@@ -1,0 +1,396 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Ashmark Wiki</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Pixelify+Sans:wght@500;600&family=Silkscreen&display=swap">
+<style>
+/* Layout: a field manual for the game. Sticky contents rail on the left, one long reference column on the right; every entry is built from the prototype's own data files, so sprites and numbers match the game. */
+:root{
+  --bg:#12141c; --panel:#1a1e2b; --panel-2:#232944; --line:#363e5e; --fg:#e4e0cf; --muted:#98a0ba; --accent:#e8b94a; --bad:#e8675f; --good:#78c474; --ground:#0b0d14;
+  --display:"Pixelify Sans","Courier New",monospace; --label:"Silkscreen","Courier New",monospace; --body:"Atkinson Hyperlegible",system-ui,sans-serif;
+  color-scheme:dark;
+}
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]){
+  --bg:#eceef3; --panel:#ffffff; --panel-2:#f3f4f8; --line:#c9cedb; --fg:#191c27; --muted:#586079; --accent:#8f6300; --bad:#b8352b; --good:#2c7a33; --ground:#2a3044; color-scheme:light}}
+:root[data-theme="light"]{
+  --bg:#eceef3; --panel:#ffffff; --panel-2:#f3f4f8; --line:#c9cedb; --fg:#191c27; --muted:#586079; --accent:#8f6300; --bad:#b8352b; --good:#2c7a33; --ground:#2a3044; color-scheme:light}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.5;padding-inline:16px;padding-block:20px 48px}
+h1,h2,h3{font-family:var(--display);font-weight:600;margin:0;text-wrap:balance;line-height:1.15}
+h2{font-size:28px;color:var(--accent)}
+h3{font-size:19px}
+p{margin:0;max-width:68ch}
+.lab{font-family:var(--label);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.muted{color:var(--muted)}
+.num{font-variant-numeric:tabular-nums}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+canvas.spr{image-rendering:pixelated;display:block;flex:none}
+
+.shell{max-width:1240px;margin:0 auto;display:grid;grid-template-columns:200px minmax(0,1fr);gap:28px;align-items:start}
+.rail{position:sticky;top:calc(16px + env(safe-area-inset-top,0px));display:flex;flex-direction:column;gap:14px}
+.rail nav{display:flex;flex-direction:column;gap:2px}
+.rail nav a{font-family:var(--display);font-size:16px;color:var(--fg);text-decoration:none;padding:4px 8px;border-left:3px solid transparent}
+.rail nav a:hover{border-left-color:var(--accent);color:var(--accent)}
+.search{display:flex;flex-direction:column;gap:4px}
+.search input{background:var(--panel);color:var(--fg);border:2px solid var(--line);padding:7px 9px;font:inherit;width:100%}
+.search small{color:var(--muted);font-size:12px;min-height:1.5em}
+main{display:flex;flex-direction:column;gap:44px;min-width:0}
+@media (max-width:860px){
+  .shell{grid-template-columns:minmax(0,1fr)}
+  .rail{position:static}
+  .rail nav{flex-direction:row;overflow-x:auto;gap:4px;padding-bottom:4px}
+  .rail nav a{border-left:0;border-bottom:3px solid transparent;white-space:nowrap}
+}
+
+.mast{display:flex;flex-direction:column;gap:10px;border-bottom:2px solid var(--line);padding-bottom:18px}
+.mast h1{font-size:46px;letter-spacing:.03em;color:var(--accent);text-transform:uppercase}
+.counts{display:flex;flex-wrap:wrap;gap:6px 18px}
+.counts span{font-family:var(--label);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.counts b{font-family:var(--display);font-size:20px;color:var(--fg);margin-right:4px;letter-spacing:0}
+
+section{display:flex;flex-direction:column;gap:14px;scroll-margin-top:16px}
+.sub{display:flex;flex-direction:column;gap:10px;margin-top:8px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+td:first-child{white-space:nowrap}
+.card{background:var(--panel);border:2px solid var(--line);padding:12px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.card .head{display:flex;gap:12px;align-items:center}
+.card .head > div{min-width:0}
+.chips{display:flex;flex-wrap:wrap;gap:4px}
+.chip{font-family:var(--label);font-size:9px;letter-spacing:.08em;text-transform:uppercase;padding:2px 6px;border:1px solid var(--line);color:var(--muted);white-space:nowrap}
+.chip.hot{border-color:var(--bad);color:var(--bad)}
+.chip.calm{border-color:var(--good);color:var(--good)}
+.sw{display:inline-block;width:12px;height:12px;border:1px solid var(--line);vertical-align:-1px;margin-right:6px}
+.stats{display:flex;flex-wrap:wrap;gap:2px 10px;font-size:13px;color:var(--muted)}
+.stats b{color:var(--fg);font-weight:700}
+.kv{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:3px 12px;font-size:14px}
+.kv dt{color:var(--muted)}
+.kv dd{margin:0}
+.rare{display:inline-block;width:8px;height:8px;margin-right:6px;vertical-align:1px}
+
+.scroll{overflow-x:auto;border:2px solid var(--line);background:var(--panel)}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-family:var(--label);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:400;background:var(--panel-2);white-space:nowrap}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+tr:last-child td{border-bottom:0}
+
+.mapwrap{background:var(--ground);border:2px solid var(--line);padding:6px}
+.mapwrap canvas{width:100%;height:auto;max-width:100%;image-rendering:pixelated;display:block}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;color:var(--muted)}
+
+.trees{display:flex;flex-direction:column;gap:10px}
+.treebox{overflow-x:auto;background:var(--panel);border:2px solid var(--line);padding:10px}
+.tree{display:flex;align-items:center;gap:22px;width:max-content}
+.tkids{display:flex;flex-direction:column;gap:8px;position:relative}
+.tkids::before{content:"";position:absolute;left:-14px;top:12px;bottom:12px;border-left:2px solid var(--line)}
+.tkids > .tree{position:relative}
+.tkids > .tree::before{content:"";position:absolute;left:-14px;top:50%;width:12px;border-top:2px solid var(--line)}
+.node{display:flex;gap:10px;align-items:center;background:var(--panel-2);border:1px solid var(--line);padding:6px 10px 6px 6px;min-width:230px}
+.node b{font-family:var(--display);font-size:16px;font-weight:600}
+.node small{display:block;font-size:12px;color:var(--muted)}
+.vs{color:var(--accent);font-size:13px}
+.callout{border-left:3px solid var(--accent);padding:4px 0 4px 12px;color:var(--muted);font-size:14px}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+</style>
+<!-- the game reads these handles when it loads; the wiki never shows them -->
+<canvas id="game" hidden></canvas><div id="ov" hidden><div id="panel"></div></div><div id="bbar" hidden></div><div id="slotbar" hidden></div><div id="stats" hidden></div><p id="hint" hidden></p><div id="log" hidden></div><button id="pause" hidden></button>
+<div class="shell">
+  <aside class="rail">
+    <div class="search">
+      <label class="lab" for="q">Search the wiki</label>
+      <input id="q" type="search" placeholder="tiger, Saltmere, quarry, spear…" autocomplete="off">
+      <small id="qinfo" aria-live="polite"></small>
+    </div>
+    <nav id="toc" aria-label="Contents"></nav>
+  </aside>
+  <main id="wiki">
+    <header class="mast">
+      <span class="lab">Prototype field manual</span>
+      <h1>Ashmark Wiki</h1>
+      <p class="muted">Every table here is read straight from the game's own data and rules when the page opens, so the numbers, sprites and map match the build in this folder.</p>
+      <div class="counts" id="counts"></div>
+    </header>
+    <p id="loading" class="muted">Loading game data…</p>
+  </main>
+</div>
+<script src="js/core/core.js"></script>
+<script src="js/data/races.js"></script>
+<script src="js/data/factions.js"></script>
+<script src="js/data/units.js"></script>
+<script src="js/data/monsters.js"></script>
+<script src="js/data/critters.js"></script>
+<script src="js/data/matchups.js"></script>
+<script src="js/data/gear.js"></script>
+<script src="js/data/progression.js"></script>
+<script src="js/data/tree.js"></script>
+<script src="js/data/places.js"></script>
+<script src="js/data/economy.js"></script>
+<script src="js/data/conduct.js"></script>
+<script src="js/core/state.js"></script>
+<script src="js/world/map.js"></script>
+<script src="js/gfx/worldart.js"></script>
+<script src="js/gfx/sprites.js"></script>
+<script src="js/ui/ui.js"></script>
+<script src="js/core/save.js"></script>
+<script src="js/world/reputation.js"></script>
+<script src="js/ui/character.js"></script>
+<script src="js/ui/inventory.js"></script>
+<script src="js/ui/town.js"></script>
+<script src="js/world/realms.js"></script>
+<script src="js/world/monsters.js"></script>
+<script src="js/world/critters.js"></script>
+<script src="js/world/events.js"></script>
+<script src="js/world/sites.js"></script>
+<script src="js/world/siege.js"></script>
+<script src="js/world/territory.js"></script>
+<script src="js/world/estates.js"></script>
+<script src="js/world/economy.js"></script>
+<script src="js/world/conduct.js"></script>
+<script src="js/world/folk.js"></script>
+<script src="js/world/caravans.js"></script>
+<script src="js/world/refugees.js"></script>
+<script src="js/world/quests.js"></script>
+<script src="js/ui/talents.js"></script>
+<script src="js/world/world.js"></script>
+<script src="js/battle/encounters.js"></script>
+<script src="js/battle/parley.js"></script>
+<script src="js/battle/battle.js"></script>
+<script src="js/battle/combat.js"></script>
+<script src="js/gfx/render.js"></script>
+<script>
+(()=>{
+'use strict';
+// a world to read from: owners, estates, stores and people as a new game starts (no game is started or saved)
+P.x=(TOWNS[0].tx+.5)*TILE;P.y=(TOWNS[0].ty+2.5)*TILE;G.mode='wiki';initWorld();
+const main=document.getElementById('wiki');
+const L={grass:'Grassland',frost:'Frost',desert:'Desert',swamp:'Swamp',forest:'Forest',hills:'Hills',open:'Open ground',rock:'Hills or mountain',shore:'Shoreline'};
+const pct=x=>Math.round(x*100)+'%';
+const keyOf=s=>Object.keys(ST).find(k=>ST[k]===s);
+const kind=s=>s.big?'huge':s.range?'ranged':s.charge?'mounted':'melee';
+const trainCostOf=id=>ST[id].tier>=3?45:25;
+const g$=g=>GOODS[g]?GOODS[g].n:g;
+const stats=s=>'<span>HP <b>'+s.hp+'</b></span><span>DMG <b>'+(+(s.dmg||0).toFixed(1))+'</b></span><span>SPD <b>'+s.spd+'</b></span>'+
+  (s.range?'<span>Range <b>'+s.range+'</b></span>':'<span>Reach <b>'+(s.reach||0)+'</b></span>')+'<span>Every <b>'+(s.cd||0).toFixed(2)+'s</b></span>'+(keyOf(s)?'<span>Power <b>'+rating([keyOf(s)])+'</b></span>':'');
+const spr=(type,team,scale)=>'<span data-spr="'+type+'" data-team="'+(team||0)+'" data-scale="'+(scale||3)+'"></span>';
+const fac=f=>f==='player'?'<span class="sw" style="background:'+FACS.player.col+'"></span>You':'<span class="sw" style="background:'+FACS[f].col+'"></span>'+FACS[f].n;
+const table=(head,rows,num)=>'<div class="scroll"><table><thead><tr>'+head.map((h,i)=>'<th'+((num||[]).includes(i)?' class="n"':'')+'>'+h+'</th>').join('')+'</tr></thead><tbody>'+rows.map(r=>'<tr class="entry">'+r.map((c,i)=>'<td'+((num||[]).includes(i)?' class="n"':'')+'>'+c+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>';
+const kv=pairs=>'<dl class="kv">'+pairs.map(([k,v])=>'<dt>'+k+'</dt><dd>'+v+'</dd>').join('')+'</dl>';
+const sub=(title,lead,html)=>'<div class="sub"><h3>'+title+'</h3>'+(lead?'<p class="muted">'+lead+'</p>':'')+html+'</div>';
+const callout=t=>'<p class="callout">'+t+'</p>';
+const sections=[];
+function section(id,title,lead,html){sections.push([id,title]);main.insertAdjacentHTML('beforeend','<section id="'+id+'" aria-labelledby="h-'+id+'"><h2 id="h-'+id+'">'+title+'</h2>'+(lead?'<p class="muted">'+lead+'</p>':'')+html+'</section>')}
+const hireAt=id=>{const s=ST[id];if(!s.race||!HIRE[id])return[];const r=RACES[s.race];
+  return TOWNS.filter(t=>t.races.includes(s.race)&&(id===r.melee||(id===r.ranged&&t.kind!=='village')||(id===r.horse&&t.kind==='castle'))).map(t=>t.name)};
+const statText=m=>Object.keys(m||{}).filter(k=>GEAR_STAT[k]&&m[k]).map(k=>{const [n,u]=GEAR_STAT[k],v=u?Math.round(m[k]*100):m[k];return (v>0?'+':'')+v+u+' '+n}).join(', ')||'—';
+
+/* counts */
+const raceUnits=Object.keys(ST).filter(k=>ST[k].race).length,mercs=['militia','spearman','archer','ranger','horse'];
+document.getElementById('counts').innerHTML=[[MW+'×'+MH,'tiles'],[TOWNS.length,'holdings'],[FIDS.length,'realms'],[Object.keys(RACES).length,'races'],[raceUnits+mercs.length,'troop types'],[Object.keys(MONSTERS).length,'monsters'],
+  [Object.keys(GOODS).length,'goods'],[Object.keys(ESTATES).length,'estates'],[Object.keys(ITEMS).length,'items'],[Object.keys(TREE).length,'skill nodes']].map(([n,l])=>'<span><b>'+n+'</b>'+l+'</span>').join('');
+document.getElementById('loading').remove();
+
+/* getting started */
+section('start','Getting started','Pick a race and a past, then make your name: hire troops, trade between towns, clear camps and lairs, take jobs, and in time take holdings of your own.',
+  kv([['World map','Click to move (or click a holding, party or site to walk to it and meet it). Space pauses; 1×, 2× and 3× set the speed.'],['Screens','C character · K skills · I inventory · Esc closes a screen or opens the pause menu (save, load, settings, main menu).'],
+    ['Battle','WASD move · Space or left-click attack · F dodge · Shift sprint · B block · right-click shove (shield bash with a shield) · 1–0 skill slots.'],['Bows','Hold the attack to draw (longer is stronger, but holding a full draw drains stamina); the mouse wheel sets your range.'],
+    ['Troops','G picks a group (infantry, archers, cavalry, all) · Z hold · X follow · C charge · V advance · T spread out.'],['Saving','The game saves each day and when you leave a town; F6 or the pause menu saves any time.']])+
+  callout('A day on the map lasts '+DAY_SECONDS+' seconds at 1× speed: '+pct(NIGHT_AT)+' daylight, then dusk, night and dawn. Your band eats and is paid each day.'));
+
+/* world */
+section('world','The world','Ashmark is a '+MW+' × '+MH+' tile map: cold north, hot south, ranges you cross by passes, roads between the holdings and bridges where they cross water. Colors show each realm’s land as a new game begins.',
+  '<div class="mapwrap"><canvas id="worldmap" role="img" aria-label="Map of Ashmark with its holdings and the lands each realm rules"></canvas></div>'+
+  '<div class="legend">'+FIDS.map(f=>'<span>'+fac(f)+'</span>').join('')+CLIMS.map(c=>'<span><span class="sw" style="background:'+PAL[c].g[0]+'"></span>'+L[c]+'</span>').join('')+'</div>'+
+  sub('Territory','Every holding rules the land it can reach from its gates; roads carry its reach farther, forest, hills and mountains less, and water stops it. Where two claims meet, the holding with more reach to spare keeps the land.',
+    table(['Kind','Starting reach','Grows to (in peace)'],['village','town','castle'].map(k=>[k,LAND_REACH[k],LAND_REACH[k]+GROW_MAX[k]+' (+ up to 3 for friendly holdings within 50 tiles)']),[1])+
+    callout('Reach grows about 1 every '+Math.round(1/GROW_DAY)+' days a holding is held in peace, and by 1 each time you clear a camp or den near it. Conquest costs 2; siege, sack and raids wear it down. A captured holding brings all its land to the new owner. Crossing into another realm’s land shows in the log.')));
+
+/* biomes */
+const biomeRows=[
+  ['Grassland','grass',T_OPEN,'Normal vision','—','Open ground: cavalry rides 15% faster.'],
+  ['Forest','grass',T_FOREST,'70% vision. Parties hiding in forest are seen late, and you are too.','—','Trees block movement and stop about 25% of arrows. Elves shoot through them.'],
+  ['Hills','grass',T_HILL,'130% vision','—','High ground: archers reach 15% farther.'],
+  ['Mountains','grass',T_MOUNT,'—','Impassable. Dragon lairs.','—'],
+  ['Frost','frost',T_OPEN,'Normal vision','Carry 1 fur per 5 people or lose 3 morale a night; the cold eats extra food.','Snow slows everyone 15%, except dwarves and wolves.'],
+  ['Desert','desert',T_OPEN,'120% vision','−3 morale a night unless within 3 tiles of water.','Heat makes melee attacks 10% slower, except for orcs and scorpions.'],
+  ['Swamp','swamp',T_OPEN,'80% vision','Fever chance each night: 25%, minus 3% per Medicine level. Costs morale and can kill a troop.','Mud slows everyone 20% and cavalry 35%, so charges stall. Orcs wade through.'],
+  ['Road','grass',T_ROAD,'Normal vision','—','—']];
+const ignores=(c,t)=>Object.keys(RACES).filter(r=>RACES[r].home.includes(t===T_FOREST?'forest':t===T_HILL?'hills':c)).map(r=>RACES[r].n).join(', ')||'—';
+section('biomes','Biomes','Every tile has a climate and a terrain. Speed multiplies the two (minimum 35%), and roads always run at 130%. Camping within 3 tiles of a holding avoids every nightly cost.',
+  table(['Biome','Speed','Vision','Each night','In battle','Ignored by'],biomeRows.map(([n,c,t,v,night,battle])=>{const sp=t===T_ROAD?1.3:t===T_MOUNT?0:Math.max(.35,SPEEDMUL[t]*CLIMMUL[c]);
+    return ['<span class="sw" style="background:'+(t===T_FOREST?PAL.grass.mini[1]:t===T_HILL?PAL.grass.hill[1]:t===T_MOUNT?'#7d8494':t===T_ROAD?PAL.grass.road[0]:PAL[c].g[0])+'"></span><b>'+n+'</b>',sp?pct(sp):'—',v,night,battle,t===T_ROAD||t===T_MOUNT?'—':ignores(c,t)]}),[1])+
+  callout('Your race skips the travel and survival cost of its home biomes. Some mounts ignore a biome too (see Mounts).'));
+
+/* races */
+section('races','Races','Pick one at the start. It sets your bonuses, your hero’s look and which biomes slow you down. Troops of your own race cost 15% less to hire.',
+  '<div class="grid">'+Object.keys(RACES).map(r=>{const R=RACES[r];return '<article class="card entry"><div class="head">'+spr(R.melee,0,3)+spr(R.horse,0,2)+'<div><h3>'+R.n+'</h3><span class="muted">'+R.d+'</span></div></div>'+
+    kv([['Home',R.home.map(h=>L[h]).join(', ')],['Recruits',[R.melee,R.ranged,R.horse].map(k=>ST[k].n).join(', ')],['Livestock',(LIVESTOCK[r]||[]).map(id=>CRITTERS[id].n).join(', ')],['Lives in',TOWNS.filter(t=>t.races.includes(r)).map(t=>t.name).join(', ')]])+'</article>'}).join('')+'</div>');
+
+/* realms */
+section('realms','Realms and diplomacy','Five realms declare wars, sign truces and form alliances on their own. Their lords lead armies of up to '+LCAP+' (more when a realm is losing) to besiege enemy holdings. A realm that loses its last holding falls.',
+  '<div class="grid">'+FIDS.map(f=>{const F=FACS[f],own=TOWNS.filter(t=>HOME[t.name]===f);return '<article class="card entry"><h3>'+fac(f)+'</h3><p class="muted">'+F.d+'</p>'+
+    kv([['Lords',F.lords.join(', ')],['Holdings',own.map(t=>t.name+' <span class="muted">('+t.kind+')</span>').join(', ')],['Peoples',[...new Set(own.flatMap(t=>t.races))].map(r=>RACES[r].n).join(', ')],['Starting land',landsOf(f)+' tiles']])+'</article>'}).join('')+'</div>'+
+  sub('Realm economy (Settings)','How strictly armies depend on their realm’s money and food.',table(['Mode','What it means'],Object.keys(ECON_MODES).map(m=>['<b>'+ECON_MODES[m][0]+'</b>'+(m==='full'?' (default)':''),ECON_MODES[m][1]])))+
+  callout('Sign a mercenary contract in any town tavern: the realm pays 1 gold per troop a day and adds a 40 gold bounty per enemy lord you beat. Their enemies become yours. Attacking a lord, a caravan or a holding makes its realm hostile for a while and costs honor with it.'));
+
+/* holdings */
+section('holdings','Holdings',TOWNS.length+' towns, castles and villages. Hiring needs standing at the holding: '+REP_NEED[1]+' for tier 1, '+REP_NEED[2]+' for tier 2, '+REP_NEED[3]+' for tier 3. Standing is your reputation there, half your honor with its owner, and a bonus where your own race lives. Shown as a new game begins.',
+  table(['Holding','Kind','Starts with','Folk','Climate','Walls','People','Estates','Notes'],TOWNS.map(t=>['<b>'+t.name+'</b>',t.kind,fac(HOME[t.name]),t.races.map(r=>RACES[r].n).join(', '),L[t.clim],WALL_N[wallOf(t)],t.pop,'<span class="muted" style="font-size:13px">'+estateLine(t)+'</span>',
+    '<span class="muted" style="font-size:13px">'+t.note+(Object.keys(COMPS).some(c=>COMPS[c].town===t.name)?' Companion: '+Object.keys(COMPS).filter(c=>COMPS[c].town===t.name).map(c=>COMPS[c].n).join(', ')+'.':'')+'</span>']),[6]));
+
+/* economy */
+const madeBy=g=>Object.keys(MAKE).filter(k=>MAKE[k].out&&MAKE[k].out[g]).map(k=>ESTATES[k].n+' '+MAKE[k].out[g]+'/lv').concat(g==='furs'?['Weavers & Tanners in the frost']:[]).concat(['grain','timber','stone'].includes(g)?['the land itself']:[]).join(', ')||'—';
+const usedBy=g=>[...Object.keys(MAKE).filter(k=>MAKE[k].in&&MAKE[k].in[g]).map(k=>ESTATES[k].n),...Object.keys(NEEDS).filter(k=>NEEDS[k][g]).map(k=>k+'s'),...(GOODS[g].food?['everyone (food)']:[]),
+  ...(Object.keys(ESTATES).some(k=>ESTATE_MAT(k,1)[g])||WALL_MAT.some(m=>m&&m[g])?['building']:[]),...(GOODS[g].ammo?['your bows and crossbows']:[]),...(g==='furs'?['frost holdings, your band in the frost']:[])].join(', ')||'—';
+section('economy','The economy','Every holding keeps real stores. Each day its estates (staffed by its people) and its land produce, workshops turn inputs into goods, people and garrison eat and use things up, and fresh food spoils. What is left sets the price.',
+  table(['Good','Base','Per bag slot','Spoils a day','Made by','Used by'],Object.keys(GOODS).map(g=>['<b>'+g$(g)+'</b>',GOODS[g].base+'g',GOODS[g].stack,GOODS[g].spoil?pct(GOODS[g].spoil):'—','<span class="muted" style="font-size:13px">'+madeBy(g)+'</span>','<span class="muted" style="font-size:13px">'+usedBy(g)+'</span>']),[1,2,3])+
+  sub('Prices','A holding aims to keep ten days of what it needs. Price = base × √(target ÷ stock), between 0.4× and 3×, and 40% more while it lies ruined. Every unit you buy or sell changes the stock, so the next unit costs more (or pays less). Buying costs about 8% over the price and selling pays about 8% under it; Trade narrows the gap. You cannot buy what a market does not have, and buying a hungry town’s food angers its people.','')+
+  sub('People and prosperity','',table(['Kind','Starts with','Room for','Storage per good'],['village','town','castle'].map(k=>[k,POP0[k]+' people',POPCAP[k]+' + land/12 (+15% per Granary)',STORE[k]+' (+50% per Granary)']),[1])+
+    kv([['Food','People eat '+NEEDS.town.food+' food per 100 a day, the garrison 1 per 4 soldiers. Perishables go first; three or more kinds of food lift spirits.'],['Other needs','Towns use cloth, timber, tools, ale, spice and some iron; castles iron, tools and ammunition; villages a little cloth, timber, tools and ale.'],
+      ['Famine','Short of food, people die or leave (up to 3% a day).'],['Growth','Fed and content (prosperity over 40%), a holding grows toward its room.'],['Prosperity','Follows how well needs are met; turmoil, ruin, sieges and high taxes wear it down.'],
+      ['Staffing','Each estate level needs '+WORKERS+' workers; with too few people, estates make less.'],['Volunteers','Grow each day with people and prosperity, up to a tenth of the people. Every troop you hire takes one.']]))+
+  sub('Taxes','A day’s taxes = people × rate × (0.4 + prosperity) + 3 gold per Market level. Your fiefs pay you; the rest pay their realm.',table(['Rate','Share','Effect on prosperity'],TAX_N.map((n,i)=>[n,pct(TAX_RATE[i]),['+1 a day','—','−1.5 a day'][i]])))+
+  sub('Caravans','Realms ship surplus (stock well above ten days’ need) to the friendly holding most short of it, within 90 tiles. The goods leave one store and arrive in the other, and the receiving owner takes a 5% toll. Guards fight off small bands of bandits; big bands plunder the carts, and lords at war seize them for their own realm. Meet a caravan to buy its cargo or sell it what its destination lacks — or attack it.',
+    kv([['Your caravans','Hire one in a fief’s Fief tab: pick a destination, up to two goods from the fief’s stores, the guards and whether it runs a standing route.'],['Delivering','To one of your fiefs it unloads into the stores. Anywhere else it sells at that market (moving its prices) and brings the gold home.'],
+      ['Cost',PCV.hire+' gold plus '+PCV.guard+' per guard to hire; '+PCV.upkeep+' gold a day plus '+PCV.guardUp+' per guard. Up to '+PCV.max+' at once.'],['On the road','Click one of yours to end or start its standing route, or disband it and take its cargo.']]))+
+  sub('Realm treasuries','Realms collect taxes and tolls, and pay '+0.6+' gold a day per soldier in the field and 0.4 per garrison soldier, 10 gold (and 1 food) per recruit, 6 per garrison soldier raised, 90 to raise a new army, and gold plus materials for every building. Armies eat from their holdings’ stores. In Full mode a broke or starving realm loses soldiers to desertion and grows weary of war. Character → Factions shows each treasury.',''));
+
+/* estates */
+const makeText=k=>{const M=MAKE[k];if(!M.out)return '—';return (M.in?Object.keys(M.in).map(g=>M.in[g]+' '+g$(g).toLowerCase()).join(' + ')+' → ':'')+Object.keys(M.out).map(g=>M.out[g]+' '+g$(g).toLowerCase()).join(', ')};
+section('estates','Estates and walls','What a holding has built. Outdoor estates stand on land that suits them, near the holding; their workers walk out each morning and home at dusk. Build and upgrade them in your fiefs (one project at a time); realms build their own over time.',
+  table(['Estate','Needs','Per level a day','Gold for level 1 / 2 / 3','Materials (level 1)','Notes'],Object.keys(ESTATES).map(k=>{const E=ESTATES[k];return ['<b>'+E.n+'</b>',E.ground?L[E.ground]:'inside',makeText(k),[1,2,3].map(l=>bldCost(k,l)).join(' / '),matsText(ESTATE_MAT(k,1)),'<span class="muted" style="font-size:13px">'+E.d+'</span>']}))+
+  callout('Most estates reach level '+BLD_MAX.town+' in towns and '+BLD_MAX.village+' in villages and castles. Level 1 takes '+buildDays(1)+' days, level 2 '+buildDays(2)+' and level 3 '+buildDays(3)+'; materials scale with the level and come from the holding’s own stores. Raids burn one estate and sacks burn two.')+
+  sub('Walls','',table(['Walls','Gold','Materials','Days','Defenders fight as'],WALL_N.map((n,l)=>[n,l?WALL_COST[l]:'—',l?matsText(WALL_MAT[l]):'—',l?buildDays(l):'—','level '+(1+l)]))+
+    kv([['Starting walls','Castles '+WALL_N[WALL0.castle]+', towns '+WALL_N[WALL0.town]+', villages '+WALL_N[WALL0.village]+'. Villages can build up to a '+WALL_N[WALL_MAX.village].toLowerCase()+'.'],['Effects','Each level makes lords’ sieges last a day longer and lets your fief hold 3 more garrison soldiers.'],['Breach','Capturing a holding costs it a wall level. Realms fortify their frontier first.']])));
+
+/* warfare */
+section('warfare','Sieges, raids and fiefs','Any holding not yours or your employer’s can be attacked from its Besiege tab or by walking up to it while its realm is hostile to you.',
+  kv([['Siege camp','Needs 5 troops. Ladders are ready after '+LADDER_DAYS+' days (then you can assault); a ram after '+RAM_DAYS+' weakens the walls one level.'],['Starving','The garrison and people inside live on the holding’s stores; when food runs out the garrison starves, and a garrison of one surrenders.'],
+    ['Relief','The realm sends its lords to break your siege. Walking away lifts it.'],['Villages','Raid one (takes half a day; you carry off food and gold, burn an estate, and kill or scatter people) or seize it outright. Its militia fights as level 1 behind no walls, 2 behind a palisade.'],
+    ['Captured','Take it in peace (+3 honor with the other realms), sack it (gold and goods; reputation and honor fall, half its stores and a third of its people are lost, two estates burn), sack and leave, or hand it to your employer for gold.'],
+    ['Your fiefs','Pay taxes daily. Garrison them from the Fief tab (hire guards or station troops), set the tax rate, store and take goods, build estates and walls, and send caravans. Realms hostile to you will come for them.'],
+    ['Lords’ sieges','Last 2 days plus the wall level; well-walled and well-stocked holdings hold better.']]));
+
+/* combat */
+const famN={one:'Sword (and any other one-handed weapon)',dagger:'Dagger',dual:'Dual wield',axe:'One-handed axe',heavy:'Greatsword and other two-handed blades',hammer:'Warhammer and clubs',thrust:'Spear held in two hands',phalanx:'Spear and shield'};
+const shapeN={arc:'sweep',thrust:'thrust (pierces)',twin:'twin thrust',slam:'slam',spin:'spin'};
+section('combat','Battle','Battles are fought in real time on ground shaped by the biome. You fight in the line; your troops follow their group’s orders.',
+  sub('Weapon combos','Keep attacking inside '+COMBO_WINDOW+'s of the last blow to chain the next step. Each step’s shape is both its hitbox and its look: a sweep covers a wide arc at your reach, a thrust a long narrow line that pierces everyone along it (each one behind takes a little less), a slam a patch of ground ahead, a spin all around.',
+    table(['Weapon','Step 1','Step 2','Finisher','Stamina'],Object.keys(COMBOS).map(k=>{const C=COMBOS[k];return ['<b>'+famN[k]+'</b>',...C.map(c=>c.n+' <span class="muted">· '+shapeN[c.shape]+' · ×'+c.mult+(c.stun?' · stuns':'')+'</span>'),STAM.swing.map(v=>Math.round(v*(C.sp||1))).join(' / ')]})))+
+  sub('Moves','',kv([['Dodge','F rolls you out of harm (invulnerable while rolling): '+STAM.dodge+' stamina, every '+DODGE_CD+'s.'],['Block','Hold B to raise your guard: blows from the front lose most of their damage, and blocking costs stamina.'],
+    ['Shove','Right-click pushes enemies in front back and staggers them for '+SHOVE.stun+'s ('+SHOVE.sp+' stamina). With a shield it is a Shield Bash: ×'+BASH.mult+' damage, '+BASH.stun+'s stagger.'],['Sprint','Hold Shift to run 60% faster for stamina.'],
+    ['Bows','Hold to draw: a longer draw flies faster and hits harder, but holding a full draw drains stamina. The wheel sets the range; arrows fly in an arc (less at short range). The Hawkeye node shows the arrow’s path. Crossbows shoot flat and hit harder; they need bolts.'],
+    ['Magic','Staves and wands cast bolts that splash, paid in mana. Spells get stronger with Spellcraft.'],['Ammunition','Your arrows and bolts come from your bag; troops carry a quiver (bows 16, crossbows 12, javelins 6) and draw blades when it runs out. After a won battle you gather some back.']]))+
+  sub('Skills','Unlock active skills on the skill tree, then put them in slots 1–0 from the Skill bar page.',table(['Skill','Learned at','Cooldown','Mana','Stamina','Does'],Object.keys(HSKILLS).map(k=>{const S=HSKILLS[k],N=TREE[S.learn];return ['<b>'+S.n+'</b>',N?N.n+' <span class="muted">('+(N.br?TREE_BRANCHES.find(b=>b.k===N.br)?TREE_BRANCHES.find(b=>b.k===N.br).n:N.br:'—')+')</span>':'—',S.cd+'s',S.mp||'—',S.sp||'—',S.d]}),[2,3,4]))+
+  sub('Troop orders','',kv([['Groups',GRPS.map(g=>GN[g]).join(', ')+', or all troops (G cycles).'],['Orders','Z hold where they stand · X follow you · C charge the enemy · V advance in line · T spread out against arrows.'],
+    ['Troop blows','Spearmen thrust and carry on into the enemy behind for half damage; chieftains, trolls and the heaviest hitters chop down from above and cleave a neighbor; the rest mostly swing. Spears brace against charges; cavalry charges hit 1.9× at full speed.']])));
+
+/* troops */
+const node=id=>{const s=ST[id],at=hireAt(id);return '<div class="node entry">'+spr(id,0,3)+'<div><b>'+s.n+'</b><small>Tier '+s.tier+' · '+kind(s)+(HIRE[id]?' · hire '+HIRE[id]+'g':' · train '+trainCostOf(id)+'g')+'</small><div class="stats">'+stats(s)+'</div>'+(at.length?'<small>Hired at '+at.join(', ')+'</small>':'')+'</div></div>'};
+const tree=id=>{const kids=UP[id]||[];return '<div class="tree">'+node(id)+(kids.length?'<div class="tkids">'+kids.map(tree).join('')+'</div>':'')+'</div>'};
+section('troops','Troop trees','Hire tier 1 troops (and tier 2 riders at castles), then train them in towns: 25 gold to reach tier 2 and 45 to reach tier 3. Where a line forks, you choose the branch. Each hire takes one of the holding’s volunteers.',
+  Object.keys(RACES).map(r=>{const R=RACES[r];return '<div class="sub"><h3>'+R.n+'</h3><div class="trees">'+[R.melee,R.ranged,R.horse].map(k=>'<div class="treebox">'+tree(k)+'</div>').join('')+'</div></div>'}).join('')+
+  '<div class="sub"><h3>Mercenaries and bandits</h3><p class="muted">Not tied to a race. You start with some, take them as prisoners, and bandits field them. Camps are led by a chieftain.</p><div class="trees">'+
+    ['militia','archer','horse','chief'].map(k=>'<div class="treebox">'+tree(k)+'</div>').join('')+'</div></div>'+
+  '<div class="sub"><h3>Companions</h3><div class="grid">'+Object.keys(COMPS).map(c=>{const C=COMPS[c];return '<article class="card entry"><div class="head">'+spr(c,0,3)+'<div><h3>'+C.n+'</h3><span class="muted">'+C.d+'</span></div></div>'+
+    kv([['Found in',C.town+' tavern, '+C.cost+'g'],['Likes',Object.keys(C.react).filter(k=>C.react[k]>0).join(', ')||'—'],['Dislikes',Object.keys(C.react).filter(k=>C.react[k]<0).join(', ')||'—']])+'</article>'}).join('')+'</div>'+
+  callout('Companions leave when their approval falls to −5. Brann and Elske also quarrel when both travel with you. Give each one a role: '+Object.values(ROLES).join(', ')+'.')+'</div>');
+
+/* gear */
+const handN={one:'one-handed',two:'two-handed',hybrid:'hybrid'};
+section('gear','Gear and inventory','Press I. Your equipment sits on a body: slots where each piece is worn, five rings by each hand, and your mount with its own three slots below. The bag holds '+INV_SIZE+' slots (more with a pack, a belt or saddlebags); trade goods and trophies share it with gear.',
+  sub('Equipment slots','',kv([['Body',['head','face','ear','body','cape','arms','belt','legs','feet','bag'].map(k=>SLOTS[k]).join(', ')],['Hands','Main hand, Off hand, and ten fingers for rings'],['Mount','Mount, plus '+MOUNT_KEYS.map(k=>SLOTS[k]).join(', ')+' (they only count while you ride)']]))+
+  sub('Holding weapons','One-handed weapons leave the off hand free for a shield, a tome, a torch or a second weapon (dual wield: the off-hand weapon adds half its damage, and your combo turns quick). Two-handed weapons need both hands and send your off-hand item to the bag. Hybrid weapons (spears) are held in two hands when the off hand is empty (+20% damage, +4 reach) and in one with a shield.',
+    table(['Piece','Slot','Grip','Wooden (tier 0)','Silver (tier 3)','Adamant (tier 6)'],Object.keys(BASES).map(b=>{const B=BASES[b];return ['<b>'+B.n+'</b>',SLOTS[B.slot],B.hand?handN[B.hand]:'—',...[0,3,6].map(t=>'<span class="muted" style="font-size:12px">'+statText(ITEMS[gearId(b,t)].m)+'</span>')]})))+
+  callout('Materials run '+MATERIALS.map(m=>m.n).join(', ')+'; value doubles with each step. Smiths stock pieces up to a tier that rises with the days (castles forge one higher), and enemies drop them.')+
+  sub('Rare gear','Dropped by monsters.',table(['Item','Slot','Rarity','Effect','Value','Dropped by'],Object.keys(ITEMS).filter(k=>ITEMS[k].tier==null&&ITEMS[k].slot!=='mount').map(k=>{const I=ITEMS[k];return ['<span class="rare" style="background:'+RARITY[I.r]+'"></span><b>'+I.n+'</b>',SLOTS[I.slot]+(I.hand?' · '+handN[I.hand]:''),I.r,I.d,I.v+'g',Object.keys(MONSTERS).filter(m=>MONSTERS[m].gear.some(x=>x[0]===k)).map(m=>MONSTERS[m].n).join(', ')||'—']}),[4]))+
+  sub('Mounts','Stables sell them; rare beasts need standing '+REP_NEED[2]+' and the right place. A mount speeds your travel; some ignore a biome.',
+    table(['Mount','Rarity','Effect','Ignores','Where','Price'],Object.keys(MOUNTS).map(k=>{const M=MOUNTS[k];return ['<b>'+M.n+'</b>',M.r,statText(M.m)+(M.fly?', flies':''),(M.ign||[]).map(x=>L[x]).join(', ')||'—',M.drop?'only as loot':M.where==='any'?'any stable':M.where?M.where+' stables':M.race?RACES[M.race].n+' holdings':L[M.clim]+' holdings',M.drop?'—':Math.round(M.v*1.2)+'g']}),[5]))+
+  sub('Trophies','Sell them at any market.',table(['Trophy','Value','From'],Object.keys(MATS).map(k=>['<b>'+MATS[k].n+'</b>',MATS[k].v+'g','<span class="muted">'+[...Object.keys(MONSTERS).filter(m=>MONSTERS[m].mat===k).map(m=>MONSTERS[m].n),...Object.keys(CRITTERS).filter(c=>CRITTERS[c].mat&&CRITTERS[c].mat[0]===k).map(c=>CRITTERS[c].n)].join(', ')+'</span>']),[1])));
+
+/* hero */
+const branchOf=k=>TREE_BRANCHES.find(b=>b.k===k);
+section('hero','Your hero','Your past sets your weapon, purse and starting place on the skill tree. You gain a skill point every level; disciplines grow as you use them, up to level 10.',
+  '<div class="sub"><h3>Pasts</h3><div class="grid">'+Object.keys(BGS).map(k=>{const B=BGS[k],O=TREE['o_'+k];return '<article class="card entry"><h3>'+B.n+'</h3><p class="muted">'+B.d+'</p>'+kv([['Weapon',BASES[B.weapon].n+(B.ammo?' and '+B.ammo[1]+' '+B.ammo[0]:'')],['Gold',B.gold],['Origin',O?O.n+' <span class="muted">'+O.d+'</span>':'—']])+'</article>'}).join('')+'</div></div>'+
+  sub('The skill tree','Start at your origin and spend points outward: a node can be taken once it touches one you have, and refunded if nothing beyond needs it. Four paths branch from the Crossroads, joined by hybrid nodes between them.',
+    table(['Path','Attribute','Nodes','Notables','Abilities','Keystones'],TREE_BRANCHES.map(b=>{const ns=Object.values(TREE).filter(N=>N.br===b.k);return ['<span class="sw" style="background:'+b.col+'"></span><b>'+b.n+'</b>',ATTRS[b.a][0],ns.length,ns.filter(N=>N.t==='n').length,ns.filter(N=>N.t==='a').length,ns.filter(N=>N.t==='k').map(N=>N.n).join(', ')]}),[2,3,4])+
+    '<div class="grid">'+Object.values(TREE).filter(N=>N.t==='k').map(N=>'<article class="card entry"><h3>'+N.n+'</h3><span class="chip">'+(branchOf(N.br)?branchOf(N.br).n:'')+' keystone</span><p class="muted">'+N.d+'</p></article>').join('')+'</div>')+
+  sub('Disciplines','',table(['Discipline','Attribute','Does'],Object.keys(SKILLS).map(k=>['<b>'+SKILLS[k].n+'</b>',ATTRS[SKILLS[k].a][0],SKILLS[k].d])))+
+  sub('Attributes','Raised by nodes on the tree.',kv(Object.keys(ATTRS).map(k=>[ATTRS[k][0],ATTRS[k][1]]))));
+
+/* threats */
+const abil={pounce:'Pounces on a fighter 24–110 px away for 1.6× damage, then waits 4.5 s.',web:'Spits webs (range 60) that halve the target’s speed for 2 s.',regen:'Regenerates 4 health per second.'};
+const monCard=id=>{const M=MONSTERS[id],s=ST[M.unit],traits=[s.ability&&abil[s.ability],s.charge&&'Charges for 1.9× damage at full speed.',s.big&&'Huge: takes up more room and ignores battleground rules.'].filter(Boolean);
+  return '<article class="card entry"><div class="head">'+spr(M.unit,1,s.big?2:3)+'<div><h3>'+M.n+'</h3><span class="muted">'+M.d+'</span></div></div>'+
+  '<div class="chips"><span class="chip '+(M.aggro?'hot':'calm')+'">'+(M.aggro?'Hunts you':'Waits')+'</span>'+M.where.map(w=>'<span class="chip">'+L[w]+'</span>').join('')+'<span class="chip">Group of '+(M.count[0]===M.count[1]?M.count[0]:M.count[0]+'–'+M.count[1])+'</span></div>'+
+  '<div class="stats">'+stats(s)+'</div><p class="vs">'+vsLine(s)+'</p>'+(traits.length?'<p class="muted" style="font-size:14px">'+traits.join(' ')+'</p>':'')+
+  kv([['XP',M.xp+' each'],['Trophy',MATS[M.mat].n+' ('+MATS[M.mat].v+'g)'+(id==='wolf'?' and 1 fur per 2 wolves':'')],['Rare drops',M.gear.map(([it,ch])=>'<span class="rare" style="background:'+RARITY[ITEMS[it].r]+'"></span>'+ITEMS[it].n+' '+pct(ch)).join(', ')]])+'</article>'};
+section('threats','Monsters and threats','Up to '+MONSTER_CAP+' monsters roam at a time, each near its lair in its own habitat. They level up as the days pass: each level adds 20% health, 12% damage, 25% more XP and better drop chances.',
+  '<div class="grid">'+Object.keys(MONSTERS).filter(id=>!MONSTERS[id].mythic).map(monCard).join('')+'</div>'+
+  '<div class="sub"><h3>Mythic monsters</h3><p class="muted">One of each at a time, roaming the whole map rather than a lair. Slain, another comes some days later.</p>'+Object.keys(MONSTERS).filter(id=>MONSTERS[id].mythic).map(id=>{const M=MONSTERS[id],Y=M.mythic,s=ST[M.unit],H=Y.hoard||{};
+    return '<article class="card entry"><div class="head">'+spr(M.unit,1,3)+'<div><h3>'+M.n+'</h3><span class="muted">'+M.d+'</span></div></div><div class="stats">'+stats(s)+'</div>'+
+    kv([['Appears','From day '+Y.first+', in the '+Y.lair.join(' or ')+'. Another comes '+Y.back+' days after one is slain.'],['Hunts','Spots you within '+Y.see+' px'+(Y.fly?' and flies over anything':'')+'.'],
+      ['Ravages',(Y.ravage?'Kills '+pct(Y.ravage)+' of any army it lands on. ':'')+(Y.scorch?pct(Y.scorch)+' a day: burns a nearby holding’s fields and halves its garrison.':'')],
+      ['Hoard',(H.gold?H.gold+' gold':'')+(H.renown?', '+H.renown+' renown':'')+', '+M.xp+' XP'+(H.gear?', gear of tier '+H.gear[0]+'–'+H.gear[1]:'')+(H.egg?', and '+pct(H.egg[1])+' to find a '+ITEMS[H.egg[0]].n:'')+'.'],['Fame','+'+Y.fame+' reputation nearby.']])+'</article>'}).join('')+'</div>'+
+  sub('Bandits and armies','',table(['Threat','Where','Fields','Notes'],[['Bandits','Grassland and frost','Militia, archers, spearmen, orc grunts','Up to '+BANDITS+' roam. Grow by one fighter every 12 days. Drop gold and prisoners, and plunder caravans.'],
+     ['Desert raiders','Desert','Spear throwers, militia, orc grunts','Same as bandits.'],['Bog raiders','Swamp','Orc grunts, spear throwers, militia','Same as bandits.'],
+     ['Bandit camps',CAMPS.length+' across the map','7–9 raiders and a chieftain','Pay 25 extra gold. Return 10 days after you clear them; clearing one pushes the nearest holding’s land out.'],
+     ['Lords’ armies','Anywhere','Their realm’s races, up to '+LCAP+' (more when the realm is losing)','Hostile only when their realm is at war with you. Friendly lords nearby join your fights.']])));
+
+/* wildlife */
+section('wildlife','Game and livestock','Wild game roams its habitat and bolts when you come near; catch a herd to hunt it. Livestock grazes by villages and towns on ground its kind can use — inside the pasture fence where a holding has one.',
+  table(['Animal','Lives in','Herd','Meat','Trophy'],Object.keys(CRITTERS).filter(k=>!CRITTERS[k].live).map(k=>{const C=CRITTERS[k];return ['<b>'+C.n+'</b>',C.where.map(w=>L[w]).join(', '),C.herd.join('–'),C.meat,C.mat?MATS[C.mat[0]].n+' '+pct(C.mat[1]):'—']}),[3])+
+  sub('Livestock','Buy an animal or milk from the herders, or take one and anger the village.',table(['Animal','Grazes on','Climates','Price','Milk','Kept by'],Object.keys(CRITTERS).filter(k=>CRITTERS[k].live).map(k=>{const C=CRITTERS[k],Gz=GRAZE[k]||{on:['open'],clim:null};
+    return ['<b>'+C.n+'</b>',Gz.on.map(x=>x==='open'?'open ground':x).join(', '),Gz.clim?Gz.clim.map(c=>L[c]).join(', '):'any',C.price+'g',C.milk||'—',Object.keys(LIVESTOCK).filter(r=>LIVESTOCK[r].includes(k)).map(r=>RACES[r].n).join(', ')]}),[3,4])));
+
+/* sites and jobs */
+section('sites','Places and jobs','Away from the holdings lie places to explore. You see a place only once you come near it.',
+  table(['Place','On the map','Returns','What you find'],Object.keys(SITE_TYPES).map(k=>{const S=SITE_TYPES[k];return ['<b>'+S.n+'</b>',Math.round(S.count*MAP_DENS),S.respawn?S.respawn+' days after you clear it':'—',S.d]}),[1])+
+  sub('Travellers','Camps on the road that move on after a week or so. Trade with them, hire sellswords, rest and hear news.',table(['Who','Sells','Notes'],TRAVELERS.map(T=>['<b>'+T.n+'</b>',T.goods.map(g$).join(', '),T.d])))+
+  sub('Jobs','Holdings and lords offer work in their Jobs tab once your standing allows. Rewards scale with the days.',kv([['Bounty','Beat a named band of bandits.'],['Supply run','Bring goods the town is truly short of; they go into its stores.'],['Courier','Carry a sealed letter to another holding.'],['Clear a place','Clear a cave or hideout that troubles the holding.'],
+    ['Beast hunt','Kill a named monster pack.'],['Hunt','Bring meat for a feast, or hides for the tanner.'],['Reinforce','Hand a castle troops of tier 2 or better.'],['Lords’ jobs','Beat an enemy lord in the field, or raid an enemy village.']])));
+
+/* life */
+section('life','Life on the map','The world goes on without you.',kv([['Workers','Farmers, herders, woodcutters, miners and fishers walk out to their estates each morning, work there and go home at dusk. They hurry home when bandits come near and stay in while their holding is besieged or burned. Click one to talk (they tell you what their holding is short of), hire them, rob them or press-gang them; robbing and press-ganging cost reputation and honor and scare the workers off the fields: half the holding’s output for days.'],
+  ['Refugees','When a holding is sacked, raided, starving, besieged or miserable, its people leave in groups for a friendly holding nearby that is better off: they come off its people and join the other’s. Bandits rob them on the road. Meet them to share food (reputation), offer them a home in your fief (more people for you), ask for volunteers, or rob them (shame with both holdings and their lords).'],
+  ['Estates','Click an estate on the map to see what it made. Someone else’s can be plundered (fight its guards, take its goods) or burned (it loses a level, the holding grows poorer and its people may leave). Its realm turns hostile, and your companions take note.'],
+  ['Cornered parties','A bandit band or enemy lord that runs from you and is caught may yield instead of fighting: the weaker they are, and the greater your renown, the likelier. Yielded bandits become prisoners, join your band (morale and honor fall), or are let go; a lord pays a ransom. If they refuse, they fight. You can always let them go.'],
+  ['Army size','On the map, a band trails followers by its size, and a host of 30 or more carries a second banner.'],
+  ['Caravans','Carts with guards carry goods along the roads between friendly holdings, and your own carry yours. Besides trading with them, you can demand a toll from a weak one, attack it for its cargo, or (with a fief) seize it so it drives its cargo to your fief and works for you. A hostile caravan that fears you may hand over its cargo without a fight.'],['Day and night','Clouds drift over by day; smoke rises from every holding; snow falls in the frost; fireflies glow on warm nights.'],
+  ['Wars','Realms make war and peace, besiege each other’s holdings, sack them, raise walls and build estates. Lords fight each other when their armies meet.']]));
+
+/* settings */
+section('settings','Settings','Main menu → Settings, or Esc → Main menu.',kv([['Realm economy',Object.keys(ECON_MODES).map(m=>ECON_MODES[m][0]).join(' / ')+' — see Realms and diplomacy.']]));
+
+/* contents */
+document.getElementById('toc').innerHTML=sections.map(([id,t])=>'<a href="#'+id+'">'+t+'</a>').join('');
+
+/* sprites */
+document.querySelectorAll('[data-spr]').forEach(e=>{
+  const s=unitSprite(e.dataset.spr,+e.dataset.team,false),k=+e.dataset.scale,c=document.createElement('canvas');
+  c.width=s.width*k;c.height=s.height*k;const g=c.getContext('2d');g.imageSmoothingEnabled=false;
+  if(+e.dataset.team===1&&ST[e.dataset.spr]&&!ST[e.dataset.spr].beast){g.translate(c.width,0);g.scale(-1,1)}
+  g.drawImage(s,0,0,c.width,c.height);c.className='spr';c.setAttribute('role','img');c.setAttribute('aria-label',(ST[e.dataset.spr]||{}).n||e.dataset.spr);e.replaceWith(c);
+});
+
+/* the map: painted terrain, each realm's land, and the holdings */
+const mc=document.getElementById('worldmap');mc.width=MW*TILE;mc.height=MH*TILE;const mg=mc.getContext('2d');mg.imageSmoothingEnabled=false;mg.drawImage(worldCv(),0,0);
+mg.globalAlpha=.28;landFresh();for(let k=0;k<LAND.length;k++){const i=LAND[k];if(i<0)continue;mg.fillStyle=FACS[TOWNS[i].owner].col;mg.fillRect((k%MW)*TILE,Math.floor(k/MW)*TILE,TILE,TILE)}mg.globalAlpha=1;
+mg.font='bold 26px "Atkinson Hyperlegible",sans-serif';mg.textAlign='center';
+for(const t of TOWNS){{const s=holdingSprite(t,FACS[HOME[t.name]].col);mg.drawImage(s,t.x-s.width/2,t.y+8-s.height)}mg.fillStyle='rgba(0,0,0,.75)';mg.fillText(t.name,t.x+2,t.y+36);mg.fillStyle='#fff';mg.fillText(t.name,t.x,t.y+34)}
+
+/* search */
+const q=document.getElementById('q'),info=document.getElementById('qinfo');
+q.addEventListener('input',()=>{
+  const v=q.value.trim().toLowerCase();let n=0;
+  document.querySelectorAll('.entry').forEach(e=>{const hit=!v||e.textContent.toLowerCase().includes(v);e.hidden=!hit;if(hit&&v)n++});
+  document.querySelectorAll('.treebox').forEach(b=>{b.hidden=!!v&&!b.querySelector('.entry:not([hidden])')});
+  document.querySelectorAll('.tree').forEach(tr=>{if(v&&tr.querySelector('.entry:not([hidden])'))tr.querySelectorAll(':scope > .node').forEach(x=>x.hidden=false)});
+  document.querySelectorAll('.sub').forEach(s=>{const has=s.querySelector('.entry');if(has)s.hidden=!!v&&!s.querySelector('.entry:not([hidden])')});
+  document.querySelectorAll('main section').forEach(s=>{const has=s.querySelector('.entry');s.hidden=!!v&&(!has||!s.querySelector('.entry:not([hidden])'))});
+  info.textContent=v?(n?n+' match'+(n>1?'es':''):'Nothing matches “'+q.value.trim()+'”.'):'';
+});
+window.WIKI_OK=sections.length;{const only=(new URLSearchParams(location.search).get('only')||'').split(',').filter(Boolean);if(only.length){document.querySelector('.mast').hidden=true;document.querySelectorAll('main section').forEach(s=>s.hidden=!only.includes(s.id))}}
+})();
+</script>
+</body></html>

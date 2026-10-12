@@ -1,0 +1,158 @@
+/* reset */
+:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}
+/* Layout: one framed game screen with a status strip above it, log and battle controls below, and modal panels laid over the screen. Single committed dark look, like a handheld at night. */
+:root{
+  --bg:#12141c; --screen:#0b0d14; --panel:#1a1e2b; --panel-2:#262c47; --line:#3a4263; --shade:#080a10;
+  --fg:#e4e0cf; --muted:#98a0ba; --accent:#e8b94a; --danger:#e0605a; --good:#78c474; --blue:#5a8fe8;
+  --display:"Pixelify Sans","Courier New",monospace; --label:"Silkscreen","Courier New",monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--display);font-size:16px;line-height:1.4;padding-inline:16px;padding-block:16px}
+.wrap{max-width:1600px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
+/* the HUD never reflows: brand, a fixed grid of the same stats every time, then the controls */
+.hud{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px 20px;align-items:center;background:var(--panel);border:2px solid var(--line);padding:8px 12px}
+.brand{display:flex;flex-direction:column;min-width:0}
+.brand h1{margin:0;font-size:26px;line-height:1;font-weight:600;letter-spacing:.04em;color:var(--accent);text-transform:uppercase}
+.brand .tag{font-family:var(--label);font-size:9px;letter-spacing:.14em;color:var(--muted);text-transform:uppercase;margin-top:4px}
+.stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:6px 14px;min-width:0}
+.stat{min-width:0}
+.stat.wide{grid-column:span 2}
+.stat span{display:block;overflow:hidden;text-overflow:ellipsis}
+.stat{display:flex;flex-direction:column;min-width:0}
+.stat b{font-family:var(--label);font-size:9px;letter-spacing:.14em;color:var(--muted);text-transform:uppercase;font-weight:400}
+.stat span{font-size:18px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.stat span.low{color:var(--danger)}
+.ctrls{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;max-width:360px}
+@media (max-width:900px){.hud{grid-template-columns:minmax(0,1fr)}.ctrls{justify-content:flex-start;max-width:none}}
+.btn{font-family:var(--display);font-weight:600;font-size:15px;color:var(--fg);background:var(--panel-2);border:2px solid var(--line);padding:6px 12px;cursor:pointer;box-shadow:0 3px 0 var(--shade);min-height:36px}
+.btn:hover:not(:disabled){border-color:var(--accent);color:#fff}
+.btn:active:not(:disabled){transform:translateY(2px);box-shadow:0 1px 0 var(--shade)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn:focus-visible,.card:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btn.primary{background:var(--accent);color:#1a1408;border-color:#f6d27e}
+.btn.sm{padding:4px 10px;font-size:14px;min-height:30px}
+.btn.on{border-color:var(--accent);color:var(--accent)}
+/* the game screen fills the window: as wide as fits, but never taller than the space left beside the HUD and log */
+.screen{position:relative;border:2px solid var(--line);background:var(--screen);width:min(100%,max(560px,calc((100vh - 250px)*1.6)));margin-inline:auto}
+canvas{display:block;width:100%;height:auto;aspect-ratio:8/5;image-rendering:pixelated;touch-action:none;cursor:crosshair}
+.overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:12px;background:rgba(8,10,16,.86);overflow:auto}
+.inv{display:grid;grid-template-columns:270px minmax(0,1fr);gap:14px;align-items:start}
+/* the body: every slot sits where it is worn */
+.doll{position:relative;width:270px;height:436px;background:var(--panel-2);border:2px solid var(--line);box-sizing:border-box}
+.doll .body{position:absolute;left:0;top:0;opacity:.14;pointer-events:none}
+.doll .slot{position:absolute;width:40px;height:40px}
+.doll .slot canvas{width:26px;height:26px}
+.doll .slot.ring{width:24px;height:24px}
+.doll .slot.ring canvas{width:18px;height:18px}
+.doll .slot small{line-height:1;text-align:center}
+.doll .lbl{position:absolute;font-family:var(--label);font-size:8px;letter-spacing:.1em;color:var(--muted);text-transform:uppercase;pointer-events:none}
+.doll .rule{position:absolute;left:8px;right:8px;top:330px;border-top:2px dashed var(--line)}
+.doll .dstats{position:absolute;left:8px;right:8px;bottom:6px;display:flex;justify-content:space-between;font-size:13px}
+.slot.fit{box-shadow:0 0 0 2px #ffe08a;opacity:1}
+.slot.off,.slot.lock{opacity:.3}
+.slot.dim{opacity:.25}
+.invB{display:flex;flex-direction:column;gap:8px;min-width:0}
+.invtabs{display:flex;gap:4px;align-items:center;flex-wrap:wrap}
+.invtabs .grow{flex:1}
+.invcap{height:6px;background:var(--shade);border:1px solid var(--line)}
+.invcap i{display:block;height:100%;background:var(--accent)}
+.invL{display:flex;flex-direction:column;gap:8px;min-width:0}
+.invR{background:var(--panel-2);border:2px solid var(--line);padding:10px;display:flex;flex-direction:column;gap:6px;min-height:120px}
+.invR h3{margin:0;font-size:18px}
+.invR p:not(.lab){font-size:14px}
+.invR p{margin:0}
+.eqrow{display:flex;gap:6px}
+.invgrid{display:grid;grid-template-columns:repeat(auto-fill,40px);gap:4px}
+.invgrid .slot{width:40px;height:40px}
+.invgrid .slot canvas{width:26px;height:26px}
+.slot{position:relative;width:44px;height:44px;padding:0;display:grid;place-items:center;background:var(--shade);border:2px solid var(--rc,var(--line));cursor:pointer;color:var(--fg)}
+.slot.empty{border-style:dashed;border-color:var(--line);opacity:.6}
+.slot.eq{background:var(--panel-2)}
+.slot.ring{width:30px;height:30px}
+.slot.ring canvas{width:22px;height:22px}
+.slot.eq small{font-family:var(--label);font-size:8px;letter-spacing:.08em;color:var(--muted);text-transform:uppercase}
+.slot.sel{outline:2px solid var(--accent);outline-offset:1px}
+.slot:hover{border-color:var(--accent)}
+.slot canvas{image-rendering:pixelated;width:28px;height:28px}
+.slot .cnt{position:absolute;right:2px;bottom:0;font-family:var(--label);font-size:10px;text-shadow:1px 1px 0 #000}
+.diff{display:flex;flex-wrap:wrap;gap:2px 10px;font-size:14px}
+.cargo{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:14px;color:var(--muted)}
+.cargo b{color:var(--fg)}
+@media (max-width:760px){.inv{grid-template-columns:minmax(0,1fr)}}
+/* every panel is the same fixed size; its title row and its action buttons stay put while the content between them scrolls */
+.panel{width:min(760px,100%);height:min(560px,100%);flex:none;overflow:auto;background:var(--panel);border:2px solid var(--line);box-shadow:0 4px 0 var(--shade);padding:16px;display:flex;flex-direction:column;gap:12px}
+.panel > .top:first-child{position:sticky;top:-16px;z-index:1;background:var(--panel);margin:-16px -16px 0;padding:16px 16px 10px;border-bottom:1px solid var(--line)}
+.panel > .btns:last-child{position:sticky;bottom:-16px;z-index:1;background:var(--panel);margin:auto -16px -16px;padding:10px 16px 16px;border-top:1px solid var(--line)}
+.panel h2{margin:0;font-size:24px;line-height:1.1;font-weight:600;color:var(--accent);text-wrap:balance}
+.panel h2.big{font-size:44px;letter-spacing:.04em;text-transform:uppercase}
+.panel p{margin:0;color:var(--fg);max-width:60ch}
+.panel .muted,.muted{color:var(--muted)}
+.lab{font-family:var(--label);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.row{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line)}
+.row .info{flex:1;min-width:0;display:flex;flex-direction:column}
+.row .info small.vs{color:var(--accent);opacity:.85}
+.row .info small{color:var(--muted);font-size:13px}
+.row .own{font-variant-numeric:tabular-nums;min-width:3ch;text-align:right;color:var(--muted)}
+.row .acts{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.top{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}
+.card{text-align:left;font-family:var(--display);color:var(--fg);background:var(--panel-2);border:2px solid var(--line);padding:10px 12px;cursor:pointer;display:flex;flex-direction:column;gap:4px;box-shadow:0 3px 0 var(--shade)}
+.card:hover{border-color:var(--accent)}
+.origin-cards{grid-template-columns:repeat(auto-fit,minmax(190px,1fr));align-items:stretch}
+.origin-card{padding:0 0 10px;overflow:hidden;gap:5px}
+.origin-card strong,.origin-card span{margin-inline:10px}
+.origin-card strong{margin-top:3px}
+.origin-art{display:block;width:100%;height:96px;background:#172127;image-rendering:pixelated;border-bottom:2px solid var(--line)}
+.origin-card:hover .origin-art,.origin-card:focus-visible .origin-art{border-bottom-color:var(--accent)}
+.card strong{font-size:18px;color:var(--accent)}
+.card span{font-size:14px;color:var(--muted)}
+.btns{display:flex;gap:8px;flex-wrap:wrap}
+.battlebar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.battlebar[hidden]{display:none}
+.grp{display:flex;gap:4px;flex-wrap:wrap;padding-right:8px;border-right:2px solid var(--line)}
+.hint{margin:0;font-family:var(--label);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.log{background:var(--panel);border:2px solid var(--line);padding:8px 12px;min-height:5.2em;font-size:15px;display:flex;flex-direction:column;justify-content:flex-end}
+.log div{color:var(--muted)}
+.log div:last-child{color:var(--fg)}
+.good{color:var(--good)}.bad{color:var(--danger)}.gold{color:var(--accent)}
+.bar{height:4px;background:var(--shade);margin-top:4px;max-width:180px}
+.bar i{display:block;height:100%;background:var(--accent)}
+.card.cont{border-color:var(--accent)}
+@media (max-width:640px){
+  .overlay{position:fixed;z-index:10;padding:calc(12px + env(safe-area-inset-top,0px)) 12px calc(12px + env(safe-area-inset-bottom,0px))}
+  .panel h2.big{font-size:34px}
+}
+@media (prefers-reduced-motion:reduce){.btn{transition:none}}
+
+/* talent tree */
+.tree{display:block;width:100%;height:292px;background:var(--panel-2);border:2px solid var(--line);margin:6px 0}
+.tree .tnode{cursor:pointer}
+.tree .tnode:hover circle,.tree .tnode:hover rect{stroke:#fff}
+.tree .pulse{animation:tpulse 1.4s ease-in-out infinite}
+@keyframes tpulse{50%{stroke-opacity:.35}}
+@media (prefers-reduced-motion:reduce){.tree .pulse{animation:none}}
+.tdetail{display:flex;gap:12px;align-items:center;justify-content:space-between;background:var(--panel-2);border:2px solid var(--line);padding:6px 10px;min-height:52px}
+.tree .tlab{font:600 18px system-ui,sans-serif;fill:#8a8fa8;paint-order:stroke;stroke:#141826;stroke-width:5px}
+.tree .tlab.on{fill:#f0ead8}
+.tdetail p{margin:4px 0 0;font-size:14px}
+
+.slotbar{display:contents}
+/* skill tree zoom and the skill bar */
+.tree{cursor:grab}
+.tree .tglyph{font:700 13px system-ui,sans-serif;fill:#fff;pointer-events:none}
+.zoom{display:flex;gap:4px}
+.slotgrid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.slotpick{display:flex;align-items:center;gap:6px;background:var(--panel-2);border:2px solid var(--line);padding:4px 6px}
+.slotpick b{color:var(--gold, #e8b94a);min-width:10px}
+.slotpick select{flex:1;min-width:0;background:var(--panel);color:inherit;border:1px solid var(--line);font:inherit;font-size:13px;padding:2px}
+@media (max-width:760px){.slotgrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* main menu */
+.menulist{display:flex;flex-direction:column;gap:8px;max-width:420px}
+.card.menu{text-align:left}
+.card[disabled]{opacity:.5}
+
+select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);font:inherit;font-size:13px;padding:1px 2px;margin:2px 2px 0 0}
+.cvform small{display:block;margin-top:3px}

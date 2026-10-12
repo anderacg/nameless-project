@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Ashmark</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600&family=Silkscreen:wght@400;700&display=swap">
+<link rel="stylesheet" href="style.css">
+</head><body>
+<div class="wrap">
+  <header class="hud">
+    <div class="brand"><h1>Ashmark</h1><span class="tag">Prototype build</span></div>
+    <div class="stats" id="stats"></div>
+    <div class="ctrls">
+      <button class="btn sm" id="charBtn" type="button">Character</button>
+      <button class="btn sm" id="skillBtn" type="button">Skills</button>
+      <button class="btn sm" id="invBtn" type="button">Inventory</button>
+      <button class="btn sm" id="saveBtn" type="button">Save</button>
+      <button class="btn sm" id="menuBtn" type="button" title="Main menu">Menu</button>
+      <button class="btn sm" id="pause" type="button">Pause</button>
+      <button class="btn sm on" type="button" data-speed="1">1x</button>
+      <button class="btn sm" type="button" data-speed="2">2x</button>
+      <button class="btn sm" type="button" data-speed="3">3x</button>
+    </div>
+  </header>
+  <div class="screen">
+    <canvas id="game" role="img" aria-label="Ashmark game screen: a top-down pixel-art map and battles"></canvas>
+    <div class="overlay" id="ov"><div class="panel" id="panel" role="dialog" aria-live="polite"></div></div>
+  </div>
+  <div class="battlebar" id="bbar" hidden>
+    <div class="grp" role="group" aria-label="Troop group (G to cycle)">
+      <button class="btn sm on" type="button" data-grp="all" aria-pressed="true">All</button>
+      <button class="btn sm" type="button" data-grp="inf" aria-pressed="false">Infantry</button>
+      <button class="btn sm" type="button" data-grp="arc" aria-pressed="false">Archers</button>
+      <button class="btn sm" type="button" data-grp="cav" aria-pressed="false">Cavalry</button>
+    </div>
+    <div class="grp" role="group" aria-label="Orders">
+      <button class="btn sm" type="button" data-order="hold">Z Hold</button>
+      <button class="btn sm" type="button" data-order="follow">X Follow</button>
+      <button class="btn sm" type="button" data-order="charge">C Charge</button>
+      <button class="btn sm" type="button" data-order="advance">V Advance</button>
+      <button class="btn sm" type="button" id="spread" aria-pressed="false">T Spread</button>
+    </div>
+    <button class="btn sm primary" type="button" id="swing">Attack</button>
+    <span class="slotbar" id="slotbar" role="group" aria-label="Skill slots"></span>
+    <button class="btn sm" type="button" data-skill="dodge">F Dodge</button>
+    <button class="btn sm" type="button" id="block">Block</button>
+  </div>
+  <p class="hint" id="hint"></p>
+  <div class="log" id="log" aria-live="polite"></div>
+</div>
+
+<script src="js/core/core.js"></script>
+<script src="js/data/races.js"></script>
+<script src="js/data/factions.js"></script>
+<script src="js/data/units.js"></script>
+<script src="js/data/monsters.js"></script>
+<script src="js/data/critters.js"></script>
+<script src="js/data/matchups.js"></script>
+<script src="js/data/gear.js"></script>
+<script src="js/data/progression.js"></script>
+<script src="js/data/tree.js"></script>
+<script src="js/data/places.js"></script>
+<script src="js/data/economy.js"></script>
+<script src="js/data/conduct.js"></script>
+<script src="js/core/state.js"></script>
+<script src="js/world/map.js"></script>
+<script src="js/gfx/worldart.js"></script>
+<script src="js/gfx/sprites.js"></script>
+<script src="js/ui/ui.js"></script>
+<script src="js/core/save.js"></script>
+<script src="js/world/reputation.js"></script>
+<script src="js/ui/character.js"></script>
+<script src="js/ui/inventory.js"></script>
+<script src="js/ui/town.js"></script>
+<script src="js/world/realms.js"></script>
+<script src="js/world/monsters.js"></script>
+<script src="js/world/critters.js"></script>
+<script src="js/world/events.js"></script>
+<script src="js/world/sites.js"></script>
+<script src="js/world/siege.js"></script>
+<script src="js/world/territory.js"></script>
+<script src="js/world/estates.js"></script>
+<script src="js/world/economy.js"></script>
+<script src="js/world/conduct.js"></script>
+<script src="js/world/folk.js"></script>
+<script src="js/world/caravans.js"></script>
+<script src="js/world/refugees.js"></script>
+<script src="js/world/quests.js"></script>
+<script src="js/ui/talents.js"></script>
+<script src="js/world/world.js"></script>
+<script src="js/battle/encounters.js"></script>
+<script src="js/battle/parley.js"></script>
+<script src="js/battle/battle.js"></script>
+<script src="js/battle/combat.js"></script>
+<script src="js/gfx/render.js"></script>
+<script src="js/ui/input.js"></script>
+<script src="js/main.js"></script>
+</body></html>

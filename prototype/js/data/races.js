@@ -1,0 +1,9 @@
+'use strict';
+/* ---------- data: playable races ---------- */
+// home: biomes whose travel and survival penalties the race ignores (climates: grass, frost, desert, swamp; terrain: forest, hills)
+const RACES={
+  human:{n:'Human',d:'Adaptable. +1 Charisma, +1 Leadership. 10% faster on roads and open grassland.',attr:{cha:1},sk:{lead:1},skin:'#e8c39e',melee:'hum_levy',ranged:'hum_bow',horse:'hum_squire',mage:'hum_mage',home:['grass']},
+  dwarf:{n:'Dwarf',d:'Stubborn. +1 Strength, +1 Intellect, +2 Trade. Ignores hills and frost.',attr:{str:1,int:1},sk:{trade:2},skin:'#d9a882',melee:'dw_clan',ranged:'dw_sling',horse:'dw_ram',mage:'dw_rune',home:['hills','frost']},
+  elf:{n:'Elf',d:'Keen-eyed. +1 Agility, +1 Intellect, +2 Scouting. Moves through forest freely.',attr:{agi:1,int:1},sk:{scout:2},skin:'#f2dcc4',melee:'elf_glade',ranged:'elf_archer',horse:'elf_hart',mage:'elf_weaver',home:['forest']},
+  orc:{n:'Orc',d:'Brutal. +2 Strength, +1 One-Handed, −1 Charisma. Ignores desert heat and swamp.',attr:{str:2,cha:-1},sk:{oneh:1},skin:'#7aa35a',melee:'orc_grunt',ranged:'orc_thrower',horse:'orc_wolf',mage:'orc_shaman',home:['desert','swamp']}
+};

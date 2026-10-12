@@ -1,0 +1,48 @@
+'use strict';
+// Main menu: Continue, New game, Load game, Settings, Wiki and Exit; the HUD Menu button with Resume; deleting the save asks twice.
+// Pasts decide the starting weapon and a lean purse; early loot is lean too.
+window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);
+try{
+ const t=T,G=t.G,P=t.P;try{localStorage.clear()}catch(e){}
+ const panel=()=>document.getElementById('panel').innerHTML,cards=()=>[...document.querySelectorAll('#panel .card strong')].map(e=>e.textContent);
+ t.showTitle();ok(G.mode==='title'&&['New game','Load game','Settings','Wiki','Exit'].every(n=>cards().includes(n))&&!cards().includes('Continue'),'the main menu: '+cards().join(', '));
+ // new game
+ t.act('menu','new');ok(G.menu==='new'&&document.querySelectorAll('[data-act="begin"]').length===7&&document.querySelectorAll('[data-act="race"]').length===4,'New game: four races and seven pasts');
+ t.act('race','dwarf');ok(G.menu==='new'&&document.querySelector('[data-act="race"].on').dataset.arg==='dwarf','picking a race stays on the New game screen');
+ t.act('menu','main');t.act('menu','new');t.act('race','human');t.act('begin','hedge');ok(G.mode==='world'&&P.gear.weapon===t.gearId('staff',0)&&P.gold===40,'the Hedge mage starts with a wooden staff and 40 gold');
+ ok(Object.values(t.BGS).every(b=>b.gold<=110),'every past starts poor: '+Object.values(t.BGS).map(b=>b.n+' '+b.gold+'g').join(', '));
+ // the HUD Menu button: resume where you were
+ G.mode='world';G.modal=false;t.hidePanel();document.getElementById('menuBtn').click();ok(G.mode==='esc'&&/Paused/.test(panel()),'the HUD Menu button opens the Esc menu');
+ t.act('esc-main');ok(G.mode==='title'&&cards()[0]==='Resume','Main menu from there offers Resume first');t.act('resume');ok(G.mode==='world'&&!G.modal,'Resume goes back to the map');
+ // Esc: close what is open, else pause with the Esc menu
+ const esc=()=>window.dispatchEvent(new KeyboardEvent('keydown',{code:'Escape',key:'Escape'}));
+ esc();ok(G.mode==='esc'&&['Resume','Save game','Load game','Main menu','Exit game'].every(n=>cards().includes(n)),'Esc on the map opens the Esc menu: '+cards().join(', '));
+ const day=G.day,clk=G.clock;t.loop&&0;esc();ok(G.mode==='world'&&!G.modal,'Esc again resumes');
+ esc();t.act('esc-save');ok(t.readSave()&&/Game saved/.test(panel())&&G.mode==='esc','Save game from the Esc menu');esc();
+ t.openInv();esc();ok(G.mode==='world','Esc closes the inventory');t.openChar();esc();ok(G.mode==='world','Esc closes the character screen');t.openSkills();esc();ok(G.mode==='world','Esc closes the Skills page');
+ t.enterTown(t.townBy('Ashford'));esc();ok(G.mode==='world','Esc leaves a town');while(G.mode==='perk')t.act('perk',G.perkOffer[0]);
+ // in an encounter Esc pauses and Resume brings the same choice back
+ G.mode='world';G.modal=false;t.hidePanel();t.startEncounter({kind:'party',ref:{x:P.x,y:P.y,cool:0},n:3,list:['militia','militia','militia']});const encHtml=panel();
+ esc();ok(G.mode==='esc'&&/Not during a battle|Finish what/.test(panel()),'an encounter cannot be saved over');esc();ok(G.mode==='dialog'&&panel()===encHtml,'Resume brings back the same encounter screen');
+ // in battle Esc pauses the fight
+ t.act('fight');const B=t.B,bt=B.t;esc();ok(G.mode==='esc'&&/in battle/.test(panel())&&/Not during a battle/.test(panel()),'Esc in battle pauses it; no saving mid-fight');
+ for(let i=0;i<5;i++){if(G.mode==='battle')t.updateBattle(.05)}ok(B.t===bt,'the battle does not move while paused');t.frame();esc();ok(G.mode==='battle'&&!G.modal,'Esc resumes the battle');
+ B.over=true;B.endT=0;t.updateBattle(.01);t.act('cont');while(G.mode==='perk')t.act('perk',G.perkOffer[0]);
+ // Load and Exit from the Esc menu
+ esc();const g2=P.gold;P.gold=1;t.act('esc-load');ok(G.mode==='world'&&P.gold!==1,'Load game from the Esc menu');esc();t.act('esc-exit');ok(G.mode==='title'&&/Thanks for playing/.test(panel()),'Exit game from the Esc menu');
+ // in the menus Esc goes back
+ t.act('menu','main');t.act('menu','settings');esc();ok(G.menu==='main','Esc in a menu page goes back to the main menu');
+ // continue and load
+ t.saveGame();t.showTitle();ok(cards().includes('Continue')&&/hedge mage/i.test(panel()),'with a save, Continue shows it');const g0=P.gold;P.gold=999;t.act('load');ok(G.mode==='world'&&P.gold===g0,'Continue loads it');
+ t.showTitle('load');ok(/Saved game/.test(panel()),'Load game shows the saved game');
+ t.act('wipe-ask');ok(t.readSave()&&/Click again/.test(panel()),'deleting asks for a second click');t.act('wipe');ok(!t.readSave()&&G.mode==='title'&&!cards().includes('Continue'),'and then deletes the save');
+ // settings, wiki, exit
+ t.act('menu','settings');ok(/Realm economy/.test(panel())&&!/Pack sprites/.test(panel())&&/Controls/.test(panel())&&/Back/.test(panel()),'Settings: realm economy and controls, no art switch');
+ let opened=null;const wo=window.open;window.open=(u)=>{opened=u;return null};t.act('menu','wiki');window.open=wo;ok(opened==='wiki.html','Wiki opens the wiki in a new tab');
+ t.act('menu','exit');ok(/Thanks for playing/.test(panel()),'Exit says goodbye (a browser tab can only close itself if it opened itself)');t.act('menu','main');ok(G.menu==='main','and Back returns to the menu');
+ // lean loot: a band of 8 gives far less than it used to
+ t.act('menu','new');t.act('begin','soldier');P.troops={hum_knight:20};let gold=0;for(let k=0;k<6;k++){G.mode='world';G.modal=false;t.hidePanel();const g1=P.gold;t.startEncounter({kind:'party',ref:{x:P.x,y:P.y,cool:0},n:8,list:Array(8).fill('militia')});t.autoResolve();gold+=P.gold-g1;t.act('cont');while(G.mode==='perk')t.act('perk',G.perkOffer[0])}
+ ok(gold/6<45,'beating 8 bandits pays about '+Math.round(gold/6)+' gold (it used to be about 90)');
+ t.frame();
+}catch(e){o.push('EXC '+e.message+' '+e.stack)}
+const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d)};

@@ -1,0 +1,31 @@
+'use strict';
+// Vitals: health, stamina and mana carry over between battles, recover on the map (faster near holdings), fully at an inn,
+// a knocked-out hero comes to at 10%, a lost auto-resolve costs half your health, and the HUD and encounters show it.
+window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);
+try{
+ const t=T,G=t.G,P=t.P;try{localStorage.clear()}catch(e){}
+ const done=()=>{while(G.mode==='perk')t.act('perk',G.perkOffer[0])};
+ t.act('begin','soldier');const m=t.vitals();ok(P.hp===m[0]&&P.sp===m[1]&&P.mp===m[2],'a new hero starts full ('+m.join(' / ')+')');
+ const battle=()=>{G.mode='world';G.modal=false;t.hidePanel();G.enc={kind:'party',ref:{cool:0,x:P.x,y:P.y},list:['militia']};t.startBattle({enemies:['militia'],tournament:false});return t.B};
+ const finish=(B,win)=>{B.win=win;B.over=true;B.endT=0;t.updateBattle(.01);t.act('cont');done()};
+ // carry over
+ let B=battle();B.hero.hp-=30;t.updateBattle(.01);B.hx.sp-=25;B.hx.mp-=20;const hp=B.hero.hp,sp=B.hx.sp,mp=B.hx.mp;finish(B,true);
+ ok(Math.abs(P.hp-hp)<1&&Math.abs(P.sp-sp)<1&&Math.abs(P.mp-mp)<1,'health, stamina and mana carry out of a battle');
+ B=battle();ok(Math.abs(B.hero.hp-P.hp)<1&&B.hero.hp<B.hero.max,'the next battle starts wounded ('+Math.round(B.hero.hp)+' / '+B.hero.max+')');t.updateBattle(.01);
+ ok(Math.abs(B.hx.sp-P.sp)<2&&Math.abs(B.hx.mp-P.mp)<2,'and with the stamina and mana you had left');
+ B.hero.hp=0;finish(B,false);ok(P.hp===Math.max(1,Math.round(m[0]*.1)),'a knocked-out hero comes to at 10% health ('+P.hp+')');
+ // recovery on the map
+ P.x=t.TOWNS[0].x+400;P.y=t.TOWNS[0].y+400;t.unstick(P);P.hp=10;P.sp=0;P.mp=0;t.regenVitals(1);const far=[P.hp,P.sp,P.mp].map(Math.round);
+ ok(far[0]>10&&far[1]>0&&far[2]>0&&far[0]<m[0],'a day on the road restores some of each ('+far.join(' / ')+')');
+ P.x=t.TOWNS[0].x;P.y=t.TOWNS[0].y+20;P.hp=10;P.sp=0;P.mp=0;t.regenVitals(1);ok(P.hp-10>(far[0]-10)*1.8,'recovery is twice as fast near a holding');
+ P.hp=10;P.sp=0;P.mp=0;P.gold=100;G.lastTown=null;t.enterTown(t.townBy('Ashford'));t.act('tab','tavern');t.act('rest');ok(P.hp===m[0]&&P.sp===m[1]&&P.mp===m[2]&&P.gold===95,'resting at the inn restores everything for 5 gold');t.act('leave');done();
+ // auto-resolve defeat
+ P.troops={};const h0=P.hp;G.mode='world';G.modal=false;t.startEncounter({kind:'party',ref:{cool:0,x:P.x,y:P.y},list:Array(15).fill('spearman'),band:'bandits'});t.autoResolve();t.act('cont');done();
+ ok(Math.abs(P.hp-Math.round(h0*.5))<=1,'losing an auto-resolved fight costs half your health');
+ // display
+ P.hp=20;t.updateHUD(true);ok(/Health · Stamina · Mana/.test(document.getElementById('stats').innerHTML)&&/class="low"/.test(document.getElementById('stats').innerHTML),'the HUD shows your vitals and flags low health');
+ G.mode='world';G.modal=false;t.startEncounter({kind:'party',ref:{cool:0,x:P.x,y:P.y},n:3,band:'bandits'});ok(/You are wounded/.test(document.getElementById('panel').innerHTML),'encounters warn when you are wounded');t.act('flee');
+ // saves
+ P.hp=33;P.sp=12;P.mp=7;G.mode='world';G.modal=false;t.hidePanel();t.saveGame();P.hp=P.sp=P.mp=null;t.act('load');ok(P.hp===33&&P.sp===12&&P.mp===7,'save/load keeps your vitals');
+}catch(e){o.push('EXC '+e.message+' '+e.stack)}
+const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d)};

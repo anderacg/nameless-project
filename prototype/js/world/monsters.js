@@ -1,0 +1,89 @@
+'use strict';
+/* ---------- monsters ---------- */
+// habitat tags for a spot: its climate on open ground, or 'forest' / 'hills' on those tiles
+function habitatAt(x,y){const t=terrAt(x,y);return t===T_FOREST?['forest',climAt(x,y)==='swamp'?'swamp':'']:t===T_HILL?['hills']:t===T_OPEN?[climAt(x,y)]:[]}
+const monLevel=()=>1+Math.floor(G.day/20)+(Math.random()<.3?1:0);
+const lvMul=lv=>(1+.2*(lv-1))*(1+.12*(lv-1));
+function spawnMonster(initial){
+  // pick the kind first, favoring kinds that are scarce on the map, then find it a home in its habitat
+  const ids=Object.keys(MONSTERS).filter(id=>!MONSTERS[id].mythic),wt=id=>MONSTERS[id].w/(1+W.monsters.filter(m=>m.id===id).length);
+  let r=Math.random()*ids.reduce((a,id)=>a+wt(id),0),id=ids[0];for(const f of ids){r-=wt(f);if(r<=0){id=f;break}}
+  const M=MONSTERS[id];
+  for(let k=0;k<200;k++){
+    const x=rint(2,MW-3)*TILE+8,y=rint(2,MH-3)*TILE+8,tags=habitatAt(x,y);
+    if(!M.where.some(w=>tags.includes(w))||Math.hypot(x-P.x,y-P.y)<(initial?180:240)||TOWNS.some(t=>Math.hypot(t.x-x,t.y-y)<64))continue;
+    W.monsters.push({id,x,y,hx:x,hy:y,lv:monLevel(),n:rint(M.count[0],M.count[1]),t:0,a:0,cool:0});return;
+  }
+}
+function monsterDay(){for(let k=0;k<3;k++)if(W.monsters.length<MONSTER_CAP&&Math.random()<.6)spawnMonster(false);mythicDay()}
+function updateMonsters(d){
+  const hide=hiddenAt(P.x,P.y)?.55:1;
+  for(const m of W.monsters){
+    if(MONSTERS[m.id].mythic){if(roamMythic(m,d))return true;continue}
+    const M=MONSTERS[m.id],dx=P.x-m.x,dy=P.y-m.y,dist=Math.hypot(dx,dy);m.cool=Math.max(0,m.cool-d);
+    const st=stance(monPower(m)),hunt=M.aggro&&Math.hypot(P.x-m.hx,P.y-m.hy)<140;
+    if(m.cool>0||!stanceMove(m,st,dist,dx,dy,70*hide,26*Math.min(1,speedAt(m.x,m.y)||1)*d,hunt)){m.t-=d;if(m.t<=0){m.t=2+Math.random()*4;m.a=Math.random()*6.283}
+      // wander, but stay near the lair
+      const hx=m.hx-m.x,hy=m.hy-m.y;if(Math.hypot(hx,hy)>60)m.a=Math.atan2(hy,hx);walk(m,Math.cos(m.a),Math.sin(m.a),10*d)}
+    if(M.aggro&&stance(monPower(m))==='attack'&&dist<10&&m.cool<=0&&G.encCool<=0&&!G.modal){startMonster(m);return true}
+  }
+  return false;
+}
+function startMonster(m){const M=MONSTERS[m.id];startEncounter({kind:'monster',ref:m,lv:m.lv,list:Array(m.n).fill(M.unit)})}
+// roll trophies and gear for a won monster fight; returns a sentence for the victory panel
+function monsterLoot(m,slain){
+  const M=MONSTERS[m.id],got=[],mats=slain.filter(k=>k===M.unit).length;
+  if(mats&&M.mat){const kept=invAdd('mat',M.mat,mats);if(kept)got.push(kept+' '+MATS[M.mat].n+(kept>1?'s':''));if(kept<mats)log('Your bag is full. You leave '+(mats-kept)+' '+MATS[M.mat].n.toLowerCase()+(mats-kept>1?'s':'')+' behind.','bad')}
+  if(M.meat&&mats){const k=invAdd('good','meat',mats*M.meat);if(k)got.push(k+' meat')}
+  for(const [it,ch] of M.gear)if(Math.random()<ch*(1+.1*(m.lv-1))){
+    if(invAdd('gear',it,1)){got.push('<span style="color:'+RARITY[ITEMS[it].r]+'">'+ITEMS[it].n+'</span>');log('You found '+ITEMS[it].n+' ('+ITEMS[it].r+')! Open your inventory with I.','gold')}
+    else log('Your bag is full. You leave '+ITEMS[it].n+' behind.','bad');
+  }
+  return got.length?' Loot: '+got.join(', ')+'.':'';
+}
+function monsterXp(m,slain){return Math.round(slain.reduce((a,k)=>a+(k===MONSTERS[m.id].unit?MONSTERS[m.id].xp:0),0)*(1+.25*(m.lv-1)))}
+
+/* mythic monsters (MONSTERS[id].mythic): one of each at a time, anywhere on the map. W.mythic[id] = {back}: the day the next one
+   may appear. It hunts you when it sees you, mauls any army it lands on, burns the fields of holdings near it, and pays a hoard. */
+const LAIR_TILES={mountains:()=>T_MOUNT,hills:()=>T_HILL};
+const mythicIds=()=>Object.keys(MONSTERS).filter(id=>MONSTERS[id].mythic);
+const mythicOf=id=>W.monsters.find(m=>m.id===id);
+// a line of news about the mythic monsters abroad, for the realms page and tavern talk
+const mythicNews=(verb)=>W.monsters.filter(m=>MONSTERS[m.id].mythic).map(m=>cap1(an(MONSTERS[m.id].n.toLowerCase()))+' '+verb+' near '+nearestOf(m,TOWNS).name+'.').join(' ');
+function spawnMythic(id){
+  const M=MONSTERS[id],Y=M.mythic,lairs=Y.lair.map(l=>LAIR_TILES[l]());W.mythic=W.mythic||{};
+  // its favorite ground first; the others only if that keeps failing
+  for(let k=0;k<160;k++){const tx=rint(3,MW-4),ty=rint(3,MH-4),tt=tAt(tx,ty),ok=k<100?tt===lairs[0]:lairs.includes(tt);if(!ok)continue;
+    const x=(tx+.5)*TILE,y=(ty+.5)*TILE;if(Math.hypot(x-P.x,y-P.y)<200)continue;
+    const m={id,x,y,hx:x,hy:y,tx:x,ty:y,lv:1,n:1,t:0,a:0,cool:5,dir:1};W.monsters.push(m);
+    log(cap1(an(M.n.toLowerCase()))+' has been sighted near '+nearestOf(m,TOWNS).name+'!','bad');return m}
+  W.mythic[id]={back:G.day+2};return null;
+}
+function mythicDay(){
+  W.mythic=W.mythic||{};
+  for(const id of mythicIds()){const M=MONSTERS[id],Y=M.mythic,m=mythicOf(id),st=W.mythic[id]||(W.mythic[id]={back:Y.first});
+    if(!m){if(G.day>=st.back)spawnMythic(id);continue}
+    if(Y.scorch&&Math.random()<Y.scorch){const t=nearestOf(m,TOWNS);if(Math.hypot(t.x-m.x,t.y-m.y)<200){t.gar=Math.floor(t.gar/2);m.tx=t.x;m.ty=t.y-20;m.t=6;log('The '+M.n.toLowerCase()+' burns the fields of '+t.name+'. Its garrison is halved.','bad')}}}
+}
+// one frame of a mythic monster: hunt you if it sees you, else roam; returns true if it starts a fight
+function roamMythic(m,d){
+  const M=MONSTERS[m.id],Y=M.mythic;m.cool=Math.max(0,m.cool-d);
+  const pd=Math.hypot(P.x-m.x,P.y-m.y),hunt=pd<Y.see*(hiddenAt(P.x,P.y)?.55:1)&&m.cool<=0;let tx=m.tx,ty=m.ty;
+  if(hunt){tx=P.x;ty=P.y}
+  else{m.t-=d;if(m.t<=0||Math.hypot(tx-m.x,ty-m.y)<4){m.t=4+Math.random()*5;m.tx=tx=clamp(m.x+rint(-120,120),24,MW*TILE-24);m.ty=ty=clamp(m.y+rint(-90,90),24,MH*TILE-24)}}
+  const dx=tx-m.x,dy=ty-m.y,dl=Math.hypot(dx,dy);
+  if(dl>1){const sp=Math.min(dl,Y.speed[hunt?1:0]*d);if(Y.fly){m.x+=dx/dl*sp;m.y+=dy/dl*sp}else walk(m,dx,dy,sp);m.dir=dx>=0?1:-1}
+  if(Y.ravage)for(const l of W.lords)if(!l.dead&&!((l.dcool||0)>G.day)&&Math.hypot(l.x-m.x,l.y-m.y)<16){l.dcool=G.day+3;cull(l,Y.ravage);log('The '+M.n.toLowerCase()+' falls upon the army of '+l.name+'. '+(Y.ravage>=.5?'Half':'Many')+' are lost.','bad');if(l.troops.length<3)defeatLord(l)}
+  if(pd<12&&m.cool<=0&&G.encCool<=0&&!G.modal){startMonster(m);return true}
+  return false;
+}
+// slain: its hoard, and the wait for the next one
+function mythicSlain(m,res){
+  const M=MONSTERS[m.id],Y=M.mythic,H=Y.hoard||{};let txt='';
+  (W.mythic=W.mythic||{})[m.id]={back:G.day+Y.back};res.fame=Y.fame;
+  if(H.gold)res.gold+=H.gold;if(H.renown)P.renown+=H.renown;if(H.text)txt+=' '+H.text;
+  if(H.gear){const g=randomGear(H.gear[0],H.gear[1]);if(invAdd('gear',g,1))txt+=' You find a <span style="color:'+RARITY[ITEMS[g].r]+'">'+ITEMS[g].n+'</span>.';else log('Your bag is full. You leave a '+ITEMS[g].n+' behind.','bad')}
+  if(H.egg&&Math.random()<H.egg[1]&&invAdd('gear',H.egg[0],1))txt+=' Among the gold, an egg hatches: a <span style="color:'+RARITY[ITEMS[H.egg[0]].r]+'">'+ITEMS[H.egg[0]].n+'</span>.';
+  log('The '+M.n.toLowerCase()+' is slain! Your name rings across Ashmark.','gold');
+  return txt;
+}
