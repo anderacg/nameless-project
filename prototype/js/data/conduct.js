@@ -11,6 +11,7 @@ const CONDUCT={
   robRefugees:{rep:12,honor:4,repTo:8,honorTo:3,morale:3},
   plunderEstate:{rep:10,honor:5,hostile:20,pros:8,fear:3},
   burnEstate:{rep:18,honor:8,hostile:30,pros:15,fear:3},
+  sabotageEstate:{rep:3},// unseen; caught, it costs as a plunder does
   toll:{rep:4,honor:3},
   takeBrigands:{honorAll:2,morale:4}
 };

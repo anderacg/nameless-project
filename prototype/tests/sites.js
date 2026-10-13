@@ -8,13 +8,14 @@ try{
  const panel=()=>document.getElementById('panel').innerHTML;
  t.act('begin','soldier');
  const S=W.sites,of=ty=>S.filter(s=>s.type===ty),want=Object.keys(t.SITE_TYPES);
- ok(want.every(ty=>of(ty).length===Math.round(t.SITE_TYPES[ty].count*t.MAP_DENS)),'every kind placed: '+want.map(ty=>of(ty).length+' '+ty).join(', '));
- const f=t.flowTo(t.TOWNS[0]);ok(S.every(s=>t.passable(t.tAt(s.tx,s.ty))&&isFinite(f[s.ty*MW+s.tx])),'all '+S.length+' sites stand on open ground you can reach');
+ ok(want.every(ty=>of(ty).length===(t.SITE_TYPES[ty].spots?t.CAMP_SPOTS.length:Math.round(t.SITE_TYPES[ty].count*t.MAP_DENS))),'every kind placed: '+want.map(ty=>of(ty).length+' '+ty).join(', '));
+ const f=t.flowTo(t.TOWNS[0]);const at=s=>s.type==='cave'?s.ty+1:s.ty;ok(S.every(s=>t.passable(t.tAt(s.tx,at(s)))&&isFinite(f[at(s)*MW+s.tx])),'all '+S.length+' sites stand on ground you can reach (a cave: the ground at its mouth)');
  const quad=[0,1,2,3].map(q=>S.filter(s=>(s.tx<MW/2?0:1)+(s.ty<MH/2?0:2)===q).length);ok(quad.every(n=>n>=4),'spread over the whole map (per quarter: '+quad.join(', ')+')');
  ok(S.every(s=>t.TOWNS.every(w=>Math.hypot(w.tx-s.tx,w.ty-s.ty)>=6)),'none sit on top of a holding');
  ok(of('cave').every(s=>t.MONSTERS[s.id]),'every cave has a lair beast ('+[...new Set(of('cave').map(s=>s.id))].join(', ')+')');
  // hidden until seen
- ok(S.filter(s=>s.seen).length===0,'sites start hidden');
+ ok(S.filter(s=>t.siteKnown(s)&&s.type!=='camp').length===0,'sites start hidden');
+ {const k=of('camp').filter(t.siteKnown);ok(k.length<of('camp').length&&of('camp').every(c=>t.siteKnown(c)===t.seenAt(c.x,c.y)),'bandit camps stand in plain sight: on the map (and the minimap) once you have seen their ground, not before ('+k.length+' of '+of('camp').length+' known at the start)')}
  const go=s=>{P.x=s.x;P.y=s.y;P.tx=null;G.mode='world';G.modal=false;t.hidePanel();G.encCool=0;G.lastSite=null;return t.updateSites()};
  const strong=()=>{P.troops={hum_knight:25,hum_long:15};P.hp=null;t.vitals()};
  // cave
@@ -53,5 +54,20 @@ try{
  ok(!blank.length,'every site has a sprite');
  W.sites.forEach(s=>s.seen=true);P.x=W.sites[0].x+30;P.y=W.sites[0].y;G.mode='world';G.modal=false;t.hidePanel();t.frame();
  t.frame();
+ // each kind of site is a class over its plain data
+ {const ks=Object.keys(t.SITE_TYPES);ok(ks.every(k=>t.SITE_CLASS[k]&&t.SITE_CLASS[k].prototype instanceof t.Site),'every kind of site has its class ('+ks.map(k=>t.SITE_CLASS[k].name).join(', ')+')');
+  ok(W.sites.every(x=>x instanceof t.SITE_CLASS[x.type]),'and every site on the map is one of its kind');
+  ok(t.camps()[0] instanceof t.Lair&&W.sites.find(x=>x.type==='hideout') instanceof t.Lair,'camps and hideouts are both bandit lairs');
+  const raw=JSON.parse(JSON.stringify(W.sites[0]));ok(!('T' in raw)&&!('label' in raw)&&raw.type,'saved as plain data');G.mode='world';G.modal=false;t.hidePanel();t.saveGame(true);t.loadGame();ok(W.sites.every(x=>x instanceof t.Site),'and made sites again when loaded')}
+ // bandits keep their distance from the estates: no estate's building or field within BANDIT_GAP tiles of a camp or hideout
+ {let worst=1e9,who='';for(const b of [...t.camps(),...of('hideout')])for(const q of t.TOWNS)for(const l of q.lots||[]){if(!t.ESTATES[l.k])continue;const ts=[];t.lotTiles(l,(x,y)=>ts.push([x,y]));(l.plots||[]).forEach(p=>ts.push(p));
+   for(const [x,y] of ts){const d=Math.hypot(x-b.tx,y-b.ty);if(d<worst){worst=d;who=b.type+' by '+q.name+'’s '+l.k}}}
+  ok(worst>=t.BANDIT_GAP,'no bandit camp or hideout within '+t.BANDIT_GAP+' tiles of an estate or its fields (nearest: '+worst.toFixed(1)+', a '+who+')');
+  const c=t.camps()[0];ok(t.nearBandits(c.tx+3,c.ty,t.BANDIT_GAP)&&!t.nearBandits(c.tx+t.BANDIT_GAP+1,c.ty,t.BANDIT_GAP),'the same rule stops you building an estate beside one')}
+ // the bandit camps are sites too: on their fixed spots, in plain sight, a chieftain and the bands sheltering there
+ {const c=t.camps()[0];ok(t.camps().length===t.CAMP_SPOTS.length&&t.camps().every(x=>t.CAMP_SPOTS.some(p=>p.tx===x.tx&&p.ty===x.ty))&&t.objKind(c)==='site'&&/Bandit camp/.test(t.tipFor(c)),'the '+t.CAMP_SPOTS.length+' bandit camps are sites on their spots, with their own tooltip');
+  G.mode='world';G.modal=false;t.hidePanel();G.encCool=0;G.enc=null;c.cleared=false;c.bands=[{x:c.x,y:c.y,n:3,kind:'bandits',list:['militia','militia','militia'],t:0,a:0,cool:0}];t.enterSite(c);
+  ok(G.enc&&G.enc.kind==='camp'&&G.enc.ref===c&&G.enc.list.includes('chief')&&G.enc.list.length>=10,'walking into one means fighting its chieftain, its raiders and the band sheltering there ('+(G.enc&&G.enc.list.length)+')');t.act('flee');
+  t.clearPlace(c,10);ok(c.cleared&&t.pickAt(c.x,c.y-12)!==c,'cleared, it lies empty ('+c.cleared+')');G.day=c.back;t.siteDay();ok(!c.cleared,'and its raiders are back after 10 days ('+c.cleared+' day '+G.day+' back '+c.back+')')}
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}
 const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d)};

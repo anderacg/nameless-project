@@ -4,6 +4,7 @@ let last=performance.now();
 function loop(now){
   const dt=Math.min(.05,(now-last)/1000);last=now;
   if(G.mode==='battle'&&B)updateBattle(dt);
+  else if(G.mode==='scene')updateScene(dt);
   else if(G.mode==='world')updateWorld(dt);
   G.hudT+=dt;if(G.hudT>.25){G.hudT=0;updateHUD();if(G.mode==='battle')updateSkillBar()}
   frame();requestAnimationFrame(loop);

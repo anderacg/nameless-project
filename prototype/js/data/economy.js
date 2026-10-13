@@ -1,7 +1,7 @@
 'use strict';
 /* ---------- data: the economy: estates and walls, what they make, what people need, taxes, building materials, caravans ---------- */
 
-/* estates and walls (estates.js): t.bld = {farm:lv, …}, t.wall = 0..WALL_MAX[kind] */
+/* estates and walls (estates.js): t.bld = {farm:lv, …}, t.wall = 0..its kind's wallMax (holdings.js) */
 const ESTATES={
   farm:{n:'Farmland',goods:['grain','fruit'],cost:70,ground:'open',work:'farmer',d:'Fields: 6 grain and a little fruit a day per level (less in frost, desert and swamp).'},
   pasture:{n:'Pasture',goods:['meat','milk','cheese','wool'],cost:80,ground:'open',work:'herder',d:'Herds behind a fence: meat, milk, cheese and 2 wool a day per level.'},
@@ -15,8 +15,10 @@ const ESTATES={
   granary:{n:'Granary',goods:[],cost:90,ground:null,d:'+50% storage per level, food spoils half as fast, and more people can live here.'},
   market:{n:'Market',goods:[],cost:110,ground:null,d:'Stalls and a counting house: +3 gold a day in dues per level, and caravans set out more often.'}
 };
-const BLD_MAX={village:2,town:3,castle:2};
-const WALL_N=['No walls','Palisade','Stone walls','Great walls'],WALL_MAX={village:1,town:3,castle:3},WALL0={village:0,town:2,castle:3},WALL_COST=[0,100,300,650];
+// some estates need others first: a brewery needs the grain of level-2 farmland, weavers and tanners a pasture's wool and hides,
+// a market a granary to store what it trades
+const ESTATE_NEEDS={brewery:{farm:2},workshop:{pasture:1},market:{granary:1}};
+const WALL_N=['No walls','Palisade','Stone walls','Great walls'],WALL_COST=[0,100,300,650];
 
 /* what each estate makes per level per day, from what (inputs come out of the holding's stock), and what people need (economy.js) */
 const MAKE={
@@ -25,11 +27,24 @@ const MAKE={
   market:{},granary:{}
 };
 const FARM_CLIM={grass:1,frost:.5,desert:.7,swamp:.75};
-const POP0={village:60,town:200,castle:80},POPCAP={village:140,town:420,castle:170},STORE={village:150,town:320,castle:220};
 const WORKERS=8; // people needed per estate level
-// daily needs per 100 people, by kind of holding (food is pooled across every kind of food)
-const NEEDS={village:{food:5,cloth:.4,timber:.6,tools:.3,ale:.4},town:{food:5,cloth:1,timber:.8,tools:.5,ale:.8,spice:.5,iron:.3},castle:{food:5,cloth:.5,timber:.6,tools:.6,iron:.6,ale:.5,arrows:3,bolts:1.5}};
+// daily needs per 100 people: by kind of holding (holdings.js needs; food is pooled across every kind of food)
 const TAX_RATE=[.04,.07,.11],TAX_N=['Low','Normal','High'];
+
+/* where the regional goods are found (resources.js): ore veins on hills and mountains, fishing grounds in the water, by climate.
+   Weights: how likely a vein of each ore is, on a hill and on a mountain, and in each climate; a fishing ground's catch by climate */
+const ORE_W={
+  copper:{hill:3,mount:1,clim:{grass:1,swamp:1,desert:1,frost:.3}},tin:{hill:2,mount:.8,clim:{grass:1,swamp:.8,desert:.5,frost:.6}},
+  iron:{hill:2.5,mount:2.5,clim:{grass:1,frost:1.2,desert:.8,swamp:1}},silver:{hill:.3,mount:1.2,clim:{grass:1,frost:1,desert:.6,swamp:.4}},
+  gold:{hill:.25,mount:.6,clim:{grass:.4,frost:.3,desert:1.6,swamp:.3}},gems:{hill:.2,mount:.5,clim:{grass:.5,frost:.4,desert:1.4,swamp:.6}},
+  mithril:{hill:0,mount:.3,clim:{grass:.1,frost:1.4,desert:0,swamp:0}},adamant:{hill:0,mount:.12,clim:{grass:.4,frost:.6,desert:.8,swamp:1.2}}};
+const FISH_W={salmon:{grass:1,frost:1.6,desert:0,swamp:.2},eel:{grass:.4,frost:0,desert:0,swamp:1.8},pearls:{grass:.2,frost:0,desert:.6,swamp:.1}};
+// what a mine or port brings up per level from each vein or fishing ground in its land (rich ones up to twice that)
+const RES_RATE={copper:3,tin:2.5,iron:3,silver:1,gold:.5,gems:.4,mithril:.2,adamant:.12,salmon:2,eel:2.5,pearls:.15};
+const RES_RANGE=10,HOME_RANGE=24;// tiles from a holding to the veins and waters it works (to its own home deposit)
+// what a smith takes from its holding's stock to forge one piece of each material tier (wood, bronze, iron, silver, gold, mithril,
+// adamant): it forges only what its holding has the metal for
+const FORGE=[{timber:1},{copper:1,tin:1},{iron:2},{silver:2},{gold:2},{mithril:2},{adamant:2}];
 
 /* building projects: gold, plus materials from the holding's own stock */
 const ESTATE_MAT=(k,lv)=>({timber:6*lv,tools:lv,...(['mine','quarry','port','market','granary','smithy'].includes(k)?{stone:5*lv}:{})});
@@ -44,5 +59,5 @@ const PCV={hire:50,guard:12,upkeep:2,guardUp:1,max:6};
 
 /* people on the map: workers' colors, what a robbed worker carries, why refugees leave */
 const JOBS={farmer:{col:'#c8a24a',tool:'#d8c890'},herder:{col:'#8a6a3a',tool:'#a8783a'},woodcutter:{col:'#5a7a3a',tool:'#c9ced8'},miner:{col:'#6a6a7a',tool:'#9aa3ad'},fisher:{col:'#4a7aa8',tool:'#d8c890'}};
-const JOB_GOODS={farmer:['grain',4],herder:['meat',3],woodcutter:['timber',3],miner:['iron',2],fisher:['fish',4]};
-const REFUGEE_WHY={sacked:'their home was sacked',raided:'raiders burned their fields',hunger:'there is no food',siege:'the siege',hardship:'hard times',conquest:'new masters'};
+const JOB_GOODS={farmer:['grain',4],herder:['meat',3],woodcutter:['timber',3],miner:['iron',2],fisher:['fish',4]};// (a miner and a fisher carry their holding's own catch: jobGood)
+const REFUGEE_WHY={crowded:'there is no room left for them',sacked:'their home was sacked',raided:'raiders burned their fields',hunger:'there is no food',siege:'the siege',hardship:'hard times',conquest:'new masters'};

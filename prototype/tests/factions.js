@@ -13,7 +13,7 @@ try{
  P.gold=1000;
  t.enterTown(t.townBy('Ashford'));t.act('tab','tavern');t.act('contract');ok(P.fac==='vale'&&t.hostileTo('karn')&&!t.hostileTo('salt'),'contract with vale makes karn hostile');
  P.troops.hum_spear=2;t.act('tab','recruit');ok(/Pikeman/.test(document.getElementById('panel').innerHTML),'branching upgrade shown');
- t.act('train','hum_spear:hum_pike');ok(P.troops.hum_pike===1,'trained pikeman');
+ P.txp={hum_spear:t.txpNeed('hum_spear')};t.act('train','hum_spear:hum_pike');ok(P.troops.hum_pike===1,'trained pikeman (with the experience for it)');
  t.act('hire','hum_levy');ok(P.troops.hum_levy===1,'hired race troop');
  t.act('leave');done();
  const kh=t.townBy('Karn Hold');P.x=kh.x;P.y=kh.y+3;G.lastTown=null;G.encCool=99;t.updateWorld(.016);
@@ -24,7 +24,7 @@ try{
  let i=0;while(t.B&&i<20000){t.B.units.forEach(u=>{if(u.team===0)u.hp=u.max});t.updateBattle(.033);if(t.B)t.frame();i++}
  ok(G.mode==='dialog'&&kl.dead,'beat lord in '+i+' steps; renown '+P.renown);
  t.act('cont');done();
- const sl=W.lords.find(l=>l.fac==='salt'&&!l.dead);G.encCool=0;t.lordMeet(sl);ok(/Attack/.test(document.getElementById('panel').innerHTML),'neutral lord dialog');
+ const sl=W.lords.find(l=>l.fac==='salt'&&!l.dead);sl.inside=null;G.encCool=0;t.lordMeet(sl);// met on the road (in a hall there is no attacking)ok(/Attack/.test(document.getElementById('panel').innerHTML),'neutral lord dialog');
  t.act('lord-attack');ok(G.enc.kind==='lord'&&t.hostileTo('salt'),'attacking makes salt hostile');t.act('auto');t.act('cont');done();
  G.mode='world';t.openChar();t.act('char-tab','realms');ok(/Relations/.test(document.getElementById('panel').innerHTML),'realms tab');t.act('char-close');
  for(let k=0;k<3;k++)t.dayTick();

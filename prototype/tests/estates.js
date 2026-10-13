@@ -9,18 +9,18 @@ try{
  const done=()=>{while(G.mode==='perk')t.act('perk',G.perkOffer[0])};
  // estates where the land suits them
  ok(TW.every(x=>x.bld&&x.wall!=null),'every holding has estates and a wall level');
- const spotsOk=TW.every(x=>{const sp=t.bldSpots(x);return Object.keys(sp).every(k=>{const s=sp[k],g=t.ESTATES[k].ground;return t.GROUND[g](s.tx,s.ty)})});
+ const spotsOk=TW.every(x=>(x.lots||[]).filter(l=>t.ESTATES[l.k]).every(l=>{let ok=true;for(let j=0;j<l.n;j++)for(let i=0;i<l.n;i++)ok=ok&&t.lotGround[t.groundOf(l.k)](l.x+i,l.y+j);return ok}));
  ok(spotsOk,'every estate stands on land that suits it (fields on open ground, woodcutters in forest, mines by rock, ports on the shore)');
  ok(TW.every(x=>Object.keys(x.bld).every(k=>x.bld[k]<=t.bldCap(x,k))),'no estate where the land has no room for it');
  const ports=TW.filter(x=>x.style==='port');ok(ports.length&&ports.every(x=>x.bld.port),'port towns have ports ('+ports.filter(x=>x.bld.port).map(x=>x.name).join(', ')+')');
  ok(TW.filter(x=>x.kind==='village').every(x=>x.bld.farm>0||!t.canHave(x,'farm')),'villages farm');
- ok(t.wallOf(t.townBy('Highmoor'))===3&&t.wallOf(t.townBy('Ashford'))===2&&t.wallOf(t.townBy('Thornwick'))===0,'castles start with great walls, towns stone, villages none');
+ ok(t.wallOf(t.townBy('Highmoor'))===3&&t.wallOf(t.townBy('Ashford'))===3&&t.wallOf(t.townBy('Oakhurst'))===2&&t.wallOf(t.townBy('Thornwick'))===0,'castles and cities start with great walls, towns stone, villages none');
  const n=TW.reduce((a,x)=>a+t.bldTotal(x),0);ok(n>TW.length*3,n+' estate levels across Ashmark');
  // prices: estates make their goods cheaper
  const ash=t.townBy('Ashford');const g0=ash.bld.farm;ash.bld.farm=0;const o0=t.produce(ash,null).grain||0;ash.bld.farm=3;const o3=t.produce(ash,null).grain||0;ash.bld.farm=g0;
  ok(o3>=12&&o3>o0,'three levels of farmland grow '+o3+' grain a day into the stores');
  // your fief: income, building, walls
- ash.owner='player';ash.lastOwner='player';ash.sacked=ash.raided=ash.turmoil=0;
+ ash.owner='player';ash.lastOwner='player';ash.sacked=ash.raided=ash.turmoil=0;ash.wall=2;// (a city starts with great walls: take them down a step to build them back)
  ok(t.fiefIncome(ash)===t.taxOf(ash)&&t.fiefIncome(ash)>0,'a fief pays its taxes: '+t.fiefIncome(ash)+' gold a day');
  G.mode='world';G.modal=false;t.hidePanel();G.lastTown=null;t.enterTown(ash);t.act('tab','fief');const pan=()=>document.getElementById('panel').innerHTML;
  ok(/Walls and estates/.test(pan())&&/Farmland/.test(pan())&&/Fortify/.test(pan()),'the Fief tab lists walls and estates');
@@ -28,7 +28,7 @@ try{
  const g1=P.gold;t.act('fief-build','farm');ok(P.gold===g1,'one project at a time');
  t.act('leave');done();G.day=ash.work.done;t.estateDay();ok(ash.bld.market===lv0+1&&!ash.work,'the market reaches level '+(lv0+1));
  ash.wall=2;t.enterTown(ash);t.act('tab','fief');t.act('fief-build','wall');t.act('leave');done();G.day=ash.work.done;t.estateDay();ok(ash.wall===3,'fortifying raises stone walls to great walls');
- ok(t.fiefCap(ash)===t.GARCAP.town+6+9,'great walls hold a bigger garrison ('+t.fiefCap(ash)+')');
+ ok(t.fiefCap(ash)===ash.T.gar+6+9,'great walls hold a bigger garrison ('+t.fiefCap(ash)+')');
  // walls in sieges
  const hm=t.townBy('Highmoor');ok(t.siegeLv(hm)===4,'great walls: defenders fight as level 4');hm.wall=0;ok(t.siegeLv(hm)===1,'without walls, level 1');hm.wall=3;
  const vil=t.townBy('Thornwick');vil.wall=1;ok(t.siegeLv(vil)===2,'a village palisade makes its militia level 2');vil.wall=0;
@@ -45,17 +45,19 @@ try{
  // folk: workers walk out by day
  W.folk=[];P.x=ash.x;P.y=ash.y+40;G.clock=t.DAY*.2;for(let i=0;i<300;i++)t.updateFolk(.05);
  const ws=W.folk.filter(f=>f.home==='Ashford');ok(ws.length>=2,ws.length+' workers from Ashford: '+[...new Set(ws.map(f=>f.job))].join(', '));
- ok(ws.some(f=>f.st==='work'),'some reach their estate and work');
+ // (estates stand outside the walls now: give them the time to walk out)
+ for(let i=0;i<500&&!ws.some(f=>f.st==='work');i++){G.clock=t.DAY*.2;t.updateFolk(.05)}ok(ws.some(f=>f.st==='work'),'some reach their estate and work');
  G.clock=t.DAY*.7;for(let i=0;i<400;i++)t.updateFolk(.05);ok(!W.folk.some(f=>f.home==='Ashford'&&f.st!=='back'),'at dusk they all head home');
  // caravans
  W.caravans=[];const from=t.townBy('Saltmere');from.owner=t.HOME.Saltmere;from.sacked=from.raided=0;const fill=()=>{from.stock.cloth=400;from.stock.timber=400};fill();let c=null;for(let i=0;i<20&&!c;i++)c=t.sendCaravan(from);
  ok(c&&Object.keys(c.goods).length&&c.to!==c.from,'a caravan sets out from '+(c&&c.from)+' to '+(c&&c.to)+' with '+(c&&t.cargoText(c)));
  const to=t.townBy(c.to),gk=Object.keys(c.goods)[0],before=to.stock[gk]||0,load=c.goods[gk];P.x=-9999;P.y=-9999;for(let i=0;i<4000&&W.caravans.includes(c);i++)t.updateCaravans(.05);
  ok(!W.caravans.includes(c)&&(to.stock[gk]||0)>=before+load-2,'it travels the roads and its '+load+' '+gk+' arrive in the stores of '+c.to);
- fill();c=t.sendCaravan(from);W.caravans=[c];c.guards=3;t.bandits.push({x:c.x+4,y:c.y,n:12,kind:'bandits',list:Array(12).fill('militia'),t:0,a:0,idle:true,cool:0});t.updateCaravans(.01);
- ok(!W.caravans.length,'a big band of bandits plunders a caravan');t.bandits.length=0;
- fill();c=t.sendCaravan(from);W.caravans=[c];c.guards=6;t.bandits.push({x:c.x+4,y:c.y,n:3,kind:'bandits',list:Array(3).fill('militia'),t:0,a:0,idle:true,cool:0});t.updateCaravans(.01);
- ok(W.caravans.length===1,'six guards drive off three bandits');t.bandits.length=0;
+ fill();c=t.sendCaravan(from);W.caravans=[c];c.guards=3;W.patrols=[];W.lords.forEach(l=>{if(!l.inside&&Math.hypot(l.x-c.x,l.y-c.y)<150)l.x=-999});// (no one rides to help)
+ t.bandits.push({x:c.x+4,y:c.y,n:12,kind:'bandits',list:Array(12).fill('militia'),t:0,a:0,idle:true,cool:0});t.updateCaravans(.01);for(let i=0;i<4000&&W.fights.length;i++)t.updateFights(.05);
+ ok(!W.caravans.length,'a big band of bandits beats the guards and plunders a caravan');t.bandits.length=0;W.fights=[];
+ fill();c=t.sendCaravan(from);W.caravans=[c];c.guards=6;t.bandits.push({x:c.x+4,y:c.y,n:3,kind:'bandits',list:Array(3).fill('militia'),t:0,a:0,idle:true,cool:0});t.updateCaravans(.01);for(let i=0;i<4000&&W.fights.length;i++)t.updateFights(.05);
+ ok(W.caravans.length===1&&!t.bandits.length&&!c.fight,'six guards beat three bandits, and the caravan goes on');t.bandits.length=0;W.fights=[];
  // trade with a caravan, then attack one
  fill();c=t.sendCaravan(from);W.caravans=[c];P.x=c.x;P.y=c.y;G.mode='world';G.modal=false;t.hidePanel();P.hostile={};P.fac=null;
  t.interact(c);ok(G.mode==='dialog'&&/Caravan of/.test(pan()),'meeting a caravan opens it');

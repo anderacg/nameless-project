@@ -24,7 +24,8 @@ const TREE_BRANCHES=[
     sideC:[['a','Blade Dash',{unlock:'dash'},'Active skill: dash through enemies, cutting each one you pass.'],['a','Swift Dash',{dashCd:.35,dashDmg:.3},'Blade Dash recovers 35% faster and cuts 30% deeper.'],['a','Rain of Arrows',{unlock:'volley'},'Active skill (needs a bow): loose a volley that falls around your aim.'],['a','Arrow Storm',{volleyDmg:.4,volleyR:.3},'Rain of Arrows hits 40% harder over a wider area.']],
     sideD:[['s','Steady Aim',{sk:{archery:1},crit:.02}],['s','Fleet Runner',{sk:{athl:1},sp:10}],['n','Marksman',{sk:{archery:2},vis:.05},'+2 Archery. See a little farther.']],
     sideB:[['n','Acrobat',{dodgeCost:.4,dodgeCd:.3},'Dodge rolls cost 40% less stamina and recover 30% faster.'],['n','Pathfinder',{perk:'path',travel:.05},'Forest and hills slow you half as much.'],
-      ['n','Hawkeye',{perk:'guide',vis:.05},'Shows your arrow\u2019s path and where it will land while you draw a bow.']]},
+      ['n','Hawkeye',{perk:'guide',vis:.05},'Shows your arrow\u2019s path and where it will land while you draw a bow.'],
+      ['n','Vanish',{perk:'vanish'},'+15% to get away when you flee in forest, hills or at night.'],['n','Forced March',{perk:'forced'},'Your band travels 15% faster, and eats 20% more.']]},
   {k:'arcana',n:'Arcana',a:'int',ang:90,col:'#5a8fe8',
     spine:[['s','Intellect',{attr:{int:2}}],['s','Clarity',{mp:15}],['n','Field Surgeon',{sk:{med:1},regen:.5},'+1 Medicine. Heal 0.5 health a second in battle.'],
       ['s','Intellect',{attr:{int:2}}],['s','Flow',{mpRegen:.25}],['n','Strategist',{sk:{tact:2},loot:.1},'+2 Tactics. Take 10% more gold from battles.'],
@@ -39,7 +40,7 @@ const TREE_BRANCHES=[
       ['k','Warlord',{tHp:.15,tDmg:.15,dmgPct:-.25},'Your troops get +15% health and damage, but you deal 25% less.']],
     sideA:[['a','War Cry',{unlock:'cry'},'Learn War Cry (R): nearby troops hit harder and move faster; enemies flinch.'],['a','Battle Hymn',{cryDur:4,cryR:.4},'War Cry lasts 4 seconds longer and reaches 40% farther.'],['a','Fearsome Roar',{cryStun:.8},'War Cry makes enemies flinch twice as long.']],
     sideC:[['a','War Banner',{unlock:'banner'},'Active skill: plant your banner; troops near it take 25% less damage.'],['a','Standard Bearer',{bannerDur:4,bannerR:.4},'War Banner lasts 4 seconds longer and covers 40% more ground.'],['n','Logistics',{food:.1,cap:2},'Your band eats 10% less. +2 party size.']],
-    sideD:[['s','Drill Yard',{tDmg:.04}],['n','Quartermaster General',{sk:{lead:1},cap:2},'+1 Leadership, +2 party size.']],
+    sideD:[['s','Drill Yard',{tDmg:.04}],['n','Quartermaster General',{sk:{lead:1},cap:2},'+1 Leadership, +2 party size.'],['n','Rearguard',{perk:'rearguard'},'Caught fleeing, you lose half as many men.']],
     sideB:[['n','Banner Bearer',{tHp:.08,morale:5},'Troops get +8% health. Morale never falls below 5 more.'],['n','Veteran Drill',{tDmg:.08,sk:{lead:1}},'Troops deal 8% more damage. +1 Leadership.']]}
 ];
 // hybrid nodes between neighbouring branches

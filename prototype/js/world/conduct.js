@@ -7,12 +7,14 @@
 // charge a deed (a CONDUCT entry, or part of one) against holding t; returns what it cost, as a phrase for the dialog
 function wrong(t,c){
   const cost=[];
-  if(c.rep){addRep(t.name,-c.rep,true);cost.push('reputation in '+t.name+' −'+c.rep)}
+  if(c.rep){addRep(t.name,-c.rep,true);cost.push('reputation in '+t.name+' −'+c.rep);
+    // the holding's guards remember it: they stop you and demand a fine (patrols.js)
+    if(t.owner&&t.owner!=='player'){const old=crimeAt(t);t.crime={until:G.day+PATROL.wanted,fine:(old?old.fine:0)+c.rep*PATROL.fine}}}
   if(c.pros)t.pros=Math.max(0,t.pros-c.pros);
   if(c.fear)frighten(t,c.fear);
   if(c.morale){P.morale=clamp(P.morale-c.morale,0,100);cost.push('morale −'+c.morale)}
   if(t.owner&&t.owner!=='player'){
-    if(c.honor){addHonor(t.owner,-c.honor,true);cost.push('honor with the '+FACS[t.owner].n+' −'+c.honor)}
+    if(c.honor){addHonor(t.owner,-c.honor,true);cost.push('honor with the '+FACS[t.owner].n+' −'+c.honor);W.lords.filter(l=>l.fac===t.owner&&!l.dead).forEach(l=>changeRel(l,RELATION.harmRealm,'you wronged the people of '+t.name))}
     if(c.hostile&&!hostileTo(t.owner)){P.hostile[t.owner]=Math.max(P.hostile[t.owner]||0,G.day+c.hostile);log('The '+FACS[t.owner].n+' turns hostile to you for '+c.hostile+' days.','bad')}
   }
   return cost.join(', ');

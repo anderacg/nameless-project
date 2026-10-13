@@ -5,14 +5,14 @@
 // so strong holdings push their borders into weak ones. Reach grows (t.grow) while a holding is held in peace, faster with
 // friendly holdings nearby, and when camps and dens on or near its land are cleared; siege, sack, raid and conquest cut it back.
 // A captured holding brings all its land to the new owner.
-const LAND_REACH={village:10,town:15,castle:18},GROW_MAX={village:7,town:10,castle:10},GROW0=4,GROW_DAY=1/5;
+const GROW0=4,GROW_DAY=1/5;
 const LAND_COST=[1,1.7,1.5,0,.8,4];
 const NB8=[[1,0,1],[-1,0,1],[0,1,1],[0,-1,1],[1,1,1.41],[1,-1,1.41],[-1,1,1.41],[-1,-1,1.41]];
 const LAND=new Int8Array(MW*MH).fill(-1);  // index into TOWNS, or -1 for wild land
 let landSig='',landTiles=[],landMini=null;
-const landReach=t=>LAND_REACH[t.kind]+Math.floor(t.grow||0);
+const landReach=t=>t.T.reach+Math.floor(t.grow||0);
 // up to 3 more reach for friendly holdings within 50 tiles
-const growCap=t=>GROW_MAX[t.kind]+Math.min(3,TOWNS.filter(o=>o!==t&&o.owner===t.owner&&Math.hypot(o.tx-t.tx,o.ty-t.ty)<50).length);
+const growCap=t=>t.T.growMax+Math.min(3,TOWNS.filter(o=>o!==t&&o.owner===t.owner&&Math.hypot(o.tx-t.tx,o.ty-t.ty)<50).length);
 // a small binary heap of [cost, tile]
 function heapPush(h,e){h.push(e);let i=h.length-1;while(i){const p=(i-1)>>1;if(h[p][0]<=h[i][0])break;[h[p],h[i]]=[h[i],h[p]];i=p}}
 function heapPop(h){const top=h[0],last=h.pop();if(h.length){h[0]=last;let i=0;for(;;){const l=2*i+1,r=l+1;let m=i;if(l<h.length&&h[l][0]<h[m][0])m=l;if(r<h.length&&h[r][0]<h[m][0])m=r;if(m===i)break;[h[m],h[i]]=[h[i],h[m]];i=m}}return top}

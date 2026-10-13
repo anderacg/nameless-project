@@ -27,6 +27,8 @@ const HANDS={one:'one-handed',two:'two-handed',hybrid:'hybrid'};
 const kindLabel=I=>I.slot==='weapon'?HANDS[I.hand||'one']+' weapon':SLOTS[I.slot].toLowerCase();
 // add n of an item; returns how many fit
 function invAdd(k,id,n){
+  // after a fight, spoils go on the pile and you choose what to carry (loot.js)
+  if(looting()){lootPile(k,id,n);return n}
   let left=n;const max=stackOf(k,id);
   if(max>1)for(const s of P.inv)if(left&&s&&s.k===k&&s.id===id&&s.n<max){const t=Math.min(left,max-s.n);s.n+=t;left-=t}
   for(let i=0;i<P.inv.length&&left;i++)if(!P.inv[i]){const t=Math.min(left,max);P.inv[i]={k,id,n:t};left-=t}
@@ -147,8 +149,7 @@ function renderInv(){
       '<div class="invcap" title="'+used+' of '+P.inv.length+' slots · food for about '+Math.floor(foodN()/eatPerDay())+' days"><i style="width:'+Math.round(100*used/P.inv.length)+'%"></i></div>'+
       '<div class="invgrid">'+P.inv.map((s,i)=>slotHtml(s,i,'Empty slot',s&&tab!=='all'&&s.k!==tab?'dim':'')).join('')+'</div>'+
       '<div class="invR" aria-live="polite">'+detailHtml()+'</div></div></div>');
-  panel.querySelectorAll('[data-icon]').forEach(e=>{const [k,id]=e.dataset.icon.split(':'),src=itemIcon(itemDef({k,id})),c=document.createElement('canvas'),z=e.closest('.ring')?18:26;
-    c.width=z;c.height=z;const g=c.getContext('2d');g.imageSmoothingEnabled=false;g.drawImage(src,0,0,z,z);c.setAttribute('aria-hidden','true');e.replaceWith(c)});
+  fillIcons();
 }
 function invAct(a,arg){
   if(!a.startsWith('inv-'))return false;

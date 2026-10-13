@@ -6,7 +6,7 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),out=()=>{cons
  try{
   t.act('begin','soldier');
   ok((0,eval)('typeof ART')==='undefined'&&!document.querySelector('script[src="js/art.js"]')&&!document.getElementById('artBtn'),'no sprite sheets are loaded and there is no art switch');
-  ok(t.TOWNS.every(x=>t.holdingSprite(x).width>0),'every holding has a generated sprite');
+  ok(t.TOWNS.every(x=>{const c=t.lotCentre(x);return c&&t.lotSprite(x,c).width===c.n*16}),'every holding has a centre building, its picture exactly its cell');
   ok(['cave','ruins','shrine','hideout','travelers'].every(ty=>t.siteSprite({type:ty,seed:7,i:1,x:100,y:100,kind:0}).width>0),'every kind of site has a generated sprite');
   ok(['grass','frost','desert','swamp'].every(c=>t.obstacleSprite('tree',c).width>0&&t.obstacleSprite('rock',c).width>0),'trees and rocks for every climate');
   ok(Object.keys(t.CRITTERS).every(k=>t.critterSprite(k).width>0),'every critter has a sprite');
@@ -27,14 +27,14 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),out=()=>{cons
  {const px=c=>{const d=c.getContext('2d').getImageData(0,0,c.width,c.height).data;let h=0;for(let i=0;i<d.length;i+=4)h=(h*31+d[i]+d[i+1]*3+d[i+2]*7+d[i+3])|0;return h};
   const poses=[0,1,2,3,4,5,6,7,8].map(p=>px(t.unitSprite('spearman',0,false,1,p)));ok(new Set(poses).size>=7,'a soldier has '+new Set(poses).size+' distinct poses: breathing, striding and striking');
   const s0=t.unitSprite('militia',1,false,2,0),d0=s0.getContext('2d').getImageData(0,0,s0.width,s0.height).data;let dark=0;for(let i=0;i<d0.length;i+=4)if(d0[i+3]>150&&d0[i]<30&&d0[i+1]<30&&d0[i+2]<30)dark++;
-  ok(s0.width===22&&dark>20,'procedural sprites have a dark outline');
+  ok(s0.width===32&&s0.cw===22&&dark>20,'procedural sprites have a dark outline (a 22-pixel soldier in its 32-pixel cell)');
   const w=t.whiteOf(s0),wd=w.getContext('2d').getImageData(0,0,w.width,w.height).data;let white=0,any=0;for(let i=0;i<wd.length;i+=4)if(wd[i+3]){any++;if(wd[i]===255&&wd[i+1]===255)white++}ok(any&&white===any,'a struck fighter flashes white');
   const m=t.worldCv().getContext('2d').getImageData(t.townBy('Ashford').x-200,t.townBy('Ashford').y-200,400,400).data,cols=new Set();for(let i=0;i<m.length;i+=16)cols.add(m[i]>>3<<10|m[i+1]>>3<<5|m[i+2]>>3);
   ok(cols.size>40,'the world map is painted in '+cols.size+' shades around Ashford');
   t.worldCv();let roads=0,clearRoads=0;for(let i=0;i<t.tiles.length;i++)if(t.tiles[i]===t.T_ROAD){roads++;if(t.isClear((i%t.MW+.5)*16,(Math.floor(i/t.MW)+.5)*16))clearRoads++}
-  ok(roads&&clearRoads===roads&&t.TOWNS.every(x=>t.isClear(x.x,x.y)&&t.isClear(x.x,x.y-20)),'roads, holdings and their yards are kept clear of trees, hills and peaks');
-  ok(t.TOWNS.every(x=>Object.values(t.bldSpots(x)).every(p=>t.isClear(p.x,p.y))),'every estate plot is cleared');
-  ok(t.arenaFor('desert')!==t.arenaFor('frost')&&t.arenaFor('grass').width===t.VW,'each climate has its own battle ground');}
+  ok(roads&&clearRoads===roads&&t.TOWNS.every(x=>t.isClear(x.x,x.y)),'roads and each holding’s own tile (its centre) (and the gate before it) are kept clear of trees, hills and peaks');
+  ok(t.TOWNS.every(x=>Object.entries(t.bldSpots(x)).every(([k,p])=>{const l=t.lotOf(p.tx,p.ty);return l&&l.k===k&&l.town===x.name})),'every estate stands on a building of its own holding (its yard drawn over whatever the map painted there)');
+  ok(t.arenaFor('desert')!==t.arenaFor('frost')&&t.arenaFor('grass').width===t.BW&&t.arenaFor('grass').height===t.BH,'each climate has its own battle ground, as large as the battlefield');}
  }catch(e){o.push('EXC '+e.message+' '+e.stack)}
  out();
 };

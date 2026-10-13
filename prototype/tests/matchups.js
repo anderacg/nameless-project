@@ -15,7 +15,7 @@ try{
  ok(!gaps.length,'every unit ('+Object.keys(ST).length+') has a strength and a weakness'+(gaps.length?': missing '+gaps.join(', '):''));
  // battle mechanics
  t.act('begin','soldier');P.troops={horse:1};P.comps={};G.mode='world';G.enc={kind:'party',ref:{cool:0},list:['spearman']};t.startBattle({enemies:['spearman'],tournament:false});
- const B=t.B,hu=B.units.find(u=>u.type==='horse'),sp=B.units.find(u=>u.type==='spearman');hu.spdNow=70;const hp0=sp.hp;t.attack(hu,sp);
+ const B=t.B,hu=B.units.find(u=>u.type==='horse'),sp=B.units.find(u=>u.type==='spearman');hu.run=t.CHARGE.run;sp.inSlot=false;sp.dir=Math.atan2(hu.y-sp.y,hu.x-sp.x);const hp0=sp.hp;t.attack(hu,sp);
  ok(B.floats.some(f=>f.t==='Braced')&&hp0-sp.hp<=ST.horse.dmg*1.2+1,'a charge into spearmen is braced: no charge bonus ('+(hp0-sp.hp)+' damage)');
  B.over=true;B.endT=0;t.updateBattle(.01);t.act('cont');
  // the hero's class follows the gear

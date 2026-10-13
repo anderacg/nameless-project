@@ -9,7 +9,7 @@ try{
  const empty=()=>{P.inv=Array(t.invCap()).fill(null)};
  t.act('begin','soldier');
  // food
- ok(t.FOODS.length===6&&t.FOODS.every(g=>t.GOODS[g].food)&&t.FOODS[0]==='milk'&&['grain','cheese'].includes(t.FOODS[5]),'six foods, most perishable eaten first: '+t.FOODS.join(', '));
+ ok(t.FOODS.length===8&&t.FOODS.every(g=>t.GOODS[g].food)&&t.FOODS[0]==='milk'&&['grain','cheese'].includes(t.FOODS[7]),'eight foods (salmon and eel only where they are caught), most perishable eaten first: '+t.FOODS.join(', '));
  empty();t.invAdd('good','grain',10);t.invAdd('good','milk',3);t.invAdd('good','meat',4);
  ok(t.foodN()===17&&t.foodKinds()===3,'food counts every kind');t.foodTake(5);ok(t.goodN('milk')===0&&t.goodN('meat')===2&&t.goodN('grain')===10,'milk goes first, then meat, grain last');
  empty();t.invAdd('good','meat',8);P.troops={militia:7};P.morale=60;const eat=t.eatPerDay();t.dayTick();
@@ -19,7 +19,7 @@ try{
  ok(t.goodN('milk')<m0-6&&t.goodN('cheese')===20,'milk spoils, cheese keeps ('+m0+' → '+t.goodN('milk')+' milk)');
  empty();['grain','cheese','fruit','meat'].forEach(g=>t.invAdd('good',g,20));P.morale=50;t.dayTick();ok(P.morale>=52,'four kinds of food lift morale (+'+(P.morale-50)+')');
  t.updateHUD(true);ok(/<b>Food<\/b>/.test(document.getElementById('stats').innerHTML)&&!/<b>Grain<\/b>/.test(document.getElementById('stats').innerHTML),'the HUD shows Food');
- ok(t.TOWNS.filter(x=>x.mod).every(x=>t.FOODS.every(g=>x.mod[g]>0)),'every market prices every food');
+ ok(t.TOWNS.filter(x=>x.mod).every(x=>t.FOODS.filter(g=>!t.GOODS[g].res).every(g=>x.mod[g]>0)),'every market prices every common food (regional fish go by what is caught)');
  const fishy=t.TOWNS.find(x=>x.style==='port');ok(fishy.mod.fish<.9,fishy.name+' sells fish cheap');
  // wild game
  const wild=W.critters.filter(c=>!c.home),herds=W.critters.filter(c=>c.home);
@@ -35,11 +35,11 @@ try{
  const d0=Math.hypot(deer.x-P.x,deer.y-P.y);t.updateCritters(.1);ok(Math.hypot(deer.x-P.x,deer.y-P.y)>d0,'deer bolt when you come close');
  deer.tire=5;const x1=deer.x;t.updateCritters(.1);const fresh=Math.abs(deer.x-x1);ok(fresh<t.CRITTERS.deer.spd*.1*.5,'and slow down once tired');
  // hunting
- empty();P.troops={hum_bow:8};P.sk.scout.lv=3;const xp=P.xp+P.level*1000;deer.x=P.x+5;deer.y=P.y;deer.n=3;deer.cool=0;t.updateCritters(.01);
- const killed=3-(W.critters.includes(deer)?deer.n:0);ok(killed>=3&&t.goodN('meat')===killed*4,'8 bows and Scouting 3 bring down '+killed+' deer for '+t.goodN('meat')+' meat');
+ empty();P.troops={hum_bow:8};P.sk.hunt.lv=3;const xp=P.xp+P.level*1000;deer.x=P.x+5;deer.y=P.y;deer.n=3;deer.cool=0;t.updateCritters(.01);
+ const killed=3-(W.critters.includes(deer)?deer.n:0);ok(killed>=3&&t.goodN('meat')===killed*4,'8 bows and Hunting 3 bring down '+killed+' deer for '+t.goodN('meat')+' meat');
  ok(!W.critters.includes(deer),'a herd hunted out is gone');
- const rab={crit:true,id:'rabbit',x:P.x+5,y:P.y,hx:P.x,hy:P.y,n:4,t:0,a:0,dir:1,tire:0,cool:0};W.critters=[rab];P.troops={};P.sk.scout.lv=0;
- let lone=0;for(let i=0;i<20;i++){P.sk.scout={lv:0,xp:0};rab.n=4;rab.cool=0;rab.x=P.x+5;rab.y=P.y;if(!W.critters.includes(rab))W.critters.push(rab);const b=t.goodN('meat');t.updateCritters(.01);lone=Math.max(lone,t.goodN('meat')-b)}
+ const rab={crit:true,id:'rabbit',x:P.x+5,y:P.y,hx:P.x,hy:P.y,n:4,t:0,a:0,dir:1,tire:0,cool:0};W.critters=[rab];P.troops={};P.sk.hunt.lv=0;
+ let lone=0;for(let i=0;i<20;i++){P.sk.hunt={lv:0,xp:0};rab.n=4;rab.cool=0;rab.x=P.x+5;rab.y=P.y;if(!W.critters.includes(rab))W.critters.push(rab);const b=t.goodN('meat');t.updateCritters(.01);lone=Math.max(lone,t.goodN('meat')-b)}
  ok(lone>=1&&lone<=2,'alone, you catch one or two rabbits at a time');
  // chase
  const stag={crit:true,id:'stag',x:P.x+40,y:P.y,hx:P.x+40,hy:P.y,n:1,t:0,a:0,dir:1,tire:0,cool:0};W.critters=[stag];G.chase=stag;t.updateWorld(.05);ok(P.tx===stag.x||G.chase===stag,'clicking a critter chases it');G.chase=null;P.tx=null;

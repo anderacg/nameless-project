@@ -1,5 +1,5 @@
 'use strict';
-// Vitals: health, stamina and mana carry over between battles, recover on the map (faster near holdings), fully at an inn,
+// Vitals: health, stamina and mana carry over between battles, recover on the map (faster near holdings), fastest while staying in a holding,
 // a knocked-out hero comes to at 10%, a lost auto-resolve costs half your health, and the HUD and encounters show it.
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);
 try{
@@ -18,7 +18,7 @@ try{
  P.x=t.TOWNS[0].x+400;P.y=t.TOWNS[0].y+400;t.unstick(P);P.hp=10;P.sp=0;P.mp=0;t.regenVitals(1);const far=[P.hp,P.sp,P.mp].map(Math.round);
  ok(far[0]>10&&far[1]>0&&far[2]>0&&far[0]<m[0],'a day on the road restores some of each ('+far.join(' / ')+')');
  P.x=t.TOWNS[0].x;P.y=t.TOWNS[0].y+20;P.hp=10;P.sp=0;P.mp=0;t.regenVitals(1);ok(P.hp-10>(far[0]-10)*1.8,'recovery is twice as fast near a holding');
- P.hp=10;P.sp=0;P.mp=0;P.gold=100;G.lastTown=null;t.enterTown(t.townBy('Ashford'));t.act('tab','tavern');t.act('rest');ok(P.hp===m[0]&&P.sp===m[1]&&P.mp===m[2]&&P.gold===95,'resting at the inn restores everything for 5 gold');t.act('leave');done();
+ {const g=t.townBy('Ashford');P.rep[g.name]=40;P.hp=10;P.sp=0;P.mp=0;t.startStay(g);t.stayTick(0);t.regenVitals(.5);t.stayTick(t.DAY*.5);ok(P.hp-10>(far[0]-10)*1.8&&!!P.stay,'staying in a holding recovers you faster still');t.leaveStay();done()}
  // auto-resolve defeat
  P.troops={};const h0=P.hp;G.mode='world';G.modal=false;t.startEncounter({kind:'party',ref:{cool:0,x:P.x,y:P.y},list:Array(15).fill('spearman'),band:'bandits'});t.autoResolve();t.act('cont');done();
  ok(Math.abs(P.hp-Math.round(h0*.5))<=1,'losing an auto-resolved fight costs half your health');

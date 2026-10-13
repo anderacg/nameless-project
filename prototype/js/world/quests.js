@@ -12,7 +12,6 @@ const QUEST_KINDS={
   troops:{n:'Reinforcements',d:'Hand over trained troops to the garrison.'},lordkill:{n:'War',d:'Defeat an enemy lord in battle.'},raid:{n:'Raid',d:'Raid an enemy village.'}
 };
 // which jobs each kind of holding hands out
-const JOB_TYPES={town:['bounty','supply','courier','clear','beast'],village:['bounty','beast','hunt','hunt'],castle:['troops','courier','bounty','clear']};
 const qScale=()=>1+G.day/60,qTiles=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y)/TILE;
 const questBy=id=>P.quests.find(q=>q.id===id);
 // a free spot 8 to 16 tiles from a holding, on ground you can reach
@@ -30,7 +29,7 @@ function makeQuest(type,t,lord){
   else if(type==='beast'){const c=t.clim,ids=Object.keys(MONSTERS).filter(id=>MONSTERS[id].where.includes(c)||MONSTERS[id].where.includes('forest')&&c==='grass');if(!ids.length)return null;
     q.mon=ids[rint(0,ids.length-1)];const M=MONSTERS[q.mon];q.n=Math.max(M.count[0],M.count[1]);q.lv=monLevel()+1;q.days=10;q.title='Beast hunt: '+M.n.toLowerCase();
     q.text=cap1(M.n.toLowerCase())+' have been killing livestock outside '+t.name+'. They are bigger than most. Kill them.';r(40+M.xp*q.n*.9,8,2,0)}
-  else if(type==='clear'){const s2=W.sites.filter(x=>(x.type==='cave'||x.type==='hideout')&&!x.cleared&&qTiles(x,t)<35).sort((a,b)=>qTiles(a,t)-qTiles(b,t))[0];if(!s2)return null;
+  else if(type==='clear'){const s2=W.sites.filter(x=>x.clearJob&&!x.cleared&&qTiles(x,t)<35).sort((a,b)=>qTiles(a,t)-qTiles(b,t))[0];if(!s2)return null;
     q.site=s2.i;q.days=12;q.title='Clear the '+s2.name;q.text='The '+s2.name+' to the '+compass(s2.x-t.x,s2.y-t.y)+' troubles '+t.name+'. Clear it out.';r(130,10,3,40)}
   else if(type==='supply'){ensureEcon(t);const goods=Object.keys(GOODS).filter(g=>!GOODS[g].spoil&&!GOODS[g].ammo&&needOf(t,g)>.05).sort((a,b)=>(t.stock[a]||0)/targetStock(t,a)-(t.stock[b]||0)/targetStock(t,b));if(!goods.length)return null;q.good=goods[rint(0,Math.min(1,goods.length-1))];q.n=rint(8,15);q.days=10;
     q.title='Supply run: '+GOODS[q.good].n.toLowerCase();q.text=t.name+' is short of '+GOODS[q.good].n.toLowerCase()+'. Bring '+q.n+' here.';r(GOODS[q.good].base*q.n*1.6,8,2,15)}
@@ -41,14 +40,14 @@ function makeQuest(type,t,lord){
   else if(type==='troops'){q.n=rint(3,5);q.tier=2;q.days=12;q.title='Reinforce '+t.name;q.text='The garrison of '+t.name+' is thin. Hand over '+q.n+' troops of tier 2 or better.';r(45*q.n,6,8,25)}
   else if(type==='lordkill'){const foes=W.lords.filter(o=>!o.dead&&atWar(q.fac,o.fac));if(!foes.length)return null;const f=foes[rint(0,foes.length-1)];
     q.target=f.name;q.tfac=f.fac;q.days=20;q.title='Defeat '+f.name;q.text=lord.name+' wants '+f.name+' of the '+FACS[f.fac].n+' beaten in the field.';r(280,0,15,80)}
-  else if(type==='raid'){const vs=TOWNS.filter(v=>v.kind==='village'&&atWar(q.fac,v.owner));if(!vs.length)return null;const v=vs.sort((a,b)=>qTiles(a,t)-qTiles(b,t))[0];
+  else if(type==='raid'){const vs=TOWNS.filter(v=>!walled(v)&&atWar(q.fac,v.owner));if(!vs.length)return null;const v=vs.sort((a,b)=>qTiles(a,t)-qTiles(b,t))[0];
     q.village=v.name;q.days=12;q.title='Raid '+v.name;q.text=lord.name+' wants the '+FACS[v.owner].n+' village of '+v.name+' raided.';r(160,0,10,40)}
   else return null;
   return q;
 }
 function jobsAt(t){
   P.jobs=P.jobs||{};const j=P.jobs[t.name];
-  if(!j||G.day-j.day>=JOB_REFRESH){const list=[],kinds=JOB_TYPES[t.kind].slice();
+  if(!j||G.day-j.day>=JOB_REFRESH){const list=[],kinds=t.T.jobs.slice();
     for(let k=0;k<12&&list.length<JOB_OFFERS;k++){const q=makeQuest(kinds[rint(0,kinds.length-1)],t);if(q&&!list.some(o=>o.type===q.type))list.push(q)}
     P.jobs[t.name]={day:G.day,list}}
   return P.jobs[t.name].list;
@@ -63,7 +62,7 @@ function acceptQuest(q){
   if(P.quests.length>=QUEST_MAX)return false;
   q.id=P.qid=(P.qid||0)+1;q.due=G.day+q.days;q.done=false;const t=townBy(q.home);
   if(q.type==='bounty'){const p=spotNear(t,8,16);if(!p)return false;const kind=climAt(p.x,p.y)==='desert'?'raiders':climAt(p.x,p.y)==='swamp'?'bog':'bandits';
-    bandits.push({x:p.x,y:p.y,n:q.n,kind,list:makeEnemies(q.n,false,kind),t:0,a:0,idle:true,cool:0,qid:q.id,name:q.band});q.x=p.x;q.y=p.y}
+    bandits.push(asParty({x:p.x,y:p.y,n:q.n,kind,list:makeEnemies(q.n,false,kind),t:0,a:0,idle:true,cool:0,qid:q.id,name:q.band,ld:newChief(kind,2+Math.floor(G.day/20))}));q.x=p.x;q.y=p.y}
   if(q.type==='beast'){const M=MONSTERS[q.mon],p=spotNear(t,6,14,(x,y)=>M.where.some(w=>habitatAt(x,y).includes(w)))||spotNear(t,6,14);if(!p)return false;
     W.monsters.push({id:q.mon,x:p.x,y:p.y,hx:p.x,hy:p.y,lv:q.lv,n:q.n,t:0,a:0,cool:0,qid:q.id});q.x=p.x;q.y=p.y}
   if(q.type==='clear'){const s=W.sites[q.site];if(!s||s.cleared)return false;s.seen=true;q.x=s.x;q.y=s.y}
@@ -75,7 +74,7 @@ function acceptQuest(q){
 // where a quest points you now: its target, or home once it is done
 function questGoal(q){
   if(q.done||['supply','hunt','troops'].includes(q.type)){const t=q.lord?nearestOf(P,fiefsOf(q.fac).filter(x=>!hostileTo(x.owner)))||townBy(q.home):townBy(q.home);return t?{x:t.x,y:t.y,name:t.name}:null}
-  if(q.type==='bounty'){const b=bandits.find(x=>x.qid===q.id);return b?{x:b.x,y:b.y,name:'the '+q.band}:null}
+  if(q.type==='bounty'){const b=bandits.find(x=>x.qid===q.id)||camps().flatMap(c=>c.bands||[]).find(x=>x.qid===q.id);return b?{x:b.x,y:b.y,name:(b.ld?b.ld.name+' and ':'')+'the '+q.band}:null}
   if(q.type==='beast'){const m=W.monsters.find(x=>x.qid===q.id);return m?{x:m.x,y:m.y,name:MONSTERS[q.mon].n.toLowerCase()}:null}
   if(q.type==='lordkill'){const l=W.lords.find(x=>x.name===q.target&&!x.dead);return l?{x:l.x,y:l.y,name:q.target}:null}
   if(q.type==='clear'){const s=W.sites[q.site];return s?{x:s.x,y:s.y,name:'the '+s.name}:null}
@@ -104,7 +103,8 @@ function questNotify(kind,ref){
   }
 }
 function payQuest(q,where){
-  const r=q.reward;P.gold+=r.gold;gainXp(r.xp);P.renown+=q.lord?4:2;
+  const r=q.reward,giver=q.lord&&W.lords.find(l=>l.name===q.giver);P.gold+=r.gold;
+  if(giver){const bonus=Math.round(r.gold*Math.max(0,relWith(giver))/200);if(bonus){P.gold+=bonus;log(giver.name+' adds '+bonus+' gold for a friend.','gold')}changeRel(giver,RELATION.jobDone,'you did their work')}gainXp(r.xp);P.renown+=q.lord?4:2;
   if(r.rep)addRep(q.lord?where:q.home,r.rep,true);if(r.honor)addHonor(q.fac,r.honor,true);
   P.quests=P.quests.filter(x=>x!==q);log('Quest complete: '+q.title+'. +'+r.gold+' gold'+(r.rep?', +'+r.rep+' reputation':'')+(r.honor?', +'+r.honor+' honor':'')+'.','good');
 }
@@ -113,14 +113,14 @@ function turnIn(q,t){
   if(!questReady(q))return false;
   if(q.type==='supply'){goodTake(q.good,q.n);const ht=townBy(q.home);if(ht){ensureEcon(ht);ht.stock[q.good]=(ht.stock[q.good]||0)+q.n}}
   if(q.type==='hunt'){if(q.mat){let n=q.n;for(let i=0;i<P.inv.length&&n;i++){const s=P.inv[i];if(s&&s.k==='mat'&&s.id===q.mat){const k=Math.min(n,s.n);s.n-=k;n-=k;if(!s.n)P.inv[i]=null}}}else goodTake('meat',q.n)}
-  if(q.type==='troops'){let n=q.n;for(const k of Object.keys(P.troops).sort((a,b)=>ST[a].tier-ST[b].tier))while(n&&ST[k].tier>=q.tier&&P.troops[k]>0){P.troops[k]--;n--;t.gar=Math.min(GARCAP[t.kind]+6,t.gar+1)}}
+  if(q.type==='troops'){let n=q.n;for(const k of Object.keys(P.troops).sort((a,b)=>ST[a].tier-ST[b].tier))while(n&&ST[k].tier>=q.tier&&P.troops[k]>0){P.remove(k);n--;t.gar=Math.min(t.T.gar+6,t.gar+1)}}
   payQuest(q,t.name);return true;
 }
 const canReportAt=(q,t)=>q.lord?t.owner===q.fac:t.name===q.home;
 function failQuest(q,why){
   P.quests=P.quests.filter(x=>x!==q);if(q.lord)addHonor(q.fac,-5,true);else addRep(q.home,-6,true);
   bandits.forEach(b=>{if(b.qid===q.id)delete b.qid});W.monsters.forEach(m=>{if(m.qid===q.id)delete m.qid});
-  log('Quest failed: '+q.title+'. '+why,'bad');
+  log('Quest failed: '+q.title+'. '+why,'bad');{const giver=q.lord&&W.lords.find(l=>l.name===q.giver);if(giver)changeRel(giver,RELATION.jobFailed,'you failed their work')}
 }
 // each day: deadlines pass
 function questDay(){for(const q of P.quests.slice())if(G.day>q.due&&!q.done)failQuest(q,(q.lord?q.giver:q.home)+' is disappointed.')}
@@ -153,6 +153,7 @@ function questAct(a,arg,t){
 // the lord dialog's job section
 function lordJobHtml(l){
   if(hostileTo(l.fac))return '';
+  if(relWith(l)<RELATION.jobsAt)return '<p class="muted">'+l.name+' has no work for you.</p>';
   const done=P.quests.filter(q=>q.lord&&q.giver===l.name&&q.done),mine=P.quests.find(q=>q.lord&&q.giver===l.name);
   if(done.length)return '<p class="gold">'+l.name+' hears your report.</p><div class="btns"><button class="btn primary" type="button" data-act="q-lord-report">Report: '+done.map(q=>q.title).join(', ')+'</button></div>';
   if(mine)return '<p class="muted">You are working for '+l.name+': '+mine.title+'.</p>';

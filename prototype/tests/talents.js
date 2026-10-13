@@ -3,6 +3,7 @@
 // refunds keep the tree connected and cost gold; effects reach the hero, troops, party, abilities and perks; the page works; saves.
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);
 try{
+ (0,eval)('MANUAL_HERO=true');// (the manual control is set aside in play, RTS command: its skills are still tested here)
  const t=T,G=t.G,P=t.P,TR=t.TREE;try{localStorage.clear()}catch(e){}
  const panel=()=>document.getElementById('panel').innerHTML;
  t.act('begin','soldier');
@@ -69,7 +70,7 @@ try{
  const foes=B=>B.units.filter(u=>u.team===1);let B=fight();
  const slotOf=id=>P.slots.indexOf(id);P.slots=['whirl','quake','dash','volley','fireball','nova','heal','cry','banner','leap'];t.buildSlotBar();
  ok(document.querySelectorAll('#slotbar [data-slot]').length===10,'the battle bar shows a button per filled slot');
- const key=k=>window.dispatchEvent(new KeyboardEvent('keydown',{code:k==='0'?'Digit0':'Digit'+k,key:k}));
+ const key=k=>t.castSlot(k==='0'?9:+k-1);// (the skill keys are set aside with the manual control: the slots are cast directly)
  key('2');ok(foes(B).every(u=>u.stun>0||u.hp<u.max),'key 2: Earthquake staggers everyone around you');
  B=fight();foes(B).forEach(u=>{u.max=u.hp=999});const hx=B.hero.x;key('3');for(let i=0;i<200&&t.B&&B.hx.dash;i++)t.updateBattle(.02);if(!t.B){t.act('cont');while(G.mode==='perk')t.act('perk',G.perkOffer[0])}ok(B.hero.x>hx+40&&foes(B).some(u=>u.hp<u.max),'key 3: Blade Dash carries you through them, cutting');
  B=fight();const ar0=t.goodN('arrows');B.arrows=[];key('4');ok(B.arrows.length===8&&t.goodN('arrows')===ar0-4,'key 4: Rain of Arrows looses 8 arrows for 4');

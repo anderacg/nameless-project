@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PX Gallery</title>
+<style>
+  :root{--bg:#1a1d26;--fg:#e4e0cf;--muted:#9a958a}
+  body{margin:0;background:var(--bg);color:var(--fg);font:14px system-ui,sans-serif;padding:12px}
+  h1{font-size:18px;margin:0 0 4px}p{margin:0 0 10px;color:var(--muted)}
+  .row{display:flex;align-items:flex-end;gap:6px;margin:0 0 6px}.lab{width:110px;color:var(--muted);font-size:12px;align-self:center}
+  canvas{image-rendering:pixelated}
+  label{margin-right:12px}
+</style></head><body>
+<h1>PX building gallery</h1>
+<p>Every building type, by people, across seeds. <label>Zoom <input id="z" type="number" value="3" min="1" max="8" style="width:48px"></label> <label>Seeds <input id="n" type="number" value="8" min="1" max="20" style="width:48px"></label> <label>Only <input id="only" placeholder="type or people" style="width:140px"></label></p>
+<div id="out"></div>
+<script src="pixel.js"></script>
+<script src="buildings.js"></script>
+<script src="pieces.js"></script>
+<script>
+// which types each people builds (the same list the game's settlements use)
+const PEOPLE={human:['cottage','townhouse','fisherhut','chapel','stall','tower','longhouse','tavern','smithy','church','barn','granary','windmill','watermill','warehouse','gatehouse','keep','citadel'],
+  dwarf:['cottage','townhouse','tower','stonehall','forge','granary','gatehouse','keep','citadel'],elf:['cottage','stall','tower','treehouse','elfhall','spire','keep','citadel'],orc:['yurt','cottage','stall','tower','hidehall','watchtower','smithy','keep','citadel'],
+  villages:['village'],
+  works:['well','tent','wagon','minehead','lumbershed','crane'],sites:['cave','ruins','shrine']};
+function render(){
+  const q0=new URLSearchParams(location.search);
+  if(new URLSearchParams(location.search).get('view')==='props')return renderProps();
+  if(new URLSearchParams(location.search).get('view')==='castles'){const out=document.getElementById('out');out.innerHTML='';for(const type of ['keep','citadel','village','longhouse','stonehall','elfhall','hidehall'])for(const style of ['human','dwarf','elf','orc']){if(['stonehall','elfhall','hidehall','longhouse'].includes(type)&&style!==({longhouse:'human',stonehall:'dwarf',elfhall:'elf',hidehall:'orc'})[type])continue;const row=document.createElement('div');row.className='row';row.innerHTML='<span class="lab">'+style+' · '+type+'</span>';for(let s=1;s<=6;s++){const hall=!['keep','citadel'].includes(type),b=PX.building({type,style,seed:s*37+type.length,view:'top',fort:hall?(s>3?1:0):[0,1,2,3,1,2][s-1],banner:'#c84040'}),Z=+(q0.get('z')||3),c=document.createElement('canvas'),M=4,w=b.w+2*M;c.width=w*Z;c.height=w*Z;const g=c.getContext('2d');g.imageSmoothingEnabled=false;g.scale(Z,Z);g.fillStyle='#5a8a3a';g.fillRect(0,0,w,w);g.fillStyle='rgba(0,0,0,.18)';for(let k=0;k<=b.tiles[0];k++){g.fillRect(M+k*16,0,1,w);g.fillRect(0,M+k*16,w,1)}g.fillStyle='rgba(255,230,120,.5)';g.fillRect(M+b.w/2,M+b.h,1,M);g.fillRect(M+b.w/2-1,M+b.h,1,M);g.drawImage(b.img,M,M);if(b.flag){const fx=M+b.flag[0],fy=M+b.flag[1],fc=['#c84040','#4a72b0','#3a8a4a','#d8a030'][s%4];g.fillStyle='#4a3020';g.fillRect(fx,fy-9,1,9);g.fillStyle=fc;g.fillRect(fx+1,fy-9,4,3)}row.appendChild(c)}out.appendChild(row)}return}
+  const q=new URLSearchParams(location.search),Z=+(document.getElementById('z').value||q.get('z')||3),N=+(document.getElementById('n').value||q.get('n')||8),only=(document.getElementById('only').value||q.get('only')||'').trim();
+  const out=document.getElementById('out');out.innerHTML='';
+  for(const style in PEOPLE)for(const type of PEOPLE[style]){if(only&&only!==type&&only!==style)continue;
+    const row=document.createElement('div');row.className='row';row.innerHTML='<span class="lab">'+style+' · '+type+'</span>';
+    for(let s=1;s<=N;s++){const vw=q.get('view'),b=(PX.SITE_TYPES.includes(type)?PX.site:PX.building)({type,style,seed:s*37+type.length,env:['grass','frost','desert','swamp'][s%4],banner:['#c84040','#4a72b0','#3a8a4a','#d8a030'][s%4],view:vw==='top'||vw==='angled'?vw:undefined});
+      // the building in its square cell, on the tile grid (a faint line every 16 px, a stronger one round the cell)
+      const c=document.createElement('canvas'),M=4,tw=b.w+2*M,th=b.h+2*M;c.width=tw*Z;c.height=th*Z;const g=c.getContext('2d');g.imageSmoothingEnabled=false;g.scale(Z,Z);
+      g.fillStyle='#5a8a3a';g.fillRect(0,0,tw,th);g.fillStyle='rgba(0,0,0,.18)';for(let k=0;k<=b.tiles[0];k++){g.fillRect(M+k*16,0,1,th);g.fillRect(0,M+k*16,tw,1)}
+      g.fillStyle='rgba(255,240,200,.35)';g.fillRect(M,M,b.w,1);g.fillRect(M,M+b.h-1,b.w,1);g.fillRect(M,M,1,b.h);g.fillRect(M+b.w-1,M,1,b.h);
+      g.drawImage(b.shadow,M,M);g.drawImage(b.img,M,M);if(b.clipped){g.fillStyle='#e0605a';g.fillRect(0,0,3,3)}row.appendChild(c)}
+    row.querySelector('.lab').textContent+=' · '+((PX.SITE_TYPES.includes(type)?PX.site:PX.building)({type,style,seed:1}).w)+'px';
+    out.appendChild(row)}
+}
+// props and camps
+function renderProps(){
+  const q=new URLSearchParams(location.search),Z=+(q.get('z')||3),out=document.getElementById('out');out.innerHTML='';
+  const row=document.createElement('div');row.className='row';row.innerHTML='<span class="lab">props · 8px</span>';
+  for(const type of PX.PROP_TYPES){const c=document.createElement('canvas'),w=16;c.width=w*Z*2;c.height=w*Z*2;const g=c.getContext('2d');g.imageSmoothingEnabled=false;g.scale(Z*2,Z*2);g.fillStyle='#5a8a3a';g.fillRect(0,0,w,w);
+    g.fillStyle='rgba(0,0,0,.18)';g.fillRect(0,8,w,1);g.fillRect(8,0,1,w);const p=PX.prop({type});g.drawImage(p.img,4,4);row.appendChild(c)}
+  out.appendChild(row);
+  const r2=document.createElement('div');r2.className='row';r2.innerHTML='<span class="lab">camps</span>';
+  for(const kind of ['bandit','hideout','travelers']){const c=kind==='bandit'?PX.camp({kind,seed:4}):PX.site({type:kind,seed:4}),cv=document.createElement('canvas');cv.width=c.w*Z;cv.height=c.h*Z;const g=cv.getContext('2d');g.imageSmoothingEnabled=false;g.scale(Z,Z);g.fillStyle='#5a8a3a';g.fillRect(0,0,c.w,c.h);g.drawImage(c.img,0,0);const fl=PX.flame(0);g.drawImage(fl.img,c.fire[0]-fl.ax,c.fire[1]-fl.ay);g.fillStyle='#4a3020';g.fillRect(c.flag[0],c.flag[1]-9,1,9);g.fillStyle='#c84040';g.fillRect(c.flag[0]+1,c.flag[1]-9,4,3);r2.appendChild(cv)}
+  out.appendChild(r2);
+}
+const q=new URLSearchParams(location.search);if(q.get('z'))document.getElementById('z').value=q.get('z');if(q.get('n'))document.getElementById('n').value=q.get('n');if(q.get('only'))document.getElementById('only').value=q.get('only');
+document.querySelectorAll('input').forEach(i=>i.addEventListener('input',render));render();
+</script>
+</body></html>

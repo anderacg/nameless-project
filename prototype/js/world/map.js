@@ -28,15 +28,61 @@ const NS=MW/56*.85; // noise scale: keeps regions broad as the map grows
   // a port needs water: carve a small bay beside any port holding the land left dry
   TOWNS.filter(tw=>tw.style==='port').forEach(tw=>{let wet=false;for(let y=tw.ty-9;y<=tw.ty+9&&!wet;y++)for(let x=tw.tx-9;x<=tw.tx+9;x++)if(x>=0&&y>=0&&x<MW&&y<MH&&tiles[y*MW+x]===T_WATER&&Math.hypot(x-tw.tx,y-tw.ty)<=9){wet=true;break}
     if(wet)return;const cx=tw.tx+7,cy=tw.ty+5;for(let y=cy-5;y<=cy+5;y++)for(let x=cx-6;x<=cx+6;x++)if(x>0&&y>0&&x<MW-1&&y<MH-1&&Math.hypot((x-cx)/1.3,y-cy)<=4.2-hash(x,y,tw.seed)*.8)tiles[y*MW+x]=T_WATER});
-  POIS.forEach(p=>{for(let y=p.y-2;y<=p.y+2;y++)for(let x=p.x-2;x<=p.x+2;x++){if(x>0&&y>0&&x<MW-1&&y<MH-1)tiles[y*MW+x]=T_OPEN}});
-  let seed=1234;const R=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296};
-  const carve=(a,b)=>{let x=a.x,y=a.y;while(x!==b.x||y!==b.y){tiles[y*MW+x]=T_ROAD;const dx=Math.sign(b.x-x),dy=Math.sign(b.y-y);if(dx&&(!dy||R()<.55))x+=dx;else if(dy)y+=dy;else x+=dx}tiles[b.y*MW+b.x]=T_ROAD};
+  // each holding and camp stands on open ground: a round patch cleared under it, and round that a ragged shore of new land where
+  // it stood in water (and hills where it stood in the peaks), so none sits on a square of land in the sea
+  POIS.forEach(p=>{for(let y=p.y-6;y<=p.y+6;y++)for(let x=p.x-6;x<=p.x+6;x++){if(x<1||y<1||x>=MW-1||y>=MH-1)continue;const d=Math.hypot(x-p.x,y-p.y),i=y*MW+x;
+    if(d<=2.5)tiles[i]=T_OPEN;else if(d<=3.6+hash(x,y,7)*1.8){if(tiles[i]===T_WATER)tiles[i]=T_OPEN;else if(tiles[i]===T_MOUNT)tiles[i]=T_HILL}}});
+  // no holding stands on an island: one cut off from the main land gets a neck of land to it, the shortest way
+  // (over water it is new ground, through peaks a pass of hills)
+  {const N4=[[1,0],[-1,0],[0,1],[0,-1]];
+    for(let pass=0;pass<TOWNS.length;pass++){
+      const comp=new Int32Array(MW*MH).fill(-1),size=[];let cid=0;
+      for(let i=0;i<MW*MH;i++){if(comp[i]>=0||!passable(tiles[i]))continue;let k=0;const q=[i];comp[i]=cid;
+        while(q.length){const j=q.pop();k++;const x=j%MW,y=(j/MW)|0;for(const [a,b] of N4){const nx=x+a,ny=y+b,m=ny*MW+nx;if(nx<0||ny<0||nx>=MW||ny>=MH||comp[m]>=0||!passable(tiles[m]))continue;comp[m]=cid;q.push(m)}}size.push(k);cid++}
+      const big=size.indexOf(Math.max(...size)),cut=TOWNS.find(t=>comp[t.ty*MW+t.tx]!==big);if(!cut)break;
+      const own=comp[cut.ty*MW+cut.tx],prev=new Int32Array(MW*MH).fill(-2),q=[];for(let i=0;i<MW*MH;i++)if(comp[i]===own){prev[i]=-1;q.push(i)}
+      let end=-1;for(let h=0;h<q.length&&end<0;h++){const j=q[h],x=j%MW,y=(j/MW)|0;for(const [a,b] of N4){const nx=x+a,ny=y+b,m=ny*MW+nx;if(nx<1||ny<1||nx>=MW-1||ny>=MH-1||prev[m]!==-2)continue;prev[m]=j;if(comp[m]===big){end=m;break}q.push(m)}}
+      if(end<0)break;
+      for(let j=prev[end];j>=0&&prev[j]!==-1;j=prev[j]){const x=j%MW,y=(j/MW)|0;for(const [a,b] of [[0,0],[1,0],[0,1],[1,1],[-1,0],[0,-1]]){if(a<0||b<0?hash(x+a,y+b,9)<.45:false)continue;const m=(y+b)*MW+x+a;if(tiles[m]===T_WATER)tiles[m]=T_OPEN;else if(tiles[m]===T_MOUNT)tiles[m]=T_HILL}}// (2 wide at least, ragged to 3)
+    }}
+  // roads: the cheapest way over the land, keeping to roads already made (so roads share their way and their bridges). They
+  // cross water only by a short straight bridge over a strait (MAX_BRIDGE tiles at most); only if there is no such way at all
+  // does a road take a longer one.
+  const MAX_BRIDGE=3,RUN=[new Uint8Array(MW*MH),new Uint8Array(MW*MH)];// the stretch of water each water tile lies in, across and down
+  for(let y=0;y<MH;y++)for(let x=0;x<MW;){if(tiles[y*MW+x]!==T_WATER){x++;continue}let e=x;while(e<MW&&tiles[y*MW+e]===T_WATER)e++;for(let k=x;k<e;k++)RUN[0][y*MW+k]=Math.min(255,e-x);x=e}
+  for(let x=0;x<MW;x++)for(let y=0;y<MH;){if(tiles[y*MW+x]!==T_WATER){y++;continue}let e=y;while(e<MH&&tiles[e*MW+x]===T_WATER)e++;for(let k=y;k<e;k++)RUN[1][k*MW+x]=Math.min(255,e-y);y=e}
+  const roadCost=[1,1.8,2.2,0,.5,0];
+  const roadPath=(a,b,strict)=>{// A* over (tile, how it is crossing water: 0 on land, 1 across, 2 down)
+    const S=MW*MH*3,g=new Float64Array(S).fill(Infinity),from=new Int32Array(S).fill(-1),heap=[],h=(x,y)=>Math.abs(x-b.x)+Math.abs(y-b.y);
+    const push=(i,f)=>{heap.push([f,i]);let k=heap.length-1;while(k>0){const q=(k-1)>>1;if(heap[q][0]<=heap[k][0])break;[heap[q],heap[k]]=[heap[k],heap[q]];k=q}};
+    const pop=()=>{const top=heap[0],last=heap.pop();if(heap.length){heap[0]=last;let k=0;for(;;){const l=2*k+1,r=l+1;let m=k;if(l<heap.length&&heap[l][0]<heap[m][0])m=l;if(r<heap.length&&heap[r][0]<heap[m][0])m=r;if(m===k)break;[heap[m],heap[k]]=[heap[k],heap[m]];k=m}}return top};
+    const s0=(a.y*MW+a.x)*3;g[s0]=0;push(s0,h(a.x,a.y));let goal=-1;
+    while(heap.length){const [,st]=pop(),i=(st/3)|0,mode=st%3,x=i%MW,y=(i/MW)|0;if(x===b.x&&y===b.y){goal=st;break}
+      for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){const nx=x+dx,ny=y+dy;if(nx<1||ny<1||nx>=MW-1||ny>=MH-1)continue;const j=ny*MW+nx,t=tiles[j];let nm=0,c;
+        if(t===T_WATER){const ax=dx?1:2;if(strict&&((mode&&mode!==ax)||RUN[ax-1][j]>MAX_BRIDGE))continue;nm=ax;c=strict?6:30}
+        else if(t===T_MOUNT)continue;else{if(mode&&strict&&(dx?1:2)!==mode)continue;c=roadCost[t]}
+        const ns=j*3+nm,nd=g[st]+c+hash(nx,ny,11)*.5;if(nd<g[ns]){g[ns]=nd;from[ns]=st;push(ns,nd+h(nx,ny))}}}
+    if(goal<0)return null;const out=[];for(let st=goal;st>=0;st=from[st])out.push((st/3)|0);return out};
+  const BRIDGED=new Uint8Array(MW*MH);// road tiles laid over water: the bridges
+  const carve=(a,b)=>{const path=roadPath(a,b,true)||roadPath(a,b,false);if(path)for(const i of path){if(tiles[i]===T_WATER)BRIDGED[i]=1;tiles[i]=T_ROAD}};
   // roads: a spanning tree keeps every holding connected, then each holding also links to its two nearest neighbors
   const pts=TOWNS.map(t=>({x:t.tx,y:t.ty})),dist=(a,b)=>Math.hypot(pts[a].x-pts[b].x,pts[a].y-pts[b].y),edges=new Set(),key=(a,b)=>a<b?a+'-'+b:b+'-'+a;
   const inTree=[0];while(inTree.length<pts.length){let best=null;for(const a of inTree)for(let b=0;b<pts.length;b++)if(!inTree.includes(b)&&(!best||dist(a,b)<best[2]))best=[a,b,dist(a,b)];edges.add(key(best[0],best[1]));inTree.push(best[1])}
   pts.forEach((p,a)=>pts.map((q,b)=>b).filter(b=>b!==a).sort((u,v)=>dist(a,u)-dist(a,v)).slice(0,2).forEach(b=>edges.add(key(a,b))));
   [...edges].sort().forEach(k=>{const [a,b]=k.split('-').map(Number);carve(pts[a],pts[b])});
-  CAMPS.forEach(c=>{const p={x:c.tx,y:c.ty},n=pts.reduce((m,q)=>Math.hypot(q.x-p.x,q.y-p.y)<Math.hypot(m.x-p.x,m.y-p.y)?q:m);carve(p,n)});
+  // a road on a strip of land one tile wide, water both sides, would look like a bridge: the strip is widened by a tile (on
+  // whichever side is not beside a real bridge)
+  for(let y=1;y<MH-1;y++)for(let x=1;x<MW-1;x++){const i=y*MW+x;if(tiles[i]!==T_ROAD||BRIDGED[i])continue;
+    for(const [a,b] of [[1,0],[0,1]])if(tiles[i-a-b*MW]===T_WATER&&tiles[i+a+b*MW]===T_WATER){
+      const side=[i+a+b*MW,i-a-b*MW].find(j=>![[1,0],[-1,0],[0,1],[0,-1]].some(([c,d])=>BRIDGED[j+c+d*MW]));if(side!=null)tiles[side]=T_OPEN}}
+  // bandit camps: each on the clear ground nearest its spot, off every road (its 2 x 2 tiles and a tile round them), out of the
+  // water and the peaks, clear of holdings and reachable from them; no road leads to a camp. Its tiles are cleared to open ground.
+  {const reach=new Uint8Array(MW*MH),q=[TOWNS[0].ty*MW+TOWNS[0].tx];reach[q[0]]=1;
+    while(q.length){const i=q.pop(),x=i%MW,y=(i/MW)|0;for(const [a,b] of [[1,0],[-1,0],[0,1],[0,-1]]){const nx=x+a,ny=y+b,j=ny*MW+nx;if(nx<0||ny<0||nx>=MW||ny>=MH||reach[j]||!passable(tiles[j]))continue;reach[j]=1;q.push(j)}}
+    const ok=(cx,cy)=>{if(!reach[cy*MW+cx]||TOWNS.some(t=>Math.hypot(t.tx-cx,t.ty-cy)<5))return false;
+      for(let y=cy-2;y<=cy+1;y++)for(let x=cx-1;x<=cx+2;x++){if(x<1||y<1||x>=MW-1||y>=MH-1)return false;const t=tiles[y*MW+x];if(t===T_ROAD||t===T_WATER||t===T_MOUNT)return false}return true};
+    for(const c of CAMP_SPOTS){let p=null;for(let r=0;r<20&&!p;r++)for(let y=c.ty-r;y<=c.ty+r&&!p;y++)for(let x=c.tx-r;x<=c.tx+r&&!p;x++)if(Math.max(Math.abs(x-c.tx),Math.abs(y-c.ty))===r&&ok(x,y))p=[x,y];
+      if(p){c.tx=p[0];c.ty=p[1]}for(let y=c.ty-1;y<=c.ty;y++)for(let x=c.tx;x<=c.tx+1;x++)tiles[y*MW+x]=T_OPEN;c.x=(c.tx+.5)*TILE;c.y=(c.ty+.5)*TILE}}
 })();
 
 /* regions: what a place is called and how it treats travelers */
@@ -80,6 +126,38 @@ function flowTo(tw){
     }
   }
   return FLOW[tw.name]=dist;
+}
+/* walking to a point (a patrol's beat, a worker's field, a band's camp): straight if nothing is in the way, else by the cheapest
+   way over land and bridges, found once for each target and kept aside (never saved). True while on its way; false when the
+   point cannot be reached from where it stands (the walker should pick another). */
+const ROUTES=new WeakMap();
+// is the straight line from (x0,y0) to (x1,y1) open ground all the way
+function clearLine(x0,y0,x1,y1){const d=Math.hypot(x1-x0,y1-y0),n=Math.ceil(d/4);for(let i=1;i<=n;i++){const k=i/n;if(!passable(terrAt(x0+(x1-x0)*k,y0+(y1-y0)*k)))return false}return true}
+// the tiles to pass from one point to another by the cheapest way, searched within a box round both (pad tiles); null if none
+function findPath(x0,y0,x1,y1,pad){
+  pad=pad||16;const sx=Math.floor(x0/TILE),sy=Math.floor(y0/TILE),gx=Math.floor(x1/TILE),gy=Math.floor(y1/TILE);if(sx===gx&&sy===gy)return[];
+  if(!passable(tAt(gx,gy)))return null;
+  const bx=Math.max(0,Math.min(sx,gx)-pad),by=Math.max(0,Math.min(sy,gy)-pad),bw=Math.min(MW,Math.max(sx,gx)+pad+1)-bx,bh=Math.min(MH,Math.max(sy,gy)+pad+1)-by;
+  const N=bw*bh,g=new Float64Array(N).fill(Infinity),from=new Int32Array(N).fill(-1),heap=[],L=(x,y)=>(y-by)*bw+(x-bx);
+  const push=(i,f)=>{heap.push([f,i]);let k=heap.length-1;while(k>0){const q=(k-1)>>1;if(heap[q][0]<=heap[k][0])break;[heap[q],heap[k]]=[heap[k],heap[q]];k=q}};
+  const pop=()=>{const top=heap[0],last=heap.pop();if(heap.length){heap[0]=last;let k=0;for(;;){const l=2*k+1,r=l+1;let m=k;if(l<heap.length&&heap[l][0]<heap[m][0])m=l;if(r<heap.length&&heap[r][0]<heap[m][0])m=r;if(m===k)break;[heap[m],heap[k]]=[heap[k],heap[m]];k=m}}return top};
+  const h=(x,y)=>Math.hypot(x-gx,y-gy)/1.3,s0=L(sx,sy),goal=L(gx,gy);g[s0]=0;push(s0,h(sx,sy));
+  while(heap.length){const [,i]=pop();if(i===goal)break;const x=bx+i%bw,y=by+((i/bw)|0);
+    for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){if(!dx&&!dy)continue;const nx=x+dx,ny=y+dy;if(nx<bx||ny<by||nx>=bx+bw||ny>=by+bh)continue;
+      const t=tiles[ny*MW+nx];if(!passable(t))continue;if(dx&&dy&&(!passable(tiles[y*MW+nx])||!passable(tiles[ny*MW+x])))continue;
+      const sp=t===T_ROAD?1.3:Math.max(.35,SPEEDMUL[t]*CLIMMUL[CLIMS[climate[ny*MW+nx]]]),j=L(nx,ny),nd=g[i]+(dx&&dy?1.414:1)/sp;
+      if(nd<g[j]){g[j]=nd;from[j]=i;push(j,nd+h(nx,ny))}}}
+  if(!isFinite(g[goal]))return null;
+  const out=[];for(let i=goal;i!==s0;i=from[i])out.push((by+((i/bw)|0))*MW+bx+i%bw);return out.reverse();
+}
+function routeTo(o,x,y,step){
+  const dd=Math.hypot(x-o.x,y-o.y);if(dd<=1)return true;
+  const goal=Math.floor(y/TILE)*MW+Math.floor(x/TILE);let r=ROUTES.get(o);
+  if(!r||r.goal!==goal){r={goal,path:clearLine(o.x,o.y,x,y)?[]:findPath(o.x,o.y,x,y),i:0};ROUTES.set(o,r)}
+  if(!r.path)return false;
+  while(r.i<r.path.length){const k=r.path[r.i],cx=(k%MW+.5)*TILE,cy=(Math.floor(k/MW)+.5)*TILE,d=Math.hypot(cx-o.x,cy-o.y);
+    if(d<3){r.i++;continue}walk(o,cx-o.x,cy-o.y,Math.min(d,step));return true}
+  walk(o,x-o.x,y-o.y,Math.min(dd,step));return true;
 }
 // step toward a holding along the cheapest route; the last stretch goes straight to (tx,ty)
 function travelTo(o,tw,tx,ty,step){

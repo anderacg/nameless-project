@@ -6,10 +6,10 @@ try{
  t.act('begin','soldier');P.troops={};P.gold=500;t.enterTown(t.TOWNS[1]);t.act('tab','tavern');t.act('hire-comp','brann');P.troops={militia:4,spearman:2,archer:4,horse:3};t.act('leave');while(G.mode==='perk')t.act('perk',G.perkOffer[0]);
  t.startEncounter({kind:'party',ref:t.bandits[0],n:10});t.act('fight');const B=t.B;
  const n=g=>t.grpUnits(g).length;ok(n('inf')===7&&n('arc')===4&&n('cav')===3,'groups inf='+n('inf')+' arc='+n('arc')+' cav='+n('cav'));
- ok(B.groups.arc.order==='hold'&&B.groups.inf.order==='charge','defaults');
- const btn=document.querySelector('[data-grp="cav"]').textContent;ok(btn==='Cavalry 3','button label '+btn);
- t.selectGroup('inf');t.setOrder('hold');ok(B.groups.inf.order==='hold'&&B.groups.cav.order==='charge','per-group order');
- t.cycleGroup();ok(B.sel==='arc','cycle -> '+B.sel);t.setSpread();ok(B.groups.arc.spread&&!B.groups.inf.spread,'spread archers');
+ ok(['hero','inf','arc','cav'].every(g=>B.groups[g].order==='hold'),'defaults: every group holds until you order it');
+ const btn=document.querySelector('[data-grp="cav"] .cn').textContent;ok(btn==='Cavalry 3','button label '+btn);
+ t.selectGroup('inf');t.setOrder('charge');ok(B.groups.inf.order==='charge'&&B.groups.cav.order==='hold','per-group order');t.setOrder('hold');
+ t.cycleGroup();ok(B.sel==='arc','cycle -> '+B.sel);t.setForm('loose');ok(B.groups.arc.form==='loose'&&B.groups.inf.form==='line','archers into loose order (the old spread)');
  t.selectGroup('cav');t.setOrder('advance');const ax0=B.groups.cav.ax;
  const infX0=t.grpUnits('inf').map(u=>u.x);
  for(let i=0;i<30;i++){t.updateBattle(.033);t.frame()}
@@ -17,11 +17,11 @@ try{
  const drift=Math.max(...t.grpUnits('inf').map((u,i)=>Math.abs(u.x-infX0[i])));ok(drift<15,'infantry holding, max drift '+drift.toFixed(1));
  t.selectGroup('all');t.setOrder('follow');ok(['inf','arc','cav'].every(g=>B.groups[g].order==='follow'),'all follow');
  B.hero.x+=60;for(let i=0;i<60;i++){t.updateBattle(.033)}
- const gi=B.groups.inf;ok(Math.abs(gi.ax-(B.hero.x-22))<1,'follow anchor tracks hero');
+ const gi=B.groups.inf;ok(Math.abs(gi.ax-(B.hero.x-22))<4,'follow anchor tracks hero (who now moves on their own: within a step)');
  t.setOrder('charge');let i=0;while(t.B&&i<6000){t.updateBattle(.033);if(t.B)t.frame();i++}
  ok(!t.B,'battle ends after charge in '+i+' steps, mode '+G.mode);
  t.act('cont');while(G.mode==='perk')t.act('perk',G.perkOffer[0]);
  P.gold=100;t.enterTown(t.TOWNS[1]);t.act('tab','tavern');t.act('tourney');ok(t.B&&t.grpUnits('inf').length===0,'tournament has no groups');
- t.setOrder('hold');t.cycleGroup();ok(t.B.sel==='all','cycle with no groups stays all');for(let k=0;k<5;k++){t.updateBattle(.033);t.frame()}
+ t.setOrder('hold');t.cycleGroup();ok(t.B.sel==='hero','in a tournament your hero is your one group: cycling picks them');for(let k=0;k<5;k++){t.updateBattle(.033);t.frame()}
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}
 const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d)};

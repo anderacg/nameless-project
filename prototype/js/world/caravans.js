@@ -20,7 +20,7 @@ function sendCaravan(t){
   const sur=surplusOf(t);for(const [g,n] of sur){const to=neediest(t,g);if(!to)continue;const load={[g]:Math.min(n,25)};
     const second=sur.find(([h,m])=>h!==g&&targetStock(to,h)>(to.stock[h]||0));if(second)load[second[0]]=Math.min(second[1],15);
     for(const k in load)t.stock[k]-=load[k];
-    const c={cv:true,fac:t.owner,from:t.name,to:to.name,x:t.x+rint(-6,6),y:t.y+14,goods:load,guards:rint(3,5)+(t.kind==='village'?0:2),cool:0,dir:1};W.caravans.push(c);return c}
+    const c={cv:true,fac:t.owner,from:t.name,to:to.name,x:t.x+rint(-6,6),y:t.y+14,goods:load,guards:rint(3,5)+t.T.guards,cool:0,dir:1};W.caravans.push(c);return c}
   return null;
 }
 const caravanList=c=>{const f=c.fac==='player'?null:c.fac,a=f?armyOf(f,c.guards):Array(c.guards).fill('militia');return a};
@@ -37,28 +37,7 @@ function caravanArrive(c,to){
   const toll=Math.round(Object.keys(c.goods).reduce((a,g)=>a+GOODS[g].base*c.goods[g],0)*.05);
   if(to.owner==='player'){P.gold+=toll;P.tradeWeek=(P.tradeWeek||0)+toll}else if(to.owner){W.tolls=W.tolls||{};W.tolls[to.owner]=(W.tolls[to.owner]||0)+toll}
 }
-function updateCaravans(d){
-  W.caravans=W.caravans||[];const hide=hiddenAt(P.x,P.y)?.55:1;
-  for(const c of W.caravans){
-    if(c.idle)continue;
-    c.cool=Math.max(0,c.cool-d);const to=townBy(c.to);if(!to||!c.mine&&atWar(to.owner,c.fac)){c.gone=true;continue}
-    const dx=P.x-c.x,dy=P.y-c.y,pd=Math.hypot(dx,dy),scared=!c.mine&&hostileTo(c.fac)&&pd<80*hide;
-    if(scared){walk(c,-dx,-dy,CARAVAN_SPD*.9*d);c.dir=dx>0?-1:1}
-    else{const ox=c.x;travelTo(c,to,to.x,to.y+12,CARAVAN_SPD*Math.max(.5,speedAt(c.x,c.y)||1)*d);c.dir=c.x>=ox?1:-1}
-    if(Math.hypot(to.x-c.x,to.y+12-c.y)<8){if(c.mine){if(myCaravanArrive(c,to))c.gone=true}else{caravanArrive(c,to);c.gone=true}continue}
-    // preyed on: bandits close by (the guards may beat them off), or a lord at war with its owner, who takes the goods home
-    const b=bandits.find(o=>Math.hypot(o.x-c.x,o.y-c.y)<12&&!o.cvT);
-    const l=!b&&W.lords.find(o=>!o.dead&&o.state!=='siege'&&(c.mine?hostileTo(o.fac):atWar(o.fac,c.fac))&&Math.hypot(o.x-c.x,o.y-c.y)<14);
-    if(b&&guardsHold(c,b.n)){b.cvT=1;b.n=Math.max(1,b.n-1);b.list.pop();b.pw=0;c.guards=Math.max(1,c.guards-(Math.random()<.4?1:0));b.cool=6;
-      if(c.mine)log('Your caravan’s guards drive off bandits near '+nearestOf(c,TOWNS).name+'.','good');continue}
-    if(b||l){c.gone=true;if(b){b.n++;b.list.push('militia');b.pw=0}
-      else{const home=nearestOf(l,fiefsOf(l.fac));if(home){ensureEcon(home);for(const g in c.goods)home.stock[g]=(home.stock[g]||0)+c.goods[g]}}
-      if(c.mine||c.fac===P.fac||pd<vis())log((b?'Bandits':l.name)+' '+(b?'plunder':'seizes')+' a caravan of '+c.from+(c.mine?', one of yours':'')+'.',c.mine||c.fac===P.fac?'bad':'')}
-    if(!c.gone&&pd<10&&c.cool<=0&&G.encCool<=0&&!G.modal&&G.chase===c){caravanMeet(c);return true}
-  }
-  for(const b of bandits)if(b.cvT&&Math.random()<.01)b.cvT=0;
-  W.caravans=W.caravans.filter(c=>!c.gone);return false;
-}
+// each moment on the road: CaravanBrain (brains.js)
 
 /* meeting a caravan: trade, toll, attack or seize */
 const cargoText=c=>Object.keys(c.goods).length?Object.keys(c.goods).map(g=>c.goods[g]+' '+GOODS[g].n.toLowerCase()).join(', '):'nothing';
@@ -151,20 +130,18 @@ function myCaravanArrive(c,at){
   c.goods=load;c.leg='out';c.to=c.dest||c.to;return false;
 }
 function caravanUpkeep(){const mine=myCaravans();if(!mine.length)return;const cost=mine.reduce((a,c)=>a+PCV.upkeep+c.guards*PCV.guardUp,0);P.gold=Math.max(0,P.gold-cost)}
-// whether guards hold off an attack: their numbers against the raiders'
-const guardsHold=(c,n)=>c.guards*(1+.1*c.guards)>=n*.9;
 
 /* on the map */
 function caravanSprite(col){
   const key='cv'+col;if(spr[key])return spr[key];
-  return spr[key]=mkc(20,12,g=>{const r=(c,x,y,w,h)=>rect(g,c,x,y,w||1,h||1);
+  return spr[key]=cellOf(mkc(20,12,g=>{const r=(c,x,y,w,h)=>rect(g,c,x,y,w||1,h||1);
     r('#7a5a3a',1,5,8,3);r('#5a3a20',1,8,8,1);r('#3a2a1a',2,9,2,2);r('#3a2a1a',6,9,2,2);r('#7a5030',9,7,3,1);
-    r('#8a7a6a',12,4,6,4);r('#6a5a4a',16,2,3,3);r('#3a3020',13,8,1,3);r('#3a3020',17,8,1,3);r('#e8e4d0',2,2,6,3);r('#c8c2ae',2,4,6,1);r('#5a3a20',1,0,1,5);r(col,2,0,3,2)});
+    r('#8a7a6a',12,4,6,4);r('#6a5a4a',16,2,3,3);r('#3a3020',13,8,1,3);r('#3a3020',17,8,1,3);r('#e8e4d0',2,2,6,3);r('#c8c2ae',2,4,6,1);r('#5a3a20',1,0,1,5);r(col,2,0,3,2)}));
 }
 function drawCaravans(ents,cam,V){
   for(const c of W.caravans||[]){if(Math.hypot(c.x-P.x,c.y-P.y)>V*1.2)continue;
     ents.push({y:c.y,f:()=>{const s=caravanSprite(c.fac==='player'?FACS.player.col:FACS[c.fac].col),sx=Math.round(c.x-cam.x),sy=Math.round(c.y-cam.y);ctx.fillStyle='rgba(0,0,0,.3)';ctx.fillRect(sx-8,sy-1,16,2);
-      ctx.save();ctx.translate(sx,sy);if(c.dir<0)ctx.scale(-1,1);ctx.drawImage(s,-10,-11);ctx.restore();
+      ctx.save();ctx.translate(sx,sy);if(c.dir<0)ctx.scale(-1,1);ctx.drawImage(s,-16,-31);ctx.restore();
       if(Math.hypot(c.x-P.x,c.y-P.y)<90)txt('Caravan',sx,sy-13,hostileTo(c.fac)?'#ff9a90':'#e8d8a0','center')}})}
 }
 onAct('cv-',caravanAct);

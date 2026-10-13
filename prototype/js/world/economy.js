@@ -15,16 +15,18 @@ const isFood=g=>!!GOODS[g].food;
 
 /* setting a holding up: people, prosperity, and stock shaped by what it is known for (its old trade profile) */
 function initEconomy(t){
-  t.pop=POP0[t.kind];t.pros=55;t.tax=1;t.vol=Math.round(t.pop/12);t.stock={};t.popF=0;t.hist=[];
+  t.pop=t.T.pop0;t.pros=55;t.tax=1;t.vol=Math.round(t.pop/12);t.stock={};t.popF=0;t.hist=[];
   for(const g of T_GOODS()){const m=(t.mod&&t.mod[g])||1,tg=targetStock(t,g);t.stock[g]=Math.round(Math.max(2,tg)*Math.min(3,Math.pow(1/m,2))*(.8+Math.random()*.4))}
+  // regional goods (metals, gems, rare fish, pearls): a store of what its own land yields, none of the rest
+  for(const g of T_GOODS())if(GOODS[g].res)t.stock[g]=resOf(t)[g]?Math.round(Math.max(4,targetStock(t,g))*(1+Math.random())):0;
 }
 const ensureEcon=t=>{if(!t.stock)initEconomy(t)};
 
 /* demand: what the people and garrison want each day, what workshops take, and what a building project still needs */
 function needOf(t,g){
-  const N=NEEDS[t.kind],per=t.pop/100;let n=0;
+  const N=t.T.needs,per=t.pop/100;let n=0;
   if(isFood(g))n=(N.food*per+t.gar/4)/3;
-  else n=(N[g]||0)*per;
+  else n=((N[g]||0)+(t.T.wants[g]||0))*per;
   if(g==='furs'&&climAt(t.x,t.y)==='frost')n+=1.5*per;
   for(const k in MAKE){const i=MAKE[k].in;if(i&&i[g])n+=i[g]*bldLv(t,k)}
   const w=t.work&&projectNeed(t.work);if(w&&w[g])n+=w[g]/5;
@@ -32,9 +34,9 @@ function needOf(t,g){
 }
 // a holding aims to keep ten days of what it needs; prices rise below that and fall above it
 const targetStock=(t,g)=>Math.max(6,needOf(t,g)*10);
-const storeCap=t=>STORE[t.kind]*(1+.5*bldLv(t,'granary'));
+const storeCap=t=>t.T.store*(1+.5*bldLv(t,'granary'));
 const foodStock=t=>FOODS.reduce((a,g)=>a+(t.stock[g]||0),0);
-const foodNeed=t=>NEEDS[t.kind].food*t.pop/100+t.gar/4;
+const foodNeed=t=>t.T.needs.food*t.pop/100+(t.gar+insideTroops(t).length)/4;
 const foodDays=t=>Math.floor(foodStock(t)/Math.max(.1,foodNeed(t)));
 
 /* prices: base x √(target ÷ stock), between 0.4x and 3x; ruin adds 40% */
@@ -51,28 +53,31 @@ function landYield(){const y=TOWNS.map(()=>({grain:0,timber:0,stone:0}));if(type
 function produce(t,ly){
   const st=t.stock,ws=workerScale(t),clim=climAt(t.x,t.y),out={};
   const add=(g,n)=>{if(n<=0)return;const v=n+(Math.random()<n%1?1:0);st[g]=(st[g]||0)+Math.floor(v);out[g]=(out[g]||0)+Math.floor(v)};
-  for(const k in MAKE){const lv=bldLv(t,k),M=MAKE[k];if(!lv||!M.out)continue;
-    // workshops first take their inputs: as many batches as the stock allows
-    let f=lv*ws;if(M.in)for(const g in M.in)f=Math.min(f,(st[g]||0)/M.in[g]);if(f<=0)continue;
+  for(const k in MAKE){const lv=bldLv(t,k),M=MAKE[k];if(!lv||!M.out||sabotaged(t,k))continue;
+    // workshops first take their inputs: as many batches as the stock allows; farms, pastures and quarries make what their fields allow
+    let f=lv*ws*fieldShare(t,k);if(M.in)for(const g in M.in)f=Math.min(f,(st[g]||0)/M.in[g]);if(f<=0)continue;
     if(M.in)for(const g in M.in)st[g]-=Math.round(M.in[g]*f);
-    for(const g in M.out)add(g,M.out[g]*f*(k==='farm'?FARM_CLIM[clim]:1));
+    const O=k==='mine'||k==='port'?resOut(t,k):M.out;// mines and ports bring up what their land holds (resources.js)
+    for(const g in O)add(g,O[g]*f*(k==='farm'?FARM_CLIM[clim]:1));
     if(k==='workshop'&&clim==='frost')add('furs',f)}
   if(ly){add('grain',ly.grain*FARM_CLIM[clim]);add('timber',ly.timber);add('stone',ly.stone)}
   return out;
 }
 function consume(t){
-  const st=t.stock,N=NEEDS[t.kind],per=t.pop/100,use={};
+  const st=t.stock,N=t.T.needs,per=t.pop/100,use={};
   const fn=foodNeed(t),ate=takeFood(st,fn),fs=fn?ate/fn:1;use.food=ate;
   const kinds=FOODS.filter(g=>(st[g]||0)>0).length;
   let sum=fs*3,wt=3;
   for(const g in N){if(g==='food')continue;const n=N[g]*per+(g==='furs'&&climAt(t.x,t.y)==='frost'?1.5*per:0);if(n<=0)continue;const k=Math.min(n,st[g]||0);st[g]-=k;use[g]=k;sum+=k/n;wt++}
+  // wants: taken when there is some, never missed (they do not touch contentment)
+  const Wt=t.T.wants;for(const g in Wt){const k=Math.min(Wt[g]*per,st[g]||0);if(k>0){st[g]-=k;use[g]=(use[g]||0)+k}}
   return{fs,sat:sum/wt,kinds,use};
 }
 function spoil(t){const half=bldLv(t,'granary')?.5:1;for(const g of FOODS){const r=GOODS[g].spoil;if(r&&t.stock[g])t.stock[g]-=Math.floor(t.stock[g]*r*half+Math.random())}
   const cap=storeCap(t);for(const g in t.stock)t.stock[g]=Math.max(0,Math.min(cap,Math.round(t.stock[g])))}
 // people grow when fed and content, starve in famine; prosperity follows needs, taxes and war
 function people(t,c){
-  const cap=POPCAP[t.kind]*(1+.15*bldLv(t,'granary'))+Math.floor(landOf(t)/12);
+  const cap=Math.min(t.T.popCap*(1+.15*bldLv(t,'granary'))+Math.floor(landOf(t)/12),t.lots?housing(t):1e9);
   if(c.fs<1){t.pop=Math.max(10,t.pop-Math.ceil(t.pop*.03*(1-c.fs)));}
   else if(t.pros>40&&t.pop<cap){t.popF=(t.popF||0)+t.pop*.004*(t.pros/100);if(t.popF>=1){const k=Math.floor(t.popF);t.pop+=k;t.popF-=k}}
   let d=(c.sat*100-t.pros)*.08+(c.kinds>=3?.5:0)+[1,0,-1.5][t.tax==null?1:t.tax];
@@ -101,7 +106,7 @@ function realmDay(){
     const light=ECON.mode==='light',upkeep=(lords.reduce((a,l)=>a+l.troops.length*.6,0)+own.reduce((a,t)=>a+t.gar*.4,0))*(light?.5:1);W.treas[f]-=Math.round(upkeep);
     // armies eat from the realm's best-stocked holdings
     let hungry=0;for(const l of lords){const need=Math.ceil(l.troops.length/6),src=own.slice().sort((a,b)=>foodStock(b)-foodStock(a))[0];const got=src?takeFood(src.stock,need):0;if(got<need)hungry++}
-    if(!light&&(W.treas[f]<0||hungry))for(const l of lords){if(l.troops.length>4&&(W.treas[f]<0||hungry&&Math.random()<.5)){const n=Math.max(1,Math.round(l.troops.length*.06));l.troops.splice(0,n)}}
+    if(!light&&(W.treas[f]<0||hungry))for(const l of lords){if(l.troops.length>4&&(W.treas[f]<0||hungry&&Math.random()<.5)){const n=Math.max(1,Math.round(l.troops.length*.06));partyRemoveAny(l,n)}}
     if(!light&&(W.treas[f]<0||hungry)&&(f===P.fac||Math.random()<.1)&&G.day%3===0)log('The '+FACS[f].n+(W.treas[f]<0?' cannot pay its soldiers':' cannot feed its armies')+'. Men desert.',f===P.fac?'bad':'')}
   W.tolls={};
 }
@@ -130,7 +135,7 @@ const matsText=m=>Object.keys(m).map(g=>m[g]+' '+GOODS[g].n.toLowerCase()).join(
 function fiefEconBody(t){
   ensureEcon(t);const L=t.last||{out:{},use:{}},b=(act,arg,label,why,on)=>'<button class="btn sm'+(on?' on':'')+'" type="button" data-act="'+act+'" data-arg="'+arg+'"'+(why?' disabled title="'+why+'"':'')+'>'+label+'</button>';
   const goods=Object.keys(GOODS).filter(g=>(t.stock[g]||0)>0||goodN(g)>0||needOf(t,g)>.05);
-  const cap=POPCAP[t.kind]*(1+.15*bldLv(t,'granary'))+Math.floor(landOf(t)/12);
+  const cap=t.T.popCap*(1+.15*bldLv(t,'granary'))+Math.floor(landOf(t)/12);
   const dests=TOWNS.filter(o=>o!==t&&(o.owner==='player'||!hostileTo(o.owner))).sort((a,c)=>Math.hypot(a.x-t.x,a.y-t.y)-Math.hypot(c.x-t.x,c.y-t.y)).slice(0,14);
   const gsel=id=>'<select id="'+id+'" class="sel"><option value="">—</option>'+goods.filter(g=>(t.stock[g]||0)>0).map(g=>'<option value="'+g+'">'+GOODS[g].n+' ('+t.stock[g]+')</option>').join('')+'</select>';
   const nsel=id=>'<select id="'+id+'" class="sel">'+[10,20,40,80].map(n=>'<option>'+n+'</option>').join('')+'</select>';

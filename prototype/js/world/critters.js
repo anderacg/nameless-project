@@ -28,23 +28,24 @@ function spawnHerd(t){
   if(sp){const lv=bldLv(t,'pasture'),w=16+6*lv,h=12+3*lv,pen={x:sp.x-w/2+3,y:sp.y-h/2+3,w:w-6,h:h-6},grazers=kinds.filter(id=>id!=='hen'),id=(grazers.length?grazers:kinds)[0],D=CRITTERS[id];
     W.critters.push({crit:true,id,x:sp.x,y:sp.y,hx:sp.x,hy:sp.y,pen,n:rint(D.herd[0],D.herd[1]),home:t.name,t:0,a:0,dir:1,tire:0,cool:0,milked:0});return true}
   for(const id of kinds){const D=CRITTERS[id],near=id==='hen';
-    for(let k=0;k<80;k++){const a=Math.random()*6.283,d=(near?22:30)+Math.random()*(near?10:18),x=t.x+Math.cos(a)*d,y=t.y+12+Math.sin(a)*d;
+    for(let k=0;k<160;k++){const a=Math.random()*6.283,d=(near?22:30)+Math.random()*(near?10:18)+k*.5,// wider out if it finds no room close by
+      x=t.x+Math.cos(a)*d,y=t.y+12+Math.sin(a)*d;
       // the spot and the ground around it, so the herd has room to graze
       if(!grazeOk(id,x,y)||[[8,0],[-8,0],[0,6],[0,-6]].filter(([a2,b2])=>grazeOk(id,x+a2,y+b2)).length<3)continue;
       W.critters.push({crit:true,id,x,y,hx:x,hy:y,n:rint(D.herd[0],D.herd[1]),home:t.name,t:0,a:0,dir:1,tire:0,cool:0,milked:0});return true}}
   return false;
 }
 const herdOf=t=>W.critters.find(c=>c.home===t.name);
-function initCritters(){TOWNS.filter(t=>t.kind!=='castle').forEach(spawnHerd);for(let i=0;i<CRITTER_START;i++)spawnCritter(true)}
+function initCritters(){TOWNS.filter(t=>t.T.herds).forEach(spawnHerd);for(let i=0;i<CRITTER_START;i++)spawnCritter(true)}
 // each day: game returns, herds regrow and empty pastures restock
 function critterDay(){
   for(let k=0;k<3;k++)if(W.critters.filter(c=>!c.home).length<CRITTER_CAP&&Math.random()<.7)spawnCritter(false);
   for(const c of W.critters){const D=CRITTERS[c.id];if(c.n<D.herd[1]&&Math.random()<(c.home?.35:.15))c.n++}
-  TOWNS.filter(t=>t.kind!=='castle'&&!herdOf(t)&&Math.random()<.25).forEach(spawnHerd);
+  TOWNS.filter(t=>t.T.herds&&!herdOf(t)&&Math.random()<.25).forEach(spawnHerd);
 }
 // move every herd: wild game bolts when you come close and tires as it runs; livestock just grazes
 function updateCritters(d){
-  const hide=hiddenAt(P.x,P.y)?.6:1;
+  const hide=P.stay?0:hiddenAt(P.x,P.y)?.6:1;
   for(const c of W.critters){
     const D=CRITTERS[c.id],dx=c.x-P.x,dy=c.y-P.y,dist=Math.hypot(dx,dy);c.cool=Math.max(0,c.cool-d);
     if(!D.live&&dist<D.shy*hide){const sp=D.spd*(c.tire>4?.4:1)*Math.min(1,speedAt(c.x,c.y)||1)*d;walk(c,dx,dy,sp);c.dir=dx>=0?1:-1;c.tire+=d}
@@ -58,11 +59,11 @@ function updateCritters(d){
 // a hunt: one animal, plus one for every 4 bows or slings and every 3 levels of Scouting; the rest scatter
 const rangedCount=()=>Object.keys(P.troops).reduce((a,k)=>a+(ST[k].range?P.troops[k]:0),0);
 function hunt(c){
-  const D=CRITTERS[c.id],kills=Math.min(c.n,1+Math.floor(rangedCount()/4)+Math.floor(skill('scout')/3)+(Math.random()<.4?1:0));
+  const D=CRITTERS[c.id],kills=Math.min(c.n,1+Math.floor(rangedCount()/4)+Math.floor(skill('hunt')/3)+(Math.random()<.4?1:0));
   c.n-=kills;if(c.n<=0)W.critters=W.critters.filter(x=>x!==c);else{c.tire=0;c.cool=6}
   const meat=invAdd('good','meat',kills*D.meat),got=[meat+' meat'];
-  if(D.mat){let m=0;for(let i=0;i<kills;i++)if(Math.random()<D.mat[1])m++;if(m){const k=invAdd('mat',D.mat[0],m);if(k)got.push(k+' '+MATS[D.mat[0]].n.toLowerCase()+(k>1?'s':''))}}
-  gainXp(kills*D.xp);train('scout',kills*3);
+  if(D.mat){let m=0;for(let i=0;i<kills;i++)if(Math.random()<D.mat[1]*(1+.05*skill('hunt')))m++;if(m){const k=invAdd('mat',D.mat[0],m);if(k)got.push(k+' '+MATS[D.mat[0]].n.toLowerCase()+(k>1?'s':''))}}
+  gainXp(kills*D.xp);train('hunt',kills*3);
   log('You bring down '+(kills>1?kills+' '+D.n.toLowerCase():an(D.one))+': '+got.join(', ')+'.'+(meat<kills*D.meat?' Your bag is full, so you leave some meat.':''),'good');
   updateHUD(true);
 }
@@ -91,7 +92,7 @@ function herdAct(a){
   return true;
 }
 /* sprites: small side-on animals, 14x11, facing right */
-function critterSprite(id){const k='cr'+id;return spr[k]||(spr[k]=mkc(14,11,g=>{
+function critterSprite(id){const k='cr'+id;return spr[k]||(spr[k]=cellOf(mkc(14,11,g=>{
   const D=CRITTERS[id],c=D.col,dk=shade(c,.7),lt=shade(c,1.15),r=(col,x,y,w,h)=>rect(g,col,x,y,w||1,h||1),eye='#1a1410';
   if(D.bird){r(c,3,4,7,4);r(dk,3,7,7,1);r(lt,4,4,3,1);r(c,9,2,3,3);r('#e8b94a',12,3,2,1);r(eye,10,3,1,1);r(dk,1,3,3,2);r('#e8b94a',5,8,1,3);r('#e8b94a',8,8,1,3);if(id==='hen')r('#d83a2a',10,1,2,1);return}
   if(D.size===1){r(c,3,6,7,4);r(lt,4,6,4,1);r(c,9,4,3,3);r(c,9,1,1,3);r(c,11,1,1,3);r(dk,9,2,1,1);r(eye,11,5,1,1);r('#ffffff',2,6,2,2);r(dk,4,10,2,1);r(dk,8,10,2,1);return}
@@ -105,5 +106,5 @@ function critterSprite(id){const k='cr'+id;return spr[k]||(spr[k]=mkc(14,11,g=>{
   if(D.antlers){r('#e0d0b0',hx+1,hy-3,1,3);r('#e0d0b0',hx+2,hy-3,1,1);r('#e0d0b0',hx,hy-2,1,1);r('#e0d0b0',hx+3,hy-2,1,1)}
   else if(D.horns){r('#e8e4d0',hx+1,hy-1,1,1);r('#e8e4d0',hx+3,hy-1,1,1)}
   if(id==='deer'||id==='gazelle')r('#f0e8d8',x0+2,y0+1,1,1);
-}))}
+})))}
 onAct('herd-',herdAct);

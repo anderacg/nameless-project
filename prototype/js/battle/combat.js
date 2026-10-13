@@ -69,7 +69,8 @@ const HSKILLS={
 const SLOT_KEYS=['1','2','3','4','5','6','7','8','9','0'];
 const spellMul=()=>1+.04*skill('spell');
 // the point you aim at: the cursor, or ahead of you without a mouse
-const aimPoint=d=>G.mouse.in&&G.mouse.type==='mouse'?{x:G.mouse.x,y:G.mouse.y+6}:{x:B.hero.x+Math.cos(B.aim)*d,y:B.hero.y+Math.sin(B.aim)*d};
+// (under RTS command your hero aims where they choose: B.aiAim, heroai.js)
+const aimPoint=d=>B.aiAim?{x:B.aiAim.x,y:B.aiAim.y}:G.mouse.in&&G.mouse.type==='mouse'?{x:G.mouse.x,y:G.mouse.y+6}:{x:B.hero.x+Math.cos(B.aim)*d,y:B.hero.y+Math.sin(B.aim)*d};
 function castSlot(i){const id=(P.slots||[])[i];if(id)castSkill(id)}
 // per-battle hero action state
 function heroState(){return B.hx||(vitals(),B.hx={sp:P.sp,mp:P.mp,spT:9,step:-1,win:0,buf:false,roll:0,rollCd:0,inv:0,rx:0,ry:0,leap:null,dash:null,cds:Object.fromEntries(Object.keys(HSKILLS).map(k=>[k,0])),combo:0,comboT:0,stop:0})}
@@ -78,22 +79,25 @@ const costText=S=>[S.mp?S.mp+' MP':'',S.sp?S.sp+' SP':''].filter(Boolean).join('
 // pay stamina and mana together, or neither; says why when short
 function spend(sp,mp){
   const X=heroState(),h=B.hero;
-  if(X.sp<sp){B.floats.push({x:h.x,y:h.y-26,t:'Too tired',life:.6,c:'#9aa3ad'});return false}
-  if(X.mp<mp){B.floats.push({x:h.x,y:h.y-26,t:'Not enough mana',life:.6,c:'#6a9cf0'});return false}
+  // (the warning is for the manual control: under RTS command your hero waits for their breath instead, heroai.js)
+  if(X.sp<sp){if(MANUAL_HERO)B.floats.push({x:h.x,y:h.y-26,t:'Too tired',life:.6,c:'#9aa3ad'});return false}
+  if(X.mp<mp){if(MANUAL_HERO)B.floats.push({x:h.x,y:h.y-26,t:'Not enough mana',life:.6,c:'#6a9cf0'});return false}
   X.sp-=sp;X.mp-=mp;if(sp)X.spT=0;return true;
 }
 // a blocked hit drains stamina; with none left the guard breaks and the hit lands in full
 function guard(dm){
   const X=heroState(),h=B.hero;if(X.sp<=0){B.floats.push({x:h.x,y:h.y-18,t:'Guard broken',life:.6,c:'#e8675f'});return false}
-  X.sp=Math.max(0,X.sp-dm*STAM.guard);X.spT=0;return true;
+  X.sp=Math.max(0,X.sp-dm*STAM.guard*(1-.03*skill('block')));X.spT=0;train('block',1);return true;
 }
+// what share of a blocked hit still lands: shieldwall, gear and Blocking lower it
+const blockMul=()=>Math.max(.05,(has('shieldwall')?.1:.2)-gm('block')-.01*skill('block'));
 function knock(u,ox,oy,f){if(!f||u.hp<=0)return;const a=Math.atan2(u.y-oy,u.x-ox),k=u.s.big?.2:1;u.kx=(u.kx||0)+Math.cos(a)*f*6*k;u.ky=(u.ky||0)+Math.sin(a)*f*6*k}
 function stun(u,t){u.stun=Math.max(u.stun||0,u.s.big?t*.4:t)}
 // one hero blow on one enemy: matchup, crit, knockback, stagger, combo count
 function heroHit(e,mult,o){
   const h=B.hero,X=heroState(),mu=matchup(h.s,e.s);let dm=h.s.dmg*(.85+Math.random()*.3)*mu*mult*(h.buffT>0?1.3:1);
   if(!o.noCrit&&Math.random()<(has('bloodlust')?.2:.1)+gm('crit')){dm*=1.8;B.floats.push({x:e.x,y:e.y-22,t:'Crit',life:.6,c:'#ffd24a'})}
-  applyDmg(e,dm,mu);fx(e.x,e.y-6,'#fff',3);train('oneh',2);
+  applyDmg(e,dm*formTaken(e,h),mu);fx(e.x,e.y-6,'#fff',3);train(meleeSk(),2);
   knock(e,h.x,h.y,o.kb||0);if(o.stun)stun(e,o.stun);
   X.combo++;X.comboT=2.2;
 }
@@ -117,7 +121,7 @@ function drawHold(dt){
   if(X.sp<=0){B.floats.push({x:h.x,y:h.y-28,t:'Arm gives out',life:.8,c:'#9aa3ad'});X.sp=heroShot().sp;drawRelease(.35)}
 }
 // the cursor's distance from the hero, or a middling shot without a mouse
-const cursorDist=h=>G.mouse.in&&G.mouse.type==='mouse'?Math.hypot(G.mouse.x-h.x,G.mouse.y+6-h.y):150;
+const cursorDist=h=>B.aiAim?Math.hypot(B.aiAim.x-h.x,B.aiAim.y-h.y):G.mouse.in&&G.mouse.type==='mouse'?Math.hypot(G.mouse.x-h.x,G.mouse.y+6-h.y):150;
 // where the shot you are drawing will land, and how high it climbs on the way
 function bowLanding(p){const h=B.hero;if(!h)return null;const d=Math.min(bowRange(),aimReach(p));return{x:h.x+Math.cos(B.aim)*d,y:h.y+Math.sin(B.aim)*d,d,H:Math.min(44,d*d/700)}}
 // a bow shoots arrows, a crossbow bolts; magic needs none
@@ -142,7 +146,7 @@ function swing(){
   h.cd=c.cd*(h.s.cd/.45);X.win=h.cd+COMBO_WINDOW;h.swing=.18;h.atkAt=B.t;h.atkStyle=STYLE[c.shape];h.face=Math.cos(B.aim)>=0?1:-1;
   // thrusts step in, sweeps lean in, slams and spins plant the feet
   const lean=c.shape==='thrust'||c.shape==='twin'?(c.reach>15?8:5):c.shape==='arc'?3:0;
-  h.x=clamp(h.x+Math.cos(B.aim)*lean,8,VW-8);h.y=clamp(h.y+Math.sin(B.aim)*lean,18,VH-6);
+  h.x=clamp(h.x+Math.cos(B.aim)*lean,8,BW-8);h.y=clamp(h.y+Math.sin(B.aim)*lean,18,BH-6);
   const R=h.s.reach+c.reach,life=c.shape==='slam'||c.shape==='spin'?.32:.2;
   B.slashes.push({kind:c.shape,x:h.x,y:h.y-6,a:B.aim,life,max:life,arc:c.arc,r:R,col:c.col,w:c.w,dir:c.dir,area:c.area,wid:c.wid});
   if(c.shape==='slam'){const cx=h.x+Math.cos(B.aim)*R*.6,cy=h.y+Math.sin(B.aim)*R*.6;fx(cx,cy,'#a89a78',8)}
@@ -180,18 +184,18 @@ function castSkill(id){
     for(const e of B.units)if(e.team===1&&e.hp>0&&Math.hypot(e.x-h.x,e.y-h.y)-(e.s.big?12:0)<=(h.s.reach+14)*A.r){heroHit(e,1.3*A.dmg,{kb:18});n++}
     if(n){X.stop=.05;shakeIt(2)}
   }else if(id==='leap'){
-    let tx,ty;if(G.mouse.in&&G.mouse.type==='mouse'){tx=G.mouse.x;ty=G.mouse.y+6}else{tx=h.x+Math.cos(B.aim)*80;ty=h.y+Math.sin(B.aim)*80}
+    let tx,ty;if(B.aiAim){tx=B.aiAim.x;ty=B.aiAim.y}else if(G.mouse.in&&G.mouse.type==='mouse'){tx=G.mouse.x;ty=G.mouse.y+6}else{tx=h.x+Math.cos(B.aim)*80;ty=h.y+Math.sin(B.aim)*80}
     const dd=Math.hypot(tx-h.x,ty-h.y),m=Math.min(1,100/Math.max(1,dd));
-    X.leap={sx:h.x,sy:h.y,tx:clamp(h.x+(tx-h.x)*m,8,VW-8),ty:clamp(h.y+(ty-h.y)*m,18,VH-6),t:0,dur:.32};X.inv=.36;
+    X.leap={sx:h.x,sy:h.y,tx:clamp(h.x+(tx-h.x)*m,8,BW-8),ty:clamp(h.y+(ty-h.y)*m,18,BH-6),t:0,dur:.32};X.inv=.36;
   }else if(id==='cry'){
     B.rings.push({x:h.x,y:h.y-6,r:90*A.r,life:.5,max:.5,col:'232,185,74'});
-    for(const u of B.units){if(u.hp<=0)continue;const d=Math.hypot(u.x-h.x,u.y-h.y);if(u.team===0&&d<90*A.r)u.buffT=6+A.dur;if(u.team===1&&d<70*A.r)stun(u,.8+A.stun)}
+    for(const u of B.units){if(u.hp<=0)continue;const d=Math.hypot(u.x-h.x,u.y-h.y);if(u.team===0&&d<90*A.r){u.buffT=6+A.dur;moraleCry([u])}if(u.team===1&&d<70*A.r)stun(u,.8+A.stun)}
     B.floats.push({x:h.x,y:h.y-28,t:'WAR CRY',life:1,c:'#e8b94a'});shakeIt(2);
   }else if(id==='quake'){
     const R=50*A.r;B.rings.push({x:h.x,y:h.y-4,r:R,life:.45,max:.45,col:'200,160,110'});fx(h.x,h.y,'#c8b48a',12);
     for(const e of B.units)if(e.team===1&&e.hp>0&&Math.hypot(e.x-h.x,e.y-h.y)-(e.s.big?12:0)<=R)heroHit(e,.9*A.dmg,{kb:8,stun:.6+A.stun});shakeIt(5);
   }else if(id==='dash'){
-    X.dash={sx:h.x,sy:h.y,tx:clamp(h.x+Math.cos(B.aim)*80,8,VW-8),ty:clamp(h.y+Math.sin(B.aim)*80,18,VH-6),t:0,dur:.2,hit:[],mult:1.1*A.dmg};X.inv=.25;h.face=Math.cos(B.aim)>=0?1:-1;
+    X.dash={sx:h.x,sy:h.y,tx:clamp(h.x+Math.cos(B.aim)*80,8,BW-8),ty:clamp(h.y+Math.sin(B.aim)*80,18,BH-6),t:0,dur:.2,hit:[],mult:1.1*A.dmg};X.inv=.25;h.face=Math.cos(B.aim)>=0?1:-1;
   }else if(id==='volley'){
     goodTake('arrows',4);const c=aimPoint(130);
     for(let k=0;k<8;k++){const an=Math.random()*6.283,rr=Math.random()*28*A.r,px=c.x+Math.cos(an)*rr,py=c.y+Math.sin(an)*rr;
@@ -232,7 +236,7 @@ function heroActions(dt){
       shakeIt(4);if(n)X.stop=.06}
     return true;
   }
-  if(X.roll>0){X.roll-=dt;h.x=clamp(h.x+X.rx*170*dt,8,VW-8);h.y=clamp(h.y+X.ry*170*dt,18,VH-6);h.face=X.rx>=0?1:-1;return true}
+  if(X.roll>0){X.roll-=dt;h.x=clamp(h.x+X.rx*170*dt,8,BW-8);h.y=clamp(h.y+X.ry*170*dt,18,BH-6);h.face=X.rx>=0?1:-1;return true}
   if(X.buf&&h.cd<=0)swing();
   return false;
 }
@@ -249,9 +253,10 @@ function drawHeroHud(){
   ctx.fillStyle='#000';ctx.fillRect(5,20,62,4);ctx.fillRect(5,25,62,4);
   ctx.fillStyle=X.spT<STAM.delay?'#c8a24a':'#78c474';ctx.fillRect(6,21,Math.round(60*X.sp/maxSP()),2);
   ctx.fillStyle='#5a8fe8';ctx.fillRect(6,26,Math.round(60*X.mp/maxMP()),2);
-  if(X.combo>=2&&X.comboT>0){ctx.font='16px "Pixelify Sans", "Courier New", monospace';ctx.textAlign='right';ctx.fillStyle='#000';ctx.fillText('×'+X.combo+' HITS',VW-5,31);ctx.fillStyle=X.combo>=10?'#ffb04a':'#ffe08a';ctx.fillText('×'+X.combo+' HITS',VW-6,30)}
+  if(X.combo>=2&&X.comboT>0){ctx.font='20px VT323, "Courier New", monospace';ctx.textAlign='right';ctx.fillStyle='#000';ctx.fillText('×'+X.combo+' HITS',VW-5,31);ctx.fillStyle=X.combo>=10?'#ffb04a':'#ffe08a';ctx.fillText('×'+X.combo+' HITS',VW-6,30)}
   const short=(sp,mp)=>X.sp<sp||X.mp<mp,slots=[...(P.slots||[]).map((id,i)=>id?[SLOT_KEYS[i],(()=>{const A=abil(id);return[X.cds[id]/A.cd,!knows(id)||short(A.sp,A.mp)]})()]:null).filter(Boolean).map(([k,[f,lock]])=>[k,f,lock]),['F',X.rollCd/dodgeCd(),short(dodgeCost(),0)]];
-  slots.forEach(([k,f,lock],i)=>{const x=6+i*24,y=VH-30;rect(ctx,'#000',x-1,y-1,22,22);rect(ctx,lock?'#2a2e3e':'#3a4263',x,y,20,20);
+  // (the skill and dodge cooldowns: only with the manual control, set aside for now)
+  if(MANUAL_HERO)slots.forEach(([k,f,lock],i)=>{const x=6+i*24,y=VH-30;rect(ctx,'#000',x-1,y-1,22,22);rect(ctx,lock?'#2a2e3e':'#3a4263',x,y,20,20);
     if(f>0)rect(ctx,'rgba(8,10,16,.75)',x,y,20,Math.round(20*f));txt(k,x+10,y+14,lock?'#646d88':f>0?'#98a0ba':'#e8b94a','center')});
   if(B.banner){const b=B.banner;ctx.fillStyle='rgba(232,185,74,.12)';ctx.beginPath();ctx.arc(b.x,b.y-4,b.r,0,7);ctx.fill();rect(ctx,'#5a3a20',Math.round(b.x),Math.round(b.y)-22,1,22);rect(ctx,'#e8b94a',Math.round(b.x)+1,Math.round(b.y)-22,7,5)}
 }

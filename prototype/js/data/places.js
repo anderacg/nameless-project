@@ -18,19 +18,32 @@ const GOODS={grain:{n:'Grain',base:8,stack:30,icon:'sack',col:'#d8b860',food:tru
   wool:{n:'Wool',base:9,stack:25,icon:'wool',col:'#eeeae0',d:'Shorn from the herds. Weavers turn it into cloth.'},
   tools:{n:'Tools',base:30,stack:10,icon:'tools',col:'#9aa3ad',d:'Saws, picks and hammers from the smithies. Every building project and estate wears them out.'},
   ale:{n:'Ale',base:12,stack:15,icon:'barrel',col:'#c88a3a',d:'Brewed from grain. Towns drink it; content people work harder.'},
-  spice:{n:'Spice',base:34,stack:25,icon:'jar',col:'#d87a30',d:'Light and precious. Worth the most per bag slot.'}};
+  spice:{n:'Spice',base:34,stack:25,icon:'jar',col:'#d87a30',d:'Light and precious. Worth the most per bag slot.'},
+  // regional goods (res): only mines and ports whose land holds them bring them up (resources.js), so they are cheap at the source
+  // and dear everywhere else
+  copper:{n:'Copper',base:16,stack:15,icon:'ingot',col:'#cd7f32',res:'ore',d:'Soft red metal from the hills. Smiths cast bronze from copper and tin.'},
+  tin:{n:'Tin',base:18,stack:15,icon:'ingot',col:'#c8ccd0',res:'ore',d:'Bright and brittle. Bronze needs it as much as copper.'},
+  silver:{n:'Silver',base:60,stack:15,icon:'ingot',col:'#dfe4ea',res:'ore',d:'Mined deep in the mountains. Coin, plate and silver arms.'},
+  gold:{n:'Gold',base:110,stack:15,icon:'ingot',col:'#e8c040',res:'ore',d:'Washed and dug from the desert hills and a few mountain seams.'},
+  gems:{n:'Gems',base:90,stack:20,icon:'gem',col:'#d84a8a',res:'ore',d:'Rough stones from desert and mountain mines. Towns pay well for them.'},
+  mithril:{n:'Mithril',base:240,stack:15,icon:'ingot',col:'#7fd8e8',res:'ore',d:'Light as silver, hard as steel. Found only under the frozen peaks.'},
+  adamant:{n:'Adamantite',base:400,stack:15,icon:'ingot',col:'#b07af0',res:'ore',d:'The rarest metal of all, in a handful of deep mountain seams.'},
+  salmon:{n:'Salmon',base:16,stack:20,icon:'fish',col:'#e88a6a',food:true,spoil:.08,res:'fish',d:'Caught in cold rivers and northern waters. Prized at every table.'},
+  eel:{n:'Eel',base:11,stack:20,icon:'fish',col:'#6a7a4a',food:true,spoil:.07,res:'fish',d:'Trapped in the bogs and slow waters of the swamp.'},
+  pearls:{n:'Pearls',base:150,stack:25,icon:'pearl',col:'#f0ece0',res:'fish',d:'Dived for in warm southern waters. A fortune in a pouch.'}};
+// the holdings: plain data, each made one of its kind (holdings.js) below
 const TOWNS=[
-  {name:'Ashford',races:['human'],kind:'town',clim:'grass',tx:36,ty:40,col:'#e8b94a',seed:1,mod:{grain:.7,iron:1.4,cloth:1.1,timber:1,furs:1.3,spice:1.4},note:'Farmland on open grassland. Grain is cheap here.'},
-  {name:'Karn Hold',races:['dwarf'],kind:'town',clim:'grass',tx:172,ty:44,col:'#5a8fe8',seed:2,mod:{grain:1.3,iron:.7,cloth:1.2,timber:1.3,furs:.7,spice:1.3},note:'Dwarven mining town below the peaks. Iron and furs sell cheap.'},
-  {name:'Saltmere',style:'port',races:['elf','human'],kind:'town',clim:'grass',tx:108,ty:124,col:'#78c474',seed:3,mod:{grain:1,iron:1.1,cloth:.75,timber:.65,furs:1.4,spice:1},note:'Forest port with weavers. Cloth and timber are cheap.'},
+  {name:'Ashford',races:['human'],kind:'city',clim:'grass',tx:36,ty:40,col:'#e8b94a',seed:1,mod:{grain:.7,iron:1.4,cloth:1.1,timber:1,furs:1.3,spice:1.4},note:'Farmland on open grassland. Grain is cheap here.'},
+  {name:'Karn Hold',races:['dwarf'],kind:'city',clim:'grass',tx:172,ty:44,col:'#5a8fe8',seed:2,mod:{grain:1.3,iron:.7,cloth:1.2,timber:1.3,furs:.7,spice:1.3},note:'Dwarven mining town below the peaks. Iron and furs sell cheap.'},
+  {name:'Saltmere',style:'port',races:['elf','human'],kind:'city',clim:'grass',tx:108,ty:124,col:'#78c474',seed:3,mod:{grain:1,iron:1.1,cloth:.75,timber:.65,furs:1.4,spice:1},note:'Forest port with weavers. Cloth and timber are cheap.'},
   {name:'Greywell',races:['orc'],kind:'village',clim:'desert',tx:196,ty:128,col:'#c7a46a',seed:4,mod:{grain:.8,iron:1.5,cloth:1.3,timber:1.5,furs:1.5,spice:.6},note:'A desert village by a well. Grain, spice and recruits.'},
   {name:'Highmoor',races:['human'],kind:'castle',clim:'grass',tx:64,ty:80,seed:5,note:'A stone keep on the moor. Hires mounted troops.'},
   {name:'Dunrak',races:['dwarf'],kind:'castle',clim:'frost',tx:144,ty:20,seed:6,note:'A dwarven fortress cut into the frozen mountain. Hires mounted troops.'},
   {name:'Brinewatch',style:'port',races:['elf','orc'],kind:'castle',clim:'swamp',tx:148,ty:92,seed:7,note:'A sea fort above the mire. Hires mounted troops.'},
   {name:'Thornwick',races:['human'],kind:'village',clim:'grass',tx:16,ty:72,seed:8,mod:{grain:.7,iron:1.4,cloth:1.2,timber:.7,furs:1.4,spice:1.5},note:'A farming village on the western fields. Grain, timber and recruits.'},
-  {name:'Elderglen',races:['elf'],kind:'town',clim:'grass',tx:40,ty:116,seed:9,mod:{grain:1,iron:1.3,cloth:.9,timber:.6,furs:1.3,spice:1.2},note:'An elven town in the old woods. Timber is cheap here.'},
+  {name:'Elderglen',races:['elf'],kind:'city',clim:'grass',tx:40,ty:116,seed:9,mod:{grain:1,iron:1.3,cloth:.9,timber:.6,furs:1.3,spice:1.2},note:'An elven town in the old woods. Timber is cheap here.'},
   {name:'Frosthelm',races:['dwarf'],kind:'village',clim:'frost',tx:200,ty:16,seed:10,mod:{grain:1.4,iron:.9,cloth:1.3,timber:1.2,furs:.6,spice:1.5},note:'A dwarven hamlet in the snow. Grain, furs and recruits.'},
-  {name:'Sunreach',races:['orc'],kind:'town',clim:'desert',tx:160,ty:144,seed:11,mod:{grain:1.2,iron:1,cloth:1.2,timber:1.4,furs:1.6,spice:.65},note:'The orc capital on the spice road. Spice is cheap here.'},
+  {name:'Sunreach',races:['orc'],kind:'city',clim:'desert',tx:160,ty:144,seed:11,mod:{grain:1.2,iron:1,cloth:1.2,timber:1.4,furs:1.6,spice:.65},note:'The orc capital on the spice road. Spice is cheap here.'},
   {name:'Brookhollow',races:['human'],kind:'village',clim:'grass',tx:80,ty:28,seed:16,mod:{grain:.65,iron:1.4,cloth:1.1,timber:.8,furs:1.2,spice:1.5},note:'A mill village on a cold brook. Grain is cheapest here.'},
   {name:'Ironvein',races:['dwarf'],kind:'village',clim:'frost',tx:116,ty:12,seed:17,mod:{grain:1.4,iron:.6,cloth:1.4,timber:1.3,furs:.8,spice:1.6},note:'A dwarven mining camp over a rich seam. Iron is cheapest here.'},
   {name:'Mossdell',races:['elf'],kind:'village',clim:'grass',tx:28,ty:144,seed:18,mod:{grain:.9,iron:1.5,cloth:.7,timber:.65,furs:1.3,spice:1.3},note:'Elven weavers in a mossy hollow. Cloth and timber.'},
@@ -58,19 +71,22 @@ const TOWNS=[
   {name:'Tidewatch',style:'port',races:['human','orc'],kind:'castle',clim:'swamp',tx:124,ty:104,seed:36,note:'A League fort over the tidal marsh. Hires mounted troops.'},
   {name:'Crossmere',races:['human','orc'],kind:'town',clim:'grass',tx:128,ty:70,seed:37,mod:{grain:1,iron:1,cloth:1,timber:1.1,furs:1.1,spice:1},note:'A crossroads market in the middle of Ashmark. Fair prices on everything.'}
 ];
+TOWNS.forEach(t=>holdingOf(t));
 // eaten first: whatever spoils fastest
 // ammunition prices: elves make the best arrows, dwarves the best bolts
 TOWNS.forEach(t=>{if(!t.mod)return;const r=t.races;if(t.mod.arrows==null)t.mod.arrows=r.includes('elf')?.7:1.1;if(t.mod.bolts==null)t.mod.bolts=r.includes('dwarf')?.7:1.15});
 const FOODS=Object.keys(GOODS).filter(g=>GOODS[g].food).sort((a,b)=>GOODS[b].spoil-GOODS[a].spoil);
 // food prices by who lives there: orcs and the frost eat meat, ports and bogs fish, grassland villages sell milk, dwarves and farms cheese, elves and oases fruit
 TOWNS.forEach(t=>{if(!t.mod)return;const r=t.races,c=t.clim;
-  const cheap={meat:r.includes('orc')||c==='frost',fish:t.style==='port'||t.style==='stilt'||c==='swamp',milk:t.kind==='village'&&c==='grass',cheese:r.includes('dwarf')||r.includes('human')&&c==='grass'&&t.kind==='village',fruit:r.includes('elf')||c==='desert'};
+  const cheap={meat:r.includes('orc')||c==='frost',fish:t.style==='port'||t.style==='stilt'||c==='swamp',milk:!!t.T.rural&&c==='grass',cheese:r.includes('dwarf')||r.includes('human')&&c==='grass'&&!!t.T.rural,fruit:r.includes('elf')||c==='desert'};
   Object.keys(cheap).forEach((g,i)=>{if(t.mod[g]==null){const v=((t.seed*37+i*13)%10)/50;t.mod[g]=+(cheap[g]?.6+v:1.05+v*2).toFixed(2)}})});
 const HOME={Ashford:'vale',Highmoor:'vale',Thornwick:'vale','Karn Hold':'karn',Dunrak:'karn',Frosthelm:'karn',Elderglen:'sylvan',Silverbough:'sylvan',Willowmere:'sylvan',Greywell:'horde',Sunreach:'horde',Skullrock:'horde',Saltmere:'salt',Brinewatch:'salt',Mirefen:'salt',Brookhollow:'vale',Ironvein:'karn',Mossdell:'sylvan',Bonepit:'horde',Stonebridge:'salt',Gullhaven:'salt',Coldmarch:'vale',Wardenhall:'vale',Millbrook:'vale',Oakhurst:'vale',Coldforge:'karn',Granitegate:'karn',Deepdelve:'karn',Thistledown:'sylvan',Moonwell:'sylvan',Fernhollow:'sylvan',Dustfang:'horde',Redspire:'horde',Scorchwell:'horde',Pearlbay:'salt',Tidewatch:'salt',Crossmere:'salt'};
 // standing needed to hire by troop tier, the trust your own race gives, and where each race starts
 const REP_NEED={1:15,2:30,3:50},RACE_TRUST=10,START_TOWN={human:'Ashford',dwarf:'Karn Hold',elf:'Elderglen',orc:'Sunreach'};
-const GARCAP={town:16,castle:18,village:6};
-const CAMPS=[{tx:88,ty:48},{tx:20,ty:96},{tx:116,ty:76},{tx:200,ty:84},{tx:60,ty:140},{tx:176,ty:106},{tx:146,ty:58},{tx:44,ty:130},{tx:100,ty:112},{tx:150,ty:130},{tx:28,ty:58},{tx:190,ty:30}].map(c=>({...c,cleared:false,back:0}));
-const POIS=[...TOWNS.map(t=>({x:t.tx,y:t.ty})),...CAMPS.map(c=>({x:c.tx,y:c.ty}))];
-TOWNS.forEach(t=>{t.x=(t.tx+.5)*TILE;t.y=(t.ty+.5)*TILE});
-CAMPS.forEach(c=>{c.x=(c.tx+.5)*TILE;c.y=(c.ty+.5)*TILE});
+// where the bandit camps stand (sites.js makes a camp site on each; map.js moves each off roads and water first)
+const CAMP_SPOTS=[{tx:88,ty:48},{tx:20,ty:96},{tx:116,ty:76},{tx:200,ty:84},{tx:60,ty:140},{tx:176,ty:106},{tx:146,ty:58},{tx:44,ty:130},{tx:100,ty:112},{tx:150,ty:130},{tx:28,ty:58},{tx:190,ty:30}];
+const POIS=[...TOWNS.map(t=>({x:t.tx,y:t.ty})),...CAMP_SPOTS.map(c=>({x:c.tx,y:c.ty}))];
+// a holding's point, where you reach it and where its name hangs: at its gate, centred under its centre building (which stands
+// on the holding's tile, its middle on that tile's left edge, its foot on that tile's bottom: lots.js)
+TOWNS.forEach(t=>{t.x=t.tx*TILE;t.y=(t.ty+1)*TILE+2});
+CAMP_SPOTS.forEach(c=>{c.x=(c.tx+.5)*TILE;c.y=(c.ty+.5)*TILE});

@@ -1,42 +1,58 @@
 'use strict';
 /* ---------- estates and walls: what each holding has built ---------- */
-// t.bld = {farm:lv, …}: 0 is none, up to BLD_MAX[kind]. t.wall = 0..WALL_MAX[kind]. t.work = {k, lv, done}: the project underway.
+// t.bld = {farm:lv, …}: 0 is none, up to its kind's estMax. t.wall = 0..its wallMax (holdings.js). t.work = {k, lv, done}: the project underway.
 // Outdoor estates sit on a spot in the holding's land that suits them, where their workers go each day. What they make
 // goes into the holding's stock (see economy.js); building needs gold and materials from that stock. Raids and sacks burn them.
 // Walls make defenders stronger, sieges longer and the garrison bigger; a breach on capture costs a level.
 const bldCost=(k,lv)=>ESTATES[k].cost*lv*lv;
+// what an estate needs built first (ESTATE_NEEDS), and what is missing
+const needsMet=(t,k)=>Object.entries(ESTATE_NEEDS[k]||{}).every(([e,lv])=>bldLv(t,e)>=lv);
+const needsText=k=>Object.entries(ESTATE_NEEDS[k]||{}).map(([e,lv])=>ESTATES[e].n+' '+lv).join(' and ');
 const buildDays=lv=>1+2*lv;
-const wallOf=t=>t.wall==null?WALL0[t.kind]:t.wall;
+const wallOf=t=>t.wall==null?t.T.wall0:t.wall;
 const bldLv=(t,k)=>t.bld&&t.bld[k]||0;
 const bldTotal=t=>Object.keys(ESTATES).reduce((a,k)=>a+bldLv(t,k),0);
 
-/* where each outdoor estate stands: the nearest suitable tile 3 to 11 tiles out (a port town looks up to 20 for its shore), apart from the other estates */
+/* where each estate stands: its placed building (lots.js). GROUND says what land each kind of estate works. */
 const GROUND={
   open:(x,y)=>tAt(x,y)===T_OPEN,
   forest:(x,y)=>tAt(x,y)===T_FOREST,
   rock:(x,y)=>passable(tAt(x,y))&&(tAt(x,y)===T_HILL||[[1,0],[-1,0],[0,1],[0,-1]].some(([a,b])=>tAt(x+a,y+b)===T_MOUNT)),
   shore:(x,y)=>passable(tAt(x,y))&&tAt(x,y)!==T_ROAD&&[[1,0],[-1,0],[0,1],[0,-1]].some(([a,b])=>tAt(x+a,y+b)===T_WATER)
 };
+// k -> {tx, ty, x, y}: where each estate's building stands (its front middle tile); only estates that have a building
 function bldSpots(t){
-  if(t._spots)return t._spots;const sp={},taken=[];
-  for(const k of Object.keys(ESTATES)){const g=ESTATES[k].ground;if(!g)continue;let best=null,bd=1e9;const R=k==='port'&&t.style==='port'?20:11;
-    for(let y=t.ty-R;y<=t.ty+R;y++)for(let x=t.tx-R;x<=t.tx+R;x++){const d=Math.hypot(x-t.tx,y-t.ty);if(d<3||d>R||!GROUND[g](x,y))continue;
-      if(taken.some(o=>Math.hypot(o[0]-x,o[1]-y)<3.5))continue;const s=d+hash(x,y,t.seed)*2;if(s<bd){bd=s;best=[x,y]}}
-    if(best){taken.push(best);sp[k]={tx:best[0],ty:best[1],x:(best[0]+.5)*TILE,y:(best[1]+.5)*TILE}}}
+  if(t._spots)return t._spots;const sp={};
+  for(const l of t.lots||[])if(ESTATES[l.k]){const m=lotMid(l);sp[l.k]={tx:m.tx,ty:m.ty,x:m.x,y:m.y}}
   return t._spots=sp;
 }
-const canHave=(t,k)=>!ESTATES[k].ground||!!bldSpots(t)[k];
-const bldCap=(t,k)=>canHave(t,k)?BLD_MAX[t.kind]:0;
+// the field tiles an estate keeps (farms, pastures, quarries), and those in use at a level
+const PLOTS={farm:6,pasture:4,quarry:3};
+const estatePlots=(t,k)=>{const l=lotAt(t,k);return l&&l.plots||[]};
+const PLOTS_AT={farm:lv=>2*lv,pasture:lv=>lv+1,quarry:lv=>lv};
+const plotsAt=(t,k,lv)=>estatePlots(t,k).slice(0,PLOTS_AT[k]?PLOTS_AT[k](lv):0);
+// the share of its fields a farm, pasture or quarry actually has at its level (no fields: it makes nothing); 1 for the rest
+const fieldShare=(t,k)=>{const lv=bldLv(t,k);if(!PLOTS[k]||!lv||!t.lots)return 1;return Math.min(1,plotsAt(t,k,lv).length/PLOTS_AT[k](lv))};
+// sabotaged: idle until t.sab[k]
+const sabotaged=(t,k)=>!!(t.sab&&t.sab[k]>G.day);
+// can this holding have this estate: it has one, or there is room and ground for one
+function canHave(t,k){
+  if(lotAt(t,k))return true;t._can=t._can||{};if(t._can[k]!=null)return t._can[k];
+  const type=ESTATE_LOT[k],n=lotSize(type),inner=INNER.includes(k),wb=wallBox(t),R=()=>.5;
+  return t._can[k]=!!(inner?lotSpot(t,n,'open',1,9,R,{estate:true}):lotSpot(t,n,groundOf(k),3,k==='port'&&t.style==='port'?20:12,R,{estate:true,outside:wb&&{x0:wb.x0-1,y0:wb.y0-1,x1:wb.x1+1,y1:wb.y1+1},fields:PLOTS[k]?k:null}));
+}
+
+const bldCap=(t,k)=>canHave(t,k)?t.T.estMax:0;
 
 // what a holding starts with: what its land and trade suggest
 function initEstates(t){
-  const R=seeded(t.seed*131+7),m=t.mod||{},b={},v=t.kind==='village',c=t.kind==='castle';
+  const R=seeded(t.seed*131+7),m=t.mod||{},b={},v=!!t.T.rural,c=!!t.T.fort;
   const set=(k,lv)=>{b[k]=Math.min(bldCap(t,k),Math.max(0,lv))};
   set('farm',v?2:1+(m.grain<=.8?1:0));set('pasture',v?1:R()<.4?1:0);
-  set('lumber',m.timber<=.75?2:R()<.5?1:0);set('mine',m.iron<=.8?2:R()<.4?1:0);
+  set('lumber',m.timber<=.75?2:R()<.5?1:0);set('mine',m.iron<=.8?2:resHas(t,'ore').some(g=>GOODS[g].base>=60)?1:R()<.4?1:0);
   set('port',t.style==='port'?2:R()<.3?1:0);set('workshop',c?0:m.cloth<=.85||m.furs<=.8?1+(v?0:1):0);set('market',c?0:v?0:1);
   set('quarry',m.iron<=1||c?1:R()<.3?1:0);set('smithy',v?0:1);set('brewery',v?(R()<.3?1:0):R()<.6?1:0);set('granary',c?1:R()<.3?1:0);
-  t.bld=b;t.wall=WALL0[t.kind];t.work=null;
+  t.bld=b;t.wall=t.T.wall0;t.work=null;
 }
 const estateLine=t=>{const ks=Object.keys(ESTATES).filter(k=>bldLv(t,k));return (ks.length?ks.map(k=>ESTATES[k].n+' '+bldLv(t,k)).join(', '):'none')};
 
@@ -48,26 +64,29 @@ function estateDay(){
     if(t.owner==='player'||t.work||besieged(t)||ruined(t)||Math.random()>.05)continue;
     // what to build: walls on the frontier, then whatever the holding is shortest of
     const front=TOWNS.some(o=>o!==t&&atWar(t.owner,o.owner)&&Math.hypot(o.tx-t.tx,o.ty-t.ty)<60);
-    let k=null;if(wallOf(t)<WALL_MAX[t.kind]&&(front||Math.random()<.2))k='wall';
-    else{const ks=Object.keys(ESTATES).filter(e=>bldLv(t,e)<bldCap(t,e));ensureEcon(t);
+    // a full holding builds a house first (its people have nowhere else to go)
+    if(t.lots&&t.pop>=housing(t)*.9&&!matsLacking(t,HOUSE_COST.mats).length&&payRealm(t.owner,HOUSE_COST.gold)){takeMats(t,HOUSE_COST.mats);startWork(t,'house',HOUSE_DAYS);continue}
+    let k=null;if(wallOf(t)<t.T.wallMax&&(front||Math.random()<.2))k='wall';
+    else{const ks=Object.keys(ESTATES).filter(e=>bldLv(t,e)<bldCap(t,e)&&(bldLv(t,e)||needsMet(t,e)));ensureEcon(t);
       const want=e=>{const gs=ESTATES[e].goods;let w=gs.reduce((a,g)=>a+Math.max(0,1-(t.stock[g]||0)/targetStock(t,g)),0);if(e==='granary')w+=foodDays(t)<5?.6:0;if(e==='market')w+=.3;return w+Math.random()*.3};
       k=ks.sort((p,q)=>want(q)-want(p))[0]||null}
     if(!k)continue;const lv=k==='wall'?wallOf(t)+1:bldLv(t,k)+1,mats=k==='wall'?WALL_MAT[lv]:ESTATE_MAT(k,lv),gold=k==='wall'?WALL_COST[lv]:bldCost(k,lv);
     if(matsLacking(t,mats).length||!payRealm(t.owner,gold))continue;
-    takeMats(t,mats);t.work={k,lv,done:G.day+buildDays(lv)};
+    takeMats(t,mats);startWork(t,k,lv);
     if(k==='wall'&&(t.owner===P.fac||Math.hypot(t.x-P.x,t.y-P.y)<vis()*1.5))log('The '+FACS[t.owner].n+' starts raising '+WALL_N[lv].toLowerCase()+' around '+t.name+'.');
   }
 }
 function finishWork(t){
-  const w=t.work;t.work=null;if(w.k==='wall')t.wall=Math.min(WALL_MAX[t.kind],wallOf(t)+1);else t.bld[w.k]=Math.min(bldCap(t,w.k),bldLv(t,w.k)+1);
-  if(t.owner==='player')log((w.k==='wall'?WALL_N[t.wall]+' now ring '+t.name:'The '+ESTATES[w.k].n.toLowerCase()+' of '+t.name+' reaches level '+t.bld[w.k])+'.','good');
+  const w=t.work;t.work=null;if(w.k==='house'){houseDone(t,w);if(t.owner==='player')log('A new house stands in '+t.name+'.','good');return}if(w.k==='wall')t.wall=Math.min(t.T.wallMax,wallOf(t)+1);else t.bld[w.k]=Math.min(bldCap(t,w.k),bldLv(t,w.k)+1);
+  syncLots(t);
+  if(t.owner==='player')log((w.k==='wall'?'The centre of '+t.name+' is fortified: '+WALL_N[t.wall].toLowerCase():'The '+ESTATES[w.k].n.toLowerCase()+' of '+t.name+' reaches level '+t.bld[w.k])+'.','good');
 }
 // war's damage: burn n estates (fields and herds first), and breach the walls on capture
 function burnEstates(t,n){
   const out=[];for(let i=0;i<n;i++){const ks=['farm','pasture','lumber','workshop','brewery','granary','market','smithy','quarry','mine','port'].filter(k=>bldLv(t,k));if(!ks.length)break;const k=ks[Math.random()<.6?0:rint(0,ks.length-1)];t.bld[k]--;out.push(ESTATES[k].n.toLowerCase())}
-  if(t.work&&t.work.k!=='wall')t.work=null;return out;
+  if(t.work&&t.work.k!=='wall')t.work=null;syncLots(t);return out;
 }
-const breach=t=>{t.wall=Math.max(0,wallOf(t)-1);if(t.work&&t.work.k==='wall')t.work=null};
+const breach=t=>{t.wall=Math.max(0,wallOf(t)-1);if(t.work&&t.work.k==='wall')t.work=null;syncLots(t)};
 
 /* someone else's estate: plunder or burn it */
 /* estates: plunder or burn what a holding has built in its fields */
@@ -79,24 +98,35 @@ function estateMeet(o){
   const E=ESTATES[k],lv=bldLv(t,k),own=t.owner==='player',emp=P.fac&&P.fac===t.owner,out=(t.last&&t.last.out)||{},gs=E.goods.filter(g=>out[g]);
   const hands=(W.folk||[]).filter(f=>f.home===t.name&&f.k===k).length,guard=estateGuards(t,k),pw=rating(guard);
   showPanel('<div class="top"><h2>'+E.n+' of '+t.name+'</h2><span class="muted">Level '+lv+' · '+(t.owner?'<span style="color:'+FACS[t.owner].col+'">'+FACS[t.owner].n+'</span>':'')+'</span></div>'+
-    '<p>'+E.d+'</p><p class="muted">'+(gs.length?'Yesterday it sent '+gs.map(g=>out[g]+' '+GOODS[g].n.toLowerCase()).join(', ')+' to '+t.name+'. ':'')+(hands?hands+' at work here now. ':'')+(until(t,'fear')?'The workers are afraid to come out. ':'')+'</p>'+
+    '<p>'+E.d+'</p>'+(PLOTS[k]?'<p class="'+(fieldShare(t,k)<1?'bad':'muted')+'">Fields: '+plotsAt(t,k,lv).length+' of the '+PLOTS_AT[k](lv)+' its level works'+(fieldShare(t,k)<1?' (no open ground for more: it makes '+Math.round(fieldShare(t,k)*100)+'%)':'')+'.</p>':'')+(sabotaged(t,k)?'<p class="bad">Wrecked: it makes nothing until day '+t.sab[k]+'.</p>':'')+'<p class="muted">'+(gs.length?'Yesterday it sent '+gs.map(g=>out[g]+' '+GOODS[g].n.toLowerCase()).join(', ')+' to '+t.name+'. ':'')+(hands?hands+' at work here now. ':'')+(until(t,'fear')?'The workers are afraid to come out. ':'')+'</p>'+
     (own?'<p class="good">Your estate. Build and upgrade it from the Fief tab in '+t.name+'.</p><div class="btns">'+dlgBtn('dlg-close',null,'Leave',null,true)+'</div>':
      '<p>'+guard.length+' guards watch it (power '+pw+' vs your '+partyPower()+').</p><div class="btns">'+
-     dlgBtn('es-plunder',null,'Plunder its stores',emp?'Your employer':troopCount()<3?'Need 3 troops':'')+dlgBtn('es-burn',null,'Burn it',emp?'Your employer':troopCount()<3?'Need 3 troops':'')+dlgBtn('dlg-close',null,'Leave',null,true)+'</div>'+
+     dlgBtn('es-sabotage',null,'Sabotage it ('+Math.round(sabotageChance(t,k)*100)+'% unseen)',emp?'Your employer':sabotaged(t,k)?'Already wrecked':'')+dlgBtn('es-plunder',null,'Plunder its stores',emp?'Your employer':troopCount()<3?'Need 3 troops':'')+
+dlgBtn('es-burn',null,'Burn it',emp?'Your employer':troopCount()<3?'Need 3 troops':'')+dlgBtn('dlg-close',null,'Leave',null,true)+'</div>'+
+     '<p class="muted">Sabotage: you slip in and wreck its work: it makes nothing for '+(3+2*lv)+' days. Unseen, only rumour follows you (reputation there −'+CONDUCT.sabotageEstate.rep+'); caught, you fight its guards and pay as for a plunder. Night, Scouting and Agility help; a big band and a big estate make it harder.</p>'+
      '<p class="muted">Plunder: you fight the guards and take what the estate made for '+t.name+': reputation there −'+CONDUCT.plunderEstate.rep+', honor −'+CONDUCT.plunderEstate.honor+(hostileTo(t.owner)?'':', and the '+FACS[t.owner].n+' turns hostile for '+CONDUCT.plunderEstate.hostile+' days')+'. Burning also knocks it down a level and costs more: reputation −'+CONDUCT.burnEstate.rep+', honor −'+CONDUCT.burnEstate.honor+(hostileTo(t.owner)?'':', hostile for '+CONDUCT.burnEstate.hostile+' days')+'; its people may leave.</p>'));
 }
+// the chance of slipping in unseen
+const sabotageChance=(t,k)=>clamp(.35+.03*skill('scout')+.02*P.attr.agi+(darkness()>.5?.2:0)-.06*bldLv(t,k)-(partySize()>20?.1:0),.1,.9);
+function sabotage(t,k){t.sab=t.sab||{};t.sab[k]=G.day+3+2*bldLv(t,k)}
 function estateAct(a){
   const o=G.est,t=o&&townBy(o.town);if(!t||!bldLv(t,o.k)){closeDialog();return}
+  if(a==='es-sabotage'&&P.fac!==t.owner&&t.owner!=='player'&&!sabotaged(t,o.k)){const k=o.k;G.est=null;train('scout',4);
+    if(Math.random()<sabotageChance(t,k)){sabotage(t,k);addRep(t.name,-CONDUCT.sabotageEstate.rep,true);closeDialog();
+      return notice('Sabotaged','Under cover your people foul the '+ESTATES[k].n.toLowerCase()+' of '+t.name+'. It will make nothing for '+(t.sab[k]-G.day)+' days, and nobody saw who did it.','good')}
+    wrong(t,{hostile:CONDUCT.plunderEstate.hostile});log('You are caught at the '+ESTATES[k].n.toLowerCase()+' of '+t.name+'!','bad');
+    return startEncounter({kind:'estate',ref:{town:t.name,k,sab:true,x:o.x,y:o.y,fac:t.owner,cool:0},list:estateGuards(t,k),title:'Guards of the '+ESTATES[k].n.toLowerCase()+' of '+t.name})}
   if((a==='es-plunder'||a==='es-burn')&&troopCount()>=3&&P.fac!==t.owner){const burn=a==='es-burn';wrong(t,{hostile:(burn?CONDUCT.burnEstate:CONDUCT.plunderEstate).hostile});G.est=null;
-    startEncounter({kind:'estate',ref:{town:t.name,k:o.k,burn,x:o.x,y:o.y,fac:t.owner,cool:0},list:estateGuards(t,o.k),title:'Guards of the '+ESTATES[o.k].n.toLowerCase()+' of '+t.name})}
+    startEncounter({kind:'estate',mine:true,ref:{town:t.name,k:o.k,burn,x:o.x,y:o.y,fac:t.owner,cool:0},list:estateGuards(t,o.k),title:'Guards of the '+ESTATES[o.k].n.toLowerCase()+' of '+t.name})}
 }
 // won the fight at an estate (from concludeEncounter): the spoils and the damage
 function estateWon(e){
   const r=e.ref,t=townBy(r.town);if(!t)return '';ensureEcon(t);const lv=bldLv(t,r.k),M=MAKE[r.k]||{},got=[];
+  if(r.sab){sabotage(t,r.k);const cost=wrong(t,{rep:CONDUCT.plunderEstate.rep,honor:CONDUCT.plunderEstate.honor});return ' You beat its guards and wreck the '+ESTATES[r.k].n.toLowerCase()+' of '+t.name+' anyway: idle for '+(t.sab[r.k]-G.day)+' days ('+cost+').'}
   for(const g in M.out||{}){const n=Math.min(t.stock[g]||0,Math.ceil(M.out[g]*Math.max(1,lv)*3));if(n<=0)continue;const k=invAdd('good',g,n);t.stock[g]-=n;if(k)got.push(k+' '+GOODS[g].n.toLowerCase())}
   const gold=rint(10,25)*Math.max(1,lv),c=r.burn?CONDUCT.burnEstate:CONDUCT.plunderEstate;P.gold+=gold;
   const cost=wrong(t,{rep:c.rep,honor:c.honor,fear:c.fear,pros:c.pros});
-  if(r.burn){t.bld[r.k]=Math.max(0,lv-1);t.raided=Math.max(t.raided||0,G.day+4);mood('cruel')}
+  if(r.burn){t.bld[r.k]=Math.max(0,lv-1);t.raided=Math.max(t.raided||0,G.day+4);mood('cruel');syncLots(t)}
   return ' You '+(r.burn?'burn the '+ESTATES[r.k].n.toLowerCase()+' of '+t.name+' (now level '+bldLv(t,r.k)+')':'plunder the '+ESTATES[r.k].n.toLowerCase()+' of '+t.name)+': '+(got.length?got.join(', ')+' and ':'')+gold+' gold. Its workers flee and '+t.name+' grows poorer ('+cost+').';
 }
 
@@ -108,46 +138,24 @@ function estatesBody(t){
   const mt=(mats)=>{const l=matsLacking(t,mats);return ' Needs '+matsText(mats)+(l.length?' (short: '+l.join(', ')+')':'')+'.'};
   return '<div class="lab" style="margin-top:6px">Walls and estates · built with gold and materials from '+t.name+'&rsquo;s stock</div>'+
     (w?'<p class="gold" style="font-size:13px">Building: '+(w.k==='wall'?WALL_N[w.lv||wn]:ESTATES[w.k].n+' level '+(bldLv(t,w.k)+1))+', done in '+Math.max(1,w.done-G.day)+' days'+(besieged(t)?' (stopped by the siege)':'')+'. One project at a time.</p>':'')+
-    row(WALL_N[wl]+(wl<WALL_MAX[t.kind]?'':' (best)'),'Defenders fight as level '+(1+wl)+'; sieges by lords take '+(2+wl)+' days; garrison up to '+fiefCap(t)+'.'+(wl<WALL_MAX[t.kind]?' Next: '+WALL_N[wn]+'.'+mt(WALL_MAT[wn]):''),
-      wl<WALL_MAX[t.kind]?b('wall','Fortify '+wc+'g · '+buildDays(wn)+' days',busy?'Already building':P.gold<wc?'Not enough gold':matsLacking(t,WALL_MAT[wn]).length?'Not enough materials in stock':''):'')+
+    row('Fortification: '+WALL_N[wl]+(wl<t.T.wallMax?'':' (best)'),'Defenders fight as level '+(1+wl)+'; sieges by lords take '+(2+wl)+' days; garrison up to '+fiefCap(t)+'.'+(wl<t.T.wallMax?' Next: '+WALL_N[wn]+'.'+mt(WALL_MAT[wn]):''),
+      wl<t.T.wallMax?b('wall','Fortify '+wc+'g · '+workDays(t,wn)+' days',busy?'Already building':P.gold<wc?'Not enough gold':matsLacking(t,WALL_MAT[wn]).length?'Not enough materials in stock':''):'')+
+    // houses: the room they give, a new one placed by hand, an old one pulled down
+    (()=>{const hs=(t.lots||[]).filter(l=>l.k==='house'),hc=HOUSE_COST,why=busy?'Already building':P.gold<hc.gold?'Not enough gold':matsLacking(t,hc.mats).length?'Not enough materials in stock':'';
+      return row('Houses '+hs.length,'Room for '+housing(t)+' people; '+Math.round(t.pop||0)+' live here.'+(housingFull(t)?' <span class="bad">Full: no one more can settle, and some will leave.</span>':'')+' A new house needs '+matsText(hc.mats)+'.',
+        '<button class="btn sm" type="button" data-act="fief-house"'+(why?' disabled title="'+why+'"':'')+'>Place a house '+hc.gold+'g · '+workDays(t,HOUSE_DAYS)+' days</button>'+(hs.length?'<button class="btn sm" type="button" data-act="fief-demolish" data-arg="house">Pull one down</button>':''))})()+
     Object.keys(ESTATES).map(k=>{const lv=bldLv(t,k),cap=bldCap(t,k),c=bldCost(k,lv+1);
       return row(ESTATES[k].n+' '+lv+' / '+(cap||'–'),ESTATES[k].d+(cap?(lv<cap?mt(ESTATE_MAT(k,lv+1)):''):' No suitable land near '+t.name+'.'),
-        cap&&lv<cap?b(k,(lv?'Upgrade ':'Build ')+c+'g · '+buildDays(lv+1)+' days',busy?'Already building':P.gold<c?'Not enough gold':matsLacking(t,ESTATE_MAT(k,lv+1)).length?'Not enough materials in stock':''):'')}).join('');
+        (lv?'<button class="btn sm" type="button" data-act="fief-demolish" data-arg="'+k+'">Pull down</button>':'')+
+        (cap&&lv<cap?b(k,(lv?'Upgrade ':'Place ')+c+'g · '+workDays(t,lv+1)+' days',busy?'Already building':!lv&&!needsMet(t,k)?'Needs '+needsText(k):P.gold<c?'Not enough gold':matsLacking(t,ESTATE_MAT(k,lv+1)).length?'Not enough materials in stock':''):''))}).join('');
 }
-function buildAct(t,k){
+function buildAct(t,k,at){
   if(t.work)return;
-  if(k==='wall'){const n=wallOf(t)+1;if(n>WALL_MAX[t.kind]||P.gold<WALL_COST[n]||matsLacking(t,WALL_MAT[n]).length)return;P.gold-=WALL_COST[n];takeMats(t,WALL_MAT[n]);t.work={k,lv:n,done:G.day+buildDays(n)};log('Masons start on '+WALL_N[n].toLowerCase()+' at '+t.name+'.');return}
-  if(!ESTATES[k])return;const lv=bldLv(t,k);if(lv>=bldCap(t,k))return;const c=bldCost(k,lv+1),mats=ESTATE_MAT(k,lv+1);if(P.gold<c||matsLacking(t,mats).length)return;P.gold-=c;takeMats(t,mats);t.work={k,lv:lv+1,done:G.day+buildDays(lv+1)};log('Work starts on the '+ESTATES[k].n.toLowerCase()+' of '+t.name+'.');
+  if(k==='wall'){const n=wallOf(t)+1;if(n>t.T.wallMax||P.gold<WALL_COST[n]||matsLacking(t,WALL_MAT[n]).length)return;P.gold-=WALL_COST[n];takeMats(t,WALL_MAT[n]);startWork(t,k,n);log('Masons start on '+WALL_N[n].toLowerCase()+' at '+t.name+'.');return}
+  if(!ESTATES[k])return;at=at||null;const lv=bldLv(t,k);if(lv>=bldCap(t,k)||!lv&&!needsMet(t,k))return;const c=bldCost(k,lv+1),mats=ESTATE_MAT(k,lv+1);if(P.gold<c||matsLacking(t,mats).length)return;P.gold-=c;takeMats(t,mats);startWork(t,k,lv+1,at);log('Work starts on the '+ESTATES[k].n.toLowerCase()+' of '+t.name+'.');
 }
 
-/* on the map: each estate drawn on its spot, sized by its level; walls around the holdings */
-function estateSprite(k,lv,clim){
-  const key='es'+k+lv+clim;if(spr[key])return spr[key];
-  const crop={grass:['#c8b048','#a8903a'],frost:['#b8b090','#98907a'],desert:['#c8a050','#a8803a'],swamp:['#8a9a48','#6a7a38']}[clim]||['#c8b048','#a8903a'];
-  const sz={farm:[14+8*lv,10+4*lv],pasture:[16+6*lv,12+3*lv],lumber:[22,16],mine:[22,16],quarry:[22,16],port:[26,16]}[k];if(!sz)return null;
-  return spr[key]=mkc(sz[0],sz[1],g=>{const r=(c,x,y,w,h)=>rect(g,c,x,y,w||1,h||1),[W,H]=sz;
-    if(k==='farm'){r('#6a5030',0,0,W,H);for(let y=1;y<H-1;y+=2)r(y%4===1?crop[0]:crop[1],1,y,W-2,1);r('#8a6a3a',0,0,W,1);r('#8a6a3a',0,0,1,H)}
-    else if(k==='pasture'){for(let x=0;x<W;x+=3){r('#8a6a3a',x,0,1,2);r('#8a6a3a',x,H-2,1,2)}r('#8a6a3a',0,1,W,1);r('#8a6a3a',0,H-1,W,1);for(let y=0;y<H;y+=3){r('#8a6a3a',0,y,1,1);r('#8a6a3a',W-1,y,1,1)}
-      for(let i=0;i<lv+1;i++){const x=3+i*5%(W-6),y=3+(i*7)%(H-7);r('#f0ece0',x,y,3,2);r('#3a3020',x+3,y,1,1)}}
-    else if(k==='lumber'){r('#6a4a2a',2,6,9,7);r('#8a3d2d',1,4,11,3);r('#3a2418',5,9,2,4);for(let i=0;i<lv+1;i++)r('#a8783a',13,8+i*2,8,2),r('#d8b070',13,8+i*2,1,2);r('#7a5a3a',16,3,3,2);r('#c8a060',16,3,1,2)}
-    else if(k==='mine'){r('#5a5048',3,3,14,11);r('#2a2420',6,6,8,8);r('#7a5a3a',5,5,10,1);r('#7a5a3a',5,5,1,9);r('#7a5a3a',14,5,1,9);r('#8a8a90',16,11,5,3);r('#3a3030',16,14,1,1);r('#3a3030',20,14,1,1);for(let i=0;i<lv;i++)r('#c8ced8',17+i,10,1,1)}
-    else if(k==='quarry'){r('#6a6a64',2,6,18,9);r('#8e8e86',3,4,12,4);r('#a8a8a0',4,4,6,1);r('#55554e',14,6,1,8);r('#55554e',8,8,1,7);for(let i=0;i<lv+1;i++){r('#b4b4ac',16-i*4,12,3,3);r('#8e8e86',16-i*4,14,3,1)}r('#7a5a3a',1,10,1,5)}
-    else if(k==='port'){r('#8a6a3a',0,6,18,3);for(let x=1;x<18;x+=4)r('#5a3a20',x,9,1,3);r('#6a4a2a',18,4,8,5);r('#e8e4d0',21,0,1,4);r('#e8e4d0',22,1,3,3);if(lv>1){r('#6a4a2a',4,11,8,4);r('#e8e4d0',7,7,3,4)}}
-  });
-}
-function drawEstates(cam,V){
-  for(const t of TOWNS){if(!t.bld||Math.hypot(t.x-P.x,t.y-P.y)>V+260)continue;const sp=bldSpots(t),clim=climAt(t.x,t.y);
-    for(const k in sp){const lv=bldLv(t,k);if(!lv)continue;const s=estateSprite(k,lv,clim);if(!s)continue;const p=sp[k],sx=Math.round(p.x-s.width/2-cam.x),sy=Math.round(p.y-s.height/2-cam.y);
-      if(sx>VW||sy>VH||sx+s.width<0||sy+s.height<0)continue;ctx.drawImage(s,sx,sy);
-      if(Math.hypot(p.x-P.x,p.y-P.y)<60)txt(ESTATES[k].n,Math.round(p.x-cam.x),sy+s.height+7,'#c8c2ae','center')}}
-}
-// a ring around the holding: back half before its sprite, front half after
-function drawWall(t,sx,sy,w,h,front){
-  const lv=wallOf(t);if(!lv)return;const col=lv===1?'#7a5a32':'#8a8e98',dk=lv===1?'#4a3420':'#5a5e68',th=lv,x0=sx-4,x1=sx+w+4,yb=sy+h-2,yt=yb-Math.max(10,Math.round(h*.45));
-  if(!front){rect(ctx,col,x0,yt,x1-x0,th);rect(ctx,col,x0,yt,th,yb-yt);rect(ctx,col,x1-th,yt,th,yb-yt);if(lv===1)for(let x=x0;x<x1;x+=2)rect(ctx,dk,x,yt-1,1,1);return}
-  rect(ctx,col,x0,yb,x1-x0,th+1);rect(ctx,dk,x0,yb+th+1,x1-x0,1);
-  if(lv===1)for(let x=x0;x<x1;x+=2)rect(ctx,dk,x,yb-1,1,1);else for(let x=x0;x<x1;x+=3)rect(ctx,col,x,yb-1,2,1);
-  const gx=Math.round((x0+x1)/2)-2;rect(ctx,'#3a2418',gx,yb,4,th+1);
-  if(lv===3)[x0-1,x1-4].forEach(x=>{rect(ctx,col,x,yt-4,5,yb-yt+th+5);rect(ctx,dk,x,yt-5,5,1);rect(ctx,dk,x+1,yt-2,1,2);rect(ctx,dk,x+3,yt-2,1,2)});
-}
+/* on the map: drawn with every other placed building (structures.js: drawLotGround, lotEnts) */
+const drawEstates=(cam,V)=>drawLotGround(cam,V);
+const estateEnts=(ents,cam,V)=>lotEnts(ents,cam,V);
 onAct('es-',estateAct);

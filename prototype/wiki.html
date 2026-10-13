@@ -2,12 +2,12 @@
 <title>Ashmark Wiki</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Pixelify+Sans:wght@500;600&family=Silkscreen&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=VT323&family=Silkscreen&display=swap">
 <style>
 /* Layout: a field manual for the game. Sticky contents rail on the left, one long reference column on the right; every entry is built from the prototype's own data files, so sprites and numbers match the game. */
 :root{
   --bg:#12141c; --panel:#1a1e2b; --panel-2:#232944; --line:#363e5e; --fg:#e4e0cf; --muted:#98a0ba; --accent:#e8b94a; --bad:#e8675f; --good:#78c474; --ground:#0b0d14;
-  --display:"Pixelify Sans","Courier New",monospace; --label:"Silkscreen","Courier New",monospace; --body:"Atkinson Hyperlegible",system-ui,sans-serif;
+  --display:"VT323","Courier New",monospace; --label:"Silkscreen","Courier New",monospace; --body:"Atkinson Hyperlegible",system-ui,sans-serif;
   color-scheme:dark;
 }
 @media (prefers-color-scheme:light){:root:not([data-theme="dark"]){
@@ -114,6 +114,9 @@ tr:last-child td{border-bottom:0}
     <p id="loading" class="muted">Loading game data…</p>
   </main>
 </div>
+<script src="../engine/pixel.js"></script>
+<script src="../engine/buildings.js"></script>
+<script src="../engine/pieces.js"></script>
 <script src="js/core/core.js"></script>
 <script src="js/data/races.js"></script>
 <script src="js/data/factions.js"></script>
@@ -124,20 +127,28 @@ tr:last-child td{border-bottom:0}
 <script src="js/data/gear.js"></script>
 <script src="js/data/progression.js"></script>
 <script src="js/data/tree.js"></script>
+<script src="js/data/holdings.js"></script>
 <script src="js/data/places.js"></script>
 <script src="js/data/economy.js"></script>
 <script src="js/data/conduct.js"></script>
+<script src="js/data/scenes.js"></script>
 <script src="js/core/state.js"></script>
 <script src="js/world/map.js"></script>
+<script src="js/world/fog.js"></script>
+<script src="js/world/resources.js"></script>
 <script src="js/gfx/worldart.js"></script>
 <script src="js/gfx/sprites.js"></script>
+<script src="js/gfx/structures.js"></script>
 <script src="js/ui/ui.js"></script>
 <script src="js/core/save.js"></script>
 <script src="js/world/reputation.js"></script>
 <script src="js/ui/character.js"></script>
 <script src="js/ui/inventory.js"></script>
+<script src="js/ui/loot.js"></script>
 <script src="js/ui/town.js"></script>
+<script src="js/world/leaders.js"></script>
 <script src="js/world/realms.js"></script>
+<script src="js/world/parties.js"></script>
 <script src="js/world/monsters.js"></script>
 <script src="js/world/critters.js"></script>
 <script src="js/world/events.js"></script>
@@ -145,11 +156,20 @@ tr:last-child td{border-bottom:0}
 <script src="js/world/siege.js"></script>
 <script src="js/world/territory.js"></script>
 <script src="js/world/estates.js"></script>
+<script src="js/world/lots.js"></script>
 <script src="js/world/economy.js"></script>
 <script src="js/world/conduct.js"></script>
 <script src="js/world/folk.js"></script>
 <script src="js/world/caravans.js"></script>
+<script src="js/world/ships.js"></script>
+<script src="js/world/companions.js"></script>
+<script src="js/world/stay.js"></script>
 <script src="js/world/refugees.js"></script>
+<script src="js/world/patrols.js"></script>
+<script src="js/world/fights.js"></script>
+<script src="js/world/brains.js"></script>
+<script src="js/world/captives.js"></script>
+<script src="js/world/relations.js"></script>
 <script src="js/world/quests.js"></script>
 <script src="js/ui/talents.js"></script>
 <script src="js/world/world.js"></script>
@@ -157,7 +177,17 @@ tr:last-child td{border-bottom:0}
 <script src="js/battle/parley.js"></script>
 <script src="js/battle/battle.js"></script>
 <script src="js/battle/combat.js"></script>
+<script src="js/battle/heroai.js"></script>
+<script src="js/battle/commander.js"></script>
+<script src="js/battle/formations.js"></script>
+<script src="js/battle/morale.js"></script>
+<script src="js/battle/camera.js"></script>
+<script src="js/battle/deploy.js"></script>
+<script src="js/scene/scene.js"></script>
+<script src="js/scene/town.js"></script>
+<script src="js/gfx/scene.js"></script>
 <script src="js/gfx/render.js"></script>
+<script src="js/ui/battlehud.js"></script>
 <script>
 (()=>{
 'use strict';
@@ -166,6 +196,8 @@ P.x=(TOWNS[0].tx+.5)*TILE;P.y=(TOWNS[0].ty+2.5)*TILE;G.mode='wiki';initWorld();
 const main=document.getElementById('wiki');
 const L={grass:'Grassland',frost:'Frost',desert:'Desert',swamp:'Swamp',forest:'Forest',hills:'Hills',open:'Open ground',rock:'Hills or mountain',shore:'Shoreline'};
 const pct=x=>Math.round(x*100)+'%';
+// the kinds of holding (holdings.js), and their plurals
+const HT=HOLDING_TYPES,HK=Object.keys(HT),kinds=k=>k==='city'?'cities':k+'s';
 const keyOf=s=>Object.keys(ST).find(k=>ST[k]===s);
 const kind=s=>s.big?'huge':s.range?'ranged':s.charge?'mounted':'melee';
 const trainCostOf=id=>ST[id].tier>=3?45:25;
@@ -181,7 +213,7 @@ const callout=t=>'<p class="callout">'+t+'</p>';
 const sections=[];
 function section(id,title,lead,html){sections.push([id,title]);main.insertAdjacentHTML('beforeend','<section id="'+id+'" aria-labelledby="h-'+id+'"><h2 id="h-'+id+'">'+title+'</h2>'+(lead?'<p class="muted">'+lead+'</p>':'')+html+'</section>')}
 const hireAt=id=>{const s=ST[id];if(!s.race||!HIRE[id])return[];const r=RACES[s.race];
-  return TOWNS.filter(t=>t.races.includes(s.race)&&(id===r.melee||(id===r.ranged&&t.kind!=='village')||(id===r.horse&&t.kind==='castle'))).map(t=>t.name)};
+  return TOWNS.filter(t=>t.races.includes(s.race)&&t.hires(s.race).includes(id)).map(t=>t.name)};
 const statText=m=>Object.keys(m||{}).filter(k=>GEAR_STAT[k]&&m[k]).map(k=>{const [n,u]=GEAR_STAT[k],v=u?Math.round(m[k]*100):m[k];return (v>0?'+':'')+v+u+' '+n}).join(', ')||'—';
 
 /* counts */
@@ -192,9 +224,11 @@ document.getElementById('loading').remove();
 
 /* getting started */
 section('start','Getting started','Pick a race and a past, then make your name: hire troops, trade between towns, clear camps and lairs, take jobs, and in time take holdings of your own.',
-  kv([['World map','Click to move (or click a holding, party or site to walk to it and meet it). Space pauses; 1×, 2× and 3× set the speed.'],['Screens','C character · K skills · I inventory · Esc closes a screen or opens the pause menu (save, load, settings, main menu).'],
+  kv([['World map','Click to move (or click a holding, party or site to walk to it and meet it). Space pauses; 1×, 2× and 3× set the speed.'],['Screens','C character · K skills · I inventory · Esc closes the window in front, one at a time; with none left it opens the pause menu (save, load, settings, main menu).'],
+    ['Towns','The town panel is the quick way to trade, recruit and take jobs. <b>Walk the streets</b> to go in on foot: WASD or click to walk, E to talk. The '+Object.values(SCENE_ROLES).filter(R=>R.tab).map(R=>R.n.toLowerCase()).join(', ')+' each open their part of the panel; the priest blesses you once a day (+'+BLESSING.morale+' morale); townsfolk share gossip. Walk out of the gate to leave. Castles, villages and sites get their own scenes later.'],
     ['Battle','WASD move · Space or left-click attack · F dodge · Shift sprint · B block · right-click shove (shield bash with a shield) · 1–0 skill slots.'],['Bows','Hold the attack to draw (longer is stronger, but holding a full draw drains stamina); the mouse wheel sets your range.'],
-    ['Troops','G picks a group (infantry, archers, cavalry, all) · Z hold · X follow · C charge · V advance · T spread out.'],['Saving','The game saves each day and when you leave a town; F6 or the pause menu saves any time.']])+
+    ['Troops','G picks a group (infantry, archers, cavalry, all) · Z hold · X follow · C charge · V advance · B shield wall · L loose · T wedge · right-drag lays out the line (width and depth).'],['Saving','The game saves each day and when you leave a town; F6 or the pause menu saves any time.'],
+    ['Spoils','After a fight its gold, XP and prisoners are yours at once; the things it won lie on the ground beside your bag. Click one to take it, use <b>Take all that fits</b>, or click something in your bag to put it back and make room. Whatever you leave stays behind (Esc won’t leave it for you).']])+
   callout('A day on the map lasts '+DAY_SECONDS+' seconds at 1× speed: '+pct(NIGHT_AT)+' daylight, then dusk, night and dawn. Your band eats and is paid each day.'));
 
 /* world */
@@ -202,7 +236,7 @@ section('world','The world','Ashmark is a '+MW+' × '+MH+' tile map: cold north,
   '<div class="mapwrap"><canvas id="worldmap" role="img" aria-label="Map of Ashmark with its holdings and the lands each realm rules"></canvas></div>'+
   '<div class="legend">'+FIDS.map(f=>'<span>'+fac(f)+'</span>').join('')+CLIMS.map(c=>'<span><span class="sw" style="background:'+PAL[c].g[0]+'"></span>'+L[c]+'</span>').join('')+'</div>'+
   sub('Territory','Every holding rules the land it can reach from its gates; roads carry its reach farther, forest, hills and mountains less, and water stops it. Where two claims meet, the holding with more reach to spare keeps the land.',
-    table(['Kind','Starting reach','Grows to (in peace)'],['village','town','castle'].map(k=>[k,LAND_REACH[k],LAND_REACH[k]+GROW_MAX[k]+' (+ up to 3 for friendly holdings within 50 tiles)']),[1])+
+    table(['Kind','Starting reach','Grows to (in peace)'],HK.map(k=>[k,HT[k].reach,HT[k].reach+HT[k].growMax+' (+ up to 3 for friendly holdings within 50 tiles)']),[1])+
     callout('Reach grows about 1 every '+Math.round(1/GROW_DAY)+' days a holding is held in peace, and by 1 each time you clear a camp or den near it. Conquest costs 2; siege, sack and raids wear it down. A captured holding brings all its land to the new owner. Crossing into another realm’s land shows in the log.')));
 
 /* biomes */
@@ -234,19 +268,29 @@ section('realms','Realms and diplomacy','Five realms declare wars, sign truces a
   callout('Sign a mercenary contract in any town tavern: the realm pays 1 gold per troop a day and adds a 40 gold bounty per enemy lord you beat. Their enemies become yours. Attacking a lord, a caravan or a holding makes its realm hostile for a while and costs honor with it.'));
 
 /* holdings */
-section('holdings','Holdings',TOWNS.length+' towns, castles and villages. Hiring needs standing at the holding: '+REP_NEED[1]+' for tier 1, '+REP_NEED[2]+' for tier 2, '+REP_NEED[3]+' for tier 3. Standing is your reputation there, half your honor with its owner, and a bonus where your own race lives. Shown as a new game begins.',
+section('holdings','Holdings',TOWNS.length+' cities, towns, castles and villages. Hiring needs standing at the holding: '+REP_NEED[1]+' for tier 1, '+REP_NEED[2]+' for tier 2, '+REP_NEED[3]+' for tier 3. Standing is your reputation there, half your honor with its owner, and a bonus where your own race lives. Shown as a new game begins.',
   table(['Holding','Kind','Starts with','Folk','Climate','Walls','People','Estates','Notes'],TOWNS.map(t=>['<b>'+t.name+'</b>',t.kind,fac(HOME[t.name]),t.races.map(r=>RACES[r].n).join(', '),L[t.clim],WALL_N[wallOf(t)],t.pop,'<span class="muted" style="font-size:13px">'+estateLine(t)+'</span>',
-    '<span class="muted" style="font-size:13px">'+t.note+(Object.keys(COMPS).some(c=>COMPS[c].town===t.name)?' Companion: '+Object.keys(COMPS).filter(c=>COMPS[c].town===t.name).map(c=>COMPS[c].n).join(', ')+'.':'')+'</span>']),[6]));
+    '<span class="muted" style="font-size:13px">'+t.note+(Object.keys(COMPS).some(c=>COMPS[c].town===t.name)?' Companion: '+Object.keys(COMPS).filter(c=>COMPS[c].town===t.name).map(c=>COMPS[c].n).join(', ')+'.':'')+'</span>']),[6])+
+  sub('Staying in a holding','Stay here (in a holding’s window, or Lodgings in its tavern) and your band goes inside while the days pass at whatever speed you set.',kv([
+    ['Inside','Off the map: nothing hunts you, the frost and the desert cannot reach you. You recover four times as fast as on the road, morale rises 15 a day, the wounded heal twice as fast. Click the holding to trade, hire and drink as usual; the banner’s Leave takes you out by the gate.'],
+    ['Free','Where they know you: your own fief, your employer’s holdings, or standing '+STAY_FREE+' or more. As long as you like.'],
+    ['Paid','Elsewhere '+STAY_BASE+' gold a day, and 1 more for every 2 of your people, paid as each day begins; the banner says the day your gold runs out, and then the innkeeper sends you out.'],
+    ['Refused','By a hostile realm, where they dislike you (standing below 0), in a siege or in ruins, and by a castle that does not know you: castles take no paying guests.'],
+    ['Food','Your band eats its own stores; the tavern sells Provisions for 3 or 7 days.'],
+    ['A siege','If an army lays siege while you are inside, time stops and you choose: defend the walls (fight the besieger, the garrison beside you), slip out (a flight past them), or wait it out (if it falls, you are thrown out and lose a quarter of your soldiers).'],
+    ['Everyone shelters','Lords rest only in their own realm’s holdings. Order a companion’s party to Stay in town and it shelters in the nearest holding that will take it, by your rules, paid from your purse, hiring there.']])));
 
 /* economy */
-const madeBy=g=>Object.keys(MAKE).filter(k=>MAKE[k].out&&MAKE[k].out[g]).map(k=>ESTATES[k].n+' '+MAKE[k].out[g]+'/lv').concat(g==='furs'?['Weavers & Tanners in the frost']:[]).concat(['grain','timber','stone'].includes(g)?['the land itself']:[]).join(', ')||'—';
-const usedBy=g=>[...Object.keys(MAKE).filter(k=>MAKE[k].in&&MAKE[k].in[g]).map(k=>ESTATES[k].n),...Object.keys(NEEDS).filter(k=>NEEDS[k][g]).map(k=>k+'s'),...(GOODS[g].food?['everyone (food)']:[]),
-  ...(Object.keys(ESTATES).some(k=>ESTATE_MAT(k,1)[g])||WALL_MAT.some(m=>m&&m[g])?['building']:[]),...(GOODS[g].ammo?['your bows and crossbows']:[]),...(g==='furs'?['frost holdings, your band in the frost']:[])].join(', ')||'—';
+const resWhere=g=>{const ore=!!ORE_W[g],n=DEPOSITS.filter(d=>d.g===g).length,c=ore?ORE_W[g].clim:FISH_W[g],cl=Object.keys(c).filter(k=>c[k]>0).sort((a,b)=>c[b]-c[a]);return (ore?'Mines':'Ports')+' near its '+n+' '+(ore?'veins':'fishing grounds')+' ('+cl.join(', ')+'), '+RES_RATE[g]+'/lv'};
+const madeBy=g=>GOODS[g].res||ORE_W[g]?resWhere(g):Object.keys(MAKE).filter(k=>MAKE[k].out&&MAKE[k].out[g]).map(k=>ESTATES[k].n+' '+MAKE[k].out[g]+'/lv').concat(g==='furs'?['Weavers & Tanners in the frost']:[]).concat(['grain','timber','stone'].includes(g)?['the land itself']:[]).join(', ')||'—';
+const usedBy=g=>[...Object.keys(MAKE).filter(k=>MAKE[k].in&&MAKE[k].in[g]).map(k=>ESTATES[k].n),...HK.filter(k=>HT[k].needs[g]).map(kinds),...(GOODS[g].food?['everyone (food)']:[]),
+  ...(Object.keys(ESTATES).some(k=>ESTATE_MAT(k,1)[g])||WALL_MAT.some(m=>m&&m[g])?['building']:[]),...(GOODS[g].ammo?['your bows and crossbows']:[]),...(FORGE.some(m=>m[g])?['smiths, forging gear']:[]),...HK.filter(k=>HT[k].wants[g]).map(k=>kinds(k)+' (wanted)'),...(g==='furs'?['frost holdings, your band in the frost']:[])].join(', ')||'—';
 section('economy','The economy','Every holding keeps real stores. Each day its estates (staffed by its people) and its land produce, workshops turn inputs into goods, people and garrison eat and use things up, and fresh food spoils. What is left sets the price.',
   table(['Good','Base','Per bag slot','Spoils a day','Made by','Used by'],Object.keys(GOODS).map(g=>['<b>'+g$(g)+'</b>',GOODS[g].base+'g',GOODS[g].stack,GOODS[g].spoil?pct(GOODS[g].spoil):'—','<span class="muted" style="font-size:13px">'+madeBy(g)+'</span>','<span class="muted" style="font-size:13px">'+usedBy(g)+'</span>']),[1,2,3])+
   sub('Prices','A holding aims to keep ten days of what it needs. Price = base × √(target ÷ stock), between 0.4× and 3×, and 40% more while it lies ruined. Every unit you buy or sell changes the stock, so the next unit costs more (or pays less). Buying costs about 8% over the price and selling pays about 8% under it; Trade narrows the gap. You cannot buy what a market does not have, and buying a hungry town’s food angers its people.','')+
-  sub('People and prosperity','',table(['Kind','Starts with','Room for','Storage per good'],['village','town','castle'].map(k=>[k,POP0[k]+' people',POPCAP[k]+' + land/12 (+15% per Granary)',STORE[k]+' (+50% per Granary)']),[1])+
-    kv([['Food','People eat '+NEEDS.town.food+' food per 100 a day, the garrison 1 per 4 soldiers. Perishables go first; three or more kinds of food lift spirits.'],['Other needs','Towns use cloth, timber, tools, ale, spice and some iron; castles iron, tools and ammunition; villages a little cloth, timber, tools and ale.'],
+  sub('Kinds of holding','',table(['Kind','How many','Garrison','Walls (start / best)','Patrol','Its window','Raises'],HK.map(k=>[k,TOWNS.filter(t=>t.kind===k).length,HT[k].gar,WALL_N[HT[k].wall0]+' / '+WALL_N[HT[k].wallMax],HT[k].patrol.size,HT[k].tabs.join(', '),HT[k].hires.join(', ')]),[1,2,4])+'<p class="muted">Each realm rules from one city. Villages are the most common holding; castles are its garrisons, which keep a stockpile instead of a market and lodge only those they know.</p>')+
+  sub('People and prosperity','',table(['Kind','Starts with','Room for','Storage per good'],HK.map(k=>[k,HT[k].pop0+' people',HT[k].popCap+' + land/12 (+15% per Granary)',HT[k].store+' (+50% per Granary)']),[1])+
+    kv([['Food','People eat '+HT.town.needs.food+' food per 100 a day, the garrison 1 per 4 soldiers. Perishables go first; three or more kinds of food lift spirits.'],['Other needs','Towns use cloth, timber, tools, ale, spice and some iron; castles iron, tools and ammunition; villages a little cloth, timber, tools and ale.'],
       ['Famine','Short of food, people die or leave (up to 3% a day).'],['Growth','Fed and content (prosperity over 40%), a holding grows toward its room.'],['Prosperity','Follows how well needs are met; turmoil, ruin, sieges and high taxes wear it down.'],
       ['Staffing','Each estate level needs '+WORKERS+' workers; with too few people, estates make less.'],['Volunteers','Grow each day with people and prosperity, up to a tenth of the people. Every troop you hire takes one.']]))+
   sub('Taxes','A day’s taxes = people × rate × (0.4 + prosperity) + 3 gold per Market level. Your fiefs pay you; the rest pay their realm.',table(['Rate','Share','Effect on prosperity'],TAX_N.map((n,i)=>[n,pct(TAX_RATE[i]),['+1 a day','—','−1.5 a day'][i]])))+
@@ -257,16 +301,17 @@ section('economy','The economy','Every holding keeps real stores. Each day its e
 
 /* estates */
 const makeText=k=>{const M=MAKE[k];if(!M.out)return '—';return (M.in?Object.keys(M.in).map(g=>M.in[g]+' '+g$(g).toLowerCase()).join(' + ')+' → ':'')+Object.keys(M.out).map(g=>M.out[g]+' '+g$(g).toLowerCase()).join(', ')};
-section('estates','Estates and walls','What a holding has built. Outdoor estates stand on land that suits them, near the holding; their workers walk out each morning and home at dusk. Build and upgrade them in your fiefs (one project at a time); realms build their own over time.',
+section('estates','Estates and walls','What a holding has built. Every building stands on its own tiles of the map grid, round the holding’s centre (a keep, a citadel or a hall): houses and workshops, and outside them the estates that work the land, their workers walking out each morning and home at dusk. In your fiefs you place what you build: a ghost of it follows the pointer, green where it may stand, red where not. One project at a time, and it takes days (fewer with more people), going up behind scaffolding. Realms build their own over time.',
   table(['Estate','Needs','Per level a day','Gold for level 1 / 2 / 3','Materials (level 1)','Notes'],Object.keys(ESTATES).map(k=>{const E=ESTATES[k];return ['<b>'+E.n+'</b>',E.ground?L[E.ground]:'inside',makeText(k),[1,2,3].map(l=>bldCost(k,l)).join(' / '),matsText(ESTATE_MAT(k,1)),'<span class="muted" style="font-size:13px">'+E.d+'</span>']}))+
-  callout('Most estates reach level '+BLD_MAX.town+' in towns and '+BLD_MAX.village+' in villages and castles. Level 1 takes '+buildDays(1)+' days, level 2 '+buildDays(2)+' and level 3 '+buildDays(3)+'; materials scale with the level and come from the holding’s own stores. Raids burn one estate and sacks burn two.')+
+  callout('Most estates reach level '+HT.town.estMax+' in towns and cities and '+HT.village.estMax+' in villages and castles. Level 1 takes '+buildDays(1)+' days, level 2 '+buildDays(2)+' and level 3 '+buildDays(3)+' at a holding of its usual size (a busier one builds up to twice as fast, a small one slower); materials scale with the level and come from the holding’s own stores. Each level shows a better building. Raids burn one estate and sacks burn two: they stand in ruins until rebuilt. Some need others first: '+Object.keys(ESTATE_NEEDS).map(k=>ESTATES[k].n+' needs '+needsText(k)).join('; ')+'. You can pull down your own buildings for half their cost back.')+
+  sub('Houses and people','',kv([['Room','Each house gives room for people (a cottage '+HOUSING.cottage+', a town house '+HOUSING.townhouse+', a yurt '+HOUSING.yurt+', a tree house '+HOUSING.treehouse+'), and so does the centre. A holding grows only to the room it has.'],['Full','A full holding grows no more, and now and then some of its people leave for a holding with room to spare.'],['Building','A house costs '+HOUSE_COST.gold+' gold and '+matsText(HOUSE_COST.mats)+'. Realms build houses as their people fill them; in your fiefs you place them yourself.']]))+
   sub('Walls','',table(['Walls','Gold','Materials','Days','Defenders fight as'],WALL_N.map((n,l)=>[n,l?WALL_COST[l]:'—',l?matsText(WALL_MAT[l]):'—',l?buildDays(l):'—','level '+(1+l)]))+
-    kv([['Starting walls','Castles '+WALL_N[WALL0.castle]+', towns '+WALL_N[WALL0.town]+', villages '+WALL_N[WALL0.village]+'. Villages can build up to a '+WALL_N[WALL_MAX.village].toLowerCase()+'.'],['Effects','Each level makes lords’ sieges last a day longer and lets your fief hold 3 more garrison soldiers.'],['Breach','Capturing a holding costs it a wall level. Realms fortify their frontier first.']])));
+    kv([['Starting walls',HK.map(k=>cap1(kinds(k))+' '+WALL_N[HT[k].wall0].toLowerCase()).join(', ')+'. Villages can build up to a '+WALL_N[HT.village.wallMax].toLowerCase()+'.'],['Effects','Each level makes lords’ sieges last a day longer and lets your fief hold 3 more garrison soldiers.'],['Breach','Capturing a holding costs it a wall level. Realms fortify their frontier first.'],['On the map','A holding’s walls are its centre’s fortification: Fortify upgrades the keep, citadel or hall itself. A hall gains a palisade; a keep or citadel stands open, then behind a palisade with wooden towers, then stone walls, then great walls with more towers.']])));
 
 /* warfare */
 section('warfare','Sieges, raids and fiefs','Any holding not yours or your employer’s can be attacked from its Besiege tab or by walking up to it while its realm is hostile to you.',
   kv([['Siege camp','Needs 5 troops. Ladders are ready after '+LADDER_DAYS+' days (then you can assault); a ram after '+RAM_DAYS+' weakens the walls one level.'],['Starving','The garrison and people inside live on the holding’s stores; when food runs out the garrison starves, and a garrison of one surrenders.'],
-    ['Relief','The realm sends its lords to break your siege. Walking away lifts it.'],['Villages','Raid one (takes half a day; you carry off food and gold, burn an estate, and kill or scatter people) or seize it outright. Its militia fights as level 1 behind no walls, 2 behind a palisade.'],
+    ['Relief','The realm sends its lords to break your siege. Walking away lifts it.'],['No walls','Any holding without walls (a village that never built them, or a castle whose walls were breached) needs no siege: fight its garrison in battle to seize it, or raid it (takes half a day; you carry off food and gold, burn an estate, and kill or scatter people). Holdings with walls (a palisade or better, the centre’s fortification) must be besieged first.'],['Estates','Plunder an estate’s stores, burn it a level down, or sabotage it: slip in (likelier at night, with Scouting and Agility) and it makes nothing for some days; caught, you fight its guards.'],['Castle stores','A castle has no market but keeps a stockpile. In a castle of yours, store goods there and take them out again.'],
     ['Captured','Take it in peace (+3 honor with the other realms), sack it (gold and goods; reputation and honor fall, half its stores and a third of its people are lost, two estates burn), sack and leave, or hand it to your employer for gold.'],
     ['Your fiefs','Pay taxes daily. Garrison them from the Fief tab (hire guards or station troops), set the tax rate, store and take goods, build estates and walls, and send caravans. Realms hostile to you will come for them.'],
     ['Lords’ sieges','Last 2 days plus the wall level; well-walled and well-stocked holdings hold better.']]));
@@ -274,21 +319,32 @@ section('warfare','Sieges, raids and fiefs','Any holding not yours or your emplo
 /* combat */
 const famN={one:'Sword (and any other one-handed weapon)',dagger:'Dagger',dual:'Dual wield',axe:'One-handed axe',heavy:'Greatsword and other two-handed blades',hammer:'Warhammer and clubs',thrust:'Spear held in two hands',phalanx:'Spear and shield'};
 const shapeN={arc:'sweep',thrust:'thrust (pierces)',twin:'twin thrust',slam:'slam',spin:'spin'};
-section('combat','Battle','Battles are fought in real time on ground shaped by the biome. You fight in the line; your troops follow their group’s orders.',
+section('combat','Battle','Battles are fought in real time on ground shaped by the biome, under RTS command: you select your groups and send them, and everyone, your hero too, fights on their own. Your hero swings the combos below, draws and looses the bow and uses the skills in their slots when the moment is right (healing when hurt, a Whirlwind or Earthquake when hemmed in, a Leap or Dash to close in, Fireball and Rain of Arrows on a knot of enemies, War Cry and Banner when the troops are engaged). Lords, chieftains and your companions fight as champions, as your hero does: the combo of their weapon, paid with stamina, a breath after each finisher, and skills by their level (Whirlwind; War Cry from level 3; Earthquake and Leap Slam from 5; Healing from 7). An enemy champion goes for your hero when near. The enemy has a captain too: their infantry advances in line and charges when close, their archers hold behind it (shooting at your hero once the lines meet), and their cavalry swings round a flank and falls on your archers.',
   sub('Weapon combos','Keep attacking inside '+COMBO_WINDOW+'s of the last blow to chain the next step. Each step’s shape is both its hitbox and its look: a sweep covers a wide arc at your reach, a thrust a long narrow line that pierces everyone along it (each one behind takes a little less), a slam a patch of ground ahead, a spin all around.',
     table(['Weapon','Step 1','Step 2','Finisher','Stamina'],Object.keys(COMBOS).map(k=>{const C=COMBOS[k];return ['<b>'+famN[k]+'</b>',...C.map(c=>c.n+' <span class="muted">· '+shapeN[c.shape]+' · ×'+c.mult+(c.stun?' · stuns':'')+'</span>'),STAM.swing.map(v=>Math.round(v*(C.sp||1))).join(' / ')]})))+
-  sub('Moves','',kv([['Dodge','F rolls you out of harm (invulnerable while rolling): '+STAM.dodge+' stamina, every '+DODGE_CD+'s.'],['Block','Hold B to raise your guard: blows from the front lose most of their damage, and blocking costs stamina.'],
+  sub('Moves','The moves of the manual control, set aside for now under RTS command (the bow and the skills your hero uses on their own):',kv([['Dodge','F rolls you out of harm (invulnerable while rolling): '+STAM.dodge+' stamina, every '+DODGE_CD+'s.'],['Block','Hold B to raise your guard: blows from the front lose most of their damage, and blocking costs stamina.'],
     ['Shove','Right-click pushes enemies in front back and staggers them for '+SHOVE.stun+'s ('+SHOVE.sp+' stamina). With a shield it is a Shield Bash: ×'+BASH.mult+' damage, '+BASH.stun+'s stagger.'],['Sprint','Hold Shift to run 60% faster for stamina.'],
     ['Bows','Hold to draw: a longer draw flies faster and hits harder, but holding a full draw drains stamina. The wheel sets the range; arrows fly in an arc (less at short range). The Hawkeye node shows the arrow’s path. Crossbows shoot flat and hit harder; they need bolts.'],
     ['Magic','Staves and wands cast bolts that splash, paid in mana. Spells get stronger with Spellcraft.'],['Ammunition','Your arrows and bolts come from your bag; troops carry a quiver (bows 16, crossbows 12, javelins 6) and draw blades when it runs out. After a won battle you gather some back.']]))+
   sub('Skills','Unlock active skills on the skill tree, then put them in slots 1–0 from the Skill bar page.',table(['Skill','Learned at','Cooldown','Mana','Stamina','Does'],Object.keys(HSKILLS).map(k=>{const S=HSKILLS[k],N=TREE[S.learn];return ['<b>'+S.n+'</b>',N?N.n+' <span class="muted">('+(N.br?TREE_BRANCHES.find(b=>b.k===N.br)?TREE_BRANCHES.find(b=>b.k===N.br).n:N.br:'—')+')</span>':'—',S.cd+'s',S.mp||'—',S.sp||'—',S.d]}),[2,3,4]))+
-  sub('Troop orders','',kv([['Groups',GRPS.map(g=>GN[g]).join(', ')+', or all troops (G cycles).'],['Orders','Z hold where they stand · X follow you · C charge the enemy · V advance in line · T spread out against arrows.'],
+  sub('Formations','A group’s shape is the line you drag: right-click and drag to set where it runs, how wide it is and which way it faces. Wide makes a long thin line, short makes a deep block or a column (a plain right-click keeps its width and turns it toward where it marches). Its formation is how the men stand in that shape: a line, or one of these for the troops it suits (press its key or button again for line). A block '+DEPTH.ranks+' or more ranks deep takes a charge at '+Math.round(DEPTH.charge*100)+'% of its force; each unit card shows its shape (wide × deep).',table(['Formation','Key','For','What it does'],FORM_ORDER.map(f=>['<b>'+FORMS[f].n+'</b>',FORMS[f].key||'—',FORMS[f].who?WHO_N[FORMS[f].who]:'everyone',FORMS[f].d])))+
+  sub('Facing, morale and routs','Every soldier faces somewhere: its formation’s front while it stands in its slot, else where it marches or whom it fights. A blow from the flank hurts '+Math.round((FLANK.flank-1)*100)+'% more, from behind '+Math.round((FLANK.rear-1)*100)+'% (arrows half that), and shakes it. Every soldier has morale (the blue line on a unit card): it sinks under wounds, comrades falling close by, being outnumbered, a charge, its side losing, and its leader falling; it comes back when the fighting leaves it alone, faster near your hero (or their lord). Under '+MORALE.waver+' it wavers (a blinking mark); at 0 it routs, running for its own edge with a white flag, and leaves the field there alive. Left alone it can rally once; the second time it breaks for good. When a side has no one left fighting, the battle ends in a rout. Your hero, companions, lords, chieftains and beasts never break; tournaments have no morale.',
+    table(['What','Morale'],[['A wound','−'+MORALE.hurt+' × the share of health it took'],['A blow from the flank / rear','−'+MORALE.flank+' / −'+MORALE.rear],['A comrade falls close by','−'+(MORALE.death+MORALE.side)+' (anywhere: −'+MORALE.side+')'],['Its leader falls','−'+MORALE.lead],['A neighbour routs','−'+MORALE.cascade],['Outnumbered 2 to 1 close by','−'+MORALE.outnumbered+' a second'],['Its side under half the other’s','−'+MORALE.losing+' a second'],['A charge hits it','up to −'+CHARGE.shock+' (riders), −'+CHARGE.footShock+' (on foot)'],['A war cry','+'+MORALE.cry],['No enemy close by','+'+MORALE.back+' a second, back to where it started']]))+
+  sub('Morale banners','Over each group on the field (yours edged blue, theirs red) and on its unit card: a flag in the colour of its morale, then an icon for each thing weakening it right now.',
+    table(['Icon','Means'],Object.keys(MORALE_STATE).map(k=>[moraleSVG(stateIcon(k),MORALE_STATE[k].c,21),'<b>'+MORALE_STATE[k].n+'</b>'+({steady:': 60 or more',shaken:': 30 to 60',wavering:': under 30, or most of them',routing:': most of them running',shattered:': all running, broken for good'})[k]])
+      .concat(Object.keys(WEAK_N).map(k=>[moraleSVG(k,null,21),WEAK_N[k]]))))+
+  sub('The battle screen','Laid out as in Total War. Top middle: the balance of power (your strength against theirs, by health and tier) with each side’s numbers, the field, and what is happening (deploying, paused, the speed). Top right: pause and speed, the AI button, health bars, and the small map of the field (click it to look there). Bottom left: the selected unit’s details (its portrait, health, morale and what weakens it, damage, reach or range, speed, what it is strong and weak against; with several selected, a line each). Bottom middle: the orders, formations and settings as icon buttons (their keys in the corner) over a row of unit cards (portrait, numbers, shape, formation, morale banner, health and morale bars; 1-5 pick them). On the field, the soldiers you have selected stand on bright rings (light ones with All), the group you point at on a soft one, an enemy you point at on a red one; and a line runs from each selected group to where it is going (gold, with its men’s places there faintly), to whom it is set on or charging (red), to your hero when following (green), or to the withdrawal point (blue).','')+
+  sub('Deployment and command','A battle you fight opens frozen, in deployment: your band stands in its zone (your side of the field, shaded). Place your groups there by right-clicking a spot or right-dragging a line (they stand there at once), set their formations and orders, then press Space (or Begin) to start the fight. Settings can switch deployment off; tournaments have none. Your army does only what you order: every group holds where it stands, fighting what comes to it. The AI button (A) hands your army to a captain who commands it as the enemy’s does (infantry advances then charges, archers keep behind and shoot, cavalry swings round a flank, your hero joins once the lines meet); any order you give takes command back. It remembers your choice for the next battle.','')+
+  sub('Withdrawing','W sends the selected groups running for the withdrawal point (where your band stood when the fight began, marked on the field), striking no one; there they leave the field, alive. The enemy may cut them down on the way. Once all of your band has withdrawn, the battle is over and your escape is rolled as fleeing on the map: a fight you started (or a foe afraid of you) lets you go; otherwise it is a race, your band’s speed against theirs, helped by night and cover. Get away and they lose your trail for a while; run down, your rearguard (about a tenth of your troops) is lost and you must face them again, with no running this time. The summary shows the battle: enemies slain, your fallen, who got away, enemies still standing, and your losses. If your hero is down, the band carries them off when the last of it gets away.','')+
+  sub('Camera','The field starts seen whole. The wheel zooms in toward the cursor (up to '+BCAM.zooms[BCAM.zooms.length-1]+'×), + and − zoom on the middle, and 0 shows the whole field again. Pan with the middle mouse button held, or the arrow keys. Press a group’s number twice quickly to look at it. Zoomed in, a small map of the field (top right) shows every soldier and where you are looking: click it to look there. The camera moves while the battle is paused, and every order lands where you click on the field, at any zoom.','')+
+  sub('Charges','A charge builds momentum as it runs at the enemy: full after '+CHARGE.run+' px. Its first blow hits up to '+Math.round(CHARGE.cav*100)+'% harder for riders ('+Math.round(CHARGE.foot*100)+'% on foot), knocks the one it hits back and shakes it; then the run is spent. Spearmen brace against riders; a wedge charges harder and a deep formation blunts it.','')+
+  sub('Troop orders','',kv([['Select','Click a unit to select its group, drag a box round several, or 1–4 (hero, infantry, archers, cavalry) and 5 (all).'],['Move and attack','Right-click the ground to send the selection there in formation; right-click an enemy to set them on it.'],['Marching','Shift + right-click adds waypoints, taken in turn; a double right-click sends them at a run. R: walk (at the slowest one’s pace, keeping formation; no running charge) or run.'],['More orders','H halt where they stand · W withdraw: they run, striking no one, to the withdrawal point (where your band formed up, marked on the field) and leave the battle there, alive; any the enemy cuts down on the way are lost. Withdraw everyone and once all have reached it the battle is over: your retreat, with its summary (what you slew, what it cost), and the enemy loses your trail for a while. If your hero is down, the band carries them off when the last of it gets away · F hold their ground (strike only what comes into reach) · Q fire at will, or only at the enemy you set them on · E skirmish (archers step back from enemies coming at them).'],['Selecting more','Shift + click or drag adds to the selection; Ctrl + 6-9 keeps it under a key, 6-9 picks it again.'],['Groups',GRPS.map(g=>GN[g]).join(', ')+', or all troops (G cycles).'],['Orders','Z hold where they stand · X follow you · C charge the enemy · V advance in line · formations: B shield wall · L loose (against arrows) · T wedge · right-drag to lay out the line, its width and depth.'],
     ['Troop blows','Spearmen thrust and carry on into the enemy behind for half damage; chieftains, trolls and the heaviest hitters chop down from above and cleave a neighbor; the rest mostly swing. Spears brace against charges; cavalry charges hit 1.9× at full speed.']])));
 
 /* troops */
 const node=id=>{const s=ST[id],at=hireAt(id);return '<div class="node entry">'+spr(id,0,3)+'<div><b>'+s.n+'</b><small>Tier '+s.tier+' · '+kind(s)+(HIRE[id]?' · hire '+HIRE[id]+'g':' · train '+trainCostOf(id)+'g')+'</small><div class="stats">'+stats(s)+'</div>'+(at.length?'<small>Hired at '+at.join(', ')+'</small>':'')+'</div></div>'};
 const tree=id=>{const kids=UP[id]||[];return '<div class="tree">'+node(id)+(kids.length?'<div class="tkids">'+kids.map(tree).join('')+'</div>':'')+'</div>'};
-section('troops','Troop trees','Hire tier 1 troops (and tier 2 riders at castles), then train them in towns: 25 gold to reach tier 2 and 45 to reach tier 3. Where a line forks, you choose the branch. Each hire takes one of the holding’s volunteers.',
+section('troops','Troop trees','Hire tier 1 troops (and tier 2 riders at castles), then train them in towns: 25 gold to reach tier 2 and 45 to reach tier 3. Where a line forks, you choose the branch. Each hire takes one of the holding’s volunteers. Training also needs experience: your soldiers learn by fighting (XP for the damage they deal, more for each foe they fell by its tier, a little for being there and for winning; less in an auto-resolve; more with Leadership). The survivors pool it by kind, and the fallen take theirs with them. Training one soldier spends his kind’s XP: '+Object.entries(TROOP_XP.need).map(([t,n])=>n+' from tier '+t).join(', ')+'. The Party window and the barracks show each kind’s experience and how many are ready.',
   Object.keys(RACES).map(r=>{const R=RACES[r];return '<div class="sub"><h3>'+R.n+'</h3><div class="trees">'+[R.melee,R.ranged,R.horse].map(k=>'<div class="treebox">'+tree(k)+'</div>').join('')+'</div></div>'}).join('')+
   '<div class="sub"><h3>Mercenaries and bandits</h3><p class="muted">Not tied to a race. You start with some, take them as prisoners, and bandits field them. Camps are led by a chieftain.</p><div class="trees">'+
     ['militia','archer','horse','chief'].map(k=>'<div class="treebox">'+tree(k)+'</div>').join('')+'</div></div>'+
@@ -334,8 +390,14 @@ section('threats','Monsters and threats','Up to '+MONSTER_CAP+' monsters roam at
       ['Hoard',(H.gold?H.gold+' gold':'')+(H.renown?', '+H.renown+' renown':'')+', '+M.xp+' XP'+(H.gear?', gear of tier '+H.gear[0]+'–'+H.gear[1]:'')+(H.egg?', and '+pct(H.egg[1])+' to find a '+ITEMS[H.egg[0]].n:'')+'.'],['Fame','+'+Y.fame+' reputation nearby.']])+'</article>'}).join('')+'</div>'+
   sub('Bandits and armies','',table(['Threat','Where','Fields','Notes'],[['Bandits','Grassland and frost','Militia, archers, spearmen, orc grunts','Up to '+BANDITS+' roam. Grow by one fighter every 12 days. Drop gold and prisoners, and plunder caravans.'],
      ['Desert raiders','Desert','Spear throwers, militia, orc grunts','Same as bandits.'],['Bog raiders','Swamp','Orc grunts, spear throwers, militia','Same as bandits.'],
-     ['Bandit camps',CAMPS.length+' across the map','7–9 raiders and a chieftain','Pay 25 extra gold. Return 10 days after you clear them; clearing one pushes the nearest holding’s land out.'],
-     ['Lords’ armies','Anywhere','Their realm’s races, up to '+LCAP+' (more when the realm is losing)','Hostile only when their realm is at war with you. Friendly lords nearby join your fights.']])));
+     ['Bandit camps',CAMP_SPOTS.length+' across the map (seen once you have explored their ground)','7–9 raiders and a chieftain','Pay 25 extra gold. Return 10 days after you clear them; clearing one pushes the nearest holding’s land out.'],
+     ['Lords’ armies','Anywhere','Their realm’s races, up to '+LCAP+' (more when the realm is losing)','Hostile only when their realm is at war with you. Friendly lords nearby join your fights.']]))+
+  sub('Bandit chieftains','Every band on the road, every camp and every hideout is led by a named chieftain: bandits like '+CHIEF_NAMES.bandits[0][0]+' '+CHIEF_NAMES.bandits[1][0]+', desert raiders like '+CHIEF_NAMES.raiders[0][0]+' '+CHIEF_NAMES.raiders[1][0]+', bog raiders like '+CHIEF_NAMES.bog[0][0]+' '+CHIEF_NAMES.bog[1][0]+'.',kv([
+    ['Growing','Only by winning: each battle their band wins (against you, a caravan, a patrol) brings experience, and a level as yours does. Every 3 levels their fighters fight a level harder.'],
+    ['Bounty','10 gold and 15 more a level, shown on their tooltip. Beat their band and they are your captive: hand them over for the bounty, or let them go.'],
+    ['Escaping','Broken by anyone else, a chieftain gets away and is back on the roads with a new band within days. A cleared camp returns under a new chieftain.'],
+    ['Most wanted','The taverns talk of the highest chieftain, and where they were last seen.'],
+    ['Keeping clear','No camp or hideout lies within '+BANDIT_GAP+' tiles of an estate or its fields, and no estate is built that near one.']])));
 
 /* wildlife */
 section('wildlife','Game and livestock','Wild game roams its habitat and bolts when you come near; catch a herd to hunt it. Livestock grazes by villages and towns on ground its kind can use — inside the pasture fence where a holding has one.',
@@ -345,7 +407,7 @@ section('wildlife','Game and livestock','Wild game roams its habitat and bolts w
 
 /* sites and jobs */
 section('sites','Places and jobs','Away from the holdings lie places to explore. You see a place only once you come near it.',
-  table(['Place','On the map','Returns','What you find'],Object.keys(SITE_TYPES).map(k=>{const S=SITE_TYPES[k];return ['<b>'+S.n+'</b>',Math.round(S.count*MAP_DENS),S.respawn?S.respawn+' days after you clear it':'—',S.d]}),[1])+
+  table(['Place','On the map','Returns','What you find'],Object.keys(SITE_TYPES).map(k=>{const S=SITE_TYPES[k];return ['<b>'+S.n+'</b>',(S.spots?CAMP_SPOTS.length:Math.round(S.count*MAP_DENS)),S.respawn?S.respawn+' days after you clear it':'—',S.d]}),[1])+
   sub('Travellers','Camps on the road that move on after a week or so. Trade with them, hire sellswords, rest and hear news.',table(['Who','Sells','Notes'],TRAVELERS.map(T=>['<b>'+T.n+'</b>',T.goods.map(g$).join(', '),T.d])))+
   sub('Jobs','Holdings and lords offer work in their Jobs tab once your standing allows. Rewards scale with the days.',kv([['Bounty','Beat a named band of bandits.'],['Supply run','Bring goods the town is truly short of; they go into its stores.'],['Courier','Carry a sealed letter to another holding.'],['Clear a place','Clear a cave or hideout that troubles the holding.'],
     ['Beast hunt','Kill a named monster pack.'],['Hunt','Bring meat for a feast, or hides for the tanner.'],['Reinforce','Hand a castle troops of tier 2 or better.'],['Lords’ jobs','Beat an enemy lord in the field, or raid an enemy village.']])));
@@ -354,8 +416,16 @@ section('sites','Places and jobs','Away from the holdings lie places to explore.
 section('life','Life on the map','The world goes on without you.',kv([['Workers','Farmers, herders, woodcutters, miners and fishers walk out to their estates each morning, work there and go home at dusk. They hurry home when bandits come near and stay in while their holding is besieged or burned. Click one to talk (they tell you what their holding is short of), hire them, rob them or press-gang them; robbing and press-ganging cost reputation and honor and scare the workers off the fields: half the holding’s output for days.'],
   ['Refugees','When a holding is sacked, raided, starving, besieged or miserable, its people leave in groups for a friendly holding nearby that is better off: they come off its people and join the other’s. Bandits rob them on the road. Meet them to share food (reputation), offer them a home in your fief (more people for you), ask for volunteers, or rob them (shame with both holdings and their lords).'],
   ['Estates','Click an estate on the map to see what it made. Someone else’s can be plundered (fight its guards, take its goods) or burned (it loses a level, the holding grows poorer and its people may leave). Its realm turns hostile, and your companions take note.'],
+  ['Battles on the map','When parties clash (lords at war, guards and bandits, raiders and caravans) they stop and fight it out over time instead of in a moment: about '+FIGHT.base+' + '+FIGHT.per+' × every fighter in it (world time), so a skirmish is soon over and a clash of armies grinds on. Each side wears the other down by its share of the strength, and a side that falls below '+pct(FIGHT.rout)+' of the other’s breaks and is routed. Lords and guards within '+FIGHT.join+' px ride in on their friends’ side. Click anyone in a battle to see it and <b>join</b> either side (not the bandits’, not against your employer): the realms you fight turn hostile, and the battle becomes yours, everyone in it beside you or against you.'],
+  ['Guards','Every holding with a big enough garrison sends a patrol out to ride its land: '+HK.map(k=>HT[k].patrol.size+' soldiers from '+an(k)).join(', ')+' (they leave the garrison while out). Patrols go from estate to estate and along the roads, cut down bandits on their land, fight armies they can beat and run home from ones they can’t, and return after '+PATROL.days+' days or at once if their holding is besieged. Wrong a holding (robbing, press-ganging, plundering) and its guards remember it for '+PATROL.wanted+' days: when they catch you, pay a fine ('+PATROL.fine+' gold per point of reputation it cost) or fight them, and their realm turns hostile. Guards of a hostile realm attack you on sight; your own fiefs’ guards ride for you.'],
+  ['Relations with lords','Each lord feels something about you, from −100 to +100 ('+RELATION.levels.map(x=>x[1]).join(', ')+'), apart from your honor with their realm. Fighting beside them (+'+RELATION.fightBeside+'), doing their work (+'+RELATION.jobDone+'), letting them go when they yield (+'+RELATION.letGo+'), breaking a siege of their holding (+'+RELATION.breakSiege+') and gifts of '+RELATION.gift.gold+' gold (+'+RELATION.gift.rel+', once a week) win them; beating them ('+RELATION.beatThem+'), taking their ransom ('+RELATION.ransom+'), failing their work ('+RELATION.jobFailed+') and wronging their people sour them, and their friends feel some of it while their rivals feel the opposite. At +'+RELATION.helpAt+' a lord rides to help you in a fight; at +'+RELATION.troopsAt+' they lend you '+RELATION.troops+' soldiers every '+RELATION.troopsDays+' days; at +'+RELATION.spareAt+' they won’t attack you unless your employer is at war with them; below '+RELATION.jobsAt+' they give you no work. Lords feel about each other too: those of one realm start as friends, lords who win side by side grow closer, the beaten resent the victors, and rivals won’t ride to each other’s aid. Feelings soften a little each day. See them all under Character → Lords.'],
+  ['Lords at home','A lord resting at a holding of their realm goes inside: off the map, their banner flying over it. Their soldiers stand with the garrison, defending it in any siege and eating from its stores, and if it falls they are taken with it. They ride out when they campaign, cannot get into a holding under siege, and stay to defend one. Walk into a town to meet a lord staying there, by the hall.'],
+  ['Bandits at night','At nightfall bandit bands head for a camp nearby and shelter there until dawn. Attack a camp at night and you fight every band inside as well as its own bandits.'],
   ['Cornered parties','A bandit band or enemy lord that runs from you and is caught may yield instead of fighting: the weaker they are, and the greater your renown, the likelier. Yielded bandits become prisoners, join your band (morale and honor fall), or are let go; a lord pays a ransom. If they refuse, they fight. You can always let them go.'],
   ['Army size','On the map, a band trails followers by its size, and a host of 30 or more carries a second banner.'],
+  ['Leaders in battle','Every leader grows the same way: a level every level × 60 experience, disciplines that rise by use. A lord or chieftain fights at the head of his men, far tougher than his soldiers ('+pct(LEADER_HP[0])+' of their health and '+pct(LEADER_HP[1])+' more a level), his name over him. A lord riding beside you leads his men too. Your companions are never killed: knocked down, they are wounded for 2 days.'],
+  ['Captives','Beat a lord’s army and he is your captive (Hero, Party): ransom him to his realm (gold, and a little of their goodwill) or let him go (honor with his realm); either way he rides home to raise a new army, and while you hold him he raises none. Lose a battle and your captives slip away.'],
+  ['In cover','Any party in woods or hills is seen only from nearer; your companions’ parties you always see.'],
   ['Caravans','Carts with guards carry goods along the roads between friendly holdings, and your own carry yours. Besides trading with them, you can demand a toll from a weak one, attack it for its cargo, or (with a fief) seize it so it drives its cargo to your fief and works for you. A hostile caravan that fears you may hand over its cargo without a fight.'],['Day and night','Clouds drift over by day; smoke rises from every holding; snow falls in the frost; fireflies glow on warm nights.'],
   ['Wars','Realms make war and peace, besiege each other’s holdings, sack them, raise walls and build estates. Lords fight each other when their armies meet.']]));
 
@@ -377,7 +447,8 @@ document.querySelectorAll('[data-spr]').forEach(e=>{
 const mc=document.getElementById('worldmap');mc.width=MW*TILE;mc.height=MH*TILE;const mg=mc.getContext('2d');mg.imageSmoothingEnabled=false;mg.drawImage(worldCv(),0,0);
 mg.globalAlpha=.28;landFresh();for(let k=0;k<LAND.length;k++){const i=LAND[k];if(i<0)continue;mg.fillStyle=FACS[TOWNS[i].owner].col;mg.fillRect((k%MW)*TILE,Math.floor(k/MW)*TILE,TILE,TILE)}mg.globalAlpha=1;
 mg.font='bold 26px "Atkinson Hyperlegible",sans-serif';mg.textAlign='center';
-for(const t of TOWNS){{const s=holdingSprite(t,FACS[HOME[t.name]].col);mg.drawImage(s,t.x-s.width/2,t.y+8-s.height)}mg.fillStyle='rgba(0,0,0,.75)';mg.fillText(t.name,t.x+2,t.y+36);mg.fillStyle='#fff';mg.fillText(t.name,t.x,t.y+34)}
+for(const t of TOWNS){for(const l of t.lots||[]){const s=lotSprite(t,l);mg.drawImage(s,l.x*TILE,l.y*TILE)}// (its placed buildings, as the game draws them)
+  mg.fillStyle='rgba(0,0,0,.75)';mg.fillText(t.name,t.x+2,t.y+36);mg.fillStyle='#fff';mg.fillText(t.name,t.x,t.y+34)}
 
 /* search */
 const q=document.getElementById('q'),info=document.getElementById('qinfo');

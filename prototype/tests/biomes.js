@@ -22,7 +22,8 @@ try{
  setGood('furs',2);P.morale=80;at(spot.frost,()=>t.survive());ok(P.morale===80,'enough furs keep the band warm');
  P.morale=80;at(spot.desert,()=>t.survive());ok(P.morale===77,'desert sun costs morale away from water');
  P.race='orc';P.morale=80;at(spot.desert,()=>t.survive());ok(P.morale===80,'orcs ignore desert heat');P.race='human';
- let fever=0;for(let k=0;k<200;k++){P.morale=80;P.troops={militia:9};at(spot.swamp,()=>t.survive());if(P.morale<80)fever++}
+ let fever=0;for(let k=0;k<200;k++){P.morale=80;P.troops={militia:9};P.sk.surv={lv:0,xp:0};// the untrained rate (Survival would learn from it)
+  at(spot.swamp,()=>t.survive());if(P.morale<80)fever++}
  ok(fever>20&&fever<80,'swamp fever strikes about a quarter of nights ('+fever+'/200)');
  const ash=t.townBy('Ashford');P.x=ash.x;P.y=ash.y+20;P.morale=80;setGood('furs',0);t.survive();ok(P.morale===80,'holdings shelter you');
  // battlegrounds
@@ -36,8 +37,9 @@ try{
  B=fight(spot.grass);ok(B.units.find(u=>u.type==='hum_squire').s.spd>t.ST.hum_squire.spd,'open grass speeds cavalry');B.over=true;B.endT=0;t.updateBattle(.01);t.act('cont');done();
  B=fight(spot.forest);ok(B.obs.filter(x=>x.kind==='tree').length>=8,'forest battle has many trees ('+B.obs.length+')');
  // fire 400 arrows straight through one tree
+ // (no one may fall meanwhile: your hero fights on their own now, and the battle would end)
  const tree=B.obs.find(x=>x.kind==='tree');let stopped=0;const N=400;
- for(let k=0;k<N;k++){B.arrows=[{x:tree.x-30,y:tree.y-6,vx:170,vy:0,team:1,dmg:0,life:1,a:0,elf:false,tk:0}];B.units.forEach(u=>u.hp=u.max);for(let s=0;s<40;s++)t.updateBattle(.01);if(!B.arrows.length||B.arrows[0].x<tree.x+10)stopped++}
+ for(let k=0;k<N;k++){B.arrows=[{x:tree.x-30,y:tree.y-6,vx:170,vy:0,team:1,dmg:0,life:1,a:0,elf:false,tk:0}];B.noMorale=true;B.units.forEach(u=>{u.hp=u.max=1e6;u.cd=99});for(let s=0;s<40;s++)t.updateBattle(.01);if(!B.arrows.length||B.arrows[0].x<tree.x+10)stopped++}
  ok(stopped>N*.12&&stopped<N*.4,'trees stop about a quarter of arrows ('+stopped+'/'+N+')');
  B.over=true;B.endT=0;t.updateBattle(.01);t.act('cont');done();
  // biome bands: desert bandits are raiders, frost wolves are monsters that drop furs
@@ -45,7 +47,7 @@ try{
  ok(/Desert raiders/.test(document.getElementById('panel').innerHTML),'desert bandits are desert raiders');t.act('flee');
  const before=t.goodN('furs');at(spot.frost,()=>{G.mode='world';G.modal=false;const m={id:'wolf',x:P.x+20,y:P.y,hx:P.x,hy:P.y,lv:1,n:4,cool:0};W.monsters.push(m);t.startMonster(m)});
  ok(/Wolf pack/.test(document.getElementById('panel').innerHTML)&&G.enc.list.every(k=>k==='wolf'),'frost wolves are a monster pack');
- P.troops={hum_spear:12,hum_long:6};t.act('auto');ok(t.goodN('furs')>before,'wolves drop furs ('+(t.goodN('furs')-before)+')');t.act('cont');done();
+ P.troops={hum_spear:12,hum_long:6};t.act('auto');t.act('lt-all');ok(t.goodN('furs')>before,'wolves drop furs ('+(t.goodN('furs')-before)+')');t.act('cont');done();
  // goods
  const gw=t.townBy('Greywell');G.lastTown=null;G.mode='world';t.enterTown(gw);t.act('tab','trade');const html=document.getElementById('panel').innerHTML;
  ok(/Spice/.test(html)&&/Grain/.test(html),'desert village trades grain and spice');t.act('leave');done();

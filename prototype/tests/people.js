@@ -60,12 +60,13 @@ try{
  fix(.01);t.act('pl-yield');unfix();ok(/throw down/.test(panel()),'it may yield');const pc=t.prisonerCount();t.act('pl-cage');
  ok(t.prisonerCount()===pc+2&&!t.bandits.includes(b),'and its fighters become your prisoners ('+pc+' → '+t.prisonerCount()+', cap '+t.prisonCap()+')');t.act('dlg-ok');
  const b2={x:P.x+5,y:P.y,n:2,kind:'bandits',list:['militia','spearman'],t:0,a:0,idle:false,cool:0};t.bandits.push(b2);world();t.meetBand(b2);fix(.01);t.act('pl-yield');unfix();
+ P.wounded={};// (the wounded from earlier take room in the band)
  const tc2=t.troopCount(),hh=t.honorWith(t.FIDS[0]);t.act('pl-join');ok(t.troopCount()===tc2+2&&t.honorWith(t.FIDS[0])<hh,'or join your band, at a cost to your honor');t.act('dlg-ok');
  const b3={x:P.x+5,y:P.y,n:2,kind:'bandits',list:['militia','militia'],t:0,a:0,idle:false,cool:0};t.bandits.push(b3);world();t.meetBand(b3);fix(.99);t.act('pl-yield');unfix();
  ok(G.enc&&G.enc.ref===b3&&/Fight/.test(panel()),'if they refuse, they fight');t.act('flee');
  const l=W.lords.find(x=>!x.dead);l.troops=['hum_levy','hum_levy'];P.hostile[l.fac]=G.day+20;world();P.x=l.x;P.y=l.y;t.interact(l);
  ok(G.par&&G.par.o===l,'a weak enemy lord who is caught may be called on to yield');const lg=P.gold;fix(.01);t.act('pl-yield');unfix();
- ok(l.dead&&P.gold>lg&&/yields/.test(panel()),'he pays a ransom and his army is gone');t.act('dlg-ok');
+ ok(l.dead&&P.gold>lg&&/yields/.test(panel()),'the lord pays a ransom and the army is gone');t.act('dlg-ok');
  // ---- a big host looks big
  ok(t.hostSize(3)===0&&t.hostSize(12)>0&&t.hostSize(60)>t.hostSize(12),'followers grow with the army: '+[3,12,30,60].map(n=>n+' → '+t.hostSize(n)).join(', '));
  world();P.troops={hum_knight:40};W.refugees=[];t.sendRefugees(src,dst,'hunger');W.refugees[0].x=P.x+30;W.refugees[0].y=P.y;t.drawWorld();ok(true,'the map draws big hosts and refugees');

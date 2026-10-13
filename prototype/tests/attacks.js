@@ -4,6 +4,7 @@
 // (stamina) or casts with a staff (mana); bog slimes spit magic; dragon fire is magic too.
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);
 try{
+ (0,eval)('MANUAL_HERO=true');// (the manual control is set aside in play, RTS command: its attacks are still tested here)
  const t=T,G=t.G,P=t.P,W=t.W,ST=t.ST;try{localStorage.clear()}catch(e){}
  const done=()=>{while(G.mode==='perk')t.act('perk',G.perkOffer[0])};
  t.act('begin','soldier');
@@ -28,7 +29,7 @@ try{
  let B=fresh(['hum_mage'],{hum_spear:3});const mg=B.units.find(u=>u.type==='hum_mage'),tgt=B.units.find(u=>u.type==='hum_spear');
  B.arrows=[];t.attack(mg,tgt);const bolt=B.arrows[0];ok(bolt&&bolt.magic&&Math.hypot(bolt.vx,bolt.vy)<150&&bolt.col===ST.hum_mage.bolt,'casters shoot slow, coloured bolts');
  // splash and trees
- B.obs=[{kind:'tree',x:200,y:200,r:6}];const sp=B.units.filter(u=>u.type==='hum_spear');sp.forEach((u,i)=>{u.x=300;u.y=200+i*6;u.hp=u.max});B.units.filter(u=>u.team===1||u.hero).forEach(u=>{if(!u.hero){u.x=100;u.y=200}});
+ B.obs=[{kind:'tree',x:200,y:200,r:6}];const sp=B.units.filter(u=>u.type==='hum_spear');sp.forEach((u,i)=>{u.x=300;u.y=200+i*6;u.hp=u.max;u.s={...u.s,spd:0}});B.units.filter(u=>u.team===1||u.hero).forEach(u=>{if(!u.hero){u.x=100;u.y=200}});
  B.arrows=[{x:150,y:194,vx:125,vy:0,team:1,dmg:10,life:3,a:0,src:ST.hum_mage,magic:true,col:'#fff',tk:0}];const hp0=sp.map(u=>u.hp);
  for(let i=0;i<500&&B.arrows.length;i++){B.units.forEach(u=>{u.cd=9});t.updateBattle(.01)}
  const hurt=sp.filter((u,i)=>u.hp<hp0[i]).length;ok(hurt>=2,'a bolt flies through the tree and splashes ('+hurt+' spearmen hurt)');
@@ -59,7 +60,7 @@ try{
  const bows=Object.keys(ST).filter(k=>ST[k].bow);ok(bows.length>=9&&bows.every(k=>ST[k].range>=200),'every bow user shoots at least 200 ('+bows.map(k=>ST[k].n+' '+ST[k].range).join(', ')+')');
  ok(Math.min(...bows.filter(k=>ST[k].race==='elf').map(k=>ST[k].range))>Math.max(...bows.filter(k=>ST[k].race!=='elf').map(k=>ST[k].range)),'elves outrange every other bow');
  const scat=race=>{const w=[];for(let k=0;k<60;k++){B.arrows=[];t.fireBolt(bw2,0,1,{...ST.hum_bow,race},200);w.push(B.arrows[0].T*Math.hypot(B.arrows[0].vx,B.arrows[0].vy))}return Math.max(...w)-Math.min(...w)};ok(scat('elf')<scat('human')*.75,'elven arrows scatter less');
- B.units.forEach(u=>{u.cd=99;u.spd=0});const sx=sp2.x,sy=sp2.y;let peak=0,hitHigh=false;const hp2=sp2.hp;B.arrows=[ar];
+ B.noMorale=true;B.units.forEach(u=>{u.cd=99;u.spd=0});const sx=sp2.x,sy=sp2.y;let peak=0,hitHigh=false;const hp2=sp2.hp;B.arrows=[ar];
  // a unit right under the arrow's peak is safe
  const near=t.ARC_SPEED,cl={H:Math.min(44,30*30/700),t:0,T:1};cl.t=.5;ok(t.arcZ(cl)<2,'a close shot (30 away) flies almost flat (peak '+t.arcZ(cl).toFixed(1)+')');
  const mid={x:bw2.x+(sx-bw2.x)/2,y:bw2.y+(sy-bw2.y)/2};sp2.x=mid.x;sp2.y=mid.y;
@@ -71,7 +72,8 @@ try{
  // the bow: hold to draw, let go to shoot; holding a full draw drains stamina; the wheel sets the range; right-click shoves
  t.invAdd('good','arrows',100);P.gear.weapon=t.gearId('bow',2);G.bowRange=180;B=fresh(['militia'],{});B.units.forEach(u=>{if(!u.hero){u.x=560;u.cd=99;u.s={...u.s,spd:0}}});const hb2=B.hero;t.heroState().sp=999;
  const cvs=document.querySelector('canvas'),R2=cvs.getBoundingClientRect(),at2=(x,y)=>({clientX:R2.left+x*R2.width/t.VW,clientY:R2.top+y*R2.height/t.VH,pointerType:'mouse',bubbles:true});
- const press=(btn,x,y)=>cvs.dispatchEvent(new PointerEvent('pointerdown',{...at2(x,y),button:btn})),release=()=>window.dispatchEvent(new PointerEvent('pointerup',{button:0,pointerType:'mouse'}));
+ // (the mouse and the wheel no longer draw the bow: set aside with the manual control; its mechanics are called directly)
+ const press=(btn,x,y)=>btn===2?t.shove():t.drawStart(),release=()=>{if(t.B&&t.B.draw)t.drawRelease()};
  const tick2=s=>{for(let i=0;i<Math.round(s/.02);i++)t.updateBattle(.02)};
  G.mouse.in=true;G.mouse.type='mouse';G.mouse.x=hb2.x+60;G.mouse.y=hb2.y-6;hb2.cd=0;press(0,G.mouse.x,G.mouse.y);ok(B.draw&&!B.arrows.length,'pressing draws the bow without shooting');
  tick2(.3);release();const weak=B.arrows[0];ok(weak&&!B.draw&&weak.arc,'letting go shoots');
@@ -82,8 +84,8 @@ try{
  hb2.cd=0;B.arrows=[];const X2=t.heroState();X2.sp=60;press(0,G.mouse.x,G.mouse.y);tick2(1.6);const s1=X2.sp;tick2(.6);ok(X2.sp<s1-3&&B.draw,'holding a full draw keeps draining stamina ('+Math.round(s1)+' → '+Math.round(X2.sp)+')');
  for(let i=0;i<1500&&B.draw;i++)t.updateBattle(.02);ok(!B.draw&&B.arrows.length===1&&B.arrows[0].dmg<strong.dmg&&B.floats.some(f=>/Arm gives out/.test(f.t)),'when stamina runs out the arm gives out and the arrow goes weak');release();
  // the wheel sets the range
- cvs.dispatchEvent(new WheelEvent('wheel',{deltaY:-100,bubbles:true,cancelable:true}));ok(G.bowRange===195,'the wheel pushes the range out (195)');
- for(let k=0;k<30;k++)cvs.dispatchEvent(new WheelEvent('wheel',{deltaY:100,bubbles:true,cancelable:true}));ok(G.bowRange===t.BOW_RANGE[0],'and in, down to '+t.BOW_RANGE[0]);G.bowRange=180;
+ t.bowRangeStep(15);ok(G.bowRange===195,'the wheel pushes the range out (195)');
+ for(let k=0;k<30;k++)t.bowRangeStep(-15);ok(G.bowRange===t.BOW_RANGE[0],'and in, down to '+t.BOW_RANGE[0]);G.bowRange=180;
  // landing: a full draw comes down at the set range in the cursor's direction
  hb2.cd=0;B.arrows=[];X2.sp=999;press(0,G.mouse.x,G.mouse.y);tick2(1.2);release();let land=null;for(let i=0;i<300&&B.arrows.length;i++){t.updateBattle(.02);if(B.arrows.length)land={x:B.arrows[0].x,y:B.arrows[0].y}}
  ok(land&&Math.abs(Math.hypot(land.x-hb2.x,land.y-hb2.y)-180)<14,'a full draw lands at the set range ('+Math.round(Math.hypot(land.x-hb2.x,land.y-hb2.y))+')');
@@ -99,7 +101,7 @@ try{
  P.gear.weapon=t.gearId('bow',1);P.inv=P.inv.map(()=>null);t.invAdd('good','arrows',3);B=fresh(['militia'],{});B.units.forEach(u=>{if(!u.hero){u.x=560;u.cd=99;u.s={...u.s,spd:0}}});t.heroState().sp=999;B.aim=0;
  for(let k=0;k<3;k++){B.hero.cd=0;t.swing()}ok(t.goodN('arrows')===0&&B.arrows.length===3,'each shot uses an arrow');
  B.hero.cd=0;t.swing();t.drawStart();ok(B.arrows.length===3&&!B.draw&&B.floats.some(f=>/Out of arrows/.test(f.t)),'with none left you cannot shoot');
- B.win=true;B.over=true;B.endT=0;t.updateBattle(.01);ok(t.goodN('arrows')>=1,'after a win you gather some back ('+t.goodN('arrows')+' of 3)');t.act('cont');done();
+ B.win=true;B.over=true;B.endT=0;t.updateBattle(.01);t.act('lt-all');ok(t.goodN('arrows')>=1,'after a win you gather some back ('+t.goodN('arrows')+' of 3)');t.act('cont');done();
  P.gear.weapon=t.gearId('crossbow',1);ok(t.ammoOf()==='bolts','crossbows use bolts');P.gear.weapon=t.gearId('staff',1);ok(t.ammoOf()===null,'magic needs no ammunition');
  B=fresh(['hum_bow'],{hum_spear:1});const ar3=B.units.find(u=>u.type==='hum_bow'),sp3=B.units.find(u=>u.type==='hum_spear');B.arrows=[];
  for(let k=0;k<16;k++)t.attack(ar3,sp3);ok(B.arrows.length===16&&ar3.empty&&!ar3.s.range&&ar3.s.reach>=10,'a bowman has 16 arrows, then draws a blade');

@@ -89,7 +89,7 @@ function skillBarBody(){
 }
 function disciplinesBody(){
   return '<p class="muted" style="font-size:13px">Disciplines rise as you use them. The skill tree and gear add to them.</p>'+Object.keys(SKILLS).map(k=>{const s=P.sk[k],b=skill(k)-s.lv,need=(s.lv+1)*20,pc=s.lv>=10?100:Math.round(s.xp/need*100);
-    return '<div class="row"><div class="info"><strong>'+SKILLS[k].n+'</strong><small>'+SKILLS[k].d+' · grows faster with '+ATTRS[SKILLS[k].a][0]+'</small><div class="bar" role="progressbar" aria-label="'+SKILLS[k].n+' progress" aria-valuenow="'+pc+'"><i style="width:'+pc+'%"></i></div></div><span class="own">'+s.lv+(b?' <span class="good">+'+b+'</span>':'')+'</span></div>'}).join('');
+    return '<div class="row"><div class="info"><strong>'+SKILLS[k].n+(P.apt&&P.apt[k]?' <span class="good" style="font-size:12px">knack +'+Math.round(P.apt[k]*100)+'%</span>':'')+'</strong><small>'+SKILLS[k].d+' · grows faster with '+ATTRS[SKILLS[k].a][0]+'</small><div class="bar" role="progressbar" aria-label="'+SKILLS[k].n+' progress" aria-valuenow="'+pc+'"><i style="width:'+pc+'%"></i></div></div><span class="own">'+s.lv+(b?' <span class="good">+'+b+'</span>':'')+'</span></div>'}).join('');
 }
 function renderSkills(){
   const tab=G.skTab,taken=P.tree.length-1,pts=P.tp+' skill point'+(P.tp===1?'':'s');

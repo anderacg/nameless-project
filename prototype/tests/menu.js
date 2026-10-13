@@ -24,6 +24,15 @@ try{
  // in an encounter Esc pauses and Resume brings the same choice back
  G.mode='world';G.modal=false;t.hidePanel();t.startEncounter({kind:'party',ref:{x:P.x,y:P.y,cool:0},n:3,list:['militia','militia','militia']});const encHtml=panel();
  esc();ok(G.mode==='esc'&&/Not during a battle|Finish what/.test(panel()),'an encounter cannot be saved over');esc();ok(G.mode==='dialog'&&panel()===encHtml,'Resume brings back the same encounter screen');
+ // Esc closes each window that can be closed, one press at a time; only then does it pause
+ {const enc=G.enc,world=()=>{G.mode='world';G.modal=false;G.enc=null;t.hidePanel();G.encCool=0},tw=t.townBy('Ashford');world();
+  const l=W.lords.find(x=>!x.dead&&!t.hostileTo(x.fac));if(l){t.lordMeet(l);esc();ok(G.mode==='world'&&!G.modal,'Esc leaves a lord you met')}
+  const c={cv:true,fac:tw.owner,from:tw.name,to:t.TOWNS[1].name,x:P.x,y:P.y,goods:{grain:5},guards:3,cool:0,dir:1};W.caravans.push(c);world();t.caravanMeet(c);esc();ok(G.mode==='world'&&!G.cv,'Esc leaves a caravan');W.caravans=W.caravans.filter(x=>x!==c);
+  world();t.notice('A notice','Something happened.');esc();ok(G.mode==='world'&&!G.modal,'Esc closes a notice');
+  world();G.enc={kind:'party',ref:{x:P.x,y:P.y,cool:0},list:['militia']};t.concludeEncounter(true,{},1,true,['militia']);if(G.loot){G.loot.pile=[];t.renderLoot()}ok(/Victory/.test(panel()),'(a victory screen, nothing left on the ground)');esc();
+  while(G.mode==='perk')t.act('perk',G.perkOffer[0]);ok(G.mode==='world'&&!G.modal,'Esc continues past a victory screen');
+  esc();ok(G.mode==='esc','with nothing left open, Esc pauses');esc();ok(G.mode==='world','and Esc resumes');
+  world();G.enc=enc;t.startEncounter({kind:'party',ref:{x:P.x,y:P.y,cool:0},n:3,list:['militia','militia','militia']})}
  // in battle Esc pauses the fight
  t.act('fight');const B=t.B,bt=B.t;esc();ok(G.mode==='esc'&&/in battle/.test(panel())&&/Not during a battle/.test(panel()),'Esc in battle pauses it; no saving mid-fight');
  for(let i=0;i<5;i++){if(G.mode==='battle')t.updateBattle(.05)}ok(B.t===bt,'the battle does not move while paused');t.frame();esc();ok(G.mode==='battle'&&!G.modal,'Esc resumes the battle');

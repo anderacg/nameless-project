@@ -53,9 +53,17 @@ function paintWorld(){
   const trample=(cx,cy,rx,ry,amt)=>{for(let yy=-ry;yy<=ry;yy++)for(let xx=-rx;xx<=rx;xx++){const x=cx+xx,y=cy+yy;if(x<0||y<0||x>=Wp||y>=Hp)continue;
     const d=(xx*xx)/(rx*rx)+(yy*yy)/(ry*ry),edge=1-hs(x,y,17)*.35;if(d>edge||tiles[(y>>4)*MW+(x>>4)]===T_WATER)continue;const o=(y*Wp+x)*4,dc=DIRT[CLIMS[climate[(y>>4)*MW+(x>>4)]]],k=amt*(d>edge-.25?.5:1)*(.75+hs(x,y,18)*.25);
     D[o]+=(dc[0]-D[o])*k;D[o+1]+=(dc[1]-D[o+1])*k;D[o+2]+=(dc[2]-D[o+2])*k}};
-  for(const t of TOWNS){const big=t.kind==='village'?0:6;trample(t.x,t.y+4,22+big,11+big/2,.55);markEllipse(t.x,t.y-6,30+big,26+big/2)}
-  for(const c of CAMPS){trample(c.x,c.y+2,11,6,.5);markEllipse(c.x,c.y-2,15,12)}
-  if(typeof bldSpots==='function')for(const t of TOWNS){const sp=bldSpots(t);for(const k in sp){const p=sp[k];if(k==='lumber'||k==='mine')trample(p.x,p.y+3,9,5,.4);markEllipse(p.x,p.y,k==='farm'||k==='pasture'?21:14,k==='farm'||k==='pasture'?14:11)}}
+  // a holding's yard: worn ground over its whole footprint, softer at the edges, and nothing else grows there
+  const yard=(X,Y,w,h,amt)=>{for(let y=Math.max(0,Y);y<Math.min(Hp,Y+h);y++)for(let x=Math.max(0,X);x<Math.min(Wp,X+w);x++){if(tiles[(y>>4)*MW+(x>>4)]===T_WATER)continue;
+    const e=Math.min(x-X,X+w-1-x,y-Y,Y+h-1-y),o=(y*Wp+x)*4,dc=DIRT[CLIMS[climate[(y>>4)*MW+(x>>4)]]],k=amt*(e<4?(e+1)/5*(.4+hs(x,y,19)*.6):1)*(.75+hs(x,y,18)*.25);
+    D[o]+=(dc[0]-D[o])*k;D[o+1]+=(dc[1]-D[o+1])*k;D[o+2]+=(dc[2]-D[o+2])*k}};
+  // nothing grows under a holding's buildings and fields (lots.js)
+  const FOOT=new Uint8Array(MW*MH);
+  for(const t of TOWNS){markClear(t.tx*TILE,t.ty*TILE,TILE,TILE);markClear(t.x-12,t.y-14,24,24);// its gate, where you arrive
+    for(const l of t.lots||[]){markClear(l.x*TILE-2,l.y*TILE-2,l.n*TILE+4,l.n*TILE+4);for(const [x,y] of l.plots||[])markClear(x*TILE,y*TILE,TILE,TILE)}}
+  for(const c of CAMP_SPOTS){trample(c.x+8,c.y+4,14,7,.5);markClear(c.x-24,c.y-40,64,64)}
+  // estates: their own tile, every tile their fields may grow over, and the water under a pier
+  for(const t of TOWNS){const sp=bldSpots(t);for(const k in sp){const p=sp[k];if(k==='lumber'||k==='mine')trample(p.x,p.y+3,9,5,.4)}}
   g.putImageData(img,0,0);
   const r=(col,x,y,w,h)=>{g.fillStyle=col;g.fillRect(x,y,w||1,h||1)},ta=(x,y)=>tAt(x,y),cl=(x,y)=>CLIMS[climate[Math.max(0,Math.min(MH-1,y))*MW+Math.max(0,Math.min(MW-1,x))]];
   // shores: a beach (or ice, or mud) on the land side, a line of foam on the water side
@@ -69,23 +77,32 @@ function paintWorld(){
   // roads: a dirt band from the tile's middle to each neighboring road, darker at the edges, with ruts and stones;
   // first pass only marks the band and a margin as clear
   const ROADC={grass:['#8a7448','#b89b62','#cdb47e'],frost:['#8e8a80','#b8b2a6','#d4cfc4'],desert:['#a8884c','#c9a868','#dcc084'],swamp:['#5a4a34','#7a6a48','#8e7e5a']};
-  const isRoad=(x,y)=>ta(x,y)===T_ROAD||TOWNS.some(t=>t.tx===x&&t.ty===y);
+  const isRoad=(x,y)=>TOWNS.some(t=>t.tx===x&&t.ty===y)||ta(x,y)===T_ROAD&&!FOOT[y*MW+x];
   const bridge=(x,y)=>ta(x,y)===T_ROAD&&(ta(x-1,y)===T_WATER&&ta(x+1,y)===T_WATER||ta(x,y-1)===T_WATER&&ta(x,y+1)===T_WATER);
-  for(const pass of [0,1,2])for(let ty=0;ty<MH;ty++)for(let tx=0;tx<MW;tx++){if(ta(tx,ty)!==T_ROAD)continue;const X=tx*TILE+8,Y=ty*TILE+8,[e,m]=ROADC[cl(tx,ty)],w=[9,7,5][pass],br=bridge(tx,ty),col=br?[null,'#3e2818','#8a6038'][pass]:[null,e,m][pass],h=w>>1;
+  // where a road tile's path runs through: its middle, but at a holding's gate (and its own tile) half a tile to the left, so the
+  // road comes up to the middle of the centre building's door (its gate lies on the line between two tiles); each arm runs to
+  // halfway between two path points, so a shifted one still meets its neighbours
+  const SHIFT=new Set();for(const t of TOWNS){SHIFT.add(t.ty*MW+t.tx);SHIFT.add((t.ty+1)*MW+t.tx)}
+  const pX=(x,y)=>x*TILE+8-(SHIFT.has(y*MW+x)?8:0);
+  for(const pass of [0,1,2])for(let ty=0;ty<MH;ty++)for(let tx=0;tx<MW;tx++){if(ta(tx,ty)!==T_ROAD||FOOT[ty*MW+tx])continue;const X=pX(tx,ty),Y=ty*TILE+8,[e,m]=ROADC[cl(tx,ty)],w=[9,7,5][pass],br=bridge(tx,ty),col=br?[null,'#3e2818','#8a6038'][pass]:[null,e,m][pass],h=w>>1;
     const arms=[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]].filter(([a,b])=>isRoad(tx+a,ty+b)&&!(a&&b&&(isRoad(tx+a,ty)||isRoad(tx,ty+b))));
     const st=(x,y)=>{if(pass)r(col,x,y,w,w);else markClear(x-1,y-1,w+2,w+2)};
-    st(X-h,Y-h);for(const [a,b] of arms)for(let s=0;s<=8;s++){const jx=Math.round((hs(tx*8+s,ty,a+3*b)-.5)*1.2);st(X+a*s-h+(b?jx:0),Y+b*s-h+(a?jx:0))}}
+    st(X-h,Y-h);for(const [a,b] of arms){const mx=(X+pX(tx+a,ty+b))/2,my=Y+b*8,n=Math.max(Math.abs(mx-X),Math.abs(my-Y));
+      for(let s=0;s<=n;s++){const jx=Math.round((hs(tx*8+s,ty,a+3*b)-.5)*1.2);st(Math.round(X+(mx-X)*s/n)-h+(b?jx:0),Math.round(Y+(my-Y)*s/n)-h+(a?jx:0))}}}
   // bridge planks across the deck, rails along it and posts in the water
   for(let ty=0;ty<MH;ty++)for(let tx=0;tx<MW;tx++){if(!bridge(tx,ty))continue;const X=tx*TILE,Y=ty*TILE,vert=ta(tx-1,ty)===T_WATER;
-    if(vert){for(let y=0;y<16;y+=2)r('#6a4628',X+5,Y+y,6,1);r('#3e2818',X+4,Y,1,16);r('#3e2818',X+11,Y,1,16);r('#2a1a10',X+3,Y+4,1,3);r('#2a1a10',X+12,Y+11,1,3)}
-    else{for(let x=0;x<16;x+=2)r('#6a4628',X+x,Y+5,1,6);r('#3e2818',X,Y+4,16,1);r('#3e2818',X,Y+11,16,1);r('#2a1a10',X+4,Y+12,1,3);r('#2a1a10',X+11,Y+12,1,3)}}
-  for(let ty=0;ty<MH;ty++)for(let tx=0;tx<MW;tx++){if(ta(tx,ty)!==T_ROAD||bridge(tx,ty))continue;const X=tx*TILE,Y=ty*TILE,c=ROADC[cl(tx,ty)];for(let k=0;k<6;k++){const px=X+4+Math.floor(hs(tx,ty,k)*8),py=Y+4+Math.floor(hs(tx,ty,k+9)*8);r(k<2?c[0]:c[2],px,py,1,1)}}
+    // (a deck 10 wide, as wide as anyone crossing it: walk, world.js, keeps them to its middle)
+    if(vert){r('#8a6038',X+3,Y,10,16);for(let y=0;y<16;y+=2)r('#6a4628',X+3,Y+y,10,1);r('#3e2818',X+2,Y,1,16);r('#3e2818',X+13,Y,1,16);r('#2a1a10',X+1,Y+4,1,3);r('#2a1a10',X+14,Y+11,1,3)}
+    else{r('#8a6038',X,Y+3,16,10);for(let x=0;x<16;x+=2)r('#6a4628',X+x,Y+3,1,10);r('#3e2818',X,Y+2,16,1);r('#3e2818',X,Y+13,16,1);r('#2a1a10',X+4,Y+14,1,2);r('#2a1a10',X+11,Y+14,1,2)}}
+  for(let ty=0;ty<MH;ty++)for(let tx=0;tx<MW;tx++){if(ta(tx,ty)!==T_ROAD||bridge(tx,ty)||FOOT[ty*MW+tx])continue;const X=tx*TILE,Y=ty*TILE,c=ROADC[cl(tx,ty)];for(let k=0;k<6;k++){const px=X+4+Math.floor(hs(tx,ty,k)*8),py=Y+4+Math.floor(hs(tx,ty,k+9)*8);r(k<2?c[0]:c[2],px,py,1,1)}}
   // forests, hills, mountains and small things, top row first so lower ones overlap the ones behind
   for(let ty=0;ty<MH;ty++)for(let tx=0;tx<MW;tx++){const t=ta(tx,ty),X=tx*TILE,Y=ty*TILE,c=cl(tx,ty),h=k=>hs(tx,ty,k+40);
     if(t===T_FOREST){const spots=[[3,2],[10,4],[5,9],[12,11],[1,13]].slice(0,3+(h(1)>.5?1:0)+(h(2)>.7?1:0)).map(([a,b],i)=>[X+a+Math.round((h(i+3)-.5)*3),Y+b+Math.round((h(i+8)-.5)*3),h(i+13)]).sort((p,q)=>p[1]-q[1]);
       for(const [x,y,s] of spots)if(!anyClear([[x+3,y+11],[x+3,y+1],[x,y+6],[x+7,y+6],[x+1,y+10],[x+6,y+10]])&&tAt((x+3)>>4,(y+5)>>4)!==T_WATER)paintTree(g,x,y,c,s)}
     else if(t===T_HILL)paintHill(g,X,Y,c,h);
     else if(t===T_MOUNT){paintMountain(g,X,Y,c,h,tx,ty);if(bigPeakAt(tx,ty))paintBigPeak(g,X,Y,c,k=>hs(tx,ty,k+90))}
+    // an ore vein: a few bright flecks of its metal low on the hill or mountain
+    if((t===T_HILL||t===T_MOUNT)&&DEP_AT[ty*MW+tx]>=0){const col=GOODS[DEPOSITS[DEP_AT[ty*MW+tx]].g].col;for(let k=0;k<4;k++){const x=X+4+Math.floor(h(20+k)*8),y=Y+9+Math.floor(h(24+k)*5);r('#2a2620',x,y+1,2,1);r(col,x,y,2,1);if(k<2)r('#ffffff',x,y,1,1)}}
     else if(t===T_OPEN&&!anyClear([[X+2,Y+2],[X+13,Y+2],[X+2,Y+13],[X+13,Y+13],[X+8,Y+8]]))paintDecor(g,X,Y,c,h);
     else if(t===T_WATER&&c==='swamp'&&h(5)<.35){r('#4a7a3a',X+3+Math.floor(h(6)*8),Y+4+Math.floor(h(7)*8),3,2);r('#6a9a4a',X+4+Math.floor(h(6)*8),Y+4+Math.floor(h(7)*8),1,1)}
     else if(t===T_WATER&&c==='frost'&&h(5)<.25){const x=X+2+Math.floor(h(6)*8),y=Y+3+Math.floor(h(7)*9);r('#e8f2fa',x,y,5,2);r('#ffffff',x+1,y,2,1)}}
@@ -183,21 +200,23 @@ function paintDecor(g,X,Y,c,h){
 
 /* battle grounds: the same ground, with tufts, flowers, stones and patches by climate */
 function paintArena(c){
-  const cv=document.createElement('canvas');cv.width=VW;cv.height=VH;const g=cv.getContext('2d'),img=g.createImageData(VW,VH),D=img.data,P3=GROUND_RGB[c],seed=CLIMS.indexOf(c)*7+1;
-  for(let y=0;y<VH;y++)for(let x=0;x<VW;x++){const L=(fbm(x/70,y/70,seed)-.5)*2,b4=hs(x>>2,y>>2,seed);let v=.5+.4*L+.2*(b4-.5);v=Math.max(0,Math.min(1,v));
+  const cv=document.createElement('canvas');cv.width=BW;cv.height=BH;const g=cv.getContext('2d'),img=g.createImageData(BW,BH),D=img.data,P3=GROUND_RGB[c],seed=CLIMS.indexOf(c)*7+1;
+  for(let y=0;y<BH;y++)for(let x=0;x<BW;x++){const L=(fbm(x/70,y/70,seed)-.5)*2,b4=hs(x>>2,y>>2,seed);let v=.5+.4*L+.2*(b4-.5);v=Math.max(0,Math.min(1,v));
     let col=v<.5?mixc(P3[0],P3[1],v*2):mixc(P3[1],P3[2],(v-.5)*2);const ph=hs(x,y,seed+9);if(ph<.03)col=mixc(col,P3[2],.6);else if(ph>.97)col=mixc(col,P3[0],.7);
-    const o=(y*VW+x)*4;D[o]=col[0];D[o+1]=col[1];D[o+2]=col[2];D[o+3]=255}
+    const o=(y*BW+x)*4;D[o]=col[0];D[o+1]=col[1];D[o+2]=col[2];D[o+3]=255}
   g.putImageData(img,0,0);
-  for(let ty=1;ty<VH/16;ty++)for(let tx=0;tx<VW/16;tx++)paintDecor(g,tx*16,ty*16,c,k=>hs(tx,ty,k+seed*3));
-  if(c==='swamp')for(let k=0;k<10;k++){const x=Math.floor(hs(k,6,97)*(VW-30)),y=Math.floor(hs(k,7,97)*(VH-40))+20;g.fillStyle='#3d5a4a';g.fillRect(x,y,18+k%3*6,6);g.fillStyle='#56735e';g.fillRect(x+3,y+2,6,1)}
+  for(let ty=1;ty<BH/16;ty++)for(let tx=0;tx<BW/16;tx++)paintDecor(g,tx*16,ty*16,c,k=>hs(tx,ty,k+seed*3));
+  if(c==='swamp')for(let k=0;k<10;k++){const x=Math.floor(hs(k,6,97)*(BW-30)),y=Math.floor(hs(k,7,97)*(BH-40))+20;g.fillStyle='#3d5a4a';g.fillRect(x,y,18+k%3*6,6);g.fillStyle='#56735e';g.fillRect(x+3,y+2,6,1)}
   const top=c==='frost'?['#b8c4d2','#9aa6b4']:c==='desert'?['#b8944c','#9a7a3a']:c==='swamp'?['#3a4a2a','#2a3a20']:['#3a5c2c','#2a4a22'];
-  g.fillStyle=top[0];g.fillRect(0,0,VW,14);g.fillStyle=top[1];for(let x=0;x<VW;x+=3)g.fillRect(x,13+(hs(x,0,4)>.5?1:0),2,1);
+  g.fillStyle=top[0];g.fillRect(0,0,BW,14);g.fillStyle=top[1];for(let x=0;x<BW;x+=3)g.fillRect(x,13+(hs(x,0,4)>.5?1:0),2,1);
   return cv;
 }
 
 /* what moves on the map: water glints, cloud shadows drifting by day, smoke over holdings, snow in the frost, fireflies at night */
-const CLOUD=(()=>{const c=document.createElement('canvas');c.width=96;c.height=48;const g=c.getContext('2d');g.fillStyle='#000';
-  for(let i=0;i<9;i++){const cx=18+hs(i,1,3)*60,cy=14+hs(i,2,3)*20,rr=10+hs(i,3,3)*10;g.beginPath();g.ellipse(cx,cy,rr*1.4,rr*.8,0,0,7);g.fill()}return c})();
+// a cloud's shadow at full size, pixel by pixel (hard edges, never scaled)
+const CLOUD=(()=>{const c=document.createElement('canvas');c.width=192;c.height=96;const g=c.getContext('2d');g.fillStyle='#000';
+  const E=[...Array(9)].map((_,i)=>[36+hs(i,1,3)*120,28+hs(i,2,3)*40,(20+hs(i,3,3)*20)*1.4,(20+hs(i,3,3)*20)*.8]);
+  for(let y=0;y<96;y++)for(let x=0;x<192;x++)if(E.some(([cx,cy,rx,ry])=>((x+.5-cx)/rx)**2+((y+.5-cy)/ry)**2<=1))g.fillRect(x,y,1,1);return c})();
 // layer 0 (under everything): water glints; layer 1 (over parties, under fog and night): clouds, smoke, snow, fireflies
 function drawEnv(cam,V,layer){
   const now=performance.now()/1000,dark=darkness(),x0=Math.max(0,Math.floor(cam.x/TILE)),y0=Math.max(0,Math.floor(cam.y/TILE)),x1=Math.min(MW-1,x0+Math.ceil(VW/TILE)+1),y1=Math.min(MH-1,y0+Math.ceil(VH/TILE)+1);
@@ -206,12 +225,16 @@ function drawEnv(cam,V,layer){
   if(layer===0){for(let ty=y0;ty<=y1;ty++)for(let tx=x0;tx<=x1;tx++){if(tiles[ty*MW+tx]!==T_WATER)continue;const c=CLIMS[climate[ty*MW+tx]];if(c==='frost')continue;
     for(let k=0;k<2;k++){const ph=(now*.35+hs(tx,ty,k))%1,a=Math.sin(ph*Math.PI);if(a<.15)continue;
       ctx.globalAlpha=a*.55;ctx.fillStyle=c==='swamp'?'#8ab08a':'#d8ecfa';ctx.fillRect(tx*TILE+2+Math.floor(hs(tx,ty,k+4)*9)+Math.floor(ph*3)-cam.x,ty*TILE+2+Math.floor(hs(tx,ty,k+6)*12)-cam.y,3,1)}}ctx.restore();return}
+  // fish leap now and then over the fishing grounds (each its own colour: salmon, eel, pearl oysters' silver)
+  if(layer===0){for(let ty=y0;ty<=y1;ty++)for(let tx=x0;tx<=x1;tx++){const d=DEP_AT[ty*MW+tx];if(d<0||tiles[ty*MW+tx]!==T_WATER)continue;const ph=(now*.4+hs(tx,ty,3)*7)%3;if(ph>1)continue;
+    const fx=tx*TILE+4+Math.floor(hs(tx,ty,5)*6)+Math.floor(ph*6)-cam.x,fy=ty*TILE+10-Math.round(Math.sin(ph*Math.PI)*5)-cam.y;ctx.globalAlpha=1;ctx.fillStyle=GOODS[DEPOSITS[d].g].res==='fish'&&DEPOSITS[d].g!=='pearls'?GOODS[DEPOSITS[d].g].col:'#dfe4ea';ctx.fillRect(Math.round(fx),Math.round(fy),2,1);
+    if(ph<.15||ph>.85){ctx.fillStyle='#d8ecfa';ctx.fillRect(Math.round(fx)-1,ty*TILE+11-cam.y,4,1)}}ctx.globalAlpha=1}
   // cloud shadows by day
   if(dark<.8){ctx.globalAlpha=.1*(1-dark);for(let i=0;i<14;i++){const span=MW*TILE+300,x=((hs(i,1,21)*span+now*6*(1+hs(i,2,21)))%span)-150,y=hs(i,3,21)*MH*TILE;
-    if(x+192<cam.x||x>cam.x+VW||y+96<cam.y||y>cam.y+VH)continue;ctx.drawImage(CLOUD,Math.round(x-cam.x),Math.round(y-cam.y),192,96)}}
-  // smoke from the hearths of holdings in view
-  for(const t of TOWNS){const sx=t.x-cam.x,sy=t.y-cam.y;if(sx<-40||sy<-60||sx>VW+40||sy>VH+40)continue;const n=t.kind==='village'?1:2;
-    for(let j=0;j<n;j++){const ox=Math.round((hs(t.seed,j,5)-.5)*20),oy=-14-Math.round(hs(t.seed,j,6)*6);
+    if(x+192<cam.x||x>cam.x+VW||y+96<cam.y||y>cam.y+VH)continue;ctx.drawImage(CLOUD,Math.round(x-cam.x),Math.round(y-cam.y))}}
+  // smoke from the hearths of a few houses of each holding in view
+  for(const t of TOWNS){if(Math.hypot(t.x-P.x,t.y-P.y)>VW)continue;const hs0=(t.lots||[]).filter(l=>l.k==='house'&&l.st==='built').slice(0,t.T.smoke);
+    for(let j=0;j<hs0.length;j++){const l=hs0[j],sx=(l.x+l.n*.7)*TILE-cam.x,sy=l.y*TILE+2-cam.y,ox=0,oy=0;if(sx<-20||sy<-40||sx>VW+20||sy>VH+20)continue;
       for(let k=0;k<5;k++){const ph=(now*.3+k/5+j*.37)%1;ctx.globalAlpha=(1-ph)*.45;ctx.fillStyle=ph<.3?'#8a8a8a':'#b4b4b4';const w=1+Math.round(ph*3);
         ctx.fillRect(Math.round(sx+ox+Math.sin(ph*5+k)*2+ph*6-w/2),Math.round(sy+oy-ph*18),w,w)}}}
   // snow falls in the frost, fireflies glow on warm nights

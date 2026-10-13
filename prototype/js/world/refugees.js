@@ -5,11 +5,11 @@
 // join the other's when they arrive. Bandits rob them on the way; you can feed, settle, recruit or rob them.
 const REFUGEE_CAP=Math.round(14*MAP_DENS),REFUGEE_SPD=11;
 // why people would leave a holding, or '' if they stay
-function fleeReason(t){ensureEcon(t);return until(t,'sacked')?'sacked':until(t,'raided')?'raided':foodDays(t)<1?'hunger':besieged(t)?'siege':t.pros<25?'hardship':until(t,'turmoil')&&t.pros<45?'conquest':''}
+function fleeReason(t){ensureEcon(t);return until(t,'sacked')?'sacked':until(t,'raided')?'raided':foodDays(t)<1?'hunger':besieged(t)?'siege':t.pros<25?'hardship':until(t,'turmoil')&&t.pros<45?'conquest':housingFull(t)?'crowded':''}
 // where they go: the nearest holding not at war with theirs that is fed, unbesieged and clearly better off
 function refuge(t){
-  let best=null,bd=1e9;
-  for(const o of TOWNS){if(o===t||!o.owner||besieged(o)||ruined(o)||atWar(o.owner,t.owner))continue;ensureEcon(o);if(o.pros<t.pros+15||foodDays(o)<3)continue;
+  let best=null,bd=1e9;const crowded=housingFull(t)&&fleeReason(t)==='crowded';
+  for(const o of TOWNS){if(o===t||!o.owner||besieged(o)||ruined(o)||atWar(o.owner,t.owner))continue;ensureEcon(o);if(crowded?(housing(o)-(o.pop||0)<15||foodDays(o)<3):(o.pros<t.pros+15||foodDays(o)<3))continue;
     const d=Math.hypot(o.tx-t.tx,o.ty-t.ty);if(d<bd&&d<70){bd=d;best=o}}
   return best;
 }
@@ -23,7 +23,7 @@ function sendRefugees(t,to,why){
 }
 function refugeeDay(){
   W.refugees=W.refugees||[];
-  for(const t of TOWNS){if(W.refugees.length>=REFUGEE_CAP)break;const why=fleeReason(t);if(!why||t.pop<=30||Math.random()>(why==='hardship'||why==='conquest'?.12:.3))continue;
+  for(const t of TOWNS){if(W.refugees.length>=REFUGEE_CAP)break;const why=fleeReason(t);if(!why||t.pop<=30||Math.random()>(why==='hardship'||why==='conquest'||why==='crowded'?.12:.3))continue;
     if(W.refugees.some(r=>r.from===t.name))continue;const to=refuge(t);if(to)sendRefugees(t,to,why)}
 }
 function refugeesArrive(r,to){
@@ -35,7 +35,7 @@ function updateRefugees(d){
   for(const r of W.refugees){
     r.cool=Math.max(0,r.cool-d);let to=townBy(r.to);
     if(!to||besieged(to)||to.owner!=='player'&&atWar(to.owner,(townBy(r.from)||{}).owner)){const f=townBy(r.from);to=f&&refuge(f);if(!to){r.gone=true;continue}r.to=to.name}
-    const dx=P.x-r.x,dy=P.y-r.y,pd=Math.hypot(dx,dy),afraid=r.fear&&pd<70*hide;
+    const dx=P.x-r.x,dy=P.y-r.y,pd=Math.hypot(dx,dy),afraid=!P.stay&&r.fear&&pd<70*hide;
     if(afraid){walk(r,-dx,-dy,REFUGEE_SPD*1.2*d);r.dir=dx>0?-1:1}
     else{const ox=r.x;travelTo(r,to,to.x,to.y+12,REFUGEE_SPD*Math.max(.5,speedAt(r.x,r.y)||1)*d);r.dir=r.x>=ox?1:-1}
     if(Math.hypot(to.x-r.x,to.y+12-r.y)<8){refugeesArrive(r,to);r.gone=true;continue}
@@ -66,7 +66,7 @@ function refugeeAct(a){
     return notice('Fed','They bless your name. Reputation in '+r.from+' +'+c.rep+' and in '+r.to+' +'+c.repTo+'.','good')}
   if(a==='rf-settle'){const home=nearestOf(r,playerFiefs().filter(t=>!besieged(t)));if(!home)return;r.to=home.name;const c=C.settleRefugees;if(from)addRep(from.name,c.rep,true);if(from&&from.owner&&from.owner!=='player')addHonor(from.owner,-c.honor,true);
     return notice('A new home','They turn toward '+home.name+'. '+r.n+' more people will live and pay taxes there. The '+(from&&from.owner&&from.owner!=='player'?FACS[from.owner].n+' grumbles at losing them (−'+c.honor+' honor).':'road is long.'),'good')}
-  if(a==='rf-recruit'&&!r.asked){const k=Math.min(3,Math.floor(r.n/4),partyRoom());if(k<1)return;r.asked=true;const lv=levyOf(r.race);P.troops[lv]=(P.troops[lv]||0)+k;r.n-=k;if(from)addRep(from.name,-2,true);
+  if(a==='rf-recruit'&&!r.asked){const k=Math.min(3,Math.floor(r.n/4),partyRoom());if(k<1)return;r.asked=true;const lv=levyOf(r.race);P.add(lv,k);r.n-=k;if(from)addRep(from.name,-2,true);
     return notice('Volunteers',k+' of them take up arms with you as '+ST[lv].n.toLowerCase()+(k>1?'s':'')+'. Fewer will reach '+r.to+'.','good')}
   if(a==='rf-rob'&&!r.robbed){const got=Object.keys(r.goods).map(g=>{const k=invAdd('good',g,r.goods[g]);return k?k+' '+GOODS[g].n.toLowerCase():''}).filter(Boolean),gold=r.purse;P.gold+=gold;r.goods={};r.purse=0;r.robbed=true;r.fear=true;r.n=Math.max(2,r.n-rint(1,3));
     const c=C.robRefugees,cost=[from&&wrong(from,{rep:c.rep,honor:c.honor,morale:c.morale}),to&&to!==from&&wrong(to,{rep:c.repTo,honor:c.honorTo})].filter(Boolean).join(', ');mood('cruel');
@@ -74,12 +74,12 @@ function refugeeAct(a){
 }
 
 /* on the map */
-function refugeeSprite(f){const k='rf'+f;return spr[k]||(spr[k]=outlined(mkc(6,8,g=>{const r=(c,x,y,w,h)=>rect(g,c,x,y,w||1,h||1);
-  r('#6a5a48',1,0,3,2);r(C.skin,2,1,2,1);r('#7a6a52',1,2,3,4);r('#5a4a3a',1,5,3,1);r('#a8906a',4,2,2,3);r(C.dark,f?0:1,6,1,2);r(C.dark,f?3:2,6,1,2)})))}
+function refugeeSprite(f){const k='rf'+f;return spr[k]||(spr[k]=cellOf(outlined(mkc(6,8,g=>{const r=(c,x,y,w,h)=>rect(g,c,x,y,w||1,h||1);
+  r('#6a5a48',1,0,3,2);r(C.skin,2,1,2,1);r('#7a6a52',1,2,3,4);r('#5a4a3a',1,5,3,1);r('#a8906a',4,2,2,3);r(C.dark,f?0:1,6,1,2);r(C.dark,f?3:2,6,1,2)}))))}
 function drawRefugees(ents,cam,V){
   for(const r of W.refugees||[]){if(Math.hypot(r.x-P.x,r.y-P.y)>V*1.2)continue;
     ents.push({y:r.y,f:()=>{const sx=Math.round(r.x-cam.x),sy=Math.round(r.y-cam.y),k=Math.min(6,Math.max(3,Math.ceil(r.n/3))),mv=performance.now();ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(sx-8,sy-1,16,2);
-      for(let i=0;i<k;i++){const px=sx-r.dir*((i%3)*4-4)+(i>2?-r.dir*2:0),py=sy-(i>2?3:0);const s=refugeeSprite(Math.floor(mv/220+i)%2);ctx.save();ctx.translate(px,py);if(r.dir<0)ctx.scale(-1,1);ctx.drawImage(s,-4,-9);ctx.restore()}
+      for(let i=0;i<k;i++){const px=sx-r.dir*((i%3)*4-4)+(i>2?-r.dir*2:0),py=sy-(i>2?3:0);const s=refugeeSprite(Math.floor(mv/220+i)%2);ctx.save();ctx.translate(px,py);if(r.dir<0)ctx.scale(-1,1);ctx.drawImage(s,-8,-15);ctx.restore()}
       if(Math.hypot(r.x-P.x,r.y-P.y)<90)txt('Refugees '+r.n,sx,sy-12,r.fear?'#ff9a90':'#c8c2ae','center')}})}
 }
 onAct('rf-',refugeeAct);

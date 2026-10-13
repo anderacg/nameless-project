@@ -35,7 +35,7 @@ try{
  at(town);t.updateWorld(.01);ok(G.mode==='town'&&/Fief/.test(panel())&&/turmoil/.test(panel()),'entering your fief shows the Fief tab');
  t.act('tab','recruit');ok(/No one will enlist/.test(panel()),'no recruits while it is in turmoil');
  t.act('tab','fief');const gar=town.gar,kn=P.troops.hum_knight;t.act('fief-station','hum_knight:5');ok(town.gar===gar+5&&P.troops.hum_knight===kn-5,'station 5 knights in the garrison');
- t.act('leave');done();const gold=P.gold;P.troops={};G.day=town.turmoil;t.dayTick();ok(P.gold-gold>=t.fiefIncome(town)-1&&t.fiefIncome(town)>0,'your fief pays its taxes: '+t.fiefIncome(town)+' gold a day');
+ t.act('leave');done();P.troops={};P.wounded={};const gold=P.gold;G.day=town.turmoil;t.dayTick();ok(P.gold-gold>=t.fiefIncome(town)-1&&t.fiefIncome(town)>0,'your fief pays its taxes: '+t.fiefIncome(town)+' gold a day');
  // a faction hostile to you comes for it
  t.addMissingLords();const karnLord=W.lords.find(l=>l.fac==='karn');ok(karnLord,'karn has a lord');t.lordThink(karnLord);
  ok(karnLord.state==='march'&&t.atWar('karn','player'),'the Karn Clans march on your fief ('+karnLord.tgt+')');
@@ -59,10 +59,10 @@ try{
  at(t3);G.lastTown=t3;t.updateWorld(.01);ok(G.mode==='capture'&&t3.gar===0,t3.name+' starves and surrenders');t.act('cap-leave');t.act('cont');done();
  ok(t3.owner==='horde'&&t3.gar===1&&t3.sacked>G.day,'sack and leave: it stays theirs, ruined and empty');
  // raid a village
- quiet();army();P.inv=P.inv.map(()=>null);t.initCritters();const vr=t.repAt(vil.name);at(vil);t.updateWorld(.01);ok(/Raid/.test(panel()),'a hostile village can be raided');
+ quiet();army();P.inv=P.inv.map(()=>null);t.initCritters();t.ensureEcon(vil);vil.stock.grain=Math.max(vil.stock.grain||0,60);vil.stock.meat=Math.max(vil.stock.meat||0,20);const vr=t.repAt(vil.name);at(vil);t.updateWorld(.01);ok(/Raid/.test(panel()),'a hostile village can be raided');
  t.act('sg-raid-auto');t.act('cont');done();ok(P.raid&&!vil.raided&&t.repAt(vil.name)<vr-20,'beating the militia starts the raid, and the village already hates you');
  G.lastTown=null;G.encCool=0;t.clickAt(vil.x,vil.y-4);ok(G.mode==='besiege'&&/plundered/.test(panel()),'the village is closed while you raid it');t.act('sg-wait');
- for(let i=0;i<40&&P.raid;i++)t.updateWorld(.25);ok(vil.raided>G.day&&t.foodN()>10&&t.repAt(vil.name)<vr-20&&!t.herdOf(vil),'raiding takes food, burns the herd and earns hatred');
+ for(let i=0;i<40&&P.raid;i++)t.updateWorld(.25);ok(vil.raided>G.day&&t.foodN()>10&&t.repAt(vil.name)<vr-20&&!t.herdOf(vil),'raiding takes food, burns the herd and earns hatred (raided '+(vil.raided>G.day)+', food '+t.foodN()+', rep '+t.repAt(vil.name)+' vs '+vr+', herd '+!!t.herdOf(vil)+', raid '+!!P.raid+')');
  // AI conquest marks a town
  quiet();const prey=t.TOWNS.find(x=>!['horde','player'].includes(x.owner)&&x.kind!=='village'),l={id:'x0',name:'Test Lord',fac:'horde',x:prey.x,y:prey.y,troops:Array(60).fill('orc_grunt'),state:'siege',tgt:prey.name,sd:0,dead:false};
  W.rel[t.rk('horde',prey.owner)]={s:'war',since:G.day};W.lords=[l];prey.gar=2;t.resolveSiege(l,prey);ok(prey.owner==='horde'&&prey.turmoil>G.day,'lords who take a town leave it in turmoil');
@@ -76,8 +76,8 @@ try{
  at(fr);t.updateWorld(.01);ok(G.mode==='town','with the siege broken the gates open');t.act('leave');done();
  // your raid draws the owner's lords
  const vi2=t.TOWNS.find(x=>x.kind==='village'&&x.owner==='karn'&&!x.raided),kl={id:'k1',name:'Rescuer',fac:'karn',x:vi2.x+300,y:vi2.y,troops:Array(12).fill('dw_clan'),state:'rest',tgt:t.fiefsOf('karn')[0].name,sd:0,dead:false,cool:0};
- W.lords=[kl];army();at(vi2);t.updateWorld(.01);t.act('sg-raid-auto');t.act('cont');done();t.lordThink(kl);ok(P.raid&&kl.state==='relieve'&&kl.tgt===vi2.name,'the village lords ride to stop your raid');
- const f0=t.foodN();P.x+=200;t.updateWorld(.01);ok(!P.raid&&vi2.raided>G.day,'walking away ends the raid early with part of the loot');W.lords=[];
+ W.lords=[kl];army();at(vi2);t.updateWorld(.01);{const r=Math.random;Math.random=()=>.5;t.act('sg-raid-auto');Math.random=r}/* (the auto-resolve's dice fixed: this is about the lords, not luck) */t.act('cont');done();t.lordThink(kl);ok(P.raid&&kl.state==='relieve'&&kl.tgt===vi2.name,'the village lords ride to stop your raid');
+ const f0=t.foodN();P.x+=200;t.updateWorld(.01);ok(!P.raid&&vi2.raided>G.day,'walking away ends the raid early with part of the loot'+(P.raid?' (still raiding: mode '+G.mode+', paused '+G.paused+', capture '+!!G.capture+', stay '+!!P.stay+', '+Math.round(Math.hypot(P.x-vi2.x,P.y-vi2.y))+' px)':''));W.lords=[];
  // save and load
  G.mode='world';G.modal=false;t.hidePanel();t.saveGame();const snap=JSON.stringify(t.TOWNS.map(x=>[x.owner,x.sacked||0,x.raided||0,x.turmoil||0]));t.act('load');
  ok(JSON.stringify(t.TOWNS.map(x=>[x.owner,x.sacked||0,x.raided||0,x.turmoil||0]))===snap,'owners, sacks, raids and turmoil survive a reload');

@@ -30,16 +30,16 @@ function updateMonsters(d){
   return false;
 }
 function startMonster(m){const M=MONSTERS[m.id];startEncounter({kind:'monster',ref:m,lv:m.lv,list:Array(m.n).fill(M.unit)})}
-// roll trophies and gear for a won monster fight; returns a sentence for the victory panel
+// roll trophies and gear for a won monster fight, into the bag (the victory panel lists them with the rest of the spoils)
 function monsterLoot(m,slain){
-  const M=MONSTERS[m.id],got=[],mats=slain.filter(k=>k===M.unit).length;
-  if(mats&&M.mat){const kept=invAdd('mat',M.mat,mats);if(kept)got.push(kept+' '+MATS[M.mat].n+(kept>1?'s':''));if(kept<mats)log('Your bag is full. You leave '+(mats-kept)+' '+MATS[M.mat].n.toLowerCase()+(mats-kept>1?'s':'')+' behind.','bad')}
-  if(M.meat&&mats){const k=invAdd('good','meat',mats*M.meat);if(k)got.push(k+' meat')}
+  const M=MONSTERS[m.id],mats=slain.filter(k=>k===M.unit).length;
+  if(mats&&M.mat){const kept=invAdd('mat',M.mat,mats);if(kept<mats)log('Your bag is full. You leave '+(mats-kept)+' '+MATS[M.mat].n.toLowerCase()+(mats-kept>1?'s':'')+' behind.','bad')}
+  if(M.meat&&mats)invAdd('good','meat',mats*M.meat);
   for(const [it,ch] of M.gear)if(Math.random()<ch*(1+.1*(m.lv-1))){
-    if(invAdd('gear',it,1)){got.push('<span style="color:'+RARITY[ITEMS[it].r]+'">'+ITEMS[it].n+'</span>');log('You found '+ITEMS[it].n+' ('+ITEMS[it].r+')! Open your inventory with I.','gold')}
+    if(invAdd('gear',it,1))log('You found '+ITEMS[it].n+' ('+ITEMS[it].r+')! Open your inventory with I.','gold');
     else log('Your bag is full. You leave '+ITEMS[it].n+' behind.','bad');
   }
-  return got.length?' Loot: '+got.join(', ')+'.':'';
+  return '';
 }
 function monsterXp(m,slain){return Math.round(slain.reduce((a,k)=>a+(k===MONSTERS[m.id].unit?MONSTERS[m.id].xp:0),0)*(1+.25*(m.lv-1)))}
 
@@ -68,12 +68,12 @@ function mythicDay(){
 // one frame of a mythic monster: hunt you if it sees you, else roam; returns true if it starts a fight
 function roamMythic(m,d){
   const M=MONSTERS[m.id],Y=M.mythic;m.cool=Math.max(0,m.cool-d);
-  const pd=Math.hypot(P.x-m.x,P.y-m.y),hunt=pd<Y.see*(hiddenAt(P.x,P.y)?.55:1)&&m.cool<=0;let tx=m.tx,ty=m.ty;
+  const pd=Math.hypot(P.x-m.x,P.y-m.y),hunt=!P.stay&&pd<Y.see*(hiddenAt(P.x,P.y)?.55:1)&&m.cool<=0;let tx=m.tx,ty=m.ty;
   if(hunt){tx=P.x;ty=P.y}
   else{m.t-=d;if(m.t<=0||Math.hypot(tx-m.x,ty-m.y)<4){m.t=4+Math.random()*5;m.tx=tx=clamp(m.x+rint(-120,120),24,MW*TILE-24);m.ty=ty=clamp(m.y+rint(-90,90),24,MH*TILE-24)}}
   const dx=tx-m.x,dy=ty-m.y,dl=Math.hypot(dx,dy);
   if(dl>1){const sp=Math.min(dl,Y.speed[hunt?1:0]*d);if(Y.fly){m.x+=dx/dl*sp;m.y+=dy/dl*sp}else walk(m,dx,dy,sp);m.dir=dx>=0?1:-1}
-  if(Y.ravage)for(const l of W.lords)if(!l.dead&&!((l.dcool||0)>G.day)&&Math.hypot(l.x-m.x,l.y-m.y)<16){l.dcool=G.day+3;cull(l,Y.ravage);log('The '+M.n.toLowerCase()+' falls upon the army of '+l.name+'. '+(Y.ravage>=.5?'Half':'Many')+' are lost.','bad');if(l.troops.length<3)defeatLord(l)}
+  if(Y.ravage)for(const l of W.lords)if(!l.dead&&!l.inside&&!((l.dcool||0)>G.day)&&Math.hypot(l.x-m.x,l.y-m.y)<16){l.dcool=G.day+3;cull(l,Y.ravage);log('The '+M.n.toLowerCase()+' falls upon the army of '+l.name+'. '+(Y.ravage>=.5?'Half':'Many')+' are lost.','bad');if(l.troops.length<3)defeatLord(l)}
   if(pd<12&&m.cool<=0&&G.encCool<=0&&!G.modal){startMonster(m);return true}
   return false;
 }
@@ -82,7 +82,7 @@ function mythicSlain(m,res){
   const M=MONSTERS[m.id],Y=M.mythic,H=Y.hoard||{};let txt='';
   (W.mythic=W.mythic||{})[m.id]={back:G.day+Y.back};res.fame=Y.fame;
   if(H.gold)res.gold+=H.gold;if(H.renown)P.renown+=H.renown;if(H.text)txt+=' '+H.text;
-  if(H.gear){const g=randomGear(H.gear[0],H.gear[1]);if(invAdd('gear',g,1))txt+=' You find a <span style="color:'+RARITY[ITEMS[g].r]+'">'+ITEMS[g].n+'</span>.';else log('Your bag is full. You leave a '+ITEMS[g].n+' behind.','bad')}
+  if(H.gear){const g=randomGear(H.gear[0],H.gear[1]);if(!invAdd('gear',g,1))log('Your bag is full. You leave a '+ITEMS[g].n+' behind.','bad')}
   if(H.egg&&Math.random()<H.egg[1]&&invAdd('gear',H.egg[0],1))txt+=' Among the gold, an egg hatches: a <span style="color:'+RARITY[ITEMS[H.egg[0]].r]+'">'+ITEMS[H.egg[0]].n+'</span>.';
   log('The '+M.n.toLowerCase()+' is slain! Your name rings across Ashmark.','gold');
   return txt;

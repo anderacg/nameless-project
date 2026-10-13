@@ -24,6 +24,7 @@ try{
    let seen={pounce:0,web:0,heal:0},i=0;
    while(t.B&&i<12000){B.units.forEach(u=>{if(u.team===0)u.hp=u.max});const hp=mu.hp;t.updateBattle(.033);if(t.B){t.frame();
      if(B.floats.some(f=>f.t==='POUNCE'))seen.pounce=1;if(B.units.some(u=>u.slow>0))seen.web=1;if(mu.hp>hp&&mu.hp>0)seen.heal=1}i++}
+   if(G.loot)t.act('lt-all');// carry the spoils off
    return{m,mu,seen,xp:P.xp+P.level*1000-xp0}};
  let r=win('tiger',3,true);ok(r.mu.max>ST.tiger.hp,'level 3 tiger is tougher ('+r.mu.max+' hp vs '+ST.tiger.hp+')');ok(r.seen.pounce,'tigers pounce');
  ok(t.invCount('mat','tigerpelt')===1&&t.invCount('gear','clawblade')===1,'tiger drops a pelt and the claw blade into the inventory');ok(!W.monsters.includes(r.m),'slain monster leaves the map');t.act('cont');done();

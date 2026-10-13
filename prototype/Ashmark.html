@@ -3,52 +3,101 @@
 <title>Ashmark</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600&family=Silkscreen:wght@400;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&family=Silkscreen:wght@400;700&display=swap">
 <link rel="stylesheet" href="style.css">
 </head><body>
-<div class="wrap">
-  <header class="hud">
-    <div class="brand"><h1>Ashmark</h1><span class="tag">Prototype build</span></div>
-    <div class="stats" id="stats"></div>
-    <div class="ctrls">
-      <button class="btn sm" id="charBtn" type="button">Character</button>
-      <button class="btn sm" id="skillBtn" type="button">Skills</button>
-      <button class="btn sm" id="invBtn" type="button">Inventory</button>
-      <button class="btn sm" id="saveBtn" type="button">Save</button>
-      <button class="btn sm" id="menuBtn" type="button" title="Main menu">Menu</button>
-      <button class="btn sm" id="pause" type="button">Pause</button>
-      <button class="btn sm on" type="button" data-speed="1">1x</button>
-      <button class="btn sm" type="button" data-speed="2">2x</button>
-      <button class="btn sm" type="button" data-speed="3">3x</button>
+<div class="stage" id="stage">
+<div class="screen" id="screen" data-mode="title">
+  <canvas id="game" role="img" aria-label="Ashmark game screen: a top-down pixel-art map and battles"></canvas>
+  <!-- everything you need sits on the one screen: your party at the top left, the map's minimap at the top right (drawn on the
+       canvas), messages at the bottom left, your windows and speed at the bottom right, battle orders at the bottom middle -->
+  <div class="hudlayer">
+    <section class="pcard" id="stats" aria-label="Your party"></section>
+    <div class="toasts" id="log" aria-live="polite"></div>
+    <p class="hint" id="hint"></p>
+    <div class="staybar" id="staybar" role="status" hidden></div>
+    <nav class="dock" aria-label="Windows and time">
+      <div class="dockrow">
+        <button class="dbtn" id="charBtn" type="button" title="Character (C)"><span class="ico">&#9817;</span><span class="dl">Hero</span><kbd>C</kbd></button>
+        <button class="dbtn" id="skillBtn" type="button" title="Skills (K)"><span class="ico">&#10022;</span><span class="dl">Skills</span><kbd>K</kbd></button>
+        <button class="dbtn" id="invBtn" type="button" title="Inventory (I)"><span class="ico">&#9635;</span><span class="dl">Bag</span><kbd>I</kbd></button>
+        <button class="dbtn" id="journalBtn" type="button" title="Message log (L)"><span class="ico">&#9776;</span><span class="dl">Log</span><kbd>L</kbd></button>
+        <button class="dbtn" id="helpBtn" type="button" title="Controls and help (H)"><span class="ico">?</span><span class="dl">Help</span><kbd>H</kbd></button>
+      </div>
+      <div class="dockrow">
+        <button class="dbtn" id="pause" type="button" title="Pause or play (Space)">Pause</button>
+        <button class="dbtn on" type="button" data-speed="1" title="Normal speed (1)">1x</button>
+        <button class="dbtn" type="button" data-speed="2" title="Fast (2)">2x</button>
+        <button class="dbtn" type="button" data-speed="3" title="Fastest (3)">3x</button>
+        <button class="dbtn" id="saveBtn" type="button" title="Save (F6)">Save</button>
+        <button class="dbtn" id="fsBtn" type="button" title="Full screen (F11)">&#x26F6;</button>
+        <button class="dbtn" id="menuBtn" type="button" title="Main menu (Esc)">Menu</button>
+      </div>
+    </nav>
+    <div class="tip" id="tip" hidden></div>
+    <!-- the battle HUD, laid out as in Total War: the balance of power at the top middle, time at the top right (the small map of
+         the field under it, drawn on the canvas), the selected unit's details at the bottom left, and at the bottom middle the orders
+         over a row of unit cards. Icons are filled in at load (battlehud.js) -->
+    <div class="bhud" id="bbar" hidden>
+      <div class="btop" role="status">
+        <div class="bpow"><span class="bside me"><b id="bMine">0</b> Your band</span><span class="bpowbar" aria-hidden="true"><i id="bPowMe"></i></span><span class="bside foe">Enemy <b id="bFoe">0</b></span></div>
+        <div class="bfield"><span id="bField"></span><span id="bStatus"></span></div>
+      </div>
+      <div class="btime" role="group" aria-label="Battle speed (Space pauses; [ and ] slower, faster)">
+        <button class="btn sm" type="button" id="bPause" aria-pressed="false" title="Pause: you can still give orders (Space)">⏸ Pause</button>
+        <button class="btn sm" type="button" data-bspeed="0.5" aria-pressed="false">0.5×</button>
+        <button class="btn sm" type="button" data-bspeed="1" aria-pressed="false">1×</button>
+        <button class="btn sm" type="button" data-bspeed="2" aria-pressed="false">2×</button>
+        <button class="btn sm" type="button" data-bspeed="5" aria-pressed="false">5×</button>
+        <button class="btn sm" type="button" id="bAuto" aria-pressed="false" title="A · The AI commands your army (off: they do only what you order; any order takes it back)">AI</button>
+        <button class="btn sm" type="button" id="hpBtn" aria-pressed="true" title="Health bars over every fighter">HP</button>
+      </div>
+      <section class="binfo" id="bInfo" aria-label="Selected unit"></section>
+      <div class="bcmd">
+        <div class="borders">
+          <div class="ogrp" role="group" aria-label="Orders">
+            <button class="obtn" type="button" data-order="hold" data-key="Z" title="Hold: stand in formation where you sent them (Z)"></button>
+            <button class="obtn" type="button" data-order="follow" data-key="X" title="Follow your hero (X)"></button>
+            <button class="obtn" type="button" data-order="charge" data-key="C" title="Charge the nearest enemy (C)"></button>
+            <button class="obtn" type="button" data-order="advance" data-key="V" title="Advance in line toward the enemy (V)"></button>
+            <button class="obtn" type="button" data-order="halt" data-key="H" title="Halt: stop and hold where they stand (H)"></button>
+            <button class="obtn" type="button" data-order="withdraw" data-key="W" title="Withdraw: flee the battle by way of the withdrawal point (where you formed up); once everyone has withdrawn, the battle ends as your retreat (W)"></button>
+          </div>
+          <div class="ogrp" role="group" aria-label="How they move and fight">
+            <button class="obtn" type="button" data-flag="walk" data-key="R" aria-pressed="false" title="Walk at the slowest one's pace, keeping formation (off: run) (R)"></button>
+            <button class="obtn" type="button" data-flag="firm" data-key="F" aria-pressed="false" title="Hold their ground: strike only what comes into reach (F)"></button>
+            <button class="obtn" type="button" data-flag="fire" data-key="Q" aria-pressed="true" title="Fire at will (off: archers shoot only the enemy you set them on) (Q)"></button>
+            <button class="obtn" type="button" data-flag="skirmish" data-key="E" aria-pressed="false" title="Skirmish: archers step back from enemies coming at them (E)"></button>
+          </div>
+          <div class="ogrp forms" role="group" aria-label="Formation (pressed again: line; drag the line for width and depth)">
+            <button class="obtn" type="button" data-form="wall" aria-pressed="false"></button>
+            <button class="obtn" type="button" data-form="loose" aria-pressed="false"></button>
+            <button class="obtn" type="button" data-form="wedge" aria-pressed="false"></button>
+          </div>
+        </div>
+        <div class="bcards" role="group" aria-label="Your units (1-5; G to cycle)">
+          <button class="ucard all on" type="button" data-grp="all" data-key="5" aria-pressed="true"></button>
+          <button class="ucard" type="button" data-grp="hero" data-key="1" aria-pressed="false"></button>
+          <button class="ucard" type="button" data-grp="inf" data-key="2" aria-pressed="false"></button>
+          <button class="ucard" type="button" data-grp="arc" data-key="3" aria-pressed="false"></button>
+          <button class="ucard" type="button" data-grp="cav" data-key="4" aria-pressed="false"></button>
+        </div>
+      </div>
+      <!-- the manual control of your hero, set aside for now (RTS command: battle.js); kept, hidden -->
+      <button class="btn sm primary" type="button" id="swing" style="display:none">Attack</button>
+      <span class="slotbar" id="slotbar" role="group" aria-label="Skill slots" style="display:none"></span>
+      <button class="btn sm" type="button" data-skill="dodge" style="display:none">F Dodge</button>
+      <button class="btn sm" type="button" id="block" style="display:none">Block</button>
     </div>
-  </header>
-  <div class="screen">
-    <canvas id="game" role="img" aria-label="Ashmark game screen: a top-down pixel-art map and battles"></canvas>
-    <div class="overlay" id="ov"><div class="panel" id="panel" role="dialog" aria-live="polite"></div></div>
   </div>
-  <div class="battlebar" id="bbar" hidden>
-    <div class="grp" role="group" aria-label="Troop group (G to cycle)">
-      <button class="btn sm on" type="button" data-grp="all" aria-pressed="true">All</button>
-      <button class="btn sm" type="button" data-grp="inf" aria-pressed="false">Infantry</button>
-      <button class="btn sm" type="button" data-grp="arc" aria-pressed="false">Archers</button>
-      <button class="btn sm" type="button" data-grp="cav" aria-pressed="false">Cavalry</button>
-    </div>
-    <div class="grp" role="group" aria-label="Orders">
-      <button class="btn sm" type="button" data-order="hold">Z Hold</button>
-      <button class="btn sm" type="button" data-order="follow">X Follow</button>
-      <button class="btn sm" type="button" data-order="charge">C Charge</button>
-      <button class="btn sm" type="button" data-order="advance">V Advance</button>
-      <button class="btn sm" type="button" id="spread" aria-pressed="false">T Spread</button>
-    </div>
-    <button class="btn sm primary" type="button" id="swing">Attack</button>
-    <span class="slotbar" id="slotbar" role="group" aria-label="Skill slots"></span>
-    <button class="btn sm" type="button" data-skill="dodge">F Dodge</button>
-    <button class="btn sm" type="button" id="block">Block</button>
-  </div>
-  <p class="hint" id="hint"></p>
-  <div class="log" id="log" aria-live="polite"></div>
+  <div class="overlay" id="ov"><div class="panel" id="panel" role="dialog" aria-live="polite"></div></div>
+</div>
 </div>
 
+
+<script src="../engine/pixel.js"></script>
+<script src="../engine/buildings.js"></script>
+<script src="../engine/pieces.js"></script>
 <script src="js/core/core.js"></script>
 <script src="js/data/races.js"></script>
 <script src="js/data/factions.js"></script>
@@ -59,20 +108,28 @@
 <script src="js/data/gear.js"></script>
 <script src="js/data/progression.js"></script>
 <script src="js/data/tree.js"></script>
+<script src="js/data/holdings.js"></script>
 <script src="js/data/places.js"></script>
 <script src="js/data/economy.js"></script>
 <script src="js/data/conduct.js"></script>
+<script src="js/data/scenes.js"></script>
 <script src="js/core/state.js"></script>
 <script src="js/world/map.js"></script>
+<script src="js/world/fog.js"></script>
+<script src="js/world/resources.js"></script>
 <script src="js/gfx/worldart.js"></script>
 <script src="js/gfx/sprites.js"></script>
+<script src="js/gfx/structures.js"></script>
 <script src="js/ui/ui.js"></script>
 <script src="js/core/save.js"></script>
 <script src="js/world/reputation.js"></script>
 <script src="js/ui/character.js"></script>
 <script src="js/ui/inventory.js"></script>
+<script src="js/ui/loot.js"></script>
 <script src="js/ui/town.js"></script>
+<script src="js/world/leaders.js"></script>
 <script src="js/world/realms.js"></script>
+<script src="js/world/parties.js"></script>
 <script src="js/world/monsters.js"></script>
 <script src="js/world/critters.js"></script>
 <script src="js/world/events.js"></script>
@@ -80,11 +137,20 @@
 <script src="js/world/siege.js"></script>
 <script src="js/world/territory.js"></script>
 <script src="js/world/estates.js"></script>
+<script src="js/world/lots.js"></script>
 <script src="js/world/economy.js"></script>
 <script src="js/world/conduct.js"></script>
 <script src="js/world/folk.js"></script>
 <script src="js/world/caravans.js"></script>
+<script src="js/world/ships.js"></script>
+<script src="js/world/companions.js"></script>
+<script src="js/world/stay.js"></script>
 <script src="js/world/refugees.js"></script>
+<script src="js/world/patrols.js"></script>
+<script src="js/world/fights.js"></script>
+<script src="js/world/brains.js"></script>
+<script src="js/world/captives.js"></script>
+<script src="js/world/relations.js"></script>
 <script src="js/world/quests.js"></script>
 <script src="js/ui/talents.js"></script>
 <script src="js/world/world.js"></script>
@@ -92,7 +158,17 @@
 <script src="js/battle/parley.js"></script>
 <script src="js/battle/battle.js"></script>
 <script src="js/battle/combat.js"></script>
+<script src="js/battle/heroai.js"></script>
+<script src="js/battle/commander.js"></script>
+<script src="js/battle/formations.js"></script>
+<script src="js/battle/morale.js"></script>
+<script src="js/battle/camera.js"></script>
+<script src="js/battle/deploy.js"></script>
+<script src="js/scene/scene.js"></script>
+<script src="js/scene/town.js"></script>
+<script src="js/gfx/scene.js"></script>
 <script src="js/gfx/render.js"></script>
+<script src="js/ui/battlehud.js"></script>
 <script src="js/ui/input.js"></script>
 <script src="js/main.js"></script>
 </body></html>

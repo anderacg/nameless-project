@@ -4,6 +4,7 @@
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);
 try{
  const t=T,G=t.G,P=t.P;try{localStorage.clear()}catch(e){}
+ (0,eval)('MANUAL_HERO=true');// (the manual control is set aside in play, RTS command: its mechanics are still tested here)
  t.act('begin','soldier');P.level=5;P.tree=['start','might0','might1','might2','mighta0','command0','command1','command2','commanda0'];P.slots=['whirl','leap','cry',...Array(7).fill(null)];P.troops={militia:3};P.comps={};G.mouse.in=false;
  // each test battle starts with a fully rested hero; persistence has its own suite
  const fresh=enemies=>{P.hp=P.sp=P.mp=null;G.mode='world';G.modal=false;t.hidePanel();G.enc={kind:'party',ref:{cool:0},list:enemies.slice()};t.startBattle({enemies,tournament:false});
@@ -34,7 +35,8 @@ try{
  B=fresh(['militia']);const ally=B.units.find(u=>u.team===0&&!u.hero);ally.x=B.hero.x+20;ally.y=B.hero.y;const foe=B.units.find(u=>u.team===1);
  t.castSkill('cry');ok(ally.buffT>0&&foe.stun>0,'War Cry inspires nearby troops and staggers nearby enemies');
  foe.cd=0;foe.x=B.hero.x+8;foe.y=B.hero.y;const hh=B.hero.hp;t.updateBattle(.05);ok(B.hero.hp===hh,'a staggered enemy cannot attack');
- const mul=t.matchup(ally.s,foe.s);foe.hp=foe.max;t.hit(ally,foe,10);ok(Math.abs((foe.max-foe.hp)-Math.round(10*mul*1.3))<=1,'inspired troops hit 30% harder');end();
+ const mul=t.matchup(ally.s,foe.s);foe.hp=foe.max;foe.inSlot=false;foe.dir=Math.atan2(ally.y-foe.y,ally.x-foe.x);t.hit(ally,foe,10);// (struck from its front: no flank bonus)
+ ok(Math.abs((foe.max-foe.hp)-Math.round(10*mul*1.3))<=1,'inspired troops hit 30% harder');end();
  // stamina and mana
  B=fresh(['chief','chief']);B.keepSp=true;const Xs=B.hx||t.heroState(),h5=B.hero;
  ok(Xs.sp===t.maxSP()&&Xs.mp===t.maxMP(),'battles start with full stamina ('+t.maxSP()+') and mana ('+t.maxMP()+')');
@@ -55,5 +57,9 @@ try{
  const tr=P.tree;P.tree=['start','might0','might1'];B=fresh(['militia']);t.castSkill('leap');ok(B.hx.cds.leap===0&&B.floats.some(f=>/Learn Leap Slam/.test(f.t)),'Leap Slam is locked until learned on the tree');
  const sl=P.slots;P.slots=['whirl','leap',...Array(8).fill(null)];P.tree=['start','might0','might1'];t.buildSlotBar();t.updateSkillBar();const lb=document.querySelector('[data-slot="1"]'),wb=document.querySelector('[data-slot="0"]');ok(lb.disabled&&/not learned/.test(lb.textContent)&&!wb.disabled,'skill slot buttons show locks and readiness');P.tree=tr;P.slots=sl;
  t.frame();end();
+ // health bars over every fighter, switched in Settings or by the HP bars button; the enemy count reads Enemy
+ {const on0=t.HPBARS.on;t.setHpBars(false);ok(!t.HPBARS.on&&localStorage.getItem('ashmark.hpbars')==='0','health bars can be turned off (and it is remembered)');
+  document.getElementById('hpBtn').click();ok(t.HPBARS.on&&document.getElementById('hpBtn').classList.contains('on'),'the HP bars button turns them back on');
+  t.showTitle('settings');ok(/Health bars in battle/.test(document.getElementById('panel').innerHTML),'Settings offers it too');t.hidePanel();t.setHpBars(on0)}
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}
 const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d)};

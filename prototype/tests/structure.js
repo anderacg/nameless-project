@@ -12,17 +12,17 @@ try{
  const seen={},dups=[];
  for(const f of srcs){const txt=get(f);for(const m of txt.matchAll(/^(?:function\s+([\w$]+)\s*\(|(?:const|let)\s+([\w$]+)\s*=)/gm)){const n=m[1]||m[2];if(seen[n]&&seen[n]!==f)dups.push(n+' ('+seen[n]+', '+f+')');else seen[n]=f}}
  ok(srcs.length>=40&&!dups.length,Object.keys(seen).length+' top-level names in '+srcs.length+' scripts, none declared twice'+(dups.length?': '+dups.join('; '):''));
- ok(srcs.every(s=>/^js\/(core|data|world|battle|gfx|ui)\/[\w]+\.js$|^js\/main\.js$/.test(s)),'every script lives in its folder: core, data, world, battle, gfx or ui');
+ ok(srcs.every(s=>/^js\/(core|data|world|battle|scene|gfx|ui)\/[\w]+\.js$|^js\/main\.js$/.test(s)),'every script lives in its folder: core, data, world, battle, scene, gfx or ui');
  const order=srcs.map(s=>s.replace(/^js\//,'')),dataFirst=order.findIndex(s=>!s.startsWith('core/core')&&!s.startsWith('data/'));
  ok(order[0]==='core/core.js'&&order.slice(1,dataFirst).every(s=>s.startsWith('data/'))&&order.slice(dataFirst).every(s=>!s.startsWith('data/')),'core loads first, then all the data, then the systems');
  const wiki=[...get('wiki.html').matchAll(/<script src="(js\/[^"]+)"/g)].map(m=>m[1]);
  ok(wiki.join()===srcs.filter(s=>!/ui\/input\.js|main\.js/.test(s)).join(),'the wiki loads the same scripts in the same order (all but input and main)');
  // ---- actions
- const want=['cv-','sg-','cap-','inv-','sk-','tree-','slot-','esc-','ev-','site-','herd-','wk-','rf-','es-','pl-','dlg-'];
+ const want=['lr-','fg-','pt-','scene-','cv-','sg-','cap-','inv-','sk-','tree-','slot-','esc-','ev-','site-','herd-','wk-','rf-','es-','pl-','dlg-'];
  ok(want.every(p=>typeof t.ACTS[p]==='function'),'each dialog system owns its action prefix: '+Object.keys(t.ACTS).join(' '));
  let threw=false;try{t.onAct('cv-',()=>0)}catch(e){threw=/Two systems/.test(e.message)}ok(threw,'a second claim on a prefix is refused');
  // ---- encounters
- ok(['party','camp','monster','cave','lord','caravan','estate','siege','raid'].every(k=>t.ON_WIN[k]&&typeof t.ON_WIN[k].won==='function'),'every kind of encounter has its own outcome on victory');
+ ok(['party','camp','monster','cave','lord','caravan','estate','siege','raid','patrol','field'].every(k=>t.ON_WIN[k]&&typeof t.ON_WIN[k].won==='function'),'every kind of encounter has its own outcome on victory');
  // ---- monsters are data; the dragon is a mythic one
  t.act('begin','soldier');G.quietEvents=true;
  ok((0,eval)('typeof W.dragon')==='undefined'&&(0,eval)('typeof updateDragon')==='undefined'&&t.MONSTERS.dragon.mythic,'no dragon special case: it is MONSTERS.dragon, with mythic rules');

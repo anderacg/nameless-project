@@ -4,7 +4,7 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);
 try{const t=T,G=t.G,P=t.P,W=t.W;try{localStorage.clear()}catch(e){}
  t.showTitle('new');ok(document.querySelectorAll('[data-act="race"]').length===4,'4 race buttons on the New game screen');
  t.act('race','orc');ok(/Brutal/.test(document.getElementById('panel').innerHTML),'orc description shown');
- t.act('begin','soldier');ok(P.race==='orc'&&P.attr.str===7&&P.attr.cha===1&&P.sk.oneh.lv===3,'orc bonuses (with +1 from the Soldier origin) str='+P.attr.str+' cha='+P.attr.cha+' oneh='+P.sk.oneh.lv);
+ t.act('begin','soldier');ok(P.race==='orc'&&P.attr.str===7&&P.attr.cha===1&&P.sk.oneh.lv===0&&P.apt.oneh===.75,'orc bonuses (with +1 from the Soldier origin) str='+P.attr.str+' cha='+P.attr.cha+'; One-Handed starts at 0, learned '+Math.round(P.apt.oneh*100)+'% faster');
  P.gold=2000;const dn=t.townBy('Brinewatch');G.lastTown=null;t.enterTown(dn);const html=document.getElementById('panel').innerHTML;
  ok(/Orc Grunt/.test(html)&&/Glade Warden/.test(html)&&/Wolf Rider/.test(html)&&/Hart Rider/.test(html)&&!/Dwarf/.test(html),'mixed Brinewatch hires orc and elf troops incl. mounts');
  ok(t.hireCost('orc_grunt')<t.hireCost('hum_levy'),'own race discount '+t.hireCost('orc_grunt')+' vs '+t.hireCost('hum_levy'));
