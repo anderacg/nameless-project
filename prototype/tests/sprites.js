@@ -26,8 +26,8 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),out=()=>{cons
  // procedural detail and animation
  {const px=c=>{const d=c.getContext('2d').getImageData(0,0,c.width,c.height).data;let h=0;for(let i=0;i<d.length;i+=4)h=(h*31+d[i]+d[i+1]*3+d[i+2]*7+d[i+3])|0;return h};
   const poses=[0,1,2,3,4,5,6,7,8].map(p=>px(t.unitSprite('spearman',0,false,1,p)));ok(new Set(poses).size>=7,'a soldier has '+new Set(poses).size+' distinct poses: breathing, striding and striking');
-  const s0=t.unitSprite('militia',1,false,2,0),d0=s0.getContext('2d').getImageData(0,0,s0.width,s0.height).data;let dark=0;for(let i=0;i<d0.length;i+=4)if(d0[i+3]>150&&d0[i]<30&&d0[i+1]<30&&d0[i+2]<30)dark++;
-  ok(s0.width===32&&s0.cw===22&&dark>20,'procedural sprites have a dark outline (a 22-pixel soldier in its 32-pixel cell)');
+  const s0=t.unitSprite('militia',1,false,2,0),d0=s0.getContext('2d').getImageData(0,0,s0.width,s0.height).data;let dark=0;for(let i=0;i<d0.length;i+=4)if(d0[i+3]>150&&d0[i]<40&&d0[i+1]<40&&d0[i+2]<50)dark++;
+  ok(s0.width===32&&s0.cw===24&&s0.ch===16&&dark>20,'soldiers are the 16-pixel template figures with their dark navy outline (a 24-pixel canvas, room for a weapon, in its 32-pixel cell; '+s0.ch+' tall)');
   const w=t.whiteOf(s0),wd=w.getContext('2d').getImageData(0,0,w.width,w.height).data;let white=0,any=0;for(let i=0;i<wd.length;i+=4)if(wd[i+3]){any++;if(wd[i]===255&&wd[i+1]===255)white++}ok(any&&white===any,'a struck fighter flashes white');
   const m=t.worldCv().getContext('2d').getImageData(t.townBy('Ashford').x-200,t.townBy('Ashford').y-200,400,400).data,cols=new Set();for(let i=0;i<m.length;i+=16)cols.add(m[i]>>3<<10|m[i+1]>>3<<5|m[i+2]>>3);
   ok(cols.size>40,'the world map is painted in '+cols.size+' shades around Ashford');
@@ -35,6 +35,39 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),out=()=>{cons
   ok(roads&&clearRoads===roads&&t.TOWNS.every(x=>t.isClear(x.x,x.y)),'roads and each holding’s own tile (its centre) (and the gate before it) are kept clear of trees, hills and peaks');
   ok(t.TOWNS.every(x=>Object.entries(t.bldSpots(x)).every(([k,p])=>{const l=t.lotOf(p.tx,p.ty);return l&&l.k===k&&l.town===x.name})),'every estate stands on a building of its own holding (its yard drawn over whatever the map painted there)');
   ok(t.arenaFor('desert')!==t.arenaFor('frost')&&t.arenaFor('grass').width===t.BW&&t.arenaFor('grass').height===t.BH,'each climate has its own battle ground, as large as the battlefield');}
+ // weapons held apart from the body: the battle sprite leaves the melee weapon off and knows where the hand is
+ {const px=c=>{const d=c.getContext('2d').getImageData(0,0,c.width,c.height).data;let n=0;for(let k=3;k<d.length;k+=4)if(d[k])n++;return n};
+  const full=t.unitSprite('hum_spear',0,false,0,0),bare=t.unitSprite('hum_spear',0,false,0,0,true);ok(bare.hand&&px(bare)<px(full)-8,'a battle sprite is the body alone, its hand marked ('+bare.hand+')');
+  const L=t.lookOf('hum_spear',0,false,0,'',null);ok(t.heldWeapon(L)==='spear'&&!t.heldWeapon(t.lookOf('hum_bow',0,false,0,'',null)),'melee weapons are held apart; bows stay with the body');
+  const w0=t.weaponSprite('spear','blue','#f3bfad',0),w8=t.weaponSprite('spear','blue','#f3bfad',8);ok(w0!==w8&&w0===t.weaponSprite('spear','blue','#f3bfad',0)&&w0.R>0,'each weapon is drawn once at each angle, and kept');
+  // (a weapon at any angle is one solid line: its pixels in each row (or column) one unbroken run, never two side by side
+  // with the outline between them, and all of them joined edge to edge)
+  {const hex=c=>{const n=parseInt(c.slice(1),16);return[n>>16,(n>>8)&255,n&255]};let bad='',n=0;
+   for(const [k,col] of [['spear',t.PPAL.wood[1]],['pike',t.PPAL.wood[1]],['lance',t.PPAL.wood[1]],['sword',t.PPAL.steel[0]],['great',t.PPAL.steel[0]]])for(let i=0;i<t.WEAPON_STEPS;i++){const c=t.weaponSprite(k,'blue','#f3bfad',i),d=c.getContext('2d').getImageData(0,0,c.width,c.height).data,cc=hex(col),W=c.width,H=c.height;n++;
+     const on=(x,y)=>{if(x<0||y<0||x>=W||y>=H)return false;const j=(y*W+x)*4;return d[j+3]&&d[j]===cc[0]&&d[j+1]===cc[1]&&d[j+2]===cc[2]};const pts=[];for(let y=0;y<H;y++)for(let x=0;x<W;x++)if(on(x,y))pts.push([x,y]);
+     const a=i/t.WEAPON_STEPS*2*Math.PI,steep=Math.abs(Math.sin(a))>=Math.abs(Math.cos(a));
+     for(let m=0;m<(steep?H:W);m++){const r=pts.filter(p=>(steep?p[1]:p[0])===m).map(p=>steep?p[0]:p[1]);if(r.length&&Math.max(...r)-Math.min(...r)+1!==r.length){bad=k+' step '+i+' (a gap)';break}}
+     const seen=new Set([pts[0]+'']),q=[pts[0]];while(q.length){const [x,y]=q.pop();for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]])if(on(x+dx,y+dy)&&!seen.has((x+dx)+','+(y+dy))){seen.add((x+dx)+','+(y+dy));q.push([x+dx,y+dy])}}
+     if(seen.size!==pts.length)bad=k+' step '+i+' (in pieces)';if(bad)break}
+   ok(!bad,'every weapon at every angle is one solid line ('+(bad||n+' sprites checked')+')')}
+  const run=t.peopleSprite(L,15,true),walk=t.peopleSprite(L,2,true);ok(run.toDataURL()!==walk.toDataURL(),'running is its own stride, not the walk sped up');
+  const kn=t.lookOf('hum_knight',0,false,0,'',null);ok(t.peopleSprite(kn,15,true).toDataURL()!==t.peopleSprite(kn,2,true).toDataURL(),'and a mount gallops');
+  world2();P.troops={hum_spear:1,hum_foot:1};t.startBattle({enemies:['militia'],tournament:false});const B=t.B,sp=B.units.find(u=>u.type==='hum_spear'),sw=B.units.find(u=>u.type==='hum_foot');
+  const st=(u,k)=>t.holdOf(u,k)[0];[sp,sw].forEach(u=>{u.tgt=null;u.atkAt=null;u.stun=0;u.spdNow=0});
+  const restS=st(sp,'spear'),restW=st(sw,'sword');sp.spdNow=sp.s.spd;sw.spdNow=sw.s.spd;const runS=st(sp,'spear'),runW=st(sw,'sword');sw.spdNow=sw.s.spd*.55;const marchW=st(sw,'sword');
+  ok(restS<-80&&Math.abs(runS)<20,'a spear: upright at rest, levelled in a charge ('+restS+' \u2192 '+runS+')');
+  ok(restW>40&&marchW<-100&&runW<-100,'a sword: point down at rest, on the shoulder on the march, raised up and back in a charge ('+restW+', '+marchW+', '+runW+')');
+  sp.spdNow=sw.spdNow=0;sp.tgt={x:sp.x+18,y:sp.y+8,hp:1,s:{}};sw.tgt={x:sw.x+18,y:sw.y,hp:1,s:{}};ok(st(sp,'spear')>0&&st(sp,'spear')<35&&st(sw,'sword')<0&&st(sw,'sword')>-70,'a foe close by: the spear points at him, the sword comes up in guard');
+  sw.atkStyle='swing';const at=f=>{sw.atkAt=B.t-f*t.ATK_ANIM;return st(sw,'sword')};const a0=at(.05),a1=at(.42),a2=at(.6);ok(a0<a1&&a1<a2&&a0<-100&&a2>30&&at(.2)===a0,'a blow: a wind-up held a moment, then a fast strike from raised behind to down in front ('+[a0,a1,a2].map(Math.round).join(' \u2192 ')+')');
+  sp.atkStyle='thrust';sp.atkAt=B.t-.4*t.ATK_ANIM;ok(t.holdOf(sp,'spear')[1]>1,'a thrust drives the spear forward');
+  sp.atkAt=null;sp.tgt=null;sp.spdNow=sp.s.spd;sp.plx=sp.x-1;ok(t.procPose(sp,true)>=15&&t.procPose(sp,true)<=18,'running shows the run');sp.spdNow=sp.s.spd*.5;ok(t.procPose(sp,true)>=2&&t.procPose(sp,true)<=5,'walking the walk');
+  B.over=true;B.endT=0;t.B=null;G.mode='world'}
+ // smooth frames: a battle's sprites are made ahead, a little each frame, so no pose is first drawn mid-fight
+ {world2();P.troops={hum_spear:4,hum_bow:3};t.startBattle({enemies:['orc_grunt','orc_hunter'],tournament:false});const n0=t.WARM.q.length;ok(n0>40,'a battle lists the sprites it will need ('+n0+')');
+  const a=performance.now();t.warmStep();const ms=performance.now()-a;ok(t.WARM.q.length<n0&&ms<t.WARM.budget+12,'and makes them a little at a time ('+(n0-t.WARM.q.length)+' in '+ms.toFixed(1)+' ms)');
+  let k=0;while(t.WARM.q.length&&k++<400)t.warmStep();ok(!t.WARM.q.length,'until all are ready');
+  const b0=t.unitSprite('hum_spear',0,false,0,0,true),b7=t.unitSprite('hum_spear',0,false,0,7,true);ok(b0===b7,'a blow\u2019s frames share the standing body (the weapon swings apart)');
+  t.B.over=true;t.B.endT=0;t.B=null;G.mode='world'}
  }catch(e){o.push('EXC '+e.message+' '+e.stack)}
  out();
 };

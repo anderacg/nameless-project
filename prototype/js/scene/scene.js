@@ -53,7 +53,7 @@ function sceneTalk(n){
     return sceneSay(R.n,'&ldquo;'+R.say+'&rdquo;'+(fresh?'<br><span class="good">You rest in the cool of the temple. Morale +'+BLESSING.morale+'.</span>':'<br><span class="muted">You have prayed here today.</span>'))}
   if(R.tab&&G.town){G.town.tab=R.tab;G.town.inScene=true;G.town.greet=R.n+': &ldquo;'+R.say+'&rdquo;';G.mode='town';renderTown();updateHint()}
 }
-function sceneSay(who,html){showPanel('<h2>'+who+'</h2><p>'+html+'</p><div class="btns"><button class="btn primary" type="button" data-act="scene-back">Back to the streets</button></div>')}
+function sceneSay(who,html){showPanel('<h2>'+who+'</h2><p>'+html+'</p>'+nav(null,['scene-back',null,'Back to the streets']))}
 // a townsperson's news: the place itself, a war, a monster abroad, or idle talk
 function sceneGossip(t){
   const opts=[...SCENE_GOSSIP];ensureEcon(t);

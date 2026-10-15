@@ -11,7 +11,7 @@ try{
  const ch=t.newChief('bandits',1);t.bandits.push({x:-999,y:-999,n:4,kind:'bandits',list:['militia'],t:0,a:0,cool:0,ld:ch});
  P.level=1;P.xp=0;const ups=[t.leaderOf(P),t.leaderOf(L),t.leaderOf(c,'brann'),t.leaderOf(ch)].map(x=>x.gainXp(59)+x.gainXp(1));
  ok(ups.every(u=>u===1)&&P.level===2&&L.lv===2&&c.lv===2&&ch.lv===2,'hero, lord, companion and chieftain all reach level 2 at 60 experience ('+ups.join(', ')+')');
- ok([t.leaderOf(P),t.leaderOf(L),t.leaderOf(c),t.leaderOf(ch)].map(x=>x.constructor.name).join()==='HeroLeader,LordLeader,CompanionLeader,ChiefLeader','each read by its own kind of leader');
+ ok([t.leaderOf(P),t.leaderOf(L),t.leaderOf(c),t.leaderOf(ch)].map(x=>x.role).join()==='hero,lord,companion,chieftain'&&[P,L,c,ch].every(o=>t.charOf(o) instanceof t.Character&&t.charOf(o) instanceof t.Unit),'each one Character (a Unit), in its own role');
  {const s0=P.sk.lead.xp,l0=L.sk.lead.xp;t.train('lead',5);t.lordTrain(L,'lead',5);ok(P.sk.lead.xp-s0>L.sk.lead.xp-l0,'you learn faster than a lord, by your Charisma and your knacks')}
  {c.lv=2;c.xp=0;c.perkPend=0;t.compXp('brann',2*60+1);ok(c.lv===3&&c.perkPend===1,'a companion still earns a perk every third level')}
  {const tp=P.tp||0;t.gainXp(P.level*60);ok(P.tp===tp+1,'and you a skill point a level')}
@@ -39,6 +39,6 @@ try{
  // a camp that returns has a new chieftain
  {const s=W.sites.find(x=>x.type==='camp'),old=s.ld.name;t.clearPlace(s,10);G.day=s.back;t.siteDay();ok(!s.cleared&&s.ld&&s.ld!==null&&s.ld.lv>=1,'a cleared camp returns under a new chieftain ('+old+' → '+s.ld.name+')')}
  // saves
- {world();const b=t.bandits[0],n=b.ld.name,lv=b.ld.lv;t.saveGame(true);t.loadGame();const b2=t.bandits.find(x=>x.ld&&x.ld.name===n);ok(b2&&b2.ld.lv===lv&&t.leaderOf(b2.ld).constructor.name==='ChiefLeader','a save keeps the chieftains')}
+ {world();const b=t.bandits[0],n=b.ld.name,lv=b.ld.lv;t.saveGame(true);t.loadGame();const b2=t.bandits.find(x=>x.ld&&x.ld.name===n);ok(b2&&b2.ld.lv===lv&&t.leaderOf(b2.ld).role==='chieftain','a save keeps the chieftains')}
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}
 const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d)};

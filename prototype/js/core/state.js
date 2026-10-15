@@ -11,12 +11,15 @@ const troopCount=()=>sum(P.troops);
 const compCount=()=>Object.keys(P.comps).length;
 const woundedN=()=>sum(P.wounded||{});
 // riders in your band (their horses want feed and their wages are higher)
-const mountedN=()=>Object.keys(P.troops).reduce((a,k)=>a+(ST[k]&&ST[k].charge?P.troops[k]:0),0);
+const mountedN=()=>Object.keys(P.troops).reduce((a,k)=>a+(ST[k]&&ST[k].mounted?P.troops[k]:0),0);
 const partySize=()=>troopCount()+compCount()+woundedN();
 const prisonerCount=()=>sum(P.prisoners);
 // the sum of one effect over your talents (the wiki page has no tree, hence the guard)
-const tm=k=>typeof TREE==='undefined'?0:(P.tree||[]).reduce((a,id)=>a+(TREE[id]&&TREE[id].m[k]||0),0);
-const treeSk=k=>typeof TREE==='undefined'?0:(P.tree||[]).reduce((a,id)=>a+(TREE[id]&&TREE[id].m.sk&&TREE[id].m.sk[k]||0),0);
+// what a skill tree gives: yours (tm), or any character's (tmOf: o is its record, with its own tree)
+const tmOf=(o,k)=>typeof TREE==='undefined'?0:(o.tree||[]).reduce((a,id)=>a+(TREE[id]&&TREE[id].m[k]||0),0);
+const tm=k=>tmOf(P,k);
+const treeSkOf=(o,k)=>typeof TREE==='undefined'?0:(o.tree||[]).reduce((a,id)=>a+(TREE[id]&&TREE[id].m.sk&&TREE[id].m.sk[k]||0),0);
+const treeSk=k=>treeSkOf(P,k);
 // perks: the old picks, or the talent notables that grant them
 const has=p=>P.perks.includes(p)||typeof TREE!=='undefined'&&(P.tree||[]).some(id=>TREE[id]&&TREE[id].m.perk===p);
 const roleOf=r=>Object.keys(P.comps).find(id=>P.comps[id].role===r);
@@ -57,7 +60,9 @@ const vis=()=>(110+8*skill('scout'))*visMulAt(P.x,P.y)*(1+gm('vis'));
 const rankName=()=>P.renown>=250?'Lord':P.renown>=100?'Warlord':P.renown>=30?'Captain':'Wanderer';
 // what your weapon does: melee (the combo), ranged (a bow) or magic (a staff)
 const heroKind=()=>{const w=P.gear&&P.gear.weapon&&ITEMS[P.gear.weapon];return w&&w.kind||'melee'};
-const heroStats=()=>({n:'You',hp:Math.round((50+10*P.level+4*P.attr.str+gm('hp'))*(1+tm('hpPct'))),dmg:(8+2*P.level+P.bonus+P.attr.str*.5+skill(meleeSk())*.6+gm('dmg'))*(1+tm('dmgPct'))*(hybridTwo()?1.2:1),spd:(48+P.attr.agi*2)*(1+gm('spd')),reach:21+skill(meleeSk())*.4+gm('reach')+(hybridTwo()?4:0),range:heroKind()==='melee'?0:130,magic:heroKind()==='magic',cd:.45*(1-P.attr.agi*.03)*(1+gm('cd')),tags:Object.values(P.gear).map(id=>id&&ITEMS[id].tag).filter(Boolean)});
+// your hero's reach with what they carry: a bow as a bowman's, a crossbow as an arbalester's, a staff or wand as a caster's
+const heroRange=()=>{const k=heroKind();if(k==='melee')return 0;if(k==='magic')return 160;const w=P.gear.weapon&&ITEMS[P.gear.weapon];return w&&w.shot&&w.shot.flat?200:400};
+const heroStats=()=>({n:'You',hp:Math.round((50+10*P.level+4*P.attr.str+gm('hp'))*(1+tm('hpPct'))),dmg:(8+2*P.level+P.bonus+P.attr.str*.5+skill(meleeSk())*.6+gm('dmg'))*(1+tm('dmgPct'))*(hybridTwo()?1.2:1),spd:(48+P.attr.agi*2)*(1+gm('spd')),reach:21+skill(meleeSk())*.4+gm('reach')+(hybridTwo()?4:0),range:heroRange(),magic:heroKind()==='magic',dt:itemDt(P.gear.weapon)||(heroKind()==='magic'?'arcane':'blunt'),armor:itemArmor(P.gear.body)||'none',race:P.race,cd:.45*(1-P.attr.agi*.03)*(1+gm('cd')),tags:Object.values(P.gear).map(id=>id&&ITEMS[id].tag).filter(Boolean)});
 // your disciplines rise by use (leaders.js: as every leader's do, faster with the attribute behind them and your knacks)
 function train(k,n){leaderOf(P).train(k,n)}
 function mood(ev){

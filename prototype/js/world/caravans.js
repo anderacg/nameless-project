@@ -54,8 +54,8 @@ function caravanMeet(c){
       Object.keys(c.goods).map(g=>{const p=caravanPrice(c,g),n=Math.min(5,c.goods[g]);return '<div class="row"><div class="info"><strong>Buy '+GOODS[g].n.toLowerCase()+'</strong><small>'+p+'g each · '+c.goods[g]+' aboard · you have '+goodN(g)+'</small></div><div class="acts">'+
         btn('cv-buy',g,'Buy '+n+' for '+p*n+'g',P.gold<p*n?'Not enough gold':goodRoom(g)<n?'No room in your bag':'')+'</div></div>'}).join('')+
       wants.map(g=>{const p=caravanPays(c,g),n=Math.min(5,goodN(g));return '<div class="row"><div class="info"><strong>Sell '+GOODS[g].n.toLowerCase()+'</strong><small>'+c.to+' is short of it · '+p+'g each</small></div><div class="acts">'+btn('cv-sell',g,'Sell '+n+' for '+p*n+'g')+'</div></div>'}).join(''))+
-    '<div class="btns">'+caravanExtra(c,hostile)+(mine?btn('cv-repeat',null,c.repeat?'End the standing route':'Make it a standing route')+btn('cv-disband',null,'Disband here'):'<button class="btn" type="button" data-act="cv-attack"'+(P.fac===c.fac?' disabled title="Your employer"':'')+'>Attack'+(hostile?'':' (the '+f.n+' turns hostile)')+'</button>')+'<button class="btn primary" type="button" data-act="cv-leave">Leave</button></div>'+
-    (mine||hostile?'':'<p class="muted">Attacking a caravan makes its owner hostile for 20 days and costs 10 honor with them.</p>'));
+    '<div class="btns">'+caravanExtra(c,hostile)+(mine?btn('cv-repeat',null,c.repeat?'End the standing route':'Make it a standing route')+btn('cv-disband',null,'Disband here'):'<button class="btn" type="button" data-act="cv-attack"'+(P.fac===c.fac?' disabled title="Your employer"':'')+'>Attack'+(hostile?'':' (the '+f.n+' turns hostile)')+'</button>')+'</div>'+
+    (mine||hostile?'':'<p class="muted">Attacking a caravan makes its owner hostile for 20 days and costs 10 honor with them.</p>')+nav(null,['cv-leave',null,'Leave']));
 }
 function caravanAct(a,arg){
   const c=G.cv;if(!c)return true;if(caravanExtraAct(a,c))return true;

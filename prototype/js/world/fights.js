@@ -90,7 +90,7 @@ function fightMeet(f){
   const p0=power(sideTroops(f,0)),p1=power(sideTroops(f,1)),share=Math.round(p0/Math.max(1,p0+p1)*100);
   showPanel('<h2>Battle near '+where+'</h2><p class="muted">The fight has gone on a while ('+Math.round(f.t/Math.max(.1,f.dur)*100)+'% of its likely length). Your power: '+partyPower()+'.</p>'+side(0)+
     '<div style="height:8px;background:#7e2a26;border:1px solid var(--line)"><div style="height:100%;width:'+share+'%;background:#3d74d6"></div></div>'+side(1)+
-    '<p class="muted">Joining a side means fighting its enemies, beside everyone on your side; realms you fight against turn hostile for 20 days.</p><div class="btns">'+dlgBtn('dlg-close',null,'Watch from afar',null,true)+'</div>');
+    '<p class="muted">Joining a side means fighting its enemies, beside everyone on your side; realms you fight against turn hostile for 20 days.</p>'+nav(null,['dlg-close',null,'Watch from afar']));
 }
 // why you can't join a side: your employer fights on the other one, or it is a side of bandits
 function joinWhy(f,s){const other=sideParties(f,1-s),mine=sideParties(f,s);if(P.fac&&other.some(o=>partyFac(o)===P.fac))return 'Your employer is on the other side';if(other.some(o=>partyFac(o)==='player'))return 'Your own people are on the other side';if(mine.some(o=>partyKind(o)==='band'))return 'They are bandits';return ''}

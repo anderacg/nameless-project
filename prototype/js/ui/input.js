@@ -4,13 +4,15 @@ function act(a,arg){
   if(a==='begin')return begin(arg);
   if(a==='econmode'){setEconMode(arg);showTitle('settings');return}
   if(a==='grid'){setGrid(arg==='on');showTitle('settings');return}
+  if(a==='blood'){setBlood(arg==='on');showTitle('settings');return}
   if(a==='hpbars'){setHpBars(arg==='on');showTitle('settings');return}
   if(a==='bdeploy'){setDeploy(arg==='on');showTitle('settings');return}
+  if(a==='guide'){setGuide(arg==='on');showTitle('settings');return}
   if(a==='bspeed'){setBattleSpeed(+arg,true);showTitle('settings');return}
   if(routeAct(a,arg)||menuAct(a,arg))return;
   if(a==='race'){G.race=arg;showTitle('new');const b=panel.querySelector('[data-act="race"].on');if(b)b.focus({preventScroll:true});return}
-  if(a==='load')return loadGame();
-  if(a==='wipe')return wipeSave();
+  if(a==='load')return loadGame(arg);
+  if(a==='wipe')return wipeSave(arg);
   if(a==='fight'){const e=G.enc;return startBattle({enemies:e.list,tournament:false,lv:e.lv||1,deploy:true})}
   if(a==='auto')return autoResolve();
   if(a==='flee')return flee();
@@ -28,6 +30,7 @@ function act(a,arg){
   if(a==='plan-siege'){G.town=null;hidePanel();G.mode='world';return openSiege(t)}
   if(fiefAct(a,arg,t)){}
   else if(a==='tab'){G.town.tab=arg;G.town.greet=null}
+  else if(a==='rec-pick'){G.town.pick=arg}// (the unit card shown beside the recruits: unitcard.js)
   else if(a==='hire'){const c=hireCost(arg);if(!canHire(t,arg))log('The people of '+t.name+' do not know you well enough yet.','bad');else if((t.vol||0)<1)log('No one else in '+t.name+' will take up arms today.','bad');else if(P.gold>=c&&partySize()<partyCap()){P.gold-=c;t.vol--;t.pop=Math.max(10,t.pop-1);P.add(arg);log(cap1(an(ST[arg].n.toLowerCase()))+' joins your band.')}}
   else if(a==='train'){const [k,to]=arg.split(':'),c=trainCost(to);if(UP[k]&&UP[k].includes(to)&&P.gold>=c&&P.troops[k]>0){if(txpReady(k)<1)log(ST[k].n+' needs more experience first ('+Math.floor(txpOf(k)%txpNeed(k))+' / '+txpNeed(k)+' XP): fight with them.','bad');else{P.gold-=c;P.txp[k]-=txpNeed(k);P.remove(k);P.add(to);txpClamp();log(ST[k].n+' trained into '+ST[to].n.toLowerCase()+'.')}}}
   else if(a==='contract'){if(!P.fac){P.fac=t.owner;delete P.hostile[t.owner];log('You sign on with the '+FACS[t.owner].n+'. Their enemies are now yours.','gold')}}
@@ -60,9 +63,12 @@ document.querySelectorAll('[data-flag]').forEach(b=>b.addEventListener('click',(
 document.querySelectorAll('[data-bspeed]').forEach(b=>b.addEventListener('click',()=>setBattleSpeed(+b.dataset.bspeed)));
 $('#bPause').addEventListener('click',()=>battlePause());
 $('#bAuto').addEventListener('click',()=>setAuto(!(B&&B.auto)));
+{const b=document.getElementById('bSkills');if(b)b.addEventListener('click',()=>setAutoSkills(!AUTOSK.on))}
 $('#hpBtn').addEventListener('click',()=>setHpBars(!HPBARS.on));setHpBars(HPBARS.on);
-$('#pause').addEventListener('click',togglePause);
-$('#saveBtn').addEventListener('click',()=>saveGame());
+$('#pause').addEventListener('click',togglePause);pauseUI();
+// the dock's tiles: an icon over the name, the key in the corner
+document.querySelectorAll('.dbtn[data-ico]').forEach(b=>{b.innerHTML=icon(b.dataset.ico,18)+'<span class="dl">'+b.textContent+'</span>'+(b.dataset.key?'<kbd>'+b.dataset.key+'</kbd>':'')});
+$('#saveBtn').addEventListener('click',()=>saveGame(false,'quick'));
 // the main menu, from anywhere outside a battle
 $('#menuBtn').addEventListener('click',()=>{if(G.mode==='title')return;if(G.mode==='esc')return escAct('esc-resume');showEsc()});
 
@@ -116,7 +122,7 @@ window.addEventListener('pointerup',e=>{if(e.button===1&&B&&B.cam&&B.cam.drag){B
   else{const L=B.lastRc,now=performance.now(),dbl=!!L&&now-L.t<350&&Math.hypot(L.x-d.x0,L.y-d.y0)<16;B.lastRc={t:now,x:d.x0,y:d.y0};rtsOrder(d.x0,d.y0,{queue:d.shift,run:dbl})}return}
   if(e.button===0&&B&&B.box){const b=B.box;B.box=null;rtsSelect(b.x0,b.y0,b.x1,b.y1,b.add)}/* (the bow, set aside:) if(e.button===0&&B&&B.draw)drawRelease() */});
 cv.addEventListener('pointermove',e=>{if(G.mode!=='battle'||!B)return;const p=toCanvas(e);
-  {const q=toField(p);B.hov=q;cv.style.cursor=B.sel!=='all'&&rtsUnitAt(q.x,q.y,1)?'crosshair':rtsUnitAt(q.x,q.y,0)?'pointer':''}// (what you point at: a ring, battlehud.js)
+  {const q=toField(p);B.hov=q;{const ic=iconAt(q.x,q.y);B.iconHov=ic?ic.g:null}cv.style.cursor=B.sel!=='all'&&rtsUnitAt(q.x,q.y,1)?'crosshair':rtsUnitAt(q.x,q.y,0)?'pointer':''}// (what you point at: a ring, battlehud.js)
   if(B.cam&&B.cam.drag){camPan(B.cam.drag.x-p.x,B.cam.drag.y-p.y);B.cam.drag={x:p.x,y:p.y};return}// (middle-drag: pan)
   if(B.box||B.rdrag){const q=toField(p),o=B.box||B.rdrag;o.x1=q.x;o.y1=q.y}});
 // the wheel zooms the battle toward the cursor (camera.js)
@@ -132,32 +138,31 @@ function keyOf(e){const c=e.code||'';
 window.addEventListener('keydown',e=>{
   if(e.target&&/INPUT|TEXTAREA|SELECT/.test(e.target.tagName))return;
   const k=keyOf(e);
-  if(e.key==='F6'){e.preventDefault();saveGame();return}
+  if(e.key==='F6'){e.preventDefault();saveGame(false,'quick');return}
   if(k==='escape'){e.preventDefault();onEscape();return}
   if(G.mode==='battle'&&B){
     // the battle's speed: Space pauses (orders still go: a tactical pause), [ and ] slow it down and speed it up
     if(e.code==='Space'){e.preventDefault();if(!e.repeat)battlePause();return}
     if(!e.repeat&&(k==='['||k===']')){battleSpeedStep(k==='['?-1:1);return}
-    // RTS command: 1-4 pick a group (hero, infantry, archers, cavalry), 5 all; the orders below
-    // (the same number twice quickly: the camera looks at them)
+    // RTS command: no key stands for a group of units (you pick them with the mouse: a soldier, his icon, his card, a box);
+    // control groups are yours to make: Ctrl+1-9 keeps the selection under a number, 1-9 picks it again (twice quickly: the
+    // camera looks at them)
     const twice=()=>{const now=performance.now(),L=B.lastKey;B.lastKey={k,t:now};if(L&&L.k===k&&now-L.t<BCAM.dbl)camLookAt(selGroups())};
-    if(!e.repeat&&/^[1-5]$/.test(k)){const g=k==='5'?'all':GRPS[+k-1];if(g==='all'||grpUnits(g).length){B.sel=g;setOrderUI();twice()}return}
-    // control groups: Ctrl+6-9 keeps the selection, 6-9 picks it again
-    if(!e.repeat&&/^[6-9]$/.test(k)){e.preventDefault();ctrlGroup(k,e.ctrlKey||e.metaKey);if(!e.ctrlKey&&!e.metaKey)twice();return}
+    if(!e.repeat&&/^[1-9]$/.test(k)){e.preventDefault();ctrlGroup(k,e.ctrlKey||e.metaKey);if(!e.ctrlKey&&!e.metaKey)twice();return}
     // the camera: arrows pan (held), + and - zoom on the middle, 0 the whole field
     if(k.startsWith('arrow')){e.preventDefault();B.cam.keys[k]=true;return}
     if(!e.repeat&&(k==='='||k==='+'||k==='-')){camZoom(k==='-'?-1:1);return}
     if(!e.repeat&&k==='0'){camReset();return}
-    // H halt, W withdraw; R walk or run, F hold ground, Q fire at will, E skirmish
-    if(!e.repeat&&k==='a')return setAuto(!B.auto);// (the AI in command of your army)
-    if(!e.repeat){if(k==='h')return setOrder('halt');if(k==='w')return setOrder('withdraw');const fl={r:'walk',f:'firm',q:'fire',e:'skirmish'}[k];if(fl)return toggleFlag(fl)}
+    // H hold (where they stand), W withdraw; R walk or run, F hold ground, Q cease fire, E skirmish, X melee mode
+    if(!e.repeat&&k==='a')return setAuto(!B.auto);
+    if(!e.repeat&&k==='k')return setAutoSkills(!AUTOSK.on);// (your characters' skills on their own)// (the AI in command of your army)
+    if(!e.repeat){if(k==='h')return setOrder('hold');if(k==='w')return setOrder('withdraw');const fl={r:'walk',f:'firm',q:'cease',e:'skirmish',x:'melee'}[k];if(fl)return toggleFlag(fl)}
     /* the manual control, set aside for now:
     if(e.code==='Space'){e.preventDefault();if(!e.repeat){if(isBow())drawStart();else swing()}return}
     if(!e.repeat){const si=SLOT_KEYS.indexOf(k);if(si>=0)return castSlot(si);if(k==='f')return dodge()} */
-    if(k==='z')return setOrder('hold');if(k==='x')return setOrder('follow');if(k==='c')return setOrder('charge');if(k==='v')return setOrder('advance');
+    if(k==='c')return setOrder('charge');if(k==='v')return setOrder('advance');
     // formations: B shield wall, L loose, T wedge (pressed again: line)
     if(!e.repeat){const fk=FORM_PICK.find(f=>FORMS[f].key.toLowerCase()===k);if(fk)return setForm(fk)}
-    if(k==='g'&&!e.repeat)return cycleGroup();
     /* (moving your hero with WASD, sprinting with Shift, blocking with B: set aside)
     if(['arrowup','arrowdown','arrowleft','arrowright'].includes(k))e.preventDefault();
     G.keys[k]=true;if(e.shiftKey)G.keys.shift=true; */

@@ -55,7 +55,7 @@ try{
   Object.keys(t.MONSTERS).forEach(m=>add('monster '+m,t.unitSprite(t.MONSTERS[m].unit,1,false)));['tree','cactus','rock'].forEach(k=>add('obstacle '+k,t.obstacleSprite(k,'grass')));add('townsfolk',t.personSprite('folk','human',1,0));
   const bad=list.filter(([,c])=>!pow(c)).map(([n,c])=>n+' '+c.width+'x'+c.height),by={};list.forEach(([n,c])=>{(by[c.width]=by[c.width]||new Set()).add(n.split(' ')[0])});
   ok(!bad.length,list.length+' sprites, each in a power-of-two cell: '+Object.keys(by).map(k=>k+'x'+k+' '+[...by[k]].slice(0,6).join('/')).join(', ')+(bad.length?' — not: '+bad.slice(0,6).join(', '):''));
-  ok(t.followerSprite('#3d74d6',1).width===8,'army followers fit an 8x8 cell')}
+  ok(t.followerSprite('#3d74d6',1).width===16,'army followers stand as tall as their lord, in a 16x16 cell')}
  // ---- the tile grid: off by default; on, a line runs down every tile edge and nowhere else
  t.setGrid(false);
  {const z=t.townBy('Ashford');P.x=z.x+30;P.y=z.y+20;G.paused=true;const col=x=>{const a=ctx.getImageData(x,0,1,t.VH).data;return a};

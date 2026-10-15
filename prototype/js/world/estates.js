@@ -33,6 +33,14 @@ const PLOTS_AT={farm:lv=>2*lv,pasture:lv=>lv+1,quarry:lv=>lv};
 const plotsAt=(t,k,lv)=>estatePlots(t,k).slice(0,PLOTS_AT[k]?PLOTS_AT[k](lv):0);
 // the share of its fields a farm, pasture or quarry actually has at its level (no fields: it makes nothing); 1 for the rest
 const fieldShare=(t,k)=>{const lv=bldLv(t,k);if(!PLOTS[k]||!lv||!t.lots)return 1;return Math.min(1,plotsAt(t,k,lv).length/PLOTS_AT[k](lv))};
+// an estate's worked fields: the tiles, and their middle (the plot nearest their centre, in pixels): where its workers work and
+// its animals graze. null: it has none (no fields, or none worked at its level)
+function fieldsOf(t,k){const lv=t&&bldLv(t,k),pl=lv&&PLOTS[k]?plotsAt(t,k,lv):[];if(!pl.length)return null;
+  const cx=pl.reduce((a,p)=>a+p[0],0)/pl.length,cy=pl.reduce((a,p)=>a+p[1],0)/pl.length,m=pl.reduce((a,p)=>Math.hypot(p[0]-cx,p[1]-cy)<Math.hypot(a[0]-cx,a[1]-cy)?p:a);
+  return{x:m[0]*TILE+TILE/2,y:m[1]*TILE+TILE-4,tiles:pl}}
+// on those fields (a little inside each tile's edge), and a spot somewhere on them
+const onFields=(F,x,y)=>F.tiles.some(([tx,ty])=>x>=tx*TILE+2&&x<tx*TILE+TILE-2&&y>=ty*TILE+4&&y<ty*TILE+TILE-1);
+const fieldSpot=F=>{const [tx,ty]=F.tiles[rint(0,F.tiles.length-1)];return{x:tx*TILE+rint(3,TILE-4),y:ty*TILE+rint(6,TILE-2)}};
 // sabotaged: idle until t.sab[k]
 const sabotaged=(t,k)=>!!(t.sab&&t.sab[k]>G.day);
 // can this holding have this estate: it has one, or there is room and ground for one
@@ -96,21 +104,25 @@ function estatePick(t,k){const p=bldSpots(t)[k];return{est:true,town:t.name,k,x:
 function estateMeet(o){
   const t=townBy(o.town),k=o.k;if(!t||!bldLv(t,k))return;G.est=o;G.mode='dialog';P.tx=null;G.chase=null;ensureEcon(t);
   const E=ESTATES[k],lv=bldLv(t,k),own=t.owner==='player',emp=P.fac&&P.fac===t.owner,out=(t.last&&t.last.out)||{},gs=E.goods.filter(g=>out[g]);
-  const hands=(W.folk||[]).filter(f=>f.home===t.name&&f.k===k).length,guard=estateGuards(t,k),pw=rating(guard);
+  const hands=(W.folk||[]).filter(f=>f.home===t.name&&f.k===k).length,guard=estateGuards(t,k),pw=rating(guard),herd=k==='pasture'&&herdOf(t),
+    job=E.work,herdBtn=(herd?dlgBtn('es-herd',null,'Buy livestock'):'')+
+      (job?dlgBtn('es-folk',null,'Talk to the '+job+'s · '+hands,hands?'':'Nobody about'):'');
   showPanel('<div class="top"><h2>'+E.n+' of '+t.name+'</h2><span class="muted">Level '+lv+' · '+(t.owner?'<span style="color:'+FACS[t.owner].col+'">'+FACS[t.owner].n+'</span>':'')+'</span></div>'+
     '<p>'+E.d+'</p>'+(PLOTS[k]?'<p class="'+(fieldShare(t,k)<1?'bad':'muted')+'">Fields: '+plotsAt(t,k,lv).length+' of the '+PLOTS_AT[k](lv)+' its level works'+(fieldShare(t,k)<1?' (no open ground for more: it makes '+Math.round(fieldShare(t,k)*100)+'%)':'')+'.</p>':'')+(sabotaged(t,k)?'<p class="bad">Wrecked: it makes nothing until day '+t.sab[k]+'.</p>':'')+'<p class="muted">'+(gs.length?'Yesterday it sent '+gs.map(g=>out[g]+' '+GOODS[g].n.toLowerCase()).join(', ')+' to '+t.name+'. ':'')+(hands?hands+' at work here now. ':'')+(until(t,'fear')?'The workers are afraid to come out. ':'')+'</p>'+
-    (own?'<p class="good">Your estate. Build and upgrade it from the Fief tab in '+t.name+'.</p><div class="btns">'+dlgBtn('dlg-close',null,'Leave',null,true)+'</div>':
-     '<p>'+guard.length+' guards watch it (power '+pw+' vs your '+partyPower()+').</p><div class="btns">'+
+    (own?'<p class="good">Your estate. Build and upgrade it from the Fief tab in '+t.name+'.</p>'+(herdBtn?'<div class="btns">'+herdBtn+'</div>':''):
+     '<p>'+guard.length+' guards watch it (power '+pw+' vs your '+partyPower()+').</p><div class="btns">'+herdBtn+
      dlgBtn('es-sabotage',null,'Sabotage it ('+Math.round(sabotageChance(t,k)*100)+'% unseen)',emp?'Your employer':sabotaged(t,k)?'Already wrecked':'')+dlgBtn('es-plunder',null,'Plunder its stores',emp?'Your employer':troopCount()<3?'Need 3 troops':'')+
-dlgBtn('es-burn',null,'Burn it',emp?'Your employer':troopCount()<3?'Need 3 troops':'')+dlgBtn('dlg-close',null,'Leave',null,true)+'</div>'+
+dlgBtn('es-burn',null,'Burn it',emp?'Your employer':troopCount()<3?'Need 3 troops':'')+'</div>'+
      '<p class="muted">Sabotage: you slip in and wreck its work: it makes nothing for '+(3+2*lv)+' days. Unseen, only rumour follows you (reputation there −'+CONDUCT.sabotageEstate.rep+'); caught, you fight its guards and pay as for a plunder. Night, Scouting and Agility help; a big band and a big estate make it harder.</p>'+
-     '<p class="muted">Plunder: you fight the guards and take what the estate made for '+t.name+': reputation there −'+CONDUCT.plunderEstate.rep+', honor −'+CONDUCT.plunderEstate.honor+(hostileTo(t.owner)?'':', and the '+FACS[t.owner].n+' turns hostile for '+CONDUCT.plunderEstate.hostile+' days')+'. Burning also knocks it down a level and costs more: reputation −'+CONDUCT.burnEstate.rep+', honor −'+CONDUCT.burnEstate.honor+(hostileTo(t.owner)?'':', hostile for '+CONDUCT.burnEstate.hostile+' days')+'; its people may leave.</p>'));
+     '<p class="muted">Plunder: you fight the guards and take what the estate made for '+t.name+': reputation there −'+CONDUCT.plunderEstate.rep+', honor −'+CONDUCT.plunderEstate.honor+(hostileTo(t.owner)?'':', and the '+FACS[t.owner].n+' turns hostile for '+CONDUCT.plunderEstate.hostile+' days')+'. Burning also knocks it down a level and costs more: reputation −'+CONDUCT.burnEstate.rep+', honor −'+CONDUCT.burnEstate.honor+(hostileTo(t.owner)?'':', hostile for '+CONDUCT.burnEstate.hostile+' days')+'; its people may leave.</p>')+nav(null,['dlg-close',null,'Leave']));
 }
 // the chance of slipping in unseen
 const sabotageChance=(t,k)=>clamp(.35+.03*skill('scout')+.02*P.attr.agi+(darkness()>.5?.2:0)-.06*bldLv(t,k)-(partySize()>20?.1:0),.1,.9);
 function sabotage(t,k){t.sab=t.sab||{};t.sab[k]=G.day+3+2*bldLv(t,k)}
 function estateAct(a){
   const o=G.est,t=o&&townBy(o.town);if(!t||!bldLv(t,o.k)){closeDialog();return}
+  if(a==='es-herd'){const c=herdOf(t);if(c){G.est=null;openHerd(c,o)}return}
+  if(a==='es-folk'){const ws=(W.folk||[]).filter(f=>f.home===t.name&&f.k===o.k),f=ws.find(f=>f.st==='in')||ws[0];if(f){G.est=null;workerMeet(f,o)}return}
   if(a==='es-sabotage'&&P.fac!==t.owner&&t.owner!=='player'&&!sabotaged(t,o.k)){const k=o.k;G.est=null;train('scout',4);
     if(Math.random()<sabotageChance(t,k)){sabotage(t,k);addRep(t.name,-CONDUCT.sabotageEstate.rep,true);closeDialog();
       return notice('Sabotaged','Under cover your people foul the '+ESTATES[k].n.toLowerCase()+' of '+t.name+'. It will make nothing for '+(t.sab[k]-G.day)+' days, and nobody saw who did it.','good')}

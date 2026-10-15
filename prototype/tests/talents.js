@@ -46,7 +46,7 @@ try{
  ok(document.querySelectorAll('.tnode').length===ids.length,'every node is drawn');
  P.tp=1;t.act('tree-sel','arcana2');ok(/Field Surgeon/.test(panel())&&!document.querySelector('[data-act="tree-take"]').disabled,'selecting a node shows it, with Learn');
  t.act('tree-take','arcana2');ok(t.treeHas('arcana2')&&/Unlearn/.test(panel()),'learning it from the page');
- t.act('sk-tab','abilities');ok(/Leap Slam/.test(panel())&&/Earthshaker/.test(panel())&&/Not learned/.test(panel()),'Abilities lists skills, upgrades and what is not learned');
+ t.act('sk-tab','abilities');{const un=Object.keys(t.HSKILLS).filter(k=>!t.knows(k));ok(!/Not learned/.test(panel())&&un.length&&un.every(k=>!panel().includes('<strong>'+t.HSKILLS[k].n+'</strong>')),'the Skill bar lists only the active skills you have learned ('+un.length+' not learned, not shown)')}
  t.act('sk-tab','disciplines');ok(/One-Handed/.test(panel())&&/Scouting/.test(panel()),'Disciplines lists the skills you train by use');
  window.dispatchEvent(new KeyboardEvent('keydown',{code:'Escape',key:'Escape'}));ok(G.mode==='world','Escape closes it');
  t.openChar();ok(/Open Skills/.test(panel())&&!/improve through use/.test(panel()),'the Hero tab points to the Skills page');t.act('char-close');
@@ -63,7 +63,7 @@ try{
  learnAll();ok(ids2.every(t.knows)&&ids2.every(id=>P.slots.includes(id)),'learning skills puts them on free slots ('+P.slots.map(x=>x||'-').join(' ')+')');
  G.mode='world';G.modal=false;t.hidePanel();t.openSkills('abilities');const sel=document.querySelector('select[data-act="slot-set"][data-arg="0"]');sel.value='fireball';sel.dispatchEvent(new Event('change',{bubbles:true}));
  ok(P.slots[0]==='fireball'&&P.slots.filter(x=>x==='fireball').length===1,'the Skill bar puts Fireball on slot 1 (and takes it off its old slot)');
- ok(/Skill slots/.test(panel())&&/Always available/.test(panel())&&document.querySelectorAll('select[data-act="slot-set"]').length===10,'the Skill bar shows ten slots, the active skills and the moves you always have');t.act('sk-close');
+ ok(/Skill slots/.test(panel())&&/Basic moves/.test(panel())&&/Dodge Roll/.test(panel())&&!/press 1 to 0|Right-click|Space ·|F ·/.test(panel())&&document.querySelectorAll('select[data-act="slot-set"]').length===10,'the Skill bar shows ten slots, your active skills and your basic moves, with no keys (battles are commanded)');t.act('sk-close');
  // each new skill in battle
  P.troops={hum_spear:4};P.gear.weapon=t.gearId('bow',2);t.invAdd('good','arrows',60);const fight=()=>{G.mode='world';G.modal=false;t.hidePanel();G.enc={kind:'party',ref:{cool:0,x:P.x,y:P.y},list:['militia','militia','militia']};t.startBattle({enemies:G.enc.list,tournament:false});const B=t.B;
    B.units.filter(u=>u.team===1).forEach((u,i)=>{u.x=B.hero.x+18;u.y=B.hero.y+(i-1)*8;u.cd=99;u.s={...u.s,spd:0}});B.aim=0;const X=t.heroState();X.sp=999;X.mp=999;return B};
@@ -102,5 +102,13 @@ try{
  G.mode='world';G.modal=false;t.hidePanel();t.openChar();ok(!document.querySelector('[data-act="spend"]')&&/raised on the skill tree/.test(panel()),'the Hero tab shows attributes without + buttons');t.act('char-close');
  t.saveGame();const d2=JSON.parse(localStorage.getItem(t.SAVE));d2.P.pts=3;const tp0=d2.P.tp;localStorage.setItem(t.SAVE,JSON.stringify(d2));t.act('load');ok(P.pts===0&&P.tp===tp0+3,'old saves turn 3 unspent attribute points into talent points');
  t.frame();
+ // the special skills: under the tree, apart from its paths
+ {G.mode='world';G.modal=false;t.hidePanel();P.fin=null;const sk=P.sk[t.meleeSk()];sk.lv=0;t.openSkills('talents');
+  ok(/Special skills/.test(panel())&&/Dodge Roll/.test(panel())&&/Shove/.test(panel())&&/Shield Bash/.test(panel())&&/Third Blow/.test(panel()),'the special skills: the basic moves and the combo\u2019s path');
+  ok(!document.querySelector('[data-act="sk-fin"]'),'the finisher is not yours to choose yet');sk.lv=t.COMBO_UP.fin;t.renderSkills();
+  ok(document.querySelectorAll('[data-act="sk-fin"]').length===2,'practised enough, choose one of two finishers');t.act('sk-fin','push');ok(P.fin==='push'&&!document.querySelector('[data-act="sk-fin"]'),'chosen once: crushing');
+  t.act('sk-fin','stun');ok(P.fin==='push','and it stays chosen');P.fin=null;sk.lv=0;t.act('sk-close')}
+ // shove with a bow, shield bash with a shield, neither otherwise
+ {const g0=P.gear.weapon;ok(t.shoveKind()===(t.grip()==='shield'?'bash':t.isBow()?'shove':null),'shove needs a bow, shield bash a shield ('+t.shoveKind()+')');P.gear.weapon=g0}
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}
 const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d)};

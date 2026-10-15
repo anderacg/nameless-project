@@ -21,19 +21,9 @@ const compHas=(id,p)=>!!compInit(id)&&compInit(id).perks.includes(p);
 const compInBand=id=>{const c=compInit(id);return !!c&&!c.party&&!(c.hurt>G.day)};
 const compsInBand=()=>Object.keys(P.comps).filter(compInBand);
 // the melee discipline of the weapon they hold
-const compMeleeSk=id=>{const w=compInit(id).gear.weapon,I=w&&ITEMS[w];return I&&!I.kind&&I.hand==='two'?'twoh':'oneh'};
+const compMeleeSk=id=>meleeSkOf(compInit(id));
 // their battle stats: their own, grown by level, gear, disciplines and perks
-function compStats(id){
-  const c=compInit(id),b=ST[id],s={...b},w=c.gear.weapon&&ITEMS[c.gear.weapon];
-  const g=k=>COMP_SLOTS.reduce((a,sl)=>{const it=c.gear[sl]&&ITEMS[c.gear[sl]];return a+(it&&it.m&&it.m[k]||0)},0);
-  s.hp=Math.round((b.hp*(1+.1*(c.lv-1))+g('hp'))*(compHas(id,'stalwart')?1.15:1));
-  let dmg=b.dmg*(1+.07*(c.lv-1))+g('dmg');
-  if(w){if(w.kind){s.range=Math.max(b.range||0,110);s.reach=0}else{s.range=0;s.reach=Math.max(b.reach||13,13)+(w.m.reach||0)}}
-  if(s.range)dmg*=1+.04*compSkill(id,'archery');else dmg+=.6*compSkill(id,compMeleeSk(id));
-  s.dmg=+(dmg*(compHas(id,'brute')?1.12:1)).toFixed(1);s.spd=Math.round(b.spd*(1+g('spd')+(compHas(id,'swift')?.1:0)));
-  s.block=Math.min(.6,g('block')+(compHas(id,'guardian')?.1:0));
-  return s;
-}
+function compStats(id){return charStats(charOf(compInit(id),id))}// (characters.js: one formula for every character)
 // gear: what fits a slot, and giving or taking it back
 const compFits=(id,slot)=>P.inv.map((x,i)=>[x,i]).filter(([x])=>x&&x.k==='gear'&&ITEMS[x.id]&&ITEMS[x.id].slot===slot);
 function compEquip(id,slot,i){const c=compInit(id),x=P.inv[i];if(!c||!x||x.k!=='gear'||ITEMS[x.id].slot!==slot)return false;

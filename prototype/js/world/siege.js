@@ -37,7 +37,7 @@ function showBlockade(t){
     '<p class="bad">The gates are barred. No trade, no recruits, no work and no rest until the siege is broken.</p><p>Your power <strong>'+partyPower()+'</strong>.'+(t.owner==='player'?' This is your fief.':' Breaking the siege earns the thanks of '+t.name+' and the '+f.n+'.')+'</p>'+
     '<div class="lab" style="margin-top:6px">Break the siege</div><p class="muted" style="font-size:13px">Fight the besiegers. The garrison'+(lordsInside(t).length?' and '+lordsInside(t).map(l=>l.name).join(' and '):'')+' sally out beside you.</p>'+
     '<div class="btns">'+ls.map((l,i)=>'<button class="btn'+(i?'':' primary')+'" type="button" data-act="sg-relieve" data-arg="'+i+'"'+(P.fac&&P.fac===l.fac?' disabled title="Your employer"':'')+'>Attack '+l.name+(hostileTo(l.fac)?'':' (the '+FACS[l.fac].n+' turns hostile)')+'</button>').join('')+'</div>'+
-    joinHtml(t)+'<div class="btns"><button class="btn" type="button" data-act="sg-leave">Leave</button></div>');
+    joinHtml(t)+nav(null,['sg-leave',null,'Leave']));
 }
 // joining a siege: storm the walls beside the besiegers of a realm you are not hostile to (not your employer's holding);
 // the owner turns hostile, and if you win, the realm that led the siege may have it
@@ -77,7 +77,7 @@ function showSiege(msg){
     body+=joinHtml(t);
   }
   showPanel('<div class="top"><h2>'+(s?'Siege of ':'')+t.name+'</h2><span class="muted">'+cap1(t.label)+' · '+P.gold+' gold</span></div>'+body+(msg?'<p class="gold">'+msg+'</p>':'')+
-    '<div class="btns">'+btns+(s?'':'<button class="btn" type="button" data-act="sg-leave">Leave</button>')+'</div>');
+    '<div class="btns">'+btns+'</div>'+(s?'':nav(null,['sg-leave',null,'Leave'])));
 }
 // with: the realm whose siege you join (its besiegers fight beside you; it may have the holding)
 function startAssault(t,kind,auto,with_){
@@ -176,7 +176,7 @@ function captureAct(a){
   }
   G.capWith=null;
   lines.forEach(l=>log(l,'gold'));
-  showPanel('<h2>'+t.name+'</h2><p>'+lines.join(' ')+'</p><div class="btns"><button class="btn primary" type="button" data-act="cont">Continue</button></div>');G.mode='dialog';updateHUD(true);
+  showPanel('<h2>'+t.name+'</h2><p>'+lines.join(' ')+'</p>'+nav(null,['cont',null,'Continue']));G.mode='dialog';updateHUD(true);
   return true;
 }
 // fiefs pay every day; a weekly note in the log

@@ -3,12 +3,12 @@
 // gear that changes the hero's class, and the UI text. BAL lines compare real battles; they never fail.
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);
 try{
- const t=T,G=t.G,P=t.P,ST=t.ST,mu=(a,d)=>+t.matchup(ST[a],ST[d]).toFixed(3);try{localStorage.clear()}catch(e){}
+ const t=T,G=t.G,P=t.P,ST=t.ST,mu=(a,d)=>+(t.matchup(ST[a],ST[d])/t.typeMul(ST[a],ST[d])).toFixed(3),tm=(a,d)=>+t.typeMul(ST[a],ST[d]).toFixed(3);// (mu: the counter triangle alone; tm: damage type against armour)try{localStorage.clear()}catch(e){}
  ok(mu('horse','archer')===1.4,'cavalry beat archers (×1.4)');
  ok(mu('archer','militia')===1.2,'archers beat unarmored foot (×1.2)');
  ok(mu('militia','spearman')===1.25,'foot beat spearmen (×1.25)');
  ok(mu('spearman','horse')===1.6&&mu('spearman','troll')===1.6,'spears beat cavalry and large monsters (×1.6)');
- ok(mu('archer','hum_guard')===.65&&mu('hum_long','hum_guard')===1.3,'heavy armor shrugs off arrows (×0.65) unless they pierce (×1.3)');
+ ok(tm('archer','hum_guard')===.6&&tm('hum_long','hum_guard')===.8,'plate shrugs off arrows (×0.6), armour-piercing ones half as much (×0.8)');
  ok(mu('dw_berserk','archer')===1.4,'shock troops tear into archers (×1.4)');
  ok(mu('militia','militia')===1,'even fights stay even');
  const gaps=Object.keys(ST).filter(k=>{const v=t.vsInfo(ST[k]);return !v.strong.length||!v.weak.length});
@@ -20,7 +20,7 @@ try{
  B.over=true;B.endT=0;t.updateBattle(.01);t.act('cont');
  // the hero's class follows the gear
  P.gear.weapon='wyrmspear';ok(t.unitClass(t.heroStats())==='spear','the Wyrm Tooth Spear makes your hero fight as a spearman');P.gear.weapon=null;
- P.gear.body='scorpplate';ok(t.matchup(ST.archer,t.heroStats())===.65,'Scorpion Plate gives your hero heavy armor against arrows');P.gear.body=null;
+ P.gear.body='scorpplate';ok(t.heroStats().armor==='plate'&&+t.typeMul(ST.archer,t.heroStats()).toFixed(3)===.6,'Scorpion Plate gives your hero plate against arrows');P.gear.body=null;
  // UI
  P.gold=999;G.mode='world';G.modal=false;G.lastTown=null;t.enterTown(t.townBy('Ashford'));ok(/Strong vs/.test(document.getElementById('panel').innerHTML),'recruit screen lists strengths and weaknesses');t.act('leave');
  while(G.mode==='perk')t.act('perk',G.perkOffer[0]);

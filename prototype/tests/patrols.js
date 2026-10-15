@@ -43,7 +43,8 @@ try{
  P.troops={hum_knight:20};t.act('auto');ok(!W.patrols.includes(q)&&/scattered/.test(panel()),'beating them scatters the patrol');t.act('cont');while(G.mode==='perk')t.act('perk',G.perkOffer[0]);
  // a hostile realm's guards attack; a friendly one's just talk
  world();h.gar=Math.max(h.gar,h.T.gar);t.patrolDay();const r=t.patrolOf(h);if(r){P.x=r.x+30;P.y=r.y;P.troops={hum_levy:1};r.cool=0;G.encCool=0;for(let i=0;i<40&&G.mode==='world';i++)t.updatePatrols(.05);ok(G.enc&&G.enc.kind==='patrol','guards of a hostile realm attack you');t.act('flee')}
- world();P.hostile={};const fr=W.patrols.find(x=>!t.hostileTo(x.fac)&&!t.crimeAt(t.townBy(x.home)));t.patrolMeet(fr);ok(/Guards of/.test(panel())&&/Leave/.test(panel()),'friendly guards just talk');
+ world();P.hostile={};if(!W.patrols.length){for(const tw of t.TOWNS)tw.gar=Math.max(tw.gar,tw.T.gar);t.patrolDay()}// (none out this time: send them)
+ let fr=W.patrols.find(x=>!t.hostileTo(x.fac)&&!t.crimeAt(t.townBy(x.home)));if(!fr){fr=W.patrols[0];const h0=t.townBy(fr.home);if(h0)h0.crime=null;P.fac=null}t.patrolMeet(fr);ok(/Guards of/.test(panel())&&/Leave/.test(panel()),'friendly guards just talk');
  window.dispatchEvent(new KeyboardEvent('keydown',{code:'Escape',key:'Escape'}));ok(G.mode==='world','Esc leaves them');
  // saved, drawn
  h.crime={until:G.day+3,fine:12};const np=W.patrols.length;t.saveGame(true);W.patrols=[];h.crime=null;t.loadGame();ok(W.patrols.length===np&&t.townBy(h.name).crime&&t.townBy(h.name).crime.fine===12,'patrols and crimes are saved');

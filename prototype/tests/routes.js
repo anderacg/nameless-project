@@ -31,7 +31,7 @@ try{
    ok(seen.size>=3&&moved>150,'Willowmere’s guards walk their beat from building to building ('+seen.size+' stops, '+Math.round(moved)+' px)')}
   else ok(false,'Willowmere sends no patrol')}
  // the workers
- {W.folk=[];G.clock=t.DAY*.3;P.x=v.x;P.y=v.y+30;let worked=0;for(let i=0;i<2400;i++){G.clock=t.DAY*.3;t.updateFolk(.05);worked=Math.max(worked,W.folk.filter(f=>f.home===v.name&&f.st==='work').length)}
-  const all=W.folk.filter(f=>f.home===v.name);ok(worked>0,'its workers reach their estates ('+worked+' at work of '+all.length+' out)')}
+ {W.folk=[];G.clock=t.DAY*.5;P.x=v.x;P.y=v.y+30;let came=0;for(let i=0;i<2400;i++){G.clock=t.DAY*.6;t.updateFolk(.05);came=Math.max(came,W.folk.filter(f=>f.home===v.name&&(f.st==='town'||f.st==='back'||f.st==='in'&&f.done===G.day)).length)}
+  const all=W.folk.filter(f=>f.home===v.name);ok(came>0,'its workers bring their loads to it and go back ('+came+' of '+all.length+')')}
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}
 const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d)};

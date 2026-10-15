@@ -47,7 +47,7 @@ function patrolMeet(p){
   const band=bandits.filter(b=>patrolLand(p,b.x,b.y)).length;
   showPanel('<h2>'+(watchOf(p)==='night'?'The night watch of ':'Guards of ')+p.home+'</h2><p class="muted">'+p.troops.length+' soldiers of the <span style="color:'+f.col+'">'+f.n+'</span> riding the land of '+p.home+'.</p><p>&ldquo;'+
     (p.fac==='player'?'All quiet, my lord.':band?'Bandits have been seen on our land. Keep your eyes open.':'The roads are safe, for now.')+'&rdquo;</p><div class="btns">'+
-    (p.fac==='player'||P.fac===p.fac?'':dlgBtn('pt-attack',null,'Attack (the '+f.n+' turns hostile)'))+dlgBtn('dlg-close',null,'Leave',null,true)+'</div>');
+    (p.fac==='player'||P.fac===p.fac?'':dlgBtn('pt-attack',null,'Attack (the '+f.n+' turns hostile)'))+'</div>'+nav(null,['dlg-close',null,'Leave']));
 }
 function patrolAct(a){
   const p=G.pt;if(!p){closeDialog();return}const t=townBy(p.home),c=crimeAt(t);

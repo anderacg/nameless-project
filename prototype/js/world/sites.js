@@ -266,7 +266,7 @@ function showSite(){
   const s=G.site,r=regionAt(s.x,s.y),btn=(act,arg,label,why)=>'<button class="btn sm" type="button" data-act="'+act+'"'+(arg!=null?' data-arg="'+arg+'"':'')+(why?' disabled title="'+why+'"':'')+'>'+label+'</button>';
   const row=(title,sub,acts)=>'<div class="row"><div class="info"><strong>'+title+'</strong><small>'+sub+'</small></div><div class="acts">'+acts+'</div></div>';
   showPanel('<div class="top"><h2>'+s.name+'</h2><span class="muted">'+s.T.n+' · '+r.name+' · <span class="gold">'+P.gold+' gold</span></span></div>'+s.panel(r,btn,row)+
-    (G.siteMsg?'<p class="gold">'+G.siteMsg+'</p>':'')+'<div class="btns"><button class="btn primary" type="button" data-act="site-leave">Leave</button></div>');
+    (G.siteMsg?'<p class="gold">'+G.siteMsg+'</p>':'')+nav(null,['site-leave',null,'Leave']));
 }
 function siteAct(a,arg){
   if(!a.startsWith('site-'))return false;

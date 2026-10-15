@@ -62,12 +62,12 @@ try{
  ok(!t.equipInto(slotOf('gear',gid('shield',1)),'offhand')&&!P.gear.offhand,'no shield with a greatsword');
  ok(!t.accepts('offhand',gid('greatsword',1))&&!t.accepts('offhand',gid('spear',1))&&t.accepts('offhand',gid('dagger',1))&&t.accepts('offhand',gid('torch',1)),'the off hand takes one-handed weapons and off-hand pieces only');
  empty();P.gear.weapon=gid('sword',2);t.invAdd('gear',gid('sword',2),1);const d0=t.gm('dmg');t.equipInto(0,'offhand');ok(t.grip()==='dual'&&Math.abs(t.gm('dmg')-d0*1.5)<.01,'dual wield: the off-hand sword adds half its damage');
- ok(t.heroCombo()===t.COMBOS.dual,'dual wield swaps the combo for quick twin strikes');
+ ok(t.weaponCombo()===t.COMBOS.dual,'dual wield swaps the combo for quick twin strikes');
  empty();for(let i=0;i<N;i++)t.invAdd('mat','silk',t.STACK);P.gear.weapon=gid('sword',1);P.gear.offhand=gid('shield',1);P.inv[0]={k:'gear',id:gid('warhammer',1),n:1};
  ok(!t.invEquip(0)&&P.gear.offhand===gid('shield',1)&&P.gear.weapon===gid('sword',1),'a full bag refuses a two-handed swap that has nowhere to put the shield');
  // hybrid: a spear is two-handed with the off hand empty, one-handed with a shield
- empty();P.gear.weapon=gid('spear',2);const r2=t.heroStats().reach,m2=t.heroStats().dmg;ok(t.grip()==='two'&&t.heroCombo()===t.COMBOS.thrust,'a lone spear is held in two hands and thrusts');
- P.gear.offhand=gid('shield',0);ok(t.grip()==='shield'&&t.heroStats().reach===r2-4&&t.heroStats().dmg<m2&&t.heroCombo()===t.COMBOS.phalanx,'spear and shield: one-handed jabs, less reach and damage');
+ empty();P.gear.weapon=gid('spear',2);const r2=t.heroStats().reach,m2=t.heroStats().dmg;ok(t.grip()==='two'&&t.weaponCombo()===t.COMBOS.thrust,'a lone spear is held in two hands and thrusts');
+ P.gear.offhand=gid('shield',0);ok(t.grip()==='shield'&&t.heroStats().reach===r2-4&&t.heroStats().dmg<m2&&t.weaponCombo()===t.COMBOS.phalanx,'spear and shield: one-handed jabs, less reach and damage');
  // mount gear only goes on a mount, only counts while you ride, and comes off with it
  empty();t.invAdd('gear',gid('barding',1),1);ok(!t.invEquip(0)&&!P.gear.marmor,'no barding without a mount');
  P.gear.mount='m_horse';const h0=t.gm('hp');ok(t.invEquip(0)&&P.gear.marmor&&t.gm('hp')>h0,'barding on a horse adds health');

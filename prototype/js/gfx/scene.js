@@ -68,28 +68,10 @@ function signIcon(g,icon,x,y,col){const r=(xx,yy,w,h)=>rect(g,col||'#3a2418',x+x
 }
 // townsfolk and the people who work in town, in their own clothes (no weapons): a seeded look per person, with the trade's
 // clothes and tools for a role. pose: 0-1 standing, 2-5 walking, like unitSprite
+// a townsperson: the template figure in its trade's clothes (people.js), walking or standing
 function personSprite(look,race,v,pose){
   const k='ps'+look+race+v+'p'+pose;if(spr[k])return spr[k];
-  const R=seeded(v*131+7),pick=a=>a[Math.floor(R()*a.length)],skin=(RACES[race]||{}).skin||C.skin,hair=pick(['#2a1a10','#5a3a20','#8a6a3a','#c8a060','#3a3a40','#9a3a20']);
-  const cloth=pick(['#3a5a8a','#7a3a3a','#4a6a3a','#8a7a4a','#5a4a6a','#6a5a3a','#3a6a6a']),legs=pick(['#3a2a1a','#4a4a5a','#5a4a3a']),dress=look==='priest'||look==='folk'&&v%3===0;
-  const walk=pose>=2&&pose<=5?pose-2:-1,b=walk===1||walk===3?-1:0,br=pose===1?1:0;
-  const body={smith:'#8a6a5a',merchant:'#7a3a8a',priest:'#e8e4d0',steward:'#2f4f6a',groom:'#8a6a3a',innkeeper:'#6a5a8a'}[look]||cloth;
-  return spr[k]=cellOf(outlined(mkc(12,19,g=>{const r=(c,x,y,w,h)=>rect(g,c,x,y,w||1,h||1);
-    // legs, or a long skirt or robe
-    if(dress||look==='steward'){r(body,3,11+b,6,6-b);r(shade(body,.75),3,16,6,1);r(C.dark,4,17,1,2);r(C.dark,7,17,1,2)}
-    else{const L=walk<0?[4,6]:[[3,7],[4,6],[5,5],[4,6]][walk];r(legs,L[0],13+b,2,4-b);r(legs,L[1],13+b,2,4-b);r(C.dark,L[0],17,2,2);r(C.dark,L[1],17,2,2)}
-    // body and arms (swinging when walking)
-    r(body,3,7+b+br,6,6-br);r(shade(body,.8),3,12+b,6,1);const sw=walk<0?0:walk===0?1:walk===2?-1:0;r(skin,2,9+b+sw,1,3);r(skin,9,9+b-sw,1,3);r(body,2,7+b+br,1,2);r(body,9,7+b+br,1,2);
-    // head and hair
-    r(skin,4,2+b+br,4,5);r(C.dark,6,4+b+br,1,1);r(hair,4,1+b+br,4,2);r(hair,4,3+b+br,1,2);
-    // the trade's clothes and tools
-    if(look==='smith'){r('#5a3a20',4,9+b,4,5);r('#9aa3ad',10,8+b-sw,2,2);r('#6a4a2a',10,10+b-sw,1,3)}
-    if(look==='innkeeper'){r('#e8e4d0',4,9+b,4,5);r('#c8a060',10,9+b-sw,2,3);r('#f0ece0',10,9+b-sw,2,1)}
-    if(look==='merchant'){r('#3a2a4a',3,0+b+br,6,2);r('#3a2a4a',2,2+b+br,8,1);r('#e8b94a',3,10+b,6,1)}
-    if(look==='priest'){r('#e8e4d0',3,1+b+br,6,2);r('#e8e4d0',3,3+b+br,1,3);r('#e8e4d0',8,3+b+br,1,3);r('#e8b94a',5,8+b,2,8)}
-    if(look==='steward'){r('#e8e4d0',10,9+b-sw,2,3);r('#c8a060',10,9+b-sw,2,1);r('#e8b94a',5,7+b+br,2,1)}
-    if(look==='groom'){r('#d8c060',2,1+b+br,8,1);r('#d8c060',3,0+b+br,6,1)}
-  })))
+  return spr[k]=cellOf(peopleSprite(folkLook(look,race,v),pose));
 }
 function drawScene(){
   const S=G.scene;if(!S)return;const Z=SCENE_ZOOM,c=sceneCv(S),cam=sceneCam(S),p=S.p,now=performance.now();
@@ -116,5 +98,5 @@ function drawScene(){
   txt(S.ref,6,14,'#e8b94a');
   if(n){const lab=n.folk?'Talk':n.guard?'Talk to the guard':n.lord?'Talk to '+nameOf(n):'Talk to the '+SCENE_ROLES[n.role].n.toLowerCase()+(SCENE_ROLES[n.role].tab?' ('+(townTabs(townBy(S.ref)).find(x=>x[0]===SCENE_ROLES[n.role].tab)||['',''])[1]+')':'');
     ctx.fillStyle='rgba(11,13,20,.8)';ctx.fillRect(VW/2-130,VH-26,260,18);txt('E · '+lab,VW/2,VH-13,'#ffe08a','center')}
-  else if(p.y>(S.H-4)*TILE)txt('Walk out of the gate to leave',VW/2,VH-13,'#c8c2ae','center');
+  else if(GUIDE.on&&p.y>(S.H-4)*TILE)txt('Walk out of the gate to leave',VW/2,VH-13,'#c8c2ae','center');
 }

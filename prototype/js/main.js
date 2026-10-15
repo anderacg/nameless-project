@@ -1,4 +1,5 @@
 'use strict';
+damageTypesInit();// (every troop kind its damage type and armour: matchups.js)
 /* ---------- loop ---------- */
 let last=performance.now();
 function loop(now){

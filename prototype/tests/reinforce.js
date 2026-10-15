@@ -22,7 +22,7 @@ try{
  // honor alone is enough
  P.fac=null;P.honor={vale:30};world();t.startEncounter({kind:'party',ref:band(),n:6,band:'bandits'});ok(G.enc.allies[0]===ally,'a faction that honors you (30) also helps');
  // in battle: their own units, their own losses
- t.act('fight');const B=t.B,au=B.units.filter(u=>u.lord===ally);ok(au.length===10&&au.every(u=>u.team===0&&!u.grp),'they fight as 10 units on your side, outside your orders');
+ t.act('fight');const B=t.B,au=B.units.filter(u=>u.lord===ally);ok(au.length===10&&au.every(u=>u.team===0&&u.grp&&u.grp.startsWith('a_')&&!t.GRPS.includes(u.grp)),'they fight as 10 units on your side, in their own groups under their own captain, outside your orders');
  const n0=ally.troops.length;au[0].hp=1;t.applyDmg(au[0],50);ok(ally.troops.length===n0-1&&!B.lost.hum_spear,'their dead come out of their army, not yours');
  B.units.filter(u=>u.team===1).forEach(u=>t.applyDmg(u,999));for(let i=0;i<80&&!B.over;i++)t.updateBattle(.05);B.endT=0;t.updateBattle(.01);
  ok(t.honorWith('vale')>30,'winning beside them earns honor');t.act('cont');done();

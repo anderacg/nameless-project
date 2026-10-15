@@ -36,19 +36,19 @@ class Party{
 class LordParty extends Party{
   get brain(){return BRAINS.lord}
   shelterWhy(t){return t&&t.owner!==this.fac?'Not a holding of his realm':super.shelterWhy(t)}
-  look(){const col=FACS[this.fac].col,still=this.state==='rest'||this.state==='siege';return{col,rider:'horse',dir:faceDir(this),moving:!still,seed:this.id.length*31+this.name.length,label:String(this.size),labelCol:hostileTo(this.fac)?STANCE_COL[stance(rating(this.troops))]:col}}
+  look(){const col=FACS[this.fac].col,still=this.state==='rest'||this.state==='siege';return{col,race:FACS[this.fac].races[0],rider:'horse',dir:faceDir(this),moving:!still,seed:this.id.length*31+this.name.length,label:String(this.size),labelCol:hostileTo(this.fac)?STANCE_COL[stance(rating(this.troops))]:col}}
 }
 class CompanionParty extends Party{
   get brain(){return BRAINS.cparty}
   shelterWhy(t){return !t?'Nowhere':yourShelterWhy(t)}
   enter(t){this.inside=t.name;this.x=t.x;this.y=t.y}
   inView(V){return this.onMap()&&Math.hypot(this.x-P.x,this.y-P.y)<V}// (yours: always in sight)
-  look(){return{col:FACS.player.col,dir:this.dir||1,moving:true,seed:this.cid.length*7,label:COMPS[this.cid].short+' '+this.size,labelCol:'#9fc0ff'}}
+  look(){return{col:FACS.player.col,race:P.race,dir:this.dir||1,moving:true,seed:this.cid.length*7,label:COMPS[this.cid].short+' '+this.size,labelCol:'#9fc0ff'}}
 }
 class PatrolParty extends Party{
   get brain(){return BRAINS.patrol}
   look(){const col=this.fac==='player'?FACS.player.col:FACS[this.fac].col,near=Math.hypot(this.x-P.x,this.y-P.y)<120;
-    return{col,dir:this.dir||1,moving:true,seed:this.home.length*13,torch:watchOf(this)==='night',label:near?String(this.size):'',labelCol:hostileTo(this.fac)?STANCE_COL[stance(rating(this.troops))]:crimeAt(townBy(this.home))&&this.fac!=='player'?'#ff9a90':col}}
+    return{col,race:this.fac==='player'?P.race:FACS[this.fac].races[0],dir:this.dir||1,moving:true,seed:this.home.length*13,torch:watchOf(this)==='night',label:near?String(this.size):'',labelCol:hostileTo(this.fac)?STANCE_COL[stance(rating(this.troops))]:crimeAt(townBy(this.home))&&this.fac!=='player'?'#ff9a90':col}}
 }
 // a bandit band: its list is its troops; n (how many it shows) follows them
 class BandParty extends Party{

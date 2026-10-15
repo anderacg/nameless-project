@@ -12,15 +12,16 @@ try{
  // tick keeps the enemies alive so timing checks never end the battle early
  const tick=(B,sec)=>{for(let i=0;i<Math.round(sec/.02);i++){if(!t.B)return;B.hero.hp=Math.max(B.hero.hp,B.hero.max*.5);if(B.hx&&!B.keepSp)B.hx.sp=Math.max(B.hx.sp,40);B.units.forEach(u=>{if(u.team===1&&u.hp>0)u.hp=u.max});t.updateBattle(.02)}};
  const end=()=>{const B=t.B;if(!B)return;B.over=true;B.endT=0;t.updateBattle(.01);t.act('cont');while(G.mode==='perk')t.act('perk',G.perkOffer[0])};
- // combo
- let B=fresh(['chief','chief']);const X=()=>B.hx||t.heroState(),h=B.hero,steps=[];
+ // combo (practised enough for its third blow: the combo grows with the weapon's discipline)
+ P.sk[t.meleeSk()].lv=t.COMBO_UP.third;let B=fresh(['chief','chief']);B.noMorale=true;B.units.filter(u=>u.team===1).forEach(u=>u.hp=u.max=9999);// (nobody routs or falls: the combo is what is tested)
+ const X=()=>B.hx||t.heroState(),h=B.hero,steps=[];
  t.swing();steps.push(X().step);tick(B,.42);t.swing();steps.push(X().step);tick(B,.42);const e0=B.units.find(u=>u.team===1&&u.hp>0),hp0=e0.hp;t.swing();steps.push(X().step);
  ok(steps.join(',')==='0,1,2','three presses inside the window chain Slash → Sweep → Finisher ('+steps.join(',')+')');
  ok(X().stop>0&&B.units.some(u=>u.team===1&&(u.stun>0||u.kx)),'the finisher knocks back, staggers and triggers hit-stop');
  const ux=B.units.filter(u=>u.team===1).map(u=>u.x).join();t.updateBattle(.01);ok(B.units.filter(u=>u.team===1).map(u=>u.x).join()===ux,'hit-stop freezes the fight for a moment');
  tick(B,2);t.swing();ok(X().step===0,'waiting too long restarts the chain');
- h.cd=.2;X().win=1;t.swing();ok(X().buf===true,'pressing mid-swing queues the next hit');tick(B,.3);ok(X().step===1&&!X().buf,'the queued hit fires when the swing ends');
- ok(X().combo>=3,'combo counter counts hits (×'+X().combo+')');tick(B,3);ok(X().combo===0,'combo counter resets after a pause');
+ h.cd=.2;X().win=1;t.swing();ok(X().buf===true,'pressing mid-swing queues the next hit');tick(B,.3);ok(X().step===1&&!X().buf,'the queued hit fires when the swing ends (step '+X().step+', buf '+X().buf+', cd '+h.cd.toFixed(2)+')');
+ ok(X().combo>=3,'combo counter counts hits (×'+X().combo+')');B.units.filter(u=>u.team===1).forEach(u=>{u.x=t.BW-20;u.cd=99;u.mor=999;u.rout=false});tick(B,3);ok(X().combo===0,'combo counter resets after a pause (×'+X().combo+')');
  end();
  // dodge
  B=fresh(['militia']);const h2=B.hero,x0=h2.x,hp=h2.hp;G.keys={d:true};t.dodge();t.applyDmg(h2,40);ok(h2.hp===hp,'a dodge roll is invulnerable');
@@ -50,7 +51,7 @@ try{
  Xs.mp=10;Xs.sp=t.maxSP();Xs.cds.cry=0;t.castSkill('cry');ok(Xs.cds.cry===0&&Xs.mp===10&&B.floats.some(f=>f.t==='Not enough mana'),'War Cry needs 30 mana and is not spent without it');
  Xs.mp=t.maxMP();Xs.sp=5;Xs.cds.whirl=0;t.castSkill('whirl');ok(Xs.cds.whirl===0&&Xs.mp===t.maxMP(),'Whirlwind needs stamina as well as mana');
  Xs.sp=t.maxSP();t.castSkill('whirl');ok(Xs.mp===t.maxMP()-15&&Xs.sp===t.maxSP()-20,'Whirlwind costs 15 mana and 20 stamina');
- Xs.mp=0;tick(B,2);ok(Xs.mp>3,'mana trickles back ('+Xs.mp.toFixed(1)+')');
+ Xs.mp=0;tick(B,2);ok(Xs.mp===0||t.tm('mpRegen')>0,'no mana comes back in battle without a talent for it ('+Xs.mp.toFixed(1)+')');
  t.buildSlotBar();t.updateSkillBar();ok(/15 MP · 20 SP/.test(document.querySelector('[data-slot="0"]').title),'skill slot buttons list their costs');
  end();
  // level locks and UI
@@ -61,5 +62,10 @@ try{
  {const on0=t.HPBARS.on;t.setHpBars(false);ok(!t.HPBARS.on&&localStorage.getItem('ashmark.hpbars')==='0','health bars can be turned off (and it is remembered)');
   document.getElementById('hpBtn').click();ok(t.HPBARS.on&&document.getElementById('hpBtn').classList.contains('on'),'the HP bars button turns them back on');
   t.showTitle('settings');ok(/Health bars in battle/.test(document.getElementById('panel').innerHTML),'Settings offers it too');t.hidePanel();t.setHpBars(on0)}
+ // the combo grows with practice: two blows to begin with, a third at COMBO_UP.third, the finisher's style chosen at COMBO_UP.fin
+ {const sk=P.sk[t.meleeSk()];P.fin=null;sk.lv=0;ok(t.heroCombo().length===2,'a new hero\u2019s combo: two blows');
+  sk.lv=t.COMBO_UP.third;const C3=t.heroCombo(),W=t.weaponCombo();ok(C3.length===3&&C3[2].mult<W[2].mult,'practised, a third: a finisher, weaker than it was ('+C3[2].mult+' against '+W[2].mult+')');
+  ok(!t.finReady(),'its style is not yours to choose yet');sk.lv=t.COMBO_UP.fin;ok(t.finReady(),'at '+t.COMBO_UP.fin+' it is');
+  P.fin='stun';const S=t.heroCombo()[2];P.fin='push';const Pu=t.heroCombo()[2];ok(S.stun>Pu.stun&&Pu.kb>S.kb&&Pu.stun===0,'stunning: a long stun, little push; crushing: a hard push, no stun');P.fin=null;sk.lv=0}
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}
 const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d)};

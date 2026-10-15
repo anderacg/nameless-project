@@ -67,7 +67,7 @@ const eventDef=()=>EVENTS.find(e=>e.id===G.event.id);
 function showEvent(result){
   const ev=eventDef();
   showPanel('<div class="top"><h2>On the road</h2><span class="muted">Day '+G.day+' · '+regionAt(P.x,P.y).name+'</span></div><p>'+ev.text()+'</p>'+
-    (result!=null?'<p class="gold">'+result+'</p><div class="btns"><button class="btn primary" type="button" data-act="ev-done">Continue</button></div>'
+    (result!=null?'<p class="gold">'+result+'</p>'+nav(null,['ev-done',null,'Continue'])
       :'<div class="btns">'+ev.choices.map((c,i)=>{const why=c.need&&c.need();return '<button class="btn'+(i===0?' primary':'')+'" type="button" data-act="ev-choose" data-arg="'+i+'"'+(why?' disabled title="'+why+'"':'')+'>'+c.label+(why?' · '+why:'')+'</button>'}).join('')+'</div>'));
 }
 function eventAct(a,arg){

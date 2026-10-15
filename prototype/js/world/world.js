@@ -32,7 +32,9 @@ function pickAt(wx,wy){
     for(const l of t.lots||[]){const o=ESTATES[l.k]&&bldLv(t,l.k)?estatePick(t,l.k):t;box(o,l.x*TILE,l.y*TILE,(l.x+l.n)*TILE,(l.y+l.n)*TILE,ESTATES[l.k]?0:4);
       if(o!==t)plotsAt(t,l.k,bldLv(t,l.k)).forEach(([x,y])=>box(o,x*TILE,y*TILE,(x+1)*TILE,(y+1)*TILE))}});W.parties.forEach(o=>{if(o.onMap())add(o,10,4)});W.monsters.forEach(m=>add(m,11,6));
   // each kind of site says where it is clicked (sites.js)
-  W.sites.forEach(s=>{if(s.pickable())s.box(box,camp)});W.critters.forEach(k=>add(k,9,4));(W.caravans||[]).forEach(k=>add(k,11,5));(W.refugees||[]).forEach(k=>add(k,10,4));(W.folk||[]).forEach(k=>add(k,6,4));
+  W.sites.forEach(s=>{if(s.pickable())s.box(box,camp)});W.critters.forEach(k=>{if(!k.decor)add(k,9,4)});/* (a pasture's herd is only to be seen: the pasture answers) */(W.caravans||[]).forEach(k=>add(k,11,5));(W.refugees||[]).forEach(k=>add(k,10,4));
+  // (workers: met at their estate while they work inside it; out on the road with a delivery, met where they walk: folk.js)
+  (W.folk||[]).forEach(k=>{if(folkOut(k))add(k,6,4)});
   c.sort((a,b)=>a[0]-b[0]);return c.length?c[0][1]:null;
 }
 const objKind=o=>o&&o.cid&&o.troops?'cparty':o&&o.est?'estate':TOWNS.includes(o)?'town':W.lords.includes(o)?'lord':W.monsters.includes(o)?'monster':bandits.includes(o)?'band':W.sites.includes(o)?'site':W.critters.includes(o)?'critter':(W.caravans||[]).includes(o)?'caravan':(W.refugees||[]).includes(o)?'refugee':(W.patrols||[]).includes(o)?'patrol':(W.folk||[]).includes(o)?'worker':null;
@@ -111,6 +113,9 @@ function survive(){
     if(ks.length&&Math.random()<.5){const k=ks[rint(0,ks.length-1)];P.remove(k);log('Swamp fever takes '+an(ST[k].n.toLowerCase())+'.','bad')}else log('Swamp fever spreads through the camp. Morale drops.','bad');
   }
 }
+// your troops' average Morale (matchups.js unitMoraleOf), by their numbers; null with none
+const PARTY_MOR={drift:.1};
+function bandNerve(){let n=0,sum=0;for(const k in P.troops){const c=P.troops[k]||0;if(c>0&&ST[k]){n+=c;sum+=c*unitMoraleOf(ST[k])}}return n?sum/n:null}
 function dayTick(){
   G.day++;
   const cnt=troopCount()+woundedN()+cparties().reduce((a,p)=>a+p.troops.length,0),wage=Math.ceil(cnt*.5+mountedN()*.5)+2*compCount(),eat=eatPerDay();
@@ -123,6 +128,8 @@ function dayTick(){
   for(const id in P.comps){const r=COMPS[id].rival;if(r&&P.comps[r]&&Math.random()<.12){P.comps[id].ap--;P.comps[r].ap--;log(COMPS[id].short+' and '+COMPS[r].short+' quarrel by the fire. Both are unhappy.','bad')}}
   if(P.morale<25&&cnt>0&&Math.random()<.5){const ks=Object.keys(P.troops).filter(k=>P.troops[k]>0);const k=ks[rint(0,ks.length-1)];P.remove(k);log(cap1(an(ST[k].n.toLowerCase()))+' deserts in the night.','bad')}
   survive();
+  // (your band's morale drifts toward its troops' Morale, by their numbers: veterans keep their spirits, levies sag)
+  {const st=bandNerve();if(st!=null)P.morale+=(st-P.morale)*PARTY_MOR.drift}
   P.morale=clamp(P.morale,Math.min(30,skill('lead')*3)+tm('morale'),100);
   if(bandits.length<BANDITS&&Math.random()<.6)spawnBandit(false);
   if(P.renown>=250&&!G.rankSeen){G.rankSeen=1;log('Your name carries across Ashmark. A throne is within reach.','gold')}

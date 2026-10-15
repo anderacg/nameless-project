@@ -13,7 +13,7 @@ try{
  Object.assign(l,{state:'rest',tgt:h.name,inside:null});h.vol=10;h.gar=h.T.gar;const p0=h.pop,v0=h.vol,g0=W.treas[l.fac],n0=l.troops.length,before=t.countsOf(l.troops);t.worldDay();const got=l.troops.length-n0;
  ok(got>0&&h.vol===v0-got&&h.pop===p0-got&&W.treas[l.fac]<g0,'with volunteers he hires them, as you would: '+got+' joined, the people and the treasury pay ('+(g0-W.treas[l.fac])+' gold)');
  {const c1=t.countsOf(l.troops),gained=Object.keys(c1).filter(k=>c1[k]>(before[k]||0));// (one of them may be trained up the same day)
- ok(gained.length&&gained.every(k=>h.races.some(r=>[t.RACES[r].melee,t.RACES[r].ranged].includes(k))||Object.values(t.UP).some(u=>u.includes(k))),'his recruits are '+h.name+'’s own folk')}
+ ok(gained.length&&gained.every(k=>h.races.some(r=>[t.RACES[r].melee,t.RACES[r].shield,t.RACES[r].ranged].includes(k))||Object.values(t.UP).some(u=>u.includes(k))),'his recruits are '+h.name+'’s own folk')}
  // a beaten lord needs volunteers to raise a new army
  {const b=W.lords.find(x=>x!==l);t.lordStats(b);const lv=b.lv;t.defeatLord(b);b.back=G.day;t.fiefsOf(b.fac).forEach(z=>{t.ensureEcon(z);z.vol=0});t.worldDay();ok(b.dead,'a beaten lord with no volunteers in his realm raises no army');
   t.fiefsOf(b.fac).forEach(z=>{z.vol=12});W.treas[b.fac]=5000;t.worldDay();ok(!b.dead&&b.troops.length>=3&&b.lv===lv,'with them he rises again at level '+b.lv+' with '+b.troops.length+' soldiers')}

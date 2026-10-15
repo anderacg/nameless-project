@@ -20,14 +20,14 @@ function wrong(t,c){
   return cost.join(', ');
 }
 // frightened workers run home and keep away: half the holding's output for a few days
-const frighten=(t,days)=>{t.fear=Math.max(t.fear||0,G.day+days);for(const f of W.folk||[])if(f.home===t.name){f.st='back';const h=folkHome(t);f.tx=h.x;f.ty=h.y}};
+const frighten=(t,days)=>{t.fear=Math.max(t.fear||0,G.day+days);for(const f of W.folk||[])if(f.home===t.name&&folkOut(f)){f.st='back';const door=folkDoor(t,f.k);f.tx=door.x;f.ty=door.y}};// (its workers on the road hurry back in: folk.js)
 
 /* dialogs */
 // a dialog button; why (if set) disables it and says why
 const dlgBtn=(act,arg,label,why,primary)=>'<button class="btn'+(primary?' primary':'')+'" type="button" data-act="'+act+'"'+(arg!=null?' data-arg="'+arg+'"':'')+(why?' disabled title="'+why+'"':'')+'>'+label+(why?' · '+why:'')+'</button>';
 const closeDialog=()=>{G.wk=G.rf=G.est=G.par=null;G.mode='world';G.encCool=Math.max(G.encCool,1);hidePanel();updateHUD(true)};
 // a moment's notice in the dialog, then back to the map
-function notice(title,msg,cls){G.mode='dialog';showPanel('<h2>'+title+'</h2><p class="'+(cls||'')+'">'+msg+'</p><div class="btns"><button class="btn primary" type="button" data-act="dlg-ok">Continue</button></div>');updateHUD(true)}
+function notice(title,msg,cls){G.mode='dialog';showPanel('<h2>'+title+'</h2><p class="'+(cls||'')+'">'+msg+'</p>'+nav(null,['dlg-ok',null,'Continue']));updateHUD(true)}
 const levyOf=race=>RACES[race]?RACES[race].melee:'militia';
 // how many more your band can take
 const partyRoom=()=>partyCap()-partySize();

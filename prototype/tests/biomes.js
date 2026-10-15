@@ -39,7 +39,7 @@ try{
  // fire 400 arrows straight through one tree
  // (no one may fall meanwhile: your hero fights on their own now, and the battle would end)
  const tree=B.obs.find(x=>x.kind==='tree');let stopped=0;const N=400;
- for(let k=0;k<N;k++){B.arrows=[{x:tree.x-30,y:tree.y-6,vx:170,vy:0,team:1,dmg:0,life:1,a:0,elf:false,tk:0}];B.noMorale=true;B.units.forEach(u=>{u.hp=u.max=1e6;u.cd=99});for(let s=0;s<40;s++)t.updateBattle(.01);if(!B.arrows.length||B.arrows[0].x<tree.x+10)stopped++}
+ for(let k=0;k<N;k++){B.arrows=[{x:tree.x-30,y:tree.y-6,vx:170,vy:0,team:1,dmg:0,life:1,a:0,elf:false,tk:0}];B.noMorale=true;B.units.forEach(u=>{u.hp=u.max=1e6;u.cd=99;u.x=12;u.y=t.BH-20;u.s={...u.s,spd:0}});for(let s=0;s<40;s++)t.updateBattle(.01);if(!B.arrows.length||B.arrows[0].x<tree.x+10)stopped++}
  ok(stopped>N*.12&&stopped<N*.4,'trees stop about a quarter of arrows ('+stopped+'/'+N+')');
  B.over=true;B.endT=0;t.updateBattle(.01);t.act('cont');done();
  // biome bands: desert bandits are raiders, frost wolves are monsters that drop furs
@@ -51,7 +51,7 @@ try{
  // goods
  const gw=t.townBy('Greywell');G.lastTown=null;G.mode='world';t.enterTown(gw);t.act('tab','trade');const html=document.getElementById('panel').innerHTML;
  ok(/Spice/.test(html)&&/Grain/.test(html),'desert village trades grain and spice');t.act('leave');done();
- t.updateHUD(true);ok(/Region/.test(document.getElementById('stats').innerHTML),'region shown in HUD');
+ t.updateHUD(true);ok(/Where you are/.test(document.getElementById('stats').innerHTML)&&document.getElementById('stats').textContent.includes(t.regionAt(P.x,P.y).name),'region shown in HUD');
  setGood('spice',7);t.saveGame();t.goodTake('spice',99);t.act('load');ok(t.goodN('spice')===7,'goods in the bag survive save and load');
  t.frame();
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}

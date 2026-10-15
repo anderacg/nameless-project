@@ -13,10 +13,11 @@ try{
  ok(Object.values(t.BGS).every(b=>b.gold<=110),'every past starts poor: '+Object.values(t.BGS).map(b=>b.n+' '+b.gold+'g').join(', '));
  // the HUD Menu button: resume where you were
  G.mode='world';G.modal=false;t.hidePanel();document.getElementById('menuBtn').click();ok(G.mode==='esc'&&/Paused/.test(panel()),'the HUD Menu button opens the Esc menu');
- t.act('esc-main');ok(G.mode==='title'&&cards()[0]==='Resume','Main menu from there offers Resume first');t.act('resume');ok(G.mode==='world'&&!G.modal,'Resume goes back to the map');
+ t.act('esc-main');ok(G.mode==='title'&&!cards().includes('Resume'),'the main menu offers no Resume: '+cards().join(', '));
+ G.mode='world';G.modal=false;t.hidePanel();
  // Esc: close what is open, else pause with the Esc menu
  const esc=()=>window.dispatchEvent(new KeyboardEvent('keydown',{code:'Escape',key:'Escape'}));
- esc();ok(G.mode==='esc'&&['Resume','Save game','Load game','Main menu','Exit game'].every(n=>cards().includes(n)),'Esc on the map opens the Esc menu: '+cards().join(', '));
+ esc();ok(G.mode==='esc'&&['Save game','Load game','Main menu','Exit game'].every(n=>cards().includes(n))&&/Resume/.test(document.querySelector('.nav [data-nav="close"]').textContent),'Esc on the map opens the Esc menu, Resume in its bottom bar: '+cards().join(', '));
  const day=G.day,clk=G.clock;t.loop&&0;esc();ok(G.mode==='world'&&!G.modal,'Esc again resumes');
  esc();t.act('esc-save');ok(t.readSave()&&/Game saved/.test(panel())&&G.mode==='esc','Save game from the Esc menu');esc();
  t.openInv();esc();ok(G.mode==='world','Esc closes the inventory');t.openChar();esc();ok(G.mode==='world','Esc closes the character screen');t.openSkills();esc();ok(G.mode==='world','Esc closes the Skills page');
@@ -43,8 +44,8 @@ try{
  t.act('menu','main');t.act('menu','settings');esc();ok(G.menu==='main','Esc in a menu page goes back to the main menu');
  // continue and load
  t.saveGame();t.showTitle();ok(cards().includes('Continue')&&/hedge mage/i.test(panel()),'with a save, Continue shows it');const g0=P.gold;P.gold=999;t.act('load');ok(G.mode==='world'&&P.gold===g0,'Continue loads it');
- t.showTitle('load');ok(/Saved game/.test(panel()),'Load game shows the saved game');
- t.act('wipe-ask');ok(t.readSave()&&/Click again/.test(panel()),'deleting asks for a second click');t.act('wipe');ok(!t.readSave()&&G.mode==='title'&&!cards().includes('Continue'),'and then deletes the save');
+ t.showTitle('load');ok(/Autosave/.test(panel())&&/Quick save/.test(panel())&&/Slot 5/.test(panel())&&/Day \d+/.test(panel()),'Load game lists the save slots, the saved game in its own');
+ t.act('wipe-ask','auto');ok(t.readSave()&&/Delete\?/.test(panel()),'deleting asks for a second click');t.act('wipe','auto');ok(!t.readSlot('auto')&&G.mode==='title','and then deletes that save (the others stay)');
  // settings, wiki, exit
  t.act('menu','settings');ok(/Realm economy/.test(panel())&&!/Pack sprites/.test(panel())&&/Controls/.test(panel())&&/Back/.test(panel()),'Settings: realm economy and controls, no art switch');
  let opened=null;const wo=window.open;window.open=(u)=>{opened=u;return null};t.act('menu','wiki');window.open=wo;ok(opened==='wiki.html','Wiki opens the wiki in a new tab');
@@ -53,5 +54,16 @@ try{
  t.act('menu','new');t.act('begin','soldier');P.troops={hum_knight:20};let gold=0;for(let k=0;k<6;k++){G.mode='world';G.modal=false;t.hidePanel();const g1=P.gold;t.startEncounter({kind:'party',ref:{x:P.x,y:P.y,cool:0},n:8,list:Array(8).fill('militia')});t.autoResolve();gold+=P.gold-g1;t.act('cont');while(G.mode==='perk')t.act('perk',G.perkOffer[0])}
  ok(gold/6<45,'beating 8 bandits pays about '+Math.round(gold/6)+' gold (it used to be about 90)');
  t.frame();
+ // save slots: five of your own (from the menu), a quick save (F6), the autosave; Continue loads the latest
+ {try{localStorage.clear()}catch(e){}t.act('begin','soldier');G.quietEvents=true;G.mode='world';G.modal=false;t.hidePanel();
+  const press=k=>window.dispatchEvent(new KeyboardEvent('keydown',{key:k,code:k==='Escape'?'Escape':k}));
+  P.gold=111;press('F6');ok(t.readSlot('quick')&&t.readSlot('quick').P.gold===111,'F6: a quick save');
+  press('Escape');t.act('esc-saves');ok(/Save game/.test(panel())&&/Slot 1/.test(panel())&&/empty/.test(panel()),'the menu\u2019s Save game lists the slots');
+  P.gold=222;t.act('esc-save','2');ok(t.readSlot('2')&&t.readSlot('2').P.gold===222&&/Game saved \(Slot 2\)/.test(panel()),'saved to slot 2');
+  P.gold=333;t.act('esc-save','2');ok(t.readSlot('2').P.gold===222&&/click again to overwrite/.test(panel()),'a slot in use asks a second click before it is overwritten');
+  t.act('esc-save','2');ok(t.readSlot('2').P.gold===333,'and then overwrites it');
+  t.act('esc-back');t.act('esc-resume');P.gold=1;t.act('load','quick');ok(P.gold===111,'loading a slot loads that one');
+  G.mode='world';t.saveGame(true,'4');P.gold=2;t.showTitle();t.act('load');ok(P.gold===111,'Continue loads the latest save of all (slot 4)');
+  t.showTitle('load');ok(panel().match(/data-act="load"/g).length>=4,'Load game: every slot in use, ready to load')}
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}
 const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d)};

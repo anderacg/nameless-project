@@ -1,0 +1,128 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Slim sprites</title>
+<style>
+body{margin:0;background:#7a7a5a;color:#2a2618;font:13px monospace;padding:14px}
+h3{margin:12px 0 6px;color:#2a2618;font-weight:700;letter-spacing:.08em;text-transform:uppercase;font-size:11px}
+.row{display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap}
+.cell{display:flex;flex-direction:column;align-items:center;gap:3px}
+.cell span{font-size:10px;color:#3a3624}
+canvas{image-rendering:pixelated}
+.field{background:#5f7a3f;padding:8px;display:inline-block}
+</style></head><body>
+<script>
+'use strict';
+const G=(w,h)=>({w,h,p:new Array(w*h).fill(null)});
+const set=(g,x,y,c)=>{x=Math.round(x);y=Math.round(y);if(c&&x>=0&&y>=0&&x<g.w&&y<g.h)g.p[y*g.w+x]=c};
+const get=(g,x,y)=>x>=0&&y>=0&&x<g.w&&y<g.h?g.p[y*g.w+x]:null;
+const rect=(g,x,y,w,h,c)=>{for(let j=0;j<h;j++)for(let i=0;i<w;i++)set(g,x+i,y+j,c)};
+const line=(g,x0,y0,x1,y1,c)=>{const n=Math.max(Math.abs(x1-x0),Math.abs(y1-y0))||1;for(let i=0;i<=n;i++)set(g,x0+(x1-x0)*i/n,y0+(y1-y0)*i/n,c)};
+const ell=(g,cx,cy,rx,ry,c)=>{for(let y=Math.floor(cy-ry);y<=cy+ry;y++)for(let x=Math.floor(cx-rx);x<=cx+rx;x++)if(((x+.5-cx)/rx)**2+((y+.5-cy)/ry)**2<=1)set(g,x,y,c)};
+const stamp=(d,s,ox,oy,mask)=>{for(let y=0;y<s.h;y++)for(let x=0;x<s.w;x++){const c=s.p[y*s.w+x];if(c&&(!mask||mask(x,y)))set(d,ox+x,oy+y,c)}};
+// colours: a base and its shade; the outline is each edge pixel's own colour, darkened (a soft "sel-out", not black)
+const hex=c=>[1,3,5].map(i=>parseInt(c.slice(i,i+2),16)),toHex=a=>'#'+a.map(v=>Math.max(0,Math.min(255,Math.round(v))).toString(16).padStart(2,'0')).join('');
+const shade=(c,k)=>toHex(hex(c).map(v=>v*k));
+function outline(g){const o=[];for(let y=0;y<g.h;y++)for(let x=0;x<g.w;x++){if(get(g,x,y))continue;const n=get(g,x-1,y)||get(g,x+1,y)||get(g,x,y-1)||get(g,x,y+1);if(n)o.push([x,y,shade(n,.38)])}for(const [x,y,c] of o)set(g,x,y,c)}
+const C={skin:'#e8b48a',skinD:'#c08664',orc:'#7a9a4a',orcD:'#5a7a34',steel:'#b8bec8',steelD:'#7e8694',mail:'#8a909a',leather:'#8a5a34',leatherD:'#5e3c22',wood:'#7a5230',cloth:'#c8b48a',boot:'#4a3424',hairB:'#5a3a22',hairR:'#a8502a',hairG:'#d8d0b8',gold:'#d8a83a',teal:'#3a8a84',tealD:'#2a6460',green:'#4a7a3a',greenD:'#34582a',purple:'#6a4a8a',red:'#a8382e',redD:'#7a2620',blue:'#3a64a8',blueD:'#284a80',horse:'#8a5a34',horseD:'#64401f',horseW:'#d8d0c0',horseWD:'#a8a090',mane:'#3a2614'};
+// a slim figure, 32×32 cell, about 26 tall, facing right, light from the left. o: race, helm, body (armour colour), team, weapon, shield
+function slim(o){
+  const g=G(32,32),T=C[o.team||'blue'],TD=C[(o.team||'blue')+'D'],dw=o.race==='dwarf',orc=o.race==='orc',elf=o.race==='elf';
+  const sk=orc?C.orc:C.skin,skD=orc?C.orcD:C.skinD,arm=C[o.body||'steel']||C.steel,armD=C[(o.body||'steel')+'D']||C.steelD;
+  const top=dw?6:orc?2:3,leg=dw?6:9,hip=top+14,w=orc?8:dw?8:7,x0=Math.round(15-w/2);
+  // back arm and its shield
+  rect(g,x0-1,top+7,1,6,armD);
+  if(o.shield){ell(g,x0,top+11,3.4,3.6,C.wood);ell(g,x0,top+11,2.4,2.6,T);set(g,x0,top+11,C.gold)}
+  // legs: the back one shaded, a stride
+  rect(g,x0+1,hip+3,2,leg,o.legs?C[o.legs]:C.leatherD);rect(g,x0+w-3,hip+3,2,leg,o.legs?C[o.legs]:C.leather);
+  rect(g,x0,hip+3+leg-1,3,2,C.boot);rect(g,x0+w-3,hip+3+leg-1,4,2,C.boot);
+  // the torso: armour, the team's tabard over it, a belt; a skirt below
+  rect(g,x0,top+6,w,9,arm);rect(g,x0+w-1,top+6,1,9,armD);rect(g,x0+2,top+7,w-4,8,T);rect(g,x0+w-3,top+7,1,8,TD);
+  rect(g,x0,hip+1,w,1,C.leatherD);set(g,x0+3,hip+1,C.gold);rect(g,x0+1,hip+2,w-2,2,T);rect(g,x0+w-2,hip+2,1,2,TD);
+  rect(g,x0-1,top+6,w+2,2,arm);rect(g,x0+w,top+6,1,2,armD);// (shoulders)
+  // the head: neck, face, hair or helm
+  const hx=x0+Math.round(w/2)-2,hy=top;
+  rect(g,hx+1,hy+5,3,1,skD);rect(g,hx,hy,5,5,sk);rect(g,hx+4,hy,1,5,skD);set(g,hx+3,hy+2,'#2a1e16');
+  if(elf)set(g,hx-1,hy+1,sk);if(orc){set(g,hx+4,hy+4,'#f0e8d0');rect(g,hx-1,hy,6,1,C.mane)}
+  if(dw)rect(g,hx+1,hy+3,5,4,C.hairR),rect(g,hx+2,hy+7,3,1,C.hairR);
+  const helm=o.helm;
+  if(helm==='kettle'){rect(g,hx-2,hy,9,1,C.steelD);rect(g,hx,hy-2,5,2,C.steel);set(g,hx+4,hy-1,C.steelD)}
+  else if(helm==='great'){rect(g,hx-1,hy-1,7,7,C.steel);rect(g,hx+5,hy-1,1,7,C.steelD);rect(g,hx+1,hy+2,5,1,'#2a2e36');set(g,hx+4,hy+4,C.steelD)}
+  else if(helm==='plume'){rect(g,hx-1,hy-1,7,7,C.steel);rect(g,hx+5,hy-1,1,7,C.steelD);rect(g,hx+1,hy+2,5,1,'#2a2e36');rect(g,hx,hy-3,3,2,C.red);set(g,hx-1,hy-2,C.redD);set(g,hx+1,hy-4,C.red)}
+  else if(helm==='hood'){rect(g,hx-1,hy-1,6,6,C[o.hood||'green']);rect(g,hx+2,hy+1,3,4,sk);set(g,hx+3,hy+2,'#2a1e16');rect(g,hx-2,hy+3,2,4,C[(o.hood||'green')+'D'])}
+  else if(helm==='horned'){rect(g,hx-1,hy-1,7,3,C.steelD);rect(g,hx-1,hy-1,7,1,C.steel);line(g,hx-2,hy,hx-3,hy-3,C.cloth);line(g,hx+6,hy,hx+7,hy-3,C.cloth)}
+  else if(helm==='wizard'){rect(g,hx-2,hy,9,1,C.purple);rect(g,hx,hy-2,5,2,C.purple);rect(g,hx+1,hy-4,3,2,C.purple);set(g,hx+2,hy-5,C.purple);set(g,hx+3,hy-6,C.purple);rect(g,hx+1,hy+4,4,3,C.hairG)}
+  else if(helm==='crown'){rect(g,hx,hy-1,5,2,C[o.hair||'hairB']);rect(g,hx,hy-2,5,1,C.gold);set(g,hx,hy-3,C.gold);set(g,hx+2,hy-3,C.gold);set(g,hx+4,hy-3,C.gold);rect(g,hx-1,hy,1,3,C[o.hair||'hairB'])}
+  else{rect(g,hx,hy-1,5,2,C[o.hair||'hairB']);rect(g,hx-1,hy,1,4,C[o.hair||'hairB'])}
+  // the front arm and its weapon
+  const ax=x0+w,ay=top+7;rect(g,ax,ay,1,4,arm);set(g,ax+1,ay+4,sk);
+  const wp=o.weapon,hx2=ax+1,hy2=ay+4;
+  if(wp==='spear'){line(g,hx2-3,hy2+8,hx2+3,hy2-12,C.wood);rect(g,hx2+3,hy2-15,1,3,C.steel);set(g,hx2+4,hy2-14,C.steelD)}
+  if(wp==='sword'){line(g,hx2+1,hy2,hx2+8,hy2+3,C.steel);set(g,hx2+1,hy2-1,C.gold);set(g,hx2,hy2+1,C.gold)}
+  if(wp==='axe'){line(g,hx2-1,hy2+4,hx2+2,hy2-6,C.wood);rect(g,hx2+2,hy2-7,3,4,C.steel);set(g,hx2+4,hy2-4,C.steelD)}
+  if(wp==='bow'){for(let y=-8;y<=6;y++)set(g,hx2+2-Math.round(3*(1-((y+1)/7.5)**2)),hy2+y,C.wood);line(g,hx2+2,hy2-8,hx2+2,hy2+6,'#d8d0b8')}
+  if(wp==='staff'){line(g,hx2,hy2+9,hx2+1,hy2-10,C.wood);set(g,hx2+1,hy2-11,'#c8a0ff');set(g,hx2+2,hy2-11,'#e8d8ff')}
+  if(wp==='bigaxe'){line(g,hx2-4,hy2+6,hx2+3,hy2-8,C.wood);rect(g,hx2+2,hy2-10,5,5,C.steel);rect(g,hx2+6,hy2-10,1,5,C.steelD);set(g,hx2+4,hy2-6,C.red)}
+  outline(g);return g;
+}
+// the same at a 16×16 cell: about 14 tall, a few pixels each part (as a figure on the world map)
+function tiny(o){
+  const g=G(16,16),T=C[o.team||'blue'],TD=C[(o.team||'blue')+'D'],orc=o.race==='orc',dw=o.race==='dwarf',sk=orc?C.orc:C.skin;
+  const top=dw?4:2,hip=top+8;
+  rect(g,6,hip+1,1,dw?2:4,C.leatherD);rect(g,8,hip+1,1,dw?2:4,C.leather);set(g,6,hip+(dw?3:5),C.boot);set(g,8,hip+(dw?3:5),C.boot);set(g,9,hip+(dw?3:5),C.boot);
+  if(o.shield)rect(g,4,top+5,2,3,T);
+  rect(g,6,top+4,3,5,C[o.body||'steel']||C.steel);rect(g,7,top+4,1,5,T);set(g,8,top+8,TD);
+  rect(g,6,top+1,3,3,sk);set(g,8,top+2,'#2a1e16');
+  const h=o.helm;
+  if(h==='kettle')rect(g,5,top,5,1,C.steelD);else if(h==='great'||h==='plume'){rect(g,6,top,3,4,C.steel);set(g,8,top+2,'#2a2e36');if(h==='plume')set(g,6,top-1,C.red)}
+  else if(h==='hood')rect(g,5,top,3,4,C[o.hood||'green']);else if(h==='wizard'){rect(g,5,top,5,1,C.purple);set(g,7,top-1,C.purple);set(g,7,top-2,C.purple)}
+  else if(h==='crown'){rect(g,6,top,3,1,C.gold)}else if(h==='horned'){rect(g,6,top,3,1,C.steelD);set(g,5,top-1,C.cloth);set(g,9,top-1,C.cloth)}else rect(g,6,top,3,1,C[o.hair||'hairB']);
+  if(dw)rect(g,7,top+3,2,2,C.hairR);
+  const wp=o.weapon;set(g,9,top+5,sk);
+  if(wp==='spear')line(g,9,top+9,11,top-2,C.wood);if(wp==='sword')line(g,10,top+5,12,top+7,C.steel);if(wp==='bow')line(g,10,top+1,10,top+8,C.wood);
+  if(wp==='staff')line(g,10,top+9,10,top-1,C.wood);if(wp==='axe'||wp==='bigaxe'){line(g,9,top+7,10,top+1,C.wood);rect(g,10,top+1,2,2,C.steel)}
+  outline(g);return g;
+}
+// a mount: the very same rider (its upper body, cut at the hip) on a horse, its leg down the horse's side; cell twice the foot's
+function mounted(o,size){
+  const big=size===32,g=G(big?64:32,big?64:32),s=big?1:.5,H=C[o.horse||'horse'],HD=C[(o.horse||'horse')+'D'],T=C[o.team||'blue'];
+  const R=(x,y,w,h,c)=>rect(g,Math.round(x*s),Math.round(y*s),Math.max(1,Math.round(w*s)),Math.max(1,Math.round(h*s)),c);
+  const L=(x0,y0,x1,y1,c)=>line(g,x0*s,y0*s,x1*s,y1*s,c);
+  // tail, far legs, body, near legs, neck, head
+  L(14,36,10,50,C.mane);L(15,36,11,50,C.mane);
+  R(18,46,3,14,HD);R(40,46,3,14,HD);
+  R(16,34,30,14,H);R(16,44,30,4,HD);R(16,34,30,1,shade(H,1.15));
+  R(22,46,3,14,H);R(44,46,3,14,H);R(22,59,3,2,'#2a1e14');R(44,59,3,2,'#2a1e14');R(18,59,3,2,'#1e140c');R(40,59,3,2,'#1e140c');
+  for(let i=0;i<8;i++)R(43+i*1.3,35-i*1.6,6,6,H);
+  R(50,20,12,6,H);R(58,24,4,3,HD);R(50,18,2,3,HD);L(46,22,56,26,'#00000000');
+  for(let i=0;i<8;i++)R(42+i*1.3,33-i*1.6,2,3,C.mane);
+  if(o.caparison){R(16,36,30,9,T);for(let x=16;x<46;x+=4)R(x,45,2,2,shade(T,.7));R(16,38,30,1,C.gold)}else R(27,32,9,4,C.leather);
+  // the rider: the same figure, cut at the hip, sat on its back
+  const rider=size===32?slim(o):tiny(o),cut=size===32?(o.race==='dwarf'?6:o.race==='orc'?2:3)+16:(o.race==='dwarf'?4:2)+9;
+  stamp(g,rider,big?14:7,big?34-cut+1:Math.round(17-cut),(x,y)=>y<=cut);
+  // its leg down the horse's side
+  if(big){rect(g,14+17,33,2,8,C.leatherD);rect(g,14+17,41,3,2,C.boot)}else{rect(g,7+8,16,1,4,C.leatherD);set(g,7+8,20,C.boot)}
+  outline(g);return g;
+}
+function draw(g,k){const c=document.createElement('canvas');c.width=g.w*k;c.height=g.h*k;const x=c.getContext('2d');
+  for(let y=0;y<g.h;y++)for(let i=0;i<g.w;i++){const p=g.p[y*g.w+i];if(p&&p.length===7){x.fillStyle=p;x.fillRect(i*k,y*k,k,k)}}return c}
+const UNITS=[
+  ['Levy',{helm:'kettle',body:'leather',weapon:'spear',legs:'cloth'}],
+  ['Spearman',{helm:'kettle',body:'mail',weapon:'spear',shield:true}],
+  ['Man-at-arms',{helm:'great',body:'steel',weapon:'sword',shield:true}],
+  ['Bowman',{helm:'hood',body:'leather',weapon:'bow',legs:'cloth'}],
+  ['Mage',{helm:'wizard',body:'cloth',weapon:'staff',team:'purple'}],
+  ['Knight',{helm:'plume',body:'steel',weapon:'sword',shield:true}],
+  ['Hero',{helm:'crown',body:'steel',weapon:'sword',hair:'hairB'}],
+  ['Dwarf axe',{race:'dwarf',helm:'horned',body:'mail',weapon:'axe',shield:true}],
+  ['Elf archer',{race:'elf',helm:'hood',hood:'teal',body:'leather',weapon:'bow',team:'green'}],
+  ['Orc brute',{race:'orc',helm:'horned',body:'leather',weapon:'bigaxe',team:'red'}]
+];
+const add=(p,c,l)=>{const d=document.createElement('div');d.className='cell';d.appendChild(c);if(l){const s=document.createElement('span');s.textContent=l;d.appendChild(s)}p.appendChild(d)};
+const sec=t=>{const h=document.createElement('h3');h.textContent=t;document.body.appendChild(h);const r=document.createElement('div');r.className='row';document.body.appendChild(r);return r};
+let r=sec('32×32 cell · slim, about 26 tall · shown 4×');for(const [n,o] of UNITS)add(r,draw(slim(o),4),n);
+r=sec('Mounted · 64×64 · the same rider (spearman, knight, enemy knight) · shown 3×');add(r,draw(mounted(UNITS[1][1],32),3),'Spearman, mounted');add(r,draw(mounted({...UNITS[5][1],horse:'horseW',caparison:true},32),3),'Knight, barded');add(r,draw(mounted({...UNITS[5][1],team:'red',caparison:true},32),3),'Enemy knight');
+r=sec('16×16 cell · about 14 tall, as a figure on the world map · shown 5×');for(const [n,o] of UNITS)add(r,draw(tiny(o),5),n);add(r,draw(mounted(UNITS[1][1],16),5),'mounted');add(r,draw(mounted({...UNITS[5][1],horse:'horseW',caparison:true},16),5),'knight');
+r=sec('In the field · 32 cell at 1× and 2× · 16 cell at 2×');
+for(const [k,fn,cell] of [[1,slim,32],[2,slim,32],[2,tiny,16]]){const f=document.createElement('div');f.className='field';const c=document.createElement('canvas');const W=(UNITS.length+2)*cell*.8*k,Hh=cell*2*k;c.width=W;c.height=Hh;const x=c.getContext('2d');
+  let px=2;for(const [n,o] of UNITS){x.drawImage(draw(fn(o),k),px*k,cell*k);px+=cell*.72}x.drawImage(draw(mounted({...UNITS[5][1],horse:'horseW',caparison:true},cell),k),px*k,0);f.appendChild(c);r.appendChild(f)}
+</script>
+</body></html>

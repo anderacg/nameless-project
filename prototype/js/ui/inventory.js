@@ -140,7 +140,7 @@ function renderInv(){
     return eqHtml(key,why&&key==='offhand'?'Both hands':label,c).replace('<button ','<button style="'+at(x,y)+'" ')};
   const doll=Object.entries(DOLL).map(([k,[x,y,l]])=>place(k,x,y,l)).join('')+EQUIP.filter(k=>k.startsWith('ring')).map((k,i)=>place(k,FINGERS[i][0],FINGERS[i][1],'R'+(i+1),'eq ring')).join('');
   const lbl=(x,y,t)=>'<span class="lbl" style="'+at(x,y)+'">'+t+'</span>';
-  showPanel('<div class="top"><h2>Inventory</h2><span class="muted">'+used+' / '+P.inv.length+' slots · <span class="gold">'+P.gold+' gold</span></span><button class="btn sm" type="button" data-act="inv-close">Back to map</button></div>'+
+  showPanel('<div class="top"><h2>Inventory</h2><span class="muted">'+used+' / '+P.inv.length+' slots · <span class="gold">'+P.gold+' gold</span></span></div>'+
     '<div class="inv"><div class="doll" aria-label="Equipment">'+BODY_SVG+lbl(8,6,'Equipment')+lbl(16,138,'Off hand')+lbl(206,138,'Main hand')+
       '<div class="rule"></div>'+lbl(8,338,'Mount · '+(mountDef()?mountDef().n:'on foot'))+doll+
       '<div class="dstats"><span>HP <b>'+hs.hp+'</b></span><span>DMG <b>'+Math.round(hs.dmg)+'</b></span><span>'+(hs.range?'Range <b>'+hs.range+'</b>':'Reach <b>'+Math.round(hs.reach)+'</b>')+'</span><span class="gold">'+GRIP_N[grip()]+'</span></div></div>'+
@@ -148,7 +148,7 @@ function renderInv(){
       '<span class="grow"></span><button class="btn sm" type="button" data-act="inv-sort">Sort</button></div>'+
       '<div class="invcap" title="'+used+' of '+P.inv.length+' slots · food for about '+Math.floor(foodN()/eatPerDay())+' days"><i style="width:'+Math.round(100*used/P.inv.length)+'%"></i></div>'+
       '<div class="invgrid">'+P.inv.map((s,i)=>slotHtml(s,i,'Empty slot',s&&tab!=='all'&&s.k!==tab?'dim':'')).join('')+'</div>'+
-      '<div class="invR" aria-live="polite">'+detailHtml()+'</div></div></div>');
+      '<div class="invR" aria-live="polite">'+detailHtml()+'</div></div></div>'+nav(null,['inv-close',null,'Back to map']));
   fillIcons();
 }
 function invAct(a,arg){

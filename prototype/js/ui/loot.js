@@ -43,9 +43,8 @@ function lootHtml(lost,saved){
 function lootShow(head,lost,saved,next){lootStart();G.loot.capture=false;G.lootView={head,lost,saved,next};renderLoot()}
 function renderLoot(){
   const V=G.lootView,L=G.loot;if(!V||!L)return;const n=L.pile.reduce((a,s)=>a+s.n,0),any=L.pile.some(lootRoom);
-  showPanel(V.head+lootHtml(V.lost,V.saved)+'<div class="btns">'+(L.pile.length?
-    '<button class="btn primary" type="button" data-act="lt-all"'+(any?'':' disabled title="No room in your bag"')+'>Take all that fits</button><button class="btn" type="button" data-act="lt-leave">Continue · leave '+n+' behind</button>':
-    '<button class="btn primary" type="button" data-act="'+V.next+'">'+(V.next==='back-town'?'Back to town':'Continue')+'</button>')+'</div>');
+  showPanel(V.head+lootHtml(V.lost,V.saved)+(L.pile.length?'<div class="btns"><button class="btn primary" type="button" data-act="lt-all"'+(any?'':' disabled title="No room in your bag"')+'>Take all that fits</button></div>'+nav(null,['lt-leave',null,'Continue · leave '+n+' behind',null,true])
+    :nav(null,[V.next,null,V.next==='back-town'?'Back to town':'Continue'])));
   fillIcons();updateHUD(true);
 }
 // done with the spoils (continuing, or leaving the rest)

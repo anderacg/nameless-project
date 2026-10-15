@@ -1,0 +1,117 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>16px roster, hue-shifted</title>
+<style>
+body{margin:0;background:#7c7c84;color:#16161e;font:13px monospace;padding:14px}
+h3{margin:12px 0 6px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;font-size:11px}
+.row{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
+.cell{display:flex;flex-direction:column;align-items:center;gap:3px}
+.cell span{font-size:10px;color:#22222e}
+canvas,img{image-rendering:pixelated}
+.field{background:#5f8a3f;padding:8px;display:inline-block}
+</style></head><body>
+<h3>The reference (Basic Humanoid II) · 4×</h3>
+<img src="file:///F:/Game Project/Nameless/doc/references/Basic Asset Pack/Basic Humanoid II Sprites/Basic Humanoid II 4x.png" style="width:auto;height:auto">
+<script>
+'use strict';
+const G=(w,h)=>({w,h,p:new Array(w*h).fill(null)});
+const set=(g,x,y,c)=>{x=Math.round(x);y=Math.round(y);if(x>=0&&y>=0&&x<g.w&&y<g.h)g.p[y*g.w+x]=c||null};
+const get=(g,x,y)=>x>=0&&y>=0&&x<g.w&&y<g.h?g.p[y*g.w+x]:null;
+const OUT='#1a1c26';
+// a ramp of four tones, hue-shifted as in the reference: highlights lean warm (toward yellow), shadows lean cool (toward blue-purple)
+function hsl(h,s,l){s/=100;l/=100;const k=n=>(n+h/30)%12,a=s*Math.min(l,1-l),f=n=>l-a*Math.max(-1,Math.min(k(n)-3,Math.min(9-k(n),1)));return '#'+[f(0),f(8),f(4)].map(v=>Math.round(v*255).toString(16).padStart(2,'0')).join('')}
+const toward=(h,t,k)=>{let d=((t-h+540)%360)-180;return (h+d*k+360)%360};
+function ramp(h,s,l){s=s*.72;l=l-5;return[hsl(toward(h,55,.3),Math.min(100,s+4),Math.min(84,l+18)),hsl(toward(h,55,.12),s,Math.min(78,l+9)),hsl(h,s,l),hsl(toward(h,255,.3),Math.min(100,s+6),Math.max(8,l-15))]}
+const R={
+  skin:['#eccfb4','#d9ae92','#bf8a74','#8e5e5a'],blush:'#f08a8a',orc:ramp(95,50,48),
+  blond:ramp(48,85,62),brown:ramp(25,50,38),red:ramp(18,75,48),grey:ramp(220,10,75),black:ramp(235,18,26),white:ramp(220,20,86),
+  steel:ramp(210,22,70),gold:ramp(45,90,55),wood:ramp(25,55,38),leather:ramp(22,45,42),cloth:ramp(40,35,74),
+  blue:ramp(228,70,58),red2:ramp(355,72,52),green:ramp(130,48,48),teal:ramp(172,62,46),purple:ramp(262,55,52),olive:ramp(70,45,48),orange:ramp(28,90,55),
+  horse:ramp(25,52,40),horseW:ramp(35,25,86),horseB:ramp(235,15,28),mane:ramp(22,40,22)
+};
+const EYE='#5e9fb2';
+// a block shaded as in the reference: lit from the top left, a broad lit side, the mid tone, a narrow shadow on the right and the bottom
+function block(g,x,y,w,h,Rm,opt){opt=opt||{};for(let j=0;j<h;j++)for(let i=0;i<w;i++){let t=i===0&&w>2?0:i<Math.ceil(w*.5)?1:2;if(i===w-1&&w>1)t=3;if(j===h-1&&h>2)t=Math.min(3,t+1);if(j===0&&!opt.flatTop)t=Math.max(0,t-1);set(g,x+i,y+j,Rm[t])}}
+function outline(g){const o=[];for(let y=0;y<g.h;y++)for(let x=0;x<g.w;x++)if(!get(g,x,y)&&(get(g,x-1,y)||get(g,x+1,y)||get(g,x,y-1)||get(g,x,y+1)))o.push([x,y]);for(const [x,y] of o)set(g,x,y,OUT)}
+const stamp=(d,s,ox,oy,keep)=>{for(let y=0;y<s.h;y++)for(let x=0;x<s.w;x++){const c=s.p[y*s.w+x];if(c&&(!keep||keep(x,y)))set(d,ox+x,oy+y,c)}};
+// a figure in a 16×16 cell, looking to its right: a 6-wide head (the face on its front half, hair round the back), a narrow body,
+// short legs. The art sits in 1..14, the outline round it
+function unit(o){
+  const g=G(16,16),S=R[o.skin||'skin'],H=R[o.hair||'blond'],T=R[o.team||'blue'],B=R[o.body]||T,L=R[o.legs||'leather'],M=R.steel,W=R.wood,dw=o.short?1:0;
+  const vl=(x,y0,y1,c)=>{for(let y=y0;y<=y1;y++)set(g,x,y,c)};
+  // the cape behind
+  if(o.cape)block(g,4,8,7,6,[R[o.cape][1],R[o.cape][2],R[o.cape][3],R[o.cape][3]]);
+  // legs and boots (or a robe to the ground)
+  if(o.robe)block(g,5,11,6,4,B);else{block(g,5,11,2,3,L);block(g,8,11,2,3,L);rect2(g,5,14,2,1,R.leather[3]);rect2(g,8,14,3,1,R.leather[3])}
+  // the body: its clothes or armour, the team's colour down the front, sleeves, hands
+  block(g,5,7+dw,6,4-dw,B);block(g,6,7+dw,3,4-dw,T,{flatTop:true});
+  block(g,4,7+dw,1,3-dw,[B[1],B[1],B[2],B[3]]);block(g,11,7+dw,1,3-dw,[B[2],B[2],B[3],B[3]]);set(g,4,10,S[1]);set(g,11,10,S[1]);
+  // the head: hair round the back, the face to the front (right), its eyes, a blush
+  const hy=1+dw;
+  block(g,5,hy,6,6,H);
+  block(g,7,hy+2,4,4,[S[0],S[0],S[1],S[2]],{flatTop:true});set(g,7,hy+5,H[2]);
+  set(g,8,hy+3,o.eye||EYE);set(g,10,hy+3,o.eye||EYE);set(g,9,hy+4,'#d98c86');
+  rect2(g,6,hy+1,5,1,H[1]);set(g,6,hy,H[0]);set(g,7,hy,H[0]);set(g,10,hy+1,H[2]);
+  if(o.short_hair){set(g,5,hy+5,null);set(g,6,hy+5,S[2])}
+  if(o.beard){const Bd=R[o.beard];block(g,7,hy+4,4,3,Bd);set(g,8,hy+3,o.eye||EYE);set(g,10,hy+3,o.eye||EYE);set(g,9,hy+7,Bd[3])}
+  if(o.tusk){set(g,10,hy+5,'#f0ece0')}
+  if(o.ears){set(g,6,hy+2,S[1]);set(g,5,hy+1,S[0])}
+  const h=o.helm;
+  if(h==='cap'){block(g,5,hy-1,6,3,M);set(g,11,hy+1,M[2]);set(g,4,hy+1,M[3])}
+  if(h==='great'||h==='plume'){block(g,5,hy-1,6,7-dw,M);rect2(g,8,hy+2,3,1,OUT);set(g,10,hy+4,M[3]);
+    if(h==='plume'){block(g,6,hy-3,3,2,R.red2);set(g,5,hy-2,R.red2[1])}}
+  if(h==='horned'){block(g,5,hy-1,6,3,M);set(g,4,hy-2,R.white[1]);set(g,4,hy-1,R.white[2]);set(g,11,hy-2,R.white[2]);set(g,11,hy-1,R.white[3])}
+  if(h==='hood'){const C=R[o.hood||'green'];block(g,4,hy-1,7,7-dw,C);block(g,7,hy+2,4,4,[S[0],S[0],S[1],S[2]],{flatTop:true});set(g,8,hy+3,o.eye||EYE);set(g,10,hy+3,o.eye||EYE);set(g,9,hy+4,'#d98c86');rect2(g,7,hy+1,4,1,H[1])}
+  if(h==='wizard'){const C=R.purple;block(g,4,hy,8,2,C);block(g,5,hy-2,5,2,C);block(g,5,hy-3,3,1,C);set(g,4,hy-4,C[1])}
+  if(h==='crown'){rect2(g,6,hy-1,4,1,R.gold[1]);set(g,6,hy-2,R.gold[0]);set(g,8,hy-2,R.gold[1]);set(g,9,hy-2,R.gold[2]);set(g,8,hy-1,R.red2[1])}
+  // the shield on its left (behind), the weapon upright in its right hand
+  if(o.shield){const C=R[o.shieldC||'wood'];block(g,2,7,3,5,C);set(g,3,8,T[1]);set(g,3,9,T[2]);set(g,3,10,T[2])}
+  const wp=o.weapon,hx=12;
+  if(wp==='spear'){vl(hx,2,14,W[2]);set(g,hx,0,M[0]);set(g,hx,1,M[2])}
+  if(wp==='sword'){vl(hx,3,8,M[0]);set(g,hx,2,M[1]);rect2(g,hx-1,9,3,1,R.gold[1]);set(g,hx,10,W[2])}
+  if(wp==='axe'){vl(hx,4,14,W[2]);block(g,hx+1,3,2,3,M)}
+  if(wp==='bow'){vl(hx+1,4,12,W[1]);set(g,hx,3,W[1]);set(g,hx,13,W[2]);vl(hx,4,12,R.cloth[0])}
+  if(wp==='staff'){vl(hx,3,14,W[2]);set(g,hx,1,R.teal[0]);set(g,hx,2,R.teal[2]);set(g,hx+1,1,R.teal[1])}
+  if(wp==='bigaxe'){vl(hx,2,14,W[2]);block(g,hx+1,1,2,4,M)}
+  outline(g);return g;
+}
+function rect2(g,x,y,w,h,c){for(let j=0;j<h;j++)for(let i=0;i<w;i++)set(g,x+i,y+j,c)}
+// a mount: the very same rider (above the belt) on a horse seen from the side; a 32×32 cell
+function mounted(o){
+  const g=G(32,32),Hs=R[o.horse||'horse'],Mn=R.mane,T=R[o.team||'blue'];
+  for(let y=17;y<25;y++){set(g,4,y,Mn[2]);set(g,5,y-1,Mn[1])}
+  block(g,8,24,2,6,[Hs[2],Hs[2],Hs[3],Hs[3]]);block(g,21,24,2,6,[Hs[2],Hs[2],Hs[3],Hs[3]]);
+  block(g,6,16,19,9,Hs);
+  block(g,10,24,2,6,Hs);block(g,23,24,2,6,Hs);rect2(g,10,29,2,1,'#3a2a20');rect2(g,23,29,2,1,'#3a2a20');rect2(g,8,29,2,1,'#2a1e18');rect2(g,21,29,2,1,'#2a1e18');
+  block(g,22,10,4,9,Hs);block(g,24,7,7,4,Hs);set(g,28,8,OUT);set(g,25,5,Hs[2]);set(g,25,6,Hs[2]);set(g,30,10,Hs[3]);
+  for(let y=8;y<18;y++)set(g,21,y,Mn[1]);for(let y=7;y<10;y++)set(g,22,y,Mn[2]);
+  for(const [a,b] of [[6,16],[24,16],[6,24],[24,24],[24,7],[30,7],[30,10]])set(g,a,b,null);
+  if(o.caparison){block(g,6,17,19,7,T);rect2(g,6,19,19,1,R.gold[1]);for(let x=7;x<25;x+=3)set(g,x,24,T[3])}else block(g,11,15,7,2,R.leather);
+  const r=unit(o);stamp(g,r,7,4,(x,y)=>y<=10);
+  block(g,12,15,2,4,R[o.legs||'leather']);set(g,12,19,R.leather[3]);set(g,13,19,R.leather[3]);
+  outline(g);return g;
+}
+function draw(g,k){const c=document.createElement('canvas');c.width=g.w*k;c.height=g.h*k;const x=c.getContext('2d');for(let y=0;y<g.h;y++)for(let i=0;i<g.w;i++){const p=g.p[y*g.w+i];if(p){x.fillStyle=p;x.fillRect(i*k,y*k,k,k)}}return c}
+const U=[
+  ['Levy',{helm:'cap',body:'leather',team:'blue',weapon:'spear',hair:'brown',short_hair:true}],
+  ['Spearman',{helm:'cap',body:'steel',team:'blue',weapon:'spear',shield:true,hair:'blond'}],
+  ['Man-at-arms',{helm:'great',body:'steel',team:'blue',weapon:'sword',shield:true,shieldC:'steel'}],
+  ['Bowman',{helm:'hood',hood:'green',body:'leather',team:'olive',weapon:'bow',hair:'brown'}],
+  ['Mage',{helm:'wizard',body:'purple',team:'blue',weapon:'staff',robe:true,beard:'grey',hair:'grey'}],
+  ['Knight',{helm:'plume',body:'steel',team:'blue',weapon:'sword',shield:true,shieldC:'steel',cape:'blue'}],
+  ['Hero',{helm:'crown',body:'steel',team:'blue',weapon:'sword',hair:'blond',cape:'red2'}],
+  ['Priestess',{body:'white',team:'teal',weapon:'staff',robe:true,hair:'blond'}],
+  ['Dwarf',{short:true,helm:'horned',body:'steel',team:'red2',weapon:'axe',shield:true,shieldC:'orange',beard:'red',hair:'red'}],
+  ['Elf',{ears:true,body:'green',team:'teal',weapon:'bow',hair:'blond'}],
+  ['Orc',{skin:'orc',helm:'horned',body:'leather',team:'red2',weapon:'bigaxe',tusk:true,hair:'black',eye:'#ffdd55'}],
+  ['Villager',{body:'cloth',team:'orange',hair:'brown',legs:'cloth',short_hair:true}]
+];
+const add=(p,c,l)=>{const d=document.createElement('div');d.className='cell';d.appendChild(c);if(l){const s=document.createElement('span');s.textContent=l;d.appendChild(s)}p.appendChild(d)};
+const sec=t=>{const h=document.createElement('h3');h.textContent=t;document.body.appendChild(h);const r=document.createElement('div');r.className='row';document.body.appendChild(r);return r};
+let r=sec('Ours · 16×16 · shown 4× (as the reference above)');for(const [n,o] of U)add(r,draw(unit(o),4),n);
+r=sec('The other side');for(const [n,o] of U.slice(0,7))add(r,draw(unit({...o,team:'red2',cape:o.cape?'red2':null}),4),n);
+r=sec('Mounted · 32×32 · the same rider · shown 4×');add(r,draw(mounted({...U[1][1]}),4),'Spearman');add(r,draw(mounted({...U[5][1],horse:'horseW',caparison:true}),4),'Knight, barded');add(r,draw(mounted({...U[5][1],team:'red2',cape:'red2',caparison:true,horse:'horseB'}),4),'Enemy knight');
+r=sec('At play size · 1×, 2×, 3×');
+for(const k of [1,2,3]){const f=document.createElement('div');f.className='field';const c=document.createElement('canvas');c.width=(U.length*14+40)*k;c.height=36*k;const x=c.getContext('2d');let px=2;
+  for(const [n,o] of U){x.drawImage(draw(unit(o),k),px*k,18*k);px+=14}x.drawImage(draw(mounted({...U[5][1],horse:'horseW',caparison:true}),k),px*k,2*k);f.appendChild(c);r.appendChild(f)}
+</script>
+</body></html>

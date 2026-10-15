@@ -12,11 +12,11 @@ try{
  const mages=['hum_mage','dw_rune','elf_weaver','orc_shaman'];
  ok(mages.every(k=>ST[k]&&ST[k].magic&&t.unitClass(ST[k])==='magic'),'every race has a caster: '+mages.map(k=>ST[k].n).join(', '));
  ok(Object.values(t.RACES).every(r=>ST[r.mage].race&&t.UP[r.ranged].includes(r.mage)),'casters are trained from each race\'s ranged recruits');
- ok(t.unitClass(ST.hum_bow)==='ranged'&&t.unitClass(ST.hum_levy)==='foot','ranged and melee classes stay as before');
+ ok(t.unitClass(ST.hum_bow)==='ranged'&&t.unitClass(ST.hum_foot)==='foot'&&t.unitClass(ST.hum_levy)==='spear','ranged and melee classes stay as before (a levy carries a spear)');
  const M=t.matchup;
- ok(M(ST.hum_mage,ST.hum_knight)>1.2&&M(ST.hum_bow,ST.hum_knight)<.7,'heavy armor stops arrows but not magic ('+M(ST.hum_bow,ST.hum_knight).toFixed(2)+' vs '+M(ST.hum_mage,ST.hum_knight).toFixed(2)+')');
+ ok(M(ST.hum_mage,ST.hum_knight)>=1&&M(ST.hum_bow,ST.hum_knight)<.7,'plate stops arrows but not magic ('+M(ST.hum_bow,ST.hum_knight).toFixed(2)+' vs '+M(ST.hum_mage,ST.hum_knight).toFixed(2)+')');
  ok(M(ST.hum_mage,ST.dw_rune)<.7,'warded troops resist magic');
- ok(M(ST.hum_knight,ST.hum_mage)>=1.4&&M(ST.elf_blade,ST.orc_shaman)>=1.4,'cavalry and shock troops punish casters');
+ ok(M(ST.hum_knight,ST.hum_mage)/t.typeMul(ST.hum_knight,ST.hum_mage)>=1.4&&M(ST.elf_blade,ST.orc_shaman)/t.typeMul(ST.elf_blade,ST.orc_shaman)>=1.4,'cavalry and shock troops punish casters (+40%, before their armour)');
  ok(/magic/.test(t.vsLine(ST.hum_knight))&&/warded/.test(t.vsLine(ST.hum_mage)),'strengths and weaknesses mention magic');
  // who fields casters
  let hedges=0,shamans=0;for(let k=0;k<200;k++){t.makeEnemies(6,false,'bandits').forEach(u=>{if(u==='hedge')hedges++});t.makeEnemies(6,false,'raiders').forEach(u=>{if(u==='orc_shaman')shamans++})}
@@ -27,7 +27,7 @@ try{
  // battle: an enemy caster's bolt
  const fresh=(enemies,troops)=>{P.troops=troops||{};P.comps={};P.hp=P.sp=P.mp=null;G.mode='world';G.modal=false;t.hidePanel();G.enc={kind:'party',ref:{cool:0,x:P.x,y:P.y},list:enemies.slice()};t.startBattle({enemies,tournament:false});return t.B};
  let B=fresh(['hum_mage'],{hum_spear:3});const mg=B.units.find(u=>u.type==='hum_mage'),tgt=B.units.find(u=>u.type==='hum_spear');
- B.arrows=[];t.attack(mg,tgt);const bolt=B.arrows[0];ok(bolt&&bolt.magic&&Math.hypot(bolt.vx,bolt.vy)<150&&bolt.col===ST.hum_mage.bolt,'casters shoot slow, coloured bolts');
+ B.arrows=[];t.attack(mg,tgt);const bolt=B.arrows[0];ok(bolt&&bolt.magic&&Math.hypot(bolt.vx,bolt.vy)<t.BOLT_SPEED&&bolt.col===ST.hum_mage.bolt,'casters shoot coloured bolts, slower than a crossbow’s');
  // splash and trees
  B.obs=[{kind:'tree',x:200,y:200,r:6}];const sp=B.units.filter(u=>u.type==='hum_spear');sp.forEach((u,i)=>{u.x=300;u.y=200+i*6;u.hp=u.max;u.s={...u.s,spd:0}});B.units.filter(u=>u.team===1||u.hero).forEach(u=>{if(!u.hero){u.x=100;u.y=200}});
  B.arrows=[{x:150,y:194,vx:125,vy:0,team:1,dmg:10,life:3,a:0,src:ST.hum_mage,magic:true,col:'#fff',tk:0}];const hp0=sp.map(u=>u.hp);
@@ -53,7 +53,7 @@ try{
  G.mode='world';G.modal=false;t.hidePanel();P.gear.weapon='g_staff_1';t.openSkills('abilities');ok(/Cast \([a-z ]*staff\)/.test(document.getElementById('panel').innerHTML),'the Abilities tab explains your attack');t.act('sk-close');
  // bow arrows arc and fall; crossbow bolts and magic fly straight
  B=fresh(['hum_bow','dw_xbow','hum_mage'],{hum_spear:2});const bw2=B.units.find(u=>u.type==='hum_bow'),xb2=B.units.find(u=>u.type==='dw_xbow'),mg2=B.units.find(u=>u.type==='hum_mage'),sp2=B.units.find(u=>u.type==='hum_spear');
- B.units.forEach(u=>{if(u!==sp2&&u!==bw2&&u!==xb2&&u!==mg2)u.x=-200});sp2.x=bw2.x-110;sp2.y=bw2.y+20;B.arrows=[];t.attack(bw2,sp2);t.attack(xb2,sp2);t.attack(mg2,sp2);const [ar,xbolt,mb]=B.arrows;
+ B.units.forEach(u=>{if(u!==sp2&&u!==bw2&&u!==xb2&&u!==mg2)u.x=-200});sp2.x=bw2.x-110;sp2.y=Math.min(bw2.y+20,t.fieldBot()-4);B.arrows=[];t.attack(bw2,sp2);t.attack(xb2,sp2);t.attack(mg2,sp2);const [ar,xbolt,mb]=B.arrows;
  ok(ar.arc&&!xbolt.arc&&!mb.arc,'bow arrows arc; crossbow and magic bolts fly straight');
  ok(Math.hypot(ar.vx,ar.vy)<Math.hypot(xbolt.vx,xbolt.vy)*.75,'arrows fly slower than crossbow bolts');
  const d2=Math.hypot(sp2.x-bw2.x,sp2.y-bw2.y);ok(Math.abs(ar.T*Math.hypot(ar.vx,ar.vy)-d2)<d2*.1,'an arrow is aimed to come down at its target ('+Math.round(ar.T*Math.hypot(ar.vx,ar.vy))+' of '+Math.round(d2)+')');
@@ -79,7 +79,7 @@ try{
  tick2(.3);release();const weak=B.arrows[0];ok(weak&&!B.draw&&weak.arc,'letting go shoots');
  hb2.cd=0;B.arrows=[];t.heroState().sp=999;press(0,G.mouse.x,G.mouse.y);tick2(1.6);release();const strong=B.arrows[0];
  ok(Math.hypot(strong.vx,strong.vy)>Math.hypot(weak.vx,weak.vy)*1.3&&strong.dmg>weak.dmg,'a longer draw flies faster and hits harder');
- const reach=p=>Math.round(p.T*Math.hypot(p.vx,p.vy));ok(reach(weak)<150&&Math.abs(reach(strong)-180)<3,'the range comes from the wheel, not the cursor; a weak draw falls short ('+reach(weak)+' vs '+reach(strong)+')');
+ const reach=p=>Math.round(p.T*Math.hypot(p.vx,p.vy));ok(reach(weak)<150&&Math.abs(reach(strong)-180)<=180*t.AIM.bow[1]+3,'the range comes from the wheel, not the cursor (give or take the bow’s scatter); a weak draw falls short ('+reach(weak)+' vs '+reach(strong)+')');
  // holding on drains stamina, then the arm gives out
  hb2.cd=0;B.arrows=[];const X2=t.heroState();X2.sp=60;press(0,G.mouse.x,G.mouse.y);tick2(1.6);const s1=X2.sp;tick2(.6);ok(X2.sp<s1-3&&B.draw,'holding a full draw keeps draining stamina ('+Math.round(s1)+' → '+Math.round(X2.sp)+')');
  for(let i=0;i<1500&&B.draw;i++)t.updateBattle(.02);ok(!B.draw&&B.arrows.length===1&&B.arrows[0].dmg<strong.dmg&&B.floats.some(f=>/Arm gives out/.test(f.t)),'when stamina runs out the arm gives out and the arrow goes weak');release();
@@ -104,8 +104,8 @@ try{
  B.win=true;B.over=true;B.endT=0;t.updateBattle(.01);t.act('lt-all');ok(t.goodN('arrows')>=1,'after a win you gather some back ('+t.goodN('arrows')+' of 3)');t.act('cont');done();
  P.gear.weapon=t.gearId('crossbow',1);ok(t.ammoOf()==='bolts','crossbows use bolts');P.gear.weapon=t.gearId('staff',1);ok(t.ammoOf()===null,'magic needs no ammunition');
  B=fresh(['hum_bow'],{hum_spear:1});const ar3=B.units.find(u=>u.type==='hum_bow'),sp3=B.units.find(u=>u.type==='hum_spear');B.arrows=[];
- for(let k=0;k<16;k++)t.attack(ar3,sp3);ok(B.arrows.length===16&&ar3.empty&&!ar3.s.range&&ar3.s.reach>=10,'a bowman has 16 arrows, then draws a blade');
- ok(t.quiverOf(ST.dw_xbow)===12&&t.quiverOf(ST.orc_thrower)===6&&t.quiverOf(ST.hum_mage)===Infinity,'crossbows carry 12, javelins 6, casters never run out');
+ const qv=t.quiverOf(ar3.s);for(let k=0;k<qv;k++)t.attack(ar3,sp3);ok(qv>=32&&B.arrows.length===qv&&ar3.empty&&!ar3.s.range&&ar3.s.reach>=10,'a bowman has '+qv+' arrows, then draws a blade');
+ ok(t.quiverOf(ST.dw_xbow)===32&&t.quiverOf(ST.orc_thrower)>=32&&t.quiverOf(ST.hum_bow)===40&&t.quiverOf(ST.hum_mage)===Infinity,'every shooter carries at least 32: bows 40, crossbows 32; casters never run out');
  B.over=true;B.endT=0;t.updateBattle(.01);t.act('cont');done();
  // buying ammunition, and a ranged start comes with a quiver
  const ash3=t.townBy('Ashford');P.gold=500;G.mode='world';G.modal=false;t.hidePanel();t.enterTown(ash3);t.act('tab','smith');ok(/Ammunition/.test(document.getElementById('panel').innerHTML),'smiths sell ammunition');
@@ -121,5 +121,17 @@ try{
  P.gear.weapon=t.gearId('axe',0);ok(t.heroKind()==='melee'&&t.heroStats().tags.includes('pierce')&&t.ITEMS[t.gearId('axe',0)].m.dmg>t.ITEMS[t.gearId('sword',0)].m.dmg,'an axe is melee, hits harder and pierces');
  t.act('begin','soldier');
  t.frame();
+ // damage types and armour: physical against armour, magic against ward; every kind its type and armour from its look
+ {const M=t.matchup,TM=t.typeMul;
+  ok(['hum_sword','hum_spear','dw_hammer','hum_bow','dw_sling','hum_mage','hedge','dw_rune','wolf'].map(k=>ST[k].dt).join()==='slash,pierce,blunt,pierce,blunt,fire,frost,arcane,slash','each kind its damage type, by its weapon (casters by their school, beasts by their claws)');
+  ok(['hum_foot','militia','hum_sword','hum_knight','bear'].map(k=>ST[k].armor).join()==='none,leather,mail,plate,hide','and its armour by what it wears (unarmoured, leather, mail, plate, hide)');
+  const pl=ST.hum_knight;ok(TM(ST.hum_sword,pl)<TM(ST.dw_hammer,pl)&&TM(ST.dw_hammer,pl)<1,'against plate a sword does least, a hammer more ('+TM(ST.hum_sword,pl)+' / '+TM(ST.dw_hammer,pl)+')');
+  ok(TM(ST.hum_sword,ST.hum_foot)===1&&TM(ST.hum_sword,ST.hum_sword)<TM(ST.hum_sword,ST.militia),'mail stops more of a slash than leather, nothing stops it on the unarmoured');
+  ok(TM(ST.hum_long,pl)>TM(ST.hum_bow,pl),'an armour-piercing longbow is stopped half as much');
+  ok(TM(ST.hum_mage,pl)===1&&TM(ST.hum_mage,ST.dw_rune)<1,'magic ignores armour; a ward stops it');
+  ok(TM(ST.hum_mage,ST.troll)>1&&TM(ST.hedge,ST.troll)<1&&TM(ST.hum_mage,ST.dragon)<.5,'a troll fears fire and shrugs off frost; a dragon all but ignores fire');
+  ok(t.shapeDt('thrust','slash')==='pierce'&&t.shapeDt('slam','slash')==='blunt'&&t.shapeDt('arc','slash')==='slash','a combo\u2019s thrust pierces, its slam crushes, its sweep is its weapon\u2019s');
+  P.gear.weapon=t.gearId('warhammer',0);P.gear.body=t.gearId('mail',4);ok(t.heroStats().dt==='blunt'&&t.heroStats().armor==='plate','your hero: a warhammer crushes, golden armour is plate');P.gear.body=null;ok(t.heroStats().armor==='none','no armour, unarmoured');
+  ok(/Slash · physical · Mail armour/.test(t.unitCard('hum_sword')),'the unit card says it (Slash · physical · Mail armour)');}
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}
 const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d)};

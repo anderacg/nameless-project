@@ -32,13 +32,13 @@ const lordTac=ls=>1+.05*Math.max(0,...ls.filter(o=>W.lords.includes(o)).map(o=>l
 function lordWins(l,foes){lordXp(l,12+2*foes);l.renown=(l.renown||0)+Math.ceil(foes/3);lordTrain(l,'lead',3+foes*.5);lordTrain(l,'tact',2)}
 const cull=(l,frac)=>{l.troops=l.troops.filter(()=>Math.random()>frac)};
 const facRaces=f=>{const rs=[...new Set(fiefsOf(f).flatMap(t=>t.races))];return rs.length?rs:FACS[f].races};
-function armyOf(f,n){const rs=facRaces(f),a=[];for(let i=0;i<n;i++){const c=RACES[rs[rint(0,rs.length-1)]],r=Math.random();a.push(r<.35?c.melee:r<.58?UP[c.melee][0]:r<.76?c.ranged:r<.84?UP[c.ranged][0]:r<.91?c.mage:c.horse)}return a}
+function armyOf(f,n){const rs=facRaces(f),a=[];for(let i=0;i<n;i++){const c=RACES[rs[rint(0,rs.length-1)]],r=Math.random();a.push(r<.24?c.melee:r<.36?c.shield:r<.5?UP[c.melee][0]:r<.6?UP[c.shield][0]:r<.76?c.ranged:r<.84?UP[c.ranged][0]:r<.91?c.mage:c.horse)}return a}
 // a holding's guards come from its people: each new one is a volunteer (t.vol, the pool you recruit from too) who leaves the
 // population for the garrison. A holding needs at least GUARD_FLOOR people left; returns how many it could draft (up to n)
 const GUARD_FLOOR=20;
 function draftLocals(t,n){ensureEcon(t);const k=Math.max(0,Math.min(n,Math.floor(t.vol||0),Math.floor((t.pop||0)-GUARD_FLOOR)));if(k){t.vol-=k;t.pop-=k}return k}
 const canDraft=t=>(t.vol||0)>=1&&(t.pop||0)-GUARD_FLOOR>=1;
-function garList(t){const a=[];for(let i=0;i<t.gar;i++){const c=RACES[t.races[i%t.races.length]];a.push(i%7===6?c.mage:i%3===2?c.ranged:i%2?UP[c.melee][0]:c.melee)}return a}
+function garList(t){const a=[];for(let i=0;i<t.gar;i++){const c=RACES[t.races[i%t.races.length]];a.push(i%7===6?c.mage:i%3===2?c.ranged:i%4===1?c.shield:i%2?UP[c.melee][0]:c.melee)}return a}
 function initWorld(){
   TOWNS.forEach(t=>{t.owner=t.lastOwner=HOME[t.name];t.gar=t.T.gar;t.sacked=t.raided=t.turmoil=0;t.grow=GROW0;initEstates(t);initEconomy(t)});lotsReset();TOWNS.forEach(initLots);W.caravans=[];W.folk=[];W.refugees=[];W.patrols=[];W.fights=[];W.lrel={};W.treas={};W.tolls={};
   W.rel={};W.dead={};W.lords=[];W.exiles=[];W.monsters=[];W.mythic={};
@@ -131,7 +131,7 @@ function worldDay(){
       if(++l.sd>=2+wallOf(t))resolveSiege(l,t);continue}
     if(l.state==='rest'&&t&&t.owner===l.fac){
       // he hires as you do: the holding's own volunteers, at the price you pay, from his realm's treasury
-      for(let k=0,n=3+Math.max(0,FIEF0-fiefsOf(l.fac).length);k<n&&l.troops.length<lcapOf(l)&&canDraft(t);k++){const c=RACES[t.races[rint(0,t.races.length-1)]],type=Math.random()<.6?c.melee:c.ranged;if(!payRealm(l.fac,HIRE[type]||22,t,1))break;draftLocals(t,1);partyAdd(l,type)}
+      for(let k=0,n=3+Math.max(0,FIEF0-fiefsOf(l.fac).length);k<n&&l.troops.length<lcapOf(l)&&canDraft(t);k++){const c=RACES[t.races[rint(0,t.races.length-1)]],r=Math.random(),type=r<.4?c.melee:r<.6?c.shield:c.ranged;if(!payRealm(l.fac,HIRE[type]||22,t,1))break;draftLocals(t,1);partyAdd(l,type)}
       const k=l.troops.find(x=>UP[x]);if(k&&Math.random()<.7){const u=UP[k];partyRemove(l,k,1);partyAdd(l,u[rint(0,u.length-1)])}// (one is trained up)
     }
     if(l.state==='rest'||Math.random()<.35)lordThink(l);
@@ -143,6 +143,6 @@ function lordMeet(l){
   G.enc={kind:'lord',ref:l};G.mode=l.inside&&G.scene?'scene':'dialog';P.tx=null;const f=FACS[l.fac];
   const st=hostileTo(l.fac)?'Your realms are at odds, but '+l.name+' will not draw on a friend.':P.fac===l.fac?'You serve the '+f.n+'.':P.fac?'Your employer is at '+(relOf(P.fac,l.fac).s==='ally'?'alliance':'peace')+' with them.':'They have no quarrel with you.';
   showPanel('<h2>'+l.name+'</h2><p class="muted">Lord of the <span style="color:'+f.col+'">'+f.n+'</span>, leading '+l.troops.length+' soldiers (power '+rating(l.troops)+' vs your '+partyPower()+').</p><p class="muted">Level '+lordStats(l).lv+' · renown '+(l.renown||0)+' · Leadership '+lordSkill(l,'lead')+' · Tactics '+lordSkill(l,'tact')+' · Medicine '+lordSkill(l,'med')+' · leads up to '+lcapOf(l)+'.</p><p>'+st+'</p>'+
-    relHtml(l)+(l.inside?'<p class="muted">Holding court in '+l.inside+', with '+l.troops.length+' soldiers quartered alongside the garrison.</p>':'')+lordJobHtml(l)+'<div class="btns">'+(P.fac===l.fac||l.inside?'':'<button class="btn" type="button" data-act="lord-attack">Attack</button>')+'<button class="btn primary" type="button" data-act="lord-leave">Leave</button></div>'+
-    (P.fac===l.fac||l.inside?'':'<p class="muted">Attacking makes the '+f.n+' hostile to you for 20 days.</p>'));
+    relHtml(l)+(l.inside?'<p class="muted">Holding court in '+l.inside+', with '+l.troops.length+' soldiers quartered alongside the garrison.</p>':'')+lordJobHtml(l)+'<div class="btns">'+(P.fac===l.fac||l.inside?'':'<button class="btn" type="button" data-act="lord-attack">Attack</button>')+'</div>'+
+    (P.fac===l.fac||l.inside?'':'<p class="muted">Attacking makes the '+f.n+' hostile to you for 20 days.</p>')+nav(null,['lord-leave',null,'Leave']));
 }

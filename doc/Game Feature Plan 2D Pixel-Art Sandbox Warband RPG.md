@@ -1,6 +1,12 @@
 # Game Feature Plan: 2D Pixel-Art Sandbox Warband RPG
 
-Oct 10, 2026 · @Adisorn
+Oct 10, 2026 · @Adisorn · updated Oct 15, 2026
+
+This is the game's design vision. It records what the game is meant to be and how far each feature has come. Two companion documents cover the rest:
+- **[IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md):** the work order.
+- **[KNOWLEDGE_TRANSFER.md](KNOWLEDGE_TRANSFER.md):** how the code works.
+
+**Status tags:** **[Built]** works in the prototype · **[Partly]** some of it works · **[Not yet]** designed but not started.
 
 ## Design pillars
 
@@ -9,7 +15,7 @@ Four pillars decide what makes the cut: a player's rise, their army, a world tha
 1. **Rise from nobody to ruler.** You start as a lone wanderer and can end up founding a kingdom.
 2. **Your army is your character.** Recruiting, training, and supplying troops matters as much as your own stats.
 3. **A living world that doesn't wait for you.** Factions wage war, trade, and collapse whether or not you take part.
-4. **Skill-based, readable combat.** Fights are short, tactical, and legible in pixel art.
+4. **Skill-based, readable combat.** Fights are short, tactical, and legible in pixel art. Since Oct 13, "skill" means command skill: battles are fought Total War-style.
 
 ## Core loop
 
@@ -19,114 +25,140 @@ The game cycles through four stages, and each pass runs at a larger scale than t
 
 Each encounter pays out loot, renown, and XP; management turns that into stronger troops and a harder choice of next fight.
 
+## Decisions made
+
+These were the open questions on Oct 10. All are now settled.
+
+| Question | Decision |
+| --- | --- |
+| Which engine? | **Plain HTML5 canvas and JavaScript**, with no build step. It runs by opening `Ashmark.html` from disk. It is not Godot. |
+| Top-down or side-view battles? | **Top-down, real-time strategy**, in the style of Total War: you command groups and your hero is one of them. |
+| Historical or fantasy setting? | **Fantasy:** four races (human, dwarf, elf, orc), five realms, magic, monsters and a roaming dragon. |
+| Platforms | **Desktop and mobile (landscape)**, played full-screen in the browser. |
+
 ## Feature breakdown
 
-Nine systems make up the game; combat is the one that must be right first.
+Nine systems make up the game; combat is the one that had to be right first.
 
 ### A. Overworld
 
-- Top-down tile map with party sprites moving in real time (pause and speed controls).
-- Terrain affects speed and vision (forest, hills, snow, desert, rivers).
-- Towns, castles, villages, bandit camps, and roaming armies as map nodes.
-- Day/night and seasons, with a food and morale clock for your party.
-- Fog of war, with scouting range set by a Scouting skill.
+- **[Built]** Top-down tile map with party sprites moving in real time (pause and 1×/2×/3× speed).
+- **[Built]** Terrain affects speed and vision: forest, hills, snow, desert, swamp, rivers, roads.
+- **[Built]** Towns, cities, castles, villages, bandit camps and hideouts, caves, ruins, shrines, and roaming armies and monsters. Holdings are placed buildings on a grid and grow over time.
+- **[Partly]** Day/night with a food and morale clock for your party. **[Not yet]** Seasons.
+- **[Built]** Fog of war, with scouting range set by the Scouting skill.
+- **[Built]** Life on the map:
+  - workers carry their estate's goods to town each afternoon;
+  - herds graze on pastures;
+  - wild game flees and can be hunted;
+  - caravans, patrols, refugees and ships move about.
 
 ### B. Character and progression
 
-- Attributes (Strength, Agility, Intellect, Charisma) plus skills (One-Handed, Archery, Riding, Leadership, Trade, Tactics, Medicine, and so on).
-- Skills level through use, as in Mount & Blade.
-- Perks every few levels that give meaningful branching choices.
-- Background picked at the start (merchant's child, exile, soldier, noble, outlaw) that changes starting skills and relationships.
+- **[Built]** Attributes (Strength, Agility, Intellect, Charisma) plus skills that level through use.
+- **[Built]** A skill tree with branching choices, special moves, and an ability bar for the hero.
+- **[Built]** A background ("past") picked at the start, together with a race. It sets the starting weapon, gold, skills and standing.
 
 ### C. Party and troop management
 
-- Party size is capped by Leadership and renown.
-- **Troop trees:** each recruit starts at Tier 1 and branches by culture into specialist paths (for example, Militia → Spearman → Pikeman or Shield Guard).
-- Upkeep wages, morale, and desertion when you're broke or keep losing.
-- Prisoners can be ransomed, recruited, or released.
-- Companions: unique named NPCs with personalities, quests, and conflicts with each other. They can be assigned as caravan leaders, governors, or scouts.
+- **[Built]** Party size is capped by level, renown, Leadership and Charisma.
+- **[Built]** Troop trees by race, with tiers and specialist branches. Troops gain experience in battle and train up at a barracks.
+- **[Partly]** Upkeep wages and morale are built. **[Not yet]** Desertion when you're broke or keep losing.
+- **[Built]** Prisoners can be ransomed, recruited or released. Captured lords and bandit chieftains can be ransomed, handed over or recruited.
+- **[Partly]** Companions are named characters who grow as you do. They have approval and roles (scout, surgeon), lead their own parties, and use the full skill tree.
+  - **[Not yet]** Personal story quests and conflicts between companions.
+  - **[Not yet]** Companions as caravan leaders or governors.
 
 ### D. Combat
 
-Real-time top-down battles are the recommended style for the prototype.
+Battles are real-time and top-down, in Total War style.
 
-| Style | Pros | Cons |
-| --- | --- | --- |
-| **Real-time top-down battles** (recommended) | Closest to M&B, supports formations and flanking | Needs good AI and camera tuning |
-| **Side-view brawler** | Great pixel-art animation, easy to read | Weak fit for large armies |
-| **Tactical grid** | Simple AI, deep strategy | Loses the M&B feel |
-
-- Directional melee (swing from 4 angles, block by matching direction), ranged weapons, and mounted charges with momentum.
-- Formations and orders for infantry, archers, and cavalry (hold, advance, charge, follow, spread out).
-- Player control of one unit while commanding the rest.
-- Auto-resolve option for small fights.
-- Sieges: ladders, rams, towers, walls, and gate defense.
-- Tournaments for easy early money and renown.
+- **[Built]** RTS command:
+  - select groups (hero, infantry, archers, mages, cavalry);
+  - move in formation, drag a line for width and facing;
+  - orders: hold, walk/run, charge, withdraw, hold ground, cease fire, skirmish, melee mode;
+  - control groups and tactical pause.
+- **[Built]** Formations: line, shield wall, loose, wedge.
+- **[Built]** Flanking, charges with momentum and knockback, and morale with routing and rallying.
+- **[Built]** Damage types (physical: slash, pierce, blunt; magical: fire, frost, arcane) against armour classes (unarmoured, leather, mail, plate, hide/scales).
+- **[Built]** Shooters fire in a forward arc with draw, loose and reload. Ammunition is limited.
+- **[Built]** Stamina limits running and weakens tired fighters.
+- **[Built]** A commander AI that uses the same orders as the player, with focus fire, kiting, hunting and covering shooters. An "AI command" switch lets it lead your side, and "Auto skills" lets your characters use theirs.
+- **[Built]** A deployment phase, camera zoom and pan, a minimap, and battle speeds 0.5× to 5×.
+- **[Built]** Battle results carry over: casualties, band morale, and the cost of a retreat.
+- **[Changed]** "Player control of one unit while commanding the rest" was set aside on Oct 13. The manual hero controls (combos, dodge, block, bow) are kept in the code behind a switch in case they return.
+- **[Not yet]** Directional melee (swing angles, blocking by matching direction).
+- **[Built]** Auto-resolve, sieges and village raids, and tournaments.
 
 ### E. Economy and trade
 
-- Local supply and demand, so prices vary by town and shift with events like war, famine, and caravans.
-- Production chains (grain → flour, ore → weapons).
-- Buy cheap and sell dear, or own workshops and caravans for passive income.
-- Gear crafting and smithing as a late-game gold sink.
+- **[Built]** Local supply and demand. Prices vary by town and shift with war, shortages, caravans and estates' output.
+- **[Partly]** Holdings run estates: farms, pastures, lumber camps, mines, quarries, ports and workshops. **[Not yet]** Production chains (grain → flour, ore → weapons).
+- **[Built]** Buy cheap and sell dear, run your own caravans, and own fiefs that pay taxes.
+- **[Not yet]** Gear crafting and smithing as a late-game gold sink. Gear can be bought at smiths today.
 
 ### F. Factions, politics, and the world sim
 
-- 4 to 6 factions with distinct cultures, troop trees, and goals.
-- Lords with traits, grudges, and loyalty to the king.
-- Wars, truces, and alliances driven by simulation, with fief ownership changing hands.
-- Relations system: help villages, fight their enemies, and they offer recruits and quests.
-- Player endgame options: serve a king and earn a fief, become a mercenary, or **found your own kingdom** (laws, vassals, diplomacy).
+- **[Built]** Five realms: four single-race kingdoms and a mixed league, each with its own troop trees.
+- **[Partly]** Lords have levels, skills, friendships and standing toward you. **[Not yet]** Personal traits and grudges.
+- **[Built]** Wars, peace and the capture of fiefs come from the simulation. Realms build, fortify and run treasuries.
+- **[Built]** Reputation with holdings and honour with realms. Helping or harming them changes recruits, prices and quests.
+- **[Partly]** Endgame paths:
+  - **[Built]** serving a realm and earning fiefs;
+  - **[Built]** mercenary contracts;
+  - **[Not yet]** founding your own kingdom (laws, vassals, diplomacy).
 
 ### G. Quests and content
 
-- Procedural contracts: escort, bounty, delivery, raid, rescue, and defend.
-- Authored story arcs per companion and a few faction chains.
-- Random events on the road (merchants, refugees, plague, ambush).
-- Optional main threat in the late game (invasion or civil war) to give long runs a climax.
+- **[Built]** Contracts from holdings and lords: bounty, beast hunt, lair clearing, supply run, hunting, courier, reinforcements, war and raid.
+- **[Not yet]** Escort, rescue and defend contracts.
+- **[Not yet]** Authored story arcs per companion and faction story chains.
+- **[Built]** Random events on the road: 20 kinds, including refugees, fever, storms, deserters and merchants. **[Not yet]** Ambush events.
+- **[Not yet]** A late-game main threat (invasion or civil war). The dragon is a roaming danger, but not a story climax yet.
 
 ### H. UI and presentation
 
-- Pixel-art style with a limited palette (16 to 32 colors) and 16×16 or 32×32 sprites.
-- Layered paper-doll equipment so every item visibly changes the character.
-- Clean menus for party, inventory, kingdom, and a world map overview.
-- Chiptune or lo-fi medieval soundtrack with distinct battle and map themes.
+- **[Built]** Pixel art drawn by code with muted, hue-shifted palettes:
+  - people are 16×16 template figures with race and troop variety;
+  - animals and buildings are drawn to scale in power-of-two boxes (8, 16, 32, 64).
+- **[Built]** A paper-doll equipment screen.
+- **[Built]** A full-screen interface that works on phones:
+  - an Arial-first interface font;
+  - every window has the same layout, with navigation (Back, close) in a bottom bar;
+  - a Total War-style battle HUD.
+- **[Partly]** Walkable town streets. Other interiors are planned (castle, cave, ruins, mine, dragon lair).
+- **[Not yet]** Music in the game. A chiptune generator script exists in `prototype/audio/`.
 
 ### I. Technical
 
-- Engine options: **Godot 4** (recommended for 2D and pixel art), Unity, or GameMaker.
-- Data-driven design: troops, items, and events defined in JSON or resources.
-- Save-anywhere and autosave.
-- Deterministic simulation tick for the world, so it can run efficiently in the background.
+- **[Changed]** Data lives in `js/data/` tables, not JSON. Browsers block reading JSON files from disk, so moving to JSON is deferred until there's a way to load it.
+- **[Built]** Save slots, quick save (F6) and autosave.
+- **[Built]** About 63 automated browser test suites cover every system.
+- **[Partly]** The world simulation runs every frame on a daily tick. It is not deterministic or seeded.
 
-## Roadmap
+## Status
 
-Five phases take the game from pitch to release in roughly 10 to 14 months.
+The original roadmap planned five phases over 10 to 14 months, starting from a combat prototype. The prototype has moved past it:
+- All the MVP must-haves are built.
+- So are several items once marked "cut if needed": sieges, tournaments, companions, quests and captives.
 
-| Phase | Duration | Goal | Deliverables |
-| --- | --- | --- | --- |
-| **0. Pre-production** | 2–4 weeks | Prove the fun | One-page pitch, art style tests, combat prototype (1v1 and 10v10) |
-| **1. Vertical slice** | 2–3 months | One playable loop | Small map with 3 towns, recruit → fight → loot → upgrade, 5 troop types |
-| **2. Core systems** | 3–4 months | Sandbox foundation | Economy, factions at war, full troop trees, sieges, save/load |
-| **3. Content** | 3 months | Depth | Companions, quests, events, kingdom founding, balance pass |
-| **4. Polish and release** | 2–3 months | Ship it | Audio, tutorial, UI polish, playtesting, bug fixing |
+What remains (finishing mobile, the backlog above, polish and audio) is ordered in **[IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md)**.
 
 ## Scope control
 
-The MVP is travel, recruitment, real-time battles, trading, and a small war between factions; everything else can slip.
+The MVP was travel, recruitment, real-time battles, trading, and a small war between factions.
 
-**MVP must-haves**
+**MVP must-haves (all built)**
 
 - Overworld travel
 - Party and recruitment
 - Real-time battles with formations
 - Towns with trading
-- 2 to 3 factions at war
+- Factions at war (five)
 - Save/load
 
-**Cut or delay if needed**
+**Still cut or delayed**
 
-- Sieges
 - Kingdom founding
 - Crafting
 - Seasons
@@ -134,17 +166,8 @@ The MVP is travel, recruitment, real-time battles, trading, and a small war betw
 
 ## Key risks
 
-Battle AI is the biggest unknown, so it gets prototyped first.
-
-- **Battle AI and performance** with 50+ units. Prototype this first.
-- **World sim balance.** Factions can snowball or stall, so build debug tools to fast-forward and inspect.
-- **Content volume.** Procedural quests and modular troop trees reduce hand-authoring.
+- **Battle AI and performance** with 50+ units. The AI part is largely answered: the commander AI is built. Performance with very large armies hasn't been measured yet; `Ashmark.html?test=visual/perf` gives rough timings.
+- **World sim balance.** Factions can snowball or stall. The `worldsim` test reports five 120-day campaigns to check this.
+- **Content volume.** Procedural quests, events and troop trees keep hand-authoring down. Story arcs are still to come.
 - **Scope creep.** Keep a strict feature-freeze date before polish.
-
-## Open questions
-
-Three choices would shape the plan further.
-
-- [ ] Which engine, and how large is the team?
-- [ ] Should battles be top-down or side-view?
-- [ ] Historical or fantasy setting?
+- **New: mobile.** Touch controls for battle (pinch zoom, long-press orders) are the main gap.

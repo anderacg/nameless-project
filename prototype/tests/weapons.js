@@ -16,7 +16,7 @@ try{
  ok(inS(sl,18,8)&&!inS(sl,2,-14),'a slam hits a patch of ground ahead');
  ok(inS(tw,28,8)&&inS(tw,28,-8)&&!inS(tw,10,14),'twin strikes thrust left and right of the aim');
  // which combo each weapon brings
- const use=(w,off)=>{P.gear.weapon=w;P.gear.offhand=off||null;return t.heroCombo()};
+ const use=(w,off)=>{P.gear.weapon=w;P.gear.offhand=off||null;return t.weaponCombo()};
  const pat=c=>c.map(x=>x.shape).join(',');
  const sword=pat(use(gid('sword',1))),spear=pat(use(gid('spear',1))),phal=pat(use(gid('spear',1),gid('shield',1))),ham=pat(use(gid('warhammer',1))),gs=pat(use(gid('greatsword',1))),dg=pat(use(gid('dagger',1))),ax=pat(use(gid('axe',1)));
  ok(sword.split(',').filter(x=>x==='arc').length===2&&sword.includes('thrust'),'sword: two sweeps and one riposte ('+sword+')');

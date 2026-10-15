@@ -10,7 +10,7 @@ try{
  const p0=t.partyPower();P.gear.weapon='wyrmspear';ok(t.partyPower()>p0,'gear raises power ('+p0+' → '+t.partyPower()+')');P.gear.weapon=null;
  ok(t.rating(['tiger'],3)>t.rating(['tiger'],1),'monster levels raise power');
  ok(t.rating(['hum_knight'])>t.rating(['hum_spear'])&&t.rating(['hum_spear'])>t.rating(['hum_levy']),'higher tiers rate higher');
- t.updateHUD(true);ok(new RegExp('Power</b><span class="gold">'+t.partyPower()).test(document.getElementById('stats').innerHTML),'HUD shows power');
+ t.updateHUD(true);ok(new RegExp('title="Party power">.*?<span class="gold">'+t.partyPower()+'<').test(document.getElementById('stats').innerHTML),'HUD shows power');
  G.mode='world';t.openChar();t.act('char-tab','party');const h=document.getElementById('panel').innerHTML;
  ok(/Party power/.test(h)&&/Brann the Wolf/.test(h)&&/Levy/.test(h),'party tab breaks power down by hero, companion and troop type');t.act('char-close');
  t.startEncounter({kind:'party',ref:t.bandits[0],n:5,band:'bandits'});ok(/Your power <strong>\d+<\/strong> vs <strong>\d+<\/strong>/.test(document.getElementById('panel').innerHTML),'encounters show your power vs theirs');t.act('flee');

@@ -56,8 +56,8 @@ function refugeeMeet(r){
     dlgBtn('rf-feed',null,'Share '+CONDUCT.feedRefugees.food+' food',r.fed?'Already fed':foodN()<CONDUCT.feedRefugees.food?'Not enough food':'')+
     (mine.length&&townBy(r.to).owner!=='player'?dlgBtn('rf-settle',null,'Offer them a home in '+nearestOf(r,mine).name):'')+
     dlgBtn('rf-recruit',null,'Ask for volunteers ('+k+')',k<1?(partyRoom()<1?'Your band is full':'Too few of them'):r.asked?'Already asked':'')+
-    dlgBtn('rf-rob',null,'Rob them',r.robbed?'Nothing left to take':'')+dlgBtn('dlg-close',null,'Leave',null,true)+'</div>'+
-    '<p class="muted">Kindness is remembered in '+r.from+' and '+r.to+'; robbing refugees shames you with both, and with their lords.</p>');
+    dlgBtn('rf-rob',null,'Rob them',r.robbed?'Nothing left to take':'')+'</div>'+
+    '<p class="muted">Kindness is remembered in '+r.from+' and '+r.to+'; robbing refugees shames you with both, and with their lords.</p>'+nav(null,['dlg-close',null,'Leave']));
 }
 function refugeeAct(a){
   const r=G.rf;if(!r){closeDialog();return}const from=townBy(r.from),to=townBy(r.to);
@@ -74,12 +74,11 @@ function refugeeAct(a){
 }
 
 /* on the map */
-function refugeeSprite(f){const k='rf'+f;return spr[k]||(spr[k]=cellOf(outlined(mkc(6,8,g=>{const r=(c,x,y,w,h)=>rect(g,c,x,y,w||1,h||1);
-  r('#6a5a48',1,0,3,2);r(C.skin,2,1,2,1);r('#7a6a52',1,2,3,4);r('#5a4a3a',1,5,3,1);r('#a8906a',4,2,2,3);r(C.dark,f?0:1,6,1,2);r(C.dark,f?3:2,6,1,2)}))))}
+// (a refugee on the map: people.js refugeeSprite)
 function drawRefugees(ents,cam,V){
   for(const r of W.refugees||[]){if(Math.hypot(r.x-P.x,r.y-P.y)>V*1.2)continue;
     ents.push({y:r.y,f:()=>{const sx=Math.round(r.x-cam.x),sy=Math.round(r.y-cam.y),k=Math.min(6,Math.max(3,Math.ceil(r.n/3))),mv=performance.now();ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(sx-8,sy-1,16,2);
-      for(let i=0;i<k;i++){const px=sx-r.dir*((i%3)*4-4)+(i>2?-r.dir*2:0),py=sy-(i>2?3:0);const s=refugeeSprite(Math.floor(mv/220+i)%2);ctx.save();ctx.translate(px,py);if(r.dir<0)ctx.scale(-1,1);ctx.drawImage(s,-8,-15);ctx.restore()}
+      for(let i=0;i<k;i++){const px=sx-r.dir*((i%3)*6-6)+(i>2?-r.dir*3:0),py=sy-(i>2?3:0);const s=refugeeSprite(Math.floor(mv/220+i)%2,i);ctx.save();ctx.translate(px,py);if(r.dir<0)ctx.scale(-1,1);ctx.drawImage(s,-8,-15);ctx.restore()}
       if(Math.hypot(r.x-P.x,r.y-P.y)<90)txt('Refugees '+r.n,sx,sy-12,r.fear?'#ff9a90':'#c8c2ae','center')}})}
 }
 onAct('rf-',refugeeAct);

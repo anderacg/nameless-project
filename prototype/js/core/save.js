@@ -1,17 +1,25 @@
 'use strict';
 /* ---------- save / load ---------- */
-function readSave(){try{const d=JSON.parse(localStorage.getItem(SAVE));return d&&d.v===1&&d.P?d:null}catch(e){return null}}
-function saveGame(quiet){
+/* save slots: the autosave (the game saves itself each day, on leaving a town and so on: the old save's own key), the quick save
+   (F6 and the Save button) and five slots you save to from the menu. Continue loads the latest of them; Load game lists them all */
+const SAVE_SLOTS=['auto','quick','1','2','3','4','5'],SLOT_N={auto:'Autosave',quick:'Quick save'};
+const slotName=s=>SLOT_N[s]||'Slot '+s;
+const slotKey=s=>!s||s==='auto'?SAVE:SAVE+'.'+s;
+function readSlot(s){try{const d=JSON.parse(localStorage.getItem(slotKey(s)));return d&&d.v===1&&d.P?d:null}catch(e){return null}}
+// the latest save of all (or one slot's)
+function latestSlot(){let best=null,bt=-1;for(const s of SAVE_SLOTS){const d=readSlot(s);if(d&&(d.at||0)>bt){bt=d.at||0;best=s}}return best}
+function readSave(s){return readSlot(s||latestSlot())}
+function saveGame(quiet,slot){
   if(!ESC_SAVE.includes(G.mode)){if(!quiet)log('You can only save while traveling or in town.','bad');return}
-  const d={v:1,mw:MW,P:{...P,tx:null,ty:null,stuck:0},day:G.day,clock:G.clock,speed:G.speed,last:G.lastTown&&G.lastTown.name,bandits,perkOffer:G.perkOffer||null,
+  slot=slot||'auto';const d={v:1,at:Date.now(),mw:MW,P:{...P,tx:null,ty:null,stuck:0},day:G.day,clock:G.clock,speed:G.speed,last:G.lastTown&&G.lastTown.name,bandits,perkOffer:G.perkOffer||null,
     world:{v:2,seen:seenSave(),own:TOWNS.map(t=>[t.owner,t.gar,t.name,{s:t.sacked||0,r:t.raided||0,u:t.turmoil||0,g:t.grow,b:t.bld,w:t.wall,k:t.work,f:t.fear||0,cr:t.crime||null,wo:t.watchOff||0,l:(t.lots||[]).map(l=>({id:l.id,k:l.k,type:l.type,x:l.x,y:l.y,n:l.n,lv:l.lv,seed:l.seed,st:l.st,plots:l.plots})),e:t.stock?{st:t.stock,pop:t.pop,pros:t.pros,tax:t.tax,vol:t.vol,pf:t.popF}:null}]),rel:W.rel,dead:W.dead,lords:W.lords,exiles:W.exiles||[],mythic:W.mythic,monsters:W.monsters,sites:W.sites,caravans:W.caravans,refugees:W.refugees,patrols:W.patrols,fights:W.fights,lrel:W.lrel||{},uidN:W.uidN||0,fightN:W.fightN||0,treas:W.treas,critters:W.critters,shops:W.shops||{}}};
-  try{localStorage.setItem(SAVE,JSON.stringify(d));if(!quiet)log('Game saved.','good')}
+  try{localStorage.setItem(slotKey(slot),JSON.stringify(d));if(!quiet)log('Game saved'+(slot==='auto'?'':' ('+slotName(slot)+')')+'.','good')}
   catch(e){if(!quiet)log('Could not save. Browser storage is unavailable.','bad')}
 }
-function loadGame(){G.scene=null;
-  const d=readSave();if(!d)return showTitle();
-  Object.assign(P,d.P);const sk=mkSkills();for(const k in sk)if(!P.sk[k])P.sk[k]=sk[k];
-  G.day=d.day;G.clock=d.clock;setSpeed(d.speed||1);G.paused=false;$('#pause').textContent='Pause';
+function loadGame(slot){G.scene=null;
+  const d=readSave(slot);if(!d)return showTitle();
+  Object.assign(P,d.P);registerRecruits();const sk=mkSkills();for(const k in sk)if(!P.sk[k])P.sk[k]=sk[k];
+  G.day=d.day;G.clock=d.clock;setSpeed(d.speed||1);G.paused=false;pauseUI();
   G.lastTown=TOWNS.find(t=>t.name===d.last)||null;G.capture=null;G.bes=null;if(P.siege===undefined)P.siege=null;if(P.raid===undefined)P.raid=null;G.perkOffer=d.perkOffer;G.town=null;G.enc=null;
   // a save from a smaller map: stretch the hero, lords and dragon onto this one; sites, beasts and bandits are placed afresh
   const k=MW/(d.mw||112);if(k!==1){P.x*=k;P.y*=k;const w=d.world;if(w){(w.lords||[]).forEach(l=>{l.x*=k;l.y*=k});if(w.dragon){['x','y','tx','ty'].forEach(f=>{if(w.dragon[f]!=null)w.dragon[f]*=k})}w.sites=null;w.critters=null;w.monsters=null;w.caravans=null;w.refugees=null;w.patrols=null;w.fights=null}d.bandits=[];
@@ -37,10 +45,11 @@ function loadGame(){G.scene=null;
   W.lords=W.lords.filter(l=>FACS[l.fac]&&FACS[l.fac].lords.includes(l.name));addMissingLords();
   W.shops=d.world&&d.world.shops||{};W.caravans=d.world&&d.world.caravans||[];W.ships=[];W.refugees=d.world&&d.world.refugees||[];W.patrols=(d.world&&d.world.patrols||[]).map(asParty);W.fights=d.world&&d.world.fights||[];W.lrel=d.world&&d.world.lrel||{};W.uidN=d.world&&d.world.uidN||0;W.fightN=d.world&&d.world.fightN||0;W.folk=[];G.cv=null;
   seenLoad(d.world&&d.world.seen);W.sites=(d.world&&d.world.sites||genSites()).map(siteOf);W.sites.forEach(s=>s.placed());G.lastSite=null;G.site=null;
-  W.critters=d.world&&d.world.critters||[];W.critters=W.critters.filter(c=>!c.home||!CRITTERS[c.id]||grazeOk(c.id,c.hx,c.hy,c.pen));if(!W.critters.length)initCritters();G.herd=null;
+  W.critters=d.world&&d.world.critters||[];W.critters.forEach(herdToFields);W.critters=W.critters.filter(c=>!c.home||!CRITTERS[c.id]||grazeOk(c.id,c.hx,c.hy,c.pen));if(!W.critters.length)initCritters();G.herd=null;
   W.monsters=d.world&&d.world.monsters||[];if(!W.monsters.length)for(let i=0;i<MONSTER_START;i++)spawnMonster(true);
   bandits.forEach(b=>{if(b.kind==='wolves'||b.kind==='scorpions')b.kind='bandits'});
   unstick(P);W.lords.forEach(unstick);bandits.forEach(unstick);W.monsters.forEach(unstick);
   G.mode='world';hidePanel();G.msgs=[];log('Welcome back. It is day '+G.day+'.'+spilled,spilled?'bad':'');updateHint();updateHUD(true);
 }
-function wipeSave(){try{localStorage.removeItem(SAVE)}catch(e){}G.wipeArmed=false;G.resume=null;showTitle()}
+// delete a slot's save (the latest, if none is named)
+function wipeSave(slot){const s=slot||latestSlot();try{if(s)localStorage.removeItem(slotKey(s))}catch(e){}G.wipeArmed=false;G.resume=null;showTitle('load')}

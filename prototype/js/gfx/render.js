@@ -1,13 +1,16 @@
 'use strict';
 /* ---------- rendering ---------- */
 // x, y: the leader's feet on screen; dir: which way the host faces; seed keeps each follower's place steady
-function drawHost(n,col,x,y,dir,moving,seed){
+// (race: the host's people; band: a bandit band, hooded and ragged. Every follower stands as tall as the leader: people.js)
+function drawHost(n,col,x,y,dir,moving,seed,race,band){
   const k=hostSize(n);if(!k)return;const pts=[];
-  for(let i=0;i<k;i++){const row=Math.floor(i/3),c=i%3,j=hash(i,seed|0,7);pts.push([x-dir*(7+row*5+(c===1?2:0))+Math.round(j*2-1),y-3+(c-1)*4+(row%2),i])}
+  for(let i=0;i<k;i++){const row=Math.floor(i/3),c=i%3,j=hash(i,seed|0,7);pts.push([x-dir*(8+row*6+(c===1?3:0))+Math.round(j*2-1),y-3+(c-1)*4+(row%2),i])}
   pts.sort((a,b)=>a[1]-b[1]);const t=performance.now();
-  for(const [px,py,i] of pts){const f=moving?Math.floor(t/170+i*.7)%2:0,s=followerSprite(col,f);ctx.save();ctx.translate(Math.round(px),Math.round(py));if(dir<0)ctx.scale(-1,1);ctx.drawImage(s,-4,-7);ctx.restore()}
+  for(const [px,py,i] of pts){const f=moving?Math.floor(t/170+i*.7)%2:0,s=followerSprite(col,f,(i+(seed|0))%6,race,band);ctx.save();ctx.translate(Math.round(px),Math.round(py));if(dir<0)ctx.scale(-1,1);ctx.drawImage(s,-8,-14);ctx.restore()}
   if(n>=30){const bx=Math.round(x-dir*(11+Math.floor((k-1)/3)*5)),by=y-4;rect(ctx,'#5a3a20',bx,by-14,1,12);rect(ctx,col,bx+(dir>0?-5:1),by-14,5,4);rect(ctx,shade(col,.7),bx+(dir>0?-5:1),by-11,5,1)}
 }
+// (an animal's step on the map, ms a frame)
+const D_STEP=150;
 // the tile grid over the view: a line along every tile edge from (x0, y0) for w by h world pixels, drawn offset by (ox, oy),
 // px thick (one screen pixel whatever the zoom)
 function drawGrid(x0,y0,w,h,ox,oy,px){
@@ -26,7 +29,7 @@ const FACE=new WeakMap();
 // lights in the dark (torches): {x, y, r} in screen pixels, queued while drawing and lit over the night
 let LIGHTQ=[];
 // the scene of buildings, camps and sites, before anyone is drawn over it: what you remember of the land outside your sight
-let MEM=null;const memCv=()=>MEM||(MEM=mkc(VW,VH,()=>{}));
+let MEM=null;const memCv=()=>MEM&&MEM.width===VW&&MEM.height===VH?MEM:(MEM=mkc(VW,VH,()=>{}));
 const faceDir=o=>{let f=FACE.get(o);if(!f)FACE.set(o,f={x:o.x,d:o.x>P.x?-1:1});if(Math.abs(o.x-f.x)>.05){f.d=o.x>f.x?1:-1;f.x=o.x}return o.fight&&o.dir?o.dir:f.d};
 function drawWorld(){
   reveal();const V=vis(),cam=G.cam;cam.x=Math.round(clamp(P.x-VW/2,0,MW*TILE-VW));cam.y=Math.round(clamp(P.y-VH/2,0,MH*TILE-VH));
@@ -42,13 +45,20 @@ function drawWorld(){
     ctx.fillStyle='rgba(0,0,0,.3)';if(Y)ctx.fillRect(sx-8,sy-1,16,3);else ctx.fillRect(sx-5,sy-1,10,2);
     ctx.save();ctx.translate(sx,sy-lift);if(Y?m.dir<0:faceDir(m)<0)ctx.scale(-1,1);ctx.drawImage(s,-(w>>1),-s.height+2);ctx.restore();
     if(!Y)txt((m.n>1?m.n+' ':'')+'Lv'+m.lv,sx,sy-h,STANCE_COL[M.aggro||stance(monPower(m))==='afraid'?stance(monPower(m)):'wary'],'center')}})});
-  W.critters.forEach(c=>{if(Math.hypot(c.x-P.x,c.y-P.y)<V*(hiddenAt(c.x,c.y)?.45:1))ents.push({y:c.y,f:()=>{const s=critterSprite(c.id),sx=Math.round(c.x-cam.x),sy=Math.round(c.y-cam.y);
-    ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(sx-4,sy-1,8,2);
-    ctx.save();ctx.translate(sx,sy);if(c.dir<0)ctx.scale(-1,1);ctx.drawImage(s,-(s.width>>1),-s.height+1-(c.idle?0:Math.floor(performance.now()/130+c.x)%2));ctx.restore();
-    if(c.n>1&&Math.hypot(c.x-P.x,c.y-P.y)<90)txt(String(c.n),sx,sy-s.ch-1,CRITTERS[c.id].live?'#e8d8a0':'#c8e0a0','center')}})});
+  // (a herd: up to three of its animals, behind and beside the first, each stepping as they go (critters.js critterSprite))
+  // (a pasture's herd, only to be seen: one animal on each worked field tile, grazing to and fro on it)
+  W.critters.forEach(c=>{if(!c.decor||Math.hypot(c.x-P.x,c.y-P.y)>V)return;const F=fieldsOf(townBy(c.home),'pasture');if(!F)return;
+    F.tiles.slice(0,c.n).forEach(([tx,ty],i)=>{const y=ty*TILE+TILE-3;ents.push({y,f:()=>{const now=performance.now(),ph=now/2600+i*1.9+tx,mv=Math.cos(ph),fr=Math.abs(mv)>.6?Math.floor(now/D_STEP+i)%2:0,
+      a=critterSprite(c.id,fr,true),x=Math.round(tx*TILE+TILE/2+Math.sin(ph)*3-cam.x),sy=Math.round(y-cam.y),w=Math.max(4,a.cw-2);
+      ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(x-(w>>1),sy-1,w,2);ctx.save();ctx.translate(x,sy);if(mv<0)ctx.scale(-1,1);ctx.drawImage(a,-(a.width>>1),-a.height+1);ctx.restore()}})})});
+  W.critters.forEach(c=>{if(c.decor&&fieldsOf(townBy(c.home),'pasture'))return;if(Math.hypot(c.x-P.x,c.y-P.y)<V*(hiddenAt(c.x,c.y)?.45:1))ents.push({y:c.y,f:()=>{const s=critterSprite(c.id),sx=Math.round(c.x-cam.x),sy=Math.round(c.y-cam.y),now=performance.now(),k=Math.min(3,c.n||1),sp=Math.max(4,Math.round(s.cw*.55));
+    for(let i=k-1;i>=0;i--){const ox=i===0?0:i===1?-sp:Math.round(sp*.4),oy=i===0?0:i===1?-2:-4,fr=c.idle?0:Math.floor(now/(D_STEP)+c.x+i)%2,a=critterSprite(c.id,fr),w=Math.max(4,a.cw-2);
+      ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(sx+(c.dir<0?-ox:ox)-(w>>1),sy+oy-1,w,2);
+      ctx.save();ctx.translate(sx+(c.dir<0?-ox:ox),sy+oy);if(c.dir<0)ctx.scale(-1,1);ctx.drawImage(a,-(a.width>>1),-a.height+1);ctx.restore()}
+    if(c.n>1&&!c.decor&&Math.hypot(c.x-P.x,c.y-P.y)<90)txt(String(c.n),sx,sy-s.ch-1,CRITTERS[c.id].live?'#e8d8a0':'#c8e0a0','center')}})});
   if(P.raid)ents.push({y:P.y-1,f:()=>txt('Raiding '+Math.round(P.raid.t/RAID_TIME*100)+'%',Math.round(P.x-cam.x),Math.round(P.y-20-cam.y),'#ff9a90','center')});
   if(P.siege)ents.push({y:P.y-1,f:()=>{const s=campSprite(77,'bandit'),X=Math.round(P.x-24-s.ax-cam.x),Y=Math.round(P.y+2-s.ay-cam.y);ctx.drawImage(s,X,Y);drawFire(X+s.fire[0],Y+s.fire[1],0);drawFlag(FACS.player.col,X+s.flag[0],Y+s.flag[1],0);txt('Siege day '+P.siege.days,Math.round(P.x-cam.x),Math.round(P.y-18-cam.y),'#e8b94a','center')}});
-  if(!P.stay)ents.push({y:P.y,f:()=>{const sx=Math.round(P.x-cam.x),sy=Math.round(P.y-cam.y);ctx.fillStyle='rgba(0,0,0,.3)';ctx.fillRect(sx-5,sy-1,10,2);drawHost(partySize(),'#3d74d6',sx,sy+2,P.dir,P.tx!=null,5);ctx.save();ctx.translate(sx,sy-10);ctx.scale(P.dir,1);ctx.drawImage(partySprite('#e8b94a',mountDef()?mountDef().col:'',P.tx!=null?Math.floor(performance.now()/150)%2:0),-8,P.tx!=null?-3-Math.floor(performance.now()/150)%2:-3);ctx.restore()}});
+  if(!P.stay)ents.push({y:P.y,f:()=>{const sx=Math.round(P.x-cam.x),sy=Math.round(P.y-cam.y);ctx.fillStyle='rgba(0,0,0,.3)';ctx.fillRect(sx-5,sy-1,10,2);drawHost(partySize(),'#3d74d6',sx,sy+2,P.dir,P.tx!=null,5,P.race);ctx.save();ctx.translate(sx,sy-10);ctx.scale(P.dir,1);ctx.drawImage(partySprite('#e8b94a',mountDef()?mountDef().col:'',P.tx!=null?Math.floor(performance.now()/150)%2:0),-8,P.tx!=null?-3-Math.floor(performance.now()/150)%2:-3);ctx.restore()}});
   drawFolk(ents,cam,V);drawCaravans(ents,cam,V);drawShips(ents,cam,V);drawRefugees(ents,cam,V);drawFights(ents,cam,V);
   // buildings, camps and sites first (in their own order), then every character over them, then all their labels on top
   TXTQ=[];TXTQ.ctx=ctx;LIGHTQ=[];const bents=[];estateEnts(bents,cam,V);for(const e of ents.filter(e=>e.st))bents.push(e);
@@ -86,7 +96,6 @@ function drawWorld(){
   (W.patrols||[]).forEach(p=>{if(Math.hypot(p.x-P.x,p.y-P.y)<V)dot(p.x,p.y,p.fac==='player'?FACS.player.col:FACS[p.fac].col,1)});
   P.quests.forEach(q=>{const g=questGoal(q);if(g)dot(g.x,g.y,'#ffe040',2)});
   dot(P.x,P.y,'#fff',3);
-  if(G.paused)txt('PAUSED',VW/2,20,'#fff','center');
 }
 // how long a unit holds its attack pose after it strikes
 const ATK_ANIM=.36;
@@ -94,20 +103,23 @@ const ATK_ANIM=.36;
 function drawParties(ents,cam,V){
   for(const o of W.parties){if(!o.inView(V))continue;
     ents.push({y:o.y,f:()=>{const L=o.look(),sx=Math.round(o.x-cam.x),sy=Math.round(o.y-10-cam.y),fd=L.dir<0?-1:1,fr=L.moving?Math.floor(performance.now()/(L.bandit?160:170))%2:0;
-      drawHost(o.size,L.col,sx,sy+12,fd,L.moving,L.seed);ctx.save();ctx.translate(sx,sy);if(fd<0)ctx.scale(-1,1);ctx.drawImage(L.bandit?banditSprite(fr):partySprite(L.col,L.rider==='horse'?C.horse:'',fr),-8,-3);ctx.restore();
+      drawHost(o.size,L.col,sx,sy+12,fd,L.moving,L.seed,L.race,L.bandit);ctx.save();ctx.translate(sx,sy);if(fd<0)ctx.scale(-1,1);ctx.drawImage(L.bandit?banditSprite(fr):partySprite(L.col,L.rider==='horse'?C.horse:'',fr),-8,-3);ctx.restore();
       if(L.torch){const tx=sx+fd*6,ty=sy-4;rect(ctx,'#5a3e24',tx,ty,1,5);LIGHTQ.push({x:tx,y:ty-1,r:20})}
       if(!o.fight&&L.label)txt(L.label,sx,sy-2,L.labelCol,'center')}})}
 }
 function drawUnit(u){
-  const big=u.s.big?2:1,s=unitSprite(u.type,u.team,u.hero,u.v),w=s.width,h=s.ch,x=Math.round(u.x),y=Math.round(u.y);
-  ctx.fillStyle='rgba(0,0,0,.3)';ctx.fillRect(x-5*big,y-1,10*big,2);
+  // (placed on the camera's pixels, not the field's: zoomed in, they glide instead of stepping)
+  const q=B.cam?B.cam.z:1,big=u.s.big?2:1,s=unitSprite(u.type,u.team,u.hero,u.v),w=s.width,h=s.ch,x=Math.round(u.x*q)/q,y=Math.round(u.y*q)/q;
+  ctx.fillStyle='rgba(0,0,0,.28)';ctx.beginPath();ctx.ellipse(x,y,5.5*big,1.8*big,0,0,6.283);ctx.fill();// (a soft shadow)
   const z=Math.round(u.z||0),ghost=u.hero&&B.hx&&B.hx.inv>0;
   if(u.buffT>0){ctx.fillStyle='rgba(232,185,74,.35)';ctx.fillRect(x-6,y-2,12,3)}
   const hit=u.hitAt!=null&&B.t-u.hitAt<.09;
-  {const moved=u.plx!=null&&Math.hypot(u.x-u.plx,u.y-u.ply)>.02;u.plx=u.x;u.ply=u.y;const beast=!!(ST[u.type]&&ST[u.type].beast),pose=beast?0:procPose(u,moved),sp=pose?unitSprite(u.type,u.team,u.hero,u.v,pose):s;
+  // (moving: a step in the last few frames, so a man who stops and starts as he settles does not flicker between standing and walking)
+  {const step=u.plx!=null&&Math.hypot(u.x-u.plx,u.y-u.ply)>.02;u.plx=u.x;u.ply=u.y;u.movF=step?6:Math.max(0,(u.movF||0)-(B.paused?0:1));const moved=u.movF>0;const beast=!!(ST[u.type]&&ST[u.type].beast),pose=beast?0:procPose(u,moved),sp=beast?(pose?unitSprite(u.type,u.team,u.hero,u.v,pose):s):unitSprite(u.type,u.team,u.hero,u.v,pose,true,!!u.inMelee);
     let bx=0,bo=0;if(beast){if(moved)bo=-(Math.floor(B.t*8+(u.v||0))%2);if(u.atkAt!=null&&B.t-u.atkAt<ATK_ANIM)bx=Math.round(3*Math.sin((B.t-u.atkAt)/ATK_ANIM*Math.PI))}
-    if(moved&&Math.random()<.05&&B.parts.length<300)B.parts.push({x:x-u.face*3,y:y-1,vx:-u.face*8,vy:-12,life:.28,c:'#a89a78'});
-    ctx.save();ctx.translate(x,y-z+bo);if(u.face<0)ctx.scale(-1,1);if(ghost)ctx.globalAlpha=.55;ctx.drawImage(hit?whiteOf(sp):sp,-Math.floor(sp.width/2)+bx,-sp.height+2);ctx.restore()}
+    ctx.save();ctx.translate(x,y-z+bo);if(u.face<0)ctx.scale(-1,1);if(ghost)ctx.globalAlpha=.55;ctx.drawImage(hit?whiteOf(sp):sp,-Math.floor(sp.width/2)+bx,-sp.height+2);if(!beast)drawHeld(u,u.inMelee?sidearmLook(u):unitLook(u),sp,-Math.floor(sp.width/2)+bx,-sp.height+2,hit);ctx.restore()}// (his weapon in his hand: weapons.js)
+  drawStuck(u,x,y-Math.round(u.z||0));// (arrows in him: vfx.js)
+  if(u.buffT>0&&Math.random()<.06)vfx({k:'ember',x:u.x+rnd(-4,4),y:u.y-rnd(2,12),vx:rnd(-4,4),vy:-rnd(10,25),life:rnd(.4,.7),col:'#ffd25a'});// (inspired: golden sparks)
   if(u.stun>0)txt('*',x+(Math.floor(performance.now()/120)%2?3:-3),y-h-z-2,'#ffe08a','center');
   drawMorale(u,x,y-h-z-3);// (running or wavering: morale.js)
   // its health: over every fighter with health bars on (Settings, or HP bars in battle), else over you and your companions
@@ -135,15 +147,16 @@ function drawSlash(s){
   ctx.restore();
 }
 function drawBattle(){
+  warmStep();// (sprites made ahead before they are needed: sprites.js)
   // the camera (camera.js): the field drawn at its zoom and pan, the HUD over it at the screen's scale
-  if(B.cam)camTick();const Cz=B.cam?B.cam.z:1;ctx.save();if(Cz!==1){ctx.scale(Cz,Cz);ctx.translate(-Math.round(B.cam.x*Cz)/Cz,-Math.round(B.cam.y*Cz)/Cz)}
-  ctx.drawImage(B.arena,0,0);
-  if(!B.deploy)drawExit();drawDeploy();// (the withdrawal point: morale.js; the deployment zone: deploy.js)
-  for(const c of B.corpses){ctx.save();ctx.translate(Math.round(c.x),Math.round(c.y));ctx.fillStyle='rgba(0,0,0,.3)';ctx.fillRect(-6,-1,12,3);ctx.fillStyle=C.team[c.team];ctx.fillRect(-5,-3,8,3);ctx.fillStyle=C.skin;ctx.fillRect(3,-3,3,3);ctx.fillStyle='#a8322e';ctx.fillRect(-2,0,4,1);ctx.restore()}
+  if(B.cam)camTick();const Cz=B.cam?B.cam.z:1;ctx.fillStyle='#07090e';ctx.fillRect(0,0,BVW,BVH);ctx.save();if(B.cam){ctx.scale(Cz,Cz);ctx.translate(-Math.round(B.cam.x*Cz)/Cz,-Math.round(B.cam.y*Cz)/Cz)}
+  ctx.drawImage(B.arena,0,0);{const t=fieldTop()-FIELD_EDGE.body+6,b=fieldBot()+4;ctx.fillStyle='rgba(8,10,16,.35)';if(t>0)ctx.fillRect(0,0,BW,t);if(b<BH)ctx.fillRect(0,b,BW,BH-b);ctx.fillStyle='rgba(232,224,200,.18)';if(t>0)ctx.fillRect(0,t,BW,1);if(b<BH)ctx.fillRect(0,b,BW,1)}// (the field's edges in sight: battle.js fieldTop)
+  if(!B.deploy)drawExit();drawDeploy();// (the withdrawal edge: morale.js; the deployment zone: deploy.js)
+  drawCorpses();vfxGround();// (the fallen and their blood; dust, shockwaves: vfx.js)
   for(const g of GRPS){const gr=B.groups[g];if((gr.order!=='hold'&&gr.order!=='advance')||!grpUnits(g).length)continue;
     const fx_=Math.round(gr.ax),fy=Math.round(gr.ay);rect(ctx,C.wood,fx_,fy-14,1,14);rect(ctx,C.team[0],fx_+1,fy-14,6,4);rect(ctx,'#e4e0cf',fx_+3,fy-13,2,2)}
   // your selection underlined; the box you drag; where you last sent them (a ring), or whom you set them on (red)
-  drawSelection();drawOrderLines();
+  drawFireRange();drawSelection();drawOrderLines();// (shooters' reach and line of fire: battlehud.js)
   drawFormGhost();// (a line being dragged: formations.js)
   if(B.box){const b=B.box;ctx.strokeStyle='#e8b94a';ctx.lineWidth=1;ctx.strokeRect(Math.min(b.x0,b.x1)+.5,Math.min(b.y0,b.y1)+.5,Math.abs(b.x1-b.x0),Math.abs(b.y1-b.y0))}
   if(B.mark&&B.mark.t>0){const m=B.mark;ctx.strokeStyle=m.foe?'#ff6a5a':'#e8b94a';ctx.globalAlpha=Math.min(1,m.t*2);ctx.beginPath();ctx.ellipse(m.x,m.y,8*(1.4-m.t*.5),4*(1.4-m.t*.5),0,0,7);ctx.stroke();ctx.globalAlpha=1;m.t-=1/60}
@@ -151,7 +164,7 @@ function drawBattle(){
   for(const a of B.arrows){if(a.arc){const z=Math.max(0,a.z),ang=Math.atan2(a.vy-a.vz,a.vx),sc=Math.min(1,z/50);
       ctx.fillStyle='rgba(0,0,0,'+(.35-sc*.2).toFixed(2)+')';ctx.fillRect(Math.round(a.x-2),Math.round(a.y),4,1);
       ctx.save();ctx.translate(Math.round(a.x),Math.round(a.y-4-z));ctx.rotate(ang);ctx.fillStyle='#e8e4d0';ctx.fillRect(-4,0,7,1);ctx.fillStyle='#c9ced8';ctx.fillRect(3,0,2,1);ctx.fillStyle='#d8d0c0';ctx.fillRect(-5,-1,2,1);ctx.fillRect(-5,1,2,1);ctx.restore();continue}
-    if(a.magic){const fl=Math.floor(performance.now()/80)%2;ctx.fillStyle=a.col;ctx.globalAlpha=.35;ctx.beginPath();ctx.arc(a.x,a.y,5+fl,0,7);ctx.fill();ctx.globalAlpha=1;ctx.beginPath();ctx.arc(a.x,a.y,2.5,0,7);ctx.fill();ctx.fillStyle='#fff';ctx.fillRect(Math.round(a.x)-1,Math.round(a.y)-1,2,2);continue}ctx.save();ctx.translate(Math.round(a.x),Math.round(a.y));ctx.rotate(a.a);ctx.fillStyle='#e8e4d0';ctx.fillRect(-4,0,7,1);ctx.fillStyle='#c9ced8';ctx.fillRect(3,0,2,1);ctx.restore()}
+    if(a.magic){if(Math.random()<.6)vfx({k:'ember',x:a.x+rnd(-2,2),y:a.y+rnd(-2,2),vx:rnd(-12,12),vy:rnd(-12,6),life:rnd(.2,.4),col:a.col});const fl=Math.floor(performance.now()/80)%2;ctx.fillStyle=a.col;ctx.globalAlpha=.35;ctx.beginPath();ctx.arc(a.x,a.y,5+fl,0,7);ctx.fill();ctx.globalAlpha=1;ctx.beginPath();ctx.arc(a.x,a.y,2.5,0,7);ctx.fill();ctx.fillStyle='#fff';ctx.fillRect(Math.round(a.x)-1,Math.round(a.y)-1,2,2);continue}ctx.save();ctx.translate(Math.round(a.x),Math.round(a.y));ctx.rotate(a.a);ctx.fillStyle='#e8e4d0';ctx.fillRect(-4,0,7,1);ctx.fillStyle='#c9ced8';ctx.fillRect(3,0,2,1);ctx.restore()}
   const h=B.hero;
   if(h&&h.hp>0){
     if(B.blocking){ctx.strokeStyle='#9fc0ff';ctx.lineWidth=3;ctx.beginPath();ctx.arc(h.x,h.y-6,13,B.aim-.9,B.aim+.9);ctx.stroke()}
@@ -161,18 +174,20 @@ function drawBattle(){
   for(const r of B.rings){const p=1-r.life/r.max;ctx.strokeStyle='rgba('+r.col+','+(r.life/r.max).toFixed(2)+')';ctx.lineWidth=3;ctx.beginPath();ctx.arc(r.x,r.y,r.r*(.5+.5*p),0,6.283);ctx.stroke()}
   for(const p of B.parts){if(p.stuck){const x=Math.round(p.x),y=Math.round(p.y);ctx.globalAlpha=Math.min(1,p.life*2);ctx.fillStyle='#c9b48a';ctx.fillRect(x-p.stuck,y-3,1,2);ctx.fillRect(x-2*p.stuck,y-5,1,2);ctx.fillStyle='#e8e4d0';ctx.fillRect(x-3*p.stuck,y-6,1,1);ctx.globalAlpha=1;continue}
     ctx.fillStyle=p.c;ctx.fillRect(Math.round(p.x),Math.round(p.y),2,2)}
-  for(const f of B.floats)txt(f.t,Math.round(f.x),Math.round(f.y),f.c,'center');
+  vfxAir();// (sparks, glows, embers, flying blood: vfx.js)
+  // (a number pops up big and settles)
+  for(const f of B.floats){const a=f.age||0,k=a<.12?1+(1-a/.12)*.6:1;if(k===1){txt(f.t,Math.round(f.x),Math.round(f.y),f.c,'center');continue}ctx.save();ctx.translate(Math.round(f.x),Math.round(f.y));ctx.scale(k,k);txt(f.t,0,0,f.c,'center');ctx.restore()}
   ctx.restore();
-  drawBanners();// (each group's morale and weaknesses, over it, the same size at any zoom: morale.js)
+  drawUnitIcons();// (each group's type, health, morale and weaknesses, over it, the same size at any zoom: morale.js)
   // the HUD at the screen's scale over the zoomed-out field
-  ctx.save();ctx.scale(BW/VW,BH/VH);
+  ctx.save();ctx.scale(BVW/VW,BVH/VH);
   drawHeroHud();drawMiniField();// (the small map of the field, top right: camera.js)
   if(B.over){txt(B.retreat?'WITHDRAWN':B.win?'VICTORY':'DEFEAT',VW/2,VH/2,B.win?'#e8b94a':B.retreat?'#6fa8e0':'#e0605a','center')}
   ctx.restore();
 }
 function frame(){
   {const sc=document.getElementById('screen');if(sc&&sc.dataset.mode!==G.mode){sc.dataset.mode=G.mode;updateHint();hideTip()}}
-  const bat=B&&(G.mode==='battle'||G.mode==='esc'&&G.esc&&G.esc.mode==='battle');setRes(bat?BW:VW,bat?BH:VH);// (a battle: the larger field, zoomed out)
+  const bat=B&&(G.mode==='battle'||G.mode==='esc'&&G.esc&&G.esc.mode==='battle');setRes(bat?BVW:VW,bat?BVH:VH);// (a battle: the field's height, the screen's shape: core.js)
   ctx.save();
   if(G.shake>0)ctx.translate(Math.round((Math.random()-.5)*G.shake),Math.round((Math.random()-.5)*G.shake));
   if(bat)drawBattle();
@@ -182,48 +197,57 @@ function frame(){
   ctx.restore();
 }
 // your party, top left: the day, your level, health, stamina and mana as bars, then what you have; what runs short is red
+// the party card (top left): your hero (portrait, name, level), health, stamina and mana, your band's gold, food, troops, power,
+// morale and pace as icon chips, then where you are and whom you serve; the top bar: the day and the time
 function updateHUD(force){
   stayBanner();const el=$('#stats');if(!el)return;const cnt=partySize(),cap=partyCap(),eat=eatPerDay(),m=vitals(),fd=foodN(),days=Math.floor(fd/Math.max(1,eat));
   const bar=(v,mx,c,lab)=>'<div class="bar" title="'+lab+'"><i style="width:'+Math.max(0,Math.min(100,Math.round(v/mx*100)))+'%;background:'+c+'"></i><em'+(v<mx*.3?' class="low"':'')+'>'+lab+' '+Math.round(v)+'/'+mx+'</em></div>';
-  const st=(lab,val,warn,cls,title,wide)=>'<div class="stat'+(wide?' wide':'')+(warn?' warn':'')+'"'+(title?' title="'+title+'"':'')+'><b>'+lab+'</b><span'+(cls?' class="'+cls+'"':'')+'>'+val+'</span></div>';
-  const frost=climAt(P.x,P.y)==='frost'&&!RACES[P.race].home.includes('frost'),furNeed=Math.ceil((cnt+1)/5),lh=landHold(P.x,P.y);
-  el.innerHTML='<div class="head"><span>Day '+G.day+' · '+timeOfDay()+(G.paused?' · paused':'')+'</span><span class="lv">Lv '+P.level+(P.tp?' <span class="gold">+'+P.tp+'</span>':'')+'</span></div>'+
+  const chip=(ic,val,title,warn,cls)=>'<span class="chip'+(warn?' warn':'')+'" title="'+title+'">'+icon(ic,14)+'<span'+(cls?' class="'+cls+'"':'')+'>'+val+'</span></span>';
+  const frost=climAt(P.x,P.y)==='frost'&&!RACES[P.race].home.includes('frost'),furNeed=Math.ceil((cnt+1)/5),lh=landHold(P.x,P.y),sp=bandPace();
+  el.innerHTML='<div class="pc-head"><img class="pc-pic" src="'+portrait('hero',true)+'" alt=""><div class="pc-who"><b>'+RACES[P.race].n+' '+(BGS[P.bg]?BGS[P.bg].n:'')+'</b><small>Level '+P.level+' · '+rankName()+'</small></div>'+
+      (P.tp?'<span class="pc-pts" title="Talent points to spend (K)">+'+P.tp+'</span>':'')+'</div>'+
     '<div class="bars" title="Health · Stamina · Mana">'+bar(P.hp,m[0],'#c8503a','Health')+bar(P.sp,m[1],'#78c474','Stamina')+bar(P.mp,m[2],'#5a8fe8','Mana')+'</div>'+
-    st('Gold',P.gold,false,'gold')+
-    st('Food',fd,days<2,'',FOODS.filter(g=>goodN(g)).map(g=>GOODS[g].n+' '+goodN(g)).join(', ')+' · about '+days+' days')+
-    st('Troops',cnt+'/'+cap)+
-    st('Power',partyPower(),false,'gold')+
-    st('Morale',Math.round(P.morale),P.morale<30)+
-    (()=>{const sp=bandPace();return st('Speed',sp.toFixed(1)+'×',sp<.8,'','Your band\u2019s pace before the ground: the slowest of you, its size, the wounded, mounts, Athletics or Riding, a Guide, Forced March')})()+
-    (frost||goodN('furs')?st('Furs',goodN('furs')+(frost?' of '+furNeed+' needed':''),frost&&goodN('furs')<furNeed,'','','true'):'')+(prisonerCount()?st('Prisoners',prisonerCount(),false,'','',true):'')+(woundedN()?st('Wounded',woundedN()+' riding with you, healing',false,'bad','',true):'')+
-    st('Region','<span>'+regionAt(P.x,P.y).name+'</span> · <span style="color:'+(lh?landCol(lh.owner):'#9a958a')+'">'+landName(P.x,P.y)+'</span>',false,'','',true)+
-    st('Renown · Serving',P.renown+' '+rankName()+' · <span'+(P.fac?' style="color:'+FACS[P.fac].col+'"':'')+'>'+(P.fac?FACS[P.fac].n:'Independent')+'</span>',false,'','',true);
+    '<div class="pc-res">'+chip('gold',P.gold,'Gold',false,'gold')+chip('food',fd+'<small> '+days+'d</small>','Food: '+(FOODS.filter(g=>goodN(g)).map(g=>GOODS[g].n+' '+goodN(g)).join(', ')||'none')+' · about '+days+' days',days<2)+
+      chip('troops',cnt+'<small>/'+cap+'</small>','Troops: '+cnt+' of '+cap)+chip('power',partyPower(),'Party power','', 'gold')+chip('morale',Math.round(P.morale),'Morale'+(bandNerve()!=null?' (your troops\u2019 nerve: '+Math.round(bandNerve())+', it drifts toward it)':''),P.morale<30)+
+      chip('speed',sp.toFixed(1)+'×','Your band\u2019s pace before the ground: the slowest of you, its size, the wounded, mounts, Athletics or Riding, a Guide, Forced March',sp<.8)+
+      (frost||goodN('furs')?chip('furs',goodN('furs')+(frost?'<small>/'+furNeed+'</small>':''),'Furs'+(frost?': '+furNeed+' needed in the frost':''),frost&&goodN('furs')<furNeed):'')+
+      (prisonerCount()?chip('prisoners',prisonerCount(),'Prisoners'):'')+(woundedN()?chip('wounded',woundedN(),'Wounded, riding with you while they heal',true):'')+'</div>'+
+    '<div class="pc-line" title="Where you are">'+icon('region',12)+'<span>'+regionAt(P.x,P.y).name+' · <span style="color:'+(lh?landCol(lh.owner):'#9a958a')+'">'+landName(P.x,P.y)+'</span></span></div>'+
+    '<div class="pc-line" title="Renown and whom you serve">'+icon('renown',12)+'<span>'+P.renown+'</span>'+icon('banner',12)+'<span'+(P.fac?' style="color:'+FACS[P.fac].col+'"':'')+'>'+(P.fac?FACS[P.fac].n:'Independent')+'</span></div>';
+  const d=$('#wday');if(d)d.innerHTML=icon(darkness()>.3?'moon':'sun',16)+'<span>Day '+G.day+' · '+timeOfDay()+'</span><b'+(G.paused?'':' class="off"')+'>Paused</b>';
 }
 // a short hint at the top of the screen for where you are (H shows every control)
 function updateHint(){
-  const h=$('#hint');if(!h)return;
-  h.textContent=G.mode==='scene'?'WASD or click to walk · E talk · out of the gate to leave · H help':G.mode==='battle'?'Click or drag to select · right-click: move or attack · 1-4 groups, 5 all · Z X C V orders · Space pause · [ ] speed':'Click to travel · hover for details · Space pause · H help';
+  const h=$('#hint');if(!h)return;h.hidden=!GUIDE.on;// (guide texts off: no hint: ui.js)
+  h.textContent=G.mode==='scene'?'WASD or click to walk · E talk · out of the gate to leave · H help':G.mode==='battle'?'':'Click to travel · hover for details · Space pause · H help';
 }
+// (a group holding: standing in its places, sent nowhere and set on no one. 'hold' is also the order a move gives, its men going
+// to their new places, so the order alone would light Hold on nearly always)
+function holding(g){const gr=B.groups[g],m=grpUnits(g);return !!gr&&gr.order==='hold'&&!gr.tgt&&!(gr.queue&&gr.queue.length)&&m.length>0&&m.filter(u=>u.slotted&&!u.spdNow).length>=m.length*.6}
 function setOrderUI(){
   if(!B)return;const gs=selGroups().filter(g=>grpUnits(g).length),src=gs.length?gs:selGroups();
-  document.querySelectorAll('[data-order]').forEach(b=>b.classList.toggle('on',src.every(g=>B.groups[g].order===b.dataset.order)));
+  document.querySelectorAll('[data-order]').forEach(b=>{const o=b.dataset.order;b.classList.toggle('on',o==='charge'?src.every(g=>!walking(B.groups[g])):o==='advance'?src.every(g=>walking(B.groups[g])):o==='hold'?src.every(holding):src.every(g=>B.groups[g].order===o))});
   // the formation buttons: lit when every selected group it suits stands in it; dimmed when it suits none of them
   document.querySelectorAll('[data-form]').forEach(b=>{const f=b.dataset.form,fit=src.filter(g=>formFits(g,f)),on=fit.length>0&&fit.every(g=>B.groups[g].form===f);b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on));b.disabled=!fit.length});
-  document.querySelectorAll('[data-flag]').forEach(b=>{const on=src.every(g=>B.groups[g][b.dataset.flag]);b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on))});
+  // (a shooters' flag dimmed when none of the selection shoots; lit when every one of them that does has it)
+  document.querySelectorAll('[data-flag]').forEach(b=>{const f=b.dataset.flag,sh=SHOOT_FLAGS.includes(f),l=sh?src.filter(g=>grpUnits(g).some(u=>u.s.range)):src,on=l.length>0&&l.every(g=>B.groups[g][f]);b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on));b.disabled=sh&&!l.length});
   // unit cards, the selected unit's details and the top bar (battlehud.js)
   document.querySelectorAll('[data-grp]').forEach(b=>bhudCard(b,b.dataset.grp));bhudInfo();bhudTop();
 }
-// an order to the selected groups: hold, follow, charge, advance; halt (hold where they stand), withdraw (flee the battle: off your edge,
-// to the withdrawal point, striking no one: once all have withdrawn the battle ends as your retreat, morale.js). Any order calls off a target and the waypoints
+// an order to the selected groups: hold (where they stand), charge, advance, withdraw (flee the battle: off your edge,
+// straight back off your edge, striking no one: once all have withdrawn the battle ends as your retreat, morale.js). Any order calls off a target and the waypoints
 function setOrder(o){
   if(!B)return;takeCommand();
-  for(const g of selGroups()){const gr=B.groups[g];gr.tgt=null;gr.queue=[];
-    if(o==='charge')breakWall(g);if(o==='halt'){regroup(g);gr.order='hold'}else if(o==='withdraw'){regroup(g);gr.order='withdraw';gr.ax=B.exit?B.exit.x:MARCH.edge;if(B.exit)gr.ay=B.exit.y}else{if(o==='hold'||o==='advance')regroup(g);gr.order=o}}
+  // (Charge and Advance set the pace, run or walk, and nothing else: where they go and whom they fight stay as they were)
+  if(o==='charge'||o==='advance'){for(const g of selGroups())B.groups[g].setWalk(o==='advance');setOrderUI();log(selLabel()+': '+(o==='charge'?'at a run.':'at a walk.'));return}
+  // (hold: where they stand; withdraw: off your edge (battlecontrol.js); the others are pace: above)
+  for(const g of selGroups()){const gr=B.groups[g];if(o==='withdraw')gr.withdraw();else if(o==='hold')gr.hold();else if(o==='advance')gr.advance()}
   setOrderUI();log(selLabel()+': '+o+'.');
 }
-// a group's flag on or off for the selection: walk, firm (hold ground), fire (fire at will), skirmish
-const FLAG_N={walk:['walk','run'],firm:['hold their ground','fight freely'],fire:['fire at will','hold fire'],skirmish:['skirmish','stand']};
-function toggleFlag(f){if(!B)return;const gs=selGroups().filter(g=>grpUnits(g).length);if(!gs.length)return;const on=!gs.every(g=>B.groups[g][f]);gs.forEach(g=>B.groups[g][f]=on);setOrderUI();log(selLabel()+': '+FLAG_N[f][on?0:1]+'.')}
+// a group's flag on or off for the selection: walk, firm (hold ground), cease (cease fire), skirmish, melee (shooters' blades)
+const SHOOT_FLAGS=['melee','cease','skirmish'];
+const FLAG_N={walk:['walk','run'],firm:['hold their ground','fight freely'],cease:['cease fire','fire at will'],skirmish:['skirmish','stand'],melee:['melee mode on: they fight whoever reaches them','melee mode off: they keep shooting, point blank']};
+function toggleFlag(f){if(!B)return;const gs=selGroups().filter(g=>grpUnits(g).length&&(!SHOOT_FLAGS.includes(f)||grpUnits(g).some(u=>u.s.range)));/* (melee mode, cease fire, skirmish: shooters' only) */if(!gs.length)return;const on=!gs.every(g=>B.groups[g][f]);gs.forEach(g=>B.groups[g].setFlag(f,on));setOrderUI();log(selLabel()+': '+FLAG_N[f][on?0:1]+'.')}
 // control groups: Ctrl+6-9 keeps the selection under that key, 6-9 picks it again
 function ctrlGroup(k,save){if(!B)return;B.ctrl=B.ctrl||{};if(save){B.ctrl[k]=B.sel==='all'?'all':selGroups().slice();log('Group '+k+': '+selLabel()+'.');return}
   const c=B.ctrl[k];if(!c)return;const gs=c==='all'?'all':c.filter(g=>grpUnits(g).length);if(gs!=='all'&&!gs.length)return;B.sel=gs==='all'?'all':gs.length===1?gs[0]:gs;setOrderUI()}
@@ -232,4 +256,5 @@ const setSpread=()=>setForm('loose');
 function selectGroup(g){if(!B)return;if(g!=='all'&&!grpUnits(g).length)return;B.sel=g;setOrderUI()}
 function cycleGroup(){if(!B)return;const opts=['all',...GRPS.filter(g=>grpUnits(g).length)];B.sel=opts[(opts.indexOf(B.sel)+1)%opts.length];setOrderUI()}
 function setSpeed(n){G.speed=n;document.querySelectorAll('[data-speed]').forEach(b=>b.classList.toggle('on',+b.dataset.speed===n))}
-function togglePause(){G.paused=!G.paused;$('#pause').textContent=G.paused?'Play':'Pause';$('#pause').classList.toggle('on',G.paused);updateHUD(true)}
+function pauseUI(){const b=$('#pause');if(!b)return;b.innerHTML=icon(G.paused?'play':'pause',14);b.setAttribute('aria-label',G.paused?'Play':'Pause');b.classList.toggle('on',!!G.paused)}
+function togglePause(){G.paused=!G.paused;pauseUI();updateHUD(true)}

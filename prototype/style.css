@@ -1,317 +1,547 @@
-/* reset */
-:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}
-/* Layout: one framed game screen with a status strip above it, log and battle controls below, and modal panels laid over the screen. Single committed dark look, like a handheld at night. */
+/* =====================================================================================================================
+   Ashmark: the interface
+   One game screen fills the window (the canvas, core.js fitScreen); the HUD lies over it, pinned to the window's edges and
+   clear of a phone's notch (safe areas); windows (the panel) lie over all of it.
+     1. tokens         colours, type, spacing, radii, tap size, the HUD's edge
+     2. base           reset, body, the screen, links and focus
+     3. primitives     buttons, cards, tabs, labels, bars, chips, rows
+     4. windows        the overlay and the panel: one size, a fixed title row and action row, the content scrolls
+     5. menus          the title screen, the pause menu, save slots
+     6. world HUD      party card (top left), day bar (top middle), dock (bottom right), messages (bottom left), tooltip
+     7. battle HUD     balance of power, time, the selected unit, orders over the unit cards
+     8. screens        inventory, talents, recruiting and unit cards, companions, troop cards, help and log
+     9. responsive     compact screens (phones, small windows), touch pointers, phones held upright
+   ===================================================================================================================== */
+
+/* ---------- 1. tokens ---------- */
 :root{
-  --bg:#12141c; --screen:#0b0d14; --panel:#1a1e2b; --panel-2:#262c47; --line:#3a4263; --shade:#080a10;
-  --fg:#e4e0cf; --muted:#98a0ba; --accent:#e8b94a; --danger:#e0605a; --good:#78c474; --blue:#5a8fe8;
-  --display:"VT323","Courier New",monospace; --label:"Silkscreen","Courier New",monospace;
+  /* surfaces: the void behind the map, then panels from lowest to highest */
+  --void:#07090e; --screen:#0b0d14; --bg:#10131c;
+  --panel:#161a26; --panel-2:#1f2536; --panel-3:#29304a;
+  --glass:rgba(14,17,26,.88); --glass-hi:rgba(22,26,40,.94);
+  /* lines: hairlines, raised edges, and the gold trim of the HUD's frames */
+  --line:#2f3651; --line-2:#444d72; --shade:#05070b; --trim:#7d6532; --trim-hi:#c9a24e;
+  /* text and meaning */
+  --fg:#ece6d3; --fg-2:#c4c3c4; --muted:#929ab3; --faint:#69708a;
+  --accent:#e8b94a; --accent-ink:#1d1606; --danger:#e0605a; --good:#78c474; --blue:#5a8fe8;
+  /* type: Arial first, the system's sans after it */
+  --font:Arial,"Helvetica Neue",Helvetica,"Segoe UI",Roboto,system-ui,sans-serif;
+  --display:var(--font); --label:var(--font);
+  --fs-2xs:10px; --fs-xs:11px; --fs-sm:12px; --fs-md:13px; --fs-base:14px; --fs-lg:16px; --fs-xl:19px; --fs-2xl:24px; --fs-hero:48px;
+  /* spacing, radii, depth */
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:24px;
+  --r-sm:3px; --r-md:6px; --r-lg:10px;
+  --lift:0 2px 0 var(--shade); --float:0 8px 24px rgba(0,0,0,.45); --deep:0 24px 64px rgba(0,0,0,.6);
+  /* touch: the smallest thing you can press (44 on a touch screen: section 9) */
+  --tap:32px;
+  /* the HUD's distance from the window's edges, clear of a notch or a home bar */
+  --edge:10px;
+  --sa-t:env(safe-area-inset-top,0px); --sa-r:env(safe-area-inset-right,0px); --sa-b:env(safe-area-inset-bottom,0px); --sa-l:env(safe-area-inset-left,0px);
+  --e-t:calc(var(--edge) + var(--sa-t)); --e-r:calc(var(--edge) + var(--sa-r)); --e-b:calc(var(--edge) + var(--sa-b)); --e-l:calc(var(--edge) + var(--sa-l));
   color-scheme:dark;
 }
-*{box-sizing:border-box}
-/* VT323 runs small for its size and has no bold: scale it to a .5 x-height and never fake a bold (labels keep their own size) */
-body{background:var(--bg);color:var(--fg);font-family:var(--display);font-size-adjust:.5;font-synthesis:none;font-size:16px;line-height:1.4;padding-inline:16px;padding-block:16px}
-.wrap{max-width:1600px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
-/* the HUD never reflows: brand, a fixed grid of the same stats every time, then the controls */
-.hud{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px 20px;align-items:center;background:var(--panel);border:2px solid var(--line);padding:8px 12px}
-.brand{display:flex;flex-direction:column;min-width:0}
-.brand h1{margin:0;font-size:26px;line-height:1;font-weight:600;letter-spacing:.04em;color:var(--accent);text-transform:uppercase}
-.brand .tag{font-family:var(--label);font-size-adjust:none;font-size:9px;letter-spacing:.14em;color:var(--muted);text-transform:uppercase;margin-top:4px}
-.stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:6px 14px;min-width:0}
-.stat{min-width:0}
-.stat.wide{grid-column:span 2}
-.stat span{display:block;overflow:hidden;text-overflow:ellipsis}
-.stat{display:flex;flex-direction:column;min-width:0}
-.stat b{font-family:var(--label);font-size-adjust:none;font-size:9px;letter-spacing:.14em;color:var(--muted);text-transform:uppercase;font-weight:400}
-.stat span{font-size:18px;font-variant-numeric:tabular-nums;white-space:nowrap}
-.stat span.low{color:var(--danger)}
-.ctrls{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;max-width:360px}
-@media (max-width:900px){.hud{grid-template-columns:minmax(0,1fr)}.ctrls{justify-content:flex-start;max-width:none}}
-.btn{font-family:var(--display);font-weight:600;font-size:15px;color:var(--fg);background:var(--panel-2);border:2px solid var(--line);padding:6px 12px;cursor:pointer;box-shadow:0 3px 0 var(--shade);min-height:36px}
+
+/* ---------- 2. base ---------- */
+*,*::before,*::after{box-sizing:border-box}
+[hidden]:not([hidden=until-found i]){display:none!important}
+html,body{height:100%}
+body{margin:0;padding:0;overflow:hidden;background:var(--void);color:var(--fg);font-family:var(--font);font-size:var(--fs-base);line-height:1.4;
+  -webkit-font-smoothing:antialiased;-webkit-text-size-adjust:100%;text-size-adjust:100%;-webkit-tap-highlight-color:transparent}
+img{max-width:100%}
+button,select,input,textarea{font-family:inherit;font-size:inherit;color:inherit}
+button{touch-action:manipulation}
+b,strong{font-weight:700}
+kbd{font-family:var(--font)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.good{color:var(--good)}.bad{color:var(--danger)}.gold{color:var(--accent)}
+.muted,.panel .muted{color:var(--muted)}
+@keyframes blink{50%{opacity:.35}}
+@keyframes rise{from{transform:translateY(8px)}to{transform:none}}
+
+/* the game: the stage is the window; the screen fills it; the canvas fills the screen at a whole-number scale */
+.stage{position:fixed;inset:0;display:flex;align-items:flex-start;justify-content:flex-start;background:var(--void);overflow:hidden}
+.screen{position:relative;flex:none;overflow:hidden;background:var(--screen)}
+canvas{display:block;image-rendering:pixelated;touch-action:none;cursor:crosshair}
+.hudlayer{position:absolute;inset:0;pointer-events:none;z-index:10;user-select:none;-webkit-user-select:none}
+.hudlayer>*{pointer-events:auto}
+.screen[data-mode="title"] .hudlayer>*{display:none}
+
+/* ---------- 3. primitives ---------- */
+/* buttons: one look, three sizes (.btn, .btn.sm, and the HUD's square ones); gold border on hover, gold text when on */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:var(--tap);padding:6px 14px;
+  font-weight:700;font-size:var(--fs-base);line-height:1.15;color:var(--fg);text-align:center;
+  background:linear-gradient(#2b3350,#1f2539);border:1px solid var(--line-2);border-radius:var(--r-sm);box-shadow:var(--lift),inset 0 1px 0 rgba(255,255,255,.06);cursor:pointer}
 .btn:hover:not(:disabled){border-color:var(--accent);color:#fff}
-.btn:active:not(:disabled){transform:translateY(2px);box-shadow:0 1px 0 var(--shade)}
-.btn:disabled{opacity:.4;cursor:not-allowed}
-.btn:focus-visible,.card:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.btn.primary{background:var(--accent);color:#1a1408;border-color:#f6d27e}
-.btn.sm{padding:4px 10px;font-size:14px;min-height:30px}
-.btn.on{border-color:var(--accent);color:var(--accent)}
-/* the game screen fills the window: as wide as fits, but never taller than the space left beside the HUD and log */
-.screen{position:relative;border:2px solid var(--line);background:var(--screen);width:min(100%,max(560px,calc((100vh - 250px)*1.6)));margin-inline:auto}
-canvas{display:block;width:100%;height:auto;aspect-ratio:8/5;image-rendering:pixelated;touch-action:none;cursor:crosshair}
-.overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:12px;background:rgba(8,10,16,.86);overflow:auto}
+.btn:active:not(:disabled){transform:translateY(1px);box-shadow:0 1px 0 var(--shade)}
+.btn:disabled{opacity:.42;cursor:not-allowed}
+.btn.primary{background:linear-gradient(#f2c862,#d9a535);color:var(--accent-ink);border-color:#f6d27e}
+.btn.primary:hover:not(:disabled){color:#000;border-color:#fff1c4}
+.btn.sm{min-height:28px;padding:3px 10px;font-size:var(--fs-md)}
+.btn.on,.btn[aria-pressed="true"]{border-color:var(--accent);color:var(--accent);background:linear-gradient(#3d3520,#262115)}
+.btns{display:flex;gap:var(--sp-2);flex-wrap:wrap;align-items:center}
+/* the bottom bar (ui.js nav): Back on the left, the way out on the right; nothing else */
+.btns.nav{flex-wrap:nowrap}
+.btns.nav .grow{flex:1}
+
+/* tabs: a row of small buttons, the open one gold */
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+
+/* cards: something to pick (a menu entry, an origin, a slot) */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+.card{display:flex;flex-direction:column;gap:4px;text-align:left;padding:10px 12px;color:var(--fg);
+  background:linear-gradient(var(--panel-3),var(--panel-2));border:1px solid var(--line-2);border-radius:var(--r-md);box-shadow:var(--lift);cursor:pointer}
+.card:hover:not(:disabled){border-color:var(--accent)}
+.card[disabled],.card:disabled{opacity:.5;cursor:not-allowed}
+.card strong{font-size:var(--fs-lg);color:var(--accent)}
+.card span{font-size:var(--fs-md);color:var(--muted)}
+.card.cont{border-color:var(--accent)}
+
+/* labels: small capitals over a group */
+.lab{font-size:var(--fs-xs);font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+.hint{margin:0;font-size:var(--fs-xs);font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+
+/* rows: a list entry, its words and its buttons */
+.row{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--line)}
+.row .info{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.row .info small{color:var(--muted);font-size:var(--fs-md)}
+.row .info small.vs{color:var(--accent);opacity:.85}
+.row .own{font-variant-numeric:tabular-nums;min-width:3ch;text-align:right;color:var(--muted)}
+.row .acts{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.top{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
+.grp{display:flex;gap:4px;flex-wrap:wrap;padding-right:8px;border-right:1px solid var(--line)}
+
+/* bars and chips */
+.bar{height:5px;background:var(--shade);margin-top:4px;max-width:180px;border-radius:3px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent)}
+.chip{display:flex;align-items:center;gap:5px;min-width:0;padding:2px 6px;background:rgba(0,0,0,.32);border:1px solid rgba(68,77,114,.7);border-radius:var(--r-sm);
+  font-size:var(--fs-base);font-weight:700;line-height:1.2;white-space:nowrap;overflow:hidden;font-variant-numeric:tabular-nums}
+.chip small{font-size:var(--fs-xs);font-weight:400;color:var(--muted)}
+.chip.warn{border-color:var(--danger)}.chip.warn>span{color:var(--danger);animation:blink 1s steps(2) infinite}
+.gico{display:inline-block;vertical-align:middle;image-rendering:pixelated;flex:none}
+.stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:6px 14px;min-width:0}
+.stat{display:flex;flex-direction:column;min-width:0}
+.stat.wide{grid-column:span 2}
+.stat b{font-size:var(--fs-2xs);letter-spacing:.09em;color:var(--muted);text-transform:uppercase}
+.stat span{display:block;overflow:hidden;text-overflow:ellipsis;font-size:var(--fs-lg);font-variant-numeric:tabular-nums;white-space:nowrap}
+.stat span.low{color:var(--danger)}
+select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);border-radius:var(--r-sm);font-size:var(--fs-md);padding:2px 4px;margin:2px 2px 0 0}
+
+/* ---------- 4. windows ---------- */
+/* the overlay dims the game; the panel is one size whatever it holds: its title row and its action row stay put, the rest scrolls */
+.overlay{position:absolute;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;
+  padding:calc(12px + var(--sa-t)) calc(12px + var(--sa-r)) calc(12px + var(--sa-b)) calc(12px + var(--sa-l));
+  background:radial-gradient(ellipse at center,rgba(8,10,16,.72),rgba(4,5,9,.9));overflow:auto}
+.panel{width:min(820px,100%);height:min(620px,100%);flex:none;overflow:auto;overscroll-behavior:contain;display:flex;flex-direction:column;gap:12px;padding:18px 20px;
+  background:linear-gradient(180deg,#1a1f2e,var(--panel) 120px);border:1px solid var(--line-2);border-top:2px solid var(--trim);border-radius:var(--r-lg);box-shadow:var(--deep);
+  animation:rise .14s ease-out;scrollbar-width:thin;scrollbar-color:var(--line-2) transparent}
+.panel.wide{width:min(1040px,100%);height:min(720px,100%)}
+.panel > .top:first-child{position:sticky;top:-18px;z-index:1;margin:-18px -20px 0;padding:16px 20px 12px;background:linear-gradient(#1b2030,#181c2a);border-bottom:1px solid var(--line);border-radius:var(--r-lg) var(--r-lg) 0 0}
+.panel > .btns:last-child{position:sticky;bottom:-18px;z-index:1;margin:auto -20px -18px;padding:12px 20px 16px;background:var(--panel);border-top:1px solid var(--line)}
+.panel h2{margin:0;font-size:var(--fs-2xl);line-height:1.15;font-weight:700;color:var(--accent);text-wrap:balance}
+.panel h2.big{font-size:var(--fs-hero);letter-spacing:.14em;text-transform:uppercase;line-height:1}
+.panel h3{margin:0}
+.panel p{margin:0;color:var(--fg);max-width:68ch}
+.log{background:var(--panel);border:1px solid var(--line);padding:8px 12px;min-height:5.2em;font-size:var(--fs-base);display:flex;flex-direction:column;justify-content:flex-end}
+.log div{color:var(--muted)}.log div:last-child{color:var(--fg)}
+
+/* ---------- 5. menus ---------- */
+/* a menu window (the pause menu): as tall as its entries */
+.panel:has(> .menulist){width:min(480px,100%);height:auto;max-height:100%}
+.panel:has(> .menulist) > p{text-align:center;max-width:none}
+/* the title screen: the menu down the left over the world, as in most games; its other pages are ordinary windows */
+.screen[data-mode="title"] .overlay:has(.title){justify-content:flex-start;background:linear-gradient(90deg,rgba(5,7,12,.96) 0,rgba(5,7,12,.88) 34%,rgba(5,7,12,.35) 70%,rgba(5,7,12,.15))}
+.panel:has(> .title){width:min(440px,100%);height:auto;max-height:100%;background:none;border:0;box-shadow:none;border-radius:0;padding:24px 8px 24px calc(4vw + 8px);gap:20px;animation:none}
+.title{text-align:left}
+.title .big{margin-bottom:10px;background:linear-gradient(#ffe39a,#d9a535 60%,#a8741f);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 3px 0 #000)}
+.title p{color:var(--fg-2);max-width:34ch}
+.menulist{display:flex;flex-direction:column;gap:8px;width:100%;max-width:440px;margin:0 auto}
+.panel:has(> .title) .menulist{margin:0}
+.card.menu{flex-direction:row;align-items:center;gap:12px;text-align:left}
+.card.menu .mi{flex:none;width:40px;height:40px;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.3);border:1px solid var(--line);border-radius:var(--r-sm)}
+.card.menu .mt{display:flex;flex-direction:column;gap:2px;min-width:0}
+.card.menu .mt span{font-size:var(--fs-md);color:var(--muted)}
+.panel:has(> .title) .card.menu{background:rgba(22,26,40,.72);border-color:rgba(68,77,114,.6);backdrop-filter:blur(4px)}
+.panel:has(> .title) .card.menu:hover:not(:disabled),.panel:has(> .title) .card.menu:focus-visible{background:linear-gradient(90deg,rgba(232,185,74,.18),rgba(22,26,40,.8));border-color:var(--accent);transform:translateX(3px)}
+.card.menu{transition:transform .12s,background .12s}
+/* new game: the origins */
+.origin-cards{grid-template-columns:repeat(auto-fit,minmax(190px,1fr));align-items:stretch}
+.origin-card{padding:0 0 10px;overflow:hidden;gap:5px}
+.origin-card strong,.origin-card span{margin-inline:10px}
+.origin-card strong{margin-top:3px}
+.origin-art{display:block;width:100%;height:96px;background:#172127;image-rendering:pixelated;border-bottom:1px solid var(--line)}
+.origin-card:hover .origin-art,.origin-card:focus-visible .origin-art{border-bottom-color:var(--accent)}
+/* save slots: a row each, the slot and its delete */
+.slots{display:flex;flex-direction:column;gap:6px;width:100%;max-width:580px;margin:0 auto}
+.slotrow{display:flex;gap:6px;align-items:stretch;width:100%}
+.slotrow .card.slot{flex:1;min-width:0;flex-direction:row;align-items:center;gap:10px;padding:8px 10px}
+.slotrow .card.slot .mi{width:34px;height:34px}
+.slotrow .card.slot .mt{min-width:0;flex:1}
+.slotrow .card.slot .mt span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.slotrow>.btn{align-self:center;min-width:72px}
+.cvform small{display:block;margin-top:3px}
+
+/* ---------- 6. world HUD ---------- */
+/* HUD frames: dark glass, a hairline, a gold top edge */
+.pcard,.wtop,.btop,.binfo{background:var(--glass);border:1px solid var(--line-2);border-top:2px solid var(--trim);border-radius:var(--r-md);box-shadow:var(--float);backdrop-filter:blur(6px)}
+
+/* your party (top left): who you are, health, stamina and mana, what you have, where you are */
+.pcard{position:absolute;left:var(--e-l);top:var(--e-t);width:272px;padding:8px 10px 9px;display:block}
+.pc-head{display:flex;gap:9px;align-items:center;margin-bottom:7px}
+.pc-pic{width:38px;height:38px;flex:none;image-rendering:pixelated;object-fit:contain;background:rgba(0,0,0,.35);border:1px solid var(--line);border-radius:var(--r-sm)}
+.pc-who{flex:1;min-width:0}
+.pc-who b{display:block;font-size:var(--fs-lg);line-height:1.15;color:var(--accent);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pc-who small{display:block;font-size:var(--fs-sm);color:var(--muted)}
+.pc-pts{font-size:var(--fs-xs);font-weight:700;color:var(--accent-ink);background:var(--accent);padding:2px 6px;border-radius:var(--r-sm)}
+.pcard .bars{display:grid;gap:3px;margin:0 0 7px}
+.pcard .bar{position:relative;width:100%;max-width:none;height:14px;margin:0;background:rgba(0,0,0,.55);border:1px solid #000;border-radius:var(--r-sm)}
+.pcard .bar i{display:block;height:100%}
+.pcard .bar em{position:absolute;inset:0;font-style:normal;font-size:var(--fs-xs);font-weight:700;line-height:12px;padding-left:6px;color:#fff;text-shadow:0 1px 1px #000}
+.pcard .bar em.low{color:#ffb0a0;animation:blink 1s steps(2) infinite}
+.pc-res{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;margin-bottom:7px}
+.pc-line{display:flex;align-items:center;gap:5px;font-size:var(--fs-md);line-height:1.45;color:var(--fg-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pc-line .gico+span{margin-right:8px}
+.pcard .stat span span{display:inline}
+.pcard .stat.warn span{color:var(--danger);animation:blink 1s steps(2) infinite}
+
+/* the day bar (top middle): the day and the time, pause and speed; a hint under it */
+.wtop{position:absolute;top:var(--e-t);left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:10px;padding:4px 4px 4px 12px}
+.wday{display:flex;align-items:center;gap:7px;width:220px;font-size:var(--fs-lg);font-weight:700;white-space:nowrap}
+.wday span{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wday b{font-size:var(--fs-2xs);letter-spacing:.09em;text-transform:uppercase;color:var(--accent);animation:blink 1.4s steps(2) infinite}
+.wday b.off{visibility:hidden;animation:none}
+.wtime{display:flex;gap:3px}
+.tbtn{display:inline-flex;align-items:center;justify-content:center;min-width:34px;height:28px;padding:0 7px;font-size:var(--fs-md);font-weight:700;color:var(--fg);
+  background:linear-gradient(#2b3350,#1d2235);border:1px solid var(--line-2);border-radius:var(--r-sm);cursor:pointer}
+.tbtn:hover{border-color:var(--accent)}.tbtn.on{border-color:var(--accent);color:var(--accent);background:linear-gradient(#3d3520,#262115)}
+.hint{position:absolute;top:calc(var(--e-t) + 44px);left:50%;transform:translateX(-50%);max-width:56%;text-align:center;pointer-events:none;
+  color:var(--fg-2);text-shadow:0 1px 2px #000,0 0 6px #000;opacity:.85}
+.hint[hidden]{display:none}
+.staybar{position:absolute;top:calc(var(--e-t) + 44px);left:50%;transform:translateX(-50%);display:flex;gap:10px;align-items:center;max-width:calc(100% - 24px);
+  background:var(--glass-hi);border:1px solid var(--accent);border-radius:var(--r-md);box-shadow:var(--float);padding:5px 6px 5px 12px;font-size:var(--fs-base)}
+.staybar[hidden]{display:none}
+.staybar b{color:var(--accent)}
+
+/* the dock (bottom right): your windows, icon tiles with their keys; under them the game's own (save, full screen, menu) */
+.dock{position:absolute;right:var(--e-r);bottom:var(--e-b);display:flex;flex-direction:column;gap:5px;align-items:flex-end}
+.dockrow{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end}
+.dbtn{position:relative;display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-width:56px;min-height:50px;padding:5px 6px 4px;
+  font-size:var(--fs-sm);font-weight:700;color:var(--fg);background:linear-gradient(rgba(43,51,80,.95),rgba(26,30,46,.95));border:1px solid var(--line-2);border-radius:var(--r-md);box-shadow:var(--lift);cursor:pointer}
+.dbtn:hover{border-color:var(--accent);color:#fff}.dbtn.on{border-color:var(--accent);color:var(--accent)}
+.dbtn .ico{font-size:17px;line-height:1}
+.dbtn .dl{font-size:var(--fs-sm);line-height:1}
+.dbtn kbd{position:absolute;right:3px;top:2px;font-size:9px;font-weight:700;color:var(--faint);background:none;border:0;padding:0}
+.dbtn .badge{background:var(--accent);color:var(--accent-ink);font-size:9px;font-weight:700;padding:1px 4px;border-radius:var(--r-sm)}
+.dockrow.sys .dbtn{flex-direction:row;min-width:40px;min-height:32px;padding:3px 8px}
+.dockrow.sys .dbtn .dl,.dockrow.sys .dbtn kbd{display:none}
+
+/* messages (bottom left): the newest at the bottom, each fading after a few seconds (L opens them all) */
+.toasts{position:absolute;left:var(--e-l);bottom:var(--e-b);width:min(46%,500px);display:flex;flex-direction:column;gap:3px;pointer-events:none}
+.toasts div{background:rgba(10,12,18,.82);border-left:3px solid var(--line-2);border-radius:0 var(--r-sm) var(--r-sm) 0;padding:4px 10px;font-size:var(--fs-md);line-height:1.3;color:var(--fg);transition:opacity .8s;text-shadow:0 1px 0 #000}
+.toasts div.good{border-left-color:var(--good)}.toasts div.bad{border-left-color:var(--danger)}.toasts div.gold{border-left-color:var(--accent)}
+.toasts div.gone{opacity:0}
+
+/* the tooltip by the pointer: what that is, and what a click does */
+.tip{position:absolute;z-index:15;max-width:280px;padding:7px 10px;font-size:var(--fs-md);line-height:1.35;pointer-events:none;
+  background:rgba(10,12,18,.96);border:1px solid var(--line-2);border-radius:var(--r-md);box-shadow:var(--float)}
+.tip[hidden]{display:none}
+.tip b{display:block;font-size:var(--fs-base);color:var(--accent)}
+.tip small{display:block;color:var(--muted)}
+.tip .act{color:var(--good)}
+
+/* what shows where: a battle shows its own HUD; a walk through a town has no time controls */
+.screen[data-mode="battle"] .pcard,.screen[data-mode="battle"] .hint,.screen[data-mode="battle"] .wtop,.screen[data-mode="battle"] .dock{display:none}
+.screen[data-mode="battle"] .toasts{bottom:auto;top:var(--e-t);width:min(28%,340px)}
+.screen[data-mode="scene"] .wtop [data-speed]{display:none}
+
+/* ---------- 7. battle HUD ---------- */
+.bhud{position:absolute;inset:0;pointer-events:none}
+.bhud[hidden]{display:none}
+.bhud>*{pointer-events:auto}
+.bhud .mico,.oico{display:inline-block;vertical-align:middle;image-rendering:pixelated}
+.bhud .ficon{display:inline-block;vertical-align:middle;color:currentColor}
+/* the balance of power (top middle) */
+.btop{position:absolute;top:var(--e-t);left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:3px;width:440px;max-width:44%;padding:5px 12px 6px}
+.bpow{display:flex;align-items:center;gap:8px;width:100%}
+.bside{display:flex;align-items:baseline;gap:5px;font-size:var(--fs-2xs);font-weight:700;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap}
+.bside.me{color:#9fc0ff}.bside.foe{color:#ff9a90}
+.bside b{font-size:var(--fs-xl);letter-spacing:0;color:#fff;line-height:1}
+.bpowbar{flex:1;height:10px;background:linear-gradient(#e0605a,#a8322e);border:1px solid #000;border-radius:5px;overflow:hidden}
+.bpowbar i{display:block;height:100%;width:50%;background:linear-gradient(#8fc0f0,#3d74d6);border-right:2px solid #fff;transition:width .4s}
+.bfield{display:flex;justify-content:center;gap:10px;width:100%;font-size:var(--fs-2xs);font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);white-space:nowrap;overflow:hidden}
+.bfield #bStatus{color:var(--accent);overflow:hidden;text-overflow:ellipsis}
+.bfield.alert #bStatus{animation:blink 1.4s steps(2) infinite}
+/* time and switches (top right) */
+.btime{position:absolute;top:var(--e-t);right:var(--e-r);display:flex;gap:3px;padding:3px;background:var(--glass);border:1px solid var(--line-2);border-radius:var(--r-md);box-shadow:var(--float)}
+.btime .btn{min-height:26px;padding:1px 8px;font-size:var(--fs-sm)}
+/* the selected unit (bottom left) */
+.binfo{position:absolute;left:var(--e-l);bottom:var(--e-b);width:240px;height:214px;overflow:hidden;align-content:start;display:grid;gap:4px;padding:8px 9px;font-size:var(--fs-md)}
+.binfo small{display:block;color:var(--muted);font-size:var(--fs-sm);line-height:1.25}
+.bi-head{display:flex;gap:8px;align-items:center}
+.bi-pic{width:44px;height:44px;image-rendering:pixelated;object-fit:contain;background:rgba(0,0,0,.35);border:1px solid var(--line);border-radius:var(--r-sm)}
+.bi-title{font-size:var(--fs-lg);font-weight:700;color:var(--accent);line-height:1.15}
+.bi-bar{position:relative;height:14px;background:rgba(0,0,0,.55);border:1px solid #000;border-radius:var(--r-sm);overflow:hidden}
+.bi-bar i{display:block;height:100%}
+.bi-bar.hp i{background:#5aa056}.bi-bar.sp i{background:#9a8a3a}.bi-bar.mp i{background:#4a6ac8}.bi-bar.mo i{background:#3d74d6}.bi-bar.mo i.low{background:#c8782a}
+.bi-bar.st i{background:#a8903a}.bi-bar.st i.low{background:#b8602a}
+.bi-bar em{position:absolute;inset:0;font-style:normal;font-size:var(--fs-xs);font-weight:700;line-height:12px;padding-left:6px;color:#fff;text-shadow:0 1px 1px #000}
+.bi-weak{display:flex;flex-wrap:wrap;gap:2px 8px;font-size:var(--fs-sm);color:#ffb04a}
+.bi-weak span{display:inline-flex;align-items:center;gap:3px}
+.bi-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:3px;text-align:center}
+.bi-stats span{background:rgba(0,0,0,.3);border:1px solid rgba(68,77,114,.6);border-radius:var(--r-sm);padding:2px 0;font-size:var(--fs-base);font-weight:700}
+.bi-stats b{display:block;font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.bi-row{display:grid;grid-template-columns:20px 1fr 52px 12px;gap:5px;align-items:center}
+.bi-mini{width:20px;height:20px;image-rendering:pixelated;object-fit:contain}
+.bi-row .ub{height:4px;background:var(--shade);border-radius:2px;overflow:hidden}
+.bi-row .ub i{display:block;height:100%;background:#78c474}
+/* the orders over the unit cards (bottom middle) */
+.bcmd{position:absolute;left:50%;transform:translateX(-50%);bottom:var(--e-b);width:max-content;display:flex;flex-direction:column;align-items:center;gap:6px;max-width:calc(100% - 540px)}
+.borders{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;padding:4px;background:var(--glass);border:1px solid var(--line-2);border-radius:var(--r-md);box-shadow:var(--float)}
+.ogrp{display:flex;gap:3px}
+.ogrp+.ogrp{border-left:1px solid var(--line);padding-left:6px}
+.obtn{position:relative;width:36px;height:34px;display:inline-flex;align-items:center;justify-content:center;padding:0;color:#d8d2bc;cursor:pointer;
+  background:linear-gradient(#2b3350,#1a1e2c);border:1px solid var(--line-2);border-radius:var(--r-sm)}
+.obtn:hover{border-color:var(--accent);color:#fff}
+.obtn.on{border-color:var(--accent);color:var(--accent);background:linear-gradient(#433b20,#241f12)}
+.obtn:disabled{opacity:.3;cursor:not-allowed}
+.obtn .k{position:absolute;right:2px;bottom:1px;font-size:8px;font-weight:700;color:var(--faint);line-height:1}
+.bcards{display:flex;gap:5px;align-items:flex-end}
+.ucard{position:relative;display:block;width:84px;height:86px;padding:0;overflow:hidden;color:var(--fg);cursor:pointer;
+  background:linear-gradient(#2b3350,#141824);border:1px solid var(--line-2);border-radius:var(--r-md);transition:transform .1s}
+.ucard.all{width:56px;height:62px}
+.ucard:hover{border-color:#9a8a5a}
+.ucard.on{border-color:#ffd25a;box-shadow:0 0 0 1px #ffd25a,0 0 12px rgba(255,210,90,.5);transform:translateY(-3px)}
+.ucard:disabled{opacity:.3;cursor:default;transform:none}
+.ucard .upic{position:absolute;left:50%;top:10px;transform:translateX(-50%);width:44px;height:44px;image-rendering:pixelated;object-fit:contain;pointer-events:none}
+.ucard .uall{position:absolute;left:0;right:0;top:16px;text-align:center;font-size:var(--fs-xs);font-weight:700;letter-spacing:.06em;color:var(--accent)}
+.ucard .ukey{position:absolute;left:4px;top:3px;font-size:9px;font-weight:700;color:var(--faint)}
+.ucard .cn{position:absolute;left:2px;right:2px;bottom:17px;font-size:var(--fs-sm);font-weight:700;line-height:1;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 1px #000}
+.ucard.all .cn{bottom:17px;font-size:var(--fs-xs)}
+.ucard .utop{position:absolute;right:3px;top:2px;display:flex;flex-direction:column;align-items:flex-end;gap:1px;color:var(--accent);font-size:var(--fs-2xs);font-weight:700}
+.ucard .csh{font-size:var(--fs-2xs);color:var(--muted);line-height:1}
+.ucard .cmi{position:absolute;left:3px;top:13px;display:flex;flex-direction:column;gap:1px}
+.ucard .cmi .mico{width:11px;height:11px}
+.ucard .ubars{position:absolute;left:4px;right:4px;bottom:4px;display:grid;gap:1px}
+.ucard .ub{display:block;height:3px;background:rgba(0,0,0,.6);border-radius:2px;overflow:hidden}
+.ucard .chp{display:block;height:100%;background:#78c474}
+.ucard .cmo{display:block;height:100%;background:#6fa8e0}.ucard .cmo.low{background:#ffb04a}
+.ucard .cst{display:block;height:100%;background:#d8b84a}.ucard .cst.low{background:#c8703a}
+.ucard .cf{display:none}
+.ucard .cf.warn{display:block;position:absolute;left:0;right:0;bottom:30px;font-size:var(--fs-2xs);font-weight:700;text-align:center;color:#ffb04a;text-shadow:0 1px 1px #000}
+/* (a narrower window: the orders move right, beside the selected unit) */
+@media (max-width:1100px){.bcmd{max-width:calc(100% - 280px);left:auto;right:var(--e-r);transform:none;align-items:flex-end}.binfo{width:210px}}
+.slotbar{display:contents}
+
+/* ---------- 8. screens ---------- */
+/* inventory: the body (every slot where it is worn) beside the bag */
 .inv{display:grid;grid-template-columns:270px minmax(0,1fr);gap:14px;align-items:start}
-/* the body: every slot sits where it is worn */
-.doll{position:relative;width:270px;height:436px;background:var(--panel-2);border:2px solid var(--line);box-sizing:border-box}
+.doll{position:relative;width:270px;height:436px;background:var(--panel-2);border:1px solid var(--line-2);border-radius:var(--r-md)}
 .doll .body{position:absolute;left:0;top:0;opacity:.14;pointer-events:none}
 .doll .slot{position:absolute;width:40px;height:40px}
 .doll .slot canvas{width:26px;height:26px}
 .doll .slot.ring{width:24px;height:24px}
 .doll .slot.ring canvas{width:18px;height:18px}
 .doll .slot small{line-height:1;text-align:center}
-.doll .lbl{position:absolute;font-family:var(--label);font-size-adjust:none;font-size:8px;letter-spacing:.1em;color:var(--muted);text-transform:uppercase;pointer-events:none}
-.doll .rule{position:absolute;left:8px;right:8px;top:330px;border-top:2px dashed var(--line)}
-.doll .dstats{position:absolute;left:8px;right:8px;bottom:6px;display:flex;justify-content:space-between;font-size:13px}
+.doll .lbl{position:absolute;font-size:9px;font-weight:700;letter-spacing:.08em;color:var(--muted);text-transform:uppercase;pointer-events:none}
+.doll .rule{position:absolute;left:8px;right:8px;top:330px;border-top:1px dashed var(--line-2)}
+.doll .dstats{position:absolute;left:8px;right:8px;bottom:6px;display:flex;justify-content:space-between;font-size:var(--fs-md)}
+.slot{position:relative;width:44px;height:44px;padding:0;display:grid;place-items:center;color:var(--fg);cursor:pointer;background:var(--shade);border:2px solid var(--rc,var(--line));border-radius:var(--r-sm)}
+.slot.empty{border-style:dashed;border-color:var(--line);opacity:.6}
+.slot.eq{background:var(--panel-3)}
+.slot.ring{width:30px;height:30px}
+.slot.ring canvas{width:22px;height:22px}
+.slot.eq small{font-size:8px;font-weight:700;letter-spacing:.06em;color:var(--muted);text-transform:uppercase}
+.slot.sel{outline:2px solid var(--accent);outline-offset:1px}
+.slot:hover{border-color:var(--accent)}
 .slot.fit{box-shadow:0 0 0 2px #ffe08a;opacity:1}
 .slot.off,.slot.lock{opacity:.3}
 .slot.dim{opacity:.25}
-.invB{display:flex;flex-direction:column;gap:8px;min-width:0}
+.slot canvas{image-rendering:pixelated;width:28px;height:28px}
+.slot .cnt{position:absolute;right:2px;bottom:0;font-size:var(--fs-2xs);font-weight:700;text-shadow:1px 1px 0 #000}
+.invB,.invL{display:flex;flex-direction:column;gap:8px;min-width:0}
 .invtabs{display:flex;gap:4px;align-items:center;flex-wrap:wrap}
 .invtabs .grow{flex:1}
-.invcap{height:6px;background:var(--shade);border:1px solid var(--line)}
+.invcap{height:6px;background:var(--shade);border:1px solid var(--line);border-radius:3px;overflow:hidden}
 .invcap i{display:block;height:100%;background:var(--accent)}
-.invL{display:flex;flex-direction:column;gap:8px;min-width:0}
-.invR{background:var(--panel-2);border:2px solid var(--line);padding:10px;display:flex;flex-direction:column;gap:6px;min-height:120px}
-.invR h3{margin:0;font-size:18px}
-.invR p:not(.lab){font-size:14px}
-.invR p{margin:0}
+.invR{display:flex;flex-direction:column;gap:6px;min-height:120px;padding:10px;background:var(--panel-2);border:1px solid var(--line-2);border-radius:var(--r-md)}
+.invR h3{margin:0;font-size:var(--fs-lg)}
+.invR p{margin:0}.invR p:not(.lab){font-size:var(--fs-md)}
 .eqrow{display:flex;gap:6px}
 .invgrid{display:grid;grid-template-columns:repeat(auto-fill,40px);gap:4px}
 .invgrid .slot{width:40px;height:40px}
 .invgrid .slot canvas{width:26px;height:26px}
-.slot{position:relative;width:44px;height:44px;padding:0;display:grid;place-items:center;background:var(--shade);border:2px solid var(--rc,var(--line));cursor:pointer;color:var(--fg)}
-.slot.empty{border-style:dashed;border-color:var(--line);opacity:.6}
-.slot.eq{background:var(--panel-2)}
-.slot.ring{width:30px;height:30px}
-.slot.ring canvas{width:22px;height:22px}
-.slot.eq small{font-family:var(--label);font-size-adjust:none;font-size:8px;letter-spacing:.08em;color:var(--muted);text-transform:uppercase}
-.slot.sel{outline:2px solid var(--accent);outline-offset:1px}
-.slot:hover{border-color:var(--accent)}
-.slot canvas{image-rendering:pixelated;width:28px;height:28px}
-.slot .cnt{position:absolute;right:2px;bottom:0;font-family:var(--label);font-size-adjust:none;font-size:10px;text-shadow:1px 1px 0 #000}
+/* loot and trade */
 .loot{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:6px}
-.loot-item{font:inherit;color:inherit;text-align:left;cursor:pointer;display:flex;align-items:center;gap:8px;min-width:0;background:var(--panel-2);border:1px solid var(--line);padding:4px 8px 4px 4px}
+.loot-item{display:flex;align-items:center;gap:8px;min-width:0;padding:4px 8px 4px 4px;text-align:left;cursor:pointer;background:var(--panel-2);border:1px solid var(--line);border-radius:var(--r-sm)}
 .loot-item:hover:not(:disabled){border-color:var(--accent)}
 .loot-item:disabled{opacity:.45;cursor:not-allowed}
 .loot-item .slot{width:36px;height:36px;flex:none;cursor:default}
 .loot-item .slot canvas{width:24px;height:24px}
-.loot-item strong{display:block;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.loot-item small{display:block;font-size:12px;color:var(--muted)}
-.loot-stats{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:15px}
+.loot-item strong{display:block;font-size:var(--fs-md);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.loot-item small{display:block;font-size:var(--fs-sm);color:var(--muted)}
+.loot-stats{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:var(--fs-base)}
 .loot-stats > span{display:flex;gap:6px;align-items:baseline}
-.loot-stats b{font-family:var(--label);font-size-adjust:none;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
-.diff{display:flex;flex-wrap:wrap;gap:2px 10px;font-size:14px}
-.cargo{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:14px;color:var(--muted)}
+.loot-stats b{font-size:var(--fs-2xs);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.diff{display:flex;flex-wrap:wrap;gap:2px 10px;font-size:var(--fs-md)}
+.cargo{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:var(--fs-md);color:var(--muted)}
 .cargo b{color:var(--fg)}
-@media (max-width:760px){.inv{grid-template-columns:minmax(0,1fr)}}
-/* every panel is the same fixed size; its title row and its action buttons stay put while the content between them scrolls */
-.panel{width:min(760px,100%);height:min(560px,100%);flex:none;overflow:auto;background:var(--panel);border:2px solid var(--line);box-shadow:0 4px 0 var(--shade);padding:16px;display:flex;flex-direction:column;gap:12px}
-.panel > .top:first-child{position:sticky;top:-16px;z-index:1;background:var(--panel);margin:-16px -16px 0;padding:16px 16px 10px;border-bottom:1px solid var(--line)}
-.panel > .btns:last-child{position:sticky;bottom:-16px;z-index:1;background:var(--panel);margin:auto -16px -16px;padding:10px 16px 16px;border-top:1px solid var(--line)}
-.panel h2{margin:0;font-size:24px;line-height:1.1;font-weight:600;color:var(--accent);text-wrap:balance}
-.panel h2.big{font-size:44px;letter-spacing:.04em;text-transform:uppercase}
-.panel p{margin:0;color:var(--fg);max-width:60ch}
-.panel .muted,.muted{color:var(--muted)}
-.lab{font-family:var(--label);font-size-adjust:none;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
-.row{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line)}
-.row .info{flex:1;min-width:0;display:flex;flex-direction:column}
-.row .info small.vs{color:var(--accent);opacity:.85}
-.row .info small{color:var(--muted);font-size:13px}
-.row .own{font-variant-numeric:tabular-nums;min-width:3ch;text-align:right;color:var(--muted)}
-.row .acts{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
-.tabs{display:flex;gap:6px;flex-wrap:wrap}
-.top{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
-.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}
-.card{text-align:left;font-family:var(--display);color:var(--fg);background:var(--panel-2);border:2px solid var(--line);padding:10px 12px;cursor:pointer;display:flex;flex-direction:column;gap:4px;box-shadow:0 3px 0 var(--shade)}
-.card:hover{border-color:var(--accent)}
-.origin-cards{grid-template-columns:repeat(auto-fit,minmax(190px,1fr));align-items:stretch}
-.origin-card{padding:0 0 10px;overflow:hidden;gap:5px}
-.origin-card strong,.origin-card span{margin-inline:10px}
-.origin-card strong{margin-top:3px}
-.origin-art{display:block;width:100%;height:96px;background:#172127;image-rendering:pixelated;border-bottom:2px solid var(--line)}
-.origin-card:hover .origin-art,.origin-card:focus-visible .origin-art{border-bottom-color:var(--accent)}
-.card strong{font-size:18px;color:var(--accent)}
-.card span{font-size:14px;color:var(--muted)}
-.btns{display:flex;gap:8px;flex-wrap:wrap}
-.grp{display:flex;gap:4px;flex-wrap:wrap;padding-right:8px;border-right:2px solid var(--line)}
-.hint{margin:0;font-family:var(--label);font-size-adjust:none;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
-.log{background:var(--panel);border:2px solid var(--line);padding:8px 12px;min-height:5.2em;font-size:15px;display:flex;flex-direction:column;justify-content:flex-end}
-.log div{color:var(--muted)}
-.log div:last-child{color:var(--fg)}
-.good{color:var(--good)}.bad{color:var(--danger)}.gold{color:var(--accent)}
-.bar{height:4px;background:var(--shade);margin-top:4px;max-width:180px}
-.bar i{display:block;height:100%;background:var(--accent)}
-.card.cont{border-color:var(--accent)}
-@media (max-width:640px){
-  .overlay{position:fixed;z-index:10;padding:calc(12px + env(safe-area-inset-top,0px)) 12px calc(12px + env(safe-area-inset-bottom,0px))}
-  .panel h2.big{font-size:34px}
-}
-@media (prefers-reduced-motion:reduce){.btn{transition:none}}
-
-/* talent tree */
-.tree{display:block;width:100%;height:292px;background:var(--panel-2);border:2px solid var(--line);margin:6px 0}
+/* talents: the tree, its zoom, the special skills and the skill bar */
+.tree{display:block;width:100%;height:292px;margin:6px 0;background:var(--panel-2);border:1px solid var(--line-2);border-radius:var(--r-md);cursor:grab}
 .tree .tnode{cursor:pointer}
 .tree .tnode:hover circle,.tree .tnode:hover rect{stroke:#fff}
 .tree .pulse{animation:tpulse 1.4s ease-in-out infinite}
 @keyframes tpulse{50%{stroke-opacity:.35}}
-@media (prefers-reduced-motion:reduce){.tree .pulse{animation:none}}
-.tdetail{display:flex;gap:12px;align-items:center;justify-content:space-between;background:var(--panel-2);border:2px solid var(--line);padding:6px 10px;min-height:52px}
-.tree .tlab{font:600 18px system-ui,sans-serif;fill:#8a8fa8;paint-order:stroke;stroke:#141826;stroke-width:5px}
+.tree .tlab{font:700 17px var(--font);fill:#8a8fa8;paint-order:stroke;stroke:#141826;stroke-width:5px}
 .tree .tlab.on{fill:#f0ead8}
-.tdetail p{margin:4px 0 0;font-size:14px}
-
-.slotbar{display:contents}
-/* skill tree zoom and the skill bar */
-.tree{cursor:grab}
-.tree .tglyph{font:700 13px system-ui,sans-serif;fill:#fff;pointer-events:none}
+.tree .tglyph{font:700 13px var(--font);fill:#fff;pointer-events:none}
+.tdetail{display:flex;gap:12px;align-items:center;justify-content:space-between;min-height:52px;padding:6px 10px;background:var(--panel-2);border:1px solid var(--line-2);border-radius:var(--r-md)}
+.tdetail p{margin:4px 0 0;font-size:var(--fs-md)}
 .zoom{display:flex;gap:4px}
+.specials{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:6px}
+.spnode{display:flex;flex-direction:column;gap:2px;padding:7px 9px;background:var(--panel-2);border:1px solid var(--line-2);border-radius:var(--r-md);opacity:.65}
+.spnode strong{font-size:var(--fs-base);color:var(--fg)}
+.spnode small{font-size:var(--fs-sm);color:var(--muted);line-height:1.3}
+.spnode.on{opacity:1;border-color:#8a7a52}.spnode.on strong{color:var(--accent)}
+.spnode.open{opacity:1;border-color:var(--accent)}
+.spnode .btn{align-self:flex-start;margin-top:3px}
 .slotgrid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
-.slotpick{display:flex;align-items:center;gap:6px;background:var(--panel-2);border:2px solid var(--line);padding:4px 6px}
-.slotpick b{color:var(--gold, #e8b94a);min-width:10px}
-.slotpick select{flex:1;min-width:0;background:var(--panel);color:inherit;border:1px solid var(--line);font:inherit;font-size:13px;padding:2px}
-@media (max-width:760px){.slotgrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
-
-/* main menu */
-.menulist{display:flex;flex-direction:column;gap:8px;max-width:420px}
-.card.menu{text-align:left}
-.card[disabled]{opacity:.5}
-
-select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);font:inherit;font-size:13px;padding:1px 2px;margin:2px 2px 0 0}
-.cvform small{display:block;margin-top:3px}
-button,select,input,textarea{font-size-adjust:inherit;font-synthesis:none}
-
-/* ---------- one screen: the game fills the window and everything else lies on it ---------- */
-/* The canvas is scaled by a whole number to fill as much of the window as it can (fitScreen); black bars take the rest. The
-   HUD layer covers the canvas: your party top left, messages bottom left, windows and time bottom right, battle orders
-   bottom middle, a short hint top middle, and a tooltip by the pointer. Windows (the panel) lie over all of it. */
-html,body{height:100%}
-body{margin:0;padding:0;overflow:hidden;background:#000}
-.stage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#000}
-.screen{position:relative;border:0;width:auto;margin:0;background:var(--screen);flex:none}
-.screen canvas{width:auto;height:auto;aspect-ratio:auto}
-.overlay{z-index:20}
-.hudlayer{position:absolute;inset:0;pointer-events:none;z-index:10}
-.hudlayer>*{pointer-events:auto}
-.screen[data-mode="title"] .hudlayer>:not(.toasts),.screen[data-mode="title"] .toasts{display:none}
-@keyframes blink{50%{opacity:.35}}
-
-/* your party: a compact card */
-.pcard{position:absolute;left:8px;top:8px;width:252px;background:rgba(18,20,28,.88);border:2px solid var(--line);box-shadow:0 3px 0 var(--shade);padding:6px 8px 7px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:3px 8px}
-.pcard .head{grid-column:1/-1;display:flex;justify-content:space-between;gap:6px;font-family:var(--label);font-size-adjust:none;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent)}
-.pcard .head .lv{color:var(--fg)}
-.pcard .bars{grid-column:1/-1;display:grid;gap:2px;margin:1px 0 2px}
-.pcard .bar{position:relative;height:11px;background:var(--shade);border:1px solid #000}
-.pcard .bar i{display:block;height:100%}
-.pcard .bar em{position:absolute;inset:0;font-style:normal;font-size:12px;line-height:10px;padding-left:4px;color:#fff;text-shadow:1px 1px 0 #000}
-.pcard .stat b{font-size:8px}
-.pcard .stat span{font-size:16px;line-height:1.1}
-.pcard .stat.wide{grid-column:1/-1}
-.pcard .stat.wide span{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.pcard .stat.warn span{color:var(--danger);animation:blink 1s steps(2) infinite}
-@media (prefers-reduced-motion:reduce){.pcard .stat.warn span{animation:none}}
-
-/* messages: the newest at the bottom, each fading after a few seconds (L opens them all) */
-.toasts{position:absolute;left:8px;bottom:8px;width:min(48%,520px);display:flex;flex-direction:column;gap:3px;pointer-events:none;background:none;border:0;padding:0;min-height:0}
-.toasts div{background:rgba(10,12,18,.84);border-left:3px solid var(--line);padding:3px 8px;font-size:15px;line-height:1.25;color:var(--fg);transition:opacity .8s}
-.toasts div.good{border-left-color:var(--good)}.toasts div.bad{border-left-color:var(--danger)}.toasts div.gold{border-left-color:var(--accent)}
-.toasts div.gone{opacity:0}
-.screen[data-mode="battle"] .toasts{bottom:auto;top:8px;width:min(30%,340px)}
-
-/* a short hint at the top middle */
-.hint{position:absolute;top:8px;left:50%;transform:translateX(-50%);max-width:52%;text-align:center;background:rgba(10,12,18,.7);padding:3px 10px;border:1px solid var(--line);pointer-events:none}
-.staybar{position:absolute;top:34px;left:50%;transform:translateX(-50%);display:flex;gap:10px;align-items:center;max-width:calc(100% - 16px);background:rgba(18,20,28,.92);border:2px solid var(--accent);box-shadow:0 3px 0 var(--shade);padding:4px 6px 4px 12px;font-size:15px}
-.staybar[hidden]{display:none}
-.staybar b{color:var(--accent)}
-.screen[data-mode="world"] .hint{opacity:.8}
-
-/* windows and time: bottom right */
-.dock{position:absolute;right:8px;bottom:8px;display:flex;flex-direction:column;gap:4px;align-items:flex-end}
-.dockrow{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end}
-.dbtn{font-family:var(--display);font-size:15px;color:var(--fg);background:rgba(38,44,71,.94);border:2px solid var(--line);padding:2px 8px;min-height:30px;min-width:32px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:5px;box-shadow:0 2px 0 var(--shade)}
-.dbtn:hover{border-color:var(--accent);color:#fff}.dbtn.on{border-color:var(--accent);color:var(--accent)}
-.dbtn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.dbtn .ico{font-size:17px;line-height:1}
-.dbtn kbd{font-family:var(--label);font-size-adjust:none;font-size:8px;color:var(--muted);border:1px solid var(--line);padding:1px 3px;background:var(--shade)}
-.dbtn .badge{background:var(--accent);color:#1a1408;font-family:var(--label);font-size-adjust:none;font-size:8px;padding:1px 3px}
-.screen[data-mode="battle"] .dock,.screen[data-mode="scene"] .dock .dockrow:last-child>[data-speed]{display:none}
-
-/* the tooltip by the pointer: what that is, and what a click does */
-.tip{position:absolute;max-width:270px;background:rgba(10,12,18,.95);border:2px solid var(--line);box-shadow:0 3px 0 var(--shade);padding:5px 9px;font-size:14px;line-height:1.3;pointer-events:none;z-index:15}
-.tip[hidden]{display:none}
-.tip b{display:block;font-weight:400;font-size:17px;color:var(--accent)}
-.tip small{display:block;color:var(--muted)}
-.tip .act{color:var(--good)}
-
-
-/* help and the message log in a window */
-.keys{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:4px 18px}
+.slotpick{display:flex;align-items:center;gap:6px;padding:4px 6px;background:var(--panel-2);border:1px solid var(--line-2);border-radius:var(--r-sm)}
+.slotpick b{color:var(--accent);min-width:10px}
+.slotpick select{flex:1;min-width:0;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);font-size:var(--fs-md);padding:2px}
+/* recruiting: the list, and the picked unit's card beside it (unitcard.js) */
+.recwrap{display:flex;gap:12px;align-items:flex-start;min-height:0}
+.reclist{flex:1;min-width:0}
+.reccard{flex:none;width:280px;position:sticky;top:0}
+.recrow{cursor:pointer;gap:8px;border-radius:var(--r-sm)}
+.recrow:hover{background:rgba(255,255,255,.04)}
+.recrow.sel{outline:2px solid var(--accent);outline-offset:-2px;background:rgba(232,185,74,.08)}
+.rec-pic{width:34px;height:34px;flex:none;image-rendering:pixelated;background:#141822;border:1px solid var(--line);border-radius:var(--r-sm)}
+/* a unit's card */
+.uc-ico{image-rendering:pixelated;vertical-align:-2px}
+.ucard-x{padding:10px 12px;font-size:var(--fs-md);background:var(--panel-2);border:1px solid var(--line-2);border-radius:var(--r-md);box-shadow:var(--lift)}
+.uc-head{display:flex;gap:10px;align-items:center;margin-bottom:8px}
+.uc-pic{width:52px;height:52px;flex:none;image-rendering:pixelated;background:#141a28;border:1px solid var(--line-2);border-radius:var(--r-sm)}
+.uc-name{display:flex;flex-direction:column;gap:2px}
+.uc-name strong{font-size:var(--fs-lg);color:var(--accent)}
+.uc-name small{color:var(--muted)}
+.uc-from{color:var(--fg-2)}
+.uc-stats{display:flex;flex-direction:column;gap:3px;margin:2px 0 8px}
+.uc-stat{display:grid;grid-template-columns:96px 1fr 68px;gap:6px;align-items:center}
+.uc-l{color:var(--fg-2)}
+.uc-bar{display:block;height:7px;background:#0a0c12;border:1px solid var(--line);border-radius:3px;overflow:hidden}
+.uc-bar i{display:block;height:100%;background:#d8b84a}
+.uc-v{text-align:right;white-space:nowrap;font-weight:700}
+.uc-v b{font-size:var(--fs-2xs)}
+.uc-lab{margin:6px 0 4px;font-size:var(--fs-xs);font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+.uc-abs{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px}
+.uc-ab{padding:2px 7px;font-size:var(--fs-sm);background:#1e2a44;border:1px solid #3466c0;border-radius:var(--r-sm);cursor:help}
+.uc-ab.sk{border-color:var(--accent);background:#3a3020}
+.uc-vs{margin-bottom:6px;font-size:var(--fs-sm);line-height:1.45;color:var(--fg-2)}
+.uc-foot{padding-top:6px;border-top:1px solid var(--line);font-size:var(--fs-sm);color:var(--accent)}
+/* a companion's window: its card beside the rest (character.js renderComp) */
+.cmwrap{display:flex;gap:12px;align-items:flex-start}
+.cmside{flex:none;width:280px;position:sticky;top:0}
+.cmmain{flex:1;min-width:0}
+/* the party's troops as cards (character.js troopCards) */
+.tcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px;margin:4px 0 8px}
+.tcard{display:flex;flex-direction:column;gap:6px;padding:9px 11px;font-size:var(--fs-md);background:linear-gradient(var(--panel-3),var(--panel-2));border:1px solid var(--line-2);border-radius:var(--r-md);box-shadow:var(--lift)}
+.tc-head{display:flex;gap:9px;align-items:center}
+.tc-pic{width:38px;height:38px;flex:none;image-rendering:pixelated;background:#0d1018;border:1px solid var(--line);border-radius:var(--r-sm)}
+.tc-name{display:flex;flex-direction:column;flex:1;min-width:0}
+.tc-name strong{font-size:var(--fs-base);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tc-name small{color:var(--muted);font-size:var(--fs-xs)}
+.tc-n{font-size:var(--fs-lg);font-weight:700;color:var(--accent)}
+.tc-state{display:flex;gap:10px;font-size:var(--fs-md);font-weight:700}
+.tc-bar{position:relative;height:16px;background:#0d1018;border:1px solid var(--line);border-radius:var(--r-sm);overflow:hidden}
+.tc-bar i{position:absolute;left:0;top:0;bottom:0;background:#4a7ad8}
+.tc-bar.mo i{background:linear-gradient(#d8b25a,#b58a35)}.tc-bar.xp i{background:linear-gradient(#7aac6a,#55844a)}
+.tc-bar em{position:absolute;inset:0;font-style:normal;font-size:var(--fs-xs);font-weight:700;padding-left:6px;line-height:14px;white-space:nowrap;color:#fff;text-shadow:0 1px 1px #000}
+.tc-stats{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:var(--fs-md);font-weight:700}
+.tc-stats span{display:flex;gap:4px;align-items:baseline}
+.tc-stats b{font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.tc-band{display:flex;flex-direction:column;gap:4px;margin-bottom:6px}
+/* help and the message log */
+.keys{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:5px 18px}
 .keys div{display:flex;gap:8px;align-items:baseline}
-.keys kbd{flex:none;min-width:58px;text-align:center;font-family:var(--label);font-size-adjust:none;font-size:9px;color:var(--fg);background:var(--panel-2);border:1px solid var(--line);padding:2px 4px}
-.journal div{padding:2px 0;border-bottom:1px solid rgba(58,66,99,.4);color:var(--muted)}
+.keys kbd{flex:none;min-width:58px;text-align:center;font-size:var(--fs-2xs);font-weight:700;color:var(--fg);background:var(--panel-2);border:1px solid var(--line-2);border-radius:var(--r-sm);padding:2px 5px}
+.journal div{padding:3px 0;border-bottom:1px solid rgba(58,66,99,.4);color:var(--muted)}
 .journal .good{color:var(--good)}.journal .bad{color:var(--danger)}.journal .gold{color:var(--accent)}
-.pcard .bar em.low{color:#ffb0a0;animation:blink 1s steps(2) infinite}
-.pcard .stat span span{display:inline}
-/* a battle shows its own count, your health and the orders on the field: the party card and hint stand aside */
-.screen[data-mode="battle"] .pcard,.screen[data-mode="battle"] .hint{display:none}
 
-/* the battle HUD (battlehud.js), laid out as in Total War: the balance of power at the top middle, time at the top right, the
-   selected unit at the bottom left, the orders over the unit cards at the bottom middle */
-.bhud{position:absolute;inset:0;pointer-events:none}
-.bhud[hidden]{display:none}
-.bhud>*{pointer-events:auto}
-.bhud .mico{display:inline-block;vertical-align:middle;image-rendering:pixelated}
-.bhud .ficon{display:inline-block;vertical-align:middle;color:currentColor}
-.btop{position:absolute;top:6px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:2px;width:min(440px,40%);background:linear-gradient(#20253a,#12141c);border:2px solid #6a5a32;box-shadow:0 3px 0 var(--shade);padding:4px 10px 5px}
-.bpow{display:flex;align-items:center;gap:8px;width:100%}
-.bside{font-family:var(--label);font-size-adjust:none;font-size:8px;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;display:flex;align-items:baseline;gap:5px}
-.bside.me{color:#9fc0ff}.bside.foe{color:#ff9a90}
-.bside b{font-family:var(--display);font-size:20px;letter-spacing:0;color:#fff;line-height:1}
-.bpowbar{flex:1;height:10px;background:linear-gradient(#e0605a,#a8322e);border:1px solid #000;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
-.bpowbar i{display:block;height:100%;width:50%;background:linear-gradient(#8fc0f0,#3d74d6);border-right:2px solid #fff;transition:width .4s}
-.bfield{font-family:var(--label);font-size-adjust:none;font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);display:flex;gap:10px}
-.bfield #bStatus{color:var(--accent)}
-.bfield.alert #bStatus{animation:blink 1.4s steps(2) infinite}
-@media (prefers-reduced-motion:reduce){.bfield.alert #bStatus{animation:none}}
-.btime{position:absolute;top:6px;right:8px;display:flex;gap:3px;background:rgba(18,20,28,.92);border:2px solid var(--line);padding:3px}
-.btime .btn{min-height:24px;padding:1px 6px}
-.binfo{position:absolute;left:8px;bottom:8px;width:236px;background:linear-gradient(#20253a,#12141c);border:2px solid #6a5a32;box-shadow:0 3px 0 var(--shade);padding:7px 8px;display:grid;gap:4px;font-size:13px}
-.binfo small{display:block;color:var(--muted);font-size:12px;line-height:1.2}
-.bi-head{display:flex;gap:8px;align-items:center}
-.bi-pic{width:44px;height:44px;image-rendering:pixelated;object-fit:contain;background:rgba(0,0,0,.35);border:1px solid var(--line)}
-.bi-title{font-size:17px;color:var(--accent);line-height:1.1}
-.bi-bar{position:relative;height:13px;background:var(--shade);border:1px solid #000}
-.bi-bar i{display:block;height:100%}
-.bi-bar.hp i{background:#5aa056}.bi-bar.mo i{background:#3d74d6}.bi-bar.mo i.low{background:#c8782a}
-.bi-bar em{position:absolute;inset:0;font-style:normal;font-size:12px;line-height:12px;padding-left:4px;color:#fff;text-shadow:1px 1px 0 #000}
-.bi-weak{display:flex;flex-wrap:wrap;gap:2px 8px;font-size:12px;color:#ffb04a}
-.bi-weak span{display:inline-flex;align-items:center;gap:3px}
-.bi-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;text-align:center}
-.bi-stats span{background:rgba(0,0,0,.3);border:1px solid rgba(58,66,99,.6);padding:1px 0;font-size:15px}
-.bi-stats b{display:block;font-family:var(--label);font-size-adjust:none;font-size:7px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:400}
-.bi-row{display:grid;grid-template-columns:20px 1fr 52px 12px;gap:5px;align-items:center}
-.bi-mini{width:20px;height:20px;image-rendering:pixelated;object-fit:contain}
-.bi-row .ub{height:4px;background:var(--shade)}
-.bi-row .ub i{display:block;height:100%;background:#78c474}
-.bcmd{position:absolute;left:50%;transform:translateX(-50%);bottom:8px;display:flex;flex-direction:column;align-items:center;gap:4px;max-width:calc(100% - 520px)}
-.borders{display:flex;flex-wrap:wrap;justify-content:center;gap:5px;background:rgba(18,20,28,.92);border:2px solid var(--line);padding:3px 4px}
-.ogrp{display:flex;gap:2px}
-.ogrp+.ogrp{border-left:1px solid var(--line);padding-left:5px}
-.obtn{position:relative;width:34px;height:32px;display:inline-flex;align-items:center;justify-content:center;background:linear-gradient(#2c3350,#1a1e2c);border:2px solid #3a4263;color:#d8d2bc;cursor:pointer;padding:0}
-.obtn:hover{border-color:var(--accent);color:#fff}
-.obtn.on{border-color:var(--accent);color:var(--accent);background:linear-gradient(#433b20,#241f12)}
-.obtn:disabled{opacity:.3;cursor:not-allowed}
-.obtn:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
-.obtn .k{position:absolute;right:1px;bottom:0;font-family:var(--label);font-size-adjust:none;font-size:7px;color:var(--muted);line-height:1}
-.oico{image-rendering:pixelated}
-.bcards{display:flex;gap:4px;align-items:flex-end}
-.ucard{position:relative;width:84px;height:86px;padding:0;background:linear-gradient(#2c3350,#141824);border:2px solid #3a4263;color:var(--fg);cursor:pointer;display:block;overflow:hidden;font-family:var(--display)}
-.ucard.all{width:54px;height:60px}
-.ucard:hover{border-color:#9a8a5a}
-.ucard.on{border-color:#ffd25a;box-shadow:0 0 0 1px #ffd25a,0 0 10px rgba(255,210,90,.55);transform:translateY(-3px)}
-.ucard:disabled{opacity:.3;cursor:default;transform:none}
-.ucard:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
-.ucard .upic{position:absolute;left:50%;top:10px;transform:translateX(-50%);width:44px;height:44px;image-rendering:pixelated;object-fit:contain;pointer-events:none}
-.ucard .uall{position:absolute;left:0;right:0;top:16px;text-align:center;font-family:var(--label);font-size-adjust:none;font-size:9px;color:var(--accent)}
-.ucard .ukey{position:absolute;left:3px;top:2px;font-family:var(--label);font-size-adjust:none;font-size:7px;color:var(--muted)}
-.ucard .cn{position:absolute;left:1px;right:1px;bottom:11px;font-size:13px;line-height:1;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:1px 1px 0 #000}
-.ucard.all .cn{bottom:11px;font-size:12px}
-.ucard .utop{position:absolute;right:2px;top:1px;display:flex;flex-direction:column;align-items:flex-end;gap:1px;color:var(--accent)}
-.ucard .csh{font-size:11px;color:var(--muted);line-height:1}
-.ucard .cmi{position:absolute;left:2px;top:12px;display:flex;flex-direction:column;gap:1px}
-.ucard .cmi .mico{width:11px;height:11px}
-.ucard .ubars{position:absolute;left:3px;right:3px;bottom:3px;display:grid;gap:1px}
-.ucard .ub{display:block;height:3px;background:rgba(0,0,0,.6)}
-.ucard .chp{display:block;height:100%;background:#78c474}
-.ucard .cmo{display:block;height:100%;background:#6fa8e0}
-.ucard .cmo.low{background:#ffb04a}
-.ucard .cf{display:none}
-.ucard .cf.warn{display:block;position:absolute;left:0;right:0;bottom:24px;font-size:11px;text-align:center;color:#ffb04a;text-shadow:1px 1px 0 #000}
-@media (max-width:1100px){.bcmd{max-width:calc(100% - 270px);left:auto;right:8px;transform:none;align-items:flex-end}.binfo{width:200px}}
+/* ---------- 9. responsive ---------- */
+/* a touch screen: everything you press at least 44 px, and nothing that only hovering shows */
+@media (pointer:coarse){
+  :root{--tap:44px}
+  .btn.sm{min-height:40px;padding:6px 12px}
+  .tbtn{min-width:42px;height:40px}
+  .dockrow.sys .dbtn{min-width:44px;min-height:44px}
+  .obtn{width:42px;height:42px}
+  .btime .btn{min-height:38px}
+  .slot{min-width:40px;min-height:40px}
+  .tip{display:none!important}
+}
+/* a small screen (a phone on its side, a small window): the HUD tightens; the details you can open stay out of the way */
+@media (max-height:600px),(max-width:820px){
+  :root{--edge:6px;--fs-hero:38px}
+  .pcard{width:226px;padding:6px 8px 7px}
+  .pc-head{margin-bottom:5px}.pc-pic{width:30px;height:30px}
+  .pc-who b{font-size:var(--fs-base)}
+  .pcard .bars{gap:2px;margin-bottom:5px}.pcard .bar{height:11px}.pcard .bar em{font-size:9px;line-height:9px}
+  .pc-res{gap:3px;margin-bottom:0}.chip{font-size:var(--fs-sm);padding:1px 4px}
+  .pc-line{display:none}
+  .wtop{padding:3px 3px 3px 9px;gap:6px}.wday{width:auto;font-size:var(--fs-base)}
+  .hint{display:none}
+  .staybar{top:calc(var(--e-t) + 40px)}
+  .dock{gap:4px}.dockrow{gap:4px}
+  .dbtn{min-width:44px;min-height:44px;padding:4px}
+  .dbtn .dl,.dbtn kbd{display:none}
+  .toasts{width:min(44%,380px);bottom:calc(var(--e-b) + 0px)}
+  .toasts div{font-size:var(--fs-sm);padding:3px 8px}
+  .toasts div:nth-last-child(n+4){display:none}
+  /* battle: the selected unit's details give way to the field; the orders and the cards shrink */
+  .btop{left:var(--e-l);transform:none;width:min(330px,42%);max-width:none;padding:3px 10px 4px}.bside b{font-size:var(--fs-lg)}
+  .screen[data-mode="battle"] .toasts{top:calc(var(--e-t) + 48px);width:min(40%,320px)}
+  .title p,.card.menu .mt span{display:none}
+  .panel:has(> .title){gap:12px;padding-top:14px;padding-bottom:14px}
+  .card.menu{padding:7px 10px}.card.menu .mi{width:32px;height:32px}
+  .btime{gap:2px;padding:2px}
+  .binfo{display:none}
+  .bcmd{left:50%;right:auto;transform:translateX(-50%);align-items:center;max-width:calc(100% - 2*var(--edge));gap:4px}
+  .borders{gap:4px;padding:3px}.ogrp+.ogrp{padding-left:4px}
+  .obtn{width:34px;height:32px}
+  .ucard{width:64px;height:64px}.ucard.all{width:48px;height:52px}
+  .ucard .upic{width:28px;height:28px;top:7px}
+  .ucard .cn{font-size:var(--fs-xs);bottom:16px}
+  .ucard .uall{top:12px}
+  .ucard .cmi,.ucard .csh{display:none}
+}
+/* a phone on its side, or a touch screen of that size: buttons big enough for a thumb, the rest as small as above */
+@media (pointer:coarse) and ((max-height:600px) or (max-width:820px)){
+  .obtn{width:40px;height:40px}
+  .tbtn{min-width:40px;height:38px}
+  .btime .btn{min-height:36px;padding:1px 7px}
+}
+/* windows on a small screen fill it, edge to edge */
+@media (max-width:720px),(max-height:520px){
+  .overlay{padding:0}
+  .panel,.panel.wide{width:100%;height:100%;border-radius:0;border-left:0;border-right:0;
+    padding:calc(14px + var(--sa-t)) calc(14px + var(--sa-r)) calc(14px + var(--sa-b)) calc(14px + var(--sa-l))}
+  .panel > .top:first-child{top:calc(-14px - var(--sa-t));margin:calc(-14px - var(--sa-t)) calc(-14px - var(--sa-r)) 0 calc(-14px - var(--sa-l));padding:calc(12px + var(--sa-t)) calc(14px + var(--sa-r)) 10px calc(14px + var(--sa-l));border-radius:0}
+  .panel > .btns:last-child{bottom:calc(-14px - var(--sa-b));margin:auto calc(-14px - var(--sa-r)) calc(-14px - var(--sa-b)) calc(-14px - var(--sa-l));padding:10px calc(14px + var(--sa-r)) calc(12px + var(--sa-b)) calc(14px + var(--sa-l))}
+  .panel h2{font-size:var(--fs-xl)}
+  .panel:has(> .title){padding-left:calc(24px + var(--sa-l))}
+  .recwrap,.cmwrap{flex-direction:column}
+  .reccard,.cmside{position:static;width:100%}
+}
+@media (max-width:760px){
+  .inv{grid-template-columns:minmax(0,1fr)}
+  .slotgrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+/* a phone held upright: the game wants it on its side, but every window still works */
+@media (max-width:520px) and (orientation:portrait){
+  .wtop{top:auto;bottom:calc(var(--e-b) + 104px)}
+  .pcard{width:calc(100% - 2*var(--edge) - var(--sa-l) - var(--sa-r))}
+  .dock .dockrow:first-child{flex-wrap:nowrap}
+  .toasts{width:calc(100% - 2*var(--edge));bottom:calc(var(--e-b) + 150px)}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
+}

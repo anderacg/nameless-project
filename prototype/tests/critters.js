@@ -18,7 +18,7 @@ try{
  empty();t.invAdd('good','milk',20);t.invAdd('good','cheese',20);P.troops={};let m0=t.goodN('milk');for(let i=0;i<5;i++)t.dayTick();
  ok(t.goodN('milk')<m0-6&&t.goodN('cheese')===20,'milk spoils, cheese keeps ('+m0+' → '+t.goodN('milk')+' milk)');
  empty();['grain','cheese','fruit','meat'].forEach(g=>t.invAdd('good',g,20));P.morale=50;t.dayTick();ok(P.morale>=52,'four kinds of food lift morale (+'+(P.morale-50)+')');
- t.updateHUD(true);ok(/<b>Food<\/b>/.test(document.getElementById('stats').innerHTML)&&!/<b>Grain<\/b>/.test(document.getElementById('stats').innerHTML),'the HUD shows Food');
+ t.updateHUD(true);ok(/title="Food: /.test(document.getElementById('stats').innerHTML)&&!/title="Grain/.test(document.getElementById('stats').innerHTML),'the HUD shows Food');
  ok(t.TOWNS.filter(x=>x.mod).every(x=>t.FOODS.filter(g=>!t.GOODS[g].res).every(g=>x.mod[g]>0)),'every market prices every common food (regional fish go by what is caught)');
  const fishy=t.TOWNS.find(x=>x.style==='port');ok(fishy.mod.fish<.9,fishy.name+' sells fish cheap');
  // wild game
@@ -45,7 +45,12 @@ try{
  const stag={crit:true,id:'stag',x:P.x+40,y:P.y,hx:P.x+40,hy:P.y,n:1,t:0,a:0,dir:1,tire:0,cool:0};W.critters=[stag];G.chase=stag;t.updateWorld(.05);ok(P.tx===stag.x||G.chase===stag,'clicking a critter chases it');G.chase=null;P.tx=null;
  // livestock
  W.critters=[];t.initCritters();empty();P.gold=500;const ash=t.townBy('Ashford'),cow=t.herdOf(ash);cow.id='cow';cow.n=4;cow.x=P.x=ash.x+60;cow.y=P.y=ash.y+40;cow.cool=0;G.mode='world';G.modal=false;G.encCool=0;t.hidePanel();
- t.updateCritters(.01);ok(G.mode==='herd'&&/Cattle/.test(panel())&&/Buy milk/.test(panel()),'reaching a herd opens the herders\' panel');
+ // (a pasture's herd is only to be seen: walking into it opens nothing, a click on its fields picks the pasture, whose herders trade)
+ t.updateCritters(.01);ok(G.mode==='world'&&cow.decor,'walking into a pasture\'s herd opens nothing (it is only to be seen)');
+ {const F=t.fieldsOf(ash,'pasture');if(F){const at=t.fieldSpot(F),o=t.pickAt(at.x,at.y);ok(o&&o.est&&o.k==='pasture','a click on its fields picks the pasture: '+(o&&(o.k||o.name||o.id)))}}
+ t.estateMeet(t.estatePick(ash,'pasture'));ok(/Buy livestock/.test(panel()),'the pasture offers to buy from its herd');t.act('es-herd');ok(/Back/.test(panel()),'opened from the pasture, the herders’ panel has a Back');
+ t.act('herd-back');ok(G.mode==='dialog'&&/Pasture of Ashford/.test(panel()),'Back returns to the pasture');t.act('es-herd');
+ ok(G.mode==='herd'&&/Cattle/.test(panel())&&/Buy milk/.test(panel()),'the herders\' panel: from the pasture');
  const g0=P.gold;t.act('herd-buy');ok(t.goodN('meat')===8&&P.gold<g0&&cow.n===3,'buy a cow: 8 meat');
  t.act('herd-milk');ok(t.goodN('milk')===6&&document.querySelector('[data-act="herd-milk"]').disabled,'buy milk once a day');
  const r0=t.repAt('Ashford'),h0=t.honorWith(ash.owner);t.act('herd-steal');ok(t.goodN('meat')===16&&t.repAt('Ashford')<r0-10&&t.honorWith(ash.owner)<h0,'taking one costs reputation and honor');

@@ -9,97 +9,71 @@ const spr={};
 // off. c.cw and c.ch keep the size of the figure itself (for health bars and labels above it).
 const CELLS=[8,16,32,64];
 function cellOf(src){const n=CELLS.find(s=>s>=src.width&&s>=src.height)||Math.max(src.width,src.height);
-  const c=mkc(n,n,g=>g.drawImage(src,(n>>1)-(src.width>>1),n-src.height));c.cw=src.width;c.ch=src.height;return c}
+  const c=mkc(n,n,g=>g.drawImage(src,(n>>1)-(src.width>>1),n-src.height));c.cw=src.width;c.ch=src.fh||src.height;
+  if(src.hand)c.hand=[(n>>1)-(src.width>>1)+src.hand[0],n-src.height+src.hand[1]];// (the hand, where it went)
+  return c}
 // v (0-5) varies a generated soldier: skin tone, helmet or cap, tunic shade, beard
 const VAR_TINT=[1,.86,1.12,.94,1.06,.8],VAR_SKIN=[1,.9,1.08,.82,.96,1.04],VAR_HELM=['#c9ced8','#9aa3ad','#a07a4a','#dfe4ea','#7a5a3a','#8e95a6'],VAR_BEARD=['#9a6a3a','#c8a050','#6a4a2a','#d8d0c0','#8a3a20','#3a2a20'];
-// pose: 0-1 idle (breathing), 2-5 walking (legs stride, body bobs), then three blows of three frames each (wind up, strike,
+// pose: 0-1 idle (breathing), 2-5 walking (legs stride, body bobs), 15-18 running (a long stride, leaning, bouncing), then three blows of three frames each (wind up, strike,
 // follow through): 6-8 a swing, 9-11 a thrust, 12-14 an overhead chop. A figure is 16x16 drawn into a 20x20 canvas (room for a
 // raised or thrust weapon) inside a 1-pixel outline, feet on the bottom row; cached by type, team, variant and pose.
-const POSES=15,ATK_BASE={swing:6,thrust:9,overhead:12};
-function unitSprite(type,team,hero,v,pose){
+const POSES=19,ATK_BASE={swing:6,thrust:9,overhead:12};
+// bare: in battle, a soldier's melee weapon is drawn apart (weapons.js); the sprite leaves it off
+// (arm: a shooter in melee mode: his bow put away, his body bare for the sidearm drawn in his hand: weapons.js, sidearmLook)
+function unitSprite(type,team,hero,v,pose,bare,arm){
   // a companion wears what you gave them: their weapon, armour and helm show (cg)
   const cg=COMPS[type]&&P.comps&&P.comps[type]&&P.comps[type].gear||null;
-  v=hero?0:(v||0)%6;pose=pose||0;const key=type+team+(hero?'h'+P.race+(P.gear.weapon||''):'')+(cg?'g'+(cg.weapon||'')+(cg.body||'')+(cg.head||''):'')+'v'+v+'p'+pose;if(spr[key])return spr[key];
+  v=hero?0:(v||0)%6;pose=pose||0;const key=type+team+(hero?'h'+P.race+(P.gear.weapon||'')+(P.gear.body||'')+(P.gear.head||''):'')+(cg?'g'+(cg.weapon||'')+(cg.body||'')+(cg.head||''):'')+'v'+v+'p'+pose+(bare?'b':'')+(arm?'s':'');if(spr[key])return spr[key];
   if(type==='dragon')return spr[key]=cellOf(dragonSprite(32));
   if(ST[type]&&ST[type].beast)return spr[key]=cellOf(outlined(ST[type].big?bigBeastSprite(type):beastSprite(type)));
-  const cid=COMPS[type]?type:'',st=ST[type],race=hero?P.race:st&&st.race;
-  if(cid)type=COMPS[cid].look;else if(st&&st.look)type=st.look;
-  const sk=shade(race?RACES[race].skin:C.skin,VAR_SKIN[v]),skd=shade(sk,.8),helm=hero?C.steel:VAR_HELM[v],beard=VAR_BEARD[v],horse=type==='horse';
-  // what the figure holds: from the hero's weapon, or the troop's kind
-  const hk=hero?heroKind():cg&&cg.weapon?ITEMS[cg.weapon].kind||'melee':null,hw=hero&&P.gear.weapon?ITEMS[P.gear.weapon]:cg&&cg.weapon?ITEMS[cg.weapon]:null;
-  const wpn=hero||hw?(hk==='ranged'?'bow':hk==='magic'?'staff':!hw?'sword':hw.base==='spear'||hw.tag==='spear'?'spear':hw.base==='warhammer'||hw.icon==='club'?'hammer':hw.base==='dagger'||hw.icon==='dagger'?'dagger':hw.base==='axe'?'axe':hw.hand==='two'?'great':'sword')
-    :type==='spearman'?'spear':type==='mage'?'staff':type==='archer'||type==='ranger'?'bow':type==='chief'?'axe':type==='militia'?'sword':st&&st.range?'bow':'sword';
-  const walk=pose>=2&&pose<=5?pose-2:-1,atk=pose>=6?(pose-6)%3:-1,style=pose>=12?'overhead':pose>=9?'thrust':pose>=6?'swing':null,breathe=pose===1?1:0;
-  return spr[key]=cellOf(outlined(mkc(20,horse?16:20,g=>{
-    const t=shade(C.team[team],VAR_TINT[v]),tl=shade(t,1.2),td=shade(C.teamD[team],VAR_TINT[v]),r=(c,x,y,ww,hh)=>rect(g,c,x,y,ww||1,hh||1);
-    if(horse){
-      const mount=race==='orc'?['#6b6b73','#4a4a52','#8a8a92']:race==='dwarf'?['#c9bfae','#8e8574','#e0d8c8']:race==='elf'?['#c8a070','#9a7448','#dcb88a']:[C.horse,C.horseD,'#9a6a3e'];
-      const bob=walk===1||walk===3?-1:0,L=[[4,6,12,14],[5,7,11,13],[4,6,12,14],[3,5,13,15]][walk<0?0:walk];
-      // legs: a gallop of four, then the body, neck, head, mane and tail
-      L.forEach((x,i)=>{const lift=walk>=0&&(i+walk)%2?1:0;r(i%2?mount[1]:shade(mount[1],.8),x,13-lift,1,3);r(C.dark,x,15,1,1)});
-      r(mount[0],3,9+bob,12,5);r(mount[1],3,13+bob,12,1);r(mount[2],4,9+bob,9,1);
-      r(mount[0],14,6+bob,3,4);r(mount[0],16,5+bob,3,3);r(mount[1],18,7+bob,1,1);r(C.dark,17,6+bob,1,1);r(mount[1],13,5+bob,2,4);r(mount[1],1,9+bob,2,1);r(mount[1],0,10+bob,2,3);
-      if(race==='dwarf')r('#e4e0cf',16,4+bob,1,2);if(race==='elf')r('#e4e0cf',17,3+bob,1,2);
-      r('#6a3a20',5,8+bob,7,2);
-      // the rider
-      const ry=bob;r(t,7,3+ry,4,5);r(tl,7,3+ry,1,5);r(sk,8,0+ry,3,3);r(C.steel,8,0+ry,3,1);r(td,6,4+ry,2,3);
-      const lance=atk===1?3:atk===0?-1:0;r(C.wood,10+lance,2+ry,9,1);r(C.steel,18+lance,2+ry,2,1);
-      if(race==='orc')r('#fff',10,2+ry,1,1);if(race==='dwarf')r('#9a6a3a',8,2+ry,3,2);
-      return;
-    }
-    g.translate(2,4);const by=(walk===1||walk===3?-1:0),ub=by+breathe,ox=1;
-    // legs: stride with the near leg lighter; boots at the bottom
-    const legs=walk===0?[[ox+3,12,'far'],[ox+8,12,'near']]:walk===2?[[ox+8,12,'far'],[ox+3,12,'near']]:[[ox+4,12,'far'],[ox+7,12,'near']];
-    for(const [x,y,w] of legs){r(w==='near'?'#3a2e26':'#241c16',x,y+by,2,4-by);r('#1a1410',x,15,2+(w==='near'?1:0),1)}
-    // torso: tunic with a light edge and a belt; a tabard stripe for veterans
-    r(t,ox+3,6+ub,7,6);r(tl,ox+3,6+ub,1,6);r(td,ox+9,7+ub,1,5);r('#3a2a1a',ox+3,10+ub,7,1);r(C.gold,ox+6,10+ub,1,1);
-    if(st&&st.tier>=2&&!cid)r(shade(helm,.9),ox+3,6+ub,7,1);
-    if(st&&st.tier>=3&&!cid){r(C.gold,ox+6,7+ub,1,3)}
-    if(hero){r(C.gold,ox+1,6+ub,2,6);r(shade(C.gold,.75),ox+1,11+ub,2,1)}
-    if(type==='mage'){r('#5a3a8a',ox+2,9+ub,9,4);r('#6a4aa8',ox+3,9+ub,1,4)}
-    // head: face, eye, and the headgear of the kind
-    const hy=2+ub;r(sk,ox+4,hy,5,4);r(skd,ox+4,hy+3,5,1);r('#1a1410',ox+7,hy+1,1,1);r(sk,ox+9,hy+1,1,2);
-    if(type==='archer'||type==='ranger'){const hc=type==='ranger'?'#2c5230':C.hood;r(hc,ox+3,hy-1,6,2);r(hc,ox+3,hy,2,4);r(shade(hc,1.25),ox+4,hy-1,3,1)}
-    else if(type==='mage'){r('#5a3a8a',ox+3,hy-1,7,2);r('#5a3a8a',ox+5,hy-3,3,2);r('#6a4aa8',ox+6,hy-4,1,1);r('#e8c040',ox+6,hy-1,1,1)}
-    else if(hero){r(C.steel,ox+3,hy-1,7,2);r('#dfe4ea',ox+4,hy-1,3,1);r(C.gold,ox+6,hy-2,2,1);r(C.steel,ox+3,hy,1,3)}
-    else if(type==='chief'){r(C.steel2,ox+3,hy-1,7,2);r('#e8e4d0',ox+2,hy-3,1,3);r('#e8e4d0',ox+10,hy-3,1,3)}
-    else{r(helm,ox+3,hy-1,7,2);r(shade(helm,1.2),ox+4,hy-1,3,1);if(v===2||v===4)r(shade(helm,.75),ox+3,hy,1,3);if(v===3)r(helm,ox+5,hy-2,3,1);if(v===5)r('#a14b38',ox+6,hy-3,1,2)}
-    if(race==='elf'){r(sk,ox+9,hy,1,1);r(sk,ox+10,hy-1,1,1)}
-    if(race==='orc'){r(shade(sk,.85),ox+4,hy+2,5,2);r('#fff',ox+6,hy+3,1,1);r('#fff',ox+8,hy+3,1,1)}
-    if(race==='dwarf'){r(beard,ox+4,hy+3,5,3);r(beard,ox+5,hy+6,3,1);r(shade(beard,1.2),ox+5,hy+3,2,1)}
-    if((race==='human'||!race)&&!hero&&v%3===1){r(beard,ox+5,hy+3,4,1);r(beard,ox+6,hy+4,2,1)}
-    if(cid==='elske'){r('#e4e0cf',ox+3,hy-1,7,2);r('#e4e0cf',ox+3,hy,1,5)}
-    if(cid)r(C.gold,ox+3,11+ub,7,1);
-    if(cg&&cg.body){const ac=ITEMS[cg.body].col;r(ac,ox+4,6+ub,5,4);r(shade(ac,1.25),ox+4,6+ub,5,1);r(shade(ac,.7),ox+8,7+ub,1,3)}
-    if(cg&&cg.head){const hc=ITEMS[cg.head].col;r(hc,ox+3,hy-1,7,2);r(shade(hc,1.25),ox+4,hy-1,3,1);r(shade(hc,.75),ox+3,hy,1,3)}
-    if(type==='spearman'){r(td,ox+1,6+ub,3,6);r(C.steel,ox+1,6+ub,3,1);r(shade(td,1.3),ox+2,8+ub,1,2)}
-    // the weapon arm: hold, wind up, strike, follow through
-    const hand=(x,y)=>r(sk,x,y,1,1),wy=ub+breathe;
-    // melee weapons: a shaft or blade drawn as a line from the hand at an angle (0 points forward, -90 up), with its head at the end
-    const MEL={sword:[7,C.steel,'guard'],great:[10,C.steel,'guard'],dagger:[4,C.steel,'guard'],axe:[7,C.wood,'axe'],hammer:[8,C.wood,'hammer'],spear:[14,C.wood,'tip']}[wpn];
-    if(MEL){const [L,col,head]=MEL,line=(x0,y0,ang,len,c)=>{for(let i=0;i<len;i++)r(c,Math.round(x0+Math.cos(ang)*i),Math.round(y0+Math.sin(ang)*i),1,1)};
-      // hand position and blade angle for each style and frame; spears hold their point forward when they swing or thrust
-      const P0={swing:[[8,5,-125],[11,8,-5],[10,10,55]],thrust:[[7,8,-8],[12,8,0],[10,8,0]],overhead:[[8,3,-95],[10,4,-35],[11,9,70]]};
-      let [hx,hy,deg]=style?P0[style][atk]:[11,9,-90];if(wpn==='spear'&&style==='swing')[hx,hy,deg]=[[9,7,-40],[11,8,-2],[10,9,25]][atk];
-      hx+=ox;hy+=wy;const ang=deg*Math.PI/180,c=Math.cos(ang),sn=Math.sin(ang),tip=[hx+c*(L-1),hy+sn*(L-1)];
-      line(hx,hy,ang+Math.PI,wpn==='spear'?4:2,C.wood);line(hx,hy,ang,L,col);
-      if(head==='guard'){r(C.gold,Math.round(hx-sn),Math.round(hy+c),1,1);r(C.gold,Math.round(hx+sn),Math.round(hy-c),1,1);line(hx+c,hy+sn,ang,2,shade(col,1.25))}
-      else if(head==='tip'){r(C.steel,Math.round(tip[0]),Math.round(tip[1]),1,1);r('#ffffff',Math.round(tip[0]+c),Math.round(tip[1]+sn),1,1);r(C.steel,Math.round(tip[0]-c),Math.round(tip[1]-sn),1,1)}
-      else if(head==='axe'){for(let k=0;k<3;k++){r(C.steel2,Math.round(tip[0]-sn*(k+1)-c*k*.5),Math.round(tip[1]+c*(k+1)-sn*k*.5),1,1);r(C.steel,Math.round(tip[0]-sn*(k+1)),Math.round(tip[1]+c*(k+1)),1,1)}}
-      else if(head==='hammer'){r(C.steel2,Math.round(tip[0])-1,Math.round(tip[1])-1,3,3);r(C.steel,Math.round(tip[0])-1,Math.round(tip[1])-1,3,1)}
-      if(atk===1&&style){r('#ffffff',Math.round(tip[0]),Math.round(tip[1]),1,1)}
-      hand(hx,hy)}
-    else if(wpn==='staff'){const lift=atk===1?-2:atk===0?-1:0,glow=(st&&st.bolt)||'#9ad0ff';
-      r(C.wood,ox+11,1+wy+lift,1,13);r(glow,ox+10,0+wy+lift,3,2);if(atk===1){r(glow,ox+9,-1+wy+lift+1,5,1);r('#ffffff',ox+11,0+wy+lift,1,1)}hand(ox+11,8+wy)}
-    else if(wpn==='bow'){const pull=atk===0?2:atk===1?0:0;r(C.wood,ox+12,3+wy,1,8);r(C.wood,ox+11,2+wy,1,1);r(C.wood,ox+11,11+wy,1,1);
-      if(pull){r('#e8e4d0',ox+12-pull,4+wy,1,3);r('#e8e4d0',ox+12-pull,7+wy,1,3);r('#c9ced8',ox+10-pull,7+wy,4+pull,1)}else r('#e8e4d0',ox+11,3+wy,1,8);hand(ox+12,7+wy);if(atk===1)r('#e8e4d0',ox+14,7+wy,2,1)}
-  })));
+  // soldiers, your hero and companions: the template figures (people.js)
+  const cid=COMPS[type]?type:'',L0=lookOf(type,team,hero,v,cid,cg),L=arm?{...L0,weapon:null}:L0;
+  // (a bare body in a blow is the body standing: its weapon is drawn apart, so one sprite serves all nine blow frames)
+  if(bare&&pose>=6&&pose<=14&&heldWeapon(L)){const k0=key.replace('p'+pose+'b','p0b');return spr[key]=spr[k0]||(spr[k0]=cellOf(peopleSprite(L,0,true)))}
+  return spr[key]=cellOf(peopleSprite(L,pose,bare));
 }
+/* the fallen (vfx.js drawCorpses): a man flat where he fell, head the way he faced, turned a quarter pixel for pixel so he stays
+   crisp; a rider thrown from his mount, which lies low beside him; a beast slumped where it stood. stand: him upright (his fall
+   turns it about his feet), body: him lying, ax, ay: his feet in it; wk: the weapon he dropped; mount: his mount standing, down: lying */
+const CORPSES=new WeakMap(),BEAST_FALL={troll:'over',spider:'back',scorpion:'back',slime:'melt'};
+function corpseOf(u){
+  const base=unitSprite(u.type,u.team,u.hero,u.v,0,true);let c=CORPSES.get(base);if(c)return c;
+  // (a beast: one that stands upright falls as a man does; a spider or a scorpion ends on its back; a slime runs flat; the rest lie
+  // on their side, which seen at the field's slant is their shape pressed low)
+  if(u.type==='dragon'||ST[u.type]&&ST[u.type].beast)c={beast:base,how:BEAST_FALL[u.type]||'side'};
+  else{const L=unitLook(u),wk=heldWeapon(L),g=pgrid(24,20);drawFigure(g,{...L,mount:null,weapon:wk?null:L.weapon},4,3,-1,null,-1);const lie=pturn(g);poutline(g);poutline(lie);
+    c={stand:pcanvas(g),body:pcanvas(lie),ax:2,ay:12,wk,team:L.team};
+    if(L.mount){const m=pgrid(32,32),d=pgrid(32,22);drawMount(m,L,-1);drawMountDown(d,L);poutline(m);poutline(d);c.mount=pcanvas(m);c.down=pcanvas(d)}}
+  CORPSES.set(base,c);return c}
 // which pose a fighter shows now: striking just after an attack, striding while moving, breathing while still
+/* the sprites a battle will need, made a little each frame before they are first shown (WARM.budget ms a frame, during the
+   deployment and the opening): every body of every kind, side and look on the field, standing, breathing, walking and
+   running, and their weapons at every angle. A pose first drawn mid-fight would otherwise cost a hitch */
+const WARM={q:[],budget:4};
+function warmBattle(units){
+  WARM.q=[];const seen=new Set(),late=[];
+  for(const u of units){if(ST[u.type]&&ST[u.type].beast)continue;const v=u.hero?0:(u.v||0)%6,k=u.type+'|'+u.team+'|'+(u.hero?1:0)+'|'+v;if(seen.has(k))continue;seen.add(k);
+    for(const p of [0,1,2,3,4,5,15,16,17,18])WARM.q.push(()=>unitSprite(u.type,u.team,u.hero,u.v,p,true));
+    const L=unitLook(u),w=heldWeapon(L);
+    if(w){const sk=pal(L.skin)[1],kw=w+L.team+sk;if(!seen.has(kw)){seen.add(kw);for(let i=0;i<WEAPON_STEPS;i++)WARM.q.push(()=>weaponSprite(w,L.team,sk,i))}}
+    else for(let p=6;p<=14;p++)WARM.q.push(()=>unitSprite(u.type,u.team,u.hero,u.v,p,true));
+    // (and last, how he lies when he falls, and the weapon he drops: vfx.js drawCorpses)
+    late.push(()=>corpseOf(u));if(u.s.range&&!u.s.magic){for(const p of [0,2,3,4,5,6,7,8])late.push(()=>unitSprite(u.type,u.team,u.hero,u.v,p,true,true));const sk=pal(L.skin)[1],kw='sword'+L.team+sk;if(!seen.has(kw)){seen.add(kw);for(let i=0;i<WEAPON_STEPS;i++)late.push(()=>weaponSprite('sword',L.team,sk,i))}}if(w)for(const i of [0,1,WEAPON_STEPS-1,WEAPON_STEPS/2,WEAPON_STEPS/2+1])late.push(()=>weaponSprite(w,L.team,PPAL.wood[2],i))}
+  WARM.q.push(...late)}
+function warmStep(){const t0=performance.now();while(WARM.q.length&&performance.now()-t0<WARM.budget)WARM.q.shift()()}
+// a soldier's look (what unitSprite draws him from), for the weapon in his hand
+// a shooter's sidearm: a short sword, on the weapon layer
+const sidearmLook=u=>u.side||(u.side={...unitLook(u),weapon:'sword'});
+function unitLook(u){if(u.look)return u.look;const cg=COMPS[u.type]&&P.comps&&P.comps[u.type]&&P.comps[u.type].gear||null;return u.look=lookOf(u.type,u.team,u.hero,u.hero?0:(u.v||0)%6,COMPS[u.type]?u.type:'',cg)}
 function procPose(u,moved){
+  // (a shooter: drawing, three steps to full; just loosed; reloading)
+  if(u.shot)return ATK_BASE.thrust+Math.min(2,Math.floor(u.shot.t/u.shot.aim*3));
   if(u.atkAt!=null&&B.t-u.atkAt<ATK_ANIM)return (ATK_BASE[u.atkStyle]||6)+Math.min(2,Math.floor((B.t-u.atkAt)/ATK_ANIM*3));
-  if(moved)return 2+Math.floor(B.t*9+(u.v||0))%4;
-  return Math.floor(B.t*1.4+(u.v||0)*.37)%2;
+  if(u.s.range&&!u.inMelee&&u.cd>0&&u.atkAt!=null&&!moved)return ATK_BASE.overhead+Math.floor((B.t-u.atkAt)*5)%3;
+  // (running: the run, faster; walking: the walk)
+  if(moved)return u.spdNow>u.s.spd*.75?15+Math.floor(B.t*14+(u.v||0))%4:2+Math.floor(B.t*9+(u.v||0))%4;
+  // (standing: breathing, slow, each on his own rhythm)
+  return (B.t*.8+((u.id||0)*.37)%1)%1<.45?1:0;
 }
 function dragonSprite(w){const k='dr'+w;return spr[k]||(spr[k]=mkc(32,24,g=>{
   const r=(c,x,y,ww,hh)=>rect(g,c,x,y,ww,hh),B='#b8403a',D='#7e2a26',Wg='#5e1f1c',Y='#e8a04a';
@@ -110,15 +84,13 @@ function dragonSprite(w){const k='dr'+w;return spr[k]||(spr[k]=mkc(32,24,g=>{
   r(D,10,17,2,5);r(D,18,17,2,5);r(C.dark,9,21,4,1);r(C.dark,17,21,4,1);
   r(Wg,14,2,4,2);r(Wg,13,4,7,4);r(Wg,12,8,6,2);
 }))}
-// a banner bearer on the map: riding a mount of color mc, or on foot without one
-// a banner bearer on the map: riding a mount of color mc, or on foot; frame 1 is mid-stride
-function partySprite(col,mc,f){f=f||0;const k='p'+col+(mc||'')+f;return spr[k]||(spr[k]=cellOf(outlined(mkc(12,12,g=>{const r=(c,x,y,w,h)=>rect(g,c,x,y,w,h);
-  if(!mc){const L=f?[3,7]:[4,6];r(C.dark,L[0],9,1,3);r('#3a2e26',L[1],9,1,3);r('#3d74d6',4,4,3,5);r('#5a8ae0',4,4,1,5);r('#3a2a1a',4,7,3,1);r(C.skin,4,2,3,2);r('#1a1410',6,2,1,1);r(C.wood,2,1,1,11);r(col,0,1,2,3);r(shade(col,.7),0,3,2,1);return}
-  const L=f?[1,4,6,9]:[2,4,7,8];L.forEach((x,i)=>r(i%2?shade(mc,.6):C.dark,x,9,1,3));
-  r(shade(mc,.75),1,6,8,3);r(mc,1,6,8,2);r(shade(mc,1.2),2,6,5,1);r(mc,8,4,3,3);r(shade(mc,.6),10,5,1,1);r(shade(mc,.7),0,6,1,3);
-  r('#3d74d6',4,2,3,4);r('#5a8ae0',4,2,1,4);r(C.skin,4,0,3,2);r(C.wood,3,0,1,6);r(col,0,0,3,2)}))))}
-function banditSprite(f){f=f||0;const k='bd'+f;return spr[k]||(spr[k]=cellOf(outlined(mkc(12,12,g=>{const r=(c,x,y,w,h)=>rect(g,c,x,y,w,h),L=f?[2,7]:[3,6];
-  r(C.dark,L[0],9,2,3);r('#2e1c1a',L[1],9,2,3);r('#4a2e2a',2,3,7,6);r('#5e3a34',2,3,1,6);r('#2e1c1a',3,1,5,3);r(C.skin,4,3,3,2);r('#1a1410',6,3,1,1);r(C.wood,9,0,1,10);r('#b8403a',9,0,3,2)}))))}
+// a banner bearer on the map (people.js): the party's leader in the banner's colour, on foot or riding a mount of colour mc; f the step
+function partySprite(col,mc,f){f=f||0;const k='p'+col+(mc||'')+f;if(spr[k])return spr[k];
+  const you=col==='#e8b94a',R=RACE_LOOK[you?P.race:'human']||RACE_LOOK.human;
+  return spr[k]=mapFigure({race:you?P.race:'human',skin:R.skin[0],hair:R.hair[you?0:2],eye:R.eye,ears:R.ears,tusk:R.tusk,short:R.short,beard:R.beard?R.hair[0]:null,
+    helm:you?'crown':'kettle',outer:'steel',inner:'dark',team:col,shortHair:true},f,mc||null)}
+// a bandit on the map: hooded, a spear
+function banditSprite(f){f=f||0;const k='bd'+f;return spr[k]||(spr[k]=mapFigure({race:'human',skin:'skinTan',hair:'black',helm:'hood',hood:'leather',outer:'leather',inner:'dark',team:'#8a3a2a',weapon:'spear',shortHair:true},f,null))}
 /* holdings: every town, castle and village is drawn from its people's style, its size and its own seed, so no two look alike.
    Styles: human, dwarf, elf, orc (from the first race living there), or port and stilt where the holding sets one. The flag shows the owner. */
 const seeded=s=>()=>{s=(s*1664525+1013904223)>>>0;return s/4294967296};
@@ -135,7 +107,7 @@ const worldCv=()=>mapCv||(mapCv=paintWorld());
 const miniCv=mkc(MW,MH,g=>{for(let y=0;y<MH;y++)for(let x=0;x<MW;x++)rect(g,PAL[CLIMS[climate[y*MW+x]]].mini[tiles[y*MW+x]],x,y,1,1)});
 /* battle arenas: one per climate, built when first needed */
 const ARENAS={};
-function arenaFor(c){return ARENAS[c]||(ARENAS[c]=paintArena(c))}
+function arenaFor(c){const k=c+BW;return ARENAS[k]||(ARENAS[k]=paintArena(c))}
 function obstacleSprite(kind,clim){const k='ob'+kind+clim;return spr[k]||(spr[k]=cellOf(outlined(mkc(14,16,g=>{
   const r=(c,x,y,w,h)=>rect(g,c,x,y,w,h);
   if(kind==='tree'){
@@ -238,6 +210,4 @@ function txt(s,x,y,col,al){if(TXTQ&&ctx===TXTQ.ctx){TXTQ.push([s,x,y,col,al]);re
 /* how big a host looks: followers trail the banner, more of them the bigger the band */
 /* how big a host looks: followers trail the banner, more of them the bigger the band */
 const hostSize=n=>n<5?0:Math.min(14,Math.round(Math.sqrt(n)*1.7)-2);
-// an army follower: 6x6 inside its outline, an 8x8 cell: helmet, face, tunic, striding legs, a spear
-function followerSprite(col,f){const k='fw'+col+f;return spr[k]||(spr[k]=cellOf(outlined(mkc(6,6,g=>{const r=(c,x,y,w,h)=>rect(g,c,x,y,w||1,h||1);
-  r(shade(col,.55),1,0,3,1);r(C.skin,1,1,3,1);r(col,1,2,3,2);r(shade(col,1.2),1,2,1,1);r(shade(col,.7),1,3,3,1);r(C.dark,f?0:1,4,1,2);r(C.dark,f?3:2,4,1,2);r(C.wood,5,1,1,5);r('#c9ced8',5,0,1,1)}))))}
+// (a follower on the map: people.js followerSprite)

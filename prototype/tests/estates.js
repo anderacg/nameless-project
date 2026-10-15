@@ -42,12 +42,20 @@ try{
  {const v=t.townBy('Brookhollow');const b0=t.bldTotal(v);const out=t.burnEstates(v,2);ok(t.bldTotal(v)===b0-out.length&&out.length===2,'a sack burns two estates ('+out.join(', ')+')')}
  // AI builds over time
  {const f=TW.filter(x=>x.owner!=='player'),b0=f.reduce((a,x)=>a+t.bldTotal(x)+t.wallOf(x),0);for(let i=0;i<40;i++){G.day++;t.estateDay()}const b1=f.reduce((a,x)=>a+t.bldTotal(x)+t.wallOf(x),0);ok(b1>b0,'realms build and fortify over time ('+b0+' → '+b1+')')}
- // folk: workers walk out by day
+ // folk: every estate's workers work inside it, and carry the day's load to the holding between the afternoon and dusk
  W.folk=[];P.x=ash.x;P.y=ash.y+40;G.clock=t.DAY*.2;for(let i=0;i<300;i++)t.updateFolk(.05);
  const ws=W.folk.filter(f=>f.home==='Ashford');ok(ws.length>=2,ws.length+' workers from Ashford: '+[...new Set(ws.map(f=>f.job))].join(', '));
- // (estates stand outside the walls now: give them the time to walk out)
- for(let i=0;i<500&&!ws.some(f=>f.st==='work');i++){G.clock=t.DAY*.2;t.updateFolk(.05)}ok(ws.some(f=>f.st==='work'),'some reach their estate and work');
- G.clock=t.DAY*.7;for(let i=0;i<400;i++)t.updateFolk(.05);ok(!W.folk.some(f=>f.home==='Ashford'&&f.st!=='back'),'at dusk they all head home');
+ ok(ws.every(f=>f.st==='in'&&!t.folkOut(f)),'in the morning they are all at work inside their estates (unseen)');
+ {const f=ws[0],o=t.pickAt(f.x,f.y-4);ok(!o||o!==f,'one at work inside is not picked by a click (his estate is): '+(o&&(o.k||o.name||o.job)))}
+ {let out=0,town=0,back=0,loaded=false;for(let i=0;i<4000;i++){G.clock=Math.min(t.DAY*.69,t.DAY*(.4+i*.00008));t.updateFolk(.05);const a=W.folk.filter(f=>f.home==='Ashford');
+    out=Math.max(out,a.filter(f=>f.st==='out').length);town=Math.max(town,a.filter(f=>f.st==='town').length);back=Math.max(back,a.filter(f=>f.st==='back').length)}
+  ok(out>0&&town>0&&back>0,'between the afternoon and dusk they carry their load to the holding and walk back (out '+out+', in town '+town+', back '+back+')');
+  for(let i=0;i<2000&&W.folk.some(f=>f.home==='Ashford'&&f.st!=='in');i++){G.clock=t.DAY*.75;t.updateFolk(.05)}
+  ok(W.folk.filter(f=>f.home==='Ashford').every(f=>f.st==='in'&&f.done===G.day),'by night all have delivered and gone back inside')}
+ {const night=W.folk.filter(f=>f.home==='Ashford'),k=night[0].k,n0=night.filter(f=>f.k===k).length;t.estateMeet(t.estatePick(ash,k));ok(new RegExp('Talk to the '+t.ESTATES[k].work).test(document.getElementById('panel').textContent),'the estate offers its '+t.ESTATES[k].work+'s');
+  P.gold=500;P.troops={};t.act('es-folk');ok(G.mode==='dialog'&&/Hire as/.test(document.getElementById('panel').textContent),'and talking to them opens the worker dialog');
+  t.act('wk-back');ok(new RegExp('Talk to the '+t.ESTATES[k].work).test(document.getElementById('panel').textContent),'Back returns to the estate');t.act('es-folk');t.act('wk-hire');
+  ok(W.folk.filter(f=>f.home==='Ashford'&&f.k===k).length===n0-1,'hiring one takes him from the estate');G.mode='world';G.modal=false;t.hidePanel()}
  // caravans
  W.caravans=[];const from=t.townBy('Saltmere');from.owner=t.HOME.Saltmere;from.sacked=from.raided=0;const fill=()=>{from.stock.cloth=400;from.stock.timber=400};fill();let c=null;for(let i=0;i<20&&!c;i++)c=t.sendCaravan(from);
  ok(c&&Object.keys(c.goods).length&&c.to!==c.from,'a caravan sets out from '+(c&&c.from)+' to '+(c&&c.to)+' with '+(c&&t.cargoText(c)));

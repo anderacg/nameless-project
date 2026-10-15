@@ -12,7 +12,7 @@ const TREE_BRANCHES=[
     spine:[['s','Strength',{attr:{str:2}}],['a','Whirlwind',{unlock:'whirl',hp:5},'Active skill: spin and hit every enemy around you. +5 health.'],['n','Brute Force',{dmgPct:.15,sk:{oneh:1}},'Your blows land 15% harder. +1 One-Handed.'],
       ['s','Strength',{attr:{str:2}}],['s','Toughness',{hp:12}],['n','Shieldwall',{perk:'shieldwall',block:.05},'Blocked hits deal only 10% damage.'],
       ['k','Berserker’s Oath',{dmgPct:.35,dr:-.15},'+35% damage, but you take 15% more damage.']],
-    sideA:[['a','Leap Slam',{unlock:'leap'},'Learn Leap Slam (E): leap to the cursor and stun where you land.'],['a','Earthshaker',{leapR:.5,leapStun:.5},'Leap Slam lands in a 50% wider circle and stuns longer.'],['a','Quick Leap',{leapCd:.4},'Leap Slam recovers 40% faster.']],
+    sideA:[['a','Leap Slam',{unlock:'leap'},'Active skill: leap onto a knot of enemies and stun them where you land.'],['a','Earthshaker',{leapR:.5,leapStun:.5},'Leap Slam lands in a 50% wider circle and stuns longer.'],['a','Quick Leap',{leapCd:.4},'Leap Slam recovers 40% faster.']],
     sideC:[['a','Earthquake',{unlock:'quake'},'Active skill: slam the ground, hurting and staggering every enemy around you.'],['a','Aftershock',{quakeR:.4,quakeStun:.4},'Earthquake reaches 40% farther and staggers longer.'],['n','Iron Hide',{dr:.05,hp:20},'Take 5% less damage. +20 health.']],
     sideD:[['s','Siegecraft',{sk:{eng:2}}],['n','Sapper',{sk:{eng:2},dmgPct:.05},'+2 Engineering: siege camps build faster. +5% damage.']],
     sideB:[['n','Thick Skin',{dr:.08,hp:15},'Take 8% less damage. +15 health.'],['n','Bloodlust',{perk:'bloodlust'},'Your swings crit twice as often.']]},
@@ -38,7 +38,7 @@ const TREE_BRANCHES=[
     spine:[['s','Charisma',{attr:{cha:2}}],['s','Followers',{cap:1}],['n','Silver Tongue',{perk:'silver',hire:.05},'Hiring troops costs 25% less.'],
       ['s','Charisma',{attr:{cha:2}}],['s','Followers',{cap:2}],['n','Drillmaster',{perk:'drill',train:.1},'Training troops costs about half as much.'],
       ['k','Warlord',{tHp:.15,tDmg:.15,dmgPct:-.25},'Your troops get +15% health and damage, but you deal 25% less.']],
-    sideA:[['a','War Cry',{unlock:'cry'},'Learn War Cry (R): nearby troops hit harder and move faster; enemies flinch.'],['a','Battle Hymn',{cryDur:4,cryR:.4},'War Cry lasts 4 seconds longer and reaches 40% farther.'],['a','Fearsome Roar',{cryStun:.8},'War Cry makes enemies flinch twice as long.']],
+    sideA:[['a','War Cry',{unlock:'cry'},'Active skill: nearby troops hit harder and move faster; enemies flinch.'],['a','Battle Hymn',{cryDur:4,cryR:.4},'War Cry lasts 4 seconds longer and reaches 40% farther.'],['a','Fearsome Roar',{cryStun:.8},'War Cry makes enemies flinch twice as long.']],
     sideC:[['a','War Banner',{unlock:'banner'},'Active skill: plant your banner; troops near it take 25% less damage.'],['a','Standard Bearer',{bannerDur:4,bannerR:.4},'War Banner lasts 4 seconds longer and covers 40% more ground.'],['n','Logistics',{food:.1,cap:2},'Your band eats 10% less. +2 party size.']],
     sideD:[['s','Drill Yard',{tDmg:.04}],['n','Quartermaster General',{sk:{lead:1},cap:2},'+1 Leadership, +2 party size.'],['n','Rearguard',{perk:'rearguard'},'Caught fleeing, you lose half as many men.']],
     sideB:[['n','Banner Bearer',{tHp:.08,morale:5},'Troops get +8% health. Morale never falls below 5 more.'],['n','Veteran Drill',{tDmg:.08,sk:{lead:1}},'Troops deal 8% more damage. +1 Leadership.']]}
