@@ -134,6 +134,12 @@ tr:last-child td{border-bottom:0}
 <script src="js/data/scenes.js"></script>
 <script src="js/data/abilities.js"></script>
 <script src="js/core/state.js"></script>
+<script src="js/core/roster.js"></script>
+<script src="js/core/garrison.js"></script>
+<script src="js/core/recruitment.js"></script>
+<script src="js/core/talents.js"></script>
+<script src="js/core/inventory.js"></script>
+<script src="js/core/equipment.js"></script>
 <script src="js/world/map.js"></script>
 <script src="js/world/fog.js"></script>
 <script src="js/world/resources.js"></script>
@@ -151,6 +157,7 @@ tr:last-child td{border-bottom:0}
 <script src="js/world/characters.js"></script>
 <script src="js/world/leaders.js"></script>
 <script src="js/world/realms.js"></script>
+<script src="js/core/session.js"></script>
 <script src="js/world/parties.js"></script>
 <script src="js/world/monsters.js"></script>
 <script src="js/world/critters.js"></script>
@@ -180,6 +187,9 @@ tr:last-child td{border-bottom:0}
 <script src="js/battle/parley.js"></script>
 <script src="js/battle/battle.js"></script>
 <script src="js/battle/battlecontrol.js"></script>
+<script src="js/battle/commands.js"></script>
+<script src="js/battle/setup.js"></script>
+<script src="js/battle/resolution.js"></script>
 <script src="js/battle/combat.js"></script>
 <script src="js/battle/commander.js"></script>
 <script src="js/battle/abilities.js"></script>
@@ -436,7 +446,7 @@ section('life','Life on the map','The world goes on without you.',kv([['Workers'
   ['Bandits at night','At nightfall bandit bands head for a camp nearby and shelter there until dawn. Attack a camp at night and you fight every band inside as well as its own bandits.'],
   ['Cornered parties','A bandit band or enemy lord that runs from you and is caught may yield instead of fighting: the weaker they are, and the greater your renown, the likelier. Yielded bandits become prisoners, join your band (morale and honor fall), or are let go; a lord pays a ransom. If they refuse, they fight. You can always let them go.'],
   ['Army size','On the map, a band trails followers by its size, and a host of 30 or more carries a second banner.'],
-  ['Leaders in battle','Every leader grows the same way: a level every level × 60 experience, disciplines that rise by use. A lord or chieftain fights at the head of his men, far tougher than his soldiers ('+pct(LEADER_HP[0])+' of their health and '+pct(LEADER_HP[1])+' more a level), his name over him. A lord riding beside you leads his men too. Your companions are never killed: knocked down, they are wounded for 2 days.'],
+  ['Leaders in battle','Every leader grows the same way: a level every level × 60 experience, disciplines that rise by use. A lord or chieftain fights at the head of his men, his name over him. Health grows from their own unit and level (lords: '+pct(CHAR_GROW.lord.hp[0])+' + '+pct(CHAR_GROW.lord.hp[1])+' × level; chieftains: '+pct(CHAR_GROW.chieftain.hp[0])+' + '+pct(CHAR_GROW.chieftain.hp[1])+' × level), then attributes, gear and talents apply. A lord riding beside you leads his men too. Your companions are never killed: knocked down, they are wounded for 2 days.'],
   ['Captives','Beat a lord’s army and he is your captive (Hero, Party): ransom him to his realm (gold, and a little of their goodwill) or let him go (honor with his realm); either way he rides home to raise a new army, and while you hold him he raises none. Lose a battle and your captives slip away.'],
   ['Recruiting','A captive may join you as a companion, the character he was: his level, the skill tree he grew, his skills and gear (Recruit, in the Party tab). A bandit chieftain right away, if your honor allows: an outlaw in your band costs '+RECRUIT.honor+' honor with every realm, and a realm you serve will not stand for it if your honor with them would fall below 0. A lord only when his realm has fallen, or once he is disgraced (taken by you '+RECRUIT.shame+' times); he then leaves his realm for good.'],
   ['In cover','Any party in woods or hills is seen only from nearer; your companions’ parties you always see.'],

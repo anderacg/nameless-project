@@ -112,7 +112,7 @@ function champShove(u,t,M){
   const C=champ(u),a=Math.atan2(t.y-u.y,t.x-u.x);C.sp-=M.sp;u.atkAt=B.t;u.face=Math.cos(a)>=0?1:-1;
   if(M===BASH)B.floats.push({x:u.x,y:u.y-26,t:'Shield Bash',life:.6,c:u.team?'#ff9a90':'#cfe0ff'});
   B.slashes.push({x:u.x,y:u.y-6,a,life:.15,r:(u.s.reach||12)+2,arc:.9,col:'200,220,255',w:2});
-  for(const e of champFoes(u)){const d=Math.hypot(e.x-u.x,e.y-u.y)-(e.s.big?12:0),ea=Math.atan2(e.y-u.y,e.x-u.x),df=Math.abs(Math.atan2(Math.sin(ea-a),Math.cos(ea-a)));
+  for(const e of champFoes(u)){const d=Math.hypot(e.x-u.x,e.y-u.y)-(e.s.big?12:0),ea=Math.atan2(e.y-u.y,e.x-u.x),df=angGap(ea,a);
     if(d<=(u.s.reach||12)+6&&df<1.1){hit(u,e,u.s.dmg*M.mult,'blunt');knock(e,u.x,u.y,M.kb);stun(e,M.stun)}}}
 function champDodge(u,dx,dy,cost){const C=champ(u);C.sp-=cost;C.rx=dx;C.ry=dy;C.roll=.24;C.inv=.3;C.rollCd=DODGE_CD;fx(u.x,u.y,'#c8b48a',6)}
 // (kept for the tests and the console: a champion's skill now, if one fits)
@@ -139,7 +139,6 @@ function foeGroupsInit(units,groups,opts){
 }
 // a captain's groups: the enemy's (team 1), and yours (team 0) when you hand your army to the AI (B.auto)
 const CAPTAIN={1:{inf:'e_inf',arc:'e_arc',mag:'e_mag',cav:'e_cav'},0:{inf:'inf',arc:'arc',mag:'mag',cav:'cav',hero:'hero'},ally:{inf:'a_inf',arc:'a_arc',mag:'a_mag',cav:'a_cav'}};
-const captainOf=g=>g.startsWith('e_')?1:0;
 // each moment: an advancing line's anchor moves toward the other army (the enemy's; yours under the AI)
 // twice a second, the captains' orders: the enemy's always; yours only with the AI in command (B.auto)
 function command(dt){
@@ -202,7 +201,7 @@ function captainFinish(team,N){
     // reach), turned only once he is out of their arc: the soldiers never turn themselves)
     const C={x:m.reduce((a,u)=>a+u.x,0)/m.length,y:m.reduce((a,u)=>a+u.y,0)/m.length},sm=(k==='arc'||k==='mag')&&m.some(u=>u.s.range),R=sm?Math.max(...m.map(u=>u.s.range||0)):0,inR=sm?foes.filter(e=>Math.hypot(e.x-C.x,e.y-C.y)<=R):[],
       mark=sm&&(g.tgt&&g.tgt.hp>0?g.tgt:inR.length?inR.reduce((a,e)=>Math.hypot(e.x-C.x,e.y-C.y)<Math.hypot(a.x-C.x,a.y-C.y)?e:a):null),
-      face=mark?Math.atan2(mark.y-C.y,mark.x-C.x):Math.atan2(M.y-C.y,M.x-C.x),turned=Math.abs(Math.atan2(Math.sin(face-(g.face||0)),Math.cos(face-(g.face||0))))>(mark?SHOOT.arc*.4:CAPT.turn);
+      face=mark?Math.atan2(mark.y-C.y,mark.x-C.x):Math.atan2(M.y-C.y,M.x-C.x),turned=angGap(face,g.face||0)>(mark?SHOOT.arc*.4:CAPT.turn);
     if(g.form!==f||turned)g.setForm(f,{face})}
 }
 /* one side's captain. It reads the whole battle (assess): each side's strength (health by tier), how much of it shoots, how

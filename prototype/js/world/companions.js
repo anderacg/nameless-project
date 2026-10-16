@@ -25,12 +25,10 @@ const compMeleeSk=id=>meleeSkOf(compInit(id));
 // their battle stats: their own, grown by level, gear, disciplines and perks
 function compStats(id){return charStats(charOf(compInit(id),id))}// (characters.js: one formula for every character)
 // gear: what fits a slot, and giving or taking it back
-const compFits=(id,slot)=>P.inv.map((x,i)=>[x,i]).filter(([x])=>x&&x.k==='gear'&&ITEMS[x.id]&&ITEMS[x.id].slot===slot);
-function compEquip(id,slot,i){const c=compInit(id),x=P.inv[i];if(!c||!x||x.k!=='gear'||ITEMS[x.id].slot!==slot)return false;
-  const old=c.gear[slot];P.inv[i]=old?{k:'gear',id:old,n:1}:null;c.gear[slot]=x.id;
-  if(slot==='weapon'&&ITEMS[x.id].hand==='two'&&c.gear.offhand){if(!invAdd('gear',c.gear.offhand,1))return true;delete c.gear.offhand}
-  return true}
-function compUnequip(id,slot){const c=compInit(id);if(!c||!c.gear[slot])return false;if(!invAdd('gear',c.gear[slot],1)){log('Your bag is full.','bad');return false}delete c.gear[slot];return true}
+const compEquipment=id=>{const c=compInit(id);return c?new EquipmentService(c,playerInventory,{items:ITEMS,slots:COMP_SLOTS,slotType:slotOfKey,mountKeys:[],dualWield:false}):null};
+const compFits=(id,slot)=>{const e=compEquipment(id);return !e||e.blockedWhy(slot)?[]:P.inv.map((x,i)=>[x,i]).filter(([x])=>x&&x.k==='gear'&&e.accepts(slot,x.id))};
+function compEquip(id,slot,i){const e=compEquipment(id);return !!e&&equipmentFeedback(e.equip(i,slot))}
+function compUnequip(id,slot){const e=compEquipment(id);return !!e&&equipmentFeedback(e.unequip(slot))}
 
 /* leading a party */
 const cparties=()=>Object.keys(P.comps).map(id=>compInit(id)&&P.comps[id].party).filter(Boolean).map(asParty);
@@ -38,13 +36,13 @@ const cpartyCap=id=>4+2*compInit(id).lv+compSkill(id,'lead')+(compHas(id,'captai
 const canLead=id=>{const c=compInit(id);return c.lv>=COMP_LEAD.lv&&c.ap>=COMP_LEAD.ap};
 const cpPower=p=>power(p.troops)*(1+.04*compSkill(p.cid,'lead'));
 // hand soldiers over (the party forms beside you) or take them back (only beside you)
-function cpGive(id,k,n){const c=compInit(id);if(!canLead(id))return 0;n=Math.min(n,P.troops[k]||0,cpartyCap(id)-(c.party?c.party.troops.length:0));if(n<=0)return 0;
+function cpGive(id,k,n){const c=compInit(id);if(!c||!canLead(id))return 0;n=partyRoster(P).limit(k,n,cpartyCap(id)-(c.party?c.party.troops.length:0));if(n<=0)return 0;
   if(!c.party)c.party=asParty({cid:id,x:P.x+10,y:P.y+6,troops:[],order:'follow',base:null,cool:2,dir:1});
-  P.remove(k,n);partyAdd(c.party,k,n);return n}
-function cpTake(id,k,n){const p=compInit(id).party;if(!p||Math.hypot(p.x-P.x,p.y-P.y)>60)return 0;let got=0;
-  while(got<n&&partySize()<partyCap()){if(!partyRemove(p,k,1))break;P.add(k);got++}
+  return partyTransfer(P,c.party,k,n,cpartyCap(id)-c.party.troops.length)}
+function cpTake(id,k,n){const c=compInit(id),p=c&&c.party;if(!p||Math.hypot(p.x-P.x,p.y-P.y)>60)return 0;
+  const got=partyTransfer(p,P,k,n,partyRoom());
   if(!p.troops.length)cpDisband(id,true);return got}
-function cpDisband(id,home){const c=P.comps[id];if(!c||!c.party)return;const p=c.party;for(const k of p.troops)P.add(k);c.party=null;if(home)log(COMPS[id].short+' rejoins your band'+(p.troops.length?' with '+p.troops.length+' soldiers':'')+'.')}
+function cpDisband(id,home){const c=P.comps[id];if(!c||!c.party)return;const p=c.party,n=p.troops.length;partyTransferAll(p,P);c.party=null;if(home)log(COMPS[id].short+' rejoins your band'+(n?' with '+n+' soldiers':'')+'.')}
 // where a party may shelter: as you may (stay.js), but a party pays only for its own soldiers
 const cpStayOk=t=>!yourShelterWhy(t);// (a companion's party shelters by your rules: parties.js)
 const cpStayCost=p=>STAY_BASE+Math.ceil(p.troops.length/2);

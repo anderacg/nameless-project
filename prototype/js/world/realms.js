@@ -1,6 +1,7 @@
 'use strict';
 /* ---------- factions and world sim ---------- */
-const W={rel:{},lords:[],dead:{},sites:[],critters:[]};
+const makeWorldState=()=>({rel:{},lords:[],dead:{},sites:[],critters:[],caravans:[],folk:[],refugees:[],patrols:[],fights:[],lrel:{},treas:{},tolls:{},exiles:[],monsters:[],mythic:{},ships:[],shops:{},uidN:0,fightN:0});
+const W=makeWorldState();
 // daily war chance per peaceful pair, scaled so more factions don't mean more wars overall
 const FIDS=Object.keys(FACS),WAR_RATE=.05*3/(FIDS.length*(FIDS.length-1)/2),LCAP=18,FIEF0=Math.round(TOWNS.length/FIDS.length);
 // holdings you take for yourself belong to 'player'. It is not one of FIDS: it never rolls wars, and it is at war with whoever is hostile to you.
@@ -15,7 +16,6 @@ const hostileTo=f=>!!f&&f!=='player'&&((!!P.fac&&atWar(P.fac,f))||(P.hostile[f]|
 const townBy=n=>TOWNS.find(t=>t.name===n);
 const besieged=t=>W.lords.some(l=>!l.dead&&l.state==='siege'&&l.tgt===t.name)||!!(P.siege&&P.siege.town===t.name)||!!(P.raid&&P.raid.town===t.name);
 const nearestOf=(o,list)=>{let b=null,bd=1e9;for(const t of list){const d=Math.hypot(t.x-o.x,t.y-o.y);if(d<bd){bd=d;b=t}}return b};
-const lcap=f=>LCAP+4*Math.max(0,FIEF0-fiefsOf(f).length);
 /* lords grow as you do: a level from what they win in battle (l.lv, l.xp: level x 60 to the next, as yours), renown, and the
    disciplines of command, which rise by use (l.sk: Leadership by winning, Tactics by fighting, Medicine by tending their fallen;
    levels 0-10, (level+1) x 20 to the next, as yours). Their army is capped as yours is: 8 + 3 a level + renown/25 + Leadership
@@ -30,7 +30,7 @@ const lcapOf=l=>{lordStats(l);return Math.round(9+3*l.lv+Math.floor((l.renown||0
 const lordTac=ls=>1+.05*Math.max(0,...ls.filter(o=>W.lords.includes(o)).map(o=>lordSkill(o,'tact')));
 // a lord who won: experience and renown, and his Leadership and Tactics rise
 function lordWins(l,foes){lordXp(l,12+2*foes);l.renown=(l.renown||0)+Math.ceil(foes/3);lordTrain(l,'lead',3+foes*.5);lordTrain(l,'tact',2)}
-const cull=(l,frac)=>{l.troops=l.troops.filter(()=>Math.random()>frac)};
+const cull=(l,frac)=>{if(l instanceof Party)return l.cull(frac);const r=new TroopRoster({tc:countsOf(l.troops)},'tc');r.cull(frac);l.troops=r.list;return l};
 const facRaces=f=>{const rs=[...new Set(fiefsOf(f).flatMap(t=>t.races))];return rs.length?rs:FACS[f].races};
 function armyOf(f,n){const rs=facRaces(f),a=[];for(let i=0;i<n;i++){const c=RACES[rs[rint(0,rs.length-1)]],r=Math.random();a.push(r<.24?c.melee:r<.36?c.shield:r<.5?UP[c.melee][0]:r<.6?UP[c.shield][0]:r<.76?c.ranged:r<.84?UP[c.ranged][0]:r<.91?c.mage:c.horse)}return a}
 // a holding's guards come from its people: each new one is a volunteer (t.vol, the pool you recruit from too) who leaves the

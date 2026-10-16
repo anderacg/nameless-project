@@ -1,7 +1,9 @@
 'use strict';
 // Main menu: Continue, New game, Load game, Settings, Wiki and Exit; the HUD Menu button with Resume; deleting the save asks twice.
 // Pasts decide the starting weapon and a lean purse; early loot is lean too.
-window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);
+window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),close0=window.close;let closeCalls=0;
+// CDP-created test tabs may actually close themselves. Check the request without destroying the reporting page.
+window.close=()=>{closeCalls++};
 try{
  const t=T,G=t.G,P=t.P;try{localStorage.clear()}catch(e){}
  const panel=()=>document.getElementById('panel').innerHTML,cards=()=>[...document.querySelectorAll('#panel .card strong')].map(e=>e.textContent);
@@ -39,7 +41,7 @@ try{
  for(let i=0;i<5;i++){if(G.mode==='battle')t.updateBattle(.05)}ok(B.t===bt,'the battle does not move while paused');t.frame();esc();ok(G.mode==='battle'&&!G.modal,'Esc resumes the battle');
  B.over=true;B.endT=0;t.updateBattle(.01);t.act('cont');while(G.mode==='perk')t.act('perk',G.perkOffer[0]);
  // Load and Exit from the Esc menu
- esc();const g2=P.gold;P.gold=1;t.act('esc-load');ok(G.mode==='world'&&P.gold!==1,'Load game from the Esc menu');esc();t.act('esc-exit');ok(G.mode==='title'&&/Thanks for playing/.test(panel()),'Exit game from the Esc menu');
+ esc();const g2=P.gold;P.gold=1;t.act('esc-load');ok(G.mode==='world'&&P.gold!==1,'Load game from the Esc menu');esc();t.act('esc-exit');ok(G.mode==='title'&&/Thanks for playing/.test(panel())&&closeCalls===1,'Exit game from the Esc menu requests tab closure');
  // in the menus Esc goes back
  t.act('menu','main');t.act('menu','settings');esc();ok(G.menu==='main','Esc in a menu page goes back to the main menu');
  // continue and load
@@ -49,7 +51,7 @@ try{
  // settings, wiki, exit
  t.act('menu','settings');ok(/Realm economy/.test(panel())&&!/Pack sprites/.test(panel())&&/Controls/.test(panel())&&/Back/.test(panel()),'Settings: realm economy and controls, no art switch');
  let opened=null;const wo=window.open;window.open=(u)=>{opened=u;return null};t.act('menu','wiki');window.open=wo;ok(opened==='wiki.html','Wiki opens the wiki in a new tab');
- t.act('menu','exit');ok(/Thanks for playing/.test(panel()),'Exit says goodbye (a browser tab can only close itself if it opened itself)');t.act('menu','main');ok(G.menu==='main','and Back returns to the menu');
+ t.act('menu','exit');ok(/Thanks for playing/.test(panel())&&closeCalls===2,'Exit requests tab closure and says goodbye');t.act('menu','main');ok(G.menu==='main','and Back returns to the menu');
  // lean loot: a band of 8 gives far less than it used to
  t.act('menu','new');t.act('begin','soldier');P.troops={hum_knight:20};let gold=0;for(let k=0;k<6;k++){G.mode='world';G.modal=false;t.hidePanel();const g1=P.gold;t.startEncounter({kind:'party',ref:{x:P.x,y:P.y,cool:0},n:8,list:Array(8).fill('militia')});t.autoResolve();gold+=P.gold-g1;t.act('cont');while(G.mode==='perk')t.act('perk',G.perkOffer[0])}
  ok(gold/6<45,'beating 8 bandits pays about '+Math.round(gold/6)+' gold (it used to be about 90)');
@@ -65,5 +67,5 @@ try{
   t.act('esc-back');t.act('esc-resume');P.gold=1;t.act('load','quick');ok(P.gold===111,'loading a slot loads that one');
   G.mode='world';t.saveGame(true,'4');P.gold=2;t.showTitle();t.act('load');ok(P.gold===111,'Continue loads the latest save of all (slot 4)');
   t.showTitle('load');ok(panel().match(/data-act="load"/g).length>=4,'Load game: every slot in use, ready to load')}
-}catch(e){o.push('EXC '+e.message+' '+e.stack)}
+}catch(e){o.push('EXC '+e.message+' '+e.stack)}finally{window.close=close0}
 const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d)};

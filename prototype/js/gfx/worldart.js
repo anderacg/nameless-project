@@ -14,7 +14,6 @@ const mixc=(a,b,t)=>[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t,a[2]+(b[2]-a[2])*t];
 let CLEAR=null;
 const isClear=(x,y)=>{x|=0;y|=0;return x>=0&&y>=0&&x<MW*TILE&&y<MH*TILE&&CLEAR[y*MW*TILE+x]===1};
 function markClear(x,y,w,h){const Wp=MW*TILE,Hp=MH*TILE;x|=0;y|=0;for(let yy=Math.max(0,y);yy<Math.min(Hp,y+h);yy++)CLEAR.fill(1,yy*Wp+Math.max(0,x),yy*Wp+Math.min(Wp,x+w))}
-function markEllipse(cx,cy,rx,ry){for(let yy=-ry;yy<=ry;yy++){const hw=Math.round(rx*Math.sqrt(Math.max(0,1-(yy/ry)*(yy/ry))));markClear(cx-hw,cy+yy,hw*2+1,1)}}
 const anyClear=pts=>pts.some(([x,y])=>isClear(x,y));
 const hex=c=>'#'+c.map(v=>Math.max(0,Math.min(255,Math.round(v))).toString(16).padStart(2,'0')).join('');
 

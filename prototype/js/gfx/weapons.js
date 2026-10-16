@@ -32,7 +32,6 @@ function drawBlade(set,hx,hy,deg,k,Tm,skin){
   if(head==='hammer'){for(let i=-1;i<=1;i++){set(tx-s*i,ty+c*i,M[1]);set(tx-s*i-c,ty+c*i-s,M[2])}}
   set(hx,hy,skin)}
 // how he holds it now: [angle (degrees, 0 forward, -90 up), hand dx, hand dy] by what he is doing
-const ease=p=>p<.5?2*p*p:1-2*(1-p)*(1-p);
 const HOLD={
   // at rest, on the march, in a charge, in guard near a foe, stunned
   blade:{rest:62,march:-128,run:-122,guard:-38,stun:85},heavy:{rest:58,march:-140,run:-118,guard:-55,stun:85},

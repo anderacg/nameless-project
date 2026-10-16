@@ -234,27 +234,6 @@ function setOrderUI(){
   // unit cards, the selected unit's details and the top bar (battlehud.js)
   document.querySelectorAll('[data-grp]').forEach(b=>bhudCard(b,b.dataset.grp));bhudInfo();bhudTop();
 }
-// an order to the selected groups: hold (where they stand), charge, advance, withdraw (flee the battle: off your edge,
-// straight back off your edge, striking no one: once all have withdrawn the battle ends as your retreat, morale.js). Any order calls off a target and the waypoints
-function setOrder(o){
-  if(!B)return;takeCommand();
-  // (Charge and Advance set the pace, run or walk, and nothing else: where they go and whom they fight stay as they were)
-  if(o==='charge'||o==='advance'){for(const g of selGroups())B.groups[g].setWalk(o==='advance');setOrderUI();log(selLabel()+': '+(o==='charge'?'at a run.':'at a walk.'));return}
-  // (hold: where they stand; withdraw: off your edge (battlecontrol.js); the others are pace: above)
-  for(const g of selGroups()){const gr=B.groups[g];if(o==='withdraw')gr.withdraw();else if(o==='hold')gr.hold();else if(o==='advance')gr.advance()}
-  setOrderUI();log(selLabel()+': '+o+'.');
-}
-// a group's flag on or off for the selection: walk, firm (hold ground), cease (cease fire), skirmish, melee (shooters' blades)
-const SHOOT_FLAGS=['melee','cease','skirmish'];
-const FLAG_N={walk:['walk','run'],firm:['hold their ground','fight freely'],cease:['cease fire','fire at will'],skirmish:['skirmish','stand'],melee:['melee mode on: they fight whoever reaches them','melee mode off: they keep shooting, point blank']};
-function toggleFlag(f){if(!B)return;const gs=selGroups().filter(g=>grpUnits(g).length&&(!SHOOT_FLAGS.includes(f)||grpUnits(g).some(u=>u.s.range)));/* (melee mode, cease fire, skirmish: shooters' only) */if(!gs.length)return;const on=!gs.every(g=>B.groups[g][f]);gs.forEach(g=>B.groups[g].setFlag(f,on));setOrderUI();log(selLabel()+': '+FLAG_N[f][on?0:1]+'.')}
-// control groups: Ctrl+6-9 keeps the selection under that key, 6-9 picks it again
-function ctrlGroup(k,save){if(!B)return;B.ctrl=B.ctrl||{};if(save){B.ctrl[k]=B.sel==='all'?'all':selGroups().slice();log('Group '+k+': '+selLabel()+'.');return}
-  const c=B.ctrl[k];if(!c)return;const gs=c==='all'?'all':c.filter(g=>grpUnits(g).length);if(gs!=='all'&&!gs.length)return;B.sel=gs==='all'?'all':gs.length===1?gs[0]:gs;setOrderUI()}
-// (T, once spread out: now the next formation; Loose is the old spread)
-const setSpread=()=>setForm('loose');
-function selectGroup(g){if(!B)return;if(g!=='all'&&!grpUnits(g).length)return;B.sel=g;setOrderUI()}
-function cycleGroup(){if(!B)return;const opts=['all',...GRPS.filter(g=>grpUnits(g).length)];B.sel=opts[(opts.indexOf(B.sel)+1)%opts.length];setOrderUI()}
 function setSpeed(n){G.speed=n;document.querySelectorAll('[data-speed]').forEach(b=>b.classList.toggle('on',+b.dataset.speed===n))}
 function pauseUI(){const b=$('#pause');if(!b)return;b.innerHTML=icon(G.paused?'play':'pause',14);b.setAttribute('aria-label',G.paused?'Play':'Pause');b.classList.toggle('on',!!G.paused)}
 function togglePause(){G.paused=!G.paused;pauseUI();updateHUD(true)}

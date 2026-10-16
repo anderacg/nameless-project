@@ -490,9 +490,10 @@ try{
   B.over=true;B.endT=0;t.B=null}
  // your hero with a shield: a bash now and then in a long melee, never a stream of them
  {P.gear.weapon=t.gearId('sword',0);P.gear.offhand=t.gearId('shield',0);P.slots=Array(10).fill(null);
-  const B=fight(['militia','militia','militia']);B.obs=[];B.units.filter(u=>u.team===1).forEach((u,i)=>{u.hp=u.max=9999;u.s={...u.s,dmg:14};u.x=B.hero.x+12;u.y=B.hero.y+(i-1)*6});
-  let bashes=0;const T0=B.t;for(let j=0;j<400;j++){t.updateBattle(.03);bashes+=B.floats.filter(f=>f.t==='Shield Bash'&&!f.seen&&(f.seen=true)).length}const secs=B.t-T0;
-  ok(t.grip()==='shield'&&bashes>=1&&bashes<=Math.ceil(secs/t.CHAR_AI.bash)+1,'your hero with a shield bashes now and then, not all the time ('+bashes+' in '+secs.toFixed(0)+' s)');P.gear.offhand=null;B.over=true;B.endT=0;t.B=null}
+  const B=fight(['militia','militia','militia']);B.obs=[];B.hero.hp=B.hero.max=9999;// keep the long melee alive: this fixture measures bash frequency, not survival
+  B.units.filter(u=>u.team===1).forEach((u,i)=>{u.hp=u.max=9999;u.s={...u.s,dmg:14};u.x=B.hero.x+12;u.y=B.hero.y+(i-1)*6});
+  let bashes=0;const T0=B.t;for(let j=0;j<400&&t.B===B;j++){t.updateBattle(.03);bashes+=B.floats.filter(f=>f.t==='Shield Bash'&&!f.seen&&(f.seen=true)).length}const secs=B.t-T0;
+  ok(t.B===B&&!B.over&&t.grip()==='shield'&&bashes>=1&&bashes<=Math.ceil(secs/t.CHAR_AI.bash)+1,'your hero with a shield bashes now and then, not all the time ('+bashes+' in '+secs.toFixed(0)+' s)');P.gear.offhand=null;B.over=true;B.endT=0;t.B=null}
  // one accuracy for every shooter: by weapon, race, a soldier's tier or a character's skill and bow, tiredness and the draw
  {const B=fight(['militia']);const mk=(o)=>({s:{range:120,tier:1,race:'human',...o.s},sta:o.sta==null?100:o.sta,team:0,unit:o.unit,leader:o.leader,comp:o.comp});
   const lv=mk({}),vet=mk({s:{tier:4}}),elf=mk({s:{race:'elf'}}),xb=mk({s:{flat:true}});

@@ -43,7 +43,7 @@ function moraleInit(units,opts){
 function facing(u){const g=u.grp&&B.groups[u.grp];if(g&&g.form&&u.inSlot)return g.face||0;return u.dir!=null?u.dir:u.face<0?Math.PI:0}
 // which side of t a blow from src comes at
 function sideOf(t,src){
-  const a=Math.atan2(src.y-t.y,src.x-t.x),f=facing(t),df=Math.abs(Math.atan2(Math.sin(a-f),Math.cos(a-f)));
+  const a=Math.atan2(src.y-t.y,src.x-t.x),f=facing(t),df=angGap(a,f);
   return df<1.05?'front':df<2.1?'flank':'rear';
 }
 // a word over a soldier, unless the same word is already up close by (a whole line breaking says it once)

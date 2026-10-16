@@ -41,9 +41,9 @@ function renderChar(){
           Object.keys(ROLES).map(r=>'<button class="btn sm'+(c.role===r?' on':'')+'" type="button" data-act="role" data-arg="'+id+':'+r+'" aria-pressed="'+(c.role===r)+'">'+ROLES[r]+'</button>').join('')+
           '<button class="btn sm" type="button" data-act="dismiss" data-arg="'+id+'">Dismiss</button></div></div>'}).join('')+
         '<p class="muted">Scout: +2 Scouting and more as they learn it. Surgeon: the same for Medicine. Quartermaster: band eats 25% less. Manage: their gear, level, perks and a party to lead.</p>':'<p class="muted">None yet. Look for them in town taverns.</p>')+
-      '<div class="lab" style="margin-top:6px">Prisoners ('+prisonerCount()+' / '+prisonCap()+')</div>'+(prisonerCount()?Object.keys(P.prisoners).filter(k=>P.prisoners[k]>0).map(k=>'<div class="row"><div class="info"><strong>'+ST[k].n+'</strong><small>Ransom '+RANSOM[ST[k].tier]+'g in a town tavern</small></div><span class="own">×'+P.prisoners[k]+'</span><div class="acts">'+
-        '<button class="btn sm" type="button" data-act="p-recruit" data-arg="'+k+'"'+(P.gold<10||partySize()>=partyCap()?' disabled':'')+'>Recruit 10g</button>'+
-        '<button class="btn sm" type="button" data-act="p-release" data-arg="'+k+'">Release</button></div></div>').join(''):'<p class="muted">None. Win battles to take some.</p>')+captivesHtml();
+      '<div class="lab" style="margin-top:6px">Prisoners ('+prisonerCount()+' / '+prisonCap()+')</div>'+(prisonerCount()?Object.keys(P.prisoners).filter(k=>P.prisoners[k]>0).map(k=>{const quote=recruitment.quotePrisoner(k);return '<div class="row"><div class="info"><strong>'+ST[k].n+'</strong><small>Ransom '+RANSOM[ST[k].tier]+'g in a town tavern</small></div><span class="own">×'+P.prisoners[k]+'</span><div class="acts">'+
+        '<button class="btn sm" type="button" data-act="p-recruit" data-arg="'+k+'"'+(!quote.ok?' disabled title="'+recruitmentWhy(quote)+'"':'')+'>Recruit '+quote.cost+'g</button>'+
+        '<button class="btn sm" type="button" data-act="p-release" data-arg="'+k+'">Release</button></div></div>'}).join(''):'<p class="muted">None. Win battles to take some.</p>')+captivesHtml();
   }
   showPanel('<div class="top"><h2>'+(tab==='hero'?'Your hero':tab==='realms'?'Realms of Ashmark':tab==='lords'?'Lords':tab==='quests'?'Quests':'Your party')+'</h2><span class="muted">'+RACES[P.race].n+' · level '+P.level+' · '+rankName()+'</span></div><div class="tabs">'+
     [['hero','Hero'],['party','Party'],['quests','Quests'],['lords','Lords'],['realms','Realms']].map(x=>'<button class="btn sm'+(x[0]===tab?' on':'')+'" type="button" data-act="char-tab" data-arg="'+x[0]+'">'+x[1]+'</button>').join('')+
@@ -90,7 +90,7 @@ function charAct(a,arg){
   if(a==='char-tab')G.char=arg;
   else if(a==='role'){const [id,r]=arg.split(':');const c=P.comps[id];if(c){if(c.role===r)c.role='';else{const o=roleOf(r);if(o)P.comps[o].role='';c.role=r}}}
   else if(a==='dismiss'){if(P.comps[arg]){delete P.comps[arg];log(COMPS[arg].n+' leaves your band. You may find them in '+COMPS[arg].town+' again.')}}
-  else if(a==='p-recruit'){if(P.prisoners[arg]>0&&P.gold>=10&&partySize()<partyCap()){P.gold-=10;P.prisoners[arg]--;P.add(arg);log('A captured '+ST[arg].n.toLowerCase()+' swears to follow you.')}}
+  else if(a==='p-recruit')recruitmentFeedback(recruitment.recruitPrisoner(arg));
   else if(a==='p-release'){if(P.prisoners[arg]>0){P.prisoners[arg]--;P.renown++;log('You let '+an(ST[arg].n.toLowerCase())+' go free. +1 renown.');mood('release')}}
   else return false;
   updateHUD(true);renderChar();panel.scrollTop=keep;
@@ -113,16 +113,16 @@ function renderComp(){
     '<div class="lab">Disciplines · rise as they fight, lead and work</div><div class="keys">'+Object.keys(COMP_SK).map(k=>'<div><kbd>'+c.sk[k].lv+'</kbd><span>'+COMP_SK[k]+'</span></div>').join('')+'</div>'+
     '<div class="lab">Perks · one every third level</div>'+(c.perks.length?'<p>'+c.perks.map(p=>COMP_PERKS[p].n+' ('+COMP_PERKS[p].d+')').join(', ')+'</p>':'<p class="muted">None yet.</p>')+
     (c.perkPend?'<div class="cards">'+Object.keys(COMP_PERKS).filter(p=>!c.perks.includes(p)).map(p=>'<button class="card" type="button" data-act="cm-perk" data-arg="'+p+'"><strong>'+COMP_PERKS[p].n+'</strong><span>'+COMP_PERKS[p].d+'</span></button>').join('')+'</div>':'')+
-    '<div class="lab">Gear · from your bag</div>'+COMP_SLOTS.map(sl=>{const it=c.gear[sl]&&ITEMS[c.gear[sl]],fit=compFits(id,sl);
-      return row(SLOTS[sl]+': '+(it?'<span style="color:'+RARITY[it.r]+'">'+it.n+'</span>':'<span class="muted">nothing</span>'),it?it.d:(fit.length?fit.length+' in your bag fit':'Nothing in your bag fits'),(it?b('cm-off',sl,'Take back'):'')+fit.slice(0,3).map(([x,i])=>b('cm-eq',sl+':'+i,'Give '+ITEMS[x.id].n)).join(''))}).join('');
+    '<div class="lab">Gear · from your bag</div>'+COMP_SLOTS.map(sl=>{const it=c.gear[sl]&&ITEMS[c.gear[sl]],fit=compFits(id,sl),why=compEquipment(id).blockedWhy(sl);
+      return row(SLOTS[sl]+': '+(it?'<span style="color:'+RARITY[it.r]+'">'+it.n+'</span>':'<span class="muted">nothing</span>'),why||(it?it.d:(fit.length?fit.length+' in your bag fit':'Nothing in your bag fits')),(it?b('cm-off',sl,'Take back'):'')+fit.slice(0,3).map(([x,i])=>b('cm-eq',sl+':'+i,'Give '+ITEMS[x.id].n)).join(''))}).join('');
   // the party
-  const p=c.party,trs=Object.keys(P.troops).filter(k=>P.troops[k]>0),near=p&&Math.hypot(p.x-P.x,p.y-P.y)<=60;
+  const p=c.party,pc=countsOf(p&&p.troops),trs=Object.keys(P.troops).filter(k=>P.troops[k]>0),near=p&&Math.hypot(p.x-P.x,p.y-P.y)<=60;
   h+='<div class="lab">Lead a party · up to '+cpartyCap(id)+' soldiers</div>';
   if(!canLead(id))h+='<p class="muted">'+C0.short+' will lead your soldiers from level '+COMP_LEAD.lv+', once they trust you (approval '+COMP_LEAD.ap+'+).</p>';
   else{h+=(p?row(C0.short+'’s party: '+p.troops.length+' soldiers','Now '+({follow:'riding with you',patrol:'patrolling the land of '+p.base,return:'coming back to you',stay:(p.inside?'staying in ':'on the way to shelter in ')+p.base})[p.order]+'. It fights bandits and weaker enemies, keeps clear of stronger ones'+(p.order==='patrol'||p.order==='stay'?', and hires volunteers there with your gold'+(p.order==='stay'&&townBy(p.base)&&!stayFree(townBy(p.base))?' (lodgings '+cpStayCost(p)+'g a day)':''):'')+'.',
         b('cm-order','follow','Ride with me')+b('cm-order','patrol','Patrol here')+b('cm-order','stay','Stay in town')+b('cm-order','return','Come back')):'<p class="muted">Give '+C0.short+' soldiers to lead their own party on the map. They ride with you at first: order them to patrol the land around you, or to come back.</p>')+
-      trs.map(k=>row(ST[k].n+' <span class="muted">(you have '+P.troops[k]+(p?', '+C0.short+' has '+p.troops.filter(x=>x===k).length:'')+')</span>','',b('cm-give',k+':1','Give 1')+b('cm-give',k+':5','Give 5'))).join('')+
-      (p?[...new Set(p.troops)].map(k=>row(ST[k].n+' with '+C0.short+': '+p.troops.filter(x=>x===k).length,near?'':'Ride close to take them back','' +b('cm-take',k+':1','Take 1',near?'':'Too far')+b('cm-take',k+':99','Take all',near?'':'Too far'))).join(''):'')}
+      trs.map(k=>row(ST[k].n+' <span class="muted">(you have '+P.troops[k]+(p?', '+C0.short+' has '+(pc[k]||0):'')+')</span>','',b('cm-give',k+':1','Give 1')+b('cm-give',k+':5','Give 5'))).join('')+
+      (p?Object.keys(pc).map(k=>row(ST[k].n+' with '+C0.short+': '+pc[k],near?'':'Ride close to take them back','' +b('cm-take',k+':1','Take 1',near?'':'Too far')+b('cm-take',k+':99','Take all',near?'':'Too far'))).join(''):'')}
   showPanel(h+'</div></div>'+nav(['cm-back',null,'Back']));panel.classList.add('wide');// (the larger window: the card beside the rest)
 }
 onAct('cm-',(a,arg)=>{

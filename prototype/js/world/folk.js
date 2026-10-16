@@ -9,7 +9,6 @@ const FOLK_R=520;
 // (the estates whose workers you have come near: town|estate; forgotten once you are far)
 const FOLK_SEEN=new Set();
 const dayPart=()=>G.clock/DAY;
-const workHours=()=>dayPart()>.04&&dayPart()<NIGHT_AT-.04;
 // the hours a delivery may start (share of the day: the afternoon to the end of dusk), and how long it takes inside the gate
 const DELIVER={from:.45,to:.66,stop:[1.5,3.5]};
 

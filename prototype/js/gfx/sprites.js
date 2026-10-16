@@ -91,9 +91,6 @@ function partySprite(col,mc,f){f=f||0;const k='p'+col+(mc||'')+f;if(spr[k])retur
     helm:you?'crown':'kettle',outer:'steel',inner:'dark',team:col,shortHair:true},f,mc||null)}
 // a bandit on the map: hooded, a spear
 function banditSprite(f){f=f||0;const k='bd'+f;return spr[k]||(spr[k]=mapFigure({race:'human',skin:'skinTan',hair:'black',helm:'hood',hood:'leather',outer:'leather',inner:'dark',team:'#8a3a2a',weapon:'spear',shortHair:true},f,null))}
-/* holdings: every town, castle and village is drawn from its people's style, its size and its own seed, so no two look alike.
-   Styles: human, dwarf, elf, orc (from the first race living there), or port and stilt where the holding sets one. The flag shows the owner. */
-const seeded=s=>()=>{s=(s*1664525+1013904223)>>>0;return s/4294967296};
 /* pre-rendered world map: ground colors per climate, then terrain on top */
 const PAL={
   grass:{g:['#4f7a3a','#4c7738'],s:['#5d8c44','#3f6a30'],road:['#b89b62','#d0b880','#9a7f4c'],tree:['#2a5a2a','#2f6a30','#3f8a3e'],hill:['#7a6e46','#9a8c5c','#a89a68','#c4b684'],mini:['#4f7a3a','#2f5a2c','#8a7a52','#3b6ca8','#b89b62','#8e95a6']},

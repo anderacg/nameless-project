@@ -29,6 +29,10 @@ addEventListener('resize',fitScreen);fitScreen();
 const ov=$('#ov'),panel=$('#panel'),bbar=$('#bbar');
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const rint=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
+// Shared numeric helpers: available to simulation, rendering and the wiki without a renderer dependency.
+const sum=o=>Object.values(o).reduce((a,b)=>a+b,0);
+const seeded=s=>()=>{s=(s*1664525+1013904223)>>>0;return s/4294967296};
+const angGap=(a,b)=>Math.abs(Math.atan2(Math.sin(a-b),Math.cos(a-b)));
 // pace: share of full speed for the world (travel, days, everyone on the map) and for battles (movement, attacks, arrows).
 // Visual effects ignore it. Lower is calmer; 1 is the original pace.
 // the world clock: one day (DAY clock units) lasts DAY_SECONDS real seconds at 1x speed, whatever the travel pace;

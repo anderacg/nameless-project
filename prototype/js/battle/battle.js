@@ -4,14 +4,10 @@
 // the archers, their reach being so much shorter) and cavalry
 const GRPS=['hero','inf','arc','mag','cav'],GN={hero:'Hero',inf:'Infantry',arc:'Archers',mag:'Mages',cav:'Cavalry',all:'All troops'};
 // the manual control of your hero (WASD, Space, F, B, skill slots) is set aside for now: you command, your hero fights on their
-// own (RTS command, below). true brings it back here (its keys and buttons are commented out in input.js and Ashmark.html)
+// own (RTS command: commands.js). true brings it back here (its keys and buttons are commented out in input.js and Ashmark.html)
 let MANUAL_HERO=false;
 const grpOf=s=>s.range?(s.magic?'mag':'arc'):s.charge?'cav':'inf';
 const grpUnits=g=>B.units.filter(u=>u.grp===g&&u.hp>0);
-// what you have selected: all, one group, or several (a box round them)
-const selGroups=()=>B.sel==='all'?GRPS:Array.isArray(B.sel)?B.sel:[B.sel];
-const selLabel=()=>B.sel==='all'?GN.all:selGroups().map(g=>GN[g]).join(' and ');
-const regroup=g=>B.groups[g]&&B.groups[g].regroup();// (its place where its men are: battlecontrol.js)
 /* how a group of yours moves and fights, besides its order (hold, charge, advance; withdraw):
    walk (at its slowest member's pace, keeping formation; no running charge), firm (holds its ground: strikes only what
    comes into reach, never steps out of line), fire (archers shoot at will; off, only at the enemy you set them on),
@@ -23,87 +19,7 @@ const MARCH={reached:10,skirmish:44,edge:40,walk:.55};
 // walking: a group set to walk, unless this order is a run (g.run: a double right-click, a charge); a walk keeps the slowest's
 // pace at MARCH.walk of it, and builds no charge
 const walking=g=>!!(g&&g.walk&&!g.run);
-function formation(list,team){
-  const dir=team?-1:1,base=team?BW-72:72,out=[];// (each side starts at its edge of the field)
-  // (infantry in front; mages a step behind them (their reach is short); archers at the back; riders on the flanks)
-  const front=[],mid=[],back=[],flank=[];list.forEach(t=>{(ST[t].range?(ST[t].magic?mid:back):ST[t].charge?flank:front).push(t)});
-  const lay=(arr,x0)=>{const per=8;arr.forEach((t,i)=>{const col=Math.floor(i/per),row=i%per,rows=Math.min(per,arr.length-col*per),gap=Math.min(20,(BH-60)/Math.max(rows,1));out.push({t,x:x0-dir*col*13,y:BH/2+(row-(rows-1)/2)*gap})})};
-  lay(front,base+dir*32);lay(mid,base+dir*14);lay(back,base-dir*8);
-  flank.forEach((t,i)=>{const up=i%2===0;out.push({t,x:base+dir*10-dir*Math.floor(i/2)*12,y:up?40+Math.floor(i/2)*12:BH-34-Math.floor(i/2)*12})});
-  return out;
-}
-// the ground under the player decides the battle's look and its one rule
-function battleEnv(tourney){
-  if(tourney)return{c:'grass',t:T_OPEN,name:'Tournament ground',text:'An open field with no tricks.'};
-  const r=regionAt(P.x,P.y),t=r.t===T_MOUNT||r.t===T_WATER?T_HILL:r.t,c=r.c;
-  const text=t===T_FOREST?'Trees block movement and stop some arrows. Elves shoot through them.':t===T_HILL?'High ground: archers reach 15% farther.'
-    :c==='frost'?'Snow slows everyone but dwarves and wolves.':c==='desert'?'The heat slows melee attacks, except for orcs and scorpions.':c==='swamp'?'Mud slows everyone and stalls cavalry charges. Orcs wade through.':'Open ground: cavalry rides 15% faster.';
-  return{c,t,name:r.name,text};
-}
-function envStats(s,race,env){
-  if(s.big)return s;const o={...s},home=race?RACES[race].home:s.home||[],c=env.c,t=env.t;
-  if(t===T_FOREST||t===T_HILL){if(t===T_HILL&&s.range)o.range*=1.15}
-  else if(c==='frost'&&!home.includes('frost'))o.spd*=.85;
-  else if(c==='desert'&&!s.range&&!home.includes('desert'))o.cd*=1.1;
-  else if(c==='swamp'&&!home.includes('swamp'))o.spd*=s.mounted?.65:.8;
-  else if(c==='grass'&&s.mounted)o.spd*=1.15;
-  return o;
-}
-function placeObstacles(env,y0,y1){y0=y0==null?FIELD_EDGE.top:y0;y1=y1==null?BH-FIELD_EDGE.bot:y1;
-  const obs=[],c=env.c,list=env.t===T_FOREST?Array(12).fill('tree'):env.t===T_HILL?Array(6).fill('rock'):c==='desert'?['cactus','cactus','cactus','cactus','rock','rock']
-    :c==='swamp'?Array(5).fill('tree'):c==='frost'?['tree','tree','rock','rock']:['tree','tree','rock'];
-  // (as many again for each screen's worth of field: the larger field keeps its look)
-  // (rocks and trees keep room to pass between them and the field's edges; fewer where the field in sight is shorter)
-  const lo=y0+FIELD_EDGE.pass+6,hi=Math.max(lo,y1-FIELD_EDGE.pass-6),many=Math.max(1,Math.round(BW*(y1-y0)/(VW*VH)));for(const kind of Array(many).fill(list).flat())for(let k=0;k<30;k++){const x=rint(110,BW-110),y=rint(lo,hi);if(obs.every(o=>Math.hypot(o.x-x,o.y-y)>26)){obs.push({kind,x,y,r:kind==='rock'?7:kind==='cactus'?5:6});break}}
-  return obs;
-}
-/* the field's edges: where the battle HUD leaves it in sight. Its top bar and speed buttons cover the top of the field, its
-   orders and unit cards the bottom: nobody fights under them (measured once a battle starts; the field's own edges if the HUD
-   cannot be measured). A soldier's feet are its place, so the top leaves room for its body. */
-const FIELD_EDGE={top:18,bot:6,body:22,pass:18};
-const fieldTop=()=>B&&B.ftop!=null?B.ftop:FIELD_EDGE.top,fieldBot=()=>B&&B.fbot!=null?B.fbot:BH-FIELD_EDGE.bot;
-// (measured before the field is laid out, so its rocks and trees go where the fight can be seen)
-function measureField(){
-  const def={top:FIELD_EDGE.top,bot:BH-FIELD_EDGE.bot};bbar.hidden=false;{const sc=document.getElementById('screen');if(sc)sc.dataset.mode='battle'}// (the HUD laid out as in battle)
-  const cv=document.querySelector('canvas'),r=cv&&cv.getBoundingClientRect();if(!r||r.height<50)return def;const k=BVH/r.height/camFit(),box=sel=>{const e=bbar.querySelector(sel);return e&&e.offsetParent!==null?e.getBoundingClientRect():null};
-  const tops=['.btop','.btime'].map(box).filter(Boolean),bot=box('.bcmd');
-  const top=tops.length?Math.max(...tops.map(b=>b.bottom))-r.top:0,bh=bot?r.bottom-bot.top:0;
-  return{top:Math.round(clamp(top*k+FIELD_EDGE.body,FIELD_EDGE.top,BH*.3)),bot:Math.round(clamp(BH-bh*k-FIELD_EDGE.bot,BH*.6,BH-FIELD_EDGE.bot))}}
-function startBattle(opts){
-  BW=clamp(BVW,FIELD_W.min,FIELD_W.max);// (the field as wide as the screen's shape asks, within FIELD_W: core.js)
-  damageTypesInit();// (a kind added since the game began, a recruit, gets its type and armour too: matchups.js)
-  const units=[];let id=0;const env=battleEnv(opts.tournament);
-  // every soldier is made from its Unit (characters.js): your hero, your companions, every troop, the leaders
-  const lv=opts.lv||1,mk=(unit,team,x,y)=>{const s=unit.fieldStats(env,team,lv);return{id:id++,v:Math.floor(Math.random()*6),type:unit.key,unit,team,x,y,hp:s.hp,max:s.hp,cd:Math.random()*.6,hero:unit.role==='hero',face:team?-1:1,s,spdNow:0,tgt:null,rt:0,swing:0}};
-  const hero=mk(charOf(P),0,72+44,BH/2);hero.cd=0;vitals();hero.hp=Math.max(1,Math.round(P.hp));units.push(hero);
-  if(!opts.tournament)compsInBand().forEach((id,i)=>{const u=mk(charOf(compInit(id),id),0,hero.x-14,BH/2+(i%2?1:-1)*(16+Math.floor(i/2)*14));u.comp=true;units.push(u)});
-  if(!opts.tournament){const l=[];for(const k in P.troops)for(let i=0;i<P.troops[k];i++)l.push(k);formation(l,0).forEach(f=>units.push(mk(troopOf(f.t),0,f.x,f.y)))}
-  formation(opts.enemies,1).forEach(f=>units.push(mk(troopOf(f.t),1,f.x,f.y)));
-  // reinforcing lords arrive behind each line, a little apart
-  const enc=!opts.tournament&&G.enc,side=(ls,team)=>(ls||[]).forEach((l,li)=>formation(l.troops.slice(),team).forEach(f=>{const u=mk(troopOf(f.t),team,clamp(f.x+(team?36:-36)+li*(team?10:-10),12,BW-12),clamp(f.y+(li?18:-18),26,BH-8));u.lord=l;units.push(u)}));
-  if(enc){side(enc.allies,0);side(enc.foes,1)}
-  // the leaders fight at the head of their men (captives.js): a camp's chieftain is the one already in its ranks
-  if(enc)for(const L of battleLeaders(enc)){let u=L.type==='chief'&&L.team===1&&units.find(x=>x.team===1&&x.type==='chief'&&!x.leader);
-    const C=charOf(L.ref);if(!u){u=mk(C,L.team,L.team?BW-96:96,BH/2+(L.team?0:30));units.push(u)}else{u.s=C.fieldStats(env,L.team,lv);u.unit=C;u.type=C.key}u.hp=u.max=u.s.hp;u.leader=L}// (one already in the ranks: a chief, made a leader)
-  // (each holds where it stands until you order otherwise, or hand the army to the AI: deploy.js)
-  const groups=Object.fromEntries(GRPS.map(g=>[g,new BattleControl(g,0)]));// (each group its battle control: battlecontrol.js)
-  units.forEach(u=>{if(u.team===0&&!u.hero&&!u.lord&&!u.leader)u.grp=grpOf(u.s)});hero.grp='hero';// (you lead your own group, and fight on your own)
-  for(const g of GRPS){const m=units.filter(u=>u.grp===g);if(!m.length)continue;const gr=groups[g];
-    gr.ax=m.reduce((a,u)=>a+u.x,0)/m.length;gr.ay=m.reduce((a,u)=>a+u.y,0)/m.length;m.forEach(u=>{u.sx=u.x-gr.ax;u.sy=u.y-gr.ay})}
-  foeGroupsInit(units,groups,opts);// the enemy army's groups, under their captain (commander.js)
-  const FI=measureField();
-  B={units,hero,groups,env,arena:arenaFor(env.c),ftop:FI.top,fbot:FI.bot,obs:opts.tournament?[]:placeObstacles(env,FI.top,FI.bot),sel:'all',rings:[],arrows:[],parts:[],floats:[],slashes:[],corpses:[],aim:0,blocking:false,touchBlock:false,mt:null,over:false,endT:0,kills:0,slain:[],lost:{},heroDown:false,opts,t:0};
-  B.speed=BSPEED.v;B.paused=false;// (each battle starts at the speed set in Settings)
-  for(const g of [...GRPS,...FOE_GRPS,...ALLY_GRPS])if(g!=='hero'&&B.groups[g])layForm(g);// (every army into its ranks: formations.js)
-  moraleInit(units,opts);// (each soldier's morale: morale.js)
-  fatigueInit(units);// (each soldier's stamina: fatigue.js)
-  camInit();// (the field seen whole; zoom and pan: camera.js)
-  warmBattle(units);// (its sprites made ahead, a little each frame: sprites.js)
-  deployInit(opts);// (deployment, and who commands your army: deploy.js)
-  G.mode='battle';hidePanel();bbar.hidden=false;buildSlotBar();setOrderUI();battleSpeedUI();autoUI();updateHint();// (the field in sight: measureField)
-  for(const u of units)u.y=clamp(u.y,fieldTop(),fieldBot());for(const g of GRPS)if(g!=='hero'&&B.groups[g].ay)B.groups[g].placeAt(B.groups[g].ax,clamp(B.groups[g].ay,fieldTop(),fieldBot()));
-  log(opts.tournament?'The crowd roars. Defeat the champion.':'The lines meet in the '+env.name.toLowerCase()+'. '+env.text);
-}
+// Setup, player commands and resolution live in their own files; this file owns combat simulation.
 const nearest=u=>{let best=null,bd=1e9;for(const e of B.units){if(e.hp<=0||e.team===u.team)continue;const d=((e.x-u.x)**2+(e.y-u.y)**2)*(e.rout?9:1);if(d<bd){bd=d;best=e}}return best};
 function fx(x,y,c,n){for(let i=0;i<n;i++)B.parts.push({x,y,vx:(Math.random()-.5)*70,vy:(Math.random()-.5)*70,life:.35,c})}
 function applyDmg(t,amt,m,dt){
@@ -132,7 +48,7 @@ function earnXp(u,t,was){if(!u||u.team!==0||u.hero||u.comp||u.lord||u.leader||!t
   u.xp=(u.xp||0)+dealt*TROOP_XP.dmg+(was>0&&t.hp<=0?TROOP_XP.kill*(ST[t.type]&&ST[t.type].tier||1):0)}
 function hit(att,t,dm,dt){
   const m=matchup(att.s,t.s,dt);dm*=m*(att.buffT>0?1.3:1);if(att.comp)compTrain(att.type,compMeleeSk(att.type),2);
-  if(t.hero&&B.blocking){const a=Math.atan2(att.y-t.y,att.x-t.x),df=Math.abs(Math.atan2(Math.sin(a-B.aim),Math.cos(a-B.aim)));if(df<1.25&&guard(dm)){dm*=blockMul();fx(t.x+Math.cos(B.aim)*10,t.y-6,'#cfe0ff',5);B.floats.push({x:t.x,y:t.y-14,t:'Block',life:.5,c:'#9fc0ff'})}}
+  if(t.hero&&B.blocking){const a=Math.atan2(att.y-t.y,att.x-t.x),df=angGap(a,B.aim);if(df<1.25&&guard(dm)){dm*=blockMul();fx(t.x+Math.cos(B.aim)*10,t.y-6,'#cfe0ff',5);B.floats.push({x:t.x,y:t.y-14,t:'Block',life:.5,c:'#9fc0ff'})}}
   const was=t.hp;applyDmg(t,dm*formTaken(t,att)*flankMul(t,att),m,dt||dtOf(att.s));vfxHit(att,t,dm);earnXp(att,t,was);// (its formation: formations.js; the side it is hit on: morale.js)
 }
 // arrows and bolts: src is the shooter's stats (its class, tags and bolt colour)
@@ -153,15 +69,13 @@ function fireBolt(u,a,dmg,src,dist,opts){
   B.arrows.push({...base,x:u.x,y:u.y-6,vx:Math.cos(a)*v,vy:Math.sin(a)*v,life:mag?1.4:1.1,magic:mag,col:src.bolt||'#c58af0'});
 }
 const arcZ=a=>a.z||0;
-// where a bow shot of speed v at angle ang comes down
-const arrowRange=(v,ang)=>v*v*Math.sin(2*ang)/ARROW_G;
 // one step of an arcing arrow: trees catch it only low, it hits on the way down, a miss sticks in the ground
 function arcStep(a,dt){
   a.t+=dt;a.x+=a.vx*dt;a.y+=a.vy*dt;a.z+=a.vz*dt;a.vz-=a.g*dt;const z=Math.max(0,a.z);
   if(z<10&&!a.elf)for(let k=0;k<B.obs.length;k++){const o=B.obs[k];if(o.kind==='tree'&&!(a.tk&1<<k)&&Math.hypot(a.x-o.x,a.y-o.y)<o.r+2){a.tk|=1<<k;if(Math.random()<.35){a.life=0;fx(a.x,a.y-z-4,'#8b5a2b',2);return}}}
   if(z<9)for(const e of B.units){if(e.hp<=0||e.team===a.team)continue;if(Math.abs(e.x-a.x)<(e.s.big?14:6)&&Math.abs(e.y-a.y)<(e.s.big?10:5)){
     const mu=matchup(a.src||{},e.s);let dm=a.dmg*mu;
-    if(e.hero&&B.blocking){const df=Math.abs(Math.atan2(Math.sin(a.a+Math.PI-B.aim),Math.cos(a.a+Math.PI-B.aim)));if(df<1.25&&guard(dm)){dm*=blockMul();fx(a.x,a.y-6,'#cfe0ff',4)}}
+    if(e.hero&&B.blocking){const df=angGap(a.a+Math.PI,B.aim);if(df<1.25&&guard(dm)){dm*=blockMul();fx(a.x,a.y-6,'#cfe0ff',4)}}
     if(a.web){e.slow=2;B.floats.push({x:e.x,y:e.y-20,t:'Webbed',life:.6,c:'#e4e0cf'})}if(a.src&&a.src.heroShot)train('archery',1.5);{const O={x:a.x-a.vx,y:a.y-a.vy,arrow:!a.magic},was=e.hp;e.shotAt=B.t;applyDmg(e,dm*formTaken(e,O)*flankMul(e,O),mu,dtOf(a.src));vfxHit(O,e,dm,{arrow:!a.magic,magic:a.magic,col:a.col||(a.src&&a.src.bolt)});if(!a.magic)stickArrow(e,a);earnXp(a.by,e,was)}a.life=0;return}}
   if(a.z<=0&&a.t>.03){a.life=0;B.parts.push({x:a.x,y:a.y-1,vx:0,vy:0,life:5,c:'#c9b48a',stuck:a.vx>=0?1:-1});vfx({k:'dust',x:a.x,y:a.y,vx:0,vy:-3,r:1,grow:5,life:.3,col:dustCol()})}// (it stays where it lands a while)
 }
@@ -204,7 +118,7 @@ function meleeFollow(u,t,dm){
 const troopStyle=u=>unitClass(u.s)==='spear'?'thrust':u.type==='chief'||u.s.big||u.s.dmg>=14?'overhead':(u.atkN%3===0?'overhead':'swing');
 function breathe(u,t){
   const a=Math.atan2(t.y-u.y,t.x-u.x),ox=u.x+Math.cos(a)*14,oy=u.y-10;u.face=Math.cos(a)>=0?1:-1;u.atkAt=B.t;
-  for(const e of B.units){if(e.hp<=0||e.team===u.team)continue;const ea=Math.atan2(e.y-u.y,e.x-u.x),df=Math.abs(Math.atan2(Math.sin(ea-a),Math.cos(ea-a)));
+  for(const e of B.units){if(e.hp<=0||e.team===u.team)continue;const ea=Math.atan2(e.y-u.y,e.x-u.x),df=angGap(ea,a);
     if(df<.5&&Math.hypot(e.x-u.x,e.y-u.y)<95)hit(u,e,14*(.8+Math.random()*.4)*(tagsOf(e.s).includes('ward')?.6:1))}
   for(let i=0;i<34;i++){const j=a+(Math.random()-.5)*.9,v=70+Math.random()*90;B.parts.push({x:ox,y:oy,vx:Math.cos(j)*v,vy:Math.sin(j)*v-20,life:.5,c:Math.random()<.5?'#ff7a30':'#ffd24a'})}
   B.floats.push({x:u.x,y:u.y-30,t:'FIRE',life:.6,c:'#ff9a50'});shakeIt(3);
@@ -229,13 +143,11 @@ function shotKind(u){
 function shotTimes(u){const f=SHOOT.kinds[shotKind(u)],tot=u.hero?heroShot().cd*(u.s.cd/.45):u.s.cd;return{aim:u.s.aim??tot*f[0],reload:u.s.reload??tot*f[1]}}
 // (all round: a mage's bolt (their spells keep their own shapes: battle/abilities.js), a rider, a unit marked 'circle')
 const roundFire=u=>!!(u.s.magic||u.s.mounted||tagsOf(u.s).includes('circle'));
-const angGap=(a,b)=>Math.abs(Math.atan2(Math.sin(a-b),Math.cos(a-b)));
 // (his arc: where his group faces (its formation's front: your orders turn it, or its commander's), the way he walks while he
 // walks; he never turns it himself, and shoots only what is in it. Alone, outside any group, where he last faced (u.aimA))
 const bodyAim=u=>(u.face||(u.team?-1:1))>0?0:Math.PI;
 const arcAim=u=>{if(u.walkA!=null)return u.walkA;const g=u.grp&&B.groups[u.grp];if(g&&g.face!=null)return g.face;return u.aimA!=null?u.aimA:bodyAim(u)};
 const inArc=(u,t)=>roundFire(u)||angGap(Math.atan2(t.y-u.y,t.x-u.x),arcAim(u))<=SHOOT.arc/2+.01;
-function turnTo(a,b,step){const d=Math.atan2(Math.sin(b-a),Math.cos(b-a));return Math.abs(d)<=step?b:a+Math.sign(d)*step}
 // a moment of a shooter: turn (toward a foe they may shoot, else the way they go, else their formation's front), then draw, loose, reload
 function shotStep(u,g,t,can,mv,dx,dy,mx,my,dt,strike){
   // (walking, his arc is the way he walks; standing, his group's front: he turns nothing himself. His body faces the side his arc
@@ -263,7 +175,6 @@ const SKIRM={keep:.6,until:.85,max:140,burst:1.5,stand:1.2,outpaced:1.15,room:24
 const onTheMove=s=>!!s&&!s.magic&&(tagsOf(s).includes('mobile')||s.race==='elf');
 const BLADE={reach:12,dmg:.6,cd:.8};
 const meleeFoe=(u,r)=>{let best=null,bd=r;for(const e of B.units){if(e.hp<=0||e.team===u.team||e.rout||e.s.range)continue;const d=Math.hypot(e.x-u.x,e.y-u.y)-(e.s.big?12:0);if(d<bd){bd=d;best=e}}return best};
-const closeFoe=(u,r)=>{let best=null,bd=r;for(const e of B.units){if(e.hp<=0||e.team===u.team||e.rout)continue;const d=Math.hypot(e.x-u.x,e.y-u.y)-(e.s.big?12:0);if(d<bd){bd=d;best=e}}return best};
 function bladeBlow(u,e){const s=u.s,dm=meleeDmgOf(s)*(.8+Math.random()*.4)*tiredMul(u).dmg;u.cd=s.cd*BLADE.cd*(.9+Math.random()*.2);u.atkAt=B.t;u.atkStyle='swing';fatigueBlow(u);u.face=e.x>=u.x?1:-1;hit(u,e,dm);meleeFollow(u,e,dm)}
 /* whom a soldier goes for by himself (fire at will): the nearest foe in his reach, one already in his arc first (he turns for
    none he need not); out of reach, the nearest, to face or close on. Routers last. Nothing cleverer: whom to finish, whom to
@@ -353,40 +264,7 @@ function crowdTarget(u,dt){
 const RELOCATE={near:6,max:8};
 function moveOrder(g){const gr=B.groups[g];if(gr)gr.mvId=(gr.mvId||0)+1}
 const relocating=(u,g)=>!!(g&&g.mvId&&u.mvId!==g.mvId&&g.order==='hold'&&!g.tgt);
-const RTS_PICK=10;
-// the unit under a point: on a group's icon, its soldier nearest the group's middle (the icon is clicked as the group: select,
-// attack, everything a click on a soldier does); else the nearest soldier within RTS_PICK
-function rtsUnitAt(x,y,team){
-  const ic=iconAt(x,y,team);if(ic){let best=null,bd=1e9;for(const u of B.units){if(u.hp<=0||u.grp!==ic.g)continue;const d=Math.hypot(u.x-ic.cx,u.y-ic.cy);if(d<bd){bd=d;best=u}}if(best)return best}
-  let best=null,bd=RTS_PICK;for(const u of B.units){if(u.hp<=0||u.team!==team)continue;const d=Math.hypot(u.x-x,u.y-6-y);if(d<bd){bd=d;best=u}}return best}
-// select: a click picks the group of the unit under it (nothing under it: all); a box picks every group with a unit inside
-function rtsSelect(x0,y0,x1,y1,add){
-  const was=add?selGroups():[];
-  if(Math.hypot(x1-x0,y1-y0)<5){const u=rtsUnitAt(x1,y1,0);B.sel=u&&GRPS.includes(u.grp)?u.grp:add?B.sel:'all'}// (your allies' men are theirs to command)
-  else{const xa=Math.min(x0,x1),xb=Math.max(x0,x1),ya=Math.min(y0,y1),yb=Math.max(y0,y1),gs=GRPS.filter(g=>grpUnits(g).some(u=>u.x>=xa&&u.x<=xb&&u.y-6>=ya&&u.y-6<=yb));
-    B.sel=!gs.length?B.sel:gs.length===1?gs[0]:gs.length===GRPS.filter(g=>grpUnits(g).length).length?'all':gs}
-  if(add&&B.sel!=='all'){const all=[...new Set([...was,...selGroups()])].filter(g=>grpUnits(g).length);B.sel=all.length>=GRPS.filter(g=>grpUnits(g).length).length?'all':all.length===1?all[0]:all}// (Shift: added to what you had)
-  setOrderUI();
-}
-// right-click: on an enemy, the selected set on it; on the ground, sent there keeping their places relative to one another
-// (opt.queue: Shift, a waypoint after the ones they have; opt.run: a double right-click, at a run)
-function rtsOrder(x,y,opt){
-  opt=opt||{};const gs=selGroups().filter(g=>grpUnits(g).length);if(!gs.length)return;takeCommand();
-  if(B.deploy){const p=inZone(x,y);x=p.x;y=p.y;opt={}}// (deploying: a spot in your zone, no enemy to set them on)
-  const e=B.deploy?null:rtsUnitAt(x,y,1);
-  {const ic=!e&&iconAt(x,y,0);if(ic&&!B.deploy){x=ic.cx;y=ic.cy}}// (on one of your icons: to where that group stands)
-  gs.forEach(g=>B.groups[g].setRun(!!opt.run));// (a double right-click: this order at a run, a charge on an enemy)
-  if(!e&&opt.queue){// a waypoint after their last, the groups keeping their places relative to one another
-    gs.forEach(g=>B.groups[g].toHold());
-    const last=g=>{const gr=B.groups[g];return gr.queue.length?gr.queue[gr.queue.length-1]:{x:gr.ax,y:gr.ay}},cx=gs.reduce((a,g)=>a+last(g).x,0)/gs.length,cy=gs.reduce((a,g)=>a+last(g).y,0)/gs.length;
-    gs.forEach(g=>{const l=last(g);B.groups[g].queueTo(x+l.x-cx,y+l.y-cy)});B.mark={x,y,t:.7,foe:false};setOrderUI();return}
-  if(e){gs.forEach(g=>B.groups[g].attack(e,{run:!!opt.run}));log(selLabel()+': attack the '+(e.leader?e.leader.name:ST[e.type]?ST[e.type].n.toLowerCase():'enemy')+'.')}
-  else{gs.forEach(regroup);const cx=gs.reduce((a,g)=>a+B.groups[g].ax,0)/gs.length,cy=gs.reduce((a,g)=>a+B.groups[g].ay,0)/gs.length;
-    gs.forEach(g=>{const gr=B.groups[g];gr.moveTo(x+gr.ax-cx,y+gr.ay-cy,{run:!!opt.run})})}
-  if(B.deploy)deploySnap(gs);
-  B.mark={x,y,t:.7,foe:!!e};setOrderUI();
-}
-/* the manual control of your hero, set aside for now (RTS command above): WASD, Space, F, B, the skill slots (input.js) */
+/* the manual control of your hero, set aside for now (RTS command: commands.js): WASD, Space, F, B, the skill slots (input.js) */
 function updateHero(dt){
   const h=B.hero;B.blocking=!!(G.keys.b||B.touchBlock);
   if(!h||h.hp<=0){B.blocking=false;return}
@@ -425,7 +303,7 @@ function updateBattle(rt){
       if(!a.elf&&!a.magic)for(let k=0;k<B.obs.length;k++){const o=B.obs[k];if(o.kind==='tree'&&!(a.tk&1<<k)&&Math.hypot(a.x-o.x,a.y-(o.y-6))<o.r+2){a.tk|=1<<k;if(Math.random()<.25){a.life=0;fx(a.x,a.y,'#8b5a2b',2)}}}
       if(a.life<=0)continue;
       for(const e of B.units){if(e.hp<=0||e.team===a.team)continue;if(Math.abs(e.x-a.x)<(e.s.big?14:6)&&Math.abs((e.y-(e.s.big?10:6))-a.y)<(e.s.big?11:7)){
-        const mu=matchup(a.src||{},e.s);let dm=a.dmg*mu;if(e.hero&&B.blocking){const df=Math.abs(Math.atan2(Math.sin(a.a+Math.PI-B.aim),Math.cos(a.a+Math.PI-B.aim)));if(df<1.25&&guard(dm)){const bl=blockMul();dm*=a.magic?Math.max(.5,bl):bl;fx(a.x,a.y,'#cfe0ff',4)}}
+        const mu=matchup(a.src||{},e.s);let dm=a.dmg*mu;if(e.hero&&B.blocking){const df=angGap(a.a+Math.PI,B.aim);if(df<1.25&&guard(dm)){const bl=blockMul();dm*=a.magic?Math.max(.5,bl):bl;fx(a.x,a.y,'#cfe0ff',4)}}
         if(a.web){e.slow=2;B.floats.push({x:e.x,y:e.y-20,t:'Webbed',life:.6,c:'#e4e0cf'})}if(a.by&&a.by.comp)compTrain(a.by.type,'archery',1.5);{const O={x:a.x-a.vx,y:a.y-a.vy,arrow:!a.magic},was=e.hp;e.shotAt=B.t;applyDmg(e,dm*formTaken(e,O)*flankMul(e,O),mu,dtOf(a.src));vfxHit(O,e,dm,{arrow:!a.magic,magic:a.magic,col:a.col||(a.src&&a.src.bolt)});if(!a.magic)stickArrow(e,a);earnXp(a.by,e,was)}a.life=0;
         if(a.magic){const sr=a.src&&a.src.splash||18,sm=a.src&&a.src.splashMul||.5;if(sr>=28)vfxExplode(a.x,a.y,sr,a.col);// (a fireball: an explosion, vfx.js)
         B.rings.push({x:a.x,y:a.y,r:sr,life:.25,max:.25,col:'210,170,255'});for(const o of B.units)if(o!==e&&o.hp>0&&o.team!==a.team&&Math.hypot(o.x-a.x,o.y-6-a.y)<sr)applyDmg(o,a.dmg*matchup(a.src||{},o.s)*sm,1,dtOf(a.src))}
@@ -444,23 +322,4 @@ function updateBattle(rt){
   for(const s of B.slashes)s.life-=rt;B.slashes=B.slashes.filter(s=>s.life>0);
   for(const r of B.rings)r.life-=rt;B.rings=B.rings.filter(r=>r.life>0);
   G.shake=Math.max(0,G.shake-rt*14);
-}
-function finishBattle(){
-  if(!B.opts.tournament)for(const u of B.units)if(u.team===0&&!u.hero&&!u.comp&&!u.lord&&!u.leader&&(u.hp>0||u.left))(B.txp=B.txp||{})[u.type]=(B.txp[u.type]||0)+(u.xp||0)+TROOP_XP.fight+(B.win?TROOP_XP.win:0);
-  const txp=B.txp||{},o=B.opts,win=B.win,retreat=!!B.retreat,caught=B.caught||0,got=B.withdrawn||0,standing=B.units.filter(u=>u.team===1&&u.hp>0).length,fallen=Object.values(B.lost).reduce((a,n)=>a+n,0);bbar.hidden=true;G.mode='dialog';lootStart();
-  const lost=o.tournament?{}:B.lost,kills=B.kills,slain=B.slain,h=B.hero,X=B.hx;
-  if(B.bestCombo>=3)log('Your longest chain of blows: '+B.bestCombo+' hits.');
-  if(B.fired&&B.win&&ammoOf()){const back=invAdd('good',ammoOf(),Math.floor(B.fired*(.35+Math.random()*.2)));if(back)log('You gather '+back+' '+GOODS[ammoOf()].n.toLowerCase()+' from the field.')}
-  // carry the hero's condition out of the fight; a knocked-out hero comes to at 10% health
-  if(h.hp>0||h.left)P.hp=h.left?h.hpLeft:h.hp;else{P.hp=Math.max(1,Math.round(h.max*.1));log('You come to after the fight, badly wounded.','bad')}
-  if(X){P.sp=X.sp;P.mp=X.mp}
-  {const m=B.units.filter(u=>u.team===0&&!u.hero&&!u.lord&&!u.leader&&!u.comp&&u.mor0);
-    BATTLE_MOOD=o.tournament||!m.length?null:{share:fallen/m.length,shaken:m.filter(u=>u.hp>0||u.left).reduce((a,u)=>a+clamp((u.rout?0:u.mor)/u.mor0,0,1),0)/Math.max(1,m.filter(u=>u.hp>0||u.left).length),broke:B.routed===1}}
-  B=null;updateHint();
-  if(o.tournament){
-    let html;if(win){P.gold+=45;P.renown+=6;gainXp(25);if(G.town)addRep(G.town.ref.name,8);html='<h2>Champion</h2><p>The crowd chants your name. You take <strong class="gold">45 gold</strong> and gain renown.</p>';log('You win the tournament.','good')}
-    else{html='<h2>Beaten</h2><p>The champion takes your entry fee and sends you off with a bruised pride.</p>';log('You lose the tournament.','bad')}
-    lootShow(html,null,0,'back-town');return;
-  }
-  concludeEncounter(win,lost,kills,false,slain,retreat&&{caught,got,standing,fallen,carried:h.hp<=0&&!h.left},txp);
 }

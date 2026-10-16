@@ -16,10 +16,10 @@ function saveGame(quiet,slot){
   try{localStorage.setItem(slotKey(slot),JSON.stringify(d));if(!quiet)log('Game saved'+(slot==='auto'?'':' ('+slotName(slot)+')')+'.','good')}
   catch(e){if(!quiet)log('Could not save. Browser storage is unavailable.','bad')}
 }
-function loadGame(slot){G.scene=null;
+function loadGame(slot){
   const d=readSave(slot);if(!d)return showTitle();
-  Object.assign(P,d.P);registerRecruits();const sk=mkSkills();for(const k in sk)if(!P.sk[k])P.sk[k]=sk[k];
-  G.day=d.day;G.clock=d.clock;setSpeed(d.speed||1);G.paused=false;pauseUI();
+  resetSession(d.P);registerRecruits();const sk=mkSkills();for(const k in sk)if(!P.sk[k])P.sk[k]=sk[k];
+  G.day=d.day;G.clock=d.clock;G.rankSeen=P.renown>=250?1:0;setSpeed(d.speed||1);G.paused=false;pauseUI();
   G.lastTown=TOWNS.find(t=>t.name===d.last)||null;G.capture=null;G.bes=null;if(P.siege===undefined)P.siege=null;if(P.raid===undefined)P.raid=null;G.perkOffer=d.perkOffer;G.town=null;G.enc=null;
   // a save from a smaller map: stretch the hero, lords and dragon onto this one; sites, beasts and bandits are placed afresh
   const k=MW/(d.mw||112);if(k!==1){P.x*=k;P.y*=k;const w=d.world;if(w){(w.lords||[]).forEach(l=>{l.x*=k;l.y*=k});if(w.dragon){['x','y','tx','ty'].forEach(f=>{if(w.dragon[f]!=null)w.dragon[f]*=k})}w.sites=null;w.critters=null;w.monsters=null;w.caravans=null;w.refugees=null;w.patrols=null;w.fights=null}d.bandits=[];
@@ -36,7 +36,7 @@ function loadGame(slot){G.scene=null;
     if(lost.length)spilled=' Your bag could not hold everything: '+lost.join(', ')+' left behind.';delete P.cargo}
   if(!P.rep)P.rep={};if(!P.honor)P.honor={};if(!d.P.tree){P.tree=[];P.tp=Math.max(0,P.level-1)}if(!P.origin)P.origin=originOf(P.bg);if(!P.tree.includes(P.origin)){P.tree.unshift(P.origin);applyNode(P.origin,1)}if(P.pts>0){P.tp=(P.tp||0)+P.pts;log('Your '+P.pts+' unspent attribute point'+(P.pts>1?'s are':' is')+' now skill points.','gold');P.pts=0}P.tree=P.tree.filter(id=>TREE[id]);if(!d.P.slots){P.slots=Array(10).fill(null);Object.keys(HSKILLS).filter(knows).slice(0,10).forEach((id,i)=>P.slots[i]=id)}P.slots=P.slots.map(id=>id&&HSKILLS[id]?id:null);if(!P.quests)P.quests=[];if(!P.jobs)P.jobs={};G.lordJob=null;
   if(!P.hostile)P.hostile={};if(!P.txp)P.txp={};if(!P.fac)P.fac=null;if(!P.race)P.race='human';G.chase=null;
-  const mig=o=>{for(const k of Object.keys(o))if(MIG[k]){o[MIG[k]]=(o[MIG[k]]||0)+o[k];delete o[k]}};mig(P.troops);mig(P.prisoners);
+  const mig=o=>{for(const k of Object.keys(o))if(MIG[k]){o[MIG[k]]=(o[MIG[k]]||0)+o[k];delete o[k]}};mig(P.troops);mig(P.prisoners);txpClamp();
   // world v2: five factions, owners stored by holding name. Older worlds restart their realms; the hero keeps everything.
   if(d.world&&d.world.v===2){TOWNS.forEach(t=>{const o=d.world.own.find(x=>x[2]===t.name);t.owner=o?o[0]:HOME[t.name];t.gar=o?o[1]:t.T.gar;const x=o&&o[3]||{};t.sacked=x.s||0;t.raided=x.r||0;t.turmoil=x.u||0;t.grow=x.g!=null?x.g:GROW0;t.lastOwner=t.owner;t.fear=x.f||0;t.crime=x.cr||null;t.watchOff=x.wo||0;if(x.b){t.bld=x.b;t.wall=x.w;t.work=x.k||null}else initEstates(t);t.lots=x.l||null;
     if(x.e){t.stock=x.e.st;t.pop=x.e.pop;t.pros=x.e.pros;t.tax=x.e.tax;t.vol=x.e.vol;t.popF=x.e.pf||0}else initEconomy(t)});W.treas=d.world.treas||{};W.rel=d.world.rel||{};W.dead=d.world.dead||{};W.lords=d.world.lords||[];W.exiles=d.world.exiles||[];W.lords.forEach(l=>{asParty(l);l.troops=l.troops.map(k=>MIG[k]||k)});W.mythic=d.world.mythic||{};{const od=d.world.dragon;if(od&&!d.world.mythic)W.mythic.dragon={back:od.alive?G.day:od.back||G.day+8}}}

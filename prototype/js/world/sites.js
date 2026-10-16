@@ -200,7 +200,6 @@ class TravellersCamp extends Site{
 const SITE_CLASS={camp:BanditCamp,cave:Cave,travelers:TravellersCamp,hideout:Hideout,ruins:Ruins,shrine:Shrine};
 // a site of its kind again (from a save); and the old names, read through the classes
 const siteOf=s=>s instanceof Site?s:Object.setPrototypeOf(s,SITE_CLASS[s.type].prototype);
-const siteLabel=s=>s.label;
 const siteKnown=s=>s.known();
 const camps=()=>W.sites.filter(s=>s instanceof BanditCamp);
 const siteClear=(type,tx,ty)=>SITE_CLASS[type].clear(tx,ty);

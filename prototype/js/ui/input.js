@@ -31,11 +31,11 @@ function act(a,arg){
   if(fiefAct(a,arg,t)){}
   else if(a==='tab'){G.town.tab=arg;G.town.greet=null}
   else if(a==='rec-pick'){G.town.pick=arg}// (the unit card shown beside the recruits: unitcard.js)
-  else if(a==='hire'){const c=hireCost(arg);if(!canHire(t,arg))log('The people of '+t.name+' do not know you well enough yet.','bad');else if((t.vol||0)<1)log('No one else in '+t.name+' will take up arms today.','bad');else if(P.gold>=c&&partySize()<partyCap()){P.gold-=c;t.vol--;t.pop=Math.max(10,t.pop-1);P.add(arg);log(cap1(an(ST[arg].n.toLowerCase()))+' joins your band.')}}
-  else if(a==='train'){const [k,to]=arg.split(':'),c=trainCost(to);if(UP[k]&&UP[k].includes(to)&&P.gold>=c&&P.troops[k]>0){if(txpReady(k)<1)log(ST[k].n+' needs more experience first ('+Math.floor(txpOf(k)%txpNeed(k))+' / '+txpNeed(k)+' XP): fight with them.','bad');else{P.gold-=c;P.txp[k]-=txpNeed(k);P.remove(k);P.add(to);txpClamp();log(ST[k].n+' trained into '+ST[to].n.toLowerCase()+'.')}}}
+  else if(a==='hire')recruitmentFeedback(recruitment.hire(t,arg),t);
+  else if(a==='train'){const [k,to]=String(arg).split(':');recruitmentFeedback(recruitment.train(t,k,to),t)}
   else if(a==='contract'){if(!P.fac){P.fac=t.owner;delete P.hostile[t.owner];log('You sign on with the '+FACS[t.owner].n+'. Their enemies are now yours.','gold')}}
   else if(a==='end-contract'){if(P.fac===t.owner){P.fac=null;log('You end your contract with the '+FACS[t.owner].n+'.')}}
-  else if(a==='hire-comp'){const c=COMPS[arg];if(!P.comps[arg]&&P.gold>=c.cost&&partySize()<partyCap()){P.gold-=c.cost;P.comps[arg]={ap:0,role:''};log(c.n+' joins your band. Give them a role with C.','good')}}
+  else if(a==='hire-comp')recruitmentFeedback(recruitment.hireCompanion(t,arg),t);
   else if(a==='ransom'){const v=ransomValue();if(v){P.gold+=v;log('The broker pays '+v+' gold for '+prisonerCount()+' prisoners.','gold');P.prisoners={};mood('ransom')}}
   else if(a==='buy-gear'){const st=smithStock(t),id=st[+arg];if(id&&P.gold>=gearPrice(id)&&invAdd('gear',id,1)){P.gold-=gearPrice(id);st.splice(+arg,1);addRep(t.name,ITEMS[id].v/120,true);log('You buy the '+ITEMS[id].n+'.','gold')}}
   else if(a==='buy-ammo'){const [g,ns]=arg.split(':'),n=+ns;if(GOODS[g]&&GOODS[g].ammo){const r=buyGoods(t,g,n);if(r.got)log('You buy '+r.got+' '+GOODS[g].n.toLowerCase()+'.');else log('The smith has no '+GOODS[g].n.toLowerCase()+' to sell.','bad')}}
@@ -103,7 +103,7 @@ cv.addEventListener('pointerdown',e=>{
   if(G.mode==='world'){const wx=G.cam.x+p.x,wy=G.cam.y+p.y;if(G.place){if(e.button===2){G.place=null;log('You stop placing.')}else placeClick(wx,wy);return}if(P.stay)return stayClick(wx,wy);if(clickAt(wx,wy)||G.chase)return;
     P.tx=clamp(wx,8,MW*TILE-8);P.ty=clamp(wy,8,MH*TILE-8);P.stuck=0}
   else if(G.mode==='scene')sceneClick(p.x,p.y);
-  // battle: RTS command (battle.js): left-click or drag to select, right-click to move or attack (a touch: select, then a
+  // battle: RTS command (commands.js): left-click or drag to select, right-click to move or attack (a touch: select, then a
   // second touch sends them)
   // (the camera, camera.js: the middle button pans, a click on the small map looks there; every point is on the field)
   else if(G.mode==='battle'&&B){const mh=miniHit(p),q=toField(p);

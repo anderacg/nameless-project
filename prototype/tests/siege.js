@@ -76,7 +76,9 @@ try{
  at(fr);t.updateWorld(.01);ok(G.mode==='town','with the siege broken the gates open');t.act('leave');done();
  // your raid draws the owner's lords
  const vi2=t.TOWNS.find(x=>x.kind==='village'&&x.owner==='karn'&&!x.raided),kl={id:'k1',name:'Rescuer',fac:'karn',x:vi2.x+300,y:vi2.y,troops:Array(12).fill('dw_clan'),state:'rest',tgt:t.fiefsOf('karn')[0].name,sd:0,dead:false,cool:0};
- W.lords=[kl];army();at(vi2);t.updateWorld(.01);{const r=Math.random;Math.random=()=>.5;t.act('sg-raid-auto');Math.random=r}/* (the auto-resolve's dice fixed: this is about the lords, not luck) */t.act('cont');done();t.lordThink(kl);ok(P.raid&&kl.state==='relieve'&&kl.tgt===vi2.name,'the village lords ride to stop your raid');
+ // Days of world simulation above can build a palisade here (reproduced with seed 28). This scenario specifically needs a raid, not a siege.
+ vi2.wall=0;
+ W.lords=[kl];army();at(vi2);t.updateWorld(.01);{const r=Math.random;Math.random=()=>.5;t.act('sg-raid-auto');Math.random=r}/* (the auto-resolve's dice fixed: this is about the lords, not luck) */t.act('cont');done();t.lordThink(kl);ok(P.raid&&kl.state==='relieve'&&kl.tgt===vi2.name,'the village lords ride to stop your raid (wall '+t.wallOf(vi2)+', mode '+G.mode+', raid '+!!P.raid+', lord '+kl.state+', target '+kl.tgt+')');
  const f0=t.foodN();P.x+=200;t.updateWorld(.01);ok(!P.raid&&vi2.raided>G.day,'walking away ends the raid early with part of the loot'+(P.raid?' (still raiding: mode '+G.mode+', paused '+G.paused+', capture '+!!G.capture+', stay '+!!P.stay+', '+Math.round(Math.hypot(P.x-vi2.x,P.y-vi2.y))+' px)':''));W.lords=[];
  // save and load
  G.mode='world';G.modal=false;t.hidePanel();t.saveGame();const snap=JSON.stringify(t.TOWNS.map(x=>[x.owner,x.sacked||0,x.raided||0,x.turmoil||0]));t.act('load');

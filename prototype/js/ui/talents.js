@@ -1,5 +1,6 @@
 'use strict';
 /* ---------- the Skills page: skill tree, skill bar, disciplines ---------- */
+// Graph rules, spending, refunds and slot commands live in core/talents.js; this file presents their results.
 // One word for one thing: the Skill tree holds every passive, notable, keystone and active skill; you learn them with skill points
 // (one per level). Active skills go into the ten skill slots on the Skill bar: your hero uses them in battle when the moment is
 // right (battles are commanded, not played by hand: no keys). Disciplines rise as you use them. The special skills sit apart: the
@@ -7,45 +8,6 @@
 // P.tree: learned node ids (your origin always; P.origin). P.tp: unspent skill points. P.slots: ten slot entries, an active skill id or null.
 // Every character has a tree of its own (o: its record, with tree, tp, slots and attr; yours is P): the ...Of functions work on any
 // record, the plain ones on yours. A companion, a lord or a chieftain starts from the crossroads ('start'); you from your origin.
-const knowsOf=(o,id)=>!HSKILLS[id].learn||treeHasOf(o,HSKILLS[id].learn);
-const treeHasOf=(o,id)=>(o.tree||[]).includes(id);
-const treeRootOf=o=>o===P&&P.origin&&treeHasOf(P,P.origin)?P.origin:'start';
-const canTakeOf=(o,id)=>!treeHasOf(o,id)&&o.tp>0&&TREE[id].t!=='origin'&&TREE[id].links.some(n=>treeHasOf(o,n));
-const knows=id=>knowsOf(P,id),treeHas=id=>treeHasOf(P,id),treeRoot=()=>treeRootOf(P),canTake=id=>canTakeOf(P,id);
-const refundCost=()=>15*P.level;
-// unlearning must leave every other node connected to the start
-function canRefundOf(o,id){
-  const root=treeRootOf(o);if(id===root||TREE[id].t==='origin'||!treeHasOf(o,id))return false;const keep=new Set(o.tree.filter(x=>x!==id)),seen=new Set([root]),q=[root];
-  while(q.length){const c=q.pop();for(const n of TREE[c].links)if(keep.has(n)&&!seen.has(n)){seen.add(n);q.push(n)}}
-  return seen.size===keep.size;
-}
-const canRefund=id=>canRefundOf(P,id);
-// (your attributes never fall below 1; another's, below 0)
-function applyNodeOf(o,id,sign){const m=TREE[id].m,lo=o===P?1:0;if(m.attr)for(const a in m.attr)o.attr[a]=Math.max(lo,(o.attr[a]||0)+sign*m.attr[a])}
-const applyNode=(id,sign)=>applyNodeOf(P,id,sign);
-// a newly learned active skill takes the first empty slot
-function slotSkillOf(o,id){o.slots=o.slots||Array(10).fill(null);if(o.slots.includes(id))return o.slots.indexOf(id);const i=o.slots.indexOf(null);if(i>=0)o.slots[i]=id;return i}
-const slotSkill=id=>slotSkillOf(P,id);
-// whose it is, for the news ('You', or the character's name)
-const treeWho=o=>o===P?null:(Object.keys(P.comps||{}).find(k=>P.comps[k]===o));
-function takeNodeOf(o,id,quiet){
-  if(!canTakeOf(o,id))return false;o.tree.push(id);o.tp--;applyNodeOf(o,id,1);const u=TREE[id].m.unlock,who=treeWho(o),nm=who&&COMPS[who]?COMPS[who].short:null;
-  if(u){const i=slotSkillOf(o,u);if(!quiet)log((nm?nm+' learns':'Learned')+' the active skill '+HSKILLS[u].n+(i>=0?', in slot '+(i+1):'; put it in a free slot on the Skill bar')+'.','gold')}else if(!quiet)log((nm?nm+' learns':'Learned')+': '+TREE[id].n+'.','gold');
-  return true;
-}
-const takeNode=id=>takeNodeOf(P,id);
-function refundNodeOf(o,id){
-  if(!canRefundOf(o,id)||P.gold<refundCost())return false;P.gold-=refundCost();o.tree=o.tree.filter(x=>x!==id);o.tp++;applyNodeOf(o,id,-1);if(o===P)vitals();
-  const u=TREE[id].m.unlock;if(u)o.slots=(o.slots||[]).map(s=>s===u?null:s);log((o===P?'You unlearn ':COMPS[treeWho(o)].short+' unlearns ')+TREE[id].n+'.');return true;
-}
-const refundNode=id=>refundNodeOf(P,id);
-// an active skill's numbers after its upgrades; Spellcraft lowers the mana it costs
-function abilOf(o,id,spell){
-  const S=HSKILLS[id],t=k=>tmOf(o,k),c=1-t(id+'Cost');
-  return{...S,mp:Math.round(S.mp*c*(1-.02*spell)),sp:Math.round(S.sp*c),cd:+(S.cd*(1-t(id+'Cd'))).toFixed(1),r:1+t(id+'R'),dmg:1+t(id+'Dmg'),stun:t(id+'Stun'),dur:t(id+'Dur')};
-}
-const abil=id=>abilOf(P,id,skill('spell'));
-const dodgeCost=()=>Math.round(STAM.dodge*(1-tm('dodgeCost'))),dodgeCd=()=>DODGE_CD*(1-tm('dodgeCd'));
 // what an active skill does right now, in numbers
 function skillStats(id){
   const A=abil(id),sm=HSKILLS[id].magic?spellMul():1,x=v=>(v*A.dmg*sm).toFixed(2)+'×';
@@ -85,9 +47,9 @@ function treeSvg(){
   return '<svg class="tree" viewBox="'+vbText(treeView())+'" preserveAspectRatio="xMidYMid meet">'+lines+nodes+'</svg>';
 }
 function nodeDetail(){
-  const S=skSubj(),treeHas=id=>treeHasOf(S,id),canTake=id=>canTakeOf(S,id),canRefund=id=>canRefundOf(S,id),treeRoot=()=>treeRootOf(S);
-  const id=G.skSel,N=TREE[id];if(!N)return '';const u=N.m.unlock;
-  const btn=N.t==='origin'?(treeHas(id)?'<span class="muted">'+(S===P?'Your origin':'Their origin')+'</span>':'<span class="muted">Another past\u2019s origin</span>'):treeHas(id)?(id===treeRoot()?'':'<button class="btn sm" type="button" data-act="tree-refund" data-arg="'+id+'"'+(canRefund(id)&&P.gold>=refundCost()?'':' disabled title="'+(canRefund(id)?'Not enough gold':'Other skills depend on it')+'"')+'>Unlearn · '+refundCost()+'g</button>')
+  const S=skSubj(),treeHas=id=>treeHasOf(S,id),canTake=id=>canTakeOf(S,id),treeRoot=()=>treeRootOf(S);
+  const id=G.skSel,N=TREE[id];if(!N)return '';const u=N.m.unlock,refund=talentsOf(S).quoteRefund(id);
+  const btn=N.t==='origin'?(treeHas(id)?'<span class="muted">'+(S===P?'Your origin':'Their origin')+'</span>':'<span class="muted">Another past\u2019s origin</span>'):treeHas(id)?(id===treeRoot()?'':'<button class="btn sm" type="button" data-act="tree-refund" data-arg="'+id+'"'+(refund.ok?'':' disabled title="'+(refund.code==='gold'?'Not enough gold':'Other skills depend on it')+'"')+'>Unlearn · '+refundCost()+'g</button>')
     :'<button class="btn sm primary" type="button" data-act="tree-take" data-arg="'+id+'"'+(canTake(id)?'':' disabled title="'+(S.tp<1?'No skill points':'Not connected to your skills yet')+'"')+'>Learn</button>';
   return '<div class="tdetail"><div><strong>'+N.n+'</strong> <span class="muted">· '+NODE_KIND(N)+(N.br&&N.br!=='hybrid'?' · '+TREE_BRANCHES.find(b=>b.k===N.br).n:'')+'</span><p>'+N.d+(u&&S===P?' <span class="muted">'+skillStats(u)+'.</span>':'')+'</p></div><div class="acts">'+btn+'</div></div>';
 }
@@ -104,7 +66,7 @@ const SPECIAL=[
 ];
 function specialBody(){
   return '<div class="lab" style="margin-top:6px">Special skills · apart from the paths: the basic moves everyone has, and the combo, which grows as you practise your weapon</div><div class="specials">'+
-    SPECIAL.map(S=>{const have=S.have(),can=S.fin&&!P.fin&&finReady();
+    SPECIAL.map(S=>{const have=S.have(),can=talentsOf(P).canChooseFinisher(S.fin);
       return '<div class="spnode'+(have?' on':can?' open':'')+'"><strong>'+S.n+'</strong><small>'+S.d()+'</small>'+(have?'<small class="good">Learned</small>':can?'<button class="btn sm primary" type="button" data-act="sk-fin" data-arg="'+S.fin+'">Choose</button>':'<small class="muted">'+(S.req?S.req():'')+'</small>')+'</div>'}).join('')+'</div>';
 }
 // the Skill bar: the ten slots your hero uses in battle, the active skills you have learned, and the basic moves you can use now
@@ -128,10 +90,10 @@ function skillBarBody(){
 }
 // a companion's skill bar: its slots, the active skills it has learned
 function compSkillBar(S){
-  S.slots=S.slots||Array(10).fill(null);const known=Object.keys(HSKILLS).filter(k=>knowsOf(S,k)),nm=COMPS[skWho()].short;
-  const slot=i=>'<label class="slotpick"><b>'+(i+1)+'</b><select data-act="slot-set" data-arg="'+i+'" aria-label="Skill slot '+(i+1)+'"><option value="">— empty —</option>'+known.map(k=>'<option value="'+k+'"'+(k===S.slots[i]?' selected':'')+'>'+HSKILLS[k].n+'</option>').join('')+'</select></label>';
+  const slots=S.slots||Array(10).fill(null),known=Object.keys(HSKILLS).filter(k=>knowsOf(S,k)),nm=COMPS[skWho()].short;
+  const slot=i=>'<label class="slotpick"><b>'+(i+1)+'</b><select data-act="slot-set" data-arg="'+i+'" aria-label="Skill slot '+(i+1)+'"><option value="">— empty —</option>'+known.map(k=>'<option value="'+k+'"'+(k===slots[i]?' selected':'')+'>'+HSKILLS[k].n+'</option>').join('')+'</select></label>';
   return '<div class="lab">'+nm+'’s skill slots · they use what is in them in battle, when the moment is right</div><div class="slotgrid">'+SLOT_KEYS.map((k,i)=>slot(i)).join('')+'</div>'+
-    '<div class="lab" style="margin-top:6px">Active skills</div>'+(known.length?known.map(id=>'<div class="row"><div class="info"><strong>'+HSKILLS[id].n+'</strong><small>'+HSKILLS[id].d+'</small><small>'+(S.slots.includes(id)?'<span class="gold">In slot '+(S.slots.indexOf(id)+1)+'</span>':'<span class="muted">Not in a slot: '+nm+' will not use it</span>')+'</small></div></div>').join(''):'<p class="muted">No active skills yet. Learn them on '+nm+'’s skill tree.</p>');
+    '<div class="lab" style="margin-top:6px">Active skills</div>'+(known.length?known.map(id=>'<div class="row"><div class="info"><strong>'+HSKILLS[id].n+'</strong><small>'+HSKILLS[id].d+'</small><small>'+(slots.includes(id)?'<span class="gold">In slot '+(slots.indexOf(id)+1)+'</span>':'<span class="muted">Not in a slot: '+nm+' will not use it</span>')+'</small></div></div>').join(''):'<p class="muted">No active skills yet. Learn them on '+nm+'’s skill tree.</p>');
 }
 function disciplinesBody(){
   return '<p class="muted" style="font-size:13px">Disciplines rise as you use them. The skill tree and gear add to them.</p>'+Object.keys(SKILLS).map(k=>{const s=P.sk[k],b=skill(k)-s.lv,need=(s.lv+1)*20,pc=s.lv>=10?100:Math.round(s.xp/need*100);
@@ -162,8 +124,8 @@ function skillsAct(a,arg){
   else if(a==='tree-zout'){treeZoom(1.4);return true}
   else if(a==='tree-fit')G.tv=null;
   // the combo's finishing style: chosen once, when your weapon's discipline is high enough
-  else if(a==='sk-fin'){if(finReady()&&!P.fin&&FIN_STYLE[arg]){P.fin=arg;log('Your combo now ends in a '+(arg==='stun'?'stunning':'crushing')+' finisher.','gold')}}
-  else if(a==='slot-set'){const S=skSubj(),[i,id]=arg.split(':'),n=+i;S.slots=S.slots||Array(10).fill(null);if(n>=0&&n<10&&(!id||HSKILLS[id]&&knowsOf(S,id))){S.slots=S.slots.map(s=>s===id?null:s);S.slots[n]=id||null}}
+  else if(a==='sk-fin'){if(talentsOf(P).chooseFinisher(arg).ok)log('Your combo now ends in a '+(arg==='stun'?'stunning':'crushing')+' finisher.','gold')}
+  else if(a==='slot-set'){const [i,id]=String(arg).split(':');talentsOf(skSubj()).assignSlot(+i,id)}
   updateHUD(true);renderSkills();return true;
 }
 // a double click on an open node learns it

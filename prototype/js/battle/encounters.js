@@ -18,7 +18,7 @@ function stanceMove(o,st,dist,dx,dy,see,sp,canHunt){
   if(st==='wary'&&dist<see*.45){walk(o,-dx,-dy,sp*.5);return true}
   return false;
 }
-function playerList(){const a=['hero',...Object.keys(P.comps)];for(const k in P.troops)for(let i=0;i<P.troops[k];i++)a.push(k);return a}
+function playerList(){return ['hero',...Object.keys(P.comps),...P.list]}
 const BANDS={bandits:['Bandits ahead','raiders'],raiders:['Desert raiders','raiders'],bog:['Bog raiders','raiders']};
 function makeEnemies(n,camp,band){
   const a=[];
@@ -98,8 +98,7 @@ function fleeBtn(e,label){const od=fleeOdds(e);if(od.leave)return '<button class
 function flee(){
   const e=G.enc;if(!e)return;const o=e.ref,od=fleeOdds(e);if(!od.leave&&od.ch<=0)return;
   if(!od.leave&&Math.random()>=od.ch){// they run you down: the rearguard pays, and you must fight
-    const all=[];for(const k in P.troops)for(let i=0;i<P.troops[k];i++)all.push(k);const n=all.length?Math.max(1,Math.round(all.length*.1*(has('rearguard')?.5:1))):0,lost={};
-    for(let i=0;i<n;i++){const k=all.splice(rint(0,all.length-1),1)[0];lost[k]=(lost[k]||0)+1}applyLosses(lost);e.noFlee=true;
+    const n=P.size?Math.max(1,Math.round(P.size*.1*(has('rearguard')?.5:1))):0,lost=countsOf(P.removeAny(n));e.noFlee=true;
     log('They run you down'+(n?': your rearguard loses '+lossText(lost):'')+'. You must fight.','bad');mood('flee');return startEncounter(e)}
   let dx=P.x-o.x,dy=P.y-o.y;const l=Math.hypot(dx,dy)||1;
   walk(P,dx/l,dy/l,od.leave?40:56);if(e.kind!=='camp')o.cool=od.leave?6:12;G.encCool=od.leave?4:3;// got away: they lose your trail for a while
@@ -107,20 +106,8 @@ function flee(){
 }
 // experience: yours (leaders.js), and your companions share what you learn
 function gainXp(n){leaderOf(P).gainXp(n);for(const id of compsInBand())compXp(id,n)}
-function applyLosses(lost){for(const k in lost)P.remove(k,lost[k])}
+function applyLosses(lost){return partyRoster(P).lose(lost)}
 function lossText(lost){const k=Object.keys(lost).filter(x=>lost[x]>0);return k.length?k.map(x=>lost[x]+' '+ST[x].n.toLowerCase()).join(', '):'none'}
-// after a battle: Medicine brings some of the fallen straight back; of the rest, some live but are wounded (more with Medicine):
-// they leave the ranks and ride with the band until they heal (woundedDay)
-function heal(lost){
-  let saved=0,total=0,hurt=0;const ch=.07*skill('med'),wc=Math.min(.7,.25+.04*skill('med'));P.wounded=P.wounded||{};
-  for(const k in lost){total+=lost[k];for(let i=lost[k];i>0;i--){if(Math.random()<ch){lost[k]--;saved++}else if(ST[k]&&!ST[k].beast&&Math.random()<wc){P.wounded[k]=(P.wounded[k]||0)+1;hurt++}}}
-  train('med',total*2);if(hurt)log(hurt+' of your fallen live, wounded: they ride with the band until they heal.','gold');return saved;
-}
-function takePrisoners(slain){
-  let n=0;const pool=slain.filter(k=>ST[k].tier<4&&!ST[k].beast),want=Math.round(pool.length*.35);
-  while(n<want&&pool.length&&prisonerCount()<prisonCap()){const k=pool.splice(rint(0,pool.length-1),1)[0];P.prisoners[k]=(P.prisoners[k]||0)+1;n++}
-  return n;
-}
 /* what winning brings: every fight pays gold per foe, renown, XP and morale; then each kind of encounter has its own outcome.
    big: a hard-won fight (more gold, renown and XP); drop: rolls a piece of gear; fame: reputation it earns at the nearest holding
    (0 for fights against a holding's own people; unset: by the number slain); won(e, slain, res) settles the rest, may add to
@@ -140,77 +127,9 @@ const ON_WIN={
   siege:{big:true,fame:0,won:e=>siegeWon(e)},
   raid:{fame:0,won:e=>siegeWon(e)}
 };
-// retreat: you withdrew from the battle ({caught}: the rearguard cut down), neither a victory nor a rout
-/* the band's morale after a fight: its outcome (base), then how it went (a battle fought, not resolved): MOOD.loss for all of the
-   band lost (a share of it, its share), up to MOOD.shaken more as the men ended shaken (their morale at the end against its
-   start), MOOD.rout for an enemy broken and fled. A line for the summary: from what, to what, and why */
-let BATTLE_MOOD=null;
-const MOOD={loss:20,shaken:15,rout:3,retreat:8,renown:2,runDown:5};
-function battleMood(base,why){
-  const bm=BATTLE_MOOD;BATTLE_MOOD=null;why=why?[why]:[];let d=base;
-  if(bm){if(bm.share>0){d-=MOOD.loss*bm.share;if(bm.share>=.2)why.push('heavy losses')}const sk=bm.shaken-1;if(sk<-.1){d+=MOOD.shaken*sk;why.push('the men shaken')}if(bm.broke){d+=MOOD.rout;why.push('the enemy broke and fled')}}
-  const m0=P.morale;P.morale=clamp(P.morale+Math.round(d),0,100);
-  return '<p class="'+(P.morale<m0?'bad':P.morale>m0?'good':'muted')+'">Your band\u2019s morale: '+Math.round(m0)+' \u2192 '+Math.round(P.morale)+(why.length?' ('+why.join(', ')+')':'')+'.</p>'}
-function concludeEncounter(win,lost,kills,auto,slain,retreat,txp){
-  if(auto)BATTLE_MOOD=null;
-  lootStart();const e=G.enc;if(e)reinfAfter(e,win);let html;const saved=heal(lost);applyLosses(lost);
-  if(win){
-    const O=ON_WIN[e.kind]||ON_WIN.party,big=!!O.big,res={gold:0,fame:O.fame};let bounty='';slain=slain||[];
-    const beasts=slain.filter(k=>ST[k].beast).length;for(let i=0;i<kills-beasts;i++)res.gold+=rint(2,6);
-    const furs=invAdd('good','furs',Math.floor(slain.filter(k=>k==='wolf').length/2));if(furs>0)bounty+=' You skin '+furs+' furs from the wolves.';
-    if(big)res.gold+=25;if(auto)res.gold=Math.floor(res.gold*.8);res.gold=Math.round(res.gold*(1+tm('loot')));
-    P.renown+=Math.ceil(kills*(big?1.5:1));const moodLine=battleMood(4,'victory');gainXp(kills*8+(big?30:0));
-    if(troopCount()>0)train('lead',3+kills*.5);train('tact',auto?6:2);
-    const taken=takePrisoners(slain),drop=O.drop&&O.drop();
-    if(drop&&!invAdd('gear',drop,1))log('Your bag is full. You leave a '+ITEMS[drop].n+' behind.','bad');
-    {const c=(e.kind==='party'||e.kind==='camp')&&e.ref&&e.ref.ld;if(c){captureChief(c);e.ref.ld=null;bounty+=' You take '+chiefLabel(c)+' captive: hand him over for '+bountyOf(c)+' gold, or let him go (Hero, Party).'}}
-    bounty=(O.won(e,slain,res)||'')+bounty;
-    P.gold+=res.gold;
-    const fame=res.fame==null?Math.max(2,Math.round(kills/2)):res.fame;if(fame)repNear(P.x,P.y,fame);
-    html='<h2>Victory</h2><p>You defeated '+(e.kind==='monster'?(kills>1?kills+' ':'the ')+MONSTERS[e.ref.id].n.toLowerCase():kills+' '+(e.kind==='lord'?'soldiers':'foes'))+(taken?' and took '+taken+' prisoner'+(taken>1?'s':''):'')+'.'+bounty+'</p>'+moodLine;
-    log('Victory. +'+res.gold+' gold, renown now '+P.renown+'.','good');mood('win');
-  }else if(retreat){
-    // as fleeing on the map (fleeOdds): a fight you started you simply leave; else a race. Got away, they lose your trail for a
-    // while; run down, your rearguard pays and you must face them again. The foes you slew stay dead either way.
-    const o=e.ref;slain=slain||[];if(o&&(e.kind==='lord'||e.kind==='patrol'||e.kind==='party'))for(const k of slain){try{partyRemove(o,k,1)}catch(err){}}
-    if(e.list)for(const k of slain){const i=e.list.indexOf(k);if(i>=0)e.list.splice(i,1)}
-    mood('flee');if(kills)gainXp(kills*4);
-    const od=fleeOdds(e),away=od.leave||od.ch>0&&Math.random()<od.ch,rear={};
-    // (a retreat costs, as in Total War: the band's morale and your renown; run down, more)
-    const moodLine=battleMood(-MOOD.retreat-(away?0:MOOD.runDown),away?'a retreat':'run down in the retreat');P.renown=Math.max(0,P.renown-MOOD.renown);
-    if(away){if(o&&o.x!=null){const dx=P.x-o.x,dy=P.y-o.y,l=Math.hypot(dx,dy)||1;walk(P,dx/l,dy/l,40)}if(o&&e.kind!=='camp')o.cool=12}
-    else{const all=[];for(const k in P.troops)for(let i=0;i<P.troops[k];i++)all.push(k);const n=all.length?Math.max(1,Math.round(all.length*.1*(has('rearguard')?.5:1))):0;
-      for(let i=0;i<n;i++){const k=all.splice(rint(0,all.length-1),1)[0];rear[k]=(rear[k]||0)+1}applyLosses(rear);for(const k in rear)lost[k]=(lost[k]||0)+rear[k];
-      e.noFlee=true;e.foes=[];e.allies=[];G.encAgain=e}
-    const n=troopCount(),rn=Object.values(rear).reduce((a,x)=>a+x,0);
-    html='<h2>'+(away?'Withdrawn':'Run down')+'</h2><p>'+(retreat.carried?'You fall in the fight, and your men carry you off the field. ':'')+'You pull your band out of the fight'+(kills?', leaving '+kills+' of them dead':'')+'. '+(retreat.caught?retreat.caught+' '+(retreat.caught>1?'were':'was')+' cut down before reaching the edge of the field.':'Everyone who withdrew got clear of the field.')+'</p>'+
-      '<p class="'+(away?'good':'bad')+'">'+(od.leave?'They let you go.':away?'You get away ('+Math.round(od.ch*100)+'% chance): they lose your trail.':(od.ch<=0?od.why+': ':'')+'They run you down'+(rn?': your rearguard loses '+lossText(rear):'')+'. You must face them again.')+' You ride on with '+n+' soldier'+(n===1?'':'s')+'.</p>'+
-      '<div class="lab">The battle</div><div class="loot-stats">'+[['Enemies slain',kills,'good'],['Your fallen',retreat.fallen||0,retreat.fallen?'bad':''],['Got away',retreat.got||0,''],['Enemies still standing',retreat.standing||0,'']].map(([k,v,c])=>'<span><b>'+k+'</b><span class="'+c+'">'+v+'</span></span>').join('')+'</div>'+moodLine+'<p class="bad">Renown −'+MOOD.renown+' for the retreat.</p>';
-  }else{
-    const lose=Math.floor(P.gold*.25);P.gold-=lose;const moodLine=battleMood(-15,'defeat');if(auto){vitals();P.hp=Math.max(1,Math.round(P.hp*.5))}
-    if(prisonerCount()){P.prisoners={};log('Your prisoners escape in the chaos.','bad')}
-    captivesEscape();
-    if(e.kind==='siege'||e.kind==='raid'){P.siege=null;G.capWith=null;e.ref.gar=Math.max(1,Math.round(e.ref.gar*.75))}
-    if(e.kind==='patrol'){const h=townBy(e.ref.home);if(h)h.crime=null}
-    if(e.kind==='party'||e.kind==='camp')chiefWins(e.ref,partySize()+1);// the chieftain who beat you grows
-    const safe=TOWNS.filter(t=>!hostileTo(t.owner)),near=nearestOf(P,safe.length?safe:TOWNS);
-    P.x=near.x;P.y=near.y+24;G.lastTown=near;if(e.kind!=='camp')e.ref.cool=8;
-    if(e.kind==='lord'){const l=e.ref;if(auto)cull(l,.3);else for(const k of slain)partyRemove(l,k,1);lordWins(l,partySize())}
-    html='<h2>Defeat</h2><p>Your band was routed. You lost '+lose+' gold and woke up near '+near.name+'.</p>'+moodLine;
-    log('Defeat. You wake near '+near.name+'.','bad');
-  }
-  // your troops' experience (state.js): what each kind earned in the battle (an auto-resolve: a share by the kills), after the losses
-  {const before=Object.keys(P.troops).reduce((a,k)=>a+txpReady(k),0);
-    if(auto){const n=troopCount(),each=TROOP_XP.auto*(TROOP_XP.fight+(win?TROOP_XP.win:0)+(n?kills*TROOP_XP.kill*2/n:0));for(const k in P.troops)txpGain(k,each*P.troops[k])}
-    else for(const k in txp||{})txpGain(k,txp[k]);txpClamp();const ready=Object.keys(P.troops).reduce((a,k)=>a+txpReady(k),0);
-    if(ready>before)html+='<p class="gold">Your troops learn from the fight: '+ready+' soldier'+(ready>1?'s are':' is')+' ready to train at a barracks.</p>'}
-  G.encCool=retreat?4:3;G.enc=null;G.mode='dialog';
-  lootShow(html,lost,saved,'cont');
-}
 function autoResolve(){
   const e=G.enc,pl=playerList(),al=e.allies||[],fl=e.foes||[],pp=(power(pl)+power(lordTroops(al)))*(.8+Math.random()*.4)*(1+.05*skill('tact')),ep=(power(e.list)*lvPow(e.lv)+power(lordTroops(fl)))*(e.kind==='lord'?lordTac([e.ref,...fl]):lordTac(fl))*(.8+Math.random()*.4),win=pp>ep;
-  const lost={};const loser=win?ep/pp:pp/ep,frac=win?clamp(.1+.6*loser*loser,.05,.8):1;
-  for(const k in P.troops)for(let i=0;i<P.troops[k];i++)if(Math.random()<frac)lost[k]=(lost[k]||0)+1;
+  const loser=win?ep/pp:pp/ep,frac=win?clamp(.1+.6*loser*loser,.05,.8):1,lost=partyRoster(P).losses(frac);
   const helpers=e.kind==='field'&&win?lordTroops(fl).slice():[];
   al.forEach(l=>cull(l,Math.min(frac,.85)));fl.forEach(l=>cull(l,win?.6:clamp(.1+.6*loser*loser,.05,.5)));
   concludeEncounter(win,lost,e.list.length+helpers.length,true,e.list.concat(helpers));

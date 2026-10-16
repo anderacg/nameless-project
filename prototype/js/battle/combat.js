@@ -42,7 +42,7 @@ function inShape(x,y,a,R,c,e){
   if(c.shape==='slam')return Math.hypot(e.x-(x+Math.cos(a)*R*.6),e.y-(y+Math.sin(a)*R*.6))-big<=c.area;
   if(c.shape==='thrust')return along(0)>-4&&along(0)<=R+5+big&&perp(0)<=c.wid+big*.6;
   if(c.shape==='twin')return [-.28,.28].some(o=>along(o)>-4&&along(o)<=R+5+big&&perp(o)<=c.wid+big*.6);
-  const d=Math.hypot(dx,dy)-big;if(d>R+5)return false;const ea=Math.atan2(dy,dx);return Math.abs(Math.atan2(Math.sin(ea-a),Math.cos(ea-a)))<c.arc;
+  const d=Math.hypot(dx,dy)-big;if(d>R+5)return false;const ea=Math.atan2(dy,dx);return angGap(ea,a)<c.arc;
 }
 // stamina pays for physical effort, mana for skills; some skills need both
 // (regen, delay: the manual control's breath, set aside. Under RTS command your stamina comes back as a soldier's does: fatigue.js)
@@ -168,7 +168,7 @@ function shove(){
   if(!B||B.over||!shoveKind())return;const h=B.hero,X=heroState();if(!h||h.hp<=0||heroBusy(X)||(X.shoveCd||0)>0)return;if(!spend((grip()==='shield'?BASH:SHOVE).sp,0))return;
   const S=grip()==='shield'?BASH:SHOVE;X.shoveCd=S.cd;B.draw=null;h.face=Math.cos(B.aim)>=0?1:-1;h.atkAt=B.t;if(S===BASH)B.floats.push({x:h.x,y:h.y-26,t:'Shield Bash',life:.6,c:'#cfe0ff'});
   B.slashes.push({x:h.x,y:h.y-6,a:B.aim,life:.15,r:h.s.reach+2,arc:.9,col:'200,220,255',w:2});
-  for(const e of B.units){if(e.team!==1||e.hp<=0)continue;const d=Math.hypot(e.x-h.x,e.y-h.y)-(e.s.big?12:0),ea=Math.atan2(e.y-h.y,e.x-h.x),df=Math.abs(Math.atan2(Math.sin(ea-B.aim),Math.cos(ea-B.aim)));
+  for(const e of B.units){if(e.team!==1||e.hp<=0)continue;const d=Math.hypot(e.x-h.x,e.y-h.y)-(e.s.big?12:0),ea=Math.atan2(e.y-h.y,e.x-h.x),df=angGap(ea,B.aim);
     if(d<=h.s.reach+6&&df<1.1)heroHit(e,S.mult,{kb:S.kb,stun:S.stun,noCrit:true,dt:'blunt'})}
 }
 function dodge(dirX,dirY){

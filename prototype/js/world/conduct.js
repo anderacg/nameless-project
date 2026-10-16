@@ -29,6 +29,4 @@ const closeDialog=()=>{G.wk=G.rf=G.est=G.par=null;G.mode='world';G.encCool=Math.
 // a moment's notice in the dialog, then back to the map
 function notice(title,msg,cls){G.mode='dialog';showPanel('<h2>'+title+'</h2><p class="'+(cls||'')+'">'+msg+'</p>'+nav(null,['dlg-ok',null,'Continue']));updateHUD(true)}
 const levyOf=race=>RACES[race]?RACES[race].melee:'militia';
-// how many more your band can take
-const partyRoom=()=>partyCap()-partySize();
 onAct('dlg-',()=>closeDialog());

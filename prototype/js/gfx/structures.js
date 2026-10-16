@@ -18,9 +18,6 @@ function lotSprite(t,l){
 function charred(src,seed){return mkc(src.width,src.height,g=>{g.drawImage(src,0,0);const d=g.getImageData(0,0,src.width,src.height),a=d.data;
   for(let i=0;i<a.length;i+=4){if(a[i+3]<255)continue;const k=(i>>2),h=hash(k%src.width,k/src.width|0,seed);const f=h<.08?.25:.45;a[i]=a[i]*f+30*(1-f)|0;a[i+1]=a[i+1]*f+24*(1-f)|0;a[i+2]=a[i+2]*f+20*(1-f)|0;if(h>.995){a[i]=232;a[i+1]=106;a[i+2]=42}}
   g.putImageData(d,0,0)})}
-// worn ground under a building: the climate's dirt, its edge broken (whole pixels only)
-function lotYard(n,c){const k='yd'+n+c;if(spr[k])return spr[k];const N=n*TILE,dc={grass:[124,108,70],frost:[176,170,158],desert:[196,166,110],swamp:[84,76,52]}[c],P3=GROUND_RGB[c][1];
-  return spr[k]=mkc(N,N,g=>{for(let y=0;y<N;y++)for(let x=0;x<N;x++){const e=Math.min(x,y,N-1-x,N-1-y),h=hash(x,y,n*7+3);if(e<2&&h<(2-e)*.4)continue;g.fillStyle=hex(mixc(P3,dc,.45+hash(x>>1,y>>1,n)*.25));g.fillRect(x,y,1,1)}})}
 // a flag waving on its pole (its own sprite: three frames), in its colour; drawn with the pole's foot at the point given
 function flagSprite(col,f){const k='fl'+col+f;if(spr[k])return spr[k];return spr[k]=outlined(mkc(7,11,g=>{rect(g,'#4a3020',0,1,1,10);rect(g,'#c8a040',0,0,1,1);
   const wave=[[0,0,0,0,0],[0,0,1,1,0],[0,1,1,0,0]][f];for(let i=0;i<5;i++){rect(g,col,1+i,1+wave[i],1,3);rect(g,shade(col,1.25),1+i,1+wave[i],1,1);rect(g,shade(col,.7),1+i,3+wave[i],1,1)}}),'#1a1512')}

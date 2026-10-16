@@ -31,7 +31,7 @@ function parleyAct(a){
   if(a==='pl-go'){o.cool=8;G.encCool=3;if(kind==='lord'){addHonor(o.fac,2,true);changeRel(o,RELATION.letGo,'you let them go')}else repNear(o.x,o.y,-2);mood('mercy');closeDialog();log(kind==='lord'?'You let '+o.name+' ride away.':'You let the band go. The roads stay dangerous.');return}
   if(a==='pl-yield'){const y=Math.random()<yieldChance(o,kind);train('pers',y?6:2);if(y)return parleyYield();log((kind==='lord'?o.name:'The band')+' refuses to yield and draws steel.','bad');return parleyFight(o,kind)}
   if(a==='pl-cage'&&kind==='band'){const n=cage(o.list),gold=rint(5,15)+o.n*2;P.gold+=gold;P.renown+=2;bandGone(o);G.par=null;return notice('Prisoners',n+' of them are bound and marched with you'+(o.n>n?'; the rest are disarmed and chased off':'')+'. You take '+gold+' gold they had stolen.','good')}
-  if(a==='pl-join'&&kind==='band'&&partyRoom()>0){const k=Math.min(o.list.length,partyRoom());for(const u of o.list.slice(0,k))P.add(u);const c=CONDUCT.takeBrigands;P.morale=clamp(P.morale-c.morale,0,100);FIDS.forEach(f=>addHonor(f,-c.honorAll,true));mood('cruel');bandGone(o);G.par=null;
+  if(a==='pl-join'&&kind==='band'&&partyRoom()>0){const k=sum(partyTransferAll(o,P,partyRoom()));const c=CONDUCT.takeBrigands;P.morale=clamp(P.morale-c.morale,0,100);FIDS.forEach(f=>addHonor(f,-c.honorAll,true));mood('cruel');bandGone(o);G.par=null;
     return notice('New recruits',k+' brigands join your band. Your honest soldiers grumble (morale −'+c.morale+'), and every realm thinks a little less of you (−'+c.honorAll+' honor).','gold')}
   if(a==='pl-free'&&kind==='band'){P.renown+=1;bandGone(o);mood('mercy');G.par=null;return notice('Set free','You break their weapons and send them off. Some may find honest work; some will not.','good')}
 }

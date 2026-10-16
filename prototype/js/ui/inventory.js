@@ -1,92 +1,29 @@
 'use strict';
-/* ---------- inventory ---------- */
-// P.inv holds invCap() slots: null, or {k:'gear'|'good'|'mat', id, n}. Gear never stacks; trade goods stack to GOODS[id].stack, trophies to STACK.
-// P.gear maps each EQUIP key (weapon = main hand, offhand, head, …, the mount and its gear, ring0–ring9) to an item id or null.
-const itemDef=s=>s.k==='gear'?ITEMS[s.id]:s.k==='good'?GOODS[s.id]:MATS[s.id];
-const stackOf=(k,id)=>k==='gear'?1:k==='good'?GOODS[id].stack:STACK;
-const invCap=()=>INV_SIZE+gm('slots');
-const invFree=()=>P.inv.filter(s=>!s).length;
-const invCount=(k,id)=>P.inv.reduce((a,s)=>a+(s&&s.k===k&&s.id===id?s.n:0),0);
-// trade goods: how many you carry, how many more fit, and taking some (partial stacks first, so slots free up)
-const goodN=g=>invCount('good',g);
-const goodRoom=g=>P.inv.reduce((a,s)=>a+(!s?GOODS[g].stack:s.k==='good'&&s.id===g?GOODS[g].stack-s.n:0),0);
-const foodN=()=>FOODS.reduce((a,g)=>a+goodN(g),0);
-const foodKinds=()=>FOODS.filter(g=>goodN(g)>0).length;
-// the band eats the most perishable food first
-function foodTake(n){let left=n;for(const g of FOODS){if(!left)break;left-=goodTake(g,left)}return n-left}
-function goodTake(g,n){
-  let left=n;const idx=P.inv.map((s,i)=>i).filter(i=>P.inv[i]&&P.inv[i].k==='good'&&P.inv[i].id===g).sort((a,b)=>P.inv[a].n-P.inv[b].n);
-  for(const i of idx){if(!left)break;const s=P.inv[i],t=Math.min(left,s.n);s.n-=t;left-=t;if(!s.n)P.inv[i]=null}
-  return n-left;
-}
-const itemRank=I=>I.tier!=null?I.tier:{common:2,rare:4,epic:6}[I.r];
-// the main hand takes any weapon; the off hand takes shields, tomes and torches, or a one-handed weapon (dual wield)
-const accepts=(key,id)=>{const I=ITEMS[id];if(key==='offhand')return I.slot==='offhand'||I.slot==='weapon'&&(I.hand||'one')==='one';return slotOfKey(key)===I.slot};
-const twoHanded=id=>!!id&&ITEMS[id].hand==='two';
+/* ---------- inventory screen and command feedback ---------- */
 const HANDS={one:'one-handed',two:'two-handed',hybrid:'hybrid'};
 const kindLabel=I=>I.slot==='weapon'?HANDS[I.hand||'one']+' weapon':SLOTS[I.slot].toLowerCase();
-// add n of an item; returns how many fit
-function invAdd(k,id,n){
-  // after a fight, spoils go on the pile and you choose what to carry (loot.js)
-  if(looting()){lootPile(k,id,n);return n}
-  let left=n;const max=stackOf(k,id);
-  if(max>1)for(const s of P.inv)if(left&&s&&s.k===k&&s.id===id&&s.n<max){const t=Math.min(left,max-s.n);s.n+=t;left-=t}
-  for(let i=0;i<P.inv.length&&left;i++)if(!P.inv[i]){const t=Math.min(left,max);P.inv[i]={k,id,n:t};left-=t}
-  return n-left;
-}
-// grow or shrink the bag to match the equipped pack; refuses (false) if shrinking would drop items
-function fitInv(){
-  const cap=invCap();if(P.inv.length>cap&&P.inv.slice(cap).some(Boolean))return false;
-  while(P.inv.length<cap)P.inv.push(null);P.inv.length=cap;return true;
-}
-// where an item would go: its own slot, or for rings the first empty finger (else the first finger)
-const targetKey=id=>{const sl=ITEMS[id].slot;if(sl!=='ring')return sl;const f=EQUIP.filter(k=>k.startsWith('ring'));return f.find(k=>!P.gear[k])||f[0]};
-// why a slot cannot take anything right now, or ''
-function blockedWhy(key){
-  if(MOUNT_KEYS.includes(key)&&!P.gear.mount)return 'Equip a mount first: its gear needs something to wear it.';
-  if(key==='offhand'&&twoHanded(P.gear.weapon))return 'Your '+ITEMS[P.gear.weapon].n+' takes both hands.';
-  return '';
-}
-// what a change pushes off: the off hand when the main hand goes two-handed, the mount's gear when the mount comes off
-const evicted=()=>[...(twoHanded(P.gear.weapon)&&P.gear.offhand?['offhand']:[]),...(P.gear.mount?[]:MOUNT_KEYS.filter(k=>P.gear[k]))];
-// run a change to gear and bag, put what it pushes off into the bag, and undo it all if anything does not fit
-function gearTxn(fn,fail){
-  const g={...P.gear},inv=P.inv.map(s=>s&&{...s}),undo=m=>{P.gear=g;P.inv=inv;fitInv();if(m)log(m,'bad');return false};
-  if(!fn())return undo();const moved=[];
-  for(const k of evicted()){const i=P.inv.indexOf(null);if(i<0)return undo('Your bag is full. Make room for your '+ITEMS[P.gear[k]].n+' first.');P.inv[i]={k:'gear',id:P.gear[k],n:1};moved.push(ITEMS[P.gear[k]].n);P.gear[k]=null}
-  if(!fitInv())return undo(fail||'Empty the extra bag slots before you swap that.');
-  if(moved.length)log('Into the bag: '+moved.join(', ')+'.');return true;
+function equipmentFeedback(result){
+  if(result.reason)log(result.reason,'bad');
+  if(result.ok&&result.moved.length)log('Into the bag: '+result.moved.join(', ')+'.');
+  return result.ok;
 }
 function equipInto(i,key){
-  const s=P.inv[i];if(!s||s.k!=='gear'||!accepts(key,s.id))return false;const why=blockedWhy(key);if(why){log(why,'bad');return false}
-  if(!gearTxn(()=>{const old=P.gear[key];P.gear[key]=s.id;P.inv[i]=old?{k:'gear',id:old,n:1}:null;return true}))return false;
+  const s=P.inv[i];if(!equipmentFeedback(heroEquipment.equip(i,key)))return false;
   log('You equip the '+ITEMS[s.id].n+(key==='offhand'&&ITEMS[s.id].slot==='weapon'?' in your off hand':'')+'.');return true;
 }
 const invEquip=i=>{const s=P.inv[i];return s&&s.k==='gear'?equipInto(i,targetKey(s.id)):false};
-function invUnequip(key,to){
-  const id=P.gear[key];if(!id)return false;const i=to!=null&&!P.inv[to]?to:P.inv.indexOf(null);
-  if(i<0){log('Your bag is full. Make room before you take that off.','bad');return false}
-  return gearTxn(()=>{P.gear[key]=null;P.inv[i]={k:'gear',id,n:1};return true},'Empty the extra bag slots before you take that off.');
-}
-// drag and drop: from/to are a slot index or 'eq:<key>'
+const invUnequip=(key,to)=>equipmentFeedback(heroEquipment.unequip(key,to));
+// Drag and drop translate slot names into the same equipment commands used by buttons.
 function invMove(from,to){
   if(from===to)return;const fe=String(from).startsWith('eq:'),te=String(to).startsWith('eq:');
-  if(fe&&te){const a=from.slice(3),b=to.slice(3),x=P.gear[a],y=P.gear[b];if(!x||!accepts(b,x)||y&&!accepts(a,y))return;
-    const why=blockedWhy(b)||y&&blockedWhy(a);if(why){log(why,'bad');return}gearTxn(()=>{P.gear[a]=y;P.gear[b]=x;return true});return}
-  if(fe){const key=from.slice(3),t=P.inv[to];if(!t)invUnequip(key,to);else if(t.k==='gear'&&accepts(key,t.id))equipInto(to,key);return}
+  if(fe&&te){equipmentFeedback(heroEquipment.swap(from.slice(3),to.slice(3)));return}
+  if(fe){const key=from.slice(3),s=P.inv[to];if(!s)invUnequip(key,to);else if(s.k==='gear'&&accepts(key,s.id))equipInto(to,key);return}
   if(te){const s=P.inv[from];if(s&&s.k==='gear')equipInto(from,to.slice(3));return}
   const a=P.inv[from],b=P.inv[to];
-  if(a&&b&&a.k!=='gear'&&b.k===a.k&&a.id===b.id&&b.n<stackOf(b.k,b.id)){const t=Math.min(a.n,stackOf(b.k,b.id)-b.n);b.n+=t;a.n-=t;if(!a.n)P.inv[from]=null;return}
+  if(a&&b&&a.k!=='gear'&&b.k===a.k&&a.id===b.id&&b.n<stackOf(b.k,b.id)){const n=Math.min(a.n,stackOf(b.k,b.id)-b.n);b.n+=n;a.n-=n;if(!a.n)P.inv[from]=null;return}
   P.inv[from]=b;P.inv[to]=a;
 }
-function invSort(){
-  const so=Object.fromEntries(Object.keys(SLOTS).map((k,i)=>[k,i])),items=P.inv.filter(Boolean);
-  // merge partial stacks first; then gear, trade goods, trophies
-  const merged=[],ko={gear:0,good:1,mat:2},go=Object.keys(GOODS);
-  for(const s of items){const m=s.k!=='gear'&&merged.find(x=>x.k===s.k&&x.id===s.id&&x.n<stackOf(x.k,x.id));if(m){const t=Math.min(s.n,stackOf(m.k,m.id)-m.n);m.n+=t;s.n-=t;if(s.n)merged.push(s)}else merged.push(s)}
-  merged.sort((a,b)=>a.k!==b.k?ko[a.k]-ko[b.k]:a.k==='good'?go.indexOf(a.id)-go.indexOf(b.id)||b.n-a.n:a.k==='gear'?(so[ITEMS[a.id].slot]-so[ITEMS[b.id].slot]||itemRank(ITEMS[b.id])-itemRank(ITEMS[a.id])||ITEMS[a.id].n.localeCompare(ITEMS[b.id].n)):(MATS[b.id].v-MATS[a.id].v||b.n-a.n));
-  P.inv=merged.concat(Array(invCap()-merged.length).fill(null));G.invSel=null;
-}
+function invSort(){sortInventory();G.invSel=null}
 
 /* the screen: a body with each slot where it is worn, the mount below it, and the bag beside it */
 // how an item changes the hero against what it would replace, as a list of "+3 damage" strings

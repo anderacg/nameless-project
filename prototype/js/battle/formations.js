@@ -42,7 +42,7 @@ const shieldMul=(t,src)=>src&&src.arrow&&t.s&&tagsOf(t.s).includes('shield')&&B&
 function formTaken(t,src){
   const sh=shieldMul(t,src),g=t.grp&&B.groups[t.grp];if(!g||!g.form)return sh;const F=FORMS[g.form];let k=(F.taken||1)*sh;
   if(src&&src.arrow&&F.arrows)k*=F.arrows;
-  if(src&&F.front){const a=Math.atan2(src.y-t.y,src.x-t.x),df=Math.abs(Math.atan2(Math.sin(a-(g.face||0)),Math.cos(a-(g.face||0))));if(df<1.05)k*=F.front}
+  if(src&&F.front){const a=Math.atan2(src.y-t.y,src.x-t.x),df=angGap(a,g.face||0);if(df<1.05)k*=F.front}
   return k;
 }
 // a charge: its force by the charger's formation (a wedge) and the depth of the block it hits
@@ -50,15 +50,6 @@ const formCharge=(att,t)=>{const ga=att.grp&&B.groups[att.grp],sh=t.grp&&B.group
 // a group's pace in its formation (a shield wall is slow)
 const formPace=g=>g&&FORMS[g.form]&&FORMS[g.form].spd||1;
 
-/* your commands: a formation for the selected groups it suits (pressed again: back to line) */
-function setForm(f){
-  if(!B||!FORMS[f])return;const sel=selGroups().filter(g=>grpUnits(g).length),gs=sel.filter(g=>formFits(g,f));
-  if(!gs.length){if(sel.length)log('Only '+WHO_N[FORMS[f].who]+' can form '+(f==='wall'?'a shield wall':f==='wedge'?'a wedge':'loose order')+'.');return}
-  const to=f!=='line'&&gs.every(g=>B.groups[g].form===f)?'line':f;
-  gs.forEach(g=>B.groups[g].setForm(to));setOrderUI();log(gs.map(g=>GN[g]).join(' and ')+': '+FORMS[to].n.toLowerCase()+'.');
-}
-// (once the next formation; kept for old callers: T is the wedge now)
-function cycleForm(){if(!B)return;const gs=selGroups().filter(g=>grpUnits(g).length);if(!gs.length)return;const cur=B.groups[gs[0]].form||'line';setForm(FORM_ORDER[(FORM_ORDER.indexOf(cur)+1)%FORM_ORDER.length])}
 // an order to charge breaks a shield wall
 function breakWall(g){const gr=B.groups[g];if(gr&&gr.form==='wall'){gr.setForm('line');log(GN[g]+' break their shield wall to charge.')}}
 // turn a group toward where it marches (a plain right-click, far enough to matter)
@@ -77,13 +68,6 @@ function formPlan(x0,y0,x1,y1){
     return{g,ax:clamp(x0+ux*c,8,BW-8),ay:clamp(y0+uy*c,fieldTop(),fieldBot()),face,files:dragFiles(B.groups[g].form||'line',n,seg)}});
   if(sel.includes('hero'))plan.push({g:'hero',hero:true,ax:clamp(mx-Math.cos(face)*(gs.length?30:0),8,BW-8),ay:clamp(my-Math.sin(face)*(gs.length?30:0),fieldTop(),fieldBot()),face,files:null});
   return plan;
-}
-function formDragTo(x0,y0,x1,y1){
-  if(B.deploy){const a=inZone(x0,y0),b=inZone(x1,y1);x0=a.x;y0=a.y;x1=b.x;y1=b.y}// (deploying: the line in your zone)
-  const plan=formPlan(x0,y0,x1,y1);if(!plan.length)return false;takeCommand();
-  // (each a move to its part of the line, facing as dragged, as wide as its share of it: battlecontrol.js; your hero stands behind)
-  for(const p of plan){const gr=B.groups[p.g];if(p.hero){gr.moveTo(p.ax,p.ay,{turn:false});B.hero.sx=B.hero.sy=0;continue}gr.moveTo(p.ax,p.ay,{face:p.face,files:p.files})}
-  B.mark={x:(x0+x1)/2,y:(y0+y1)/2,t:.7,foe:false};if(B.deploy)deploySnap(plan.map(p=>p.g));setOrderUI();log(selLabel()+': form up there.');return true;
 }
 // the ghost of a dragged line: each soldier's slot, faint, and an arrow the way they will face
 function drawFormGhost(){

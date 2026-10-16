@@ -49,7 +49,7 @@ function relAct(a,arg){
   const l=W.lords.find(x=>x.id===arg);if(!l||l.dead)return;const R=RELATION;
   if(a==='lr-gift'&&P.gold>=R.gift.gold&&!((l.gift||0)>G.day)){P.gold-=R.gift.gold;l.gift=G.day+R.gift.days;changeRel(l,R.gift.rel,'your gift');updateHUD(true)}
   if(a==='lr-troops'&&relWith(l)>=R.troopsAt&&!((l.lend||0)>G.day)&&l.troops.length>=R.troops+6&&partyRoom()>=R.troops){
-    l.lend=G.day+R.troopsDays;const got=[];for(let i=0;i<R.troops;i++){const k=partyRemoveAny(l,1)[0];P.add(k);got.push(ST[k].n.toLowerCase())}
+    l.lend=G.day+R.troopsDays;const got=partyTransferAny(l,P,R.troops,partyRoom()).map(k=>ST[k].n.toLowerCase());
     log(l.name+' lends you '+got.join(', ')+'.','good');updateHUD(true)}
   lordMeet(l);
 }

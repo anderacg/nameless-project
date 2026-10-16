@@ -24,8 +24,6 @@ const closedNow=t=>siegeLordsAt(t).length>0||!!mySiege(t)||!!myRaid(t);
 const mySiege=t=>P.siege&&P.siege.town===t.name?P.siege:null;
 // how hard the walls make the defenders: 1 + the wall level (no walls 1 … great walls 4), one less once your ram is built
 const siegeLv=t=>Math.max(1,1+wallOf(t)-((mySiege(t)||{days:0}).days>=RAM_DAYS?1:0));
-// a besieged holding lives on its stores: the day of the siege its food runs out
-const starveDay=t=>((mySiege(t)||{days:0}).days)+foodDays(t);
 
 /* the siege panel */
 function openSiege(t){G.lastTown=t;P.tx=null;G.chase=null;G.bes=t;G.mode='besiege';showSiege()}
@@ -204,7 +202,7 @@ function garrisonBody(t){
   const row=(title,sub,acts,own)=>'<div class="row"><div class="info"><strong>'+title+'</strong><small>'+sub+'</small></div>'+(own!=null?'<span class="own">'+own+'</span>':'')+(acts?'<div class="acts">'+acts+'</div>':'')+'</div>';
   const b=(act,arg,label,why)=>'<button class="btn sm" type="button" data-act="'+act+'" data-arg="'+arg+'"'+(why?' disabled title="'+why+'"':'')+'>'+label+'</button>';
   const mine=t.owner==='player',cap=mine?fiefCap(t):t.T.gar,def=siegeDefenders(t),lv=siegeLv(t),wl=wallOf(t),pt=patrolOf(t),gl=garList(t),fd=t.stock?foodDays(t):null;
-  const groups=list=>{const c={};list.forEach(k=>c[k]=(c[k]||0)+1);return Object.keys(c).sort((x,y)=>c[y]-c[x])};
+  const groups=list=>Object.entries(countsOf(list)).sort((a,b)=>b[1]-a[1]);
   const lab=s=>'<div class="lab" style="margin-top:6px">'+s+'</div>';
   // the numbers that decide a siege
   let html='<div class="loot-stats" style="margin-bottom:4px">'+[['Garrison',t.gar+' / '+cap],['Lords inside',def.lords.length+(def.lords.length?' ('+def.lords.reduce((a,l)=>a+l.troops.length,0)+' soldiers)':'')],['Defenders',def.list.length],
@@ -218,10 +216,10 @@ function garrisonBody(t){
   if(notes.length)html+='<p style="font-size:14px">'+notes.join(' ')+'</p>';
   // the soldiers on the walls
   html+=lab('On the walls · '+t.gar+' '+t.races.map(r=>RACES[r].n).join(' and ')+' soldiers'+(mine?'':' ('+(t.gar<cap?'refilling to '+cap:'full')+')'))+
-    (gl.length?groups(gl).map(k=>{const n=gl.filter(x=>x===k).length,s=ST[k];return row(s.n,'Tier '+s.tier+' · '+s.hp+' hp · '+s.dmg+' damage'+(s.range?' · ranged':'')+'<br><span class="vs">'+vsLine(s)+'</span>',null,'×'+n)}).join(''):'<p class="muted">No one holds the walls.</p>');
+    (gl.length?groups(gl).map(([k,n])=>{const s=ST[k];return row(s.n,'Tier '+s.tier+' · '+s.hp+' hp · '+s.dmg+' damage'+(s.range?' · ranged':'')+'<br><span class="vs">'+vsLine(s)+'</span>',null,'×'+n)}).join(''):'<p class="muted">No one holds the walls.</p>');
   // lords staying, and the patrol out on the land
   html+=lab('Lords inside')+(def.lords.length?def.lords.map(l=>{const tr=groups(l.troops);return row(l.name+' · <span style="color:'+FACS[l.fac].col+'">'+FACS[l.fac].n+'</span>',
-      l.troops.length+' soldiers: '+tr.slice(0,4).map(k=>l.troops.filter(x=>x===k).length+' '+ST[k].n.toLowerCase()).join(', ')+(tr.length>4?'…':'')+' · toward you '+relTag(relWith(l)),null,'power '+rating(l.troops))}).join(''):'<p class="muted">'+(mine?'None: your fief is held by its garrison alone.':'None. A lord of the '+(FACS[t.owner]||{n:'realm'}).n+' resting here would go inside and defend it.')+'</p>');
+      l.troops.length+' soldiers: '+tr.slice(0,4).map(([k,n])=>n+' '+ST[k].n.toLowerCase()).join(', ')+(tr.length>4?'…':'')+' · toward you '+relTag(relWith(l)),null,'power '+rating(l.troops))}).join(''):'<p class="muted">'+(mine?'None: your fief is held by its garrison alone.':'None. A lord of the '+(FACS[t.owner]||{n:'realm'}).n+' resting here would go inside and defend it.')+'</p>');
   html+=lab('Patrol')+(pt?row(pt.troops.length+' guards out on the land','Back by day '+pt.back+(pt.fight?' · <span class="bad">fighting now</span>':'')+' · '+(d=>d<1?'by the gate':d+(d===1?' tile ':' tiles ')+compass(pt.x-t.x,pt.y-t.y))(Math.round(Math.hypot(pt.x-t.x,pt.y-t.y)/TILE))+'. They rejoin the garrison when they return.',null,'power '+rating(pt.troops)):
     '<p class="muted">None out'+(t.gar<t.T.patrol.keep+t.T.patrol.size?': the garrison needs '+(t.T.patrol.keep+t.T.patrol.size)+' before it can spare '+t.T.patrol.size+' to ride the land.':'; one rides out each day it can spare the soldiers.')+'</p>');
   // in your fief: hire, station and call up
@@ -234,15 +232,15 @@ function garrisonBody(t){
   return html;
 }
 function fiefAct(a,arg,t){
-  if(!a.startsWith('fief-'))return false;if(t.owner!=='player')return true;const cap=fiefCap(t);
-  if(a==='fief-hire'){const n=+arg;if(P.gold>=30*n&&t.gar+n<=cap){const k=draftLocals(t,n);P.gold-=30*k;t.gar+=k;if(k<n)log('Only '+k+' of the people of '+t.name+' will take up arms.','bad')}}
-  else if(a==='fief-station'){const [k,ns]=arg.split(':'),n=Math.min(+ns,P.troops[k]||0,cap-t.gar);if(n>0){P.remove(k,n);t.gar+=n;log(n+' '+ST[k].n.toLowerCase()+(n>1?'s':'')+' join the garrison of '+t.name+'.')}}
+  if(!a.startsWith('fief-'))return false;if(t.owner!=='player')return true;
+  if(a==='fief-hire'){const n=+arg;if(garrisons.canHire(t,n)){const k=garrisons.hire(t,n);if(k<n)log('Only '+k+' of the people of '+t.name+' will take up arms.','bad')}}
+  else if(a==='fief-station'){const [k,ns]=String(arg).split(':'),n=garrisons.station(t,k,+ns);if(n>0)log(n+' '+ST[k].n.toLowerCase()+(n>1?'s':'')+' join the garrison of '+t.name+'.')}
   // a new estate is placed by hand on the map; an upgrade or the walls start at once
   else if(a==='fief-build'){if(ESTATES[arg]&&!bldLv(t,arg)&&!lotAt(t,arg)){const c=bldCost(arg,1);if(!t.work&&bldCap(t,arg)&&needsMet(t,arg)&&P.gold>=c&&!matsLacking(t,ESTATE_MAT(arg,1)).length)startPlace(t,arg)}else buildAct(t,arg)}
   else if(a==='fief-house'){if(!t.work&&P.gold>=HOUSE_COST.gold&&!matsLacking(t,HOUSE_COST.mats).length)startPlace(t,'house')}
   else if(a==='fief-demolish'){demolish(t,arg==='house'?(t.lots||[]).filter(l=>l.k==='house'&&l.st==='built').pop():lotAt(t,arg))}
   else if(fiefEconAct(a,arg,t)){}
-  else if(a==='fief-callup'){const k=RACES[t.races[0]].melee;if(t.gar>1&&partySize()<partyCap()){t.gar--;P.add(k)}}
+  else if(a==='fief-callup')garrisons.callup(t);
   return true;
 }
 onAct('sg-',siegeAct);onAct('cap-',captureAct);

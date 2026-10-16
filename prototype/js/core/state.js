@@ -1,12 +1,12 @@
 'use strict';
 /* ---------- state ---------- */
-const G={mode:'title',modal:true,paused:false,speed:1,day:1,clock:0,cam:{x:0,y:0},mouse:{x:VW/2,y:VH/2,in:false,type:'mouse'},keys:{},encCool:0,lastTown:null,town:null,enc:null,msgs:[],rankSeen:0,hudT:0,shake:0};
 const mkSkills=()=>Object.fromEntries(Object.keys(SKILLS).map(k=>[k,{lv:0,xp:0}]));
-const P={x:0,y:0,tx:null,ty:null,gold:0,troops:{},morale:80,renown:0,level:1,xp:0,bonus:0,stuck:0,dir:1,bg:'',
-  attr:{str:2,agi:2,int:2,cha:2},pts:0,sk:mkSkills(),perks:[],perkPend:0,prisoners:{},comps:{},fac:null,hostile:{},race:'human',hp:null,sp:null,mp:null,tree:['start'],origin:null,tp:0,slots:Array(10).fill(null),quests:[],jobs:{},qid:0,rep:{},honor:{},gear:emptyGear(),inv:Array(INV_SIZE).fill(null)};
+const makeRuntimeState=()=>({mode:'title',modal:true,paused:false,speed:1,day:1,clock:0,cam:{x:0,y:0},mouse:{x:VW/2,y:VH/2,in:false,type:'mouse'},keys:{},encCool:0,lastTown:null,town:null,enc:null,scene:null,msgs:[],rankSeen:0,hudT:0,shake:0});
+const makePlayerState=()=>({x:0,y:0,tx:null,ty:null,gold:0,troops:{},morale:80,renown:0,level:1,xp:0,bonus:0,stuck:0,dir:1,bg:'',
+  attr:{str:2,agi:2,int:2,cha:2},pts:0,sk:mkSkills(),apt:{},perks:[],perkPend:0,prisoners:{},comps:{},fac:null,hostile:{},race:'human',hp:null,sp:null,mp:null,tree:['start'],origin:null,tp:0,slots:Array(10).fill(null),quests:[],jobs:{},qid:0,rep:{},honor:{},gear:emptyGear(),inv:Array(INV_SIZE).fill(null),stay:null,txp:{},fin:null,captives:[],wounded:{},siege:null,raid:null,fiefWeek:0,recruits:{},recN:0});
+const G=makeRuntimeState(),P=makePlayerState();
 let bandits=[],B=null;
 
-const sum=o=>Object.values(o).reduce((a,b)=>a+b,0);
 const troopCount=()=>sum(P.troops);
 const compCount=()=>Object.keys(P.comps).length;
 const woundedN=()=>sum(P.wounded||{});
@@ -40,22 +40,9 @@ const mountDef=()=>P.gear.mount?ITEMS[P.gear.mount]:null;
 const mountIgn=()=>mountDef()?mountDef().ign:[];
 const skill=k=>P.sk[k].lv+roleBonus(k)+gearSkill(k)+treeSk(k);
 const partyCap=()=>Math.max(3,Math.round((8+P.level*3+Math.floor(P.renown/25)+skill('lead')+Math.floor(P.attr.cha/2)+tm('cap'))*(1+tm('capPct'))));
+const partyRoom=()=>partyCap()-partySize();// negative while over capacity; callers decide whether a transfer is allowed
 const prisonCap=()=>2+skill('lead')+(has('warden')?6:0)+tm('prison');
 const eatPerDay=()=>Math.ceil((partySize()+mountedN()+prisonerCount()+1)/4*(has('forced')?1.2:1)*(has('quarter')?.75:1)*(roleOf('quarter')?.75:1)*(1-tm('food')));
-const hireCost=k=>Math.round(HIRE[k]*(has('silver')?.8:1)*(1-.02*P.attr.cha)*(ST[k].race&&ST[k].race===P.race?.85:1)*(1-tm('hire')));
-/* troop experience: your soldiers learn by fighting. Each one earns XP in battle (TROOP_XP.dmg per point of damage it deals,
-   kill x the tier of each foe it fells, fight for being there, win for a victory; less in an auto-resolve), and the survivors
-   pool it by kind (P.txp, more with Leadership). A soldier can be trained up a troop tree once its kind has need[tier] XP for it
-   (and the gold, at a barracks); training spends it. A kind holds no more than its soldiers can use; the fallen take theirs. */
-const TROOP_XP={need:{1:40,2:80,3:140,4:220},dmg:.5,kill:6,fight:4,win:4,auto:.6};
-const txpNeed=k=>TROOP_XP.need[ST[k]&&ST[k].tier||1]||TROOP_XP.need[4];
-const txpOf=k=>(P.txp||{})[k]||0;
-// how many soldiers of kind k are ready to train (it has somewhere to go, and the XP for it)
-const txpReady=k=>UP[k]?Math.min(P.troops[k]||0,Math.floor(txpOf(k)/txpNeed(k))):0;
-// add XP to a kind (Leadership helps), held to what its soldiers can use
-function txpGain(k,n){if(!UP[k]||!(P.troops[k]>0)||n<=0)return;P.txp=P.txp||{};P.txp[k]=Math.min(txpOf(k)+n*(1+.05*skill('lead')),(P.troops[k]||0)*txpNeed(k))}
-function txpClamp(){P.txp=P.txp||{};for(const k in P.txp){const cap=UP[k]?(P.troops[k]||0)*txpNeed(k):0;if(P.txp[k]>cap)P.txp[k]=cap;if(!P.txp[k])delete P.txp[k]}}
-const trainCost=to=>Math.round((ST[to].tier>=3?45:25)*(has('drill')?.6:1)*(1-tm('train')));
 const vis=()=>(110+8*skill('scout'))*visMulAt(P.x,P.y)*(1+gm('vis'));
 const rankName=()=>P.renown>=250?'Lord':P.renown>=100?'Warlord':P.renown>=30?'Captain':'Wanderer';
 // what your weapon does: melee (the combo), ranged (a bow) or magic (a staff)

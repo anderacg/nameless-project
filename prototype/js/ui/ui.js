@@ -154,17 +154,4 @@ function menuAct(a,arg){
   if(arg==='exit'){try{window.close()}catch(e){}showTitle('exit');return true}
   showTitle(arg);const b=panel.querySelector('.card,button');if(b)b.focus({preventScroll:true});return true;
 }
-function begin(k){G.scene=null;
-  const b=BGS[k];P.bg=k;P.gold=b.gold;P.troops={...b.troops};P.bonus=b.bonus;P.morale=80;P.renown=0;P.level=1;P.xp=0;
-  const rc=RACES[P.race=G.race||'human'];
-  P.attr={str:2,agi:2,int:2,cha:2};for(const a in b.attr)P.attr[a]+=b.attr[a];for(const a in rc.attr)P.attr[a]=Math.max(1,P.attr[a]+rc.attr[a]);
-  // every discipline starts at 0; your race and past give a knack: 25% faster learning per point (P.apt)
-  P.sk=mkSkills();P.apt={};for(const src of [b.sk,rc.sk])for(const s in src||{})P.apt[s]=(P.apt[s]||0)+.25*src[s];
-  P.pts=0;P.recruits={};P.recN=0;P.perks=[];P.perkPend=0;P.origin=originOf(k);P.tree=[P.origin];applyNode(P.origin,1);P.tp=0;P.slots=Array(10).fill(null);G.skSel=P.origin;G.tv=null;P.stay=null;P.txp={};P.fin=null;P.prisoners={};P.captives=[];P.wounded={};P.comps={};P.fac=null;P.hostile={};P.rep={};P.honor={};P.hp=P.sp=P.mp=null;P.siege=null;P.raid=null;P.fiefWeek=0;P.quests=[];P.jobs={};P.qid=0;G.lordJob=null;G.capture=null;G.bes=null;P.gear={...emptyGear(),weapon:gearId(b.weapon||'sword',0)};P.inv=Array(INV_SIZE).fill(null);for(const g in b.cargo)invAdd('good',g,b.cargo[g]);if(b.ammo)invAdd('good',b.ammo[0],b.ammo[1]);G.perkOffer=null;G.chase=null;W.sites=[];initWorld();W.sites=genSites();G.lastSite=null;G.site=null;W.critters=[];W.ships=[];fogReset();G.herd=null;initCritters();
-  const home=townBy(START_TOWN[P.race])||TOWNS[0];if(b.rep)P.rep[home.name]=b.rep;
-  P.x=(home.tx+.5)*TILE;P.y=(home.ty+2.5)*TILE;P.tx=null;G.day=1;G.clock=0;G.mode='world';G.lastTown=home;
-  bandits=[];for(let i=0;i<BANDITS;i++)spawnBandit(true);
-  for(let i=0;i<MONSTER_START;i++)spawnMonster(true);
-  hidePanel();G.msgs=[];log('You ride out of '+home.name+' alone, as '+(rc.n==='Elf'||rc.n==='Orc'?'an ':'a ')+rc.n.toLowerCase()+' '+b.n.toLowerCase()+'. Win fame around here and the locals will follow you.');updateHint();updateHUD(true);
-}
 onAct('esc-',escAct);

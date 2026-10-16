@@ -5,21 +5,21 @@
    add, remove, removeAny, cull, or by setting troops to a new list. The kinds: lords, your companions' parties, bandit bands
    and holdings' patrols (caravans and your own band come later). A party made as plain data (a new one, or one from a save) is
    made one of its kind by asParty(o) wherever its soldiers are changed, so plain data keeps working until then. ---------- */
-const countsOf=list=>{const c={};for(const k of list||[])c[k]=(c[k]||0)+1;return c};
-const expandCounts=c=>{const a=[];for(const k in c)for(let i=0;i<c[k];i++)a.push(k);return a};
 const LISTS=new WeakMap();// each party's list view, rebuilt when its soldiers change (kept aside: never saved)
+const ROSTERS=new WeakMap();
+function partyRoster(o){let r=ROSTERS.get(o);if(!r){r=new TroopRoster(o,'tc',{valid:k=>Object.prototype.hasOwnProperty.call(ST,k),changed:()=>o.changed()});ROSTERS.set(o,r)}return r}
 class Party{
   get troops(){let a=LISTS.get(this);if(!a){a=Object.freeze(expandCounts(this.tc));LISTS.set(this,a)}return a}
   set troops(list){this.tc=countsOf(list);this.changed()}
-  get size(){let n=0;for(const k in this.tc)n+=this.tc[k];return n}
-  has(k){return (this.tc[k]||0)>0}
-  add(k,n=1){if(n>0){this.tc[k]=(this.tc[k]||0)+n;this.changed()}return this}
+  get size(){return partyRoster(this).size}
+  has(k){return partyRoster(this).count(k)>0}
+  add(k,n=1){partyRoster(this).add(k,n);return this}
   // take up to n of a kind; returns how many
-  remove(k,n=1){const m=Math.min(n,this.tc[k]||0);if(m>0){this.tc[k]-=m;if(!this.tc[k])delete this.tc[k];this.changed()}return m}
+  remove(k,n=1){return partyRoster(this).remove(k,n)}
   // take n at random, one by one; returns the kinds taken
-  removeAny(n=1){const out=[];for(let i=0;i<n;i++){const s=this.size;if(!s)break;let r=Math.floor(Math.random()*s);for(const k in this.tc){r-=this.tc[k];if(r<0){this.remove(k);out.push(k);break}}}return out}
+  removeAny(n=1){return partyRoster(this).removeAny(n)}
   // each soldier lost with this chance
-  cull(frac){for(const k of Object.keys(this.tc)){let lost=0;for(let i=0;i<this.tc[k];i++)if(Math.random()<frac)lost++;this.remove(k,lost)}return this}
+  cull(frac){partyRoster(this).cull(frac);return this}
   changed(){LISTS.delete(this)}
   // on the map (to be drawn and clicked): not beaten, not inside a holding
   onMap(){return !this.dead&&!this.inside}
@@ -62,6 +62,7 @@ class BandParty extends Party{
 class PlayerParty extends Party{
   get tc(){return this.troops} set tc(v){this.troops=v}
   get list(){return expandCounts(this.troops)}
+  changed(){super.changed();txpClamp()}
   get brain(){return null}
   get inside(){return this.stay?this.stay.town:null}
   onMap(){return !this.stay}
@@ -87,3 +88,6 @@ Object.defineProperty(W,'parties',{get:allParties,enumerable:false});
 const partyAdd=(o,k,n)=>asParty(o).add(k,n);
 const partyRemove=(o,k,n)=>asParty(o).remove(k,n);
 const partyRemoveAny=(o,n)=>asParty(o).removeAny(n);
+const partyTransfer=(from,to,k,n,room=Infinity)=>partyRoster(asParty(from)).transferTo(partyRoster(asParty(to)),k,n,room);
+const partyTransferAll=(from,to,room=Infinity)=>partyRoster(asParty(from)).transferAllTo(partyRoster(asParty(to)),room);
+const partyTransferAny=(from,to,n,room=Infinity)=>partyRoster(asParty(from)).transferAnyTo(partyRoster(asParty(to)),n,room);
