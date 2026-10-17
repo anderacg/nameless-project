@@ -7,10 +7,12 @@
    made one of its kind by asParty(o) wherever its soldiers are changed, so plain data keeps working until then. ---------- */
 /* ---------- world objects: whatever is on the map to be seen, clicked and met says for itself what it is (mapKind), whether you
    see it (inView), where a click answers on it (pick: world.js pickAt hands it the ways to answer, at), how you meet it (meet),
-   how it is drawn (draw: onto the frame's list, render.js drawWorld) and dotted on the minimap (mapDot: [colour, size] or
-   none). here(): still on the map, in its kind's list (a chase after one gone ends). Behaviour only: saves keep plain data,
-   made one of its kind again on loading. The parties are world objects (the caravans too: worldObjects); sites, estates,
-   holdings and the other movers still go their own ways (world.js pickAt, objKind, interact; render.js drawWorld). ---------- */
+   what the pointer shows over it (tip), how it is drawn (draw: onto the frame's list, render.js drawWorld) and dotted on the
+   minimap (mapDot: [colour, size] or none). here(): still on the map, in its kind's list; chaseable(): still worth walking to
+   (a chase after one gone ends); meetsAnyTime: met as soon as you reach it, even just after a fight (G.encCool). Behaviour
+   only: saves keep plain data, made one of its kind again on loading or when the map next asks (asClass; world.js
+   asWorldObject, worldObjects). The parties and caravans (here), holdings and estates (estates.js), sites, beasts (monsters.js),
+   herds (critters.js), refugees, workers (folk.js) and ships are world objects. ---------- */
 // (in sight: within your sight, or nearer where it hides in woods or hills)
 const spotted=(o,V)=>Math.hypot(o.x-P.x,o.y-P.y)<V*(hiddenAt(o.x,o.y)?.45:1);
 class WorldObject{
@@ -20,9 +22,14 @@ class WorldObject{
   inView(V){return spotted(this,V)}
   pick(at){}
   meet(){}
+  chaseable(){return !this.dead}
+  get meetsAnyTime(){return false}
+  tip(){return ''}
   draw(ents,cam,V){}
   mapDot(V){return null}
 }
+// plain data made one of a class in place (new, from a save or a test): the same object, its fields as they were
+const asClass=C=>o=>o&&!(o instanceof C)?Object.setPrototypeOf(o,C.prototype):o;
 const LISTS=new WeakMap();// each party's list view, rebuilt when its soldiers change (kept aside: never saved)
 const ROSTERS=new WeakMap();
 function partyRoster(o){let r=ROSTERS.get(o);if(!r){r=new ArmyRoster(o,'tc',{valid:k=>Object.prototype.hasOwnProperty.call(ST,k),changed:()=>o.changed(),characters:()=>o===P?['hero',...Object.keys(P.comps).filter(id=>!P.comps[id].party).map(id=>'comp_'+id)]:[],reserved:()=>o===P?1+Object.keys(P.comps).filter(id=>!P.comps[id].party).length:o.cid||o.ld||W.lords.includes(o)||o.kind==='cparty'?1:0});ROSTERS.set(o,r)}return r}
@@ -67,6 +74,7 @@ class LordParty extends Party{
   here(){return W.lords.includes(this)}
   meet(){lordMeet(this)}
   mapDot(V){return !this.dead&&!this.inside&&this.fromYou()<V?[FACS[this.fac].col,1]:null}
+  tip(){return '<b>'+this.name+' <span class="muted">Lv '+lordStats(this).lv+'</span></b><small>'+tipFac(this.fac)+' · '+this.troops.length+' soldiers'+tipOdds(rating(this.troops))+paceVs(lordSpeed(this))+'</small><span class="act">Click: '+(hostileTo(this.fac)?'fight':'talk')+'</span>'}
   get brain(){return BRAINS.lord}
   shelterWhy(t){return t&&t.owner!==this.fac?'Not a holding of his realm':super.shelterWhy(t)}
   look(){const col=FACS[this.fac].col,still=this.state==='rest'||this.state==='siege';return{col,race:FACS[this.fac].races[0],rider:'horse',dir:faceDir(this),moving:!still,seed:this.id.length*31+this.name.length,label:String(this.size),labelCol:hostileTo(this.fac)?STANCE_COL[stance(rating(this.troops))]:col}}
@@ -74,6 +82,7 @@ class LordParty extends Party{
 class CompanionParty extends Party{
   get mapKind(){return 'cparty'}
   meet(){openComp(this.cid)}// (no minimap dot)
+  tip(){return '<b>'+COMPS[this.cid].short+'’s party</b><small>Your companion · '+this.troops.length+' soldiers · '+({follow:'riding with you',patrol:'patrolling '+this.base,return:'coming back'})[this.order]+'</small><span class="act">Click: orders</span>'}
   get brain(){return BRAINS.cparty}
   shelterWhy(t){return !t?'Nowhere':yourShelterWhy(t)}
   enter(t){this.inside=t.name;this.x=t.x;this.y=t.y}
@@ -84,6 +93,8 @@ class PatrolParty extends Party{
   get mapKind(){return 'patrol'}
   here(){return W.patrols.includes(this)}
   meet(){patrolMeet(this)}
+  get meetsAnyTime(){return true}
+  tip(){return '<b>'+(this.watch==='night'?'Night watch':'Guards')+' of '+this.home+'</b><small>'+tipFac(this.fac)+' · '+this.troops.length+' soldiers'+(hostileTo(this.fac)?tipOdds(rating(this.troops)):'')+'</small><span class="act">Click: meet</span>'}
   mapDot(V){return this.fromYou()<V?[this.fac==='player'?FACS.player.col:FACS[this.fac].col,1]:null}
   get brain(){return BRAINS.patrol}
   look(){const col=this.fac==='player'?FACS.player.col:FACS[this.fac].col,near=Math.hypot(this.x-P.x,this.y-P.y)<120;
@@ -96,6 +107,7 @@ class BandParty extends Party{
   here(){return bandits.includes(this)}
   meet(){meetBand(this)}
   mapDot(V){return this.fromYou()<V?['#ff6a60',1]:null}
+  tip(){return '<b>'+(BANDS[this.kind||'bandits']?BANDS[this.kind||'bandits'][0].replace(' ahead',''):'Bandits')+'</b>'+chiefTip(this)+'<small>'+this.n+' fighters'+tipOdds(bandPower(this))+paceVs(partySpeed(this,this.list||[]))+'</small><span class="act">Click: attack</span>'}
   get brain(){return BRAINS.band}
   look(){const c=this.ld;return{col:'#8a4a3a',bandit:true,dir:faceDir(this),moving:!this.idle,seed:Math.round(this.x)%97,label:(c?c.name.split(' ')[0]+' Lv'+c.lv+' · ':'')+this.n,labelCol:STANCE_COL[stance(bandPower(this))]}}
   get list(){return this.troops} set list(a){this.troops=a}
@@ -131,8 +143,6 @@ function asParty(o){
 // they are drawn and picked as their carts, caravans.js, not as a host behind a leader, render.js drawParties)
 function allParties(){const a=[...W.lords.filter(l=>!l.dead),...bandits,...W.patrols,...cparties()];a.forEach(asParty);return a}
 Object.defineProperty(W,'parties',{get:allParties,enumerable:false});
-// every world object on the map, each made one of its kind: the parties, then the caravans
-const worldObjects=()=>[...W.parties,...W.caravans.map(asParty)];
 // change a party's soldiers, whatever it is yet (plain or made)
 const partyAdd=(o,k,n)=>asParty(o).add(k,n);
 const partyRemove=(o,k,n)=>asParty(o).remove(k,n);

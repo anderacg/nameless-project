@@ -6,6 +6,21 @@
 // land (resources.js) or open water near it; it fishes there and is home before night (its catch is the port's own yield).
 // A port with surplus sends a trade ship to the friendly port on the same water that needs it most; the goods arrive in that
 // port's stock with the toll, as a caravan's do (caravanArrive).
+// a ship (made one in place: asShip): a world object (parties.js), only to be seen: never clicked or met
+class Ship extends WorldObject{
+  get mapKind(){return 'ship'}
+  here(){return W.ships.includes(this)}
+  inView(V){return this.fromYou()<=V*1.2}
+  // rocking on the water, a wake behind it while it sails; a fishing boat at its ground casts its net; a trade ship's label near you
+  draw(ents,cam,V){if(!this.inView(V))return;const s=this,now=performance.now();
+    ents.push({y:s.y+4,f:()=>{const b=shipSprite(s),sx=Math.round(s.x-cam.x),sy=Math.round(s.y+4-cam.y)+(Math.floor(now/450+s.seed)%2);
+      const sailing=s.state!=='fish';
+      if(sailing)for(let i=1;i<=3;i++){const ph=(now/300+i/3)%1;ctx.fillStyle=i===1?'#e8f4fa':'#bcd8e8';ctx.fillRect(sx-s.dir*(b.stern+i*3+Math.floor(ph*2)),sy-2+(i%2),2,1)}
+      ctx.save();ctx.translate(sx,sy);if(s.dir<0)ctx.scale(-1,1);ctx.drawImage(b,-b.ax,-b.ay);ctx.restore();
+      if(!sailing){const ph=(now/700+s.seed)%2;ctx.fillStyle='#d8c890';ctx.fillRect(sx+s.dir*b.net,sy-5,1,5);if(ph<1){ctx.fillStyle='#e8f4fa';ctx.fillRect(sx+s.dir*b.net-1,sy+1,3,1)}}
+      if(s.k==='trade'&&s.fromYou()<110)txt('Trade ship',sx,sy-b.ay+opaqueBox(b)[1]-2,hostileTo(s.fac)?'#ff9a90':'#e8d8a0','center')}})}
+}
+const asShip=asClass(Ship);
 const SHIP_SPD=26,BOAT_SPD=13,SHIP_CAP=Math.round(10*MAP_DENS);
 // open water a boat can sail: not the frozen lakes of the frost (their ports fish through the ice). The sea round the edge
 // of the world is the coastal route that joins the ports of different shores
@@ -37,7 +52,7 @@ function shipPath(a,b){
 const shipsOf=(t,k)=>W.ships.filter(s=>s.home===t.name&&s.k===k);
 function launch(t,k,to,target,o){
   const d=dockOf(t),p=d&&shipPath(d,target);if(!p)return null;
-  const s=Object.assign({k,home:t.name,to,x:(d.tx+.5)*TILE,y:(d.ty+.5)*TILE,path:p,i:0,seed:rint(1,99999),dir:1,state:'out'},o);W.ships.push(s);return s;
+  const s=asShip(Object.assign({k,home:t.name,to,x:(d.tx+.5)*TILE,y:(d.ty+.5)*TILE,path:p,i:0,seed:rint(1,99999),dir:1,state:'out'},o));W.ships.push(s);return s;
 }
 
 /* fishing boats */
@@ -130,14 +145,5 @@ function shipSprite(o){
     x.drawImage(hull,0,0);if(!big&&!o.moored)line(12,R-1,6,WL,Wo[1])});
   c.cw=n;c.ch=n;c.ax=n>>1;c.ay=WL;c.stern=(n>>1)-(big?5:4);c.net=big?0:13;c.posts=big?[[6,R-6],[57,R-4]]:[[3,25],[29,24]];return spr[key]=c;
 }
-/* each boat rocks on the water, a wake behind it while it sails; a fishing boat at its ground casts its net */
-function drawShips(ents,cam,V){
-  const now=performance.now();
-  for(const s of W.ships){if(Math.hypot(s.x-P.x,s.y-P.y)>V*1.2)continue;
-    ents.push({y:s.y+4,f:()=>{const b=shipSprite(s),sx=Math.round(s.x-cam.x),sy=Math.round(s.y+4-cam.y)+(Math.floor(now/450+s.seed)%2);
-      const sailing=s.state!=='fish';
-      if(sailing)for(let i=1;i<=3;i++){const ph=(now/300+i/3)%1;ctx.fillStyle=i===1?'#e8f4fa':'#bcd8e8';ctx.fillRect(sx-s.dir*(b.stern+i*3+Math.floor(ph*2)),sy-2+(i%2),2,1)}
-      ctx.save();ctx.translate(sx,sy);if(s.dir<0)ctx.scale(-1,1);ctx.drawImage(b,-b.ax,-b.ay);ctx.restore();
-      if(!sailing){const ph=(now/700+s.seed)%2;ctx.fillStyle='#d8c890';ctx.fillRect(sx+s.dir*b.net,sy-5,1,5);if(ph<1){ctx.fillStyle='#e8f4fa';ctx.fillRect(sx+s.dir*b.net-1,sy+1,3,1)}}
-      if(s.k==='trade'&&Math.hypot(s.x-P.x,s.y-P.y)<110)txt('Trade ship',sx,sy-b.ay+opaqueBox(b)[1]-2,hostileTo(s.fac)?'#ff9a90':'#e8d8a0','center')}})}
-}
+// every ship in sight (Ship draw)
+function drawShips(ents,cam,V){for(const s of W.ships)asShip(s).draw(ents,cam,V)}

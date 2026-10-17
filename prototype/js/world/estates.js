@@ -100,7 +100,6 @@ const breach=t=>{t.wall=Math.max(0,wallOf(t)-1);if(t.work&&t.work.k==='wall')t.w
 /* estates: plunder or burn what a holding has built in its fields */
 const estateGuards=(t,k)=>{const lv=bldLv(t,k),near=Math.hypot(bldSpots(t)[k].x-t.x,bldSpots(t)[k].y-t.y)<7*TILE,n=2+2*lv+(near?Math.min(4,t.gar||0):0),a=[];
   for(let i=0;i<n;i++){const c=RACES[t.races[i%t.races.length]];a.push(i%3===2?c.ranged:c.melee)}return a};
-function estatePick(t,k){const p=bldSpots(t)[k];return{est:true,town:t.name,k,x:p.x,y:p.y,fac:t.owner}}
 function estateMeet(o){
   const t=townBy(o.town),k=o.k;if(!t||!bldLv(t,k))return;G.est=o;G.mode='dialog';P.tx=null;G.chase=null;ensureEcon(t);
   const E=ESTATES[k],lv=bldLv(t,k),own=t.owner==='player',emp=P.fac&&P.fac===t.owner,out=(t.last&&t.last.out)||{},gs=E.goods.filter(g=>out[g]);
@@ -167,7 +166,41 @@ function buildAct(t,k,at){
   if(!ESTATES[k])return;at=at||null;const lv=bldLv(t,k);if(lv>=bldCap(t,k)||!lv&&!needsMet(t,k))return;const c=bldCost(k,lv+1),mats=ESTATE_MAT(k,lv+1);if(P.gold<c||matsLacking(t,mats).length)return;P.gold-=c;takeMats(t,mats);startWork(t,k,lv+1,at);log('Work starts on the '+ESTATES[k].n.toLowerCase()+' of '+t.name+'.');
 }
 
-/* on the map: drawn with every other placed building (structures.js: drawLotGround, lotEnts) */
+/* ---------- on the map: a holding and its estates are world objects (parties.js WorldObject). A holding's class is data
+   (holdings.js, loaded before the world objects), so HoldingObject is put under it here. A holding answers a click on its gate
+   and on any of its buildings and walls; an estate on its building and its fields, in the holding's order of lots (both:
+   HoldingObject pick). Both are drawn with the holding's lots (structures.js holdingEnts, drawLotGround). ---------- */
+class HoldingObject extends WorldObject{
+  get mapKind(){return 'town'}
+  here(){return TOWNS.includes(this)}
+  get meetsAnyTime(){return true}
+  meet(){approachHolding(this)}
+  // its built estates, in the order of its lots (worldObjects lists them after it)
+  estates(){return Object.keys(bldSpots(this)).filter(k=>bldLv(this,k)).map(k=>estatePick(this,k))}
+  // (structures answer anywhere on what is drawn of them: pickAt box)
+  pick(at){if(Math.hypot(this.x-P.x,this.y-P.y)>at.V+340)return;at.box(this,this.x-8,this.y-18,this.x+8,this.y+8,4);// its gate
+    for(const l of this.lots||[]){if(ESTATES[l.k]&&bldLv(this,l.k))estatePick(this,l.k).pickOn(at,this,l);else at.box(this,l.x*TILE,l.y*TILE,(l.x+l.n)*TILE,(l.y+l.n)*TILE,ESTATES[l.k]?0:4)}}
+  draw(ents,cam,V){holdingEnts(this,ents,cam,V)}
+  mapDot(V){return seenTile(this.tx,this.ty)?[this._memCol||facCol(this),3]:null}// (its colour as you last saw it)
+  tip(){return '<b>'+this.name+'</b><small>'+cap1(this.label)+(this.owner?' of the '+tipFac(this.owner):'')+' · '+WALL_N[wallOf(this)]+'</small>'+(closedNow(this)?'<small class="bad">Under siege</small>':'')+'<span class="act">'+(hostileTo(this.owner)?'Click: attack it':'Click: enter')+'</span>'}
+}
+Object.setPrototypeOf(Holding.prototype,HoldingObject.prototype);
+// an estate: one per holding and kind, kept aside (never saved): town (its holding's name), k, and its building's spot (x, y) and
+// owner (fac) as they are when it is asked for (estatePick)
+const ESTATE_OBJ=new WeakMap();
+class Estate extends WorldObject{
+  constructor(t,k){super();this.town=t.name;this.k=k}
+  get mapKind(){return 'estate'}
+  get est(){return true}
+  chaseable(){return super.chaseable()&&!!bldLv(townBy(this.town)||{},this.k)}// (pulled down or burnt while you walk there: no more)
+  get meetsAnyTime(){return true}
+  meet(){estateMeet(this)}
+  pick(at){}// (with its holding's lots, in their order: pickOn)
+  pickOn(at,t,l){at.box(this,l.x*TILE,l.y*TILE,(l.x+l.n)*TILE,(l.y+l.n)*TILE,0);plotsAt(t,this.k,bldLv(t,this.k)).forEach(([x,y])=>at.box(this,x*TILE,y*TILE,(x+1)*TILE,(y+1)*TILE))}
+  tip(){return '<b>'+ESTATES[this.k].n+'</b><small>Estate of '+this.town+'</small><span class="act">Click: look</span>'}
+}
+function estatePick(t,k){let m=ESTATE_OBJ.get(t);if(!m)ESTATE_OBJ.set(t,m={});const o=m[k]||(m[k]=new Estate(t,k)),p=bldSpots(t)[k];o.x=p.x;o.y=p.y;o.fac=t.owner;return o}
+/* drawn with every other placed building (structures.js: drawLotGround, lotEnts) */
 const drawEstates=(cam,V)=>drawLotGround(cam,V);
 const estateEnts=(ents,cam,V)=>lotEnts(ents,cam,V);
 onAct('es-',estateAct);

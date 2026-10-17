@@ -30,7 +30,8 @@ const compass=(dx,dy)=>COMPASS[(Math.round(Math.atan2(dy,dx)/(Math.PI/4))+8)%8];
 
 /* ---------- the kinds of site: one class each over the plain data in W.sites (saved as it is; siteOf puts the class back).
    Site has what every place shares: where it may stand (static: ground, clear, fits; its point), whether you know of it,
-   walking in, the day's change, its click area and tooltip. Each kind adds what it does. ---------- */
+   walking in, the day's change, its click area and tooltip; on the map it is a world object (parties.js WorldObject). Each
+   kind adds what it does. ---------- */
 const nearTile=(tx,ty,type,r)=>{for(let j=-r;j<=r;j++)for(let i=-r;i<=r;i++)if(tAt(tx+i,ty+j)===type)return true;return false};
 // A cave is cut into the front of a hill or mountain: it stands on that rock tile, drawn over the hill or peak painted there,
 // and its mouth opens onto the ground in front (any you can walk), where parties reach it. Its point (x, y) is that mouth,
@@ -44,7 +45,13 @@ function campClear(type,tx,ty){const [x0,y0,w,h]=campFoot(type);
   for(let j=y0-1;j<=y0+h;j++)for(let i=x0-1;i<=x0+w;i++){const t=tAt(tx+i,ty+j),own=i>=x0&&i<x0+w&&j>=y0&&j<y0+h;if(occAt(tx+i,ty+j)||t!==T_OPEN&&(own||t!==T_ROAD))return false}return true}
 const unusedName=(list,sites)=>{const free=list.filter(n=>!sites.some(o=>o.name===n));return free.length?free[rint(0,free.length-1)]:list[rint(0,list.length-1)]};
 
-class Site{
+class Site extends WorldObject{
+  get mapKind(){return 'site'}
+  here(){return W.sites.includes(this)}
+  get meetsAnyTime(){return true}
+  chaseable(){return super.chaseable()&&this.pickable()}
+  // met: walked into (a fight, or its window), the one you last left (G.lastSite: not opened again as you stand by it)
+  meet(){G.lastSite=this;this.enter()}
   get T(){return SITE_TYPES[this.type]}
   get label(){return this.name+' ('+this.T.n.toLowerCase()+')'}
   // where one may stand: its ground; open ground round it (so nothing painted stands over its picture); anything else
@@ -83,7 +90,15 @@ class Site{
   flagCol(){return '#2a1e14'}
   banner(){return null}
   pickable(){return this.known()}
+  pick(at){if(this.pickable())this.box(at.box,at.camp)}
   box(box,camp){box(this,this.x-8,this.y-8,this.x+8,this.y+8)}
+  // drawn once you know of it (as you last saw it, outside your sight: a building, render.js drawWorld), its name near you; dotted
+  // on the minimap in its kind's colour (grey, cleared)
+  inView(V){return this.known()}
+  draw(ents,cam,V){if(!this.inView(V))return;const s=this;
+    ents.push({st:true,y:s.y,f:()=>{const sx=Math.round(s.x-cam.x),sy=Math.round(s.y-cam.y);if(s.patch)ctx.drawImage(groundPatch(climAt(s.x,s.y)),sx-15,sy-4);if(s.cleared)ctx.globalAlpha=.5;const sp=siteSprite(s);ctx.drawImage(sp,sx-sp.ax,sy+8-sp.ay);if(sp.fire&&!s.cleared)drawFire(sx-sp.ax+sp.fire[0],sy+8-sp.ay+sp.fire[1],s.seed);if(sp.flag&&!s.cleared)drawFlag(s.flagCol(),sx-sp.ax+sp.flag[0],sy+8-sp.ay+sp.flag[1],s.seed);ctx.globalAlpha=1;
+      if(s.fromYou()<70)txt(s.name,sx,sy+12,s.cleared?'#9a958a':'#e4e0cf','center')}})}
+  mapDot(V){return this.known()?[this.cleared?'#555':this.T.col,2]:null}
   tip(){return '<b>'+this.name+'</b>'+(this.cleared?'':chiefTip(this))+'<small>'+this.T.n+(this.cleared?' · empty for now':'')+'</small><span class="act">Click: go there</span>'}
   // a job to clear it (quests.js)
   get clearJob(){return false}

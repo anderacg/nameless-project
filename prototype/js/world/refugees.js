@@ -3,6 +3,22 @@
 // W.refugees: {rf, from, to, n, why, race, goods, purse, x, y, dir, cool}. People leave a holding that is sacked, raided, starving,
 // besieged or miserable for a friendly holding nearby that is doing better: they come off its people when they set out and
 // join the other's when they arrive. Bandits rob them on the way; you can feed, settle, recruit or rob them.
+// refugees on the road (plain data, saved as they are; made Refugees in place: asRefugees): a world object (parties.js)
+class Refugees extends WorldObject{
+  get mapKind(){return 'refugee'}
+  here(){return W.refugees.includes(this)}
+  get meetsAnyTime(){return true}
+  meet(){refugeeMeet(this)}
+  inView(V){return this.fromYou()<=V*1.2}// (on the road: seen a little past your sight, woods or not)
+  pick(at){at.add(this,10,4)}
+  // a few of them walking (people.js refugeeSprite), how many near you
+  draw(ents,cam,V){if(!this.inView(V))return;const r=this;
+    ents.push({y:r.y,f:()=>{const sx=Math.round(r.x-cam.x),sy=Math.round(r.y-cam.y),k=Math.min(6,Math.max(3,Math.ceil(r.n/3))),mv=performance.now();ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(sx-8,sy-1,16,2);
+      for(let i=0;i<k;i++){const px=sx-r.dir*((i%3)*6-6)+(i>2?-r.dir*3:0),py=sy-(i>2?3:0);const s=refugeeSprite(Math.floor(mv/220+i)%2,i);ctx.save();ctx.translate(px,py);if(r.dir<0)ctx.scale(-1,1);ctx.drawImage(s,-8,-15);ctx.restore()}
+      if(r.fromYou()<90)txt('Refugees '+r.n,sx,sy-12,r.fear?'#ff9a90':'#c8c2ae','center')}})}
+  tip(){return '<b>Refugees</b><small>From '+this.from+' to '+this.to+'</small><span class="act">Click: meet</span>'}
+}
+const asRefugees=asClass(Refugees);
 const REFUGEE_CAP=Math.round(14*MAP_DENS),REFUGEE_SPD=11;
 // why people would leave a holding, or '' if they stay
 function fleeReason(t){ensureEcon(t);return until(t,'sacked')?'sacked':until(t,'raided')?'raided':foodDays(t)<1?'hunger':besieged(t)?'siege':t.pros<25?'hardship':until(t,'turmoil')&&t.pros<45?'conquest':housingFull(t)?'crowded':''}
@@ -16,7 +32,7 @@ function refuge(t){
 function sendRefugees(t,to,why){
   const n=Math.min(t.pop-20,rint(6,14)+(why==='sacked'?8:0));if(n<4)return null;t.pop-=n;ensureEcon(t);
   const goods={};for(const g of ['grain','cheese','cloth']){const k=Math.min(t.stock[g]||0,rint(0,3));if(k){goods[g]=k;t.stock[g]-=k}}
-  const r={rf:true,from:t.name,to:to.name,n,why,race:t.races[rint(0,t.races.length-1)],goods,purse:rint(5,12)+Math.round(n*1.5),x:t.x+rint(-6,6),y:t.y+14,dir:1,cool:0};
+  const r=asRefugees({rf:true,from:t.name,to:to.name,n,why,race:t.races[rint(0,t.races.length-1)],goods,purse:rint(5,12)+Math.round(n*1.5),x:t.x+rint(-6,6),y:t.y+14,dir:1,cool:0});
   W.refugees.push(r);
   if(t.owner==='player'||Math.hypot(t.x-P.x,t.y-P.y)<vis()*1.5)log(n+' people leave '+t.name+' for '+to.name+': '+REFUGEE_WHY[why]+'.',t.owner==='player'?'bad':'');
   return r;
@@ -74,10 +90,5 @@ function refugeeAct(a){
 
 /* on the map */
 // (a refugee on the map: people.js refugeeSprite)
-function drawRefugees(ents,cam,V){
-  for(const r of W.refugees){if(Math.hypot(r.x-P.x,r.y-P.y)>V*1.2)continue;
-    ents.push({y:r.y,f:()=>{const sx=Math.round(r.x-cam.x),sy=Math.round(r.y-cam.y),k=Math.min(6,Math.max(3,Math.ceil(r.n/3))),mv=performance.now();ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(sx-8,sy-1,16,2);
-      for(let i=0;i<k;i++){const px=sx-r.dir*((i%3)*6-6)+(i>2?-r.dir*3:0),py=sy-(i>2?3:0);const s=refugeeSprite(Math.floor(mv/220+i)%2,i);ctx.save();ctx.translate(px,py);if(r.dir<0)ctx.scale(-1,1);ctx.drawImage(s,-8,-15);ctx.restore()}
-      if(Math.hypot(r.x-P.x,r.y-P.y)<90)txt('Refugees '+r.n,sx,sy-12,r.fear?'#ff9a90':'#c8c2ae','center')}})}
-}
+function drawRefugees(ents,cam,V){for(const r of W.refugees)asRefugees(r).draw(ents,cam,V)}
 onAct('rf-',refugeeAct);

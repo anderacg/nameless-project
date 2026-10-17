@@ -26,22 +26,11 @@ const paceVs=sp=>{const me=MAP_BASE*travelMul();return sp>me*1.1?' · <span clas
 const odds=pw=>{const r=pw/Math.max(1,partyPower());return r<.6?['Easy','good']:r<1?['Even','gold']:r<1.5?['Risky','bad']:['Deadly','bad']};
 // who leads a bandit band, camp or hideout, and the price on its head
 const chiefTip=o=>o&&o.ld?'<small>Led by '+chiefLabel(o.ld)+' · bounty '+bountyOf(o.ld)+' gold</small>':'';
-function tipFor(o){
-  const k=objKind(o),fc=f=>f&&FACS[f]?'<span style="color:'+FACS[f].col+'">'+FACS[f].n+'</span>':'',vs=pw=>{const [n,c]=odds(pw);return ' · <span class="'+c+'">'+n+'</span>'};
-  if(k==='town')return '<b>'+o.name+'</b><small>'+cap1(o.label)+(o.owner?' of the '+fc(o.owner):'')+' · '+WALL_N[wallOf(o)]+'</small>'+(closedNow(o)?'<small class="bad">Under siege</small>':'')+'<span class="act">'+(hostileTo(o.owner)?'Click: attack it':'Click: enter')+'</span>';
-  if(k==='estate')return '<b>'+ESTATES[o.k].n+'</b><small>Estate of '+o.town+'</small><span class="act">Click: look</span>';
-  if(k==='lord')return '<b>'+o.name+' <span class="muted">Lv '+lordStats(o).lv+'</span></b><small>'+fc(o.fac)+' · '+o.troops.length+' soldiers'+vs(rating(o.troops))+paceVs(lordSpeed(o))+'</small><span class="act">Click: '+(hostileTo(o.fac)?'fight':'talk')+'</span>';
-  if(k==='band')return '<b>'+(BANDS[o.kind||'bandits']?BANDS[o.kind||'bandits'][0].replace(' ahead',''):'Bandits')+'</b>'+chiefTip(o)+'<small>'+o.n+' fighters'+vs(bandPower(o))+paceVs(partySpeed(o,o.list||[]))+'</small><span class="act">Click: attack</span>';
-  if(k==='monster'){const M=MONSTERS[o.id];return '<b>'+(M.n||o.id)+(o.n>1?' ×'+o.n:'')+'</b><small>Level '+o.lv+vs(monPower(o))+'</small><span class="act">Click: fight</span>'}
-  if(k==='site')return o.tip();// (each kind of site: sites.js)
-  if(k==='critter'){const D=CRITTERS[o.id];return '<b>'+D.n+(o.n>1?' ×'+o.n:'')+'</b><small>'+(D.live?'Livestock of '+o.home:'Wild game')+'</small><span class="act">Click: '+(D.live?'look':'hunt')+'</span>'}
-  if(k==='caravan')return '<b>Caravan</b><small>'+(o.from||'')+' → '+(o.to||'')+(o.fac?' · '+fc(o.fac):'')+'</small><span class="act">Click: meet</span>';
-  if(k==='refugee')return '<b>Refugees</b><small>From '+o.from+' to '+o.to+'</small><span class="act">Click: meet</span>';
-  if(k==='patrol')return '<b>'+(o.watch==='night'?'Night watch':'Guards')+' of '+o.home+'</b><small>'+fc(o.fac)+' · '+o.troops.length+' soldiers'+(hostileTo(o.fac)?vs(rating(o.troops)):'')+'</small><span class="act">Click: meet</span>';
-  if(k==='cparty')return '<b>'+COMPS[o.cid].short+'’s party</b><small>Your companion · '+o.troops.length+' soldiers · '+({follow:'riding with you',patrol:'patrolling '+o.base,return:'coming back'})[o.order]+'</small><span class="act">Click: orders</span>';
-  if(k==='worker')return '<b>'+cap1(o.job)+'</b><small>Of '+o.home+'</small><span class="act">Click: talk</span>';
-  return '';
-}
+// a realm's name in its colour, and how a fight against this power would go (for each thing's tip)
+const tipFac=f=>f&&FACS[f]?'<span style="color:'+FACS[f].col+'">'+FACS[f].n+'</span>':'';
+const tipOdds=pw=>{const [n,c]=odds(pw);return ' · <span class="'+c+'">'+n+'</span>'};
+// what the pointer is over: whatever is on the map says (WorldObject tip); nothing for what is not (or no longer) there
+function tipFor(o){return objKind(o)?o.tip():''}
 function hideTip(){const t=document.getElementById('tip');if(t){t.hidden=true;t.classList.remove('hold')}}
 // full screen (F11 does the same)
 function toggleFull(){try{if(document.fullscreenElement)document.exitFullscreen();else document.documentElement.requestFullscreen()}catch(e){}}

@@ -65,7 +65,7 @@ try{
  ok(parties.every(q=>q instanceof t.WorldObject)&&P instanceof t.WorldObject,'every party, and your band, is a WorldObject');
  ok(L.mapKind==='lord'&&b.mapKind==='band'&&pt.mapKind==='patrol'&&cv.mapKind==='caravan'&&cp.mapKind==='cparty'&&P.mapKind==='you','each says its kind: '+[...parties,P].map(q=>q.mapKind).join(', '));
  ok(b.kind&&b.kind!==b.mapKind&&t.BANDS[b.kind],'a band keeps its own kind of bandits ('+b.kind+') beside what it is on the map');
- const wo=t.worldObjects();ok(parties.every(q=>wo.includes(q))&&!wo.includes(P)&&wo.indexOf(cv)>wo.indexOf(cp),'worldObjects(): the parties, then the caravans ('+wo.length+'), not you');
+ const wo=t.worldObjects();ok(parties.every(q=>wo.includes(q))&&!wo.includes(P)&&wo.indexOf(cv)>wo.indexOf(cp),'worldObjects(): the parties, then (after the others) the caravans ('+wo.length+'), not you');
  // ---- objKind and partyKind as before, for everything on the map
  {const things=[...t.TOWNS,...W.lords,...t.bandits,...W.patrols,...W.caravans,...t.cparties(),...W.monsters,...W.sites,...W.critters,...W.refugees,...W.folk,...t.TOWNS.flatMap(x=>Object.keys(t.ESTATES).filter(k=>t.bldLv(x,k)).map(k=>t.estatePick(x,k))),null,undefined,P];
   const bad=things.filter(q=>t.objKind(q)!==oldObjKind(q)).map(q=>t.objKind(q)+'≠'+oldObjKind(q));
@@ -103,7 +103,7 @@ try{
   ok(same,'who is in sight is as before ('+n+' checks'+(f?', in the woods too':'')+')');
   L.inside=tw.name;ok(!L.inView(999)&&!L.mapDot(999),'a lord inside a holding is neither seen nor dotted');L.inside=null}
  // ---- the minimap: the same dots
- {const V=t.vis(),a=[],n=[];oldDots((x,y,col,s)=>a.push([x,y,col,s].join()),V);for(const q of t.worldObjects()){const d=q.mapDot(V);if(d)n.push([q.x,q.y,d[0],d[1]].join())}
+ {const V=t.vis(),a=[],n=[];oldDots((x,y,col,s)=>a.push([x,y,col,s].join()),V);for(const q of t.worldObjects().filter(q=>q instanceof t.Party)){const d=q.mapDot(V);if(d)n.push([q.x,q.y,d[0],d[1]].join())}
   ok(a.length>=4&&a.sort().join('|')===n.sort().join('|'),'the minimap dots the same parties and caravans, in the same colours ('+n.length+')')}
  // ---- meeting: the same dialog for each kind; G.youAttack set while it opens and cleared as soon as interact is done
  {const spies=['lordMeet','meetBand','patrolMeet','openComp'],orig={},got=[];

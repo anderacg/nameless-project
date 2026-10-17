@@ -20,6 +20,13 @@ function walk(o,dx,dy,step,ok){
 // a click on something you already stand beside opens it at once, even if you just left it or fled from it
 // touching distance: you interact with something only when you reach it; a click on something farther away walks you there
 const REACH=14;
+// everything on the map, each made one of its kind, in the order a click weighs them when two are as near (pickAt): each
+// holding then its built estates, the parties (lords, bands, patrols, your companions'), the beasts, the sites, the herds, the
+// caravans, the refugees, the workers, then the ships (never clicked). Not you.
+const worldObjects=()=>[...TOWNS.flatMap(t=>[t,...t.estates()]),...W.parties,...W.monsters.map(asMonster),...W.sites,...W.critters.map(asHerd),...W.caravans.map(asParty),...W.refugees.map(asRefugees),...W.folk.map(asWorker),...W.ships.map(asShip)];
+// a thing on the map made one of its kind if it is still plain data (new, from a save or a test), by its fields: a herd (crit),
+// refugees (rf), a worker (folk), a ship (its path over the water), a beast (a MONSTERS kind). Parties are made theirs by asParty
+const asWorldObject=o=>!o||o instanceof WorldObject?o:o.crit?asHerd(o):o.rf?asRefugees(o):o.folk?asWorker(o):o.path?asShip(o):MONSTERS[o.id]&&!o.type?asMonster(o):o;
 // what lies under a click: the nearest clickable thing you can see
 function pickAt(wx,wy){
   const V=vis(),c=[],add=(o,r,dy)=>{const d=Math.hypot(o.x-wx,o.y-(dy||0)-wy);if(d<r&&Math.hypot(o.x-P.x,o.y-P.y)<V*1.2)c.push([d,o])};
@@ -32,34 +39,19 @@ function pickAt(wx,wy){
   // ring (someone small beside it, clicked on, is still picked), before a building it stands in front of
   const fig=(o,s,x0,y0,flip)=>{if(Math.hypot(o.x-wx,o.y-wy)>s.width)return;const b=opaqueBox(s),L=flip?x0+s.width-1-b[2]:x0+b[0],R=L+b[2]-b[0]+1,T=y0+b[1],Bt=y0+b[3]+1,hw=(R-L)/2,hh=(Bt-T)/2;
     if(wx>=L&&wx<R&&wy>=T&&wy<Bt&&Math.hypot(o.x-P.x,o.y-P.y)<V*1.2)c.push([10+2*Math.max(Math.abs(wx-L-hw)/hw,Math.abs(wy-T-hh)/hh),o])};
-  // a holding answers on its square and on any of its buildings and walls; an estate on its building and its fields
-  TOWNS.forEach(t=>{if(Math.hypot(t.x-P.x,t.y-P.y)>V+340)return;box(t,t.x-8,t.y-18,t.x+8,t.y+8,4);// its gate
-    for(const l of t.lots||[]){const o=ESTATES[l.k]&&bldLv(t,l.k)?estatePick(t,l.k):t;box(o,l.x*TILE,l.y*TILE,(l.x+l.n)*TILE,(l.y+l.n)*TILE,ESTATES[l.k]?0:4);
-      if(o!==t)plotsAt(t,l.k,bldLv(t,l.k)).forEach(([x,y])=>box(o,x*TILE,y*TILE,(x+1)*TILE,(y+1)*TILE))}});
-  // a world object says where it is clicked (parties.js WorldObject.pick), with these
-  const at={x:wx,y:wy,add,box,fig,camp};
-  W.parties.forEach(o=>o.pick(at));W.monsters.forEach(m=>add(m,11,6));
-  // each kind of site says where it is clicked (sites.js)
-  W.sites.forEach(s=>{if(s.pickable())s.box(box,camp)});W.critters.forEach(k=>{if(!k.decor)add(k,9,4)});/* (a pasture's herd is only to be seen: the pasture answers) */W.caravans.forEach(k=>asParty(k).pick(at));W.refugees.forEach(k=>add(k,10,4));
-  // (workers: met at their estate while they work inside it; out on the road with a delivery, met where they walk: folk.js)
-  W.folk.forEach(k=>{if(folkOut(k))add(k,6,4)});
+  // every world object says where a click answers on it (WorldObject pick), with these, in worldObjects' order (a tie keeps it)
+  const at={x:wx,y:wy,V,add,box,fig,camp};for(const o of worldObjects())o.pick(at);
   c.sort((a,b)=>a[0]-b[0]);return c.length?c[0][1]:null;
 }
-// what a thing on the map is: a world object says (its mapKind, while it is still on the map: here); the rest by where it is kept
-const objKind=o=>o instanceof WorldObject?(o.here()?o.mapKind:null):o&&o.est?'estate':TOWNS.includes(o)?'town':W.monsters.includes(o)?'monster':W.sites.includes(o)?'site':W.critters.includes(o)?'critter':W.refugees.includes(o)?'refugee':W.folk.includes(o)?'worker':null;
-// meet whatever you have reached (G.youAttack: you started whatever fight this opens at once: encounters.js startEncounter)
+// what a thing on the map is (its mapKind), while it is still on the map (here); null for anything else
+const objKind=o=>(o=asWorldObject(o)) instanceof WorldObject&&o.here()?o.mapKind:null;
+// meet whatever you have reached, each its own way (WorldObject meet; G.youAttack: you started whatever fight this opens at once:
+// encounters.js startEncounter)
 function interact(o){
   const k=objKind(o);P.tx=null;G.chase=null;G.youAttack=true;
   try{
     if(o&&o.fight&&fightOf(o)){fightMeet(fightOf(o));return true}
-    if(o instanceof WorldObject){if(k)o.meet()}// (a party: parties.js, caravans.js)
-    else if(k==='town')approachHolding(o);
-    else if(k==='monster')startMonster(o);
-    else if(k==='site'){G.lastSite=o;enterSite(o)}
-    else if(k==='refugee')refugeeMeet(o);
-    else if(k==='worker')workerMeet(o);
-    else if(k==='estate')estateMeet(o);
-    else if(k==='critter'){o.cool=4;if(CRITTERS[o.id].live)openHerd(o);else hunt(o)}
+    if(k)o.meet();
     return !!k;
   }finally{G.youAttack=false}
 }
@@ -154,8 +146,10 @@ function updateWorld(dt){
   if(G.capture&&!G.modal){showCapture();return}
   raidTick(d);landWatch();
   if(P.siege){const st=townBy(P.siege.town);if(!st||Math.hypot(P.x-st.x,P.y-st.y)>80){P.siege=null;log('You march away and the siege'+(st?' of '+st.name:'')+' is lifted.','bad')}}
-  if(G.chase){const o=G.chase,k=objKind(o);if(!k||o.dead||k==='site'&&!o.pickable()||k==='estate'&&!bldLv(townBy(o.town)||{},o.k))G.chase=null;else{P.tx=o.x;P.ty=o.y;
-    if(Math.hypot(o.x-P.x,o.y-P.y)<=REACH&&!G.modal&&(G.encCool<=0||['town','site','critter','caravan','refugee','worker','estate','patrol'].includes(k))){interact(o);return}}}
+  // (a chase ends when what you chase is gone or not worth it: WorldObject here, chaseable; reached, it is met, unless you just
+  // fought and it would fight you: meetsAnyTime)
+  if(G.chase){const o=G.chase;if(!objKind(o)||!o.chaseable())G.chase=null;else{P.tx=o.x;P.ty=o.y;
+    if(Math.hypot(o.x-P.x,o.y-P.y)<=REACH&&!G.modal&&(G.encCool<=0||o.meetsAnyTime)){interact(o);return}}}
   if(P.tx!=null){
     const dx=P.tx-P.x,dy=P.ty-P.y,dist=Math.hypot(dx,dy);
     if(dist<2){P.tx=null}

@@ -36,26 +36,13 @@ function drawWorld(){
   ctx.drawImage(worldCv(),cam.x,cam.y,VW,VH,0,0,VW,VH);
   drawEnv(cam,V,0);drawLand(cam);drawEstates(cam,V);
   const ents=[];
-  W.sites.forEach(s=>{if(siteKnown(s))ents.push({st:true,y:s.y,f:()=>{const sx=Math.round(s.x-cam.x),sy=Math.round(s.y-cam.y);if(s.patch)ctx.drawImage(groundPatch(climAt(s.x,s.y)),sx-15,sy-4);if(s.cleared)ctx.globalAlpha=.5;const sp=siteSprite(s);ctx.drawImage(sp,sx-sp.ax,sy+8-sp.ay);if(sp.fire&&!s.cleared)drawFire(sx-sp.ax+sp.fire[0],sy+8-sp.ay+sp.fire[1],s.seed);if(sp.flag&&!s.cleared)drawFlag(s.flagCol(),sx-sp.ax+sp.flag[0],sy+8-sp.ay+sp.flag[1],s.seed);ctx.globalAlpha=1;
-    if(Math.hypot(s.x-P.x,s.y-P.y)<70)txt(s.name,sx,sy+12,s.cleared?'#9a958a':'#e4e0cf','center')}})});
-  // the holdings are drawn as their placed buildings (lotEnts, called with the estates below)
+  // each thing on the map draws itself onto the frame's list (WorldObject draw), in the order they always went (two as deep stay
+  // in it): the sites, the parties, the beasts, the herds, you, then the workers, caravans, ships, refugees and fights
+  for(const s of W.sites)s.draw(ents,cam,V);
+  // the holdings (and their estates) are drawn as their placed buildings (lotEnts, called with the estates below)
   drawParties(ents,cam,V);// lords, bands, patrols and your companions' parties (each party draws itself: parties.js)
-  W.monsters.forEach(m=>{const M=MONSTERS[m.id],Y=M.mythic;if(Y?Math.hypot(m.x-P.x,m.y-P.y)<V*1.6:spotted(m,V))ents.push({y:m.y+(Y&&Y.fly?30:0),f:()=>{
-    const s=unitSprite(M.unit,1,false),w=s.width,h=s.ch,sx=Math.round(m.x-cam.x),sy=Math.round(m.y-cam.y),lift=Y&&Y.fly?6-Math.round(Math.sin(performance.now()/260)*2):0;
-    ctx.fillStyle='rgba(0,0,0,.3)';if(Y)ctx.fillRect(sx-8,sy-1,16,3);else ctx.fillRect(sx-5,sy-1,10,2);
-    ctx.save();ctx.translate(sx,sy-lift);if(Y?m.dir<0:faceDir(m)<0)ctx.scale(-1,1);ctx.drawImage(s,-(w>>1),-s.height+2);ctx.restore();
-    if(!Y)txt((m.n>1?m.n+' ':'')+'Lv'+m.lv,sx,sy-h,STANCE_COL[M.aggro||stance(monPower(m))==='afraid'?stance(monPower(m)):'wary'],'center')}})});
-  // (a herd: up to three of its animals, behind and beside the first, each stepping as they go (critters.js critterSprite))
-  // (a pasture's herd, only to be seen: one animal on each worked field tile, grazing to and fro on it)
-  W.critters.forEach(c=>{if(!c.decor||Math.hypot(c.x-P.x,c.y-P.y)>V)return;const F=fieldsOf(townBy(c.home),'pasture');if(!F)return;
-    F.tiles.slice(0,c.n).forEach(([tx,ty],i)=>{const y=ty*TILE+TILE-3;ents.push({y,f:()=>{const now=performance.now(),ph=now/2600+i*1.9+tx,mv=Math.cos(ph),fr=Math.abs(mv)>.6?Math.floor(now/D_STEP+i)%2:0,
-      a=critterSprite(c.id,fr,true),x=Math.round(tx*TILE+TILE/2+Math.sin(ph)*3-cam.x),sy=Math.round(y-cam.y),w=Math.max(4,a.cw-2);
-      ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(x-(w>>1),sy-1,w,2);ctx.save();ctx.translate(x,sy);if(mv<0)ctx.scale(-1,1);ctx.drawImage(a,-(a.width>>1),-a.height+1);ctx.restore()}})})});
-  W.critters.forEach(c=>{if(c.decor&&fieldsOf(townBy(c.home),'pasture'))return;if(spotted(c,V))ents.push({y:c.y,f:()=>{const s=critterSprite(c.id),sx=Math.round(c.x-cam.x),sy=Math.round(c.y-cam.y),now=performance.now(),k=Math.min(3,c.n||1),sp=Math.max(4,Math.round(s.cw*.55));
-    for(let i=k-1;i>=0;i--){const ox=i===0?0:i===1?-sp:Math.round(sp*.4),oy=i===0?0:i===1?-2:-4,fr=c.idle?0:Math.floor(now/(D_STEP)+c.x+i)%2,a=critterSprite(c.id,fr),w=Math.max(4,a.cw-2);
-      ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(sx+(c.dir<0?-ox:ox)-(w>>1),sy+oy-1,w,2);
-      ctx.save();ctx.translate(sx+(c.dir<0?-ox:ox),sy+oy);if(c.dir<0)ctx.scale(-1,1);ctx.drawImage(a,-(a.width>>1),-a.height+1);ctx.restore()}
-    if(c.n>1&&!c.decor&&Math.hypot(c.x-P.x,c.y-P.y)<90)txt(String(c.n),sx,sy-s.ch-1,CRITTERS[c.id].live?'#e8d8a0':'#c8e0a0','center')}})});
+  for(const m of W.monsters)asMonster(m).draw(ents,cam,V);
+  drawHerds(ents,cam,V);// (a pasture's herd: one animal on each worked field tile; the rest as herds: critters.js)
   if(P.raid)ents.push({y:P.y-1,f:()=>txt('Raiding '+Math.round(P.raid.t/RAID_TIME*100)+'%',Math.round(P.x-cam.x),Math.round(P.y-20-cam.y),'#ff9a90','center')});
   if(P.siege)ents.push({y:P.y-1,f:()=>{const s=campSprite(77,'bandit'),X=Math.round(P.x-24-s.ax-cam.x),Y=Math.round(P.y+2-s.ay-cam.y);ctx.drawImage(s,X,Y);drawFire(X+s.fire[0],Y+s.fire[1],0);drawFlag(FACS.player.col,X+s.flag[0],Y+s.flag[1],0);txt('Siege day '+P.siege.days,Math.round(P.x-cam.x),Math.round(P.y-18-cam.y),'#e8b94a','center')}});
   // (you: on foot, a bob as you walk; mounted, your horse in its 32 cell on the same feet, your host behind it, as a lord's: drawParties)
@@ -89,11 +76,8 @@ function drawWorld(){
   // minimap
   const MS=112/MW,mw=Math.round(MW*MS),mh=Math.round(MH*MS),mx=VW-mw-6,my=6,dot=(x,y,col,s)=>rect(ctx,col,mx+Math.floor(x/TILE*MS)-(s>>1),my+Math.floor(y/TILE*MS)-(s>>1),s,s);
   ctx.fillStyle='#000';ctx.fillRect(mx-1,my-1,mw+2,mh+2);ctx.drawImage(atSize(miniCv,mw,mh),mx,my);ctx.globalAlpha=.4;ctx.drawImage(atSize(landMiniCv(),mw,mh),mx,my);ctx.globalAlpha=1;ctx.drawImage(atSize(fogMiniCv(),mw,mh),mx,my);
-  TOWNS.forEach(tw=>{if(seenTile(tw.tx,tw.ty))dot(tw.x,tw.y,tw._memCol||facCol(tw),3)});
-  W.sites.forEach(s=>{if(siteKnown(s))dot(s.x,s.y,s.cleared?'#555':s.T.col,2)});
-  W.monsters.forEach(m=>{const Y=MONSTERS[m.id].mythic;if(Math.hypot(m.x-P.x,m.y-P.y)<V)dot(m.x,m.y,Y?'#ff7a30':'#c58af0',Y?2:1)});
-  // (the movers over the places: lords, bands, patrols and caravans in sight, each its own dot: WorldObject.mapDot)
-  for(const o of worldObjects()){const d=o.mapDot(V);if(d)dot(o.x,o.y,d[0],d[1])}
+  // each its own dot (WorldObject mapDot): the holdings and sites you know of, then the beasts, parties and caravans in sight over them
+  for(const os of [TOWNS,W.sites,W.monsters.map(asMonster),W.parties,W.caravans.map(asParty)])for(const o of os){const d=o.mapDot(V);if(d)dot(o.x,o.y,d[0],d[1])}
   P.quests.forEach(q=>{const g=questGoal(q);if(g)dot(g.x,g.y,'#ffe040',2)});
   dot(P.x,P.y,'#fff',3);
 }

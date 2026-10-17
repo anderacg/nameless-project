@@ -5,6 +5,22 @@
 // (DELIVER), walks to its gate with his load, stops in a little while, and walks back to the estate and in again. Met at their
 // estate (a click on it: estates.js estateMeet); one out on the road, where he walks (to talk to, hire, rob or press-gang).
 // st: 'in' (at work inside), 'out' (to the holding, loaded), 'town' (delivering, inside its gate), 'back' (home to the estate)
+// a worker (made an EstateWorker in place: asWorker): a world object (parties.js), seen and met only out on the road
+class EstateWorker extends WorldObject{
+  get mapKind(){return 'worker'}
+  here(){return W.folk.includes(this)}
+  get meetsAnyTime(){return true}
+  meet(){workerMeet(this)}
+  inView(V){return folkOut(this)&&Math.abs(this.x-P.x)<=V*1.3&&Math.abs(this.y-P.y)<=V*1.3}
+  // (at work inside: met at his estate, estates.js; out on the road with a delivery, where he walks)
+  pick(at){if(folkOut(this))at.add(this,6,4)}
+  // the people's figure with his trade's tool, the home's race, his load on his back on the way to the holding (folkSprite)
+  draw(ents,cam,V){if(!this.inView(V))return;const f=this;
+    ents.push({y:f.y,f:()=>{const fr=f.moving?Math.floor((performance.now()/180+f.ph))%2:0,t=townBy(f.home),s=folkSprite(f.job,fr,t&&t.races?t.races[0]:'human',Math.floor(f.ph*7),f.st==='out'),sx=Math.round(f.x-cam.x),sy=Math.round(f.y-cam.y);
+      ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(sx-3,sy-1,6,2);ctx.save();ctx.translate(sx,sy);if(f.dir<0)ctx.scale(-1,1);ctx.drawImage(s,-8,-14);ctx.restore()}})}
+  tip(){return '<b>'+cap1(this.job)+'</b><small>Of '+this.home+'</small><span class="act">Click: talk</span>'}
+}
+const asWorker=asClass(EstateWorker);
 const FOLK_R=520;
 // (the estates whose workers you have come near: town|estate; forgotten once you are far)
 const FOLK_SEEN=new Set();
@@ -28,7 +44,7 @@ function updateFolk(d){
       // (all of them there as you come near; one taken or fled comes back only slowly, so a hire or a press-gang shows)
       const key=t.name+'|'+k,first=!FOLK_SEEN.has(key);FOLK_SEEN.add(key);
       for(let have=W.folk.filter(f=>f.home===t.name&&f.k===k).length;have<Math.min(3,lv+1)&&(first||Math.random()<d*.02);have++){const at=folkDoor(t,k),leave=DELIVER.from+Math.random()*(DELIVER.to-DELIVER.from);
-        W.folk.push({folk:true,home:t.name,k,job,x:at.x,y:at.y,tx:at.x,ty:at.y,st:'in',leave,done:now>leave?G.day:-1,dir:1,ph:Math.random()*6})}}}
+        W.folk.push(asWorker({folk:true,home:t.name,k,job,x:at.x,y:at.y,tx:at.x,ty:at.y,st:'in',leave,done:now>leave?G.day:-1,dir:1,ph:Math.random()*6}))}}}
   for(const f of W.folk){
     const t=townBy(f.home);if(!t){f.gone=true;continue}
     const threat=bandits.some(b=>Math.hypot(b.x-f.x,b.y-f.y)<70)||until(t,'fear')&&Math.hypot(P.x-f.x,P.y-f.y)<90;
@@ -48,12 +64,8 @@ function updateFolk(d){
 // (carry: his load on his back, on the way to the holding)
 function folkSprite(job,frame,race,v,carry){return workerSprite(job,frame,race,v,carry)}
 
-function drawFolk(ents,cam,V){
-  // (only those out on the road: the rest are at work inside their estate, or delivering inside the gate)
-  for(const f of W.folk){if(!folkOut(f)||Math.abs(f.x-P.x)>V*1.3||Math.abs(f.y-P.y)>V*1.3)continue;
-    ents.push({y:f.y,f:()=>{const fr=f.moving?Math.floor((performance.now()/180+f.ph))%2:0,t=townBy(f.home),s=folkSprite(f.job,fr,t&&t.races?t.races[0]:'human',Math.floor(f.ph*7),f.st==='out'),sx=Math.round(f.x-cam.x),sy=Math.round(f.y-cam.y);
-      ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(sx-3,sy-1,6,2);ctx.save();ctx.translate(sx,sy);if(f.dir<0)ctx.scale(-1,1);ctx.drawImage(s,-8,-14);ctx.restore()}})}
-}
+// (only those out on the road: the rest are at work inside their estate, or delivering inside the gate)
+function drawFolk(ents,cam,V){for(const f of W.folk)asWorker(f).draw(ents,cam,V)}
 
 /* meeting a worker: talk, hire, rob or press-gang */
 // (from: the estate it was opened from: Back returns there)

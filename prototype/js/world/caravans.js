@@ -55,6 +55,8 @@ class CaravanParty extends Party{
       ctx.save();ctx.translate(sx,sy);if(c.dir<0)ctx.scale(-1,1);ctx.drawImage(s,-(s.width>>1),1-s.height);ctx.restore();
       if(c.fromYou()<90)txt(L.label,sx,sy-s.ch-1,L.labelCol,'center')}})}
   mapDot(V){return this.fromYou()<V?['#e8d8a0',1]:null}
+  get meetsAnyTime(){return true}
+  tip(){return '<b>Caravan</b><small>'+(this.from||'')+' → '+(this.to||'')+(this.fac?' · '+tipFac(this.fac):'')+'</small><span class="act">Click: meet</span>'}
   get brain(){return BRAINS.caravan}
   get tc(){let c=CV_TC.get(this);if(!c||sum(c)!==this.guards){c=countsOf(this.rollGuards());CV_TC.set(this,c);LISTS.delete(this)}return c}
   set tc(v){CV_TC.set(this,v||{})}

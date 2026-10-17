@@ -58,7 +58,7 @@ function acceptQuest(q){
   if(q.type==='bounty'){const p=spotNear(t,8,16);if(!p)return false;const kind=climAt(p.x,p.y)==='desert'?'raiders':climAt(p.x,p.y)==='swamp'?'bog':'bandits';
     bandits.push(asParty({x:p.x,y:p.y,n:q.n,kind,list:makeEnemies(q.n,false,kind),t:0,a:0,idle:true,cool:0,qid:q.id,name:q.band,ld:newChief(kind,2+Math.floor(G.day/20))}));q.x=p.x;q.y=p.y}
   if(q.type==='beast'){const M=MONSTERS[q.mon],p=spotNear(t,6,14,(x,y)=>M.where.some(w=>habitatAt(x,y).includes(w)))||spotNear(t,6,14);if(!p)return false;
-    W.monsters.push({id:q.mon,x:p.x,y:p.y,hx:p.x,hy:p.y,lv:q.lv,n:q.n,t:0,a:0,cool:0,qid:q.id});q.x=p.x;q.y=p.y}
+    W.monsters.push(asMonster({id:q.mon,x:p.x,y:p.y,hx:p.x,hy:p.y,lv:q.lv,n:q.n,t:0,a:0,cool:0,qid:q.id}));q.x=p.x;q.y=p.y}
   if(q.type==='clear'){const s=W.sites[q.site];if(!s||s.cleared)return false;s.seen=true;q.x=s.x;q.y=s.y}
   if(q.type==='lordkill')q.x=null;
   if(q.type==='raid'){const v=townBy(q.village);q.x=v.x;q.y=v.y}

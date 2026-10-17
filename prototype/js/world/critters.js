@@ -1,6 +1,33 @@
 'use strict';
 /* ---------- critters: wild game to hunt and livestock to buy (or rustle) ---------- */
 // W.critters: {crit:true, id, x, y, hx, hy, n, home (holding name, livestock only), t, a, dir, tire, cool, milked}
+// a herd on the map (plain data, saved as it is; made a Herd in place: asHerd): a world object (parties.js). Met: game is
+// hunted, livestock opens its herders' panel
+class Herd extends WorldObject{
+  get mapKind(){return 'critter'}
+  here(){return W.critters.includes(this)}
+  get meetsAnyTime(){return true}
+  meet(){this.cool=4;if(CRITTERS[this.id].live)openHerd(this);else hunt(this)}
+  // a pasture's herd (decor): the fields it grazes, only to be seen (the pasture answers a click: estates.js); else none
+  pasture(){return this.decor&&fieldsOf(townBy(this.home),'pasture')||null}
+  inView(V){return this.pasture()?this.fromYou()<=V:spotted(this,V)}
+  pick(at){if(!this.decor)at.add(this,9,4)}
+  // a pasture's herd: one animal on each worked field tile, grazing to and fro on it; any other: up to three of its animals,
+  // behind and beside the first, each stepping as they go (critterSprite), its count near you
+  draw(ents,cam,V){if(!this.inView(V))return;const c=this,F=c.pasture();
+    if(F){F.tiles.slice(0,c.n).forEach(([tx,ty],i)=>{const y=ty*TILE+TILE-3;ents.push({y,f:()=>{const now=performance.now(),ph=now/2600+i*1.9+tx,mv=Math.cos(ph),fr=Math.abs(mv)>.6?Math.floor(now/D_STEP+i)%2:0,
+      a=critterSprite(c.id,fr,true),x=Math.round(tx*TILE+TILE/2+Math.sin(ph)*3-cam.x),sy=Math.round(y-cam.y),w=Math.max(4,a.cw-2);
+      ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(x-(w>>1),sy-1,w,2);ctx.save();ctx.translate(x,sy);if(mv<0)ctx.scale(-1,1);ctx.drawImage(a,-(a.width>>1),-a.height+1);ctx.restore()}})});return}
+    ents.push({y:c.y,f:()=>{const s=critterSprite(c.id),sx=Math.round(c.x-cam.x),sy=Math.round(c.y-cam.y),now=performance.now(),k=Math.min(3,c.n||1),sp=Math.max(4,Math.round(s.cw*.55));
+      for(let i=k-1;i>=0;i--){const ox=i===0?0:i===1?-sp:Math.round(sp*.4),oy=i===0?0:i===1?-2:-4,fr=c.idle?0:Math.floor(now/(D_STEP)+c.x+i)%2,a=critterSprite(c.id,fr),w=Math.max(4,a.cw-2);
+        ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(sx+(c.dir<0?-ox:ox)-(w>>1),sy+oy-1,w,2);
+        ctx.save();ctx.translate(sx+(c.dir<0?-ox:ox),sy+oy);if(c.dir<0)ctx.scale(-1,1);ctx.drawImage(a,-(a.width>>1),-a.height+1);ctx.restore()}
+      if(c.n>1&&!c.decor&&c.fromYou()<90)txt(String(c.n),sx,sy-s.ch-1,CRITTERS[c.id].live?'#e8d8a0':'#c8e0a0','center')}})}
+  tip(){const D=CRITTERS[this.id];return '<b>'+D.n+(this.n>1?' ×'+this.n:'')+'</b><small>'+(D.live?'Livestock of '+this.home:'Wild game')+'</small><span class="act">Click: '+(D.live?'look':'hunt')+'</span>'}
+}
+const asHerd=asClass(Herd);
+// the herds on the map: the pastures' first, then the rest (render.js drawWorld)
+function drawHerds(ents,cam,V){const hs=W.critters.map(asHerd);for(const c of hs)if(c.pasture())c.draw(ents,cam,V);for(const c of hs)if(!c.pasture())c.draw(ents,cam,V)}
 function spawnCritter(initial){
   const ids=Object.keys(CRITTERS).filter(k=>!CRITTERS[k].live),wt=id=>CRITTERS[id].w/(1+W.critters.filter(c=>c.id===id).length*.3);
   let r=Math.random()*ids.reduce((a,id)=>a+wt(id),0),id=ids[0];for(const f of ids){r-=wt(f);if(r<=0){id=f;break}}
@@ -8,7 +35,7 @@ function spawnCritter(initial){
   for(let k=0;k<200;k++){
     const x=rint(2,MW-3)*TILE+8,y=rint(2,MH-3)*TILE+8,tags=habitatAt(x,y);
     if(!D.where.some(w=>tags.includes(w))||Math.hypot(x-P.x,y-P.y)<(initial?120:200)||TOWNS.some(t=>Math.hypot(t.x-x,t.y-y)<56))continue;
-    W.critters.push({crit:true,id,x,y,hx:x,hy:y,n:rint(D.herd[0],D.herd[1]),t:0,a:0,dir:1,tire:0,cool:0});return;
+    W.critters.push(asHerd({crit:true,id,x,y,hx:x,hy:y,n:rint(D.herd[0],D.herd[1]),t:0,a:0,dir:1,tire:0,cool:0}));return;
   }
 }
 // can this kind of livestock stand here? its own ground and climate, never a road, a holding's yard, or another estate's plot
@@ -30,13 +57,13 @@ function spawnHerd(t){
   // the pasture itself (estates.js estateMeet))
   if(sp){const F=fieldsOf(t,'pasture'),lv=bldLv(t,'pasture'),w=16+6*lv,h=12+3*lv,pen=F?{town:t.name,k:'pasture'}:{x:sp.x-w/2+3,y:sp.y-h/2+3,w:w-6,h:h-6},at=F||sp,
       grazers=kinds.filter(id=>id!=='hen'),id=(grazers.length?grazers:kinds)[0],D=CRITTERS[id];
-    W.critters.push({crit:true,decor:true,id,x:at.x,y:at.y,hx:at.x,hy:at.y,pen,n:rint(D.herd[0],D.herd[1]),home:t.name,t:0,a:0,dir:1,tire:0,cool:0,milked:0});return true}
+    W.critters.push(asHerd({crit:true,decor:true,id,x:at.x,y:at.y,hx:at.x,hy:at.y,pen,n:rint(D.herd[0],D.herd[1]),home:t.name,t:0,a:0,dir:1,tire:0,cool:0,milked:0}));return true}
   for(const id of kinds){const D=CRITTERS[id],near=id==='hen';
     for(let k=0;k<160;k++){const a=Math.random()*6.283,d=(near?22:30)+Math.random()*(near?10:18)+k*.5,// wider out if it finds no room close by
       x=t.x+Math.cos(a)*d,y=t.y+12+Math.sin(a)*d;
       // the spot and the ground around it, so the herd has room to graze
       if(!grazeOk(id,x,y)||[[8,0],[-8,0],[0,6],[0,-6]].filter(([a2,b2])=>grazeOk(id,x+a2,y+b2)).length<3)continue;
-      W.critters.push({crit:true,id,x,y,hx:x,hy:y,n:rint(D.herd[0],D.herd[1]),home:t.name,t:0,a:0,dir:1,tire:0,cool:0,milked:0});return true}}
+      W.critters.push(asHerd({crit:true,id,x,y,hx:x,hy:y,n:rint(D.herd[0],D.herd[1]),home:t.name,t:0,a:0,dir:1,tire:0,cool:0,milked:0}));return true}}
   return false;
 }
 const herdOf=t=>W.critters.find(c=>c.home===t.name);

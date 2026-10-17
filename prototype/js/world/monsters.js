@@ -2,6 +2,25 @@
 /* ---------- monsters ---------- */
 // habitat tags for a spot: its climate on open ground, or 'forest' / 'hills' on those tiles
 function habitatAt(x,y){const t=terrAt(x,y);return t===T_FOREST?['forest',climAt(x,y)==='swamp'?'swamp':'']:t===T_HILL?['hills']:t===T_OPEN?[climAt(x,y)]:[]}
+/* a beast on the map (W.monsters: plain data, saved as it is; made a Monster in place: asMonster): a world object (parties.js) */
+class Monster extends WorldObject{
+  get mapKind(){return 'monster'}
+  here(){return W.monsters.includes(this)}
+  meet(){startMonster(this)}
+  // in sight: a mythic one from afar (it flies over everything), the rest as anyone, nearer in woods and hills
+  inView(V){return MONSTERS[this.id].mythic?this.fromYou()<V*1.6:spotted(this,V)}
+  pick(at){at.add(this,11,6)}
+  // its figure (a mythic one in flight, bobbing, drawn over what it flies above), its count and level by how it means to fight
+  draw(ents,cam,V){if(!this.inView(V))return;const m=this,M=MONSTERS[m.id],Y=M.mythic;
+    ents.push({y:m.y+(Y&&Y.fly?30:0),f:()=>{
+      const s=unitSprite(M.unit,1,false),w=s.width,h=s.ch,sx=Math.round(m.x-cam.x),sy=Math.round(m.y-cam.y),lift=Y&&Y.fly?6-Math.round(Math.sin(performance.now()/260)*2):0;
+      ctx.fillStyle='rgba(0,0,0,.3)';if(Y)ctx.fillRect(sx-8,sy-1,16,3);else ctx.fillRect(sx-5,sy-1,10,2);
+      ctx.save();ctx.translate(sx,sy-lift);if(Y?m.dir<0:faceDir(m)<0)ctx.scale(-1,1);ctx.drawImage(s,-(w>>1),-s.height+2);ctx.restore();
+      if(!Y)txt((m.n>1?m.n+' ':'')+'Lv'+m.lv,sx,sy-h,STANCE_COL[M.aggro||stance(monPower(m))==='afraid'?stance(monPower(m)):'wary'],'center')}})}
+  mapDot(V){const Y=MONSTERS[this.id].mythic;return this.fromYou()<V?[Y?'#ff7a30':'#c58af0',Y?2:1]:null}
+  tip(){const M=MONSTERS[this.id];return '<b>'+(M.n||this.id)+(this.n>1?' ×'+this.n:'')+'</b><small>Level '+this.lv+tipOdds(monPower(this))+'</small><span class="act">Click: fight</span>'}
+}
+const asMonster=asClass(Monster);
 const monLevel=()=>1+Math.floor(G.day/20)+(Math.random()<.3?1:0);
 const lvMul=lv=>(1+.2*(lv-1))*(1+.12*(lv-1));
 function spawnMonster(initial){
@@ -12,7 +31,7 @@ function spawnMonster(initial){
   for(let k=0;k<200;k++){
     const x=rint(2,MW-3)*TILE+8,y=rint(2,MH-3)*TILE+8,tags=habitatAt(x,y);
     if(!M.where.some(w=>tags.includes(w))||Math.hypot(x-P.x,y-P.y)<(initial?180:240)||TOWNS.some(t=>Math.hypot(t.x-x,t.y-y)<64))continue;
-    W.monsters.push({id,x,y,hx:x,hy:y,lv:monLevel(),n:rint(M.count[0],M.count[1]),t:0,a:0,cool:0});return;
+    W.monsters.push(asMonster({id,x,y,hx:x,hy:y,lv:monLevel(),n:rint(M.count[0],M.count[1]),t:0,a:0,cool:0}));return;
   }
 }
 function monsterDay(){for(let k=0;k<3;k++)if(W.monsters.length<MONSTER_CAP&&Math.random()<.6)spawnMonster(false);mythicDay()}
@@ -55,7 +74,7 @@ function spawnMythic(id){
   // its favorite ground first; the others only if that keeps failing
   for(let k=0;k<160;k++){const tx=rint(3,MW-4),ty=rint(3,MH-4),tt=tAt(tx,ty),ok=k<100?tt===lairs[0]:lairs.includes(tt);if(!ok)continue;
     const x=(tx+.5)*TILE,y=(ty+.5)*TILE;if(Math.hypot(x-P.x,y-P.y)<200)continue;
-    const m={id,x,y,hx:x,hy:y,tx:x,ty:y,lv:1,n:1,t:0,a:0,cool:5,dir:1};W.monsters.push(m);
+    const m=asMonster({id,x,y,hx:x,hy:y,tx:x,ty:y,lv:1,n:1,t:0,a:0,cool:5,dir:1});W.monsters.push(m);
     log(cap1(an(M.n.toLowerCase()))+' has been sighted near '+nearestOf(m,TOWNS).name+'!','bad');return m}
   W.mythic[id]={back:G.day+2};return null;
 }
