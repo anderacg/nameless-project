@@ -225,6 +225,16 @@ Morale is owned by the **formation**, not the soldier. `BattleResolve` (`battle/
 
 Tuning lives in `MORALE`, `CONFIDENCE`, `AWARENESS`, `COHESION`, `LOSS_MEMORY`, `RESOLVE` and `GROUP_RESOLVE`. Coverage: `tests/groupmorale.js` (shared state, normalisation, routing as a group, rally/shatter, HUD/lab agreement), `tests/moralebalance.js` (kill reassurance, breaking timers), `tests/confidence.js`, `tests/moralecontext.js`, `tests/moraleresilience.js`, and the audits `tests/moraleaudit.js` and `tests/confidenceaudit.js`.
 
+## AI tactics
+
+**Shooters lead, or play safe.** Every captain picks a posture for its shooters each think (`rangedMode`, `B.rmode`): **aggressive** when attacking, not outnumbered, out-ranging (×1.1) or out-shooting (×1.25) the other side, with little fast melee against them (riders or speed ≥ 60 under 15% of its shooters' strength), quivers and nerve whole and no melee foe closing. The shooters then lead: the army line puts the infantry `screenGap` behind their full reach, and they go up (at a run from over 80 px) and open fire first. When the captain turns **safe** (defending, outnumbered, cavalry, worn, a foe closing), shooters that led run back behind their infantry. The margins relax while aggressive, and a 2 s wait applies before leading again.
+
+**Charges by stamina** (`runFor`): fresh infantry runs from 240 px and charges from a 140 px gap (not at riders or beasts, nor with a charge coming at it, when it braces instead); fresh riders gallop all the way, start a charge from 160 px, and pull back 150 px to charge again; less fresh, `CAPT.runAt`; tired, 130 px; spent, a walk. Tired riders stand off after a charge until stamina 55, or 5 s.
+
+**Characters fall back** (`CHAR_FALL`): one who rolls out of a press ("Falling back") goes to cover behind its own troops, heals if it can, and goes back in once its breath is back and the place is no trap (at most 2 foes near the target, or as many of ours there): your hero to your order, AI characters to the safest foe near; after 12 s, or with no troops of its own left, it goes in anyway; a new order of yours ends it. Health is not a gate (it doesn't regenerate in battle).
+
+Tunables: `AI_TACTICS`, `CHAR_FALL` in `battle/commander.js`. Tests: `tests/aitactics.js`, `tests/charfallback.js`. Balance: with the AI rallying, equal infantry fights rout at ~46–49% losses (~8 s).
+
 ## Battle feedback
 
 **Callouts** (`callout*` in `ui/battlehud.js`, tuned by `CALLOUT`): a short side-coloured banner at the top middle of the field for the big moments: a group routs, is shattered, rallies or is flanked; a leader falls; the enemy falls back (read from `B.fallBack`). Each moment is called once (the same key stays quiet for `same` combat seconds; a flank at most once per group every `flankEvery` s; arrows and steady units never trigger it). At most one new banner every `gap` real seconds, at most two on screen; a burst is cut to a short queue, minor callouts first. Your groups' routs and shatters and a leader's fall also go to the battle log; the enemy breaking is logged once at the end. No callouts in tournaments.
@@ -244,7 +254,7 @@ Some groups have a special order with a cooldown (`battle/unitabilities.js`, reg
 | **Spur** | U | cavalry | full charge momentum at once and 35% more speed, at a run, for 12 stamina per rider | 3 s | 35 s |
 | **Rally** | Y | foot units | +15 shared morale (at most 100) and an end to Breaking; not while routing or with morale off | at once | 60 s |
 
-API for captains: `g.abilities()` lists `{id,active,left,cooldown,why}` (`why===''`: usable now) and `g.useAbility(id)` returns false when refused. Per-group state `g.abil` is non-enumerable (out of snapshots and saves). Tests: `tests/unitabilities.js`. The AI does not use abilities yet.
+API for captains: `g.abilities()` lists `{id,active,left,cooldown,why}` (`why===''`: usable now) and `g.useAbility(id)` returns false when refused. Per-group state `g.abil` is non-enumerable (out of snapshots and saves). Tests: `tests/unitabilities.js`. Every AI captain uses them too (`AI_TACTICS` in commander.js): Brace when riders or a big beast with momentum come within 80 px of a spear group's front (left braced while one is within 120 px), Rally a wavering or Breaking group, Spur a fresh charge on a mark 60–140 px off with stamina ≥ 45, Fire arrows when their mark wears mail or plate or is weak to fire. Tests: `tests/aitactics.js`.
 
 ## Touch controls
 
