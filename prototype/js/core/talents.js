@@ -56,7 +56,7 @@ function talentsOf(o){
   let service=TALENTS.get(o);if(!service){service=new TalentService(o,{nodes:TREE,skills:()=>HSKILLS,root:()=>o===P?o.origin:'start',minAttribute:o===P?1:0,slotCount:10,
     wallet:P,refundCost:()=>15*P.level,effect:k=>tmOf(o,k),finisher:o===P?{styles:()=>FIN_STYLE,ready:()=>finReady()}:null});TALENTS.set(o,service)}return service;
 }
-// Compatibility commands also serve character AI and save migration; presentation stays outside the service itself.
+// Shorthand commands also serve character AI; presentation stays outside the service itself.
 const knowsOf=(o,id)=>talentsOf(o).knows(id),treeHasOf=(o,id)=>talentsOf(o).has(id),treeRootOf=o=>talentsOf(o).root();
 const canTakeOf=(o,id)=>talentsOf(o).canTake(id),canRefundOf=(o,id)=>talentsOf(o).canRefund(id);
 const knows=id=>knowsOf(P,id),treeHas=id=>treeHasOf(P,id),treeRoot=()=>treeRootOf(P),canTake=id=>canTakeOf(P,id),canRefund=id=>canRefundOf(P,id);

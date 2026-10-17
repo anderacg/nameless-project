@@ -24,8 +24,7 @@ try{const t=T,G=t.G,P=t.P,W=t.W;try{localStorage.clear()}catch(e){}
    t.startMonster(dm);t.act('fight');let j=0;while(t.B&&j<9000){t.updateBattle(.033);j++}
    const left=Object.values(P.troops).reduce((a,b)=>a+b,0);if(!t.mythicOf('dragon'))wins++;loss+=tot-left;n++;t.act('cont');while(G.mode==='perk')t.act('perk',G.perkOffer[0]);}
   o.push('BAL '+name+' ('+tot+' troops, power ratio '+(t.power(['dragon'])/t.power(t.playerList().length>1?t.playerList():['hero'])).toFixed(2)+'): won '+wins+'/4, avg losses '+(loss/n).toFixed(1));}
- P.troops={vale_levy:3,karn_axe:1};P.prisoners={salt_archer:2};G.mode='world';G.modal=false;t.saveGame();t.act('load');
- ok(P.troops.hum_levy===3&&P.troops.dw_axe===1&&P.prisoners.elf_archer===2&&P.race==='orc','old ids migrate on load, race kept');
+ G.mode='world';G.modal=false;t.saveGame();t.act('load');ok(P.race==='orc','race survives a reload');
  G.mode='world';t.openChar();ok(/Orc · level/.test(document.getElementById('panel').innerHTML),'race in char panel');t.act('char-tab','realms');t.act('char-close');t.frame();
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}
 const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d)};

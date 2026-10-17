@@ -61,8 +61,4 @@ const UP={militia:['spearman'],archer:['ranger'],
   elf_spear:['elf_eternal'],elf_eternal:['elf_phoenix'],
   orc_grunt:['orc_brute'],orc_brute:['orc_ironjaw','orc_reaver'],orc_thrower:['orc_hunter','orc_shaman'],orc_wolf:['orc_warg','orc_wolfbow'],
   orc_shield:['orc_warrior'],orc_warrior:['orc_black']};
-// older saves used faction culture ids
-const MIG={vale_levy:'hum_levy',vale_spear:'hum_spear',vale_guard:'hum_guard',vale_pike:'hum_pike',vale_bow:'hum_bow',vale_long:'hum_long',vale_squire:'hum_squire',vale_knight:'hum_knight',
-  karn_clan:'dw_clan',karn_axe:'dw_axe',karn_huscarl:'dw_iron',karn_berserk:'dw_berserk',karn_sling:'dw_sling',karn_xbow:'dw_xbow',karn_rider:'dw_ram',karn_raider:'dw_ramlord',
-  salt_sailor:'elf_glade',salt_marine:'elf_dancer',salt_corsair:'elf_blade',salt_halberd:'elf_sentinel',salt_archer:'elf_archer',salt_marks:'elf_marks',salt_sharp:'elf_sharp',salt_scout:'elf_hart',salt_lancer:'elf_lance'};
 const RANSOM=[0,15,30,60];

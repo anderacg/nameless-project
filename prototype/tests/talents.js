@@ -50,9 +50,8 @@ try{
  t.act('sk-tab','disciplines');ok(/One-Handed/.test(panel())&&/Scouting/.test(panel()),'Disciplines lists the skills you train by use');
  window.dispatchEvent(new KeyboardEvent('keydown',{code:'Escape',key:'Escape'}));ok(G.mode==='world','Escape closes it');
  t.openChar();ok(/Open Skills/.test(panel())&&!/improve through use/.test(panel()),'the Hero tab points to the Skills page');t.act('char-close');
- // saves: old saves get points for their levels
+ // saves
  t.saveGame();const tree=P.tree.slice();P.tree=['start'];t.act('load');ok(JSON.stringify(P.tree)===JSON.stringify(tree),'talents survive a reload');
- const d=JSON.parse(localStorage.getItem(t.SAVE));delete d.P.tree;delete d.P.tp;d.P.level=7;localStorage.setItem(t.SAVE,JSON.stringify(d));t.act('load');ok(P.tp===6&&P.tree.length===1&&P.tree[0]===P.origin,'an old save at level 7 gets 6 skill points and its origin');
  // active skills: every one on the tree, reachable without a keystone; slots fill themselves; keys 1 to 0 cast them
  const H=t.HSKILLS,ids2=Object.keys(H);ok(ids2.length===10&&ids2.every(id=>TR[H[id].learn]&&(TR[H[id].learn].m.unlock===id)),'ten active skills, each learned on its own node of the skill tree');
  const pathOK=goal=>{const prev={start:null},q=['start'];while(q.length){const c=q.shift();if(c===goal)break;for(const n of TR[c].links)if(!(n in prev)&&TR[n].t!=='k'){prev[n]=c;q.push(n)}}return goal in prev};
@@ -98,9 +97,8 @@ try{
  P.tp=5;ok(t.canTake('arcana0')&&!t.canTake('might0')&&!t.canTake('o_soldier'),'a Hedge mage grows from Arcana, and can never learn another past’s origin');
  t.takeNode('arcana0');t.takeNode('start');ok(t.canTake('might0'),'through the Crossroads every path opens up');P.gold=9999;ok(!t.canRefund('o_hedge')&&!t.canRefund('arcana0')&&t.canRefund('start'),'your origin cannot be unlearned, nor anything that links it to the rest');
  t.act('begin','soldier');
- // attributes are read-only now; old unspent points become talent points
+ // attributes are read-only now
  G.mode='world';G.modal=false;t.hidePanel();t.openChar();ok(!document.querySelector('[data-act="spend"]')&&/raised on the skill tree/.test(panel()),'the Hero tab shows attributes without + buttons');t.act('char-close');
- t.saveGame();const d2=JSON.parse(localStorage.getItem(t.SAVE));d2.P.pts=3;const tp0=d2.P.tp;localStorage.setItem(t.SAVE,JSON.stringify(d2));t.act('load');ok(P.pts===0&&P.tp===tp0+3,'old saves turn 3 unspent attribute points into talent points');
  t.frame();
  // the special skills: under the tree, apart from its paths
  {G.mode='world';G.modal=false;t.hidePanel();P.fin=null;const sk=P.sk[t.meleeSk()];sk.lv=0;t.openSkills('talents');

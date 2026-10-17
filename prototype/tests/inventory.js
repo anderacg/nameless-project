@@ -75,12 +75,6 @@ try{
  ok(t.invUnequip('mount')&&!P.gear.marmor&&slotOf('gear',gid('barding',1))>=0&&slotOf('gear','m_horse')>=0,'taking off the mount puts its barding in the bag');
  // shield bash
  empty();P.gear.weapon=gid('sword',1);P.gear.offhand=gid('shield',1);ok(t.BASH.mult>t.SHOVE.mult&&t.BASH.stun>t.SHOVE.stun,'a shield turns the shove into a harder Shield Bash');
- // old saves
- {const d={v:1,P:{...P,gear:{weapon:gid('sword',1),offhand:gid('dagger',2)},inv:Array(N).fill(null)},day:3,clock:0,speed:1,last:null,bandits:[],camps:[],perkOffer:null};
-  localStorage.setItem(t.SAVE,JSON.stringify(d));t.act('load');ok(P.gear.weapon===gid('sword',1)&&P.gear.offhand===gid('dagger',2)&&t.invCount('gear',gid('dagger',2))===0,'a saved off-hand dagger stays in the off hand')}
- const d={v:1,P:{...P,gear:{weapon:'clawblade',armor:'bearcoat',charm:'tuskcharm'},inv:undefined,bag:['wyrmeye'],loot:{pelt:3}},day:3,clock:0,speed:1,last:null,bandits:[],camps:[],perkOffer:null};
- delete d.P.inv;localStorage.setItem(t.SAVE,JSON.stringify(d));t.act('load');
- ok(P.gear.weapon==='clawblade'&&P.gear.body==='bearcoat'&&P.gear.ring0==='tuskcharm'&&!('armor' in P.gear)&&t.invCount('gear','wyrmeye')===1&&t.invCount('mat','pelt')===3,'old gear moves to its new slots and the old bag into the inventory');
  t.frame();
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}
 const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d)};

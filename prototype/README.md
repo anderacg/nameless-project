@@ -90,7 +90,7 @@ The scripts are plain `<script>` files, not modules, so the page still works fro
 
 `core/core.js` owns the generic numeric helpers (`sum`, `seeded`, `angGap`); the seeded RNG sequence and angle wrapping are shared unchanged by simulation, rendering and combat. `core/state.js` owns `partyRoom` alongside party size/capacity. It deliberately returns a negative value while over capacity. `core/roster.js` owns count/list conversion; companion and garrison displays reuse `countsOf` without modifying saved counts.
 
-Before removing a global, check both HTML entry points, registered action callbacks, save migration and tests—not only direct function calls in gameplay. `FORM_ORDER` and `LCAP`, for example, are still read by the wiki. Talent, equipment, site and party compatibility helpers with live consumers remain supported. Unused legacy controls and rendering helpers were removed in cleanup step 4; manual hero control and archived/reference assets were not removed. `tests/helpers.js` checks the shared helper contracts and grouped displays; `tests/wiki.js` loads the actual wiki and checks completion, sprites and search, rather than only checking its script list.
+Before removing a global, check both HTML entry points, registered action callbacks, the save format and tests—not only direct function calls in gameplay. `FORM_ORDER` and `LCAP`, for example, are still read by the wiki. Talent, equipment, site and party compatibility helpers with live consumers remain supported. Unused legacy controls and rendering helpers were removed in cleanup step 4; manual hero control and archived/reference assets were not removed. `tests/helpers.js` checks the shared helper contracts and grouped displays; `tests/wiki.js` loads the actual wiki and checks completion, sprites and search, rather than only checking its script list.
 
 ## What is on the map
 
@@ -114,7 +114,7 @@ Inventory and equipment rules live outside the screens. `Inventory` operates on 
 
 `TalentService` owns tree connectivity, attribute effects, point spending, refunds, skill slots, finishing-style choices and ability modifiers. `talentsOf(record)` caches one service per live character record. The service receives its nodes, skill definitions, wallet, price and effect functions; its methods return outcomes without logging or touching the DOM. Hero and companion trees remain separate, while refunds retain their existing fee from the player's purse (`15 * P.level`). Learning fills the first free skill slot, and refunding an active clears every slot containing it. UI renderers do not initialize saved slot arrays.
 
-The existing helper names (`takeNodeOf`, `refundNodeOf`, `canTakeOf`, `abilOf`, `hireCost`, `txpGain`, etc.) delegate to the services. The talent command helpers handle messages and hero vital refresh outside the service. Character AI, new-game setup and old-save migration can use those core helpers without depending on the Skills screen. The services hold record references rather than snapshots, so the session reset and save schema from step 1 continue to work.
+The existing helper names (`takeNodeOf`, `refundNodeOf`, `canTakeOf`, `abilOf`, `hireCost`, `txpGain`, etc.) delegate to the services. The talent command helpers handle messages and hero vital refresh outside the service. Character AI and new-game setup can use those core helpers without depending on the Skills screen. The services hold record references rather than snapshots, so the session reset and save schema from step 1 continue to work.
 
 ## Troop operations
 

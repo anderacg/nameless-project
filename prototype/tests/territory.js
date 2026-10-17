@@ -38,9 +38,6 @@ try{
  t.frame();ok(true,'borders and the minimap tint draw');
  // saves keep reach
  v.grow=6.5;t.saveGame(true);v.grow=0;t.act('load');ok(Math.abs(t.townBy(v.name).grow-6.5)<.01,'each holding’s reach survives a reload');
- // a save from the old 112 x 80 map stretches onto this one
- {G.mode='world';t.saveGame(true);const d=JSON.parse(localStorage.getItem(t.SAVE));d.mw=112;d.P.x=100;d.P.y=60;d.world.lords.forEach(l=>{l.x=50;l.y=40});localStorage.setItem(t.SAVE,JSON.stringify(d));t.act('load');
-  ok(P.x===200&&P.y===120&&W.lords.every(l=>l.x===100&&l.y===80)&&W.sites.length>50,'an old small-map save is stretched onto the bigger map, with fresh sites');}
  ok(t.MW===224&&t.MH===160&&t.TOWNS.length===37,'Ashmark is 224 x 160 tiles with 37 holdings');
  t.updateHUD(true);t.frame();
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}

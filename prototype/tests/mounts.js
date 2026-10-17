@@ -1,6 +1,6 @@
 'use strict';
 // Goods and mounts: trade goods take bag slots and stack per good, eating frees slots, a full bag blocks buying,
-// old saves move cargo into the bag; nobody starts with a mount, stables sell by place and standing, mounts speed travel,
+// nobody starts with a mount, stables sell by place and standing, mounts speed travel,
 // cross their home ground at full speed, fly, add saddlebag slots and show on the map.
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);
 try{
@@ -31,9 +31,6 @@ try{
  empty();t.invAdd('good','spice',4);G.mode='world';G.modal=false;t.hidePanel();t.openInv();t.act('inv-sel','0');
  ok(/Spice/.test(document.querySelector('.invR').innerHTML)&&/Trade good/.test(document.querySelector('.invR').innerHTML),'goods show in the bag with details');
  ok(document.querySelector('.doll .slot[data-arg="eq:mount"]'),'the paper doll has a Mount slot');t.act('inv-close');
- // old saves kept cargo outside the bag
- empty();t.saveGame();const d=JSON.parse(localStorage.getItem(t.SAVE));d.P.cargo={grain:40,iron:3,spice:0};localStorage.setItem(t.SAVE,JSON.stringify(d));t.act('load');
- ok(!('cargo' in P)&&t.goodN('grain')===40&&t.goodN('iron')===3&&slots('grain')===2,'old cargo moves into the bag');
  // stables
  G.lastTown=null;P.gold=5000;P.rep={};t.enterTown(ash);t.act('tab','stable');
  const st=t.stableStock(ash);ok(st.includes('m_mule')&&st.includes('m_horse')&&st.includes('m_courser')&&!st.includes('m_warg')&&!st.includes('m_griffin'),'Ashford stable: '+st.map(id=>t.ITEMS[id].n).join(', '));

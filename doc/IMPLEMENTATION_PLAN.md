@@ -138,7 +138,7 @@ These are in the [Game Feature Plan](Game%20Feature%20Plan%202D%20Pixel-Art%20Sa
 
 | Item | Notes when it comes back |
 |---|---|
-| **Procedural world** (a seeded map) | Holdings placed by rules, generated names, realms as territories. **Keep a fixed "classic" seed** so tests that name holdings (Ashford, Karn Hold…) still work. Ask about backward compatibility first. |
+| **Procedural world** (a seeded map) | Holdings placed by rules, generated names, realms as territories. **Keep a fixed "classic" seed** so tests that name holdings (Ashford, Karn Hold…) still work. Saves are not backward compatible for now (schema v2 only), so a new world shape only needs a new save version. |
 | **Game data as JSON** | Browsers block reading `.json` from `file://`. Ask how to load it first: a Python-built bundle (recommended), a local server, or `.js` files shaped like JSON. |
 | **Art derived from the `graphics/` pack** | Order: recolour → kit-bash (dwarves, elves, mounted hero) → missing animals. Bake offline to `graphics/generated/`. |
 | **Entering hostile holdings** | See section 7. |
