@@ -14,7 +14,7 @@ const KEYS=[['Map',[['Click','travel there, or meet what is there'],['Hover','wh
   ['Battle',[['Click / drag','select a group (a soldier or the icon over it), or box several (your hero is a group too; everyone fights on their own)'],['Right-click ground','move the selection there, in formation (walking)'],['Right-click enemy','walk in and attack that enemy'],['Double right-click','the same at a run: on an enemy, a charge'],['H C V','hold (where they stand) · charge · advance'],['Right-drag','lay out the line: where, how wide (and so how deep), facing which way'],['B / L / T','B: supported shield infantry ability · L: loose spacing · T: cavalry wedge (bonus starts at 6 formed riders); L/T again: line'],['Wheel / + −','zoom the battle (toward the cursor); Home: the whole field again'],['Middle-drag / arrows','pan; the same group number twice: look at it; the small map (top right): click to look there'],['Banners','over each group: its side’s pennant with its kind’s mark and a health bar; round badges beside it when something is wrong (wavering, routing, shattered, flanked, outnumbered, charged, leader fallen, losing)'],['A','AI command of your army on or off (off: they do only what you order; any order takes it back)'],['Space (deploying)','begin the battle once your band is placed'],['W','withdraw: flee the battle off your edge of the field; all withdrawn, the battle ends as your retreat'],['R F Q E X','walk or run · hold ground · cease fire · skirmish · melee mode (shooters)'],['Shift + right-click','add a waypoint; double right-click: at a run'],['Shift + click / drag','add to the selection'],['1–9 / 0','select army group cards 1–10; Ctrl + number stores a custom selection'],['Space','pause: you can still select and give orders'],['[ / ]','slower / faster (0.5×, 1×, 2×, 5×)'],['HP bars','health bars on or off (button)']]],
   ['Touch',[['Tap','map: travel there, or meet what is there · battle: select a group; tap again: send it there (or on that enemy)'],['Hold','map: what it is and how strong (tap again to put the card away) · battle: move the selection there, or attack the enemy held (a ring fills)'],['Hold, then drag','battle: lay out the line, as a right-drag'],['Drag','battle: box several groups'],['Pinch / two fingers','battle: zoom about them / pan']]],
   ['Streets',[['WASD / click','walk'],['E','talk to whoever is near'],['Gate','walk out to leave']]],
-  ['Screen',[['F11','full screen'],['H','this help']]]];
+  ['Screen',[['F11','full screen'],['H','this help'],['M','sound off / on']]]];
 function openHelp(){return openOver('help','<div class="top"><h2>Controls</h2></div>'+KEYS.map(([g,ks])=>'<div class="lab">'+g+'</div><div class="keys">'+ks.map(([k,d])=>'<div><kbd>'+k+'</kbd><span>'+d+'</span></div>').join('')+'</div>').join('')+
   '<p class="muted">Hover anything on the map to see what it is and how strong it is against you. Messages fade from the screen after a few seconds; L shows them all.</p>'+nav(null,['help-close',null,'Close']))}
 function openJournal(){return openOver('journal','<div class="top"><h2>Message log</h2><span class="muted">'+G.msgs.length+' messages</span></div><div class="journal">'+
@@ -42,6 +42,8 @@ function toggleFull(){try{if(document.fullscreenElement)document.exitFullscreen(
 const BATTLE_SPEEDS=[.5,1,2,5];
 // on/off, stored '1' or '0'; anything else reads as the default
 const prefOnOff=(def,apply)=>({def,read:s=>def?s!=='0':s==='1',write:v=>v?'1':'0',apply});
+// a volume 0–1, stored as text ('0.75'), anything else its default
+function prefVol(def){return{def,read:s=>{if(s==null||s==='')return def;const v=+s;return v>=0&&v<=1?Math.round(v*100)/100:def},write:v=>String(Math.round(clamp(+v||0,0,1)*100)/100),apply:()=>{if(typeof audioPrefs==='function')audioPrefs()}}}
 const PREFS={
   grid:prefOnOff(false),// the tile grid: a faint line along every 16-pixel tile edge on the map and in scenes (G)
   bspeed:{def:1,read:s=>BATTLE_SPEEDS.includes(+s)?+s:1,write:String},// the speed each battle starts at
@@ -50,7 +52,10 @@ const PREFS={
   hpbars:prefOnOff(true,v=>{const b=typeof document!=='undefined'&&document.getElementById('hpBtn');if(b){b.classList.toggle('on',v);b.setAttribute('aria-pressed',String(v))}}),// health bars over every fighter in battle (off: only you and your companions); the HP bars button shows it
   blood:prefOnOff(true),// blood in battle: the spray of a blow, the stains it leaves, the pool under the fallen (off: none of it; the fallen still lie)
   autoskills:prefOnOff(true,()=>autoUI()),// your characters use their skills on their own (Auto skills, K: deploy.js)
-  bauto:prefOnOff(false)};// the AI in command of your army (A), kept for the next battle (setAuto, deploy.js)
+  bauto:prefOnOff(false),// the AI in command of your army (A), kept for the next battle (setAuto, deploy.js)
+  // the sound (audio.js): all of it off (M), and the volumes 0–1 (everything, the music, the effects); each change goes straight
+  // to the speakers (audioPrefs)
+  mute:prefOnOff(false,()=>{if(typeof audioPrefs==='function')audioPrefs()}),volmaster:prefVol(.8),volmusic:prefVol(.5),volsfx:prefVol(.8)};
 // what a setting reads as from storage (as the game loads)
 function prefLoad(k){const p=PREFS[k];try{return p.read(localStorage.getItem('ashmark.'+k))}catch(e){return p.def}}
 for(const k in PREFS)PREFS[k].v=prefLoad(k);
@@ -62,11 +67,16 @@ function setGrid(on){prefSet('grid',on)}
 function setGuide(on){prefSet('guide',on)}
 function setHpBars(on){prefSet('hpbars',on)}
 function setBlood(on){prefSet('blood',on)}
+// all sound off or back on (M, anywhere; Settings → Sound)
+function toggleMute(){prefSet('mute',!prefGet('mute'));if(G.mode==='title'){if(G.menu==='settings')showTitle('settings')}else log(prefGet('mute')?'Sound off (M to turn it back on).':'Sound on.')}
 // a Settings button: data-act names the setting, data-arg its new value (on/off, or a speed; econmode: the realm economy,
-// economy.js), and the page redraws; false if the action is no setting
+// economy.js; sound: on/off; volmaster, volmusic, volsfx: a volume 0–1), and the page redraws; false if the action is no setting
 function settingAct(a,arg){
-  if(a==='econmode')setEconMode(arg);else if(a==='bspeed')setBattleSpeed(+arg,true);else if(['grid','blood','hpbars','bdeploy','guide'].includes(a))prefSet(a,arg==='on');else return false;
+  if(a==='econmode')setEconMode(arg);else if(a==='bspeed')setBattleSpeed(+arg,true);else if(['grid','blood','hpbars','bdeploy','guide'].includes(a))prefSet(a,arg==='on');
+  else if(a==='sound')prefSet('mute',arg==='off');else if(VOLUMES.some(([k])=>k===a))prefSet(a,+arg);else return false;
   showTitle('settings');return true}
+// the volume settings, and the steps Settings offers
+const VOLUMES=[['volmaster','Volume'],['volmusic','Music'],['volsfx','Effects']],VOL_STEPS=[0,.25,.5,.75,1];
 // the battle's speed: the clock runs at this rate (and stands still while paused, though you can still give orders: a
 // tactical pause); B.speed is this battle's, BSPEED.v the one each battle starts at (save: set that too, as Settings does)
 function setBattleSpeed(v,save){if(!BATTLE_SPEEDS.includes(v))return;if(B)B.speed=v;if(save)prefSet('bspeed',v);battleSpeedUI()}
@@ -76,7 +86,7 @@ function battleSpeedUI(){if(typeof document==='undefined')return;const sp=B?B.sp
   document.querySelectorAll('[data-bspeed]').forEach(b=>{const on=+b.dataset.bspeed===sp;b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on))});
   const p=document.getElementById('bPause');if(p){const on=!!(B&&B.paused);p.classList.toggle('on',on);p.setAttribute('aria-pressed',String(on));p.textContent=B&&B.deploy?'⚔ Begin':on?'▶ Play':'⏸ Pause'}if(B&&typeof bhudTop==='function')bhudTop()}
 // the controls in brief (Settings); every key is in Help (H)
-const CONTROLS='World map: click to travel, hover for details, Space to pause, 1 2 3 for the speed, C your hero and party, K skills, I your bag, L the message log, H help, G the tile grid, F6 to save, Esc the menu. Battle: click or drag to select, right-click to move or attack, right-drag to lay out a line, 1–9/0 to select the ten army cards, Ctrl+number to store a custom selection, Home to reset the camera, H hold, C run, V walk (the pace; a double right-click on an enemy charges), W withdraw, R walk or run, F hold ground, Q cease fire, E skirmish, X melee mode (shooters), B L T formations, A the AI in command, K auto skills, Space to pause, [ ] the speed, the wheel to zoom. Every key: Help (H).';
+const CONTROLS='World map: click to travel, hover for details, Space to pause, 1 2 3 for the speed, C your hero and party, K skills, I your bag, L the message log, H help, G the tile grid, F6 to save, Esc the menu. Battle: click or drag to select, right-click to move or attack, right-drag to lay out a line, 1–9/0 to select the ten army cards, Ctrl+number to store a custom selection, Home to reset the camera, H hold, C run, V walk (the pace; a double right-click on an enemy charges), W withdraw, R walk or run, F hold ground, Q cease fire, E skirmish, X melee mode (shooters), B L T formations, A the AI in command, K auto skills, Space to pause, [ ] the speed, the wheel to zoom. Anywhere: M turns the sound off and on. Every key: Help (H).';
 const saveLine=sv=>'Day '+sv.day+' · '+RACES[sv.P.race||'human'].n+' '+((BGS[sv.P.bg]||{}).n||'hero').toLowerCase()+' · level '+sv.P.level+' · '+sv.P.gold+' gold'+(sv.at?' · '+new Date(sv.at).toLocaleString([], {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):'');
 // the slots, each a row: load it (or save into it), and delete it (two clicks)
 function slotRows(mode){return SAVE_SLOTS.filter(s=>mode==='save'?s!=='auto':true).map(s=>{const d=readSlot(s),armed=G.wipeArmed===s,over=G.overArmed===s;
@@ -103,6 +113,9 @@ function showTitle(screen){
     '<div class="lab">Deployment</div><div class="tabs" role="group" aria-label="Deployment">'+[['off','Off'],['on','On']].map(([v,n])=>'<button class="btn sm'+(BDEPLOY.on===(v==='on')?' on':'')+'" type="button" data-act="bdeploy" data-arg="'+v+'" aria-pressed="'+(BDEPLOY.on===(v==='on'))+'">'+n+'</button>').join('')+'</div><p class="muted">On, a battle opens frozen so you can place your band in its zone first (Space to begin).</p>'+
     '<div class="lab">Health bars in battle</div><div class="tabs" role="group" aria-label="Health bars in battle">'+[['off','Off'],['on','On']].map(([v,n])=>'<button class="btn sm'+(HPBARS.on===(v==='on')?' on':'')+'" type="button" data-act="hpbars" data-arg="'+v+'" aria-pressed="'+(HPBARS.on===(v==='on'))+'">'+n+'</button>').join('')+'</div><p class="muted">A bar over every ally and enemy. Off, only you and your companions show one. The HP bars button in battle switches it too.</p>'+
     '<div class="lab">Blood in battle</div><div class="tabs" role="group" aria-label="Blood in battle">'+[['off','Off'],['on','On']].map(([v,n])=>'<button class="btn sm'+(BLOOD.on===(v==='on')?' on':'')+'" type="button" data-act="blood" data-arg="'+v+'" aria-pressed="'+(BLOOD.on===(v==='on'))+'">'+n+'</button>').join('')+'</div><p class="muted">Blood from blows, the stains it leaves and pools under the fallen. Off, the fallen still lie where they fell.</p>'+
+    '<div class="lab">Sound</div><div class="tabs" role="group" aria-label="Sound">'+[['off','Off'],['on','On']].map(([v,n])=>{const on=prefGet('mute')===(v==='off');return '<button class="btn sm'+(on?' on':'')+'" type="button" data-act="sound" data-arg="'+v+'" aria-pressed="'+on+'">'+n+'</button>'}).join('')+'</div>'+
+    VOLUMES.map(([k,n])=>{const cur=prefGet(k),near=VOL_STEPS.reduce((a,x)=>Math.abs(x-cur)<Math.abs(a-cur)?x:a);return '<div class="lab">'+n+'</div><div class="tabs" role="group" aria-label="'+n+'">'+VOL_STEPS.map(x=>'<button class="btn sm'+(x===near?' on':'')+'" type="button" data-act="'+k+'" data-arg="'+x+'" aria-pressed="'+(x===near)+'">'+Math.round(x*100)+'%</button>').join('')+'</div>'}).join('')+
+    '<p class="muted">Music and sound effects, all made as you play (nothing to download). M turns the sound off and on anywhere.</p>'+
     '<div class="lab">Controls</div><p class="muted">'+CONTROLS+'</p>'+back);
   if(G.menu==='exit')return showPanel('<h2 class="big">Ashmark</h2><p>Thanks for playing. You can close this tab now.</p>'+nav(['menu','main','Back to the menu']));
   showPanel('<div class="title"><h2 class="big">Ashmark</h2><p>Rise from a nobody to a ruler. Recruit a warband, trade between towns, and fight in real time.</p></div><div class="menulist">'+
@@ -123,6 +136,7 @@ const ESC_CLOSE={comp:'cm-back',help:'help-close',journal:'journal-close',town:'
 // never chosen for you: Esc then pauses with the Esc menu, as it does once no window is left.
 function escDismiss(){if(ov.hidden)return null;return panel.querySelector('.nav [data-nav="back"]:not([disabled])')||panel.querySelector('.nav [data-nav="close"]:not([disabled]):not([data-noesc])')}
 function onEscape(){
+  uiSfx('back');
   if(G.mode==='esc')return escAct('esc-resume');
   if(G.mode==='title'){if(G.menu&&G.menu!=='main')return menuAct('menu','main');return}
   if(G.place&&G.mode==='world'){G.place=null;log('You stop placing.');return}
@@ -165,3 +179,10 @@ function menuAct(a,arg){
   showTitle(arg);const b=panel.querySelector('.card,button');if(b)b.focus({preventScroll:true});return true;
 }
 onAct('esc-',escAct);
+/* ---------- the buttons' sounds (audio.js): one listener hears every button, nav() bars and windows alike; what the press did
+   picks the sound: gold changed hands, the coin; a refusal (a new message in red), the refusal; else a bottom bar's Back or way
+   out, back; a primary button, confirm; any other, a click. (Before the first press there is no sound: nothing to work out) ---------- */
+const uiSfx=n=>typeof sfx==='function'&&sfx(n);
+document.addEventListener('click',e=>{if(typeof AUDIO==='undefined'||!AUDIO.ctx||AUDIO.muted)return;const b=e.target.closest&&e.target.closest('button,[data-act]');if(!b||b.disabled)return;
+  const kind=b.dataset.nav?'back':b.classList.contains('primary')?'confirm':'click',gold=P.gold,last=G.msgs[G.msgs.length-1];
+  setTimeout(()=>{const fresh=G.msgs.slice(G.msgs.lastIndexOf(last)+1);uiSfx(P.gold!==gold?'coin':fresh.some(m=>m.cls==='bad')?'refused':kind)},0)},true);

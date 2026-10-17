@@ -191,6 +191,7 @@ window.addEventListener('keydown',e=>{
   const k=keyOf(e);
   if(e.key==='F6'){e.preventDefault();saveGame(false,'quick');return}
   if(k==='escape'){e.preventDefault();onEscape();return}
+  if(k==='m'&&!e.ctrlKey&&!e.metaKey&&!e.altKey){if(!e.repeat)toggleMute();return}// M: the sound off or on, anywhere (ui.js)
   if(G.mode==='battle'&&B){
     // the battle's speed: Space pauses (orders still go: a tactical pause), [ and ] slow it down and speed it up
     if(e.code==='Space'){e.preventDefault();if(!e.repeat)battlePause();return}

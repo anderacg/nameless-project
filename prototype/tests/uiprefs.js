@@ -10,7 +10,7 @@ try{
  const sp=[.5,1,2,5],OLD={grid:s=>s==='1',bspeed:s=>sp.includes(+s)?+s:1,hpbars:s=>s!=='0',blood:s=>s!=='0',guide:s=>s!=='0',bdeploy:s=>s!=='0',autoskills:s=>s!=='0',bauto:s=>s==='1'};
  const DEF={grid:false,bspeed:1,hpbars:true,blood:true,guide:true,bdeploy:true,autoskills:true,bauto:false};
  const VIEW={grid:['GRID','on'],bspeed:['BSPEED','v'],hpbars:['HPBARS','on'],blood:['BLOOD','on'],guide:['GUIDE','on'],bdeploy:['BDEPLOY','on'],autoskills:['AUTOSK','on'],bauto:['BAUTO','on']};
- ok(Object.keys(t.PREFS).sort().join()===Object.keys(OLD).sort().join(),'eight settings in one table: '+Object.keys(t.PREFS).join(', '));
+ ok(Object.keys(t.PREFS).sort().join()===[...Object.keys(OLD),'mute','volmaster','volmusic','volsfx'].sort().join(),'the eight settings and the four of sound (audio.js) in one table: '+Object.keys(t.PREFS).join(', '));
  const inputs=[null,'1','0','','junk','2','0.5','.5','5','7','true'];
  for(const k in OLD){const bad=inputs.filter(s=>{if(s==null)localStorage.removeItem('ashmark.'+k);else localStorage.setItem('ashmark.'+k,s);return t.prefLoad(k)!==OLD[k](s)});
    ok(!bad.length&&t.PREFS[k].def===DEF[k],k+' reads ashmark.'+k+' as before (default '+DEF[k]+')'+(bad.length?': differs for '+bad.join('|'):''))}
