@@ -81,8 +81,9 @@ function aiUnit(u,dt,strike){
     // Re-evaluate immediately on an order change or casualty; otherwise retain the normal thinking interval.
     const member=e=>e&&e.hp>0&&!e.left&&e.team!==u.team&&(g.targetGroupId!==null?e.grp===g.targetGroupId:e.id===g.targetUnitId);
     if(u.rt<=0||!member(u.tgt)){u.tgt=orderedTarget(u,g,s);u.rt=.4;u.near=null}
+    // (your hero and companions, sent at a foe, go for him: they do not turn on whoever they brush past on the way; soldiers do)
     const n=nearest(u),close=s.range?30:(s.reach||11)+8;
-    u.near=n&&!n.rout&&!member(n)&&Math.hypot(n.x-u.x,n.y-u.y)<close?n:null;
+    u.near=!(g.player&&isChar(u))&&n&&!n.rout&&!member(n)&&Math.hypot(n.x-u.x,n.y-u.y)<close?n:null;
     if(u.near)u.tgt=u.near;
   }
   else if(u.rt<=0||!u.tgt||u.tgt.hp<=0){u.tgt=s.range?shooterTarget(u):meleeTarget(u);u.rt=.4}
