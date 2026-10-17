@@ -106,16 +106,17 @@ blk.addEventListener('pointerdown',()=>{if(B)B.touchBlock=true});
 function toCanvas(e){const r=cv.getBoundingClientRect();return{x:(e.clientX-r.left)*cv.width/r.width,y:(e.clientY-r.top)*cv.height/r.height}}
 cv.addEventListener('pointermove',e=>{const p=toCanvas(e);G.mouse.x=p.x;G.mouse.y=p.y;G.mouse.in=true;G.mouse.type=e.pointerType;
   // the tooltip: what is under the pointer on the map
-  const tip=$('#tip');if(G.mode!=='world'||G.modal||e.pointerType==='touch'){tip.hidden=true;return}
+  const tip=$('#tip');if(holdCardUp()&&e.pointerType==='touch')return;// (a long press's card stays until the next tap: below)
+  if(G.mode!=='world'||G.modal||e.pointerType==='touch'){tip.hidden=true;return}
   const o=pickAt(G.cam.x+p.x,G.cam.y+p.y),h=o?tipFor(o):'';if(!h){tip.hidden=true;return}
-  tip.innerHTML=h;tip.hidden=false;const r=cv.getBoundingClientRect(),x=e.clientX-r.left+16,y=e.clientY-r.top+14;
+  tip.innerHTML=h;tip.classList.remove('hold');tip.hidden=false;const r=cv.getBoundingClientRect(),x=e.clientX-r.left+16,y=e.clientY-r.top+14;
   tip.style.left=Math.min(x,r.width-tip.offsetWidth-6)+'px';tip.style.top=Math.min(y,r.height-tip.offsetHeight-6)+'px'});
-cv.addEventListener('pointerleave',()=>{G.mouse.in=false;hideTip();if(B)B.hov=null;cv.style.cursor=''});
+cv.addEventListener('pointerleave',()=>{G.mouse.in=false;if(!holdCardUp())hideTip();if(B)B.hov=null;cv.style.cursor=''});
 cv.addEventListener('pointerdown',e=>{
   const p=toCanvas(e);G.mouse.x=p.x;G.mouse.y=p.y;G.mouse.in=true;G.mouse.type=e.pointerType;
   if(G.modal)return;
-  if(G.mode==='world'){const wx=G.cam.x+p.x,wy=G.cam.y+p.y;if(G.place){if(e.button===2){G.place=null;log('You stop placing.')}else placeClick(wx,wy);return}if(P.stay)return stayClick(wx,wy);if(clickAt(wx,wy)||G.chase)return;
-    P.tx=clamp(wx,8,MW*TILE-8);P.ty=clamp(wy,8,MH*TILE-8);P.stuck=0}
+  if(e.pointerType==='touch'&&touchDown(e,p))return;// (a finger in battle or on the map: below; it acts when it lifts)
+  if(G.mode==='world'){const wx=G.cam.x+p.x,wy=G.cam.y+p.y;if(G.place){if(e.button===2){G.place=null;log('You stop placing.')}else placeClick(wx,wy);return}if(P.stay)return stayClick(wx,wy);worldGo(wx,wy)}
   else if(G.mode==='scene')sceneClick(p.x,p.y);
   // battle: RTS command (commands.js): left-click or drag to select, right-click to move or attack (a touch: select, then a
   // second touch sends them)
@@ -130,7 +131,8 @@ cv.addEventListener('pointerdown',e=>{
 });
 cv.addEventListener('contextmenu',e=>e.preventDefault());
 // the bow: let go of the button (anywhere) to shoot; the wheel sets the angle
-window.addEventListener('pointerup',e=>{if(e.button===1&&B&&B.cam&&B.cam.drag){B.cam.drag=null;return}
+window.addEventListener('pointerup',e=>{if(e.pointerType==='touch'&&touchUp(e))return;
+  if(e.button===1&&B&&B.cam&&B.cam.drag){B.cam.drag=null;return}
   if(e.button===2&&B&&B.rdrag){const d=B.rdrag;B.rdrag=null;
   if(Math.hypot(d.x1-d.x0,d.y1-d.y0)>=FORM_DRAG)formDragTo(d.x0,d.y0,d.x1,d.y1);
   else{const L=B.lastRc,now=performance.now(),dbl=!!L&&now-L.t<350&&Math.hypot(L.x-d.x0,L.y-d.y0)<16;B.lastRc={t:now,x:d.x0,y:d.y0};rtsOrder(d.x0,d.y0,{queue:d.shift,run:dbl})}return}
@@ -139,6 +141,67 @@ cv.addEventListener('pointermove',e=>{if(G.mode!=='battle'||!B)return;const p=to
   {const q=toField(p);B.hov=q;{const ic=iconAt(q.x,q.y);B.iconHov=ic?ic.g:null}cv.style.cursor=B.sel!=='all'&&rtsUnitAt(q.x,q.y,1)?'crosshair':rtsUnitAt(q.x,q.y,0)?'pointer':''}// (what you point at: a ring, battlehud.js)
   if(B.cam&&B.cam.drag){camPan(B.cam.drag.x-p.x,B.cam.drag.y-p.y);B.cam.drag={x:p.x,y:p.y};return}// (middle-drag: pan)
   if(B.box||B.rdrag){const q=toField(p),o=B.box||B.rdrag;o.x1=q.x;o.y1=q.y}});
+// the map: travel to a point, or meet what is there
+function worldGo(wx,wy){if(clickAt(wx,wy)||G.chase)return;P.tx=clamp(wx,8,MW*TILE-8);P.ty=clamp(wy,8,MH*TILE-8);P.stuck=0}
+/* ---------- touch (a phone on its side): Pointer Events with pointerType 'touch' only; the mouse, pen and keys above are as they were.
+   Battle: a tap selects and a tap again sends, as before (now when the finger lifts); a long press (TOUCH.hold ms, the finger
+   within TOUCH.slop CSS px) sends the selection there, or onto the enemy under it; a long press then a drag lays the line, as a
+   right-drag does (where, how wide, facing); a drag before it boxes groups. Two fingers: pinch to zoom about their middle, move
+   both to pan; a second finger calls off whatever the first was doing, and a pinch never selects or orders.
+   Map: a tap travels; a long press on something shows its card (the tooltip), which the next tap puts away, travelling nowhere ---------- */
+// hold: ms to a long press; slop: CSS px a finger may wander in it; ring: the filling ring's radius (CSS px, round the finger)
+const TOUCH={hold:450,slop:10,ring:34,pts:new Map(),lp:null,pinch:null,spent:new Set()};
+const touchMid=()=>{const [a,b]=[...TOUCH.pts.values()];return{x:(a.x+b.x)/2,y:(a.y+b.y)/2,d:Math.max(1,Math.hypot(a.x-b.x,a.y-b.y))}};
+const holdCardUp=()=>{const t=$('#tip');return!!t&&!t.hidden&&t.classList.contains('hold')};
+// the press under way (TOUCH.lp) dropped: its box or line gone, nothing sent
+function touchDrop(){const l=TOUCH.lp;if(!l)return;clearTimeout(l.timer);TOUCH.lp=null;if(l.mode==='battle'&&B&&B===l.B){if(l.box)B.box=null;if(l.armed)B.rdrag=null}}
+function touchDown(e,p){const T=TOUCH,id=e.pointerId;
+  if(e.isPrimary&&T.pts.size){touchDrop();T.pts.clear();T.spent.clear();T.pinch=null}// (the first finger of a new touch: anything a lost lift left behind goes)
+  if(G.mode==='world'){if(holdCardUp()){hideTip();touchDrop();T.pts.set(id,p);T.spent.add(id);return true}if(G.place||P.stay)return false;// (the card up: this tap only puts it away)
+    T.pts.set(id,p);if(T.pts.size>1){touchDrop();T.spent.add(id);return true}
+    T.lp={id,mode:'world',cx:e.clientX,cy:e.clientY,wx:G.cam.x+p.x,wy:G.cam.y+p.y,t0:performance.now()};touchTimer();return true}
+  if(G.mode!=='battle'||!B)return false;T.pts.set(id,p);
+  if(T.pts.size===2){touchDrop();for(const k of T.pts.keys())T.spent.add(k);const m=touchMid();T.pinch={d0:m.d,z0:B.cam?B.cam.z:1,w:toField(m)};return true}
+  if(T.pts.size>2){T.spent.add(id);return true}
+  {const mh=miniHit(p);if(mh){camCentre(mh.x,mh.y);T.spent.add(id);return true}}// (the small map: look there)
+  T.lp={id,mode:'battle',B,cx:e.clientX,cy:e.clientY,q:toField(p),t0:performance.now()};touchTimer();return true}
+function touchTimer(){const l=TOUCH.lp;l.timer=setTimeout(()=>touchTick(performance.now()),TOUCH.hold+5)}
+// the press comes due at time now (its timer; a move or the lift if the timer is late): in battle the order is armed (a line
+// to drag from there), on the map the card of what is under it (nothing there: the lift still travels)
+function touchTick(now){const l=TOUCH.lp;if(!l||l.armed||l.box||l.off||now-l.t0<TOUCH.hold)return false;
+  if(l.mode==='battle'){if(B!==l.B||G.mode!=='battle'){touchDrop();return false}l.armed=true;B.box=null;B.rdrag={x0:l.q.x,y0:l.q.y,x1:l.q.x,y1:l.q.y,shift:false}}
+  else{const o=G.mode==='world'&&!G.modal?pickAt(l.wx,l.wy):null,h=o?tipFor(o):'';if(!h){l.off=true;return false}l.armed=true;holdCard(h,l.cx,l.cy)}
+  try{if(navigator.vibrate)navigator.vibrate(12)}catch(err){}return true}
+function touchMove(e,p){const T=TOUCH,pt=T.pts.get(e.pointerId);if(!pt)return;pt.x=p.x;pt.y=p.y;
+  if(T.pinch){if(T.pts.size>=2&&B&&G.mode==='battle'){const m=touchMid();camPinch(T.pinch.w,T.pinch.z0*m.d/T.pinch.d0,m.x,m.y)}return}
+  const l=T.lp;if(!l||l.id!==e.pointerId)return;touchTick(performance.now());
+  if(l.armed||l.box||Math.hypot(e.clientX-l.cx,e.clientY-l.cy)<=T.slop)return;
+  if(l.mode==='world'){l.off=true;return}// (wandered: no card; the lift still travels to where it went down)
+  if(B===l.B){l.box=true;const q=toField(p);B.box={x0:l.q.x,y0:l.q.y,x1:q.x,y1:q.y,add:false}}}
+// a finger lifts (cancel: the browser took it): what the press was comes about; true when it was a touch of ours
+function touchUp(e,cancel){const T=TOUCH,id=e.pointerId;if(!T.pts.has(id))return false;T.pts.delete(id);if(T.pinch&&T.pts.size<2)T.pinch=null;
+  if(T.spent.delete(id))return true;const l=T.lp;if(!l||l.id!==id)return true;
+  if(cancel){touchDrop();return true}touchTick(performance.now());clearTimeout(l.timer);T.lp=null;
+  if(l.mode==='world'){if(!l.armed&&G.mode==='world'&&!G.modal)worldGo(l.wx,l.wy);return true}
+  if(B!==l.B||G.mode!=='battle')return true;const q=l.q;
+  if(l.armed){const d=B.rdrag;B.rdrag=null;if(d&&Math.hypot(d.x1-d.x0,d.y1-d.y0)>=FORM_DRAG)formDragTo(d.x0,d.y0,d.x1,d.y1);else rtsOrder(q.x,q.y);return true}
+  if(l.box){const b=B.box;B.box=null;if(b)rtsSelect(b.x0,b.y0,b.x1,b.y1,false);return true}
+  if(B.sel!=='all'&&!rtsUnitAt(q.x,q.y,0))rtsOrder(q.x,q.y);else rtsSelect(q.x,q.y,q.x,q.y,false);return true}// (a tap: as it always was)
+cv.addEventListener('pointermove',e=>{if(e.pointerType==='touch')touchMove(e,toCanvas(e))});
+window.addEventListener('pointercancel',e=>{if(e.pointerType==='touch')touchUp(e,true)});
+// anything else pressed puts the card away
+document.addEventListener('pointerdown',e=>{if(e.target!==cv&&holdCardUp())hideTip()},true);
+// the card: over the finger (not under it), kept on the screen; 'Tap' where the tooltip says 'Click'
+function holdCard(h,cx,cy){const tip=$('#tip'),r=cv.getBoundingClientRect();tip.innerHTML=h.replace(/>Click:/g,'>Tap:');tip.classList.add('hold');tip.hidden=false;
+  const w=tip.offsetWidth,ht=tip.offsetHeight,x=cx-r.left,y=cy-r.top,up=y-ht-TOUCH.ring;
+  tip.style.left=clamp(x-w/2,6,Math.max(6,r.width-w-6))+'px';tip.style.top=(up>=6?up:clamp(y+TOUCH.ring,6,Math.max(6,r.height-ht-6)))+'px'}
+// the long press filling, on the field (battlehud.js drawSelection): a ring round the finger, wider than it, gold, red on an
+// enemy; full once armed. From 90 ms, so a quick tap shows nothing
+function drawTouchHold(){const l=TOUCH.lp;if(!l||l.mode!=='battle'||l.B!==B||l.box)return;const t=performance.now()-l.t0;if(!l.armed&&t<90)return;
+  const r=cv.getBoundingClientRect(),k=cv.width/Math.max(1,r.width)/(B.cam?B.cam.z:1),R=TOUCH.ring*k,col=rtsUnitAt(l.q.x,l.q.y,1)?'255,106,90':'232,185,74',f=l.armed?1:Math.min(1,t/TOUCH.hold);
+  ctx.lineWidth=3*k;ctx.strokeStyle='rgba(10,12,18,.45)';ctx.beginPath();ctx.arc(l.q.x,l.q.y,R,0,7);ctx.stroke();
+  ctx.strokeStyle='rgba('+col+','+(l.armed?1:.85)+')';ctx.beginPath();ctx.arc(l.q.x,l.q.y,R,-Math.PI/2,-Math.PI/2+f*Math.PI*2);ctx.stroke();
+  if(l.armed){ctx.fillStyle='rgba('+col+',.9)';ctx.beginPath();ctx.arc(l.q.x,l.q.y,2.5*k,0,7);ctx.fill()}ctx.lineWidth=1}
 // the wheel zooms the battle toward the cursor (camera.js)
 cv.addEventListener('wheel',e=>{if(G.mode==='battle'&&B&&!G.modal){e.preventDefault();const p=toCanvas(e);camZoom(e.deltaY<0?1:-1,p.x,p.y)}},{passive:false});
 // the arrow keys pan while held

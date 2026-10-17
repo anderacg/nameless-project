@@ -18,9 +18,13 @@ const toField=p=>{const c=bcam();return{x:c.x+p.x/c.z,y:c.y+p.y/c.z}};
 const fromField=p=>{const c=bcam();return{x:(p.x-c.x)*c.z,y:(p.y-c.y)*c.z}};
 // zoom a step in (dir 1) or out (-1), keeping the field point under (sx, sy) on the canvas where it is
 function camZoom(dir,sx,sy){
-  if(!B||!B.cam)return;const c=B.cam,Z=camZooms(),i=Z.indexOf(c.z),j=clamp((i<0?0:i)+dir,0,Z.length-1);if(Z[j]===c.z)return;
+  // (from a pinched zoom between the steps: the next step that way)
+  if(!B||!B.cam)return;const c=B.cam,Z=camZooms(),i=Z.indexOf(c.z),j=i>=0?clamp(i+dir,0,Z.length-1):dir>0?Z.findIndex(z=>z>c.z):Z.findLastIndex(z=>z<c.z);if(j<0||Z[j]===c.z)return;
   if(sx==null){sx=BVW/2;sy=BVH/2}const w=toField({x:sx,y:sy});c.z=Z[j];c.fit=j===0;c.x=w.x-sx/c.z;c.y=w.y-sy/c.z;camClamp();
 }
+// a pinch (two fingers, input.js): zoom z, anywhere from the whole field to the closest step, the field point w held under the
+// canvas point (sx, sy), their middle (so moving both fingers pans)
+function camPinch(w,z,sx,sy){if(!B||!B.cam)return;const c=B.cam,f=camFit();c.z=clamp(z,f,BCAM.zooms[BCAM.zooms.length-1]);c.fit=c.z<f+.01;if(c.fit)c.z=f;c.x=w.x-sx/c.z;c.y=w.y-sy/c.z;camClamp()}
 // look at a point of the field (keeping the zoom)
 function camCentre(x,y){if(!B||!B.cam)return;const c=B.cam;c.x=x-BVW/c.z/2;c.y=y-BVH/c.z/2;camClamp()}
 function camReset(){if(!B||!B.cam)return;B.cam.z=camFit();B.cam.fit=true;B.cam.x=B.cam.y=0;camClamp()}

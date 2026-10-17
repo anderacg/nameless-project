@@ -64,6 +64,8 @@ kbd{font-family:var(--font)}
 .stage{position:fixed;inset:0;display:flex;align-items:flex-start;justify-content:flex-start;background:var(--void);overflow:hidden}
 .screen{position:relative;flex:none;overflow:hidden;background:var(--screen)}
 canvas{display:block;image-rendering:pixelated;touch-action:none;cursor:crosshair}
+/* (a finger held on the game (a long press, input.js): no text selection, magnifier or callout menu, iOS included) */
+.screen>canvas{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
 .hudlayer{position:absolute;inset:0;pointer-events:none;z-index:10;user-select:none;-webkit-user-select:none}
 .hudlayer>*{pointer-events:auto}
 .screen[data-mode="title"] .hudlayer>*{display:none}
@@ -249,6 +251,8 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 .tip b{display:block;font-size:var(--fs-base);color:var(--accent)}
 .tip small{display:block;color:var(--muted)}
 .tip .act{color:var(--good)}
+/* a long press on the map (touch, input.js): the same tooltip as a card over the finger, until the next tap */
+.tip.hold{max-width:min(280px,calc(100% - 12px));border-color:var(--accent)}
 
 /* what shows where: a battle shows its own HUD; a walk through a town has no time controls */
 .screen[data-mode="battle"] .pcard,.screen[data-mode="battle"] .hint,.screen[data-mode="battle"] .wtop,.screen[data-mode="battle"] .dock{display:none}
@@ -535,6 +539,7 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
   .btime .btn{min-height:38px}
   .slot{min-width:40px;min-height:40px}
   .tip{display:none!important}
+  .tip.hold:not([hidden]){display:block!important}
 }
 /* a small screen (a phone on its side, a small window): the HUD tightens; the details you can open stay out of the way */
 @media (max-height:600px),(max-width:820px){

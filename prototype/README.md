@@ -246,6 +246,13 @@ Some groups have a special order with a cooldown (`battle/unitabilities.js`, reg
 
 API for captains: `g.abilities()` lists `{id,active,left,cooldown,why}` (`why===''`: usable now) and `g.useAbility(id)` returns false when refused. Per-group state `g.abil` is non-enumerable (out of snapshots and saves). Tests: `tests/unitabilities.js`. The AI does not use abilities yet.
 
+## Touch controls
+
+For a phone on its side. Touch reads Pointer Events with `pointerType 'touch'` (`TOUCH` in `ui/input.js`: `hold` 450 ms, `slop` 10 CSS px, `ring` 34 CSS px); mouse, pen and keys are unchanged.
+- **Battle:** tap a group to select it, tap again to send it there or onto the enemy tapped (a tap acts when the finger lifts). Hold still for about half a second (a gold ring fills; red over an enemy) to move the selection there or attack the enemy held; hold, then drag, to lay out the line as a right-drag does. Drag without holding to box groups. Two fingers: pinch to zoom about them (`camPinch`), move both to pan; a second finger cancels what the first was doing, so a pinch never selects or orders.
+- **Map:** tap to travel. Hold on a holding, party or site to see its card (its tooltip, "Tap:" for "Click:"); the next tap puts it away without travelling.
+- Tests: `tests/touch.js`. Still to check on a real phone: iOS callout and page-zoom suppression, Android `pointercancel` during a pinch, notch safe areas, rotation mid-gesture, and whether 450 ms and 10 px suit real thumbs.
+
 ## Withdrawal balance
 
 W still orders selected groups to leave through your edge, without attacking on the way. Withdrawal now uses the existing fatigue rules: running spends stamina, tired/spent units have their normal speed penalties, and units below `FATIGUE.runMin` can only walk. Slowing effects still apply. The hero pays from the existing hero stamina pool.

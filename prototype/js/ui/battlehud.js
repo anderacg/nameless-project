@@ -170,6 +170,7 @@ function drawSelection(){
   // (All selected: every soldier of yours, a lighter ring, so the field does not turn gold)
   const sel=selGroups(),all=B.sel==='all';
   for(const g of sel)for(const u of grpUnits(g)){const k=u.s.big?2:1;ctx.fillStyle='rgba(255,210,90,.35)';ctx.beginPath();ctx.ellipse(Math.round(u.x),Math.round(u.y),7*k,3.5*k,0,0,7);ctx.fill();ring(u,'#ffe08a',1,2)}
+  if(typeof drawTouchHold==='function')drawTouchHold();// (a finger held on the field: its filling ring, input.js)
   const h=B.hov;if(!h)return;const mine=rtsUnitAt(h.x,h.y,0),foe=!mine&&rtsUnitAt(h.x,h.y,1);
   if(mine&&mine.grp&&(all||!sel.includes(mine.grp)))for(const u of grpUnits(mine.grp))ring(u,'#ffffff',.7,1.5);
   if(foe){const g=foe.grp;for(const u of g?grpUnits(g):[foe])ring(u,'#ff6a5a',.9,1.5)}
