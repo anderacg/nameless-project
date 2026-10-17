@@ -103,9 +103,11 @@ const ATK_ANIM=.36;
 function drawParties(ents,cam,V){
   for(const o of W.parties){if(!o.inView(V))continue;
     ents.push({y:o.y,f:()=>{const L=o.look(),sx=Math.round(o.x-cam.x),sy=Math.round(o.y-10-cam.y),fd=L.dir<0?-1:1,fr=L.moving?Math.floor(performance.now()/(L.bandit?160:170))%2:0;
-      drawHost(o.size,L.col,sx,sy+12,fd,L.moving,L.seed,L.race,L.bandit);ctx.save();ctx.translate(sx,sy);if(fd<0)ctx.scale(-1,1);ctx.drawImage(L.bandit?banditSprite(fr):partySprite(L.col,L.rider==='horse'?C.horse:'',fr),-8,-3);ctx.restore();
+      const s=L.bandit?banditSprite(fr):partySprite(L.col,L.rider==='horse'?C.horse:'',fr),up=s.ch-16;// (a rider's 32 cell: the same feet, his banner taller, his host behind his horse)
+      drawHost(o.size,L.col,sx-(s.width>16?fd*6:0),sy+12,fd,L.moving,L.seed,L.race,L.bandit);
+      ctx.save();ctx.translate(sx,sy);if(fd<0)ctx.scale(-1,1);ctx.drawImage(s,-(s.width>>1),13-s.height);ctx.restore();
       if(L.torch){const tx=sx+fd*6,ty=sy-4;rect(ctx,'#5a3e24',tx,ty,1,5);LIGHTQ.push({x:tx,y:ty-1,r:20})}
-      if(!o.fight&&L.label)txt(L.label,sx,sy-2,L.labelCol,'center')}})}
+      if(!o.fight&&L.label)txt(L.label,sx,sy-2-up,L.labelCol,'center')}})}
 }
 function drawUnit(u){
   // (placed on the camera's pixels, not the field's: zoomed in, they glide instead of stepping)

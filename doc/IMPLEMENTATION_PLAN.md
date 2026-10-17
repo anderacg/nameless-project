@@ -41,8 +41,8 @@ This is the work queue as of **2026-10-15**, in priority order. For how the code
 
 | # | Task | Notes |
 |---|---|---|
-| 2.1 | **The lord's map horse** (`MINI_MOUNT` in `people.js` `mapFigure`) | Today a 14×7 pony under a full-size rider. Make it realistic, on the battle horse's scale: a 32 cell, like `MOUNT_T` cut down. |
-| 2.2 | **The caravan** (`caravans.js` `caravanSprite`) | A cart with a draft animal (ox or horse) on the animal scale, and a driver from `mapPerson`. |
+| 2.1 | ~~**The lord's map horse**~~ **Done 2026-10-17** | The battle horse (`drawMount`) in a 32×32 cell, rider seated with his banner (`people.js` `mapFigure`). |
+| 2.2 | ~~**The caravan**~~ **Done 2026-10-17** | A covered two-wheeled cart, an ox with a yoke and a drover, in a 64×64 cell; the cover takes the faction colour (`caravans.js` `caravanSprite`). |
 | 2.3 | **Village herds without a pasture** | Consider showing them as small animals too, for consistency. Ask the owner first. |
 | 2.4 | **Ships and refugees' carts** (if any) | Check them against the cell rules. |
 

@@ -283,25 +283,20 @@ function peopleSprite(o,pose,bare){
   const g=pgrid(24,19),hand=drawFigure(g,o,4,3,walk,style,atk);poutline(g);const c=pcanvas(g);c.fh=o.short?15:16;c.hand=hand;return c;
 }
 
-/* the world map: a party's leader in a 16×16 cell, its banner in its colour; a rider on a small mount the size of a tile (the same
-   rider, above the shoulders' line, on a horse cut to fit); a bandit, hooded, with a spear. f: 0 or 1, the step */
-const MINI_MOUNT=[
-  '...........hHH..',
-  '..hhhhhhhhhHHh..',
-  '.mHHHHHHHHHHd...',
-  'm.dHHHHHHHHd....',
-  '...ddddddddd....',
-  '...d.d...d.d....',
-  '...d.d...d.d....'];
+/* the world map: a party's leader in a 16×16 cell, its banner in its colour; a lord rides the battle's horse (drawMount: the same
+   horse on the same scale, the same rider seated on it, above the belt) in a 32×32 cell, his banner on a pole in his hand; a
+   bandit, hooded, with a spear. f: 0 or 1, the step (mounted: standing, then the legs apart); mountCol: the horse's coat */
 function mapFigure(o,f,mountCol){
-  const g=pgrid(16,16),C=pal(o.team),W=PPAL.wood;
-  if(mountCol){const H=rampOf(mountCol),y0=8;
-    MINI_MOUNT.forEach((r,y)=>[...r].forEach((c,x)=>{let col={H:H[1],h:H[0],d:H[2],m:PPAL.dark[1]}[c];if(col){if(y>=5&&f&&(x===3||x===9))return;pset(g,x,y0+y,col)}}));
-    if(f){pset(g,4,y0+5,H[2]);pset(g,10,y0+5,H[2]);pset(g,4,y0+6,H[2]);pset(g,10,y0+6,H[2])}
-    drawFigure(g,{...o,weapon:null,shield:null,cape:null},-1,-1,-1,null,-1,8);
-    for(let y=0;y<=9;y++)pset(g,11,y,W[1]);pset(g,12,0,C[0]);pset(g,13,0,C[1]);pset(g,12,1,C[1]);pset(g,13,1,C[2]);pset(g,14,0,C[1])}
-  else{drawFigure(g,{...o,shield:null,cape:null},0,0,f?0:2,null,-1);
-    if(!o.weapon){for(let y=2;y<=13;y++)pset(g,12,y,W[1]);pset(g,13,2,C[0]);pset(g,14,2,C[1]);pset(g,13,3,C[1]);pset(g,14,3,C[2]);pset(g,13,4,C[2]);pset(g,11,10,pal(o.skin)[1])}}
+  const C=pal(o.team),W=PPAL.wood;
+  if(mountCol){const g=pgrid(32,32),top=drawMount(g,{mount:'horse',mountC:mountCol,team:o.team},f?1:0),ry=top-6;
+    drawFigure(g,{...o,weapon:null,shield:null,cape:null},6,ry,-1,null,-1,12);
+    // (his leg down the horse's side, as in battle; the banner's pole from his hand to above his head, its flag at the top)
+    const Lc=lettersOf(o);pset(g,11,top+7,Lc.L);pset(g,11,top+8,Lc.L);pset(g,11,top+9,Lc.F);
+    for(let y=ry-2;y<=ry+12;y++)pset(g,18,y,y>ry+9?W[2]:W[1]);pset(g,18,ry-3,PPAL.gold[1]);
+    [[19,-2,0],[20,-2,1],[21,-2,1],[22,-2,1],[19,-1,1],[20,-1,1],[21,-1,2],[22,-1,2],[19,0,2],[20,0,2],[21,0,3]].forEach(([x,y,k])=>pset(g,x,ry+y,C[k]));
+    poutline(g);const c=pcanvas(g);c.fh=32-(ry+(f?1:0)-3);return cellOf(c)}// (fh: to the banner's top, standing: a label above it keeps still)
+  const g=pgrid(16,16);drawFigure(g,{...o,shield:null,cape:null},0,0,f?0:2,null,-1);
+  if(!o.weapon){for(let y=2;y<=13;y++)pset(g,12,y,W[1]);pset(g,13,2,C[0]);pset(g,14,2,C[1]);pset(g,13,3,C[1]);pset(g,14,3,C[2]);pset(g,13,4,C[2]);pset(g,11,10,pal(o.skin)[1])}
   poutline(g);return cellOf(pcanvas(g));
 }
 
