@@ -25,9 +25,14 @@ function moraleVisible(u,o){
   return true;
 }
 function cohesionReady(u){const g=u.grp&&B.groups[u.grp];return fighting(u)&&!withdrawing(u)&&!(u.stun>0)&&g&&!g.backing&&!((u.spdNow||0)>1&&(g.run||(u.run||0)>0))}
+/* (moraleTick's live, filed in a grid of their own the first time a view is wanted (VIEW_GRID, spatial.js): only those within
+   CONFIDENCE.radius of him are looked at, in live's order; nobody moves or joins during moraleTick, so the sums are the full
+   scan's, term by term) */
+let VIEW_GRID=null;
+const viewGrid=live=>{const V=VIEW_GRID;if(!V||V.live!==live)return null;if(!V.grid){const set=new Set(live);V.grid=new SpatialGrid(B.units,SPATIAL.cell,u=>set.has(u))}return V.grid.U===B.units?V.grid:null};
 function moraleView(u,live,strength){
   const own=Math.max(.01,strength.get(u)||moraleStrength(u)),face=facing(u),sectors=[0,0,0,0];let allied=0,enemy=0,visibleAllied=0,visibleEnemy=0,localAllied=0,localEnemy=0,closest=Infinity,support=0,left=false,right=false;
-  for(const o of live){const dx=o.x-u.x,dy=o.y-u.y,d=Math.hypot(dx,dy);if(d>CONFIDENCE.radius||!moraleVisible(u,o))continue;
+  const vg=viewGrid(live);for(const o of vg?vg.near(u.x,u.y,CONFIDENCE.radius+1,null):live){const dx=o.x-u.x,dy=o.y-u.y,d=Math.hypot(dx,dy);if(d>CONFIDENCE.radius||!moraleVisible(u,o))continue;
     const s=strength.get(o)||0,w=1/(1+(d/AWARENESS.near)**2);
     if(o.team===u.team){allied+=s*w;visibleAllied+=s;if(d<AWARENESS.close)localAllied+=s;
       if(o!==u&&d<COHESION.radius&&cohesionReady(u)&&cohesionReady(o)&&angGap(facing(o),face)<1.05){
@@ -139,7 +144,7 @@ const PUSH={cav:2.6,heavyCav:3.4,big:3.6,shock:1.4,foot:.9,heavy:.6,wall:.35,spl
 function chargePush(u,t,m){
   const s=u.s,at=tagsOf(s),base=s.big?PUSH.big:s.charge?(at.includes('heavy')?PUSH.heavyCav:PUSH.cav):at.includes('shock')?PUSH.shock:PUSH.foot,g=t.grp&&B.groups[t.grp];
   const f=base*m*(tagsOf(t.s).includes('heavy')?PUSH.heavy:1)*(shieldWallActive(t)?PUSH.wall:1);knock(t,u.x,u.y,f);
-  for(const o of B.units)if(o!==t&&o.team===t.team&&o.hp>0&&!o.s.big&&Math.hypot(o.x-t.x,o.y-t.y)<PUSH.splashR)knock(o,u.x,u.y,f*PUSH.splash)}
+  for(const o of spatialOn()?SG.near(t.x,t.y,PUSH.splashR+1,t.team,false):B.units)if(o!==t&&o.team===t.team&&o.hp>0&&!o.s.big&&Math.hypot(o.x-t.x,o.y-t.y)<PUSH.splashR)knock(o,u.x,u.y,f*PUSH.splash)}
 
 // who never breaks
 // (a shock to a soldier's morale, by his steadiness: a unit of higher Morale is shaken less)
@@ -194,14 +199,21 @@ function moraleDeath(t,source){
   if(lead){B.floats.push({x:t.x,y:t.y-30,t:t.team?'Their leader falls!':'Your leader falls!',life:1.4,c:t.team?'#ffe08a':'#ff9a90'});calloutLeader(t)}
 }
 // a leader close by steadies them: your hero, a lord or chieftain of theirs
-const inspired=u=>B.units.some(o=>o.team===u.team&&o.hp>0&&(o.hero||o.leader)&&Math.hypot(o.x-u.x,o.y-u.y)<MORALE.inspire);
+// (during moraleTick only the heroes and leaders are looked at, gathered once for it: nobody else can steady them)
+let INSPIRERS=null;
+const inspired=u=>(INSPIRERS&&INSPIRERS.U===B.units?INSPIRERS.list:B.units).some(o=>o.team===u.team&&o.hp>0&&(o.hero||o.leader)&&Math.hypot(o.x-u.x,o.y-u.y)<MORALE.inspire);
 // a war cry heartens those it reaches
 function moraleCry(list){if(B.noMorale)return;for(const r of new Set(list.map(resolveOf).filter(Boolean))){r.mor=Math.min(100,r.mor+MORALE.cry);r.refreshState();r.sync()}}
 
 // each moment: morale drifts with the fight, soldiers break, rally, and leave the field
 function moraleTick(dt){
-  if(B.noMorale)return;
-  const owners=battleResolves(),live=B.units.filter(fighting),n=[0,0],strength=new Map(live.map(u=>[u,moraleStrength(u)])),broken=[];for(const u of live)n[u.team]++;B.losing=[n[0]<n[1]*.5,n[1]<n[0]*.5];
+  if(B.noMorale)return;INSPIRERS={U:B.units,list:B.units.filter(o=>o.hero||o.leader)};try{moraleTickNow(dt)}finally{INSPIRERS=null}
+}
+function moraleTickNow(dt){
+  const owners=battleResolves(),live=B.units.filter(fighting);VIEW_GRID={live,grid:null};try{moraleDecide(dt,owners,live)}finally{VIEW_GRID=null}
+}
+function moraleDecide(dt,owners,live){
+  const n=[0,0],strength=new Map(live.map(u=>[u,moraleStrength(u)])),broken=[];for(const u of live)n[u.team]++;B.losing=[n[0]<n[1]*.5,n[1]<n[0]*.5];
   if(!B.moraleViews||B.t+1e-9>=(B.moraleNext||0)||dt===0){B.moraleViews=new Map(owners.map(r=>[r,r.view(live,strength)]));B.moraleNext=B.t+AWARENESS.every}
   // Decide every formation against the same pre-route context. Apply neighbour panic only after all decisions.
   for(const r of owners)if(r.step(dt,B.moraleViews.get(r)||r.view(live,strength)))broken.push(r);
@@ -236,7 +248,8 @@ const withdrawing=u=>{const g=u.grp&&B.groups[u.grp];return !!g&&g.order==='with
 function exitInit(units){const m=units.filter(u=>u.team===0&&!u.lord);B.exit={x:MORALE.edge,w:WITHDRAW.band,y:m.length?m.reduce((a,u)=>a+u.y,0)/m.length:BH/2}}
 // where a soldier withdraws to: the nearest point of your edge, straight back
 const exitFor=u=>({x:u.team?BW-MORALE.edge:B.exit.x,y:clamp(u.y,fieldTop(),fieldBot())});
-function withdrawThreat(u){return B.units.some(e=>e.hp>0&&e.team!==u.team&&!e.rout&&(!e.s.range||e.inMelee)&&Math.hypot(e.x-u.x,e.y-u.y)<=(e.inMelee?BLADE.reach:e.s.reach||11)+3+(u.s.big?12:0)+WITHDRAW.contact)}
+// (the grid open, spatial.js: only those within the longest reach of him, in their order)
+function withdrawThreat(u){return (spatialOn()?SG.near(u.x,u.y,Math.max(SG.reach,BLADE.reach)+3+12+WITHDRAW.contact+1,u.team,true):B.units).some(e=>e.hp>0&&e.team!==u.team&&!e.rout&&(!e.s.range||e.inMelee)&&Math.hypot(e.x-u.x,e.y-u.y)<=(e.inMelee?BLADE.reach:e.s.reach||11)+3+(u.s.big?12:0)+WITHDRAW.contact)}
 function withdrawStep(u,dt){
   u.run=0;u.inSlot=false;u.spdNow=0;
   const threat=withdrawThreat(u);

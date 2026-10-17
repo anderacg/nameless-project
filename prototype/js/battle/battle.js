@@ -31,6 +31,23 @@ function obstaclePush(u,o,w){
   const mx=dx-(w[0]-o.x),my=dy-(w[1]-o.y),m=Math.hypot(mx,my);if(m<1e-6)return;
   const into=-(mx*nx+my*ny)/m,c=(mx*ny-my*nx)/m;if(into<=0||Math.abs(c)>=OBSTACLE.slip)return;
   const side=c>0?-1:c<0?1:(u.id&1?1:-1),a=Math.atan2(ny,nx)+side*Math.min(m*into,r)/r;u.x=o.x+Math.cos(a)*r;u.y=o.y+Math.sin(a)*r}
+/* soldiers jostle apart: every pair closer than 8 (18 by a big one) pushed half the overlap each way (a hero stands his ground);
+   those running off the field, withdrawn or routed, slip through their own side. Pairs are taken as the full scan took them
+   (i ascending, each j after it ascending) on the positions of that moment, but only those a grid finds close (spatial.js):
+   a pushed pair is filed again as it moves; a's candidates are those within reach + JOSTLE.pad (and a pixel for rounding) of
+   where he stood when they were gathered, big ones always, gathered again from the next j on once he has been pushed more than
+   the pad off; so every pair that could be in reach at its turn is tried, in the same order with the same arithmetic, and
+   the pairs left out would have done nothing */
+const JOSTLE={pad:4};
+function jostle(){
+  const U=B.units,S=spatialOpen(SPATIAL.jostle),big=[],list=[];for(let i=0;i<U.length;i++)if(U[i].hp>0&&U[i].s.big)big.push(i);
+  let a=null,x0=0,y0=0;const gather=()=>{x0=a.x;y0=a.y;const r=(a.s.big?18:8)+JOSTLE.pad+1;list.length=0;for(const i of big)list.push(i);S.box(x0-r,y0-r,x0+r,y0+r,null,false,list)};
+  try{for(let i=0;i<U.length;i++){a=U[i];if(a.hp<=0)continue;let last=i;gather();
+    for(let k=0;k<list.length;k++){const j=list[k];if(j<=last)continue;
+      if(Math.abs(a.x-x0)>JOSTLE.pad||Math.abs(a.y-y0)>JOSTLE.pad){gather();k=-1;continue}
+      last=j;const b=U[j];if(b.hp<=0||a.team===b.team&&(a.rout||b.rout||withdrawing(a)||withdrawing(b)))continue;const dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy);const R=a.s.big||b.s.big?18:8;if(d<R&&d>.01){const p=(R-d)*.5/d;if(!a.hero){a.x-=dx*p;a.y-=dy*p;S.refile(i)}if(!b.hero){b.x+=dx*p;b.y+=dy*p;S.refile(j)}}}}}
+  finally{spatialClose()}
+}
 // Actor execution lives in actors.js; shared group defaults and frame orchestration remain here.
 // rt is real time; fighting runs on dt, slowed by BATTLE_PACE, while effects keep real time
 function updateBattle(rt){
@@ -48,7 +65,7 @@ function updateBattle(rt){
     for(const u of B.units){if(u.hp<=0)continue;if(u.slow>0)u.slow-=dt;if(u.hero&&gm('regen'))u.hp=Math.min(u.max,u.hp+gm('regen')*dt)}
     updateNonHeroActors(dt);
     // (soldiers jostle apart; those running off the field, withdrawn or routed, slip through their own side)
-    for(let i=0;i<B.units.length;i++){const a=B.units[i];if(a.hp<=0)continue;for(let j=i+1;j<B.units.length;j++){const b=B.units[j];if(b.hp<=0||a.team===b.team&&(a.rout||b.rout||withdrawing(a)||withdrawing(b)))continue;const dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy);const R=a.s.big||b.s.big?18:8;if(d<R&&d>.01){const p=(R-d)*.5/d;if(!a.hero){a.x-=dx*p;a.y-=dy*p}if(!b.hero){b.x+=dx*p;b.y+=dy*p}}}}
+    jostle();
     for(const u of B.units){if(u.hp<=0||u.s.big)continue;for(const o of B.obs)obstaclePush(u,o,was.get(u))}
     for(const u of B.units){u.x=clamp(u.x,8,BW-8);u.y=clamp(u.y,fieldTop(),fieldBot())}
     updateProjectiles(dt);

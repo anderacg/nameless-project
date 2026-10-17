@@ -1,7 +1,8 @@
 'use strict';
 /* ---------- actor execution and local targeting ---------- */
 // Actors execute their group's orders; commanders and BattleControl retain command authority.
-const nearest=u=>{let best=null,bd=1e9;for(const e of B.units){if(e.hp<=0||e.team===u.team)continue;const d=((e.x-u.x)**2+(e.y-u.y)**2)*(e.rout?9:1);if(d<bd){bd=d;best=e}}return best};
+// (the grid open: the same pick from the buckets round him, spatial.js)
+const nearest=u=>{if(spatialOn())return SG.nearest(u);let best=null,bd=1e9;for(const e of B.units){if(e.hp<=0||e.team===u.team)continue;const d=((e.x-u.x)**2+(e.y-u.y)**2)*(e.rout?9:1);if(d<bd){bd=d;best=e}}return best};
 function monsterAbility(u,dt){
   const ab=u.s.ability;
   if(ab==='regen')u.hp=Math.min(u.max,u.hp+4*dt);
@@ -57,16 +58,34 @@ const meleeFoe=(u,r)=>{let best=null,bd=r;for(const e of B.units){if(e.hp<=0||e.
 const blowsToFell=(u,e)=>Math.ceil(e.hp/Math.max(.5,u.s.dmg*matchup(u.s,e.s)));
 const meleeTarget=u=>nearest(u);// named targeting contract, also used by the RTS tests
 function shooterTarget(u){
-  const R=u.s.range,d=e=>Math.hypot(e.x-u.x,e.y-u.y),inR=B.units.filter(e=>e.hp>0&&e.team!==u.team&&!e.rout&&d(e)<=R);if(!inR.length)return nearest(u);
+  const R=u.s.range,d=e=>Math.hypot(e.x-u.x,e.y-u.y),inR=(spatialOn()?SG.near(u.x,u.y,R+1,u.team,true):B.units).filter(e=>e.hp>0&&e.team!==u.team&&!e.rout&&d(e)<=R);if(!inR.length)return nearest(u);
   const fr=inR.filter(e=>inArc(u,e)),L=fr.length?fr:inR;return L.reduce((a,e)=>d(e)<d(a)?e:a)}
 // Tactical focus is a formation; each soldier selects an opponent appropriate to its own position and firing arc.
 function orderedTarget(u,g,s){
-  const members=g.targetMembers(),standing=members.filter(e=>!e.rout),pool=standing.length?standing:members;
+  const members=targetMembersOf(g),standing=members.filter(e=>!e.rout),pool=standing.length?standing:members;
   if(!pool.length)return null;
   const dist=e=>Math.hypot(e.x-u.x,e.y-u.y);let eligible=pool;
   if(s.range){const inR=pool.filter(e=>dist(e)<=s.range),forward=inR.filter(e=>inArc(u,e));if(forward.length)eligible=forward;else if(inR.length)eligible=inR}
   return eligible.reduce((a,e)=>dist(e)<dist(a)?e:a);
 }
+// (battlecontrol.js targetMembers' test of one soldier)
+const targetTest=g=>u=>u.hp>0&&!u.left&&u.team!==g.team&&(g.targetGroupId!==null?u.grp===g.targetGroupId:u.id===g.targetUnitId);
+/* g.targetMembers() (battlecontrol.js), during the soldiers' turns (the grid open): the list sifted from the whole battle once
+   per turn of the battle and target, then only sifted again by the same test. Nobody joins a target mid-turn (no one rises,
+   comes back, changes side or group), so the members then are those of the first list still passing it, plus any soldier
+   added since, in B.units order: the same list */
+function targetMembersOf(g){
+  if(!spatialOn())return g.targetMembers();if(!g.hasTarget||g.targetGroupId!==null&&!B.groups[g.targetGroupId])return [];
+  const k=g.team+'|'+g.targetGroupId+'|'+g.targetUnitId,U=B.units;let c=SG.memo.get(k);if(!c){c={n:U.length,m:g.targetMembers()};SG.memo.set(k,c);return c.m.slice()}
+  const is=targetTest(g),out=c.m.filter(is);
+  for(let i=c.n;i<U.length;i++)if(is(U[i]))out.push(U[i]);return out}
+/* is anyone of g's target left (g.tgt is someone: battlecontrol.js targetMembers is not empty)? Its test, unit by unit, but the
+   last one found is tried first (TARGET_SEEN): still a member, the answer is yes without sifting the whole battle again */
+const TARGET_SEEN=new WeakMap();
+function targetStands(g){
+  if(g.targetGroupId!==null&&!B.groups[g.targetGroupId])return false;
+  const is=targetTest(g),w=TARGET_SEEN.get(g);
+  if(w&&w.U===B.units&&is(w.u))return true;const u=B.units.find(is);if(u)TARGET_SEEN.set(g,{U:B.units,u});return !!u}
 function aiUnit(u,dt,strike){
   if(u.stun>0){u.stun-=dt;u.spdNow=0;u.shot=null;return}
   if(u.rout){u.shot=null;return routStep(u,dt)}// (broken: it runs for its edge, morale.js)
@@ -76,8 +95,9 @@ function aiUnit(u,dt,strike){
   // (Melee Mode, his group's: a shooter puts his bow away and is a fighter: his melee damage, a sword's reach; he shoots nothing)
   const g=u.grp&&B.groups[u.grp],mm=!!(u.s.range&&!u.empty&&g&&g.melee),s=mm?(u.mmS&&u.mmS.base===u.s?u.mmS:(u.mmS={...u.s,base:u.s,range:0,reach:BLADE.reach,dmg:meleeDmgOf(u.s)})):u.s;u.rt-=dt;// (his group lets a fallen foe go: battlecontrol.js step)
   // (set on a target, it still turns on an enemy right on top of it: it does not stand and take the blows)
-  if(g&&g.hasTarget&&!g.tgt)g.hold();
-  if(g&&g.tgt){
+  // (whether g.tgt is set: read once here (nothing before his blow below changes it, and hold() leaves none); only its truth is used)
+  const gt=!!g&&g.hasTarget&&targetStands(g);if(g&&g.hasTarget&&!gt)g.hold();
+  if(gt){
     // Re-evaluate immediately on an order change or casualty; otherwise retain the normal thinking interval.
     const member=e=>e&&e.hp>0&&!e.left&&e.team!==u.team&&(g.targetGroupId!==null?e.grp===g.targetGroupId:e.id===g.targetUnitId);
     if(u.rt<=0||!member(u.tgt)){u.tgt=orderedTarget(u,g,s);u.rt=.4;u.near=null}
@@ -91,12 +111,12 @@ function aiUnit(u,dt,strike){
   const t=u.tgt;u.spdNow=0;
   // The hero is a single-unit group: an explicit attack turns its firing arc toward the target,
   // even after a move left/right. Ordinary shooter formations keep their commanded facing.
-  if(u.hero&&s.range&&g&&g.tgt){const p=g.targetPoint();g.faceTo(Math.atan2(p.y-u.y,p.x-u.x))}
-  const order=g?(g.tgt?'charge':g.order):'charge';
+  if(u.hero&&s.range&&g&&gt){const p=g.targetPoint();g.faceTo(Math.atan2(p.y-u.y,p.x-u.x))}
+  const order=g?(gt?'charge':g.order):'charge';
   if(!t&&!(g&&order!=='charge'))return;
   const dx=t?t.x-u.x:0,dy=t?t.y-u.y:0,d=Math.hypot(dx,dy)||1,de=t?d-(t.s.big&&!s.range?12:0):1e9;
   const reach=s.range?s.range:s.reach+2;let mv=false,mx=0,my=0,chase=false,back=false;
-  const reloc=relocating(u,g);
+  const reloc=relocating(u,g,gt);
   // (his group moves him: its place for him, backing off together when it skirmishes, stopping together to shoot (battlecontrol.js step);
   // he himself only picks his foe, shoots, and fights with his blades whoever reaches him)
   u.skirm=!!(g&&g.backing);u.inMelee=mm;if(mm)u.shot=null;// (melee mode: his bow down (a draw let down), a sword out: render.js)
@@ -109,7 +129,7 @@ function aiUnit(u,dt,strike){
       if(pd>RELOCATE.near&&u.relocT<RELOCATE.max){mv=true;mx=px/pd;my=py/pd}else{u.mvId=g.mvId;u.relocT=0;u.inSlot=true}}
     else if(t&&!s.range&&de<=reach){}
     else if(t&&!s.range&&engage&&Math.hypot(t.x-sx,t.y-sy)<engage){mv=true;mx=dx/d;my=dy/d;chase=true}
-    else if(s.range&&t&&de<=reach&&!onTheMove(s)&&!g.backing&&!(g.cease&&!g.tgt)){}// (a foe in reach: they keep their ground and shoot, not step to their exact place: attacking first)
+    else if(s.range&&t&&de<=reach&&!onTheMove(s)&&!g.backing&&!(g.cease&&!gt)){}// (a foe in reach: they keep their ground and shoot, not step to their exact place: attacking first)
     else{const px=sx-u.x,py=sy-u.y,pd=Math.hypot(px,py);const going=g.going;// (its place on the move: battlecontrol.js step)
       if(pd>(u.slotted&&!going?7:2)){mv=true;mx=px/pd;my=py/pd;u.slotted=false}else{u.inSlot=true;u.slotted=true}}// (in its slot: it faces the formation's way, and stays till pushed clearly out)
   }else{
@@ -133,20 +153,20 @@ function aiUnit(u,dt,strike){
   // (facing: where it marches or whom it fights; momentum: the run at its target, spent on its first blow; spurred, kept: unitabilities.js)
   fatigueStep(u,dt,mv,wk,chase&&!back&&!!t&&!wk,!!t&&de<=reach+8);
   // shooters: whatever comes into range and their arc, unless told to cease fire (then only the enemy you set them on); a move lets a draw down
-  if(s.range){if(reloc)u.shot=null;shotStep(u,g,t,!!t&&!reloc&&de<=reach&&!(g&&g.cease&&!g.tgt),mv,dx,dy,mx,my,dt,strike);return}
+  if(s.range){if(reloc)u.shot=null;shotStep(u,g,t,!!t&&!reloc&&de<=reach&&!(g&&g.cease&&!gt),mv,dx,dy,mx,my,dt,strike);return}
   if(t&&u.cd<=0&&!reloc&&de<=reach+1){if(mm)bladeBlow(u,t);else(strike||attack)(u,t)}
 }
 /* the press: when the men round a foe stand too thick, those behind cannot reach him and would stand idle. A melee soldier
    kept out of reach for CROWD.wait turns on another foe close by (within CROWD.look) that has room round him, for CROWD.keep */
 const CROWD={wait:.8,keep:2.5,look:90,slack:16,full:3};
 function roomyFoe(u,not,s=u.s){let best=null,bs=1e9;const R=(s.reach||11)+6;
-  const g=u.grp&&B.groups[u.grp],pool=g&&g.hasTarget?g.targetMembers():B.units;
+  const g=u.grp&&B.groups[u.grp],grid=spatialOn(),pool=g&&g.hasTarget?targetMembersOf(g):grid?SG.near(u.x,u.y,CROWD.look+1,u.team,true):B.units;
   for(const e of pool){if(e.hp<=0||e.team===u.team||e===not||e.rout)continue;const d=Math.hypot(e.x-u.x,e.y-u.y);if(d>CROWD.look)continue;
-    let n=0;for(const o of B.units)if(o!==u&&o.hp>0&&o.team===u.team&&Math.hypot(o.x-e.x,o.y-e.y)<R)n++;if(n>=CROWD.full)continue;const sc=d+n*14;if(sc<bs){bs=sc;best=e}}
+    let n=0;for(const o of grid?SG.near(e.x,e.y,R+1,u.team,false):B.units)if(o!==u&&o.hp>0&&o.team===u.team&&Math.hypot(o.x-e.x,o.y-e.y)<R)n++;if(n>=CROWD.full)continue;const sc=d+n*14;if(sc<bs){bs=sc;best=e}}
   return best}
 // (s: the stats he fights with now, a shooter's Melee Mode ones: aiUnit)
 function crowdTarget(u,dt,s=u.s){
-  if(s.range||u.hero||u.near&&u.tgt===u.near)return;const g=u.grp&&B.groups[u.grp];if(u.alt&&(u.alt.hp<=0||u.alt.rout||(u.altT-=dt)<=0||g&&g.hasTarget&&!g.targetMembers().includes(u.alt)))u.alt=null;
+  if(s.range||u.hero||u.near&&u.tgt===u.near)return;const g=u.grp&&B.groups[u.grp];if(u.alt&&(u.alt.hp<=0||u.alt.rout||(u.altT-=dt)<=0||g&&g.hasTarget&&!targetMembersOf(g).includes(u.alt)))u.alt=null;
   const t=u.tgt;if(t&&t.hp>0&&!u.alt){const R=(s.reach||11)+2,d=Math.hypot(t.x-u.x,t.y-u.y)-(t.s.big?12:0);
     if(d>R&&d<R+CROWD.slack){u.blockT=(u.blockT||0)+dt;if(u.blockT>CROWD.wait){u.blockT=0;const a=roomyFoe(u,t,s);if(a){u.alt=a;u.altT=CROWD.keep}}}else u.blockT=0}
   if(u.alt)u.tgt=u.alt}
@@ -155,7 +175,7 @@ function crowdTarget(u,dt,s=u.s){
    foe), as in Total War; once there, he fights whatever comes to him. Hold where they stand is no move: they keep fighting.
    RELOCATE.near: close enough to his place; RELOCATE.max: he gives up getting there after this long (a place he cannot reach) */
 const RELOCATE={near:6,max:8};
-const relocating=(u,g)=>!!(g&&g.mvId&&u.mvId!==g.mvId&&g.order==='hold'&&!g.tgt);
+const relocating=(u,g,tgt)=>!!(g&&g.mvId&&u.mvId!==g.mvId&&g.order==='hold'&&!(tgt===undefined?g.tgt:tgt));// (tgt: g.tgt, already read)
 /* the manual control of your hero, set aside for now (RTS command: commands.js): WASD, Space, F, B, the skill slots (input.js) */
 function updateHero(dt){
   const h=B.hero;B.blocking=!!(G.keys.b||B.touchBlock);
@@ -173,5 +193,9 @@ function updateHero(dt){
 // Non-hero turns keep the original order and simulation clock. The hero's separate HERO_PACE turn stays in updateBattle.
 function updateNonHeroActors(dt){
   // every unit's moment (lords, chieftains and companions fight as your hero does: charmind.js charAuto)
-  for(const u of B.units){if(u.hp<=0||u.hero)continue;u.cd-=dt;if(isFighter(u)){charAuto(u,dt);continue}aiUnit(u,dt,null);monsterAbility(u,dt);if(u.s.breath){u.br=(u.br??2.5)-dt;if(u.br<=0){const t=nearest(u);if(t&&Math.hypot(t.x-u.x,t.y-u.y)<90){breathe(u,t);u.br=3.5}}}}
+  // (the grid, spatial.js: only the one taking his turn moves, so he is held loose while he acts, then filed where he ends up)
+  const S=spatialOpen();
+  try{for(let i=0;i<B.units.length;i++){const u=B.units[i];if(u.hp<=0||u.hero)continue;S.hold(i);u.cd-=dt;
+    if(isFighter(u))charAuto(u,dt);else{aiUnit(u,dt,null);monsterAbility(u,dt);if(u.s.breath){u.br=(u.br??2.5)-dt;if(u.br<=0){const t=nearest(u);if(t&&Math.hypot(t.x-u.x,t.y-u.y)<90){breathe(u,t);u.br=3.5}}}}
+    S.release(i)}}finally{spatialClose()}
 }
