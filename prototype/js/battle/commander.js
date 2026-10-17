@@ -52,6 +52,61 @@ const TEMPERAMENT={human:{},
 const TEMPER_SAY={dwarf:'The dwarves hold the line.',elf:'The elves keep their distance.',orc:'The orcs come on in a frenzy.',mixed:'Their mixed host looks for a wavering line.'};
 // a tunable as this temperament has it (T: TEMPERAMENT entry, or null: the base)
 const tun=(T,tab,k)=>T&&T[k]!=null?tab[k]*T[k]:tab[k];
+/* the captains read the ground (terrain phase 2, doc/TERRAIN_DESIGN.md §5): B.terrain's static reading (ai: tops, crossings,
+   woods) through captainCtx's ground; with none (no terrain, or TERRAIN_AI.on false) every rule below is skipped and the
+   captain is today's. holdR, hillGain: a defending army's line takes the best top this near it (px) on its half (or a middle
+   one nearer it than the foe; none a foe stands within held px of), this many levels above it at least, its front on the
+   crest, if it can walk there holdSafe s before a foe who fights hand to hand could run there (given up on the way once not);
+   woodHold: a wood's worth as such a place, in levels (under hillGain: none but the elves'); uphill, uphillOdds: no
+   running charge at a foe holding ground this many levels higher unless the strength ratio is attackAt×uphillOdds (infantry advance at a
+   walk, running only the last upRun px; riders wait on the flank for another mark, flankMax×upWait s at most, unless he is
+   fighting ours); upVolley: the volleys before infantry goes up at a foe on higher ground (×); shooterHill, shooterFwd:
+   shooters look this far (px) for higher ground, at most shooterFwd toward the foe (on the army's line, ±shooterFwd along
+   their reach); woodShoot: a wood cell's worth to a shooter's spot, in levels (their own low shots are stopped; an elf's
+   is cover: theirs pass); woodsCav, upCav, downCav: the riders' dislike of a mark in woods, marsh or water, of one a level
+   higher, liking for one a level lower; flankProbe, woodPad: flank spots tried (×1, ×1.4, the other side) for one in the
+   open, and a wood on the way ridden round this wide; riverDefend: a river between the armies, defendAt this much higher,
+   the defenders holding their bank at the crossings; bank: crossing points stand this far off the water (px) */
+const TERRAIN_AI={on:true,holdR:220,hillGain:1,held:80,holdSafe:2,woodHold:.5,uphill:1,uphillOdds:1.3,upRun:40,upWait:2,upVolley:1.5,shooterHill:60,shooterFwd:16,woodShoot:-1,
+  woodsCav:3,upCav:1.5,downCav:1,flankProbe:3,woodPad:24,riverDefend:1.15,bank:24};
+/* the ground by race (multipliers on TERRAIN_AI, read through gtun as TEMPERAMENT's are through tun): dwarves seek and keep
+   high ground and hold crossings; elves hold woods and shoot from under them (woodShoot turned to a liking) and seek height
+   for range; orcs charge up anything but a cliff (uphill 2 levels), on worse odds, after shorter volleys, and look less far
+   for a hill to hold (they still route round deep water); human and mixed: the base */
+const TERRAIN_TEMPER={dwarf:{holdR:1.5,riverDefend:1.2,shooterHill:1.5},elf:{woodHold:2,woodShoot:-1,shooterHill:1.5},orc:{uphill:2,uphillOdds:.8,upVolley:.5,upCav:.5,holdR:.6}};
+// (a ground tunable as a captain's temperament has it)
+const gtun=(ck,k)=>{const q=B.captains&&B.captains[ck];return tun(q&&TERRAIN_TEMPER[q.temper]||null,TERRAIN_AI,k)};
+// the ground a captain reads (B.terrain), or null: none, or TERRAIN_AI off (ck: the captain; the lab blinds one side here)
+function groundAI(ck){return TERRAIN_AI.on&&B&&B.terrain||null}
+// (a man standing his ground: his group holding where it is, not on its way anywhere (a crest held, not one passed over))
+const holdsGround=e=>{const g=e.grp&&B.groups[e.grp];return !g||g.order==='hold'&&!g.going};
+// (the level under a point, or a list of men's mean)
+const lvlOf=l=>Array.isArray(l)?l.reduce((a,u)=>a+levelAt(u.x,u.y),0)/Math.max(1,l.length):levelAt(l.x,l.y);
+const wetK=k=>k===TKIND.deep||k===TKIND.ford||k===TKIND.bridge;
+// does the straight way a→b wade deep water (its cells every 8 px; points, as the captains have them)
+function wadesDeep(a,b){const T=B&&B.terrain;if(!T||!T.has.water)return false;const n=Math.ceil(Math.hypot(b.x-a.x,b.y-a.y)/8);
+  for(let i=0;i<=n;i++){const k=i/Math.max(1,n);if(groundAt(a.x+(b.x-a.x)*k,a.y+(b.y-a.y)*k)===TKIND.deep)return true}return false}
+// the crossing (B.terrain.ai.crossings) that makes the shortest way a→b, or null (points; terrain.js's crossingFor takes coordinates)
+function crossingOf(a,b){const T=B&&B.terrain,L=T&&T.ai&&T.ai.crossings;if(!L||!L.length)return null;let best=null,bd=Infinity;
+  for(const c of L){const d=Math.hypot(c.x-a.x,c.y-a.y)+Math.hypot(b.x-c.x,b.y-c.y);if(d<bd){bd=d;best=c}}return best}
+/* the next point on the way from a to b: the crossing's near end, then (there: in the middle of its width, or on it) its far
+   end (on), while the straight way wades deep water; null: straight on. box: the crossing (terrain.js's record: x0..x1 the
+   water it spans, y0..y1 its width along the river); s: the way over (+1 east, -1 west) */
+function wayVia(a,b){if(!wadesDeep(a,b))return null;const c=crossingOf(a,b);if(!c)return null;const X=c,s=Math.sign(b.x-a.x)||1,pad=TERRAIN_AI.bank;
+  const near={x:s>0?X.x0-pad:X.x1+pad,y:c.y},far={x:s>0?X.x1+pad:X.x0-pad,y:c.y},on=(a.x-near.x)*s>-MARCH.reached*2&&Math.abs(a.y-c.y)<(X.y1-X.y0)/4;
+  return{...(on?far:near),box:X,s,on}}
+// a point moved out of deep water, toward from's side (none: as it is)
+function dryOf(p,from){const T=B.terrain;if(!T.has.water||groundAt(p.x,p.y)!==TKIND.deep)return p;const s=Math.sign(from.x-p.x)||1;let x=p.x;
+  for(let i=0;i<12&&groundAt(x,p.y)===TKIND.deep;i++)x+=s*T.cs;return{x,y:p.y}}
+// riders' way round a wood: the first wood patch the straight way a→b runs through, its men pad px either side of it (not one
+// a is in), and a point beside it TERRAIN_AI.woodPad beyond them (toward the side the way passes, else the field's middle);
+// null: straight on. (A patch's ragged edge reaches a third past its radius)
+function woodAround(a,b,pad=0){const T=B.terrain;if(!T.has.wood||!T.ai)return null;let best=null,bt=2;
+  for(const w of T.ai.woods){const r=(w.box[2]-w.box[0])/2*1.35+pad;if(Math.hypot(a.x-w.x,a.y-w.y)<r-pad||segDist(w,a,b)>=r)continue;
+    const dx=b.x-a.x,dy=b.y-a.y,L=dx*dx+dy*dy||1,k=clamp(((w.x-a.x)*dx+(w.y-a.y)*dy)/L,0,1);if(k<bt){bt=k;best={w,r,k,fx:a.x+dx*k,fy:a.y+dy*k,dx,dy}}}
+  if(!best)return null;const {w,r}=best;let nx=best.fx-w.x,ny=best.fy-w.y,n=Math.hypot(nx,ny);
+  if(n<1){const L=Math.hypot(best.dx,best.dy)||1;nx=-best.dy/L;ny=best.dx/L;if(ny*(BH/2-w.y)<0){nx=-nx;ny=-ny}n=1}
+  const R=r+TERRAIN_AI.woodPad;return{x:clamp(w.x+nx/n*R,8,BW-8),y:clamp(w.y+ny/n*R,fieldTop(),fieldBot())}}
 /* a captain's temperament from its troops (characters aside): the race of 60% of those of a race, else mixed; none (null, the base)
    when under half its troops have a race (beasts, monsters, the generic levies) */
 function temperFor(team,key){const ids=new Set(Object.values(captainGroups(team,key)).flat()),n={};let all=0;
@@ -147,7 +202,10 @@ function captainFinish(team,N,ck=team){
     // fresher it is (runFor), at a walk once spent; riders gallop round a flank unless tired; leading shooters run to their
     // place and back behind their infantry: rangedMode)
     const tg=g.targetPoint(),Cm=centroid(m),near=tg?Math.hypot(tg.x-Cm.x,tg.y-Cm.y):Math.min(...foes.map(e=>Math.hypot(e.x-Cm.x,e.y-Cm.y))),st=grpSta(m);
-    g.setRun(g.backing||!!g.huntBack||!!g.screenBack||!!g.pushRun||!g.hunt&&g.order==='charge'&&near<runFor(k,st,T)||k==='cav'&&g.order==='hold'&&g.phase==='flank'&&st>=FATIGUE.tired);
+    // (on the ground: infantry charging a foe TERRAIN_AI.uphill levels above them walks up, running only the last upRun px, unless
+    // strong enough to go up anyway)
+    const up=k==='inf'&&g.order==='charge'&&!!groundAI(ck)&&(()=>{const p=tg||foes.reduce((a,e)=>Math.hypot(e.x-Cm.x,e.y-Cm.y)<Math.hypot(a.x-Cm.x,a.y-Cm.y)?e:a);return levelAt(p.x,p.y)-lvlOf(m)>=gtun(ck,'uphill')&&holdsGround(tg?{grp:g.targetGroupId}:p)&&S.ratio<tun(T,FOE_CMD,'attackAt')*gtun(ck,'uphillOdds')})();
+    g.setRun(g.backing||!!g.huntBack||!!g.screenBack||!!g.pushRun||!g.hunt&&g.order==='charge'&&near<(up?Math.min(TERRAIN_AI.upRun,runFor(k,st,T)):runFor(k,st,T))||k==='cav'&&g.order==='hold'&&g.phase==='flank'&&st>=FATIGUE.tired);
     if(k==='hero')continue;
     // (whether a new place is a move, its men breaking off to go: battlecontrol.js standAt)
     // (what the moment calls for: shot at, a shield wall (infantry) or loose order (shooters); a charge coming, they brace in a
@@ -161,10 +219,10 @@ function captainFinish(team,N,ck=team){
     const f=k==='cav'&&g.order==='charge'&&formFits(id,'wedge')?'wedge':(k==='arc'||k==='mag')&&(shot||held&&g.form==='loose')&&formFits(id,'loose')?'loose':'line';
     if(f!==g.form&&f==='loose')g.formAt=B.t;
     // (its front: toward the foe's army; its shooters toward whom they should shoot (their mark, else the nearest in their
-    // reach), turned only once he is out of their arc: the soldiers never turn themselves)
+    // reach), turned only once he is out of their arc: the soldiers never turn themselves; on its way over a crossing, its way)
     const C=centroid(m),sm=(k==='arc'||k==='mag')&&m.some(u=>u.s.range),R=sm?Math.max(...m.map(u=>u.s.range||0)):0,inR=sm?foes.filter(e=>Math.hypot(e.x-C.x,e.y-C.y)<=R):[],
       mark=sm&&(g.targetPoint()||(inR.length?inR.reduce((a,e)=>Math.hypot(e.x-C.x,e.y-C.y)<Math.hypot(a.x-C.x,a.y-C.y)?e:a):null)),
-      face=mark?Math.atan2(mark.y-C.y,mark.x-C.x):Math.atan2(M.y-C.y,M.x-C.x),turned=angGap(face,g.currentFacing??g.face)>(mark?SHOOT.arc*.4:CAPT.turn);
+      wade=g.order==='hold'&&B.captains&&B.captains[ck]&&B.captains[ck].files&&B.captains[ck].files[id],face=wade?wade.a:mark?Math.atan2(mark.y-C.y,mark.x-C.x):Math.atan2(M.y-C.y,M.x-C.x),turned=angGap(face,g.currentFacing??g.face)>(mark?SHOOT.arc*.4:CAPT.turn);
     if(g.form!==f||turned)g.setForm(f,{face})}
 }
 /* one side's captain. It reads the whole battle (assess): each side's strength (health by tier), how much of it shoots, how
@@ -195,7 +253,9 @@ function captainMem(ck){const C=B.captains=B.captains||{};return C[ck]||(C[ck]={
 function posture(ck,S){
   const P_=captainMem(ck).post,T=temperOf(ck),F=FOE_CMD,stall=tun(T,F,'stall');
   if(S.shootFoe>S.shootMe+.15||S.ratio>=tun(T,F,'attackAt')-(P_==='attack'?F.hold:0))return 'attack';
-  if(S.ratio<tun(T,F,'defendAt')&&S.shootMe>=S.shootFoe&&S.shootMe>.1)return B.t<stall*2?'defend':'attack';
+  // (a river between the armies: a defence is worth more, at the crossings (TERRAIN_AI.riverDefend))
+  const rv=groundAI(ck)&&S.mine&&S.mine.length&&S.foes.length&&wadesDeep(centroid(S.mine),centroid(S.foes));
+  if(S.ratio<(rv?tun(T,F,'defendAt')*gtun(ck,'riverDefend'):tun(T,F,'defendAt'))&&S.shootMe>=S.shootFoe&&S.shootMe>.1)return B.t<stall*2?'defend':'attack';
   return P_==='defend'&&B.t<stall?'defend':S.shootMe>S.shootFoe+.1&&B.t<stall?'defend':'attack';
 }
 // a captain's think: its posture, then each arm in turn on one reading of the battle (captainCtx); it hands back its groups (captainFinish's)
@@ -275,11 +335,70 @@ function captainCtx(team,ck,Q,S,N,post){
   // recovering: a group stepped back to get its breath, g.recover {at, x, y}, or {done} once ended by the time cap)
   const rOf=id=>!B.noMorale&&B.groups[id]&&B.groups[id].resolve||null,weak=e=>{const r=!B.noMorale&&resolveOf(e);return !!r&&!r.routed&&r.mor<MORALE.waver};
   const recovering=id=>{const r=B.groups[id].recover;return !!r&&r.done==null},firm=id=>{const r=rOf(id);return grpUnits(id).some(u=>!u.rout)&&!recovering(id)&&(!r||!r.routed&&r.mor>=UNIT_AI.backAt)};
-  return{T,Q,S,N,post,foes,M,d2,lead,gap,inf,offset,shots,engaged,clash,goIn,shooterNear,threats,A,line,aggr,chargeOn,footCharge,rOf,weak,recovering,firm}}
+  /* the ground (TERRAIN_AI; ground null: none, and every rule of it skipped): gt, a ground tunable by this captain's
+     temperament; uphill, the foe nearest a group holds ground too far above it to charge; hold, a defence's place (Q.hold,
+     chosen once a defence: a top, a wood (elves), or the crossings when a river lies between) and holdAt, a group's spot there
+     (a top's or wood's forward edge, its front on it; the bank at a crossing), shootHold, its shooters' place behind them;
+     stand, a group's place by the ground (round deep water by a crossing, its files narrowed to it, and never in deep water);
+     send, an order at a foe across deep water goes by a crossing first; ride, riders' way (a crossing, round a wood); flankAt,
+     a flank spot in the open; perch, shooters' spot on higher ground (keep: a test each spot must pass) */
+  const GT=groundAI(ck),ground=GT&&GT.ai||null,gt=k=>gtun(ck,k);let uphill=null,hold=null,holdAt=null,shootHold=null,stand=null,send=null,ride=null,flankAt=null,perch=null;
+  if(ground){const Cm=centroid(mine);
+    // (the foe nearest these men holds ground TERRAIN_AI.uphill levels above them, and we are not strong enough to go up anyway)
+    uphill=m=>{const I=centroid(m),e=foes.reduce((a,o)=>d2(o,I)<d2(a,I)?o:a);return levelAt(e.x,e.y)-lvlOf(m)>=gt('uphill')&&holdsGround(e)&&S.ratio<tun(T,FOE_CMD,'attackAt')*gt('uphillOdds')};
+    const river=GT.has.water&&ground.crossings.length>0&&wadesDeep(Cm,M);
+    // (time enough to get there: our infantry and shooters walking (the slowest of each) before any foe who fights hand to hand
+    // running there, with TERRAIN_AI.holdSafe s to spare: shooters on the move shoot nobody)
+    const walkT=p=>Math.max(...[inf,shots].filter(l=>l.length).map(l=>d2(centroid(l),p)/Math.max(1,Math.min(...l.map(u=>u.s.spd))*MARCH.walk))),
+      runT=p=>Math.min(...foes.filter(e=>!e.s.range&&!e.rout).map(e=>d2(e,p)/Math.max(1,e.s.spd))),safe=p=>runT(p)>walkT(p)+gt('holdSafe');
+    if(post!=='defend')delete Q.hold;
+    else if(Q.hold===undefined){const half=Cm.x<BW/2?0:1,dir=Math.sign(M.x-Cm.x)||1,P0=A?{x:A.x+dir*40,y:A.y}:inf.length?centroid(inf):Cm,l0=levelAt(P0.x,P0.y),R=gt('holdR'),gain=gt('hillGain');
+      const ok=p=>(p.half===half||Math.abs(p.x-BW/2)<BW*.1&&d2(p,Cm)<d2(p,M))&&d2(p,P0)<=R&&!foes.some(e=>d2(e,p)<TERRAIN_AI.held)&&safe(p);let best=null,bv=-1;
+      // (a river between: our bank at the crossings near enough our line and safe to reach (cr), top to bottom)
+      if(river){const L=ground.crossings.map(c=>({c,x:(dir>0?c.x0:c.x1)-dir*TERRAIN_AI.bank,y:c.y})).filter(p=>d2(p,P0)<=R&&safe(p)).sort((a,b)=>a.y-b.y);
+        Q.hold=L.length?{river:true,...centroid(L),cr:L.map(p=>p.c)}:false}
+      else{for(const t of ground.tops){const v=t.lvl-l0;if(v>=gain&&ok(t)&&(v>bv||v===bv&&d2(t,P0)<d2(best,P0))){best={x:t.x,y:t.y,lvl:t.lvl};bv=v}}
+        const wv=gt('woodHold');if(wv>=gain)for(const w of ground.woods){const p={x:w.x,y:w.y,half:w.x<BW/2?0:1};if((wv>bv||wv===bv&&best.wood&&d2(p,P0)<d2(best,P0))&&ok(p)){best={x:w.x,y:w.y,wood:true};bv=wv}}
+        Q.hold=best||false}}
+    // (on the way there, it is given up once a foe could be there first; there (the infantry on its spots), it is kept; a bank
+    // held only while the river lies between)
+    else if(Q.hold&&!Q.hold.at&&!safe(Q.hold))Q.hold=false;
+    hold=post==='defend'&&inf.length&&Q.hold&&(!Q.hold.river||river)?Q.hold:null;
+    if(hold)holdAt=id=>{const g=B.groups[id],sh=grpShape(id),depth=sh?sh.ranks*(FORMS[g.form]||FORMS.line).gy:0,cs=GT.cs;
+      if(hold.river){const L=hold.cr,i=Math.max(0,N.inf.indexOf(id)),cr=L[i%L.length],k=Math.floor(i/L.length),dir=Math.sign(M.x-cr.x)||1;
+        return{x:(dir>0?cr.x0:cr.x1)-dir*(TERRAIN_AI.bank+depth/2+k*(depth+20)),y:cr.y}}
+      const dir=Math.sign(M.x-hold.x)||1,on=(x,y)=>hold.wood?groundAt(x,y)===TKIND.wood:levelAt(x,y)>=hold.lvl;let yy=clamp(hold.y+offset(id,'inf'),fieldTop(),fieldBot());
+      for(let i=0;i<30&&!on(hold.x,yy)&&Math.abs(yy-hold.y)>cs;i++)yy+=Math.sign(hold.y-yy)*cs;if(!on(hold.x,yy))yy=hold.y;
+      let x=hold.x;for(let i=0;i<40&&on(x+dir*cs,yy);i++)x+=dir*cs;return{x:x-dir*Math.max(0,depth/2-cs/2),y:yy}};
+    if(hold&&!hold.at){const P=N.inf.filter(i=>grpUnits(i).some(u=>!u.rout)).map(holdAt);if(P.length&&d2(centroid(inf),centroid(P))<FOE_CMD.flankAt)hold.at=true}
+    // (its shooters' place: behind the infantry's places (FOE_CMD.behind, mages half), on the highest ground near (perch))
+    if(hold)shootHold=(id,k)=>{const P=N.inf.filter(i=>grpUnits(i).some(u=>!u.rout)).map(holdAt);if(!P.length)return null;const H=centroid(P),dir=Math.sign(M.x-H.x)||1,b=k==='arc'?FOE_CMD.behind:FOE_CMD.behind*.5;
+      return perch(H.x-dir*b,H.y+offset(id,k),-dir,false)};
+    // (on the way over a crossing a group's files are narrowed to its width and it faces its way (Q.files[id]: {f, the files it
+    // had; a, its way: captainFinish turns it so); given back once across)
+    // (the way on: wayVia's, kept to the far end (W.far) till none of them stands in the water)
+    const route=(g,m,C,to)=>{const F=FORMS[g.form]||FORMS.line,E=Q.files&&Q.files[g.id];let w=to&&wayVia(C,to);if(!w&&E&&E.far&&m.some(u=>wetK(groundAt(u.x,u.y))))w=E.far;
+      if(w&&!F.wedge){const want=Math.max(2,Math.floor((w.box.y1-w.box.y0)/F.gx)),a=Math.hypot(w.x-C.x,w.y-C.y)>30?Math.atan2(w.y-C.y,w.x-C.x):w.s>0?0:Math.PI;Q.files=Q.files||{};
+        const W=Q.files[g.id]=Q.files[g.id]||{f:g.files};W.a=a;if(w.on)W.far=w;if((g.files||F.files)>want)g.setForm(g.form,{files:want,face:a})}
+      else if(E){delete Q.files[g.id];g.setForm(g.form,{files:E.f})}
+      return w};
+    stand=(g,x,y,m)=>{const C=centroid(m),w=route(g,m,C,{x,y}),p=w||dryOf({x,y},C);g.standAt(p.x,p.y)};
+    send=(g,m,to,fn)=>{const w=route(g,m,centroid(m),to);if(w)g.standAt(w.x,w.y);else fn()};
+    ride=(g,m,p)=>{const C=centroid(m),w=route(g,m,C,p);const q=w||woodAround(C,p,Math.max(...m.map(u=>Math.hypot(u.x-C.x,u.y-C.y))))||dryOf(p,C);g.standAt(q.x,q.y)};
+    flankAt=(g,fy)=>{const s=g.flankSide,open=p=>{const k=groundAt(p.x,p.y);return k!==TKIND.wood&&k!==TKIND.marsh&&k!==TKIND.deep},at=(sd,f)=>({x:clamp(M.x,8,BW-8),y:clamp(M.y+sd*fy*f,fieldTop(),fieldBot())});
+      for(const [sd,f] of [[s,1],[s,1.4],[-s,1],[-s,1.4]].slice(0,Math.max(1,TERRAIN_AI.flankProbe))){const p=at(sd,f);if(open(p)){if(sd!==s)g.flankSide=sd;return p}}return at(s,1)};
+    perch=(x,y,fwd,onLine,keep)=>{const R=gt('shooterHill'),F=TERRAIN_AI.shooterFwd,ws=gt('woodShoot'),cs=GT.cs,val=(px,py)=>{const k=groundAt(px,py);return k===TKIND.deep?-9:levelAt(px,py)+(k===TKIND.wood?ws:0)};
+      const v0=val(x,y);let best=null,bs=-Infinity;
+      for(let j=onLine?0:-Math.floor(R/cs);j<=(onLine?0:Math.floor(F/cs));j++)for(let i=-Math.floor(R/cs);i<=Math.floor(R/cs);i++){const dx=j*cs,dy=i*cs,r=Math.hypot(dx,dy);if(r>R+1)continue;
+        const px=x+fwd*dx,py=y+dy;if(px<8||px>BW-8||py<fieldTop()||py>fieldBot())continue;const v=val(px,py),s=v-r/(R*8);if(v>=v0+TERRAIN_AI.hillGain&&s>bs&&(!keep||keep(px,py))){bs=s;best={x:px,y:py}}}
+      return best||{x,y}}}
+  return{T,Q,S,N,post,foes,M,d2,lead,gap,inf,offset,shots,engaged,clash,goIn,shooterNear,threats,A,line,aggr,chargeOn,footCharge,rOf,weak,recovering,firm,ground,gt,uphill,hold,holdAt,shootHold,stand,send,ride,flankAt,perch}}
 // infantry
 function captainInf(c,id){
-  const {T,Q,N,post,foes,M,d2,gap,offset,shots,clash,goIn,shooterNear,threats,A,line,chargeOn,footCharge,rOf,recovering,firm}=c,X=AI_TACTICS,volley=tun(T,FOE_CMD,'volley');
-  const inf=grpUnits(id).filter(u=>!u.rout);if(!inf.length)return;const g=B.groups[id],busy=inf.some(u=>foes.some(e=>d2(e,u)<20)),r=rOf(id);
+  const {T,Q,N,post,foes,M,d2,gap,offset,shots,clash,goIn,shooterNear,threats,A,line,chargeOn,footCharge,rOf,recovering,firm,gt,uphill,holdAt,stand,send}=c,X=AI_TACTICS,volley0=tun(T,FOE_CMD,'volley');
+  const inf=grpUnits(id).filter(u=>!u.rout);if(!inf.length)return;
+  // (a foe above them on the ground: longer volleys before they go up, TERRAIN_AI.upVolley)
+  const volley=uphill&&uphill(inf)?volley0*gt('upVolley'):volley0;const g=B.groups[id],busy=inf.some(u=>foes.some(e=>d2(e,u)<20)),r=rOf(id);
   // (Brace: a charge coming at its front, a spear group braces; braced, it is given no order (any would end it) while one is near)
   if(abilityActive(g,'brace')){if(chargeOn(inf,X.braceKeep,0))return}
   else if(chargeOn(inf,tun(T,X,'braceAt'),X.braceMom)&&!abilityWhyNot(g,'brace')){g.useAbility('brace');return}
@@ -303,22 +422,27 @@ function captainInf(c,id){
   // (with an opening, a threat to our shooters is theirs to see to (shoot, kite, fight) unless they are cornered; without one, worth
   // the infantry only if strong enough that they cannot)
   const realThreat=threats.length&&(shots.some(u=>B.groups[u.grp]&&B.groups[u.grp].cornered)||!preyOk&&pow(threats)>pow(shots)*CAPT.threatShare);
-  if(realThreat&&!busy)g.attack(threats[0]);
-  else if(goIn&&!busy)g.attack(shooterNear(I0));// (losing the ranged duel: at their shooters)
-  else if(preyOk&&!busy&&(post==='attack'||clash))g.attack(prey);// (their shooters bare: at them)
+  // (on the ground: an order at a foe over deep water goes by a crossing first (send); a place, round it and never in it (stand))
+  const go=(to,fn)=>send&&!busy?send(g,inf,to,fn):fn(),nearest=()=>foes.reduce((a,e)=>d2(e,I0)<d2(a,I0)?e:a);
+  if(realThreat&&!busy)go(threats[0],()=>g.attack(threats[0]));
+  else if(goIn&&!busy){const e=shooterNear(I0);go(e,()=>g.attack(e))}// (losing the ranged duel: at their shooters)
+  else if(preyOk&&!busy&&(post==='attack'||clash))go(prey,()=>g.attack(prey));// (their shooters bare: at them)
   // (attacking and fresh, it charges from further off (AI_TACTICS.footFar), to come in at a full run; not while it stands for the
-  // volleys, nor at riders or a beast (the nearest foe), nor with a charge coming at it (a shield wall's moment: captainFinish))
-  else if(clash||post==='attack'&&!threats.length&&inf.every(u=>u.s.range)||post==='attack'&&!(line&&Q.vol<volley)&&grpSta(inf)>=X.fresh&&gap(inf)<tun(T,X,'footFar')&&footCharge(inf))g.charge();
+  // volleys, nor at riders or a beast (the nearest foe), nor with a charge coming at it (a shield wall's moment: captainFinish),
+  // nor up at a foe on higher ground (uphill: they advance at a walk instead, and go in once the lines meet))
+  else if(clash||post==='attack'&&!threats.length&&inf.every(u=>u.s.range)||post==='attack'&&!(line&&Q.vol<volley)&&grpSta(inf)>=X.fresh&&gap(inf)<tun(T,X,'footFar')&&footCharge(inf)&&!(uphill&&uphill(inf)))go(send&&nearest(),()=>g.charge());
   // (attacking with archers: the infantry stands a little in front of them while they shoot (FOE_CMD.volley seconds of it), then
   // goes in; while they lead (rangedMode), a little behind them: the army's line)
-  else if(line&&Q.vol<volley)g.standAt(line.inf,line.y+offset(id,'inf'));
-  else if(post==='attack')g.advance();
-  else{// defend: a line between the archers and the enemy
-    const I=A||centroid(inf),dir=Math.sign(M.x-I.x)||1;g.standAt(I.x+dir*(A?40:0),(A?A.y:I.y)+offset(id,'inf'))}}
+  else if(line&&Q.vol<volley){if(stand)stand(g,line.inf,line.y+offset(id,'inf'),inf);else g.standAt(line.inf,line.y+offset(id,'inf'))}
+  else if(post==='attack')go(send&&nearest(),()=>g.advance());
+  else{// defend: a line between the archers and the enemy; on the ground, its front on a top's crest (or an elf wood's edge), or
+    // on its bank at the crossings with a river between (holdAt)
+    const I=A||centroid(inf),dir=Math.sign(M.x-I.x)||1,h=holdAt&&holdAt(id);
+    if(h)stand(g,h.x,h.y,inf);else if(stand)stand(g,I.x+dir*(A?40:0),(A?A.y:I.y)+offset(id,'inf'),inf);else g.standAt(I.x+dir*(A?40:0),(A?A.y:I.y)+offset(id,'inf'))}}
 function captainRally(c,id){const r=c.rOf(id);if(r&&!r.routed&&r.mor<MORALE.waver&&!abilityWhyNot(B.groups[id],'rally'))B.groups[id].useAbility('rally')}
 // archers, and mages apart (a step behind the infantry, their reach being short)
 function captainShooters(c,k,id){
-  const {T,S,N,foes,M,d2,lead,inf,offset,engaged,threats,line,aggr,weak}=c,X=AI_TACTICS;
+  const {T,S,N,foes,M,d2,lead,inf,offset,engaged,threats,line,aggr,weak,stand,perch,shootHold}=c,X=AI_TACTICS;
   const grp=grpUnits(id).filter(u=>!u.rout);if(!grp.length)return;const behind=k==='arc'?FOE_CMD.behind:FOE_CMD.behind*.5,g=B.groups[id],armed=grp.filter(u=>u.s.range);
   if(!armed.length){g.charge();g.setFlag('skirmish',false);g.screenBack=null;g.pushRun=false}// (out of ammo: they go in)
   else{      // (Kite: a foe coming at them uncovered: they skirmish (and no focus: keeping away comes first); melee mode on, its call)
@@ -344,15 +468,22 @@ function captainShooters(c,k,id){
     // the moment it is not safe, their mark is gone or out of reach, the ammunition runs low, or the armies close; Kite first)
     const R0=Math.min(...armed.map(a=>a.s.range)),meleeF=foes.filter(e=>!e.s.range),meleeM=S.mine.filter(u=>!u.s.range),closing=meleeM.length&&meleeF.length&&Math.min(...meleeM.map(u=>Math.min(...meleeF.map(e=>d2(u,e)))))<HUNT.clash;
     const ammoOk=armed.every(u=>u.ammo==null||!isFinite(quiverOf(u.s))||u.ammo>quiverOf(u.s)*HUNT.ammo),reachNone=!armed.some(a=>foes.some(e=>d2(a,e)<=a.s.range));
+    // (on the ground: a hunt's spot moved to higher ground near it (perch), still in reach of their mark (from its height) and safe)
+    const hill=H=>{const p=perch(H.x,H.y,Math.sign(H.tx-H.x)||1,false,(x,y)=>Math.hypot(H.tx-x,H.ty-y)<=R0*(1+HILL.range*levelAt(x,y))*HUNT.spot&&huntSafe({x,y},foes,engaged,R0,T));H.x=p.x;H.y=p.y};
     // (a hunt that has someone in reach has done its work: they stand where they are and shoot, no walking on, no run home)
     if(g.hunt&&!reachNone){g.hunt=null;g.stand={x:C.x,y:C.y}}
     if(g.hunt){const H=g.hunt;if(open||closing||g.backing||g.screenBack||!ammoOk||H.t.hp<=0||H.t.rout||!huntSafe({x:H.x,y:H.y},foes,engaged,R0,T)||!huntSafe(C,foes,engaged,R0,T)){g.hunt=null;g.huntBack=B.t||.001}
-      else if(d2(H.t,{x:H.tx,y:H.ty})>30){const h=huntSpot(armed,[H.t],()=>false,T);if(h&&huntSafe({x:h.x,y:h.y},foes,engaged,R0,T))Object.assign(H,{x:h.x,y:h.y,tx:H.t.x,ty:H.t.y});else{g.hunt=null;g.huntBack=B.t||.001}}}// (huntBack: when it turned home, never 0)
-    else if(!open&&!closing&&!threats.length&&!g.backing&&!g.screenBack&&reachNone&&ammoOk)g.hunt=huntSpot(armed,foes,engaged,T);
+      else if(d2(H.t,{x:H.tx,y:H.ty})>30){const h=huntSpot(armed,[H.t],()=>false,T);if(h&&huntSafe({x:h.x,y:h.y},foes,engaged,R0,T)){Object.assign(H,{x:h.x,y:h.y,tx:H.t.x,ty:H.t.y});if(perch)hill(H)}else{g.hunt=null;g.huntBack=B.t||.001}}}// (huntBack: when it turned home, never 0)
+    // (holding ground (c.hold): their place behind the infantry's on it (shootHold); away from it, they go there first, before
+    // any focus or hunt, and hunt none while the army holds)
+    const home=shootHold&&shootHold(id,k),goHome=!!home&&!open&&!threats.length&&!g.backing&&d2(C,home)>FOE_CMD.moved;
+    if(home&&g.hunt){g.hunt=null;g.huntBack=0}
+    else if(!open&&!closing&&!threats.length&&!g.backing&&!g.screenBack&&reachNone&&ammoOk&&!home){g.hunt=huntSpot(armed,foes,engaged,T);if(g.hunt&&perch)hill(g.hunt)}
     if(g.huntBack&&B.t-g.huntBack>HUNT.home&&d2(C,{x:g.ax,y:g.ay})<30)g.huntBack=0;// (home: at a run, HUNT.home s at least, till back in its place)
-    const focus=!g.hunt&&!g.huntBack&&worth&&!open&&!threats.length&&!g.backing&&!g.screenBack&&armed.filter(a=>d2(a,worth)<=a.s.range).length*2>=armed.length;
+    const focus=!g.hunt&&!g.huntBack&&!goHome&&worth&&!open&&!threats.length&&!g.backing&&!g.screenBack&&armed.filter(a=>d2(a,worth)<=a.s.range).length*2>=armed.length;
     if(g.hunt){if(g.order==='charge')g.toHold();g.stand=null;g.standAt(g.hunt.x,g.hunt.y);// (leading: out to it at a run, ahead of their infantry)
       if(aggr){if(I0&&(g.hunt.x-I0.x)*fd>0)g.pushed=true;g.pushRun=d2(C,g.hunt)>X.pushRun&&grpSta(armed)>=FATIGUE.tired}}
+    else if(goHome){if(g.order==='charge')g.toHold();g.stand=null;stand(g,home.x,home.y,armed);if(!armed.some(u=>relocating(u,g)))moveOrder(id)}// (a move: shooters with a foe in reach would stand)
     else if(focus){if(!g.hasTarget||(worth.grp?g.targetGroupId!==worth.grp:g.targetUnitId!==worth.id))g.attack(worth)}
     else{if(g.order==='charge')g.toHold();
     // (stop to shoot: on its way, a foe in its shooters' reach: it stops where it is, they turn to him and shoot; no walking on
@@ -369,8 +500,11 @@ function captainShooters(c,k,id){
       if(reachNone&&Math.abs(C.x-x)<8){const short=Math.min(...armed.map(a=>Math.min(...foes.map(e=>d2(a,e)))-a.s.range));if(short>0){x+=line.dir*(short+4);line.x[k]=x}}
       // (leading (rangedMode aggressive): straight to it, ahead of their infantry, at a run from far (pushRun); else never ahead of it)
       if(aggr){if(I0&&(x-I0.x)*line.dir>0)g.pushed=true;g.pushRun=Math.abs(x-C.x)>X.pushRun&&grpSta(armed)>=FATIGUE.tired}
-      else if(inf.length&&N.inf.some(id=>B.groups[id].order==='hold')){const I=centroid(inf);if(Math.abs(I.x-line.inf)>40){const cap=I.x-line.dir*behind;x=line.dir>0?Math.min(x,cap):Math.max(x,cap)}}g.standAt(x,line.y+offset(id,k))}
-    else if(inf.length){const I=centroid(inf),dir=Math.sign(I.x-M.x)||1;g.standAt(I.x+dir*behind,I.y+offset(id,k))}}
+      else if(inf.length&&N.inf.some(id=>B.groups[id].order==='hold')){const I=centroid(inf);if(Math.abs(I.x-line.inf)>40){const cap=I.x-line.dir*behind;x=line.dir>0?Math.min(x,cap):Math.max(x,cap)}}
+      // (on the ground: the highest spot along the line within TERRAIN_AI.shooterHill (perch); behind the infantry, the highest
+      // within it not ahead of them; out of woods (an elf's: under the trees), never in deep water)
+      if(perch){const p=perch(x,line.y+offset(id,k),line.dir,true);stand(g,p.x,p.y,armed)}else g.standAt(x,line.y+offset(id,k))}
+    else if(inf.length){const I=centroid(inf),dir=Math.sign(I.x-M.x)||1;if(perch){const p=perch(I.x+dir*behind,I.y+offset(id,k),-dir,false);stand(g,p.x,p.y,armed)}else g.standAt(I.x+dir*behind,I.y+offset(id,k))}}
     // (without a focus order, actors.js shooterTarget selects the nearest eligible foe by range and arc)
     }
     // (Fire arrows: their mark (their focus, else the nearest in reach) armoured or weak to fire: fireWorth)
@@ -379,25 +513,34 @@ function captainShooters(c,k,id){
 // (fresh riders (AI_TACTICS.fresh) charge from further off (cavStart: not only once on top of the foe) and pull back further to
 // charge again (regroupFar); tired ones stand off after a charge till rested (rested, restMax), and walk (runFor, captainFinish))
 function captainCav(c,id){
-  const {T,foes,M,d2,lead,gap,engaged,goIn,shooterNear,threats,rOf,weak}=c,X=AI_TACTICS;
+  const {T,S,foes,M,d2,lead,gap,engaged,goIn,shooterNear,threats,rOf,weak,ground,gt,stand,send,ride,flankAt}=c,X=AI_TACTICS;
   const cav=grpUnits(id).filter(u=>!u.rout);if(!cav.length)return;const g=B.groups[id],C=centroid(cav),was=g.phase;g.t=(g.t||0)+FOE_CMD.think;g.phase=g.phase||'flank';
   const st=grpSta(cav),fresh=st>=X.fresh,back=fresh?tun(T,X,'regroupFar'):FOE_CMD.regroup;
-  const pick=()=>{const sc=e=>(e.s.range?3:0)+(engaged(e)?2:0)+(foes.some(o=>o!==e&&d2(o,e)<30)?0:1)+(unitClass(e.s)==='spear'?-3:0)+(e===lead?.5:0)+(weak(e)?tun(T,UNIT_AI,'prey'):0)-d2(e,C)/300;return foes.reduce((a,e)=>sc(e)>sc(a)?e:a)};
+  // (on the ground: a mark in woods, marsh or water worth TERRAIN_AI.woodsCav less, one higher upCav less a level, one lower downCav more)
+  const pick=()=>{const sc0=e=>(e.s.range?3:0)+(engaged(e)?2:0)+(foes.some(o=>o!==e&&d2(o,e)<30)?0:1)+(unitClass(e.s)==='spear'?-3:0)+(e===lead?.5:0)+(weak(e)?tun(T,UNIT_AI,'prey'):0)-d2(e,C)/300;
+    const lv=ground?lvlOf(cav):0,sc=ground?e=>{const k=groundAt(e.x,e.y),dl=levelAt(e.x,e.y)-lv;return sc0(e)-(k===TKIND.wood||k===TKIND.marsh||k===TKIND.deep?gt('woodsCav'):0)-(dl>0?dl*gt('upCav'):0)+(dl<0?gt('downCav'):0)}:sc0;
+    return foes.reduce((a,e)=>sc(e)>sc(a)?e:a)};
+  // (on the ground: an attack over deep water goes by a crossing first, a place never in it (send, stand); riders on the flank wait
+  // for a mark not above them (uphill, not fighting ours), flankMax×upWait s at most, unless strong enough to go up anyway)
+  const att=e=>send?send(g,cav,e,()=>g.attack(e)):g.attack(e),sa=(x,y)=>stand?stand(g,x,y,cav):g.standAt(x,y);
+  const wait=()=>{if(!ground)return false;const e=pick();return levelAt(e.x,e.y)-lvlOf(cav)>=gt('uphill')&&holdsGround(e)&&!engaged(e)&&g.t<FOE_CMD.flankMax*gt('upWait')&&S.ratio<tun(T,FOE_CMD,'attackAt')*gt('uphillOdds')};
   // (shaken (under UNIT_AI.chargeAt): no new charge; they stand off as after one (regroup) till their resolve is back, or cavRecover s
   // (losses lower the ceiling it recovers to: worn riders would stand off for ever); one under way goes on)
-  const r=rOf(id),into=()=>{if(!r||r.mor>=tun(T,UNIT_AI,'chargeAt')||g.phase==='charge'||g.phase==='regroup'&&g.t>=tun(T,UNIT_AI,'cavRecover'))return true;if(g.phase!=='regroup'){const dir=Math.sign(C.x-M.x)||1;g.phase='regroup';g.t=0;g.standAt(C.x+dir*back,C.y)}return false};
+  const r=rOf(id),into=()=>{if(!r||r.mor>=tun(T,UNIT_AI,'chargeAt')||g.phase==='charge'||g.phase==='regroup'&&g.t>=tun(T,UNIT_AI,'cavRecover'))return true;if(g.phase!=='regroup'){const dir=Math.sign(C.x-M.x)||1;g.phase='regroup';g.t=0;sa(C.x+dir*back,C.y)}return false};
   // (on a charge, any (a rescue of its shooters too): half of them in the melee for recharge s, they pull back to charge again;
   // the count kept only while charging, so one left from before never pulls them back at once)
   if(g.phase==='charge'){g.inMelee=cav.filter(u=>foes.some(e=>d2(e,u)<16)).length*2>=cav.length?(g.inMelee||0)+FOE_CMD.think:0;
-    if(g.inMelee>=FOE_CMD.recharge){const dir=Math.sign(C.x-M.x)||1;g.phase='regroup';g.t=0;g.standAt(C.x+dir*back,C.y)}}
+    if(g.inMelee>=FOE_CMD.recharge){const dir=Math.sign(C.x-M.x)||1;g.phase='regroup';g.t=0;sa(C.x+dir*back,C.y)}}
   if(g.phase!=='charge'&&g.inMelee)g.inMelee=0;
-  if(threats.length&&g.phase!=='regroup'&&into()){g.phase='charge';g.attack(threats[0])}
-  else if(goIn&&g.phase!=='regroup'&&into()){g.phase='charge';g.t=0;g.attack(!g.tgt||g.tgt.hp<=0||!g.tgt.s.range?shooterNear(C):g.tgt)}// (losing the ranged duel: ride down their shooters)
+  if(threats.length&&g.phase!=='regroup'&&into()){g.phase='charge';att(threats[0])}
+  else if(goIn&&g.phase!=='regroup'&&into()){g.phase='charge';g.t=0;att(!g.tgt||g.tgt.hp<=0||!g.tgt.s.range?shooterNear(C):g.tgt)}// (losing the ranged duel: ride down their shooters)
   // (its flank chosen once, on setting out (flankSide): the side the riders are on, level with the foe the open side; kept till the phase changes)
-  else if(g.phase==='flank'){if(g.flankSide==null)g.flankSide=Math.abs(C.y-M.y)>20?Math.sign(C.y-M.y):M.y<BH/2?1:-1;g.standAt(M.x,M.y+g.flankSide*tun(T,FOE_CMD,'flankY'));
-    if((d2(C,{x:g.ax,y:g.ay})<FOE_CMD.flankAt||g.t>FOE_CMD.flankMax||gap(cav)<(fresh?tun(T,X,'cavStart'):30))&&into()){g.phase='charge';g.t=0;g.attack(pick())}}
-  else if(g.phase==='charge')g.attack(!g.tgt||g.tgt.hp<=0||g.tgt.rout?pick():g.tgt);
-  else if(g.phase==='regroup'){g.rest=g.t<tun(T,X,'restMax')&&st<tun(T,X,'rested')&&(g.rest||st<FATIGUE.tired);if(!g.rest&&(d2(C,{x:g.ax,y:g.ay})<25||g.t>4)&&into()){g.phase='charge';g.t=0;g.attack(pick())}}
+  // (on the ground: the first flank spot in the open (flankAt: the other side if need be), ridden to round woods and by a crossing)
+  else if(g.phase==='flank'){if(g.flankSide==null)g.flankSide=Math.abs(C.y-M.y)>20?Math.sign(C.y-M.y):M.y<BH/2?1:-1;let aim=null;
+    if(ride){aim=flankAt(g,tun(T,FOE_CMD,'flankY'));ride(g,cav,aim)}else g.standAt(M.x,M.y+g.flankSide*tun(T,FOE_CMD,'flankY'));
+    if((d2(C,aim||{x:g.ax,y:g.ay})<FOE_CMD.flankAt||g.t>FOE_CMD.flankMax||gap(cav)<(fresh?tun(T,X,'cavStart'):30))&&!wait()&&into()){g.phase='charge';g.t=0;att(pick())}}
+  else if(g.phase==='charge')att(!g.tgt||g.tgt.hp<=0||g.tgt.rout?pick():g.tgt);
+  else if(g.phase==='regroup'){g.rest=g.t<tun(T,X,'restMax')&&st<tun(T,X,'rested')&&(g.rest||st<FATIGUE.tired);if(!g.rest&&(d2(C,{x:g.ax,y:g.ay})<25||g.t>4)&&into()){g.phase='charge';g.t=0;att(pick())}}
   if(g.phase!=='flank'&&g.flankSide!=null)delete g.flankSide;// (off the flank: a fresh choice next time)
   // (Spur: a fresh charge (spurWin s since it was ordered) on a mark spur[0]-spur[1] px off, with breath for it: full momentum at once)
   if(g.phase==='charge'&&was!=='charge')g.chargeAt=B.t;

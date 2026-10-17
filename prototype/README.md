@@ -240,6 +240,18 @@ Tuning lives in `MORALE`, `CONFIDENCE`, `AWARENESS`, `COHESION`, `LOSS_MEMORY`, 
 
 **Race fighting styles** (`TEMPERAMENT` in `battle/commander.js`): each captain (the enemy, your allies, your army under Auto) takes a temperament from its troops (the race of 60% of those that have one, else *mixed*; beasts, monsters and generic levies get none), chosen once at its first think (`captainMem(ck).temper`): multipliers on existing tunables, read through `tun()` at the captain's decision points. **Human** is the base itself. **Dwarves hold the line** (attack only from a higher strength ratio, hold longer, run in from nearer, shield wall against riders earlier, rotate a wavering group out sooner). **Elves skirmish** (shooters lead on smaller margins, a wider screen behind them, infantry goes in after longer volleys, riders swing wider round a flank). **Orcs come on in a frenzy** (attack sooner, charge and run from further, pull back only when nearly broken, fight on long after a human army would fall back, riders rest less). **A mixed host** favours wavering prey. The enemy's style is logged as the battle opens. Balance: in human-troop mirror labs over seeds 1–8 each style wins 38–50% against human. Tests: `tests/aitemperament.js`.
 
+**The captains read the ground** (`TERRAIN_AI` and `TERRAIN_TEMPER` in `battle/commander.js`; `tests/aiterrain.js`). With no terrain the captains are unchanged.
+- **Defence:**
+  - A defending army takes the crest of a top near its line on its own half, if it can get there before the enemy's fighters could run there.
+  - Its infantry stands on the rim and its shooters behind it on the height; elves may hold a wood.
+  - A river between the armies makes a defence more likely, and defenders hold their bank at the crossings.
+- **Attack:**
+  - Infantry does not run uphill into a held crest: it walks up after longer volleys and runs only the last 40 px.
+  - Riders wait rather than charge foot holding a hilltop, ride round woods to an open flank spot, and pass over marks standing in woods, marsh or water.
+- **Shooters** stand on the highest ground near their place, out of woods (elves stand under the trees).
+- **Rivers:** moves over a river go by the nearest ford or bridge, with files narrowed to it.
+- **Races:** dwarves look further for high ground and hold crossings longer; orcs charge up anything short of a two-level climb.
+
 Tunables: `AI_TACTICS` in `battle/commander.js`, `CHAR_FALL` in `battle/charmind.js`. Tests: `tests/aitactics.js`, `tests/charfallback.js`. Balance: with the AI rallying, equal infantry fights rout at ~46–49% losses (~8 s).
 
 ## Charges, bracing and morale-off rules (effect audit, 2026-10-17)
