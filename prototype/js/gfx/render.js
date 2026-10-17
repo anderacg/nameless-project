@@ -135,7 +135,7 @@ function drawUnit(u){
   drawStuck(u,x,y-Math.round(u.z||0));// (arrows in him: vfx.js)
   if(u.buffT>0&&Math.random()<.06)vfx({k:'ember',x:u.x+rnd(-4,4),y:u.y-rnd(2,12),vx:rnd(-4,4),vy:-rnd(10,25),life:rnd(.4,.7),col:'#ffd25a'});// (inspired: golden sparks)
   if(u.stun>0)txt('*',x+(Math.floor(performance.now()/120)%2?3:-3),y-h-z-2,'#ffe08a','center');
-  drawMorale(u,x,y-h-z-3);// (running or wavering: morale.js)
+  drawMorale(u,x,y-h-z-3);// (running or wavering: ui/moraleicons.js)
   // its health: over every fighter with health bars on (Settings, or HP bars in battle), else over you and your companions
   if(u.leader)txt(u.leader.name+' Lv'+u.leader.lv,x,y-h-8-z,u.team?'#ff9a90':'#9fc0ff','center');// a leader: his name over him
   if(HPBARS.on||u.hero||u.comp||u.leader){const bw=u.s.big?28:12,f=Math.max(0,u.hp/u.max),bx=Math.round(x-bw/2),by=y-h-2-z;ctx.fillStyle='#0a0c12';ctx.fillRect(bx-1,by-1,bw+2,4);ctx.fillStyle='#3a2420';ctx.fillRect(bx,by,bw,2);
@@ -190,7 +190,7 @@ function drawBattle(){
   // (a number pops up big and settles)
   for(const f of B.floats){const a=f.age||0,k=a<.12?1+(1-a/.12)*.6:1;if(k===1){txt(f.t,Math.round(f.x),Math.round(f.y),f.c,'center');continue}ctx.save();ctx.translate(Math.round(f.x),Math.round(f.y));ctx.scale(k,k);txt(f.t,0,0,f.c,'center');ctx.restore()}
   ctx.restore();
-  drawUnitIcons();// (each group's type, health, morale and weaknesses, over it, the same size at any zoom: morale.js)
+  drawUnitIcons();// (each group's type, health, morale and weaknesses, over it, the same size at any zoom: ui/moraleicons.js)
   // the HUD at the screen's scale over the zoomed-out field
   ctx.save();ctx.scale(BVW/VW,BVH/VH);
   drawHeroHud();drawMiniField();// (the small map of the field, top right: camera.js)

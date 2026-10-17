@@ -28,7 +28,7 @@ let UC_MAX=null;
 function ucMax(){if(UC_MAX)return UC_MAX;UC_MAX={};for(const k of TROOP_TYPES())for(const [id,,v] of unitNumbers(ST[k]))UC_MAX[id]=Math.max(UC_MAX[id]||0,v);return UC_MAX}
 // what it is (its traits, data/abilities.js): [name, what it does]
 const unitAbilities=s=>traitsOf(s).map(id=>[ABILITIES[id].n,abilityText(id,s)]);
-// the type icon (morale.js UNIT_GLYPH) as SVG
+// the type icon (ui/moraleicons.js UNIT_GLYPH) as SVG
 function glyphSVG(kind,size){const G=UNIT_GLYPH[kind];if(!G)return '';size=size||18;
   return '<svg class="uc-ico" viewBox="0 0 13 13" width="'+size+'" height="'+size+'" shape-rendering="crispEdges" aria-hidden="true"><rect x="0" y="0" width="13" height="13" fill="#0a0c12"/><rect x="1" y="1" width="11" height="11" fill="#3466c0"/>'+
     G.map((r,y)=>[...r].map((c,x)=>c==='g'?'<rect x="'+(x+2)+'" y="'+(y+2)+'" width="1" height="1" fill="#f4efe0"/>':'').join('')).join('')+'</svg>'}

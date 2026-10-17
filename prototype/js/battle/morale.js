@@ -7,14 +7,16 @@ const FLANK={flank:1.25,rear:1.5,arrow:.5};
 // mor: start (yours from the band's morale, theirs by level); hurt: per share of health lost; death: an ally falling close (near);
 // side: anyone on its side falling; flank/rear: extra shock; crowd: neighbouring rout-shock radius;
 // lead: a leader falling; cascade: a neighbour breaking; back: recovery per
-// second with no enemy within quiet; rally: it rallies at; waver: wavering under
+// second with no enemy within quiet; rally: it rallies at; waver: wavering under; shaken: shaken under (moraleStateOf)
 const MORALE={hurt:25,death:6,near:60,side:1,flank:3,rear:6,crowd:50,lead:20,cascade:8,quiet:60,back:2,
-  rallyBack:6,rally:40,waver:30,cry:15,charge:15,inspire:90,edge:10};
+  rallyBack:6,rally:40,waver:30,shaken:60,cry:15,charge:15,inspire:90,edge:10};
 // Local superiority offers bounded confidence, never immunity. Fresh panic/leader loss temporarily overrides it.
 const CONFIDENCE={radius:220,ratio:1.25,full:3,max:12,recover:1.5,resist:.3,cascadeCooldown:1,panic:2,leaderPause:4};
 const AWARENESS={near:100,close:45,outmatched:.65,overwhelmed:2.25,every:.2};
 const COHESION={radius:36,slot:8,allies:4,resist:.3,cascade:.4};
 const LOSS_MEMORY={life:4};
+// a morale value's state above breaking (a resolve's, or a mixed group's average: grpMorale): wavering, shaken or steady
+const moraleStateOf=mor=>mor<MORALE.waver?'wavering':mor<MORALE.shaken?'shaken':'steady';
 // Morale perception only: 360-degree local awareness, attenuated by distance and existing obstacle circles.
 function moraleVisible(u,o){
   const dx=o.x-u.x,dy=o.y-u.y,dd=dx*dx+dy*dy;if(dd<.01)return true;
@@ -82,7 +84,7 @@ class BattleResolve{
     const avg=k=>views.reduce((n,v)=>n+v[k],0)/Math.max(1,views.length);
     return {confidence:avg('confidence'),outmatched:avg('outmatched'),overwhelmed:avg('overwhelmed'),cohesion:avg('cohesion'),closest:views.length?Math.min(...views.map(v=>v.closest)):Infinity};
   }
-  refreshState(){this.state=!this.live().length?'destroyed':this.shattered?'shattered':this.routed?(this.rallyT>0?'rallying':'routing'):this.mor<=0?'breaking':this.mor<MORALE.waver?'wavering':this.mor<60?'shaken':'steady'}
+  refreshState(){this.state=!this.live().length?'destroyed':this.shattered?'shattered':this.routed?(this.rallyT>0?'rallying':'routing'):this.mor<=0?'breaking':moraleStateOf(this.mor)}
   sync(){for(const u of this.live()){
     u.mor0=this.base;u.mor=this.mor;u.confidence=this.confidence;u.cohesion=this.cohesion;u.outmatched=this.outmatched;u.overwhelmed=this.overwhelmed;u.lossStrain=this.lossStrain;
     u.breakT=this.breakT;u.confidenceBlockedUntil=this.confidenceBlockedUntil;
@@ -209,7 +211,6 @@ function moraleTick(dt){
     const p=r.point();if(Math.hypot(p.x-s.x,p.y-s.y)>=GROUP_RESOLVE.routeRadius)continue;
     r.routShockAt=B.t;r.confidence=0;r.confidenceBlockedUntil=Math.max(r.confidenceBlockedUntil,B.t+CONFIDENCE.panic);r.shock(MORALE.cascade*(1-COHESION.cascade*r.cohesion),false);
   }
-  if((B.cardT=(B.cardT||0)-dt)<=0){B.cardT=.5;setOrderUI()}// (the unit cards' morale)
 }
 // Commit a rout after sustained breaking (or an explicit forced rout); neighbour shocks remain deferred.
 function rout(u){
@@ -289,8 +290,8 @@ const MORALE_WEAK={flanked:2,outnumbered:1.5,charged:2,leader:6};
 function grpMorale(m){
   const l=m.filter(u=>u.hp>0&&!u.left&&!steady(u)),owners=[...new Set(l.map(resolveOf).filter(Boolean))];if(!owners.length)return null;
   owners.forEach(r=>r.refreshState());const weight=r=>l.filter(u=>resolveOf(u)===r).length,avg=k=>owners.reduce((n,r)=>n+r[k]*weight(r),0)/l.length;
-  const v=Math.max(0,avg('mor'))/100,rout=owners.reduce((n,r)=>n+(r.routed?weight(r):0),0),waver=owners.reduce((n,r)=>n+(!r.routed&&r.mor<MORALE.waver?weight(r):0),0),breaking=owners.reduce((n,r)=>n+(!r.routed&&r.mor<=0&&r.breakT>0?weight(r):0),0);
-  const state=owners.length===1?owners[0].state:rout*2>l.length?'routing':v<.3?'wavering':v<.6?'shaken':'steady';
+  const mor=avg('mor'),v=Math.max(0,mor)/100,rout=owners.reduce((n,r)=>n+(r.routed?weight(r):0),0),waver=owners.reduce((n,r)=>n+(!r.routed&&r.mor<MORALE.waver?weight(r):0),0),breaking=owners.reduce((n,r)=>n+(!r.routed&&r.mor<=0&&r.breakT>0?weight(r):0),0);
+  const state=owners.length===1?owners[0].state:rout*2>l.length?'routing':moraleStateOf(mor);// (a mixed group: by its average, as one resolve)
   const ago=(k,w)=>owners.some(r=>r[k]!=null&&B.t-r[k]<w),team=l[0].team,weak=[];
   if(ago('flankAt',MORALE_WEAK.flanked))weak.push('flanked');if(ago('outAt',MORALE_WEAK.outnumbered))weak.push('outnumbered');if(ago('shockAt',MORALE_WEAK.charged))weak.push('charged');
   if(B.leadFell&&B.leadFell[team]!=null&&B.t-B.leadFell[team]<MORALE_WEAK.leader)weak.push('leader');if(B.losing&&B.losing[team])weak.push('losing');
@@ -298,107 +299,4 @@ function grpMorale(m){
   const confident=owners.every(r=>!r.routed&&r.mor>0&&r.control?.order!=='withdraw'&&r.confidence>.1);
   if(owners.some(r=>!r.routed&&r.outmatched>.1))weak.push('outmatched');if(owners.some(r=>r.lossStrain>1))weak.push('recentloss');if(owners.some(r=>r.missilePressure>0))weak.push('missile');
   return {v,rout,waver,state,weak,team,confident,breaking,cohesion:avg('cohesion'),lossStrain:avg('lossStrain'),missilePressure:avg('missilePressure')};
-}
-/* the look, as in Total War: over each group a small icon in its side's colour showing what it is (sword, spear, axe, hammer,
-   bow, crossbow, javelin, staff, horse, a beast's paw, your hero's crown) and a thin health bar under it; beside it a round badge
-   for each status: a green confidence arrow, or wavering, routing, shattered (its morale), flanked,
-   outnumbered, charged, its leader fallen, its side losing, tired (what weakens it). Drawn on the field and as SVG on the unit
-   cards and in the details. */
-const BADGE=['..xxxxx..','.xooooox.','xooooooox','xooooooox','xooooooox','xooooooox','xooooooox','.xooooox.','..xxxxx..'];
-const GLYPH={
-  breaking:['g...g','.g.g.','..g..','.....','..g..'],
-  rallying:['..g..','.ggg.','g.g.g','..g..','.ggg.'],
-  missile:['g.g.g','.g.g.','..g..','.g.g.','g.g.g'],
-  confident:['..g..','.ggg.','g.g.g','..g..','..g..'],
-  wavering:['..g..','..g..','..g..','.....','..g..'],
-  routing:['gggg.','ggggg','gggg.','g....','g....'],
-  shattered:['g...g','.g.g.','..g..','.g.g.','g...g'],
-  flanked:['g....','.g...','..g.g','...gg','..ggg'],
-  outnumbered:['g...g','.....','g.g.g','.....','g...g'],
-  outmatched:['g...g','gg.gg','.....','.g.g.','..g..'],
-  recentloss:['ggggg','.g.g.','..g..','.g.g.','ggggg'],
-  charged:['...gg','..gg.','.ggg.','.gg..','gg...'],
-  leader:['g.g.g','ggggg','ggggg','.....','.....'],
-  losing:['..g..','..g..','g.g.g','.ggg.','..g..'],
-  tired:['gggg.','..g..','.g...','gggg.','.....']
-};
-// each badge's rim: morale in its own colours, weaknesses in red (a charge in gold)
-const BADGE_RIM={breaking:'#ff8040',rallying:'#9fe09a',missile:'#e8a75a',confident:'#70dfb0',outmatched:'#d8b35a',recentloss:'#e8a75a',tired:'#c8a04a',wavering:'#ffa040',routing:'#f2efe6',shattered:'#8a8f98',flanked:'#e0605a',outnumbered:'#e0605a',charged:'#ffd25a',leader:'#e0605a',losing:'#e0605a'};
-const CONFIDENCE_LABEL='Confident: visible, distance-weighted fighting strength advantage. Up to +'+CONFIDENCE.max+' morale and '+Math.round(CONFIDENCE.resist*100)+'% less ordinary morale shock. Panic and leader loss can suppress it.';
-const MORALE_STATE={steady:{c:'#78c474',n:'Steady'},shaken:{c:'#e8d04a',n:'Shaken'},wavering:{c:'#ffa040',n:'Wavering'},breaking:{c:'#ff8040',n:'Breaking'},rallying:{c:'#9fe09a',n:'Rallying'},routing:{c:'#f2efe6',n:'Routing'},shattered:{c:'#8a8f98',n:'Shattered'}};
-const WEAK_N={missile:'Unanswered missile fire: recent ranged damage without enough successful retaliation',tired:'Tired: slower and weaker; standing still restores them',flanked:'Flanked: hit from the side or behind',outmatched:'Outmatched: stronger visible opposition in the wider area',recentloss:'Recent losses: temporary pressure that fades; some morale loss remains',outnumbered:'Locally overwhelmed: close fighting strength or substantial threats on opposite sides',charged:'Charged: hit by a charge',leader:'Leader fallen',losing:'Army depleted: fewer than half as many active troops overall (informational, not a direct morale penalty)'};
-// a state's badge (only when its morale is failing: steady and shaken show none)
-const stateIcon=st=>['wavering','breaking','routing','rallying','shattered'].includes(st)?st:null;
-// a badge's pixels: [x, y, colour] (9×9)
-function badgePx(k){const rim=BADGE_RIM[k]||'#e4e0cf',G=GLYPH[k],out=[];BADGE.forEach((r,y)=>[...r].forEach((ch,x)=>{if(ch==='.')return;const gy=y-2,gx=x-2,g=G&&G[gy]&&G[gy][gx]==='g';out.push([x,y,ch==='x'?rim:g?'#ffffff':'#141822'])}));return out}
-function moraleSVG(k,col,size){if(!k)return '';size=size||14;const confident=k==='confident';return '<svg class="mico" viewBox="0 0 9 9" width="'+size+'" height="'+size+'" shape-rendering="crispEdges"'+(confident?' data-status="confident" role="img" aria-label="'+CONFIDENCE_LABEL+'"':' aria-hidden="true"')+'>'+(confident?'<title>'+CONFIDENCE_LABEL+'</title>':'')+badgePx(k).map(([x,y,c])=>'<rect x="'+x+'" y="'+y+'" width="1" height="1" fill="'+c+'"/>').join('')+'</svg>'}
-// a group's badges: its failing morale, then what weakens it
-const statusOf=mo=>[stateIcon(mo.state),mo.confident?'confident':null,...mo.weak].filter(Boolean);
-const moraleCardIcons=mo=>statusOf(mo).map(k=>moraleSVG(k)).join('');
-const moraleWords=mo=>'morale '+Math.round(mo.v*100)+' ('+MORALE_STATE[mo.state].n.toLowerCase()+')'+(mo.confident?' · '+CONFIDENCE_LABEL:'')+(mo.weak.length?' · '+mo.weak.map(w=>WEAK_N[w].split(':')[0].toLowerCase()).join(', '):'');
-// the unit types' glyphs on the icons (9×9)
-const UNIT_GLYPH={
-  sword:['.......gg','......ggg','.....ggg.','....ggg..','.g.ggg...','..ggg....','..gg.....','.g..g....','g........'],
-  spear:['....g....','...ggg...','..ggggg..','...ggg...','....g....','....g....','....g....','....g....','....g....'],
-  axe:['..g..g...','.gg.ggg..','gggggg...','gggggg...','gggggg...','.gg..g...','..g..g...','.....g...','.....g...'],
-  hammer:['ggggggg..','ggggggg..','ggggggg..','...g.....','...g.....','...g.....','...g.....','...g.....','..ggg....'],
-  bow:['.gg......','g..g.....','g...g....','g....g...','ggggggggg','g....g...','g...g....','g..g.....','.gg......'],
-  xbow:['....g....','.ggggggg.','g...g...g','....g....','....g....','....g....','...ggg...','...ggg...','.........'],
-  javelin:['......g.g','.....g.g.','....g.g..','...g.g...','..g.g....','.g.g.....','g.g......','.g.......','.........'],
-  staff:['...ggg...','..g...g..','..g.g.g..','..g...g..','...ggg...','....g....','....g....','....g....','....g....'],
-  horse:['....g.g..','...ggggg.','..gggggg.','.ggggggg.','gggg.ggg.','ggg..ggg.','.....ggg.','.....gggg','.....gggg'],
-  beast:['..g...g..','g.g...g.g','g.......g','...ggg...','..ggggg..','.ggggggg.','.ggggggg.','..gg.gg..','.........'],
-  hero:['.........','g...g...g','gg.ggg.gg','ggggggggg','ggggggggg','ggggggggg','.........','.........','.........']
-};
-// what a group is, by its most common soldier: its weapon (people.js) or what it is (a beast, a rider, a caster)
-function unitIcon(g,m){
-  if(g==='hero')return 'hero';const rep=repOf(m),s=ST[rep]||m[0].s;if(s.beast||s.big)return 'beast';
-  const L=PEOPLE_LOOK[rep]||PEOPLE_LOOK[s.look]||{},w=L.weapon;if(L.mount)return 'horse';if(s.magic||w==='staff')return 'staff';
-  if(w==='xbow')return 'xbow';if(s.range)return w==='javelin'?'javelin':'bow';
-  return {sword:'sword',great:'sword',axe:'axe',bigaxe:'axe',hammer:'hammer',spear:'spear',pike:'spear',lance:'spear'}[w]||(unitClass(s)==='spear'?'spear':'sword')}
-// the icon under a point of the field (screen-sized, so tested on the screen), for clicks: the icon stands for its group
-function iconAt(x,y,team){if(!B.icons)return null;const p=fromField({x,y});for(let i=B.icons.length-1;i>=0;i--){const r=B.icons[i];if((team==null||r.team===team)&&p.x>=r.x&&p.x<r.x+r.w&&p.y>=r.y&&p.y<r.y+r.h)return r}return null}
-// the icons over each group on the field (yours and theirs), drawn on the screen (not the zoomed field) so they keep their size
-const UICON={s:13,lift:22,k:2};// (its art in pixels, drawn k times over)
-function drawUnitIcons(){
-  const sel=selGroups(),blink=Math.floor(B.t*3)%2,K=UICON.k,S=UICON.s;B.icons=[];// (where each was drawn, for clicks: iconAt)
-  // (each icon's place over its group; then those that would overlap, as where the lines meet, are set side by side in a row
-  // under the highest of them, the row centred on them; and each icon glides to its place rather than jumping)
-  const items=[];
-  for(const g in B.groups){const m=B.units.filter(u=>u.grp===g&&u.hp>0);if(!m.length)continue;const mo=B.noMorale?null:grpMorale(m);
-    const f=m.filter(u=>!u.rout),at=f.length?f:m,cx=at.reduce((a,u)=>a+u.x,0)/at.length,top=Math.min(...at.map(u=>u.y));
-    const st=mo?statusOf(mo):[],W=(S+(st.length?Math.ceil(st.length/2)*10+1:0))*K,H=(S+6)*K;
-    const sp=fromField({x:cx,y:top}),z=B.cam?B.cam.z:1;if(sp.x<-W||sp.x>BVW+W||sp.y<0||sp.y>BVH+40)continue;// (off the view: none)
-    items.push({g,m,mo,st,W,H,cx,cy:at.reduce((a,u)=>a+u.y,0)/at.length,x:sp.x-S*K/2,y:Math.max(4,sp.y-UICON.lift*z-H)})}
-  items.sort((p,q)=>p.x-q.x);const rows=[];
-  for(const it of items){const r=rows.find(r=>r.some(o=>Math.abs(o.y-it.y)<it.H+4&&it.x<o.x+o.W+4&&o.x<it.x+it.W+4));if(r)r.push(it);else rows.push([it])}
-  for(const r of rows){if(r.length<2)continue;const w=r.reduce((a,o)=>a+o.W+4,-4),mid=r.reduce((a,o)=>a+o.x+o.W/2,0)/r.length,y=Math.min(...r.map(o=>o.y));let x=mid-w/2;for(const o of r){o.x=x;o.y=y;x+=o.W+4}}
-  const IP=B.iconPos=B.iconPos||{};
-  for(const it of items){const p=IP[it.g];if(!p||Math.hypot(p.x-it.x,p.y-it.y)>200)IP[it.g]={x:it.x,y:it.y};else{p.x+=(it.x-p.x)*.25;p.y+=(it.y-p.y)*.25}}
-  // (and while they glide, none may cross another: pushed aside along the row)
-  {const L=items.map(it=>({it,p:IP[it.g]})).sort((a,b)=>a.p.x-b.p.x);for(let i=1;i<L.length;i++)for(let j=0;j<i;j++){const a=L[j],b=L[i];if(Math.abs(a.p.y-b.p.y)<b.it.H&&b.p.x<a.p.x+a.it.W+2)b.p.x=a.p.x+a.it.W+2}}
-  for(const it of items){const {g,m,mo,st,W,H,cx,cy}=it,x=Math.round(IP[g].x),y=Math.round(IP[g].y);
-    B.icons.push({g,x,y,w:S*K,h:H,team:m[0].team,cx,cy});
-    const team=(mo?mo.team:m[0].team)?['#a8443e','#c8605a','#7a2e2a']:g.startsWith('a_')?['#5aa0c8','#8ac4e0','#3a7898']:['#3466c0','#5a8ae0','#24488a'],wav=mo&&mo.state==='wavering'&&blink;
-    const hov=B.iconHov===g,edge=sel.includes(g)?'#ffd25a':wav?'#ffa040':hov?'#f4efe0':'#0a0c12';
-    ctx.save();ctx.translate(x,y);ctx.scale(K,K);ctx.globalAlpha=mo&&(mo.state==='routing'||mo.state==='shattered')?.6:1;
-    // the plate: an edge (gold when selected), its side's colour, lighter at the top and darker at the foot, a notch pointing down
-    ctx.fillStyle=edge;ctx.fillRect(1,0,S-2,S);ctx.fillRect(0,1,S,S-2);ctx.fillRect(S/2-1.5|0,S,3,1);
-    ctx.fillStyle=team[0];ctx.fillRect(1,1,S-2,S-2);ctx.fillStyle=team[1];ctx.fillRect(2,1,S-4,1);ctx.fillStyle=team[2];ctx.fillRect(1,S-3,S-2,2);
-    // its type, in white with a dark shadow
-    const gl=UNIT_GLYPH[unitIcon(g,m)];
-    for(const [col,dx] of [['rgba(0,0,0,.45)',1],['#f4efe0',0]]){ctx.fillStyle=col;gl.forEach((row,ry)=>[...row].forEach((c,rx)=>{if(c==='g')ctx.fillRect(2+rx+dx,2+ry+dx,1,1)}))}
-    ctx.globalAlpha=1;
-    // its health, under it
-    const hp=m.reduce((a,u)=>a+u.hp,0)/Math.max(1,m.reduce((a,u)=>a+u.max,0)),hy=S+2;
-    ctx.fillStyle='#0a0c12';ctx.fillRect(0,hy,S,3);ctx.fillStyle=hp>.6?'#78c474':hp>.3?'#e8d04a':'#e0605a';ctx.fillRect(1,hy+1,Math.max(1,Math.round((S-2)*hp)),1);
-    // what is wrong with it, beside it (two to a column)
-    st.forEach((k,i)=>{const bx=S+2+Math.floor(i/2)*10,by=(i%2)*10;for(const [px,py,c] of badgePx(k)){ctx.fillStyle=c;ctx.fillRect(bx+px,by+py,1,1)}});
-    ctx.restore()}
-}
-// over a soldier: a white flag while it runs, a blinking mark while it wavers
-function drawMorale(u,x,y){
-  if(B.noMorale||u.mor==null||steady(u))return;
-  if(u.rout){ctx.fillStyle='#5a4a3a';ctx.fillRect(x+3,y-8,1,8);ctx.fillStyle='#f2efe6';ctx.fillRect(x+4,y-8,4,3)}
-  else if(u.mor<MORALE.waver&&Math.floor(B.t*4)%2)rect(ctx,'#ffd24a',x-1,y-3,2,2);
 }

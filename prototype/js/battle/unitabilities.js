@@ -64,12 +64,11 @@ function useGroupAbility(g,id){
   return true;
 }
 // each moment of a group (BattleControl.step): a timed ability that no longer holds ends; those on do their part; fire arrows
-// still in the air trail embers; the order bar's cooldowns are redrawn now and then (morale's own refresh stops with morale off)
+// still in the air trail embers (the order bar's cooldowns are redrawn on the HUD's own clock: main.js, battlehud.js bhudAbilities)
 function abilityStep(g,dt){
   if(!g.abil)return;
   for(const id in g.abil){const S=g.abil[id],A=UNIT_ABILITIES[id];if(!(B.t<S.until)){if(A.end&&!S.ended){S.ended=true;A.end(g,S)}continue}if(A.holds&&!A.holds(g,S)){S.until=B.t;continue}if(A.step)A.step(g,S,dt)}
   const F=g.abil.fire;if(F&&B.t<F.until+4)for(const a of B.arrows)if(a.src&&a.src.fireArrow&&a.by&&a.by.grp===g.id&&(a.emb=(a.emb||0)+1)%2)vfx({k:'ember',x:a.x,y:a.y-(a.arc?4+Math.max(0,a.z):0),vx:-a.vx*.05,vy:-8,life:.22,col:UNIT_ABILITIES.fire.col});
-  if(g.player&&B.t>=(B.abilUiAt||0)){B.abilUiAt=B.t+.25;bhudAbilities()}
 }
 // ---- the effects, where they happen
 // a soldier under one of his group's abilities (he qualifies himself, and it is on)

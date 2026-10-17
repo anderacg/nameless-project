@@ -31,6 +31,15 @@ try{
  for(const [file,names] of Object.entries(battleOwners))ok(names.every(n=>seen[n]==='js/battle/'+file+'.js'),'battle ownership: '+names.join(', ')+' belong to '+file+'.js');
  const battleOrder=['battle','battlecontrol','commands','setup','resolution','attacks','projectiles','actors','combat','commander','abilities','formations','morale','fatigue','camera','deploy'].map(n=>'battle/'+n+'.js');
  ok(battleOrder.every((f,i)=>order.includes(f)&&(!i||order.indexOf(battleOrder[i-1])<order.indexOf(f))),'battle scripts retain the supported loading order in both entry points');
+ // ---- every note an AI keeps on a group is in AI_NOTES (battlecontrol.js aiReset clears them when Auto hands a group over), or
+ // is the group's own field (its constructor's) or phase/t: each `<v>.<name>=` (also +=, ++…) in the captains (commander.js) and
+ // the character mind (charmind.js, once it has its own file) on a group variable (g, q, or a name bound to B.groups[…]) is read
+ {const files=['js/battle/commander.js','js/battle/charmind.js'].map(f=>{let s='';try{s=get(f)}catch(e){}return [f,s]}).filter(([f,s])=>s||srcs.includes(f));
+  const own=new Set([...Object.getOwnPropertyNames(new t.BattleControl('structure_probe',0)),...t.AI_NOTES,'phase','t']),bad=[],wrote=new Set(),W1=/\s*(?:=(?![=>])|[-+*\/%|&]=|\+\+|--)/.source;
+  for(const [f,s] of files){const vars=new Set(['g','q',...[...s.matchAll(/(?<![\w$.])([\w$]+)\s*=\s*(?:[\w$.]+&&)?B\.groups\[/g)].map(m=>m[1])]),hit=(v,k)=>{wrote.add(k);if(!own.has(k))bad.push(f.split('/').pop()+': '+v+'.'+k)};
+   for(const m of s.matchAll(new RegExp('(?<![\\w$.])([\\w$]+)\\.([\\w$]+)'+W1,'g')))if(vars.has(m[1]))hit(m[1],m[2]);
+   for(const m of s.matchAll(new RegExp('B\\.groups\\[[^\\]]+\\]\\.([\\w$]+)'+W1,'g')))hit('B.groups[…]',m[1])}
+  ok(files.length>0&&files.every(([f,s])=>s)&&wrote.size>=5&&!bad.length,'the AI’s notes on a group are all in AI_NOTES ('+[...wrote].sort().join(' ')+' in '+files.map(([f])=>f.split('/').pop()).join(', ')+')'+(bad.length?': not in it: '+bad.join('; '):''))}
  ok(typeof t.BattleControl.prototype.suggest==='undefined','the unused advisory-target setter is removed; attack orders remain the focus-fire API');
  // ---- actions
  const want=['lr-','fg-','pt-','scene-','cv-','sg-','cap-','inv-','sk-','tree-','slot-','esc-','ev-','site-','herd-','wk-','rf-','es-','pl-','dlg-'];
