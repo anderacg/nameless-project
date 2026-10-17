@@ -28,9 +28,9 @@ window.RUN=()=>{const t=T,L=t.BattleLab,o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL '
  const knights=[{type:'hum_knight',count:10}];
  w=army([foot(20)],knights,[[400,300],[600,300]]);let k=w.foe[0];ok(k.role==='cav'&&k.resolve,'fixture: enemy cavalry with a resolve');
  k.resolve.mor=U.chargeAt-10;k.phase='flank';k.t=99;t.command(1);ok(k.phase==='regroup'&&k.order==='hold'&&!k.hasTarget,'shaken cavalry do not start a charge from the flank: they stand off');
- k.t=U.maxRecover-1;t.command(1);ok(k.phase==='regroup'&&k.order==='hold','nor from the regroup while still shaken');
+ k.t=U.cavRecover-1;t.command(1);ok(k.phase==='regroup'&&k.order==='hold','nor from the regroup while still shaken');
  k.resolve.mor=U.chargeAt+10;k.t=5;t.command(1);ok(k.phase==='charge'&&k.order==='charge'&&k.hasTarget,'recovered, they charge again');
- w=army([foot(20)],knights,[[400,300],[600,300]]);k=w.foe[0];k.resolve.mor=5;k.phase='flank';k.t=99;t.command(1);k.t=U.maxRecover;t.command(1);ok(k.phase==='charge'&&k.order==='charge','still shaken after maxRecover s standing off, they charge anyway (worn riders never stand off for ever)');
+ w=army([foot(20)],knights,[[400,300],[600,300]]);k=w.foe[0];k.resolve.mor=5;k.phase='flank';k.t=99;t.command(1);k.t=U.cavRecover;t.command(1);ok(k.phase==='charge'&&k.order==='charge','still shaken after cavRecover s standing off, they charge anyway (worn riders never stand off for ever)');
  w=army([foot(20)],knights,[[400,300],[600,300]]);k=w.foe[0];k.resolve.mor=U.chargeAt+10;k.phase='charge';k.t=0;k.attack(w.mine[0].units[0]);
  k.resolve.mor=U.chargeAt-10;t.command(1);ok(k.phase==='charge'&&k.order==='charge','a charge already under way is not called off');
  // ----- going after weakness: the cavalry's pick and the shooters' focus

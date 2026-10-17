@@ -42,7 +42,7 @@ function moraleView(u,live,strength){
   const overwhelmed=Math.max(clamp((localEnemy/Math.max(.01,localAllied)-1.5)/2.5,0,1),surround);
   return{confidence,outmatched,overwhelmed,cohesion,closest};
 }
-const RESOLVE={window:1,breakDelay:.6,severeAt:-10,severeDelay:.25,leaderDelay:.2,flankEvery:.5,killGain:.5,killCap:2};
+const RESOLVE={window:1,breakDelay:.6,severeAt:-10,severeDelay:.25,leaderDelay:.2,flankEvery:.5,killGain:.5,killCap:1};
 function moraleBreaking(u,dt){
   if(u.mor>0){delete u.breakT;delete u.breakLimit;return false}
   u.confidence=0;u.breakT=(u.breakT||0)+dt;
@@ -52,7 +52,7 @@ function moraleBreaking(u,dt){
 }
 // Ratios use the formation's STARTING roster/health, not the shrinking number left alive.
 const GROUP_RESOLVE={hurt:35,death:45,attrition:35,wounds:12,recent:65,strainCap:30,window:5,history:20,bucket:.25,
-  missileMin:.01,missileFull:.1,missileRate:8,answer:.35,quietAfter:3,rallyQuiet:3,routeRadius:140};
+  missileMin:.01,missileFull:.25,missileRate:8,answer:.35,quietAfter:3,rallyQuiet:3,routeRadius:140};
 class BattleResolve{
   constructor(groupId,team,m,unitId=null){
     this.groupId=groupId;this.unitId=unitId;this.team=team;this.initialCount=m.length;this.initialHP=Math.max(1,m.reduce((n,u)=>n+u.max,0));

@@ -6,9 +6,9 @@ window.RUN=()=>{const t=T,L=t.BattleLab,o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL '
   const tick=(f,dt)=>{f.b.t+=dt;t.moraleTick(dt)},kill=u=>{u.hp=0;t.moraleDeath(u)};
   let f=fixture(),r=f.r;ok(r&&f.a.every(u=>t.resolveOf(u)===r),'the fixture side shares one formation resolve');
   r.mor=20;kill(f.e[0]);ok(near(r.mor,20.5),'ordinary nearby kill grants only half a morale point');
-  f.e.slice(1,20).forEach(kill);ok(near(r.mor,22),'ordinary kill reassurance shares a two-point rolling budget');
-  f.b.t=.99;kill(f.e[20]);ok(near(r.mor,22),'kill budget cannot reset at an arbitrary time boundary');
-  f.b.t=1.01;kill(f.e[21]);ok(near(r.mor,22.5),'new enemy deaths reassure again after the rolling window');
+  const cap=t.RESOLVE.killCap;f.e.slice(1,20).forEach(kill);ok(near(r.mor,20+cap),'ordinary kill reassurance shares a rolling budget of '+cap+' points');
+  f.b.t=.99;kill(f.e[20]);ok(near(r.mor,20+cap),'kill budget cannot reset at an arbitrary time boundary');
+  f.b.t=1.01;kill(f.e[21]);ok(near(r.mor,20+cap+.5),'new enemy deaths reassure again after the rolling window');
   f=fixture();r=f.r;r.mor=r.base-.1;kill(f.e[0]);ok(near(r.mor,r.base),'kill reassurance cannot exceed baseline morale without confidence');
   r.confidence=1;r.mor=r.base+t.CONFIDENCE.max-.1;f.b.t+=1.01;kill(f.e[1]);ok(near(r.mor,Math.min(100,r.base+t.CONFIDENCE.max)),'earned confidence raises the kill-reassurance ceiling');
   r.confidence=0;r.mor=r.base+5;f.b.t+=1.01;kill(f.e[2]);ok(near(r.mor,r.base+5),'kill ceiling never removes existing morale');

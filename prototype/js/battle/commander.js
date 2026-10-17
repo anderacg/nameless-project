@@ -129,8 +129,10 @@ const champSkill=u=>chooseAbility(u);
 const FOE_CMD={think:.5,clash:70,behind:50,outgun:.8,volley:12,screen:20,replan:3,moved:30,flankY:110,flankAt:40,flankMax:8,advance:22,threat:70,reach:.97,regroup:90,recharge:3,attackAt:1.15,defendAt:.85,stall:30,lull:10,patience:6,beaten:.4,broken:30};
 // unit-level morale (each captain's, a group's own resolve): an infantry group under pullAt with a steady one (backAt) beside it
 // steps pullDist back to recover, till backAt or maxRecover s, the nearest steady one free going into the gap; riders under
-// chargeAt start no new charge; prey, preyShot: the cavalry's and the shooters' liking for a wavering foe (under MORALE.waver)
-const UNIT_AI={pullAt:25,backAt:45,pullDist:90,maxRecover:15,chargeAt:40,prey:2,preyShot:1.5};
+// chargeAt start no new charge, standing off cavRecover s at most (short: riders out of the fight get their breath back and come
+// again, so a long stand-off only drags a cavalry fight out); prey, preyShot: the cavalry's and the shooters' liking for a
+// wavering foe (under MORALE.waver)
+const UNIT_AI={pullAt:25,backAt:45,pullDist:90,maxRecover:15,chargeAt:40,cavRecover:4,prey:2,preyShot:1.5};
 // beaten / broken: the enemy army falls back (withdraws off its edge) once its strength is under beaten of yours and its
 // formations' shared morale (morale.js BattleResolve), weighted by the men in them, is under broken. Your own army never does on its own.
 function beatenArmy(N,S){
@@ -362,9 +364,9 @@ function captain(team,key){
   // cavalry
   for(const id of N.cav){const cav=grpUnits(id).filter(u=>!u.rout);if(!cav.length)continue;const g=B.groups[id],C=mid(cav);g.t=(g.t||0)+FOE_CMD.think;g.phase=g.phase||'flank';
     const pick=()=>{const sc=e=>(e.s.range?3:0)+(engaged(e)?2:0)+(foes.some(o=>o!==e&&d2(o,e)<30)?0:1)+(unitClass(e.s)==='spear'?-3:0)+(e===lead?.5:0)+(weak(e)?UNIT_AI.prey:0)-d2(e,C)/300;return foes.reduce((a,e)=>sc(e)>sc(a)?e:a)};
-    // (shaken (under UNIT_AI.chargeAt): no new charge; they stand off as after one (regroup) till their resolve is back, or maxRecover s
+    // (shaken (under UNIT_AI.chargeAt): no new charge; they stand off as after one (regroup) till their resolve is back, or cavRecover s
     // (losses lower the ceiling it recovers to: worn riders would stand off for ever); one under way goes on)
-    const r=rOf(id),into=()=>{if(!r||r.mor>=UNIT_AI.chargeAt||g.phase==='charge'||g.phase==='regroup'&&g.t>=UNIT_AI.maxRecover)return true;if(g.phase!=='regroup'){const dir=Math.sign(C.x-M.x)||1;g.phase='regroup';g.t=0;g.standAt(C.x+dir*FOE_CMD.regroup,C.y)}return false};
+    const r=rOf(id),into=()=>{if(!r||r.mor>=UNIT_AI.chargeAt||g.phase==='charge'||g.phase==='regroup'&&g.t>=UNIT_AI.cavRecover)return true;if(g.phase!=='regroup'){const dir=Math.sign(C.x-M.x)||1;g.phase='regroup';g.t=0;g.standAt(C.x+dir*FOE_CMD.regroup,C.y)}return false};
     if(threats.length&&g.phase!=='regroup'&&into()){g.phase='charge';g.attack(threats[0])}
     else if(goIn&&g.phase!=='regroup'&&into()){g.phase='charge';g.t=0;g.attack(!g.tgt||g.tgt.hp<=0||!g.tgt.s.range?shooterNear(C):g.tgt)}// (losing the ranged duel: ride down their shooters)
     else if(g.phase==='flank'){const side=M.y<BH/2?1:-1;g.standAt(M.x,M.y+side*FOE_CMD.flankY);
