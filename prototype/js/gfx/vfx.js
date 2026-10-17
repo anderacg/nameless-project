@@ -25,6 +25,24 @@ function vfxCharge(u,t,m){
   if(!B)return;const x=(u.x+t.x)/2,y=(u.y+t.y)/2;vfx({k:'shock',x,y,r:14+22*m,life:.45,col:'220,200,160'});
   for(let i=0;i<10;i++){const b=rnd(0,6.283),v=rnd(40,110)*m;vfx({k:'dust',x,y,vx:Math.cos(b)*v,vy:Math.sin(b)*v*.45,r:rnd(3,5),grow:14,life:rnd(.5,.9),col:'196,180,140'})}
   B.slow=Math.max(B.slow||0,.08+.14*m);shakeIt(2+3*m)}
+/* screen shake, drawn only: a jolt of the whole view (frame, render.js) when a strong charge strikes home (a rider or a big beast,
+   momentum over SHAKE.charge) and, lighter, when a group of yours routs; with it the small shake of every blow (G.shake). A wobble
+   by the clock, never a random draw; the jolt fades over SHAKE.life seconds of real time and never moves the camera (B.cam).
+   Off: SHAKE.on false, or the system asks for reduced motion */
+const SHAKE={on:true,charge:.6,amp:4,rout:1.5,max:5,life:.45,hz:38};
+function reducedMotion(){try{return !!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)}catch(e){return false}}
+const shakeOn=()=>SHAKE.on&&!reducedMotion();
+// a jolt of n pixels, unless a stronger one is still going (lt: its clock restarts on the next frame)
+function jolt(n){if(!B||!(n>0)||!shakeOn())return;const J=B.jolt||(B.jolt={a:0,t:0,lt:0});if(n<joltAmp())return;J.a=Math.min(SHAKE.max,n);J.t=SHAKE.life;J.lt=0}
+const joltAmp=()=>{const J=B&&B.jolt;return J&&J.t>0?J.a*J.t/SHAKE.life:0};
+function joltStep(rt){const J=B&&B.jolt;if(!J||!(J.t>0))return;J.t=Math.max(0,J.t-rt);if(!J.t)J.a=0}
+// (a charge's impact: chargeMul, morale.js)
+function chargeJolt(u,m){if(m>SHAKE.charge&&(u.s.charge||u.s.big))jolt(SHAKE.amp*m)}
+// each drawn frame: the jolt runs down on real time; the offset to draw at, or null (paused: no blow's shake, only a jolt fading)
+function shakeView(bat){
+  const now=performance.now()/1000,J=bat&&B&&B.jolt;if(J){joltStep(J.lt?Math.min(.1,now-J.lt):0);J.lt=now}
+  if(!shakeOn())return null;const a=Math.max(bat&&B.paused?0:G.shake/2,bat?joltAmp():0);if(a<.5)return null;
+  return{x:Math.round(Math.sin(now*SHAKE.hz)*a),y:Math.round(Math.cos(now*SHAKE.hz*1.3)*a)}}
 // one falls: the body tips over (drawCorpses), lies, and bleeds; a puff of dust. Its weapon drops beside it
 function vfxDeath(t,corpse){
   if(!B)return;vfx({k:'fall',x:t.x,y:t.y,life:GORE.fall+.1,corpse});

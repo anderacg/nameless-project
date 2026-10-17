@@ -24,6 +24,8 @@
   /* text and meaning */
   --fg:#ece6d3; --fg-2:#c4c3c4; --muted:#929ab3; --faint:#69708a;
   --accent:#e8b94a; --accent-ink:#1d1606; --danger:#e0605a; --good:#78c474; --blue:#5a8fe8;
+  /* the two sides in a battle: yours, theirs (their trims; their words lighter) */
+  --side-me:#6fa8e0; --side-me-fg:#cfe0ff; --side-foe:#e0605a; --side-foe-fg:#ffd0c8;
   /* type: Arial first, the system's sans after it */
   --font:Arial,"Helvetica Neue",Helvetica,"Segoe UI",Roboto,system-ui,sans-serif;
   --display:var(--font); --label:var(--font);
@@ -293,6 +295,14 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 .bi-mini{width:20px;height:20px;image-rendering:pixelated;object-fit:contain}
 .bi-row .ub{height:4px;background:var(--shade);border-radius:2px;overflow:hidden}
 .bi-row .ub i{display:block;height:100%;background:#78c474}
+/* callouts: the big moments, a banner at the top middle of the field in the colour of the side it is about (battlehud.js) */
+.bhud>.callouts{position:absolute;top:calc(var(--e-t) + 60px);left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:4px;width:max-content;max-width:min(560px,calc(100% - 2*var(--edge)));pointer-events:none}
+.callout{max-width:100%;padding:4px 16px 5px;font-size:var(--fs-lg);font-weight:700;line-height:1.25;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--fg);text-shadow:0 1px 2px #000;
+  background:var(--glass-hi);border:1px solid var(--line-2);border-radius:var(--r-md);box-shadow:var(--float);animation:callout 1.8s ease-out both}
+.callout.major{font-size:var(--fs-xl);padding:5px 20px 6px}
+.callout.mine{color:var(--side-me-fg);border-top:2px solid var(--side-me)}
+.callout.foe{color:var(--side-foe-fg);border-top:2px solid var(--side-foe)}
+@keyframes callout{0%{opacity:0;transform:translateY(-6px)}10%{opacity:1;transform:none}80%{opacity:1}100%{opacity:0}}
 /* the orders over the unit cards (bottom middle) */
 .bcmd{position:absolute;left:50%;transform:translateX(-50%);bottom:var(--e-b);width:max-content;display:flex;flex-direction:column;align-items:center;gap:6px;max-width:calc(100% - 540px)}
 .borders{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;padding:4px;background:var(--glass);border:1px solid var(--line-2);border-radius:var(--r-md);box-shadow:var(--float)}
@@ -389,6 +399,7 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 .loot-stats b{font-size:var(--fs-2xs);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
 .battle-report{margin:14px 0;padding:12px;background:var(--panel-2);border:1px solid var(--line-2);border-radius:4px}
 .battle-report p{font-size:13px;margin:7px 0}
+.battle-report .battle-best{font-size:var(--fs-base);color:var(--accent)}.battle-best b{color:var(--fg)}
 .battle-report-scroll{overflow-x:auto}
 .battle-report table{width:100%;border-collapse:collapse;font-size:14px}
 .battle-report th,.battle-report td{padding:9px 7px;border-bottom:1px solid var(--line-2);text-align:right}
@@ -537,6 +548,9 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
   /* battle: the selected unit's details give way to the field; the orders and the cards shrink */
   .btop{left:var(--e-l);transform:none;width:min(330px,42%);max-width:none;padding:3px 10px 4px}.bside b{font-size:var(--fs-lg)}
   .screen[data-mode="battle"] .toasts{top:calc(var(--e-t) + 48px);width:min(40%,320px)}
+  /* (the banners centred in the room between the messages and the small map of the field, under the time controls) */
+  .bhud>.callouts{top:calc(var(--e-t) + 46px);left:calc(var(--e-l) + min(40%,320px) + 8px);right:calc(var(--e-r) + 104px);transform:none;width:auto;max-width:none}
+  .callout{font-size:var(--fs-base);padding:3px 12px 4px}.callout.major{font-size:var(--fs-lg);padding:3px 14px 4px}
   .title p,.card.menu .mt span{display:none}
   .panel:has(> .title){gap:12px;padding-top:14px;padding-bottom:14px}
   .card.menu{padding:7px 10px}.card.menu .mi{width:32px;height:32px}

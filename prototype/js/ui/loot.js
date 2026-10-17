@@ -44,7 +44,9 @@ function lootShow(head,lost,saved,next,report){lootStart();G.loot.capture=false;
 function battleReportHtml(report){
   if(!report)return '';
   const rows=report.groups||[],characters=report.characters||[];
+  const best=report.best;// (the unit of the battle: resolution.js)
   return '<section class="battle-report" aria-label="Army battle report"><div class="lab">Your army · battle report</div>'+
+    (best?'<p class="battle-best" data-best-group="'+htmlText(best.id)+'"><b>Unit of the battle:</b> '+htmlText(best.name)+' — '+(best.kills?best.kills+' kill'+(best.kills>1?'s':''):best.damage+' damage dealt')+'</p>':'')+
     (rows.length?'<p class="muted">Fit includes soldiers returned immediately by medicine. Wounded are new injuries from this battle; earlier wounded are not included.</p><div class="battle-report-scroll" tabindex="0" role="region" aria-label="Troop group outcomes"><table><thead><tr><th scope="col">Group</th><th scope="col">Started</th><th scope="col">Fit</th><th scope="col">Wounded</th><th scope="col">Killed</th></tr></thead><tbody>'+rows.map(g=>
       '<tr data-report-group="'+htmlText(g.id)+'"><th scope="row">'+htmlText(g.name)+'<small>'+htmlText(ST[g.type]?.n||g.type)+' · '+htmlText(g.id)+'</small>'+
       (g.saved||g.rearguard?'<small>'+[g.saved?g.saved+' returned by medicine':'',g.rearguard?g.rearguard+' killed in rearguard':''].filter(Boolean).join(' · ')+'</small>':'')+'</th>'+

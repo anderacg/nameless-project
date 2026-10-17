@@ -88,6 +88,52 @@ function bhudTop(){
   $id('bStatus').textContent=B.over?(B.retreat?'Withdrawn':B.win?'Victory':'Defeat'):B.deploy?(GUIDE.on?'Deploy: place your band in the shaded zone · Space to begin':'Deploying'):B.paused?(GUIDE.on?'Paused · give your orders · Space to go on':'Paused'):B.speed!==1?B.speed+'×':'';
   document.querySelector('.bfield').classList.toggle('alert',!!(B.deploy||B.paused));
 }
+/* callouts: a short banner at the top middle of the field for the big moments, in the colour of the side it is about: a group
+   routs, is shattered, rallies or is flanked, a leader falls, the enemy falls back. Each is said once (key, again only after
+   CALLOUT.same combat seconds; a flank once a group in flankEvery), never twice on screen at once; a rout or shattering of yours
+   and a leader's fall go to the battle log as well (theirs breaking is logged once, at the end: battle.js). Banners come up one
+   at most every gap seconds and stay life seconds (real time); stale ones are dropped, the small ones (flank, rally) first. The
+   words over the soldiers (moraleSay) stay as they were */
+const CALLOUT={gap:1.2,life:1.8,show:2,queue:4,stale:4,same:6,flankEvery:8};
+const calloutState=()=>B.callouts||(B.callouts={q:[],on:[],last:{},wait:0,n:0,lt:0,fell:false});
+// a callout (team: whose it is, 0 yours, 1 theirs); o.major: rout, shatter, leader, fall-back; o.log: to the battle log too (o.cls)
+function callout(text,team,key,o={}){
+  if(!B||B.opts.tournament)return false;const C=calloutState();
+  if(key){if(C.last[key]!=null&&B.t-C.last[key]<(o.every??CALLOUT.same))return false;C.last[key]=B.t}
+  if(o.log)log(htmlText(text),o.cls);
+  if(C.q.some(c=>c.text===text)||C.on.some(c=>c.text===text))return true;
+  C.q.push({id:++C.n,text,team:team?1:0,major:!!o.major,age:0});
+  while(C.q.length>CALLOUT.queue){const i=C.q.findIndex(c=>!c.major);C.q.splice(i<0?0:i,1)}
+  return true;
+}
+// a group by its name, theirs and allies' marked so
+const calloutName=g=>(g.foe?'Enemy ':g.ally?'Allied ':'')+g.name;
+// the moments (morale.js calls them)
+function calloutRout(r){const g=r.control;if(!g)return;const mine=!r.team;
+  callout(calloutName(g)+(r.shattered?' is shattered!':' routs!'),r.team,(r.shattered?'shatter:':'rout:')+g.id,{major:true,log:mine,cls:'bad'});if(mine&&g.player)jolt(SHAKE.rout)}
+function calloutRally(r){const g=r.control;if(g)callout(calloutName(g)+' rallies',r.team,'rally:'+g.id)}
+function calloutFlank(t,src){const g=t.grp&&B.groups[t.grp];if(!g||!g.resolve||src.arrow||steady(t))return;callout(calloutName(g)+' is flanked!',g.team,'flank:'+g.id,{every:CALLOUT.flankEvery})}
+// (your hero's and a companion's fall are already in the log: applyDmg)
+function calloutLeader(u){const mine=!u.team;callout(mine?'Your leader falls!':'Their leader falls!',u.team,'lead:'+u.id,{major:true,log:!u.hero&&!u.comp,cls:mine?'bad':'good'})}
+// each moment (rt: real seconds): the enemy's fall-back noticed (commander.js B.fallBack), banners age, the next comes up
+function calloutTick(rt){
+  if(!B)return;const C=calloutState();if(B.fallBack&&!C.fell){C.fell=true;callout('The enemy falls back',1,'fallback',{major:true})}
+  C.wait-=rt;for(const c of C.on)c.life-=rt;C.on=C.on.filter(c=>c.life>0);for(const c of C.q)c.age+=rt;C.q=C.q.filter(c=>c.age<CALLOUT.stale*(c.major?2:1));
+  if(C.wait<=0&&C.q.length&&C.on.length<CALLOUT.show){const c=C.q.shift();c.life=CALLOUT.life;C.on.unshift(c);C.wait=CALLOUT.gap}
+  calloutDraw(C);
+}
+// each drawn frame (drawBattle): on the real clock, so they come and go while paused too
+function calloutFrame(){const C=calloutState(),now=performance.now()/1000;calloutTick(C.lt?Math.min(.25,now-C.lt):0);C.lt=now}
+// the banners in the battle HUD (#bbar), newest on top; kept while they show, so their fade runs on
+function calloutDraw(C){
+  const bar=document.getElementById('bbar');if(!bar)return;let el=document.getElementById('bCallouts');
+  if(!el){el=document.createElement('div');el.id='bCallouts';el.className='callouts';el.setAttribute('role','status');el.setAttribute('aria-live','polite');bar.appendChild(el)}
+  if(el.calls!==C){el.calls=C;el.replaceChildren();el.dataset.sig=''}// (a new battle: none of the last one's)
+  const ids=C.on.map(c=>String(c.id));if(el.dataset.sig===ids.join())return;
+  for(const d of [...el.children])if(!ids.includes(d.dataset.id))d.remove();
+  for(const c of C.on.slice().reverse())if(!el.querySelector('[data-id="'+c.id+'"]')){const d=document.createElement('div');d.className='callout '+(c.team?'foe':'mine')+(c.major?' major':'');d.dataset.id=c.id;d.textContent=c.text;d.style.animationDuration=CALLOUT.life+'s';el.prepend(d)}
+  el.dataset.sig=ids.join();
+}
 
 /* on the field */
 // rings: under every soldier of the groups you have selected (bright; with All, light), under the group you point at (soft); an enemy you point

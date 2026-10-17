@@ -51,6 +51,9 @@ class BattleResolution{
     if(!o.tournament)this.characterReport=Object.values(b.groups).filter(g=>g.player&&!g.sourceGroupId).map(g=>{
       const u=b.units.find(u=>u.grp===g.id);return{id:g.id,name:g.name,status:u?.left?'Withdrawn':u?.hp>0?'Standing':'Wounded'};
     });
+    // the unit of the battle: your troop group with the most kills (then the most damage dealt); none if none of them fought
+    if(!o.tournament){const K=b.grpKills||{};this.unitOfBattle=Object.values(b.groups).filter(g=>g.player&&g.sourceGroupId).map(g=>({id:g.sourceGroupId,name:g.name,kills:K[g.id]||0,damage:Math.round(g.resolve?.damageDealt||0)}))
+      .filter(x=>x.kills||x.damage).sort((x,y)=>y.kills-x.kills||y.damage-x.damage)[0]||null}
     B=null;updateHint();
     if(o.tournament){
       let html;if(win){P.gold+=45;P.renown+=6;gainXp(25);if(G.town)addRep(G.town.ref.name,8);html='<h2>Champion</h2><p>The crowd chants your name. You take <strong class="gold">45 gold</strong> and gain renown.</p>';log('You win the tournament.','good')}
@@ -117,7 +120,7 @@ class BattleResolution{
       if(ready>before)html+='<p class="gold">Your troops learn from the fight: '+ready+' soldier'+(ready>1?'s are':' is')+' ready to train at a barracks.</p>'}
     G.encCool=retreat?4:3;G.enc=null;G.mode='dialog';
     const report=groupLosses?{groups:groupLosses.slice().sort((a,b)=>a.slot-b.slot).map(row=>({id:row.id,type:row.type,name:row.name,start:row.start,
-      fit:row.start-row.count-row.rearguard,wounded:row.wounded,killed:row.count-row.wounded+row.rearguard,saved:row.saved,rearguard:row.rearguard})),characters:this.characterReport||[]}:null;
+      fit:row.start-row.count-row.rearguard,wounded:row.wounded,killed:row.count-row.wounded+row.rearguard,saved:row.saved,rearguard:row.rearguard})),characters:this.characterReport||[],...(this.unitOfBattle?{best:this.unitOfBattle}:{})}:null;
     lootShow(html,lost,saved,'cont',report);
   }
 }

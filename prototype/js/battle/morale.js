@@ -112,10 +112,10 @@ class BattleResolve{
     this.routed=true;this.shattered=this.rallied;this.confidence=0;this.mor=Math.max(0,this.mor);this.breakT=0;delete this.breakLimit;this.rallyT=0;
     this.routeAt=B.t;this.refreshState();this.sync();const m=this.live(),p=this.point();
     if(B.opts.sandbox&&BattleLab.active){BattleLab.event('group_routed',null,{groupId:this.groupId,shattered:this.shattered});for(const u of m)BattleLab.event('routed',u)}
-    for(const u of m){u.tgt=null;u.shot=null}moraleSay(m[0],this.shattered?'Shattered':'Routs!',this.team?'#ffe08a':'#ff9a90');
+    for(const u of m){u.tgt=null;u.shot=null}moraleSay(m[0],this.shattered?'Shattered':'Routs!',this.team?'#ffe08a':'#ff9a90');calloutRout(this);// (its banner: battlehud.js)
     (B.routShocks||(B.routShocks=[])).push({team:this.team,groupId:this.groupId,unitId:this.unitId,x:p.x,y:p.y});B.moraleNext=0;
   }
-  rally(){this.routed=false;this.rallied=true;this.rallyT=0;this.breakT=0;this.mor=Math.max(MORALE.rally,this.mor);const g=this.control;if(g)g.hold();this.refreshState();this.sync();for(const u of this.live()){u.tgt=null;u.shot=null}if(this.live()[0])moraleSay(this.live()[0],'Rallies','#9fe09a');if(B.opts.sandbox&&BattleLab.active)BattleLab.event('group_rallied',null,{groupId:this.groupId})}
+  rally(){this.routed=false;this.rallied=true;this.rallyT=0;this.breakT=0;this.mor=Math.max(MORALE.rally,this.mor);const g=this.control;if(g)g.hold();this.refreshState();this.sync();for(const u of this.live()){u.tgt=null;u.shot=null}if(this.live()[0])moraleSay(this.live()[0],'Rallies','#9fe09a');calloutRally(this);if(B.opts.sandbox&&BattleLab.active)BattleLab.event('group_rallied',null,{groupId:this.groupId})}
 }
 function groupMoraleInit(units){
   for(const [id,g] of Object.entries(B.groups)){const m=units.filter(u=>u.grp===id&&!steady(u));if(m.length)g.resolve=new BattleResolve(id,g.team,m);else delete g.resolve}
@@ -168,7 +168,7 @@ function moraleSay(u,t,c,life){if(B.floats.some(f=>f.t===t&&Math.abs(f.x-u.x)<40
 function flankMul(t,src){
   if(!src||B.noMorale||t.hero&&MANUAL_HERO)return 1;const s=sideOf(t,src);if(s==='front')return 1;
   if(!steady(t)&&B.t-(t.sideShockAt??-Infinity)>=RESOLVE.flankEvery){shake(t,MORALE[s]);t.sideShockAt=B.t}t.flankAt=B.t;const r=resolveOf(t);if(r)r.flankAt=B.t;
-  if(!src.arrow)moraleSay(t,s==='rear'?'Rear!':'Flank!','#ffb04a',.5);
+  if(!src.arrow)moraleSay(t,s==='rear'?'Rear!':'Flank!','#ffb04a',.5);calloutFlank(t,src);// (its banner, now and then: battlehud.js)
   return 1+(FLANK[s]-1)*(src.arrow?FLANK.arrow:1);
 }
 // a blow on morale: by the share of health it took
@@ -187,7 +187,7 @@ function moraleDeath(t,source){
     if(r.team===t.team){if(lead){r.confidence=0;r.confidenceBlockedUntil=Math.max(r.confidenceBlockedUntil,B.t+CONFIDENCE.leaderPause);r.breakUrgentUntil=B.t+CONFIDENCE.leaderPause;r.shock(MORALE.lead,false)}else if(r!==own&&d<MORALE.near)r.shock(MORALE.death/Math.max(1,own?.initialCount||r.initialCount))}
     else if(lead){r.mor=Math.min(100,r.mor+MORALE.lead/2);r.sync()}else if(d<MORALE.near||r===resolveOf(source))r.reassure()}
   if(lead){(B.leadFell=B.leadFell||[])[t.team]=B.t}
-  if(lead)B.floats.push({x:t.x,y:t.y-30,t:t.team?'Their leader falls!':'Your leader falls!',life:1.4,c:t.team?'#ffe08a':'#ff9a90'});
+  if(lead){B.floats.push({x:t.x,y:t.y-30,t:t.team?'Their leader falls!':'Your leader falls!',life:1.4,c:t.team?'#ffe08a':'#ff9a90'});calloutLeader(t)}
 }
 // a leader close by steadies them: your hero, a lord or chieftain of theirs
 const inspired=u=>B.units.some(o=>o.team===u.team&&o.hp>0&&(o.hero||o.leader)&&Math.hypot(o.x-u.x,o.y-u.y)<MORALE.inspire);
@@ -272,10 +272,10 @@ function chargeMul(u,t){
   const m=momentum(u),s=u.s;u.run=0;if(m>=CHARGE.min)fatigueCharge(u,m);// (the charge spends the runner's stamina: fatigue.js)
   if(B.noMorale&&!s.charge)return 1;
   if(s.charge){if(m<CHARGE.min)return 1;if(unitClass(t.s)==='spear'){B.floats.push({x:t.x,y:t.y-22,t:'Braced',life:.6,c:'#cfe0ff'});return 1}
-    vfxCharge(u,t,m);fx(t.x,t.y-6,'#fff',4);if(!steady(t)&&t.mor!=null){shake(t,CHARGE.shock*m);t.shockAt=B.t;const r=resolveOf(t);if(r)r.shockAt=B.t}chargePush(u,t,m);if(m>.6)moraleSay(t,'Charge!','#fff',.6);
+    vfxCharge(u,t,m);chargeJolt(u,m);fx(t.x,t.y-6,'#fff',4);if(!steady(t)&&t.mor!=null){shake(t,CHARGE.shock*m);t.shockAt=B.t;const r=resolveOf(t);if(r)r.shockAt=B.t}chargePush(u,t,m);if(m>.6)moraleSay(t,'Charge!','#fff',.6);
     return (1+CHARGE.cav*m)*formCharge(u,t)}
   if(s.range||m<CHARGE.foot_min)return 1;if(unitClass(t.s)==='spear'){B.floats.push({x:t.x,y:t.y-22,t:'Braced',life:.6,c:'#cfe0ff'});return 1}
-  if(!steady(t)&&t.mor!=null){shake(t,CHARGE.footShock*m);t.shockAt=B.t;const r=resolveOf(t);if(r)r.shockAt=B.t}chargePush(u,t,m);return 1+CHARGE.foot*m;
+  if(!steady(t)&&t.mor!=null){shake(t,CHARGE.footShock*m);t.shockAt=B.t;const r=resolveOf(t);if(r)r.shockAt=B.t}chargeJolt(u,m);chargePush(u,t,m);return 1+CHARGE.foot*m;
 }
 // a group's morale (unit cards and the icons over groups): the average, how many waver or run, its state, and what weakens it now
 // state: steady (60+), shaken (30+), wavering, routing (most of them running), shattered (all running, broken for good)

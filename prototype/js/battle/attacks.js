@@ -14,7 +14,7 @@ function applyDmg(t,amt,m,dt,source,missile){
   if(t.hp<=0){
     if(wasHp>0&&B.opts.sandbox&&BattleLab.active)BattleLab.kill(t,source);
     t.hp=0;const cp={x:t.x,y:t.y,team:t.team,face:t.face,hero:t.hero,wait:true};B.corpses.push(cp);vfxDeath(t,cp);if(wasHp>0)moraleDeath(t,source);// (it falls first, then lies: vfx.js)
-    if(t.team===1){B.kills++;B.slain.push(t.type)}
+    if(t.team===1){B.kills++;B.slain.push(t.type);if(wasHp>0&&source&&source.grp){const K=B.grpKills||(B.grpKills={});K[source.grp]=(K[source.grp]||0)+1}}// (and by whose group: the unit of the battle, resolution.js)
     else if(t.hero){B.heroDown=true;B.floats.push({x:t.x,y:t.y-22,t:'You are down!',life:1.6,c:'#fff'});log('You are knocked down. Your troops fight on.','bad')}
     else if(t.comp){const c=compInit(t.type);if(c)c.hurt=Math.max(c.hurt||0,G.day+2);log(COMPS[t.type].n+' is wounded and drops out of the fight: out for 2 days.','bad')}// (never killed)
     else if(!t.lord)B.lost[t.type]=(B.lost[t.type]||0)+1;

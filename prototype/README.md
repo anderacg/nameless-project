@@ -225,6 +225,14 @@ Morale is owned by the **formation**, not the soldier. `BattleResolve` (`battle/
 
 Tuning lives in `MORALE`, `CONFIDENCE`, `AWARENESS`, `COHESION`, `LOSS_MEMORY`, `RESOLVE` and `GROUP_RESOLVE`. Coverage: `tests/groupmorale.js` (shared state, normalisation, routing as a group, rally/shatter, HUD/lab agreement), `tests/moralebalance.js` (kill reassurance, breaking timers), `tests/confidence.js`, `tests/moralecontext.js`, `tests/moraleresilience.js`, and the audits `tests/moraleaudit.js` and `tests/confidenceaudit.js`.
 
+## Battle feedback
+
+**Callouts** (`callout*` in `ui/battlehud.js`, tuned by `CALLOUT`): a short side-coloured banner at the top middle of the field for the big moments: a group routs, is shattered, rallies or is flanked; a leader falls; the enemy falls back (read from `B.fallBack`). Each moment is called once (the same key stays quiet for `same` combat seconds; a flank at most once per group every `flankEvery` s; arrows and steady units never trigger it). At most one new banner every `gap` real seconds, at most two on screen; a burst is cut to a short queue, minor callouts first. Your groups' routs and shatters and a leader's fall also go to the battle log; the enemy breaking is logged once at the end. No callouts in tournaments.
+
+**Screen shake** is drawn only (`shakeView` in `gfx/vfx.js`, tuned by `SHAKE`): `frame()` offsets the view by a sine wobble, never moving `B.cam` and never drawing random numbers. A rider or big beast charging home at momentum over `SHAKE.charge` jolts the view (capped at `SHAKE.max` px, fading over `SHAKE.life` s); one of your groups routing gives a lighter jolt. `SHAKE.on=false` or the system's reduced-motion setting turns it off.
+
+**Unit of the battle**: kills are counted per source group (`B.grpKills`, `applyDmg`); the battle report names your troop group with the most kills (ties: `resolve.damageDealt`). Not shown in tournaments, for heroes and companions, or when none of your groups fought. Tests: `tests/battlejuice.js`.
+
 ## Withdrawal balance
 
 W still orders selected groups to leave through your edge, without attacking on the way. Withdrawal now uses the existing fatigue rules: running spends stamina, tired/spent units have their normal speed penalties, and units below `FATIGUE.runMin` can only walk. Slowing effects still apply. The hero pays from the existing hero stamina pool.
