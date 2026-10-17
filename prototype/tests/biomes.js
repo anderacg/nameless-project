@@ -38,8 +38,13 @@ try{
  B=fight(spot.forest);ok(B.obs.filter(x=>x.kind==='tree').length>=8,'forest battle has many trees ('+B.obs.length+')');
  // fire 400 arrows straight through one tree
  // (no one may fall meanwhile: your hero fights on their own now, and the battle would end)
- const tree=B.obs.find(x=>x.kind==='tree');let stopped=0;const N=400;
+ // (a tree with no other tree on the arrow's 68 px flight: two in a row stop about 44%, which once failed the check; and the
+ // shots' dice are seeded, so the count is the same every run)
+ const tree=B.obs.find(x=>x.kind==='tree'&&!B.obs.some(o=>o!==x&&o.kind==='tree'&&o.x>x.x-40-o.r&&o.x<x.x+50+o.r&&Math.abs(o.y-x.y)<o.r+6));let stopped=0;const N=400;
+ ok(tree,'the forest has a tree standing clear of the others');
+ if(tree){const r0=Math.random;Math.random=t.seeded(4321);try{
  for(let k=0;k<N;k++){B.arrows=[{x:tree.x-30,y:tree.y-6,vx:170,vy:0,team:1,dmg:0,life:1,a:0,elf:false,tk:0}];B.noMorale=true;B.units.forEach(u=>{u.hp=u.max=1e6;u.cd=99;u.x=12;u.y=t.BH-20;u.s={...u.s,spd:0}});for(let s=0;s<40;s++)t.updateBattle(.01);if(!B.arrows.length||B.arrows[0].x<tree.x+10)stopped++}
+ }finally{Math.random=r0}}
  ok(stopped>N*.12&&stopped<N*.4,'trees stop about a quarter of arrows ('+stopped+'/'+N+')');
  B.over=true;B.endT=0;t.updateBattle(.01);t.act('cont');done();
  // biome bands: desert bandits are raiders, frost wolves are monsters that drop furs

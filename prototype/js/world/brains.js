@@ -91,7 +91,8 @@ class PatrolBrain extends Brain{
     const home=besieged(t)||watchOf(p)!==watchNow()||p.troops.length<t.T.patrol.size/2||threat&&rating(threat.troops)>rating(p.troops);
     const pd=this.look(p).d,hostile=hostileTo(p.fac),wanted=!!crimeAt(t)&&p.fac!=='player',sees=pd<this.sight(PATROL.see);
     const afraid=hostile&&stance(rating(p.troops))==='afraid';
-    if(sees&&(hostile||wanted)&&!home&&!afraid&&p.cool<=0){if(!(G.encCool>0&&pd<GRACE_GAP))routeTo(p,P.x,P.y,sp*1.25)||walk(p,P.x-p.x,P.y-p.y,Math.min(pd,sp*1.25));
+    if(sees&&(hostile||wanted)&&!home&&!afraid&&p.cool<=0){const st=G.encCool>0?Math.min(sp*1.25,pd-GRACE_GAP):sp*1.25;// (in the grace, no step into the gap)
+      if(st>0)routeTo(p,P.x,P.y,st)||walk(p,P.x-p.x,P.y-p.y,Math.min(pd,st));
       if(this.canMeet(p,pd)){patrolMeet(p);return true}}
     else if(threat&&!home&&Math.hypot(threat.x-p.x,threat.y-p.y)<16)startFight([p],[threat]);
     else{

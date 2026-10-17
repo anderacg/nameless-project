@@ -12,8 +12,9 @@ try{
  const p=W.patrols.find(x=>t.townBy(x.home).kind==='town'),h=t.townBy(p.home);
  ok(p.troops.length===h.T.patrol.size&&h.gar+p.troops.length===h.T.gar,'a town sends '+p.troops.length+' of its garrison out ('+h.gar+' stay behind)');
  // riding its land
- P.x=10;P.y=10;let off=0;for(let i=0;i<600;i++){t.updatePatrols(.05);if(!t.patrolLand(p,p.x,p.y)&&Math.hypot(p.x-h.x,p.y-h.y)>40)off++}
- ok(W.patrols.includes(p)&&off<30&&Math.hypot(p.x-h.x,p.y-h.y)>20,'it rides out over its own land ('+Math.round(Math.hypot(p.x-h.x,p.y-h.y))+' px from home, off its land '+off+'/600 frames)');
+ // (how far it got, not where it happens to stand at the end: its beat can bring it back by the gate; and its stops are seeded)
+ P.x=10;P.y=10;let off=0,far=0;{const r0=Math.random;Math.random=t.seeded(2024);try{for(let i=0;i<600;i++){t.updatePatrols(.05);const d=Math.hypot(p.x-h.x,p.y-h.y);far=Math.max(far,d);if(!t.patrolLand(p,p.x,p.y)&&d>40)off++}}finally{Math.random=r0}}
+ ok(W.patrols.includes(p)&&off<30&&far>30,'it rides out over its own land (as far as '+Math.round(far)+' px from home, off its land '+off+'/600 frames)');
  // bandits on its land
  const b={x:p.x+40,y:p.y,n:2,kind:'bandits',list:['militia','militia'],t:9,a:0,idle:true,cool:0};
  if(t.patrolLand(p,b.x,b.y)){t.bandits.push(b);for(let i=0;i<400&&t.bandits.includes(b);i++)tick();ok(!t.bandits.includes(b)&&!p.fight,'it hunts down a bandit band on its land, in a fight that takes a while')}else ok(true,'(the spot by the patrol is not its land)');
@@ -44,7 +45,7 @@ try{
  // a hostile realm's guards attack; a friendly one's just talk
  world();h.gar=Math.max(h.gar,h.T.gar);t.patrolDay();const r=t.patrolOf(h);if(r){P.x=r.x+30;P.y=r.y;P.troops={hum_levy:1};r.cool=0;G.encCool=0;for(let i=0;i<40&&G.mode==='world';i++)t.updatePatrols(.05);ok(G.enc&&G.enc.kind==='patrol','guards of a hostile realm attack you');t.act('flee')}
  world();P.hostile={};if(!W.patrols.length){for(const tw of t.TOWNS)tw.gar=Math.max(tw.gar,tw.T.gar);t.patrolDay()}// (none out this time: send them)
- let fr=W.patrols.find(x=>!t.hostileTo(x.fac)&&!t.crimeAt(t.townBy(x.home)));if(!fr){fr=W.patrols[0];const h0=t.townBy(fr.home);if(h0)h0.crime=null;P.fac=null}t.patrolMeet(fr);ok(/Guards of/.test(panel())&&/Leave/.test(panel()),'friendly guards just talk');
+ let fr=W.patrols.find(x=>!t.hostileTo(x.fac)&&!t.crimeAt(t.townBy(x.home)));if(!fr){fr=W.patrols[0];const h0=t.townBy(fr.home);if(h0)h0.crime=null;P.fac=null}t.patrolMeet(fr);ok(/Guards of|night watch of/.test(panel())&&/Leave/.test(panel()),'friendly guards just talk');// (by night it is the night watch)
  window.dispatchEvent(new KeyboardEvent('keydown',{code:'Escape',key:'Escape'}));ok(G.mode==='world','Esc leaves them');
  // saved, drawn
  h.crime={until:G.day+3,fine:12};const np=W.patrols.length;t.saveGame(true);W.patrols=[];h.crime=null;t.loadGame();ok(W.patrols.length===np&&t.townBy(h.name).crime&&t.townBy(h.name).crime.fine===12,'patrols and crimes are saved');
@@ -59,8 +60,12 @@ try{
   for(let i=0;i<200;i++){t.updateWorld(.05);if(G.mode!=='world')world()}ok(!W.patrols.some(x=>x.home===q.home),'beat a holding\u2019s guards: no new watch rides out at once ('+hq.gar+' still in the garrison)');
   hq.gar=Math.max(hq.gar,hq.T.patrol.keep+hq.T.patrol.size);G.day+=1;t.updatePatrols(.6);ok(W.patrols.some(x=>x.home===q.home),'a day later, it sends one again')}
  // in the grace after a fight, hostile guards keep a few steps off instead of standing on you
- {world();const q=W.patrols.find(x=>x.troops.length>=3);P.hostile[q.fac]=G.day+20;P.troops={hum_spear:1};q.cool=0;q.x=P.x+40;q.y=P.y;G.encCool=5;
-  for(let i=0;i<60;i++)t.updatePatrols(.05);const d=Math.hypot(q.x-P.x,q.y-P.y);ok(d>=t.GRACE_GAP-2&&!G.enc,'in the grace after a fight, the guards hunting you hold off ('+Math.round(d)+' px)');
-  G.encCool=0;for(let i=0;i<200&&!G.enc&&G.mode==='world';i++)t.updatePatrols(.05);ok(G.enc&&G.enc.kind==='patrol','once it is over, they close in and attack');world();delete P.hostile[q.fac]}
+ // (the strongest watch: a small one afraid of your hero does not hunt you at all, and walks its beat wherever it leads; it is
+ // put on open ground 40 px off in plain line to you, not in a river it cannot walk out of; and the dice are seeded)
+ {world();P.troops={hum_spear:1};const q=W.patrols.filter(x=>x.troops.length>=3).sort((a,b)=>t.rating(b.troops)-t.rating(a.troops))[0],r0=Math.random;Math.random=t.seeded(77);try{
+  const spot=[0,1,2,3,4,5,6,7].map(k=>[P.x+40*Math.cos(k*Math.PI/4),P.y+40*Math.sin(k*Math.PI/4)]).find(([x,y])=>t.passable(t.terrAt(x,y))&&t.clearLine(x,y,P.x,P.y))||[P.x+40,P.y];
+  P.hostile[q.fac]=G.day+20;q.cool=0;q.x=spot[0];q.y=spot[1];G.encCool=5;
+  for(let i=0;i<60;i++)t.updatePatrols(.05);const d=Math.hypot(q.x-P.x,q.y-P.y);ok(d>=t.GRACE_GAP-2&&!G.enc,'in the grace after a fight, the guards hunting you hold off ('+Math.round(d)+' px, '+t.stance(t.rating(q.troops))+')');
+  G.encCool=0;for(let i=0;i<200&&!G.enc&&G.mode==='world';i++)t.updatePatrols(.05);ok(G.enc&&G.enc.kind==='patrol','once it is over, they close in and attack');world();delete P.hostile[q.fac]}finally{Math.random=r0}}
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}
 const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d)};

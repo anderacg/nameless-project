@@ -58,11 +58,14 @@ try{
  quiet();P.fac=null;P.hostile={horde:G.day+90};const t3=t.TOWNS.find(x=>x.owner==='horde'&&x.kind!=='village');army();at(t3);t.updateWorld(.01);t.act('sg-camp');t.act('sg-wait');t3.gar=2;t.FOODS.forEach(g=>t3.stock[g]=0);['farm','pasture','port'].forEach(k=>t3.bld[k]=0);days(3);
  at(t3);G.lastTown=t3;t.updateWorld(.01);ok(G.mode==='capture'&&t3.gar===0,t3.name+' starves and surrenders');t.act('cap-leave');t.act('cont');done();
  ok(t3.owner==='horde'&&t3.gar===1&&t3.sacked>G.day,'sack and leave: it stays theirs, ruined and empty');
- // raid a village
- quiet();army();P.inv=P.inv.map(()=>null);t.initCritters();t.ensureEcon(vil);vil.stock.grain=Math.max(vil.stock.grain||0,60);vil.stock.meat=Math.max(vil.stock.meat||0,20);const vr=t.repAt(vil.name);at(vil);t.updateWorld(.01);ok(/Raid/.test(panel()),'a hostile village can be raided');
+ // raid a village (unwalled: days of world simulation above can build it a palisade, and then it is a siege, not a raid;
+ // the world's dice are seeded from here, so the raid plays out the same every run)
+ {const r0=Math.random;Math.random=t.seeded(6201);try{
+ quiet();army();vil.wall=0;P.inv=P.inv.map(()=>null);t.initCritters();t.ensureEcon(vil);vil.stock.grain=Math.max(vil.stock.grain||0,60);vil.stock.meat=Math.max(vil.stock.meat||0,20);const vr=t.repAt(vil.name);at(vil);t.updateWorld(.01);ok(/Raid/.test(panel()),'a hostile village can be raided');
  t.act('sg-raid-auto');t.act('cont');done();ok(P.raid&&!vil.raided&&t.repAt(vil.name)<vr-20,'beating the militia starts the raid, and the village already hates you');
  G.lastTown=null;G.encCool=0;t.clickAt(vil.x,vil.y-4);ok(G.mode==='besiege'&&/plundered/.test(panel()),'the village is closed while you raid it');t.act('sg-wait');
  for(let i=0;i<40&&P.raid;i++)t.updateWorld(.25);ok(vil.raided>G.day&&t.foodN()>10&&t.repAt(vil.name)<vr-20&&!t.herdOf(vil),'raiding takes food, burns the herd and earns hatred (raided '+(vil.raided>G.day)+', food '+t.foodN()+', rep '+t.repAt(vil.name)+' vs '+vr+', herd '+!!t.herdOf(vil)+', raid '+!!P.raid+')');
+ }finally{Math.random=r0}}
  // AI conquest marks a town
  quiet();const prey=t.TOWNS.find(x=>!['horde','player'].includes(x.owner)&&x.kind!=='village'),l={id:'x0',name:'Test Lord',fac:'horde',x:prey.x,y:prey.y,troops:Array(60).fill('orc_grunt'),state:'siege',tgt:prey.name,sd:0,dead:false};
  W.rel[t.rk('horde',prey.owner)]={s:'war',since:G.day};W.lords=[l];prey.gar=2;t.resolveSiege(l,prey);ok(prey.owner==='horde'&&prey.turmoil>G.day,'lords who take a town leave it in turmoil');
@@ -74,12 +77,14 @@ try{
  const rf=t.repAt(fr.name);t.act('sg-relieve','0');ok(G.enc&&G.enc.kind==='lord'&&t.hostileTo('karn'),'attacking the besieger makes his faction hostile');
  t.act('auto');ok(/break the siege/.test(panel())&&t.repAt(fr.name)>rf,'breaking the siege earns thanks in '+fr.name);t.act('cont');done();
  at(fr);t.updateWorld(.01);ok(G.mode==='town','with the siege broken the gates open');t.act('leave');done();
- // your raid draws the owner's lords
+ // your raid draws the owner's lords (the world's dice seeded here too)
+ {const r0=Math.random;Math.random=t.seeded(7801);try{
  const vi2=t.TOWNS.find(x=>x.kind==='village'&&x.owner==='karn'&&!x.raided),kl={id:'k1',name:'Rescuer',fac:'karn',x:vi2.x+300,y:vi2.y,troops:Array(12).fill('dw_clan'),state:'rest',tgt:t.fiefsOf('karn')[0].name,sd:0,dead:false,cool:0};
  // Days of world simulation above can build a palisade here (reproduced with seed 28). This scenario specifically needs a raid, not a siege.
  vi2.wall=0;
  W.lords=[kl];army();at(vi2);t.updateWorld(.01);{const r=Math.random;Math.random=()=>.5;t.act('sg-raid-auto');Math.random=r}/* (the auto-resolve's dice fixed: this is about the lords, not luck) */t.act('cont');done();t.lordThink(kl);ok(P.raid&&kl.state==='relieve'&&kl.tgt===vi2.name,'the village lords ride to stop your raid (wall '+t.wallOf(vi2)+', mode '+G.mode+', raid '+!!P.raid+', lord '+kl.state+', target '+kl.tgt+')');
  const f0=t.foodN();P.x+=200;t.updateWorld(.01);ok(!P.raid&&vi2.raided>G.day,'walking away ends the raid early with part of the loot'+(P.raid?' (still raiding: mode '+G.mode+', paused '+G.paused+', capture '+!!G.capture+', stay '+!!P.stay+', '+Math.round(Math.hypot(P.x-vi2.x,P.y-vi2.y))+' px)':''));W.lords=[];
+ }finally{Math.random=r0}}
  // save and load
  G.mode='world';G.modal=false;t.hidePanel();t.saveGame();const snap=JSON.stringify(t.TOWNS.map(x=>[x.owner,x.sacked||0,x.raided||0,x.turmoil||0]));t.act('load');
  ok(JSON.stringify(t.TOWNS.map(x=>[x.owner,x.sacked||0,x.raided||0,x.turmoil||0]))===snap,'owners, sacks, raids and turmoil survive a reload');
