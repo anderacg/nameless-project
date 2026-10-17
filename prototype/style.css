@@ -624,7 +624,9 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
   *,*::before,*::after{animation:none!important;transition:none!important}
 }
 /* Developer overlay is separate from game panels: opening it freezes, but never replaces, the underlying screen. */
-#dev-toggle{position:fixed;right:calc(12px + var(--sa-r));top:calc(12px + var(--sa-t));z-index:10001;background:#182431;color:#ffe0a0;border:1px solid #8e7955;padding:6px 10px;font:12px monospace;cursor:pointer}
+/* (a small tab at the middle of the right edge, clear of the time bar, the minimap, the cards and the dock; ` or F2 opens the tools too) */
+#dev-toggle{position:fixed;right:var(--sa-r);top:50%;transform:translateY(-50%);z-index:10001;background:#182431;color:#ffe0a0;border:1px solid #8e7955;border-right:0;padding:6px 3px;font:10px monospace;cursor:pointer;opacity:.7;writing-mode:vertical-rl}
+#dev-toggle:hover,#dev-toggle:focus-visible{opacity:1}
 #dev-console{position:fixed;inset:0;z-index:10002;background:#0009;padding:clamp(8px,3vw,32px);overflow:auto;color:#e4e9ef;font:14px/1.5 monospace}
 #dev-console[hidden],#dev-lab-bar[hidden]{display:none}
 .dev-window{max-width:850px;margin:auto;padding:18px;border:1px solid #8e7955;background:#101922;box-shadow:0 12px 60px #000b}
