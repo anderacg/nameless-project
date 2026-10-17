@@ -28,6 +28,17 @@ try{
  strong();d0=gap(l);for(let i=0;i<15;i++)t.updateLords(.05);ok(gap(l)>d0+5,'a weak hostile lord runs');
  const tw=t.townBy('Highmoor');l.state='siege';l.tgt=tw.name;l.x=tw.x+16;l.y=tw.y+12;P.x=tw.x;P.y=tw.y+40;t.updateLords(.05);
  ok(l.state==='home'&&/abandons the siege/.test(G.msgs[G.msgs.length-1].m),'a weak besieger abandons the siege when you arrive');
+ // in the grace after a fight (G.encCool), a hunting band or lord stops at GRACE_GAP: its last step is cut short, not
+ // carried into the gap (big time steps make the steps long; each starts 40 px off on open ground in plain line to you)
+ {const r0=Math.random;Math.random=t.seeded(41);try{weak();P.tx=null;P.ty=null;W.monsters=[];
+  const spot=()=>[0,1,2,3,4,5,6,7].map(k=>[P.x+40*Math.cos(k*Math.PI/4),P.y+40*Math.sin(k*Math.PI/4)]).find(([x,y])=>t.passable(t.terrAt(x,y))&&t.clearLine(x,y,P.x,P.y))||[P.x+40,P.y];
+  const closest=(o,step)=>{let lo=gap(o);for(let i=0;i<40;i++){G.encCool=5;step();lo=Math.min(lo,gap(o))}return lo};
+  const bb=band(14);[bb.x,bb.y]=spot();bb.idle=false;const lb=closest(bb,()=>t.updateBands(.4));
+  ok(t.stance(t.bandPower(bb))==='attack'&&lb>=t.GRACE_GAP-1e-6&&lb<t.GRACE_GAP+6&&!G.enc,'in the grace, a hunting band closes in but never steps into the gap (closest '+lb.toFixed(2)+' px, gap '+t.GRACE_GAP+')');t.bandits.length=0;
+  const gl=W.lords.find(x=>x.fac==='karn'&&!x.dead&&x!==l)||l;gl.troops=Array(14).fill('dw_axe');gl.state='rest';gl.inside=null;gl.cool=0;gl.tgt=t.townBy('Highmoor').name;[gl.x,gl.y]=spot();
+  const ll=closest(gl,()=>t.updateLords(.4));
+  ok(t.stance(t.rating(gl.troops))==='attack'&&ll>=t.GRACE_GAP-1e-6&&ll<t.GRACE_GAP+6&&!G.enc,'in the grace, a hunting lord closes in but never steps into the gap (closest '+ll.toFixed(2)+' px)');
+  gl.x=-9000;gl.y=-9000;G.encCool=99}finally{Math.random=r0}}
  // lord against a much stronger enemy lord
  P.fac=null;P.x=-9999;P.y=-9999;const big=W.lords.find(x=>x.fac==='vale'&&!x.dead);big.troops=Array(18).fill('hum_knight');big.x=l.x+40;big.y=l.y;big.state='rest';
  l.state='march';l.tgt=t.townBy('Ashford').name;t.updateLords(.01);ok(l.state==='home','a marching lord turns back from a far stronger enemy army');
