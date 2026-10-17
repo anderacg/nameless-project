@@ -256,14 +256,27 @@ Tunables: `AI_TACTICS` in `battle/commander.js`, `CHAR_FALL` in `battle/charmind
 
 ## Terrain
 
-**Terrain** (`battle/terrain.js`, `doc/TERRAIN_DESIGN.md`; phase 1: hills, woods, marsh). A field fought on the world map gets a static 16-px grid `B.terrain` (kind, level 0–2, slope direction) laid out from the world tile and its 8 neighbours with its own seeded stream (the same place always gives the same field), fair to both sides (woods ≤25% of each deployment zone, the halves score within 15%, a 96-px open lane edge to edge, hills centred or mirrored); none in tournaments, sieges or raids. Layouts vary per biome (wooded hills and ridges, copses…). A field with terrain has **no scattered trees or rocks**; deserts get no woods and water only as an **oasis** beside a water tile.
+**Terrain** (`battle/terrain.js`, `doc/TERRAIN_DESIGN.md`; phase 1: hills, woods, marsh; phase 2: rivers, fords, bridges). A field fought on the world map gets a static 16-px grid `B.terrain` (kind, level 0–2, slope direction) laid out from the world tile and its 8 neighbours with its own seeded stream (the same place always gives the same field), fair to both sides (woods ≤25% of each deployment zone, the halves score within 15%, a 96-px open lane edge to edge, hills centred or mirrored); none in tournaments, sieges or raids. Layouts vary per biome (wooded hills and ridges, copses…). A field with terrain has **no scattered trees or rocks**; deserts get no woods and water only as an **oasis** beside a water tile.
 - **Range:** a shooter reaches 7.5% farther per level he stands on (replaces the old whole-field +15% hill rule).
 - **Charges:** the charge bonus ×1.35 downhill, ×0.65 uphill; halved against a foe in woods. **Melee:** +10% against a foe at least one level lower.
 - **Climbing:** foot ×0.6, riders and big units ×0.5 (dwarves climb freely), descending ×1.15; running uphill doubles stamina drain; climbing breaks cohesion. Climbers lean forward and step short (`climbState(u)`, drawn only).
 - **Woods:** foot ×0.8, riders and big units ×0.55 (elves ×1); charge momentum builds ×0.35; each wood cell stops a low missile 8%, an arrow coming down into woods 35% (elves and magic pass); three wood cells block morale sight unless the viewer stands higher; no cohesion, shield wall or wedge in woods.
 - **Marsh:** foot and big ×0.7, riders ×0.5; momentum ×0.3; stamina ×1.5; blows ×0.9 (orcs and swamp beasts exempt).
-- **Art:** `engine/ground.js` `PX.battleGround` paints the field once per battle (`B.ground`): terraces as cliff-faced plateaus, species-mixed woods, marsh, oases, per-biome painted detail; the minimap shows it (`B.groundMini`).
-`TERRAIN.on` is the game's switch; `tests/harness.js` turns it off, so older suites see today's field. The lab's `ground` key takes `'none'` (default), `'auto'`, `{recipe, seed, oasis}` or explicit `{hills, woods, marsh, seed}`. Balance: the hill holder wins ~69% of mirror battles; woods cut archer damage ~27%; hill battles run ~44% longer than flat (harder climbing; `HILL.climb` is the knob). Tests: `tests/terrain.js`.
+- **Rivers (phase 2):**
+  - **Where:** a field beside water on the world map gets a river down the middle: 48 px of deep water, meandering.
+    - 1–2 fords (64 px), or a bridge (32 px) and a ford when a road bridge is within 2 tiles.
+    - Frozen in the frost (all ford, crossable anywhere). A ford-only stream in half of swamps away from water.
+    - None in deserts (oasis only), against monsters or in caves.
+  - **Fair:** deployment zones stay dry; crossings lie near the middle, ≥120 px apart (less on a short field), and the open lane runs over one.
+  - **Deep water** (wadeable): ×0.35 speed (big ×0.5), no momentum, stamina ×2 running and spent even walking, no shooting. Blows dealt ×0.75 and taken ×1.25. No cohesion, shield wall or wedge.
+  - **Fords:** foot and big ×0.7, riders ×0.5, momentum ×0.3, stamina ×1.5, blows ×0.9 (orcs exempt), no shield wall or wedge.
+  - **Bridges:** open ground, but narrow.
+  - **Crossing:** soldiers go over a crossing when that beats wading (`crossWay`), so lines squeeze onto it and those far off its line wade. A line holding a bank does not step into the water after a foe (`holdsBank`).
+  - **For the AI:** captains read `B.terrain.ai.crossings` (`{kind, x, y, w, y0, y1, x0, x1}`) and `B.terrain.ai.river`.
+- **Art:** `engine/ground.js` `PX.battleGround` paints the field once per battle (`B.ground`): terraces as cliff-faced plateaus, species-mixed woods, marsh, oases, rivers with banks, fords, bridges and ice, per-biome painted detail; the minimap shows it (`B.groundMini`).
+  - `PX.battleWater` animates the water (glints and current, still with reduced motion).
+  - Waders are sunk to the waist inside a ring of ripples; fords splash.
+`TERRAIN.on` is the game's switch; `tests/harness.js` turns it off, so older suites see today's field. The lab's `ground` key takes `'none'` (default), `'auto'`, `{recipe, seed, oasis, river}` (recipe `'river'`: open with a river; `river: true | {bridge, frozen, stream}`) or explicit `{hills, woods, marsh, rivers:[{x, meander, crossings:[{kind, y, w}], frozen, stream}], seed}`. Balance: the hill holder wins ~69% of mirror battles; woods cut archer damage ~27%; hill battles run ~44% longer than flat (harder climbing; `HILL.climb` is the knob). Tests: `tests/terrain.js`.
 
 ## Battle feedback
 

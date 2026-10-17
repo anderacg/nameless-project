@@ -124,17 +124,19 @@ function aiUnit(u,dt,strike){
     // keep a slot in the group's formation; melee breaks off only for enemies that come close to it (never, holding its
     // ground or withdrawing: it strikes only what is in reach)
     const sx=clamp(g.ax+u.sx,8,BW-8),sy=clamp(g.ay+u.sy,fieldTop(),fieldBot());
+    // (the way there: over a ford or bridge when that beats wading deep water, terrain.js crossWay)
+    let wx=sx,wy=sy;if(B.terrain&&B.terrain.has.water){const w=crossWay(u,sx,sy);if(w){wx=w[0];wy=w[1]}}
     const engage=order==='withdraw'||g.firm||unitFlag(u,'shieldWall')?0:28;
-    if(reloc){const px=sx-u.x,py=sy-u.y,pd=Math.hypot(px,py);if(u.relocFor!==g.mvId){u.relocFor=g.mvId;u.relocT=0}u.relocT+=dt;
+    if(reloc){const px=wx-u.x,py=wy-u.y,pd=Math.hypot(px,py);if(u.relocFor!==g.mvId){u.relocFor=g.mvId;u.relocT=0}u.relocT+=dt;
       if(pd>RELOCATE.near&&u.relocT<RELOCATE.max){mv=true;mx=px/pd;my=py/pd}else{u.mvId=g.mvId;u.relocT=0;u.inSlot=true}}
     else if(t&&!s.range&&de<=reach){}
-    else if(t&&!s.range&&engage&&Math.hypot(t.x-sx,t.y-sy)<engage){mv=true;mx=dx/d;my=dy/d;chase=true}
+    else if(t&&!s.range&&engage&&Math.hypot(t.x-sx,t.y-sy)<engage&&!holdsBank(u,t)){mv=true;mx=dx/d;my=dy/d;chase=true}// (not down off a bank into the water after him: terrain.js)
     else if(s.range&&t&&de<=reach&&!onTheMove(s)&&!g.backing&&!(g.cease&&!gt)){}// (a foe in reach: they keep their ground and shoot, not step to their exact place: attacking first)
-    else{const px=sx-u.x,py=sy-u.y,pd=Math.hypot(px,py);const going=g.going;// (its place on the move: battlecontrol.js step)
+    else{const px=wx-u.x,py=wy-u.y,pd=Math.hypot(px,py);const going=g.going;// (its place on the move: battlecontrol.js step)
       if(pd>(u.slotted&&!going?7:2)){mv=true;mx=px/pd;my=py/pd;u.slotted=false}else{u.inSlot=true;u.slotted=true}}// (in its slot: it faces the formation's way, and stays till pushed clearly out)
   }else{
     if(s.range){if(d>s.range||!u.inRng&&d>s.range*.97){mv=true;mx=dx/d;my=dy/d;u.inRng=false}else{u.inRng=true;if(d<28){mv=true;mx=-dx/d;my=-dy/d;back=true}}}
-    else if(de>reach){mv=true;mx=dx/d;my=dy/d}
+    else if(de>reach){mv=true;mx=dx/d;my=dy/d;if(B.terrain&&B.terrain.has.water){const w=crossWay(u,t.x,t.y);if(w){const qx=w[0]-u.x,qy=w[1]-u.y,ql=Math.hypot(qx,qy)||1;mx=qx/ql;my=qy/ql}}}// (a charge goes over a bridge or ford when that beats wading, terrain.js)
     chase=true;
   }
   // walking, they keep to the slowest one's pace (and keep their formation); running, or fighting, each goes as fast as it can
@@ -154,7 +156,7 @@ function aiUnit(u,dt,strike){
   // (facing: where it marches or whom it fights; momentum: the run at its target, spent on its first blow; spurred, kept: unitabilities.js)
   fatigueStep(u,dt,mv,wk,chase&&!back&&!!t&&!wk,!!t&&de<=reach+8);
   // shooters: whatever comes into range and their arc, unless told to cease fire (then only the enemy you set them on); a move lets a draw down
-  if(s.range){if(reloc)u.shot=null;shotStep(u,g,t,!!t&&!reloc&&de<=reach&&!(g&&g.cease&&!gt),mv,dx,dy,mx,my,dt,strike);return}
+  if(s.range){if(reloc)u.shot=null;shotStep(u,g,t,!!t&&!reloc&&de<=reach&&!(g&&g.cease&&!gt)&&!groundNoShoot(u),mv,dx,dy,mx,my,dt,strike);return}// (no shooting from deep water, terrain.js)
   if(t&&u.cd<=0&&!reloc&&de<=reach+1){if(mm)bladeBlow(u,t);else(strike||attack)(u,t)}
 }
 /* the press: when the men round a foe stand too thick, those behind cannot reach him and would stand idle. A melee soldier

@@ -24,8 +24,8 @@ function moraleVisible(u,o){
     if(Math.hypot(b.x-u.x-dx*at,b.y-u.y-dy*at)<b.r)return false}
   return !terrainBlocksView(u,o);// (deep woods hide, unless he stands higher: terrain.js)
 }
-// (woods break formations, and so does a climb: no cohesion in one, nor going up a slope, terrain.js)
-function cohesionReady(u){const g=u.grp&&B.groups[u.grp];return fighting(u)&&!withdrawing(u)&&!(u.stun>0)&&g&&!g.backing&&!((u.spdNow||0)>1&&(g.run||(u.run||0)>0))&&!inWood(u)&&climbState(u)!=='up'}
+// (woods and deep water break formations, and so does a climb: no cohesion in them, nor going up a slope, terrain.js)
+function cohesionReady(u){const g=u.grp&&B.groups[u.grp];return fighting(u)&&!withdrawing(u)&&!(u.stun>0)&&g&&!g.backing&&!((u.spdNow||0)>1&&(g.run||(u.run||0)>0))&&!groundLoose(u)&&climbState(u)!=='up'}
 /* (moraleTick's live, filed in a grid of their own the first time a view is wanted (VIEW_GRID, spatial.js): only those within
    CONFIDENCE.radius of him are looked at, in live's order; nobody moves or joins during moraleTick, so the sums are the full
    scan's, term by term) */

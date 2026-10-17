@@ -155,6 +155,97 @@ try{
   let n=0;const r=Math.random;Math.random=()=>n++===0?.99:0;try{B.arrows=[{x:280,y:y-6,vx:320,vy:0,team:1,dmg:0,life:2,a:0,elf:false,tk:0,src:{}}];for(let s=0;s<30&&B.arrows.length;s++)t.updateProjectiles(1/60)}finally{Math.random=r}
   ok(!B.arrows.length||B.arrows[0].x<400,'an arrow that passed tree 0 can still be stopped by tree 32 (no bit alias)');
   const a={tk:0};t.treeMark(a,0);ok(t.treePast(a,0)&&!t.treePast(a,32)&&(t.treeMark(a,33),t.treePast(a,33))&&a.tk===1,'trees 0-31 stay in the bitmask, later ones in a list');L.exit()}
+ // ======== phase 2: rivers, fords and bridges (D1: deep water wadeable but punishing) ========
+ {const V=t.TERRAIN_RIVER,cellK=(T,x,y)=>T.kind[T.C*Math.floor(y/T.cs)+Math.floor(x/T.cs)],rowHas=(T,y,k)=>{const r=Math.floor(y/T.cs);for(let c=0;c<T.C;c++)if(T.kind[r*T.C+c]===k)return true;return false};
+  // ---- generation: determinism, isolation, fairness, the crossings contract
+  let calls=0;const r0=Math.random;Math.random=()=>{calls++;return r0()};let R1,R2,R3;
+  try{const sp=s=>({recipe:'open',seed:s,W:1100,top:40,bot:560,river:{bridge:true}});R1=t.buildTerrain(sp(4242));R2=t.buildTerrain(sp(4242));R3=t.buildTerrain(sp(9001))}finally{Math.random=r0}
+  ok(calls===0&&gridHash(R1)===gridHash(R2)&&gridHash(R1)!==gridHash(R3)&&R1.has.water,'rivers: same seed, same river ('+gridHash(R1)+'); another seed, another; never Math.random ('+calls+' calls)');
+  {const keys=o=>Object.keys(o).sort().join(),C=R1.ai.crossings;
+   ok(C.length===2&&C[0].y<C[1].y&&C.every(c=>keys(c)==='kind,w,x,x0,x1,y,y0,y1'&&c.w===V[c.kind]&&c.y1-c.y0===c.w&&c.y===(c.y0+c.y1)/2&&c.x0<c.x&&c.x<c.x1&&c.x1-c.x0===2*V.half&&cellK(R1,c.x,c.y)===(c.kind==='ford'?K.ford:K.bridge)&&cellK(R1,c.x0+1,c.y)===cellK(R1,c.x1-1,c.y)&&cellK(R1,c.x0-8,c.y)<K.ford&&cellK(R1,c.x1+8,c.y)<K.ford&&rowHas(R1,c.y0-8,K.deep)&&rowHas(R1,c.y1+8,K.deep)),
+    'the crossings contract (B.terrain.ai.crossings): sorted {kind, x, y, w, y0, y1, x0, x1}; a ford '+V.ford+' px and a bridge '+V.bridge+' px along the river, x0-x1 its water, dry banks, deep water above and below: '+JSON.stringify(C.map(c=>({kind:c.kind,x:Math.round(c.x),y:c.y,x0:c.x0,x1:c.x1}))));
+   const ar=R1.ai.river;ok(ar&&keys(ar)==='deep,frozen,stream,w,x,x0,x1'&&ar.deep&&ar.w===2*V.half&&ar.x0<ar.x&&ar.x<ar.x1&&R1.recipe.river&&R1.recipe.river.path.length===R1.R&&R1.recipe.rivers.length===1,'ai.river {x, x0, x1, w, deep, frozen, stream} and recipe.river (its path a middle per cell row)');
+   ok(!t.buildTerrain({recipe:'forest',seed:5,W:1100,top:40,bot:560}).has.water&&t.buildTerrain({recipe:'forest',seed:5,W:1100,top:40,bot:560}).ai.river===null,'no river spec, no water (ai.river null, crossings [])')}
+  {const specs=[{},{bridge:true},{frozen:true},{stream:true}],recs=['open','forest','hills','swamp'],bad=[];let dropped=0,nb=0,nf=0,frozenX=0,lanes=0;
+   for(let i=0;i<200;i++){const W=960+(i*37)%341,top=30+(i*13)%50,bot=600-((i*7)%40)-10,rv=specs[i%4],rc=rv.stream?'swamp':recs[(i>>2)%4],T=t.buildTerrain({recipe:rc,seed:(i*2654435761+7)>>>0,W,top,bot,river:rv}),f=t.terrainFair(T,W,top,bot),L2=T.ai.crossings,deep=!rv.frozen&&!rv.stream,fails=[];
+    if(T.recipe.dropped.includes('rivers'))dropped++;if(!f.ok)fails.push((f.zone?'':' zone')+(f.score?'':' score')+(f.lane?'':' lane')+(f.river?'':' river'));if(!T.has.water)fails.push('dry');
+    if(deep!==T.kind.includes(K.deep)||deep!==!!L2.length)fails.push('deep/crossings');
+    for(const c of L2)if(Math.abs(c.x-W/2)>V.mid||c.y0<top+V.edge||c.y1>bot-V.edge)fails.push('crossing place');
+    for(let k=0;k<T.C*T.R;k++){const x=(k%T.C+.5)*T.cs;if(T.kind[k]>=K.ford&&(x<TR.zone*W||x>(1-TR.zone)*W)){fails.push('water in a zone');break}}
+    if(rv.bridge&&!L2.some(c=>c.kind==='bridge')&&deep)fails.push('no bridge');if(rv.frozen&&T.kind.includes(K.deep))frozenX++;
+    if(deep&&T.recipe.lane&&L2.some(c=>c.y0<T.recipe.lane.y1&&c.y1>T.recipe.lane.y0))lanes++;
+    nb+=L2.filter(c=>c.kind==='bridge').length;nf+=L2.filter(c=>c.kind==='ford').length;if(fails.length)bad.push(rc+JSON.stringify(rv)+'#'+i+':'+fails.join(','))}
+   ok(!bad.length&&!dropped&&!frozenX,'fairness over 200 river fields: deployment zones dry, crossings within '+V.mid+' px of the middle (both sides reach them alike) and '+V.edge+' px off the edges, the open lane over a crossing; a road bridge gives a bridge; frost and swamp streams all ford ('+nb+' bridges, '+nf+' fords; '+lanes+'/100 deep rivers with a crossing in the lane)'+(bad.length?': '+bad.slice(0,5).join('; '):''))}
+  {let bad=0,gaps=new Set();for(let i=0;i<60;i++){const top=100+(i%7)*3,bot=top+270+(i%5)*10,T=t.buildTerrain({recipe:['open','forest','hills'][i%3],seed:(i*40503+11)>>>0,W:960,top,bot,river:{bridge:i%2===0}});
+    if(T.recipe.dropped.includes('rivers')||!t.terrainFair(T,960,top,bot).ok||!T.ai.crossings.length)bad++;else gaps.add(T.recipe.river.gap)}
+   ok(!bad,'a short field (270-310 px, a phone’s): the river is kept, its crossings closer together ('+[...gaps].sort((a,b)=>a-b).join(', ')+' px apart at least)'+(bad?'; '+bad+'/60 lost it':''))}
+  // ---- the world: water beside the tile runs a river; a road bridge near gives a bridge; frost freezes it; deserts and monsters none
+  {const near=(i,f,N=1)=>{const tx=i%t.MW,ty=Math.floor(i/t.MW);for(let dy=-N;dy<=N;dy++)for(let dx=-N;dx<=N;dx++)if((dx||dy)&&f(tx+dx,ty+dy))return true;return false},water=(a,b)=>t.tAt(a,b)===t.T_WATER,
+    rb=(a,b)=>t.tAt(a,b)===t.T_ROAD&&(water(a-1,b)&&water(a+1,b)||water(a,b-1)&&water(a,b+1)),spot=i=>({x:(i%t.MW+.5)*t.TILE,y:(Math.floor(i/t.MW)+.5)*t.TILE});
+   let wet=-1,dry=-1,br=-1,frost=-1,desert=-1;for(let i=0;i<t.MW*t.MH;i++){if(t.tiles[i]!==t.T_OPEN)continue;const cl=t.CLIMS[t.climate[i]],w=near(i,water);
+    if(cl==='grass'&&w&&wet<0)wet=i;if(cl==='grass'&&!w&&dry<0)dry=i;if(cl!=='desert'&&cl!=='frost'&&w&&br<0&&near(i,rb,2))br=i;if(cl==='frost'&&w&&frost<0)frost=i;if(cl==='desert'&&w&&desert<0)desert=i}
+   const at2=(i,c)=>{const p=spot(i);return t.terrainAt(p.x,p.y,{c,t:t.T_OPEN})};
+   ok(wet>=0&&at2(wet,'grass').river&&!at2(dry,'grass').river,'a battle beside water has a river ('+JSON.stringify(at2(wet,'grass').river)+'), one away from it none');
+   ok(br<0||at2(br,'grass').river.bridge,'a road bridge within '+V.near+' tiles gives the field a bridge'+(br<0?' (no such tile on this map)':''));
+   ok(frost<0||at2(frost,'frost').river.frozen,'in the frost the river is frozen'+(frost<0?' (no such tile)':''));
+   ok(desert<0||!at2(desert,'desert').river&&at2(desert,'desert').oasis,'a desert by water has an oasis, never a river'+(desert<0?' (no such tile)':''));
+   {let st=0,n=0;for(let i=0;i<t.MW*t.MH&&n<200;i++){if(t.tiles[i]!==t.T_OPEN||t.CLIMS[t.climate[i]]!=='swamp'||near(i,water))continue;n++;const r=at2(i,'swamp').river;if(r&&r.stream)st++}
+    ok(!n||st>n*.3&&st<n*.7,'a swamp away from water: a ford-only stream about half the time ('+st+'/'+n+')')}
+   const p=spot(wet),envW={c:'grass',t:t.T_OPEN};P.x=p.x;P.y=p.y;const sp=k=>{G.enc={kind:k};return t.groundSpecFor({},envW)};
+   ok(sp('party').river&&sp('lord').river&&sp('monster').river===null&&sp('cave').river===null&&sp('siege')===null,'river fields for lords and parties; none against a monster or in a cave (hills and woods only), no terrain in a siege');
+   ok(/river/i.test(t.terrainEnvText({...envW,text:'X.'},'party'))&&!/river/i.test(t.terrainEnvText({...envW,text:'X.'},'monster')),'the pre-battle panel tells of the river: '+t.terrainEnvText({...envW,text:'X.'},'party'));
+   const Bw=fight(p);ok(Bw.terrain&&Bw.terrain.has.water&&Bw.terrain.ai.crossings.length>0&&Bw.obs.length===0&&/river/i.test(Bw.env.text),'a battle beside water is fought over a river: '+Bw.env.text);ev('B=null');G.mode='world';G.modal=false}
+  // ---- the rules, on a lab field: a river down the middle, a ford above, a bridge below
+  L.exit();G.mode='world';G.modal=false;
+  const RB=lab([{type:'hum_foot',count:1},{type:'hum_knight',count:1},{type:'orc_grunt',count:1},{type:'hum_bow',count:1},{type:'hum_foot',count:16},{type:'hum_knight',count:8,form:'wedge'}],[{type:'hum_foot',count:1},{type:'troll',count:1},{type:'dw_shield',count:6}],
+   {rivers:[{x:.5,crossings:[{kind:'ford',y:.22},{kind:'bridge',y:.5}]}],seed:3});
+  const RT=RB.terrain,[cF,cB]=RT.ai.crossings,mid=(cF.x0+cF.x1)/2,dp={x:mid,y:t.BH*.36},fd={x:mid,y:cF.y},bg={x:(cB.x0+cB.x1)/2,y:cB.y},dry={x:cF.x0-120,y:t.BH*.36};
+  ok(RT.has.water&&cellK(RT,dp.x,dp.y)===K.deep&&cellK(RT,fd.x,fd.y)===K.ford&&cellK(RT,bg.x,bg.y)===K.bridge&&cF.kind==='ford'&&cB.kind==='bridge','a lab river ({rivers:[…]}): deep water, a ford and a bridge');
+  const W0=RB.units.filter(u=>u.hp>0),one=(ty,tm=0)=>W0.find(u=>u.type===ty&&u.team===tm&&t.grpUnits(u.grp).length===1),foot=one('hum_foot'),kn=one('hum_knight'),orc=one('orc_grunt'),bow=one('hum_bow'),foe=one('hum_foot',1),troll=W0.find(u=>u.type==='troll');
+  const put=(u,p,dx=0,dy=0)=>{u.x=p.x+dx;u.y=p.y+dy;return u},gm=(u,p)=>{put(u,p);return t.groundMul(u,1,0)},DG=t.TERRAIN_GROUND.deep,FG=t.TERRAIN_GROUND.ford;
+  ok(near(gm(foot,dp),DG.spd.foot)&&near(gm(kn,dp),DG.spd.mounted)&&near(gm(troll,dp),DG.spd.big)&&near(gm(orc,dp),DG.spd.foot),'deep water: ×'+DG.spd.foot+' for foot and riders, ×'+DG.spd.big+' for big units, orcs too');
+  ok(near(gm(foot,fd),FG.spd.foot)&&near(gm(kn,fd),FG.spd.mounted)&&near(gm(troll,fd),FG.spd.big)&&near(gm(orc,fd),1),'a ford: foot ×'+FG.spd.foot+', riders ×'+FG.spd.mounted+', big ×'+FG.spd.big+', orcs ×1');
+  ok([foot,kn,troll,orc].every(u=>near(gm(u,bg),1)),'a bridge: open ground (×1)');
+  {for(const u of RB.units)if(u.hp>0&&u.team===1&&u!==foe){u.x=t.BW-20;u.y=20}
+   const step=(u,p)=>{put(u,p);const g=RB.groups[u.grp];g.order='charge';g.tgt=null;put(foe,p,0,200);u.rt=0;u.tgt=null;u.cd=9;const x0=u.x,y0=u.y;t.aiUnit(u,.05,null);return Math.hypot(u.x-x0,u.y-y0)};
+   const a=step(foot,dry),w=step(foot,dp),f=step(foot,fd);ok(a>0&&near(w/a,DG.spd.foot,1e-6)&&near(f/a,FG.spd.foot,1e-6),'a soldier wading deep water goes ×'+(w/a).toFixed(2)+', through a ford ×'+(f/a).toFixed(2)+' as far')}
+  {const gr=(u,p)=>{put(u,p);u.run=0;return t.groundRun(u,1,0,1)};ok(gr(kn,dp)===0&&near(gr(kn,fd),FG.run)&&near(gr(orc,fd),1)&&near(gr(kn,bg),1),'charge momentum: none builds in deep water, ×'+FG.run+' in a ford (orcs ×1), ×1 on a bridge');
+   put(kn,dp);kn.run=60;t.terrainStep();const lost=kn.run;put(kn,bg);kn.run=60;t.terrainStep();ok(lost===0&&kn.run===60,'deep water takes a rider’s momentum away (a bridge does not)')}
+  {const FA=t.FATIGUE,drain=(u,p,walk)=>{put(u,p);u.dir=0;u.sta=80;t.fatigueStep(u,1,true,walk,false,false);return 80-u.sta},flat=drain(foot,dry,false);
+   ok(near(drain(foot,dp,false),flat*DG.sta,1e-9)&&near(drain(foot,fd,false),flat*FG.sta,1e-9)&&near(drain(orc,fd,false),drain(orc,dry,false),1e-9)&&drain(foot,dry,true)===0&&near(drain(foot,dp,true),FA.run*DG.wade/(foot.vig||1),1e-9),'stamina: running in deep water ×'+DG.sta+', in a ford ×'+FG.sta+' (orcs ×1); wading at a walk spends '+FA.run+'/s (walking on dry ground none)')}
+  {const ex=(p,q,a=foot)=>{put(foe,q);const v={x:p.x,y:p.y,s:a.s,unit:a.unit};return t.groundHit(v,foe)};
+   ok(near(ex(dp,dry),DG.hit)&&near(ex(dry,dp),DG.hurt)&&near(ex(dp,{x:dp.x+8,y:dp.y}),DG.hit*DG.hurt)&&near(ex(fd,dry),FG.hit)&&near(ex(fd,dry,orc),1)&&near(ex(bg,dry),1),'melee: blows from deep water ×'+DG.hit+', at a foe in it ×'+DG.hurt+'; from a ford ×'+FG.hit+' (orcs ×1); a bridge ×1')}
+  {for(const u of RB.units)if(u.hp>0&&u!==bow&&u!==foe){u.x=40;u.y=40}const shots=p=>{put(bow,p);put(foe,p,180,0);bow.shot=null;bow.cd=0;bow.tgt=null;bow.rt=0;RB.groups[bow.grp].order='hold';RB.groups[bow.grp].ax=bow.x;RB.groups[bow.grp].ay=bow.y;bow.sx=bow.sy=0;let drew=0;
+     for(let k=0;k<40;k++){t.aiUnit(bow,.05,()=>{});if(bow.shot)drew++;bow.x=p.x;bow.y=p.y}return drew};
+   ok(shots(dp)===0&&shots(dry)>0,'no shooting from deep water (a bowman there never draws; on the bank he does)')}
+  {const g=RB.groups[foot.grp];g.order='hold';foot.spdNow=0;foot.run=0;const co=p=>{put(foot,p);return t.cohesionReady(foot)},wr=p=>{put(foot,p);return t.wallReady(foot)};
+   const sh=W0.find(u=>u.type==='dw_shield'),sg=RB.groups[sh.grp];sg.shieldWall=true;sg.walk=true;sg.run=false;sg.order='hold';const wall=p=>{put(sh,p);return t.wallReady(sh)};
+   ok(!co(dp)&&co(fd)&&co(bg)&&co(dry),'cohesion: lost in deep water; kept in a ford, on a bridge and on dry ground');
+   ok(!wall(dp)&&!wall(fd)&&wall(bg)&&wall(dry),'shield wall: not in deep water or a ford (formations thin there); on a bridge it holds');sg.shieldWall=false}
+  {const wg=Object.keys(RB.groups).find(id=>RB.groups[id].form==='wedge'),m=t.grpUnits(wg);for(const u of m){u.x=dry.x-60+(u.sx||0);u.y=dry.y+(u.sy||0)}RB.groups[wg].ax=dry.x-60;RB.groups[wg].ay=dry.y;const n0=t.wedgeMembers(wg).length;
+   const d=fd.x-m[0].x,e=fd.y-m[0].y;for(const u of m){u.x+=d;u.y+=e}const inF=m.filter(u=>t.groundThin(u)).length;ok(n0===8&&inF>0&&t.wedgeMembers(wg).length<=8-inF,'riders in a ford do not count toward the wedge ('+inF+' of 8 in it)')}
+  ok(t.holdsBank(put(foot,{x:cF.x1+12,y:fd.y}),put(foe,fd))&&t.holdsBank(put(foot,dry),put(foe,dp))&&!t.holdsBank(put(foot,fd),put(foe,{x:fd.x+4,y:fd.y}))&&!t.holdsBank(put(foot,dry),put(foe,dry,10,0)),'a man in formation on the bank keeps it: he does not step down into the water after a foe there');
+  {foot.xc=null;const way=(p,q)=>{put(foot,p);return t.crossWay(foot,q.x,q.y)},P1=way({x:cF.x0-60,y:cF.y+40},{x:cF.x1+80,y:cF.y+40});
+   ok(P1&&near(P1[0],cF.x0-V.pad)&&P1[1]>=cF.y0+V.inset&&P1[1]<=cF.y1-V.inset&&foot.xc===cF,'a man whose way crosses deep water near a ford makes for its mouth ('+P1.map(Math.round)+')');
+   const P2=way({x:cF.x0-4,y:cF.y+10},{x:cF.x1+80,y:cF.y+40});ok(P2&&near(P2[0],cF.x1+V.pad),'at its mouth, over to the far side');
+   foot.xc=null;ok(way({x:cF.x0-20,y:t.BH*.37},{x:cF.x1+20,y:t.BH*.37})===null,'a short hop over, far from a crossing: he wades (quicker than the way round)');
+   ok(way(dp,{x:cF.x1+80,y:dp.y})===null&&foot.xc===null,'and once in deep water he wades on');ok(way(dry,{x:dry.x-40,y:dry.y})===null,'a way that does not cross the river: none')}
+  // marching over: a line of 16 squeezes onto a bridge (those far off its line wade); a charge goes over a bridge, not through the water
+  {const g=RB.groups[Object.keys(RB.groups).find(id=>RB.groups[id].type==='hum_foot'&&t.grpUnits(id).length===16)],m=g.units;for(const u of RB.units)if(u.hp>0&&!m.includes(u)){u.x=u.team?t.BW-30:30;u.y=t.fieldTop()+10;u.hp=u.max=1e9;u.s={...u.s,spd:0}}
+   g.face=0;g.currentFacing=0;g.placeAt(cB.x0-90,cB.y);t.layForm(g.id);for(const u of m){u.x=g.ax+u.sx;u.y=g.ay+u.sy}g.moveTo(cB.x1+120,cB.y,{face:0});
+   const wet=new Set(),dryX=new Set();RB.paused=false;ev('B.cmdT=1e9');for(let f=0;f<60*25;f++){t.updateBattle(1/60);for(const u of m){const k=t.groundAt(u.x,u.y);if(k===K.deep)wet.add(u);else if(k===K.bridge)dryX.add(u)}}
+   const over=m.filter(u=>u.x>cB.x1).length;ok(over===16&&dryX.size>=8&&wet.size<16,'a line of 16 marching over: '+dryX.size+' squeeze over the bridge, '+wet.size+' far off its line wade; '+over+'/16 across')}
+  L.exit();G.mode='world';G.modal=false;
+  {const CB=lab([{type:'hum_knight',count:1}],[{type:'hum_foot',count:1}],{rivers:[{x:.5,crossings:[{kind:'bridge',y:.5}]}],seed:3}),k=CB.units.find(u=>u.type==='hum_knight'),f=CB.units.find(u=>u.type==='hum_foot'),c=CB.terrain.ai.crossings[0];
+   k.x=c.x0-100;k.y=c.y+30;f.x=c.x1+90;f.y=c.y-20;f.s={...f.s,spd:0};CB.groups[k.grp].attack(f);CB.paused=false;ev('B.cmdT=1e9');let wet=0,onB=0;for(let i=0;i<60*8&&f.hp>0;i++){t.updateBattle(1/60);const g=t.groundAt(k.x,k.y);if(g===K.deep)wet++;if(g===K.bridge)onB++}
+   ok(!wet&&onB>0,'a charge goes over the bridge, not through the water (frames: '+onB+' on it, '+wet+' wading)');L.exit();G.mode='world';G.modal=false}
+  {const T2=t.buildTerrain({recipe:'open',seed:1,W:1100,top:40,bot:560,river:{bridge:true}}),save=t.B;ev('B={terrain:null}');t.B.terrain=T2;const ux=T2.ai.crossings[0],hm=[{x:ux.x,y:ux.y-40,hp:1,s:{range:300}}],dw=[{x:(ux.x0+ux.x1)/2,y:ux.y-60,hp:1,s:{range:300}}];
+   const l1=t.groundLabel(hm),l2=t.groundLabel(dw);ev('B=null');ok(/Deep water \(slowed, cannot shoot\)/.test(l1+l2),'the details tell of it: '+(l1||l2))}
+  // ---- text, the lab key, reproducible
+  {const T3=t.buildTerrain({recipe:'hills',seed:2,W:1100,top:40,bot:560,river:{bridge:true}});ok(/^A river with a bridge and a ford\./.test(T3.recipe.text)&&/Deep water/.test(T3.recipe.text),'the ground in words: '+T3.recipe.text)}
+  ok(L.validate({ground:{recipe:'river',seed:3}}).ground.river&&L.validate({ground:{recipe:'hills',river:{bridge:true}}}).ground.river.bridge&&L.validate({ground:{rivers:[{x:.5,crossings:[{kind:'ford',y:.5}]}]}}).ground.rivers[0].crossings[0].kind==='ford','the lab ground key takes rivers: {recipe:"river"}, {recipe, river:{bridge, frozen, stream}}, {rivers:[{x, crossings:[{kind, y}]}]}');
+  {let th=0;for(const g of [{rivers:[{x:2}]},{rivers:[{x:.5,crossings:[{kind:'moat',y:.5}]}]},{recipe:'open',river:5},{rivers:'x'},{rivers:[{x:.5,meander:900}]}])try{L.validate({ground:g})}catch(e){th++}ok(th===5,'bad river grounds are refused')}
+  {const rg={recipe:'river',seed:11,river:{bridge:true}},a1=run(rg,true),a2=run(rg,true);ok(a1===a2,'a battle over a river is reproducible ('+a1+')')}}
  // ---- the lab key
  ok(L.validate({}).ground==='none'&&L.validate({ground:'auto'}).ground==='auto'&&L.validate({ground:{recipe:'hills',seed:3}}).ground.recipe==='hills','the lab ground key: none by default, auto, a recipe');
  let threw=0;for(const g of [{recipe:'moon'},{hills:[{x:2,y:.5,r:50}]},{woods:'x'},{hills:[{x:.5,y:.5,r:50,top:3}]},5])try{L.validate({ground:g})}catch(e){threw++}ok(threw===5,'bad grounds are refused');

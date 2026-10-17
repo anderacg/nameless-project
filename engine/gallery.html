@@ -42,10 +42,13 @@ function render(){
     out.appendChild(row)}
 }
 // battlefield ground (engine/ground.js) on stand-in terrain (ground-fixture.js): each recipe in each climate, a field 960×600 at
-// 1:1 (?z=2 doubles it); ?only= a recipe or a climate; ?seed= the fixture's seed
+// 1:1 (?z=2 doubles it); ?only= a recipe, a climate or 'rivers'; ?seed= the fixture's seed
 function renderGround(){
   const q=new URLSearchParams(location.search),Z=+(q.get('z')||1),only=q.get('only')||'',sd=+(q.get('seed')||1),out=document.getElementById('out');out.innerHTML='';
-  for(const recipe of ['hills','forest','marsh','mixed','hillwoods','oasis'])for(const climate of ['grass','frost','desert','swamp']){if(only&&only!==recipe&&only!==climate)continue;
+  // (rivers: ?only=rivers shows each river recipe in the climates that have one; a desert gets a river only when the game lays one)
+  const RIVERS=['river','bridge','fords','bridgehills','stream','frozen'],riv=only==='rivers';
+  for(const recipe of ['hills','forest','marsh','mixed','hillwoods','oasis',...RIVERS])for(const climate of ['grass','frost','desert','swamp']){if(riv?!RIVERS.includes(recipe)||climate==='desert':only&&only!==recipe&&only!==climate)continue;
+    if(RIVERS.includes(recipe)&&climate==='desert'&&only!==recipe)continue;
     const t=PX.groundFixture({recipe,C:60,R:38,seed:sd}),t0=performance.now(),gr=PX.battleGround({...t,climate}),ms=performance.now()-t0,mini=PX.battleGroundMini({...t,climate},gr);
     const row=document.createElement('div');row.className='row';row.innerHTML='<span class="lab">'+recipe+' · '+climate+' · '+ms.toFixed(0)+' ms</span>';
     const c=document.createElement('canvas');c.width=gr.width*Z;c.height=gr.height*Z;const g=c.getContext('2d');g.imageSmoothingEnabled=false;g.drawImage(gr,0,0,c.width,c.height);row.appendChild(c);

@@ -97,8 +97,11 @@ function drawParties(ents,cam,V){for(const o of W.parties)o.draw(ents,cam,V)}
 function drawUnit(u){
   // (placed on the camera's pixels, not the field's: zoomed in, they glide instead of stepping)
   const q=B.cam?B.cam.z:1,big=u.s.big?2:1,s=unitSprite(u.type,u.team,u.hero,u.v),w=s.width,h=s.ch,x=Math.round(u.x*q)/q,y=Math.round(u.y*q)/q;
-  ctx.fillStyle='rgba(0,0,0,.28)';ctx.beginPath();ctx.ellipse(x,y,5.5*big,1.8*big,0,0,6.283);ctx.fill();// (a soft shadow)
-  const z=Math.round(u.z||0),ghost=u.hero&&B.hx&&B.hx.inv>0;
+  // (in a river (terrain.js groundAt; engine/ground.js paints it): deep water hides him to the waist, sunk 2 px, a ring of ripples
+  // round him, its back half behind him; a ford wets his feet and splashes as he walks; a frozen ford (frost) is ice. From the
+  // battle's time and his id: drawn only)
+  const z=Math.round(u.z||0),ghost=u.hero&&B.hx&&B.hx.inv>0,wk=B.terrain&&!z?groundAt(u.x,u.y):0,deep=wk===4,ford=wk===3&&B.env.c!=='frost',rr=Math.round(5*big+1);
+  if(deep)waterRing(x,y-2,rr,u,-1);else{ctx.fillStyle='rgba(0,0,0,.28)';ctx.beginPath();ctx.ellipse(x,y,5.5*big,1.8*big,0,0,6.283);ctx.fill()}// (a soft shadow)
   if(u.buffT>0){ctx.fillStyle='rgba(232,185,74,.35)';ctx.fillRect(x-6,y-2,12,3)}
   const hit=u.hitAt!=null&&B.t-u.hitAt<.09;
   // (moving: a step in the last few frames, so a man who stops and starts as he settles does not flicker between standing and walking)
@@ -107,12 +110,14 @@ function drawUnit(u){
     if(cl&&((pose>=2&&pose<=5)||(pose>=15&&pose<=18)))pose=cl==='up'?19+Math.floor(B.t*5+(u.v||0))%4:23+Math.floor(B.t*9+(u.v||0))%4;
     const sp=beast?(pose?unitSprite(u.type,u.team,u.hero,u.v,pose):s):unitSprite(u.type,u.team,u.hero,u.v,pose,true,!!u.inMelee);
     let bx=0,bo=0;if(beast){if(moved)bo=-(Math.floor(B.t*8+(u.v||0))%2);if(u.atkAt!=null&&B.t-u.atkAt<ATK_ANIM)bx=Math.round(3*Math.sin((B.t-u.atkAt)/ATK_ANIM*Math.PI))}
-    ctx.save();ctx.translate(x,y-z+bo);if(u.face<0)ctx.scale(-1,1);if(ghost)ctx.globalAlpha=.55;ctx.drawImage(hit?whiteOf(sp):sp,-Math.floor(sp.width/2)+bx,-sp.height+2);if(!beast)drawHeld(u,u.inMelee?sidearmLook(u):unitLook(u),sp,-Math.floor(sp.width/2)+bx,-sp.height+2,hit);ctx.restore();
+    ctx.save();ctx.translate(x,y-z+bo);if(deep||ford){const sk=deep?2:0;ctx.translate(0,sk);ctx.beginPath();ctx.rect(-64,-128,128,128-sk-(deep?2:0));ctx.clip()}if(u.face<0)ctx.scale(-1,1);if(ghost)ctx.globalAlpha=.55;ctx.drawImage(hit?whiteOf(sp):sp,-Math.floor(sp.width/2)+bx,-sp.height+2);if(!beast)drawHeld(u,u.inMelee?sidearmLook(u):unitLook(u),sp,-Math.floor(sp.width/2)+bx,-sp.height+2,hit);ctx.restore();
     // (climbing: a little grit trickles down the slope behind him now and then; coming down, a puff at the heel: from his id and the
     // battle's time, drawn only)
     if(cl){const ph=(B.t*(cl==='up'?2.2:3)+((u.id||0)*.37))%1,dc=B.env.c==='frost'?'#e8eef4':B.env.c==='desert'?'#e6cc96':'#a8987a';
       if(cl==='up'&&ph<.4){const f=u.face<0?1:-1;ctx.fillStyle=dc;ctx.fillRect(Math.round(x+f*3),Math.round(y+1+ph*10),1,1);ctx.fillStyle='#6e6252';ctx.fillRect(Math.round(x+f*5),Math.round(y+ph*7),1,1)}
-      else if(cl==='down'&&ph<.25){ctx.fillStyle=dc;ctx.globalAlpha=.7;ctx.fillRect(Math.round(x-(u.face<0?-4:4)),Math.round(y-1),2,1);ctx.globalAlpha=1}}}// (his weapon in his hand: weapons.js)
+      else if(cl==='down'&&ph<.25){ctx.fillStyle=dc;ctx.globalAlpha=.7;ctx.fillRect(Math.round(x-(u.face<0?-4:4)),Math.round(y-1),2,1);ctx.globalAlpha=1}}
+    if(deep)waterRing(x,y-2,rr,u,1,moved);else if(ford){const ph=(B.t*3+(u.id||0)*.37)%1;ctx.fillStyle='rgba(232,242,240,.55)';ctx.fillRect(Math.round(x-rr+1),Math.round(y),2*rr-2,1);
+      if(moved&&ph<.5){ctx.fillStyle='#e8f2f0';ctx.fillRect(Math.round(x-3),Math.round(y-1-ph*4),1,1);ctx.fillRect(Math.round(x+3),Math.round(y-ph*5),1,1);ctx.fillRect(Math.round(x+(u.face<0?4:-4)),Math.round(y),1,1)}}}// (his weapon in his hand: weapons.js)
   drawStuck(u,x,y-Math.round(u.z||0));// (arrows in him: vfx.js)
   if(u.buffT>0&&Math.random()<.06)vfx({k:'ember',x:u.x+rnd(-4,4),y:u.y-rnd(2,12),vx:rnd(-4,4),vy:-rnd(10,25),life:rnd(.4,.7),col:'#ffd25a'});// (inspired: golden sparks)
   if(u.stun>0)txt('*',x+(Math.floor(performance.now()/120)%2?3:-3),y-h-z-2,'#ffe08a','center');
@@ -122,6 +127,12 @@ function drawUnit(u){
   if(HPBARS.on||u.hero||u.comp||u.leader){const bw=u.s.big?28:12,f=Math.max(0,u.hp/u.max),bx=Math.round(x-bw/2),by=y-h-2-z;ctx.fillStyle='#0a0c12';ctx.fillRect(bx-1,by-1,bw+2,4);ctx.fillStyle='#3a2420';ctx.fillRect(bx,by,bw,2);
     ctx.fillStyle=u.hero||u.comp?'#e8b94a':u.team?'#e0605a':'#78c474';ctx.fillRect(bx,by,Math.round(bw*f),2)}
 }
+// a ring of ripples round one wading (half -1: its back half, drawn before him; 1: its front, after): whole pixels on the ellipse
+// (rx, 2), a fainter one spreading from it, a wake behind him as he moves
+function waterRing(x,y,rx,u,half,moved){x=Math.round(x);y=Math.round(y);const ph=(B.t*(moved?1.6:.8)+(u.id||0)*.37)%1,r2=rx+1+Math.round(ph*4);
+  for(const [r,a] of [[rx,.8],[r2,.5*(1-ph)]]){ctx.fillStyle='rgba(232,242,244,'+a.toFixed(2)+')';const ry=r===rx?2:2+Math.round(ph*1.5);
+    for(let dx=-r;dx<=r;dx++){const dy=Math.round(ry*Math.sqrt(Math.max(0,1-(dx/(r+.5))**2)));ctx.fillRect(x+dx,y+half*dy,1,1)}}
+  if(moved&&half>0){const f=u.face<0?1:-1;ctx.fillStyle='rgba(232,242,244,.6)';for(let k=1;k<=3;k++){ctx.fillRect(x+f*(rx+k*2),y-k+1,2,1);ctx.fillRect(x+f*(rx+k*2),y+k,2,1)}}}
 // an attack's trail by its shape: a sweeping crescent, a darting streak, a chop and its shockwave, a full circle, claw marks
 function drawSlash(s){
   const p=1-s.life/(s.max||.2),fade=Math.min(1,s.life/(s.max||.2)*1.6),col=s.col||'255,255,255',st=a=>'rgba('+col+','+Math.max(0,a).toFixed(2)+')';
@@ -146,7 +157,11 @@ function drawBattle(){
   // the camera (camera.js): the field drawn at its zoom and pan, the HUD over it at the screen's scale
   if(B.cam)camTick();const Cz=B.cam?B.cam.z:1;ctx.fillStyle='#07090e';ctx.fillRect(0,0,BVW,BVH);ctx.save();if(B.cam){ctx.scale(Cz,Cz);ctx.translate(-Math.round(B.cam.x*Cz)/Cz,-Math.round(B.cam.y*Cz)/Cz)}
   // (a field with terrain: its own ground, painted once over the arena: engine/ground.js; units, as ever, over it)
-  ctx.drawImage(B.terrain?B.ground||(B.ground=PX.battleGround({...B.terrain,climate:B.env.c,base:B.arena})):B.arena,0,0);{const t=fieldTop()-FIELD_EDGE.body+6,b=fieldBot()+4;ctx.fillStyle='rgba(8,10,16,.35)';if(t>0)ctx.fillRect(0,0,BW,t);if(b<BH)ctx.fillRect(0,b,BW,BH-b);ctx.fillStyle='rgba(232,224,200,.18)';if(t>0)ctx.fillRect(0,t,BW,1);if(b<BH)ctx.fillRect(0,b,BW,1)}// (the field's edges in sight: battle.js fieldTop)
+  ctx.drawImage(B.terrain?B.ground||(B.ground=PX.battleGround({...B.terrain,climate:B.env.c,base:B.arena})):B.arena,0,0);
+  // (a river moves: glints and current over its water, engine/ground.js PX.battleWater, on the ground's own clock (real time, still
+  // while paused); still water for those who ask for less motion (vfx.js reducedMotion))
+  if(B.terrain&&B.ground.water){const gw=B.ground,now=performance.now();if(!B.paused&&gw.wl)gw.wt=(gw.wt||0)+Math.min(.1,(now-gw.wl)/1000);gw.wl=now;
+    if(!reducedMotion()){const c=B.cam,z=c?c.z:1,vx=c?c.x:0,vy=c?c.y:0;PX.battleWater(ctx,gw,gw.wt||0,[vx,vy,vx+BVW/z,vy+BVH/z])}}{const t=fieldTop()-FIELD_EDGE.body+6,b=fieldBot()+4;ctx.fillStyle='rgba(8,10,16,.35)';if(t>0)ctx.fillRect(0,0,BW,t);if(b<BH)ctx.fillRect(0,b,BW,BH-b);ctx.fillStyle='rgba(232,224,200,.18)';if(t>0)ctx.fillRect(0,t,BW,1);if(b<BH)ctx.fillRect(0,b,BW,1)}// (the field's edges in sight: battle.js fieldTop)
   if(!B.deploy)drawExit();drawDeploy();// (the withdrawal edge: morale.js; the deployment zone: deploy.js)
   drawCorpses();vfxGround();// (the fallen and their blood; dust, shockwaves: vfx.js)
   for(const g of playerGroups()){const gr=B.groups[g];if((gr.order!=='hold'&&gr.order!=='advance')||!grpUnits(g).length)continue;
