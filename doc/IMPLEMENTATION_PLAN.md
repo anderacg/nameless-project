@@ -72,7 +72,7 @@ Recommended order, with what already exists to build on:
 3. **Terrain that matters:** hills (range, downhill charge), river and bridge chokepoints, woods that hide and slow cavalry.
 4. **Juice:** shake and slow motion on a full charge, callouts ("Flanked!", "Routed!"), and a "unit of the battle" in the summary.
 5. **Battle types:** ambush (surrounded, no deploy), defend a caravan, hold the bridge, run down a fleeing enemy.
-6. **Race fighting styles** as captain personalities (orc berserk, elf skirmish, beasts ignore formation).
+6. ~~**Race fighting styles**~~ **Built 2026-10-17** (`TEMPERAMENT` in `commander.js`: dwarves hold, elves skirmish, orcs frenzy, mixed hunts the wavering; human = base). Beasts get no style yet.
 7. **Reinforcements that arrive mid-battle** from the field's edge. Reinforcements exist today but are present from the start.
 
 On hold by the owner's call: a battle scale of one unit ≈ 100 men.
