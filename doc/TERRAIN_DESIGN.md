@@ -282,6 +282,10 @@ Agents are split by files that do not overlap. The **`B.terrain` shape in §4 is
 
 **Art v3 approved by the owner (2026-10-17):** steep cliff-faced terraces, trees on hills and species mixes, desert oasis only, per-biome painted detail, lean-forward climbing / downhill poses for foot soldiers (riders keep their pose).
 
+**Owner requests after phase 2 art (2026-10-17):**
+- **Canopy layer:** trees bigger (32-px cells) and drawn **above** units; where your or your allies' soldiers stand under it, the canopy near them fades to partly transparent so you see your men. **Enemies under trees stay covered until spotted** (the full phase-3 concealment: unseen by a team with no soldier near; revealed when one of yours is close or they attack). Order: right after phase 2.
+- **Cliffs and one-way hills:** impassable cliff edges, and hills climbable from one side only (a plateau with cliffs all round but one ramp), built **together with grid route-finding and impassable deep water** (phase 4 routing): moves, AI moves and chases become waypoints around cliffs; charges can't cross a cliff, missiles fly over; generation keeps one-way hills fair (mirrored or reachable by both sides). Order: after the canopy/concealment work.
+
 | # | Decision | Recommendation |
 |---|---|---|
 | D1 | Deep water: **wadeable but punishing** (×0.35 speed, no shooting, weak in melee), or **impassable** (which needs crossing routing for every move and chase)? | **Wadeable in phase 2.** Impassable comes with *Hold the bridge* in phase 4. |
