@@ -7,6 +7,8 @@ const selGroups=()=>!B?[]:(B.sel==='all'?playerGroups():Array.isArray(B.sel)?B.s
 const selLabel=()=>B.sel==='all'?groupName('all'):selGroups().map(g=>groupName(g)).join(' and ');
 const regroup=g=>B.groups[g]&&B.groups[g].regroup();// (its place where its men are: battlecontrol.js)
 const RTS_PICK=10;
+// an order of yours to these groups: counted (orderSeq), so a character's fall-back ends on any of them (commander.js fallLook)
+const ordered=gs=>gs.forEach(g=>{const gr=B.groups[g];if(gr)gr.orderSeq=(gr.orderSeq|0)+1});
 // the unit under a point: on a group's icon, its soldier nearest the group's middle (the icon is clicked as the group: select,
 // attack, everything a click on a soldier does); else the nearest soldier within RTS_PICK
 function rtsUnitAt(x,y,team){
@@ -24,7 +26,7 @@ function rtsSelect(x0,y0,x1,y1,add){
 // right-click: on an enemy, the selected set on it; on the ground, sent there keeping their places relative to one another
 // (opt.queue: Shift, a waypoint after the ones they have; opt.run: a double right-click, at a run)
 function rtsOrder(x,y,opt){
-  opt=opt||{};const gs=selGroups().filter(g=>grpUnits(g).length&&!B.groups[g].resolve?.routed);if(!gs.length)return;takeCommand();
+  opt=opt||{};const gs=selGroups().filter(g=>grpUnits(g).length&&!B.groups[g].resolve?.routed);if(!gs.length)return;takeCommand();ordered(gs);
   if(B.deploy){const p=inZone(x,y);x=p.x;y=p.y;opt={}}// (deploying: a spot in your zone, no enemy to set them on)
   const e=B.deploy?null:rtsUnitAt(x,y,1);
   {const ic=!e&&iconAt(x,y,0);if(ic&&!B.deploy){x=ic.cx;y=ic.cy}}// (on one of your icons: to where that group stands)
@@ -42,17 +44,17 @@ function rtsOrder(x,y,opt){
 // an order to the selected groups: hold (where they stand), charge, advance, withdraw (flee the battle: off your edge,
 // straight back off your edge, striking no one: once all have withdrawn the battle ends as your retreat, morale.js). Any order calls off a target and the waypoints
 function setOrder(o){
-  if(!B)return;takeCommand();
+  if(!B)return;takeCommand();ordered(selGroups());
   // (Charge and Advance set the pace, run or walk, and nothing else: where they go and whom they fight stay as they were)
   if(o==='charge'||o==='advance'){for(const g of selGroups())B.groups[g].setWalk(o==='advance');setOrderUI();log(htmlText(selLabel())+': '+(o==='charge'?'at a run.':'at a walk.'));return}
   // (hold: where they stand; withdraw: off your edge (battlecontrol.js); the others are pace: above)
-  for(const g of selGroups()){const gr=B.groups[g];if(o==='withdraw')gr.withdraw();else if(o==='hold')gr.hold();else if(o==='advance')gr.advance()}
+  for(const g of selGroups()){const gr=B.groups[g];if(o==='withdraw')gr.withdraw();else if(o==='hold')gr.hold()}
   setOrderUI();log(htmlText(selLabel())+': '+o+'.');
 }
 // a group's flag on or off for the selection: walk, firm (hold ground), cease (cease fire), skirmish, melee (shooters' blades)
 const SHOOT_FLAGS=['melee','cease','skirmish'];
 const FLAG_N={walk:['walk','run'],firm:['hold their ground','fight freely'],shieldWall:['shield wall requested for eligible soldiers','shields lowered'],cease:['cease fire','fire at will'],skirmish:['skirmish','stand'],melee:['melee mode on: they fight whoever reaches them','melee mode off: they keep shooting, point blank']};
-function toggleFlag(f){if(!B||!FLAG_N[f])return;const gs=selGroups().filter(g=>grpUnits(g).some(u=>flagEligible(u,f)));if(!gs.length)return;const on=!gs.every(g=>B.groups[g][f]);gs.forEach(g=>B.groups[g].setFlag(f,on));setOrderUI();log(htmlText(selLabel())+': '+FLAG_N[f][on?0:1]+'.')}
+function toggleFlag(f){if(!B||!FLAG_N[f])return;const gs=selGroups().filter(g=>grpUnits(g).some(u=>flagEligible(u,f)));if(!gs.length)return;takeCommand();const on=!gs.every(g=>B.groups[g][f]);gs.forEach(g=>B.groups[g].setFlag(f,on));setOrderUI();log(htmlText(selLabel())+': '+FLAG_N[f][on?0:1]+'.')}
 // control groups: Ctrl+1-9 keeps the selection under that key, 1-9 picks it again
 function ctrlGroup(k,save){if(!B)return;B.ctrl=B.ctrl||{};if(save){B.ctrl[k]=B.sel==='all'?'all':selGroups().slice();log('Group '+k+': '+htmlText(selLabel())+'.');return}
   const c=B.ctrl[k];if(!c){const id=playerGroups()[k==='0'?9:Number(k)-1];if(id)selectGroup(id);return}const gs=c==='all'?'all':c.filter(g=>grpUnits(g).length);if(gs!=='all'&&!gs.length)return;B.sel=gs==='all'?'all':gs.length===1?gs[0]:gs;setOrderUI()}
@@ -63,12 +65,12 @@ function setForm(f){
   if(f==='wall')return toggleFlag('shieldWall');// Compatibility for old command callers, not a formation.
   if(!B||!FORMS[f])return;const sel=selGroups().filter(g=>grpUnits(g).length),gs=sel.filter(g=>formFits(g,f));
   if(!gs.length){if(sel.length)log('Only '+WHO_N[FORMS[f].who]+' can form '+(f==='wall'?'a shield wall':f==='wedge'?'a wedge':'loose order')+'.');return}
-  const to=f!=='line'&&gs.every(g=>B.groups[g].form===f)?'line':f;
+  takeCommand();const to=f!=='line'&&gs.every(g=>B.groups[g].form===f)?'line':f;
   gs.forEach(g=>B.groups[g].setForm(to));setOrderUI();log(gs.map(g=>htmlText(groupName(g))).join(' and ')+': '+FORMS[to].n.toLowerCase()+'.');
 }
 function formDragTo(x0,y0,x1,y1){
   if(B.deploy){const a=inZone(x0,y0),b=inZone(x1,y1);x0=a.x;y0=a.y;x1=b.x;y1=b.y}// (deploying: the line in your zone)
-  const plan=formPlan(x0,y0,x1,y1);if(!plan.length)return false;takeCommand();
+  const plan=formPlan(x0,y0,x1,y1);if(!plan.length)return false;takeCommand();ordered(plan.map(p=>p.g));
   // (each a move to its part of the line, facing as dragged, as wide as its share of it: battlecontrol.js; your hero stands behind)
   for(const p of plan){const gr=B.groups[p.g];if(p.hero){gr.moveTo(p.ax,p.ay,{face:p.face});B.hero.sx=B.hero.sy=0;continue}gr.moveTo(p.ax,p.ay,{face:p.face,files:p.files})}
   B.mark={x:(x0+x1)/2,y:(y0+y1)/2,t:.7,foe:false};if(B.deploy)deploySnap(plan.map(p=>p.g));setOrderUI();log(htmlText(selLabel())+': form up there.');return true;

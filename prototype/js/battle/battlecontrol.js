@@ -8,10 +8,13 @@
    (the explicit attack identity), tgt (a resolved representative), ax, ay
    (where it stands), face, form, files (its formation), queue (waypoints), mvId (a move under way: actors.js relocating),
    walk, run (its pace), firm, cease, skirmish, melee (its flags: battle.js GRP_FLAGS), pace (its slowest man's speed),
-   going (its place on the move), backing (backing off from a foe). An AI keeps its own notes on it too (phase, t,
-   stand, formAt, lax, lay) ---------- */
+   going (its place on the move), backing (backing off from a foe), orderSeq (bumped by every order of yours: commands.js;
+   not enumerable, out of snapshots). An AI keeps its own notes on it too (AI_NOTES), cleared when it is handed over ---------- */
 // (every FORM_SWAP.every seconds its places are shared out again, a swap made when it saves FORM_SWAP.gain px of walking)
 const FORM_SWAP={every:1,gain:6};
+// the AI's own notes on a group (commander.js): its phase and time in it, its stand, hunt and way home, its screen and lead, a
+// recovery and a plug, a cavalry's rest, melee count, charge time and flank, a form's time, where it last stood
+const AI_NOTES=['stand','hunt','huntBack','screenBack','recover','plug','pushed','pushRun','rest','inMelee','chargeAt','flankSide','formAt','lax','lay'];
 // A new relocation generation belongs to group orders; actors only compare it with their completed mvId.
 function moveOrder(g){const gr=B.groups[g];if(gr)gr.mvId=(gr.mvId||0)+1}
 class BattleControl{
@@ -20,6 +23,7 @@ class BattleControl{
     // tactical AI callers; assigning an actor through it selects that actor's formation (or a lone actor).
     this.targetGroupId=null;this.targetUnitId=null;
     Object.defineProperty(this,'tgt',{enumerable:true,get:()=>this.targetRepresentative(),set:e=>this.setTarget(e)});
+    Object.defineProperty(this,'orderSeq',{value:0,writable:true,enumerable:false});
     Object.assign(this,{id,team,name:id,role:'inf',order:'hold',spread:false,ax:0,ay:0,tgt:null,queue:[],form:'line',face:team?Math.PI:0,currentFacing:null,files:null,mvId:0,run:false},GRP_FLAGS,o);this.currentFacing=o.currentFacing==null?this.face:o.currentFacing}
   get units(){return grpUnits(this.id)}
   get hasTarget(){return this.targetGroupId!==null||this.targetUnitId!==null}
@@ -52,8 +56,8 @@ class BattleControl{
   queueTo(x,y){if(this.resolve?.routed)return;this.toHold();this.queue.push({x:clamp(x,8,BW-8),y:clamp(y,fieldTop(),fieldBot())})}
   // put at (x,y) at once (deploying: no march), standing
   placeAt(x,y){if(this.resolve?.routed)return;this.ax=x;this.ay=y;this.order='hold';this.tgt=null;this.queue=[]}
-  // handed to the AI: its notes and waypoints cleared, for a fresh start
-  aiReset(){this.phase=null;this.t=0;this.queue=[]}
+  // handed to the AI: its notes and waypoints cleared, for a fresh start (none left from an earlier spell of the AI's)
+  aiReset(){for(const k of AI_NOTES)delete this[k];this.phase=null;this.t=0;this.queue=[]}
   // the AI's placing: stand at (x,y); a move (its men break off and go) only when that is well away from where it last stood
   standAt(x,y){if(this.resolve?.routed)return;this.order='hold';this.tgt=null;this.ax=clamp(x,8,BW-8);this.ay=clamp(y,fieldTop(),fieldBot());
     if(this.lax==null||Math.hypot(this.ax-this.lax,this.ay-this.lay)>CAPT.move){if(this.lax!=null)moveOrder(this.id);this.lax=this.ax;this.lay=this.ay}}
