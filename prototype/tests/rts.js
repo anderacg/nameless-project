@@ -298,17 +298,17 @@ try{
  {P.troops={hum_spear:8,hum_bow:6};const B=fight(['militia','militia','militia','militia','archer','archer','archer','horse','horse','horse']);
   ok([testGroup('e_inf'),testGroup('e_arc'),testGroup('e_cav')].every(g=>B.groups[g]&&t.grpUnits(g).length),'the enemy army is in groups: infantry, archers, cavalry');
   for(let i=0;i<40&&t.B;i++)t.updateBattle(.03);const gi=B.groups[testGroup('e_inf')],ga=B.groups[testGroup('e_arc')],gc=B.groups[testGroup('e_cav')],S=t.assess(1);
-  ok(S.ratio<1&&B.post[1]==='defend'&&gi.order==='hold'&&(gi.ax<ga.ax||!!ga.hunt),'weaker, and shooting as well as you: it holds a line in front of its archers (unless they are out hunting, safely) and lets you come (strength '+S.ratio.toFixed(2)+')');
+  ok(S.ratio<1&&t.captainMem(1).post==='defend'&&gi.order==='hold'&&(gi.ax<ga.ax||!!ga.hunt),'weaker, and shooting as well as you: it holds a line in front of its archers (unless they are out hunting, safely) and lets you come (strength '+S.ratio.toFixed(2)+')');
   ok(ga.order==='hold'&&!ga.skirmish,'their archers stand behind it, and with nobody coming at them they do not skirmish');
   const mine=B.units.filter(u=>u.team===0&&u.hp>0),my=mine.reduce((a,u)=>a+u.y,0)/mine.length;ok(gc.phase==='flank'&&gc.order==='hold'&&Math.abs(gc.ay-my)>60,'their cavalry swings round a flank ('+Math.round(gc.ay)+' against your middle '+Math.round(my)+')');
   gc.t=99;B.cmdT=0;t.command(.01);ok(gc.phase==='charge'&&gc.order==='charge'&&gc.tgt&&gc.tgt.s.range,'then falls on your archers');
   B.units.filter(u=>u.team===1&&u.grp===testGroup('e_inf')).forEach(u=>{u.x=B.hero.x+40});B.cmdT=0;t.command(.01);ok(gi.order==='charge','and their line charges once the lines are close');B.over=true;B.endT=0;t.B=null}
  {const war=(mine,list)=>{P.troops=mine;G.mode='world';G.modal=false;t.hidePanel();G.enc={kind:'party',ref:{cool:0,x:P.x,y:P.y},list};t.startBattle({enemies:list,tournament:false});return t.B};
   const B=war({hum_levy:4},Array(10).fill('militia').concat(['archer','archer']));for(let i=0;i<20&&t.B;i++)t.updateBattle(.03);
-  const sc=B.groups[testGroup('e_inf')].order==='hold'&&B.plan&&B.plan[1]&&B.groups[testGroup('e_inf')].ax===B.plan[1].inf;
-  ok(t.assess(1).ratio>1&&B.post[1]==='attack'&&(B.groups[testGroup('e_inf')].order==='advance'||sc),'stronger: it attacks, its infantry advancing in line (or first walking up as one army to its line, screening its archers while they shoot) (strength '+t.assess(1).ratio.toFixed(2)+')');B.over=true;B.endT=0;t.B=null;
+  const sc=B.groups[testGroup('e_inf')].order==='hold'&&t.captainMem(1).plan&&B.groups[testGroup('e_inf')].ax===t.captainMem(1).plan.inf;
+  ok(t.assess(1).ratio>1&&t.captainMem(1).post==='attack'&&(B.groups[testGroup('e_inf')].order==='advance'||sc),'stronger: it attacks, its infantry advancing in line (or first walking up as one army to its line, screening its archers while they shoot) (strength '+t.assess(1).ratio.toFixed(2)+')');B.over=true;B.endT=0;t.B=null;
   const B2=war({hum_bow:10},['militia','militia','militia','militia','archer']);for(let i=0;i<20&&t.B;i++)t.updateBattle(.03);
-  ok(t.assess(1).shootFoe>t.assess(1).shootMe&&B2.post[1]==='attack','outshot by your archers, it closes in rather than stand under them');B2.over=true;B2.endT=0;t.B=null}
+  ok(t.assess(1).shootFoe>t.assess(1).shootMe&&B2.captains[1].post==='attack','outshot by your archers, it closes in rather than stand under them');B2.over=true;B2.endT=0;t.B=null}
  // its archers shoot what matters, not just your hero; and fight back at what is on them
  {P.troops={hum_spear:4,hum_bow:2};const B=fight(['militia','militia','militia','archer','archer','archer']);B.units.forEach(u=>{u.cd=99;u.s={...u.s,spd:0}});
   const arc=t.grpUnits(testGroup('e_arc')),inf=t.grpUnits(testGroup('e_inf')),sp=t.grpUnits(testGroup('inf'))[0],ga=B.groups[testGroup('e_arc')],R=arc[0].s.range;
@@ -536,7 +536,7 @@ try{
  {P.troops={hum_spear:4};const L=['hum_bow','hum_bow','hum_bow','hum_bow','hum_foot','hum_foot','hum_foot','hum_foot','hum_foot','hum_foot','hum_foot','hum_foot'];G.mode='world';G.modal=false;t.hidePanel();
   G.enc={kind:'party',ref:{cool:0,x:P.x,y:P.y},list:L};t.startBattle({enemies:L,tournament:false});const B=t.B;B.obs=[];
   t.grpUnits(testGroup('inf')).forEach(u=>{u.x=120;u.s={...u.s,spd:0}});B.hero.x=100;B.hero.y=B.groups[testGroup('inf')].ay;B.hero.s={...B.hero.s,spd:0};
-  B.post={};(0,eval)('window.__pz=posture;posture=()=>"attack"');B.cmdT=0;const ei=()=>t.grpUnits(testGroup('e_inf')),mine=B.units.filter(u=>u.team===0);let gap=null,j=0;
+  for(const c of Object.values(B.captains||{}))c.post=null;(0,eval)('window.__pz=posture;posture=()=>"attack"');B.cmdT=0;const ei=()=>t.grpUnits(testGroup('e_inf')),mine=B.units.filter(u=>u.team===0);let gap=null,j=0;
   for(;j<2500&&gap==null;j++){t.updateBattle(.03);if(B.arrows.some(a=>a.team===1))gap=Math.min(...ei().map(e=>Math.min(...mine.map(m=>Math.hypot(m.x-e.x,m.y-e.y)))))}
   (0,eval)('posture=__pz');ok(gap!=null&&gap>t.FOE_CMD.clash,'attacking, their archers go up to their range and shoot before the lines meet ('+(gap==null?'no shot':Math.round(gap)+' px apart, '+(j*.03).toFixed(0)+' s')+')');B.over=true;B.endT=0;t.B=null}
  // separate groups of mixed shooters: one independent envelope per group, even when selected together
@@ -582,7 +582,7 @@ try{
   ok(!!document.querySelector('.ucard[data-grp="'+testGroup('mag')+'"]'),'with their own card');
   const s0=B.sel;window.dispatchEvent(new KeyboardEvent('keydown',{key:'m',code:'KeyM'}));ok(B.sel===s0,'no key picks them (no key stands for a group)');document.querySelector('.ucard[data-grp="'+testGroup('mag')+'"]').click();ok(B.sel===testGroup('mag'),'their card does');
   ok(t.grpUnits(testGroup('e_mag')).length===2&&t.grpUnits(testGroup('e_arc')).every(u=>!u.s.magic),'the enemy\u2019s mages are a group of their own too');
-  B.post={};(0,eval)('window.__pz=posture;posture=(t,S)=>t===1?"attack":__pz(t,S);window.__ba=beatenArmy;beatenArmy=()=>false');B.noMorale=true;/* (this checks the captain's plan, not morale: a broken or fallen-back army never casts) */let bolts=0;const seen=new Set();
+  for(const c of Object.values(B.captains||{}))c.post=null;(0,eval)('window.__pz=posture;posture=(t,S)=>t===1?"attack":__pz(t,S);window.__ba=beatenArmy;beatenArmy=()=>false');B.noMorale=true;/* (this checks the captain's plan, not morale: a broken or fallen-back army never casts) */let bolts=0;const seen=new Set();
   for(let j=0;j<2500&&!B.over;j++){t.updateBattle(.03);for(const a of B.arrows)if(a.magic&&a.team===1&&!seen.has(a)){seen.add(a);bolts++}if(bolts)break}
   (0,eval)('posture=__pz;beatenArmy=__ba');ok(bolts>0,'attacking, their captain brings their mages in reach, and they cast');B.over=true;B.endT=0;t.B=null}
  // a shield wall when the moment calls for it: riders charging at them, they brace; the danger past, they drop it
@@ -594,17 +594,17 @@ try{
   B.over=true;B.endT=0;t.B=null}
  // the ranged duel: their fighters shot at by archers who outshoot theirs, they stop standing there and go for those archers
  {P.troops={hum_bow:10,hum_spear:2};const L=['hum_foot','hum_foot','hum_foot','hum_foot','hum_foot','hum_foot'];G.mode='world';G.modal=false;t.hidePanel();
-  G.enc={kind:'party',ref:{cool:0,x:P.x,y:P.y},list:L};t.startBattle({enemies:L,tournament:false});const B=t.B,ei=B.groups[testGroup('e_inf')];B.post={};(0,eval)('window.__pz=posture;posture=(t,S)=>t===1?"defend":__pz(t,S)');
+  G.enc={kind:'party',ref:{cool:0,x:P.x,y:P.y},list:L};t.startBattle({enemies:L,tournament:false});const B=t.B,ei=B.groups[testGroup('e_inf')];for(const c of Object.values(B.captains||{}))c.post=null;(0,eval)('window.__pz=posture;posture=(t,S)=>t===1?"defend":__pz(t,S)');
   B.cmdT=0;t.command(.01);ok(ei.order==='hold','defending, nobody shooting at them: they hold');
   t.grpUnits(testGroup('e_inf')).forEach(u=>u.shotAt=B.t);B.cmdT=0;t.command(.01);ok(ei.order==='charge'&&ei.tgt&&ei.tgt.s.range,'shot at by archers they cannot answer: they go for the archers, defending or not');
   (0,eval)('posture=__pz');B.over=true;B.endT=0;t.B=null}
  // a charge at a walk till near, then at a run (breath left for the impact)
- {const B=fight(['militia','militia']);B.post={};const ei=B.groups[testGroup('e_inf')],me=t.grpUnits(testGroup('inf'));ei.order='charge';ei.tgt=me[0];t.captainFinish(1,t.captainGroups(1));
+ {const B=fight(['militia','militia']);for(const c of Object.values(B.captains||{}))c.post=null;const ei=B.groups[testGroup('e_inf')],me=t.grpUnits(testGroup('inf'));ei.order='charge';ei.tgt=me[0];t.captainFinish(1,t.captainGroups(1));
   const far=Math.hypot(me[0].x-t.grpUnits(testGroup('e_inf'))[0].x,me[0].y-t.grpUnits(testGroup('e_inf'))[0].y);ok(far>t.CAPT.runAt&&!ei.run,'far off, they charge at a walk ('+Math.round(far)+' px)');
   t.grpUnits(testGroup('e_inf')).forEach(u=>{u.x=me[0].x+100;u.y=me[0].y});t.captainFinish(1,t.captainGroups(1));ok(ei.run,'near, at a run');B.over=true;B.endT=0;t.B=null}
  // one AI for every army: the enemy's captain, your allies', and yours on auto: each with its own plan, never another's
- {const B=fight(['militia']);B.plan={};B.post={};(0,eval)('window.__pz=posture;posture=()=>"attack"');B.auto=true;B.cmdT=0;t.command(.01);
-  const k=Object.keys(B.plan);ok(t.captainGroups(0,'ally')&&t.captainGroups(0)&&t.captainGroups(1)&&k.every(x=>['0','1','ally'].includes(x)),'your army on auto, your allies and the enemy each plan under their own captain ('+k.join(', ')+')');
+ {const B=fight(['militia']);for(const c of Object.values(B.captains||{})){c.plan=null;c.post=null}(0,eval)('window.__pz=posture;posture=()=>"attack"');B.auto=true;B.cmdT=0;t.command(.01);
+  const k=Object.keys(B.captains).filter(x=>B.captains[x].plan);ok(t.captainGroups(0,'ally')&&t.captainGroups(0)&&t.captainGroups(1)&&k.every(x=>['0','1','ally'].includes(x)),'your army on auto, your allies and the enemy each plan under their own captain ('+k.join(', ')+')');
   (0,eval)('posture=__pz');B.auto=false;B.over=true;B.endT=0;t.B=null}
  // attacking before moving: archers on a move with a foe within half their range stop and shoot; told to cease fire, they walk on
  {const B=fight(['militia']);B.obs=[];const ar=t.grpUnits(testGroup('arc')),a=ar[0],e=B.units.find(u=>u.team===1),g=B.groups[testGroup('arc')];B.units.filter(u=>u!==e&&u.team===1).forEach(u=>u.hp=0);
@@ -615,9 +615,9 @@ try{
   B.over=true;B.endT=0;t.B=null}
  // the captain: its shooters threatened, the march is off and they stand where they are
  {P.troops={hum_spear:4};const L=['hum_bow','hum_bow','hum_bow','hum_foot','hum_foot'];G.mode='world';G.modal=false;t.hidePanel();
-  G.enc={kind:'party',ref:{cool:0,x:P.x,y:P.y},list:L};t.startBattle({enemies:L,tournament:false});const B=t.B;B.post={};(0,eval)('window.__pz=posture;posture=(t,S)=>t===1?"attack":__pz(t,S)');
-  B.cmdT=0;t.command(.01);const ea=B.groups[testGroup('e_arc')],ax0=ea.ax,ar=t.grpUnits(testGroup('e_arc')),cx=ar.reduce((a,u)=>a+u.x,0)/ar.length;const ei=t.grpUnits(testGroup('e_inf')),ix=ei.reduce((a,u)=>a+u.x,0)/ei.length;ok(B.plan&&B.plan[1]&&Math.abs(B.groups[testGroup('e_inf')].ax-ix)>40,'attacking: their army is sent up to its line (the archers behind their infantry)');
-  const m=t.grpUnits(testGroup('inf'))[0];m.x=cx-40;m.y=ar[0].y;B.cmdT=0;t.command(.01);ok(!B.plan[1]&&Math.abs(ea.ax-cx)<2,'your soldier comes at them: the march is off, they stand where they are');
+  G.enc={kind:'party',ref:{cool:0,x:P.x,y:P.y},list:L};t.startBattle({enemies:L,tournament:false});const B=t.B;for(const c of Object.values(B.captains||{}))c.post=null;(0,eval)('window.__pz=posture;posture=(t,S)=>t===1?"attack":__pz(t,S)');
+  B.cmdT=0;t.command(.01);const ea=B.groups[testGroup('e_arc')],ax0=ea.ax,ar=t.grpUnits(testGroup('e_arc')),cx=ar.reduce((a,u)=>a+u.x,0)/ar.length;const ei=t.grpUnits(testGroup('e_inf')),ix=ei.reduce((a,u)=>a+u.x,0)/ei.length;ok(t.captainMem(1).plan&&Math.abs(B.groups[testGroup('e_inf')].ax-ix)>40,'attacking: their army is sent up to its line (the archers behind their infantry)');
+  const m=t.grpUnits(testGroup('inf'))[0];m.x=cx-40;m.y=ar[0].y;B.cmdT=0;t.command(.01);ok(!t.captainMem(1).plan&&Math.abs(ea.ax-cx)<2,'your soldier comes at them: the march is off, they stand where they are');
   (0,eval)('posture=__pz');B.over=true;B.endT=0;t.B=null}
  // shooting on the move: a skill some have (elves, rangers, horse archers); the rest stand to shoot
  {const B=fight(['militia']);B.obs=[];const a=t.grpUnits(testGroup('arc'))[0],e=B.units.find(u=>u.team===1);a.grp=null;a.aimA=0;e.s={...e.s,spd:0};e.cd=99;e.hp=e.max=9999;
@@ -676,9 +676,9 @@ try{
   P.troops={hum_levy:6};P.morale=90;const m1=P.morale;t.dayTick();ok(P.morale<m1,'a band of levies sags ('+m1+' → '+Math.round(P.morale)+')');}
  // an army with shooters never sits out of reach: defending, but nobody in reach a few seconds, it goes up
  {P.troops={hum_spear:6};const L=['hum_bow','hum_bow','hum_bow','hum_foot','hum_foot'];G.mode='world';G.modal=false;t.hidePanel();
-  G.enc={kind:'party',ref:{cool:0,x:P.x,y:P.y},list:L};t.startBattle({enemies:L,tournament:false});const B=t.B;B.post={};B.commit={};(0,eval)('window.__pz=posture;posture=(t,S)=>t===1?"defend":__pz(t,S)');
-  B.cmdT=0;t.command(.01);ok(B.post[1]==='defend','at first they wait');
-  for(let j=0;j<Math.ceil(t.FOE_CMD.patience/t.FOE_CMD.think)+2;j++){B.cmdT=0;t.command(.01)}ok(B.commit[1]&&B.post[1]==='attack'&&B.plan&&B.plan[1],'none of their shooters able to reach anyone for '+t.FOE_CMD.patience+' s: they go up to shoot');
+  G.enc={kind:'party',ref:{cool:0,x:P.x,y:P.y},list:L};t.startBattle({enemies:L,tournament:false});const B=t.B;for(const c of Object.values(B.captains||{})){c.post=null;c.commit=false}(0,eval)('window.__pz=posture;posture=(t,S)=>t===1?"defend":__pz(t,S)');
+  B.cmdT=0;t.command(.01);ok(t.captainMem(1).post==='defend','at first they wait');
+  for(let j=0;j<Math.ceil(t.FOE_CMD.patience/t.FOE_CMD.think)+2;j++){B.cmdT=0;t.command(.01)}ok(t.captainMem(1).commit&&t.captainMem(1).post==='attack'&&t.captainMem(1).plan,'none of their shooters able to reach anyone for '+t.FOE_CMD.patience+' s: they go up to shoot');
   (0,eval)('posture=__pz');B.over=true;B.endT=0;t.B=null}
  // Auto skills (K): your characters use their skills on their own only while it is on; the AI's always do, on its commander's call
  {P.slots=['whirl',...Array(9).fill(null)];const B=fight(['militia','militia','militia']);ring(B,3,16);const X=t.heroState();X.sp=X.mp=999;B.hero.hp=B.hero.max;
@@ -713,7 +713,7 @@ try{
   B.over=true;B.endT=0;t.B=null}
  // the commander weighs a threat to its shooters: a lone man is the shooters' own business; their bare shooters are its infantry's prey
  {P.troops={hum_spear:4,hum_bow:3};const L=['hum_bow','hum_bow','hum_bow','hum_foot','hum_foot','hum_foot','hum_foot'];G.mode='world';G.modal=false;t.hidePanel();
-  G.enc={kind:'party',ref:{cool:0,x:P.x,y:P.y},list:L};t.startBattle({enemies:L,tournament:false});const B=t.B,ei=B.groups[testGroup('e_inf')],ar=t.grpUnits(testGroup('e_arc'));B.post={};(0,eval)('window.__pz=posture;posture=(t,S)=>t===1?"attack":__pz(t,S)');
+  G.enc={kind:'party',ref:{cool:0,x:P.x,y:P.y},list:L};t.startBattle({enemies:L,tournament:false});const B=t.B,ei=B.groups[testGroup('e_inf')],ar=t.grpUnits(testGroup('e_arc'));for(const c of Object.values(B.captains||{}))c.post=null;(0,eval)('window.__pz=posture;posture=(t,S)=>t===1?"attack":__pz(t,S)');
   const cx=ar.reduce((a,u)=>a+u.x,0)/ar.length,cy=ar.reduce((a,u)=>a+u.y,0)/ar.length;t.grpUnits(testGroup('inf')).forEach(u=>{u.x=40;u.y=40});const myA=t.grpUnits(testGroup('arc'));myA.forEach((u,k)=>{u.x=cx-330;u.y=cy+k*10});
   B.hero.x=cx+30;B.hero.y=cy;B.cmdT=0;t.command(.01);ok(!(ei.tgt===B.hero),'your hero alone near their archers: not worth their infantry (the archers see to him)');
   ok(ei.order==='charge'&&ei.tgt&&ei.tgt.s.range&&ei.tgt.team===0,'your archers bare, none of your fighters near them: their infantry goes for them');

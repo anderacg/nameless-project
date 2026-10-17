@@ -189,7 +189,7 @@ These files still share live `B`, `G` and `P` records and runtime callbacks. Thi
 
 | Owner | Main runtime connections |
 | --- | --- |
-| `commands.js` / `commander.js` | Issue orders through `BattleControl`; commanders also drive character decisions. |
+| `commands.js` / `commander.js` / `charmind.js` | Player orders (`commands.js`, one `playerOrder` path) and AI captains (`commander.js`: `captain` builds a shared context with `captainCtx`, then `captainInf`, `captainRally`, `captainShooters`, `captainCav`, `captainHero`; each captain's memory is one object, `captainMem(ck)` = `B.captains[ck]`) all issue orders through `BattleControl`; the character mind (heroes, companions, lords, chieftains; fall-back) is `charmind.js`. |
 | `battlecontrol.js` | Owns group order state and relocation generations; uses actor target queries and formation helpers. |
 | `actors.js` | Reads orders; delegates character turns, attacks, fatigue and rout/withdraw movement. |
 | `attacks.js` | Executes damage/strikes, launches projectiles, and calls morale, XP, character and visual helpers. |
@@ -228,7 +228,7 @@ Tuning lives in `MORALE`, `CONFIDENCE`, `AWARENESS`, `COHESION`, `LOSS_MEMORY`, 
 
 ## AI tactics
 
-**Shooters lead, or play safe.** Every captain picks a posture for its shooters each think (`rangedMode`, `B.rmode`): **aggressive** when attacking, not outnumbered, out-ranging (×1.1) or out-shooting (×1.25) the other side, with little fast melee against them (riders or speed ≥ 60 under 15% of its shooters' strength), quivers and nerve whole and no melee foe closing. The shooters then lead: the army line puts the infantry `screenGap` behind their full reach, and they go up (at a run from over 80 px) and open fire first. When the captain turns **safe** (defending, outnumbered, cavalry, worn, a foe closing), shooters that led run back behind their infantry. The margins relax while aggressive, and a 2 s wait applies before leading again.
+**Shooters lead, or play safe.** Every captain picks a posture for its shooters each think (`rangedMode`, stored in the captain's memory `captainMem(ck).rmode`): **aggressive** when attacking, not outnumbered, out-ranging (×1.1) or out-shooting (×1.25) the other side, with little fast melee against them (riders or speed ≥ 60 under 15% of its shooters' strength), quivers and nerve whole and no melee foe closing. The shooters then lead: the army line puts the infantry `screenGap` behind their full reach, and they go up (at a run from over 80 px) and open fire first. When the captain turns **safe** (defending, outnumbered, cavalry, worn, a foe closing), shooters that led run back behind their infantry. The margins relax while aggressive, and a 2 s wait applies before leading again.
 
 **Charges by stamina** (`runFor`): fresh infantry runs from 240 px and charges from a 140 px gap (not at riders or beasts, nor with a charge coming at it, when it braces instead); fresh riders gallop all the way, start a charge from 160 px, and pull back 150 px to charge again; less fresh, `CAPT.runAt`; tired, 130 px; spent, a walk. Tired riders stand off after a charge until stamina 55, or 5 s.
 
@@ -236,7 +236,7 @@ Tuning lives in `MORALE`, `CONFIDENCE`, `AWARENESS`, `COHESION`, `LOSS_MEMORY`, 
 
 **Auto (A):** handing your army to the AI starts its captain afresh (`aiReset` clears every AI note); any order, formation or flag button of yours takes command back; groups you sent withdrawing keep withdrawing. Posture keeps attacking down to `attackAt − FOE_CMD.hold` and is remembered per captain (your army and your allies apart). Cavalry pick a flank once and keep it; riders 3 s in melee on any charge, a rescue included, pull back to charge again; hunting archers head home for at least 3 s without focus-firing at a run. Only a wavering group not engaged hand to hand pulls back (an engaged one fights on), and a braced group is never sent to plug a gap. Tests: `tests/controlaudit.js`.
 
-Tunables: `AI_TACTICS`, `CHAR_FALL` in `battle/commander.js`. Tests: `tests/aitactics.js`, `tests/charfallback.js`. Balance: with the AI rallying, equal infantry fights rout at ~46–49% losses (~8 s).
+Tunables: `AI_TACTICS` in `battle/commander.js`, `CHAR_FALL` in `battle/charmind.js`. Tests: `tests/aitactics.js`, `tests/charfallback.js`. Balance: with the AI rallying, equal infantry fights rout at ~46–49% losses (~8 s).
 
 ## Charges, bracing and morale-off rules (effect audit, 2026-10-17)
 

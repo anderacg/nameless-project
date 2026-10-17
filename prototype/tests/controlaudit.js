@@ -19,7 +19,7 @@ window.RUN=()=>{const t=T,L=t.BattleLab,o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL '
  t.setAuto(false,true);ma.moveTo(250,150);ma.units.forEach(u=>{u.x=ma.ax+(u.sx||0);u.y=ma.ay+(u.sy||0)});
  const notes=['stand','hunt','huntBack','screenBack','recover','plug','pushed','pushRun','rest','inMelee','chargeAt','lax','lay','flankSide','formAt'];const fake={stand:{x:250,y:300},hunt:{t:w.foe[0].units[0],x:250,y:300,tx:600,ty:300},huntBack:1,screenBack:{x:250,y:300},recover:{done:0},plug:ma.id,pushed:true,pushRun:true,rest:true,inMelee:1,chargeAt:1,lax:1,lay:1,flankSide:1,formAt:1};notes.forEach(k=>mi[k]=fake[k]);
  t.setAuto(true,true);ok(notes.every(k=>mi[k]==null)&&!mi.phase,'Auto on again: every AI note on your groups is cleared ('+notes.filter(k=>mi[k]!=null).join(',')+')');
- ok(['plan','rmode','commit','idle','vol','post'].every(k=>!w.b[k]||w.b[k][0]==null),'and your captain’s plan, posture, volleys and commitment start afresh');
+ ok(!w.b.captains||w.b.captains[0]==null,'and your captain’s plan, posture, volleys and commitment start afresh');
  t.command(1);ok(Math.abs(ma.ay-150)<20,'your archers moved while you had command are not sent back to their old spot (ay '+Math.round(ma.ay)+')');
  // ----- 2. formation and flag buttons take command back; a form taken at the start is not "held"
  w=army([G('hum_foot',12),G('hum_bow',12)],[G('hum_foot',12)],[[300,300],[250,300],[600,300]],{ai:true});
@@ -50,15 +50,15 @@ window.RUN=()=>{const t=T,L=t.BattleLab,o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL '
  w=army([G('hum_foot',10)],[G('hum_bow',10),G('hum_knight',8)],[[400,300],[700,300],[600,300]],{},false);k=w.foe[1];k.phase='charge';k.t=0;k.inMelee=99;think();ok(k.phase==='charge','a stale melee count does not pull them back at once');
  // ----- 8. a withdrawal you ordered is kept under Auto
  w=army([G('hum_foot',12)],[G('hum_foot',12)],[[300,300],[600,300]]);let g=w.mine[0];g.withdraw();t.setAuto(true,true);t.command(1);ok(g.order==='withdraw','Auto on: a group you sent off withdrawing keeps withdrawing ('+g.order+')');
- w.b.t=t.FOE_CMD.lull+1;w.b.lastHit=0;w.b.post={};t.command(1);ok(g.order==='withdraw','and the lull does not send it back in');
+ w.b.t=t.FOE_CMD.lull+1;w.b.lastHit=0;for(const c of Object.values(w.b.captains||{}))c.post=null;t.command(1);ok(g.order==='withdraw','and the lull does not send it back in');
  // ----- 9. posture hysteresis
  w=army([G('hum_foot',12)],[G('hum_foot',12)],[[300,300],[600,300]]);w.b.t=5;const S={ratio:t.FOE_CMD.attackAt-.05,shootMe:.5,shootFoe:.2};
- w.b.post={1:'attack'};ok(t.posture(1,S)==='attack','attacking, a strength ratio a little under attackAt keeps it attacking');
- w.b.post={1:'defend'};ok(t.posture(1,S)==='defend','defending, the same ratio keeps it defending');
- w.b.post={1:'attack'};ok(t.posture(1,{...S,ratio:t.FOE_CMD.attackAt-.2})==='defend','well under it, it turns to defend');
+ t.captainMem(1).post='attack';ok(t.posture(1,S)==='attack','attacking, a strength ratio a little under attackAt keeps it attacking');
+ t.captainMem(1).post='defend';ok(t.posture(1,S)==='defend','defending, the same ratio keeps it defending');
+ t.captainMem(1).post='attack';ok(t.posture(1,{...S,ratio:t.FOE_CMD.attackAt-.2})==='defend','well under it, it turns to defend');
  // ----- 10. your allies and your army on Auto: a posture each
  w=army([G('hum_foot',12),G('hum_foot',12)],[G('hum_foot',12),G('hum_bow',12)],[[300,250],[300,350],[600,300],[650,300]]);w.mine[1].player=false;w.mine[1].ally=true;w.b.auto=true;t.command(1);
- ok(w.b.post&&w.b.post.ally!=null&&w.b.post[0]!=null,'your allies’ captain and your army’s keep a posture each ('+JSON.stringify(w.b.post)+')');
+ ok(w.b.captains&&w.b.captains.ally&&w.b.captains.ally.post!=null&&w.b.captains[0]&&w.b.captains[0].post!=null,'your allies’ captain and your army’s keep a posture each ('+JSON.stringify(Object.fromEntries(Object.entries(w.b.captains||{}).map(([k,c])=>[k,c.post])))+')');
  // ----- 11. the hunt's way home
  w=army([G('hum_bow',6)],[G('hum_bow',10)],[[100,300],[700,300]]);fa=w.foe[0];w.b.t=8;w.b.lastHit=8;const prey=w.mine[0].units[0];
  fa.hunt={t:prey,x:700,y:300,tx:prey.x,ty:prey.y};fa.backing=true;t.command(1);ok(fa.huntBack===8,'a hunt called off (backing) heads home stamped with the time ('+fa.huntBack+')');

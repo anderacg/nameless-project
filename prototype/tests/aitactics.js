@@ -9,13 +9,13 @@ window.RUN=()=>{const t=T,L=t.BattleLab,o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL '
   const mine=t.playerGroups().map(id=>b.groups[id]),foe=Object.values(b.groups).filter(g=>g.foe);
   [...mine,...foe].forEach((g,i)=>{g.placeAt(at[i][0],at[i][1]);t.layForm(g.id);g.units.forEach(u=>{u.x=g.ax+(u.sx||0);u.y=g.ay+(u.sy||0)})});return {b,mine,foe}};
  const G=(type,count,form)=>({type,count,...(form?{form}:{})}),C=g=>g.centre(),still=g=>g.units.forEach(u=>{u.s={...u.s,spd:0};u.cd=999});
- const step=s=>{const end=t.B.t+s;while(t.B.t<end-1e-9&&!L.session.result)L.step(30)},mode=(k=1)=>t.B.rmode&&t.B.rmode[k]||{},sta=(g,v)=>g.units.forEach(u=>u.sta=v);
+ const step=s=>{const end=t.B.t+s;while(t.B.t<end-1e-9&&!L.session.result)L.step(30)},mode=(k=1)=>t.B.captains&&t.B.captains[k]&&t.B.captains[k].rmode||{},sta=(g,v)=>g.units.forEach(u=>u.sta=v);
  // ----- the shooters' posture
  let w=army([G('hum_foot',12)],[G('hum_foot',20),G('hum_bow',20)],[[200,300],[780,300],[830,300]]);let [fi,fa]=w.foe;still(w.mine[0]);
  t.command(1);ok(mode().mode==='aggressive'&&mode().why==='','out-ranging and out-shooting, no riders against them, attacking: the shooters lead (aggressive)');
  step(10);const reach=fa.units.some(a=>w.mine[0].units.some(e=>Math.hypot(e.x-a.x,e.y-a.y)<=a.s.range));
  ok(C(fa).x<C(fi).x-20&&reach,'they stand ahead of their infantry, in reach of the foe ('+Math.round(C(fi).x-C(fa).x)+' px ahead)');
- ok(w.b.plan[1]&&w.b.plan[1].leads&&fi.ax>=fa.ax,'the army’s line puts the infantry behind them while they lead');
+ ok(t.captainMem(1).plan&&t.captainMem(1).plan.leads&&fi.ax>=fa.ax,'the army’s line puts the infantry behind them while they lead');
  const shot=w.b.arrows.some(a=>a.by&&a.by.team===1)||fa.units.some(u=>u.ammo!=null&&u.ammo<t.quiverOf(u.s));ok(shot,'and they open fire');
  // melee closes on them: safe, back behind the infantry at a run
  const A=C(fa);w.mine[0].units.forEach((u,i)=>{u.x=A.x-90+(i%4)*6;u.y=A.y-10+Math.floor(i/4)*8});t.command(1);
@@ -23,10 +23,10 @@ window.RUN=()=>{const t=T,L=t.BattleLab,o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL '
  ok(fa.screenBack&&fa.ax>C(fi).x&&fa.run,'and the leading shooters go back behind their infantry, at a run');
  w.mine[0].units.forEach(u=>{u.x=150;u.y=300});w.b.t+=X.dwell+.1;t.command(1);ok(mode().mode==='aggressive'&&!fa.screenBack,'the danger past (and a breath later), they lead again');
  // riders against them: safe, behind the infantry
- w=army([G('hum_foot',12),G('hum_knight',12)],[G('hum_foot',24),G('hum_bow',20)],[[200,250],[200,380],[780,300],[830,300]]);[fi,fa]=w.foe;w.mine.forEach(still);w.b.commit={1:true};
+ w=army([G('hum_foot',12),G('hum_knight',12)],[G('hum_foot',24),G('hum_bow',20)],[[200,250],[200,380],[780,300],[830,300]]);[fi,fa]=w.foe;w.mine.forEach(still);t.captainMem(1).commit=true;
  t.command(1);ok(mode().mode==='safe'&&mode().why==='cavalry','riders that can run them down: the shooters play safe (why: cavalry)');
  let ahead=0;for(let i=0;i<14;i++){step(.5);if(C(fa).x<C(fi).x-15)ahead++}ok(ahead===0,'and never stand ahead of their infantry');
- w=army([G('hum_foot',40)],[G('hum_foot',10),G('hum_bow',10)],[[200,300],[780,300],[830,300]]);still(w.mine[0]);w.b.commit={1:true};t.command(1);ok(mode().mode==='safe'&&mode().why==='outnumbered','outnumbered: safe (why: outnumbered)');
+ w=army([G('hum_foot',40)],[G('hum_foot',10),G('hum_bow',10)],[[200,300],[780,300],[830,300]]);still(w.mine[0]);t.captainMem(1).commit=true;t.command(1);ok(mode().mode==='safe'&&mode().why==='outnumbered','outnumbered: safe (why: outnumbered)');
  w=army([G('hum_foot',12)],[G('hum_foot',20),G('hum_bow',20)],[[200,300],[780,300],[830,300]]);w.foe[1].units.forEach(u=>u.ammo=2);t.command(1);ok(mode().mode==='safe'&&mode().why==='worn','quivers nearly empty: safe (why: worn)');
  w=army([G('hum_foot',12)],[G('hum_foot',20),G('hum_bow',20)],[[200,300],[780,300],[830,300]]);w.foe[1].resolve.mor=20;t.command(1);ok(mode().mode==='safe'&&mode().why==='worn','their nerve wavering: safe (why: worn)');
  // ----- charges: further off when fresh, gated by stamina
@@ -40,8 +40,8 @@ window.RUN=()=>{const t=T,L=t.BattleLab,o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL '
  w=army([G('hum_foot',20)],[G('hum_knight',10)],[[200,300],[600,300]]);k=w.foe[0];k.phase='flank';sta(k,30);t.command(1);ok(k.phase==='flank'&&!k.run,'tired riders ride round a flank at a walk');
  w=army([G('hum_foot',20)],[G('hum_foot',20)],[[200,300],[420,300]]);let f=w.foe[0];f.attack(w.mine[0]);fin(f,'inf');
  ok(f.run&&X.runFar>t.CAPT.runAt,'fresh infantry charging runs from further off (runFar '+X.runFar+' px, not CAPT.runAt '+t.CAPT.runAt+')');sta(f,50);fin(f,'inf');ok(!f.run,'not fresh, it walks till CAPT.runAt');
- w=army([G('hum_foot',20)],[G('hum_foot',20)],[[200,300],[330,300]]);w.b.commit={1:true};t.command(1);ok(w.foe[0].order==='charge','fresh and attacking, infantry charges from footFar ('+X.footFar+' px), not only once the lines meet');
- w=army([G('hum_foot',20)],[G('hum_foot',20)],[[200,300],[330,300]]);w.b.commit={1:true};sta(w.foe[0],30);t.command(1);ok(w.foe[0].order!=='charge','tired, it waits for the lines to meet');
+ w=army([G('hum_foot',20)],[G('hum_foot',20)],[[200,300],[330,300]]);t.captainMem(1).commit=true;t.command(1);ok(w.foe[0].order==='charge','fresh and attacking, infantry charges from footFar ('+X.footFar+' px), not only once the lines meet');
+ w=army([G('hum_foot',20)],[G('hum_foot',20)],[[200,300],[330,300]]);t.captainMem(1).commit=true;sta(w.foe[0],30);t.command(1);ok(w.foe[0].order!=='charge','tired, it waits for the lines to meet');
  w=army([G('hum_foot',20)],[G('hum_knight',10)],[[200,300],[350,300]]);k=w.foe[0];k.phase='flank';k.t=0;t.command(1);ok(k.phase==='charge'&&k.order==='charge','fresh riders on their way round a flank charge from cavStart, not on top of the foe');
  w=army([G('hum_foot',20)],[G('hum_knight',10)],[[200,300],[350,300]]);k=w.foe[0];k.phase='flank';k.t=0;sta(k,50);t.command(1);ok(k.phase==='flank','less fresh, they ride on round the flank');
  w=army([G('hum_foot',20)],[G('hum_knight',10)],[[200,300],[600,300]]);k=w.foe[0];k.phase='regroup';k.t=0;sta(k,30);k.standAt(C(k).x,C(k).y);t.command(1);t.command(1);
@@ -51,7 +51,7 @@ window.RUN=()=>{const t=T,L=t.BattleLab,o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL '
  w=army([G('hum_knight',10)],[G('hum_spear',16)],[[300,300],[380,300]]);const sp=w.foe[0];ok(sp.abilities().some(a=>a.id==='brace'),'fixture: an enemy spear group can brace');
  w.mine[0].units.forEach(u=>{u.run=t.CHARGE.run;u.cd=999});t.command(1);ok(t.abilityActive(sp,'brace'),'riders charging in at its front: the spear group braces');
  for(let i=0;i<4;i++){w.b.t+=.5;t.command(1)}ok(t.abilityActive(sp,'brace')&&sp.order==='hold'&&!sp.hasTarget,'and its captain leaves it braced while they are near');
- w.mine[0].units.forEach(u=>{u.x=40;u.y=40;u.run=0});w.b.commit={1:true};w.b.t+=.5;t.command(1);w.b.t+=.5;t.command(1);ok(!t.abilityActive(sp,'brace'),'the danger past, it is given orders again (attacking: ending the brace)');
+ w.mine[0].units.forEach(u=>{u.x=40;u.y=40;u.run=0});t.captainMem(1).commit=true;w.b.t+=.5;t.command(1);w.b.t+=.5;t.command(1);ok(!t.abilityActive(sp,'brace'),'the danger past, it is given orders again (attacking: ending the brace)');
  w=army([G('hum_knight',10)],[G('hum_spear',16)],[[300,300],[380,300]]);w.mine[0].units.forEach(u=>{u.run=0});t.command(1);ok(!t.abilityActive(w.foe[0],'brace'),'riders standing (no momentum): no brace');
  // Rally
  w=army([G('hum_foot',20)],[G('hum_foot',15),G('hum_foot',15)],[[200,300],[600,250],[600,350]]);let [r1]=w.foe;r1.resolve.mor=20;t.command(1);

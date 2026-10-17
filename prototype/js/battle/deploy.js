@@ -34,7 +34,7 @@ function drawDeploy(){
 function setAuto(on,quiet){
   if(!B)return;B.auto=!!on;if(!B.opts.sandbox){BAUTO.on=B.auto;try{localStorage.setItem('ashmark.bauto',B.auto?'1':'0')}catch(e){}}
   if(B.auto)for(const g of playerGroups())B.groups[g].aiReset();
-  for(const k of ['plan','rmode','commit','idle','vol','post'])if(B[k])delete B[k][0];// (your captain's memory (commander.js, its key 0): afresh each time)
+  if(B.captains)delete B.captains[0];// (your captain's memory (commander.js captainMem, its key 0): afresh each time)
   B.cmdT=0;autoUI();if(!quiet)log(B.auto?'The AI takes command of your army (A: take it back).':'You take command of your army.');
 }
 // an order of yours takes command back from the AI

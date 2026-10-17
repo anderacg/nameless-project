@@ -6,7 +6,7 @@ From a read-only review of the prototype at commit 4d24715 (99 scripts, ~11.5k d
 - **Wave 1 approved:** items 1–8 below, after the test-suite cleanup lands.
 - **Fall-back ending:** every player order to a group ends a character's fall-back — moves, attacks, Hold, pace (including the R key), formations and flags — **but not using a unit ability**.
 
-## A. Do now (wave 1)
+## A. Do now (wave 1) — **done 2026-10-17** (commits 3859184, 9ed0d7d, f8045a1 and the captain/charmind split)
 | # | Refactor | Problem | Change | Effort |
 |---|---|---|---|---|
 | 1 | Split `commander.js` | Character mind (lines ~1–173: `CHAR_AI`, `charAuto`, `charBasics`, `CHAR_FALL`, `commandCharacters`) and army captains (~175–520) in one 59 KB file | Pure move of the character mind to a new `js/battle/characters.js` (loaded before commander.js in both HTML files) | S |
