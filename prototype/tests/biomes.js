@@ -28,7 +28,7 @@ try{
  const ash=t.townBy('Ashford');P.x=ash.x;P.y=ash.y+20;P.morale=80;setGood('furs',0);t.survive();ok(P.morale===80,'holdings shelter you');
  // battlegrounds
  P.troops={hum_levy:4,dw_clan:4,hum_bow:4,hum_squire:3};
- const fight=(s,band)=>{at(s,()=>{G.mode='world';G.modal=false;t.startEncounter({kind:'party',ref:{x:P.x+20,y:P.y,cool:0,n:4},n:4,band:band||'bandits'});t.act('fight')});return t.B};
+ const fight=(s,band)=>{at(s,()=>{G.mode='world';G.modal=false;t.startEncounter({kind:'party',ref:t.asParty({x:P.x+20,y:P.y,cool:0,n:4,kind:band||'bandits'}),n:4,band:band||'bandits'});t.act('fight')});return t.B};
  let B=fight(spot.frost);const lv=B.units.find(u=>u.type==='hum_levy'),dc=B.units.find(u=>u.type==='dw_clan');
  ok(lv.s.spd<t.ST.hum_levy.spd&&dc.s.spd===t.ST.dw_clan.spd,'frost battle slows humans, not dwarves');
  ok(B.arena===t.arenaFor('frost')&&B.obs.length>0,'frost arena with obstacles');
@@ -48,7 +48,7 @@ try{
  ok(stopped>N*.12&&stopped<N*.4,'trees stop about a quarter of arrows ('+stopped+'/'+N+')');
  B.over=true;B.endT=0;t.updateBattle(.01);t.act('cont');done();
  // biome bands: desert bandits are raiders, frost wolves are monsters that drop furs
- at(spot.desert,()=>{G.mode='world';G.modal=false;t.startEncounter({kind:'party',ref:{x:P.x+20,y:P.y,cool:0},n:3,band:'raiders'})});
+ at(spot.desert,()=>{G.mode='world';G.modal=false;t.startEncounter({kind:'party',ref:t.asParty({x:P.x+20,y:P.y,cool:0,n:3,kind:'raiders'}),n:3,band:'raiders'})});
  ok(/Desert raiders/.test(document.getElementById('panel').innerHTML),'desert bandits are desert raiders');t.act('flee');
  const before=t.goodN('furs');at(spot.frost,()=>{G.mode='world';G.modal=false;const m={id:'wolf',x:P.x+20,y:P.y,hx:P.x,hy:P.y,lv:1,n:4,cool:0};W.monsters.push(m);t.startMonster(m)});
  ok(/Wolf pack/.test(document.getElementById('panel').innerHTML)&&G.enc.list.every(k=>k==='wolf'),'frost wolves are a monster pack');

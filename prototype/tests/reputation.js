@@ -20,7 +20,7 @@ try{
  const elg=t.townBy('Elderglen');ok(t.standingAt(elg)===0,'other races start at zero');
  // earning reputation
  P.troops={hum_spear:10};P.x=ash.x+60;P.y=ash.y;const r0=t.repAt('Ashford');
- G.mode='world';G.modal=false;t.startEncounter({kind:'party',ref:{x:P.x,y:P.y,cool:0},n:4,band:'bandits'});t.autoResolve();t.act('cont');done();
+ G.mode='world';G.modal=false;t.startEncounter({kind:'party',ref:t.asParty({x:P.x,y:P.y,cool:0,n:4,kind:'bandits'}),n:4,band:'bandits'});t.autoResolve();t.act('cont');done();
  ok(t.repAt('Ashford')>r0,'beating bandits near a holding raises its reputation ('+r0+' → '+t.repAt('Ashford')+')');
  const c0=t.repAt('Ashford'),camp={cleared:false,back:0,x:P.x,y:P.y};G.mode='world';G.modal=false;t.startEncounter({kind:'camp',ref:camp,n:3});t.autoResolve();t.act('cont');done();
  ok(t.repAt('Ashford')>=c0+10,'clearing a camp is worth 10');

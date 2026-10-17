@@ -14,7 +14,7 @@ try{
  ok(t.lordRel(a,L[5])===t.lordRel(L[5],a),'and how two lords feel is the same both ways');
  // fighting beside a lord
  world();P.troops={hum_knight:20};const ally=L.find(l=>l.fac!==a.fac);Object.assign(ally,{inside:null,x:P.x+10,y:P.y,troops:Array(12).fill('hum_spear')});
- G.enc={kind:'party',ref:{x:P.x,y:P.y,cool:0},list:['militia','militia'],allies:[ally],foes:[]};t.startEncounter(G.enc);t.act('auto');
+ G.enc={kind:'party',ref:t.asParty({x:P.x,y:P.y,cool:0,troops:['militia','militia']}),list:['militia','militia'],allies:[ally],foes:[]};t.startEncounter(G.enc);t.act('auto');
  ok(t.relWith(ally)===R.fightBeside&&/fought beside them/.test(t.P.lrelWhy[ally.id][0].why),ally.name+' remembers you fought beside them (+'+t.relWith(ally)+')');done();
  // beating a lord: they hate it, their friends somewhat, their rivals are glad
  const foe=a,fr=t.lordFriends(foe).filter(x=>x!==foe)[0],rv=t.lordRivals(foe)[0],fr0=fr?t.relWith(fr):0,rv0=rv?t.relWith(rv):0;

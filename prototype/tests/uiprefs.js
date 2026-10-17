@@ -43,7 +43,7 @@ try{
  SP.setItem=si;SP.getItem=gi;t.setGrid(false);t.setBlood(true);t.setBattleSpeed(1,true);t.setGuide(true);t.setAutoSkills(true);
  // the AI in command (setAuto, in a battle) and Auto skills' message
  t.act('begin','soldier');G.quietEvents=true;G.mode='world';G.modal=false;t.hidePanel();
- t.startEncounter({kind:'party',ref:{x:P.x,y:P.y,cool:0},n:3,list:['militia','militia','militia']});t.act('fight');
+ t.startEncounter({kind:'party',ref:t.asParty({x:P.x,y:P.y,cool:0,troops:['militia','militia','militia']}),n:3,list:['militia','militia','militia']});t.act('fight');
  {t.setAuto(true,true);const on=key('bauto')==='1'&&t.BAUTO.on===true;t.setAuto(false,true);ok(t.B&&on&&key('bauto')==='0'&&t.BAUTO.on===false,'setAuto writes ashmark.bauto 1 or 0 and sets BAUTO.on')}
  t.setAutoSkills(false);ok(G.msgs[G.msgs.length-1].m==='Auto skills off: your hero and companions use no skills.'&&key('autoskills')==='0','Auto skills in battle: stored and said');t.setAutoSkills(true);
  t.B.over=true;t.B.endT=0;t.updateBattle(.01);t.act('cont');while(G.mode==='perk')t.act('perk',G.perkOffer[0]);

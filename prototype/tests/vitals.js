@@ -20,11 +20,11 @@ try{
  P.x=t.TOWNS[0].x;P.y=t.TOWNS[0].y+20;P.hp=10;P.sp=0;P.mp=0;t.regenVitals(1);ok(P.hp-10>(far[0]-10)*1.8,'recovery is twice as fast near a holding');
  {const g=t.townBy('Ashford');P.rep[g.name]=40;P.hp=10;P.sp=0;P.mp=0;t.startStay(g);t.stayTick(0);t.regenVitals(.5);t.stayTick(t.DAY*.5);ok(P.hp-10>(far[0]-10)*1.8&&!!P.stay,'staying in a holding recovers you faster still');t.leaveStay();done()}
  // auto-resolve defeat
- P.troops={};const h0=P.hp;G.mode='world';G.modal=false;t.startEncounter({kind:'party',ref:{cool:0,x:P.x,y:P.y},list:Array(15).fill('spearman'),band:'bandits'});t.autoResolve();t.act('cont');done();
+ P.troops={};const h0=P.hp;G.mode='world';G.modal=false;t.startEncounter({kind:'party',ref:t.asParty({cool:0,x:P.x,y:P.y,troops:Array(15).fill('spearman')}),list:Array(15).fill('spearman'),band:'bandits'});t.autoResolve();t.act('cont');done();
  ok(Math.abs(P.hp-Math.round(h0*.5))<=1,'losing an auto-resolved fight costs half your health');
  // display
  P.hp=20;t.updateHUD(true);ok(/Health · Stamina · Mana/.test(document.getElementById('stats').innerHTML)&&/class="low"/.test(document.getElementById('stats').innerHTML),'the HUD shows your vitals and flags low health');
- G.mode='world';G.modal=false;t.startEncounter({kind:'party',ref:{cool:0,x:P.x,y:P.y},n:3,band:'bandits'});ok(/You are wounded/.test(document.getElementById('panel').innerHTML),'encounters warn when you are wounded');t.act('flee');
+ G.mode='world';G.modal=false;t.startEncounter({kind:'party',ref:t.asParty({cool:0,x:P.x,y:P.y,n:3,kind:'bandits'}),n:3,band:'bandits'});ok(/You are wounded/.test(document.getElementById('panel').innerHTML),'encounters warn when you are wounded');t.act('flee');
  // saves
  P.hp=33;P.sp=12;P.mp=7;G.mode='world';G.modal=false;t.hidePanel();t.saveGame();P.hp=P.sp=P.mp=null;t.act('load');ok(P.hp===33&&P.sp===12&&P.mp===7,'save/load keeps your vitals');
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}
