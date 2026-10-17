@@ -22,8 +22,12 @@ try{
  ok(!bad.length,t.TOWNS.reduce((a,z)=>a+z.lots.length,0)+' placed buildings: each exactly its cell, none sharing a tile (fields included), and the grid agrees'+(bad.length?': '+bad.slice(0,6).join('; '):''));
  const cen=t.TOWNS.filter(z=>{const c=t.lotCentre(z);return!c||c.y+c.n!==z.ty+1||z.tx<c.x||z.tx>=c.x+c.n});ok(!cen.length,'every holding has one centre, standing on its own tile (where its roads end and parties arrive)'+(cen.length?': '+cen.map(z=>z.name).join(', '):''));
  // ---- estates: their boats float clear of their piers
- const eb=[];for(const tw of t.TOWNS){if(tw.lots.some(l=>l.k==='port')&&t.bldLv(tw,'port'))for(const bt of t.estateBoats(tw,3)){const pr=t.pierOf(tw),l=bt.x-bt.b.ax,r=l+bt.b.img.width,v=pr.dir==='n'||pr.dir==='s';if(v?(l<pr.x+6&&r>pr.x-5):(bt.y-6<pr.y+7&&bt.y+2>pr.y-6))eb.push(tw.name+' boat on the pier')}}
- ok(!eb.length,'boats float clear of their piers'+(eb.length?': '+eb.slice(0,8).join('; '):''));
+ // (moored boats are the sailing ships' sprites, moored: power-of-two cells, waterline on the bottom row, the hull on water)
+ const eb=[];let nb=0,ncog=0;for(const tw of t.TOWNS){if(tw.lots.some(l=>l.k==='port')&&t.pierOf(tw))for(const lv of [1,2,3])for(const bt of t.estateBoats(tw,lv)){const pr=t.pierOf(tw),[l,tp,r,bm]=bt.box,v=pr.dir==='n'||pr.dir==='s',n=bt.b.img.width;nb++;if(bt.big)ncog++;
+   if(v?(l<=pr.x+5&&r>=pr.x-5):(tp<=pr.y+6&&bm>=pr.y-5))eb.push(tw.name+' boat on the pier');
+   if(n!==bt.b.img.height||![32,64].includes(n)||bt.b.ay!==n-1)eb.push(tw.name+' boat not in its power-of-two cell');
+   for(const [x,y] of [[l,bm],[r,bm],[(l+r)>>1,bm],[l,tp],[r,tp]])if(x<0||y<0||x>=t.MW*TILE||y>=t.MH*TILE||t.tAt(Math.floor(x/TILE),Math.floor(y/TILE))!==t.T_WATER)eb.push(tw.name+' boat aground at '+x+','+y)}}
+ ok(nb&&ncog&&!eb.length,nb+' boats moored at the ports’ piers (levels 1 to 3, '+ncog+' of them cogs): in power-of-two cells, afloat and clear of their piers'+(eb.length?': '+eb.slice(0,8).join('; '):''));
  // ---- sites: on open ground, nothing painted on the map inside or over them
  const sb=W.sites.filter(s=>s.type!=='camp'&&!t.siteClear(s.type,s.tx,s.ty));// (the camps: their own check below)ok(!sb.length,W.sites.length+' sites, all on open ground clear of trees, hills and peaks (a cave: in the face of its hill or mountain)'+(sb.length?': '+sb.map(s=>s.type+'@'+s.tx+','+s.ty).slice(0,6).join(', '):''));
  {const on=[],foot=(o,sp)=>{const x0=Math.floor((o.x-sp.ax)/TILE),y0=Math.floor((o.y+8-sp.ay)/TILE);for(let j=0;j<sp.height/TILE;j++)for(let i=0;i<sp.width/TILE;i++)if(t.tAt(x0+i,y0+j)===t.T_ROAD)return true;return false};

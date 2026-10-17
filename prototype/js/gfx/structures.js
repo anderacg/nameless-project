@@ -43,7 +43,7 @@ function lotEnts(ents,cam,V){
         if(ESTATES[l.k]&&sabotaged(t,l.k)){const now=performance.now()/1000;for(let i=0;i<6;i++){const ph=(now*.35+i/6)%1;ctx.globalAlpha=(1-ph)*.6;rect(ctx,ph<.3?'#4a4440':'#7a7470',Math.round(X+N/2-1+Math.sin(ph*6+i)*3+ph*5),Math.round(Y-N*.6-ph*20),2,2)}ctx.globalAlpha=1}
         if(l.k==='centre'&&l.st!=='ruined'){if(s.flag)drawFlag(col,X+s.flag[0],Y-N+s.flag[1],t.seed);holdingLabel(t,cam,X,Y,N)}
         if(ESTATES[l.k]){const m=lotMid(l);if(Math.hypot(m.x-P.x,m.y-P.y)<60)txt(ESTATES[l.k].n,Math.round(m.x-cam.x),Y+8,'#c8c2ae','center')}}});
-      if(l.k==='port'&&l.st==='built')for(const o of estateBoats(t,bldLv(t,'port')))ents.push({y:o.y,f:()=>ctx.drawImage(o.b.img,Math.round(o.x-o.b.ax-cam.x),Math.round(o.y-o.b.ay-cam.y))})}}
+      if(l.k==='port'&&l.st==='built')for(const o of estateBoats(t,bldLv(t,'port')))ents.push({y:o.y,f:()=>drawMoored(o,cam)})}}
 }
 // a building site: what is built so far (from the ground up, as the work goes on) behind scaffolding, a worker on the planks
 // hammering; for an upgrade (full) the building stands whole with scaffolding against its side
@@ -132,14 +132,49 @@ function estateGround(t,k,lv){
   });
   cv.x=x0;cv.y=y0;return spr[key]=cv;
 }
-// boats moored along a port's pier, by level: clear of the deck, and only where their whole hull floats on water
+// boats moored at a port's pier, drawn as the ships that sail (ships.js shipSprite, moored): a rowing boat (32 x 32) for each
+// level up to two, and at a port of the third level a cog (64 x 64) with its sail furled in place of the second. Along a pier
+// that runs east or west a boat lies alongside: a rowing boat in front of the deck, a cog (or a second rowing boat) behind
+// it, a little water between its waterline and the deck's far edge; along one that runs north or south a boat lies bow on to
+// the pier, a little off its side. Each is kept only where its whole hull floats on water, clear of the other boat (else the
+// next place along the pier or on its other side; a cog that fits nowhere gives way to a rowing boat). Each: {b:{img,ax,ay},
+// x, y (the middle of its waterline), seed, big, box (its hull on the map: [left, top, right, bottom]), ropes (its mooring
+// lines, from its posts to the pier: [x0, y0, x1, y1], the boat's end first)}
 function estateBoats(t,lv){
-  const pr=pierOf(t);if(!pr)return[];const len=10+lv*6,out=[],v=pr.dir==='n'||pr.dir==='s',sg=pr.dir==='s'||pr.dir==='e'?1:-1;
-  const wet=(x,y)=>tAt(Math.floor(x/TILE),Math.floor(y/TILE))===T_WATER;
-  for(let i=0;i<Math.min(2,lv);i++){const b=spr['bt'+t.name+i]||(spr['bt'+t.name+i]=PX.boat({seed:t.seed*3+i,big:i===0}));
-    const d=len*(i?.45:.85),x=v?pr.x+(i?-16:16):pr.x+sg*d,y=v?pr.y+sg*d+3:pr.y+(i?-8:13),l=x-b.ax,r=l+b.img.width;
-    if(wet(l,y)&&wet(r,y)&&wet(x,y-4)&&wet(l,y-4)&&wet(r,y-4))out.push({b,x,y})}
-  return out;
+  const pr=pierOf(t);if(!pr||!lv)return[];const col=t.owner&&FACS[t.owner]?FACS[t.owner].col:null,key='bt'+t.name+lv+(col||'');if(spr[key])return spr[key];
+  const len=10+lv*6,v=pr.dir==='n'||pr.dir==='s',sg=pr.dir==='s'||pr.dir==='e'?1:-1,out=[];
+  const wet=(x,y)=>x>=0&&y>=0&&x<MW*TILE&&y<MH*TILE&&tAt(Math.floor(x/TILE),Math.floor(y/TILE))===T_WATER;// (on the map: not the sea past its edge)
+  const span=v?null:[Math.min(pr.x,pr.x+sg*len),Math.max(pr.x,pr.x+sg*len)];
+  // the cog first (it needs the most room), then the rowing boats; each its own seed (the holding's, by its place in line)
+  const kinds=lv>=3?[['cog',1],['row',0]]:lv>=2?[['row',0],['row',1]]:[['row',0]];
+  for(const [kind,i] of kinds){const seed=t.seed+i*7;let done=false;
+    for(const k of kind==='cog'?['cog','row']:['row']){if(done)break;const big=k==='cog',sp=shipSprite({seed,big,col:big?col:null,moored:true}),n=sp.width,hh=big?9:4,bx=opaqueBox(sp);
+      // the places to try: [side (north-south pier: 1 east of it, -1 west; else 1 in front, -1 behind), how far out along it]
+      const along=[i?.45:.85,.65,i?.85:.45,1,.3].map(f=>len*f),places=[],top=big?15:7;
+      for(const side of v?(i?[-1,1]:[1,-1]):big?[-1]:i?[-1,1]:[1,-1])for(const d of v?along:along.concat([len+8,len+16]))places.push([side,d]);
+      for(const [side,d] of places){
+        // which way it faces: bow on to a north-south pier; else out to sea (a rowing boat either way, by its seed)
+        const face=v?-side:big||PX.hash(seed,5,9)<.6?sg:-sg,hx0=face>0?bx[0]:n-1-bx[2],hx1=face>0?bx[2]:n-1-bx[0];
+        let L,y;if(v){y=Math.round(pr.y+sg*d+3);L=side>0?pr.x+8-hx0:pr.x-8-hx1}else{y=side>0?pr.y+14:pr.y-10;L=Math.round(pr.x+sg*d-(n>>1))}
+        // its hull on water, alongside the pier (a stretch of it at least 8 long beside the deck), clear of the other boat's
+        // hull and what stands on it (gunwale, posts, castles: top)
+        const box=[L+hx0,y-hh,L+hx1,y],up=[box[0],y-top,box[2],y];let ok=v||Math.min(box[2],span[1])-Math.max(box[0],span[0])>=8;
+        for(let x=box[0];x<=box[2]+7&&ok;x+=8){const xx=Math.min(x,box[2]);if(!wet(xx,y)||!wet(xx,y-hh))ok=false}
+        if(!ok||out.some(o=>up[0]<=o.up[2]+2&&up[2]>=o.up[0]-2&&up[1]<=o.up[3]+2&&up[3]>=o.up[1]-2))continue;
+        const fk='shf'+(big?1:0)+(big&&col||'')+seed%3,img=face>0?sp:(spr[fk]||(spr[fk]=mkc(n,n,g=>{g.translate(n,0);g.scale(-1,1);g.drawImage(sp,0,0)})));
+        // the mooring lines: the bow's to the side of a north-south pier; along an east-west pier, each end's to the deck's edge
+        const posts=sp.posts.map(([px,py])=>[L+(face>0?px:n-1-px),y-(n-1)+py]),ropes=[];
+        if(v){const p=posts[1];ropes.push([p[0],p[1],pr.x+side*4,p[1]+2])}
+        else for(const p of posts){const ex=Math.max(span[0]+1,Math.min(span[1]-1,p[0]-face*2));if(Math.abs(ex-p[0])<8)ropes.push([p[0],p[1],ex,side>0?pr.y+2:pr.y-3])}
+        out.push({b:{img,ax:n>>1,ay:n-1},x:L+(n>>1),y,seed,big,box,up,ropes});done=true;break}}}
+  return spr[key]=out;
+}
+// a moored boat rocks gently at its lines (a pixel, slower than one under way)
+function drawMoored(o,cam){
+  const bob=Math.floor(performance.now()/700+o.seed)%2,X=Math.round(o.x-o.b.ax-cam.x),Y=Math.round(o.y-o.b.ay-cam.y)+bob;
+  ctx.drawImage(o.b.img,X,Y);ctx.fillStyle='#4c3c34';
+  for(const [x0,y0,x1,y1] of o.ropes){const a=[x0,y0+bob],k=Math.max(Math.abs(x1-a[0]),Math.abs(y1-a[1]),1);
+    for(let j=1;j<k;j++)ctx.fillRect(Math.round(a[0]+(x1-a[0])*j/k-cam.x),Math.round(a[1]+(y1-a[1])*j/k-cam.y),1,1)}
 }
 
 /* camps (PX.camp): a bandit camp is one or two tents and a fire on 2 x 2 tiles; its fire's flame (drawFire) and any flag are

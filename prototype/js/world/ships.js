@@ -95,16 +95,21 @@ function updateShips(d){
    26 long, its fisherman in it, in a 32×32 cell; a trade ship is a cog some 56 long, high sided, a castle at its stern and a
    smaller one at its bow, one mast with a square sail striped in its owner's colour (col), two of its crew at the rail, in a
    64×64 cell. Facing right; its waterline is the cell's bottom row, its middle the ship's place. stern: how far behind the
-   middle its stern is (the wake starts there); net: how far ahead the fisherman's line goes down */
+   middle its stern is (the wake starts there); net: how far ahead the fisherman's line goes down.
+   moored (a boat tied up at its port's pier: structures.js estateBoats): the rowing boat lies empty, its oars shipped and its
+   net heaped in the stern; the cog's sail is furled on its yard. posts: where its mooring lines are made fast, [stern, bow] */
 const SH_HULL=['#9a7e5e','#6e5642','#4c3c34','#30262a'];
 function shipSprite(o){
-  const big=!!o.big,v=(o.seed|0)%3,key='sh'+(big?1:0)+(o.col||'')+v;if(spr[key])return spr[key];
+  const big=!!o.big,v=(o.seed|0)%3,key='sh'+(big?1:0)+(o.col||'')+v+(o.moored?'m':'');if(spr[key])return spr[key];
   const n=big?64:32,WL=n-1,R=big?54:27,H=SH_HULL,Wo=CV_WOOD,g=pgrid(n,n),s=(x,y,c)=>pset(g,x,y,c);
   // the hull, planked (clinker: a dark seam every third strake), its stern post raked, its stem curved; a cog's castles
   const xa=t=>big?5+Math.floor(t/3):4+(t>2?1:0)+(t>3?1:0),xb=t=>big?59-Math.floor(t*t/14):27-(t>2?1:0)+(t>3?-2:0);
   for(let y=R;y<=WL;y++){const t=y-R;for(let x=xa(t);x<=xb(t);x++)s(x,y,x===xa(t)||x===xb(t)?H[2]:t===0?Wo[0]:t===1?H[0]:y===WL?H[2]:t%3===1?H[3]:H[1])}
   if(big){const castle=(a,b,h,p)=>{for(let y=R-h;y<R;y++)for(let x=a;x<=b;x++)s(x,y,y===R-h?Wo[0]:(x-a)%p===0||x===b?H[2]:y===R-h+2?shade(o.col||'#a8483a',.8):H[1])};castle(5,18,6,4);castle(49,58,4,3)}
   else{s(28,26,H[1]);s(28,25,H[0]);s(29,24,H[2]);s(3,26,H[1]);s(3,25,H[2])}
+  if(!big&&o.moored){// an oar shipped, its loom slanting up over the gunwale to its blade at the bow; the net heaped in the stern
+    for(let x=10;x<=20;x++)s(x,R-1-Math.floor((x-10)/4),Wo[1]);s(21,R-3,Wo[0]);s(22,R-3,Wo[0]);s(22,R-4,Wo[0]);s(23,R-4,Wo[0]);
+    const Nt=[cvMix('#a89a78','#4a4a66',.15),cvMix('#7a6e58','#4a4a66',.25)];for(let x=5;x<=8;x++)s(x,R-1,Nt[x%2]);s(6,R-2,Nt[0]);s(7,R-2,Nt[1])}
   poutline(g);const hull=pcanvas(g);
   // the mast, its yard and the sail on it, striped (v: its stripes' width), billowing (shaded toward its foot and lee), a pennant
   let rig=null;
@@ -113,16 +118,18 @@ function shipSprite(o){
     for(let y=8;y<R;y++){q(31,y,Wo[1]);q(32,y,Wo[2])}for(let x=29;x<=34;x++){q(x,9,Wo[1]);q(x,10,Wo[2])}
     for(let x=34;x<=38;x++)q(x,6+(x>36?1:0),Cl);q(33,6,Wo[2]);q(33,7,Wo[2]);
     for(let x=18;x<=45;x++)q(x,13,Wo[2]);
-    for(let y=14;y<=36;y++){const e=y===36?2:0;for(let x=19+e;x<=44-e;x++){const st=Math.floor((x-19)/sw)%2,lee=x>39||y>32;q(x,y,st?(lee?Cv[4]:Cv[3]):(lee?Cv[2]:y<17?Cv[0]:Cv[1]))}}
+    // moored: the sail furled, bunched along the yard under its gaskets, a hint of its stripes in the folds
+    if(o.moored)for(let y=14;y<=16;y++){const e=y===16?2:y===14?0:1;for(let x=19+e;x<=44-e;x++){const st=Math.floor((x-19)/sw)%2;q(x,y,(x-21)%6===0?Wo[2]:y===16?(st?Cv[4]:Cv[2]):st?Cv[3]:y===14?Cv[0]:Cv[1])}}
+    else for(let y=14;y<=36;y++){const e=y===36?2:0;for(let x=19+e;x<=44-e;x++){const st=Math.floor((x-19)/sw)%2,lee=x>39||y>32;q(x,y,st?(lee?Cv[4]:Cv[3]):(lee?Cv[2]:y<17?Cv[0]:Cv[1]))}}
     poutline(r);rig=pcanvas(r)}
   // the crew: a sailor at the helm on the stern castle and one at the rail amidships (the hull hides them below the waist);
   // the fisherman sitting in his boat, head and shoulders over the gunwale
   const man=k=>mapPerson({...folkLook('folk','human',(o.seed|0)+k*7),robe:false,helm:k%2?'cap':'bare',helmC:'leather',weapon:null},0);
   // (ropes, a pixel thin, no outline: the stays from the masthead to bow and stern, behind the sail; the fisherman's oar)
   const c=mkc(n,n,x=>{const line=(x0,y0,x1,y1,col)=>{const k=Math.max(Math.abs(x1-x0),Math.abs(y1-y0));x.fillStyle=col;for(let i=0;i<=k;i++)x.fillRect(Math.round(x0+(x1-x0)*i/k),Math.round(y0+(y1-y0)*i/k),1,1)};
-    if(big){line(33,11,57,R-4,'#3e2e26');line(30,11,7,R-6,'#3e2e26');x.drawImage(rig,0,0);x.drawImage(man(0),11-8,R-1-15);x.drawImage(man(1),41-8,R+6-15)}else x.drawImage(man(0),14-8,R-8);
-    x.drawImage(hull,0,0);if(!big)line(12,R-1,6,WL,Wo[1])});
-  c.cw=n;c.ch=n;c.ax=n>>1;c.ay=WL;c.stern=(n>>1)-(big?5:4);c.net=big?0:13;return spr[key]=c;
+    if(big){line(33,11,57,R-4,'#3e2e26');line(30,11,7,R-6,'#3e2e26');x.drawImage(rig,0,0);x.drawImage(man(0),11-8,R-1-15);x.drawImage(man(1),41-8,R+6-15)}else if(!o.moored)x.drawImage(man(0),14-8,R-8);
+    x.drawImage(hull,0,0);if(!big&&!o.moored)line(12,R-1,6,WL,Wo[1])});
+  c.cw=n;c.ch=n;c.ax=n>>1;c.ay=WL;c.stern=(n>>1)-(big?5:4);c.net=big?0:13;c.posts=big?[[6,R-6],[57,R-4]]:[[3,25],[29,24]];return spr[key]=c;
 }
 /* each boat rocks on the water, a wake behind it while it sails; a fishing boat at its ground casts its net */
 function drawShips(ents,cam,V){

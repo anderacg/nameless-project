@@ -44,7 +44,7 @@ This is the work queue as of **2026-10-15**, in priority order. For how the code
 | 2.1 | ~~**The lord's map horse**~~ **Done 2026-10-17** | The battle horse (`drawMount`) in a 32×32 cell, rider seated with his banner (`people.js` `mapFigure`). |
 | 2.2 | ~~**The caravan**~~ **Done 2026-10-17** | A covered two-wheeled cart, an ox with a yoke and a drover, in a 64×64 cell; the cover takes the faction colour (`caravans.js` `caravanSprite`). |
 | 2.3 | **Village herds without a pasture** | Consider showing them as small animals too, for consistency. Ask the owner first. |
-| 2.4 | ~~**Ships and refugees' carts**~~ **Done 2026-10-17** | Fishing boats are rowing boats with a fisherman (32×32); trade ships are cogs with castles, a square sail striped in the owner's colour and crew (64×64, `ships.js` `shipSprite`). Refugees walk as 16-px people (no carts). **Next:** moored dock boats (`structures.js`, engine `PX.boat`) to match. |
+| 2.4 | ~~**Ships and refugees' carts**~~ **Done 2026-10-17** | Fishing boats are rowing boats with a fisherman (32×32); trade ships are cogs with castles, a square sail striped in the owner's colour and crew (64×64, `ships.js` `shipSprite`). Refugees walk as 16-px people (no carts). Moored dock boats match too (`gfx/structures.js` `estateBoats` draws `shipSprite({moored:true})`: empty rowing boats, and a cog with its sail furled at level-3 ports, tied to the pier and wholly afloat); the engine's `PX.boat` is unused. |
 
 Check each one in a sprite lineup at 6–8× and on the map, then get the owner's approval.
 

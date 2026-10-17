@@ -50,6 +50,12 @@ try{const t=T,G=t.G,P=t.P,W=t.W;t.act('begin','soldier');G.mode='world';G.modal=
  for(const big of [true,false]){const s=t.shipSprite({seed:4,big,col:'#a8483a'}),bx=t.opaqueBox(s),len=bx[2]-bx[0]+1;
    ok(s.width===s.height&&s.width===(big?64:32)&&bx[3]===s.height-1,(big?'a trade ship':'a fishing boat')+' sits in a '+s.width+'x'+s.height+' cell, its waterline on the bottom row');
    ok(big?len>=3*15&&bx[3]-bx[1]>=2*15:len>=24,(big?'a cog is some three men long and two tall':'a rowing boat is longer than a man is tall')+' ('+len+' long, '+(bx[3]-bx[1]+1)+' high)')}
+ // ---- moored at a pier (structures.js estateBoats): the same ships, the rowing boat empty, the cog's sail furled
+ {const row=(s,y)=>{const d=s.getContext('2d').getImageData(19,y,26,1).data;let k=0;for(let i=3;i<d.length;i+=4)if(d[i])k++;return k};
+  const sail=t.shipSprite({seed:4,big:true,col:'#a8483a'}),furl=t.shipSprite({seed:4,big:true,col:'#a8483a',moored:true}),rb=t.shipSprite({seed:4,big:false,moored:true});
+  ok(furl.width===64&&t.opaqueBox(furl)[3]===63&&rb.width===32&&t.opaqueBox(rb)[3]===31,'moored boats keep their ships’ cells and waterlines (64 and 32, the bottom row)');
+  ok(row(sail,25)>20&&row(furl,25)<=6,'a moored cog’s sail is furled on its yard ('+row(furl,25)+' pixels across where the sail hangs under way: the mast and the stays)');
+  ok(t.opaqueBox(rb)[1]>t.opaqueBox(t.shipSprite({seed:4,big:false}))[1],'a moored rowing boat lies empty, no fisherman in it')}
  {const z=t.TOWNS.find(q=>t.dockOf(q));if(z){const d=t.dockOf(z);W.ships=[{k:'trade',home:z.name,to:z.name,fac:z.owner,x:(d.tx+.5)*TILE,y:(d.ty+.5)*TILE,path:[],i:0,seed:3,dir:-1,state:'out',big:true,col:'#a8483a'},{k:'fish',home:z.name,x:(d.tx+.5)*TILE,y:(d.ty+1.5)*TILE,path:[],i:0,seed:4,dir:1,state:'fish',big:false}];
    P.x=d.tx*TILE;P.y=d.ty*TILE+30;t.reveal();t.drawWorld();ok(!ERR.length,'ships and boats are drawn without error')}}
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}
