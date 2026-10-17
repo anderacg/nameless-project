@@ -43,9 +43,13 @@ const fieldTop=()=>B&&B.ftop!=null?B.ftop:FIELD_EDGE.top,fieldBot=()=>B&&B.fbot!
 function measureField(){
   const def={top:FIELD_EDGE.top,bot:BH-FIELD_EDGE.bot};bbar.hidden=false;{const sc=document.getElementById('screen');if(sc)sc.dataset.mode='battle'}// (the HUD laid out as in battle)
   const cv=document.querySelector('canvas'),r=cv&&cv.getBoundingClientRect();if(!r||r.height<50)return def;const k=BVH/r.height/camFit(),box=sel=>{const e=bbar.querySelector(sel);return e&&e.offsetParent!==null?e.getBoundingClientRect():null};
-  const tops=['.btop','.btime'].map(box).filter(Boolean),bot=box('.bcmd');
-  const top=tops.length?Math.max(...tops.map(b=>b.bottom))-r.top:0,bh=bot?r.bottom-bot.top:0;
-  return{top:Math.round(clamp(top*k+FIELD_EDGE.body,FIELD_EDGE.top,BH*.3)),bot:Math.round(clamp(BH-bh*k-FIELD_EDGE.bot,BH*.6,BH-FIELD_EDGE.bot))}}
+  // (measured without the unit-ability buttons (battlehud.js): which abilities show depends on the selection, and the last battle's
+  // were still there, so the field and the groups' widths would change with them)
+  const ab=bbar.querySelector('.abils'),abH=ab&&ab.hidden;if(ab)ab.hidden=true;
+  try{const tops=['.btop','.btime'].map(box).filter(Boolean),bot=box('.bcmd');
+    const top=tops.length?Math.max(...tops.map(b=>b.bottom))-r.top:0,bh=bot?r.bottom-bot.top:0;
+    return{top:Math.round(clamp(top*k+FIELD_EDGE.body,FIELD_EDGE.top,BH*.3)),bot:Math.round(clamp(BH-bh*k-FIELD_EDGE.bot,BH*.6,BH-FIELD_EDGE.bot))}}
+  finally{if(ab)ab.hidden=abH}}
 // One short-lived coordinator per battle. Runtime units remain plain records; saved campaign records are not copied.
 // Construction order is deliberate: preserve random draws, chief reuse, HUD measurement and post-layout initialization.
 class BattleSetup{
