@@ -12,12 +12,10 @@ function cellOf(src){const n=CELLS.find(s=>s>=src.width&&s>=src.height)||Math.ma
   const c=mkc(n,n,g=>g.drawImage(src,(n>>1)-(src.width>>1),n-src.height));c.cw=src.width;c.ch=src.fh||src.height;
   if(src.hand)c.hand=[(n>>1)-(src.width>>1)+src.hand[0],n-src.height+src.hand[1]];// (the hand, where it went)
   return c}
-// v (0-5) varies a generated soldier: skin tone, helmet or cap, tunic shade, beard
-const VAR_TINT=[1,.86,1.12,.94,1.06,.8],VAR_SKIN=[1,.9,1.08,.82,.96,1.04],VAR_HELM=['#c9ced8','#9aa3ad','#a07a4a','#dfe4ea','#7a5a3a','#8e95a6'],VAR_BEARD=['#9a6a3a','#c8a050','#6a4a2a','#d8d0c0','#8a3a20','#3a2a20'];
 // pose: 0-1 idle (breathing), 2-5 walking (legs stride, body bobs), 15-18 running (a long stride, leaning, bouncing), then three blows of three frames each (wind up, strike,
 // follow through): 6-8 a swing, 9-11 a thrust, 12-14 an overhead chop. A figure is 16x16 drawn into a 20x20 canvas (room for a
 // raised or thrust weapon) inside a 1-pixel outline, feet on the bottom row; cached by type, team, variant and pose.
-const POSES=19,ATK_BASE={swing:6,thrust:9,overhead:12};
+const ATK_BASE={swing:6,thrust:9,overhead:12};
 // bare: in battle, a soldier's melee weapon is drawn apart (weapons.js); the sprite leaves it off
 // (arm: a shooter in melee mode: his bow put away, his body bare for the sidearm drawn in his hand: weapons.js, sidearmLook)
 function unitSprite(type,team,hero,v,pose,bare,arm){

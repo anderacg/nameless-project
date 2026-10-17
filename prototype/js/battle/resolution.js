@@ -13,6 +13,9 @@ function takePrisoners(slain){
   while(n<want&&pool.length&&prisonerCount()<prisonCap()){const k=pool.splice(rint(0,pool.length-1),1)[0];P.prisoners[k]=(P.prisoners[k]||0)+1;n++}
   return n;
 }
+// can a party's soldiers be laid out as formations? Not when it holds kinds with no formation yet and too few free slots for
+// them: ArmyRoster.groups throws then (army.js). A party that took the field was laid out by BattleSetup, so it always can
+const formsFit=o=>{const r=partyRoster(o),gs=o.army?.groups||[],ks=Object.keys(r.counts).filter(k=>r.count(k));return ks.every(k=>gs.some(g=>g.type===k&&g.count>0))||ks.length+r.reserved<=ARMY_LIMIT};
 // retreat: you withdrew from the battle ({caught}: the rearguard cut down), neither a victory nor a rout
 /* the band's morale after a fight: its outcome (base), then how it went (a battle fought, not resolved): MOOD.loss for all of the
    band lost (a share of it, its share), up to MOOD.shaken more as the men ended shaken (their morale at the end against its
@@ -84,7 +87,7 @@ class BattleResolution{
     }else if(retreat){
       // as fleeing on the map (fleeOdds): a fight you started you simply leave; else a race. Got away, they lose your trail for a
       // while; run down, your rearguard pays and you must face them again. The foes you slew stay dead either way.
-      const o=e.ref;slain=slain||[];if(!this.primaryLossesApplied&&o&&(e.kind==='lord'||e.kind==='patrol'||e.kind==='party'))for(const k of slain){try{partyRemove(o,k,1)}catch(err){}}
+      const o=e.ref;slain=slain||[];if(!this.primaryLossesApplied&&o&&(e.kind==='lord'||e.kind==='patrol'||e.kind==='party'))for(const k of slain)if(formsFit(asParty(o)))partyRemove(o,k,1);
       if(e.list)for(const k of slain){const i=e.list.indexOf(k);if(i>=0)e.list.splice(i,1)}
       mood('flee');if(kills)gainXp(kills*4);
       const od=fleeOdds(e),away=od.leave||od.ch>0&&Math.random()<od.ch,rear={};

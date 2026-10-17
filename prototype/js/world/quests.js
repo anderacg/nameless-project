@@ -6,12 +6,6 @@
 // A courier pays on arrival. Lord quests can be reported to the lord or at any holding of his faction.
 const QUEST_MAX=4,JOB_OFFERS=2,JOB_REFRESH=7;
 const BAND_NAMES=['Red Vipers','Ash Crows','Black Hounds','Grey Wolves','Bone Saws','Mud Rats','Iron Jaws','Night Owls','Rusty Knives','Hollow Men','Crooked Spears','Burnt Hands'];
-const QUEST_KINDS={
-  bounty:{n:'Bounty',d:'Hunt down a bandit band.'},beast:{n:'Beast hunt',d:'Kill a dangerous pack near the holding.'},clear:{n:'Clearance',d:'Clear a lair or hideout.'},
-  supply:{n:'Supply run',d:'Bring trade goods the holding needs.'},hunt:{n:'Hunting',d:'Bring meat or hides from the hunt.'},courier:{n:'Courier',d:'Carry a letter to another holding.'},
-  troops:{n:'Reinforcements',d:'Hand over trained troops to the garrison.'},lordkill:{n:'War',d:'Defeat an enemy lord in battle.'},raid:{n:'Raid',d:'Raid an enemy village.'}
-};
-// which jobs each kind of holding hands out
 const qScale=()=>1+G.day/60,qTiles=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y)/TILE;
 const questBy=id=>P.quests.find(q=>q.id===id);
 // a free spot 8 to 16 tiles from a holding, on ground you can reach
