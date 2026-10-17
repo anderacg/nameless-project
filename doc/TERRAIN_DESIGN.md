@@ -280,6 +280,8 @@ Agents are split by files that do not overlap. The **`B.terrain` shape in §4 is
 
 **Second art review (2026-10-17):** desert has **no water**, only an **oasis** on maps that warrant one; **more variation** (trees on hills, wooded ridges, copses, species mixes); **climbing harder** (stronger slow and stamina cost on a rising slope band, brief cohesion loss; `climbState(u)` for a lean-forward climbing animation); **more painted ground detail** per biome (flowers, grass, pebbles, bushes, branches, mushrooms; frost drifts; sparse desert stones and cracked earth; swamp reeds and moss) — decoration only, never colliding props.
 
+**Art v3 approved by the owner (2026-10-17):** steep cliff-faced terraces, trees on hills and species mixes, desert oasis only, per-biome painted detail, lean-forward climbing / downhill poses for foot soldiers (riders keep their pose).
+
 | # | Decision | Recommendation |
 |---|---|---|
 | D1 | Deep water: **wadeable but punishing** (×0.35 speed, no shooting, weak in melee), or **impassable** (which needs crossing routing for every move and chase)? | **Wadeable in phase 2.** Impassable comes with *Hold the bridge* in phase 4. |
