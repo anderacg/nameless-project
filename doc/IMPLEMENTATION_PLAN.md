@@ -155,6 +155,8 @@ These are in the [Game Feature Plan](Game%20Feature%20Plan%202D%20Pixel-Art%20Sa
 
 ## Technical debt and watch-outs
 
+- **Timing-sensitive test:** `rts` "fights in bursts, a breath after each finisher" can fail under `-Parallel 4` CPU load (passes alone); harden it to measure combat time only.
+
 - **The mid-line `//` trap:** a comment followed by code on the same line hides that code. Use `/* */` (see the knowledge transfer).
 - **Frame cost:** the world frame rose from about 1.2 to 3 ms with placed buildings. Profile with `Ashmark.html?test=visual/perf` before adding more map entities.
 - **Interior painter:** interior scenes still use their own painter rather than the PX engine.
