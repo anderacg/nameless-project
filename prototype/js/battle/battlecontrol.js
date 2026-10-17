@@ -74,8 +74,12 @@ class BattleControl{
   setFlag(k,on){if(this.resolve?.routed||!Object.hasOwn(GRP_FLAGS,k))return;this[k]=!!on&&this.units.some(u=>flagEligible(u,k))}
   // a formation (formations.js), facing face, files wide
   setForm(f,o){if(this.resolve?.routed)return;if(f==='wall'){this.setFlag('shieldWall',true);return}if(!FORMS[f])return;o=o||{};if(o.face!=null)this.face=o.face;if(o.files!==undefined)this.files=o.files;this.form=f;if(FORMS[f].wedge&&o.files===undefined)this.files=null;layForm(this.id)}
+  // its unit abilities (unitabilities.js): Brace, Fire arrows, Spur, Rally, as it has them; false when refused (cooldown, routing...)
+  useAbility(id){return useGroupAbility(this,id)}
+  abilities(){return groupAbilities(this)}
   // ---------- its own moment ----------
   step(dt){
+    abilityStep(this,dt);// (a timed ability holds or ends: unitabilities.js)
     if(this.resolve?.routed){this.backing=false;return}
     this.turnFacing(dt);
     const m=this.units.filter(u=>!u.rout);

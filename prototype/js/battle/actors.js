@@ -118,7 +118,8 @@ function aiUnit(u,dt,strike){
   }
   // walking, they keep to the slowest one's pace (and keep their formation); running, or fighting, each goes as fast as it can
   const tm=tiredMul(u),wk=(walking(g)||staOf(u)<FATIGUE.runMin)&&order!=='withdraw';/* (no breath left: he walks, whatever he is told) */let spd=(wk?Math.min(s.spd,g&&g.pace||s.spd)*MARCH.walk:s.spd)*tm.spd;// (tired: slower, fatigue.js)
-  spd*=formPace(u);// Only supported, eligible shield-wall soldiers pay its speed cost.
+  spd*=formPace(u)*abilitySpeed(u);// Only supported, eligible shield-wall soldiers pay its speed cost. (spurred riders: faster, unitabilities.js)
+  if(mv&&abilityStands(u))mv=false;// (braced: he stands fast where he is and strikes what comes into reach)
   // (stuck: trying to move but going nowhere, against a rock or the field's edge, it steps aside to get round; not in the press
   // round its foe, where it finds another instead: crowdTarget)
   if(mv&&chase&&!back&&!(t&&!s.range&&de<reach+CROWD.slack)){u.stk=(u.stk||0)+dt;if(u.stk>.5){if(u.sx0!=null&&Math.hypot(u.x-u.sx0,u.y-u.sy0)<3){u.side=u.side||(Math.random()<.5?-1:1);u.sideT=.6}u.stk=0;u.sx0=u.x;u.sy0=u.y}

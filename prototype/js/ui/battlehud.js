@@ -87,6 +87,33 @@ function bhudTop(){
   $id('bField').textContent=B.env.name+(B.opts.tournament?' · tournament':'');
   $id('bStatus').textContent=B.over?(B.retreat?'Withdrawn':B.win?'Victory':'Defeat'):B.deploy?(GUIDE.on?'Deploy: place your band in the shaded zone · Space to begin':'Deploying'):B.paused?(GUIDE.on?'Paused · give your orders · Space to go on':'Paused'):B.speed!==1?B.speed+'×':'';
   document.querySelector('.bfield').classList.toggle('alert',!!(B.deploy||B.paused));
+  bhudAbilities();
+}
+/* the unit abilities (unitabilities.js) in their own group at the end of the order bar: a button for each one any selected group
+   has. On (lit): the seconds it has left; cooling down: a shade over it that shrinks as it comes back, and the seconds; dimmed,
+   with the reason in its tooltip, when none of them can use it now. A press (or its key) uses it for every selected group that
+   can (commands.js groupAbility). data-abil, never data-order/flag/form: those lists are the orders' own */
+const ABIL_ICON={
+  brace:['....a....','...aaa...','....a....','....a....','....a....','...ba....','..b.a....','.b..a....','aaaaaaaaa'],
+  fire:['....a....','...aa....','...aab...','..aabba..','.aabbba..','.abbbbaa.','.abbbbba.','..abbba..','...aaa...'],
+  spur:['.........','a...a....','.a...a...','..a...a..','...a...a.','..a...a..','.a...a...','a...a....','.........'],
+  rally:['a........','aaaaaa...','abbbbba..','abbbba...','aaaaaaa..','a........','a........','a........','aa.......']
+};
+function bhudAbilities(){
+  const bar=document.querySelector('#bbar .borders');if(!bar||!B)return;let el=bar.querySelector('.abils');
+  if(!el){el=document.createElement('div');el.className='ogrp abils';el.setAttribute('role','group');el.setAttribute('aria-label','Unit abilities (G brace, I fire arrows, U spur, Y rally)');
+    el.addEventListener('click',e=>{const b=e.target.closest('[data-abil]');if(b&&!b.disabled)groupAbility(b.dataset.abil)});bar.appendChild(el)}
+  const gs=selGroups().filter(g=>grpUnits(g).length).map(g=>B.groups[g]),ids=UNIT_ABIL_ORDER.filter(id=>gs.some(g=>groupHasAbility(g,id)));
+  if(el.dataset.ids!==ids.join()){el.dataset.ids=ids.join();el.replaceChildren(...ids.map(id=>{const b=document.createElement('button');b.type='button';b.className='obtn abtn';b.dataset.abil=id;
+    b.innerHTML='<i class="acd" aria-hidden="true"></i>'+pixelSVG(ABIL_ICON[id],18)+'<span class="at" aria-hidden="true"></span><span class="k">'+UNIT_ABILITIES[id].key+'</span>';return b}))}
+  el.hidden=!ids.length;
+  for(const b of el.children){const id=b.dataset.abil,A=UNIT_ABILITIES[id],st=gs.filter(g=>groupHasAbility(g,id)).map(g=>abilityStatus(g,id)),ready=st.filter(x=>!x.why),on=st.filter(x=>x.active),cool=st.filter(x=>x.cooldown>0);
+    // (the soonest back of those cooling down, when none is ready nor on; the longest still on)
+    const back=!ready.length&&!on.length&&cool.length?Math.min(...cool.map(x=>x.cooldown)):0,left=on.length?Math.max(...on.map(x=>x.left)):0;
+    b.classList.toggle('on',on.length>0);b.setAttribute('aria-pressed',String(on.length>0));b.disabled=!ready.length;
+    b.querySelector('.acd').style.height=back?pct(back/A.cd):'0%';b.querySelector('.at').textContent=on.length?Math.ceil(left-1e-9):back?Math.ceil(back-1e-9):'';
+    b.title=A.n+' ('+A.key+'): '+A.d+(A.dur?' Lasts '+A.dur+' s.':'')+' Cooldown '+A.cd+' s.'+(on.length?' Active: '+Math.ceil(left-1e-9)+' s left.':'')+(ready.length?ready.length<st.length?' Ready for '+ready.length+' of '+st.length+' selected units.':' Ready.':' Unavailable: '+(back?'ready in '+Math.ceil(back-1e-9)+' s':st[0].why)+'.');
+    b.setAttribute('aria-label',b.title)}
 }
 /* callouts: a short banner at the top middle of the field for the big moments, in the colour of the side it is about: a group
    routs, is shattered, rallies or is flanked, a leader falls, the enemy falls back. Each is said once (key, again only after

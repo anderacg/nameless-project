@@ -73,3 +73,10 @@ function formDragTo(x0,y0,x1,y1){
   for(const p of plan){const gr=B.groups[p.g];if(p.hero){gr.moveTo(p.ax,p.ay,{face:p.face});B.hero.sx=B.hero.sy=0;continue}gr.moveTo(p.ax,p.ay,{face:p.face,files:p.files})}
   B.mark={x:(x0+x1)/2,y:(y0+y1)/2,t:.7,foe:false};if(B.deploy)deploySnap(plan.map(p=>p.g));setOrderUI();log(htmlText(selLabel())+': form up there.');return true;
 }
+// a unit ability (unitabilities.js) for every selected group that has it: each that can use it now does; the rest are left as
+// they are (cooling down, routing...). The order bar's ability buttons and their keys (G, I, U, Y) come here
+function groupAbility(id){
+  const A=B&&UNIT_ABILITIES[id];if(!A)return false;const has=selGroups().filter(g=>grpUnits(g).length&&groupHasAbility(B.groups[g],id));if(!has.length)return false;
+  takeCommand();const used=has.filter(g=>B.groups[g].useAbility(id));setOrderUI();
+  log(used.length?used.map(g=>htmlText(groupName(g))).join(' and ')+': '+A.n.toLowerCase()+'.':htmlText(A.n)+': '+htmlText(abilityWhyNot(B.groups[has[0]],id).toLowerCase())+'.');return used.length>0;
+}

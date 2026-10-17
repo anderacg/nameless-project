@@ -233,6 +233,19 @@ Tuning lives in `MORALE`, `CONFIDENCE`, `AWARENESS`, `COHESION`, `LOSS_MEMORY`, 
 
 **Unit of the battle**: kills are counted per source group (`B.grpKills`, `applyDmg`); the battle report names your troop group with the most kills (ties: `resolve.damageDealt`). Not shown in tournaments, for heroes and companions, or when none of your groups fought. Tests: `tests/battlejuice.js`.
 
+## Unit abilities
+
+Some groups have a special order with a cooldown (`battle/unitabilities.js`, registry `UNIT_ABILITIES`). The selected groups' abilities are shown at the end of the order bar; a press (or its key) uses it for every selected group that can. A group has an ability when at least half its fighting troops qualify. Durations and cooldowns run on combat time (pausing stops them); a lit button shows the seconds left, a shaded one the seconds until ready, and the tooltip says why one is unavailable.
+
+| Ability | Key | Who | Effect | Lasts | Cooldown |
+|---|---|---|---|---|---|
+| **Brace** | G | spear and pike infantry | stands fast where it is; the first blow of any charge on its front or flank does half damage; pushes barely move it; any move, attack, advance or withdraw order ends it | 8 s | 40 s |
+| **Fire arrows** | I | bow and crossbow archers | shots deal fire damage (magical: armour doesn't stop it; wards and resistances apply), 10% more | 12 s | 45 s |
+| **Spur** | U | cavalry | full charge momentum at once and 35% more speed, at a run, for 12 stamina per rider | 3 s | 35 s |
+| **Rally** | Y | foot units | +15 shared morale (at most 100) and an end to Breaking; not while routing or with morale off | at once | 60 s |
+
+API for captains: `g.abilities()` lists `{id,active,left,cooldown,why}` (`why===''`: usable now) and `g.useAbility(id)` returns false when refused. Per-group state `g.abil` is non-enumerable (out of snapshots and saves). Tests: `tests/unitabilities.js`. The AI does not use abilities yet.
+
 ## Withdrawal balance
 
 W still orders selected groups to leave through your edge, without attacking on the way. Withdrawal now uses the existing fatigue rules: running spends stamina, tired/spent units have their normal speed penalties, and units below `FATIGUE.runMin` can only walk. Slowing effects still apply. The hero pays from the existing hero stamina pool.
