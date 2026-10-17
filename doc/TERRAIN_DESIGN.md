@@ -299,3 +299,79 @@ Agents are split by files that do not overlap. The **`B.terrain` shape in §4 is
 | D8 | Height as **3 terraces** (readable pixel art, simple rules) or smooth? | **3 terraces** (levels 0–2). |
 | D9 | High-ground melee bonus (+10%) in addition to range and charge? | **Yes, small.** Tune it in the lab. |
 | D10 | Keep today's colliding scattered trees and rocks alongside the new woods? | **Yes.** Forest fields keep half of them. |
+
+---
+
+## 10. Phase 4 routing core (built 2026-10-17: `battle/route.js`, `tests/route.js`)
+
+`route.js` is a standalone library, not yet called by game code.
+
+### Grid
+`g = {C, R, cs, cost, wall, v}`.
+
+- **`cost`** (`Uint8Array`): 0 means impassable; 16 is open ground.
+- **`wall`**: 4 edge bits per cell (E 1, S 2, W 4, N 8). A set bit forbids stepping out of that cell over that edge, so a bit set on one side only makes the cliff **one-way**.
+- **`v`**: the grid's version. Edits made through `routeCell` and `routeWall` bump it.
+
+### API
+- **Building a grid:**
+  - `routeGrid(C, R, cs)` makes an open grid.
+  - `routeGridOf(T, {deep, who})` builds one from `B.terrain`:
+    - the cost comes from `TGROUND` speeds for `who` (foot, mounted or big);
+    - deep water is wadeable at cost 46, or impassable with `deep:true`;
+    - a `TERRAIN_GROUND` entry with `solid:true` is impassable;
+    - `T.wall` holds the cliffs.
+- **`routePath(g, ax, ay, bx, by, {budget, r, cache})`**:
+  - A* over 8 directions with an octile heuristic and no corner cutting, then string-pulled.
+  - Returns the waypoints after the start, with `.ok`, `.cut` and `.n`.
+  - An unreachable or blocked goal gives the nearest reachable point.
+  - The work is bounded by `ROUTE.budget`.
+  - Results are cached by start cell × goal cell, invalidated when `v` changes.
+- **`reachable(g, …)`**
+- **`lineClear(g, ax, ay, bx, by, cap, r)`**: no blocked cell, blocked edge or cut corner on the segment.
+
+### Performance
+On the largest field (82×38 cells):
+
+| Case | Time |
+|---|---|
+| Typical path | about 0.1 ms mean, 0.3 ms p95 |
+| Cache hit or short move | about 0.007 ms |
+| Worst case (bounded by the budget) | about 1 ms |
+| `lineClear` | about 0.5 µs |
+
+### Wiring it in (phase 4)
+- **Grids:**
+  - Build `B.terrain.route = {foot, mounted, big}` once per battle, after generation, with `routeGridOf(T, {deep:true, who})`.
+  - The ground is static. Bump `v` only if the terrain changes (e.g. a burnt bridge).
+- **Generation:**
+  - **Mountains and spires:** `TKIND.rock` (6), with a `TERRAIN_GROUND` entry that has `solid:true`.
+  - **Cliffs:** `T.wall`, filled in `rasterTerrain` on the cardinal edges between a terrace cell and a lower neighbour.
+    - A two-way cliff sets the bit on both sides.
+    - A one-way hill sets it only on the low cell, pointing up: down is allowed, up is refused.
+    - The open rim (the slope band) is the ramp.
+  - **Fairness:** `terrainFair` adds `reachable` checks:
+    - each deployment zone reaches the other, both ways;
+    - mountains never seal a zone;
+    - every hilltop is reachable from both zones, or the hills come as a mirrored pair with their ramps facing the middle.
+- **Group moves** (`battlecontrol.js` `moveTo`):
+  - Call `routePath(grid, centre, goal, {r: min(half frontage, 24)})` and keep `g.way`, `g.wi` and `g.wayV`.
+  - Lay the slots at the next waypoint, facing along the leg; the last waypoint uses the ordered facing.
+  - Slots that land in blocked cells snap to `routeNear`, or the group narrows to a column (as `crossWay` does on bridges).
+- **Soldier steps** (`actors.js`): refuse any step into a cost-0 cell or across a set wall bit, and slide along the other axis instead. This covers knockback and routs too.
+- **Chases:**
+  - When `lineClear(grid, u, t)` holds, go straight, as today.
+  - Otherwise take `routePath`'s next waypoint. Nearby soldiers share the start-cell × goal-cell cache.
+  - Re-path at most every 0.5 s per soldier (staggered), or when the target changes cell.
+  - With deep water impassable this replaces `crossWay`/`crossingFor`, which stay for wadeable mode.
+- **Charges:**
+  - A charge needs `lineClear(grid, u.x, u.y, t.x, t.y, 255, 4)`. Otherwise it becomes a routed move, and momentum builds only once the rest of the leg is clear, so no charge crosses a cliff.
+  - Missiles ignore `wall` and fly over.
+  - Line of sight past mountains and tall plateaus belongs in `terrainBlocksView`, not in `lineClear`.
+- **AI:** captains already move through `moveTo`. When choosing tops and positions they should use `reachable` and the route's length instead of straight-line distance, so a hill whose ramp is on the far side counts as far.
+- **When to re-path:**
+  1. a new order;
+  2. `grid.v` changes;
+  3. a 0.5-s check finds no `lineClear` to the next waypoint (the group was shoved off its leg);
+  4. a cut path reaches its last waypoint;
+  5. a chase target changes cell.
