@@ -1,0 +1,81 @@
+'use strict';
+window.RUN=()=>{const t=T,P=t.P,G=t.G,o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);
+try{
+ const fixture=(party=false)=>{
+  t.begin('soldier');G.quietEvents=true;P.renown=1000;P.comps.brann={ap:5,role:''};const c=t.compInit('brann');c.lv=8;
+  const r=t.partyRoster(P);r.add('hum_foot',12);const a=r.groups[0],b=r.split(a.id,6);r.rename(a.id,'First <Guard>');r.rename(b.id,'Second Guard');b.form='loose';b.files=3;
+  P.wounded={hum_foot:2};P.woundedGroups=[{id:a.id,type:a.type,count:2}];
+  if(party)c.party=t.asParty({cid:'brann',x:P.x+10,y:P.y,troops:[],order:'follow',cool:0});
+  return{r,a,b,c};
+ };
+ const state=()=>JSON.stringify({troops:P.troops,army:P.army,comps:P.comps,wounded:P.wounded,woundedGroups:P.woundedGroups,txp:P.txp});
+ const reject=(f,code,label)=>{const before=state(),q=f();ok(!q.ok&&q.code===code&&state()===before,label)};
+ let f=fixture(),before=state(),q=t.cpTransferQuote('brann','give',f.b.id,3,'new');
+ ok(q.ok&&q.fromSlots===4&&q.fromAfter===3&&q.toAfter===2&&state()===before&&!f.c.party,'quote is read-only and budgets the departing companion and new leader slot');
+ for(const n of [0,-1,.5,7,NaN,Infinity])reject(()=>t.cpTransferGroup('brann','give',f.b.id,n),'amount','invalid exact quantity '+n+' cannot form a party or move soldiers');
+ reject(()=>t.cpTransferGroup('brann','give','missing',1),'source','missing source is never replaced by another duplicate');
+ reject(()=>t.cpTransferGroup('brann','give',f.b.id,1,'missing'),'target','missing destination cannot silently create a group');
+ reject(()=>t.cpTransferGroup('__proto__','give',f.b.id,1),'companion','inherited companion IDs cannot reach roster mutations');
+ reject(()=>t.cpTransferGroup('brann','invalid',f.b.id,1),'companion','unknown transfer directions are rejected');
+ f.c.ap=0;reject(()=>t.cpTransferGroup('brann','give',f.b.id,1),'leadership','leadership eligibility is checked before creating a party');f.c.ap=5;
+ let result=t.cpTransferGroup('brann','give',f.b.id,3),peer=t.partyRoster(f.c.party),first=peer.groups[0];
+ ok(result.ok&&f.a.count===6&&f.b.count===3&&first.count===3,'partial give removes exactly the selected duplicate');
+ ok(!first.name&&first.form==='line'&&!first.files,'partial new group uses default name and formation');
+ ok(P.woundedGroups[0].id===f.a.id&&f.r.wounded(f.a.id)===2&&!peer.wounded(first.id),'wounded remain with their original army and identity');
+ result=t.cpTransferGroup('brann','give',f.b.id,3);const second=peer.groups.find(g=>g.id===result.destinationId);
+ ok(result.ok&&second.name==='Second Guard'&&second.form==='loose'&&second.files===3,'whole fit group retains its name, formation and frontage');
+ ok(first.id!==second.id&&peer.groups.length===2&&peer.count('hum_foot')===6,'same-type formations remain separate with destination-local IDs');
+ second.form='line';second.files=2;result=t.cpTransferGroup('brann','give',f.a.id,2,second.id);
+ ok(result.ok&&second.count===5&&first.count===3&&f.a.count===4&&second.name==='Second Guard'&&second.form==='line'&&second.files===2,'reinforcement affects only the chosen destination and retains its metadata');
+ peer.add('hum_bow',1,'new');const bow=peer.groups.find(g=>g.type==='hum_bow');reject(()=>t.cpTransferGroup('brann','give',f.a.id,1,bow.id),'target','different unit types cannot be mixed');
+ f.c.party.x=P.x+200;result=t.cpTransferGroup('brann','give',f.a.id,1,first.id);ok(result.ok,'existing remote give policy is retained');
+ reject(()=>t.cpTransferGroup('brann','take',first.id,1,f.a.id),'distance','taking soldiers back requires proximity');f.c.party.x=P.x;
+ f.c.party.fight='active';reject(()=>t.cpTransferGroup('brann','give',f.a.id,1,first.id),'fighting','give cannot change an army during its battle');reject(()=>t.cpTransferGroup('brann','take',first.id,1,f.a.id),'fighting','take cannot change an army during its battle');f.c.party.fight=null;
+ result=t.cpTransferGroup('brann','give',f.a.id,f.a.count,first.id);ok(result.ok&&!f.r.groups.some(g=>g.id===f.a.id)&&f.r.nameOf(f.a.id)==='First <Guard>'&&P.woundedGroups[0].count===2,'moving all fit soldiers leaves the named wounded group with the source');
+ // Army slots and headcount are checked for the entire order, never truncated.
+ f=fixture(true);peer=t.partyRoster(f.c.party);for(let i=0;i<9;i++)peer.add('hum_foot',1,'new');
+ reject(()=>t.cpTransferGroup('brann','give',f.b.id,1),'groups','companion leader plus nine troop groups exhausts ten slots');
+ result=t.cpTransferGroup('brann','give',f.b.id,1,peer.groups[4].id);ok(result.ok&&peer.slots===10&&peer.groups[4].count===2,'a full army may reinforce a selected compatible group');
+ f.c.lv=2;reject(()=>t.cpTransferGroup('brann','give',f.a.id,6,peer.groups[0].id),'capacity','companion headcount rejects the whole oversized order');
+ f=fixture(true);peer=t.partyRoster(f.c.party);peer.add('hum_foot',2);f.r.add('hum_foot',t.partyCap()-t.partySize());
+ reject(()=>t.cpTransferGroup('brann','take',peer.groups[0].id,1,f.a.id),'capacity','player receiving capacity includes existing wounded and companions');
+ f=fixture(true);peer=t.partyRoster(f.c.party);peer.add('hum_foot',1);const incoming=peer.groups[0];while(f.r.slots<9)f.r.add('hum_foot',1,'new');
+ reject(()=>t.cpTransferGroup('brann','take',incoming.id,1),'groups','last-group return reserves a separate slot for the companion');
+ result=t.cpTransferGroup('brann','take',incoming.id,1,f.a.id);ok(result.ok&&result.rejoin&&!f.c.party&&f.r.slots===10&&peer.size===0,'last group can reinforce an existing group and return its leader at exactly ten slots');
+ const once=state();result=t.cpTransferGroup('brann','take',incoming.id,1,f.a.id);ok(!result.ok&&state()===once,'stale party transfers cannot duplicate returned soldiers');
+ f=fixture(true);peer=t.partyRoster(f.c.party);peer.add('hum_foot',2);const fullSource=peer.groups[0];while(f.r.slots<10)f.r.add('hum_foot',1,'new');
+ result=t.cpTransferGroup('brann','take',fullSource.id,1,f.a.id);ok(result.ok&&f.c.party&&peer.size===1&&f.r.slots===10,'a full player army may take partial reinforcement without returning the leader');
+ reject(()=>t.cpTransferGroup('brann','take',fullSource.id,1,f.a.id),'groups','a full player army cannot silently exceed the limit when the leader would return');
+ // Automatic return preserves every formation and is atomic across all of them.
+ f=fixture(true);peer=t.partyRoster(f.c.party);peer.add('hum_foot',2);const x=peer.groups[0];peer.rename(x.id,'Oak Guard');x.form='loose';x.files=2;peer.add('hum_foot',3,'new');const y=peer.groups[1];peer.rename(y.id,'Pine Guard');
+ t.cpDisband('brann',true);ok(!f.c.party&&peer.size===0&&f.r.groups.filter(g=>g.type==='hum_foot').length===4,'automatic return does not collapse duplicate formations');
+ ok(f.r.groups.some(g=>g.name==='Oak Guard'&&g.form==='loose'&&g.files===2)&&f.r.groups.some(g=>g.name==='Pine Guard'&&g.count===3),'automatic return keeps names and formation metadata');
+ const returned=state();t.cpDisband('brann',true);ok(state()===returned,'repeated automatic return cannot duplicate groups');
+ f=fixture(true);peer=t.partyRoster(f.c.party);peer.add('hum_foot',2);peer.add('hum_foot',2,'new');while(f.r.slots<9)f.r.add('hum_foot',1,'new');
+ before=JSON.stringify({a:P.army,b:f.c.party.army,tc:P.troops,peer:peer.counts});t.cpDisband('brann',true);
+ ok(f.c.party&&JSON.stringify({a:P.army,b:f.c.party.army,tc:P.troops,peer:peer.counts})===before,'blocked automatic return moves no soldiers or groups');
+ // Real UI controls: no hidden mutation, stable typing, review, revalidation and one-shot confirmation.
+ f=fixture(true);peer=t.partyRoster(f.c.party);peer.add('hum_foot',2);peer.add('hum_foot',3,'new');const dest=peer.groups[1];
+ G.mode='world';G.modal=false;t.hidePanel();t.openComp('brann');
+ t.act('cm-army');ok(panel.scrollWidth<=panel.clientWidth+1,'companion transfer layout fits the available game-panel width without horizontal overflow');
+ if(panel.clientWidth-40<=760){const side=panel.querySelector('.cmside'),main=panel.querySelector('.cmmain');ok(getComputedStyle(side).position==='static'&&main.getBoundingClientRect().top>=side.getBoundingClientRect().bottom-1,'narrow-panel stat card stacks above the controls instead of overlapping them')}
+ const change=(direction,field,value,type='change')=>{const el=panel.querySelector('[data-cp-transfer="'+direction+'"] [data-cp-field="'+field+'"]');el.value=String(value);el.dispatchEvent(new Event(type,{bubbles:true}));return el};
+ before=state();change('give','source',f.b.id);change('give','target',dest.id);const input=change('give','count',2,'input');input.focus();change('give','count',3,'input');
+ ok(state()===before&&panel.querySelector('[data-cp-transfer="give"] [data-cp-field="count"]')===input&&document.activeElement===input,'draft editing is read-only and quantity typing preserves input identity and focus');
+ const button=panel.querySelector('[data-act="cm-transfer-review"][data-arg="give"]');change('give','count',3);ok(panel.querySelector('[data-act="cm-transfer-review"][data-arg="give"]')===button,'quantity blur does not replace the pending Review click target');
+ change('give','count',0,'input');ok(button.disabled&&state()===before,'invalid quantity disables review without moving soldiers');change('give','count',2,'input');
+ t.act('cm-transfer-review','give');ok(G.compTransfer.give.review&&state()===before,'review is a non-mutating step');t.act('cm-transfer-cancel','give');ok(state()===before&&!G.compTransfer.give.review,'cancel moves nothing');
+ t.act('cm-transfer-review','give');t.act('cm-transfer-confirm','give');ok(f.b.count===4&&dest.count===5&&peer.groups[0].count===2,'actual confirm transfers to the selected duplicate');before=state();t.act('cm-transfer-confirm','give');ok(state()===before,'confirmation cannot be replayed');
+ change('give','source',f.a.id);change('give','count',1);t.act('cm-transfer-review','give');f.r.remove('hum_foot',1,f.a.id);before=state();t.act('cm-transfer-confirm','give');ok(state()===before&&panel.textContent.includes('transfer changed'),'changed source strength requires a fresh review');
+ change('give','source',f.a.id);t.act('cm-transfer-review','give');peer.add('hum_foot',1);before=state();t.act('cm-transfer-confirm','give');ok(state()===before&&!G.compTransfer.give.review,'changed destination capacity invalidates an old review');
+ ok(panel.querySelector('[data-cp-transfer="give"] [data-cp-field="source"]').textContent.includes('First <Guard>')&&!panel.querySelector('Guard'),'custom group names are safe literal text in transfer controls');
+ G.mode='world';G.modal=false;t.hidePanel();t.saveGame(true,'quick');const saved=JSON.stringify({army:P.army,peer:P.comps.brann.party.army});t.begin('hedge');t.loadGame('quick');
+ ok(JSON.stringify({army:P.army,peer:P.comps.brann.party.army})===saved,'both armies retain transferred boundaries and metadata through current-schema save/load');
+ G.mode='world';G.modal=false;t.hidePanel();t.openComp('brann');ok(panel.querySelector('[data-cp-transfer="take"] [data-cp-field="source"]')?.options.length===2,'loaded companion armies can be managed immediately, before a world tick');
+ const ally=t.asParty(P.comps.brann.party),arm=t.partyRoster(ally),allyIds=arm.groups.map(g=>g.id),foe=t.asParty({kind:'bandits',troops:['militia'],x:P.x+5,y:P.y});
+ G.enc={kind:'party',ref:foe,list:['militia'],allies:[t.forceOf(ally)],foes:[]};t.startBattle({enemies:['militia'],deploy:false});
+ const controls=Object.values(t.B.groups).filter(g=>g.ally&&g.sourceGroupId);
+ ok(controls.length===allyIds.length&&allyIds.every(id=>controls.some(g=>g.sourceGroupId===id)),'transferred duplicate groups remain independent allied formations in battle');
+ ok(controls.every(g=>t.B.units.filter(u=>u.grp===g.id).length===arm.groups.find(s=>s.id===g.sourceGroupId).count),'allied deployment retains the exact transferred composition');
+}catch(e){o.push('EXC '+e.message+' '+e.stack)}
+const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d)};

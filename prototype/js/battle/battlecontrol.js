@@ -1,60 +1,86 @@
 'use strict';
 /* ---------- battle control: the one place a group of soldiers is commanded (one BattleControl for each group: B.groups). You (your clicks, keys and buttons) and the AI (a captain:
    commander.js) give it orders the same way, through these methods, and nothing else changes what it does. Its soldiers
-   (battle.js aiUnit) are only actors: they keep their places in its formation, pick their foes, shoot and strike. Between
-   orders the group minds itself (step): it lets a fallen target go, walks its waypoints, creeps on an advance, backs off
+   (actors.js aiUnit) are only actors: they keep their places in its formation, pick their foes, shoot and strike. Between
+   orders the group minds itself (step): it releases an eliminated target formation, walks its waypoints, creeps on an advance, backs off
    together when it skirmishes. It decides nothing: when to stop, whom to shoot, when to skirmish are yours or its commander's.
-   Its state, read by its soldiers and the HUD: order (hold, charge, advance, withdraw), tgt (the foe it is set on), ax, ay
-   (where it stands), face, form, files (its formation), queue (waypoints), mvId (a move under way: battle.js relocating),
+   Its state, read by its soldiers and the HUD: order (hold, charge, advance, withdraw), targetGroupId/targetUnitId
+   (the explicit attack identity), tgt (a resolved representative), ax, ay
+   (where it stands), face, form, files (its formation), queue (waypoints), mvId (a move under way: actors.js relocating),
    walk, run (its pace), firm, cease, skirmish, melee (its flags: battle.js GRP_FLAGS), pace (its slowest man's speed),
-   going (its place on the move), backing (backing off from a foe). An AI keeps its own notes on it too (phase, t, prefer,
+   going (its place on the move), backing (backing off from a foe). An AI keeps its own notes on it too (phase, t,
    stand, formAt, lax, lay) ---------- */
 // (every FORM_SWAP.every seconds its places are shared out again, a swap made when it saves FORM_SWAP.gain px of walking)
 const FORM_SWAP={every:1,gain:6};
+// A new relocation generation belongs to group orders; actors only compare it with their completed mvId.
+function moveOrder(g){const gr=B.groups[g];if(gr)gr.mvId=(gr.mvId||0)+1}
 class BattleControl{
-  constructor(id,team,o){Object.assign(this,{id,team,order:'hold',spread:false,ax:0,ay:0,tgt:null,queue:[],form:'line',face:team?Math.PI:0,files:null,mvId:0,run:false},GRP_FLAGS,o||{})}
+  constructor(id,team,o){o=o||{};
+    // The order owns identities, never one soldier's lifetime. `tgt` remains a resolved representative for
+    // tactical AI callers; assigning an actor through it selects that actor's formation (or a lone actor).
+    this.targetGroupId=null;this.targetUnitId=null;
+    Object.defineProperty(this,'tgt',{enumerable:true,get:()=>this.targetRepresentative(),set:e=>this.setTarget(e)});
+    Object.assign(this,{id,team,name:id,role:'inf',order:'hold',spread:false,ax:0,ay:0,tgt:null,queue:[],form:'line',face:team?Math.PI:0,currentFacing:null,files:null,mvId:0,run:false},GRP_FLAGS,o);this.currentFacing=o.currentFacing==null?this.face:o.currentFacing}
   get units(){return grpUnits(this.id)}
+  get hasTarget(){return this.targetGroupId!==null||this.targetUnitId!==null}
+  setTarget(e){
+    const group=e instanceof BattleControl?e:e&&e.grp&&B&&B.groups[e.grp];
+    if(!e||e.team===this.team){this.targetGroupId=this.targetUnitId=null;return}
+    this.targetGroupId=group&&group.team!==this.team?group.id:null;
+    this.targetUnitId=e instanceof BattleControl?null:e.id??null;
+  }
+  targetMembers(){
+    if(!B||!this.hasTarget)return [];
+    if(this.targetGroupId!==null&&!B.groups[this.targetGroupId])return [];
+    return B.units.filter(u=>u.hp>0&&!u.left&&u.team!==this.team&&(this.targetGroupId!==null?u.grp===this.targetGroupId:u.id===this.targetUnitId));
+  }
+  targetRepresentative(){const m=this.targetMembers();return m.find(u=>u.id===this.targetUnitId&&!u.rout)||m.find(u=>!u.rout)||m[0]||null}
+  targetPoint(){const m=this.targetMembers();return m.length?{x:m.reduce((n,u)=>n+u.x,0)/m.length,y:m.reduce((n,u)=>n+u.y,0)/m.length}:null}
   // where its men are, on average
   centre(){const m=this.units;return m.length?{x:m.reduce((a,u)=>a+u.x,0)/m.length,y:m.reduce((a,u)=>a+u.y,0)/m.length}:{x:this.ax,y:this.ay}}
   regroup(){const m=this.units;if(!m.length)return;const C=this.centre();this.ax=C.x;this.ay=C.y}
   // ---------- orders: the same for you and the AI ----------
   // stand where they are
-  hold(){this.tgt=null;this.queue=[];this.run=false;this.regroup();this.order='hold'}
-  // go to (x,y) and stand there, turned toward it if it is far (face: a facing of its own); run: at a run; a move under way
-  moveTo(x,y,o){o=o||{};this.tgt=null;this.queue=[];this.order='hold';this.run=!!o.run;moveOrder(this.id);
+  hold(){if(this.resolve?.routed)return;this.tgt=null;this.queue=[];this.run=false;this.regroup();this.order='hold'}
+  // go to (x,y) and stand there facing the move (face: an explicit facing instead); run: at a run; a move under way
+  moveTo(x,y,o){if(this.resolve?.routed)return;o=o||{};this.tgt=null;this.queue=[];this.order='hold';this.run=!!o.run;moveOrder(this.id);
     if(o.face!=null){this.face=o.face;if(o.files!==undefined)this.files=o.files;layForm(this.id)}else if(o.turn!==false)faceToward(this.id,x,y);
-    this.ax=clamp(x,8,BW-8);this.ay=clamp(y,fieldTop(),fieldBot())}
+    if(o.run)breakWall(this.id);this.ax=clamp(x,8,BW-8);this.ay=clamp(y,fieldTop(),fieldBot())}
   // standing (its waypoints kept): from a charge or an advance, where they are
-  toHold(){if(this.order!=='hold'){this.regroup();this.order='hold';this.tgt=null}}
+  toHold(){if(this.resolve?.routed)return;if(this.order!=='hold'){this.regroup();this.order='hold';this.tgt=null}}
   // a waypoint after its last
-  queueTo(x,y){this.toHold();this.queue.push({x:clamp(x,8,BW-8),y:clamp(y,fieldTop(),fieldBot())})}
+  queueTo(x,y){if(this.resolve?.routed)return;this.toHold();this.queue.push({x:clamp(x,8,BW-8),y:clamp(y,fieldTop(),fieldBot())})}
   // put at (x,y) at once (deploying: no march), standing
-  placeAt(x,y){this.ax=x;this.ay=y;this.order='hold';this.tgt=null;this.queue=[]}
+  placeAt(x,y){if(this.resolve?.routed)return;this.ax=x;this.ay=y;this.order='hold';this.tgt=null;this.queue=[]}
   // handed to the AI: its notes and waypoints cleared, for a fresh start
   aiReset(){this.phase=null;this.t=0;this.queue=[]}
   // the AI's placing: stand at (x,y); a move (its men break off and go) only when that is well away from where it last stood
-  standAt(x,y){this.order='hold';this.tgt=null;this.ax=clamp(x,8,BW-8);this.ay=clamp(y,fieldTop(),fieldBot());
+  standAt(x,y){if(this.resolve?.routed)return;this.order='hold';this.tgt=null;this.ax=clamp(x,8,BW-8);this.ay=clamp(y,fieldTop(),fieldBot());
     if(this.lax==null||Math.hypot(this.ax-this.lax,this.ay-this.lay)>CAPT.move){if(this.lax!=null)moveOrder(this.id);this.lax=this.ax;this.lay=this.ay}}
-  // set on one foe (run: at a run, a charge); a shield wall breaks to go
-  attack(e,o){o=o||{};breakWall(this.id);this.queue=[];this.tgt=e;this.order='charge';if(o.run!=null)this.run=!!o.run}
+  // Set on an enemy formation, accepting its control or any member. Lone ungrouped foes remain valid targets.
+  attack(e,o){if(this.resolve?.routed||!e||e.team===this.team)return;const prior=[this.targetGroupId,this.targetUnitId];this.tgt=e;if(!this.tgt){[this.targetGroupId,this.targetUnitId]=prior;return}o=o||{};breakWall(this.id);this.queue=[];this.order='charge';if(o.run!=null)this.run=!!o.run}
   // at them all: each man at the foe nearest him
-  charge(o){o=o||{};breakWall(this.id);this.queue=[];this.tgt=null;this.order='charge';if(o.run!=null)this.run=!!o.run}
+  charge(o){if(this.resolve?.routed)return;o=o||{};breakWall(this.id);this.queue=[];this.tgt=null;this.order='charge';if(o.run!=null)this.run=!!o.run}
   // walk on at the foe, in its ranks (step)
-  advance(){if(this.order!=='advance'){this.regroup();this.order='advance';this.tgt=null}}
+  advance(){if(this.resolve?.routed)return;if(this.order!=='advance'){this.regroup();this.order='advance';this.tgt=null}}
   // off the field by your edge, striking no one
-  withdraw(){this.tgt=null;this.queue=[];this.run=false;this.regroup();this.order='withdraw';this.ax=B.exit?B.exit.x:MARCH.edge}
+  withdraw(){if(this.resolve?.routed)return;if(this.order!=='withdraw'){if(B.opts.sandbox&&BattleLab.active)BattleLab.event('withdraw_order',null,{groupId:this.id,side:this.team?'right':'left'});for(const u of this.units)delete u.withdrawal}this.tgt=null;this.queue=[];this.run=false;this.regroup();this.order='withdraw';this.ax=this.team?BW-MORALE.edge:B.exit?B.exit.x:MARCH.edge}
   // its pace: walk (keeping its ranks) or run; this order at a run (the AI's charges)
-  setWalk(walk){this.walk=!!walk;this.run=false;if(!walk)breakWall(this.id)}
-  setRun(run){this.run=!!run}
-  setFlag(k,on){this[k]=!!on}
+  setWalk(walk){if(this.resolve?.routed)return;this.walk=!!walk;this.run=false;if(!walk)breakWall(this.id)}
+  setRun(run){if(this.resolve?.routed)return;this.run=!!run;if(run)breakWall(this.id)}
+  // `face` is the ordered/destination heading. The field's firing front catches up on simulation time.
+  faceTo(angle){this.face=angle}
+  turnFacing(dt){const from=this.currentFacing==null?this.face:this.currentFacing,diff=Math.atan2(Math.sin(this.face-from),Math.cos(this.face-from)),step=Math.min(Math.abs(diff),SHOOT.turn*Math.max(0,dt));this.currentFacing=from+Math.sign(diff)*step}
+  setFlag(k,on){if(this.resolve?.routed||!Object.hasOwn(GRP_FLAGS,k))return;this[k]=!!on&&this.units.some(u=>flagEligible(u,k))}
   // a formation (formations.js), facing face, files wide
-  setForm(f,o){o=o||{};if(o.face!=null)this.face=o.face;if(o.files!==undefined)this.files=o.files;this.form=f;if(FORMS[f]&&FORMS[f].wedge&&o.files===undefined)this.files=null;layForm(this.id)}
-  // a foe worth shooting, pointed out to its shooters (a suggestion: each shoots him if he can reach him: battle.js shooterTarget)
-  suggest(t){this.prefer=t||null}
+  setForm(f,o){if(this.resolve?.routed)return;if(f==='wall'){this.setFlag('shieldWall',true);return}if(!FORMS[f])return;o=o||{};if(o.face!=null)this.face=o.face;if(o.files!==undefined)this.files=o.files;this.form=f;if(FORMS[f].wedge&&o.files===undefined)this.files=null;layForm(this.id)}
   // ---------- its own moment ----------
   step(dt){
+    if(this.resolve?.routed){this.backing=false;return}
+    this.turnFacing(dt);
     const m=this.units.filter(u=>!u.rout);
-    if(this.tgt&&this.tgt.hp<=0)this.tgt=null;// (its foe fallen: let go)
+    // An explicit order pursues routers/withdrawers still on the field, but never silently charges a new formation.
+    if(this.hasTarget&&!this.tgt)this.hold();
     // (its place on the move: its men keep walking with it, no stop, step, stop)
     if(this.px==null){this.px=this.ax;this.py=this.ay}else if(this.px!==this.ax||this.py!==this.ay){this.movedAt=B.t;this.px=this.ax;this.py=this.ay}
     this.going=B.t-(this.movedAt??-9)<.5;

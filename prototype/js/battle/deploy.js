@@ -15,16 +15,16 @@ const BAUTO={on:(()=>{try{return localStorage.getItem('ashmark.bauto')==='1'}cat
 function setDeploy(on){BDEPLOY.on=!!on;try{localStorage.setItem('ashmark.bdeploy',BDEPLOY.on?'1':'0')}catch(e){}}
 // the deployment zone (field px)
 const deployZone=()=>({x0:8,x1:Math.round(BW*DEPLOY.zone),y0:fieldTop(),y1:fieldBot()});
-function deployInit(opts){B.deploy=!!(opts.deploy&&BDEPLOY.on&&!opts.tournament);B.auto=!opts.tournament&&BAUTO.on;if(B.deploy&&GUIDE.on)log('Deploy your band: right-click or right-drag in the shaded zone, then Space to begin.')}
+function deployInit(opts){B.deploy=!!(opts.deploy&&(opts.sandbox||BDEPLOY.on)&&!opts.tournament);B.auto=!opts.tournament&&BAUTO.on;if(B.deploy&&GUIDE.on)log('Deploy your band: right-click or right-drag in the shaded zone, then Space to begin.')}
 // keep a point in the zone
 const inZone=(x,y)=>{const Z=deployZone();return{x:clamp(x,Z.x0,Z.x1),y:clamp(y,Z.y0,Z.y1)}};
 // deploying, the groups just placed stand there at once (in the zone), not march
 function deploySnap(gs){
-  const Z=deployZone();for(const g of gs){const gr=B.groups[g];if(!gr)continue;const a=inZone(gr.ax,gr.ay);gr.placeAt(a.x,a.y);
+  const Z=deployZone();for(const g of gs){const gr=B.groups[g];if(!gr)continue;const a=inZone(gr.ax,gr.ay);gr.placeAt(a.x,a.y);gr.currentFacing=gr.face;
     for(const u of grpUnits(g)){u.x=clamp(gr.ax+(u.sx||0),Z.x0,Z.x1);u.y=clamp(gr.ay+(u.sy||0),Z.y0,Z.y1)}}
 }
 // the fight begins (the withdrawal edge is your side of the field)
-function beginFight(){if(!B||!B.deploy)return;B.deploy=false;exitInit(B.units);B.paused=false;battleSpeedUI();setOrderUI();log('The battle begins.')}
+function beginFight(){if(!B||!B.deploy)return;B.deploy=false;exitInit(B.units);B.paused=!!(B.opts.sandbox&&B.opts.pauseAfterDeploy);battleSpeedUI();setOrderUI();log('The battle begins.')}
 // the shaded zone and the word, while deploying (drawn on the field)
 function drawDeploy(){
   if(!B.deploy)return;const Z=deployZone();ctx.fillStyle='rgba(74,122,192,.12)';ctx.fillRect(Z.x0,Z.y0,Z.x1-Z.x0,Z.y1-Z.y0);
@@ -32,8 +32,8 @@ function drawDeploy(){
 }
 // the AI in command of your army, on or off (remembered for the next battle)
 function setAuto(on,quiet){
-  if(!B)return;B.auto=!!on;BAUTO.on=B.auto;try{localStorage.setItem('ashmark.bauto',B.auto?'1':'0')}catch(e){}
-  if(B.auto)for(const g of ['inf','arc','mag','cav','hero'])if(B.groups[g])B.groups[g].aiReset();
+  if(!B)return;B.auto=!!on;if(!B.opts.sandbox){BAUTO.on=B.auto;try{localStorage.setItem('ashmark.bauto',B.auto?'1':'0')}catch(e){}}
+  if(B.auto)for(const g of playerGroups())B.groups[g].aiReset();
   B.cmdT=0;autoUI();if(!quiet)log(B.auto?'The AI takes command of your army (A: take it back).':'You take command of your army.');
 }
 // an order of yours takes command back from the AI

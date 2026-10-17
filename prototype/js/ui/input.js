@@ -30,8 +30,9 @@ function act(a,arg){
   if(a==='plan-siege'){G.town=null;hidePanel();G.mode='world';return openSiege(t)}
   if(fiefAct(a,arg,t)){}
   else if(a==='tab'){G.town.tab=arg;G.town.greet=null}
-  else if(a==='rec-pick'){G.town.pick=arg}// (the unit card shown beside the recruits: unitcard.js)
-  else if(a==='hire')recruitmentFeedback(recruitment.hire(t,arg),t);
+  else if(a==='rec-pick'){G.town.pick=arg;G.town.review=null;G.town.recruitNotice=''}
+  else if(['rec-review','rec-confirm','rec-cancel'].includes(a))townRecruitAction(a);
+  else if(a==='hire'){const result=recruitment.hire(t,arg,1,G.town.pick===arg?G.town.hireTarget:undefined);if(result.ok&&result.target==='new'&&G.town.pick===arg)G.town.hireTarget=G.recruitTarget;recruitmentFeedback(result,t)}
   else if(a==='train'){const [k,to]=String(arg).split(':');recruitmentFeedback(recruitment.train(t,k,to),t)}
   else if(a==='contract'){if(!P.fac){P.fac=t.owner;delete P.hostile[t.owner];log('You sign on with the '+FACS[t.owner].n+'. Their enemies are now yours.','gold')}}
   else if(a==='end-contract'){if(P.fac===t.owner){P.fac=null;log('You end your contract with the '+FACS[t.owner].n+'.')}}
@@ -49,13 +50,26 @@ function act(a,arg){
     else{const r=sellGoods(t,g,n);train('trade',r.earned/20);addRep(t.name,r.earned/60,true)}}
   else if(a==='tourney'){if(P.gold>=10){P.gold-=10;updateHUD(true);return startBattle({enemies:['chief'],tournament:true})}}
   updateHUD(true);renderTown();panel.scrollTop=keep;
+  if(a==='rec-pick')panel.querySelector('.recruit-order')?.scrollIntoView({block:'nearest'});
+  if(a==='rec-review'&&G.town.review){panel.querySelector('[data-act="rec-confirm"]')?.focus();return}
   const again=panel.querySelector('[data-act="'+a+'"][data-arg="'+arg+'"]:not([disabled])')||panel.querySelector('[data-act="tab"].on');if(again)again.focus({preventScroll:true});
 }
-panel.addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(b)act(b.dataset.act,b.dataset.arg)});
+panel.addEventListener('click',e=>{if(e.target.closest('[data-recruit-field]'))return;const b=e.target.closest('[data-act]');if(b)act(b.dataset.act,b.dataset.arg)});
+function updateRecruitDraft(e){const field=e.target.dataset.recruitField;if(!['hireCount','hireTarget','trainingGroup'].includes(field)||G.mode!=='town'||!G.town)return;
+  const value=field==='hireCount'?Number(e.target.value):e.target.value;if(Object.is(G.town[field],value))return;
+  G.town[field]=value;G.town.review=null;G.town.recruitNotice='';
+  // Keep the input node/focus/caret alive. In particular, blur must not replace the Review button during a click.
+  const preview=document.createElement('div');preview.innerHTML=townRecruitControls(G.town.ref,G.town.pick);
+  panel.querySelector('.recruit-summary')?.replaceWith(preview.querySelector('.recruit-summary'));
+}
+panel.addEventListener('input',updateRecruitDraft);
+panel.addEventListener('change',updateRecruitDraft);
+panel.addEventListener('input',updateCompTransferDraft);
+panel.addEventListener('change',updateCompTransferDraft);
 document.addEventListener('click',e=>{
   const s=e.target.closest('[data-speed]');if(s)setSpeed(+s.dataset.speed);
   const o=e.target.closest('[data-order]');if(o)setOrder(o.dataset.order);
-  const g=e.target.closest('[data-grp]');if(g)selectGroup(g.dataset.grp);
+  const g=e.target.closest('[data-grp]');if(g)selectGroup(g.dataset.grp,e.shiftKey);
 });
 bhudInit();// (the order, flag and formation buttons' icons: battlehud.js)
 document.querySelectorAll('[data-form]').forEach(b=>b.addEventListener('click',()=>setForm(b.dataset.form)));
@@ -70,7 +84,7 @@ $('#pause').addEventListener('click',togglePause);pauseUI();
 document.querySelectorAll('.dbtn[data-ico]').forEach(b=>{b.innerHTML=icon(b.dataset.ico,18)+'<span class="dl">'+b.textContent+'</span>'+(b.dataset.key?'<kbd>'+b.dataset.key+'</kbd>':'')});
 $('#saveBtn').addEventListener('click',()=>saveGame(false,'quick'));
 // the main menu, from anywhere outside a battle
-$('#menuBtn').addEventListener('click',()=>{if(G.mode==='title')return;if(G.mode==='esc')return escAct('esc-resume');showEsc()});
+$('#menuBtn').addEventListener('click',()=>{if(BattleLab.active)return DevConsole.show('battle');if(G.mode==='title')return;if(G.mode==='esc')return escAct('esc-resume');showEsc()});
 
 $('#charBtn').addEventListener('click',()=>{if(G.mode==='char')act('char-close');else openChar()});
 $('#helpBtn').addEventListener('click',()=>{if(G.mode==='help')closeOver();else openHelp()});
@@ -144,15 +158,13 @@ window.addEventListener('keydown',e=>{
     // the battle's speed: Space pauses (orders still go: a tactical pause), [ and ] slow it down and speed it up
     if(e.code==='Space'){e.preventDefault();if(!e.repeat)battlePause();return}
     if(!e.repeat&&(k==='['||k===']')){battleSpeedStep(k==='['?-1:1);return}
-    // RTS command: no key stands for a group of units (you pick them with the mouse: a soldier, his icon, his card, a box);
-    // control groups are yours to make: Ctrl+1-9 keeps the selection under a number, 1-9 picks it again (twice quickly: the
-    // camera looks at them)
+    // 1–9/0 select the ten army cards; Ctrl stores an override selection. Double-tap centres the camera.
     const twice=()=>{const now=performance.now(),L=B.lastKey;B.lastKey={k,t:now};if(L&&L.k===k&&now-L.t<BCAM.dbl)camLookAt(selGroups())};
-    if(!e.repeat&&/^[1-9]$/.test(k)){e.preventDefault();ctrlGroup(k,e.ctrlKey||e.metaKey);if(!e.ctrlKey&&!e.metaKey)twice();return}
-    // the camera: arrows pan (held), + and - zoom on the middle, 0 the whole field
+    if(!e.repeat&&/^[0-9]$/.test(k)){e.preventDefault();ctrlGroup(k,e.ctrlKey||e.metaKey);if(!e.ctrlKey&&!e.metaKey)twice();return}
+    // the camera: arrows pan (held), + and - zoom on the middle, Home the whole field
     if(k.startsWith('arrow')){e.preventDefault();B.cam.keys[k]=true;return}
     if(!e.repeat&&(k==='='||k==='+'||k==='-')){camZoom(k==='-'?-1:1);return}
-    if(!e.repeat&&k==='0'){camReset();return}
+    if(!e.repeat&&k==='home'){camReset();return}
     // H hold (where they stand), W withdraw; R walk or run, F hold ground, Q cease fire, E skirmish, X melee mode
     if(!e.repeat&&k==='a')return setAuto(!B.auto);
     if(!e.repeat&&k==='k')return setAutoSkills(!AUTOSK.on);// (your characters' skills on their own)// (the AI in command of your army)
@@ -162,7 +174,7 @@ window.addEventListener('keydown',e=>{
     if(!e.repeat){const si=SLOT_KEYS.indexOf(k);if(si>=0)return castSlot(si);if(k==='f')return dodge()} */
     if(k==='c')return setOrder('charge');if(k==='v')return setOrder('advance');
     // formations: B shield wall, L loose, T wedge (pressed again: line)
-    if(!e.repeat){const fk=FORM_PICK.find(f=>FORMS[f].key.toLowerCase()===k);if(fk)return setForm(fk)}
+    if(!e.repeat){if(k==='b')return toggleFlag('shieldWall');const fk=FORM_PICK.find(f=>FORMS[f].key.toLowerCase()===k);if(fk)return setForm(fk)}
     /* (moving your hero with WASD, sprinting with Shift, blocking with B: set aside)
     if(['arrowup','arrowdown','arrowleft','arrowright'].includes(k))e.preventDefault();
     G.keys[k]=true;if(e.shiftKey)G.keys.shift=true; */

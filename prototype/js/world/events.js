@@ -28,7 +28,7 @@ const EVENTS=[
       {label:'Leave an offering (20 gold)',need:()=>P.gold<20&&'Not enough gold.',run:()=>{P.gold-=20;P.morale+=12;gainXp(25);return'You feel watched over. (+25 XP)'}},
       {label:'Take the coins',run:()=>{P.gold+=12;P.morale-=8;return'12 gold richer. Nobody sleeps well that night.'}}]},
   {id:'deserters',w:1.2,ok:()=>partySize()<partyCap(),text:()=>{const t=nearestOf(P,TOWNS);G.event.unit=G.event.unit||RACES[t.races[0]].melee;return'Two '+ST[G.event.unit].n.toLowerCase()+'s who fled their lord ask to join your band for food and 15 gold.'},
-    choices:[{label:'Take them in (15 gold)',need:()=>P.gold<15?'Not enough gold.':partySize()+2>partyCap()&&'No room in your party.',run:()=>{P.gold-=15;P.add(G.event.unit,2);return'Two new '+ST[G.event.unit].n.toLowerCase()+'s fall in line.'}},
+    choices:[{label:'Take them in (15 gold)',need:()=>P.gold<15?'Not enough gold.':partySize()+2>partyCap()?'No room in your party.':!partyRoster(P).canAdd(G.event.unit)&&'No free army group.',run:()=>{P.gold-=15;P.add(G.event.unit,2);return'Two new '+ST[G.event.unit].n.toLowerCase()+'s fall in line.'}},
       {label:'Turn them away',run:()=>'They vanish into the trees.'}]},
   {id:'gamblers',w:1.2,ok:()=>P.gold>=20,text:()=>'Off-duty soldiers wave you over to a game of bones. The pot is 20 gold a hand.',
     choices:[{label:'Play a hand (20 gold)',need:()=>P.gold<20&&'Not enough gold.',run:()=>{if(Math.random()<.48){P.gold+=20;return'You win 20 gold. They grumble.'}P.gold-=20;return'You lose 20 gold. They laugh.'}},

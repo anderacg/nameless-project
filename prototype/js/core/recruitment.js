@@ -13,18 +13,45 @@ class RecruitmentService{
   }
   clampXp(){const p=this.player;p.txp=p.txp||{};for(const k in p.txp){const cap=this.rules.upgrades[k]?(p.troops[k]||0)*this.xpNeed(k):0;if(p.txp[k]>cap)p.txp[k]=cap;if(!p.txp[k])delete p.txp[k]}}
   closed(t){return !t||['sacked','raided','turmoil'].some(k=>(t[k]||0)>this.rules.day())}
-  quoteHire(t,k){
-    const cost=this.hireCost(k),fail=code=>({ok:false,code,kind:k,cost});
+  quoteHire(t,k,n=1,target){
+    if(target===undefined&&this.rules.target)target=this.rules.target(k);
+    const unitCost=this.hireCost(k),cost=unitCost*n,fail=code=>({ok:false,code,kind:k,count:n,target,cost,unitCost});
     if(!this.rules.troops[k]||!Number.isFinite(this.rules.hire[k]))return fail('invalid-unit');
+    if(!troopAmount(n)||!Number.isSafeInteger(cost)||cost<0)return fail('amount');
     if(this.closed(t))return fail('closed');
     if(!t.races.some(r=>t.hires(r).includes(k)))return fail('unavailable');
     if(!this.rules.canHire(t,k))return fail('standing');
-    if((t.vol||0)<1)return fail('volunteers');
+    if((t.vol||0)<n)return fail('volunteers');
     if(this.player.gold<cost)return fail('gold');
-    if(this.rules.size()>=this.rules.capacity())return fail('capacity');
-    return {ok:true,code:'hire',kind:k,cost};
+    if(this.rules.size()+n>this.rules.capacity())return fail('capacity');
+    if(this.rules.roster&&target!=='new'&&!this.rules.roster().groups.some(g=>g.id===target&&g.type===k))return fail('target');
+    if(this.rules.canGroup&&!this.rules.canGroup(k,target))return fail('groups');
+    return {ok:true,code:'hire',kind:k,count:n,target,cost,unitCost};
   }
-  hire(t,k){const result=this.quoteHire(t,k);if(!result.ok)return result;this.player.gold-=result.cost;t.vol--;t.pop=Math.max(10,t.pop-1);this.player.add(k);return result}
+  hire(t,k,n=1,target){
+    const result=this.quoteHire(t,k,n,target);if(!result.ok)return result;
+    if(this.rules.add){if(this.rules.add(k,n,result.target)!==n)return {...result,ok:false,code:'target'}}else for(let i=0;i<n;i++)this.player.add(k);
+    this.player.gold-=result.cost;t.vol-=n;t.pop=Math.max(10,t.pop-n);return result;
+  }
+  quoteGroupTraining(t,id,to){
+    const g=this.rules.roster&&this.rules.roster().groups.find(g=>g.id===id),from=g&&g.type,count=g&&g.count||0,unitCost=this.trainCost(to),cost=unitCost*count,xpCost=from?this.xpNeed(from)*count:0;
+    const result={id,from,to,count,unitCost,cost,xpCost},fail=code=>({...result,ok:false,code});
+    if(!g)return fail('target');
+    if(!this.rules.troops[to]||!Array.isArray(this.rules.upgrades[from])||!this.rules.upgrades[from].includes(to))return fail('upgrade');
+    if(this.closed(t)||!t.T.train)return fail('training-unavailable');
+    if(!Number.isSafeInteger(cost)||cost<0||!Number.isSafeInteger(xpCost))return fail('amount');
+    if(this.player.gold<cost)return fail('gold');
+    if(this.xpOf(from)<xpCost)return fail('experience');
+    if((this.player.woundedGroups||[]).some(w=>w.id===id&&w.count>0))return fail('wounded-group');
+    return {...result,ok:true,code:'group-training'};
+  }
+  trainGroup(t,id,to){
+    const result=this.quoteGroupTraining(t,id,to);if(!result.ok)return result;
+    // Spend XP before roster change clamps the old type's pool; preserve the group's ID and its slot.
+    this.player.txp[result.from]-=result.xpCost;
+    if(!this.rules.roster().upgrade(id,to)){this.player.txp[result.from]+=result.xpCost;return {...result,ok:false,code:'target'}}
+    this.player.gold-=result.cost;this.clampXp();return result;
+  }
   quoteTraining(t,from,to){
     const cost=this.trainCost(to),fail=code=>({ok:false,code,from,to,cost});
     if(!this.rules.troops[to]||!Array.isArray(this.rules.upgrades[from])||!this.rules.upgrades[from].includes(to))return fail('upgrade');
@@ -32,6 +59,7 @@ class RecruitmentService{
     if(this.player.gold<cost)return fail('gold');
     if(!(this.player.troops[from]>0))return fail('troops');
     if(this.ready(from)<1)return fail('experience');
+    if(this.rules.canTrainGroup&&!this.rules.canTrainGroup(from,to))return fail('groups');
     return {ok:true,code:'training',from,to,cost};
   }
   train(t,from,to){
@@ -44,6 +72,7 @@ class RecruitmentService{
     if(this.player.comps[id])return fail('companion-hired');
     if(this.player.gold<cost)return fail('gold');
     if(this.rules.size()>=this.rules.capacity())return fail('capacity');
+    if(this.rules.freeGroup&&!this.rules.freeGroup())return fail('groups');
     return {ok:true,code:'companion',id,cost};
   }
   hireCompanion(t,id){const result=this.quoteCompanion(t,id);if(!result.ok)return result;this.player.gold-=result.cost;this.player.comps[id]={ap:0,role:''};return result}
@@ -52,14 +81,20 @@ class RecruitmentService{
     if(!this.rules.troops[k]||!((this.player.prisoners||{})[k]>0))return fail('prisoner-unavailable');
     if(this.player.gold<cost)return fail('gold');
     if(this.rules.size()>=this.rules.capacity())return fail('capacity');
+    if(this.rules.canGroup&&!this.rules.canGroup(k))return fail('groups');
     return {ok:true,code:'prisoner',kind:k,cost};
   }
-  recruitPrisoner(k){const result=this.quotePrisoner(k);if(!result.ok)return result;this.player.gold-=result.cost;this.player.prisoners[k]--;this.player.add(k);return result}
+  recruitPrisoner(k){const result=this.quotePrisoner(k);if(!result.ok)return result;this.player.gold-=result.cost;this.player.prisoners[k]--;if(this.rules.add)this.rules.add(k);else this.player.add(k);return result}
 }
 // Survivors pool XP by kind. Training spends one soldier's threshold; casualties cannot leave more XP than the survivors can use.
 const TROOP_XP={need:{1:40,2:80,3:140,4:220},dmg:.5,kill:6,fight:4,win:4,auto:.6};
 const recruitment=new RecruitmentService(P,{troops:ST,upgrades:UP,companions:COMPS,hire:HIRE,xp:TROOP_XP,prisonerCost:10,has,effect:tm,
-  lead:()=>skill('lead'),size:partySize,capacity:partyCap,canHire:(t,k)=>canHire(t,k),day:()=>G.day});
+  lead:()=>skill('lead'),size:partySize,capacity:partyCap,canHire:(t,k)=>canHire(t,k),day:()=>G.day,
+  roster:()=>partyRoster(P),target:k=>recruitTarget(k)||partyRoster(P).groups.find(g=>g.type===k)?.id||'new',
+  canGroup:(k,target)=>partyRoster(P).canAdd(k,target===undefined?recruitTarget(k):target),freeGroup:()=>partyRoster(P).slots<ARMY_LIMIT,
+  add:(k,n=1,target=recruitTarget(k))=>{const r=partyRoster(P),added=r.add(k,n,target);if(added&&target==='new')G.recruitTarget=r.groups[r.groups.length-1].id;return added},
+  canTrainGroup:(from,to)=>partyRoster(P).canAdd(to)||partyRoster(P).groups.find(g=>g.type===from)?.count===1});
 const hireCost=k=>recruitment.hireCost(k),trainCost=k=>recruitment.trainCost(k);
 const txpNeed=k=>recruitment.xpNeed(k),txpOf=k=>recruitment.xpOf(k),txpReady=k=>recruitment.ready(k);
 const txpGain=(k,n)=>recruitment.gainXp(k,n),txpClamp=()=>recruitment.clampXp();
+function recruitTarget(k){const id=G.recruitTarget;return id==='new'||partyRoster(P).groups.some(g=>g.id===id&&g.type===k)?id:undefined}

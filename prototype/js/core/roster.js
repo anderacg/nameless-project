@@ -35,7 +35,7 @@ class TroopRoster{
   transferTo(target,k,n=1,room=Infinity){
     if(target===this||target.counts===this.counts||!target.accepts(k))return 0;
     const m=this.limit(k,n,room);if(!m||!Number.isSafeInteger(target.count(k)+m))return 0;
-    this.remove(k,m);target.add(k,m);return m;
+    const added=target.add(k,m);if(added)this.remove(k,added);return added;
   }
   transferAllTo(target,room=Infinity){
     const moved={};for(const k of Object.keys(this.counts)){const n=this.transferTo(target,k,this.count(k),room);if(n){moved[k]=n;room-=n}}return moved;

@@ -1,0 +1,51 @@
+'use strict';
+window.RUN=()=>{const t=T,o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),near=(a,b)=>Math.abs(a-b)<1e-8,L=t.BattleLab;
+ try{
+  const fixture=(kind='hum_foot',n=8)=>{if(L.active)L.exit();L.start({left:kind,leftCount:n,right:'hum_levy',rightCount:1,ai:false,paused:true,morale:true});const m=t.B.units.filter(u=>u.team===0),g=t.B.groups[m[0].grp];g.placeAt(350,300);g.face=0;t.layForm(g.id);m.forEach(u=>{u.x=g.ax+u.sx;u.y=g.ay+u.sy;u.dir=0});t.B.sel=g.id;return {m,g,b:t.B}};
+  let {m,g,b}=fixture(),u=m[0],v=m[1];
+  ok(m.every(t.shieldEligible),'shield fixture has eligible shield infantry');
+  t.toggleFlag('shieldWall');ok(g.shieldWall&&g.form==='line','shield wall toggles independently of formation');
+  ok(t.shieldWallActive(u)&&near(t.formTaken(u,{x:u.x+20,y:u.y}),.65),'nearby formed shields give frontal protection');
+  ok(t.formTaken(u,{x:u.x-20,y:u.y})===1,'shield wall does not protect the rear');
+  ok(near(t.formPace(u),.6),'supported shields pay the movement cost');
+  const anchor=g.ax;g.ax+=100;ok(t.shieldWallActive(u),'a walking order does not remove support from an intact wall');g.ax=anchor;
+  ok(near(t.formTaken(u,{x:u.x+20,y:u.y,arrow:true}),.65*t.SHIELD_ARROWS),'personal shield blocking stacks with supported wall protection');
+  m.slice(1).forEach(q=>q.x+=200);ok(!t.shieldWallActive(u)&&t.formTaken(u,{x:u.x+20,y:u.y})===1&&t.formPace(u)===1,'isolated shield gets no extra wall protection or speed penalty');
+  ok(near(t.formTaken(u,{x:u.x+20,y:u.y,arrow:true}),t.SHIELD_ARROWS),'isolated shield retains individual frontal arrow blocking');
+  v.x=u.x;v.y=u.y+14;v.sx=u.sx;v.sy=u.sy+14;ok(t.shieldWallActive(u),'one nearby eligible supporting shield restores the wall');
+  v.rout=true;ok(!t.shieldWallActive(u),'routing shield cannot support the wall');v.rout=false;
+  v.hp=0;ok(!t.shieldWallActive(u),'dead shield cannot support the wall');v.hp=v.max;
+  v.stun=1;ok(!t.shieldWallActive(u),'stunned shield cannot support the wall');v.stun=0;
+  const old=v.grp;v.grp=testGroup('e_inf');b.groups[testGroup('e_inf')].face=Math.PI;b.groups[testGroup('e_inf')].shieldWall=true;ok(!t.shieldWallActive(u),'a supporting shield facing the opposite way cannot complete the wall');v.grp=old;
+  v.s={...v.s,tags:[],range:0};ok(!t.shieldWallActive(u)&&!t.unitFlag(v,'shieldWall')&&t.formPace(v)===1,'non-shield group members neither activate nor support shield wall');
+  t.setOrderUI();ok(document.querySelector('[data-flag=shieldWall]').title.includes('7/8 eligible'),'toggle explains eligible and active counts');
+  ok(document.getElementById('bInfo').textContent.includes('Shield wall: 7/8 eligible'),'selected details show per-unit eligibility');
+  g.charge();ok(!g.shieldWall,'charge lowers shield wall');g.hold();g.setFlag('shieldWall',true);g.setWalk(false);ok(!g.shieldWall,'run lowers shield wall');
+  g.setWalk(true);g.setFlag('shieldWall',true);g.moveTo(500,300,{run:true});ok(!g.shieldWall,'double-click running movement lowers shields');
+  ({m,g,b}=fixture('hum_bow'));g.setFlag('shieldWall',true);ok(!g.shieldWall,'group without shields cannot activate shield wall');
+  t.setOrderUI();ok(document.querySelector('[data-flag=shieldWall]').disabled,'shield toggle disabled for ineligible selection');
+  ({m,g,b}=fixture());u=m[0];const front={x:u.x+20,y:u.y,arrow:true},back={x:u.x-20,y:u.y};const arrow=t.formTaken(u,front),melee=t.formTaken(u,back);g.setForm('loose');
+  ok(t.formTaken(u,front)===arrow&&t.formTaken(u,back)===melee,'loose adds no direct damage modifiers');
+  ok(!t.FORMS.wall&&t.FORM_ORDER.join()==='line,loose,wedge','shield wall is no longer a positioning formation');
+  // Per-unit ranged capability, even in a mixed squad.
+  g.setFlag('cease',true);ok(!g.cease,'non-shooters cannot activate ranged toggles');u.s={...u.s,range:100};g.setFlag('cease',true);ok(t.unitFlag(u,'cease')&&!t.unitFlag(m[1],'cease'),'ranged toggle applies only to capable members');
+  const cavalry=Object.keys(t.ST).find(k=>t.ST[k].charge&&!t.ST[k].range);
+  const wedge=n=>{const f=fixture(cavalry,n);f.g.setForm('wedge');f.m.forEach(q=>{q.x=f.g.ax+q.sx;q.y=f.g.ay+q.sy;q.dir=f.g.face});return f};
+  ({m,g,b}=wedge(5));ok(t.formCharge(m[0],{grp:null})===1,'five cavalry keep wedge positioning without a bonus');
+  ({m,g,b}=wedge(6));ok(near(t.formCharge(m[0],{grp:null}),1.05),'six formed cavalry start at +5%');
+  ({m,g,b}=wedge(7));ok(near(t.formCharge(m[0],{grp:null}),1.075),'seven formed cavalry give +7.5%');
+  ({m,g,b}=wedge(16));ok(near(t.formCharge(m[0],{grp:null}),1.3),'sixteen formed cavalry reach +30%');
+  ({m,g,b}=wedge(25));ok(near(t.formCharge(m[0],{grp:null}),1.3),'larger wedges cannot exceed the cap');
+  ({m,g,b}=wedge(6));m[5].hp=0;ok(t.formCharge(m[0],{grp:null})===1&&g.form==='wedge','casualties remove bonus without changing formation');
+  ({m,g,b}=wedge(6));m[5].rout=true;ok(t.formCharge(m[0],{grp:null})===1,'routing cavalry do not count');
+  ({m,g,b}=wedge(6));m[5].x+=200;ok(t.formCharge(m[0],{grp:null})===1&&t.formCharge(m[5],{grp:null})===1,'stragglers neither count nor receive bonus');
+  ({m,g,b}=wedge(6));m[5].s={...m[5].s,charge:0};ok(t.formCharge(m[0],{grp:null})===1&&t.formCharge(m[5],{grp:null})===1,'ineligible soldiers cannot count or receive wedge bonus');
+  ({m,g,b}=wedge(6));m[5].dir=Math.PI;ok(t.formCharge(m[0],{grp:null})===1,'cavalry facing away do not count as maintaining the wedge');
+  ({m,g,b}=wedge(6));t.setOrderUI();ok(document.getElementById('bInfo').textContent.includes('+5% charge'),'HUD shows actual current wedge bonus');
+  const target=b.units.find(q=>q.team===1),eg=b.groups[target.grp];eg.files=1;
+  ok(near(t.formCharge(m[0],target),1.05),'a shallow defending group takes full charge multiplier');
+  // Depth remains the existing group-shape rule, independently of wedge tuning.
+  m.forEach(q=>q.grp=target.grp);eg.form='line';eg.files=1;ok(t.grpShape(target.grp).ranks>=4&&near(t.formCharge({s:{},grp:null},target),.7),'four or more ranks still blunt incoming charge');
+ }catch(e){o.push('EXC '+e.message+' '+e.stack)}finally{if(L.active)L.exit()}
+ const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d);
+};

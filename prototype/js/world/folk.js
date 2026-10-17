@@ -73,11 +73,11 @@ function workerAct(a){
   const f=G.wk,t=f&&townBy(f.home);if(!t){closeDialog();return}
   if(a==='wk-back'){const o=G.wkFrom;G.wk=null;G.wkFrom=null;if(o)estateMeet(o);else closeDialog();return}
   const take=()=>{f.gone=true;W.folk=W.folk.filter(x=>x!==f);t.pop=Math.max(10,t.pop-1)};
-  if(a==='wk-hire'){const lv=levyOf(t.races[0]),c=hireCost(lv);if(partyRoom()<1||P.gold<c||!canHire(t,lv)&&t.owner!=='player')return;P.gold-=c;P.add(lv);take();
+  if(a==='wk-hire'){const lv=levyOf(t.races[0]),c=hireCost(lv);if(partyRoom()<1||!partyRoster(P).canAdd(lv)||P.gold<c||!canHire(t,lv)&&t.owner!=='player')return;P.gold-=c;P.add(lv);take();
     return notice('A new recruit','The '+f.job+' lays down the '+(f.job==='farmer'?'hoe':'tools')+' and joins your band as '+an(ST[lv].n.toLowerCase())+'. '+t.name+' has one less pair of hands.','good')}
   if(a==='wk-rob'){const [g,n]=jobGood(t,f.job);ensureEcon(t);const k=invAdd('good',g,Math.min(n,Math.max(1,t.stock[g]||0)));t.stock[g]=Math.max(0,(t.stock[g]||0)-k);const gold=rint(2,6);P.gold+=gold;
     const cost=wrong(t,CONDUCT.robWorker);mood('cruel');return notice('Robbed','You take '+k+' '+GOODS[g].n.toLowerCase()+' and '+gold+' coins. The workers of '+t.name+' run for home. It costs you: '+cost+'.','bad')}
-  if(a==='wk-press'){if(partyRoom()<1)return;const lv=levyOf(t.races[0]);P.add(lv);take();const cost=wrong(t,CONDUCT.pressWorker);mood('cruel');
+  if(a==='wk-press'){if(partyRoom()<1)return;const lv=levyOf(t.races[0]);if(!partyRoster(P).canAdd(lv))return;P.add(lv);take();const cost=wrong(t,CONDUCT.pressWorker);mood('cruel');
     return notice('Press-ganged','Your soldiers drag the '+f.job+' into the ranks. '+cap1(an(ST[lv].n.toLowerCase()))+' joins, unwilling, and the fields of '+t.name+' empty for days. It costs you: '+cost+'.','bad')}
 }
 onAct('wk-',workerAct);

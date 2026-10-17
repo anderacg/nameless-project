@@ -1,7 +1,8 @@
 'use strict';
 /* ---------- core: DOM handles, canvas, constants and tiny helpers ---------- */
 const $=s=>document.querySelector(s);
-const TILE=16,MW=224,MH=160,DAY=12,SAVE='ashmark.save.v1';
+const htmlText=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const TILE=16,MW=224,MH=160,DAY=12,SAVE='ashmark.save.v2';
 // the view: the game's pixels across and down (VW x VH). The game fills the window: each game pixel a whole number of device
 // pixels (VIEW.h or more of them down, VIEW.w or more across on a narrow phone), so a bigger window sees more of the map
 const VIEW={h:320,w:400};

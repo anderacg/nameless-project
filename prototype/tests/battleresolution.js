@@ -1,7 +1,9 @@
 'use strict';
+// Snapshot baseline reviewed for schema v2: persistent IDs, homogeneous formations, new deployment lanes and source-army links.
+// Behavioral assertions below are retained; old category-bucket fingerprints no longer describe this architecture.
 // Outcome fingerprints captured before extraction. No battle frames are simulated: each fixture supplies an explicit field result.
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t.P,W=t.W,originalRandom=Math.random;
-  const expected={"field_win":"762aa4e0","field_loss":"28c98e4d","retreat_away":"b0fa5c17","retreat_caught":"e7b0cbb6","carried_retreat":"e7badb90","tournament_win":"9e54f30c","tournament_loss":"e2c2dc5e","siege_win":"b1c78f72","siege_loss":"184fd610","lord_win":"de3a03af","lord_loss":"a339cfd7","monster_win":"8d90aae1","auto_win":"65e4246e","auto_loss":"ad89a72c","auto_resolve":"149c8296"};
+  const expected={"field_win":"9671e334","field_loss":"d48922db","retreat_away":"bee2937a","retreat_caught":"d3d76d7b","carried_retreat":"19e34db5","tournament_win":"da029830","tournament_loss":"2d62a464","siege_win":"cabdab94","siege_loss":"d2b42f0d","lord_win":"d2a4ba0e","lord_loss":"74034454","monster_win":"a91f1408","auto_win":"a1a9c7e8","auto_loss":"5e48fb7b","auto_resolve":"b1c69d34"};
   const stable=x=>Array.isArray(x)?x.map(stable):x&&typeof x==='object'?Object.fromEntries(Object.keys(x).sort().map(k=>[k,stable(x[k])])):x;
   const hash=x=>{let h=2166136261;for(const c of JSON.stringify(stable(x)))h=Math.imul(h^c.charCodeAt(0),16777619)>>>0;return h.toString(16).padStart(8,'0')};
   const cases=['field_win','field_loss','retreat_away','retreat_caught','carried_retreat','tournament_win','tournament_loss','siege_win','siege_loss','lord_win','lord_loss','monster_win','auto_win','auto_loss','auto_resolve'];
@@ -39,13 +41,16 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t
         field.units.filter(u=>u.team===1).forEach((u,i)=>{if(win||i<2)u.hp=0});if(win)field.routed=1;
         t.finishBattle();
       }
-      const callsBefore=G.msgs.length,html=document.getElementById('panel').innerHTML;
+      // Keep the existing settlement/random-stream baseline independent of the new presentation-only report.
+      // tests/battlereport.js verifies report ownership, outcomes, persistence and rendering separately.
+      const callsBefore=G.msgs.length,reportHtml=document.querySelector('.battle-report')?.outerHTML,
+        html=document.getElementById('panel').innerHTML.replace(reportHtml||'<!-- no group report -->',''),view={...G.lootView};delete view.report;
       const snapshot={P,mode:G.mode,enc:G.enc,again:G.encAgain,encCool:G.encCool,lastTown:G.lastTown&&G.lastTown.name,capture:G.capture&&G.capture.name,capWith:G.capWith,
-        loot:G.loot,view:G.lootView,messages:G.msgs,html,B:t.B,mood:t.BATTLE_MOOD,
+        loot:G.loot,view,messages:G.msgs,html,B:t.B,mood:t.BATTLE_MOOD,
         towns:t.TOWNS.map(h=>({name:h.name,owner:h.owner,gar:h.gar,rep:P.rep[h.name],crime:h.crime})),
         world:{lords:W.lords,exiles:W.exiles,monsters:W.monsters,treas:W.treas,rel:W.rel,lrel:W.lrel},bands:t.bandits,
         randomCalls:calls,random:[Math.random(),Math.random(),Math.random()]};
-      const fingerprint=hash(snapshot);if(expected[name])ok(fingerprint===expected[name],name+' matches pre-extraction outcome ('+fingerprint+')');else o.push('SNAP '+name+' '+fingerprint);
+      const fingerprint=hash(snapshot);if(expected[name])ok(fingerprint===expected[name],name+' matches independent-group outcome ('+fingerprint+')');else o.push('SNAP '+name+' '+fingerprint);
       ok(!t.B&&G.mode==='dialog'&&G.loot&&G.loot.capture===false,name+': field released and loot summary ready');
       ok(t.BATTLE_MOOD===null&&G.msgs.length===callsBefore,name+': morale carry-over consumed without snapshot side effects');
       if(tournament)ok(P.gold===(win?245:200)&&P.renown===(win?36:30)&&G.lootView.next==='back-town'&&P.troops.hum_spear===6,name+': tournament rewards and roster isolation preserved');

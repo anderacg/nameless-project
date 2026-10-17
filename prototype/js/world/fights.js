@@ -95,9 +95,9 @@ function fightMeet(f){
 // why you can't join a side: your employer fights on the other one, or it is a side of bandits
 function joinWhy(f,s){const other=sideParties(f,1-s),mine=sideParties(f,s);if(P.fac&&other.some(o=>partyFac(o)===P.fac))return 'Your employer is on the other side';if(other.some(o=>partyFac(o)==='player'))return 'Your own people are on the other side';if(mine.some(o=>partyKind(o)==='band'))return 'They are bandits';return ''}
 // the parties of a side as battle forces: lords as they are; the rest wrapped with their fighters, name and realm
-function forceOf(o){const k=partyKind(o);return k==='lord'?o:{kind:k,src:o,name:partyName(o),fac:partyFac(o),troops:troopsOf(o).slice()}}
+function forceOf(o){const k=partyKind(o);if(k==='lord')return o;if(o instanceof Party)partyRoster(o).groups;return{kind:k,src:o,name:partyName(o),fac:partyFac(o),troops:troopsOf(o).slice(),army:o.army?structuredClone(o.army):undefined}}
 // after your battle: write the forces' fighters back to their parties
-function syncForces(list){for(const f of list||[]){if(!f.src)continue;const o=f.src;if(f.kind==='band'){o.list=f.troops;o.n=o.list.length;o.pw=0}else if(f.kind==='patrol')o.troops=f.troops;else if(f.kind==='caravan')o.fightTroops=f.troops;else if(f.kind==='garrison')o.gar=f.troops.length;else if(f.kind==='cparty')o.troops=f.troops}}
+function syncForces(list){for(const f of list||[]){if(!f.src)continue;const o=f.src;if(f.kind==='band'){o.list=f.troops;o.n=o.list.length;o.pw=0}else if(f.kind==='patrol')o.troops=f.troops;else if(f.kind==='caravan')o.fightTroops=f.troops;else if(f.kind==='garrison')o.gar=f.troops.length;else if(f.kind==='cparty')o.troops=f.troops;if(f.army)o.army=structuredClone(f.army)}}
 // a holding's garrison as a battle force: it sallies beside whoever fights its besiegers, or beside the army come to relieve it
 const garrisonForce=t=>({kind:'garrison',src:t,name:'the garrison of '+t.name,fac:t.owner,troops:garList(t)});
 // a force you beat (or that fought beside you and was ground down)

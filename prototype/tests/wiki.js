@@ -12,7 +12,7 @@ window.RUN=()=>{
     ok(!!d.querySelector('#realms .entry')&&!!d.querySelector('#combat .entry'),'realm and battle reference content still renders');
     ok(d.querySelectorAll('#combat table').length>0&&d.getElementById('combat').textContent.includes('Shield wall'),'formation reference data remains available');
     ok(!d.querySelector('[data-spr]')&&d.querySelectorAll('canvas.spr').length>20,'wiki sprite placeholders become rendered canvases (remaining '+d.querySelectorAll('[data-spr]').length+', canvases '+d.querySelectorAll('canvas.spr').length+')');
-    ok(w.eval('typeof seeded')==='function'&&w.eval('typeof LCAP')==='number'&&w.eval('FORM_ORDER.length')===4,'shared helpers and wiki-only constant consumers remain intact');
+    ok(w.eval('typeof seeded')==='function'&&w.eval('typeof LCAP')==='number'&&w.eval('FORM_ORDER.length')===3&&w.eval('typeof shieldWallActive')==='function','shared helpers and wiki-only constant consumers remain intact');
     const search=d.getElementById('q');ok(!!search,'the wiki search control exists');
     if(search){search.value='dragon';search.dispatchEvent(new w.Event('input',{bubbles:true}));const shown=[...d.querySelectorAll('main section:not([hidden])')];ok(shown.length>0&&shown.length<sections.length&&/match/.test(d.getElementById('qinfo').textContent)&&shown.some(s=>s.textContent.toLowerCase().includes('dragon')),'wiki search filters reference entries and reports matches')}
   }catch(e){o.push('EXC '+e.message+' '+e.stack)}finish()};

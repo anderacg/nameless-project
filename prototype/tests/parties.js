@@ -29,7 +29,7 @@ try{
   ok(P.brain===null&&!W.parties.includes(P),'you are its brain (it is not among the parties the world moves)')}
  // saves keep the counts
  {const L=W.lords.find(l=>!l.dead);L.troops=['hum_knight','hum_knight','hum_spear'];const b=t.bandits[0],bn=b.n;G.mode='world';t.saveGame(true);
-  let raw=null;try{raw=JSON.parse(localStorage.getItem('ashmark.save.v1')||'null')}catch(e){}
+  let raw=null;try{raw=JSON.parse(localStorage.getItem(t.slotKey('auto'))||'null')}catch(e){}
   const rl=raw&&raw.world&&raw.world.lords.find(x=>x.id===L.id);ok(rl&&rl.tc&&rl.tc.hum_knight===2&&!rl.troops,'a save keeps a party’s counts, not a list');
   t.loadGame();const L2=W.lords.find(x=>x.id===L.id);ok(L2 instanceof t.LordParty&&L2.troops.length===3&&L2.tc.hum_knight===2&&t.bandits[0].n===bn,'and loading makes them parties again');ok(P instanceof t.PlayerParty&&typeof P.troops==='object'&&!Array.isArray(P.troops),'your band stays a party after loading')}
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}

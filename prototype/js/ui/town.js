@@ -1,17 +1,57 @@
 'use strict';
 // Commands return outcomes; the screen decides how to describe them.
-const RECRUIT_WHY={gold:'Not enough gold',capacity:'Your band is full',volunteers:'No volunteers left',standing:'Not enough standing',closed:'No one will enlist while the holding recovers',unavailable:'This holding does not raise that troop',experience:'Needs more experience: fight with them',troops:'No soldiers of that kind',upgrade:'Not a valid troop upgrade','training-unavailable':'No training available here','companion-unavailable':'This companion is not available here','companion-hired':'Already in your band','invalid-unit':'Unknown recruit'};
+const RECRUIT_WHY={amount:'Enter a positive whole number with a valid total cost',target:'Choose an existing group of this unit type, or a new group','wounded-group':'Wait for this group’s wounded to return before upgrading it',groups:'Army is full (10 groups). Reinforce an existing type or merge groups',gold:'Not enough gold for this order',capacity:'Not enough headcount capacity for this order',volunteers:'Not enough volunteers for this order',standing:'Not enough standing',closed:'No one will enlist while the holding recovers',unavailable:'This holding does not raise that troop',experience:'Needs more experience: fight with them',troops:'No soldiers of that kind',upgrade:'Not a valid troop upgrade','training-unavailable':'No training available here','companion-unavailable':'This companion is not available here','companion-hired':'Already in your band','invalid-unit':'Unknown recruit'};
 const recruitmentWhy=r=>RECRUIT_WHY[r.code]||'';
 function recruitmentFeedback(r,t){
   if(r.ok){
-    if(r.code==='hire')log(cap1(an(ST[r.kind].n.toLowerCase()))+' joins your band.');
+    if(r.code==='hire')log((r.count>1?r.count+' × '+ST[r.kind].n:cap1(an(ST[r.kind].n.toLowerCase())))+' join'+(r.count>1?'':'s')+' your band.');
     else if(r.code==='training')log(ST[r.from].n+' trained into '+ST[r.to].n.toLowerCase()+'.');
+    else if(r.code==='group-training')log(r.id+': '+r.count+' × '+ST[r.from].n+' upgraded to '+ST[r.to].n+' for '+r.cost+'g.','good');
     else if(r.code==='companion')log(COMPS[r.id].n+' joins your band. Give them a role with C.','good');
     else if(r.code==='prisoner')log('A captured '+ST[r.kind].n.toLowerCase()+' swears to follow you.');
   }else if(r.code==='standing')log('The people of '+t.name+' do not know you well enough yet.','bad');
   else if(r.code==='volunteers')log('No one else in '+t.name+' will take up arms today.','bad');
-  else if(r.code==='experience')log(ST[r.from].n+' needs more experience first ('+Math.floor(txpOf(r.from)%txpNeed(r.from))+' / '+txpNeed(r.from)+' XP): fight with them.','bad');
+  else if(r.code==='experience')log(ST[r.from].n+' needs more experience first ('+Math.floor(txpOf(r.from))+' / '+(r.xpCost||txpNeed(r.from))+' XP): fight with them.','bad');
   else if(recruitmentWhy(r))log(recruitmentWhy(r)+'.','bad');
+}
+// Drafts and confirmations belong to the current town visit, never campaign saves.
+function townRecruitQuote(){
+  const s=G.town,pick=s&&s.pick;if(!pick)return null;const [from,to]=pick.split('>');
+  return to?recruitment.quoteGroupTraining(s.ref,s.trainingGroup,to):recruitment.quoteHire(s.ref,from,s.hireCount??1,s.hireTarget);
+}
+function townRecruitAction(a){
+  const s=G.town;if(!s||G.mode!=='town')return;
+  if(a==='rec-cancel'){s.review=null;s.recruitNotice='';return}
+  const quote=townRecruitQuote();if(!quote)return;
+  if(a==='rec-review'){s.review=quote.ok?{...quote}:null;s.recruitNotice=quote.ok?'':recruitmentWhy(quote);return}
+  if(a!=='rec-confirm'||!s.review)return;
+  if(!quote.ok||JSON.stringify(quote)!==JSON.stringify(s.review)){
+    s.review=null;s.recruitNotice=quote.ok?'This order changed. Review the new totals before confirming.':recruitmentWhy(quote);return;
+  }
+  const result=quote.code==='hire'?recruitment.hire(s.ref,quote.kind,quote.count,quote.target):recruitment.trainGroup(s.ref,quote.id,quote.to);
+  s.review=null;s.recruitNotice=result.ok?'Completed: '+result.count+' soldiers · '+result.cost+'g.':recruitmentWhy(result);
+  if(result.ok&&result.code==='hire'&&quote.target==='new')s.hireTarget=G.recruitTarget;
+  recruitmentFeedback(result,s.ref);
+}
+function townRecruitControls(t,pick){
+  const s=G.town,r=partyRoster(P),[from,to]=pick.split('>'),groups=r.groups.filter(g=>g.type===from);
+  const option=(value,text,selected,disabled=false)=>'<option value="'+value+'"'+(selected?' selected':'')+(disabled?' disabled':'')+'>'+htmlText(text)+'</option>';
+  if(to){if(!groups.some(g=>g.id===s.trainingGroup))s.trainingGroup=groups[0]?.id||''}
+  else if(s.hireTarget===undefined||s.draftType!==from){s.hireTarget=recruitment.rules.target(from);s.draftType=from}
+  s.pick=pick;const q=townRecruitQuote(),slots=r.slots,capacity=partyCap(),size=partySize(),review=s.review;
+  const groupSelect=to?'<label>Group to upgrade<select data-recruit-field="trainingGroup" aria-label="Group to upgrade">'+groups.map(g=>option(g.id,(g.name||ST[from].n)+' · '+g.id+' × '+g.count,g.id===s.trainingGroup)).join('')+'</select></label>':
+    '<label>Destination group<select data-recruit-field="hireTarget" aria-label="Destination group">'+groups.map(g=>option(g.id,(g.name||ST[from].n)+' · '+g.id+' × '+g.count,g.id===s.hireTarget)).join('')+option('new','New '+ST[from].n+' group',s.hireTarget==='new',slots>=ARMY_LIMIT)+'</select></label>';
+  const projected=slots+(!to&&s.hireTarget==='new'?1:0);
+  return '<section class="recruit-order" aria-label="Group recruitment and training"><div class="lab">'+(to?'Upgrade '+ST[from].n+' → '+ST[to].n:'Recruit '+ST[from].n)+'</div><div class="recruit-fields">'+groupSelect+
+    (to?'':'<label>Soldiers<input data-recruit-field="hireCount" aria-label="Recruit quantity" type="number" min="1" step="1" value="'+(Number.isFinite(s.hireCount)?s.hireCount:1)+'"></label>')+'</div>'+
+    '<p class="muted">'+(to?'Keeps the group ID and slot; resets formation to Line. XP remains pooled by unit type.':'Recruitment is all-or-nothing. Volunteers here: '+Math.floor(t.vol||0)+'.')+'</p>'+
+    '<div class="recruit-summary"><div class="recruit-totals" aria-live="polite"><span>Total <b>'+q.cost+'g</b> · '+q.unitCost+'g × '+q.count+'</span><span>Headcount '+size+' → '+(size+(to?0:q.count))+' / '+capacity+'</span><span>Groups '+slots+' → '+projected+' / '+ARMY_LIMIT+' · '+Math.max(0,ARMY_LIMIT-projected)+' free after order</span>'+
+    (to?'<span>XP '+Math.floor(txpOf(from))+' / '+q.xpCost+' required</span>':'')+'</div>'+
+    (!q.ok?'<p class="bad" role="status">'+recruitmentWhy(q)+'</p>':'')+
+    (review?'<div class="recruit-confirm" role="status">Confirm '+review.count+' × '+ST[to||from].n+' · '+review.cost+'g · '+(to?review.id+' keeps its slot':review.target==='new'?'one new group':review.target)+
+      '<div class="btns"><button type="button" class="btn primary" data-act="rec-confirm">Confirm '+review.cost+'g</button><button type="button" class="btn" data-act="rec-cancel">Cancel</button></div></div>':
+      '<button type="button" class="btn primary" data-act="rec-review"'+(!q.ok?' disabled':'')+'>Review '+(to?'group upgrade':'recruitment')+'</button>')+
+    (s.recruitNotice?'<p role="status">'+s.recruitNotice+'</p>':'')+'</div></section>';
 }
 /* ---------- economy ---------- */
 // prices come from each market's stock against its needs (economy.js); these are the next unit's
@@ -78,8 +118,8 @@ function renderTown(){
     const ups=t.T.train?Object.keys(P.troops).filter(k=>P.troops[k]>0&&UP[k]).flatMap(k=>UP[k].map(to=>[k,to])):[];
     // (the unit picked for the card: a hire, or a training as from>to; the first hire until you pick)
     let pick=G.town.pick;if(!pick||!(hires.includes(pick)||ups.some(([k,to])=>pick===k+'>'+to)))pick=hires[0]||(ups[0]&&ups[0].join('>'))||null;
-    const TRAIN_ROWS=t.T.train?'<div class="lab" style="margin-top:6px">Train (troop trees)</div>'+(ups.length?ups.map(([k,to])=>{const quote=recruitment.quoteTraining(t,k,to),c=quote.cost,s=ST[to];return '<div class="row recrow'+(pick===k+'>'+to?' sel':'')+'" data-act="rec-pick" data-arg="'+k+'>'+to+'"><img class="rec-pic" src="'+portrait(to)+'" alt=""><div class="info"><strong>'+glyphSVG(iconOfType(to),14)+' '+ST[k].n+' → '+s.n+'</strong><small>Tier '+s.tier+' · '+s.hp+' hp · '+s.dmg+' damage · '+(s.range?'range '+s.range:'reach '+s.reach)+'</small></div><small class="'+(txpReady(k)?'gold':'muted')+'">'+(txpReady(k)?txpReady(k)+' of '+P.troops[k]+' ready':'Experience '+Math.floor(txpOf(k))+' / '+txpNeed(k)+' to train one')+'</small><span class="own">×'+P.troops[k]+'</span><div class="acts"><button class="btn sm" type="button" data-act="train" data-arg="'+k+':'+to+'"'+(!quote.ok?' disabled title="'+(quote.code==='experience'?'Needs '+txpNeed(k)+' XP: fight with them':recruitmentWhy(quote))+'"':'')+'>Train '+c+'g</button></div></div>'}).join(''):'<p class="muted">None of your troops can train further.</p>'):'';
-    body='<div class="top"><span class="lab">Hire '+t.races.map(r=>RACES[r].n).join(' and ')+' troops ('+cnt+' / '+cap+')</span><span class="lab">Your standing here <b class="gold" style="font-size:14px">'+standingAt(t)+'</b></span></div>'+'<p class="muted" style="font-size:13px" title="Standing is your reputation here ('+Math.round(repAt(t.name))+'), half your honor with the '+FACS[t.owner].n+' ('+honorWith(t.owner)+')'+(t.races.includes(P.race)?', and +'+RACE_TRUST+' because your people live here':'')+'.">Tier 1 needs standing '+REP_NEED[1]+', tier 2 needs '+REP_NEED[2]+' · volunteers here: <b>'+Math.floor(t.vol||0)+'</b> · click a unit for its card.</p>'+'<div class="recwrap"><div class="reclist">'+hires.map(k=>{const s=ST[k],quote=recruitment.quoteHire(t,k);return '<div class="row recrow'+(pick===k?' sel':'')+'" data-act="rec-pick" data-arg="'+k+'"><img class="rec-pic" src="'+portrait(k)+'" alt=""><div class="info"><strong>'+glyphSVG(iconOfType(k),14)+' '+s.n+'</strong><small>Tier '+s.tier+(s.race?' · '+RACES[s.race].n:'')+' · '+s.hp+' hp · '+kind(s)+'</small></div><span class="own">×'+(P.troops[k]||0)+'</span><div class="acts">'+(canHire(t,k)?'':'<small class="bad">Needs standing '+needFor(k)+'</small>')+'<button class="btn sm" type="button" data-act="hire" data-arg="'+k+'"'+(!quote.ok?' disabled title="'+recruitmentWhy(quote)+'"':'')+'>Hire '+quote.cost+'g</button></div></div>'}).join('')+'<p class="muted" style="font-size:12px">More volunteers come forward each day as the '+t.label+' grows and prospers.</p>'+TRAIN_ROWS+'</div><div class="reccard">'+(pick?unitCard(pick.split('>').pop(),pick.includes('>')?pick.split('>')[0]:null):'')+'</div></div>';
+    const TRAIN_ROWS=t.T.train?'<div class="lab" style="margin-top:6px">Train (troop trees)</div>'+(ups.length?ups.map(([k,to])=>{const quote=recruitment.quoteTraining(t,k,to),c=quote.cost,s=ST[to];return '<div class="row recrow'+(pick===k+'>'+to?' sel':'')+'" data-act="rec-pick" data-arg="'+k+'>'+to+'"><img class="rec-pic" src="'+portrait(to)+'" alt=""><div class="info"><strong>'+glyphSVG(iconOfType(to),14)+' '+ST[k].n+' → '+s.n+'</strong><small>Tier '+s.tier+' · '+s.hp+' hp · '+s.dmg+' damage · '+(s.range?'range '+s.range:'reach '+s.reach)+'</small></div><small class="'+(txpReady(k)?'gold':'muted')+'">'+(txpReady(k)?txpReady(k)+' of '+P.troops[k]+' ready':'Experience '+Math.floor(txpOf(k))+' / '+txpNeed(k)+' to train one')+'</small><span class="own">×'+P.troops[k]+'</span><div class="acts"><button class="btn sm" type="button" data-act="train" data-arg="'+k+':'+to+'"'+(!quote.ok?' disabled title="'+(quote.code==='experience'?'Needs '+txpNeed(k)+' XP: fight with them':recruitmentWhy(quote))+'"':'')+'>Train 1 · '+c+'g</button></div></div>'}).join(''):'<p class="muted">None of your troops can train further.</p>'):'';
+    body='<div class="top"><span class="lab">Hire '+t.races.map(r=>RACES[r].n).join(' and ')+' troops ('+cnt+' / '+cap+')</span><span class="lab">Your standing here <b class="gold" style="font-size:14px">'+standingAt(t)+'</b></span></div>'+'<p class="muted" style="font-size:13px" title="Standing is your reputation here ('+Math.round(repAt(t.name))+'), half your honor with the '+FACS[t.owner].n+' ('+honorWith(t.owner)+')'+(t.races.includes(P.race)?', and +'+RACE_TRUST+' because your people live here':'')+'.">Tier 1 needs standing '+REP_NEED[1]+', tier 2 needs '+REP_NEED[2]+' · volunteers here: <b>'+Math.floor(t.vol||0)+'</b> · click a unit for its card.</p>'+(pick?townRecruitControls(t,pick):'')+'<div class="recwrap"><div class="reclist">'+hires.map(k=>{const s=ST[k],quote=recruitment.quoteHire(t,k);return '<div class="row recrow'+(pick===k?' sel':'')+'" data-act="rec-pick" data-arg="'+k+'"><img class="rec-pic" src="'+portrait(k)+'" alt=""><div class="info"><strong>'+glyphSVG(iconOfType(k),14)+' '+s.n+'</strong><small>Tier '+s.tier+(s.race?' · '+RACES[s.race].n:'')+' · '+s.hp+' hp · '+kind(s)+'</small></div><span class="own">×'+(P.troops[k]||0)+'</span><div class="acts">'+(canHire(t,k)?'':'<small class="bad">Needs standing '+needFor(k)+'</small>')+'<button class="btn sm" type="button" data-act="hire" data-arg="'+k+'"'+(!quote.ok?' disabled title="'+recruitmentWhy(quote)+'"':'')+'>Hire 1 · '+quote.cost+'g</button></div></div>'}).join('')+'<p class="muted" style="font-size:12px">More volunteers come forward each day as the '+t.label+' grows and prospers.</p>'+TRAIN_ROWS+'</div><div class="reccard">'+(pick?unitCard(pick.split('>').pop(),pick.includes('>')?pick.split('>')[0]:null):'')+'</div></div>';
   }else if(tab==='smith'){
     const st=smithStock(t);
     body='<div class="lab">Smith · new stock in '+(7-(G.day-W.shops[t.name].day)%7)+' days</div><p class="muted" style="font-size:13px">'+forgeText(t)+' Bring copper and tin, silver, gold, mithril or adamantite to its market and the smith will forge with them.</p>'+(st.length?st.map((id,i)=>{const I=ITEMS[id],p=gearPrice(id);

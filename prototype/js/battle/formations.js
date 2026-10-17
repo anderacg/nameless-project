@@ -2,18 +2,31 @@
 /* ---------- formations: how a group stands. Every group (yours, and the enemy's) keeps its soldiers in slots laid out in ranks
    and files across the way it faces. Its width and depth are the line you drag (right-click and drag: where it runs, how wide,
    which way it faces; wide makes a long thin line, short a deep block or a column); a plain right-click keeps its width and turns
-   it toward where it marches. Its formation is how the men stand in that shape: a line, or, for the troops it suits, a shield
-   wall (melee infantry), loose order (foot) or a wedge (cavalry). See FORMS. A block 4 or more ranks deep blunts a charge. ---------- */
-// files: soldiers abreast (until a line is dragged); gx, gy: spacing across and back (px); spd: its pace; taken: damage it takes;
-// front: from the front (within 60° of its facing); arrows: from arrows; chargeMul: its own charge; firm: holds its ground;
+   it toward where it marches. Its formation is how the men stand in that shape: a line, or, for the troops it suits,
+   loose order (foot) or a wedge (cavalry). Shield wall is a capability-filtered ability, not a formation. A block 4 or more ranks deep blunts a charge. ---------- */
+// files: soldiers abreast (until a line is dragged); gx, gy: spacing across and back (px).
 // who: the troops it suits (FORM_WHO); key: its key; drag: fixed (its own shape: a dragged line sets only where and which way)
 const FORMS={
   line:{n:'Line',files:8,gx:14,gy:13,d:'Ranks across the front, as wide as you drag the line.'},
-  wall:{n:'Shield wall',files:8,gx:11,gy:11,spd:.6,front:.65,firm:true,who:'shield',key:'B',d:'Shielded infantry: tight ranks, shields up: 35% less damage from the front, 40% slower, and they hold their ground. An order to charge breaks it.'},
-  loose:{n:'Loose',files:8,gx:24,gy:22,arrows:.6,taken:1.1,who:'foot',key:'L',d:'Foot troops: spread out: 40% less damage from arrows, 10% more in melee.'},
-  wedge:{n:'Wedge',wedge:true,gx:13,gy:12,chargeMul:1.3,drag:'fixed',who:'cav',key:'T',d:'Cavalry: a spearhead: its charge hits 30% harder. It keeps its shape: a dragged line sets only where it stands and which way it faces.'}
+  loose:{n:'Loose',files:8,gx:24,gy:22,who:'foot',key:'L',d:'Wider spacing only; no direct damage bonus or penalty.'},
+  wedge:{n:'Wedge',wedge:true,gx:13,gy:12,drag:'fixed',who:'cav',key:'T',d:'Cavalry spearhead: 6 formed cavalry give +5% charge, +2.5 percentage points per additional rider, capped at +30% at 16. Scattered or routing riders do not count.'}
 };
-const FORM_ORDER=['line','wall','loose','wedge'],FORM_PICK=['wall','loose','wedge'];
+const FORM_ORDER=['line','loose','wedge'],FORM_PICK=['loose','wedge'];
+const WALL={near:16,front:.65,spd:.6},WEDGE={min:6,start:.05,step:.025,cap:.3,slot:28};
+const shieldEligible=u=>!!(u.s&&!u.s.range&&!u.s.mounted&&!u.s.charge&&tagsOf(u.s).includes('shield'));
+// Group flags request actions; each soldier must have the capability.
+const flagEligible=(u,f)=>f==='shieldWall'?shieldEligible(u):['melee','cease','skirmish'].includes(f)?!!u.s.range:true;
+const unitFlag=(u,f)=>!!(u.grp&&B.groups[u.grp]&&B.groups[u.grp][f]&&flagEligible(u,f));
+function wallReady(u){const g=u.grp&&B.groups[u.grp];return !!(unitFlag(u,'shieldWall')&&g.walk&&!g.run&&u.hp>0&&!u.rout&&!(u.stun>0)&&g.order!=='charge'&&g.order!=='withdraw')}
+function shieldWallActive(u){return wallReady(u)&&B.units.some(o=>o!==u&&o.team===u.team&&wallReady(o)&&Math.hypot(o.x-u.x,o.y-u.y)<=WALL.near&&angGap(B.groups[o.grp].face||0,B.groups[u.grp].face||0)<1.05)}
+function wedgeMembers(g){
+  const gr=B.groups[g];if(!gr||gr.form!=='wedge')return [];
+  const m=grpUnits(g).filter(u=>!u.rout&&!withdrawing(u)&&u.s.charge&&!(u.stun>0));if(!m.length)return [];
+  // Inferred median anchors reject distant stragglers while allowing the wedge to move.
+  const median=a=>a.sort((a,b)=>a-b)[Math.floor(a.length/2)],x=median(m.map(u=>u.x-(u.sx||0))),y=median(m.map(u=>u.y-(u.sy||0)));
+  return m.filter(u=>Math.hypot(u.x-x-(u.sx||0),u.y-y-(u.sy||0))<=WEDGE.slot&&angGap(u.dir??gr.face,gr.face||0)<1.05);
+}
+const wedgeBonus=n=>n<WEDGE.min?0:Math.min(WEDGE.cap,WEDGE.start+(n-WEDGE.min)*WEDGE.step);
 const FORM_WHO={melee:u=>!u.s.range&&!u.s.charge,shield:u=>!u.s.range&&!u.s.mounted&&tagsOf(u.s).includes('shield'),foot:u=>!u.s.mounted,cav:u=>!!u.s.charge},WHO_N={melee:'melee infantry',shield:'shielded infantry',foot:'foot troops',cav:'cavalry'};
 const DEPTH={ranks:4,charge:.7};// a block this many ranks deep takes a charge at this much of its force
 const FORM_DRAG=8;// a right-click dragged further than this lays out a line
@@ -40,26 +53,26 @@ function layForm(g){
 const SHIELD_ARROWS=.7;
 const shieldMul=(t,src)=>src&&src.arrow&&t.s&&tagsOf(t.s).includes('shield')&&B&&sideOf(t,src)==='front'?SHIELD_ARROWS:1;
 function formTaken(t,src){
-  const sh=shieldMul(t,src),g=t.grp&&B.groups[t.grp];if(!g||!g.form)return sh;const F=FORMS[g.form];let k=(F.taken||1)*sh;
-  if(src&&src.arrow&&F.arrows)k*=F.arrows;
-  if(src&&F.front){const a=Math.atan2(src.y-t.y,src.x-t.x),df=angGap(a,g.face||0);if(df<1.05)k*=F.front}
+  let k=shieldMul(t,src);const g=t.grp&&B.groups[t.grp];
+  if(src&&g&&shieldWallActive(t)){const a=Math.atan2(src.y-t.y,src.x-t.x);if(angGap(a,g.face||0)<1.05)k*=WALL.front}
   return k;
 }
 // a charge: its force by the charger's formation (a wedge) and the depth of the block it hits
-const formCharge=(att,t)=>{const ga=att.grp&&B.groups[att.grp],sh=t.grp&&B.groups[t.grp]&&grpShape(t.grp);return (ga&&FORMS[ga.form]&&FORMS[ga.form].chargeMul||1)*(sh&&sh.ranks>=DEPTH.ranks?DEPTH.charge:1)};
-// a group's pace in its formation (a shield wall is slow)
-const formPace=g=>g&&FORMS[g.form]&&FORMS[g.form].spd||1;
+const formCharge=(att,t)=>{const m=att.s.charge&&att.grp?wedgeMembers(att.grp):[],sh=t.grp&&B.groups[t.grp]&&grpShape(t.grp);return (1+(m.includes(att)?wedgeBonus(m.length):0))*(sh&&sh.ranks>=DEPTH.ranks?DEPTH.charge:1)};
+// Only an individually supported shield-wall soldier pays the ability's speed cost.
+const formPace=u=>shieldWallActive(u)?WALL.spd:1;
 
 // an order to charge breaks a shield wall
-function breakWall(g){const gr=B.groups[g];if(gr&&gr.form==='wall'){gr.setForm('line');log(GN[g]+' break their shield wall to charge.')}}
-// turn a group toward where it marches (a plain right-click, far enough to matter)
-function faceToward(g,x,y){const gr=B.groups[g],m=grpUnits(g);if(!m.length)return;const cx=m.reduce((a,u)=>a+u.x,0)/m.length,cy=m.reduce((a,u)=>a+u.y,0)/m.length;if(Math.hypot(x-cx,y-cy)>40)gr.setForm(gr.form||'line',{face:Math.atan2(y-cy,x-cx),files:gr.files})}
+function breakWall(g){const gr=B.groups[g];if(gr&&gr.shieldWall){gr.setFlag('shieldWall',false);log(htmlText(groupName(g))+' lower their shield wall.')}}
+// Turn toward a plain move, including short repositioning. Ignore only effectively zero displacement;
+// explicit dragged facing bypasses this helper in BattleControl.moveTo.
+function faceToward(g,x,y){const gr=B.groups[g],m=grpUnits(g);if(!m.length)return;const cx=m.reduce((a,u)=>a+u.x,0)/m.length,cy=m.reduce((a,u)=>a+u.y,0)/m.length;if(Math.hypot(x-cx,y-cy)>.01)gr.setForm(gr.form||'line',{face:Math.atan2(y-cy,x-cx),files:gr.files})}
 // a line dragged from (x0,y0) to (x1,y1): the selection along it, shared by their numbers, facing the left of the drag.
 // Each is as wide as its share of the line (and so as deep as its numbers make it); a wedge keeps its shape; your hero stands
 // just behind the line's middle, not in it
 function dragFiles(f,n,seg){const F=FORMS[f]||FORMS.line;return F.drag==='fixed'?null:Math.max(1,Math.min(n,Math.round(seg/F.gx)+1))}
 function formPlan(x0,y0,x1,y1){
-  const sel=selGroups().filter(g=>grpUnits(g).length),gs=sel.filter(g=>g!=='hero'),L=Math.hypot(x1-x0,y1-y0);if(!sel.length||L<FORM_DRAG)return[];
+  const sel=selGroups().filter(g=>grpUnits(g).length&&!B.groups[g].resolve?.routed),gs=sel.filter(g=>g!=='hero'),L=Math.hypot(x1-x0,y1-y0);if(!sel.length||L<FORM_DRAG)return[];
   const ux=(x1-x0)/L,uy=(y1-y0)/L,foes=B.units.filter(u=>u.team===1&&u.hp>0),ex=foes.length?foes.reduce((a,u)=>a+u.x,0)/foes.length:BW,ey=foes.length?foes.reduce((a,u)=>a+u.y,0)/foes.length:BH/2;
   // (its front on the left of the drag, as in Total War: dragged down they face right, up left, left to right up, right to left down)
   const face=Math.atan2(-ux,uy),mx=(x0+x1)/2,my=(y0+y1)/2;

@@ -54,15 +54,15 @@ function charThink(u,dt){
 function charStrike(u,t){
   {const m=momentum(u);u.run=0;if(m>=CHARGE.min)fatigueCharge(u,m)}// (a charge spends their stamina, as a soldier's: fatigue.js)
   aimAt(u,t);
-  // (a bow: drawn already, by the shot cycle every shooter has (battle.js shotStep); loosed now, at full draw)
+  // (a bow: drawn already, by the shot cycle every shooter has (actors.js shotStep); loosed now, at full draw)
   if(drawsBow(u)){if(u.hero){G.bowRange=clamp(Math.hypot(t.x-u.x,t.y-u.y),BOW_RANGE[0],BOW_RANGE[1]);shoot('ranged',1)}else champLoose(u,t,1);return}
   if(!u.hero)return champStrike(u,t);
   if(heroKind()==='melee'){const X=heroState(),CB=heroCombo(),at=u.atkAt;swing();
     if(u.atkAt!==at){u.cd+=CHAR_AI.pause;if(X.step===CB.length-1)u.cd+=breath()}return}
   swing();
 }
-/* the bow, the same for every character and soldier: drawn, loosed and reloaded by the shot cycle (battle.js shotStep), as true
-   as their skill, their bow and their draw allow (battle.js aimErr). A character's arrow is their own (your hero's from your
+/* the bow, the same for every character and soldier: drawn, loosed and reloaded by the shot cycle (actors.js shotStep), as true
+   as their skill, their bow and their draw allow (attacks.js aimErr). A character's arrow is their own (your hero's from your
    bag: combat.js shoot); crossbows, slings and magic shoot as a soldier's do */
 const drawsBow=u=>u.hero?isBow():!!u.s.range&&!u.s.magic&&!u.s.flat;
 function champLoose(u,t,p){
@@ -105,7 +105,7 @@ const aiCommands=u=>u.team===1||!!(u.grp&&u.grp.startsWith('a_'))||!!B.auto;
 function commandCharacters(dt){
   for(const u of B.units){if(u.hp<=0||!isChar(u)||u.stun>0||withdrawing(u)||u.hero&&MANUAL_HERO)continue;const ai=aiCommands(u);/* (your hero under your own hands: yours alone) */if(!ai&&!AUTOSK.on)continue;
     const S=charState(u),g=u.grp&&B.groups[u.grp],sent=!!g&&relocating(u,g);if(S.leap||S.dash||S.roll>0)continue;
-    if(ai&&!sent){let best=null,bd=CHAR_AI.duel;for(const e of B.units)if(e.team!==u.team&&e.hp>0&&isChar(e)){const d=Math.hypot(e.x-u.x,e.y-u.y);if(d<bd){bd=d;best=e}}if(best){u.tgt=best;u.rt=.5}}
+    if(ai&&!sent&&!(g&&g.hasTarget)){let best=null,bd=CHAR_AI.duel;for(const e of B.units)if(e.team!==u.team&&e.hp>0&&isChar(e)){const d=Math.hypot(e.x-u.x,e.y-u.y);if(d<bd){bd=d;best=e}}if(best){u.tgt=best;u.rt=.5}}
     if((S.think=(S.think||0)-dt)<=0){S.think=CHAR_AI.think;if(sent)continue;if(charBasics(u)||chooseAbility(u))u.castNow=true}}}
 // a champion's own: the shove or bash (those in front knocked back and staggered), the roll (away, unhurt while it lasts)
 function champShove(u,t,M){
@@ -126,29 +126,27 @@ const champSkill=u=>chooseAbility(u);
 // at what is within this share of their range; regroup: cavalry pulls back this far after a charge, recharge: after this long
 // in the melee; attackAt / defendAt: the strength ratios to attack or hold at; stall: a standoff turns into an attack after this;
 // lull: no blow struck anywhere for this long (two sides that cannot reach each other), and every group goes in
-const FOE_GRPS=['e_inf','e_arc','e_mag','e_cav'],ALLY_GRPS=['a_inf','a_arc','a_mag','a_cav'],FOE_CMD={think:.5,clash:70,behind:50,outgun:.8,volley:12,screen:20,replan:3,moved:30,flankY:110,flankAt:40,flankMax:8,advance:22,threat:70,reach:.97,regroup:90,recharge:3,attackAt:1.15,defendAt:.85,stall:30,lull:10,patience:6};
-// the other armies' groups: the enemy's (e_), and your allies' (a_: the men of lords who came to your side), each commanded by its
-// own captain. They are groups as yours are: the same pace (they walk unless running), laid out in the same formations
-function foeGroupsInit(units,groups,opts){
-  if(opts.tournament)return;
-  // (a leader with the group of his kind: a chieftain marches with his infantry, a mounted lord leads the cavalry's flank)
-  for(const u of units){if(ST[u.type]&&ST[u.type].beast)continue;if(u.team===1)u.grp='e_'+grpOf(u.s);else if(u.lord||u.leader)u.grp='a_'+grpOf(u.s)}
-  for(const g of [...FOE_GRPS,...ALLY_GRPS]){const m=units.filter(u=>u.grp===g);if(!m.length)continue;const foe=g.startsWith('e_');
-    const gr=groups[g]=new BattleControl(g,foe?1:0,{order:g.endsWith('inf')&&foe?'advance':'hold',ax:m.reduce((a,u)=>a+u.x,0)/m.length,ay:m.reduce((a,u)=>a+u.y,0)/m.length,foe,ally:!foe,t:0,face:foe?Math.PI:0});// (battlecontrol.js)
-    m.forEach(u=>{u.sx=u.x-gr.ax;u.sy=u.y-gr.ay})}
+const FOE_CMD={think:.5,clash:70,behind:50,outgun:.8,volley:12,screen:20,replan:3,moved:30,flankY:110,flankAt:40,flankMax:8,advance:22,threat:70,reach:.97,regroup:90,recharge:3,attackAt:1.15,defendAt:.85,stall:30,lull:10,patience:6,beaten:.4,broken:30};
+// beaten / broken: the enemy army falls back (withdraws off its edge) once its strength is under beaten of yours and its
+// formations' shared morale (morale.js BattleResolve), weighted by the men in them, is under broken. Your own army never does on its own.
+function beatenArmy(N,S){
+  const rs=[...new Set(Object.values(N).flat().flatMap(grpUnits).map(resolveOf).filter(r=>r&&!r.routed&&r.live().length))],n=rs.reduce((a,r)=>a+r.live().length,0);
+  return !!n&&S.ratio<FOE_CMD.beaten&&rs.reduce((a,r)=>a+r.mor*r.live().length,0)/n<FOE_CMD.broken;
 }
-// a captain's groups: the enemy's (team 1), and yours (team 0) when you hand your army to the AI (B.auto)
-const CAPTAIN={1:{inf:'e_inf',arc:'e_arc',mag:'e_mag',cav:'e_cav'},0:{inf:'inf',arc:'arc',mag:'mag',cav:'cav',hero:'hero'},ally:{inf:'a_inf',arc:'a_arc',mag:'a_mag',cav:'a_cav'}};
+function captainGroups(team,key){
+  const ids=Object.keys(B.groups).filter(id=>{const g=B.groups[id];return g.team===team&&(team===1||key==='ally'?team===1||g.ally:g.player)});
+  return Object.fromEntries(['inf','arc','mag','cav','hero'].map(role=>[role,ids.filter(id=>B.groups[id].role===role)]));
+}
 // each moment: an advancing line's anchor moves toward the other army (the enemy's; yours under the AI)
 // twice a second, the captains' orders: the enemy's always; yours only with the AI in command (B.auto)
 function command(dt){
   if(!B||(B.cmdT=(B.cmdT||0)-dt)>0)return;B.cmdT=FOE_CMD.think;
-  captain(1);captainFinish(1,CAPTAIN[1]);
-  if(ALLY_GRPS.some(g=>B.groups[g]&&grpUnits(g).length)){captain(0,'ally');captainFinish(0,CAPTAIN.ally)}// (your allies' own captain)
-  if(B.auto){captain(0);captainFinish(0,CAPTAIN[0])}
+  captain(1);captainFinish(1,captainGroups(1));
+  if(Object.values(B.groups).some(g=>g.ally)){captain(0,'ally');captainFinish(0,captainGroups(0,'ally'))}// (your allies' own captain)
+  if(B.auto){captain(0);captainFinish(0,captainGroups(0))}
 }
 /* a captain gives its orders through the same tools you use. Its pace: a charge (and a cavalry's ride round a flank) at a run,
-   else at a walk. A new place well away (CAPT.move): a move, its men break off and go (battle.js moveOrder). Its formation for
+   else at a walk. A new place well away (CAPT.move): a move, its men break off and go (battlecontrol.js moveOrder). Its formation for
    the moment: a wedge for a cavalry charge, a shield wall for shielded infantry holding under the other side's arrows, loose
    order for archers under them, else a line; its front toward the other army. */
 // shotFor, shotShare: a group is under fire when this share of its men were hit by a shot in the last shotFor seconds; brace: riders
@@ -183,25 +181,27 @@ function kiteFrom(sh,foes,mates){let best=null,bd=1e9;
   return best}
 function captainFinish(team,N){
   const S=assess(team),foes=S.foes;if(!foes.length)return;const M={x:foes.reduce((a,u)=>a+u.x,0)/foes.length,y:foes.reduce((a,u)=>a+u.y,0)/foes.length};
-  for(const k of ['inf','arc','mag','cav','hero']){const id=N[k],g=id&&B.groups[id],m=id?grpUnits(id):[];if(!g||!m.length)continue;
+  for(const k of ['inf','arc','mag','cav','hero'])for(const id of N[k]){const g=B.groups[id],m=grpUnits(id);if(!g||!m.length||g.order==='withdraw')continue;
     // (a charge at a walk till near its foe, then at a run: it comes in with breath left for the impact; riders gallop round a flank)
-    const tg=g.tgt&&g.tgt.hp>0?g.tgt:null,Cm={x:m.reduce((a,u)=>a+u.x,0)/m.length,y:m.reduce((a,u)=>a+u.y,0)/m.length},near=tg?Math.hypot(tg.x-Cm.x,tg.y-Cm.y):Math.min(...foes.map(e=>Math.hypot(e.x-Cm.x,e.y-Cm.y)));
+    const tg=g.targetPoint(),Cm={x:m.reduce((a,u)=>a+u.x,0)/m.length,y:m.reduce((a,u)=>a+u.y,0)/m.length},near=tg?Math.hypot(tg.x-Cm.x,tg.y-Cm.y):Math.min(...foes.map(e=>Math.hypot(e.x-Cm.x,e.y-Cm.y)));
     g.setRun(g.backing||!!g.huntBack||!g.hunt&&g.order==='charge'&&near<CAPT.runAt||k==='cav'&&(g.order==='charge'||g.order==='hold'&&g.phase==='flank'));
     if(k==='hero')continue;
     // (whether a new place is a move, its men breaking off to go: battlecontrol.js standAt)
     // (what the moment calls for: shot at, a shield wall (infantry) or loose order (shooters); a charge coming, they brace in a
     // shield wall; on the march or charging, a line; a wall or loose order kept a while once taken, then dropped when it passes)
-    const C0={x:m.reduce((a,u)=>a+u.x,0)/m.length,y:m.reduce((a,u)=>a+u.y,0)/m.length},marching=Math.hypot(C0.x-g.ax,C0.y-g.ay)>(g.form==='wall'?40:25);
+    const C0={x:m.reduce((a,u)=>a+u.x,0)/m.length,y:m.reduce((a,u)=>a+u.y,0)/m.length},marching=Math.hypot(C0.x-g.ax,C0.y-g.ay)>(g.shieldWall?40:25);
     const shot=m.filter(u=>B.t-(u.shotAt??-99)<CAPT.shotFor).length>=Math.max(1,m.length*CAPT.shotShare);
     const brace=foes.some(e=>{const d=Math.hypot(e.x-C0.x,e.y-C0.y);return e.s.charge&&(e.run||0)>CHARGE.run*.25&&d<CAPT.brace||e.s.big&&d<CAPT.brace/2});
-    const held=(g.form==='wall'||g.form==='loose')&&B.t-(g.formAt||0)<CAPT.keep;
-    const f=k==='cav'&&g.order==='charge'&&formFits(id,'wedge')?'wedge':k==='inf'&&g.order!=='charge'&&!marching&&(shot||brace||held&&g.form==='wall')&&formFits(id,'wall')?'wall':(k==='arc'||k==='mag')&&(shot||held&&g.form==='loose')&&formFits(id,'loose')?'loose':'line';
-    if(f!==g.form&&(f==='wall'||f==='loose'))g.formAt=B.t;
+    const held=(g.shieldWall||g.form==='loose')&&B.t-(g.formAt||0)<CAPT.keep;
+    const wall=k==='inf'&&g.order!=='charge'&&!marching&&(shot||brace||held&&g.shieldWall)&&m.some(shieldEligible);
+    if(wall&&!g.shieldWall)g.formAt=B.t;g.setFlag('shieldWall',wall);
+    const f=k==='cav'&&g.order==='charge'&&formFits(id,'wedge')?'wedge':(k==='arc'||k==='mag')&&(shot||held&&g.form==='loose')&&formFits(id,'loose')?'loose':'line';
+    if(f!==g.form&&f==='loose')g.formAt=B.t;
     // (its front: toward the foe's army; its shooters toward whom they should shoot (their mark, else the nearest in their
     // reach), turned only once he is out of their arc: the soldiers never turn themselves)
     const C={x:m.reduce((a,u)=>a+u.x,0)/m.length,y:m.reduce((a,u)=>a+u.y,0)/m.length},sm=(k==='arc'||k==='mag')&&m.some(u=>u.s.range),R=sm?Math.max(...m.map(u=>u.s.range||0)):0,inR=sm?foes.filter(e=>Math.hypot(e.x-C.x,e.y-C.y)<=R):[],
-      mark=sm&&(g.tgt&&g.tgt.hp>0?g.tgt:inR.length?inR.reduce((a,e)=>Math.hypot(e.x-C.x,e.y-C.y)<Math.hypot(a.x-C.x,a.y-C.y)?e:a):null),
-      face=mark?Math.atan2(mark.y-C.y,mark.x-C.x):Math.atan2(M.y-C.y,M.x-C.x),turned=angGap(face,g.face||0)>(mark?SHOOT.arc*.4:CAPT.turn);
+      mark=sm&&(g.targetPoint()||(inR.length?inR.reduce((a,e)=>Math.hypot(e.x-C.x,e.y-C.y)<Math.hypot(a.x-C.x,a.y-C.y)?e:a):null)),
+      face=mark?Math.atan2(mark.y-C.y,mark.x-C.x):Math.atan2(M.y-C.y,M.x-C.x),turned=angGap(face,g.currentFacing??g.face)>(mark?SHOOT.arc*.4:CAPT.turn);
     if(g.form!==f||turned)g.setForm(f,{face})}
 }
 /* one side's captain. It reads the whole battle (assess): each side's strength (health by tier), how much of it shoots, how
@@ -231,16 +231,19 @@ function posture(team,S){
 }
 function captain(team,key){
   // (ck: this captain's own plan and volleys: your army's and your allies' are on one side but each its own)
-  const ck=key==null?team:key,N=CAPTAIN[ck],S=assess(team),foes=S.foes;if(!foes.length)return;const post=(B.post=B.post||{})[team]=B.commit&&B.commit[key==null?team:key]?'attack':posture(team,S);// (once it has gone in after a lull, it stays in)
+  const ck=key==null?team:key,N=captainGroups(team,key),S=assess(team),foes=S.foes;if(!foes.length)return;
+  // (a beaten enemy army falls back as one, rather than fighting to the last man; once begun it does not turn round)
+  if(team===1&&key==null&&!B.noMorale&&(B.fallBack||beatenArmy(N,S))){if(!B.fallBack){B.fallBack=true;log('The enemy falls back.','good')}for(const id of Object.values(N).flat())B.groups[id].withdraw();return}const post=(B.post=B.post||{})[team]=B.commit&&B.commit[key==null?team:key]?'attack':posture(team,S);// (once it has gone in after a lull, it stays in)
   const mid=l=>({x:l.reduce((a,u)=>a+u.x,0)/l.length,y:l.reduce((a,u)=>a+u.y,0)/l.length}),M=mid(foes),d2=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
   const lead=team?(B.hero&&B.hero.hp>0?B.hero:null):foes.find(u=>u.leader)||null;
   const gap=l=>Math.min(...l.map(u=>Math.min(...foes.map(o=>d2(o,u)))));
-  const inf=grpUnits(N.inf).filter(u=>!u.rout),arc=grpUnits(N.arc).filter(u=>!u.rout),mag=N.mag?grpUnits(N.mag).filter(u=>!u.rout):[],cav=grpUnits(N.cav).filter(u=>!u.rout),G1=k=>B.groups[N[k]];
+  const members=k=>N[k].flatMap(grpUnits).filter(u=>!u.rout),inf=members('inf'),arc=members('arc'),mag=members('mag'),cav=members('cav');
+  const offset=(id,role)=>{const ids=N[role],i=ids.indexOf(id);return (i-(ids.length-1)/2)*Math.min(100,(fieldBot()-fieldTop()-80)/Math.max(1,ids.length))};
   const shots=[...arc,...mag];// (all their shooters: archers and mages, each group placed on its own below)
   const mine=S.mine,engaged=(e)=>mine.some(u=>d2(u,e)<18);// (an enemy already fighting one of ours)
   // (a lull: nobody has landed a blow in a while, everyone holding out of reach: every group of ours goes in; not an army already
   // on its way in, which walks up on its own plan)
-  if(B.t-(B.lastHit||0)>FOE_CMD.lull&&post!=='attack'){(B.commit=B.commit||{})[ck]=true;for(const k of ['inf','arc','mag','cav']){const g=G1(k);if(g&&grpUnits(N[k]).length){g.charge();g.setFlag('skirmish',false)}}return}
+  if(B.t-(B.lastHit||0)>FOE_CMD.lull&&post!=='attack'){(B.commit=B.commit||{})[ck]=true;for(const k of ['inf','arc','mag','cav'])for(const id of N[k]){const g=B.groups[id];if(grpUnits(id).length){g.charge();g.setFlag('skirmish',false)}}return}
   const clash=inf.length?gap(inf)<FOE_CMD.clash:true;
   /* the ranged duel: what each side's shooters put out (damage a second, those with shots left). Our fighters shot at (a share of
      them hit lately) by shooters who outdo ours (or we have none): standing there is losing, so they go for those shooters,
@@ -272,7 +275,7 @@ function captain(team,key){
       B.plan[ck]={F:{x:F.x,y:F.y},t:B.t,dir,y,x:Object.fromEntries(Object.entries(at).map(([k,r])=>[k,clamp(fwd(F.x-dir*r,grpOf_[k].length?mid(grpOf_[k]):null),8,BW-8)])),inf:clamp(fwd(F.x-dir*(front-FOE_CMD.screen),inf.length?mid(inf):null),8,BW-8)}}
     line=B.plan[ck]}
   // infantry
-  if(inf.length){const g=G1('inf'),busy=inf.some(u=>foes.some(e=>d2(e,u)<20));
+  for(const id of N.inf){const inf=grpUnits(id).filter(u=>!u.rout);if(!inf.length)continue;const g=B.groups[id],busy=inf.some(u=>foes.some(e=>d2(e,u)<20));
     // (a threat to our shooters worth the infantry: strong enough that they cannot see to it themselves, or with nowhere to back
     // to; a lone man is theirs to shoot, kite or fight. Their shooters bare (none of theirs who fight hand to hand near them, and
     // nearer us than their fighters): the infantry goes for them; else at the nearest of theirs)
@@ -287,12 +290,12 @@ function captain(team,key){
     else if(preyOk&&!busy&&(post==='attack'||clash))g.attack(prey);// (their shooters bare: at them)
     else if(clash||post==='attack'&&!threats.length&&inf.every(u=>u.s.range))g.charge();
     // (attacking with archers: the infantry stands a little in front of them while they shoot (FOE_CMD.volley seconds of it), then goes in)
-    else if(line&&(B.vol[ck]||0)<FOE_CMD.volley)g.standAt(line.inf,line.y);
+    else if(line&&(B.vol[ck]||0)<FOE_CMD.volley)g.standAt(line.inf,line.y+offset(id,'inf'));
     else if(post==='attack')g.advance();
     else{// defend: a line between the archers and the enemy
-      const I=A||mid(inf),dir=Math.sign(M.x-I.x)||1;g.standAt(I.x+dir*(A?40:0),A?A.y:I.y)}}
+      const I=A||mid(inf),dir=Math.sign(M.x-I.x)||1;g.standAt(I.x+dir*(A?40:0),(A?A.y:I.y)+offset(id,'inf'))}}
   // archers, and mages apart (a step behind the infantry, their reach being short)
-  for(const [k,grp,behind] of [['arc',arc,FOE_CMD.behind],['mag',mag,FOE_CMD.behind*.5]])if(grp.length){const g=G1(k),armed=grp.filter(u=>u.s.range);
+  for(const k of ['arc','mag'])for(const id of N[k]){const grp=grpUnits(id).filter(u=>!u.rout);if(!grp.length)continue;const behind=k==='arc'?FOE_CMD.behind:FOE_CMD.behind*.5,g=B.groups[id],armed=grp.filter(u=>u.s.range);
     if(!armed.length){g.charge();g.setFlag('skirmish',false)}// (out of ammo: they go in)
     else{      // (Kite: a foe coming at them uncovered: they skirmish (and no focus: keeping away comes first); melee mode on, its call)
       const open=kiteFrom(armed,foes,S.mine.filter(u=>!u.s.range));g.setFlag('skirmish',!!open);const C=mid(armed),near=a=>foes.reduce((p,e)=>d2(e,a)<d2(p,a)?e:p);g.setFlag('melee',armed.some(a=>foes.some(e=>!e.s.range&&!e.rout&&d2(a,e)<CAPT.toBlades))&&(!open||g.cornered||foes.some(e=>!e.s.range&&e.s.spd>g.pace*SKIRM.outpaced&&d2(e,C)<CAPT.toBlades*2)));/* (melee mode: a foe on them they cannot kite from) */
@@ -320,7 +323,7 @@ function captain(team,key){
       if(g.huntBack&&B.t-g.huntBack>HUNT.home&&d2(C,{x:g.ax,y:g.ay})<30)g.huntBack=0;// (home: at a run, HUNT.home s at least, till back in its place)
       const focus=!g.hunt&&worth&&!open&&!threats.length&&!g.backing&&armed.filter(a=>d2(a,worth)<=a.s.range).length*2>=armed.length;
       if(g.hunt){if(g.order==='charge')g.toHold();g.stand=null;g.standAt(g.hunt.x,g.hunt.y)}
-      else if(focus){if(g.tgt!==worth)g.attack(worth)}
+      else if(focus){if(!g.hasTarget||(worth.grp?g.targetGroupId!==worth.grp:g.targetUnitId!==worth.id))g.attack(worth)}
       else{if(g.order==='charge')g.toHold();
       // (stop to shoot: on its way, a foe in its shooters' reach: it stops where it is, they turn to him and shoot; no walking on
       // while they could be shooting)
@@ -330,13 +333,12 @@ function captain(team,key){
       else if(threats.length||halt||!reachNone||!inf.length&&!line){if(!g.stand)g.stand={x:C.x,y:C.y};g.standAt(g.stand.x,g.stand.y)}
       else{g.stand=null;
       if(line&&line.x[k]!=null){let x=line.x[k];if((x-C.x)*line.dir<0)x=C.x;// (forward only, from where they are now)
-        if(inf.length&&G1('inf').order==='hold'){const I=mid(inf);if(Math.abs(I.x-line.inf)>40){const cap=I.x-line.dir*behind;x=line.dir>0?Math.min(x,cap):Math.max(x,cap)}}g.standAt(x,line.y)}
-      else if(inf.length){const I=mid(inf),dir=Math.sign(I.x-M.x)||1;g.standAt(I.x+dir*behind,I.y)}}
-      // (no focus: the foe worth it only pointed out; each shoots him if he can reach him, else the easiest kill in his own
-      // reach: battle.js shooterTarget)
+        if(inf.length&&N.inf.some(id=>B.groups[id].order==='hold')){const I=mid(inf);if(Math.abs(I.x-line.inf)>40){const cap=I.x-line.dir*behind;x=line.dir>0?Math.min(x,cap):Math.max(x,cap)}}g.standAt(x,line.y+offset(id,k))}
+      else if(inf.length){const I=mid(inf),dir=Math.sign(I.x-M.x)||1;g.standAt(I.x+dir*behind,I.y+offset(id,k))}}
+      // (without a focus order, actors.js shooterTarget selects the nearest eligible foe by range and arc)
       }}}
   // cavalry
-  if(cav.length){const g=G1('cav'),C=mid(cav);g.t=(g.t||0)+FOE_CMD.think;g.phase=g.phase||'flank';
+  for(const id of N.cav){const cav=grpUnits(id).filter(u=>!u.rout);if(!cav.length)continue;const g=B.groups[id],C=mid(cav);g.t=(g.t||0)+FOE_CMD.think;g.phase=g.phase||'flank';
     const pick=()=>{const sc=e=>(e.s.range?3:0)+(engaged(e)?2:0)+(foes.some(o=>o!==e&&d2(o,e)<30)?0:1)+(unitClass(e.s)==='spear'?-3:0)+(e===lead?.5:0)-d2(e,C)/300;return foes.reduce((a,e)=>sc(e)>sc(a)?e:a)};
     if(threats.length&&g.phase!=='regroup'){g.phase='charge';g.attack(threats[0])}
     else if(goIn&&g.phase!=='regroup'){g.phase='charge';g.t=0;g.attack(!g.tgt||g.tgt.hp<=0||!g.tgt.s.range?shooterNear(C):g.tgt)}// (losing the ranged duel: ride down their shooters)
@@ -347,6 +349,6 @@ function captain(team,key){
       if(g.inMelee>=FOE_CMD.recharge){const dir=Math.sign(C.x-M.x)||1;g.phase='regroup';g.t=0;g.standAt(C.x+dir*FOE_CMD.regroup,C.y)}}
     else if(g.phase==='regroup'){if(d2(C,{x:g.ax,y:g.ay})<25||g.t>4){g.phase='charge';g.t=0;g.attack(pick())}}}
   // your hero, under the AI
-  if(N.hero&&B.hero&&B.hero.hp>0){const g=G1('hero');
+  for(const id of N.hero){const g=B.groups[id];if(!grpUnits(id).some(u=>!u.rout))continue;
     if(clash||!inf.length){if(g.order!=='charge')g.charge()}else{const I=mid(inf),dir=Math.sign(I.x-M.x)||1;g.standAt(I.x+dir*FOE_CMD.behind*.5,I.y)}}
 }

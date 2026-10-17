@@ -17,6 +17,21 @@ try{
  ok(order[0]==='core/core.js'&&order.slice(1,dataFirst).every(s=>s.startsWith('data/'))&&order.slice(dataFirst).every(s=>!s.startsWith('data/')),'core loads first, then all the data, then the systems');
  const wiki=[...get('wiki.html').matchAll(/<script src="(js\/[^"]+)"/g)].map(m=>m[1]);
  ok(wiki.join()===srcs.filter(s=>!/ui\/input\.js|main\.js/.test(s)).join(),'the wiki loads the same scripts in the same order (all but input and main)');
+ // ---- extracted battle responsibilities keep a single owner; these are plain scripts, not isolated modules
+ const battleOwners={
+  'battle':['updateBattle'],
+  'battlecontrol':['moveOrder'],
+  'commands':['rtsOrder','setOrder'],
+  'setup':['startBattle'],
+  'resolution':['finishBattle','concludeEncounter'],
+  'actors':['aiUnit','shotStep','relocating','updateNonHeroActors'],
+  'attacks':['applyDmg','attack','bladeBlow'],
+  'projectiles':['fireBolt','arcStep','updateProjectiles']
+ };
+ for(const [file,names] of Object.entries(battleOwners))ok(names.every(n=>seen[n]==='js/battle/'+file+'.js'),'battle ownership: '+names.join(', ')+' belong to '+file+'.js');
+ const battleOrder=['battle','battlecontrol','commands','setup','resolution','attacks','projectiles','actors','combat','commander','abilities','formations','morale','fatigue','camera','deploy'].map(n=>'battle/'+n+'.js');
+ ok(battleOrder.every((f,i)=>order.includes(f)&&(!i||order.indexOf(battleOrder[i-1])<order.indexOf(f))),'battle scripts retain the supported loading order in both entry points');
+ ok(typeof t.BattleControl.prototype.suggest==='undefined','the unused advisory-target setter is removed; attack orders remain the focus-fire API');
  // ---- actions
  const want=['lr-','fg-','pt-','scene-','cv-','sg-','cap-','inv-','sk-','tree-','slot-','esc-','ev-','site-','herd-','wk-','rf-','es-','pl-','dlg-'];
  ok(want.every(p=>typeof t.ACTS[p]==='function'),'each dialog system owns its action prefix: '+Object.keys(t.ACTS).join(' '));

@@ -187,7 +187,7 @@ class TravellersCamp extends Site{
   act(a,arg,done){const s=this;
     if(a==='site-buy'){const g=arg,p=travPrice(g),k=Math.min(5,s.stock[g]||0);if(k&&P.gold>=p*k&&goodRoom(g)>=k){P.gold-=p*k;s.stock[g]-=k;invAdd('good',g,k);train('trade',k*p/40);done('You buy '+k+' '+GOODS[g].n.toLowerCase()+' for '+p*k+' gold.')}}
     else if(a==='site-sell'){let g=0;P.inv.forEach((x,i)=>{if(x&&x.k==='mat'){g+=matPrice(x.id)*x.n;P.inv[i]=null}});g=Math.round(g*.85);if(g){P.gold+=g;train('trade',g/20);done('The travellers buy your trophies for '+g+' gold.')}}
-    else if(a==='site-hire'){const k=s.unit,c=mercCost(k);if(k&&s.mercs>0&&P.gold>=c&&partySize()<partyCap()){P.gold-=c;s.mercs--;P.add(k);done(cap1(an(ST[k].n.toLowerCase()))+' takes your coin and joins you.')}}
+    else if(a==='site-hire'){const k=s.unit,c=mercCost(k);if(k&&s.mercs>0&&P.gold>=c&&partySize()<partyCap()&&partyRoster(P).canAdd(k)){P.gold-=c;s.mercs--;P.add(k);done(cap1(an(ST[k].n.toLowerCase()))+' takes your coin and joins you.')}}
     else if(a==='site-fire'&&s.fire!==G.day){const m=vitals();s.fire=G.day;P.hp+=(m[0]-P.hp)/2;P.sp+=(m[1]-P.sp)/2;P.mp+=(m[2]-P.mp)/2;P.morale=clamp(P.morale+5,0,100);done('You share their fire and their stew. Everyone sleeps well.')}
     else if(a==='site-news'&&!s.news){s.news=true;
       const far=W.sites.filter(o=>!o.seen&&o.scoutable&&!(o instanceof TravellersCamp)).sort((a,b)=>Math.hypot(a.x-s.x,a.y-s.y)-Math.hypot(b.x-s.x,b.y-s.y)).slice(0,2);

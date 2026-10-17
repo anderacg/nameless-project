@@ -176,5 +176,11 @@ function updateWorld(dt){
 
 // the wounded heal: each day a share of them is fit again (more with Medicine, more near a friendly holding)
 function woundedDay(){const W0=P.wounded||{},near=TOWNS.some(t=>!hostileTo(t.owner)&&Math.hypot(t.x-P.x,t.y-P.y)<80),r=Math.min(.9,(.2+.03*skill('med')+(near?.2:0))*(P.stay?2:1));let back=0;
-  for(const k in W0){const n=W0[k];if(!n)continue;const h=Math.min(n,Math.floor(n*r+Math.random()));if(h){W0[k]-=h;P.add(k,h);back+=h}if(!W0[k])delete W0[k]}
+  for(const k in W0){const n=W0[k];if(!n)continue;let h=Math.min(n,Math.floor(n*r+Math.random())),returned=0;
+    for(const g of (P.woundedGroups||[]).filter(g=>g.type===k&&g.count)){if(!h)break;const m=partyRoster(P).restore(g,Math.min(h,g.count));g.count-=m;h-=m;returned+=m}
+    // A blocked originating group keeps its wounded; they never silently reinforce a duplicate group.
+    const tracked=(P.woundedGroups||[]).filter(g=>g.type===k).reduce((a,g)=>a+g.count,0);
+    if(h&&tracked===0)returned+=partyRoster(P).add(k,h);
+    W0[k]-=returned;back+=returned;if(!W0[k])delete W0[k]}
+  P.woundedGroups=(P.woundedGroups||[]).filter(g=>g.count>0);
   if(back)log(back+' of your wounded '+(back>1?'are':'is')+' fit to fight again.','good')}

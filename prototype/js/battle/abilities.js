@@ -30,8 +30,8 @@ const CAST={
     if(n){if(K.hero)K.st.stop=.05;shakeIt(2)}},
   leap(u,K,at){const p=aimOf(K,at,80),dd=Math.hypot(p.x-u.x,p.y-u.y),m=Math.min(1,100/Math.max(1,dd));
     K.st.leap={sx:u.x,sy:u.y,tx:clamp(u.x+(p.x-u.x)*m,8,BW-8),ty:clamp(u.y+(p.y-u.y)*m,fieldTop(),fieldBot()),t:0,dur:.32};K.st.inv=.36},
-  cry(u,K){const A=K.A;B.rings.push({x:u.x,y:u.y-6,r:90*A.r,life:.5,max:.5,col:'232,185,74'});
-    for(const o of B.units){if(o.hp<=0)continue;const d=Math.hypot(o.x-u.x,o.y-u.y);if(o.team===u.team&&d<90*A.r){o.buffT=6+A.dur;moraleCry([o])}if(o.team!==u.team&&!o.hero&&d<70*A.r)stun(o,.8+A.stun)}
+  cry(u,K){const A=K.A,heartened=[];B.rings.push({x:u.x,y:u.y-6,r:90*A.r,life:.5,max:.5,col:'232,185,74'});
+    for(const o of B.units){if(o.hp<=0)continue;const d=Math.hypot(o.x-u.x,o.y-u.y);if(o.team===u.team&&d<90*A.r){o.buffT=6+A.dur;heartened.push(o)}if(o.team!==u.team&&!o.hero&&d<70*A.r)stun(o,.8+A.stun)}moraleCry(heartened);
     vfxRing(u.x,u.y,70*A.r,'232,185,74',.5);vfxRing(u.x,u.y,100*A.r,'255,220,120',.7);for(const o of B.units)if(o.team===u.team&&o.hp>0&&Math.hypot(o.x-u.x,o.y-u.y)<90*A.r)vfxBurst(o.x,o.y-8,2,'#ffd25a',5,15,'ember',25);
     castSay(u,'WAR CRY',u.team?'#ff9a90':'#e8b94a');shakeIt(2)},
   quake(u,K){const A=K.A,R=50*A.r;vfxCracks(u.x,u.y,8,R*.7);vfxRing(u.x,u.y,R*1.2,'170,130,90',.55);vfxBurst(u.x,u.y,10,'#a88a60',30,90,'spark',40);for(let i=0;i<8;i++){const b=rnd(0,6.283);vfx({k:'dust',x:u.x+Math.cos(b)*R*.5,y:u.y+Math.sin(b)*R*.25,vx:Math.cos(b)*30,vy:Math.sin(b)*12,r:rnd(3,5),grow:12,life:rnd(.6,.9),col:dustCol()})}B.rings.push({x:u.x,y:u.y-4,r:R,life:.45,max:.45,col:'200,160,110'});fx(u.x,u.y,'#c8b48a',12);
@@ -82,7 +82,7 @@ const ABILITY_ORDER=['heal','whirl','quake','nova','leap','dash','fireball','vol
 const hasBow=u=>u.hero?isBow():!!u.s.range;
 // the ability that fits the moment, of those this unit has, ready and paid for; cast it. True if cast
 function chooseAbility(u){
-  if(u.grp&&relocating(u,B.groups[u.grp]))return false;// (on the move: battle.js)
+  if(u.grp&&relocating(u,B.groups[u.grp]))return false;// (on the move: actors.js)
   const ids=u.unit?u.unit.actives():[];if(!ids.length)return false;const foes=foesOf(u);if(!foes.length)return false;
   const mine=alliesOf(u),near=(x,y,r,list)=>withinOf(x,y,r,list).length;
   const close=foes.reduce((a,e)=>Math.hypot(e.x-u.x,e.y-u.y)<Math.hypot(a.x-u.x,a.y-u.y)?e:a),d=Math.hypot(close.x-u.x,close.y-u.y);

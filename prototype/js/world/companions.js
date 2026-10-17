@@ -35,14 +35,47 @@ const cparties=()=>Object.keys(P.comps).map(id=>compInit(id)&&P.comps[id].party)
 const cpartyCap=id=>4+2*compInit(id).lv+compSkill(id,'lead')+(compHas(id,'captain')?4:0);
 const canLead=id=>{const c=compInit(id);return c.lv>=COMP_LEAD.lv&&c.ap>=COMP_LEAD.ap};
 const cpPower=p=>power(p.troops)*(1+.04*compSkill(p.cid,'lead'));
-// hand soldiers over (the party forms beside you) or take them back (only beside you)
-function cpGive(id,k,n){const c=compInit(id);if(!c||!canLead(id))return 0;n=partyRoster(P).limit(k,n,cpartyCap(id)-(c.party?c.party.troops.length:0));if(n<=0)return 0;
-  if(!c.party)c.party=asParty({cid:id,x:P.x+10,y:P.y+6,troops:[],order:'follow',base:null,cool:2,dir:1});
-  return partyTransfer(P,c.party,k,n,cpartyCap(id)-c.party.troops.length)}
-function cpTake(id,k,n){const c=compInit(id),p=c&&c.party;if(!p||Math.hypot(p.x-P.x,p.y-P.y)>60)return 0;
-  const got=partyTransfer(p,P,k,n,partyRoom());
-  if(!p.troops.length)cpDisband(id,true);return got}
-function cpDisband(id,home){const c=P.comps[id];if(!c||!c.party)return;const p=c.party,n=p.troops.length;partyTransferAll(p,P);c.party=null;if(home)log(COMPS[id].short+' rejoins your band'+(n?' with '+n+' soldiers':'')+'.')}
+// Plans are transient. Forming a party builds a private candidate, attached only after a successful transfer.
+function cpTransferPlan(id,direction,source,n,target='new'){
+  const fail=code=>({quote:{ok:false,code}});
+  if(!Object.prototype.hasOwnProperty.call(P.comps,id)||!Object.prototype.hasOwnProperty.call(COMPS,id)||!['give','take'].includes(direction))return fail('companion');
+  const c=compInit(id);if(direction==='give'&&!canLead(id))return fail('leadership');
+  if(direction==='take'&&!c.party)return fail('party');
+  const forming=!c.party,p=c.party||asParty({cid:id,x:P.x+10,y:P.y+6,troops:[],order:'follow',base:null,cool:2,dir:1});
+  if(p.fight)return fail('fighting');
+  if(direction==='take'&&Math.hypot(p.x-P.x,p.y-P.y)>60)return fail('distance');
+  const from=partyRoster(direction==='give'?P:asParty(p)),to=partyRoster(direction==='give'?asParty(p):P),
+    rejoin=direction==='take'&&n===from.size&&!sum(p.wounded||{})&&!(p.woundedGroups||[]).some(g=>g.count>0),
+    room=direction==='give'?cpartyCap(id)-to.size-sum(p.wounded||{}):partyRoom(),reserve=rejoin?1:0,
+    quote=from.quoteGroupTransfer(to,source,n,target,room,reserve);
+  if(quote.ok)Object.assign(quote,{id,direction,forming,rejoin,room,fromAfter:quote.fromAfter-(forming||rejoin?1:0)});
+  return {quote,c,p,from,to,room,reserve,forming,rejoin};
+}
+const cpTransferQuote=(...args)=>cpTransferPlan(...args).quote;
+function cpTransferGroup(id,direction,source,n,target='new'){
+  const plan=cpTransferPlan(id,direction,source,n,target),q=plan.quote;if(!q.ok)return q;
+  const result=plan.from.transferGroupTo(plan.to,source,n,target,plan.room,plan.reserve);if(!result.ok)return result;
+  if(plan.forming)plan.c.party=plan.p;
+  if(plan.rejoin){plan.c.party=null;log(COMPS[id].short+' rejoins your band.')}
+  return {...q,destinationId:result.destinationId};
+}
+// Count-based callers retain their up-to-N behavior, but delegate to one explicitly resolved source and destination.
+function cpGive(id,k,n){
+  if(!Object.prototype.hasOwnProperty.call(P.comps,id)||!Object.prototype.hasOwnProperty.call(COMPS,id)||!troopAmount(n))return 0;const c=compInit(id),from=partyRoster(P),g=from.groups.find(g=>g.type===k);if(!g)return 0;
+  const to=c.party&&partyRoster(asParty(c.party)),target=to?.groups.find(g=>g.type===k)?.id||'new',amount=Math.min(n,g.count,cpartyCap(id)-(to?.size||0)-sum(c.party?.wounded||{}));
+  const result=cpTransferGroup(id,'give',g.id,amount,target);return result.ok?result.count:0;
+}
+function cpTake(id,k,n){
+  const p=P.comps[id]?.party;if(!p||!troopAmount(n))return 0;const g=partyRoster(asParty(p)).groups.find(g=>g.type===k);if(!g)return 0;
+  const target=partyRoster(P).groups.find(g=>g.type===k)?.id||'new',result=cpTransferGroup(id,'take',g.id,Math.min(n,g.count,partyRoom()),target);return result.ok?result.count:0;
+}
+function cpDisband(id,home){const c=P.comps[id];if(!c||!c.party)return;const p=asParty(c.party),n=p.troops.length;
+  const r=partyRoster(P),source=partyRoster(asParty(p)),groups=source.groups.slice(),wounded=sum(p.wounded||{})||(p.woundedGroups||[]).some(g=>g.count>0);
+  // Automatic return preserves boundaries too, and is checked for the entire army before any soldier moves.
+  if(wounded||r.slots+groups.length+1>ARMY_LIMIT||Object.keys(source.counts).some(k=>!r.accepts(k)||!Number.isSafeInteger(r.count(k)+source.count(k)))){
+    p.order='follow';if(!p.returnBlocked)log(wounded?COMPS[id].short+' must keep their wounded with their own army.':'Make room for '+groups.length+' troop groups and '+COMPS[id].short+' before they can rejoin (10 groups maximum).','bad');p.returnBlocked=true;return}
+  for(const g of groups)source.transferGroupTo(r,g.id,g.count,'new',Infinity,1);
+  c.party=null;if(home)log(COMPS[id].short+' rejoins your band'+(n?' with '+n+' soldiers':'')+'.')}
 // where a party may shelter: as you may (stay.js), but a party pays only for its own soldiers
 const cpStayOk=t=>!yourShelterWhy(t);// (a companion's party shelters by your rules: parties.js)
 const cpStayCost=p=>STAY_BASE+Math.ceil(p.troops.length/2);
@@ -59,7 +92,7 @@ function compDay(){
     if(c.party&&c.party.inside){const p=c.party,h=townBy(p.base);if(h&&!stayFree(h)){const k=cpStayCost(p);if(P.gold>=k)P.gold-=k;else{p.leave();p.order='follow';log('You cannot pay for '+COMPS[id].short+'’s lodgings. The party leaves '+h.name+' to rejoin you.','bad')}}}
     if(c.party){compTrain(id,'lead',2);const p=c.party,t=(p.order==='patrol'||p.inside)&&townBy(p.base);
       if(t&&!hostileTo(t.owner)&&Math.hypot(t.x-p.x,t.y-p.y)<120)for(let k=0;k<2&&p.troops.length<cpartyCap(id)&&canDraft(t);k++){const r=RACES[t.races[rint(0,t.races.length-1)]],type=Math.random()<.6?r.melee:r.ranged,cost=HIRE[type]||22;
-        if(P.gold<cost)break;P.gold-=cost;draftLocals(t,1);partyAdd(p,type);log(COMPS[id].short+' hires '+an(ST[type].n.toLowerCase())+' in '+t.name+' ('+cost+'g).')}}
+        if(P.gold<cost||!partyRoster(p).canAdd(type))break;P.gold-=cost;draftLocals(t,1);partyAdd(p,type);log(COMPS[id].short+' hires '+an(ST[type].n.toLowerCase())+' in '+t.name+' ('+cost+'g).')}}
     if(c.role==='scout'&&compInBand(id))compTrain(id,'scout',3);if(c.role==='surgeon'&&compInBand(id))compTrain(id,'med',2)}
 }
 // on the map: drawn with every party (render.js drawParties; its look: parties.js)

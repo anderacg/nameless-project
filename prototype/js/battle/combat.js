@@ -97,7 +97,7 @@ function stun(u,t){u.stun=Math.max(u.stun||0,u.s.big?t*.4:t)}
 function heroHit(e,mult,o){
   const h=B.hero,X=heroState(),dt=o.dt||shapeDt(o.shape,h.s.dt),mu=matchup(h.s,e.s,dt);let dm=h.s.dmg*(.85+Math.random()*.3)*mu*mult*(h.buffT>0?1.3:1)*(MANUAL_HERO?1:tiredMul(h).dmg);
   if(!o.noCrit&&Math.random()<(has('bloodlust')?.2:.1)+gm('crit')){dm*=1.8;B.floats.push({x:e.x,y:e.y-22,t:'Crit',life:.6,c:'#ffd24a'})}
-  applyDmg(e,dm*formTaken(e,h),mu,dt);vfxHit(h,e,dm,{crit:dm>h.s.dmg*1.7});train(meleeSk(),2);
+  applyDmg(e,dm*formTaken(e,h),mu,dt,h,false);vfxHit(h,e,dm,{crit:dm>h.s.dmg*1.7});train(meleeSk(),2);
   knock(e,h.x,h.y,o.kb||0);if(o.stun)stun(e,o.stun);
   X.combo++;X.comboT=2.2;B.bestCombo=Math.max(B.bestCombo||0,X.combo);// (the longest chain: told in the log when the battle ends)
 }
@@ -133,7 +133,7 @@ function shoot(kind,power){
   const am=ammoOf();if(am){goodTake(am,1);B.fired=(B.fired||0)+1}
   h.cd=S.cd*(h.s.cd/.45);h.atkAt=B.t;h.face=Math.cos(B.aim)>=0?1:-1;
   const dmg=h.s.dmg*S.mult*(.9+Math.random()*.2)*(h.buffT>0?1.3:1)*(kind==='magic'?spellMul():1+.04*skill('archery')),src={...h.s,bolt:'#ffe08a',flat:!!S.flat,heroShot:true};if(kind==='magic')train('spell',.5);
-  // (as true as any shooter's: battle.js aimErr, by their skill, their bow and their draw)
+  // (as true as any shooter's: attacks.js aimErr, by their skill, their bow and their draw)
   if(kind==='ranged'&&!S.flat){const p=power==null?.75:power,dm=dmg*(.55+.6*p),E=aimErr(h,p);
     const dd=Math.min(bowRange(),aimReach(p));fireBolt(h,B.aim+spreadOf(E),dm,src,dd,{speed:ARC_SPEED*(.8+dd/250)*(.6+.4*p),sc:E.d});return}
   fireBolt(h,B.aim+spreadOf(aimErr(h)),dmg,src,cursorDist(h));

@@ -29,9 +29,10 @@ try{
   t.cpGive('brann','hum_levy',3);t.cpGive('brann','hum_bow',2);const party=c.party,snapshot=JSON.stringify(party.tc);
   G.mode='world';G.modal=false;t.hidePanel();t.openComp('brann');let text=document.getElementById('panel').textContent;
   const levy=t.ST.hum_levy.n,bow=t.ST.hum_bow.n;
-  ok(text.includes(levy+' with Brann: 3')&&text.includes(bow+' with Brann: 2'),'companion troop rows show the grouped counts');
-  ok(text.indexOf(levy+' with Brann: 3')<text.indexOf(bow+' with Brann: 2')&&JSON.stringify(party.tc)===snapshot,'grouping preserves first-kind order without changing party counts');
-  t.cpDisband('brann',false);t.renderComp();ok(!document.querySelector('[data-act="cm-take"]'),'a companion without a party has no stale take-back rows');
+  const take=()=>document.querySelector('[data-cp-transfer="take"] [data-cp-field="source"]'),options=[...take().options].map(el=>el.textContent);
+  ok(options.some(s=>s.includes(levy)&&s.includes('3 fit'))&&options.some(s=>s.includes(bow)&&s.includes('2 fit')),'companion source choices show separate groups and fit counts');
+  ok(options[0].includes(levy)&&options[1].includes(bow)&&JSON.stringify(party.tc)===snapshot,'group choices preserve formation order without changing party counts');
+  t.cpDisband('brann',false);t.renderComp();ok(!take(),'a companion without a party has no stale take-back choices');
 
   const town=t.TOWNS.find(h=>h.kind==='town');town.gar=10;W.lords=[];
   const div=document.createElement('div');div.innerHTML=t.garrisonBody(town);const rows=[...div.querySelectorAll('.row')];

@@ -4,6 +4,13 @@ window.ERR=[];
 addEventListener('error',e=>ERR.push(e.message+' @'+(e.filename||'').split('/').pop()+':'+e.lineno));
 // T.name reads any top-level game binding by name, including let/const ones that change (T.B, T.bandits)
 window.T=new Proxy({},{get:(_,k)=>(0,eval)(String(k))});
+// Older execution fixtures refer to a tactical role, not a particular persistent army formation.
+// Resolve that role to a real ID; explicitly supply an empty fixture control when a case injects soldiers later.
+function testGroup(role){
+  const side=role.startsWith('e_')?'foe':role.startsWith('a_')?'ally':'player',kind=role.replace(/^[ea]_/,''),b=T.B;
+  const found=Object.values(b.groups).find(g=>g[side]&&g.role===kind);if(found)return found.id;
+  const id='fixture_'+role;b.groups[id]=new T.BattleControl(id,side==='foe'?1:0,{[side]:true,role:kind,name:kind,ax:100,ay:300});return id;
+}
 (()=>{
   const suite=new URLSearchParams(location.search).get('test'),s=document.createElement('script');
   const fail=m=>{const d=document.createElement('pre');d.id='OUT';d.textContent=m;document.body.appendChild(d)};

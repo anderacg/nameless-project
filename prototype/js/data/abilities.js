@@ -30,9 +30,9 @@ const ABILITIES={
   longshot:{kind:'trait',n:'Longshot',has:s=>!!s.bow&&s.race!=='elf',d:'Bows outrange every other weapon: arrows lob over the lines.'},
   direct:{kind:'trait',n:'Direct fire',has:s=>!!s.flat,d:'Bolts fly flat and fast instead of lobbing: they hit the first in their way.'},
   few:{kind:'trait',n:'Few missiles',has:s=>!!s.ammo&&s.ammo<12,d:s=>'Only '+(s?s.ammo:'a few')+' to throw; then it fights hand to hand.'},
-  wedge:{kind:'trait',n:'Wedge',has:s=>!!s.charge,d:'Can ride in a wedge: its charge hits 30% harder.'},
+  wedge:{kind:'trait',n:'Wedge',has:s=>!!s.charge,d:'Formed cavalry: +5% charge at 6 riders, +2.5 percentage points per additional rider, capped at +30% at 16. Scattered and routing riders do not count.'},
   horsebow:{kind:'trait',n:'Horse archer',has:s=>!!(s.mounted&&s.range),d:'Shoots from the saddle: fast enough to keep away from foot and loose as it goes.'},
-  shieldwall:{kind:'trait',n:'Shield wall',has:s=>tagsOf(s).includes('shield')&&!s.range&&!s.mounted,d:'Can lock shields: firm and slow, its front takes 35% less.'},
+  shieldwall:{kind:'trait',n:'Shield wall',has:s=>tagsOf(s).includes('shield')&&!s.range&&!s.mounted&&!s.charge,d:'B toggles shield wall for eligible shield infantry. Nearby active, aligned shields provide 35% less frontal damage and 40% slower movement. Alone: personal shield blocking only. Charge/run lowers shields.'},
   // traits: monsters'
   pounce:{kind:'trait',n:'Pounce',has:s=>s.ability==='pounce',d:'Pounces on a fighter 24–110 px away for 1.6× damage, then waits 4.5 s.'},
   web:{kind:'trait',n:'Web',has:s=>s.ability==='web',d:'Spits webs (range 60) that halve the target’s speed for 2 s.'},

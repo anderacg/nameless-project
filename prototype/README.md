@@ -2,6 +2,30 @@
 
 Open `Ashmark.html` in a browser. There is no build step and nothing to install.
 
+## Independent army groups (save schema v2)
+
+Start a **new campaign** for this version. Old saves are not loaded or migrated; old browser storage is left untouched.
+
+- Each army has at most **10 groups**, including its hero/leader and companions. Wounded companions in your band reserve their slot; companions leading another army belong to that army instead.
+- Each troop group contains one unit type. Duplicate types have persistent, distinct IDs. The existing total-headcount capacity remains a separate limit; no new per-group soldier cap is imposed.
+- Open **Hero → Party → Manage** to name a group (up to 32 characters), split an exact number of fit soldiers, or merge compatible groups. A split starts with its default name and leaves wounded with its original group. **Reinforce** selects a recruitment target.
+- Use **↑ / ↓** to reorder the entire army, including hero and companion groups. This persists into battle cards, default number keys and deployment lanes. Wounded companions reserve a slot but have no battle card until recovered. Custom Ctrl+number selections still override the default keys within a battle.
+- Each group shows its own wounded count. Groups with no fit soldiers appear under **Recovering groups** and retain their name when soldiers return. They do not take a battle card or an active slot until restored.
+- Battles show one card per group. Shift-click adds cards to the selection. **1–9 and 0** select the ten cards; Ctrl+number stores a custom selection. **Home** resets the battle camera (0 is now the tenth card).
+- Orders, formation, facing, waypoints and capability-filtered ability toggles are independent for each group. Enemies and allied armies use the same grouping model; reinforcements keep their own army budgets and source identities.
+- Fought-battle casualties and wounded returns retain the originating troop-group ID. Merging groups transfers wounded ownership. Wounded whose original group cannot fit wait rather than reinforcing an unrelated duplicate.
+- Fought-battle results include a per-group report in battle-card order: starting soldiers, fit survivors, new wounded and killed. Medicine returns count as fit; extra rearguard deaths after a failed escape belong to the actual group that lost them. Destroyed groups retain their name in this report. Earlier wounded are excluded. Hero/companion conditions appear separately and never count as soldier deaths. Auto-resolve and non-field encounters retain their aggregate losses summary rather than inventing a field breakdown.
+- **Town → Recruit** lets you choose a destination group (or one new group), enter a soldier quantity, review total gold/headcount/slots, then confirm. Orders are all-or-nothing. Single-soldier quick-hire buttons remain available.
+- Click a training-tree row to **upgrade a whole group**: select the source group, review its total gold and pooled XP cost, then confirm. Its ID, soldier count and slot are preserved, even in a full ten-group army; formation resets to Line. Groups with wounded waiting to return must heal first. Individual **Train 1** buttons remain available and may need a free slot for a new type.
+- Recruitment, transfers and training reject operations that need an unavailable slot. A changed price or unavailable order is rechecked at confirmation rather than silently charging different terms.
+- Open a companion’s details → **Army transfers** to select the exact source formation, quantity and destination (compatible group or a separate new group). Review and confirm the whole order; capacity, proximity, leadership and army slots are rechecked. Only fit soldiers move, leaving wounded with the source army. A whole fit formation moved to a new group keeps its name, formation and frontage; a partial new group uses defaults, and reinforcement keeps the destination’s settings. IDs are local to the receiving army.
+- Taking the last soldiers back reserves a slot for the returning companion as well as any new troop group. Automatic **Come back** preserves separate formations and their settings too; if the entire returning army plus its leader cannot fit, no soldiers move. Automatic return retains the prior over-headcount-cap policy; explicit transfers cannot exceed headcount capacity. Giving to a distant companion remains allowed, but taking soldiers back requires being within 60 pixels. Neither direction may change a party currently in a battle. Garrisons still convert stationed soldiers into generic defenders.
+- Individual attacks, fatigue, weapon rules and morale remain the existing systems. The proposed shared group-resolve / unanswered-missile-fire morale redesign is **not implemented** by this change. Troop XP is still pooled by unit type.
+
+`core/army.js` owns group identity and mutations. `P.troops` and NPC `tc` remain count views/interchange records for economy and world simulation; `ArmyRoster` updates them together with `army.groups`. Battle controls reference unique IDs rather than fixed Infantry/Archers/Mages/Cavalry buckets. Tactical role is a separate field used by the captain.
+
+Focused regression suites: `armygroups`, `armyedges`, `groups`, `battlesetup`, `battlecommands`, `rts`, plus the existing recruitment, roster, laboratory, combat and morale suites. Test-only `testGroup(role)` resolves role-based execution fixtures to real group IDs; it is not a gameplay or save-compatibility API.
+
 `wiki.html` is the game reference: world map, biomes, races, realms, holdings, the economy, battle, troops, gear, monsters and life on the map. It loads the game's own data and sprite scripts, so it updates itself whenever the data changes.
 
 ## Layout
@@ -10,7 +34,7 @@ Open `Ashmark.html` in a browser. There is no build step and nothing to install.
 Ashmark.html          page markup; loads style.css, the PX engine (../engine: pixel, buildings, pieces), then the scripts below, in this order
 style.css
 js/core/              core.js (DOM, canvas, constants, helpers, the action registry), state.js (state factories, G, P, derived stats),
-                      roster.js (TroopRoster, count/list helpers), garrison.js (GarrisonService),
+                      roster.js (TroopRoster, count/list helpers), army.js (ArmyRoster, persistent groups and slot budget), garrison.js (GarrisonService),
                       inventory.js (Inventory and bag operations), equipment.js (EquipmentService), recruitment.js (RecruitmentService and troop XP),
                       talents.js (TalentService and character talent commands), session.js (GameSession and new game), save.js
 js/data/              tables only, no game logic: races, factions, units, monsters (incl. mythic ones like the dragon), critters,
@@ -39,7 +63,9 @@ js/world/             the campaign map and everything on it
   world.js              travel, the daily tick, the world update
 js/battle/            encounters.js (dialogs, outcomes by kind: ON_WIN), parley.js (cornered parties), setup.js (BattleSetup, field
                       and unit construction), resolution.js (BattleResolution, field results and campaign settlement),
-                      battle.js (combat simulation), battlecontrol.js (group mechanics), commands.js (player selection and orders),
+                      battle.js (shared group defaults and frame orchestration), actors.js (actor execution and targeting),
+                      battlecontrol.js (group mechanics), commands.js (player selection and orders),
+                      attacks.js (damage and attack execution), projectiles.js (launch, flight and impact stepping),
                       combat.js (the hero's manual control: combos, dodge, block, the bow, skills; set aside for now,
                       MANUAL_HERO in battle.js)
 js/scene/             walkable maps of the places you enter: scene.js (walking, paths, talking, in and out), town.js (town layouts);
@@ -106,6 +132,18 @@ Construction order matters. Spawning consumes the existing random sequence; a ch
 
 `tests/battlesetup.js` compares nine fixed-seed snapshots captured before this extraction, including random-call counts and the subsequent random values. It covers ordinary fights, allied/enemy reinforcements, chief reuse, siege penalties, monsters, tournaments, deployment settings and field-width limits. Fixed geometry isolates structural parity; a separate check uses the actual HUD measurement.
 
+Forward ranged groups keep `face` as their ordered heading and `currentFacing` as their simulation-time firing heading. Their at-rest shooter bodies follow `currentFacing`; slot movement does not steer their firing arcs. A hero's explicit ranged attack updates its group's ordered heading, while ordinary soldiers cannot rotate a group toward a rear target. Pausing and deployment freeze turns; deployment placement snaps to the order. The HUD shows one indicative envelope per group at its median inferred slot anchor, widened by ideal formation frontage. It uses the shortest range in a mixed-range group, while all-around groups retain a circle. The envelope is not a promise that every soldier can hit every point: each attack still checks that soldier's position, ammo, range, arc and obstructions, and hover counts use those actual checks. Formation slots and existing melee, shield-wall and wedge facing rules continue to use the ordered `face` in this stage.
+
+`tests/formationfacing.js` covers simulation-time turns, angle wrap, pause/deployment behavior, isolated duplicate-group envelopes, grouped firing/arc agreement, rear-target discipline and mounted all-around coverage. `tests/visual/formationfacing.js` prepares two same-type archer groups at different headings and a scattered formation for visual review.
+
+### Formation attack targets
+
+An explicit attack selects an enemy formation by its battle group ID, not the lifetime of the clicked soldier. Duplicate troop types remain independent. Soldiers choose nearby opponents within the selected formation; ranged soldiers prefer members in their own range and current firing arc. Immediate close-range self-defence remains possible without replacing the group's order, and crowd alternatives stay within the selected formation. Character duels do not override an explicit formation focus.
+
+The group keeps its attack after the originally clicked member dies. Explicit orders pursue routing or withdrawing members while they remain on the field. Once the entire target is dead, off-field or removed, the attackers Hold at their current position instead of automatically charging another formation; normal local defence/free fire still applies, and an AI captain may issue a fresh order. Ground movement, Hold, withdrawal and general Charge cancel explicit focus. Hero/companion formations follow the same identity rules; genuinely ungrouped actors can still be targeted individually.
+
+`BattleControl.targetGroupId` and `targetUnitId` own the transient order identity. `targetMembers()` resolves living on-field enemies, and `tgt` is a derived representative retained for tactical AI callers, not the authoritative soldier target. Order lines and captain/hero aiming use the surviving formation's centre. Per-soldier range, arc, ammo, projectile collision and morale rules remain unchanged. These battle-only fields do not alter campaign saves. Focused coverage: `tests/grouptargeting.js`; `tests/visual/grouptargeting.js` previews an attack after the clicked soldier has fallen.
+
 ## Battle resolution
 
 `battle/resolution.js` owns the short-lived `BattleResolution` coordinator. `finishBattle()` carries the finished field into campaign state: survivor troop XP, recovered ammunition, hero condition, morale context, tournament results and release of `B`. `concludeEncounter(win, lost, kills, auto, slain, retreat, txp)` remains the compatibility entry point for campaign settlement, including auto-resolve callers. A field result hands off to the same settlement implementation.
@@ -122,7 +160,116 @@ The command layer forwards formation eligibility/layout to `formations.js` and z
 
 `tests/battlecommands.js` captures 19 pre-extraction scenarios with explicit field fixtures: unit/icon picking, Shift selection, boxes, control groups, relative movement, queues, attack targets, pace/hold/withdraw, shooter flags, formations, dragged lines, deployment and empty selections. It also dispatches real browser pointer/touch/keyboard events through the unchanged input listeners. Snapshots include selection, group state, target identities, unit positions, HUD button state, messages and calls to the existing BattleControl methods. Fixed geometry and seeded input isolate commands from combat timing and generated world actors.
 
-## Tests
+## Attack and projectile execution
+
+`battle/attacks.js` owns `applyDmg`, `hit`, troop damage/kill XP, attack cooldown/damage execution, melee follow-through, sidearm blows and dragon breath. It also owns ammunition/accuracy helpers and their existing constants (`AMMO`, `AIM`, `BLADE`). All existing function names remain available to actors, character/manual combat, abilities and effects. Damage still invokes the existing morale, fatigue, roster, character, HUD and VFX systems in its original order.
+
+`battle/projectiles.js` owns `fireBolt`, `arcZ`, `arcStep`, launch constants and `updateProjectiles(dt)`. The latter contains the former inline projectile loop unchanged: arc and flat stepping, tree checks, blocking, web effects, hits/splash and final lifetime/bounds filtering. `updateBattle` calls it after unit movement/collision/clamping and before morale/end checks, inside the same pause/deployment/hit-stop gates. Target choice, shooter draw/reload decisions and monster activation now live in `actors.js`; no actor or commander policy was changed. `combat.js` retains manual hero attack/ability mechanics.
+
+Both HTML entry points load attacks and projectiles after resolution and before character/manual combat. These are plain scripts with runtime cross-system calls, not isolated modules or a new unit hierarchy. Save formats and transient field records are unchanged.
+
+`tests/attackrules.js` captures 26 pre-extraction combat snapshots with explicit units, fixed geometry and fixed random streams. It checks damage reduction/invulnerability, casualties/XP, companion and lord losses, melee/follow-through/sidearms, launch physics, ammunition/accuracy, arc and flat impacts, trees/elf arrows, magic splash, webs, expiry/bounds, pause/deployment/hit-stop gates, guarding and shooter-phase handoff. Snapshots include state, effects metadata and random-call sequencing; generated bystanders are excluded. Existing attacks, manual combat, RTS, biome, matchup and XP suites provide broader integration coverage.
+
+## Actor execution and targeting
+
+`battle/actors.js` owns local target queries, firing arcs, shooter draw/reload execution, troop movement/strikes, crowd retargeting, relocation, monster activation, and the retained `updateHero` manual movement driver. Existing names (`nearest`, `aiUnit`, `shotStep`, etc.) remain available to commanders, groups, attacks, effects and tests. This is a function-based responsibility boundary, not another unit or AI hierarchy.
+
+`updateNonHeroActors(dt)` contains the former non-hero unit loop verbatim: decrement cooldown, delegate characters to `charAuto`, otherwise execute the troop, monster ability and breath timer in their existing order. `updateBattle` calls it at the same point after knockback/buffs/slow/regeneration and before collision/projectile/morale processing. The hero still runs earlier on `rt * HERO_PACE`, while non-hero turns use `rt * BATTLE_PACE`; group stepping and commander decisions keep their original ordering. Pause, deployment and hit-stop gates remain in the coordinator.
+
+Commanders and `BattleControl` retain authority over orders, group facing, formation and tactical choices. No targeting priorities, activation thresholds, random sequencing, pacing or saved/transient record formats changed. Both HTML entry points load actors after projectiles and before character/manual combat. Stale comments describing old hotkeys and an obsolete shooter-target heuristic were corrected without changing executable code.
+
+### Battle boundary audit
+
+`battlecontrol.js` owns `moveOrder`: issuing a new relocation increments the group's `mvId`. `actors.js` owns `relocating`: each actor compares its completed generation with the group's current one. The global helper name remains available; moving its declaration does not change the command API or transient state.
+
+The actor cleanup removed only unreachable code: an always-null automatic-sidearm branch and an always-false face-the-foe movement branch. Moving actors still face their travel direction; explicit Melee Mode still executes `bladeBlow`. Small helpers such as `meleeTarget`, `meleeFoe`, `blowsToFell` and `arcZ` stay because they have test, commander or group consumers. The unused `BattleControl.suggest` method was removed: nothing called it or read the `prefer` field it wrote. Commanders still focus fire through `attack`; otherwise actors select by range and arc. No new targeting policy was introduced.
+
+These files still share live `B`, `G` and `P` records and runtime callbacks. This is an ownership split, not an acyclic dependency graph:
+
+| Owner | Main runtime connections |
+| --- | --- |
+| `commands.js` / `commander.js` | Issue orders through `BattleControl`; commanders also drive character decisions. |
+| `battlecontrol.js` | Owns group order state and relocation generations; uses actor target queries and formation helpers. |
+| `actors.js` | Reads orders; delegates character turns, attacks, fatigue and rout/withdraw movement. |
+| `attacks.js` | Executes damage/strikes, launches projectiles, and calls morale, XP, character and visual helpers. |
+| `projectiles.js` | Advances projectiles and calls damage, guarding, XP and visual helpers on impact. |
+| `battle.js` | Sequences group/commander turns, actors, collisions, projectiles, morale and resolution on the existing clocks. |
+
+Keep those callbacks inside runtime functions: load-time calls into scripts loaded later would fail. `tests/structure.js` now checks ownership of the main extracted entry points and the supported battle script order, in addition to duplicate globals and wiki parity. Behavior remains covered by the actor/attack/command snapshots and RTS/character integration suites.
+
+`tests/actorrules.js` captures 23 pre-extraction scenarios for local targeting, arcs, shooter phases, stun/rout/withdraw, ordered-target self-defence, firm hold, relocation, fatigue, crowding, melee mode, cease-fire, regeneration/pounce, manual movement, hero-versus-troop clocks and frame gates. It uses explicit units and fixed geometry/random streams; unrelated generated world state is excluded.
+
+## Formations and unit abilities
+
+Positioning formations are Line, Loose and Wedge. Loose changes spacing only: no arrow resistance or melee vulnerability modifier. Shield wall is a separate **B** ability toggle; old `setForm('wall')` command callers forward to the ability rather than assigning a formation.
+
+Group flags request actions, with eligibility checked per soldier. Shield wall requires shield-bearing, non-ranged, non-mounted, non-charge infantry. An active soldier needs a nearby active-requesting eligible ally within 16 pixels, facing within 60 degrees; dead, routing, stunned, withdrawing or running soldiers cannot support it. Supporting shields may belong to another friendly group. Supported soldiers take 35% less frontal damage and move 40% slower; unsupported shields keep their normal personal frontal missile blocking. Charge and running orders lower the toggle. Other group members gain no wall protection or speed penalty. Shield-wall users hold their ground instead of chasing nearby enemies.
+
+Wedge positioning can be selected below six riders, but the charge bonus starts at **6 formed cavalry: +5%**, increases by **2.5 percentage points per additional rider**, and caps at **+30% at 16**. Only living, non-routing, non-stunned cavalry aligned with the wedge and within 28 pixels of their relative slots count or receive it. Inferred median anchors let the formation move without counting distant stragglers. Casualties remove bonus without forcing a formation change. Existing formation-depth charge resistance remains unchanged.
+
+The HUD shows eligible/active shield counts and the current wedge bonus. Tuning lives in `WALL` and `WEDGE` in `battle/formations.js`. Focused coverage: `tests/formationabilities.js`, existing RTS/command/actor/attack regressions and unit-card/wiki checks. This does not introduce dynamic squads or change the existing rank-based depth model.
+
+## Group morale, confidence and routing
+
+Morale is owned by the **formation**, not the soldier. `BattleResolve` (`battle/morale.js`) holds one morale value, confidence, cohesion, recent-loss strain, missile pressure, breaking timer and route/rally/shatter state per group (`g.resolve`). Ungrouped breakable soldiers get a one-man resolve; `resolveOf(u)` finds either. Soldier fields (`u.mor`, `u.rout`, `u.confidence`, …) are **mirrors** written by `sync()`; writing them changes nothing. HP, armour, shields, ammunition and stamina stay per soldier. Heroes, companions, lords, chieftains and beasts (`steady`) have no resolve and never break.
+
+**Inputs.** Wounds (`hurt`), deaths (`death`), flank/rear blows and charges on any member feed the group. Ratios use the group's **starting** headcount and health, so the same share of losses shakes small and large groups equally. Casualties and wounds also lower the recovery `ceiling()`. Deaths in a short window build **recent-loss strain** (up to `GROUP_RESOLVE.strainCap`), which decays with `LOSS_MEMORY.life`; bursts hurt more than spread-out losses. **Unanswered missile fire** (missile damage in the last `window` seconds, while dealing back less than `answer` of it) drains up to `missileRate` a second and blocks confidence. Per-soldier flank and charge shocks are divided by the group's starting size.
+
+**Context.** Every 0.2 combat seconds (sooner after a death) each group samples three members (left, centre, right along its front) and averages their view: visible, distance-weighted strength within `CONFIDENCE.radius` gives **Confident** or **Outmatched**; close strength or threats on opposite sides give **Locally overwhelmed**; aligned, settled neighbours within `COHESION.radius` give **cohesion**, which softens ordinary and routing shock. Trees and rocks block the view. Confidence (1.25:1 to 3:1) adds up to +12 above the starting value and 30% shock resistance; a withdrawal order, missile pressure, a nearby rout or a fallen leader suppress it.
+
+**Breaking and routing.** At 0 or below the group is **Breaking**: it routs after `RESOLVE.breakDelay` (0.6 s), `severeDelay` (0.25 s) at −10 or worse, or `leaderDelay` (0.2 s) during leader panic. Positive morale resets the episode. All break decisions are made before neighbour shocks are applied, so routs cannot domino in one update. On a route the group's order becomes `'rout'`, its target and queue are cleared, and every `BattleControl` order method returns early; each soldier still escapes on its own (`routStep`). A group left quiet for `rallyQuiet` seconds can rally once (back to Hold); a second rout shatters it. A nearby rout shocks other groups within `routeRadius` at most once per second. Leader death shocks every group of that side and suppresses confidence. Nearby enemy deaths reassure by `killGain`, capped at `killCap` per rolling second and at the ceiling.
+
+**Readers.** The HUD (`grpMorale`, unit cards, badges), the battle lab's morale history and the developer panel all read the resolve. The developer panel only allows editing `group.<id>.resolve.mor`. The enemy commander reads it too: once its strength is under `FOE_CMD.beaten` (0.4) of yours and its formations' shared morale, weighted by men, is under `FOE_CMD.broken` (30), the whole enemy army **falls back** (withdraws off its own edge, logged "The enemy falls back.") instead of fighting to the last man. Once begun it does not turn round; withdrawing groups are left alone by `captainFinish`. Escaped enemies are not kills, as with a rout. Your army (even under AI command), allies, beasts and morale-free battles never fall back on their own (`beatenArmy` in `battle/commander.js`, tests in `tests/groupmorale.js`).
+
+Tuning lives in `MORALE`, `CONFIDENCE`, `AWARENESS`, `COHESION`, `LOSS_MEMORY`, `RESOLVE` and `GROUP_RESOLVE`. Coverage: `tests/groupmorale.js` (shared state, normalisation, routing as a group, rally/shatter, HUD/lab agreement), `tests/moralebalance.js` (kill reassurance, breaking timers), `tests/confidence.js`, `tests/moralecontext.js`, `tests/moraleresilience.js`, and the audits `tests/moraleaudit.js` and `tests/confidenceaudit.js`.
+
+## Withdrawal balance
+
+W still orders selected groups to leave through your edge, without attacking on the way. Withdrawal now uses the existing fatigue rules: running spends stamina, tired/spent units have their normal speed penalties, and units below `FATIGUE.runMin` can only walk. Slowing effects still apply. The hero pays from the existing hero stamina pool.
+
+On first contact with a live, non-routing melee threat during a withdrawal order, a unit spends `WITHDRAW.disengage` (0.8 combat seconds) disengaging at `WITHDRAW.backstep` (35%) of its current fatigue/slow-adjusted movement speed. This also applies near the exit. A shooter in Melee Mode counts as a melee threat; a ranged-only or routing foe does not. The bounded phase occurs once per withdrawal order, so a close pursuer cannot reset it forever. Repeating W does not reset it; canceling withdrawal and ordering it again requires disengagement again.
+
+Disengaging units remain vulnerable and still do not strike. An uncontested exit remains immediate; no automatic casualties or additional escape roll were added. Existing battlefield losses, campaign escape odds, rearguard losses, morale/renown penalties, allied overlap rules and routing behavior are unchanged. `tests/withdrawal.js` covers these mechanics using isolated battle fixtures; RTS, retreat settlement and flee suites cover their connection to campaign rules.
+
+## Developer console and battle laboratory
+
+Click **DEV** (top right), press **F2**, or press the physical backquote key to open developer tools. Escape closes the window; simulation stops while it is open. Up/Down recalls command history. Tools work from the title screen, world map and battle; teleporting requires the unobstructed world map.
+
+Campaign cheats affect live state and can persist in normal saves. Keep a separate save if you want to undo them. These are explicit commands, not arbitrary JavaScript.
+
+| Command | Effect |
+| --- | --- |
+| `money 1000` / `money -100` | Add/subtract gold without allowing a negative balance. |
+| `where` | Show world-pixel and tile coordinates. |
+| `tp 1200 800` / `tp tile 50 60` | Teleport to walkable map coordinates; cancel previous travel/chase. |
+| `goto Ashford` | Teleport near a holding; names containing spaces need no quoting. |
+| `get player` / `get player.attr` | Inspect campaign state and discover fields. |
+| `set player.attr.agi 12` | Edit an existing scalar field. Values use JSON syntax, including quotes for strings. |
+| `get game.day` / `set game.day 30` | Inspect state; game writes are limited to day, clock, speed and paused. |
+| `units bow` | List matching unit definition IDs. |
+| `roster` | List current battle unit IDs, sides, health and positions. |
+| `get unit.1` / `set unit.1.s.spd 80` | Inspect a live fighter or override its stats; use IDs from `roster`. |
+| `battle hum_bow 5 hum_foot 5` | Start a paused isolated matchup; `battle` alone opens the selection form. |
+| `pause`, `step 60`, `restart`, `exit` | Control a battle test. Step advances 1–600 frames at 1/60 second per frame and pauses afterward. |
+| `help`, `clear` | Show command examples or clear console output. |
+
+Player edits do not rebuild an already-spawned hero's battlefield stats; edit `unit.<id>.s` to change live stats. Writes cannot replace objects, create arbitrary fields, traverse prototypes, change unit identity/group links, or edit linked shared Unit/campaign objects. Stat edits copy the live stats first so they do not alter the shared unit definitions. Extreme but finite developer values can still invalidate gameplay assumptions; these are debugging tools, not validated progression commands.
+
+The **Battle test** tab builds two armies, each with **1–10 independent groups**, including optional characters. Duplicate troop types stay separate. Add/remove/reorder rows, set counts, names, formations and files (0 = auto). Each troop group permits 1–100 fighters, with a performance limit of **200 fighters per army**. Wedge requires at least six cavalry; formations must fit their field/starting zone. The builder rejects unsuitable formations instead of silently changing them.
+
+Your current hero may occupy one left-side group. Companion choices are independent level-1 templates on either side, with one copy of each companion per army; they do not use or injure your campaign recruits. Characters require count 1. Troop-only tests have no extra fighting hero and do not inherit campaign troop talent/perk bonuses. Both sides start from their own unit kind's base morale. Hero tests use your current build/equipment, including its normal effects on the left army.
+
+Choose terrain, climate, seed, player-side AI, initial pause and morale/routing. **Deploy left army before battle** freezes the field and uses the normal right-click/right-drag placement controls, independently of the campaign deployment preference. The right army deploys automatically in its chosen formations. **Begin** ends deployment; if Start paused is checked, the battle remains paused for stepping. Separation applies when deployment is skipped. The existing `battle hum_bow 5 hum_foot 5` command remains a quick one-group matchup without deployment.
+
+Built-in presets include combined arms, duplicate formations, mounted archers vs footmen, and footmen vs berserkers. Save/load up to 20 named user presets in the separate `ashmark.lab.presets.v1` browser-storage key. Save / replace overwrites only the named user preset; built-ins are read-only. Delete affects only the selected user preset. **Use last test** copies the last successful configuration into the draft. Editing the draft or live stats does not change the configuration used by **Restart**.
+
+The persistent test toolbar offers Play/Pause, Step, Restart, Exit, Tools and **Report**. The report compares each configured group on both sides: surviving, remaining-on-field and dead counts, kills, effective damage dealt/taken, morale samples (recent six shown, older samples in JSON), and route/withdrawal/field-exit timestamps. Routed exits and ordered withdrawals have separate counts and timestamps. Effective damage is post-mitigation HP removed, capped to the target's HP remaining; dodges and overkill do not count. Damage without a configured source is explicitly uncredited. The downloadable JSON includes the normalized configuration and seed, bounded event/morale histories with truncation counts, and a plain final unit snapshot. Survivor counts include living units that exited; kills count lethal damage only. Normal selection, move, attack, facing, speed and formation controls remain available. Escape and the HUD menu open the test tools. Starting a test is allowed from the title screen or unobstructed world map, never over a campaign battle or unresolved choice.
+
+The laboratory swaps `P`/`G` contents for private copies while preserving their record identities, and restores the original nested records, screen and random function on exit. World simulation is not advanced. Saving/loading is blocked during a test; completion freezes the field instead of running campaign settlement, so test rewards, casualties, hero training, ammo and gold edits are discarded. Restart restores the campaign then recreates the same configuration. Seed initializes the existing random stream; exact simulation reproducibility still depends on matching frame/input/render activity.
+
+Implementation: `js/ui/developer.js`, `js/battle/lab.js`; the normal setup and simulation remain in use. `tests/developer.js` exercises commands, real form/keyboard/toolbar events, private stat edits, natural battle completion, restart and restoration, and save/load isolation. `tests/armylab.js` covers independent armies, character templates, validation, deployment, maximum-group setups, restart, presets and actual builder controls. `tests/labdiagnostics.js` covers isolated damage attribution, group metrics, route/withdraw events, morale samples, bounded history and JSON serialization. `tests/visual/developer.js` prepares a desktop/narrow preview (`&tab=console` selects the console); `tests/visual/armylab.js` previews a mixed-army preset and its deployed field.
+
+## Running tests
 
 ```
 bash tests/run-tests.sh            # every suite
@@ -135,6 +282,13 @@ bash tests/run-tests.sh helpers wiki structure  # shared helper contracts and th
 bash tests/run-tests.sh battlesetup rts reinforce groups characters captives besiege siege  # battle setup and integration
 bash tests/run-tests.sh battleresolution loot troopxp captives flee siege besiege reinforce  # field outcomes and campaign settlement
 bash tests/run-tests.sh battlecommands input groups rts structure wiki  # player command routing and real input integration
+bash tests/run-tests.sh attackrules attacks combat charcontrol matchups troopxp rts biomes  # damage, attacks, projectiles and integration
+bash tests/run-tests.sh actorrules rts charcontrol attackrules structure wiki  # focused actor/targeting verification
+bash tests/run-tests.sh firingcones rangedfacing  # actual canvas cone angles and ranged-hero move/attack facing
+bash tests/run-tests.sh shortmoves  # short-move arrival facing, zero-distance orders and explicit facing
+bash tests/run-tests.sh developer input menu session battlesetup battleresolution structure wiki  # developer tools and sandbox isolation
+bash tests/run-tests.sh withdrawal actorrules rts charcontrol battleresolution flee battlecommands developer structure wiki  # withdrawal stamina/disengagement and settlement
+bash tests/run-tests.sh confidence rts actorrules battleresolution withdrawal battlecommands developer structure wiki  # local morale confidence and bounded routing cascades
 ```
 
 On Windows, the dependency-free native runner reuses one isolated headless browser with a fresh tab per suite, avoiding repeated Chrome startup delays:

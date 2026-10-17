@@ -55,33 +55,74 @@ class BattleSetup{
     return{id:this.id++,v:Math.floor(Math.random()*6),type:unit.key,unit,team,x,y,hp:s.hp,max:s.hp,cd:Math.random()*.6,hero:unit.role==='hero',face:team?-1:1,s,spdNow:0,tgt:null,rt:0,swing:0};
   }
   createUnits(){
-    const {opts,env,units}=this,lv=opts.lv||1,mk=(...args)=>this.spawn(...args);
-    // Every soldier comes from its Unit (characters.js): hero, companions, troops and leaders.
-    const hero=this.hero=mk(charOf(P),0,72+44,BH/2);hero.cd=0;vitals();hero.hp=Math.max(1,Math.round(P.hp));units.push(hero);
-    if(!opts.tournament)compsInBand().forEach((id,i)=>{const u=mk(charOf(compInit(id),id),0,hero.x-14,BH/2+(i%2?1:-1)*(16+Math.floor(i/2)*14));u.comp=true;units.push(u)});
-    if(!opts.tournament)formation(P.list,0).forEach(f=>units.push(mk(troopOf(f.t),0,f.x,f.y)));
-    formation(opts.enemies,1).forEach(f=>units.push(mk(troopOf(f.t),1,f.x,f.y)));
-    // Reinforcing lords arrive behind each line, a little apart.
-    const enc=!opts.tournament&&G.enc,side=(ls,team)=>(ls||[]).forEach((l,li)=>formation(l.troops.slice(),team).forEach(f=>{const u=mk(troopOf(f.t),team,clamp(f.x+(team?36:-36)+li*(team?10:-10),12,BW-12),clamp(f.y+(li?18:-18),26,BH-8));u.lord=l;units.push(u)}));
-    if(enc){side(enc.allies,0);side(enc.foes,1)}
-    // A camp's chieftain is promoted in place rather than spawned twice.
-    if(enc)for(const L of battleLeaders(enc)){let u=L.type==='chief'&&L.team===1&&units.find(x=>x.team===1&&x.type==='chief'&&!x.leader);
-      const C=charOf(L.ref);if(!u){u=mk(C,L.team,L.team?BW-96:96,BH/2+(L.team?0:30));units.push(u)}else{u.s=C.fieldStats(env,L.team,lv);u.unit=C;u.type=C.key}u.hp=u.max=u.s.hp;u.leader=L}
+    const {opts,env,units}=this,lv=opts.lv||1,mk=(...args)=>this.spawn(...args),enc=!opts.tournament&&G.enc;
+    const hero=this.hero=mk(charOf(P),0,116,BH/2);hero.cd=0;vitals();hero.hp=Math.max(1,Math.round(P.hp));hero.grp='hero';units.push(hero);
+    if(!opts.tournament)compsInBand().forEach((id,i)=>{const u=mk(charOf(compInit(id),id),0,90,BH/2+(i+1)*18);u.comp=true;u.grp='comp_'+id;units.push(u)});
+    // Each source army retains its own ten-slot budget, even when several armies reinforce the same side.
+    const addArmy=(source,list,team,prefix,player=false,reinforcement=false)=>{
+      const owner=source?asParty(source):asParty({troops:list.slice()}),roster=partyRoster(owner);
+      for(const group of roster.groups)for(const f of formation(Array(group.count).fill(group.type),team)){
+        const u=mk(troopOf(f.t),team,f.x,f.y);u.grp=prefix+group.id;u.sourceGroupId=group.id;u.sourceArmy=owner;
+        if(source&&reinforcement)u.lord=source;units.push(u);
+      }
+    };
+    if(!opts.tournament)addArmy(P,P.list,0,'p_',true);
+    const raw=enc&&['lord','party','patrol'].includes(enc.kind)?enc.ref:null;
+    if(raw&&!(raw instanceof Party)&&!raw.tc&&!raw.troops&&!raw.list)raw.troops=opts.enemies.slice();
+    const main=raw?asParty(raw):null;
+    addArmy(main,opts.enemies,1,'e0_');
+    if(enc){(enc.allies||[]).forEach((l,i)=>addArmy(l,l.troops,0,'a'+i+'_',false,true));(enc.foes||[]).forEach((l,i)=>addArmy(l,l.troops,1,'e'+(i+1)+'_',false,true))}
+    // Characters are their own formations, not mixed into cavalry or infantry.
+    if(enc)for(const L of battleLeaders(enc)){
+      let u=L.type==='chief'&&L.team===1&&units.find(x=>x.team===1&&x.type==='chief'&&!x.leader);
+      const C=L.comp?charOf(compInit(L.comp),L.comp):charOf(L.ref);
+      if(!u){u=mk(C,L.team,L.team?BW-96:96,BH/2+(L.team?0:30));units.push(u)}
+      else{u.s=C.fieldStats(env,L.team,lv);u.unit=C;u.type=C.key}
+      u.hp=u.max=u.s.hp;u.leader=L;if(L.comp)u.comp=true;
+      const owner=L.ref=== (enc.ref&&enc.ref.ld)?main:L.ref;
+      const i=(L.team?enc.foes:enc.allies||[]).indexOf(L.ref),prefix=L.team?(i<0?'e0_':'e'+(i+1)+'_'):'a'+i+'_';
+      u.grp=prefix+'leader';u.sourceArmy=owner;
+    }
   }
   createGroups(){
-    const {units,hero,opts}=this,groups=this.groups=Object.fromEntries(GRPS.map(g=>[g,new BattleControl(g,0)]));
-    units.forEach(u=>{if(u.team===0&&!u.hero&&!u.lord&&!u.leader)u.grp=grpOf(u.s)});hero.grp='hero';
-    for(const g of GRPS){const m=units.filter(u=>u.grp===g);if(!m.length)continue;const gr=groups[g];
-      gr.ax=m.reduce((a,u)=>a+u.x,0)/m.length;gr.ay=m.reduce((a,u)=>a+u.y,0)/m.length;m.forEach(u=>{u.sx=u.x-gr.ax;u.sy=u.y-gr.ay})}
-    foeGroupsInit(units,groups,opts);
+    const {units}=this,groups=this.groups={};
+    for(const u of units){
+      if(!u.grp)u.grp=(u.hero?'hero':u.team?'e0_':'p_')+u.type; // isolated lab fixtures
+      let gr=groups[u.grp];
+      if(!gr){
+        const player=u.team===0&&!u.lord&&!u.leader,source=u.sourceArmy&&partyRoster(u.sourceArmy).groups.find(g=>g.id===u.sourceGroupId);
+        gr=groups[u.grp]=new BattleControl(u.grp,u.team,{player,ally:u.team===0&&!player,foe:u.team===1,
+          role:u.hero||u.comp||u.leader?'hero':grpOf(u.s),type:u.type,sourceGroupId:u.sourceGroupId,
+          name:u.hero?(P.name||'Hero'):u.comp?COMPS[u.type].n:u.leader?u.leader.name:ST[u.type].n,
+          form:source&&FORMS[source.form]?source.form:'line',files:source&&source.files||null});
+        const label=player?partyRoster(P).nameOf(u.hero?'hero':u.comp?'comp_'+u.type:u.sourceGroupId):source?.name;
+        if(label){gr.name=label;gr.customName=true}
+      }
+    }
+    if(!this.opts.sandbox&&!this.opts.tournament)this.playerOrder=partyRoster(P).order.map(id=>groups[id]?id:'p_'+id).filter(id=>groups[id]?.player);
+    // Duplicate types receive distinct labels and non-overlapping deployment lanes.
+    for(const player of [true,false])for(const team of [0,1]){
+      const ids=Object.keys(groups).filter(id=>groups[id].player===player&&groups[id].team===team);
+      if(player&&this.playerOrder)ids.sort((a,b)=>this.playerOrder.indexOf(a)-this.playerOrder.indexOf(b));
+      ids.forEach((id,index)=>{
+        const gr=groups[id],m=units.filter(u=>u.grp===id),same=ids.filter(k=>groups[k].type===gr.type);
+        if(same.length>1&&!gr.customName)gr.name+=' '+(same.indexOf(id)+1);
+        const top=this.field.top,bottom=this.field.bot;
+        gr.ax=team?BW-105:105;gr.ay=top+(bottom-top)*(index+.5)/Math.max(1,ids.length);
+        if(gr.role==='arc')gr.ax+=team?35:-35;if(gr.role==='mag')gr.ax+=team?20:-20;
+        if(this.opts.sandbox){gr.ax=m.reduce((n,u)=>n+u.x,0)/m.length;gr.ay=m.reduce((n,u)=>n+u.y,0)/m.length}
+        else if(gr.role!=='hero'&&!gr.files)gr.files=Math.max(1,Math.min(8,Math.floor((bottom-top)/Math.max(1,ids.length)/FORMS.line.gx)));
+        const S=formSlots(gr.form,m.length,gr.face,gr.files);m.forEach((u,i)=>{u.sx=S[i][0];u.sy=S[i][1];u.x=gr.ax+u.sx;u.y=gr.ay+u.sy});
+      });
+    }
   }
   createState(){
-    const {units,hero,groups,env,opts}=this,FI=measureField();
+    const {units,hero,groups,env,opts}=this,FI=this.field;
     return{units,hero,groups,env,arena:arenaFor(env.c),ftop:FI.top,fbot:FI.bot,obs:opts.tournament?[]:placeObstacles(env,FI.top,FI.bot),sel:'all',rings:[],arrows:[],parts:[],floats:[],slashes:[],corpses:[],aim:0,blocking:false,touchBlock:false,mt:null,over:false,endT:0,kills:0,slain:[],lost:{},heroDown:false,opts,t:0};
   }
   initialize(){
     B.speed=BSPEED.v;B.paused=false;
-    for(const g of [...GRPS,...FOE_GRPS,...ALLY_GRPS])if(g!=='hero'&&B.groups[g])layForm(g);
+    for(const g of Object.keys(B.groups))layForm(g);
     moraleInit(this.units,this.opts);
     fatigueInit(this.units);
     camInit();
@@ -90,7 +131,7 @@ class BattleSetup{
   }
   present(){
     G.mode='battle';hidePanel();bbar.hidden=false;buildSlotBar();setOrderUI();battleSpeedUI();autoUI();updateHint();
-    for(const u of this.units)u.y=clamp(u.y,fieldTop(),fieldBot());for(const g of GRPS)if(g!=='hero'&&B.groups[g].ay)B.groups[g].placeAt(B.groups[g].ax,clamp(B.groups[g].ay,fieldTop(),fieldBot()));
+    for(const u of this.units)u.y=clamp(u.y,fieldTop(),fieldBot());for(const g of playerGroups())if(B.groups[g].ay)B.groups[g].placeAt(B.groups[g].ax,clamp(B.groups[g].ay,fieldTop(),fieldBot()));
     log(this.opts.tournament?'The crowd roars. Defeat the champion.':'The lines meet in the '+this.env.name.toLowerCase()+'. '+this.env.text);
   }
   start(){
@@ -98,8 +139,10 @@ class BattleSetup{
     damageTypesInit();
     this.env=battleEnv(this.opts.tournament);
     this.createUnits();
+    this.field=measureField();
     this.createGroups();
     B=this.createState();
+    if(this.playerOrder)B.playerOrder=this.playerOrder;
     this.initialize();
     this.present();
   }

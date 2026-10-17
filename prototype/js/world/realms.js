@@ -32,7 +32,8 @@ const lordTac=ls=>1+.05*Math.max(0,...ls.filter(o=>W.lords.includes(o)).map(o=>l
 function lordWins(l,foes){lordXp(l,12+2*foes);l.renown=(l.renown||0)+Math.ceil(foes/3);lordTrain(l,'lead',3+foes*.5);lordTrain(l,'tact',2)}
 const cull=(l,frac)=>{if(l instanceof Party)return l.cull(frac);const r=new TroopRoster({tc:countsOf(l.troops)},'tc');r.cull(frac);l.troops=r.list;return l};
 const facRaces=f=>{const rs=[...new Set(fiefsOf(f).flatMap(t=>t.races))];return rs.length?rs:FACS[f].races};
-function armyOf(f,n){const rs=facRaces(f),a=[];for(let i=0;i<n;i++){const c=RACES[rs[rint(0,rs.length-1)]],r=Math.random();a.push(r<.24?c.melee:r<.36?c.shield:r<.5?UP[c.melee][0]:r<.6?UP[c.shield][0]:r<.76?c.ranged:r<.84?UP[c.ranged][0]:r<.91?c.mage:c.horse)}return a}
+function armyOf(f,n){const rs=facRaces(f),a=[],types=[];for(let i=0;i<n;i++){const c=RACES[rs[rint(0,rs.length-1)]],r=Math.random();let type=r<.24?c.melee:r<.36?c.shield:r<.5?UP[c.melee][0]:r<.6?UP[c.shield][0]:r<.76?c.ranged:r<.84?UP[c.ranged][0]:r<.91?c.mage:c.horse;
+    if(!types.includes(type)){if(types.length>=ARMY_LIMIT-1)type=types[i%types.length];else types.push(type)}a.push(type)}return a}
 // a holding's guards come from its people: each new one is a volunteer (t.vol, the pool you recruit from too) who leaves the
 // population for the garrison. A holding needs at least GUARD_FLOOR people left; returns how many it could draft (up to n)
 const GUARD_FLOOR=20;
@@ -131,8 +132,8 @@ function worldDay(){
       if(++l.sd>=2+wallOf(t))resolveSiege(l,t);continue}
     if(l.state==='rest'&&t&&t.owner===l.fac){
       // he hires as you do: the holding's own volunteers, at the price you pay, from his realm's treasury
-      for(let k=0,n=3+Math.max(0,FIEF0-fiefsOf(l.fac).length);k<n&&l.troops.length<lcapOf(l)&&canDraft(t);k++){const c=RACES[t.races[rint(0,t.races.length-1)]],r=Math.random(),type=r<.4?c.melee:r<.6?c.shield:c.ranged;if(!payRealm(l.fac,HIRE[type]||22,t,1))break;draftLocals(t,1);partyAdd(l,type)}
-      const k=l.troops.find(x=>UP[x]);if(k&&Math.random()<.7){const u=UP[k];partyRemove(l,k,1);partyAdd(l,u[rint(0,u.length-1)])}// (one is trained up)
+      for(let k=0,n=3+Math.max(0,FIEF0-fiefsOf(l.fac).length);k<n&&l.troops.length<lcapOf(l)&&canDraft(t);k++){const c=RACES[t.races[rint(0,t.races.length-1)]],r=Math.random(),type=r<.4?c.melee:r<.6?c.shield:c.ranged;if(!partyRoster(asParty(l)).canAdd(type)||!payRealm(l.fac,HIRE[type]||22,t,1))break;draftLocals(t,1);partyAdd(l,type)}
+      const k=l.troops.find(x=>UP[x]);if(k&&Math.random()<.7){const u=UP[k],to=u[rint(0,u.length-1)],r=partyRoster(asParty(l));if(r.canAdd(to)||r.groups.find(g=>g.type===k)?.count===1){partyRemove(l,k,1);partyAdd(l,to)}}// (one is trained up)
     }
     if(l.state==='rest'||Math.random()<.35)lordThink(l);
   }

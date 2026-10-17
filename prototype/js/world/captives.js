@@ -13,7 +13,8 @@ function battleLeaders(e){
   const a=[],lord=(l,team)=>{if(l&&W.lords.includes(l)&&!l.dead)a.push({type:lordUnit(l),team,lv:lordStats(l).lv,name:l.name,ref:l})};
   if(e.kind==='lord')lord(e.ref,1);
   if((e.kind==='party'||e.kind==='camp')&&e.ref&&e.ref.ld)a.push({type:'chief',team:1,lv:e.ref.ld.lv,name:e.ref.ld.name,ref:e.ref.ld});
-  (e.allies||[]).forEach(l=>lord(l,0));(e.foes||[]).forEach(l=>lord(l,1));
+  const reinforcement=(l,team)=>{lord(l,team);if(l.kind==='cparty'&&l.src&&P.comps[l.src.cid])a.push({type:l.src.cid,comp:l.src.cid,team,lv:compInit(l.src.cid).lv,name:COMPS[l.src.cid].n,ref:l})};
+  (e.allies||[]).forEach(l=>reinforcement(l,0));(e.foes||[]).forEach(l=>reinforcement(l,1));
   return a;
 }
 // his fighter: his kind's soldier, made a leader by his level
