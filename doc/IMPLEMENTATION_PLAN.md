@@ -69,7 +69,7 @@ Recommended order, with what already exists to build on:
 
 1. **Unit-type abilities with cooldowns** on the order bar (spear Brace, archer Volley or Fire arrows, cavalry Charge burst, infantry Rally). Build them on `ST[k].actives` and the ability system (`data/abilities.js`, `battle/abilities.js`). Spears already brace automatically, and monsters have `ability`.
 2. **Commander powers for the player** (Rally the line, Hold!, pre-battle Ambush or Scout). These are distinct from the hero's own skills.
-3. **Terrain that matters:** hills (range, downhill charge), river and bridge chokepoints, woods that hide and slow cavalry.
+3. **Terrain that matters:** hills (range, downhill charge), river and bridge chokepoints, woods that hide and slow cavalry. — **designed** in [TERRAIN_DESIGN.md](TERRAIN_DESIGN.md) (all D1–D10 recommendations accepted 2026-10-17); phase 1 (hills, woods, marsh) in progress.
 4. **Juice:** shake and slow motion on a full charge, callouts ("Flanked!", "Routed!"), and a "unit of the battle" in the summary.
 5. **Battle types:** ambush (surrounded, no deploy), defend a caravan, hold the bridge, run down a fleeing enemy.
 6. ~~**Race fighting styles**~~ **Built 2026-10-17** (`TEMPERAMENT` in `commander.js`: dwarves hold, elves skirmish, orcs frenzy, mixed hunts the wavering; human = base). Beasts get no style yet.
