@@ -122,10 +122,10 @@ class BattleResolve{
     this.routed=true;this.shattered=this.rallied;this.confidence=0;this.mor=Math.max(0,this.mor);this.breakT=0;delete this.breakLimit;this.rallyT=0;
     this.routeAt=B.t;this.refreshState();this.sync();const m=this.live(),p=this.point();
     if(B.opts.sandbox&&BattleLab.active){BattleLab.event('group_routed',null,{groupId:this.groupId,shattered:this.shattered});for(const u of m)BattleLab.event('routed',u)}
-    for(const u of m){u.tgt=null;u.shot=null}moraleSay(m[0],this.shattered?'Shattered':'Routs!',this.team?'#ffe08a':'#ff9a90');calloutRout(this);// (its banner: battlehud.js)
+    for(const u of m){u.tgt=null;u.shot=null}moraleSay(m[0],this.shattered?'Shattered':'Routs!',this.team?'#ffe08a':'#ff9a90');calloutRout(this);sfxAt('rout',p.x,p.y);// (its banner: battlehud.js; its horn and cry: audio.js)
     (B.routShocks||(B.routShocks=[])).push({team:this.team,groupId:this.groupId,unitId:this.unitId,x:p.x,y:p.y});B.moraleNext=0;
   }
-  rally(){this.routed=false;this.rallied=true;this.rallyT=0;this.breakT=0;this.mor=Math.max(MORALE.rally,this.mor);const g=this.control;if(g)g.hold();this.refreshState();this.sync();for(const u of this.live()){u.tgt=null;u.shot=null}if(this.live()[0])moraleSay(this.live()[0],'Rallies','#9fe09a');calloutRally(this);if(B.opts.sandbox&&BattleLab.active)BattleLab.event('group_rallied',null,{groupId:this.groupId})}
+  rally(){this.routed=false;this.rallied=true;this.rallyT=0;this.breakT=0;this.mor=Math.max(MORALE.rally,this.mor);const g=this.control;if(g)g.hold();this.refreshState();this.sync();for(const u of this.live()){u.tgt=null;u.shot=null}if(this.live()[0])moraleSay(this.live()[0],'Rallies','#9fe09a');calloutRally(this);if(sfxOn()){const p=this.point();sfxAt('rally',p.x,p.y)}if(B.opts.sandbox&&BattleLab.active)BattleLab.event('group_rallied',null,{groupId:this.groupId})}
 }
 function groupMoraleInit(units){
   for(const [id,g] of Object.entries(B.groups)){const m=units.filter(u=>u.grp===id&&!steady(u));if(m.length)g.resolve=new BattleResolve(id,g.team,m);else delete g.resolve}

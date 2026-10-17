@@ -141,7 +141,7 @@ function calloutRout(r){const g=r.control;if(!g)return;const mine=!r.team;
 function calloutRally(r){const g=r.control;if(g)callout(calloutName(g)+' rallies',r.team,'rally:'+g.id)}
 function calloutFlank(t,src){const g=t.grp&&B.groups[t.grp];if(!g||!g.resolve||src.arrow||steady(t))return;callout(calloutName(g)+' is flanked!',g.team,'flank:'+g.id,{every:CALLOUT.flankEvery})}
 // a group unseen till it charged springs an ambush (terrain.js ambushMul: once a battle a group); yours, logged
-function calloutAmbush(u){const g=u.grp&&B.groups[u.grp],mine=!u.team;callout('Ambush!',u.team,'ambush:'+(u.grp||u.id),{major:true,log:mine,cls:'good'});if(g&&!mine&&typeof log==='function')log(htmlText(calloutName(g))+' springs an ambush!','bad')}
+function calloutAmbush(u){const g=u.grp&&B.groups[u.grp],mine=!u.team;callout('Ambush!',u.team,'ambush:'+(u.grp||u.id),{major:true,log:mine,cls:'good'});sfxAt('charge',u.x,u.y);if(g&&!mine&&typeof log==='function')log(htmlText(calloutName(g))+' springs an ambush!','bad')}
 // (your hero's and a companion's fall are already in the log: applyDmg)
 function calloutLeader(u){const mine=!u.team;callout(mine?'Your leader falls!':'Their leader falls!',u.team,'lead:'+u.id,{major:true,log:!u.hero&&!u.comp,cls:mine?'bad':'good'})}
 // each moment (rt: real seconds): the enemy's fall-back noticed (commander.js B.fallBack), banners age, the next comes up

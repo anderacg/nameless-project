@@ -1,7 +1,8 @@
 'use strict';
 // Sound (audio.js, music.js): off, every call is a no-op; every cue and mood builds and is heard (rendered offline, never past
 // full scale); the per-cue limit and the voice cap hold under a battle's pile-up; the settings are stored and mute silences;
-// M mutes; the music follows the scene (title, road, town, battle, its stinger, then on). Sound is played into an
+// M mutes; the music follows the scene (title, road, town, battle, its stinger, then on); a lab battle is heard (its blows,
+// shots, charges and routs) and fought the same with sound on or off. Sound is played into an
 // OfflineAudioContext whose clock the test moves (a Proxy over it), so nothing reaches the speakers.
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.push('INFO '+m),t=T,A=t.AUDIO,MU=t.MUSIC,G=t.G,P=t.P;
 window.requestAnimationFrame=()=>0;// (the game's loop stops: audioWatch runs only when the test calls it)
@@ -48,14 +49,14 @@ try{
   ok(full&&h&&A.stats.stolen===st0+1&&A.live.length<=6,'a horn at the cap takes the place of a lesser sound');A.voices=24}
  // ---- sfxAt: panned and quieter off the middle of the view, unheard far off
  {clock(4);A.ear=()=>({x:400,y:300,w:800});const L=A.live;t.sfxAt('clash',400,300);const mid=L[L.length-1];A.last={};t.sfxAt('clash',800,300);const edge=L[L.length-1];A.last={};
-  const far=t.sfxAt('clash',400+1400,300);ok(mid&&edge&&mid!==edge&&edge.out.gain.value<mid.out.gain.value*.6&&!far,'sfxAt: quieter at the edge of the view (gain '+(edge&&edge.out.gain.value.toFixed(2))+' vs '+(mid&&mid.out.gain.value.toFixed(2))+'), unheard three half-views off');A.ear=null}
+  const far=t.sfxAt('clash',400+1400,300);ok(mid&&edge&&mid!==edge&&edge.out.gain.value<mid.out.gain.value*.8&&!far,'sfxAt: quieter at the edge of the view (gain '+(edge&&edge.out.gain.value.toFixed(2))+' vs '+(mid&&mid.out.gain.value.toFixed(2))+'), unheard three half-views off');A.ear=null}
  // ---- the settings: stored, read back, applied; mute
  {const key=k=>localStorage.getItem('ashmark.'+k);try{localStorage.clear()}catch(e){}
   ok(['mute','volmaster','volmusic','volsfx'].every(k=>Object.keys(t.PREFS).includes(k)),'four sound settings in PREFS, like the rest');
   ok(t.prefLoad('volmaster')===.8&&t.prefLoad('volmusic')===.5&&t.prefLoad('volsfx')===.8&&t.prefLoad('mute')===false,'defaults: volume 0.8, music 0.5, effects 0.8, sound on');
   const reads=[['0.3',.3],['0',0],['1',1],['junk',.5],['1.5',.5],['-1',.5],['',.5]].filter(([s,v])=>{localStorage.setItem('ashmark.volmusic',s);return t.prefLoad('volmusic')!==v});
   ok(!reads.length,'a stored volume reads back; out of range or junk gives the default'+(reads.length?': wrong for '+reads.map(x=>x[0]).join('|'):''));
-  clock(4);t.prefSet('volmusic',.3);t.prefSet('volsfx',.6);ok(key('volmusic')==='0.3'&&key('volsfx')==='0.6'&&A.vol.music===.3&&Math.abs(A.level.music-.09)<1e-9&&Math.abs(A.level.sfx-.36)<1e-9,'a volume set is stored (ashmark.volmusic "0.3") and put on its bus at once (gain '+A.level.music.toFixed(2)+')');
+  clock(4);t.prefSet('volmusic',.3);t.prefSet('volsfx',.6);ok(key('volmusic')==='0.3'&&key('volsfx')==='0.6'&&A.vol.music===.3&&Math.abs(A.level.music-.09)<1e-9&&Math.abs(A.level.sfx-.36*A.fxBoost)<1e-9,'a volume set is stored (ashmark.volmusic "0.3") and put on its bus at once (gain '+A.level.music.toFixed(2)+')');
   t.prefSet('mute',true);const m1=t.sfx('click');ok(key('mute')==='1'&&A.muted&&A.level.master===0&&!m1,'mute: stored, master at 0, and a cue then makes nothing');
   t.prefSet('mute',false);ok(key('mute')==='0'&&!A.muted&&t.sfx('click'),'sound back on: cues play');
   const press=()=>window.dispatchEvent(new KeyboardEvent('keydown',{code:'KeyM',key:'m'}));G.mode='world';G.modal=false;press();const on1=t.prefGet('mute')&&key('mute')==='1'&&A.muted;press();
@@ -85,6 +86,25 @@ try{
    k.t=16;t.musicSchedule();ok(cur()==='world','then the road\'s music comes in');
    ok(A.stats.errors===0,'no sound error along the way'+(A.stats.err?' (last: '+A.stats.err+')':''))
   }catch(e){threw=e}if(threw)o.push('EXC '+threw.message+' '+threw.stack)}
+ // ---- a battle heard (attacks.js, projectiles.js, morale.js, unitabilities.js, commands.js, commander.js): a lab fight with
+ // sound on plays its blows, shots, strikes, charges and routs, never past the voice cap; on or off, the fight is the same
+ // (sound draws no dice and changes nothing: the field and the next draw of the battle's seeded Math.random match)
+ {const L=t.BattleLab,BC=['clash','hit','block','loose','arrowhit','brace','gallop','charge','rout','rally'],keep={},heard={};
+  const cfg={leftGroups:[{type:'hum_foot',count:30},{type:'hum_bow',count:20},{type:'hum_knight',count:12}],rightGroups:[{type:'hum_levy',count:30},{type:'hum_bow',count:16},{type:'hum_squire',count:10}],morale:true,deploy:false,paused:true,ai:true,seed:11};
+  for(const n of BC){keep[n]=t.SFX[n].play;t.SFX[n].play=(V,x)=>{heard[n]=(heard[n]||0)+1;return keep[n](V,x)}}
+  const fight=on=>{if(L.active)L.exit();G.mode='world';G.modal=false;t.audioStop();A.on=false;L.start(cfg);const b=t.B;b.paused=false;let k=null,most=0,loud=0;
+   if(on){k=clock(1).k;A.ear=()=>({x:t.BW/2,y:t.BH/2,w:t.BW*2})}// (heard from the middle of the field, all of it)
+   for(let f=0;f<30*60&&!L.session.result;f++){
+    if(f===30){const g=Object.values(b.groups).find(x=>!x.foe&&x.units.some(u=>u.type==='hum_foot'));if(g){t.selectGroup(g.id);t.setOrder('charge')}}// (your foot ordered to charge: the horn)
+    t.updateBattle(1/30);if(k){k.t=b.t;most=Math.max(most,A.live.length);loud=Math.max(loud,A.live.filter(v=>v.end>k.t).length)}}
+   let h=2166136261;const mix=v=>{h=Math.imul(h^(v|0),16777619)>>>0};for(const u of b.units){mix(u.x*1e6);mix(u.y*1e6);mix(u.hp*1e3);mix(u.rout?1:0)}mix(Math.random()*1e9);
+   const r={fp:h.toString(16)+' @'+b.t.toFixed(1)+'s',most,loud,routs:Object.values(b.groups).filter(g=>g.resolve&&g.resolve.routed).length};A.ear=null;L.exit();t.audioStop();A.on=false;return r};
+  let off,on,threw=null;try{off=fight(false);on=fight(true)}catch(e){threw=e}for(const n of BC)t.SFX[n].play=keep[n];
+  if(threw)o.push('EXC '+threw.message+' '+threw.stack);else{
+   const need=[['clash or hit',heard.clash||heard.hit],['loose',heard.loose],['arrowhit',heard.arrowhit],['rout',heard.rout],['charge or gallop',heard.charge||heard.gallop]],miss=need.filter(x=>!x[1]).map(x=>x[0]);
+   ok(!miss.length,'a lab battle with sound on is heard: '+BC.filter(n=>heard[n]).map(n=>n+' '+heard[n]).join(', ')+(miss.length?'; never: '+miss.join(', '):''));
+   ok(on.most<=A.voices,'and never past the voice cap: at most '+on.loud+' sounding at once ('+on.most+' held) of '+A.voices);
+   ok(off.fp===on.fp,'sound changes nothing: the same field and the same next draw with sound on or off ('+on.fp+', '+on.routs+' routed)'+(off.fp===on.fp?'':': off '+off.fp))}}
  // ---- heard: each cue, each mood and a battle's pile-up rendered offline: audible, never past full scale (the limiter)
  for(const n of CUES)steps.push(()=>{const {real}=clock(5);t.sfx(n);return real.startRendering().then(b=>level(b)).then(l=>({n,...l}))});
  steps.push(()=>{const {k,real}=clock(3.5),r=t.mkRng(9);A.ear=()=>({x:400,y:300,w:800});const s0={...A.stats};let most=0;

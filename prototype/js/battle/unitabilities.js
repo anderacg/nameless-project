@@ -3,7 +3,8 @@
    on the combat clock (B.t: a pause or deployment freezes both). UNIT_ABILITIES is the registry: n (its name), d (what it does),
    key (its hotkey), who (does one soldier qualify; a group has the ability when at least half of its living, steady, non-routing
    troops do: heroes, companions, lords and beasts never count), dur and cd (combat seconds; the cooldown runs from the moment
-   it is used), use (its effect, at once) and, for the timed ones, holds (still on?) and step (each moment while on). The lasting
+   it is used), use (its effect, at once), snd (the cue heard from the group as it is used: audio.js) and, for the timed ones,
+   holds (still on?) and step (each moment while on). The lasting
    effects are read where they happen: actors.js (a braced soldier stands, a spurred rider is faster and keeps his momentum),
    morale.js chargeMul (a charge on a braced soldier's flank), attacks.js (a fire arrow). An end hook (end) runs once when it runs out. One API for you and an AI captain alike: g.useAbility(id) (BattleControl; false when refused),
    groupAbilities(g) (what it has, each with its state), abilityWhyNot(g,id) (why not now: '' when it can). A group's state:
@@ -11,7 +12,7 @@
 const UNIT_ABILITIES={
   // (spearmen in the fight always brace against a charge on their front, morale.js chargeMul: Brace adds their flanks)
   // push: the share of a push (its distance) that still moves him
-  brace:{n:'Brace',key:'G',dur:8,cd:40,push:.2,who:u=>unitClass(u.s)==='spear',
+  brace:{n:'Brace',key:'G',dur:8,cd:40,snd:'brace',push:.2,who:u=>unitClass(u.s)==='spear',
     d:'Spear and pike infantry plant their spears and stand fast: they stop where they are, a charge on their front or flank gets no charge bonus (spearmen always brace against one on their front; from behind it still hits home), and pushes barely move them. A move, attack, advance or withdraw order ends it.',
     use(g,S){g.hold();S.mv=g.mvId;const m=abilityTroops(g);if(m[0])moraleSay(m[0],'Brace!','#cfe0ff',.8)},
     holds:(g,S)=>g.order==='hold'&&!g.hasTarget&&g.mvId===S.mv&&!(g.queue&&g.queue.length),
@@ -21,14 +22,14 @@ const UNIT_ABILITIES={
     d:'Bows and crossbows loose fire arrows: fire damage (magical, so armour does not stop it; wards, dwarves and some creatures resist it, trolls, wolves and spiders fear it) and 10% more of it.',
     use(g){const m=abilityTroops(g);if(m[0])moraleSay(m[0],'Fire arrows!','#ffb070',.8)}},
   // spd: their speed while it lasts; sta: the stamina it costs each rider
-  spur:{n:'Spur',key:'U',dur:3,cd:35,spd:1.35,sta:12,who:u=>unitClass(u.s)==='cav',
+  spur:{n:'Spur',key:'U',dur:3,cd:35,snd:'gallop',spd:1.35,sta:12,who:u=>unitClass(u.s)==='cav',
     d:'Riders spur their horses: full charge momentum at once and 35% more speed for 3 seconds, at a run, for 12 stamina each.',
     can:g=>(grpStamina(abilityTroops(g))??1)*FATIGUE.max<FATIGUE.spent?'Too tired':'',
     use(g,S){S.run=g.run;S.sig=spurSig(g);for(const u of abilityTroops(g))if(this.who(u)){u.run=CHARGE.run;staSpend(u,this.sta)}g.setRun(true);const m=abilityTroops(g);if(m[0])moraleSay(m[0],'Spur!','#ffe08a',.8)},
     // (run out: back to the pace they had, unless an order since has set its own)
     end(g,S){if(g.run&&!S.run&&spurSig(g)===S.sig)g.setRun(false)}},
   // gain: morale at once (from 0, if they are breaking); morale: needs morale on
-  rally:{n:'Rally',key:'Y',dur:0,cd:60,gain:15,morale:true,who:u=>!u.s.mounted&&!u.s.charge,
+  rally:{n:'Rally',key:'Y',dur:0,cd:60,snd:'rally',gain:15,morale:true,who:u=>!u.s.mounted&&!u.s.charge,
     d:'Officers steady the ranks: +15 shared morale at once (at most 100), and a unit that is Breaking stops breaking. Not while routing, nor with morale off.',
     use(g){const r=g.resolve;r.mor=Math.min(100,Math.max(0,r.mor)+this.gain);r.breakT=0;delete r.breakLimit;r.refreshState();r.sync();const m=abilityTroops(g);if(m[0])moraleSay(m[0],'Rally!','#9fe09a',.8)}}
 };
@@ -59,7 +60,7 @@ function groupAbilities(g){if(typeof g==='string')g=B&&B.groups[g];return g?UNIT
 function useGroupAbility(g,id){
   if(abilityWhyNot(g,id))return false;const A=UNIT_ABILITIES[id];
   if(!Object.hasOwn(g,'abil'))Object.defineProperty(g,'abil',{value:{},writable:true,configurable:true});
-  const S=g.abil[id]={at:B.t,until:B.t+A.dur,readyAt:B.t+A.cd};A.use(g,S);
+  const S=g.abil[id]={at:B.t,until:B.t+A.dur,readyAt:B.t+A.cd};A.use(g,S);if(A.snd&&sfxOn()){const C=g.centre();sfxAt(A.snd,C.x,C.y)}// (its sound, snd: audio.js; a group rallying from a rout has its own, morale.js)
   if(B.opts&&B.opts.sandbox&&BattleLab.active)BattleLab.event('ability',null,{groupId:g.id,ability:id});
   return true;
 }

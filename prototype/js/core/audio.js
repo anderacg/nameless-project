@@ -12,6 +12,7 @@
 function mkRng(seed){let s=seed>>>0;return()=>{s=s+0x6D2B79F5|0;let t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 const AUDIO={on:true,ctx:null,bus:null,noise:null,rng:mkRng(0xA5B1),
   vol:{master:.8,music:.5,sfx:.8},muted:false,// (the settings' values, 0–1; ui.js PREFS keeps them: audioPrefs)
+  fxBoost:2,// the effects bus over its setting (about +6 dB: the cues sit above the music; the limiter holds the peaks)
   voices:24,// at most this many effects at once: past it a new one takes the place of the oldest less important one, or is dropped
   live:[],last:{},stats:{played:0,limited:0,capped:0,stolen:0,errors:0,err:''},
   ear:null};// sfxAt's listener: a function → {x, y, w} (the point heard from, the width of the view), else the battle camera
@@ -48,7 +49,7 @@ if(typeof window!=='undefined'){
   document.addEventListener('visibilitychange',()=>{const c=AUDIO.ctx;if(!c)return;
     try{if(document.hidden){if(c.state==='running'&&c.suspend)quiet(c.suspend())}else if(AUDIO.on&&c.state==='suspended'&&c.resume)quiet(c.resume())}catch(e){}})}
 // the buses follow the settings (AUDIO.vol, AUDIO.muted); AUDIO.level: the gains set, for a look
-function audioVolumes(){const b=AUDIO.bus,c=AUDIO.ctx,L={master:AUDIO.muted?0:volGain(AUDIO.vol.master),music:volGain(AUDIO.vol.music),sfx:volGain(AUDIO.vol.sfx)};AUDIO.level=L;if(!b)return;
+function audioVolumes(){const b=AUDIO.bus,c=AUDIO.ctx,L={master:AUDIO.muted?0:volGain(AUDIO.vol.master),music:volGain(AUDIO.vol.music),sfx:volGain(AUDIO.vol.sfx)*AUDIO.fxBoost};AUDIO.level=L;if(!b)return;
   const t=c.currentTime,set=(g,v)=>{try{g.gain.cancelScheduledValues(t);g.gain.setTargetAtTime(v,t,.03)}catch(e){g.gain.value=v}};
   set(b.master,L.master);set(b.music,L.music);set(b.fx,L.sfx)}
 // the settings read (ui.js PREFS; the sound gallery has none and sets AUDIO.vol itself) and put on the buses
@@ -118,14 +119,14 @@ const SFX={
   town:{g:'world',n:'Entering a town (gate and bell)',pri:3,gap:2,vol:.6,play:V=>{AU.noise(V,{f:520,f1:880,q:9,a:.08,d:.45,amp:.12});AU.tone(V,{type:'triangle',f:95,f1:70,at:.45,d:.18,amp:.3});
     AU.bell(V,{f:330,at:.55,d:2.6,amp:.16});AU.bell(V,{f:247,at:1.35,d:3,amp:.14});return 4.4}},
   day:{g:'world',n:'A day passes (soft chime)',pri:1,gap:2,vol:.4,play:V=>{AU.bell(V,{f:1568,d:1.2,amp:.1,parts:CHIME});AU.bell(V,{f:2093,at:.2,d:1.4,amp:.07,parts:CHIME});return 1.6}},
-  // the battle
+  // the battle (the blows, shots and strikes: at most 16 of them at once, by their max)
   horn:{g:'battle',n:'Battle-start horn',pri:3,gap:2,vol:.75,play:V=>{AU.drum(V,{f:65,d:.6,amp:.5});AU.horn(V,{f:146.8,a:.12,hold:.8,r:.3,amp:.22,bright:4});AU.horn(V,{f:220,at:1.15,a:.1,hold:1.3,r:.6,amp:.24,bright:4.5});return 3.2}},
   charge:{g:'battle',n:'Charge horn',pri:3,gap:1.5,vol:.75,play:V=>{[220,277.2,329.6].forEach((f,i)=>AU.horn(V,{f,at:i*.17,a:.04,hold:.07,r:.06,amp:.2,scoop:.97}));AU.horn(V,{f:440,at:.52,a:.05,hold:.75,r:.3,amp:.22,scoop:.95,bright:4});return 1.7}},
-  clash:{g:'battle',n:'Sword clash',gap:.03,max:6,vol:.55,vary:.08,play:V=>AU.metal(V,{f:1800+V.r()*700,d:.32,amp:.2})},
-  hit:{g:'battle',n:'Blade on flesh',gap:.025,max:6,vol:.7,vary:.1,play:V=>{AU.noise(V,{ft:'lowpass',f:900,f1:200,q:1,d:.12,amp:.5});AU.tone(V,{f:150,f1:60,d:.1,amp:.4});AU.noise(V,{f:850,q:4,at:.01,d:.06,amp:.1});return .16}},
-  block:{g:'battle',n:'Shield block',gap:.03,max:5,vol:.65,vary:.08,play:V=>{AU.tone(V,{type:'triangle',f:210,f1:140,d:.12,amp:.4});AU.noise(V,{f:480,q:2,d:.1,amp:.45});AU.metal(V,{f:1250,d:.12,amp:.05});return .2}},
-  loose:{g:'battle',n:'Arrow loosed',gap:.025,max:6,vol:.45,vary:.1,play:V=>{AU.pluck(V,{f:196,type:'triangle',d:.14,amp:.3,bright:10});AU.noise(V,{f:3200,f1:900,q:2,a:.01,d:.18,amp:.22});return .22}},
-  arrowhit:{g:'battle',n:'Arrow strikes',gap:.025,max:6,vol:.45,vary:.12,play:V=>{AU.noise(V,{f:1800,q:3,d:.04,amp:.45});AU.tone(V,{f:320,f1:170,d:.05,amp:.3});return .08}},
+  clash:{g:'battle',n:'Sword clash',gap:.06,max:4,vol:.55,vary:.08,play:V=>AU.metal(V,{f:1800+V.r()*700,d:.32,amp:.2})},
+  hit:{g:'battle',n:'Blade on flesh',gap:.05,max:3,vol:.7,vary:.1,play:V=>{AU.noise(V,{ft:'lowpass',f:900,f1:200,q:1,d:.12,amp:.5});AU.tone(V,{f:150,f1:60,d:.1,amp:.4});AU.noise(V,{f:850,q:4,at:.01,d:.06,amp:.1});return .16}},
+  block:{g:'battle',n:'Shield block',gap:.06,max:3,vol:.65,vary:.08,play:V=>{AU.tone(V,{type:'triangle',f:210,f1:140,d:.12,amp:.4});AU.noise(V,{f:480,q:2,d:.1,amp:.45});AU.metal(V,{f:1250,d:.12,amp:.05});return .2}},
+  loose:{g:'battle',n:'Arrow loosed',gap:.06,max:3,vol:.45,vary:.1,play:V=>{AU.pluck(V,{f:196,type:'triangle',d:.14,amp:.3,bright:10});AU.noise(V,{f:3200,f1:900,q:2,a:.01,d:.18,amp:.22});return .22}},
+  arrowhit:{g:'battle',n:'Arrow strikes',gap:.05,max:3,vol:.45,vary:.12,play:V=>{AU.noise(V,{f:1800,q:3,d:.04,amp:.45});AU.tone(V,{f:320,f1:170,d:.05,amp:.3});return .08}},
   brace:{g:'battle',n:'Spears brace',gap:.4,max:2,vol:.6,play:V=>{AU.drum(V,{f:62,d:.28,amp:.55,skin:.4});for(let i=0;i<5;i++)AU.tek(V,{f:1300+V.r()*900,q:6,at:.03+V.r()*.12,amp:.12,d:.03});AU.metal(V,{f:2600,at:.1,d:.12,amp:.04});return .4}},
   gallop:{g:'battle',n:'Cavalry gallop (short)',gap:.4,max:3,vol:.55,play:V=>{for(const at of [0,.09,.18,.4,.49,.58,.8,.89,.98]){AU.tone(V,{f:115,f1:68,at,d:.07,amp:.32});AU.noise(V,{ft:'lowpass',f:420,at,d:.05,amp:.22})}return 1.1}},
   rout:{g:'battle',n:'A unit routs (horn and cry)',pri:2,gap:1,vol:.65,play:V=>{AU.horn(V,{f:220,f1:146.8,a:.08,hold:.5,r:.5,amp:.18,scoop:1});AU.noise(V,{f:950,f1:480,q:6,a:.1,d:.9,amp:.09});AU.noise(V,{f:1300,f1:700,q:7,at:.15,a:.1,d:.8,amp:.06});return 1.2}},
@@ -136,6 +137,8 @@ const SFX={
     AU.drum(V,{f:55,d:.9,amp:.5});AU.drum(V,{f:50,at:1.7,d:1.2,amp:.55});return 3.4}}};
 
 /* ---------- playing them ---------- */
+// is anything heard (the battle's hooks ask first, so a cue that needs reckoning costs nothing with sound off)
+const sfxOn=()=>AUDIO.on&&!!AUDIO.ctx&&!AUDIO.muted;
 // a cue, now (opts: vol, pan -1..1, pitch, delay s); false when it does not play (off, muted, unknown, held by its limit)
 function sfx(name,o){
   if(!AUDIO.on||!AUDIO.ctx||AUDIO.muted)return false;const S=SFX[name];if(!S)return false;
@@ -158,7 +161,7 @@ function voiceEnd(v,now){try{if(now!=null){v.out.gain.cancelScheduledValues(now)
 function audioEar(){if(AUDIO.ear)return AUDIO.ear();
   if(typeof B!=='undefined'&&B&&B.cam&&typeof BVW!=='undefined'){const c=B.cam,w=BVW/c.z;return{x:c.x+w/2,y:c.y+BVH/c.z/2,w}}return null}
 // a cue from a point of the field: panned toward its side of the view, quieter the farther it is from the middle (at the
-// view's edge about half as loud), and not played at all three half-views away
+// view's edge about three quarters as loud), and not played at all three half-views away
 function sfxAt(name,x,y,o){if(!AUDIO.on||!AUDIO.ctx||AUDIO.muted||!SFX[name])return false;
   try{const e=audioEar();if(!e)return sfx(name,o);const half=Math.max(1,e.w/2),dx=x-e.x,d=Math.hypot(dx,(y-e.y)*1.2)/half;if(!(d<=3))return false;
-    return sfx(name,Object.assign({},o,{pan:Math.max(-1,Math.min(1,dx/half))*.75,vol:(o&&o.vol!=null?o.vol:1)/(1+d*d*.9)}))}catch(e){AUDIO.stats.errors++;AUDIO.stats.err=name+' at: '+e.message;return false}}
+    return sfx(name,Object.assign({},o,{pan:Math.max(-1,Math.min(1,dx/half))*.75,vol:(o&&o.vol!=null?o.vol:1)/(1+d*d*.35)}))}catch(e){AUDIO.stats.errors++;AUDIO.stats.err=name+' at: '+e.message;return false}}

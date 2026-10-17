@@ -53,6 +53,7 @@ function setOrder(o){
   // hold: where they stand; withdraw: off your edge (battlecontrol.js))
   playerOrder(selGroups(),()=>{for(const g of selGroups()){const gr=B.groups[g];if(pace)gr.setWalk(o==='advance');else if(o==='withdraw')gr.withdraw();else if(o==='hold')gr.hold()}});
   log(htmlText(selLabel())+': '+(pace?o==='charge'?'at a run.':'at a walk.':o+'.'));
+  if(o==='charge'&&sfxOn()){const gs=selGroups();if(gs.length)sfx(gs.some(g=>grpUnits(g).some(u=>unitClass(u.s)==='cav'))?'gallop':'charge')}// (riders' hooves, else the horn)
 }
 // a group's flag on or off for the selection: walk, firm (hold ground), cease (cease fire), skirmish, melee (shooters' blades)
 const FLAG_N={walk:['walk','run'],firm:['hold their ground','fight freely'],shieldWall:['shield wall requested for eligible soldiers','shields lowered'],cease:['cease fire','fire at will'],skirmish:['skirmish','stand'],melee:['melee mode on: they fight whoever reaches them','melee mode off: they keep shooting, point blank']};

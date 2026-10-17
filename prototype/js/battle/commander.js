@@ -602,7 +602,7 @@ function captainCav(c,id){
   else if(g.phase==='regroup'){g.rest=g.t<tun(T,X,'restMax')&&st<tun(T,X,'rested')&&(g.rest||st<FATIGUE.tired);if(!g.rest&&(d2(C,{x:g.ax,y:g.ay})<25||g.t>4)&&into()){g.phase='charge';g.t=0;att(pick())}}
   if(g.phase!=='flank'&&g.flankSide!=null)delete g.flankSide;// (off the flank: a fresh choice next time)
   // (Spur: a fresh charge (spurWin s since it was ordered) on a mark spur[0]-spur[1] px off, with breath for it: full momentum at once)
-  if(g.phase==='charge'&&was!=='charge')g.chargeAt=B.t;
+  if(g.phase==='charge'&&was!=='charge'){g.chargeAt=B.t;sfxAt('gallop',C.x,C.y)}// (the hooves heard: audio.js)
   if(g.phase==='charge'&&B.t-(g.chargeAt??-99)<=X.spurWin&&st>=X.spurSta){const p=sightGoal(g,team)||g.targetPoint(),d=p?d2(p,C):1e9;if(d>=X.spur[0]&&d<=X.spur[1]&&!abilityWhyNot(g,'spur'))g.useAbility('spur')}}
 // your hero, under the AI
 function captainHero(c,id){const {M,inf,clash}=c,g=B.groups[id];if(!grpUnits(id).some(u=>!u.rout))return;
