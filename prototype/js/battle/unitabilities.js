@@ -4,14 +4,15 @@
    key (its hotkey), who (does one soldier qualify; a group has the ability when at least half of its living, steady, non-routing
    troops do: heroes, companions, lords and beasts never count), dur and cd (combat seconds; the cooldown runs from the moment
    it is used), use (its effect, at once) and, for the timed ones, holds (still on?) and step (each moment while on). The lasting
-   effects are read where they happen: actors.js (a braced soldier stands, a spurred rider is faster), attacks.js (a charge on a
-   braced soldier, a fire arrow). One API for you and an AI captain alike: g.useAbility(id) (BattleControl; false when refused),
+   effects are read where they happen: actors.js (a braced soldier stands, a spurred rider is faster and keeps his momentum),
+   morale.js chargeMul (a charge on a braced soldier's flank), attacks.js (a fire arrow). An end hook (end) runs once when it runs out. One API for you and an AI captain alike: g.useAbility(id) (BattleControl; false when refused),
    groupAbilities(g) (what it has, each with its state), abilityWhyNot(g,id) (why not now: '' when it can). A group's state:
    g.abil[id]={at,until,readyAt}, created on first use and not enumerable (never in saves or group snapshots) ---------- */
 const UNIT_ABILITIES={
-  // dmg: a charge's first blow on a braced soldier's front or flank; push: the share of a push (its distance) that still moves him
-  brace:{n:'Brace',key:'G',dur:8,cd:40,dmg:.5,push:.2,who:u=>unitClass(u.s)==='spear',
-    d:'Spear and pike infantry plant their spears and stand fast: they stop where they are, the first blow of any charge on their front or flank does half damage, and pushes barely move them. A move, attack, advance or withdraw order ends it.',
+  // (spearmen in the fight always brace against a charge on their front, morale.js chargeMul: Brace adds their flanks)
+  // push: the share of a push (its distance) that still moves him
+  brace:{n:'Brace',key:'G',dur:8,cd:40,push:.2,who:u=>unitClass(u.s)==='spear',
+    d:'Spear and pike infantry plant their spears and stand fast: they stop where they are, a charge on their front or flank gets no charge bonus (spearmen always brace against one on their front; from behind it still hits home), and pushes barely move them. A move, attack, advance or withdraw order ends it.',
     use(g,S){g.hold();S.mv=g.mvId;const m=abilityTroops(g);if(m[0])moraleSay(m[0],'Brace!','#cfe0ff',.8)},
     holds:(g,S)=>g.order==='hold'&&!g.hasTarget&&g.mvId===S.mv&&!(g.queue&&g.queue.length),
     step(g,S,dt){const k=Math.pow(.004,dt*(1/this.push-1));/* (on top of a push's own fading, .004 a combat second: battle.js) */for(const u of g.units)if((u.kx||u.ky)&&this.who(u)){u.kx*=k;u.ky*=k}}},
@@ -23,13 +24,17 @@ const UNIT_ABILITIES={
   spur:{n:'Spur',key:'U',dur:3,cd:35,spd:1.35,sta:12,who:u=>unitClass(u.s)==='cav',
     d:'Riders spur their horses: full charge momentum at once and 35% more speed for 3 seconds, at a run, for 12 stamina each.',
     can:g=>(grpStamina(abilityTroops(g))??1)*FATIGUE.max<FATIGUE.spent?'Too tired':'',
-    use(g){for(const u of abilityTroops(g))if(this.who(u)){u.run=CHARGE.run;staSpend(u,this.sta)}g.setRun(true);const m=abilityTroops(g);if(m[0])moraleSay(m[0],'Spur!','#ffe08a',.8)}},
+    use(g,S){S.run=g.run;S.sig=spurSig(g);for(const u of abilityTroops(g))if(this.who(u)){u.run=CHARGE.run;staSpend(u,this.sta)}g.setRun(true);const m=abilityTroops(g);if(m[0])moraleSay(m[0],'Spur!','#ffe08a',.8)},
+    // (run out: back to the pace they had, unless an order since has set its own)
+    end(g,S){if(g.run&&!S.run&&spurSig(g)===S.sig)g.setRun(false)}},
   // gain: morale at once (from 0, if they are breaking); morale: needs morale on
   rally:{n:'Rally',key:'Y',dur:0,cd:60,gain:15,morale:true,who:u=>!u.s.mounted&&!u.s.charge,
     d:'Officers steady the ranks: +15 shared morale at once (at most 100), and a unit that is Breaking stops breaking. Not while routing, nor with morale off.',
     use(g){const r=g.resolve;r.mor=Math.min(100,Math.max(0,r.mor)+this.gain);r.breakT=0;delete r.breakLimit;r.refreshState();r.sync();const m=abilityTroops(g);if(m[0])moraleSay(m[0],'Rally!','#9fe09a',.8)}}
 };
 const UNIT_ABIL_ORDER=Object.keys(UNIT_ABILITIES);
+// a group's orders as Spur found them (a new order since: its pace is that order's)
+const spurSig=g=>[g.order,g.targetGroupId,g.targetUnitId,g.mvId,g.queue&&g.queue.length].join();
 // the troops an ability looks at: living, not routing, not a character or a beast
 const abilityTroops=g=>g.units.filter(u=>!u.rout&&!steady(u));
 function groupHasAbility(g,id){const A=UNIT_ABILITIES[id];if(!g||!A)return false;const m=abilityTroops(g);return m.length>0&&m.filter(A.who).length*2>=m.length}
@@ -62,7 +67,7 @@ function useGroupAbility(g,id){
 // still in the air trail embers; the order bar's cooldowns are redrawn now and then (morale's own refresh stops with morale off)
 function abilityStep(g,dt){
   if(!g.abil)return;
-  for(const id in g.abil){const S=g.abil[id],A=UNIT_ABILITIES[id];if(!(B.t<S.until))continue;if(A.holds&&!A.holds(g,S)){S.until=B.t;continue}if(A.step)A.step(g,S,dt)}
+  for(const id in g.abil){const S=g.abil[id],A=UNIT_ABILITIES[id];if(!(B.t<S.until)){if(A.end&&!S.ended){S.ended=true;A.end(g,S)}continue}if(A.holds&&!A.holds(g,S)){S.until=B.t;continue}if(A.step)A.step(g,S,dt)}
   const F=g.abil.fire;if(F&&B.t<F.until+4)for(const a of B.arrows)if(a.src&&a.src.fireArrow&&a.by&&a.by.grp===g.id&&(a.emb=(a.emb||0)+1)%2)vfx({k:'ember',x:a.x,y:a.y-(a.arc?4+Math.max(0,a.z):0),vx:-a.vx*.05,vy:-8,life:.22,col:UNIT_ABILITIES.fire.col});
   if(g.player&&B.t>=(B.abilUiAt||0)){B.abilUiAt=B.t+.25;bhudAbilities()}
 }
@@ -73,8 +78,8 @@ function unitAbility(u,id){const g=u&&u.grp&&B.groups[u.grp];return !!(g&&g.abil
 const abilitySpeed=u=>unitAbility(u,'spur')?UNIT_ABILITIES.spur.spd:1;
 // braced, he stands where he is (actors.js aiUnit)
 const abilityStands=u=>unitAbility(u,'brace');
-// a charge's first blow (attacks.js attack, read before chargeMul spends the run): on a braced soldier's front or flank, less
-function braceMul(u,t){if(!t||!unitAbility(t,'brace')||u.s.range)return 1;return momentum(u)>=(u.s.charge?CHARGE.min:CHARGE.foot_min)&&sideOf(t,u)!=='rear'?UNIT_ABILITIES.brace.dmg:1}
+// spurred, he keeps his momentum while he is not chasing (actors.js aiUnit)
+const abilityMomentum=u=>unitAbility(u,'spur');
 // a shot (attacks.js attack): the shooter's stats as his arrow carries them, fire arrows their fire copy (made once a kind)
 const FIRE_ARROW_SRC=new WeakMap();
 function arrowSrc(u,s){if(!unitAbility(u,'fire'))return s;let f=FIRE_ARROW_SRC.get(s);if(!f){f={...s,dt:'fire',bolt:UNIT_ABILITIES.fire.col,fireArrow:true};FIRE_ARROW_SRC.set(s,f)}return f}

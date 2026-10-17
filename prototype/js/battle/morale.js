@@ -52,7 +52,8 @@ function moraleBreaking(u,dt){
 }
 // Ratios use the formation's STARTING roster/health, not the shrinking number left alive.
 const GROUP_RESOLVE={hurt:35,death:45,attrition:35,wounds:12,recent:65,strainCap:30,window:5,history:20,bucket:.25,
-  missileMin:.01,missileFull:.25,missileRate:8,answer:.35,quietAfter:3,rallyQuiet:3,routeRadius:140};
+  missileMin:.01,missileFull:.25,missileRate:8,answer:.35,quietAfter:3,rallyQuiet:3,routeRadius:140,fade:1};
+// (fade: per combat second, morale above its ceiling (a Rally, a war cry, an enemy leader's fall) drifts back down to it)
 class BattleResolve{
   constructor(groupId,team,m,unitId=null){
     this.groupId=groupId;this.unitId=unitId;this.team=team;this.initialCount=m.length;this.initialHP=Math.max(1,m.reduce((n,u)=>n+u.max,0));
@@ -104,6 +105,7 @@ class BattleResolve{
     moraleBreaking(this,0);const cap=this.ceiling()-this.lossStrain;
     if(quiet)this.mor+=Math.min(Math.max(0,cap-this.mor),(MORALE.back+(this.live().some(inspired)?1:0))*dt);
     if(this.confidence>0)this.mor+=Math.min(Math.max(0,cap-this.mor),CONFIDENCE.recover*this.confidence*dt);
+    const top=this.ceiling();if(this.mor>top)this.mor=Math.max(top,this.mor-GROUP_RESOLVE.fade*dt);// (a boost is for a while)
     this.refreshState();this.sync();return false;
   }
   route(){
@@ -166,9 +168,9 @@ function sideOf(t,src){
 function moraleSay(u,t,c,life){if(B.floats.some(f=>f.t===t&&Math.abs(f.x-u.x)<40&&Math.abs(f.y-u.y+22)<30))return;B.floats.push({x:u.x,y:u.y-22,t,life:life||.8,c})}
 // a blow's weight by the side it lands on (and a shake to its morale)
 function flankMul(t,src){
-  if(!src||B.noMorale||t.hero&&MANUAL_HERO)return 1;const s=sideOf(t,src);if(s==='front')return 1;
-  if(!steady(t)&&B.t-(t.sideShockAt??-Infinity)>=RESOLVE.flankEvery){shake(t,MORALE[s]);t.sideShockAt=B.t}t.flankAt=B.t;const r=resolveOf(t);if(r)r.flankAt=B.t;
-  if(!src.arrow)moraleSay(t,s==='rear'?'Rear!':'Flank!','#ffb04a',.5);calloutFlank(t,src);// (its banner, now and then: battlehud.js)
+  if(!src||B.opts&&B.opts.tournament||t.hero&&MANUAL_HERO)return 1;const s=sideOf(t,src);if(s==='front')return 1;// (a tournament: no flank bonus; morale off still has it, only the shake and banner go)
+  if(!B.noMorale){if(!steady(t)&&B.t-(t.sideShockAt??-Infinity)>=RESOLVE.flankEvery){shake(t,MORALE[s]);t.sideShockAt=B.t}t.flankAt=B.t;const r=resolveOf(t);if(r)r.flankAt=B.t;calloutFlank(t,src)}// (its banner, now and then: battlehud.js)
+  if(!src.arrow)moraleSay(t,s==='rear'?'Rear!':'Flank!','#ffb04a',.5);
   return 1+(FLANK[s]-1)*(src.arrow?FLANK.arrow:1);
 }
 // a blow on morale: by the share of health it took
@@ -267,15 +269,17 @@ function drawExit(){
 }
 // charge momentum: how far it has run at its target, 0 to 1
 const momentum=u=>clamp((u.run||0)/CHARGE.run,0,1);
-// a charge's weight on its first blow (spearmen brace against riders); its shock to the one it hits. The run is spent.
+/* a charge's weight on its first blow; its shock to the one it hits. The run is spent, and its stamina only once it counts as a
+   charge (riders CHARGE.min, foot CHARGE.foot_min). Spearmen still in the fight brace against a charge on their front (Brace:
+   their flanks too, unitabilities.js): no bonus, no shock. A deep block blunts the bonus, never from behind (formations.js formCharge) */
+function spearBraced(t,u){if(unitClass(t.s)!=='spear'||t.rout||withdrawing(t))return false;const side=sideOf(t,u);return side==='front'||side==='flank'&&unitAbility(t,'brace')}
 function chargeMul(u,t){
-  const m=momentum(u),s=u.s;u.run=0;if(m>=CHARGE.min)fatigueCharge(u,m);// (the charge spends the runner's stamina: fatigue.js)
-  if(B.noMorale&&!s.charge)return 1;
-  if(s.charge){if(m<CHARGE.min)return 1;if(unitClass(t.s)==='spear'){B.floats.push({x:t.x,y:t.y-22,t:'Braced',life:.6,c:'#cfe0ff'});return 1}
-    vfxCharge(u,t,m);chargeJolt(u,m);fx(t.x,t.y-6,'#fff',4);if(!steady(t)&&t.mor!=null){shake(t,CHARGE.shock*m);t.shockAt=B.t;const r=resolveOf(t);if(r)r.shockAt=B.t}chargePush(u,t,m);if(m>.6)moraleSay(t,'Charge!','#fff',.6);
-    return (1+CHARGE.cav*m)*formCharge(u,t)}
-  if(s.range||m<CHARGE.foot_min)return 1;if(unitClass(t.s)==='spear'){B.floats.push({x:t.x,y:t.y-22,t:'Braced',life:.6,c:'#cfe0ff'});return 1}
-  if(!steady(t)&&t.mor!=null){shake(t,CHARGE.footShock*m);t.shockAt=B.t;const r=resolveOf(t);if(r)r.shockAt=B.t}chargeJolt(u,m);chargePush(u,t,m);return 1+CHARGE.foot*m;
+  const m=momentum(u),s=u.s;u.run=0;if(s.range&&!s.charge||m<(s.charge?CHARGE.min:CHARGE.foot_min))return 1;fatigueCharge(u,m);// (the charge spends the runner's stamina: fatigue.js)
+  if(spearBraced(t,u)){B.floats.push({x:t.x,y:t.y-22,t:'Braced',life:.6,c:'#cfe0ff'});return 1}
+  if(s.charge){vfxCharge(u,t,m);chargeJolt(u,m);fx(t.x,t.y-6,'#fff',4);if(!B.noMorale&&!steady(t)&&t.mor!=null){shake(t,CHARGE.shock*m);t.shockAt=B.t;const r=resolveOf(t);if(r)r.shockAt=B.t}chargePush(u,t,m);if(m>.6)moraleSay(t,'Charge!','#fff',.6);
+    return 1+CHARGE.cav*m*formCharge(u,t,sideOf(t,u))}
+  if(B.opts&&B.opts.tournament)return 1;// (a tournament: no foot charges; morale off still has them, only the shake goes)
+  if(!B.noMorale&&!steady(t)&&t.mor!=null){shake(t,CHARGE.footShock*m);t.shockAt=B.t;const r=resolveOf(t);if(r)r.shockAt=B.t}chargeJolt(u,m);chargePush(u,t,m);return 1+CHARGE.foot*m*formCharge(u,t,sideOf(t,u));
 }
 // a group's morale (unit cards and the icons over groups): the average, how many waver or run, its state, and what weakens it now
 // state: steady (60+), shaken (30+), wavering, routing (most of them running), shattered (all running, broken for good)

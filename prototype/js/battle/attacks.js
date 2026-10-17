@@ -54,7 +54,7 @@ function outOfAmmo(u){u.s={...u.s,range:0,reach:Math.max(u.s.reach||0,10),dmg:u.
 function attack(u,t){
   const s=u.s;u.cd=s.cd*(.9+Math.random()*.2);u.atkAt=B.t;
   if(s.range){const flat=s.magic||s.flat,E=aimErr(u);fireBolt(u,Math.atan2(t.y-(flat?u.y-6:u.y),t.x-u.x)+spreadOf(E),s.dmg*(.85+Math.random()*.3)*(u.buffT>0?1.3:1)*arrowMul(u),arrowSrc(u,s),Math.hypot(t.x-u.x,t.y-u.y),{sc:E.d})}// (fire arrows: unitabilities.js)
-  else{const bm=braceMul(u,t);/* (a charge into braced spears, read before the run is spent: unitabilities.js) */let dm=s.dmg*(.8+Math.random()*.4)*chargeMul(u,t)*tiredMul(u).dmg*bm;fatigueBlow(u);// (a charge: by how far it ran, morale.js; tired, softer: fatigue.js)
+  else{let dm=s.dmg*(.8+Math.random()*.4)*chargeMul(u,t)*tiredMul(u).dmg;fatigueBlow(u);// (a charge: by how far it ran, braced spears blunt it, morale.js; tired, softer: fatigue.js)
     hit(u,t,dm);meleeFollow(u,t,dm)}
   if(s.range&&!u.hero){if(u.ammo==null)u.ammo=quiverOf(s);if(--u.ammo<=0)outOfAmmo(u)}
 }

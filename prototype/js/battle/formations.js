@@ -28,7 +28,7 @@ function wedgeMembers(g){
 }
 const wedgeBonus=n=>n<WEDGE.min?0:Math.min(WEDGE.cap,WEDGE.start+(n-WEDGE.min)*WEDGE.step);
 const FORM_WHO={melee:u=>!u.s.range&&!u.s.charge,shield:u=>!u.s.range&&!u.s.mounted&&tagsOf(u.s).includes('shield'),foot:u=>!u.s.mounted,cav:u=>!!u.s.charge},WHO_N={melee:'melee infantry',shield:'shielded infantry',foot:'foot troops',cav:'cavalry'};
-const DEPTH={ranks:4,charge:.7};// a block this many ranks deep takes a charge at this much of its force
+const DEPTH={ranks:4,charge:.7};// a block this many ranks deep takes a charge's bonus at this much of its force (not from behind)
 const FORM_DRAG=8;// a right-click dragged further than this lays out a line
 // does formation f suit group g (most of its soldiers are of the kind it is for)
 function formFits(g,f){const F=FORMS[f];if(!F)return false;if(!F.who)return true;if(g==='hero')return false;const m=grpUnits(g);return m.length>0&&m.filter(FORM_WHO[F.who]).length*2>=m.length}
@@ -57,8 +57,9 @@ function formTaken(t,src){
   if(src&&g&&shieldWallActive(t)){const a=Math.atan2(src.y-t.y,src.x-t.x);if(angGap(a,g.face||0)<1.05)k*=WALL.front}
   return k;
 }
-// a charge: its force by the charger's formation (a wedge) and the depth of the block it hits
-const formCharge=(att,t)=>{const m=att.s.charge&&att.grp?wedgeMembers(att.grp):[],sh=t.grp&&B.groups[t.grp]&&grpShape(t.grp);return (1+(m.includes(att)?wedgeBonus(m.length):0))*(sh&&sh.ranks>=DEPTH.ranks?DEPTH.charge:1)};
+// a charge's bonus (morale.js chargeMul: 1+bonus*this), by the charger's formation (a wedge) and the depth of the block it hits
+// (side: where it lands, sideOf; depth never blunts a charge from behind)
+const formCharge=(att,t,side)=>{const m=att.s.charge&&att.grp?wedgeMembers(att.grp):[],sh=side!=='rear'&&t.grp&&B.groups[t.grp]&&grpShape(t.grp);return (1+(m.includes(att)?wedgeBonus(m.length):0))*(sh&&sh.ranks>=DEPTH.ranks?DEPTH.charge:1)};
 // Only an individually supported shield-wall soldier pays the ability's speed cost.
 const formPace=u=>shieldWallActive(u)?WALL.spd:1;
 

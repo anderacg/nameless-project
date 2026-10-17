@@ -237,6 +237,14 @@ Tuning lives in `MORALE`, `CONFIDENCE`, `AWARENESS`, `COHESION`, `LOSS_MEMORY`, 
 
 Tunables: `AI_TACTICS`, `CHAR_FALL` in `battle/commander.js`. Tests: `tests/aitactics.js`, `tests/charfallback.js`. Balance: with the AI rallying, equal infantry fights rout at ~46–49% losses (~8 s).
 
+## Charges, bracing and morale-off rules (effect audit, 2026-10-17)
+
+- **Spearmen brace** only against a charge on their **front**, and only while fighting (not routing or withdrawing): no charge bonus, push or shock. Brace (the ability) extends that to the flanks; a charge into the **rear** always hits home (`spearBraced` in morale.js).
+- **Depth and wedge scale only the charge bonus**: a block 4+ ranks deep takes 70% of the bonus (not from behind), so a weak charge never does less than no charge; a full 16-rider wedge is about ×2.17.
+- **Charge stamina** is spent only when the charge actually earns its bonus (cavalry from `CHARGE.min`, foot from `CHARGE.foot_min`; characters likewise).
+- **Morale off** (some lab/test battles) skips only morale effects: flank/rear damage and foot-charge damage still apply. Tournaments still have no flank or foot-charge bonus.
+- Morale boosts above the recovery ceiling (Rally, war cry, an enemy leader's fall) fade at `GROUP_RESOLVE.fade` per combat second. Tests: `tests/effectaudit.js`.
+
 ## Battle feedback
 
 **Callouts** (`callout*` in `ui/battlehud.js`, tuned by `CALLOUT`): a short side-coloured banner at the top middle of the field for the big moments: a group routs, is shattered, rallies or is flanked; a leader falls; the enemy falls back (read from `B.fallBack`). Each moment is called once (the same key stays quiet for `same` combat seconds; a flank at most once per group every `flankEvery` s; arrows and steady units never trigger it). At most one new banner every `gap` real seconds, at most two on screen; a burst is cut to a short queue, minor callouts first. Your groups' routs and shatters and a leader's fall also go to the battle log; the enemy breaking is logged once at the end. No callouts in tournaments.
@@ -251,10 +259,10 @@ Some groups have a special order with a cooldown (`battle/unitabilities.js`, reg
 
 | Ability | Key | Who | Effect | Lasts | Cooldown |
 |---|---|---|---|---|---|
-| **Brace** | G | spear and pike infantry | stands fast where it is; the first blow of any charge on its front or flank does half damage; pushes barely move it; any move, attack, advance or withdraw order ends it | 8 s | 40 s |
+| **Brace** | G | spear and pike infantry | stands fast where it is; a charge on its front or flank gets no charge bonus (spearmen always brace on their front while fighting; Brace adds the flanks; the rear is never braced); pushes barely move it; any move, attack, advance or withdraw order ends it | 8 s | 40 s |
 | **Fire arrows** | I | bow and crossbow archers | shots deal fire damage (magical: armour doesn't stop it; wards and resistances apply), 10% more | 12 s | 45 s |
-| **Spur** | U | cavalry | full charge momentum at once and 35% more speed, at a run, for 12 stamina per rider | 3 s | 35 s |
-| **Rally** | Y | foot units | +15 shared morale (at most 100) and an end to Breaking; not while routing or with morale off | at once | 60 s |
+| **Spur** | U | cavalry | full charge momentum at once and 35% more speed, at a run, for 12 stamina per rider; momentum is kept while it lasts, then the group returns to its earlier pace unless given a new order | 3 s | 35 s |
+| **Rally** | Y | foot units | +15 shared morale (at most 100; boosts above the recovery ceiling fade at `GROUP_RESOLVE.fade`, 1 per combat second) and an end to Breaking; not while routing or with morale off | at once | 60 s |
 
 API for captains: `g.abilities()` lists `{id,active,left,cooldown,why}` (`why===''`: usable now) and `g.useAbility(id)` returns false when refused. Per-group state `g.abil` is non-enumerable (out of snapshots and saves). Tests: `tests/unitabilities.js`. Every AI captain uses them too (`AI_TACTICS` in commander.js): Brace when riders or a big beast with momentum come within 80 px of a spear group's front (left braced while one is within 120 px), Rally a wavering or Breaking group, Spur a fresh charge on a mark 60–140 px off with stamina ≥ 45, Fire arrows when their mark wears mail or plate or is weak to fire. Tests: `tests/aitactics.js`.
 

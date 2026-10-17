@@ -41,16 +41,19 @@ window.RUN=()=>{const t=T,L=t.BattleLab,o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL '
  const kb=spear.units[4],ku=other.units[4],kb0={x:kb.x,y:kb.y},ku0={x:ku.x,y:ku.y};kb.kx=ku.kx=240;kb.ky=ku.ky=0;let db=0,du=0;
  for(let i=0;i<40;i++){L.step(1);db=Math.max(db,disp(kb,kb0));du=Math.max(du,disp(ku,ku0))}ok(db<du*.4,'a push barely moves a braced spearman ('+db.toFixed(1)+' px against '+du.toFixed(1)+' px unbraced)');
  spear.moveTo(300,90);ok(!t.abilityActive(spear,'brace'),'a move order ends the brace at once');L.step(1);ok(!(t.B.t<spear.abil.brace.until),'and its timer is closed');
- // charge damage: a full-momentum knight into the braced and the unbraced line, same random stream
- const chargeHit=braced=>{const f2=start([{type:'hum_spear',count:10}],[{type:'hum_knight',count:3},{type:'orc_grunt',count:3}]),g=f2.mine[0],kn=f2.foes[0].units[0],tg=g.units[0];
-  if(braced)g.useAbility('brace');tg.hp=tg.max=999;kn.x=tg.x+12;kn.y=tg.y;kn.run=t.CHARGE.run;kn.sta=100;const was=tg.hp;seeded(77,()=>t.attack(kn,tg));
-  const gr=f2.foes[1].units[0],tg2=g.units[1];tg2.hp=tg2.max=999;gr.x=tg2.x+12;gr.y=tg2.y;gr.run=t.CHARGE.run;gr.sta=100;const was2=tg2.hp;seeded(78,()=>t.attack(gr,tg2));
-  return[was-tg.hp,was2-tg2.hp,kn.run]};
- const [cu,fu]=chargeHit(false),[cb,fb,run]=chargeHit(true);
- ok(cb>0&&cb<=cu*.6,'a rider charging braced spears does about half the damage ('+cb+' against '+cu+' unbraced)');
- ok(fb>0&&fb<=fu*.6,'so does a charging footman: Brace holds against any charger ('+fb+' against '+fu+')');ok(run===0,'the charge is spent on that blow as before');
- {const f3=start([{type:'hum_spear',count:10}],[{type:'hum_knight',count:3}]),g=f3.mine[0],kn=f3.foes[0].units[0],tg=g.units[0];g.useAbility('brace');kn.x=tg.x-12;kn.y=tg.y;kn.run=t.CHARGE.run;
-  ok(t.braceMul(kn,tg)===1,'a charge from behind is not braced against');kn.x=tg.x+12;kn.run=0;ok(t.braceMul(kn,tg)===1,'nor is a blow without momentum')}
+ // charge damage: a full-momentum knight and a running footman into the braced and the unbraced line from one side, same random
+ // stream; run 0 is the same blow walked in. Spearmen always brace against a charge on their front; Brace adds the flanks, never the rear
+ const chargeHit=(braced,side,run=t.CHARGE.run)=>{const f2=start([{type:'hum_spear',count:10}],[{type:'hum_knight',count:3},{type:'orc_grunt',count:3}]),g=f2.mine[0];
+  if(braced)g.useAbility('brace');const blow=(a,tg,n)=>{tg.hp=tg.max=999;a.x=tg.x+(side==='rear'?-12:side==='flank'?0:12);a.y=tg.y+(side==='flank'?12:0);a.run=run;a.sta=100;
+   const at=t.sideOf(tg,a),was=tg.hp;seeded(n,()=>t.attack(a,tg));return{d:was-tg.hp,at,run:a.run}};
+  return{kn:blow(f2.foes[0].units[0],g.units[0],77),ft:blow(f2.foes[1].units[0],g.units[5],78)}};
+ const H={};for(const side of ['front','flank','rear'])H[side]={u:chargeHit(false,side),b:chargeHit(true,side),w:chargeHit(false,side,0)};
+ ok(['front','flank','rear'].every(k=>H[k].u.kn.at===k&&H[k].b.ft.at===k),'(each charge lands on the side meant)');
+ ok(H.front.u.kn.d===H.front.w.kn.d&&H.front.b.kn.d===H.front.w.kn.d&&H.front.u.ft.d===H.front.w.ft.d,'spearmen facing a charge brace against it, braced or not: no more than a blow walked in ('+H.front.u.kn.d+', '+H.front.b.kn.d+' against '+H.front.w.kn.d+')');
+ ok(H.flank.b.kn.d===H.flank.w.kn.d&&H.flank.u.kn.d>H.flank.w.kn.d*1.5,'Brace covers the flanks: a rider there does what a walked-in blow does ('+H.flank.b.kn.d+' against '+H.flank.w.kn.d+'; unbraced '+H.flank.u.kn.d+')');
+ ok(H.flank.b.ft.d===H.flank.w.ft.d&&H.flank.u.ft.d>H.flank.w.ft.d,'so does a charging footman: Brace holds against any charger ('+H.flank.b.ft.d+' against '+H.flank.w.ft.d+'; unbraced '+H.flank.u.ft.d+')');
+ ok(H.rear.b.kn.d===H.rear.u.kn.d&&H.rear.b.kn.d>H.rear.w.kn.d*1.5,'a charge from behind is not braced against ('+H.rear.b.kn.d+' braced, '+H.rear.u.kn.d+' unbraced, '+H.rear.w.kn.d+' walked in)');
+ ok(H.flank.b.kn.run===0&&H.front.u.kn.run===0,'the charge is spent on that blow as before');
  // ---- Fire arrows
  const shot=(fire,type='hum_bow')=>{const f4=start([{type,count:6}],[{type:'hum_guard',count:4}]),g=f4.mine[0],a=g.units[0],e=f4.foes[0].units[0];e.x=a.x+150;e.y=a.y;if(fire)g.useAbility('fire');const n=t.B.arrows.length;seeded(91,()=>t.attack(a,e));return{g,a,e,arrow:t.B.arrows[n],f4}};
  const plain=shot(false),fire=shot(true);

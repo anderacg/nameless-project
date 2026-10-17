@@ -52,7 +52,7 @@ function charThink(u,dt){
 }
 // a blow at t: your hero's (the combo, the bow drawn, a staff's cast: combat.js) or a champion's
 function charStrike(u,t){
-  {const m=momentum(u);u.run=0;if(m>=CHARGE.min)fatigueCharge(u,m)}// (a charge spends their stamina, as a soldier's: fatigue.js)
+  {const m=momentum(u);u.run=0;if(m>=(u.s.charge?CHARGE.min:CHARGE.foot_min))fatigueCharge(u,m)}// (a charge spends their stamina, as a soldier's: fatigue.js)
   aimAt(u,t);
   // (a bow: drawn already, by the shot cycle every shooter has (actors.js shotStep); loosed now, at full draw)
   if(drawsBow(u)){if(u.hero){G.bowRange=clamp(Math.hypot(t.x-u.x,t.y-u.y),BOW_RANGE[0],BOW_RANGE[1]);shoot('ranged',1)}else champLoose(u,t,1);return}

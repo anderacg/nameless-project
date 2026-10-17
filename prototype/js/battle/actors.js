@@ -86,8 +86,8 @@ function aiUnit(u,dt,strike){
     u.near=!(g.player&&isChar(u))&&n&&!n.rout&&!member(n)&&Math.hypot(n.x-u.x,n.y-u.y)<close?n:null;
     if(u.near)u.tgt=u.near;
   }
-  else if(u.rt<=0||!u.tgt||u.tgt.hp<=0){u.tgt=s.range?shooterTarget(u):meleeTarget(u);u.rt=.4}
-  crowdTarget(u,dt);
+  else{if(u.near)u.near=null;if(u.rt<=0||!u.tgt||u.tgt.hp<=0){u.tgt=s.range?shooterTarget(u):meleeTarget(u);u.rt=.4}}// (free: no ordered foe, so no foe brushed past either)
+  crowdTarget(u,dt,s);
   const t=u.tgt;u.spdNow=0;
   // The hero is a single-unit group: an explicit attack turns its firing arc toward the target,
   // even after a move left/right. Ordinary shooter formations keep their commanded facing.
@@ -120,7 +120,7 @@ function aiUnit(u,dt,strike){
   // walking, they keep to the slowest one's pace (and keep their formation); running, or fighting, each goes as fast as it can
   const tm=tiredMul(u),wk=(walking(g)||staOf(u)<FATIGUE.runMin)&&order!=='withdraw';/* (no breath left: he walks, whatever he is told) */let spd=(wk?Math.min(s.spd,g&&g.pace||s.spd)*MARCH.walk:s.spd)*tm.spd;// (tired: slower, fatigue.js)
   spd*=formPace(u)*abilitySpeed(u);// Only supported, eligible shield-wall soldiers pay its speed cost. (spurred riders: faster, unitabilities.js)
-  if(mv&&abilityStands(u))mv=false;// (braced: he stands fast where he is and strikes what comes into reach)
+  const spurred=abilityMomentum(u);/* (spurred: he keeps his momentum, unitabilities.js) */if(mv&&abilityStands(u))mv=false;// (braced: he stands fast where he is and strikes what comes into reach)
   // (stuck: trying to move but going nowhere, against a rock or the field's edge, it steps aside to get round; not in the press
   // round its foe, where it finds another instead: crowdTarget)
   if(mv&&chase&&!back&&!(t&&!s.range&&de<reach+CROWD.slack)){u.stk=(u.stk||0)+dt;if(u.stk>.5){if(u.sx0!=null&&Math.hypot(u.x-u.sx0,u.y-u.sy0)<3){u.side=u.side||(Math.random()<.5?-1:1);u.sideT=.6}u.stk=0;u.sx0=u.x;u.sy0=u.y}
@@ -128,9 +128,9 @@ function aiUnit(u,dt,strike){
   if(mv&&!wk)footDust(u,dt);// (running: dust from their feet, vfx.js)
   if(mv){const sp=spd*dt*(u.slow>0?.5:1)*(u.buffT>0?1.25:1);u.x+=mx*sp;u.y+=my*sp;u.spdNow=spd;
     // (he faces where he goes, backing off too (no walking backwards): he turns to his foe again when he stops to shoot)
-    if(Math.abs(mx)>.35)u.face=mx>0?1:-1;u.dir=Math.atan2(my,mx);u.run=chase&&!back&&!wk?(u.run||0)+sp*tm.run:0}
-  else{if(t){if(Math.abs(dx)>3&&!(s.range&&!roundFire(u)))u.face=dx>=0?1:-1;if(!u.inSlot)u.dir=Math.atan2(dy,dx)}u.run=Math.max(0,(u.run||0)-CHARGE.run*dt)}
-  // (facing: where it marches or whom it fights; momentum: the run at its target, spent on its first blow)
+    if(Math.abs(mx)>.35)u.face=mx>0?1:-1;u.dir=Math.atan2(my,mx);u.run=chase&&!back&&!wk?(u.run||0)+sp*tm.run:spurred?u.run:0}
+  else{if(t){if(Math.abs(dx)>3&&!(s.range&&!roundFire(u)))u.face=dx>=0?1:-1;if(!u.inSlot)u.dir=Math.atan2(dy,dx)}if(!spurred)u.run=Math.max(0,(u.run||0)-CHARGE.run*dt)}
+  // (facing: where it marches or whom it fights; momentum: the run at its target, spent on its first blow; spurred, kept: unitabilities.js)
   fatigueStep(u,dt,mv,wk,chase&&!back&&!!t&&!wk,!!t&&de<=reach+8);
   // shooters: whatever comes into range and their arc, unless told to cease fire (then only the enemy you set them on); a move lets a draw down
   if(s.range){if(reloc)u.shot=null;shotStep(u,g,t,!!t&&!reloc&&de<=reach&&!(g&&g.cease&&!g.tgt),mv,dx,dy,mx,my,dt,strike);return}
@@ -139,15 +139,16 @@ function aiUnit(u,dt,strike){
 /* the press: when the men round a foe stand too thick, those behind cannot reach him and would stand idle. A melee soldier
    kept out of reach for CROWD.wait turns on another foe close by (within CROWD.look) that has room round him, for CROWD.keep */
 const CROWD={wait:.8,keep:2.5,look:90,slack:16,full:3};
-function roomyFoe(u,not){let best=null,bs=1e9;const R=(u.s.reach||11)+6;
+function roomyFoe(u,not,s=u.s){let best=null,bs=1e9;const R=(s.reach||11)+6;
   const g=u.grp&&B.groups[u.grp],pool=g&&g.hasTarget?g.targetMembers():B.units;
   for(const e of pool){if(e.hp<=0||e.team===u.team||e===not||e.rout)continue;const d=Math.hypot(e.x-u.x,e.y-u.y);if(d>CROWD.look)continue;
     let n=0;for(const o of B.units)if(o!==u&&o.hp>0&&o.team===u.team&&Math.hypot(o.x-e.x,o.y-e.y)<R)n++;if(n>=CROWD.full)continue;const sc=d+n*14;if(sc<bs){bs=sc;best=e}}
   return best}
-function crowdTarget(u,dt){
-  if(u.s.range||u.hero||u.near&&u.tgt===u.near)return;const g=u.grp&&B.groups[u.grp];if(u.alt&&(u.alt.hp<=0||u.alt.rout||(u.altT-=dt)<=0||g&&g.hasTarget&&!g.targetMembers().includes(u.alt)))u.alt=null;
-  const t=u.tgt;if(t&&t.hp>0&&!u.alt){const R=(u.s.reach||11)+2,d=Math.hypot(t.x-u.x,t.y-u.y)-(t.s.big?12:0);
-    if(d>R&&d<R+CROWD.slack){u.blockT=(u.blockT||0)+dt;if(u.blockT>CROWD.wait){u.blockT=0;const a=roomyFoe(u,t);if(a){u.alt=a;u.altT=CROWD.keep}}}else u.blockT=0}
+// (s: the stats he fights with now, a shooter's Melee Mode ones: aiUnit)
+function crowdTarget(u,dt,s=u.s){
+  if(s.range||u.hero||u.near&&u.tgt===u.near)return;const g=u.grp&&B.groups[u.grp];if(u.alt&&(u.alt.hp<=0||u.alt.rout||(u.altT-=dt)<=0||g&&g.hasTarget&&!g.targetMembers().includes(u.alt)))u.alt=null;
+  const t=u.tgt;if(t&&t.hp>0&&!u.alt){const R=(s.reach||11)+2,d=Math.hypot(t.x-u.x,t.y-u.y)-(t.s.big?12:0);
+    if(d>R&&d<R+CROWD.slack){u.blockT=(u.blockT||0)+dt;if(u.blockT>CROWD.wait){u.blockT=0;const a=roomyFoe(u,t,s);if(a){u.alt=a;u.altT=CROWD.keep}}}else u.blockT=0}
   if(u.alt)u.tgt=u.alt}
 /* a move order (the ground right-clicked, a line dragged, the next waypoint): the group relocates. Each of its men breaks off
    the fight he is in and goes to his new place, striking no one on the way (and taking blows in the back if he turns from a
