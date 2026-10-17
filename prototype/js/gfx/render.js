@@ -39,8 +39,8 @@ function drawWorld(){
   W.sites.forEach(s=>{if(siteKnown(s))ents.push({st:true,y:s.y,f:()=>{const sx=Math.round(s.x-cam.x),sy=Math.round(s.y-cam.y);if(s.patch)ctx.drawImage(groundPatch(climAt(s.x,s.y)),sx-15,sy-4);if(s.cleared)ctx.globalAlpha=.5;const sp=siteSprite(s);ctx.drawImage(sp,sx-sp.ax,sy+8-sp.ay);if(sp.fire&&!s.cleared)drawFire(sx-sp.ax+sp.fire[0],sy+8-sp.ay+sp.fire[1],s.seed);if(sp.flag&&!s.cleared)drawFlag(s.flagCol(),sx-sp.ax+sp.flag[0],sy+8-sp.ay+sp.flag[1],s.seed);ctx.globalAlpha=1;
     if(Math.hypot(s.x-P.x,s.y-P.y)<70)txt(s.name,sx,sy+12,s.cleared?'#9a958a':'#e4e0cf','center')}})});
   // the holdings are drawn as their placed buildings (lotEnts, called with the estates below)
-  drawParties(ents,cam,V);// lords, bands, patrols and your companions' parties (each party says how it looks: parties.js)
-  W.monsters.forEach(m=>{const M=MONSTERS[m.id],Y=M.mythic;if(Math.hypot(m.x-P.x,m.y-P.y)<V*(Y?1.6:hiddenAt(m.x,m.y)?.45:1))ents.push({y:m.y+(Y&&Y.fly?30:0),f:()=>{
+  drawParties(ents,cam,V);// lords, bands, patrols and your companions' parties (each party draws itself: parties.js)
+  W.monsters.forEach(m=>{const M=MONSTERS[m.id],Y=M.mythic;if(Y?Math.hypot(m.x-P.x,m.y-P.y)<V*1.6:spotted(m,V))ents.push({y:m.y+(Y&&Y.fly?30:0),f:()=>{
     const s=unitSprite(M.unit,1,false),w=s.width,h=s.ch,sx=Math.round(m.x-cam.x),sy=Math.round(m.y-cam.y),lift=Y&&Y.fly?6-Math.round(Math.sin(performance.now()/260)*2):0;
     ctx.fillStyle='rgba(0,0,0,.3)';if(Y)ctx.fillRect(sx-8,sy-1,16,3);else ctx.fillRect(sx-5,sy-1,10,2);
     ctx.save();ctx.translate(sx,sy-lift);if(Y?m.dir<0:faceDir(m)<0)ctx.scale(-1,1);ctx.drawImage(s,-(w>>1),-s.height+2);ctx.restore();
@@ -51,7 +51,7 @@ function drawWorld(){
     F.tiles.slice(0,c.n).forEach(([tx,ty],i)=>{const y=ty*TILE+TILE-3;ents.push({y,f:()=>{const now=performance.now(),ph=now/2600+i*1.9+tx,mv=Math.cos(ph),fr=Math.abs(mv)>.6?Math.floor(now/D_STEP+i)%2:0,
       a=critterSprite(c.id,fr,true),x=Math.round(tx*TILE+TILE/2+Math.sin(ph)*3-cam.x),sy=Math.round(y-cam.y),w=Math.max(4,a.cw-2);
       ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(x-(w>>1),sy-1,w,2);ctx.save();ctx.translate(x,sy);if(mv<0)ctx.scale(-1,1);ctx.drawImage(a,-(a.width>>1),-a.height+1);ctx.restore()}})})});
-  W.critters.forEach(c=>{if(c.decor&&fieldsOf(townBy(c.home),'pasture'))return;if(Math.hypot(c.x-P.x,c.y-P.y)<V*(hiddenAt(c.x,c.y)?.45:1))ents.push({y:c.y,f:()=>{const s=critterSprite(c.id),sx=Math.round(c.x-cam.x),sy=Math.round(c.y-cam.y),now=performance.now(),k=Math.min(3,c.n||1),sp=Math.max(4,Math.round(s.cw*.55));
+  W.critters.forEach(c=>{if(c.decor&&fieldsOf(townBy(c.home),'pasture'))return;if(spotted(c,V))ents.push({y:c.y,f:()=>{const s=critterSprite(c.id),sx=Math.round(c.x-cam.x),sy=Math.round(c.y-cam.y),now=performance.now(),k=Math.min(3,c.n||1),sp=Math.max(4,Math.round(s.cw*.55));
     for(let i=k-1;i>=0;i--){const ox=i===0?0:i===1?-sp:Math.round(sp*.4),oy=i===0?0:i===1?-2:-4,fr=c.idle?0:Math.floor(now/(D_STEP)+c.x+i)%2,a=critterSprite(c.id,fr),w=Math.max(4,a.cw-2);
       ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(sx+(c.dir<0?-ox:ox)-(w>>1),sy+oy-1,w,2);
       ctx.save();ctx.translate(sx+(c.dir<0?-ox:ox),sy+oy);if(c.dir<0)ctx.scale(-1,1);ctx.drawImage(a,-(a.width>>1),-a.height+1);ctx.restore()}
@@ -90,12 +90,10 @@ function drawWorld(){
   const MS=112/MW,mw=Math.round(MW*MS),mh=Math.round(MH*MS),mx=VW-mw-6,my=6,dot=(x,y,col,s)=>rect(ctx,col,mx+Math.floor(x/TILE*MS)-(s>>1),my+Math.floor(y/TILE*MS)-(s>>1),s,s);
   ctx.fillStyle='#000';ctx.fillRect(mx-1,my-1,mw+2,mh+2);ctx.drawImage(atSize(miniCv,mw,mh),mx,my);ctx.globalAlpha=.4;ctx.drawImage(atSize(landMiniCv(),mw,mh),mx,my);ctx.globalAlpha=1;ctx.drawImage(atSize(fogMiniCv(),mw,mh),mx,my);
   TOWNS.forEach(tw=>{if(seenTile(tw.tx,tw.ty))dot(tw.x,tw.y,tw._memCol||facCol(tw),3)});
-  W.lords.forEach(l=>{if(!l.dead&&!l.inside&&Math.hypot(l.x-P.x,l.y-P.y)<V)dot(l.x,l.y,FACS[l.fac].col,1)});
-  (W.caravans||[]).forEach(c=>{if(Math.hypot(c.x-P.x,c.y-P.y)<V)dot(c.x,c.y,'#e8d8a0',1)});
   W.sites.forEach(s=>{if(siteKnown(s))dot(s.x,s.y,s.cleared?'#555':s.T.col,2)});
   W.monsters.forEach(m=>{const Y=MONSTERS[m.id].mythic;if(Math.hypot(m.x-P.x,m.y-P.y)<V)dot(m.x,m.y,Y?'#ff7a30':'#c58af0',Y?2:1)});
-  bandits.forEach(b=>{if(Math.hypot(b.x-P.x,b.y-P.y)<V)dot(b.x,b.y,'#ff6a60',1)});
-  (W.patrols||[]).forEach(p=>{if(Math.hypot(p.x-P.x,p.y-P.y)<V)dot(p.x,p.y,p.fac==='player'?FACS.player.col:FACS[p.fac].col,1)});
+  // (the movers over the places: lords, bands, patrols and caravans in sight, each its own dot: WorldObject.mapDot)
+  for(const o of worldObjects()){const d=o.mapDot(V);if(d)dot(o.x,o.y,d[0],d[1])}
   P.quests.forEach(q=>{const g=questGoal(q);if(g)dot(g.x,g.y,'#ffe040',2)});
   dot(P.x,P.y,'#fff',3);
 }
@@ -110,17 +108,8 @@ function opaqueBox(s){if(s._ob)return s._ob;const d=s.getContext('2d').getImageD
 function partyFig(o,L,f){const s=L.bandit?banditSprite(f):partySprite(L.col,L.rider==='horse'?C.horse:'',f);return{s,x:o.x-(s.width>>1),y:o.y+3-s.height,flip:L.dir<0}}
 // (the rows above a leader's cell top his label clears: his highest pixel in either step, so it stands still as he walks)
 const figTop=L=>Math.min(opaqueBox(partyFig(P,L,0).s)[1],opaqueBox(partyFig(P,L,1).s)[1]);
-// every party in sight, one way: its host of soldiers, its leader's figure (a rider, a bandit), a torch on a night watch, its label
-function drawParties(ents,cam,V){
-  for(const o of W.parties){if(!o.inView(V))continue;
-    ents.push({y:o.y,f:()=>{const L=o.look(),sx=Math.round(o.x-cam.x),sy=Math.round(o.y-10-cam.y),fd=L.dir<0?-1:1,fr=L.moving?Math.floor(performance.now()/(L.bandit?160:170))%2:0;
-      const s=partyFig(o,L,fr).s;// (a rider: his host behind his horse)
-      drawHost(o.size,L.col,sx-(s.width>16?fd*6:0),sy+12,fd,L.moving,L.seed,L.race,L.bandit);
-      ctx.save();ctx.translate(sx,sy);if(fd<0)ctx.scale(-1,1);ctx.drawImage(s,-(s.width>>1),13-s.height);ctx.restore();
-      if(L.torch){const tx=sx+fd*6,ty=sy-4;rect(ctx,'#5a3e24',tx,ty,1,5);LIGHTQ.push({x:tx,y:ty-1,r:20})}
-      // (its label clear above the figure, its banner's top: over it, the label in the banner's own colour was lost on the flag)
-      if(!o.fight&&L.label)txt(L.label,sx,sy+13-s.height+figTop(L)-2,L.labelCol,'center')}})}
-}
+// every party in sight, one way (Party.draw: its host, its leader's figure, a torch on a night watch, its label)
+function drawParties(ents,cam,V){for(const o of W.parties)o.draw(ents,cam,V)}
 function drawUnit(u){
   // (placed on the camera's pixels, not the field's: zoomed in, they glide instead of stepping)
   const q=B.cam?B.cam.z:1,big=u.s.big?2:1,s=unitSprite(u.type,u.team,u.hero,u.v),w=s.width,h=s.ch,x=Math.round(u.x*q)/q,y=Math.round(u.y*q)/q;

@@ -17,12 +17,11 @@ function sendRefugees(t,to,why){
   const n=Math.min(t.pop-20,rint(6,14)+(why==='sacked'?8:0));if(n<4)return null;t.pop-=n;ensureEcon(t);
   const goods={};for(const g of ['grain','cheese','cloth']){const k=Math.min(t.stock[g]||0,rint(0,3));if(k){goods[g]=k;t.stock[g]-=k}}
   const r={rf:true,from:t.name,to:to.name,n,why,race:t.races[rint(0,t.races.length-1)],goods,purse:rint(5,12)+Math.round(n*1.5),x:t.x+rint(-6,6),y:t.y+14,dir:1,cool:0};
-  (W.refugees=W.refugees||[]).push(r);
+  W.refugees.push(r);
   if(t.owner==='player'||Math.hypot(t.x-P.x,t.y-P.y)<vis()*1.5)log(n+' people leave '+t.name+' for '+to.name+': '+REFUGEE_WHY[why]+'.',t.owner==='player'?'bad':'');
   return r;
 }
 function refugeeDay(){
-  W.refugees=W.refugees||[];
   for(const t of TOWNS){if(W.refugees.length>=REFUGEE_CAP)break;const why=fleeReason(t);if(!why||t.pop<=30||Math.random()>(why==='hardship'||why==='conquest'||why==='crowded'?.12:.3))continue;
     if(W.refugees.some(r=>r.from===t.name))continue;const to=refuge(t);if(to)sendRefugees(t,to,why)}
 }
@@ -31,7 +30,7 @@ function refugeesArrive(r,to){
   if(to.owner==='player')log(r.n+' refugees from '+r.from+' settle in '+to.name+'.','good');
 }
 function updateRefugees(d){
-  W.refugees=W.refugees||[];const hide=hiddenAt(P.x,P.y)?.55:1;
+  const hide=hiddenAt(P.x,P.y)?.55:1;
   for(const r of W.refugees){
     r.cool=Math.max(0,r.cool-d);let to=townBy(r.to);
     if(!to||besieged(to)||to.owner!=='player'&&atWar(to.owner,(townBy(r.from)||{}).owner)){const f=townBy(r.from);to=f&&refuge(f);if(!to){r.gone=true;continue}r.to=to.name}
@@ -76,7 +75,7 @@ function refugeeAct(a){
 /* on the map */
 // (a refugee on the map: people.js refugeeSprite)
 function drawRefugees(ents,cam,V){
-  for(const r of W.refugees||[]){if(Math.hypot(r.x-P.x,r.y-P.y)>V*1.2)continue;
+  for(const r of W.refugees){if(Math.hypot(r.x-P.x,r.y-P.y)>V*1.2)continue;
     ents.push({y:r.y,f:()=>{const sx=Math.round(r.x-cam.x),sy=Math.round(r.y-cam.y),k=Math.min(6,Math.max(3,Math.ceil(r.n/3))),mv=performance.now();ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(sx-8,sy-1,16,2);
       for(let i=0;i<k;i++){const px=sx-r.dir*((i%3)*6-6)+(i>2?-r.dir*3:0),py=sy-(i>2?3:0);const s=refugeeSprite(Math.floor(mv/220+i)%2,i);ctx.save();ctx.translate(px,py);if(r.dir<0)ctx.scale(-1,1);ctx.drawImage(s,-8,-15);ctx.restore()}
       if(Math.hypot(r.x-P.x,r.y-P.y)<90)txt('Refugees '+r.n,sx,sy-12,r.fear?'#ff9a90':'#c8c2ae','center')}})}

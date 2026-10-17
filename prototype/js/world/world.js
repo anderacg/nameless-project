@@ -36,32 +36,32 @@ function pickAt(wx,wy){
   TOWNS.forEach(t=>{if(Math.hypot(t.x-P.x,t.y-P.y)>V+340)return;box(t,t.x-8,t.y-18,t.x+8,t.y+8,4);// its gate
     for(const l of t.lots||[]){const o=ESTATES[l.k]&&bldLv(t,l.k)?estatePick(t,l.k):t;box(o,l.x*TILE,l.y*TILE,(l.x+l.n)*TILE,(l.y+l.n)*TILE,ESTATES[l.k]?0:4);
       if(o!==t)plotsAt(t,l.k,bldLv(t,l.k)).forEach(([x,y])=>box(o,x*TILE,y*TILE,(x+1)*TILE,(y+1)*TILE))}});
-  // (a party on its leader's figure too: a lord's whole horse and banner; render.js partyFig)
-  W.parties.forEach(o=>{if(!o.onMap())return;add(o,10,4);if(o!==P&&Math.hypot(o.x-wx,o.y-wy)<32){const F=partyFig(o,o.look(),0);fig(o,F.s,F.x,F.y,F.flip)}});W.monsters.forEach(m=>add(m,11,6));
+  // a world object says where it is clicked (parties.js WorldObject.pick), with these
+  const at={x:wx,y:wy,add,box,fig,camp};
+  W.parties.forEach(o=>o.pick(at));W.monsters.forEach(m=>add(m,11,6));
   // each kind of site says where it is clicked (sites.js)
-  W.sites.forEach(s=>{if(s.pickable())s.box(box,camp)});W.critters.forEach(k=>{if(!k.decor)add(k,9,4)});/* (a pasture's herd is only to be seen: the pasture answers) */(W.caravans||[]).forEach(k=>{add(k,11,5);const s=caravanPic(k);fig(k,s,k.x-(s.width>>1),k.y+1-s.height,k.dir<0)});(W.refugees||[]).forEach(k=>add(k,10,4));
+  W.sites.forEach(s=>{if(s.pickable())s.box(box,camp)});W.critters.forEach(k=>{if(!k.decor)add(k,9,4)});/* (a pasture's herd is only to be seen: the pasture answers) */W.caravans.forEach(k=>asParty(k).pick(at));W.refugees.forEach(k=>add(k,10,4));
   // (workers: met at their estate while they work inside it; out on the road with a delivery, met where they walk: folk.js)
-  (W.folk||[]).forEach(k=>{if(folkOut(k))add(k,6,4)});
+  W.folk.forEach(k=>{if(folkOut(k))add(k,6,4)});
   c.sort((a,b)=>a[0]-b[0]);return c.length?c[0][1]:null;
 }
-const objKind=o=>o&&o.cid&&o.troops?'cparty':o&&o.est?'estate':TOWNS.includes(o)?'town':W.lords.includes(o)?'lord':W.monsters.includes(o)?'monster':bandits.includes(o)?'band':W.sites.includes(o)?'site':W.critters.includes(o)?'critter':(W.caravans||[]).includes(o)?'caravan':(W.refugees||[]).includes(o)?'refugee':(W.patrols||[]).includes(o)?'patrol':(W.folk||[]).includes(o)?'worker':null;
-// meet whatever you have reached
+// what a thing on the map is: a world object says (its mapKind, while it is still on the map: here); the rest by where it is kept
+const objKind=o=>o instanceof WorldObject?(o.here()?o.mapKind:null):o&&o.est?'estate':TOWNS.includes(o)?'town':W.monsters.includes(o)?'monster':W.sites.includes(o)?'site':W.critters.includes(o)?'critter':W.refugees.includes(o)?'refugee':W.folk.includes(o)?'worker':null;
+// meet whatever you have reached (G.youAttack: you started whatever fight this opens at once: encounters.js startEncounter)
 function interact(o){
-  const k=objKind(o);P.tx=null;G.chase=null;G.youAttack=true;setTimeout(()=>{G.youAttack=false},0);
-  if(o&&o.fight&&fightOf(o)){fightMeet(fightOf(o));return true}
-  if(k==='town')approachHolding(o);
-  else if(k==='cparty')openComp(o.cid);
-  else if(k==='lord')lordMeet(o);
-  else if(k==='monster')startMonster(o);
-  else if(k==='band')meetBand(o);
-  else if(k==='site'){G.lastSite=o;enterSite(o)}
-  else if(k==='caravan')caravanMeet(o);
-  else if(k==='refugee')refugeeMeet(o);
-  else if(k==='patrol')patrolMeet(o);
-  else if(k==='worker')workerMeet(o);
-  else if(k==='estate')estateMeet(o);
-  else if(k==='critter'){o.cool=4;if(CRITTERS[o.id].live)openHerd(o);else hunt(o)}
-  return !!k;
+  const k=objKind(o);P.tx=null;G.chase=null;G.youAttack=true;
+  try{
+    if(o&&o.fight&&fightOf(o)){fightMeet(fightOf(o));return true}
+    if(o instanceof WorldObject){if(k)o.meet()}// (a party: parties.js, caravans.js)
+    else if(k==='town')approachHolding(o);
+    else if(k==='monster')startMonster(o);
+    else if(k==='site'){G.lastSite=o;enterSite(o)}
+    else if(k==='refugee')refugeeMeet(o);
+    else if(k==='worker')workerMeet(o);
+    else if(k==='estate')estateMeet(o);
+    else if(k==='critter'){o.cool=4;if(CRITTERS[o.id].live)openHerd(o);else hunt(o)}
+    return !!k;
+  }finally{G.youAttack=false}
 }
 // a click on the map: interact if you are touching it, else walk to it (and interact on arrival). Returns true if something opened.
 function clickAt(wx,wy){

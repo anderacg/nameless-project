@@ -88,7 +88,7 @@ function people(t,c){
 // a day's taxes at the holding's rate (fiefs pay you; the rest pay their realm), plus market dues
 const taxOf=(t,rate)=>ruined(t)?0:Math.round(t.pop*TAX_RATE[rate==null?(t.tax==null?1:t.tax):rate]*(.4+t.pros/100)*(until(t,'turmoil')?.5:1)+3*bldLv(t,'market'));
 
-const treas=f=>{W.treas=W.treas||{};if(W.treas[f]==null)W.treas[f]=TREAS0+60*fiefsOf(f).length;return W.treas[f]};
+const treas=f=>{if(W.treas[f]==null)W.treas[f]=TREAS0+60*fiefsOf(f).length;return W.treas[f]};
 // pay for something a realm wants: gold from its treasury, food from a holding's stock; false if it cannot (never in off mode)
 function payRealm(f,gold,t,food){
   if(ECON.mode==='off'||!f||f==='player')return true;const light=ECON.mode==='light';gold*=light?.5:1;

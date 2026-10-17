@@ -6,15 +6,16 @@
 // the strength, so the stronger side wins more and more easily; a side that falls far behind breaks and is routed.
 // Lords and patrols nearby ride in on the side of their friends against their enemies. You can join either side: then
 // the fight becomes your battle, everyone in it fighting beside you or against you.
-const uidOf=o=>o.uid||(o.uid='u'+(W.uidN=(W.uidN||0)+1));
+const uidOf=o=>o.uid||(o.uid='u'+(++W.uidN));
 // every party that can fight on the map, by uid
-function partyBy(u){return cparties().find(o=>o.uid===u)||W.lords.find(o=>o.uid===u&&!o.dead)||bandits.find(o=>o.uid===u)||(W.patrols||[]).find(o=>o.uid===u&&!o.gone)||(W.caravans||[]).find(o=>o.uid===u&&!o.gone)||null}
-const partyKind=o=>o&&o.cid?'cparty':W.lords.includes(o)?'lord':bandits.includes(o)?'band':(W.patrols||[]).includes(o)?'patrol':'caravan';
+function partyBy(u){return cparties().find(o=>o.uid===u)||W.lords.find(o=>o.uid===u&&!o.dead)||bandits.find(o=>o.uid===u)||W.patrols.find(o=>o.uid===u&&!o.gone)||W.caravans.find(o=>o.uid===u&&!o.gone)||null}
+// what kind of party: its own say (parties.js mapKind; plain data made one first)
+const partyKind=o=>o?asParty(o).mapKind:null;
 // the fighters of a party (a band's list is its troops; a caravan's are its guards: CaravanParty)
 function troopsOf(o){return asParty(o).troops}
 const partyName=o=>{const k=partyKind(o);return k==='cparty'?COMPS[o.cid].short+'’s party':k==='lord'?o.name:k==='band'?BANDS[o.kind||'bandits'][0].replace(' ahead',''):k==='patrol'?'Guards of '+o.home:'Caravan of '+o.from};
 const partyFac=o=>partyKind(o)==='band'?null:partyKind(o)==='cparty'?'player':o.fac;
-const fightOf=o=>o&&o.fight?(W.fights||[]).find(f=>f.id===o.fight):null;
+const fightOf=o=>o&&o.fight?W.fights.find(f=>f.id===o.fight):null;
 // is a party busy fighting? (a stale mark, from a fight that is gone, is cleared)
 const inFight=o=>{if(!o.fight)return false;if(fightOf(o))return true;o.fight=null;return false};
 const sideParties=(f,s)=>f.sides[s].map(partyBy).filter(Boolean);
@@ -22,11 +23,11 @@ const sideTroops=(f,s)=>sideParties(f,s).flatMap(troopsOf);
 
 // two groups of parties clash; one already fighting pulls the others into its fight
 function startFight(A,B){
-  W.fights=W.fights||[];const all=[...A,...B],old=all.map(fightOf).find(Boolean);
+  const all=[...A,...B],old=all.map(fightOf).find(Boolean);
   if(old){const anchor=all.find(o=>fightOf(o)===old),as=old.sides[0].includes(uidOf(anchor))?0:1,sa=A.includes(anchor)?as:1-as;
     for(const o of A)if(!o.fight)joinFight(old,o,sa);for(const o of B)if(!o.fight)joinFight(old,o,1-sa);return old}
   const x=all.reduce((s,o)=>s+o.x,0)/all.length,y=all.reduce((s,o)=>s+o.y,0)/all.length,n=all.reduce((s,o)=>s+troopsOf(o).length,0);
-  const f={id:'f'+(W.fightN=(W.fightN||0)+1),x,y,sides:[A.map(uidOf),B.map(uidOf)],t:0,n0:n,dur:FIGHT.base+FIGHT.per*n,acc:[0,0]};
+  const f={id:'f'+(++W.fightN),x,y,sides:[A.map(uidOf),B.map(uidOf)],t:0,n0:n,dur:FIGHT.base+FIGHT.per*n,acc:[0,0]};
   all.forEach(o=>{o.fight=f.id});W.fights.push(f);fightPlace(f);
   if(Math.hypot(x-P.x,y-P.y)<vis()*1.5||all.some(o=>partyFac(o)===P.fac||o.mine))log('Battle near '+nearestOf(f,TOWNS).name+': '+A.map(partyName).join(', ')+' against '+B.map(partyName).join(', ')+'.',all.some(o=>o.mine)?'bad':'');
   return f;
@@ -62,13 +63,12 @@ function endFight(f,win){
   if(Math.hypot(f.x-P.x,f.y-P.y)<vis()*1.5&&W0.length&&L.length)log(W0.map(partyName).join(' and ')+' win'+(W0.length>1?'':'s')+' the battle near '+nearestOf(f,TOWNS).name+'.');
 }
 function updateFights(d){
-  W.fights=W.fights||[];
   for(const f of [...W.fights]){
     // gone from the field (beaten elsewhere, arrived, dead): out of the fight
     for(const s of [0,1])f.sides[s]=f.sides[s].filter(u=>{const o=partyBy(u);return o&&o.fight===f.id&&troopsOf(o).length});
     if(!f.sides[0].length||!f.sides[1].length){const win=f.sides[0].length?0:1;sideParties(f,win).forEach(freeParty);W.fights=W.fights.filter(x=>x!==f);continue}
     // lords and patrols nearby ride in
-    for(const o of [...W.lords.filter(l=>!l.dead&&!l.inside&&!l.fight),...(W.patrols||[]).filter(p=>!p.fight)])
+    for(const o of [...W.lords.filter(l=>!l.dead&&!l.inside&&!l.fight),...W.patrols.filter(p=>!p.fight)])
       if(Math.hypot(o.x-f.x,o.y-f.y)<FIGHT.join){const s=sideFor(f,o);if(s>=0){joinFight(f,o,s);if(Math.hypot(f.x-P.x,f.y-P.y)<vis()*1.5)log(partyName(o)+' rides into the battle near '+nearestOf(f,TOWNS).name+'.')}}
     // each side wears the other down by its share of the strength; the whole fight takes about dur
     // the pace is set by how many started (and joined): an even fight takes about dur, a lopsided one less
@@ -114,7 +114,7 @@ function fieldWon(e){const f=e.ref;sideParties(f,e.side).forEach(freeParty);side
 
 /* on the map: dust, steel and a tally over each fight */
 function drawFights(ents,cam,V){
-  for(const f of W.fights||[]){if(Math.hypot(f.x-P.x,f.y-P.y)>V*1.2)continue;
+  for(const f of W.fights){if(Math.hypot(f.x-P.x,f.y-P.y)>V*1.2)continue;
     ents.push({y:f.y+20,f:()=>{const sx=Math.round(f.x-cam.x),sy=Math.round(f.y-cam.y),t=performance.now();
       for(let i=0;i<6;i++){const a=t/300+i*1.05,r=10+4*Math.sin(t/200+i);ctx.fillStyle='rgba(200,184,150,'+(.25+.15*Math.sin(t/150+i)).toFixed(2)+')';ctx.fillRect(Math.round(sx+Math.cos(a)*r)-2,Math.round(sy+Math.sin(a)*r*.5)-1,4,3)}
       if(Math.floor(t/120)%3===0){ctx.fillStyle='#fff8d0';ctx.fillRect(sx+rint(-8,8),sy-rint(4,14),2,2)}

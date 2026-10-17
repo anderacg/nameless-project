@@ -143,14 +143,12 @@ function updateLords(d){
 }
 function updateCParties(d){for(const p of cparties())BRAINS.cparty.think(p,d)}
 function updatePatrols(d){
-  W.patrols=W.patrols||[];
   // the change of the watch: the one on duty sets out (checked twice a second)
   if((watchCheck-=d)<=0){watchCheck=.5;for(const t of TOWNS)sendWatch(t)}
   for(const p of W.patrols)if(BRAINS.patrol.think(p,d))return true;
   W.patrols=W.patrols.filter(p=>!p.gone);return false;
 }
 function updateCaravans(d){
-  W.caravans=W.caravans||[];
   for(const c of W.caravans)if(asParty(c).brain.think(c,d))return true;
   for(const b of bandits)if(b.cvT&&Math.random()<.01)b.cvT=0;
   W.caravans=W.caravans.filter(c=>!c.gone);return false;

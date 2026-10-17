@@ -34,7 +34,7 @@ function shipPath(a,b){
       if(!isWater(nx,ny)||prev[k]>=0||(dx&&dy&&!(isWater(x+dx,y)&&isWater(x,y+dy))))continue;prev[k]=j;q.push(k)}}
   if(prev[e]<0)return null;const p=[];for(let j=e;j!==s;j=prev[j])p.push(j);return p.reverse();
 }
-const shipsOf=(t,k)=>(W.ships||[]).filter(s=>s.home===t.name&&s.k===k);
+const shipsOf=(t,k)=>W.ships.filter(s=>s.home===t.name&&s.k===k);
 function launch(t,k,to,target,o){
   const d=dockOf(t),p=d&&shipPath(d,target);if(!p)return null;
   const s=Object.assign({k,home:t.name,to,x:(d.tx+.5)*TILE,y:(d.ty+.5)*TILE,path:p,i:0,seed:rint(1,99999),dir:1,state:'out'},o);W.ships.push(s);return s;
@@ -70,14 +70,13 @@ function sendShip(t){
   return null;
 }
 function shipDay(){
-  W.ships=W.ships||[];
   for(const t of TOWNS){if(W.ships.filter(s=>s.k==='trade').length>=SHIP_CAP)break;if(!bldLv(t,'port')||!t.bld||t.owner==='player'||besieged(t)||ruined(t))continue;
     if(!shipsOf(t,'trade').length&&Math.random()<.3+.1*bldLv(t,'market'))sendShip(t)}
 }
 
 /* sailing */
 function updateShips(d){
-  W.ships=W.ships||[];sendBoats();const tod=G.clock/DAY;
+  sendBoats();const tod=G.clock/DAY;
   for(const s of W.ships){
     if(s.state==='fish'){if(G.clock>=s.until||tod<.2){const home=townBy(s.home),dk=home&&dockOf(home),p=dk&&shipPath({tx:Math.floor(s.x/TILE),ty:Math.floor(s.y/TILE)},dk);if(!p){s.gone=true;continue}s.path=p;s.i=0;s.state='home'}continue}
     const j=s.path[s.i];if(j==null){s.gone=true;continue}const tx=(j%MW+.5)*TILE,ty=(((j/MW)|0)+.5)*TILE,dx=tx-s.x,dy=ty-s.y,l=Math.hypot(dx,dy),step=(s.k==='trade'?SHIP_SPD:BOAT_SPD)*d;
@@ -134,7 +133,7 @@ function shipSprite(o){
 /* each boat rocks on the water, a wake behind it while it sails; a fishing boat at its ground casts its net */
 function drawShips(ents,cam,V){
   const now=performance.now();
-  for(const s of W.ships||[]){if(Math.hypot(s.x-P.x,s.y-P.y)>V*1.2)continue;
+  for(const s of W.ships){if(Math.hypot(s.x-P.x,s.y-P.y)>V*1.2)continue;
     ents.push({y:s.y+4,f:()=>{const b=shipSprite(s),sx=Math.round(s.x-cam.x),sy=Math.round(s.y+4-cam.y)+(Math.floor(now/450+s.seed)%2);
       const sailing=s.state!=='fish';
       if(sailing)for(let i=1;i<=3;i++){const ph=(now/300+i/3)%1;ctx.fillStyle=i===1?'#e8f4fa':'#bcd8e8';ctx.fillRect(sx-s.dir*(b.stern+i*3+Math.floor(ph*2)),sy-2+(i%2),2,1)}

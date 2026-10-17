@@ -104,7 +104,7 @@ function estatePick(t,k){const p=bldSpots(t)[k];return{est:true,town:t.name,k,x:
 function estateMeet(o){
   const t=townBy(o.town),k=o.k;if(!t||!bldLv(t,k))return;G.est=o;G.mode='dialog';P.tx=null;G.chase=null;ensureEcon(t);
   const E=ESTATES[k],lv=bldLv(t,k),own=t.owner==='player',emp=P.fac&&P.fac===t.owner,out=(t.last&&t.last.out)||{},gs=E.goods.filter(g=>out[g]);
-  const hands=(W.folk||[]).filter(f=>f.home===t.name&&f.k===k).length,guard=estateGuards(t,k),pw=rating(guard),herd=k==='pasture'&&herdOf(t),
+  const hands=W.folk.filter(f=>f.home===t.name&&f.k===k).length,guard=estateGuards(t,k),pw=rating(guard),herd=k==='pasture'&&herdOf(t),
     job=E.work,herdBtn=(herd?dlgBtn('es-herd',null,'Buy livestock'):'')+
       (job?dlgBtn('es-folk',null,'Talk to the '+job+'s · '+hands,hands?'':'Nobody about'):'');
   showPanel('<div class="top"><h2>'+E.n+' of '+t.name+'</h2><span class="muted">Level '+lv+' · '+(t.owner?'<span style="color:'+FACS[t.owner].col+'">'+FACS[t.owner].n+'</span>':'')+'</span></div>'+
@@ -122,7 +122,7 @@ function sabotage(t,k){t.sab=t.sab||{};t.sab[k]=G.day+3+2*bldLv(t,k)}
 function estateAct(a){
   const o=G.est,t=o&&townBy(o.town);if(!t||!bldLv(t,o.k)){closeDialog();return}
   if(a==='es-herd'){const c=herdOf(t);if(c){G.est=null;openHerd(c,o)}return}
-  if(a==='es-folk'){const ws=(W.folk||[]).filter(f=>f.home===t.name&&f.k===o.k),f=ws.find(f=>f.st==='in')||ws[0];if(f){G.est=null;workerMeet(f,o)}return}
+  if(a==='es-folk'){const ws=W.folk.filter(f=>f.home===t.name&&f.k===o.k),f=ws.find(f=>f.st==='in')||ws[0];if(f){G.est=null;workerMeet(f,o)}return}
   if(a==='es-sabotage'&&P.fac!==t.owner&&t.owner!=='player'&&!sabotaged(t,o.k)){const k=o.k;G.est=null;train('scout',4);
     if(Math.random()<sabotageChance(t,k)){sabotage(t,k);addRep(t.name,-CONDUCT.sabotageEstate.rep,true);closeDialog();
       return notice('Sabotaged','Under cover your people foul the '+ESTATES[k].n.toLowerCase()+' of '+t.name+'. It will make nothing for '+(t.sab[k]-G.day)+' days, and nobody saw who did it.','good')}

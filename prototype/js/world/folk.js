@@ -19,7 +19,6 @@ function folkDoor(t,k){const sp=bldSpots(t)[k];return sp?{x:sp.x+rint(-3,3),y:sp
 // out on the map (seen, and met where he walks): on the way to the holding or back
 const folkOut=f=>f.st==='out'||f.st==='back';
 function updateFolk(d){
-  W.folk=W.folk||[];
   // workers belong to nearby holdings only; far ones go
   W.folk=W.folk.filter(f=>{const t=townBy(f.home);return t&&Math.hypot(t.x-P.x,t.y-P.y)<FOLK_R+120&&!f.gone});
   for(const key of FOLK_SEEN){const t=townBy(key.split('|')[0]);if(!t||Math.hypot(t.x-P.x,t.y-P.y)>FOLK_R+120)FOLK_SEEN.delete(key)}/* (out of reach: met afresh next time) */
@@ -51,7 +50,7 @@ function folkSprite(job,frame,race,v,carry){return workerSprite(job,frame,race,v
 
 function drawFolk(ents,cam,V){
   // (only those out on the road: the rest are at work inside their estate, or delivering inside the gate)
-  for(const f of W.folk||[]){if(!folkOut(f)||Math.abs(f.x-P.x)>V*1.3||Math.abs(f.y-P.y)>V*1.3)continue;
+  for(const f of W.folk){if(!folkOut(f)||Math.abs(f.x-P.x)>V*1.3||Math.abs(f.y-P.y)>V*1.3)continue;
     ents.push({y:f.y,f:()=>{const fr=f.moving?Math.floor((performance.now()/180+f.ph))%2:0,t=townBy(f.home),s=folkSprite(f.job,fr,t&&t.races?t.races[0]:'human',Math.floor(f.ph*7),f.st==='out'),sx=Math.round(f.x-cam.x),sy=Math.round(f.y-cam.y);
       ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(sx-3,sy-1,6,2);ctx.save();ctx.translate(sx,sy);if(f.dir<0)ctx.scale(-1,1);ctx.drawImage(s,-8,-14);ctx.restore()}})}
 }

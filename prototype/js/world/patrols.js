@@ -8,13 +8,13 @@
 // home from one it can't. It goes home at once when the holding is besieged, or when it is down to half.
 // The guards stop you if you have wronged the holding lately (t.crime: pay the fine or fight) and attack if their realm is
 // hostile to you. Your own fiefs' guards ride for you.
-const patrolOf=t=>(W.patrols||[]).find(p=>p.home===t.name);
+const patrolOf=t=>W.patrols.find(p=>p.home===t.name);
 // the watch on duty: the night watch from nightfall to dawn
 const watchNow=()=>G.clock/DAY>=NIGHT_AT?'night':'day';
 const watchOf=p=>p.watch||'day';
 // a holding sends out the watch on duty, if it is not out already and the garrison can spare it
 function sendWatch(t){
-  if(!t.owner||besieged(t)||ruined(t)||(t.watchOff||0)>worldTime())return;const w=watchNow();if((W.patrols||[]).some(p=>p.home===t.name&&watchOf(p)===w))return;
+  if(!t.owner||besieged(t)||ruined(t)||(t.watchOff||0)>worldTime())return;const w=watchNow();if(W.patrols.some(p=>p.home===t.name&&watchOf(p)===w))return;
   const n=t.T.patrol.size;if(t.gar<t.T.patrol.keep+n)return;
   t.gar-=n;W.patrols.push(asParty({pt:true,watch:w,home:t.name,fac:t.owner,troops:garList({gar:n,races:t.races}),x:t.x+rint(-6,6),y:t.y+14,wx:null,wy:null,cool:0,dir:1}));
 }
@@ -22,7 +22,7 @@ let watchCheck=0;
 const crimeAt=t=>t&&t.crime&&t.crime.until>G.day?t.crime:null;
 // is (x, y) land the patrol guards: its holding's, or another holding of the same realm's
 const patrolLand=(p,x,y)=>{const h=landHold(x,y);return !!h&&(h.name===p.home||h.owner===p.fac)};
-function patrolDay(){W.patrols=W.patrols||[];for(const t of TOWNS)sendWatch(t)}
+function patrolDay(){for(const t of TOWNS)sendWatch(t)}
 // its beat: from building to building of the holding (its centre, houses, estates and their fields), one of the nearest it has
 // not just left, to a corner just outside it, where it stops a moment to look about; now and then out along its land
 function patrolWaypoint(p,t){

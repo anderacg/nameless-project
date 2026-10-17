@@ -51,7 +51,7 @@ const mythicOf=id=>W.monsters.find(m=>m.id===id);
 // a line of news about the mythic monsters abroad, for the realms page and tavern talk
 const mythicNews=(verb)=>W.monsters.filter(m=>MONSTERS[m.id].mythic).map(m=>cap1(an(MONSTERS[m.id].n.toLowerCase()))+' '+verb+' near '+nearestOf(m,TOWNS).name+'.').join(' ');
 function spawnMythic(id){
-  const M=MONSTERS[id],Y=M.mythic,lairs=Y.lair.map(l=>LAIR_TILES[l]());W.mythic=W.mythic||{};
+  const M=MONSTERS[id],Y=M.mythic,lairs=Y.lair.map(l=>LAIR_TILES[l]());
   // its favorite ground first; the others only if that keeps failing
   for(let k=0;k<160;k++){const tx=rint(3,MW-4),ty=rint(3,MH-4),tt=tAt(tx,ty),ok=k<100?tt===lairs[0]:lairs.includes(tt);if(!ok)continue;
     const x=(tx+.5)*TILE,y=(ty+.5)*TILE;if(Math.hypot(x-P.x,y-P.y)<200)continue;
@@ -60,7 +60,6 @@ function spawnMythic(id){
   W.mythic[id]={back:G.day+2};return null;
 }
 function mythicDay(){
-  W.mythic=W.mythic||{};
   for(const id of mythicIds()){const M=MONSTERS[id],Y=M.mythic,m=mythicOf(id),st=W.mythic[id]||(W.mythic[id]={back:Y.first});
     if(!m){if(G.day>=st.back)spawnMythic(id);continue}
     if(Y.scorch&&Math.random()<Y.scorch){const t=nearestOf(m,TOWNS);if(Math.hypot(t.x-m.x,t.y-m.y)<200){t.gar=Math.floor(t.gar/2);m.tx=t.x;m.ty=t.y-20;m.t=6;log('The '+M.n.toLowerCase()+' burns the fields of '+t.name+'. Its garrison is halved.','bad')}}}
@@ -80,7 +79,7 @@ function roamMythic(m,d){
 // slain: its hoard, and the wait for the next one
 function mythicSlain(m,res){
   const M=MONSTERS[m.id],Y=M.mythic,H=Y.hoard||{};let txt='';
-  (W.mythic=W.mythic||{})[m.id]={back:G.day+Y.back};res.fame=Y.fame;
+  W.mythic[m.id]={back:G.day+Y.back};res.fame=Y.fame;
   if(H.gold)res.gold+=H.gold;if(H.renown)P.renown+=H.renown;if(H.text)txt+=' '+H.text;
   if(H.gear){const g=randomGear(H.gear[0],H.gear[1]);if(!invAdd('gear',g,1))log('Your bag is full. You leave a '+ITEMS[g].n+' behind.','bad')}
   if(H.egg&&Math.random()<H.egg[1]&&invAdd('gear',H.egg[0],1))txt+=' Among the gold, an egg hatches: a <span style="color:'+RARITY[ITEMS[H.egg[0]].r]+'">'+ITEMS[H.egg[0]].n+'</span>.';

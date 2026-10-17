@@ -20,7 +20,7 @@ function wrong(t,c){
   return cost.join(', ');
 }
 // frightened workers run home and keep away: half the holding's output for a few days
-const frighten=(t,days)=>{t.fear=Math.max(t.fear||0,G.day+days);for(const f of W.folk||[])if(f.home===t.name&&folkOut(f)){f.st='back';const door=folkDoor(t,f.k);f.tx=door.x;f.ty=door.y}};// (its workers on the road hurry back in: folk.js)
+const frighten=(t,days)=>{t.fear=Math.max(t.fear||0,G.day+days);for(const f of W.folk)if(f.home===t.name&&folkOut(f)){f.st='back';const door=folkDoor(t,f.k);f.tx=door.x;f.ty=door.y}};// (its workers on the road hurry back in: folk.js)
 
 /* dialogs */
 // a dialog button; why (if set) disables it and says why

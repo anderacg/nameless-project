@@ -26,7 +26,7 @@ function captureLord(l){
 }
 function captureChief(ld){if(ld)captives().push({k:'chief',ld})}
 // a chieftain who got away: back with a new band in a few days
-function chiefEscapes(ld,days){if(!ld)return;(W.exiles=W.exiles||[]).push({ld,back:G.day+(days||rint(4,8))})}
+function chiefEscapes(ld,days){if(!ld)return;W.exiles.push({ld,back:G.day+(days||rint(4,8))})}
 // a captive let go (or slipped away): a lord rides home to raise a new army, a chieftain to gather a new band
 function freeCaptive(c,days){
   if(c.k==='lord'){const l=W.lords.find(x=>x.id===c.id);if(l){l.held=false;l.back=G.day+(days||5)}}
@@ -35,7 +35,7 @@ function freeCaptive(c,days){
 const lordRansom=c=>80+30*c.lv;
 // once a day: chieftains who got away come back with a new band
 function chiefDay(){
-  const ex=W.exiles=W.exiles||[];for(const x of ex.filter(x=>G.day>=x.back)){spawnBandit(false,x.ld);x.done=true}
+  const ex=W.exiles;for(const x of ex.filter(x=>G.day>=x.back)){spawnBandit(false,x.ld);x.done=true}
   W.exiles=ex.filter(x=>!x.done);
 }
 // your band is routed: the captives slip away in the chaos

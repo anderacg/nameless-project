@@ -25,7 +25,6 @@ function sendCaravan(t){
   return null;
 }
 function caravanDay(){
-  W.caravans=W.caravans||[];
   for(const t of TOWNS){if(W.caravans.length>=CARAVAN_CAP)break;if(!t.bld||t.owner==='player'||besieged(t)||ruined(t))continue;
     const out=W.caravans.filter(c=>c.from===t.name&&!c.mine).length;if(out<2&&Math.random()<.25+.1*bldLv(t,'market'))sendCaravan(t)}
   // your idle caravans try to load again
@@ -35,7 +34,7 @@ function caravanDay(){
 function caravanArrive(c,to){
   ensureEcon(to);for(const g in c.goods)to.stock[g]=(to.stock[g]||0)+c.goods[g];
   const toll=Math.round(Object.keys(c.goods).reduce((a,g)=>a+GOODS[g].base*c.goods[g],0)*.05);
-  if(to.owner==='player'){P.gold+=toll;P.tradeWeek=(P.tradeWeek||0)+toll}else if(to.owner){W.tolls=W.tolls||{};W.tolls[to.owner]=(W.tolls[to.owner]||0)+toll}
+  if(to.owner==='player'){P.gold+=toll;P.tradeWeek=(P.tradeWeek||0)+toll}else if(to.owner){W.tolls[to.owner]=(W.tolls[to.owner]||0)+toll}
 }
 // each moment on the road: CaravanBrain (brains.js)
 
@@ -45,6 +44,17 @@ function caravanArrive(c,to){
 const CV_TC=new WeakMap(),CV_ARMY=new WeakMap();
 const cargoText=c=>Object.keys(c.goods).length?Object.keys(c.goods).map(g=>c.goods[g]+' '+GOODS[g].n.toLowerCase()).join(', '):'nothing';
 class CaravanParty extends Party{
+  get mapKind(){return 'caravan'}
+  here(){return W.caravans.includes(this)}
+  // on the map (drawCaravans): its carts seen out to a little past your sight, not hidden by woods; its label near you
+  inView(V){return this.fromYou()<=V*1.2}
+  // a click: on its ring, and anywhere on its cart, ox and drover (caravanPic)
+  pick(at){at.add(this,11,5);const s=caravanPic(this);at.fig(this,s,this.x-(s.width>>1),this.y+1-s.height,this.dir<0)}
+  draw(ents,cam,V){if(!this.inView(V))return;const c=this;
+    ents.push({y:c.y,f:()=>{const L=c.look(),s=caravanSprite(L.col),sx=Math.round(c.x-cam.x),sy=Math.round(c.y-cam.y);ctx.fillStyle='rgba(0,0,0,.3)';ctx.fillRect(sx-(s.cw>>1)+3,sy-1,s.cw-6,2);
+      ctx.save();ctx.translate(sx,sy);if(c.dir<0)ctx.scale(-1,1);ctx.drawImage(s,-(s.width>>1),1-s.height);ctx.restore();
+      if(c.fromYou()<90)txt(L.label,sx,sy-s.ch-1,L.labelCol,'center')}})}
+  mapDot(V){return this.fromYou()<V?['#e8d8a0',1]:null}
   get brain(){return BRAINS.caravan}
   get tc(){let c=CV_TC.get(this);if(!c||sum(c)!==this.guards){c=countsOf(this.rollGuards());CV_TC.set(this,c);LISTS.delete(this)}return c}
   set tc(v){CV_TC.set(this,v||{})}
@@ -143,7 +153,7 @@ onAct('cv-',(a,arg)=>G.cv?asParty(G.cv).act(a,arg):true);
 
 /* your own caravans: hired at a fief, carrying its stock to a destination; to your own fief they deliver, elsewhere they sell
    at the market there and bring the gold home. Standing routes reload and go again. Upkeep is paid daily. */
-const myCaravans=()=>(W.caravans||[]).filter(c=>c.mine);
+const myCaravans=()=>W.caravans.filter(c=>c.mine);
 function hireCaravan(from,to,cargo,guards,repeat){
   const t=townBy(from),d=townBy(to);if(!t||!d||t.owner!=='player'||hostileTo(d.owner)&&d.owner!=='player')return 'Pick a destination that is not hostile to you.';
   if(myCaravans().length>=PCV.max)return 'You already run '+PCV.max+' caravans.';
@@ -151,7 +161,7 @@ function hireCaravan(from,to,cargo,guards,repeat){
   const load={};for(const g in cargo){const n=Math.min(cargo[g],t.stock[g]||0);if(n>0)load[g]=n}if(!Object.keys(load).length)return 'Nothing to carry: '+t.name+' has none of that in stock.';
   for(const g in load)t.stock[g]-=load[g];P.gold-=cost;
   const c=asParty({cv:true,mine:true,fac:'player',from,to,dest:to,home:from,goods:load,order:{...cargo},guards,repeat:!!repeat,leg:'out',x:t.x+rint(-6,6),y:t.y+14,cool:0,dir:1});
-  (W.caravans=W.caravans||[]).push(c);log('A caravan leaves '+from+' for '+to+' with '+cargoText(c)+'.','gold');return '';
+  W.caravans.push(c);log('A caravan leaves '+from+' for '+to+' with '+cargoText(c)+'.','gold');return '';
 }
 function caravanUpkeep(){const mine=myCaravans();if(!mine.length)return;const cost=mine.reduce((a,c)=>a+PCV.upkeep+c.guards*PCV.guardUp,0);P.gold=Math.max(0,P.gold-cost)}
 
@@ -196,12 +206,7 @@ function caravanSprite(col){
   const c=mkc(Wd,G+2,x=>{x.drawImage(pcanvas(g),0,0);x.drawImage(drover,x0+31-(drover.width>>1),G+2-drover.height)});
   return spr[key]=cellOf(c);
 }
-// (a caravan's picture, in its owner's colour: drawn here as it looks (CaravanParty.look), clicked on its whole cart, ox and
-// drover: world.js pickAt)
+// (a caravan's picture, in its owner's colour: drawn as it looks (CaravanParty.look, draw), clicked on its whole cart, ox and
+// drover: CaravanParty.pick)
 const caravanCol=c=>c.fac==='player'||!FACS[c.fac]?FACS.player.col:FACS[c.fac].col,caravanPic=c=>caravanSprite(caravanCol(c));
-function drawCaravans(ents,cam,V){
-  for(const c of W.caravans||[]){if(Math.hypot(c.x-P.x,c.y-P.y)>V*1.2)continue;
-    ents.push({y:c.y,f:()=>{const L=asParty(c).look(),s=caravanSprite(L.col),sx=Math.round(c.x-cam.x),sy=Math.round(c.y-cam.y);ctx.fillStyle='rgba(0,0,0,.3)';ctx.fillRect(sx-(s.cw>>1)+3,sy-1,s.cw-6,2);
-      ctx.save();ctx.translate(sx,sy);if(c.dir<0)ctx.scale(-1,1);ctx.drawImage(s,-(s.width>>1),1-s.height);ctx.restore();
-      if(Math.hypot(c.x-P.x,c.y-P.y)<90)txt(L.label,sx,sy-s.ch-1,L.labelCol,'center')}})}
-}
+function drawCaravans(ents,cam,V){for(const c of W.caravans)asParty(c).draw(ents,cam,V)}

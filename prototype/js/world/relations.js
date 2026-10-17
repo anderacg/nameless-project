@@ -23,8 +23,8 @@ function rippleRel(l,n,why){
 // between lords: where they start (same realm: friendly; else seeded from their names) plus what has happened since
 const lordKey=(a,b)=>a.id<b.id?a.id+'|'+b.id:b.id+'|'+a.id;
 const lordRel0=(a,b)=>{const k=lordKey(a,b);let h=0;for(const c of k)h=(h*31+c.charCodeAt(0))|0;return a.fac===b.fac?15+Math.abs(h)%21:(Math.abs(h)%41)-20};
-const lordRel=(a,b)=>clamp(lordRel0(a,b)+((W.lrel||{})[lordKey(a,b)]||0),-100,100);
-function changeLordRel(a,b,n){if(!a||!b||a===b||!n)return;W.lrel=W.lrel||{};const k=lordKey(a,b);W.lrel[k]=(W.lrel[k]||0)+n}
+const lordRel=(a,b)=>clamp(lordRel0(a,b)+(W.lrel[lordKey(a,b)]||0),-100,100);
+function changeLordRel(a,b,n){if(!a||!b||a===b||!n)return;const k=lordKey(a,b);W.lrel[k]=(W.lrel[k]||0)+n}
 const lordFriends=l=>W.lords.filter(o=>o!==l&&!o.gone&&lordRel(l,o)>=RELATION.friend);
 const lordRivals=l=>W.lords.filter(o=>o!==l&&!o.gone&&lordRel(l,o)<=RELATION.rival);
 // friendship's favours
@@ -33,7 +33,7 @@ const lordSpares=l=>relWith(l)>=RELATION.spareAt&&!(P.fac&&atWar(P.fac,l.fac));
 // the days soften everything a little
 function relDay(){
   const k=1-RELATION.decay;for(const id in P.lrel||{}){P.lrel[id]*=k;if(Math.abs(P.lrel[id])<.5)delete P.lrel[id]}
-  for(const id in W.lrel||{}){W.lrel[id]*=k;if(Math.abs(W.lrel[id])<.5)delete W.lrel[id]}
+  for(const id in W.lrel){W.lrel[id]*=k;if(Math.abs(W.lrel[id])<.5)delete W.lrel[id]}
 }
 
 /* in a lord's audience: where you stand, and what you can ask */

@@ -20,7 +20,7 @@ function occReserve(){for(const c of CAMP_SPOTS)for(let j=-2;j<=1;j++)for(let i=
 // bandits keep their distance from the estates: no estate's building or field within BANDIT_GAP tiles of a bandit camp or hideout
 // (estates avoid the camps and hideouts there are; hideouts are placed after the estates and avoid them, sites.js)
 const BANDIT_GAP=8;
-const banditSpots=()=>[...CAMP_SPOTS,...(W.sites||[]).filter(s=>s instanceof Hideout)];
+const banditSpots=()=>[...CAMP_SPOTS,...W.sites.filter(s=>s instanceof Hideout)];
 const nearBandits=(x,y,r)=>banditSpots().some(s=>Math.hypot(s.tx-x,s.ty-y)<r);
 // is any estate's building or field within r tiles of (tx, ty)
 function estateNear(tx,ty,r){for(let y=ty-r;y<=ty+r;y++)for(let x=tx-r;x<=tx+r;x++){const id=occAt(x,y),l=id>0&&LOT[id];if(l&&ESTATES[l.k]&&Math.hypot(x-tx,y-ty)<r)return true}return false}
