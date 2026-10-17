@@ -68,7 +68,9 @@ function updateBattle(rt){
     jostle();
     for(const u of B.units){if(u.hp<=0||u.s.big)continue;for(const o of B.obs)obstaclePush(u,o,was.get(u))}
     for(const u of B.units){u.x=clamp(u.x,8,BW-8);u.y=clamp(u.y,fieldTop(),fieldBot())}
+    if(B.terrain)terrainHold(was);// (no step into rock or impassable water, nor over a cliff its blocked way: refused or slid along, terrain.js)
     updateProjectiles(dt);
+    sightStep();// (who sees whom, every SIGHT.every s: hidden in woods or behind a rise, terrain.js; nothing with no terrain)
     moraleTick(dt);if(B.opts.sandbox&&BattleLab.active)BattleLab.sampleMorale();// (morale.js)
     if(!B.over){const ap=B.units.filter(u=>u.team===0&&fighting(u)).length,ae=B.units.filter(u=>u.team===1&&fighting(u)).length;
     if(ae>0&&retreating())retreatNow();// (you withdrew: morale.js)

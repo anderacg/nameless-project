@@ -196,7 +196,9 @@ try{
    ok(/river/i.test(t.terrainEnvText({...envW,text:'X.'},'party'))&&!/river/i.test(t.terrainEnvText({...envW,text:'X.'},'monster')),'the pre-battle panel tells of the river: '+t.terrainEnvText({...envW,text:'X.'},'party'));
    const Bw=fight(p);ok(Bw.terrain&&Bw.terrain.has.water&&Bw.terrain.ai.crossings.length>0&&Bw.obs.length===0&&/river/i.test(Bw.env.text),'a battle beside water is fought over a river: '+Bw.env.text);ev('B=null');G.mode='world';G.modal=false}
   // ---- the rules, on a lab field: a river down the middle, a ford above, a bridge below
-  L.exit();G.mode='world';G.modal=false;
+  // (wadeable deep water: phase 2's rules, kept under TERRAIN.wade (phase 4 makes it impassable: tests/routing.js); crossWay steers
+  // round it there)
+  L.exit();G.mode='world';G.modal=false;ev('TERRAIN.wade=true');
   const RB=lab([{type:'hum_foot',count:1},{type:'hum_knight',count:1},{type:'orc_grunt',count:1},{type:'hum_bow',count:1},{type:'hum_foot',count:16},{type:'hum_knight',count:8,form:'wedge'}],[{type:'hum_foot',count:1},{type:'troll',count:1},{type:'dw_shield',count:6}],
    {rivers:[{x:.5,crossings:[{kind:'ford',y:.22},{kind:'bridge',y:.5}]}],seed:3});
   const RT=RB.terrain,[cF,cB]=RT.ai.crossings,mid=(cF.x0+cF.x1)/2,dp={x:mid,y:t.BH*.36},fd={x:mid,y:cF.y},bg={x:(cB.x0+cB.x1)/2,y:cB.y},dry={x:cF.x0-120,y:t.BH*.36};
@@ -235,7 +237,12 @@ try{
    g.face=0;g.currentFacing=0;g.placeAt(cB.x0-90,cB.y);t.layForm(g.id);for(const u of m){u.x=g.ax+u.sx;u.y=g.ay+u.sy}g.moveTo(cB.x1+120,cB.y,{face:0});
    const wet=new Set(),dryX=new Set();RB.paused=false;ev('B.cmdT=1e9');for(let f=0;f<60*25;f++){t.updateBattle(1/60);for(const u of m){const k=t.groundAt(u.x,u.y);if(k===K.deep)wet.add(u);else if(k===K.bridge)dryX.add(u)}}
    const over=m.filter(u=>u.x>cB.x1).length;ok(over===16&&dryX.size>=8&&wet.size<16,'a line of 16 marching over: '+dryX.size+' squeeze over the bridge, '+wet.size+' far off its line wade; '+over+'/16 across')}
-  L.exit();G.mode='world';G.modal=false;
+  L.exit();G.mode='world';G.modal=false;ev('TERRAIN.wade=false');
+  // (impassable, phase 4: the same line all over the bridge, no one in the water)
+  {const B2=lab([{type:'hum_foot',count:16}],[{type:'hum_foot',count:1}],{rivers:[{x:.5,crossings:[{kind:'ford',y:.22},{kind:'bridge',y:.5}]}],seed:3}),c=B2.terrain.ai.crossings[1],g=Object.values(B2.groups).find(q=>q.player),m=g.units;
+   for(const u of B2.units)if(u.team){u.x=t.BW-30;u.y=t.fieldTop()+10;u.hp=u.max=1e9;u.s={...u.s,spd:0}}g.face=0;g.currentFacing=0;g.placeAt(c.x0-90,c.y);t.layForm(g.id);for(const u of m){u.x=g.ax+u.sx;u.y=g.ay+u.sy}g.moveTo(c.x1+120,c.y,{face:0});
+   const wet=new Set(),onB=new Set();B2.paused=false;ev('B.cmdT=1e9');for(let f=0;f<60*25;f++){t.updateBattle(1/60);for(const u of m){const k=t.groundAt(u.x,u.y);if(k===K.deep)wet.add(u);else if(k===K.bridge)onB.add(u)}}
+   const over=m.filter(u=>u.x>c.x1).length;ok(over===16&&onB.size===16&&!wet.size,'deep water impassable (phase 4): the line of 16 all over the bridge ('+onB.size+'), none in the water; '+over+'/16 across');L.exit();G.mode='world';G.modal=false}
   {const CB=lab([{type:'hum_knight',count:1}],[{type:'hum_foot',count:1}],{rivers:[{x:.5,crossings:[{kind:'bridge',y:.5}]}],seed:3}),k=CB.units.find(u=>u.type==='hum_knight'),f=CB.units.find(u=>u.type==='hum_foot'),c=CB.terrain.ai.crossings[0];
    k.x=c.x0-100;k.y=c.y+30;f.x=c.x1+90;f.y=c.y-20;f.s={...f.s,spd:0};CB.groups[k.grp].attack(f);CB.paused=false;ev('B.cmdT=1e9');let wet=0,onB=0;for(let i=0;i<60*8&&f.hp>0;i++){t.updateBattle(1/60);const g=t.groundAt(k.x,k.y);if(g===K.deep)wet++;if(g===K.bridge)onB++}
    ok(!wet&&onB>0,'a charge goes over the bridge, not through the water (frames: '+onB+' on it, '+wet+' wading)');L.exit();G.mode='world';G.modal=false}

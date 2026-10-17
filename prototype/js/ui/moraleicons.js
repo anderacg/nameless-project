@@ -68,7 +68,8 @@ function drawUnitIcons(){
   // (each icon's place over its group; then those that would overlap, as where the lines meet, are set side by side in a row
   // under the highest of them, the row centred on them; and each icon glides to its place rather than jumping)
   const items=[];
-  for(const g in B.groups){const m=B.units.filter(u=>u.grp===g&&u.hp>0);if(!m.length)continue;const mo=B.noMorale?null:grpMorale(m);
+  // (an enemy group your side does not see has no icon; one partly seen, over those seen: terrain.js seenBy)
+  for(const g in B.groups){const m=B.units.filter(u=>u.grp===g&&u.hp>0&&seenBy(0,u));if(!m.length)continue;const mo=B.noMorale?null:grpMorale(m);
     const f=m.filter(u=>!u.rout),at=f.length?f:m,cx=at.reduce((a,u)=>a+u.x,0)/at.length,top=Math.min(...at.map(u=>u.y));
     const st=mo?statusOf(mo):[],W=(S+(st.length?Math.ceil(st.length/2)*10+1:0))*K,H=(S+6)*K;
     const sp=fromField({x:cx,y:top}),z=B.cam?B.cam.z:1;if(sp.x<-W||sp.x>BVW+W||sp.y<0||sp.y>BVH+40)continue;// (off the view: none)

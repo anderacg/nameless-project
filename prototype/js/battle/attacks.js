@@ -3,6 +3,7 @@
 // Targeting and activation stay with actors/commanders. These helpers execute an attack and preserve its existing effects.
 function fx(x,y,c,n){for(let i=0;i<n;i++)B.parts.push({x,y,vx:(Math.random()-.5)*70,vy:(Math.random()-.5)*70,life:.35,c})}
 function applyDmg(t,amt,m,dt,source,missile){
+  if(B.terrain)sightStruck(source,t);// (whoever strikes or shoots at a side is seen by it: terrain.js)
   if((t.hero?B.hx&&B.hx.inv:t.ch&&t.ch.inv)>0){B.floats.push({x:t.x,y:t.y-16,t:'Dodge',life:.4,c:'#cfe0ff'});return}// (rolling, leaping, dashing: unhurt)
   if(t.hero)amt*=1-tm('dr');
   if(t.wardT>0)amt*=.75;
@@ -18,7 +19,7 @@ function applyDmg(t,amt,m,dt,source,missile){
     else if(t.hero){B.heroDown=true;B.floats.push({x:t.x,y:t.y-22,t:'You are down!',life:1.6,c:'#fff'});log('You are knocked down. Your troops fight on.','bad')}
     else if(t.comp){const c=compInit(t.type);if(c)c.hurt=Math.max(c.hurt||0,G.day+2);log(COMPS[t.type].n+' is wounded and drops out of the fight: out for 2 days.','bad')}// (never killed)
     else if(!t.lord)B.lost[t.type]=(B.lost[t.type]||0)+1;
-    if(t.lord&&!t.leader){if(t.sourceArmy===t.lord&&t.sourceGroupId)partyRoster(t.sourceArmy).remove(t.type,1,t.sourceGroupId);else partyRemove(t.lord,t.type,1)}
+    if(t.lord&&!t.leader){if(t.sourceArmy===t.lord&&t.sourceGroupId)partyRoster(t.sourceArmy).remove(t.type,1,t.sourceGroupId);else t.lord.remove(t.type,1)}
     else if(t.team===1&&t.sourceArmy&&t.sourceGroupId&&!t.leader){partyRoster(t.sourceArmy).remove(t.type,1,t.sourceGroupId);B.primaryLossesApplied=true}
     if(t.grp){if(B.sel===t.grp&&!grpUnits(t.grp).length)B.sel='all';setOrderUI()}
     shakeIt(2);
@@ -52,7 +53,7 @@ function aimErr(u,p){
 const spreadOf=E=>(Math.random()-.5)*E.a;
 function outOfAmmo(u){u.s={...u.s,range:0,reach:Math.max(u.s.reach||0,10),dmg:u.s.dmg*.6};u.empty=true;B.floats.push({x:u.x,y:u.y-20,t:'Out of ammo',life:.7,c:'#9aa3ad'})}
 function attack(u,t){
-  const s=u.s;u.cd=s.cd*(.9+Math.random()*.2);u.atkAt=B.t;
+  const s=u.s;u.cd=s.cd*(.9+Math.random()*.2);u.atkAt=B.t;if(B.terrain)sightStruck(u,t);// (a blow or a shot loosed gives him away: terrain.js)
   if(s.range){const flat=s.magic||s.flat,E=aimErr(u);fireBolt(u,Math.atan2(t.y-(flat?u.y-6:u.y),t.x-u.x)+spreadOf(E),s.dmg*(.85+Math.random()*.3)*(u.buffT>0?1.3:1)*arrowMul(u),arrowSrc(u,s),Math.hypot(t.x-u.x,t.y-u.y),{sc:E.d})}// (fire arrows: unitabilities.js)
   else{let dm=s.dmg*(.8+Math.random()*.4)*chargeMul(u,t)*tiredMul(u).dmg;fatigueBlow(u);// (a charge: by how far it ran, braced spears blunt it, morale.js; tired, softer: fatigue.js)
     hit(u,t,dm);meleeFollow(u,t,dm)}

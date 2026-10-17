@@ -50,6 +50,31 @@ function measureField(){
     const top=tops.length?Math.max(...tops.map(b=>b.bottom))-r.top:0,bh=bot?r.bottom-bot.top:0;
     return{top:Math.round(clamp(top*k+FIELD_EDGE.body,FIELD_EDGE.top,BH*.3)),bot:Math.round(clamp(BH-bh*k-FIELD_EDGE.bot,BH*.6,BH-FIELD_EDGE.bot))}}
   finally{if(ab)ab.hidden=abH}}
+/* ---------- battle types (IMPLEMENTATION_PLAN §4 item 5; doc/TERRAIN_DESIGN.md §8, phase 5): B.btype, absent on an open field ----------
+   {kind:'bridge', def, ford}: a fight at a river crossing: one bridge over deep water nobody can wade (ford: and a ford far off
+   it); def, the team set upon, stands on its bank by the bridge, the other comes on from its own edge and must cross.
+   {kind:'ambush', hid}: hid, the team lying in wait, starts hidden in cover on one flank of a road or both; the other in march
+   order on the road down the middle, with no deployment. Only with terrain (B.terrain): the world asks for them
+   (encounters.js battleTypeFor, the pre-battle panel's Spring an ambush), and the lab (lab.js type).
+   bridgeY: the bridge's middle off the open lane's (share of the field's height, either way); ford: the chance of a ford far off
+   it (by the world tile; the lab's by its seed); fordGap: the least ground between them (px); front: the holders' line this far
+   off the water (px, besides half its depth), behind: their shooters this much behind it (characters 1.6×, riders 2.4×), flank:
+   their riders this far off the bridge's middle (px, either side); back, alert: the holders' foot stands this much further back from
+   the water (px) while none of theirs who fight hand to hand is within alert px of its place; wait: s with no blow struck before the holders give up
+   waiting and go over (commander.js) */
+// road: the column's road this far either side of it (px, kept clear of cover); files: the column's files; colGap: room between its
+// groups (px); gap: the column's edge to the front of those lying in wait (px: beyond SIGHT.near); r0: a wood's least radius
+// round a group (px); sep: room between two (px); edge: the share of the field's width kept clear at each end; both: the chance
+// of cover on both flanks (else one); ridge: on hills, the chance cover is a low ridge (deserts always: no woods there); ridgeX:
+// a ridge runs this far past the furthest group behind it (px, then ÷.7: its ends are thin); march: the AI's column marches this share of the
+// field's width on along the road; rush: s from the start the AI's men lying in wait go straight in, before its usual orders
+// take (commander.js typeTake: a bridge's takers going over as one): stage, form: they wait this far back from the crossing's near
+// mouth, and form up this far beyond its far one (px, besides half their depth); spread: groups this far apart along it (px); near:
+// a group is at its place within this (px); share: a group is over with this share of its men; held: their strength this near the
+// far mouth holds a crossing (px); pick: s between looks for the crossing least held; volleys: their shooters' volleys (× FOE_CMD.volley
+// s) before they go to the crossing; waitMax, stageMax, formMax: s at most waiting for them, gathering at the crossing, forming
+const BTYPE={bridgeY:.15,ford:.4,fordGap:100,front:24,behind:50,flank:110,back:30,alert:260,wait:60,road:20,files:4,colGap:14,gap:84,r0:56,sep:12,edge:.1,both:.5,ridge:.5,ridgeX:60,march:.5,rush:6,
+  take:{stage:60,form:50,spread:70,near:40,share:.75,held:150,pick:3,volleys:2,waitMax:30,stageMax:15,formMax:20}};
 // One short-lived coordinator per battle. Runtime units remain plain records; saved campaign records are not copied.
 // Construction order is deliberate: preserve random draws, chief reuse, HUD measurement and post-layout initialization.
 class BattleSetup{
@@ -122,12 +147,61 @@ class BattleSetup{
   }
   createState(){
     const {units,hero,groups,env,opts}=this,FI=this.field;
+    // (an ambush's cover is laid round the groups lying in wait: ambushLayout)
+    if(this.btype&&this.btype.kind==='ambush')this.ground.ambush=this.ambushLayout();
     // (the ground: only a battle with terrain gets B.terrain, and then no scattered trees, rocks or cacti: its woods, hills and
     // marsh are the field's only features (the owner, 2026-10-17, reversing D10); without terrain the obstacles as ever: terrain.js)
     const TR=this.ground?buildTerrain({...this.ground,W:BW,top:FI.top,bot:FI.bot}):null;if(TR&&!opts.sandbox)env.text=groundEnvText(env,TR);
     const st={units,hero,groups,env,arena:arenaFor(env.c),ftop:FI.top,fbot:FI.bot,obs:opts.tournament||TR?[]:placeObstacles(env,FI.top,FI.bot),sel:'all',rings:[],arrows:[],parts:[],floats:[],slashes:[],corpses:[],aim:0,blocking:false,touchBlock:false,mt:null,over:false,endT:0,kills:0,slain:[],lost:{},heroDown:false,opts,t:0};
-    if(TR)st.terrain=TR;return st;
+    if(TR)st.terrain=TR;if(TR&&this.btype)st.btype=this.btype;return st;
   }
+  // (the battle's type (BTYPE): the encounter's (encounters.js battleTypeFor), only with terrain; the lab's own: lab.js)
+  // (an ambush is sprung once: run down after it, you face them again on an open field (e.btype false))
+  battleType(){const e=!this.opts.tournament&&!this.opts.sandbox&&G.enc,bt=e&&e.btype;if(!bt||!this.ground||bt.kind!=='bridge'&&bt.kind!=='ambush')return null;if(bt.kind==='ambush')e.btype=false;return{...bt}}
+  // (its ground: a held bridge's river; an ambush's has no recipe of its own (its cover: createState), and no deployment)
+  typeGround(){const bt=this.btype,g=this.ground;
+    if(bt.kind==='bridge')g.river={bridge:true,hold:true,ford:!!bt.ford,frozen:false};else{g.river=null;this.opts.deploy=false}}
+  /* (the groups where the type puts them: a bridge's holders on their bank by it (its riders and characters behind), the other
+     side where it would be; an ambush's as ambushLayout laid them, and a column of the AI's marching on along the road. Your zone,
+     holding a bridge, runs to the bank: B.dzone, deploy.js) */
+  arrangeType(){
+    const bt=B.btype,T=B.terrain,put=(g,x,y,face,files)=>{const m=grpUnits(g.id);if(!m.length)return;if(FORMS[g.form]&&FORMS[g.form].wedge||g.form==='loose')g.form='line';if(files!=null)g.files=Math.max(1,Math.min(files,m.length));
+      g.face=face;g.currentFacing=face;g.ax=clamp(x,8,BW-8);g.ay=clamp(y,fieldTop(),fieldBot());const S=formSlots(g.form,m.length,face,g.files);m.forEach((u,i)=>{u.sx=S[i][0];u.sy=S[i][1];u.x=g.ax+u.sx;u.y=g.ay+u.sy;u.dir=face})};
+    if(bt.kind==='ambush'){const L=this.ground.ambush.place;for(const id of Object.keys(L))if(B.groups[id])put(B.groups[id],L[id].x,L[id].y,L[id].face,L[id].files);
+      // (the AI's column marches on along the road, west, till it sees whoever lies in wait (commander.js))
+      if(bt.hid===0)for(const g of Object.values(B.groups))if(g.team===1&&L[g.id])g.standAt(Math.max(BW*BTYPE.edge,g.ax-BW*BTYPE.march),g.ay);return}
+    const c=T.ai.crossings.find(k=>k.kind==='bridge');if(!c){B.btype=null;return}
+    const d=bt.def,fd=d?-1:1,bank=fd>0?c.x0:c.x1,face=fd>0?0:Math.PI,A=BTYPE,gs=Object.values(B.groups).filter(g=>g.team===d&&grpUnits(g.id).length),by=r=>gs.filter(g=>g.role===r);
+    // (the bank by each group's own stretch of it: the water's edge nearest them over the rows it covers)
+    const rv=T.recipe.rivers[0],edge=(y,h)=>{let b=fd>0?Infinity:-Infinity;for(let r=Math.max(0,Math.floor((y-h)/T.cs));r<=Math.min(T.R-1,Math.floor((y+h)/T.cs));r++){const a=fd>0?rv.sp0[r]:rv.sp1[r];if(a>=0)b=fd>0?Math.min(b,a):Math.max(b,a)}return isFinite(b)?b:bank};
+    const lay=(list,dx,spread)=>list.forEach((g,i)=>{const sh=formSlots(g.form,grpUnits(g.id).length,face,g.files),dep=sh.length?Math.max(...sh.map(p=>p[0]*Math.cos(face)))-Math.min(...sh.map(p=>p[0]*Math.cos(face))):0,w=sh.length?Math.max(...sh.map(p=>Math.abs(p[1])))+8:8,y=c.y+(i-(list.length-1)/2)*spread;
+      put(g,edge(y,w)-fd*(dx+dep/2),y,face)});
+    const inf=by('inf'),dep=inf.reduce((a,g)=>Math.max(a,Math.ceil(grpUnits(g.id).length/(g.files||FORMS.line.files))*FORMS.line.gy),0);
+    lay(inf,A.front,120);lay(by('arc'),A.front+dep+A.behind,120);lay(by('mag'),A.front+dep+A.behind*.5,90);lay(by('hero'),A.front+dep+A.behind*1.6,30);
+    by('cav').forEach((g,i)=>{const y=c.y+(i%2?-1:1)*(A.flank+Math.floor(i/2)*60);put(g,edge(y,48)-fd*(A.front+dep+A.behind*2.4),y,face)});
+    if(d===0)B.dzone={x0:8,x1:Math.round(T.ai.river.x0-A.front)}}
+  /* (an ambush's lay-out (BTYPE), before its ground is built: the column on a road down the middle, each group BTYPE.files wide in
+     march order (riders the van, then the foot, the characters, the shooters), facing on (yours east, theirs west); those lying in
+     wait on one flank or both, each group facing the road with its front BTYPE.gap px off the column's edge (beyond SIGHT.near), in
+     a wood of its own round it, or (deserts; half the time on hills) behind a low ridge the length of the flank. Its own stream
+     from the ground's seed. {road, woods, ridges (terrain.js ambushPlan), place: {group id: {x, y, face, files}}} */
+  ambushLayout(){
+    const bt=this.btype,A=BTYPE,F=FORMS.line,top=this.field.top,bot=this.field.bot,mid=Math.round((top+bot)/2),rnd=seeded((this.ground.seed^0xA3B5C701)>>>0),W=BW,place={};
+    const rank=r=>['cav','inf','hero','arc','mag'].indexOf(r),n=g=>this.units.filter(u=>u.grp===g.id).length,side=t=>Object.values(this.groups).filter(g=>g.team===t&&n(g)).sort((a,b)=>rank(a.role)-rank(b.role));
+    const col=side(1-bt.hid),hid=side(bt.hid),dir=bt.hid?1:-1,h=Math.min(A.files,Math.max(1,...col.map(n)))*F.gx/2;
+    // (the column: its van at the front, centred on the field)
+    const len=g=>Math.ceil(n(g)/Math.min(A.files,n(g)))*F.gy;let x=W/2+dir*(col.reduce((a,g)=>a+len(g)+A.colGap,-A.colGap))/2;
+    for(const g of col){place[g.id]={x:x-dir*len(g)/2,y:mid,face:dir>0?0:Math.PI,files:A.files};x-=dir*(len(g)+A.colGap)}
+    // (those lying in wait: their flank or flanks, each group in turn out from the middle, alternately right and left of it)
+    const ridge=ambushRidge(this.ground.recipe,this.ground.seed),s0=rnd()<.5?-1:1,both=rnd()<A.both,fl={[-1]:[],[1]:[]},woods=[];
+    hid.forEach((g,i)=>{const k=n(g),f=Math.min(k,Math.max(1,Math.min(8,Math.ceil(Math.sqrt(k*2.5))))),w=(f-1)*F.gx,d=(Math.ceil(k/f)-1)*F.gy,r=Math.max(A.r0,Math.hypot(w/2+F.gx,d/2+F.gy)/.8);
+      let s=both?(i%2?-s0:s0):s0;const room=q=>{const l=fl[q];return !l.length||Math.max(...l.map(p=>p.x+p.r))+A.sep+2*r<W*(1-A.edge)||Math.min(...l.map(p=>p.x-p.r))-A.sep-2*r>W*A.edge};if(!room(s)&&room(-s))s=-s;
+      const l=fl[s],right=l.length%2===0,px=!l.length?W/2:right?Math.max(...l.map(p=>p.x+p.r))+A.sep+r:Math.min(...l.map(p=>p.x-p.r))-A.sep-r,y=mid+s*(h+A.gap+d/2);
+      const p={x:clamp(px,W*A.edge,W*(1-A.edge)),y,r};l.push(p);woods.push({x:p.x,y:p.y,r});place[g.id]={x:p.x,y,face:s>0?-Math.PI/2:Math.PI/2,files:f}});
+    // (ridges: one along each flank in use, between the road and those behind it, past the furthest of them)
+    const ridges=ridge?[-1,1].filter(s=>fl[s].length).map(s=>{const l=fl[s],span=Math.max(...l.map(p=>Math.abs(p.x-W/2)+p.r),col.reduce((a,g)=>a+len(g),0)/2)+A.ridgeX;
+      return{x:W/2,y:mid+s*(h+A.gap*.5),rx:Math.min(W/2-8,span/.7),ry:A.gap*.3}}):[];
+    return{road:[mid-h-A.road,mid+h+A.road],woods:ridge?[]:woods,ridges,place}}
   initialize(){
     B.speed=BSPEED.v;B.paused=false;
     for(const g of Object.keys(B.groups))layForm(g);
@@ -141,6 +215,7 @@ class BattleSetup{
     G.mode='battle';hidePanel();bbar.hidden=false;buildSlotBar();setOrderUI();battleSpeedUI();autoUI();updateHint();
     for(const u of this.units)u.y=clamp(u.y,fieldTop(),fieldBot());for(const g of playerGroups())if(B.groups[g].ay)B.groups[g].placeAt(B.groups[g].ax,clamp(B.groups[g].ay,fieldTop(),fieldBot()));
     log(this.opts.tournament?'The crowd roars. Defeat the champion.':'The lines meet in the '+this.env.name.toLowerCase()+'. '+this.env.text);
+    if(B.btype)typeSay();
   }
   // (the battle's terrain: its recipe and seed, or null; the lab's own: lab.js)
   groundSpec(){return groundSpecFor(this.opts,this.env)}
@@ -150,14 +225,24 @@ class BattleSetup{
     this.env=battleEnv(this.opts.tournament);
     this.ground=this.groundSpec();groundEnv(this.env,this.ground);// (the ground's recipe and seed before anyone spawns: D2, terrain.js)
     this.createUnits();
+    this.btype=this.battleType();if(this.btype)this.typeGround();// (its type, if any: BTYPE)
     this.field=measureField();
     this.createGroups();
     B=this.createState();
     if(this.playerOrder)B.playerOrder=this.playerOrder;
+    if(B.btype)this.arrangeType();
     this.initialize();
     this.present();
     terrainStep();// (shooters on high ground: their range from where they stand at the start, terrain.js)
+    sightStep(true);// (who sees whom from the start: those in woods or behind a rise unseen, terrain.js)
   }
 }
+// (an ambush's cover a ridge, not woods: always in a desert, BTYPE.ridge of the time on hills, by the ground's seed)
+const ambushRidge=(recipe,seed)=>recipe==='desert'||recipe==='hills'&&seeded((seed^0x5EED41D)>>>0)()<BTYPE.ridge;
+// the battle's type told as it opens (B.btype): a line in the log and a banner (battlehud.js callout); its words (BTYPE_SAY)
+const BTYPE_SAY={hold:['Hold the bridge!','Hold the bridge: they must come over the river to you, by the bridge or not at all.'],take:['Take the bridge!','Take the bridge: they hold the far bank, and you must cross under their arrows.'],
+  wait:['Lie in wait','Your band lies hidden beside the road. Charge out of hiding when you choose: the first blow lands harder.'],caught:['Ambushed!','Ambush! They lie hidden beside the road, and your band is caught in march order.']};
+function typeSay(){const bt=B.btype;if(!bt)return;const mine=bt.kind==='bridge'?bt.def===0:bt.hid===0,k=bt.kind==='bridge'?(mine?'hold':'take'):mine?'wait':'caught',[t,txt]=BTYPE_SAY[k];
+  log(txt,k==='caught'?'bad':k==='wait'?'good':'');if(typeof callout==='function')callout(t,k==='caught'?1:0,'btype',{major:true})}
 // Compatibility entry point used by encounters, tournaments, tests and other callers.
 function startBattle(opts){return new BattleSetup(opts).start()}

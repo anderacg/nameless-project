@@ -54,9 +54,39 @@ function reinfAfter(e,win){
   const facs=[...new Set((e.allies||[]).filter(l=>l.fac&&l.fac!=='player').map(l=>FACS[l.fac].n))];
   if(win&&(e.allies||[]).length)log('You fought beside '+e.allies.map(l=>l.name).join(' and ')+'.'+(facs.length?' The '+facs.join(' and ')+' will remember it.':''),'good');
 }
+/* ---------- battle types from the world (setup.js BTYPE), only with terrain (TERRAIN.on) ----------
+   Hold the bridge: a fight with a lord, a band, a patrol or a caravan on a road bridge or next to one (a road tile with water on
+   both sides, within near tiles; not where the river is ice (frost) nor in the desert (no river)): the side set upon (you, unless
+   you rode at them) holds it. Ambush: a band, or a hostile lord's army, that comes at you where there is cover springs one at
+   cover's chance (a forest tile or 3 forest tiles round it; hills or peaks; else woods or rock on the field) × by its kind's
+   (bandits, raiders, bog raiders; lord). Riding at a party where there is cover, you may lie in wait for it instead (Spring an
+   ambush). Each drawn from the tile and the day (hash), never Math.random: the game's random sequence is untouched */
+const BTYPE_WORLD={kinds:['lord','party','patrol','caravan'],near:1,cover:{forest:.35,hills:.3,field:.15},by:{bandits:1,raiders:1.2,bog:1.2,lord:.5}};
+const roadBridge=(tx,ty)=>tAt(tx,ty)===T_ROAD&&(tAt(tx-1,ty)===T_WATER&&tAt(tx+1,ty)===T_WATER||tAt(tx,ty-1)===T_WATER&&tAt(tx,ty+1)===T_WATER);
+function bridgeNear(tx,ty){const N=BTYPE_WORLD.near;for(let dy=-N;dy<=N;dy++)for(let dx=-N;dx<=N;dx++)if(roadBridge(tx+dx,ty+dy))return true;return false}
+// the cover at world point (x,y) for an ambush: 'forest', 'hills', 'field' (woods or rock on its battlefield) or null; and its words
+function coverAt(x,y){const env=battleEnv(),t=terrAt(x,y),g=terrainAt(x,y,env);if(g.recipe==='forest')return 'forest';if(t===T_HILL||t===T_MOUNT||env.t===T_HILL)return 'hills';
+  const T=buildTerrain({...g,W:clamp(BVW,FIELD_W.min,FIELD_W.max)});return T.has.wood||T.has.rock?'field':null}
+const COVER_SAY={forest:'the trees',hills:'the rocky rises',field:'the thickets'};
+function battleTypeFor(e){
+  if(!TERRAIN.on||!BTYPE_WORLD.kinds.includes(e.kind))return null;const env=battleEnv(),g=terrainAt(P.x,P.y,env);
+  if(g.river&&!g.river.frozen&&!g.river.stream&&bridgeNear(g.tx,g.ty))return{kind:'bridge',def:e.mine?1:0,ford:hash(g.tx,g.ty,4447)<BTYPE.ford};
+  const by=e.mine?0:e.kind==='lord'?BTYPE_WORLD.by.lord:e.kind==='party'?BTYPE_WORLD.by[e.band||'bandits']||0:0,cv=by&&coverAt(P.x,P.y);
+  return cv&&hash(g.tx,g.ty,G.day*13+7)<BTYPE_WORLD.cover[cv]*by?{kind:'ambush',hid:1}:null}
+// you may lie in wait for them: you rode at them, where there is cover, and it is no bridge's fight
+const canSpring=e=>TERRAIN.on&&!!e.mine&&BTYPE_WORLD.kinds.includes(e.kind)&&!e.btype&&!!coverAt(P.x,P.y);
+// the pre-battle panel's word on the battle's type
+function typeHtml(e){const bt=e.btype;
+  if(bt&&bt.kind==='bridge')return bt.def===0?'<p class="gold"><strong>Hold the bridge.</strong> You stand on your bank by it: they must come at you over the river, by the bridge'+(bt.ford?' or a ford far off it.':' or not at all.')+'</p>'
+    :'<p class="gold"><strong>Take the bridge.</strong> They hold the far bank by it'+(bt.ford?', a ford far off it':'')+': you must cross.</p>';
+  if(bt&&bt.kind==='ambush')return '<p class="bad"><strong>Ambush!</strong> They burst from cover beside the road: your band is caught in march order, with no time to deploy.</p>';
+  return canSpring(e)?'<p class="muted">There is cover here: you can lie in wait beside the road and spring an ambush on them as they pass.</p>':''}
+// (Spring an ambush: your band hidden beside the road, theirs on it in march order; no deployment for either)
+onAct('bt-',a=>{const e=G.enc;if(a==='bt-spring'&&e&&G.mode==='dialog'&&canSpring(e)){e.btype={kind:'ambush',hid:0};startBattle({enemies:e.list,tournament:false,lv:e.lv||1,deploy:false})}});
 function startEncounter(e){
   if(e.mine==null)e.mine=!!G.youAttack;G.youAttack=false;if(e.lv==null&&e.ref&&e.ref.ld)e.lv=chiefLv(e.ref);// did you start it (you may call that off)? a chieftain's band fights at its level
-  e.list=e.list||makeEnemies(e.n,e.kind==='camp',e.band);const env=battleEnv(),ground='<p class="muted">Battleground: '+env.name+'. '+terrainEnvText(env,e.kind)+'</p>',band=BANDS[e.band||'bandits'];G.enc=e;G.mode='dialog';P.tx=null;G.chase=null;
+  if(e.btype==null){const bt=battleTypeFor(e);if(bt)e.btype=bt}// (a battle type: none with terrain off)
+  e.list=e.list||makeEnemies(e.n,e.kind==='camp',e.band);const env=battleEnv(),ground='<p class="muted">Battleground: '+env.name+'. '+terrainEnvText(env,e.kind,e.btype)+'</p>',band=BANDS[e.band||'bandits'];G.enc=e;G.mode='dialog';P.tx=null;G.chase=null;
   const given=!!e.allies;e.allies=e.allies||nearAllies(e);e.foes=e.foes||nearFoes(e);
   if(!given&&e.kind!=='tourney')for(const p of cparties())if(!p.fight&&!p.inside&&Math.hypot(p.x-P.x,p.y-P.y)<REINF_R)e.allies.push(forceOf(p));// your companions' parties
   // the garrison sallies: beside you when you fight a holding's besiegers, against you when an army comes to relieve your siege
@@ -69,7 +99,7 @@ function startEncounter(e){
       (finds?'<p class="muted">'+finds+'</p>':'')+hurt+'<p>'+vs+'</p>'+
       '<div class="btns"><button class="btn primary" type="button" data-act="fight">Fight</button><button class="btn" type="button" data-act="auto">Auto-resolve</button>'+fleeBtn(e)+'</div>')}
   if(e.kind==='field')return showPanel('<h2>'+e.title+'</h2><p>You ride into the battle'+(e.allies.length?' beside '+e.allies.map(l=>l.name).join(', '):'')+'.</p>'+ground+hurt+'<p>'+vs+'</p><div class="btns"><button class="btn primary" type="button" data-act="fight">Fight</button><button class="btn" type="button" data-act="auto">Auto-resolve</button><button class="btn" type="button" data-act="flee">Leave them to it</button></div>');
-  showPanel('<h2>'+(e.title?e.title:lord?lord.name+' attacks':e.kind==='camp'?e.ref.name||'Bandit camp':band[0])+'</h2>'+(lord?'<p class="muted">An army of the <span style="color:'+f.col+'">'+f.n+'</span>.</p>':'')+'<p>Scouts count about <strong>'+e.list.length+'</strong> '+(lord||e.kind==='estate'||e.kind==='caravan'||e.kind==='patrol'?'soldiers':band[1]+(e.kind==='camp'?' and a chieftain':''))+'.'+ground+' You have <strong>'+playerList().length+'</strong> fighters, including yourself.</p>'+hurt+'<p>'+vs+'</p><div class="btns"><button class="btn primary" type="button" data-act="fight">Fight</button><button class="btn" type="button" data-act="auto">Auto-resolve</button>'+fleeBtn(e)+'</div>');
+  showPanel('<h2>'+(e.title?e.title:lord?lord.name+' attacks':e.kind==='camp'?e.ref.name||'Bandit camp':band[0])+'</h2>'+(lord?'<p class="muted">An army of the <span style="color:'+f.col+'">'+f.n+'</span>.</p>':'')+'<p>Scouts count about <strong>'+e.list.length+'</strong> '+(lord||e.kind==='estate'||e.kind==='caravan'||e.kind==='patrol'?'soldiers':band[1]+(e.kind==='camp'?' and a chieftain':''))+'.'+ground+' You have <strong>'+playerList().length+'</strong> fighters, including yourself.</p>'+typeHtml(e)+hurt+'<p>'+vs+'</p><div class="btns"><button class="btn primary" type="button" data-act="fight">Fight</button>'+(canSpring(e)?'<button class="btn" type="button" data-act="bt-spring">Spring an ambush</button>':'')+'<button class="btn" type="button" data-act="auto">Auto-resolve</button>'+fleeBtn(e)+'</div>');
 }
 /* fleeing is a real escape. A fight you started (you rode at them, or you are storming, raiding or joining a battle) you can
    simply call off, as you can with a foe that is afraid of you. Otherwise it is a race: your band's speed on this ground (a big
@@ -83,6 +113,7 @@ function chaserSpeed(e){const o=e.ref,k=e.kind,at=Math.max(.45,speedAt(P.x,P.y)|
   return (k==='camp'?30:k==='caravan'?CARAVAN_SPD:k==='estate'?22:26)*at}
 function fleeOdds(e){
   if(['siege','raid','field','tourney','cave'].includes(e.kind)||e.mine&&!(e.ref&&e.ref.sab))return{leave:true,ch:1};
+  if(e.btype&&e.btype.kind==='ambush'&&e.btype.hid===1)return{ch:0,why:'They have you in their trap'};// (an ambush: no way out but through)
   const pw=['lord','party','patrol'].includes(e.kind)?e.ref.power():null;if(pw!=null&&stance(pw)==='afraid')return{leave:true,ch:1};
   if(e.noFlee)return{ch:0,why:'They caught you'};
   if((e.foes||[]).length)return{ch:0,why:'More of them are closing in around you'};

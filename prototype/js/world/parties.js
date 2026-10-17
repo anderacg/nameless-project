@@ -160,4 +160,3 @@ function asParty(o){
 // picked as their carts, caravans.js, not as a host behind a leader, render.js drawParties)
 function allParties(){return [...W.lords.filter(l=>!l.dead),...bandits,...W.patrols,...cparties()]}
 Object.defineProperty(W,'parties',{get:allParties,enumerable:false});
-const partyRemove=(o,k,n)=>asParty(o).remove(k,n);// TODO(item 10): attacks.js still calls it

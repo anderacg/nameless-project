@@ -23,11 +23,18 @@ class LabBattleSetup extends BattleSetup{
      climate, seeded by its seed), {recipe, seed, oasis, river} (a recipe by name, fairness-checked; oasis: a desert's by water;
      river: true or {bridge, frozen, stream}, a river down the middle as the world gives one; recipe 'river' is the open recipe
      with one) or {hills, woods, marsh, rivers, seed} (its own features: x, y as shares of the field, r in px, a hill's top 1-2;
-     a river {x, meander (px), crossings: [{kind: 'ford'|'bridge', y, w (px)}], frozen, stream}; no fairness checks). Not tied
-     to TERRAIN.on */
-  groundSpec(){const c=this.config,g=c.ground;if(!g||g==='none'||!this.env)return null;
-    if(g==='auto')return{recipe:terrainRecipeOf(this.env.t,this.env.c,0),seed:c.seed};
-    return g.recipe?{recipe:g.recipe==='river'?'open':g.recipe,seed:g.seed??c.seed,oasis:!!g.oasis,river:g.recipe==='river'?{...g.river||{}}:g.river?{...g.river}:null}:{explicit:g,seed:g.seed??c.seed}}
+     a river {x, meander (px), crossings: [{kind: 'ford'|'bridge', y, w (px)}], frozen, stream}; phase 4: a hill's cliff (sheer
+     all round), oneway (its cliffs climbed nowhere, dropped down anywhere), ramps ([degrees]: 0 east, 90 south; [90] by default),
+     rocks [{x, y, r, h (its peak, in levels of 14 px)}]: mountains and spires; no fairness checks). Recipe 'crags': the hills recipe with its
+     cliffs and mountains always (fairness-checked). A frost lab field is a frost one (more rock). Not tied to TERRAIN.on */
+  groundSpec(){const c=this.config,g=c.ground==='none'&&c.type!=='field'?'auto':c.ground;if(!g||g==='none'||!this.env)return null;// (a typed battle needs ground: 'auto' for 'none')
+    const frost=this.env.c==='frost';if(g==='auto')return{recipe:terrainRecipeOf(this.env.t,this.env.c,0),seed:c.seed,frost};
+    return g.recipe?{recipe:g.recipe==='river'?'open':g.recipe==='crags'?'hills':g.recipe,seed:g.seed??c.seed,oasis:!!g.oasis,river:g.recipe==='river'?{...g.river||{}}:g.river?{...g.river}:null,frost,crags:g.recipe==='crags'}:{explicit:g,seed:g.seed??c.seed}}
+  /* the lab's battle type (config.type, setup.js BTYPE): 'field' (none); 'bridge' or 'ambush' with the left side the one set upon
+     (holding the bridge, or caught on the road); {kind, side: the one set upon ('left' or 'right'), ford (a bridge's: a ford far
+     off it, true or false; by the seed when not given)}. Its ground as config.ground has it ('none': 'auto'); an ambush's is its own */
+  battleType(){const t=this.config.type;if(!t||t==='field'||!this.ground)return null;const k=typeof t==='string'?t:t.kind,s=typeof t==='object'&&t.side==='right'?1:0;
+    return k==='bridge'?{kind:k,def:s,ford:typeof t==='object'&&t.ford!=null?t.ford:hash(this.config.seed|0,7,4447)<BTYPE.ford}:{kind:'ambush',hid:1-s}}
   createGroups(){
     super.createGroups();const c=this.config,top=this.field.top,bottom=this.field.bot;
     for(const row of this.rows){const gr=this.groups[row.id],m=this.units.filter(u=>u.grp===row.id),rows=row.team?c.rightGroups:c.leftGroups;
@@ -70,7 +77,7 @@ const BattleLab={
   validate(raw){
     if(!raw||typeof raw!=='object'||Array.isArray(raw))throw Error('Supply a battle configuration.');
     const mode=raw.mode||(raw.leftGroups!==undefined||raw.rightGroups!==undefined?'army':'duel');if(!['duel','army'].includes(mode))throw Error('Unknown battle configuration mode.');
-    const c={left:'hum_bow',leftCount:1,right:'hum_foot',rightCount:1,distance:220,terrain:'open',climate:'grass',seed:42,ai:true,paused:true,morale:true,deploy:mode==='army',ground:'none',...raw,mode};
+    const c={left:'hum_bow',leftCount:1,right:'hum_foot',rightCount:1,distance:220,terrain:'open',climate:'grass',seed:42,ai:true,paused:true,morale:true,deploy:mode==='army',ground:'none',type:'field',...raw,mode};
     for(const [side,team] of [['left',0],['right',1]]){
       const rows=c[side+'Groups']??[{type:c[side],count:c[side+'Count']}],seen=new Set();
       if(!Array.isArray(rows)||!rows.length||rows.length>ARMY_LIMIT||mode==='duel'&&rows.length!==1)throw Error('Each army needs 1–10 groups, including characters.');
@@ -91,22 +98,30 @@ const BattleLab={
     if(!['open','forest','hill'].includes(c.terrain)||!CLIMS.includes(c.climate))throw Error('Unknown terrain or climate.');
     if(!Number.isInteger(c.seed)||c.seed<0||c.seed>4294967295)throw Error('Seed must be an unsigned 32-bit integer.');
     for(const k of ['ai','paused','morale','deploy'])if(typeof c[k]!=='boolean')throw Error(k+' must be true or false.');
-    c.ground=this.validGround(c.ground);
-    return Object.fromEntries(['mode','leftGroups','rightGroups','distance','terrain','climate','seed','ai','paused','morale','deploy','ground'].map(k=>[k,c[k]]));
+    c.ground=this.validGround(c.ground);c.type=this.validType(c.type);
+    return Object.fromEntries(['mode','leftGroups','rightGroups','distance','terrain','climate','seed','ai','paused','morale','deploy','ground','type'].map(k=>[k,c[k]]));
   },
+  // (the type key, normalized: see LabBattleSetup.battleType)
+  validType(t){if(t==null||t==='field'||t==='bridge'||t==='ambush')return t??'field';const bad=m=>{throw Error('Type: '+m)};
+    if(typeof t!=='object'||Array.isArray(t)||!['bridge','ambush'].includes(t.kind))bad("use 'field', 'bridge', 'ambush' or {kind, side, ford}.");const o={kind:t.kind};
+    if(t.side!=null){if(t.side!=='left'&&t.side!=='right')bad("side is 'left' or 'right' (the side set upon).");o.side=t.side}
+    if(t.ford!=null){if(t.kind!=='bridge'||typeof t.ford!=='boolean')bad('ford (true or false) is for a bridge.');o.ford=t.ford}return o},
   // (the ground key, normalized: see LabBattleSetup.groundSpec)
   validGround(g){
     if(g==null||g==='none'||g==='auto')return g??'none';const bad=m=>{throw Error('Ground: '+m)};if(typeof g!=='object'||Array.isArray(g))bad("use 'none', 'auto', {recipe, seed, river} or {hills, woods, marsh, rivers, seed}.");
     const seed=g.seed==null?undefined:g.seed;if(seed!==undefined&&!(Number.isInteger(seed)&&seed>=0&&seed<=4294967295))bad('seed must be an unsigned 32-bit integer.');
     const num=(v,a,b)=>typeof v==='number'&&Number.isFinite(v)&&v>=a&&v<=b,flags=(v,ks,w)=>{const o={};for(const k of ks)if(v[k]!=null){if(typeof v[k]!=='boolean')bad(w+' '+k+' must be true or false.');if(v[k])o[k]=true}return o};
-    if(g.recipe!=null){if(g.recipe!=='river'&&!Object.hasOwn(TERRAIN_RECIPE,g.recipe))bad('unknown recipe ('+Object.keys(TERRAIN_RECIPE).join(', ')+', river).');const r={recipe:g.recipe};if(seed!==undefined)r.seed=seed;if(g.oasis)r.oasis=true;
+    if(g.recipe!=null){if(g.recipe!=='river'&&g.recipe!=='crags'&&!Object.hasOwn(TERRAIN_RECIPE,g.recipe))bad('unknown recipe ('+Object.keys(TERRAIN_RECIPE).join(', ')+', river, crags).');const r={recipe:g.recipe};if(seed!==undefined)r.seed=seed;if(g.oasis)r.oasis=true;
       if(g.river!=null&&g.river!==false){if(g.river!==true&&(typeof g.river!=='object'||Array.isArray(g.river)))bad('river must be true or {bridge, frozen, stream}.');r.river=g.river===true?{}:flags(g.river,['bridge','frozen','stream'],'river')}
       else if(g.recipe==='river')r.river={};return r}
     const out={};
     for(const k of ['hills','woods','marsh']){const l=g[k]??[];if(!Array.isArray(l)||l.length>8)bad(k+' must be a list of at most 8.');
       out[k]=l.map(p=>{if(!p||!num(p.x,0,1)||!num(p.y,0,1)||!num(p.r,16,400))bad(k+' need x, y (0-1) and r (16-400 px).');
         if(k!=='hills')return{x:p.x,y:p.y,r:p.r};const top=p.top??1;if(top!==1&&top!==2)bad('a hill top is 1 or 2.');
-        const h={x:p.x,y:p.y,r:p.r,top};for(const q of ['rx','ry'])if(p[q]!=null){if(!num(p[q],16,600))bad(q+' must be 16-600 px.');h[q]=p[q]}return h})}
+        const h={x:p.x,y:p.y,r:p.r,top};for(const q of ['rx','ry'])if(p[q]!=null){if(!num(p[q],16,600))bad(q+' must be 16-600 px.');h[q]=p[q]}
+        Object.assign(h,flags(p,['cliff','oneway'],'a hill'));if(p.ramps!=null){if(!h.cliff&&!h.oneway)bad('ramps need cliff or oneway.');if(!Array.isArray(p.ramps)||!p.ramps.length||p.ramps.length>4||!p.ramps.every(a=>num(a,-360,360)))bad('ramps must be a list of 1-4 angles (degrees, 0 east, 90 south).');h.ramps=p.ramps.slice()}return h})}
+    {const l=g.rocks??[];if(!Array.isArray(l)||l.length>12)bad('rocks must be a list of at most 12.');
+      if(l.length)out.rocks=l.map(p=>{if(!p||!num(p.x,0,1)||!num(p.y,0,1)||!num(p.r,8,200))bad('rocks need x, y (0-1) and r (8-200 px).');if(p.h!=null&&!(Number.isInteger(p.h)&&num(p.h,1,18)))bad('a rock h is 1-18 levels (whole).');const o={x:p.x,y:p.y,r:p.r};if(p.h!=null)o.h=p.h;return o})}
     {const l=g.rivers??[];if(!Array.isArray(l)||l.length>2)bad('rivers must be a list of at most 2.');
       if(l.length)out.rivers=l.map(v=>{if(!v||!num(v.x,.05,.95))bad('a river needs x (0.05-0.95).');if(v.meander!=null&&!num(v.meander,0,64))bad('a river meander is 0-64 px.');const cr=v.crossings??[];if(!Array.isArray(cr)||cr.length>4)bad('a river has at most 4 crossings.');
         const o={x:v.x,crossings:cr.map(c=>{if(!c||!['ford','bridge'].includes(c.kind)||!num(c.y,0,1))bad("a crossing needs kind ('ford' or 'bridge') and y (0-1).");if(c.w!=null&&!num(c.w,16,200))bad('a crossing w is 16-200 px.');const q={kind:c.kind,y:c.y};if(c.w!=null)q.w=c.w;return q}),...flags(v,['frozen','stream'],'river')};

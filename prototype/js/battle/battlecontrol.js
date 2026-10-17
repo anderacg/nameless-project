@@ -93,6 +93,8 @@ class BattleControl{
     if(this.px==null){this.px=this.ax;this.py=this.ay}else if(this.px!==this.ax||this.py!==this.ay){this.movedAt=B.t;this.px=this.ax;this.py=this.ay}
     this.going=B.t-(this.movedAt??-9)<.5;
     if(!m.length){this.backing=false;return}
+    // (its way to its place round rock, cliffs and impassable water, its men following it: terrain.js groupWay)
+    if(B.terrain&&B.terrain.blocky){if(this.order==='hold'||this.order==='advance')groupWay(this,m);else if(this.way)this.way=null}
     this.pace=Math.min(...m.map(u=>u.s.spd));// (walking: the slowest sets the pace)
     // (its places shared out again now and then: two of its men who would each be nearer their places by swapping, swap; else
     // one who must pass another to get to his can shove and be shoved forever)
@@ -101,7 +103,9 @@ class BattleControl{
         if(dd(a,pb)+dd(b,pa)<dd(a,pa)+dd(b,pb)-FORM_SWAP.gain){const sx=a.sx,sy=a.sy;a.sx=b.sx;a.sy=b.sy;b.sx=sx;b.sy=sy}}}
     // the next waypoint once they are there
     if(this.queue&&this.queue.length&&this.order==='hold'){const cx=m.reduce((a,u)=>a+u.x-(u.sx||0),0)/m.length,cy=m.reduce((a,u)=>a+u.y-(u.sy||0),0)/m.length;
-      if(Math.hypot(cx-this.ax,cy-this.ay)<MARCH.reached){const w=this.queue.shift();this.ax=w.x;this.ay=w.y;moveOrder(this.id)}}
+      // (a place out of reach (terrain.js groupWay: its way ends short of it): its men there as near as they get)
+      const W=this.way,short=!!W&&!W.ok&&m.every(u=>u.mvId===this.mvId);
+      if(Math.hypot(cx-this.ax,cy-this.ay)<MARCH.reached||short){const w=this.queue.shift();this.ax=w.x;this.ay=w.y;moveOrder(this.id)}}
     const foes=B.units.filter(e=>e.team!==this.team&&e.hp>0&&!e.rout),C=this.centre(),near=foes.length?foes.reduce((a,e)=>Math.hypot(e.x-this.ax,e.y-this.ay)<Math.hypot(a.x-this.ax,a.y-this.ay)?e:a):null;
     // an advance: its place walks on at the nearest foe till it is close (shooters stop further off)
     if(this.order==='advance'&&near){const dx=near.x-this.ax,dy=near.y-this.ay,d=Math.hypot(dx,dy)||1,stop=m.some(u=>u.s.range)?(m.some(u=>u.s.magic)?60:85):FOE_CMD.clash*.6;

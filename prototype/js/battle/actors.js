@@ -56,9 +56,13 @@ const meleeFoe=(u,r)=>{let best=null,bd=r;for(const e of B.units){if(e.hp<=0||e.
    focus, when to hold fire are his commander's calls (commander.js) or yours: an attack order, cease fire */
 // (his blows to fell a foe, by his damage against him, armour and kind counted: matchups.js; for his commander's reckoning)
 const blowsToFell=(u,e)=>Math.ceil(e.hp/Math.max(.5,u.s.dmg*matchup(u.s,e.s)));
-const meleeTarget=u=>nearest(u);// named targeting contract, also used by the RTS tests
+/* (a foe his side cannot see, hidden in woods or behind a rise, is no one's pick: terrain.js seenBy; the nearest he can see. With
+   no terrain everyone is seen and this is nearest itself) */
+const nearestSeen=u=>{const n=nearest(u);if(!n||seenBy(u.team,n))return n;let best=null,bd=1e9;
+  for(const e of B.units){if(e.hp<=0||e.team===u.team||!seenBy(u.team,e))continue;const d=((e.x-u.x)**2+(e.y-u.y)**2)*(e.rout?9:1);if(d<bd){bd=d;best=e}}return best};
+const meleeTarget=u=>nearestSeen(u);// named targeting contract, also used by the RTS tests
 function shooterTarget(u){
-  const R=u.s.range,d=e=>Math.hypot(e.x-u.x,e.y-u.y),inR=(spatialOn()?SG.near(u.x,u.y,R+1,u.team,true):B.units).filter(e=>e.hp>0&&e.team!==u.team&&!e.rout&&d(e)<=R);if(!inR.length)return nearest(u);
+  const R=u.s.range,d=e=>Math.hypot(e.x-u.x,e.y-u.y),inR=(spatialOn()?SG.near(u.x,u.y,R+1,u.team,true):B.units).filter(e=>e.hp>0&&e.team!==u.team&&!e.rout&&d(e)<=R&&seenBy(u.team,e));if(!inR.length)return nearestSeen(u);
   const fr=inR.filter(e=>inArc(u,e)),L=fr.length?fr:inR;return L.reduce((a,e)=>d(e)<d(a)?e:a)}
 // Tactical focus is a formation; each soldier selects an opponent appropriate to its own position and firing arc.
 function orderedTarget(u,g,s){
@@ -97,6 +101,8 @@ function aiUnit(u,dt,strike){
   // (set on a target, it still turns on an enemy right on top of it: it does not stand and take the blows)
   // (whether g.tgt is set: read once here (nothing before his blow below changes it, and hold() leaves none); only its truth is used)
   const gt=!!g&&g.hasTarget&&targetStands(g);if(g&&g.hasTarget&&!gt)g.hold();
+  // (set on a target his side sees none of now: they make for where it was last seen, terrain.js sightGoal)
+  if(gt&&B.terrain){const lk=sightGoal(g,u.team);if(lk)return lostStep(u,g,s,lk,dt)}
   if(gt){
     // Re-evaluate immediately on an order change or casualty; otherwise retain the normal thinking interval.
     const member=e=>e&&e.hp>0&&!e.left&&e.team!==u.team&&(g.targetGroupId!==null?e.grp===g.targetGroupId:e.id===g.targetUnitId);
@@ -106,7 +112,7 @@ function aiUnit(u,dt,strike){
     u.near=!(g.player&&isChar(u))&&n&&!n.rout&&!member(n)&&Math.hypot(n.x-u.x,n.y-u.y)<close?n:null;
     if(u.near)u.tgt=u.near;
   }
-  else{if(u.near)u.near=null;if(u.rt<=0||!u.tgt||u.tgt.hp<=0){u.tgt=s.range?shooterTarget(u):meleeTarget(u);u.rt=.4}}// (free: no ordered foe, so no foe brushed past either)
+  else{if(u.near)u.near=null;if(u.rt<=0||!u.tgt||u.tgt.hp<=0||!seenBy(u.team,u.tgt)){u.tgt=s.range?shooterTarget(u):meleeTarget(u);u.rt=.4}}// (free: no ordered foe, so no foe brushed past either; one gone from sight is let go)
   crowdTarget(u,dt,s);
   const t=u.tgt;u.spdNow=0;
   // The hero is a single-unit group: an explicit attack turns its firing arc toward the target,
@@ -115,7 +121,9 @@ function aiUnit(u,dt,strike){
   const order=g?(gt?'charge':g.order):'charge';
   if(!t&&!(g&&order!=='charge'))return;
   const dx=t?t.x-u.x:0,dy=t?t.y-u.y:0,d=Math.hypot(dx,dy)||1,de=t?d-(t.s.big&&!s.range?12:0):1e9;
-  const reach=s.range?s.range:s.reach+2;let mv=false,mx=0,my=0,chase=false,back=false;
+  const reach=s.range?s.range:s.reach+2;let mv=false,mx=0,my=0,chase=false,back=false,routed=false;
+  // (on ground that blocks: round it toward (x,y) when the straight way is not clear (terrain.js steerDir); routed, a charge builds no momentum)
+  const round=(x,y)=>{const w=B.terrain&&B.terrain.blocky?steerDir(u,x,y):null;if(w){mx=w[0];my=w[1];routed=true}};
   const reloc=relocating(u,g,gt);
   // (his group moves him: its place for him, backing off together when it skirmishes, stopping together to shoot (battlecontrol.js step);
   // he himself only picks his foe, shoots, and fights with his blades whoever reaches him)
@@ -124,19 +132,20 @@ function aiUnit(u,dt,strike){
     // keep a slot in the group's formation; melee breaks off only for enemies that come close to it (never, holding its
     // ground or withdrawing: it strikes only what is in reach)
     const sx=clamp(g.ax+u.sx,8,BW-8),sy=clamp(g.ay+u.sy,fieldTop(),fieldBot());
-    // (the way there: over a ford or bridge when that beats wading deep water, terrain.js crossWay)
-    let wx=sx,wy=sy;if(B.terrain&&B.terrain.has.water){const w=crossWay(u,sx,sy);if(w){wx=w[0];wy=w[1]}}
+    // (the way there: round rock, cliffs and impassable water along its group's way (terrain.js slotWay; via: not yet his place);
+    // with wadeable water alone, over a ford or bridge when that beats wading (crossWay))
+    let wx=sx,wy=sy,via=false;const TR=B.terrain;if(TR&&TR.blocky){const w=slotWay(u,g,sx,sy);if(w){wx=w[0];wy=w[1];via=!w.at}}else if(TR&&TR.has.water){const w=crossWay(u,sx,sy);if(w){wx=w[0];wy=w[1]}}
     const engage=order==='withdraw'||g.firm||unitFlag(u,'shieldWall')?0:28;
     if(reloc){const px=wx-u.x,py=wy-u.y,pd=Math.hypot(px,py);if(u.relocFor!==g.mvId){u.relocFor=g.mvId;u.relocT=0}u.relocT+=dt;
-      if(pd>RELOCATE.near&&u.relocT<RELOCATE.max){mv=true;mx=px/pd;my=py/pd}else{u.mvId=g.mvId;u.relocT=0;u.inSlot=true}}
+      if((pd>RELOCATE.near||via)&&u.relocT<RELOCATE.max){mv=true;mx=px/pd;my=py/pd}else{u.mvId=g.mvId;u.relocT=0;u.inSlot=true}}
     else if(t&&!s.range&&de<=reach){}
-    else if(t&&!s.range&&engage&&Math.hypot(t.x-sx,t.y-sy)<engage&&!holdsBank(u,t)){mv=true;mx=dx/d;my=dy/d;chase=true}// (not down off a bank into the water after him: terrain.js)
+    else if(t&&!s.range&&engage&&Math.hypot(t.x-sx,t.y-sy)<engage&&!holdsBank(u,t)){mv=true;mx=dx/d;my=dy/d;chase=true;round(t.x,t.y)}// (not down off a bank into the water after him: terrain.js)
     else if(s.range&&t&&de<=reach&&!onTheMove(s)&&!g.backing&&!(g.cease&&!gt)){}// (a foe in reach: they keep their ground and shoot, not step to their exact place: attacking first)
     else{const px=wx-u.x,py=wy-u.y,pd=Math.hypot(px,py);const going=g.going;// (its place on the move: battlecontrol.js step)
-      if(pd>(u.slotted&&!going?7:2)){mv=true;mx=px/pd;my=py/pd;u.slotted=false}else{u.inSlot=true;u.slotted=true}}// (in its slot: it faces the formation's way, and stays till pushed clearly out)
+      if(pd>(u.slotted&&!going?7:2)||via&&pd>.5){mv=true;mx=px/pd;my=py/pd;u.slotted=false}else{u.inSlot=true;u.slotted=true}}// (in its slot: it faces the formation's way, and stays till pushed clearly out)
   }else{
-    if(s.range){if(d>s.range||!u.inRng&&d>s.range*.97){mv=true;mx=dx/d;my=dy/d;u.inRng=false}else{u.inRng=true;if(d<28){mv=true;mx=-dx/d;my=-dy/d;back=true}}}
-    else if(de>reach){mv=true;mx=dx/d;my=dy/d;if(B.terrain&&B.terrain.has.water){const w=crossWay(u,t.x,t.y);if(w){const qx=w[0]-u.x,qy=w[1]-u.y,ql=Math.hypot(qx,qy)||1;mx=qx/ql;my=qy/ql}}}// (a charge goes over a bridge or ford when that beats wading, terrain.js)
+    if(s.range){if(d>s.range||!u.inRng&&d>s.range*.97){mv=true;mx=dx/d;my=dy/d;u.inRng=false;round(t.x,t.y)}else{u.inRng=true;if(d<28){mv=true;mx=-dx/d;my=-dy/d;back=true}}}
+    else if(de>reach){mv=true;mx=dx/d;my=dy/d;if(B.terrain&&B.terrain.blocky)round(t.x,t.y);else if(B.terrain&&B.terrain.has.water){const w=crossWay(u,t.x,t.y);if(w){const qx=w[0]-u.x,qy=w[1]-u.y,ql=Math.hypot(qx,qy)||1;mx=qx/ql;my=qy/ql}}}// (a charge goes over a bridge or ford when that beats wading, terrain.js)
     chase=true;
   }
   // walking, they keep to the slowest one's pace (and keep their formation); running, or fighting, each goes as fast as it can
@@ -147,11 +156,11 @@ function aiUnit(u,dt,strike){
   // round its foe, where it finds another instead: crowdTarget)
   if(mv&&chase&&!back&&!(t&&!s.range&&de<reach+CROWD.slack)){u.stk=(u.stk||0)+dt;if(u.stk>.5){if(u.sx0!=null&&Math.hypot(u.x-u.sx0,u.y-u.sy0)<3){u.side=u.side||(Math.random()<.5?-1:1);u.sideT=.6}u.stk=0;u.sx0=u.x;u.sy0=u.y}
     if(u.sideT>0){u.sideT-=dt;const px=-my*u.side,py=mx*u.side;mx=mx*.3+px;my=my*.3+py;const l=Math.hypot(mx,my)||1;mx/=l;my/=l}}else{u.stk=0;u.sx0=u.x;u.sy0=u.y}
-  if(mv&&!wk)footDust(u,dt);// (running: dust from their feet, vfx.js)
+  if(mv&&!wk&&seenBy(0,u))footDust(u,dt);// (running: dust from their feet, vfx.js; none where your side cannot see him: terrain.js)
   // (the ground: woods, marsh, slopes slow him or speed him, and build his charge slower or faster: terrain.js)
   if(mv){const sp=spd*dt*(u.slow>0?.5:1)*(u.buffT>0?1.25:1)*groundMul(u,mx,my);u.x+=mx*sp;u.y+=my*sp;u.spdNow=spd;
     // (he faces where he goes, backing off too (no walking backwards): he turns to his foe again when he stops to shoot)
-    if(Math.abs(mx)>.35)u.face=mx>0?1:-1;u.dir=Math.atan2(my,mx);u.run=chase&&!back&&!wk?(u.run||0)+sp*tm.run*groundRun(u,mx,my,sp):spurred?u.run:0}
+    if(Math.abs(mx)>.35)u.face=mx>0?1:-1;u.dir=Math.atan2(my,mx);u.run=chase&&!back&&!wk&&!routed?(u.run||0)+sp*tm.run*groundRun(u,mx,my,sp):spurred?u.run:0}
   else{if(t){if(Math.abs(dx)>3&&!(s.range&&!roundFire(u)))u.face=dx>=0?1:-1;if(!u.inSlot)u.dir=Math.atan2(dy,dx)}if(!spurred)u.run=Math.max(0,(u.run||0)-CHARGE.run*dt)}
   // (facing: where it marches or whom it fights; momentum: the run at its target, spent on its first blow; spurred, kept: unitabilities.js)
   fatigueStep(u,dt,mv,wk,chase&&!back&&!!t&&!wk,!!t&&de<=reach+8);
@@ -164,7 +173,7 @@ function aiUnit(u,dt,strike){
 const CROWD={wait:.8,keep:2.5,look:90,slack:16,full:3};
 function roomyFoe(u,not,s=u.s){let best=null,bs=1e9;const R=(s.reach||11)+6;
   const g=u.grp&&B.groups[u.grp],grid=spatialOn(),pool=g&&g.hasTarget?targetMembersOf(g):grid?SG.near(u.x,u.y,CROWD.look+1,u.team,true):B.units;
-  for(const e of pool){if(e.hp<=0||e.team===u.team||e===not||e.rout)continue;const d=Math.hypot(e.x-u.x,e.y-u.y);if(d>CROWD.look)continue;
+  for(const e of pool){if(e.hp<=0||e.team===u.team||e===not||e.rout||!seenBy(u.team,e))continue;const d=Math.hypot(e.x-u.x,e.y-u.y);if(d>CROWD.look)continue;
     let n=0;for(const o of grid?SG.near(e.x,e.y,R+1,u.team,false):B.units)if(o!==u&&o.hp>0&&o.team===u.team&&Math.hypot(o.x-e.x,o.y-e.y)<R)n++;if(n>=CROWD.full)continue;const sc=d+n*14;if(sc<bs){bs=sc;best=e}}
   return best}
 // (s: the stats he fights with now, a shooter's Melee Mode ones: aiUnit)
@@ -173,6 +182,18 @@ function crowdTarget(u,dt,s=u.s){
   const t=u.tgt;if(t&&t.hp>0&&!u.alt){const R=(s.reach||11)+2,d=Math.hypot(t.x-u.x,t.y-u.y)-(t.s.big?12:0);
     if(d>R&&d<R+CROWD.slack){u.blockT=(u.blockT||0)+dt;if(u.blockT>CROWD.wait){u.blockT=0;const a=roomyFoe(u,t,s);if(a){u.alt=a;u.altT=CROWD.keep}}}else u.blockT=0}
   if(u.alt)u.tgt=u.alt}
+/* an order at a target gone from sight (terrain.js sightGoal: in woods or behind a rise, none of it seen by his side): he leaves
+   it be and makes for his place round where it was last seen (its last known place plus his slot), at his group's pace, shooting
+   nothing; whoever comes near enough is seen again and the order goes on as before. Once there (LOST.near of his place) with it
+   still unseen, the order lapses: his group holds where it stands (battlecontrol.js hold) */
+const LOST={near:10};
+function lostStep(u,g,s,lk,dt){
+  u.tgt=null;u.near=null;u.shot=null;u.inSlot=false;u.skirm=false;
+  const x=clamp(lk.x+(u.sx||0),8,BW-8),y=clamp(lk.y+(u.sy||0),fieldTop(),fieldBot()),px=x-u.x,py=y-u.y,pd=Math.hypot(px,py);
+  if(pd<=LOST.near){u.spdNow=0;g.hold();return}
+  const w=steerDir(u,x,y),mx=w?w[0]:px/pd,my=w?w[1]:py/pd,tm=tiredMul(u),wk=walking(g)||staOf(u)<FATIGUE.runMin,spd=(wk?Math.min(s.spd,g.pace||s.spd)*MARCH.walk:s.spd)*tm.spd*formPace(u)*abilitySpeed(u);
+  const sp=spd*dt*(u.slow>0?.5:1)*(u.buffT>0?1.25:1)*groundMul(u,mx,my);u.x+=mx*sp;u.y+=my*sp;u.spdNow=spd;if(Math.abs(mx)>.35)u.face=mx>0?1:-1;u.dir=Math.atan2(my,mx);u.run=0;
+  fatigueStep(u,dt,true,wk,false,false)}
 /* a move order (the ground right-clicked, a line dragged, the next waypoint): the group relocates. Each of its men breaks off
    the fight he is in and goes to his new place, striking no one on the way (and taking blows in the back if he turns from a
    foe), as in Total War; once there, he fights whatever comes to him. Hold where they stand is no move: they keep fighting.

@@ -140,6 +140,8 @@ function calloutRout(r){const g=r.control;if(!g)return;const mine=!r.team;
   callout(calloutName(g)+(r.shattered?' is shattered!':' routs!'),r.team,(r.shattered?'shatter:':'rout:')+g.id,{major:true,log:mine,cls:'bad'});if(mine&&g.player)jolt(SHAKE.rout)}
 function calloutRally(r){const g=r.control;if(g)callout(calloutName(g)+' rallies',r.team,'rally:'+g.id)}
 function calloutFlank(t,src){const g=t.grp&&B.groups[t.grp];if(!g||!g.resolve||src.arrow||steady(t))return;callout(calloutName(g)+' is flanked!',g.team,'flank:'+g.id,{every:CALLOUT.flankEvery})}
+// a group unseen till it charged springs an ambush (terrain.js ambushMul: once a battle a group); yours, logged
+function calloutAmbush(u){const g=u.grp&&B.groups[u.grp],mine=!u.team;callout('Ambush!',u.team,'ambush:'+(u.grp||u.id),{major:true,log:mine,cls:'good'});if(g&&!mine&&typeof log==='function')log(htmlText(calloutName(g))+' springs an ambush!','bad')}
 // (your hero's and a companion's fall are already in the log: applyDmg)
 function calloutLeader(u){const mine=!u.team;callout(mine?'Your leader falls!':'Their leader falls!',u.team,'lead:'+u.id,{major:true,log:!u.hero&&!u.comp,cls:mine?'bad':'good'})}
 // each moment (rt: real seconds): the enemy's fall-back noticed (commander.js B.fallBack), banners age, the next comes up
@@ -173,7 +175,7 @@ function drawSelection(){
   if(typeof drawTouchHold==='function')drawTouchHold();// (a finger held on the field: its filling ring, input.js)
   const h=B.hov;if(!h)return;const mine=rtsUnitAt(h.x,h.y,0),foe=!mine&&rtsUnitAt(h.x,h.y,1);
   if(mine&&mine.grp&&(all||!sel.includes(mine.grp)))for(const u of grpUnits(mine.grp))ring(u,'#ffffff',.7,1.5);
-  if(foe){const g=foe.grp;for(const u of g?grpUnits(g):[foe])ring(u,'#ff6a5a',.9,1.5)}
+  if(foe){const g=foe.grp;for(const u of g?grpUnits(g):[foe])if(seenBy(0,u))ring(u,'#ff6a5a',.9,1.5)}// (none under those you cannot see: terrain.js)
 }
 /* the reach of shooters: one frontage-aware shaded envelope for each selected group (or the group whose icon you point at);
    an enemy group of shooters you point at, theirs, in red. Point at an enemy with shooters selected: a line of fire from each group, green when all can
@@ -248,7 +250,8 @@ function drawOrderLines(){
   const line=(a,b,col,dash)=>{ctx.save();ctx.strokeStyle=col;ctx.lineWidth=1;ctx.setLineDash(dash||[4,3]);ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();ctx.restore();
     const an=Math.atan2(b.y-a.y,b.x-a.x);ctx.fillStyle=col;ctx.beginPath();ctx.moveTo(b.x,b.y);ctx.lineTo(b.x-Math.cos(an-.5)*5,b.y-Math.sin(an-.5)*5);ctx.lineTo(b.x-Math.cos(an+.5)*5,b.y-Math.sin(an+.5)*5);ctx.fill()};
   for(const g of selGroups()){const m=grpUnits(g).filter(u=>!u.rout);if(!m.length)continue;const gr=B.groups[g],c={x:m.reduce((a,u)=>a+u.x,0)/m.length,y:m.reduce((a,u)=>a+u.y,0)/m.length};
-    const target=gr.targetPoint();if(target){line(c,target,'rgba(255,106,90,.9)',[]);ctx.strokeStyle='#ff6a5a';ctx.beginPath();ctx.ellipse(target.x,target.y,8,4,0,0,7);ctx.stroke();continue}
+    // (an attack on those gone from sight: to where they were last seen, terrain.js sightGoal)
+    const target=B.terrain&&sightGoal(gr,0)||gr.targetPoint();if(target){line(c,target,'rgba(255,106,90,.9)',[]);ctx.strokeStyle='#ff6a5a';ctx.beginPath();ctx.ellipse(target.x,target.y,8,4,0,0,7);ctx.stroke();continue}
     if(gr.order==='charge'){const ts=[...new Set(m.map(u=>u.tgt).filter(t=>t&&t.hp>0))];if(ts.length){const t={x:ts.reduce((a,u)=>a+u.x,0)/ts.length,y:ts.reduce((a,u)=>a+u.y,0)/ts.length};if(Math.hypot(t.x-c.x,t.y-c.y)>12)line(c,t,'rgba(255,106,90,.7)')}continue}
     if(gr.order==='withdraw'&&B.exit){line(c,exitFor(c),'rgba(111,168,224,.9)');continue}
     const a={x:gr.ax,y:gr.ay};

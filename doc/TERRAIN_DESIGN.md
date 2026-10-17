@@ -1,6 +1,6 @@
 # Terrain that matters: design proposal
 
-**Status:** proposal only, nothing built yet (2026-10-17, written against HEAD 460c917 on `battle-rts-and-world`).
+**Status:** phases 1 and 2 built and committed; phase 3 (depth-sorted trees and cliff faces, concealment, ambush) built 2026-10-18, awaiting the owner's art approval and the `commander.js` sight filter (see §8, "Phase 3 as built"); phase 4's simulation (impassable deep water, cliffs, one-way hills, mountains, routing) built 2026-10-18 on top of phase 3, its art in parallel (see §8, "Phase 4 routing as built"); battle types *Hold the bridge* and *Ambush* built 2026-10-18 on top of both (see §8, "Battle types as built"). Written first as a proposal against HEAD 460c917 on `battle-rts-and-world`.
 **Plan item:** IMPLEMENTATION_PLAN §4 battle fun pipeline item 3: "hills (range, downhill charge), river and bridge chokepoints, woods that hide and slow cavalry". It also prepares item 5 (battle types: *hold the bridge*, *ambush*).
 **Readers:** the owner, who makes the decisions in §9, and the developer agents who will build it.
 
@@ -57,7 +57,7 @@ All the tables below are **tunable `const` tables** in a new `js/battle/terrain.
 | `stop` | 8% per wood cell entered | The chance a missile that is low (arc `z<10`, or a flat bolt) is stopped. It is per cell, so a shot through 3 cells loses about 22%. Elves and magic pass, as with trees today. |
 | cohesion | off | `cohesionReady` is false inside a wood. Shield wall cannot form (`wallReady`). Riders in a wood don't count toward the wedge (`wedgeMembers`). This is what "woods break formations" means here. |
 | `view` | 3 cells | A morale-view line crossing 3 or more wood cells (48 px) is blocked, unless the viewer is higher (`HILL.view`). |
-| `hide` (phase 3) | 64 px | Covered in §6 and phase 3. |
+| `hide` (phase 3, built) | 64 px | Unseen by a side with no soldier this near (96 px from higher ground) and none struck or shot by him in the last 3 s: `SIGHT` in `terrain.js`. |
 
 Today's scattered `B.obs` trees and rocks stay as they are: they still collide and stop arrows. Woods are **ground**: they do not collide.
 
@@ -267,10 +267,181 @@ Agents are split by files that do not overlap. The **`B.terrain` shape in §4 is
 |---|---|---|---|
 | **1. Core: hills, woods, marsh** | Grid, generation (no rivers yet), all hill, wood and marsh rules, painting, minimap, lab `ground`, wiki | **A (sim):** new `battle/terrain.js`; hooks in `setup.js`, `actors.js`, `charmind.js`, `morale.js`, `fatigue.js`, `formations.js`, `attacks.js`, `projectiles.js` (and the `a.tk` fix); `tests/terrain.js`; `tests/harness.js` (one line); `tests/structure.js`. **B (art):** `engine/` painter and gallery, then `gfx/render.js`, `battle/camera.js`. **C (after A's consts):** `battle/lab.js`, `wiki.html`, `README.md` | M |
 | **2. Rivers and AI** | Deep, ford and bridge generation and rules (wadeable); captains read the ground (§5) | **A:** `terrain.js` rivers, plus `actors.js` `shotStep`. **D (AI):** `commander.js` (`TERRAIN_AI`, temperament keys), `tests/aiterrain.js`. **B:** water and bridge art | M |
-| **3. Hidden in woods** | Spotting: a unit in a wood is unseen by a team with no living soldier within 64 px (96 from higher ground) and none it struck or shot in the last 3 s. Unseen enemies are not drawn and not on the minimap; free fire skips them; captains' `assess` and `foes` filter them (fair both ways). A hidden group's first charge gives `CHARGE.shock`×1.5 and an "Ambush!" callout | **A:** `terrain.js` spotting (every 0.25 s); `actors.js` `shooterTarget`. **D:** `commander.js` filter. **B:** `render.js`, `camera.js`, `ui/battlehud.js` callout and chips | M |
-| **4. Battle types** (shared with item 5) | Impassable deep water with crossing routing for every group; *Hold the bridge* and *Ambush* battle types; optional defender's ground | `terrain.js` routing, `battlecontrol.js` `moveTo`, `encounters.js` types | L |
+| **3. Hidden in woods** (built 2026-10-18) | Spotting: a unit in a wood is unseen by a team with no living soldier within 64 px (96 from higher ground) and none it struck or shot in the last 3 s. Unseen enemies are not drawn and not on the minimap; free fire skips them; captains' `assess` and `foes` filter them (fair both ways). A hidden group's first charge gives `CHARGE.shock`×1.5 and an "Ambush!" callout | **A:** `terrain.js` spotting (every 0.25 s); `actors.js` `shooterTarget`. **D:** `commander.js` filter. **B:** `render.js`, `camera.js`, `ui/battlehud.js` callout and chips | M |
+| **4. Routing** (simulation built 2026-10-18) | Impassable deep water with crossing routing for every group; cliffs (sheer and one-way hills, ramps); mountains and rock spires; every step guarded; AI by route length (see "Phase 4 routing as built") | **A:** `terrain.js` generation, grids and steering; hooks in `battle.js`, `battlecontrol.js`, `actors.js`, `morale.js`, `charmind.js`, `commander.js`, `lab.js`; `route.js` (`routeFlood`, `routeDist`); `tests/routing.js`. **B:** mountains, spires and cliff edges in `engine/` and `render.js` | L |
+| **5. Battle types** (shared with item 5; built 2026-10-18) | *Hold the bridge* and *Ambush* battle types; the defender's ground is the bridge itself | `setup.js` `BTYPE`, `encounters.js` triggers and panel, `terrain.js` fields, `commander.js` AI, `lab.js` `type`, `events.js` road event; `tests/battletypes.js`, `tests/visual/btypebalance.js` | M |
 
 ---
+
+### Phase 3 as built (2026-10-18)
+
+- **Standing trees.** `PX.battleGround` no longer paints trees into the ground. Trees are 32-px sprites (`PX.battleTree`: oak, birch, fir, snowy pine, bare birch, dead, willow, palm), returned in `ground.props`. Their shadows, roots, undergrowth and bushes stay painted.
+- **Cliff faces.** The plateaus' south cliff faces are also returned in `ground.props`, cut into column-run sections up to 16 px wide whose foot rows lie within 2 px. Each section is its own small canvas: drawing many sections from one shared atlas was much slower in Chrome.
+- **Depth order.** `render.js` `battleEnts` sorts the props in view in with the soldiers by their feet, so a soldier behind a trunk's foot or a face's foot is drawn under it. `propsInView` fades a prop to 0.4 (`PROPFADE`) while it covers one of your or your allies' men. Enemies get no fade.
+- **Sight.** `terrain.js` `sightStep` runs every 0.25 s of battle time (`SIGHT`); at a battle's start (`setup.js`); and on the real clock while you deploy.
+  - A soldier in a wood is unseen by a side with no soldier within 64 px of him (96 px from higher ground), unless he struck or shot at that side in the last 3 s.
+  - A soldier anywhere is also unseen when every soldier of that side has raised ground between them: a cell at least one level higher than both (`riseBlocked`). A `TERRAIN_GROUND` kind with `blocks: true` hides whatever lies behind it at any height, so phase 4's mountains only need that flag.
+  - `terrainBlocksView`, the morale view, honours rises too.
+- **The API.** `seenBy(team,u)`, `visibleFoes(team)`, `lastSeen(team,u)` and `sightGoal(g,team)`. A blow, a shot loosed or a missile landing reveals the attacker at once (`sightStruck`).
+- **Fair both ways (player side).** Unseen enemies are not drawn and are not on the minimap. They have no icon (`moraleicons.js`) and cannot be clicked (`commands.js` `rtsUnitAt`). Free fire skips them (`shooterTarget`, and the fallback `nearestSeen`, `meleeTarget` and `roomyFoe`).
+- **An order at a target gone from sight** goes to where it was last seen: the soldiers march to their slots round that point and shoot nothing (`actors.js` `lostStep`). Once they are there with the target still unseen, the order lapses and the group holds. Anyone who comes near enough is seen again, and the order goes on as before. The order line points at the last known place.
+- **Ambush.** A group wholly unseen by its foes within 3 s before its charge lands multiplies its charges' shock by 1.5 for 1.5 s (`AMBUSH`), once a battle, with an "Ambush!" callout.
+- **Still to do.** The enemy captain is not yet bound by sight: `commander.js` must filter its `assess`, `foes` and target picks through `seenBy`/`visibleFoes`. `charmind.js` (characters' own targeting) is unfiltered too.
+
+### Phase 4 routing as built (2026-10-18, simulation)
+
+**The contract with the art** (written at the top of `terrain.js`):
+- **Kind.** `TKIND.rock` = 6 is a mountain's or a rock spire's cell. `TERRAIN_GROUND.rock` has `solid: true` (no one steps in) and `blocks: true` (it hides what lies behind it at any height).
+- **Walls.** `B.terrain.wall` is a `Uint8Array(C*R)`, or absent when the field has no cliff. It uses `route.js`'s bits: E 1, S 2, W 4, N 8. A set bit forbids stepping from that cell over that edge. A bit set on one side only is one-way: a one-way hill has its bits on the low cells, pointing up. A ramp is a stretch of rim with no bits. `B.terrain.recipe.hills[i]` carries `cliff`, `oneway` and `ramps` (angles in radians, screen y down: 0 east, π/2 south).
+- **Heights.** `B.terrain.lvl` still gives the terrace levels (a rock cell keeps the level under it, 0 as generated). `B.terrain.rockH` is a `Uint8Array(C*R)`, or absent with no rock: a rock cell's height in **levels** above the ground, each `PX.ROCK_PX` (14 px) of screen height as the art draws it (1 at least on rock; mountains peak at 4–7, spires 2–3, `TERRAIN_ROCK.mh`/`sh`; 0 elsewhere). The art reads `wall` and `rockH` straight off `B.terrain`; `wall` is absent on a field with no cliffed hill, whose terrace edges are then painted as before. `B.terrain.recipe.rocks` lists them as `{x, y, r, h}`.
+
+**Generation.**
+- `featurePlan` adds cliffs and rock to a recipe's plan from a stream of its own, so the rest of the field is as before.
+  - Each recipe has `cliff: [sheer, one-way]` chances: open .12/.08, forest .08/.05, hills .3/.2; deserts (dunes) and swamps none. Frost multiplies them by 1.3.
+  - Each recipe has `rock: [mountains, spires]` chances: open .06/.1, forest .04/.04, hills .5/.15, desert 0/.55 (spires only). Frost multiplies them by 1.6.
+- **Sheer hills** have one ramp or two (`ramps2` .5); their walls are set on both sides. **One-way hills** have one ramp; their walls are set on the low side only, so men can drop down anywhere but climb only by the ramp.
+- **Fair ramps.** A lone hill's ramps face up or down the field, or one to each side. A pair's ramps are mirrored about the middle.
+- **Rock.** A mountain stands in the middle, or a mirrored pair; spires come in mirrored pairs. Rock keeps off the deployment zones, the open lane, the hills and the river.
+- **Fairness** (`terrainFair`, now with `reach`): no rock in a zone or the lane. On the foot grid, each zone's middle reaches the other's, every passable cell of its own zone, and every hilltop, both ways round. When no sub-seed is fair, rock is dropped first, then cliffs, then the old order.
+- **The lab.** Hills take `cliff`, `oneway` and `ramps` (degrees); `rocks: [{x, y, r, h}]`; recipe `'crags'` (the hills recipe, always with cliffs and mountains). A frost lab field counts as frost.
+- **Text.** "Deep water cannot be crossed: only at the fords and bridges." "Sheer cliffs ring a hill: it is climbed only by its ramps." "A hill is climbed by one ramp only, though men can drop down its cliffs." "Rock bars the way and hides what lies behind it." Mountains and spires are named in the field's sentence.
+
+**Movement.**
+- **Grids.** `B.terrain.route = {foot, mounted, big}`, built with the field (`terrainRoutes`). Deep water is impassable unless `TERRAIN.wade` (false; true brings phase 2's wading back). Cell rows wholly off the field are closed. `T.blocky` is set when anything blocks a step. Without it, none of this runs and a battle is exactly phase 3's.
+- **The guard.** `terrainHold`, once a frame after all movement, knocks, jostling and the field clamp (`battle.js`). It refuses any soldier's step into a solid cell or over a cliff edge its blocked way, sliding him along x or y instead. One standing in a solid cell steps out freely.
+- **Group moves.** `BattleControl.step` lays `g.way` (`groupWay`) for a holding or advancing group. It runs from its men's middle to its place, on its slowest kind's grid, with legs keeping min(half its front, 24 px) clear. It is laid again on a new place cell, a new grid version, or a cut way's end. Each soldier (`slotWay`):
+  - goes straight to his place when the line is clear;
+  - else walks the group's way from his own index on it, skipping ahead while the next point is in a clear line;
+  - pushed off it, he takes his own way to that point.
+  - A place in rock or across a cliff from the group's goal is pulled in toward the goal.
+  - On a narrow crossing the men stream through the waypoints as a column and re-form at the goal.
+- **Chases, charges, routs, withdrawals, fall-backs and lost targets** steer with `steerTo`/`steerDir`. They go straight while `lineClear` holds (r 3 px, reckoned again on a cell change or every 0.5 s). Otherwise they follow their own `routePath`, taken again every 0.5 s (staggered), on a grid version change, or when the goal changes cell (after 0.25 s). A charge builds no momentum while its way is routed, so momentum comes only on the clear last leg.
+- **The AI.** `wayLen` (a `routeDist` field, cached) measures the infantry's and shooters' way to tops, woods and river banks in `captainCtx`. A top whose ramp is on the far side is far; one out of reach is never chosen. Flank spots and hunt spots must be reachable (`canReach`). Shooters' perches must be walkable within twice their reach (`nearLen`, a bounded search). Rock counts as no perch. The captains' own crossing logic (`wayVia`, files narrowed) is kept: it works with the routing.
+- **The art and the HUD may read** `B.groups[id].way.p` (the group's waypoints, `[[x, y], …]`) to draw an order's path.
+
+- **Finding nothing to fight.** When a captain can see none of its foes (they are hidden by rock, a crest or woods) and no blow has been struck for `FOE_CMD.lull` (10 s), `captainSearch` sends every group of its army looking.
+  - It goes to where the foe was last seen.
+  - If the group is already there, or never saw the foe, it goes toward the foe's side of the field instead.
+  - This was a gap in phase 3's sight that rock made common: in a cliff battle, neither side saw the other and both stood for good.
+
+**Tests.** `tests/routing.js` (38 checks) covers:
+- the art's contract;
+- 300 generated fields: the zones reach each other and their own ground, every top is reached from both sides, no rock in a zone or the lane, variety by biome, more rock in frost;
+- determinism, with no `Math.random`;
+- the lab key;
+- one-way hills: climbed only by the ramp, dropped down anywhere;
+- the sheer hill's ramp, both ways;
+- riders round a mountain;
+- four kinds of group over a bridge and a ford;
+- a charge over a river;
+- two columns crossing one bridge each way at once;
+- two AI battles on a single-bridge field;
+- a charge round a cliff (no momentum without a clear line);
+- the AI taking a top by its ramp, and leaving one whose ramp is far;
+- a crags-and-river AI battle, run twice for the same result;
+- the search;
+- `routeFlood`/`routeDist`.
+
+Every soldier's every step is judged each frame in its battles. `tests/terrain.js` keeps phase 2's wading checks under `TERRAIN.wade`, and adds the impassable line over a bridge. `tests/aiterrain.js` lays its hand-made river's grids again, and blind captains now cross by the ford too.
+
+**Performance** (`tests/visual/terrainperf.js`, ms per frame; fcb67d6 → phase 4):
+
+| Field | 400 soldiers | 800 soldiers |
+|---|---|---|
+| None | 1.91 → 1.97 | 4.67 → 4.73 |
+| Hills and woods (nothing blocks) | 2.02 → 1.96 | 5.26 → 5.30 |
+| Cliffs, mountains and a river | 2.07 → 2.42 | 5.46 → 6.60 |
+
+- The fingerprints of the first two rows are unchanged.
+- On the blocking field, part of the cost is the routing itself, which a profile puts at about 0.5–0.8 ms at 800 soldiers: the guard, about 0.05 ms; slots and steering; the captains' route measures. The rest is a different battle: armies bunch at crossings instead of wading.
+
+**Lab balance** (`tests/visual/terrainbalance.js`; AI on AI, mirror armies of 20 foot, 12 bows and 6 riders a side, seeds 1–10):
+
+| Field | Left / right wins | Length, mean / median |
+|---|---|---|
+| Flat | 5 / 5 | 64 / 66 s |
+| Cliffs (crags) | 3 / 7 | 65 / 68 s |
+| Mountains | 6 / 4 | 64 / 63 s |
+| River (bridge and ford) | 4 / 6 | 72 / 74 s |
+| One bridge | 4 / 6 | 68 / 74 s |
+
+No battle was unfinished at 300 s. Every length is within +13% of flat.
+
+### Battle types as built (2026-10-18)
+
+Two battle types are built on the phase 3+4 snapshot: `BTYPE` in `setup.js`, and `B.btype`, which is absent on an open field. They come only with terrain. With `TERRAIN.on` false nothing changes: every older suite stays byte-identical.
+
+**Hold the bridge** (`{kind:'bridge', def, ford}`).
+- **When:** a fight with a lord, band, patrol or caravan on a road bridge or next to it (a road tile with water on both sides, within 1 tile: `bridgeNear`). Not in the frost, where the river is ice, and not in the desert, which has no river.
+- **Who holds it:** the side set upon. That is you, unless you rode at them (`e.mine`).
+- **The field:** the recipe's river, held (`rv.hold`). One bridge lies in the open lane near the middle (±15% of the field's height). At 40% of such places (`hash` of the tile) a ford lies at the field's far end from it as well, if there are at least 100 px of ground between them. On a short field there is none.
+  - Deep water is impassable, as phase 4 made it.
+  - `terrainFair` asks only for the bridge's 32 px of crossing.
+  - The river is never the feature dropped when no sub-seed is fair.
+- **Who stands where** (`arrangeType`): the holders' foot stands on its bank at the bridge, `BTYPE.front` (24 px) off the water's edge where each group stands. Their shooters are 50 px behind, their characters further back, and their riders back on the flanks (±110 px). The takers start at their own edge as ever. Your deployment zone, when you hold, runs to your bank (`B.dzone`, `deploy.js`).
+- **AI holding** (`typeHolds`, `commander.js`):
+  - It defends while the river lies between the armies, judged by the takers' fighters' middle against the river's (`acrossRiver`). The straight way may run over the bridge itself, so `wadesDeep` cannot tell.
+  - No lull, idle shooters or search sends it over until `BTYPE.wait` (60 s) passes with no blow struck.
+  - It holds TERRAIN_AI's river bank, the bridge first. The holding check skips `safe` (the holders start there).
+  - Its foot stands at the bank and never follows anyone over the water. While none of their fighters is within `alert` (260 px), it stands `back` (30 px) further from the water, out of the worst of their arrows.
+  - Its riders wait behind and ride only at those who come over. Its characters stay behind the foot.
+- **AI taking** (`typeTake`, `BTYPE.take`). The army goes over as one, by the crossing least held: the holders' strength within 150 px of each far mouth, then the way. It goes through four phases:
+  1. **wait:** the foot and riders hold where they started while the shooters shoot (2 × `FOE_CMD.volley`, 30 s at most).
+  2. **stage:** they gather 60 px back from the near mouth (15 s at most).
+  3. **cross:** the foot goes over to a place 50 px beyond the far mouth. The routing streams it over as a column and re-forms it there. The riders wait.
+  4. **go:** once every group of foot is ¾ over and formed (or 20 s pass), the captain's usual orders resume.
+  - Before this, the takers' foot walked into the arrows alone and broke at the bridge (holders won 95% of battles). With staging but no waiting it stood under fire at the mouth.
+- **Telling the player:** the panel says **Hold the bridge** or **Take the bridge**, and its ground line says "a river with a single bridge (and a ford far off it)". The battle opens with a banner and a log line (`typeSay`).
+
+**Ambush** (`{kind:'ambush', hid}`; `hid` is the side lying in wait).
+- **When** (`battleTypeFor`, `BTYPE_WORLD`): a band or a hostile lord's army comes at you where there is cover (`coverAt`). The chance is set by the cover: a forest tile (or 3 forest tiles round it) .35, hills or peaks .3, woods or rock on the field .15. It is multiplied by the band: bandits ×1, raiders and bog raiders ×1.2, lord ×0.5.
+  - Patrols, caravans and fights you start never ambush you.
+  - A bridge comes first.
+  - The draw is from the tile and the day (`hash`), never `Math.random`.
+  - It is sprung once: if you are run down after it, you meet them again on an open field (`e.btype` false).
+- **The field** (`ambushLayout` in `setup.js`, before the ground is built; `ambushPlan` in `terrain.js`):
+  - **The column:** a road down the middle, kept clear of cover edge to edge. The caught side stands on it in march order, `BTYPE.files` (4) wide, facing on: riders as the van, then foot, characters and shooters.
+  - **The ambushers:** on one flank or both (50%). Each group faces the road with its front 84 px (`gap`) off the column's edge, beyond `SIGHT.near`.
+  - **Their cover:** each group stands in a wood of its own sized round it (r ≥ 56). In deserts, and on half of hill fields (`ambushRidge`, by the seed), they stand behind a low ridge the length of their flank instead, which hides them by `riseBlocked`.
+  - Its own stream, from the ground's seed.
+- **Rules:**
+  - No deployment for either side (`opts.deploy` false).
+  - No fleeing when you are caught: "They have you in their trap".
+  - The ambushers' first charge out of hiding gets `AMBUSH`'s shock and the "Ambush!" callout, as phase 3 built them.
+  - The AI lying in wait goes straight in for `BTYPE.rush` (6 s): its foot charges and its riders ride at once. A column of the AI's marches on west along the road until it sees whoever lies in wait.
+- **Spring an ambush:** riding at a band, lord, patrol or caravan where there is cover, the panel offers it beside Fight (`bt-spring`). Your band starts hidden beside the road and theirs in march order on it.
+- **The ambush road event** (only with terrain and cover; `TERRAIN_EVENTS` in `events.js`, kept apart from `EVENTS` so a game without terrain draws from the very same list): fight (the ambush above), or cut the baggage loose and run (−4 food, −15 gold, −4 morale).
+- **Telling the player:** the panel says **Ambush!** and its ground line says "The road runs between woods / dune ridges / low ridges". The battle opens with "Ambushed!" (or "Lie in wait").
+- **Window frame:** the pre-battle panel and the event's choice page stay forced choices with no bar. Esc pauses there. The event's outcome ends with the `nav` bar, "Continue".
+
+**Lab:** `type: 'field' | 'bridge' | 'ambush' | {kind, side, ford}`. `side` is the side set upon, `'left'` by default. A typed battle with `ground:'none'` gets `'auto'`, and an ambush's ground is always its own.
+
+**Balance** (`tests/visual/btypebalance.js`: AI on AI, mirror armies of 20 foot, 12 bows and 6 riders, 500 px apart, ground `'auto'`, open recipe):
+
+| Set | Seeds 1–10 | Length, mean / median |
+|---|---|---|
+| Bridge, left holds | holders 7 / takers 3 | 42 / 43 s |
+| Bridge, right holds | holders 9 / takers 1 | 37 / 36 s |
+| **Bridge, both** | **holders 16 / 20 (80%)** | 39 / 39 s |
+| Ambush, left caught | ambushed 2 / ambushers 8 | 28 / 21 s |
+| Ambush, right caught | ambushed 5 / ambushers 5 | 23 / 26 s |
+
+- Over seeds 1–20 the bridge's holders won 30 of 40 battles (75%), with means of 44 and 39 s.
+- How hard the bridge is to take turns mostly on `BTYPE.back`. Over 40 battles: 0 px gave the holders 58%, 20 px 63%, 30 px 75%, 40 px 80%, and 60 px 90%.
+- No battle went unfinished. They are shorter than the flat field's 64 s, because one side breaks at the crossing.
+- The headless lab's field is short (about 290 px between the HUD bars), so none of these fields had a ford.
+
+**Tests:** `tests/battletypes.js` (49 checks):
+- the triggers, with their chances measured over 600 days;
+- no `Math.random` drawn;
+- who stands where, in the world and the lab;
+- the single-bridge field and its impassable water;
+- a held bridge fought to its end with nobody ever in deep water;
+- the AI holding and taking it;
+- an ambush in the lab, in a desert, in the world, from the road event, and sprung by you;
+- the panels' frame;
+- the lab key;
+- terrain off.
 
 ## 9. Owner decisions (with recommendations)
 
@@ -304,7 +475,7 @@ Agents are split by files that do not overlap. The **`B.terrain` shape in §4 is
 
 ## 10. Phase 4 routing core (built 2026-10-17: `battle/route.js`, `tests/route.js`)
 
-`route.js` is a standalone library, not yet called by game code.
+`route.js` is a standalone library. Since 2026-10-18 game code calls it (wired as below; see "Deviations as built" at the end of this section). Two helpers were added then: `routeFlood(g, s)` (every cell reachable from cell s) and `routeDist(g, x, y)` (a Dijkstra cost field from a point, kept per start cell, `ROUTE.dist` of them).
 
 ### Grid
 `g = {C, R, cs, cost, wall, v}`.
@@ -340,7 +511,7 @@ On the largest field (82×38 cells):
 | Worst case (bounded by the budget) | about 1 ms |
 | `lineClear` | about 0.5 µs |
 
-### Wiring it in (phase 4)
+### Wiring it in (phase 4: built 2026-10-18)
 - **Grids:**
   - Build `B.terrain.route = {foot, mounted, big}` once per battle, after generation, with `routeGridOf(T, {deep:true, who})`.
   - The ground is static. Bump `v` only if the terrain changes (e.g. a burnt bridge).
@@ -375,3 +546,22 @@ On the largest field (82×38 cells):
   3. a 0.5-s check finds no `lineClear` to the next waypoint (the group was shoved off its leg);
   4. a cut path reaches its last waypoint;
   5. a chase target changes cell.
+
+### Deviations as built (2026-10-18)
+- **Group moves keep `g.ax, g.ay` as the order.**
+  - The way is `g.way = {p, id, gc, v, who, ok, cut, end}`; there is no `g.wi` or `g.wayV`.
+  - Each soldier keeps his own index on the way (`u.gw`) instead of the group laying its slots at each waypoint.
+  - He makes for his own slot as soon as the straight line to it is clear, so a group streams through a narrow crossing as a column and re-forms at the goal.
+  - A slot in a blocked cell, or across a cliff from the goal, is pulled in toward the goal rather than snapped by `routeNear`, which could pick the far bank.
+  - Why: the captains, the HUD, `standAt` and the tests all read `ax, ay` as the order. Re-laying the formation per leg would churn `layForm` and the slot swaps mid-march.
+- **Soldier steps are guarded in one place.** `terrainHold` runs once a frame after all movement, rather than in each step function. One pass covers troops, characters, knockback, routs, withdrawals, jostling, leaps, pounces and the field clamp. The movers steer (`steerTo`) so that they rarely meet the guard.
+- **Clear lines.** A soldier's `lineClear` uses r 3 px (`ROUTE_UNIT.r`), not 4. It is reckoned again only when he or his goal changes cell, or every 0.5 s.
+- **Re-path triggers.**
+  - A chase re-paths when the target changes cell no sooner than 0.25 s after the last path.
+  - A soldier pushed off his group's way takes his own path to its next point (trigger 3), at most every 0.5 s.
+- **Off-field rows are closed** on the grids. A way along rows the field clamp forbids would stall.
+- **The captains** measure by `routeDist` (`wayLen`) and a bounded search (`nearLen`), not by `routePath` lengths per query.
+  - Their own crossing logic (`wayVia`: to the crossing's near end, files narrowed) stays, and works with the routing.
+  - `crossWay` stays for wadeable water only (`TERRAIN.wade`, nothing else blocking).
+  - `crossingFor` is retired: no game code called it once routing came.
+- **Fairness is stricter than proposed.** Every hilltop must be reachable from both zones, even for a mirrored pair. A pair's ramps are mirrored at any angle, not only facing the middle.

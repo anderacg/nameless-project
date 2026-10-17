@@ -37,6 +37,7 @@ js/core/              core.js (DOM, canvas, constants, helpers, the action regis
                       roster.js (TroopRoster, count/list helpers), army.js (ArmyRoster, persistent groups and slot budget), garrison.js (GarrisonService),
                       inventory.js (Inventory and bag operations), equipment.js (EquipmentService), recruitment.js (RecruitmentService and troop XP),
                       talents.js (TalentService and character talent commands), session.js (GameSession and new game), save.js
+                      audio.js (the sound: context, buses, synth parts, the SFX cues), music.js (generative music, its moods, audioWatch)
 js/data/              tables only, no game logic: races, factions, units, monsters (incl. mythic ones like the dragon), critters,
                       matchups, gear, progression (pasts, skills, perks, companions), tree, holdings (the kinds of holding and their
                       classes), places (goods, holdings, camp spots),
@@ -268,7 +269,7 @@ Tunables: `AI_TACTICS` in `battle/commander.js`, `CHAR_FALL` in `battle/charmind
 
 ## Terrain
 
-**Terrain** (`battle/terrain.js`, `doc/TERRAIN_DESIGN.md`; phase 1: hills, woods, marsh; phase 2: rivers, fords, bridges). A field fought on the world map gets a static 16-px grid `B.terrain` (kind, level 0–2, slope direction) laid out from the world tile and its 8 neighbours with its own seeded stream (the same place always gives the same field), fair to both sides (woods ≤25% of each deployment zone, the halves score within 15%, a 96-px open lane edge to edge, hills centred or mirrored); none in tournaments, sieges or raids. Layouts vary per biome (wooded hills and ridges, copses…). A field with terrain has **no scattered trees or rocks**; deserts get no woods and water only as an **oasis** beside a water tile.
+**Terrain** (`battle/terrain.js`, `doc/TERRAIN_DESIGN.md`; phase 1: hills, woods, marsh; phase 2: rivers, fords, bridges; phase 3: depth-sorted trees and cliff faces, concealment; phase 4: impassable water, cliffs, one-way hills, mountains, routing). A field fought on the world map gets a static 16-px grid `B.terrain` (kind, level 0–2, slope direction) laid out from the world tile and its 8 neighbours with its own seeded stream (the same place always gives the same field), fair to both sides (woods ≤25% of each deployment zone, the halves score within 15%, a 96-px open lane edge to edge, hills centred or mirrored); none in tournaments, sieges or raids. Layouts vary per biome (wooded hills and ridges, copses…). A field with terrain has **no scattered trees or rocks**; deserts get no woods and water only as an **oasis** beside a water tile.
 - **Range:** a shooter reaches 7.5% farther per level he stands on (replaces the old whole-field +15% hill rule).
 - **Charges:** the charge bonus ×1.35 downhill, ×0.65 uphill; halved against a foe in woods. **Melee:** +10% against a foe at least one level lower.
 - **Climbing:** foot ×0.6, riders and big units ×0.5 (dwarves climb freely), descending ×1.15; running uphill doubles stamina drain; climbing breaks cohesion. Climbers lean forward and step short (`climbState(u)`, drawn only).
@@ -280,15 +281,58 @@ Tunables: `AI_TACTICS` in `battle/commander.js`, `CHAR_FALL` in `battle/charmind
     - Frozen in the frost (all ford, crossable anywhere). A ford-only stream in half of swamps away from water.
     - None in deserts (oasis only), against monsters or in caves.
   - **Fair:** deployment zones stay dry; crossings lie near the middle, ≥120 px apart (less on a short field), and the open lane runs over one.
-  - **Deep water** (wadeable): ×0.35 speed (big ×0.5), no momentum, stamina ×2 running and spent even walking, no shooting. Blows dealt ×0.75 and taken ×1.25. No cohesion, shield wall or wedge.
+  - **Deep water** is impassable (phase 4): only fords and bridges cross it. `TERRAIN.wade` brings back phase 2's wading: ×0.35 speed (big ×0.5), no momentum, stamina ×2 running and spent even walking, no shooting, blows dealt ×0.75 and taken ×1.25, no cohesion, shield wall or wedge.
   - **Fords:** foot and big ×0.7, riders ×0.5, momentum ×0.3, stamina ×1.5, blows ×0.9 (orcs exempt), no shield wall or wedge.
   - **Bridges:** open ground, but narrow.
-  - **Crossing:** soldiers go over a crossing when that beats wading (`crossWay`), so lines squeeze onto it and those far off its line wade. A line holding a bank does not step into the water after a foe (`holdsBank`).
+  - **Crossing:** groups stream over a bridge or ford as a column and re-form beyond it. A line holding a bank does not step into the water after a foe (`holdsBank`).
   - **For the AI:** captains read `B.terrain.ai.crossings` (`{kind, x, y, w, y0, y1, x0, x1}`) and `B.terrain.ai.river`.
 - **Art:** `engine/ground.js` `PX.battleGround` paints the field once per battle (`B.ground`): terraces as cliff-faced plateaus, species-mixed woods, marsh, oases, rivers with banks, fords, bridges and ice, per-biome painted detail; the minimap shows it (`B.groundMini`).
   - `PX.battleWater` animates the water (glints and current, still with reduced motion).
   - Waders are sunk to the waist inside a ring of ripples; fords splash.
-`TERRAIN.on` is the game's switch; `tests/harness.js` turns it off, so older suites see today's field. The lab's `ground` key takes `'none'` (default), `'auto'`, `{recipe, seed, oasis, river}` (recipe `'river'`: open with a river; `river: true | {bridge, frozen, stream}`) or explicit `{hills, woods, marsh, rivers:[{x, meander, crossings:[{kind, y, w}], frozen, stream}], seed}`. Balance: the hill holder wins ~69% of mirror battles; woods cut archer damage ~27%; hill battles run ~44% longer than flat (harder climbing; `HILL.climb` is the knob). Tests: `tests/terrain.js`.
+  - **Depth:** trees (32-px sprites, `PX.battleTree`) and the plateaus' south cliff faces stand in `B.ground.props` and are drawn in the same depth order as the soldiers (`render.js` `battleEnts`).
+    - A man behind a trunk's foot is under its crown; one behind a rim is under the rock.
+    - A tree or face covering one of your or your allies' men fades (`PROPFADE`); the enemy's get no fade.
+- **Sight (phase 3):**
+  - **Woods:** a soldier in a wood is unseen by a side with no soldier within 64 px of him (96 px from higher ground), unless he struck or shot at that side in the last 3 s.
+  - **Raised ground** at least a level above both viewer and target hides the target too (`riseBlocked`). A `TERRAIN_GROUND` kind with `blocks:true` hides at any height, ready for mountains.
+  - Sight is reckoned every 0.25 s (`sightStep`, `SIGHT`).
+  - **For you:** unseen enemies are not drawn, not on the minimap, have no icon and cannot be clicked. Free fire skips them.
+  - **For the AI, the same rule:** captains (`assess`) and characters (`liveFoes`) only count foes their side sees, and aim at a hidden target's last-known place (`sightGoal`).
+  - **Lost targets:** an attack on a group gone from sight marches to where it was last seen, and lapses there if nothing is found.
+  - **Ambush:** a group unseen until its charge lands shakes its foe ×1.5, once ("Ambush!", `AMBUSH`).
+  - API: `seenBy(team,u)`, `visibleFoes(team)`, `lastSeen(team,u)`, `sightGoal(g,team)`.
+- **Cliffs and rock (phase 4):**
+  - **Sheer hills:** cliffs all round, one or two ramps.
+  - **One-way hills:** one ramp; men may drop down the cliffs but climb only by the ramp.
+  - Both are commonest on hill fields and in the frost.
+  - **Mountains and rock spires** (`TKIND.rock`) are impassable and hide what lies behind them. Deserts get spires only.
+  - **Fair:** each zone reaches the other and every hilltop; no rock in a zone or the open lane; ramps face both sides alike or are mirrored.
+  - **Data:** `B.terrain.wall` (edge bits E 1, S 2, W 4, N 8; one-way on the low cell only) and `B.terrain.rockH` (levels of `PX.ROCK_PX` = 14 px).
+- **The way round (phase 4):**
+  - Every group move, chase, charge, rout and withdrawal routes round rock, cliffs and water (`route.js`, grids in `B.terrain.route`).
+  - No step ever enters rock or deep water or climbs a cliff (`terrainHold`, one guard pass after all movement).
+  - A charge builds momentum only on a clear last leg.
+  - Captains measure tops by the way round (a ramp on the far side is far), and go looking when they have seen no one for 10 s (`captainSearch`).
+  - Cost: +0.6 ms/frame at 800 soldiers on a cliff, mountain and river field; none on fields where nothing blocks.
+  - Tests: `tests/routing.js`, `tests/route.js`. Reports: `tests/visual/terrainperf.js`, `tests/visual/terrainbalance.js`.
+- **Battle types** (`BTYPE` in `battle/setup.js`, `B.btype`; triggers in `battle/encounters.js`; only with terrain):
+  - **Hold the bridge:** a fight with a lord, band, patrol or caravan on a road bridge or next to one (not in the frost, where the river is ice, nor the desert).
+    - The field: a river of impassable deep water with a single bridge in the open lane near the middle; 40% of places (by the tile) also have a ford far off it, when the field is tall enough (≥100 px between).
+    - The side set upon holds it: its foot on its bank by the bridge, its shooters behind, its riders further back on the flanks. You hold it unless you rode at them; holding it, your deployment zone runs to your bank (`B.dzone`).
+    - The other side comes on from its own edge and must cross.
+    - **AI holding:** defends while the river lies between (no lull or idle shooters send it over, until 60 s pass with no blow struck). Its foot stands at the bridge, the bridge first, 30 px back from the water until their fighters come within 260 px. It never follows anyone over the water. Its riders ride only at those who come over (`typeHolds`).
+    - **AI taking:** picks the crossing least held. Its foot and riders hold back out of reach while its shooters shoot (2 volleys), then gather at the near mouth, then go over and form up 50 px beyond the far mouth. Only once the foot is formed (or 20 s pass) does the army go on as ever; its riders cross after the foot (`typeTake`).
+    - The panel and the battle's start say **Hold the bridge** or **Take the bridge**.
+  - **Ambush:** bands (bandits ×1, raiders and bog raiders ×1.2) or a hostile lord's army (×0.5) that come at you where there is cover spring one on 35% of days in a forest, 30% on hills or peaks, 15% where the field has woods or rock (`BTYPE_WORLD`).
+    - The draw is from the tile and the day (`hash`), never `Math.random`. Patrols, caravans and fights you start never ambush you.
+    - **Caught:** no deployment, and no fleeing. Your band starts in march order, 4 files wide, on a road down the middle (`ambushLayout`).
+    - **Their side:** each group stands in a wood of its own, on one flank or both (deserts, and half of hill fields: behind a low ridge), its front 84 px off the column, beyond sight. Their first charge out of hiding gets `AMBUSH`'s shock and the "Ambush!" callout. For 6 s they go straight in.
+    - **Spring an ambush:** riding at a band, lord, patrol or caravan where there is cover, the panel offers it beside Fight. Your band starts hidden beside the road and theirs in march order on it, marching on west till it sees you. Neither side deploys.
+    - The **ambush road event** (only where there is cover; `TERRAIN_EVENTS`, apart from `EVENTS`): fight (the ambush above), or cut the baggage loose and run (−4 food, −15 gold, −4 morale).
+  - **Lab:** `type: 'field'` (default) | `'bridge'` | `'ambush'` | `{kind, side, ford}`. `side` is the side set upon (holding the bridge, or caught on the road), `'left'` by default. A typed battle with `ground:'none'` gets `'auto'`.
+  - **Balance** (`tests/visual/btypebalance.js`, mirror armies of 20 foot, 12 bows and 6 riders, seeds 1–10, each side holding): see `doc/TERRAIN_DESIGN.md` §8, "Battle types as built".
+  - **Tests:** `tests/battletypes.js`.
+`TERRAIN.on` is the game's switch; `tests/harness.js` turns it off, so older suites see today's field. The lab's `ground` key takes `'none'` (default), `'auto'`, `{recipe, seed, oasis, river}` (recipe `'river'`: open with a river; `river: true | {bridge, frozen, stream}`) or explicit `{hills, woods, marsh, rivers:[{x, meander, crossings:[{kind, y, w}], frozen, stream}], rocks:[{x, y, r, h}], seed}` (hills take `cliff`, `oneway`, `ramps:[degrees]`; recipe `'crags'`: hills with cliffs and mountains). Balance: the hill holder wins ~69% of mirror battles; woods cut archer damage ~27%; hill battles run ~44% longer than flat (harder climbing; `HILL.climb` is the knob). Tests: `tests/terrain.js`, `tests/concealment.js`.
 
 ## Battle feedback
 
@@ -373,10 +417,10 @@ Implementation: `js/ui/developer.js`, `js/battle/lab.js`; the normal setup and s
 Each suite in `tests/` runs headless in Chrome or Edge by opening `Ashmark.html?test=<suite>`. Windows (PowerShell):
 
 ```
-.	estsun-tests.ps1                                  # every suite (about 4 min)
-.	estsun-tests.ps1 -Parallel 4                      # every suite, 4 browsers at once (about 1.5 min)
-.	estsun-tests.ps1 -Suites rosters,parties,garrison # selected suites
-.	estsun-tests.ps1 -Suites siege -Seed (1..8)       # reproducible random scenarios
+.\tests\run-tests.ps1                                  # every suite (about 4 min)
+.\tests\run-tests.ps1 -Parallel 4                      # every suite, 4 browsers at once (about 1.5 min)
+.\tests\run-tests.ps1 -Suites rosters,parties,garrison # selected suites
+.\tests\run-tests.ps1 -Suites siege -Seed (1..8)       # reproducible random scenarios
 ```
 
 From bash: `bash tests/run-tests.sh [-j N] [-s SEED] [suite ...]`. On Windows it hands over to the PowerShell runner; elsewhere (or with `ASHMARK_DUMP_DOM=1`) it runs a `--dump-dom` browser per suite.
@@ -394,6 +438,16 @@ To look at the result, take a screenshot of a prepared scene (`scene` is `world`
 ```
 chrome --headless --allow-file-access-from-files --window-size=1400,880 --screenshot=shot.png "file:///.../Ashmark.html?test=visual/shot&scene=world&town=Skullrock&mount=1&zoom=1"
 ```
+
+## Sound
+
+Everything heard is synthesised by WebAudio as it plays (`js/core/audio.js`, `js/core/music.js`): oscillators, filtered noise and envelopes, no files (fetching is unreliable from `file://`, and a phone downloads nothing). One `AudioContext`, made or woken by the first key, click or touch (the autoplay rule), suspended while the tab is hidden. Each sound and each mood feeds the effects or the music bus, both into master, then a compressor and a soft clip, so a big melee never clips.
+- **Effects:** `sfx(name, {vol, pan, pitch, delay})` plays a cue of `SFX` (each cue: a small recipe, `gap` its rate limit, `max` how many at once, `pri` who gives way at the cap); `sfxAt(name, x, y)` plays one heard from a point of the field: panned, quieter away from the middle of the battle camera, unheard three half-views off. At most `AUDIO.voices` (24) sound at once; past it a more important cue takes the oldest lesser one's place, else it is dropped. Cues: UI `click confirm back refused coin levelup notify`; world `encounter town day`; battle `horn charge clash hit block loose arrowhit brace gallop rout rally victory defeat`.
+- **Music:** `music(mood)`: `menu`, `world`, `town`, `battle` (Dorian, Mixolydian, Aeolian; lute or harp, drone, recorder or fiddle, frame drum and tabor) and the stingers `victory` and `defeat`. Each mood draws three motifs from its seed; each four-bar phrase is made anew from them (repeated, moved, inverted, a note split, a new cadence and chord walk), so it is recognisable but never loops. A lookahead scheduler puts notes on the audio clock 0.4 s ahead; a new mood crossfades over 1.8 s; a stinger plays out before the next mood comes in.
+- **The game:** `audioWatch()` (main.js's loop) sets the mood from the scene (title, road, town window or streets, battle, its stinger once over; the Esc menu keeps what is under it) and plays the encounter alert, a town's gate and bells, the day's chime, level-up and the horn as a fight begins. Every button (one listener in ui.js) clicks, confirms (primary), goes back (a bottom bar), chinks coin (gold changed) or refuses (a red message).
+- **Settings:** Settings → Sound: on/off and three volumes (`PREFS` `mute`, `volmaster`, `volmusic`, `volsfx`, stored as `ashmark.<key>`). **M** mutes anywhere.
+- **Off:** `AUDIO.on=false` (`tests/harness.js` sets it) or no WebAudio: every call is a cheap no-op that never throws. Sound never touches `Math.random` (own `mkRng`), so seeded battles are unchanged.
+- **Gallery:** `sounds.html` plays every cue (battle cues also at the left and right edge), each mood and stinger, has the volume sliders, a voice-cap box, a peak meter and a battle-stress button (60 random battle cues in 2 s). Tests: `tests/audio.js` (offline rendering: every cue and mood heard, never past full scale; limits; settings; the mood following the scene).
 
 ## The screen
 One screen, filling the window at a whole-number scale (F11 or the corner button for full screen). Everything lies on it: your

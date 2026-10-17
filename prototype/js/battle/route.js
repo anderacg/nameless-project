@@ -9,8 +9,9 @@
    then h, then cell index): the same grid and query give the same way. One query's work is bounded (ROUTE.budget cells) and
    reuses the same typed arrays (ROUTE_WS): run it per group order and re-path, not per soldier per frame */
 // unit: open ground's cost; budget: cells a query expands at most; cache: paths kept per grid; deep: deep water impassable
-// (routeGridOf; wadeable until phase 4 turns it on); near: rings searched for the passable cell nearest a blocked one
-const ROUTE={unit:16,budget:4096,cache:64,deep:false,near:16};
+// (routeGridOf; terrain.js passes its own: TERRAIN.wade); near: rings searched for the passable cell nearest a blocked one; dist:
+// distance fields kept per grid (routeDist)
+const ROUTE={unit:16,budget:4096,cache:64,deep:false,near:16,dist:8};
 // (the 8 steps in TDX's order: E SE S SW W NW N NE)
 const ROUTE_DC=[1,1,0,-1,-1,-1,0,1],ROUTE_DR=[0,1,1,1,0,-1,-1,-1];
 // an open grid of C×R cells of cs px
@@ -41,7 +42,7 @@ function routePrep(g){
       const dx=ROUTE_DC[d]>0?0:4,dy=ROUTE_DR[d]>0?2:6,x=i+ROUTE_DC[d],y=i+ROUTE_DR[d]*C;
       if(cost[x]&&cost[y]&&open(i,dx)&&open(x,dy)&&open(i,dy)&&open(y,dx))m|=1<<d}
     mv[i]=m}
-  g.lo=lo>255?ROUTE.unit:lo;g.pv=g.v;g.memo.clear();return g}
+  g.lo=lo>255?ROUTE.unit:lo;g.pv=g.v;g.memo.clear();if(g.dm)g.dm.clear();return g}
 // (the work arrays, one set for every query, grown to the largest grid seen; st: this query's stamp in seen/done)
 const ROUTE_WS={n:0,st:0};
 function routeWs(N){const W=ROUTE_WS;
@@ -126,3 +127,20 @@ function reachable(g,ax,ay,bx,by){
   const W=routeWs(g.C*g.R),q=W.hp,seen=W.seen,st=W.st,mv=g.mv,off=g.off;let a=0,b=1;q[0]=s;seen[s]=st;
   while(a<b){const i=q[a++],m=mv[i];for(let d=0;d<8;d++){if(!(m&1<<d))continue;const j=i+off[d];if(seen[j]===st)continue;if(j===t)return true;seen[j]=st;q[b++]=j}}
   return false}
+// every cell reachable from cell s (a flood over the step masks, as reachable's): a Uint8Array, 1 reached (s's own too)
+function routeFlood(g,s){
+  routePrep(g);const N=g.C*g.R,out=new Uint8Array(N);if(s<0)return out;const q=new Int32Array(N),mv=g.mv,off=g.off;let a=0,b=1;q[0]=s;out[s]=1;
+  while(a<b){const i=q[a++],m=mv[i];for(let d=0;d<8;d++){if(!(m&1<<d))continue;const j=i+off[d];if(out[j])continue;out[j]=1;q[b++]=j}}
+  return out}
+/* the cost of the way from (x,y) to every cell (Dijkstra over the step masks, a step's cost as routeSearch's: a cell a side on open
+   ground 2·ROUTE.unit; Infinity out of reach; a start in a blocked cell from the passable one nearest it): a Float64Array, kept per
+   start cell (ROUTE.dist of them) till the version moves. The captains' measure of the ground (terrain.js wayLen) */
+function routeDist(g,x,y){
+  routePrep(g);const N=g.C*g.R;let s=routeIx(g,x,y);if(!g.cost[s]&&!g.mv[s])s=routeNear(g,s);const dm=g.dm||(g.dm=new Map());
+  let D=dm.get(s);if(D)return D;D=new Float64Array(N).fill(Infinity);if(s<0)return D;
+  const W=routeWs(N),F=W.f,H=W.h,hp=W.hp,pos=W.pos,seen=W.seen,done=W.done,st=W.st,mv=g.mv,off=g.off,cost=g.cost,SQ=Math.SQRT2;let size=1;
+  seen[s]=st;F[s]=0;H[s]=0;hp[0]=s;pos[s]=0;
+  while(size){const i=hp[0];if(--size){hp[0]=hp[size];routeDown(W,0,size)}done[i]=st;D[i]=F[i];const m=mv[i],ci=cost[i]||g.lo;
+    for(let d=0;d<8;d++){if(!(m&1<<d))continue;const j=i+off[d];if(done[j]===st)continue;const ng=F[i]+(d&1?SQ:1)*(ci+cost[j]);
+      if(seen[j]!==st){seen[j]=st;F[j]=ng;H[j]=0;hp[size]=j;routeUp(W,size);size++}else if(ng<F[j]){F[j]=ng;routeUp(W,pos[j])}}}
+  if(dm.size>=ROUTE.dist)dm.delete(dm.keys().next().value);dm.set(s,D);return D}

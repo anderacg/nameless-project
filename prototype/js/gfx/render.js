@@ -77,7 +77,7 @@ function drawWorld(){
   const MS=112/MW,mw=Math.round(MW*MS),mh=Math.round(MH*MS),mx=VW-mw-6,my=6,dot=(x,y,col,s)=>rect(ctx,col,mx+Math.floor(x/TILE*MS)-(s>>1),my+Math.floor(y/TILE*MS)-(s>>1),s,s);
   ctx.fillStyle='#000';ctx.fillRect(mx-1,my-1,mw+2,mh+2);ctx.drawImage(atSize(miniCv,mw,mh),mx,my);ctx.globalAlpha=.4;ctx.drawImage(atSize(landMiniCv(),mw,mh),mx,my);ctx.globalAlpha=1;ctx.drawImage(atSize(fogMiniCv(),mw,mh),mx,my);
   // each its own dot (WorldObject mapDot): the holdings and sites you know of, then the beasts, parties and caravans in sight over them
-  for(const os of [TOWNS,W.sites,W.monsters.map(asMonster),W.parties,W.caravans.map(asParty)])for(const o of os){const d=o.mapDot(V);if(d)dot(o.x,o.y,d[0],d[1])}
+  for(const os of [TOWNS,W.sites,W.monsters.map(asMonster),W.parties,W.caravans])for(const o of os){const d=o.mapDot(V);if(d)dot(o.x,o.y,d[0],d[1])}
   P.quests.forEach(q=>{const g=questGoal(q);if(g)dot(g.x,g.y,'#ffe040',2)});
   dot(P.x,P.y,'#fff',3);
 }
@@ -152,10 +152,38 @@ function drawSlash(s){
   else if(s.kind==='claw'){ctx.strokeStyle=st(fade);ctx.lineWidth=1;const c=Math.cos(s.a+.8),sn=Math.sin(s.a+.8);for(const k of [-3,0,3]){ctx.beginPath();ctx.moveTo(s.x-c*5-sn*k,s.y-sn*5+c*k);ctx.lineTo(s.x+c*5-sn*k,s.y+sn*5+c*k);ctx.stroke()}}
   ctx.restore();
 }
+/* a field with terrain: its standing trees and plateau cliff faces (engine/ground.js cv.props) are drawn in the same depth order
+   as the soldiers, by their feet (a soldier whose feet are lower on the screen than a trunk's foot stands in front of it; one
+   behind is under its crown). Those in view only; each one covering one of your or your allies' men behind it fades to PROPFADE.a
+   (at PROPFADE.rate a second, real time) so you see them; the enemy's men get no fade. The men are filed by the 8-px cells their
+   bodies cover (PF: the least feet y there), so a prop looks at a few cells, not at every soldier */
+const PROPFADE={a:.4,rate:4,cell:8};
+let PF=null,PFT=0;
+function propsInView(out,v0,v1,v2,v3){
+  const L=B.ground&&B.ground.props;if(!L||!L.length)return;const c=PROPFADE.cell,gw=Math.ceil(BW/c)+1,gh=Math.ceil(BH/c)+1;
+  if(!PF||PF.length!==gw*gh)PF=new Float32Array(gw*gh);PF.fill(1e9);let any=false;
+  for(const u of B.units){if(u.hp<=0||u.team!==0)continue;const k=u.s.big?2:1,x0=u.x-5*k,x1=u.x+5*k,y0=u.y-15*k,y1=u.y-1;if(x1<v0||x0>v2||y1<v1||y0>v3)continue;any=true;
+    const ga=Math.max(0,Math.floor(y0/c)),gb=Math.min(gh-1,Math.floor(y1/c)),ha=Math.max(0,Math.floor(x0/c)),hb=Math.min(gw-1,Math.floor(x1/c));
+    for(let gy=ga;gy<=gb;gy++)for(let gx=ha;gx<=hb;gx++){const i=gy*gw+gx;if(u.y<PF[i])PF[i]=u.y}}
+  const now=performance.now(),st=PFT?Math.min(.1,(now-PFT)/1000)*PROPFADE.rate:1;PFT=now;
+  for(const p of L){const b=p.box;if(b[2]<v0||b[0]>v2||b[3]<v1||b[1]>v3)continue;let cov=false;
+    if(any){const ga=Math.max(0,Math.floor(b[1]/c)),gb=Math.min(gh-1,Math.floor(b[3]/c)),ha=Math.max(0,Math.floor(b[0]/c)),hb=Math.min(gw-1,Math.floor(b[2]/c));
+      for(let gy=ga;gy<=gb&&!cov;gy++){const o=gy*gw;for(let gx=ha;gx<=hb;gx++)if(PF[o+gx]<p.y){cov=true;break}}}
+    const to=cov?PROPFADE.a:1,a=p.al==null?1:p.al;p.al=a<to?Math.min(to,a+st):Math.max(to,a-st);out.push(p)}}
+// one standing prop: a tree, or a section of a cliff face (faded by propsInView)
+function drawProp(o){const a=o.al==null?1:o.al;if(a<1)ctx.globalAlpha=a;ctx.drawImage(o.s,o.dx,o.dy);if(a<1)ctx.globalAlpha=1}
+// what stands on the field, in the order it is drawn (by feet): obstacles and the living; with terrain the trees and cliff faces
+// in view sorted in too, and of the enemy only those your side sees (terrain.js seenBy)
+function battleEnts(){
+  let ents;if(B.terrain&&B.ground){const c=B.cam,z=c?c.z:1,vx=c?c.x:0,vy=c?c.y:0;ents=B.obs.slice();propsInView(ents,vx-16,vy-16,vx+BVW/z+16,vy+BVH/z+40);for(const u of B.units)if(u.hp>0&&seenBy(0,u))ents.push(u)}
+  else ents=[...B.obs,...B.units.filter(u=>u.hp>0)];
+  return ents.sort((a,b)=>a.y-b.y)}
 function drawBattle(){
   warmStep();// (sprites made ahead before they are needed: sprites.js)
   // the camera (camera.js): the field drawn at its zoom and pan, the HUD over it at the screen's scale
-  if(B.cam)camTick();const Cz=B.cam?B.cam.z:1;ctx.fillStyle='#07090e';ctx.fillRect(0,0,BVW,BVH);ctx.save();if(B.cam){ctx.scale(Cz,Cz);ctx.translate(-Math.round(B.cam.x*Cz)/Cz,-Math.round(B.cam.y*Cz)/Cz)}
+  if(B.cam)camTick();const Cz=B.cam?B.cam.z:1;
+  // (deploying, the battle's clock stands: who sees whom is reckoned on the real one as your men are placed, terrain.js)
+  if(B.terrain&&B.deploy){const n=performance.now(),S=B.terrain.sight;if(!S||!(n-(S.rt||0)<250)){sightStep(true);B.terrain.sight.rt=n}}ctx.fillStyle='#07090e';ctx.fillRect(0,0,BVW,BVH);ctx.save();if(B.cam){ctx.scale(Cz,Cz);ctx.translate(-Math.round(B.cam.x*Cz)/Cz,-Math.round(B.cam.y*Cz)/Cz)}
   // (a field with terrain: its own ground, painted once over the arena: engine/ground.js; units, as ever, over it)
   ctx.drawImage(B.terrain?B.ground||(B.ground=PX.battleGround({...B.terrain,climate:B.env.c,base:B.arena})):B.arena,0,0);
   // (a river moves: glints and current over its water, engine/ground.js PX.battleWater, on the ground's own clock (real time, still
@@ -171,7 +199,7 @@ function drawBattle(){
   drawFormGhost();// (a line being dragged: formations.js)
   if(B.box){const b=B.box;ctx.strokeStyle='#e8b94a';ctx.lineWidth=1;ctx.strokeRect(Math.min(b.x0,b.x1)+.5,Math.min(b.y0,b.y1)+.5,Math.abs(b.x1-b.x0),Math.abs(b.y1-b.y0))}
   if(B.mark&&B.mark.t>0){const m=B.mark;ctx.strokeStyle=m.foe?'#ff6a5a':'#e8b94a';ctx.globalAlpha=Math.min(1,m.t*2);ctx.beginPath();ctx.ellipse(m.x,m.y,8*(1.4-m.t*.5),4*(1.4-m.t*.5),0,0,7);ctx.stroke();ctx.globalAlpha=1;m.t-=1/60}
-  [...B.obs,...B.units.filter(u=>u.hp>0)].sort((a,b)=>a.y-b.y).forEach(o=>o.kind?(sp=>ctx.drawImage(sp,Math.round(o.x)-(sp.width>>1),Math.round(o.y)+4-sp.height))(obstacleSprite(o.kind,B.env.c)):drawUnit(o));
+  battleEnts().forEach(o=>o.kind?(sp=>ctx.drawImage(sp,Math.round(o.x)-(sp.width>>1),Math.round(o.y)+4-sp.height))(obstacleSprite(o.kind,B.env.c)):o.dk?drawProp(o):drawUnit(o));
   for(const a of B.arrows){if(a.arc){const z=Math.max(0,a.z),ang=Math.atan2(a.vy-a.vz,a.vx),sc=Math.min(1,z/50);
       ctx.fillStyle='rgba(0,0,0,'+(.35-sc*.2).toFixed(2)+')';ctx.fillRect(Math.round(a.x-2),Math.round(a.y),4,1);
       ctx.save();ctx.translate(Math.round(a.x),Math.round(a.y-4-z));ctx.rotate(ang);ctx.fillStyle='#e8e4d0';ctx.fillRect(-4,0,7,1);ctx.fillStyle='#c9ced8';ctx.fillRect(3,0,2,1);ctx.fillStyle='#d8d0c0';ctx.fillRect(-5,-1,2,1);ctx.fillRect(-5,1,2,1);ctx.restore();continue}

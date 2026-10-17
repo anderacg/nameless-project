@@ -54,16 +54,26 @@ const EVENTS=[
     choices:[{label:'Charge in',run:()=>{G.event.fight=true;return'You draw steel and ride at the raiders.'}},
       {label:'Stay clear',run:()=>'You wait until the screams stop.'}]}
 ];
+/* road events that come only with battle terrain (TERRAIN.on; battle/terrain.js): kept apart from EVENTS, so a game without it draws
+   from exactly the same list (roadEvents). An ambush (battle types, setup.js BTYPE), where there is cover (encounters.js coverAt);
+   fought, the band springs it: you start on the road in march order, they hidden beside it */
+const TERRAIN_EVENTS=[
+  {id:'ambush',w:1.5,ok:()=>troopCount()>=3&&!!coverAt(P.x,P.y),text:()=>'The road runs on between '+COVER_SAY[coverAt(P.x,P.y)]+'. No birdsong. Too late, your outriders see the glint of steel beside the road: an ambush.',
+    choices:[{label:'Close up and fight',run:()=>{G.event.fight='ambush';return'Your band closes up on the road, weapons drawn.'}},
+      {label:'Cut the baggage loose and run (−4 food, −15 gold)',run:()=>{foodTake(4);P.gold=Math.max(0,P.gold-15);P.morale-=4;return'You leave the baggage to them and ride hard. They are too busy looting to follow.'}}]}
+];
 function nearMount(){const tx=Math.floor(P.x/TILE),ty=Math.floor(P.y/TILE);for(let j=-2;j<=2;j++)for(let i=-2;i<=2;i++)if(tAt(tx+i,ty+j)===T_MOUNT)return true;return false}
+// the road events that can come (with battle terrain, its own too)
+const roadEvents=()=>TERRAIN.on?EVENTS.concat(TERRAIN_EVENTS):EVENTS;
 // called from the daily tick
 function roadEvent(){
   if(G.quietEvents||G.mode!=='world'||G.modal)return;
-  const ok=EVENTS.filter(e=>e.ok());let r=Math.random()*ok.reduce((a,e)=>a+e.w,0),ev=ok[0];for(const e of ok){r-=e.w;if(r<=0){ev=e;break}}
+  const ok=roadEvents().filter(e=>e.ok());let r=Math.random()*ok.reduce((a,e)=>a+e.w,0),ev=ok[0];for(const e of ok){r-=e.w;if(r<=0){ev=e;break}}
   if(!ev)return;
   if(ev.run){const [m,c]=ev.run();log(m,c);return}
   G.event={id:ev.id};G.mode='event';P.tx=null;showEvent();
 }
-const eventDef=()=>EVENTS.find(e=>e.id===G.event.id);
+const eventDef=()=>EVENTS.find(e=>e.id===G.event.id)||TERRAIN_EVENTS.find(e=>e.id===G.event.id);
 function showEvent(result){
   const ev=eventDef();
   showPanel('<div class="top"><h2>On the road</h2><span class="muted">Day '+G.day+' · '+regionAt(P.x,P.y).name+'</span></div><p>'+ev.text()+'</p>'+
@@ -74,7 +84,8 @@ function eventAct(a,arg){
   if(a==='ev-choose'&&G.mode==='event'){const c=eventDef().choices[+arg];if(c.need&&c.need())return true;const res=c.run();P.morale=clamp(P.morale,0,100);updateHUD(true);log(res);showEvent(res);return true}
   if(a==='ev-done'&&G.mode==='event'){const fight=G.event.fight;G.event=null;G.mode='world';hidePanel();
     // (an ambush: a band of its own, its fighters mustered here, as every band's are)
-    if(fight){const n=rint(4,6)+Math.floor(G.day/15),b=asParty({x:P.x,y:P.y,cool:0,n,kind:'bandits'});startEncounter({kind:'party',ref:b,n,list:b.troops.slice(),band:'bandits'})}else saveGame(true);return true}
+    if(fight==='ambush'){const n=rint(5,7)+Math.floor(G.day/15),c=climAt(P.x,P.y),k=c==='desert'?'raiders':c==='swamp'?'bog':'bandits',b=asParty({x:P.x,y:P.y,cool:0,n,kind:k});startEncounter({kind:'party',ref:b,n,list:b.troops.slice(),band:k,btype:{kind:'ambush',hid:1}})}
+    else if(fight){const n=rint(4,6)+Math.floor(G.day/15),b=asParty({x:P.x,y:P.y,cool:0,n,kind:'bandits'});startEncounter({kind:'party',ref:b,n,list:b.troops.slice(),band:'bandits'})}else saveGame(true);return true}
   return false;
 }
 onAct('ev-',eventAct);

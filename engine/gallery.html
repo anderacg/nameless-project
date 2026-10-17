@@ -27,6 +27,8 @@ function render(){
   const q0=new URLSearchParams(location.search);
   if(new URLSearchParams(location.search).get('view')==='props')return renderProps();
   if(q0.get('view')==='ground')return renderGround();
+  if(q0.get('view')==='depth')return renderDepth();
+  if(q0.get('view')==='bench')return renderBench();
   if(new URLSearchParams(location.search).get('view')==='castles'){const out=document.getElementById('out');out.innerHTML='';for(const type of ['keep','citadel','village','longhouse','stonehall','elfhall','hidehall'])for(const style of ['human','dwarf','elf','orc']){if(['stonehall','elfhall','hidehall','longhouse'].includes(type)&&style!==({longhouse:'human',stonehall:'dwarf',elfhall:'elf',hidehall:'orc'})[type])continue;const row=document.createElement('div');row.className='row';row.innerHTML='<span class="lab">'+style+' · '+type+'</span>';for(let s=1;s<=6;s++){const hall=!['keep','citadel'].includes(type),b=PX.building({type,style,seed:s*37+type.length,view:'top',fort:hall?(s>3?1:0):[0,1,2,3,1,2][s-1],banner:'#c84040'}),Z=+(q0.get('z')||3),c=document.createElement('canvas'),M=4,w=b.w+2*M;c.width=w*Z;c.height=w*Z;const g=c.getContext('2d');g.imageSmoothingEnabled=false;g.scale(Z,Z);g.fillStyle='#5a8a3a';g.fillRect(0,0,w,w);g.fillStyle='rgba(0,0,0,.18)';for(let k=0;k<=b.tiles[0];k++){g.fillRect(M+k*16,0,1,w);g.fillRect(0,M+k*16,w,1)}g.fillStyle='rgba(255,230,120,.5)';g.fillRect(M+b.w/2,M+b.h,1,M);g.fillRect(M+b.w/2-1,M+b.h,1,M);g.drawImage(b.img,M,M);if(b.flag){const fx=M+b.flag[0],fy=M+b.flag[1],fc=['#c84040','#4a72b0','#3a8a4a','#d8a030'][s%4];g.fillStyle='#4a3020';g.fillRect(fx,fy-9,1,9);g.fillStyle=fc;g.fillRect(fx+1,fy-9,4,3)}row.appendChild(c)}out.appendChild(row)}return}
   const q=new URLSearchParams(location.search),Z=+(document.getElementById('z').value||q.get('z')||3),N=+(document.getElementById('n').value||q.get('n')||8),only=(document.getElementById('only').value||q.get('only')||'').trim();
   const out=document.getElementById('out');out.innerHTML='';
@@ -42,19 +44,64 @@ function render(){
     out.appendChild(row)}
 }
 // battlefield ground (engine/ground.js) on stand-in terrain (ground-fixture.js): each recipe in each climate, a field 960×600 at
-// 1:1 (?z=2 doubles it); ?only= a recipe, a climate or 'rivers'; ?seed= the fixture's seed
+// 1:1 (?z=2 doubles it); ?only= a recipe, a climate, 'rivers' or 'rock' (phase 4: mountains, cliffs and ramps); &c= one climate;
+// ?seed= the fixture's seed
 function renderGround(){
   const q=new URLSearchParams(location.search),Z=+(q.get('z')||1),only=q.get('only')||'',sd=+(q.get('seed')||1),out=document.getElementById('out');out.innerHTML='';
   // (rivers: ?only=rivers shows each river recipe in the climates that have one; a desert gets a river only when the game lays one)
-  const RIVERS=['river','bridge','fords','bridgehills','stream','frozen'],riv=only==='rivers';
-  for(const recipe of ['hills','forest','marsh','mixed','hillwoods','oasis',...RIVERS])for(const climate of ['grass','frost','desert','swamp']){if(riv?!RIVERS.includes(recipe)||climate==='desert':only&&only!==recipe&&only!==climate)continue;
-    if(RIVERS.includes(recipe)&&climate==='desert'&&only!==recipe)continue;
+  const RIVERS=['river','bridge','fords','bridgehills','stream','frozen','mountriver'],riv=only==='rivers',ROCK=['spires','plateau','cliffs','mountriver'],rk=only==='rock',cl=q.get('c');
+  for(const recipe of ['hills','forest','marsh','mixed','hillwoods','oasis',...RIVERS,'spires','plateau','cliffs'])for(const climate of ['grass','frost','desert','swamp']){if(rk?!ROCK.includes(recipe):riv?!RIVERS.includes(recipe)||climate==='desert':only&&only!==recipe&&only!==climate)continue;
+    if(RIVERS.includes(recipe)&&climate==='desert'&&only!==recipe)continue;if(cl&&cl!==climate)continue;
     const t=PX.groundFixture({recipe,C:60,R:38,seed:sd}),t0=performance.now(),gr=PX.battleGround({...t,climate}),ms=performance.now()-t0,mini=PX.battleGroundMini({...t,climate},gr);
-    const row=document.createElement('div');row.className='row';row.innerHTML='<span class="lab">'+recipe+' · '+climate+' · '+ms.toFixed(0)+' ms</span>';
-    const c=document.createElement('canvas');c.width=gr.width*Z;c.height=gr.height*Z;const g=c.getContext('2d');g.imageSmoothingEnabled=false;g.drawImage(gr,0,0,c.width,c.height);row.appendChild(c);
+    const row=document.createElement('div');row.className='row';row.innerHTML='<span class="lab">'+recipe+' · '+climate+' · '+ms.toFixed(0)+' ms · props '+[1,2,3].map(k=>gr.props.filter(p=>p.dk===k).length).join('/')+'</span>';
+    const c=document.createElement('canvas');c.width=gr.width*Z;c.height=gr.height*Z;const g=c.getContext('2d');g.imageSmoothingEnabled=false;g.scale(Z,Z);g.drawImage(gr,0,0);PX.battleProps(g,gr);row.appendChild(c);// (its standing trees and cliff faces in their order: in the game, sorted in with the soldiers)
     const m=document.createElement('canvas');m.width=mini.width*3;m.height=mini.height*3;const mg=m.getContext('2d');mg.imageSmoothingEnabled=false;mg.drawImage(mini,0,0,m.width,m.height);row.appendChild(m);
     out.appendChild(row)}
 }
+// phase 4 depth: stand-in soldiers (yours blue, the enemy red) in front of and behind a spire, the massif and a cliff, drawn in
+// one list with the ground's props by their feet as render.js battleEnts does; a prop over one of yours behind it fades to .4
+// (render.js PROPFADE), none over the enemy. Each crop twice: no fade, then with it. ?c= the climate, &seed=
+const FIG=['......112.......','.....12232......','.....2s3s3......','.....1sexe......','.....1ttxt......','.....12uu2......','....a2pqq2d.....','...abpqqrcd.....','...bcpnnrcd.....','...bspnnrsd.....','...bcqoorcd.....','...bckllkcd.....','.....LL.LM......','.....F...F......'];
+function figure(team){const T=team?['#d05a4a','#a83a34','#7a2a2a','#5a1e22']:['#5a86d0','#3a62a8','#2a467a','#1e3058'],col={1:'#4a3020',2:'#6a4428',3:'#2e1e14',s:'#e0b088',x:'#c08a68',t:'#d09c78',u:'#a87458',e:'#202028',a:T[1],b:T[2],c:T[2],d:T[3],p:T[0],q:T[0],r:T[1],n:'#c8c0a8',o:'#a89e88',k:'#5a3a22',l:'#3a2a1a',L:'#4a4038',M:'#3a3028',F:'#2a2018'};
+  return PX.canvas(16,16,g=>{for(let y=0;y<14;y++)for(let x=0;x<16;x++){const ch=FIG[y][x];if(ch!=='.'){g.fillStyle=col[ch];g.fillRect(x,y+1,1,1)}}
+    const d=g.getImageData(0,0,16,16).data,o=[],a=(u,v)=>u>=0&&v>=0&&u<16&&v<16&&d[(v*16+u)*4+3];for(let y=0;y<16;y++)for(let x=0;x<16;x++)if(!a(x,y)&&(a(x-1,y)||a(x+1,y)||a(x,y-1)||a(x,y+1)))o.push([x,y]);
+    g.fillStyle='#1a1c26';for(const [x,y] of o)g.fillRect(x,y,1,1)})}
+function scene(gr,men,fade){const c=PX.canvas(gr.width,gr.height),g=c.getContext('2d'),F0=figure(0),F1=figure(1);g.drawImage(gr,0,0);
+  for(const p of gr.props){p.al=1;if(!fade)continue;for(const u of men){if(u.team)continue;const b=p.box;if(u.x+5<b[0]||u.x-5>b[2]||u.y-1<b[1]||u.y-15>b[3])continue;if(u.y<p.y){p.al=.4;break}}}
+  for(const o of [...gr.props,...men].sort((a,b)=>a.y-b.y)){if(o.dk){g.globalAlpha=o.al;g.drawImage(o.s,o.dx,o.dy);g.globalAlpha=1}else{g.fillStyle='rgba(8,14,24,.3)';g.fillRect(o.x-3,o.y,7,1);g.drawImage(o.team?F1:F0,o.x-8,o.y-15)}}
+  return c}
+function crop(src,x,y,w,h,Z){const c=document.createElement('canvas');c.width=w*Z;c.height=h*Z;const g=c.getContext('2d');g.imageSmoothingEnabled=false;g.drawImage(src,x,y,w,h,0,0,w*Z,h*Z);return c}
+function renderDepth(){const q=new URLSearchParams(location.search),climate=q.get('c')||'grass',sd=+(q.get('seed')||1),Z=+(q.get('z')||3),out=document.getElementById('out');out.innerHTML='';const shots=[];
+  // (the lone spire at cell (38,9): yours behind it and in front; behind the massif yours and the enemy's)
+  {const t=PX.groundFixture({recipe:'spires',C:60,R:38,seed:sd}),gr=PX.battleGround({...t,climate}),R3=gr.props.filter(p=>p.dk===3),men=[];
+    const sec=(x0,x1,y0,y1)=>R3.filter(p=>p.x>=x0&&p.x<x1&&p.y>=y0&&p.y<y1),sp=sec(596,644,100,200),fy=Math.max(...sp.map(p=>p.y)),fx=Math.round((Math.min(...sp.map(p=>p.box[0]))+Math.max(...sp.map(p=>p.box[2])))/2);
+    const ms=sec(180,420,100,400),top=Math.min(...ms.map(p=>p.box[1])),bot=Math.max(...ms.map(p=>p.y)),mx=Math.round((Math.min(...ms.map(p=>p.box[0]))+Math.max(...ms.map(p=>p.box[2])))/2);
+    men.push({team:0,x:fx-4,y:fy-12},{team:0,x:fx+5,y:fy-16},{team:0,x:fx-10,y:fy+6},{team:0,x:fx+2,y:fy+9},{team:0,x:fx+12,y:fy+5});
+    // (the massif: a line just behind its back, yours on the left half, the enemy's on the right)
+    const back=x=>{let y0=1e9;for(const p of ms)if(x>=p.box[0]&&x<=p.box[2]){const yy=p.y-p.h+Math.round(p.h*.35);if(yy<y0)y0=yy}return y0};
+    for(let k=0;k<8;k++){const x=mx-56+k*16;men.push({team:k<4?0:1,x,y:Math.min(back(x),bot-30)})}
+    for(let k=0;k<4;k++)men.push({team:0,x:mx-30+k*18,y:bot+10});
+    shots.push(['spire',gr,men,[fx-44,fy-70,88,96]],['massif',gr,men,[mx-90,Math.max(16,top-12),180,bot-top+34]])}
+  {const t=PX.groundFixture({recipe:'plateau',C:60,R:38,seed:sd}),gr=PX.battleGround({...t,climate}),F2=gr.props.filter(p=>p.dk===2&&p.w>=12&&p.h>=11),f=F2.sort((a,b)=>b.y-a.y)[0],men=[];
+    if(f){const top=f.y-f.h+1;men.push({team:0,x:f.x-6,y:top-3},{team:0,x:f.x+4,y:top-6},{team:1,x:f.x+40,y:top-3},{team:0,x:f.x-4,y:f.y+7},{team:0,x:f.x+8,y:f.y+10});
+      shots.push(['cliff',gr,men,[f.x-48,top-36,128,f.h+60]])}}
+  for(const [name,gr,men,r] of shots){const row=document.createElement('div');row.className='row';row.innerHTML='<span class="lab">'+name+' · '+climate+' · no fade | fade</span>';
+    row.appendChild(crop(scene(gr,men,false),...r,Z));row.appendChild(crop(scene(gr,men,true),...r,Z));out.appendChild(row)}
+}
+// phase 4 cost: each field's painting (ms, mean of 3) and a frame's props (the fade's cover test over 150 of your men, as
+// propsInView does, then every prop drawn: full zoom-out), over 300 frames
+function renderBench(){const out=document.getElementById('out'),rows=[];
+  for(const [recipe,climate] of [['spires','grass'],['spires','frost'],['mountriver','swamp'],['plateau','desert'],['cliffs','grass'],['hillwoods','grass'],['forest','grass']]){
+    const t=PX.groundFixture({recipe,C:82,R:38,seed:1});let ms=0,gr;for(let k=0;k<3;k++){const t0=performance.now();gr=PX.battleGround({...t,climate});ms+=performance.now()-t0}ms/=3;
+    const W=gr.width,H=gr.height,c=PX.canvas(W,H),g=c.getContext('2d'),R=PX.dice(PX.rng(5)),men=[];for(let k=0;k<150;k++)men.push({x:R.int(20,W-20),y:R.int(40,H-10)});
+    const cc=8,gw=Math.ceil(W/cc)+1,gh=Math.ceil(H/cc)+1,PF=new Float32Array(gw*gh),L=gr.props;
+    const frame=()=>{PF.fill(1e9);for(const u of men){const ga=Math.floor((u.y-15)/cc),gb=Math.floor((u.y-1)/cc),ha=Math.floor((u.x-5)/cc),hb=Math.floor((u.x+5)/cc);for(let y=ga;y<=gb;y++)for(let x=ha;x<=hb;x++){const i=y*gw+x;if(u.y<PF[i])PF[i]=u.y}}
+      for(const p of L){const b=p.box;let cov=false;const ga=Math.max(0,Math.floor(b[1]/cc)),gb=Math.min(gh-1,Math.floor(b[3]/cc)),ha=Math.max(0,Math.floor(b[0]/cc)),hb=Math.min(gw-1,Math.floor(b[2]/cc));
+        for(let y=ga;y<=gb&&!cov;y++){const o=y*gw;for(let x=ha;x<=hb;x++)if(PF[o+x]<p.y){cov=true;break}}p.al=cov?.4:1}
+      for(const p of L){if(p.al<1)g.globalAlpha=p.al;g.drawImage(p.s,p.dx,p.dy);if(p.al<1)g.globalAlpha=1}};
+    for(let k=0;k<20;k++)frame();g.getImageData(0,0,1,1);const t0=performance.now();for(let k=0;k<300;k++)frame();const f=(performance.now()-t0)/300;g.getImageData(0,0,1,1);const f2=(performance.now()-t0)/300;
+    rows.push(recipe+' · '+climate+' 82×38: paint '+ms.toFixed(1)+' ms; props '+[1,2,3].map(k=>L.filter(p=>p.dk===k).length).join('/')+' (trees/faces/rock); a frame '+f.toFixed(3)+' ms JS ('+f2.toFixed(3)+' ms with the raster flush)')}
+  out.innerHTML='<pre id="bench">'+rows.join('\n')+'</pre>'}
 // props and camps
 function renderProps(){
   const q=new URLSearchParams(location.search),Z=+(q.get('z')||3),out=document.getElementById('out');out.innerHTML='';

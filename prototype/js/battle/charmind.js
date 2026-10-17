@@ -114,7 +114,7 @@ const CHAR_FALL={near:60,dist:100,cover:250,min:1,crowd:2,trap:40,look:300,max:1
 // a group's orders as a fall-back remembers them: any order of yours (commands.js bumps orderSeq), a move, a target
 const ordKey=g=>g?[g.mvId,g.targetGroupId,g.targetUnitId,g.order,g.orderSeq|0].join():'';
 const fallMates=u=>B.units.filter(o=>o.team===u.team&&o.hp>0&&!o.rout&&!o.left&&!isChar(o));
-const liveFoes=u=>B.units.filter(e=>e.team!==u.team&&e.hp>0&&!e.rout&&!e.left);
+const liveFoes=u=>B.units.filter(e=>e.team!==u.team&&e.hp>0&&!e.rout&&!e.left&&seenBy(u.team,e));// (those its side can see: terrain.js sight)
 // where to fall back to from the press round c: behind the nearest troops of ours within cover, else straight away from it
 function fallSpot(u,around,c){
   const X=CHAR_FALL,dd=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y),ax=u.x-c.x,ay=u.y-c.y,l=Math.hypot(ax,ay)||1,away={x:u.x+ax/l*X.dist*.8,y:u.y+ay/l*X.dist*.8};
@@ -127,14 +127,14 @@ function fallSpot(u,around,c){
 function fallStep(u,S,dt){
   if(u.stun>0){u.stun-=dt;u.spdNow=0;return}
   const F=S.fallBack,reach=(u.s.reach||12)+2,block=drawsBow(u)?null:liveFoes(u).find(e=>Math.hypot(e.x-u.x,e.y-u.y)-(e.s.big?12:0)<=reach+1);
-  const dx=F.x-u.x,dy=F.y-u.y,d=Math.hypot(dx,dy);u.spdNow=0;u.run=0;let moved=false;
+  const d=Math.hypot(F.x-u.x,F.y-u.y),w=d>4&&B.terrain?steerDir(u,F.x,F.y):null,dx=w?w[0]*d:F.x-u.x,dy=w?w[1]*d:F.y-u.y;u.spdNow=0;u.run=0;let moved=false;// (round rock, cliffs and impassable water: terrain.js)
   if(d>4){const sp=Math.min(d,u.s.spd*tiredMul(u).spd*(u.slow>0?.5:1)*groundMul(u,dx/d,dy/d)*dt);u.x+=dx/d*sp;u.y+=dy/d*sp;u.face=dx>=0?1:-1;u.dir=Math.atan2(dy,dx);u.spdNow=sp/Math.max(dt,1e-6);moved=true}
   if(block){u.tgt=block;if(u.cd<=0)charStrike(u,block)}
   fatigueStep(u,dt,moved,false,false,!!block)}
 // the point it would go in at: its group's ordered target (yours: your attack order), else (an AI character) the foe near with the
 // fewest of theirs round him and the nearer the better ({x,y,e})
 function fallMark(u,g){
-  if(g&&g.hasTarget){const p=g.targetPoint();return p&&{x:p.x,y:p.y,e:null}}
+  if(g&&g.hasTarget){const p=sightGoal(g,u.team)||g.targetPoint();return p&&{x:p.x,y:p.y,e:null}}
   const foes=liveFoes(u),near=foes.filter(e=>Math.hypot(e.x-u.x,e.y-u.y)<CHAR_FALL.look),l=near.length?near:foes;if(!l.length)return null;
   const sc=e=>Math.hypot(e.x-u.x,e.y-u.y)+60*foes.filter(o=>o!==e&&Math.hypot(o.x-e.x,o.y-e.y)<CHAR_FALL.trap).length,e=l.reduce((a,o)=>sc(o)<sc(a)?o:a);return{x:e.x,y:e.y,e}}
 // no trap there: few of theirs about it, or as many of ours already in the fight there

@@ -76,14 +76,14 @@ window.RUN=()=>{const t=T,L=t.BattleLab,o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL '
  const river=(fords)=>{const T0=t.B.terrain,cs=T0.cs,mx=W()/2,half=24,out=[];fords=fords.map(y=>Math.round(y/cs)*cs);// (on cell rows: the record's edges are the cells')
  for(let r=0;r<T0.R;r++)for(let c=0;c<T0.C;c++){const x=(c+.5)*cs;if(Math.abs(x-mx)<half)T0.kind[r*T0.C+c]=K.deep}
   for(const fy of fords){const y0=fy-32,y1=fy+32;for(let r=0;r<T0.R;r++)for(let c=0;c<T0.C;c++){const x=(c+.5)*cs,y=(r+.5)*cs;if(Math.abs(x-mx)<half&&y>y0&&y<y1)T0.kind[r*T0.C+c]=K.ford}
-   out.push({kind:'ford',x:mx,y:fy,w:64,y0,y1,x0:mx-half,x1:mx+half})}T0.has.water=true;T0.ai.crossings=out;return out};
+   out.push({kind:'ford',x:mx,y:fy,w:64,y0,y1,x0:mx-half,x1:mx+half})}T0.has.water=true;T0.ai.crossings=out;t.terrainRoutes(T0);return out};// (its grids again: deep water impassable, phase 4)
  const empty={hills:[],woods:[],seed:3},top=()=>t.fieldTop(),bot=()=>t.fieldBot();
  {w=army([G('hum_foot',8)],[G('hum_foot',16)],(T0)=>[[W()/2-160,T0+30],[W()/2+160,T0+30]],empty);still(w.mine[0]);const [cr]=river([bot()-60]);f=w.foe[0];t.captainMem(1).commit=true;t.command(1);
   ok(Math.abs(f.ay-cr.y)<1&&Math.abs(f.ax-(cr.x1+TA.bank))<1&&f.files===Math.floor(cr.w/t.FORMS.line.gx),'the foe across deep water: the attack goes to the ford’s near end first ('+Math.round(f.ax)+','+Math.round(f.ay)+'), its files narrowed to '+f.files);
   let wet=0,across=false,charged=false;for(let i=0;i<60&&!charged;i++){step(.5);wet=Math.max(wet,f.units.filter(u=>gk(u)===K.deep).length);across=across||f.units.every(u=>u.x<cr.x0);charged=f.order==='charge'&&across}
   ok(across&&charged&&wet<=2,'over by the ford (at most '+wet+' man in deep water at a time), then at the foe');ok(!t.captainMem(1).files||!(f.id in t.captainMem(1).files),'across, its files given back ('+f.files+')');
   read(false);w=army([G('hum_foot',8)],[G('hum_foot',16)],(T0)=>[[W()/2-160,T0+30],[W()/2+160,T0+30]],empty);still(w.mine[0]);river([bot()-60]);f=w.foe[0];t.captainMem(1).commit=true;let wet0=0;for(let i=0;i<30;i++){step(.5);wet0=Math.max(wet0,f.units.filter(u=>gk(u)===K.deep).length)}read(true);
-  ok(wet0>=8,'blind, they wade straight over ('+wet0+' in deep water at once)')}
+  ok(wet0===0,'blind, they still go over by the ford: deep water is impassable and the soldiers route (phase 4; '+wet0+' in deep water)')}
  {w=army([G('hum_foot',40)],[G('hum_foot',12),G('hum_foot',12),G('hum_bow',12)],(T0,B0)=>[[200,(T0+B0)/2],[W()/2+170,T0+60],[W()/2+170,B0-60],[W()/2+220,(T0+B0)/2]],empty);still(w.mine[0]);const L2=river([top()+60,bot()-60]);
   const S={...t.assess(1)},S2={ratio:.95,shootMe:.3,shootFoe:.3,mine:S.mine,foes:S.foes};w.b.t=40;const p1=t.posture(1,S2);read(false);const p0=t.posture(1,S2);read(true);
   ok(p1==='defend'&&p0==='attack','a river between them: an army a little the weaker holds (defendAt ×'+TA.riverDefend+'), where without it it would attack');w.b.t=0;

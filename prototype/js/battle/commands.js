@@ -13,10 +13,11 @@ const ordered=gs=>gs.forEach(g=>{const gr=B.groups[g];if(gr)gr.orderSeq=(gr.orde
 // not a unit ability: counts false), done (fn), the order bar redrawn; returns what fn does
 function playerOrder(gs,fn,{counts=true}={}){takeCommand();if(counts)ordered(gs);const r=fn();setOrderUI();return r}
 // the unit under a point: on a group's icon, its soldier nearest the group's middle (the icon is clicked as the group: select,
-// attack, everything a click on a soldier does); else the nearest soldier within RTS_PICK
+// attack, everything a click on a soldier does); else the nearest soldier within RTS_PICK. An enemy your side does not see (in
+// woods or behind a rise: terrain.js seenBy) is no one to click
 function rtsUnitAt(x,y,team){
-  const ic=iconAt(x,y,team);if(ic){let best=null,bd=1e9;for(const u of B.units){if(u.hp<=0||u.grp!==ic.g)continue;const d=Math.hypot(u.x-ic.cx,u.y-ic.cy);if(d<bd){bd=d;best=u}}if(best)return best}
-  let best=null,bd=RTS_PICK;for(const u of B.units){if(u.hp<=0||u.team!==team)continue;const d=Math.hypot(u.x-x,u.y-6-y);if(d<bd){bd=d;best=u}}return best}
+  const ic=iconAt(x,y,team);if(ic){let best=null,bd=1e9;for(const u of B.units){if(u.hp<=0||u.grp!==ic.g||!seenBy(0,u))continue;const d=Math.hypot(u.x-ic.cx,u.y-ic.cy);if(d<bd){bd=d;best=u}}if(best)return best}
+  let best=null,bd=RTS_PICK;for(const u of B.units){if(u.hp<=0||u.team!==team||!seenBy(0,u))continue;const d=Math.hypot(u.x-x,u.y-6-y);if(d<bd){bd=d;best=u}}return best}
 // select: a click picks the group of the unit under it (nothing under it: all); a box picks every group with a unit inside
 function rtsSelect(x0,y0,x1,y1,add){
   const was=add?selGroups():[];

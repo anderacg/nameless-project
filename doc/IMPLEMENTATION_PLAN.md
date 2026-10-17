@@ -71,7 +71,7 @@ Recommended order, with what already exists to build on:
 2. **Commander powers for the player** (Rally the line, Hold!, pre-battle Ambush or Scout). These are distinct from the hero's own skills.
 3. **Terrain that matters:** hills (range, downhill charge), river and bridge chokepoints, woods that hide and slow cavalry. — **designed** in [TERRAIN_DESIGN.md](TERRAIN_DESIGN.md) (all D1–D10 recommendations accepted 2026-10-17); phase 1 (hills, woods, marsh) in progress.
 4. **Juice:** shake and slow motion on a full charge, callouts ("Flanked!", "Routed!"), and a "unit of the battle" in the summary.
-5. **Battle types:** ambush (surrounded, no deploy), defend a caravan, hold the bridge, run down a fleeing enemy.
+5. **Battle types:** ~~ambush (surrounded, no deploy)~~, defend a caravan, ~~hold the bridge~~, run down a fleeing enemy. — **Hold the bridge** and **Ambush** built 2026-10-18 on the terrain phase 3+4 snapshot (`BTYPE` in `battle/setup.js`, triggers and the panel's *Spring an ambush* in `battle/encounters.js`, an ambush road event, AI in `commander.js`, lab `type` key; [TERRAIN_DESIGN.md](TERRAIN_DESIGN.md) §8, "Battle types as built"). Defend a caravan and run down a fleeing enemy are still to come.
 6. ~~**Race fighting styles**~~ **Built 2026-10-17** (`TEMPERAMENT` in `commander.js`: dwarves hold, elves skirmish, orcs frenzy, mixed hunts the wavering; human = base). Beasts get no style yet.
 7. **Reinforcements that arrive mid-battle** from the field's edge. Reinforcements exist today but are present from the start.
 
