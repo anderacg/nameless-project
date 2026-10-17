@@ -10,8 +10,8 @@ const uidOf=o=>o.uid||(o.uid='u'+(W.uidN=(W.uidN||0)+1));
 // every party that can fight on the map, by uid
 function partyBy(u){return cparties().find(o=>o.uid===u)||W.lords.find(o=>o.uid===u&&!o.dead)||bandits.find(o=>o.uid===u)||(W.patrols||[]).find(o=>o.uid===u&&!o.gone)||(W.caravans||[]).find(o=>o.uid===u&&!o.gone)||null}
 const partyKind=o=>o&&o.cid?'cparty':W.lords.includes(o)?'lord':bandits.includes(o)?'band':(W.patrols||[]).includes(o)?'patrol':'caravan';
-// the fighters of a party (a caravan's are its guards: CaravanParty)
-function troopsOf(o){const k=partyKind(o);return k==='lord'||k==='cparty'?o.troops:k==='band'?o.list:k==='patrol'?o.troops:asParty(o).troops}
+// the fighters of a party (a band's list is its troops; a caravan's are its guards: CaravanParty)
+function troopsOf(o){return asParty(o).troops}
 const partyName=o=>{const k=partyKind(o);return k==='cparty'?COMPS[o.cid].short+'’s party':k==='lord'?o.name:k==='band'?BANDS[o.kind||'bandits'][0].replace(' ahead',''):k==='patrol'?'Guards of '+o.home:'Caravan of '+o.from};
 const partyFac=o=>partyKind(o)==='band'?null:partyKind(o)==='cparty'?'player':o.fac;
 const fightOf=o=>o&&o.fight?(W.fights||[]).find(f=>f.id===o.fight):null;

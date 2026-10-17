@@ -72,10 +72,10 @@ function clickAt(wx,wy){
 // the camp a band heads for at night: the nearest that is not cleared, within reach
 const campNear=b=>{let best=null,bd=220;for(const c of camps()){if(c.cleared)continue;const d=Math.hypot(c.x-b.x,c.y-b.y);if(d<bd){bd=d;best=c}}return best};
 // at dawn the bands in a camp ride out again
-function campEmpty(c){if(!c.bands||!c.bands.length)return;for(const b of c.bands){b.x=c.x+rint(-12,12);b.y=c.y+rint(10,18);b.cool=2;b.gone=false;bandits.push(b)}c.bands=[]}
+function campEmpty(c){if(!c.bands||!c.bands.length)return;for(const b of c.bands.map(asParty)){b.x=c.x+rint(-12,12);b.y=c.y+rint(10,18);b.cool=2;b.gone=false;bandits.push(b)}c.bands=[]}
 // attacking a camp: its own bandits and chieftain, and any bands sheltering there tonight
-function campFight(c){const own=makeEnemies(rint(7,9)+Math.floor(G.day/15),true),bands=c.bands||[];
-  startEncounter({kind:'camp',ref:c,list:own.concat(...bands.map(b=>b.list)),title:(c.name||'Bandit camp')+(bands.length?' · '+bands.length+' band'+(bands.length>1?'s':'')+' sheltering inside':'')})}
+function campFight(c){const own=makeEnemies(rint(7,9)+Math.floor(G.day/15),true),bands=(c.bands||[]).map(asParty);
+  startEncounter({kind:'camp',ref:c,list:own.concat(...bands.map(b=>b.troops)),title:(c.name||'Bandit camp')+(bands.length?' · '+bands.length+' band'+(bands.length>1?'s':'')+' sheltering inside':'')})}
 // the hero's speed multiplier where they stand: ground, race, mount, Pathfinder and gear
 /* how fast a party moves on the map: what it is made of. Each member's pace is its battle speed (a foot soldier 38, a rider 62
    to 80); a party moves near its slowest (3/4 the slowest, 1/4 the average), compressed so riders are about 1.5x foot. Big

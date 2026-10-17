@@ -58,6 +58,8 @@ class Site{
   setup(sites,clim){}
   // put its point back from its tile (after a load)
   placed(){[this.x,this.y]=this.constructor.point(this.tx,this.ty)}
+  // its classes back over what it holds as plain data (siteOf, after a load); the saved JSON stays as it is
+  restore(){}
   // do you know it is there; can your scouts find it; what they say
   known(){return this.seen}
   get scoutable(){return true}
@@ -150,6 +152,8 @@ class Hideout extends Lair{
 // a bandit camp: on its fixed spot, in plain sight once you have seen its ground; the roving bands shelter in it by night
 class BanditCamp extends Lair{
   setup(sites){this.name='Bandit camp';this.bands=[];this.ld=newChief('bandits',rint(2,4),sites)}
+  // the bands sheltering here are parties (a save keeps them as plain counts)
+  restore(){if(this.bands)this.bands.forEach(asParty)}
   known(){return seenAt(this.x,this.y)}
   get scoutable(){return false}
   enter(){if(this.cleared)return super.enter();campFight(this);return true}
@@ -199,7 +203,7 @@ class TravellersCamp extends Site{
 }
 const SITE_CLASS={camp:BanditCamp,cave:Cave,travelers:TravellersCamp,hideout:Hideout,ruins:Ruins,shrine:Shrine};
 // a site of its kind again (from a save); and the old names, read through the classes
-const siteOf=s=>s instanceof Site?s:Object.setPrototypeOf(s,SITE_CLASS[s.type].prototype);
+const siteOf=s=>{if(s instanceof Site)return s;Object.setPrototypeOf(s,SITE_CLASS[s.type].prototype);s.restore();return s};
 const siteKnown=s=>s.known();
 const camps=()=>W.sites.filter(s=>s instanceof BanditCamp);
 const siteClear=(type,tx,ty)=>SITE_CLASS[type].clear(tx,ty);
