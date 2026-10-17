@@ -82,13 +82,31 @@ function formPlan(x0,y0,x1,y1){
   if(sel.includes('hero'))plan.push({g:'hero',hero:true,ax:clamp(mx-Math.cos(face)*(gs.length?30:0),8,BW-8),ay:clamp(my-Math.sin(face)*(gs.length?30:0),fieldTop(),fieldBot()),face,files:null});
   return plan;
 }
-// the ghost of a dragged line: each soldier's slot, faint, and an arrow the way they will face
+// the ghost of a dragged line: each soldier's slot, faint, and an arrow the way they will face. On a phone or a small window
+// (GHOST.mq) it is drawn bold in screen terms, so it reads at the whole field's zoom: the line, dots and arrow in CSS px (line,
+// dot, arrow), brighter, over a dark edge; a dot never wider than most of its slot's spacing. It only draws: no state changes
+const GHOST={mq:typeof matchMedia==='function'?matchMedia('(pointer:coarse),(max-height:600px),(max-width:820px)'):null,line:3,dot:5,arrow:22};
 function drawFormGhost(){
-  const d=B.rdrag;if(!d||Math.hypot(d.x1-d.x0,d.y1-d.y0)<FORM_DRAG)return;
-  ctx.strokeStyle='rgba(232,185,74,.7)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(d.x0,d.y0);ctx.lineTo(d.x1,d.y1);ctx.stroke();
-  for(const p of formPlan(d.x0,d.y0,d.x1,d.y1)){const gr=B.groups[p.g],S=p.hero?[[0,0]]:formSlots(gr.form||'line',grpUnits(p.g).length,p.face,p.files);
-    ctx.fillStyle='rgba(232,185,74,.8)';for(const [sx,sy] of S)ctx.fillRect(Math.round(p.ax+sx)-2,Math.round(p.ay+sy)-2,4,4);
-    ctx.strokeStyle='rgba(232,185,74,.8)';ctx.beginPath();ctx.moveTo(p.ax,p.ay);ctx.lineTo(p.ax+Math.cos(p.face)*14,p.ay+Math.sin(p.face)*14);ctx.stroke()}
+  const d=B.rdrag;if(!d||Math.hypot(d.x1-d.x0,d.y1-d.y0)<FORM_DRAG)return;const plan=formPlan(d.x0,d.y0,d.x1,d.y1);
+  if(!(GHOST.mq&&GHOST.mq.matches)){
+    ctx.strokeStyle='rgba(232,185,74,.7)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(d.x0,d.y0);ctx.lineTo(d.x1,d.y1);ctx.stroke();
+    for(const p of plan){const gr=B.groups[p.g],S=p.hero?[[0,0]]:formSlots(gr.form||'line',grpUnits(p.g).length,p.face,p.files);
+      ctx.fillStyle='rgba(232,185,74,.8)';for(const [sx,sy] of S)ctx.fillRect(Math.round(p.ax+sx)-2,Math.round(p.ay+sy)-2,4,4);
+      ctx.strokeStyle='rgba(232,185,74,.8)';ctx.beginPath();ctx.moveTo(p.ax,p.ay);ctx.lineTo(p.ax+Math.cos(p.face)*14,p.ay+Math.sin(p.face)*14);ctx.stroke()}
+    return}
+  // (k: field units to a CSS px at this zoom; every size at least what the desktop draws)
+  const r=cv.getBoundingClientRect(),k=cv.width/Math.max(1,r.width)/(B.cam?B.cam.z:1),lw=Math.max(1,GHOST.line*k),ek=Math.max(1,k),gold='rgba(255,214,110,.95)',dark='rgba(10,12,18,.6)';
+  const seg=(x0,y0,x1,y1)=>{ctx.beginPath();ctx.moveTo(x0,y0);ctx.lineTo(x1,y1);ctx.stroke()};ctx.lineCap='round';
+  ctx.strokeStyle=dark;ctx.lineWidth=lw+2*ek;seg(d.x0,d.y0,d.x1,d.y1);ctx.strokeStyle=gold;ctx.lineWidth=lw;seg(d.x0,d.y0,d.x1,d.y1);
+  const ghosts=plan.map(p=>{const f=B.groups[p.g].form||'line',F=FORMS[f]||FORMS.line,S=p.hero?[[0,0]]:formSlots(f,grpUnits(p.g).length,p.face,p.files);
+    return{p,S,s:Math.max(4,Math.min(GHOST.dot*k,Math.min(F.gx,F.gy)*.7))}});
+  ctx.fillStyle=dark;for(const {p,S,s} of ghosts){const o=s/2+ek;for(const [sx,sy] of S)ctx.fillRect(Math.round(p.ax+sx)-o,Math.round(p.ay+sy)-o,2*o,2*o)}
+  ctx.fillStyle=gold;for(const {p,S,s} of ghosts)for(const [sx,sy] of S)ctx.fillRect(Math.round(p.ax+sx)-s/2,Math.round(p.ay+sy)-s/2,s,s);
+  // (the facing: an arrow with a head, over its dark edge)
+  for(const {p} of ghosts){const L=Math.max(14,GHOST.arrow*k),c=Math.cos(p.face),sn=Math.sin(p.face),hx=p.ax+c*L,hy=p.ay+sn*L,h=Math.max(4,L*.35);
+    const head=()=>{seg(hx,hy,hx-c*h-sn*h*.6,hy-sn*h+c*h*.6);seg(hx,hy,hx-c*h+sn*h*.6,hy-sn*h-c*h*.6)};
+    ctx.strokeStyle=dark;ctx.lineWidth=lw+2*ek;seg(p.ax,p.ay,hx,hy);head();ctx.strokeStyle=gold;ctx.lineWidth=lw;seg(p.ax,p.ay,hx,hy);head()}
+  ctx.lineCap='butt';ctx.lineWidth=1;
 }
 // a formation's icon: its own slots, drawn small (shields for the wall), facing up
 function formIcon(f,w,h){

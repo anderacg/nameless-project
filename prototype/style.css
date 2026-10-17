@@ -47,6 +47,7 @@
 *,*::before,*::after{box-sizing:border-box}
 [hidden]:not([hidden=until-found i]){display:none!important}
 html,body{height:100%}
+html,body{overscroll-behavior:none}
 body{margin:0;padding:0;overflow:hidden;background:var(--void);color:var(--fg);font-family:var(--font);font-size:var(--fs-base);line-height:1.4;
   -webkit-font-smoothing:antialiased;-webkit-text-size-adjust:100%;text-size-adjust:100%;-webkit-tap-highlight-color:transparent}
 img{max-width:100%}
@@ -68,6 +69,16 @@ canvas{display:block;image-rendering:pixelated;touch-action:none;cursor:crosshai
 .screen>canvas{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
 .hudlayer{position:absolute;inset:0;pointer-events:none;z-index:10;user-select:none;-webkit-user-select:none}
 .hudlayer>*{pointer-events:auto}
+/* (the safe area as the HUD layer's padding: it moves none of its children, placed against its padding box, but input.js
+   safeInsets reads it there, in px, to keep the long-press card clear of a notch) */
+.hudlayer{padding:var(--sa-t) var(--sa-r) var(--sa-b) var(--sa-l)}
+/* touch on a phone: a pinch or a double tap on the HUD never zooms the page (iOS ignores user-scalable=no: input.js stops its
+   gesture events too); the HUD's own lists still slide (the unit cards across, the selected unit down), and the windows scroll
+   both ways but never zoom. Pull-to-refresh is off (html, body above) */
+.hudlayer,.hudlayer *{touch-action:none}
+.bcards,.bcards *{touch-action:pan-x}
+.binfo,.binfo *{touch-action:pan-y}
+.overlay,.overlay *{touch-action:pan-x pan-y}
 .screen[data-mode="title"] .hudlayer>*{display:none}
 
 /* ---------- 3. primitives ---------- */
@@ -220,7 +231,7 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 .hint{position:absolute;top:calc(var(--e-t) + 44px);left:50%;transform:translateX(-50%);max-width:56%;text-align:center;pointer-events:none;
   color:var(--fg-2);text-shadow:0 1px 2px #000,0 0 6px #000;opacity:.85}
 .hint[hidden]{display:none}
-.staybar{position:absolute;top:calc(var(--e-t) + 44px);left:50%;transform:translateX(-50%);display:flex;gap:10px;align-items:center;max-width:calc(100% - 24px);
+.staybar{position:absolute;top:calc(var(--e-t) + 44px);left:50%;transform:translateX(-50%);display:flex;gap:10px;align-items:center;max-width:calc(100% - 24px - var(--sa-l) - var(--sa-r));
   background:var(--glass-hi);border:1px solid var(--accent);border-radius:var(--r-md);box-shadow:var(--float);padding:5px 6px 5px 12px;font-size:var(--fs-base)}
 .staybar[hidden]{display:none}
 .staybar b{color:var(--accent)}
@@ -252,7 +263,7 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 .tip small{display:block;color:var(--muted)}
 .tip .act{color:var(--good)}
 /* a long press on the map (touch, input.js): the same tooltip as a card over the finger, until the next tap */
-.tip.hold{max-width:min(280px,calc(100% - 12px));border-color:var(--accent)}
+.tip.hold{max-width:min(280px,calc(100% - 12px - var(--sa-l) - var(--sa-r)));border-color:var(--accent)}
 
 /* what shows where: a battle shows its own HUD; a walk through a town has no time controls */
 .screen[data-mode="battle"] .pcard,.screen[data-mode="battle"] .hint,.screen[data-mode="battle"] .wtop,.screen[data-mode="battle"] .dock{display:none}
@@ -300,7 +311,7 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 .bi-row .ub{height:4px;background:var(--shade);border-radius:2px;overflow:hidden}
 .bi-row .ub i{display:block;height:100%;background:#78c474}
 /* callouts: the big moments, a banner at the top middle of the field in the colour of the side it is about (battlehud.js) */
-.bhud>.callouts{position:absolute;top:calc(var(--e-t) + 60px);left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:4px;width:max-content;max-width:min(560px,calc(100% - 2*var(--edge)));pointer-events:none}
+.bhud>.callouts{position:absolute;top:calc(var(--e-t) + 60px);left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:4px;width:max-content;max-width:min(560px,calc(100% - var(--e-l) - var(--e-r)));pointer-events:none}
 .callout{max-width:100%;padding:4px 16px 5px;font-size:var(--fs-lg);font-weight:700;line-height:1.25;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--fg);text-shadow:0 1px 2px #000;
   background:var(--glass-hi);border:1px solid var(--line-2);border-radius:var(--r-md);box-shadow:var(--float);animation:callout 1.8s ease-out both}
 .callout.major{font-size:var(--fs-xl);padding:5px 20px 6px}
@@ -570,7 +581,7 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
   .card.menu{padding:7px 10px}.card.menu .mi{width:32px;height:32px}
   .btime{gap:2px;padding:2px}
   .binfo{display:none}
-  .bcmd{left:50%;right:auto;transform:translateX(-50%);align-items:center;max-width:calc(100% - 2*var(--edge));gap:4px}
+  .bcmd{left:50%;right:auto;transform:translateX(-50%);align-items:center;max-width:calc(100% - var(--e-l) - var(--e-r));gap:4px}
   .borders{gap:4px;padding:3px}.ogrp+.ogrp{padding-left:4px}
   .obtn{width:34px;height:32px}
   .ucard{width:64px;height:64px}.ucard.all{width:48px;height:52px}
@@ -605,15 +616,15 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 /* a phone held upright: the game wants it on its side, but every window still works */
 @media (max-width:520px) and (orientation:portrait){
   .wtop{top:auto;bottom:calc(var(--e-b) + 104px)}
-  .pcard{width:calc(100% - 2*var(--edge) - var(--sa-l) - var(--sa-r))}
+  .pcard{width:calc(100% - var(--e-l) - var(--e-r))}
   .dock .dockrow:first-child{flex-wrap:nowrap}
-  .toasts{width:calc(100% - 2*var(--edge));bottom:calc(var(--e-b) + 150px)}
+  .toasts{width:calc(100% - var(--e-l) - var(--e-r));bottom:calc(var(--e-b) + 150px)}
 }
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation:none!important;transition:none!important}
 }
 /* Developer overlay is separate from game panels: opening it freezes, but never replaces, the underlying screen. */
-#dev-toggle{position:fixed;right:12px;top:12px;z-index:10001;background:#182431;color:#ffe0a0;border:1px solid #8e7955;padding:6px 10px;font:12px monospace;cursor:pointer}
+#dev-toggle{position:fixed;right:calc(12px + var(--sa-r));top:calc(12px + var(--sa-t));z-index:10001;background:#182431;color:#ffe0a0;border:1px solid #8e7955;padding:6px 10px;font:12px monospace;cursor:pointer}
 #dev-console{position:fixed;inset:0;z-index:10002;background:#0009;padding:clamp(8px,3vw,32px);overflow:auto;color:#e4e9ef;font:14px/1.5 monospace}
 #dev-console[hidden],#dev-lab-bar[hidden]{display:none}
 .dev-window{max-width:850px;margin:auto;padding:18px;border:1px solid #8e7955;background:#101922;box-shadow:0 12px 60px #000b}
@@ -632,5 +643,5 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 #dev-console button:disabled,#dev-lab-bar button:disabled{opacity:.45;cursor:not-allowed}
 #dev-console [data-dev-report]{max-height:72vh;overflow:auto}#dev-console .lab-report-scroll{max-height:34vh;overflow:auto}#dev-console [data-dev-report] table{border-collapse:collapse;font:12px monospace;width:max-content;min-width:100%}#dev-console [data-dev-report] th,#dev-console [data-dev-report] td{border:1px solid #657282;padding:5px;text-align:left;vertical-align:top}#dev-console [data-dev-report] thead{position:sticky;top:0;background:#182532;white-space:nowrap}#dev-console [data-dev-report] th:nth-child(1){min-width:125px}#dev-console [data-dev-report] th:nth-child(8),#dev-console [data-dev-report] td:nth-child(8){min-width:155px}#dev-console [data-dev-report] th:nth-child(11),#dev-console [data-dev-report] td:nth-child(11){min-width:170px}#dev-console [data-dev-report] section{margin:12px 0}
 @media(max-width:680px){.lab-armies{grid-template-columns:1fr}}
-#dev-lab-bar{position:fixed;z-index:10001;bottom:8px;left:50%;transform:translateX(-50%);display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:center;max-width:95vw;width:max-content;padding:8px;background:#101922ef;color:#ffe0a0;border:1px solid #8e7955;font:12px monospace}
+#dev-lab-bar{position:fixed;z-index:10001;bottom:calc(8px + var(--sa-b));left:50%;transform:translateX(-50%);display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:center;max-width:95vw;width:max-content;padding:8px;background:#101922ef;color:#ffe0a0;border:1px solid #8e7955;font:12px monospace}
 @media(max-width:520px){.dev-grid{grid-template-columns:1fr}#dev-console [data-dev-form]{grid-template-columns:1fr auto}#dev-console [data-dev-form]>label{grid-column:1/-1}}

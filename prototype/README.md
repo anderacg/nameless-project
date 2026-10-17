@@ -251,7 +251,11 @@ API for captains: `g.abilities()` lists `{id,active,left,cooldown,why}` (`why===
 For a phone on its side. Touch reads Pointer Events with `pointerType 'touch'` (`TOUCH` in `ui/input.js`: `hold` 450 ms, `slop` 10 CSS px, `ring` 34 CSS px); mouse, pen and keys are unchanged.
 - **Battle:** tap a group to select it, tap again to send it there or onto the enemy tapped (a tap acts when the finger lifts). Hold still for about half a second (a gold ring fills; red over an enemy) to move the selection there or attack the enemy held; hold, then drag, to lay out the line as a right-drag does. Drag without holding to box groups. Two fingers: pinch to zoom about them (`camPinch`), move both to pan; a second finger cancels what the first was doing, so a pinch never selects or orders.
 - **Map:** tap to travel. Hold on a holding, party or site to see its card (its tooltip, "Tap:" for "Click:"); the next tap puts it away without travelling.
-- Tests: `tests/touch.js`. Still to check on a real phone: iOS callout and page-zoom suppression, Android `pointercancel` during a pinch, notch safe areas, rotation mid-gesture, and whether 450 ms and 10 px suit real thumbs.
+- **Notch and safe areas:** `viewport-fit=cover`; HUD frames, buttons, messages, banners and windows sit inside the `--e-*` edges (`--edge` plus `env(safe-area-inset-*)`); the hold card is clamped with `safeInsets()` (input.js), read from `.hudlayer`'s padding.
+- **No page zoom:** the HUD is `touch-action:none` (unit cards `pan-x`, selected unit `pan-y`); windows are `pan-x pan-y`, so they scroll but never zoom; pull-to-refresh is off; on iOS `gesturestart`/`gesturechange` are cancelled.
+- **Line preview on phones:** on a coarse or small screen (`GHOST` in formations.js) the dragged line is drawn in screen pixels: a 3 px gold line, 5 px slot dots and an arrowhead over a dark edge. Desktop unchanged.
+- **Install:** served over http(s), `manifest.webmanifest` (fullscreen, landscape, icons `icon-192.png`/`icon-512.png`) and the `apple-*` tags let you add Ashmark to a home screen; from `file://` the manifest isn't linked.
+- Tests: `tests/touch.js`, `tests/mobile.js`. Still to check on a real phone: iOS callout and page-zoom suppression, Android `pointercancel` during a pinch, notch safe areas, rotation mid-gesture, and whether 450 ms and 10 px suit real thumbs.
 
 ## Withdrawal balance
 

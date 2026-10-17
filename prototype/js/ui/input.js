@@ -191,10 +191,17 @@ cv.addEventListener('pointermove',e=>{if(e.pointerType==='touch')touchMove(e,toC
 window.addEventListener('pointercancel',e=>{if(e.pointerType==='touch')touchUp(e,true)});
 // anything else pressed puts the card away
 document.addEventListener('pointerdown',e=>{if(e.target!==cv&&holdCardUp())hideTip()},true);
-// the card: over the finger (not under it), kept on the screen; 'Tap' where the tooltip says 'Click'
-function holdCard(h,cx,cy){const tip=$('#tip'),r=cv.getBoundingClientRect();tip.innerHTML=h.replace(/>Click:/g,'>Tap:');tip.classList.add('hold');tip.hidden=false;
-  const w=tip.offsetWidth,ht=tip.offsetHeight,x=cx-r.left,y=cy-r.top,up=y-ht-TOUCH.ring;
-  tip.style.left=clamp(x-w/2,6,Math.max(6,r.width-w-6))+'px';tip.style.top=(up>=6?up:clamp(y+TOUCH.ring,6,Math.max(6,r.height-ht-6)))+'px'}
+// the screen's safe area (clear of a notch, rounded corners, a home bar), CSS px: style.css --sa-*, read off the HUD layer's
+// padding (its children are placed against its padding box, so the padding moves nothing)
+function safeInsets(){const h=$('.hudlayer'),s=h&&getComputedStyle(h),n=v=>parseFloat(v)||0;return s?{t:n(s.paddingTop),r:n(s.paddingRight),b:n(s.paddingBottom),l:n(s.paddingLeft)}:{t:0,r:0,b:0,l:0}}
+// the card: over the finger (not under it), kept on the screen and in its safe area; 'Tap' where the tooltip says 'Click'
+function holdCard(h,cx,cy){const tip=$('#tip'),r=cv.getBoundingClientRect(),sa=safeInsets();tip.innerHTML=h.replace(/>Click:/g,'>Tap:');tip.classList.add('hold');tip.hidden=false;
+  const w=tip.offsetWidth,ht=tip.offsetHeight,x=cx-r.left,y=cy-r.top,up=y-ht-TOUCH.ring,L=6+sa.l,T=6+sa.t;
+  tip.style.left=clamp(x-w/2,L,Math.max(L,r.width-w-6-sa.r))+'px';tip.style.top=(up>=T?up:clamp(y+TOUCH.ring,T,Math.max(T,r.height-ht-6-sa.b)))+'px'}
+// iOS Safari ignores user-scalable=no: a pinch begun on the HUD or a window would zoom the whole page. Its own gesture events
+// (iOS only; other browsers never send them) are stopped; the game's pinch reads pointers and windows still scroll (style.css
+// touch-action)
+['gesturestart','gesturechange'].forEach(t=>document.addEventListener(t,e=>{if(e.cancelable)e.preventDefault()},{passive:false}));
 // the long press filling, on the field (battlehud.js drawSelection): a ring round the finger, wider than it, gold, red on an
 // enemy; full once armed. From 90 ms, so a quick tap shows nothing
 function drawTouchHold(){const l=TOUCH.lp;if(!l||l.mode!=='battle'||l.B!==B||l.box)return;const t=performance.now()-l.t0;if(!l.armed&&t<90)return;
