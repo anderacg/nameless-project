@@ -257,8 +257,9 @@ function captain(team,key){
   B.idle=B.idle||{};if(shots.some(a=>a.s.range)&&post!=='attack'&&!shots.some(a=>a.s.range&&foes.some(e=>d2(a,e)<=a.s.range))){B.idle[ck]=(B.idle[ck]||0)+FOE_CMD.think;if(B.idle[ck]>=FOE_CMD.patience)(B.commit=B.commit||{})[ck]=true}else B.idle[ck]=0;
   // (how long our archers have had a foe in reach: the volleys before the infantry goes in)
   B.vol=B.vol||{};if(shots.some(a=>a.s.range&&!(B.groups[a.grp]&&B.groups[a.grp].hunt)&&foes.some(e=>d2(a,e)<=a.s.range)))B.vol[ck]=(B.vol[ck]||0)+FOE_CMD.think;// (hunting volleys not counted)
-  // who threatens our archers: an enemy that fights hand to hand, close to them (the nearest to them first)
-  const A=shots.length?mid(shots):null,threats=A?foes.filter(e=>!e.s.range&&shots.some(a=>d2(a,e)<FOE_CMD.threat)).sort((a,b)=>d2(a,A)-d2(b,A)):[];
+  // who threatens our archers: an enemy that fights hand to hand, close to them (the nearest to them first); never further than
+  // their reach (a short one, a spider's spit): held still by a threat they cannot shoot, they would never close to shoot at all
+  const A=shots.length?mid(shots):null,threats=A?foes.filter(e=>!e.s.range&&shots.some(a=>d2(a,e)<Math.min(FOE_CMD.threat,a.s.range||FOE_CMD.threat))).sort((a,b)=>d2(a,A)-d2(b,A)):[];
   /* the army's line, attacking with shooters: each group of shooters where its own reach covers the foe's front (the shortest
      reach among its men), the infantry a screen just in front of the nearest of them, all opposite the foe's middle; planned
      once and kept (B.plan) till the foe's front moves FOE_CMD.moved or FOE_CMD.replan seconds pass, so the army walks up as
@@ -333,6 +334,9 @@ function captain(team,key){
       else if(threats.length||halt||!reachNone||!inf.length&&!line){if(!g.stand)g.stand={x:C.x,y:C.y};g.standAt(g.stand.x,g.stand.y)}
       else{g.stand=null;
       if(line&&line.x[k]!=null){let x=line.x[k];if((x-C.x)*line.dir<0)x=C.x;// (forward only, from where they are now)
+        // (there, and still nobody in anyone's reach (the line's height or their ranks put them a little out: a short reach, a
+        // spider's spit): the line steps on by what they lack, and stays that much nearer)
+        if(reachNone&&Math.abs(C.x-x)<8){const short=Math.min(...armed.map(a=>Math.min(...foes.map(e=>d2(a,e)))-a.s.range));if(short>0){x+=line.dir*(short+4);line.x[k]=x}}
         if(inf.length&&N.inf.some(id=>B.groups[id].order==='hold')){const I=mid(inf);if(Math.abs(I.x-line.inf)>40){const cap=I.x-line.dir*behind;x=line.dir>0?Math.min(x,cap):Math.max(x,cap)}}g.standAt(x,line.y+offset(id,k))}
       else if(inf.length){const I=mid(inf),dir=Math.sign(I.x-M.x)||1;g.standAt(I.x+dir*behind,I.y+offset(id,k))}}
       // (without a focus order, actors.js shooterTarget selects the nearest eligible foe by range and arc)
