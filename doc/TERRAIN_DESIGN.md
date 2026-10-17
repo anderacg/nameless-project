@@ -276,6 +276,8 @@ Agents are split by files that do not overlap. The **`B.terrain` shape in §4 is
 
 **Decided 2026-10-17: the owner accepted all ten recommendations (D1–D10) and approved building phase 1.**
 
+**Revised after the art review (2026-10-17):** D10 reversed — battlefields with terrain on have **no scattered trees, rocks or other props** (terrain features only; with terrain off, as in tests, the old obstacles stay). **Desert gets no woods** — only a few sparse grass tufts. Hills must **look steeper and higher** (visible cliff faces, strata, shadows). Forest art approved as is.
+
 | # | Decision | Recommendation |
 |---|---|---|
 | D1 | Deep water: **wadeable but punishing** (×0.35 speed, no shooting, weak in melee), or **impassable** (which needs crossing routing for every move and chase)? | **Wadeable in phase 2.** Impassable comes with *Hold the bridge* in phase 4. |
