@@ -83,7 +83,7 @@ On hold by the owner's call: a battle scale of one unit ≈ 100 men.
 
 Already built: holdings as classes, sites as classes, parties, brains, leaders, captives, and Unit/Troop/Character.
 
-1. **Caravans as a Party** (today they have only a brain).
+1. ~~**Caravans as a Party**~~ **Done 2026-10-17** (`CaravanParty`; save shape unchanged; not in `W.parties` until the `WorldObject` step).
 2. **A `WorldObject` base:** shared pick, tooltip, interact, draw and save for everything on the map.
 3. **Estates, buildings and deposits as classes.**
 4. **The other movers as classes:** ships, monsters, critters, folk, refugees.

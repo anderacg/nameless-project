@@ -2,8 +2,8 @@
 /* ---------- parties: every band of soldiers on the map keeps them the same way, as counts by kind ({hum_spear: 6, ...}, as
    your own band does), in o.tc. A party's troops (and a bandit band's list, the same thing) are a view: a list built from the
    counts, read-only, for everything that reads soldiers one by one (power, battles, drawing). Change them through the party:
-   add, remove, removeAny, cull, or by setting troops to a new list. The kinds: lords, your companions' parties, bandit bands
-   and holdings' patrols (caravans and your own band come later). A party made as plain data (a new one, or one from a save) is
+   add, remove, removeAny, cull, or by setting troops to a new list. The kinds: lords, your companions' parties, bandit bands,
+   holdings' patrols, caravans (caravans.js) and your own band. A party made as plain data (a new one, or one from a save) is
    made one of its kind by asParty(o) wherever its soldiers are changed, so plain data keeps working until then. ---------- */
 const LISTS=new WeakMap();// each party's list view, rebuilt when its soldiers change (kept aside: never saved)
 const ROSTERS=new WeakMap();
@@ -73,7 +73,7 @@ class PlayerParty extends Party{
 }
 Object.setPrototypeOf(P,PlayerParty.prototype);
 // which kind a plain party is
-const partyClassOf=o=>o.cid?CompanionParty:o.pt?PatrolParty:o.fac&&o.name&&!o.cv?LordParty:BandParty;
+const partyClassOf=o=>o.cid?CompanionParty:o.pt?PatrolParty:o.cv?CaravanParty:o.fac&&o.name?LordParty:BandParty;
 // make a party one of its kind: its own list of soldiers (or a save's counts) becomes its counts
 function asParty(o){
   if(!o||o instanceof Party)return o;
@@ -81,7 +81,8 @@ function asParty(o){
   delete o.troops;delete o.list;Object.setPrototypeOf(o,C.prototype);
   o.tc=o.tc||(list?countsOf(list):C===BandParty?countsOf(makeEnemies(o.n||3,false,o.kind)):{});o.changed();return o;
 }
-// every party on the map, made one of its kind: the lords in the field, bands, patrols, your companions' parties
+// every party on the map, made one of its kind: the lords in the field, bands, patrols, your companions' parties (not caravans:
+// they are drawn and picked as their carts, caravans.js, not as a host behind a leader, render.js drawParties)
 function allParties(){const a=[...W.lords.filter(l=>!l.dead),...bandits,...(W.patrols||[]),...cparties()];a.forEach(asParty);return a}
 Object.defineProperty(W,'parties',{get:allParties,enumerable:false});
 // change a party's soldiers, whatever it is yet (plain or made)

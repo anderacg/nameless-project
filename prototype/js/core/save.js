@@ -33,7 +33,7 @@ function loadGame(slot){
     const e=x.e;if(e){t.stock=e.st;t.pop=e.pop;t.pros=e.pros;t.tax=e.tax;t.vol=e.vol;t.popF=e.pf}
   });
   Object.assign(W,{treas:w.treas,rel:w.rel,dead:w.dead,lords:w.lords.map(asParty),exiles:w.exiles,mythic:w.mythic,
-    shops:w.shops,caravans:w.caravans,ships:[],refugees:w.refugees,patrols:w.patrols.map(asParty),fights:w.fights,
+    shops:w.shops,caravans:w.caravans.map(asParty),ships:[],refugees:w.refugees,patrols:w.patrols.map(asParty),fights:w.fights,
     lrel:w.lrel,uidN:w.uidN,fightN:w.fightN,folk:[],critters:w.critters,monsters:w.monsters});
   occRebuild();seenLoad(w.seen);W.sites=w.sites.map(siteOf);W.sites.forEach(s=>s.placed());W.critters.forEach(herdToFields);
   unstick(P);W.lords.forEach(unstick);bandits.forEach(unstick);W.monsters.forEach(unstick);txpClamp();

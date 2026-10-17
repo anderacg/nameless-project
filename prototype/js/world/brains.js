@@ -106,7 +106,8 @@ class PatrolBrain extends Brain{
   }
 }
 
-// a caravan: on the road to its market, away from you if you are its enemy; bandits and enemy lords near it fall on it
+// a caravan (CaravanParty, caravans.js): on the road to its market, away from you if you are its enemy; bandits and enemy lords
+// near it fall on it
 class CaravanBrain extends Brain{
   think(c,d){
     if(c.idle||inFight(c))return false;
@@ -114,12 +115,12 @@ class CaravanBrain extends Brain{
     const v=this.look(c),pd=v.d,scared=!c.mine&&hostileTo(c.fac)&&pd<this.sight(80);
     if(scared){walk(c,-v.dx,-v.dy,CARAVAN_SPD*.9*d);c.dir=v.dx>0?-1:1}
     else{const ox=c.x;travelTo(c,to,to.x,to.y+12,CARAVAN_SPD*Math.max(.5,speedAt(c.x,c.y)||1)*d);c.dir=c.x>=ox?1:-1}
-    if(Math.hypot(to.x-c.x,to.y+12-c.y)<8){if(c.mine){if(myCaravanArrive(c,to))c.gone=true}else{caravanArrive(c,to);c.gone=true}return false}
+    if(Math.hypot(to.x-c.x,to.y+12-c.y)<8){if(c.arrive(to))c.gone=true;return false}
     // preyed on: bandits close by, or a lord at war with its owner; the guards fight it out (fights.js)
     const b=bandits.find(o=>Math.hypot(o.x-c.x,o.y-c.y)<12&&!o.cvT);
     const l=!b&&W.lords.find(o=>!o.dead&&!o.inside&&o.state!=='siege'&&(c.mine?hostileTo(o.fac):atWar(o.fac,c.fac))&&Math.hypot(o.x-c.x,o.y-c.y)<14);
     if(b||l){startFight([c],[b||l]);return false}
-    if(!c.gone&&this.canMeet(c,pd)&&G.chase===c){caravanMeet(c);return true}
+    if(!c.gone&&this.canMeet(c,pd)&&G.chase===c){c.meet();return true}
     return false;
   }
 }
@@ -150,7 +151,7 @@ function updatePatrols(d){
 }
 function updateCaravans(d){
   W.caravans=W.caravans||[];
-  for(const c of W.caravans)if(BRAINS.caravan.think(c,d))return true;
+  for(const c of W.caravans)if(asParty(c).brain.think(c,d))return true;
   for(const b of bandits)if(b.cvT&&Math.random()<.01)b.cvT=0;
   W.caravans=W.caravans.filter(c=>!c.gone);return false;
 }

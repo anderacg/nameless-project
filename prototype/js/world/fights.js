@@ -10,8 +10,8 @@ const uidOf=o=>o.uid||(o.uid='u'+(W.uidN=(W.uidN||0)+1));
 // every party that can fight on the map, by uid
 function partyBy(u){return cparties().find(o=>o.uid===u)||W.lords.find(o=>o.uid===u&&!o.dead)||bandits.find(o=>o.uid===u)||(W.patrols||[]).find(o=>o.uid===u&&!o.gone)||(W.caravans||[]).find(o=>o.uid===u&&!o.gone)||null}
 const partyKind=o=>o&&o.cid?'cparty':W.lords.includes(o)?'lord':bandits.includes(o)?'band':(W.patrols||[]).includes(o)?'patrol':'caravan';
-// the fighters of a party (a caravan fights with its guards)
-function troopsOf(o){const k=partyKind(o);return k==='lord'||k==='cparty'?o.troops:k==='band'?o.list:k==='patrol'?o.troops:(o.fightTroops||(o.fightTroops=caravanList(o)))}
+// the fighters of a party (a caravan's are its guards: CaravanParty)
+function troopsOf(o){const k=partyKind(o);return k==='lord'||k==='cparty'?o.troops:k==='band'?o.list:k==='patrol'?o.troops:asParty(o).troops}
 const partyName=o=>{const k=partyKind(o);return k==='cparty'?COMPS[o.cid].short+'’s party':k==='lord'?o.name:k==='band'?BANDS[o.kind||'bandits'][0].replace(' ahead',''):k==='patrol'?'Guards of '+o.home:'Caravan of '+o.from};
 const partyFac=o=>partyKind(o)==='band'?null:partyKind(o)==='cparty'?'player':o.fac;
 const fightOf=o=>o&&o.fight?(W.fights||[]).find(f=>f.id===o.fight):null;
@@ -52,7 +52,7 @@ function routParty(o,winners){
     if(o.mine||o.fac===P.fac||near)log((lord?lord.name+' seizes':band?'Bandits plunder':'The enemy takes')+' a caravan of '+o.from+(o.mine?', one of yours':'')+'.',o.mine||o.fac===P.fac?'bad':'')}
 }
 // a party that came through: free to go on its way
-function freeParty(o){o.fight=null;o.cool=3;const k=partyKind(o);if(k==='band'){o.n=o.list.length;o.pw=0}if(k==='caravan'){o.guards=Math.max(1,(o.fightTroops||[]).length);delete o.fightTroops}if(k==='lord'&&o.state!=='siege')lordThink(o)}
+function freeParty(o){o.fight=null;o.cool=3;const k=partyKind(o);if(k==='band'){o.n=o.list.length;o.pw=0}if(k==='caravan'&&!o.guards)o.guards=1;if(k==='lord'&&o.state!=='siege')lordThink(o)}
 function endFight(f,win){
   const W0=sideParties(f,win),L=sideParties(f,1-win),lw=W0.filter(o=>partyKind(o)==='lord'),ll=L.filter(o=>partyKind(o)==='lord');
   {const foes=L.reduce((a,o)=>a+troopsOf(o).length,0)+Math.round((f.n0||0)/3);lw.forEach(o=>lordWins(o,foes));W0.filter(o=>partyKind(o)==='band').forEach(o=>chiefWins(o,foes));W0.filter(o=>o.cid).forEach(o=>{compXp(o.cid,12+2*foes);compTrain(o.cid,'lead',3)})}
@@ -75,9 +75,9 @@ function updateFights(d){
     const pw=[0,1].map(s=>power(sideTroops(f,s))*lordTac(sideParties(f,s))),rate=(f.n0||sideTroops(f,0).length+sideTroops(f,1).length)/Math.max(1,f.dur);
     for(const s of [0,1]){f.acc[s]+=d*rate*pw[1-s]/Math.max(1,pw[0]+pw[1]);
       while(f.acc[s]>=1){f.acc[s]--;const ps=sideParties(f,s).filter(o=>troopsOf(o).length);if(!ps.length)break;let r=Math.random()*ps.reduce((a,o)=>a+troopsOf(o).length,0),o=ps[0];for(const p of ps){r-=troopsOf(p).length;if(r<=0){o=p;break}}
-        const tr=troopsOf(o);// a lord's Medicine: some of his fallen live
+        // a lord's Medicine: some of his fallen live
         if(partyKind(o)==='lord'){lordTrain(o,'med',2);if(Math.random()<.07*lordSkill(o,'med'))continue}
-        if(partyKind(o)==='caravan')tr.splice(rint(0,tr.length-1),1);else partyRemoveAny(o,1);if(!troopsOf(o).length)routParty(o,sideParties(f,1-s))}}
+        partyRemoveAny(o,1);if(!troopsOf(o).length)routParty(o,sideParties(f,1-s))}}
     f.t+=d;const p0=power(sideTroops(f,0)),p1=power(sideTroops(f,1));
     if(!p0||p0<FIGHT.rout*p1)endFight(f,1);else if(!p1||p1<FIGHT.rout*p0)endFight(f,0);
   }
@@ -97,7 +97,7 @@ function joinWhy(f,s){const other=sideParties(f,1-s),mine=sideParties(f,s);if(P.
 // the parties of a side as battle forces: lords as they are; the rest wrapped with their fighters, name and realm
 function forceOf(o){const k=partyKind(o);if(k==='lord')return o;if(o instanceof Party)partyRoster(o).groups;return{kind:k,src:o,name:partyName(o),fac:partyFac(o),troops:troopsOf(o).slice(),army:o.army?structuredClone(o.army):undefined}}
 // after your battle: write the forces' fighters back to their parties
-function syncForces(list){for(const f of list||[]){if(!f.src)continue;const o=f.src;if(f.kind==='band'){o.list=f.troops;o.n=o.list.length;o.pw=0}else if(f.kind==='patrol')o.troops=f.troops;else if(f.kind==='caravan')o.fightTroops=f.troops;else if(f.kind==='garrison')o.gar=f.troops.length;else if(f.kind==='cparty')o.troops=f.troops;if(f.army)o.army=structuredClone(f.army)}}
+function syncForces(list){for(const f of list||[]){if(!f.src)continue;const o=f.src;if(f.kind==='band'){o.list=f.troops;o.n=o.list.length;o.pw=0}else if(f.kind==='patrol'||f.kind==='caravan')o.troops=f.troops;else if(f.kind==='garrison')o.gar=f.troops.length;else if(f.kind==='cparty')o.troops=f.troops;if(f.army)o.army=structuredClone(f.army)}}
 // a holding's garrison as a battle force: it sallies beside whoever fights its besiegers, or beside the army come to relieve it
 const garrisonForce=t=>({kind:'garrison',src:t,name:'the garrison of '+t.name,fac:t.owner,troops:garList(t)});
 // a force you beat (or that fought beside you and was ground down)
