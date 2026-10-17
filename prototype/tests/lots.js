@@ -42,7 +42,8 @@ try{
  // no free plot for a house: nothing is spent (the realm's gold and the holding's materials stay; your gold stays)
  {const q=t.TOWNS.find(x=>x.owner!=='player'&&x.lots&&x.lots.length&&!x.work),mats=t.HOUSE_COST.mats,ls=t.lotSpot,r0=Math.random;
   q.pop=t.housing(q)+5;for(const g in mats)q.stock[g]=(q.stock[g]||0)+50;W.treas[q.owner]=1e5;const st0=JSON.stringify(mats&&Object.keys(mats).map(g=>q.stock[g])),tr0=W.treas[q.owner];
-  try{(0,eval)('lotSpot=()=>null');Math.random=()=>0;t.estateDay()}finally{Math.random=r0;(0,eval)('lotSpot=window.__ls||lotSpot')}
+  /* (the other holdings kept busy, so only this one can spend from its realm's treasury today) */const busy=t.TOWNS.filter(x=>x!==q&&!x.work);busy.forEach(x=>x.work={k:'test',lv:1,done:G.day+99,start:G.day});
+  try{(0,eval)('lotSpot=()=>null');Math.random=()=>0;t.estateDay()}finally{Math.random=r0;(0,eval)('lotSpot=window.__ls||lotSpot');busy.forEach(x=>x.work=null)}
   ok(!(q.work&&q.work.k==='house')&&JSON.stringify(Object.keys(mats).map(g=>q.stock[g]))===st0&&W.treas[q.owner]===tr0,'a realm with no free plot for a house spends neither gold nor materials');
   q.work=null;P.gold=1e4;const pg=P.gold,st1=JSON.stringify(Object.keys(mats).map(g=>q.stock[g]));
   try{(0,eval)('lotSpot=()=>null');ok(!t.buildHouse(q)&&P.gold===pg&&JSON.stringify(Object.keys(mats).map(g=>q.stock[g]))===st1,'your house order with no free plot costs you nothing')}finally{(0,eval)('lotSpot=window.__ls')}}
