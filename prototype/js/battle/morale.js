@@ -283,7 +283,7 @@ function chargeMul(u,t){
 // losing (its side under half the other's); each shows a while (seconds) after it last happened
 const MORALE_WEAK={flanked:2,outnumbered:1.5,charged:2,leader:6};
 function grpMorale(m){
-  const l=m.filter(u=>u.hp>0&&!steady(u)),owners=[...new Set(l.map(resolveOf).filter(Boolean))];if(!owners.length)return null;
+  const l=m.filter(u=>u.hp>0&&!u.left&&!steady(u)),owners=[...new Set(l.map(resolveOf).filter(Boolean))];if(!owners.length)return null;
   owners.forEach(r=>r.refreshState());const weight=r=>l.filter(u=>resolveOf(u)===r).length,avg=k=>owners.reduce((n,r)=>n+r[k]*weight(r),0)/l.length;
   const v=Math.max(0,avg('mor'))/100,rout=owners.reduce((n,r)=>n+(r.routed?weight(r):0),0),waver=owners.reduce((n,r)=>n+(!r.routed&&r.mor<MORALE.waver?weight(r):0),0),breaking=owners.reduce((n,r)=>n+(!r.routed&&r.mor<=0&&r.breakT>0?weight(r):0),0);
   const state=owners.length===1?owners[0].state:rout*2>l.length?'routing':v<.3?'wavering':v<.6?'shaken':'steady';

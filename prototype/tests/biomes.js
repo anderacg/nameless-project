@@ -28,7 +28,7 @@ try{
  const ash=t.townBy('Ashford');P.x=ash.x;P.y=ash.y+20;P.morale=80;setGood('furs',0);t.survive();ok(P.morale===80,'holdings shelter you');
  // battlegrounds
  P.troops={hum_levy:4,dw_clan:4,hum_bow:4,hum_squire:3};
- const fight=(s,band)=>{at(s,()=>{G.mode='world';G.modal=false;t.startEncounter({kind:'party',ref:{x:P.x+20,y:P.y,cool:0},n:4,band:band||'bandits'});t.act('fight')});return t.B};
+ const fight=(s,band)=>{at(s,()=>{G.mode='world';G.modal=false;t.startEncounter({kind:'party',ref:{x:P.x+20,y:P.y,cool:0,n:4},n:4,band:band||'bandits'});t.act('fight')});return t.B};
  let B=fight(spot.frost);const lv=B.units.find(u=>u.type==='hum_levy'),dc=B.units.find(u=>u.type==='dw_clan');
  ok(lv.s.spd<t.ST.hum_levy.spd&&dc.s.spd===t.ST.dw_clan.spd,'frost battle slows humans, not dwarves');
  ok(B.arena===t.arenaFor('frost')&&B.obs.length>0,'frost arena with obstacles');
