@@ -9,7 +9,11 @@ try{
  const done=()=>{while(G.mode==='perk')t.act('perk',G.perkOffer[0])},pan=()=>document.getElementById('panel').innerHTML;
  const world=()=>{G.mode='world';G.modal=false;t.hidePanel();G.encCool=0;G.enc=null;G.cv=null};
  const from=t.townBy('Saltmere');from.owner=t.HOME.Saltmere;from.sacked=from.raided=0;t.ensureEcon(from);
- const fill=()=>{from.stock.cloth=400;from.stock.timber=400},send=()=>{fill();let c=null;for(let i=0;i<20&&!c;i++)c=t.sendCaravan(from);return c};
+ // (a caravan sets out only for a town in reach that is short of its surplus: the world's stocks are random, and on some seeds the
+ // only one short of anything Saltmere has is short of a good the first caravan carries off. A town of its own, in reach, emptied of
+ // cloth and timber, is always one to send to)
+ const near=TW.find(x=>x!==from&&x.owner===from.owner&&!t.besieged(x)&&Math.hypot(x.tx-from.tx,x.ty-from.ty)>20&&Math.hypot(x.tx-from.tx,x.ty-from.ty)<80);t.ensureEcon(near);
+ const fill=()=>{from.stock.cloth=400;from.stock.timber=400;near.stock.cloth=near.stock.timber=0},send=()=>{fill();let c=null;for(let i=0;i<20&&!c;i++)c=t.sendCaravan(from);return c};
  const FIELDS=['cv','fac','from','to','x','y','goods','guards','cool','dir'];
  // ---- a caravan is a party of its kind
  W.caravans=[];let c=send();

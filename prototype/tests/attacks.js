@@ -18,10 +18,12 @@ try{
  ok(M(ST.hum_mage,ST.dw_rune)<.7,'warded troops resist magic');
  ok(M(ST.hum_knight,ST.hum_mage)/t.typeMul(ST.hum_knight,ST.hum_mage)>=1.4&&M(ST.elf_blade,ST.orc_shaman)/t.typeMul(ST.elf_blade,ST.orc_shaman)>=1.4,'cavalry and shock troops punish casters (+40%, before their armour)');
  ok(/magic/.test(t.vsLine(ST.hum_knight))&&/warded/.test(t.vsLine(ST.hum_mage)),'strengths and weaknesses mention magic');
- // who fields casters
+ // who fields casters (seeded: counts of random rolls, a bare pass on an unlucky run)
+ {const r0=Math.random;Math.random=t.seeded(3);try{
  let hedges=0,shamans=0;for(let k=0;k<200;k++){t.makeEnemies(6,false,'bandits').forEach(u=>{if(u==='hedge')hedges++});t.makeEnemies(6,false,'raiders').forEach(u=>{if(u==='orc_shaman')shamans++})}
  ok(hedges>20&&shamans>20,'bandits bring hedge witches ('+hedges+'), raiders orc shamans ('+shamans+')');
  let am=0;for(let k=0;k<20;k++)am+=t.armyOf('vale',20).filter(u=>u==='hum_mage').length;ok(am>10,'lords\' armies include battle mages ('+am+' in 20 armies)');
+ }finally{Math.random=r0}}
  ok(t.garList(t.townBy('Ashford')).includes('hum_mage'),'garrisons include casters');
  ok(t.MONSTERS.slime&&ST.slime.magic&&t.MONSTERS.slime.where.includes('swamp'),'bog slimes spit magic in the swamps');
  // battle: an enemy caster's bolt
@@ -52,7 +54,10 @@ try{
  // abilities page
  G.mode='world';G.modal=false;t.hidePanel();P.gear.weapon='g_staff_1';t.openSkills('abilities');ok(/Cast \([a-z ]*staff\)/.test(document.getElementById('panel').innerHTML),'the Abilities tab explains your attack');t.act('sk-close');
  // bow arrows arc and fall; crossbow bolts and magic fly straight
- B=fresh(['hum_bow','dw_xbow','hum_mage'],{hum_spear:2});const bw2=B.units.find(u=>u.type==='hum_bow'),xb2=B.units.find(u=>u.type==='dw_xbow'),mg2=B.units.find(u=>u.type==='hum_mage'),sp2=B.units.find(u=>u.type==='hum_spear');
+ // (seeded, on open ground: the field's trees are random, and a tree by the bowman or the target catches a low arrow 35% of the
+ // time, so it never comes down or sticks in the ground; and the bow's scatter is a random draw)
+ {const r0=Math.random;Math.random=t.seeded(5);try{
+ B=fresh(['hum_bow','dw_xbow','hum_mage'],{hum_spear:2});B.obs=[];const bw2=B.units.find(u=>u.type==='hum_bow'),xb2=B.units.find(u=>u.type==='dw_xbow'),mg2=B.units.find(u=>u.type==='hum_mage'),sp2=B.units.find(u=>u.type==='hum_spear');
  B.units.forEach(u=>{if(u!==sp2&&u!==bw2&&u!==xb2&&u!==mg2)u.x=-200});sp2.x=bw2.x-110;sp2.y=Math.min(bw2.y+20,t.fieldBot()-4);B.arrows=[];t.attack(bw2,sp2);t.attack(xb2,sp2);t.attack(mg2,sp2);const [ar,xbolt,mb]=B.arrows;
  ok(ar.arc&&!xbolt.arc&&!mb.arc,'bow arrows arc; crossbow and magic bolts fly straight');
  ok(Math.hypot(ar.vx,ar.vy)<Math.hypot(xbolt.vx,xbolt.vy)*.75,'arrows fly slower than crossbow bolts');
@@ -68,9 +73,12 @@ try{
  ok(peak>15&&!hitHigh,'it climbs high (peak '+Math.round(peak)+') and flies over anyone under its path');
  ok(sp2.hp<hp2,'then comes down on its target');
  B.arrows=[{...ar,t:0,life:ar.T,x:bw2.x,y:bw2.y,tk:0}];sp2.x=-99;for(let i=0;i<400&&B.arrows.length;i++)t.updateBattle(.01);ok(B.parts.some(p=>p.stuck),'a miss sticks in the ground');
+ }finally{Math.random=r0}}
  B.over=true;B.endT=0;t.updateBattle(.01);t.act('cont');done();
  // the bow: hold to draw, let go to shoot; holding a full draw drains stamina; the wheel sets the range; right-click shoves
- t.invAdd('good','arrows',100);P.gear.weapon=t.gearId('bow',2);G.bowRange=180;B=fresh(['militia'],{});B.units.forEach(u=>{if(!u.hero){u.x=560;u.cd=99;u.s={...u.s,spd:0}}});const hb2=B.hero;t.heroState().sp=999;
+ // (seeded, on open ground: a random tree by your hero or where the arrow comes down catches a low arrow 35% of the time)
+ {const r0=Math.random;Math.random=t.seeded(9);try{
+ t.invAdd('good','arrows',100);P.gear.weapon=t.gearId('bow',2);G.bowRange=180;B=fresh(['militia'],{});B.obs=[];B.units.forEach(u=>{if(!u.hero){u.x=560;u.cd=99;u.s={...u.s,spd:0}}});const hb2=B.hero;t.heroState().sp=999;
  const cvs=document.querySelector('canvas'),R2=cvs.getBoundingClientRect(),at2=(x,y)=>({clientX:R2.left+x*R2.width/t.VW,clientY:R2.top+y*R2.height/t.VH,pointerType:'mouse',bubbles:true});
  // (the mouse and the wheel no longer draw the bow: set aside with the manual control; its mechanics are called directly)
  const press=(btn,x,y)=>btn===2?t.shove():t.drawStart(),release=()=>{if(t.B&&t.B.draw)t.drawRelease()};
@@ -97,6 +105,7 @@ try{
  ok(t.TREE.finesseb2&&t.TREE.finesseb2.m.perk==='guide'&&t.TREE.finesseb2.br==='finesse','Hawkeye sits on the Finesse (Agility) path');
  ok(!t.has('guide'),'without it there is no path guide');P.tree.push('finesseb2');ok(t.has('guide'),'learning Hawkeye turns the guide on');t.drawBattle();P.tree=P.tree.filter(x=>x!=='finesseb2');
  P.gear.weapon=t.gearId('crossbow',1);ok(!t.isBow(),'crossbows shoot at once, no drawing');B.over=true;B.endT=0;t.updateBattle(.01);t.act('cont');done();P.gear.weapon=t.gearId('sword',0);G.mouse.in=false;
+ }finally{Math.random=r0}}
  // ammunition: shots use arrows or bolts, none left means no shot, some come back after a win; troops have quivers
  P.gear.weapon=t.gearId('bow',1);P.inv=P.inv.map(()=>null);t.invAdd('good','arrows',3);B=fresh(['militia'],{});B.units.forEach(u=>{if(!u.hero){u.x=560;u.cd=99;u.s={...u.s,spd:0}}});t.heroState().sp=999;B.aim=0;
  for(let k=0;k<3;k++){B.hero.cd=0;t.swing()}ok(t.goodN('arrows')===0&&B.arrows.length===3,'each shot uses an arrow');

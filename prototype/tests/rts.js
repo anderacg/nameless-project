@@ -273,9 +273,13 @@ try{
   ok([0,1,2].every(k=>steps.has(k)),'your hero swings the whole combo on their own: Slash, Sweep, Finisher ('+[...steps].filter(k=>k>=0).join(',')+')');if(t.B){t.B.over=true;t.B.endT=0;t.B=null}}
  {P.slots=Array(10).fill(null);const B=fight(['militia']);ring(B,1,14);const X=t.heroState();X.sp=0;const a0=B.hero.atkAt;let tired=0;run(60,()=>{X.sp=0;tired+=B.floats.filter(f=>/tired/i.test(f.t)).length;B.floats=[]});
   ok(!tired&&B.hero.atkAt!==a0&&t.tiredMul(B.hero).dmg<1,'out of breath, your hero fights on as a soldier does, softer: no flurry of failed swings, no “Too tired”');if(t.B){t.B.over=true;t.B.endT=0;t.B=null}}
- {P.slots=Array(10).fill(null);const B=fight(['militia']);ring(B,1,14);B.units.filter(u=>u.team===1).forEach(u=>u.hp=u.max=9999);const X=t.heroState();
-  X.sp=999;let swings=0,last=B.hero.atkAt;const T0=B.t;run(300,()=>{X.sp=999;if(B.hero.atkAt!==last){swings++;last=B.hero.atkAt}});const per=swings/Math.max(.01,B.t-T0);
-  ok(swings>=3&&per<1.8,'and fights in bursts, a breath after each finisher ('+swings+' blows, '+per.toFixed(1)+' a second)');if(t.B){t.B.over=true;t.B.endT=0;t.B=null}}
+ // (seeded, and the foe pinned in reach: each blow knocks him back, and left free he is out of reach after the first combo, its
+ // third blow landing at the edge of the hero's reach: the count hung on that one combo, 3 blows or 2. Pinned, combo follows combo)
+ {const r0=Math.random;Math.random=t.seeded(7);try{
+  P.slots=Array(10).fill(null);const B=fight(['militia']);ring(B,1,14);B.units.filter(u=>u.team===1).forEach(u=>u.hp=u.max=9999);const X=t.heroState();
+  const e=B.units.find(u=>u.team===1),ex=e.x,ey=e.y;
+  X.sp=999;let swings=0,last=B.hero.atkAt;const T0=B.t;run(300,()=>{X.sp=999;e.x=ex;e.y=ey;e.kx=e.ky=0;if(B.hero.atkAt!==last){swings++;last=B.hero.atkAt}});const per=swings/Math.max(.01,B.t-T0);
+  ok(swings>=3&&per<1.8,'and fights in bursts, a breath after each finisher ('+swings+' blows, '+per.toFixed(1)+' a second)');if(t.B){t.B.over=true;t.B.endT=0;t.B=null}}finally{Math.random=r0}}
  {P.slots=['whirl',...Array(9).fill(null)];const B=fight(['militia','militia','militia']);ring(B,3,16);const X=t.heroState();X.sp=X.mp=999;B.hero.hp=B.hero.max;run(40);
   ok(X.cds.whirl>0,'hemmed in, they spin a Whirlwind from their slots (Auto skills)');if(t.B){t.B.over=true;t.B.endT=0;t.B=null}}
  {P.slots=['leap',...Array(9).fill(null)];const B=fight(['militia','militia','militia']);const h=B.hero;B.units.filter(u=>u.team===1).forEach((u,i)=>{u.x=h.x+80;u.y=h.y+(i-1)*8;u.cd=99;u.hp=u.max=9999;u.s={...u.s,spd:0}});
