@@ -4,7 +4,8 @@
    silhouette, the pack's own colours. Every soldier is the template in its kind's colours (PEOPLE_LOOK) with a helm, a shield and
    a weapon over it, and one of six variants (skin, hair, beard, a helm for the plain troops, a shade of cloth) so a line of them is
    not one man copied. Riders sit on a mount of their race (horse, stag, ram, wolf) in a 32×32 cell, the same rider above the belt.
-   Poses as before (sprites.js): 0-1 standing, 2-5 walking, then a swing, a thrust and an overhead blow of three frames each. ---------- */
+   Poses as before (sprites.js): 0-1 standing, 2-5 walking, then a swing, a thrust and an overhead blow of three frames each,
+   15-18 running, 19-22 climbing a slope and 23-26 coming down one (render.js). ---------- */
 // the template: hair 1 2 3, skin s x t u, eyes e, the outer garment a b c d, the front (the side's colour) p q r, under-tunic n o,
 // belt and skirt k l, legs L M, feet F. The outline is added after
 const PEOPLE_T=[
@@ -136,15 +137,21 @@ function lettersOf(o){
 const STRIDE=[[4,9,4,10],[5,8,5,8],[5,9,5,9],[6,8,6,8]];
 // running (walk 4-7): a long stride, a moment off the ground, the body leaning forward and bouncing
 const STRIDE_RUN=[[3,10,2,11],[5,8,5,9],[4,9,3,11],[6,7,6,8]],RUN_BOB=[0,-2,0,-1];
+// climbing a slope (walk 8-11): bent forward, short steps, the front knee lifted every other frame, a small bob; descending (walk
+// 12-15): the head forward, long steps, sinking a little (render.js picks them from the ground's climbState)
+const STRIDE_CLIMB=[[5,8,5,9],[5,9,5,10],[5,8,5,9],[4,9,4,10]],CLIMB_BOB=[0,-1,0,0],STRIDE_DESC=[[4,9,3,10],[5,8,5,9],[3,10,3,11],[6,8,6,8]],DESC_BOB=[0,0,1,0];
 /* a figure into grid g at (ox, oy): the template, then its head, shield and weapon. walk: -1 or 0-3; atk: -1 or 0-2 with style */
 function drawFigure(g,o,ox,oy,walk,style,atk,cut){
-  const run=walk>=4,T=o.short?PEOPLE_T_SHORT:PEOPLE_T,Lc=lettersOf(o),bob=run?RUN_BOB[walk-4]:walk===1||walk===3||walk===-2?-1:0,sh=o.short?1:0;
-  const set=(x,y,c)=>pset(g,ox+x+(run&&y<9?1:0),oy+y+(y<13-sh?bob:0),c);
+  const run=walk>=4&&walk<8,climb=walk>=8&&walk<12,desc=walk>=12,T=o.short?PEOPLE_T_SHORT:PEOPLE_T,Lc=lettersOf(o),sh=o.short?1:0;
+  const bob=run?RUN_BOB[walk-4]:climb?CLIMB_BOB[walk-8]:desc?DESC_BOB[walk-12]:walk===1||walk===3||walk===-2?-1:0,lean=run?9:desc?6:0;
+  // (climbing: bent double, the head two pixels forward and the shoulders one, all above the belt a pixel lower)
+  const set=climb?(x,y,c)=>pset(g,ox+x+(y<6?2:y<9?1:0),oy+y+(y<9?1:0)+(y<13-sh?bob:0),c):(x,y,c)=>pset(g,ox+x+(y<lean?1:0),oy+y+(y<13-sh?bob:0),c);
   T.forEach((row,y)=>{if(cut!=null&&y>cut)return;[...row].forEach((c,x)=>{if(c==='.'||c==='L'||c==='M'||c==='F')return;set(x,y+(o.short&&y>=9?0:0),Lc[c])})});
   const ly=13-sh;
   // legs and feet (by the stride), or a robe to the ground
   if(cut==null){if(o.robe){for(let x=4;x<=9;x++)set(x,ly,x<6?Lc.b:x<8?Lc.c:Lc.d);set(5,ly+1,Lc.d);set(8,ly+1,Lc.d)}
-    else{const s=run?STRIDE_RUN[walk-4]:STRIDE[walk<0?2:walk];/* (standing or breathing: the standing stride) */set(s[0],ly,Lc.L);set(s[0]+1,ly,Lc.L);set(s[1],ly,Lc.L);set(s[1]+1,ly,Lc.M);set(s[2],ly+1,Lc.F);set(s[3],ly+1,Lc.F)}}
+    else{const s=run?STRIDE_RUN[walk-4]:climb?STRIDE_CLIMB[walk-8]:desc?STRIDE_DESC[walk-12]:STRIDE[walk<0?2:walk],k=climb&&walk&1?1:0;/* (standing or breathing: the standing stride; climbing, the front knee up: k) */
+      set(s[0],ly,Lc.L);set(s[0]+1,ly,Lc.L);set(s[1],ly-k,Lc.L);set(s[1]+1,ly-k,Lc.M);set(s[2],ly+1,Lc.F);set(s[3],ly+1-k,Lc.F)}}
   // short hair: off the shoulders
   if(o.shortHair&&!o.robe){set(5,7,Lc.a);set(9,7,Lc.c);set(5,6,Lc.t)}
   if(o.cape){const C=pal(o.cape===true?o.team:o.cape);for(let y=7;y<=12-sh;y++){set(2,y,C[2]);set(3,y,y===7?C[1]:C[2])}set(2,12-sh,C[3])}
@@ -274,7 +281,8 @@ function drawMountDown(g,o){
    outlined, then placed in its power-of-two cell (sprites.js cellOf) */
 function peopleSprite(o,pose,bare){
   // (pose 1: a breath in, walk -2)
-  const walk=pose===1?-2:pose>=2&&pose<=5?pose-2:pose>=15&&pose<=18?pose-11:-1,blow=pose>=6&&pose<=14,atk=blow?(pose-6)%3:-1,style=!blow?null:pose>=12?'overhead':pose>=9?'thrust':'swing';
+  // (19-22: climbing, walk 8-11; 23-26: descending, walk 12-15; a rider's mount just walks)
+  const walk=pose===1?-2:pose>=2&&pose<=5?pose-2:pose>=15&&pose<=18?pose-11:pose>=19&&pose<=26?(o.mount?(pose-19)%4:pose-11):-1,blow=pose>=6&&pose<=14,atk=blow?(pose-6)%3:-1,style=!blow?null:pose>=12?'overhead':pose>=9?'thrust':'swing';
   // (bare: the melee weapon left off, to be held apart: weapons.js)
   if(bare&&heldWeapon(o))o={...o,weapon:null};
   if(o.mount){const g=pgrid(32,32),top=drawMount(g,o,walk),hand=drawFigure(g,{...o,shield:null},6,top-6,-1,style,atk,12);g.fh=32-(top-6);

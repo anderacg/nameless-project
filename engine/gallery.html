@@ -15,6 +15,8 @@
 <script src="pixel.js"></script>
 <script src="buildings.js"></script>
 <script src="pieces.js"></script>
+<script src="ground.js"></script>
+<script src="ground-fixture.js"></script>
 <script>
 // which types each people builds (the same list the game's settlements use)
 const PEOPLE={human:['cottage','townhouse','fisherhut','chapel','stall','tower','longhouse','tavern','smithy','church','barn','granary','windmill','watermill','warehouse','gatehouse','keep','citadel'],
@@ -24,6 +26,7 @@ const PEOPLE={human:['cottage','townhouse','fisherhut','chapel','stall','tower',
 function render(){
   const q0=new URLSearchParams(location.search);
   if(new URLSearchParams(location.search).get('view')==='props')return renderProps();
+  if(q0.get('view')==='ground')return renderGround();
   if(new URLSearchParams(location.search).get('view')==='castles'){const out=document.getElementById('out');out.innerHTML='';for(const type of ['keep','citadel','village','longhouse','stonehall','elfhall','hidehall'])for(const style of ['human','dwarf','elf','orc']){if(['stonehall','elfhall','hidehall','longhouse'].includes(type)&&style!==({longhouse:'human',stonehall:'dwarf',elfhall:'elf',hidehall:'orc'})[type])continue;const row=document.createElement('div');row.className='row';row.innerHTML='<span class="lab">'+style+' · '+type+'</span>';for(let s=1;s<=6;s++){const hall=!['keep','citadel'].includes(type),b=PX.building({type,style,seed:s*37+type.length,view:'top',fort:hall?(s>3?1:0):[0,1,2,3,1,2][s-1],banner:'#c84040'}),Z=+(q0.get('z')||3),c=document.createElement('canvas'),M=4,w=b.w+2*M;c.width=w*Z;c.height=w*Z;const g=c.getContext('2d');g.imageSmoothingEnabled=false;g.scale(Z,Z);g.fillStyle='#5a8a3a';g.fillRect(0,0,w,w);g.fillStyle='rgba(0,0,0,.18)';for(let k=0;k<=b.tiles[0];k++){g.fillRect(M+k*16,0,1,w);g.fillRect(0,M+k*16,w,1)}g.fillStyle='rgba(255,230,120,.5)';g.fillRect(M+b.w/2,M+b.h,1,M);g.fillRect(M+b.w/2-1,M+b.h,1,M);g.drawImage(b.img,M,M);if(b.flag){const fx=M+b.flag[0],fy=M+b.flag[1],fc=['#c84040','#4a72b0','#3a8a4a','#d8a030'][s%4];g.fillStyle='#4a3020';g.fillRect(fx,fy-9,1,9);g.fillStyle=fc;g.fillRect(fx+1,fy-9,4,3)}row.appendChild(c)}out.appendChild(row)}return}
   const q=new URLSearchParams(location.search),Z=+(document.getElementById('z').value||q.get('z')||3),N=+(document.getElementById('n').value||q.get('n')||8),only=(document.getElementById('only').value||q.get('only')||'').trim();
   const out=document.getElementById('out');out.innerHTML='';
@@ -36,6 +39,17 @@ function render(){
       g.fillStyle='rgba(255,240,200,.35)';g.fillRect(M,M,b.w,1);g.fillRect(M,M+b.h-1,b.w,1);g.fillRect(M,M,1,b.h);g.fillRect(M+b.w-1,M,1,b.h);
       g.drawImage(b.shadow,M,M);g.drawImage(b.img,M,M);if(b.clipped){g.fillStyle='#e0605a';g.fillRect(0,0,3,3)}row.appendChild(c)}
     row.querySelector('.lab').textContent+=' · '+((PX.SITE_TYPES.includes(type)?PX.site:PX.building)({type,style,seed:1}).w)+'px';
+    out.appendChild(row)}
+}
+// battlefield ground (engine/ground.js) on stand-in terrain (ground-fixture.js): each recipe in each climate, a field 960×600 at
+// 1:1 (?z=2 doubles it); ?only= a recipe or a climate; ?seed= the fixture's seed
+function renderGround(){
+  const q=new URLSearchParams(location.search),Z=+(q.get('z')||1),only=q.get('only')||'',sd=+(q.get('seed')||1),out=document.getElementById('out');out.innerHTML='';
+  for(const recipe of ['hills','forest','marsh','mixed','hillwoods','oasis'])for(const climate of ['grass','frost','desert','swamp']){if(only&&only!==recipe&&only!==climate)continue;
+    const t=PX.groundFixture({recipe,C:60,R:38,seed:sd}),t0=performance.now(),gr=PX.battleGround({...t,climate}),ms=performance.now()-t0,mini=PX.battleGroundMini({...t,climate},gr);
+    const row=document.createElement('div');row.className='row';row.innerHTML='<span class="lab">'+recipe+' · '+climate+' · '+ms.toFixed(0)+' ms</span>';
+    const c=document.createElement('canvas');c.width=gr.width*Z;c.height=gr.height*Z;const g=c.getContext('2d');g.imageSmoothingEnabled=false;g.drawImage(gr,0,0,c.width,c.height);row.appendChild(c);
+    const m=document.createElement('canvas');m.width=mini.width*3;m.height=mini.height*3;const mg=m.getContext('2d');mg.imageSmoothingEnabled=false;mg.drawImage(mini,0,0,m.width,m.height);row.appendChild(m);
     out.appendChild(row)}
 }
 // props and camps

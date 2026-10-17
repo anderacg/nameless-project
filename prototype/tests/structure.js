@@ -26,11 +26,13 @@ try{
   'resolution':['finishBattle','concludeEncounter'],
   'actors':['aiUnit','shotStep','relocating','updateNonHeroActors'],
   'attacks':['applyDmg','attack','bladeBlow'],
-  'projectiles':['fireBolt','arcStep','updateProjectiles']
+  'projectiles':['fireBolt','arcStep','updateProjectiles'],
+  'terrain':['buildTerrain','groundMul','terrainStep','terrainBlocksView']
  };
  for(const [file,names] of Object.entries(battleOwners))ok(names.every(n=>seen[n]==='js/battle/'+file+'.js'),'battle ownership: '+names.join(', ')+' belong to '+file+'.js');
  const battleOrder=['battle','battlecontrol','commands','setup','resolution','attacks','projectiles','actors','combat','commander','abilities','formations','morale','fatigue','camera','deploy'].map(n=>'battle/'+n+'.js');
  ok(battleOrder.every((f,i)=>order.includes(f)&&(!i||order.indexOf(battleOrder[i-1])<order.indexOf(f))),'battle scripts retain the supported loading order in both entry points');
+ ok(order.indexOf('battle/terrain.js')===order.indexOf('battle/spatial.js')+1&&order.indexOf('battle/terrain.js')<order.indexOf('battle/battle.js'),'terrain.js loads right after spatial.js, before battle.js (the wiki too: its order is checked above)');
  // ---- every note an AI keeps on a group is in AI_NOTES (battlecontrol.js aiReset clears them when Auto hands a group over), or
  // is the group's own field (its constructor's) or phase/t: each `<v>.<name>=` (also +=, ++…) in the captains (commander.js) and
  // the character mind (charmind.js, once it has its own file) on a group variable (g, q, or a name bound to B.groups[…]) is read

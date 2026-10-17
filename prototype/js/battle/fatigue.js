@@ -19,9 +19,9 @@ function tiredMul(u){const s=staOf(u);return s<FATIGUE.spent?{spd:.7,dmg:.75,run
 function fatigueInit(units){for(const u of units)if(!u.hero){u.sta=FATIGUE.max;u.vig=vigorOf(u.s)/100}}
 // each moment: running spends, charging spends twice that; walking, or fighting in place, neither spends nor restores; standing restores
 function fatigueStep(u,dt,moved,walking,charging,fighting){
-  if(heroSta(u)){if(moved&&!walking)staSpend(u,FATIGUE.run*(charging?2:1)*dt);else if(!moved&&!fighting){const X=heroState();X.sp=Math.min(maxSP(),X.sp+FATIGUE.rest*maxSP()/FATIGUE.max*(1+tm('spRegen'))*dt)}return}
+  if(heroSta(u)){if(moved&&!walking)staSpend(u,FATIGUE.run*(charging?2:1)*dt*groundSta(u));else if(!moved&&!fighting){const X=heroState();X.sp=Math.min(maxSP(),X.sp+FATIGUE.rest*maxSP()/FATIGUE.max*(1+tm('spRegen'))*dt)}return}
   if(u.hero||u.sta==null)return;
-  const vg=u.vig||1;if(moved){if(!walking)u.sta-=FATIGUE.run*(charging?2:1)*dt/vg}else if(!fighting)u.sta+=FATIGUE.rest*dt*vg;
+  const vg=u.vig||1;if(moved){if(!walking)u.sta-=FATIGUE.run*(charging?2:1)*dt/vg*groundSta(u)}/* (marsh and uphill tire him faster: terrain.js) */else if(!fighting)u.sta+=FATIGUE.rest*dt*vg;
   u.sta=clamp(u.sta,0,FATIGUE.max);
 }
 // a charge's impact: a lump by how far it ran (m, 0-1); a blow: a little

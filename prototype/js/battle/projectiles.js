@@ -18,10 +18,14 @@ function fireBolt(u,a,dmg,src,dist,opts){
   B.arrows.push({...base,x:u.x,y:u.y-6,vx:Math.cos(a)*v,vy:Math.sin(a)*v,life:mag?1.4:1.1,magic:mag,col:src.bolt||'#c58af0'});
 }
 const arcZ=a=>a.z||0;
+// the trees an arrow has passed (each tries to stop it once): a bitmask for the first 32, a list past them (a wide forest field's)
+const treePast=(a,k)=>k<32?!!(a.tk&1<<k):!!(a.tkx&&a.tkx.includes(k));
+const treeMark=(a,k)=>{if(k<32)a.tk|=1<<k;else(a.tkx||(a.tkx=[])).push(k)};
 // one step of an arcing arrow: trees catch it only low, it hits on the way down, a miss sticks in the ground
 function arcStep(a,dt){
   a.t+=dt;a.x+=a.vx*dt;a.y+=a.vy*dt;a.z+=a.vz*dt;a.vz-=a.g*dt;const z=Math.max(0,a.z);
-  if(z<10&&!a.elf)for(let k=0;k<B.obs.length;k++){const o=B.obs[k];if(o.kind==='tree'&&!(a.tk&1<<k)&&Math.hypot(a.x-o.x,a.y-o.y)<o.r+2){a.tk|=1<<k;if(Math.random()<.35){a.life=0;fx(a.x,a.y-z-4,'#8b5a2b',2);return}}}
+  if(z<10&&!a.elf)for(let k=0;k<B.obs.length;k++){const o=B.obs[k];if(o.kind==='tree'&&!treePast(a,k)&&Math.hypot(a.x-o.x,a.y-o.y)<o.r+2){treeMark(a,k);if(Math.random()<.35){a.life=0;fx(a.x,a.y-z-4,'#8b5a2b',2);return}}}
+  if(z<10&&!a.elf&&B.terrain&&B.terrain.has.wood&&woodStops(a,a.x,a.y,a.x-a.vx*dt,a.y-a.vy*dt,a.vz<0)){a.life=0;fx(a.x,a.y-z-4,'#8b5a2b',2);return}// (low through woods, or down into them: terrain.js)
   if(z<9)for(const e of spatialOn()?SG.near(a.x,a.y,16,a.team,true):B.units){if(e.hp<=0||e.team===a.team)continue;if(Math.abs(e.x-a.x)<(e.s.big?14:6)&&Math.abs(e.y-a.y)<(e.s.big?10:5)){
     const mu=matchup(a.src||{},e.s);let dm=a.dmg*mu;
     if(e.hero&&B.blocking){const df=angGap(a.a+Math.PI,B.aim);if(df<1.25&&guard(dm)){dm*=blockMul();fx(a.x,a.y-6,'#cfe0ff',4)}}
@@ -31,6 +35,7 @@ function arcStep(a,dt){
 // Called at the original point in updateBattle: after unit movement/collision, before morale and battle-end checks.
 // (nobody moves while arrows fly: the grid, spatial.js, offers each the soldiers round it, in their order)
 function updateProjectiles(dt){
+  terrainStep();// (each soldier's ground once a frame, after all movement: a shooter's range by his level, terrain.js)
   if(B.arrows.length){spatialOpen();try{flyArrows(dt)}finally{spatialClose()}}
   B.arrows=B.arrows.filter(a=>a.life>0&&a.x>-4&&a.x<BW+4&&a.y>-4&&a.y<BH+4);
 }
@@ -38,7 +43,8 @@ function flyArrows(dt){
   for(const a of B.arrows){
     if(a.arc){arcStep(a,dt);continue}
     a.x+=a.vx*dt;a.y+=a.vy*dt;a.life-=dt;
-    if(!a.elf&&!a.magic)for(let k=0;k<B.obs.length;k++){const o=B.obs[k];if(o.kind==='tree'&&!(a.tk&1<<k)&&Math.hypot(a.x-o.x,a.y-(o.y-6))<o.r+2){a.tk|=1<<k;if(Math.random()<.25){a.life=0;fx(a.x,a.y,'#8b5a2b',2)}}}
+    if(!a.elf&&!a.magic)for(let k=0;k<B.obs.length;k++){const o=B.obs[k];if(o.kind==='tree'&&!treePast(a,k)&&Math.hypot(a.x-o.x,a.y-(o.y-6))<o.r+2){treeMark(a,k);if(Math.random()<.25){a.life=0;fx(a.x,a.y,'#8b5a2b',2)}}}
+    if(!a.elf&&!a.magic&&a.life>0&&B.terrain&&B.terrain.has.wood&&woodStops(a,a.x,a.y+6,a.x-a.vx*dt,a.y+6-a.vy*dt)){a.life=0;fx(a.x,a.y,'#8b5a2b',2)}// (a bolt flies low: woods stop it, terrain.js)
     if(a.life<=0)continue;
     for(const e of spatialOn()?SG.near(a.x,a.y+10,24,a.team,true):B.units){if(e.hp<=0||e.team===a.team)continue;if(Math.abs(e.x-a.x)<(e.s.big?14:6)&&Math.abs((e.y-(e.s.big?10:6))-a.y)<(e.s.big?11:7)){
       const mu=matchup(a.src||{},e.s);let dm=a.dmg*mu;if(e.hero&&B.blocking){const df=angGap(a.a+Math.PI,B.aim);if(df<1.25&&guard(dm)){const bl=blockMul();dm*=a.magic?Math.max(.5,bl):bl;fx(a.x,a.y,'#cfe0ff',4)}}

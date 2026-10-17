@@ -19,7 +19,7 @@ function battleEnv(tourney){
 }
 function envStats(s,race,env){
   if(s.big)return s;const o={...s},home=race?RACES[race].home:s.home||[],c=env.c,t=env.t;
-  if(t===T_FOREST||t===T_HILL){if(t===T_HILL&&s.range)o.range*=1.15}
+  if(t===T_FOREST||t===T_HILL){if(t===T_HILL&&s.range&&!env.terrain)o.range*=1.15}// (with terrain the hills earn it where they stand, D2: terrain.js)
   else if(c==='frost'&&!home.includes('frost'))o.spd*=.85;
   else if(c==='desert'&&!s.range&&!home.includes('desert'))o.cd*=1.1;
   else if(c==='swamp'&&!home.includes('swamp'))o.spd*=s.mounted?.65:.8;
@@ -122,7 +122,11 @@ class BattleSetup{
   }
   createState(){
     const {units,hero,groups,env,opts}=this,FI=this.field;
-    return{units,hero,groups,env,arena:arenaFor(env.c),ftop:FI.top,fbot:FI.bot,obs:opts.tournament?[]:placeObstacles(env,FI.top,FI.bot),sel:'all',rings:[],arrows:[],parts:[],floats:[],slashes:[],corpses:[],aim:0,blocking:false,touchBlock:false,mt:null,over:false,endT:0,kills:0,slain:[],lost:{},heroDown:false,opts,t:0};
+    // (the ground: only a battle with terrain gets B.terrain, and then no scattered trees, rocks or cacti: its woods, hills and
+    // marsh are the field's only features (the owner, 2026-10-17, reversing D10); without terrain the obstacles as ever: terrain.js)
+    const TR=this.ground?buildTerrain({...this.ground,W:BW,top:FI.top,bot:FI.bot}):null;if(TR&&!opts.sandbox)env.text=groundEnvText(env,TR);
+    const st={units,hero,groups,env,arena:arenaFor(env.c),ftop:FI.top,fbot:FI.bot,obs:opts.tournament||TR?[]:placeObstacles(env,FI.top,FI.bot),sel:'all',rings:[],arrows:[],parts:[],floats:[],slashes:[],corpses:[],aim:0,blocking:false,touchBlock:false,mt:null,over:false,endT:0,kills:0,slain:[],lost:{},heroDown:false,opts,t:0};
+    if(TR)st.terrain=TR;return st;
   }
   initialize(){
     B.speed=BSPEED.v;B.paused=false;
@@ -138,10 +142,13 @@ class BattleSetup{
     for(const u of this.units)u.y=clamp(u.y,fieldTop(),fieldBot());for(const g of playerGroups())if(B.groups[g].ay)B.groups[g].placeAt(B.groups[g].ax,clamp(B.groups[g].ay,fieldTop(),fieldBot()));
     log(this.opts.tournament?'The crowd roars. Defeat the champion.':'The lines meet in the '+this.env.name.toLowerCase()+'. '+this.env.text);
   }
+  // (the battle's terrain: its recipe and seed, or null; the lab's own: lab.js)
+  groundSpec(){return groundSpecFor(this.opts,this.env)}
   start(){
     BW=clamp(BVW,FIELD_W.min,FIELD_W.max);
     damageTypesInit();
     this.env=battleEnv(this.opts.tournament);
+    this.ground=this.groundSpec();groundEnv(this.env,this.ground);// (the ground's recipe and seed before anyone spawns: D2, terrain.js)
     this.createUnits();
     this.field=measureField();
     this.createGroups();
@@ -149,6 +156,7 @@ class BattleSetup{
     if(this.playerOrder)B.playerOrder=this.playerOrder;
     this.initialize();
     this.present();
+    terrainStep();// (shooters on high ground: their range from where they stand at the start, terrain.js)
   }
 }
 // Compatibility entry point used by encounters, tournaments, tests and other callers.

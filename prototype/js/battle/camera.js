@@ -45,7 +45,10 @@ function miniHit(p){if(!B||!B.cam)return null;const r=miniRect(),sx=BVW/VW,sy=BV
 // drawn in the HUD (its scale): the field, every soldier a dot, the view a box
 function drawMiniField(){
   if(!B.cam)return;const r=miniRect(),c=B.cam,kx=r.w/BW,ky=r.h/BH;
-  ctx.fillStyle='rgba(10,12,18,.75)';ctx.fillRect(r.x-1,r.y-1,r.w+2,r.h+2);ctx.fillStyle='rgba(90,120,70,.55)';ctx.fillRect(r.x,r.y,r.w,r.h);
+  ctx.fillStyle='rgba(10,12,18,.75)';ctx.fillRect(r.x-1,r.y-1,r.w+2,r.h+2);
+  // (a field with terrain: its painted ground, a pixel a cell, terraces' edges dark (engine/ground.js), dimmed under the dots)
+  const gm=B.terrain&&B.ground&&(B.groundMini||(B.groundMini=PX.battleGroundMini({...B.terrain,climate:B.env.c},B.ground)));
+  if(gm){ctx.globalAlpha=.8;ctx.drawImage(gm,r.x,r.y,r.w,r.h);ctx.globalAlpha=1}else{ctx.fillStyle='rgba(90,120,70,.55)';ctx.fillRect(r.x,r.y,r.w,r.h)}
   for(const u of B.units){if(u.hp<=0)continue;ctx.fillStyle=u.hero?'#e8b94a':u.team?(u.rout?'#f2c0b8':'#e0605a'):(u.rout?'#c8d8f0':'#6fa8e0');ctx.fillRect(Math.round(r.x+u.x*kx),Math.round(r.y+u.y*ky),1,1)}
   ctx.strokeStyle='#e4e0cf';ctx.lineWidth=1;ctx.strokeRect(Math.round(r.x+c.x*kx)+.5,Math.round(r.y+c.y*ky)+.5,Math.round(BVW/c.z*kx),Math.round(BVH/c.z*ky));
   if(c.z>camFit()+.01)txt(c.z+'×',r.x+r.w-2,r.y+r.h+8,'#98a0ba','right');

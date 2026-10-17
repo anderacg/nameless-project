@@ -57,7 +57,7 @@ function reinfAfter(e,win){
 }
 function startEncounter(e){
   if(e.mine==null)e.mine=!!G.youAttack;G.youAttack=false;if(e.lv==null&&e.ref&&e.ref.ld)e.lv=chiefLv(e.ref);// did you start it (you may call that off)? a chieftain's band fights at its level
-  e.list=e.list||makeEnemies(e.n,e.kind==='camp',e.band);const env=battleEnv(),ground='<p class="muted">Battleground: '+env.name+'. '+env.text+'</p>',band=BANDS[e.band||'bandits'];G.enc=e;G.mode='dialog';P.tx=null;G.chase=null;
+  e.list=e.list||makeEnemies(e.n,e.kind==='camp',e.band);const env=battleEnv(),ground='<p class="muted">Battleground: '+env.name+'. '+terrainEnvText(env,e.kind)+'</p>',band=BANDS[e.band||'bandits'];G.enc=e;G.mode='dialog';P.tx=null;G.chase=null;
   const given=!!e.allies;e.allies=e.allies||nearAllies(e);e.foes=e.foes||nearFoes(e);
   if(!given&&e.kind!=='tourney')for(const p of cparties())if(!p.fight&&!p.inside&&Math.hypot(p.x-P.x,p.y-P.y)<REINF_R)e.allies.push(forceOf(p));// your companions' parties
   // the garrison sallies: beside you when you fight a holding's besiegers, against you when an army comes to relieve your siege

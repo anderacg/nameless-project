@@ -128,7 +128,7 @@ function fallStep(u,S,dt){
   if(u.stun>0){u.stun-=dt;u.spdNow=0;return}
   const F=S.fallBack,reach=(u.s.reach||12)+2,block=drawsBow(u)?null:liveFoes(u).find(e=>Math.hypot(e.x-u.x,e.y-u.y)-(e.s.big?12:0)<=reach+1);
   const dx=F.x-u.x,dy=F.y-u.y,d=Math.hypot(dx,dy);u.spdNow=0;u.run=0;let moved=false;
-  if(d>4){const sp=Math.min(d,u.s.spd*tiredMul(u).spd*(u.slow>0?.5:1)*dt);u.x+=dx/d*sp;u.y+=dy/d*sp;u.face=dx>=0?1:-1;u.dir=Math.atan2(dy,dx);u.spdNow=sp/Math.max(dt,1e-6);moved=true}
+  if(d>4){const sp=Math.min(d,u.s.spd*tiredMul(u).spd*(u.slow>0?.5:1)*groundMul(u,dx/d,dy/d)*dt);u.x+=dx/d*sp;u.y+=dy/d*sp;u.face=dx>=0?1:-1;u.dir=Math.atan2(dy,dx);u.spdNow=sp/Math.max(dt,1e-6);moved=true}
   if(block){u.tgt=block;if(u.cd<=0)charStrike(u,block)}
   fatigueStep(u,dt,moved,false,false,!!block)}
 // the point it would go in at: its group's ordered target (yours: your attack order), else (an AI character) the foe near with the

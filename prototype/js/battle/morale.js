@@ -22,9 +22,10 @@ function moraleVisible(u,o){
   const dx=o.x-u.x,dy=o.y-u.y,dd=dx*dx+dy*dy;if(dd<.01)return true;
   for(const b of B.obs||[]){if(b.kind!=='tree'&&b.kind!=='rock')continue;const at=((b.x-u.x)*dx+(b.y-u.y)*dy)/dd;if(at<=0||at>=1)continue;
     if(Math.hypot(b.x-u.x-dx*at,b.y-u.y-dy*at)<b.r)return false}
-  return true;
+  return !terrainBlocksView(u,o);// (deep woods hide, unless he stands higher: terrain.js)
 }
-function cohesionReady(u){const g=u.grp&&B.groups[u.grp];return fighting(u)&&!withdrawing(u)&&!(u.stun>0)&&g&&!g.backing&&!((u.spdNow||0)>1&&(g.run||(u.run||0)>0))}
+// (woods break formations, and so does a climb: no cohesion in one, nor going up a slope, terrain.js)
+function cohesionReady(u){const g=u.grp&&B.groups[u.grp];return fighting(u)&&!withdrawing(u)&&!(u.stun>0)&&g&&!g.backing&&!((u.spdNow||0)>1&&(g.run||(u.run||0)>0))&&!inWood(u)&&climbState(u)!=='up'}
 /* (moraleTick's live, filed in a grid of their own the first time a view is wanted (VIEW_GRID, spatial.js): only those within
    CONFIDENCE.radius of him are looked at, in live's order; nobody moves or joins during moraleTick, so the sums are the full
    scan's, term by term) */
@@ -232,7 +233,7 @@ function rout(u){
 function routStep(u,dt){
   const ex=u.team?BW-MORALE.edge:MORALE.edge,e=nearest(u);let mx=Math.sign(ex-u.x)||1,my=0;
   if(e){const dx=u.x-e.x,dy=u.y-e.y,d=Math.hypot(dx,dy)||1;if(d<80){mx+=dx/d*.6;my+=dy/d*.6}}
-  const m=Math.hypot(mx,my)||1,sp=u.s.spd*1.1*dt*(u.slow>0?.5:1);u.x+=mx/m*sp;u.y+=my/m*sp;u.spdNow=u.s.spd;u.dir=Math.atan2(my,mx);u.face=mx>=0?1:-1;u.run=0;fatigueStep(u,dt,true,false,false);
+  const m=Math.hypot(mx,my)||1,sp=u.s.spd*1.1*dt*(u.slow>0?.5:1)*groundMul(u,mx/m,my/m);u.x+=mx/m*sp;u.y+=my/m*sp;u.spdNow=u.s.spd;u.dir=Math.atan2(my,mx);u.face=mx>=0?1:-1;u.run=0;fatigueStep(u,dt,true,false,false);
   if(u.team?u.x>=BW-MORALE.edge-2:u.x<=MORALE.edge+2){u.fled=true;if(u.team===1)B.fledFoes=(B.fledFoes||0)+1;else B.fledMine=(B.fledMine||0)+1;leaveField(u)}
 }
 // a soldier off the field (at its edge): out of the fight, alive (not a loss); its health kept for after (your hero's)
@@ -262,7 +263,7 @@ function withdrawStep(u,dt){
   if(atExit&&state.remaining===0){leave();return}
   const back=Math.min(dt,state.remaining||0);if(state.remaining>0)state.remaining=Math.max(0,state.remaining-back);
   const free=dt-back,walking=staOf(u)<FATIGUE.runMin,spd=u.s.spd*tiredMul(u).spd*(u.slow>0?.5:1),X=exitFor(u),dx=X.x-u.x,dy=X.y-u.y,d=Math.hypot(dx,dy);
-  const sp=Math.min(d,spd*(back*WITHDRAW.backstep+free*(walking?MARCH.walk:1)));
+  const sp=Math.min(d,spd*(back*WITHDRAW.backstep+free*(walking?MARCH.walk:1))*groundMul(u,dx/d,dy/d));
   if(d>.001){u.x+=dx/d*sp;u.y+=dy/d*sp;u.dir=Math.atan2(dy,dx);u.face=dx>=0?1:-1;u.walkA=u.dir;u.spdNow=free>0?spd*(walking?MARCH.walk:1):spd*WITHDRAW.backstep}
   if(back>0)fatigueStep(u,back,sp>0,true,false,threat);
   if(free>0)fatigueStep(u,free,sp>0,walking,false,threat);
@@ -291,9 +292,9 @@ function chargeMul(u,t){
   const m=momentum(u),s=u.s;u.run=0;if(s.range&&!s.charge||m<(s.charge?CHARGE.min:CHARGE.foot_min))return 1;fatigueCharge(u,m);// (the charge spends the runner's stamina: fatigue.js)
   if(spearBraced(t,u)){B.floats.push({x:t.x,y:t.y-22,t:'Braced',life:.6,c:'#cfe0ff'});return 1}
   if(s.charge){vfxCharge(u,t,m);chargeJolt(u,m);fx(t.x,t.y-6,'#fff',4);if(!B.noMorale&&!steady(t)&&t.mor!=null){shake(t,CHARGE.shock*m);t.shockAt=B.t;const r=resolveOf(t);if(r)r.shockAt=B.t}chargePush(u,t,m);if(m>.6)moraleSay(t,'Charge!','#fff',.6);
-    return 1+CHARGE.cav*m*formCharge(u,t,sideOf(t,u))}
+    return 1+CHARGE.cav*m*formCharge(u,t,sideOf(t,u))*groundCharge(u,t)}// (downhill harder, uphill softer, into woods halved: terrain.js)
   if(B.opts&&B.opts.tournament)return 1;// (a tournament: no foot charges; morale off still has them, only the shake goes)
-  if(!B.noMorale&&!steady(t)&&t.mor!=null){shake(t,CHARGE.footShock*m);t.shockAt=B.t;const r=resolveOf(t);if(r)r.shockAt=B.t}chargeJolt(u,m);chargePush(u,t,m);return 1+CHARGE.foot*m*formCharge(u,t,sideOf(t,u));
+  if(!B.noMorale&&!steady(t)&&t.mor!=null){shake(t,CHARGE.footShock*m);t.shockAt=B.t;const r=resolveOf(t);if(r)r.shockAt=B.t}chargeJolt(u,m);chargePush(u,t,m);return 1+CHARGE.foot*m*formCharge(u,t,sideOf(t,u))*groundCharge(u,t);
 }
 // a group's morale (unit cards and the icons over groups): the average, how many waver or run, its state, and what weakens it now
 // state: steady (60+), shaken (30+), wavering, routing (most of them running), shattered (all running, broken for good)

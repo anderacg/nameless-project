@@ -17,11 +17,12 @@ const shieldEligible=u=>!!(u.s&&!u.s.range&&!u.s.mounted&&!u.s.charge&&tagsOf(u.
 // Group flags request actions; each soldier must have the capability.
 const flagEligible=(u,f)=>f==='shieldWall'?shieldEligible(u):['melee','cease','skirmish'].includes(f)?!!u.s.range:true;
 const unitFlag=(u,f)=>!!(u.grp&&B.groups[u.grp]&&B.groups[u.grp][f]&&flagEligible(u,f));
-function wallReady(u){const g=u.grp&&B.groups[u.grp];return !!(unitFlag(u,'shieldWall')&&g.walk&&!g.run&&u.hp>0&&!u.rout&&!(u.stun>0)&&g.order!=='charge'&&g.order!=='withdraw')}
+// (no shield wall in woods, nor riders in the wedge there: woods break formations, terrain.js)
+function wallReady(u){const g=u.grp&&B.groups[u.grp];return !!(unitFlag(u,'shieldWall')&&g.walk&&!g.run&&u.hp>0&&!u.rout&&!(u.stun>0)&&g.order!=='charge'&&g.order!=='withdraw'&&!inWood(u))}
 function shieldWallActive(u){return wallReady(u)&&B.units.some(o=>o!==u&&o.team===u.team&&wallReady(o)&&Math.hypot(o.x-u.x,o.y-u.y)<=WALL.near&&angGap(B.groups[o.grp].face||0,B.groups[u.grp].face||0)<1.05)}
 function wedgeMembers(g){
   const gr=B.groups[g];if(!gr||gr.form!=='wedge')return [];
-  const m=grpUnits(g).filter(u=>!u.rout&&!withdrawing(u)&&u.s.charge&&!(u.stun>0));if(!m.length)return [];
+  const m=grpUnits(g).filter(u=>!u.rout&&!withdrawing(u)&&u.s.charge&&!(u.stun>0)&&!inWood(u));if(!m.length)return [];
   // Inferred median anchors reject distant stragglers while allowing the wedge to move.
   const median=a=>a.sort((a,b)=>a-b)[Math.floor(a.length/2)],x=median(m.map(u=>u.x-(u.sx||0))),y=median(m.map(u=>u.y-(u.sy||0)));
   return m.filter(u=>Math.hypot(u.x-x-(u.sx||0),u.y-y-(u.sy||0))<=WEDGE.slot&&angGap(u.dir??gr.face,gr.face||0)<1.05);

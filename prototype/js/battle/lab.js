@@ -5,6 +5,7 @@ class LabBattleSetup extends BattleSetup{
   spawn(...args){const u=super.spawn(...args);u.s=structuredClone(u.s);return u}
   createUnits(){
     const c=this.config;this.env={c:c.climate,t:{open:T_OPEN,forest:T_FOREST,hill:T_HILL}[c.terrain],name:'Battle laboratory',text:'Test battle: no campaign rewards or losses.'};
+    this.ground=this.groundSpec();groundEnv(this.env,this.ground);// (its ground, before anyone spawns: terrain.js)
     const hero=this.hero=this.spawn(charOf(P),0,72,BH/2);hero.hp=0;
     for(const [team,rows] of [[0,c.leftGroups],[1,c.rightGroups]])rows.forEach((row,index)=>{
       const id=row.type==='hero'?'hero':'lab_'+(team?'r_':'l_')+index,character=Object.hasOwn(COMPS,row.type),
@@ -18,6 +19,12 @@ class LabBattleSetup extends BattleSetup{
       });
     });
   }
+  /* the lab's ground (config.ground): 'none' (no terrain, the old whole-field hill rule), 'auto' (the recipe of its terrain and
+     climate, seeded by its seed), {recipe, seed, oasis} (a recipe by name, fairness-checked; oasis: a desert's by water) or {hills, woods, marsh, seed} (its own
+     features: x, y as shares of the field, r in px, a hill's top 1-2; no fairness checks). Not tied to TERRAIN.on */
+  groundSpec(){const c=this.config,g=c.ground;if(!g||g==='none'||!this.env)return null;
+    if(g==='auto')return{recipe:terrainRecipeOf(this.env.t,this.env.c,0),seed:c.seed};
+    return g.recipe?{recipe:g.recipe,seed:g.seed??c.seed,oasis:!!g.oasis}:{explicit:g,seed:g.seed??c.seed}}
   createGroups(){
     super.createGroups();const c=this.config,top=this.field.top,bottom=this.field.bot;
     for(const row of this.rows){const gr=this.groups[row.id],m=this.units.filter(u=>u.grp===row.id),rows=row.team?c.rightGroups:c.leftGroups;
@@ -60,7 +67,7 @@ const BattleLab={
   validate(raw){
     if(!raw||typeof raw!=='object'||Array.isArray(raw))throw Error('Supply a battle configuration.');
     const mode=raw.mode||(raw.leftGroups!==undefined||raw.rightGroups!==undefined?'army':'duel');if(!['duel','army'].includes(mode))throw Error('Unknown battle configuration mode.');
-    const c={left:'hum_bow',leftCount:1,right:'hum_foot',rightCount:1,distance:220,terrain:'open',climate:'grass',seed:42,ai:true,paused:true,morale:true,deploy:mode==='army',...raw,mode};
+    const c={left:'hum_bow',leftCount:1,right:'hum_foot',rightCount:1,distance:220,terrain:'open',climate:'grass',seed:42,ai:true,paused:true,morale:true,deploy:mode==='army',ground:'none',...raw,mode};
     for(const [side,team] of [['left',0],['right',1]]){
       const rows=c[side+'Groups']??[{type:c[side],count:c[side+'Count']}],seen=new Set();
       if(!Array.isArray(rows)||!rows.length||rows.length>ARMY_LIMIT||mode==='duel'&&rows.length!==1)throw Error('Each army needs 1–10 groups, including characters.');
@@ -81,8 +88,20 @@ const BattleLab={
     if(!['open','forest','hill'].includes(c.terrain)||!CLIMS.includes(c.climate))throw Error('Unknown terrain or climate.');
     if(!Number.isInteger(c.seed)||c.seed<0||c.seed>4294967295)throw Error('Seed must be an unsigned 32-bit integer.');
     for(const k of ['ai','paused','morale','deploy'])if(typeof c[k]!=='boolean')throw Error(k+' must be true or false.');
-    return Object.fromEntries(['mode','leftGroups','rightGroups','distance','terrain','climate','seed','ai','paused','morale','deploy'].map(k=>[k,c[k]]));
+    c.ground=this.validGround(c.ground);
+    return Object.fromEntries(['mode','leftGroups','rightGroups','distance','terrain','climate','seed','ai','paused','morale','deploy','ground'].map(k=>[k,c[k]]));
   },
+  // (the ground key, normalized: see LabBattleSetup.groundSpec)
+  validGround(g){
+    if(g==null||g==='none'||g==='auto')return g??'none';const bad=m=>{throw Error('Ground: '+m)};if(typeof g!=='object'||Array.isArray(g))bad("use 'none', 'auto', {recipe, seed} or {hills, woods, marsh, seed}.");
+    const seed=g.seed==null?undefined:g.seed;if(seed!==undefined&&!(Number.isInteger(seed)&&seed>=0&&seed<=4294967295))bad('seed must be an unsigned 32-bit integer.');
+    if(g.recipe!=null){if(!Object.hasOwn(TERRAIN_RECIPE,g.recipe))bad('unknown recipe ('+Object.keys(TERRAIN_RECIPE).join(', ')+').');const r={recipe:g.recipe};if(seed!==undefined)r.seed=seed;if(g.oasis)r.oasis=true;return r}
+    const num=(v,a,b)=>typeof v==='number'&&Number.isFinite(v)&&v>=a&&v<=b,out={};
+    for(const k of ['hills','woods','marsh']){const l=g[k]??[];if(!Array.isArray(l)||l.length>8)bad(k+' must be a list of at most 8.');
+      out[k]=l.map(p=>{if(!p||!num(p.x,0,1)||!num(p.y,0,1)||!num(p.r,16,400))bad(k+' need x, y (0-1) and r (16-400 px).');
+        if(k!=='hills')return{x:p.x,y:p.y,r:p.r};const top=p.top??1;if(top!==1&&top!==2)bad('a hill top is 1 or 2.');
+        const h={x:p.x,y:p.y,r:p.r,top};for(const q of ['rx','ry'])if(p[q]!=null){if(!num(p[q],16,600))bad(q+' must be 16-600 px.');h[q]=p[q]}return h})}
+    if(seed!==undefined)out.seed=seed;return out},
   builtins(){return [
     {name:'Combined arms',config:{leftGroups:[{type:'hum_foot',count:20},{type:'hum_bow',count:12},{type:'hum_knight',count:6,form:'wedge'}],rightGroups:[{type:'hum_foot',count:20},{type:'hum_bow',count:12},{type:'hum_knight',count:6,form:'wedge'}]}},
     {name:'Duplicate formations',config:{leftGroups:[{type:'hum_foot',count:15,name:'Left guard'},{type:'hum_foot',count:15,name:'Right guard'},{type:'hum_bow',count:12}],rightGroups:[{type:'dw_clan',count:15},{type:'dw_clan',count:15},{type:'dw_sling',count:12}]}},

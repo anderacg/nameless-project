@@ -19,7 +19,7 @@ function testGroup(role){
   // escape (odds, being caught) is tested on its own through flee() (tests/flee.js)
   s.onload=()=>{try{const act0=(0,eval)('act');window.__act0=act0;(0,eval)('act=function(a,arg){if(a==="flee"&&G.enc){G.enc.mine=true;G.enc.noFlee=false;if(G.enc.ref)delete G.enc.ref.sab;G.enc.foes=[]}return __act0(a,arg)}');
     const seed=new URLSearchParams(location.search).get('seed');if(seed!==null&&/^\d+$/.test(seed))Math.random=T.seeded(+seed);
-    T.G.quietEvents=true;(0,eval)('BDEPLOY.on=false;BAUTO.on=false');RUN();
+    T.G.quietEvents=true;(0,eval)('BDEPLOY.on=false;BAUTO.on=false;TERRAIN.on=false');RUN();// (terrain: the older suites see today's flat field; tests/terrain.js turns it on)
     // Assertions are synchronous. Once the report exists, stop animating the finished scene while Chrome waits to dump it.
     if(document.getElementById('OUT'))window.requestAnimationFrame=()=>0;
   }catch(e){fail('EXC '+e.message+'\n'+e.stack)}};

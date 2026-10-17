@@ -102,9 +102,17 @@ function drawUnit(u){
   if(u.buffT>0){ctx.fillStyle='rgba(232,185,74,.35)';ctx.fillRect(x-6,y-2,12,3)}
   const hit=u.hitAt!=null&&B.t-u.hitAt<.09;
   // (moving: a step in the last few frames, so a man who stops and starts as he settles does not flicker between standing and walking)
-  {const step=u.plx!=null&&Math.hypot(u.x-u.plx,u.y-u.ply)>.02;u.plx=u.x;u.ply=u.y;u.movF=step?6:Math.max(0,(u.movF||0)-(B.paused?0:1));const moved=u.movF>0;const beast=!!(ST[u.type]&&ST[u.type].beast),pose=beast?0:procPose(u,moved),sp=beast?(pose?unitSprite(u.type,u.team,u.hero,u.v,pose):s):unitSprite(u.type,u.team,u.hero,u.v,pose,true,!!u.inMelee);
+  {const step=u.plx!=null&&Math.hypot(u.x-u.plx,u.y-u.ply)>.02;u.plx=u.x;u.ply=u.y;u.movF=step?6:Math.max(0,(u.movF||0)-(B.paused?0:1));const moved=u.movF>0;const beast=!!(ST[u.type]&&ST[u.type].beast),cl=moved&&typeof climbState==='function'?climbState(u):null;let pose=beast?0:procPose(u,moved);
+    // (on a hill's slope (the ground's climbState): walking or running up, bent forward on short slow steps; down, leaning on long ones)
+    if(cl&&((pose>=2&&pose<=5)||(pose>=15&&pose<=18)))pose=cl==='up'?19+Math.floor(B.t*5+(u.v||0))%4:23+Math.floor(B.t*9+(u.v||0))%4;
+    const sp=beast?(pose?unitSprite(u.type,u.team,u.hero,u.v,pose):s):unitSprite(u.type,u.team,u.hero,u.v,pose,true,!!u.inMelee);
     let bx=0,bo=0;if(beast){if(moved)bo=-(Math.floor(B.t*8+(u.v||0))%2);if(u.atkAt!=null&&B.t-u.atkAt<ATK_ANIM)bx=Math.round(3*Math.sin((B.t-u.atkAt)/ATK_ANIM*Math.PI))}
-    ctx.save();ctx.translate(x,y-z+bo);if(u.face<0)ctx.scale(-1,1);if(ghost)ctx.globalAlpha=.55;ctx.drawImage(hit?whiteOf(sp):sp,-Math.floor(sp.width/2)+bx,-sp.height+2);if(!beast)drawHeld(u,u.inMelee?sidearmLook(u):unitLook(u),sp,-Math.floor(sp.width/2)+bx,-sp.height+2,hit);ctx.restore()}// (his weapon in his hand: weapons.js)
+    ctx.save();ctx.translate(x,y-z+bo);if(u.face<0)ctx.scale(-1,1);if(ghost)ctx.globalAlpha=.55;ctx.drawImage(hit?whiteOf(sp):sp,-Math.floor(sp.width/2)+bx,-sp.height+2);if(!beast)drawHeld(u,u.inMelee?sidearmLook(u):unitLook(u),sp,-Math.floor(sp.width/2)+bx,-sp.height+2,hit);ctx.restore();
+    // (climbing: a little grit trickles down the slope behind him now and then; coming down, a puff at the heel: from his id and the
+    // battle's time, drawn only)
+    if(cl){const ph=(B.t*(cl==='up'?2.2:3)+((u.id||0)*.37))%1,dc=B.env.c==='frost'?'#e8eef4':B.env.c==='desert'?'#e6cc96':'#a8987a';
+      if(cl==='up'&&ph<.4){const f=u.face<0?1:-1;ctx.fillStyle=dc;ctx.fillRect(Math.round(x+f*3),Math.round(y+1+ph*10),1,1);ctx.fillStyle='#6e6252';ctx.fillRect(Math.round(x+f*5),Math.round(y+ph*7),1,1)}
+      else if(cl==='down'&&ph<.25){ctx.fillStyle=dc;ctx.globalAlpha=.7;ctx.fillRect(Math.round(x-(u.face<0?-4:4)),Math.round(y-1),2,1);ctx.globalAlpha=1}}}// (his weapon in his hand: weapons.js)
   drawStuck(u,x,y-Math.round(u.z||0));// (arrows in him: vfx.js)
   if(u.buffT>0&&Math.random()<.06)vfx({k:'ember',x:u.x+rnd(-4,4),y:u.y-rnd(2,12),vx:rnd(-4,4),vy:-rnd(10,25),life:rnd(.4,.7),col:'#ffd25a'});// (inspired: golden sparks)
   if(u.stun>0)txt('*',x+(Math.floor(performance.now()/120)%2?3:-3),y-h-z-2,'#ffe08a','center');
@@ -137,7 +145,8 @@ function drawBattle(){
   warmStep();// (sprites made ahead before they are needed: sprites.js)
   // the camera (camera.js): the field drawn at its zoom and pan, the HUD over it at the screen's scale
   if(B.cam)camTick();const Cz=B.cam?B.cam.z:1;ctx.fillStyle='#07090e';ctx.fillRect(0,0,BVW,BVH);ctx.save();if(B.cam){ctx.scale(Cz,Cz);ctx.translate(-Math.round(B.cam.x*Cz)/Cz,-Math.round(B.cam.y*Cz)/Cz)}
-  ctx.drawImage(B.arena,0,0);{const t=fieldTop()-FIELD_EDGE.body+6,b=fieldBot()+4;ctx.fillStyle='rgba(8,10,16,.35)';if(t>0)ctx.fillRect(0,0,BW,t);if(b<BH)ctx.fillRect(0,b,BW,BH-b);ctx.fillStyle='rgba(232,224,200,.18)';if(t>0)ctx.fillRect(0,t,BW,1);if(b<BH)ctx.fillRect(0,b,BW,1)}// (the field's edges in sight: battle.js fieldTop)
+  // (a field with terrain: its own ground, painted once over the arena: engine/ground.js; units, as ever, over it)
+  ctx.drawImage(B.terrain?B.ground||(B.ground=PX.battleGround({...B.terrain,climate:B.env.c,base:B.arena})):B.arena,0,0);{const t=fieldTop()-FIELD_EDGE.body+6,b=fieldBot()+4;ctx.fillStyle='rgba(8,10,16,.35)';if(t>0)ctx.fillRect(0,0,BW,t);if(b<BH)ctx.fillRect(0,b,BW,BH-b);ctx.fillStyle='rgba(232,224,200,.18)';if(t>0)ctx.fillRect(0,t,BW,1);if(b<BH)ctx.fillRect(0,b,BW,1)}// (the field's edges in sight: battle.js fieldTop)
   if(!B.deploy)drawExit();drawDeploy();// (the withdrawal edge: morale.js; the deployment zone: deploy.js)
   drawCorpses();vfxGround();// (the fallen and their blood; dust, shockwaves: vfx.js)
   for(const g of playerGroups()){const gr=B.groups[g];if((gr.order!=='hold'&&gr.order!=='advance')||!grpUnits(g).length)continue;

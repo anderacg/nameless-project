@@ -29,7 +29,7 @@ function shakeIt(n){G.shake=Math.max(G.shake,n)}
 function earnXp(u,t,was){if(!u||u.team!==0||u.hero||u.comp||u.lord||u.leader||!t||t.team===0)return;const dealt=Math.max(0,was-Math.max(0,t.hp));
   u.xp=(u.xp||0)+dealt*TROOP_XP.dmg+(was>0&&t.hp<=0?TROOP_XP.kill*(ST[t.type]&&ST[t.type].tier||1):0)}
 function hit(att,t,dm,dt){
-  const m=matchup(att.s,t.s,dt);dm*=m*(att.buffT>0?1.3:1);if(att.comp)compTrain(att.type,compMeleeSk(att.type),2);
+  const m=matchup(att.s,t.s,dt);dm*=m*(att.buffT>0?1.3:1)*groundHit(att,t);/* (from high ground harder, from marsh softer: terrain.js) */if(att.comp)compTrain(att.type,compMeleeSk(att.type),2);
   if(t.hero&&B.blocking){const a=Math.atan2(att.y-t.y,att.x-t.x),df=angGap(a,B.aim);if(df<1.25&&guard(dm)){dm*=blockMul();fx(t.x+Math.cos(B.aim)*10,t.y-6,'#cfe0ff',5);B.floats.push({x:t.x,y:t.y-14,t:'Block',life:.5,c:'#9fc0ff'})}}
   const was=t.hp;applyDmg(t,dm*formTaken(t,att)*flankMul(t,att),m,dt||dtOf(att.s),att,false);vfxHit(att,t,dm);earnXp(att,t,was);// (its formation: formations.js; the side it is hit on: morale.js)
 }

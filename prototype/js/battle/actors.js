@@ -146,9 +146,10 @@ function aiUnit(u,dt,strike){
   if(mv&&chase&&!back&&!(t&&!s.range&&de<reach+CROWD.slack)){u.stk=(u.stk||0)+dt;if(u.stk>.5){if(u.sx0!=null&&Math.hypot(u.x-u.sx0,u.y-u.sy0)<3){u.side=u.side||(Math.random()<.5?-1:1);u.sideT=.6}u.stk=0;u.sx0=u.x;u.sy0=u.y}
     if(u.sideT>0){u.sideT-=dt;const px=-my*u.side,py=mx*u.side;mx=mx*.3+px;my=my*.3+py;const l=Math.hypot(mx,my)||1;mx/=l;my/=l}}else{u.stk=0;u.sx0=u.x;u.sy0=u.y}
   if(mv&&!wk)footDust(u,dt);// (running: dust from their feet, vfx.js)
-  if(mv){const sp=spd*dt*(u.slow>0?.5:1)*(u.buffT>0?1.25:1);u.x+=mx*sp;u.y+=my*sp;u.spdNow=spd;
+  // (the ground: woods, marsh, slopes slow him or speed him, and build his charge slower or faster: terrain.js)
+  if(mv){const sp=spd*dt*(u.slow>0?.5:1)*(u.buffT>0?1.25:1)*groundMul(u,mx,my);u.x+=mx*sp;u.y+=my*sp;u.spdNow=spd;
     // (he faces where he goes, backing off too (no walking backwards): he turns to his foe again when he stops to shoot)
-    if(Math.abs(mx)>.35)u.face=mx>0?1:-1;u.dir=Math.atan2(my,mx);u.run=chase&&!back&&!wk?(u.run||0)+sp*tm.run:spurred?u.run:0}
+    if(Math.abs(mx)>.35)u.face=mx>0?1:-1;u.dir=Math.atan2(my,mx);u.run=chase&&!back&&!wk?(u.run||0)+sp*tm.run*groundRun(u,mx,my,sp):spurred?u.run:0}
   else{if(t){if(Math.abs(dx)>3&&!(s.range&&!roundFire(u)))u.face=dx>=0?1:-1;if(!u.inSlot)u.dir=Math.atan2(dy,dx)}if(!spurred)u.run=Math.max(0,(u.run||0)-CHARGE.run*dt)}
   // (facing: where it marches or whom it fights; momentum: the run at its target, spent on its first blow; spurred, kept: unitabilities.js)
   fatigueStep(u,dt,mv,wk,chase&&!back&&!!t&&!wk,!!t&&de<=reach+8);
@@ -186,7 +187,7 @@ function updateHero(dt){
   if(dx||dy)B.mt=null;else if(B.mt){const ex=B.mt.x-h.x,ey=B.mt.y-h.y,ed=Math.hypot(ex,ey);if(ed<3)B.mt=null;else{dx=ex/ed;dy=ey/ed}}
   const l=Math.hypot(dx,dy);
   const X=heroState(),run=l>0&&G.keys.shift&&!B.blocking&&X.sp>0;if(run){X.sp=Math.max(0,X.sp-STAM.sprint*dt);X.spT=0}
-  if(l>0){dx/=l;dy/=l;const sp=h.s.spd*(B.blocking?.55:1)*(B.draw?.6:1)*(run?SPRINT_MUL:1)*(h.slow>0?.5:1)*dt;h.x+=dx*sp;h.y+=dy*sp;h.face=dx>=0?1:-1;h.spdNow=h.s.spd;if(run)train('athl',dt*.4)}
+  if(l>0){dx/=l;dy/=l;const sp=h.s.spd*(B.blocking?.55:1)*(B.draw?.6:1)*(run?SPRINT_MUL:1)*(h.slow>0?.5:1)*groundMul(h,dx,dy)*dt;h.x+=dx*sp;h.y+=dy*sp;h.face=dx>=0?1:-1;h.spdNow=h.s.spd;if(run)train('athl',dt*.4)}
   if(G.mouse.in&&G.mouse.type==='mouse')B.aim=Math.atan2(G.mouse.y-(h.y-6),G.mouse.x-h.x);
   else{const n=nearest(h);if(n)B.aim=Math.atan2(n.y-h.y,n.x-h.x)}
 }

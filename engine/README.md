@@ -7,7 +7,9 @@ Reusable procedural pixel-art generators. They are plain scripts with no build s
 | `pixel.js` | `PX.rng`, `PX.dice`, `PX.hash` (seeded randomness); `PX.shade`, `PX.mix` (colour); `PX.canvas`, `PX.paint` (rect, px, poly, line); `PX.outline` (the dark rim characters and buildings share); `PX.MAT` (the medieval palette, by material) |
 | `buildings.js` | `PX.building({type, style, seed, banner, facing, deep})` returns `{img, shadow, w, h, ax, ay, tiles, facing, deep}` for a 16 px tile map; `PX.BUILDING_TYPES` lists the types |
 | `pieces.js` | `PX.prop({type})`: 8×8 yard props. `PX.pier` (`PX.boat` is legacy: the game moors the sailing ships' sprites, `ships.js` `shipSprite({moored:true})`), and `PX.camp({kind, seed})`: a bandit camp is one or two tents and a fire on 2×2 tiles; a hideout is the same ringed by barricades of spiked logs (4×4); travellers have two tents, a fire and their wagon (3×2). It returns `flag` (the foot of a flag pole, for the game's own flag) and `fire` (the foot of the flame). `PX.flame(frame)`: the flame, frames 0–3, for the game to animate. There are no wall pieces: a holding's walls are its centre's fortification (`spec.fort`) |
-| `gallery.html` | a preview of every building type for each people across seeds; it takes the URL options `?z=4&n=8&only=keep`; `?view=props` shows the props and camps; `?only=sites` the sites; `?view=castles` the keeps, citadels, villages and halls |
+| `ground.js` | `PX.battleGround({C,R,cs,kind,lvl,climate,seed,base})`: a battle's terrain (doc/TERRAIN_DESIGN.md §4: terraces 0–2 as raised plateaus with cliff faces, woods of mixed species on the flat or on hills, lone trees and copses, marsh, small details by climate; desert bare, its water an oasis) painted once over the climate's arena canvas `base`, the field's size; `PX.battleGroundMini(spec,ground)`: the small map, a pixel a cell; `PX.GROUND_PAL` the palettes by climate. Seeded, never `Math.random` |
+| `ground-fixture.js` | previews only (not loaded by the game): `PX.groundFixture({recipe,C,R,seed})`, stand-in terrain in the §4 shape (`hills`, `forest`, `marsh`, `mixed`, `hillwoods`, `oasis`) |
+| `gallery.html` | a preview of every building type for each people across seeds; it takes the URL options `?z=4&n=8&only=keep`; `?view=props` shows the props and camps; `?only=sites` the sites; `?view=castles` the keeps, citadels, villages and halls; `?view=ground` the battlefield ground, each recipe in each climate (`&only=hills`, `&z=2`, `&seed=`) |
 
 ## Building conventions
 - **Cells (the sizing rule):**
@@ -76,4 +78,4 @@ None of them is in `PX.BUILDING_TYPES`, and `PX.building` refuses them.
 A pier is drawn without water, to be laid over real water tiles.
 
 ## Loading
-In a page: `<script src="../engine/pixel.js"></script>`, then `buildings.js`, then `pieces.js`.
+In a page: `<script src="../engine/pixel.js"></script>`, then `buildings.js`, then `pieces.js`, then `ground.js`.
