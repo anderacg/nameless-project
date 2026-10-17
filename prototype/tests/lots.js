@@ -2,7 +2,7 @@
 // Placed buildings (lots.js): every holding is laid out from its centre, its own way; its walls are the centre's fortification;
 // you place what you build, it takes time (less with more people), upgrades need what they need; houses hold the people, and
 // a full holding grows no more and sends people away; the realms build houses as they fill; saves keep every building.
-window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);
+window.RUN=()=>{window.__ls=window.__ls||T.lotSpot;const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);
 try{
  const t=T,G=t.G,P=t.P,W=t.W,TILE=t.TILE;try{localStorage.clear()}catch(e){}
  t.act('begin','soldier');G.quietEvents=true;const TW=t.TOWNS;
@@ -33,9 +33,18 @@ try{
  {const z=t.townBy('Brookhollow');t.ensureEcon(z);z.pop=t.housing(z);z.pros=80;const c={fs:1,sat:1,kinds:3};for(let i=0;i<5;i++)t.people(z,c);ok(z.pop<=t.housing(z),'a full holding grows no more ('+z.pop+' people, room for '+t.housing(z)+')');
   ok(t.fleeReason(z)==='crowded'||t.fleeReason(z)!=='','and its people have reason to leave ('+t.fleeReason(z)+')');
   z.owner=z.owner==='player'?t.HOME[z.name]:z.owner;z.work=null;t.ensureEcon(z);z.stock.timber=100;z.stock.tools=20;W.treas[z.owner]=5000;const h0=z.lots.filter(l=>l.k==='house').length;
-  for(let i=0;i<60&&!(z.work&&z.work.k==='house');i++){G.day++;z.work=null;t.estateDay()}ok(z.work&&z.work.k==='house'||z.lots.filter(l=>l.k==='house').length>h0,'its realm builds it another house')}
+  // a realm takes up a project on a holding on about 1 day in 20 (estateDay), so 60 days missed it on some worlds (about 1 in 20,
+  // more on some seeds): give it 200 days (a miss is then ~1 in 30,000) on a seeded draw, so every run sees the same days
+  const r0=Math.random;Math.random=t.seeded(7);try{for(let i=0;i<200&&!(z.work&&z.work.k==='house');i++){G.day++;z.work=null;t.estateDay()}}finally{Math.random=r0}ok(z.work&&z.work.k==='house'||z.lots.filter(l=>l.k==='house').length>h0,'its realm builds it another house')}
  // ---- saves keep every building
  {t.syncLots(ash);G.mode='world';G.modal=false;t.hidePanel();const n0=ash.lots.length,ids=ash.lots.map(l=>l.id+l.type).join();t.saveGame(true);t.loadGame();const a2=t.townBy('Ashford');
   ok(a2.lots.length===n0&&a2.lots.map(l=>l.id+l.type).join()===ids&&a2.lots.every(l=>t.occAt(l.x,l.y)===l.id),'a save keeps every building where it stands ('+n0+' at Ashford)')}
+ // no free plot for a house: nothing is spent (the realm's gold and the holding's materials stay; your gold stays)
+ {const q=t.TOWNS.find(x=>x.owner!=='player'&&x.lots&&x.lots.length&&!x.work),mats=t.HOUSE_COST.mats,ls=t.lotSpot,r0=Math.random;
+  q.pop=t.housing(q)+5;for(const g in mats)q.stock[g]=(q.stock[g]||0)+50;W.treas[q.owner]=1e5;const st0=JSON.stringify(mats&&Object.keys(mats).map(g=>q.stock[g])),tr0=W.treas[q.owner];
+  try{(0,eval)('lotSpot=()=>null');Math.random=()=>0;t.estateDay()}finally{Math.random=r0;(0,eval)('lotSpot=window.__ls||lotSpot')}
+  ok(!(q.work&&q.work.k==='house')&&JSON.stringify(Object.keys(mats).map(g=>q.stock[g]))===st0&&W.treas[q.owner]===tr0,'a realm with no free plot for a house spends neither gold nor materials');
+  q.work=null;P.gold=1e4;const pg=P.gold,st1=JSON.stringify(Object.keys(mats).map(g=>q.stock[g]));
+  try{(0,eval)('lotSpot=()=>null');ok(!t.buildHouse(q)&&P.gold===pg&&JSON.stringify(Object.keys(mats).map(g=>q.stock[g]))===st1,'your house order with no free plot costs you nothing')}finally{(0,eval)('lotSpot=window.__ls')}}
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}
 const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d)};

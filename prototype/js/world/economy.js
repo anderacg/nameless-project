@@ -96,6 +96,8 @@ function payRealm(f,gold,t,food){
   if(food&&t){ensureEcon(t);if(foodStock(t)<food&&!light)return false;takeFood(t.stock,food)}
   W.treas[f]-=gold;return true;
 }
+// give back what payRealm took (a project that could not start after all)
+function refundRealm(f,gold){if(ECON.mode==='off'||!f||f==='player')return;W.treas[f]+=gold*(ECON.mode==='light'?.5:1)}
 // is a realm worn out by its economy (broke, or a third of its holdings hungry)? it leans toward peace
 const econWeary=f=>ECON.mode!=='off'&&(treas(f)<0||fiefsOf(f).filter(t=>t.stock&&foodDays(t)<2).length>fiefsOf(f).length/3);
 function realmDay(){

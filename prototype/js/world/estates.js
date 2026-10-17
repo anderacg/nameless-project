@@ -73,7 +73,7 @@ function estateDay(){
     // what to build: walls on the frontier, then whatever the holding is shortest of
     const front=TOWNS.some(o=>o!==t&&atWar(t.owner,o.owner)&&Math.hypot(o.tx-t.tx,o.ty-t.ty)<60);
     // a full holding builds a house first (its people have nowhere else to go)
-    if(t.lots&&t.pop>=housing(t)*.9&&!matsLacking(t,HOUSE_COST.mats).length&&payRealm(t.owner,HOUSE_COST.gold)){takeMats(t,HOUSE_COST.mats);startWork(t,'house',HOUSE_DAYS);continue}
+    if(t.lots&&t.pop>=housing(t)*.9&&!matsLacking(t,HOUSE_COST.mats).length&&payRealm(t.owner,HOUSE_COST.gold)){if(startWork(t,'house',HOUSE_DAYS))takeMats(t,HOUSE_COST.mats);else refundRealm(t.owner,HOUSE_COST.gold);continue}// (no free plot: nothing spent)
     let k=null;if(wallOf(t)<t.T.wallMax&&(front||Math.random()<.2))k='wall';
     else{const ks=Object.keys(ESTATES).filter(e=>bldLv(t,e)<bldCap(t,e)&&(bldLv(t,e)||needsMet(t,e)));ensureEcon(t);
       const want=e=>{const gs=ESTATES[e].goods;let w=gs.reduce((a,g)=>a+Math.max(0,1-(t.stock[g]||0)/targetStock(t,g)),0);if(e==='granary')w+=foodDays(t)<5?.6:0;if(e==='market')w+=.3;return w+Math.random()*.3};

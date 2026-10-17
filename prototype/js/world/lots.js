@@ -197,8 +197,8 @@ function placeClick(wx,wy){
   if(t.work)G.place=null;
 }
 function buildHouse(t,at){
-  if(t.work||P.gold<HOUSE_COST.gold||matsLacking(t,HOUSE_COST.mats).length)return false;P.gold-=HOUSE_COST.gold;takeMats(t,HOUSE_COST.mats);
-  if(!startWork(t,'house',HOUSE_DAYS,at)){P.gold+=HOUSE_COST.gold;return false}log('Builders start on a new house in '+t.name+'.');return true;
+  if(t.work||P.gold<HOUSE_COST.gold||matsLacking(t,HOUSE_COST.mats).length)return false;P.gold-=HOUSE_COST.gold;
+  if(!startWork(t,'house',HOUSE_DAYS,at)){P.gold+=HOUSE_COST.gold;return false}takeMats(t,HOUSE_COST.mats);// (materials only once it starts)log('Builders start on a new house in '+t.name+'.');return true;
 }
 // pull a building down: half of what it last cost comes back; its estate is gone
 function demolish(t,l){
