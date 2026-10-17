@@ -58,6 +58,10 @@ try{
  quiet();P.fac=null;P.hostile={horde:G.day+90};const t3=t.TOWNS.find(x=>x.owner==='horde'&&x.kind!=='village');army();at(t3);t.updateWorld(.01);t.act('sg-camp');t.act('sg-wait');t3.gar=2;t.FOODS.forEach(g=>t3.stock[g]=0);['farm','pasture','port'].forEach(k=>t3.bld[k]=0);days(3);
  at(t3);G.lastTown=t3;t.updateWorld(.01);ok(G.mode==='capture'&&t3.gar===0,t3.name+' starves and surrenders');t.act('cap-leave');t.act('cont');done();
  ok(t3.owner==='horde'&&t3.gar===1&&t3.sacked>G.day,'sack and leave: it stays theirs, ruined and empty');
+ // a walled village is a siege, not a raid: the raid's precondition is no walls, not merely being a village
+ {quiet();army();vil.wall=1;at(vil);t.openSiege(vil);const raidState=()=>JSON.stringify({troops:P.troops,gold:P.gold,gar:vil.gar,raid:P.raid}),rs0=raidState();
+ ok(t.walled(vil)&&!!document.querySelector('[data-act="sg-camp"]')&&!document.querySelector('[data-act="sg-raid-auto"]'),'a fortified village offers a siege camp, not a raid');
+ t.act('sg-raid-auto');ok(raidState()===rs0&&!P.raid,'a direct raid command cannot bypass the wall requirement');t.act('sg-leave')}
  // raid a village (unwalled: days of world simulation above can build it a palisade, and then it is a siege, not a raid;
  // the world's dice are seeded from here, so the raid plays out the same every run)
  {const r0=Math.random;Math.random=t.seeded(6201);try{

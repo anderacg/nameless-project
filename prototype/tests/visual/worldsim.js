@@ -1,5 +1,5 @@
 'use strict';
-// World sim report: five 120-day campaigns. Prints holdings over time and diplomacy counts; it never fails on balance.
+// Report, not a test (run by name: run-tests.ps1 -Suites visual/worldsim): five 120-day campaigns. Prints holdings over time and diplomacy counts; it never fails on balance.
 window.RUN=()=>{const o=[];
 try{const t=T,G=t.G,P=t.P,W=t.W;
  for(let run=0;run<5;run++){

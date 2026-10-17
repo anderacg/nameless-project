@@ -1,6 +1,6 @@
 'use strict';
 // Monsters: habitats, hunting vs passive, abilities, levels, XP and loot, gear stats, trophy sales, save/load.
-// The BAL lines report how a 12-troop army fares against each monster; they never fail.
+// (How a 12-troop army fares against each monster: visual/monsterbalance.js.)
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);
 try{
  const t=T,G=t.G,P=t.P,W=t.W,MONSTERS=t.MONSTERS,ST=t.ST;try{localStorage.clear()}catch(e){}
@@ -22,7 +22,7 @@ try{
  const win=(id,lv,force)=>{const m=near(id,lv);if(force)MONSTERS[id].gear=MONSTERS[id].gear.map(([g])=>[g,1]);G.encCool=0;t.startMonster(m);
    const xp0=P.xp+P.level*1000;t.act('fight');const B=t.B,mu=B.units.find(u=>u.type===MONSTERS[id].unit);
    let seen={pounce:0,web:0,heal:0},i=0;
-   while(t.B&&i<12000){B.units.forEach(u=>{if(u.team===0)u.hp=u.max});const hp=mu.hp;t.updateBattle(.033);if(t.B){t.frame();
+   while(t.B&&i<12000){B.units.forEach(u=>{if(u.team===0)u.hp=u.max});const hp=mu.hp;t.updateBattle(.033);if(t.B){if(i%15===0)t.frame();/* (drawn now and then: what is seen is read from the simulation) */
      if(B.floats.some(f=>f.t==='POUNCE'))seen.pounce=1;if(B.units.some(u=>u.slow>0))seen.web=1;if(mu.hp>hp&&mu.hp>0)seen.heal=1}i++}
    if(G.loot)t.act('lt-all');// carry the spoils off
    return{m,mu,seen,xp:P.xp+P.level*1000-xp0}};
@@ -41,11 +41,6 @@ try{
  t.invAdd('gear','bearcoat',1);const g1=P.gold;t.act('tab','trade');t.act('sell-item',String(slotOf('gear','bearcoat')));ok(P.gold>g1&&!t.invCount('gear','bearcoat'),'sell spare gear (+'+(P.gold-g1)+'g)');t.act('leave');done();
  // save and load
  const n=W.monsters.length;t.saveGame();W.monsters=[];P.gear.weapon=null;t.act('load');ok(W.monsters.length===n&&P.gear.weapon==='clawblade','save/load keeps monsters and gear');
- // balance report: 12 tier-2 troops plus the hero, 3 fights per monster at level 1 and 3
- for(const id of Object.keys(MONSTERS).filter(id=>!MONSTERS[id].mythic)){const res=[];for(const lv of [1,3]){let w=0,lost=0;for(let k=0;k<3;k++){P.troops={hum_spear:6,hum_long:3,hum_squire:3};
-   reset();const m=near(id,lv);m.n=MONSTERS[id].count[1];G.encCool=0;t.startMonster(m);t.act('fight');let i=0;while(t.B&&i<12000){t.updateBattle(.033);i++}
-   if(!W.monsters.includes(m))w++;lost+=12-t.troopCount();t.act('cont');done();W.monsters=W.monsters.filter(x=>x!==m)}res.push('lv'+lv+' won '+w+'/3 lost '+(lost/3).toFixed(1))}
-   o.push('BAL '+id+' ×'+MONSTERS[id].count[1]+': '+res.join(', '))}
  t.frame();
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}
 const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d)};

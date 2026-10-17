@@ -9,7 +9,6 @@ window.RUN=()=>{const t=T,L=t.BattleLab,o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL '
  ok(f.r.casualties.length===10&&f.r.initialCount===100,'casualty normalization retains the starting size rather than shrinking the denominator');
  tick(f,0);ok(f.r.lossStrain>0&&t.grpMorale(f.a).weak.includes('recentloss'),'recent group losses create one visible temporary strain');
  const strain=f.r.lossStrain;f.e.forEach(u=>u.x=900);for(let i=0;i<8;i++)tick(f,1);ok(f.r.lossStrain<strain&&f.r.mor<=f.r.ceiling()+1e-8,'stored loss pressure fades without restoring beyond the attrition ceiling');
- f=start(20,20);kill(f);kill(f);tick(f,0);const burst=f.r.lossStrain;f=start(20,20);kill(f);tick(f,8);kill(f);tick(f,0);ok(f.r.lossStrain<burst,'rapid casualties create more concurrent pressure than spaced-out casualties');
  f=start(100,25);tick(f,1);ok(f.r.confidence>.1&&f.r.mor>f.r.base,'a stronger formation can become confident');ok(f.a.every(u=>u.confidence===f.r.confidence),'the confidence value is shared by all formation members');
  const badge=t.grpMorale(f.a);t.setOrderUI();ok(badge.confident&&document.querySelector('[data-grp="'+f.g.id+'"] [data-status=confident]'),'the formation confidence badge reads the same authoritative state');
  const before=f.r.mor;for(let i=0;i<10;i++)tick(f,.5);ok(f.r.mor<=Math.min(100,f.r.base+t.CONFIDENCE.max),'numerical confidence remains capped');

@@ -26,6 +26,11 @@ window.RUN=()=>{const t=T,L=t.BattleLab,o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL '
   f=fixture();r=f.r;r.mor=-20;r.breakUrgentUntil=4;tick(f,.19);ok(!r.routed,'leader-loss collapse still has a reaction window');tick(f,.01);ok(r.routed,'leader-loss panic retains the 0.2-second override');
   f=fixture();r=f.r;r.mor=-10;for(let i=0;i<4;i++)tick(f,.05);ok(!r.routed,'small simulation steps accumulate without premature routing');tick(f,.05);ok(r.routed,'severe breaking threshold is consistent across timestep partitions');
   f=fixture();r=f.r;r.mor=-10;tick(f,0);tick(f,0);ok(!r.routed&&!r.breakT,'zero combat time cannot cause routing');
+  // (from the morale audit, visual/moraleaudit.js) footmen facing berserkers do rout, and long before the last few men; the
+  // first formation to break is theirs
+  for(const seed of [42,1]){if(L.active)L.exit();L.start({left:'hum_foot',leftCount:100,right:'dw_berserk',rightCount:100,ai:true,paused:true,morale:true,seed});let first=null;
+   for(let i=0;i<480&&!first&&!L.session.result;i++){L.step(30);const q=t.battleResolves().find(x=>x.routed);if(q)first={team:q.team,alive:t.B.units.filter(u=>u.team===0&&u.hp>0).length}}
+   ok(first&&first.team===0&&first.alive>=20,'Footmen facing Berserkers rout while at least twenty still stand, seed '+seed+' ('+(first?'team '+first.team+', '+first.alive+' alive':L.session.result||'no rout')+')')}
  }catch(e){o.push('EXC '+e.message+' '+e.stack)}finally{if(L.active)L.exit()}
  const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d);
 };

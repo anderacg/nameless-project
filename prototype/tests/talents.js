@@ -33,7 +33,7 @@ try{
  learn(['command0']);const c0=t.partyCap();learn(['command1']);ok(t.partyCap()===c0+1,'Followers: +1 party size');
  const hc=t.hireCost('hum_levy');learn(['command2']);ok(t.has('silver')&&t.hireCost('hum_levy')<hc,'Silver Tongue: the perk, and cheaper hiring');
  learn(['arcana0']);const ms=t.maxMP();learn(['arcana1']);ok(t.maxMP()===ms+15,'Clarity: +15 mana');
- learn(['h_might_finesse']);ok(true,'hybrid nodes link neighbouring branches');
+ P.tp++;ok(t.takeNode('h_might_finesse')&&t.treeHas('h_might_finesse'),'hybrid nodes link neighbouring branches (Might and Finesse taken: the node between them can be learned)');
  // troops in battle
  P.troops={hum_spear:2};G.mode='world';G.modal=false;t.hidePanel();G.enc={kind:'party',ref:{cool:0,x:P.x,y:P.y},list:['militia']};t.startBattle({enemies:['militia'],tournament:false});
  const sp0=t.B.units.find(u=>u.type==='hum_spear').s.hp;t.B.over=true;t.B.endT=0;t.updateBattle(.01);t.act('cont');while(G.mode==='perk')t.act('perk',G.perkOffer[0]);

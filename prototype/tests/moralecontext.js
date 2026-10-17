@@ -1,4 +1,6 @@
 'use strict';
+// Morale context: what a soldier's formation sees (outmatched, overwhelmed, confident), cohesion of the line, and recent-loss
+// strain. (Casualty bursts are in moraleresilience.js; strain as shared group state in groupmorale.js.)
 window.RUN=()=>{const t=T,L=t.BattleLab,o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),near=(a,b)=>Math.abs(a-b)<1e-6;
  try{
   const fixture=(n=5,e=5,x=550)=>{if(L.active)L.exit();L.start({left:'hum_levy',leftCount:n,right:'hum_levy',rightCount:e,ai:false,paused:true,morale:true,seed:42});const b=t.B,a=b.units.filter(u=>u.team===0),en=b.units.filter(u=>u.team===1);b.obs=[];for(const [id,cx] of [[testGroup('inf'),400],[testGroup('e_inf'),x]]){const g=b.groups[id];g.placeAt(cx,300);t.layForm(id);t.grpUnits(id).forEach(u=>{u.x=cx+u.sx;u.y=300+u.sy;u.inSlot=true})}return{b,a,e:en,u:a.slice().sort((a,b)=>a.y-b.y)[Math.floor(n/2)]}};
@@ -25,14 +27,13 @@ window.RUN=()=>{const t=T,L=t.BattleLab,o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL '
   f=fixture();f.a.filter(u=>u!==f.u&&u.y<f.u.y).forEach(u=>u.x+=100);ok(view(f).cohesion<v.cohesion,'loss of flank coverage weakens cohesion');
   f=fixture();tick(f,.01);const target=f.u,other=f.a.find(u=>u!==target),m=target.mor;kill(other);const supported=m-target.mor;
   f=fixture();f.a.filter(u=>u!==f.u).forEach(u=>u.sx+=100);tick(f,.01);const m2=f.u.mor;kill(f.a.find(u=>u!==f.u));ok(m2-f.u.mor>supported,'cohesion softens casualty shock without changing health or damage');
-  f=fixture(20,20,440);const u=f.u;kill(f.a.find(q=>q!==u));tick(f,0);const low=u.mor,strain=u.lossStrain;ok(strain>0,'a casualty creates recent-loss strain');
+  f=fixture(20,20,440);const u=f.u;kill(f.a.find(q=>q!==u));tick(f,0);const low=u.mor,strain=u.lossStrain;
   tick(f,0);f.b.sel=testGroup('inf');t.setOrderUI();ok(document.getElementById('bInfo').textContent.includes('Recent-loss pressure')&&t.grpMorale(f.a).weak.includes('recentloss'),'recent-loss pressure is explained in selected details and badge metadata');
   const panel=document.getElementById('bInfo'),line=[...panel.querySelectorAll('.bi-flags')].find(e=>e.textContent.includes('Cohesion'));ok(line&&line.getBoundingClientRect().bottom<=panel.getBoundingClientRect().bottom&&getComputedStyle(panel).overflowY==='auto','expanded details keep morale context visible and allow overflow scrolling');
   f.b.t+=2;t.moraleTick(0);ok(u.lossStrain<strain&&u.mor>low&&u.mor<u.mor0,'recent pressure fades but part of the casualty loss remains');
   const paused=u.mor;t.moraleTick(0);ok(near(u.mor,paused),'releasing loss memory with no combat time cannot heal morale twice');
   f=fixture(20,20,440);const burst=f.u;f.a.filter(q=>q!==burst).slice(0,4).forEach(kill);tick(f,0);const burstMorale=burst.mor;
   f=fixture(20,20,440);const spaced=f.u;for(const q of f.a.filter(q=>q!==spaced).slice(0,4)){f.b.t+=5;t.moraleTick(0);kill(q)}t.moraleTick(0);ok(burstMorale<spaced.mor,'rapid losses cause more immediate panic than equal losses spread over time');
-  f=fixture(100,25,440);const survivor=f.u;f.a.filter(q=>q!==survivor).slice(0,11).forEach(kill);tick(f,.01);ok(survivor.mor>0&&!survivor.rout,'bounded casualty burst remains survivable with the new context system');
   f=fixture(1,20,550);tick(f,.1);ok(f.u.outmatched>0&&!f.u.overwhelmed,'simulation publishes separate awareness and local-pressure values');
   f.b.sel=testGroup('inf');t.setOrderUI();ok(document.getElementById('bInfo').textContent.includes('Outmatched'),'selected details explain wider outmatched pressure');
   f=fixture();f.b.noMorale=true;const unchanged=f.u.mor;tick(f,3);ok(f.u.mor===unchanged&&f.u.cohesion==null,'morale-disabled battles do not update context or strain');

@@ -21,10 +21,10 @@ try{
  const kl=W.lords.find(l=>l.fac==='karn'&&!l.dead);kl.troops=Array(14).fill('dw_axe');kl.cool=0;G.encCool=0;P.x=kl.x+3;P.y=kl.y;t.updateLords(.016);
  ok(G.mode==='dialog'&&G.enc&&G.enc.kind==='lord','hostile lord attacks');
  t.act('fight');ok(t.B&&t.B.units.some(u=>u.team===1&&['dwarf','orc'].includes(t.ST[u.type].race)),'battle vs dwarf/orc troops');
- let i=0;while(t.B&&i<20000){t.B.units.forEach(u=>{if(u.team===0&&!u.left)u.hp=u.max});t.updateBattle(.033);if(t.B)t.frame();i++}
+ let i=0;while(t.B&&i<20000){t.B.units.forEach(u=>{if(u.team===0&&!u.left)u.hp=u.max});t.updateBattle(.033);if(t.B&&i%15===0)t.frame();i++}
  ok(G.mode==='dialog'&&kl.dead,'beat lord in '+i+' steps; renown '+P.renown);
  t.act('cont');done();
- const sl=W.lords.find(l=>l.fac==='salt'&&!l.dead);sl.inside=null;G.encCool=0;t.lordMeet(sl);// met on the road (in a hall there is no attacking)ok(/Attack/.test(document.getElementById('panel').innerHTML),'neutral lord dialog');
+ const sl=W.lords.find(l=>l.fac==='salt'&&!l.dead);sl.inside=null;G.encCool=0;t.lordMeet(sl);/* met on the road (in a hall there is no attacking) */ok(/Attack/.test(document.getElementById('panel').innerHTML),'neutral lord dialog');
  t.act('lord-attack');ok(G.enc.kind==='lord'&&t.hostileTo('salt'),'attacking makes salt hostile');t.act('auto');t.act('cont');done();
  G.mode='world';t.openChar();t.act('char-tab','realms');ok(/Relations/.test(document.getElementById('panel').innerHTML),'realms tab');t.act('char-close');
  for(let k=0;k<3;k++)t.dayTick();

@@ -1,5 +1,5 @@
 'use strict';
-// Diagnostic only: isolated lab state, no morale tuning changes.
+// Report (run by name: -Suites visual/confidenceaudit), diagnostic only: isolated lab state, no morale tuning changes.
 window.RUN=()=>{const t=T,L=t.BattleLab,o=[];
  try{
   const snapshot=label=>{const b=t.B,live=b.units.filter(t.fighting),strength=new Map(live.map(u=>[u,t.moraleStrength(u)]));

@@ -1,5 +1,5 @@
 'use strict';
-// Read-only balance diagnostic on formation resolve: lab sessions are isolated and the patched method is restored.
+// Report (run by name: -Suites visual/moraleaudit): a read-only balance diagnostic on formation resolve: lab sessions are isolated and the patched method is restored.
 window.RUN=()=>{const t=T,L=t.BattleLab,o=[],P=t.BattleResolve.prototype,original={route:P.route,death:P.death};let audit=null;
  try{
   L.start({left:'hum_levy',leftCount:100,right:'hum_levy',rightCount:100,ai:false,paused:true,morale:true,seed:42});

@@ -224,7 +224,7 @@ Morale is owned by the **formation**, not the soldier. `BattleResolve` (`battle/
 
 **Unit-level AI morale.** Every captain (the enemy, your allies, your army under AI command) also reads each group's own resolve, tuned by `UNIT_AI` in `battle/commander.js`. (1) An infantry group under `pullAt` (25), with another infantry group of the same captain still steady (`backAt`, 45, not routed, not recovering), **pulls back** `pullDist` (90 px) straight away from the foe's middle and stands there (`g.recover`) until its morale is back to `backAt` or `maxRecover` (15 s) pass; a time-capped group cannot pull back again for another `maxRecover` s. A group with no steady sibling fights on. (2) The nearest steady sibling not already fighting **plugs the gap**: it is ordered once onto the foe nearest the recovering group (`g.plug`) and keeps at him while the other recovers. (3) Cavalry under `chargeAt` (40) **start no new charge** (from the flank, the regroup, a rescue or the ranged-duel ride): they stand off as after a charge until they recover, or at most `cavRecover` (4) s (losses lower the ceiling morale recovers to, so worn riders would otherwise stand off for ever); a charge under way goes on. (4) Cavalry target choice adds `prey` (2) and shooters' focus fire `preyShot` (1.5) for a foe whose group is **wavering**. Groups without a resolve (heroes, companions, leaders, beasts) count as steady and are never weak prey; with morale off (`B.noMorale`) none of this applies. Tests: `tests/unitmorale.js`.
 
-Tuning lives in `MORALE`, `CONFIDENCE`, `AWARENESS`, `COHESION`, `LOSS_MEMORY`, `RESOLVE` and `GROUP_RESOLVE`. Coverage: `tests/groupmorale.js` (shared state, normalisation, routing as a group, rally/shatter, HUD/lab agreement), `tests/moralebalance.js` (kill reassurance, breaking timers), `tests/confidence.js`, `tests/moralecontext.js`, `tests/moraleresilience.js`, and the audits `tests/moraleaudit.js` and `tests/confidenceaudit.js`.
+Tuning lives in `MORALE`, `CONFIDENCE`, `AWARENESS`, `COHESION`, `LOSS_MEMORY`, `RESOLVE` and `GROUP_RESOLVE`. Coverage: `tests/groupmorale.js` (shared state, normalisation, routing as a group, rally/shatter, HUD/lab agreement), `tests/moralebalance.js` (kill reassurance, breaking timers), `tests/confidence.js`, `tests/moralecontext.js`, `tests/moraleresilience.js`, and the reports `tests/visual/moraleaudit.js` and `tests/visual/confidenceaudit.js`; footmen against berserkers in `tests/moralebalance.js`.
 
 ## AI tactics
 
@@ -326,37 +326,20 @@ Implementation: `js/ui/developer.js`, `js/battle/lab.js`; the normal setup and s
 
 ## Running tests
 
+Each suite in `tests/` runs headless in Chrome or Edge by opening `Ashmark.html?test=<suite>`. Windows (PowerShell):
+
 ```
-bash tests/run-tests.sh            # every suite
-bash tests/run-tests.sh races      # one suite
-bash tests/run-tests.sh structure  # the layout rules above
-bash tests/run-tests.sh equipment session inventory companions menu structure  # equipment and session regressions
-bash tests/run-tests.sh recruitment talentrules talents troopxp reputation progression characters structure  # recruitment and talent rules
-bash tests/run-tests.sh rosters parties companions garrison troopxp flee people relations  # shared troop operations
-bash tests/run-tests.sh helpers wiki structure  # shared helper contracts and the actual wiki entry point
-bash tests/run-tests.sh battlesetup rts reinforce groups characters captives besiege siege  # battle setup and integration
-bash tests/run-tests.sh battleresolution loot troopxp captives flee siege besiege reinforce  # field outcomes and campaign settlement
-bash tests/run-tests.sh battlecommands input groups rts structure wiki  # player command routing and real input integration
-bash tests/run-tests.sh attackrules attacks combat charcontrol matchups troopxp rts biomes  # damage, attacks, projectiles and integration
-bash tests/run-tests.sh actorrules rts charcontrol attackrules structure wiki  # focused actor/targeting verification
-bash tests/run-tests.sh firingcones rangedfacing  # actual canvas cone angles and ranged-hero move/attack facing
-bash tests/run-tests.sh shortmoves  # short-move arrival facing, zero-distance orders and explicit facing
-bash tests/run-tests.sh developer input menu session battlesetup battleresolution structure wiki  # developer tools and sandbox isolation
-bash tests/run-tests.sh withdrawal actorrules rts charcontrol battleresolution flee battlecommands developer structure wiki  # withdrawal stamina/disengagement and settlement
-bash tests/run-tests.sh confidence rts actorrules battleresolution withdrawal battlecommands developer structure wiki  # local morale confidence and bounded routing cascades
+.	estsun-tests.ps1                                  # every suite (about 4 min)
+.	estsun-tests.ps1 -Parallel 4                      # every suite, 4 browsers at once (about 1.5 min)
+.	estsun-tests.ps1 -Suites rosters,parties,garrison # selected suites
+.	estsun-tests.ps1 -Suites siege -Seed (1..8)       # reproducible random scenarios
 ```
 
-On Windows, the dependency-free native runner reuses one isolated headless browser with a fresh tab per suite, avoiding repeated Chrome startup delays:
+From bash: `bash tests/run-tests.sh [-j N] [-s SEED] [suite ...]`. On Windows it hands over to the PowerShell runner; elsewhere (or with `ASHMARK_DUMP_DOM=1`) it runs a `--dump-dom` browser per suite.
 
-```powershell
-.\tests\run-tests.ps1                                      # every suite
-.\tests\run-tests.ps1 -Suites rosters,parties,garrison       # selected suites
-.\tests\run-tests.ps1 -Suites siege -Seed (1..8)             # reproducible random scenarios
-```
+After each suite the runner prints `# N pass, N fail, N.N s`, and at the end `# summary: ...` and `# failing: ...`; it exits non-zero if any line starts with `FAIL`, `EXC` or `ERR` (every line is counted, not just a suite's first). Each worker reuses a locked profile slot under `%TEMP%shmark-tests` (a new Chrome profile costs 10-20 s before its first page) and clears its stored data first; it never attaches to a user browser. `-Browser` picks another Chrome/Edge, `-TimeoutSeconds` the per-suite deadline. Seeded runs reset the random stream just before `RUN()`; a page can also be opened as `?test=siege&seed=1`.
 
-`-Browser` selects another Chrome/Edge executable, and `-TimeoutSeconds` controls the per-command/test deadline. Seeded runs reset the random stream immediately before `RUN()`; browser tests can also use `?test=siege&seed=1`. The runner never attaches to an existing user browser and keeps its temporary profile for failure diagnostics.
-
-Each suite runs headless in Chrome or Edge by opening `Ashmark.html?test=<suite>`. The runner exits non-zero if any line starts with `FAIL`, `EXC` or `ERR`. `mapview` also draws the whole map over the page, so `Ashmark.html?test=mapview` is a quick way to look at it. `worldsim` only reports how five 120-day campaigns played out; it never fails on balance. `Ashmark.html?test=visual/perf` prints rough timings of the hot paths (world frame, simulation, battle, daily tick, save).
+`tests/visual/` holds pages run by name, not in the default sweep: screenshot scenes (`visual/shot`, `visual/<feature>`) and reports that never fail: `visual/perf` (hot-path timings), `visual/worldsim` (five 120-day campaigns), `visual/monsterbalance`, `visual/dragonbalance`, `visual/matchupbalance` (BAL lines), `visual/moraleaudit` and `visual/confidenceaudit` (morale diagnostics). `mapview` also draws the whole map over the page, so `Ashmark.html?test=mapview` is a quick way to look at it.
 
 ## Art
 

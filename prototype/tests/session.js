@@ -17,11 +17,11 @@ try{
   t.saveGame(true,'1');const save=t.readSlot('1');
   delete save.P.stay;delete save.P.wounded;delete save.P.recruits;delete save.P.captives;
   localStorage.setItem(t.slotKey('1'),JSON.stringify(save));
-  P.stay={town:'Ashford'};P.wounded={hum_levy:5};P.recruits={ghost:{}};P.captives=[{name:'Old captive'}];P.cargo={grain:100};
+  P.stay={town:'Ashford'};P.wounded={hum_levy:5};P.recruits={ghost:{}};P.captives=[{name:'Old captive'}];t.invAdd('good','grain',100);
   G.loot={capture:true,pile:[]};G.place={};G.chase={};W.shops={old:{}};
   t.loadGame('1');
-  ok(!P.stay&&!Object.keys(P.wounded).length&&!Object.keys(P.recruits).length&&!P.captives.length,'fields absent from an older save use defaults instead of the previous campaign');
-  ok(!P.cargo&&t.goodN('grain')===t.BGS.soldier.cargo.grain,'loading never migrates cargo left over from the previous campaign');
+  ok(!P.stay&&!Object.keys(P.wounded).length&&!Object.keys(P.recruits).length&&!P.captives.length,'optional fields absent from a save use defaults instead of the previous campaign');
+  ok(t.goodN('grain')===t.BGS.soldier.cargo.grain,'loading restores the saved inventory, not goods picked up since');
   ok(!G.loot&&!G.place&&!G.chase&&!G.paused,'loading clears previous session interactions');
   ok(t.P===P&&P instanceof t.PlayerParty&&t.charOf(P)===hero,'loading retains the live player record and its behavior');
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}

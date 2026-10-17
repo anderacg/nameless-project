@@ -15,9 +15,10 @@ try{
   if(bx){const w={x:(bx[0]+.5)*16+(bx[2]===1?5:0),y:(bx[1]+.5)*16+(bx[2]===2?5:0)};t.walk(w,bx[2]===1?0:1,bx[2]===1?1:0,2);ok(Math.abs((bx[2]===1?w.x:w.y)-((bx[2]===1?bx[0]:bx[1])+.5)*16)<4,'on a bridge, walkers keep to the middle of the deck')}else ok(true,'(no bridges)')}
  // a route across the water
  {let pair=null;for(const l of v.lots||[]){const x=(l.x+l.n/2)*16,y=(l.y+l.n)*16+6;if(t.passable(t.terrAt(x,y))&&!t.clearLine(v.x,v.y+12,x,y)){pair=[x,y];break}}
+  /* (every building in sight of the gate: then open ground nearby that the water hides from it) */for(let r=40;!pair&&r<=200;r+=16)for(let k=0;k<16&&!pair;k++){const x=v.x+Math.cos(k*Math.PI/8)*r,y=v.y+12+Math.sin(k*Math.PI/8)*r;if(t.passable(t.terrAt(x,y))&&!t.clearLine(v.x,v.y+12,x,y))pair=[x,y]}
+  ok(!!pair,'(fixture: ground near the gate that the water hides from it)');
   if(pair){const path=t.findPath(v.x,v.y+12,pair[0],pair[1]);ok(path&&path.length&&path.every(k=>t.passable(t.tiles[k])),'where water lies between, a route goes round it ('+(path&&path.length)+' tiles)');
-   const w={x:v.x,y:v.y+12};let i=0;for(;i<4000&&Math.hypot(w.x-pair[0],w.y-pair[1])>2;i++)t.routeTo(w,pair[0],pair[1],1.2);ok(Math.hypot(w.x-pair[0],w.y-pair[1])<=2,'and a walker gets there by it ('+i+' steps)')}
-  else ok(true,'(every building in sight of the gate)')}
+   const w={x:v.x,y:v.y+12};let i=0;for(;i<4000&&Math.hypot(w.x-pair[0],w.y-pair[1])>2;i++)t.routeTo(w,pair[0],pair[1],1.2);ok(Math.hypot(w.x-pair[0],w.y-pair[1])<=2,'and a walker gets there by it ('+i+' steps)')}}
  {const sea=(()=>{for(let ty=5;ty<t.MH-5;ty++)for(let tx=5;tx<t.MW-5;tx++)if(t.tAt(tx,ty)===t.T_WATER&&[[1,0],[-1,0],[0,1],[0,-1],[2,0],[-2,0],[0,2],[0,-2]].every(([a,b])=>t.tAt(tx+a,ty+b)===t.T_WATER))return[(tx+.5)*16,(ty+.5)*16]})();
   const w={x:v.x,y:v.y+12};ok(t.findPath(w.x,w.y,sea[0],sea[1])===null&&t.routeTo(w,sea[0],sea[1],2)===false,'a point in the water cannot be reached, and the walker is told so')}
  // every stop on the beat, and every estate's work, can be walked to from the gate (on any holding)
