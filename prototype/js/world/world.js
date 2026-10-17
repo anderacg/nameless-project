@@ -27,12 +27,19 @@ function pickAt(wx,wy){
   // than 12 pixels away, so someone clicked on top of one is picked, and a click on the gate still picks the holding
   const box=(o,x0,y0,x1,y1,dy)=>{if(wx>=x0&&wx<x1&&wy>=y0&&wy<y1&&Math.hypot(o.x-P.x,o.y-P.y)<V*1.2)c.push([Math.min(12,Math.hypot(o.x-wx,o.y-(dy||0)-wy))+Math.hypot(o.x-wx,o.y-wy)/1000,o])};
   const camp=(o,sp)=>{const x0=o.x-sp.ax,y0=o.y+8-sp.ay;box(o,x0,y0,x0+sp.width,y0+sp.height)};// anywhere on its picture
+  // a big figure (a mounted lord, a caravan's cart, ox and drover) answers anywhere on what is drawn of it (its picture s, cell
+  // top left x0, y0, mirrored when it faces left: render.js opaqueBox), ranked 10-12 by how far from its middle: after anyone's
+  // ring (someone small beside it, clicked on, is still picked), before a building it stands in front of
+  const fig=(o,s,x0,y0,flip)=>{if(Math.hypot(o.x-wx,o.y-wy)>s.width)return;const b=opaqueBox(s),L=flip?x0+s.width-1-b[2]:x0+b[0],R=L+b[2]-b[0]+1,T=y0+b[1],Bt=y0+b[3]+1,hw=(R-L)/2,hh=(Bt-T)/2;
+    if(wx>=L&&wx<R&&wy>=T&&wy<Bt&&Math.hypot(o.x-P.x,o.y-P.y)<V*1.2)c.push([10+2*Math.max(Math.abs(wx-L-hw)/hw,Math.abs(wy-T-hh)/hh),o])};
   // a holding answers on its square and on any of its buildings and walls; an estate on its building and its fields
   TOWNS.forEach(t=>{if(Math.hypot(t.x-P.x,t.y-P.y)>V+340)return;box(t,t.x-8,t.y-18,t.x+8,t.y+8,4);// its gate
     for(const l of t.lots||[]){const o=ESTATES[l.k]&&bldLv(t,l.k)?estatePick(t,l.k):t;box(o,l.x*TILE,l.y*TILE,(l.x+l.n)*TILE,(l.y+l.n)*TILE,ESTATES[l.k]?0:4);
-      if(o!==t)plotsAt(t,l.k,bldLv(t,l.k)).forEach(([x,y])=>box(o,x*TILE,y*TILE,(x+1)*TILE,(y+1)*TILE))}});W.parties.forEach(o=>{if(o.onMap())add(o,10,4)});W.monsters.forEach(m=>add(m,11,6));
+      if(o!==t)plotsAt(t,l.k,bldLv(t,l.k)).forEach(([x,y])=>box(o,x*TILE,y*TILE,(x+1)*TILE,(y+1)*TILE))}});
+  // (a party on its leader's figure too: a lord's whole horse and banner; render.js partyFig)
+  W.parties.forEach(o=>{if(!o.onMap())return;add(o,10,4);if(o!==P&&Math.hypot(o.x-wx,o.y-wy)<32){const F=partyFig(o,o.look(),0);fig(o,F.s,F.x,F.y,F.flip)}});W.monsters.forEach(m=>add(m,11,6));
   // each kind of site says where it is clicked (sites.js)
-  W.sites.forEach(s=>{if(s.pickable())s.box(box,camp)});W.critters.forEach(k=>{if(!k.decor)add(k,9,4)});/* (a pasture's herd is only to be seen: the pasture answers) */(W.caravans||[]).forEach(k=>add(k,11,5));(W.refugees||[]).forEach(k=>add(k,10,4));
+  W.sites.forEach(s=>{if(s.pickable())s.box(box,camp)});W.critters.forEach(k=>{if(!k.decor)add(k,9,4)});/* (a pasture's herd is only to be seen: the pasture answers) */(W.caravans||[]).forEach(k=>{add(k,11,5);const s=caravanPic(k);fig(k,s,k.x-(s.width>>1),k.y+1-s.height,k.dir<0)});(W.refugees||[]).forEach(k=>add(k,10,4));
   // (workers: met at their estate while they work inside it; out on the road with a delivery, met where they walk: folk.js)
   (W.folk||[]).forEach(k=>{if(folkOut(k))add(k,6,4)});
   c.sort((a,b)=>a[0]-b[0]);return c.length?c[0][1]:null;

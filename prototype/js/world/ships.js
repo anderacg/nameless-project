@@ -91,14 +91,47 @@ function updateShips(d){
   W.ships=W.ships.filter(s=>!s.gone);
 }
 
-/* on the map: each boat rocks on the water, a wake behind it while it sails; a fishing boat at its ground casts its net */
+/* on the map, on the people's scale (a man 15 high, as the caravan's ox cart: caravans.js): a fishing boat is a rowing boat some
+   26 long, its fisherman in it, in a 32×32 cell; a trade ship is a cog some 56 long, high sided, a castle at its stern and a
+   smaller one at its bow, one mast with a square sail striped in its owner's colour (col), two of its crew at the rail, in a
+   64×64 cell. Facing right; its waterline is the cell's bottom row, its middle the ship's place. stern: how far behind the
+   middle its stern is (the wake starts there); net: how far ahead the fisherman's line goes down */
+const SH_HULL=['#9a7e5e','#6e5642','#4c3c34','#30262a'];
+function shipSprite(o){
+  const big=!!o.big,v=(o.seed|0)%3,key='sh'+(big?1:0)+(o.col||'')+v;if(spr[key])return spr[key];
+  const n=big?64:32,WL=n-1,R=big?54:27,H=SH_HULL,Wo=CV_WOOD,g=pgrid(n,n),s=(x,y,c)=>pset(g,x,y,c);
+  // the hull, planked (clinker: a dark seam every third strake), its stern post raked, its stem curved; a cog's castles
+  const xa=t=>big?5+Math.floor(t/3):4+(t>2?1:0)+(t>3?1:0),xb=t=>big?59-Math.floor(t*t/14):27-(t>2?1:0)+(t>3?-2:0);
+  for(let y=R;y<=WL;y++){const t=y-R;for(let x=xa(t);x<=xb(t);x++)s(x,y,x===xa(t)||x===xb(t)?H[2]:t===0?Wo[0]:t===1?H[0]:y===WL?H[2]:t%3===1?H[3]:H[1])}
+  if(big){const castle=(a,b,h,p)=>{for(let y=R-h;y<R;y++)for(let x=a;x<=b;x++)s(x,y,y===R-h?Wo[0]:(x-a)%p===0||x===b?H[2]:y===R-h+2?shade(o.col||'#a8483a',.8):H[1])};castle(5,18,6,4);castle(49,58,4,3)}
+  else{s(28,26,H[1]);s(28,25,H[0]);s(29,24,H[2]);s(3,26,H[1]);s(3,25,H[2])}
+  poutline(g);const hull=pcanvas(g);
+  // the mast, its yard and the sail on it, striped (v: its stripes' width), billowing (shaded toward its foot and lee), a pennant
+  let rig=null;
+  if(big){const r=pgrid(n,n),q=(x,y,c)=>pset(r,x,y,c),Cl=o.col||'#a8483a',sw=v+2,
+      Cv=[cvMix('#f4e8c8','#ffffff',.2),'#e4d8b8',cvMix('#c8bca0','#4a4a66',.2),cvMix(Cl,'#f4e8c8',.25),cvMix(Cl,'#2e2a40',.3)];
+    for(let y=8;y<R;y++){q(31,y,Wo[1]);q(32,y,Wo[2])}for(let x=29;x<=34;x++){q(x,9,Wo[1]);q(x,10,Wo[2])}
+    for(let x=34;x<=38;x++)q(x,6+(x>36?1:0),Cl);q(33,6,Wo[2]);q(33,7,Wo[2]);
+    for(let x=18;x<=45;x++)q(x,13,Wo[2]);
+    for(let y=14;y<=36;y++){const e=y===36?2:0;for(let x=19+e;x<=44-e;x++){const st=Math.floor((x-19)/sw)%2,lee=x>39||y>32;q(x,y,st?(lee?Cv[4]:Cv[3]):(lee?Cv[2]:y<17?Cv[0]:Cv[1]))}}
+    poutline(r);rig=pcanvas(r)}
+  // the crew: a sailor at the helm on the stern castle and one at the rail amidships (the hull hides them below the waist);
+  // the fisherman sitting in his boat, head and shoulders over the gunwale
+  const man=k=>mapPerson({...folkLook('folk','human',(o.seed|0)+k*7),robe:false,helm:k%2?'cap':'bare',helmC:'leather',weapon:null},0);
+  // (ropes, a pixel thin, no outline: the stays from the masthead to bow and stern, behind the sail; the fisherman's oar)
+  const c=mkc(n,n,x=>{const line=(x0,y0,x1,y1,col)=>{const k=Math.max(Math.abs(x1-x0),Math.abs(y1-y0));x.fillStyle=col;for(let i=0;i<=k;i++)x.fillRect(Math.round(x0+(x1-x0)*i/k),Math.round(y0+(y1-y0)*i/k),1,1)};
+    if(big){line(33,11,57,R-4,'#3e2e26');line(30,11,7,R-6,'#3e2e26');x.drawImage(rig,0,0);x.drawImage(man(0),11-8,R-1-15);x.drawImage(man(1),41-8,R+6-15)}else x.drawImage(man(0),14-8,R-8);
+    x.drawImage(hull,0,0);if(!big)line(12,R-1,6,WL,Wo[1])});
+  c.cw=n;c.ch=n;c.ax=n>>1;c.ay=WL;c.stern=(n>>1)-(big?5:4);c.net=big?0:13;return spr[key]=c;
+}
+/* each boat rocks on the water, a wake behind it while it sails; a fishing boat at its ground casts its net */
 function drawShips(ents,cam,V){
   const now=performance.now();
   for(const s of W.ships||[]){if(Math.hypot(s.x-P.x,s.y-P.y)>V*1.2)continue;
-    ents.push({y:s.y+4,f:()=>{const k='ship'+s.seed+(s.big?1:0)+(s.col||''),b=spr[k]||(spr[k]=PX.boat({seed:s.seed,big:s.big,col:s.col||undefined})),sx=Math.round(s.x-cam.x),sy=Math.round(s.y+4-cam.y)+(Math.floor(now/450+s.seed)%2);
+    ents.push({y:s.y+4,f:()=>{const b=shipSprite(s),sx=Math.round(s.x-cam.x),sy=Math.round(s.y+4-cam.y)+(Math.floor(now/450+s.seed)%2);
       const sailing=s.state!=='fish';
-      if(sailing)for(let i=1;i<=3;i++){const ph=(now/300+i/3)%1;ctx.fillStyle=i===1?'#e8f4fa':'#bcd8e8';ctx.fillRect(sx-s.dir*(b.ax+i*3+Math.floor(ph*2)),sy-2+(i%2),2,1)}
-      ctx.save();ctx.translate(sx,sy);if(s.dir<0)ctx.scale(-1,1);ctx.drawImage(b.img,-b.ax,-b.ay);ctx.restore();
-      if(!sailing){const ph=(now/700+s.seed)%2;ctx.fillStyle='#d8c890';ctx.fillRect(sx+s.dir*4,sy-3,1,3);if(ph<1){ctx.fillStyle='#e8f4fa';ctx.fillRect(sx+s.dir*4-1,sy+1,3,1)}}
-      if(s.k==='trade'&&Math.hypot(s.x-P.x,s.y-P.y)<110)txt('Trade ship',sx,sy-b.ay-3,hostileTo(s.fac)?'#ff9a90':'#e8d8a0','center')}})}
+      if(sailing)for(let i=1;i<=3;i++){const ph=(now/300+i/3)%1;ctx.fillStyle=i===1?'#e8f4fa':'#bcd8e8';ctx.fillRect(sx-s.dir*(b.stern+i*3+Math.floor(ph*2)),sy-2+(i%2),2,1)}
+      ctx.save();ctx.translate(sx,sy);if(s.dir<0)ctx.scale(-1,1);ctx.drawImage(b,-b.ax,-b.ay);ctx.restore();
+      if(!sailing){const ph=(now/700+s.seed)%2;ctx.fillStyle='#d8c890';ctx.fillRect(sx+s.dir*b.net,sy-5,1,5);if(ph<1){ctx.fillStyle='#e8f4fa';ctx.fillRect(sx+s.dir*b.net-1,sy+1,3,1)}}
+      if(s.k==='trade'&&Math.hypot(s.x-P.x,s.y-P.y)<110)txt('Trade ship',sx,sy-b.ay+opaqueBox(b)[1]-2,hostileTo(s.fac)?'#ff9a90':'#e8d8a0','center')}})}
 }

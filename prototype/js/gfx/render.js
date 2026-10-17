@@ -58,7 +58,9 @@ function drawWorld(){
     if(c.n>1&&!c.decor&&Math.hypot(c.x-P.x,c.y-P.y)<90)txt(String(c.n),sx,sy-s.ch-1,CRITTERS[c.id].live?'#e8d8a0':'#c8e0a0','center')}})});
   if(P.raid)ents.push({y:P.y-1,f:()=>txt('Raiding '+Math.round(P.raid.t/RAID_TIME*100)+'%',Math.round(P.x-cam.x),Math.round(P.y-20-cam.y),'#ff9a90','center')});
   if(P.siege)ents.push({y:P.y-1,f:()=>{const s=campSprite(77,'bandit'),X=Math.round(P.x-24-s.ax-cam.x),Y=Math.round(P.y+2-s.ay-cam.y);ctx.drawImage(s,X,Y);drawFire(X+s.fire[0],Y+s.fire[1],0);drawFlag(FACS.player.col,X+s.flag[0],Y+s.flag[1],0);txt('Siege day '+P.siege.days,Math.round(P.x-cam.x),Math.round(P.y-18-cam.y),'#e8b94a','center')}});
-  if(!P.stay)ents.push({y:P.y,f:()=>{const sx=Math.round(P.x-cam.x),sy=Math.round(P.y-cam.y);ctx.fillStyle='rgba(0,0,0,.3)';ctx.fillRect(sx-5,sy-1,10,2);drawHost(partySize(),'#3d74d6',sx,sy+2,P.dir,P.tx!=null,5,P.race);ctx.save();ctx.translate(sx,sy-10);ctx.scale(P.dir,1);ctx.drawImage(partySprite('#e8b94a',mountDef()?mountDef().col:'',P.tx!=null?Math.floor(performance.now()/150)%2:0),-8,P.tx!=null?-3-Math.floor(performance.now()/150)%2:-3);ctx.restore()}});
+  // (you: on foot, a bob as you walk; mounted, your horse in its 32 cell on the same feet, your host behind it, as a lord's: drawParties)
+  if(!P.stay)ents.push({y:P.y,f:()=>{const sx=Math.round(P.x-cam.x),sy=Math.round(P.y-cam.y),f=P.tx!=null?Math.floor(performance.now()/150)%2:0,s=partySprite('#e8b94a',mountDef()?mountDef().col:'',f),big=s.width>16;
+    ctx.fillStyle='rgba(0,0,0,.3)';ctx.fillRect(sx-5,sy-1,10,2);drawHost(partySize(),'#3d74d6',sx-(big?P.dir*6:0),sy+2,P.dir,P.tx!=null,5,P.race);ctx.save();ctx.translate(sx,sy-10);ctx.scale(P.dir,1);ctx.drawImage(s,-(s.width>>1),13-s.height-(big?0:f));ctx.restore()}});
   drawFolk(ents,cam,V);drawCaravans(ents,cam,V);drawShips(ents,cam,V);drawRefugees(ents,cam,V);drawFights(ents,cam,V);
   // buildings, camps and sites first (in their own order), then every character over them, then all their labels on top
   TXTQ=[];TXTQ.ctx=ctx;LIGHTQ=[];const bents=[];estateEnts(bents,cam,V);for(const e of ents.filter(e=>e.st))bents.push(e);
@@ -99,15 +101,25 @@ function drawWorld(){
 }
 // how long a unit holds its attack pose after it strikes
 const ATK_ANIM=.36;
+// the box a picture's drawn pixels fill, [x0, y0, x1, y1] (inclusive), worked out once per picture: what a label clears and a
+// click answers on (world.js pickAt)
+function opaqueBox(s){if(s._ob)return s._ob;const d=s.getContext('2d').getImageData(0,0,s.width,s.height).data;let x0=s.width,y0=s.height,x1=-1,y1=-1;
+  for(let y=0;y<s.height;y++)for(let x=0;x<s.width;x++)if(d[(y*s.width+x)*4+3]){if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y}return s._ob=x1<0?[0,0,0,0]:[x0,y0,x1,y1]}
+// a party's leader as drawn (L: its look; f: the step): his picture, its cell's top left on the map and whether it faces left.
+// The cell's bottom is 3 below his place (a rider's 32 cell: the same feet, his banner taller)
+function partyFig(o,L,f){const s=L.bandit?banditSprite(f):partySprite(L.col,L.rider==='horse'?C.horse:'',f);return{s,x:o.x-(s.width>>1),y:o.y+3-s.height,flip:L.dir<0}}
+// (the rows above a leader's cell top his label clears: his highest pixel in either step, so it stands still as he walks)
+const figTop=L=>Math.min(opaqueBox(partyFig(P,L,0).s)[1],opaqueBox(partyFig(P,L,1).s)[1]);
 // every party in sight, one way: its host of soldiers, its leader's figure (a rider, a bandit), a torch on a night watch, its label
 function drawParties(ents,cam,V){
   for(const o of W.parties){if(!o.inView(V))continue;
     ents.push({y:o.y,f:()=>{const L=o.look(),sx=Math.round(o.x-cam.x),sy=Math.round(o.y-10-cam.y),fd=L.dir<0?-1:1,fr=L.moving?Math.floor(performance.now()/(L.bandit?160:170))%2:0;
-      const s=L.bandit?banditSprite(fr):partySprite(L.col,L.rider==='horse'?C.horse:'',fr),up=s.ch-16;// (a rider's 32 cell: the same feet, his banner taller, his host behind his horse)
+      const s=partyFig(o,L,fr).s;// (a rider: his host behind his horse)
       drawHost(o.size,L.col,sx-(s.width>16?fd*6:0),sy+12,fd,L.moving,L.seed,L.race,L.bandit);
       ctx.save();ctx.translate(sx,sy);if(fd<0)ctx.scale(-1,1);ctx.drawImage(s,-(s.width>>1),13-s.height);ctx.restore();
       if(L.torch){const tx=sx+fd*6,ty=sy-4;rect(ctx,'#5a3e24',tx,ty,1,5);LIGHTQ.push({x:tx,y:ty-1,r:20})}
-      if(!o.fight&&L.label)txt(L.label,sx,sy-2-up,L.labelCol,'center')}})}
+      // (its label clear above the figure, its banner's top: over it, the label in the banner's own colour was lost on the flag)
+      if(!o.fight&&L.label)txt(L.label,sx,sy+13-s.height+figTop(L)-2,L.labelCol,'center')}})}
 }
 function drawUnit(u){
   // (placed on the camera's pixels, not the field's: zoomed in, they glide instead of stepping)

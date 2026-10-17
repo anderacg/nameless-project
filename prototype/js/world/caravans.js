@@ -172,9 +172,11 @@ function caravanSprite(col){
   const c=mkc(Wd,G+2,x=>{x.drawImage(pcanvas(g),0,0);x.drawImage(drover,x0+31-(drover.width>>1),G+2-drover.height)});
   return spr[key]=cellOf(c);
 }
+// (a caravan's picture, in its owner's colour: drawn here, clicked on its whole cart, ox and drover: world.js pickAt)
+const caravanPic=c=>caravanSprite(c.fac==='player'||!FACS[c.fac]?FACS.player.col:FACS[c.fac].col);
 function drawCaravans(ents,cam,V){
   for(const c of W.caravans||[]){if(Math.hypot(c.x-P.x,c.y-P.y)>V*1.2)continue;
-    ents.push({y:c.y,f:()=>{const s=caravanSprite(c.fac==='player'?FACS.player.col:FACS[c.fac].col),sx=Math.round(c.x-cam.x),sy=Math.round(c.y-cam.y);ctx.fillStyle='rgba(0,0,0,.3)';ctx.fillRect(sx-(s.cw>>1)+3,sy-1,s.cw-6,2);
+    ents.push({y:c.y,f:()=>{const s=caravanPic(c),sx=Math.round(c.x-cam.x),sy=Math.round(c.y-cam.y);ctx.fillStyle='rgba(0,0,0,.3)';ctx.fillRect(sx-(s.cw>>1)+3,sy-1,s.cw-6,2);
       ctx.save();ctx.translate(sx,sy);if(c.dir<0)ctx.scale(-1,1);ctx.drawImage(s,-(s.width>>1),1-s.height);ctx.restore();
       if(Math.hypot(c.x-P.x,c.y-P.y)<90)txt('Caravan',sx,sy-s.ch-1,hostileTo(c.fac)?'#ff9a90':'#e8d8a0','center')}})}
 }
