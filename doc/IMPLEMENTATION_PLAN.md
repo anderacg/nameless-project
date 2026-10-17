@@ -93,6 +93,8 @@ Rules: classes for behaviour, plain JSON in saves, check in after each step.
 
 ---
 
+**Refactor plan:** see [REFACTOR_PLAN.md](REFACTOR_PLAN.md) (code-structure review 2026-10-17; wave 1 approved, items 9–10 there map to steps 2–5 here).
+
 ## 6. Holdings growth and new types
 
 1. **Growth tiers** (village → town → city) on top of `HOLDING_TYPES`. `holdingOf(t, kind)` already switches a holding's class.
