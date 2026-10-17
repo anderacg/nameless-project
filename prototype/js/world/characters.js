@@ -145,7 +145,7 @@ function charStats(c){
   s.spd=Math.round((K.spd+2*a.agi)*(1+g('spd')+t('spd')+(pk('swift')?.1:0)));
   s.cd=+(K.cd*(1-.03*a.agi)*(1+t('cd'))).toFixed(3);
   s.block=Math.min(.6,g('block')+t('block')+(pk('guardian')?.1:0));
-  // (taken less, and more breath and mana for its skills: commander.js champ)
+  // (taken less, and more breath and mana for its skills: charmind.js champ)
   s.dr=t('dr');s.spX=t('sp');s.mpX=t('mp');s.mpPct=t('mpPct');s.mpRegen=t('mpRegen');
   // (their weapon's type, their body armour's class; else their kind's: matchups.js)
   if(w)s.dt=itemDt(o.gear.weapon);if(o.gear.body)s.armor=itemArmor(o.gear.body);

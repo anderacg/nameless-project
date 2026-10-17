@@ -8,7 +8,7 @@
 // runMin: under this a soldier cannot run at all, only walk
 const FATIGUE={max:100,run:2.5,charge:18,blow:1.2,rest:1.2,tired:40,spent:15,runMin:1};
 // your hero's: their SP, as a share of FATIGUE.max. It comes back as a soldier's does (standing, out of the fight), faster with the
-// talents that quicken it (spRegen). A champion's (a lord, a chieftain, a companion: commander.js champ) is their soldier's stamina
+// talents that quicken it (spRegen). A champion's (a lord, a chieftain, a companion: charmind.js champ) is their soldier's stamina
 const heroSta=u=>u.hero&&B&&u===B.hero&&!MANUAL_HERO;
 const staOf=u=>heroSta(u)?heroState().sp/Math.max(1,maxSP())*FATIGUE.max:u.sta==null?FATIGUE.max:u.sta;
 // spend n (on FATIGUE's scale) of a soldier's stamina, or of your hero's SP

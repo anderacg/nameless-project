@@ -9,7 +9,7 @@ function monsterAbility(u,dt){
     const a=Math.atan2(t.y-u.y,t.x-u.x);fx(u.x,u.y-6,'#e8d8a0',6);u.x=t.x-Math.cos(a)*10;u.y=t.y-Math.sin(a)*10;u.face=Math.cos(a)>=0?1:-1;
     hit(u,t,u.s.dmg*1.6);B.floats.push({x:u.x,y:u.y-20,t:'POUNCE',life:.6,c:'#ffb070'});u.ab=4.5}
 }
-// strike: how it hits (a character: combos, the bow and casts, commander.js charStrike); else a troop's attack
+// strike: how it hits (a character: combos, the bow and casts, charmind.js charStrike); else a troop's attack
 /* every shooter's shot, as in Total War: they shoot only in a forward arc (SHOOT.arc), where their group faces; turning it is
    yours or their commander's call (a move, a dragged line, the commander's facing: commander.js), never theirs; mages (their bolt; their spells have their own shapes), riders and units marked 'circle' shoot all round. The moment a foe is in range and in the arc (and
    they are not told to cease fire), they draw (their aim time), loose, and reload (their reload time); the two make up their
@@ -172,6 +172,6 @@ function updateHero(dt){
 }
 // Non-hero turns keep the original order and simulation clock. The hero's separate HERO_PACE turn stays in updateBattle.
 function updateNonHeroActors(dt){
-  // every unit's moment (lords, chieftains and companions fight as your hero does: commander.js charAuto)
+  // every unit's moment (lords, chieftains and companions fight as your hero does: charmind.js charAuto)
   for(const u of B.units){if(u.hp<=0||u.hero)continue;u.cd-=dt;if(isFighter(u)){charAuto(u,dt);continue}aiUnit(u,dt,null);monsterAbility(u,dt);if(u.s.breath){u.br=(u.br??2.5)-dt;if(u.br<=0){const t=nearest(u);if(t&&Math.hypot(t.x-u.x,t.y-u.y)<90){breathe(u,t);u.br=3.5}}}}
 }

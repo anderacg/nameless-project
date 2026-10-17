@@ -7,7 +7,7 @@ const selGroups=()=>!B?[]:(B.sel==='all'?playerGroups():Array.isArray(B.sel)?B.s
 const selLabel=()=>B.sel==='all'?groupName('all'):selGroups().map(g=>groupName(g)).join(' and ');
 const regroup=g=>B.groups[g]&&B.groups[g].regroup();// (its place where its men are: battlecontrol.js)
 const RTS_PICK=10;
-// an order of yours to these groups: counted (orderSeq), so a character's fall-back ends on any of them (commander.js fallLook)
+// an order of yours to these groups: counted (orderSeq), so a character's fall-back ends on any of them (charmind.js fallLook)
 const ordered=gs=>gs.forEach(g=>{const gr=B.groups[g];if(gr)gr.orderSeq=(gr.orderSeq|0)+1});
 // every order of yours to groups gs: command taken back from Auto, counted (a move, an attack, Hold, the pace, a formation, a flag;
 // not a unit ability: counts false), done (fn), the order bar redrawn; returns what fn does
