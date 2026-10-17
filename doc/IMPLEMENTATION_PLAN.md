@@ -155,6 +155,11 @@ These are in the [Game Feature Plan](Game%20Feature%20Plan%202D%20Pixel-Art%20Sa
 
 ## Technical debt and watch-outs
 
+- **Seeded failure:** `lots` "its realm builds it another house" fails with `-Seed 1` and `-Seed 2` (seen 2026-10-17, also before the spatial grid).
+- **Unseeded flake:** `monsters` "spiders web your fighters" sometimes fails unseeded (spiders now shoot; fight outcome varies).
+- **Lab warm-up:** the first BattleLab battle after a page load plays slightly differently from the same battle run again (visible in `visual/battleperf` fingerprints).
+- **Remaining hot scans (perf, later):** `commander.js` members×foes `busy` checks (~2 ms/frame at 1200), `BattleResolve.live()/members()` filters (2–4 ms at 800–1200; a per-frame member cache), `setOrderUI` on every death (batch per frame), `targetMembers`/`tgt` getter O(n) per access, `FORM_SWAP` pairwise pass.
+
 - **Timing-sensitive test:** `rts` "fights in bursts, a breath after each finisher" can fail under `-Parallel 4` CPU load (passes alone); harden it to measure combat time only.
 
 - **The mid-line `//` trap:** a comment followed by code on the same line hides that code. Use `/* */` (see the knowledge transfer).
