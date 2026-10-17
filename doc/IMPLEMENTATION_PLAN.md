@@ -59,6 +59,7 @@ Check each one in a sprite lineup at 6–8× and on the map, then get the owner'
    - **Ranged units lead:** the AI opens with its shooters to scout and fire first when its range or numbers pay (pushing ahead of its infantry and pulling back when your melee closes in), but plays **safe** (shooters behind the infantry screen) when your cavalry or fast troops threaten them, when it is outnumbered or defending a holding, or when its archers are worn (ammunition, morale). Leave room for per-army temperament (see "Race fighting styles" below).
    - **Charges from further away:** cavalry and shock infantry start their run earlier so they hit at full momentum more often, but **stamina gates each charge** (no long charge when tired: walk closer or wait; a charge already under way drops to a walk if they tire).
    - **Ability use:** captains call `g.useAbility(id)` (Brace against charging cavalry, Rally when wavering, Spur on attack, Fire arrows against armour or beasts).
+   - **Characters fall back and reassess** (owner's request): after a defensive roll (badly hurt and surrounded), a character moves away toward its own troops, watches, and goes back in only when it's OK (stamina recovered, the target area no longer a trap or friendly troops already fighting there); your hero resumes your order then. Health isn't a hard gate (it doesn't regenerate in battle).
 
 ---
 
