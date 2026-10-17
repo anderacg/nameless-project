@@ -2,13 +2,7 @@
 /* ---------- actions ---------- */
 function act(a,arg){
   if(a==='begin')return begin(arg);
-  if(a==='econmode'){setEconMode(arg);showTitle('settings');return}
-  if(a==='grid'){setGrid(arg==='on');showTitle('settings');return}
-  if(a==='blood'){setBlood(arg==='on');showTitle('settings');return}
-  if(a==='hpbars'){setHpBars(arg==='on');showTitle('settings');return}
-  if(a==='bdeploy'){setDeploy(arg==='on');showTitle('settings');return}
-  if(a==='guide'){setGuide(arg==='on');showTitle('settings');return}
-  if(a==='bspeed'){setBattleSpeed(+arg,true);showTitle('settings');return}
+  if(settingAct(a,arg))return;// (the Settings buttons: ui.js)
   if(routeAct(a,arg)||menuAct(a,arg))return;
   if(a==='race'){G.race=arg;showTitle('new');const b=panel.querySelector('[data-act="race"].on');if(b)b.focus({preventScroll:true});return}
   if(a==='load')return loadGame(arg);
@@ -25,34 +19,7 @@ function act(a,arg){
   if(a==='lord-attack'){const l=G.enc.ref;P.hostile[l.fac]=G.day+20;addHonor(l.fac,-15,true);log('You attack '+l.name+'. The '+FACS[l.fac].n+' is now hostile to you.','bad');return startEncounter({kind:'lord',ref:l,list:l.troops.slice(),mine:true})}
   if(a.startsWith('q-')){const tq=G.town&&G.town.ref;questAct(a,arg,G.mode==='town'?tq:null);if(a.startsWith('q-lord'))return;updateHUD(true);if(G.mode==='char')return renderChar();if(G.mode==='town')renderTown();return}
   if(charAct(a,arg))return;
-  const t=G.town&&G.town.ref;if(!t)return;
-  const keep=panel.scrollTop;
-  if(a==='plan-siege'){G.town=null;hidePanel();G.mode='world';return openSiege(t)}
-  if(fiefAct(a,arg,t)){}
-  else if(a==='tab'){G.town.tab=arg;G.town.greet=null}
-  else if(a==='rec-pick'){G.town.pick=arg;G.town.review=null;G.town.recruitNotice=''}
-  else if(['rec-review','rec-confirm','rec-cancel'].includes(a))townRecruitAction(a);
-  else if(a==='hire'){const result=recruitment.hire(t,arg,1,G.town.pick===arg?G.town.hireTarget:undefined);if(result.ok&&result.target==='new'&&G.town.pick===arg)G.town.hireTarget=G.recruitTarget;recruitmentFeedback(result,t)}
-  else if(a==='train'){const [k,to]=String(arg).split(':');recruitmentFeedback(recruitment.train(t,k,to),t)}
-  else if(a==='contract'){if(!P.fac){P.fac=t.owner;delete P.hostile[t.owner];log('You sign on with the '+FACS[t.owner].n+'. Their enemies are now yours.','gold')}}
-  else if(a==='end-contract'){if(P.fac===t.owner){P.fac=null;log('You end your contract with the '+FACS[t.owner].n+'.')}}
-  else if(a==='hire-comp')recruitmentFeedback(recruitment.hireCompanion(t,arg),t);
-  else if(a==='ransom'){const v=ransomValue();if(v){P.gold+=v;log('The broker pays '+v+' gold for '+prisonerCount()+' prisoners.','gold');P.prisoners={};mood('ransom')}}
-  else if(a==='buy-gear'){const st=smithStock(t),id=st[+arg];if(id&&P.gold>=gearPrice(id)&&invAdd('gear',id,1)){P.gold-=gearPrice(id);st.splice(+arg,1);addRep(t.name,ITEMS[id].v/120,true);log('You buy the '+ITEMS[id].n+'.','gold')}}
-  else if(a==='buy-ammo'){const [g,ns]=arg.split(':'),n=+ns;if(GOODS[g]&&GOODS[g].ammo){const r=buyGoods(t,g,n);if(r.got)log('You buy '+r.got+' '+GOODS[g].n.toLowerCase()+'.');else log('The smith has no '+GOODS[g].n.toLowerCase()+' to sell.','bad')}}
-  else if(a==='buy-mount'){const id=arg,p=gearPrice(id);if(stableStock(t).includes(id)&&canBuyMount(t,id)&&P.gold>=p&&P.gear.mount!==id){
-    if(!P.gear.mount){P.gear.mount=id;P.gold-=p;fitInv();log('You buy a '+ITEMS[id].n+' and ride it out of the stable.','gold')}
-    else if(invAdd('gear',id,1)){P.gold-=p;log('You buy a '+ITEMS[id].n+'. Swap mounts in your inventory.','gold')}}}
-  else if(a==='sell-loot'){const x=P.inv[+arg];if(x&&x.k==='mat'){const g=matPrice(x.id)*x.n;P.gold+=g;P.inv[+arg]=null;train('trade',g/20);log('You sell '+x.n+' '+MATS[x.id].n.toLowerCase()+(x.n>1?'s':'')+' for '+g+' gold.','gold')}}
-  else if(a==='sell-item'){const x=P.inv[+arg];if(x&&x.k==='gear'){const g=itemPrice(x.id);P.gold+=g;P.inv[+arg]=null;train('trade',g/20);log('You sell the '+ITEMS[x.id].n+' for '+g+' gold.','gold')}}
-  else if(a==='buy'||a==='sell'){const [g,nStr]=arg.split(':');let n=+nStr;
-    if(a==='buy'){const r=buyGoods(t,g,n);if(r.got)addRep(t.name,r.spent/60,true)}
-    else{const r=sellGoods(t,g,n);train('trade',r.earned/20);addRep(t.name,r.earned/60,true)}}
-  else if(a==='tourney'){if(P.gold>=10){P.gold-=10;updateHUD(true);return startBattle({enemies:['chief'],tournament:true})}}
-  updateHUD(true);renderTown();panel.scrollTop=keep;
-  if(a==='rec-pick')panel.querySelector('.recruit-order')?.scrollIntoView({block:'nearest'});
-  if(a==='rec-review'&&G.town.review){panel.querySelector('[data-act="rec-confirm"]')?.focus();return}
-  const again=panel.querySelector('[data-act="'+a+'"][data-arg="'+arg+'"]:not([disabled])')||panel.querySelector('[data-act="tab"].on');if(again)again.focus({preventScroll:true});
+  const t=G.town&&G.town.ref;if(t)return townAct(a,arg,t);// (the rest: a town's window and its tabs, town.js)
 }
 panel.addEventListener('click',e=>{if(e.target.closest('[data-recruit-field]'))return;const b=e.target.closest('[data-act]');if(b)act(b.dataset.act,b.dataset.arg)});
 function updateRecruitDraft(e){const field=e.target.dataset.recruitField;if(!['hireCount','hireTarget','trainingGroup'].includes(field)||G.mode!=='town'||!G.town)return;

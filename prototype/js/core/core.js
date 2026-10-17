@@ -43,7 +43,8 @@ const WORLD_PACE=.6,BATTLE_PACE=.6,HERO_PACE=.85;
 const MAP_AREA=MW*MH/(112*80),MAP_DENS=.75*MAP_AREA; // the world is 4x the old map; wild things are 3x as many
 const BANDITS=Math.round(10*MAP_DENS),MONSTER_CAP=Math.round(20*MAP_DENS),MONSTER_START=Math.round(16*MAP_DENS);
 // actions: every button names one (data-act="prefix-name"); each system claims its prefix once with onAct, so two systems can
-// never answer the same button. Actions without a registered prefix fall through to the town and encounter handlers in input.js.
+// never answer the same button. Actions without a registered prefix fall through to act() in input.js (menu, encounters), and
+// a town's own (tab, hire, buy …) on to townAct in ui/town.js.
 const ACTS={};
 function onAct(prefix,fn){if(!/^[a-z]+-$/.test(prefix))throw new Error('Action prefixes look like "name-": '+prefix);if(ACTS[prefix])throw new Error('Two systems claim the action prefix '+prefix);ACTS[prefix]=fn}
 // run a registered action; false if no system owns its prefix

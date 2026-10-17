@@ -24,11 +24,11 @@ Parallel split (no file overlap): **A** items 1+2 (commander.js, new characters.
 9. **`WorldObject` base** (plan 5.2): five parallel per-kind switch sites (`drawWorld`, `pickAt`, `objKind`→`interact`/`tipFor`/chase, `partyKind`, visibility rule ×3, `estatePick` stand-in) → base with `kind`, `inView`, `pick`, `tip`, `meet`, `draw`, `mapDot` and a `worldObjects()` iterator; incremental (parties → sites → estates → movers); saves stay plain JSON.
 10. **Party polymorphism** (`kind` getter, `power()` replacing `rating/bandPower/cpPower` — note `bandPower` silently generates troops — `label()`, faction), then remove compatibility wrappers (`partyAdd/Remove/Transfer*`, `canEnter/lordEnter/lordLeave`, `caravanMeet/caravanLoot/seizeCaravan`, `siteKnown/siteClear/stockTravelers`, `BandParty.list`, `champSkill`, `brainOf`, defensive `asParty` at use sites) with the test agent. `partyClassOf` infers class from field shape; an explicit saved kind would change the save shape (owner's call).
 11. **Battle event hook** with battle-fun "juice": `battleEvent(type,data)` + listeners (HUD callouts, lab telemetry) instead of direct `callout*`/`BattleLab.event` calls in simulation code and HUD polling of `B.fallBack`.
-12. **Town actions** out of `input.js` `act()` into `town.js` `townAct` (keep action names).
+12. **(Done 2026-10-17)** **Town actions** out of `input.js` `act()` into `town.js` `townAct` (keep action names).
 13. **Readable battle tick:** extract `pushApart`, `keepOffObstacles`, `checkBattleOver` from `updateBattle` (same order).
 14. **Geometry helpers** `centroid`, `edgeGap`, `reachOf` (≈15/10/7 inline copies) — same arithmetic order so fingerprints hold.
 15. Drop ~45 defensive `W.x||[]` guards (all lists exist after `makeWorldState`).
-16. One `PREFS` settings table (8 copy-pasted localStorage IIFEs + act lines).
+16. **(Done 2026-10-17)** One `PREFS` settings table (8 copy-pasted localStorage IIFEs + act lines).
 17. `G.youAttack` set/cleared with `setTimeout` → `try/finally` around `interact`.
 18. Later, with the test agent: retire per-soldier morale mirrors (`sync()` writes 12 fields/tick; only resolution.js reads them in game code), re-recording fingerprints with a stated reason.
 

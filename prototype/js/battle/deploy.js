@@ -7,12 +7,14 @@
    The AI button (A) hands it to a captain who commands it as the enemy's does (commander.js); any order you give takes it back. ---------- */
 // zone: the share of the field (from your edge) you deploy in
 const DEPLOY={zone:.3};
-const BDEPLOY={on:(()=>{try{return localStorage.getItem('ashmark.bdeploy')!=='0'}catch(e){return true}})()};
+// deployment on or off (Settings); BDEPLOY, AUTOSK and BAUTO are views over the settings table (PREFS, ui.js)
+const BDEPLOY=prefView('bdeploy');
 // your characters' skills and special moves on their own (Auto skills, K): on, they use them when the moment is right; off, never
-const AUTOSK={on:(()=>{try{return localStorage.getItem('ashmark.autoskills')!=='0'}catch(e){return true}})()};
-function setAutoSkills(on){AUTOSK.on=!!on;try{localStorage.setItem('ashmark.autoskills',AUTOSK.on?'1':'0')}catch(e){}autoUI();if(B)log('Auto skills '+(AUTOSK.on?'on: your hero and companions use their skills when the moment is right.':'off: your hero and companions use no skills.'))}
-const BAUTO={on:(()=>{try{return localStorage.getItem('ashmark.bauto')==='1'}catch(e){return false}})()};
-function setDeploy(on){BDEPLOY.on=!!on;try{localStorage.setItem('ashmark.bdeploy',BDEPLOY.on?'1':'0')}catch(e){}}
+const AUTOSK=prefView('autoskills');
+function setAutoSkills(on){prefSet('autoskills',on);if(B)log('Auto skills '+(AUTOSK.on?'on: your hero and companions use their skills when the moment is right.':'off: your hero and companions use no skills.'))}
+// the AI in command of your army, kept for the next battle (setAuto)
+const BAUTO=prefView('bauto');
+function setDeploy(on){prefSet('bdeploy',on)}
 // the deployment zone (field px)
 const deployZone=()=>({x0:8,x1:Math.round(BW*DEPLOY.zone),y0:fieldTop(),y1:fieldBot()});
 function deployInit(opts){B.deploy=!!(opts.deploy&&(opts.sandbox||BDEPLOY.on)&&!opts.tournament);B.auto=!opts.tournament&&BAUTO.on;if(B.deploy&&GUIDE.on)log('Deploy your band: right-click or right-drag in the shaded zone, then Space to begin.')}
@@ -32,7 +34,7 @@ function drawDeploy(){
 }
 // the AI in command of your army, on or off (remembered for the next battle)
 function setAuto(on,quiet){
-  if(!B)return;B.auto=!!on;if(!B.opts.sandbox){BAUTO.on=B.auto;try{localStorage.setItem('ashmark.bauto',B.auto?'1':'0')}catch(e){}}
+  if(!B)return;B.auto=!!on;if(!B.opts.sandbox)prefSet('bauto',B.auto);
   if(B.auto)for(const g of playerGroups())B.groups[g].aiReset();
   if(B.captains)delete B.captains[0];// (your captain's memory (commander.js captainMem, its key 0): afresh each time)
   B.cmdT=0;autoUI();if(!quiet)log(B.auto?'The AI takes command of your army (A: take it back).':'You take command of your army.');

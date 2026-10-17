@@ -45,30 +45,49 @@ function tipFor(o){
 function hideTip(){const t=document.getElementById('tip');if(t){t.hidden=true;t.classList.remove('hold')}}
 // full screen (F11 does the same)
 function toggleFull(){try{if(document.fullscreenElement)document.exitFullscreen();else document.documentElement.requestFullscreen()}catch(e){}}
-/* the main menu: Continue, New game, Load game, Settings, Wiki, Exit; opened from the HUD it can Resume the game in progress */
-// the tile grid: a faint line along every 16-pixel tile edge on the map and in scenes; remembered between games
-const GRID={on:(()=>{try{return localStorage.getItem('ashmark.grid')==='1'}catch(e){return false}})()};
-function setGrid(on){GRID.on=!!on;try{localStorage.setItem('ashmark.grid',GRID.on?'1':'0')}catch(e){}}
-// health bars over every fighter in battle (off: only you and your companions); remembered between games
+/* ---------- settings, remembered between games, each in its own browser-storage key 'ashmark.<key>' ----------
+   PREFS: key → def (the default: nothing stored, or storage blocked), read (the stored text → the value), write (the value →
+   the text), apply (what a change does at once, once stored). prefSet keeps the value as a reload would read it back. The
+   globals other files read (GRID.on, BSPEED.v …; deploy.js: BDEPLOY, AUTOSK, BAUTO) are views over PREFS: setting one
+   directly changes it for this session only, stored nowhere (the tests do) */
+const BATTLE_SPEEDS=[.5,1,2,5];
+// on/off, stored '1' or '0'; anything else reads as the default
+const prefOnOff=(def,apply)=>({def,read:s=>def?s!=='0':s==='1',write:v=>v?'1':'0',apply});
+const PREFS={
+  grid:prefOnOff(false),// the tile grid: a faint line along every 16-pixel tile edge on the map and in scenes (G)
+  bspeed:{def:1,read:s=>BATTLE_SPEEDS.includes(+s)?+s:1,write:String},// the speed each battle starts at
+  guide:prefOnOff(true,()=>{if(typeof updateHint==='function')updateHint()}),// guide texts: the hints at the top of the screen and the helper lines in towns and battle
+  bdeploy:prefOnOff(true),// deployment: a battle you fight opens frozen, to place your band first (deploy.js)
+  hpbars:prefOnOff(true,v=>{const b=typeof document!=='undefined'&&document.getElementById('hpBtn');if(b){b.classList.toggle('on',v);b.setAttribute('aria-pressed',String(v))}}),// health bars over every fighter in battle (off: only you and your companions); the HP bars button shows it
+  blood:prefOnOff(true),// blood in battle: the spray of a blow, the stains it leaves, the pool under the fallen (off: none of it; the fallen still lie)
+  autoskills:prefOnOff(true,()=>autoUI()),// your characters use their skills on their own (Auto skills, K: deploy.js)
+  bauto:prefOnOff(false)};// the AI in command of your army (A), kept for the next battle (setAuto, deploy.js)
+// what a setting reads as from storage (as the game loads)
+function prefLoad(k){const p=PREFS[k];try{return p.read(localStorage.getItem('ashmark.'+k))}catch(e){return p.def}}
+for(const k in PREFS)PREFS[k].v=prefLoad(k);
+const prefGet=k=>PREFS[k].v;
+function prefSet(k,v){const p=PREFS[k],s=p.write(v);p.v=p.read(s);try{localStorage.setItem('ashmark.'+k,s)}catch(e){}if(p.apply)p.apply(p.v)}
+const prefView=(k,f='on')=>Object.defineProperty({},f,{get:()=>prefGet(k),set:v=>{PREFS[k].v=v},enumerable:true});
+const GRID=prefView('grid'),BSPEED=prefView('bspeed','v'),GUIDE=prefView('guide'),HPBARS=prefView('hpbars'),BLOOD=prefView('blood');
+function setGrid(on){prefSet('grid',on)}
+function setGuide(on){prefSet('guide',on)}
+function setHpBars(on){prefSet('hpbars',on)}
+function setBlood(on){prefSet('blood',on)}
+// a Settings button: data-act names the setting, data-arg its new value (on/off, or a speed; econmode: the realm economy,
+// economy.js), and the page redraws; false if the action is no setting
+function settingAct(a,arg){
+  if(a==='econmode')setEconMode(arg);else if(a==='bspeed')setBattleSpeed(+arg,true);else if(['grid','blood','hpbars','bdeploy','guide'].includes(a))prefSet(a,arg==='on');else return false;
+  showTitle('settings');return true}
 // the battle's speed: the clock runs at this rate (and stands still while paused, though you can still give orders: a
-// tactical pause); each battle starts at the speed set in Settings
-const BATTLE_SPEEDS=[.5,1,2,5],BSPEED={v:(()=>{try{const n=+localStorage.getItem('ashmark.bspeed');return BATTLE_SPEEDS.includes(n)?n:1}catch(e){return 1}})()};
-function setBattleSpeed(v,save){if(!BATTLE_SPEEDS.includes(v))return;if(B)B.speed=v;if(save){BSPEED.v=v;try{localStorage.setItem('ashmark.bspeed',String(v))}catch(e){}}battleSpeedUI()}
+// tactical pause); B.speed is this battle's, BSPEED.v the one each battle starts at (save: set that too, as Settings does)
+function setBattleSpeed(v,save){if(!BATTLE_SPEEDS.includes(v))return;if(B)B.speed=v;if(save)prefSet('bspeed',v);battleSpeedUI()}
 function battleSpeedStep(d){const i=BATTLE_SPEEDS.indexOf(B?B.speed:BSPEED.v);setBattleSpeed(BATTLE_SPEEDS[clamp(i+d,0,BATTLE_SPEEDS.length-1)])}
 function battlePause(on){if(!B)return;if(B.deploy){if(on!==true)beginFight();return}B.paused=on==null?!B.paused:!!on;battleSpeedUI()}
 function battleSpeedUI(){if(typeof document==='undefined')return;const sp=B?B.speed:BSPEED.v;
   document.querySelectorAll('[data-bspeed]').forEach(b=>{const on=+b.dataset.bspeed===sp;b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on))});
   const p=document.getElementById('bPause');if(p){const on=!!(B&&B.paused);p.classList.toggle('on',on);p.setAttribute('aria-pressed',String(on));p.textContent=B&&B.deploy?'⚔ Begin':on?'▶ Play':'⏸ Pause'}if(B&&typeof bhudTop==='function')bhudTop()}
-const HPBARS={on:(()=>{try{return localStorage.getItem('ashmark.hpbars')!=='0'}catch(e){return true}})()};
-// blood in battle: the spray of a blow, the stains it leaves, the pool under the fallen (off: none of it; the fallen still lie)
-const BLOOD={on:(()=>{try{return localStorage.getItem('ashmark.blood')!=='0'}catch(e){return true}})()};
-function setBlood(on){BLOOD.on=!!on;try{localStorage.setItem('ashmark.blood',BLOOD.on?'1':'0')}catch(e){}}
-function setHpBars(on){HPBARS.on=!!on;try{localStorage.setItem('ashmark.hpbars',HPBARS.on?'1':'0')}catch(e){}const b=typeof document!=='undefined'&&document.getElementById('hpBtn');if(b){b.classList.toggle('on',HPBARS.on);b.setAttribute('aria-pressed',String(HPBARS.on))}}
 // the controls in brief (Settings); every key is in Help (H)
 const CONTROLS='World map: click to travel, hover for details, Space to pause, 1 2 3 for the speed, C your hero and party, K skills, I your bag, L the message log, H help, G the tile grid, F6 to save, Esc the menu. Battle: click or drag to select, right-click to move or attack, right-drag to lay out a line, 1–9/0 to select the ten army cards, Ctrl+number to store a custom selection, Home to reset the camera, H hold, C run, V walk (the pace; a double right-click on an enemy charges), W withdraw, R walk or run, F hold ground, Q cease fire, E skirmish, X melee mode (shooters), B L T formations, A the AI in command, K auto skills, Space to pause, [ ] the speed, the wheel to zoom. Every key: Help (H).';
-// guide texts: the hints at the top of the screen and the helper lines in towns and battle, on or off (Settings)
-const GUIDE={on:(()=>{try{return localStorage.getItem('ashmark.guide')!=='0'}catch(e){return true}})()};
-function setGuide(on){GUIDE.on=!!on;try{localStorage.setItem('ashmark.guide',GUIDE.on?'1':'0')}catch(e){}if(typeof updateHint==='function')updateHint()}
 const saveLine=sv=>'Day '+sv.day+' · '+RACES[sv.P.race||'human'].n+' '+((BGS[sv.P.bg]||{}).n||'hero').toLowerCase()+' · level '+sv.P.level+' · '+sv.P.gold+' gold'+(sv.at?' · '+new Date(sv.at).toLocaleString([], {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):'');
 // the slots, each a row: load it (or save into it), and delete it (two clicks)
 function slotRows(mode){return SAVE_SLOTS.filter(s=>mode==='save'?s!=='auto':true).map(s=>{const d=readSlot(s),armed=G.wipeArmed===s,over=G.overArmed===s;
@@ -78,6 +97,7 @@ function slotRows(mode){return SAVE_SLOTS.filter(s=>mode==='save'?s!=='auto':tru
 // Small, code-drawn origin illustrations keep the new-game cards vivid without loading extra sprite sheets.
 const ORIGIN_ART={soldier:['#273747','#c1844d','#d7b974','M0 82h320v30H0z M28 55h38v27H28z M36 40h22v15H36z M234 48h54v34h-54z M246 30h28v18h-28z','sword'],guard:['#314641','#b68449','#d6c48b','M0 82h320v30H0z M20 55h42v27H20z M28 40h26v15H28z M250 50h40v32h-40z','spear'],woodcutter:['#233b32','#8f6844','#b9a168','M0 76h320v36H0z M15 0h24v75H15z M54 0h17v74H54z M258 12h14v60h-14z M284 0h23v77h-23z','axe'],exile:['#29384a','#bb7658','#b8c0a0','M0 82h320v30H0z M20 38h30v44H20z M36 18h30v30H36z M256 28h18v54h-18z M270 12h34v35h-34z','bow'],merchant:['#4a3b38','#be8650','#dfc377','M0 82h320v30H0z M16 52h50v30H16z M25 36h34v16H25z M254 53h40v29h-40z','crossbow'],hedge:['#34354e','#9077a8','#c2acd0','M0 82h320v30H0z M18 56h42v26H18z M29 39h23v17H29z M245 52h48v30h-48z M263 32h15v20h-15z','staff'],apprentice:['#37414b','#7393a0','#d1b678','M0 82h320v30H0z M20 59h40v23H20z M30 43h21v16H30z M250 58h45v24h-45z M266 40h14v18h-14z','wand']};
 function originArt(key){const [sky,coat,glow,land,weapon]=ORIGIN_ART[key]||ORIGIN_ART.soldier;const stars=key==='hedge'||key==='apprentice'?'<path d="M36 18v8m-4-4h8M260 18v7m-3-3h6M111 34v5m-2-2h4" stroke="#e8d58c" stroke-width="2"/>':'';const arms=weapon==='bow'?'<path d="M210 38q-22 26 0 52M210 39q18 25 0 51M210 40v50" fill="none" stroke="#c79655" stroke-width="3"/><path d="M209 64h-21" stroke="#e5d6b5" stroke-width="2"/>':weapon==='spear'?'<path d="M211 27v72" stroke="#9f7048" stroke-width="4"/><path d="M211 24l-5 12h10z" fill="#c7c8bb"/>':weapon==='axe'?'<path d="M210 49v48" stroke="#9a6942" stroke-width="5"/><path d="M207 49q19-12 22 3l-13 8-9-3z" fill="#bfc2b6"/>':weapon==='crossbow'?'<path d="M195 61h33m-16-13v27m-15-23q15 19 30 0" fill="none" stroke="#bd9259" stroke-width="4"/>':weapon==='staff'?'<path d="M211 34v64" stroke="#94744e" stroke-width="4"/><path d="M211 27l5 6-5 6-5-6z" fill="#c2a9da"/>':weapon==='wand'?'<path d="M209 49l7 46" stroke="#ab8150" stroke-width="4"/><path d="M207 44l3-7 5 6-4 7z" fill="#b9dcdf"/>':'<path d="M210 40v57" stroke="#927047" stroke-width="4"/><path d="M205 33h10v30h-10z" fill="#b8c6cc"/><path d="M205 34h10" stroke="#ead9ac" stroke-width="2"/>';return '<svg class="origin-art" viewBox="0 0 320 112" aria-hidden="true" focusable="false" shape-rendering="crispEdges"><rect width="320" height="112" fill="'+sky+'"/><circle cx="268" cy="24" r="12" fill="'+glow+'" opacity=".9"/><path d="M0 69l42-28 41 28 48-38 55 40 48-31 86 39v22H0z" fill="#17242b" opacity=".8"/>'+stars+'<path d="'+land+'" fill="#3a493f"/><ellipse cx="164" cy="96" rx="34" ry="6" fill="#172127" opacity=".7"/><path d="M151 48h27v12h8v25h-7v12h-28V85h-7V60h7z" fill="'+coat+'"/><rect x="155" y="34" width="20" height="19" fill="#c89a70"/><path d="M152 38h25v5h-25z" fill="#382b2a"/><path d="M151 60l-12 20 5 3 16-14m18-9 13 16-4 4-17-13" fill="none" stroke="'+coat+'" stroke-width="7"/><path d="M152 94v13m20-13v13" stroke="#222a31" stroke-width="7"/>'+arms+'<path d="M0 108h320" stroke="'+glow+'" stroke-width="4" opacity=".7"/></svg>'}
+/* the main menu: Continue, New game, Load game, Settings (settingAct), Wiki, Exit */
 function showTitle(screen){
   // (the main menu leaves the game behind: no Resume here; the pause menu (Esc) is where you resume)
   G.resume=null;G.mode='title';G.menu=screen||'main';G.race=G.race||'human';const sv=readSave(),back=nav(['menu','main','Back']);
