@@ -15,6 +15,7 @@ window.RUN=()=>{const t=T,L=t.BattleLab,o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL '
  ok(us[0].tgt===os[0]&&hit.includes(os[0])&&g.targetGroupId===chosen.id,'immediate self-defence can hit an unrelated attacker without changing tactical focus');
  os[0].x=600;us[0].rt=99;t.aiUnit(us[0],.01,()=>{});ok(us[0].tgt.grp===chosen.id,'soldier resumes the ordered formation when the immediate threat leaves');
  {const hu=h.units[0],hn=hu.near,ht=hu.tgt;hu.x=200;hu.y=400;hu.rt=0;os[1].x=hu.x+6;os[1].y=hu.y;h.attack(es[2]);t.aiUnit(hu,.01,()=>{});ok(hu.tgt&&hu.tgt.grp===chosen.id&&!hu.near,'your hero, sent at a formation, does not turn on an unrelated enemy he brushes past');h.hold();hu.near=hn;hu.tgt=ht}
+ {const hu=h.units[0];h.attack(es[2]);const af=t.abilityFoes(hu);ok(af.length&&af.every(e=>e.grp===chosen.id),'your hero’s leaps, dashes and aimed skills only go for the formation he was sent at');h.hold();ok(t.abilityFoes(hu).some(e=>e.grp===other.id),'without an attack order his skills may go for anyone')}
  us[0].alt=os[1];us[0].altT=5;us[0].near=null;us[0].tgt=es[0];t.crowdTarget(us[0],.01);ok(!us[0].alt||us[0].alt.grp===chosen.id,'crowd retargeting cannot retain an opponent from an unrelated formation');
  const ar=bow.units;ar.forEach((u,i)=>{u.x=200;u.y=200+i*80;u.rt=0;u.s={...u.s,range:180};u.shot=null;u.cd=0});bow.face=bow.currentFacing=0;bow.cease=true;bow.attack(es[0]);
  es[0].x=150;es[0].y=200;es[1].x=300;es[1].y=200;es[2].x=300;es[2].y=280;

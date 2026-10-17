@@ -80,13 +80,16 @@ const ABILITY_WHEN={
 const ABILITY_ORDER=['heal','whirl','quake','nova','leap','dash','fireball','volley','cry','banner'];
 // a bow in hand: your hero's weapon, a champion's kind
 const hasBow=u=>u.hero?isBow():!!u.s.range;
+// whom his aimed and moving skills (a leap, a dash, a fireball, a volley) may go for: your hero and companions sent at a foe, only
+// that foe's formation (no leaping off onto another knot on the way); else anyone. Skills cast where he stands count everyone near
+function abilityFoes(u){const g=u.grp&&B.groups[u.grp],all=foesOf(u);if(!(g&&g.player&&isChar(u)&&g.hasTarget))return all;const m=g.targetMembers().filter(e=>e.hp>0&&!e.rout);return m.length?m:all}
 // the ability that fits the moment, of those this unit has, ready and paid for; cast it. True if cast
 function chooseAbility(u){
   if(u.grp&&relocating(u,B.groups[u.grp]))return false;// (on the move: actors.js)
   const ids=u.unit?u.unit.actives():[];if(!ids.length)return false;const foes=foesOf(u);if(!foes.length)return false;
   const mine=alliesOf(u),near=(x,y,r,list)=>withinOf(x,y,r,list).length;
-  const close=foes.reduce((a,e)=>Math.hypot(e.x-u.x,e.y-u.y)<Math.hypot(a.x-u.x,a.y-u.y)?e:a),d=Math.hypot(close.x-u.x,close.y-u.y);
-  const knot=r=>{let best=null,bn=0;for(const e of foes){const n=near(e.x,e.y,r,foes);if(n>bn){bn=n;best=e}}return best&&{x:best.x,y:best.y,n:bn}};
+  const aim=abilityFoes(u),close=aim.reduce((a,e)=>Math.hypot(e.x-u.x,e.y-u.y)<Math.hypot(a.x-u.x,a.y-u.y)?e:a),d=Math.hypot(close.x-u.x,close.y-u.y);
+  const knot=r=>{let best=null,bn=0;for(const e of aim){const n=near(e.x,e.y,r,foes);if(n>bn){bn=n;best=e}}return best&&{x:best.x,y:best.y,n:bn}};
   const c={foes,mine,near,close,d,knot};
   for(const id of ABILITY_ORDER){if(!ids.includes(id))continue;const S=ABILITIES[id],K=kitOf(u,id);
     if(K.st.cds[id]>0||!K.can(true)||S.melee&&hasBow(u)||S.needs==='bow'&&(!hasBow(u)||K.hero&&goodN('arrows')<4))continue;
