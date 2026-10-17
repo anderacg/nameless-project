@@ -74,7 +74,7 @@ function staySiege(t){
   const ls=siegeLordsAt(t);if(!ls.length)return;G.mode='dialog';P.tx=null;
   const l=ls.slice().sort((a,b)=>lordSpeed(b)-lordSpeed(a))[0],od=fleeOdds({kind:'lord',ref:l,foes:ls.filter(o=>o!==l&&Math.hypot(o.x-l.x,o.y-l.y)>40)});
   showPanel('<div class="top"><h2>'+t.name+' is besieged</h2><span class="muted">You are inside</span></div>'+
-    '<p>'+ls.map(o=>o.name+' of the '+FACS[o.fac].n+' ('+o.troops.length+' soldiers, power '+rating(o.troops)+')').join(' and ')+' '+(ls.length>1?'surround':'surrounds')+' the walls. Your power <strong>'+partyPower()+'</strong>, the garrison '+t.gar+'.</p>'+
+    '<p>'+ls.map(o=>o.name+' of the '+FACS[o.fac].n+' ('+o.troops.length+' soldiers, power '+o.power()+')').join(' and ')+' '+(ls.length>1?'surround':'surrounds')+' the walls. Your power <strong>'+partyPower()+'</strong>, the garrison '+t.gar+'.</p>'+
     '<div class="btns" style="flex-direction:column;align-items:stretch">'+
     ls.map((o,i)=>dlgBtn('sy-defend',i,'Defend the walls: attack '+o.name+(hostileTo(o.fac)?'':' (the '+FACS[o.fac].n+' turns hostile)'),P.fac&&P.fac===o.fac?'Your employer':'',!i)).join('')+
     dlgBtn('sy-slip','','Slip out past '+l.name+(od.ch>0?' · '+Math.round(od.ch*100)+'% to get away':''),od.ch>0?'':od.why)+

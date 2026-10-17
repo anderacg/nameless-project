@@ -16,7 +16,7 @@ try{
  // a click on a far town still just walks there
  reset();const far=t.TOWNS.find(x=>Math.hypot(x.x-P.x,x.y-P.y)>200);click(far.x,far.y);ok(G.mode==='world'&&P.tx!=null,'a far town is walked to, not opened');
  // bandits that you fled from
- reset();W.critters=[];W.monsters=[];G.encCool=4;const b={x:P.x+12,y:P.y,n:3,cool:6,t:0,a:0,kind:'bandits'};t.bandits.length=0;t.bandits.push(b);t.bandPower(b);
+ reset();W.critters=[];W.monsters=[];G.encCool=4;const b={x:P.x+12,y:P.y,n:3,cool:6,t:0,a:0,kind:'bandits'};t.bandits.length=0;t.bandits.push(t.asParty(b));
  click(b.x,b.y-4);ok(G.mode==='dialog'&&(G.enc&&G.enc.ref===b||G.par&&G.par.o===b),'clicking bandits you just fled re-opens the encounter (or, cornered, their offer to talk) ('+G.mode+' '+(G.enc&&G.enc.kind)+' P.tx '+P.tx+' ptr '+JSON.stringify(G.mouse)+')');t.act('flee');
  // a monster
  reset();t.bandits.length=0;const m={id:'boar',x:P.x+12,y:P.y,hx:P.x,hy:P.y,lv:1,n:2,t:0,a:0,cool:5};W.monsters=[m];click(m.x,m.y-6);ok(G.enc&&G.enc.kind==='monster','clicking a monster beside you starts the fight');t.act('flee');
@@ -30,7 +30,7 @@ try{
  W.patrols=[];W.caravans=[];W.refugees=[];W.folk=[];t.bandits.length=0;W.monsters=[];G.encCool=1e9;// nobody on the road to meet on the way
  click(far2.x,far2.y);ok(G.mode==='world'&&G.chase===far2&&P.tx!=null,'clicking a holding 60 away does not open it, your band walks there');
  for(let i=0;i<400&&G.mode==='world';i++)t.updateWorld(.05);ok(G.mode==='town'||G.mode==='besiege','on arrival it opens ('+G.mode+' '+(G.mode==='dialog'?document.getElementById('panel').textContent.slice(0,160):'')+')');t.hidePanel();G.mode='world';G.modal=false;G.town=null;
- reset();G.encCool=0;const b2={x:P.x+40,y:P.y,n:3,cool:0,t:0,a:0,kind:'bandits',idle:true};t.bandits.length=0;t.bandits.push(b2);t.bandPower(b2);
+ reset();G.encCool=0;const b2={x:P.x+40,y:P.y,n:3,cool:0,t:0,a:0,kind:'bandits',idle:true};t.bandits.length=0;t.bandits.push(t.asParty(b2));
  ok(!t.clickAt(b2.x,b2.y-4)&&G.mode==='world'&&G.chase===b2,'clicking bandits 40 away starts a chase, not a fight');
  t.frame();
  // structures answer wherever they are drawn: the centre's far corner, a house, a wall piece, but not the open ground beside

@@ -87,7 +87,7 @@ class BattleResolution{
     }else if(retreat){
       // as fleeing on the map (fleeOdds): a fight you started you simply leave; else a race. Got away, they lose your trail for a
       // while; run down, your rearguard pays and you must face them again. The foes you slew stay dead either way.
-      const o=e.ref;slain=slain||[];if(!this.primaryLossesApplied&&o&&(e.kind==='lord'||e.kind==='patrol'||e.kind==='party'))for(const k of slain)if(formsFit(asParty(o)))partyRemove(o,k,1);
+      const o=e.ref;slain=slain||[];if(!this.primaryLossesApplied&&o&&(e.kind==='lord'||e.kind==='patrol'||e.kind==='party'))for(const k of slain)if(formsFit(o))o.remove(k,1);
       if(e.list)for(const k of slain){const i=e.list.indexOf(k);if(i>=0)e.list.splice(i,1)}
       mood('flee');if(kills)gainXp(kills*4);
       const od=fleeOdds(e),away=od.leave||od.ch>0&&Math.random()<od.ch,rear={};
@@ -112,7 +112,7 @@ class BattleResolution{
       if(e.kind==='party'||e.kind==='camp')chiefWins(e.ref,partySize()+1);// the chieftain who beat you grows
       const safe=TOWNS.filter(t=>!hostileTo(t.owner)),near=nearestOf(P,safe.length?safe:TOWNS);
       P.x=near.x;P.y=near.y+24;G.lastTown=near;if(e.kind!=='camp')e.ref.cool=8;
-      if(e.kind==='lord'){const l=e.ref;if(auto)cull(l,.3);else if(!this.primaryLossesApplied)for(const k of slain)partyRemove(l,k,1);lordWins(l,partySize())}
+      if(e.kind==='lord'){const l=e.ref;if(auto)cull(l,.3);else if(!this.primaryLossesApplied)for(const k of slain)l.remove(k,1);lordWins(l,partySize())}
       html='<h2>Defeat</h2><p>Your band was routed. You lost '+lose+' gold and woke up near '+near.name+'.</p>'+moodLine;
       log('Defeat. You wake near '+near.name+'.','bad');
     }

@@ -34,7 +34,7 @@ try{
  ok(/Gold|XP/.test(panel()),'and pays out like any victory');t.act('cont');while(G.mode==='perk')t.act('perk',G.perkOffer[0]);
  // not the bandits' side, not against your employer
  world();W.caravans=[];const from=t.townBy('Saltmere');from.owner=t.HOME.Saltmere;from.sacked=from.raided=0;t.ensureEcon(from);from.stock.cloth=400;from.stock.timber=400;let cv=null;for(let i=0;i<20&&!cv;i++)cv=t.sendCaravan(from);W.caravans=cv?[cv]:[];
- if(cv){const bd={x:cv.x+5,y:cv.y,n:12,kind:'bandits',list:Array(12).fill('militia'),t:0,a:0,idle:true,cool:0};t.bandits.push(bd);P.x=-9000;t.updateCaravans(.01);const fc=W.fights.find(x=>x.sides.flat().includes(cv.uid));
+ if(cv){const bd={x:cv.x+5,y:cv.y,n:12,kind:'bandits',list:Array(12).fill('militia'),t:0,a:0,idle:true,cool:0};t.bandits.push(t.asParty(bd));P.x=-9000;t.updateCaravans(.01);const fc=W.fights.find(x=>x.sides.flat().includes(cv.uid));
    ok(fc&&cv.fight,'bandits falling on a caravan start a fight with its guards');
    G.fg=fc;t.fightMeet(fc);ok(/They are bandits/.test(panel()),'you cannot side with bandits');world();
    run(fc,8000);ok(!W.caravans.includes(cv)&&t.bandits.includes(bd),'a big band beats the guards and plunders the caravan')}

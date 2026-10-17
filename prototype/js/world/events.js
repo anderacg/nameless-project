@@ -73,7 +73,8 @@ function showEvent(result){
 function eventAct(a,arg){
   if(a==='ev-choose'&&G.mode==='event'){const c=eventDef().choices[+arg];if(c.need&&c.need())return true;const res=c.run();P.morale=clamp(P.morale,0,100);updateHUD(true);log(res);showEvent(res);return true}
   if(a==='ev-done'&&G.mode==='event'){const fight=G.event.fight;G.event=null;G.mode='world';hidePanel();
-    if(fight)startEncounter({kind:'party',ref:{x:P.x,y:P.y,cool:0},n:rint(4,6)+Math.floor(G.day/15),band:'bandits'});else saveGame(true);return true}
+    // (an ambush: a band of its own, its fighters mustered here, as every band's are)
+    if(fight){const n=rint(4,6)+Math.floor(G.day/15),b=asParty({x:P.x,y:P.y,cool:0,n,kind:'bandits'});startEncounter({kind:'party',ref:b,n,list:b.troops.slice(),band:'bandits'})}else saveGame(true);return true}
   return false;
 }
 onAct('ev-',eventAct);

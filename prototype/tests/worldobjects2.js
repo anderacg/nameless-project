@@ -165,13 +165,15 @@ try{
  window.__oldObjKind=ev('('+OLD_OBJKIND.replace('const objKind=','').replace(/;$/,'').replace('o instanceof WorldObject','o instanceof Party')+')');
  const oldObjKind=window.__oldObjKind,oldPick=ev('('+OLD_PICK+')');
  const oldInteract=ev('('+OLD_INTERACT.replace('objKind(o)','__oldObjKind(o)').replace('o instanceof WorldObject','o instanceof Party')+')');
- const oldTip=ev('('+OLD_TIP.replace('objKind(o)','__oldObjKind(o)')+')');
+ // (the helpers named there that are gone since, read as their methods now: item 10)
+ const since=s=>s.replace(/siteKnown\(s\)/g,'s.known()').replace(/bandPower\(o\)/g,'o.power()').replace(/o\.list\|\|\[\]/g,'o.troops');
+ const oldTip=ev('('+since(OLD_TIP).replace('objKind(o)','__oldObjKind(o)')+')');
  // (the chase: dropped when, and met during the cool-down after a fight: its two lines, read as two tests)
  const oldDrop=ev('(o=>{const k=__oldObjKind(o);return '+OLD_CHASE.slice(OLD_CHASE.indexOf('if(!k')+3,OLD_CHASE.indexOf(')G.chase=null'))+'})');
  const oldCool=ev('(k=>'+OLD_CHASE.match(/(\[\'town\'[^\]]*\])\.includes\(k\)/)[0]+')');
  ev('window.__oldLotEnts=('+OLD_LOTS+');window.__oldDrawFolk=('+OLD_FOLK+');window.__oldDrawShips=('+OLD_SHIPS+');window.__oldDrawRefugees=('+OLD_REF+')');
  // (drawWorld as it was: its helpers as they were; the minimap's movers were then the parties and caravans: worldObjects)
- const oldDraw=ev('('+OLD_DRAW.replace('estateEnts(bents,cam,V)','__oldLotEnts(bents,cam,V)').replace('drawFolk(ents,cam,V)','__oldDrawFolk(ents,cam,V)').replace('drawShips(ents,cam,V)','__oldDrawShips(ents,cam,V)').replace('drawRefugees(ents,cam,V)','__oldDrawRefugees(ents,cam,V)').replace('worldObjects()','[...W.parties,...W.caravans.map(asParty)]')+')');
+ const oldDraw=ev('('+since(OLD_DRAW).replace('estateEnts(bents,cam,V)','__oldLotEnts(bents,cam,V)').replace('drawFolk(ents,cam,V)','__oldDrawFolk(ents,cam,V)').replace('drawShips(ents,cam,V)','__oldDrawShips(ents,cam,V)').replace('drawRefugees(ents,cam,V)','__oldDrawRefugees(ents,cam,V)').replace('worldObjects()','[...W.parties,...W.caravans.map(asParty)]')+')');
  ok([OLD_PICK,OLD_INTERACT,OLD_TIP,OLD_DRAW].every(s=>s.length>500)&&/estateEnts\(bents/.test(OLD_DRAW)&&/worldObjects\(\)/.test(OLD_DRAW),'the old ways are kept as text ('+[OLD_PICK,OLD_INTERACT,OLD_TIP,OLD_DRAW].map(s=>s.length).join(', ')+' characters)');
  // ---- a crowd by a holding: a lord, a band beside him, two patrols, a caravan, your companion's party, a beast and the dragon,
  // herds wild and kept, refugees, workers on the road, every kind of site and a ship; some made as a save or a test makes them
@@ -272,7 +274,7 @@ try{
   const e0=ERR.length;t.frame();ok(ERR.length===e0,'and the whole frame draws')}
  // ---- the minimap: the same dots, layered as before (the places, then the beasts, parties and caravans over them)
  {const V=t.vis(),a=[],n=[],dot=arr=>(x,y,col,s)=>arr.push([x,y,col,s].join());
-  ev('((dot,V)=>{'+OLD_DRAW.slice(OLD_DRAW.indexOf("  TOWNS.forEach(tw=>{if(seenTile"),OLD_DRAW.indexOf("  P.quests.forEach")).replace('worldObjects()','[...W.parties,...W.caravans.map(asParty)]')+'})')(dot(a),V);
+  ev('((dot,V)=>{'+since(OLD_DRAW.slice(OLD_DRAW.indexOf("  TOWNS.forEach(tw=>{if(seenTile"),OLD_DRAW.indexOf("  P.quests.forEach"))).replace('worldObjects()','[...W.parties,...W.caravans.map(asParty)]')+'})')(dot(a),V);
   for(const os of [t.TOWNS,W.sites,W.monsters,W.parties,W.caravans])for(const q of os){const d=q.mapDot(V);if(d)dot(n)(q.x,q.y,d[0],d[1])}
   ok(a.length>=10&&a.join('|')===n.join('|'),'the minimap dots the same things, in the same colours and order ('+n.length+')')}
  // ---- saves: plain data; the same after loading (the classes add no fields), and made their kinds again when the map asks

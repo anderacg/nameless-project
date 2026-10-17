@@ -108,7 +108,7 @@ function realmDay(){
     const light=ECON.mode==='light',upkeep=(lords.reduce((a,l)=>a+l.troops.length*.6,0)+own.reduce((a,t)=>a+t.gar*.4,0))*(light?.5:1);W.treas[f]-=Math.round(upkeep);
     // armies eat from the realm's best-stocked holdings
     let hungry=0;for(const l of lords){const need=Math.ceil(l.troops.length/6),src=own.slice().sort((a,b)=>foodStock(b)-foodStock(a))[0];const got=src?takeFood(src.stock,need):0;if(got<need)hungry++}
-    if(!light&&(W.treas[f]<0||hungry))for(const l of lords){if(l.troops.length>4&&(W.treas[f]<0||hungry&&Math.random()<.5)){const n=Math.max(1,Math.round(l.troops.length*.06));partyRemoveAny(l,n)}}
+    if(!light&&(W.treas[f]<0||hungry))for(const l of lords){if(l.troops.length>4&&(W.treas[f]<0||hungry&&Math.random()<.5)){const n=Math.max(1,Math.round(l.troops.length*.06));l.removeAny(n)}}
     if(!light&&(W.treas[f]<0||hungry)&&(f===P.fac||Math.random()<.1)&&G.day%3===0)log('The '+FACS[f].n+(W.treas[f]<0?' cannot pay its soldiers':' cannot feed its armies')+'. Men desert.',f===P.fac?'bad':'')}
   W.tolls={};
 }

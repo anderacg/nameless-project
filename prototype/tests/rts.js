@@ -292,7 +292,7 @@ try{
   fs.forEach((u,i)=>{u.x=c.x+10;u.y=c.y+(i?6:-6);u.cd=99;u.hp=u.max=9999;u.s={...u.s,spd:0};u.grp=null});B.hero.x=10;B.hero.y=10;const C=t.champ(c);C.sp=999;C.cds={whirl:99};
   const steps=[];for(let i=0;i<3;i++){c.cd=0;t.champStrike(c,fs[0]);steps.push(C.step)}ok(steps.join()==='0,1,2'&&fs[0].hp<9999,'a companion swings the whole combo of their weapon ('+t.champCombo(c).map(x=>x.n).join(' → ')+')');
   ok(c.cd>1,'and takes a breath after the finisher');C.sp=0;c.cd=0;C.win=0;const a0=fs[0].hp;t.champStrike(c,fs[0]);ok(fs[0].hp<a0&&t.tiredMul(c).dmg<1,'winded, they still fight (as a soldier does), but softer');ok(c.sta===0&&C.sp===0,'their breath is their soldier’s stamina');
-  C.cds={};C.sp=C.mp=999;const h0=fs.map(u=>u.hp);t.champSkill(c,C);ok(fs.every((u,i)=>u.hp<h0[i])&&C.cds.whirl>0,'hemmed in, they spin a Whirlwind');if(t.B){t.B.over=true;t.B.endT=0;t.B=null}}
+  C.cds={};C.sp=C.mp=999;const h0=fs.map(u=>u.hp);t.chooseAbility(c);ok(fs.every((u,i)=>u.hp<h0[i])&&C.cds.whirl>0,'hemmed in, they spin a Whirlwind');if(t.B){t.B.over=true;t.B.endT=0;t.B=null}}
  {const L=t.W.lords.find(l=>!l.dead);Object.assign(L,{inside:null,x:P.x,y:P.y,troops:Array(6).fill('hum_spear')});L.lv=6;P.troops={hum_spear:4};G.mode='world';G.modal=false;t.hidePanel();
   t.startEncounter({kind:'lord',ref:L,list:L.troops.slice(),allies:[],foes:[]});t.startBattle({enemies:G.enc.list,tournament:false});const B=t.B,u=B.units.find(x=>x.leader&&x.leader.ref===L),C=t.champ(u);
   ok(C.lv===6&&C.spMax>60&&C.mpMax>30,'an enemy lord fights with breath and mana by his level ('+C.lv+')');

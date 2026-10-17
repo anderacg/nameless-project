@@ -22,12 +22,12 @@ class Brain{
 class LordBrain extends Brain{
   think(l,d){
     if(l.dead)return false;this.cool(l,d);
-    if(l.inside){const h=townBy(l.inside);if(l.state==='rest'&&l.tgt===l.inside&&h&&h.owner===l.fac)return false;lordLeave(l)}
+    if(l.inside){const h=townBy(l.inside);if(l.state==='rest'&&l.tgt===l.inside&&h&&h.owner===l.fac)return false;l.leave()}
     if(inFight(l))return false;
     const v=this.look(l),pd=v.d,hostile=hostileTo(l.fac)&&!lordSpares(l),mul=lordSpeed(l)/26;// (26: a lord's old pace)
-    const relief=hostile&&l.state==='relieve'&&!!P.siege&&P.siege.town===l.tgt,st=hostile?(relief?'attack':stance(rating(l.troops))):null,see=this.sight(90)*(relief?2:1);
+    const relief=hostile&&l.state==='relieve'&&!!P.siege&&P.siege.town===l.tgt,st=hostile?(relief?'attack':stance(l.power())):null,see=this.sight(90)*(relief?2:1);
     if(st==='afraid'&&l.state==='siege'&&pd<see){l.state='home';l.tgt=nearestOf(l,fiefsOf(l.fac)).name;log(l.name+' abandons the siege as your band approaches.','good')}
-    const dread=W.lords.find(o=>!o.dead&&!o.inside&&o!==l&&atWar(o.fac,l.fac)&&Math.hypot(o.x-l.x,o.y-l.y)<70&&rating(o.troops)>=rating(l.troops)*1.5);
+    const dread=W.lords.find(o=>!o.dead&&!o.inside&&o!==l&&atWar(o.fac,l.fac)&&Math.hypot(o.x-l.x,o.y-l.y)<70&&o.power()>=l.power()*1.5);
     if(dread&&l.state==='march'&&fiefsOf(l.fac).length){l.state='home';l.tgt=nearestOf(l,fiefsOf(l.fac)).name}
     if(!(hostile&&l.cool<=0&&l.state!=='siege'&&stanceMove(l,st,pd,v.dx,v.dy,see,26*mul*d,true))){
       const t=townBy(l.tgt);if(!t){lordThink(l);return false}
@@ -36,8 +36,8 @@ class LordBrain extends Brain{
       else if(l.state==='march'){
         if(atWar(l.fac,t.owner)){l.state='siege';l.sd=0;if(Math.hypot(t.x-P.x,t.y-P.y)<vis()*1.5||t.owner===P.fac||t.owner==='player')log(l.name+' of the '+FACS[l.fac].n+' lays siege to '+t.name+(t.owner==='player'?', your fief!':'.'),t.owner===P.fac||t.owner==='player'?'bad':'')}
         else lordThink(l);
-      }else if(l.state==='home'||l.state==='patrol'||l.state==='relieve'){l.state='rest';if(canEnter(l,t))lordEnter(l,t)}
-      else if(l.state==='rest'&&canEnter(l,t))lordEnter(l,t);
+      }else if(l.state==='home'||l.state==='patrol'||l.state==='relieve'){l.state='rest';if(!l.shelterWhy(t))l.enter(t)}
+      else if(l.state==='rest'&&!l.shelterWhy(t))l.enter(t);
     }
     if(hostile&&st==='attack'&&this.canMeet(l,pd)){startEncounter({kind:'lord',ref:l,list:l.troops.slice()});return true}
     return false;
@@ -49,8 +49,8 @@ class BandBrain extends Brain{
   think(b,d,night){
     if(inFight(b))return false;
     const v=this.look(b);this.cool(b,d);
-    const st=stance(bandPower(b)),home=night&&campNear(b);
-    if(b.cool>0||!stanceMove(b,st,v.d,v.dx,v.dy,this.sight(95),partySpeed(b,b.list||[])*d,true)){
+    const st=stance(b.power()),home=night&&campNear(b);
+    if(b.cool>0||!stanceMove(b,st,v.d,v.dx,v.dy,this.sight(95),partySpeed(b,b.troops)*d,true)){
       if(home){routeTo(b,home.x,home.y,16*d)||walk(b,home.x-b.x,home.y-b.y,Math.min(Math.hypot(home.x-b.x,home.y-b.y),16*d));if(Math.hypot(home.x-b.x,home.y-b.y)<8){(home.bands=home.bands||[]).push(b);b.x=home.x;b.y=home.y;b.gone=true;return false}}
       else{b.t-=d;if(b.t<=0){b.t=2+Math.random()*3;b.a=Math.random()*6.283;b.idle=Math.random()<.3}if(!b.idle)walk(b,Math.cos(b.a),Math.sin(b.a),12*d)}}
     if(this.canMeet(b,v.d)){meetBand(b);return true}
@@ -65,8 +65,8 @@ class CompanionBrain extends Brain{
     if(inFight(p))return false;if(!p.troops.length){cpDisband(p.cid,false);return false}
     if(p.order==='stay'){const t=townBy(p.base);if(!t||p.shelterWhy(t)&&!(p.inside&&besieged(t)&&!hostileTo(t.owner))){if(p.inside)p.leave();p.order='follow';log(COMPS[p.cid].short+(t?' can no longer stay in '+t.name:' has nowhere to stay')+' and rides to rejoin you.','bad')}
       else if(p.inside)return false;}// inside: off the map
-    this.cool(p,d);const sp=partySpeed(p,p.troops)*.9*d,ox=p.x,mine=cpPower(p),go=(x,y,s)=>{const dd=Math.hypot(x-p.x,y-p.y);if(dd>1)routeTo(p,x,y,s)||walk(p,x-p.x,y-p.y,Math.min(dd,s))};
-    const foes=[...bandits.filter(b=>!b.fight),...W.lords.filter(l=>!l.dead&&!l.inside&&!l.fight&&hostileTo(l.fac))].map(o=>[o,Math.hypot(o.x-p.x,o.y-p.y),W.lords.includes(o)?rating(o.troops):bandPower(o)]).filter(([,dd])=>dd<90).sort((a,b)=>a[1]-b[1]);
+    this.cool(p,d);const sp=partySpeed(p,p.troops)*.9*d,ox=p.x,mine=p.power(),go=(x,y,s)=>{const dd=Math.hypot(x-p.x,y-p.y);if(dd>1)routeTo(p,x,y,s)||walk(p,x-p.x,y-p.y,Math.min(dd,s))};
+    const foes=[...bandits.filter(b=>!b.fight),...W.lords.filter(l=>!l.dead&&!l.inside&&!l.fight&&hostileTo(l.fac))].map(o=>[o,Math.hypot(o.x-p.x,o.y-p.y),o.power()]).filter(([,dd])=>dd<90).sort((a,b)=>a[1]-b[1]);
     const strong=foes.find(([,,pw])=>pw>mine*1.2),prey=p.order!=='return'&&foes.find(([,,pw])=>pw<=mine);
     if(strong&&strong[1]<70){go(P.x,P.y,sp*1.1)}
     else if(prey&&p.cool<=0){go(prey[0].x,prey[0].y,sp*1.15);if(prey[1]<10){startFight([p],[prey[0]]);p.cool=3}}
@@ -88,9 +88,9 @@ class PatrolBrain extends Brain{
     if(inFight(p))return false;
     this.cool(p,d);const sp=partySpeed(p,p.troops)*.75*d,ox=p.x;
     const threat=W.lords.find(l=>!l.dead&&!l.inside&&atWar(l.fac,p.fac)&&Math.hypot(l.x-p.x,l.y-p.y)<PATROL.see);
-    const home=besieged(t)||watchOf(p)!==watchNow()||p.troops.length<t.T.patrol.size/2||threat&&rating(threat.troops)>rating(p.troops);
+    const home=besieged(t)||watchOf(p)!==watchNow()||p.troops.length<t.T.patrol.size/2||threat&&threat.power()>p.power();
     const pd=this.look(p).d,hostile=hostileTo(p.fac),wanted=!!crimeAt(t)&&p.fac!=='player',sees=pd<this.sight(PATROL.see);
-    const afraid=hostile&&stance(rating(p.troops))==='afraid';
+    const afraid=hostile&&stance(p.power())==='afraid';
     if(sees&&(hostile||wanted)&&!home&&!afraid&&p.cool<=0){const st=G.encCool>0?Math.min(sp*1.25,pd-GRACE_GAP):sp*1.25;// (in the grace, no step into the gap)
       if(st>0)routeTo(p,P.x,P.y,st)||walk(p,P.x-p.x,P.y-p.y,Math.min(pd,st));
       if(this.canMeet(p,pd)){patrolMeet(p);return true}}
@@ -125,7 +125,6 @@ class CaravanBrain extends Brain{
   }
 }
 const BRAINS={lord:new LordBrain(),band:new BandBrain(),cparty:new CompanionBrain(),patrol:new PatrolBrain(),caravan:new CaravanBrain()};
-const brainOf=o=>BRAINS[partyKind(o)];
 
 /* each kind's moment, and then what the kind does together */
 function updateBands(d){
@@ -149,7 +148,7 @@ function updatePatrols(d){
   W.patrols=W.patrols.filter(p=>!p.gone);return false;
 }
 function updateCaravans(d){
-  for(const c of W.caravans)if(asParty(c).brain.think(c,d))return true;
+  for(const c of W.caravans)if(c.brain.think(c,d))return true;
   for(const b of bandits)if(b.cvT&&Math.random()<.01)b.cvT=0;
   W.caravans=W.caravans.filter(c=>!c.gone);return false;
 }

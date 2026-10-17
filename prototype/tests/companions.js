@@ -36,7 +36,7 @@ try{
  t.cpOrder('brann','patrol');const base=t.townBy(p.base);ok(!!base,'ordered to patrol, he takes the land of '+p.base);
  p.x=base.x;p.y=base.y+20;t.ensureEcon(base);base.vol=6;P.gold=500;const n0=p.troops.length;t.compDay();ok(p.troops.length>n0&&P.gold<500,'patrolling, he hires its volunteers with your gold ('+n0+' → '+p.troops.length+')');
  // fighting beside you
- {p.order='follow';p.x=P.x+20;p.y=P.y;G.mode='world';G.modal=false;G.encCool=0;const b={x:P.x+5,y:P.y,n:4,cool:0,t:0,a:0,kind:'bandits'};t.bandits.push(b);t.bandPower(b);
+ {p.order='follow';p.x=P.x+20;p.y=P.y;G.mode='world';G.modal=false;G.encCool=0;const b={x:P.x+5,y:P.y,n:4,cool:0,t:0,a:0,kind:'bandits'};t.bandits.push(t.asParty(b));
   t.startEncounter({kind:'party',ref:b,n:4,band:'bandits'});ok(G.enc&&G.enc.allies.some(a=>a.src===p),'near you, his party rides into your battles');t.act('flee');t.hidePanel();G.mode='world';G.modal=false}
  // coming back
  t.cpOrder('brann','return');for(let k=0;k<120&&c.party;k++)t.updateCParties(.1);ok(!c.party&&P.troops.hum_levy>=4+n0,'told to come back, he rejoins you with his soldiers');

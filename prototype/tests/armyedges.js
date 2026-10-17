@@ -15,7 +15,7 @@ try{
  while(r.slots<10)r.add(type,1,'new');G.recruitTarget='new';
  const snapshot=JSON.stringify({gold:P.gold,vol:town.vol,troops:P.troops,groups:r.groups});const q=t.recruitment.hire(town,type);
  ok(!q.ok&&q.code==='groups'&&JSON.stringify({gold:P.gold,vol:town.vol,troops:P.troops,groups:r.groups})===snapshot,'full-slot recruitment rejection is atomic');
- const source=t.asParty({troops:['hum_bow','hum_bow']});const moved=t.partyTransfer(source,P,'hum_bow',2);
+ const source=t.asParty({troops:['hum_bow','hum_bow']});const moved=t.partyRoster(source).transferTo(t.partyRoster(P),'hum_bow',2);
  ok(moved===0&&source.size===2&&!P.troops.hum_bow,'failed transfer never removes soldiers from its source');
  // Wounded return to the same duplicate, including a completely destroyed formation.
  t.begin('soldier');G.quietEvents=true;P.add('hum_foot',6);const original=r.groups[0],other=r.split(original.id,3);P.wounded={hum_foot:2};P.woundedGroups=[{id:other.id,type:'hum_foot',count:2}];r.remove('hum_foot',3,other.id);

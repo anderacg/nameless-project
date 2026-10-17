@@ -8,7 +8,6 @@ const partyPower=()=>rating(playerList());
 // stance: how a roaming party judges you from its power against yours
 const ATTACK_AT=.8,FLEE_AT=.5,STANCE_COL={attack:'#ff9a90',wary:'#e8d8a0',afraid:'#78c474'};
 const stance=pw=>{const r=pw/Math.max(1,partyPower());return r>=ATTACK_AT?'attack':r>=FLEE_AT?'wary':'afraid'};
-const bandPower=b=>b.pw||(b.pw=rating(b.list||(b.list=makeEnemies(b.n,false,b.kind)),chiefLv(b)));// (its chieftain hardens it, leaders.js)
 const monPower=m=>m.pw||(m.pw=rating(Array(m.n).fill(MONSTERS[m.id].unit),m.lv));
 // move a party for one frame by its stance: hunt, keep its distance, or run
 function stanceMove(o,st,dist,dx,dy,see,sp,canHunt){
@@ -80,11 +79,11 @@ function startEncounter(e){
 const mySpeed=()=>MAP_BASE*travelMul()*(P.morale<25?.8:1);
 function chaserSpeed(e){const o=e.ref,k=e.kind,at=Math.max(.45,speedAt(P.x,P.y)||1);
   if(k==='monster'&&MONSTERS[o.id].mythic)return MONSTERS[o.id].mythic.speed[1];
-  if(k==='lord')return lordSpeed(o);if(k==='party')return partySpeed(o,o.list||[]);if(k==='patrol')return partySpeed(o,o.troops)*.75*1.25;
+  if(k==='lord')return lordSpeed(o);if(k==='party')return partySpeed(o,o.troops);if(k==='patrol')return partySpeed(o,o.troops)*.75*1.25;
   return (k==='camp'?30:k==='caravan'?CARAVAN_SPD:k==='estate'?22:26)*at}
 function fleeOdds(e){
   if(['siege','raid','field','tourney','cave'].includes(e.kind)||e.mine&&!(e.ref&&e.ref.sab))return{leave:true,ch:1};
-  const pw=e.kind==='lord'?rating(e.ref.troops):e.kind==='party'?bandPower(e.ref):e.kind==='patrol'?rating(e.ref.troops):null;if(pw!=null&&stance(pw)==='afraid')return{leave:true,ch:1};
+  const pw=['lord','party','patrol'].includes(e.kind)?e.ref.power():null;if(pw!=null&&stance(pw)==='afraid')return{leave:true,ch:1};
   if(e.noFlee)return{ch:0,why:'They caught you'};
   if((e.foes||[]).length)return{ch:0,why:'More of them are closing in around you'};
   if(e.kind==='monster'&&MONSTERS[e.ref.id].mythic&&MONSTERS[e.ref.id].mythic.fly)return{ch:0,why:'It is on the wing: nothing outruns it'};
@@ -120,7 +119,7 @@ const ON_WIN={
   monster:{won:(e,slain,res)=>{const m=e.ref;questNotify('monster',m);W.monsters=W.monsters.filter(x=>x!==m);gainXp(monsterXp(m,slain));return monsterLoot(m,slain)+(MONSTERS[m.id].mythic?mythicSlain(m,res):'')}},
   cave:{won:(e,slain)=>{questNotify('site',e.ref);gainXp(monsterXp(e.ref,slain));const txt=monsterLoot(e.ref,slain)+siteChest(e.ref);clearPlace(e.ref,SITE_TYPES[e.ref.type].respawn);return txt}},
   lord:{big:true,fame:0,drop:()=>Math.random()<.6?randomGear(1,gearTop()+1):null,won:(e,slain,res)=>lordWon(e.ref,res)},
-  caravan:{fame:0,won:e=>e.seize?seizeCaravan(e.ref):caravanLoot(e.ref)},
+  caravan:{fame:0,won:e=>e.seize?e.ref.seize():e.ref.loot()},
   estate:{fame:0,won:e=>estateWon(e)},
   patrol:{fame:0,won:e=>patrolWon(e)},
   field:{won:e=>fieldWon(e)+(e.spoils||'')},

@@ -55,14 +55,14 @@ try{
    fz.owner=fzo;W.caravans=[]}
  else ok(false,'a caravan to stop');
  // ---- cornered parties
- world();P.troops={hum_knight:8};P.prisoners={};const b={x:P.x+5,y:P.y,n:2,kind:'bandits',list:['militia','militia'],t:0,a:0,idle:false,cool:0};t.bandits.push(b);
+ world();P.troops={hum_knight:8};P.prisoners={};const b={x:P.x+5,y:P.y,n:2,kind:'bandits',list:['militia','militia'],t:0,a:0,idle:false,cool:0};t.bandits.push(t.asParty(b));
  ok(t.cornered(b,'band'),'a small band is afraid of a big one');t.meetBand(b);ok(G.par&&/cornered/.test(panel()),'catching a band that fled from you opens a parley');
  fix(.01);t.act('pl-yield');unfix();ok(/throw down/.test(panel()),'it may yield');const pc=t.prisonerCount();t.act('pl-cage');
  ok(t.prisonerCount()===pc+2&&!t.bandits.includes(b),'and its fighters become your prisoners ('+pc+' → '+t.prisonerCount()+', cap '+t.prisonCap()+')');t.act('dlg-ok');
- const b2={x:P.x+5,y:P.y,n:2,kind:'bandits',list:['militia','spearman'],t:0,a:0,idle:false,cool:0};t.bandits.push(b2);world();t.meetBand(b2);fix(.01);t.act('pl-yield');unfix();
+ const b2={x:P.x+5,y:P.y,n:2,kind:'bandits',list:['militia','spearman'],t:0,a:0,idle:false,cool:0};t.bandits.push(t.asParty(b2));world();t.meetBand(b2);fix(.01);t.act('pl-yield');unfix();
  P.wounded={};// (the wounded from earlier take room in the band)
  const tc2=t.troopCount(),hh=t.honorWith(t.FIDS[0]);t.act('pl-join');ok(t.troopCount()===tc2+2&&t.honorWith(t.FIDS[0])<hh,'or join your band, at a cost to your honor');t.act('dlg-ok');
- const b3={x:P.x+5,y:P.y,n:2,kind:'bandits',list:['militia','militia'],t:0,a:0,idle:false,cool:0};t.bandits.push(b3);world();t.meetBand(b3);fix(.99);t.act('pl-yield');unfix();
+ const b3={x:P.x+5,y:P.y,n:2,kind:'bandits',list:['militia','militia'],t:0,a:0,idle:false,cool:0};t.bandits.push(t.asParty(b3));world();t.meetBand(b3);fix(.99);t.act('pl-yield');unfix();
  ok(G.enc&&G.enc.ref===b3&&/Fight/.test(panel()),'if they refuse, they fight');t.act('flee');
  const l=W.lords.find(x=>!x.dead);l.troops=['hum_levy','hum_levy'];P.hostile[l.fac]=G.day+20;world();P.x=l.x;P.y=l.y;t.interact(l);
  ok(G.par&&G.par.o===l,'a weak enemy lord who is caught may be called on to yield');const lg=P.gold;fix(.01);t.act('pl-yield');unfix();

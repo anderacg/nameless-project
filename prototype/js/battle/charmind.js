@@ -170,4 +170,3 @@ function champShove(u,t,M){
     if(d<=(u.s.reach||12)+6&&df<1.1){hit(u,e,u.s.dmg*M.mult,'blunt');knock(e,u.x,u.y,M.kb);stun(e,M.stun)}}}
 function champDodge(u,dx,dy,cost){const C=champ(u);C.sp-=cost;C.rx=dx;C.ry=dy;C.roll=.24;C.inv=.3;C.rollCd=DODGE_CD;fx(u.x,u.y,'#c8b48a',6)}
 // (kept for the tests and the console: a champion's skill now, if one fits)
-const champSkill=u=>chooseAbility(u);

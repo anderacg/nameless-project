@@ -22,7 +22,7 @@ try{
  world();const qb=t.makeQuest('bounty',ash);t.acceptQuest(qb);const band=t.bandits.find(b=>b.qid===qb.id);
  ok(band&&Math.hypot(band.x-ash.x,band.y-ash.y)<17*t.TILE&&band.n===qb.n,'a bounty puts the '+qb.band+' ('+qb.n+') near Ashford');
  const goal=t.questGoal(qb);ok(goal&&goal.x===band.x,'the quest points at the band');
- t.startEncounter({kind:'party',ref:band,n:band.n,list:band.list.slice(),band:band.kind});win();ok(qb.done&&!t.bandits.includes(band),'breaking the band finishes the deed');
+ t.startEncounter({kind:'party',ref:band,n:band.n,list:band.troops.slice(),band:band.kind});win();ok(qb.done&&!t.bandits.includes(band),'breaking the band finishes the deed');
  const g0=P.gold,r0=t.repAt('Ashford');near(ash);t.updateWorld(.01);ok(G.town&&G.town.tab==='jobs','entering with a quest to report opens the Jobs tab');
  t.act('q-turnin',String(qb.id));ok(!P.quests.includes(qb)&&P.gold>=g0+qb.reward.gold&&t.repAt('Ashford')>r0,'reporting pays '+qb.reward.gold+' gold and reputation');t.act('leave');done();
  // beast

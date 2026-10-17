@@ -16,7 +16,7 @@ try{
  P.x=10;P.y=10;let off=0,far=0;{const r0=Math.random;Math.random=t.seeded(2024);try{for(let i=0;i<600;i++){t.updatePatrols(.05);const d=Math.hypot(p.x-h.x,p.y-h.y);far=Math.max(far,d);if(!t.patrolLand(p,p.x,p.y)&&d>40)off++}}finally{Math.random=r0}}
  ok(W.patrols.includes(p)&&off<30&&far>30,'it rides out over its own land (as far as '+Math.round(far)+' px from home, off its land '+off+'/600 frames)');
  // bandits on its land
- const b={x:p.x+40,y:p.y,n:2,kind:'bandits',list:['militia','militia'],t:9,a:0,idle:true,cool:0};
+ const b=t.asParty({x:p.x+40,y:p.y,n:2,kind:'bandits',list:['militia','militia'],t:9,a:0,idle:true,cool:0});
  if(t.patrolLand(p,b.x,b.y)){t.bandits.push(b);for(let i=0;i<400&&t.bandits.includes(b);i++)tick();ok(!t.bandits.includes(b)&&!p.fight,'it hunts down a bandit band on its land, in a fight that takes a while')}else ok(true,'(the spot by the patrol is not its land)');
  // an army: one it can beat, and one it can't
  W.patrols=[p];W.fights=[];p.fight=null;W.lords.forEach(l=>{l.x=-9000;l.y=-9000;l.fight=null});// just this patrol and the army below

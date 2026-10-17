@@ -12,29 +12,29 @@ try{
  {const B=battle({kind:'lord',ref:L,list:L.troops.slice(),allies:[],foes:[]}),u=B.units.find(x=>x.leader&&x.leader.ref===L);const base=t.ST[u&&u.type];
   ok(u&&u.team===1&&u.s.hp>base.hp*1.5,'a lord fights at the head of his army, far tougher than his men ('+(u&&u.s.hp)+' health against '+(base&&base.hp)+')');
   const n0=L.size;u.hp=1;t.applyDmg?t.applyDmg(u,99):(u.hp=0);ok(L.size===n0,'his fall costs him no soldier from his ranks');endBattle()}
- {const b=t.bandits[0];b.x=P.x+8;b.y=P.y;const B=battle({kind:'party',ref:b,n:b.n,list:b.list.slice(),band:'bandits'});const u=B.units.find(x=>x.leader);
+ {const b=t.bandits[0];b.x=P.x+8;b.y=P.y;const B=battle({kind:'party',ref:b,n:b.n,list:b.troops.slice(),band:'bandits'});const u=B.units.find(x=>x.leader);
   ok(u&&u.type==='chief'&&u.leader.name===b.ld.name,'a band’s chieftain fights with it, by name ('+(u&&u.leader.name)+')');endBattle()}
  {const s=W.sites.find(x=>x.type==='camp');s.cleared=false;const own=t.makeEnemies(7,true);const B=battle({kind:'camp',ref:s,list:own});
   ok(B.units.filter(x=>x.team===1&&x.type==='chief').length===1&&B.units.some(x=>x.leader&&x.type==='chief'),'a camp’s chieftain is the chief in its ranks, not a second one');endBattle()}
  {const A=W.lords.find(l=>!l.dead&&l!==L);Object.assign(A,{inside:null,x:P.x,y:P.y,troops:Array(6).fill('hum_spear')});const b=t.bandits[1];
-  const B=battle({kind:'party',ref:b,n:b.n,list:b.list.slice(),band:'bandits',allies:[A],foes:[]});ok(B.units.some(x=>x.leader&&x.leader.ref===A&&x.team===0),'a lord riding beside you fights at his men’s head too');endBattle()}
+  const B=battle({kind:'party',ref:b,n:b.n,list:b.troops.slice(),band:'bandits',allies:[A],foes:[]});ok(B.units.some(x=>x.leader&&x.leader.ref===A&&x.team===0),'a lord riding beside you fights at his men’s head too');endBattle()}
  // a lord beaten by you
  {world();t.startEncounter({kind:'lord',ref:L,list:L.troops.slice(),allies:[],foes:[]});t.concludeEncounter(true,{},10,true,[]);t.act('cont');done();
   const i=P.captives.findIndex(c=>c.k==='lord'&&c.id===L.id);ok(i>=0&&L.dead&&L.held,'beat a lord and he is your captive');
   G.day+=20;t.worldDay();ok(L.dead,'held, he raises no army');
   const g0=P.gold,r=t.lordRansom(P.captives[i]);t.act('ct-ransom',String(i));ok(P.gold-g0===r&&!L.held&&L.back<=G.day+6,'ransomed ('+r+' gold), he rides home to raise a new army')}
  // a chieftain beaten by you, let go
- {world();const b=t.bandits[0],ld=b.ld;b.x=P.x+8;b.y=P.y;t.startEncounter({kind:'party',ref:b,n:b.n,list:b.list.slice(),band:'bandits'});t.concludeEncounter(true,{},3,true,[]);t.act('cont');done();
+ {world();const b=t.bandits[0],ld=b.ld;b.x=P.x+8;b.y=P.y;t.startEncounter({kind:'party',ref:b,n:b.n,list:b.troops.slice(),band:'bandits'});t.concludeEncounter(true,{},3,true,[]);t.act('cont');done();
   const i=P.captives.findIndex(c=>c.ld===ld);ok(i>=0&&!t.bandits.includes(b),'break a band and its chieftain is your captive');
   t.act('ct-free',String(i));ok(W.exiles.some(x=>x.ld===ld),'let go, he goes off to gather a new band');
   const x=W.exiles.find(x=>x.ld===ld);G.day=x.back;t.chiefDay();ok(t.bandits.some(q=>q.ld===ld),'and is back on the roads with one ('+ld.name+')')}
  // beaten by others: he gets away
  {const b=t.bandits.find(q=>q.ld),ld=b.ld;t.routParty(b,[]);ok(!t.bandits.includes(b)&&W.exiles.some(x=>x.ld===ld),'a band broken by others: its chieftain gets away to rebuild')}
  // you lose: the captives slip away
- {const b=t.bandits.find(q=>q.ld);P.captives.push({k:'chief',ld:t.newChief('bandits',2)});world();b.x=P.x+8;b.y=P.y;t.startEncounter({kind:'party',ref:b,n:b.n,list:b.list.slice(),band:'bandits'});
+ {const b=t.bandits.find(q=>q.ld);P.captives.push({k:'chief',ld:t.newChief('bandits',2)});world();b.x=P.x+8;b.y=P.y;t.startEncounter({kind:'party',ref:b,n:b.n,list:b.troops.slice(),band:'bandits'});
   t.concludeEncounter(false,{},0,true,[]);t.act('cont');done();ok(!P.captives.length,'lose a battle and your captives slip away')}
  // companions
- {P.comps={elske:{ap:0,role:''}};t.compInit('elske');world();const b=t.bandits.find(q=>q.ld);b.x=P.x+8;b.y=P.y;const B=battle({kind:'party',ref:b,n:b.n,list:b.list.slice(),band:'bandits'});const u=B.units.find(x=>x.comp);
+ {P.comps={elske:{ap:0,role:''}};t.compInit('elske');world();const b=t.bandits.find(q=>q.ld);b.x=P.x+8;b.y=P.y;const B=battle({kind:'party',ref:b,n:b.n,list:b.troops.slice(),band:'bandits'});const u=B.units.find(x=>x.comp);
   u.hp=1;t.applyDmg(u,99);ok(P.comps.elske&&P.comps.elske.hurt>G.day&&!t.compInBand('elske'),'a companion knocked down is wounded for a few days, never killed');endBattle()}
  // one way to draw, click and see every party
  {const all=W.parties.filter(p=>p.onMap());ok(all.every(p=>{const k=p.look();return k&&k.col&&typeof k.label==='string'}),'every party says how it looks ('+all.length+')');

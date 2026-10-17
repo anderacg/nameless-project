@@ -18,9 +18,9 @@ try{
  // ---- a caravan is a party of its kind
  W.caravans=[];let c=send();
  ok(c instanceof t.CaravanParty&&c instanceof t.Party,'a caravan that sets out is a CaravanParty');
- ok(c.brain===t.BRAINS.caravan&&t.brainOf(c)===c.brain&&t.partyKind(c)==='caravan','with the caravan brain');
+ ok(c.brain===t.BRAINS.caravan&&c.mapKind==='caravan','with the caravan brain');
  ok(c.troops.length===c.guards&&c.size===c.guards&&Object.isFrozen(c.troops),'its soldiers are its '+c.guards+' guards (a read-only list)');
- ok(t.troopsOf(c)===c.troops,'and they are what it fights with');
+ ok(c.label()==='Caravan of '+c.from&&c.faction===c.fac&&c.power()===t.rating(c.troops),'it says its name, its realm and its strength');
  {const keys=Object.keys(JSON.parse(JSON.stringify(c))).sort().join(',');ok(keys===[...FIELDS].sort().join(','),'its saved shape is the plain fields only ('+keys+')')}
  c.guards=2;ok(c.troops.length===2&&c.size===2,'set its guards and its soldiers follow');
  c.removeAny(1);ok(c.guards===1&&c.size===1,'lose a soldier and its guards follow');
@@ -32,9 +32,9 @@ try{
   const dest=TW.filter(x=>x!==ash&&!t.hostileTo(x.owner)&&x.owner!=='player')[0];W.caravans=[];const err=t.hireCaravan('Ashford',dest.name,{cloth:20},4,false),mc=W.caravans[0];
   ok(!err&&mc instanceof t.CaravanParty&&mc.troops.length===4&&mc.troops.every(k=>k==='militia'),'a caravan you hire is a party of 4 militia');
   const g0=P.gold;t.caravanUpkeep();ok(P.gold===g0-t.PCV.upkeep-4*t.PCV.guardUp,'and costs its upkeep');W.caravans=[]}
- // ---- plain data becomes one where it is met
- {world();const tw=TW.find(x=>x.owner&&x.owner!=='player');const pc={cv:true,fac:tw.owner,from:tw.name,to:TW[1].name,x:P.x,y:P.y,goods:{grain:5},guards:3,cool:0,dir:1};W.caravans=[pc];
-  t.caravanMeet(pc);ok(pc instanceof t.CaravanParty&&G.cv===pc&&/Caravan of/.test(pan()),'a caravan made as plain data is made one when you meet it');t.act('cv-leave');ok(G.mode==='world'&&!G.cv,'and Leave closes it');W.caravans=[]}
+ // ---- plain data (as a save keeps it) made one, as loading does
+ {world();const tw=TW.find(x=>x.owner&&x.owner!=='player');const pc=t.asParty({cv:true,fac:tw.owner,from:tw.name,to:TW[1].name,x:P.x,y:P.y,goods:{grain:5},guards:3,cool:0,dir:1});W.caravans=[pc];
+  pc.meet();ok(pc instanceof t.CaravanParty&&G.cv===pc&&/Caravan of/.test(pan()),'a caravan made of plain data meets you as one');t.act('cv-leave');ok(G.mode==='world'&&!G.cv,'and Leave closes it');W.caravans=[]}
  // ---- saves keep the same fields, and loading makes them parties again
  {world();W.caravans=[send(),send()].filter(Boolean);W.caravans[0].guards=2;const before=W.caravans.map(x=>JSON.stringify(x));t.saveGame(true);
   let raw=null;try{raw=JSON.parse(localStorage.getItem(t.slotKey('auto'))||'null')}catch(e){}
@@ -60,11 +60,11 @@ try{
   ok(c.mine&&c.fac==='player'&&W.caravans.includes(c)&&c.guards===3&&c.troops.length===3&&c.troops.every(k=>k==='militia'),'a seized caravan is yours, with 3 of its 6 guards, as militia');t.act('cont');done();W.caravans=[]}
  // ---- fights on the map: losses come off its guards; the survivors go on
  {world();P.x=-9000;P.y=-9000;W.fights=[];c=send();W.caravans=[c];c.guards=12;t.bandits.length=0;
-  t.bandits.push({x:c.x+4,y:c.y,n:2,kind:'bandits',list:['militia','militia'],t:0,a:0,idle:true,cool:0});t.updateCaravans(.01);
+  t.bandits.push(t.asParty({x:c.x+4,y:c.y,n:2,kind:'bandits',list:['militia','militia'],t:0,a:0,idle:true,cool:0}));t.updateCaravans(.01);
   ok(c.fight&&W.fights.length===1,'bandits falling on it start a fight');
   for(let i=0;i<4000&&W.fights.length;i++)t.updateFights(.05);
   ok(W.caravans.includes(c)&&!c.fight&&c.guards>=1&&c.guards===c.size&&c.troops.length===c.guards,'it wins; its guards are its survivors ('+c.guards+')');
-  t.bandits.length=0;W.fights=[];c.guards=2;t.bandits.push({x:c.x+4,y:c.y,n:14,kind:'bandits',list:Array(14).fill('orc_grunt'),t:0,a:0,idle:true,cool:0});t.updateCaravans(.01);
+  t.bandits.length=0;W.fights=[];c.guards=2;t.bandits.push(t.asParty({x:c.x+4,y:c.y,n:14,kind:'bandits',list:Array(14).fill('orc_grunt'),t:0,a:0,idle:true,cool:0}));t.updateCaravans(.01);
   for(let i=0;i<4000&&W.fights.length;i++)t.updateFights(.05);ok(!W.caravans.includes(c),'a big band plunders it');t.bandits.length=0;W.fights=[]}
  // ---- a battle you join: its force is written back to it
  {c=send();W.caravans=[c];c.guards=5;c.fight='fx';const f=t.forceOf(c);ok(f.kind==='caravan'&&f.src===c&&f.troops.length===5&&f.army,'in a battle you join its guards fight as a force');

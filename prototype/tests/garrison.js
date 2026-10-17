@@ -43,7 +43,7 @@ try{
    t.frame();t.act('lord-leave');ok(G.mode==='scene'&&!G.modal,'and leaving it returns to the street');t.exitScene();t.act('leave')}
  else ok(true,'(no lord in a town to visit)');
  // bandits shelter in camps at night
- world();G.encCool=1e9;const c=t.camps().find(x=>!x.cleared);c.bands=[];const b={x:c.x+30,y:c.y,n:3,kind:'bandits',list:['militia','militia','militia'],t:9,a:0,idle:false,cool:0};t.bandits.push(b);P.x=c.x+900;P.y=c.y+900;
+ world();G.encCool=1e9;const c=t.camps().find(x=>!x.cleared);c.bands=[];const b={x:c.x+30,y:c.y,n:3,kind:'bandits',list:['militia','militia','militia'],t:9,a:0,idle:false,cool:0};t.bandits.push(t.asParty(b));P.x=c.x+900;P.y=c.y+900;
  G.clock=t.DAY*.8;for(let i=0;i<80&&t.bandits.includes(b);i++)t.updateWorld(.05);
  ok(!t.bandits.includes(b)&&c.bands.includes(b),'at night a band goes into a camp nearby');
  ok(!t.pickAt(b.x,b.y)||t.pickAt(b.x,b.y)===c,'and is off the map');

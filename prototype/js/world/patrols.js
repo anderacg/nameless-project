@@ -42,7 +42,7 @@ function patrolMeet(p){
   if(hostileTo(p.fac))return startEncounter({kind:'patrol',ref:p,list:p.troops.slice(),title:'Guards of '+p.home});
   G.mode='dialog';
   if(c&&p.fac!=='player')return showPanel('<h2>The guards of '+p.home+' stop you</h2><p>&ldquo;You have wronged the people of '+p.home+'. Pay '+c.fine+' gold to set it right, or answer for it.&rdquo;</p>'+
-    '<p class="muted">'+p.troops.length+' guards of the <span style="color:'+f.col+'">'+f.n+'</span> (power '+rating(p.troops)+' vs your '+partyPower()+'). Refusing makes the '+f.n+' hostile for 20 days.</p><div class="btns">'+
+    '<p class="muted">'+p.troops.length+' guards of the <span style="color:'+f.col+'">'+f.n+'</span> (power '+p.power()+' vs your '+partyPower()+'). Refusing makes the '+f.n+' hostile for 20 days.</p><div class="btns">'+
     dlgBtn('pt-pay',null,'Pay '+c.fine+' gold',P.gold<c.fine?'Not enough gold':'',true)+dlgBtn('pt-fight',null,'Refuse and fight')+dlgBtn('pt-run',null,'Run for it')+'</div>');
   const band=bandits.filter(b=>patrolLand(p,b.x,b.y)).length;
   showPanel('<h2>'+(watchOf(p)==='night'?'The night watch of ':'Guards of ')+p.home+'</h2><p class="muted">'+p.troops.length+' soldiers of the <span style="color:'+f.col+'">'+f.n+'</span> riding the land of '+p.home+'.</p><p>&ldquo;'+

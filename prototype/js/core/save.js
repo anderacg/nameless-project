@@ -25,7 +25,8 @@ function loadGame(slot){
   resetSession(d.P);registerRecruits();const w=d.world;
   G.day=d.day;G.clock=d.clock;G.rankSeen=P.renown>=250?1:0;setSpeed(d.speed);G.paused=false;pauseUI();
   G.lastTown=TOWNS.find(t=>t.name===d.last)||null;G.perkOffer=d.perkOffer;
-  bandits=d.bandits.map(asParty);
+  // (the parties made of their kinds again: bands here, your companions' parties, lords, caravans and patrols)
+  bandits=d.bandits.map(asParty);for(const id in P.comps)if(P.comps[id].party)asParty(P.comps[id].party);
   TOWNS.forEach(t=>{
     const o=w.own.find(x=>x[2]===t.name),x=o[3];t.owner=o[0];t.gar=o[1];t.lastOwner=t.owner;
     t.sacked=x.s;t.raided=x.r;t.turmoil=x.u;t.grow=x.g;t.fear=x.f;t.crime=x.cr;t.watchOff=x.wo;

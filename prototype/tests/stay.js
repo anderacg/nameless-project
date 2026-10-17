@@ -18,7 +18,7 @@ try{
  t.updateHUD(true);ok(!bar().hidden&&/Staying in/.test(bar().innerHTML)&&/your gold lasts until Day \d+/.test(bar().innerHTML)&&/data-act="sy-leave"/.test(bar().innerHTML),'a banner says where you stay, the price, the day your gold runs out, and offers Leave');
  {P.stay.paidTo=t.worldTime()-.01;t.stayTick(.01);ok(P.gold===180&&P.stay.paidTo>t.worldTime(),'each day inside is paid as it begins (10g)')}
  // nothing reaches you inside
- {const b={x:P.x+6,y:P.y,n:12,cool:0,t:0,a:0,kind:'bandits'};t.bandits.push(b);t.bandPower(b);for(let i=0;i<30;i++)t.updateWorld(.05);
+ {const b={x:P.x+6,y:P.y,n:12,cool:0,t:0,a:0,kind:'bandits'};t.bandits.push(t.asParty(b));for(let i=0;i<30;i++)t.updateWorld(.05);
   ok(G.mode==='world'&&!G.enc&&P.stay,'a band at the gate cannot reach you inside');t.bandits.length=0}
  {const x0=P.x;t.stayClick(P.x+300,P.y+300);ok(P.stay&&P.x===x0&&P.tx==null,'clicking elsewhere on the map does not move you: leave first')}
  t.stayClick(town.x,town.y-4);ok(G.mode==='town'&&/Back to your lodgings/.test(panel())&&/data-act="sy-leave"/.test(panel()),'clicking the holding opens it: you can still trade, hire and drink');

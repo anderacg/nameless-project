@@ -66,17 +66,17 @@ try{
  ok(L.mapKind==='lord'&&b.mapKind==='band'&&pt.mapKind==='patrol'&&cv.mapKind==='caravan'&&cp.mapKind==='cparty'&&P.mapKind==='you','each says its kind: '+[...parties,P].map(q=>q.mapKind).join(', '));
  ok(b.kind&&b.kind!==b.mapKind&&t.BANDS[b.kind],'a band keeps its own kind of bandits ('+b.kind+') beside what it is on the map');
  const wo=t.worldObjects();ok(parties.every(q=>wo.includes(q))&&!wo.includes(P)&&wo.indexOf(cv)>wo.indexOf(cp),'worldObjects(): the parties, then (after the others) the caravans ('+wo.length+'), not you');
- // ---- objKind and partyKind as before, for everything on the map
+ // ---- objKind and each party's own kind (mapKind; partyKind before) as before, for everything on the map
  {const things=[...t.TOWNS,...W.lords,...t.bandits,...W.patrols,...W.caravans,...t.cparties(),...W.monsters,...W.sites,...W.critters,...W.refugees,...W.folk,...t.TOWNS.flatMap(x=>Object.keys(t.ESTATES).filter(k=>t.bldLv(x,k)).map(k=>t.estatePick(x,k))),null,undefined,P];
   const bad=things.filter(q=>t.objKind(q)!==oldObjKind(q)).map(q=>t.objKind(q)+'≠'+oldObjKind(q));
   ok(!bad.length,'objKind is as before for all '+things.length+' things'+(bad.length?': '+bad.slice(0,5).join(' '):''));
-  const ps=[...W.lords.filter(l=>!l.dead),...t.bandits,...W.patrols,...W.caravans,...t.cparties()],pb=ps.filter(q=>t.partyKind(q)!==oldPartyKind(q));
-  ok(ps.length>=5&&!pb.length,'partyKind is as before for all '+ps.length+' parties on the map');
-  ok(t.brainOf(L)===L.brain&&t.brainOf(cv)===cv.brain&&t.brainOf(b)===b.brain&&t.brainOf(pt)===pt.brain,'each party’s brain by its kind, as before')}
+  const ps=[...W.lords.filter(l=>!l.dead),...t.bandits,...W.patrols,...W.caravans,...t.cparties()],pb=ps.filter(q=>q.mapKind!==oldPartyKind(q));
+  ok(ps.length>=5&&!pb.length,'each party’s kind is as before for all '+ps.length+' parties on the map');
+  ok([L,cv,b,pt].every(q=>t.BRAINS[q.mapKind]===q.brain),'each party’s brain by its kind, as before')}
  // ---- gone from the map: nothing to meet, no chase; and no more 'caravan' for whatever is not in a list
  {const gone=t.asParty({x:cx,y:cy,n:3,kind:'bandits',list:['militia','militia','militia'],t:0,a:0,cool:0});
   ok(t.objKind(gone)===null&&oldObjKind(gone)===null&&!t.interact(gone),'a band no longer on the map is nothing to meet (as before)');
-  ok(t.partyKind(gone)==='band'&&oldPartyKind(gone)==='caravan'&&t.partyKind(P)==='you','partyKind says what a party is, even off the map (before: a caravan)');
+  ok(gone.mapKind==='band'&&oldPartyKind(gone)==='caravan'&&P.mapKind==='you','a party says what it is, even off the map (before: a caravan)');
 }
  // ---- pick: the same thing on every spot as before
  {let n=0;const diff=[];for(let y=cy-50;y<=cy+30;y+=2)for(let x=cx-56;x<=cx+56;x+=2){n++;const a=oldPick(x,y),c=t.pickAt(x,y);if(a!==c)diff.push((x-cx)+','+(y-cy)+' '+(t.objKind(c)||c)+'≠'+(t.objKind(a)||a))}

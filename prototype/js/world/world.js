@@ -23,7 +23,7 @@ const REACH=14;
 // everything on the map, each made one of its kind, in the order a click weighs them when two are as near (pickAt): each
 // holding then its built estates, the parties (lords, bands, patrols, your companions'), the beasts, the sites, the herds, the
 // caravans, the refugees, the workers, then the ships (never clicked). Not you.
-const worldObjects=()=>[...TOWNS.flatMap(t=>[t,...t.estates()]),...W.parties,...W.monsters.map(asMonster),...W.sites,...W.critters.map(asHerd),...W.caravans.map(asParty),...W.refugees.map(asRefugees),...W.folk.map(asWorker),...W.ships.map(asShip)];
+const worldObjects=()=>[...TOWNS.flatMap(t=>[t,...t.estates()]),...W.parties,...W.monsters.map(asMonster),...W.sites,...W.critters.map(asHerd),...W.caravans,...W.refugees.map(asRefugees),...W.folk.map(asWorker),...W.ships.map(asShip)];
 // a thing on the map made one of its kind if it is still plain data (new, from a save or a test), by its fields: a herd (crit),
 // refugees (rf), a worker (folk), a ship (its path over the water), a beast (a MONSTERS kind). Parties are made theirs by asParty
 const asWorldObject=o=>!o||o instanceof WorldObject?o:o.crit?asHerd(o):o.rf?asRefugees(o):o.folk?asWorker(o):o.path?asShip(o):MONSTERS[o.id]&&!o.type?asMonster(o):o;
@@ -64,9 +64,9 @@ function clickAt(wx,wy){
 // the camp a band heads for at night: the nearest that is not cleared, within reach
 const campNear=b=>{let best=null,bd=220;for(const c of camps()){if(c.cleared)continue;const d=Math.hypot(c.x-b.x,c.y-b.y);if(d<bd){bd=d;best=c}}return best};
 // at dawn the bands in a camp ride out again
-function campEmpty(c){if(!c.bands||!c.bands.length)return;for(const b of c.bands.map(asParty)){b.x=c.x+rint(-12,12);b.y=c.y+rint(10,18);b.cool=2;b.gone=false;bandits.push(b)}c.bands=[]}
+function campEmpty(c){if(!c.bands||!c.bands.length)return;for(const b of c.bands){b.x=c.x+rint(-12,12);b.y=c.y+rint(10,18);b.cool=2;b.gone=false;bandits.push(b)}c.bands=[]}
 // attacking a camp: its own bandits and chieftain, and any bands sheltering there tonight
-function campFight(c){const own=makeEnemies(rint(7,9)+Math.floor(G.day/15),true),bands=(c.bands||[]).map(asParty);
+function campFight(c){const own=makeEnemies(rint(7,9)+Math.floor(G.day/15),true),bands=c.bands||[];
   startEncounter({kind:'camp',ref:c,list:own.concat(...bands.map(b=>b.troops)),title:(c.name||'Bandit camp')+(bands.length?' · '+bands.length+' band'+(bands.length>1?'s':'')+' sheltering inside':'')})}
 // the hero's speed multiplier where they stand: ground, race, mount, Pathfinder and gear
 /* how fast a party moves on the map: what it is made of. Each member's pace is its battle speed (a foot soldier 38, a rider 62

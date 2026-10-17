@@ -7,7 +7,7 @@ try{
  const t=T,G=t.G,P=t.P,W=t.W;t.act('begin','soldier');G.quietEvents=true;W.monsters=[];W.critters=[];t.bandits.length=0;W.patrols=[];G.clock=t.DAY*.3;
  const panel=()=>document.getElementById('panel').innerHTML,world=()=>{t.hidePanel();G.mode='world';G.modal=false;G.enc=null;G.encCool=0};
  const flee=()=>t.__act0('flee');// the game's own flee, not the tests' shortcut
- const band=n=>{const b={x:P.x+8,y:P.y,n,cool:0,t:0,a:0,kind:'bandits'};t.bandits.push(b);t.bandPower(b);return b};
+ const band=n=>{const b={x:P.x+8,y:P.y,n,cool:0,t:0,a:0,kind:'bandits'};t.bandits.push(t.asParty(b));return b};
  P.troops={hum_levy:10};
  // you started it: call it off
  world();let b=band(12);t.startEncounter({kind:'party',ref:b,n:12,band:'bandits',mine:true});ok(/>Leave</.test(panel()),'a fight you started shows Leave');flee();ok(G.mode==='world','and you can always call it off');
@@ -19,16 +19,16 @@ try{
   ok(G.mode==='world'&&b.cool>=10&&Math.hypot(P.x-x0,0)>30,'got away: you put ground between you, and they lose your trail ('+b.cool+'s)');
   const d0=Math.hypot(b.x-P.x,b.y-P.y);for(let i=0;i<20;i++)t.updateWorld(.05);ok(Math.hypot(b.x-P.x,b.y-P.y)>=d0-14&&G.mode==='world','meanwhile they do not come and stand on you (they wander, no more)')}
  // what helps and what hurts
- world();b=band(14);b.list=Array(14).fill('elf_glade');t.startEncounter({kind:'party',ref:b,n:14,band:'bandits',list:b.list.slice()});// light infantry: close to your pace
+ world();b=band(14);b.troops=Array(14).fill('elf_glade');t.startEncounter({kind:'party',ref:b,n:14,band:'bandits',list:b.troops.slice()});// light infantry: close to your pace
  const day=t.fleeOdds(G.enc).ch;G.clock=t.DAY*.85;const night=t.fleeOdds(G.enc).ch;G.clock=t.DAY*.3;
  const s10=t.mySpeed();P.troops={hum_levy:40};const s40=t.mySpeed();P.troops={hum_levy:10};
  ok(night>day&&s40<s10,'night helps ('+Math.round(day*100)+'% → '+Math.round(night*100)+'%), a big band is slower ('+s10.toFixed(1)+' → '+s40.toFixed(1)+')');world();
  // impossible
- {const L={id:'X',name:'Lord X',fac:t.FIDS[0],x:P.x+60,y:P.y,troops:Array(12).fill('hum_spear'),state:'march',dead:false,cool:0};b=band(12);
+ {const L=t.asParty({id:'X',name:'Lord X',fac:t.FIDS[0],x:P.x+60,y:P.y,troops:Array(12).fill('hum_spear'),state:'march',dead:false,cool:0});b=band(12);
   t.startEncounter({kind:'party',ref:b,n:12,band:'bandits',foes:[L]});ok(t.fleeOdds(G.enc).ch===0&&/closing in/.test(panel()),'with more of them closing in around you, you cannot flee');world()}
  {const dm=t.mythicOf('dragon')||t.spawnMythic('dragon');if(dm){dm.x=P.x+8;dm.y=P.y;t.startEncounter({kind:'monster',ref:dm,list:['dragon']});const f=t.fleeOdds(G.enc);ok(f.ch===0&&/on the wing/.test(panel()),'nor from a dragon on the wing ('+(f.why||f.ch)+')');world()}else ok(true,'(no dragon)')}
  // a patrol that met you does not crowd you while it cools down
- {const z=t.TOWNS.find(q=>q.owner&&q.owner!=='player');P.hostile={[z.owner]:G.day+30};const p={pt:true,watch:t.watchNow(),home:z.name,fac:z.owner,troops:t.garList({gar:6,races:z.races}),x:P.x+40,y:P.y,cool:8,dir:1};W.patrols=[p];
+ {const z=t.TOWNS.find(q=>q.owner&&q.owner!=='player');P.hostile={[z.owner]:G.day+30};const p=t.asParty({pt:true,watch:t.watchNow(),home:z.name,fac:z.owner,troops:t.garList({gar:6,races:z.races}),x:P.x+40,y:P.y,cool:8,dir:1});W.patrols=[p];
   const d0=Math.hypot(p.x-P.x,p.y-P.y);for(let i=0;i<20;i++)t.updatePatrols(.05);ok(Math.hypot(p.x-P.x,p.y-P.y)>=d0-12,'a patrol cooling down does not ride up and stand on you');P.hostile={}}
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}
 const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d)};

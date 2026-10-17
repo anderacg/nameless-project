@@ -28,7 +28,7 @@ try{
  // the realms: same rules
  {const L=W.lords[0];L.x=open[0];L.y=open[1];const a=t.partySpeed(L,Array(20).fill('hum_levy')),b=t.partySpeed(L,Array(20).fill('hum_knight'));ok(b>a*1.3,'a lord’s cavalry outpaces his infantry ('+a.toFixed(0)+' → '+b.toFixed(0)+')')}
  // cavalry runs infantry down in the open; the woods save you
- {P.troops={hum_levy:10};P.gear.mount=null;P.x=open[0];P.y=open[1];const L={id:'Z',name:'Lord Z',fac:t.FIDS[0],x:P.x+8,y:P.y,troops:Array(30).fill('hum_knight'),state:'march',dead:false,cool:0};P.hostile={[L.fac]:G.day+30};
+ {P.troops={hum_levy:10};P.gear.mount=null;P.x=open[0];P.y=open[1];const L=t.asParty({id:'Z',name:'Lord Z',fac:t.FIDS[0],x:P.x+8,y:P.y,troops:Array(30).fill('hum_knight'),state:'march',dead:false,cool:0});P.hostile={[L.fac]:G.day+30};
   G.mode='world';G.modal=false;t.startEncounter({kind:'lord',ref:L,list:L.troops.slice(),foes:[],allies:[]});const f1=t.fleeOdds(G.enc);P.x=forest[0];P.y=forest[1];L.x=P.x+8;L.y=P.y;const f2=t.fleeOdds(G.enc);
   ok(f1.ch===0&&f2.ch>0,'on open ground you cannot outrun a host of knights on foot ('+(f1.why||f1.ch)+'); in the woods you may ('+Math.round(f2.ch*100)+'%)');t.hidePanel();G.mode='world';G.modal=false;P.hostile={}}
  // the wounded: some of the fallen live, and heal

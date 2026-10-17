@@ -35,7 +35,7 @@ try{
  {const keep={...ash.stock};t.FOODS.forEach(g=>ash.stock[g]=0);ash.stock.grain=200;const d1=t.foodDays(ash);ash.stock.grain=0;ok(d1>3&&t.foodDays(ash)===0,'a besieged holding lives on its stores: '+d1+' days of food in its granaries');ash.stock=keep}
  // AI siege: takes 2 + wall days
  {const tgt=t.townBy('Saltmere'),att=t.FIDS.find(f=>f!==tgt.owner);W.rel={};t.setRel(att,tgt.owner,'war');tgt.wall=3;
-  W.lords=[{id:'x0',name:'Test Lord',fac:att,x:tgt.x+16,y:tgt.y+12,troops:Array(60).fill('hum_knight'),state:'siege',tgt:tgt.name,sd:0,cool:0,dead:false,gone:false,back:0}];
+  W.lords=[t.asParty({id:'x0',name:'Test Lord',fac:att,x:tgt.x+16,y:tgt.y+12,troops:Array(60).fill('hum_knight'),state:'siege',tgt:tgt.name,sd:0,cool:0,dead:false,gone:false,back:0})];
   const own0=tgt.owner;for(let i=0;i<4;i++)t.worldDay();ok(tgt.owner===own0,'great walls hold for more than 4 days');t.worldDay();
   ok(tgt.owner===att&&tgt.wall===2,'after 5 days it falls, and the breach costs a wall level');W.lords=[]}
  // war burns estates
@@ -62,9 +62,9 @@ try{
  const to=t.townBy(c.to),gk=Object.keys(c.goods)[0],before=to.stock[gk]||0,load=c.goods[gk];P.x=-9999;P.y=-9999;for(let i=0;i<4000&&W.caravans.includes(c);i++)t.updateCaravans(.05);
  ok(!W.caravans.includes(c)&&(to.stock[gk]||0)>=before+load-2,'it travels the roads and its '+load+' '+gk+' arrive in the stores of '+c.to);
  fill();c=t.sendCaravan(from);W.caravans=[c];c.guards=3;W.patrols=[];W.lords.forEach(l=>{if(!l.inside&&Math.hypot(l.x-c.x,l.y-c.y)<150)l.x=-999});// (no one rides to help)
- t.bandits.push({x:c.x+4,y:c.y,n:12,kind:'bandits',list:Array(12).fill('militia'),t:0,a:0,idle:true,cool:0});t.updateCaravans(.01);for(let i=0;i<4000&&W.fights.length;i++)t.updateFights(.05);
+ t.bandits.push(t.asParty({x:c.x+4,y:c.y,n:12,kind:'bandits',list:Array(12).fill('militia'),t:0,a:0,idle:true,cool:0}));t.updateCaravans(.01);for(let i=0;i<4000&&W.fights.length;i++)t.updateFights(.05);
  ok(!W.caravans.length,'a big band of bandits beats the guards and plunders a caravan');t.bandits.length=0;W.fights=[];
- fill();c=t.sendCaravan(from);W.caravans=[c];c.guards=6;t.bandits.push({x:c.x+4,y:c.y,n:3,kind:'bandits',list:Array(3).fill('militia'),t:0,a:0,idle:true,cool:0});t.updateCaravans(.01);for(let i=0;i<4000&&W.fights.length;i++)t.updateFights(.05);
+ fill();c=t.sendCaravan(from);W.caravans=[c];c.guards=6;t.bandits.push(t.asParty({x:c.x+4,y:c.y,n:3,kind:'bandits',list:Array(3).fill('militia'),t:0,a:0,idle:true,cool:0}));t.updateCaravans(.01);for(let i=0;i<4000&&W.fights.length;i++)t.updateFights(.05);
  ok(W.caravans.length===1&&!t.bandits.length&&!c.fight,'six guards beat three bandits, and the caravan goes on');t.bandits.length=0;W.fights=[];
  // trade with a caravan, then attack one
  fill();c=t.sendCaravan(from);W.caravans=[c];P.x=c.x;P.y=c.y;G.mode='world';G.modal=false;t.hidePanel();P.hostile={};P.fac=null;

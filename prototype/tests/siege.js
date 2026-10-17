@@ -71,10 +71,10 @@ try{
  for(let i=0;i<40&&P.raid;i++)t.updateWorld(.25);ok(vil.raided>G.day&&t.foodN()>10&&t.repAt(vil.name)<vr-20&&!t.herdOf(vil),'raiding takes food, burns the herd and earns hatred (raided '+(vil.raided>G.day)+', food '+t.foodN()+', rep '+t.repAt(vil.name)+' vs '+vr+', herd '+!!t.herdOf(vil)+', raid '+!!P.raid+')');
  }finally{Math.random=r0}}
  // AI conquest marks a town
- quiet();const prey=t.TOWNS.find(x=>!['horde','player'].includes(x.owner)&&x.kind!=='village'),l={id:'x0',name:'Test Lord',fac:'horde',x:prey.x,y:prey.y,troops:Array(60).fill('orc_grunt'),state:'siege',tgt:prey.name,sd:0,dead:false};
+ quiet();const prey=t.TOWNS.find(x=>!['horde','player'].includes(x.owner)&&x.kind!=='village'),l=t.asParty({id:'x0',name:'Test Lord',fac:'horde',x:prey.x,y:prey.y,troops:Array(60).fill('orc_grunt'),state:'siege',tgt:prey.name,sd:0,dead:false});
  W.rel[t.rk('horde',prey.owner)]={s:'war',since:G.day};W.lords=[l];prey.gar=2;t.resolveSiege(l,prey);ok(prey.owner==='horde'&&prey.turmoil>G.day,'lords who take a town leave it in turmoil');
  // a friendly town besieged by a lord is closed to you; break the siege to open it
- quiet();P.fac=null;P.hostile={};army();const fr=t.TOWNS.find(x=>x.kind!=='village'&&!['karn','player'].includes(x.owner)&&!x.sacked&&!x.turmoil),bl={id:'b0',name:'Besieger',fac:'karn',x:fr.x+16,y:fr.y+12,troops:Array(8).fill('dw_clan'),state:'siege',tgt:fr.name,sd:0,dead:false,cool:0};
+ quiet();P.fac=null;P.hostile={};army();const fr=t.TOWNS.find(x=>x.kind!=='village'&&!['karn','player'].includes(x.owner)&&!x.sacked&&!x.turmoil),bl=t.asParty({id:'b0',name:'Besieger',fac:'karn',x:fr.x+16,y:fr.y+12,troops:Array(8).fill('dw_clan'),state:'siege',tgt:fr.name,sd:0,dead:false,cool:0});
  W.lords=[bl];W.rel[t.rk(fr.owner,'karn')]={s:'war',since:G.day};at(fr);t.updateWorld(.01);
  ok(G.mode==='besiege'&&/gates are barred/.test(panel())&&/Attack Besieger/.test(panel()),'a besieged friendly town shows only the blockade');
  ok(!/data-act="tab"/.test(panel())&&!/data-act="buy"/.test(panel()),'no trade, recruits or jobs while it is besieged');
@@ -83,7 +83,7 @@ try{
  at(fr);t.updateWorld(.01);ok(G.mode==='town','with the siege broken the gates open');t.act('leave');done();
  // your raid draws the owner's lords (the world's dice seeded here too)
  {const r0=Math.random;Math.random=t.seeded(7801);try{
- const vi2=t.TOWNS.find(x=>x.kind==='village'&&x.owner==='karn'&&!x.raided),kl={id:'k1',name:'Rescuer',fac:'karn',x:vi2.x+300,y:vi2.y,troops:Array(12).fill('dw_clan'),state:'rest',tgt:t.fiefsOf('karn')[0].name,sd:0,dead:false,cool:0};
+ const vi2=t.TOWNS.find(x=>x.kind==='village'&&x.owner==='karn'&&!x.raided),kl=t.asParty({id:'k1',name:'Rescuer',fac:'karn',x:vi2.x+300,y:vi2.y,troops:Array(12).fill('dw_clan'),state:'rest',tgt:t.fiefsOf('karn')[0].name,sd:0,dead:false,cool:0});
  // Days of world simulation above can build a palisade here (reproduced with seed 28). This scenario specifically needs a raid, not a siege.
  vi2.wall=0;
  W.lords=[kl];army();at(vi2);t.updateWorld(.01);{const r=Math.random;Math.random=()=>.5;t.act('sg-raid-auto');Math.random=r}/* (the auto-resolve's dice fixed: this is about the lords, not luck) */t.act('cont');done();t.lordThink(kl);ok(P.raid&&kl.state==='relieve'&&kl.tgt===vi2.name,'the village lords ride to stop your raid (wall '+t.wallOf(vi2)+', mode '+G.mode+', raid '+!!P.raid+', lord '+kl.state+', target '+kl.tgt+')');

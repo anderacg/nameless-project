@@ -10,7 +10,7 @@ try{
  // stance thresholds
  weak();const me=t.partyPower();ok(t.stance(me*.9)==='attack'&&t.stance(me*.6)==='wary'&&t.stance(me*.3)==='afraid','stance from power ratio: ≥80% attack, ≥50% wary, below that afraid');
  // bandits
- const band=n=>{const b={x:P.x+60,y:P.y,n,kind:'bandits',list:Array(n).fill('militia'),t:9,a:0,idle:true,cool:0};t.bandits.length=0;t.bandits.push(b);return b};
+ const band=n=>{const b={x:P.x+60,y:P.y,n,kind:'bandits',list:Array(n).fill('militia'),t:9,a:0,idle:true,cool:0};t.bandits.length=0;t.bandits.push(t.asParty(b));return b};
  strong();let b=band(4),d0=gap(b);for(let k=0;k<20;k++){W.patrols=[];t.updateWorld(.05)}/* (the watch rides out every half second: kept out) */ok(gap(b)>d0+10,'a weak bandit band runs from a strong party ('+Math.round(d0)+' → '+Math.round(gap(b))+')');
  weak();b=band(14);d0=gap(b);for(let k=0;k<20;k++){G.encCool=99;W.patrols=[];t.updateWorld(.05)}ok(gap(b)<d0-10,'a strong bandit band hunts a weak party ('+Math.round(d0)+' → '+Math.round(gap(b))+')');
  // you can still run a fleeing band down
@@ -34,7 +34,7 @@ try{
   const spot=()=>[0,1,2,3,4,5,6,7].map(k=>[P.x+40*Math.cos(k*Math.PI/4),P.y+40*Math.sin(k*Math.PI/4)]).find(([x,y])=>t.passable(t.terrAt(x,y))&&t.clearLine(x,y,P.x,P.y))||[P.x+40,P.y];
   const closest=(o,step)=>{let lo=gap(o);for(let i=0;i<40;i++){G.encCool=5;step();lo=Math.min(lo,gap(o))}return lo};
   const bb=band(14);[bb.x,bb.y]=spot();bb.idle=false;const lb=closest(bb,()=>t.updateBands(.4));
-  ok(t.stance(t.bandPower(bb))==='attack'&&lb>=t.GRACE_GAP-1e-6&&lb<t.GRACE_GAP+6&&!G.enc,'in the grace, a hunting band closes in but never steps into the gap (closest '+lb.toFixed(2)+' px, gap '+t.GRACE_GAP+')');t.bandits.length=0;
+  ok(t.stance(bb.power())==='attack'&&lb>=t.GRACE_GAP-1e-6&&lb<t.GRACE_GAP+6&&!G.enc,'in the grace, a hunting band closes in but never steps into the gap (closest '+lb.toFixed(2)+' px, gap '+t.GRACE_GAP+')');t.bandits.length=0;
   const gl=W.lords.find(x=>x.fac==='karn'&&!x.dead&&x!==l)||l;gl.troops=Array(14).fill('dw_axe');gl.state='rest';gl.inside=null;gl.cool=0;gl.tgt=t.townBy('Highmoor').name;[gl.x,gl.y]=spot();
   const ll=closest(gl,()=>t.updateLords(.4));
   ok(t.stance(t.rating(gl.troops))==='attack'&&ll>=t.GRACE_GAP-1e-6&&ll<t.GRACE_GAP+6&&!G.enc,'in the grace, a hunting lord closes in but never steps into the gap (closest '+ll.toFixed(2)+' px)');

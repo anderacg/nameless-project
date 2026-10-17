@@ -217,12 +217,9 @@ class TravellersCamp extends Site{
     return true}
 }
 const SITE_CLASS={camp:BanditCamp,cave:Cave,travelers:TravellersCamp,hideout:Hideout,ruins:Ruins,shrine:Shrine};
-// a site of its kind again (from a save); and the old names, read through the classes
+// a site of its kind again (from a save)
 const siteOf=s=>{if(s instanceof Site)return s;Object.setPrototypeOf(s,SITE_CLASS[s.type].prototype);s.restore();return s};
-const siteKnown=s=>s.known();
 const camps=()=>W.sites.filter(s=>s instanceof BanditCamp);
-const siteClear=(type,tx,ty)=>SITE_CLASS[type].clear(tx,ty);
-const stockTravelers=s=>s.stockUp();
 
 /* placement */
 // a free tile for a site of this kind: reachable from the roads, on its ground, clear of holdings and other sites (the camps among them)

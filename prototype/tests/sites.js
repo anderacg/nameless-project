@@ -14,8 +14,8 @@ try{
  ok(S.every(s=>t.TOWNS.every(w=>Math.hypot(w.tx-s.tx,w.ty-s.ty)>=6)),'none sit on top of a holding');
  ok(of('cave').every(s=>t.MONSTERS[s.id]),'every cave has a lair beast ('+[...new Set(of('cave').map(s=>s.id))].join(', ')+')');
  // hidden until seen
- ok(S.filter(s=>t.siteKnown(s)&&s.type!=='camp').length===0,'sites start hidden');
- {const k=of('camp').filter(t.siteKnown);ok(k.length<of('camp').length&&of('camp').every(c=>t.siteKnown(c)===t.seenAt(c.x,c.y)),'bandit camps stand in plain sight: on the map (and the minimap) once you have seen their ground, not before ('+k.length+' of '+of('camp').length+' known at the start)')}
+ ok(S.filter(s=>s.known()&&s.type!=='camp').length===0,'sites start hidden');
+ {const k=of('camp').filter(s=>s.known());ok(k.length<of('camp').length&&of('camp').every(c=>c.known()===t.seenAt(c.x,c.y)),'bandit camps stand in plain sight: on the map (and the minimap) once you have seen their ground, not before ('+k.length+' of '+of('camp').length+' known at the start)')}
  const go=s=>{P.x=s.x;P.y=s.y;P.tx=null;G.mode='world';G.modal=false;t.hidePanel();G.encCool=0;G.lastSite=null;return t.updateSites()};
  const strong=()=>{P.troops={hum_knight:25,hum_long:15};P.hp=null;t.vitals()};
  // cave
@@ -37,7 +37,7 @@ try{
  const sh=of('shrine')[0];go(sh);const m=t.vitals();P.sp=1;P.mp=1;t.act('site-pray','0');ok(P.sp===m[1]&&P.mp===m[2]&&sh.back===G.day+7,'praying restores stamina and mana');
  ok(document.querySelector('[data-act="site-pray"]').disabled,'and only once a week');t.act('site-leave');
  // travellers
- const tr=of('travelers').find(s=>t.TRAVELERS[s.kind].race)||of('travelers')[0];if(!t.TRAVELERS[tr.kind].race){tr.kind=0;t.stockTravelers(tr)}
+ const tr=of('travelers').find(s=>t.TRAVELERS[s.kind].race)||of('travelers')[0];if(!t.TRAVELERS[tr.kind].race){tr.kind=0;tr.stockUp()}
  go(tr);ok(G.mode==='site'&&new RegExp(tr.name).test(panel()),'a camp of '+tr.name.toLowerCase());
  P.gold=2000;P.troops={};P.inv=P.inv.map(()=>null);const g=Object.keys(tr.stock)[0],n0=t.goodN(g);t.act('site-buy',g);ok(t.goodN(g)===n0+5,'buy '+g+' from them');
  const u=tr.unit;t.act('site-hire');ok(P.troops[u]===1,'hire a sellsword ('+t.ST[u].n+') with no standing');
@@ -66,7 +66,7 @@ try{
   const c=t.camps()[0];ok(t.nearBandits(c.tx+3,c.ty,t.BANDIT_GAP)&&!t.nearBandits(c.tx+t.BANDIT_GAP+1,c.ty,t.BANDIT_GAP),'the same rule stops you building an estate beside one')}
  // the bandit camps are sites too: on their fixed spots, in plain sight, a chieftain and the bands sheltering there
  {const c=t.camps()[0];ok(t.camps().length===t.CAMP_SPOTS.length&&t.camps().every(x=>t.CAMP_SPOTS.some(p=>p.tx===x.tx&&p.ty===x.ty))&&t.objKind(c)==='site'&&/Bandit camp/.test(t.tipFor(c)),'the '+t.CAMP_SPOTS.length+' bandit camps are sites on their spots, with their own tooltip');
-  G.mode='world';G.modal=false;t.hidePanel();G.encCool=0;G.enc=null;c.cleared=false;c.bands=[{x:c.x,y:c.y,n:3,kind:'bandits',list:['militia','militia','militia'],t:0,a:0,cool:0}];t.enterSite(c);
+  G.mode='world';G.modal=false;t.hidePanel();G.encCool=0;G.enc=null;c.cleared=false;c.bands=[t.asParty({x:c.x,y:c.y,n:3,kind:'bandits',list:['militia','militia','militia'],t:0,a:0,cool:0})];t.enterSite(c);
   ok(G.enc&&G.enc.kind==='camp'&&G.enc.ref===c&&G.enc.list.includes('chief')&&G.enc.list.length>=10,'walking into one means fighting its chieftain, its raiders and the band sheltering there ('+(G.enc&&G.enc.list.length)+')');t.act('flee');
   t.clearPlace(c,10);ok(c.cleared&&t.pickAt(c.x,c.y-12)!==c,'cleared, it lies empty ('+c.cleared+')');G.day=c.back;t.siteDay();ok(!c.cleared,'and its raiders are back after 10 days ('+c.cleared+' day '+G.day+' back '+c.back+')')}
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}

@@ -25,7 +25,7 @@ try{
  // Stewardship: holding fiefs teaches it, and it raises their taxes
  {const z=t.townBy('Thornwick');z.owner='player';t.ensureEcon(z);const g0=t.fiefIncome(z);P.sk.stew.lv=10;ok(t.fiefIncome(z)>g0,'Stewardship raises a fief’s taxes ('+g0+' to '+t.fiefIncome(z)+' gold a day)');P.sk.stew.lv=0;ok(up('stew',()=>t.fiefDay()),'each day you hold fiefs trains it')}
  // Persuasion: demanding surrender teaches it, and foes yield more often
- {P.troops={hum_spear:6};const b={x:P.x+5,y:P.y,n:4,list:Array(4).fill('orc_grunt'),kind:'bandits'};t.bandits.push(b);const y0=t.yieldChance(b,'band');P.sk.pers.lv=10;ok(t.yieldChance(b,'band')>y0||y0>=.95,'Persuasion makes cornered foes likelier to yield');P.sk.pers.lv=0;
+ {P.troops={hum_spear:6};const b={x:P.x+5,y:P.y,n:4,list:Array(4).fill('orc_grunt'),kind:'bandits'};t.bandits.push(t.asParty(b));const y0=t.yieldChance(b,'band');P.sk.pers.lv=10;ok(t.yieldChance(b,'band')>y0||y0>=.95,'Persuasion makes cornered foes likelier to yield');P.sk.pers.lv=0;
   t.parley(b,'band');ok(up('pers',()=>t.act('pl-yield')),'demanding a surrender trains it');G.mode='world';G.modal=false;t.hidePanel()}
  // Scouting: spotting a place
  {const s=W.sites.find(q=>!q.seen&&q.type!=='camp');P.x=s.x;P.y=s.y+40;G.lastSite=s;ok(up('scout',()=>t.updateSites())&&s.seen,'spotting a new place trains Scouting')}

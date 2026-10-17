@@ -11,7 +11,7 @@ try{
  const world=()=>{t.hidePanel();G.mode='world';G.modal=false;G.enc=null;G.encCool=0;G.lastTown=null};
  const T1=t.TOWNS.find(z=>z.kind==='town'&&z.owner),A=T1.owner,B=t.FIDS.find(f=>f!==A&&!t.W.dead[f]);
  const war=()=>{t.W.rel[t.rk(A,B)]={s:'war',since:t.G.day}};war();P.fac=null;P.hostile={};P.honor={};
- const mk=(name,fac,x,y,n,type,o)=>Object.assign({id:name,uid:null,name,fac,x,y,troops:Array(n).fill(type||'hum_spear'),state:'rest',tgt:T1.name,sd:0,dead:false,cool:0},o||{});
+ const mk=(name,fac,x,y,n,type,o)=>t.asParty(Object.assign({id:name,uid:null,name,fac,x,y,troops:Array(n).fill(type||'hum_spear'),state:'rest',tgt:T1.name,sd:0,dead:false,cool:0},o||{}));
  const sieger=(tw,n,name)=>mk(name||'Ser Siege',B,tw.x+16,tw.y+12,n||10,'hum_spear',{state:'siege',tgt:tw.name});
  const farP=()=>{P.x=T1.x+600;P.y=T1.y+600};
  // ---- a relief army comes and fights the besieger

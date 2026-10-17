@@ -37,9 +37,9 @@ try{
   const town=t.TOWNS.find(h=>h.kind==='town');town.gar=10;W.lords=[];
   const div=document.createElement('div');div.innerHTML=t.garrisonBody(town);const rows=[...div.querySelectorAll('.row')];
   ok(Object.entries(t.countsOf(t.garList(town))).every(([k,n])=>rows.some(row=>row.querySelector('strong').textContent===t.ST[k].n&&row.querySelector('.own')?.textContent==='×'+n)),'garrison troop rows retain each kind and its count');
-  W.lords=[{id:'helper-test',name:'Test Lord',fac:town.owner,inside:town.name,dead:false,troops:['hum_spear','hum_bow','hum_spear','hum_bow','hum_spear']}];
+  W.lords=[t.asParty({id:'helper-test',name:'Test Lord',fac:town.owner,inside:town.name,dead:false,troops:['hum_spear','hum_bow','hum_spear','hum_bow','hum_spear']})];
   div.innerHTML=t.garrisonBody(town);text=div.textContent;
   ok(text.includes('3 '+t.ST.hum_spear.n.toLowerCase()+', 2 '+bow.toLowerCase()),'lords inside keep their descending-count troop summary');
-  ok(typeof t.takeNodeOf==='function'&&typeof t.slotSkillOf==='function'&&typeof t.partyAdd==='function'&&typeof t.compEquip==='function','live compatibility commands remain available');
+  ok(typeof t.takeNodeOf==='function'&&typeof t.slotSkillOf==='function'&&typeof t.compEquip==='function','live compatibility commands remain available');
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}
 const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d)};

@@ -28,7 +28,7 @@ function caravanDay(){
   for(const t of TOWNS){if(W.caravans.length>=CARAVAN_CAP)break;if(!t.bld||t.owner==='player'||besieged(t)||ruined(t))continue;
     const out=W.caravans.filter(c=>c.from===t.name&&!c.mine).length;if(out<2&&Math.random()<.25+.1*bldLv(t,'market'))sendCaravan(t)}
   // your idle caravans try to load again
-  for(const c of myCaravans())if(c.idle){const at=townBy(c.home);if(at){c.idle=false;asParty(c).endLeg(at)}}
+  for(const c of myCaravans())if(c.idle){const at=townBy(c.home);if(at){c.idle=false;c.endLeg(at)}}
 }
 // arrival: goods into the destination's stock; its owner takes a toll (5% of their worth)
 function caravanArrive(c,to){
@@ -56,6 +56,7 @@ class CaravanParty extends Party{
       if(c.fromYou()<90)txt(L.label,sx,sy-s.ch-1,L.labelCol,'center')}})}
   mapDot(V){return this.fromYou()<V?['#e8d8a0',1]:null}
   get meetsAnyTime(){return true}
+  label(){return 'Caravan of '+this.from}
   tip(){return '<b>Caravan</b><small>'+(this.from||'')+' → '+(this.to||'')+(this.fac?' · '+tipFac(this.fac):'')+'</small><span class="act">Click: meet</span>'}
   get brain(){return BRAINS.caravan}
   get tc(){let c=CV_TC.get(this);if(!c||sum(c)!==this.guards){c=countsOf(this.rollGuards());CV_TC.set(this,c);LISTS.delete(this)}return c}
@@ -106,7 +107,7 @@ class CaravanParty extends Party{
     return ' You take the caravan: '+(got.length?got.join(', ')+' and ':'')+gold+' gold from its strongbox.';
   }
   // a toll from a weak one; a hostile one that fears you may hand over its cargo
-  fears(){return rating(this.troops)<partyPower()*.5}
+  fears(){return this.power()<partyPower()*.5}
   demands(hostile){
     const c=this;if(c.mine)return '';
     return hostile?(c.fears()?dlgBtn('cv-yield',null,'Demand their cargo'):''):dlgBtn('cv-toll',null,'Demand a toll',c.tolled?'Already paid':P.fac===c.fac?'Your employer':'')+
@@ -149,9 +150,7 @@ class CaravanParty extends Party{
     c.goods=load;c.leg='out';c.to=c.dest||c.to;return false;
   }
 }
-// (for the systems that meet, beat or seize one: world.js, fights.js, encounters.js ON_WIN; plain data is made a party first)
-const caravanMeet=c=>asParty(c).meet(),caravanLoot=c=>asParty(c).loot(),seizeCaravan=c=>asParty(c).seize();
-onAct('cv-',(a,arg)=>G.cv?asParty(G.cv).act(a,arg):true);
+onAct('cv-',(a,arg)=>G.cv?G.cv.act(a,arg):true);
 
 /* your own caravans: hired at a fief, carrying its stock to a destination; to your own fief they deliver, elsewhere they sell
    at the market there and bring the gold home. Standing routes reload and go again. Upkeep is paid daily. */
@@ -211,4 +210,4 @@ function caravanSprite(col){
 // (a caravan's picture, in its owner's colour: drawn as it looks (CaravanParty.look, draw), clicked on its whole cart, ox and
 // drover: CaravanParty.pick)
 const caravanCol=c=>c.fac==='player'||!FACS[c.fac]?FACS.player.col:FACS[c.fac].col,caravanPic=c=>caravanSprite(caravanCol(c));
-function drawCaravans(ents,cam,V){for(const c of W.caravans)asParty(c).draw(ents,cam,V)}
+function drawCaravans(ents,cam,V){for(const c of W.caravans)c.draw(ents,cam,V)}

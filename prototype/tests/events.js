@@ -13,7 +13,8 @@ try{
  const gr=t.goodN('grain');t.act('ev-choose','0');ok(t.goodN('grain')===gr-3&&/Continue/.test(panel()),'a choice applies its outcome and shows it');t.act('ev-done');ok(G.mode==='world','Continue returns to the map');
  P.gold=5;fire('bard');ok(document.querySelector('[data-act="ev-choose"][data-arg="0"]').disabled&&/Not enough gold/.test(panel()),'choices you cannot afford are disabled with a reason');t.act('ev-choose','0');ok(G.mode==='event'&&P.gold===5,'a disabled choice does nothing');t.act('ev-choose','1');t.act('ev-done');
  P.gold=500;P.inv=Array(t.INV_SIZE).fill(null);fire('merchant');t.act('ev-choose','0');ok(P.inv.some(x=>x&&x.k==='gear'),'the peddler sells a piece of gear');t.act('ev-done');
- fire('caravan');t.act('ev-choose','0');t.act('ev-done');ok(G.mode==='dialog'&&G.enc&&G.enc.kind==='party','defending the caravan starts a fight');t.act('flee');
+ fire('caravan');t.act('ev-choose','0');t.act('ev-done');ok(G.mode==='dialog'&&G.enc&&G.enc.kind==='party','defending the caravan starts a fight');
+ ok(G.enc.ref instanceof t.BandParty&&G.enc.ref.troops.length===G.enc.list.length&&G.enc.ref.power()>0,'the ambushers are a band of their own, its fighters the ones you face ('+G.enc.list.length+')');t.act('flee');
  // where each event can happen
  const spot=(clim,terr)=>{for(let i=0;i<t.MW*t.MH;i++)if(t.CLIMS[t.climate[i]]===clim&&t.tiles[i]===terr){P.x=(i%t.MW+.5)*t.TILE;P.y=(Math.floor(i/t.MW)+.5)*t.TILE;return true}return false};
  const seen=new Set();for(const [c,tr] of [['grass',t.T_OPEN],['grass',t.T_FOREST],['grass',t.T_HILL],['frost',t.T_OPEN],['desert',t.T_OPEN],['swamp',t.T_OPEN]]){spot(c,tr);t.EVENTS.forEach(e=>{if(e.ok())seen.add(e.id)})}

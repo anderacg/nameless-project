@@ -9,8 +9,8 @@ try{
  const panel=()=>document.getElementById('panel').innerHTML;
  const world=()=>{t.hidePanel();G.mode='world';G.modal=false;G.enc=null;G.encCool=0};
  t.act('begin','soldier');W.critters=[];W.sites=[];W.monsters=[];t.bandits.length=0;
- const mk=(name,fac,dx,n,type)=>({id:name,name,fac,x:P.x+dx,y:P.y,troops:Array(n).fill(type||'hum_spear'),state:'rest',tgt:t.TOWNS[0].name,sd:0,dead:false,cool:0});
- const band=()=>{const b={x:P.x+5,y:P.y,n:6,cool:0,t:0,a:0,kind:'bandits'};t.bandits.push(b);t.bandPower(b);return b};
+ const mk=(name,fac,dx,n,type)=>t.asParty({id:name,name,fac,x:P.x+dx,y:P.y,troops:Array(n).fill(type||'hum_spear'),state:'rest',tgt:t.TOWNS[0].name,sd:0,dead:false,cool:0});
+ const band=()=>{const b={x:P.x+5,y:P.y,n:6,cool:0,t:0,a:0,kind:'bandits'};t.bandits.push(t.asParty(b));return b};
  P.troops={hum_levy:6};
  // nobody helps a stranger
  const ally=mk('Ser Help','vale',40,10);W.lords=[ally];P.fac=null;P.honor={};world();t.startEncounter({kind:'party',ref:band(),n:6,band:'bandits'});
@@ -37,9 +37,9 @@ try{
  ok(foe2.dead,'winning routes the helper too');t.act('cont');done();
  // auto-resolve counts helpers: a band you could not beat alone
  world();P.troops={hum_levy:2};ally.troops=Array(30).fill('hum_knight');ally.dead=false;W.lords=[ally];P.fac='vale';let wins=0;
- for(let k=0;k<6;k++){world();const b={x:P.x+5,y:P.y,n:14,cool:0,t:0,a:0,kind:'bandits'};t.bandits.push(b);t.bandPower(b);t.startEncounter({kind:'party',ref:b,n:14,band:'bandits'});t.act('auto');if(/Victory/.test(panel()))wins++;t.act('cont');done();ally.troops=Array(30).fill('hum_knight');ally.dead=false;P.troops={hum_levy:2}}
+ for(let k=0;k<6;k++){world();const b={x:P.x+5,y:P.y,n:14,cool:0,t:0,a:0,kind:'bandits'};t.bandits.push(t.asParty(b));t.startEncounter({kind:'party',ref:b,n:14,band:'bandits'});t.act('auto');if(/Victory/.test(panel()))wins++;t.act('cont');done();ally.troops=Array(30).fill('hum_knight');ally.dead=false;P.troops={hum_levy:2}}
  ok(wins>=4,'with 30 allied knights, auto-resolve wins against 14 bandits ('+wins+'/6)');
- const n1=ally.troops.length;world();const b3={x:P.x+5,y:P.y,n:14,cool:0,t:0,a:0,kind:'bandits'};t.bandits.push(b3);t.bandPower(b3);t.startEncounter({kind:'party',ref:b3,n:14,band:'bandits'});t.act('auto');ok(ally.troops.length<=n1,'and the allies take losses too');t.act('cont');done();
+ const n1=ally.troops.length;world();const b3={x:P.x+5,y:P.y,n:14,cool:0,t:0,a:0,kind:'bandits'};t.bandits.push(t.asParty(b3));t.startEncounter({kind:'party',ref:b3,n:14,band:'bandits'});t.act('auto');ok(ally.troops.length<=n1,'and the allies take losses too');t.act('cont');done();
  t.frame();
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}
 const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d)};
