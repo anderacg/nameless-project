@@ -91,7 +91,8 @@ function guard(dm){
 }
 // what share of a blocked hit still lands: shieldwall, gear and Blocking lower it
 const blockMul=()=>Math.max(.05,(has('shieldwall')?.1:.2)-gm('block')-.01*skill('block'));
-function knock(u,ox,oy,f){if(!f||u.hp<=0)return;const a=Math.atan2(u.y-oy,u.x-ox),k=u.s.big?.2:1;u.kx=(u.kx||0)+Math.cos(a)*f*6*k;u.ky=(u.ky||0)+Math.sin(a)*f*6*k}
+function knock(u,ox,oy,f){if(!f||u.hp<=0)return;const a=Math.atan2(u.y-oy,u.x-ox),k=PHYSICS.on?1/physMass(u):u.s.big?.2:1;// (physics: by his mass)
+  u.kx=(u.kx||0)+Math.cos(a)*f*6*k;u.ky=(u.ky||0)+Math.sin(a)*f*6*k}
 function stun(u,t){u.stun=Math.max(u.stun||0,u.s.big?t*.4:t)}
 // one hero blow on one enemy: matchup, crit, knockback, stagger, combo count
 function heroHit(e,mult,o){

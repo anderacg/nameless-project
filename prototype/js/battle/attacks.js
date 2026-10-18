@@ -67,7 +67,7 @@ function attack(u,t){
   const s=u.s;u.cd=s.cd*(.9+Math.random()*.2);u.atkAt=B.t;if(B.sight)sightStruck(u,t);// (a blow or a shot loosed gives him away: terrain.js)
   if(s.range){const flat=s.magic||s.flat,E=aimErr(u);fireBolt(u,Math.atan2(t.y-(flat?u.y-6:u.y),t.x-u.x)+spreadOf(E),s.dmg*(.85+Math.random()*.3)*(u.buffT>0?1.3:1)*arrowMul(u),arrowSrc(u,s),Math.hypot(t.x-u.x,t.y-u.y),{sc:E.d});if(!s.magic&&sfxOn()&&sndTurn('loose'))sfxAt('loose',u.x,u.y)}// (fire arrows: unitabilities.js)
   else{let dm=s.dmg*(.8+Math.random()*.4)*chargeMul(u,t)*tiredMul(u).dmg;fatigueBlow(u);// (a charge: by how far it ran, braced spears blunt it, morale.js; tired, softer: fatigue.js)
-    hit(u,t,dm);meleeFollow(u,t,dm)}
+    hit(u,t,dm);if(PHYSICS.on)physBlow(u,t);meleeFollow(u,t,dm)}// (a heavy beast's blow throws men: physics.js)
   if(s.range&&!u.hero){if(u.ammo==null)u.ammo=quiverOf(s);if(--u.ammo<=0)outOfAmmo(u)}
 }
 // a troop's melee blow: the look of its weapon, and what it does beyond the one it hits

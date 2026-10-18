@@ -43,7 +43,7 @@ try{
   'terrain':['buildTerrain','groundMul','terrainStep','terrainBlocksView']
  };
  for(const [file,names] of Object.entries(battleOwners))ok(names.every(n=>seen[n]==='js/battle/'+file+'.js'),'battle ownership: '+names.join(', ')+' belong to '+file+'.js');
- const battleOrder=['battle','battlecontrol','commands','setup','resolution','attacks','projectiles','actors','combat','commander','abilities','formations','morale','fatigue','camera','deploy'].map(n=>'battle/'+n+'.js');
+ const battleOrder=['battle','battlecontrol','commands','setup','resolution','attacks','projectiles','actors','combat','commander','abilities','formations','morale','fatigue','physics','camera','deploy'].map(n=>'battle/'+n+'.js');
  ok(battleOrder.every((f,i)=>order.includes(f)&&(!i||order.indexOf(battleOrder[i-1])<order.indexOf(f))),'battle scripts retain the supported loading order in both entry points');
  ok(order.indexOf('battle/terrain.js')===order.indexOf('battle/spatial.js')+1&&order.indexOf('battle/terrain.js')<order.indexOf('battle/battle.js'),'terrain.js loads right after spatial.js, before battle.js (the wiki too: its order is checked above)');
  // ---- every note an AI keeps on a group is in AI_NOTES (battlecontrol.js aiReset clears them when Auto hands a group over), or

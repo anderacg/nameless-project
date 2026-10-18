@@ -169,7 +169,7 @@ function moraleInit(units,opts){
   groupMoraleInit(units);
 }
 // where a soldier faces: its formation's front while it stands in its slot, else where it last moved or struck
-function facing(u){const g=u.grp&&B.groups[u.grp];if(g&&g.form&&u.inSlot)return g.face||0;return u.dir!=null?u.dir:u.face<0?Math.PI:0}
+function facing(u){if(PHYSICS.on&&u.hd!=null)return u.hd;/* (physics: his body's heading, which turns in time: physics.js) */const g=u.grp&&B.groups[u.grp];if(g&&g.form&&u.inSlot)return g.face||0;return u.dir!=null?u.dir:u.face<0?Math.PI:0}
 // which side of t a blow from src comes at
 function sideOf(t,src){
   const a=Math.atan2(src.y-t.y,src.x-t.x),f=facing(t),df=angGap(a,f);
@@ -239,7 +239,8 @@ function routStep(u,dt){
   if(any){const l=Math.hypot(ex-u.x,ey-u.y);if(l>1e-9){mx=(ex-u.x)/l;my=(ey-u.y)/l}}
   {const w=B.terrain?steerDir(u,ex,ey):null;if(w){mx=w[0];my=w[1]}}// (round rock, cliffs and impassable water to the edge: terrain.js)
   if(e){const dx=u.x-e.x,dy=u.y-e.y,d=Math.hypot(dx,dy)||1;if(d<80){mx+=dx/d*.6;my+=dy/d*.6}}
-  const m=Math.hypot(mx,my)||1,sp=u.s.spd*1.1*dt*(u.slow>0?.5:1)*groundMul(u,mx/m,my/m);u.x+=mx/m*sp;u.y+=my/m*sp;u.spdNow=u.s.spd;u.dir=Math.atan2(my,mx);u.face=mx>=0?1:-1;u.run=0;fatigueStep(u,dt,true,false,false);
+  const m=Math.hypot(mx,my)||1;// (physics on: he stumbles and wanders as he runs, physics.js physRout)
+  if(PHYSICS.on){physRout(u,dt,mx/m,my/m,u.s.spd*1.1*(u.slow>0?.5:1));u.run=0}else{const sp=u.s.spd*1.1*dt*(u.slow>0?.5:1)*groundMul(u,mx/m,my/m);u.x+=mx/m*sp;u.y+=my/m*sp;u.spdNow=u.s.spd;u.dir=Math.atan2(my,mx);u.face=mx>=0?1:-1;u.run=0}fatigueStep(u,dt,true,false,false);
   if(any?exitReached(u,exitOf(u),2):u.team?u.x>=BW-MORALE.edge-2:u.x<=MORALE.edge+2){u.fled=true;if(u.team===1)B.fledFoes=(B.fledFoes||0)+1;else B.fledMine=(B.fledMine||0)+1;leaveField(u)}
 }
 // a soldier off the field (at its edge): out of the fight, alive (not a loss); its health kept for after (your hero's)
@@ -369,20 +370,21 @@ function drawExits(){
     if(q&&q.word){const W=q.word,P=exitPoint(W.side,W.s);ctx.save();if(W.side==='W'||W.side==='E'){ctx.translate(W.side==='W'?D/2+3:BW-D/2+3,P.y);ctx.rotate(-Math.PI/2)}else ctx.translate(P.x,W.side==='N'?top+D/2+3:bot-D/2+3);txt('Withdraw',0,0,'#9fc0ff','center');ctx.restore()}}
 }
 // charge momentum: how far it has run at its target, 0 to 1
-const momentum=u=>clamp((u.run||0)/CHARGE.run,0,1);
+const momentum=u=>{const r=clamp((u.run||0)/CHARGE.run,0,1);return PHYSICS.on?Math.min(r,physSpeed(u)):r};// (physics: never more than the speed he still has, physics.js)
 /* a charge's weight on its first blow; its shock to the one it hits. The run is spent, and its stamina only once it counts as a
    charge (riders CHARGE.min, foot CHARGE.foot_min). Spearmen still in the fight brace against a charge on their front (Brace:
    their flanks too, unitabilities.js): no bonus, no shock. A deep block blunts the bonus, never from behind (formations.js formCharge) */
-function spearBraced(t,u){if(unitClass(t.s)!=='spear'||t.rout||withdrawing(t))return false;const side=sideOf(t,u);return side==='front'||side==='flank'&&unitAbility(t,'brace')}
+function spearBraced(t,u){if(unitClass(t.s)!=='spear'||t.rout||withdrawing(t)||PHYSICS.on&&t.down>0)return false;const side=sideOf(t,u);return side==='front'||side==='flank'&&unitAbility(t,'brace')}
 function chargeMul(u,t){
   const m=momentum(u),s=u.s;u.run=0;if(s.range&&!s.charge||m<(s.charge?CHARGE.min:CHARGE.foot_min))return 1;fatigueCharge(u,m);// (the charge spends the runner's stamina: fatigue.js)
-  if(spearBraced(t,u)){B.floats.push({x:t.x,y:t.y-22,t:'Braced',life:.6,c:'#cfe0ff'});return 1}
+  if(spearBraced(t,u)){if(PHYSICS.on){physBraced(u,t,m);moraleSay(t,'Braced!','#cfe0ff',.7)}else B.floats.push({x:t.x,y:t.y-22,t:'Braced',life:.6,c:'#cfe0ff'});return 1}// (physics: the charge stopped dead, the riders hurt: physics.js)
   // (out of hiding: a group unseen till it charged shakes them harder, once: terrain.js ambushMul)
   const amb=B.terrain?ambushMul(u):1;
-  if(s.charge){vfxCharge(u,t,m);chargeJolt(u,m);fx(t.x,t.y-6,'#fff',4);if(!B.noMorale&&!steady(t)&&t.mor!=null){shake(t,CHARGE.shock*m*amb);t.shockAt=B.t;const r=resolveOf(t);if(r)r.shockAt=B.t}chargePush(u,t,m);if(m>.6)moraleSay(t,'Charge!','#fff',.6);
+  // (physics on: the impact throws them by the two masses in place of chargeJolt and chargePush, physics.js physImpact)
+  if(s.charge){vfxCharge(u,t,m);if(!PHYSICS.on)chargeJolt(u,m);fx(t.x,t.y-6,'#fff',4);if(!B.noMorale&&!steady(t)&&t.mor!=null){shake(t,CHARGE.shock*m*amb);t.shockAt=B.t;const r=resolveOf(t);if(r)r.shockAt=B.t}if(PHYSICS.on)physImpact(u,t,m);else chargePush(u,t,m);if(m>.6)moraleSay(t,'Charge!','#fff',.6);
     return 1+CHARGE.cav*m*formCharge(u,t,sideOf(t,u))*groundCharge(u,t)}// (downhill harder, uphill softer, into woods halved: terrain.js)
   if(B.opts&&B.opts.tournament)return 1;// (a tournament: no foot charges; morale off still has them, only the shake goes)
-  if(!B.noMorale&&!steady(t)&&t.mor!=null){shake(t,CHARGE.footShock*m*amb);t.shockAt=B.t;const r=resolveOf(t);if(r)r.shockAt=B.t}chargeJolt(u,m);chargePush(u,t,m);return 1+CHARGE.foot*m*formCharge(u,t,sideOf(t,u))*groundCharge(u,t);
+  if(!B.noMorale&&!steady(t)&&t.mor!=null){shake(t,CHARGE.footShock*m*amb);t.shockAt=B.t;const r=resolveOf(t);if(r)r.shockAt=B.t}if(PHYSICS.on)physImpact(u,t,m);else{chargeJolt(u,m);chargePush(u,t,m)}return 1+CHARGE.foot*m*formCharge(u,t,sideOf(t,u))*groundCharge(u,t);
 }
 // a group's morale (unit cards and the icons over groups): the average, how many waver or run, its state, and what weakens it now
 // state: steady (60+), shaken (30+), wavering, routing (most of them running), shattered (all running, broken for good)
