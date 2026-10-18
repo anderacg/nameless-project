@@ -290,7 +290,7 @@ const momentum=u=>clamp((u.run||0)/CHARGE.run,0,1);
    their flanks too, unitabilities.js): no bonus, no shock. A deep block blunts the bonus, never from behind (formations.js formCharge) */
 function spearBraced(t,u){if(unitClass(t.s)!=='spear'||t.rout||withdrawing(t))return false;const side=sideOf(t,u);return side==='front'||side==='flank'&&unitAbility(t,'brace')}
 function chargeMul(u,t){
-  const m=momentum(u),s=u.s;u.run=0;if(s.range&&!s.charge||m<(s.charge?CHARGE.min:CHARGE.foot_min))return 1;fatigueCharge(u,m);if(sfxOn())bsImpact(t,m,s.charge);// (the charge spends the runner's stamina: fatigue.js; its crash: battlesound.js)
+  const m=momentum(u),s=u.s;u.run=0;if(s.range&&!s.charge||m<(s.charge?CHARGE.min:CHARGE.foot_min))return 1;fatigueCharge(u,m);// (the charge spends the runner's stamina: fatigue.js)
   if(spearBraced(t,u)){B.floats.push({x:t.x,y:t.y-22,t:'Braced',life:.6,c:'#cfe0ff'});return 1}
   // (out of hiding: a group unseen till it charged shakes them harder, once: terrain.js ambushMul)
   const amb=B.terrain?ambushMul(u):1;

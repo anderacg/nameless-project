@@ -1,7 +1,6 @@
 'use strict';
-/* ---------- sound (audio.js): every sound is made here by WebAudio, from oscillators, filtered noise and envelopes. A battle
-   also has recordings (battlesound.js: its beds and voices, banks injected as scripts, as file:// cannot fetch); a cue that has
-   one plays it (smp), else its synth recipe here.
+/* ---------- sound (audio.js): every sound is made here by WebAudio, from oscillators, filtered noise and envelopes. Nothing is
+   loaded: fetching files is unreliable from file://, and a phone downloads nothing.
    One AudioContext, made (or woken) by the first key, click or touch, as browsers require, and suspended while the tab is
    hidden. Its graph:  each sound → the effects bus ─┐
                        music.js's moods → the music bus ┴→ master → a compressor and a soft clip (a 400-man melee never clips) → out.
@@ -88,14 +87,6 @@ const AU={
     const o=c.createOscillator();o.type=type;o.frequency.value=F;o.connect(to);o.start(s);o.stop(end+.03);
     if(vib&&len>.35){const l=c.createOscillator(),lg=c.createGain();l.frequency.value=5.3;lg.gain.setValueAtTime(0,s);lg.gain.linearRampToValueAtTime(vib,s+Math.min(.45,len));l.connect(lg);lg.connect(o.detune);l.start(s);l.stop(end+.03)}
     if(chiff)AU.noise(V,{f:Math.min(9000,F*3),q:2,at,d:.05,amp:amp*chiff,dest});return end-V.t},
-  // a shout, a man's or a crowd's (n voices): detuned saws round f through a vowel's two formants (vow), swelling in a, held,
-  // let go over r, with breath
-  crowd(V,{f=140,n=4,at=0,a=.25,hold=.8,r=.6,amp=.1,vow=[700,1150],spread=.1,dest}){const c=V.c,s=V.t+at,end=s+a+hold+r,g=c.createGain(),p=g.gain;
-    p.setValueAtTime(1e-4,s);p.linearRampToValueAtTime(amp,s+a);p.setValueAtTime(amp,s+a+hold);p.exponentialRampToValueAtTime(1e-4,end);g.connect(dest||V.out);
-    const F=vow.map(v=>{const b=c.createBiquadFilter();b.type='bandpass';b.frequency.value=v;b.Q.value=4;b.connect(g);return b});
-    for(let i=0;i<n;i++){const o=c.createOscillator(),f0=f*V.p*(1+(V.r()*2-1)*spread);o.type='sawtooth';o.frequency.setValueAtTime(f0*.9,s);o.frequency.linearRampToValueAtTime(f0*(1+V.r()*.08),s+a+hold*.5);
-      o.frequency.linearRampToValueAtTime(f0*.85,end);for(const b of F)o.connect(b);o.start(s+V.r()*.06);o.stop(end+.03)}
-    AU.noise(V,{f:vow[1]*1.6,q:1.2,at,a,d:hold+r,amp:amp*.5,dest});return end-V.t},
   // a frame drum: a thump falling to f, with the slap of its skin
   drum(V,{f=90,at=0,d=.35,amp=.5,skin=.25,dest}){const c=V.c,s=V.t+at,o=c.createOscillator();o.frequency.setValueAtTime(f*1.9*V.p,s);o.frequency.exponentialRampToValueAtTime(f*V.p,s+.05);
     o.connect(AU.env(V,s,.002,d,amp,dest));o.start(s);o.stop(s+d+.03);if(skin)AU.noise(V,{ft:'lowpass',f:1100,at,d:.06,amp:amp*skin,dest});return d+at},
@@ -108,10 +99,6 @@ const AU={
 const BELL=[[.5,.3,1.2],[1,1,1],[1.19,.45,.7],[1.5,.3,.6],[2,.4,.45],[2.74,.2,.3],[3.76,.12,.2]];
 const CHIME=[[1,1,1],[2.76,.32,.4],[5.4,.12,.2]];// a small bell: brighter, fewer partials
 const METAL=[[1,1,1],[1.47,.75,.8],[2.09,.55,.6],[2.56,.4,.5],[3.31,.25,.35]];
-// a cue's recording (battlesound.js bsCue: its length, 0 when it has none loaded)
-const smp=(V,k,o)=>typeof bsCue==='function'&&bsCue(V,k,o)||0;
-// a race's shouting pitch for the synth's stand-ins
-const shoutF=o=>({orc:95,dwarf:105,elf:185,beast:80})[o&&o.race]||140;
 // a note (MIDI number) as a frequency
 const mtof=m=>440*Math.pow(2,(m-69)/12);
 
@@ -133,7 +120,7 @@ const SFX={
     AU.bell(V,{f:330,at:.55,d:2.6,amp:.16});AU.bell(V,{f:247,at:1.35,d:3,amp:.14});return 4.4}},
   day:{g:'world',n:'A day passes (soft chime)',pri:1,gap:2,vol:.4,play:V=>{AU.bell(V,{f:1568,d:1.2,amp:.1,parts:CHIME});AU.bell(V,{f:2093,at:.2,d:1.4,amp:.07,parts:CHIME});return 1.6}},
   // the battle (the blows, shots and strikes: at most 16 of them at once, by their max)
-  horn:{g:'battle',n:'Battle-start horn (yours, then theirs answering, by race)',pri:3,gap:2,vol:.75,play:(V,o)=>smp(V,'horn',o)||(AU.drum(V,{f:65,d:.6,amp:.5}),AU.horn(V,{f:146.8,a:.12,hold:.8,r:.3,amp:.22,bright:4}),AU.horn(V,{f:220,at:1.15,a:.1,hold:1.3,r:.6,amp:.24,bright:4.5}),3.2)},
+  horn:{g:'battle',n:'Battle-start horn',pri:3,gap:2,vol:.75,play:V=>{AU.drum(V,{f:65,d:.6,amp:.5});AU.horn(V,{f:146.8,a:.12,hold:.8,r:.3,amp:.22,bright:4});AU.horn(V,{f:220,at:1.15,a:.1,hold:1.3,r:.6,amp:.24,bright:4.5});return 3.2}},
   charge:{g:'battle',n:'Charge horn',pri:3,gap:1.5,vol:.75,play:V=>{[220,277.2,329.6].forEach((f,i)=>AU.horn(V,{f,at:i*.17,a:.04,hold:.07,r:.06,amp:.2,scoop:.97}));AU.horn(V,{f:440,at:.52,a:.05,hold:.75,r:.3,amp:.22,scoop:.95,bright:4});return 1.7}},
   clash:{g:'battle',n:'Sword clash',gap:.06,max:4,vol:.55,vary:.08,play:V=>AU.metal(V,{f:1800+V.r()*700,d:.32,amp:.2})},
   hit:{g:'battle',n:'Blade on flesh',gap:.05,max:3,vol:.7,vary:.1,play:V=>{AU.noise(V,{ft:'lowpass',f:900,f1:200,q:1,d:.12,amp:.5});AU.tone(V,{f:150,f1:60,d:.1,amp:.4});AU.noise(V,{f:850,q:4,at:.01,d:.06,amp:.1});return .16}},
@@ -142,24 +129,12 @@ const SFX={
   arrowhit:{g:'battle',n:'Arrow strikes',gap:.05,max:3,vol:.45,vary:.12,play:V=>{AU.noise(V,{f:1800,q:3,d:.04,amp:.45});AU.tone(V,{f:320,f1:170,d:.05,amp:.3});return .08}},
   brace:{g:'battle',n:'Spears brace',gap:.4,max:2,vol:.6,play:V=>{AU.drum(V,{f:62,d:.28,amp:.55,skin:.4});for(let i=0;i<5;i++)AU.tek(V,{f:1300+V.r()*900,q:6,at:.03+V.r()*.12,amp:.12,d:.03});AU.metal(V,{f:2600,at:.1,d:.12,amp:.04});return .4}},
   gallop:{g:'battle',n:'Cavalry gallop (short)',gap:.4,max:3,vol:.55,play:V=>{for(const at of [0,.09,.18,.4,.49,.58,.8,.89,.98]){AU.tone(V,{f:115,f1:68,at,d:.07,amp:.32});AU.noise(V,{ft:'lowpass',f:420,at,d:.05,amp:.22})}return 1.1}},
-  rout:{g:'battle',n:'A unit routs (horn, panic and screams)',pri:2,gap:1,vol:.65,play:(V,o)=>{AU.horn(V,{f:220,f1:146.8,a:.08,hold:.5,r:.5,amp:.18,scoop:1});const L=smp(V,'rout',o);if(L)return Math.max(1.2,L);
-    AU.noise(V,{f:950,f1:480,q:6,a:.1,d:.9,amp:.09});AU.noise(V,{f:1300,f1:700,q:7,at:.15,a:.1,d:.8,amp:.06});return 1.2}},
-  rally:{g:'battle',n:'Rally (horn and a cheer)',pri:2,gap:1,vol:.65,play:(V,o)=>{AU.drum(V,{f:72,d:.3,amp:.45});AU.horn(V,{f:220,a:.05,hold:.18,r:.08,amp:.18});AU.drum(V,{f:72,at:.32,d:.35,amp:.5});AU.horn(V,{f:293.7,at:.32,a:.06,hold:.7,r:.35,amp:.2});return Math.max(1.5,smp(V,'rally',o))}},
+  rout:{g:'battle',n:'A unit routs (horn and cry)',pri:2,gap:1,vol:.65,play:V=>{AU.horn(V,{f:220,f1:146.8,a:.08,hold:.5,r:.5,amp:.18,scoop:1});AU.noise(V,{f:950,f1:480,q:6,a:.1,d:.9,amp:.09});AU.noise(V,{f:1300,f1:700,q:7,at:.15,a:.1,d:.8,amp:.06});return 1.2}},
+  rally:{g:'battle',n:'Rally',pri:2,gap:1,vol:.65,play:V=>{AU.drum(V,{f:72,d:.3,amp:.45});AU.horn(V,{f:220,a:.05,hold:.18,r:.08,amp:.18});AU.drum(V,{f:72,at:.32,d:.35,amp:.5});AU.horn(V,{f:293.7,at:.32,a:.06,hold:.7,r:.35,amp:.2});return 1.5}},
   victory:{g:'battle',n:'Victory fanfare',pri:3,gap:2,vol:.7,play:V=>{[[0,293.7,.12],[.18,293.7,.12],[.36,440,.25],[.7,370,.12],[.88,440,.12],[1.06,587.3,1]].forEach(([at,f,hold])=>AU.horn(V,{f,at,a:.04,hold,r:.15,amp:.19,scoop:.97}));
     AU.drum(V,{f:80,at:1.06,d:.6,amp:.5});return 2.6}},
   defeat:{g:'battle',n:'Defeat stinger',pri:3,gap:2,vol:.7,play:V=>{[[0,220,.4],[.55,196,.4],[1.1,174.6,.45],[1.7,164.8,1.2]].forEach(([at,f,hold])=>AU.horn(V,{f,at,a:.1,hold,r:.3,amp:.16,bright:3}));
-    AU.drum(V,{f:55,d:.9,amp:.5});AU.drum(V,{f:50,at:1.7,d:1.2,amp:.55});return 3.4}},
-  // the soundscape's voices and arrows (battlesound.js: recorded, by race; these synth stand-ins until the banks are in)
-  warcry:{g:'battle',n:'War cry (a group charges)',pri:2,gap:.4,max:3,vol:.85,play:(V,o)=>smp(V,'warcry',o)||AU.crowd(V,{f:shoutF(o),n:o&&o.n>=8?8:3,a:.3,hold:.9,r:.7,amp:.09})},
-  impact:{g:'battle',n:'A charge lands (shields and bodies)',pri:1,gap:.15,max:3,vol:.8,play:(V,o)=>smp(V,'impact',o)||(AU.drum(V,{f:60,d:.4,amp:.6,skin:.6}),AU.noise(V,{f:500,q:1.5,d:.25,amp:.5}),
-    AU.metal(V,{f:1400,at:.02,d:.25,amp:.12}),AU.noise(V,{ft:'lowpass',f:300,at:.05,d:.3,amp:.4}),.5)},
-  order:{g:'battle',n:'A group answers your order',pri:2,gap:.25,max:2,vol:.75,play:(V,o)=>smp(V,'order',o)||AU.crowd(V,{f:shoutF(o),n:1,a:.04,hold:.12,r:.12,amp:.12,vow:[600,1000],spread:0})},
-  officer:{g:'battle',n:'An officer steadies a wavering line',pri:2,gap:1.5,max:1,vol:.8,play:(V,o)=>smp(V,'officer',o)||AU.crowd(V,{f:shoutF(o),n:1,a:.05,hold:.5,r:.3,amp:.12,vow:[650,1080],spread:0})},
-  cheer:{g:'battle',n:'Cheers (a rally; victory)',pri:2,gap:1,max:2,vol:.7,play:(V,o)=>smp(V,'cheer',o)||AU.crowd(V,{f:shoutF(o)*1.3,n:8,a:.4,hold:o&&o.big?2:1,r:1.2,amp:.08,vow:[800,1300],spread:.2})},
-  panic:{g:'battle',n:'Panic (a rout; defeat)',pri:1,gap:.8,max:2,vol:.75,play:(V,o)=>smp(V,'panic',o)||AU.crowd(V,{f:shoutF(o)*1.8,n:6,a:.2,hold:1,r:1,amp:.07,vow:[900,1400],spread:.25})},
-  chatter:{g:'battle',n:'Grunts and shouts in the melee',pri:1,max:4,vol:.6,play:(V,o)=>smp(V,'chatter',o)||AU.crowd(V,{f:shoutF(o),n:1,a:.02,hold:.08,r:.1,amp:.08,vow:[600,1000],spread:0})},
-  volley:{g:'battle',n:'A volley in flight',pri:1,gap:.2,max:4,vol:.7,play:(V,o)=>smp(V,'volley',o)||(AU.noise(V,{f:2600,f1:700,q:1.4,a:.25,d:1.1,amp:.25}),[0,.03,.06].forEach(at=>AU.pluck(V,{f:180+V.r()*40,type:'triangle',at,d:.14,amp:.15,bright:10})),1.4)},
-  hail:{g:'battle',n:'A volley comes down (a hail of strikes)',pri:1,gap:.15,max:4,vol:.6,play:(V,o)=>smp(V,'hail',o)||(Array.from({length:10},()=>V.r()*.8).forEach(at=>{AU.noise(V,{f:1700+V.r()*800,q:3,at,d:.04,amp:.25});AU.tone(V,{f:300,f1:160,at,d:.05,amp:.15})}),1)}};
+    AU.drum(V,{f:55,d:.9,amp:.5});AU.drum(V,{f:50,at:1.7,d:1.2,amp:.55});return 3.4}}};
 
 /* ---------- playing them ---------- */
 // is anything heard (the battle's hooks ask first, so a cue that needs reckoning costs nothing with sound off)
