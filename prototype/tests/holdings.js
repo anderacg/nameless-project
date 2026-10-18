@@ -13,7 +13,8 @@ try{
  ok(!on.length,'no building, field, site or camp stands on a road'+(on.length?': '+[...new Set(on)].slice(0,8).join(', '):''));
  // every holding's gate is on the road network, and the roads join them all
  const gate=z=>{const c=t.lotCentre(z);return[z.tx,c.y+c.n]};const g0=gate(t.TOWNS[0]),seen=new Uint8Array(MW*MH),q=[g0[1]*MW+g0[0]];seen[q[0]]=1;
- while(q.length){const j=q.pop(),x=j%MW,y=(j/MW)|0;for(const [a,b] of [[1,0],[-1,0],[0,1],[0,-1]]){const k=(y+b)*MW+x+a;if(!seen[k]&&road(x+a,y+b)){seen[k]=1;q.push(k)}}}
+ const way=(x,y)=>road(x,y)||t.tAt(x,y)===t.T_FORD;// (8 ways: a generated world's roads run diagonally too, its fords are road; doc/WORLD_DESIGN.md §8.11)
+ while(q.length){const j=q.pop(),x=j%MW,y=(j/MW)|0;for(const [a,b] of [[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]]){const k=(y+b)*MW+x+a;if(!seen[k]&&way(x+a,y+b)){seen[k]=1;q.push(k)}}}
  const cut=t.TOWNS.filter(z=>{const [x,y]=gate(z);return !road(x,y)||!seen[y*MW+x]});
  ok(!cut.length,'each road runs to its holding\'s gate, and the roads still join every holding'+(cut.length?': not '+cut.map(z=>z.name).join(', '):''));
  // walls decide how a holding is taken

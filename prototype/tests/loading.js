@@ -24,7 +24,9 @@ try{
  // ---- the driver, run at once (the tests' way)
  {const seen=[];let threw=null;const v=t.runSteps('x',[{id:'a',run:()=>seen.push('a')},{id:'b',run:function*(){seen.push('b0');yield .5;seen.push('b1');return 'B'}},{id:'c',run:()=>{seen.push('c');return 7}}]);
   try{t.runSteps('x',[{id:'a',run:()=>{throw new Error('boom')}}])}catch(e){threw=e}
-  ok(LD.sync&&seen.join()==='a,b0,b1,c'&&v instanceof Promise&&!shown()&&threw&&threw.message==='boom','LOADING.sync: every step at once, in order, generators to the end, no overlay; an error is thrown')}
+  ok(LD.sync&&seen.join()==='a,b0,b1,c'&&v instanceof Promise&&!shown()&&threw&&threw.message==='boom','LOADING.sync: every step at once, in order, generators to the end, no overlay; an error is thrown')
+  let w=null;try{t.runSteps('x',[{id:'zip',run:()=>Promise.resolve(1)}])}catch(e){w=e}
+  ok(w&&/cannot run at once/.test(w.message),'LOADING.sync: a step that returns a Promise cannot be waited for, and says so ('+(w&&w.message)+')')}
  // ---- a new game and a load in steps make what they make at once: first, on a page as fresh as worldprint's, a new game in
  // steps gives worldprint's own W1-W8 (its baseline, made at once: read from the suite, by its recipe), and no random is drawn
  // between its slices; then a save loaded at once, in steps and at once again puts in the same game each time
@@ -63,11 +65,23 @@ try{
   for(const steps of [false,true,false]){localStorage.setItem(t.SAVE+'.quick',sv);seed(9010);draws=stray=0;await go(steps,()=>t.loadGame('quick'));if(steps)pL=fr.slice();R.push(draws+(stray?'+'+stray+' stray':''));G.quietEvents=true;L.push(fnv().s(saveStr()).x)}
   ok(L[0]===L[1]&&L[1]===L[2]&&R[0]===R[1]&&R[1]===R[2],'a load in steps puts in the game a load at once does, with the same randoms, and loading again over it the same again ('+L.join(' ')+'; randoms '+R.join(' ')+')');
   ok(mono(pB)&&mono(pL),'the bars of a new game and a load never go back and end full ('+pB.map(v=>v.toFixed(2)).join(' ')+'; '+pL.map(v=>v.toFixed(2)).join(' ')+')');
+  // a generated world (doc/WORLD_DESIGN.md §15.2.2 C): a new game that makes it (the generator's stages, each a step), at once and
+  // in steps, from the default world; then its save loaded where the default world is in (made again first), at once and in steps.
+  // (home: the default world back, by loading a save made in it: a new game without settings keeps the world in)
+  {const S={preset:'normal',seed:'redwater'},out=[],R2=[],bars=[];G.mode='world';t.saveGame(true,'5');const home=()=>go(false,()=>t.loadGame('5'));
+   for(const steps of [false,true]){await home();seed(9020);draws=stray=0;await go(steps,()=>t.begin('soldier',S));if(steps)bars.push(fr.slice());
+    R2.push(draws+(stray?'+'+stray+' stray':''));G.quietEvents=true;G.mode='world';G.modal=false;t.hidePanel();out.push(t.WM.gen+' '+t.WM.sum+' '+fnv().s(saveStr()).x)}
+   const sv2=localStorage.getItem(t.SAVE+'.quick');
+   for(const steps of [false,true]){await home();localStorage.setItem(t.SAVE+'.quick',sv2);seed(9021);draws=stray=0;await go(steps,()=>t.loadGame('quick'));if(steps)bars.push(fr.slice());
+    R2.push(draws+(stray?'+'+stray+' stray':''));G.quietEvents=true;out.push(t.WM.gen+' '+t.WM.sum+' '+fnv().s(saveStr()).x)}
+   ok(out[0]===out[1]&&out[2]===out[3]&&out[0].split(' ')[1]===out[2].split(' ')[1]&&R2[0]===R2[1]&&R2[2]===R2[3]&&!/stray/.test(R2.join()),'a generated world: a new game in steps makes the world and game one at once does, and a load in steps (the world made again first) the same, with the same randoms, none between slices ('+out.join('; ')+'; randoms '+R2.join(' ')+')');
+   ok(bars.length===2&&bars.every(mono)&&bars[0].length>12,'their bars never go back and end full ('+bars.map(b=>b.length+' steps').join(', ')+')');
+   await home()}
   Math.random=r0;info('a battle\'s setup in steps is R15\'s (the battle agent)')}
  // ---- R9: holdings save themselves (each new game from the same seed, as worldprint's)
  const fresh=()=>{Math.random=t.seeded(9001);t.act('begin','soldier');Math.random=r0;G.quietEvents=true};
  fresh();G.mode='world';G.modal=false;t.hidePanel();
- const TOWNS=t.TOWNS,n0=TOWNS.length,MW=t.MW,MH=t.MH,w3=J(TOWNS),save=s=>{G.mode='world';t.saveGame(true,s);return t.readSlot(s)};
+ const TOWNS=t.TOWNS,n0=TOWNS.length,MW=t.MW,MH=t.MH,w3=J(TOWNS),save=s=>{G.mode='world';const k=LD.sync;LD.sync=true;t.saveGame(true,s);LD.sync=k;return t.readSlot(s)};
  {const s=save('1');
   ok(s.world.own.length===n0&&s.world.own.every((r,i)=>r[2]===TOWNS[i].name&&Object.keys(r[3]).join()==='s,r,u,g,b,w,k,f,cr,wo,l,e'),'each holding saves its own record, today\'s tuple: owner, garrison, name, its state (nothing more while it is as the world made it)')}
  // a load starts from the world as it first stood: nothing play left on a holding stays
@@ -117,6 +131,12 @@ try{
   ok(mid&&mid[0]==='Forging the world…'&&mid[1]==='Carving rivers'&&mid[2].length>10&&parseFloat(mid[3])>0,'it shows its title, the step under way, a tip and the bar ('+(mid&&mid.slice(0,4).join(' · '))+')');
   ok(mid&&mid[4],'its window fits a phone on its side, 844 x 390 ('+(mid&&mid[5])+')');
   ok(mid&&mid[6],'your flag flutters by the title')}
+ // a step that returns a Promise (a gunzip: save.js) is waited for, the game waiting too; one that rejects shows the error
+ {const m0=G.mode,seen=[];const r=await watch('Waiting',[{id:'a',label:'Reading the save',run:()=>new Promise(res=>setTimeout(()=>{seen.push(G.mode);res(5)},120))},{id:'b',run:()=>{seen.push(G.mode);return 'B'}}]);
+  ok(!r.err&&r.value==='B'&&seen.join()==='loading,'+m0&&G.mode===m0,'a step that returns a Promise is waited for, the game waiting (loading) meanwhile, then the next step as the game was ('+seen.join()+')');
+  const x=await watch('Waiting',[{id:'a',label:'Reading the save',run:()=>new Promise((res,rej)=>setTimeout(()=>rej(new Error('Not a gzipped save')),60))}],{back:['Back to your saves',()=>{}]});
+  const view=LD.view,txt=LD.el.querySelector('.lstep').textContent;key('Escape');
+  ok(x.err&&x.err.message==='Not a gzipped save'&&view==='error'&&txt==='Not a gzipped save'&&LD.el.hidden&&!G.modal&&G.mode===m0,'and one whose Promise fails shows the error view, its way back closing it')}
  // keys wait while it runs
  {const m0=G.mode;let mode=null;const r=watch('Keys',[{id:'a',run:()=>busy(20)},{id:'b',run:()=>{key('i');key('Escape');mode=G.mode}}]);
   key('i');key('Escape');const m1=G.mode;await r;

@@ -148,7 +148,7 @@ const PAL={
 const worldCv=()=>WorldArt.whole();
 // the minimap from the tile data (WorldArt.mini, drawn by render.js): made now, from the map as the scripts leave it (as it
 // always was: the roads lots.js leads to the gates come after it), and again when next shown after WorldArt.invalidate()
-WorldArt.mini();
+if(WM)WorldArt.mini();
 /* battle arenas: one per climate, built when first needed (R16: no pixels of its own, its tiles painted as they are seen:
    worldart.js paintArena) */
 const ARENAS={};

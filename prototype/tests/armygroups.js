@@ -16,10 +16,14 @@ try{
  ok(!t.recruitment.quoteCompanion(t.townBy(t.COMPS.brann.town),'brann').ok,'companion recruitment cannot exceed the slot cap');
  const before=P.troops.hum_foot;ok(r.merge(r.groups[2].id,first.id)&&P.troops.hum_foot===before&&r.slots===9,'merge preserves headcount and frees a slot');
  P.gold=100000;P.renown=10000;G.mode='world';t.saveGame(true,'quick');const saved=JSON.parse(localStorage.getItem(t.slotKey('quick')));
- ok(saved.v===2&&saved.P.army.groups.some(g=>g.id===secondId),'current save serializes persistent duplicate IDs');
+ ok(saved.v===3&&saved.P.army.groups.some(g=>g.id===secondId),'current save serializes persistent duplicate IDs');
  const ids=r.groups.map(g=>g.id).join();r.merge(secondId,first.id);t.loadGame('quick');
  ok(r.groups.map(g=>g.id).join()===ids,'save/load restores group boundaries and identities');
  localStorage.setItem(t.slotKey('1'),JSON.stringify({v:1,P:{troops:{hum_foot:2}}}));ok(t.readSlot('1')===null,'legacy saves are rejected, not migrated');
+ // save v2 (before the world was made from its seed): refused, never migrated (doc/WORLD_DESIGN.md D7); the list says so
+ {const v2={...saved,v:2,world:{...saved.world,v:2}};delete v2.world.map;localStorage.setItem(t.slotKey('2'),JSON.stringify(v2));const g=P.gold;P.gold=-5;t.loadGame('2');
+  ok(t.readSlot('2')===null&&t.oldSlot('2')&&P.gold===-5&&G.mode==='title','a v2 save is refused, not loaded: the game stays as it was');
+  t.showTitle('load');ok(/Made by an older version: start a new game/.test(document.getElementById('panel').innerHTML),'the save list says it was made by an older version: start a new game');P.gold=g;G.mode='world';t.hidePanel()}
  // A compact battle with duplicate infantry and duplicate archers, plus a separate companion.
  t.begin('soldier');G.quietEvents=true;P.add('hum_foot',12);const a=r.groups[0],b=r.split(a.id,6);P.add('hum_bow',8);const c=r.groups.find(g=>g.type==='hum_bow'),d=r.split(c.id,4);P.comps.brann={ap:0,role:''};
  t.startBattle({enemies:Array(12).fill('hum_foot'),deploy:false});const B=t.B,gs=t.playerGroups(),aid='p_'+a.id,bid='p_'+b.id;

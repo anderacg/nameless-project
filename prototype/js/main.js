@@ -12,12 +12,16 @@ function loop(now){
   }
   // (the HUD on its own clock, in real time, never the simulation's: in a battle the ability buttons every tick, the orders, unit
   // cards, details and top bar every other one (setOrderUI redraws the abilities too: battlehud.js bhudTop))
-  G.hudT+=dt;if(G.hudT>.25){G.hudT=0;updateHUD();if(G.mode==='battle'){updateSkillBar();if(B&&(hudCards=!hudCards))setOrderUI();else bhudAbilities()}}
+  G.hudT+=dt;if(G.hudT>.25&&WM){G.hudT=0;updateHUD();if(G.mode==='battle'){updateSkillBar();if(B&&(hudCards=!hudCards))setOrderUI();else bhudAbilities()}}
   audioWatch();// (the music follows the scene; a town, a meeting, a new day, a battle's start are heard: music.js)
   frame();requestAnimationFrame(loop);
 }
-P.x=(startHolding().tx+.5)*TILE;P.y=(startHolding().ty+2.5)*TILE;
-initWorld();worldKeep();showTitle();updateHUD(true);requestAnimationFrame(loop);// (worldKeep: the world as it first stands, every new game's start)
+// the world as it first stands (session.js worldFirst: every new game's start), laid out once it is in: at once, or with WORLD.gen
+// on the game's own page forged first behind the overlay (worldmap.js leaves it to here; the tests and the wiki make it at once)
+if(WM){worldFirst();showTitle();updateHUD(true)}
+else{const made={};runSteps('Forging the world…',[...forgeSteps('ashmark-1',classicSettings(),r=>made.r=r),{id:'install',label:'Drawing borders',w:150,run:()=>{installWorld(made.r);worldFirst()}}],
+  {back:['Try again',()=>location.reload()]}).then(()=>{showTitle();updateHUD(true)},()=>{})}
+requestAnimationFrame(loop);
 DevConsole.init();
 
 // Ashmark.html?test=<suite> runs a headless test suite from tests/ (see tests/run-tests.sh); visual/<scene> sets up a screenshot

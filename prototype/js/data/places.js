@@ -86,7 +86,7 @@ const CLASSIC_CAMPS=[{tx:88,ty:48},{tx:20,ty:96},{tx:116,ty:76},{tx:200,ty:84},{
    (its anchor, worldplace.js classicAnchors) or a point as shares of the map [x, y]; side: n, s, e or w; r: tiles */
 const CLASSIC_HINTS=[
   {id:'southSea',kind:'sea',side:'s',ports:['Saltmere','Gullhaven','Pearlbay','Brinewatch','Tidewatch'],note:'a south coast, the League’s ports on one sea'},
-  {id:'frostNorth',kind:'temp',side:'n',r:48,d:-1,note:'frost in the north'},
+  {id:'frostNorth',kind:'temp',side:'n',r:80,d:-1,note:'frost in the north'},
   {id:'desertSouthEast',kind:'temp',at:[.85,.85],r:30,d:1,dry:1,note:'desert in the south-east'},
   {id:'karnPeaks',kind:'elev',at:'Karn Hold',side:'n',r:16,note:'Karn Hold below the peaks'},
   {id:'willowIsle',kind:'island',at:'Willowmere',bridges:true,note:'Willowmere an island village with bridges (tests/routes.js)'},

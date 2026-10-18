@@ -2,8 +2,8 @@
 /* ---------- loading: one overlay for the long waits, and the driver that runs long work in steps (doc/WORLD_DESIGN.md §5) ----------
    runSteps(title, steps, opt): the driver. Returns a Promise of the last step's value (kept as LOADING.task too).
      steps: [{id, label, w, run}], in order. w: the step's share of the bar (1 if left out). run(): its work: plain, or a generator
-       function that yields at safe points (yield a number 0-1: how far through the step it is). Or steps is one generator
-       function: one step, its yields as above.
+       function that yields at safe points (yield a number 0-1: how far through the step it is), or one that returns a Promise
+       (a gunzip: save.js), waited for, the game waiting too. Or steps is one generator function: one step, its yields as above.
      The work runs in slices of up to LOADING.slice ms a frame (requestAnimationFrame), cut only between steps and at yields.
        Between slices G.mode is 'loading' and G.modal is set: main.js runs no simulation, render.js frame() draws the overlay over
        the last frame and nothing that draws a random, and input waits. Each slice gives G.mode and G.modal back as the work left
@@ -12,7 +12,8 @@
      One run at a time: called again while one runs, it returns that run's promise and does nothing.
      On an error: the error view, and the promise rejects. No step for LOADING.stall ms (20 s): the stall view (Keep waiting, or
        the way back; taking it calls the run off and the promise rejects).
-     LOADING.sync (the tests, harness.js): every step at once, in order, inside the call, no overlay; an error is thrown.
+     LOADING.sync (the tests, harness.js): every step at once, in order, inside the call, no overlay; an error is thrown
+       (a step that returns a Promise, too: it cannot be waited for).
    loadingShow(title, steps): opens the overlay for these steps ([{id, label, w}]). It shows only after LOADING.delay ms (300) and,
      once shown, stays LOADING.hold ms (400) at least (runSteps waits it out); until it shows it is clear and only takes the
      pointer, so a quick load never flashes.
@@ -91,20 +92,24 @@ function loadingAct(k){const L=LOADING;
 // Esc and every other key: theirs while it is open
 addEventListener('keydown',e=>{const L=LOADING;if(!L.on)return;e.stopImmediatePropagation();if(e.key!=='Escape')return;e.preventDefault();
   if(L.view==='stall')loadingAct('wait');else if(L.view==='error')loadingAct('back')},true);
-function runSteps(title,steps,opt){const L=LOADING,list=typeof steps==='function'?[{id:'work',label:'',w:1,run:steps}]:steps,iter=v=>v&&typeof v.next==='function';
-  if(L.sync){let v;for(const s of list){v=s.run?s.run():undefined;if(iter(v)){let n;while(!(n=v.next()).done);v=n.value}}return L.task=Promise.resolve(v)}
+function runSteps(title,steps,opt){const L=LOADING,list=typeof steps==='function'?[{id:'work',label:'',w:1,run:steps}]:steps,iter=v=>v&&typeof v.next==='function',later=v=>v&&typeof v.then==='function';
+  if(L.sync){let v;for(const s of list){v=s.run?s.run():undefined;if(later(v))throw new Error('A step that waits cannot run at once: '+s.id);if(iter(v)){let n;while(!(n=v.next()).done);v=n.value}}return L.task=Promise.resolve(v)}
   if(L.on&&L.run)return L.task;
   const back=opt&&opt.back||['Back to the title',()=>showTitle()];loadingShow(title,list);L.back=back;
   return L.task=new Promise((res,rej)=>{const run=L.run={};let i=0,it=null,v;
     const away=()=>{L.keep={mode:G.mode,modal:G.modal};G.mode='loading';G.modal=true},home=()=>{if(L.keep){G.mode=L.keep.mode;G.modal=L.keep.modal;L.keep=null}};
+    const fail=e=>{G.modal=false;away();L.run=null;L.stop=null;loadingFail(e,back);rej(e)};
     L.stop=()=>{L.stop=null;rej(new Error('Called off'))};
-    // (a slice: the tick first, as timers can starve behind busy frames; then the work, as the last slice left the game)
+    // (a slice: the tick first, as timers can starve behind busy frames; then the work, as the last slice left the game. A step
+    // that returns a Promise (a gunzip) is waited for, the game waiting too, its value the step's)
     const slice=()=>{if(L.run!==run)return;loadingTick();home();const t0=performance.now();
       try{while(i<list.length){const s=list[i];
-          if(!it){loadingStep(s.id,0);v=s.run?s.run():undefined;if(iter(v))it=v;else{loadingStep(s.id,1);i++}}
+          if(!it){loadingStep(s.id,0);v=s.run?s.run():undefined;if(iter(v))it=v;
+            else if(later(v)){away();v.then(x=>{if(L.run!==run)return;v=x;loadingStep(s.id,1);i++;slice()},e=>{if(L.run===run){home();fail(e)}});return}
+            else{loadingStep(s.id,1);i++}}
           else{const n=it.next();if(n.done){v=n.value;it=null;loadingStep(s.id,1);i++}else if(typeof n.value==='number')loadingStep(s.id,n.value)}
           if(i<list.length&&performance.now()-t0>=L.slice){away();requestAnimationFrame(slice);return}}}
-      catch(e){G.modal=false;away();L.run=null;L.stop=null;loadingFail(e,back);rej(e);return}
+      catch(e){fail(e);return}
       // (done: once shown, it stays its least time, the game still waiting)
       L.stop=null;const wait=L.shownAt?L.hold-(performance.now()-L.shownAt):0;
       if(wait>0){away();setTimeout(()=>{if(L.run===run)loadingHide();res(v)},wait)}else{loadingHide();res(v)}};

@@ -50,9 +50,13 @@ function grazeOk(id,x,y,pen){
 }
 // wild game wanders inside its habitat
 const habitatOk=(id,x,y)=>{const tags=habitatAt(x,y);return CRITTERS[id].where.some(w=>tags.includes(w))};
+// (a copy of a shuffled by binary insertion, a draw a comparison: what sort(()=>Math.random()-.5) did on a fresh page. That sort
+// is not a function of its draws: once the browser optimizes its caller it compares in another order and draws fewer, so a
+// new game's later draws hung on how warm the page was)
+function drawShuffle(a){a=a.slice();for(let s=1;s<a.length;s++){const p=a[s];let l=0,r=s;while(l<r){const m=(l+r)>>1;if(Math.random()-.5<0)r=m;else l=m+1}a.splice(s,1);a.splice(l,0,p)}return a}
 // one herd grazing beside a holding, of an animal its people keep and its land can feed: inside the pasture fence if it has one
 function spawnHerd(t){
-  const kinds=(LIVESTOCK[t.races[0]]||LIVESTOCK.human).slice().sort(()=>Math.random()-.5),sp=typeof bldSpots==='function'&&bldLv(t,'pasture')?bldSpots(t).pasture:null;
+  const kinds=drawShuffle(LIVESTOCK[t.races[0]]||LIVESTOCK.human),sp=typeof bldSpots==='function'&&bldLv(t,'pasture')?bldSpots(t).pasture:null;
   // (a pasture's herd grazes the middle of its fields (or round the barn, if it has none), a sight to see: its herders are met at
   // the pasture itself (estates.js estateMeet))
   if(sp){const F=fieldsOf(t,'pasture'),lv=bldLv(t,'pasture'),w=16+6*lv,h=12+3*lv,pen=F?{town:t.name,k:'pasture'}:{x:sp.x-w/2+3,y:sp.y-h/2+3,w:w-6,h:h-6},at=F||sp,

@@ -5,12 +5,14 @@
 // silver, gold and gems favour the mountains and the desert, mithril only the frozen peaks, and adamantite lies only deep inside
 // the great ranges. A holding works the veins and waters within RES_RANGE tiles: its mine brings up their ores, its port their fish (data/economy.js, RES_RATE).
 // genDeposits keeps them on the map (map.deposits, map.depAt: the deposit at each tile, or -1); DEPOSITS and DEP_AT are the
-// lists of the map that is in.
+// lists of the map that is in. A generated world's (doc/WORLD_DESIGN.md §8.12) also fishes its rivers and lakes (salmon more in
+// the rivers, eels in the lakes, pearls only in the sea), and its economy setting makes every deposit rarer or commoner.
 let DEPOSITS=[],DEP_AT=null;
 onWorld(m=>{DEPOSITS=m.deposits||[];DEP_AT=m.depAt||new Int16Array(MW*MH).fill(-1);for(const t of TOWNS)if(t._res)t._res=null});
 // (the body reads the map's layers and size by the usual names)
 function genDeposits(map,holdings){
   const MW=map.w,MH=map.h,tiles=map.kind,climate=map.clim,tAt=(x,y)=>map.kindAt(x,y),DEPOSITS=map.deposits=[],DEP_AT=map.depAt=new Int16Array(MW*MH).fill(-1);
+  const econ=map.settings&&{poor:.7,rich:1.3}[map.settings.economy]||1,inland=i=>map.river[i]&3?'river':map.feat[i]&2?'lake':null,IN={river:{salmon:1.5,pearls:0},lake:{eel:1.5,pearls:0}};
   const pick=(w,r)=>{const ks=Object.keys(w).filter(k=>w[k]>0),tot=ks.reduce((a,k)=>a+w[k],0);let x=r*tot;for(const k of ks){x-=w[k];if(x<0)return k}return ks[ks.length-1]};
   const shore=(x,y)=>[[1,0],[-1,0],[0,1],[0,-1]].some(([a,b])=>{const t=tAt(x+a,y+b);return t!==T_WATER&&t!==T_MOUNT});
   const deep=(x,y)=>[[-1,-1],[0,-1],[1,-1],[-1,0],[1,0],[-1,1],[0,1],[1,1]].every(([a,b])=>tAt(x+a,y+b)===T_MOUNT);
@@ -19,9 +21,9 @@ function genDeposits(map,holdings){
   for(let by=0;by<MH;by+=3)for(let bx=0;bx<MW;bx+=3){
     const x=bx+Math.floor(hash(bx,by,71)*3),y=by+Math.floor(hash(bx,by,72)*3);if(x<1||y<1||x>=MW-1||y>=MH-1)continue;
     const t=tiles[y*MW+x],c=CLIMS[climate[y*MW+x]],r=hash(x,y,73);
-    if(t===T_HILL&&r<.55)put(x,y,ore(x,y,'hill'));
-    else if(t===T_WATER&&shore(x,y)&&r<.35){const w={};for(const k in FISH_W)w[k]=FISH_W[k][c];if(Object.values(w).some(v=>v>0))put(x,y,pick(w,hash(x,y,76)))}}
-  for(let y=1;y<MH-1;y++)for(let x=1;x<MW-1;x++)if(tiles[y*MW+x]===T_MOUNT&&hash(x,y,77)<.1)put(x,y,ore(x,y,'mount'));
+    if(t===T_HILL&&r<.55*econ)put(x,y,ore(x,y,'hill'));
+    else if(t===T_WATER&&shore(x,y)&&r<.35*econ){const w={},o=IN[inland(y*MW+x)];for(const k in FISH_W)w[k]=FISH_W[k][c]*(o&&o[k]!=null?o[k]:1);if(Object.values(w).some(v=>v>0))put(x,y,pick(w,hash(x,y,76)))}}
+  for(let y=1;y<MH-1;y++)for(let x=1;x<MW-1;x++)if(tiles[y*MW+x]===T_MOUNT&&hash(x,y,77)<.1*econ)put(x,y,ore(x,y,'mount'));
   // every holding has a home deposit that suits its land and its folk: dwarves dig iron, silver and mithril, orcs gold and gems,
   // a holding known for cheap iron has its seam. It lies on the nearest hill or mountain (or is a fishing ground by the nearest shore)
   // within HOME_RANGE, further out than its other veins if need be: it always counts as the holding's own (d.home)
@@ -31,10 +33,10 @@ function genDeposits(map,holdings){
       const tt=tiles[y*MW+x];if(tt===T_HILL||tt===T_MOUNT)rock.push([x,y]);else if(tt===T_WATER&&shore(x,y))wet.push([x,y])}
     const w={},rb=Object.assign({},...t.races.map(r=>RACE_ORE[r]||{}));
     if(rock.length)for(const k in ORE_W)w[k]=(ORE_W[k].hill+ORE_W[k].mount)*(ORE_W[k].clim[c]||0)*(rb[k]||1)*(k==='iron'&&t.mod&&t.mod.iron<=.8?4:1);
-    if(wet.length)for(const k in FISH_W)w[k]=(FISH_W[k][c]||0)*(rock.length?.8:1.5);
+    const sea=p=>!inland(p[1]*MW+p[0]);if(wet.length)for(const k in FISH_W)w[k]=(FISH_W[k][c]||0)*(rock.length?.8:1.5)*(k==='pearls'&&!wet.some(sea)?0:1);
     // no rock or water in reach at all: a seam under the holding itself
     if(!Object.values(w).some(v=>v>0)){for(const k in ORE_W)w[k]=ORE_W[k].hill*(ORE_W[k].clim[c]||0)*(rb[k]||1);rock.push([t.tx,t.ty])}
-    const g=pick(w,hash(t.tx,t.ty,78)),at=(ORE_W[g]?rock:wet).sort((p,q)=>Math.hypot(p[0]-t.tx,p[1]-t.ty)-Math.hypot(q[0]-t.tx,q[1]-t.ty))[0];
+    const g=pick(w,hash(t.tx,t.ty,78)),at=(ORE_W[g]?rock:g==='pearls'?wet.filter(sea):wet).sort((p,q)=>Math.hypot(p[0]-t.tx,p[1]-t.ty)-Math.hypot(q[0]-t.tx,q[1]-t.ty))[0];
     put(at[0],at[1],g);Object.assign(DEPOSITS[DEPOSITS.length-1],{rich:1.5,home:t.name})}
   return map;
 }

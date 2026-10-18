@@ -17,9 +17,14 @@ function reveal(){
 }
 // a fresh map (a new game): nothing known yet
 function fogReset(){W.seen=new Uint8Array(MW*MH);fogDirty=true;lastReveal=''}
-// in the save: a bit a tile, as base64
-function seenSave(){const S=seenArr(),b=new Uint8Array(Math.ceil(S.length/8));for(let i=0;i<S.length;i++)if(S[i])b[i>>3]|=1<<(i&7);let s='';for(let i=0;i<b.length;i+=4096)s+=String.fromCharCode.apply(null,b.subarray(i,i+4096));return btoa(s)}
-function seenLoad(str){fogReset();if(!str)return;try{const s=atob(str),S=W.seen;for(let i=0;i<S.length;i++)S[i]=(s.charCodeAt(i>>3)>>(i&7))&1}catch(e){fogReset()}}
+// in the save (doc/WORLD_DESIGN.md §9.3): run lengths from the first tile, row by row, unknown and known in turn (the first run
+// unknown, maybe 0 long), each 7 bits a byte (the top bit: more follows), as base64. A save that does not add up: nothing known
+function seenSave(){const S=seenArr(),b=[],put=n=>{for(;n>127;n>>>=7)b.push(n&127|128);b.push(n)};let v=0,n=0;
+  for(let i=0;i<S.length;i++){if((S[i]?1:0)!==v){put(n);v^=1;n=0}n++}put(n);
+  let s='';for(let i=0;i<b.length;i+=4096)s+=String.fromCharCode.apply(null,b.slice(i,i+4096));return btoa(s)}
+function seenLoad(str){fogReset();if(!str)return;try{const s=atob(str),S=W.seen;let i=0,v=0;
+  for(let p=0;p<s.length;v^=1){let n=0,k=0,c;do{c=s.charCodeAt(p++);n|=(c&127)<<k;k+=7}while(c&128&&k<28);if(i+n>S.length)throw 0;if(v)S.fill(1,i,i+n);i+=n}
+  if(i!==S.length)throw 0}catch(e){fogReset()}}
 
 /* drawing: the battle fog's, over the ground and under the HUD (drawWorldFog, from render.js drawWorld): your sight clear;
    beyond it, from WFOG.ring of vis() out, the battle's dim (FOG.col, FOG.dark) over all the land you remember; over land you

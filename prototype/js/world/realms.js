@@ -42,8 +42,11 @@ const GUARD_FLOOR=20;
 function draftLocals(t,n){ensureEcon(t);const k=Math.max(0,Math.min(n,Math.floor(t.vol||0),Math.floor((t.pop||0)-GUARD_FLOOR)));if(k){t.vol-=k;t.pop-=k}return k}
 const canDraft=t=>(t.vol||0)>=1&&(t.pop||0)-GUARD_FLOOR>=1;
 function garList(t){const a=[];for(let i=0;i<t.gar;i++){const c=RACES[t.races[i%t.races.length]];a.push(i%7===6?c.mage:i%3===2?c.ranged:i%4===1?c.shield:i%2?UP[c.melee][0]:c.melee)}return a}
-// a holding's first day: its realm, garrison and peace, its estates and economy (its lots: initLots)
-function initHolding(t){t.owner=t.lastOwner=HOME[t.name];t.gar=t.T.gar;t.sacked=t.raided=t.turmoil=0;t.grow=GROW0;initEstates(t);initEconomy(t)}
+// a holding's first day: its realm, garrison and peace, its estates and economy (its lots: initLots); a generated world's economy
+// setting (doc/WORLD_DESIGN.md §4.1) on its first stocks (ECON_STOCK: poor or rich)
+const ECON_STOCK={poor:.75,rich:1.3};
+function initHolding(t){t.owner=t.lastOwner=HOME[t.name];t.gar=t.T.gar;t.sacked=t.raided=t.turmoil=0;t.grow=GROW0;initEstates(t);initEconomy(t);
+  const e=WM.settings&&ECON_STOCK[WM.settings.economy];if(e)for(const g in t.stock)t.stock[g]=Math.round(t.stock[g]*e)}
 // told when a holding is added or lost while the world runs: fn(t, 'add' | 'gone')
 const HOLDING_HOOKS=[],onHolding=fn=>HOLDING_HOOKS.push(fn);
 // a holding made while the world runs (founded): its name kept unique, held by its realm (yours unless given), set up as the
@@ -59,9 +62,10 @@ function initWorld(){
   {const a=FIDS[rint(0,FIDS.length-1)],others=FIDS.filter(x=>x!==a),b=others[rint(0,others.length-1)];W.rel[rk(a,b)]={s:'war',since:1}}
   addMissingLords();patrolDay();
 }
-// every faction fields its listed lords; also fills in lords for factions an older save didn't have
+// every faction fields its listed lords (a generated world's when it needs more: WM.lords, doc/WORLD_DESIGN.md D10); also fills
+// in lords for factions an older save didn't have
 function addMissingLords(){
-  FIDS.forEach(f=>FACS[f].lords.forEach((n,i)=>{if(W.lords.some(l=>l.name===n)||W.dead[f])return;const own=fiefsOf(f);if(!own.length)return;const h=own[i%own.length];
+  FIDS.forEach(f=>(WM.lords&&WM.lords[f]||FACS[f].lords).forEach((n,i)=>{if(W.lords.some(l=>l.name===n)||W.dead[f])return;const own=fiefsOf(f);if(!own.length)return;const h=own[i%own.length];
     W.lords.push(asParty({id:f+i,name:n,fac:f,x:h.x+rint(-8,8),y:h.y+14,troops:armyOf(f,12),state:'rest',tgt:h.name,sd:0,cool:0,dead:false,gone:false,back:0}))}));
 }
 function setRel(a,b,s,chain){

@@ -1013,6 +1013,8 @@ Standing stones go on high moor; groves 3–6 tiles inside deep woods; monasteri
 | Mountains and cliff edges | closed |
 
 - **Crossing spacing:** if a river runs more than 60 tiles between crossings, add a ford (on a stream or river) or a ferry (on a great river) at the best spot.
+  - **As built (wave 1):** on a great river the spot takes a bridge where its water is 3 tiles or less, else a ferry by a town or port. A crossing's place along a river is its last tile on the river's path (else the path's nearest within 2). No crossing end is a notch (water on both its sides across the way: it would read as one more tile of bridge).
+  - **Bare stretches:** where no spot within 60 tiles can take a crossing by these rules (a bank of peaks or of land no road joins; a great river far from towns where it is wider than a bridge, as on its diagonal reaches, 4–9 tiles of water across), the next crossing goes at the first spot past them, and the stretch stays bare. They are no failure and cost no retry; `tests/worldplace.js` lists them (INFO; e.g. Normal `redwater`: Otterlode 16–92; Large `redwater`: Ironbeck 392–508 and 532–630, both great rivers).
 - **Crossings** are listed in `WM.crossings` with their kind, river, season rule and toll holding.
 - **The way graph** (§3.6) is built last, from the roads, crossings, river legs and chunk portals.
 
