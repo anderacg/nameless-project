@@ -177,15 +177,22 @@ class BattleSetup{
       });
     }
   }
-  createState(){
-    const {units,hero,groups,env,opts}=this,FI=this.field;
-    // (an ambush's cover is laid round the groups lying in wait: ambushLayout)
+  // (the ground's terrain (terrain.js buildTerrain: its plan, routes and fairness), or null: an ambush's cover is laid round the groups
+  // lying in wait first (ambushLayout))
+  terrain(){const {env,opts}=this,FI=this.field;
     if(this.btype&&this.btype.kind==='ambush')this.ground.ambush=this.ambushLayout();
     // (the ground: only a battle with terrain gets B.terrain, and then no scattered trees, rocks or cacti: its woods, hills and
     // marsh are the field's only features (the owner, 2026-10-17, reversing D10); without terrain the obstacles as ever: terrain.js)
-    const TR=this.ground?buildTerrain({...this.ground,W:BW,top:FI.top,bot:FI.bot}):null;if(TR&&!opts.sandbox)env.text=groundEnvText(env,TR);
+    const TR=this.ground?buildTerrain({...this.ground,W:BW,top:FI.top,bot:FI.bot}):null;if(TR&&!opts.sandbox)env.text=groundEnvText(env,TR);return this.TR=TR}
+  // (its ground painted in slices: the climate's arena (sprites.js arenaSteps: every battle's, kept), then over it the terrain
+  // (engine/ground.js), as the first frame painted it till R15: the same spec, so the same pixels)
+  *paint(){const base=yield* arenaSteps(this.env.c),TR=this.TR;if(TR)this.painted=yield* PX.battleGroundSteps({...TR,climate:this.env.c,base})}
+  // (a wood of more trees than LOD.trees: its canopy layer made now, not when first zoomed out (render.js LOD))
+  canopy(){const g=this.painted;if(g&&LOD.on&&g.trees>LOD.trees)PX.battleCanopy(g)}
+  createState(){
+    const {units,hero,groups,env,opts}=this,FI=this.field,TR=this.TR;
     const st={units,hero,groups,env,arena:arenaFor(env.c),ftop:FI.top,fbot:FI.bot,obs:opts.tournament||TR?[]:placeObstacles(env,FI.top,FI.bot),sel:'all',rings:[],arrows:[],parts:[],floats:[],slashes:[],corpses:[],aim:0,blocking:false,touchBlock:false,mt:null,over:false,endT:0,kills:0,slain:[],lost:{},heroDown:false,opts,t:0};
-    if(TR)st.terrain=TR;if(TR&&this.btype)st.btype=this.btype;if(this.fogOn())st.fog=true;if(BFIELD)st.fsize=BFIELD.key;return st;
+    if(TR)st.terrain=TR;if(this.painted)st.ground=this.painted;if(TR&&this.btype)st.btype=this.btype;if(this.fogOn())st.fog=true;if(BFIELD)st.fsize=BFIELD.key;return st;
   }
   // (fog of war: field battles, terrain or none, with the setting on; never a tournament, a siege or a raid: battlefog.js)
   fogOn(){const e=G.enc;return FOG.on&&!this.opts.tournament&&!this.opts.sandbox&&!(e&&['siege','raid','tourney'].includes(e.kind))}
@@ -259,7 +266,8 @@ class BattleSetup{
     let heads=1+o.enemies.length;if(!o.tournament)heads+=compsInBand().length+P.list.length;if(e)for(const l of [...(e.allies||[]),...(e.foes||[])])heads+=n(l.troops)+1;
     const kind=bt&&TERRAIN.on&&!['siege','raid','tourney'].includes(e.kind)&&(bt.kind==='bridge'||bt.kind==='ambush')?bt.kind:null;
     return fieldSizeFor(heads,o.tournament?null:regionAt(P.x,P.y),kind)}
-  start(){
+  // (the field, its look and its armies: their randoms drawn here, in this order)
+  survey(){
     fieldSet(this.fieldSize());// (the field's size first: everything after lays out on it, the ground's generation too)
     damageTypesInit();
     this.env=battleEnv(this.opts.tournament);
@@ -268,14 +276,41 @@ class BattleSetup{
     this.btype=this.battleType();if(this.btype)this.typeGround();// (its type, if any: BTYPE)
     this.field=measureField();
     this.createGroups();
+  }
+  // (the battle's state (B), its type's lay-out, morale, the camera, deployment and the sprites queued (initialize))
+  muster(){
     B=this.createState();
     if(this.playerOrder)B.playerOrder=this.playerOrder;
     if(B.btype)this.arrangeType();
     this.initialize();
+  }
+  // (the sprites queued (sprites.js warmBattle) made now, while the overlay is up anyway; a quick start leaves them to its first
+  // frames, as ever)
+  *warm(){while(LOADING.on&&LOADING.shownAt&&(WARM.q.length||WARM.b.length)){warmStep();yield}}
+  // (the field opened: the HUD; who reaches and sees whom from the start (the route, fog and sight grids: terrain.js))
+  open(){
     this.present();
     terrainStep();// (shooters on high ground: their range from where they stand at the start, terrain.js)
     sightStep(true);// (who sees whom from the start: those in woods, behind a rise or out of sight in the fog unseen, terrain.js)
   }
+  /* the start, in steps behind "Marching to battle…" (loading.js runSteps; doc/WORLD_DESIGN.md R15): each step's work as it ever
+     was and in its order, so its randoms are drawn as ever, and between slices nothing runs that draws one; the ground painted
+     here, in slices, not in the first frame (render.js finds it made). Past LOADING.delay (300 ms: a big field, a forest) the overlay
+     shows; the tests (LOADING.sync) run it all at once, inside the call. after: run as its last step (the lab's); back: the way back
+     from a failed start ([label, fn]; by default undo: to the map, the encounter as it was). The run's promise (LOADING.task) */
+  start(after,back){return runSteps('Marching to battle…',this.steps(after),{back:back||['Back to the map',()=>BattleSetup.undo()]})}
+  // (its steps ({id, label, w, run}: loading.js); paint a generator, yielding between its stages and bands of rows)
+  steps(after){
+    return[
+      {id:'survey',label:'Surveying the ground',w:1,run:()=>this.survey()},
+      {id:'terrain',label:'Raising the hills',w:1,run:()=>this.terrain()},
+      {id:'paint',label:'Painting the field',w:8,run:()=>this.paint()},
+      {id:'canopy',label:'Planting the woods',w:1,run:()=>this.canopy()},
+      {id:'muster',label:'Mustering the troops',w:1,run:()=>this.muster()},
+      {id:'warm',label:'Arming the ranks',w:1,run:()=>this.warm()},
+      {id:'open',label:'Sounding the horns',w:1,run:()=>{this.open();if(after)after()}}]}
+  // (a start that failed: no battle, today's field, the HUD away; back on the map, or in the encounter where it was left)
+  static undo(){B=null;fieldDone();bbar.hidden=true;if(G.mode==='battle'){G.mode='world';hidePanel()}}
 }
 // (an ambush's cover a ridge, not woods: always in a desert, BTYPE.ridge of the time on hills, by the ground's seed)
 const ambushRidge=(recipe,seed)=>recipe==='desert'||recipe==='hills'&&seeded((seed^0x5EED41D)>>>0)()<BTYPE.ridge;
@@ -284,5 +319,6 @@ const BTYPE_SAY={hold:['Hold the bridge!','Hold the bridge: they must come over 
   wait:['Lie in wait','Your band lies hidden beside the road. Charge out of hiding when you choose: the first blow lands harder.'],caught:['Ambushed!','Ambush! They lie hidden beside the road, and your band is caught in march order.']};
 function typeSay(){const bt=B.btype;if(!bt)return;const mine=bt.kind==='bridge'?bt.def===0:bt.hid===0,k=bt.kind==='bridge'?(mine?'hold':'take'):mine?'wait':'caught',[t,txt]=BTYPE_SAY[k];
   log(txt,k==='caught'?'bad':k==='wait'?'good':'');battleEvent('btype',{text:t,team:k==='caught'?1:0})}
-// Compatibility entry point used by encounters, tournaments, tests and other callers.
-function startBattle(opts){return new BattleSetup(opts).start()}
+// Compatibility entry point used by encounters, tournaments, sieges, tests and other callers: the start in steps (a failure shows
+// itself: its error view)
+function startBattle(opts){new BattleSetup(opts).start().catch(()=>{})}

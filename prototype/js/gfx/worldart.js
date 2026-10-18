@@ -192,18 +192,20 @@ const WorldArt={
 onWorld(()=>WorldArt.invalidate());
 // the whole map painted afresh (a new plan: the tests)
 function paintWorld(){WorldArt.invalidate();return WorldArt.whole()}
-/* battle grounds: the same ground, with the battlefield's small things by climate (as a terrain's: engine/ground.js) */
-function paintArena(c){
-  const cv=document.createElement('canvas');cv.width=BW;cv.height=BH;const g=cv.getContext('2d'),img=g.createImageData(BW,BH),D=img.data,P3=GROUND_RGB[c],seed=CLIMS.indexOf(c)*7+1;
-  for(let y=0;y<BH;y++)for(let x=0;x<BW;x++){const L=(fbm(x/70,y/70,seed)-.5)*2,b4=hs(x>>2,y>>2,seed);let v=.5+.4*L+.2*(b4-.5);v=Math.max(0,Math.min(1,v));
+/* battle grounds: the same ground, with the battlefield's small things by climate (as a terrain's: engine/ground.js). steps: the
+   same as a generator, yielding every band of rows (PX.GROUND_BAND px) and before its small things (R15: setup.js paints a
+   battle's in slices) */
+function paintArena(c,steps){const it=(function*(){
+  const cv=document.createElement('canvas');cv.width=BW;cv.height=BH;const g=cv.getContext('2d'),img=g.createImageData(BW,BH),D=img.data,P3=GROUND_RGB[c],seed=CLIMS.indexOf(c)*7+1,band=Math.max(1,Math.floor(PX.GROUND_BAND/BW));
+  for(let y=0;y<BH;y++){if(y&&!(y%band))yield;for(let x=0;x<BW;x++){const L=(fbm(x/70,y/70,seed)-.5)*2,b4=hs(x>>2,y>>2,seed);let v=.5+.4*L+.2*(b4-.5);v=Math.max(0,Math.min(1,v));
     let col=v<.5?mixc(P3[0],P3[1],v*2):mixc(P3[1],P3[2],(v-.5)*2);const ph=hs(x,y,seed+9);if(ph<.03)col=mixc(col,P3[2],.6);else if(ph>.97)col=mixc(col,P3[0],.7);
-    const o=(y*BW+x)*4;D[o]=col[0];D[o+1]=col[1];D[o+2]=col[2];D[o+3]=255}
-  g.putImageData(img,0,0);
+    const o=(y*BW+x)*4;D[o]=col[0];D[o+1]=col[1];D[o+2]=col[2];D[o+3]=255}}
+  g.putImageData(img,0,0);yield;
   PX.battleDetails(g,BW,BH,c,seed);// (tufts, flowers, pebbles, bushes; drifts; stones; moss, reeds and pools: engine/ground.js)
   const top=c==='frost'?['#b8c4d2','#9aa6b4']:c==='desert'?['#b8944c','#9a7a3a']:c==='swamp'?['#3a4a2a','#2a3a20']:['#3a5c2c','#2a4a22'];
   g.fillStyle=top[0];g.fillRect(0,0,BW,14);g.fillStyle=top[1];for(let x=0;x<BW;x+=3)g.fillRect(x,13+(hs(x,0,4)>.5?1:0),2,1);
   return cv;
-}
+  })();if(steps)return it;let n;while(!(n=it.next()).done);return n.value}
 
 /* what moves on the map: water glints, cloud shadows drifting by day, smoke over holdings, snow in the frost, fireflies at night */
 // a cloud's shadow at full size, pixel by pixel (hard edges, never scaled)

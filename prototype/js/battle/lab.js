@@ -183,8 +183,9 @@ const BattleLab={
       this.restoreRecord(P,Object.getOwnPropertyDescriptors({...player,...(hasHero?{}:{tree:['start'],perks:[]}),morale:100,comps:{},army:{nextId:1,groups:[]},troops,wounded:{},woundedGroups:[],captives:[],prisoners:{},stay:null,siege:null,raid:null,hp:null,sp:null,mp:null}));
       if(typeof P.changed==='function')P.changed();
       this.restoreRecord(G,Object.getOwnPropertyDescriptors({...makeRuntimeState(),mode:'world',modal:false,day:G.day,quietEvents:true}));
-      Math.random=seeded(c.seed);new LabBattleSetup(c).start();this.last=structuredClone(c);this.session.result=null;this.beginTelemetry();
-      if(typeof DevConsole!=='undefined'){DevConsole.close();DevConsole.labStatus()}
+      // (its start in steps (setup.js BattleSetup.start), the test's own work its last; a failure's way back exits the test)
+      Math.random=seeded(c.seed);new LabBattleSetup(c).start(()=>{this.last=structuredClone(c);this.session.result=null;this.beginTelemetry();
+        if(typeof DevConsole!=='undefined'){DevConsole.close();DevConsole.labStatus()}},['Exit the test',()=>this.exit()]).catch(()=>{});
       return 'Battle test started. Use the normal orders, or the test toolbar to pause, step, restart and exit.';
     }catch(e){this.exit();throw e}
   },

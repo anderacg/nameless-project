@@ -5,7 +5,10 @@
 // field in a 1280×720 view and zoomed in to a third of it. Zoomed out, a field of more than LOD.trees trees draws its canopy layer
 // (render.js LOD, PX.battleCanopy) and only its other props as sprites: "LOD" is that frame, "sprites" the frame without it.
 // Each frame is timed to a pixel read back (the canvas's drawing done, not only queued).
-// Plains (copses) beside them. Then a real battle frame (drawBattle) on a huge forest, LOD on and off. Never fails.
+// Plains (copses) beside them. Then a battle's start by field size, open and forest (R15: the start in steps, setup.js; before it
+// the ground was painted in the first frame): the start, each step's time and the longest piece of work between two yields (the
+// page answers between pieces: loading.js runSteps cuts its slices only there), then its first frame. Then a real battle frame
+// (drawBattle) on a huge forest, LOD on and off. Never fails.
 window.RUN=()=>{const t=T,o=[],ev=s=>(0,eval)(s);
  try{window.requestAnimationFrame=()=>0;ev('TERRAIN.on=true');
   const med=a=>{a=a.slice().sort((x,y)=>x-y);return a[a.length>>1]};
@@ -19,6 +22,15 @@ window.RUN=()=>{const t=T,o=[],ev=s=>(0,eval)(s);
    const lod=z<t.LOD.z&&trees>t.LOD.trees,a0=performance.now();if(lod)t.PX.battleCanopy(G);const cb=performance.now()-a0;
    for(let k=0;k<12;k++){const [a,n]=frame(G,cv,[0,0,W,H],z);fo.push(a);no=n;if(lod){const [c,m]=frame(G,cv,[0,0,W,H],z,true);fl.push(c);nl=m}const v=[W*.3,H*.3,W*.3+1280/2,H*.3+720/2],[b,m]=frame(G,cv,v,2);fi.push(b);ni=m}
    o.push('INFO '+(name+' '+W+'×'+H).padEnd(18)+' '+(rc+':'+lay).padEnd(16)+' gen '+med(gen).toFixed(1)+' ms, paint '+med(paint).toFixed(0)+' ms, props '+G.props.length+' (trees '+trees+', '+deep+' in the woods’ hearts: T.deep); a frame zoomed out: sprites '+med(fo.slice(2)).toFixed(2)+' ms ('+no+' drawn)'+(lod?', LOD '+med(fl.slice(2)).toFixed(2)+' ms (the canopy and '+nl+' sprites; the canopy made once in '+cb.toFixed(0)+' ms)':', no LOD (under '+t.LOD.trees+' trees or zoom '+z.toFixed(2)+')')+'; zoomed in ×2 '+med(fi.slice(2)).toFixed(2)+' ms ('+ni+' drawn)')}
+  // (a battle's start by field size: the lab's, 60 a side; its steps timed where it runs them (runSteps, at once, as LOADING.sync))
+  {const L=t.BattleLab,G=t.G,r0=window.runSteps,arm=[{type:'hum_foot',count:40},{type:'hum_bow',count:20}];t.act('begin','soldier');G.quietEvents=true;t.GUIDE.on=false;
+   for(const size of t.FIELD_SIZES.order)for(const tr of ['open','forest']){G.mode='world';G.modal=false;const st=[];let big=0;
+    window.runSteps=(title,steps)=>{let v;for(const s of steps){const a=performance.now();let m=0,n=0;v=s.run?s.run():undefined;
+      if(v&&typeof v.next==='function'){let x;for(;;){const q=performance.now();x=v.next();m=Math.max(m,performance.now()-q);n++;if(x.done)break}v=x.value}
+      const all=performance.now()-a;big=Math.max(big,n?m:all);st.push(s.id+' '+all.toFixed(0)+(n>1?' ('+n+' pieces, the longest '+m.toFixed(0)+')':''))}return Promise.resolve(v)};
+    let a=performance.now();try{L.start({leftGroups:arm,rightGroups:arm,deploy:false,paused:true,ai:true,morale:true,seed:7,terrain:tr,ground:'auto',size,fog:false})}finally{window.runSteps=r0}
+    const set=performance.now()-a;a=performance.now();t.drawBattle();t.ctx.getImageData(0,0,1,1);const f1=performance.now()-a;
+    o.push('INFO start, '+(size+' '+tr).padEnd(13)+(' '+t.BW+'×'+t.BH).padEnd(11)+' setup '+set.toFixed(0)+' ms, first frame '+f1.toFixed(0)+' ms'+(st.length?', the longest piece '+big.toFixed(0)+' ms; '+st.join(', '):' (one piece)'));L.exit()}}
   // (a real frame: a huge forest battle of 300 soldiers, drawBattle whole, at the field's fit and at ×1, LOD on and off)
   {const L=t.BattleLab,G=t.G;t.act('begin','soldier');G.quietEvents=true;t.GUIDE.on=false;ev('FIELD_SIZES.on=true;EXITS.on=true');
    const arm=[{type:'hum_foot',count:60},{type:'hum_bow',count:40},{type:'hum_knight',count:30},{type:'hum_foot',count:20}];G.mode='world';G.modal=false;
