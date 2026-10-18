@@ -44,7 +44,7 @@ try{
  else ok(true,'(no lord in a town to visit)');
  // bandits shelter in camps at night
  world();G.encCool=1e9;const c=t.camps().find(x=>!x.cleared);c.bands=[];const b={x:c.x+30,y:c.y,n:3,kind:'bandits',list:['militia','militia','militia'],t:9,a:0,idle:false,cool:0};t.bandits.push(t.asParty(b));P.x=c.x+900;P.y=c.y+900;
- G.clock=t.DAY*.8;for(let i=0;i<80&&t.bandits.includes(b);i++)t.updateWorld(.05);
+ G.clock=t.DAY*.8;for(let i=0;i<180&&t.bandits.includes(b);i++)t.updateWorld(.05);// (180 frames: the slower pace of Phase 1, D9; it was 80)
  ok(!t.bandits.includes(b)&&c.bands.includes(b),'at night a band goes into a camp nearby');
  ok(!t.pickAt(b.x,b.y)||t.pickAt(b.x,b.y)===c,'and is off the map');
  t.saveGame(true);c.bands=[];t.loadGame();const cl=t.camps().find(x=>x.tx===c.tx&&x.ty===c.ty);ok(cl.bands.length===1,'it is saved with its camp');

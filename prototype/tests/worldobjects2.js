@@ -174,7 +174,12 @@ try{
  ev('window.__oldLotEnts=('+OLD_LOTS+');window.__oldDrawFolk=('+OLD_FOLK+');window.__oldDrawShips=('+OLD_SHIPS+');window.__oldDrawRefugees=('+OLD_REF+')');
  // (drawWorld as it was: its helpers as they were; the minimap's movers were then the parties and caravans: worldObjects; the fog
  // as it is now (fog.js fogMem, drawWorldFog: the fog's look is tests/fog.js's))
- const oldDraw=ev('('+since(OLD_DRAW).replace('estateEnts(bents,cam,V)','__oldLotEnts(bents,cam,V)').replace('drawFolk(ents,cam,V)','__oldDrawFolk(ents,cam,V)').replace('drawShips(ents,cam,V)','__oldDrawShips(ents,cam,V)').replace('drawRefugees(ents,cam,V)','__oldDrawRefugees(ents,cam,V)').replace('worldObjects()','[...W.parties,...W.caravans.map(asParty)]').replace('atSize(miniCv,mw,mh)','atSize(WorldArt.mini(1),mw,mh)').replace("ctx.save();ctx.beginPath();ctx.rect(0,0,VW,VH);ctx.arc(px0,py0,V,0,Math.PI*2,true);ctx.clip('evenodd');ctx.drawImage(memCv(),0,0);ctx.restore();",'fogMem(memCv(),px0,py0,V);').replace(/const px=P\.x-cam\.x,py=P\.y-cam\.y,gr=[^\n]*\n\s*drawDark\(cam\);/,'drawWorldFog(cam,V);')+')');
+ // (Phase 1 redrew the map's figures smaller on purpose, D25 (mapfigures.js holds them to their sizes): you are drawn as now in
+ // both, and the movers the text draws its own old ways (beasts, herds, workers, ships, refugees, fights) are taken off the map
+ // while the two are compared below; the parties and caravans draw themselves in both)
+ // (and the parties' banners, drawn over all, as now: drawBanners; a spot on a banner picks its party, below)
+ const PLINE=/if\(!P\.stay\)ents\.push\(\{y:P\.y,f:\(\)=>\{[\s\S]*?\}\}\);/,nowP=t.drawWorld.toString().match(PLINE)[0];const onFlag=(q,x,y)=>{const B=q&&q.banner&&t.bannerAt(q,0);if(!B)return false;const b=t.opaqueBox(B.s);return x>=B.x+b[0]&&x<=B.x+b[2]&&y>=B.y+b[1]&&y<=B.y+b[3]};
+ const oldDraw=ev('('+since(OLD_DRAW).replace(PLINE,()=>nowP).replace('estateEnts(bents,cam,V)','__oldLotEnts(bents,cam,V)').replace('drawFolk(ents,cam,V)','__oldDrawFolk(ents,cam,V)').replace('drawShips(ents,cam,V)','__oldDrawShips(ents,cam,V)').replace('drawRefugees(ents,cam,V)','__oldDrawRefugees(ents,cam,V)').replace('worldObjects()','[...W.parties,...W.caravans.map(asParty)]').replace('atSize(miniCv,mw,mh)','atSize(WorldArt.mini(1),mw,mh)').replace("ctx.save();ctx.beginPath();ctx.rect(0,0,VW,VH);ctx.arc(px0,py0,V,0,Math.PI*2,true);ctx.clip('evenodd');ctx.drawImage(memCv(),0,0);ctx.restore();",'fogMem(memCv(),px0,py0,V);drawBanners(cam);').replace(/const px=P\.x-cam\.x,py=P\.y-cam\.y,gr=[^\n]*\n\s*drawDark\(cam\);/,'drawWorldFog(cam,V);')+')');
  ok([OLD_PICK,OLD_INTERACT,OLD_TIP,OLD_DRAW].every(s=>s.length>500)&&/estateEnts\(bents/.test(OLD_DRAW)&&/worldObjects\(\)/.test(OLD_DRAW),'the old ways are kept as text ('+[OLD_PICK,OLD_INTERACT,OLD_TIP,OLD_DRAW].map(s=>s.length).join(', ')+' characters)');
  // ---- a crowd by a holding: a lord, a band beside him, two patrols, a caravan, your companion's party, a beast and the dragon,
  // herds wild and kept, refugees, workers on the road, every kind of site and a ship; some made as a save or a test makes them
@@ -233,7 +238,7 @@ try{
   for(const e of ests)for(const [x,y] of t.plotsAt(tw,e.k,t.bldLv(tw,e.k)).slice(0,2))areas.push([x*TILE+8,y*TILE+8,14,14,2]);
   let n=0;const diff=[],seen=new Set();
   for(const [ax,ay,rx,ry,st] of areas){const px=P.x,py=P.y;if(Math.hypot(ax-P.x,ay-P.y)>V)Object.assign(P,{x:ax,y:ay+30});
-   for(let y=ay-ry;y<=ay+ry;y+=st)for(let x=ax-rx;x<=ax+rx;x+=st){n++;const a=oldPick(x,y),c=t.pickAt(x,y);if(c)seen.add(t.objKind(c));if(a!==c)diff.push(Math.round(x-ax)+','+Math.round(y-ay)+' '+(t.objKind(c)||c)+'≠'+(t.objKind(a)||a))}
+   for(let y=ay-ry;y<=ay+ry;y+=st)for(let x=ax-rx;x<=ax+rx;x+=st){n++;const a=oldPick(x,y),c=t.pickAt(x,y);if(c)seen.add(t.objKind(c));if(a!==c&&onFlag(c,x,y))continue;if(a!==c)diff.push(Math.round(x-ax)+','+Math.round(y-ay)+' '+(t.objKind(c)||c)+'≠'+(t.objKind(a)||a))}
    P.x=px;P.y=py}
   ok(!diff.length&&n>4000,'a click picks the same thing as before on all '+n+' spots ('+[...seen].sort().join(', ')+')'+(diff.length?' ('+diff.length+' differ: '+diff.slice(0,4).join('; ')+')':''));
   ok(['town','estate','lord','band','patrol','cparty','caravan','monster','site','critter','refugee','worker'].every(k=>seen.has(k)),'every kind that is clicked was picked somewhere');
@@ -268,10 +273,11 @@ try{
   const paint=fn=>{Math.random=t.seeded(7);c.save();c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,c.canvas.width,c.canvas.height);c.restore();fn();
    const d=c.getImageData(0,0,c.canvas.width,c.canvas.height).data;let h=0,lit=0;for(let i=0;i<d.length;i++){h=(h*31+d[i])|0;if(d[i])lit++}return [h,lit].join()};
   const rects=fn=>{const got=[];c.fillRect=function(...a){got.push(this.fillStyle+' '+a.join());return CanvasRenderingContext2D.prototype.fillRect.apply(this,a)};try{paint(fn)}finally{delete c.fillRect}return got.join('|')};
+  const off={monsters:W.monsters,critters:W.critters,folk:W.folk,ships:W.ships,refugees:W.refugees,fights:W.fights};for(const k in off)W[k]=[];
   try{paint(t.drawWorld);paint(oldDraw);const a=paint(oldDraw),n=paint(t.drawWorld),a2=paint(oldDraw);
    ok(a===n&&a===a2,'the whole map is drawn as before, pixel for pixel ('+n+')');
    const ra=rects(oldDraw),rn=rects(t.drawWorld);ok(ra.length>100&&ra===rn,'the same small marks, minimap dots among them, in the same order ('+rn.split('|').length+')');
-   G.clock=t.DAY*.8;const na=paint(oldDraw),nn=paint(t.drawWorld);ok(na===nn,'and at night (torches)');G.clock=t.DAY*.2}finally{performance.now=pn;Math.random=rnd}
+   G.clock=t.DAY*.8;const na=paint(oldDraw),nn=paint(t.drawWorld);ok(na===nn,'and at night (torches)');G.clock=t.DAY*.2}finally{performance.now=pn;Math.random=rnd;Object.assign(W,off)}
   const e0=ERR.length;t.frame();ok(ERR.length===e0,'and the whole frame draws')}
  // ---- the minimap: the same dots, layered as before (the places, then the beasts, parties and caravans over them)
  {const V=t.vis(),a=[],n=[],dot=arr=>(x,y,col,s)=>arr.push([x,y,col,s].join());

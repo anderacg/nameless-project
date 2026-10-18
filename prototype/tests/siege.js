@@ -68,7 +68,7 @@ try{
  quiet();army();vil.wall=0;P.inv=P.inv.map(()=>null);t.initCritters();t.ensureEcon(vil);vil.stock.grain=Math.max(vil.stock.grain||0,60);vil.stock.meat=Math.max(vil.stock.meat||0,20);const vr=t.repAt(vil.name);at(vil);t.updateWorld(.01);ok(/Raid/.test(panel()),'a hostile village can be raided');
  t.act('sg-raid-auto');t.act('cont');done();ok(P.raid&&!vil.raided&&t.repAt(vil.name)<vr-20,'beating the militia starts the raid, and the village already hates you');
  G.lastTown=null;G.encCool=0;t.clickAt(vil.x,vil.y-4);ok(G.mode==='besiege'&&/plundered/.test(panel()),'the village is closed while you raid it');t.act('sg-wait');
- for(let i=0;i<40&&P.raid;i++)t.updateWorld(.25);ok(vil.raided>G.day&&t.foodN()>10&&t.repAt(vil.name)<vr-20&&!t.herdOf(vil),'raiding takes food, burns the herd and earns hatred (raided '+(vil.raided>G.day)+', food '+t.foodN()+', rep '+t.repAt(vil.name)+' vs '+vr+', herd '+!!t.herdOf(vil)+', raid '+!!P.raid+')');
+ for(let i=0;i<70&&P.raid;i++)t.updateWorld(.25);ok(vil.raided>G.day&&t.foodN()>10&&t.repAt(vil.name)<vr-20&&!t.herdOf(vil),'raiding takes food, burns the herd and earns hatred (raided '+(vil.raided>G.day)+', food '+t.foodN()+', rep '+t.repAt(vil.name)+' vs '+vr+', herd '+!!t.herdOf(vil)+', raid '+!!P.raid+')');
  }finally{Math.random=r0}}
  // AI conquest marks a town
  quiet();const prey=t.TOWNS.find(x=>!['horde','player'].includes(x.owner)&&x.kind!=='village'),l=t.asParty({id:'x0',name:'Test Lord',fac:'horde',x:prey.x,y:prey.y,troops:Array(60).fill('orc_grunt'),state:'siege',tgt:prey.name,sd:0,dead:false});

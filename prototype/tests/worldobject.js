@@ -79,10 +79,12 @@ try{
   ok(gone.mapKind==='band'&&oldPartyKind(gone)==='caravan'&&P.mapKind==='you','a party says what it is, even off the map (before: a caravan)');
 }
  // ---- pick: the same thing on every spot as before
- {let n=0;const diff=[];for(let y=cy-50;y<=cy+30;y+=2)for(let x=cx-56;x<=cx+56;x+=2){n++;const a=oldPick(x,y),c=t.pickAt(x,y);if(a!==c)diff.push((x-cx)+','+(y-cy)+' '+(t.objKind(c)||c)+'≠'+(t.objKind(a)||a))}
-  ok(!diff.length,'a click picks the same thing as before on all '+n+' spots round the crowd'+(diff.length?' ('+diff.length+' differ: '+diff.slice(0,4).join('; ')+')':''));
+ // (a party's banner, floating over it since Phase 1, answers a click too: a spot on one picks its party, whatever was under it)
+ {const onFlag=(q,x,y)=>{const B=q&&q.banner&&t.bannerAt(q,0);if(!B)return false;const b=t.opaqueBox(B.s);return x>=B.x+b[0]&&x<=B.x+b[2]&&y>=B.y+b[1]&&y<=B.y+b[3]};let n=0,nf=0;const diff=[];for(let y=cy-50;y<=cy+30;y+=2)for(let x=cx-56;x<=cx+56;x+=2){n++;const a=oldPick(x,y),c=t.pickAt(x,y);if(a!==c&&onFlag(c,x,y)){nf++;continue}if(a!==c)diff.push((x-cx)+','+(y-cy)+' '+(t.objKind(c)||c)+'≠'+(t.objKind(a)||a))}
+  ok(!diff.length&&nf>0,'a click picks the same thing as before on all '+n+' spots round the crowd, or a party on its banner ('+nf+')'+(diff.length?' ('+diff.length+' differ: '+diff.slice(0,4).join('; ')+')':''));
   ok(t.pickAt(b.x,b.y-4)===b,'the bandit, small, beside the mounted lord is picked on his ring');
-  ok(t.pickAt(L.x-3,L.y-14)===L,'the lord on his banner, above the bandit');
+  // (his banner's top: since Phase 1's smaller figures (a rider in a 16 cell), wherever it is drawn)
+  {const F=t.partyFig(L,L.look(),0),q=t.opaqueBox(F.s),mx=(q[0]+q[2])>>1,tx=F.flip?F.x+F.s.width-1-mx:F.x+mx;ok(t.pickAt(tx,F.y+q[1]+1)===L,'the lord on his banner, above the bandit')}
   ok(t.pickAt(cv.x-8,cv.y-8)===cv,'the caravan anywhere on its cart');
   ok(t.pickAt(pt.x,pt.y-4)===pt&&t.pickAt(cp.x,cp.y-4)===cp,'the patrol and your companion’s party on their rings')}
  // ---- drawn as before: the same pictures, labels and order (the clock held still)
@@ -90,8 +92,10 @@ try{
   const paint=fn=>{const e=[];fn(e,cam,V);c.save();c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,c.canvas.width,c.canvas.height);c.restore();ev('LIGHTQ=[]');e.forEach(q=>q.f());
    const d=c.getImageData(0,0,c.canvas.width,c.canvas.height).data;let h=0,lit=0;for(let i=0;i<d.length;i++){h=(h*31+d[i])|0;if(d[i])lit++}return [e.map(q=>q.y).join(),h,lit,ev('LIGHTQ.length')]};
   try{const a=paint(oldDrawParties),n=paint(t.drawParties),ca=paint(oldDrawCaravans),cn=paint(t.drawCaravans);
-   ok(a[2]>0&&a.join()===n.join(),'every party is drawn as before: hosts, figures, torches and labels ('+n[0].split(',').length+' parties)');
-   ok(ca[2]>0&&ca.join()===cn.join(),'the caravan’s cart, ox and label as before')}finally{performance.now=pn}
+   // (Phase 1 redrew the map's figures smaller on purpose, D25: how each looks is mapfigures.js's; here each is still drawn, in
+   // the same order, with its torches)
+   ok(n[2]>0&&a[0]===n[0]&&a[3]===n[3],'every party is drawn as before: each in its turn, with its torches ('+n[0].split(',').length+' parties)');
+   ok(cn[2]>0&&ca[0]===cn[0],'the caravan’s cart, ox and label as before: drawn, in its turn')}finally{performance.now=pn}
   const e0=ERR.length;t.frame();ok(ERR.length===e0,'and the whole frame draws')}
  // ---- sight: the same rule as before for parties and beasts (nearer in woods and hills)
  {let f=null;for(let ty=2;ty<t.MH-2&&!f;ty++)for(let tx=2;tx<t.MW-2&&!f;tx++)if(t.tAt(tx,ty)===t.T_FOREST)f=[(tx+.5)*t.TILE,(ty+.5)*t.TILE];

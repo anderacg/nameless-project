@@ -40,9 +40,13 @@ const angGap=(a,b)=>Math.abs(Math.atan2(Math.sin(a-b),Math.cos(a-b)));
 // pace: share of full speed for the world (travel, days, everyone on the map) and for battles (movement, attacks, arrows).
 // Visual effects ignore it. Lower is calmer; 1 is the original pace.
 // the world clock: one day (DAY clock units) lasts DAY_SECONDS real seconds at 1x speed, whatever the travel pace;
-// the first 60% is daylight, then dusk, night and dawn fill the last 40% (NIGHT_AT on)
-const DAY_SECONDS=120,NIGHT_AT=.6;
-const WORLD_PACE=.6,BATTLE_PACE=.6,HERO_PACE=.85;
+// the first 60% is daylight, then dusk, night and dawn fill the last 40% (NIGHT_AT on). A day of 180 s at a world pace of .4
+// (doc/WORLD_DESIGN.md D9: it was 120 s at .6) keeps 72 units of the world's time to a day, so every timer counted in it lasts
+// the same share of a day; what moves goes slower on screen (data/world.js WORLD_SCALE.move)
+const DAY_SECONDS=180,NIGHT_AT=.6;
+const WORLD_PACE=.4,BATTLE_PACE=.6,HERO_PACE=.85;
+// the world's time controls (D23): 1x, 2x and 4x (keys 1-3), and Travel fast (key 4), 8x until anything calls for you (world.js fastWatch)
+const SPEEDS=[1,2,4],TRAVEL_FAST=8;
 // actions: every button names one (data-act="prefix-name"); each system claims its prefix once with onAct, so two systems can
 // never answer the same button. Actions without a registered prefix fall through to act() in input.js (menu, encounters), and
 // a town's own (tab, hire, buy …) on to townAct in ui/town.js.

@@ -118,12 +118,12 @@ class Fight extends WorldObject{
   meet(){fightMeet(this)}
   draw(ents,cam,V){if(!this.inView(V))return;const f=this;
     ents.push({y:f.y+20,f:()=>{const sx=Math.round(f.x-cam.x),sy=Math.round(f.y-cam.y),t=performance.now();
-      for(let i=0;i<6;i++){const a=t/300+i*1.05,r=10+4*Math.sin(t/200+i);ctx.fillStyle='rgba(200,184,150,'+(.25+.15*Math.sin(t/150+i)).toFixed(2)+')';ctx.fillRect(Math.round(sx+Math.cos(a)*r)-2,Math.round(sy+Math.sin(a)*r*.5)-1,4,3)}
-      if(Math.floor(t/120)%3===0){ctx.fillStyle='#fff8d0';ctx.fillRect(sx+rint(-8,8),sy-rint(4,14),2,2)}
-      ctx.strokeStyle='#e4e0cf';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(sx-4,sy-22);ctx.lineTo(sx+4,sy-14);ctx.moveTo(sx+4,sy-22);ctx.lineTo(sx-4,sy-14);ctx.stroke();
+      for(let i=0;i<6;i++){const a=t/300+i*1.05,r=7+3*Math.sin(t/200+i);ctx.fillStyle='rgba(200,184,150,'+(.25+.15*Math.sin(t/150+i)).toFixed(2)+')';ctx.fillRect(Math.round(sx+Math.cos(a)*r)-2,Math.round(sy+Math.sin(a)*r*.5)-1,3,2)}
+      if(Math.floor(t/120)%3===0){ctx.fillStyle='#fff8d0';ctx.fillRect(sx+rint(-6,6),sy-rint(3,10),1,1)}
+      ctx.strokeStyle='#e4e0cf';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(sx-3,sy-17);ctx.lineTo(sx+3,sy-11);ctx.moveTo(sx+3,sy-17);ctx.lineTo(sx-3,sy-11);ctx.stroke();
       // the tally: each side's fighters in its colours
       const col=s=>{const p=sideParties(f,s)[0],fc=p&&p.faction;return fc?(fc==='player'?FACS.player.col:FACS[fc].col):'#ff9a90'};
-      txt(String(sideTroops(f,0).length),sx-6,sy-26,col(0),'right');txt('vs',sx,sy-26,'#e4e0cf','center');txt(String(sideTroops(f,1).length),sx+6,sy-26,col(1),'left')}})}
+      txt(String(sideTroops(f,0).length),sx-6,sy-20,col(0),'right');txt('vs',sx,sy-20,'#e4e0cf','center');txt(String(sideTroops(f,1).length),sx+6,sy-20,col(1),'left')}})}
 }
 // (a fight from a save is plain data until the map asks)
 const asFight=asClass(Fight);

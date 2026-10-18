@@ -13,16 +13,16 @@ class Herd extends WorldObject{
   inView(V){return this.pasture()?this.fromYou()<=V:spotted(this,V)}
   pick(at){if(!this.decor)at.add(this,9,4)}
   // a pasture's herd: one animal on each worked field tile, grazing to and fro on it; any other: up to three of its animals,
-  // behind and beside the first, each stepping as they go (critterSprite), its count near you
+  // behind and beside the first, a step each half a body length walked (critterSprite; render.js stepOf), its count near you
   draw(ents,cam,V){if(!this.inView(V))return;const c=this,F=c.pasture();
     if(F){F.tiles.slice(0,c.n).forEach(([tx,ty],i)=>{const y=ty*TILE+TILE-3;ents.push({y,f:()=>{const now=performance.now(),ph=now/2600+i*1.9+tx,mv=Math.cos(ph),fr=Math.abs(mv)>.6?Math.floor(now/D_STEP+i)%2:0,
-      a=critterSprite(c.id,fr,true),x=Math.round(tx*TILE+TILE/2+Math.sin(ph)*3-cam.x),sy=Math.round(y-cam.y),w=Math.max(4,a.cw-2);
+      a=critterSprite(c.id,fr),x=Math.round(tx*TILE+TILE/2+Math.sin(ph)*3-cam.x),sy=Math.round(y-cam.y),w=Math.max(4,a.cw-2);
       ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(x-(w>>1),sy-1,w,2);ctx.save();ctx.translate(x,sy);if(mv<0)ctx.scale(-1,1);ctx.drawImage(a,-(a.width>>1),-a.height+1);ctx.restore()}})});return}
-    ents.push({y:c.y,f:()=>{const s=critterSprite(c.id),sx=Math.round(c.x-cam.x),sy=Math.round(c.y-cam.y),now=performance.now(),k=Math.min(3,c.n||1),sp=Math.max(4,Math.round(s.cw*.55));
-      for(let i=k-1;i>=0;i--){const ox=i===0?0:i===1?-sp:Math.round(sp*.4),oy=i===0?0:i===1?-2:-4,fr=c.idle?0:Math.floor(now/(D_STEP)+c.x+i)%2,a=critterSprite(c.id,fr),w=Math.max(4,a.cw-2);
+    ents.push({y:c.y,f:()=>{const s=critterSprite(c.id),sx=Math.round(c.x-cam.x),sy=Math.round(c.y-cam.y),k=Math.min(3,c.n||1),sp=Math.max(4,Math.round(s.cw*.55)),go=mapStepping(c);
+      for(let i=k-1;i>=0;i--){const ox=i===0?0:i===1?-sp:Math.round(sp*.4),oy=i===0?0:i===1?-1:-3,fr=go?(frameOf(c,Math.max(2,s.cw/2))+i)%2:0,a=critterSprite(c.id,fr),w=Math.max(4,a.cw-2);
         ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(sx+(c.dir<0?-ox:ox)-(w>>1),sy+oy-1,w,2);
         ctx.save();ctx.translate(sx+(c.dir<0?-ox:ox),sy+oy);if(c.dir<0)ctx.scale(-1,1);ctx.drawImage(a,-(a.width>>1),-a.height+1);ctx.restore()}
-      if(c.n>1&&!c.decor&&c.fromYou()<90)txt(String(c.n),sx,sy-s.ch-1,CRITTERS[c.id].live?'#e8d8a0':'#c8e0a0','center')}})}
+      if(c.n>1&&!c.decor&&c.fromYou()<90)txt(String(c.n),sx,sy-s.ch-4,CRITTERS[c.id].live?'#e8d8a0':'#c8e0a0','center')}})}
   tip(){const D=CRITTERS[this.id];return '<b>'+D.n+(this.n>1?' ×'+this.n:'')+'</b><small>'+(D.live?'Livestock of '+this.home:'Wild game')+'</small><span class="act">Click: '+(D.live?'look':'hunt')+'</span>'}
 }
 const asHerd=asClass(Herd);
@@ -127,81 +127,29 @@ function herdAct(a){
     if(c.n<=0)W.critters=W.critters.filter(x=>x!==c);done('You drive off '+an(D.one)+' while the herders shout. '+(t?t.name+' will remember this.':''))}
   return true;
 }
-/* sprites: the animals side-on, facing right, on the people's scale (a person stands 15 high: a cow's back at his shoulder and its
-   body half again his length, a deer's head as high as his, a sheep or a pig to his waist, a hen or a rabbit to his knee), drawn
-   pixel by pixel with the people's outline (people.js), each in the smallest power-of-two cell it fits (8, 16, 32: sprites.js
-   cellOf). f: the step (0, 1: the legs apart or crossed) */
-// the four-legged: a body len × depth on legs leg long (lw: the near legs' width), a head hw × hh at hx past the chest and rise
-// above the back, a neck between; top: room over the head (ears, horns, antlers); tail: hanging (its length), 'up', 'white' (a
-// deer's scut) or 'curl'; the rest their marks
-const BEASTS={
-  cow:{len:15,depth:6,leg:4,lw:2,hw:5,hh:4,hx:-1,rise:1,top:2,tail:5,muzzle:'#e8b8b0',horns:'cow',spots:true,udder:true},
-  pig:{len:8,depth:5,leg:2,lw:1,hw:3,hh:4,hx:0,rise:0,top:2,tail:'curl',snout:true,ears:'flop'},
-  sheep:{len:9,depth:5,leg:3,lw:1,hw:3,hh:3,hx:0,rise:1,top:2,tail:2,wool:true,face:'#4a423c'},
-  goat:{len:8,depth:4,leg:4,lw:1,hw:3,hh:3,hx:0,rise:3,top:3,tail:'up',horns:'back',beard:true},
-  deer:{len:9,depth:4,leg:5,lw:1,hw:4,hh:3,hx:0,rise:3,top:2,tail:'white',ears:'up'},
-  stag:{len:11,depth:5,leg:5,lw:1,hw:4,hh:3,hx:0,rise:3,top:6,nw:3,tail:'white',antlers:'stag',ears:'up'},
-  reindeer:{len:10,depth:5,leg:4,lw:1,hw:4,hh:3,hx:0,rise:2,top:6,nw:3,tail:'white',antlers:'rein',ruff:true},
-  ibex:{len:9,depth:4,leg:4,lw:1,hw:3,hh:3,hx:0,rise:2,top:4,tail:'up',horns:'arc',beard:true},
-  gazelle:{len:8,depth:3,leg:5,lw:1,hw:3,hh:2,hx:0,rise:3,top:3,tail:'up',horns:'thin',stripe:true}
+/* sprites: the animals on the world map's scale (doc/WORLD_DESIGN.md §10.1: a person stands 10 high there, a house 16): a cow 9 × 5
+   inside its outline, a deer 7 × 6 (a stag or a reindeer with its antlers over that), a sheep, a pig or a goat 4 × 3, a hen, a
+   rabbit, a hare or a fowl 4 × 3; drawn pixel by pixel, side-on facing right, in its colour's hue-shifted ramp (engine PX.ramp:
+   h its light, H the coat, d its shade, k darker; w white, e eye, n nose, b beak, y legs, r comb, a antler, o horn, s spots, f a
+   face), with the people's outline (people.js), each in the smallest power-of-two cell it fits (8, 16: sprites.js cellOf). rows:
+   the body over the legs; legs: two steps (f 0 under it, 1 apart: a step each half a body length walked, critters.js draw) */
+const CRITTER_MAP={
+  cow:{rows:['......ow.','.hhhshhHe','dHsHHHHHn','.dHHHHHd.'],legs:[['.kH..kH..'],['k.H.k..H.']]},
+  sheep:{x:{f:'#4a423c'},rows:['hhh.','HHHf'],legs:[['.f.f'],['f.f.']]},
+  pig:{rows:['hhh.','dHHn'],legs:[['.k.k'],['k.k.']]},
+  goat:{rows:['.hho','dHHe'],legs:[['.k.k'],['k.k.']]},
+  deer:{rows:['.....hd','.....He','whhhhHn','.dHHHd.'],legs:[['.kH.kH.','.kH.kH.'],['.kH.kH.','k.H.k.H']]},
+  stag:{rows:['....a.a','.....a.','.....He','whhhhHn','.dHHHd.'],legs:[['.kH.kH.','.kH.kH.'],['.kH.kH.','k.H.k.H']]},
+  reindeer:{rows:['....a.a','....aa.','.....He','dhhhhwn','.dHHHw.'],legs:[['.kH.kH.','.kH.kH.'],['.kH.kH.','k.H.k.H']]},
+  ibex:{rows:['....oo.','.....oe','dhhhhHk','.dHHHd.'],legs:[['.kH.kH.','.kH.kH.'],['.kH.kH.','k.H.k.H']]},
+  gazelle:{rows:['.....o.','.....He','dhhhhHn','.kkkkd.'],legs:[['.kH.kH.','.kH.kH.'],['.kH.kH.','k.H.k.H']]},
+  rabbit:{rows:['..h.','whHe'],legs:[['.dd.'],['d..d']]},
+  hare:{rows:['..hd','whHe'],legs:[['.dd.'],['d..d']]},
+  hen:{rows:['d.r.','dhHb'],legs:[['.y.y'],['y.y.']]},
+  fowl:{rows:['..hH','dhHb'],legs:[['.y.y'],['y.y.']]}
 };
-// the same animals made small, to fit a pasture's field tile (16 pixels: a sight on the fields, render.js); the big ones above
-// stay for everywhere else
-const BEASTS_SMALL={
-  cow:{len:9,depth:4,leg:2,lw:1,hw:3,hh:3,hx:-1,rise:1,top:2,tail:3,muzzle:'#e8b8b0',horns:'cow',spots:true,udder:true},
-  pig:{len:6,depth:3,leg:2,lw:1,hw:3,hh:3,hx:0,rise:0,top:2,tail:'curl',snout:true,ears:'flop'},
-  sheep:{len:6,depth:4,leg:2,lw:1,hw:2,hh:2,hx:0,rise:1,top:2,tail:1,wool:true,face:'#4a423c'},
-  goat:{len:6,depth:3,leg:3,lw:1,hw:2,hh:2,hx:0,rise:2,top:3,tail:'up',horns:'back',beard:true}
-};
-// the small: pixel templates, two steps each (H the coat, h its light, d its shade, k darker, w white, e eye, n nose, b beak,
-// y legs, r comb)
-const SMALL_BEASTS={
-  rabbit:[['....hd','...hHH','.hHHHe','wHHHHn','.dHHdd','.dd.d.'],['....hd','...hHH','.hHHHe','wHHHHn','.dHHdd','dd...d']],
-  hare:[['.....hd','.....hd','....hHH','..hHHHe','whHHHHn','.dHHHdd','.dd..d.'],['.....hd','.....hd','....hHH','..hHHHe','whHHHHn','.dHHHdd','dd....d']],
-  hen:[['....r.','d..hHb','dd.HHr','dhhHH.','.dHHd.','..y.y.'],['....r.','d..hHb','dd.HHr','dhhHH.','.dHHd.','.y..y.']],
-  fowl:[['...hH.','...HHb','dhhHH.','.HHHd.','..y.y.'],['...hH.','...HHb','dhhHH.','.HHHd.','.y..y.']]
-};
-function critterSprite(id,f,small){f=f?1:0;small=!!(small&&BEASTS_SMALL[id]);const k='cr'+id+f+(small?'s':'');if(spr[k])return spr[k];
-  const D=CRITTERS[id],R=rampOf(D.col),eye='#1a1410',hoof='#2c2622';
-  const T=SMALL_BEASTS[id];
-  if(T){const rows=T[f],g=pgrid(rows[0].length+2,rows.length+2),col={H:R[1],h:R[0],d:R[2],k:R[3],w:'#f4f0e8',e:eye,n:'#e8a0a0',b:'#e8b94a',y:'#d8963a',r:'#d83a2a'};
-    rows.forEach((r,y)=>[...r].forEach((c,x)=>{if(col[c])pset(g,x+1,y+1,col[c])}));poutline(g);return spr[k]=cellOf(pcanvas(g))}
-  const B=small?BEASTS_SMALL[id]:BEASTS[id]||BEASTS.goat,F=B.face?rampOf(B.face):R,bx=2,ex=bx+B.len-1,by=B.top+B.rise,ey=by+B.depth-1,G=ey+B.leg,hy=by-B.rise,x0=ex+1+B.hx;
-  const W=x0+B.hw+(B.snout?1:0)+1,g=pgrid(W,G+2),s=(x,y,c)=>pset(g,x,y,c);
-  // the legs: the far pair darker, behind; the near pair over them; a stride (f) swings their lower half
-  // (a stride: the near hind and the far fore swing back, the others forward; standing, the far leg just behind the near one)
-  const low=y=>y>ey+Math.floor(B.leg/2),hN=bx+1,hF=hN+B.lw,fN=ex-B.lw,fF=fN-1;
-  const leg=(x,near,fore)=>{for(let y=ey+1;y<=G;y++){const dx=f&&low(y)?(near===fore?1:-1):0,c=y===G?(id==='pig'?R[3]:hoof):near?F[1]:F[3];s(x+dx,y,c);if(near&&B.lw>1)s(x+1+dx,y,y===G?c:F[2])}};
-  leg(hF,false,false);leg(fF,false,true);
-  // the neck, widening to the chest; the body, light along the back and dark along the belly, its corners rounded
-  for(let y=hy+1;y<=by+1;y++){const nl=x0-(B.nw||2)-Math.floor((y-hy)/2);for(let x=nl;x<=x0;x++)s(x,y,y===hy+1&&x===nl?R[0]:R[1])}
-  for(let y=by;y<=ey;y++)for(let x=bx;x<=ex;x++){if((y===by||y===ey)&&(x===bx||x===ex))continue;s(x,y,y===by?R[0]:y===ey?R[2]:R[1])}
-  leg(hN,true,false);leg(fN,true,true);
-  // the head: its brow light, the jaw dark; a muzzle, a nose, an eye, an ear
-  for(let y=hy;y<hy+B.hh;y++)for(let x=x0;x<x0+B.hw;x++){if(y===hy&&x===x0+B.hw-1&&B.hh>2)continue;s(x,y,y===hy?F[0]:y===hy+B.hh-1?F[2]:F[1])}
-  const mx=x0+B.hw-1;
-  if(B.muzzle){for(let y=hy+1;y<hy+B.hh;y++)s(mx,y,B.muzzle);s(mx,hy+2,shade(B.muzzle,.75))}else s(mx,hy+B.hh-2,F[3]);
-  if(B.snout){s(mx+1,hy+1,'#f0b4b4');s(mx+1,hy+2,'#d88a8a')}
-  s(x0+Math.max(B.hw>2?1:0,B.hw-3),hy+(B.hh>2?1:0),eye);
-  if(B.ears==='up'){s(x0,hy-1,F[1]);s(x0-1,hy-1,F[2])}else if(B.ears==='flop'){s(x0,hy-1,R[2]);s(x0+1,hy-1,R[2]);s(x0+1,hy,R[2])}else s(x0-1,hy+1,F[2]);
-  // its kind: horns, antlers, a beard, a ruff, wool, spots, an udder, a stripe
-  if(B.horns==='cow'){s(x0+1,hy-1,'#e8e0c8');s(x0+2,hy-1,'#a89a7a')}
-  if(B.horns==='back'){s(x0,hy-1,'#8a7a62');s(x0-1,hy-2,'#6a5a46')}
-  if(B.horns==='thin'){s(x0+1,hy-1,'#3a3028');s(x0,hy-2,'#3a3028')}
-  if(B.horns==='arc')[[1,-1],[0,-2],[-1,-3],[-2,-3],[-3,-2]].forEach(([x,y],i)=>s(x0+x,hy+y,i%2?'#6a5a46':'#9a8a6e'));
-  if(B.antlers){const pts=B.antlers==='stag'?[[1,-1],[0,-2],[0,-3],[-1,-4],[-2,-5],[1,-3],[2,-4],[0,-5],[-3,-4]]:[[1,-1],[0,-2],[-1,-3],[-2,-4],[-2,-5],[2,-1],[3,-2],[0,-4],[1,-5],[-3,-3],[-4,-4]];
-    pts.forEach(([x,y])=>s(x0+x-1,hy+y,'#b09a74'));pts.forEach(([x,y])=>s(x0+x,hy+y,'#e0d0b0'))}
-  if(B.beard)s(mx-1,hy+B.hh,F[3]);
-  if(B.ruff)for(let y=hy+B.hh;y<=by+2;y++){s(x0-1,y,'#ece6d8');s(x0,y,y>hy+B.hh?'#d8d0c0':'#ece6d8')}
-  if(B.wool){for(let x=bx+1;x<ex;x+=3){s(x,by-1,R[0]);s(x+1,by-1,R[0])}for(let y=by+1;y<ey;y++)for(let x=bx+1;x<ex;x++)if((x*3+y*5)%7===0)s(x,y,R[2])}
-  if(B.spots&&D.spots){(small?[[1,1],[2,1],[2,2],[5,0],[6,0],[6,1]]:[[2,1],[3,1],[2,2],[3,2],[4,2],[3,3],[8,0],[9,0],[8,1],[9,1],[10,1],[9,2],[12,3],[13,3],[12,4]]).forEach(([x,y])=>s(bx+x,by+y,D.spots));s(x0+1,hy+1,D.spots)}
-  if(B.udder){const u=bx+Math.round(B.len*.42);s(u,ey+1,'#e8a8a8');if(!small)s(u+1,ey+1,'#d89090')}
-  if(B.stripe)for(let x=bx+1;x<ex;x++){s(x,ey-1,R[3]);s(x,ey,'#f4ece0')}
-  // the tail
-  if(typeof B.tail==='number'){for(let i=0;i<B.tail;i++)s(bx-1,by+1+i,i===B.tail-1?R[3]:R[2])}
-  else if(B.tail==='up'){s(bx-1,by,R[2]);s(bx-1,by-1,R[3])}
-  else if(B.tail==='white'){s(bx-1,by,'#f4ece0');s(bx-1,by+1,'#e8dcc8');s(bx,by+1,'#f4ece0')}
-  else if(B.tail==='curl'){s(bx-1,by,R[2]);s(bx-1,by-1,R[2]);s(bx,by-1,R[3])}
-  poutline(g);return spr[k]=cellOf(pcanvas(g));
-}
+function critterSprite(id,f){f=f?1:0;const k='cr'+id+f;if(spr[k])return spr[k];
+  const D=CRITTERS[id],T=CRITTER_MAP[id],R=PX.ramp(D.col),rows=T.rows.concat(T.legs[f]),g=pgrid(Math.max(...rows.map(r=>r.length))+2,rows.length+2),
+    col={h:R[0],H:R[1],d:R[2],k:R[3],w:'#f4f0e8',e:'#1a1410',n:'#e8a0a0',b:'#e8b94a',y:'#d8963a',r:'#d83a2a',a:'#d8c8a0',o:'#a89a7a',s:D.spots||R[3],...(T.x||{})};
+  rows.forEach((r,y)=>[...r].forEach((c,x)=>{if(col[c])pset(g,x+1,y+1,col[c])}));poutline(g);return spr[k]=cellOf(pcanvas(g))}
 onAct('herd-',herdAct);

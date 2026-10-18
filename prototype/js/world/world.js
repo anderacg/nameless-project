@@ -40,8 +40,11 @@ function pickAt(wx,wy){
   // ring (someone small beside it, clicked on, is still picked), before a building it stands in front of
   const fig=(o,s,x0,y0,flip)=>{if(Math.hypot(o.x-wx,o.y-wy)>s.width)return;const b=opaqueBox(s),L=flip?x0+s.width-1-b[2]:x0+b[0],R=L+b[2]-b[0]+1,T=y0+b[1],Bt=y0+b[3]+1,hw=(R-L)/2,hh=(Bt-T)/2;
     if(wx>=L&&wx<R&&wy>=T&&wy<Bt&&Math.hypot(o.x-P.x,o.y-P.y)<V*1.2)c.push([10+2*Math.max(Math.abs(wx-L-hw)/hw,Math.abs(wy-T-hh)/hh),o])};
+  // a party's banner (render.js bannerAt) answers anywhere on it while the party is in sight, ranked 9.5: over the buildings and
+  // figures it floats over, after anyone's ring clicked nearer
+  const flag=(o,B)=>{const b=opaqueBox(B.s);if(wx>=B.x+b[0]&&wx<=B.x+b[2]&&wy>=B.y+b[1]&&wy<=B.y+b[3]&&o.inView(V))c.push([9.5,o])};
   // every world object says where a click answers on it (WorldObject pick), with these, in worldObjects' order (a tie keeps it)
-  const at={x:wx,y:wy,V,add,box,fig,camp};for(const o of worldObjects())o.pick(at);
+  const at={x:wx,y:wy,V,add,box,fig,camp,flag};for(const o of worldObjects())o.pick(at);
   c.sort((a,b)=>a[0]-b[0]);return c.length?c[0][1]:null;
 }
 // what a thing on the map is (its mapKind), while it is still on the map (here); null for anything else
@@ -138,11 +141,21 @@ function dayTick(){
   saveGame(true);
   if(!P.stay&&Math.random()<.32)roadEvent();
 }
+/* Travel fast (TRAVEL_FAST) holds only while nothing calls for you: it drops to 1x the moment anything hostile is in sight (a
+   band, an army or a patrol of a realm at odds with you, a beast that hunts, a fight), an event or any window opens (main.js
+   calls this every frame, whatever is shown), or you arrive where you were going (updateWorld); it will not start with one in sight */
+function dangerInSight(){const V=vis();
+  if(W.fights.some(f=>asFight(f).inView(V)))return 'a fight ahead';
+  for(const o of W.parties){const k=o.mapKind;if(o.inView(V)&&(k==='band'||(k==='lord'||k==='patrol')&&hostileTo(o.faction)))return k==='band'?'bandits in sight':k==='lord'?'an enemy army in sight':'enemy guards in sight'}
+  for(const m of W.monsters){const M=MONSTERS[m.id];if((M.mythic||M.aggro||stance(monPower(m))==='attack')&&asMonster(m).inView(V))return (M.mythic?'the ':'')+(M.n||m.id).toLowerCase()+' in sight'}
+  return ''}
+function fastWatch(){if(G.speed!==TRAVEL_FAST)return;if(G.mode!=='world'||G.modal){setSpeed(1);return}const why=P.stay?'':dangerInSight();if(why)setSpeed(1,why)}
 function updateWorld(dt){
   if(G.paused)return;
+  fastWatch();
   const d=dt*G.speed*WORLD_PACE;lodTick(dt);
   G.clock+=dt*G.speed*DAY/DAY_SECONDS;if(G.clock>=DAY){G.clock-=DAY;dayTick()}
-  G.encCool=Math.max(0,G.encCool-d);regenVitals(d/DAY);
+  G.encCool=Math.max(0,G.encCool-d/WORLD_SCALE.ai.grace);regenVitals(d/DAY);
   if(P.stay&&stayTick(d))return;
   if(G.capture&&!G.modal){showCapture();return}
   raidTick(d);landWatch();
@@ -153,7 +166,7 @@ function updateWorld(dt){
     if(Math.hypot(o.x-P.x,o.y-P.y)<=REACH&&!G.modal&&(G.encCool<=0||o.meetsAnyTime)){interact(o);return}}}
   if(P.tx!=null){
     const dx=P.tx-P.x,dy=P.ty-P.y,dist=Math.hypot(dx,dy);
-    if(dist<2){P.tx=null}
+    if(dist<2){P.tx=null;if(G.speed===TRAVEL_FAST)setSpeed(1,'you have arrived')}
     else{
       const step=Math.min(dist,moveStep(MAP_BASE*travelMul(),d)*(P.morale<25?.8:1));
       P.dir=dx>=0?1:-1;

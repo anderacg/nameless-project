@@ -73,13 +73,13 @@ try{
  {const blue=c=>{const d=data(c);let n=0;for(let i=0;i<d.length;i+=4)if(d[i+3]&&((d[i]===0x39&&d[i+1]===0x8d&&d[i+2]===0xd5)||(d[i]===0x30&&d[i+1]===0x56&&d[i+2]===0xac)))n++;return n};
   ok(kinds.every(k=>blue(t.unitSprite(k,0,false,0,0))>0&&!blue(t.unitSprite(k,1,false,0,0))),'a beast on your side wears the side’s blue (a collar, a band, a harness); a wild one none')}
  // ---- the world map
- {const ids=Object.keys(t.MONSTERS),bad=ids.filter(id=>{const s=t.monsterMapSprite(id,0);return !(s.width===s.height&&[16,32,64].includes(s.width)&&s.ch>0)});
+ {const ids=Object.keys(t.MONSTERS),bad=ids.filter(id=>{const s=t.monsterMapSprite(id,0);return !(s.width===s.height&&[8,16,32,64].includes(s.width)&&s.ch>0)});
   ok(!bad.length,'every monster on the map has its figure in a power-of-two cell'+(bad.length?': not '+bad.join(', '):''));
-  const dm=t.monsterMapSprite('dragon',0);ok(dm.width===32&&dm!==t.monsterMapSprite('dragon',1)&&dm!==t.unitSprite('dragon',1,false,0,0)&&t.monsterMapSprite('wolf',1)===t.unitSprite('wolf',1,false,0,3),'the dragon on the map is the dragon, smaller, on the wing (wings up, then level); the rest walk in their battle figures');
+  const dm=t.monsterMapSprite('dragon',0);ok(dm.width===32&&dm!==t.monsterMapSprite('dragon',1)&&dm!==t.unitSprite('dragon',1,false,0,0)&&t.monsterMapSprite('wolf',1)!==t.unitSprite('wolf',1,false,0,3)&&t.monsterMapSprite('wolf',0).width===16,'the dragon on the map is the dragon, smaller, on the wing (wings up, then level); the rest their own small map figures (Phase 1: mapfigures.js)');
   const P0={x:P.x,y:P.y};{const W=t.W,tw=t.TOWNS[0];P.x=tw.x;P.y=tw.y+40;W.monsters=[t.asMonster({id:'bear',x:P.x+30,y:P.y,hx:P.x,hy:P.y,lv:1,n:1,t:0,a:0,cool:0})];
    const ctx=t.ctx,orig=ctx.drawImage,drawn=new Set();ctx.drawImage=function(img,...a){drawn.add(img);return orig.call(ctx,img,...a)};
    try{G.mode='world';G.modal=false;t.drawWorld()}finally{ctx.drawImage=orig}
-   ok([0,1,2,3].some(f=>drawn.has(t.monsterMapSprite('bear',f))),'a beast on the map is drawn in its map figure')}Object.assign(P,P0)}
+   ok([0,1].some(f=>drawn.has(t.monsterMapSprite('bear',f))),'a beast on the map is drawn in its map figure')}Object.assign(P,P0)}
  // ---- cost: the cache, the making, a 200-strong monster battle's drawing
  {const a=performance.now();let made=0;for(const k of kinds)for(const team of [0,1])for(const v of [0,1,2])for(const p of poses){PX.beast(k,{v,pose:p,team});made++}
   const ms=performance.now()-a,all=Object.keys(t.spr).filter(k=>k.startsWith('bst')).length;

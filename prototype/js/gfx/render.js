@@ -1,14 +1,32 @@
 'use strict';
 /* ---------- rendering ---------- */
-// x, y: the leader's feet on screen; dir: which way the host faces; seed keeps each follower's place steady
-// (race: the host's people; band: a bandit band, hooded and ragged. Every follower stands as tall as the leader: people.js)
-function drawHost(n,col,x,y,dir,moving,seed,race,band){
+// x, y: the leader's feet on screen; dir: which way the host faces; seed keeps each follower's place steady; wd: how far the
+// leader has walked while it walks (each follower's step by it, a little out of time with the next), null standing
+// (race: the host's people; band: a bandit band, hooded and ragged. Every follower stands as tall as the leader: people.js; at
+// most 9 of them, three abreast, the ranks 4 px apart; the party's banner floats over it all: drawBanners)
+function drawHost(n,col,x,y,dir,wd,seed,race,band){
   const k=hostSize(n);if(!k)return;const pts=[];
-  for(let i=0;i<k;i++){const row=Math.floor(i/3),c=i%3,j=hash(i,seed|0,7);pts.push([x-dir*(8+row*6+(c===1?3:0))+Math.round(j*2-1),y-3+(c-1)*4+(row%2),i])}
-  pts.sort((a,b)=>a[1]-b[1]);const t=performance.now();
-  for(const [px,py,i] of pts){const f=moving?Math.floor(t/170+i*.7)%2:0,s=followerSprite(col,f,(i+(seed|0))%6,race,band);ctx.save();ctx.translate(Math.round(px),Math.round(py));if(dir<0)ctx.scale(-1,1);ctx.drawImage(s,-8,-14);ctx.restore()}
-  if(n>=30){const bx=Math.round(x-dir*(11+Math.floor((k-1)/3)*5)),by=y-4;rect(ctx,'#5a3a20',bx,by-14,1,12);rect(ctx,col,bx+(dir>0?-5:1),by-14,5,4);rect(ctx,shade(col,.7),bx+(dir>0?-5:1),by-11,5,1)}
+  for(let i=0;i<k;i++){const row=Math.floor(i/3),c=i%3,j=hash(i,seed|0,7);pts.push([x-dir*(6+row*4+(c===1?2:0))+Math.round(j*2-1),y-2+(c-1)*3+(row%2),i])}
+  pts.sort((a,b)=>a[1]-b[1]);
+  for(const [px,py,i] of pts){const f=wd==null?0:Math.floor(wd/2.5+i*1.3)%4,s=followerSprite(col,f,(i+(seed|0))%6,race,band);ctx.save();ctx.translate(Math.round(px),Math.round(py));if(dir<0)ctx.scale(-1,1);ctx.drawImage(s,-8,-14);ctx.restore()}
 }
+// a mover's step on the map (doc §10.2, R13): its frame by how far it has walked (parties.js frameOf: a frame each stride px, n a
+// cycle), so the feet keep to the ground at every speed; 0 standing, once it has not moved for a moment (STILL_MS). Drawn only
+const STILL=new WeakMap(),STILL_MS=250;
+function mapStepping(o){const w=WALKED.get(o)||0,s=STILL.get(o),now=performance.now();if(!s||s.w!==w){STILL.set(o,{w,t:now});return !!s}return now-s.t<STILL_MS}
+const stepOf=(o,stride,n=4)=>mapStepping(o)?frameOf(o,stride,n):0;
+/* the parties' banners (Total War-style, Party.banner): each over its party, its pole's foot BANNER_GAP px over the leader's head
+   (headY), the cloth to the east; queued (BANNERQ) as each party in sight is drawn, so a party out of sight or sheltering shows
+   none, and drawn after everyone and every tree (drawBanners), yours over the rest, each its label over it (a party's size and its
+   stance against you, as before). They flutter in real time, still under reducedMotion (vfx.js). A click on one picks its party
+   (Party.pick, world.js pickAt) */
+const BANNER_GAP=2;let BANNERQ=[];
+function bannerAt(o,f){const b=o.banner&&o.banner();if(!b)return null;const s=bannerSprite(b,f);return{s,x:Math.round(o.x)-4,y:o.headY()-BANNER_GAP-14}}
+function drawBanners(cam){const now=performance.now(),still=reducedMotion(),mine=q=>q.o===P||q.o.faction==='player'?1:0;
+  BANNERQ.sort((a,b)=>mine(a)-mine(b)||a.o.y-b.o.y);
+  for(const q of BANNERQ){const B=bannerAt(q.o,still?0:Math.floor(now/420+q.o.x*.13)%2);if(!B)continue;const X=B.x-cam.x,Y=B.y-cam.y;ctx.drawImage(B.s,X,Y);
+    if(q.label)txt(q.label[0],X+7,Y+opaqueBox(B.s)[1]-2,q.label[1],'center')}
+  BANNERQ=[]}
 // (an animal's step on the map, ms a frame)
 const D_STEP=150;
 // the tile grid over the view: a line along every tile edge from (x0, y0) for w by h world pixels, drawn offset by (ox, oy),
@@ -48,18 +66,19 @@ function drawWorld(){
   drawHerds(ents,cam,V);// (a pasture's herd: one animal on each worked field tile; the rest as herds: critters.js)
   if(P.raid)ents.push({y:P.y-1,f:()=>txt('Raiding '+Math.round(P.raid.t/RAID_TIME*100)+'%',Math.round(P.x-cam.x),Math.round(P.y-20-cam.y),'#ff9a90','center')});
   if(P.siege)ents.push({y:P.y-1,f:()=>{const s=campSprite(77,'bandit'),X=Math.round(P.x-24-s.ax-cam.x),Y=Math.round(P.y+2-s.ay-cam.y);ctx.drawImage(s,X,Y);drawFire(X+s.fire[0],Y+s.fire[1],0);drawFlag(FACS.player.col,X+s.flag[0],Y+s.flag[1],0);txt('Siege day '+P.siege.days,Math.round(P.x-cam.x),Math.round(P.y-18-cam.y),'#e8b94a','center')}});
-  // (you: on foot, a bob as you walk; mounted, your horse in its 32 cell on the same feet, your host behind it, as a lord's: drawParties)
-  if(!P.stay)ents.push({y:P.y,f:()=>{const sx=Math.round(P.x-cam.x),sy=Math.round(P.y-cam.y),f=P.tx!=null?Math.floor(performance.now()/150)%2:0,s=partySprite('#e8b94a',mountDef()?mountDef().col:'',f),big=s.width>16;
-    ctx.fillStyle='rgba(0,0,0,.3)';ctx.fillRect(sx-5,sy-1,10,2);drawHost(partySize(),'#3d74d6',sx-(big?P.dir*6:0),sy+2,P.dir,P.tx!=null,5,P.race);ctx.save();ctx.translate(sx,sy-10);ctx.scale(P.dir,1);ctx.drawImage(s,-(s.width>>1),13-s.height-(big?0:f));ctx.restore()}});
+  // (you: on foot, a step each 2.5 px you walk; mounted, your horse on the same feet, a step each 4 px; your host behind, as a lord's: drawParties)
+  if(!P.stay)ents.push({y:P.y,f:()=>{const sx=Math.round(P.x-cam.x),sy=Math.round(P.y-cam.y),m=mountDef(),go=mapStepping(P),s=partySprite('#e8b94a',m?m.col:'',go?frameOf(P,m?4:2.5,4):0);
+    ctx.fillStyle='rgba(0,0,0,.3)';ctx.fillRect(sx-(m?6:3),sy-1,m?12:6,2);drawHost(partySize(),'#3d74d6',sx-(m?P.dir*4:0),sy+2,P.dir,go?WALKED.get(P)||0:null,5,P.race);ctx.save();ctx.translate(sx,sy-10);ctx.scale(P.dir,1);ctx.drawImage(s,-(s.width>>1),13-s.height);ctx.restore();BANNERQ.push({o:P})}});
   drawFolk(ents,cam,V);drawCaravans(ents,cam,V);drawShips(ents,cam,V);drawRefugees(ents,cam,V);drawFights(ents,cam,V);
   // buildings, camps and sites first (in their own order), then every character over them, then all their labels on top
-  TXTQ=[];TXTQ.ctx=ctx;LIGHTQ=[];const bents=[];estateEnts(bents,cam,V);for(const e of ents.filter(e=>e.st))bents.push(e);
+  TXTQ=[];TXTQ.ctx=ctx;LIGHTQ=[];BANNERQ=[];const bents=[];estateEnts(bents,cam,V);for(const e of ents.filter(e=>e.st))bents.push(e);
   bents.sort((a,b)=>a.y-b.y).forEach(e=>e.f());
   // fog of war: keep the scene of structures, draw everyone, then put the remembered scene back over all but your sight, so
   // nothing that moves shows outside it; labels likewise (a place's, where you know the land; anyone's, only in your sight)
   {const mg=memCv().getContext('2d');mg.clearRect(0,0,VW,VH);mg.drawImage(cv,0,0)}const nPlace=TXTQ.length,px0=P.x-cam.x,py0=P.y-cam.y;
   ents.filter(e=>!e.st).sort((a,b)=>a.y-b.y).forEach(e=>e.f());
   fogMem(memCv(),px0,py0,V);
+  drawBanners(cam);// (the parties' banners, over all, their labels queued with the rest)
   const q=TXTQ;TXTQ=null;q.forEach((a,i)=>{const wx=a[1]+cam.x,wy=a[2]+cam.y;if(i<nPlace?seenAt(wx,wy+6):inSight(wx,wy+8))txt(...a)});
   drawEnv(cam,V,1);
   drawQuestMarks(cam);
@@ -89,11 +108,11 @@ const ATK_ANIM=.36;
 // click answers on (world.js pickAt)
 function opaqueBox(s){if(s._ob)return s._ob;const d=s.getContext('2d').getImageData(0,0,s.width,s.height).data;let x0=s.width,y0=s.height,x1=-1,y1=-1;
   for(let y=0;y<s.height;y++)for(let x=0;x<s.width;x++)if(d[(y*s.width+x)*4+3]){if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y}return s._ob=x1<0?[0,0,0,0]:[x0,y0,x1,y1]}
-// a party's leader as drawn (L: its look; f: the step): his picture, its cell's top left on the map and whether it faces left.
-// The cell's bottom is 3 below his place (a rider's 32 cell: the same feet, his banner taller)
+// a party's leader as drawn (L: its look; f: the step, 0-3): his picture, its cell's top left on the map and whether it faces
+// left. The cell's bottom is 3 below his place (a rider in the same 16 cell: the same feet, his banner taller)
 function partyFig(o,L,f){const s=L.bandit?banditSprite(f):partySprite(L.col,L.rider==='horse'?C.horse:'',f);return{s,x:o.x-(s.width>>1),y:o.y+3-s.height,flip:L.dir<0}}
 // (the rows above a leader's cell top his label clears: his highest pixel in either step, so it stands still as he walks)
-const figTop=L=>Math.min(opaqueBox(partyFig(P,L,0).s)[1],opaqueBox(partyFig(P,L,1).s)[1]);
+const figTop=L=>Math.min(...[0,1,2,3].map(f=>opaqueBox(partyFig(P,L,f).s)[1]));
 // every party in sight, one way (Party.draw: its host, its leader's figure, a torch on a night watch, its label)
 function drawParties(ents,cam,V){for(const o of W.parties)o.draw(ents,cam,V)}
 function drawUnit(u){
@@ -301,6 +320,11 @@ function setOrderUI(){
   // unit cards, the selected unit's details and the top bar (battlehud.js)
   bhudCards();document.querySelectorAll('[data-grp]').forEach(b=>bhudCard(b,b.dataset.grp));bhudInfo();bhudTop();
 }
-function setSpeed(n){G.speed=n;document.querySelectorAll('[data-speed]').forEach(b=>b.classList.toggle('on',+b.dataset.speed===n))}
+// the world's speed (SPEEDS, TRAVEL_FAST: core.js), lit on its button; why: Travel fast ends (world.js fastWatch), said in the log.
+// Travel fast will not start with danger in sight
+function setSpeed(n,why){
+  if(n===TRAVEL_FAST&&G.speed!==n&&G.mode==='world'){const d=dangerInSight();if(d){log('No travelling fast with '+d.replace(/ in sight$| ahead$/,'')+' about.','bad');n=1}}
+  else if(why&&G.speed===TRAVEL_FAST&&n!==TRAVEL_FAST)log('Travel fast ends: '+why+'.','bad');
+  G.speed=n;document.querySelectorAll('[data-speed]').forEach(b=>{const on=+b.dataset.speed===n;b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on))})}
 function pauseUI(){const b=$('#pause');if(!b)return;b.innerHTML=icon(G.paused?'play':'pause',14);b.setAttribute('aria-label',G.paused?'Play':'Pause');b.classList.toggle('on',!!G.paused)}
 function togglePause(){G.paused=!G.paused;pauseUI();updateHUD(true)}

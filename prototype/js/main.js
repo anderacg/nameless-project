@@ -4,6 +4,7 @@ damageTypesInit();// (every troop kind its damage type and armour: matchups.js)
 let last=performance.now(),hudCards=false;
 function loop(now){
   const dt=Math.min(.05,(now-last)/1000);last=now;
+  fastWatch();// (Travel fast: back to 1x when anything calls for you: world.js)
   if(!DevConsole.opened){
     if(G.mode==='battle'&&B)updateBattle(dt);
     else if(G.mode==='scene')updateScene(dt);

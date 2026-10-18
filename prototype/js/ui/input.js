@@ -34,7 +34,7 @@ panel.addEventListener('change',updateRecruitDraft);
 panel.addEventListener('input',updateCompTransferDraft);
 panel.addEventListener('change',updateCompTransferDraft);
 document.addEventListener('click',e=>{
-  const s=e.target.closest('[data-speed]');if(s)setSpeed(+s.dataset.speed);
+  const s=e.target.closest('[data-speed]');if(s){const n=+s.dataset.speed;setSpeed(n===TRAVEL_FAST&&G.speed===n?1:n)}// (Travel fast toggles)
   const o=e.target.closest('[data-order]');if(o)setOrder(o.dataset.order);
   const g=e.target.closest('[data-grp]');if(g)selectGroup(g.dataset.grp,e.shiftKey);
 });
@@ -232,7 +232,7 @@ window.addEventListener('keydown',e=>{
     G.keys[k]=true;if(e.shiftKey)G.keys.shift=true;
   }else if(G.mode==='world'&&!G.modal){
     if(e.code==='Space'){e.preventDefault();if(!e.repeat)togglePause()}
-    if(k==='1')setSpeed(1);if(k==='2')setSpeed(2);if(k==='3')setSpeed(3);
+    if(k>='1'&&k<='3')setSpeed(SPEEDS[k-1]);if(k==='4'&&!e.repeat)setSpeed(G.speed===TRAVEL_FAST?1:TRAVEL_FAST);
     if(k==='c')openChar();if(k==='i')openInv();if(k==='k')openSkills();if(k==='h')openHelp();if(k==='l')openJournal();
     if(k==='g'&&!e.repeat){setGrid(!GRID.on);log(GRID.on?'Tile grid on (G to hide).':'Tile grid off.')}
   }else if(G.mode==='help'&&k==='h'||G.mode==='journal'&&k==='l')closeOver();

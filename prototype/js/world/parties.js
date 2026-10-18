@@ -73,17 +73,22 @@ class Party extends WorldObject{
   onMap(){return !this.dead&&!this.inside}
   // in sight (fog): within your sight, or nearer when it is in woods or hills
   inView(V){return this.onMap()&&spotted(this,V)}
-  // a click: on its ring, and on its leader's figure too (a lord's whole horse and banner: render.js partyFig, opaqueBox)
-  pick(at){if(!this.onMap())return;at.add(this,10,4);if(Math.hypot(this.x-at.x,this.y-at.y)<32){const F=partyFig(this,this.look(),0);at.fig(this,F.s,F.x,F.y,F.flip)}}
+  // a click: on its ring, on its leader's figure (a lord's whole horse: render.js partyFig, opaqueBox) and on its banner
+  pick(at){if(!this.onMap())return;at.add(this,10,4);if(Math.hypot(this.x-at.x,this.y-at.y)<32){const F=partyFig(this,this.look(),0);at.fig(this,F.s,F.x,F.y,F.flip)}const B=at.flag&&bannerAt(this,0);if(B)at.flag(this,B)}
+  // the banner it flies over it, Total War-style (sprites.js bannerSprite: k its shape, col its field, dev its device), null for
+  // none; and the map row of its leader's head, the banner's pole standing over it (render.js bannerAt)
+  banner(){return null}
+  headY(){return Math.round(this.y)+3-16+figTop(this.look())}
   // in sight: its host of soldiers, its leader's figure (a rider, a bandit), a torch on a night watch, its label (as it looks: look)
   draw(ents,cam,V){if(!this.inView(V))return;const o=this;
-    ents.push({y:o.y,f:()=>{const L=o.look(),sx=Math.round(o.x-cam.x),sy=Math.round(o.y-10-cam.y),fd=L.dir<0?-1:1,fr=L.moving?Math.floor(performance.now()/(L.bandit?160:170))%2:0;
+    // (its step by how far it has walked: on foot a step each 2.5 px, a rider each 4; standing still, or resting, the first)
+    // (its banner over it all, with its label over the banner: render.js drawBanners)
+    ents.push({y:o.y,f:()=>{const L=o.look(),sx=Math.round(o.x-cam.x),sy=Math.round(o.y-10-cam.y),fd=L.dir<0?-1:1,rider=!!L.rider&&!L.bandit,go=L.moving&&mapStepping(o),fr=go?frameOf(o,rider?4:2.5,4):0;
       const s=partyFig(o,L,fr).s;// (a rider: his host behind his horse)
-      drawHost(o.size,L.col,sx-(s.width>16?fd*6:0),sy+12,fd,L.moving,L.seed,L.race,L.bandit);
+      drawHost(o.size,L.col,sx-(rider?fd*4:0),sy+12,fd,go?o.wd:null,L.seed,L.race,L.bandit);
       ctx.save();ctx.translate(sx,sy);if(fd<0)ctx.scale(-1,1);ctx.drawImage(s,-(s.width>>1),13-s.height);ctx.restore();
-      if(L.torch){const tx=sx+fd*6,ty=sy-4;rect(ctx,'#5a3e24',tx,ty,1,5);LIGHTQ.push({x:tx,y:ty-1,r:20})}
-      // (its label clear above the figure, its banner's top: over it, the label in the banner's own colour was lost on the flag)
-      if(!o.fight&&L.label)txt(L.label,sx,sy+13-s.height+figTop(L)-2,L.labelCol,'center')}})}
+      if(L.torch){const tx=sx+fd*4,ty=sy+3;rect(ctx,'#5a3e24',tx,ty,1,4);LIGHTQ.push({x:tx,y:ty-1,r:16})}
+      BANNERQ.push({o,label:!o.fight&&L.label?[L.label,L.labelCol]:null})}})}
   // sheltering in a holding: inside is the holding's name. shelterWhy(t): why it may not go in there ('' if it may; each kind
   // has its rules); enter and leave by the gate
   shelterWhy(t){return !t?'Nowhere':besieged(t)?'The gates are barred for the siege':''}
@@ -104,6 +109,7 @@ class LordParty extends Party{
   tip(){return '<b>'+this.name+' <span class="muted">Lv '+lordStats(this).lv+'</span></b><small>'+tipFac(this.fac)+' · '+this.troops.length+' soldiers'+tipOdds(this.power())+paceVs(lordSpeed(this))+'</small><span class="act">Click: '+(hostileTo(this.fac)?'fight':'talk')+'</span>'}
   get brain(){return BRAINS.lord}
   shelterWhy(t){return t&&t.owner!==this.fac?'Not a holding of his realm':super.shelterWhy(t)}
+  banner(){return{k:'banner',col:FACS[this.fac].col,dev:this.fac}}
   look(){const col=FACS[this.fac].col,still=this.state==='rest'||this.state==='siege';return{col,race:FACS[this.fac].races[0],rider:'horse',dir:faceDir(this),moving:!still,seed:this.id.length*31+this.name.length,label:String(this.size),labelCol:hostileTo(this.fac)?STANCE_COL[stance(this.power())]:col}}
 }
 class CompanionParty extends Party{
@@ -118,6 +124,7 @@ class CompanionParty extends Party{
   shelterWhy(t){return !t?'Nowhere':yourShelterWhy(t)}
   enter(t){this.inside=t.name;this.x=t.x;this.y=t.y}
   inView(V){return this.onMap()&&Math.hypot(this.x-P.x,this.y-P.y)<V}// (yours: always in sight)
+  banner(){return{k:'banner',col:FACS.player.col,dev:'star'}}// (yours, a companion's mark on it)
   look(){return{col:FACS.player.col,race:P.race,dir:this.dir||1,moving:true,seed:this.cid.length*7,label:COMPS[this.cid].short+' '+this.size,labelCol:'#9fc0ff'}}
 }
 class PatrolParty extends Party{
@@ -129,6 +136,7 @@ class PatrolParty extends Party{
   tip(){return '<b>'+(this.watch==='night'?'Night watch':'Guards')+' of '+this.home+'</b><small>'+tipFac(this.fac)+' · '+this.troops.length+' soldiers'+(hostileTo(this.fac)?tipOdds(this.power()):'')+'</small><span class="act">Click: meet</span>'}
   mapDot(V){return this.fromYou()<V?[this.fac==='player'?FACS.player.col:FACS[this.fac].col,1]:null}
   get brain(){return BRAINS.patrol}
+  banner(){return{k:'pennant',col:this.fac==='player'?FACS.player.col:FACS[this.fac].col,dev:this.fac}}// (its holding's realm's pennant)
   look(){const col=this.fac==='player'?FACS.player.col:FACS[this.fac].col,near=Math.hypot(this.x-P.x,this.y-P.y)<120;
     return{col,race:this.fac==='player'?P.race:FACS[this.fac].races[0],dir:this.dir||1,moving:true,seed:this.home.length*13,torch:watchOf(this)==='night',label:near?String(this.size):'',labelCol:hostileTo(this.fac)?STANCE_COL[stance(this.power())]:crimeAt(townBy(this.home))&&this.fac!=='player'?'#ff9a90':col}}
 }
@@ -145,6 +153,7 @@ class BandParty extends Party{
   power(){return this.pw||(this.pw=rating(this.troops,chiefLv(this)))}
   tip(){return '<b>'+this.label()+'</b>'+chiefTip(this)+'<small>'+this.n+' fighters'+tipOdds(this.power())+paceVs(partySpeed(this,this.troops))+'</small><span class="act">Click: attack</span>'}
   get brain(){return BRAINS.band}
+  banner(){return{k:'rag',col:BAND_FLAG[this.kind]||BAND_FLAG.bandits,dev:'skull'}}// (a tattered rag: red, a desert raider's ochre, a bog raider's green)
   look(){const c=this.ld;return{col:'#8a4a3a',bandit:true,dir:faceDir(this),moving:!this.idle,seed:Math.round(this.x)%97,label:(c?c.name.split(' ')[0]+' Lv'+c.lv+' · ':'')+this.n,labelCol:STANCE_COL[stance(this.power())]}}
   changed(){super.changed();if(this.tc)this.n=this.size;this.pw=0}
 }
@@ -166,6 +175,8 @@ class PlayerParty extends Party{
   get faction(){return 'player'}
   power(){return partyPower()}
   look(){return{col:'#3d74d6',rider:mountDef()?mountDef().col:'',dir:this.dir||1,moving:this.tx!=null,seed:5,label:'',labelCol:'#fff'}}
+  banner(){return{k:'banner',col:FACS.player.col,dev:'crown'}}
+  headY(){const m=mountDef();return Math.round(this.y)+3-16+opaqueBox(partySprite('#e8b94a',m?m.col:'',0))[1]}
 }
 Object.setPrototypeOf(P,PlayerParty.prototype);
 // which kind a plain party is

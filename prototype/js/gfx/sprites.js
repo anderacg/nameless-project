@@ -51,9 +51,10 @@ function beastPose(u,moved){
   if((u.z||0)>1)return 16;
   if(moved)return u.spdNow>u.s.spd*.75?15+Math.floor(B.t*12+(u.v||0))%4:2+Math.floor(B.t*8+(u.v||0))%4;
   return (B.t*.8+((u.id||0)*.37)%1)%1<.45?1:0}
-// a monster on the world map: the dragon on the wing (its own small figure in a 32 cell, wings up, then level); the rest walking, f 0-3
-function monsterMapSprite(id,f){const M=MONSTERS[id],k='mm'+M.unit+(f||0);if(spr[k])return spr[k];
-  return spr[k]=M.mythic?cellOf(PX.beastMap(M.unit,f||0)):unitSprite(M.unit,1,false,0,2+((f||0)%4))}
+// a monster on the world map (engine/beasts.js PX.beastMap): the dragon on the wing (its own small figure in a 32 cell, wings up,
+// then level: it should look huge); the rest their own small figures in a 16 cell, f 0-1 their step (a step each half a body
+// length walked: monsters.js)
+function monsterMapSprite(id,f){const M=MONSTERS[id],k='mm'+M.unit+((f||0)%2);if(spr[k])return spr[k];return spr[k]=cellOf(PX.beastMap(M.unit,(f||0)%2))}
 function corpseOf(u){
   const base=unitSprite(u.type,u.team,u.hero,u.v,0,true);let c=CORPSES.get(base);if(c)return c;
   // (a beast: it sinks as it falls (a troll over as a man does, a spider or a scorpion onto its back, a slime running flat, the rest
@@ -94,13 +95,44 @@ function procPose(u,moved){
   // (standing: breathing, slow, each on his own rhythm)
   return (B.t*.8+((u.id||0)*.37)%1)%1<.45?1:0;
 }
-// a banner bearer on the map (people.js): the party's leader in the banner's colour, on foot or riding a mount of colour mc; f the step
-function partySprite(col,mc,f){f=f||0;const k='p'+col+(mc||'')+f;if(spr[k])return spr[k];
+// a banner bearer on the map (people.js mapFigure): the party's leader in the banner's colour, on foot or riding a mount of colour
+// mc; f the step (0-3)
+function partySprite(col,mc,f){f=(f||0)%4;const k='p'+col+(mc||'')+f;if(spr[k])return spr[k];
   const you=col==='#e8b94a',R=RACE_LOOK[you?P.race:'human']||RACE_LOOK.human;
   return spr[k]=mapFigure({race:you?P.race:'human',skin:R.skin[0],hair:R.hair[you?0:2],eye:R.eye,ears:R.ears,tusk:R.tusk,short:R.short,beard:R.beard?R.hair[0]:null,
     helm:you?'crown':'kettle',outer:'steel',inner:'dark',team:col,shortHair:true},f,mc||null)}
 // a bandit on the map: hooded, a spear
-function banditSprite(f){f=f||0;const k='bd'+f;return spr[k]||(spr[k]=mapFigure({race:'human',skin:'skinTan',hair:'black',helm:'hood',hood:'leather',outer:'leather',inner:'dark',team:'#8a3a2a',weapon:'spear',shortHair:true},f,null))}
+function banditSprite(f){f=(f||0)%4;const k='bd'+f;return spr[k]||(spr[k]=mapFigure({race:'human',skin:'skinTan',hair:'black',helm:'hood',hood:'leather',outer:'leather',inner:'dark',team:'#8a3a2a',weapon:'spear',shortHair:true},f,null))}
+/* a party's banner on the map (Total War-style: larger than any real flag, floating over the party, drawn over everything:
+   render.js drawBanners): a pole with a gilt finial and the cloth on it, in its own 16 cell, its pole's foot at the cell's bottom
+   left (x 2). Its look b (Party.banner): k, the shape: 'banner' a swallow-tailed standard (a realm's lords, you, your
+   companions), 'pennant' a tapering pennant (a holding's guards), 'trade' a small pennant on a short pole (a caravan), 'rag' a
+   tattered standard (bandits, desert raiders, bog raiders); col its field, dev its device (BANNER_DEV: a realm's emblem by its
+   id, a crown for you, a star for a companion, a skull, a coin). In the field's hue-shifted ramp (engine PX.ramp), lit from the
+   top left, a fold in shade; the device light on a dark field, dark on a light one; the people's outline (people.js). f: the
+   flutter (0, 1) */
+// (a band's rag by its kind: bandits, desert raiders, bog raiders)
+const BAND_FLAG={bandits:'#8a2a2a',raiders:'#b07a38',bog:'#4e6a3a'};
+const BANNER_DEV={vale:['..w..','..w..','wwwww','..x..','..x..'],karn:['wwwww','wwwww','..x..','..x..','..x..'],sylvan:['..w..','.www.','wwwww','.www.','..x..'],
+  horde:['w...w','.w.w.','..x..','.w.w.','w...w'],salt:['..w..','wwwww','..w..','w.w.w','.www.'],crown:['.....','w.w.w','wwwww','wxwxw','.....'],
+  star:['.....','..w..','.www.','..w..','.....'],skull:['.www.','wxwxw','.www.','.w.w.','.....'],coin:['ww','wx']};
+function bannerSprite(b,f){f=f?1:0;const key='bn'+b.k+b.col+b.dev+f;if(spr[key])return spr[key];
+  const g=pgrid(12,16),s=(x,y,c)=>pset(g,x,y,c),R=PX.ramp(b.col),Wd=PPAL.wood,G=PPAL.gold,trade=b.k==='trade',top=trade?6:2;
+  const lum=[1,3,5].reduce((a,i,k)=>a+parseInt(b.col.slice(i,i+2),16)*[.3,.59,.11][k],0)/255,D=lum>.6?['#5a2a2a','#3a1a22']:['#f4ecd8','#c8bca0'];
+  for(let y=top;y<=14;y++)s(2,y,y>11?Wd[2]:Wd[1]);s(2,top-1,G[1]);
+  // the cloth: each row's runs [first x, last x] down from the pole's top (a swallow tail, tatters, a pennant's taper); its top and
+  // the pole's side lit, its fold and far edge in shade
+  const F=[[3,9]],rows=b.k==='banner'?[F,F,F,F,F,F,F,F,f?[[3,5],[8,9]]:[[3,5],[7,9]],f?[[3,4],[9,9]]:[[3,4],[8,9]]]
+    :b.k==='rag'?[F,F,F,F,F,F,[[3,6],[8,9]],f?[[4,5],[8,9]]:[[3,4],[6,6],[9,9]]]
+    :trade?[[[3,8]],[[3,7]],[[3,5]],[[3,4]]]:[[[3,10]],[[3,9]],[[3,8]],[f?[3,6]:[3,7]],[[3,5]],[[3,4]]];
+  rows.forEach((runs,i)=>{const y=top+i,far=Math.max(...runs.map(r=>r[1]));for(const [a,c] of runs)for(let x=a;x<=c;x++)s(x,y,i===0||x===3?R[0]:x===far||x===(f?6:7)&&!trade?R[2]:R[1])});
+  if(b.k==='rag'){s(7,top+3,R[3]);s(9,top+5,R[3])}// (a hole, a stain)
+  // the device, in the middle of the field
+  const T=BANNER_DEV[b.dev];if(T&&!trade){const h=T.length,w=T[0].length,x0=b.k==='banner'||b.k==='rag'?4:trade?4:3,y0=top+(b.k==='banner'||b.k==='rag'?2:trade?1:1);
+    const sm=b.k==='pennant'?[[0,0],[1,0],[0,1],[1,1]]:null;
+    if(sm)for(const [x,y] of sm)s(x0+x+1,y0+y,(x+y)%2?D[1]:D[0]);else T.forEach((r,y)=>[...r].forEach((c,x)=>{if(c!=='.')s(x0+x,y0+y,c==='w'?D[0]:D[1])}))}
+  if(trade)T&&T.forEach((r,y)=>[...r].forEach((c,x)=>{if(c!=='.')s(4+x,top+1+y,c==='w'?G[0]:G[2])}));
+  poutline(g);return spr[key]=cellOf(pcanvas(g))}
 /* pre-rendered world map: ground colors per climate, then terrain on top */
 const PAL={
   grass:{g:['#4f7a3a','#4c7738'],s:['#5d8c44','#3f6a30'],road:['#b89b62','#d0b880','#9a7f4c'],tree:['#2a5a2a','#2f6a30','#3f8a3e'],hill:['#7a6e46','#9a8c5c','#a89a68','#c4b684'],mini:['#4f7a3a','#2f5a2c','#8a7a52','#3b6ca8','#b89b62','#8e95a6']},
@@ -199,7 +231,6 @@ function itemIcon(def){const k='ic'+def.icon+def.col;return spr[k]||(spr[k]=mkc(
 let TXTQ=null;
 function txt(s,x,y,col,al){if(TXTQ&&ctx===TXTQ.ctx){TXTQ.push([s,x,y,col,al]);return}ctx.font='8px Silkscreen, "Courier New", monospace';ctx.textAlign=al||'left';ctx.textBaseline='alphabetic';ctx.fillStyle='#000';ctx.fillText(s,x+1,y+1);ctx.fillStyle=col||'#e4e0cf';ctx.fillText(s,x,y)}
 
-/* how big a host looks: followers trail the banner, more of them the bigger the band */
-/* how big a host looks: followers trail the banner, more of them the bigger the band */
-const hostSize=n=>n<5?0:Math.min(14,Math.round(Math.sqrt(n)*1.7)-2);
+/* how big a host looks: followers trail the banner, more of them the bigger the band, at most 9 (render.js drawHost) */
+const hostSize=n=>n<5?0:Math.min(9,Math.round(Math.sqrt(n)*1.7)-2);
 // (a follower on the map: people.js followerSprite)

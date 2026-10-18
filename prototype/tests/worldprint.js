@@ -27,10 +27,16 @@
 // G.quietEvents is on, and the view is the tests' fixed 576 x 360. Hash: FNV-1a 32-bit over bytes, char codes or 32-bit words;
 // W8's places at 1e-6 px.
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.push('INFO '+m),t=T,G=t.G,P=t.P,W=t.W;
-const EXPECT={W1:'65e24662',W2:'2b49a168',W3:'7a0dcbac',W4:'46450e62',W5:'6587a43c',W6:'f2016cf2',W7:'c50cf16f',W8:'847c821c',B2:'00a93435'};// (at 0a42712; B2 at R3)
+const EXPECT={W1:'65e24662',W2:'2b49a168',W3:'7a0dcbac',W4:'46450e62',W5:'6587a43c',W6:'251c8821',W7:'3ef9ffd9',W8:'d4c01429',B2:'00a93435'};// (at 0a42712; B2 at R3; W6-W8 at Phase 1)
 // (W5, W6 re-recorded in Phase 0 wave 1, on purpose, a fix: the painted world and the minimap were the title screen's, from the
 //  lots main.js lays out at load, never repainted for a game's own (begin lays out others); now begin repaints them, so the map
 //  shows the real lots. W6 moved only at the third spot (2688, 768) by night and day; was W5 aceeae00, W6 7a99f543)
+// (W6, W7, W8 re-recorded in Phase 1, on purpose (doc/WORLD_DESIGN.md D9, D23, D25): W6, the map's own smaller figures (people,
+//  riders, hosts, beasts, herds, caravans, ships), stepping by the distance walked; W7 and W8, the slower pace: the day 180 s at
+//  a world pace of .4 (72 units of world time a day, as before), every step x .68 (WORLD_SCALE.move), the grace after a fight
+//  x 1.47; W7 now takes 3401 frames to its 3 days, not 2200. Was W6 f2016cf2, W7 c50cf16f, W8 847c821c; W1-W5 and B2 unchanged.
+//  W6 again, f364827a to 251c8821, at the owner's review: no banner held in the figures' hands, each party's own banner floating
+//  over it instead, Total War-style, its label over the banner: render.js drawBanners)
 const r0=Math.random,pn=performance.now,t0=pn.call(performance);
 try{
  try{localStorage.clear()}catch(e){}

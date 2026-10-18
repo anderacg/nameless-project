@@ -70,7 +70,7 @@ function roadEvent(){
   if(G.quietEvents||G.mode!=='world'||G.modal)return;
   const ok=roadEvents().filter(e=>e.ok());let r=Math.random()*ok.reduce((a,e)=>a+e.w,0),ev=ok[0];for(const e of ok){r-=e.w;if(r<=0){ev=e;break}}
   if(!ev)return;
-  if(ev.run){const [m,c]=ev.run();log(m,c);return}
+  if(ev.run){const [m,c]=ev.run();log(m,c);if(G.speed===TRAVEL_FAST)setSpeed(1,'something on the road');return}// (one with a window: main.js fastWatch)
   G.event={id:ev.id};G.mode='event';P.tx=null;showEvent();
 }
 const eventDef=()=>EVENTS.find(e=>e.id===G.event.id)||TERRAIN_EVENTS.find(e=>e.id===G.event.id);

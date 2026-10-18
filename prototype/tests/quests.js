@@ -55,7 +55,7 @@ try{
  const h0=t.honorWith('vale');lord.cool=0;world();t.lordMeet(lord);ok(/Report/.test(panel()),'the lord asks for your report');t.act('q-lord-report');ok(!P.quests.length&&t.honorWith('vale')>h0,'reporting earns honor');t.act('lord-leave');
  // a lord's job can also be reported at any of his faction's holdings
  world();const lr=t.makeQuest('raid',ash,lord);ok(lr&&t.atWar('vale',t.townBy(lr.village).owner),'vassals are asked to raid enemy villages ('+(lr&&lr.village)+')');t.acceptQuest(lr);
- const v=t.townBy(lr.village);P.x=v.x;P.y=v.y+5;world();G.lastTown=null;t.updateWorld(.01);t.act('sg-raid-auto');t.act('cont');done();for(let i=0;i<40&&P.raid;i++){G.mode='world';G.modal=false;t.updateWorld(.25)}ok(lr.done,'raiding it finishes the quest');
+ const v=t.townBy(lr.village);P.x=v.x;P.y=v.y+5;world();G.lastTown=null;t.updateWorld(.01);t.act('sg-raid-auto');t.act('cont');done();for(let i=0;i<70&&P.raid;i++){G.mode='world';G.modal=false;t.updateWorld(.25)}ok(lr.done,'raiding it finishes the quest');
  world();near(t.TOWNS.find(x=>x.owner==='vale'&&x!==ash));t.updateWorld(.01);t.act('q-turnin',String(lr.id));ok(!P.quests.length,'reported at another Vale holding');t.act('leave');done();
  // limits, deadlines, abandoning
  world();for(let k=0;k<6;k++){const q=t.makeQuest('supply',ash);t.acceptQuest(q)}ok(P.quests.length===t.QUEST_MAX,'at most '+t.QUEST_MAX+' quests at a time');

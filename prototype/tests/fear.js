@@ -11,8 +11,9 @@ try{
  weak();const me=t.partyPower();ok(t.stance(me*.9)==='attack'&&t.stance(me*.6)==='wary'&&t.stance(me*.3)==='afraid','stance from power ratio: ≥80% attack, ≥50% wary, below that afraid');
  // bandits
  const band=n=>{const b={x:P.x+60,y:P.y,n,kind:'bandits',list:Array(n).fill('militia'),t:9,a:0,idle:true,cool:0};t.bandits.length=0;t.bandits.push(t.asParty(b));return b};
- strong();let b=band(4),d0=gap(b);for(let k=0;k<20;k++){W.patrols=[];t.updateWorld(.05)}/* (the watch rides out every half second: kept out) */ok(gap(b)>d0+10,'a weak bandit band runs from a strong party ('+Math.round(d0)+' → '+Math.round(gap(b))+')');
- weak();b=band(14);d0=gap(b);for(let k=0;k<20;k++){G.encCool=99;W.patrols=[];t.updateWorld(.05)}ok(gap(b)<d0-10,'a strong bandit band hunts a weak party ('+Math.round(d0)+' → '+Math.round(gap(b))+')');
+ // (45 frames of updateWorld: as far as 20 went before Phase 1's slower pace, D9: .4/.6 x .68 of the ground a frame)
+ strong();let b=band(4),d0=gap(b);for(let k=0;k<45;k++){W.patrols=[];t.updateWorld(.05)}/* (the watch rides out every half second: kept out) */ok(gap(b)>d0+10,'a weak bandit band runs from a strong party ('+Math.round(d0)+' → '+Math.round(gap(b))+')');
+ weak();b=band(14);d0=gap(b);for(let k=0;k<45;k++){G.encCool=99;W.patrols=[];t.updateWorld(.05)}ok(gap(b)<d0-10,'a strong bandit band hunts a weak party ('+Math.round(d0)+' → '+Math.round(gap(b))+')');
  // you can still run a fleeing band down
  // a band that flees is run down by riders
  strong();P.troops={hum_knight:20};P.gear.mount='m_horse';b=band(3);P.tx=b.x;P.ty=b.y;G.encCool=0;let k=0;for(;k<400&&G.mode==='world';k++){P.tx=b.x;P.ty=b.y;t.updateWorld(.05)}

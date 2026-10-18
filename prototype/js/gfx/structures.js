@@ -56,8 +56,8 @@ function drawSite(s,X,Y,N,p,full,seed){
   for(const px of poles){rect(ctx,'#1a1512',px-1,Y-top-1,3,top+1);rect(ctx,'#8a6a42',px,Y-top,1,top)}
   for(let y=Y-4;y>Y-top;y-=6){rect(ctx,'#1a1512',x0-1,y-1,x1-x0+3,3);rect(ctx,'#a07e54',x0,y,x1-x0+1,1)}
   // the worker: walks the plank at the height reached, swings his hammer, a spark now and then
-  const ly=full?Y-Math.round(top/2):Math.max(Y-top+2,Y-h-1),span=x1-x0-4,wx=x0+2+Math.round((Math.sin(now/900+seed)*.5+.5)*span),f=Math.floor(now/180)%2,ws=workerSprite('builder',f,'human',seed%4);
-  ctx.drawImage(ws,wx-8,ly-14);if(Math.floor(now/180+seed)%7===0)rect(ctx,'#ffe090',wx+4,ly-12,1,1);
+  const ly=full?Y-Math.round(top/2):Math.max(Y-top+2,Y-h-1),span=x1-x0-4,wx=x0+2+Math.round((Math.sin(now/900+seed)*.5+.5)*span),f=Math.floor(now/180)%4,ws=workerSprite('builder',f,'human',seed%4);
+  ctx.drawImage(ws,wx-8,ly-14);if(Math.floor(now/180+seed)%7===0)rect(ctx,'#ffe090',wx+4,ly-8,1,1);
 }
 // placing a building by hand: its ghost under the pointer, its tiles green where it may stand and red where not
 function drawPlace(cam){
@@ -134,8 +134,8 @@ function estateGround(t,k,lv){
   });
   cv.x=x0;cv.y=y0;return spr[key]=cv;
 }
-// boats moored at a port's pier, drawn as the ships that sail (ships.js shipSprite, moored): a rowing boat (32 x 32) for each
-// level up to two, and at a port of the third level a cog (64 x 64) with its sail furled in place of the second. Along a pier
+// boats moored at a port's pier, drawn as the ships that sail (ships.js shipSprite, moored): a rowing boat (16 x 16) for each
+// level up to two, and at a port of the third level a cog (32 x 32) with its sail furled in place of the second. Along a pier
 // that runs east or west a boat lies alongside: a rowing boat in front of the deck, a cog (or a second rowing boat) behind
 // it, a little water between its waterline and the deck's far edge; along one that runs north or south a boat lies bow on to
 // the pier, a little off its side. Each is kept only where its whole hull floats on water, clear of the other boat (else the
@@ -150,9 +150,9 @@ function estateBoats(t,lv){
   // the cog first (it needs the most room), then the rowing boats; each its own seed (the holding's, by its place in line)
   const kinds=lv>=3?[['cog',1],['row',0]]:lv>=2?[['row',0],['row',1]]:[['row',0]];
   for(const [kind,i] of kinds){const seed=t.seed+i*7;let done=false;
-    for(const k of kind==='cog'?['cog','row']:['row']){if(done)break;const big=k==='cog',sp=shipSprite({seed,big,col:big?col:null,moored:true}),n=sp.width,hh=big?9:4,bx=opaqueBox(sp);
+    for(const k of kind==='cog'?['cog','row']:['row']){if(done)break;const big=k==='cog',sp=shipSprite({seed,big,col:big?col:null,moored:true}),n=sp.width,hh=sp.hull,bx=opaqueBox(sp);
       // the places to try: [side (north-south pier: 1 east of it, -1 west; else 1 in front, -1 behind), how far out along it]
-      const along=[i?.45:.85,.65,i?.85:.45,1,.3].map(f=>len*f),places=[],top=big?15:7;
+      const along=[i?.45:.85,.65,i?.85:.45,1,.3].map(f=>len*f),places=[],top=sp.top;
       for(const side of v?(i?[-1,1]:[1,-1]):big?[-1]:i?[-1,1]:[1,-1])for(const d of v?along:along.concat([len+8,len+16]))places.push([side,d]);
       for(const [side,d] of places){
         // which way it faces: bow on to a north-south pier; else out to sea (a rowing boat either way, by its seed)

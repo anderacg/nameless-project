@@ -10,8 +10,8 @@
 // 0-1 standing (breathing), 2-5 walking, 15-18 running, 6-8 the attack (wind up, strike, follow through: a bite, a claw, a slam,
 // a spit), 9-11 the second attack (the dragon's breath; the rest the first again), 19-26 the walk; PX.BEAST_DEAD lying dead.
 // team 0 (your side): a collar or a band in the side's blue on a beast that fights for you; a wild one (team 1) wears nothing.
-// PX.beastMap(kind, f): the world map's figure (the dragon flying, its own smaller figure, wings up, then level; the rest their walk,
-// f 0-3). PX._beastFit(kind): how far each kind's poses reach (none may touch its canvas's edge: the gallery's ?view=beasts&fit=1).
+// PX.beastMap(kind, f): the world map's figure (the dragon flying, its own smaller figure, wings up, then level; the rest their own
+// small figures, PX.MAP_BEASTS, two steps: f 0-1). PX._beastFit(kind): how far each kind's poses reach (none may touch its canvas's edge: the gallery's ?view=beasts&fit=1).
 (function(PX){
   const OUT='#1a1c26',DEAD=99;
   PX.BEAST_DEAD=DEAD;PX.BEAST_POSES=[0,1,2,3,4,5,15,16,17,18,6,7,8,9,10,11];
@@ -351,7 +351,30 @@
   PX.beast=(kind,o)=>{o=o||{};const K=KINDS[kind];if(!K)return null;const c=canvas(figure(K,kind,o));
     if(fhOf[kind]==null){const g0=figure(K,kind,{v:0,team:1,pose:0});let t=g0.h;for(let y=0;y<g0.h&&t===g0.h;y++)for(let x=0;x<g0.w;x++)if(at(g0,x,y)){t=y;break}fhOf[kind]=g0.h-t}
     c.fh=fhOf[kind];c.kind=kind;return c};
-  // the world map: the dragon on the wing (its own small figure: wings up, then level), the rest walking
-  PX.beastMap=(kind,f)=>{f=f||0;if(kind!=='dragon')return PX.beast(kind,{pose:2+(f%4),team:1});const c=canvas(figure(DRAKE,'drake',{pose:15+(f%2),team:1},true));c.fh=c.height;c.kind='drake';return c};
+  /* the world map's own figures (doc/WORLD_DESIGN.md §10.1), smaller than the battle's (a person stands 10 high there): each kind
+     drawn pixel by pixel, side-on facing right, in its coat's ramp lit from the top left (h H d k), a second ramp (l L m: a belly,
+     a loincloth, wings), dark D (paws, nose), eye e, bone w, red r and its own (x); then the outline round the silhouette. rows,
+     the body over the legs (legs: two steps, under it and apart), or whole frames; its feet on the row above the bottom one */
+  const MAPF={
+    wolf:{e:'#e8c84a',D:'#4a4a52',rows:['.....hd','dhhhhHe','.dHHHdD'],legs:[['.kH.kH.'],['k.H.k.H']]},
+    boar:{D:'#3a2c28',rows:['.DDh...','hHHHHhe','dHHHHdw'],legs:[['.kD.kD.'],['k.D.k.D']]},
+    bear:{D:'#3a2c26',rows:['.......h.','..hhhh.hH','.hHHHHhHe','hHHHHHHHD','.dHHHHHd.'],legs:[['.kD..kD..'],['k.D..k.D.']]},
+    tiger:{e:'#e8c84a',D:'#3e302e',x:{g:'#3a2c2c'},c2:'#e4d8bc',rows:['.......hd','kdhghghHe','..dHgHlHD'],legs:[['..kH.kH..'],['.k.H.k.H.']]},
+    spider:{e:'#c0403a',D:'#26222c',rows:['.hHd...','hHHHdhe','dHHdkdD'],legs:[['k.k.k.k'],['.k.k.k.']]},
+    scorpion:{D:'#4a3428',x:{s:'#e4dcc4'},rows:['.hhs....','h.......','dhhhhh.h','.dHHHHdH'],legs:[['.k.k.k..'],['k.k.k...']]},
+    slime:{x:{s:'#f0f4e0'},frames:[['.hhH.','hsHHd','dHHdk'],['.....','hsHHd','dHHHk']]},
+    troll:{e:'#e8c84a',D:'#3a3a2e',c2:'#6a4e36',x:{x:'#7a5a3a',y:'#a07a52'},rows:['..hHd..','..HeHd.','.hHHHdy','hHHHHHx','dHHHHdx','D.LLLDx','..LLm..'],
+      legs:[['..H.d..','..H.d..','.DD.DD.'],['.H...d.','.H...d.','DD...DD']]},
+    wyrm:{e:'#e8c84a',D:'#4e3a2a',c2:'#d8c08a',frames:[['..........hh.','.........hHHe','..hhh...hHdmD','.hHHHh.hHd...','kdLLLdhHLd...'],
+      ['..........hh.','.........hHHe','...hhh..hHdmD','..hHHHhhHd...','kdmLLLdHLd...']]},
+    griffin:{D:'#4a3a30',c2:'#8a6a48',x:{W:'#e2dacb',X:'#b8b0a2',y:'#c8a04a'},rows:['..lLm.....','.lLLLm..WX','.lLLm..WXy','hHHHHHHXX.','dHHHHHHd..'],
+      legs:[['.kH..kH...','.DD..DD...'],['.kH..kH...','k..D.D..D.']]}};
+  function mapBeast(kind,f){const T=MAPF[kind],K=KINDS[kind],rows=T.frames?T.frames[f%2]:T.rows.concat(T.legs[f%2]),W=Math.max(...rows.map(r=>r.length)),g=grid(W+2,rows.length+2),
+      C=R(T.c||K.coats[0]),S=R(T.c2||K.coats[0]),col={h:C[0],H:C[1],d:C[2],k:C[3],l:S[0],L:S[1],m:S[2],D:T.D||'#3a2c28',e:T.e||'#1a1410',w:'#e4dcc4',r:'#c0403a',...(T.x||{})};
+    rows.forEach((r,y)=>[...r].forEach((c,x)=>putR(g,x+1,y+1,col[c])));outline(g);const c=canvas(g);c.fh=g.h-1;c.kind=kind;return c}
+  PX.MAP_BEASTS=Object.keys(MAPF);
+  // the world map: the dragon on the wing (its own drake, wings up, then level: 32, it should look huge); the rest their own small
+  // figures (MAPF), f 0-1 their step
+  PX.beastMap=(kind,f)=>{f=f||0;if(kind!=='dragon')return mapBeast(kind,f);const c=canvas(figure(DRAKE,'drake',{pose:15+(f%2),team:1},true));c.fh=c.height;c.kind='drake';return c};
   PX._beastKit={grid,put,at,mask,shade,flat,outline,canvas,R,gait,quad,quadDead,tube,wing,turn,TEAM,KINDS};
 })(window.PX=window.PX||{});

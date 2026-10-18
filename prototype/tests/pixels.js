@@ -22,10 +22,10 @@ try{
  ok(!bad.length,t.TOWNS.reduce((a,z)=>a+z.lots.length,0)+' placed buildings: each exactly its cell, none sharing a tile (fields included), and the grid agrees'+(bad.length?': '+bad.slice(0,6).join('; '):''));
  const cen=t.TOWNS.filter(z=>{const c=t.lotCentre(z);return!c||c.y+c.n!==z.ty+1||z.tx<c.x||z.tx>=c.x+c.n});ok(!cen.length,'every holding has one centre, standing on its own tile (where its roads end and parties arrive)'+(cen.length?': '+cen.map(z=>z.name).join(', '):''));
  // ---- estates: their boats float clear of their piers
- // (moored boats are the sailing ships' sprites, moored: power-of-two cells, waterline on the bottom row, the hull on water)
+ // (moored boats are the sailing ships' sprites, moored: power-of-two cells (16 and 32 since Phase 1's smaller figures), waterline on the bottom row, the hull on water)
  const eb=[];let nb=0,ncog=0;for(const tw of t.TOWNS){if(tw.lots.some(l=>l.k==='port')&&t.pierOf(tw))for(const lv of [1,2,3])for(const bt of t.estateBoats(tw,lv)){const pr=t.pierOf(tw),[l,tp,r,bm]=bt.box,v=pr.dir==='n'||pr.dir==='s',n=bt.b.img.width;nb++;if(bt.big)ncog++;
    if(v?(l<=pr.x+5&&r>=pr.x-5):(tp<=pr.y+6&&bm>=pr.y-5))eb.push(tw.name+' boat on the pier');
-   if(n!==bt.b.img.height||![32,64].includes(n)||bt.b.ay!==n-1)eb.push(tw.name+' boat not in its power-of-two cell');
+   if(n!==bt.b.img.height||![16,32].includes(n)||bt.b.ay!==n-1)eb.push(tw.name+' boat not in its power-of-two cell');
    for(const [x,y] of [[l,bm],[r,bm],[(l+r)>>1,bm],[l,tp],[r,tp]])if(x<0||y<0||x>=t.MW*TILE||y>=t.MH*TILE||t.tAt(Math.floor(x/TILE),Math.floor(y/TILE))!==t.T_WATER)eb.push(tw.name+' boat aground at '+x+','+y)}}
  ok(nb&&ncog&&!eb.length,nb+' boats moored at the ports’ piers (levels 1 to 3, '+ncog+' of them cogs): in power-of-two cells, afloat and clear of their piers'+(eb.length?': '+eb.slice(0,8).join('; '):''));
  // ---- sites: on open ground, nothing painted on the map inside or over them

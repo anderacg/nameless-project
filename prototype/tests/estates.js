@@ -77,11 +77,11 @@ try{
  // saves
  G.mode='world';G.modal=false;t.hidePanel();ash.bld.mine=0;ash.bld.farm=2;ash.wall=3;fill(),W.caravans=[t.sendCaravan(from)].filter(Boolean);const nc=W.caravans.length;t.saveGame(true);ash.bld.farm=0;ash.wall=0;W.caravans=[];t.act('load');
  ok(t.townBy('Ashford').bld.farm===2&&t.townBy('Ashford').wall===3&&W.caravans.length===nc,'estates, walls and caravans survive a reload');
- // the clock: a day lasts 2 minutes at 1x; 60% daylight, 40% dusk, night and dawn
+ // the clock: a day lasts 3 minutes at 1x (Phase 1, D9: it was 2); 60% daylight, 40% dusk, night and dawn
  {W.lords=[];t.bandits.length=0;W.monsters=[];W.critters=[];W.caravans=[];G.mode='world';G.modal=false;t.hidePanel();t.setSpeed(1);G.paused=false;G.clock=0;G.encCool=99;
   const far=[30,60,90,120,150].flatMap(x=>[30,60,90,120].map(y=>({x:(x+.5)*16,y:(y+.5)*16}))).filter(p=>t.passable(t.terrAt(p.x,p.y))).sort((a,b)=>Math.min(...t.TOWNS.map(o=>Math.hypot(o.x-b.x,o.y-b.y)))-Math.min(...t.TOWNS.map(o=>Math.hypot(o.x-a.x,o.y-a.y))))[0];
-  P.x=far.x;P.y=far.y;P.tx=null;const d0=G.day;for(let i=0;i<119;i++){G.encCool=99;t.updateWorld(1)}const mid=G.day;for(let i=0;i<2;i++){G.encCool=99;t.updateWorld(1)}
-  ok(mid===d0&&G.day===d0+1,'a day on the map lasts 120 seconds at 1x');
+  P.x=far.x;P.y=far.y;P.tx=null;const d0=G.day;for(let i=0;i<179;i++){G.encCool=99;t.updateWorld(1)}const mid=G.day;for(let i=0;i<2;i++){G.encCool=99;t.updateWorld(1)}
+  ok(mid===d0&&G.day===d0+1,'a day on the map lasts 180 seconds at 1x');
   G.clock=t.DAY*.59;const l=t.darkness();G.clock=t.DAY*.61;const dusk=t.darkness();G.clock=t.DAY*.8;const n=t.darkness();ok(l===0&&dusk>0&&dusk<1&&n===1,'daylight for 60% of the day, then dusk and night ('+t.timeOfDay()+')');G.mode='world'}
  t.updateHUD(true);P.x=ash.x;P.y=ash.y+40;G.clock=t.DAY*.2;for(let i=0;i<60;i++)t.updateFolk(.05);t.frame();ok(true,'estates, walls, folk and caravans draw');
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}
