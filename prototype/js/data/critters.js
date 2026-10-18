@@ -24,4 +24,4 @@ const GRAZE={cow:{on:['open'],clim:['grass','swamp','frost']},sheep:{on:['open',
   goat:{on:['open','hills'],clim:null},hen:{on:['open'],clim:null}};
 // which animals each people keeps
 const LIVESTOCK={human:['cow','sheep','pig','hen'],dwarf:['goat','pig','sheep'],elf:['sheep','hen','goat'],orc:['pig','goat','cow']};
-const CRITTER_CAP=Math.round(40*MAP_DENS),CRITTER_START=Math.round(32*MAP_DENS);
+const CRITTER_CAP=density().critterCap,CRITTER_START=density().critterStart;

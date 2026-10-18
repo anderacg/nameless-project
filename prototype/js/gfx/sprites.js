@@ -108,10 +108,13 @@ const PAL={
   desert:{g:['#d8b86a','#d2b064'],s:['#e6c87e','#b8944c'],road:['#c9a868','#dcc084','#a8884c'],tree:['#5a8a3a','#6a9a44','#7aaa50'],hill:['#9a5a32','#b5733e','#c8885a','#dca070'],mini:['#d8b86a','#7a9a44','#b5733e','#4a8ab8','#c9a868','#9a6a4a']},
   swamp:{g:['#4a5a34','#465630'],s:['#5a6a3a','#3a4a2a'],road:['#7a6a48','#8a7a58','#5a4a34'],tree:['#2a3a24','#3a4a2a','#5a4a34'],hill:['#5a5a3a','#6a6a46','#7a7a52','#8a8a5c'],mini:['#4a5a34','#2a3a24','#6a6a46','#3d5a4a','#7a6a48','#8e95a6']}
 };
-// painted on first use, when every script (and every estate plot) is ready
-let mapCv=null;
-const worldCv=()=>mapCv||(mapCv=paintWorld());
-const miniCv=mkc(MW,MH,g=>{for(let y=0;y<MH;y++)for(let x=0;x<MW;x++)rect(g,PAL[CLIMS[climate[y*MW+x]]].mini[tiles[y*MW+x]],x,y,1,1)});
+// the painted map is kept by chunks (worldart.js WorldArt); worldCv() is the whole of it as one canvas, painted on first use (when
+// every script and every estate plot is ready), for the blit until render.js draws by chunks, for the wiki and the tests
+const worldCv=()=>WorldArt.whole();
+// the minimap, made from the tile data (WorldArt.mini), under the name render.js reads; made now, from the map as the scripts
+// leave it (as it always was: the roads lots.js leads to the gates come after it), and again when next shown after
+// WorldArt.invalidate()
+Object.defineProperty(window,'miniCv',{get:()=>WorldArt.mini(),configurable:true});WorldArt.mini();
 /* battle arenas: one per climate, built when first needed */
 const ARENAS={};
 // (by climate and field size: only the field size in use kept, a huge field's ground being large)

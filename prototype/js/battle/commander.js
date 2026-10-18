@@ -323,7 +323,7 @@ function captain(team,key){
   // (its temperament, once, from its army's troops (temperFor); the enemy's style told as the battle opens)
   const Q=captainMem(ck);if(B.fog&&Q.seen==null)Q.seen=B.t;if(Q.temper===undefined){Q.temper=temperFor(team,key);if(ck===1&&TEMPER_SAY[Q.temper])log(TEMPER_SAY[Q.temper])}
   // (a beaten enemy army falls back as one, rather than fighting to the last man; once begun it does not turn round)
-  if(team===1&&key==null&&!B.noMorale&&(B.fallBack||beatenArmy(N0,S,temperOf(ck)))){if(!B.fallBack){B.fallBack=true;log('The enemy falls back.','good')}for(const id of Object.values(N0).flat())B.groups[id].withdraw();return N0}
+  if(team===1&&key==null&&!B.noMorale&&(B.fallBack||beatenArmy(N0,S,temperOf(ck)))){if(!B.fallBack){B.fallBack=true;log('The enemy falls back.','good');battleEvent('fallback',{team})}for(const id of Object.values(N0).flat())B.groups[id].withdraw();return N0}
   const post=Q.post=Q.commit?'attack':typePost(team,S)||posture(ck,S);// (once it has gone in after a lull, it stays in; a battle type's first)
   // (a group withdrawing (your order, before Auto) is left to it, as captainFinish does: the AI never takes a withdrawal back)
   const N=Object.fromEntries(Object.entries(N0).map(([k,l])=>[k,l.filter(id=>B.groups[id].order!=='withdraw')]));

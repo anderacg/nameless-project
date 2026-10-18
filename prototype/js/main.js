@@ -15,8 +15,8 @@ function loop(now){
   audioWatch();// (the music follows the scene; a town, a meeting, a new day, a battle's start are heard: music.js)
   frame();requestAnimationFrame(loop);
 }
-P.x=(TOWNS[0].tx+.5)*TILE;P.y=(TOWNS[0].ty+2.5)*TILE;
-initWorld();showTitle();updateHUD(true);requestAnimationFrame(loop);
+P.x=(startHolding().tx+.5)*TILE;P.y=(startHolding().ty+2.5)*TILE;
+initWorld();worldKeep();showTitle();updateHUD(true);requestAnimationFrame(loop);// (worldKeep: the world as it first stands, every new game's start)
 DevConsole.init();
 
 // Ashmark.html?test=<suite> runs a headless test suite from tests/ (see tests/run-tests.sh); visual/<scene> sets up a screenshot

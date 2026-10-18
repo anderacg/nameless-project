@@ -1,6 +1,6 @@
 # A bigger, seeded world: design
 
-**Status:** **Approved by the owner 2026-10-18 (D1–D39 as recommended).** Final design, revision 3. Nothing is built yet. Written against the working tree of `battle-rts-and-world` (with its uncommitted changes). Phase 0 is ready to launch (§15.1).
+**Status:** **Approved by the owner 2026-10-18 (D1–D39 as recommended).** Final design, revision 3. Phase 0 wave 1 is built (2026-10-18, §2.2). Written against the working tree of `battle-rts-and-world` (with its uncommitted changes). Phase 0 is ready to launch (§15.1).
 **Plan item:** IMPLEMENTATION_PLAN "Deferred: Procedural world (a seeded map)", made active by the owner on 2026-10-18. It also prepares world cliffs, which battles will take their cliffs from (TERRAIN_DESIGN §8).
 **Readers:** the owner, whose decisions are recorded in §16, and the developer agents who will build it.
 
@@ -145,7 +145,7 @@ It runs under `-Seed 1`. Every Phase 0 step must reproduce all eight.
 
 **Order and split** (5 agents at most, by file; full launch plan with file lists and checks in §15.1):
 - **Wave 0:** `tests/worldprint.js` and its baseline, alone and first.
-- **Wave 1:** R1+R2+R3 (A); R4 (B); R6 (C); R5 except `core.js`, `ships.js` and `territory.js` (D); the battle agent on REFACTOR items 11 and 13.
+- **Wave 1:** R1+R2+R3 (A); R4 (B); R6 (C); R5 except `core.js`, `ships.js` and `territory.js` (D); the battle agent on REFACTOR items 11 and 13. **Done 2026-10-18:** R1–R6 and battle items 11 and 13, merged with their seams (`capitalOf`/`startHolding` at the call sites, `installClassic` making the classic holdings, `compTown` everywhere, the companion radii in `WORLD_SCALE.ai`, `FIEF0` on `onWorld`, `WorldArt.invalidate` on `onWorld`). W5 and W6 were re-recorded on purpose: begin now repaints the world and the minimap for its own lots (they were the title screen's). **Left for wave 2:** D's `core.js` `MAP_DENS`/`BANDITS`/`MONSTER_CAP` from `density()`, `ships.js` `SHIP_CAP` and `moveStep`, `territory.js` `land.friendly`/`pacify`; C's `render.js` switch to `WorldArt.draw` and `WorldArt.mini` (E); `sites.js` and `quests.js` `TOWNS[0]` to `startHolding()` (A).
 - **Wave 2**, once wave 1 has landed: R10+R11+R12+R13 (A); R9+R14 (B); R7+R8 and R5's territory constants (E); R5's `core.js` and `ships.js` lines (D); R15 (the battle agent).
 - **Wave 3**, once wave 2 has landed: R17 (A, needs R1 and R15); R16 (the battle agent, after R15).
 - **Phase 0 total: L**, about 18–21 agent sessions, mostly in parallel.
@@ -700,6 +700,8 @@ Seasons exist only as far as these rivers and a few small things need.
 ### 6.7 Ready for cliffs
 
 The world stores elevation in 4 terrace levels and cliff-edge bits (`WM.edge`: E 1, S 2, W 4, N 8). These are the same bits as the battle's `B.terrain.wall` and `PX.worldHill(opts.edge)`. Escarpments come in Phase 7.
+
+**Desert mesas** (decided by the owner, 2026-10-18). Desert regions get mesas and escarpments on the world map, in sandstone, matching the world map's buttes. A battle fought there gets a mesa on that side: a flat-topped butte, sheer layered sandstone cliffs, and 1–2 natural sand ramps, in the purely natural ramp style. Until Phase 7, desert battlefields keep dunes, spires and oases only, with no cliffs or ramps (the owner's "world first" rule).
 
 ---
 
@@ -1483,7 +1485,7 @@ Agents are split by files that don't overlap (5 at most). **The `WM` shape (§9.
 | **4b. Founding your own holding** (§7) | Founding sites and free founding; the shared tier model (camp, hamlet, village, town, city or castle) with `TIERS`; upgrade and tier-down projects; the centre growing in place; your realm from the first camp (tension, governors, protection of hamlets); AI tier changes; raids and upkeep; the settler start and the two settings; tier art per people | **A:** `data/holdings.js` (`camp`, `tier`/`next` in use, `TIERS`), `world/lots.js` (reserved block, centre replacement). **B:** `world/founding.js` (new), `world/estates.js` (tier projects), `world/siege.js` (`fiefBody` upgrade row), `ui/town.js`. **C:** `world/sites.js` (`FoundingSite`), `world/worldplace.js` (sites), `world/worldsettings.js`, `core/session.js` (settler start). **D:** `engine/pieces.js` (settler camp, stake), `engine/buildings.js` (hamlet centre, city citadel variant), `engine/gallery.html` (`?view=tiers`). **E:** `world/realms.js` (tension, AI tiers), `world/brains.js` (raids, burning), `world/companions.js` (governors), `tests/founding.js`, `tests/tiers.js` | **L** |
 | **5. Living rivers** | The calendar and `SEASON_PROFILE`; seasonal rivers (freeze, flood, dry, flash) by flag and climate; season overlays and the all-year look; crossing toggles; toll bridges and ferries' fees; barges (`BargeParty`), passage, river trade; river bandits; lords holding crossings; battle water by season; `RIVER_EVENTS` | **A:** `world/calendar.js` (new), `world/map.js` (`passableAt`, `riverState`), `world/world.js` (`dayTick` hook, HUD date). **B:** `world/ships.js` (river water, passage), `world/caravans.js` (`BargeParty`, tolls), `world/economy.js` (toll income). **C:** `battle/terrain.js`, `battle/encounters.js` (season water, ford ambush). **D:** `engine/worldnature.js` (`PX.riverSeason`), `engine/pieces.js` (barge, toll house, ferry), `gfx/worldart.js` (overlays). **E:** `world/brains.js` (river bands, `hold`), `world/events.js`, `tests/rivers.js` | **L** |
 | **6. Retune per preset** | `WORLD_SCALE` and `DENSITY` values; AI by travel days; `worldsim` per preset; `visual/worldscale`; wiki tables | **A:** `data/world.js`. **B:** `tests/visual/worldsim.js`, `tests/visual/worldscale.js`, `tests/visual/perf.js`. **C:** `world/brains.js`, `world/realms.js`. **D:** `wiki.html`, `README.md` | **M** |
-| **7. World cliffs** | Escarpments into `WM.edge` with passes; edge-aware movement, roads, territory and router; faces in the art and depth index; battles take their cliffs from the world | **A:** `world/worldgen.js`, `world/map.js`, `world/router.js`. **B:** `engine/worldnature.js`, `gfx/worldart.js`. **C:** `battle/terrain.js`, `battle/encounters.js`. **D:** `tests/worldcliffs.js`, `tests/fieldvariety.js` | **M–L** |
+| **7. World cliffs** | Escarpments into `WM.edge` with passes, and desert mesas (§6.7); edge-aware movement, roads, territory and router; faces in the art and depth index; battles take their cliffs from the world (in the desert, a mesa with 1–2 natural sand ramps) | **A:** `world/worldgen.js`, `world/map.js`, `world/router.js`. **B:** `engine/worldnature.js`, `gfx/worldart.js`. **C:** `battle/terrain.js`, `battle/encounters.js`. **D:** `tests/worldcliffs.js`, `tests/fieldvariety.js` | **M–L** |
 
 **Order and playability:**
 - **0:** the same game, better structure.
@@ -1574,7 +1576,7 @@ Phases 2b, 3, 4 and 5 can overlap on different files (2b needs only Phase 2's se
 
 ## 16. Owner decisions
 
-**All 39 decisions were approved by the owner on 2026-10-18, as recommended.** Each row gives the decision and what was decided.
+**All 39 decisions were approved by the owner on 2026-10-18, as recommended**; D40 was decided by the owner the same day. Each row gives the decision and what was decided.
 
 | # | Decision | Decided (as recommended, 2026-10-18) |
 |---|---|---|
@@ -1617,3 +1619,4 @@ Phases 2b, 3, 4 and 5 can overlap on different files (2b needs only Phase 2's se
 | D37 | Is your realm there from the first camp? | **Yes:** it is today's Free Banner (`'player'`), which already holds captured fiefs. Territory from each holding's reach; tension with realms you crowd; hamlets join by protection; **companions as governors** in v1; lords, vassals, laws and kingdom titles deferred (roadmap "founding your own kingdom"). |
 | D38 | Names and settlers? | **You name each founded holding** (a generated name suggested). Founding takes **6 of your soldiers** as its first people (never companions), plus 200 gold, 10 timber, 5 tools and 20 food (in `TIERS`). |
 | D39 | Risks for new holdings? | **Moderate:** bands raid camps, hamlets and villages (1 in 12 a day when a stronger band is within 8 tiles; you are told and can ride back); hostile lords burn camps and hamlets and besiege towns; daily upkeep in food and tools; 30 days of neglect costs prosperity. All in `FOUNDING`. |
+| D40 | Cliffs in the desert? (decided by the owner, 2026-10-18) | **Desert mesas** (§6.7): mesas and escarpments in sandstone on the world map; battles there get a mesa on that side (a flat-topped butte, sheer layered sandstone cliffs, 1–2 natural sand ramps). Until Phase 7, desert fields keep dunes, spires and oases only, with no cliffs or ramps. |

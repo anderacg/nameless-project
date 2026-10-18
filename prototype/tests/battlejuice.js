@@ -33,10 +33,13 @@ window.RUN=()=>{const t=T,L=t.BattleLab,G=t.G,P=t.P,o=[],ok=(c,m)=>o.push((c?'PA
  f.b.t+=1.1;t.flankMul(u,rear);ok(said(/is flanked!$/)===1,'and said again after');
  t.calloutTick(5);f.b.t+=99;t.flankMul(u,{...rear,arrow:true});ok(said(/is flanked!$/)===0,'arrows in the flank call nothing, as their small word');
  const fu=f.e[0],fa=t.facing(fu);t.flankMul(fu,{x:fu.x-Math.cos(fa)*20,y:fu.y-Math.sin(fa)*20});ok(all().some(c=>c.text==='Enemy '+f.foe.name+' is flanked!'&&c.team===1),'flanking them is called out too, in their colour');
- // ----- the enemy falls back (commander.js sets B.fallBack; it logs it itself)
+ // ----- the enemy falls back (commander.js sets B.fallBack, logs it itself and tells it: battleEvent 'fallback'; the HUD polls nothing)
  f=start();n0=G.msgs.length;t.calloutTick(0);ok(!all().length,'no fall-back banner before it happens');
- f.b.fallBack=true;t.calloutTick(0);t.calloutTick(2);t.calloutTick(2);ok(C().fell&&banners().length+C().q.length<=1&&all().filter(c=>c.text==='The enemy falls back').length<=1&&G.msgs.length===n0,'the fall-back is called out once and not logged twice');
- f=start();f.b.fallBack=true;t.calloutTick(0);el=banners();ok(el.length===1&&el[0].textContent==='The enemy falls back'&&el[0].classList.contains('foe'),'the fall-back banner is theirs');
+ f.b.fallBack=true;t.calloutTick(0);ok(!all().length,'B.fallBack alone shows nothing: the HUD hears the event');
+ t.battleEvent('fallback',{team:1});t.calloutTick(0);t.calloutTick(2);t.calloutTick(2);ok(banners().length+C().q.length<=1&&all().filter(c=>c.text==='The enemy falls back').length<=1&&G.msgs.length===n0,'the fall-back is called out once and not logged twice');
+ f=start();t.battleEvent('fallback',{team:1});t.calloutTick(0);el=banners();ok(el.length===1&&el[0].textContent==='The enemy falls back'&&el[0].classList.contains('foe'),'the fall-back banner is theirs');
+ f=start();n0=G.msgs.length;const beaten=window.beatenArmy;window.beatenArmy=()=>true;try{t.captain(1);t.captain(1)}finally{window.beatenArmy=beaten}t.calloutTick(0);
+ ok(f.b.fallBack&&all().filter(c=>c.text==='The enemy falls back').length===1&&logged(n0,/falls back/)===1,'their captain, beaten, tells the fall-back once however often it thinks: one banner, one log line');
  // ----- a leader falls
  f=start({leftGroups:[{type:'hum_foot',count:20},{type:'hero',count:1}]});n0=G.msgs.length;const chief=f.e[0];chief.leader={name:'Chief'};t.applyDmg(chief,chief.hp+1,1,'slash',f.a[0]);
  ok(said(/^Their leader falls!$/)===1&&logged(n0,/Their leader falls!/)===1&&f.b.floats.some(x=>x.t==='Their leader falls!'),'their leader falls: banner, log line, and the float kept');

@@ -30,20 +30,20 @@ function spawnMonster(initial){
   const M=MONSTERS[id];
   for(let k=0;k<200;k++){
     const x=rint(2,MW-3)*TILE+8,y=rint(2,MH-3)*TILE+8,tags=habitatAt(x,y);
-    if(!M.where.some(w=>tags.includes(w))||Math.hypot(x-P.x,y-P.y)<(initial?180:240)||TOWNS.some(t=>Math.hypot(t.x-x,t.y-y)<64))continue;
+    if(!M.where.some(w=>tags.includes(w))||Math.hypot(x-P.x,y-P.y)<WORLD_SCALE.spawn.monster[initial?0:1]||TOWNS.some(t=>Math.hypot(t.x-x,t.y-y)<WORLD_SCALE.spawn.monsterHold))continue;
     W.monsters.push(asMonster({id,x,y,hx:x,hy:y,lv:monLevel(),n:rint(M.count[0],M.count[1]),t:0,a:0,cool:0}));return;
   }
 }
 function monsterDay(){for(let k=0;k<3;k++)if(W.monsters.length<MONSTER_CAP&&Math.random()<.6)spawnMonster(false);mythicDay()}
 function updateMonsters(d){
-  const hide=hiddenAt(P.x,P.y)?.55:1;
+  const hide=hiddenAt(P.x,P.y)?.55:1,A=WORLD_SCALE.ai;
   for(const m of W.monsters){
     if(MONSTERS[m.id].mythic){if(roamMythic(m,d))return true;continue}
     const M=MONSTERS[m.id],dx=P.x-m.x,dy=P.y-m.y,dist=Math.hypot(dx,dy);m.cool=Math.max(0,m.cool-d);
-    const st=stance(monPower(m)),hunt=M.aggro&&Math.hypot(P.x-m.hx,P.y-m.hy)<140;
-    if(m.cool>0||!stanceMove(m,st,dist,dx,dy,70*hide,26*Math.min(1,speedAt(m.x,m.y)||1)*d,hunt)){m.t-=d;if(m.t<=0){m.t=2+Math.random()*4;m.a=Math.random()*6.283}
+    const st=stance(monPower(m)),hunt=M.aggro&&Math.hypot(P.x-m.hx,P.y-m.hy)<A.lairHunt;
+    if(m.cool>0||!stanceMove(m,st,dist,dx,dy,WORLD_SCALE.sight.monster*hide,moveStep(26*Math.min(1,speedAt(m.x,m.y)||1),d),hunt)){m.t-=d;if(m.t<=0){m.t=2+Math.random()*4;m.a=Math.random()*6.283}
       // wander, but stay near the lair
-      const hx=m.hx-m.x,hy=m.hy-m.y;if(Math.hypot(hx,hy)>60)m.a=Math.atan2(hy,hx);walk(m,Math.cos(m.a),Math.sin(m.a),10*d)}
+      const hx=m.hx-m.x,hy=m.hy-m.y;if(Math.hypot(hx,hy)>A.lairLeash)m.a=Math.atan2(hy,hx);walk(m,Math.cos(m.a),Math.sin(m.a),moveStep(10,d))}
     if(M.aggro&&stance(monPower(m))==='attack'&&dist<10&&m.cool<=0&&G.encCool<=0&&!G.modal){startMonster(m);return true}
   }
   return false;
@@ -73,7 +73,7 @@ function spawnMythic(id){
   const M=MONSTERS[id],Y=M.mythic,lairs=Y.lair.map(l=>LAIR_TILES[l]());
   // its favorite ground first; the others only if that keeps failing
   for(let k=0;k<160;k++){const tx=rint(3,MW-4),ty=rint(3,MH-4),tt=tAt(tx,ty),ok=k<100?tt===lairs[0]:lairs.includes(tt);if(!ok)continue;
-    const x=(tx+.5)*TILE,y=(ty+.5)*TILE;if(Math.hypot(x-P.x,y-P.y)<200)continue;
+    const x=(tx+.5)*TILE,y=(ty+.5)*TILE;if(Math.hypot(x-P.x,y-P.y)<WORLD_SCALE.spawn.mythic)continue;
     const m=asMonster({id,x,y,hx:x,hy:y,tx:x,ty:y,lv:1,n:1,t:0,a:0,cool:5,dir:1});W.monsters.push(m);
     log(cap1(an(M.n.toLowerCase()))+' has been sighted near '+nearestOf(m,TOWNS).name+'!','bad');return m}
   W.mythic[id]={back:G.day+2};return null;
@@ -81,16 +81,16 @@ function spawnMythic(id){
 function mythicDay(){
   for(const id of mythicIds()){const M=MONSTERS[id],Y=M.mythic,m=mythicOf(id),st=W.mythic[id]||(W.mythic[id]={back:Y.first});
     if(!m){if(G.day>=st.back)spawnMythic(id);continue}
-    if(Y.scorch&&Math.random()<Y.scorch){const t=nearestOf(m,TOWNS);if(Math.hypot(t.x-m.x,t.y-m.y)<200){t.gar=Math.floor(t.gar/2);m.tx=t.x;m.ty=t.y-20;m.t=6;log('The '+M.n.toLowerCase()+' burns the fields of '+t.name+'. Its garrison is halved.','bad')}}}
+    if(Y.scorch&&Math.random()<Y.scorch){const t=nearestOf(m,TOWNS);if(Math.hypot(t.x-m.x,t.y-m.y)<WORLD_SCALE.ai.mythicScorch){t.gar=Math.floor(t.gar/2);m.tx=t.x;m.ty=t.y-20;m.t=6;log('The '+M.n.toLowerCase()+' burns the fields of '+t.name+'. Its garrison is halved.','bad')}}}
 }
 // one frame of a mythic monster: hunt you if it sees you, else roam; returns true if it starts a fight
 function roamMythic(m,d){
   const M=MONSTERS[m.id],Y=M.mythic;m.cool=Math.max(0,m.cool-d);
   const pd=Math.hypot(P.x-m.x,P.y-m.y),hunt=!P.stay&&pd<Y.see*(hiddenAt(P.x,P.y)?.55:1)&&m.cool<=0;let tx=m.tx,ty=m.ty;
   if(hunt){tx=P.x;ty=P.y}
-  else{m.t-=d;if(m.t<=0||Math.hypot(tx-m.x,ty-m.y)<4){m.t=4+Math.random()*5;m.tx=tx=clamp(m.x+rint(-120,120),24,MW*TILE-24);m.ty=ty=clamp(m.y+rint(-90,90),24,MH*TILE-24)}}
+  else{m.t-=d;if(m.t<=0||Math.hypot(tx-m.x,ty-m.y)<4){m.t=4+Math.random()*5;const R=WORLD_SCALE.ai.mythicRoam;m.tx=tx=clamp(m.x+rint(-R[0],R[0]),24,MW*TILE-24);m.ty=ty=clamp(m.y+rint(-R[1],R[1]),24,MH*TILE-24)}}
   const dx=tx-m.x,dy=ty-m.y,dl=Math.hypot(dx,dy);
-  if(dl>1){const sp=Math.min(dl,Y.speed[hunt?1:0]*d);if(Y.fly){m.x+=dx/dl*sp;m.y+=dy/dl*sp}else walk(m,dx,dy,sp);m.dir=dx>=0?1:-1}
+  if(dl>1){const sp=Math.min(dl,moveStep(Y.speed[hunt?1:0],d));if(Y.fly){m.x+=dx/dl*sp;m.y+=dy/dl*sp}else walk(m,dx,dy,sp);m.dir=dx>=0?1:-1}
   if(Y.ravage)for(const l of W.lords)if(!l.dead&&!l.inside&&!((l.dcool||0)>G.day)&&Math.hypot(l.x-m.x,l.y-m.y)<16){l.dcool=G.day+3;cull(l,Y.ravage);log('The '+M.n.toLowerCase()+' falls upon the army of '+l.name+'. '+(Y.ravage>=.5?'Half':'Many')+' are lost.','bad');if(l.troops.length<3)defeatLord(l)}
   if(pd<12&&m.cool<=0&&G.encCool<=0&&!G.modal){startMonster(m);return true}
   return false;

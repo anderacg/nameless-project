@@ -42,6 +42,15 @@ try{
    for(const m of s.matchAll(new RegExp('(?<![\\w$.])([\\w$]+)\\.([\\w$]+)'+W1,'g')))if(vars.has(m[1]))hit(m[1],m[2]);
    for(const m of s.matchAll(new RegExp('B\\.groups\\[[^\\]]+\\]\\.([\\w$]+)'+W1,'g')))hit('B.groups[…]',m[1])}
   ok(files.length>0&&files.every(([f,s])=>s)&&wrote.size>=5&&!bad.length,'the AI’s notes on a group are all in AI_NOTES ('+[...wrote].sort().join(' ')+' in '+files.map(([f])=>f.split('/').pop()).join(', ')+')'+(bad.length?': not in it: '+bad.join('; '):''))}
+ // ---- the fight never calls the HUD or the lab: it tells them (battle.js battleEvent; battlehud.js, lab.js and the commander
+ // bar listen). No callout*, bhud* or BattleLab.event call in js/battle/* (lab.js is the lab's own; ALLOW: HUD code kept beside
+ // its system: the commander bar, which your press of a power refreshes), and the HUD reads no B.fallBack (it hears it)
+ {const ALLOW={'commandpowers.js':['bhudPowers']},bad=[],files=srcs.filter(f=>/^js\/battle\/\w+\.js$/.test(f)&&f!=='js/battle/lab.js');
+  for(const f of files){const s=get(f),n=f.split('/').pop(),ok2=ALLOW[n]||[];
+   for(const m of s.matchAll(/(?<![\w$.])(callout\w*|bhud\w*)\s*\(|BattleLab\.event\s*\(/g)){const name=m[1]||'BattleLab.event',before=s.slice(Math.max(0,m.index-9),m.index);
+    if(/function\s$/.test(before)||ok2.includes(name))continue;bad.push(n+': '+name)}}
+  const hud=get('js/ui/battlehud.js'),told=files.map(f=>get(f)).join('\n').match(/battleEvent\('\w+'/g)||[];
+  ok(files.length>=20&&!bad.length&&!/B\.fallBack/.test(hud)&&told.length>=10,'the fight tells the HUD and the lab by battleEvent ('+[...new Set(told.map(x=>x.slice(13,-1)))].join(' ')+'), never calls them'+(bad.length?': '+bad.join('; '):'')+(/B\.fallBack/.test(hud)?'; battlehud.js polls B.fallBack':''))}
  ok(typeof t.BattleControl.prototype.suggest==='undefined','the unused advisory-target setter is removed; attack orders remain the focus-fire API');
  // ---- actions
  const want=['lr-','fg-','pt-','scene-','cv-','sg-','cap-','inv-','sk-','tree-','slot-','esc-','ev-','site-','herd-','wk-','rf-','es-','pl-','dlg-'];

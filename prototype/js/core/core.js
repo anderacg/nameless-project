@@ -2,7 +2,9 @@
 /* ---------- core: DOM handles, canvas, constants and tiny helpers ---------- */
 const $=s=>document.querySelector(s);
 const htmlText=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const TILE=16,MW=224,MH=160,DAY=12,SAVE='ashmark.save.v2';
+const TILE=16,DAY=12,SAVE='ashmark.save.v2';
+// the world's size in tiles: the map that is in's (useWorld, world/worldmap.js); the classic map's till then
+let MW=224,MH=160;
 // the view: the game's pixels across and down (VW x VH). The game fills the window: each game pixel a whole number of device
 // pixels (VIEW.h or more of them down, VIEW.w or more across on a narrow phone), so a bigger window sees more of the map
 const VIEW={h:320,w:400};
@@ -50,5 +52,9 @@ const ACTS={};
 function onAct(prefix,fn){if(!/^[a-z]+-$/.test(prefix))throw new Error('Action prefixes look like "name-": '+prefix);if(ACTS[prefix])throw new Error('Two systems claim the action prefix '+prefix);ACTS[prefix]=fn}
 // run a registered action; false if no system owns its prefix
 function routeAct(a,arg){const i=a.indexOf('-'),fn=i>0&&ACTS[a.slice(0,i+1)];if(!fn)return false;fn(a,arg);return true}
+// a world goes in: each system that keeps per-tile arrays or caches of the map claims its reset once with onWorld, and useWorld
+// (world/worldmap.js) runs them all, in the order they came, with the map. One claimed while a map is in runs at once for it.
+const WORLD_HOOKS=[];
+function onWorld(fn){WORLD_HOOKS.push(fn);if(typeof WM!=='undefined'&&WM)fn(WM)}
 const cap1=w=>w[0].toUpperCase()+w.slice(1);
 const an=w=>(/^[aeiou]/i.test(w)?'an ':'a ')+w;

@@ -26,8 +26,9 @@ function begin(k){
   for(const src of [b.sk,rc.sk])for(const s in src||{})P.apt[s]=(P.apt[s]||0)+.25*src[s];
   P.origin=originOf(k);P.tree=[P.origin];applyNode(P.origin,1);G.skSel=P.origin;
   P.gear.weapon=gearId(b.weapon||'sword',0);for(const g in b.cargo)invAdd('good',g,b.cargo[g]);if(b.ammo)invAdd('good',b.ammo[0],b.ammo[1]);
-  initWorld();W.sites=genSites();fogReset();initCritters();
-  const home=townBy(START_TOWN[P.race])||TOWNS[0];if(b.rep)P.rep[home.name]=b.rep;
+  // (a new game on the map: every system's world reset first, onWorld)
+  useWorld(WM);initWorld();W.sites=genSites();fogReset();initCritters();
+  const home=capitalOf(P.race);if(b.rep)P.rep[home.name]=b.rep;
   P.x=(home.tx+.5)*TILE;P.y=(home.ty+2.5)*TILE;G.mode='world';G.lastTown=home;
   for(let i=0;i<BANDITS;i++)spawnBandit(true);
   for(let i=0;i<MONSTER_START;i++)spawnMonster(true);

@@ -204,3 +204,11 @@ const BattleLab={
     if(typeof DevConsole!=='undefined')DevConsole.labStatus();return 'Exited test; campaign restored. No rewards or losses applied.';
   }
 };
+// the fight's events as telemetry rows, while a test runs (battle.js battleEvent)
+battleOn((type,d)=>{if(!(B.opts&&B.opts.sandbox&&BattleLab.active))return;const L=BattleLab,side=t=>t?'right':'left';
+  if(type==='rout'){L.event('group_routed',null,{groupId:d.r.groupId,shattered:d.r.shattered});for(const u of d.m)L.event('routed',u)}
+  else if(type==='rally')L.event('group_rallied',null,{groupId:d.r.groupId});
+  else if(type==='left')L.event('field_exit',d.u,{cause:d.u.rout?'routed':'withdrawn'});
+  else if(type==='withdraw')L.event('withdraw_order',null,{groupId:d.g.id,side:side(d.g.team)});
+  else if(type==='power')L.event('command_power',d.c,{side:side(d.team),power:d.id,groups:d.gs.map(g=>g.id)});
+  else if(type==='ability')L.event('ability',null,{groupId:d.g.id,ability:d.id})});

@@ -5,15 +5,15 @@
 // Realms ship their holdings' surplus to friendly holdings short of it; the goods move from one stock to the other, and the
 // receiving owner takes a toll. Bandits (unless the guards hold) and enemy lords take them. You can trade with them, demand a
 // toll, attack them for their cargo, or (with a fief) seize them.
-const CARAVAN_CAP=Math.round(24*MAP_DENS),CARAVAN_SPD=17;
+const CARAVAN_CAP=density().caravans,CARAVAN_SPD=17;
 
 /* realm caravans */
 // a holding's surplus: goods it holds well beyond its own ten days, which a caravan can take away
 const surplusOf=t=>{ensureEcon(t);return Object.keys(t.stock).map(g=>[g,Math.floor((t.stock[g]||0)-targetStock(t,g)*1.3)]).filter(([g,n])=>n>=4).sort((a,b)=>b[1]*GOODS[b[0]].base-a[1]*GOODS[a[0]].base)};
 // where a good is needed most: the friendly holding within reach whose stock is lowest against its own needs
 function neediest(t,g){
-  const ok=o=>o!==t&&o.owner&&(o.owner===t.owner||!atWar(o.owner,t.owner))&&!besieged(o)&&Math.hypot(o.tx-t.tx,o.ty-t.ty)>10&&Math.hypot(o.tx-t.tx,o.ty-t.ty)<90;
-  let best=null,bv=0;for(const o of TOWNS){if(!ok(o))continue;ensureEcon(o);const v=targetStock(o,g)/((o.stock[g]||0)+1)-Math.hypot(o.tx-t.tx,o.ty-t.ty)/150;if(v>bv){bv=v;best=o}}
+  const E=WORLD_SCALE.econ,ok=o=>o!==t&&o.owner&&(o.owner===t.owner||!atWar(o.owner,t.owner))&&!besieged(o)&&Math.hypot(o.tx-t.tx,o.ty-t.ty)>E.caravanNear&&Math.hypot(o.tx-t.tx,o.ty-t.ty)<E.caravanFar;
+  let best=null,bv=0;for(const o of TOWNS){if(!ok(o))continue;ensureEcon(o);const v=targetStock(o,g)/((o.stock[g]||0)+1)-Math.hypot(o.tx-t.tx,o.ty-t.ty)/E.caravanCost;if(v>bv){bv=v;best=o}}
   return bv>1.2?best:null;
 }
 // realms ship surplus to where it is short; the goods leave the source's stock and arrive in the destination's

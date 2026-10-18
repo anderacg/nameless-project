@@ -50,8 +50,9 @@ const PERKS={
 };
 const ROLES={scout:'Scout',surgeon:'Surgeon',quarter:'Quartermaster',guide:'Guide'};
 const COMPS={
-  // short: name in passing; rival: a companion they quarrel with when both ride with you
-  brann:{n:'Brann the Wolf',short:'Brann',rival:'elske',town:'Karn Hold',cost:120,look:'chief',d:'A ruthless sellsword. Likes ransoms and wins, hates running.',react:{ransom:2,win:1,flee:-2,release:-1,cruel:1,mercy:-1}},
-  elske:{n:'Sister Elske',short:'Elske',town:'Saltmere',cost:80,look:'militia',d:'An honorable healer. Wants prisoners freed, not sold.',react:{release:2,ransom:-2,hungry:-1,kind:2,cruel:-2,mercy:1}},
-  tavi:{n:'Tavi Quickfoot',short:'Tavi',town:'Ashford',cost:60,look:'ranger',d:'A cheerful scout. Hates going hungry or unpaid.',react:{win:1,hungry:-2,unpaid:-2,kind:1,cruel:-1}}
+  // short: name in passing; rival: a companion they quarrel with when both ride with you; town: whose tavern they wait in,
+  // race: their people (all drawn human: people.js), whose capital they wait in where the world has no such town (compTown)
+  brann:{n:'Brann the Wolf',short:'Brann',rival:'elske',town:'Karn Hold',race:'human',cost:120,look:'chief',d:'A ruthless sellsword. Likes ransoms and wins, hates running.',react:{ransom:2,win:1,flee:-2,release:-1,cruel:1,mercy:-1}},
+  elske:{n:'Sister Elske',short:'Elske',town:'Saltmere',race:'human',cost:80,look:'militia',d:'An honorable healer. Wants prisoners freed, not sold.',react:{release:2,ransom:-2,hungry:-1,kind:2,cruel:-2,mercy:1}},
+  tavi:{n:'Tavi Quickfoot',short:'Tavi',town:'Ashford',race:'human',cost:60,look:'ranger',d:'A cheerful scout. Hates going hungry or unpaid.',react:{win:1,hungry:-2,unpaid:-2,kind:1,cruel:-1}}
 };

@@ -71,7 +71,7 @@ function estateDay(){
     if(t.work){if(besieged(t))t.work.done++;else if(G.day>=t.work.done)finishWork(t)}
     if(t.owner==='player'||t.work||besieged(t)||ruined(t)||Math.random()>.05)continue;
     // what to build: walls on the frontier, then whatever the holding is shortest of
-    const front=TOWNS.some(o=>o!==t&&atWar(t.owner,o.owner)&&Math.hypot(o.tx-t.tx,o.ty-t.ty)<60);
+    const front=TOWNS.some(o=>o!==t&&atWar(t.owner,o.owner)&&Math.hypot(o.tx-t.tx,o.ty-t.ty)<WORLD_SCALE.war.front);
     // a full holding builds a house first (its people have nowhere else to go)
     if(t.lots&&t.pop>=housing(t)*.9&&!matsLacking(t,HOUSE_COST.mats).length&&payRealm(t.owner,HOUSE_COST.gold)){if(startWork(t,'house',HOUSE_DAYS))takeMats(t,HOUSE_COST.mats);else refundRealm(t.owner,HOUSE_COST.gold);continue}// (no free plot: nothing spent)
     let k=null;if(wallOf(t)<t.T.wallMax&&(front||Math.random()<.2))k='wall';
@@ -98,7 +98,7 @@ const breach=t=>{t.wall=Math.max(0,wallOf(t)-1);if(t.work&&t.work.k==='wall')t.w
 
 /* someone else's estate: plunder or burn it */
 /* estates: plunder or burn what a holding has built in its fields */
-const estateGuards=(t,k)=>{const lv=bldLv(t,k),near=Math.hypot(bldSpots(t)[k].x-t.x,bldSpots(t)[k].y-t.y)<7*TILE,n=2+2*lv+(near?Math.min(4,t.gar||0):0),a=[];
+const estateGuards=(t,k)=>{const lv=bldLv(t,k),near=Math.hypot(bldSpots(t)[k].x-t.x,bldSpots(t)[k].y-t.y)<WORLD_SCALE.land.estateGuard*TILE,n=2+2*lv+(near?Math.min(4,t.gar||0):0),a=[];
   for(let i=0;i<n;i++){const c=RACES[t.races[i%t.races.length]];a.push(i%3===2?c.ranged:c.melee)}return a};
 function estateMeet(o){
   const t=townBy(o.town),k=o.k;if(!t||!bldLv(t,k))return;G.est=o;G.mode='dialog';P.tx=null;G.chase=null;ensureEcon(t);

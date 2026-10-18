@@ -48,6 +48,28 @@ function jostle(){
       last=j;const b=U[j];if(b.hp<=0||a.team===b.team&&(a.rout||b.rout||withdrawing(a)||withdrawing(b)))continue;const dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy);const R=a.s.big||b.s.big?18:8;if(d<R&&d>.01){const p=(R-d)*.5/d;if(!a.hero){a.x-=dx*p;a.y-=dy*p;S.refile(i)}if(!b.hero){b.x+=dx*p;b.y+=dy*p;S.refile(j)}}}}}
   finally{spatialClose()}
 }
+// off the rocks and trees (obstaclePush; the big ones shoulder through), inside the field, and no step into rock or impassable
+// water, nor over a cliff its blocked way: refused or slid along (terrain.js); was: where each stood as the frame began
+function keepOffObstacles(was){
+  for(const u of B.units){if(u.hp<=0||u.s.big)continue;for(const o of B.obs)obstaclePush(u,o,was.get(u))}
+  for(const u of B.units){u.x=clamp(u.x,8,BW-8);u.y=clamp(u.y,fieldTop(),fieldBot())}
+  if(B.terrain)terrainHold(was)}
+// the fight over? one side with no one left fighting (or you withdrew: morale.js retreatNow); a side running off told in the log
+function checkBattleOver(){
+  if(B.over)return;const ap=B.units.filter(u=>u.team===0&&fighting(u)).length,ae=B.units.filter(u=>u.team===1&&fighting(u)).length;
+  if(ae>0&&retreating())retreatNow();
+  else if(ae===0||ap===0){B.over=true;B.endT=END_WAIT;B.win=ae===0;const run=B.units.some(u=>u.hp>0&&u.rout&&u.team===(B.win?1:0))||(B.win?B.fledFoes:B.fledMine);
+    if(run){B.routed=B.win?1:0;log(B.win?'The enemy breaks and flees the field.':'Your men break and run.',B.win?'good':'bad')}}}
+/* battle events: the fight tells what just happened (battleEvent(type, d)) and whoever shows or records it listens (battleOn):
+   the banners and cards (battlehud.js), the commander bar's cue (commandpowers.js), the lab's telemetry (lab.js). Listeners run
+   at once, in the order they were added, so they read the state of that moment; they never change the fight. The events (d):
+   rout {r, m: its men}, rally {r} (r: a BattleResolve, morale.js); flank {u, src}, leader {u} (a leader falls), down {u} (a
+   soldier falls: attacks.js), left {u} (off the field: morale.js leaveField); ambush {u} (terrain.js ambushMul); fallback
+   {team} (an army falls back as one: commander.js); btype {text, team} (the battle's type, as it opens: setup.js); power
+   {team, id, c, gs} (commandpowers.js); ability {g, id} (unitabilities.js); withdraw {g} (battlecontrol.js) */
+const BATTLE_EARS=[];
+const battleOn=f=>{BATTLE_EARS.push(f)};
+function battleEvent(type,d){for(const f of BATTLE_EARS)f(type,d)}
 // Actor execution lives in actors.js; shared group defaults and frame orchestration remain here.
 // rt is real time; fighting runs on dt, slowed by BATTLE_PACE, while effects keep real time
 function updateBattle(rt){
@@ -66,16 +88,11 @@ function updateBattle(rt){
     updateNonHeroActors(dt);
     // (soldiers jostle apart; those running off the field, withdrawn or routed, slip through their own side)
     jostle();
-    for(const u of B.units){if(u.hp<=0||u.s.big)continue;for(const o of B.obs)obstaclePush(u,o,was.get(u))}
-    for(const u of B.units){u.x=clamp(u.x,8,BW-8);u.y=clamp(u.y,fieldTop(),fieldBot())}
-    if(B.terrain)terrainHold(was);// (no step into rock or impassable water, nor over a cliff its blocked way: refused or slid along, terrain.js)
+    keepOffObstacles(was);
     updateProjectiles(dt);
     sightStep();// (who sees whom, every SIGHT.every s: hidden in woods or behind a rise, out of sight in the fog, terrain.js; nothing with neither)
     moraleTick(dt);if(B.opts.sandbox&&BattleLab.active)BattleLab.sampleMorale();// (morale.js)
-    if(!B.over){const ap=B.units.filter(u=>u.team===0&&fighting(u)).length,ae=B.units.filter(u=>u.team===1&&fighting(u)).length;
-    if(ae>0&&retreating())retreatNow();// (you withdrew: morale.js)
-    else if(ae===0||ap===0){B.over=true;B.endT=END_WAIT;B.win=ae===0;const run=B.units.some(u=>u.hp>0&&u.rout&&u.team===(B.win?1:0))||(B.win?B.fledFoes:B.fledMine);
-      if(run){B.routed=B.win?1:0;log(B.win?'The enemy breaks and flees the field.':'Your men break and run.',B.win?'good':'bad')}}}
+    checkBattleOver();
   }
   if(B.over){B.endT-=rt;if(B.endT<=0){finishBattle();return}}
   for(const p of B.parts){p.life-=rt;if(p.stuck)continue;p.x+=p.vx*rt;p.y+=p.vy*rt;p.vy+=90*rt}B.parts=B.parts.filter(p=>p.life>0);

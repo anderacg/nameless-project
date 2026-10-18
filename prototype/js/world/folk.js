@@ -21,7 +21,6 @@ class EstateWorker extends WorldObject{
   tip(){return '<b>'+cap1(this.job)+'</b><small>Of '+this.home+'</small><span class="act">Click: talk</span>'}
 }
 const asWorker=asClass(EstateWorker);
-const FOLK_R=520;
 // (the estates whose workers you have come near: town|estate; forgotten once you are far)
 const FOLK_SEEN=new Set();
 const dayPart=()=>G.clock/DAY;
@@ -36,10 +35,10 @@ function folkDoor(t,k){const sp=bldSpots(t)[k];return sp?{x:sp.x+rint(-3,3),y:sp
 const folkOut=f=>f.st==='out'||f.st==='back';
 function updateFolk(d){
   // workers belong to nearby holdings only; far ones go
-  W.folk=W.folk.filter(f=>{const t=townBy(f.home);return t&&Math.hypot(t.x-P.x,t.y-P.y)<FOLK_R+120&&!f.gone});
-  for(const key of FOLK_SEEN){const t=townBy(key.split('|')[0]);if(!t||Math.hypot(t.x-P.x,t.y-P.y)>FOLK_R+120)FOLK_SEEN.delete(key)}/* (out of reach: met afresh next time) */
+  const A=WORLD_SCALE.ai;W.folk=W.folk.filter(f=>{const t=townBy(f.home);return t&&Math.hypot(t.x-P.x,t.y-P.y)<A.folkNear+A.folkForget&&!f.gone});
+  for(const key of FOLK_SEEN){const t=townBy(key.split('|')[0]);if(!t||Math.hypot(t.x-P.x,t.y-P.y)>A.folkNear+A.folkForget)FOLK_SEEN.delete(key)}/* (out of reach: met afresh next time) */
   const now=dayPart(),win=now>=DELIVER.from&&now<DELIVER.to;
-  for(const t of TOWNS){if(!t.bld||Math.hypot(t.x-P.x,t.y-P.y)>FOLK_R||ruined(t))continue;const sp=bldSpots(t);
+  for(const t of TOWNS){if(!t.bld||Math.hypot(t.x-P.x,t.y-P.y)>A.folkNear||ruined(t))continue;const sp=bldSpots(t);
     for(const k in sp){const lv=bldLv(t,k),job=ESTATES[k]&&ESTATES[k].work;if(!lv||!job)continue;
       // (all of them there as you come near; one taken or fled comes back only slowly, so a hire or a press-gang shows)
       const key=t.name+'|'+k,first=!FOLK_SEEN.has(key);FOLK_SEEN.add(key);
@@ -47,13 +46,13 @@ function updateFolk(d){
         W.folk.push(asWorker({folk:true,home:t.name,k,job,x:at.x,y:at.y,tx:at.x,ty:at.y,st:'in',leave,done:now>leave?G.day:-1,dir:1,ph:Math.random()*6}))}}}
   for(const f of W.folk){
     const t=townBy(f.home);if(!t){f.gone=true;continue}
-    const threat=bandits.some(b=>Math.hypot(b.x-f.x,b.y-f.y)<70)||until(t,'fear')&&Math.hypot(P.x-f.x,P.y-f.y)<90;
+    const threat=bandits.some(b=>Math.hypot(b.x-f.x,b.y-f.y)<A.folkBandit)||until(t,'fear')&&Math.hypot(P.x-f.x,P.y-f.y)<A.folkFear;
     // at work inside: out with the day's load at his hour (not while the holding is besieged or afraid)
     if(f.st==='in'){f.moving=false;if(win&&f.done!==G.day&&now>=f.leave&&!besieged(t)&&!until(t,'fear')){const g=folkHome(t);f.st='out';f.tx=g.x;f.ty=g.y}continue}
     // delivering inside the gate: then back to the estate
     if(f.st==='town'){f.wait-=d;if(f.wait<=0){const g=folkHome(t),door=folkDoor(t,f.k);f.x=g.x;f.y=g.y;f.tx=door.x;f.ty=door.y;f.st='back'}continue}
     const dx=f.tx-f.x,dy=f.ty-f.y,dd=Math.hypot(dx,dy);
-    if(dd>1.5){f.dir=dx>=0?1:-1;f.moving=true;if(routeTo(f,f.tx,f.ty,(threat?16:9)*d))continue}
+    if(dd>1.5){f.dir=dx>=0?1:-1;f.moving=true;if(routeTo(f,f.tx,f.ty,moveStep(threat?16:9,d)))continue}
     // (there, or no way there: in at the gate, or in at the estate's door; a new hour for tomorrow's load)
     f.moving=false;
     if(f.st==='out'){f.st='town';f.wait=DELIVER.stop[0]+Math.random()*(DELIVER.stop[1]-DELIVER.stop[0]);f.done=G.day;f.leave=DELIVER.from+Math.random()*(DELIVER.to-DELIVER.from)}

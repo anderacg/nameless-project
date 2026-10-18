@@ -125,11 +125,10 @@ class BattleResolve{
     const g=this.control;if(g){g.tgt=null;g.queue=[];g.run=false;g.order='rout'}
     this.routed=true;this.shattered=this.rallied;this.confidence=0;this.mor=Math.max(0,this.mor);this.breakT=0;delete this.breakLimit;this.rallyT=0;
     this.routeAt=B.t;this.refreshState();this.sync();const m=this.live(),p=this.point();
-    if(B.opts.sandbox&&BattleLab.active){BattleLab.event('group_routed',null,{groupId:this.groupId,shattered:this.shattered});for(const u of m)BattleLab.event('routed',u)}
-    for(const u of m){u.tgt=null;u.shot=null}moraleSay(m[0],this.shattered?'Shattered':'Routs!',this.team?'#ffe08a':'#ff9a90');calloutRout(this);sfxAt('rout',p.x,p.y);// (its banner: battlehud.js; its horn and cry: audio.js)
+    for(const u of m){u.tgt=null;u.shot=null}moraleSay(m[0],this.shattered?'Shattered':'Routs!',this.team?'#ffe08a':'#ff9a90');battleEvent('rout',{r:this,m});sfxAt('rout',p.x,p.y);// (its banner: battlehud.js; the lab's rows: lab.js; its horn and cry: audio.js)
     (B.routShocks||(B.routShocks=[])).push({team:this.team,groupId:this.groupId,unitId:this.unitId,x:p.x,y:p.y});B.moraleNext=0;
   }
-  rally(){this.routed=false;this.rallied=true;this.rallyT=0;this.breakT=0;this.mor=Math.max(MORALE.rally,this.mor);const g=this.control;if(g)g.hold();this.refreshState();this.sync();for(const u of this.live()){u.tgt=null;u.shot=null}if(this.live()[0])moraleSay(this.live()[0],'Rallies','#9fe09a');calloutRally(this);if(sfxOn()){const p=this.point();sfxAt('rally',p.x,p.y)}if(B.opts.sandbox&&BattleLab.active)BattleLab.event('group_rallied',null,{groupId:this.groupId})}
+  rally(){this.routed=false;this.rallied=true;this.rallyT=0;this.breakT=0;this.mor=Math.max(MORALE.rally,this.mor);const g=this.control;if(g)g.hold();this.refreshState();this.sync();for(const u of this.live()){u.tgt=null;u.shot=null}if(this.live()[0])moraleSay(this.live()[0],'Rallies','#9fe09a');battleEvent('rally',{r:this});if(sfxOn()){const p=this.point();sfxAt('rally',p.x,p.y)}}
 }
 function groupMoraleInit(units){
   for(const [id,g] of Object.entries(B.groups)){const m=units.filter(u=>u.grp===id&&!steady(u));if(m.length)g.resolve=new BattleResolve(id,g.team,m);else delete g.resolve}
@@ -181,7 +180,7 @@ function moraleSay(u,t,c,life){if(B.floats.some(f=>f.t===t&&Math.abs(f.x-u.x)<40
 // a blow's weight by the side it lands on (and a shake to its morale)
 function flankMul(t,src){
   if(!src||B.opts&&B.opts.tournament||t.hero&&MANUAL_HERO)return 1;const s=sideOf(t,src);if(s==='front')return 1;// (a tournament: no flank bonus; morale off still has it, only the shake and banner go)
-  if(!B.noMorale){if(!steady(t)&&B.t-(t.sideShockAt??-Infinity)>=RESOLVE.flankEvery){shake(t,MORALE[s]);t.sideShockAt=B.t}t.flankAt=B.t;const r=resolveOf(t);if(r)r.flankAt=B.t;calloutFlank(t,src)}// (its banner, now and then: battlehud.js)
+  if(!B.noMorale){if(!steady(t)&&B.t-(t.sideShockAt??-Infinity)>=RESOLVE.flankEvery){shake(t,MORALE[s]);t.sideShockAt=B.t}t.flankAt=B.t;const r=resolveOf(t);if(r)r.flankAt=B.t;battleEvent('flank',{u:t,src})}// (its banner, now and then: battlehud.js)
   if(!src.arrow)moraleSay(t,s==='rear'?'Rear!':'Flank!','#ffb04a',.5);
   return 1+(FLANK[s]-1)*(src.arrow?FLANK.arrow:1);
 }
@@ -201,7 +200,7 @@ function moraleDeath(t,source){
     if(r.team===t.team){if(lead){r.confidence=0;r.confidenceBlockedUntil=Math.max(r.confidenceBlockedUntil,B.t+CONFIDENCE.leaderPause);r.breakUrgentUntil=B.t+CONFIDENCE.leaderPause;r.shock(MORALE.lead,false)}else if(r!==own&&d<MORALE.near)r.shock(MORALE.death/Math.max(1,own?.initialCount||r.initialCount))}
     else if(lead){r.mor=Math.min(100,r.mor+MORALE.lead/2);r.sync()}else if(d<MORALE.near||r===resolveOf(source))r.reassure()}
   if(lead){(B.leadFell=B.leadFell||[])[t.team]=B.t}
-  if(lead){B.floats.push({x:t.x,y:t.y-30,t:t.team?'Their leader falls!':'Your leader falls!',life:1.4,c:t.team?'#ffe08a':'#ff9a90'});calloutLeader(t)}
+  if(lead){B.floats.push({x:t.x,y:t.y-30,t:t.team?'Their leader falls!':'Your leader falls!',life:1.4,c:t.team?'#ffe08a':'#ff9a90'});battleEvent('leader',{u:t})}
 }
 // a leader close by steadies them: your hero, a lord or chieftain of theirs
 // (during moraleTick only the heroes and leaders are looked at, gathered once for it: nobody else can steady them)
@@ -244,7 +243,7 @@ function routStep(u,dt){
   if(any?exitReached(u,exitOf(u),2):u.team?u.x>=BW-MORALE.edge-2:u.x<=MORALE.edge+2){u.fled=true;if(u.team===1)B.fledFoes=(B.fledFoes||0)+1;else B.fledMine=(B.fledMine||0)+1;leaveField(u)}
 }
 // a soldier off the field (at its edge): out of the fight, alive (not a loss); its health kept for after (your hero's)
-function leaveField(u){if(B.opts.sandbox&&BattleLab.active)BattleLab.event('field_exit',u,{cause:u.rout?'routed':'withdrawn'});u.hpLeft=u.hp;u.hp=0;u.left=true;if(u.team===0&&!u.lord)B.lastOut='left';if(u.grp){if(B.sel===u.grp&&!grpUnits(u.grp).length)B.sel='all';setOrderUI()}}
+function leaveField(u){u.hpLeft=u.hp;u.hp=0;u.left=true;if(u.team===0&&!u.lord)B.lastOut='left';battleEvent('left',{u})}// (the cards and the selection: battlehud.js; the lab's row: lab.js)
 
 /* withdrawing (W) is fleeing the battle: the group drops its fight, briefly disengages if in melee, then runs for your edge of the field (the side you formed up on,
    marked there while any of yours withdraw; EXITS.on: its exit, the safest way off by any open edge), straight back, striking no one; there they leave the field, alive. The enemy may run

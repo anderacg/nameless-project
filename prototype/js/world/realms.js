@@ -3,7 +3,9 @@
 const makeWorldState=()=>({rel:{},lords:[],dead:{},sites:[],critters:[],caravans:[],folk:[],refugees:[],patrols:[],fights:[],lrel:{},treas:{},tolls:{},exiles:[],monsters:[],mythic:{},ships:[],shops:{},uidN:0,fightN:0});
 const W=makeWorldState();
 // daily war chance per peaceful pair, scaled so more factions don't mean more wars overall
-const FIDS=Object.keys(FACS),WAR_RATE=.05*3/(FIDS.length*(FIDS.length-1)/2),LCAP=18,FIEF0=Math.round(TOWNS.length/FIDS.length);
+const FIDS=Object.keys(FACS),WAR_RATE=.05*3/(FIDS.length*(FIDS.length-1)/2),LCAP=18;
+// the holdings a realm counts on (lcapOf: short of them, its lords rally more): its share of the world's, as each world goes in
+let FIEF0=0;onWorld(()=>{FIEF0=Math.round(TOWNS.length/FIDS.length)});
 // holdings you take for yourself belong to 'player'. It is not one of FIDS: it never rolls wars, and it is at war with whoever is hostile to you.
 FACS.player={n:'Free Banner',col:'#f0d060',d:'Your own banner and the holdings that fly it.',races:[],lords:[]};
 const rk=(a,b)=>a<b?a+'|'+b:b+'|'+a;
@@ -40,8 +42,19 @@ const GUARD_FLOOR=20;
 function draftLocals(t,n){ensureEcon(t);const k=Math.max(0,Math.min(n,Math.floor(t.vol||0),Math.floor((t.pop||0)-GUARD_FLOOR)));if(k){t.vol-=k;t.pop-=k}return k}
 const canDraft=t=>(t.vol||0)>=1&&(t.pop||0)-GUARD_FLOOR>=1;
 function garList(t){const a=[];for(let i=0;i<t.gar;i++){const c=RACES[t.races[i%t.races.length]];a.push(i%7===6?c.mage:i%3===2?c.ranged:i%4===1?c.shield:i%2?UP[c.melee][0]:c.melee)}return a}
+// a holding's first day: its realm, garrison and peace, its estates and economy (its lots: initLots)
+function initHolding(t){t.owner=t.lastOwner=HOME[t.name];t.gar=t.T.gar;t.sacked=t.raided=t.turmoil=0;t.grow=GROW0;initEstates(t);initEconomy(t)}
+// told when a holding is added or lost while the world runs: fn(t, 'add' | 'gone')
+const HOLDING_HOOKS=[],onHolding=fn=>HOLDING_HOOKS.push(fn);
+// a holding made while the world runs (founded): its name kept unique, held by its realm (yours unless given), set up as the
+// rest were at the start, its lots laid out; added at the end, so every index into TOWNS stays as it was
+function addHolding(data){let name=data.name,n=2;while(townBy(name))name=data.name+' '+n++;
+  const t=makeHolding({realm:'player',seed:1+Math.max(0,...TOWNS.map(o=>o.seed)),...data,name});TOWNS.push(t);initHolding(t);initLots(t);
+  HOLDING_HOOKS.forEach(f=>f(t,'add'));return t}
+// a lost holding (a camp burnt or left): never taken out of TOWNS, so LAND's indices hold; gone, no one's, its lots cleared
+function loseHolding(t){if(t.gone)return;t.gone=true;t.owner=null;(t.lots||[]).slice().forEach(l=>lotDrop(t,l));HOLDING_HOOKS.forEach(f=>f(t,'gone'))}
 function initWorld(){
-  TOWNS.forEach(t=>{t.owner=t.lastOwner=HOME[t.name];t.gar=t.T.gar;t.sacked=t.raided=t.turmoil=0;t.grow=GROW0;initEstates(t);initEconomy(t)});lotsReset();TOWNS.forEach(initLots);W.caravans=[];W.folk=[];W.refugees=[];W.patrols=[];W.fights=[];W.lrel={};W.treas={};W.tolls={};
+  TOWNS.forEach(initHolding);lotsReset();TOWNS.forEach(initLots);W.caravans=[];W.folk=[];W.refugees=[];W.patrols=[];W.fights=[];W.lrel={};W.treas={};W.tolls={};
   W.rel={};W.dead={};W.lords=[];W.exiles=[];W.monsters=[];W.mythic={};
   {const a=FIDS[rint(0,FIDS.length-1)],others=FIDS.filter(x=>x!==a),b=others[rint(0,others.length-1)];W.rel[rk(a,b)]={s:'war',since:1}}
   addMissingLords();patrolDay();

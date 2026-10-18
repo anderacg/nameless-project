@@ -28,6 +28,7 @@ const isWater=(x,y)=>x>=0&&y>=0&&x<MW&&y<MH&&tiles[y*MW+x]===T_WATER&&climate[y*
 
 // the bodies of water: every water tile labelled by the sea or lake it belongs to
 let WATER_ID=null;
+onWorld(()=>{WATER_ID=null});// (a new world: labelled afresh)
 function waterIds(){
   if(WATER_ID)return WATER_ID;const id=new Int32Array(MW*MH).fill(-1);let n=0;
   for(let i=0;i<MW*MH;i++){if(tiles[i]!==T_WATER||id[i]>=0)continue;id[i]=n;const q=[i];

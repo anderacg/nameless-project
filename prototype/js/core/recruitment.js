@@ -68,7 +68,7 @@ class RecruitmentService{
   }
   quoteCompanion(t,id){
     const c=this.rules.companions[id],cost=c&&c.cost,fail=code=>({ok:false,code,id,cost});
-    if(!c||!Number.isFinite(cost)||!t||c.town!==t.name)return fail('companion-unavailable');
+    if(!c||!Number.isFinite(cost)||!t||(this.rules.compTown?this.rules.compTown(id)!==t:c.town!==t.name))return fail('companion-unavailable');
     if(this.player.comps[id])return fail('companion-hired');
     if(this.player.gold<cost)return fail('gold');
     if(this.rules.size()>=this.rules.capacity())return fail('capacity');
@@ -88,7 +88,7 @@ class RecruitmentService{
 }
 // Survivors pool XP by kind. Training spends one soldier's threshold; casualties cannot leave more XP than the survivors can use.
 const TROOP_XP={need:{1:40,2:80,3:140,4:220},dmg:.5,kill:6,fight:4,win:4,auto:.6};
-const recruitment=new RecruitmentService(P,{troops:ST,upgrades:UP,companions:COMPS,hire:HIRE,xp:TROOP_XP,prisonerCost:10,has,effect:tm,
+const recruitment=new RecruitmentService(P,{troops:ST,upgrades:UP,companions:COMPS,compTown:id=>compTown(id),hire:HIRE,xp:TROOP_XP,prisonerCost:10,has,effect:tm,
   lead:()=>skill('lead'),size:partySize,capacity:partyCap,canHire:(t,k)=>canHire(t,k),day:()=>G.day,
   roster:()=>partyRoster(P),target:k=>recruitTarget(k)||partyRoster(P).groups.find(g=>g.type===k)?.id||'new',
   canGroup:(k,target)=>partyRoster(P).canAdd(k,target===undefined?recruitTarget(k):target),freeGroup:()=>partyRoster(P).slots<ARMY_LIMIT,

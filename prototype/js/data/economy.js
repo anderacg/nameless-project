@@ -41,7 +41,7 @@ const ORE_W={
 const FISH_W={salmon:{grass:1,frost:1.6,desert:0,swamp:.2},eel:{grass:.4,frost:0,desert:0,swamp:1.8},pearls:{grass:.2,frost:0,desert:.6,swamp:.1}};
 // what a mine or port brings up per level from each vein or fishing ground in its land (rich ones up to twice that)
 const RES_RATE={copper:3,tin:2.5,iron:3,silver:1,gold:.5,gems:.4,mithril:.2,adamant:.12,salmon:2,eel:2.5,pearls:.15};
-const RES_RANGE=10,HOME_RANGE=24;// tiles from a holding to the veins and waters it works (to its own home deposit)
+const RES_RANGE=WORLD_SCALE.econ.resRange,HOME_RANGE=WORLD_SCALE.econ.homeRange;// tiles from a holding to the veins and waters it works (to its own home deposit)
 // what a smith takes from its holding's stock to forge one piece of each material tier (wood, bronze, iron, silver, gold, mithril,
 // adamant): it forges only what its holding has the metal for
 const FORGE=[{timber:1},{copper:1,tin:1},{iron:2},{silver:2},{gold:2},{mithril:2},{adamant:2}];

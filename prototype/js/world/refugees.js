@@ -19,14 +19,14 @@ class Refugees extends WorldObject{
   tip(){return '<b>Refugees</b><small>From '+this.from+' to '+this.to+'</small><span class="act">Click: meet</span>'}
 }
 const asRefugees=asClass(Refugees);
-const REFUGEE_CAP=Math.round(14*MAP_DENS),REFUGEE_SPD=11;
+const REFUGEE_CAP=density().refugees,REFUGEE_SPD=11;
 // why people would leave a holding, or '' if they stay
 function fleeReason(t){ensureEcon(t);return until(t,'sacked')?'sacked':until(t,'raided')?'raided':foodDays(t)<1?'hunger':besieged(t)?'siege':t.pros<25?'hardship':until(t,'turmoil')&&t.pros<45?'conquest':housingFull(t)?'crowded':''}
 // where they go: the nearest holding not at war with theirs that is fed, unbesieged and clearly better off
 function refuge(t){
   let best=null,bd=1e9;const crowded=housingFull(t)&&fleeReason(t)==='crowded';
   for(const o of TOWNS){if(o===t||!o.owner||besieged(o)||ruined(o)||atWar(o.owner,t.owner))continue;ensureEcon(o);if(crowded?(housing(o)-(o.pop||0)<15||foodDays(o)<3):(o.pros<t.pros+15||foodDays(o)<3))continue;
-    const d=Math.hypot(o.tx-t.tx,o.ty-t.ty);if(d<bd&&d<70){bd=d;best=o}}
+    const d=Math.hypot(o.tx-t.tx,o.ty-t.ty);if(d<bd&&d<WORLD_SCALE.econ.refuge){bd=d;best=o}}
   return best;
 }
 function sendRefugees(t,to,why){
@@ -50,9 +50,9 @@ function updateRefugees(d){
   for(const r of W.refugees){
     r.cool=Math.max(0,r.cool-d);let to=townBy(r.to);
     if(!to||besieged(to)||to.owner!=='player'&&atWar(to.owner,(townBy(r.from)||{}).owner)){const f=townBy(r.from);to=f&&refuge(f);if(!to){r.gone=true;continue}r.to=to.name}
-    const dx=P.x-r.x,dy=P.y-r.y,pd=Math.hypot(dx,dy),afraid=!P.stay&&r.fear&&pd<70*hide;
-    if(afraid){walk(r,-dx,-dy,REFUGEE_SPD*1.2*d);r.dir=dx>0?-1:1}
-    else{const ox=r.x;travelTo(r,to,to.x,to.y+12,REFUGEE_SPD*Math.max(.5,speedAt(r.x,r.y)||1)*d);r.dir=r.x>=ox?1:-1}
+    const dx=P.x-r.x,dy=P.y-r.y,pd=Math.hypot(dx,dy),afraid=!P.stay&&r.fear&&pd<WORLD_SCALE.sight.refugee*hide;
+    if(afraid){walk(r,-dx,-dy,moveStep(REFUGEE_SPD*1.2,d));r.dir=dx>0?-1:1}
+    else{const ox=r.x;travelTo(r,to,to.x,to.y+12,moveStep(REFUGEE_SPD*Math.max(.5,speedAt(r.x,r.y)||1),d));r.dir=r.x>=ox?1:-1}
     if(Math.hypot(to.x-r.x,to.y+12-r.y)<8){refugeesArrive(r,to);r.gone=true;continue}
     // bandits rob them of what they carry, and some do not survive it
     const b=!r.robbed&&bandits.find(o=>Math.hypot(o.x-r.x,o.y-r.y)<12);

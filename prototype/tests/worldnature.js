@@ -39,14 +39,14 @@ try{
   ok(!same.length,'each species’ four trees, each box’s peaks and the six hills differ in shape, not only in colour'+(same.length?': '+same.join(', '):''))}
  // ---- the map painted: with it, its woods, hills and ranges; never on clear ground or water; no Math.random; the map data untouched
  ok(PX.WN_KIND.open===t.T_OPEN&&PX.WN_KIND.forest===t.T_FOREST&&PX.WN_KIND.hill===t.T_HILL&&PX.WN_KIND.water===t.T_WATER&&PX.WN_KIND.road===t.T_ROAD&&PX.WN_KIND.mount===t.T_MOUNT,'the engine’s tile kinds are the game’s own codes');
- ok(['paintTree','paintHill','drawPeak','paintDecor','paintMountain','bigPeakAt','paintBigPeak','peakFits','ROCK_RGB','anyClear'].every(n=>(0,eval)('typeof '+n)==='undefined')&&/PX\.worldNature/.test(t.paintWorld.toString()),'the old trees, hills, peaks and small things are gone: the world is painted by PX.worldNature');
+ ok(['paintTree','paintHill','drawPeak','paintDecor','paintMountain','bigPeakAt','paintBigPeak','peakFits','ROCK_RGB','anyClear'].every(n=>(0,eval)('typeof '+n)==='undefined')&&/PX\.worldNatureSteps/.test(t.paintSteps.toString()),'the old trees, hills, peaks and small things are gone: the world is painted by PX.worldNature (a chunk at a time: tests/worldchunks.js)');
  const sum=a=>{let h=0;for(let i=0;i<a.length;i++)h=(h*31+a[i])|0;return h},tiles0=sum(t.tiles),clim0=sum(t.climate);
  const TO=new Uint8Array(Wp*Hp);window.__TO=TO;(0,eval)('NATURE_TOUCH=window.__TO');
  let rnd=0;const r0=Math.random;Math.random=function(){rnd++;return r0.apply(this,arguments)};let cv;try{cv=t.paintWorld()}finally{Math.random=r0;(0,eval)('NATURE_TOUCH=null')}
  const N=t.NATURE,CLR=t.CLEAR,cnt=k=>{let n=0;for(let i=0;i<MW*MH;i++)if(t.tiles[i]===k)n++;return n},nF=cnt(t.T_FOREST),nH=cnt(t.T_HILL),nM=cnt(t.T_MOUNT);
  ok(rnd===0&&sum(t.tiles)===tiles0&&sum(t.climate)===clim0,'painting the world reads no Math.random ('+rnd+') and leaves the map’s tiles and climates as they were');
  ok(cv.getContext('2d').imageSmoothingEnabled===false,'the world canvas is painted without smoothing');
- const share=k=>{let n=0,m=0;for(let ty=0;ty<MH;ty++)for(let tx=0;tx<MW;tx++){if(t.tiles[ty*MW+tx]!==k)continue;for(let y=1;y<TILE;y+=3)for(let x=1;x<TILE;x+=3){const i=(ty*TILE+y)*Wp+tx*TILE+x;if(CLR[i])continue;m++;if(TO[i])n++}}return m?n/m:0};
+ const share=k=>{let n=0,m=0;for(let ty=0;ty<MH;ty++)for(let tx=0;tx<MW;tx++){if(t.tiles[ty*MW+tx]!==k)continue;for(let y=1;y<TILE;y+=3)for(let x=1;x<TILE;x+=3){const i=(ty*TILE+y)*Wp+tx*TILE+x;if(CLR.at(tx*TILE+x,ty*TILE+y))continue;m++;if(TO[i])n++}}return m?n/m:0};
  const sF=share(t.T_FOREST),sH=share(t.T_HILL),sM=share(t.T_MOUNT);
  ok(N&&N.trees>=nF*3.5&&sF>.9,nF+' wood tiles stand thick with trees ('+(N&&N.trees)+' trees, '+(N&&(N.trees/nF).toFixed(1))+' a tile), '+Math.round(sF*100)+'% of their ground painted');
  ok(N&&N.hills>=nH*.3&&sH>.5,nH+' hill tiles rise ('+(N&&N.hills)+' rises), '+Math.round(sH*100)+'% of their ground shaded');
@@ -54,9 +54,9 @@ try{
  ok(N&&N.decor>200&&N.flat>500,'small things on the open ground: '+(N&&N.decor)+' standing (bushes, stones, cacti, stumps), '+(N&&N.flat)+' lying (tufts, flowers, drifts, ripples, reeds, moss, pools, pads, floes)');
  {let onClear=0,onWater=0,offWater=0,lots=0,roads=0,n=0;
   const water=(x,y)=>t.tAt(x>>4,y>>4)===t.T_WATER;
-  for(let y=0;y<Hp;y++)for(let x=0;x<Wp;x++){const i=y*Wp+x,v=TO[i];if(!v)continue;n++;if(CLR[i])onClear++;if(v===1&&water(x,y))onWater++;if(v===2&&!water(x,y))offWater++}
+  for(let y=0;y<Hp;y++)for(let x=0;x<Wp;x++){const i=y*Wp+x,v=TO[i];if(!v)continue;n++;if(CLR.at(x,y))onClear++;if(v===1&&water(x,y))onWater++;if(v===2&&!water(x,y))offWater++}
   for(const tw of t.TOWNS)for(const l of tw.lots||[]){for(let j=0;j<l.n*TILE;j++)for(let i=0;i<l.n*TILE;i++)if(TO[(l.y*TILE+j)*Wp+l.x*TILE+i])lots++;for(const [px2,py2] of l.plots||[])for(let j=0;j<TILE;j++)for(let i=0;i<TILE;i++)if(TO[(py2*TILE+j)*Wp+px2*TILE+i])lots++}
-  for(let ty=0;ty<MH;ty++)for(let tx=0;tx<MW;tx++)if(t.tiles[ty*MW+tx]===t.T_ROAD)for(let j=6;j<10;j++)for(let i=6;i<10;i++)if(TO[(ty*TILE+j)*Wp+tx*TILE+i]&&CLR[(ty*TILE+j)*Wp+tx*TILE+i])roads++;
+  for(let ty=0;ty<MH;ty++)for(let tx=0;tx<MW;tx++)if(t.tiles[ty*MW+tx]===t.T_ROAD)for(let j=6;j<10;j++)for(let i=6;i<10;i++)if(TO[(ty*TILE+j)*Wp+tx*TILE+i]&&CLR.at(tx*TILE+i,ty*TILE+j))roads++;
   ok(n>1e6&&!onClear&&!lots&&!roads,'nature painted '+n+' pixels, none on a road, a holding’s yard or building, an estate’s plot or a field ('+onClear+' on clear ground, '+lots+' on a lot, '+roads+' on a road)');
   ok(!onWater&&!offWater,'nothing on the water but its lily pads and floes, and those only on water ('+onWater+', '+offWater+')')}
  // ---- the oasis: palms only by a small water in the desert

@@ -279,10 +279,10 @@ class BattleSetup{
 }
 // (an ambush's cover a ridge, not woods: always in a desert, BTYPE.ridge of the time on hills, by the ground's seed)
 const ambushRidge=(recipe,seed)=>recipe==='desert'||recipe==='hills'&&seeded((seed^0x5EED41D)>>>0)()<BTYPE.ridge;
-// the battle's type told as it opens (B.btype): a line in the log and a banner (battlehud.js callout); its words (BTYPE_SAY)
+// the battle's type told as it opens (B.btype): a line in the log and a banner (its event: battlehud.js); its words (BTYPE_SAY)
 const BTYPE_SAY={hold:['Hold the bridge!','Hold the bridge: they must come over the river to you, by the bridge or not at all.'],take:['Take the bridge!','Take the bridge: they hold the far bank, and you must cross under their arrows.'],
   wait:['Lie in wait','Your band lies hidden beside the road. Charge out of hiding when you choose: the first blow lands harder.'],caught:['Ambushed!','Ambush! They lie hidden beside the road, and your band is caught in march order.']};
 function typeSay(){const bt=B.btype;if(!bt)return;const mine=bt.kind==='bridge'?bt.def===0:bt.hid===0,k=bt.kind==='bridge'?(mine?'hold':'take'):mine?'wait':'caught',[t,txt]=BTYPE_SAY[k];
-  log(txt,k==='caught'?'bad':k==='wait'?'good':'');if(typeof callout==='function')callout(t,k==='caught'?1:0,'btype',{major:true})}
+  log(txt,k==='caught'?'bad':k==='wait'?'good':'');battleEvent('btype',{text:t,team:k==='caught'?1:0})}
 // Compatibility entry point used by encounters, tournaments, tests and other callers.
 function startBattle(opts){return new BattleSetup(opts).start()}

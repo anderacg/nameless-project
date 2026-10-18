@@ -4,8 +4,13 @@
 // ORE_W) or in water by the shore (a fishing ground, by FISH_W), and one in ten mountain tiles. Common ores are everywhere;
 // silver, gold and gems favour the mountains and the desert, mithril only the frozen peaks, and adamantite lies only deep inside
 // the great ranges. A holding works the veins and waters within RES_RANGE tiles: its mine brings up their ores, its port their fish (data/economy.js, RES_RATE).
-const DEPOSITS=[],DEP_AT=new Int16Array(MW*MH).fill(-1);
-(function(){
+// genDeposits keeps them on the map (map.deposits, map.depAt: the deposit at each tile, or -1); DEPOSITS and DEP_AT are the
+// lists of the map that is in.
+let DEPOSITS=[],DEP_AT=null;
+onWorld(m=>{DEPOSITS=m.deposits||[];DEP_AT=m.depAt||new Int16Array(MW*MH).fill(-1);for(const t of TOWNS)if(t._res)t._res=null});
+// (the body reads the map's layers and size by the usual names)
+function genDeposits(map,holdings){
+  const MW=map.w,MH=map.h,tiles=map.kind,climate=map.clim,tAt=(x,y)=>map.kindAt(x,y),DEPOSITS=map.deposits=[],DEP_AT=map.depAt=new Int16Array(MW*MH).fill(-1);
   const pick=(w,r)=>{const ks=Object.keys(w).filter(k=>w[k]>0),tot=ks.reduce((a,k)=>a+w[k],0);let x=r*tot;for(const k of ks){x-=w[k];if(x<0)return k}return ks[ks.length-1]};
   const shore=(x,y)=>[[1,0],[-1,0],[0,1],[0,-1]].some(([a,b])=>{const t=tAt(x+a,y+b);return t!==T_WATER&&t!==T_MOUNT});
   const deep=(x,y)=>[[-1,-1],[0,-1],[1,-1],[-1,0],[1,0],[-1,1],[0,1],[1,1]].every(([a,b])=>tAt(x+a,y+b)===T_MOUNT);
@@ -21,7 +26,7 @@ const DEPOSITS=[],DEP_AT=new Int16Array(MW*MH).fill(-1);
   // a holding known for cheap iron has its seam. It lies on the nearest hill or mountain (or is a fishing ground by the nearest shore)
   // within HOME_RANGE, further out than its other veins if need be: it always counts as the holding's own (d.home)
   const RACE_ORE={dwarf:{iron:2,silver:2.5,mithril:3,gems:1.5},orc:{gold:2,gems:2,iron:1.3},elf:{silver:1.5,tin:1.3},human:{copper:1.3,tin:1.3}};
-  for(const t of TOWNS){const c=t.clim||CLIMS[climate[t.ty*MW+t.tx]],rock=[],wet=[];
+  for(const t of holdings){const c=t.clim||CLIMS[climate[t.ty*MW+t.tx]],rock=[],wet=[];
     for(let y=t.ty-HOME_RANGE;y<=t.ty+HOME_RANGE;y++)for(let x=t.tx-HOME_RANGE;x<=t.tx+HOME_RANGE;x++){if(x<1||y<1||x>=MW-1||y>=MH-1||Math.hypot(x-t.tx,y-t.ty)>HOME_RANGE||DEP_AT[y*MW+x]>=0)continue;
       const tt=tiles[y*MW+x];if(tt===T_HILL||tt===T_MOUNT)rock.push([x,y]);else if(tt===T_WATER&&shore(x,y))wet.push([x,y])}
     const w={},rb=Object.assign({},...t.races.map(r=>RACE_ORE[r]||{}));
@@ -31,8 +36,9 @@ const DEPOSITS=[],DEP_AT=new Int16Array(MW*MH).fill(-1);
     if(!Object.values(w).some(v=>v>0)){for(const k in ORE_W)w[k]=ORE_W[k].hill*(ORE_W[k].clim[c]||0)*(rb[k]||1);rock.push([t.tx,t.ty])}
     const g=pick(w,hash(t.tx,t.ty,78)),at=(ORE_W[g]?rock:wet).sort((p,q)=>Math.hypot(p[0]-t.tx,p[1]-t.ty)-Math.hypot(q[0]-t.tx,q[1]-t.ty))[0];
     put(at[0],at[1],g);Object.assign(DEPOSITS[DEPOSITS.length-1],{rich:1.5,home:t.name})}
-})();
-// what a holding's land holds: {good: richness} over its home deposit and the others within RES_RANGE (the map never changes, so it is kept)
+  return map;
+}
+// what a holding's land holds: {good: richness} over its home deposit and the others within RES_RANGE (kept till a new world)
 function resOf(t){if(t._res)return t._res;const o={};for(const d of DEPOSITS)if(d.home===t.name||Math.hypot(d.tx-t.tx,d.ty-t.ty)<=RES_RANGE)o[d.g]=(o[d.g]||0)+d.rich;return t._res=o}
 const resHas=(t,kind)=>Object.keys(resOf(t)).filter(g=>(ORE_W[g]?'ore':'fish')===kind);
 // a day's yield per level of its mine (the ores of its veins, or poor seams of iron and copper where it has none) or its port

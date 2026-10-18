@@ -10,6 +10,8 @@ const COMP_START={brann:{oneh:3,lead:2},elske:{med:3,oneh:1},tavi:{archery:3,sco
 const COMP_PERKS={brute:{n:'Brute',d:'+12% damage'},stalwart:{n:'Stalwart',d:'+15% health'},swift:{n:'Swift',d:'+10% speed in battle'},
   guardian:{n:'Guardian',d:'Takes 10% less damage'},captain:{n:'Captain',d:'Leads 4 more soldiers in a party'}};
 const COMP_LEAD={lv:2,ap:2};// who may lead a party: level 2 and trusting you
+// the holding whose tavern they wait in: their own, or (in a world without it) their people's capital
+const compTown=id=>townBy(COMPS[id].town)||capitalOf(COMPS[id].race);
 function compInit(id){const c=P.comps[id];if(!c)return null;if(c.lv)return c;
   Object.assign(c,{lv:1,xp:0,gear:{},sk:{},perks:[],perkPend:0,party:null,hurt:0});for(const k in COMP_SK)c.sk[k]={lv:(COMP_START[id]||{})[k]||0,xp:0};return c}
 const compSkill=(id,k)=>{const c=compInit(id);return c&&c.sk[k]?c.sk[k].lv:0};
@@ -42,7 +44,7 @@ function cpTransferPlan(id,direction,source,n,target='new'){
   if(direction==='take'&&!c.party)return fail('party');
   const forming=!c.party,p=c.party||asParty({cid:id,x:P.x+10,y:P.y+6,troops:[],order:'follow',base:null,cool:2,dir:1});
   if(p.fight)return fail('fighting');
-  if(direction==='take'&&Math.hypot(p.x-P.x,p.y-P.y)>60)return fail('distance');
+  if(direction==='take'&&Math.hypot(p.x-P.x,p.y-P.y)>WORLD_SCALE.ai.compTake)return fail('distance');
   const from=partyRoster(direction==='give'?P:p),to=partyRoster(direction==='give'?p:P),
     rejoin=direction==='take'&&n===from.size&&!sum(p.wounded||{})&&!(p.woundedGroups||[]).some(g=>g.count>0),
     room=direction==='give'?cpartyCap(id)-to.size-sum(p.wounded||{}):partyRoom(),reserve=rejoin?1:0,
@@ -90,7 +92,7 @@ function compDay(){
   for(const id in P.comps){const c=compInit(id);
     if(c.party&&c.party.inside){const p=c.party,h=townBy(p.base);if(h&&!stayFree(h)){const k=cpStayCost(p);if(P.gold>=k)P.gold-=k;else{p.leave();p.order='follow';log('You cannot pay for '+COMPS[id].short+'’s lodgings. The party leaves '+h.name+' to rejoin you.','bad')}}}
     if(c.party){compTrain(id,'lead',2);const p=c.party,t=(p.order==='patrol'||p.inside)&&townBy(p.base);
-      if(t&&!hostileTo(t.owner)&&Math.hypot(t.x-p.x,t.y-p.y)<120)for(let k=0;k<2&&p.troops.length<cpartyCap(id)&&canDraft(t);k++){const r=RACES[t.races[rint(0,t.races.length-1)]],type=Math.random()<.6?r.melee:r.ranged,cost=HIRE[type]||22;
+      if(t&&!hostileTo(t.owner)&&Math.hypot(t.x-p.x,t.y-p.y)<WORLD_SCALE.ai.compDraft)for(let k=0;k<2&&p.troops.length<cpartyCap(id)&&canDraft(t);k++){const r=RACES[t.races[rint(0,t.races.length-1)]],type=Math.random()<.6?r.melee:r.ranged,cost=HIRE[type]||22;
         if(P.gold<cost||!partyRoster(p).canAdd(type))break;P.gold-=cost;draftLocals(t,1);p.add(type);log(COMPS[id].short+' hires '+an(ST[type].n.toLowerCase())+' in '+t.name+' ('+cost+'g).')}}
     if(c.role==='scout'&&compInBand(id))compTrain(id,'scout',3);if(c.role==='surgeon'&&compInBand(id))compTrain(id,'med',2)}
 }

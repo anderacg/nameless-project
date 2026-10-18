@@ -99,7 +99,7 @@ function charAct(a,arg){
   else if(a==='army-merge'){const [from,to]=arg.split(':');partyRoster(P).merge(from,to)}
   else if(a==='army-recruit')G.recruitTarget=arg;
   else if(a==='role'){const [id,r]=arg.split(':');const c=P.comps[id];if(c){if(c.role===r)c.role='';else{const o=roleOf(r);if(o)P.comps[o].role='';c.role=r}}}
-  else if(a==='dismiss'){if(P.comps[arg]){delete P.comps[arg];log(COMPS[arg].n+' leaves your band. You may find them in '+COMPS[arg].town+' again.')}}
+  else if(a==='dismiss'){if(P.comps[arg]){delete P.comps[arg];log(COMPS[arg].n+' leaves your band. You may find them in '+compTown(arg).name+' again.')}}
   else if(a==='p-recruit')recruitmentFeedback(recruitment.recruitPrisoner(arg));
   else if(a==='p-release'){if(P.prisoners[arg]>0){P.prisoners[arg]--;P.renown++;log('You let '+an(ST[arg].n.toLowerCase())+' go free. +1 renown.');mood('release')}}
   else return false;

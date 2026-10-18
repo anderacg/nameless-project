@@ -68,7 +68,7 @@ class BattleControl{
   // walk on at the foe, in its ranks (step)
   advance(){if(this.resolve?.routed)return;if(this.order!=='advance'){this.regroup();this.order='advance';this.tgt=null}}
   // off the field by your edge, striking no one (EXITS.on: by the safest open edge, its exit chosen now: morale.js exitOf)
-  withdraw(){if(this.resolve?.routed)return;if(this.order!=='withdraw'){if(B.opts.sandbox&&BattleLab.active)BattleLab.event('withdraw_order',null,{groupId:this.id,side:this.team?'right':'left'});for(const u of this.units)delete u.withdrawal;delete this.exitTo}this.tgt=null;this.queue=[];this.run=false;this.regroup();this.order='withdraw';this.ax=this.team?BW-MORALE.edge:B.exit?B.exit.x:MARCH.edge;
+  withdraw(){if(this.resolve?.routed)return;if(this.order!=='withdraw'){battleEvent('withdraw',{g:this});for(const u of this.units)delete u.withdrawal;delete this.exitTo}this.tgt=null;this.queue=[];this.run=false;this.regroup();this.order='withdraw';this.ax=this.team?BW-MORALE.edge:B.exit?B.exit.x:MARCH.edge;
     const m=this.units.filter(u=>u.hp>0);if(exitsOn()&&m.length){const X=exitOf(m[0]);this.ax=X.x;this.ay=X.y}}
   // its pace: walk (keeping its ranks) or run; this order at a run (the AI's charges)
   setWalk(walk){if(this.resolve?.routed)return;this.walk=!!walk;this.run=false;if(!walk)breakWall(this.id)}

@@ -82,6 +82,8 @@ function fogMem(mem,px,py,V){
 // the minimap's dark: one pixel a tile, soft-edged, dim over land you know, dark over land you do not; rebuilt when more land is
 // known (at most twice a second)
 let fogMini=null,fogMiniT=0;
+// (a world of another size: the minimap's dark made afresh; W.seen and the fog's grid follow the size by themselves)
+onWorld(()=>{if(fogMini&&(fogMini.width!==MW||fogMini.height!==MH))fogMini=null});
 function fogMiniCv(){
   const now=performance.now();if(fogMini&&(!fogDirty||now-fogMiniT<500))return fogMini;fogDirty=false;fogMiniT=now;
   const S=seenArr(),N=MW*MH,a=new Float32Array(N),t=new Float32Array(N),[cr,cg,cb]=WFOG.col,lo=WFOG.mini*255,hi=WFOG.miniDeep*255;for(let i=0;i<N;i++)a[i]=S[i]?0:1;fogBlur(a,t,MW,0,0,MW-1,MH-1,WFOG.miniSoft);

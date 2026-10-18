@@ -61,7 +61,7 @@ function useGroupAbility(g,id){
   if(abilityWhyNot(g,id))return false;const A=UNIT_ABILITIES[id];
   if(!Object.hasOwn(g,'abil'))Object.defineProperty(g,'abil',{value:{},writable:true,configurable:true});
   const S=g.abil[id]={at:B.t,until:B.t+A.dur,readyAt:B.t+A.cd};A.use(g,S);if(A.snd&&sfxOn()){const C=g.centre();sfxAt(A.snd,C.x,C.y)}// (its sound, snd: audio.js; a group rallying from a rout has its own, morale.js)
-  if(B.opts&&B.opts.sandbox&&BattleLab.active)BattleLab.event('ability',null,{groupId:g.id,ability:id});
+  battleEvent('ability',{g,id});
   return true;
 }
 // each moment of a group (BattleControl.step): a timed ability that no longer holds ends; those on do their part; fire arrows

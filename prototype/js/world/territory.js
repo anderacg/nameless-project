@@ -8,8 +8,9 @@
 const GROW0=4,GROW_DAY=1/5;
 const LAND_COST=[1,1.7,1.5,0,.8,4];
 const NB8=[[1,0,1],[-1,0,1],[0,1,1],[0,-1,1],[1,1,1.41],[1,-1,1.41],[-1,1,1.41],[-1,-1,1.41]];
-const LAND=new Int8Array(MW*MH).fill(-1);  // index into TOWNS, or -1 for wild land
-let landSig='',landTiles=[],landMini=null;
+let LAND=null,landSig='',landTiles=[],landMini=null;// LAND: an index into TOWNS a tile, or -1 for wild land
+// a world goes in: its land as the world first stood (worldmap.js worldKeep), or none claimed yet (reckoned at the next look)
+onWorld(m=>{const F=m.first;LAND=F?Int16Array.from(F.land):new Int16Array(MW*MH).fill(-1);landSig=F?F.landSig:'';landTiles=F?F.landTiles.slice():[];landMini=null});
 const landReach=t=>t.T.reach+Math.floor(t.grow||0);
 // up to 3 more reach for friendly holdings within 50 tiles
 const growCap=t=>t.T.growMax+Math.min(3,TOWNS.filter(o=>o!==t&&o.owner===t.owner&&Math.hypot(o.tx-t.tx,o.ty-t.ty)<50).length);

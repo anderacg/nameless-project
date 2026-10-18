@@ -4,7 +4,7 @@ function spawnBandit(initial,ld){// (ld: a chieftain coming back)
   for(let tries=0;tries<40;tries++){
     const x=rint(3,MW-4)*TILE+8,y=rint(3,MH-4)*TILE+8;
     if(!passable(terrAt(x,y)))continue;
-    if(Math.hypot(x-P.x,y-P.y)<(initial?220:260))continue;
+    if(Math.hypot(x-P.x,y-P.y)<WORLD_SCALE.spawn.bandit[initial?0:1])continue;
     const c=climAt(x,y),n=rint(3,5)+Math.floor(G.day/12),kind=c==='desert'?'raiders':c==='swamp'?'bog':'bandits';bandits.push(asParty({x,y,n,kind,list:makeEnemies(n,false,kind),t:0,a:0,idle:false,cool:0,ld:ld||newChief(kind,1+Math.floor(G.day/25)+(Math.random()<.3?1:0))}));if(ld&&Math.hypot(x-P.x,y-P.y)<vis()*3)log(ld.name+' is back on the roads with a new band.','bad');return;
   }
 }
@@ -62,7 +62,7 @@ function clickAt(wx,wy){
   G.chase=o;P.tx=o.x;P.ty=o.y;P.stuck=0;return false;
 }
 // the camp a band heads for at night: the nearest that is not cleared, within reach
-const campNear=b=>{let best=null,bd=220;for(const c of camps()){if(c.cleared)continue;const d=Math.hypot(c.x-b.x,c.y-b.y);if(d<bd){bd=d;best=c}}return best};
+const campNear=b=>{let best=null,bd=WORLD_SCALE.ai.bandCamp;for(const c of camps()){if(c.cleared)continue;const d=Math.hypot(c.x-b.x,c.y-b.y);if(d<bd){bd=d;best=c}}return best};
 // at dawn the bands in a camp ride out again
 function campEmpty(c){if(!c.bands||!c.bands.length)return;for(const b of c.bands){b.x=c.x+rint(-12,12);b.y=c.y+rint(10,18);b.cool=2;b.gone=false;bandits.push(b)}c.bands=[]}
 // attacking a camp: its own bandits and chieftain, and any bands sheltering there tonight
@@ -97,7 +97,7 @@ function bandPace(){
 function travelMul(){let t=speedAt(P.x,P.y,P.race,mountIgn())||1;if(t<1&&has('path'))t=1-(1-t)/2;return bandPace()*t*(mountedShare(bandSpeeds())>=.5&&roughFor(P.x,P.y,mountIgn())?.8:1)}
 // daily price of the land you camp in; holdings shelter you from all of it
 function survive(){
-  const clim=climAt(P.x,P.y),home=RACES[P.race].home,shelter=TOWNS.some(t=>Math.hypot(t.x-P.x,t.y-P.y)<48);
+  const clim=climAt(P.x,P.y),home=RACES[P.race].home,shelter=TOWNS.some(t=>Math.hypot(t.x-P.x,t.y-P.y)<WORLD_SCALE.land.shelter);
   if(shelter)return;
   // Survival: each day in harsh land teaches it, and it softens what the land costs (sv: the share still paid)
   const harsh=clim==='frost'&&!home.includes('frost')||clim==='desert'&&!home.includes('desert')||clim==='swamp'&&!home.includes('swamp');if(harsh)train('surv',4);
@@ -145,7 +145,7 @@ function updateWorld(dt){
   if(P.stay&&stayTick(d))return;
   if(G.capture&&!G.modal){showCapture();return}
   raidTick(d);landWatch();
-  if(P.siege){const st=townBy(P.siege.town);if(!st||Math.hypot(P.x-st.x,P.y-st.y)>80){P.siege=null;log('You march away and the siege'+(st?' of '+st.name:'')+' is lifted.','bad')}}
+  if(P.siege){const st=townBy(P.siege.town);if(!st||Math.hypot(P.x-st.x,P.y-st.y)>WORLD_SCALE.war.siegeLeash){P.siege=null;log('You march away and the siege'+(st?' of '+st.name:'')+' is lifted.','bad')}}
   // (a chase ends when what you chase is gone or not worth it: WorldObject here, chaseable; reached, it is met, unless you just
   // fought and it would fight you: meetsAnyTime)
   if(G.chase){const o=G.chase;if(!objKind(o)||!o.chaseable())G.chase=null;else{P.tx=o.x;P.ty=o.y;
@@ -154,7 +154,7 @@ function updateWorld(dt){
     const dx=P.tx-P.x,dy=P.ty-P.y,dist=Math.hypot(dx,dy);
     if(dist<2){P.tx=null}
     else{
-      const step=Math.min(dist,MAP_BASE*travelMul()*d*(P.morale<25?.8:1));
+      const step=Math.min(dist,moveStep(MAP_BASE*travelMul(),d)*(P.morale<25?.8:1));
       P.dir=dx>=0?1:-1;
       if(walk(P,dx,dy,step)){P.stuck=0;train('scout',step/TILE*.08);if(mountDef())train('ride',step/TILE*.1)}else{P.stuck+=d;if(P.stuck>.4){P.tx=null;P.stuck=0}}
     }
@@ -176,7 +176,7 @@ function updateWorld(dt){
 }
 
 // the wounded heal: each day a share of them is fit again (more with Medicine, more near a friendly holding)
-function woundedDay(){const W0=P.wounded||{},near=TOWNS.some(t=>!hostileTo(t.owner)&&Math.hypot(t.x-P.x,t.y-P.y)<80),r=Math.min(.9,(.2+.03*skill('med')+(near?.2:0))*(P.stay?2:1));let back=0;
+function woundedDay(){const W0=P.wounded||{},near=TOWNS.some(t=>!hostileTo(t.owner)&&Math.hypot(t.x-P.x,t.y-P.y)<WORLD_SCALE.land.healNear),r=Math.min(.9,(.2+.03*skill('med')+(near?.2:0))*(P.stay?2:1));let back=0;
   for(const k in W0){const n=W0[k];if(!n)continue;let h=Math.min(n,Math.floor(n*r+Math.random())),returned=0;
     for(const g of (P.woundedGroups||[]).filter(g=>g.type===k&&g.count)){if(!h)break;const m=partyRoster(P).restore(g,Math.min(h,g.count));g.count-=m;h-=m;returned+=m}
     // A blocked originating group keeps its wounded; they never silently reinforce a duplicate group.

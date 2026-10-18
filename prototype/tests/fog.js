@@ -15,7 +15,9 @@ try{
  // what is dark, what is remembered, what you see
  const px=(x,y)=>{const d=t.ctx.getImageData(Math.round(x-G.cam.x),Math.round(y-G.cam.y),1,1).data;return[d[0],d[1],d[2]]};
  {let ux=null;const deep=(x,y)=>{for(let j=-3;j<=3;j++)for(let i=-3;i<=3;i++)if(t.seenAt(x+i*TILE,y+j*TILE))return false;return true};for(let y=G.cam.y+8;y<G.cam.y+t.VH-8&&ux==null;y+=8)for(let x=G.cam.x+8;x<G.cam.x+t.VW-8&&ux==null;x+=8)if(deep(x,y))ux=[x,y];
-  if(ux!=null){const c=px(ux[0],ux[1]);ok(c[0]<20&&c[1]<20&&c[2]<30,'land you have never seen is dark on the screen ('+c.join(',')+')')}else ok(true,'(no unseen land on screen)')}
+  // (drawn with the mist's drift held at its clock's 0, as reducedMotion holds it (mist.js mistTime): on the real clock a wisp
+  //  drifting by could cross the pixel in some runs and not others)
+  if(ux!=null){window.__rmD=t.reducedMotion;(0,eval)('reducedMotion=()=>true');try{t.drawWorld()}finally{(0,eval)('reducedMotion=__rmD')}const c=px(ux[0],ux[1]);ok(c[0]<20&&c[1]<20&&c[2]<30,'land you have never seen is dark on the screen ('+c.join(',')+')')}else ok(true,'(no unseen land on screen)')}
  // a lord on land you know but cannot see now is not drawn; in your sight he is
  const spot={x:P.x+V+40,y:P.y};for(let k=-2;k<=2;k++)for(let j=-2;j<=2;j++)t.seenArr()[(Math.floor(spot.y/TILE)+j)*MW+Math.floor(spot.x/TILE)+k]=1;
  const L=W.lords.find(l=>!l.dead);const keep=[L.x,L.y,L.inside];L.inside=null;

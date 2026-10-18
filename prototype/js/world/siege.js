@@ -125,7 +125,7 @@ function startRaid(t){
 // each moment on the map: plunder on, or give up if you walk away
 function raidTick(d){
   const r=P.raid;if(!r)return;const t=townBy(r.town);if(!t){P.raid=null;return}
-  if(Math.hypot(P.x-t.x,P.y-t.y)>80){finishRaid(t,r.t/RAID_TIME);return}
+  if(Math.hypot(P.x-t.x,P.y-t.y)>WORLD_SCALE.war.raidLeash){finishRaid(t,r.t/RAID_TIME);return}
   r.t+=d;if(r.t>=RAID_TIME)finishRaid(t,1);
 }
 // the loot, by how much of the raid you finished; a full raid burns the herds and counts for quests
@@ -158,7 +158,7 @@ function captureAct(a){
   if(prev!=='player'){P.hostile[prev]=Math.max(P.hostile[prev]||0,G.day+60);addHonor(prev,-15,true)}
   if(sack){const loot=Math.round(t.T.sack*(1+G.day/50));P.gold+=loot;P.morale=clamp(P.morale+12,0,100);
     let got=sackStock(t,.5,.3,true);
-    addRep(t.name,-40,true);TOWNS.forEach(o=>{if(o!==t&&Math.hypot(o.x-t.x,o.y-t.y)<20*TILE)addRep(o.name,-10,true)});FIDS.forEach(g=>addHonor(g,-6,true));
+    addRep(t.name,-40,true);TOWNS.forEach(o=>{if(o!==t&&Math.hypot(o.x-t.x,o.y-t.y)<WORLD_SCALE.law.siegeOutrage*TILE)addRep(o.name,-10,true)});FIDS.forEach(g=>addHonor(g,-6,true));
     t.sacked=G.day+20;const burnt=burnEstates(t,2);lines.push('You sack '+t.name+': '+loot+' gold and '+got+(burnt.length?'. Your soldiers burn its '+burnt.join(' and '):'')+'. Word spreads of what you did.');mood('ransom')}
   else{addRep(t.name,-5,true);FIDS.forEach(g=>{if(g!==prev)addHonor(g,3,true)});lines.push('You spare '+t.name+'. Even your enemies speak of your restraint.')}
   if(a==='cap-leave'){t.gar=1;lines.push('You leave the '+t.label+' to the '+FACS[prev].n+', empty and burning.')}

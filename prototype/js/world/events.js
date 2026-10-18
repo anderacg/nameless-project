@@ -2,7 +2,7 @@
 /* ---------- road events ---------- */
 // Each event: w = weight, ok() = can it happen here and now, then either run() for an instant event (returns a log line and its tone)
 // or text + choices for a decision. A choice has a label, an optional need() that returns why it is unavailable, and run() that returns the outcome.
-const nearHold=()=>{const t=nearestOf(P,TOWNS);return t&&Math.hypot(t.x-P.x,t.y-P.y)<15*TILE?t:null};
+const nearHold=()=>{const t=nearestOf(P,TOWNS);return t&&Math.hypot(t.x-P.x,t.y-P.y)<WORLD_SCALE.law.eventNear*TILE?t:null};
 const gainGrain=n=>invAdd('good','grain',n);
 const EVENTS=[
   // instant

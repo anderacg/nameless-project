@@ -1,30 +1,36 @@
 'use strict';
 // World fingerprints (doc/WORLD_DESIGN.md §2.0, Step 0.0): eight hashes of the classic world that every Phase 0 refactor keeps as
-// they are, recorded at the baseline commit 0a42712. Each is printed as an INFO line (to diff a refactor against) and PASSed
-// against its constant in EXPECT.
-//   W1 tiles and climate (the roads already led round the centres to the gates: lots.js roadsToGates, once a page)
+// they are, recorded at the baseline commit 0a42712, and B2 (begin twice, R3, below). Each is printed as an INFO line (to diff a
+// refactor against) and PASSed against its constant in EXPECT.
+//   W1 tiles and climate (the roads already led round the centres to the gates: lots.js roadsToGates, once a map)
 //   W2 DEPOSITS (every field, in order) and DEP_AT
 //   W3 TOWNS as JSON after begin's initWorld: owners, garrisons, economy, estates and lots (keys starting with _ left out: caches)
-//   W4 LAND (the territory: an index into TOWNS or -1, a tile)
-//   W5 the painted world as the game holds it after begin, every byte of worldCv()'s pixels (today: painted once a page, by the
-//      title screen's first frame, from the world main.js makes at load; the suite asks for it before begin, so it is the same
-//      picture whether or not that frame came before the suite)
+//   W4 LAND (the territory: an index into TOWNS or -1, a tile; hashed a byte a tile, as it was kept before R1 made it 16-bit)
+//   W5 the painted world as the game holds it after begin, every byte of worldCv()'s pixels: painted afresh after begin (its
+//      useWorld forgets the title screen's picture, worldart.js), so it shows begin's lots; the suite asks for the title's first,
+//      so it is the same picture whether or not that frame came before the suite, and again after the second begin (equal)
 //   W6 drawWorld() at three fixed spots (where begin puts you; map pixel (1792, 1280), the middle; (2688, 768)), each by day (clock
 //      .3 of a day) and by night (.8): the whole 576 x 360 view (its fog, lights, labels and minimap); the six parts are printed too
 //   W7 the save string (the quick slot, its time stamp 'at' left out) once 3 days have passed since begin
 //   W8 the place of every party and mover after 600 frames of updateWorld(.05): you (walking toward +96, +48 px), the lords (dead
 //      ones too), bands, patrols, companions' parties, caravans, beasts, herds, refugees, workers, ships and fights
 // Mode: ONE begin('soldier') a page, then every hash in turn on that game: W1-W5, W6, then W8's 600 frames, then on until 3 days
-// have passed, then W7. (One begin, because today a second begin in the same page makes other lots and estates than the first:
-// initEstates reads the last game's lots. A fresh page is the one state every refactor can reproduce.) Each stage seeds
+// have passed, then W7. Then begin twice (R3, the world reset: useWorld's onWorld hooks): a second begin, after those days of
+// play, must make what the page's first made: W1-W4 as above, and B2, the save straight after it, equal to the save a fresh
+// page makes straight after its begin (recorded at R3 by saving there in a one-off run: saving at the first begin here would
+// move W7). (Before R3 it made other lots and estates: initEstates read the last game's lots, and the holdings kept what the
+// last game left on them.) Each stage seeds
 // Math.random itself (as battlesetup does), so the page's seed changes nothing and an unseeded run gives the hashes of -Seed 1:
-// begin 9001; each of W6's draws 9061+k, with performance.now held at 1e7 + k x 1e4 (clocks, flicker and throttles read alike);
+// begin 9001 (both begins); each of W6's draws 9061+k, with performance.now held at 1e7 + k x 1e4 (clocks, flicker and throttles read alike);
 // W8 9008 (speed 1); the days to W7 9007 (you parked off the map at -999, -999, as visual/worldsim: nothing meets you; speed 3).
 // The harness's switches hold (TERRAIN, FOG, AUDIO, FIELD_SIZES... off: all battle-side; the world's fog of war is on),
 // G.quietEvents is on, and the view is the tests' fixed 576 x 360. Hash: FNV-1a 32-bit over bytes, char codes or 32-bit words;
 // W8's places at 1e-6 px.
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.push('INFO '+m),t=T,G=t.G,P=t.P,W=t.W;
-const EXPECT={W1:'65e24662',W2:'2b49a168',W3:'7a0dcbac',W4:'46450e62',W5:'aceeae00',W6:'7a99f543',W7:'c50cf16f',W8:'847c821c'};// (at 0a42712)
+const EXPECT={W1:'65e24662',W2:'2b49a168',W3:'7a0dcbac',W4:'46450e62',W5:'6587a43c',W6:'f2016cf2',W7:'c50cf16f',W8:'847c821c',B2:'00a93435'};// (at 0a42712; B2 at R3)
+// (W5, W6 re-recorded in Phase 0 wave 1, on purpose, a fix: the painted world and the minimap were the title screen's, from the
+//  lots main.js lays out at load, never repainted for a game's own (begin lays out others); now begin repaints them, so the map
+//  shows the real lots. W6 moved only at the third spot (2688, 768) by night and day; was W5 aceeae00, W6 7a99f543)
 const r0=Math.random,pn=performance.now,t0=pn.call(performance);
 try{
  try{localStorage.clear()}catch(e){}
@@ -37,11 +43,19 @@ try{
  const got={},lines={},check=(id,h,what)=>{got[id]=h;lines[id]=id+' '+h+' '+what},seed=n=>{Math.random=t.seeded(n)};
  // ---- the game: one begin (the world's picture made first, as the title screen makes it)
  t.worldCv();seed(9001);t.act('begin','soldier');G.quietEvents=true;G.mode='world';G.modal=false;t.hidePanel();const d0=G.day;
- check('W1',fnv().b(t.tiles).b(t.climate).x,'tiles and climate ('+t.MW+'x'+t.MH+')');
- {const h=fnv();for(const d of t.DEPOSITS)h.s(JSON.stringify(d));h.b(bytes(t.DEP_AT));check('W2',h.x,'DEPOSITS ('+t.DEPOSITS.length+') and DEP_AT')}
- {const s=JSON.stringify(t.TOWNS,(k,v)=>k[0]==='_'?undefined:v);check('W3',fnv().s(s).x,'TOWNS as JSON ('+t.TOWNS.length+' holdings, '+t.TOWNS.reduce((a,z)=>a+(z.lots||[]).length,0)+' lots, '+s.length+' chars)')}
- {t.landFresh();const L=t.LAND;check('W4',fnv().b(bytes(L)).x,'LAND ('+L.filter(v=>v>=0).length+' tiles claimed)')}
- {const c=t.worldCv(),d=c.getContext('2d').getImageData(0,0,c.width,c.height).data;check('W5',fnv().b(words(d)).x,'the painted world ('+c.width+'x'+c.height+')')}
+ // W1-W4: the world begin leaves (asked again after the second begin)
+ const world=()=>{const h={};
+  h.W1=[fnv().b(t.tiles).b(t.climate).x,'tiles and climate ('+t.MW+'x'+t.MH+')'];
+  {const x=fnv();for(const d of t.DEPOSITS)x.s(JSON.stringify(d));x.b(bytes(t.DEP_AT));h.W2=[x.x,'DEPOSITS ('+t.DEPOSITS.length+') and DEP_AT']}
+  {const s=JSON.stringify(t.TOWNS,(k,v)=>k[0]==='_'?undefined:v);h.W3=[fnv().s(s).x,'TOWNS as JSON ('+t.TOWNS.length+' holdings, '+t.TOWNS.reduce((a,z)=>a+(z.lots||[]).length,0)+' lots, '+s.length+' chars)']}
+  // (LAND a byte a tile: TOWNS is far under 128 long, so its 16-bit values are the bytes it had)
+  {t.landFresh();const L=t.LAND;h.W4=[fnv().b(bytes(Int8Array.from(L))).x,'LAND ('+L.filter(v=>v>=0).length+' tiles claimed)']}
+  return h};
+ // the save (the quick slot, its time stamp left out)
+ const save=()=>{t.saveGame(true,'quick');const raw=localStorage.getItem(t.SAVE+'.quick'),sv=raw&&JSON.parse(raw);if(sv)delete sv.at;try{localStorage.removeItem(t.SAVE+'.quick')}catch(e){}return sv?JSON.stringify(sv):''};
+ const w1=world();for(const id in w1)check(id,w1[id][0],w1[id][1]);
+ const paint=()=>{const c=t.worldCv();return [fnv().b(words(c.getContext('2d').getImageData(0,0,c.width,c.height).data)).x,c.width+'x'+c.height]};
+ {const [h,wh]=paint();check('W5',h,'the painted world ('+wh+')')}
  // ---- W6: three spots, by day and by night
  {const spots=[[P.x,P.y],[1792,1280],[2688,768]],keep={x:P.x,y:P.y,clock:G.clock},parts=[],h=fnv();let k=0,now=1e7;
   performance.now=()=>now;
@@ -58,9 +72,14 @@ try{
  // ---- W7: on until 3 days have passed, then the save
  {seed(9007);P.x=-999;P.y=-999;P.tx=P.ty=null;G.chase=null;t.setSpeed(3);let f=0;
   for(;f<4000&&G.day<d0+3;f++)t.updateWorld(.05);
-  const mode=G.mode;G.mode='world';t.saveGame(true,'quick');const raw=localStorage.getItem(t.SAVE+'.quick'),sv=raw&&JSON.parse(raw);
-  if(sv)delete sv.at;const s=sv?JSON.stringify(sv):'';try{localStorage.removeItem(t.SAVE+'.quick')}catch(e){}
+  const mode=G.mode;G.mode='world';const s=save();
   check('W7',fnv().s(s).x,'the save once 3 days have passed (day '+G.day+', '+f+' more frames, mode '+mode+', '+s.length+' chars)')}
+ // ---- begin twice: the same world and the same game as the first begin, a fresh page's
+ {seed(9001);t.act('begin','soldier');G.quietEvents=true;G.mode='world';G.modal=false;t.hidePanel();
+  const w2=world(),s=save(),diff=Object.keys(w1).filter(id=>w2[id][0]!==w1[id][0]),p2=paint()[0];
+  ok(p2===got.W5,'begin twice: the second paints the world as the first did (W5'+(p2===got.W5?'':'; differs: '+p2)+')');
+  ok(!diff.length,'begin twice: the second makes the world the first made (W1-W4'+(diff.length?'; differ: '+diff.map(id=>id+' '+w2[id][0]).join(', '):'')+')');
+  check('B2',fnv().s(s).x,'begin twice: the save straight after the second begin, as a fresh page makes it ('+s.length+' chars)')}
  for(const id in EXPECT)if(lines[id])info(lines[id]);
  for(const id in EXPECT)if(EXPECT[id])ok(got[id]===EXPECT[id],id+' equals the baseline ('+got[id]+(got[id]===EXPECT[id]?'':'; baseline '+EXPECT[id])+')');
   else o.push('FAIL '+id+' has no baseline ('+got[id]+')');

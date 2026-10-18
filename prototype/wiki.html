@@ -121,6 +121,7 @@ tr:last-child td{border-bottom:0}
 <script src="../engine/worldnature.js"></script>
 <script src="../engine/beasts.js"></script>
 <script src="js/core/core.js"></script>
+<script src="js/data/world.js"></script>
 <script src="js/data/races.js"></script>
 <script src="js/data/factions.js"></script>
 <script src="js/data/units.js"></script>
@@ -147,6 +148,7 @@ tr:last-child td{border-bottom:0}
 <script src="js/world/map.js"></script>
 <script src="js/world/fog.js"></script>
 <script src="js/world/resources.js"></script>
+<script src="js/world/worldmap.js"></script>
 <script src="js/gfx/worldart.js"></script>
 <script src="js/gfx/sprites.js"></script>
 <script src="js/gfx/people.js"></script>
@@ -233,7 +235,7 @@ tr:last-child td{border-bottom:0}
 'use strict';
 AUDIO.on=false;// (the wiki is silent: it loads the game's scripts, sound among them)
 // a world to read from: owners, estates, stores and people as a new game starts (no game is started or saved)
-P.x=(TOWNS[0].tx+.5)*TILE;P.y=(TOWNS[0].ty+2.5)*TILE;G.mode='wiki';initWorld();
+P.x=(startHolding().tx+.5)*TILE;P.y=(startHolding().ty+2.5)*TILE;G.mode='wiki';initWorld();
 const main=document.getElementById('wiki');
 const L={grass:'Grassland',frost:'Frost',desert:'Desert',swamp:'Swamp',forest:'Forest',hills:'Hills',open:'Open ground',rock:'Hills or mountain',shore:'Shoreline'};
 const pct=x=>Math.round(x*100)+'%';
@@ -311,7 +313,7 @@ section('realms','Realms and diplomacy','Five realms declare wars, sign truces a
 /* holdings */
 section('holdings','Holdings',TOWNS.length+' cities, towns, castles and villages. Hiring needs standing at the holding: '+REP_NEED[1]+' for tier 1, '+REP_NEED[2]+' for tier 2, '+REP_NEED[3]+' for tier 3. Standing is your reputation there, half your honor with its owner, and a bonus where your own race lives. Shown as a new game begins.',
   table(['Holding','Kind','Starts with','Folk','Climate','Walls','People','Estates','Notes'],TOWNS.map(t=>['<b>'+t.name+'</b>',t.kind,fac(HOME[t.name]),t.races.map(r=>RACES[r].n).join(', '),L[t.clim],WALL_N[wallOf(t)],t.pop,'<span class="muted" style="font-size:13px">'+estateLine(t)+'</span>',
-    '<span class="muted" style="font-size:13px">'+t.note+(Object.keys(COMPS).some(c=>COMPS[c].town===t.name)?' Companion: '+Object.keys(COMPS).filter(c=>COMPS[c].town===t.name).map(c=>COMPS[c].n).join(', ')+'.':'')+'</span>']),[6])+
+    '<span class="muted" style="font-size:13px">'+t.note+(Object.keys(COMPS).some(c=>compTown(c)===t)?' Companion: '+Object.keys(COMPS).filter(c=>compTown(c)===t).map(c=>COMPS[c].n).join(', ')+'.':'')+'</span>']),[6])+
   sub('Staying in a holding','Stay here (in a holding’s window, or Lodgings in its tavern) and your band goes inside while the days pass at whatever speed you set.',kv([
     ['Inside','Off the map: nothing hunts you, the frost and the desert cannot reach you. You recover four times as fast as on the road, morale rises 15 a day, the wounded heal twice as fast. Click the holding to trade, hire and drink as usual; the banner’s Leave takes you out by the gate.'],
     ['Free','Where they know you: your own fief, your employer’s holdings, or standing '+STAY_FREE+' or more. As long as you like.'],
@@ -414,7 +416,7 @@ section('troops','Troop trees','Hire tier 1 troops (and tier 2 riders at castles
   '<div class="sub"><h3>Mercenaries and bandits</h3><p class="muted">Not tied to a race. You start with some, take them as prisoners, and bandits field them. Camps are led by a chieftain.</p><div class="trees">'+
     ['militia','archer','horse','chief'].map(k=>'<div class="treebox">'+tree(k)+'</div>').join('')+'</div></div>'+
   '<div class="sub"><h3>Companions</h3><div class="grid">'+Object.keys(COMPS).map(c=>{const C=COMPS[c];return '<article class="card entry"><div class="head">'+spr(c,0,3)+'<div><h3>'+C.n+'</h3><span class="muted">'+C.d+'</span></div></div>'+
-    kv([['Found in',C.town+' tavern, '+C.cost+'g'],['Likes',Object.keys(C.react).filter(k=>C.react[k]>0).join(', ')||'—'],['Dislikes',Object.keys(C.react).filter(k=>C.react[k]<0).join(', ')||'—']])+'</article>'}).join('')+'</div>'+
+    kv([['Found in',compTown(c).name+' tavern, '+C.cost+'g'],['Likes',Object.keys(C.react).filter(k=>C.react[k]>0).join(', ')||'—'],['Dislikes',Object.keys(C.react).filter(k=>C.react[k]<0).join(', ')||'—']])+'</article>'}).join('')+'</div>'+
   callout('Companions, lords and chieftains are characters, as you are: each has the full skill tree (its own, from the crossroads: two points to start and one a level), fighting skills that rise as they fight, gear in seven slots and perks, and fights as their kind grown by all of it; the tree gives their attributes and active skills, which they use from their own skill slots. Until a character joins you it grows its tree itself along its class’s path (warrior, guardian, rider, archer or caster, by what it fights with); once with you, its points are yours: Manage it in the Party tab and open its skill tree. Lords and chieftains wear gear of their level (a tier every three levels).')+callout('Companions leave when their approval falls to −5. Brann and Elske also quarrel when both travel with you. Give each one a role: '+Object.values(ROLES).join(', ')+'.')+'</div>');
 
 /* gear */

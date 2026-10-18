@@ -7,7 +7,9 @@
 // A holding is laid out from its centre: houses round it (enough for its people), the buildings of its estates, then its
 // fields, herds, mines and docks outside (clear of the town). Its walls are the centre's own: Fortify upgrades it. Every layout is the
 // holding's own: the seed varies house kinds, places and orientation.
-const OCC=new Int32Array(MW*MH),LOT={};let lotN=1;
+let OCC=null,lotN=1;const LOT={};
+// a world goes in (useWorld): its grid as the world first stood (worldKeep: the holdings' lots are back by then), or empty
+onWorld(m=>{const F=m.first;OCC=F?F.occ.slice():new Int32Array(MW*MH);for(const k in LOT)delete LOT[k];lotN=F?F.lotN:1;if(F)for(const t of TOWNS)for(const l of t.lots||[])LOT[l.id]=l});
 const occAt=(x,y)=>x<0||y<0||x>=MW||y>=MH?-1:OCC[y*MW+x];
 const lotTiles=(l,f)=>{for(let j=0;j<l.n;j++)for(let i=0;i<l.n;i++)f(l.x+i,l.y+j)};
 function occMark(l,v){lotTiles(l,(x,y)=>{OCC[y*MW+x]=v});(l.plots||[]).forEach(([x,y])=>{OCC[y*MW+x]=v})}
@@ -26,14 +28,13 @@ const nearBandits=(x,y,r)=>banditSpots().some(s=>Math.hypot(s.tx-x,s.ty-y)<r);
 function estateNear(tx,ty,r){for(let y=ty-r;y<=ty+r;y++)for(let x=tx-r;x<=tx+r;x++){const id=occAt(x,y),l=id>0&&LOT[id];if(l&&ESTATES[l.k]&&Math.hypot(x-tx,y-ty)<r)return true}return false}
 // a new world: nothing stands anywhere yet
 function lotsReset(){roadsToGates();OCC.fill(0);for(const k in LOT)delete LOT[k];TOWNS.forEach(t=>{t.lots=null});occReserve()}
-// nothing stands on a road: the roads were carved to each holding's own tile, where its centre now stands, so once (the map is
+// nothing stands on a road: the roads were carved to each holding's own tile, where its centre now stands, so once a map (it is
 // the same every game) the road under each centre is taken up, and every road that ran into it is led round its walls to its
 // gate, the tile in front of it, by the shortest way that keeps off every centre, water, mountain and ore vein. Other buildings, fields,
 // camps and sites are placed off the roads.
-let roadsDone=false;
 const centreBox=t=>{const n=lotSize(typeFor(t,'centre',Math.random));return{x:t.tx-(n>>1),y:t.ty-n+1,n}};
 function roadsToGates(){
-  if(roadsDone)return;roadsDone=true;const boxes=TOWNS.map(centreBox),inBox=(x,y)=>boxes.some(b=>x>=b.x&&x<b.x+b.n&&y>=b.y&&y<b.y+b.n);
+  if(WM.gated)return;WM.gated=true;const boxes=TOWNS.map(centreBox),inBox=(x,y)=>boxes.some(b=>x>=b.x&&x<b.x+b.n&&y>=b.y&&y<b.y+b.n);
   TOWNS.forEach((t,ti)=>{const b=boxes[ti],gx=t.tx,gy=b.y+b.n,ends=[];
     for(let y=b.y;y<b.y+b.n;y++)for(let x=b.x;x<b.x+b.n;x++)if(tiles[y*MW+x]===T_ROAD)tiles[y*MW+x]=T_OPEN;
     for(let y=b.y-1;y<=b.y+b.n;y++)for(let x=b.x-1;x<=b.x+b.n;x++){const edge=(x===b.x-1||x===b.x+b.n)!==(y===b.y-1||y===b.y+b.n);if(edge&&tiles[y*MW+x]===T_ROAD&&!(x===gx&&y===gy))ends.push([x,y])}

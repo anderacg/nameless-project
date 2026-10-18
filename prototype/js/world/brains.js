@@ -4,7 +4,7 @@
    holding not at all), then it does what its kind does: hunt you, keep clear of you, or go about its business. One class per
    kind; the party's own data stays on the party. think(o, d) returns true when it opened an encounter (the world stops there).
    updateParties(d) runs them all, kind by kind. ---------- */
-const GRACE_GAP=24;
+const GRACE_GAP=WORLD_SCALE.ai.graceGap;
 class Brain{
   cool(o,d){o.cool=Math.max(0,(o.cool||0)-d)}
   // you, from where it stands
@@ -25,14 +25,14 @@ class LordBrain extends Brain{
     if(l.inside){const h=townBy(l.inside);if(l.state==='rest'&&l.tgt===l.inside&&h&&h.owner===l.fac)return false;l.leave()}
     if(inFight(l))return false;
     const v=this.look(l),pd=v.d,hostile=hostileTo(l.fac)&&!lordSpares(l),mul=lordSpeed(l)/26;// (26: a lord's old pace)
-    const relief=hostile&&l.state==='relieve'&&!!P.siege&&P.siege.town===l.tgt,st=hostile?(relief?'attack':stance(l.power())):null,see=this.sight(90)*(relief?2:1);
+    const relief=hostile&&l.state==='relieve'&&!!P.siege&&P.siege.town===l.tgt,st=hostile?(relief?'attack':stance(l.power())):null,see=this.sight(WORLD_SCALE.sight.lord)*(relief?2:1);
     if(st==='afraid'&&l.state==='siege'&&pd<see){l.state='home';l.tgt=nearestOf(l,fiefsOf(l.fac)).name;log(l.name+' abandons the siege as your band approaches.','good')}
-    const dread=W.lords.find(o=>!o.dead&&!o.inside&&o!==l&&atWar(o.fac,l.fac)&&Math.hypot(o.x-l.x,o.y-l.y)<70&&o.power()>=l.power()*1.5);
+    const dread=W.lords.find(o=>!o.dead&&!o.inside&&o!==l&&atWar(o.fac,l.fac)&&Math.hypot(o.x-l.x,o.y-l.y)<WORLD_SCALE.ai.dread&&o.power()>=l.power()*1.5);
     if(dread&&l.state==='march'&&fiefsOf(l.fac).length){l.state='home';l.tgt=nearestOf(l,fiefsOf(l.fac)).name}
-    if(!(hostile&&l.cool<=0&&l.state!=='siege'&&stanceMove(l,st,pd,v.dx,v.dy,see,26*mul*d,true))){
+    if(!(hostile&&l.cool<=0&&l.state!=='siege'&&stanceMove(l,st,pd,v.dx,v.dy,see,moveStep(26*mul,d),true))){
       const t=townBy(l.tgt);if(!t){lordThink(l);return false}
       const tx=t.x+(l.state==='siege'?(l.id.endsWith('0')?-16:16):0),ty=t.y+12,dd=Math.hypot(tx-l.x,ty-l.y);
-      if(dd>4)travelTo(l,t,tx,ty,26*mul*d);
+      if(dd>4)travelTo(l,t,tx,ty,moveStep(26*mul,d));
       else if(l.state==='march'){
         if(atWar(l.fac,t.owner)){l.state='siege';l.sd=0;if(Math.hypot(t.x-P.x,t.y-P.y)<vis()*1.5||t.owner===P.fac||t.owner==='player')log(l.name+' of the '+FACS[l.fac].n+' lays siege to '+t.name+(t.owner==='player'?', your fief!':'.'),t.owner===P.fac||t.owner==='player'?'bad':'')}
         else lordThink(l);
@@ -50,9 +50,9 @@ class BandBrain extends Brain{
     if(inFight(b))return false;
     const v=this.look(b);this.cool(b,d);
     const st=stance(b.power()),home=night&&campNear(b);
-    if(b.cool>0||!stanceMove(b,st,v.d,v.dx,v.dy,this.sight(95),partySpeed(b,b.troops)*d,true)){
-      if(home){routeTo(b,home.x,home.y,16*d)||walk(b,home.x-b.x,home.y-b.y,Math.min(Math.hypot(home.x-b.x,home.y-b.y),16*d));if(Math.hypot(home.x-b.x,home.y-b.y)<8){(home.bands=home.bands||[]).push(b);b.x=home.x;b.y=home.y;b.gone=true;return false}}
-      else{b.t-=d;if(b.t<=0){b.t=2+Math.random()*3;b.a=Math.random()*6.283;b.idle=Math.random()<.3}if(!b.idle)walk(b,Math.cos(b.a),Math.sin(b.a),12*d)}}
+    if(b.cool>0||!stanceMove(b,st,v.d,v.dx,v.dy,this.sight(WORLD_SCALE.sight.band),moveStep(partySpeed(b,b.troops),d),true)){
+      if(home){routeTo(b,home.x,home.y,moveStep(16,d))||walk(b,home.x-b.x,home.y-b.y,Math.min(Math.hypot(home.x-b.x,home.y-b.y),moveStep(16,d)));if(Math.hypot(home.x-b.x,home.y-b.y)<8){(home.bands=home.bands||[]).push(b);b.x=home.x;b.y=home.y;b.gone=true;return false}}
+      else{b.t-=d;if(b.t<=0){b.t=2+Math.random()*3;b.a=Math.random()*6.283;b.idle=Math.random()<.3}if(!b.idle)walk(b,Math.cos(b.a),Math.sin(b.a),moveStep(12,d))}}
     if(this.canMeet(b,v.d)){meetBand(b);return true}
     return false;
   }
@@ -65,16 +65,16 @@ class CompanionBrain extends Brain{
     if(inFight(p))return false;if(!p.troops.length){cpDisband(p.cid,false);return false}
     if(p.order==='stay'){const t=townBy(p.base);if(!t||p.shelterWhy(t)&&!(p.inside&&besieged(t)&&!hostileTo(t.owner))){if(p.inside)p.leave();p.order='follow';log(COMPS[p.cid].short+(t?' can no longer stay in '+t.name:' has nowhere to stay')+' and rides to rejoin you.','bad')}
       else if(p.inside)return false;}// inside: off the map
-    this.cool(p,d);const sp=partySpeed(p,p.troops)*.9*d,ox=p.x,mine=p.power(),go=(x,y,s)=>{const dd=Math.hypot(x-p.x,y-p.y);if(dd>1)routeTo(p,x,y,s)||walk(p,x-p.x,y-p.y,Math.min(dd,s))};
-    const foes=[...bandits.filter(b=>!b.fight),...W.lords.filter(l=>!l.dead&&!l.inside&&!l.fight&&hostileTo(l.fac))].map(o=>[o,Math.hypot(o.x-p.x,o.y-p.y),o.power()]).filter(([,dd])=>dd<90).sort((a,b)=>a[1]-b[1]);
+    this.cool(p,d);const sp=moveStep(partySpeed(p,p.troops)*.9,d),ox=p.x,mine=p.power(),A=WORLD_SCALE.ai,go=(x,y,s)=>{const dd=Math.hypot(x-p.x,y-p.y);if(dd>1)routeTo(p,x,y,s)||walk(p,x-p.x,y-p.y,Math.min(dd,s))};
+    const foes=[...bandits.filter(b=>!b.fight),...W.lords.filter(l=>!l.dead&&!l.inside&&!l.fight&&hostileTo(l.fac))].map(o=>[o,Math.hypot(o.x-p.x,o.y-p.y),o.power()]).filter(([,dd])=>dd<A.compFoes).sort((a,b)=>a[1]-b[1]);
     const strong=foes.find(([,,pw])=>pw>mine*1.2),prey=p.order!=='return'&&foes.find(([,,pw])=>pw<=mine);
-    if(strong&&strong[1]<70){go(P.x,P.y,sp*1.1)}
+    if(strong&&strong[1]<A.compFlee){go(P.x,P.y,sp*1.1)}
     else if(prey&&p.cool<=0){go(prey[0].x,prey[0].y,sp*1.15);if(prey[1]<10){startFight([p],[prey[0]]);p.cool=3}}
     else if(p.order==='follow'){if(Math.hypot(P.x-p.x,P.y-p.y)>28)go(P.x-14,P.y+10,sp*1.2)}
     else if(p.order==='return'){go(P.x,P.y,sp*1.2);if(Math.hypot(P.x-p.x,P.y-p.y)<12)cpDisband(p.cid,true)}
     else if(p.order==='stay'){const t=townBy(p.base);travelTo(p,t,t.x,t.y+12,sp);if(Math.hypot(t.x-p.x,t.y+12-p.y)<8){p.enter(t);log(COMPS[p.cid].short+'’s party takes lodgings in '+t.name+'.')}}
     else{const t=townBy(p.base);if(!t){p.order='follow';return false}
-      if(p.wx==null||Math.hypot(p.wx-p.x,p.wy-p.y)<6){for(let k=0;k<20;k++){const x=t.x+rint(-80,80),y=t.y+rint(-60,60);if(passable(terrAt(x,y))){p.wx=x;p.wy=y;break}}}
+      if(p.wx==null||Math.hypot(p.wx-p.x,p.wy-p.y)<6){for(let k=0;k<20;k++){const x=t.x+rint(-A.compBeat[0],A.compBeat[0]),y=t.y+rint(-A.compBeat[1],A.compBeat[1]);if(passable(terrAt(x,y))){p.wx=x;p.wy=y;break}}}
       if(p.wx!=null)go(p.wx,p.wy,sp*.8)}
     this.face(p,ox);return false;
   }
@@ -86,7 +86,7 @@ class PatrolBrain extends Brain{
   think(p,d){
     const t=townBy(p.home);if(!t||t.owner!==p.fac||!p.troops.length){p.gone=true;return false}
     if(inFight(p))return false;
-    this.cool(p,d);const sp=partySpeed(p,p.troops)*.75*d,ox=p.x;
+    this.cool(p,d);const sp=moveStep(partySpeed(p,p.troops)*.75,d),ox=p.x;
     const threat=W.lords.find(l=>!l.dead&&!l.inside&&atWar(l.fac,p.fac)&&Math.hypot(l.x-p.x,l.y-p.y)<PATROL.see);
     const home=besieged(t)||watchOf(p)!==watchNow()||p.troops.length<t.T.patrol.size/2||threat&&threat.power()>p.power();
     const pd=this.look(p).d,hostile=hostileTo(p.fac),wanted=!!crimeAt(t)&&p.fac!=='player',sees=pd<this.sight(PATROL.see);
@@ -112,9 +112,9 @@ class CaravanBrain extends Brain{
   think(c,d){
     if(c.idle||inFight(c))return false;
     this.cool(c,d);const to=townBy(c.to);if(!to||!c.mine&&atWar(to.owner,c.fac)){c.gone=true;return false}
-    const v=this.look(c),pd=v.d,scared=!c.mine&&hostileTo(c.fac)&&pd<this.sight(80);
-    if(scared){walk(c,-v.dx,-v.dy,CARAVAN_SPD*.9*d);c.dir=v.dx>0?-1:1}
-    else{const ox=c.x;travelTo(c,to,to.x,to.y+12,CARAVAN_SPD*Math.max(.5,speedAt(c.x,c.y)||1)*d);c.dir=c.x>=ox?1:-1}
+    const v=this.look(c),pd=v.d,scared=!c.mine&&hostileTo(c.fac)&&pd<this.sight(WORLD_SCALE.sight.caravan);
+    if(scared){walk(c,-v.dx,-v.dy,moveStep(CARAVAN_SPD*.9,d));c.dir=v.dx>0?-1:1}
+    else{const ox=c.x;travelTo(c,to,to.x,to.y+12,moveStep(CARAVAN_SPD*Math.max(.5,speedAt(c.x,c.y)||1),d));c.dir=c.x>=ox?1:-1}
     if(Math.hypot(to.x-c.x,to.y+12-c.y)<8){if(c.arrive(to))c.gone=true;return false}
     // preyed on: bandits close by, or a lord at war with its owner; the guards fight it out (fights.js)
     const b=bandits.find(o=>Math.hypot(o.x-c.x,o.y-c.y)<12&&!o.cvT);

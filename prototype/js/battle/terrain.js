@@ -1003,8 +1003,8 @@ function sightGoal(g,team){
   const m=g.targetMembers();let q=null;if(m.length&&m.every(u=>u.hid&1<<team)){let x=0,y=0,c=0;for(const u of m){const p=u.ls;if(p&&p[2*team]!=null){x+=p[2*team];y+=p[2*team+1];c++}}if(c)q={x:x/c,y:y/c}}
   S.goal.set(key,q);return q}
 // a charge's shock from ambush (morale.js chargeMul): AMBUSH.shock if his group was wholly unseen by its foes within AMBUSH.window
-// s and has not sprung one yet (springing it now: the callout), or sprang it within AMBUSH.burst s; else 1
+// s and has not sprung one yet (springing it now: its event, the banner), or sprang it within AMBUSH.burst s; else 1
 function ambushMul(u){
   const S=B&&B.sight;if(!S)return 1;const gk=u.grp||'u'+u.id,h=S.hid.get(gk);if(h===undefined)return 1;const sp=S.sprung.get(gk);
-  if(sp===undefined){if(B.t-h>AMBUSH.window)return 1;S.sprung.set(gk,B.t);if(typeof calloutAmbush==='function')calloutAmbush(u);return AMBUSH.shock}
+  if(sp===undefined){if(B.t-h>AMBUSH.window)return 1;S.sprung.set(gk,B.t);battleEvent('ambush',{u});return AMBUSH.shock}
   return B.t-sp<=AMBUSH.burst?AMBUSH.shock:1}

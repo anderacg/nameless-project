@@ -34,7 +34,7 @@ function spawnCritter(initial){
   const D=CRITTERS[id];
   for(let k=0;k<200;k++){
     const x=rint(2,MW-3)*TILE+8,y=rint(2,MH-3)*TILE+8,tags=habitatAt(x,y);
-    if(!D.where.some(w=>tags.includes(w))||Math.hypot(x-P.x,y-P.y)<(initial?120:200)||TOWNS.some(t=>Math.hypot(t.x-x,t.y-y)<56))continue;
+    if(!D.where.some(w=>tags.includes(w))||Math.hypot(x-P.x,y-P.y)<WORLD_SCALE.spawn.critter[initial?0:1]||TOWNS.some(t=>Math.hypot(t.x-x,t.y-y)<WORLD_SCALE.spawn.critterHold))continue;
     W.critters.push(asHerd({crit:true,id,x,y,hx:x,hy:y,n:rint(D.herd[0],D.herd[1]),t:0,a:0,dir:1,tire:0,cool:0}));return;
   }
 }
@@ -45,13 +45,12 @@ function grazeOk(id,x,y,pen){
   if(pen)return x>=pen.x&&x<=pen.x+pen.w&&y>=pen.y&&y<=pen.y+pen.h;
   const G0=GRAZE[id];if(!G0)return passable(terrAt(x,y));const g=GROUND_OF[terrAt(x,y)];
   if(!g||!G0.on.includes(g)||G0.clim&&!G0.clim.includes(climAt(x,y)))return false;
-  return !(typeof CLEAR!=='undefined'&&CLEAR&&isClear(x,y));
+  return !isClear(x,y);
 }
 // wild game wanders inside its habitat
 const habitatOk=(id,x,y)=>{const tags=habitatAt(x,y);return CRITTERS[id].where.some(w=>tags.includes(w))};
 // one herd grazing beside a holding, of an animal its people keep and its land can feed: inside the pasture fence if it has one
 function spawnHerd(t){
-  if(typeof worldCv==='function')worldCv();
   const kinds=(LIVESTOCK[t.races[0]]||LIVESTOCK.human).slice().sort(()=>Math.random()-.5),sp=typeof bldSpots==='function'&&bldLv(t,'pasture')?bldSpots(t).pasture:null;
   // (a pasture's herd grazes the middle of its fields (or round the barn, if it has none), a sight to see: its herders are met at
   // the pasture itself (estates.js estateMeet))
@@ -78,15 +77,15 @@ function critterDay(){
 }
 // move every herd: wild game bolts when you come close and tires as it runs; livestock just grazes
 function updateCritters(d){
-  const hide=P.stay?0:hiddenAt(P.x,P.y)?.6:1;
+  const hide=P.stay?0:hiddenAt(P.x,P.y)?.6:1,A=WORLD_SCALE.ai;
   for(const c of W.critters){
     const D=CRITTERS[c.id],dx=c.x-P.x,dy=c.y-P.y,dist=Math.hypot(dx,dy),ox=c.x,oy=c.y;c.cool=Math.max(0,c.cool-d);
     // (fleeing: its grazing ground goes with it, and it keeps on away a little after, so it does not turn back into you)
-    if(!D.live&&dist<D.shy*hide){const sp=D.spd*(c.tire>4?.4:1)*Math.min(1,speedAt(c.x,c.y)||1)*d;walk(c,dx,dy,sp);c.tire+=d;
+    if(!D.live&&dist<D.shy*hide){const sp=moveStep(D.spd*(c.tire>4?.4:1)*Math.min(1,speedAt(c.x,c.y)||1),d);walk(c,dx,dy,sp);c.tire+=d;
       c.hx=c.x;c.hy=c.y;c.a=Math.atan2(dy,dx);c.t=Math.max(c.t,1.5);c.idle=false}
     else{c.tire=Math.max(0,c.tire-d*.5);c.t-=d;if(c.t<=0){c.t=2+Math.random()*4;c.a=Math.random()*6.283;c.idle=Math.random()<.5}
-      const hx=c.hx-c.x,hy=c.hy-c.y;if(Math.hypot(hx,hy)>(D.live?(c.pen?99:24):50))c.a=Math.atan2(hy,hx);
-      if(!c.idle){const ok=D.live?(x,y)=>grazeOk(c.id,x,y,c.pen):(x,y)=>habitatOk(c.id,x,y);if(!walk(c,Math.cos(c.a),Math.sin(c.a),(D.live?4:8)*d,ok)){c.a=Math.atan2(hy,hx)+(Math.random()-.5);c.idle=true}}}
+      const hx=c.hx-c.x,hy=c.hy-c.y;if(Math.hypot(hx,hy)>(D.live?(c.pen?A.penLeash:A.herdLeash):A.gameLeash))c.a=Math.atan2(hy,hx);
+      if(!c.idle){const ok=D.live?(x,y)=>grazeOk(c.id,x,y,c.pen):(x,y)=>habitatOk(c.id,x,y);if(!walk(c,Math.cos(c.a),Math.sin(c.a),moveStep(D.live?4:8,d),ok)){c.a=Math.atan2(hy,hx)+(Math.random()-.5);c.idle=true}}}
     // (it faces the way it went, turning only on a clear step sideways: no flicker as it swerves or runs straight up or down)
     {const mx=c.x-ox,my=c.y-oy;if(Math.abs(mx)>Math.hypot(mx,my)*.35&&Math.abs(mx)>.01)c.dir=mx>0?1:-1}
     if(dist<10&&!c.decor&&c.cool<=0&&G.encCool<=0&&!G.modal){c.cool=4;if(G.chase===c)G.chase=null;if(D.live){openHerd(c);return true}hunt(c)}

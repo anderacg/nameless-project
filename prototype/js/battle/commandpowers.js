@@ -23,6 +23,8 @@ const COMMAND_POWERS={on:true,radius:220,lead:.08,leadMax:.6,cdLead:.04,cdMin:.6
   scout:{n:'Scout',key:'O',dur:10,snd:'notify',
     d:'Before the battle, outriders find the enemy: you see their units through the fog of war, where they stand, while you deploy and for the first 10 s of the fight. Once a battle; only with fog of war.'}};
 const POWER_ORDER=Object.keys(COMMAND_POWERS).filter(k=>typeof COMMAND_POWERS[k]==='object');
+// what is said: the word over the commander, then the banner (battlehud.js), when yours uses it and when theirs does
+const POWER_SAY={rally:['Rally to me!','Rally!','Enemy rallies its line!'],stand:['Stand fast!','Stand Fast!','Enemy: Stand Fast!'],scout:['','Scouts report the enemy’s positions','Enemy scouts have seen your lines']};
 // on for this battle (the lab's powers key first), not in a tournament
 const powersOn=()=>!!B&&!(B.opts&&B.opts.tournament)&&(B.cmdOn??COMMAND_POWERS.on);
 // a side's commander (the lab may name one, or none: B.cmdForce {team: unit id or null}), able to command now, else null
@@ -70,14 +72,12 @@ function usePower(team,id){
     if(r.routed){r.rally();r.mor=Math.min(100,r.mor+A.gain/2)}else{r.mor=Math.min(100,Math.max(0,r.mor)+A.gain);r.breakT=0;delete r.breakLimit}r.refreshState();r.sync()}
   if(id==='stand')for(const g of gs){const r=g.resolve;r.standUntil=B.t+A.dur;r.mor=Math.min(100,Math.max(0,r.mor)+A.gain);r.breakT=0;delete r.breakLimit;r.standFloor();r.refreshState();r.sync()}
   if(id==='scout'){S.until=A.dur;scoutApply(team);if(sightOn())sightStep(true)}
-  // (the word over him, the ring of his reach, the banner and the log; his cue)
-  const say={rally:['Rally to me!','Rally!','Enemy rallies its line!'],stand:['Stand fast!','Stand Fast!','Enemy: Stand Fast!'],scout:['','Scouts report the enemy’s positions','Enemy scouts have seen your lines']}[id];
+  // (the word over him, the ring of his reach, the log and his horn; then its event: the banner, the bar's cue, the lab's row)
+  const say=POWER_SAY[id];
   if(say[0])moraleSay(c,say[0],mine?'#ffe08a':'#ff9a90',1.2);if(id!=='scout')B.rings.push({x:c.x,y:c.y-6,r:commandRadius(team),life:.7,max:.7,col:mine?'255,224,138':'255,154,144'});
-  if(typeof callout==='function')callout(say[mine?1:2],team,'power:'+id+':'+team,{major:true});
   log(htmlText((mine?'Your commander':'Their commander')+': '+A.n+(gs.length?' ('+gs.map(g=>groupName(g.id)).join(', ')+')':'')+'.'),mine?'good':'bad');
   if(A.snd&&sfxOn())sfxAt(A.snd,c.x,c.y);
-  if(mine&&id!=='scout')B.cmdShow={id,until:performance.now()+1500};
-  if(B.opts&&B.opts.sandbox&&BattleLab.active)BattleLab.event('command_power',c,{side:team?'right':'left',power:id,groups:gs.map(g=>g.id)});
+  battleEvent('power',{team,id,c,gs});
   return true}
 // Scout: every soldier of the other sides seen by this one (terrain.js sightStep's u.rv, as a blow gives him away) till
 // S.until; set again each think, a blow since having put it earlier
@@ -125,6 +125,8 @@ function bhudPowers(){
 /* on the field (render.js, over the selection): the command radius round your commander while you point at Rally or Stand Fast!
    (or for a moment after either), its rim and a soft fill, rings under the units it would reach; a gold glow under every
    soldier of a group standing fast (both sides, those you see) */
+// (just after yours uses Rally or Stand Fast!: its radius shown for a moment, B.cmdShow)
+battleOn((type,d)=>{if(type==='power'&&!d.team&&d.id!=='scout')B.cmdShow={id:d.id,until:performance.now()+1500}});
 function drawCommandPowers(){
   if(!powersOn())return;const pulse=.55+.25*Math.sin(performance.now()/180);
   for(const g of Object.values(B.groups)){const r=g.resolve;if(!r||!r.standing())continue;ctx.fillStyle='rgba(255,214,110,'+(.3*pulse+.15).toFixed(3)+')';

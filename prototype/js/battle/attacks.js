@@ -21,7 +21,7 @@ function applyDmg(t,amt,m,dt,source,missile){
     else if(!t.lord)B.lost[t.type]=(B.lost[t.type]||0)+1;
     if(t.lord&&!t.leader){if(t.sourceArmy===t.lord&&t.sourceGroupId)partyRoster(t.sourceArmy).remove(t.type,1,t.sourceGroupId);else t.lord.remove(t.type,1)}
     else if(t.team===1&&t.sourceArmy&&t.sourceGroupId&&!t.leader){partyRoster(t.sourceArmy).remove(t.type,1,t.sourceGroupId);B.primaryLossesApplied=true}
-    if(t.grp){if(B.sel===t.grp&&!grpUnits(t.grp).length)B.sel='all';setOrderUI()}
+    battleEvent('down',{u:t});// (the cards and the selection: battlehud.js)
     shakeIt(2);
   }
 }
