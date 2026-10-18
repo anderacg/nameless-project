@@ -1,4 +1,4 @@
 # reference images and asset packs: kept locally, not in the repository
 doc/references/
 ux-review/
-demos
+demos__pycache__/

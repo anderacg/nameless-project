@@ -13,6 +13,7 @@ function loop(now){
   // cards, details and top bar every other one (setOrderUI redraws the abilities too: battlehud.js bhudTop))
   G.hudT+=dt;if(G.hudT>.25){G.hudT=0;updateHUD();if(G.mode==='battle'){updateSkillBar();if(B&&(hudCards=!hudCards))setOrderUI();else bhudAbilities()}}
   audioWatch();// (the music follows the scene; a town, a meeting, a new day, a battle's start are heard: music.js)
+  battleSoundTick();// (a battle's beds, war cries, officers and cheers: battlesound.js)
   frame();requestAnimationFrame(loop);
 }
 P.x=(TOWNS[0].tx+.5)*TILE;P.y=(TOWNS[0].ty+2.5)*TILE;

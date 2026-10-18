@@ -32,7 +32,7 @@ function rtsSelect(x0,y0,x1,y1,add){
 function rtsOrder(x,y,opt){
   opt=opt||{};const gs=selGroups().filter(g=>grpUnits(g).length&&!B.groups[g].resolve?.routed);if(!gs.length)return;playerOrder(gs,()=>{
   if(B.deploy){const p=inZone(x,y);x=p.x;y=p.y;opt={}}// (deploying: a spot in your zone, no enemy to set them on)
-  const e=B.deploy?null:rtsUnitAt(x,y,1);
+  const e=B.deploy?null:rtsUnitAt(x,y,1);bsOrder(e?'attack':'move',gs);// (one of them answers: battlesound.js)
   {const ic=!e&&iconAt(x,y,0);if(ic&&!B.deploy){x=ic.cx;y=ic.cy}}// (on one of your icons: to where that group stands)
   gs.forEach(g=>B.groups[g].setRun(!!opt.run));// (a double right-click: this order at a run, a charge on an enemy)
   if(!e&&opt.queue){// a waypoint after their last, the groups keeping their places relative to one another
@@ -52,12 +52,12 @@ function setOrder(o){
   // (Charge and Advance set the pace, run or walk, and nothing else: where they go and whom they fight stay as they were;
   // hold: where they stand; withdraw: off your edge (battlecontrol.js))
   playerOrder(selGroups(),()=>{for(const g of selGroups()){const gr=B.groups[g];if(pace)gr.setWalk(o==='advance');else if(o==='withdraw')gr.withdraw();else if(o==='hold')gr.hold()}});
-  log(htmlText(selLabel())+': '+(pace?o==='charge'?'at a run.':'at a walk.':o+'.'));
+  log(htmlText(selLabel())+': '+(pace?o==='charge'?'at a run.':'at a walk.':o+'.'));bsOrder(o,selGroups());
   if(o==='charge'&&sfxOn()){const gs=selGroups();if(gs.length)sfx(gs.some(g=>grpUnits(g).some(u=>unitClass(u.s)==='cav'))?'gallop':'charge')}// (riders' hooves, else the horn)
 }
 // a group's flag on or off for the selection: walk, firm (hold ground), cease (cease fire), skirmish, melee (shooters' blades)
 const FLAG_N={walk:['walk','run'],firm:['hold their ground','fight freely'],shieldWall:['shield wall requested for eligible soldiers','shields lowered'],cease:['cease fire','fire at will'],skirmish:['skirmish','stand'],melee:['melee mode on: they fight whoever reaches them','melee mode off: they keep shooting, point blank']};
-function toggleFlag(f){if(!B||!FLAG_N[f])return;const gs=selGroups().filter(g=>grpUnits(g).some(u=>flagEligible(u,f)));if(!gs.length)return;const on=playerOrder(gs,()=>{const on=!gs.every(g=>B.groups[g][f]);gs.forEach(g=>B.groups[g].setFlag(f,on));return on});log(htmlText(selLabel())+': '+FLAG_N[f][on?0:1]+'.')}
+function toggleFlag(f){if(!B||!FLAG_N[f])return;const gs=selGroups().filter(g=>grpUnits(g).some(u=>flagEligible(u,f)));if(!gs.length)return;const on=playerOrder(gs,()=>{const on=!gs.every(g=>B.groups[g][f]);gs.forEach(g=>B.groups[g].setFlag(f,on));return on});bsOrder(f,gs);log(htmlText(selLabel())+': '+FLAG_N[f][on?0:1]+'.')}
 // control groups: Ctrl+1-9 keeps the selection under that key, 1-9 picks it again
 function ctrlGroup(k,save){if(!B)return;B.ctrl=B.ctrl||{};if(save){B.ctrl[k]=B.sel==='all'?'all':selGroups().slice();log('Group '+k+': '+htmlText(selLabel())+'.');return}
   const c=B.ctrl[k];if(!c){const id=playerGroups()[k==='0'?9:Number(k)-1];if(id)selectGroup(id);return}const gs=c==='all'?'all':c.filter(g=>grpUnits(g).length);if(gs!=='all'&&!gs.length)return;B.sel=gs==='all'?'all':gs.length===1?gs[0]:gs;setOrderUI()}
@@ -68,7 +68,7 @@ function setForm(f){
   if(f==='wall')return toggleFlag('shieldWall');// Compatibility for old command callers, not a formation.
   if(!B||!FORMS[f])return;const sel=selGroups().filter(g=>grpUnits(g).length),gs=sel.filter(g=>formFits(g,f));
   if(!gs.length){if(sel.length)log('Only '+WHO_N[FORMS[f].who]+' can form '+(f==='wall'?'a shield wall':f==='wedge'?'a wedge':'loose order')+'.');return}
-  const to=playerOrder(gs,()=>{const to=f!=='line'&&gs.every(g=>B.groups[g].form===f)?'line':f;gs.forEach(g=>B.groups[g].setForm(to));return to});log(gs.map(g=>htmlText(groupName(g))).join(' and ')+': '+FORMS[to].n.toLowerCase()+'.');
+  const to=playerOrder(gs,()=>{const to=f!=='line'&&gs.every(g=>B.groups[g].form===f)?'line':f;gs.forEach(g=>B.groups[g].setForm(to));return to});bsOrder('form',gs);log(gs.map(g=>htmlText(groupName(g))).join(' and ')+': '+FORMS[to].n.toLowerCase()+'.');
 }
 function formDragTo(x0,y0,x1,y1){
   if(B.deploy){const a=inZone(x0,y0),b=inZone(x1,y1);x0=a.x;y0=a.y;x1=b.x;y1=b.y}// (deploying: the line in your zone)

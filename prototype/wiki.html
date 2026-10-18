@@ -151,6 +151,7 @@ tr:last-child td{border-bottom:0}
 <script src="js/gfx/structures.js"></script>
 <script src="js/core/audio.js"></script>
 <script src="js/core/music.js"></script>
+<script src="js/core/battlesound.js"></script>
 <script src="js/ui/ui.js"></script>
 <script src="js/core/save.js"></script>
 <script src="js/world/reputation.js"></script>
@@ -480,10 +481,11 @@ section('life','Life on the map','The world goes on without you.',kv([['Workers'
   ['Wars','Realms make war and peace, besiege each other’s holdings, sack them, raise walls and build estates. Lords fight each other when their armies meet.']]));
 
 /* sound */
-section('sound','Sound','Music and sound effects are made as you play (nothing is downloaded); the first key or click starts them.',
+section('sound','Sound','Music and most sound effects are made as you play; a battle also has real recordings (free, CC0), loaded only once a battle is on. The first key or click starts the sound.',
   kv([['Music','Each place has its own old-mode tune, never quite the same twice: the title, the road (calm, travelling), towns (livelier, with drum), battle (drums and a low drone), and a short fanfare or lament when a battle is won or lost. A new place crossfades in.'],
     ['Effects','Buttons click, confirm and go back; coin when gold changes hands, a dull knock when something is refused, a rising chord on a new level. On the map: an alert when something meets you, a gate and bells as you enter a town, a soft chime each new day. A horn as a battle begins.'],
     ['In battle','Heard from where it happens, louder near the middle of your view: steel ringing on mail and plate, blows landing, a dull knock on the face of a shield, bows loosed and arrows striking (or thudding into the ground), spears bracing, hooves as riders charge or spur, the charge horn when you order one (or as an ambush springs), a falling horn and cries as a unit routs and drums as it rallies. In a big fight only some of the blows are heard, so it never turns to noise.'],
+    ['The battlefield','Under it all, the field itself, as in a great battle: the roar of the melee rising and falling with the fighting near your view (two lines meeting land like a wave), formations tramping and jingling on the march, a rumble of hooves that builds as riders gallop and peaks as they strike, panic when a side runs, war drums as the lines close, and the land’s own sound (wind and birds on grass, rustling woods, a river, a howling frost wind, dry desert wind, a swamp’s frogs) that falls away as the fighting grows. Zoomed out you hear the battle as one mass; zoomed in, the blows and voices near you come forward. Groups cry out as they charge and crash as the charge lands; they answer your orders; an officer shouts as a line wavers; arrows come as volleys and land as a hail; a side cheers its rally and its victory. Each race has its voice: orcs their own growls and roars, dwarves deeper, elves lighter; each its own horn as the battle begins, theirs answering yours. Until the recordings are in (a moment, the first time), the made sounds stand in.'],
     ['Volume','Settings → Sound: on or off, and the volume of everything, the music and the effects. M turns the sound off and on anywhere.']]));
 
 /* settings */

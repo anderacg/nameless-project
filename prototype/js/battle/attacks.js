@@ -38,13 +38,14 @@ function hit(att,t,dm,dt){
 /* the sound of a blow or a missile landing on t from src (a unit, or a missile's point): on the front of a shield a block (the
    test vfxHit splinters by); an arrow or bolt otherwise its strike; steel on mail or plate a clash; magic, a beast's claws, a
    beast struck, the rest: a hit. Only one in SND_EVERY of each kind is played (a counter, never a dice), so a 400-man melee stays
-   readable; the cues' own limits (audio.js SFX gap, max) and the voice cap do the rest */
+   readable; the cues' own limits (audio.js SFX gap, max) and the voice cap do the rest. battlesound.js bsBlow: once its beds
+   run, only blows near the camera are heard alone (the melee bed has the rest), and arrows landing together are a hail */
 const SND_EVERY={clash:2,hit:2,block:1,arrowhit:2,ground:3,loose:2},SND_N={};
 const sndTurn=k=>(SND_N[k]=(SND_N[k]||0)+1)%SND_EVERY[k]===0;
 function blowSound(src,t,arrow,magic){
   const ts=t.s||{},k=magic?'hit':tagsOf(ts).includes('shield')&&sideOf(t,src)==='front'?'block':arrow?'arrowhit':
     ts.beast||ts.big||src.s&&src.s.beast||!/^(mail|plate)$/.test(armorOf(ts))?'hit':'clash';
-  if(sndTurn(k))sfxAt(k,t.x,t.y)}
+  if(bsBlow(k,t.x,t.y,arrow&&!magic)&&sndTurn(k))sfxAt(k,t.x,t.y)}
 // a quiver per battle: at least 32 for every shooter (bows and slings 40, crossbows 32); casters and beasts never run out.
 // When it is empty the unit draws a blade: melee reach, weaker blows.
 const AMMO={min:32,bow:40,xbow:32,sling:40};// (every shooter starts with at least AMMO.min: bows and slings 40, crossbows 32)
@@ -65,7 +66,7 @@ const spreadOf=E=>(Math.random()-.5)*E.a;
 function outOfAmmo(u){u.s={...u.s,range:0,reach:Math.max(u.s.reach||0,10),dmg:u.s.dmg*.6};u.empty=true;B.floats.push({x:u.x,y:u.y-20,t:'Out of ammo',life:.7,c:'#9aa3ad'})}
 function attack(u,t){
   const s=u.s;u.cd=s.cd*(.9+Math.random()*.2);u.atkAt=B.t;if(B.terrain)sightStruck(u,t);// (a blow or a shot loosed gives him away: terrain.js)
-  if(s.range){const flat=s.magic||s.flat,E=aimErr(u);fireBolt(u,Math.atan2(t.y-(flat?u.y-6:u.y),t.x-u.x)+spreadOf(E),s.dmg*(.85+Math.random()*.3)*(u.buffT>0?1.3:1)*arrowMul(u),arrowSrc(u,s),Math.hypot(t.x-u.x,t.y-u.y),{sc:E.d});if(!s.magic&&sfxOn()&&sndTurn('loose'))sfxAt('loose',u.x,u.y)}// (fire arrows: unitabilities.js)
+  if(s.range){const flat=s.magic||s.flat,E=aimErr(u);fireBolt(u,Math.atan2(t.y-(flat?u.y-6:u.y),t.x-u.x)+spreadOf(E),s.dmg*(.85+Math.random()*.3)*(u.buffT>0?1.3:1)*arrowMul(u),arrowSrc(u,s),Math.hypot(t.x-u.x,t.y-u.y),{sc:E.d});if(!s.magic&&sfxOn())bsLoose(u)}// (its twang, or with its group's a volley: battlesound.js; fire arrows: unitabilities.js)
   else{let dm=s.dmg*(.8+Math.random()*.4)*chargeMul(u,t)*tiredMul(u).dmg;fatigueBlow(u);// (a charge: by how far it ran, braced spears blunt it, morale.js; tired, softer: fatigue.js)
     hit(u,t,dm);meleeFollow(u,t,dm)}
   if(s.range&&!u.hero){if(u.ammo==null)u.ammo=quiverOf(s);if(--u.ammo<=0)outOfAmmo(u)}
