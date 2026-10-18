@@ -69,8 +69,9 @@ blk.addEventListener('pointerdown',()=>{if(B)B.touchBlock=true});
 ['pointerup','pointerleave','pointercancel'].forEach(ev=>blk.addEventListener(ev,()=>{if(B)B.touchBlock=false}));
 */
 /* ---------- input ---------- */
-// (in the canvas's own pixels: the screen's, or the battlefield's in a battle)
-function toCanvas(e){const r=cv.getBoundingClientRect();return{x:(e.clientX-r.left)*cv.width/r.width,y:(e.clientY-r.top)*cv.height/r.height}}
+// (in the canvas's own pixels: the screen's game pixels (the world map's canvas has CVS of its own to one: core.js), or the
+// battlefield's in a battle)
+function toCanvas(e){const r=cv.getBoundingClientRect();return{x:(e.clientX-r.left)*cv.width/r.width/CVS,y:(e.clientY-r.top)*cv.height/r.height/CVS}}
 cv.addEventListener('pointermove',e=>{const p=toCanvas(e);G.mouse.x=p.x;G.mouse.y=p.y;G.mouse.in=true;G.mouse.type=e.pointerType;
   // the tooltip: what is under the pointer on the map
   const tip=$('#tip');if(holdCardUp()&&e.pointerType==='touch')return;// (a long press's card stays until the next tap: below)

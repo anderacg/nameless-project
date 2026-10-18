@@ -13,7 +13,7 @@ class Ship extends WorldObject{
   inView(V){return this.fromYou()<=V*1.2}
   // rocking on the water, a wake behind it while it sails; a fishing boat at its ground casts its net; a trade ship's label near you
   draw(ents,cam,V){if(!this.inView(V))return;const s=this,now=performance.now();
-    ents.push({y:s.y+4,f:()=>{const b=shipSprite(s),sx=Math.round(s.x-cam.x),sy=Math.round(s.y+4-cam.y)+(Math.floor(now/450+s.seed)%2);
+    ents.push({y:s.y+4,f:()=>{subT(s);const b=shipSprite(s),sx=Math.round(s.x-cam.x),sy=Math.round(s.y+4-cam.y)+(Math.floor(now/450+s.seed)%2);
       const sailing=s.state!=='fish';
       if(sailing)for(let i=1;i<=3;i++){const ph=(now/300+i/3)%1;ctx.fillStyle=i===1?'#e8f4fa':'#bcd8e8';ctx.fillRect(sx-s.dir*(b.stern+i*2+Math.floor(ph*2)),sy-1+(i%2),2,1)}
       ctx.save();ctx.translate(sx,sy);if(s.dir<0)ctx.scale(-1,1);ctx.drawImage(b,-b.ax,-b.ay);ctx.restore();

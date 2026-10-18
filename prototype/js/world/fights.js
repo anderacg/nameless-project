@@ -117,7 +117,7 @@ class Fight extends WorldObject{
   inView(V){return Math.hypot(this.x-P.x,this.y-P.y)<=V*1.2}
   meet(){fightMeet(this)}
   draw(ents,cam,V){if(!this.inView(V))return;const f=this;
-    ents.push({y:f.y+20,f:()=>{const sx=Math.round(f.x-cam.x),sy=Math.round(f.y-cam.y),t=performance.now();
+    ents.push({y:f.y+20,f:()=>{subT(f);const sx=Math.round(f.x-cam.x),sy=Math.round(f.y-cam.y),t=performance.now();
       for(let i=0;i<6;i++){const a=t/300+i*1.05,r=7+3*Math.sin(t/200+i);ctx.fillStyle='rgba(200,184,150,'+(.25+.15*Math.sin(t/150+i)).toFixed(2)+')';ctx.fillRect(Math.round(sx+Math.cos(a)*r)-2,Math.round(sy+Math.sin(a)*r*.5)-1,3,2)}
       if(Math.floor(t/120)%3===0){ctx.fillStyle='#fff8d0';ctx.fillRect(sx+rint(-6,6),sy-rint(3,10),1,1)}
       ctx.strokeStyle='#e4e0cf';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(sx-3,sy-17);ctx.lineTo(sx+3,sy-11);ctx.moveTo(sx+3,sy-17);ctx.lineTo(sx-3,sy-11);ctx.stroke();

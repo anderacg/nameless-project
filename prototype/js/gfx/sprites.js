@@ -52,9 +52,9 @@ function beastPose(u,moved){
   if(moved)return u.spdNow>u.s.spd*.75?15+Math.floor(B.t*12+(u.v||0))%4:2+Math.floor(B.t*8+(u.v||0))%4;
   return (B.t*.8+((u.id||0)*.37)%1)%1<.45?1:0}
 // a monster on the world map (engine/beasts.js PX.beastMap): the dragon on the wing (its own small figure in a 32 cell, wings up,
-// then level: it should look huge); the rest their own small figures in a 16 cell, f 0-1 their step (a step each half a body
-// length walked: monsters.js)
-function monsterMapSprite(id,f){const M=MONSTERS[id],k='mm'+M.unit+((f||0)%2);if(spr[k])return spr[k];return spr[k]=cellOf(PX.beastMap(M.unit,(f||0)%2))}
+// then level: it should look huge: f 0-1); the rest their own small figures in a 16 cell, f their step (PX.MAP_STEPS of them to a
+// body length walked: monsters.js)
+function monsterMapSprite(id,f){const M=MONSTERS[id],n=M.mythic?2:PX.MAP_STEPS,k='mm'+M.unit+((f||0)%n);if(spr[k])return spr[k];return spr[k]=cellOf(PX.beastMap(M.unit,(f||0)%n))}
 function corpseOf(u){
   const base=unitSprite(u.type,u.team,u.hero,u.v,0,true);let c=CORPSES.get(base);if(c)return c;
   // (a beast: it sinks as it falls (a troll over as a man does, a spider or a scorpion onto its back, a slime running flat, the rest
@@ -96,13 +96,13 @@ function procPose(u,moved){
   return (B.t*.8+((u.id||0)*.37)%1)%1<.45?1:0;
 }
 // a banner bearer on the map (people.js mapFigure): the party's leader in the banner's colour, on foot or riding a mount of colour
-// mc; f the step (0-3)
-function partySprite(col,mc,f){f=(f||0)%4;const k='p'+col+(mc||'')+f;if(spr[k])return spr[k];
+// mc; f the step (0 to WALK.n-1)
+function partySprite(col,mc,f){f=(f||0)%PEOPLE_STEPS;const k='p'+col+(mc||'')+f;if(spr[k])return spr[k];
   const you=col==='#e8b94a',R=RACE_LOOK[you?P.race:'human']||RACE_LOOK.human;
   return spr[k]=mapFigure({race:you?P.race:'human',skin:R.skin[0],hair:R.hair[you?0:2],eye:R.eye,ears:R.ears,tusk:R.tusk,short:R.short,beard:R.beard?R.hair[0]:null,
     helm:you?'crown':'kettle',outer:'steel',inner:'dark',team:col,shortHair:true},f,mc||null)}
 // a bandit on the map: hooded, a spear
-function banditSprite(f){f=(f||0)%4;const k='bd'+f;return spr[k]||(spr[k]=mapFigure({race:'human',skin:'skinTan',hair:'black',helm:'hood',hood:'leather',outer:'leather',inner:'dark',team:'#8a3a2a',weapon:'spear',shortHair:true},f,null))}
+function banditSprite(f){f=(f||0)%PEOPLE_STEPS;const k='bd'+f;return spr[k]||(spr[k]=mapFigure({race:'human',skin:'skinTan',hair:'black',helm:'hood',hood:'leather',outer:'leather',inner:'dark',team:'#8a3a2a',weapon:'spear',shortHair:true},f,null))}
 /* a party's banner on the map (Total War-style: larger than any real flag, floating over the party, drawn over everything:
    render.js drawBanners): a pole with a gilt finial and the cloth on it, in its own 16 cell, its pole's foot at the cell's bottom
    left (x 2). Its look b (Party.banner): k, the shape: 'banner' a swallow-tailed standard (a realm's lords, you, your
@@ -228,9 +228,22 @@ function itemIcon(def){const k='ic'+def.icon+def.col;return spr[k]||(spr[k]=mkc(
   }
 }))}
 /* ---------- text on canvas ---------- */
-// while TXTQ is an array (the world's things being drawn), labels are queued and drawn after all of them, on top
+// while TXTQ is an array (the world's things being drawn), labels are queued and drawn after all of them, on top (those of the
+// scene in game pixels too: TXTQ.lo, render.js drawWorld). On the screen at a finer scale than the game's pixels (core.js CVS: the
+// world map) a label is drawn in game pixels as ever and laid on as a picture (txtPic), so it stays as crisp as it was
 let TXTQ=null;
-function txt(s,x,y,col,al){if(TXTQ&&ctx===TXTQ.ctx){TXTQ.push([s,x,y,col,al]);return}ctx.font='8px Silkscreen, "Courier New", monospace';ctx.textAlign=al||'left';ctx.textBaseline='alphabetic';ctx.fillStyle='#000';ctx.fillText(s,x+1,y+1);ctx.fillStyle=col||'#e4e0cf';ctx.fillText(s,x,y)}
+const TXT_FONT='8px Silkscreen, "Courier New", monospace';
+function txt(s,x,y,col,al){if(TXTQ&&(ctx===TXTQ.ctx||ctx===TXTQ.lo)){TXTQ.push([s,x,y,col,al]);return}
+  if(CVS>1&&ctx===ctx0){const c=txtPic(s,col,al);ctx.drawImage(c,x-c.ox,y-c.oy);return}
+  ctx.font=TXT_FONT;ctx.textAlign=al||'left';ctx.textBaseline='alphabetic';ctx.fillStyle='#000';ctx.fillText(s,x+1,y+1);ctx.fillStyle=col||'#e4e0cf';ctx.fillText(s,x,y)}
+// (a label's picture: drawn as txt draws it at a whole pixel, its pen (ox, oy) a whole pixel in it, so its letters fall on the
+// same pixels; kept by text, colour and alignment, the lot let go when it grows past 600 or a font comes in)
+const TXTC=new Map();let TXTM=null;
+if(document.fonts&&document.fonts.addEventListener)document.fonts.addEventListener('loadingdone',()=>TXTC.clear());
+function txtPic(s,col,al){s=String(s);const k=s+'|'+col+'|'+al;let c=TXTC.get(k);if(c)return c;if(TXTC.size>600)TXTC.clear();
+  const m=TXTM||(TXTM=mkc(1,1,()=>{}).getContext('2d'));m.font=TXT_FONT;const w=Math.ceil(m.measureText(s).width),ox=1+(al==='center'?Math.ceil(w/2):al==='right'?w:0),oy=10;
+  c=mkc(w+4,14,g=>{g.font=TXT_FONT;g.textAlign=al||'left';g.textBaseline='alphabetic';g.fillStyle='#000';g.fillText(s,ox+1,oy+1);g.fillStyle=col||'#e4e0cf';g.fillText(s,ox,oy)});
+  c.ox=ox;c.oy=oy;TXTC.set(k,c);return c}
 
 /* how big a host looks: followers trail the banner, more of them the bigger the band, at most 9 (render.js drawHost) */
 const hostSize=n=>n<5?0:Math.min(9,Math.round(Math.sqrt(n)*1.7)-2);

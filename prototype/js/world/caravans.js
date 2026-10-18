@@ -54,7 +54,7 @@ class CaravanParty extends Party{
   banner(){return{k:'trade',col:caravanCol(this),dev:'coin'}}
   headY(){const s=caravanPic(this);return Math.round(this.y)+1-s.height+opaqueBox(s)[1]}
   draw(ents,cam,V){if(!this.inView(V))return;const c=this;
-    ents.push({y:c.y,f:()=>{const L=c.look(),s=caravanSprite(L.col,stepOf(c,2.4)),sx=Math.round(c.x-cam.x),sy=Math.round(c.y-cam.y);ctx.fillStyle='rgba(0,0,0,.3)';ctx.fillRect(sx-(s.cw>>1)+3,sy-1,s.cw-6,2);
+    ents.push({y:c.y,f:()=>{subT(c);const L=c.look(),s=caravanSprite(L.col,stepOf(c,1.2)),sx=Math.round(c.x-cam.x),sy=Math.round(c.y-cam.y);ctx.fillStyle='rgba(0,0,0,.3)';ctx.fillRect(sx-(s.cw>>1)+3,sy-1,s.cw-6,2);
       ctx.save();ctx.translate(sx,sy);if(c.dir<0)ctx.scale(-1,1);ctx.drawImage(s,-(s.width>>1),1-s.height);ctx.restore();
       BANNERQ.push({o:c,label:c.fromYou()<90?[L.label,L.labelCol]:null})}})}
   mapDot(V){return this.fromYou()<V?['#e8d8a0',1]:null}
@@ -171,26 +171,26 @@ function caravanUpkeep(){const mine=myCaravans();if(!mine.length)return;const co
 
 /* on the map: a covered two-wheeled cart behind an ox, its drover walking ahead at its head (people.js mapPerson), all on the map's
    scale (a man 10 high: the ox's back at his chest, a wheel 6 across; doc/WORLD_DESIGN.md §10.1), some 30 × 12 in a 32×32 cell
-   (sprites.js cellOf), its middle where the caravan stands. The cart's cover is canvas dyed in its owner's colour: col. f: 0-3, a
-   step each 2.4 px walked (CaravanParty.draw): the wheel's spokes an eighth of a turn each (f & 1: a 6-px wheel turns once in 19
-   px), the drover's step each, the ox's every other (f >> 1) */
+   (sprites.js cellOf), its middle where the caravan stands. The cart's cover is canvas dyed in its owner's colour: col. f: 0 to
+   PEOPLE_STEPS-1, a step each 1.2 px walked (CaravanParty.draw): the wheel's spokes an eighth of a turn each other one (f >> 1 & 1:
+   a 6-px wheel turns once in 19 px), the drover's step each (people.js), the ox's walk each (engine/beasts.js PX.mapLegs) */
 const CV_WOOD=['#b8925e','#8e6a44','#604630','#3e2e26'],CV_OX=['#d8c094','#a88a62','#6e5a44','#463a32'];
 // (a colour mixed toward another by k: the cover's lights warm, its shade cool)
 const cvMix=(a,b,k)=>'#'+[1,3,5].map(i=>Math.round(parseInt(a.slice(i,i+2),16)*(1-k)+parseInt(b.slice(i,i+2),16)*k).toString(16).padStart(2,'0')).join('');
 const CV_OXT=['......ow.','.hhhhhhHe','dHHHHHHHn','.dHHHHHd.'],CV_OXL=[['.kH..kH..'],['k.H.k..H.']];
 function caravanSprite(col,f){
-  f=(f||0)%4;const key='cv'+col+f;if(spr[key])return spr[key];
+  f=(f||0)%PEOPLE_STEPS;const key='cv'+col+f;if(spr[key])return spr[key];
   const g=pgrid(30,12),s=(x,y,c)=>pset(g,x+1,y+1,c),Wo=CV_WOOD,O=CV_OX,G=9;
   const Cv=[cvMix(col,'#f4e8c8',.5),cvMix(col,'#d8ccb0',.3),cvMix(col,'#2e2a40',.35),cvMix(col,'#1a1c26',.55)];
   // the ox (13-21), facing right, its far legs in shade, its head carried low; the yoke on its neck
   const oc={h:O[0],H:O[1],d:O[2],k:O[3],o:'#a8987a',w:'#ece4cc',e:'#1a1410',n:'#b8a090'};
-  CV_OXT.concat(CV_OXL[f>>1]).forEach((r,y)=>[...r].forEach((c,x)=>{if(oc[c])s(13+x,G-4+y,oc[c])}));s(19,G-4,Wo[0]);s(19,G-3,Wo[1]);
+  CV_OXT.concat(PX.mapLegs(CV_OXL[0],CV_OXL[1],f)).forEach((r,y)=>[...r].forEach((c,x)=>{if(oc[c])s(13+x,G-4+y,oc[c])}));s(19,G-4,Wo[0]);s(19,G-3,Wo[1]);
   // the cart: the cover on its hoops, its front open; the bed; the shaft on to the yoke
   for(let y=0;y<=3;y++)for(let x=y?1:2;x<=(y?9:8);x++)s(x,y,x===9?Cv[3]:y===0?Cv[0]:(x-1)%3===2?Cv[2]:y===1?Cv[0]:Cv[1]);
   for(let x=0;x<=10;x++){s(x,4,Wo[0]);s(x,5,Wo[2])}s(11,6,Wo[1]);s(12,6,Wo[1]);
   // the wheel, its rim, four spokes and the hub
   const wx=2,wy=4;for(const [x,y] of [[1,0],[2,0],[3,0],[4,0],[0,1],[5,1],[0,2],[5,2],[0,3],[5,3],[0,4],[5,4],[1,5],[2,5],[3,5],[4,5]])s(wx+x,wy+y,y>=4||x===0&&y>=2?Wo[3]:Wo[2]);
-  for(const [x,y] of (f&1?[[3,1],[4,3],[2,4],[1,2]]:[[2,1],[4,2],[3,4],[1,3]]))s(wx+x,wy+y,Wo[1]);for(const [x,y] of [[2,2],[3,2],[2,3],[3,3]])s(wx+x,wy+y,x===2&&y===2?'#8e95a6':'#6e7890');
+  for(const [x,y] of (f>>1&1?[[3,1],[4,3],[2,4],[1,2]]:[[2,1],[4,2],[3,4],[1,3]]))s(wx+x,wy+y,Wo[1]);for(const [x,y] of [[2,2],[3,2],[2,3],[3,3]])s(wx+x,wy+y,x===2&&y===2?'#8e95a6':'#6e7890');
   poutline(g);
   // the drover, walking at the ox's head, leading it, his goad in hand (his own outline)
   const drover=mapPerson({race:'human',skin:'skinTan',hair:'brown',eye:PEOPLE_EYE,helm:'hood',hood:'linen',outer:'cloth',inner:'dark',team:'leather',weapon:'javelin',shortHair:true},f);

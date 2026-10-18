@@ -58,12 +58,12 @@ function drawSite(s,X,Y,N,p,full,seed){
   for(const px of poles){rect(ctx,'#1a1512',px-1,Y-top-1,3,top+1);rect(ctx,'#8a6a42',px,Y-top,1,top)}
   for(let y=Y-4;y>Y-top;y-=6){rect(ctx,'#1a1512',x0-1,y-1,x1-x0+3,3);rect(ctx,'#a07e54',x0,y,x1-x0+1,1)}
   // the worker: walks the plank at the height reached, swings his hammer, a spark now and then
-  const ly=full?Y-Math.round(top/2):Math.max(Y-top+2,Y-h-1),span=x1-x0-4,wx=x0+2+Math.round((Math.sin(now/900+seed)*.5+.5)*span),f=Math.floor(now/180)%4,ws=workerSprite('builder',f,'human',seed%4);
+  const ly=full?Y-Math.round(top/2):Math.max(Y-top+2,Y-h-1),span=x1-x0-4,wx=x0+2+Math.round((Math.sin(now/900+seed)*.5+.5)*span),f=Math.floor(now*PEOPLE_STEPS/720)%PEOPLE_STEPS,ws=workerSprite('builder',f,'human',seed%4);
   ctx.drawImage(ws,wx-8,ly-14);if(Math.floor(now/180+seed)%7===0)rect(ctx,'#ffe090',wx+4,ly-8,1,1);
 }
 // placing a building by hand: its ghost under the pointer, its tiles green where it may stand and red where not
 function drawPlace(cam){
-  const pl=G.place,t=townBy(pl.town);if(!t||!G.mouse.in)return;const n=pl.n,N=n*TILE,{x,y}=placeAt(cam.x+G.mouse.x,cam.y+G.mouse.y,n),ok=placeOk(t,pl.k,x,y,n),X=x*TILE-cam.x,Y=y*TILE-cam.y;
+  const pl=G.place,t=townBy(pl.town);if(!t||!G.mouse.in)return;const n=pl.n,N=n*TILE,{x,y}=placeAt(G.cam.x+G.mouse.x,G.cam.y+G.mouse.y,n),ok=placeOk(t,pl.k,x,y,n),X=x*TILE-cam.x,Y=y*TILE-cam.y;
   if(!pl._s){const b=PX.building({type:pl.type,style:t.races[0],seed:pl.seed,env:climAt(t.x,t.y)});pl._s=b.img}
   ctx.fillStyle=ok?'rgba(120,220,110,.28)':'rgba(230,90,80,.32)';ctx.fillRect(X,Y,N,N);ctx.globalAlpha=.75;ctx.drawImage(pl._s,X,Y);ctx.globalAlpha=1;
   ctx.strokeStyle=ok?'#78dc6e':'#e65a50';ctx.lineWidth=1;ctx.strokeRect(X+.5,Y+.5,N-1,N-1);

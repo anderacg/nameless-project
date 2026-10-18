@@ -81,9 +81,10 @@ class Party extends WorldObject{
   headY(){return Math.round(this.y)+3-16+figTop(this.look())}
   // in sight: its host of soldiers, its leader's figure (a rider, a bandit), a torch on a night watch, its label (as it looks: look)
   draw(ents,cam,V){if(!this.inView(V))return;const o=this;
-    // (its step by how far it has walked: on foot a step each 2.5 px, a rider each 4; standing still, or resting, the first)
+    // (its step by how far it has walked: on foot a step each WALK.foot px, a rider each WALK.ride; standing still, or resting,
+    // the first; drawn at its own place to the screen's pixel: render.js subT)
     // (its banner over it all, with its label over the banner: render.js drawBanners)
-    ents.push({y:o.y,own:o.faction==='player',f:()=>{const L=o.look(),sx=Math.round(o.x-cam.x),sy=Math.round(o.y-10-cam.y),fd=L.dir<0?-1:1,rider=!!L.rider&&!L.bandit,go=L.moving&&mapStepping(o),fr=go?frameOf(o,rider?4:2.5,4):0;
+    ents.push({y:o.y,own:o.faction==='player',f:()=>{subT(o);const L=o.look(),sx=Math.round(o.x-cam.x),sy=Math.round(o.y-10-cam.y),fd=L.dir<0?-1:1,rider=!!L.rider&&!L.bandit,go=L.moving&&mapStepping(o),fr=go?frameOf(o,rider?WALK.ride:WALK.foot,WALK.n):0;
       const s=partyFig(o,L,fr).s;// (a rider: his host behind his horse)
       drawHost(o.size,L.col,sx-(rider?fd*4:0),sy+12,fd,go?o.wd:null,L.seed,L.race,L.bandit);
       ctx.save();ctx.translate(sx,sy);if(fd<0)ctx.scale(-1,1);ctx.drawImage(s,-(s.width>>1),13-s.height);ctx.restore();

@@ -285,7 +285,8 @@ try{
  {const pn=performance.now,rnd=Math.random,c=t.ctx;performance.now=()=>4321;
   const paint=fn=>{Math.random=t.seeded(7);c.save();c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,c.canvas.width,c.canvas.height);c.restore();fn();
    const d=c.getImageData(0,0,c.canvas.width,c.canvas.height).data;let h=0,lit=0;for(let i=0;i<d.length;i++){h=(h*31+d[i])|0;if(d[i])lit++}return [h,lit].join()};
-  const rects=fn=>{const got=[];c.fillRect=function(...a){got.push(this.fillStyle+' '+a.join());return CanvasRenderingContext2D.prototype.fillRect.apply(this,a)};try{paint(fn)}finally{delete c.fillRect}return got.join('|')};
+  // (the marks on the screen and on the scene of what stands, memCv: drawWorld draws that scene in game pixels first, render.js)
+  const rects=fn=>{const got=[],P2=CanvasRenderingContext2D.prototype,f0=P2.fillRect,lo=t.memCv().getContext('2d');P2.fillRect=function(...a){if(this===c||this===lo)got.push(this.fillStyle+' '+a.join());return f0.apply(this,a)};try{paint(fn)}finally{P2.fillRect=f0}return got.join('|')};
   const off={monsters:W.monsters,critters:W.critters,folk:W.folk,ships:W.ships,refugees:W.refugees,fights:W.fights};for(const k in off)W[k]=[];
   try{paint(t.drawWorld);paint(oldDraw);const a=paint(oldDraw),n=paint(t.drawWorld),a2=paint(oldDraw);
    ok(a===n&&a===a2,'the whole map is drawn as before, pixel for pixel ('+n+')');

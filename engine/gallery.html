@@ -163,7 +163,7 @@ function renderBeasts(){
   for(const k of PX.BEAST_KINDS){if(only&&!only.split(',').includes(k))continue;const row=document.createElement('div');row.className='row';row.innerHTML='<span class="lab">'+k+'</span>';show(row,man,'a man');try{
     const poses=[0,1,2,3,4,5,15,16,17,18,6,7,8].concat(k==='dragon'?[9,10,11]:[]);for(const p of poses)show(row,PX.beast(k,{pose:p,v:+(q.get('v')||0),team:1}),'pose '+p);
     show(row,PX.beast(k,{pose:PX.BEAST_DEAD,team:1}),'dead');for(const v of [1,2])show(row,PX.beast(k,{v,team:1}),'variant '+v);show(row,PX.beast(k,{team:0}),'your side');
-    for(const f of [0,1])show(row,PX.beastMap(k,f),'map '+f)}catch(e){row.insertAdjacentHTML('beforeend','<span class="lab" style="width:auto;color:#f88">'+e.message+' '+(e.stack||'').split(String.fromCharCode(10))[1]+'</span>')}out.appendChild(row)}
+    for(let f=0;f<(k==='dragon'?2:PX.MAP_STEPS);f++)show(row,PX.beastMap(k,f),'map '+f)}catch(e){row.insertAdjacentHTML('beforeend','<span class="lab" style="width:auto;color:#f88">'+e.message+' '+(e.stack||'').split(String.fromCharCode(10))[1]+'</span>')}out.appendChild(row)}
 }
 // ?view=model: the buildings made as 3D models (model.js), each sample in its 4 facings (yaw 0, 2, 4, 6) on the grass, its cell's
 // tiles marked, a stand-in person of the map's size (6 x 10) beside it, and today's nearest building (buildings.js) first; then each

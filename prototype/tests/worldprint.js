@@ -27,7 +27,7 @@
 // G.quietEvents is on, and the view is the tests' fixed 576 x 360. Hash: FNV-1a 32-bit over bytes, char codes or 32-bit words;
 // W8's places at 1e-6 px.
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.push('INFO '+m),t=T,G=t.G,P=t.P,W=t.W;
-const EXPECT={W1:'65e24662',W2:'2b49a168',W3:'7a0dcbac',W4:'46450e62',W5:'6587a43c',W6:'462d81a4',W7:'3ef9ffd9',W8:'d4c01429',B2:'00a93435'};// (at 0a42712; B2 at R3; W6-W8 at Phase 1)
+const EXPECT={W1:'65e24662',W2:'2b49a168',W3:'7a0dcbac',W4:'46450e62',W5:'6587a43c',W6:'0a25d50c',W7:'3ef9ffd9',W8:'d4c01429',B2:'00a93435'};// (at 0a42712; B2 at R3; W6-W8 at Phase 1)
 // (W5, W6 re-recorded in Phase 0 wave 1, on purpose, a fix: the painted world and the minimap were the title screen's, from the
 //  lots main.js lays out at load, never repainted for a game's own (begin lays out others); now begin repaints them, so the map
 //  shows the real lots. W6 moved only at the third spot (2688, 768) by night and day; was W5 aceeae00, W6 7a99f543)
@@ -40,6 +40,11 @@ const EXPECT={W1:'65e24662',W2:'2b49a168',W3:'7a0dcbac',W4:'46450e62',W5:'6587a4
 // (W6 again, 251c8821 to 462d81a4, the world's depth order (doc/WORLD_DESIGN.md §12.5, gfx/depth.js): what stands in front of a
 //  figure (trees, rock, buildings) is drawn again over it, faded over yours; each structure's shadow its own picture, laid in one
 //  pass under them all; the clouds and weather, fog and night under the banners and labels. W1-W5, W7, W8 and B2 unchanged)
+// (W6 again, 462d81a4 to 0a25d50c, smooth walking on the map: the walk cycles of eight frames, not four (render.js WALK, people.js
+//  MAP_WALK, engine/beasts.js PX.mapLegs). Only the first spot's day picture moved (999c849a, was 903794fd): a pasture's herd and a
+//  builder on his planks step by the clock, so they show another frame of the new cycles; with their frames held at 0 every part
+//  is as before. The world drawn at the screen's scale (core.js VS) is 1 in the tests' fixed view, so nothing else moves. W1-W5,
+//  W7, W8 and B2 unchanged)
 const r0=Math.random,pn=performance.now,t0=pn.call(performance);
 try{
  try{localStorage.clear()}catch(e){}

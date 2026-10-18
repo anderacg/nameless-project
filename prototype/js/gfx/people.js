@@ -295,20 +295,24 @@ function peopleSprite(o,pose,bare){
    house: a person 4 × 9 inside the outline (6 × 10 with it, over the outline under the feet; a dwarf a row shorter), a 3-px head,
    the shoulders and the front in the side's colours, a belt, legs and feet. PEOPLE_MAP_T uses the battle template's letters
    (lettersOf), so every look maps one to one; a small helm, beard, shield, cape and load go over it, and what is in the hand
-   stands in a column before him (MAP_HELD). walk 0-3, a step each 2.5 px walked (render.js stepOf), 0 standing: the legs pass
-   (0, 2) and stride (1, 3), the near one forward in turn. cut: only the rows down to it (a rider, a sailor at the rail) */
+   stands in a column before him (MAP_HELD). walk 0 to PEOPLE_STEPS-1, a step each WALK.foot px walked (render.js stepOf), 0
+   standing (MAP_WALK). cut: only the rows down to it (a rider, a sailor at the rail) */
 const PEOPLE_MAP_T=['.112','.2se','..tu','apqc','bpqd','bqrd','bkld'];
+/* the map's walk, PEOPLE_STEPS frames, facing right: the near leg's x and the far leg's on the legs' row (L, M: a hip each), and
+   the feet, [x, lifted] (a lifted foot drawn on the legs' row, nothing under it). Passing (the feet together; 0 is standing too),
+   the far foot swinging through lifted, the stride (contact), the back foot lifting off; then the same with the near leg ahead */
+const PEOPLE_STEPS=8,MAP_WALK=[[1,2,[[1],[2]]],[1,2,[[1],[3,1]]],[1,2,[[0],[3]]],[1,2,[[0,1],[3]]],[2,1,[[1],[2]]],[2,1,[[1],[3,1]]],[2,1,[[0],[3]]],[2,1,[[0,1],[3]]]];
 // what is in the hand: [top row, bottom row, material, head] (above the legs' row, so no gap is shut in by a striding foot)
 const MAP_HELD={sword:[2,4,'steel','guard'],great:[1,4,'steel','guard'],dagger:[3,4,'steel','guard'],axe:[2,6,'wood','axe'],bigaxe:[1,6,'wood','axe'],
   hammer:[2,6,'wood','hammer'],spear:[0,6,'wood','tip'],pike:[0,6,'wood','tip'],javelin:[1,6,'wood','tip'],lance:[0,6,'wood','tip'],staff:[0,6,'wood','gem'],
   hoe:[1,6,'wood','hoe'],pick:[2,6,'wood','pick'],crook:[0,6,'wood','crook'],rod:[1,6,'wood','rod'],bow:[2,6,'wood','bow'],longbow:[1,6,'wood','bow'],
   xbow:[5,5,'wood','xbow'],sling:[6,6,'leather','sling']};
 function drawMapFigure(g,o,ox,oy,walk,cut){
-  const T=o.short?PEOPLE_MAP_T.filter((r,i)=>i!==4):PEOPLE_MAP_T,Lc=lettersOf(o),set=(x,y,c)=>pset(g,ox+x,oy+y,c),ly=T.length,w=walk>0?walk%4:0;
+  const T=o.short?PEOPLE_MAP_T.filter((r,i)=>i!==4):PEOPLE_MAP_T,Lc=lettersOf(o),set=(x,y,c)=>pset(g,ox+x,oy+y,c),ly=T.length,w=walk>0?walk%PEOPLE_STEPS:0,S=MAP_WALK[w];
   T.forEach((row,y)=>{if(cut==null||y<=cut)[...row].forEach((c,x)=>{if(c!=='.')set(x,y,Lc[c])})});
-  // the legs by the stride, or a robe to the ground
-  if(cut==null){if(o.robe){[Lc.b,Lc.c,Lc.c,Lc.d].forEach((c,x)=>set(x,ly,c));set(1,ly+1,Lc.d);set(2,ly+1,Lc.d)}
-    else{const sw=w>=2;set(1,ly,sw?Lc.M:Lc.L);set(2,ly,sw?Lc.L:Lc.M);if(w&1){set(0,ly+1,Lc.F);set(3,ly+1,Lc.F)}else{set(1,ly+1,Lc.F);set(2,ly+1,Lc.F)}}}
+  // the legs by the stride (MAP_WALK), or a robe to the ground, the feet under its hem
+  if(cut==null){if(o.robe){[Lc.b,Lc.c,Lc.c,Lc.d].forEach((c,x)=>set(x,ly,c));for(const [x,up] of S[2])if(!up)set(x,ly+1,Lc.d)}
+    else{set(S[0],ly,Lc.L);set(S[1],ly,Lc.M);for(const [x,up] of S[2])set(x,up?ly:ly+1,Lc.F)}}
   if(o.cape){const C=pal(o.cape===true?o.team:o.cape);for(let y=3;y<ly&&(cut==null||y<=cut);y++)set(0,y,C[y===3?1:2])}
   if(o.shield&&(cut==null||cut>=5)){const C=pal(o.shield),Tm=pal(o.team);set(0,3,C[1]);set(0,4,Tm[1]);set(0,5,C[2])}
   const Bd=o.beard&&pal(o.beard);if(Bd){set(2,2,Bd[1]);set(3,2,Bd[2]);if(o.short)set(3,3,Bd[3])}
@@ -355,15 +359,18 @@ function mapGrid(o,f,cut){const g=pgrid(11,11-(o.short?1:0)-(cut!=null?PEOPLE_MA
 /* a party's leader on the map: on foot a person, his sword (or, a bandit, his spear) in his hand; a lord (or you, mounted) on a
    horse of the map's own, 11 × 6 inside its outline (13 × 8 with it), the rider seated on it to his belt (12 high): in a 16×16
    cell, its feet on the bottom row but one. No banner in the hand: the party's banner floats over it, a sprite of its own
-   (sprites.js bannerSprite, render.js drawBanners). f: the step (0-3: on foot a step each 2.5 px; mounted, the horse's legs a
-   step each 4 px); mountCol: the horse's coat */
-const MAP_HORSE=['.........hh','........hHe','.mhhhhhhHd.','m.HHHHHHHd.'],HORSE_LEGS=[2,3,7,8],HORSE_STRIDE=[[0,0,0,0],[-1,1,-1,1],[0,0,0,0],[1,-1,1,-1]];
+   (sprites.js bannerSprite, render.js drawBanners). f: the step (0 to PEOPLE_STEPS-1: on foot a step each WALK.foot px; mounted,
+   the horse's legs a step each WALK.ride px); mountCol: the horse's coat. The horse's walk: its legs (far hind, near hind, far
+   fore, near fore; HORSE_STRIDE: the hooves' x) gathered under it, the near pair swinging forward lifted (HORSE_LIFT, a bit a leg: its hoof drawn up on the
+   legs' row: a pixel ahead swinging forward, its own lifting off), the stride, the far pair lifting off behind, gathered, the far pair swinging, the other stride, the near pair lifting */
+const MAP_HORSE=['.........hh','........hHe','.mhhhhhhHd.','m.HHHHHHHd.'],HORSE_LEGS=[2,3,7,8];
+const HORSE_UNDER=[0,0,0,0],HORSE_STRIDE=[HORSE_UNDER,[0,1,0,1],[-1,1,-1,1],HORSE_UNDER,HORSE_UNDER,[1,0,1,0],[1,-1,1,-1],HORSE_UNDER],HORSE_LIFT=[0,10,0,5,0,5,0,10];
 function mapFigure(o,f,mountCol){
-  f=(f||0)%4;
+  f=(f||0)%PEOPLE_STEPS;
   if(mountCol){const g=pgrid(15,16),H=pal(mountCol),Mn=pal('dark'),H0=9,X=2,hs=(x,y,c)=>pset(g,X+x,H0+y,c);
     MAP_HORSE.forEach((r,y)=>[...r].forEach((c,x)=>{const col={h:H[0],H:H[1],d:H[2],k:'#27272c',e:'#27272c',m:Mn[2]}[c];if(col)hs(x,y,col)}));
     // the legs: the far pair in shade behind, the near pair over them; the lower half stepping by the stride
-    HORSE_LEGS.forEach((x,i)=>{const near=i%2===1,dx=HORSE_STRIDE[f][i];hs(x,4,near?H[1]:H[2]);hs(x+dx,5,'#27272c')});
+    HORSE_LEGS.forEach((x,i)=>{const near=i%2===1,dx=HORSE_STRIDE[f][i];if(HORSE_LIFT[f]>>i&1)hs(x+dx,4,'#27272c');else{hs(x,4,near?H[1]:H[2]);hs(x+dx,5,'#27272c')}});
     // the rider to his belt, his near leg down the horse's side
     drawMapFigure(g,{...o,weapon:null,shield:null,cape:null},X+2,H0-3,-1,4);
     const Lc=lettersOf(o);hs(3,3,Lc.L);hs(3,4,Lc.F);
@@ -373,9 +380,9 @@ function mapFigure(o,f,mountCol){
 
 /* the world map's people beside the lords, every one the same small figure (a soldier, a worker and a lord stand alike) in a
    16×16 cell: a lord's followers in his colour and of his race, armed (a bandit's hooded); a worker with the tool of the trade;
-   a refugee with a blanket on the back. f: the step (0-3), cut: as drawMapFigure (a sailor at the rail: ships.js) */
+   a refugee with a blanket on the back. f: the step (0 to PEOPLE_STEPS-1), cut: as drawMapFigure (a sailor at the rail: ships.js) */
 function mapPerson(o,f,cut){const g=mapGrid(o,f,cut);poutline(g);return cellOf(pcanvas(g))}
-function followerSprite(col,f,v,race,band){v=(v||0)%6;f=(f||0)%4;race=race||'human';const k='fw'+col+f+v+race+(band?'b':'');if(spr[k])return spr[k];
+function followerSprite(col,f,v,race,band){v=(v||0)%6;f=(f||0)%PEOPLE_STEPS;race=race||'human';const k='fw'+col+f+v+race+(band?'b':'');if(spr[k])return spr[k];
   const R=RACE_LOOK[race]||RACE_LOOK.human,arms=['spear','spear','sword','spear','axe','spear'][v],
     o={race,skin:R.skin[v%R.skin.length],hair:R.hair[v%R.hair.length],eye:R.eye,ears:R.ears,tusk:R.tusk,short:R.short,beard:R.beard?R.hair[v%R.hair.length]:null,
       helm:band?(v%3?'hood':'bare'):['kettle','cap','kettle','bare','kettle','cap'][v],hood:'leather',outer:band?['leather','fur','cloth'][v%3]:v%3===2?'leather':'steel',inner:'dark',team:col,
@@ -385,11 +392,11 @@ function followerSprite(col,f,v,race,band){v=(v||0)%6;f=(f||0)%4;race=race||'hum
 const WORK_LOOK={farmer:{helm:'straw',outer:'cloth',team:'linen',weapon:'hoe'},herder:{helm:'hood',hood:'leather',outer:'fur',team:'leather',weapon:'crook'},
   woodcutter:{helm:'bare',outer:'forest',team:'leather',weapon:'axe'},miner:{helm:'cap',helmC:'iron',outer:'leather',team:'dark',weapon:'pick'},fisher:{helm:'bare',outer:'blue',team:'linen',weapon:'rod'},
   builder:{helm:'cap',helmC:'leather',outer:'linen',team:'leather',weapon:'hammer'}};
-function workerSprite(job,f,race,v,carry){v=(v||0)%4;f=(f||0)%4;race=race||'human';const k='wk'+job+f+race+v+(carry?'c':'');if(spr[k])return spr[k];
+function workerSprite(job,f,race,v,carry){v=(v||0)%4;f=(f||0)%PEOPLE_STEPS;race=race||'human';const k='wk'+job+f+race+v+(carry?'c':'');if(spr[k])return spr[k];
   const L={...folkLook('folk',race,v*3+1),robe:false,...(WORK_LOOK[job]||WORK_LOOK.farmer)};if(carry){L.weapon=null;L.load=job}// (loaded: his tool left behind)
   return spr[k]=mapPerson(L,f)}
 // a refugee: worn clothes, a hood, a rolled blanket on the back, a walking stick now and then
-function refugeeSprite(f,v){v=(v||0)%4;f=(f||0)%4;const k='rf'+f+v;if(spr[k])return spr[k];
+function refugeeSprite(f,v){v=(v||0)%4;f=(f||0)%PEOPLE_STEPS;const k='rf'+f+v;if(spr[k])return spr[k];
   return spr[k]=mapPerson({...folkLook('folk','human',v*5+2),robe:false,helm:v%2?'hood':'bare',hood:'linen',outer:['linen','cloth','leather','linen'][v],team:'dark',cape:'leather',weapon:v===1||v===3?'crook':null},f)}
 
 /* townsfolk: the same figures in their trade's clothes (and folk in all sorts, a dress now and then), their race's skin and hair */

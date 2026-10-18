@@ -13,13 +13,14 @@ class Herd extends WorldObject{
   inView(V){return this.pasture()?this.fromYou()<=V:spotted(this,V)}
   pick(at){if(!this.decor)at.add(this,9,4)}
   // a pasture's herd: one animal on each worked field tile, grazing to and fro on it; any other: up to three of its animals,
-  // behind and beside the first, a step each half a body length walked (critterSprite; render.js stepOf), its count near you
+  // behind and beside the first, a walk of PX.MAP_STEPS frames to a body length walked (critterSprite; render.js stepOf), its
+  // count near you; each at its own place to the screen's pixel (render.js subT)
   draw(ents,cam,V){if(!this.inView(V))return;const c=this,F=c.pasture();
-    if(F){F.tiles.slice(0,c.n).forEach(([tx,ty],i)=>{const y=ty*TILE+TILE-3;ents.push({y,f:()=>{const now=performance.now(),ph=now/2600+i*1.9+tx,mv=Math.cos(ph),fr=Math.abs(mv)>.6?Math.floor(now/D_STEP+i)%2:0,
-      a=critterSprite(c.id,fr),x=Math.round(tx*TILE+TILE/2+Math.sin(ph)*3-cam.x),sy=Math.round(y-cam.y),w=Math.max(4,a.cw-2);
+    if(F){F.tiles.slice(0,c.n).forEach(([tx,ty],i)=>{const y=ty*TILE+TILE-3;ents.push({y,f:()=>{const now=performance.now(),ph=now/2600+i*1.9+tx,mv=Math.cos(ph),fr=Math.abs(mv)>.6?Math.floor(now*PX.MAP_STEPS/(2*D_STEP)+i*3)%PX.MAP_STEPS:0,
+      X=tx*TILE+TILE/2+Math.sin(ph)*3;subT({x:X,y});const a=critterSprite(c.id,fr),x=Math.round(X-cam.x),sy=Math.round(y-cam.y),w=Math.max(4,a.cw-2);
       ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(x-(w>>1),sy-1,w,2);ctx.save();ctx.translate(x,sy);if(mv<0)ctx.scale(-1,1);ctx.drawImage(a,-(a.width>>1),-a.height+1);ctx.restore()}})});return}
-    ents.push({y:c.y,f:()=>{const s=critterSprite(c.id),sx=Math.round(c.x-cam.x),sy=Math.round(c.y-cam.y),k=Math.min(3,c.n||1),sp=Math.max(4,Math.round(s.cw*.55)),go=mapStepping(c);
-      for(let i=k-1;i>=0;i--){const ox=i===0?0:i===1?-sp:Math.round(sp*.4),oy=i===0?0:i===1?-1:-3,fr=go?(frameOf(c,Math.max(2,s.cw/2))+i)%2:0,a=critterSprite(c.id,fr),w=Math.max(4,a.cw-2);
+    ents.push({y:c.y,f:()=>{subT(c);const s=critterSprite(c.id),sx=Math.round(c.x-cam.x),sy=Math.round(c.y-cam.y),k=Math.min(3,c.n||1),sp=Math.max(4,Math.round(s.cw*.55)),go=mapStepping(c),N=PX.MAP_STEPS;
+      for(let i=k-1;i>=0;i--){const ox=i===0?0:i===1?-sp:Math.round(sp*.4),oy=i===0?0:i===1?-1:-3,fr=go?(frameOf(c,Math.max(4,s.cw)/N,N)+i*3)%N:0,a=critterSprite(c.id,fr),w=Math.max(4,a.cw-2);
         ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(sx+(c.dir<0?-ox:ox)-(w>>1),sy+oy-1,w,2);
         ctx.save();ctx.translate(sx+(c.dir<0?-ox:ox),sy+oy);if(c.dir<0)ctx.scale(-1,1);ctx.drawImage(a,-(a.width>>1),-a.height+1);ctx.restore()}
       if(c.n>1&&!c.decor&&c.fromYou()<90)txt(String(c.n),sx,sy-s.ch-4,CRITTERS[c.id].live?'#e8d8a0':'#c8e0a0','center')}})}
@@ -132,7 +133,8 @@ function herdAct(a){
    rabbit, a hare or a fowl 4 × 3; drawn pixel by pixel, side-on facing right, in its colour's hue-shifted ramp (engine PX.ramp:
    h its light, H the coat, d its shade, k darker; w white, e eye, n nose, b beak, y legs, r comb, a antler, o horn, s spots, f a
    face), with the people's outline (people.js), each in the smallest power-of-two cell it fits (8, 16: sprites.js cellOf). rows:
-   the body over the legs; legs: two steps (f 0 under it, 1 apart: a step each half a body length walked, critters.js draw) */
+   the body over the legs; legs: two steps (under it, then apart), walked in PX.MAP_STEPS frames (engine/beasts.js PX.mapLegs; f 0
+   standing: a walk to a body length walked, critters.js draw) */
 const CRITTER_MAP={
   cow:{rows:['......ow.','.hhhshhHe','dHsHHHHHn','.dHHHHHd.'],legs:[['.kH..kH..'],['k.H.k..H.']]},
   sheep:{x:{f:'#4a423c'},rows:['hhh.','HHHf'],legs:[['.f.f'],['f.f.']]},
@@ -148,8 +150,8 @@ const CRITTER_MAP={
   hen:{rows:['d.r.','dhHb'],legs:[['.y.y'],['y.y.']]},
   fowl:{rows:['..hH','dhHb'],legs:[['.y.y'],['y.y.']]}
 };
-function critterSprite(id,f){f=f?1:0;const k='cr'+id+f;if(spr[k])return spr[k];
-  const D=CRITTERS[id],T=CRITTER_MAP[id],R=PX.ramp(D.col),rows=T.rows.concat(T.legs[f]),g=pgrid(Math.max(...rows.map(r=>r.length))+2,rows.length+2),
+function critterSprite(id,f){f=(f||0)%PX.MAP_STEPS;const k='cr'+id+f;if(spr[k])return spr[k];
+  const D=CRITTERS[id],T=CRITTER_MAP[id],R=PX.ramp(D.col),rows=T.rows.concat(PX.mapLegs(T.legs[0],T.legs[1],f)),g=pgrid(Math.max(...rows.map(r=>r.length))+2,rows.length+2),
     col={h:R[0],H:R[1],d:R[2],k:R[3],w:'#f4f0e8',e:'#1a1410',n:'#e8a0a0',b:'#e8b94a',y:'#d8963a',r:'#d83a2a',a:'#d8c8a0',o:'#a89a7a',s:D.spots||R[3],...(T.x||{})};
   rows.forEach((r,y)=>[...r].forEach((c,x)=>{if(col[c])pset(g,x+1,y+1,col[c])}));poutline(g);return spr[k]=cellOf(pcanvas(g))}
 onAct('herd-',herdAct);

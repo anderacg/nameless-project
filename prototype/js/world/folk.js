@@ -16,7 +16,7 @@ class EstateWorker extends WorldObject{
   pick(at){if(folkOut(this))at.add(this,6,4)}
   // the people's figure with his trade's tool, the home's race, his load on his back on the way to the holding (folkSprite)
   draw(ents,cam,V){if(!this.inView(V))return;const f=this;
-    ents.push({y:f.y,f:()=>{const fr=f.moving&&mapStepping(f)?(frameOf(f,2.5,4)+Math.floor(f.ph*4))%4:0,t=townBy(f.home),s=folkSprite(f.job,fr,t&&t.races?t.races[0]:'human',Math.floor(f.ph*7),f.st==='out'),sx=Math.round(f.x-cam.x),sy=Math.round(f.y-cam.y);
+    ents.push({y:f.y,f:()=>{subT(f);const fr=f.moving&&mapStepping(f)?(frameOf(f,WALK.foot,WALK.n)+Math.floor(f.ph*WALK.n))%WALK.n:0,t=townBy(f.home),s=folkSprite(f.job,fr,t&&t.races?t.races[0]:'human',Math.floor(f.ph*7),f.st==='out'),sx=Math.round(f.x-cam.x),sy=Math.round(f.y-cam.y);
       ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(sx-2,sy-1,5,2);ctx.save();ctx.translate(sx,sy);if(f.dir<0)ctx.scale(-1,1);ctx.drawImage(s,-8,-14);ctx.restore()}})}
   tip(){return '<b>'+cap1(this.job)+'</b><small>Of '+this.home+'</small><span class="act">Click: talk</span>'}
 }

@@ -89,21 +89,23 @@ try{
   {park();P.troops={hum_levy:10};const [x,y]=grounds.open;P.x=x;P.y=y;const tm=t.travelMul();G.encCool=3;let f=0;for(;f<4000&&G.encCool>0;f++){P.x=x;P.y=y;P.tx=null;t.updateWorld(.05)}
    const secs=f*.05,gap=secs*t.MAP_BASE*tm*t.WORLD_PACE*S.move,before=3*t.MAP_BASE*tm;
    ok(Math.abs(gap/before-1)<.02,'the grace (G.encCool 3) lasts '+secs.toFixed(1)+' s at 1x: you walk '+gap.toFixed(0)+' px in it, as before ('+before.toFixed(0)+' px in '+(3/.6).toFixed(1)+' s)');P.troops={}}
-  // ---- walk cycles by distance (R13): your figure's step is a frame each 2.5 px you walk on foot, each 4 px mounted; 0 standing;
-  // the followers by the same distance; a caravan's wheel an eighth of a turn each 2.4 px; a beast a step each half its length
+  // ---- walk cycles by distance (R13): your figure's step is a frame each WALK.foot px you walk on foot, each WALK.ride px mounted,
+  // WALK.n frames a cycle (render.js: eight, the old four-frame cycles' strides of 2.5 and 4 px cut in two, the same pace in finer
+  // steps); 0 standing; the followers by the same distance; a caravan's wheel an eighth of a turn each 2.4 px; a beast a cycle each
+  // body length
   {park();const [x,y]=grounds.open;P.x=x;P.y=y;P.tx=null;P.troops={hum_levy:12};const pn=performance.now;let now=1e6;performance.now=()=>now;
    const keep=(0,eval)('partySprite'),keepF=(0,eval)('followerSprite'),got=[],gotF=[];window.__ps=keep;window.__fs=keepF;
    (0,eval)('partySprite=function(c,m,f){window.__got.push(f||0);return window.__ps(c,m,f)};followerSprite=function(c,f,v,r,b){window.__gotF.push(f||0);return window.__fs(c,f,v,r,b)}');window.__got=got;window.__gotF=gotF;
    const draw=()=>{got.length=0;gotF.length=0;t.drawWorld();now+=16;return got[0]};// (yours, the first drawn: the banners ask for the standing figure's height after)
-   try{const res=[],ok1=[];draw();for(let i=0;i<14;i++){t.walk(P,1,0,1.3);const f=draw();res.push(f);ok1.push(f===Math.floor(P.wd/2.5)%4)}
+   const WK=t.WALK;try{const res=[],ok1=[];draw();for(let i=0;i<14;i++){t.walk(P,1,0,1.3);const f=draw();res.push(f);ok1.push(f===Math.floor(P.wd/WK.foot)%WK.n)}
     const fol=gotF.slice();now+=1000;const still=draw();
-    ok(ok1.every(Boolean)&&new Set(res).size===4&&still===0,'on foot your figure steps a frame each 2.5 px walked ('+res.join('')+'), and stands (frame 0) once still');
-    ok(fol.length>0&&fol.every(f=>f>=0&&f<4)&&gotF.every(f=>f===0),'your host steps with you by the same distance ('+fol.join('')+'), and stands when you stand');
-    P.gear.mount='m_horse';draw();const rm=[];let okm=true;for(let i=0;i<10;i++){t.walk(P,1,0,1.7);const f=draw();rm.push(f);okm=okm&&f===Math.floor(P.wd/4)%4}
-    ok(okm&&new Set(rm).size===4,'mounted, a frame each 4 px ('+rm.join('')+')');P.gear.mount=null;
+    ok(ok1.every(Boolean)&&new Set(res).size===WK.n&&WK.n>=6&&WK.n<=8&&still===0,'on foot your figure steps a frame each '+WK.foot+' px walked, '+WK.n+' a cycle ('+res.join('')+'), and stands (frame 0) once still');
+    ok(fol.length>0&&fol.every(f=>f>=0&&f<WK.n)&&gotF.every(f=>f===0),'your host steps with you by the same distance ('+fol.join('')+'), and stands when you stand');
+    P.gear.mount='m_horse';draw();const rm=[];let okm=true;for(let i=0;i<10;i++){t.walk(P,1,0,1.7);const f=draw();rm.push(f);okm=okm&&f===Math.floor(P.wd/WK.ride)%WK.n}
+    ok(okm&&new Set(rm).size===WK.n,'mounted, a frame each '+WK.ride+' px ('+rm.join('')+')');P.gear.mount=null;
     // (the same distance at 1x or 8x gives the same frames: the step is by the ground covered, not the clock)
-    const w0=P.wd;t.walk(P,1,0,10);const a=draw();ok(a===Math.floor(P.wd/2.5)%4&&P.wd-w0>9.9,'a frame is set by the ground covered, whatever the speed of time (10 px: frame '+a+')');
-    const cv=t.caravanSprite('#c74453',0),cv1=t.caravanSprite('#c74453',1),cv2=t.caravanSprite('#c74453',2);ok(cv!==cv1&&cv1!==cv2&&cv.width===32,'a caravan\'s wheel turns and its ox and drover step by its frame (4 of them, a step each 2.4 px)');
+    const w0=P.wd;t.walk(P,1,0,10);const a=draw();ok(a===Math.floor(P.wd/WK.foot)%WK.n&&P.wd-w0>9.9,'a frame is set by the ground covered, whatever the speed of time (10 px: frame '+a+')');
+    const cv=t.caravanSprite('#c74453',0),cv1=t.caravanSprite('#c74453',1),cv2=t.caravanSprite('#c74453',2);ok(cv!==cv1&&cv1!==cv2&&cv.width===32,'a caravan\'s wheel turns and its ox and drover step by its frame ('+WK.n+' of them, a step each 1.2 px)');
    }finally{(0,eval)('partySprite=window.__ps;followerSprite=window.__fs');performance.now=pn;P.troops={}}}
   park()}
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}
