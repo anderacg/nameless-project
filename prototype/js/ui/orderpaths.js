@@ -65,7 +65,8 @@ function opBuild(g){
     else{const e=g.targetGroupId===null&&g.tgt;if(!e||!seenBy(0,e))return false;gx=e.x;gy=e.y}}
   else if(g.order==='charge'){let n=0;gx=gy=0;for(const u of B.units){const e=u.grp===g.id&&u.hp>0&&!u.rout&&u.tgt;if(e&&e.hp>0&&seenBy(0,e)){gx+=e.x;gy+=e.y;n++}}
     if(!n)return false;gx/=n;gy/=n;if(Math.hypot(gx-cx,gy-cy)<=12)return false;kind='attack'}
-  else if(g.order==='withdraw'){kind='withdraw';if(B.exit&&typeof exitFor==='function'){const T0=OPS.tmp;T0.x=cx;T0.y=cy;T0.team=g.team;const e=exitFor(T0);gx=e.x;gy=e.y}else{gx=g.ax;gy=g.ay}}
+  else if(g.order==='withdraw'){kind='withdraw';if(exitsOn()){const X=g.exitTo;gx=X?X.x:g.ax;gy=X?X.y:g.ay}// (the exit its men chose, read only: the drawing never picks one, morale.js exitOf)
+    else if(B.exit&&typeof exitFor==='function'){const T0=OPS.tmp;T0.x=cx;T0.y=cy;T0.team=g.team;const e=exitFor(T0);gx=e.x;gy=e.y}else{gx=g.ax;gy=g.ay}}
   else{kind='move';gx=g.ax;gy=g.ay}
   OPS.kind=kind;const Q=kind==='move'&&g.queue&&g.queue.length?g.queue:null;
   if(kind==='move'&&Math.hypot(gx-cx,gy-cy)<=OPATH.near){if(!Q)return false;opPush(cx,cy)}
