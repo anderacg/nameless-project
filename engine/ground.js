@@ -15,16 +15,15 @@
 // (and fade over its own); their shadows, roots, undergrowth and bushes stay painted. PX.battleProps(g,ground,view) draws them in
 // order over the ground alone (the gallery). PX.battleCanopy(ground): every tree of them painted once into one layer (a big wood
 // zoomed out: render.js LOD). Roads and paths (spec.ways, terrain.js): worn cart tracks and trodden trails painted into the ground
-// (paintWays), a terrace's face cut to a slope where one climbs it, no tree's crown over one (a gap in the canopy).
+// (paintWays), fainter up a rise, no tree's crown over one (a gap in the canopy).
 // The desert's life (4b): cacti, prickly pear, dead and dry shrubs, bones, small rocks, an oasis's grass and green shrubs, handed
 // back as props too (dk 4, PX.desertSprite; cv.decor how many), over painted clay pans, pebbles, flecks and wind ripples.
 // Phase 4: mountains and spires (kind 6) rise up the screen with real height, painted in the ground and handed back as props too
 // (dk 3, cut as the faces are) so a soldier behind one is under it and yours make it fade; their shadows and scree stay painted.
-// With walls a sheer cliff is grey rock, taller (12 px a level), cracked, a bright rim, a long shadow; a slope graded earth and
-// grass in steps; a ramp (a slope of a ring with cliffs) purely natural: the cliff breaks and the hillside slopes down through the gap.
-// Light from the upper left. A terrace is a raised plateau seen from the south: its top lighter and warmer, a light lip on its rim,
-// a cliff of earth or rock in strata along its south edge (9 px a level of the step, inside the higher cells, so a soldier there
-// is on the climb), deep at the foot and a cool shadow below; its east wall in shade, its west wall lit, its north edge outlined.
+// With walls a sheer cliff is grey rock, taller (12 px a level), cracked, a bright rim, a long shadow; a ramp (a slope of a ring with cliffs) purely natural: the cliff breaks and the hillside slopes down through the gap.
+// Light from the upper left. A terrace is a raised plateau seen from the south, its top lighter and warmer; every edge with no
+// cliff a smooth rise (slopePx: the ground's own cover shaded in soft steps down to its foot, inside the higher cells, so a soldier
+// there is on the climb; grassy, earthy or stony by stretches; a soft shadow below), so a grey rock face means a cliff.
 // Woods mix their climate's species with clearings and thickets, on the flat or on a plateau (its cliff still seen: a crown is
 // kept off a face); a few lone trees and copses stand in the open; small painted details by climate (flowers, tufts, pebbles, branches, mushrooms; drifts and
 // iced rocks; sparse stones and cracked earth; moss and puddles). Desert: bare, no woods (a wood cell gets dry tufts), its marsh or
@@ -368,8 +367,8 @@
     // (Wv: the river at a pixel, 255 off the field; dn, upw: k px down or up its flow; Dl: a pixel's distance to it, chamfer units)
     const Wv=(x,y)=>x<0||y<0||x>=W||y>=H?255:WV[y*W+x],dn=(x,y,k)=>flowV?Wv(x,y+k):Wv(x+k,y),upw=(x,y,k)=>flowV?Wv(x,y-k):Wv(x-k,y),Dl=(x,y)=>!hasW||x<0||y<0||x>=W||y>=H?999:DL[y*W+x];
     const Wat=(x,y)=>x<0||y<0||x>=W||y>=H?0:WT[y*W+x],Tat=(x,y)=>x<0||y<0||x>=W||y>=H?0:T[y*W+x],Fat=(x,y)=>x<0||y<0||x>=W||y>=H?1:F[y*W+x];
-    const TRK0=hx(P.trunk[0]),TRK1=hx(P.trunk[1]),FH=9,FC=P.face.map(hx),HI=hx(P.hi),LO=hx(P.lo),LN=hx(P.line),UN=hx(P.under),LF=hx(P.leaf[2]),MU=hx(P.mud),BK=hx(P.bank),WA=P.water.map(hx),GR=(P.green||P.leaf).map(hx);
-    const FOOT=[.62,.5,.4,.3,.2,.1],mix=(o,c,t)=>{D[o]+=(c[0]-D[o])*t;D[o+1]+=(c[1]-D[o+1])*t;D[o+2]+=(c[2]-D[o+2])*t},put=(o,c)=>{D[o]=c[0];D[o+1]=c[1];D[o+2]=c[2]};
+    const TRK0=hx(P.trunk[0]),TRK1=hx(P.trunk[1]),FC=P.face.map(hx),HI=hx(P.hi),LO=hx(P.lo),LN=hx(P.line),UN=hx(P.under),LF=hx(P.leaf[2]),MU=hx(P.mud),BK=hx(P.bank),WA=P.water.map(hx),GR=(P.green||P.leaf).map(hx);
+    const mix=(o,c,t)=>{D[o]+=(c[0]-D[o])*t;D[o+1]+=(c[1]-D[o+1])*t;D[o+2]+=(c[2]-D[o+2])*t},put=(o,c)=>{D[o]=c[0];D[o+1]=c[1];D[o+2]=c[2]};
     // the river's own colours (RW: its water light to deep; DEEP: the deep's tones by depth; FORD: shallow over gravel; BEDL: a bar)
     const RW=RP.w.map(hx),BED=hx(RP.bed),FOAM=hx(RP.foam),E=RP.earth.map(hx),ICE=RP.ice?RP.ice.map(hx):null,SN=hx('#f4f8fc'),ST=RP.stone.map(hx),WEED=hx('#5e6e34');
     const lerp=(a,b,t)=>a.map((v,z)=>v+(b[z]-v)*t),DEEP=[lerp(RW[0],RW[1],.55),RW[1],RW[2],RW[3]],FORD=lerp(RW[0],BED,.42),BEDL=lerp(BED,hx(P.hi),.25),NB=hasW?noise(W,H,12,seed+60):null;
@@ -401,7 +400,7 @@
     // on either side is a sheer cliff: rock, FHS px a level, dark, cracked, a bright rim, a long shadow at its foot, a thick dark lip
     // on the north; one with none is a slope: graded earth and grass in steps, a soft foot. On a plateau with any cliff a slope is its
     // ramp: the cliff breaks there and the hillside slopes down through the gap (rampPx). No spec.wall: every edge as before (a face, climbable)
-    const WL=spec.wall&&spec.wall.length===C*R?spec.wall:null,FHS=12,RC=(P.rock||PX.GROUND_PAL.grass.rock).c.map(hx),FOOTS=[.7,.62,.54,.46,.38,.3,.2,.1],FOOTL=[.34,.22,.11,.04];
+    const WL=spec.wall&&spec.wall.length===C*R?spec.wall:null,FHS=12,RC=(P.rock||PX.GROUND_PAL.grass.rock).c.map(hx),FOOTS=[.7,.62,.54,.46,.38,.3,.2,.1];
     let edgeK=null,kindOf=null;
     if(WL){const wb=(i,j)=>i<0||j<0||i>=C||j>=R?0:WL[j*C+i],P1=new Int16Array(C*R).fill(-1),P2=new Int16Array(C*R).fill(-1),W1=[],W2=[];
       // (the rings: each part of the ground at level th or more, and whether any edge of it down to lower ground is a cliff)
@@ -440,7 +439,7 @@
     // a plateau pixel with walls known: its south face (sheer: rock in FHS-px levels; a slope: graded, in steps), the rim over it,
     // its east wall (sheer 4 px a level, else 3) and west (2, else 1), its north lip; true: painted
     const wlTop=(o,x,y,i,t,d1,st)=>{
-      if(d1){const ek=edgeK(2,x,y+d1),sh=ek===1,fh=(sh||ek===2?FHS:FH)*st;
+      const ek=d1?edgeK(2,x,y+d1):0;if(ek){const sh=ek===1,fh=FHS*st;
         if(d1<=fh){const f=(fh-d1)/(fh-1),h=PX.hash(x,y,seed+12);
           if(ek===2){const e=rampSide(2,x,y+d1);rampPx(o,x,y,i,1-f,e,e<4&&edgeK(2,x-e-1,y+d1)!==2?-1:1);return true}
           if(sh){F[i]=1;let k=f<.1?1:f<.4?2:f<.75?3:4;const led=(d1+((x>>4)&1)*2)%5===0&&h>.25;
@@ -449,27 +448,26 @@
             if(SNW&&led&&h>.45)put(o,SNW[f<.5?0:1]);if(h>.96)put(o,RC[Math.max(0,k-1)]);
             if(d1===fh){put(o,RC[0]);mix(o,HI,.5)}else if(d1===fh-1)put(o,RC[1]);
             for(let k=1;k<=2;k++){if(edgeK(2,x+k,y+d1)===2){put(o,RC[k===1?4:3]);break}if(edgeK(2,x-k,y+d1)===2){put(o,RC[k===1?0:1]);if(k===1)mix(o,HI,.3);break}}// (a shoulder by a ramp)
-            return true}
-          // (a slope: steps of earth graded toward its foot; a ramp's browner, bare)
-          F[i]=4;mix(o,LO,.06+.26*f);if(ek===2)mix(o,FC[0],.3);const s=(d1+((x>>2)&1))%3;if(s===0)mix(o,FC[ek===2?2:1],ek===2?.5:.45);else if(s===1)mix(o,HI,.18);if(h>.95&&ek!==2)put(o,TU[1]);return true}
+            return true}}
         if(ek===2&&d1<=fh+2)return true;// (no lit rim over a ramp: the hillside runs on)
-        if(d1<=fh+2){mix(o,HI,sh?(d1===fh+1?.75:.35):(d1===fh+1?.22:.08));return true}}
-      for(let d=1;d<=8;d++){const u=Tat(x+d,y);if(u<t){const ek=edgeK(1,x+d,y),sh=ek===1;if(ek===2&&d<=4*(t-u)+3){rampPx(o,x,y,i,(4*(t-u)+3-d)/(4*(t-u)+3),rampSide(1,x+d,y),0);return true}if(d<=(sh?4:3)*(t-u)){if(sh){F[i]=2;put(o,RC[d===1?4:3]);if(PX.hash(x,y,seed+13)>.9)put(o,RC[2])}else{F[i]=4;mix(o,LO,.3-.06*d)}return true}break}}
-      for(let d=1;d<=5;d++){const u=Tat(x-d,y);if(u<t){const ek=edgeK(4,x-d,y),sh=ek===1;if(ek===2&&d<=2*(t-u)+3){rampPx(o,x,y,i,(2*(t-u)+3-d)/(2*(t-u)+3),rampSide(4,x-d,y),0);return true}if(d>4)break;if(d<=(sh?2:1)*(t-u)){if(sh){F[i]=2;put(o,RC[d===1?1:2])}else{F[i]=4;mix(o,HI,.2)}return true}break}}
+        if(d1<=fh+2){mix(o,HI,d1===fh+1?.75:.35);return true}}
+      for(let d=1;d<=8;d++){const u=Tat(x+d,y);if(u<t){const ek=edgeK(1,x+d,y),sh=ek===1;if(ek===2&&d<=4*(t-u)+3){rampPx(o,x,y,i,(4*(t-u)+3-d)/(4*(t-u)+3),rampSide(1,x+d,y),0);return true}if(sh&&d<=4*(t-u)){F[i]=2;put(o,RC[d===1?4:3]);if(PX.hash(x,y,seed+13)>.9)put(o,RC[2]);return true}break}}
+      for(let d=1;d<=5;d++){const u=Tat(x-d,y);if(u<t){const ek=edgeK(4,x-d,y),sh=ek===1;if(ek===2&&d<=2*(t-u)+3){rampPx(o,x,y,i,(2*(t-u)+3-d)/(2*(t-u)+3),rampSide(4,x-d,y),0);return true}if(sh&&d<=2*(t-u)){F[i]=2;put(o,RC[d===1?1:2]);return true}break}}
       for(let d=1;d<=6;d++)if(Tat(x,y-d)<t){if(edgeK(8,x,y-d)===2){rampPx(o,x,y,i,(6-d)/6*.5,rampSide(8,x,y-d),0);return true}break}// (a ramp up a north edge)
-      if(Tat(x,y-1)<t){if(edgeK(8,x,y-1)===1){put(o,RC[1]);mix(o,HI,.3)}else mix(o,HI,.3);return true}
-      if(Tat(x-1,y)<t){mix(o,HI,.25);return true}
+      if(Tat(x,y-1)<t&&edgeK(8,x,y-1)===1){put(o,RC[1]);mix(o,HI,.3);return true}
+      if(Tat(x-1,y)<t&&edgeK(4,x-1,y)===1){mix(o,HI,.25);return true}
       return false};
     // a pixel below or beside a higher one, walls known: the shadow at a cliff's foot (long) or a slope's (soft), east of a wall, a
     // north edge's outline (a cliff's thick and dark, a slope's faint)
     const wlLow=(o,x,y,t,i)=>{
-      for(let d=1;d<=11;d++)if(Tat(x,y-d)>t){const k=edgeK(2,x,y-d+1);if(k===2){rampFan(o,x,y,i,1-(d-1)/11,rampSide(2,x,y-d+1));return}if(d>8)break;const A=k===1?FOOTS:FOOTL;if(d<=A.length)mix(o,LO,A[d-1]);return}
-      for(let d=1;d<=9;d++)if(Tat(x-d,y)>t){const k=edgeK(1,x-d+1,y);if(k===2){rampFan(o,x,y,i,1-(d-1)/9,rampSide(1,x-d+1,y));return}if(d>3)break;if(k===1)mix(o,LO,.5-.1*d);else if(d===1)mix(o,LO,.18);return}
+      for(let d=1;d<=11;d++)if(Tat(x,y-d)>t){const k=edgeK(2,x,y-d+1);if(k===2){rampFan(o,x,y,i,1-(d-1)/11,rampSide(2,x,y-d+1));return}if(d>8||!k)break;if(d<=FOOTS.length)mix(o,LO,FOOTS[d-1]);return}
+      for(let d=1;d<=9;d++)if(Tat(x-d,y)>t){const k=edgeK(1,x-d+1,y);if(k===2){rampFan(o,x,y,i,1-(d-1)/9,rampSide(1,x-d+1,y));return}if(d>3||k!==1)break;mix(o,LO,.5-.1*d);return}
       for(let d=1;d<=9;d++)if(Tat(x+d,y)>t){if(edgeK(4,x+d-1,y)===2){rampFan(o,x,y,i,1-(d-1)/9,rampSide(4,x+d-1,y));return}break}
       for(let d=1;d<=9;d++)if(Tat(x,y+d)>t){if(edgeK(8,x,y+d-1)===2){rampFan(o,x,y,i,1-(d-1)/9,rampSide(8,x,y+d-1));return}break}
-      if(Tat(x,y+1)>t){if(edgeK(8,x,y)===1)put(o,LN);else mix(o,LN,.42);return}
-      if(Tat(x,y+2)>t){if(edgeK(8,x,y+1)===1)mix(o,LN,.75);return}
-      if(Tat(x,y+3)>t&&edgeK(8,x,y+2)===1)mix(o,LN,.4)};
+      if(Tat(x,y+1)>t&&edgeK(8,x,y)===1){put(o,LN);return}
+      if(Tat(x,y+2)>t&&edgeK(8,x,y+1)===1){mix(o,LN,.75);return}
+      if(Tat(x,y+3)>t&&edgeK(8,x,y+2)===1){mix(o,LN,.4);return}
+      slopeLow(o,x,y,t)};
     /* mountains and spires (phase 4: kind 6, impassable; spec.rockH a cell's height in levels of spec.rockPx px, ROCK_PX unless
        given; a rock cell without one is 3). Each mass (rock cells joined edge to edge) is a heightfield over its footprint (its cells
        through the same wobble): steep at its edge (a lone spire of 1-2 cells a needle), peaked by a ridged noise, the desert's
@@ -558,8 +556,7 @@
        clearings is no track), their lines first (painted in 3b): DR each pixel's distance to its way ×8 (255: none), so the
        details, lone trees and reeds keep off it and a tree's crown off its line (a gap in the canopy); DS how far along it lies (px,
        mod 256); DK its kind (1 road, 2 path), 4 wet (marsh round it: a causeway or a boardwalk), 16 its side of the line, 8 a climb (the terrace level under
-       its line changes within 20 px: there a terrace's face, not a sheer one, gives way to a slope cut for it (cutW) and a ramp's
-       own track gives way to it) */
+       its line changes within 20 px: up a rise or a ramp the way runs on, a little stronger than on other slopes) */
     const WY=(spec.ways||spec.recipe&&spec.recipe.ways||[]).filter(w=>(w.kind==='road'||w.kind==='path')&&w.p&&w.p.length>1),DR=WY.length?new Uint8Array(W*H).fill(255):null,HW=[0,10,4];
     const onWay=(x,y)=>!!DR&&x>=0&&y>=0&&x<W&&y<H&&DR[(y|0)*W+(x|0)]<255,DS=DR&&new Uint8Array(W*H),DK=DR&&new Uint8Array(W*H);let wx0=W,wy0=H,wx1=-1,wy1=-1;
     if(DR){
@@ -582,13 +579,40 @@
           for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){const px=x+.5-ax,py=y+.5-ay;let t=L2?(px*dx+py*dy)/L2:0;t=t<0?0:t>1?1:t;const d=Math.hypot(px-dx*t,py-dy*t);if(d>e)continue;
             const o=y*W+x,q=Math.round(d*8),jj=t<.5?j:j+1;if(q<DR[o]){DR[o]=q;DS[o]=Math.floor(s0+t*L)&255;DK[o]=k|(wet[jj]?4:0)|clb[jj]|(px*dy-py*dx>0?16:0)}}
           s0+=L}}}
-    // (a terrace face's pixel a climbing way's line passes within its half-width (and 3 px): cut to a slope)
-    const cutW=i=>!!DR&&DR[i]<255&&(DK[i]&8)>0&&DR[i]<=(HW[DK[i]&3]+3)*8;
+    /* a climbable edge (no wall: every edge of a field with no cliffs) is a smooth rise, not a face (the owner, 2026-10-18): the
+       ground's own grass, snow, sand or mud shaded in soft steps from the top down to the foot (SLB px a level of the step: south,
+       east, west, north; the south one faces us), lit from the upper left, its tint easing to the lower level's, a soft shadow
+       below. Varied along each hill by seed and climate (SLV: grassy, earthy, stony): bare earth through the grass, now and then a
+       low turf lip; stones and small outcrops poking through (frost: dark rock through the snow, its cap white; desert: low
+       sandstone ledges, broken; swamp: mud, moss and roots). Never a continuous wall, never a prop: F 4 (nothing stands there).
+       slopeAt: the edge a plateau pixel slopes to {f (1 at the foot), q (0 S, 1 E, 2 W, 3 N), st (the levels down)}, or null */
+    const SLB=[10,6,4,4],SLD=[[0,1,2],[1,0,1],[-1,0,4],[0,-1,8]],SLF=[.2,.14,.09,.05,.02],SLV={grass:[.48,.7],frost:[.42,.68],desert:[.48,.62],swamp:[.4,.78]}[clim],
+      VN=noise(W,H,56,seed+71),VN2=noise(W,H,20,seed+72),ERT=clim==='frost'?RC[3]:clim==='swamp'?MU:FC[1],SWR=clim==='swamp';
+    const slopeAt=(x,y,t)=>{let b=null;for(let q=0;q<4;q++){const [a,c,bt]=SLD[q];for(let d=1;d<=SLB[q]*t;d++){const u=Tat(x+a*d,y+c*d);if(u>=t)continue;
+      const st=t-u,n=SLB[q]*st;if(d<=n&&(!WL||edgeK(bt,x+a*d,y+c*d)===0)){const f=n>1?1-(d-1)/(n-1):1;if(!b||f>b.f)b={f,q,st}}break}}return b};
+    const slopePx=(o,x,y,i,t,sv)=>{const f=sv.f,q=sv.q,n=SLB[q]*sv.st,h=PX.hash(x,y,seed+73),fs=Math.min(1,Math.floor(f*4+h*.9)/4),rows=Math.round((1-f)*(n-1));F[i]=4;
+      if(q===0)mix(o,LO,.05+.23*fs);else if(q===1)mix(o,LO,.06+.24*fs);else mix(o,HI,(q===2?.12:.09)-.05*fs);// (shade by the way it faces)
+      const v=.5+(VN(x,y)*.75+VN2(x,y)*.25-.5)*2,kd=v<SLV[0]?0:v<SLV[1]?1:2;
+      if(kd===1&&f>.1){const e=NP(x,y);if(e>.5)mix(o,ERT,Math.min(.6,(e-.5)*3.5));if(RMOSS&&e<.3)mix(o,RMOSS,.3);// (earthy: bare earth through the grass)
+        if(q===0&&rows===1&&PX.hash(x>>3,y>>4,seed+75)<.6)mix(o,FC[3],.4);// (a low turf lip over it)
+        if(SWR&&q===0&&rows>=1&&rows<=4&&PX.hash(x,y>>3,seed+76)<.07)mix(o,TRK1,.55);return}// (roots)
+      if(kd===2&&f>.08){// (stony: stones, small outcrops; the desert's low ledges)
+        if(clim==='desert'&&q===0&&NQ(x,y)>.45){const r=(rows+((x>>4)&1))%4;if(r===2){mix(o,RC[1],.55);return}if(r===3){mix(o,RC[3],.3);return}}
+        const cx=Math.floor(x/6),cy=Math.floor(y/6),hb=PX.hash(cx,cy,seed+77);
+        if(hb<.17){const dx=x-cx*6-2.5,dy=y-cy*6-2.5+(hb*50%1-.5),r=dx*dx+dy*dy,rr=3+hb*40;// (an outcrop: a small lit boulder, its shade below)
+          if(r<rr){put(o,RC[dx+dy<-1.6?0:dx+dy>1.6?3:dy>0?2:1]);if(SNW&&dy<-1.2)put(o,SNW[0]);return}if(dy>0&&r<rr+5)mix(o,LO,.3)}
+        if(h<.06)put(o,RC[h<.03?1:2]);return}
+      if(h>.975)put(o,TU[1])};
+    // a pixel below or beside a climbable rise: a soft shadow at its foot, a little east of it, a faint hint above its north side
+    const slopeLow=(o,x,y,t)=>{
+      for(let d=1;d<=5;d++){const u=Tat(x,y-d);if(u>t){if(!WL||edgeK(2,x,y-d+1)===0)mix(o,LO,SLF[d-1]*(u-t>1?1.4:1));return}}
+      for(let d=1;d<=3;d++)if(Tat(x-d,y)>t){if(!WL||edgeK(1,x-d+1,y)===0)mix(o,LO,.09-.025*d);return}
+      for(let d=1;d<=2;d++)if(Tat(x,y+d)>t){if(!WL||edgeK(8,x,y+d-1)===0)mix(o,LN,d===1?.1:.05);return}};
     // (3) colour, pixel by pixel
     each((x,y,i)=>{const o=i*4,t=T[i];
       if(hasW){const w=WV[i];if(w){water(o,x,y,i,w);return}const dl=DL[i]/3;if(dl<=3.2&&bank(o,x,y,dl))return;
         if(oasis){const q=(12-dl)/12+(NP(x,y)-.5)*.5;if(q>.3)mix(o,GR[q>.6?1:0],q>.55?.7:.4)}else if(dl<8)mix(o,LO,(8-dl)*.025)}// (the desert's green fringe; elsewhere the ground cools toward the water)
-      if(t)mix(o,HI,P.lift*t);// (a terrace: lighter and warmer a level)
+      const sv=t?slopeAt(x,y,t):null;if(t)mix(o,HI,P.lift*(sv?t-sv.st*sv.f*.85:t));// (a terrace: lighter and warmer a level; down a rise toward the level below)
       if(K[i]===1){if(!bare){mix(o,UN,.55);const p=PX.hash(x,y,seed+8);if(p<.05)mix(o,LF,.5);else if(p>.97)mix(o,HI,.12)}}// (undergrowth, dappled; none in the desert)
       if(oasis){const q=Q[i],w=WT[i];// (an oasis: the pool, its wet sand bank, the green round it fading into the sand)
         if(w){put(o,WA[w]);if(!Wat(x,y-1))mix(o,BK,.5);else if(w===1&&PX.hash(x,y,seed+9)>.9)put(o,WA[0])}
@@ -600,23 +624,9 @@
         if(w){put(o,WA[w]);if(!Wat(x,y-1))mix(o,BK,.45);else if(w===1&&PX.hash(x,y,seed+9)>.93)put(o,WA[0])}// (the water; the bank's shadow on it)
         else if(Wat(x,y+1))put(o,BK);// (the far bank, its face toward us)
         else{mix(o,MU,.42);if(PX.hash(x,y,seed+10)>.94)mix(o,BK,.5)}}
-      // a raised plateau seen from the south: along its south edge, inside it, the cliff, FH px a level of the step (2 over 0: twice
-      // as tall), earth or rock in strata, a light lip at the top and deep at the foot; on the lower ground a cool shadow at its foot
-      if(WL){if(t){let d1=0,st=0;for(let d=1;d<=2*FHS+2;d++){const u=Tat(x,y+d);if(u<t){d1=d;st=t-u;break}}if(wlTop(o,x,y,i,t,d1,st))return}wlLow(o,x,y,t,i);return}
-      if(t){let d1=0,st=0;for(let d=1;d<=2*FH+2;d++){const u=Tat(x,y+d);if(u<t){d1=d;st=t-u;break}}
-        const fh=FH*st;
-        if(d1&&d1<=fh&&cutW(i)){const f=(fh-d1)/(fh-1),s=(d1+((x>>2)&1))%3;F[i]=4;mix(o,LO,.06+.26*f);mix(o,FC[0],.3);if(s===0)mix(o,FC[2],.5);else if(s===1)mix(o,HI,.18);return}// (a way's cut up it: a slope, worn)
-        if(d1&&d1<=fh){F[i]=1;const f=(fh-d1)/(fh-1),band=(d1+((x>>3)&1)+(PX.hash(x>>2,y+d1,seed+11)>.8?1:0))%3===0;let k=f<.22?0:f<.5?1:f<.8?2:3;if(band&&k<3)k++;
-          put(o,FC[k]);const p=PX.hash(x,y,seed+12);if(p>.95)put(o,FC[Math.max(0,k-1)]);else if(p<.03)put(o,FC[3]);
-          if(d1===fh){put(o,FC[0]);mix(o,HI,.3)}else if(d1===fh-1&&p>.5)put(o,FC[0]);return}
-        if(d1&&d1<=fh+2){mix(o,HI,d1===fh+1?.55:.25);return}// (the rim catches the light)
-        // the side walls: the east one in shade (3 px a level), the west one lit (1 px a level)
-        for(let d=1;d<=6;d++){const u=Tat(x+d,y);if(u<t){if(d<=3*(t-u)){if(cutW(i)){F[i]=4;mix(o,LO,.3-.06*d);return}F[i]=2;put(o,FC[d===1?3:2]);if(PX.hash(x,y,seed+13)>.9)put(o,FC[1]);return}break}}
-        for(let d=1;d<=2;d++){const u=Tat(x-d,y);if(u<t){if(d<=t-u){if(cutW(i)){F[i]=4;mix(o,HI,.2);return}F[i]=2;put(o,FC[1]);return}break}}
-        if(Tat(x,y-1)<t){mix(o,HI,.45);return}if(Tat(x-1,y)<t){mix(o,HI,.25);return}}
-      for(let d=1;d<=6;d++)if(Tat(x,y-d)>t){mix(o,LO,FOOT[d-1]);return}// (the shadow at the cliff's foot)
-      for(let d=1;d<=2;d++)if(Tat(x-d,y)>t){mix(o,LO,.35);return}// (and east of its shaded wall)
-      if(Tat(x,y+1)>t){put(o,LN);return}if(Tat(x,y+2)>t)mix(o,LN,.55)});// (the north edge, outlined)
+      // a raised plateau seen from the south: with walls its cliffs and ramps (wlTop, wlLow); every climbable edge a smooth rise
+      if(WL){if(t){let d1=0,st=0;for(let d=1;d<=2*FHS+2;d++){const u=Tat(x,y+d);if(u<t){d1=d;st=t-u;break}}if(wlTop(o,x,y,i,t,d1,st))return;if(sv){slopePx(o,x,y,i,t,sv);return}}wlLow(o,x,y,t,i);return}
+      if(sv){slopePx(o,x,y,i,t,sv);return}slopeLow(o,x,y,t)});
     /* (3b) roads and paths painted (their lines: 2b), natural and low in contrast: a road a worn cart track 20 px wide (its width
        wandering a little), two faint wheel ruts wandering and fading in and out, a patchy grassy crown between, its edge soft and
        ragged, bare patches, the odd stone or puddle; a path a trodden strip 8 px wide a little lighter than the ground; by climate
@@ -648,7 +658,7 @@
           if(d>e+1){continue}if(d>e){if(h<.3)mix(i,TC[0],.15*sl);continue}const ed=Math.min(1,Math.max(0,(e-d)/2.5));mix(i,TC[NP(x,y)>.55?0:1],(.18+.32*ed)*sl);if(BNK&&ed<.5)mix(i,BNK,.25);
           if(h<.05)mix(i,TU[1],.4);else if(h>.995)put(i,STN)}}})();
     // (3b, the desert) its sand: wind ripples over the dunes, and on the open sand in a patch here and there, fading in and out (never
-    //      on a face, a way or an oasis); noise only, no stream
+    //      on a face or a rise, a way or an oasis); noise only, no stream
     if(clim==='desert'){const NA=noise(W,H,80,seed+101),NW=noise(W,H,16,seed+102),RD=hx('#ae8a4e'),RL=hx('#f8e6b0'),A4=new Float32Array((W>>2)+1),y0=base?16:0,W2=new Float32Array((W>>1)+1),WY=new Int32Array((W>>1)+1).fill(-1);
       for(let y=y0;y<H;y++){if(!(y&3)||y===y0)for(let x=0;x<W;x+=4)A4[x>>2]=NA(x,y);
         for(let x=0;x<W;x++){const i=y*W+x,t=T[i],a=t?.5+.5*A4[x>>2]:(A4[x>>2]-.6)*2.5;if(a<=.04||F[i]||Q[i]>.2||DR&&DR[i]<255)continue;
@@ -863,7 +873,7 @@
         else if(k===5)m(hx(P.riv.bridge==='stone'?P.riv.stone[0]:P.riv.wood[0]),.7);
         else if(k===6){const h=spec.rockH&&spec.rockH[j*C+i]||3;m(hx(RP.c[RP.s?3:2]),.9);if(h>=3)m(hx(RP.c[RP.s?2:1]),.45);if(RP.s&&h>=4)m(hx(RP.s[1]),.25)}
         if(WL){let e=0;for(const [a,b,bt,ob] of [[1,0,1,4],[-1,0,4,1],[0,1,2,8],[0,-1,8,2]]){const x=i+a,y=j+b;if(x<0||y<0||x>=C||y>=R||lvl[y*C+x]<=l)continue;e=Math.max(e,(WL[j*C+i]&bt)||(WL[y*C+x]&ob)?2:1)}if(e)m(LN,e===2?.9:.4)}
-        else if([[1,0],[-1,0],[0,1],[0,-1]].some(([a,b])=>{const x=i+a,y=j+b;return x>=0&&y>=0&&x<C&&y<R&&lvl[y*C+x]>l}))m(LN,.7);
+        else if([[1,0],[-1,0],[0,1],[0,-1]].some(([a,b])=>{const x=i+a,y=j+b;return x>=0&&y>=0&&x<C&&y<R&&lvl[y*C+x]>l}))m(LN,.4);
         M[o]=c[0];M[o+1]=c[1];M[o+2]=c[2];M[o+3]=255}
       g.putImageData(img,0,0)})};
 })(window.PX=window.PX||{});

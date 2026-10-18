@@ -49,6 +49,21 @@ class Holding{
   sellsMount(M,clim){const m=this.T.mounts;if(m.includes(M.where))return true;if(M.where!=='any'&&M.where!=='town'&&M.where!=='castle'&&m.includes('local'))return M.race?this.races.includes(M.race):M.clim===clim;return false}
   // does it take a band in to stay (free: they know you, stay.js)
   takesGuests(free){return true}
+  /* its record in a save (save.js worldSave): [owner, garrison, name, its state]. One founded while the world ran also keeps its
+     plain data (base: its realm and HOLDING_DATA), so a load makes it again (fromRec); one the world made keeps its kind once
+     that is no longer the kind it was made (kind), so a load puts the change back (holdingOf). (A save of the world as made is
+     today's, byte for byte; v3 (doc/WORLD_DESIGN.md §9.3) will keep every holding's kind) */
+  saveRec(){const t=this,d=MADE_HOLDINGS[TOWNS.indexOf(t)],x={s:t.sacked||0,r:t.raided||0,u:t.turmoil||0,g:t.grow,b:t.bld,w:t.wall,k:t.work,f:t.fear||0,cr:t.crime||null,wo:t.watchOff||0,
+      l:(t.lots||[]).map(l=>({id:l.id,k:l.k,type:l.type,x:l.x,y:l.y,n:l.n,lv:l.lv,seed:l.seed,st:l.st,plots:l.plots})),e:t.stock?{st:t.stock,pop:t.pop,pros:t.pros,tax:t.tax,vol:t.vol,pf:t.popF}:null};
+    if(!d){x.base={realm:HOME[t.name]};for(const k of HOLDING_DATA)if(t[k]!==undefined)x.base[k]=t[k]}else if(t.kind!==d.kind)x.kind=t.kind;
+    return [t.owner,t.gar,t.name,x]}
+  // its state from its record (on the holding as the world first stood: useWorld)
+  loadRec(o){const t=this,x=o[3];if(x.kind)holdingOf(t,x.kind);t.owner=o[0];t.gar=o[1];t.lastOwner=t.owner;
+    t.sacked=x.s;t.raided=x.r;t.turmoil=x.u;t.grow=x.g;t.fear=x.f;t.crime=x.cr;t.watchOff=x.wo;
+    t.bld=x.b;t.wall=x.w;t.work=x.k;t.lots=x.l;
+    const e=x.e;if(e){t.stock=e.st;t.pop=e.pop;t.pros=e.pros;t.tax=e.tax;t.vol=e.vol;t.popF=e.pf}return t}
+  // a founded holding made again from its record
+  static fromRec(o){return makeHolding(o[3].base).loadRec(o)}
 }
 class Village extends Holding{}
 class Town extends Holding{}
@@ -77,8 +92,16 @@ function makeHolding(data){
   // a holding's point, where you reach it and where its name hangs: at its gate, centred under its centre building (which stands
   // on the holding's tile, its middle on that tile's left edge, its foot on that tile's bottom: lots.js)
   t.x=t.tx*TILE;t.y=(t.ty+1)*TILE+2;return t}
+// a holding's plain data (as places.js gives it, its realm aside: HOME), what a founded one's save record keeps (saveRec)
+const HOLDING_DATA=['name','style','races','kind','clim','tx','ty','col','seed','mod','note'];
+// the plain data of the holdings a world was made with (setHoldings): TOWNS starts with them, in order; any after them were
+// founded while it ran (addHolding)
+let MADE_HOLDINGS=[];
 // the holdings and bandit camps a world starts with, in place of the last world's
-function setHoldings(list){TOWNS.length=0;for(const k in HOME)delete HOME[k];for(const d of list)TOWNS.push(makeHolding(d))}
+function setHoldings(list){MADE_HOLDINGS=list;TOWNS.length=0;for(const k in HOME)delete HOME[k];for(const d of list)TOWNS.push(makeHolding(d))}
+// a world goes in again (a new game, a load: useWorld): the holdings founded in the last game are gone with it, before each
+// holding the world made is put back as it first stood (worldmap.js)
+onWorld(()=>{for(const t of TOWNS.splice(MADE_HOLDINGS.length))delete HOME[t.name]});
 function setCamps(list){CAMP_SPOTS.length=0;for(const c of list)CAMP_SPOTS.push({tx:c.tx,ty:c.ty,x:(c.tx+.5)*TILE,y:(c.ty+.5)*TILE})}
 // where a new game starts unless your people have a capital, and where reach is measured from
 const startHolding=()=>TOWNS[0];

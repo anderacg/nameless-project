@@ -21,7 +21,7 @@ class Ship extends WorldObject{
       if(s.k==='trade'&&s.fromYou()<110)txt('Trade ship',sx,sy-b.ay+opaqueBox(b)[1]-2,hostileTo(s.fac)?'#ff9a90':'#e8d8a0','center')}})}
 }
 const asShip=asClass(Ship);
-const SHIP_SPD=26,BOAT_SPD=13,SHIP_CAP=Math.round(10*MAP_DENS);
+const SHIP_SPD=26,BOAT_SPD=13,SHIP_CAP=density().ships;// (SHIP_CAP: trade ships at sea at once)
 // open water a boat can sail: not the frozen lakes of the frost (their ports fish through the ice). The sea round the edge
 // of the world is the coastal route that joins the ports of different shores
 const isWater=(x,y)=>x>=0&&y>=0&&x<MW&&y<MH&&tiles[y*MW+x]===T_WATER&&climate[y*MW+x]!==CLIM.frost;
@@ -91,20 +91,18 @@ function shipDay(){
 }
 
 /* sailing */
-function updateShips(d){
-  sendBoats();const tod=G.clock/DAY;
-  for(const s of W.ships){
-    if(s.state==='fish'){if(G.clock>=s.until||tod<.2){const home=townBy(s.home),dk=home&&dockOf(home),p=dk&&shipPath({tx:Math.floor(s.x/TILE),ty:Math.floor(s.y/TILE)},dk);if(!p){s.gone=true;continue}s.path=p;s.i=0;s.state='home'}continue}
-    const j=s.path[s.i];if(j==null){s.gone=true;continue}const tx=(j%MW+.5)*TILE,ty=(((j/MW)|0)+.5)*TILE,dx=tx-s.x,dy=ty-s.y,l=Math.hypot(dx,dy),step=(s.k==='trade'?SHIP_SPD:BOAT_SPD)*d;
+// a ship's moment (parties.js lodThink; tod: the time of day): on along its way over the water, or fishing until it heads home
+const SHIP_MIND={think(s,d,tod){
+    if(s.state==='fish'){if(G.clock>=s.until||tod<.2){const home=townBy(s.home),dk=home&&dockOf(home),p=dk&&shipPath({tx:Math.floor(s.x/TILE),ty:Math.floor(s.y/TILE)},dk);if(!p){s.gone=true;return false}s.path=p;s.i=0;s.state='home'}return false}
+    const j=s.path[s.i];if(j==null){s.gone=true;return false}const tx=(j%MW+.5)*TILE,ty=(((j/MW)|0)+.5)*TILE,dx=tx-s.x,dy=ty-s.y,l=Math.hypot(dx,dy),step=moveStep(s.k==='trade'?SHIP_SPD:BOAT_SPD,d);
     if(Math.abs(dx)>.5)s.dir=dx>0?1:-1;
-    if(l<=step){s.x=tx;s.y=ty;s.i++;if(s.i<s.path.length)continue;
+    if(l<=step){s.x=tx;s.y=ty;s.i++;if(s.i<s.path.length)return false;
       // the end of the way: a fishing boat starts fishing, or is home; a trade ship unloads
       if(s.k==='fish'&&s.state==='out')s.state='fish';
       else{if(s.k==='trade'){const to=townBy(s.to);if(to)caravanArrive(s,to)}s.gone=true}}
     else{s.x+=dx/l*step;s.y+=dy/l*step}
-  }
-  W.ships=W.ships.filter(s=>!s.gone);
-}
+    return false}};
+function updateShips(d){sendBoats();lodEach(W.ships,SHIP_MIND,d,G.clock/DAY);W.ships=W.ships.filter(s=>!s.gone)}
 
 /* on the map, on the people's scale (a man 15 high, as the caravan's ox cart: caravans.js): a fishing boat is a rowing boat some
    26 long, its fisherman in it, in a 32×32 cell; a trade ship is a cog some 56 long, high sided, a castle at its stern and a

@@ -28,9 +28,31 @@ class WorldObject{
   tip(){return ''}
   draw(ents,cam,V){}
   mapDot(V){return null}
+  // how often it thinks (lodTick), and how far it has walked (walk, world.js): both kept aside, never saved
+  get tier(){return tierOf(this)}
+  get wd(){return WALKED.get(this)||0}
 }
 // plain data made one of a class in place (new, from a save or a test): the same object, its fields as they were
 const asClass=C=>o=>o&&!(o instanceof C)?Object.setPrototypeOf(o,C.prototype):o;
+/* level of detail (doc/WORLD_DESIGN.md §3.5): how often each thing on the map thinks, by its tier, how far it is from you (set
+   every .every s of real time by lodTick, plain data too). Near: every frame. Mid: every 4th frame, with 4x d. Far: its kind's
+   farStep if it has one (later: on along its route by time), else as near. near, mid: the tiers' reach (px); unbounded for now,
+   so everything is near and thinks every frame, as it always did. (n: frames so far; t: till the next sorting) */
+const WORLD_LOD={near:Infinity,mid:Infinity,every:.5,t:0,n:0},TIERS=new WeakMap();
+const tierOf=o=>TIERS.get(o)||'near';
+function lodTick(dt){const L=WORLD_LOD;L.n++;if((L.t-=dt)>0)return;L.t=L.every;
+  for(const os of [W.parties,W.caravans,W.monsters,W.critters,W.ships,W.refugees,W.folk])for(const o of os||[]){const r=Math.hypot(o.x-P.x,o.y-P.y);TIERS.set(o,r<=L.near?'near':r<=L.mid?'mid':'far')}}
+// one thing's moment by its tier, from its kind's thinker (a Brain, brains.js; BEAST_MIND, HERD_MIND, SHIP_MIND): think(o, d, x)
+// near; mid, on every 4th frame (k, its place in its list, spreads them over the four) with 4x d; far, farStep(o, d, x) if the
+// kind has one. True when it opened an encounter
+function lodThink(by,o,k,d,x){const t=tierOf(o);return t==='near'?by.think(o,d,x):t==='mid'?(WORLD_LOD.n+k)%4===0&&by.think(o,4*d,x):(by.farStep||by.think).call(by,o,d,x)}
+// each of a list in turn, by its tier; true as soon as one opens an encounter (the rest wait). by: their thinker, else each one's brain
+function lodEach(list,by,d,x){let k=0;for(const o of list)if(lodThink(by||o.brain,o,k++,d,x))return true;return false}
+/* walk cycles by distance (doc §2.2 R13): walk (world.js) adds up how far each thing goes; a figure's frame is frameOf(o, stride,
+   n): a frame every stride px, n frames a cycle (frame 0 standing: the caller's). The figures still step by the clock: they
+   take this with the new figures */
+const WALKED=new WeakMap();
+const frameOf=(o,stride,n=2)=>Math.floor((WALKED.get(o)||0)/stride)%n;
 const LISTS=new WeakMap();// each party's list view, rebuilt when its soldiers change (kept aside: never saved)
 const ROSTERS=new WeakMap();
 function partyRoster(o){let r=ROSTERS.get(o);if(!r){r=new ArmyRoster(o,'tc',{valid:k=>Object.prototype.hasOwnProperty.call(ST,k),changed:()=>o.changed(),characters:()=>o===P?['hero',...Object.keys(P.comps).filter(id=>!P.comps[id].party).map(id=>'comp_'+id)]:[],reserved:()=>o===P?1+Object.keys(P.comps).filter(id=>!P.comps[id].party).length:o.cid||o.ld||W.lords.includes(o)||o.kind==='cparty'?1:0});ROSTERS.set(o,r)}return r}

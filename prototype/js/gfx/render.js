@@ -30,10 +30,13 @@ const FACE=new WeakMap();
 let LIGHTQ=[];
 // the scene of buildings, camps and sites, before anyone is drawn over it: what you remember of the land outside your sight
 let MEM=null;const memCv=()=>MEM&&MEM.width===VW&&MEM.height===VH?MEM:(MEM=mkc(VW,VH,()=>{}));
+// the minimap's layers, bottom first, by what each thing is (mapKind): the holdings, then the sites, the beasts, the parties and
+// the caravans over them; a kind not here is not dotted
+const MAP_LAYER={town:0,site:1,monster:2,lord:3,band:3,patrol:3,cparty:3,caravan:4};
 const faceDir=o=>{let f=FACE.get(o);if(!f)FACE.set(o,f={x:o.x,d:o.x>P.x?-1:1});if(Math.abs(o.x-f.x)>.05){f.d=o.x>f.x?1:-1;f.x=o.x}return o.fight&&o.dir?o.dir:f.d};
 function drawWorld(){
   reveal();const V=vis(),cam=G.cam;cam.x=Math.round(clamp(P.x-VW/2,0,MW*TILE-VW));cam.y=Math.round(clamp(P.y-VH/2,0,MH*TILE-VH));
-  ctx.drawImage(worldCv(),cam.x,cam.y,VW,VH,0,0,VW,VH);
+  WorldArt.draw(ctx,cam);// (the painted map by chunks, those in view: worldart.js)
   drawEnv(cam,V,0);drawLand(cam);drawEstates(cam,V);
   const ents=[];
   // each thing on the map draws itself onto the frame's list (WorldObject draw), in the order they always went (two as deep stay
@@ -71,11 +74,12 @@ function drawWorld(){
   // torchlight: a warm glow over the dark, and the flame itself, flickering
   {const now=performance.now();for(const L of LIGHTQ){if(!inSight(L.x+cam.x,L.y+cam.y))continue;const r=L.r*(1+.06*Math.sin(now/90+L.x)),g=ctx.createRadialGradient(L.x,L.y,1,L.x,L.y,r);g.addColorStop(0,'rgba(255,190,90,'+(.12+.28*a).toFixed(3)+')');g.addColorStop(1,'rgba(255,150,60,0)');
     ctx.save();ctx.globalCompositeOperation='lighter';ctx.fillStyle=g;ctx.fillRect(L.x-r,L.y-r,2*r,2*r);ctx.restore();const f=Math.floor(now/120+L.x)%2;rect(ctx,'#e8803a',L.x-1+f,L.y-2,2,2);rect(ctx,'#ffe090',L.x,L.y-1-f,1,1)}}
-  // minimap
-  const MS=112/MW,mw=Math.round(MW*MS),mh=Math.round(MH*MS),mx=VW-mw-6,my=6,dot=(x,y,col,s)=>rect(ctx,col,mx+Math.floor(x/TILE*MS)-(s>>1),my+Math.floor(y/TILE*MS)-(s>>1),s,s);
-  ctx.fillStyle='#000';ctx.fillRect(mx-1,my-1,mw+2,mh+2);ctx.drawImage(atSize(miniCv,mw,mh),mx,my);ctx.globalAlpha=.4;ctx.drawImage(atSize(landMiniCv(),mw,mh),mx,my);ctx.globalAlpha=1;ctx.drawImage(atSize(fogMiniCv(),mw,mh),mx,my);
-  // each its own dot (WorldObject mapDot): the holdings and sites you know of, then the beasts, parties and caravans in sight over them
-  for(const os of [TOWNS,W.sites,W.monsters.map(asMonster),W.parties,W.caravans])for(const o of os){const d=o.mapDot(V);if(d)dot(o.x,o.y,d[0],d[1])}
+  // minimap (the land from the tile data, a pixel per k tiles: worldart.js WorldArt.mini)
+  const MS=112/MW,mk=Math.max(1,Math.round(MW/256)),mw=Math.round(MW*MS),mh=Math.round(MH*MS),mx=VW-mw-6,my=6,dot=(x,y,col,s)=>rect(ctx,col,mx+Math.floor(x/TILE*MS)-(s>>1),my+Math.floor(y/TILE*MS)-(s>>1),s,s);
+  ctx.fillStyle='#000';ctx.fillRect(mx-1,my-1,mw+2,mh+2);ctx.drawImage(atSize(WorldArt.mini(mk),mw,mh),mx,my);ctx.globalAlpha=.4;ctx.drawImage(atSize(landMiniCv(),mw,mh),mx,my);ctx.globalAlpha=1;ctx.drawImage(atSize(fogMiniCv(),mw,mh),mx,my);
+  // each its own dot (WorldObject mapDot), layer by layer (MAP_LAYER; in a layer, as worldObjects lists them): the holdings and
+  // sites you know of, then the beasts, parties and caravans in sight over them
+  for(const o of worldObjects().filter(o=>o.mapKind in MAP_LAYER).sort((a,b)=>MAP_LAYER[a.mapKind]-MAP_LAYER[b.mapKind])){const d=o.mapDot(V);if(d)dot(o.x,o.y,d[0],d[1])}
   P.quests.forEach(q=>{const g=questGoal(q);if(g)dot(g.x,g.y,'#ffe040',2)});
   dot(P.x,P.y,'#fff',3);
 }
@@ -243,6 +247,8 @@ function drawBattle(){
 }
 function frame(){
   {const sc=document.getElementById('screen');if(sc&&sc.dataset.mode!==G.mode){sc.dataset.mode=G.mode;updateHint();hideTip()}}
+  // (loading: the overlay over the last frame, nothing drawn under it, so no effect draws a random number meanwhile: ui/loading.js)
+  if(G.mode==='loading'){if(typeof loadingFrame==='function')loadingFrame();return}
   const bat=B&&(G.mode==='battle'||G.mode==='esc'&&G.esc&&G.esc.mode==='battle');setRes(bat?BVW:VW,bat?BVH:VH);// (a battle: the field's height, the screen's shape: core.js)
   ctx.save();
   {const s=shakeView(bat);if(s)ctx.translate(s.x,s.y)}// (a blow's shake, a charge's jolt: drawn only, vfx.js)

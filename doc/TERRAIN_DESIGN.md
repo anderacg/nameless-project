@@ -34,7 +34,7 @@ All the tables below are **tunable `const` tables** in a new `js/battle/terrain.
 | `range` | +0.075 per level | A shooter's range comes from **the level he stands on**: level 2 gives +15%, the old hill bonus, now earned by position. |
 | `melee` | +0.10 | A blow struck at a foe at least 1 level lower does +10% damage. |
 | `charge` | ±0.35 | The charge **bonus** is scaled by `1 + 0.35·clamp(Δlevel, −1, 1)`. A full cavalry charge downhill hits ×2.22, on the flat ×1.9, uphill ×1.59. Brace, depth and wedge apply as now. |
-| `climb`, `descend` | ×0.8, ×1.1 | Speed on a **slope cell** when moving with or against its uphill direction (dot product > 0.5). |
+| `climb`, `descend` | ×0.8, ×1.1 (as built: foot ×0.5, riders and big ×0.4; ×1.15) | Speed on a **slope cell** (as built: 1 cell in from a terrace's rim) when moving with or against its uphill direction (dot product > 0.5). |
 | `runUp`, `runDown` | ×0.6, ×1.25 | How fast charge momentum (`u.run`) builds on a slope, uphill or downhill. |
 | `climbSta` | ×1.5 | Stamina drain while running uphill. |
 | `view` | — | A soldier at least 1 level higher sees over woods (morale view, and spotting in phase 3). |
@@ -645,6 +645,20 @@ The owner: "Can you ensure that the desert battle map contains the cactus or rel
 (Headless, software canvas, timings noisy by load.) A whole `drawBattle` frame of a huge desert battle, 300 soldiers, with and without the decor: 12.7 / 13.4 ms at the fit (×0.30), 5.6 / 6.5 ms at ×1: within the noise.
 
 **Tests:** `tests/desertlife.js` (17 checks): every layout stands its life, every kind stands, the flat details painted; lighter in the zones and the lane; rockier on erg; counts by area; clustered; an oasis denser and greener; decoration only (cells and routes as built, `B.obs` empty, a soldier walks straight through a saguaro's foot, the fade over yours); seeded and never `Math.random`; no decor in other climates; each sprite on its foot.
+
+### Narrower slope bands and smooth rises (2026-10-18)
+
+The owner: "Can you adjust the area when you climb the hill? Currently it seems too wide", then "slope should be smooth with terrain", and earth and rock may show on a climbable slope, broken up and varied.
+
+**The band** (`terrain.js` `rasterTerrain`, `TERRAIN.slope` 2 → 1): a slope cell is one with ground k cells off at least ceil(k/S) levels lower, so the band is **1 cell (16 px) in from a rim a level down** (was 2, 32 px), and 2 cells where a terrace drops two levels at once (the art's taller rise there). Measured over every layout of every recipe (seeds 1–4), the band's width crossed along a hill's radius went from 44–57 px to 21–26 px at either level; on the hills recipe the share of level-1 terrace that is slope went from 86% to 49%, of level 2 from 93% to 58% (the tops are now flat tops). Ramps are unchanged (their gap is `TERRAIN_ROCK.ramp` wide; the cliffs stop where it begins) and still climbed only by them (`tests/routing.js`).
+
+**The climb** (`HILL.climb` foot .6 → .5, mounted and big .5 → .4; `climbSta` 2 kept): a walk from a level-2 hill's foot to its top takes about as long as before (foot 13.8 → 14.4 s from the east, 9.9 → 9.6 s from the south; riders 6.9 → 7.2 s, 5.1 → 4.8 s), a running climb tires a little less (foot 30 → 27 stamina from the east). A `climbSta` of 2.5 kept the stamina cost but gave the hill's holder every lab battle, so it stays 2.
+
+**Balance** (lab, AI on both sides, mirror armies of 20 foot, 12 bows and 6 riders, a level-2 hill of r 130 in one side's half, each side holding it in turn): the holder won 13 of 20 battles before (seeds 1–10) and 17 of 20 after (31 of 40 over seeds 1–20; 30 of 40 with the old band and climb); means 52–56 s either way. `visual/fieldbalance` hills (mirrored, fair): left/right 8/2 → 5/5, mean length 37 → 42 s; `visual/terrainbalance` cliffs: 2/8 both, 66 → 67 s.
+
+**Smooth rises** (`engine/ground.js` `slopeAt`, `slopePx`, `slopeLow`): every edge with no wall bit (all of them on a field with no cliffs) is painted as a smooth rise, never an earth face: the ground's own grass, snow, sand or mud shaded in soft steps from the top to the foot inside the higher cells (`SLB` 10 px a level of the step facing south, 6 east, 4 west and north), lit from the upper left (the south and east ones in shade, the west and north ones lit), the terrace's tint easing toward the level below on the way down, and a soft shadow at the foot; no rim line. Along each hill, by seed and climate (`SLV`), stretches are **grassy**, **earthy** (bare earth through the grass, now and then a low turf lip) or **stony** (stones and small lit boulders poking through); frost shows dark rock through the snow, its boulders capped white; the desert low sandstone ledges, broken; the swamp mud, moss and roots. Nothing there is a prop (`F` 4): only a real cliff (wall bits) is a grey rock face with strata, a bright rim and a long shadow, cut into depth-sorted props (`dk` 2) that fade. A road runs up a rise as it does up a ramp (the cut faces, `cutW`, are gone). The small map draws a climbable edge's contour faint (as with walls). Sight, `riseBlocked` and concealment read levels, not the art, and are unchanged. A field with no terrace paints exactly as before (75 fields hashed, ground and small map).
+
+**Changed expectations:** `tests/concealment.js` (depth): its field's hills are climbable and now have no face props, so it checks that and puts a sheer hill's cliff faces in among the props for the face's depth test. Terrain-on fields change by design (`B.terrain.up`, the painted ground of hill fields); the terrain-off fingerprints (battlesetup, battlecommands, actorrules, attackrules, battleresolution, `visual/moraleaudit`, `visual/battleperf`, `rts` seeds 1, 2, 44) and `worldprint` are byte-identical.
 
 ## 9. Owner decisions (with recommendations)
 

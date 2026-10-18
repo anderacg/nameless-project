@@ -14,7 +14,7 @@ function walk(o,dx,dy,step,ok){
   const a0=Math.atan2(dy,dx);
   for(const off of [0,.6,-.6,1.2,-1.2,1.9,-1.9]){const a=a0+off;let nx=o.x+Math.cos(a)*step,ny=o.y+Math.sin(a)*step;if(passable(terrAt(nx,ny))&&(!ok||ok(nx,ny))){
     const tx=Math.floor(nx/TILE),ty=Math.floor(ny/TILE),b=bridgeAt(tx,ty),m=Math.max(1,step);if(b===1)nx+=clamp((tx+.5)*TILE-nx,-m,m);else if(b===2)ny+=clamp((ty+.5)*TILE-ny,-m,m);
-    o.x=nx;o.y=ny;return true}}
+    WALKED.set(o,(WALKED.get(o)||0)+Math.hypot(nx-o.x,ny-o.y));o.x=nx;o.y=ny;return true}}
   return false;
 }
 // a click on something you already stand beside opens it at once, even if you just left it or fled from it
@@ -22,8 +22,9 @@ function walk(o,dx,dy,step,ok){
 const REACH=14;
 // everything on the map, each made one of its kind, in the order a click weighs them when two are as near (pickAt): each
 // holding then its built estates, the parties (lords, bands, patrols, your companions'), the beasts, the sites, the herds, the
-// caravans, the refugees, the workers, then the ships (never clicked). Not you.
-const worldObjects=()=>[...TOWNS.flatMap(t=>[t,...t.estates()]),...W.parties,...W.monsters.map(asMonster),...W.sites,...W.critters.map(asHerd),...W.caravans,...W.refugees.map(asRefugees),...W.folk.map(asWorker),...W.ships.map(asShip)];
+// caravans, the refugees, the workers, the ships (never clicked), then the fights (none picked: a click on a party in one meets
+// it, interact). Not you.
+const worldObjects=()=>[...TOWNS.flatMap(t=>[t,...t.estates()]),...W.parties,...W.monsters.map(asMonster),...W.sites,...W.critters.map(asHerd),...W.caravans,...W.refugees.map(asRefugees),...W.folk.map(asWorker),...W.ships.map(asShip),...W.fights.map(asFight)];
 // a thing on the map made one of its kind if it is still plain data (new, from a save or a test), by its fields: a herd (crit),
 // refugees (rf), a worker (folk), a ship (its path over the water), a beast (a MONSTERS kind). Parties are made theirs by asParty
 const asWorldObject=o=>!o||o instanceof WorldObject?o:o.crit?asHerd(o):o.rf?asRefugees(o):o.folk?asWorker(o):o.path?asShip(o):MONSTERS[o.id]&&!o.type?asMonster(o):o;
@@ -139,7 +140,7 @@ function dayTick(){
 }
 function updateWorld(dt){
   if(G.paused)return;
-  const d=dt*G.speed*WORLD_PACE;
+  const d=dt*G.speed*WORLD_PACE;lodTick(dt);
   G.clock+=dt*G.speed*DAY/DAY_SECONDS;if(G.clock>=DAY){G.clock-=DAY;dayTick()}
   G.encCool=Math.max(0,G.encCool-d);regenVitals(d/DAY);
   if(P.stay&&stayTick(d))return;

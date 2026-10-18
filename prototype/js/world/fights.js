@@ -1,9 +1,10 @@
 'use strict';
 /* ---------- fights: battles between parties on the map, which take time and can be joined ---------- */
-// W.fights: {id, x, y, sides:[[uid…],[uid…]], t, dur, acc:[a,b]}. When parties clash (lords, patrols, bandit bands, caravans)
-// they stop where they are and fight it out over a while: dur grows with every fighter in it, so a skirmish of a few is
-// over quickly and a clash of armies grinds on. Each moment each side loses fighters at a rate set by the other's share of
-// the strength, so the stronger side wins more and more easily; a side that falls far behind breaks and is routed.
+// W.fights: Fight {id, x, y, sides:[[uid…],[uid…]], t, dur, acc:[a,b]} (a world object, below; saved as its plain fields).
+// When parties clash (lords, patrols, bandit bands, caravans) they stop where they are and fight it out over a while: dur
+// grows with every fighter in it, so a skirmish of a few is over quickly and a clash of armies grinds on. Each moment each
+// side loses fighters at a rate set by the other's share of the strength, so the stronger side wins more and more easily; a
+// side that falls far behind breaks and is routed.
 // Lords and patrols nearby ride in on the side of their friends against their enemies. You can join either side: then
 // the fight becomes your battle, everyone in it fighting beside you or against you.
 const uidOf=o=>o.uid||(o.uid='u'+(++W.uidN));
@@ -23,7 +24,7 @@ function startFight(A,B){
   if(old){const anchor=all.find(o=>fightOf(o)===old),as=old.sides[0].includes(uidOf(anchor))?0:1,sa=A.includes(anchor)?as:1-as;
     for(const o of A)if(!o.fight)joinFight(old,o,sa);for(const o of B)if(!o.fight)joinFight(old,o,1-sa);return old}
   const x=all.reduce((s,o)=>s+o.x,0)/all.length,y=all.reduce((s,o)=>s+o.y,0)/all.length,n=all.reduce((s,o)=>s+o.troops.length,0);
-  const f={id:'f'+(++W.fightN),x,y,sides:[A.map(uidOf),B.map(uidOf)],t:0,n0:n,dur:FIGHT.base+FIGHT.per*n,acc:[0,0]};
+  const f=asFight({id:'f'+(++W.fightN),x,y,sides:[A.map(uidOf),B.map(uidOf)],t:0,n0:n,dur:FIGHT.base+FIGHT.per*n,acc:[0,0]});
   all.forEach(o=>{o.fight=f.id});W.fights.push(f);fightPlace(f);
   if(Math.hypot(x-P.x,y-P.y)<vis()*1.5||all.some(o=>o.faction===P.fac||o.mine))log('Battle near '+nearestOf(f,TOWNS).name+': '+A.map(o=>o.label()).join(', ')+' against '+B.map(o=>o.label()).join(', ')+'.',all.some(o=>o.mine)?'bad':'');
   return f;
@@ -108,9 +109,14 @@ onAct('fg-',fightAct);
 // you won the battle: the fight is over, your side goes on its way
 function fieldWon(e){const f=e.ref;sideParties(f,e.side).forEach(freeParty);sideParties(f,1-e.side).forEach(o=>routParty(o,[]));W.fights=W.fights.filter(x=>x!==f);return ''}
 
-/* on the map: dust, steel and a tally over each fight */
-function drawFights(ents,cam,V){
-  for(const f of W.fights){if(Math.hypot(f.x-P.x,f.y-P.y)>V*1.2)continue;
+/* on the map: a fight is a world object (parties.js WorldObject): seen within a little more than your sight, met by joining it
+   (fightMeet: a click on a party in it, world.js interact), drawn as dust, steel and a tally; no dot on the minimap */
+class Fight extends WorldObject{
+  get mapKind(){return 'fight'}
+  here(){return W.fights.includes(this)}
+  inView(V){return Math.hypot(this.x-P.x,this.y-P.y)<=V*1.2}
+  meet(){fightMeet(this)}
+  draw(ents,cam,V){if(!this.inView(V))return;const f=this;
     ents.push({y:f.y+20,f:()=>{const sx=Math.round(f.x-cam.x),sy=Math.round(f.y-cam.y),t=performance.now();
       for(let i=0;i<6;i++){const a=t/300+i*1.05,r=10+4*Math.sin(t/200+i);ctx.fillStyle='rgba(200,184,150,'+(.25+.15*Math.sin(t/150+i)).toFixed(2)+')';ctx.fillRect(Math.round(sx+Math.cos(a)*r)-2,Math.round(sy+Math.sin(a)*r*.5)-1,4,3)}
       if(Math.floor(t/120)%3===0){ctx.fillStyle='#fff8d0';ctx.fillRect(sx+rint(-8,8),sy-rint(4,14),2,2)}
@@ -119,3 +125,6 @@ function drawFights(ents,cam,V){
       const col=s=>{const p=sideParties(f,s)[0],fc=p&&p.faction;return fc?(fc==='player'?FACS.player.col:FACS[fc].col):'#ff9a90'};
       txt(String(sideTroops(f,0).length),sx-6,sy-26,col(0),'right');txt('vs',sx,sy-26,'#e4e0cf','center');txt(String(sideTroops(f,1).length),sx+6,sy-26,col(1),'left')}})}
 }
+// (a fight from a save is plain data until the map asks)
+const asFight=asClass(Fight);
+function drawFights(ents,cam,V){for(const f of W.fights)asFight(f).draw(ents,cam,V)}

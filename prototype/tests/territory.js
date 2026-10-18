@@ -36,6 +36,48 @@ try{
  t.updateHUD(true);ok(new RegExp(v.name+' lands').test(document.getElementById('stats').innerHTML),'the HUD names whose land you stand on');
  // drawing
  t.frame();ok(true,'borders and the minimap tint draw');
+ // ---- the model and its art apart: the border bits are the borders the old per-frame loop worked out, drawn to the same pixels
+ {const MW=t.MW,MH=t.MH,ev=s=>(0,eval)(s),c=t.ctx;t.landFresh();const L=t.LAND,E=t.LAND_EDGE;let bad=0;
+  for(let y=0;y<MH;y++)for(let x=0;x<MW;x++){const k=y*MW+x,i=L[k];let e=0;
+   if(i>=0)[[1,0],[-1,0],[0,1],[0,-1]].forEach(([dx,dy],d)=>{const n=x+dx<0||y+dy<0||x+dx>=MW||y+dy>=MH?-1:L[(y+dy)*MW+x+dx];if(n===i||n<0&&t.tAt(x+dx,y+dy)===t.T_WATER)return;e|=(n<0||TW[n].owner!==TW[i].owner?2:1)<<2*d});
+   if(E[k]!==e)bad++}
+  ok(!bad,'the border bits (LAND_EDGE) are the borders as the old loop found them, on every tile ('+bad+' differ)');
+  const oldDraw=ev(`(function(cam){
+  landFresh();const x0=Math.max(0,Math.floor(cam.x/TILE)),y0=Math.max(0,Math.floor(cam.y/TILE)),x1=Math.min(MW-1,x0+Math.ceil(VW/TILE)+1),y1=Math.min(MH-1,y0+Math.ceil(VH/TILE)+1);
+  const at=(x,y)=>x<0||y<0||x>=MW||y>=MH?-1:LAND[y*MW+x];
+  ctx.save();
+  for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){
+    const i=LAND[y*MW+x];if(i<0)continue;const o=TOWNS[i].owner,col=landCol(o),sx=x*TILE-cam.x,sy=y*TILE-cam.y;
+    ctx.fillStyle=col;ctx.globalAlpha=.08;ctx.fillRect(sx,sy,TILE,TILE);
+    for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){const n=at(x+dx,y+dy);if(n===i||n<0&&tAt(x+dx,y+dy)===T_WATER)continue;const realm=n<0||TOWNS[n].owner!==o,w=realm?2:1;
+      ctx.globalAlpha=realm?.7:.22;ctx.fillRect(dx>0?sx+TILE-w:sx,dy>0?sy+TILE-w:sy,dx?w:TILE,dy?w:TILE)}
+  }
+  ctx.restore();
+})`);
+  const paint=fn=>{c.save();c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,c.canvas.width,c.canvas.height);c.restore();fn();const d=c.getImageData(0,0,c.canvas.width,c.canvas.height).data;let h=0;for(let i=0;i<d.length;i++)h=(h*31+d[i])|0;return h};
+  const c0=TW.find(x=>x.kind==='castle'),cams=[v,c0,TW[5],TW[20]].map(x=>({x:Math.round(x.x-t.VW/2),y:Math.round(x.y-t.VH/2)})).concat([{x:0,y:0},{x:MW*TILE-t.VW,y:MH*TILE-t.VH}]);
+  const diff=cams.filter(q=>paint(()=>oldDraw(q))!==paint(()=>t.drawLand(q)));
+  const f0=c0.owner;c0.owner=t.FIDS.find(f=>f!==f0);const m0=t.landMiniCv(),sw=paint(()=>oldDraw(cams[1]))===paint(()=>t.drawLand(cams[1]));c0.owner=f0;
+  ok(!diff.length&&sw&&t.landMiniCv()!==m0&&t.landMiniCv()===t.landMiniCv(),'drawn from them, the borders are the same pixels at '+cams.length+' views (map corners too), and after a holding changes hands; the minimap tint is made again only on a change')}
+ // ---- a holding that is gone rules no land
+ {const g=TW.find(x=>x.kind==='village'&&x!==v),gi=TW.indexOf(g),n0=t.landOf(g);g.gone=true;const n1=t.landOf(g),any=t.LAND.includes(gi);delete g.gone;
+  ok(n0>0&&!n1&&!any&&t.landOf(g)===n0,'a holding that is gone rules no land ('+n0+' tiles freed), and back, rules them again')}
+ // ---- incremental: a change runs again only the holdings its reach box touches (and theirs, down the list), the same land as a
+ // full reckoning, borders and tile counts too, through 200 random changes (reach, owner, both, several at once, gone and back)
+ {const R=t.seeded(1234),pick=a=>a[Math.floor(R()*a.length)],keep=TW.map(x=>({owner:x.owner,grow:x.grow,lastOwner:x.lastOwner})),k={reach:0,owner:0,both:0,many:0,gone:0};
+  const snap=()=>Array.from(t.LAND).join()+'|'+Array.from(t.LAND_EDGE).join()+'|'+t.landTiles.join();
+  let same=0,n=0,ti=0,tf=0,firstBad=-1;
+  for(let s=0;s<200;s++){const r=R(),h=pick(TW);
+   if(r<.35){h.grow=Math.max(0,(h.grow||0)+pick([-3,-2,-1,1,2,3]));k.reach++}
+   else if(r<.6){h.owner=pick(t.FIDS);k.owner++}
+   else if(r<.75){h.owner=pick([...t.FIDS,'player']);h.grow=R()*10;k.both++}
+   else if(r<.9){for(let j=0;j<3;j++)pick(TW).grow=R()*10;k.many++}
+   else{if(h.gone)delete h.gone;else h.gone=true;k.gone++}
+   let a=performance.now();t.landFresh();ti+=performance.now()-a;
+   if(s%4===3||s===199){const inc=snap();a=performance.now();t.computeLand();tf+=performance.now()-a;n++;if(inc===snap())same++;else if(firstBad<0)firstBad=s}}
+  TW.forEach((x,i)=>{Object.assign(x,keep[i]);delete x.gone});t.landFresh();
+  ok(same===n&&n===50,'incremental equals a full reckoning after each of 50 checks over 200 random changes ('+Object.entries(k).map(([a,b])=>a+' '+b).join(', ')+(firstBad>=0?'; first differs at change '+firstBad:'')+')');
+  o.push('INFO a change reckoned: '+(ti/200).toFixed(2)+' ms on average; a full reckoning '+(tf/n).toFixed(2)+' ms')}
  // saves keep reach
  v.grow=6.5;t.saveGame(true);v.grow=0;t.act('load');ok(Math.abs(t.townBy(v.name).grow-6.5)<.01,'each holding’s reach survives a reload');
  ok(t.MW===224&&t.MH===160&&t.TOWNS.length===37,'Ashmark is 224 x 160 tiles with 37 holdings');

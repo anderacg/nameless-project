@@ -25,11 +25,12 @@
 // deployment zones (share of BW at each edge); zoneWood: woods' largest share of a zone; score: how far the halves' advantage
 // scores may differ (share); mirror: a hill pair's x jitter (px); centre: a lone hill's |x-BW/2| limit (share of BW); jit: a
 // feature in the middle's x jitter (share of BW: the halves must score alike); top2: a
-// level-2 hill's crest (share of its radius); slope: a terrace's slope band (cells in from its rim). With terrain a field has no
+// level-2 hill's crest (share of its radius); slope: a terrace's slope band (cells in from its rim a level of the drop: the edge
+// the art paints, not a skirt; the owner, 2026-10-18: it was 2 cells, too wide). With terrain a field has no
 // scattered trees, rocks or cacti (B.obs empty: setup.js; the owner reversed D10): its woods, hills and marsh are its features
 // wade: deep water wadeable as in phase 2 (D1; crossWay steers round it), else impassable (phase 4: the owner's call), read when a
 // field is built
-const TERRAIN={on:true,cs:16,floor:.3,tries:8,lane:96,zone:.3,zoneWood:.25,score:.15,mirror:32,centre:.08,jit:.02,top2:.55,slope:2,wade:false};
+const TERRAIN={on:true,cs:16,floor:.3,tries:8,lane:96,zone:.3,zoneWood:.25,score:.15,mirror:32,centre:.08,jit:.02,top2:.55,slope:1,wade:false};
 // cell kinds (B.terrain.kind): deep water, fords and bridges are a river's (phase 2); rock, a mountain's or a spire's (phase 4)
 const TKIND={open:0,wood:1,marsh:2,ford:3,deep:4,bridge:5,rock:6};
 /* RIVERS (phase 2) — the contract with the AI (commander.js) and the art:
@@ -79,8 +80,9 @@ const TGROUND=[null,TERRAIN_GROUND.wood,TERRAIN_GROUND.marsh,TERRAIN_GROUND.ford
 const TERRAIN_RIVER={half:24,stream:16,meander:32,jit:.02,ford:64,bridge:32,gap:120,minGap:40,edge:40,fords:[1,2],near:2,mid:64,clear:24,streamP:.6,frostP:.35,pad:10,inset:8,keep:1.15};
 /* range: a shooter's range per level he stands on; melee: a blow at a foe at least one level lower; charge: the charge bonus
    scaled by 1+charge·Δlevel (Δ clamped ±1); climb: speed going up a slope cell (dot > dot), by foot/mounted/big (the owner: a
-   step up is hard going); descend: going down one; runUp, runDown: momentum building up or down a slope; climbSta: stamina
-   running uphill; climbing also breaks cohesion while it lasts (morale.js cohesionReady); home: who climbs freely (dwarves) */
+   step up is hard going; the band 1 cell since 2026-10-18, so slower in it: a climb takes about as long); descend: going down
+   one; runUp, runDown: momentum building up or down a slope; climbSta: stamina running uphill;
+   climbing also breaks cohesion while it lasts (morale.js cohesionReady); home: who climbs freely (dwarves) */
 /* sight (phase 3: hidden in woods, doc/TERRAIN_DESIGN.md §8). A soldier in a wood is unseen by a side with no living soldier
    within near px of him (high px from higher ground) and none of whom he struck or shot in the last memory s; so is one anywhere
    whom raised ground hides from every soldier of that side (a cell between them a level higher than both: riseBlocked; a kind
@@ -89,7 +91,7 @@ const TERRAIN_RIVER={half:24,stream:16,meander:32,jit:.02,ford:64,bridge:32,gap:
    shock ×shock for burst s, once a battle (morale.js chargeMul) */
 const SIGHT={every:.25,near:64,high:96,memory:3,wall:255};
 const AMBUSH={shock:1.5,window:3,burst:1.5};
-const HILL={range:.075,melee:.1,charge:.35,climb:{foot:.6,mounted:.5,big:.5},descend:1.15,runUp:.6,runDown:1.25,climbSta:2,dot:.5,home:'hills'};
+const HILL={range:.075,melee:.1,charge:.35,climb:{foot:.5,mounted:.4,big:.4},descend:1.15,runUp:.6,runDown:1.25,climbSta:2,dot:.5,home:'hills'};
 /* what the world round the battle lays out (§3; its river: terrainAt, riverPlan). layouts: [name, weight], one picked (terrainPlan): plain
    (nothing), hill (one centred), woodedHill (one centred, trees on its top), copse (one small wood in the middle), copses (small
    woods in mirrored pairs), woods (forest patches, half the time round a low hill), pair (a hill per half, mirrored), pairFlank
@@ -428,8 +430,9 @@ function rasterTerrain(W,plan,seed){
       if(xc)for(const c of [a-1,b+1])if(c>=0&&c<C&&(kind[r*C+c]===TKIND.wood||kind[r*C+c]===TKIND.marsh))kind[r*C+c]=0}
     v.sp0=sp0;v.sp1=sp1;v.x0=lo;v.x1=hi;for(const c of v.crossings){const r=clamp(Math.floor(c.y/cs),0,R-1);c.x0=sp0[r];c.x1=sp1[r]}}
   const S=TERRAIN.slope;
-  for(let r=0;r<R;r++)for(let c=0;c<C;c++){const i=r*C+c,L=lvl[i];if(!L)continue;let low=false;
-    for(let rr=Math.max(0,r-S);rr<=Math.min(R-1,r+S)&&!low;rr++)for(let cc=Math.max(0,c-S);cc<=Math.min(C-1,c+S);cc++)if(lvl[rr*C+cc]<L){low=true;break}
+  // (a slope cell: one with ground k cells off at least ceil(k/S) levels lower: S cells in from a rim a level down, 2S where it drops two)
+  for(let r=0;r<R;r++)for(let c=0;c<C;c++){const i=r*C+c,L=lvl[i];if(!L)continue;let low=false;const E=S*L;
+    for(let rr=Math.max(0,r-E);rr<=Math.min(R-1,r+E)&&!low;rr++)for(let cc=Math.max(0,c-E);cc<=Math.min(C-1,c+E);cc++)if(lvl[rr*C+cc]<=L-Math.max(1,Math.ceil(Math.max(Math.abs(rr-r),Math.abs(cc-c))/S))){low=true;break}
     if(low){const h=plan.hills[own[i]],x=(c+.5)*cs,y=(r+.5)*cs,gx=(x-h.x)/(h.rx*h.rx),gy=(y-h.y)/(h.ry*h.ry);up[i]=((Math.round(Math.atan2(-gy,-gx)/(Math.PI/4))%8)+8)%8}}
   /* (cliffs, phase 4: each side of a cliffed hill's cell over which the ground falls to a lower level is a cliff, but where its
      middle lies in one of the hill's ramps (a band TERRAIN_ROCK.ramp wide from the hill's middle out at the ramp's angle): its bit

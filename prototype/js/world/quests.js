@@ -10,9 +10,9 @@ const qScale=()=>1+G.day/60,qTiles=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y)/TILE;
 const questBy=id=>P.quests.find(q=>q.id===id);
 // a free spot 8 to 16 tiles from a holding, on ground you can reach
 function spotNear(t,lo,hi,ok){
-  const f=flowTo(TOWNS[0]);
+  const from=startHolding();
   for(let k=0;k<300;k++){const a=Math.random()*6.283,d=(lo+Math.random()*(hi-lo))*TILE,x=t.x+Math.cos(a)*d,y=t.y+Math.sin(a)*d,tx=Math.floor(x/TILE),ty=Math.floor(y/TILE);
-    if(tx<2||ty<2||tx>=MW-2||ty>=MH-2||!passable(tAt(tx,ty))||!isFinite(f[ty*MW+tx])||TOWNS.some(o=>Math.hypot(o.x-x,o.y-y)<48)||(ok&&!ok(x,y)))continue;return{x:(tx+.5)*TILE,y:(ty+.5)*TILE}}
+    if(tx<2||ty<2||tx>=MW-2||ty>=MH-2||!passable(tAt(tx,ty))||!Router.reach(from,{x:(tx+.5)*TILE,y:(ty+.5)*TILE})||TOWNS.some(o=>Math.hypot(o.x-x,o.y-y)<48)||(ok&&!ok(x,y)))continue;return{x:(tx+.5)*TILE,y:(ty+.5)*TILE}}
   return null;
 }
 /* making offers */

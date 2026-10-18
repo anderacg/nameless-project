@@ -111,10 +111,9 @@ const PAL={
 // the painted map is kept by chunks (worldart.js WorldArt); worldCv() is the whole of it as one canvas, painted on first use (when
 // every script and every estate plot is ready), for the blit until render.js draws by chunks, for the wiki and the tests
 const worldCv=()=>WorldArt.whole();
-// the minimap, made from the tile data (WorldArt.mini), under the name render.js reads; made now, from the map as the scripts
-// leave it (as it always was: the roads lots.js leads to the gates come after it), and again when next shown after
-// WorldArt.invalidate()
-Object.defineProperty(window,'miniCv',{get:()=>WorldArt.mini(),configurable:true});WorldArt.mini();
+// the minimap from the tile data (WorldArt.mini, drawn by render.js): made now, from the map as the scripts leave it (as it
+// always was: the roads lots.js leads to the gates come after it), and again when next shown after WorldArt.invalidate()
+WorldArt.mini();
 /* battle arenas: one per climate, built when first needed */
 const ARENAS={};
 // (by climate and field size: only the field size in use kept, a huge field's ground being large)

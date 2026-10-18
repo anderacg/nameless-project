@@ -52,7 +52,7 @@ function updateFolk(d){
     // delivering inside the gate: then back to the estate
     if(f.st==='town'){f.wait-=d;if(f.wait<=0){const g=folkHome(t),door=folkDoor(t,f.k);f.x=g.x;f.y=g.y;f.tx=door.x;f.ty=door.y;f.st='back'}continue}
     const dx=f.tx-f.x,dy=f.ty-f.y,dd=Math.hypot(dx,dy);
-    if(dd>1.5){f.dir=dx>=0?1:-1;f.moving=true;if(routeTo(f,f.tx,f.ty,moveStep(threat?16:9,d)))continue}
+    if(dd>1.5){f.dir=dx>=0?1:-1;f.moving=true;if(Router.travel(f,{x:f.tx,y:f.ty},moveStep(threat?16:9,d)))continue}
     // (there, or no way there: in at the gate, or in at the estate's door; a new hour for tomorrow's load)
     f.moving=false;
     if(f.st==='out'){f.st='town';f.wait=DELIVER.stop[0]+Math.random()*(DELIVER.stop[1]-DELIVER.stop[0]);f.done=G.day;f.leave=DELIVER.from+Math.random()*(DELIVER.to-DELIVER.from)}

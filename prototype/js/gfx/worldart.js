@@ -125,7 +125,7 @@ function* paintSteps(P,X,Y,w,h,g,ox,oy,rec){
   for(const pass of OVER){yield;g.save();g.beginPath();g.rect(ox,oy,w,h);g.clip();g.translate(ox-X,oy-Y);pass(P,r,tx0,ty0,tx1,ty1);g.restore()}
   rec.ms=performance.now()-t0;
 }
-const runSteps=gen=>{let r;while(!(r=gen.next()).done);return r.value};
+const runGen=gen=>{let r;while(!(r=gen.next()).done);return r.value};
 // WorldArt: the painted map, by chunks (key cy*cols+cx).
 //   ensure(): the plan (made when first needed).
 //   chunk(cx, cy): a chunk's canvas, painted now if it isn't (kept in the LRU, cap chunks: 32 on a desktop, 20 on a phone; never
@@ -152,7 +152,7 @@ const WorldArt={
     j={k,rec,gen:paintSteps(this.ensure(),X,Y,w,h,cv.getContext('2d'),0,0,rec)};this.jobs.set(k,j);return j},
   done(j){this.jobs.delete(j.k);this.chunks.set(j.k,j.rec);for(const [k,c] of this.chunks){if(this.chunks.size<=this.cap)break;if(this.view.has(k))continue;this.chunks.delete(k);this.recycle(c.cv)}},
   recycle(cv){if(this.pool.length<4)this.pool.push(cv)},
-  chunk(cx,cy){const k=cy*this.cols+cx,c=this.chunks.get(k);if(c){this.chunks.delete(k);this.chunks.set(k,c);return c.cv}const j=this.start(cx,cy);runSteps(j.gen);this.done(j);return j.rec.cv},
+  chunk(cx,cy){const k=cy*this.cols+cx,c=this.chunks.get(k);if(c){this.chunks.delete(k);this.chunks.set(k,c);return c.cv}const j=this.start(cx,cy);runGen(j.gen);this.done(j);return j.rec.cv},
   draw(g,cam){const W=MW*TILE,H=MH*TILE,x0=Math.max(0,cam.x),y0=Math.max(0,cam.y),x1=Math.min(W,cam.x+VW),y1=Math.min(H,cam.y+VH);if(x1<=x0||y1<=y0)return;
     const c0=Math.floor(x0/CHUNK),r0=Math.floor(y0/CHUNK),c1=Math.floor((x1-1)/CHUNK),r1=Math.floor((y1-1)/CHUNK);this.view=new Set();
     for(let cy=r0;cy<=r1;cy++)for(let cx=c0;cx<=c1;cx++)this.view.add(cy*this.cols+cx);
@@ -178,7 +178,7 @@ const WorldArt={
     if(!this.full){this.full=mkcv(W,H);this.dirty=new Set();this.cnt.clear();for(let k=0;k<this.cols*this.rows;k++)this.dirty.add(k)}
     if(this.dirty.size){const g=this.full.getContext('2d');
       for(const k of [...this.dirty].sort((a,b)=>a-b)){const cx=k%this.cols,cy=(k-cx)/this.cols,[X,Y,w,h]=this.rect(cx,cy),c=this.chunks.get(k);
-        if(c&&!NATURE_TOUCH){g.drawImage(c.cv,X,Y);this.cnt.set(k,c)}else{const rec={cx,cy};runSteps(paintSteps(this.ensure(),X,Y,w,h,g,X,Y,rec));this.cnt.set(k,rec)}}
+        if(c&&!NATURE_TOUCH){g.drawImage(c.cv,X,Y);this.cnt.set(k,c)}else{const rec={cx,cy};runGen(paintSteps(this.ensure(),X,Y,w,h,g,X,Y,rec));this.cnt.set(k,rec)}}
       this.dirty.clear();
       // (the counts and phases summed over the chunks)
       const N={trees:0,hills:0,peaks:0,decor:0,flat:0,rock:0,ms:0},tm={};for(const c of this.cnt.values()){for(const q in N)N[q]+=q==='ms'?c.n.ms:c.n[q];for(const q in c.n.tm)tm[q]=(tm[q]||0)+c.n.tm[q]}

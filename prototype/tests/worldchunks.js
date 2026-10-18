@@ -13,7 +13,7 @@ try{
  const fnv=d=>{let h=2166136261;const u=new Uint32Array(d.buffer,d.byteOffset,d.byteLength>>2);for(let i=0;i<u.length;i++)h=Math.imul(h^u[i],16777619)>>>0;return h.toString(16).padStart(8,'0')};
  const img=(cv,x,y,w,h)=>cv.getContext('2d').getImageData(x,y,w,h).data;
  const diff=(a,b)=>{let n=0;for(let i=0;i<a.length;i+=4)if(a[i]!==b[i]||a[i+1]!==b[i+1]||a[i+2]!==b[i+2]||a[i+3]!==b[i+3])n++;return n};
- const paint=(X,Y,w,h,rec={})=>{const cv=t.mkcv(w,h),q=performance.now();t.runSteps(t.paintSteps(WA.ensure(),X,Y,w,h,cv.getContext('2d'),0,0,rec));rec.wall=performance.now()-q;return cv};
+ const paint=(X,Y,w,h,rec={})=>{const cv=t.mkcv(w,h),q=performance.now();t.runGen(t.paintSteps(WA.ensure(),X,Y,w,h,cv.getContext('2d'),0,0,rec));rec.wall=performance.now()-q;return cv};
  const pct=(a,p)=>{const s=[...a].sort((x,y)=>x-y);return s[Math.min(s.length-1,Math.floor(s.length*p))]};
  // ---- the plan alone: what isClear reads, before anything is painted
  WA.invalidate();let q=performance.now();const P=WA.ensure(),planMs=performance.now()-q,T0=t.TOWNS[0];
@@ -78,7 +78,7 @@ try{
   WA.invalidate();ok(!WA.plan&&!WA.chunks.size&&!WA.full&&!WA.jobs.size&&!WA.queue.length&&!t.CLEAR,'invalidate() forgets everything: the plan, every chunk, the whole picture, the queue')}
  // ---- the minimap: from the tile data, 1 px a tile (or one per k), kept until invalidate
  {const m=WA.mini(),d=img(m,0,0,MW,MH),c=t.PAL;let bad=0;for(let i=0;i<MW*MH;i++){const col=c[t.CLIMS[t.climate[i]]].mini[t.tiles[i]],o=i*4;if(d[o]!==parseInt(col.slice(1,3),16)||d[o+1]!==parseInt(col.slice(3,5),16)||d[o+2]!==parseInt(col.slice(5,7),16))bad++}
-  const m2=WA.mini(2);WA.invalidate();ok(!bad&&WA.mini()===WA.mini()&&WA.mini()!==m&&m2.width===MW/2&&m2.height===MH/2&&t.miniCv===WA.mini(),'the minimap is the tile data, a pixel a tile ('+bad+' off), kept, made afresh after invalidate; at 1 px per 2 tiles '+m2.width+'x'+m2.height)}
+  const m2=WA.mini(2);WA.invalidate();ok(!bad&&WA.mini()===WA.mini()&&WA.mini()!==m&&m2.width===MW/2&&m2.height===MH/2,'the minimap is the tile data, a pixel a tile ('+bad+' off), kept, made afresh after invalidate; at 1 px per 2 tiles '+m2.width+'x'+m2.height)}
  // ---- memory
  {WA.cap=cap0;WA.ensure();WA.chunk(1,1);const b=WA.bytes(),Pn=WA.plan.nature,per=b.plan/(MW*MH);
   ok(b.plan<4*1048576&&b.chunks===CS*CS*4,'memory: the plan '+MB(b.plan)+' ('+per.toFixed(1)+' B a tile: clear ground '+MB(WA.plan.clear.bytes)+', kept-clear '+MB(Pn.keep.bytes)+', ranges\' height fields '+MB(Pn.mdBytes)+'), a chunk '+MB(CS*CS*4)+', the LRU at most '+WA.cap+' ('+MB(WA.cap*CS*CS*4)+'); at Huge (1024 x 768) the plan about '+MB(per*1024*768)+', the chunks the same');

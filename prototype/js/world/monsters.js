@@ -35,19 +35,18 @@ function spawnMonster(initial){
   }
 }
 function monsterDay(){for(let k=0;k<3;k++)if(W.monsters.length<MONSTER_CAP&&Math.random()<.6)spawnMonster(false);mythicDay()}
-function updateMonsters(d){
-  const hide=hiddenAt(P.x,P.y)?.55:1,A=WORLD_SCALE.ai;
-  for(const m of W.monsters){
-    if(MONSTERS[m.id].mythic){if(roamMythic(m,d))return true;continue}
-    const M=MONSTERS[m.id],dx=P.x-m.x,dy=P.y-m.y,dist=Math.hypot(dx,dy);m.cool=Math.max(0,m.cool-d);
+// a beast's moment (parties.js lodThink; hide: how well you are hidden from it): a mythic one roams; the rest hunt you, keep
+// off, or wander near the lair. True when it falls on you
+const BEAST_MIND={think(m,d,hide){
+    if(MONSTERS[m.id].mythic)return roamMythic(m,d);
+    const A=WORLD_SCALE.ai,M=MONSTERS[m.id],dx=P.x-m.x,dy=P.y-m.y,dist=Math.hypot(dx,dy);m.cool=Math.max(0,m.cool-d);
     const st=stance(monPower(m)),hunt=M.aggro&&Math.hypot(P.x-m.hx,P.y-m.hy)<A.lairHunt;
     if(m.cool>0||!stanceMove(m,st,dist,dx,dy,WORLD_SCALE.sight.monster*hide,moveStep(26*Math.min(1,speedAt(m.x,m.y)||1),d),hunt)){m.t-=d;if(m.t<=0){m.t=2+Math.random()*4;m.a=Math.random()*6.283}
       // wander, but stay near the lair
       const hx=m.hx-m.x,hy=m.hy-m.y;if(Math.hypot(hx,hy)>A.lairLeash)m.a=Math.atan2(hy,hx);walk(m,Math.cos(m.a),Math.sin(m.a),moveStep(10,d))}
     if(M.aggro&&stance(monPower(m))==='attack'&&dist<10&&m.cool<=0&&G.encCool<=0&&!G.modal){startMonster(m);return true}
-  }
-  return false;
-}
+    return false}};
+function updateMonsters(d){return lodEach(W.monsters,BEAST_MIND,d,hiddenAt(P.x,P.y)?.55:1)}
 function startMonster(m){const M=MONSTERS[m.id];startEncounter({kind:'monster',ref:m,lv:m.lv,list:Array(m.n).fill(M.unit)})}
 // roll trophies and gear for a won monster fight, into the bag (the victory panel lists them with the rest of the spoils)
 function monsterLoot(m,slain){

@@ -3,7 +3,7 @@
 // Each site in W.sites: {i, type, name, tx, ty, x, y, seed, seen, cleared, back} plus fields of its kind, read through its class (below).
 // Sites stay hidden until your scouts see them. Clearing a cave or hideout, or searching ruins, empties it until day `back`.
 // spots: stands on the map's fixed CAMP_SPOTS (places.js), in plain sight (known once its ground is explored), instead of count
-// scattered at random and hidden until your scouts find it
+// scattered at random and hidden until your scouts find it (count: per old small map; a world's own counts are its DENSITY's)
 const SITE_TYPES={
   camp:{n:'Bandit camp',spots:true,count:0,col:'#e0605a',respawn:10,d:'A big camp in plain sight: raiders and their chieftain, and the roving bands that shelter here by night.'},
   cave:{n:'Cave',count:10,col:'#c58af0',respawn:25,d:'A monster lair cut into a hill or mountain. Beat its beasts for their trophies and a treasure chest.'},
@@ -224,10 +224,10 @@ const camps=()=>W.sites.filter(s=>s instanceof BanditCamp);
 /* placement */
 // a free tile for a site of this kind: reachable from the roads, on its ground, clear of holdings and other sites (the camps among them)
 function siteSpot(type,sites,gap){
-  const f=flowTo(TOWNS[0]),C=SITE_CLASS[type];
+  const C=SITE_CLASS[type],from=startHolding();
   for(let k=0;k<5000;k++){
     const g=k<2500?gap:gap*.6,tx=rint(3,MW-4),ty=rint(3,MH-4),fy=C.reachRow(ty);// where parties reach it
-    if(!passable(tAt(tx,fy))||!isFinite(f[fy*MW+tx])||!C.ground(tx,ty)||!C.clear(tx,ty)||!C.fits(tx,ty))continue;
+    if(!passable(tAt(tx,fy))||!Router.reach(from,{x:(tx+.5)*TILE,y:(fy+.5)*TILE})||!C.ground(tx,ty)||!C.clear(tx,ty)||!C.fits(tx,ty))continue;
     if(TOWNS.some(t=>Math.hypot(t.tx-tx,t.ty-ty)<6)||sites.some(s=>Math.hypot(s.tx-tx,s.ty-ty)<g))continue;
     return[tx,ty];
   }
@@ -242,9 +242,10 @@ function makeSite(type,tx,ty,sites){
   const C=SITE_CLASS[type],[x,y]=C.point(tx,ty),s=Object.assign(Object.create(C.prototype),{i:sites.length,type,tx,ty,x,y,seed:rint(1,99999),seen:false,cleared:false,back:0});
   s.setup(sites,climAt(x,y));return s;
 }
+// a world's sites: a camp on each of its camp spots, then of each other kind as many as its size of map holds (data/world.js)
 function genSites(){
-  const sites=[];for(const c of CAMP_SPOTS)sites.push(makeSite('camp',c.tx,c.ty,sites));
-  for(const type of Object.keys(SITE_TYPES))if(!SITE_TYPES[type].spots)for(let n=0,N=Math.round(SITE_TYPES[type].count*MAP_DENS);n<N;n++){const p=siteSpot(type,sites,9);if(p)sites.push(makeSite(type,p[0],p[1],sites))}
+  const sites=[],N=density().sites;for(const c of CAMP_SPOTS)sites.push(makeSite('camp',c.tx,c.ty,sites));
+  for(const type of Object.keys(SITE_TYPES))if(!SITE_TYPES[type].spots)for(let n=0;n<(N[type]||0);n++){const p=siteSpot(type,sites,9);if(p)sites.push(makeSite(type,p[0],p[1],sites))}
   return sites;
 }
 

@@ -84,8 +84,11 @@ try{
    park();cav.forEach((u,i)=>at(u,w,(i%2)*8,Math.floor(i/2)*8));t.sightStep(true);const n1=log.length;hitOf(cav[3],foes[3]);ok(Math.abs(log[n1]-base)<1e-9&&B.terrain.sight.hid.get(gk)===B.t,'the ambush is sprung once: hidden again, its next charge shakes as ever ('+log[n1]+')')}
   finally{ev('shake=__shk')}}
  // ---- depth: standing trees and cliff faces sorted with the soldiers; faded over yours only
- {park();if(!B.ground)B.ground=t.PX.battleGround({...B.terrain,climate:B.env.c,base:B.arena});const P=B.ground.props,trees=P.filter(p=>p.dk===1),faces=P.filter(p=>p.dk===2);
-  ok(trees.length>20&&faces.length>0&&trees.every(p=>p.s.width===32&&p.s.height===32&&p.box[3]<=p.y&&p.box[1]>=p.y-31),'the ground stands '+trees.length+' trees (32-px sprites, the trunk’s foot their y) and '+faces.length+' cliff-face sections');
+ {park();if(!B.ground)B.ground=t.PX.battleGround({...B.terrain,climate:B.env.c,base:B.arena});const P=B.ground.props,trees=P.filter(p=>p.dk===1),soft=P.filter(p=>p.dk===2).length;
+  // (its hills are climbable: smooth rises, no face props (the owner, 2026-10-18); a sheer hill's cliff faces put in among them)
+  const T3=t.buildTerrain({explicit:{hills:[{x:.2,y:.5,r:60,cliff:true,ramps:[0]}],seed:3},W:t.BW,H:t.BH,top:t.fieldTop(),bot:t.fieldBot()}),faces=t.PX.battleGround({...T3,climate:B.env.c}).props.filter(p=>p.dk===2);
+  P.push(...faces);P.sort((a,b)=>a.y-b.y||a.x-b.x);
+  ok(trees.length>20&&soft===0&&faces.length>0&&trees.every(p=>p.s.width===32&&p.s.height===32&&p.box[3]<=p.y&&p.box[1]>=p.y-31),'the ground stands '+trees.length+' trees (32-px sprites, the trunk’s foot their y); its climbable hills no face ('+soft+': smooth rises), a sheer hill '+faces.length+' cliff-face sections');
   ok(P.every((p,i)=>!i||P[i-1].y<=p.y),'props come sorted by their feet');
   const tr=trees.find(p=>p.x>t.BW*.4&&p.x<t.BW*.6),tr2=trees.find(p=>Math.abs(p.x-tr.x)>60&&Math.abs(p.y-tr.y)>30),back=at(mine[0],{x:tr.x,y:tr.y-6}),front=at(mine[1],{x:tr.x+2,y:tr.y+5}),foe=at(theirs[0],{x:tr2.x,y:tr2.y-6});
   B.cam.z=t.camFit();t.camClamp();t.sightStep(true);

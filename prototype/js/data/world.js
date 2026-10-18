@@ -28,8 +28,9 @@ const WORLD_SCALE={
   econ:{caravanNear:10,caravanFar:90,caravanCost:150,refuge:70,resRange:10,homeRange:24},
   // deeds and who hears of them (tiles): field deeds and road events count for a holding this near, a sack angers those this near
   law:{repNear:15,eventNear:15,siegeOutrage:20},
-  // the land round a holding: its shelter from the land (px), healing near a friendly one (px), its garrison guards an estate (tiles)
-  land:{shelter:48,healNear:80,estateGuard:7},
+  // the land round a holding: its shelter from the land (px), healing near a friendly one (px), its garrison guards an estate (tiles);
+  // territory (tiles): friendly holdings this near raise its reach's cap, a camp cleared this near pushes it out (territory.js)
+  land:{shelter:48,healNear:80,estateGuard:7,friendly:50,pacify:35},
   // war: a realm fortifies a holding with an enemy this near (tiles); walking this far off ends your raid or siege (px)
   war:{front:60,raidLeash:80,siegeLeash:80},
   battle:{}// (the battle's own reach from the world, R17)

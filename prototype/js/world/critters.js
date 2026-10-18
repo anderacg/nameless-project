@@ -76,10 +76,9 @@ function critterDay(){
   TOWNS.filter(t=>t.T.herds&&!herdOf(t)&&Math.random()<.25).forEach(spawnHerd);
 }
 // move every herd: wild game bolts when you come close and tires as it runs; livestock just grazes
-function updateCritters(d){
-  const hide=P.stay?0:hiddenAt(P.x,P.y)?.6:1,A=WORLD_SCALE.ai;
-  for(const c of W.critters){
-    const D=CRITTERS[c.id],dx=c.x-P.x,dy=c.y-P.y,dist=Math.hypot(dx,dy),ox=c.x,oy=c.y;c.cool=Math.max(0,c.cool-d);
+// a herd's moment (parties.js lodThink; hide: how well you are hidden from it). True when you met livestock (its panel opens)
+const HERD_MIND={think(c,d,hide){
+    const A=WORLD_SCALE.ai,D=CRITTERS[c.id],dx=c.x-P.x,dy=c.y-P.y,dist=Math.hypot(dx,dy),ox=c.x,oy=c.y;c.cool=Math.max(0,c.cool-d);
     // (fleeing: its grazing ground goes with it, and it keeps on away a little after, so it does not turn back into you)
     if(!D.live&&dist<D.shy*hide){const sp=moveStep(D.spd*(c.tire>4?.4:1)*Math.min(1,speedAt(c.x,c.y)||1),d);walk(c,dx,dy,sp);c.tire+=d;
       c.hx=c.x;c.hy=c.y;c.a=Math.atan2(dy,dx);c.t=Math.max(c.t,1.5);c.idle=false}
@@ -89,9 +88,8 @@ function updateCritters(d){
     // (it faces the way it went, turning only on a clear step sideways: no flicker as it swerves or runs straight up or down)
     {const mx=c.x-ox,my=c.y-oy;if(Math.abs(mx)>Math.hypot(mx,my)*.35&&Math.abs(mx)>.01)c.dir=mx>0?1:-1}
     if(dist<10&&!c.decor&&c.cool<=0&&G.encCool<=0&&!G.modal){c.cool=4;if(G.chase===c)G.chase=null;if(D.live){openHerd(c);return true}hunt(c)}
-  }
-  return false;
-}
+    return false}};
+function updateCritters(d){return lodEach(W.critters,HERD_MIND,d,P.stay?0:hiddenAt(P.x,P.y)?.6:1)}
 // a hunt: one animal, plus one for every 4 bows or slings and every 3 levels of Scouting; the rest scatter
 const rangedCount=()=>Object.keys(P.troops).reduce((a,k)=>a+(ST[k].range?P.troops[k]:0),0);
 function hunt(c){

@@ -174,7 +174,7 @@ try{
  ev('window.__oldLotEnts=('+OLD_LOTS+');window.__oldDrawFolk=('+OLD_FOLK+');window.__oldDrawShips=('+OLD_SHIPS+');window.__oldDrawRefugees=('+OLD_REF+')');
  // (drawWorld as it was: its helpers as they were; the minimap's movers were then the parties and caravans: worldObjects; the fog
  // as it is now (fog.js fogMem, drawWorldFog: the fog's look is tests/fog.js's))
- const oldDraw=ev('('+since(OLD_DRAW).replace('estateEnts(bents,cam,V)','__oldLotEnts(bents,cam,V)').replace('drawFolk(ents,cam,V)','__oldDrawFolk(ents,cam,V)').replace('drawShips(ents,cam,V)','__oldDrawShips(ents,cam,V)').replace('drawRefugees(ents,cam,V)','__oldDrawRefugees(ents,cam,V)').replace('worldObjects()','[...W.parties,...W.caravans.map(asParty)]').replace("ctx.save();ctx.beginPath();ctx.rect(0,0,VW,VH);ctx.arc(px0,py0,V,0,Math.PI*2,true);ctx.clip('evenodd');ctx.drawImage(memCv(),0,0);ctx.restore();",'fogMem(memCv(),px0,py0,V);').replace(/const px=P\.x-cam\.x,py=P\.y-cam\.y,gr=[^\n]*\n\s*drawDark\(cam\);/,'drawWorldFog(cam,V);')+')');
+ const oldDraw=ev('('+since(OLD_DRAW).replace('estateEnts(bents,cam,V)','__oldLotEnts(bents,cam,V)').replace('drawFolk(ents,cam,V)','__oldDrawFolk(ents,cam,V)').replace('drawShips(ents,cam,V)','__oldDrawShips(ents,cam,V)').replace('drawRefugees(ents,cam,V)','__oldDrawRefugees(ents,cam,V)').replace('worldObjects()','[...W.parties,...W.caravans.map(asParty)]').replace('atSize(miniCv,mw,mh)','atSize(WorldArt.mini(1),mw,mh)').replace("ctx.save();ctx.beginPath();ctx.rect(0,0,VW,VH);ctx.arc(px0,py0,V,0,Math.PI*2,true);ctx.clip('evenodd');ctx.drawImage(memCv(),0,0);ctx.restore();",'fogMem(memCv(),px0,py0,V);').replace(/const px=P\.x-cam\.x,py=P\.y-cam\.y,gr=[^\n]*\n\s*drawDark\(cam\);/,'drawWorldFog(cam,V);')+')');
  ok([OLD_PICK,OLD_INTERACT,OLD_TIP,OLD_DRAW].every(s=>s.length>500)&&/estateEnts\(bents/.test(OLD_DRAW)&&/worldObjects\(\)/.test(OLD_DRAW),'the old ways are kept as text ('+[OLD_PICK,OLD_INTERACT,OLD_TIP,OLD_DRAW].map(s=>s.length).join(', ')+' characters)');
  // ---- a crowd by a holding: a lord, a band beside him, two patrols, a caravan, your companion's party, a beast and the dragon,
  // herds wild and kept, refugees, workers on the road, every kind of site and a ship; some made as a save or a test makes them
@@ -209,9 +209,9 @@ try{
   ok(kinds.every(([q,k])=>q.mapKind===k),'each says what it is: '+kinds.map(([q])=>q.mapKind).join(', '));
   ok(sites.every(s=>s instanceof t.Site&&s instanceof t.WorldObject)&&W.sites.every(s=>s.mapKind==='site'),'every site is a world object ('+sites.map(s=>s.type).join(', ')+')');
   // (in their order: a holding then its estates, the parties, the beasts, the sites, the herds, the caravans, the refugees,
-  // the workers, the ships; everything in their lists, nothing else)
+  // the workers, the ships, the fights; everything in their lists, nothing else)
   const ix=q=>wo.indexOf(q),seq=[tw,ests[0],L,b,pt,cp,mo,sites[0],deer,cv,rf,wk,ship];
-  const all=[...t.TOWNS,...t.TOWNS.flatMap(x=>x.estates()),...W.parties,...W.monsters,...W.sites,...W.critters,...W.caravans,...W.refugees,...W.folk,...W.ships];
+  const all=[...t.TOWNS,...t.TOWNS.flatMap(x=>x.estates()),...W.parties,...W.monsters,...W.sites,...W.critters,...W.caravans,...W.refugees,...W.folk,...W.ships,...W.fights];
   ok(seq.every((q,i)=>!i||ix(seq[i-1])<ix(q))&&ix(ests[ests.length-1])<ix(t.TOWNS[t.TOWNS.indexOf(tw)+1]||L)&&wo.length===all.length&&all.every(q=>wo.includes(q))&&!wo.includes(P),'worldObjects() lists everything on the map in its order ('+wo.length+'), not you');
   const names=['mapKind','here','fromYou','inView','pick','meet','chaseable','meetsAnyTime','tip','draw','mapDot','est','estates','pickOn','pasture'];
   const shadow=wo.filter(q=>names.some(n=>Object.prototype.hasOwnProperty.call(q,n)));ok(!shadow.length,'no field of anything on the map hides a world-object method'+(shadow.length?': '+shadow.slice(0,3).map(q=>q.mapKind).join():''))}

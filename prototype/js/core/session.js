@@ -18,8 +18,16 @@ function resetSession(savedPlayer){
   setSpeed(G.speed);pauseUI();
 }
 
+/* a new game, as steps behind "Forging the world…" (loading.js runSteps): the game put in, in one step (the session, your hero
+   from your race and past, the world as it first stood, its sites, beasts and bands), then the land round you painted. (A
+   generated world's stages will come before it, made into a world of their own: a failure leaves the last game as it was) */
 function begin(k){
-  const b=BGS[k];if(!b)return false;resetSession();P.bg=k;P.gold=b.gold;P.troops={...b.troops};P.bonus=b.bonus;
+  const b=BGS[k];if(!b)return false;
+  runSteps('Forging the world…',[{id:'world',label:'Founding holdings',w:4,run:()=>startGame(k,b)},{id:'paint',label:'Painting the first lands',w:3,run:paintView}],
+    {back:['Back to the title',()=>showTitle()]}).catch(()=>{});// (a failure shows itself: its error view)
+}
+function startGame(k,b){
+  resetSession();P.bg=k;P.gold=b.gold;P.troops={...b.troops};P.bonus=b.bonus;
   const rc=RACES[P.race=G.race||'human'];
   for(const a in b.attr)P.attr[a]+=b.attr[a];for(const a in rc.attr)P.attr[a]=Math.max(1,P.attr[a]+rc.attr[a]);
   // every discipline starts at 0; your race and past give a knack: 25% faster learning per point (P.apt)
@@ -34,3 +42,7 @@ function begin(k){
   for(let i=0;i<MONSTER_START;i++)spawnMonster(true);
   hidePanel();G.msgs=[];log('You ride out of '+home.name+' alone, as '+(rc.n==='Elf'||rc.n==='Orc'?'an ':'a ')+rc.n.toLowerCase()+' '+b.n.toLowerCase()+'. Win fame around here and the locals will follow you.');updateHint();updateHUD(true);
 }
+// the land you are about to see, painted now, inside the loading steps, not in the first frame: the chunks under the view the
+// camera will take round you (render.js drawWorld; worldart.js WorldArt keeps them)
+function paintView(){const x0=Math.round(clamp(P.x-VW/2,0,MW*TILE-VW)),y0=Math.round(clamp(P.y-VH/2,0,MH*TILE-VH));
+  for(let cy=Math.floor(y0/CHUNK);cy<=Math.floor((y0+VH-1)/CHUNK);cy++)for(let cx=Math.floor(x0/CHUNK);cx<=Math.floor((x0+VW-1)/CHUNK);cx++)WorldArt.chunk(cx,cy)}
