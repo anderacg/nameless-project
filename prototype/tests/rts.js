@@ -254,7 +254,7 @@ try{
  // selecting
  {const B=fight(['militia','militia','militia']);B.units.filter(u=>u.team===1).forEach(u=>{u.x=t.VW-20;u.cd=99;u.s={...u.s,spd:0};u.hp=u.max=9999});// (sturdy: your hero would cut them down meanwhile)
   const sp=t.grpUnits(testGroup('inf'))[0];t.rtsSelect(sp.x,sp.y-6,sp.x,sp.y-6);ok(B.sel===testGroup('inf'),'click a spearman: the infantry is selected');
-  t.rtsSelect(-5,-5,-5,-5);ok(B.sel==='all','click empty ground: everyone');
+  t.rtsSelect(-5,-5,-5,-5);ok(B.sel===null&&!t.selGroups().length,'click empty ground: nothing selected (as in Total War)');
   const ar=t.grpUnits(testGroup('arc')),xs=[...ar,...t.grpUnits(testGroup('inf'))];const x0=Math.min(...xs.map(u=>u.x))-3,x1=Math.max(...xs.map(u=>u.x))+3,y0=Math.min(...xs.map(u=>u.y))-12,y1=Math.max(...xs.map(u=>u.y))+3;
   t.rtsSelect(x0,y0,x1,y1);ok(Array.isArray(B.sel)?B.sel.includes(testGroup('inf'))&&B.sel.includes(testGroup('arc')):B.sel==='all','drag a box round archers and spearmen: both');
   // moving

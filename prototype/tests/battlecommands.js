@@ -5,7 +5,7 @@
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t.P,random0=Math.random,measure0=t.measureField;
   // line_drag reviewed after the ranged-facing fix: hero moveTo receives the ghost's face, not turn:false.
   // Attack/orders messages now identify the enemy formation by its safe group name.
-  const expected={"pick":"f8ea01cb","select":"66598499","boxes":"627fa3d1","control_groups":"1f6e535a","move":"2011bd43","queue":"e3988d7e","attack":"552fab61","own_icon":"bca1cbbd","orders":"78927b0f","flags":"d5c9b760","formations":"740cba6b","line_drag":"4598ee94","deployment":"8cf425b5","empty":"3ce8e39b","pointer_select":"f60d232d","pointer_orders":"d9382130","pointer_line":"1a6d2d33","touch":"5f816ed1","keyboard":"03b1480f"};
+  const expected={"pick":"f8ea01cb","select":"870a2099","boxes":"627fa3d1","control_groups":"1f6e535a","move":"2011bd43","queue":"e3988d7e","attack":"552fab61","own_icon":"bca1cbbd","orders":"78927b0f","flags":"d5c9b760","formations":"740cba6b","line_drag":"4598ee94","deployment":"8cf425b5","empty":"3ce8e39b","pointer_select":"f60d232d","pointer_orders":"d9382130","pointer_line":"1a6d2d33","touch":"5f816ed1","keyboard":"03b1480f"};
   const stable=x=>Array.isArray(x)?x.map(stable):x&&typeof x==='object'?Object.fromEntries(Object.keys(x).sort().map(k=>[k,stable(x[k])])):x;
   const hash=x=>{let h=2166136261;for(const c of JSON.stringify(stable(x)))h=Math.imul(h^c.charCodeAt(0),16777619)>>>0;return h.toString(16).padStart(8,'0')};
   const methods=['moveTo','attack','queueTo','hold','withdraw','setWalk','setFlag','setForm','setRun'],original={},calls=[];
@@ -43,7 +43,7 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t
         t.rtsSelect(inf[0].x,inf[0].y-6,inf[0].x,inf[0].y-6,true);results.add=B.sel.slice();
         t.rtsSelect(-20,-20,-20,-20,true);results.emptyShift=B.sel.slice();t.rtsSelect(-20,-20,-20,-20);results.empty=B.sel;
         const ally={...inf[0],id:99,grp:testGroup('a_inf'),x:450,y:450};B.units.push(ally);t.rtsSelect(450,444,450,444);results.ally=B.sel;
-        ok(results.first===testGroup('arc')&&results.add.includes(testGroup('inf'))&&results.add.includes(testGroup('arc'))&&results.empty==='all'&&results.ally==='all','click, Shift-add and empty/allied selection behavior preserved');
+        ok(results.first===testGroup('arc')&&results.add.includes(testGroup('inf'))&&results.add.includes(testGroup('arc'))&&results.empty===null&&results.ally===null,'click, Shift-add; a click on empty ground or an ally selects none');
       }else if(name==='boxes'){
         t.rtsSelect(250,410,150,140);results.two=B.sel.slice();t.rtsSelect(500,500,550,550);results.empty=B.sel.slice();t.rtsSelect(0,0,t.BW,t.BH);
         ok(results.two.includes(testGroup('inf'))&&results.two.includes(testGroup('arc'))&&JSON.stringify(results.two)===JSON.stringify(results.empty)&&B.sel==='all','reversed boxes select groups; empty boxes keep selection; full boxes select all');

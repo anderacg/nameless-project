@@ -93,7 +93,7 @@ cv.addEventListener('pointerdown',e=>{
     if(e.button===1&&B.cam){e.preventDefault();B.cam.drag={x:p.x,y:p.y}}
     else if(mh&&e.button===0)camCentre(mh.x,mh.y);
     else if(e.button===2&&e.pointerType==='mouse')B.rdrag={x0:q.x,y0:q.y,x1:q.x,y1:q.y,shift:e.shiftKey};// (let go: an order, or a line if dragged)
-    else if(e.pointerType!=='mouse'&&B.sel!=='all'&&!rtsUnitAt(q.x,q.y,0))rtsOrder(q.x,q.y)
+    else if(e.pointerType!=='mouse'&&B.sel!=='all'&&selGroups().length&&!rtsUnitAt(q.x,q.y,0))rtsOrder(q.x,q.y)
     else if(e.button===0)B.box={x0:q.x,y0:q.y,x1:q.x,y1:q.y,add:e.shiftKey}
     /* the manual control, set aside for now: if(e.pointerType==='mouse'){if(e.button===2)shove();else if(e.button===0){if(isBow())drawStart();else swing()}}else B.mt={x:p.x,y:p.y} */}
 });
@@ -106,7 +106,7 @@ window.addEventListener('pointerup',e=>{if(e.pointerType==='touch'&&touchUp(e))r
   else{const L=B.lastRc,now=performance.now(),dbl=!!L&&now-L.t<350&&Math.hypot(L.x-d.x0,L.y-d.y0)<16;B.lastRc={t:now,x:d.x0,y:d.y0};rtsOrder(d.x0,d.y0,{queue:d.shift,run:dbl})}return}
   if(e.button===0&&B&&B.box){const b=B.box;B.box=null;rtsSelect(b.x0,b.y0,b.x1,b.y1,b.add)}/* (the bow, set aside:) if(e.button===0&&B&&B.draw)drawRelease() */});
 cv.addEventListener('pointermove',e=>{if(G.mode!=='battle'||!B)return;const p=toCanvas(e);
-  {const q=toField(p);B.hov=q;{const ic=iconAt(q.x,q.y);B.iconHov=ic?ic.g:null}cv.style.cursor=B.sel!=='all'&&rtsUnitAt(q.x,q.y,1)?'crosshair':rtsUnitAt(q.x,q.y,0)?'pointer':''}// (what you point at: a ring, battlehud.js)
+  {const q=toField(p);B.hov=q;{const ic=iconAt(q.x,q.y);B.iconHov=ic?ic.g:null}cv.style.cursor=B.sel!=='all'&&selGroups().length&&rtsUnitAt(q.x,q.y,1)?'crosshair':rtsUnitAt(q.x,q.y,0)?'pointer':''}// (what you point at: a ring, battlehud.js)
   if(B.cam&&B.cam.drag){camPan(B.cam.drag.x-p.x,B.cam.drag.y-p.y);B.cam.drag={x:p.x,y:p.y};return}// (middle-drag: pan)
   if(B.rdrag&&e.pointerType==='mouse'&&e.buttons&1){B.rdrag=null;return}// (the left button pressed mid right-drag comes as a move: called off)
   if(B.box||B.rdrag){const q=toField(p),o=B.box||B.rdrag;o.x1=q.x;o.y1=q.y}});
@@ -158,7 +158,7 @@ function touchUp(e,cancel){const T=TOUCH,id=e.pointerId;if(!T.pts.has(id))return
   if(B!==l.B||G.mode!=='battle')return true;const q=l.q;
   if(l.armed){const d=B.rdrag;B.rdrag=null;if(d&&Math.hypot(d.x1-d.x0,d.y1-d.y0)>=FORM_DRAG)formDragTo(d.x0,d.y0,d.x1,d.y1);else rtsOrder(q.x,q.y);return true}
   if(l.box){const b=B.box;B.box=null;if(b)rtsSelect(b.x0,b.y0,b.x1,b.y1,false);return true}
-  if(B.sel!=='all'&&!rtsUnitAt(q.x,q.y,0))rtsOrder(q.x,q.y);else rtsSelect(q.x,q.y,q.x,q.y,false);return true}// (a tap: as it always was)
+  if(B.sel!=='all'&&selGroups().length&&!rtsUnitAt(q.x,q.y,0))rtsOrder(q.x,q.y);else rtsSelect(q.x,q.y,q.x,q.y,false);return true}// (a tap: as it always was)
 cv.addEventListener('pointermove',e=>{if(e.pointerType==='touch')touchMove(e,toCanvas(e))});
 window.addEventListener('pointercancel',e=>{if(e.pointerType==='touch')touchUp(e,true)});
 // anything else pressed puts the card away
@@ -203,6 +203,7 @@ window.addEventListener('keydown',e=>{
     if(!e.repeat&&(k==='['||k===']')){battleSpeedStep(k==='['?-1:1);return}
     // 1–9/0 select the ten army cards; Ctrl stores an override selection. Double-tap centres the camera.
     const twice=()=>{const now=performance.now(),L=B.lastKey;B.lastKey={k,t:now};if(L&&L.k===k&&now-L.t<BCAM.dbl)camLookAt(selGroups())};
+    if(!e.repeat&&k==='a'&&(e.ctrlKey||e.metaKey)){e.preventDefault();B.sel='all';setOrderUI();return}// Ctrl+A: every group (a click on empty ground selects none)
     if(!e.repeat&&/^[0-9]$/.test(k)){e.preventDefault();ctrlGroup(k,e.ctrlKey||e.metaKey);if(!e.ctrlKey&&!e.metaKey)twice();return}
     // the camera: arrows pan (held), + and - zoom on the middle, Home the whole field
     if(k.startsWith('arrow')){e.preventDefault();B.cam.keys[k]=true;return}
