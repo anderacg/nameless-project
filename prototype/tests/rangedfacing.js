@@ -35,9 +35,13 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,P=t.P,G=t
    B.arrows=[];h.cd=0;h.shot=null;e.x=h.x+100;e.y=h.y;t.rtsOrder(e.x,e.y-6);
    for(let i=0;i<120&&!B.arrows.length;i++){g.step(.03);t.charAuto(h,.03)}
    ok(h.face===1&&B.arrows.some(a=>a.by===h&&a.vx>0),weapon+': normal hero controller turns back and launches a real projectile right');
-   // Ordinary troop arcs remain group-controlled, not automatically turned toward a rear target.
+   // Ordinary troop arcs remain group-controlled: the soldier never turns himself toward a rear target...
    const a=B.units.find(u=>u.type==='hum_bow'),ag=B.groups[testGroup('arc')];a.x=450;a.y=400;a.grp=testGroup('arc');a.sx=a.sy=0;a.cd=0;ag.placeAt(a.x,a.y);ag.face=0;e.x=350;e.y=400;ag.attack(e);
-   t.aiUnit(a,.03,()=>{});ok(ag.face===0&&!a.shot,weapon+': normal archer groups retain their commanded firing arc');
+   t.aiUnit(a,.03,()=>{});ok(ag.face===0&&!a.shot,weapon+': a soldier never turns his group’s firing arc himself');
+   // ...but your group set on a foe out of its arc wheels to face him (moved right, then told to attack a foe behind it)
+   if(ag.player){const auto=B.auto;B.auto=false;ag.moveTo(a.x+40,a.y);ag.attack(e);ag.step(.03);const turned=t.angGap(ag.face,Math.PI)<.25;
+    for(let i=0;i<80;i++)ag.step(.03);ok(turned&&t.angGap(ag.currentFacing,ag.face)<.05&&t.inArc(a,e),weapon+': your archer group told to attack after a move wheels to face the foe, who is then in its arc');
+    ag.attack(e);ag.face=Math.PI;ag.currentFacing=Math.PI;e.y=a.y-12;ag.step(.03);ok(t.angGap(ag.face,Math.PI)<.001,weapon+': a foe still in the arc does not make it wheel');B.auto=auto}
   }
  }catch(e){o.push('EXC '+e.message+' '+e.stack)}finally{Math.random=random0;t.AUTOSK.on=auto0}
  const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d);

@@ -116,7 +116,7 @@ function aiUnit(u,dt,strike){
   crowdTarget(u,dt,s);
   const t=u.tgt;u.spdNow=0;
   // The hero is a single-unit group: an explicit attack turns its firing arc toward the target,
-  // even after a move left/right. Ordinary shooter formations keep their commanded facing.
+  // even after a move left/right. A shooter never turns himself: his group wheels to its foe (BattleControl.aimAt).
   if(u.hero&&s.range&&g&&gt){const p=g.targetPoint();g.faceTo(Math.atan2(p.y-u.y,p.x-u.x))}
   const order=g?(gt?'charge':g.order):'charge';
   if(!t&&!(g&&order!=='charge'))return;

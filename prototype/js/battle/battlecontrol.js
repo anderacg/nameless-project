@@ -74,6 +74,10 @@ class BattleControl{
   setRun(run){if(this.resolve?.routed)return;this.run=!!run;if(run)breakWall(this.id)}
   // `face` is the ordered/destination heading. The field's firing front catches up on simulation time.
   faceTo(angle){this.face=angle}
+  // your shooters set on a foe wheel to face him when he is outside their arc (a move left them facing elsewhere): the group
+  // turns, as in Total War; its men never turn themselves (SHOOT.arc, actors.js); the AI's captains turn their own
+  aimAt(){if(!this.hasTarget||!this.units.some(u=>u.s.range&&!u.hero))return;const p=this.targetPoint(),C=this.centre();
+    if(p&&angGap(Math.atan2(p.y-C.y,p.x-C.x),this.face)>SHOOT.arc*.4)faceToward(this.id,p.x,p.y)}
   turnFacing(dt){const from=this.currentFacing==null?this.face:this.currentFacing,diff=Math.atan2(Math.sin(this.face-from),Math.cos(this.face-from)),step=Math.min(Math.abs(diff),SHOOT.turn*Math.max(0,dt));this.currentFacing=from+Math.sign(diff)*step}
   setFlag(k,on){if(this.resolve?.routed||!Object.hasOwn(GRP_FLAGS,k))return;this[k]=!!on&&this.units.some(u=>flagEligible(u,k))}
   // a formation (formations.js), facing face, files wide
@@ -85,6 +89,7 @@ class BattleControl{
   step(dt){
     abilityStep(this,dt);// (a timed ability holds or ends: unitabilities.js)
     if(this.resolve?.routed){this.backing=false;return}
+    if(this.player&&!B.auto)this.aimAt();// (yours, set on a foe out of their arc: wheeled to him)
     this.turnFacing(dt);
     const m=this.units.filter(u=>!u.rout);
     // An explicit order pursues routers/withdrawers still on the field, but never silently charges a new formation.
