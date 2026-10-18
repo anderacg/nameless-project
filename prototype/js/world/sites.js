@@ -2,15 +2,15 @@
 /* ---------- sites: bandit camps, caves, traveller camps, bandit hideouts, ruins and shrines scattered across the map ---------- */
 // Each site in W.sites: {i, type, name, tx, ty, x, y, seed, seen, cleared, back} plus fields of its kind, read through its class (below).
 // Sites stay hidden until your scouts see them. Clearing a cave or hideout, or searching ruins, empties it until day `back`.
-// spots: stands on the map's fixed CAMP_SPOTS (places.js), in plain sight (known once its ground is explored), instead of count
-// scattered at random and hidden until your scouts find it (count: per old small map; a world's own counts are its DENSITY's)
+// spots: stands on the map's fixed CAMP_SPOTS (places.js), in plain sight (known once its ground is explored), instead of
+// scattered at random and hidden until your scouts find it (how many of each: the world's DENSITY, data/world.js)
 const SITE_TYPES={
-  camp:{n:'Bandit camp',spots:true,count:0,col:'#e0605a',respawn:10,d:'A big camp in plain sight: raiders and their chieftain, and the roving bands that shelter here by night.'},
-  cave:{n:'Cave',count:10,col:'#c58af0',respawn:25,d:'A monster lair cut into a hill or mountain. Beat its beasts for their trophies and a treasure chest.'},
-  travelers:{n:'Travellers',count:7,col:'#78c474',d:'A camp on the road. Trade, hire sellswords, rest by the fire and hear news. They move on after a few days.'},
-  hideout:{n:'Bandit hideout',count:8,col:'#e0605a',respawn:10,d:'Bandits and their chieftain, guarding their plunder.'},
-  ruins:{n:'Ruins',count:7,col:'#e8d8a0',respawn:40,d:'Search them for old treasure, but something may still guard it.'},
-  shrine:{n:'Shrine',count:6,col:'#7fd8e8',d:'Pray once a week to recover and gain insight.'}
+  camp:{n:'Bandit camp',spots:true,col:'#e0605a',respawn:10,d:'A big camp in plain sight: raiders and their chieftain, and the roving bands that shelter here by night.'},
+  cave:{n:'Cave',col:'#c58af0',respawn:25,d:'A monster lair cut into a hill or mountain. Beat its beasts for their trophies and a treasure chest.'},
+  travelers:{n:'Travellers',col:'#78c474',d:'A camp on the road. Trade, hire sellswords, rest by the fire and hear news. They move on after a few days.'},
+  hideout:{n:'Bandit hideout',col:'#e0605a',respawn:10,d:'Bandits and their chieftain, guarding their plunder.'},
+  ruins:{n:'Ruins',col:'#e8d8a0',respawn:40,d:'Search them for old treasure, but something may still guard it.'},
+  shrine:{n:'Shrine',col:'#7fd8e8',d:'Pray once a week to recover and gain insight.'}
 };
 const CAVE_NAMES=['Wolfden','Bonehollow','Darkmaw','Echo Cave','Gloomhole','Dripstone Cave','Old Burrow','Frostmaw','Sunken Grotto','Ashpit','Howling Cave','Mossy Hollow','Black Cleft','Glittercave'];
 const RUIN_NAMES=['Fallen Tower','Old Watchfort','Sunken Temple','Broken Arch','Kingsgrave','Ruined Abbey','Lost Hall','Crumbled Keep','Elder Barrow','Shattered Gate'];

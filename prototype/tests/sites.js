@@ -8,7 +8,7 @@ try{
  const panel=()=>document.getElementById('panel').innerHTML;
  t.act('begin','soldier');
  const S=W.sites,of=ty=>S.filter(s=>s.type===ty),want=Object.keys(t.SITE_TYPES);
- ok(want.every(ty=>of(ty).length===(t.SITE_TYPES[ty].spots?t.CAMP_SPOTS.length:Math.round(t.SITE_TYPES[ty].count*t.MAP_DENS))),'every kind placed: '+want.map(ty=>of(ty).length+' '+ty).join(', '));
+ ok(want.every(ty=>of(ty).length===(t.SITE_TYPES[ty].spots?t.CAMP_SPOTS.length:t.density().sites[ty])),'every kind placed: '+want.map(ty=>of(ty).length+' '+ty).join(', '));
  const f=t.flowTo(t.TOWNS[0]);const at=s=>s.type==='cave'?s.ty+1:s.ty;ok(S.every(s=>t.passable(t.tAt(s.tx,at(s)))&&isFinite(f[at(s)*MW+s.tx])),'all '+S.length+' sites stand on ground you can reach (a cave: the ground at its mouth)');
  const quad=[0,1,2,3].map(q=>S.filter(s=>(s.tx<MW/2?0:1)+(s.ty<MH/2?0:2)===q).length);ok(quad.every(n=>n>=4),'spread over the whole map (per quarter: '+quad.join(', ')+')');
  ok(S.every(s=>t.TOWNS.every(w=>Math.hypot(w.tx-s.tx,w.ty-s.ty)>=6)),'none sit on top of a holding');

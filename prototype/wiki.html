@@ -476,7 +476,7 @@ section('wildlife','Game and livestock','Wild game roams its habitat and bolts w
 
 /* sites and jobs */
 section('sites','Places and jobs','Away from the holdings lie places to explore. You see a place only once you come near it.',
-  table(['Place','On the map','Returns','What you find'],Object.keys(SITE_TYPES).map(k=>{const S=SITE_TYPES[k];return ['<b>'+S.n+'</b>',(S.spots?CAMP_SPOTS.length:Math.round(S.count*MAP_DENS)),S.respawn?S.respawn+' days after you clear it':'—',S.d]}),[1])+
+  table(['Place','On the map','Returns','What you find'],Object.keys(SITE_TYPES).map(k=>{const S=SITE_TYPES[k];return ['<b>'+S.n+'</b>',(S.spots?CAMP_SPOTS.length:density().sites[k]),S.respawn?S.respawn+' days after you clear it':'—',S.d]}),[1])+
   sub('Travellers','Camps on the road that move on after a week or so. Trade with them, hire sellswords, rest and hear news.',table(['Who','Sells','Notes'],TRAVELERS.map(T=>['<b>'+T.n+'</b>',T.goods.map(g$).join(', '),T.d])))+
   sub('Jobs','Holdings and lords offer work in their Jobs tab once your standing allows. Rewards scale with the days.',kv([['Bounty','Beat a named band of bandits.'],['Supply run','Bring goods the town is truly short of; they go into its stores.'],['Courier','Carry a sealed letter to another holding.'],['Clear a place','Clear a cave or hideout that troubles the holding.'],
     ['Beast hunt','Kill a named monster pack.'],['Hunt','Bring meat for a feast, or hides for the tanner.'],['Reinforce','Hand a castle troops of tier 2 or better.'],['Lords’ jobs','Beat an enemy lord in the field, or raid an enemy village.']])));

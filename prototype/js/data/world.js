@@ -44,3 +44,5 @@ const DENSITY={
 };
 // the caps in use: the classic map's (the map presets will pick theirs)
 const density=()=>DENSITY.classic;
+// roving bands at most, and beasts at the start and at most (session.js, world.js, monsters.js)
+const BANDITS=density().bandits,MONSTER_START=density().monsterStart,MONSTER_CAP=density().monsterCap;

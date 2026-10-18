@@ -43,8 +43,6 @@ const angGap=(a,b)=>Math.abs(Math.atan2(Math.sin(a-b),Math.cos(a-b)));
 // the first 60% is daylight, then dusk, night and dawn fill the last 40% (NIGHT_AT on)
 const DAY_SECONDS=120,NIGHT_AT=.6;
 const WORLD_PACE=.6,BATTLE_PACE=.6,HERO_PACE=.85;
-const MAP_AREA=MW*MH/(112*80),MAP_DENS=.75*MAP_AREA; // the world is 4x the old map; wild things are 3x as many
-const BANDITS=Math.round(10*MAP_DENS),MONSTER_CAP=Math.round(20*MAP_DENS),MONSTER_START=Math.round(16*MAP_DENS);
 // actions: every button names one (data-act="prefix-name"); each system claims its prefix once with onAct, so two systems can
 // never answer the same button. Actions without a registered prefix fall through to act() in input.js (menu, encounters), and
 // a town's own (tab, hire, buy …) on to townAct in ui/town.js.
