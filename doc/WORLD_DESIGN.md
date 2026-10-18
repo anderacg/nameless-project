@@ -1,8 +1,8 @@
-# A bigger, seeded world: design proposal
+# A bigger, seeded world: design
 
-**Status:** proposal, revision 3 (2026-10-18). Nothing is built yet. Written against the working tree of `battle-rts-and-world` (with its uncommitted changes) for the owner's approval.
+**Status:** **Approved by the owner 2026-10-18 (D1–D39 as recommended).** Final design, revision 3. Nothing is built yet. Written against the working tree of `battle-rts-and-world` (with its uncommitted changes). Phase 0 is ready to launch (§15.1).
 **Plan item:** IMPLEMENTATION_PLAN "Deferred: Procedural world (a seeded map)", made active by the owner on 2026-10-18. It also prepares world cliffs, which battles will take their cliffs from (TERRAIN_DESIGN §8).
-**Readers:** the owner, who makes the decisions in §15, and the developer agents who will build it.
+**Readers:** the owner, whose decisions are recorded in §16, and the developer agents who will build it.
 
 **The owner's decisions so far** (2026-10-18):
 - **Scale:** a bigger world at the same 16-px tiles. World-map figures shrink: a person about 10 px tall in a 16 box.
@@ -25,6 +25,7 @@
   - the battle link for river width, crossings and season.
 - **Slower, realistic movement:** the party moves visibly slower on screen, a day lasts longer, and walk cycles follow ground speed. This can go in early, in Phase 1, on today's map.
 - **A world settings screen at New game** (§4): size, seed, holdings, hamlets, sacred places, wild land, water, rivers, mountains, climate, danger, bandits and economy. It has presets, an Advanced fold-out, a quick preview, validated ranges and a shareable world code.
+- **Founding your own holding** (§7): founding sites and free founding; one tier model for every holding (camp → hamlet → village → town → city or castle); your realm from the first camp; an optional settler start; Phase 4b.
 - **Loading screens** (§5): one shared overlay (`ui/loading.js`), shown only for waits over 300 ms: generating the world, loading a save, the first paint and big battles. Long tasks become steps that yield, with no change to the simulation (R14, R15 in Phase 0).
 
 ---
@@ -107,6 +108,8 @@ It runs under `-Seed 1`. Every Phase 0 step must reproduce all eight.
 | k | **The save** builds the world part as an inline literal, with holdings as a positional array. The map is not identified. | `save.js` |
 | l | **Walk cycles run on the clock**, not on distance, in at least six draw paths. | `render.js` `drawHost`/`drawWorld`; `parties.js` `draw`; `critters.js`; `caravans.js`; `folk.js`; `refugees.js` |
 | m | **Long work runs inside one frame**, freezing the page: the full world paint at the first `drawWorld`, the battle ground painted lazily in the first `drawBattle` (up to 640 ms), `begin` and `loadGame` in one go. There is no loading overlay (§5). | `sprites.js` `worldCv`; `render.js` `drawBattle`; `setup.js` `BattleSetup.start`; `engine/ground.js` `PX.battleGround`; `session.js` `begin`; `save.js` `loadGame` |
+| n | **Battle layers are full-field canvases.** A field keeps up to five canvases the field's full size: the climate arena (`paintArena`, cached by `arenaFor`), the painted ground, the canopy layer for big woods zoomed out, blood (`goreLayer`) and shooter reach (`rangeLayer`). A huge field (3200 × 1800) is 23 MB a canvas: about 88 MB for ground, canopy, blood and reach, plus the arena. The ground is painted in one go (up to about 640 ms). | `gfx/worldart.js` `paintArena`; `gfx/sprites.js` `arenaFor`; `engine/ground.js` `PX.battleGround`, `PX.battleCanopy`; `gfx/vfx.js` `goreLayer`; `ui/battlehud.js` `rangeLayer`; `gfx/render.js` `drawBattle`, `drawInView`, `lodStep` |
+| o | **The battle reads world globals directly.** `battleEnv` and `terrainAt`/`terrainEdges` read `tAt`, `climAt`, water, road bridges, neighbours and elven towns. `coverAt` and `bridgeNear` do the same, and `fieldSize` reads `regionAt`. Every new world feature (rivers, seasons, elevation, cliffs, regions, the salt) would mean editing the battle generator in several places. | `battle/setup.js` `battleEnv`, `groundSpec`, `fieldSize`; `battle/terrain.js` `terrainAt`, `terrainEdges`, `TERRAIN_DENSE.elfR`; `battle/encounters.js` `bridgeNear`, `coverAt` |
 
 ### 2.2 The refactors
 
@@ -117,18 +120,20 @@ It runs under `-Seed 1`. Every Phase 0 step must reproduce all eight.
 | **R1** | **`WorldMap` holds the layers, at any size** | (a), (b) | New `world/worldmap.js`: `class WorldMap{constructor(w,h,seed)}` owns `kind` and `clim` (later `temp`, `moist`, `elev`, `feat`, `edge`, `region`, `flow`, `river`) and small accessors. `useWorld(map)` installs it: it sets `MW`/`MH` (now `let`) and allocates every per-tile array **there**, never at load. `tiles`/`climate` stay as read-only aliases for the hot loops. `tAt`/`terrAt`/`climAt`/`passable` keep their names. `LAND` becomes Int16. | M | Hashes 1–8; the full sweep |
 | **R2** | **Generators are functions** | (a) | `genMap` becomes `genClassic(map, places, camps)`; the deposits become `genDeposits(map, holdings)`. `installClassic()` runs them at load, as today, so the wiki and tests see a map. | S | Hashes 1, 2, 5 |
 | **R3** | **One world-reset hook** | (d) | `onWorld(fn)` beside `onAct`: each module registers its reset; `useWorld` calls them. | S | `begin` twice in one page equals a fresh page |
-| **R4** | **A holdings factory** | (c) | `places.js` keeps data only: `CLASSIC_PLACES` (with `realm`), `CLASSIC_CAMPS`. `makeHolding(data)` does `holdingOf`, prices and `x`/`y`. `setHoldings(list)` fills `TOWNS` in place. `capitalOf(race)` replaces `START_TOWN`; `startHolding()` replaces `TOWNS[0]`; `compTown(id)` falls back to the people's capital. | M | Hash 3; `holdings`, `economy`, `factions`, `companions`, `session` |
+| **R4** | **A holdings factory** | (c) | `places.js` keeps data only: `CLASSIC_PLACES` (with `realm`), `CLASSIC_CAMPS`. `makeHolding(data)` does `holdingOf`, prices and `x`/`y`. `setHoldings(list)` fills `TOWNS` in place. `capitalOf(race)` replaces `START_TOWN`; `startHolding()` replaces `TOWNS[0]`; `compTown(id)` falls back to the people's capital. **Ready for founding and tiers (§7):** `addHolding(data)` appends a holding made at runtime (`makeHolding`, unique name, `onWorld`-style notice to territory and lots). Holdings are never spliced out: a lost camp is marked `gone`, so indices into `TOWNS` (`LAND`) stay stable. Every `HOLDING_TYPES` entry gains `tier` (0–4) and `next` (all values for today's four kinds; no behaviour reads them yet). | M | Hash 3; `holdings`, `economy`, `factions`, `companions`, `session` |
 | **R5** | **One scale table, one movement lever** | (i) | New `data/world.js`: `WORLD_SCALE` (named distances in groups: `sight`, `ai`, `econ`, `law`, `land`, `battle`) and `DENSITY` (explicit caps **per preset**: the classic entry holds today's numbers; `MAP_DENS` retired). **Movement:** one helper `moveStep(px, d)` (= `px*d*WORLD_SCALE.move`, with `move` = 1 now) replaces every step expression (`26*mul*d`, `partySpeed(...)*d`, `16*d`, `12*d`, `10*d`, the caravan, refugee, ship, patrol and critter speeds, and the player's step in `updateWorld`), about 25 sites. **Flee odds and chase decisions keep reading the unscaled paces**, so a change of on-screen speed never changes who outruns whom. Arrival and touch radii (8–14 px) stay where they are: they follow the figure, not the world. | M | Hashes 7, 8; `pace`, `flee`, `caravanparty`, `brains`, `monsters`, `territory`, `patrols`, `events` |
 | **R6** | **A streaming painter in chunks** | (e) | **Engine:** `PX.worldNature` splits into `PX.worldNaturePlan(spec)` (global data: trees, rises, range height fields, decor, wood masses; all fit at Huge) and `PX.worldNaturePaint(plan, rect, D)`, which draws one rectangle with an apron (64 px up, 32 to the sides). **Game:** `worldArtPlan()` (data, and `CLEAR` as tile flags plus rectangles); `paintChunk(cx, cy)` makes a 512 × 512 canvas; `WorldArt` keeps an **LRU** of chunks, paints the ones in view, **prefetches** in the direction of travel, and paints in **time slices** (≤ 4 ms a frame). Its `draw(ctx, cam)` blits the chunks in view. **The minimap is built from tile data at low resolution** (1 px per k tiles), never from the painting. Today's map: all 35 chunks painted at load, as now. | L | Hash 5 (stitched chunks equal today's canvas pixel for pixel; streamed equals eager); `worldnature`; `visual/perf` |
 | **R7** | **Territory: model, state, art; incremental** | (h) | `landCost(i)` is the only cost model (Phase 3 swaps it). `computeLand` fills `LAND` and border bits `LAND_EDGE`. **Incremental:** when one holding's owner or reach changes, only the holdings whose reach box touches it are recomputed. `drawLand` reads the border bits. | M | Hash 4 and the draw hash; a test that incremental equals full after 200 random changes; `territory` |
 | **R8** | **Finish `WorldObject`** (item 9) | (j) | `Fight` is a `WorldObject`. The minimap draws `worldObjects()` by a `mapLayer` getter (today's order). | S–M | Draw hash; `clicks`, `fights`, `worldobject`, `worldobjects2` |
-| **R9** | **Holdings save themselves** | (k) | `Holding.saveRec()` and `loadRec(x)` produce today's tuple. `worldSave()`/`worldLoad()` gather the world part. **No change to the save's shape in Phase 0.** | S | Hash 7 |
+| **R9** | **Holdings save themselves** | (k) | `Holding.saveRec()` and `loadRec(x)` produce today's tuple. `worldSave()`/`worldLoad()` gather the world part. **No change to the save's shape in Phase 0.** Shaped for v3 (§9.3): a holding that is not in the generated list (`founded`) will save its base record too (name, races, kind, tile, seed, style, prices), and every holding its current kind, so `loadRec` remakes founded holdings with `makeHolding` and puts tier changes back with `holdingOf` | S | Hash 7 |
 | **R10** | **Sites' counts from the table** | — | `genSites` reads `DENSITY` and the world's camps. Sacred places will be `Site` subclasses in `SITE_CLASS`. | S | `sites`, `campbands` |
 | **R11** | **One router** | (f) | `world/router.js`: `Router.travel(o, goal, step)`, `Router.reach(a, b)`, `Router.days(a, b)`. In Phase 0 it wraps today's code exactly (`flowTo` fields, `findPath`, `clearLine`). Reachability uses a **component label per tile** (one flood fill), not a flow field. Phase 2 swaps in the two-level router (§3.6) behind the same three calls. | M | Hash 8; `routes`, `mapview`, `sites`, `quests`, `brains` |
 | **R12** | **Level-of-detail hooks** | (g) | `WorldObject.tier` (`near`/`mid`/`far`) is set every 0.5 s from the distance to you. `updateParties`/`updateMonsters`/`updateCritters`/`updateShips` call `think` by tier: near every frame, mid every 4th frame with 4× `d`, far through `farStep(d)` (by default the same as `think`). Daily jobs (`econDay`, `caravanDay`, `landDay`) gain a slice option (1/8 of holdings a frame). In Phase 0 the tier radius is infinite, so everything is near and nothing changes. | S–M | Hash 8; `visual/perf` |
 | **R13** | **Walk cycles by distance** | (l) | `walk()` adds the distance moved to `o.wd` (not saved). Each figure's frame comes from `frameOf(o, stride)` (= `floor(o.wd/stride) % n`, 0 standing). In Phase 0 a stride equal to today's clock rate at today's speed is too fiddly to match; instead this step **adds the helper and the field only** and switches the draw paths in Phase 1 with the new figures. | S | Hash 8 (positions unchanged); draw hash unchanged (not yet used) |
 | **R14** | **A loading overlay and a step driver** (§5) | (m) | `ui/loading.js` (`loadingShow`, `loadingStep`, `loadingHide`, `runSteps`), `LOADING.sync` for tests, `G.mode='loading'` (no simulation, no random-drawing effects while it runs), `begin`/`loadGame` shaped as steps | S | Hashes 1–8 with sync on; sync equals async (`tests/loading.js`) |
 | **R15** | **Battle setup and ground painting as steps** (§5.3) | (m) | `PX.battleGroundSteps` (`PX.battleGround` runs it to the end); `BattleSetup.start` as steps; the ground painted at setup, not in the first frame. By the battle agent, after REFACTOR items 11 and 13 | M | Every battle fingerprint; the ground pixel hash on 24 fields; `Math.random` count before the first frame |
+| **R16** | **A chunked battle ground** | (n) | The ground is painted **in 512-px tiles** from the plan R15 makes. **Engine:** `PX.battleGroundPaint(plan, rect)` paints one tile with an apron, and the arena's noise is painted per tile, so there is no full arena canvas. **Game:** `BattleGround` keeps the visible tiles plus a one-tile margin in an **LRU** (≤ 16 tiles, 16 MB), as the world map will (R6). Below zoom ×0.5 it draws a **half-resolution overview** (5.8 MB on a huge field) built once from the tiles. **Blood** goes in per-tile canvases made only where blood falls. **Shooter reach** is drawn into a view-sized canvas. **The canopy layer** (zoom < ×0.9) is kept at **half resolution**. Works with R15 (setup as steps: the first tiles are painted inside the steps) and R14 (the overlay shows only if setup passes 300 ms). By the battle agent, after R15 | M–L | On normal fields (today's 1100 × 600 and the sized fields under 2,000 trees, which never use the canopy) at zoom 1: **pixel hashes identical** on the 24-field set, blood and reach included. **Battle fingerprints byte-identical.** `visual/fieldperf` reports memory and time: **25–35 MB on a huge field** (about 88 MB today), and a first frame needing only the tiles in view or the overview (about ¼ of today's 640 ms on the largest field). Zoomed-out pixels on huge forests change (half-resolution canopy and overview): recorded with the reason |
+| **R17** | **A `BattleSite` hand-off** | (o) | `WorldMap.battleSite(tx, ty)` (R1) builds one small plain object: the tile and its 8 neighbours (kinds, climates), the environment (`t`, `c`), water near, the road and any road bridge within reach, elven towns near, and the world's salt. It has room, set to null in Phase 0, for what later phases add: elevation and terraces, rivers (width, flow, crossings, the bridge), season state, cliff and escarpment edges, deep forest and region bias. `battleEnv`, `terrainAt`, `terrainEdges`, `coverAt`, `bridgeNear` and `fieldSize` read **only** the `BattleSite`. The lab builds one from its own spec (`labSite`). `TERRAIN_DENSE.elfR` is read from `WORLD_SCALE.battle`. By agent A, after R1 and R15 | S–M | New `tests/battlesite.js`: for **every tile of the classic world**, the recipe, code, river, edges, road and cover computed through the `BattleSite` equal today's direct reads. **Battle fingerprints byte-identical**; `fieldvariety`, `terrain`, `battletypes`, `aiterrain`, `routing`, `roads`, `battlesetup` pass |
 
 **Not proposed** (over-engineering for this work):
 - an entity system;
@@ -138,10 +143,12 @@ It runs under `-Seed 1`. Every Phase 0 step must reproduce all eight.
 - a worker thread (Chrome blocks workers loaded from `file://`);
 - streaming tile data (all tile data fits in memory even at Huge, §3.2; only pixels stream).
 
-**Order and split** (5 agents at most, by file):
-- **Wave 1:** R1+R2+R3 (A); R4 (B); R6 (C); R5 apart from `ships.js` and `territory.js` (D).
-- **Wave 2, once A has landed:** R7+R8 (E); R9+R10+R14 (B); R11+R12+R13 (A); the rest of R5 (D); R15 (the battle agent, after items 11 and 13).
-- §14 has the file lists. **Phase 0 total: L** (about 16–18 agent sessions, mostly in parallel).
+**Order and split** (5 agents at most, by file; full launch plan with file lists and checks in §15.1):
+- **Wave 0:** `tests/worldprint.js` and its baseline, alone and first.
+- **Wave 1:** R1+R2+R3 (A); R4 (B); R6 (C); R5 except `core.js`, `ships.js` and `territory.js` (D); the battle agent on REFACTOR items 11 and 13.
+- **Wave 2**, once wave 1 has landed: R10+R11+R12+R13 (A); R9+R14 (B); R7+R8 and R5's territory constants (E); R5's `core.js` and `ships.js` lines (D); R15 (the battle agent).
+- **Wave 3**, once wave 2 has landed: R17 (A, needs R1 and R15); R16 (the battle agent, after R15).
+- **Phase 0 total: L**, about 18–21 agent sessions, mostly in parallel.
 
 ### 2.3 The battle side
 
@@ -150,7 +157,7 @@ The queued battle refactors touch only `js/battle/*` and `ui/battlehud.js`:
 - item 13, a readable battle tick;
 - item 18, retiring the per-soldier morale mirrors.
 
-The world work touches battle code only in `terrain.js` (`terrainAt`, `terrainEdges`: new optional reads, §12) and `encounters.js` (`bridgeNear`, `coverAt`).
+The world work touches battle code only in `terrain.js` (`terrainAt`, `terrainEdges`: new optional reads, §13) and `encounters.js` (`bridgeNear`, `coverAt`).
 - **Items 11 and 13:** run **alongside** Phase 0, with their own agent. Their proof is the battle fingerprints, which Phase 0 never moves.
 - **Item 18** re-records fingerprints on purpose: run it **before or after** Phase 0, never during, so each fingerprint change has one cause.
 
@@ -205,9 +212,9 @@ The streaming painter (R6):
 | In view | The game view is at most about 700 × 400 game px at every window size (`fitScreen`), so ≤ 2 × 2 chunks, or 3 × 2 straddling |
 | LRU cache | **32 chunks on a desktop (32 MB), 20 on a phone (20 MB)**, plus border overlays for the chunks in view (≤ 9 MB) |
 | Paint time per chunk | ≈ 50 ms headless (today's 1.72 s ÷ 35 chunks), ≈ 30 ms desktop Chrome, ≈ 100 ms on a mid phone. **Sliced at ≤ 4 ms a frame**, so a chunk takes 8–25 frames |
-| Prefetch | The ring of chunks ahead in the direction of travel. At the new walking pace (§9.2) a chunk is crossed in about 60 s at 1× or 7 s at 8×, so the next ring (2–3 chunks, ≤ 0.3 s of work) is always ready |
+| Prefetch | The ring of chunks ahead in the direction of travel. At the new walking pace (§10.2) a chunk is crossed in about 60 s at 1× or 7 s at 8×, so the next ring (2–3 chunks, ≤ 0.3 s of work) is always ready |
 | Jumps (load, a dev teleport, passage arrival) | The chunks in view are painted at once behind a short veil (≤ 0.4 s on a desktop) |
-| Seasons | Never repainted: frozen, flooded and dry rivers are a cheap overlay drawn each frame on the river tiles in view (§11.1) |
+| Seasons | Never repainted: frozen, flooded and dry rivers are a cheap overlay drawn each frame on the river tiles in view (§12.1) |
 
 ### 3.4 Minimap, full map and fog
 
@@ -223,7 +230,7 @@ Explored land is contiguous, so run lengths shrink it about 5× compared with to
 
 ### 3.5 Simulation: cost follows entities, not area
 
-Cost follows the number of things in the world, and the counts are capped per preset (§9.6). They grow about 3.5× from Normal to Huge, not 5.5×.
+Cost follows the number of things in the world, and the counts are capped per preset (§10.6). They grow about 3.5× from Normal to Huge, not 5.5×.
 
 **Level of detail (R12):**
 
@@ -257,7 +264,7 @@ Today's flow field per holding is Float64 over every tile: 6.3 MB each at Huge, 
 2. **A\*** on the graph for long trips: ≤ 2 ms at Huge, cached by node pair (LRU of 1,024 pairs).
 3. **Local A\*** (today's `findPath` with its box) from the start to the first node, along each leg (within 2 chunks: ≤ 0.3 ms), and from the last node to the goal.
 4. **Seasons and events toggle edges:** a ford closed by a flood, a dry riverbed open, a burnt bridge. Local A\* also reads each tile's seasonal passability (frozen water is walkable), so the player can cross the ice. AI routes keep to the graph: lords don't plan over ice, but a band near you may chase you across it.
-5. **Travel days** between any two places (`Router.days`) come from graph costs. AI targets (§10) and the caravan range use them.
+5. **Travel days** between any two places (`Router.days`) come from graph costs. AI targets (§11) and the caravan range use them.
 
 ### 3.7 Generation time and memory
 
@@ -279,7 +286,7 @@ Larger presets scale roughly with tiles × log(tiles).
 
 ### 3.8 Save size per preset
 
-A save is the seed plus the changes, not the map (§8.3).
+A save is the seed plus the changes, not the map (§9.3).
 
 | | Normal | Large | Huge |
 |---|---|---|---|
@@ -297,7 +304,7 @@ A save is the seed plus the changes, not the map (§8.3).
 | Generation memory peak | 65 MB | ≈ 260 MB: phones crash |
 | Tile data | 19 MB | 75 MB |
 | Save (gzip) | 180 KB | ≈ 700 KB, 7 slots near the quota |
-| Travel across by road | ≈ 10 days (§9.2) | ≈ 20 days: no longer fun |
+| Travel across by road | ≈ 10 days (§10.2) | ≈ 20 days: no longer fun |
 | Content needed (holdings, hamlets, sacred places, sites) | ≈ 1,000 places | ≈ 4,000: names and variety thin out |
 
 Neither canvas size (painting is chunked), typed arrays nor pixel coordinates is the limit. **Generation time and memory on phones, the save quota, and fun all point to about 1024 × 768 as the ceiling.**
@@ -315,20 +322,27 @@ The list is kept to knobs that change the world in ways you would notice. Every 
 | Setting | Choices (default in bold) | What it changes in the generator | Range and clamp |
 |---|---|---|---|
 | **Size** | **Normal** (phones), **Large** (desktop), Huge (desktop), Custom | `w × h` (§3.1) | Custom: width 320–1024 and height 224–768, in steps of 32 (one chunk); width ÷ height between 1.2 and 1.6; at most 286,720 tiles on phones (Large) and 786,432 on desktops (Huge) |
-| **Seed** | Typed text, **Random**, or pasted from a **world code** | Every stage's stream (§7.1) | Up to 24 characters, hashed to 32 bits; empty means random |
-| **Realm holdings** | A number. **37** at Normal, **55** at Large, **90** at Huge | Holdings placed per realm (§7.8). Shared among the five realms in today's ratio (8/7/7/7/8); lords follow (about 1 per 1.85 holdings) | At least 25 (5 per realm: a city, a town, a castle, 2 villages). At most 60 at Normal, 110 at Large and 200 at Huge, ×0.75 with Vast wild, ×0.85 with More sea. The slider's top moves with them and says why ("up to 51 for this land") |
+| **Seed** | Typed text, **Random**, or pasted from a **world code** | Every stage's stream (§8.1) | Up to 24 characters, hashed to 32 bits; empty means random |
+| **Realm holdings** | A number. **37** at Normal, **55** at Large, **90** at Huge | Holdings placed per realm (§8.8). Shared among the five realms in today's ratio (8/7/7/7/8); lords follow (about 1 per 1.85 holdings) | At least 25 (5 per realm: a city, a town, a castle, 2 villages). At most 60 at Normal, 110 at Large and 200 at Huge, ×0.75 with Vast wild, ×0.85 with More sea. The slider's top moves with them and says why ("up to 51 for this land") |
 | **Realms** | **5**: not a setting | — | Fixed. The five factions are written content (peoples, colours, troops, lords), so changing their number would need new factions, not a slider |
-| **Hamlets** | None, Few, **Normal**, Many (0, 0.5×, 1×, 1.6× the size's base: 24 / 45 / 100) | Natural villages (§7.9) | Capped by fringe land: at most 1 per 900 fringe tiles |
-| **Sacred places** | Rare, **Normal**, Common (0.5×, 1×, 1.5×) | Stones, groves, monasteries, altars, shrines (§7.10) | Capped by quiet spots (their spacing rules) |
-| **Wild land** | Few (10% of land), **Normal** (25%), Vast (40%) | Wild regions' count and size (§7.7) | Realms keep at least 35% of the land: if they would not, wild land is cut first, then holdings |
-| **Land and water** | Continent (78% land), **Coasts** (73–76%), More sea (62–66%: more bays and inland seas), Lakes (75%, twice the lakes) | Land threshold, inland seas, lakes (§7.2) | Land share 60–80% |
-| **Rivers** | Dry, **Normal**, Wet (rivers ×0.6, ×1, ×1.5; moisture −0.08, 0, +0.08) | River thresholds and the moisture field (§7.5), so more forest and swamp when wet | Each climate keeps ≥ 6% of land (§7.14) |
-| **Mountains** | Flat, **Normal**, Rugged (ranges and highlands ×0.6, ×1, ×1.5) | Elevation (§7.3), cliffs later (Phase 7) | Passes every 60 tiles of range, whatever the setting |
-| **Climate** | Cold, **Temperate**, Warm (temperature −0.08, 0, +0.08) | More frost or more desert (§7.4) | Each climate keeps ≥ 6% of land, because every people needs its home |
+| **Hamlets** | None, Few, **Normal**, Many (0, 0.5×, 1×, 1.6× the size's base: 24 / 45 / 100) | Natural villages (§8.9) | Capped by fringe land: at most 1 per 900 fringe tiles |
+| **Sacred places** | Rare, **Normal**, Common (0.5×, 1×, 1.5×) | Stones, groves, monasteries, altars, shrines (§8.10) | Capped by quiet spots (their spacing rules) |
+| **Wild land** | Few (10% of land), **Normal** (25%), Vast (40%) | Wild regions' count and size (§8.7) | Realms keep at least 35% of the land: if they would not, wild land is cut first, then holdings |
+| **Land and water** | Continent (78% land), **Coasts** (73–76%), More sea (62–66%: more bays and inland seas), Lakes (75%, twice the lakes) | Land threshold, inland seas, lakes (§8.2) | Land share 60–80% |
+| **Rivers** | Dry, **Normal**, Wet (rivers ×0.6, ×1, ×1.5; moisture −0.08, 0, +0.08) | River thresholds and the moisture field (§8.5), so more forest and swamp when wet | Each climate keeps ≥ 6% of land (§8.14) |
+| **Mountains** | Flat, **Normal**, Rugged (ranges and highlands ×0.6, ×1, ×1.5) | Elevation (§8.3), cliffs later (Phase 7) | Passes every 60 tiles of range, whatever the setting |
+| **Climate** | Cold, **Temperate**, Warm (temperature −0.08, 0, +0.08) | More frost or more desert (§8.4) | Each climate keeps ≥ 6% of land, because every people needs its home |
 | **Seasonal rivers** | **On**, Off | Whether rivers are flagged seasonal (§6.6.4) | — |
-| **Monsters** | Calm, **Normal**, Deadly (caps ×0.6, ×1, ×1.5; wild levels −1, 0, +1) | Monster density and strength (§9.6) | — |
-| **Bandits** | Few, **Normal**, Many (×0.6, ×1, ×1.5) | Bands, river bands, camps (§9.6) | — |
-| **Economy** | Poor, **Normal**, Rich (ore and fish deposits ×0.75, ×1, ×1.3; starting stocks ×0.85, ×1, ×1.2) | Deposits (§7.12), holdings' first stocks | — |
+| **Monsters** | Calm, **Normal**, Deadly (caps ×0.6, ×1, ×1.5; wild levels −1, 0, +1) | Monster density and strength (§10.6) | — |
+| **Bandits** | Few, **Normal**, Many (×0.6, ×1, ×1.5) | Bands, river bands, camps (§10.6) | — |
+| **Economy** | Poor, **Normal**, Rich (ore and fish deposits ×0.75, ×1, ×1.3; starting stocks ×0.85, ×1, ×1.2) | Deposits (§8.12), holdings' first stocks | — |
+
+**Two settings for founding (§7):**
+
+| Setting | Choices (default in bold) | What it changes | Range and clamp |
+|---|---|---|---|
+| **Founding sites** | Few, **Normal**, Many (0.5×, 1×, 1.6× of 14 / 24 / 52 by size) | Unclaimed sites placed by the generator (§7.2) | Capped by spots passing the site rules |
+| **Start** | **Wanderer** (today's), Settler | Where and how you begin (§7.5) | Settler needs a fair site near your people (§8.14); if none passes, the generator relaxes the distance to your capital |
 
 **Not settings**, because they would not change the world meaningfully or are chosen elsewhere: your race and start city (character creation), the number of realms (above), the starting war (as today, a random pair), the season length (D17).
 
@@ -345,7 +359,9 @@ Presets are chips across the top. Choosing one fills every setting; touching a s
 | **Wild Frontier** | Large | 38 (0.7×) | Few | Common | Vast | Continent | Wet | Rugged | Cold | Deadly | Many | Rich |
 | **Crowded Realms** | Normal | 55 (1.5×) | Many | Normal | Few | Coasts | Normal | Normal | Temperate | Calm | Normal | Normal |
 
-**Classic** uses seed `CLASSIC`, today's holdings as anchors (§7.15), and only the settings that don't change the map: monsters and bandits. Everything else is locked and greyed out. **Tests** use Classic with every setting at its default.
+Founding sites are Normal in every preset except **Wild Frontier** (Many) and **Crowded Realms** (Few). Start is Wanderer in every preset; any preset may switch it to Settler, Classic included.
+
+**Classic** uses seed `CLASSIC`, today's holdings as anchors (§8.15), and only the settings that don't change the map: monsters and bandits. Everything else is locked and greyed out. **Tests** use Classic with every setting at its default.
 
 **The Advanced fold-out** holds everything below Seed and Size: holdings, hamlets, sacred places, wild land, water, rivers, mountains, climate, seasonal rivers, monsters, bandits and economy. It is closed by default. On touch, choices are segmented buttons (3–4 steps, ≥ 36 CSS px tall) rather than fiddly sliders; only holdings and custom size use a number with − and + buttons.
 
@@ -363,11 +379,11 @@ The preview is a low-resolution map beside the settings, so you see the world be
 
 ### 4.4 Saved and reproducible
 
-- **The settings object:** `WM.settings = {v:1, preset, w, h, seed, holdings, hamlets, sacred, wild, land, rivers, mountains, climate, seasonal, monsters, bandits, economy}`.
-- **Normalized first:** settings are clamped before use (§4.5), and the clamped values are what is stored and hashed. **The same seed plus the same settings give the same world**, byte for byte, in every browser (§7.1).
+- **The settings object:** `WM.settings = {v:1, preset, w, h, seed, holdings, hamlets, sacred, wild, land, rivers, mountains, climate, seasonal, monsters, bandits, economy, sites, start}`.
+- **Normalized first:** settings are clamped before use (§4.5), and the clamped values are what is stored and hashed. **The same seed plus the same settings give the same world**, byte for byte, in every browser (§8.1).
 - **The world and its starting population come from the seed:** the map, holdings, hamlets, sacred places, camps and the lair, and also the first sites, bands, monsters and herds, which today use `Math.random` at `begin`. Two players with one code start in the same world. **What happens in play stays random**, as today.
 - **A world code** packs the version, size, every setting and the seed into one short text, for example `ASH1-L-4F2KQ9-redwater`. Paste it into the Seed field to get the same world and settings.
-- **In the save:** `world.map = {gen, settings, sum}` in save v3 (§8.3). A loaded save regenerates from these.
+- **In the save:** `world.map = {gen, settings, sum}` in save v3 (§9.3). A loaded save regenerates from these.
 - **In the game:** the Esc menu gains a **World** page (in the window frame) with the seed, the world code with a Copy button, every setting, and the final counts. The save list line shows "Large · redwater".
 
 ### 4.5 Clamps, fairness and sanity
@@ -376,7 +392,7 @@ The preview is a low-resolution map beside the settings, so you see the world be
 
 1. **The screen prevents** impossible requests. Each setting's range is computed live from the others (holdings' maximum from size, water and wild land; hamlets' from fringe land), the value is clamped when another setting shrinks its room, and a short note says why.
 2. **The generator re-clamps** everything it is given, because a pasted world code may be hand-edited. Out-of-range values snap to the nearest allowed one.
-3. **The generator's checks** (§7.14: reachability, suitable land per people, balanced capitals, fair start, ports, rivers, seasonal reachability, climates ≥ 6%, no emptiness, no circles) run on every world.
+3. **The generator's checks** (§8.14: reachability, suitable land per people, balanced capitals, fair start, ports, rivers, seasonal reachability, climates ≥ 6%, no emptiness, no circles) run on every world.
    - A failure retries its stage up to 8 times.
    - If it still fails, the generator relaxes in a fixed order: hamlets, then sacred places, then wild share, then holdings (one per realm at a time).
    - It never fails to produce a world. The World page shows the final counts, so a relaxed world is honest about it.
@@ -453,7 +469,7 @@ The times below are today's (headless, `visual/perf`, `worldnature`, TERRAIN_DES
 Long tasks become **step lists or generator functions** (`function*`, plain ES6) that `yield` between pieces of work. The work between two yields stays synchronous and in the same order as today.
 
 **Nothing in the simulation may change.** Yielding must not reorder random draws:
-- **The generator** uses only its own seeded streams (§7.1), never `Math.random`.
+- **The generator** uses only its own seeded streams (§8.1), never `Math.random`.
 - **Battle setup and `begin`** do draw `Math.random` (spawns, armies). While the overlay runs, the main loop runs **no simulation and no drawing that draws randoms**. `G.mode` is `'loading'`, and `frame()` draws only the overlay over the last frame, so no visual effects or flickering torches. The draws therefore happen in exactly the order they would synchronously.
 - **Tests run synchronously:** `LOADING.sync = true` in `tests/harness.js` makes `runSteps` run every step at once, in order, with no overlay. Every existing suite and fingerprint stays byte-identical. A dedicated test runs the same task both ways and compares (§5.4).
 
@@ -502,11 +518,12 @@ Long tasks become **step lists or generator functions** (`function*`, plain ES6)
 | Lords | 20 | 20 (4 a realm) | 30 (6) | 45 (9); names beyond each realm's listed four are generated per people |
 | Hamlets | 0 | 20–28 | 40–50 | 90–110 |
 | Sacred places | 18 small shrines | 18–24 | 30–36 | 60–70 |
+| Founding sites (§7.2) | — | 12–16 | 20–28 | 45–60 |
 | Wild regions | — | 4–7 | 6–9 | 10–14 |
 | River systems (rivers ≥ 30 tiles) | none | 8–14, of which 1–2 great rivers | 14–22, 2–3 great | 30–45, 3–5 great |
 | Land use (share of land) | 69% ruled | ≈ 40–45% realms, 3–4% hamlets, 20–30% wild, the rest fringe | same | same |
 
-**Scale convention.** Figures and buildings are realistic to **each other**: a person is smaller than a house, a house smaller than a keep. **Distance** reads as **1 tile ≈ 250 m of land** for travel, so Normal is about 110 × 80 km, Large 160 × 110 km and Huge 256 × 192 km. With §9.2's travel model a band on foot covers about 25 km a day, as medieval armies did. A building stands for its settlement's look; the map is not a survey.
+**Scale convention.** Figures and buildings are realistic to **each other**: a person is smaller than a house, a house smaller than a keep. **Distance** reads as **1 tile ≈ 250 m of land** for travel, so Normal is about 110 × 80 km, Large 160 × 110 km and Huge 256 × 192 km. With §10.2's travel model a band on foot covers about 25 km a day, as medieval armies did. A building stands for its settlement's look; the map is not a survey.
 
 ### 6.2 Wild regions
 
@@ -585,7 +602,7 @@ The owner chose all four strands: big river systems, strategic crossings, river 
 
 #### 6.6.1 Big river systems
 
-- **Drainage basins** (§7.5): water falls on the land by moisture and flows downhill. Flow gathers into tributaries, then rivers, then great rivers, which run from the mountains to the sea or a lake. Lakes fill basins and spill into an outflow river. Great rivers end in **deltas** on flat coasts.
+- **Drainage basins** (§8.5): water falls on the land by moisture and flows downhill. Flow gathers into tributaries, then rivers, then great rivers, which run from the mountains to the sea or a lake. Lakes fill basins and spill into an outflow river. Great rivers end in **deltas** on flat coasts.
 - **Width follows flow:**
 
 | Class | Flow | Width on the map | Moving across it | Boats |
@@ -619,7 +636,7 @@ Rivers are barriers. **They are crossed only at crossings**, and crossings are c
   - **You** pay 1 gold per 5 people, or refuse. Refusing is a crime with that holding, handled like today's patrol fines.
   - **Your fiefs' bridges** pay you, and the takings show in the weekly fief line.
   - A small toll house stands at one end (`PX.prop`).
-- **War at the crossings:** a lord defending his realm may hold the bridge or ford on his border nearest an enemy army (`hold` state, §10). Fights there use the existing *Hold the bridge* battle type, which already triggers on and beside road bridges (`encounters.js` `bridgeNear`).
+- **War at the crossings:** a lord defending his realm may hold the bridge or ford on his border nearest an enemy army (`hold` state, §11). Fights there use the existing *Hold the bridge* battle type, which already triggers on and beside road bridges (`encounters.js` `bridgeNear`).
 
 #### 6.6.3 River travel and trade
 
@@ -676,7 +693,7 @@ Seasons exist only as far as these rivers and a few small things need.
 - **Uses in v1:**
   - the seasonal rivers above;
   - the HUD date ("Day 17 · Summer");
-  - battle water (§12);
+  - battle water (§13);
   - three events: the flash flood, thin ice, and a ferryman stranded by high water.
 - **Is it worth adding just for this?** Yes, because it costs almost nothing: one small file, no save state, no repainting. It is also the natural hook for later systems the owner may want, none built now: a harvest that cheapens grain after autumn, harsher frost survival in winter, campaign seasons for lords. Without it, seasonal rivers would need their own clock anyway.
 
@@ -686,27 +703,184 @@ The world stores elevation in 4 terrace levels and cliff-edge bits (`WM.edge`: E
 
 ---
 
-## 7. Generation
+## 7. Founding your own holding
 
-### 7.1 Rules that hold for every stage
+The owner: "there should be a blank holding where the player can start, starting from a camp to village to etc." This makes the queued roadmap item **Growth tiers (village → town → city) on top of `HOLDING_TYPES`** (IMPLEMENTATION_PLAN §6, with the note "`holdingOf(t, kind)` already switches a holding's class") part of the world plan. **One tier model is shared by every holding:** yours, the realms' and the hamlets'.
+
+### 7.1 What exists to build on
+
+| System | Today | Where |
+|---|---|---|
+| Kinds of holding | `HOLDING_TYPES` (village, town, city, castle): people, store, garrison, patrol, `wall0`/`wallMax`, `estMax`, `reach`/`growMax`, `ring`, needs, jobs, `income`, tabs, hires, mounts. One class per kind; `holdingOf(t, kind)` changes a holding's kind and class in place | `data/holdings.js` |
+| Estates | `t.bld` levels of 11 estates (farm, pasture, lumber, mine, quarry, port, workshop, smithy, brewery, granary, market), each up to `estMax`, with `ESTATE_NEEDS`. Built as projects (`t.work`, `buildDays`, gold and materials) | `data/economy.js` `ESTATES`; `world/estates.js` |
+| Walls | `t.wall` 0–3 (`WALL_N`: none, palisade, stone, great), the **fortification of the centre building**, raised by Fortify; no wall pieces | `estates.js` `wallOf`; settlement rules memory |
+| Placed structures | Every holding is lots on the tile grid, each a power-of-two cell (1, 2 or 4 tiles). The centre (village hall 32, citadel 64, keep 64) stands on the holding's tile; houses for its people within `ring`; estates' buildings and fields (`plots`) outside; built behind scaffolding | `world/lots.js` `initLots`, `lotSpot`, `lotAdd`; `PX.building` |
+| People and economy | `t.pop` up to `popCap` and the houses it has; stock, prosperity, taxes, volunteers | `world/economy.js` |
+| Your fiefs | Owner `'player'`, the **Free Banner** faction (`FACS.player`), already at war with whoever is hostile to you. Fief tab, garrison (`fiefCap`), daily income (`fiefIncome`, `fiefDay`), building | `realms.js`; `siege.js` |
+| Staying | Rest inside a holding that takes guests (`Holding.takesGuests`; castles only for those they know) | `world/stay.js` |
+| Territory | Reach grows in peace, shrinks under siege, and a captured holding brings its land | `world/territory.js` |
+| Camps' art | Bandit and siege camps (`PX.camp`, `campSprite`): tents, fire, flag | `engine/pieces.js`, `render.js` |
+| Refugees | People leaving a ruined holding walk to a better one, and you can "settle" them | `world/refugees.js` |
+
+### 7.2 Founding sites, and free founding
+
+**Founding sites** are unclaimed good spots placed by the generator: a `FoundingSite` class in `SITE_CLASS`, seeded, saved like any site.
+
+| Kind | Where | Its gift |
+|---|---|---|
+| **River ford** | Beside a ford or bridge on a stream or river | A watermill (farm +15%), fish; caravans pass |
+| **Fertile valley** | Open land with high moisture, away from roads | Farm fields ×1.25 |
+| **Crossroads** | Where two roads or tracks meet, outside realms | Market dues +50%; caravans call |
+| **Defensible hill** | A hill tile with open ground round it | Walls cost −30%; defenders +1 level |
+| **Sheltered cove** | Coast or lake shore with connected water | Port at level 1 from the start |
+| **Wild edge** | Within 10 tiles of a wild region, never inside | Rich deposits (×1.5), monsters near |
+
+| | Normal | Large | Huge |
+|---|---|---|---|
+| Founding sites | 12–16 | 20–28 | 45–60 |
+
+The **Founding sites** setting (§4.1: Few 0.5×, Normal 1×, Many 1.6×) scales them.
+
+**Placement rules:**
+- a clear 6 × 6 block of open land, so the centre can grow to 64 px in place;
+- room for at least 3 estates (`canHave`);
+- ≥ 24 tiles from any holding, ≥ 14 from a hamlet;
+- outside every realm's starting land;
+- reachable by land in every season.
+
+**On the map**, once explored: a wooden stake with a pale pennant on bare ground (`PX.site({type:'stake'})`), labelled "Unclaimed land · river ford".
+
+**Free founding (D33): yes, with stricter rules.** Marked sites are the easy path. You may also found on any land that passes:
+- the same clear 6 × 6 block and estate room;
+- ≥ 30 tiles from any holding and ≥ 18 from a hamlet;
+- **not on land a realm rules** (`LAND`) and not within 12 tiles of a realm's holding;
+- not inside a wild region;
+- reachable.
+
+Free founding costs 50% more (a surveyor's work) and has no site gift. The Found button explains any rule that fails ("Too close to Millbrook: 22 of 30 tiles").
+
+### 7.3 The tier model, shared by every holding
+
+**Tiers:** **camp → hamlet → village → town → city** (the trade path) **or castle** (the war path, from town). Each tier is a `HOLDING_TYPES` kind with a new `tier` number (0–4) and a `next` list, so `holdingOf(t, next)` does the change. **One new kind:** `camp` (`class Camp extends Holding`). `hamlet` comes from §6.3.
+
+| Tier | Kind | Centre (lots, engine) | People (start / cap) | Unlocks | Walls | Estates (max level) | Reach | Income a day |
+|---|---|---|---|---|---|---|---|---|
+| 0 | **Camp** | Settlers' camp, 2×2: tents, a cart, a fire, a stake fence (`PX.camp({style:'settler'})`) | 8 / 25 | Stores, Build (farm, lumber, quarry only), rest inside (free) | 0 | 1 | 4 | 0 |
+| 1 | **Hamlet** | Hamlet centre, 2×2 (`PX.site({type:'hamlet'})`, §12.3) | 20 / 70 | Small trade, 2 recruits a week, jobs, tavern | 0 | 1 | 6 | 3 |
+| 2 | **Village** | Village hall, 32 (today's `village`) | 60 / 140 | Market tab, recruits as a village, patrol 3, herds | Palisade (1) | 2 | 10 → 14 | 8 |
+| 3 | **Town** | Citadel, 64 (today's) | 200 / 420 | Smith, training, tourneys, broker, contracts, patrol 6 | Stone (up to 3) | 3 | 15 → 21 | 25 |
+| 4 | **City** | Citadel, 64, a grander variant (today's open art question) | 320 / 700 | As town, more store and income; **one per realm** (yours too: your capital) | Up to 3 | 3 | 17 → 24 | 40 |
+| 4 | **Castle** (from town) | Keep, 64 (today's) | 80 / 170 | Mounted troops, bigger garrison, stockpile (`fort`) | Up to 3 | 2 | 18 → 25 | 15 |
+
+Village to castle use today's `HOLDING_TYPES` values. Camp and hamlet are new entries, and reach is shown with the ×1.4 of §8.13.
+
+**Footprint.** Every site keeps a clear 6 × 6 block, so the centre grows **in place** through power-of-two cells (2×2 → 2×2 → 2×2 → 4×4 → 4×4), as the settlement rules require. An upgrade replaces the centre lot behind scaffolding (`lotAdd` with `st:'building'`, as houses are built today). Houses come as people grow (`housing`), estates as they are built.
+
+**Reaching the next tier** is a project in the Fief tab, like an estate (`t.work`). It needs all of the following; every number is in `TIERS` (`data/holdings.js`), a tuning table:
+
+| To | People | Days at the tier | Gold | Materials | Built first | Renown | Build days |
+|---|---|---|---|---|---|---|---|
+| Camp (found) | 6 settlers from your band | — | 200 | 10 timber, 5 tools, 20 food | — | — | 1 |
+| Hamlet | 20 | 3 | 150 | 20 timber | farm or lumber 1 | — | 3 |
+| Village | 50 | 10 | 400 | 40 timber, 20 stone | 2 estates; granary 1 | 30 | 5 |
+| Town | 150 | 20 | 1,200 | 40 timber, 80 stone, 20 tools | 3 estates, market 1, palisade; prosperity ≥ 50 | 100 | 9 |
+| City | 300 | 30 | 3,000 | 200 stone, 60 tools | market 2, stone walls; your realm has no city | 250 (Lord) | 15 |
+| Castle | 80 | 20 at town | 1,500 | 150 stone, 30 iron | stone walls, smithy 1 | 100 | 12 |
+
+**People grow** by today's economy: food, prosperity and houses. **Refugees** may be directed to your holdings ("Settle them at {holding}", using today's "settle" choice), and hamlets you protect send young people. **Settlers:** founding takes 6 of your soldiers (never companions) as its first people. They leave your band; they are not lost.
+
+**Tier down.** A holding drops one tier when either:
+- its people stay below the tier's floor (the previous tier's people requirement) for 20 days;
+- or it is sacked twice within 30 days.
+
+The centre lot reverts to the lower tier's building, and the extra lots fall into ruin (today's `ruined` art) until they are rebuilt. A camp that drops is gone: its site becomes unclaimed again, and stocks are lost.
+
+**Realm holdings grow and shrink too (D35): yes, slowly.**
+- **Grow:** an AI holding grows one tier when its people have stood above the next tier's requirement for 30 days and its realm can pay.
+- **Shrink:** it falls one tier by the same rules as yours.
+- **Floors:** a realm's capital never falls below town, and a castle never changes path.
+- **Caps:** at most 1 city per realm (the rule already noted in memory), and at most one AI tier change per realm per 20 days.
+- **Hamlets** (§6.3) can grow into villages, which pushes them toward annexation.
+- **Off in tests:** `TIERS.ai` is off in `tests/harness.js`, so the classic world's kinds never change under the suites.
+
+### 7.4 Your own realm
+
+**Your realm exists from the first camp (D37).** It is today's `'player'` owner, the **Free Banner** (`FACS.player`). Founding needs no new faction code, because everything that handles your captured fiefs (`playerFiefs`, `fiefDay`, `fiefBody`, `atWar`/`hostileTo`, land colour) already works for it.
+
+| Part | v1 | Deferred (roadmap "founding your own kingdom") |
+|---|---|---|
+| Territory | Grows from each holding by its tier's reach, with §8.13's natural borders | Claims beyond reach |
+| Relations | **Tension:** founding within 40 tiles of a realm's holding costs −10 honour with that realm, once. Your land taking tiles that realm would rule costs −1 honour a week while it lasts. Hostile realms treat your holdings like any enemy's: lords besiege your towns and castles and raid your villages, camps and hamlets (`siege.js`, `realms.js`) | Treaties, borders by agreement |
+| Hamlets | D5's **Offer protection** brings a hamlet into your realm | Vassal hamlets paying tribute |
+| Governors | A **companion** can govern one holding: they stay there (their party's `stay` order), add their Stewardship to income and build speed, and command its defence | Lords as vassals; your own lords; laws |
+| Sworn to a realm | You may still found. The holding is yours (Free Banner), and your liege does not object while it lies outside his land | Granting your holdings to your liege |
+| Kingdom | — | Titles, laws, vassals, diplomacy, declaring war (IMPLEMENTATION_PLAN §9, design backlog, Politics) |
+
+### 7.5 Starting as a settler
+
+A new **Start** setting (§4.1): **Wanderer** (today's start, the default) or **Settler** (D36).
+
+As a settler you begin at a founding site **with a camp already founded**:
+- 10 people, your band of 5, 150 gold, 30 food, 20 timber, 10 tools;
+- the site is within 1–2 days of your people's capital but outside its land, and suits your people (§8.8's suitability);
+- reputation with your people's realm is neutral.
+
+**Fairness for the settler start** (added to §8.14):
+- no wild region within 15 tiles;
+- a holding or hamlet within 1 day;
+- no bandit camp within 25 tiles;
+- **10 days of grace**, in which bands don't raid your camp.
+
+The Classic preset allows the settler start too: it has founding sites like any seed.
+
+### 7.6 Risks and upkeep
+
+Every number below sits in `FOUNDING` (`data/world.js`) for Phase 6's retune.
+
+| Risk | Rule |
+|---|---|
+| **Bandit raids** | Camps, hamlets and villages are favourite targets: a stronger band within 8 tiles raids with a 1-in-12 chance a day (after the grace). A raid steals 30% of the stock and kills 10% of the people. The militia (people ÷ 6) defends. You are told ("Raiders at {camp}!") and can ride back; a band that has just raided lingers 1 day, so you can catch it |
+| **AI realms** | Tension (above); at war, sieges and raids as on any holding. Lords never besiege camps or hamlets (no walls); they **burn** them: a camp is lost, a hamlet drops a tier |
+| **Upkeep** | The garrison is paid as fief garrisons are today. Each tier costs a daily upkeep in tools and food from its stock (camp 1 food per 4 people; from village, 0.2 tools per level of estates). Hunger shrinks people, and 20 days below the floor drops a tier |
+| **Neglect** | A holding with no governor and no visit from you for 30 days loses 5 prosperity a week |
+
+### 7.7 How it fits
+
+| Change | Where |
+|---|---|
+| New kind `camp`, a `tier` and `next` on every kind, the `TIERS` table | `data/holdings.js` |
+| `FoundingSite` (site), placement in the generator | `world/sites.js`, `world/worldplace.js` |
+| Found, upgrade and tier-down projects, free-founding rules, upkeep, raids on your holdings | new `world/founding.js`; `world/estates.js` (`t.work` of kind `tier`) |
+| The centre growing in place | `world/lots.js` (reserved block, centre replacement) |
+| AI tier changes, tension | `world/realms.js`; `world/brains.js` (raids, burning) |
+| Adding a holding at runtime | `addHolding` (R4), incremental territory (R7) |
+| Fief tab: "Upgrade to {tier}" with a checklist (✓/✗, like `needsText`) | `world/siege.js` `fiefBody`, `ui/town.js` |
+| Tier art for each people | `engine/pieces.js` (settler camp, stake), `engine/buildings.js` (hamlet centre, the city's grander citadel), `gallery.html?view=tiers` |
+| Settings and the settler start | `world/worldsettings.js`, `core/session.js` |
+
+---
+
+## 8. Generation
+
+### 8.1 Rules that hold for every stage
 
 - **Seeded and isolated:** each stage has its own stream (`seeded(hashInt(seed, STAGE))`) and noise salt. `Math.random` is never called.
 - **The same in every browser:** integer hashing, `+ − × ÷` and `Math.sqrt` only. No `Math.hypot`, `sin`, `cos`, `exp`, `pow`, `log` or `atan2`, whose last digit may differ between Chrome and Safari. A static check in `tests/structure.js` bans them in `world/worldgen.js` and `world/worldplace.js`.
 - **Pure stages** in plain functions. `genWorld(settings)` (the clamped settings of §4, seed included) returns a `WorldMap` plus `{holdings, hamlets, sacred, camps, lair, regions, rivers, crossings, graph}`.
-- **Retry:** a failed check (§7.14) retries its stage with a sub-seed, up to 8 times, then relaxes the target.
+- **Retry:** a failed check (§8.14) retries its stage with a sub-seed, up to 8 times, then relaxes the target.
 - **Staged across frames**, behind "Forging the world…" (§3.7).
 - **No visible shapes:** every boundary comes from **domain-warped** noise, and every stamp is replaced by a field with noisy falloff.
 
-### 7.2 Land shape (continent)
+### 8.2 Land shape (continent)
 
 | Step | How |
 |---|---|
 | Base | Warped fbm (4 octaves; wavelength ≈ 27% of the map's width) minus a smooth edge falloff whose threshold is itself warped, so the coast never follows the frame |
 | Threshold | Chosen per seed for 73–78% land |
-| Seas and lakes | Normal and Large: one inland sea or 2–3 big lakes; Huge: 2–3 inland seas. Smaller lakes come from drainage (§7.5) |
+| Seas and lakes | Normal and Large: one inland sea or 2–3 big lakes; Huge: 2–3 inland seas. Smaller lakes come from drainage (§8.5) |
 | Clean-up | Land under 40 tiles becomes sea; sea pockets under 12 tiles become lakes or land. No holding on an island unless it is bridged or reached by a ford |
 
-### 7.3 Elevation: ranges, highlands, escarpments
+### 8.3 Elevation: ranges, highlands, escarpments
 
 - **Ranges:** 3–5 mountain spines at Normal (5–7 at Large, 8–12 at Huge). Each is a smoothed random walk with a ridge profile `max(0, 1 − d/width)²` times ridged noise, giving peaks, saddles and passes.
 - **Highlands:** 2–4 broad plateaus (more at larger presets), terraced into 4 levels.
@@ -722,7 +896,7 @@ The world stores elevation in 4 terrace levels and cliff-edge bits (`WM.edge`: E
 - **Passes:** every 60 tiles of range keeps a saddle under 200.
 - **Escarpments:** steps of ≥ 1 terrace level running ≥ 4 tiles are cliff candidates (`WM.cliffs`), used in Phase 7.
 
-### 7.4 Temperature, moisture, climate and blends
+### 8.4 Temperature, moisture, climate and blends
 
 | Field | How |
 |---|---|
@@ -732,7 +906,7 @@ The world stores elevation in 4 terrace levels and cliff-edge bits (`WM.edge`: E
 | Blend weights (for art) | From `WM.temp`/`WM.moist`, piecewise linear over an **ecotone 3–6 tiles wide** |
 | Sub-biomes (art, flavour) | Moor, steppe, taiga, oasis, mangrove and fen, from the same fields |
 
-### 7.5 Drainage basins and rivers
+### 8.5 Drainage basins and rivers
 
 1. **Fill the pits** (priority flood from the sea, O(n log n)). Basins deeper than 3 levels after filling become **lakes**, with an outflow at the spill point. Shallower pits are flattened with a slight slope so water always drains.
 2. **Flow directions:** each land tile drains to its lowest of 8 neighbours. Stored as 3 bits in `WM.flow`.
@@ -748,7 +922,7 @@ The world stores elevation in 4 terrace levels and cliff-edge bits (`WM.edge`: E
    - **swamp:** streams and delta channels get `flood` and `dry` (wet and dry seasons);
    - **grass:** about 30% of streams, chosen by cold or high ground (`freeze`), mountain sources (`flood`) or low moisture (`dry`).
 
-### 7.6 Forests and deep forests
+### 8.6 Forests and deep forests
 
 Forest density per tile = biome base (grass 0.45, frost 0.35, swamp 0.5, desert 0) × moisture × warped patch noise.
 - **Forest:** over 0.55 is `T_FOREST`.
@@ -756,13 +930,13 @@ Forest density per tile = biome base (grass 0.45, frost 0.35, swamp 0.5, desert 
 - **Sparse edges:** 0.4–0.55 is `feat` SPARSE, painted as copses and lone trees.
 - **Rivers:** banks are 15% more wooded (gallery forests), including through grassland and desert, where palms line oasis rivers.
 
-### 7.7 Wild regions, chosen on purpose
+### 8.7 Wild regions, chosen on purpose
 
 - **Habitability:** climate comfort × flatness × water within 6 tiles × closeness to a coast or river.
 - **Cores:** pick cores where habitability is low (counts per preset), at least 50 tiles apart, one of each kind the land allows.
 - **Growth:** each core grows by a noise-warped flood to 1,500–6,000 tiles, stopping at great rivers and coasts and keeping 25 tiles from the best capital sites.
 
-### 7.8 Holdings, by rules
+### 8.8 Holdings, by rules
 
 **Suitability per people:**
 
@@ -805,11 +979,11 @@ Forest density per tile = biome base (grass 0.45, frost 0.35, swamp 0.5, desert 
 
 Rivers, regions and lords are named the same way ("the Coldwater", "the Greywood"). **Prices** come from kind, climate, resources and rivers (a mill: cheaper grain), with today's ammo and food rules. **Notes** come from templates.
 
-### 7.9 Natural villages
+### 8.9 Natural villages
 
 Hamlets are placed after the realms, in fringe land by their trade's ground. Fishing hamlets go on coasts, lakes **and rivers**. 60% are within 12 tiles of a road or river; the rest are linked by a track.
 
-### 7.10 Sacred places
+### 8.10 Sacred places
 
 They go in quiet spots:
 - ≥ 18 tiles from holdings and ≥ 14 from hamlets;
@@ -818,7 +992,7 @@ They go in quiet spots:
 
 Standing stones go on high moor; groves 3–6 tiles inside deep woods; monasteries on hills or lake shores ≥ 20 tiles from a road; altars deep in their climate. A monastery may stand on an island in a lake, linked by a ford.
 
-### 7.11 Roads, crossings and the way graph
+### 8.11 Roads, crossings and the way graph
 
 - **Pairs:** a spanning tree plus each holding's two nearest, over holdings and hamlets.
 - **Great roads** (capitals, towns, castles) and **tracks** (villages, hamlets, monasteries). Road ×1.3, track ×1.15.
@@ -839,7 +1013,7 @@ Standing stones go on high moor; groves 3–6 tiles inside deep woods; monasteri
 - **Crossings** are listed in `WM.crossings` with their kind, river, season rule and toll holding.
 - **The way graph** (§3.6) is built last, from the roads, crossings, river legs and chunk portals.
 
-### 7.12 Sites, camps, deposits, ruins, lairs
+### 8.12 Sites, camps, deposits, ruins, lairs
 
 | What | Rule |
 |---|---|
@@ -850,7 +1024,7 @@ Standing stones go on high moor; groves 3–6 tiles inside deep woods; monasteri
 | Deposits | Today's rule (ore on hills and mountains, fish by shores), now also **fish in rivers and lakes** |
 | Lair | §6.5 |
 
-### 7.13 Territories: natural borders
+### 8.13 Territories: natural borders
 
 Today's model stays: a tile goes to the holding with more of its travel-cost reach left there. Four changes:
 
@@ -872,7 +1046,7 @@ Today's model stays: a tile goes to the holding with more of its travel-cost rea
 
 Reach scales ×1.4 (village 10 → 14, castle 18 → 25), the same at every preset (realms get more holdings, not wider reach).
 
-### 7.14 Sanity and fairness checks
+### 8.14 Sanity and fairness checks
 
 These hold for **every allowed combination of settings** (§4.5). Counts scale with the settings; the rules don't.
 
@@ -889,9 +1063,9 @@ These hold for **every allowed combination of settings** (§4.5). Counts scale w
 | Climates | Each ≥ 6% of land | Climate |
 | Lair | ≥ 60 tiles from holdings, ≥ 25 from roads | Lair |
 | No emptiness | Outside wild cores, the 95th percentile distance to the nearest place of interest (holding, hamlet, sacred place, site, camp, crossing) is ≤ 25 tiles at every preset | Sites, hamlets |
-| No circles | The shape metrics of §13.2 | Climate, territory |
+| No circles | The shape metrics of §14.2 | Climate, territory |
 
-### 7.15 The classic seed (at Normal)
+### 8.15 The classic seed (at Normal)
 
 **The choice: the generator, anchored.** Seed `CLASSIC` at the **Normal** preset, with today's 37 holdings as anchors: names, races, kinds, realms, styles, prices and notes.
 
@@ -916,14 +1090,14 @@ These hold for **every allowed combination of settings** (§4.5). Counts scale w
 
 ---
 
-## 8. Data model and saves
+## 9. Data model and saves
 
-### 8.1 The world map
+### 9.1 The world map
 
 ```js
 WM = {                         // world/worldmap.js (R1)
   w, h, seed, gen: 'ashmark-1', classic, salt,
-  settings: {v:1, preset, w, h, seed, holdings, hamlets, sacred, wild, land, rivers, mountains, climate, seasonal, monsters, bandits, economy},  // §4.4, clamped
+  settings: {v:1, preset, w, h, seed, holdings, hamlets, sacred, wild, land, rivers, mountains, climate, seasonal, monsters, bandits, economy, sites, start},  // §4.4, clamped
   kind:   Uint8Array(w*h),     // T_OPEN 0, T_FOREST 1, T_HILL 2, T_WATER 3, T_ROAD 4, T_MOUNT 5, T_FORD 6
   clim:   Uint8Array(w*h),     // dominant climate 0-3 (rules)
   temp, moist: Uint8Array,     // 0-255 (art blends, sub-biomes)
@@ -947,14 +1121,14 @@ The **seasonal state is never stored**: `riverState(i)` reads the tile's mode bi
 
 **Holdings** keep `places.js`'s schema plus `realm`; hamlets add `kind:'hamlet', trade`; river ports `style:'riverport'`. **Sacred places** and the **lair** are sites. **Barges** are caravans with `water:true`.
 
-### 8.2 What changes in today's tile codes
+### 9.2 What changes in today's tile codes
 
 - **`T_FORD` = 6** is new: passable at ×0.5.
 - **Every table indexed by kind** gains an entry: `SPEEDMUL`, `LAND_COST`, `roadCost`, `REGION_NAMES`, `PX.WN_KIND`, `terrainRecipeOf`.
 - **River tiles** are `T_WATER` with a width in `river`. **Lakes** are `T_WATER` with `feat` LAKE. **Sea** is `T_WATER` with neither.
 - **`passable(t)` becomes `passableAt(i)`**, which also reads the season: frozen tiles and dry beds are walkable.
 
-### 8.3 What is saved
+### 9.3 What is saved
 
 **The seed plus the changes (D8):**
 
@@ -963,7 +1137,7 @@ save = {v: 3, …today's P, day, clock…,
   world: {v: 3,
     map: {gen: 'ashmark-1', settings, sum},     // the seed and every setting (§4.4)
     edits: [],                              // tile changes in play (later: a burnt bridge, a felled wood)
-    own: […Holding.saveRec()…],             // hamlets included
+    own: […Holding.saveRec()…],             // hamlets included; founded holdings with their base record, every holding with its tier (§7)
     sites, lords, caravans (barges included), …, seen (run lengths)
   }}
 ```
@@ -979,9 +1153,9 @@ The season comes from `G.day`, so it needs nothing extra.
 
 ---
 
-## 9. Scale, travel and density
+## 10. Scale, travel and density
 
-### 9.1 Figures against buildings and trees
+### 10.1 Figures against buildings and trees
 
 One building per 16-px tile; **a person is clearly smaller than a house.** The map gets **its own small templates**; battle figures stay 15 px.
 
@@ -1006,7 +1180,7 @@ One building per 16-px tile; **a person is clearly smaller than a house.** The m
 
 **Click targets stay large for touch:** pick rings (`add(o,11,6)`, `REACH` 14) keep their size; `opaqueBox` shrinks with the sprites.
 
-### 9.2 Slower, realistic movement
+### 10.2 Slower, realistic movement
 
 The owner: "player movement should be slower to make it realistic." The party should move like a band on foot, not a gliding token.
 
@@ -1060,22 +1234,22 @@ Together these give on screen 19.4 × (0.4/0.6) × 0.68 ≈ 8.8 px/s, and about 
 
 **Interim (D25): yes, apply it to today's map in Phase 1, with the smaller figures.** It needs only R5's lever, R13's cycles and the day length, not the procedural world. Slower movement and smaller figures belong together (a 10-px figure at today's 20 px/s looks hurried), and it lets the owner judge the pace before the world grows. On today's 224 × 160 map it gives Ashford → Sunreach ≈ 1.5 days (4.6 min at 1×, 1.1 at 4×), against 1.1 days today.
 
-### 9.3 Sight
+### 10.3 Sight
 
 `vis()` stays in pixels: figures shrink, tiles don't. Wild regions modify it (§6.2).
 
-### 9.4 Gameplay at scale: no empty travel
+### 10.4 Gameplay at scale: no empty travel
 
 | Lever | How |
 |---|---|
-| **Places every ~0.2 day** | The "no emptiness" check (§7.14): outside wild cores, 95% of land lies within 25 tiles of a place of interest at **every preset**. Places scale with area (hamlets, sacred places, sites, crossings) |
+| **Places every ~0.2 day** | The "no emptiness" check (§8.14): outside wild cores, 95% of land lies within 25 tiles of a place of interest at **every preset**. Places scale with area (hamlets, sacred places, sites, crossings) |
 | **Wild regions on purpose** | Empty of people but full of beasts, ruins and lairs; named, so crossing one is a decision |
 | **Fast lanes** | Roads ×1.3, tracks ×1.15, barges 2× a road downstream, passage at 4× time, Travel fast 8× |
 | **Rivers give the map shape** | Crossings are destinations: tolls, ferries, bridge fights, river bandits |
 | **Events** | Road events stay 0.32 a day (journeys now get more of them); `WILD_EVENTS` in wild regions; `RIVER_EVENTS` near rivers (ferryman, flooded ford, toll dispute, flash flood, thin ice) |
 | **Hamlets and sacred places** | Services and quests between realms: work, rest, blessings, recruits |
 
-### 9.5 AI ranges, caravans, patrols, economy
+### 10.5 AI ranges, caravans, patrols, economy
 
 All in `WORLD_SCALE` (R5, today's values first), then set in Phase 6 with `worldsim`:
 
@@ -1083,7 +1257,7 @@ All in `WORLD_SCALE` (R5, today's values first), then set in Phase 6 with `world
 |---|---|---|
 | `ai.lordSight`, `bandSight`, `monsterSight` | 90, 95, 70 px | unchanged |
 | `ai.dread` | 70 px | unchanged |
-| `ai.grace` (after a fight) | today's `encCool` | ×1.47 (§9.2) |
+| `ai.grace` (after a fight) | today's `encCool` | ×1.47 (§10.2) |
 | `ai.lordTarget` | nearest by straight line | nearest by **travel days** (`Router.days`), ≤ 3 days unless it is the last enemy holding |
 | `econ.caravanRange` | 10–90 tiles, cost /150 | ≤ 1.5 travel days (barge or road) |
 | `econ.resRange`, `homeRange` | 10, 24 | 10, 30 |
@@ -1097,7 +1271,7 @@ All in `WORLD_SCALE` (R5, today's values first), then set in Phase 6 with `world
 | `river.toll` | — | 2% of cargo; 1 gold per 5 people |
 | `river.ferry` | — | 2 gold per 5 people, 0.05 day |
 
-### 9.6 Population density per preset
+### 10.6 Population density per preset
 
 The settled land and its roads stay as busy as today at every preset; the wild is emptier of people and fuller of beasts. `DENSITY` (R5) holds these:
 
@@ -1117,7 +1291,7 @@ Bandits per 1,000 tiles of settled land and fringe stay about 0.9 at every prese
 
 ---
 
-## 10. AI on the bigger map
+## 11. AI on the bigger map
 
 - **Lords:**
   - choose targets and rest places by travel days;
@@ -1136,9 +1310,9 @@ Bandits per 1,000 tiles of settled land and fringe stay about 0.9 at every prese
 
 ---
 
-## 11. Art and UI
+## 12. Art and UI
 
-### 11.1 Biomes, rivers and seasons
+### 12.1 Biomes, rivers and seasons
 
 - **Ground:** per-pixel climate weights from `WM.temp`/`WM.moist` (bilinear, warped), with a **4 × 4 ordered dither** between the top two palettes across the ecotone.
 - **Intrusions** of the neighbour biome's small things, by weight.
@@ -1158,14 +1332,14 @@ Bandits per 1,000 tiles of settled land and fringe stay about 0.9 at every prese
 - **Season overlays** each frame, on the river tiles in view only (never a repaint): ice and snow on frozen rivers; brown high water and spread marsh on flooded ones; a dry stony bed and sandbars on dry ones.
 - **Engine:** through `PX.worldNaturePaint` with new spec fields (`temp`, `moist`, `elev`, `feat`, `flow`, `river`); the overlays are `PX.riverSeason(state, w, dir)`. Gallery: `?view=nature&blend=1`, `?view=rivers` (every width, delta, ford, ferry, toll bridge, rapids, and each seasonal state). The owner approves before integration.
 
-### 11.2 Soft territory borders
+### 12.2 Soft territory borders
 
 - **The line:** borders traced at tile corners from the smoothed `LAND`, smoothed (Chaikin, twice), drawn as a **1-px dotted line** at 60%.
 - **The tint:** fades inward over 2 tiles.
 - **Between one realm's holdings:** a faint line, on hover or in the Fief tab.
 - **Cost:** cached per chunk as an overlay, rebuilt when `LAND` changes.
 
-### 11.3 New places, through the engine
+### 12.3 New places, through the engine
 
 All new places are `PX` generators, previewed in `gallery.html`, and approved by the owner before they go into the game:
 
@@ -1181,7 +1355,7 @@ All new places are `PX` generators, previewed in `gallery.html`, and approved by
 | Wild ruins | `PX.site({type:'ruins'})`, new variants |
 | Dragon's lair (drawn once found) | `PX.site({type:'lair'})` |
 
-### 11.4 UI
+### 12.4 UI
 
 - **New game:** the world settings screen (§4): presets, seed, size, the Advanced fold-out and a preview. Then the "Forging the world…" screen with progress.
 - **Esc menu:** a **World** page with the seed, the world code (Copy), the settings and the final counts.
@@ -1190,7 +1364,7 @@ All new places are `PX` generators, previewed in `gallery.html`, and approved by
 - **HUD:** date and season ("Day 17 · Summer"), region name, the Travel fast toggle.
 - **Ports:** a Take passage panel listing destinations, days and price.
 
-### 11.5 Depth sorting and see-through (built separately, earlier)
+### 12.5 Depth sorting and see-through (built separately, earlier)
 
 - **Trees and buildings stay painted** in the chunk.
 - **Overdraw what stands in front:** for each figure in view, the sprites in front of it (their box overlaps the figure, their foot is lower on screen) are drawn again over it: in full over others, at 0.4 alpha over your own party (`PROPFADE`, as in battle). That is about 2–6 sprites per figure.
@@ -1199,7 +1373,7 @@ All new places are `PX` generators, previewed in `gallery.html`, and approved by
 
 ---
 
-## 12. The battle link
+## 13. The battle link
 
 `terrainAt(x,y,env)` keeps its contract (tile, 8 neighbours, climate, water, bridges, roads, elven towns). New reads are optional and null-safe:
 
@@ -1221,9 +1395,9 @@ All new places are `PX` generators, previewed in `gallery.html`, and approved by
 
 ---
 
-## 13. Tests and balance
+## 14. Tests and balance
 
-### 13.1 Suites that assume today's map
+### 14.1 Suites that assume today's map
 
 | Suite | Assumes | Plan |
 |---|---|---|
@@ -1232,29 +1406,31 @@ All new places are `PX` generators, previewed in `gallery.html`, and approved by
 | `routes` | Willowmere island; bridges ≤ 3 | Kept by the classic hints |
 | `worldnature` | Counts; paint < 6,000 ms | Per-chunk time; shares |
 | `ships` | Ports share seas | Classic hint; rivers now join waters |
-| `pace`, `flee`, `campbands`, `fights` | Today's speeds and grace | Ratios unchanged; distances after grace checked (§9.2) |
+| `pace`, `flee`, `campbands`, `fights` | Today's speeds and grace | Ratios unchanged; distances after grace checked (§10.2) |
 | 46 files naming holdings ("Ashford" 109 times), 15 indexing `TOWNS[0..2]` | Names, kinds, races, realms, order | **The classic world keeps them**; a few literal coordinates adapt (`captives`, `battletypes`, `controlaudit`, `visual/shot`) |
 | `armygroups` | v1 rejected | v2 rejected |
-| `visual/perf`, `visual/worldsim` | Timings, report | Re-baselined (§13.4) |
+| `visual/perf`, `visual/worldsim` | Timings, report | Re-baselined (§14.4) |
 | Battle suites | Lab fields, terrain off | Unchanged |
 
 **Harness:** `tests/harness.js` installs the classic world (Normal), as it sets `TERRAIN.on=false`.
 
-### 13.2 New suites
+### 14.2 New suites
 
 | Suite | Checks |
 |---|---|
 | `tests/worldprint.js` (Phase 0) | The eight world hashes |
 | `tests/worldgen.js` | Determinism per preset (Normal and Large in the sweep; Huge in `visual/worldscale`); different seeds differ; no `Math.random`; the banned-function check; time per stage |
-| `tests/worldsanity.js` | §7.14 over 30 seeds at Normal and 10 at Large |
+| `tests/worldsanity.js` | §8.14 over 30 seeds at Normal and 10 at Large |
 | `tests/worldshape.js` | No-circle metrics (next table) |
 | `tests/rivers.js` | Never uphill; ends in water; width follows flow; deltas fan; navigable continuity and rapids; crossing spacing; every holding reachable with all seasonal crossings closed; per-climate flags (frost: all but great rivers; desert wadis; swamp streams; grass about 30% of streams); `riverState` by season; fords closed in flood; ice walkable; dry beds walkable; tolls paid and refused; ferry; passage times up- and downstream; barges saved and robbed like caravans |
 | `tests/router.js` | Two-level paths equal or within 5% of a full A* on 200 random pairs; the cache; season edge toggles; time per query by preset |
-| `tests/worldscale.js` | Map person ≤ 10 px tall, rider ≤ 14, all shorter than a house; on-screen speeds of §9.2 within ±5%; frames by distance; the grace gap |
+| `tests/worldscale.js` | Map person ≤ 10 px tall, rider ≤ 14, all shorter than a house; on-screen speeds of §10.2 within ±5%; frames by distance; the grace gap |
 | `tests/worldchunks.js` | Stitched equals eager; LRU cap; slice budget; jumps |
 | `tests/lod.js` | A far party reaches the same holding on the same day (±0.1 day) as a near one; far meetings resolve |
 | `tests/worldsettings.js` (Phase 2b) | **Determinism:** the same settings and seed give the same checksum and starting population. Changing any map setting changes the map. Monsters and bandits change only populations. **World code** round trip, including a hand-edited code. **Clamps:** too many holdings for the size, custom sizes snapped to 32, aspect, phone area, Vast wild with Crowded holdings. **Every preset** generates and passes `worldsanity` (Huge in the visual report). **Corner combinations** (each setting at its minimum and maximum, plus the worst pairs: Huge with maximum holdings, More sea and Vast wild; Normal with Many hamlets and Few wild) over 3 seeds each. **The preview matches the real map:** land and water agree on ≥ 95% of sketch points, climate on ≥ 90%, capitals within 2 sketch pixels. **The screen:** header, `nav()` bar, Esc, and fit at 844 × 390 |
 | `tests/hamlets.js`, `tests/sacred.js` | Phase 4 rules |
+| `tests/founding.js` (Phase 4b) | **Sites:** counts per preset and setting; placement rules; reachable in every season. **Free founding:** each rule refuses with its reason. **Founding** a camp takes 6 soldiers, the gold and the materials; the camp is yours, on the map, in `TOWNS` and with land. **Tiers:** every upgrade's requirements; the centre grows in place; houses and estates follow; tier-down by hunger and by sacks; a lost camp frees its site; never more than one city per realm. **Saves:** a founded, upgraded holding survives a reload byte for byte. **Raids:** grace days, then raids; you are told. **Tension:** honour changes. **A companion governor** adds Stewardship. **The settler start** passes its fairness rules on 30 seeds per preset |
+| `tests/tiers.js` (Phase 4b) | AI holdings grow and shrink by the rules (with `TIERS.ai` on); floors and caps; off in the harness, so classic kinds never change under the other suites |
 | `tests/visual/worldscale.js` (report) | Per preset: generation time and peak memory, chunk paint, router, `updateWorld`, daily jobs, save size plain and gzipped |
 
 **No-circle metrics:**
@@ -1268,7 +1444,7 @@ All new places are `PX` generators, previewed in `gallery.html`, and approved by
 | Biome boundary in straight axis-aligned runs > 6 tiles | ≤ 5% |
 | Median ecotone width | 2–6 tiles |
 
-### 13.3 Balance targets
+### 14.3 Balance targets
 
 | Measurement | Target |
 |---|---|
@@ -1281,7 +1457,7 @@ All new places are `PX` generators, previewed in `gallery.html`, and approved by
 | *Hold the bridge* share of world battles | ≤ 25% |
 | River trade share | 20–40% of shipments where two ports share water |
 
-### 13.4 Re-baselining `worldsim`
+### 14.4 Re-baselining `worldsim`
 
 `worldsim` advances lords by 12 units of `d` a day, while play gives 72, so the report runs lords 6× slow.
 1. **Before Phase 1:** fix it to `DAY_SECONDS × WORLD_PACE` and record a baseline on today's map.
@@ -1292,18 +1468,19 @@ New rows: hamlets annexed, sieges, days per march, caravan and barge trips, cros
 
 ---
 
-## 14. Phased plan
+## 15. Phased plan
 
-Agents are split by files that don't overlap (5 at most). **The `WM` shape (§8.1) is the contract.** The game stays playable after every phase.
+Agents are split by files that don't overlap (5 at most). **The `WM` shape (§9.1) is the contract.** The game stays playable after every phase.
 
 | Phase | Scope | Agents and files | Effort |
 |---|---|---|---|
-| **0. Refactors first** (§2) | R1–R15, behaviour-preserving, built for Huge; the loading overlay (§5) | **Wave 1.** **A:** `world/worldmap.js` (new), `world/map.js`, `world/resources.js`, `world/lots.js`, `world/fog.js`, `world/ships.js` (`WATER_ID` reset), `core/core.js`, `core/session.js`, `main.js`, both HTML script lists, `tests/structure.js`, `tests/worldprint.js` (first). **B:** `data/places.js`, `data/holdings.js`, `world/realms.js`, `data/progression.js`, `world/companions.js`. **C:** `engine/worldnature.js`, `gfx/worldart.js`, `gfx/sprites.js`, `tests/worldnature.js`, `tests/worldchunks.js`. **D:** `data/world.js` (new), `world/brains.js`, `world/caravans.js`, `world/monsters.js`, `data/critters.js`, `world/critters.js`, `world/refugees.js`, `world/patrols.js`, `world/folk.js`, `world/estates.js`, `world/reputation.js`, `world/events.js`, `world/siege.js`, `data/economy.js`. **Battle agent, alongside:** REFACTOR items 11 and 13. **Wave 2.** **A:** `world/router.js` (new), `world/world.js` (LOD tiers, `walk`'s `o.wd`), `world/sites.js`/`world/quests.js` reach calls, `tests/lod.js`. **E:** `world/territory.js`, `world/fights.js`, `world/parties.js`, `gfx/render.js` (also R14's `frame()` loading mode, and dropping the lazy ground paint once R15 paints it at setup). **B:** `core/save.js`, `core/session.js`, `ui/loading.js` (new), its `style.css` section, `tests/loading.js`, `tests/visual/loadtimes.js` (new). **D:** the `ships.js` and `territory.js` constants. **Battle agent, after items 11 and 13:** R15 (`battle/setup.js`, `engine/ground.js`) | **L** (16–18 sessions) |
+| **0. Refactors first** (§2) | R1–R17, behaviour-preserving, built for Huge; the loading overlay (§5); the chunked battle ground; the `BattleSite` hand-off | Four waves (0–3); every agent, file list, dependency and check is in **§15.1** below | **L** (18–21 sessions) |
 | **1. Figures shrink, travel slows** (depth sorting is separate and may go first) | Map templates (people, riders, beasts, critters, carts, ships); host layout; frames by distance; `DAY_SECONDS` 180, `WORLD_PACE` 0.4, `move` 0.68; time controls 1/2/4× and Travel fast 8×; the grace retune; `worldsim` fix and baselines. **On today's map** | **A:** `gfx/people.js`. **B:** `world/critters.js`, `engine/beasts.js`, gallery. **C:** `world/caravans.js` (art), `world/ships.js` (`shipSprite`). **D:** `gfx/render.js` (host, frames), `core/core.js` (day, pace), `data/world.js` (`move`, grace), `ui/input.js` and `Ashmark.html` (speeds), `tests/worldscale.js`, `tests/visual/worldsim.js` | **M** |
 | **2. The generator, presets, river systems, the classic seed** | `genWorld` stages; presets; drainage basins, widths, deltas, rapids, navigable flags, permanent crossings (bridges, fords, ferries), river towns and mills; holdings, names, roads, camps; the way graph and the two-level router; streaming at every preset; save v3, gzip, map identity; **the settings object (§4.4) as the generator's one input, with every setting and clamp working in code** (the contract for 2b); a plain New game choice (Classic or Random at a size) until 2b; "Forging the world…" and "Returning to…" through the loading overlay (`genWorld` yields per stage; load and new game as steps), the full map, the minimap; battle river width and world bridges. `WORLD.gen` flag until accepted | **A:** `world/worldgen.js` (new: terrain, drainage, rivers). **B:** `world/worldplace.js` (new: holdings, names, roads, crossings, camps, classic anchors), `data/places.js` (hints). **C:** `core/save.js`, `ui/menu.js`, `ui/map.js` (new), `tests/harness.js`, `tests/armygroups.js`. **D:** `world/router.js` (graph, A\*), `gfx/worldart.js` (rivers, prefetch), `gfx/render.js` (minimap). **E:** `battle/terrain.js` and `battle/encounters.js` (width, bridges, fords), `tests/worldgen.js`, `tests/worldsanity.js`, `tests/router.js`, suite adaptations | **L** (≈ 15 sessions) |
 | **2b. World settings screen** (§4) | The New game screen: presets (Classic, Normal, Large, Huge, Wild Frontier, Crowded Realms), seed and world code, size and custom size, the Advanced fold-out, live clamps with notes, the quick sketch preview and the optional full preview, the World page in the Esc menu, the save list line; seeded starting population | **A:** `ui/worldsetup.js` (new), its section of `style.css`, `ui/menu.js` (the New game order). **B:** `world/worldgen.js` (the sketch pass: coarse sampling, coarse drainage and holdings). **C:** `world/worldsettings.js` (new: defaults, presets, clamps, world code), `core/save.js` and `ui/ui.js` (save line), the Esc menu's World page. **D:** `core/session.js` (seeded `begin` spawns), `tests/worldsettings.js` | **M** |
 | **3. Biomes and borders blend** | Climate blends, ecotones, mixed trees, sparse edges; territory barrier costs, grain, smoothing; soft borders | **A:** `world/territory.js`. **B:** `engine/worldnature.js`, gallery. **C:** `gfx/worldart.js`. **D:** `tests/worldshape.js` | **M** |
 | **4. New places** | Wild regions; hamlets; sacred places; the dragon's lair and clues; the art | **A:** `world/worldgen.js` (regions), `world/map.js` (`regionAt`), `world/world.js` (survive, spawns), `data/world.js` (`WILD`). **B:** `data/holdings.js`, `world/realms.js`, `world/brains.js` (`claim`), `ui/town.js`. **C:** `world/sites.js`, `world/quests.js`, `world/events.js`. **D:** `engine/buildings.js`, `engine/pieces.js`, `engine/gallery.html`. **E:** `world/monsters.js`, `tests/hamlets.js`, `tests/sacred.js` | **L** |
+| **4b. Founding your own holding** (§7) | Founding sites and free founding; the shared tier model (camp, hamlet, village, town, city or castle) with `TIERS`; upgrade and tier-down projects; the centre growing in place; your realm from the first camp (tension, governors, protection of hamlets); AI tier changes; raids and upkeep; the settler start and the two settings; tier art per people | **A:** `data/holdings.js` (`camp`, `tier`/`next` in use, `TIERS`), `world/lots.js` (reserved block, centre replacement). **B:** `world/founding.js` (new), `world/estates.js` (tier projects), `world/siege.js` (`fiefBody` upgrade row), `ui/town.js`. **C:** `world/sites.js` (`FoundingSite`), `world/worldplace.js` (sites), `world/worldsettings.js`, `core/session.js` (settler start). **D:** `engine/pieces.js` (settler camp, stake), `engine/buildings.js` (hamlet centre, city citadel variant), `engine/gallery.html` (`?view=tiers`). **E:** `world/realms.js` (tension, AI tiers), `world/brains.js` (raids, burning), `world/companions.js` (governors), `tests/founding.js`, `tests/tiers.js` | **L** |
 | **5. Living rivers** | The calendar and `SEASON_PROFILE`; seasonal rivers (freeze, flood, dry, flash) by flag and climate; season overlays and the all-year look; crossing toggles; toll bridges and ferries' fees; barges (`BargeParty`), passage, river trade; river bandits; lords holding crossings; battle water by season; `RIVER_EVENTS` | **A:** `world/calendar.js` (new), `world/map.js` (`passableAt`, `riverState`), `world/world.js` (`dayTick` hook, HUD date). **B:** `world/ships.js` (river water, passage), `world/caravans.js` (`BargeParty`, tolls), `world/economy.js` (toll income). **C:** `battle/terrain.js`, `battle/encounters.js` (season water, ford ambush). **D:** `engine/worldnature.js` (`PX.riverSeason`), `engine/pieces.js` (barge, toll house, ferry), `gfx/worldart.js` (overlays). **E:** `world/brains.js` (river bands, `hold`), `world/events.js`, `tests/rivers.js` | **L** |
 | **6. Retune per preset** | `WORLD_SCALE` and `DENSITY` values; AI by travel days; `worldsim` per preset; `visual/worldscale`; wiki tables | **A:** `data/world.js`. **B:** `tests/visual/worldsim.js`, `tests/visual/worldscale.js`, `tests/visual/perf.js`. **C:** `world/brains.js`, `world/realms.js`. **D:** `wiki.html`, `README.md` | **M** |
 | **7. World cliffs** | Escarpments into `WM.edge` with passes; edge-aware movement, roads, territory and router; faces in the art and depth index; battles take their cliffs from the world | **A:** `world/worldgen.js`, `world/map.js`, `world/router.js`. **B:** `engine/worldnature.js`, `gfx/worldart.js`. **C:** `battle/terrain.js`, `battle/encounters.js`. **D:** `tests/worldcliffs.js`, `tests/fieldvariety.js` | **M–L** |
@@ -1315,51 +1492,128 @@ Agents are split by files that don't overlap (5 at most). **The `WM` shape (§8.
 - **2b:** you choose your world on the settings screen.
 - **3:** looks natural.
 - **4:** worth exploring.
+- **4b:** found your own holding and grow it.
 - **5:** the rivers come alive.
 - **6:** balanced.
 - **7:** cliffs.
 
-Phases 2b, 3, 4 and 5 can overlap on different files (2b needs only Phase 2's settings contract). Phase 1 can run alongside Phase 0's wave 2 once R5 and R13 have landed. Settings that touch Phase 4 and 5 content (hamlets, sacred places, wild land, seasonal rivers, river bands) work in code from Phase 2 and show their effect as that content lands.
+Phases 2b, 3, 4 and 5 can overlap on different files (2b needs only Phase 2's settings contract). Phase 4b follows Phase 4 (it needs the hamlet kind and its art) and can overlap Phase 5. Phase 1 may start once Phase 0's wave 2 has landed (it needs R5 and R13), except its `gfx/render.js` work, which waits for R16 (wave 3) to land. Settings that touch Phase 4, 4b and 5 content (hamlets, sacred places, wild land, founding sites, the settler start, seasonal rivers, river bands) work in code from Phase 2 and show their effect as that content lands.
 
-**Effort:** 0 L, 1 M, 2 L, 2b M, 3 M, 4 L, 5 L, 6 M, 7 M–L: roughly 48–58 agent sessions, with up to 5 in parallel.
+**Effort:** 0 L, 1 M, 2 L, 2b M, 3 M, 4 L, 4b L, 5 L, 6 M, 7 M–L: roughly 58–68 agent sessions, with up to 5 in parallel.
+
+### 15.1 Phase 0 launch plan
+
+**Rules for every agent:**
+- **Files:** edit **only** the files in your "may edit" list. Every other file is off limits; if you need a line in one, ask its owner through the coordinator. **The script lists** (`Ashmark.html`, `wiki.html`, and the load order in `tests/structure.js`) belong to agent A for all of Phase 0: send A the line for any new file.
+- **Behaviour:** every refactor preserves behaviour. Nothing may change a hash, fingerprint or test result, except where a row below says so (R16's zoomed-out huge forests).
+- **Done means:**
+  1. the full sweep `.\tests\run-tests.ps1 -Parallel 4` has no failure that the baseline did not have (known before Phase 0: `lots` "its realm builds it another house" at `-Seed 1` and `-Seed 2`; `monsters` "spiders web your fighters" unseeded);
+  2. `.\tests\run-tests.ps1 -Suites worldprint -Seed 1` shows all eight world hashes equal to the baseline;
+  3. **the battle fingerprints** are byte-identical: `-Suites battlesetup,battlecommands,actorrules,attackrules,battleresolution`, `-Suites rts -Seed 1,2,44`, and `visual/battleperf` (`fp`) and `visual/moraleaudit` run by name;
+  4. the refactor's own checks in the table at the end.
+- **Merging:** each agent's diff is reviewed and merged on its own. A wave starts only when the previous one is merged and green.
+- **Baseline:** the coordinator commits the current working tree before wave 0, so the baseline is a known commit.
+
+**Wave 0: the safety net (alone, first)**
+
+| Agent | Refactor | May edit | Then |
+|---|---|---|---|
+| **W** | Step 0.0, world fingerprints (§2.0) | `tests/worldprint.js` (new) | Records the eight hashes as constants in the suite (as `battlesetup` keeps its fingerprints) from the baseline commit, at `-Seed 1`. Runs green twice in a row. Nothing else starts until it is merged |
+
+**Wave 1** (5 agents in parallel, after wave 0)
+
+| Agent | Refactors | May edit | Must not edit (closest neighbours) | Depends on |
+|---|---|---|---|---|
+| **A** | **R1, R2, R3** | `world/worldmap.js` (new), `world/map.js`, `world/resources.js`, `world/lots.js` (allocation of `OCC`/`LOT` only), `world/fog.js`, `world/ships.js` (`WATER_ID` reset only), `world/territory.js` (`LAND` allocation and Int16 only), `core/core.js` (`MW`/`MH` as `let`), `core/session.js` (`useWorld`; the `capitalOf`/`startHolding` call from B), `main.js` (the same), the script lists, `tests/worldprint.js` (R3's "begin twice" check) | `data/*`, `gfx/*`, `engine/*`, `battle/*`, all other `world/*` | Wave 0 |
+| **B** | **R4** (and R5's companion radii, from D's table) | `data/places.js`, `data/holdings.js`, `world/realms.js`, `data/progression.js`, `world/companions.js` | `core/*`, `main.js` (send A the two call sites), `world/sites.js`, `world/quests.js` (A, wave 2) | Wave 0 |
+| **C** | **R6** | `engine/worldnature.js`, `engine/gallery.html` (its nature view), `gfx/worldart.js`, `gfx/sprites.js` (`worldCv` kept as a stitched compatibility canvas; `miniCv` lazy, built from tile data), `tests/worldnature.js`, `tests/worldchunks.js` (new) | `gfx/render.js` (E switches the blit in wave 2), `world/critters.js` (D removes `initCritters`' `worldCv()` call) | Wave 0 |
+| **D** | **R5**, except `core.js`, `ships.js` and `territory.js` | `data/world.js` (new), `world/brains.js`, `world/caravans.js`, `world/monsters.js`, `data/critters.js`, `world/critters.js` (also dropping the `worldCv()` call), `world/refugees.js`, `world/patrols.js`, `world/folk.js`, `world/estates.js`, `world/reputation.js`, `world/events.js`, `world/siege.js`, `world/world.js` (the player's step, `survive`, spawns), `data/economy.js` | `core/core.js`, `world/ships.js`, `world/territory.js`, `battle/*` (flee odds stay as they are) | Wave 0 |
+| **Battle** | REFACTOR **items 11 and 13** | `js/battle/*`, `ui/battlehud.js`, `ui/moraleicons.js`, their tests | `engine/*`, `gfx/*`, `world/*`, `data/*` | Wave 0 |
+
+**Wave 2** (after wave 1 is merged)
+
+| Agent | Refactors | May edit | Must not edit | Depends on |
+|---|---|---|---|---|
+| **A** | **R10, R11, R12, R13**, and R5's `SHIP_CAP` | `world/router.js` (new), `world/map.js`, `world/world.js` (tiers in the update loops, `walk`'s `o.wd`, fights in `worldObjects()` for E), `world/parties.js` (`tier`, `frameOf`), `world/brains.js`, `world/monsters.js`, `world/critters.js`, `world/ships.js` (tiers, `SHIP_CAP` from `DENSITY`), `world/sites.js`, `world/quests.js`, `tests/lod.js` (new), the script lists | `gfx/*`, `core/save.js`, `world/territory.js`, `world/fights.js` | R1–R3, R4, R5 |
+| **B** | **R9, R14** | `core/save.js`, `data/holdings.js` (`saveRec`/`loadRec`), `core/session.js` (`begin` as steps), `ui/loading.js` (new), its section of `style.css`, `tests/loading.js` (new), `tests/visual/loadtimes.js` (new), `tests/harness.js` (the `LOADING.sync` line) | `gfx/render.js` (E adds the `frame()` loading mode), `world/*` | R4, R1–R3 |
+| **E** | **R7, R8**, R5's territory constants, the world drawing switch | `world/territory.js`, `world/fights.js`, `gfx/render.js`: **world parts only** (`drawWorld`: `WorldArt.draw` in place of the `worldCv()` blit, the low-resolution minimap, a `MAP_LAYER` table by `mapKind` for the minimap's order) and `frame()` (R14's loading mode); `tests/territory.js` (the incremental-equals-full check) | The battle drawing in `render.js` (`drawBattle` and what it calls: R16, wave 3), `world/world.js` (A adds fights to `worldObjects()`) | R1, R6, R14's API (from B) |
+| **D** | R5's `core.js` part | `core/core.js` (`MAP_DENS` and the caps it makes, now from `DENSITY`) | everything else | R1 (A has left `core.js`) |
+| **Battle** | **R15** | `battle/setup.js`, `engine/ground.js` (`PX.battleGroundSteps`), `tests/groundhash.js` (new: the 24-field pixel hashes), `tests/visual/fieldperf.js` | `gfx/render.js`: the lazy `B.ground ||= …` there becomes a no-op once setup paints the ground, so it needs no edit; `world/*` | Items 11 and 13; R14's API |
+
+**Wave 3** (after wave 2 is merged)
+
+| Agent | Refactors | May edit | Must not edit | Depends on |
+|---|---|---|---|---|
+| **A** | **R17** | `world/worldmap.js` (`battleSite`), `battle/terrain.js`, `battle/setup.js` (`battleEnv`, `groundSpec`, `fieldSize`), `battle/encounters.js`, `battle/lab.js` (`labSite`), `data/world.js` (`WORLD_SCALE.battle`), `tests/battlesite.js` (new) | `engine/*`, `gfx/*` | R1, R15 |
+| **Battle** | **R16** | `engine/ground.js` (`PX.battleGroundPaint`), `gfx/render.js`: **battle parts only** (`drawBattle`, `drawInView`, `lodStep`, `battleEnts`), `gfx/vfx.js` (`goreLayer`), `ui/battlehud.js` (`rangeLayer`), `gfx/worldart.js` (`paintArena`), `gfx/sprites.js` (`arenaFor`), `battle/camera.js` (`drawMiniField`), `tests/groundhash.js`, `tests/visual/fieldperf.js` | `battle/setup.js`, `battle/terrain.js` (A) | R15 |
+
+**Verification per refactor**, on top of the "done" checks above (W1–W8 are the world hashes of §2.0; "battle fp" means the fingerprint suites):
+
+| Refactor | Suites that must pass | World hashes | Battle fp |
+|---|---|---|---|
+| Step 0.0 | `worldprint` green twice | records W1–W8 | — |
+| R1 | `mapview`, `territory`, `routes`, `worldnature`, `fog`, `ships`, `lots`, `estates`, `structure` | W1–W8 | unchanged |
+| R2 | `mapview`, `routes`, `resources` | W1, W2, W5 | unchanged |
+| R3 | `worldprint` "begin twice equals a fresh page" | W1–W8 | unchanged |
+| R4 | `holdings`, `economy`, `factions`, `companions`, `session`, `reputation`, `quests`, `estates` | W3, W7 | unchanged |
+| R5 | `pace`, `flee`, `caravanparty`, `brains`, `monsters`, `critters`, `refugees`, `patrols`, `events`, `campbands`, `ships`, `fights` | W7, W8 | unchanged |
+| R6 | `worldnature`, `worldchunks` (stitched equals today's canvas; streamed equals eager), `visual/perf` (map blit no slower) | W5, W6 | unchanged |
+| R7 | `territory` (incremental equals full after 200 random changes) | W4, W6 | unchanged |
+| R8 | `clicks`, `fights`, `worldobject`, `worldobjects2`, `mappolish` | W6 | unchanged |
+| R9 | `armygroups`, `session`, `captives`, `stay` | W7 | unchanged |
+| R10 | `sites`, `campbands` | W7 | unchanged |
+| R11 | `routes`, `mapview`, `sites`, `quests`, `brains`, `patrols`, `caravanparty` | W8 | unchanged |
+| R12 | `lod` (infinite radius: identical), `visual/perf` | W8 | unchanged |
+| R13 | `mappolish` | W6, W8 | unchanged |
+| R14 | `loading` (shows and hides, threshold, monotonic, error, stall, sync equals async), `session`, `armygroups` | W1–W8 with sync on | unchanged, sync and async |
+| R15 | `groundhash` (24 fields), `terrain`, `routing`, `fieldvariety`, `roads`, `battletypes`, `battlesetup`; `Math.random` count before the first frame | — | unchanged |
+| R16 | `groundhash` at zoom 1 (blood and reach included), `fieldvariety`, `terrain`, `battleui`, `concealment`, `battlefog`; `visual/fieldperf` reports 25–35 MB on a huge field | — | unchanged |
+| R17 | `battlesite` (every classic tile: same recipe, code, river, edges, road, cover), `fieldvariety`, `terrain`, `battletypes`, `aiterrain`, `routing`, `roads`, `battlesetup` | — | unchanged |
 
 ---
 
-## 15. Owner decisions (with recommendations)
+## 16. Owner decisions
 
-**Changed** marks a decision revised in this version; **New** marks one added.
+**All 39 decisions were approved by the owner on 2026-10-18, as recommended.** Each row gives the decision and what was decided.
 
-| # | Decision | Recommendation |
+| # | Decision | Decided (as recommended, 2026-10-18) |
 |---|---|---|
 | D1 | Continent or archipelago? | **One continent** with a ragged coast, inland seas or big lakes, a few small isles. |
-| D2 **(changed)** | World size? | **A new-game option with presets:** **Normal** 448 × 320 (phones' default), **Large** 640 × 448 (desktop default), **Huge** 1024 × 768. Everything is built for Huge from Phase 0. The practical ceiling is about 1024 × 768 (§3.9). |
-| D3 **(changed)** | The classic seed? | **The generator with today's 37 holdings as anchors, fixed at Normal**: Normal is designed for 37 realm holdings, is the phone default and is the fastest for tests. |
-| D4 **(changed again)** | What does New game offer? | **A world settings screen** (§4) after race and background. Presets: Classic, Normal, Large, Huge, Wild Frontier, Crowded Realms. Seed and world code, and size (or custom within limits). An **Advanced** fold-out with the other settings. A quick preview. Then "Forging the world…". Classic is a preset locked at Normal with today's holdings. |
+| D2 | World size? | **A new-game option with presets:** **Normal** 448 × 320 (phones' default), **Large** 640 × 448 (desktop default), **Huge** 1024 × 768. Everything is built for Huge from Phase 0. The practical ceiling is about 1024 × 768 (§3.9). |
+| D3 | The classic seed? | **The generator with today's 37 holdings as anchors, fixed at Normal**: Normal is designed for 37 realm holdings, is the phone default and is the fastest for tests. |
+| D4 | What does New game offer? | **A world settings screen** (§4) after race and background. Presets: Classic, Normal, Large, Huge, Wild Frontier, Crowded Realms. Seed and world code, and size (or custom within limits). An **Advanced** fold-out with the other settings. A quick preview. Then "Forging the world…". Classic is a preset locked at Normal with today's holdings. |
 | D5 | Hamlets' politics? | **Independent and slowly absorbed**: trade, recruit and jobs; bands raid them; realms annex slowly; you win them by protection; raiding one costs honour, not war. |
 | D6 | Sacred places' effects? | **Modest weekly blessings, monastery services, sanctuary**; no desecration in v1. |
 | D7 | Old saves? | **v3 with the generator**; v2 refused (no migration). |
-| D8 **(changed)** | What is saved, and how? | **The seed plus changes** with a checksum, **gzipped** (`CompressionStream`, falling back to plain JSON). Huge is not offered without gzip. |
-| D9 **(changed)** | Travel and time? | **Slower and realistic:** a band on foot 8.9 px/s on screen (today 19–21), 25 km a day; road 32 km; mounted 37–49 km; barge 65 km downstream. **The day lasts 180 s** (was 120), with `WORLD_PACE` 0.4, so timers per game day are unchanged. Walk cycles follow distance. Long trips use 4× and **Travel fast 8×** (D23), roads, and passage by boat. |
-| D10 **(changed)** | Realm holdings? | **Per preset:** Normal and classic 37 (today's); Large about 55; Huge about 90, with lords 20 / 30 / 45 (generated names past each realm's four). Still five realms. |
+| D8 | What is saved, and how? | **The seed plus changes** with a checksum, **gzipped** (`CompressionStream`, falling back to plain JSON). Huge is not offered without gzip. |
+| D9 | Travel and time? | **Slower and realistic:** a band on foot 8.9 px/s on screen (today 19–21), 25 km a day; road 32 km; mounted 37–49 km; barge 65 km downstream. **The day lasts 180 s** (was 120), with `WORLD_PACE` 0.4, so timers per game day are unchanged. Walk cycles follow distance. Long trips use 4× and **Travel fast 8×** (D23), roads, and passage by boat. |
+| D10 | Realm holdings? | **Per preset:** Normal and classic 37 (today's); Large about 55; Huge about 90, with lords 20 / 30 / 45 (generated names past each realm's four). Still five realms. |
 | D11 | Wild regions' harshness? | **Moderate:** slower travel, sight changes, survival ×1.5 in wastes, beasts ×3 and stronger, no bandits, roads go round. |
 | D12 | The dragon's lair? | **Seen only from 2 tiles**, off the minimap until found; clues from monasteries, taverns and stones; the dragon flies home at dawn. |
-| D13 **(changed)** | Rivers? | **Crossed only at bridges, fords and ferries**; crossings are choke points. **Big rivers outside frost lands never change, and great rivers never change anywhere.** Seasons affect only rivers flagged by the generator from size and climate: in frost lands everything but great rivers (freezes in winter, thaw floods in spring); desert wadis (dry, with 2–3-day flash floods); swamp streams (wet and dry seasons); about 30% of temperate streams. Seasonal rivers have their own look all year. |
+| D13 | Rivers? | **Crossed only at bridges, fords and ferries**; crossings are choke points. **Big rivers outside frost lands never change, and great rivers never change anywhere.** Seasons affect only rivers flagged by the generator from size and climate: in frost lands everything but great rivers (freezes in winter, thaw floods in spring); desert wadis (dry, with 2–3-day flash floods); swamp streams (wet and dry seasons); about 30% of temperate streams. Seasonal rivers have their own look all year. |
 | D14 | Cliffs on the world map? | **Sheer escarpments with passes**, none one-way. Battles on cliff tiles get a plateau edge. |
 | D15 | Battle fields between worlds? | **The field seed adds the world's salt** (0 for classic). The season changes only the water. |
-| D16 | Order of refactors? | **Phase 0 first** (now R1–R15), battle items 11 and 13 alongside (then R15 by the same agent), item 18 before or after. |
-| D17 **(new)** | Seasons? | **A minimal calendar** (`world/calendar.js`, derived from `G.day`, nothing saved, no repainting). **15 days a season** (a 60-day year; 45 min of real time per season at 1×); the game **starts in summer**. In v1 it drives only seasonal rivers, the HUD date, battle water and three events. Later systems may use it (harvest prices, winter survival). |
-| D18 **(new)** | Per-climate season profiles? | As in §6.6.4. **Frost:** all but great rivers freeze in winter; streams flood at the thaw (days 1–5 of spring). **Desert:** wadis dry, flash floods 2–3 days in spring. **Swamp:** wet season (spring into early summer: fords closed, marsh spreads); dry season (autumn: extra fords). **Grass:** only flagged streams (about 30%). |
-| D19 **(new)** | Thin ice? | **An event only** (first and last 2 days of a freeze: 10% to lose 1–3 men or goods; Survival 4 avoids). The ice never breaks into a tile state. |
-| D20 **(new)** | River boats for the player? | **Passage in v1** (any port to any port on the same water; pay per person and distance; 4× time aboard; river bandit or pirate events). **Owning a barge later.** |
-| D21 **(new)** | Toll bridges? | **Yes:** bridges in a holding's land charge its owner's toll (foreign caravans 2% of cargo; you 1 gold per 5 people, or refuse as a crime). Your fiefs' bridges pay you. Fixed rates in v1. |
-| D22 **(new)** | Ferries? | **Yes, on great rivers at towns and river ports** (2 gold per 5 people, 0.05 day), so great rivers don't need a bridge every 30 tiles. |
-| D23 **(new)** | Time controls? | **1×, 2×, 4×** (keys 1–3) and a **Travel fast 8×** toggle that drops to 1× when anything hostile is seen, an event or window opens, or you arrive. |
-| D24 **(new)** | Huge on phones? | **Hidden on phones** (coarse pointer and a short screen side under 900 px); Normal and Large are offered there. |
-| D25 **(new)** | Slower travel before the new world? | **Yes: in Phase 1, on today's map**, together with the smaller figures, so the pace can be judged early. |
-| D26 **(new)** | Which world settings? | **The focused list of §4.1:** size, seed, realm holdings, hamlets, sacred places, wild land, land and water, rivers, mountains, climate, seasonal rivers, monsters, bandits, economy. **Realms stay 5** (written content, not a setting). No settings for start city (character creation), the starting war or season length. |
-| D27 **(new)** | The two themed presets? | **Wild Frontier:** Large; 0.7× holdings; few hamlets; common sacred places; vast wild; wet, rugged and cold; deadly monsters; many bandits; rich. **Crowded Realms:** Normal; 1.5× holdings; many hamlets; few wild regions; calm monsters. |
-| D28 **(new)** | The preview? | **A quick sketch (≤ 150 ms)**: the real noise fields sampled coarsely, with rivers and holdings approximate. It redraws on every change. An optional **Full preview** runs the real generator, and Start reuses it. |
-| D29 **(new)** | Custom size? | **Yes, within limits**: width 320–1024 and height 224–768 in steps of 32, width ÷ height 1.2–1.6, at most Large on phones and Huge on desktops. |
-| D30 **(new)** | The order of New game, and how far a code reproduces? | **Race and background first, then world settings** (the preview marks your start city), then forging. **A world code reproduces the world and its starting population**; what happens in play stays random. |
-| D31 **(new)** | Tips on the loading screen? | **Yes:** a short tip or flavour line, changing every 4 s, from about 40 lines (game hints and lore), with the flag fluttering beside the title. There is no setting for it; the overlay only appears for waits over 300 ms. |
-| D32 **(new)** | A loading screen for battles? | **Only when a battle's setup passes 300 ms** (big fields, deep forests, sieges). Its ground is painted at setup instead of in the first frame, so the battle opens smoothly. Most battles show nothing. |
+| D16 | Order of refactors? | **Phase 0 first: R1–R17 in waves 0–3** (§15.1). Battle items 11 and 13 run alongside wave 1; the same battle agent then does R15 (wave 2) and R16 (wave 3). R17 goes in wave 3 (it needs R1 and R15). Item 18 goes before or after Phase 0, never during. |
+| D17 | Seasons? | **A minimal calendar** (`world/calendar.js`, derived from `G.day`, nothing saved, no repainting). **15 days a season** (a 60-day year; 45 min of real time per season at 1×); the game **starts in summer**. In v1 it drives only seasonal rivers, the HUD date, battle water and three events. Later systems may use it (harvest prices, winter survival). |
+| D18 | Per-climate season profiles? | As in §6.6.4. **Frost:** all but great rivers freeze in winter; streams flood at the thaw (days 1–5 of spring). **Desert:** wadis dry, flash floods 2–3 days in spring. **Swamp:** wet season (spring into early summer: fords closed, marsh spreads); dry season (autumn: extra fords). **Grass:** only flagged streams (about 30%). |
+| D19 | Thin ice? | **An event only** (first and last 2 days of a freeze: 10% to lose 1–3 men or goods; Survival 4 avoids). The ice never breaks into a tile state. |
+| D20 | River boats for the player? | **Passage in v1** (any port to any port on the same water; pay per person and distance; 4× time aboard; river bandit or pirate events). **Owning a barge later.** |
+| D21 | Toll bridges? | **Yes:** bridges in a holding's land charge its owner's toll (foreign caravans 2% of cargo; you 1 gold per 5 people, or refuse as a crime). Your fiefs' bridges pay you. Fixed rates in v1. |
+| D22 | Ferries? | **Yes, on great rivers at towns and river ports** (2 gold per 5 people, 0.05 day), so great rivers don't need a bridge every 30 tiles. |
+| D23 | Time controls? | **1×, 2×, 4×** (keys 1–3) and a **Travel fast 8×** toggle that drops to 1× when anything hostile is seen, an event or window opens, or you arrive. |
+| D24 | Huge on phones? | **Hidden on phones** (coarse pointer and a short screen side under 900 px); Normal and Large are offered there. |
+| D25 | Slower travel before the new world? | **Yes: in Phase 1, on today's map**, together with the smaller figures, so the pace can be judged early. |
+| D26 | Which world settings? | **The focused list of §4.1:** size, seed, realm holdings, hamlets, sacred places, wild land, land and water, rivers, mountains, climate, seasonal rivers, monsters, bandits, economy, **founding sites and start** (§7). **Realms stay 5** (written content, not a setting). No settings for start city (character creation), the starting war or season length. |
+| D27 | The two themed presets? | **Wild Frontier:** Large; 0.7× holdings; few hamlets; common sacred places; vast wild; wet, rugged and cold; deadly monsters; many bandits; rich. **Crowded Realms:** Normal; 1.5× holdings; many hamlets; few wild regions; calm monsters. |
+| D28 | The preview? | **A quick sketch (≤ 150 ms)**: the real noise fields sampled coarsely, with rivers and holdings approximate. It redraws on every change. An optional **Full preview** runs the real generator, and Start reuses it. |
+| D29 | Custom size? | **Yes, within limits**: width 320–1024 and height 224–768 in steps of 32, width ÷ height 1.2–1.6, at most Large on phones and Huge on desktops. |
+| D30 | The order of New game, and how far a code reproduces? | **Race and background first, then world settings** (the preview marks your start city), then forging. **A world code reproduces the world and its starting population**; what happens in play stays random. |
+| D31 | Tips on the loading screen? | **Yes:** a short tip or flavour line, changing every 4 s, from about 40 lines (game hints and lore), with the flag fluttering beside the title. There is no setting for it; the overlay only appears for waits over 300 ms. |
+| D32 | A loading screen for battles? | **Only when a battle's setup passes 300 ms** (big fields, deep forests, sieges). Its ground is painted at setup instead of in the first frame, so the battle opens smoothly. Most battles show nothing. |
+| D33 | Found only at marked sites, or anywhere? | **Both.** Marked **founding sites** are the easy path, with a gift each. **Free founding** is allowed on valid open land with stricter rules: ≥ 30 tiles from holdings, ≥ 18 from hamlets, not on any realm's land or within 12 tiles of its holdings, not in the wild; it costs 50% more, with no gift. |
+| D34 | The tier list? | **Camp → hamlet → village → town → city or castle** (castle as the war path from town). One shared model for every holding (`HOLDING_TYPES` with `tier`/`next`, `TIERS` costs). **One city per realm**, yours included. |
+| D35 | Do realm holdings grow and shrink by tier? | **Yes, slowly:** grow after 30 days above the next tier's people if the realm can pay; shrink by hunger or two sacks; capitals never below town; castles keep their path; one AI change per realm per 20 days. Hamlets may grow into villages. Off in tests. |
+| D36 | A settler start? | **Yes, optional:** the Start setting (Wanderer or Settler). As a settler you begin with a camp at a fair founding site near your people's lands, 10 people, a band of 5, and 10 days of grace from raids. |
+| D37 | Is your realm there from the first camp? | **Yes:** it is today's Free Banner (`'player'`), which already holds captured fiefs. Territory from each holding's reach; tension with realms you crowd; hamlets join by protection; **companions as governors** in v1; lords, vassals, laws and kingdom titles deferred (roadmap "founding your own kingdom"). |
+| D38 | Names and settlers? | **You name each founded holding** (a generated name suggested). Founding takes **6 of your soldiers** as its first people (never companions), plus 200 gold, 10 timber, 5 tools and 20 food (in `TIERS`). |
+| D39 | Risks for new holdings? | **Moderate:** bands raid camps, hamlets and villages (1 in 12 a day when a stronger band is within 8 tiles; you are told and can ride back); hostile lords burn camps and hamlets and besiege towns; daily upkeep in food and tools; 30 days of neglect costs prosperity. All in `FOUNDING`. |
