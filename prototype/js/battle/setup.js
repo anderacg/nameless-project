@@ -19,7 +19,7 @@ const FIELD_SIZES={on:true,order:['small','big','large','vlarge','huge'],
   huge:{n:'Huge',w:3200,h:1792,back:832,depth:416,band:920},
   heads:[60,150,300,600],types:{bridge:['big','large'],ambush:['small','big']}};
 let BFIELD=null;
-// (the size for a battle of heads soldiers on world tile r ({t, c}: regionAt's; none for a tournament), of battle type kind)
+// (the size for a battle of heads soldiers on world tile r (its BattleSite: t, c; none for a tournament), of battle type kind)
 function fieldSizeFor(heads,r,kind){
   const F=FIELD_SIZES,O=F.order,T=kind&&F.types[kind];let i=F.heads.findIndex(n=>heads<n);if(i<0)i=O.length-1;if(r)i+=fieldNudge(r);
   return O[clamp(i,T?O.indexOf(T[0]):0,T?O.indexOf(T[1]):O.length-1)]}
@@ -41,10 +41,10 @@ function formation(list,team){
   flank.forEach((t,i)=>{const up=i%2===0;out.push({t,x:base+dir*10-dir*Math.floor(i/2)*12,y:up?40+Math.floor(i/2)*12:BH-34-Math.floor(i/2)*12})});
   return out;
 }
-// the ground under the player decides the battle's look and its one rule
-function battleEnv(tourney){
+// the ground under the player (S: the battle's BattleSite, yours by default: worldmap.js) decides the battle's look and its one rule
+function battleEnv(tourney,S){
   if(tourney)return{c:'grass',t:T_OPEN,name:'Tournament ground',text:'An open field with no tricks.'};
-  const r=regionAt(P.x,P.y),t=r.t===T_MOUNT||r.t===T_WATER?T_HILL:r.t,c=r.c;
+  const r=S||battleSiteAt(P.x,P.y),t=r.t===T_MOUNT||r.t===T_WATER?T_HILL:r.t,c=r.c;
   const text=t===T_FOREST?'Trees block movement and stop some arrows. Elves shoot through them.':t===T_HILL?'High ground: archers reach 15% farther.'
     :c==='frost'?'Snow slows everyone but dwarves and wolves.':c==='desert'?'The heat slows melee attacks, except for orcs and scorpions.':c==='swamp'?'Mud slows everyone and stalls cavalry charges. Orcs wade through.':'Open ground: cavalry rides 15% faster.';
   return{c,t,name:r.name,text};
@@ -258,19 +258,22 @@ class BattleSetup{
     log((this.opts.tournament?'The crowd roars. Defeat the champion.':'The lines meet in the '+this.env.name.toLowerCase()+'. '+this.env.text)+(BFIELD?' '+BFIELD.n+' field.':''));
     if(B.btype)typeSay();
   }
+  // (the world where it is fought: its BattleSite (worldmap.js), all the battle reads of the world; yours, none for a tournament; the
+  // lab's own: lab.js)
+  battleSite(){return this.opts.tournament?null:battleSiteAt(P.x,P.y)}
   // (the battle's terrain: its recipe and seed, or null; the lab's own: lab.js)
-  groundSpec(){return groundSpecFor(this.opts,this.env)}
+  groundSpec(){return groundSpecFor(this.opts,this.env,this.site)}
   /* (the field's size (FIELD_SIZES): by the soldiers coming to it, the world tile and the battle's type; null with sizes off. Counted
      from the armies before anyone spawns: the ground's recipe and the spawns already read the field) */
   fieldSize(){if(!FIELD_SIZES.on)return null;const o=this.opts,e=!o.tournament&&G.enc,bt=e&&e.btype,n=x=>Array.isArray(x)?x.length:x&&typeof x==='object'?Object.values(x).reduce((a,v)=>a+(+v||0),0):0;
     let heads=1+o.enemies.length;if(!o.tournament)heads+=compsInBand().length+P.list.length;if(e)for(const l of [...(e.allies||[]),...(e.foes||[])])heads+=n(l.troops)+1;
     const kind=bt&&TERRAIN.on&&!['siege','raid','tourney'].includes(e.kind)&&(bt.kind==='bridge'||bt.kind==='ambush')?bt.kind:null;
-    return fieldSizeFor(heads,o.tournament?null:regionAt(P.x,P.y),kind)}
+    return fieldSizeFor(heads,this.battleSite(),kind)}
   // (the field, its look and its armies: their randoms drawn here, in this order)
   survey(){
     fieldSet(this.fieldSize());// (the field's size first: everything after lays out on it, the ground's generation too)
     damageTypesInit();
-    this.env=battleEnv(this.opts.tournament);
+    this.site=this.battleSite();this.env=battleEnv(this.opts.tournament,this.site);
     this.ground=this.groundSpec();groundEnv(this.env,this.ground);// (the ground's recipe and seed before anyone spawns: D2, terrain.js)
     this.createUnits();
     this.btype=this.battleType();if(this.btype)this.typeGround();// (its type, if any: BTYPE)

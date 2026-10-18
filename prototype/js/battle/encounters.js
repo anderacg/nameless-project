@@ -62,15 +62,15 @@ function reinfAfter(e,win){
    (bandits, raiders, bog raiders; lord). Riding at a party where there is cover, you may lie in wait for it instead (Spring an
    ambush). Each drawn from the tile and the day (hash), never Math.random: the game's random sequence is untouched */
 const BTYPE_WORLD={kinds:['lord','party','patrol','caravan'],near:1,cover:{forest:.35,hills:.3,field:.15},by:{bandits:1,raiders:1.2,bog:1.2,lord:.5}};
-const roadBridge=(tx,ty)=>tAt(tx,ty)===T_ROAD&&(tAt(tx-1,ty)===T_WATER&&tAt(tx+1,ty)===T_WATER||tAt(tx,ty-1)===T_WATER&&tAt(tx,ty+1)===T_WATER);
-function bridgeNear(tx,ty){const N=BTYPE_WORLD.near;for(let dy=-N;dy<=N;dy++)for(let dx=-N;dx<=N;dx++)if(roadBridge(tx+dx,ty+dy))return true;return false}
-// the cover at world point (x,y) for an ambush: 'forest', 'hills', 'field' (woods or rock on its battlefield) or null; and its words
-function coverAt(x,y){const env=battleEnv(),t=terrAt(x,y),g=terrainAt(x,y,env);if(g.recipe==='forest')return 'forest';if(t===T_HILL||t===T_MOUNT||env.t===T_HILL)return 'hills';
+// (a road bridge within near tiles of tile (tx,ty): its BattleSite's, worldmap.js)
+const bridgeNear=(tx,ty,S=WM.battleSite(tx,ty))=>S.bridge!==null&&S.bridge<=BTYPE_WORLD.near;
+// the cover at world point (x,y) for an ambush (its BattleSite's): 'forest', 'hills', 'field' (woods or rock on its battlefield) or null; and its words
+function coverAt(x,y){const S=battleSiteAt(x,y),env=battleEnv(false,S),g=terrainOf(S,env);if(g.recipe==='forest')return 'forest';if(S.t===T_HILL||S.t===T_MOUNT||env.t===T_HILL)return 'hills';
   const T=buildTerrain({...g,W:clamp(BVW,FIELD_W.min,FIELD_W.max)});return T.has.wood||T.has.rock?'field':null}
 const COVER_SAY={forest:'the trees',hills:'the rocky rises',field:'the thickets'};
 function battleTypeFor(e){
-  if(!TERRAIN.on||!BTYPE_WORLD.kinds.includes(e.kind))return null;const env=battleEnv(),g=terrainAt(P.x,P.y,env);
-  if(g.river&&!g.river.frozen&&!g.river.stream&&bridgeNear(g.tx,g.ty))return{kind:'bridge',def:e.mine?1:0,ford:hash(g.tx,g.ty,4447)<BTYPE.ford};
+  if(!TERRAIN.on||!BTYPE_WORLD.kinds.includes(e.kind))return null;const S=battleSiteAt(P.x,P.y),env=battleEnv(false,S),g=terrainOf(S,env);
+  if(g.river&&!g.river.frozen&&!g.river.stream&&bridgeNear(g.tx,g.ty,S))return{kind:'bridge',def:e.mine?1:0,ford:hash(g.tx,g.ty,4447)<BTYPE.ford};
   const by=e.mine?0:e.kind==='lord'?BTYPE_WORLD.by.lord:e.kind==='party'?BTYPE_WORLD.by[e.band||'bandits']||0:0,cv=by&&coverAt(P.x,P.y);
   return cv&&hash(g.tx,g.ty,G.day*13+7)<BTYPE_WORLD.cover[cv]*by?{kind:'ambush',hid:1}:null}
 // you may lie in wait for them: you rode at them, where there is cover, and it is no bridge's fight

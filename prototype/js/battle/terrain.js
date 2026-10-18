@@ -143,10 +143,10 @@ const TERRAIN_DENSE_LAYOUT={
    (cells) and verge (cells cleared each side), path: a deer path's (cells); pathP: the chance of a deer path with no road, else a
    chain of clearings (link: their radius, px; step: their spacing, px; a way's shape: TERRAIN_WAY); frost: a frost
    forest's woods × (snow fields; a forest tile's half of the field at least); edge: how much an open neighbour thins the woods toward it (band: its depth, share of the
-   field's height); elfR: an elven town within this many tiles makes elven woods; block: a stand counted for the AI (ai.woods)
+   field's height); block: a stand counted for the AI (ai.woods)
    no wider than this (px); ride, gain: riders keep to the ways when their straight way is this much woods and the way is this
    much quicker (wayRide) */
-const TERRAIN_DENSE={glade:{x:.45,rx:.42,ry:.3},zoneLess:.2,fair:.08,keep:.7,road:[2,1],path:2,pathP:.65,link:[36,56],step:[64,88],frost:.92,edge:.4,band:.22,elfR:10,block:256,ride:.35,gain:.1};
+const TERRAIN_DENSE={glade:{x:.45,rx:.42,ry:.3},zoneLess:.2,fair:.08,keep:.7,road:[2,1],path:2,pathP:.65,link:[36,56],step:[64,88],frost:.92,edge:.4,band:.22,block:256,ride:.35,gain:.1};
 // a road on the field (a world road tile's: T.road 1; a deer path or causeway: 2, open ground only): spd, its speed ×
 const TERRAIN_ROAD={spd:1.1};
 /* how a way is laid (wayPlan), by road or path (a deer path, a causeway, a chain of clearings): the cost of a cell (wayGrid) on
@@ -172,35 +172,36 @@ const TDX=[1,Math.SQRT1_2,0,-Math.SQRT1_2,-1,-Math.SQRT1_2,0,Math.SQRT1_2],TDY=[
 // which recipe a battle at this world tile gets (t: battleEnv's terrain, water and peaks already as hills; c: the climate;
 // forestN, mountN: forest and peak tiles round it; peak: the tile itself is a peak). A hill among peaks is a pass (peaks)
 function terrainRecipeOf(t,c,forestN,mountN=0,peak=false){return t===T_HILL?(peak||mountN>=3?'peaks':'hills'):c==='swamp'?'swamp':c==='desert'?'desert':t===T_FOREST||forestN>=3?'forest':'open'}
-/* the battle at world point (x,y): its recipe and seed (the tile and its kind: same place, same field); oasis: a desert by water;
-   river (phase 2): water on a neighbouring tile runs a river down the field ({bridge: a road bridge within TERRAIN_RIVER.near
-   tiles, frozen: in the frost}); a swamp with none near has a ford-only stream at streamP ({stream}), a frost field a frozen river at
-   frostP; a desert never (its oasis). Field variety: edges, the neighbours that shape each side of the field (terrainEdges); road,
-   the tile is a road ({ew, ns}: its way across the field, and on along it north or south); elven, a forest near an elven town;
-   forest, a forest tile (a swamp's is the mire wood) */
-function terrainAt(x,y,env){
-  const tx=Math.floor(x/TILE),ty=Math.floor(y/TILE);let n=0,w=0,m=0;for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){if(!dx&&!dy)continue;const k=tAt(tx+dx,ty+dy);if(k===T_FOREST)n++;else if(k===T_WATER)w++;else if(k===T_MOUNT)m++}
-  const recipe=terrainRecipeOf(env.t,env.c,n,m,tAt(tx,ty)===T_MOUNT),code=1+Object.keys(TERRAIN_RECIPE).indexOf(recipe)*4+Math.max(0,CLIMS.indexOf(env.c));
-  let river=null;if(recipe!=='desert'){if(w>0){const N=TERRAIN_RIVER.near,rb=(a,b)=>tAt(a,b)===T_ROAD&&(tAt(a-1,b)===T_WATER&&tAt(a+1,b)===T_WATER||tAt(a,b-1)===T_WATER&&tAt(a,b+1)===T_WATER);let br=false;
-    for(let dy=-N;dy<=N&&!br;dy++)for(let dx=-N;dx<=N;dx++)if(rb(tx+dx,ty+dy)){br=true;break}river={bridge:br,frozen:env.c==='frost'}}
+// the battle at world point (x,y) on ground env (battleEnv's; a test's own): its BattleSite's (terrainOf)
+function terrainAt(x,y,env){return terrainOf(battleSiteAt(x,y),env)}
+/* the battle at BattleSite S (worldmap.js: all it reads of the world) on ground env: its recipe and seed (the tile and its kind:
+   same place, same field; the world's salt in it, D15); oasis: a desert by water; river (phase 2): water on a neighbouring tile
+   runs a river down the field ({bridge: a road bridge within TERRAIN_RIVER.near tiles, frozen: in the frost}); a swamp with none
+   near has a ford-only stream at streamP ({stream}), a frost field a frozen river at frostP; a desert never (its oasis). Field
+   variety: edges, the neighbours that shape each side of the field (terrainEdges); road, the tile is a road ({ew, ns}: its way
+   across the field, and on along it north or south); elven, a forest near an elven town; forest, a forest tile (a swamp's is the
+   mire wood) */
+function terrainOf(S,env){
+  const {tx,ty}=S,K=S.kinds;let n=0,w=0,m=0;for(let i=0;i<9;i++){if(i===4)continue;const k=K[i];if(k===T_FOREST)n++;else if(k===T_WATER)w++;else if(k===T_MOUNT)m++}
+  const recipe=terrainRecipeOf(env.t,env.c,n,m,K[4]===T_MOUNT),code=1+Object.keys(TERRAIN_RECIPE).indexOf(recipe)*4+Math.max(0,CLIMS.indexOf(env.c));
+  let river=null;if(recipe!=='desert'){if(w>0){river={bridge:S.bridge!==null&&S.bridge<=TERRAIN_RIVER.near,frozen:env.c==='frost'}}
    else if(recipe==='swamp'&&hash(tx,ty,code+101)<TERRAIN_RIVER.streamP)river={stream:true};
    else if(env.c==='frost'&&hash(tx,ty,code+103)<TERRAIN_RIVER.frostP)river={frozen:true}}
-  const R=tAt(tx,ty)===T_ROAD,rN=tAt(tx,ty-1)===T_ROAD||tAt(tx,ty+1)===T_ROAD;
-  const elven=recipe==='forest'&&typeof TOWNS!=='undefined'&&TOWNS.some(o=>o.races&&o.races.length===1&&o.races[0]==='elf'&&Math.hypot(o.tx-tx,o.ty-ty)<=TERRAIN_DENSE.elfR);
-  return{recipe,seed:Math.floor(hash(tx,ty,code)*4294967296)>>>0,tx,ty,oasis:recipe==='desert'&&(w>0||tAt(tx,ty)===T_WATER),river,frost:env.c==='frost',
-    edges:terrainEdges(tx,ty,recipe,env.c),road:R?{ew:true,ns:rN}:null,elven,forest:env.t===T_FOREST||n>=3}}
-/* the neighbours that shape each side of the field: {n, s, w, e} (north is the field's top, west its left), each 'forest', 'hills',
-   'peaks', 'water', 'marsh' (a swamp beside a field that is not), 'open' (open land beside a forest's field), or absent: the three
-   tiles on that side, the middle one counting twice, 2 of 4 at least; a kind like the field's own counts for nothing */
-function terrainEdges(tx,ty,recipe,c){
-  const out={},S={n:[[-1,-1],[0,-1],[1,-1]],s:[[-1,1],[0,1],[1,1]],w:[[-1,-1],[-1,0],[-1,1]],e:[[1,-1],[1,0],[1,1]]},cl=(a,b)=>typeof climAt==='function'?climAt((a+.5)*TILE,(b+.5)*TILE):c;
-  for(const s in S){const v={};S[s].forEach(([dx,dy],j)=>{const a=tx+dx,b=ty+dy,t=tAt(a,b),k=t===T_FOREST?'forest':t===T_HILL?'hills':t===T_MOUNT?'peaks':t===T_WATER?'water':cl(a,b)==='swamp'&&c!=='swamp'?'marsh':'open';v[k]=(v[k]||0)+(j===1?2:1)});
+  return{recipe,seed:Math.floor(hash(tx,ty,code+S.salt)*4294967296)>>>0,tx,ty,oasis:recipe==='desert'&&(w>0||K[4]===T_WATER),river,frost:env.c==='frost',
+    edges:terrainEdges(S,recipe,env.c),road:S.road?{ew:true,ns:S.road.ns}:null,elven:recipe==='forest'&&S.elven,forest:env.t===T_FOREST||n>=3}}
+/* the neighbours that shape each side of the field (BattleSite S's kinds and clims): {n, s, w, e} (north is the field's top, west
+   its left), each 'forest', 'hills', 'peaks', 'water', 'marsh' (a swamp beside a field that is not), 'open' (open land beside a
+   forest's field), or absent: the three tiles on that side, the middle one counting twice, 2 of 4 at least; a kind like the
+   field's own counts for nothing */
+function terrainEdges(S,recipe,c){
+  const out={},E={n:[0,1,2],s:[6,7,8],w:[0,3,6],e:[2,5,8]};
+  for(const s in E){const v={};E[s].forEach((i,j)=>{const t=S.kinds[i],k=t===T_FOREST?'forest':t===T_HILL?'hills':t===T_MOUNT?'peaks':t===T_WATER?'water':S.clims[i]==='swamp'&&c!=='swamp'?'marsh':'open';v[k]=(v[k]||0)+(j===1?2:1)});
     const own=recipe==='forest'?'forest':recipe==='hills'?'hills':recipe==='peaks'?'peaks':recipe==='swamp'?'marsh':null;
     for(const k of ['peaks','water','forest','hills','marsh','open'])if(v[k]>=2&&k!==own&&(k!=='open'||recipe==='forest')){out[s]=k;break}}
   return out}
 // a battle's ground, or null: none when off, in tournaments, sieges and raids (D6), and no river against a monster or in a cave
-// (§3); the lab asks for its own (lab.js)
-function groundSpecFor(opts,env){const e=G.enc;if(!TERRAIN.on||opts.tournament||opts.sandbox||e&&['siege','raid','tourney'].includes(e.kind))return null;const g=terrainAt(P.x,P.y,env);if(e&&['monster','cave'].includes(e.kind))g.river=null;return g}
+// (§3); the lab asks for its own (lab.js). S: the battle's BattleSite (yours by default)
+function groundSpecFor(opts,env,S){const e=G.enc;if(!TERRAIN.on||opts.tournament||opts.sandbox||e&&['siege','raid','tourney'].includes(e.kind))return null;const g=terrainOf(S||battleSiteAt(P.x,P.y),env);if(e&&['monster','cave'].includes(e.kind))g.river=null;return g}
 // (marks the battle's env, unseen by snapshots: envStats then drops the old whole-field hill range, D2)
 function groundEnv(env,spec){if(spec&&env&&!env.terrain)Object.defineProperty(env,'terrain',{value:true,configurable:true});return env}
 

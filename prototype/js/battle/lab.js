@@ -1,10 +1,12 @@
 'use strict';
 /* Isolated battle fixtures. Campaign records are swapped for private copies, then restored by identity. */
+// the lab's BattleSite (worldmap.js battleSiteOf): its terrain and climate as a world tile's, amid its own kind; no road, river or bridge
+const labSite=c=>battleSiteOf({t:{open:T_OPEN,forest:T_FOREST,hill:T_HILL}[c.terrain],c:c.climate,name:'Battle laboratory'});
 class LabBattleSetup extends BattleSetup{
   constructor(config){super({enemies:[],lv:1,tournament:false,deploy:config.deploy,pauseAfterDeploy:config.paused,sandbox:true});this.config=config;this.rows=[]}
   spawn(...args){const u=super.spawn(...args);u.s=structuredClone(u.s);return u}
   createUnits(){
-    const c=this.config;this.env={c:c.climate,t:{open:T_OPEN,forest:T_FOREST,hill:T_HILL}[c.terrain],name:'Battle laboratory',text:'Test battle: no campaign rewards or losses.'};
+    const c=this.config,S=this.site;this.env={c:S.c,t:S.t,name:S.name,text:'Test battle: no campaign rewards or losses.'};
     this.ground=this.groundSpec();groundEnv(this.env,this.ground);// (its ground, before anyone spawns: terrain.js)
     const hero=this.hero=this.spawn(charOf(P),0,72,BH/2);hero.hp=0;
     for(const [team,rows] of [[0,c.leftGroups],[1,c.rightGroups]])rows.forEach((row,index)=>{
@@ -42,7 +44,8 @@ class LabBattleSetup extends BattleSetup{
   /* the lab's field size (config.size: a FIELD_SIZES key, forced, sizes on or off); else, sizes on, by its soldiers, its terrain and
      climate as a world tile's, and its type (setup.js fieldSizeFor) */
   fieldSize(){const c=this.config;if(c.size)return c.size;if(!FIELD_SIZES.on)return null;const k=typeof c.type==='string'?c.type:c.type&&c.type.kind;
-    return fieldSizeFor([...c.leftGroups,...c.rightGroups].reduce((n,g)=>n+g.count,0),{t:{open:T_OPEN,forest:T_FOREST,hill:T_HILL}[c.terrain],c:c.climate},k==='bridge'||k==='ambush'?k:null)}
+    return fieldSizeFor([...c.leftGroups,...c.rightGroups].reduce((n,g)=>n+g.count,0),this.battleSite(),k==='bridge'||k==='ambush'?k:null)}
+  battleSite(){return labSite(this.config)}
   createGroups(){
     super.createGroups();const c=this.config,top=this.field.top,bottom=this.field.bot,Z=[fieldZone(0),fieldZone(1)];
     for(const row of this.rows){const gr=this.groups[row.id],m=this.units.filter(u=>u.grp===row.id),rows=row.team?c.rightGroups:c.leftGroups;
