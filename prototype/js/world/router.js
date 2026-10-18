@@ -97,3 +97,8 @@ const Router={
       n=i<0?Infinity:t?flowTo(t)[i]:this.reach(a,b)?Math.hypot(a.x-b.x,a.y-b.y)/TILE:Infinity;
     return n*TILE/moveStep(pace||MAP_BASE,DAY_SECONDS*WORLD_PACE)}
 };
+/* the way graph (doc/WORLD_DESIGN.md §3.6, §15.2.1: a WayGraph, {n, tile, nk, off, to, cost, ek, xing, chunk, closed}), built by
+   the generator's last stage (worldgen.js, its stage context g) from the world's roads, crossings, landings and chunk portals.
+   Phase 2 wave 2 (D) builds it, keeping the generator's rules (seeded, no Math.hypot...: §8.1); till then none, and Router finds
+   its ways as above */
+function buildWayGraph(g){return null}

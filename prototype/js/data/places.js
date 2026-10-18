@@ -78,3 +78,18 @@ const FOODS=Object.keys(GOODS).filter(g=>GOODS[g].food).sort((a,b)=>GOODS[b].spo
 const REP_NEED={1:15,2:30,3:50},RACE_TRUST=10;
 // where the bandit camps stand on the classic map (CAMP_SPOTS, holdings.js; both made into the world by worldmap.js installClassic)
 const CLASSIC_CAMPS=[{tx:88,ty:48},{tx:20,ty:96},{tx:116,ty:76},{tx:200,ty:84},{tx:60,ty:140},{tx:176,ty:106},{tx:146,ty:58},{tx:44,ty:130},{tx:100,ty:112},{tx:150,ty:130},{tx:28,ty:58},{tx:190,ty:30}];
+/* the classic seed's terrain hints (doc/WORLD_DESIGN.md §8.15 step 2): what Ashmark's land must say about its places, read by the
+   generator when the world is classic (worldgen.js: g.hints) as soft nudges, warped-falloff bumps of temperature, moisture or
+   elevation over 12-30 tiles, never stamps. Each hint: id; kind (sea: these ports on one body of water, on side; temp, moist: a
+   bump of d (-1..1 of the field's range) over r tiles round at, or a band r tiles deep along side (dry: moisture down with it); elev: high ground on side of at; island: at stands on land ringed
+   by water, joined by bridges; river: a great river from from to to, past at, crossed there by a bridge); at: a holding's name
+   (its anchor, worldplace.js classicAnchors) or a point as shares of the map [x, y]; side: n, s, e or w; r: tiles */
+const CLASSIC_HINTS=[
+  {id:'southSea',kind:'sea',side:'s',ports:['Saltmere','Gullhaven','Pearlbay','Brinewatch','Tidewatch'],note:'a south coast, the League’s ports on one sea'},
+  {id:'frostNorth',kind:'temp',side:'n',r:48,d:-1,note:'frost in the north'},
+  {id:'desertSouthEast',kind:'temp',at:[.85,.85],r:30,d:1,dry:1,note:'desert in the south-east'},
+  {id:'karnPeaks',kind:'elev',at:'Karn Hold',side:'n',r:16,note:'Karn Hold below the peaks'},
+  {id:'willowIsle',kind:'island',at:'Willowmere',bridges:true,note:'Willowmere an island village with bridges (tests/routes.js)'},
+  {id:'stonebridge',kind:'river',at:'Stonebridge',from:'n',to:'s',great:true,bridge:true,note:'a great river from the northern peaks to the south coast, past Stonebridge, bridged there'},
+  {id:'fens',kind:'moist',at:['Mirefen','Tidewatch'],r:18,d:1,clim:'swamp',note:'Mirefen and Tidewatch in fen'}
+];

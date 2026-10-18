@@ -3,11 +3,12 @@
 function hash(x,y,s){let h=Math.imul(x,374761393)+Math.imul(y,668265263)+Math.imul(s,2147483647);h=Math.imul(h^h>>>13,1274126177);return((h^h>>>16)>>>0)/4294967296}
 function noise(x,y,s){const xi=Math.floor(x),yi=Math.floor(y),xf=x-xi,yf=y-yi,u=xf*xf*(3-2*xf),v=yf*yf*(3-2*yf);const a=hash(xi,yi,s),b=hash(xi+1,yi,s),c=hash(xi,yi+1,s),d=hash(xi+1,yi+1,s);return a+(b-a)*u+(c-a)*v+(a-b-c+d)*u*v}
 const fbm=(x,y,s)=>noise(x,y,s)*.6+noise(x*2,y*2,s+1)*.3+noise(x*4,y*4,s+2)*.1;
-// two layers per tile: terrain (what is on the ground) and climate (how cold, hot or wet it is)
-const T_OPEN=0,T_FOREST=1,T_HILL=2,T_WATER=3,T_ROAD=4,T_MOUNT=5;
+// two layers per tile: terrain (what is on the ground) and climate (how cold, hot or wet it is). T_FORD: a river's ford, walked
+// through (only the generated world has them: world/worldplace.js; every table indexed by kind has its entry)
+const T_OPEN=0,T_FOREST=1,T_HILL=2,T_WATER=3,T_ROAD=4,T_MOUNT=5,T_FORD=6;
 // (tiles, climate: the layers of the map that is in, by these names for the hot loops: world/worldmap.js useWorld)
 const CLIMS=['grass','frost','desert','swamp'],CLIM=Object.fromEntries(CLIMS.map((c,i)=>[c,i]));
-const SPEEDMUL=[1,.6,.75,0,1.3,0];
+const SPEEDMUL=[1,.6,.75,0,1.3,0,.5];
 const CLIMMUL={grass:1,frost:.7,desert:.85,swamp:.5};
 const tAt=(tx,ty)=>(tx<0||ty<0||tx>=MW||ty>=MH)?T_WATER:tiles[ty*MW+tx];
 const terrAt=(x,y)=>tAt(Math.floor(x/TILE),Math.floor(y/TILE));
@@ -54,7 +55,7 @@ function genClassic(map,places,camps){
   const MAX_BRIDGE=3,RUN=[new Uint8Array(MW*MH),new Uint8Array(MW*MH)];// the stretch of water each water tile lies in, across and down
   for(let y=0;y<MH;y++)for(let x=0;x<MW;){if(tiles[y*MW+x]!==T_WATER){x++;continue}let e=x;while(e<MW&&tiles[y*MW+e]===T_WATER)e++;for(let k=x;k<e;k++)RUN[0][y*MW+k]=Math.min(255,e-x);x=e}
   for(let x=0;x<MW;x++)for(let y=0;y<MH;){if(tiles[y*MW+x]!==T_WATER){y++;continue}let e=y;while(e<MH&&tiles[e*MW+x]===T_WATER)e++;for(let k=y;k<e;k++)RUN[1][k*MW+x]=Math.min(255,e-y);y=e}
-  const roadCost=[1,1.8,2.2,0,.5,0];
+  const roadCost=[1,1.8,2.2,0,.5,0,1.5];
   const roadPath=(a,b,strict)=>{// A* over (tile, how it is crossing water: 0 on land, 1 across, 2 down)
     const S=MW*MH*3,g=new Float64Array(S).fill(Infinity),from=new Int32Array(S).fill(-1),heap=[],h=(x,y)=>Math.abs(x-b.x)+Math.abs(y-b.y);
     const push=(i,f)=>{heap.push([f,i]);let k=heap.length-1;while(k>0){const q=(k-1)>>1;if(heap[q][0]<=heap[k][0])break;[heap[q],heap[k]]=[heap[k],heap[q]];k=q}};
@@ -90,8 +91,8 @@ function genClassic(map,places,camps){
 }
 
 /* regions: what a place is called and how it treats travelers */
-const REGION_NAMES={grass:['Grassland','Forest','Hills','Lake','Road','Mountains'],frost:['Tundra','Frost forest','Frozen hills','Ice lake','Frozen road','Frost peaks'],
-  desert:['Desert','Desert','Rocky badlands','Oasis','Desert road','Red peaks'],swamp:['Swamp','Mangrove','Mire hills','Bog water','Causeway','Peaks']};
+const REGION_NAMES={grass:['Grassland','Forest','Hills','Lake','Road','Mountains','Ford'],frost:['Tundra','Frost forest','Frozen hills','Ice lake','Frozen road','Frost peaks','Frozen ford'],
+  desert:['Desert','Desert','Rocky badlands','Oasis','Desert road','Red peaks','Wadi ford'],swamp:['Swamp','Mangrove','Mire hills','Bog water','Causeway','Peaks','Bog ford']};
 function regionAt(x,y){const t=terrAt(x,y),c=climAt(x,y);return{t,c,name:REGION_NAMES[c][t]}}
 // base travel speed for anyone; race only matters for the player's own party
 function speedAt(x,y,race,extra){

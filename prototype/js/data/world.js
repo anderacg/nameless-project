@@ -2,6 +2,9 @@
 /* ---------- data: the world's scale: its named distances, one lever for how fast everything moves on screen, and how many wild
    things each size of map holds. Arrival and touch radii (8-20 px) are not here: they follow the figures, not the world.
    Units: px unless the group says tiles. ---------- */
+// which world: gen, the generated one (doc/WORLD_DESIGN.md §15.2: the generator, world/worldgen.js) in place of today's 224 x 160
+// map, only while the page's address has gen=1 (Ashmark.html?gen=1; the tests' -Gen switch) until Phase 2 ends
+const WORLD={gen:/(?:^|[?&])gen=1(?:&|$)/.test(location.search)};
 const WORLD_SCALE={
   // every step on the map is moveStep(pace, d): pace (px per world second, unscaled) x d x move. Flee odds and chase choices
   // read the unscaled paces, so this changes how fast things look, never who outruns whom. .68 (D9): a band on foot some 9 px a

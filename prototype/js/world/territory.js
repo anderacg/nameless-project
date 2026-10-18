@@ -14,7 +14,7 @@ const NB8=[[1,0,1],[-1,0,1],[0,1,1],[0,-1,1],[1,1,1.41],[1,-1,1.41],[-1,1,1.41],
    reach spent there) is kept, so a change to one holding runs again only those whose reach box touches a changed one (and so on
    down TOWNS' order, as the full reckoning goes) and lays the rest as they were: the same land as reckoning it all */
 // what crossing a tile costs a holding's reach (0: it cannot), and the least any tile costs (how far a reach can run, in tiles)
-const LAND_COST=[1,1.7,1.5,0,.8,4],LAND_STEP=Math.min(...LAND_COST.filter(Boolean));
+const LAND_COST=[1,1.7,1.5,0,.8,4,1.5],LAND_STEP=Math.min(...LAND_COST.filter(Boolean));
 const landCost=k=>LAND_COST[tiles[k]];
 let LAND=null,LAND_EDGE=null,landSig='',landTiles=[],landRuns=null,landWas=null,landVer=0,landBest=null,landDist=null;
 // a world goes in: its land as the world first stood (worldmap.js worldKeep), or none claimed yet (reckoned at the next look)

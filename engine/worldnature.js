@@ -33,7 +33,8 @@
 //   (the painter, below); stitched, the windows are the one picture PX.worldNature paints.
 (function(PX){
   const CLIMS=['grass','frost','desert','swamp'],NAVY='#1a1c26';
-  PX.WN_KIND={open:0,forest:1,hill:2,water:3,road:4,mount:5};
+  // (ford: a river's ford, painted as open ground until the river art comes, doc/WORLD_DESIGN.md §15.2.2 wave 2)
+  PX.WN_KIND={open:0,forest:1,hill:2,water:3,road:4,mount:5,ford:6};
   const hx=c=>[parseInt(c.slice(1,3),16),parseInt(c.slice(3,5),16),parseInt(c.slice(5,7),16)];
   const RP=c=>(PX.GROUND_PAL[c]||PX.GROUND_PAL.grass);
   const mixA=(a,b,t)=>[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t,a[2]+(b[2]-a[2])*t];
@@ -409,7 +410,7 @@
     // (a wood's tile: one of three loose layouts of six trees, shuffled a little; at its edge a slot is often empty, and now and then
     //  a tree or a bush stands out on the open ground beside it; deeper trees (another wood tile in front) dimmer)
     for(let ty=Math.max(0,ty0-3);ty<=Math.min(R-1,ty1+3);ty++){if(ty>ty0-3)yield;for(let tx=Math.max(0,tx0-3);tx<=Math.min(C-1,tx1+3);tx++){const k=K[ty*C+tx],X=tx*ts,Y=ty*ts,c=cAt(tx,ty),hh=n=>h(tx,ty,n+40);own=ownT(tx,ty);
-      if(k===KIND.forest){const op=(a,b)=>{const q=kAt(tx+a,ty+b);return q===KIND.open||q===KIND.hill||q===KIND.road},below=kAt(tx,ty+1)===KIND.forest;
+      if(k===KIND.forest){const op=(a,b)=>{const q=kAt(tx+a,ty+b);return q===KIND.open||q===KIND.ford||q===KIND.hill||q===KIND.road},below=kAt(tx,ty+1)===KIND.forest;
         LAY[Math.floor(hh(0)*3)].forEach(([sx,sy],n)=>{const edge=(sx<5&&op(-1,0))||(sx>11&&op(1,0))||(sy<6&&op(0,-1))||(sy>13&&op(0,1));if(hh(n+50)<(edge?.32:.08))return;
           const x=X+sx+Math.round((hh(n+6)-.5)*4),y=Y+sy+Math.round((hh(n+12)-.5)*3),sp=pickTree(c,tx,ty,n+20),dim=below?1:0;
           if(kAt((x/ts)|0,(y/ts)|0)===KIND.water)return;if(stand(PX.worldTree(c,sp,Math.floor(hh(n+18)*4),dim),x,y,3))out.trees+=own});
@@ -417,7 +418,7 @@
           const sp=hh(38)<.55?PX.worldTree(c,pickTree(c,tx,ty,39),Math.floor(hh(40)*4),0):PX.worldDecor(c,c==='desert'?'scrub':'bush',Math.floor(hh(41)*4));if(stand(sp,x,y,3))out.trees+=own}}
       else if(k===KIND.water){if(c==='swamp'&&hh(5)<.35&&lie(PX.worldDecor('swamp','pad',Math.floor(hh(6)*4)),X+4+Math.floor(hh(7)*8),Y+4+Math.floor(hh(8)*8),true))out.flat+=own;
         else if(c==='frost'&&hh(5)<.25&&lie(PX.worldDecor('frost','floe',Math.floor(hh(6)*4)),X+2+Math.floor(hh(7)*12),Y+2+Math.floor(hh(8)*8),true))out.flat+=own}
-      else if(k===KIND.open||k===KIND.hill){const at2=(n,m)=>[X+2+Math.floor(hh(n)*12),Y+4+Math.floor(hh(m)*11)],D0=(kind,v,n,m,st)=>{const sp=PX.worldDecor(c,kind,v),[x,y]=at2(n,m);if(st?stand(sp,x,y,4):lie(sp,x,y)){if(st)out.decor+=own;else out.flat+=own}};
+      else if(k===KIND.open||k===KIND.ford||k===KIND.hill){const at2=(n,m)=>[X+2+Math.floor(hh(n)*12),Y+4+Math.floor(hh(m)*11)],D0=(kind,v,n,m,st)=>{const sp=PX.worldDecor(c,kind,v),[x,y]=at2(n,m);if(st?stand(sp,x,y,4):lie(sp,x,y)){if(st)out.decor+=own;else out.flat+=own}};
         const hill=k===KIND.hill;
         if(c==='grass'){if(hh(10)<(hill?.25:.45))for(let i=0;i<1+(hh(11)>.6?1:0);i++)D0('tuft',Math.floor(hh(12+i)*4),13+i,15+i);if(!hill&&hh(17)<.12)D0('flowers',Math.floor(hh(18)*4),19,20);
           if(hh(21)<(hill?.08:.05))D0('bush',Math.floor(hh(22)*4),23,24,1);if(hh(25)<(hill?.08:.03))D0('stone',Math.floor(hh(26)*4),27,28,1)}

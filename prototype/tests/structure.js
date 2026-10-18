@@ -1,6 +1,7 @@
 'use strict';
 // Structure: the rules that keep the code organized. No two scripts declare the same top-level name (a second `function`
-// would silently replace the first); the wiki loads the game's scripts in the game's order; every dialog's actions are owned
+// would silently replace the first); the wiki loads the game's scripts in the game's order; the world generator draws no
+// Math.random and calls nothing that differs between browsers; every dialog's actions are owned
 // by exactly one system; every kind of encounter knows what winning it means; monsters are data (the dragon is one); and the
 // fief stores' "Take" no longer calls up a garrison soldier.
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);
@@ -17,6 +18,15 @@ try{
  ok(order[0]==='core/core.js'&&order.slice(1,dataFirst).every(s=>s.startsWith('data/'))&&order.slice(dataFirst).every(s=>!s.startsWith('data/')),'core loads first, then all the data, then the systems');
  const wiki=[...get('wiki.html').matchAll(/<script src="(js\/[^"]+)"/g)].map(m=>m[1]);
  ok(wiki.join()===srcs.filter(s=>!/ui\/input\.js|main\.js/.test(s)).join(),'the wiki loads the same scripts in the same order (all but input and main)');
+ // ---- the generator (doc/WORLD_DESIGN.md §8.1, §15.2): its scripts in Phase 2's load order (worldmap.js last, its load line
+ // makes the world), and its files seeded and the same in every browser: no Math.random (nor rnd, rint or pick, which draw it),
+ // no Math.hypot, sin, cos, exp, pow, log or atan2 (their text read, comments aside)
+ {const want=['world/map.js','world/router.js','world/fog.js','world/resources.js','world/worldsettings.js','world/worldgen.js','world/worldplace.js','world/worldmap.js'],at=want.map(f=>order.indexOf(f));
+  ok(at.every((v,i)=>v>=0&&(!i||v===at[i-1]+1))&&order.indexOf('ui/map.js')===order.indexOf('ui/ui.js')+1,'the world scripts load in Phase 2\'s order ('+want.map(f=>f.split('/')[1]).join(', ')+'), the full map (ui/map.js) right after ui.js');
+  const gen=['js/world/worldsettings.js','js/world/worldgen.js','js/world/worldplace.js'],bad=[];
+  for(const f of gen){const s=get(f).replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm,'');if(!s.trim())bad.push(f+' is empty');
+   for(const m of s.matchAll(/Math\.(?:random|hypot|sin|cos|exp|pow|log\w*|atan2)\b|(?<![\w$.])(?:rnd|rint|pick)\s*\(/g))bad.push(f.split('/').pop()+': '+m[0])}
+  ok(!bad.length,'the generator ('+gen.map(f=>f.split('/').pop()).join(', ')+') never calls Math.random, rnd, rint or pick, nor Math.hypot, sin, cos, exp, pow, log or atan2'+(bad.length?': '+bad.join('; '):''))}
  // ---- extracted battle responsibilities keep a single owner; these are plain scripts, not isolated modules
  const battleOwners={
   'battle':['updateBattle'],

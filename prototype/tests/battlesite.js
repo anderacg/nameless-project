@@ -66,9 +66,9 @@ try{
   ok(!diff,'coverAt on 24 tiles spread over the map, the field run: today\'s answer each time ('+cv+' with cover)')}
  P.x=px;P.y=py;G.enc=enc;t.TERRAIN.on=on;
  // ---- the site's shape: today's values, the slots empty, the classic world's salt 0 and in the seed
- {const S=t.WM.battleSite(10,10),keys='tx ty t c name kinds clims road bridge elven salt river season region deep elev terrace cliff'.split(' ');
+ {const S=t.WM.battleSite(10,10),keys='tx ty t c name kinds clims road bridge elven salt river crossing season region deep elev terrace rough high cliff'.split(' ');
   ok(keys.every(k=>k in S)&&Object.keys(S).length===keys.length&&S.kinds.length===9&&S.clims.length===9,'a BattleSite: '+Object.keys(S).join(', '));
-  ok(['river','season','region','deep','elev','terrace','cliff'].every(k=>S[k]===null)&&t.WM.salt===0&&S.salt===0,'its later slots (river, season, region, deep forest, elevation, terrace, cliff) are empty, and the classic world\'s salt is 0');
+  ok(['river','crossing','season','region','deep','elev','terrace','rough','high','cliff'].every(k=>S[k]===null)&&t.WM.salt===0&&S.salt===0,'its later slots (river, crossing, season, region, deep forest, elevation, terrace, roughness, high ground, cliff) are empty, and the classic world\'s salt is 0');
   let fs=null;for(let i=0;i<N&&!fs;i+=13){const q=t.WM.battleSite(i%MW,Math.floor(i/MW));if(q.t===T_OPEN)fs=q}
   const env={c:fs.c,t:T_OPEN},a=t.terrainOf(fs,env),b=t.terrainOf({...fs,salt:1},env);
   ok(a.recipe===b.recipe&&J(a.edges)===J(b.edges)&&J(a.river)===J(b.river)&&a.seed!==b.seed,'another world\'s salt changes the field\'s seed, never its recipe, river or edges (D15)')}

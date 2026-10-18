@@ -53,6 +53,8 @@ try{
   {seed(9007);P.x=-999;P.y=-999;P.tx=P.ty=null;G.chase=null;t.setSpeed(3);for(let f=0;f<4000&&G.day<d0+3;f++)t.updateWorld(.05);G.mode='world';h.W7=fnv().s(saveStr()).x}
   const ids=['W1','W2','W3','W4','W5','W6','W7','W8'];
   try{const x=new XMLHttpRequest();x.open('GET','tests/worldprint.js',false);x.send();const m=/const EXPECT=(\{[^}]*\})/.exec(x.responseText),E=m&&Function('return '+m[1])(),diff=E?ids.filter(id=>E[id]!==h[id]):ids;
+   // (the generated world, -Gen: its own hashes until G1-G8 are recorded, doc/WORLD_DESIGN.md §15.2 wave 3)
+   if(t.WORLD.gen)info('the generated world, a new game in steps: '+ids.map(id=>id+' '+h[id]).join(', '));else
    ok(E&&!diff.length,'a new game in steps makes the world of worldprint\'s baseline, made at once (W1-W8'+(diff.length?'; differ: '+diff.map(id=>id+' '+h[id]+(E?' baseline '+E[id]:'')).join(', '):'')+')')}
   catch(e){ok(false,'worldprint\'s baseline read ('+e.message+')')}
   ok(!stray,'no random is drawn between its slices ('+stray+' of the '+draws+' since it began)');

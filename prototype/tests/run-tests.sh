@@ -1,15 +1,16 @@
 #!/usr/bin/env bash
 # Runs the headless test suites in Chrome or Edge and prints each suite's results.
-# Usage: tests/run-tests.sh [-j N] [-s SEED] [suite ...]   (default: every suite in tests/ except the harness)
+# Usage: tests/run-tests.sh [-j N] [-s SEED] [-g] [suite ...]   (default: every suite in tests/ except the harness)
 #   -j N     run N suites at once (a browser and profile each)      -s SEED  seed Math.random (?seed=SEED)
+#   -g       the generated world (?gen=1: data/world.js WORLD.gen)
 # After each suite: "# N pass, N fail, N.N s"; at the end "# summary: ...". Exits non-zero if any line reads FAIL, EXC or ERR.
 cd "$(dirname "$0")/.." || exit 1
-jobs=1 seed=""
-while getopts "j:s:" opt; do case $opt in j) jobs=$OPTARG;; s) seed=$OPTARG;; *) exit 2;; esac; done; shift $((OPTIND-1))
+jobs=1 seed="" gen=""
+while getopts "j:s:g" opt; do case $opt in j) jobs=$OPTARG;; s) seed=$OPTARG;; g) gen=1;; *) exit 2;; esac; done; shift $((OPTIND-1))
 # On Windows (Git Bash) hand over to the native runner: one DevTools-driven browser per worker with a reused profile, much
 # faster than a fresh --dump-dom browser per suite. Same output and exit code. (ASHMARK_DUMP_DOM=1 keeps the path below.)
 if [ -z "$ASHMARK_DUMP_DOM" ] && command -v powershell.exe >/dev/null && command -v cygpath >/dev/null; then
-  args=(-Parallel "$jobs"); [ -n "$seed" ] && args+=(-Seed "$seed"); [ $# -gt 0 ] && args+=(-Suites "$(IFS=,; echo "$*")")
+  args=(-Parallel "$jobs"); [ -n "$seed" ] && args+=(-Seed "$seed"); [ -n "$gen" ] && args+=(-Gen); [ $# -gt 0 ] && args+=(-Suites "$(IFS=,; echo "$*")")
   exec powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "& '$(cygpath -w "$(pwd)/tests/run-tests.ps1")' ${args[*]}"
 fi
 browser=""
@@ -21,7 +22,7 @@ done
 page="$(pwd)/Ashmark.html"; command -v cygpath >/dev/null && page="$(cygpath -m "$page")"
 work="$(mktemp -d)"; trap 'rm -rf "$work"' EXIT
 suites=("$@"); [ ${#suites[@]} -eq 0 ] && for f in tests/*.js; do n=$(basename "$f" .js); [ "$n" != harness ] && suites+=("$n"); done
-query=""; [ -n "$seed" ] && query="&seed=$seed"
+query=""; [ -n "$seed" ] && query="&seed=$seed"; [ -n "$gen" ] && query="$query&gen=1"
 now() { date +%s%3N; }
 run_one() { # index suite slot: writes $work/<index>.out, then <index>.ms (a profile per slot, reused: a new one is slow to start)
   local i=$1 s=$2 t0 out; t0=$(now)
