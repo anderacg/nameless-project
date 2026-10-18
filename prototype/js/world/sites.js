@@ -96,7 +96,7 @@ class Site extends WorldObject{
   // on the minimap in its kind's colour (grey, cleared)
   inView(V){return this.known()}
   draw(ents,cam,V){if(!this.inView(V))return;const s=this;
-    ents.push({st:true,y:s.y,f:()=>{const sx=Math.round(s.x-cam.x),sy=Math.round(s.y-cam.y);if(s.patch)ctx.drawImage(groundPatch(climAt(s.x,s.y)),sx-15,sy-4);if(s.cleared)ctx.globalAlpha=.5;const sp=siteSprite(s);ctx.drawImage(sp,sx-sp.ax,sy+8-sp.ay);if(sp.fire&&!s.cleared)drawFire(sx-sp.ax+sp.fire[0],sy+8-sp.ay+sp.fire[1],s.seed);if(sp.flag&&!s.cleared)drawFlag(s.flagCol(),sx-sp.ax+sp.flag[0],sy+8-sp.ay+sp.flag[1],s.seed);ctx.globalAlpha=1;
+    const sp0=siteSprite(s);ents.push({st:true,y:s.y,sh:sp0.sh?[sp0.sh,Math.round(s.x-cam.x)-sp0.ax,Math.round(s.y-cam.y)+8-sp0.ay]:null,f:()=>{const sx=Math.round(s.x-cam.x),sy=Math.round(s.y-cam.y);if(s.patch)ctx.drawImage(groundPatch(climAt(s.x,s.y)),sx-15,sy-4);if(s.cleared)ctx.globalAlpha=.5;const sp=siteSprite(s);ctx.drawImage(sp,sx-sp.ax,sy+8-sp.ay);if(!s.cleared)depthPic(sp,sx-sp.ax,sy+8-sp.ay);if(sp.fire&&!s.cleared)drawFire(sx-sp.ax+sp.fire[0],sy+8-sp.ay+sp.fire[1],s.seed);if(sp.flag&&!s.cleared)drawFlag(s.flagCol(),sx-sp.ax+sp.flag[0],sy+8-sp.ay+sp.flag[1],s.seed);ctx.globalAlpha=1;
       if(s.fromYou()<70)txt(s.name,sx,sy+12,s.cleared?'#9a958a':'#e4e0cf','center')}})}
   mapDot(V){return this.known()?[this.cleared?'#555':this.T.col,2]:null}
   tip(){return '<b>'+this.name+'</b>'+(this.cleared?'':chiefTip(this))+'<small>'+this.T.n+(this.cleared?' · empty for now':'')+'</small><span class="act">Click: go there</span>'}

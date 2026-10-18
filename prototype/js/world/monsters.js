@@ -13,7 +13,7 @@ class Monster extends WorldObject{
   // its figure (a mythic one in flight, its wings beating, bobbing, drawn over what it flies above; the rest a step each half a
   // body length walked: render.js stepOf), its count and level by how it means to fight
   draw(ents,cam,V){if(!this.inView(V))return;const m=this,M=MONSTERS[m.id],Y=M.mythic;
-    ents.push({y:m.y+(Y&&Y.fly?30:0),f:()=>{
+    ents.push({y:m.y+(Y&&Y.fly?30:0),top:!!(Y&&Y.fly),f:()=>{
       const s=monsterMapSprite(m.id,Y?Math.floor(performance.now()/260+(m.hx||0))%2:stepOf(m,Math.max(2,monsterMapSprite(m.id,0).cw/2),2)),w=s.width,h=s.ch,sx=Math.round(m.x-cam.x),sy=Math.round(m.y-cam.y),lift=Y&&Y.fly?6-Math.round(Math.sin(performance.now()/260)*2):0;
       ctx.fillStyle='rgba(0,0,0,.3)';if(Y)ctx.fillRect(sx-8,sy-1,16,3);else ctx.fillRect(sx-Math.max(2,(s.cw>>1)-1),sy-1,Math.max(4,s.cw-2),2);
       ctx.save();ctx.translate(sx,sy-lift);if(Y?m.dir<0:faceDir(m)<0)ctx.scale(-1,1);ctx.drawImage(s,-(w>>1),-s.height+2);ctx.restore();

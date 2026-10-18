@@ -316,7 +316,8 @@
      painted, then kept: md). PX.worldNatureSteps(plan, win, D, TO): a generator painting the window win {x, y, w, h, inner} (px)
      whose ground is D (RGBA, w×h) in small steps (yielding between them: sliced painting), touch TO (w×h, optional); returns the
      counts of what it painted (things on tiles in inner, rises with their middle in it, rock pixels in it, masses with their
-     first tile in it; cross: those from outside it reaching into it), its phases' ms (tm) and all (ms). PX.worldNaturePaint runs it through. What lies and stands is gathered
+     first tile in it; cross: those from outside it reaching into it), its phases' ms (tm) and all (ms), and what stands in inner
+     (stand: standIndex, below). PX.worldNaturePaint runs it through. What lies and stands is gathered
      from the tiles round the window in the map's own order, rises from the lattice round it, so whatever crosses its edge is
      painted as on the whole map: a window's pixels are the whole map's there, but within PX.WN_APRON of its edge (a range's
      outline reads its neighbours, each mass a pixel deeper): paint a window that much larger than what is kept. */
@@ -455,7 +456,27 @@
         if(ZO[q]&&Y0+j+ZO[q]-1>y)continue;
         if(t===2){if(low===cls)continue;D[o]=NV[0];D[o+1]=NV[1];D[o+2]=NV[2]}else{D[o]=sp.rgb[a*3];D[o+1]=sp.rgb[a*3+1];D[o+2]=sp.rgb[a*3+2]}S[q]=(S[q]&~15)|cls;ZO[q]=0;touch(q,1)}
       if(!(++n&127))yield}
-    lap('stand');out.ms=performance.now()-t0;return out};
+    lap('stand');out.stand=standIndex(items,I,ZO,wx0,wy0,ww,wh);out.ms=performance.now()-t0;return out};
+  /* the standing index of a window's inner rect I (what PX.worldNatureSteps hands back as stand, for the game's depth order:
+     gfx/depth.js draws what stands in front of a figure again over it): each standing thing whose drawn pixels reach into I (a
+     tree, a wood's trees, a bush, a stone, a cactus) and each column run of the ranges' rock there (rock rising up the screen, as
+     the battle's faces are cut: its foot the ground y of its nearest pixel, ZO), sorted by foot. {X, Y, w, h (I), n, E (Int16, 4
+     an entry, X, Y its origin: ox, oy, ref, foot; ref a sprite's number in PX.WN_SPR, its pixels sp.a from (ox, oy); or -len, a
+     run of rock at column ox from row oy, len rows), and a grid of STAND_CELL px cells over I for the lookup: C, R, at (C*R+1
+     starts), L (the entries each cell's pixels reach, in foot order)}. 8 bytes an entry, 2-4 more in the grid */
+  PX.WN_SPR=[];const STAND_CELL=32;
+  const sprNo=sp=>sp._wn!=null?sp._wn:(sp._wn=PX.WN_SPR.push(sp)-1);
+  function standIndex(items,I,ZO,wx0,wy0,ww,wh){const X=I.x,Y=I.y,w=I.w,h=I.h,ex1=X+w,ey1=Y+h,A=[];
+    for(const [y,x,sp] of items){const ox=x-sp.ax,oy=y-sp.ay,b=sp.box;if(ox+b[2]<X||ox+b[0]>=ex1||oy+b[3]<Y||oy+b[1]>=ey1)continue;A.push([y,ox,oy,sprNo(sp)])}
+    for(let x=X;x<ex1;x++){const c=x-wx0;for(let r=0;r<wh;r++){if(!ZO[r*ww+c])continue;let r1=r,f=0;while(r1<wh&&ZO[r1*ww+c]){const g=wy0+r1+ZO[r1*ww+c]-1;if(g>f)f=g;r1++}
+      const a=Math.max(wy0+r,Y),b=Math.min(wy0+r1,ey1);if(a<b)A.push([f,x,a,a-b]);r=r1}}
+    A.sort((p,q)=>p[0]-q[0]||p[1]-q[1]||p[2]-q[2]);
+    const n=A.length,E=new Int16Array(n*4),C=Math.ceil(w/STAND_CELL),R=Math.ceil(h/STAND_CELL),cnt=new Uint32Array(C*R+1),bx=new Int16Array(n*4);
+    A.forEach(([f,ox,oy,ref],k)=>{E.set([ox-X,oy-Y,ref,f-Y],k*4);const s=ref>=0?PX.WN_SPR[ref].box:[0,0,0,-ref-1];
+      bx.set([Math.max(0,ox+s[0]-X)/STAND_CELL|0,Math.max(0,oy+s[1]-Y)/STAND_CELL|0,Math.min(w-1,ox+s[2]-X)/STAND_CELL|0,Math.min(h-1,oy+s[3]-Y)/STAND_CELL|0],k*4)});
+    const each=fn=>{for(let k=0;k<n;k++)for(let j=bx[k*4+1];j<=bx[k*4+3];j++)for(let i=bx[k*4];i<=bx[k*4+2];i++)fn(j*C+i,k)};
+    each(q=>cnt[q+1]++);for(let q=0;q<C*R;q++)cnt[q+1]+=cnt[q];const at=cnt.slice(),L=new (n<65536?Uint16Array:Uint32Array)(cnt[C*R]);each((q,k)=>{L[at[q]++]=k});
+    return{X,Y,w,h,n,E,C,R,cell:STAND_CELL,at:cnt,L,get bytes(){return E.byteLength+cnt.byteLength+L.byteLength}}}
   PX.worldNaturePaint=(P,win,D,TO)=>runSteps(PX.worldNatureSteps(P,win,D,TO));
   // PX.worldNature(spec): the whole of a small map in one go (spec: the plan's, with D, its RGBA, and touch, a byte a pixel)
   PX.worldNature=spec=>{const t0=performance.now(),P=PX.worldNaturePlan(spec),o=PX.worldNaturePaint(P,{x:0,y:0,w:spec.W,h:spec.H},spec.D,spec.touch||null);o.ms=performance.now()-t0;

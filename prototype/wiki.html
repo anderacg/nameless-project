@@ -231,6 +231,7 @@ tr:last-child td{border-bottom:0}
 <script src="js/scene/town.js"></script>
 <script src="js/gfx/scene.js"></script>
 <script src="js/gfx/render.js"></script>
+<script src="js/gfx/depth.js"></script>
 <script src="js/gfx/vfx.js"></script>
 <script src="js/gfx/mist.js"></script>
 <script src="js/gfx/weapons.js"></script>
@@ -538,7 +539,7 @@ document.querySelectorAll('[data-spr]').forEach(e=>{
 const mc=document.getElementById('worldmap');mc.width=MW*TILE;mc.height=MH*TILE;const mg=mc.getContext('2d');mg.imageSmoothingEnabled=false;mg.drawImage(worldCv(),0,0);
 mg.globalAlpha=.28;landFresh();for(let k=0;k<LAND.length;k++){const i=LAND[k];if(i<0)continue;mg.fillStyle=FACS[TOWNS[i].owner].col;mg.fillRect((k%MW)*TILE,Math.floor(k/MW)*TILE,TILE,TILE)}mg.globalAlpha=1;
 mg.font='bold 26px "Atkinson Hyperlegible",sans-serif';mg.textAlign='center';
-for(const t of TOWNS){for(const l of t.lots||[]){const s=lotSprite(t,l);mg.drawImage(s,l.x*TILE,l.y*TILE)}// (its placed buildings, as the game draws them)
+for(const t of TOWNS){for(const l of t.lots||[]){const s=lotSprite(t,l);mg.globalAlpha=SHADOW.a;mg.drawImage(s.sh,l.x*TILE,l.y*TILE);mg.globalAlpha=1;mg.drawImage(s,l.x*TILE,l.y*TILE)}// (its placed buildings, as the game draws them)
   mg.fillStyle='rgba(0,0,0,.75)';mg.fillText(t.name,t.x+2,t.y+36);mg.fillStyle='#fff';mg.fillText(t.name,t.x,t.y+34)}
 
 /* search */

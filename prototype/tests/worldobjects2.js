@@ -171,15 +171,28 @@ try{
  // (the chase: dropped when, and met during the cool-down after a fight: its two lines, read as two tests)
  const oldDrop=ev('(o=>{const k=__oldObjKind(o);return '+OLD_CHASE.slice(OLD_CHASE.indexOf('if(!k')+3,OLD_CHASE.indexOf(')G.chase=null'))+'})');
  const oldCool=ev('(k=>'+OLD_CHASE.match(/(\[\'town\'[^\]]*\])\.includes\(k\)/)[0]+')');
- ev('window.__oldLotEnts=('+OLD_LOTS+');window.__oldDrawFolk=('+OLD_FOLK+');window.__oldDrawShips=('+OLD_SHIPS+');window.__oldDrawRefugees=('+OLD_REF+')');
+ // (the depth work (gfx/depth.js, doc/WORLD_DESIGN.md §12.5) changed what is drawn on purpose: each structure's shadow is its own
+ // picture, laid in one pass under them all (structures.js drawShadows), its picture kept for the depth (depthPic); everyone who
+ // moves has what stands in front of him drawn again over him (worldOverdraw); the clouds and weather, fog, night and lights come
+ // before the banners, labels, quest marks and your goal. The old texts are read with those changes, so the rest is held as before)
+ const depthLots=s=>s.replace(/(      ents\.push\(\{y:\(l\.y\+l\.n\)\*TILE-1,)f:\(\)=>\{\n(\s*\/\/[^\n]*\n)\s*const live=inSight[^\n]*\n/,
+   (m,a,c)=>"      const live=inSight((l.x+l.n/2)*TILE,(l.y+l.n/2)*TILE),sm=live?l.st!=='building'&&lotSprite(t,l):(seenTile(l.x,l.y)||seenTile(l.x+l.n-1,l.y+l.n-1))&&(l._mem||lotSprite(t,l));\n"+a+"sh:sm&&sm.sh?[sm.sh,X,Y-N]:null,f:()=>{\n"+c)
+  .replace('ctx.drawImage(m,X,Y-N);','ctx.drawImage(m,X,Y-N);depthPic(m,X,Y-N);').replace('else{ctx.drawImage(s,X,Y-N);','else{ctx.drawImage(s,X,Y-N);depthPic(s,X,Y-N);');
+ const depthDraw=s=>{const m=s.match(/(const q=TXTQ;TXTQ=null;[^\n]*)\n\s*drawEnv\(cam,V,1\);\n\s*drawQuestMarks\(cam\);\n\s*(if\(P\.tx!=null\)[^\n]*)\n/);
+  return s.replace(m[0],'drawEnv(cam,V,1);\n').replace('  // minimap','  drawBanners(cam);'+m[1]+'drawQuestMarks(cam);'+m[2]+'\n  // minimap')
+   .replace('ents.push({st:true,y:s.y,f:','ents.push({st:true,y:s.y,sh:(q=>q.sh?[q.sh,Math.round(s.x-cam.x)-q.ax,Math.round(s.y-cam.y)+8-q.ay]:null)(siteSprite(s)),f:')
+   .replace('ctx.drawImage(sp,sx-sp.ax,sy+8-sp.ay);','ctx.drawImage(sp,sx-sp.ax,sy+8-sp.ay);if(!s.cleared)depthPic(sp,sx-sp.ax,sy+8-sp.ay);')
+   .replace('bents.sort((a,b)=>a.y-b.y).forEach(e=>e.f());','WDEPTH.pics.length=0;drawShadows(bents);bents.sort((a,b)=>a.y-b.y).forEach(e=>e.f());')
+   .replace('ents.filter(e=>!e.st).sort((a,b)=>a.y-b.y).forEach(e=>e.f());','worldOverdraw(ents.filter(e=>!e.st).sort((a,b)=>a.y-b.y),cam);')};
+ ev('window.__oldLotEnts=('+depthLots(OLD_LOTS)+');window.__oldDrawFolk=('+OLD_FOLK+');window.__oldDrawShips=('+OLD_SHIPS+');window.__oldDrawRefugees=('+OLD_REF+')');
  // (drawWorld as it was: its helpers as they were; the minimap's movers were then the parties and caravans: worldObjects; the fog
  // as it is now (fog.js fogMem, drawWorldFog: the fog's look is tests/fog.js's))
  // (Phase 1 redrew the map's figures smaller on purpose, D25 (mapfigures.js holds them to their sizes): you are drawn as now in
  // both, and the movers the text draws its own old ways (beasts, herds, workers, ships, refugees, fights) are taken off the map
  // while the two are compared below; the parties and caravans draw themselves in both)
  // (and the parties' banners, drawn over all, as now: drawBanners; a spot on a banner picks its party, below)
- const PLINE=/if\(!P\.stay\)ents\.push\(\{y:P\.y,f:\(\)=>\{[\s\S]*?\}\}\);/,nowP=t.drawWorld.toString().match(PLINE)[0];const onFlag=(q,x,y)=>{const B=q&&q.banner&&t.bannerAt(q,0);if(!B)return false;const b=t.opaqueBox(B.s);return x>=B.x+b[0]&&x<=B.x+b[2]&&y>=B.y+b[1]&&y<=B.y+b[3]};
- const oldDraw=ev('('+since(OLD_DRAW).replace(PLINE,()=>nowP).replace('estateEnts(bents,cam,V)','__oldLotEnts(bents,cam,V)').replace('drawFolk(ents,cam,V)','__oldDrawFolk(ents,cam,V)').replace('drawShips(ents,cam,V)','__oldDrawShips(ents,cam,V)').replace('drawRefugees(ents,cam,V)','__oldDrawRefugees(ents,cam,V)').replace('worldObjects()','[...W.parties,...W.caravans.map(asParty)]').replace('atSize(miniCv,mw,mh)','atSize(WorldArt.mini(1),mw,mh)').replace("ctx.save();ctx.beginPath();ctx.rect(0,0,VW,VH);ctx.arc(px0,py0,V,0,Math.PI*2,true);ctx.clip('evenodd');ctx.drawImage(memCv(),0,0);ctx.restore();",'fogMem(memCv(),px0,py0,V);drawBanners(cam);').replace(/const px=P\.x-cam\.x,py=P\.y-cam\.y,gr=[^\n]*\n\s*drawDark\(cam\);/,'drawWorldFog(cam,V);')+')');
+ const PLINE=/if\(!P\.stay\)ents\.push\(\{y:P\.y,(?:own:1,)?f:\(\)=>\{[\s\S]*?\}\}\);/,nowP=t.drawWorld.toString().match(PLINE)[0];const onFlag=(q,x,y)=>{const B=q&&q.banner&&t.bannerAt(q,0);if(!B)return false;const b=t.opaqueBox(B.s);return x>=B.x+b[0]&&x<=B.x+b[2]&&y>=B.y+b[1]&&y<=B.y+b[3]};
+ const oldDraw=ev('('+depthDraw(since(OLD_DRAW)).replace(PLINE,()=>nowP).replace('estateEnts(bents,cam,V)','__oldLotEnts(bents,cam,V)').replace('drawFolk(ents,cam,V)','__oldDrawFolk(ents,cam,V)').replace('drawShips(ents,cam,V)','__oldDrawShips(ents,cam,V)').replace('drawRefugees(ents,cam,V)','__oldDrawRefugees(ents,cam,V)').replace('worldObjects()','[...W.parties,...W.caravans.map(asParty)]').replace('atSize(miniCv,mw,mh)','atSize(WorldArt.mini(1),mw,mh)').replace("ctx.save();ctx.beginPath();ctx.rect(0,0,VW,VH);ctx.arc(px0,py0,V,0,Math.PI*2,true);ctx.clip('evenodd');ctx.drawImage(memCv(),0,0);ctx.restore();",'fogMem(memCv(),px0,py0,V);').replace(/const px=P\.x-cam\.x,py=P\.y-cam\.y,gr=[^\n]*\n\s*drawDark\(cam\);/,'drawWorldFog(cam,V);')+')');
  ok([OLD_PICK,OLD_INTERACT,OLD_TIP,OLD_DRAW].every(s=>s.length>500)&&/estateEnts\(bents/.test(OLD_DRAW)&&/worldObjects\(\)/.test(OLD_DRAW),'the old ways are kept as text ('+[OLD_PICK,OLD_INTERACT,OLD_TIP,OLD_DRAW].map(s=>s.length).join(', ')+' characters)');
  // ---- a crowd by a holding: a lord, a band beside him, two patrols, a caravan, your companion's party, a beast and the dragon,
  // herds wild and kept, refugees, workers on the road, every kind of site and a ship; some made as a save or a test makes them

@@ -65,24 +65,24 @@ function drawWorld(){
   for(const m of W.monsters)asMonster(m).draw(ents,cam,V);
   drawHerds(ents,cam,V);// (a pasture's herd: one animal on each worked field tile; the rest as herds: critters.js)
   if(P.raid)ents.push({y:P.y-1,f:()=>txt('Raiding '+Math.round(P.raid.t/RAID_TIME*100)+'%',Math.round(P.x-cam.x),Math.round(P.y-20-cam.y),'#ff9a90','center')});
-  if(P.siege)ents.push({y:P.y-1,f:()=>{const s=campSprite(77,'bandit'),X=Math.round(P.x-24-s.ax-cam.x),Y=Math.round(P.y+2-s.ay-cam.y);ctx.drawImage(s,X,Y);drawFire(X+s.fire[0],Y+s.fire[1],0);drawFlag(FACS.player.col,X+s.flag[0],Y+s.flag[1],0);txt('Siege day '+P.siege.days,Math.round(P.x-cam.x),Math.round(P.y-18-cam.y),'#e8b94a','center')}});
+  if(P.siege)ents.push({y:P.y-1,f:()=>{const s=campSprite(77,'bandit'),X=Math.round(P.x-24-s.ax-cam.x),Y=Math.round(P.y+2-s.ay-cam.y);ctx.globalAlpha=SHADOW.a;ctx.drawImage(s.sh,X,Y);ctx.globalAlpha=1;ctx.drawImage(s,X,Y);drawFire(X+s.fire[0],Y+s.fire[1],0);drawFlag(FACS.player.col,X+s.flag[0],Y+s.flag[1],0);txt('Siege day '+P.siege.days,Math.round(P.x-cam.x),Math.round(P.y-18-cam.y),'#e8b94a','center')}});
   // (you: on foot, a step each 2.5 px you walk; mounted, your horse on the same feet, a step each 4 px; your host behind, as a lord's: drawParties)
-  if(!P.stay)ents.push({y:P.y,f:()=>{const sx=Math.round(P.x-cam.x),sy=Math.round(P.y-cam.y),m=mountDef(),go=mapStepping(P),s=partySprite('#e8b94a',m?m.col:'',go?frameOf(P,m?4:2.5,4):0);
+  if(!P.stay)ents.push({y:P.y,own:1,f:()=>{const sx=Math.round(P.x-cam.x),sy=Math.round(P.y-cam.y),m=mountDef(),go=mapStepping(P),s=partySprite('#e8b94a',m?m.col:'',go?frameOf(P,m?4:2.5,4):0);
     ctx.fillStyle='rgba(0,0,0,.3)';ctx.fillRect(sx-(m?6:3),sy-1,m?12:6,2);drawHost(partySize(),'#3d74d6',sx-(m?P.dir*4:0),sy+2,P.dir,go?WALKED.get(P)||0:null,5,P.race);ctx.save();ctx.translate(sx,sy-10);ctx.scale(P.dir,1);ctx.drawImage(s,-(s.width>>1),13-s.height);ctx.restore();BANNERQ.push({o:P})}});
   drawFolk(ents,cam,V);drawCaravans(ents,cam,V);drawShips(ents,cam,V);drawRefugees(ents,cam,V);drawFights(ents,cam,V);
-  // buildings, camps and sites first (in their own order), then every character over them, then all their labels on top
-  TXTQ=[];TXTQ.ctx=ctx;LIGHTQ=[];BANNERQ=[];const bents=[];estateEnts(bents,cam,V);for(const e of ents.filter(e=>e.st))bents.push(e);
-  bents.sort((a,b)=>a.y-b.y).forEach(e=>e.f());
+  // the order: the ground (the chunks: their trees, woods and ranges painted in), what lies flat (fields, yards, borders), the
+  // shadows of what is built (one pass), the buildings, moored boats, camps and sites (in their own order, by their feet), then everyone who moves by their feet, each with
+  // what stands in front of him drawn again over him (depth.js worldOverdraw; whoever flies, after them all); then the clouds,
+  // smoke and weather, the fog, the night and its lights, and over it all the banners and every label, the quest marks, your
+  // goal and the minimap
+  TXTQ=[];TXTQ.ctx=ctx;LIGHTQ=[];BANNERQ=[];WDEPTH.pics.length=0;const bents=[];estateEnts(bents,cam,V);for(const e of ents.filter(e=>e.st))bents.push(e);
+  drawShadows(bents);bents.sort((a,b)=>a.y-b.y).forEach(e=>e.f());// (their shadows first, in one pass: structures.js)
   // fog of war: keep the scene of structures, draw everyone, then put the remembered scene back over all but your sight, so
   // nothing that moves shows outside it; labels likewise (a place's, where you know the land; anyone's, only in your sight)
   {const mg=memCv().getContext('2d');mg.clearRect(0,0,VW,VH);mg.drawImage(cv,0,0)}const nPlace=TXTQ.length,px0=P.x-cam.x,py0=P.y-cam.y;
-  ents.filter(e=>!e.st).sort((a,b)=>a.y-b.y).forEach(e=>e.f());
+  worldOverdraw(ents.filter(e=>!e.st).sort((a,b)=>a.y-b.y),cam);
   fogMem(memCv(),px0,py0,V);
-  drawBanners(cam);// (the parties' banners, over all, their labels queued with the rest)
-  const q=TXTQ;TXTQ=null;q.forEach((a,i)=>{const wx=a[1]+cam.x,wy=a[2]+cam.y;if(i<nPlace?seenAt(wx,wy+6):inSight(wx,wy+8))txt(...a)});
   drawEnv(cam,V,1);
-  drawQuestMarks(cam);
-  if(P.tx!=null){const sx=Math.round(P.tx-cam.x),sy=Math.round(P.ty-cam.y);ctx.strokeStyle='#e8b94a';ctx.lineWidth=1;ctx.strokeRect(sx-3.5,sy-3.5,7,7)}
   // fog and night: the land you remember, outside your sight, lies dim; land you have never seen is dark (fog.js)
   drawWorldFog(cam,V);
   // the tile grid and a building being placed lie over the fog
@@ -93,6 +93,10 @@ function drawWorld(){
   // torchlight: a warm glow over the dark, and the flame itself, flickering
   {const now=performance.now();for(const L of LIGHTQ){if(!inSight(L.x+cam.x,L.y+cam.y))continue;const r=L.r*(1+.06*Math.sin(now/90+L.x)),g=ctx.createRadialGradient(L.x,L.y,1,L.x,L.y,r);g.addColorStop(0,'rgba(255,190,90,'+(.12+.28*a).toFixed(3)+')');g.addColorStop(1,'rgba(255,150,60,0)');
     ctx.save();ctx.globalCompositeOperation='lighter';ctx.fillStyle=g;ctx.fillRect(L.x-r,L.y-r,2*r,2*r);ctx.restore();const f=Math.floor(now/120+L.x)%2;rect(ctx,'#e8803a',L.x-1+f,L.y-2,2,2);rect(ctx,'#ffe090',L.x,L.y-1-f,1,1)}}
+  drawBanners(cam);// (the parties' banners, over all, their labels queued with the rest)
+  const q=TXTQ;TXTQ=null;q.forEach((a,i)=>{const wx=a[1]+cam.x,wy=a[2]+cam.y;if(i<nPlace?seenAt(wx,wy+6):inSight(wx,wy+8))txt(...a)});
+  drawQuestMarks(cam);
+  if(P.tx!=null){const sx=Math.round(P.tx-cam.x),sy=Math.round(P.ty-cam.y);ctx.strokeStyle='#e8b94a';ctx.lineWidth=1;ctx.strokeRect(sx-3.5,sy-3.5,7,7)}
   // minimap (the land from the tile data, a pixel per k tiles: worldart.js WorldArt.mini)
   const MS=112/MW,mk=Math.max(1,Math.round(MW/256)),mw=Math.round(MW*MS),mh=Math.round(MH*MS),mx=VW-mw-6,my=6,dot=(x,y,col,s)=>rect(ctx,col,mx+Math.floor(x/TILE*MS)-(s>>1),my+Math.floor(y/TILE*MS)-(s>>1),s,s);
   ctx.fillStyle='#000';ctx.fillRect(mx-1,my-1,mw+2,mh+2);ctx.drawImage(atSize(WorldArt.mini(mk),mw,mh),mx,my);ctx.globalAlpha=.4;ctx.drawImage(atSize(landMiniCv(),mw,mh),mx,my);ctx.globalAlpha=1;ctx.drawImage(atSize(fogMiniCv(),mw,mh),mx,my);

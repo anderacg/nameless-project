@@ -6,13 +6,14 @@
 
 /* placed buildings */
 // a building's picture: from the engine by its type, its people, its seed and the climate it stands in; a ruined one is its building
-// burnt (charred, with ash); cached on the lot until it changes
+// burnt (charred, with ash); cached on the lot until it changes. Its ground shadow is a picture of its own (sh, and the lot's _sh),
+// laid in the shadow pass under every building (drawShadows), never baked under its walls
 function lotSprite(t,l){
   if(l._s&&l._st===l.st&&l._lv===l.lv&&l._fort===l.fort)return l._s;const c=climAt((l.x+l.n/2)*TILE,(l.y+l.n/2)*TILE);
   const b=PX.building({type:l.type,style:lotPeople(t,l),seed:l.seed,env:c,snow:c==='frost',lv:l.k==='house'||l.k==='centre'?1:l.lv,...(l.k==='centre'?{view:'top',fort:l.fort||0}:{})});
-  let cv=mkc(b.w,b.h,g=>{g.drawImage(b.shadow,0,0);g.drawImage(b.img,0,0)});
+  let cv=mkc(b.w,b.h,g=>g.drawImage(b.img,0,0));
   if(l.st==='ruined')cv=charred(cv,l.seed);
-  cv.flag=b.flag;l._st=l.st;l._lv=l.lv;l._fort=l.fort;return l._s=cv;
+  cv.flag=b.flag;cv.sh=l._sh=solidShadow(b.shadow);l._st=l.st;l._lv=l.lv;l._fort=l.fort;return l._s=cv;
 }
 // burnt: every pixel darkened toward soot, a scatter of ash and the last embers (still whole pixels, never half-see-through)
 function charred(src,seed){return mkc(src.width,src.height,g=>{g.drawImage(src,0,0);const d=g.getImageData(0,0,src.width,src.height),a=d.data;
@@ -36,12 +37,13 @@ function lotEnts(ents,cam,V){for(const t of TOWNS)t.draw(ents,cam,V)}
 function holdingEnts(t,ents,cam,V){
   if(!t.lots||Math.hypot(t.x-P.x,t.y-P.y)>V+340)return;const now=facCol(t),live0=inSight(t.x,t.y);if(live0)t._memCol=now;const col=live0?now:t._memCol||now;
     for(const l of t.lots){const N=l.n*TILE,X=Math.round(l.x*TILE-cam.x),Y=Math.round((l.y+l.n)*TILE-cam.y);if(X>VW||X+N<0||Y-N>VH+20||Y<-12)continue;
-      ents.push({y:(l.y+l.n)*TILE-1,f:()=>{
+      // (its shadow, in the shadow pass: where its building is drawn, as you last saw it outside your sight; none while it is going up)
+      const live=inSight((l.x+l.n/2)*TILE,(l.y+l.n/2)*TILE),sm=live?l.st!=='building'&&lotSprite(t,l):(seenTile(l.x,l.y)||seenTile(l.x+l.n-1,l.y+l.n-1))&&(l._mem||lotSprite(t,l));
+      ents.push({y:(l.y+l.n)*TILE-1,sh:sm&&sm.sh?[sm.sh,X,Y-N]:null,f:()=>{
         // outside your sight: the building as you last saw it (fog.js), or nothing if you never saw its ground
-        const live=inSight((l.x+l.n/2)*TILE,(l.y+l.n/2)*TILE);
-        if(!live){if(!seenTile(l.x,l.y)&&!seenTile(l.x+l.n-1,l.y+l.n-1))return;const m=l._mem||lotSprite(t,l);ctx.drawImage(m,X,Y-N);if(l.k==='centre'&&(l._memSt||l.st)!=='ruined'){if(m.flag)drawFlag(col,X+m.flag[0],Y-N+m.flag[1],t.seed);txt(t.name,Math.round(t.x-cam.x),Math.round(t.y+16-cam.y),'#a8a496','center')}return}
+        if(!live){if(!seenTile(l.x,l.y)&&!seenTile(l.x+l.n-1,l.y+l.n-1))return;const m=l._mem||lotSprite(t,l);ctx.drawImage(m,X,Y-N);depthPic(m,X,Y-N);if(l.k==='centre'&&(l._memSt||l.st)!=='ruined'){if(m.flag)drawFlag(col,X+m.flag[0],Y-N+m.flag[1],t.seed);txt(t.name,Math.round(t.x-cam.x),Math.round(t.y+16-cam.y),'#a8a496','center')}return}
         const s=lotSprite(t,l),w=t.work&&(t.work.lot?t.work.lot===l.id:t.work.k===l.k||t.work.k==='wall'&&l.k==='centre'),p=w?workProg(t):0;l._mem=s;l._memSt=l.st;
-        if(l.st==='building')drawSite(s,X,Y,N,p,false,l.seed);else{ctx.drawImage(s,X,Y-N);if(w&&l.st==='built')drawSite(s,X,Y,N,p,true,l.seed)}
+        if(l.st==='building')drawSite(s,X,Y,N,p,false,l.seed);else{ctx.drawImage(s,X,Y-N);depthPic(s,X,Y-N);if(w&&l.st==='built')drawSite(s,X,Y,N,p,true,l.seed)}
         if(ESTATES[l.k]&&sabotaged(t,l.k)){const now=performance.now()/1000;for(let i=0;i<6;i++){const ph=(now*.35+i/6)%1;ctx.globalAlpha=(1-ph)*.6;rect(ctx,ph<.3?'#4a4440':'#7a7470',Math.round(X+N/2-1+Math.sin(ph*6+i)*3+ph*5),Math.round(Y-N*.6-ph*20),2,2)}ctx.globalAlpha=1}
         if(l.k==='centre'&&l.st!=='ruined'){if(s.flag)drawFlag(col,X+s.flag[0],Y-N+s.flag[1],t.seed);holdingLabel(t,cam,X,Y,N)}
         if(ESTATES[l.k]){const m=lotMid(l);if(Math.hypot(m.x-P.x,m.y-P.y)<60)txt(ESTATES[l.k].n,Math.round(m.x-cam.x),Y+8,'#c8c2ae','center')}}});
@@ -78,7 +80,6 @@ function holdingLabel(t,cam,X,Y,N){
 }
 
 /* estates: fields, pastures, pits and piers lie flat on the tiles they keep; their buildings are lots like any other */
-const withShadow=b=>mkc(Math.max(b.w,b.shadow.width),Math.max(b.h,b.shadow.height),g=>{g.drawImage(b.shadow,0,0);g.drawImage(b.img,0,0)});
 const ROCK_MAT={grass:'stone',frost:'stone',desert:'sandstone',swamp:'stone'};
 // which way the water lies from a port's shore tile, and where its pier starts (the shore's edge)
 function pierOf(t){
@@ -174,16 +175,31 @@ function estateBoats(t,lv){
 // a moored boat rocks gently at its lines (a pixel, slower than one under way)
 function drawMoored(o,cam){
   const bob=Math.floor(performance.now()/700+o.seed)%2,X=Math.round(o.x-o.b.ax-cam.x),Y=Math.round(o.y-o.b.ay-cam.y)+bob;
-  ctx.drawImage(o.b.img,X,Y);ctx.fillStyle='#4c3c34';
+  ctx.drawImage(o.b.img,X,Y);depthPic(o.b.img,X,Y);ctx.fillStyle='#4c3c34';
   for(const [x0,y0,x1,y1] of o.ropes){const a=[x0,y0+bob],k=Math.max(Math.abs(x1-a[0]),Math.abs(y1-a[1]),1);
     for(let j=1;j<k;j++)ctx.fillRect(Math.round(a[0]+(x1-a[0])*j/k-cam.x),Math.round(a[1]+(y1-a[1])*j/k-cam.y),1,1)}
 }
+
+/* shadows: each standing structure's ground shadow is a picture of its own (sh: solid, the shadow's colour where it falls), and the
+   shadow pass (drawShadows, render.js drawWorld: over the flat ground, under everything standing) lays them all as one mask at
+   SHADOW.a, once: two shadows never darken each other, and none is drawn over a neighbour in the depth order. A camp's tents
+   come from the engine with their shadows baked in: split from them (splitShadow: the half-clear pixels are shadow) */
+const SHADOW={a:.28,col:[20,24,12]};let SHM=null;
+function solidShadow(src){return mkc(src.width,src.height,g=>{g.drawImage(src,0,0);const d=g.getImageData(0,0,src.width,src.height),a=d.data;
+  for(let i=0;i<a.length;i+=4)if(a[i+3]){a[i]=SHADOW.col[0];a[i+1]=SHADOW.col[1];a[i+2]=SHADOW.col[2];a[i+3]=255}g.putImageData(d,0,0)})}
+function splitShadow(src){const w=src.width,h=src.height,d=src.getContext('2d').getImageData(0,0,w,h).data,B=new ImageData(w,h),S=new ImageData(w,h);
+  for(let i=0;i<d.length;i+=4){if(!d[i+3])continue;if(d[i+3]===255)B.data.set(d.subarray(i,i+4),i);else S.data.set([SHADOW.col[0],SHADOW.col[1],SHADOW.col[2],255],i)}
+  const cv=mkc(w,h,g=>g.putImageData(B,0,0));cv.sh=mkc(w,h,g=>g.putImageData(S,0,0));return cv}
+// the shadow pass: the entries' sh ([picture, x, y] on the screen) as one mask, laid once
+function drawShadows(list){let any=false;for(const e of list)if(e.sh){any=true;break}if(!any)return;const W=ctx.canvas.width,H=ctx.canvas.height;
+  if(!SHM||SHM.width!==W||SHM.height!==H)SHM=mkc(W,H,()=>{});const g=SHM.getContext('2d');g.clearRect(0,0,W,H);for(const e of list)if(e.sh)g.drawImage(e.sh[0],e.sh[1],e.sh[2]);
+  ctx.globalAlpha=SHADOW.a;ctx.drawImage(SHM,0,0);ctx.globalAlpha=1}
 
 /* camps (PX.camp): a bandit camp is one or two tents and a fire on 2 x 2 tiles; its fire's flame (drawFire) and any flag are
    drawn over it */
 function campSprite(i,kind,banner){
   const k='camp'+i+(kind||'');if(spr[k])return spr[k];
-  const c=PX.camp({kind:kind||'bandit',seed:i*131+7,banner}),cv=c.img;cv.ax=c.ax;cv.ay=c.ay;cv.flag=c.flag;cv.fire=c.fire;return spr[k]=cv;
+  const c=PX.camp({kind:kind||'bandit',seed:i*131+7,banner}),cv=splitShadow(c.img);cv.ax=c.ax;cv.ay=c.ay;cv.flag=c.flag;cv.fire=c.fire;return spr[k]=cv;
 }
 
 /* sites (sites.js), each drawn by PX.site: a cave in its climate's rock, ruins, a shrine (each on its own tile), a hideout or a
@@ -192,9 +208,9 @@ function siteSprite(s){s=siteOf(s);// (plain data too)
   if(s instanceof BanditCamp)return campSprite(s.seed,'bandit');// a bandit camp: the big camp, as the siege camp is drawn
   const c=climAt(s.x,s.y),k='site'+s.type+s.seed+c+(s.kind!=null?s.kind:'');if(spr[k])return spr[k];let cv;
   const b=PX.site({type:s.type,style:'human',seed:s.seed,env:c,mat:ROCK_MAT[c],snow:c==='frost',glow:c==='desert'?'#e8c040':'#7fd8e8',banner:s.banner()});
-  if(b.camp){cv=b.img;cv.ax=b.ax;cv.ay=b.ay;cv.flag=b.flag;cv.fire=b.fire}
+  if(b.camp){cv=splitShadow(b.img);cv.ax=b.ax;cv.ay=b.ay;cv.flag=b.flag;cv.fire=b.fire}
   // the rest stand on their own tile, drawn 8 below the site's point (the tile's middle); a cave's point is its mouth, in front
   // of its tile (CAVE_MOUTH below the tile's bottom edge)
-  else{cv=withShadow(b);cv.ax=b.w/2;cv.ay=b.h+(s.mouth?8+CAVE_MOUTH:0)}
+  else{cv=mkc(b.w,b.h,g=>g.drawImage(b.img,0,0));cv.sh=solidShadow(b.shadow);cv.ax=b.w/2;cv.ay=b.h+(s.mouth?8+CAVE_MOUTH:0)}
   return spr[k]=cv;
 }

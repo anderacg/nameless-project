@@ -140,6 +140,11 @@ const runGen=gen=>{let r;while(!(r=gen.next()).done);return r.value};
 //   whole(): the whole map as one canvas (the old worldCv: for the blit until render.js draws by chunks, the wiki and the tests;
 //     painted chunk by chunk, chunks the LRU holds copied); sets NATURE.
 //   mini(k): the minimap from the tile data, 1 px per k tiles (1: today's), kept until invalidate.
+//   standing(x0, y0, x1, y1, fn): what stands on the map's rect (px, inclusive), from the standing index each chunk keeps with its
+//     picture (engine/worldnature.js standIndex: the trees, the small things standing, the ranges' rock in column runs; a chunk
+//     not painted yet is painted): fn(S, k) once for each entry k of a chunk's index S whose grid cells meet the rect (gfx/
+//     depth.js); without fn, a list of {x, y (its foot), s (its sprite; null, a run of rock), dx, dy (where s is drawn), box (its
+//     pixels in its chunk, [x0, y0, x1, y1])}, as the battle's props.
 //   bytes(): what it holds.
 const WorldArt={
   plan:null,chunks:new Map(),jobs:new Map(),queue:[],pool:[],view:new Set(),full:null,dirty:new Set(),cnt:new Map(),minis:{},last:null,slice:4,REACH:8,
@@ -185,8 +190,15 @@ const WorldArt={
       let s=0;N.t=Object.keys(tm).map(q=>q+' '+(s+=tm[q]).toFixed(0)).join(', ');NATURE=N}
     return this.full},
   mini(k=1){return this.minis[k]||(this.minis[k]=mkc(Math.ceil(MW/k),Math.ceil(MH/k),g=>{for(let y=0;y*k<MH;y++)for(let x=0;x*k<MW;x++){const i=Math.min(MH-1,y*k+(k>>1))*MW+Math.min(MW-1,x*k+(k>>1));rect(g,PAL[CLIMS[climate[i]]].mini[tiles[i]],x,y,1,1)}}))},
-  bytes(){let c=0;for(const q of this.chunks.values())c+=q.cv.width*q.cv.height*4;let p=0;for(const q of this.pool)p+=q.width*q.height*4;const pl=this.plan;
-    return{chunks:c,pool:p,full:this.full?this.full.width*this.full.height*4:0,plan:pl?pl.dep.byteLength+pl.clear.bytes+pl.nature.bytes:0}}
+  standing(x0,y0,x1,y1,fn){const out=fn?null:[],seen=this.seen||(this.seen=new Set());x0=Math.max(0,Math.floor(x0));y0=Math.max(0,Math.floor(y0));x1=Math.min(MW*TILE-1,Math.floor(x1));y1=Math.min(MH*TILE-1,Math.floor(y1));
+    for(let cy=Math.floor(y0/CHUNK);cy<=Math.floor(y1/CHUNK)&&x0<=x1;cy++)for(let cx=Math.floor(x0/CHUNK);cx<=Math.floor(x1/CHUNK);cx++){const k=cy*this.cols+cx;if(!this.chunks.has(k))this.chunk(cx,cy);const S=this.chunks.get(k).n.stand,cs=S.cell;seen.clear();
+      for(let j=Math.max(0,Math.floor((y0-S.Y)/cs));j<=Math.min(S.R-1,Math.floor((y1-S.Y)/cs));j++)for(let i=Math.max(0,Math.floor((x0-S.X)/cs));i<=Math.min(S.C-1,Math.floor((x1-S.X)/cs));i++){const q=j*S.C+i;
+        for(let p=S.at[q];p<S.at[q+1];p++){const e=S.L[p];if(seen.has(e))continue;seen.add(e);if(fn){fn(S,e);continue}
+          const E=S.E,o=e*4,dx=S.X+E[o],dy=S.Y+E[o+1],r=E[o+2],s=r>=0?PX.WN_SPR[r]:null,b=s?s.box:[0,0,0,-r-1];
+          out.push({x:s?dx+s.ax:dx,y:S.Y+E[o+3],s,dx,dy,box:[Math.max(S.X,dx+b[0]),Math.max(S.Y,dy+b[1]),Math.min(S.X+S.w-1,dx+b[2]),Math.min(S.Y+S.h-1,dy+b[3])]})}}}
+    return out},
+  bytes(){let c=0,s=0;for(const q of this.chunks.values()){c+=q.cv.width*q.cv.height*4;s+=q.n.stand.bytes}let p=0;for(const q of this.pool)p+=q.width*q.height*4;const pl=this.plan;
+    return{chunks:c,pool:p,full:this.full?this.full.width*this.full.height*4:0,plan:pl?pl.dep.byteLength+pl.clear.bytes+pl.nature.bytes:0,stand:s}}
 };
 // a world goes in (useWorld: a new game's too, whose lots differ from the title screen's): painted afresh when next drawn, minimap too
 onWorld(()=>WorldArt.invalidate());
