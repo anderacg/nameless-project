@@ -3,6 +3,19 @@
 // Group identity is independent of tactical role. Lists belong to the active battle, never fixed category buckets.
 const playerGroups=()=>B?[...new Set([...(B.playerOrder||[]),...Object.keys(B.groups)])].filter(id=>B.groups[id]?.player):[];
 const groupName=id=>id==='all'?'All troops':B&&B.groups[id]?B.groups[id].name:id;
+/* the sides' colours, the one table for everything the battle draws by side: yours blue, your allies' (another lord's men on your
+   side: their groups' ally) green, the enemy's red. ui: marks, dots, bars, rings; rout: the paler shade of one running; rgb: the
+   same as ui for rgba() (order paths); say: words over a man; plate: a group's icon (its colour, lighter top, darker foot);
+   tabard: the side's cloth on the soldiers (people.js PPAL) */
+const SIDE={
+  own:{ui:'#6fa8e0',rout:'#c8d8f0',rgb:'111,168,224',say:'#9fc0ff',plate:['#3466c0','#5a8ae0','#24488a'],tabard:'blue'},
+  ally:{ui:'#5cc06c',rout:'#c4ecc4',rgb:'92,192,108',say:'#a8e6a4',plate:['#2c8a44','#4cb468','#1c5e30'],tabard:'forest'},
+  foe:{ui:'#e0605a',rout:'#f2c0b8',rgb:'224,96,90',say:'#ff9a90',plate:['#a8443e','#c8605a','#7a2e2a'],tabard:'red'}};
+// whose a soldier or a group is: 'own', 'ally' or 'foe' (a soldier by his group's ally)
+const sideKey=x=>x.team?'foe':(x.ally??(x.grp&&B&&B.groups[x.grp]&&B.groups[x.grp].ally))?'ally':'own';
+const sideCol=(x,k='ui')=>SIDE[sideKey(x)][k];
+// a soldier's side for his sprite (sprites.js unitSprite: 0 yours, 1 theirs, 2 your allies')
+const spriteTeam=u=>u.team?1:sideKey(u)==='ally'?2:0;
 // the manual control of your hero (WASD, Space, F, B, skill slots) is set aside for now: you command, your hero fights on their
 // own (RTS command: commands.js). true brings it back here (its keys and buttons are commented out in input.js and Ashmark.html)
 let MANUAL_HERO=false;

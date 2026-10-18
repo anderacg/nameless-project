@@ -65,7 +65,7 @@
         <button class="btn sm" type="button" data-bspeed="2" aria-pressed="false">2×</button>
         <button class="btn sm" type="button" data-bspeed="5" aria-pressed="false">5×</button>
         <button class="btn sm" type="button" id="bSkills" aria-pressed="true" title="K · Auto skills: your hero and companions use their skills and special moves (Shield Bash, Shove, Dodge) when the moment is right; off, never">Skills</button>
-        <button class="btn sm" type="button" id="bAuto" aria-pressed="false" title="A · The AI commands your army (off: they do only what you order; any order takes it back)">AI</button>
+        <button class="btn sm" type="button" id="bAuto" aria-pressed="false" title="A · The AI commands the selected groups, or with none selected your whole army; A again takes them back, and any order you give a group takes that group back">AI</button>
         <button class="btn sm" type="button" id="hpBtn" aria-pressed="true" title="Health bars over every fighter">HP</button>
       </div>
       <section class="binfo" id="bInfo" aria-label="Selected unit"></section>
@@ -75,6 +75,7 @@
             <button class="obtn" type="button" data-order="hold" data-key="H" title="Hold: stop and stand in formation where they are (H)"></button>
             <button class="obtn" type="button" data-order="charge" data-key="C" title="Run: they move at a run; a run at an enemy is a charge (C)"></button>
             <button class="obtn" type="button" data-order="advance" data-key="V" title="Walk: they move at a walk, keeping their formation (V)"></button>
+            <button class="obtn" type="button" id="bAmove" data-key="D" aria-pressed="false" title="Attack-move: their next order on the ground (a right-click, a line, a tap) marches there, fighting any enemy met on the way, then on to the place (D, or Ctrl + right-click; Esc: off)"></button>
             <button class="obtn" type="button" data-order="withdraw" data-key="W" title="Withdraw: flee the battle off your edge of the field, striking no one; once everyone has withdrawn, the battle ends as your retreat (W)"></button>
           </div>
           <div class="ogrp" role="group" aria-label="How they move and fight">

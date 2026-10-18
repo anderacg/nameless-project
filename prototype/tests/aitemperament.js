@@ -19,7 +19,7 @@ window.RUN=()=>{const t=T,L=t.BattleLab,o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL '
  ok(pick([G('elf_archer',21),G('hum_foot',9)])==='elf','70% elves and 30% men: elf (the dominant race)');
  ok(pick([G('boar',10),G('spider',10)])===null,'beasts: none (the base)');
  ok(pick([G('militia',20),G('archer',10)])===null,'generic levies of no race: none (the base)');
- army([G('orc_grunt',20)],[G('dw_clan',20)]);ok(t.temperFor(0)==='orc'&&t.temperFor(1)==='dwarf','each side its own: your army and the enemy’s apart');
+ army([G('orc_grunt',20)],[G('dw_clan',20)],null,{ai:true});ok(t.temperFor(0)==='orc'&&t.temperFor(1)==='dwarf','each side its own: your army (the AI’s: its captain plans with the groups it has, deploy.js aiHas) and the enemy’s apart');
  // ----- kept once in the captain's memory; the enemy's style told once, not human's nor your own army's
  let w=army([G('hum_foot',20)],[G('orc_grunt',20)],[[200,300],[800,300]]);let n0=t.G.msgs.length;t.command(1);t.command(1);
  ok(t.captainMem(1).temper==='orc'&&said('The orcs come on in a frenzy.')===1,'the enemy captain keeps its temperament (orc) and the log tells it once');

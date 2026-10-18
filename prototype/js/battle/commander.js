@@ -148,19 +148,21 @@ function beatenArmy(N,S,T){
   const rs=[...new Set(Object.values(N).flat().flatMap(grpUnits).map(resolveOf).filter(r=>r&&!r.routed&&r.live().length))],n=rs.reduce((a,r)=>a+r.live().length,0);
   return !!n&&S.ratio<tun(T,FOE_CMD,'beaten')&&rs.reduce((a,r)=>a+r.mor*r.live().length,0)/n<FOE_CMD.broken;
 }
+// (a captain's groups: the enemy's, your allies', or, yours, those the AI has (deploy.js aiHas): your others are friends it fights
+// beside, never its to order)
 function captainGroups(team,key){
-  const ids=Object.keys(B.groups).filter(id=>{const g=B.groups[id];return g.team===team&&(team===1||key==='ally'?team===1||g.ally:g.player)});
+  const ids=Object.keys(B.groups).filter(id=>{const g=B.groups[id];return g.team===team&&(team===1||key==='ally'?team===1||g.ally:aiHas(g))});
   return Object.fromEntries(['inf','arc','mag','cav','hero'].map(role=>[role,ids.filter(id=>B.groups[id].role===role)]));
 }
 // each moment: an advancing line's anchor moves toward the other army (the enemy's; yours under the AI)
-// twice a second, the captains' orders: the enemy's always; yours only with the AI in command (B.auto)
+// twice a second, the captains' orders: the enemy's always; yours only for the groups the AI has (A: deploy.js)
 function command(dt){
   powersThink(dt);// (the commanders' powers: theirs, and yours under Auto; commandpowers.js)
   if(!B||(B.cmdT=(B.cmdT||0)-dt)>0)return;B.cmdT=FOE_CMD.think;
   // (captain hands its groups on to captainFinish: the same as captainGroups would find again, groups being made only at the start)
   captainFinish(1,captain(1));
   if(Object.values(B.groups).some(g=>g.ally))captainFinish(0,captain(0,'ally'),'ally');// (your allies' own captain)
-  if(B.auto)captainFinish(0,captain(0));
+  if(aiAny())captainFinish(0,captain(0));// (yours: the groups the AI has, deploy.js aiHas)
 }
 /* a captain gives its orders through the same tools you use. Its pace: a charge (and a cavalry's ride round a flank) at a run,
    else at a walk. A new place well away (CAPT.move): a move, its men break off and go (battlecontrol.js moveOrder). Its formation for

@@ -43,7 +43,8 @@ document.querySelectorAll('[data-form]').forEach(b=>b.addEventListener('click',(
 document.querySelectorAll('[data-flag]').forEach(b=>b.addEventListener('click',()=>toggleFlag(b.dataset.flag)));
 document.querySelectorAll('[data-bspeed]').forEach(b=>b.addEventListener('click',()=>setBattleSpeed(+b.dataset.bspeed)));
 $('#bPause').addEventListener('click',()=>battlePause());
-$('#bAuto').addEventListener('click',()=>setAuto(!(B&&B.auto)));
+$('#bAuto').addEventListener('click',()=>autoKey());// (the selected groups, or with none the whole army: deploy.js)
+{const b=document.getElementById('bAmove');if(b)b.addEventListener('click',()=>armAttackMove())}// (the next ground order an attack-move: commands.js)
 {const b=document.getElementById('bSkills');if(b)b.addEventListener('click',()=>setAutoSkills(!AUTOSK.on))}
 $('#hpBtn').addEventListener('click',()=>setHpBars(!HPBARS.on));setHpBars(HPBARS.on);
 $('#pause').addEventListener('click',togglePause);pauseUI();
@@ -93,7 +94,7 @@ cv.addEventListener('pointerdown',e=>{
     if(e.button===0&&B.rdrag){B.rdrag=null;return}// (a left-click during a right-drag calls it off: dragCancel below)
     if(e.button===1&&B.cam){e.preventDefault();B.cam.drag={x:p.x,y:p.y}}
     else if(mh&&e.button===0)camCentre(mh.x,mh.y);
-    else if(e.button===2&&e.pointerType==='mouse')B.rdrag={x0:q.x,y0:q.y,x1:q.x,y1:q.y,shift:e.shiftKey};// (let go: an order, or a line if dragged)
+    else if(e.button===2&&e.pointerType==='mouse'){B.rdrag={x0:q.x,y0:q.y,x1:q.x,y1:q.y,shift:e.shiftKey};if(e.ctrlKey)B.rdrag.am=true}// (let go: an order, or a line if dragged; Ctrl: an attack-move)
     else if(e.pointerType!=='mouse'&&B.sel!=='all'&&selGroups().length&&!rtsUnitAt(q.x,q.y,0))rtsOrder(q.x,q.y)
     else if(e.button===0)B.box={x0:q.x,y0:q.y,x1:q.x,y1:q.y,add:e.shiftKey}
     /* the manual control, set aside for now: if(e.pointerType==='mouse'){if(e.button===2)shove();else if(e.button===0){if(isBow())drawStart();else swing()}}else B.mt={x:p.x,y:p.y} */}
@@ -103,11 +104,11 @@ cv.addEventListener('contextmenu',e=>e.preventDefault());
 window.addEventListener('pointerup',e=>{if(e.pointerType==='touch'&&touchUp(e))return;
   if(e.button===1&&B&&B.cam&&B.cam.drag){B.cam.drag=null;return}
   if(e.button===2&&B&&B.rdrag){const d=B.rdrag;B.rdrag=null;
-  if(Math.hypot(d.x1-d.x0,d.y1-d.y0)>=FORM_DRAG)formDragTo(d.x0,d.y0,d.x1,d.y1);
-  else{const L=B.lastRc,now=performance.now(),dbl=!!L&&now-L.t<350&&Math.hypot(L.x-d.x0,L.y-d.y0)<16;B.lastRc={t:now,x:d.x0,y:d.y0};rtsOrder(d.x0,d.y0,{queue:d.shift,run:dbl})}return}
+  if(Math.hypot(d.x1-d.x0,d.y1-d.y0)>=FORM_DRAG)formDragTo(d.x0,d.y0,d.x1,d.y1,{amove:d.am});
+  else{const L=B.lastRc,now=performance.now(),dbl=!!L&&now-L.t<350&&Math.hypot(L.x-d.x0,L.y-d.y0)<16;B.lastRc={t:now,x:d.x0,y:d.y0};rtsOrder(d.x0,d.y0,{queue:d.shift,run:dbl,amove:d.am})}return}
   if(e.button===0&&B&&B.box){const b=B.box;B.box=null;rtsSelect(b.x0,b.y0,b.x1,b.y1,b.add)}/* (the bow, set aside:) if(e.button===0&&B&&B.draw)drawRelease() */});
 cv.addEventListener('pointermove',e=>{if(G.mode!=='battle'||!B)return;const p=toCanvas(e);
-  {const q=toField(p);B.hov=q;{const ic=iconAt(q.x,q.y);B.iconHov=ic?ic.g:null}cv.style.cursor=B.sel!=='all'&&selGroups().length&&rtsUnitAt(q.x,q.y,1)?'crosshair':rtsUnitAt(q.x,q.y,0)?'pointer':''}// (what you point at: a ring, battlehud.js)
+  {const q=toField(p);B.hov=q;{const ic=iconAt(q.x,q.y);B.iconHov=ic?ic.g:null}cv.style.cursor=B.amArm||B.sel!=='all'&&selGroups().length&&rtsUnitAt(q.x,q.y,1)?'crosshair':rtsUnitAt(q.x,q.y,0)?'pointer':''}// (what you point at: a ring, battlehud.js)
   if(B.cam&&B.cam.drag){camPan(B.cam.drag.x-p.x,B.cam.drag.y-p.y);B.cam.drag={x:p.x,y:p.y};return}// (middle-drag: pan)
   if(B.rdrag&&e.pointerType==='mouse'&&e.buttons&1){B.rdrag=null;return}// (the left button pressed mid right-drag comes as a move: called off)
   if(B.box||B.rdrag){const q=toField(p),o=B.box||B.rdrag;o.x1=q.x;o.y1=q.y}});
@@ -196,7 +197,7 @@ window.addEventListener('keydown',e=>{
   if(e.target&&/INPUT|TEXTAREA|SELECT/.test(e.target.tagName))return;
   const k=keyOf(e);
   if(e.key==='F6'){e.preventDefault();saveGame(false,'quick');return}
-  if(k==='escape'){e.preventDefault();if(dragCancel())uiSfx('back');else onEscape();return}// (a drag first: Esc calls it off and nothing else)
+  if(k==='escape'){e.preventDefault();if(dragCancel())uiSfx('back');else if(G.mode==='battle'&&B&&B.amArm){armAttackMove(false);uiSfx('back')}else onEscape();return}// (a drag first, then an armed attack-move: Esc calls it off and nothing else)
   if(k==='m'&&!e.ctrlKey&&!e.metaKey&&!e.altKey){if(!e.repeat)toggleMute();return}// M: the sound off or on, anywhere (ui.js)
   if(G.mode==='battle'&&B){
     // the battle's speed: Space pauses (orders still go: a tactical pause), [ and ] slow it down and speed it up
@@ -211,7 +212,8 @@ window.addEventListener('keydown',e=>{
     if(!e.repeat&&(k==='='||k==='+'||k==='-')){camZoom(k==='-'?-1:1);return}
     if(!e.repeat&&k==='home'){camReset();return}
     // H hold (where they stand), W withdraw; R walk or run, F hold ground, Q cease fire, E skirmish, X melee mode
-    if(!e.repeat&&k==='a')return setAuto(!B.auto);
+    if(!e.repeat&&k==='a')return autoKey();// (the selected groups to the AI or back; none selected: the whole army, deploy.js)
+    if(!e.repeat&&k==='d'&&!e.ctrlKey&&!e.metaKey)return armAttackMove();// (the next order on the ground an attack-move: commands.js)
     if(!e.repeat&&k==='k')return setAutoSkills(!AUTOSK.on);// (your characters' skills on their own)// (the AI in command of your army)
     if(!e.repeat){if(k==='h')return setOrder('hold');if(k==='w')return setOrder('withdraw');const fl={r:'walk',f:'firm',q:'cease',e:'skirmish',x:'melee'}[k];if(fl)return toggleFlag(fl)}
     /* the manual control, set aside for now:

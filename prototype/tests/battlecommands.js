@@ -5,7 +5,9 @@
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t.P,random0=Math.random,measure0=t.measureField;
   // line_drag reviewed after the ranged-facing fix: hero moveTo receives the ghost's face, not turn:false.
   // Attack/orders messages now identify the enemy formation by its safe group name.
-  const expected={"pick":"f8ea01cb","select":"870a2099","boxes":"627fa3d1","control_groups":"1f6e535a","move":"2011bd43","queue":"e3988d7e","attack":"552fab61","own_icon":"bca1cbbd","orders":"78927b0f","flags":"d5c9b760","formations":"740cba6b","line_drag":"4598ee94","deployment":"8cf425b5","empty":"3ce8e39b","pointer_select":"f60d232d","pointer_orders":"d9382130","pointer_line":"1a6d2d33","touch":"5f816ed1","keyboard":"03b1480f"};
+  // move, attack, line_drag re-recorded for the AI handed per group (deploy.js): their orders under Auto take back only the groups
+  // ordered (the rest stay the AI's, the log says whom), not the whole army; with the old whole-army take-back the hashes are as before.
+  const expected={"pick":"f8ea01cb","select":"870a2099","boxes":"627fa3d1","control_groups":"1f6e535a","move":"619baeb8","queue":"e3988d7e","attack":"30a7c1a9","own_icon":"bca1cbbd","orders":"78927b0f","flags":"d5c9b760","formations":"740cba6b","line_drag":"b68251ea","deployment":"8cf425b5","empty":"3ce8e39b","pointer_select":"f60d232d","pointer_orders":"d9382130","pointer_line":"1a6d2d33","touch":"5f816ed1","keyboard":"03b1480f"};
   const stable=x=>Array.isArray(x)?x.map(stable):x&&typeof x==='object'?Object.fromEntries(Object.keys(x).sort().map(k=>[k,stable(x[k])])):x;
   const hash=x=>{let h=2166136261;for(const c of JSON.stringify(stable(x)))h=Math.imul(h^c.charCodeAt(0),16777619)>>>0;return h.toString(16).padStart(8,'0')};
   const methods=['moveTo','attack','queueTo','hold','withdraw','setWalk','setFlag','setForm','setRun'],original={},calls=[];
@@ -55,6 +57,7 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t
       }else if(name==='move'){
         B.sel=[testGroup('inf'),testGroup('arc')];B.auto=true;t.rtsOrder(500,300,{run:true});
         ok(!B.auto&&B.groups[testGroup('inf')].run&&B.groups[testGroup('arc')].run&&B.groups[testGroup('inf')].ax===500&&B.groups[testGroup('arc')].ay-B.groups[testGroup('inf')].ay===200&&!B.mark.foe,'move routes through group controls, preserves offsets and takes command back');
+        ok(!t.aiHas(B.groups[testGroup('inf')])&&!t.aiHas(B.groups[testGroup('arc')])&&t.aiHas(B.groups[testGroup('cav')])&&t.aiHas(B.groups.hero),'only the groups ordered: the rest stay the AI’s');
       }else if(name==='queue'){
         B.sel=[testGroup('inf'),testGroup('arc')];t.rtsOrder(450,300);t.rtsOrder(550,340,{queue:true});t.rtsOrder(650,400,{queue:true,run:true});
         ok(B.groups[testGroup('inf')].queue.length===2&&B.groups[testGroup('arc')].queue.length===2&&B.groups[testGroup('arc')].queue[1].y-B.groups[testGroup('inf')].queue[1].y===200,'queued moves keep relative offsets after the final waypoint');

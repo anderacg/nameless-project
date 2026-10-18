@@ -87,13 +87,13 @@ function scoutApply(team){const S=powerOf(team,'scout');if(!S)return;const at=S.
 function commandPower(id){if(!B||!COMMAND_POWERS[id])return false;const why=powerWhyNot(0,id);if(why){log(htmlText(COMMAND_POWERS[id].n+': '+why.toLowerCase()+'.'));return false}
   const ok=usePower(0,id);bhudPowers();return ok}
 const powerKey=k=>POWER_ORDER.find(id=>COMMAND_POWERS[id].key.toLowerCase()===k);
-/* the AI's commander (commander.js command, each frame of the fight; every think s): the enemy's always, yours under Auto (B.auto).
+/* the AI's commander (commander.js command, each frame of the fight; every think s): the enemy's always, yours with your whole army the AI's (aiAll).
    Scout at once (the fight's first think); Rally the Line when a group in range routs, or rally.waver of them waver; else Stand
    Fast! when a group in range wavers, or as stand.groups of them (all, if fewer) come within stand.meet px of a foe it sees */
 function powersThink(dt){
   if(!powersOn()||(B.cpT=(B.cpT||0)-dt)>0)return;B.cpT=COMMAND_POWERS.think;
   for(const t of [0,1]){const S=B.cmdp&&B.cmdp[t];if(S&&S.scout&&B.t<S.scout.until)scoutApply(t)}
-  for(const t of [0,1]){if(t===0&&!B.auto||!commanderOf(t))continue;
+  for(const t of [0,1]){if(t===0&&!aiAll()||!commanderOf(t))continue;// (yours: with your whole army the AI's, deploy.js)
     if(!powerWhyNot(t,'scout')){usePower(t,'scout');continue}
     const R=rallyTargets(t);if(R.length&&!powerWhyNot(t,'rally')&&(R.some(g=>g.resolve.routed)||R.length>=COMMAND_POWERS.rally.waver)){usePower(t,'rally');continue}
     if(powerWhyNot(t,'stand'))continue;const gs=standTargets(t),X=COMMAND_POWERS.stand;

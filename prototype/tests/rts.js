@@ -194,7 +194,7 @@ try{
   // the AI in command: on (A), and an order of yours takes it back
   window.dispatchEvent(new KeyboardEvent('keydown',{key:'a',code:'KeyA'}));ok(B.auto&&t.BAUTO.on&&document.getElementById('bAuto').getAttribute('aria-pressed')==='true','A: the AI takes command of your army');
   const ix=t.grpUnits(testGroup('inf')).reduce((a,u)=>a+u.x,0);for(let i=0;i<150;i++)t.updateBattle(.03);ok(t.grpUnits(testGroup('inf')).reduce((a,u)=>a+u.x,0)>ix+20,'and leads it at the enemy (infantry: '+B.groups[testGroup('inf')].order+(B.groups[testGroup('inf')].order==='hold'?', screening its archers as they go up to shoot':'')+')');
-  t.selectGroup(testGroup('inf'));t.setOrder('hold');ok(!B.auto&&!t.BAUTO.on,'an order of yours takes command back');document.getElementById('bAuto').click();ok(B.auto,'the AI button switches it too');t.setAuto(false,true);B.over=true;B.endT=0;t.B=null}
+  t.selectGroup(testGroup('inf'));t.setOrder('hold');ok(!B.auto&&!t.BAUTO.on&&!t.aiHas(B.groups[testGroup('inf')])&&t.aiHas(B.groups[testGroup('arc')]),'an order of yours takes command of that group back (the rest stay the AI’s: deploy.js)');document.getElementById('bAuto').click();ok(t.aiAll()&&t.BAUTO.on,'the AI button switches it too (the group selected back to the AI: all your army its again)');t.setAuto(false,true);B.over=true;B.endT=0;t.B=null}
  // deployment: the battle opens frozen; place your band in its zone, then begin
  {t.BDEPLOY.on=true;P.troops={hum_spear:6,hum_bow:4};G.mode='world';G.modal=false;t.hidePanel();G.enc={kind:'party',ref:{cool:0,x:P.x,y:P.y},list:['militia','militia']};
   t.startBattle({enemies:['militia','militia'],tournament:false,deploy:true});const B=t.B,Z=t.deployZone(),e=B.units.find(u=>u.team===1),ex=e.x;

@@ -9,13 +9,24 @@
    (where it stands), face, form, files (its formation), queue (waypoints), mvId (a move under way: actors.js relocating),
    walk, run (its pace), firm, cease, skirmish, melee (its flags: battle.js GRP_FLAGS), pace (its slowest man's speed),
    going (its place on the move), backing (backing off from a foe), orderSeq (bumped by every order of yours: commands.js;
-   not enumerable, out of snapshots). An AI keeps its own notes on it too (AI_NOTES), cleared when it is handed over ---------- */
+   not enumerable, out of snapshots), aiCmd (yours in the AI's hands, on its own: deploy.js; not enumerable either), amove (an
+   attack-move under way: AMOVE; none on a group never given one). An AI keeps its own notes on it too (AI_NOTES), cleared when it
+   is handed over ---------- */
 // (every FORM_SWAP.every seconds its places are shared out again, a swap made when it saves FORM_SWAP.gain px of walking)
 const FORM_SWAP={every:1,gain:6};
 // the AI's own notes on a group (commander.js): its phase and time in it, its stand, hunt and way home, its screen and lead, a
 // recovery and a plug, a cavalry's rest, melee count, charge time and flank, a form's time, where it last stood; a beast's side,
 // nerve, lair and prey (beastmind.js)
 const AI_NOTES=['stand','hunt','huntBack','screenBack','recover','plug','pushed','pushRun','rest','inMelee','chargeAt','flankSide','formAt','lax','lay','side','mark','lurk','prey'];
+/* attack-move (Ctrl + right-click, or the Attack-move button: commands.js): a march to a place that fights what it meets on the
+   way. A foe its side sees comes within reach of the march (any of its men within melee px of him; riders cav px; shooters
+   the shortest reach among them and short px more) and the group turns on the nearest: its fighters attack his group, its riders
+   charge it, its shooters halt there and shoot at will (or, just short, go on into reach at it). With none of them left there
+   (beaten, broken, gone from sight or out of reach; going on, off times the reach, so it does not flicker at the edge) it
+   marches on to the same place, its waypoints after it kept, and holds there. Runners are chased while its target runs, but
+   no further than leash px from where it turned. Looked at every `every` s, at once when its target is gone. A move stays a
+   move: it fights only what reaches it. Any other order of yours replaces it (commands.js amEnd) */
+const AMOVE={melee:90,cav:120,short:30,leash:120,off:1.25,every:.2};
 // A new relocation generation belongs to group orders; actors only compare it with their completed mvId.
 function moveOrder(g){const gr=B.groups[g];if(gr)gr.mvId=(gr.mvId||0)+1}
 class BattleControl{
@@ -24,7 +35,7 @@ class BattleControl{
     // tactical AI callers; assigning an actor through it selects that actor's formation (or a lone actor).
     this.targetGroupId=null;this.targetUnitId=null;
     Object.defineProperty(this,'tgt',{enumerable:true,get:()=>this.targetRepresentative(),set:e=>this.setTarget(e)});
-    Object.defineProperty(this,'orderSeq',{value:0,writable:true,enumerable:false});
+    Object.defineProperty(this,'orderSeq',{value:0,writable:true,enumerable:false});Object.defineProperty(this,'aiCmd',{value:false,writable:true,enumerable:false});
     Object.assign(this,{id,team,name:id,role:'inf',order:'hold',spread:false,ax:0,ay:0,tgt:null,queue:[],form:'line',face:team?Math.PI:0,currentFacing:null,files:null,mvId:0,run:false},GRP_FLAGS,o);this.currentFacing=o.currentFacing==null?this.face:o.currentFacing}
   get units(){return grpUnits(this.id)}
   get hasTarget(){return this.targetGroupId!==null||this.targetUnitId!==null}
@@ -53,12 +64,33 @@ class BattleControl{
     if(o.run)breakWall(this.id);this.ax=clamp(x,8,BW-8);this.ay=clamp(y,fieldTop(),fieldBot())}
   // standing (its waypoints kept): from a charge or an advance, where they are
   toHold(){if(this.resolve?.routed)return;if(this.order!=='hold'){this.regroup();this.order='hold';this.tgt=null}}
-  // a waypoint after its last
-  queueTo(x,y){if(this.resolve?.routed)return;this.toHold();this.queue.push({x:clamp(x,8,BW-8),y:clamp(y,fieldTop(),fieldBot())})}
+  // a waypoint after its last (am: an attack-move to it)
+  queueTo(x,y,am){if(this.resolve?.routed)return;this.toHold();const w={x:clamp(x,8,BW-8),y:clamp(y,fieldTop(),fieldBot())};if(am)w.am=true;this.queue.push(w)}
+  // an attack-move to (x,y): a move (o as moveTo's) that fights what it meets on the way (AMOVE, amStep)
+  attackMove(x,y,o){if(this.resolve?.routed)return;o=o||{};this.moveTo(x,y,o);this.amove={x:this.ax,y:this.ay,run:!!o.run,face:o.face,files:o.files}}
+  // the attack-move called off (none: nothing)
+  amEnd(){if(this.amove)delete this.amove}
+  // its attack-move, each moment (m: its men not running): turning on a foe met, or marching on (AMOVE)
+  amStep(m){
+    const A=this.amove,X=AMOVE,lost=!!A.at&&A.eng==='attack'&&!this.tgt;if(!lost&&B.t<(A.next??0))return;A.next=B.t+X.every;
+    const sh=m.filter(u=>u.s.range&&!u.empty),shoot=!this.melee&&sh.length*2>m.length,R=(shoot?Math.min(...sh.map(u=>u.s.range))+X.short:this.role==='cav'?X.cav:X.melee)*(A.at?X.off:1);
+    let e=null,d=R;for(const f of B.units){if(f.team===this.team||f.hp<=0||f.rout||f.left||!seenBy(this.team,f))continue;for(const u of m){const k=Math.hypot(f.x-u.x,f.y-u.y);if(k<d){d=k;e=f}}}
+    const C=this.centre();
+    if(!e){// (none left: runners chased a little, then on again; there, it holds)
+      if(A.at&&A.eng==='attack'&&this.tgt&&Math.hypot(C.x-A.at.x,C.y-A.at.y)<X.leash)return;
+      if(A.at){const q=[...(A.q||[]),...this.queue];delete A.at;delete A.q;delete A.eng;this.moveTo(A.x,A.y,{run:A.run,face:A.face,files:A.files});this.queue=q;return}
+      if(this.order==='hold'&&!this.queue.length&&Math.hypot(C.x-A.x,C.y-A.y)<MARCH.reached*1.5)this.amEnd();return}
+    if(!A.at){A.at=C;A.q=this.queue.slice()}
+    // (shooters with him in reach of one of them: they halt there and shoot at will, their front to him)
+    if(shoot&&sh.some(u=>Math.hypot(e.x-u.x,e.y-u.y)<=u.s.range)){if(A.eng!=='shoot'||this.hasTarget||this.order!=='hold'){this.hold();A.eng='shoot'}
+      if(angGap(Math.atan2(e.y-C.y,e.x-C.x),this.face)>SHOOT.arc*.4)faceToward(this.id,e.x,e.y);return}
+    // (set on a foe still there, within its reach: kept on him, not drawn off to whoever is a step nearer)
+    if(A.eng==='attack'&&this.targetMembers().some(f=>!f.rout&&m.some(u=>Math.hypot(f.x-u.x,f.y-u.y)<R)))return;
+    this.attack(e,{run:this.role==='cav'||A.run});A.eng='attack'}
   // put at (x,y) at once (deploying: no march), standing
   placeAt(x,y){if(this.resolve?.routed)return;this.ax=x;this.ay=y;this.order='hold';this.tgt=null;this.queue=[]}
   // handed to the AI: its notes and waypoints cleared, for a fresh start (none left from an earlier spell of the AI's)
-  aiReset(){for(const k of AI_NOTES)delete this[k];this.phase=null;this.t=0;this.queue=[]}
+  aiReset(){for(const k of AI_NOTES)delete this[k];this.phase=null;this.t=0;this.queue=[];this.amEnd()}
   // the AI's placing: stand at (x,y); a move (its men break off and go) only when that is well away from where it last stood
   standAt(x,y){if(this.resolve?.routed)return;this.order='hold';this.tgt=null;this.ax=clamp(x,8,BW-8);this.ay=clamp(y,fieldTop(),fieldBot());
     if(this.lax==null||Math.hypot(this.ax-this.lax,this.ay-this.lay)>CAPT.move){if(this.lax!=null)moveOrder(this.id);this.lax=this.ax;this.lay=this.ay}}
@@ -69,7 +101,7 @@ class BattleControl{
   // walk on at the foe, in its ranks (step)
   advance(){if(this.resolve?.routed)return;if(this.order!=='advance'){this.regroup();this.order='advance';this.tgt=null}}
   // off the field by your edge, striking no one (EXITS.on: by the safest open edge, its exit chosen now: morale.js exitOf)
-  withdraw(){if(this.resolve?.routed)return;if(this.order!=='withdraw'){battleEvent('withdraw',{g:this});for(const u of this.units)delete u.withdrawal;delete this.exitTo}this.tgt=null;this.queue=[];this.run=false;this.regroup();this.order='withdraw';this.ax=this.team?BW-MORALE.edge:B.exit?B.exit.x:MARCH.edge;
+  withdraw(){if(this.resolve?.routed)return;this.amEnd();if(this.order!=='withdraw'){battleEvent('withdraw',{g:this});for(const u of this.units)delete u.withdrawal;delete this.exitTo}this.tgt=null;this.queue=[];this.run=false;this.regroup();this.order='withdraw';this.ax=this.team?BW-MORALE.edge:B.exit?B.exit.x:MARCH.edge;
     const m=this.units.filter(u=>u.hp>0);if(exitsOn()&&m.length){const X=exitOf(m[0]);this.ax=X.x;this.ay=X.y}}
   // its pace: walk (keeping its ranks) or run; this order at a run (the AI's charges)
   setWalk(walk){if(this.resolve?.routed)return;this.walk=!!walk;this.run=false;if(!walk)breakWall(this.id)}
@@ -90,10 +122,11 @@ class BattleControl{
   // ---------- its own moment ----------
   step(dt){
     abilityStep(this,dt);// (a timed ability holds or ends: unitabilities.js)
-    if(this.resolve?.routed){this.backing=false;return}
-    if(this.player&&!B.auto)this.aimAt();// (yours, set on a foe out of their arc: wheeled to him)
+    if(this.resolve?.routed){this.backing=false;this.amEnd();return}
+    if(this.player&&!aiHas(this))this.aimAt();// (yours, set on a foe out of their arc: wheeled to him)
     this.turnFacing(dt);
     const m=this.units.filter(u=>!u.rout);
+    if(this.amove&&m.length)this.amStep(m);// (an attack-move: a foe met, or on its way: AMOVE)
     // An explicit order pursues routers/withdrawers still on the field, but never silently charges a new formation.
     if(this.hasTarget&&!this.tgt)this.hold();
     // (its place on the move: its men keep walking with it, no stop, step, stop)
@@ -112,7 +145,7 @@ class BattleControl{
     if(this.queue&&this.queue.length&&this.order==='hold'){const cx=m.reduce((a,u)=>a+u.x-(u.sx||0),0)/m.length,cy=m.reduce((a,u)=>a+u.y-(u.sy||0),0)/m.length;
       // (a place out of reach (terrain.js groupWay: its way ends short of it): its men there as near as they get)
       const W=this.way,short=!!W&&!W.ok&&m.every(u=>u.mvId===this.mvId);
-      if(Math.hypot(cx-this.ax,cy-this.ay)<MARCH.reached||short){const w=this.queue.shift();this.ax=w.x;this.ay=w.y;moveOrder(this.id)}}
+      if(Math.hypot(cx-this.ax,cy-this.ay)<MARCH.reached||short){const w=this.queue.shift();this.ax=w.x;this.ay=w.y;moveOrder(this.id);if(w.am)this.amove={x:w.x,y:w.y,run:this.run};else this.amEnd()}}
     const foes=B.units.filter(e=>e.team!==this.team&&e.hp>0&&!e.rout&&(!B.fog||seenBy(this.team,e))),C=this.centre(),near=foes.length?foes.reduce((a,e)=>Math.hypot(e.x-this.ax,e.y-this.ay)<Math.hypot(a.x-this.ax,a.y-this.ay)?e:a):null;
     // an advance: its place walks on at the nearest foe till it is close (shooters stop further off); on ground that blocks, round
     // by the way while the straight one is not clear (a cliff's ramp, a ford: terrain.js wayOn), never to stop below a cliff

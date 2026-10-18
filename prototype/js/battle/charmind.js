@@ -81,7 +81,7 @@ function champStrike(u,t){
   const R=(u.s.reach||12)+c.reach,life=c.shape==='slam'||c.shape==='spin'?.32:.2;
   B.slashes.push({kind:c.shape,x:u.x,y:u.y-6,a,life,max:life,arc:c.arc,r:R,col:u.team?'255,170,150':c.col,w:c.w,dir:c.dir,area:c.area,wid:c.wid});
   let n=0;for(const e of champFoes(u)){if(!inShape(u.x,u.y,a,R,c,e))continue;hit(u,e,u.s.dmg*tired*c.mult*(.85+Math.random()*.3)*(c.shape==='thrust'?Math.max(.5,1-.2*n):1),shapeDt(c.shape,dtOf(u.s)));knock(e,u.x,u.y,c.kb||0);if(c.stun)stun(e,c.stun);n++}
-  if(step===CB.length-1){u.cd+=breath();if(n)B.floats.push({x:u.x,y:u.y-26,t:c.n,life:.5,c:u.team?'#ff9a90':'#9fc0ff'})}
+  if(step===CB.length-1){u.cd+=breath();if(n)B.floats.push({x:u.x,y:u.y-26,t:c.n,life:.5,c:sideCol(u,'say')})}
 }
 /* the special moves, for every character: a Shield Bash (with a shield) when it matters: a heavy hitter, a big beast or another
    character in front, or two or more pressing; a Shove (with a bow) at a foe who reaches them; a Dodge Roll away when badly hurt
@@ -94,7 +94,7 @@ function charBasics(u){
     aimAt(u,close);if(u.hero)shove();else champShove(u,close,M);S.shoveCd=Math.max(S.shoveCd||0,shield?CHAR_AI.bash:CHAR_AI.shove);return true}
   const cost=u.hero?dodgeCost():STAM.dodge;
   if(u.hp<u.max*CHAR_AI.low&&around.length>=CHAR_AI.roll&&!(S.rollCd>0)&&S.sp>=cost){const cx=around.reduce((a,e)=>a+e.x,0)/around.length,cy=around.reduce((a,e)=>a+e.y,0)/around.length,l=Math.hypot(u.x-cx,u.y-cy)||1;
-    S.fallBack={at:B.t,...fallSpot(u,around,{x:cx,y:cy}),ord:ordKey(u.grp&&B.groups[u.grp])};S.fbT=CHAR_AI.think;B.floats.push({x:u.x,y:u.y-26,t:'Falling back',life:.9,c:u.team?'#ff9a90':'#cfe0ff'});// (out of the press, then a look before going in again)
+    S.fallBack={at:B.t,...fallSpot(u,around,{x:cx,y:cy}),ord:ordKey(u.grp&&B.groups[u.grp])};S.fbT=CHAR_AI.think;B.floats.push({x:u.x,y:u.y-26,t:'Falling back',life:.9,c:sideKey(u)==='own'?'#cfe0ff':sideCol(u,'say')});// (out of the press, then a look before going in again)
     if(u.hero)dodge((u.x-cx)/l,(u.y-cy)/l);else champDodge(u,(u.x-cx)/l,(u.y-cy)/l,cost);return true}
   return false;
 }
@@ -151,7 +151,7 @@ function fallLook(u,S){
    (the enemy, your allies, your army on auto: A), and for yours your Auto skills (K): a special move or a skill when the moment
    is right (charBasics, chooseAbility). Duels are the commander's alone: a character of the other side near, and not on the
    move elsewhere, it sets him on him */
-const aiCommands=u=>u.team===1||!!(u.grp&&u.grp.startsWith('a_'))||!!B.auto;
+const aiCommands=u=>u.team===1||!!(u.grp&&u.grp.startsWith('a_'))||aiAll()||aiHas(u.grp&&B.groups[u.grp]);// (yours: the AI's with your whole army its, or his group: deploy.js)
 function commandCharacters(dt){
   for(const u of B.units){if(u.hp<=0||!isChar(u)||u.stun>0||withdrawing(u)||u.hero&&MANUAL_HERO)continue;
     const ai=aiCommands(u),S=charState(u);
@@ -164,7 +164,7 @@ function commandCharacters(dt){
 // a champion's own: the shove or bash (those in front knocked back and staggered), the roll (away, unhurt while it lasts)
 function champShove(u,t,M){
   const C=champ(u),a=Math.atan2(t.y-u.y,t.x-u.x);C.sp-=M.sp;u.atkAt=B.t;u.face=Math.cos(a)>=0?1:-1;
-  if(M===BASH)B.floats.push({x:u.x,y:u.y-26,t:'Shield Bash',life:.6,c:u.team?'#ff9a90':'#cfe0ff'});
+  if(M===BASH)B.floats.push({x:u.x,y:u.y-26,t:'Shield Bash',life:.6,c:sideKey(u)==='own'?'#cfe0ff':sideCol(u,'say')});
   B.slashes.push({x:u.x,y:u.y-6,a,life:.15,r:(u.s.reach||12)+2,arc:.9,col:'200,220,255',w:2});
   for(const e of champFoes(u)){const d=Math.hypot(e.x-u.x,e.y-u.y)-(e.s.big?12:0),ea=Math.atan2(e.y-u.y,e.x-u.x),df=angGap(ea,a);
     if(d<=(u.s.reach||12)+6&&df<1.1){hit(u,e,u.s.dmg*M.mult,'blunt');knock(e,u.x,u.y,M.kb);stun(e,M.stun)}}}

@@ -26,7 +26,7 @@
   --fg:#ece6d3; --fg-2:#c4c3c4; --muted:#929ab3; --faint:#69708a;
   --accent:#e8b94a; --accent-ink:#1d1606; --danger:#e0605a; --good:#78c474; --blue:#5a8fe8;
   /* the two sides in a battle: yours, theirs (their trims; their words lighter) */
-  --side-me:#6fa8e0; --side-me-fg:#cfe0ff; --side-foe:#e0605a; --side-foe-fg:#ffd0c8;
+  --side-me:#6fa8e0; --side-me-fg:#cfe0ff; --side-ally:#5cc06c; --side-ally-fg:#c4ecc4; --side-foe:#e0605a; --side-foe-fg:#ffd0c8; --ai:#b48cf0;/* (the canvas's own: battle.js SIDE) */
   /* type: Arial first, the system's sans after it */
   --font:Arial,"Helvetica Neue",Helvetica,"Segoe UI",Roboto,system-ui,sans-serif;
   --display:var(--font); --label:var(--font);
@@ -94,6 +94,7 @@ canvas{display:block;image-rendering:pixelated;touch-action:none;cursor:crosshai
 .btn.primary:hover:not(:disabled){color:#000;border-color:#fff1c4}
 .btn.sm{min-height:28px;padding:3px 10px;font-size:var(--fs-md)}
 .btn.on,.btn[aria-pressed="true"]{border-color:var(--accent);color:var(--accent);background:linear-gradient(#3d3520,#262115)}
+.btn.some{border-color:var(--ai);color:var(--ai)}/* (the AI button: some of your groups the AI's, deploy.js autoUI) */
 .btns{display:flex;gap:var(--sp-2);flex-wrap:wrap;align-items:center}
 /* the bottom bar (ui.js nav): Back on the left, the way out on the right; nothing else */
 .btns.nav{flex-wrap:nowrap}
@@ -340,6 +341,7 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 .callout.major{font-size:var(--fs-xl);padding:5px 20px 6px}
 .callout.mine{color:var(--side-me-fg);border-top:2px solid var(--side-me)}
 .callout.foe{color:var(--side-foe-fg);border-top:2px solid var(--side-foe)}
+.callout.ally{color:var(--side-ally-fg);border-top:2px solid var(--side-ally)}
 @keyframes callout{0%{opacity:0;transform:translateY(-6px)}10%{opacity:1;transform:none}80%{opacity:1}100%{opacity:0}}
 /* the orders over the unit cards (bottom middle) */
 .bcmd{position:absolute;left:50%;transform:translateX(-50%);bottom:var(--e-b);width:max-content;display:flex;flex-direction:column;align-items:center;gap:6px;max-width:calc(100% - 540px)}

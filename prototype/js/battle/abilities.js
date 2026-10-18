@@ -22,7 +22,7 @@ const withinOf=(x,y,r,list)=>list.filter(e=>Math.hypot(e.x-x,e.y-y)-(e.s.big?12:
 // where it aims: your hero, where she aims (the cursor with the manual control, B.aiAim under command); a champion, at its target
 const aimOf=(K,at,d)=>K.hero?aimPoint(d):at||{x:K.u.x+(K.u.face||1)*d,y:K.u.y};
 const angleOf=(K,at)=>K.hero?B.aim:Math.atan2(at.y-K.u.y,at.x-K.u.x);
-const castSay=(u,t,c)=>B.floats.push({x:u.x,y:u.y-28,t,life:.8,c:c||(u.team?'#ff9a90':'#9fc0ff')});
+const castSay=(u,t,c)=>B.floats.push({x:u.x,y:u.y-28,t,life:.8,c:c||sideCol(u,'say')});
 // each ability's cast: u, its kit K, where it aims (at)
 const CAST={
   whirl(u,K){const A=K.A,re=u.s.reach||12;vfx({k:'swirl',x:u.x,y:u.y-6,r:(re+12)*A.r,a:0,life:.38,col:u.team?'#ffb0a0':'#ffe9a8'});vfxRing(u.x,u.y,(re+10)*A.r,dustCol(),.35);B.rings.push({x:u.x,y:u.y-6,r:(re+12)*A.r,life:.35,max:.35,col:u.team?'255,150,130':'255,236,170'});let n=0;

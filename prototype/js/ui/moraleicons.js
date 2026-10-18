@@ -6,7 +6,8 @@
    bow, crossbow, javelin, staff, horse, a beast's paw, your hero's crown) and a thin health bar under it; beside it a round badge
    for each status: a green confidence arrow, or wavering, routing, shattered (its morale), flanked,
    outnumbered, charged, its leader fallen, its side losing, tired (what weakens it). Drawn on the field and as SVG on the unit
-   cards and in the details. */
+   cards and in the details. Its colour is its side's (battle.js SIDE): yours blue, your allies' green, theirs red; with an AI
+   badge while the AI has it (A: deploy.js aiHas). */
 const BADGE=['..xxxxx..','.xooooox.','xooooooox','xooooooox','xooooooox','xooooooox','xooooooox','.xooooox.','..xxxxx..'];
 const GLYPH={
   breaking:['g...g','.g.g.','..g..','.....','..g..'],
@@ -47,7 +48,10 @@ const GLYPH={
   fallback:['.g...','gggg.','.g..g','....g','..gg.'],
   hidden:['.....','g...g','.ggg.','g.g.g','.....'],
   seen:['.....','.ggg.','g.g.g','.ggg.','.....'],
-  woods:['.ggg.','ggggg','ggggg','.ggg.','..g..']
+  woods:['.ggg.','ggggg','ggggg','.ggg.','..g..'],
+  // (the AI in command of the group: A, deploy.js; on its card and its icon; amove: an attack-move under way, commands.js)
+  ai:['.g..g','g.g.g','ggg.g','g.g.g','g.g.g'],
+  amove:['g...g','.g.g.','..g..','.g.gg','g..gg']
 };
 GLYPH.spent=GLYPH.tired;// (spent: tired's mark, rimmed red)
 // each badge's rim: morale in its own colours, weaknesses in red (a charge in gold)
@@ -55,8 +59,8 @@ const BADGE_RIM={breaking:'#ff8040',rallying:'#9fe09a',missile:'#e8a75a',confide
 /* the cards' other badges, rimmed by their kind (BADGE_KIND): an order warm gold, the pace pale grey, an ability on green
    (Stand Fast! too), a warning amber (few shots, tired, falling back), something bad red (no shots, spent), a flag steel blue,
    sight teal; morale and weaknesses keep their own rims above */
-const BADGE_CAT={order:'#e0b050',pace:'#c8ccd4',ability:'#6cd06c',warning:'#e8a040',bad:'#e0605a',flag:'#8ca4c0',sight:'#4cc0a8'};
-const BADGE_KIND={move:'order',attack:'order',charge:'order',advance:'order',withdraw:'order',walk:'pace',run:'pace',brace:'ability',spur:'ability',fire:'ability',rally:'ability',standfast:'ability',
+const BADGE_CAT={order:'#e0b050',pace:'#c8ccd4',ability:'#6cd06c',warning:'#e8a040',bad:'#e0605a',flag:'#8ca4c0',sight:'#4cc0a8',ai:'#b48cf0'};
+const BADGE_KIND={ai:'ai',amove:'order',move:'order',attack:'order',charge:'order',advance:'order',withdraw:'order',walk:'pace',run:'pace',brace:'ability',spur:'ability',fire:'ability',rally:'ability',standfast:'ability',
   ammo:'warning',tired:'warning',fallback:'warning',noammo:'bad',spent:'bad',shieldWall:'flag',firm:'flag',cease:'flag',skirmish:'flag',melee:'flag',hidden:'sight',seen:'sight',woods:'sight'};
 for(const k in BADGE_KIND)BADGE_RIM[k]=BADGE_CAT[BADGE_KIND[k]];
 const CONFIDENCE_LABEL='Confident: visible, distance-weighted fighting strength advantage. Up to +'+CONFIDENCE.max+' morale and '+Math.round(CONFIDENCE.resist*100)+'% less ordinary morale shock. Panic and leader loss can suppress it.';
@@ -120,7 +124,7 @@ function iconLayout(rt){
   for(const g in B.groups){const m=B.units.filter(u=>u.grp===g&&u.hp>0&&seenBy(0,u));if(!m.length){delete IP[g];continue}const mo=B.noMorale?null:grpMorale(m);
     const f=m.filter(u=>!u.rout),at=f.length?f:m,cx=at.reduce((a,u)=>a+u.x,0)/at.length,cy=at.reduce((a,u)=>a+u.y,0)/at.length,top=Math.min(...at.map(u=>u.y));
     let p=IP[g];if(!p||rm||B.deploy||Math.hypot(p.x-cx,p.y-top)>ICON_FAN.snap)p=IP[g]={x:cx,y:top,dx:p?p.dx:0};else{const k=1-Math.exp(-dt*ICON_FAN.follow);p.x+=(cx-p.x)*k;p.y+=(top-p.y)*k}
-    const st=mo?statusOf(mo):[],W=(S+(st.length?Math.ceil(st.length/2)*10+1:0))*K,H=(S+6)*K,sp=fromField({x:p.x,y:p.y});
+    const st=[...(aiHas(B.groups[g])?['ai']:[]),...(mo?statusOf(mo):[])],W=(S+(st.length?Math.ceil(st.length/2)*10+1:0))*K,H=(S+6)*K,sp=fromField({x:p.x,y:p.y});
     if(sp.x<-W||sp.x>BVW+W||sp.y<0||sp.y>BVH+40)continue;// (off the view: none)
     items.push({g,m,mo,st,W,H,cx,cy,p,team:m[0].team,bx:sp.x-S*K/2,y:Math.max(4,sp.y-UICON.lift*z-H),tier:sel.includes(g)?3:B.iconHov===g?2:m[0].team?0:1})}
   // the fan: banners that overlap where they stand, of groups at blows with each other, in clusters; each cluster set side by
@@ -140,7 +144,7 @@ function iconLayout(rt){
 function drawUnitIcons(){
   const sel=selGroups(),blink=Math.floor(B.t*3)%2,K=UICON.k,S=UICON.s,now=performance.now()/1000,rt=B.iconRT?Math.min(.25,now-B.iconRT):0;B.iconRT=now;
   for(const it of iconLayout(rt)){const {g,m,mo,st,x,y}=it;
-    const team=(mo?mo.team:m[0].team)?['#a8443e','#c8605a','#7a2e2a']:g.startsWith('a_')?['#5aa0c8','#8ac4e0','#3a7898']:['#3466c0','#5a8ae0','#24488a'],wav=mo&&mo.state==='wavering'&&blink;
+    const team=SIDE[(mo?mo.team:m[0].team)?'foe':sideKey(B.groups[g])].plate,wav=mo&&mo.state==='wavering'&&blink;
     const hov=B.iconHov===g,edge=sel.includes(g)?'#ffd25a':wav?'#ffa040':hov?'#f4efe0':'#0a0c12',fade=it.under?ICON_FAN.under:1;
     ctx.save();ctx.translate(x,y);ctx.scale(K,K);ctx.globalAlpha=(mo&&(mo.state==='routing'||mo.state==='shattered')?.6:1)*fade;
     // the plate: an edge (gold when selected), its side's colour, lighter at the top and darker at the foot, a notch pointing down
