@@ -10,9 +10,10 @@
 // Same spec, same picture: seeded, never Math.random.
 // PX.battleGroundSteps(spec): the same painting as a generator (R15): it yields how far through it is (0-1) between its stages
 // (plain ground, height, pools, colour, ways and sand, mountains, what stands, the river's details and bridges, the desert's life,
-// the props cut out) and every band of rows (PX.GROUND_BAND px) in the long ones, and returns the canvas. PX.battleGround runs it
-// to the end at once. A yield only pauses it: the same pixels either way (tests/groundhash.js), so a battle's start paints its
-// field in slices (loading.js runSteps; setup.js BattleSetup)
+// the props cut out) and every band of rows (PX.GROUND_BAND px) in the long ones. A yield only pauses it: the same pixels either
+// way (tests/groundhash.js), so a battle's start paints its field in slices (loading.js runSteps; setup.js BattleSetup). It returns
+// the field kept by tiles (R16: a PX.BattleGround, below); PX.battleGround paints the same at once as one canvas, and
+// PX.battleGroundPaint(cv.plan, rect) any rect of it again, alone
 // PX.battleWater(g,ground,t,view): a river's motion over its painted ground, each frame (glints, current, riffles, sparkles on ice).
 // PX.battleGroundMini(spec,ground): the small map's picture, one pixel a cell (C×R), the painted ground averaged with its contours.
 // Standing props (phase 3): the trees (32-px sprites, PX.battleTree) and the plateaus' south cliff faces are not left in the
@@ -70,9 +71,19 @@
       rock:{c:['#8e9080','#6c7064','#50564a','#3a4036','#22281f'],m:['#66763a','#4a5a2c','#34421f']}}
   };
   const hx=c=>[parseInt(c.slice(1,3),16),parseInt(c.slice(3,5),16),parseInt(c.slice(5,7),16)];
-  // a smooth value noise in [0,1) over a W×H field: lattice step px, seed s (the lattice hashed once, then read)
-  const noise=(W,H,step,s)=>{const gw=Math.ceil(W/step)+2,gh=Math.ceil(H/step)+2,A=new Float32Array(gw*gh);for(let j=0;j<gh;j++)for(let i=0;i<gw;i++)A[j*gw+i]=PX.hash(i,j,s);
-    return(x,y)=>{const gx=x/step,gy=y/step,ix=Math.floor(gx),iy=Math.floor(gy),fx=gx-ix,fy=gy-iy,ux=fx*fx*(3-2*fx),uy=fy*fy*(3-2*fy),o=iy*gw+ix,a=A[o],b=A[o+1],c=A[o+gw],d=A[o+gw+1];
+  // a smooth value noise in [0,1) over a W×H field: lattice step px, seed s (the lattice hashed once, then read). WR, a window
+  // [x0,y0,x1,y1] (a tile's, R16): only the lattice over it (and NOISE_M px round) hashed ahead, any other point read as the
+  // field's lattice would read it (its row-major wrap and its end included): the same values
+  const NOISE_M=96;
+  const noise=(W,H,step,s,WR)=>{const gw=Math.ceil(W/step)+2,gh=Math.ceil(H/step)+2;
+    if(!WR){const A=new Float32Array(gw*gh);for(let j=0;j<gh;j++)for(let i=0;i<gw;i++)A[j*gw+i]=PX.hash(i,j,s);
+      return(x,y)=>{const gx=x/step,gy=y/step,ix=Math.floor(gx),iy=Math.floor(gy),fx=gx-ix,fy=gy-iy,ux=fx*fx*(3-2*fx),uy=fy*fy*(3-2*fy),o=iy*gw+ix,a=A[o],b=A[o+1],c=A[o+gw],d=A[o+gw+1];
+        return a+(b-a)*ux+(c-a)*uy+(a-b-c+d)*ux*uy}}
+    const i0=Math.max(0,Math.floor((WR[0]-NOISE_M)/step)),j0=Math.max(0,Math.floor((WR[1]-NOISE_M)/step)),i1=Math.min(gw-1,Math.ceil((WR[2]+NOISE_M)/step)),j1=Math.min(gh-1,Math.ceil((WR[3]+NOISE_M)/step)),cw=i1-i0+1,A=new Float32Array(cw*(j1-j0+1));
+    for(let j=j0;j<=j1;j++)for(let i=i0;i<=i1;i++)A[(j-j0)*cw+i-i0]=PX.hash(i,j,s);
+    const at=o=>{if(o<0||o>=gw*gh)return undefined;const j=Math.floor(o/gw),i=o-j*gw;return i>=i0&&i<=i1&&j>=j0&&j<=j1?A[(j-j0)*cw+i-i0]:Math.fround(PX.hash(i,j,s))};
+    return(x,y)=>{const gx=x/step,gy=y/step,ix=Math.floor(gx),iy=Math.floor(gy),fx=gx-ix,fy=gy-iy,ux=fx*fx*(3-2*fx),uy=fy*fy*(3-2*fy);let a,b,c,d;
+      if(ix>=i0&&ix<i1&&iy>=j0&&iy<j1){const q=(iy-j0)*cw+ix-i0;a=A[q];b=A[q+1];c=A[q+cw];d=A[q+cw+1]}else{const o=iy*gw+ix;a=at(o);b=at(o+1);c=at(o+gw);d=at(o+gw+1)}
       return a+(b-a)*ux+(c-a)*uy+(a-b-c+d)*ux*uy}};
 
   /* roads and paths by climate (paintWays): c the track, light to deep (worn earth; packed snow in the frost, sand in the desert,
@@ -283,14 +294,15 @@
     const s=fromMap(W,H,M,col,rim);return DSPR[key]={s,ax,ay,box:boxOf(s),sh:DSH[k]}};
 
   // the plain climate ground (when the game gives no base: the gallery), and the desert's own bare ground under a base (from row
-  // y0: the arena's top band kept). A generator: it yields every band of rows (battleGroundSteps)
-  function* plainGround(D,W,H,P,seed,y0){const B=P.base.map(hx),N=noise(W,H,64,seed+40),N2=noise(W,H,24,seed+42),band=bandRows(W);
-    const RV=new Float32Array(W);let nv=0,bh=0;for(let y=y0||0;y<H;y++){if(y>(y0||0)&&!(y%band))yield;for(let x=0;x<W;x++){if(!(x&1)){if(!(y&1)||y===y0)RV[x]=.6*(N(x,y)-.5)+.25*(N2(x,y)-.5);nv=RV[x]}if(!(x&3))bh=.2*(PX.hash(x>>2,y>>2,seed+41)-.5);
-      let v=.5+nv+bh;v=v<0?0:v>1?1:v;const lo=v<.5,a=lo?B[0]:B[1],b=lo?B[1]:B[2],t=lo?v*2:(v-.5)*2,o=(y*W+x)*4;
+  // y0: the arena's top band kept). A generator: it yields every band of rows (battleGroundSteps). WR: a window [x0,y0,x1,y1] (its
+  // x0 a multiple of 4), D its pixels; none: the field (each odd row reads its even row's noise: the same in a window)
+  function* plainGround(D,W,H,P,seed,y0,WR){const [X0,Y0,X1,Y1]=WR||[0,0,W,H],SW=X1-X0,B=P.base.map(hx),N=noise(W,H,64,seed+40,WR),N2=noise(W,H,24,seed+42,WR),band=bandRows(SW,!!WR),ys=Math.max(y0||0,Y0);
+    const RV=new Float32Array(SW);let nv=0,bh=0;for(let y=ys;y<Y1;y++){if(y>ys&&!(y%band))yield;const ry=!(y&1)||y===y0?y:y-1,fresh=ry===y||y===ys;for(let x=X0;x<X1;x++){if(!(x&1)){if(fresh)RV[x-X0]=.6*(N(x,ry)-.5)+.25*(N2(x,ry)-.5);nv=RV[x-X0]}if(!(x&3))bh=.2*(PX.hash(x>>2,y>>2,seed+41)-.5);
+      let v=.5+nv+bh;v=v<0?0:v>1?1:v;const lo=v<.5,a=lo?B[0]:B[1],b=lo?B[1]:B[2],t=lo?v*2:(v-.5)*2,o=((y-Y0)*SW+x-X0)*4;
       D[o]=a[0]+(b[0]-a[0])*t;D[o+1]=a[1]+(b[1]-a[1])*t;D[o+2]=a[2]+(b[2]-a[2])*t;D[o+3]=255;
       const ph=PX.hash(x,y,seed+43);if(ph<.03){const c=B[2];D[o]+=(c[0]-D[o])*.6;D[o+1]+=(c[1]-D[o+1])*.6;D[o+2]+=(c[2]-D[o+2])*.6}else if(ph>.97){const c=B[0];D[o]+=(c[0]-D[o])*.7;D[o+1]+=(c[1]-D[o+1])*.7;D[o+2]+=(c[2]-D[o+2])*.7}}}}
-  // (the rows of a band: about PX.GROUND_BAND pixels, at least one row)
-  PX.GROUND_BAND=1<<17;const bandRows=W=>Math.max(1,Math.floor(PX.GROUND_BAND/W));
+  // (the rows of a band: about PX.GROUND_BAND pixels, at least one row; a tile's (R16, painted a few ms a frame): an eighth of that)
+  PX.GROUND_BAND=1<<17;const bandRows=(W,tile)=>Math.max(1,Math.floor((tile?PX.GROUND_BAND>>3:PX.GROUND_BAND)/W));
 
   /* small painted details (Pg: a painter; x, y: the foot; v: a seeded number; P: the palette) */
   const DETAIL={
@@ -317,39 +329,58 @@
 
   /* the plain field's small things (the game's arena: a battle's ground without terrain, and the base a terrain is painted over):
      the climate's open-ground details (P.detail, as battleGround paints them) on each 16-px cell from row 16 down, and in the swamp
-     still pools, a mud rim, the far bank's shade, a glint, reeds at an end now and then; seeded by the cell, never Math.random */
-  PX.battleDetails=(g,W,H,clim,seed)=>{const P=PX.GROUND_PAL[clim]||PX.GROUND_PAL.grass,Pg=PX.paint(g),C=Math.ceil(W/16),R=Math.ceil(H/16),h=(i,j,k)=>PX.hash(i,j,seed*13+k);
-    if(clim==='swamp')for(let k=0,n=Math.max(6,Math.round(W*H/80000));k<n;k++){const w=14+Math.floor(h(k,1,1)*13),ph=5+Math.floor(h(k,2,1)*3),x0=Math.floor(h(k,3,1)*(W-w-4))+2,y0=24+Math.floor(h(k,4,1)*(H-ph-30));
+     still pools, a mud rim, the far bank's shade, a glint, reeds at an end now and then; seeded by the cell, never Math.random.
+     rc: [x0,y0,x1,y1], only what reaches into it (a tile's, R16): the same pixels there */
+  PX.battleDetails=(g,W,H,clim,seed,rc)=>{const P=PX.GROUND_PAL[clim]||PX.GROUND_PAL.grass,Pg=PX.paint(g),C=Math.ceil(W/16),R=Math.ceil(H/16),h=(i,j,k)=>PX.hash(i,j,seed*13+k),out=(x0,y0,x1,y1)=>rc&&(x1<rc[0]||x0>=rc[2]||y1<rc[1]||y0>=rc[3]);
+    if(clim==='swamp')for(let k=0,n=Math.max(6,Math.round(W*H/80000));k<n;k++){const w=14+Math.floor(h(k,1,1)*13),ph=5+Math.floor(h(k,2,1)*3),x0=Math.floor(h(k,3,1)*(W-w-4))+2,y0=24+Math.floor(h(k,4,1)*(H-ph-30));if(out(x0-12,y0-12,x0+w+12,y0+ph+12))continue;
       for(let y=-1;y<=ph;y++)for(let x=-1;x<=w;x++){const dx=(x+.5-w/2)/(w/2+1),dy=(y+.5-ph/2)/(ph/2+1),e=dx*dx+dy*dy,cut=PX.hash(x0+x,y0+y,seed+5)*.12;if(e>1-cut)continue;
         const ix=(x+.5-w/2)/(w/2),iy=(y+.5-ph/2)/(ph/2),wet=ix*ix+iy*iy<=1-cut,top=wet&&ix*ix+((y-.5-ph/2)/(ph/2))**2>1-cut;
         Pg.px(!wet?P.mud:top?P.bank:iy<-.1?P.water[2]:P.water[1],x0+x,y0+y)}
       Pg.rect(P.glint,x0+(w>>1)-1,y0+(ph>>1)+1,2,1);if(h(k,5,1)<.5)reeds(Pg,x0+(h(k,6,1)<.5?2:w-3),y0+(ph>>1),Math.floor(h(k,7,1)*99),P)}
-    for(let j=1;j<R;j++)for(let i=0;i<C;i++)P.detail[0].forEach(([d,ch],n)=>{if(h(i,j,n*5+1)>=ch)return;const x=i*16+2+Math.floor(h(i,j,n*5+2)*12),y=j*16+3+Math.floor(h(i,j,n*5+3)*13);
-      if(y<H)DETAIL[d](Pg,x,y,Math.floor(h(i,j,n*5+4)*1000),P,g,clim)})};
+    for(let j=1;j<R;j++)for(let i=0;i<C;i++){if(out(i*16-16,j*16-16,i*16+32,j*16+34))continue;P.detail[0].forEach(([d,ch],n)=>{if(h(i,j,n*5+1)>=ch)return;const x=i*16+2+Math.floor(h(i,j,n*5+2)*12),y=j*16+3+Math.floor(h(i,j,n*5+3)*13);
+      if(y<H)DETAIL[d](Pg,x,y,Math.floor(h(i,j,n*5+4)*1000),P,g,clim)})}};
   PX.ROCK_PX=14;// (a level of a mountain's height, px: spec.rockH × this, unless spec.rockPx)
-  PX.battleGround=spec=>{const it=PX.battleGroundSteps(spec);let n;while(!(n=it.next()).done);return n.value};
-  PX.battleGroundSteps=function*(spec){
+  /* R16: the field painted by tiles. PX.battleGround(spec): the whole of it as one canvas, as ever (cv.plan: what its tiles share).
+     PX.battleGroundPaint(plan, [x,y,w,h], out): one rect of it (a tile), painted over a window PX.GROUND_TILE.apron px larger and
+     kept to the rect: its pixels those of the whole there, pixel for pixel (tests/groundhash.js); PX.battleGroundPaintSteps the same
+     as a generator. The whole is painted once (paint: it places every tree, detail and stone, and keeps them in the plan as a list
+     of what is drawn, in its order), then any rect from the plan alone: the per-pixel work (height, pools, the river's reach, the
+     ways' lines, colour, ways, ripples, mountains) over the window, and what is drawn over it that reaches into the rect */
+  PX.battleGround=spec=>{const it=paint(spec,null);let n;while(!(n=it.next()).done);return n.value};
+  PX.battleGroundPaintSteps=(plan,rc,out)=>paint(plan.spec,plan,rc,out);
+  PX.battleGroundPaint=(plan,rc,out)=>{const it=paint(plan.spec,plan,rc,out);let n;while(!(n=it.next()).done);return n.value};
+  // the painting: PL null, the whole field (cv, the plan made: cv.plan); else the rect rc ([x,y,w,h]) from the plan PL, onto out
+  function* paint(spec,PL,rc,out){
     const C=spec.C,R=spec.R,cs=spec.cs||16,clim=PX.GROUND_PAL[spec.climate]?spec.climate:'grass',P=PX.GROUND_PAL[clim],seed=(spec.seed|0)||1,base=spec.base,
       W=base?base.width:spec.w||C*cs,H=base?base.height:spec.h||R*cs,kind0=spec.kind||new Uint8Array(C*R),lvl=spec.lvl||new Uint8Array(C*R);
     // (the desert: its marsh is an oasis; woods none. A river, 3-5, wherever the game lays one)
     const kind=kind0,oasis=!!P.oasis,bare=!P.species.length,RP=P.riv,rk=typeof spec.recipe==='string'?spec.recipe:spec.recipe&&spec.recipe.kind||'';
-    const cv=PX.canvas(W,H),g=cv.getContext('2d');if(base)g.drawImage(base,0,0);
-    const own=!base||P.plain,img=own?g.createImageData(W,H):g.getImageData(0,0,W,H),D=img.data;if(own){yield* plainGround(D,W,H,P,seed,base?15:0);if(base)D.set(g.getImageData(0,0,W,15).data)}
+    // (the window: the whole field, or the rect and an apron round it, from a cell's edge; IX a pixel's place in its arrays)
+    const full=!PL,[X,Y,w,h]=rc||[0,0,W,H],AP=full?0:PX.GROUND_TILE.apron,WX0=Math.max(0,Math.floor((X-AP)/cs)*cs),WY0=Math.max(0,Math.floor((Y-AP)/cs)*cs),WX1=Math.min(W,X+w+AP),WY1=Math.min(H,Y+h+AP),
+      SW=WX1-WX0,SH=WY1-WY0,WR=full?null:[WX0,WY0,WX1,WY1],IX=(x,y)=>(y-WY0)*SW+x-WX0,inW=(x,y)=>x>=WX0&&y>=WY0&&x<WX1&&y<WY1;
+    // (the plan the whole makes: the spec, each way's climbs, the highest peak, what is drawn (L) and what its records point at)
+    const PLn=full?{spec,clb:[],zm:0}:null;
+    // (the base under the window (the climate's arena, painted in steps, or a canvas): the whole's into its canvas, a rect's on one
+    // the window's size; over a desert's own ground only its top band is kept, so only that is painted)
+    const own=!base||P.plain,bh=own?Math.max(0,Math.min(15,WY1)-WY0):SH,cv=out||PX.canvas(w,h),bc=full?cv:base?PX.canvas(SW,SH):null,g0=bc&&bc.getContext('2d');
+    if(base&&bh){if(base.getContext)g0.drawImage(base,-WX0,-WY0);else yield* base.paintSteps(g0,WX0,WY0,SW,bh,full?PX.GROUND_BAND:PX.GROUND_BAND>>3)}
+    const img=own?new ImageData(SW,SH):g0.getImageData(0,0,SW,SH),D=img.data;if(own){yield* plainGround(D,W,H,P,seed,base?15:0,WR);if(base&&bh)D.set(g0.getImageData(0,0,SW,bh).data)}
     // (how far through: stage s of GS, f through it; band: a stage's band of cell rows, run over its cells (each) a band at a time)
     const GS=9,at=(s,f)=>(s+(f||0))/GS;yield at(1);
     const cell=(a,i,j)=>a[(j<0?0:j>=R?R-1:j)*C+(i<0?0:i>=C?C-1:i)];
     // the cells worth painting: any with a level or a kind, and their neighbours (the slope and the ragged edge reach into them)
     const act=new Uint8Array(C*R);for(let j=0;j<R;j++)for(let i=0;i<C;i++)if(lvl[j*C+i]||kind[j*C+i])for(let b=-1;b<=1;b++)for(let a=-1;a<=1;a++){const x=i+a,y=j+b;if(x>=0&&y>=0&&x<C&&y<R)act[y*C+x]=1};
-    const T=new Uint8Array(W*H),K=new Uint8Array(W*H),WT=new Uint8Array(W*H),F=new Uint8Array(W*H),Q=oasis?new Float32Array(W*H):null;
-    const each=(f,j0=0,j1=R)=>{for(let j=j0;j<j1;j++)for(let i=0;i<C;i++){if(!act[j*C+i])continue;const y1=Math.min(H,(j+1)*cs),x1=Math.min(W,(i+1)*cs);for(let y=j*cs;y<y1;y++)for(let x=i*cs;x<x1;x++)f(x,y,y*W+x)}};
-    const BR0=Math.max(1,Math.floor(bandRows(W)/cs)),band=function*(s,f){for(let j=0;j<R;j+=BR0){each(f,j,Math.min(R,j+BR0));yield at(s,Math.min(1,(j+BR0)/R))}};
+    const T=new Uint8Array(SW*SH),K=new Uint8Array(SW*SH),WT=new Uint8Array(SW*SH),F=new Uint8Array(SW*SH),Q=oasis?new Float32Array(SW*SH):null;
+    const ci0=Math.floor(WX0/cs),ci1=Math.min(C,Math.ceil(WX1/cs)),cj0=Math.floor(WY0/cs),cj1=Math.min(R,Math.ceil(WY1/cs));
+    const each=(f,j0=cj0,j1=cj1)=>{for(let j=j0;j<j1;j++)for(let i=ci0;i<ci1;i++){if(!act[j*C+i])continue;const y1=Math.min(WY1,(j+1)*cs),x1=Math.min(WX1,(i+1)*cs);for(let y=j*cs;y<y1;y++)for(let x=i*cs;x<x1;x++)f(x,y,(y-WY0)*SW+x-WX0)}};
+    const BR0=Math.max(1,Math.floor(bandRows(SW,!full)/cs)),band=function*(s,f){for(let j=cj0;j<cj1;j+=BR0){each(f,j,Math.min(cj1,j+BR0));yield at(s,Math.min(1,(j-cj0+BR0)/(cj1-cj0)))}};
     // (1) height: the cells' levels, bilinear between cell centres, sampled through a gentle wobble (±3.5 px), so a terrace edge
     //     sits on its cells' edge but runs as a natural line; the terrace is the height rounded. Woods and marsh: the same, through
     //     a pixel-fine wobble too (their ragged edge); an oasis keeps its share (Q: pool, bank and green by how far in)
-    const NX=noise(W,H,8,seed),NY=noise(W,H,8,seed+1),NP=noise(W,H,10,seed+5),NQ=noise(W,H,5,seed+6);
+    const NX=noise(W,H,8,seed,WR),NY=noise(W,H,8,seed+1,WR),NP=noise(W,H,10,seed+5,WR),NQ=noise(W,H,5,seed+6,WR);
     // (1b) a river: its cells' water and depth blurred [1 2 1]² and read through the same wobble, so a bank runs as a curve through
     //      a meander's steps yet sits on its cells' edge. WV: 0 land, 1 ford, 2 deep (a bridge's cells are deep under its deck)
-    const hasW=kind.some(k=>k>=3&&k<=5),WV=hasW?new Uint8Array(W*H):null,bil=(A,iu,iv,fu,fv)=>{const a=cell(A,iu,iv),b=cell(A,iu+1,iv),c=cell(A,iu,iv+1),d=cell(A,iu+1,iv+1);return a+(b-a)*fu+(c-a)*fv+(a-b-c+d)*fu*fv};
+    const hasW=kind.some(k=>k>=3&&k<=5),WV=hasW?new Uint8Array(SW*SH):null,bil=(A,iu,iv,fu,fv)=>{const a=cell(A,iu,iv),b=cell(A,iu+1,iv),c=cell(A,iu,iv+1),d=cell(A,iu+1,iv+1);return a+(b-a)*fu+(c-a)*fv+(a-b-c+d)*fu*fv};
     const blur=f=>{const A=new Float32Array(C*R);for(let j=0;j<R;j++)for(let i=0;i<C;i++){let s=0;for(let b=-1;b<=1;b++)for(let a=-1;a<=1;a++)s+=f(cell(kind,i+a,j+b))*(a?1:2)*(b?1:2);A[j*C+i]=s/16}return A};
     const WB=hasW?blur(k=>k>=3&&k<=5?1:0):null,DB=hasW?blur(k=>k===4||k===5?1:0):null;// (6, rock, is no water)
     yield* band(1,(x,y,o)=>{const jx=(NX(x,y)-.5)*7,jy=(NY(x,y)-.5)*7,sx=x+.5+jx,sy=y+.5+jy,u=sx/cs-.5,v=sy/cs-.5,iu=Math.floor(u),iv=Math.floor(v),fu=u-iu,fv=v-iv;
@@ -359,7 +390,7 @@
       const k0=cell(kind,ku,kv),k1=cell(kind,ku+1,kv),k2=cell(kind,ku,kv+1),k3=cell(kind,ku+1,kv+1),w0=(1-wu)*(1-wv),w1=wu*(1-wv),w2=(1-wu)*wv,w3=wu*wv;
       const s1=(k0===1?w0:0)+(k1===1?w1:0)+(k2===1?w2:0)+(k3===1?w3:0);if(s1>.5){K[o]=1;return}const s2=(k0===2?w0:0)+(k1===2?w1:0)+(k2===2?w2:0)+(k3===2?w3:0);if(Q)Q[o]=s2+(NP(x,y)-.5)*.14;if(s2>.5)K[o]=2});
     // (2) marsh pools: a blotchy noise over the marsh, kept a few pixels inside it; an oasis: one pool in its heart
-    const Kat=(x,y)=>x<0||y<0||x>=W||y>=H?0:K[y*W+x];
+    const Kat=(x,y)=>inW(x,y)?K[IX(x,y)]:0;
     yield* band(2,(x,y,o)=>{if(oasis){const q=Q[o];if(q>.88)WT[o]=q>.95?2:1;return}if(K[o]!==2)return;const n=NP(x,y)*.8+NQ(x,y)*.2;if(n>.6&&Kat(x,y-4)===2&&Kat(x,y+4)===2&&Kat(x-5,y)===2&&Kat(x+5,y)===2)WT[o]=n>.68?2:1});
     // (1c) the river's reach: each water pixel's distance to land (DW) and each land pixel's to water (DL), chamfer 3-4 (3 a px),
     //      in its cells' box; which way it flows (down the field, or across: flowV) and its middle's slope a row (the current's lean)
@@ -370,19 +401,22 @@
       const L=flowV?R:C,cnt=flowV?rn:cn,sum=flowV?rows:cols,mid=k=>{for(let d=0;d<L;d++){if(k-d>=0&&cnt[k-d])return sum[k-d]/cnt[k-d];if(k+d<L&&cnt[k+d])return sum[k+d]/cnt[k+d]}return 0};
       for(let k=0;k<L;k++)SLP[k]=(mid(k+1)-mid(k-1))/2;
       bx0=Math.max(0,(c0-1)*cs);by0=Math.max(0,(r0-1)*cs);bx1=Math.min(W,(c1+2)*cs);by1=Math.min(H,(r1+2)*cs);
-      const cham=src=>{const A=new Uint16Array(W*H).fill(999);
-        for(let y=by0;y<by1;y++)for(let x=bx0;x<bx1;x++){const i=y*W+x;if(src(i)){A[i]=0;continue}let m=A[i];if(x>bx0)m=Math.min(m,A[i-1]+3);if(y>by0){m=Math.min(m,A[i-W]+3);if(x>bx0)m=Math.min(m,A[i-W-1]+4);if(x<bx1-1)m=Math.min(m,A[i-W+1]+4)}A[i]=m}
-        for(let y=by1-1;y>=by0;y--)for(let x=bx1-1;x>=bx0;x--){const i=y*W+x;let m=A[i];if(!m)continue;if(x<bx1-1)m=Math.min(m,A[i+1]+3);if(y<by1-1){m=Math.min(m,A[i+W]+3);if(x<bx1-1)m=Math.min(m,A[i+W+1]+4);if(x>bx0)m=Math.min(m,A[i+W-1]+4)}A[i]=m}
+      // (over the box within the window: a distance under the apron is the field's own)
+      const ax0=Math.max(bx0,WX0),ay0=Math.max(by0,WY0),ax1=Math.min(bx1,WX1),ay1=Math.min(by1,WY1);
+      const cham=src=>{const A=new Uint16Array(SW*SH).fill(999);
+        for(let y=ay0;y<ay1;y++)for(let x=ax0;x<ax1;x++){const i=IX(x,y);if(src(i)){A[i]=0;continue}let m=A[i];if(x>ax0)m=Math.min(m,A[i-1]+3);if(y>ay0){m=Math.min(m,A[i-SW]+3);if(x>ax0)m=Math.min(m,A[i-SW-1]+4);if(x<ax1-1)m=Math.min(m,A[i-SW+1]+4)}A[i]=m}
+        for(let y=ay1-1;y>=ay0;y--)for(let x=ax1-1;x>=ax0;x--){const i=IX(x,y);let m=A[i];if(!m)continue;if(x<ax1-1)m=Math.min(m,A[i+1]+3);if(y<ay1-1){m=Math.min(m,A[i+SW]+3);if(x<ax1-1)m=Math.min(m,A[i+SW+1]+4);if(x>ax0)m=Math.min(m,A[i+SW-1]+4)}A[i]=m}
         return A};
       DW=cham(i=>!WV[i]);DL=cham(i=>WV[i]>0);yield at(3)}
-    // (Wv: the river at a pixel, 255 off the field; dn, upw: k px down or up its flow; Dl: a pixel's distance to it, chamfer units)
-    const Wv=(x,y)=>x<0||y<0||x>=W||y>=H?255:WV[y*W+x],dn=(x,y,k)=>flowV?Wv(x,y+k):Wv(x+k,y),upw=(x,y,k)=>flowV?Wv(x,y-k):Wv(x-k,y),Dl=(x,y)=>!hasW||x<0||y<0||x>=W||y>=H?999:DL[y*W+x];
-    const Wat=(x,y)=>x<0||y<0||x>=W||y>=H?0:WT[y*W+x],Tat=(x,y)=>x<0||y<0||x>=W||y>=H?0:T[y*W+x],Fat=(x,y)=>x<0||y<0||x>=W||y>=H?1:F[y*W+x];
+    // (Wv: the river at a pixel, 255 off the field; dn, upw: k px down or up its flow; Dl: a pixel's distance to it, chamfer units.
+    //  Off the window as off the field: only the apron reads there)
+    const Wv=(x,y)=>inW(x,y)?WV[IX(x,y)]:255,dn=(x,y,k)=>flowV?Wv(x,y+k):Wv(x+k,y),upw=(x,y,k)=>flowV?Wv(x,y-k):Wv(x-k,y),Dl=(x,y)=>hasW&&inW(x,y)?DL[IX(x,y)]:999;
+    const Wat=(x,y)=>inW(x,y)?WT[IX(x,y)]:0,Tat=(x,y)=>inW(x,y)?T[IX(x,y)]:0,Fat=(x,y)=>inW(x,y)?F[IX(x,y)]:1;
     const TRK0=hx(P.trunk[0]),TRK1=hx(P.trunk[1]),FC=P.face.map(hx),HI=hx(P.hi),LO=hx(P.lo),LN=hx(P.line),UN=hx(P.under),LF=hx(P.leaf[2]),MU=hx(P.mud),BK=hx(P.bank),WA=P.water.map(hx),GR=(P.green||P.leaf).map(hx);
     const mix=(o,c,t)=>{D[o]+=(c[0]-D[o])*t;D[o+1]+=(c[1]-D[o+1])*t;D[o+2]+=(c[2]-D[o+2])*t},put=(o,c)=>{D[o]=c[0];D[o+1]=c[1];D[o+2]=c[2]};
     // the river's own colours (RW: its water light to deep; DEEP: the deep's tones by depth; FORD: shallow over gravel; BEDL: a bar)
     const RW=RP.w.map(hx),BED=hx(RP.bed),FOAM=hx(RP.foam),E=RP.earth.map(hx),ICE=RP.ice?RP.ice.map(hx):null,SN=hx('#f4f8fc'),ST=RP.stone.map(hx),WEED=hx('#5e6e34');
-    const lerp=(a,b,t)=>a.map((v,z)=>v+(b[z]-v)*t),DEEP=[lerp(RW[0],RW[1],.55),RW[1],RW[2],RW[3]],FORD=lerp(RW[0],BED,.42),BEDL=lerp(BED,hx(P.hi),.25),NB=hasW?noise(W,H,12,seed+60):null;
+    const lerp=(a,b,t)=>a.map((v,z)=>v+(b[z]-v)*t),DEEP=[lerp(RW[0],RW[1],.55),RW[1],RW[2],RW[3]],FORD=lerp(RW[0],BED,.42),BEDL=lerp(BED,hx(P.hi),.25),NB=hasW?noise(W,H,12,seed+60,WR):null;
     // a river's pixel: w 1 ford, 2 deep; d its distance to land (px)
     const water=(o,x,y,i,w)=>{const d=DW[i]/3,h=PX.hash(x,y,seed+61),nb=NB(x,y);
       if(w===1){if(ICE){put(o,ICE[nb>.66?0:nb<.3?2:1]);if(h>.97)put(o,ICE[0]);else if(h<.02)put(o,ICE[2]);if(d<1.6){put(o,ICE[0]);return}// (a frozen ford: snow on its edge)
@@ -444,7 +478,7 @@
       if(RSNOW&&NQ(x,y)>.35)mix(o,RSNOW,.45);if(RMOSS&&h<.18)mix(o,RMOSS,.35);
       if(h<.05)put(o,TU[h<.02?0:1]);else if(h>.985&&v>.4)put(o,RSTN);
       if(lit<0&&e<4)mix(o,LO,.2*(1-e/4));else if(lit>0&&e<3)mix(o,HI,.07);F[i]=4};
-    const rampFan=(o,x,y,i,f,e)=>{const sd=Math.min(1,(e+1)/4);mix(o,LO,.1*f*sd);if(NP(x,y)>.42)mix(o,REA,.3*f*sd);if(f>.35)F[i]=4;const h=PX.hash(x,y,seed+19);if(h<.05*f){put(o,RSTN);if(y+1<H)mix(o+W*4,RSTD,.5)}else if(h>.97)put(o,TU[1])};
+    const rampFan=(o,x,y,i,f,e)=>{const sd=Math.min(1,(e+1)/4);mix(o,LO,.1*f*sd);if(NP(x,y)>.42)mix(o,REA,.3*f*sd);if(f>.35)F[i]=4;const h=PX.hash(x,y,seed+19);if(h<.05*f){put(o,RSTN);if(y+1<WY1)mix(o+SW*4,RSTD,.5)}else if(h>.97)put(o,TU[1])};
     // (how far in from its side a ramp pixel lies: the edge b under (x,y) is a ramp, and so on k px either way along it, up to 4)
     const rampSide=(b,x,y)=>{const ax=b===2||b===8;for(let k=1;k<=4;k++)if(edgeK(b,ax?x-k:x,ax?y:y-k)!==2||edgeK(b,ax?x+k:x,ax?y:y+k)!==2)return k-1;return 4};
     // a plateau pixel with walls known: its south face (sheer: rock in FHS-px levels; a slope: graded, in steps), the rim over it,
@@ -492,11 +526,18 @@
       for(let q0=0;q0<C*R;q0++){if(kind[q0]!==6||lab[q0]>=0)continue;const id=M.length,m={c0:C,c1:-1,r0:R,r1:-1,n:0,zmax:0},st=[q0];lab[q0]=id;
         while(st.length){const q=st.pop(),i=q%C,j=(q-i)/C;m.n++;if(i<m.c0)m.c0=i;if(i>m.c1)m.c1=i;if(j<m.r0)m.r0=j;if(j>m.r1)m.r1=j;
           for(const [a,c] of [[1,0],[-1,0],[0,1],[0,-1]]){const x=i+a,y=j+c,n=y*C+x;if(x>=0&&y>=0&&x<C&&y<R&&kind[n]===6&&lab[n]<0){lab[n]=id;st.push(n)}}}M.push(m)}
-      const ZR=new Float32Array(W*H),MR=new Uint16Array(W*H),RS=new Uint16Array(W*H),GY=new Int16Array(W*H),NR1=noise(W,H,15,seed+80),NR2=noise(W,H,7,seed+81),NT=noise(W,H,5,seed+82);
+      for(const m of M)m.b=[Math.max(0,m.c0*cs-6),Math.max(0,m.r0*cs-6),Math.min(W,(m.c1+1)*cs+6),Math.min(H,(m.r1+1)*cs+6)];
+      // (a rect's rock window (RX0-RY1: ZR and MR over it): the window, the march of a shadow to its upper left (the field's highest
+      //  peak, zm, makes it K px), the rock below it that rises into it (zm px); its masses those near it, each reckoned whole)
+      const SK=1.6,zm0=full?0:PL.zm,K0=Math.ceil(zm0/SK)+1,RX0=full?0:Math.max(0,WX0-K0-2),RY0=full?0:Math.max(0,WY0-Math.ceil(K0*.38)-4),RX1=full?W:Math.min(W,WX1+6),RY1=full?H:Math.min(H,WY1+Math.ceil(zm0)+6),RWd=RX1-RX0;
+      const use=M.map(m=>full||m.b[0]<RX1+K0+8&&m.b[2]>RX0-K0-8&&m.b[1]<RY1+K0+8&&m.b[3]>RY0-K0-8),WRk=full?null:[RX0,RY0,RX1,RY1];
+      if(WRk)M.forEach((m,id)=>{if(use[id]){WRk[0]=Math.min(WRk[0],m.b[0]);WRk[1]=Math.min(WRk[1],m.b[1]);WRk[2]=Math.max(WRk[2],m.b[2]);WRk[3]=Math.max(WRk[3],m.b[3])}});
+      const ZR=new Float32Array(RWd*(RY1-RY0)),MR=new Uint16Array(RWd*(RY1-RY0)),RS=new Uint16Array(SW*SH),GY=new Int16Array(SW*SH),NR1=noise(W,H,15,seed+80,WRk),NR2=noise(W,H,7,seed+81,WRk),NT=noise(W,H,5,seed+82,WRk);
+      const inR=(x,y)=>x>=RX0&&y>=RY0&&x<RX1&&y<RY1,RI=(x,y)=>(y-RY0)*RWd+x-RX0,ZRat=(x,y)=>inR(x,y)?ZR[RI(x,y)]:0,MRat=(x,y)=>inR(x,y)?MR[RI(x,y)]:0;
       let rx0=W,rx1=0,ry0=H,ry1=0,zm=0;
       // (1) each mass's footprint (its cells, and their heights, on a small grid a cell bigger each side, read through the wobble), its
       //     distance in from the edge (chamfer 3-4) and its height
-      M.forEach((m,id)=>{const x0=Math.max(0,m.c0*cs-6),x1=Math.min(W,(m.c1+1)*cs+6),y0=Math.max(0,m.r0*cs-6),y1=Math.min(H,(m.r1+1)*cs+6),bw=x1-x0,bh=y1-y0;
+      M.forEach((m,id)=>{if(!use[id])return;const [x0,y0,x1,y1]=m.b,bw=x1-x0,bh=y1-y0;
         const small=m.n<=2,A=new Uint16Array(bw*bh),HV=new Float32Array(bw*bh),gi0=m.c0-1,gj0=m.r0-1,gw=m.c1-m.c0+3,gh=m.r1-m.r0+3,GI=new Float32Array(gw*gh),GH=new Float32Array(gw*gh);
         for(let j=0;j<gh;j++)for(let i=0;i<gw;i++){const ci=gi0+i,cj=gj0+j;if(ci>=0&&cj>=0&&ci<C&&cj<R&&lab[cj*C+ci]===id){GI[j*gw+i]=1;GH[j*gw+i]=hOf(cj*C+ci)}}
         for(let y=y0;y<y1;y++)for(let x=x0;x<x1;x++){const u=(x+.5+(NX(x,y)-.5)*5)/cs-.5-gi0,v=(y+.5+(NY(x,y)-.5)*5)/cs-.5-gj0,iu=Math.floor(u),iv=Math.floor(v);if(iu<0||iv<0||iu>=gw-1||iv>=gh-1)continue;
@@ -522,34 +563,38 @@
           else if(small)z=Math.min(Hp*(.82+.18*rid)*(1+cr*.3),d*6);// (a spire: a needle)
           else{const u=(x-x0)/2,v=(y-y0)/2,iu=u|0,iv=v|0,fu=u-iu,fv=v-iv,o=iv*pw+iu,a=PZ[o],b=PZ[o+1],c=PZ[o+pw],e=PZ[o+pw+1];
             z=Math.max(Hp*.3*Math.min(1,d/12),a+(b-a)*fu+(c-a)*fv+(a-b-c+e)*fu*fv);z=Math.min(z*(1+cr*.12)+rid*2,d*(2+1.6*NR2(x+57,y+31)))}
-          z=Math.max(.6,z);const p=y*W+x;if(z>ZR[p]){ZR[p]=z;MR[p]=id+1}if(z>m.zmax)m.zmax=z}
-        m.b=[x0,y0,x1,y1];if(x0<rx0)rx0=x0;if(x1>rx1)rx1=x1;if(y0<ry0)ry0=y0;if(y1>ry1)ry1=y1;if(m.zmax>zm)zm=m.zmax});
+          z=Math.max(.6,z);if(inR(x,y)){const p=RI(x,y);if(z>ZR[p]){ZR[p]=z;MR[p]=id+1}}if(z>m.zmax)m.zmax=z}
+        if(x0<rx0)rx0=x0;if(x1>rx1)rx1=x1;if(y0<ry0)ry0=y0;if(y1>ry1)ry1=y1;if(m.zmax>zm)zm=m.zmax});
+      if(!full)zm=zm0;
       // (each column's rows holding rock: its masses' boxes)
-      const CY0=new Int16Array(W).fill(H),CY1=new Int16Array(W);for(const m of M)for(let x=m.b[0];x<m.b[2];x++){if(m.b[1]<CY0[x])CY0[x]=m.b[1];if(m.b[3]>CY1[x])CY1[x]=m.b[3]}
-      const SK=1.6,LSX=-.92,LSY=-.38,K=Math.ceil(zm/SK)+1,LX=-.6,LY=0,LZ=.8,LN_=Math.hypot(LX,LY,LZ);
+      const CY0=new Int16Array(W).fill(H),CY1=new Int16Array(W);M.forEach((m,id)=>{if(use[id])for(let x=m.b[0];x<m.b[2];x++){if(m.b[1]<CY0[x])CY0[x]=m.b[1];if(m.b[3]>CY1[x])CY1[x]=m.b[3]}});
+      const LSX=-.92,LSY=-.38,K=Math.ceil(zm/SK)+1,LX=-.6,LY=0,LZ=.8,LN_=Math.hypot(LX,LY,LZ);
       // (in the rock's shadow: a march toward the light over ZR, st px a step; bx, by: the rock's box's west and north edges)
-      const shadowed=(x,y,z0,st=1,bx=0,by=0)=>{for(let k=2;k<=K;k+=st){const qx=Math.round(x+LSX*k),qy=Math.round(y+LSY*k);if(qx<bx||qy<by||qx>=W||qy>=H)return false;if(ZR[qy*W+qx]>z0+k*SK)return true}return false};
-      // (the small map: the ground's colour, by cell, where the rock will stand over it)
-      const cy0=Math.max(0,Math.floor((ry0-zm)/cs)),cy1=Math.min(R-1,Math.floor(ry1/cs)),cx0=Math.floor(rx0/cs),cx1=Math.min(C-1,Math.floor((rx1-1)/cs)),UND=new Float32Array(C*R*3).fill(-1);
-      for(let j=cy0;j<=cy1;j++)for(let i=cx0;i<=cx1;i++){let s0=0,s1=0,s2=0,n=0;for(let y=j*cs+1;y<Math.min(H,(j+1)*cs);y+=2)for(let x=i*cs+1;x<Math.min(W,(i+1)*cs);x+=2){const o=(y*W+x)*4;s0+=D[o];s1+=D[o+1];s2+=D[o+2];n++}if(n){UND[(j*C+i)*3]=s0/n;UND[(j*C+i)*3+1]=s1/n;UND[(j*C+i)*3+2]=s2/n}}
+      const shadowed=(x,y,z0,st=1,bx=0,by=0)=>{for(let k=2;k<=K;k+=st){const qx=Math.round(x+LSX*k),qy=Math.round(y+LSY*k);if(qx<bx||qy<by||qx>=W||qy>=H)return false;if(ZRat(qx,qy)>z0+k*SK)return true}return false};
+      // (the small map: the ground's colour, by cell, where the rock will stand over it: the whole only)
+      const cy0=Math.max(0,Math.floor((ry0-zm)/cs)),cy1=Math.min(R-1,Math.floor(ry1/cs)),cx0=Math.floor(rx0/cs),cx1=Math.min(C-1,Math.floor((rx1-1)/cs)),UND=full?new Float32Array(C*R*3).fill(-1):null;
+      if(full)for(let j=cy0;j<=cy1;j++)for(let i=cx0;i<=cx1;i++){let s0=0,s1=0,s2=0,n=0;for(let y=j*cs+1;y<Math.min(H,(j+1)*cs);y+=2)for(let x=i*cs+1;x<Math.min(W,(i+1)*cs);x+=2){const o=(y*W+x)*4;s0+=D[o];s1+=D[o+1];s2+=D[o+2];n++}if(n){UND[(j*C+i)*3]=s0/n;UND[(j*C+i)*3+1]=s1/n;UND[(j*C+i)*3+2]=s2/n}}
       yield at(5,.3);
       // (2) on the ground: scree round each foot (stones, tufts, drifts), its contact shade, the masses' shadows to the lower right
       //     (tested on a 2-px lattice)
-      const GT=P.rock.g?P.rock.g.map(hx):TU,DN=new Uint8Array(W*H),NB=[[0,-2],[2,0],[-2,0],[0,2],[0,-4],[3,-2],[-3,-2],[4,0],[-4,0]];
-      for(const m of M){const Km=Math.ceil(m.zmax/SK)+1,X0=Math.max(0,m.b[0]-4),X1=Math.min(W,m.b[2]+Km+2),Y0=Math.max(16,m.b[1]-4),Y1=Math.min(H,m.b[3]+Math.ceil(Km*.45)+2);
-        for(let y=Y0;y<Y1;y++)for(let x=X0;x<X1;x++){const p=y*W+x;if(MR[p]||DN[p])continue;DN[p]=1;const o=p*4;
-          if(x<m.b[2]+4&&y<m.b[3]+4){let near=0;for(const [a,c] of NB){const u=x+a,v=y+c;if(u>=0&&v>=0&&u<W&&v<H&&MR[v*W+u]){near=Math.abs(a)+Math.abs(c);break}}
+      const GT=P.rock.g?P.rock.g.map(hx):TU,DN=new Uint8Array(SW*SH),NB=[[0,-2],[2,0],[-2,0],[0,2],[0,-4],[3,-2],[-3,-2],[4,0],[-4,0]];
+      for(const [id,m] of M.entries()){if(!use[id])continue;const Km=Math.ceil(m.zmax/SK)+1,X0=Math.max(WX0,m.b[0]-4),X1=Math.min(WX1,m.b[2]+Km+2),Y0=Math.max(16,WY0,m.b[1]-4),Y1=Math.min(WY1,m.b[3]+Math.ceil(Km*.45)+2);
+        for(let y=Y0;y<Y1;y++)for(let x=X0;x<X1;x++){const p=IX(x,y);if(MRat(x,y)||DN[p])continue;DN[p]=1;const o=p*4;
+          if(x<m.b[2]+4&&y<m.b[3]+4){let near=0;for(const [a,c] of NB){const u=x+a,v=y+c;if(u>=0&&v>=0&&u<W&&v<H&&MRat(u,v)){near=Math.abs(a)+Math.abs(c);break}}
             if(near){const h=PX.hash(x,y,seed+84);mix(o,LO,near<=2?.22:.1);if(h<.16)put(o,RC[h<.05?1:h<.11?2:3]);else if(h<.22&&near>2)put(o,RC[4]);else if(SNW&&h>.6)put(o,SNW[1]);else if(h>.8&&!desert)mix(o,GT[1],.5)}}
           if(shadowed(x&~1,y&~1,0,2,m.b[0],m.b[1]))mix(o,LO,.42)}}
       yield at(5,.5);
       // (3) the rock, front to back a column at a time
       const SN=SNW||null,MS=P.rock.m?P.rock.m.map(hx):null,lich=hx('#b4b48c');
-      for(let x=rx0;x<rx1;x++){let hz=1e9,prev=false;if(x>rx0&&!((x-rx0)%64))yield at(5,.5+.4*(x-rx0)/(rx1-rx0));
-        for(let y=CY1[x]-1;y>=CY0[x];y--){const p=y*W+x,id=MR[p];if(!id){prev=false;continue}if(!prev)hz=Math.min(hz,y+1);prev=true;
-          const z=ZR[p],sy=Math.round(y-z);if(sy>=hz)continue;const m=M[id-1];
-          const gx=((x<W-1?ZR[p+1]:0)-(x?ZR[p-1]:0))/2,gy=((y<H-1?ZR[p+W]:0)-(y?ZR[p-W]:0))/2,nl=Math.hypot(gx,gy,1),nz=1/nl,lam=(-gx*LX-gy*LY+LZ)/nl/LN_;
+      // (a rect's: its columns, from the rock low enough to rise into it (a screen row is painted by the first ground row up its column
+      //  that reaches it, as in the whole), its rows alone painted)
+      const xa=Math.max(rx0,WX0),xb=Math.min(rx1,WX1);
+      for(let x=xa;x<xb;x++){let hz=1e9,prev=false;if(x>rx0&&!((x-rx0)%64))yield at(5,.5+.4*(x-rx0)/(rx1-rx0));
+        for(let y=(full?CY1[x]:Math.min(CY1[x],WY1+Math.ceil(zm)+2))-1;y>=Math.max(CY0[x],WY0);y--){const id=MRat(x,y);if(!id){prev=false;continue}if(!prev)hz=Math.min(hz,y+1);prev=true;
+          const z=ZRat(x,y),sy=Math.round(y-z);if(sy>=hz)continue;const m=M[id-1];
+          const gx=((x<W-1?ZRat(x+1,y):0)-(x?ZRat(x-1,y):0))/2,gy=((y<H-1?ZRat(x,y+1):0)-(y?ZRat(x,y-1):0))/2,nl=Math.hypot(gx,gy,1),nz=1/nl,lam=(-gx*LX-gy*LY+LZ)/nl/LN_;
           const v0=.5+.45*lam-(shadowed(x,y,z)?.22:0);
-          for(let r=Math.max(0,sy);r<hz&&r<H;r++){const q=r*W+x,o=q*4,hg=y-r;
+          for(let r=Math.max(0,sy,WY0);r<hz&&r<WY1;r++){const q=IX(x,r),o=q*4,hg=y-r;
             let v=v0-.16*Math.max(0,1-hg/10)+(NT(x,r)-.5)*.1+(PX.hash(x,r,seed+85)-.5)*.07;
             let k=v>.82?0:v>.66?1:v>.48?2:v>.32?3:4;if(nz<.5&&PX.hash(x,(r+(x&3))>>2,seed+86)<.07)k=Math.min(4,k+1);if(RB&&nz>.8)k=Math.max(1,k);
             put(o,RC[k]);
@@ -561,22 +606,22 @@
           hz=sy}}
       yield at(5,.9);
       // (4) the outline: round its silhouette, and along a crest over the rock behind it (the ground behind a step of 6+ px)
-      const OUT=lerp(RC[4],[12,14,22],.35),CR=RC[4],s=(u,v)=>u<0||v<0||u>=W||v>=H?0:RS[v*W+u];
-      for(let x=rx0;x<rx1;x++)for(let y=Math.max(0,CY0[x]-Math.ceil(zm)-1);y<CY1[x];y++){const q=y*W+x,id=RS[q];if(!id)continue;
+      const OUT=lerp(RC[4],[12,14,22],.35),CR=RC[4],s=(u,v)=>inW(u,v)?RS[IX(u,v)]:0;
+      for(let x=xa;x<xb;x++)for(let y=Math.max(WY0,CY0[x]-Math.ceil(zm)-1);y<Math.min(WY1,CY1[x]);y++){const q=IX(x,y),id=RS[q];if(!id)continue;
         if(s(x,y-1)!==id||s(x-1,y)!==id||s(x+1,y)!==id||s(x,y+1)!==id)put(q*4,OUT);
-        else if(GY[q+W]-GY[q]>5)put(q*4,CR)}
-      cv.under=UND;return RS}
+        else if((inW(x,y+1)?GY[q+SW]:undefined)-GY[q]>5)put(q*4,CR)}
+      if(full){cv.under=UND;PLn.zm=zm}return RS}
     /* (2b) roads and paths (spec.ways: [{kind: 'road'|'path'|'chain', p: [[x,y]...]}], terrain.js denseLay and wayPlan; a chain of
        clearings is no track), their lines first (painted in 3b): DR each pixel's distance to its way ×8 (255: none), so the
        details, lone trees and reeds keep off it and a tree's crown off its line (a gap in the canopy); DS how far along it lies (px,
        mod 256); DK its kind (1 road, 2 path), 4 wet (marsh round it: a causeway or a boardwalk), 16 its side of the line, 8 a climb (the terrace level under
        its line changes within 20 px: up a rise or a ramp the way runs on, a little stronger than on other slopes) */
-    const WY=(spec.ways||spec.recipe&&spec.recipe.ways||[]).filter(w=>(w.kind==='road'||w.kind==='path')&&w.p&&w.p.length>1),DR=WY.length?new Uint8Array(W*H).fill(255):null,HW=[0,10,4];
-    const onWay=(x,y)=>!!DR&&x>=0&&y>=0&&x<W&&y<H&&DR[(y|0)*W+(x|0)]<255,DS=DR&&new Uint8Array(W*H),DK=DR&&new Uint8Array(W*H);let wx0=W,wy0=H,wx1=-1,wy1=-1;
+    const WY=(spec.ways||spec.recipe&&spec.recipe.ways||[]).filter(w=>(w.kind==='road'||w.kind==='path')&&w.p&&w.p.length>1),DR=WY.length?new Uint8Array(SW*SH).fill(255):null,HW=[0,10,4];
+    const onWay=(x,y)=>!!DR&&x>=WX0&&y>=WY0&&x<WX1&&y<WY1&&DR[((y|0)-WY0)*SW+(x|0)-WX0]<255,DS=DR&&new Uint8Array(SW*SH),DK=DR&&new Uint8Array(SW*SH);let wx0=W,wy0=H,wx1=-1,wy1=-1;
     if(DR){
       // (each way's line smoothed (Catmull-Rom, 4 steps a gap); a pixel within its half-width and verge takes the nearest way's
       // distance, how far along it lies and its kind)
-      const hasM=kind.includes(2);for(const w of WY){const k=w.kind==='road'?1:2,e=HW[k]+5,Q=w.p,pts=[];
+      const hasM=kind.includes(2);for(const [wi,w] of WY.entries()){const k=w.kind==='road'?1:2,e=HW[k]+5,Q=w.p,pts=[];
         for(let j=0;j<Q.length-1;j++){const p0=Q[Math.max(0,j-1)],p1=Q[j],p2=Q[j+1],p3=Q[Math.min(Q.length-1,j+2)];
           for(let q=0;q<4;q++){const t=q/4,t2=t*t,t3=t2*t,cr=(a,b,c,d)=>.5*(2*b+(c-a)*t+(2*a-5*b+4*c-d)*t2+(3*b-a-3*c+d)*t3);pts.push([cr(p0[0],p1[0],p2[0],p3[0]),cr(p0[1],p1[1],p2[1],p3[1])])}}
         pts.push(Q[Q.length-1]);let s0=0;
@@ -585,13 +630,13 @@
         const wet=new Uint8Array(pts.length),wr=k===1?3:2,wn=k===1?7:6;if(hasM){pts.forEach((p,j)=>{const i0=Math.floor(p[0]/cs),j0=Math.floor(p[1]/cs);let n=0;for(let b=-wr;b<=wr;b++)for(let a=-wr;a<=wr;a++)if(cell(kind,i0+a,j0+b)===2)n++;wet[j]=n>=wn?1:0});
           for(let j=0,last=-9;j<pts.length;j++)if(wet[j]){if(j-last>1&&j-last<=4&&last>=0)wet.fill(1,last,j);last=j}
           for(let j=0;j<pts.length;){if(!wet[j]){j++;continue}let k2=j;while(k2<pts.length&&wet[k2])k2++;if(k2-j<4)wet.fill(0,j,k2);j=k2}}
-        // (its climbs: the terrace level under a sample unlike another's within 5 samples (some 20 px) either way)
-        const lv=pts.map(p=>Tat(Math.round(p[0]),Math.round(p[1]))),clb=new Uint8Array(pts.length);for(let j=0;j<pts.length;j++)for(let q=Math.max(0,j-5);q<=Math.min(pts.length-1,j+5);q++)if(lv[q]!==lv[j]){clb[j]=8;break}
+        // (its climbs: the terrace level under a sample unlike another's within 5 samples (some 20 px) either way: the whole's, kept)
+        let clb;if(full){const lv=pts.map(p=>Tat(Math.round(p[0]),Math.round(p[1])));clb=new Uint8Array(pts.length);for(let j=0;j<pts.length;j++)for(let q=Math.max(0,j-5);q<=Math.min(pts.length-1,j+5);q++)if(lv[q]!==lv[j]){clb[j]=8;break}PLn.clb.push(clb)}else clb=PL.clb[wi];
         for(let j=0;j<pts.length-1;j++){if(!(j&31))yield at(3);const ax=pts[j][0],ay=pts[j][1],dx=pts[j+1][0]-ax,dy=pts[j+1][1]-ay,L2=dx*dx+dy*dy,L=Math.sqrt(L2);
-          const x0=Math.max(0,Math.floor(Math.min(ax,ax+dx)-e)),x1=Math.min(W-1,Math.ceil(Math.max(ax,ax+dx)+e)),y0=Math.max(0,Math.floor(Math.min(ay,ay+dy)-e)),y1=Math.min(H-1,Math.ceil(Math.max(ay,ay+dy)+e));
-          if(x0<wx0)wx0=x0;if(y0<wy0)wy0=y0;if(x1>wx1)wx1=x1;if(y1>wy1)wy1=y1;
+          const x0=Math.max(WX0,Math.floor(Math.min(ax,ax+dx)-e)),x1=Math.min(WX1-1,Math.ceil(Math.max(ax,ax+dx)+e)),y0=Math.max(WY0,Math.floor(Math.min(ay,ay+dy)-e)),y1=Math.min(WY1-1,Math.ceil(Math.max(ay,ay+dy)+e));
+          if(x0>x1||y0>y1){s0+=L;continue}if(x0<wx0)wx0=x0;if(y0<wy0)wy0=y0;if(x1>wx1)wx1=x1;if(y1>wy1)wy1=y1;
           for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){const px=x+.5-ax,py=y+.5-ay;let t=L2?(px*dx+py*dy)/L2:0;t=t<0?0:t>1?1:t;const d=Math.hypot(px-dx*t,py-dy*t);if(d>e)continue;
-            const o=y*W+x,q=Math.round(d*8),jj=t<.5?j:j+1;if(q<DR[o]){DR[o]=q;DS[o]=Math.floor(s0+t*L)&255;DK[o]=k|(wet[jj]?4:0)|clb[jj]|(px*dy-py*dx>0?16:0)}}
+            const o=IX(x,y),q=Math.round(d*8),jj=t<.5?j:j+1;if(q<DR[o]){DR[o]=q;DS[o]=Math.floor(s0+t*L)&255;DK[o]=k|(wet[jj]?4:0)|clb[jj]|(px*dy-py*dx>0?16:0)}}
           s0+=L}}}
     /* a climbable edge (no wall: every edge of a field with no cliffs) is a smooth rise, not a face (the owner, 2026-10-18): the
        ground's own grass, snow, sand or mud shaded in soft steps from the top down to the foot (SLB px a level of the step: south,
@@ -601,7 +646,7 @@
        sandstone ledges, broken; swamp: mud, moss and roots). Never a continuous wall, never a prop: F 4 (nothing stands there).
        slopeAt: the edge a plateau pixel slopes to {f (1 at the foot), q (0 S, 1 E, 2 W, 3 N), st (the levels down)}, or null */
     const SLB=[10,6,4,4],SLD=[[0,1,2],[1,0,1],[-1,0,4],[0,-1,8]],SLF=[.2,.14,.09,.05,.02],SLV={grass:[.48,.7],frost:[.42,.68],desert:[.48,.62],swamp:[.4,.78]}[clim],
-      VN=noise(W,H,56,seed+71),VN2=noise(W,H,20,seed+72),ERT=clim==='frost'?RC[3]:clim==='swamp'?MU:FC[1],SWR=clim==='swamp';
+      VN=noise(W,H,56,seed+71,WR),VN2=noise(W,H,20,seed+72,WR),ERT=clim==='frost'?RC[3]:clim==='swamp'?MU:FC[1],SWR=clim==='swamp';
     const slopeAt=(x,y,t)=>{let b=null;for(let q=0;q<4;q++){const [a,c,bt]=SLD[q];for(let d=1;d<=SLB[q]*t;d++){const u=Tat(x+a*d,y+c*d);if(u>=t)continue;
       const st=t-u,n=SLB[q]*st;if(d<=n&&(!WL||edgeK(bt,x+a*d,y+c*d)===0)){const f=n>1?1-(d-1)/(n-1):1;if(!b||f>b.f)b={f,q,st}}break}}return b};
     const slopePx=(o,x,y,i,t,sv)=>{const f=sv.f,q=sv.q,n=SLB[q]*sv.st,h=PX.hash(x,y,seed+73),fs=Math.min(1,Math.floor(f*4+h*.9)/4),rows=Math.round((1-f)*(n-1));F[i]=4;
@@ -648,19 +693,19 @@
        sides, its south face and shadow) and a path on a boardwalk (planks across, a beam each side, posts). Under everything that
        stands; never on water or a sheer face (a way climbs only where a terrace has a slope, a ramp or the cut made for it); fainter
        on a slope, less so where it climbs */
-    if(DR)yield* (function* paintWays(){const BRW=bandRows(wx1-wx0+1),WP=WAYPAL[clim]||WAYPAL.grass,NWD=noise(W,H,96,seed+93);
+    if(DR)yield* (function* paintWays(){const BRW=bandRows(wx1-wx0+1,!full),WP=WAYPAL[clim]||WAYPAL.grass,NWD=noise(W,H,96,seed+93,WR);
       const TC=WP.c.map(hx),RU=hx(WP.rut),CRW=hx(WP.crown),WET=WP.wet&&hx(WP.wet),BNK=WP.bank&&hx(WP.bank),STN=hx(WP.stone),TU=P.tuft.map(hx),WD=RP.wood.map(hx),GAP=lerp(WA[2],[12,18,16],.5);
       // (a road's top, low in contrast so it lies in the land: worn earth fading in over its soft, ragged edge, lighter bare patches;
       // two wheel ruts, each wandering on its own side (NR) and fading in and out (NF), so they draw together and apart; a patchy
       // grassy crown between; the odd stone, and a puddle (ice in the frost) in a rut now and then; e its ragged edge, sd its side)
-      const NR=[noise(W,H,36,seed+94),noise(W,H,36,seed+95)],NF=noise(W,H,48,seed+96),NB=noise(W,H,22,seed+97);
+      const NR=[noise(W,H,36,seed+94,WR),noise(W,H,36,seed+95,WR)],NF=noise(W,H,48,seed+96,WR),NB=noise(W,H,22,seed+97,WR);
       const track=(i,x,y,d,e,s,h,sl,sd)=>{const pt=NP(x,y),ed=Math.min(1,Math.max(0,(e-d)/3.5));mix(i,lerp(TC[0],TC[2],Math.min(1,Math.max(0,(pt-.25)*2))),(.3+.45*ed)*sl);if(NB(x,y)>.62&&ed>.3)mix(i,TC[0],.25*sl);
         if(ed<.35){if(BNK)mix(i,BNK,.35*(1-ed));else if(h<.1)put(i,TU[1]);return}
         const ro=4.6+(NR[sd](x,y)-.5)*3.2,rd=Math.abs(d-ro),rs=Math.min(1,Math.max(0,(NF(x,y)-.28)*3));
         if(rd<1.1&&rs>0){mix(i,RU,(rd<.55?.5:.26)*rs*sl);if(WET&&rs>.7&&rd<.8&&PX.hash(x>>2,s>>3,seed+91)<.035)mix(i,WET,.8);return}
         if(d<ro-1.6){if(NB(x+40,y+40)>.45)mix(i,CRW,.3*sl);if(h<.08)mix(i,TU[1],.4)}if(h>.993)put(i,STN)};
-      for(let y=wy0;y<=wy1;y++){if(y>wy0&&!((y-wy0)%BRW))yield at(4,.5*(y-wy0)/(wy1-wy0+1));for(let x=wx0;x<=wx1;x++){const o=y*W+x,q=DR[o];if(q===255||WV&&WV[o]||F[o]===1||F[o]===2)continue;
-        const k=DK[o]&3,m=DK[o]&4,d=q/8,s=DS[o],h=PX.hash(x,y,seed+90),e=HW[k]+(NX(x,y)-.5)*3+(h-.5)*1.2+(NWD(x,y)-.5)*(k===1?4:1.5),i=o*4,sl=F[o]===4?(DK[o]&8?.85:.7):1,south=y>0&&DR[o-W]<q;
+      for(let y=wy0;y<=wy1;y++){if(y>wy0&&!((y-wy0)%BRW))yield at(4,.5*(y-wy0)/(wy1-wy0+1));for(let x=wx0;x<=wx1;x++){const o=IX(x,y),q=DR[o];if(q===255||WV&&WV[o]||F[o]===1||F[o]===2)continue;
+        const k=DK[o]&3,m=DK[o]&4,d=q/8,s=DS[o],h=PX.hash(x,y,seed+90),e=HW[k]+(NX(x,y)-.5)*3+(h-.5)*1.2+(NWD(x,y)-.5)*(k===1?4:1.5),i=o*4,sl=F[o]===4?(DK[o]&8?.85:.7):1,south=y>WY0&&DR[o-SW]<q;
         if(m&&k===1){// (a causeway: the road on a raised bank, logs along its sides (a log every 14 px), its south face and shadow)
           if(d<=e-2.5)track(i,x,y,d,e-2.5,s,h,sl,DK[o]>>4&1);else if(d<=e){put(i,s%14===0?TRK1:south?TRK1:TRK0);if(!south&&d<e-1.6&&s%14)mix(i,HI,.25);else if(h>.8)mix(i,TRK1,.4)}
           else if(d<=e+1.5){if(south){put(i,TC[2]);mix(i,LO,.2)}else if(d<=e+1)mix(i,LO,.35)}else if(south&&d<=e+4)mix(i,LO,.16)}
@@ -673,35 +718,100 @@
           if(h<.05)mix(i,TU[1],.4);else if(h>.995)put(i,STN)}}}})();
     // (3b, the desert) its sand: wind ripples over the dunes, and on the open sand in a patch here and there, fading in and out (never
     //      on a face or a rise, a way or an oasis); noise only, no stream
-    if(clim==='desert'){const NA=noise(W,H,80,seed+101),NW=noise(W,H,16,seed+102),RD=hx('#ae8a4e'),RL=hx('#f8e6b0'),A4=new Float32Array((W>>2)+1),y0=base?16:0,BRY=bandRows(W),W2=new Float32Array((W>>1)+1),WY=new Int32Array((W>>1)+1).fill(-1);
-      for(let y=y0;y<H;y++){if(y>y0&&!(y%BRY))yield at(4,.5+.5*y/H);if(!(y&3)||y===y0)for(let x=0;x<W;x+=4)A4[x>>2]=NA(x,y);
-        for(let x=0;x<W;x++){const i=y*W+x,t=T[i],a=t?.5+.5*A4[x>>2]:(A4[x>>2]-.6)*2.5;if(a<=.04||F[i]||Q[i]>.2||DR&&DR[i]<255)continue;
+    if(clim==='desert'){const NA=noise(W,H,80,seed+101,WR),NW=noise(W,H,16,seed+102,WR),RD=hx('#ae8a4e'),RL=hx('#f8e6b0'),A4=new Float32Array((W>>2)+1),y0=base?16:0,BRY=bandRows(SW,!full),W2=new Float32Array((W>>1)+1),WY=new Int32Array((W>>1)+1).fill(-1),ys=Math.max(y0,WY0);
+      for(let y=ys;y<WY1;y++){if(y>ys&&!(y%BRY))yield at(4,.5+.5*y/H);if(!(y&3)||y===ys)for(let x=WX0;x<WX1;x+=4)A4[x>>2]=NA(x,y);
+        for(let x=WX0;x<WX1;x++){const i=IX(x,y),t=T[i],a=t?.5+.5*A4[x>>2]:(A4[x>>2]-.6)*2.5;if(a<=.04||F[i]||Q[i]>.2||DR&&DR[i]<255)continue;
           const h=x>>1;if(WY[h]!==y>>1){WY[h]=y>>1;W2[h]=NW(x&~1,y&~1)}// (the ripples' wander, on a 2-px lattice, as needed)
           const ph=(y+x*.4+W2[h]*12)/5.5,f=ph-Math.floor(ph),s=Math.min(1,a)*(t?1:.6);if(f<.18)mix(i*4,RD,.2*s);else if(f<.34)mix(i*4,RL,.18*s)}}}
     yield at(5);
     // (3c) mountains and spires (kind 6): see rockMasses
     const RS=kind.includes(6)?(yield* rockMasses()):null;
-    g.putImageData(img,0,0);yield at(6);
+    // (the pixels in: the whole's; a rect's, its part of the window, and what is drawn over it in field px)
+    const g=cv.getContext('2d'),Pg=PX.paint(g);if(full)g.putImageData(img,0,0);else{g.putImageData(img,WX0-X,WY0-Y,X-WX0,Y-WY0,w,h);g.save();g.translate(-X,-Y)}yield at(6);
+    /* (4) what is drawn over the ground: the whole places it (below: every bush, reed, detail, stone, glint, bridge, tree's shadow
+       and the desert's flats, seeded, as ever) into a list in the order it is drawn (L: 6 a record, its op, x, y and three more),
+       then draws it; a rect draws the list's records that reach into it (EXT), so whatever straddles a tile's edge is drawn into
+       each tile it touches. What an op reads of the ground (a bridge's water, a clay pan's) is the window's */
+    const S=RP.stone,WD=RP.wood,shadeOn=(x,y,a)=>{const v=Wv(x,y);if(v&&v!==255)Pg.px('rgba(10,18,34,'+a.toFixed(2)+')',x,y)};
+    const stone=(x,y,v)=>{const w=5+(v&1);Pg.rect('rgba(10,18,34,.4)',x+1,y+4,w-1,1);Pg.rect(S[3],x+1,y+3,w-2,1);Pg.px(S[3],x+w-1,y+2);Pg.rect(S[0],x+1,y,w-2,1);Pg.rect(S[1],x,y+1,w,2);Pg.px(S[0],x,y+1);Pg.px(S[0],x+1,y+1);Pg.px(S[2],x+w-1,y+1);Pg.rect(S[2],x+2,y+2,w-3,1);
+      if(clim==='swamp'&&v%3===0)Pg.px('#6a7a3c',x+1,y);if(!ICE){Pg.px(RP.foam,x+(w>>1),y+4);if(v&2)Pg.px(RP.foam,x+w,y+3)}};
+    const floe=(x,y,v)=>{const rx=2+v%3,ry=1+(v>>2)%2;
+      for(let b=-ry;b<=ry;b++)for(let a=-rx;a<=rx;a++){const e=(a/(rx+.5))**2+(b/(ry+.5))**2;if(e>1)continue;Pg.px(b===ry||b===ry-1&&e>.55?RP.ice[3]:b<0||a<0?RP.ice[0]:RP.ice[1],x+a,y+b)}
+      Pg.rect(RP.w[3],x-rx+1,y+ry+1,2*rx,1)};
+    // a bridge across the flow (X0-X1 its length, Y0-Y1 its 32 px): its shadow on the water to the lower right, earth ramps onto
+    // the banks; wood: piles foaming in the water, a side beam, planks across the way (each its own tone, ragged, worn), railings
+    // on posts every 8 px; stone: arches over the water between foaming piers, a roadway of setts, parapets capped (snow in the
+    // frost), pillars at its ends
+    const deckH=(X0,X1,Y0,Y1,stone)=>{for(let y=Y1;y<Y1+(stone?10:8);y++)for(let x=X0+2;x<X1+3;x++)shadeOn(x,y,.46-(y-Y1)*.04);
+      for(const x of [X0-4,X1]){Pg.rect(RP.earth[1],x,Y0,4,Y1-Y0);Pg.rect(RP.earth[0],x,Y0,4,1);Pg.rect(RP.earth[2],x,Y1-1,4,1)}
+      if(!stone){for(let x=X0+6;x<X1-6;x+=11){const v=Wv(x,Y1+4);if(!v||v===255)continue;Pg.rect(WD[2],x,Y1+2,2,4);Pg.px(WD[3],x+1,Y1+2);Pg.px(RP.foam,x-1,Y1+5);Pg.px(RP.foam,x+2,Y1+5);Pg.px(RP.w[0],x,Y1+7);Pg.px(RP.w[0],x+1,Y1+8)}
+        Pg.rect(WD[2],X0,Y1,X1-X0,1);Pg.rect(WD[3],X0,Y1+1,X1-X0,1);
+        for(let x=X0;x<X1;x++){const k=Math.floor((x-X0)/4),c=(x-X0)%4;if(c===3){Pg.rect(WD[2],x,Y0,1,Y1-Y0);continue}
+          const tone=PX.hash(k,0,seed+70)<.5?WD[0]:WD[1],t0=Y0+(PX.hash(k,1,seed+70)<.3?1:0),t1=Y1-(PX.hash(k,2,seed+70)<.3?1:0);Pg.rect(c?tone:PX.mix(tone,P.hi,.2),x,t0,1,t1-t0);
+          for(let y=t0;y<t1;y++){const q=PX.hash(x,y,seed+71);if(q<.012)Pg.px(WD[2],x,y);else if(q>.995)Pg.px(WD[3],x,y)}}
+        Pg.rect('rgba(20,14,10,.3)',X0+1,Y0+1,X1-X0,1);
+        for(const ry of [Y0-3,Y1-5]){Pg.rect(WD[0],X0,ry,X1-X0,1);Pg.rect(WD[2],X0,ry+1,X1-X0,1);for(let x=X0+1;x<X1-1;x+=8){Pg.rect(WD[1],x,ry,2,4);Pg.px(WD[0],x,ry);Pg.px(WD[2],x+1,ry+3)}}
+        for(const x of [X0-1,X1-2])for(const y of [Y0-5,Y1-7]){Pg.rect(WD[2],x,y,3,6);Pg.rect(WD[1],x,y,2,5);Pg.px(WD[0],x,y)}return}
+      const n=Math.max(1,Math.round((X1-X0)/18)),sw=(X1-X0)/n,FH2=6;
+      for(let x=X0;x<X1;x++){const u=((x-X0)%sw)/sw,v=Wv(x,Y1+FH2),wet=v&&v!==255,a=(u-.5)/.34,top=Math.abs(a)<1?(FH2-1)-(FH2-2)*Math.sqrt(1-a*a):99;
+        for(let r=0;r<FH2;r++){let c;if(wet&&r>=top)c=r>=top+1?'#141c26':S[3];else{c=r===FH2-1?S[3]:r%2===1||(x+(r>>1)*2)%5===0?S[2]:S[1];if(wet&&r>=top-1)c=S[0]}Pg.px(c,x,Y1+r)}}
+      for(let k=0;k<=n;k++){const x=Math.round(X0+k*sw),v=Wv(x,Y1+FH2);if(!v||v===255)continue;Pg.px(RP.foam,x-1,Y1+FH2);Pg.px(RP.foam,x+1,Y1+FH2);Pg.px(RP.foam,x,Y1+FH2+1);Pg.px(RP.w[0],x,Y1+FH2+3)}
+      for(let y=Y0;y<Y1;y++)for(let x=X0;x<X1;x++){const r=y-Y0,row=Math.floor(r/3),cx=x-X0+(row&1)*2,q=PX.hash(Math.floor(cx/5),row,seed+72);let c=r%3===2||cx%5===4?PX.mix(S[1],S[2],.65):q<.4?S[0]:S[1];if(r%3===0&&cx%5===0&&c!==S[2])c=PX.mix(S[0],P.hi,.3);Pg.px(c,x,y)}
+      for(const py of [Y0-3,Y1-4]){for(let x=X0;x<X1;x++){Pg.px(ICE&&PX.hash(x,py,seed+73)>.25?'#f4f8fc':S[0],x,py);for(let r=1;r<3;r++)Pg.px((x-X0+r*2)%6===0?S[3]:S[1],x,py+r);Pg.px(S[3],x,py+3)}}
+      for(const x of [X0-2,X1-2])for(const y of [Y0-5,Y1-6]){Pg.rect(S[2],x,y,4,6);Pg.rect(S[1],x,y+1,3,4);Pg.rect(ICE?'#f4f8fc':S[0],x,y,4,1)}};
+    // (a river across the field: a plain deck down it, rails on its sides)
+    const deckV=(X0,X1,Y0,Y1,stone)=>{const M=stone?S:WD;for(let y=Y1;y<Y1+5;y++)for(let x=X0+2;x<X1+3;x++)shadeOn(x,y,.4-(y-Y1)*.07);
+      for(let y=Y0;y<Y1;y++){const k=Math.floor((y-Y0)/4);Pg.rect((y-Y0)%4===3?M[2]:PX.hash(k,3,seed+70)<.5?M[0]:M[1],X0,y,X1-X0,1)}
+      for(const x of [X0,X1-2]){Pg.rect(M[2],x,Y0,2,Y1-Y0);Pg.rect(M[0],x,Y0,1,Y1-Y0)}};
+    let L,BRs,PANs,DECs;
+    const DRAW=[
+      (x,y,d,v)=>DETAIL[d](Pg,x,y,v,P,g,clim),// 0 a small detail (PX.battleDetails' kinds)
+      (x,y,v)=>DETAIL.tuft(Pg,x,y,v,{tuft:OASG}),// 1 an oasis's green tuft
+      (x,y,c)=>Pg.px(c,x,y),// 2 a pixel (current, a fleck)
+      (x,y,a,b,c)=>Pg.rect(c,x,y,a,b),// 3 a rect (a glint, weed, a lily pad)
+      (x,y,v)=>floe(x,y,v),// 4 a floe on a cold river
+      (x,y,v)=>stone(x,y,v),// 5 a stone in a ford, at the water's edge
+      (x,y)=>DETAIL.icerock(Pg,x,y,0,P),// 6 an iced rock by a frozen river
+      (x,y,b)=>{const B=BRs[b].box;(flowV?deckH:deckV)(B[0],B[2],B[1],B[3],BRs[b].stone)},// 7 a bridge
+      // 8 a standing tree's ground: its shadow to the lower right and its roots (none under snow nor sand); the tree is a prop
+      (x,y,sp)=>{g.drawImage(shadowSprite(sp==='palm'||sp==='dead'||sp==='bbirch'?14:22),x-5,y-5);if(clim==='frost'||sp==='palm')return;const h=PX.hash(x,y,seed+23);
+        Pg.px(P.trunk[1],x-3,y);Pg.px(P.trunk[1],x+3,y);if(h>.4){Pg.px(P.trunk[1],x-4,y+1);Pg.px(P.trunk[0],x-3,y-1)}if(h<.7)Pg.px(P.trunk[1],x+4,y+1)},
+      (x,y,v)=>{g.drawImage(shadowSprite(8),x-2,y-2);g.drawImage(treeSprite(clim,'oak',v,true),x-4,y-7)},// 9 a bush
+      (x,y,v)=>reeds(Pg,x,y,v,P),// 10 reeds
+      // 11 a clay pan: a wobbly ellipse of pale clay split into plates, off faces, rises and ways
+      (x0,y0,i)=>{const [cx,cy,rw,rh,Sd]=PANs[i];for(let y=cy-rh-1;y<=cy+rh+1;y++)for(let x=cx-rw-1;x<=cx+rw+1;x++){const e=((x-cx)/rw)**2+((y-cy)/rh)**2;if(e>1-PX.hash(x,y,seed+104)*.18||Fat(x,y)||Tat(x,y)||onWay(x,y))continue;
+        let d1=1e9,d2=1e9;for(const [sx,sy] of Sd){const d=Math.hypot(x-sx,(y-sy)*1.6);if(d<d1){d2=d1;d1=d}else if(d<d2)d2=d}Pg.px(d2-d1<1.1?'#b08c58':e>.8?'#dcc08a':PX.hash(x,y,seed+105)<.06?'#d4b880':'#e6d09e',x,y)}},
+      (x,y,k)=>{Pg.px(k%3?'#b08c60':'#8a6a4a',x,y);if(k%2===0){Pg.px('#e8d0a0',x-1,y);Pg.px('#6e5238',x,y+1)}},// 12 a pebble
+      // 13 the desert's life's ground: a cactus's own (its shadow and contact shade), else a soft shadow as wide as the kind's
+      (x,y,i)=>{const d=DECs[i],Sp=PX.desertSprite(d.k,d.v);if(Sp.g)g.drawImage(Sp.g,d.x-Sp.gx,d.y-Sp.gy);else if(Sp.sh)g.drawImage(shadowSprite(Sp.sh),d.x-(Sp.sh>>1)+2,d.y-(Sp.sh>>2)-1)},
+      (x,y)=>{Pg.px('#ffffff',x-1,y-1);Pg.px(RP.ice[3],x,y)}];// 14 a crack in a frozen ford
+    // (how far each op draws round its x, y; a rect, a bridge and a clay pan their own)
+    const EXT=[[-17,-17,17,17],[-5,-6,5,1],[0,0,0,0],null,[-6,-4,6,5],[-1,-1,8,6],[-3,-4,4,2],null,[-6,-6,18,8],[-5,-8,7,3],[-7,-12,10,2],null,[-1,0,0,1],[-33,-24,33,17],[-1,-1,0,0]];
+    const reach=(op,x,y,a,b)=>op===3?[x,y,x+a-1,y+b-1]:op===7?BRs[a].reach:op===11?PANs[a].reach:[x+EXT[op][0],y+EXT[op][1],x+EXT[op][2],y+EXT[op][3]];
+    function* drawList(r){for(let k=0;k<L.length;k+=6){if(k&&!(k%24576))yield at(8,.45);const op=L[k],x=L[k+1],y=L[k+2],a=L[k+3],b=L[k+4];
+      if(r){const e=reach(op,x,y,a,b);if(e[2]<r[0]||e[0]>=r[2]||e[3]<r[1]||e[1]>=r[3])continue}DRAW[op](x,y,a,b,L[k+5])}}
+    let TREES=null,DEC=null;
+    if(full){L=[];
     // (4) what stands on the ground. A tree's crown never hides a cliff (its foot, middle and crown kept off the faces)
-    const R2=PX.dice(PX.rng(seed*31+7)),Pg=PX.paint(g),things=[],edgeCell=(i,j)=>{for(let b=-1;b<=1;b++)for(let a=-1;a<=1;a++)if(cell(kind,i+a,j+b)!==1)return true;return false};
+    const R2=PX.dice(PX.rng(seed*31+7)),things=[],edgeCell=(i,j)=>{for(let b=-1;b<=1;b++)for(let a=-1;a<=1;a++)if(cell(kind,i+a,j+b)!==1)return true;return false};
     // a river's bridges: their decks' boxes first (nothing else stands on them or by their ends: KO). A deck spans its cells across
     // the flow and reaches 4 px onto each bank; stone in the frost and the hills (or by a terrace), else its climate's make
     const R3=PX.dice(PX.rng(seed*53+11)),KO=[],keep=(x,y)=>KO.some(b=>x>=b[0]&&x<b[2]&&y>=b[1]&&y<b[3]);
     const comps=k=>{const seen=new Uint8Array(C*R),out=[];for(let q0=0;q0<C*R;q0++){if(kind[q0]!==k||seen[q0])continue;const st=[q0],b={c0:C,c1:-1,r0:R,r1:-1};seen[q0]=1;
       while(st.length){const q=st.pop(),i=q%C,j=(q-i)/C;if(i<b.c0)b.c0=i;if(i>b.c1)b.c1=i;if(j<b.r0)b.r0=j;if(j>b.r1)b.r1=j;
         for(const [a,c] of [[1,0],[-1,0],[0,1],[0,-1]]){const x=i+a,y=j+c,n=y*C+x;if(x>=0&&y>=0&&x<C&&y<R&&!seen[n]&&kind[n]===k){seen[n]=1;st.push(n)}}}out.push(b)}return out};
-    const BR=hasW?comps(5).map(b=>{let lo=1e9,hi=-1;const A0=(flowV?b.r0:b.c0)*cs,A1=((flowV?b.r1:b.c1)+1)*cs,s0=Math.max(0,(flowV?b.c0:b.r0)*cs-32),s1=Math.min(flowV?W:H,((flowV?b.c1:b.r1)+1)*cs+32);
+    BRs=hasW?comps(5).map(b=>{let lo=1e9,hi=-1;const A0=(flowV?b.r0:b.c0)*cs,A1=((flowV?b.r1:b.c1)+1)*cs,s0=Math.max(0,(flowV?b.c0:b.r0)*cs-32),s1=Math.min(flowV?W:H,((flowV?b.c1:b.r1)+1)*cs+32);
       for(let a=A0;a<A1;a++)for(let q=s0;q<s1;q++){const v=flowV?Wv(q,a):Wv(a,q);if(v&&v!==255){if(q<lo)lo=q;if(q>hi)hi=q}}
       const t0=Math.min((flowV?b.c0:b.r0)*cs,lo)-4,t1=Math.max(((flowV?b.c1:b.r1)+1)*cs,hi+1)+4,box=flowV?[t0,A0,t1,A1]:[A0,t0,A1,t1];
       let stone=RP.bridge==='stone'||/hill/.test(rk);for(let j=b.r0-2;j<=b.r1+2&&!stone;j++)for(let i=b.c0-2;i<=b.c1+2;i++)if(cell(lvl,i,j)){stone=true;break}
-      KO.push([box[0]-8,box[1]-10,box[2]+8,box[3]+12]);return{box,stone}}):[];
+      KO.push([box[0]-8,box[1]-10,box[2]+8,box[3]+12]);return{box,stone,reach:[box[0]-12,box[1]-12,box[2]+12,box[3]+16]}}):[];
     const clear=(x,y)=>!Fat(x,y)&&!Fat(x,y-6)&&!Fat(x,y-12)&&!Fat(x-5,y-7)&&!Fat(x+5,y-7)&&!Wat(x,y)&&(!hasW||Dl(x,y)>9&&!keep(x,y)),SPN=noise(W,H,56,seed+20),DN=noise(W,H,40,seed+21);
     // (a standing tree, 32 px: its foot and crown kept off the cliffs (a crown never hides one), the pools and the river's banks)
     const clearT=(x,y)=>clear(x,y)&&!Fat(x-4,y)&&!Fat(x+4,y)&&!Fat(x,y-18)&&!Fat(x,y-26)&&!Fat(x-11,y-12)&&!Fat(x+11,y-12)&&!Fat(x-8,y-22)&&!Fat(x+8,y-22)&&!Fat(x-12,y-4)&&!Fat(x+12,y-4)&&(!hasW||Dl(x,y)>14&&!keep(x,y-12));
     const species=(x,y)=>{let r=SPN(x,y)*.7+PX.hash(x,y,seed+22)*.3,a=0;for(const [n,s] of P.species){a+=s;if(r<a)return n}return P.species[P.species.length-1][0]};
     // woods: thick on their edges (the patch reads), clearings and thickets inside, bushes in the gaps. The trees stand (TREES: the
     // game draws them sorted with the soldiers); their shadows, roots and the bushes are painted
-    const TREES=[],crownWay=(x,y)=>!!DR&&(onWay(x,y-6)||onWay(x,y-14)||onWay(x,y-22)||onWay(x-9,y-14)||onWay(x+9,y-14));// (a way's line under its crown)
+    TREES=[];const crownWay=(x,y)=>!!DR&&(onWay(x,y-6)||onWay(x,y-14)||onWay(x,y-22)||onWay(x-9,y-14)||onWay(x+9,y-14));// (a way's line under its crown)
     if(!bare)for(let y=6,row=0;y<H+8;y+=12,row++)for(let x=(row&1)*7;x<W;x+=14){const tx=x+R2.int(-3,3),ty=y+R2.int(-3,3);
       if(Kat(tx,ty)!==1||Kat(tx-6,ty)!==1||Kat(tx+6,ty)!==1||Kat(tx,ty-10)!==1)continue;
       if(!clearT(tx,ty)){if(clear(tx,ty)&&R2.chance(.4))things.push({y:ty,k:'bush',x:tx,v:R2.int(0,2)});continue}const e=edgeCell(Math.floor(tx/cs),Math.floor(ty/cs));
@@ -718,60 +828,31 @@
     yield at(6,.6);
     // the small details, first (flat on the ground): by climate, in the open and in woods; never on a cliff, a pool or an oasis
     for(let j=1;j<R;j++){if(!(j%BR0))yield at(6,.6+.4*j/R);for(let i=0;i<C;i++){const k=kind[j*C+i];if(k===2)continue;for(const [d,ch] of P.detail[k===1?1:0]){if(!R2.chance(ch))continue;const x=i*cs+R2.int(2,13),y=j*cs+R2.int(3,15);
-      if(y<16||Fat(x,y)||Fat(x+3,y)||Fat(x-3,y)||Kat(x,y)!==k||onWay(x,y)||onWay(x,y-3)||oasis&&Q[y*W+x]>.25||hasW&&(Dl(x,y)<15||Dl(x-4,y)<15||Dl(x+4,y)<15||keep(x,y)))continue;DETAIL[d](Pg,x,y,R2.int(0,999),P,g,clim)}}}
+      if(y<16||Fat(x,y)||Fat(x+3,y)||Fat(x-3,y)||Kat(x,y)!==k||onWay(x,y)||onWay(x,y-3)||oasis&&Q[y*W+x]>.25||hasW&&(Dl(x,y)<15||Dl(x-4,y)<15||Dl(x+4,y)<15||keep(x,y)))continue;L.push(0,x,y,d,R2.int(0,999),0)}}}
     yield at(7);
     // the river's flat details: current lines and glints on the deep (floes on a cold one, weed on a swamp's), stepping stones across
     // a ford (cracks in a frozen one), stones at the water's edge, reeds on its banks (palms by a desert's); then its bridges
-    if(hasW){const S=RP.stone,WD=RP.wood,sl=k=>SLP[Math.max(0,Math.min((flowV?R:C)-1,Math.floor(k/cs)))],okDeep=(x,y,m)=>Wv(x,y)===2&&DW[y*W+x]>=m*3&&!keep(x,y);
-      const stone=(x,y,v)=>{const w=5+(v&1);Pg.rect('rgba(10,18,34,.4)',x+1,y+4,w-1,1);Pg.rect(S[3],x+1,y+3,w-2,1);Pg.px(S[3],x+w-1,y+2);Pg.rect(S[0],x+1,y,w-2,1);Pg.rect(S[1],x,y+1,w,2);Pg.px(S[0],x,y+1);Pg.px(S[0],x+1,y+1);Pg.px(S[2],x+w-1,y+1);Pg.rect(S[2],x+2,y+2,w-3,1);
-        if(clim==='swamp'&&v%3===0)Pg.px('#6a7a3c',x+1,y);if(!ICE){Pg.px(RP.foam,x+(w>>1),y+4);if(v&2)Pg.px(RP.foam,x+w,y+3)}};
-      const floe=(x,y,v)=>{const rx=2+v%3,ry=1+(v>>2)%2;for(let b=-ry-1;b<=ry+1;b++)for(let a=-rx-1;a<=rx+1;a++)if(!okDeep(x+a,y+b,2))return;
-        for(let b=-ry;b<=ry;b++)for(let a=-rx;a<=rx;a++){const e=(a/(rx+.5))**2+(b/(ry+.5))**2;if(e>1)continue;Pg.px(b===ry||b===ry-1&&e>.55?RP.ice[3]:b<0||a<0?RP.ice[0]:RP.ice[1],x+a,y+b)}
-        Pg.rect(RP.w[3],x-rx+1,y+ry+1,2*rx,1)};
+    if(hasW){const sl=k=>SLP[Math.max(0,Math.min((flowV?R:C)-1,Math.floor(k/cs)))],okDeep=(x,y,m)=>Wv(x,y)===2&&DW[y*W+x]>=m*3&&!keep(x,y);
+      // (a floe drawn only where it lies wholly on the deep)
+      const floeOk=(x,y,v)=>{const rx=2+v%3,ry=1+(v>>2)%2;for(let b=-ry-1;b<=ry+1;b++)for(let a=-rx-1;a<=rx+1;a++)if(!okDeep(x+a,y+b,2))return false;return true};
       for(let j=0;j<R;j++)for(let i=0;i<C;i++){if(kind[j*C+i]!==4)continue;
         for(let n=0;n<2;n++){const x=i*cs+R3.int(0,15),y=j*cs+R3.int(0,15);if(!okDeep(x,y,ICE?6:4))continue;
-          if(ICE){if(R3.chance(.4))floe(x,y,R3.int(0,99));continue}
-          if(R3.chance(.6)){const L=R3.int(3,7),k0=sl(flowV?y:x),pts=[];for(let k=0;k<L;k++){const px=flowV?Math.round(x+k0*k):x+k,py=flowV?y+k:Math.round(y+k0*k);if(!okDeep(px,py,3))break;pts.push([px,py])}
-            pts.forEach(([px,py],k)=>Pg.px(k===pts.length-1&&R3.chance(.35)?P.glint:clim==='swamp'?PX.mix(RP.w[1],RP.w[2],.4):RP.w[1],px,py))}
-          else if(R3.chance(.5)){if(clim==='swamp'&&R3.chance(.5)){Pg.rect('#5e7a3e',x,y,2,1);Pg.px('#7a9650',x,y)}else Pg.rect(P.glint,x,y,2,1)}}}
+          if(ICE){if(R3.chance(.4)){const v=R3.int(0,99);if(floeOk(x,y,v))L.push(4,x,y,v,0,0)}continue}
+          if(R3.chance(.6)){const nL=R3.int(3,7),k0=sl(flowV?y:x),pts=[];for(let k=0;k<nL;k++){const px=flowV?Math.round(x+k0*k):x+k,py=flowV?y+k:Math.round(y+k0*k);if(!okDeep(px,py,3))break;pts.push([px,py])}
+            pts.forEach(([px,py],k)=>L.push(2,px,py,k===pts.length-1&&R3.chance(.35)?P.glint:clim==='swamp'?PX.mix(RP.w[1],RP.w[2],.4):RP.w[1],0,0))}
+          else if(R3.chance(.5)){if(clim==='swamp'&&R3.chance(.5)){L.push(3,x,y,2,1,'#5e7a3e');L.push(2,x,y,'#7a9650',0,0)}else L.push(3,x,y,2,1,P.glint)}}}
       if(ICE)for(let j=0;j<R;j++)for(let i=0;i<C;i++){if(kind[j*C+i]!==3||!R3.chance(.5))continue;let x=i*cs+R3.int(2,13),y=j*cs+R3.int(2,13);const sx=R3.chance(.5)?1:-1;
-        for(let k=R3.int(5,10);k>0;k--){if(Wv(x,y)!==1||DW[y*W+x]<6||keep(x,y))break;Pg.px('#ffffff',x-1,y-1);Pg.px(RP.ice[3],x,y);if(R3.chance(.6))x+=sx;else y+=R3.chance(.5)?1:-1}}
+        for(let k=R3.int(5,10);k>0;k--){if(Wv(x,y)!==1||DW[y*W+x]<6||keep(x,y))break;L.push(14,x,y,0,0,0);if(R3.chance(.6))x+=sx;else y+=R3.chance(.5)?1:-1}}
       else for(const f of comps(3)){const lo=(flowV?f.r0:f.c0)*cs,hi=((flowV?f.r1:f.c1)+1)*cs,s0=(flowV?f.c0:f.r0)*cs-6,s1=((flowV?f.c1:f.r1)+1)*cs+6,n=Math.max(1,Math.round((hi-lo)/160));
         for(let r=0;r<n;r++){const a=lo+Math.round((r+.5)*(hi-lo)/n);for(let q=s0+R3.int(1,3);q<s1;q+=R3.int(6,8)){const x=flowV?q:a+R3.int(-1,1),y=flowV?a+R3.int(-1,1):q;
-          if(Wv(x,y)===1&&Wv(x+5,y)===1&&Wv(x,y+4)===1&&Wv(x+5,y+4)===1&&!keep(x,y))stone(x,y,R3.int(0,99))}}}
+          if(Wv(x,y)===1&&Wv(x+5,y)===1&&Wv(x,y+4)===1&&Wv(x+5,y+4)===1&&!keep(x,y))L.push(5,x,y,R3.int(0,99),0,0)}}}
       for(let y=by0+R3.int(0,2);y<by1;y+=3)for(let x=bx0;x<bx1;x++){const dl=Dl(x,y);if(y<16||keep(x,y))continue;
         if(dl>=3&&dl<=5){if(R3.chance(RP.reeds)&&!onWay(x,y))things.push({y,k:'reed',x,v:R3.int(0,99)});continue}if(PX.hash(x,y,seed+64)>.34)continue;const tx=x,ty=y;
-        if(!dl){if(DW[ty*W+tx]<=4&&R3.chance(.03))stone(tx-2,ty-1,R3.int(0,99))}
+        if(!dl){if(DW[ty*W+tx]<=4&&R3.chance(.03))L.push(5,tx-2,ty-1,R3.int(0,99),0,0)}
         else if(oasis&&dl>=15&&dl<=36&&R3.chance(.012)&&clearT(tx,ty))TREES.push({y:ty,x:tx,sp:'palm',v:R3.int(0,2)});
-        else if(ICE&&dl>=12&&dl<=27&&R3.chance(.012))DETAIL.icerock(Pg,tx,ty,0,P)}
+        else if(ICE&&dl>=12&&dl<=27&&R3.chance(.012))L.push(6,tx,ty,0,0,0)}
       yield at(7,.2);
-      // a bridge across the flow (X0-X1 its length, Y0-Y1 its 32 px): its shadow on the water to the lower right, earth ramps onto
-      // the banks; wood: piles foaming in the water, a side beam, planks across the way (each its own tone, ragged, worn), railings
-      // on posts every 8 px; stone: arches over the water between foaming piers, a roadway of setts, parapets capped (snow in the
-      // frost), pillars at its ends
-      const shadeOn=(x,y,a)=>{const v=Wv(x,y);if(v&&v!==255)Pg.px('rgba(10,18,34,'+a.toFixed(2)+')',x,y)};
-      const deckH=(X0,X1,Y0,Y1,stone)=>{for(let y=Y1;y<Y1+(stone?10:8);y++)for(let x=X0+2;x<X1+3;x++)shadeOn(x,y,.46-(y-Y1)*.04);
-        for(const x of [X0-4,X1]){Pg.rect(RP.earth[1],x,Y0,4,Y1-Y0);Pg.rect(RP.earth[0],x,Y0,4,1);Pg.rect(RP.earth[2],x,Y1-1,4,1)}
-        if(!stone){for(let x=X0+6;x<X1-6;x+=11){const v=Wv(x,Y1+4);if(!v||v===255)continue;Pg.rect(WD[2],x,Y1+2,2,4);Pg.px(WD[3],x+1,Y1+2);Pg.px(RP.foam,x-1,Y1+5);Pg.px(RP.foam,x+2,Y1+5);Pg.px(RP.w[0],x,Y1+7);Pg.px(RP.w[0],x+1,Y1+8)}
-          Pg.rect(WD[2],X0,Y1,X1-X0,1);Pg.rect(WD[3],X0,Y1+1,X1-X0,1);
-          for(let x=X0;x<X1;x++){const k=Math.floor((x-X0)/4),c=(x-X0)%4;if(c===3){Pg.rect(WD[2],x,Y0,1,Y1-Y0);continue}
-            const tone=PX.hash(k,0,seed+70)<.5?WD[0]:WD[1],t0=Y0+(PX.hash(k,1,seed+70)<.3?1:0),t1=Y1-(PX.hash(k,2,seed+70)<.3?1:0);Pg.rect(c?tone:PX.mix(tone,P.hi,.2),x,t0,1,t1-t0);
-            for(let y=t0;y<t1;y++){const q=PX.hash(x,y,seed+71);if(q<.012)Pg.px(WD[2],x,y);else if(q>.995)Pg.px(WD[3],x,y)}}
-          Pg.rect('rgba(20,14,10,.3)',X0+1,Y0+1,X1-X0,1);
-          for(const ry of [Y0-3,Y1-5]){Pg.rect(WD[0],X0,ry,X1-X0,1);Pg.rect(WD[2],X0,ry+1,X1-X0,1);for(let x=X0+1;x<X1-1;x+=8){Pg.rect(WD[1],x,ry,2,4);Pg.px(WD[0],x,ry);Pg.px(WD[2],x+1,ry+3)}}
-          for(const x of [X0-1,X1-2])for(const y of [Y0-5,Y1-7]){Pg.rect(WD[2],x,y,3,6);Pg.rect(WD[1],x,y,2,5);Pg.px(WD[0],x,y)}return}
-        const n=Math.max(1,Math.round((X1-X0)/18)),sw=(X1-X0)/n,FH2=6;
-        for(let x=X0;x<X1;x++){const u=((x-X0)%sw)/sw,v=Wv(x,Y1+FH2),wet=v&&v!==255,a=(u-.5)/.34,top=Math.abs(a)<1?(FH2-1)-(FH2-2)*Math.sqrt(1-a*a):99;
-          for(let r=0;r<FH2;r++){let c;if(wet&&r>=top)c=r>=top+1?'#141c26':S[3];else{c=r===FH2-1?S[3]:r%2===1||(x+(r>>1)*2)%5===0?S[2]:S[1];if(wet&&r>=top-1)c=S[0]}Pg.px(c,x,Y1+r)}}
-        for(let k=0;k<=n;k++){const x=Math.round(X0+k*sw),v=Wv(x,Y1+FH2);if(!v||v===255)continue;Pg.px(RP.foam,x-1,Y1+FH2);Pg.px(RP.foam,x+1,Y1+FH2);Pg.px(RP.foam,x,Y1+FH2+1);Pg.px(RP.w[0],x,Y1+FH2+3)}
-        for(let y=Y0;y<Y1;y++)for(let x=X0;x<X1;x++){const r=y-Y0,row=Math.floor(r/3),cx=x-X0+(row&1)*2,q=PX.hash(Math.floor(cx/5),row,seed+72);let c=r%3===2||cx%5===4?PX.mix(S[1],S[2],.65):q<.4?S[0]:S[1];if(r%3===0&&cx%5===0&&c!==S[2])c=PX.mix(S[0],P.hi,.3);Pg.px(c,x,y)}
-        for(const py of [Y0-3,Y1-4]){for(let x=X0;x<X1;x++){Pg.px(ICE&&PX.hash(x,py,seed+73)>.25?'#f4f8fc':S[0],x,py);for(let r=1;r<3;r++)Pg.px((x-X0+r*2)%6===0?S[3]:S[1],x,py+r);Pg.px(S[3],x,py+3)}}
-        for(const x of [X0-2,X1-2])for(const y of [Y0-5,Y1-6]){Pg.rect(S[2],x,y,4,6);Pg.rect(S[1],x,y+1,3,4);Pg.rect(ICE?'#f4f8fc':S[0],x,y,4,1)}};
-      // (a river across the field: a plain deck down it, rails on its sides)
-      const deckV=(X0,X1,Y0,Y1,stone)=>{const M=stone?S:WD;for(let y=Y1;y<Y1+5;y++)for(let x=X0+2;x<X1+3;x++)shadeOn(x,y,.4-(y-Y1)*.07);
-        for(let y=Y0;y<Y1;y++){const k=Math.floor((y-Y0)/4);Pg.rect((y-Y0)%4===3?M[2]:PX.hash(k,3,seed+70)<.5?M[0]:M[1],X0,y,X1-X0,1)}
-        for(const x of [X0,X1-2]){Pg.rect(M[2],x,Y0,2,Y1-Y0);Pg.rect(M[0],x,Y0,1,Y1-Y0)}};
-      for(const b of BR)(flowV?deckH:deckV)(b.box[0],b.box[2],b.box[1],b.box[3],b.stone);
+      for(let b=0;b<BRs.length;b++)L.push(7,0,0,b,0,0);
       // the water's motion, drawn each frame over the ground (PX.battleWater): glints (0) and current lines (1) drifting down the deep,
       // riffles (2) on a ford, sparkles (3) on ice, bits of ice (4) on a cold river. Each: a seeded start, a path down the flow checked
       // clear of banks, shelves and bridges, its length, speed (px/s; a sparkle: twinkles a second) and phase. Its own stream (R4):
@@ -784,22 +865,19 @@
           AN[ty].push(x,y,u[0],u[1],L,v,ty===3?R4.R():R4.R()*L)}}
       cv.water={a:Float32Array.from(AN.flat()),n:AN.map(l=>l.length/7),flowV,col:[P.glint,RP.w[0],RP.foam,'#ffffff',RP.ice?RP.ice[0]:P.glint]}}
     yield at(7,.5);
-    // a standing tree's ground: its shadow to the lower right and its roots (none under snow nor sand); the tree itself is a sprite
-    let nt=0;for(const t of TREES){if(!(++nt&2047))yield at(7,.6);g.drawImage(shadowSprite(t.sp==='palm'||t.sp==='dead'||t.sp==='bbirch'?14:22),t.x-5,t.y-5);
-      if(clim==='frost'||t.sp==='palm')continue;const h=PX.hash(t.x,t.y,seed+23);Pg.px(P.trunk[1],t.x-3,t.y);Pg.px(P.trunk[1],t.x+3,t.y);if(h>.4){Pg.px(P.trunk[1],t.x-4,t.y+1);Pg.px(P.trunk[0],t.x-3,t.y-1)}if(h<.7)Pg.px(P.trunk[1],t.x+4,t.y+1)}
+    // a standing tree's ground (8), the bushes (9) and reeds (10) in their order down the field
+    let nt=0;for(const t of TREES){if(!(++nt&2047))yield at(7,.6);L.push(8,t.x,t.y,t.sp,0,0)}
     things.sort((a,b)=>a.y-b.y||a.x-b.x);
-    for(const t of things){
-      if(t.k==='bush'){g.drawImage(shadowSprite(8),t.x-2,t.y-2);g.drawImage(treeSprite(clim,'oak',t.v,true),t.x-4,t.y-7)}
-      else reeds(Pg,t.x,t.y,t.v,P)}
+    for(const t of things)L.push(t.k==='bush'?9:10,t.x,t.y,t.v,0,0);
     // glints on the open pools (still: the ground is painted once); lily pads on warm water
     for(let j=0;j<R;j++)for(let i=0;i<C;i++){if(kind[j*C+i]!==2)continue;for(let n=0;n<2;n++){const tx=i*cs+R2.int(0,13),ty=j*cs+R2.int(0,15);
-      if(Wat(tx,ty)!==2||Wat(tx+2,ty)!==2||Wat(tx,ty-1)!==2)continue;if(!P.ice&&R2.chance(.35)){Pg.rect('#5e7a3e',tx,ty,2,1);Pg.px('#7a9650',tx,ty)}else Pg.rect(P.glint,tx,ty,P.ice?3:2,1)}}
+      if(Wat(tx,ty)!==2||Wat(tx+2,ty)!==2||Wat(tx,ty-1)!==2)continue;if(!P.ice&&R2.chance(.35)){L.push(3,tx,ty,2,1,'#5e7a3e');L.push(2,tx,ty,'#7a9650',0,0)}else L.push(3,tx,ty,P.ice?3:2,1,P.glint)}}
     /* (4b) the desert's life (decoration: nothing collides, slows or hides anyone). Flat: clay pans cracked by the sun, pebbles, dark
        flecks, tufts. Standing (DEC, handed back as props dk 4): cacti, prickly pear, dead and dry shrubs, a skull or ribcage now and
        then, small rocks, in spaced clusters of 2-5 and a few alone, by area; fewer on the dunes, in the deployment zones and the
        open lane; more rocks and dry shrubs on a rocky field (erg, spires) and by rock; an oasis's green fringe thick with tall grass
        and green shrubs. Its own stream (R5): nothing else changes */
-    yield at(8);const DEC=[];
+    yield at(8);DEC=[];PANs=[];
     if(clim==='desert'){const R5=PX.dice(PX.rng(seed*89+29)),rc=spec.recipe&&typeof spec.recipe==='object'?spec.recipe:{},Zn=spec.zone,zo=Zn?Zn[1]:.3*W,ln=rc.lane,A=W*H,rocky=/erg|spires/.test(rc.layout||'');
       const rockN=(x,y)=>{const i=Math.floor(x/cs),j=Math.floor(y/cs);for(let b=-2;b<=2;b++)for(let a=-2;a<=2;a++)if(cell(kind,i+a,j+b)===6)return true;return false};
       const wt=(x,y)=>(x<zo||x>W-zo?.35:1)*(ln&&y>ln.y0&&y<ln.y1?.45:1)*(Tat(x,y)?.45:1);
@@ -807,34 +885,37 @@
       const near=(x,y,dx,dy)=>DEC.some(d=>Math.abs(d.x-x)<dx&&Math.abs(d.y-y)<dy)||TREES.some(t=>Math.abs(t.x-x)<7&&Math.abs(t.y-y)<5);
       const pickK=L=>{let r=R5.R()*L.reduce((a,b)=>a+b[1],0);for(const [k,w] of L){r-=w;if(r<0)return k}return L[0][0]};
       const KW=[['saguaro',3],['young',1.2],['barrel',2],['pear',2],['dead',1.4],['dry',2.2],['rocks',1.8],['bones',.3]],KR=[['saguaro',1.6],['young',.7],['barrel',1.3],['pear',1],['dead',2],['dry',3.4],['rocks',4.6],['bones',.35]];
-      // (flat: clay pans, each a wobbly ellipse of pale clay split into plates; pebbles; flecks)
+      // (flat: clay pans, each a wobbly ellipse of pale clay split into plates (11); pebbles (12); flecks)
       for(let n=Math.max(2,Math.round(A/170000));n>0;n--)for(let tr=0;tr<8;tr++){const cx=R5.int(30,W-30),cy=R5.int(30,H-12),rw=R5.int(14,28),rh=R5.int(6,11),S=[];
         if(Tat(cx,cy)||!ok(cx,cy,.05)||!ok(cx-rw,cy,.05)||!ok(cx+rw,cy,.05))continue;for(let k=R5.int(5,8);k>0;k--)S.push([cx+R5.int(-rw,rw),cy+R5.int(-rh,rh)]);
-        for(let y=cy-rh-1;y<=cy+rh+1;y++)for(let x=cx-rw-1;x<=cx+rw+1;x++){const e=((x-cx)/rw)**2+((y-cy)/rh)**2;if(e>1-PX.hash(x,y,seed+104)*.18||Fat(x,y)||Tat(x,y)||onWay(x,y))continue;
-          let d1=1e9,d2=1e9;for(const [sx,sy] of S){const d=Math.hypot(x-sx,(y-sy)*1.6);if(d<d1){d2=d1;d1=d}else if(d<d2)d2=d}Pg.px(d2-d1<1.1?'#b08c58':e>.8?'#dcc08a':PX.hash(x,y,seed+105)<.06?'#d4b880':'#e6d09e',x,y)}break}
+        const pn=[cx,cy,rw,rh,S];pn.reach=[cx-rw-1,cy-rh-1,cx+rw+1,cy+rh+1];PANs.push(pn);L.push(11,cx,cy,PANs.length-1,0,0);break}
       for(let n=Math.round(A/7000*(rocky?1.6:1));n>0;n--){const x=R5.int(8,W-8),y=R5.int(24,H-4),m=R5.int(3,6);if(Tat(x,y)&&R5.chance(.6)||!ok(x,y,.2))continue;
-        for(let k=0;k<m;k++){const px=x+R5.int(-6,6),py=y+R5.int(-3,3);if(Fat(px,py)||onWay(px,py))continue;Pg.px(k%3?'#b08c60':'#8a6a4a',px,py);if(k%2===0){Pg.px('#e8d0a0',px-1,py);Pg.px('#6e5238',px,py+1)}}}
-      for(let n=Math.round(A/3000);n>0;n--){const x=R5.int(4,W-4),y=R5.int(20,H-2);if(!Fat(x,y)&&!onWay(x,y)&&!Wat(x,y)&&Q[y*W+x]<.2)Pg.px('#7e6046',x,y)}
+        for(let k=0;k<m;k++){const px=x+R5.int(-6,6),py=y+R5.int(-3,3);if(Fat(px,py)||onWay(px,py))continue;L.push(12,px,py,k,0,0)}}
+      for(let n=Math.round(A/3000);n>0;n--){const x=R5.int(4,W-4),y=R5.int(20,H-2);if(!Fat(x,y)&&!onWay(x,y)&&!Wat(x,y)&&Q[y*W+x]<.2)L.push(2,x,y,'#7e6046',0,0)}
       yield at(8,.1);
       // (standing: the clusters, spaced 64 px apart at least, each round a main kind; then a few alone)
       const CL=[];for(let c=Math.round(A/34000);c>0;c--)for(let tr=0;tr<10;tr++){const x=R5.int(12,W-12),y=R5.int(28,H-6);if(!ok(x,y)||!R5.chance(wt(x,y))||CL.some(p=>(p[0]-x)**2+(p[1]-y)**2<4096)||near(x,y,8,5))continue;
-        CL.push([x,y]);const L=rocky||rockN(x,y)?KR:KW,main=pickK(L),m=R5.int(2,5);let bones=false;
+        CL.push([x,y]);const L2=rocky||rockN(x,y)?KR:KW,main=pickK(L2),m=R5.int(2,5);let bones=false;
         for(let k=0,t2=0;k<m&&t2<m*6;t2++){const px=k?x+R5.int(-22,22):x,py=k?y+R5.int(-11,11):y;if(k&&(!ok(px,py)||near(px,py,8,5)))continue;
-          let kk=k&&R5.chance(.55)?pickK(L):main;if(kk==='bones'){kk=bones?'rocks':R5.chance(.55)?'skull':'ribs';bones=true}DEC.push({x:px,y:py,k:kk,v:R5.int(0,5)});k++}
-        for(let k=R5.int(1,3);k>0;k--)DETAIL.tuft(Pg,x+R5.int(-18,18),y+R5.int(-8,8),R5.int(0,999),P);break}
+          let kk=k&&R5.chance(.55)?pickK(L2):main;if(kk==='bones'){kk=bones?'rocks':R5.chance(.55)?'skull':'ribs';bones=true}DEC.push({x:px,y:py,k:kk,v:R5.int(0,5)});k++}
+        for(let k=R5.int(1,3);k>0;k--){const tx=x+R5.int(-18,18),ty=y+R5.int(-8,8);L.push(0,tx,ty,'tuft',R5.int(0,999),0)}break}
       for(let c=Math.round(A/40000);c>0;c--){const x=R5.int(12,W-12),y=R5.int(28,H-6);if(ok(x,y)&&R5.chance(wt(x,y))&&!near(x,y,12,8))DEC.push({x,y,k:pickK(rocky||rockN(x,y)?[['rocks',5],['dry',3],['dead',1.4]]:[['rocks',3],['dry',2.5],['dead',1.2],['young',.6],['barrel',.5]]),v:R5.int(0,5)})}
       yield at(8,.2);
-      // (an oasis's fringe, past its palms: tall grass and green shrubs, green tufts painted between; then round it out to twice its
+      // (an oasis's fringe, past its palms: tall grass and green shrubs, green tufts painted between (1); then round it out to twice its
       //  radius, thinning: grass and green shrubs near, sage, prickly pear and young cacti farther)
       if(kind.includes(2)){for(let y=10,row=0;y<H;y+=7,row++)for(let x=(row&1)*5;x<W;x+=10){const tx=x+R5.int(-2,2),ty=y+R5.int(-2,2),v=R5.int(0,999);if(tx<0||ty<0||tx>=W||ty>=H)continue;const q=Q[ty*W+tx];if(q<.1||q>.62)continue;
-          if(q<.55&&R5.chance(.4)&&!Fat(tx,ty)&&!onWay(tx,ty))DETAIL.tuft(Pg,tx+R5.int(-3,3),ty+R5.int(-2,2),v,{tuft:OASG});
+          if(q<.55&&R5.chance(.4)&&!Fat(tx,ty)&&!onWay(tx,ty)){const ux=tx+R5.int(-3,3),uy=ty+R5.int(-2,2);L.push(1,ux,uy,v,0,0)}
           if(R5.chance(q>.25?.5:.22)&&ok(tx,ty,.62)&&!near(tx,ty,7,4))DEC.push({x:tx,y:ty,k:R5.chance(.6)?'grass':q>.25||R5.chance(.5)?'green':'dry',v:v%6})}
         for(const o of rc.marsh||[])for(let y=Math.round(o.y-2*o.r),row=0;y<o.y+2*o.r;y+=6,row++)for(let x=Math.round(o.x-2*o.r)+(row&1)*5;x<o.x+2*o.r;x+=10){const tx=x+R5.int(-2,2),ty=y+R5.int(-2,2),d=Math.hypot(tx-o.x,(ty-o.y)*1.2)/o.r,v=R5.int(0,999);
-          if(d<.9||d>2)continue;const f=1-(d-.9)/1.1;if(R5.chance(.3*f)&&ok(tx,ty,.25))DETAIL.tuft(Pg,tx,ty,v,{tuft:OASG});
+          if(d<.9||d>2)continue;const f=1-(d-.9)/1.1;if(R5.chance(.3*f)&&ok(tx,ty,.25))L.push(1,tx,ty,v,0,0);
           if(R5.chance(.32*f)&&ok(tx,ty,.62)&&!near(tx,ty,8,5))DEC.push({x:tx,y:ty,k:d<1.3?(R5.chance(.55)?'grass':'green'):pickK([['green',2],['grass',1.5],['dry',1.5],['pear',1],['young',.7]]),v:v%6})}}
       yield at(8,.3);
-      // (their ground: a cactus's own (its shadow and contact shade), else a soft shadow as wide as the kind's)
-      DEC.sort((a,b)=>a.y-b.y||a.x-b.x);for(const d of DEC){const S=PX.desertSprite(d.k,d.v);if(S.g)g.drawImage(S.g,d.x-S.gx,d.y-S.gy);else if(S.sh)g.drawImage(shadowSprite(S.sh),d.x-(S.sh>>1)+2,d.y-(S.sh>>2)-1)}}
+      // (their ground (13), in their order down the field)
+      DEC.sort((a,b)=>a.y-b.y||a.x-b.x);for(let i=0;i<DEC.length;i++)L.push(13,DEC[i].x,DEC[i].y,i,0,0)}
+    DECs=DEC;Object.assign(PLn,{L,BR:BRs,pans:PANs,DEC})}
+    else{L=PL.L;BRs=PL.BR;PANs=PL.pans;DECs=PL.DEC}
+    yield* drawList(full?null:[X,Y,X+w,Y+h]);
+    if(!full){g.restore();return cv}
     /* (5) what stands up out of the ground, for the game to draw sorted by depth with the soldiers (cv.props, sorted by y):
        trees {dk:1, x, y (the trunk's foot), s (its sprite), dx, dy (where s is drawn), box (its drawn pixels, field px)}, and the
        plateaus' south cliff faces {dk:2, x, y (its foot: the face's lowest row), s, dx, dy, box (as a tree's), sx, sy, w, h}: the
@@ -854,17 +935,91 @@
       fg.putImageData(fi,0,0);for(const p of props)if(p.dk>=2){p.x=p.sx+(p.w>>1);p.box=[p.sx,p.sy,p.sx+p.w-1,p.sy+p.h-1];p.dx=p.sx;p.dy=p.sy;p.s=PX.canvas(p.w,p.h,q=>q.drawImage(fc,p.sx,p.sy,p.w,p.h,0,0,p.w,p.h));delete p.lt;delete p.lb;delete p.yb;delete p.id}}
     // (the desert's life {dk:4, ...as a tree's, dc: its kind}: decoration, faded over your men as a tree is; cv.decor how many)
     for(const d of DEC){const S=PX.desertSprite(d.k,d.v),b=S.box,dx=d.x-S.ax,dy=d.y-S.ay;props.push({dk:4,x:d.x,y:d.y,s:S.s,dx,dy,box:[dx+b[0],dy+b[1],dx+b[2],dy+b[3]],dc:d.k})}
-    props.sort((a,b)=>a.y-b.y||a.x-b.x);cv.props=props;cv.trees=TREES.length;cv.decor=DEC.length;
-    return cv};
+    props.sort((a,b)=>a.y-b.y||a.x-b.x);cv.props=props;cv.trees=TREES.length;cv.decor=DEC.length;cv.plan=PLn;
+    return cv}
   // the standing props of a ground (trees and cliff faces, PX.battleGround's cv.props) drawn in their order over it: the gallery's
   // preview (the game sorts them in with its soldiers: render.js). view: [x0,y0,x1,y1] field px, or all
   PX.battleProps=(g,ground,view)=>{const L=ground&&ground.props;if(!L)return;for(const p of L){const b=p.box;if(view&&(b[2]<view[0]||b[0]>view[2]||b[3]<view[1]||b[1]>view[3]))continue;
     g.drawImage(p.s,p.dx,p.dy)}};
+  /* R16: a battle's ground by tiles (GROUND_TILE.size px), for the game to draw (render.js). PX.battleGroundSteps(spec) paints the
+     whole (as PX.battleGround) and keeps it as a PX.BattleGround: its tiles in an LRU (cap at most; those in view never let go), the
+     ones nearest the middle cut from the whole at once; on a field of more tiles than cap, a half-resolution overview (each 2×2
+     averaged), drawn at a zoom of GROUND_TILE.over or less, or when the view would need more tiles than cap; the small map's picture
+     (mini); and what the whole hands back (props, trees, decor, water, under, plan). A tile let go is painted again from the plan
+     when next wanted (PX.battleGroundPaint: the same pixels). apron: a tile's window past its edges (the reach of the ground's
+     slopes, cliffs, banks and ways); slice: ms a frame for painting tiles ahead (twice that while one in view is missing); sync:
+     tiles in view painted at once, never shown from the overview (the tests) */
+  PX.GROUND_TILE={size:512,cap:16,apron:48,over:.5,slice:4,sync:false};
+  class BattleGround{
+    // W, H: the field; paint(x, y, w, h, out): a generator painting that rect of the field into out (w×h), returning it; over():
+    // the overview made at once, when first wanted (else from the tiles, one by one)
+    constructor(W,H,paint,over){const S=PX.GROUND_TILE.size;Object.assign(this,{width:W,height:H,paint,mkOver:over,cols:Math.ceil(W/S),rows:Math.ceil(H/S),tiles:new Map(),jobs:new Map(),queue:[],pool:[],view:new Set(),over:null,last:null,painted:0})}
+    get cap(){return PX.GROUND_TILE.cap}
+    rect(k){const S=PX.GROUND_TILE.size,cx=k%this.cols,cy=(k-cx)/this.cols,x=cx*S,y=cy*S;return[x,y,Math.min(S,this.width-x),Math.min(S,this.height-y)]}
+    // (a tile's painting, as steps: its own canvas, or one let go that fits)
+    start(k){let j=this.jobs.get(k);if(j)return j;const [x,y,w,h]=this.rect(k),i=this.pool.findIndex(c=>c.width===w&&c.height===h),cv=i>=0?this.pool.splice(i,1)[0]:PX.canvas(w,h);
+      j={k,cv,gen:this.paint(x,y,w,h,cv)};this.jobs.set(k,j);return j}
+    // (a tile in, the freshest: the least recently used let go past cap, never one in view)
+    put(k,cv){this.jobs.delete(k);this.tiles.delete(k);this.tiles.set(k,cv);for(const [q,c] of this.tiles){if(this.tiles.size<=this.cap)break;if(this.view.has(q)||q===k)continue;this.tiles.delete(q);this.drop(c)}}
+    drop(cv){if(this.pool.length<2)this.pool.push(cv)}
+    // a tile's canvas, painted now if it must be
+    tile(k){const c=this.tiles.get(k);if(c){this.tiles.delete(k);this.tiles.set(k,c);return c}const j=this.start(k);let n;while(!(n=j.gen.next()).done);this.painted++;this.put(k,j.cv);return j.cv}
+    // every tile in the field rect [x0,y0,x1,y1) painted now (a view about to be shown; the tests)
+    ready(x0,y0,x1,y1){const S=PX.GROUND_TILE.size;for(let cy=Math.max(0,Math.floor(y0/S));cy<=Math.min(this.rows-1,Math.floor((y1-1)/S));cy++)for(let cx=Math.max(0,Math.floor(x0/S));cx<=Math.min(this.cols-1,Math.floor((x1-1)/S));cx++){this.view.add(cy*this.cols+cx);this.tile(cy*this.cols+cx)}}
+    // the overview's part over the field rect [x0,y0,x1,y1), at the field's scale
+    blitOver(g,x0,y0,x1,y1){const O=this.over,a=Math.floor(x0/2),b=Math.floor(y0/2),c=Math.min(O.width,Math.ceil(x1/2)),d=Math.min(O.height,Math.ceil(y1/2));if(c>a&&d>b)g.drawImage(O,a,b,c-a,d-b,a*2,b*2,(c-a)*2,(d-b)*2)}
+    // (the overview made from the tiles, one by one: a ground whose whole was never painted at once (an arena's))
+    overview(){const O=this.over=PX.canvas(Math.ceil(this.width/2),Math.ceil(this.height/2)),g=O.getContext('2d');g.imageSmoothingEnabled=true;g.imageSmoothingQuality='low';
+      for(let k=0;k<this.cols*this.rows;k++){const [x,y,w,h]=this.rect(k);g.drawImage(this.tile(k),0,0,w,h,x/2,y/2,w/2,h/2)}}
+    /* the field's view [x0,y0,x1,y1) (field px) drawn on g (in field px) at zoom z: zoomed out, the overview; else the tiles in it,
+       the same pixels as the whole drawn there (each painted now if it must be; with an overview a missing one shown from it while it
+       paints, a few ms a frame). Then the ring round the view queued, the way the view moves first, as many as cap leaves room for */
+    drawView(g,x0,y0,x1,y1,z){const S=PX.GROUND_TILE.size,T=PX.GROUND_TILE,W=this.width,H=this.height;x0=Math.max(0,Math.floor(x0)-2);y0=Math.max(0,Math.floor(y0)-2);x1=Math.min(W,Math.ceil(x1)+2);y1=Math.min(H,Math.ceil(y1)+2);if(x1<=x0||y1<=y0)return;
+      const c0=Math.floor(x0/S),r0=Math.floor(y0/S),c1=Math.floor((x1-1)/S),r1=Math.floor((y1-1)/S),far=z<=T.over||(c1-c0+1)*(r1-r0+1)>this.cap;
+      if(far&&!this.over&&this.cols*this.rows>this.cap){if(this.mkOver)this.over=this.mkOver();else this.overview()}
+      if(far&&this.over){this.blitOver(g,x0,y0,x1,y1);this.view=new Set();this.queue=[];for(const j of this.jobs.values())this.drop(j.cv);this.jobs.clear();return}
+      this.view=new Set();for(let cy=r0;cy<=r1;cy++)for(let cx=c0;cx<=c1;cx++)this.view.add(cy*this.cols+cx);
+      const miss=[];
+      for(const k of this.view){const [X,Y,w,h]=this.rect(k),sx=Math.max(x0,X),sy=Math.max(y0,Y),sw=Math.min(x1,X+w)-sx,sh=Math.min(y1,Y+h)-sy;let cv=this.tiles.get(k);
+        if(cv){this.tiles.delete(k);this.tiles.set(k,cv)}else if(this.over&&!T.sync){miss.push(k);this.blitOver(g,sx,sy,sx+sw,sy+sh);continue}else cv=this.tile(k);
+        g.drawImage(cv,sx-X,sy-Y,sw,sh,sx,sy,sw,sh)}
+      const dx=this.last?Math.sign(x0-this.last[0]):0,dy=this.last?Math.sign(y0-this.last[1]):0,mx=(c0+c1)/2,my=(r0+r1)/2,ring=[];this.last=[x0,y0];
+      for(let cy=r0-1;cy<=r1+1;cy++)for(let cx=c0-1;cx<=c1+1;cx++){const k=cy*this.cols+cx;if(cx<0||cy<0||cx>=this.cols||cy>=this.rows||this.view.has(k))continue;ring.push([(cx-mx)*dx+(cy-my)*dy,Math.hypot(cx-mx,cy-my),k])}
+      ring.sort((a,b)=>b[0]-a[0]||a[1]-b[1]);ring.length=Math.min(ring.length,Math.max(0,this.cap-this.view.size));
+      for(let i=ring.length-1;i>=0;i--){const k=ring[i][2],c=this.tiles.get(k);if(c){this.tiles.delete(k);this.tiles.set(k,c)}}
+      this.queue=miss.concat(ring.map(q=>q[2]).filter(k=>!this.tiles.has(k)));const keep=new Set(this.queue);
+      for(const [k,j] of this.jobs)if(!keep.has(k)){this.jobs.delete(k);this.drop(j.cv)}
+      this.step(miss.length?2*T.slice:T.slice)}
+    // queued tiles painted for ms, a band of rows at a time (a tile's painting resumes where it stopped)
+    step(ms){const t0=performance.now();while(this.queue.length&&performance.now()-t0<ms){const k=this.queue[0];if(this.tiles.has(k)){this.queue.shift();continue}const j=this.start(k);
+      while(performance.now()-t0<ms)if(j.gen.next().done){this.painted++;this.put(k,j.cv);this.queue.shift();break}}}
+    // what it holds, bytes: its tiles, the canvases kept for reuse, the overview, the canopy layer, the small map
+    bytes(){const px=c=>c?c.width*c.height*4:0;let t=0,p=0;for(const c of this.tiles.values())t+=px(c);for(const c of this.pool)p+=px(c);for(const j of this.jobs.values())p+=px(j.cv);
+      return{tiles:t,n:this.tiles.size,pool:p,over:px(this.over),canopy:this.canopy&&this.canopy.half?px(this.canopy.half):0,mini:px(this.mini)}}
+  }
+  PX.BattleGround=BattleGround;
+  // a battle's ground painted (as PX.battleGround) and kept by tiles: a PX.BattleGround (R16; setup.js BattleSetup.paint)
+  PX.battleGroundSteps=function*(spec){const cv=yield* paint(spec,null),W=cv.width,H=cv.height,PL=cv.plan,G=new BattleGround(W,H,(x,y,w,h,out)=>paint(PL.spec,PL,[x,y,w,h],out));
+    for(const k of ['props','trees','decor','water','under','plan'])if(cv[k]!==undefined)G[k]=cv[k];
+    yield 1;G.mini=PX.battleGroundMini(spec,cv);yield 1;
+    // (its tiles cut from the whole, the nearest the middle kept; the overview when they cannot all be)
+    const ks=[...Array(G.cols*G.rows).keys()],d=k=>{const [x,y,w,h]=G.rect(k);return Math.hypot(x+w/2-W/2,y+h/2-H/2)};ks.sort((a,b)=>d(b)-d(a));
+    for(const [i,k] of ks.slice(-G.cap).entries()){if(i&&!(i&3))yield 1;const [x,y,w,h]=G.rect(k);G.put(k,PX.canvas(w,h,g=>g.drawImage(cv,-x,-y)))}
+    if(ks.length>G.cap){yield 1;G.over=PX.canvas(Math.ceil(W/2),Math.ceil(H/2),g=>{g.imageSmoothingEnabled=true;g.imageSmoothingQuality='low';g.drawImage(cv,0,0,W,H,0,0,W/2,H/2)})}
+    return G};
   /* the woods' canopy (a level of detail for a big field seen zoomed out: render.js): every standing tree of a ground (cv.props, dk 1)
      painted once, in its order, into one clear layer the size of the field, so thousands of trees are one picture to draw rather
      than one each; made when first asked and kept on the ground (ground.canopy). The same pixels as the sprites drawn one by one over
-     nothing; the cliff faces and mountains (dk 2, 3) stay sprites. ground.trees: how many trees it has */
-  PX.battleCanopy=ground=>ground.canopy||(ground.canopy=PX.canvas(ground.width,ground.height,g=>{for(const p of ground.props||[])if(p.dk===1)g.drawImage(p.s,p.dx,p.dy)}));
+     nothing; the cliff faces and mountains (dk 2, 3) stay sprites. ground.trees: how many trees it has. A tiled ground's (R16) is
+     held at half resolution (each 2×2 of the full layer averaged, made a band of rows at a time): {width, height (the field's),
+     half, drawView} */
+  const CANOPY_BAND=64;
+  PX.battleCanopy=ground=>{if(ground.canopy)return ground.canopy;
+    if(!(ground instanceof BattleGround))return ground.canopy=PX.canvas(ground.width,ground.height,g=>{for(const p of ground.props||[])if(p.dk===1)g.drawImage(p.s,p.dx,p.dy)});
+    const W=ground.width,H=ground.height,B=CANOPY_BAND,T=(ground.props||[]).filter(p=>p.dk===1),strip=PX.canvas(W,B),sg=strip.getContext('2d');
+    const half=PX.canvas(Math.ceil(W/2),Math.ceil(H/2),g=>{g.imageSmoothingEnabled=true;g.imageSmoothingQuality='low';
+      for(let y=0;y<H;y+=B){sg.clearRect(0,0,W,B);for(const p of T){const b=p.box;if(b[3]>=y&&b[1]<y+B)sg.drawImage(p.s,p.dx,p.dy-y)}g.drawImage(strip,0,0,W,B,0,y/2,W/2,B/2)}});
+    return ground.canopy={width:W,height:H,half,drawView(g,x0,y0,x1,y1){const a=Math.max(0,Math.floor(x0/2)-1),b=Math.max(0,Math.floor(y0/2)-1),c=Math.min(half.width,Math.ceil(x1/2)+1),d=Math.min(half.height,Math.ceil(y1/2)+1);if(c>a&&d>b)g.drawImage(half,a,b,c-a,d-b,a*2,b*2,(c-a)*2,(d-b)*2)}}};
 
   /* a river's motion, drawn each frame over its ground (render.js, after the ground, before the men): ground.water from battleGround
      (none: nothing). t: seconds (the caller's clock: still when the battle is paused); view: [x0,y0,x1,y1] in field px, the rest
@@ -885,7 +1040,7 @@
   // the small map: a pixel a cell, the painted ground's average there, its terrace edges dark (a contour a cell wide); a mountain's
   // cells its rock (lighter as it rises; snow on a cold one), the cells its peaks stand over their ground (ground.under); with walls a
   // cliff's contour darker, a slope's faint
-  PX.battleGroundMini=(spec,ground)=>{const C=spec.C,R=spec.R,cs=spec.cs||16,P=PX.GROUND_PAL[spec.climate]||PX.GROUND_PAL.grass,lvl=spec.lvl||new Uint8Array(C*R),kind=spec.kind||new Uint8Array(C*R),U=ground&&ground.under,WL=spec.wall&&spec.wall.length===C*R?spec.wall:null,RP=(P.rock||PX.GROUND_PAL.grass.rock);
+  PX.battleGroundMini=(spec,ground)=>{if(ground&&ground.mini)return ground.mini;const C=spec.C,R=spec.R,cs=spec.cs||16,P=PX.GROUND_PAL[spec.climate]||PX.GROUND_PAL.grass,lvl=spec.lvl||new Uint8Array(C*R),kind=spec.kind||new Uint8Array(C*R),U=ground&&ground.under,WL=spec.wall&&spec.wall.length===C*R?spec.wall:null,RP=(P.rock||PX.GROUND_PAL.grass.rock);
     return PX.canvas(C,R,g=>{const img=g.createImageData(C,R),M=img.data,G=ground?ground.getContext('2d').getImageData(0,0,ground.width,ground.height):null,B1=hx(P.base[1]),HI=hx(P.hi),LN=hx(P.line),LF=hx(P.leaf[3]),WA=hx(P.water[1]);
       for(let j=0;j<R;j++)for(let i=0;i<C;i++){const o=(j*C+i)*4,k=kind[j*C+i],l=lvl[j*C+i];let c=[0,0,0],n=0;
         if(G){for(let y=j*cs+1;y<Math.min(G.height,(j+1)*cs);y+=2)for(let x=i*cs+1;x<Math.min(G.width,(i+1)*cs);x+=2){const q=(y*G.width+x)*4;c[0]+=G.data[q];c[1]+=G.data[q+1];c[2]+=G.data[q+2];n++}}

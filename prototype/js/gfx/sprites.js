@@ -114,11 +114,12 @@ const worldCv=()=>WorldArt.whole();
 // the minimap from the tile data (WorldArt.mini, drawn by render.js): made now, from the map as the scripts leave it (as it
 // always was: the roads lots.js leads to the gates come after it), and again when next shown after WorldArt.invalidate()
 WorldArt.mini();
-/* battle arenas: one per climate, built when first needed */
+/* battle arenas: one per climate, built when first needed (R16: no pixels of its own, its tiles painted as they are seen:
+   worldart.js paintArena) */
 const ARENAS={};
-// (by climate and field size: only the field size in use kept, a huge field's ground being large)
+// (by climate and field size: only the field size in use kept, a huge field's tiles being large)
 function arenaFor(c){const it=arenaSteps(c);let n;while(!(n=it.next()).done);return n.value}
-// (the same as a generator: painted in slices where it is not made yet (worldart.js paintArena; setup.js BattleSetup.paint))
+// (the same as a generator (setup.js BattleSetup.paint))
 function* arenaSteps(c){const s='|'+BW+'x'+BH,k=c+s;if(!ARENAS[k]){for(const q of Object.keys(ARENAS))if(!q.endsWith(s))delete ARENAS[q];ARENAS[k]=yield* paintArena(c,true)}return ARENAS[k]}
 /* the obstacles of a field without terrain (B.obs: setup.js placeObstacles) in the ground's style (engine/ground.js
    PX.battleObstacle: a tree of the climate's, a boulder of its rock, a cactus), each its look by where it stands (a hash, never

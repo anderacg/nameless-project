@@ -247,7 +247,15 @@ function drawSelection(){
    which stop flat shots, dashed (arrows arc over them); no words, only the reach and the lines */
 const FIRE={fill:.1,edge:1.5,blue:'120,190,255',red:'255,110,95',kinds:['120,190,255','140,230,160','240,200,110','220,150,255'],foes:['255,110,95','255,170,90','255,120,190','240,220,120']};
 const shooters=g=>grpUnits(g).filter(u=>!u.rout&&!u.empty&&u.s.range>0);
-function rangeLayer(){const c=B.rangeCv||(B.rangeCv=document.createElement('canvas'));if(c.width!==BW||c.height!==BH){c.width=BW;c.height=BH}return c}
+// (the reach's layer (R16): the field's part in view and RANGE_M px round it, at the zoom's scale, never past the field (a fill's
+// curve cut at the layer's edge is cut as the field's own layer cut it): a field seen whole at ×1 has the field's own layer. rangeView:
+// its rect in the zoom's pixels (ox, oy, w, h) and the camera's (cx, cy); rangeClear sets the layer to it; rangeBlit puts it over the view)
+const RANGE_M=32;
+function rangeView(){const cm=B.cam,z=cm?cm.z:1,cx=Math.round((cm?cm.x:0)*z),cy=Math.round((cm?cm.y:0)*z),ox=Math.max(0,cx-RANGE_M),oy=Math.max(0,cy-RANGE_M);
+  return{z,cx,cy,ox,oy,w:Math.max(1,Math.min(Math.ceil(BW*z),cx+BVW+RANGE_M)-ox),h:Math.max(1,Math.min(Math.ceil(BH*z),cy+BVH+RANGE_M)-oy)}}
+function rangeLayer(){const v=rangeView(),c=B.rangeCv||(B.rangeCv=document.createElement('canvas'));if(c.width!==v.w||c.height!==v.h){c.width=v.w;c.height=v.h}c.rv=v;return c}
+function rangeClear(g){const v=g.canvas.rv;g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,g.canvas.width,g.canvas.height);g.setTransform(v.z,0,0,v.z,-v.ox,-v.oy)}
+function rangeBlit(c){const v=c.rv,m=ctx.getTransform();ctx.save();ctx.setTransform(1,0,0,1,Math.round(m.e+v.cx)+v.ox-v.cx,Math.round(m.f+v.cy)+v.oy-v.cy);ctx.globalAlpha=.75;ctx.drawImage(c,0,0);ctx.restore()}
 const convexHull=points=>{const p=points.slice().sort((a,b)=>a.x-b.x||a.y-b.y),cross=(o,a,b)=>(a.x-o.x)*(b.y-o.y)-(a.y-o.y)*(b.x-o.x),lo=[],hi=[];
   for(const q of p){while(lo.length>1&&cross(lo[lo.length-2],lo[lo.length-1],q)<=0)lo.pop();lo.push(q)}for(let i=p.length-1;i>=0;i--){const q=p[i];while(hi.length>1&&cross(hi[hi.length-2],hi[hi.length-1],q)<=0)hi.pop();hi.push(q)}lo.pop();hi.pop();return lo.concat(hi)};
 function formationReachGeometry(id){
@@ -265,7 +273,7 @@ function formationReachGeometry(id){
 }
 // one area round them all: the circles filled, then their insides cut a little smaller, leaving the outer edge
 function drawReach(us,col){
-  if(!us.length)return;const c=rangeLayer(),g=c.getContext('2d');g.clearRect(0,0,BW,BH);
+  if(!us.length)return;const c=rangeLayer(),g=c.getContext('2d');rangeClear(g);
   // (each man's reach: the fan in front of him he can shoot into (battle.js SHOOT.arc), or all round for those who shoot all round;
   // drawn smaller and narrower to cut out its inside, leaving its edge)
   // (the inside of a fan: its point moved forward by sh so its sides stand in by -r0, and its radius cut by that too, so the far edge stays)
@@ -273,7 +281,7 @@ function drawReach(us,col){
     const a=arcAim(u),sh=r0?-r0/Math.sin(SHOOT.arc/2):0,r=Math.max(0,u.s.range+r0-sh),ox=Math.cos(a)*sh,oy=Math.sin(a)*sh;g.moveTo(u.x+ox,u.y+oy);g.arc(u.x+ox,u.y+oy,r,a-SHOOT.arc/2,a+SHOOT.arc/2);g.closePath()}g.fill()};
   g.globalCompositeOperation='source-over';g.fillStyle='rgba('+col+',1)';disc(0);g.globalCompositeOperation='destination-out';disc(-FIRE.edge);
   g.globalCompositeOperation='source-over';g.fillStyle='rgba('+col+','+FIRE.fill+')';disc(-FIRE.edge);
-  ctx.save();ctx.globalAlpha=.75;drawInView(c);ctx.restore()}
+  rangeBlit(c)}
 // One formation envelope, anchored by the median inferred slot anchor. The hull sweeps both frontage ends through
 // the firing arc. Minimum member range is an indicative range, not guaranteed coverage from every soldier's position.
 const medianValue=a=>{a.sort((x,y)=>x-y);return a[Math.floor(a.length/2)]||0};
@@ -284,10 +292,10 @@ function drawFormationReach(id,col){
     else{const pts=convexHull(shape.points.map(p=>({x:shape.ax+(p.x-shape.ax)*(Math.max(0,shape.range+inset)/shape.range),y:shape.ay+(p.y-shape.ay)*(Math.max(0,shape.range+inset)/shape.range)})));
       if(pts.length){g.moveTo(pts[0].x,pts[0].y);for(let i=1;i<pts.length;i++)g.lineTo(pts[i].x,pts[i].y);g.closePath()}}
     g.fill()};
-  g.clearRect(0,0,BW,BH);g.globalCompositeOperation='source-over';g.fillStyle='rgba('+col+',1)';fill(0);
+  rangeClear(g);g.globalCompositeOperation='source-over';g.fillStyle='rgba('+col+',1)';fill(0);
   g.globalCompositeOperation='destination-out';g.fillStyle='rgba(0,0,0,1)';fill(-FIRE.edge);
   g.globalCompositeOperation='source-over';g.fillStyle='rgba('+col+','+FIRE.fill+')';fill(-FIRE.edge);
-  ctx.save();ctx.globalAlpha=.75;drawInView(c);ctx.restore();
+  rangeBlit(c);
 }
 // the trees a straight line from a to b passes through
 const treesOn=(a,b)=>B.obs.filter(o=>{if(o.kind!=='tree')return false;const dx=b.x-a.x,dy=b.y-a.y,L=dx*dx+dy*dy||1,k=clamp(((o.x-a.x)*dx+(o.y-6-a.y)*dy)/L,0,1);return Math.hypot(a.x+dx*k-o.x,a.y+dy*k-(o.y-6))<o.r+2}).length;

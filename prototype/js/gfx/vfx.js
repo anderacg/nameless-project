@@ -53,12 +53,30 @@ function vfxDeath(t,corpse){
    weapon dropped by him, and bleeds a pool that spreads for GORE.pool seconds; then he is painted into the field's own layer
    (B.gore), once, and costs nothing more to show. Blood that lands leaves a splash in that layer too. BLOOD off (ui.js): no
    blood, and the layer is painted again without it. The undead and the made (skeletons, golems) do not bleed. ---------- */
-const GORE={fall:.3,pool:2.5,col:['#4a0c0c','#68140f','#7e1c14']};
+// (tile: the blood layer's tiles, px)
+const GORE={fall:.3,pool:2.5,col:['#4a0c0c','#68140f','#7e1c14'],tile:256};
 const undead=u=>!!(u&&(u.type==='slime'||u.s&&(u.s.undead||u.s.race==='undead')||/skel|ghoul|wraith|golem|zomb/.test(u.type||'')));
-function goreLayer(){if(!B.gore){B.gore=mkc(BW,BH,()=>{});B.goreOn=BLOOD.on}return B.gore}
+/* the blood layer (B.gore, R16): by tiles of GORE.tile px, each made only where blood falls or one of the fallen is painted in, and
+   kept for the battle (blood is never painted twice; the ground's tiles come and go apart from it). each(x0,y0,x1,y1,f): f(g) for
+   every tile the box touches, g in field px; drawView: those in view; getContext('2d'): read as one picture (getImageData), cleared
+   (clearRect) */
+class GoreLayer{
+  constructor(W,H){this.width=W;this.height=H;this.n=GORE.tile;this.cols=Math.ceil(W/this.n);this.tiles=new Map()}
+  each(x0,y0,x1,y1,f){const n=this.n;for(let ty=Math.max(0,Math.floor(y0/n));ty<=Math.min(Math.ceil(this.height/n)-1,Math.floor(y1/n));ty++)for(let tx=Math.max(0,Math.floor(x0/n));tx<=Math.min(this.cols-1,Math.floor(x1/n));tx++){
+    const k=ty*this.cols+tx;let t=this.tiles.get(k);if(!t)this.tiles.set(k,t=mkc(Math.min(n,this.width-tx*n),Math.min(n,this.height-ty*n),()=>{}));const g=t.getContext('2d');g.setTransform(1,0,0,1,-tx*n,-ty*n);f(g)}}
+  clear(){this.tiles.clear()}
+  drawView(g,x0,y0,x1,y1){const n=this.n;x0=Math.max(0,Math.floor(x0)-2);y0=Math.max(0,Math.floor(y0)-2);x1=Math.min(this.width,Math.ceil(x1)+2);y1=Math.min(this.height,Math.ceil(y1)+2);
+    for(const [k,t] of this.tiles){const X=(k%this.cols)*n,Y=Math.floor(k/this.cols)*n,sx=Math.max(x0,X),sy=Math.max(y0,Y),sw=Math.min(x1,X+t.width)-sx,sh=Math.min(y1,Y+t.height)-sy;if(sw>0&&sh>0)g.drawImage(t,sx-X,sy-Y,sw,sh,sx,sy,sw,sh)}}
+  bytes(){let b=0;for(const t of this.tiles.values())b+=t.width*t.height*4;return b}
+  getContext(){const L=this;return{clearRect(){L.clear()},getImageData(x,y,w,h){const out=new ImageData(w,h),n=L.n;
+    for(const [k,t] of L.tiles){const X=(k%L.cols)*n,Y=Math.floor(k/L.cols)*n,sx=Math.max(x,X),sy=Math.max(y,Y),sw=Math.min(x+w,X+t.width)-sx,sh=Math.min(y+h,Y+t.height)-sy;if(sw<=0||sh<=0)continue;
+      const d=t.getContext('2d').getImageData(sx-X,sy-Y,sw,sh).data;for(let r=0;r<sh;r++)out.data.set(d.subarray(r*sw*4,(r+1)*sw*4),((sy-y+r)*w+sx-x)*4)}return out}}}
+}
+function goreLayer(){if(!B.gore){B.gore=new GoreLayer(BW,BH);B.goreOn=BLOOD.on}return B.gore}
 // a splash where a drop lands: two or three pixels, dark, a little see-through, so many of them darken the ground as a fight goes on
-function splat(x,y){if(!B||!BLOOD.on)return;const g=goreLayer().getContext('2d'),X=Math.round(x),Y=Math.round(y);g.fillStyle=GORE.col[Math.random()*3|0];g.globalAlpha=.55;
-  g.fillRect(X,Y,1,1);if(Math.random()<.7)g.fillRect(X+(Math.random()<.5?-1:1),Y,1,1);if(Math.random()<.4)g.fillRect(X,Y+(Math.random()<.5?-1:1),1,1);g.globalAlpha=1}
+function splat(x,y){if(!B||!BLOOD.on)return;const X=Math.round(x),Y=Math.round(y),col=GORE.col[Math.random()*3|0],p=[[X,Y]];
+  if(Math.random()<.7)p.push([X+(Math.random()<.5?-1:1),Y]);if(Math.random()<.4)p.push([X,Y+(Math.random()<.5?-1:1)]);
+  goreLayer().each(X-1,Y-1,X+1,Y+1,g=>{g.fillStyle=col;g.globalAlpha=.55;for(const [a,b] of p)g.fillRect(a,b,1,1);g.globalAlpha=1})}
 // a pool r pixels across (flattened: the ground seen at a slant), ragged at its edge; a few shapes, made once each
 const POOLS={};
 function poolSprite(r,seed){const key=r+'_'+seed;if(POOLS[key])return POOLS[key];const ry=Math.max(1,r*.5),h=seed*2.4+1,H=Math.ceil(ry);
@@ -78,14 +96,15 @@ function drawBody(g,c,q,k){const S=c.sp,X=Math.round(c.x),Y=Math.round(c.y);
     if(S.wk&&q>=1){const w=weaponSprite(S.wk,S.team,c.skin,c.wi);g.drawImage(w,Math.round(c.wx)-w.R,Math.round(c.wy)-w.R)}
     if(q<1){g.translate(0,1);g.rotate(q*q*Math.PI/2);g.drawImage(S.stand,-12,-18)}else g.drawImage(S.body,-S.ax,1-S.ay)}
   g.restore()}
-// all of them: the settled painted into the layer once (and the layer drawn), those still falling or bleeding drawn as they are
+// all of them: the settled painted into the layer once (into each of its tiles the body reaches), and the layer drawn; those still
+// falling or bleeding drawn as they are
 function drawCorpses(){
-  if(!B.corpses)return;const L=goreLayer(),lg=L.getContext('2d');
-  if(B.goreOn!==BLOOD.on){B.goreOn=BLOOD.on;lg.clearRect(0,0,BW,BH);for(const c of B.corpses)if(c.baked)drawBody(lg,c,1,1)}// (blood switched: painted again)
+  if(!B.corpses)return;const L=goreLayer(),bake=c=>{const X=Math.round(c.x),Y=Math.round(c.y),S=c.sp,r=Math.max(48,S&&S.beast?Math.max(S.beast.width,S.beast.height)+12:0);L.each(X-r,Y-r,X+r,Y+r,g=>drawBody(g,c,1,1))};
+  if(B.goreOn!==BLOOD.on){B.goreOn=BLOOD.on;L.clear();for(const c of B.corpses)if(c.baked)bake(c)}// (blood switched: painted again)
   const live=[];
   for(const c of B.corpses){if(c.baked||!c.sp)continue;const t=B.t-(c.td||0),q=Math.min(1,t/GORE.fall),k=Math.min(1,Math.max(0,(t-GORE.fall)/GORE.pool));
-    if(k>=1||q>=1&&(!BLOOD.on||c.dry)){drawBody(lg,c,1,1);c.baked=true}else live.push([c,q,k])}
-  drawInView(L);for(const [c,q,k] of live)drawBody(ctx,c,q,k)}
+    if(k>=1||q>=1&&(!BLOOD.on||c.dry)){bake(c);c.baked=true}else live.push([c,q,k])}
+  drawLayer(L);for(const [c,q,k] of live)drawBody(ctx,c,q,k)}
 /* ---------- C: movement. Feet kick up dust as they run (riders and big beasts a cloud), the colour of the ground; arrows stay
    where they strike, in the ground or in a man (in his shield, with splinters, when it takes them from the front) ---------- */
 const dustCol=()=>({desert:'214,190,140',frost:'232,238,244',swamp:'118,118,92'}[B&&B.env&&B.env.c]||'170,152,112');

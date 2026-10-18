@@ -163,7 +163,7 @@ function drawSlash(s){
 const PROPFADE={a:.4,rate:4,cell:8};
 let PF=null,PFT=0;
 /* the woods zoomed out (a level of detail): a field of more than LOD.trees standing trees, seen at a zoom under LOD.z, has its trees
-   drawn as one canopy layer (engine/ground.js PX.battleCanopy, painted once and kept) under the soldiers, not thousands of sprites
+   drawn as one canopy layer (engine/ground.js PX.battleCanopy, painted once and kept, at half resolution) under the soldiers, not thousands of sprites
    sorted in with them; cliff faces and mountains stay sorted. Across LOD.z the two cross-fade over 1/LOD.rate s (real time). Only
    art: who is seen, hidden or drawn is as ever. TREE_A: the sprites' share this frame (1 - the layer's) */
 const LOD={on:true,z:.9,trees:2000,rate:5};
@@ -192,24 +192,28 @@ function battleEnts(){
   let ents;if(B.terrain&&B.ground){ents=B.obs.filter(inV);propsInView(ents,vx-16,vy-16,vx+BVW/z+16,vy+BVH/z+40);for(const u of B.units)if(u.hp>0&&inV(u)&&seenBy(0,u))ents.push(u)}
   else ents=[...B.obs.filter(inV),...B.units.filter(u=>u.hp>0&&inV(u)&&seenBy(0,u))];
   return ents.sort((a,b)=>a.y-b.y)}
-// (a field-sized layer (the ground, the blood, the shooters' reach), only the part in view: the same pixels as drawing it whole)
+// (a canvas the field's size, only the part in view: the same pixels as drawing it whole)
 function drawInView(img){const c=B.cam,z=c?c.z:1,vx=c?c.x:0,vy=c?c.y:0,W=img.width,H=img.height,x0=clamp(Math.floor(vx)-2,0,W),y0=clamp(Math.floor(vy)-2,0,H),x1=clamp(Math.ceil(vx+BVW/z)+2,0,W),y1=clamp(Math.ceil(vy+BVH/z)+2,0,H);
   if(x1>x0&&y1>y0)ctx.drawImage(img,x0,y0,x1-x0,y1-y0,x0,y0,x1-x0,y1-y0)}
+// (a field layer, the part in view: kept by tiles or at half resolution (R16: the ground, the arena, the canopy, the blood:
+// drawView), or a canvas the field's size)
+function drawLayer(L){if(!L)return;if(!L.drawView){drawInView(L);return}const c=B.cam,z=c?c.z:1,vx=c?c.x:0,vy=c?c.y:0;L.drawView(ctx,vx,vy,vx+BVW/z,vy+BVH/z,z)}
 function drawBattle(){
   warmStep();// (sprites made ahead before they are needed: sprites.js)
   // the camera (camera.js): the field drawn at its zoom and pan, the HUD over it at the screen's scale
   if(B.cam)camTick();const Cz=B.cam?B.cam.z:1;
   // (deploying, the battle's clock stands: who sees whom is reckoned on the real one as your men are placed, terrain.js)
   if(sightOn()&&B.deploy){const n=performance.now(),S=B.sight;if(!S||!(n-(S.rt||0)<250)){sightStep(true);B.sight.rt=n}}ctx.fillStyle='#07090e';ctx.fillRect(0,0,BVW,BVH);ctx.save();if(B.cam){ctx.scale(Cz,Cz);ctx.translate(-Math.round(B.cam.x*Cz)/Cz,-Math.round(B.cam.y*Cz)/Cz)}
-  // (a field with terrain: its own ground, painted once over the arena: engine/ground.js; units, as ever, over it)
-  drawInView(B.terrain?B.ground||(B.ground=PX.battleGround({...B.terrain,climate:B.env.c,base:B.arena})):B.arena);
+  // (a field with terrain: its own ground, painted over the arena at the start and kept by tiles (engine/ground.js PX.BattleGround);
+  // without, the arena by its own tiles (worldart.js paintArena); units, as ever, over it)
+  drawLayer(B.terrain?B.ground||(B.ground=runGen(PX.battleGroundSteps({...B.terrain,climate:B.env.c,base:B.arena}))):B.arena.ground||B.arena);
   // (a river moves: glints and current over its water, engine/ground.js PX.battleWater, on the ground's own clock (real time, still
   // while paused); still water for those who ask for less motion (vfx.js reducedMotion))
   if(B.terrain&&B.ground.water){const gw=B.ground,now=performance.now();if(!B.paused&&gw.wl)gw.wt=(gw.wt||0)+Math.min(.1,(now-gw.wl)/1000);gw.wl=now;
     if(!reducedMotion()){const c=B.cam,z=c?c.z:1,vx=c?c.x:0,vy=c?c.y:0;PX.battleWater(ctx,gw,gw.wt||0,[vx,vy,vx+BVW/z,vy+BVH/z])}}{const t=fieldTop()-FIELD_EDGE.body+6,b=fieldBot()+4;ctx.fillStyle='rgba(8,10,16,.35)';if(t>0)ctx.fillRect(0,0,BW,t);if(b<BH)ctx.fillRect(0,b,BW,BH-b);ctx.fillStyle='rgba(232,224,200,.18)';if(t>0)ctx.fillRect(0,t,BW,1);if(b<BH)ctx.fillRect(0,b,BW,1)}// (the field's edges in sight: battle.js fieldTop)
   if(!B.deploy)drawExit();drawDeploy();// (the withdrawal edge: morale.js; the deployment zone: deploy.js)
   drawCorpses();vfxGround();// (the fallen and their blood; dust, shockwaves: vfx.js)
-  {const l=B.terrain&&B.ground?lodStep():0;TREE_A=1-l;if(l>0){if(l<1)ctx.globalAlpha=l;drawInView(PX.battleCanopy(B.ground));ctx.globalAlpha=1}}// (a big wood zoomed out: its canopy layer, LOD)
+  {const l=B.terrain&&B.ground?lodStep():0;TREE_A=1-l;if(l>0){if(l<1)ctx.globalAlpha=l;drawLayer(PX.battleCanopy(B.ground));ctx.globalAlpha=1}}// (a big wood zoomed out: its canopy layer, LOD)
   for(const g of playerGroups()){const gr=B.groups[g];if((gr.order!=='hold'&&gr.order!=='advance')||!grpUnits(g).length)continue;
     const fx_=Math.round(gr.ax),fy=Math.round(gr.ay);rect(ctx,C.wood,fx_,fy-14,1,14);rect(ctx,C.team[0],fx_+1,fy-14,6,4);rect(ctx,'#e4e0cf',fx_+3,fy-13,2,2)}
   // your selection underlined; the box you drag; where you last sent them (a ring), or whom you set them on (red)

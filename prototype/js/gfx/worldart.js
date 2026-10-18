@@ -192,20 +192,41 @@ const WorldArt={
 onWorld(()=>WorldArt.invalidate());
 // the whole map painted afresh (a new plan: the tests)
 function paintWorld(){WorldArt.invalidate();return WorldArt.whole()}
-/* battle grounds: the same ground, with the battlefield's small things by climate (as a terrain's: engine/ground.js). steps: the
-   same as a generator, yielding every band of rows (PX.GROUND_BAND px) and before its small things (R15: setup.js paints a
-   battle's in slices) */
-function paintArena(c,steps){const it=(function*(){
-  const cv=document.createElement('canvas');cv.width=BW;cv.height=BH;const g=cv.getContext('2d'),img=g.createImageData(BW,BH),D=img.data,P3=GROUND_RGB[c],seed=CLIMS.indexOf(c)*7+1,band=Math.max(1,Math.floor(PX.GROUND_BAND/BW));
-  for(let y=0;y<BH;y++){if(y&&!(y%band))yield;for(let x=0;x<BW;x++){const L=(fbm(x/70,y/70,seed)-.5)*2,b4=hs(x>>2,y>>2,seed);let v=.5+.4*L+.2*(b4-.5);v=Math.max(0,Math.min(1,v));
-    let col=v<.5?mixc(P3[0],P3[1],v*2):mixc(P3[1],P3[2],(v-.5)*2);const ph=hs(x,y,seed+9);if(ph<.03)col=mixc(col,P3[2],.6);else if(ph>.97)col=mixc(col,P3[0],.7);
-    const o=(y*BW+x)*4;D[o]=col[0];D[o+1]=col[1];D[o+2]=col[2];D[o+3]=255}}
-  g.putImageData(img,0,0);yield;
-  PX.battleDetails(g,BW,BH,c,seed);// (tufts, flowers, pebbles, bushes; drifts; stones; moss, reeds and pools: engine/ground.js)
-  const top=c==='frost'?['#b8c4d2','#9aa6b4']:c==='desert'?['#b8944c','#9a7a3a']:c==='swamp'?['#3a4a2a','#2a3a20']:['#3a5c2c','#2a4a22'];
-  g.fillStyle=top[0];g.fillRect(0,0,BW,14);g.fillStyle=top[1];for(let x=0;x<BW;x+=3)g.fillRect(x,13+(hs(x,0,4)>.5?1:0),2,1);
-  return cv;
-  })();if(steps)return it;let n;while(!(n=it.next()).done);return n.value}
+/* battle grounds: the same ground, with the battlefield's small things by climate (as a terrain's: engine/ground.js). No canvas of
+   its own (R16): the arena paints any rect of the field (paintRect: its noise a pixel at a time, then the small things that reach
+   into it, then the top band: the same pixels as the whole there), the base under a terrain's ground (engine/ground.js paints it a
+   window at a time) and, with no terrain, drawn by its own tiles (ground: a PX.BattleGround). {c, width, height (the field's),
+   paintRect(g, x, y, w, h): that rect onto g at its origin; paintSteps(g, x, y, w, h, px): the same as a generator, a band of rows
+   (about px pixels) a step; ground}.
+   steps: a generator returning it (sprites.js arenaSteps) */
+// (map.js fbm(x/70, y/70, s): the same numbers, a row at a time: row(y), then at(x) along it, each octave's row part reckoned once
+// and its lattice's hashes kept while the row stays in the same lattice cell)
+const arenaFbm=s=>{let Y1=0,yi0=0,yi1=0,yi2=0,v0=0,v1=0,v2=0,xi0=NaN,xi1=NaN,xi2=NaN,a0,b0,c0,d0,a1,b1,c1,d1,a2,b2,c2,d2;
+  const row=y=>{Y1=y/70;let ys=Y1,f;yi0=Math.floor(ys);f=ys-yi0;v0=f*f*(3-2*f);ys=Y1*2;yi1=Math.floor(ys);f=ys-yi1;v1=f*f*(3-2*f);ys=Y1*4;yi2=Math.floor(ys);f=ys-yi2;v2=f*f*(3-2*f);xi0=xi1=xi2=NaN};
+  const at=x=>{const X1=x/70;let xs=X1,xi=Math.floor(xs),f=xs-xi,u=f*f*(3-2*f);
+    if(xi!==xi0){xi0=xi;a0=hash(xi,yi0,s);b0=hash(xi+1,yi0,s);c0=hash(xi,yi0+1,s);d0=hash(xi+1,yi0+1,s)}const n0=a0+(b0-a0)*u+(c0-a0)*v0+(a0-b0-c0+d0)*u*v0;
+    xs=X1*2;xi=Math.floor(xs);f=xs-xi;u=f*f*(3-2*f);if(xi!==xi1){xi1=xi;a1=hash(xi,yi1,s+1);b1=hash(xi+1,yi1,s+1);c1=hash(xi,yi1+1,s+1);d1=hash(xi+1,yi1+1,s+1)}const n1=a1+(b1-a1)*u+(c1-a1)*v1+(a1-b1-c1+d1)*u*v1;
+    xs=X1*4;xi=Math.floor(xs);f=xs-xi;u=f*f*(3-2*f);if(xi!==xi2){xi2=xi;a2=hash(xi,yi2,s+2);b2=hash(xi+1,yi2,s+2);c2=hash(xi,yi2+1,s+2);d2=hash(xi+1,yi2+1,s+2)}const n2=a2+(b2-a2)*u+(c2-a2)*v2+(a2-b2-c2+d2)*u*v2;
+    return n0*.6+n1*.3+n2*.1};
+  return{row,at}};
+function paintArena(c,steps){const W=BW,H=BH,P3=GROUND_RGB[c],seed=CLIMS.indexOf(c)*7+1,top=c==='frost'?['#b8c4d2','#9aa6b4']:c==='desert'?['#b8944c','#9a7a3a']:c==='swamp'?['#3a4a2a','#2a3a20']:['#3a5c2c','#2a4a22'];
+  const A={c,width:W,height:H,
+    paintRect(g,X,Y,w,h){const it=A.paintSteps(g,X,Y,w,h);while(!it.next().done);},
+    // (k 2: at half resolution, a pixel of each 2×2 and the small things drawn halved: the overview of a field of more tiles than its
+    // ground keeps)
+    *paintSteps(g,X,Y,w,h,bpx,k=1){const ow=Math.ceil(w/k),img=g.createImageData(ow,Math.ceil(h/k)),D=img.data,F=arenaFbm(seed),band=Math.max(1,Math.floor((bpx||PX.GROUND_BAND)/w))*k;
+      // (mixc written out: the same sums, no array a pixel)
+      const [p0,p1,p2]=P3;let b4=0;for(let y=Y;y<Y+h;y+=k){if(y>Y&&!((y-Y)%band))yield;F.row(y);for(let x=X;x<X+w;x+=k){const L=(F.at(x)-.5)*2;if(x===X||!(x&3))b4=hs(x>>2,y>>2,seed);let v=.5+.4*L+.2*(b4-.5);v=Math.max(0,Math.min(1,v));
+        const lo=v<.5,a=lo?p0:p1,b=lo?p1:p2,t=lo?v*2:(v-.5)*2;let r=a[0]+(b[0]-a[0])*t,gg=a[1]+(b[1]-a[1])*t,bb=a[2]+(b[2]-a[2])*t;const ph=hs(x,y,seed+9);
+        if(ph<.03){r=r+(p2[0]-r)*.6;gg=gg+(p2[1]-gg)*.6;bb=bb+(p2[2]-bb)*.6}else if(ph>.97){r=r+(p0[0]-r)*.7;gg=gg+(p0[1]-gg)*.7;bb=bb+(p0[2]-bb)*.7}
+        const o=((y-Y)/k*ow+(x-X)/k)*4;D[o]=r;D[o+1]=gg;D[o+2]=bb;D[o+3]=255}}
+      g.putImageData(img,0,0);g.save();if(k>1){g.imageSmoothingEnabled=true;g.scale(1/k,1/k)}g.translate(-X,-Y);
+      PX.battleDetails(g,W,H,c,seed,[X,Y,X+w,Y+h]);// (tufts, flowers, pebbles, bushes; drifts; stones; moss, reeds and pools: engine/ground.js)
+      if(Y<15){g.fillStyle=top[0];g.fillRect(0,0,W,14);g.fillStyle=top[1];for(let x=Math.max(0,Math.floor((X-2)/3)*3);x<Math.min(W,X+w);x+=3)g.fillRect(x,13+(hs(x,0,4)>.5?1:0),2,1)}
+      g.restore()},
+    get ground(){return this._g||(this._g=new PX.BattleGround(W,H,function*(x,y,w,h,out){A.paintRect(out.getContext('2d'),x,y,w,h);return out},
+      ()=>PX.canvas(Math.ceil(W/2),Math.ceil(H/2),g=>{const it=A.paintSteps(g,0,0,W,H,0,2);while(!it.next().done);})))}};
+  return steps?(function*(){return A})():A}
 
 /* what moves on the map: water glints, cloud shadows drifting by day, smoke over holdings, snow in the frost, fireflies at night */
 // a cloud's shadow at full size, pixel by pixel (hard edges, never scaled)
