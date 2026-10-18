@@ -13,12 +13,14 @@
 <p>Every building type, by people, across seeds. <label>Zoom <input id="z" type="number" value="3" min="1" max="8" style="width:48px"></label> <label>Seeds <input id="n" type="number" value="8" min="1" max="20" style="width:48px"></label> <label>Only <input id="only" placeholder="type or people" style="width:140px"></label></p>
 <div id="out"></div>
 <script src="pixel.js"></script>
+<script src="buildkit.js"></script>
 <script src="buildings.js"></script>
 <script src="pieces.js"></script>
 <script src="ground.js"></script>
 <script src="ground-fixture.js"></script>
 <script src="worldnature.js"></script>
 <script src="beasts.js"></script>
+<script src="model.js"></script>
 <script>
 // which types each people builds (the same list the game's settlements use)
 const PEOPLE={human:['cottage','townhouse','fisherhut','chapel','stall','tower','longhouse','tavern','smithy','church','barn','granary','windmill','watermill','warehouse','gatehouse','keep','citadel'],
@@ -33,6 +35,7 @@ function render(){
   if(q0.get('view')==='depth')return renderDepth();
   if(q0.get('view')==='bench')return renderBench();
   if(q0.get('view')==='nature')return renderNature();
+  if(q0.get('view')==='model')try{return renderModel()}catch(e){document.getElementById('out').textContent=e.stack;return}
   if(new URLSearchParams(location.search).get('view')==='castles'){const out=document.getElementById('out');out.innerHTML='';for(const type of ['keep','citadel','village','longhouse','stonehall','elfhall','hidehall'])for(const style of ['human','dwarf','elf','orc']){if(['stonehall','elfhall','hidehall','longhouse'].includes(type)&&style!==({longhouse:'human',stonehall:'dwarf',elfhall:'elf',hidehall:'orc'})[type])continue;const row=document.createElement('div');row.className='row';row.innerHTML='<span class="lab">'+style+' · '+type+'</span>';for(let s=1;s<=6;s++){const hall=!['keep','citadel'].includes(type),b=PX.building({type,style,seed:s*37+type.length,view:'top',fort:hall?(s>3?1:0):[0,1,2,3,1,2][s-1],banner:'#c84040'}),Z=+(q0.get('z')||3),c=document.createElement('canvas'),M=4,w=b.w+2*M;c.width=w*Z;c.height=w*Z;const g=c.getContext('2d');g.imageSmoothingEnabled=false;g.scale(Z,Z);g.fillStyle='#5a8a3a';g.fillRect(0,0,w,w);g.fillStyle='rgba(0,0,0,.18)';for(let k=0;k<=b.tiles[0];k++){g.fillRect(M+k*16,0,1,w);g.fillRect(0,M+k*16,w,1)}g.fillStyle='rgba(255,230,120,.5)';g.fillRect(M+b.w/2,M+b.h,1,M);g.fillRect(M+b.w/2-1,M+b.h,1,M);g.drawImage(b.img,M,M);if(b.flag){const fx=M+b.flag[0],fy=M+b.flag[1],fc=['#c84040','#4a72b0','#3a8a4a','#d8a030'][s%4];g.fillStyle='#4a3020';g.fillRect(fx,fy-9,1,9);g.fillStyle=fc;g.fillRect(fx+1,fy-9,4,3)}row.appendChild(c)}out.appendChild(row)}return}
   const q=new URLSearchParams(location.search),Z=+(document.getElementById('z').value||q.get('z')||3),N=+(document.getElementById('n').value||q.get('n')||8),only=(document.getElementById('only').value||q.get('only')||'').trim();
   const out=document.getElementById('out');out.innerHTML='';
@@ -161,6 +164,35 @@ function renderBeasts(){
     const poses=[0,1,2,3,4,5,15,16,17,18,6,7,8].concat(k==='dragon'?[9,10,11]:[]);for(const p of poses)show(row,PX.beast(k,{pose:p,v:+(q.get('v')||0),team:1}),'pose '+p);
     show(row,PX.beast(k,{pose:PX.BEAST_DEAD,team:1}),'dead');for(const v of [1,2])show(row,PX.beast(k,{v,team:1}),'variant '+v);show(row,PX.beast(k,{team:0}),'your side');
     for(const f of [0,1])show(row,PX.beastMap(k,f),'map '+f)}catch(e){row.insertAdjacentHTML('beforeend','<span class="lab" style="width:auto;color:#f88">'+e.message+' '+(e.stack||'').split(String.fromCharCode(10))[1]+'</span>')}out.appendChild(row)}
+}
+// ?view=model: the buildings made as 3D models (model.js), each sample in its 4 facings (yaw 0, 2, 4, 6) on the grass, its cell's
+// tiles marked, a stand-in person of the map's size (6 x 10) beside it, and today's nearest building (buildings.js) first; then each
+// people's roofs, and a strip of 45° turns, for why they are not used (&z= zoom, &only=, &seed=, &marks=1 windows and door)
+function renderModel(){
+  const q=new URLSearchParams(location.search),Z=+(q.get('z')||4),out=document.getElementById('out'),only=q.get('only'),sd=+(q.get('seed')||1);out.innerHTML='';
+  document.querySelector('h1').textContent='PX model buildings';document.querySelector('p').textContent='Each sample in its 4 facings (front, left side, back, right side: yaw 0, 2, 4, 6), today’s nearest building first, a stand-in person for scale; then the peoples’ roofs, and why not 45°.';
+  const OLD={cottage:{type:'cottage'},house:{type:'townhouse'},frost:{type:'cottage',snow:true,env:'frost'},desert:{type:'cottage',env:'desert'},farmhouse:{type:'longhouse'},inn:{type:'tavern'},chapel:{type:'church'}};
+  const man=PX.canvas(6,10,g=>{g.fillStyle='#1a1c26';g.fillRect(1,0,4,10);g.fillRect(0,3,6,5);g.fillStyle='#e0b090';g.fillRect(2,1,2,2);g.fillStyle='#3d74d6';g.fillRect(1,3,4,4);g.fillStyle='#5a4a3a';g.fillRect(2,7,1,2);g.fillRect(3,7,1,2)});
+  const cell=(row,b,lab,sh)=>{const M=4,n=b.w,w=n+2*M+10,h=n+2*M,c=document.createElement('canvas');c.width=w*Z;c.height=h*Z;c.title=lab;const g=c.getContext('2d');g.imageSmoothingEnabled=false;g.scale(Z,Z);
+    g.fillStyle='#6e9a48';g.fillRect(0,0,w,h);g.fillStyle='rgba(0,0,0,.12)';for(let k=0;k<=n/16;k++){g.fillRect(M+k*16,0,1,h);g.fillRect(0,M+k*16,w,1)}
+    // (the layers in the game's order: the flat ground, the shadow (a mask, shaded once), then what stands)
+    if(b.ground)g.drawImage(b.ground,M,M);if(b.shadow){g.globalAlpha=b.shade||1;g.drawImage(b.shadow,M,M);g.globalAlpha=1}g.drawImage(b.img,M,M);g.drawImage(man,M+n+2,M+n-10);
+    if(sh&&b.windows)for(const [x,y] of b.windows){g.fillStyle='rgba(255,220,120,.7)';g.fillRect(M+x,M+y,1,1)}
+    if(sh&&b.door){g.fillStyle=b.door.seen?'#ff4040':'#4040ff';g.fillRect(M+b.door.x,M+b.door.y,1,1)}row.appendChild(c)};
+  const lab=t=>Object.assign(document.createElement('span'),{className:'lab',textContent:t});
+  const line=(t,list)=>{const row=document.createElement('div');row.className='row';row.appendChild(lab(t));for(const [b,l,sh] of list)cell(row,b,l,sh);out.appendChild(row)};
+  for(const name of PX.MODEL_SAMPLES){if(only&&!only.split(',').includes(name))continue;const row=document.createElement('div');row.className='row';row.appendChild(lab(name));
+    if(OLD[name])cell(row,PX.building(Object.assign({style:'human',seed:sd,facing:'right'},OLD[name])),'today');else row.appendChild(lab('(new)'));
+    for(const yaw of PX.MODEL_YAWS){const b=PX.model(PX.modelSample(name,{yaw,seed:sd}));cell(row,b,name+' yaw '+yaw+' ('+b.ms.toFixed(1)+' ms, scale '+[b.scale.u,b.scale.v,b.scale.z,b.scale.o].join('/')+')',q.get('marks'))}
+    out.appendChild(row)}
+  if(!only){// each people's roofs on the same buildings, at yaw 0
+    out.insertAdjacentHTML('beforeend','<p>The peoples’ roofs (yaw 0): humans tile and, in the country, thatch; dwarves slate; elves leaf; orcs hide.</p>');
+    for(const pp of PX.MODEL_PEOPLES)line(pp,['cottage','house','inn','row_a','row_b','row_c','yard_a'].map(n=>[PX.model(PX.modelSample(n,{yaw:0,seed:sd,people:pp})),pp+' '+n]));
+    // why not 45°: the renderer can turn a building on the diagonal, but on this straight camera it reads as an isometric diamond
+    out.insertAdjacentHTML('beforeend','<p>Why not 45°: the renderer can turn by 45° (yaw 1, 3), but on our straight top-down map a diagonal house reads as an isometric diamond, a box tipped over. Not used.</p>');
+    line('45°',['cottage','house','inn','row_a'].flatMap(n=>[1,3].map(yaw=>[PX.model(PX.modelSample(n,{yaw,seed:sd})),n+' yaw '+yaw])))}
+  const t0=performance.now();let k=0;for(let r=0;r<4;r++)for(const name of PX.MODEL_SAMPLES)for(const yaw of PX.MODEL_YAWS){PX.model(PX.modelSample(name,{yaw,seed:sd+r}));k++}
+  const ms=(performance.now()-t0)/k;out.insertAdjacentHTML('beforeend','<p id="bench">'+k+' models: '+ms.toFixed(2)+' ms each</p>');
 }
 function renderProps(){
   const q=new URLSearchParams(location.search),Z=+(q.get('z')||3),out=document.getElementById('out');out.innerHTML='';

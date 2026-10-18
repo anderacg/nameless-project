@@ -27,6 +27,9 @@ try{
   for(const f of gen){const s=get(f).replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm,'');if(!s.trim())bad.push(f+' is empty');
    for(const m of s.matchAll(/Math\.(?:random|hypot|sin|cos|exp|pow|log\w*|atan2)\b|(?<![\w$.])(?:rnd|rint|pick)\s*\(/g))bad.push(f.split('/').pop()+': '+m[0])}
   ok(!bad.length,'the generator ('+gen.map(f=>f.split('/').pop()).join(', ')+') never calls Math.random, rnd, rint or pick, nor Math.hypot, sin, cos, exp, pow, log or atan2'+(bad.length?': '+bad.join('; '):''))}
+ // the engine (engine/README.md "Loading"): the same scripts in the same order in both, its kit before the buildings, the models last
+ {const eng=[...document.querySelectorAll('script[src^="../engine/"]')].map(s=>s.getAttribute('src').replace('../engine/','')),ew=[...get('wiki.html').matchAll(/<script src="\.\.\/engine\/([^"]+)"/g)].map(m=>m[1]);
+  ok(eng.join()===ew.join()&&eng.indexOf('pixel.js')===0&&eng.indexOf('buildkit.js')===1&&eng.indexOf('buildings.js')===2&&eng[eng.length-1]==='model.js','the engine loads in its order, the same in the wiki: '+eng.join(', '))}
  // ---- extracted battle responsibilities keep a single owner; these are plain scripts, not isolated modules
  const battleOwners={
   'battle':['updateBattle'],

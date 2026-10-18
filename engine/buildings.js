@@ -11,41 +11,8 @@
 // Variety comes from structure, not just colour: footprint, roof form (side gable, front gable, hip, shed, cone, battlements),
 // storeys, wall and roof materials, and add-ons (chimney, dormer, sign, porch, barrels, woodpile, bell, sails, wheel...).
 (function(PX){
-  const T=16,M=PX.MAT;
-  const tone=(mat,i)=>M[mat][Math.max(0,Math.min(M[mat].length-1,i))];
-  // how lit each kind of surface is (0 lit .. 2 shade). A building facing left is drawn as if facing right and flipped,
-  // so its shading is chosen for where each surface ends up: the side wall then faces the sun, the front a little less.
-  const LIGHT={right:{front:0,side:1,slopeF:0,slopeL:0,slopeR:2,flip:false},left:{front:1,side:0,slopeF:0,slopeL:2,slopeR:0,flip:true}};
+  const T=16,K=PX.kit,{tone,LIGHT,tex,face,tri,bounds,door,win,slit,chimney,barrel,crate,woodpile}=K;// (the shared kit: buildkit.js)
   let LT=LIGHT.right;
-  // natural rock (no masonry): grey, desert sandstone, dark swamp rock, frost rock
-  if(!M.rock)Object.assign(M,{rock:['#a8a49a','#8a867c','#6c6962','#4c4a44'],sandrock:['#d8b07a','#bf9262','#9a7048','#6a4a2e'],darkrock:['#7e7e6c','#626254','#4a4a40','#34342c'],frostrock:['#b8c0cc','#98a0ac','#78808c','#575d68']});
-  if(!M.autumn)M.autumn=['#e8b84a','#d08e34','#aa6a28','#7a4a20'];if(!M.evergreen)M.evergreen=['#4f8a52','#3a7044','#2c5836','#1f4228'];
-
-  /* texture: what colour a material shows at (a, b) on a face, a along it, b up it; lit 0 (lit) .. 2 (shade) */
-  function tex(mat,a,b,lit,seed,o){
-    const h=PX.hash(a,b,seed),L=lit|0;
-    switch(mat){
-      case 'thatch':{const row=Math.floor(b/2);const streak=PX.hash(a,row,seed)<.35?1:0;return tone(mat,L+streak+(b%2===0&&PX.hash(a>>1,row,seed+1)<.3?1:0))}
-      case 'terracotta':{const row=Math.floor(b/2),off=row%2,edge=(a+off)%3===0;return tone(mat,L+(b%2===0?1:0)+(edge?1:0))}
-      case 'shingle':case 'slate':{const row=Math.floor(b/2),off=(row%2)*2,edge=(a+off)%4===0;return tone(mat,L+(b%2===0?1:0)+(edge?1:0)+(h<.08?1:0))}
-      case 'turf':case 'leaf':return tone(mat,L+(h<.3?1:0)+(h>.92?-1:0));
-      case 'hide':{const seam=(a%7===0)||(b%5===0);return tone(mat,L+(seam?1:0)+(h<.15?1:0))}
-      case 'stone':case 'darkstone':case 'sandstone':{const row=Math.floor(b/3),off=(row%2)*2,mortar=b%3===2||(a+off)%5===4;return mortar?tone(mat,L+2):tone(mat,L+(PX.hash((a+off)/5|0,row,seed)<.3?1:0))}
-      case 'log':return tone(mat,L+(b%2===1?1:0)+(h<.1?1:0));
-      case 'rock':case 'sandrock':case 'darkrock':case 'frostrock':{const c=PX.hash(a>>1,b>>1,seed),k=PX.hash(a>>2,(b+1)>>2,seed+1);return tone(mat,L+(c<.18?1:0)+(k>.86?1:0)-(c>.94&&L>0?1:0))}
-      case 'plank':return tone(mat,L+((a%3)===2?1:0)+(h<.1?1:0));
-      case 'daub':case 'whitewash':return tone(mat,L+(h<.07?1:0));
-      default:return tone(mat,L);
-    }
-  }
-  // fill the quad O, O+E, O+E+U, O+U with a material; (a, b) measured in pixels along E and U
-  function face(P,O,E,U,mat,lit,seed,o){
-    const el=Math.hypot(E[0],E[1])||1,ul=Math.hypot(U[0],U[1])||1,det=E[0]*U[1]-E[1]*U[0];
-    P.poly([O,[O[0]+E[0],O[1]+E[1]],[O[0]+E[0]+U[0],O[1]+E[1]+U[1]],[O[0]+U[0],O[1]+U[1]]],(x,y)=>{
-      const dx=x+.5-O[0],dy=y+.5-O[1],a=(dx*U[1]-dy*U[0])/det,b=(E[0]*dy-E[1]*dx)/det;
-      return (o&&o.col)?o.col(a*el,b*ul):tex(mat,Math.floor(a*el),Math.floor(b*ul),lit,seed,o)});
-  }
-  function tri(P,A,B,C,mat,lit,seed){P.poly([A,B,C],(x,y)=>tex(mat,x,y,lit,seed))}
 
   /* the box: front wall, right side wall, optional timber frame */
   function box(P,b){
@@ -136,14 +103,6 @@
       for(let i=x0;i<x1;i++){const u=(i-x0)/Math.max(1,x1-x0),k=LT.flip?1-u:u,lit=k<.38?0:k<.78?1:2;let c=tex(mat,i,j,Math.min(2,lit+(j>=H-2?1:0)),seed);
         if(snow&&j<H*.4-PX.hash(i,1,seed)*2.5)c=lit>1?'#c8d4e2':lit?'#e4ecf4':'#f8fbfd';P.px(c,i,y-H+j)}}
   }
-  /* openings and add-ons */
-  const door=(P,x,y,w,h,mat,arch)=>{mat=mat||'plank';P.rect(tone('timber',3),x-1,y-h-1,w+2,h+1);P.rect(tone(mat,1),x,y-h,w,h);P.rect(tone(mat,0),x,y-h,1,h);if(w>2)P.rect(tone(mat,2),x+(w>>1),y-h+1,1,h-1);if(arch){P.px(tone('timber',3),x,y-h);P.px(tone('timber',3),x+w-1,y-h)}P.px('#d8b048',x+w-1,y-(h>>1)-1)};
-  const win=(P,x,y,lit,shut)=>{P.rect(tone('timber',3),x-1,y-1,4,4);P.rect(lit?'#e8b860':'#2a3040',x,y,2,2);P.px(lit?'#ffe0a0':'#4a5468',x,y);if(shut){P.rect(tone('plank',1),x-2,y,1,2);P.rect(tone('plank',1),x+2,y,1,2)}};
-  const slit=(P,x,y)=>{P.rect('#1e1a18',x,y,1,3)};
-  const chimney=(P,x,y,h,smoke)=>{P.rect(tone('stone',1),x,y-h,3,h);P.rect(tone('stone',0),x,y-h,1,h);P.rect(tone('stone',3),x,y-h,3,1);if(smoke){P.rect('rgba(220,220,220,.0)',0,0,0,0)}};
-  const barrel=(P,x,y)=>{P.rect(tone('plank',1),x,y-4,3,4);P.rect(tone('plank',0),x,y-4,1,4);P.rect(tone('iron',2),x,y-3,3,1);P.rect(tone('iron',2),x,y-1,3,1)};
-  const crate=(P,x,y)=>{P.rect(tone('plank',1),x,y-3,4,3);P.rect(tone('plank',0),x,y-3,4,1);P.line(tone('plank',2),x,y-1,x+3,y-3)};
-  const woodpile=(P,x,y)=>{for(let i=0;i<3;i++){P.rect(tone('log',1),x,y-2-i*2,5-i,2);P.px(tone('log',0),x+4-i,y-2-i*2)}};
   // flags are not drawn into buildings: the game shows its own (animated) flag sprite. A building only notes where its flag
   // pole stands (the pole's foot), and PX.building returns it as `flag` in the cell's own pixels
   let FLAG=null;const banner=(P,x,y,c)=>{FLAG=[Math.round(x),Math.round(y)]};
@@ -269,10 +228,7 @@
     LT=LIGHT.right;
     const cw=m.x1-m.x0+1,ch=m.y1-m.y0+1,cx=top?GW/2+1-N/2:m.x0-Math.floor((fit-cw)/2),cy=m.y1-fit+1;
     const clipped=(top?(m.x0<cx||m.x1>cx+fit-1):cw>fit)||ch>fit||m.x0<=0||m.x1>=GW-1||m.y0<=0||m.y1>=GH-1;
-    const out=PX.outline(PX.canvas(fit,fit,g=>g.drawImage(img,-cx,-cy)));
-    // the ground shadow: down and to the right of the building's foot, kept inside the cell
-    const od=out.getContext('2d').getImageData(0,0,N,N).data;let s0=N,s1=-1;for(let yy=N-5;yy<N-1;yy++)for(let i=0;i<N;i++)if(od[(yy*N+i)*4+3]){s0=Math.min(s0,i);s1=Math.max(s1,i)}
-    const sd=Math.max(2,Math.round(depth())),shadow=PX.canvas(N,N,g=>{if(s1>=s0)PX.paint(g).poly([[s0+2,N+1],[s1+2,N+1],[s1+4,N-1],[s1+4,N-1-sd],[s1+1,N-2-sd],[s0+4,N-1]],'rgba(20,24,12,.28)')});
+    const out=K.crop(img,cx,cy,fit),shadow=K.cellShadow(out,N,depth());// (the ground shadow: down and to the right of its foot)
     return{img:out,shadow,w:N,h:N,ax:0,ay:N,cell:N,tiles:b.tiles,type:spec.type,facing:top?'front':flip?'left':'right',view:top?'top':'angled',deep:!!b.deepEnd,clipped,gateX:top?N/2:null,
       flag:FLAG&&b.banner?[(flip?GW-1-FLAG[0]:FLAG[0])-cx+1,FLAG[1]-cy+1]:null};
   }
@@ -307,9 +263,6 @@
       flag:hall.flag?[hall.flag[0],hall.flag[1]-lift]:null};
   }
 
-  // the box around everything drawn on a canvas
-  function bounds(c){const w=c.width,h=c.height,a=c.getContext('2d').getImageData(0,0,w,h).data;let x0=w,y0=h,x1=-1,y1=-1;
-    for(let j=0;j<h;j++)for(let i=0;i<w;i++)if(a[(j*w+i)*4+3]){if(i<x0)x0=i;if(i>x1)x1=i;if(j<y0)y0=j;if(j>y1)y1=j}return x1<0?{x0:0,x1:0,y0:0,y1:0}:{x0,x1,y0,y1}}
   // one step smaller: leave off what stands beside it first, then pull in canopies, jibs and sails, then the depth, then the width
   const DROP=['add','side','load','annex','cart','stump','sign','second','porch','bones','wing','blocks','spoil','pile'];
   function shrink(b){
