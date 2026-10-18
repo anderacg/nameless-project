@@ -94,8 +94,8 @@ function drawWorld(){
   // the order: the ground (the chunks: their trees, woods and ranges painted in), what lies flat (fields, yards, borders), the
   // shadows of what is built (one pass), the buildings, moored boats, camps and sites (in their own order, by their feet), then everyone who moves by their feet, each with
   // what stands in front of him drawn again over him (depth.js worldOverdraw; whoever flies, after them all); then the clouds,
-  // smoke and weather, the fog, the night and its lights, and over it all the banners and every label, the quest marks, your
-  // goal and the minimap
+  // smoke and weather, the fog, the night and its lights, the way you walk, and over it all the banners and every label, the
+  // quest marks, your goal and the pointer's brackets (worldui.js), and the minimap
   TXTQ=[];TXTQ.ctx=scr;TXTQ.lo=ctx;LIGHTQ=[];BANNERQ=[];WDEPTH.pics.length=0;const bents=[];estateEnts(bents,cam,V);for(const e of ents.filter(e=>e.st))bents.push(e);
   drawShadows(bents);bents.sort((a,b)=>a.y-b.y).forEach(e=>e.f());// (their shadows first, in one pass: structures.js)
   nPlace=TXTQ.length}finally{ctx=scr;if(hi){VW--;VH--}}
@@ -121,10 +121,11 @@ function drawWorld(){
   // torchlight: a warm glow over the dark, and the flame itself, flickering
   {const now=performance.now();for(const L of LIGHTQ){if(!inSight(L.x+cam.x,L.y+cam.y))continue;const r=L.r*(1+.06*Math.sin(now/90+L.x)),g=ctx.createRadialGradient(L.x,L.y,1,L.x,L.y,r);g.addColorStop(0,'rgba(255,190,90,'+(.12+.28*a).toFixed(3)+')');g.addColorStop(1,'rgba(255,150,60,0)');
     ctx.save();ctx.globalCompositeOperation='lighter';ctx.fillStyle=g;ctx.fillRect(L.x-r,L.y-r,2*r,2*r);ctx.restore();const f=Math.floor(now/120+L.x)%2;rect(ctx,'#e8803a',L.x-1+f,L.y-2,2,2);rect(ctx,'#ffe090',L.x,L.y-1-f,1,1)}}
+  wuiUnder(cam);// (the way you walk, your goal's ring, a click's ripple, the ring round what you chase: worldui.js)
   drawBanners(cam);// (the parties' banners, over all, their labels queued with the rest)
   const q=TXTQ;TXTQ=null;q.forEach((a,i)=>{const wx=a[1]+cam.x,wy=a[2]+cam.y;if(i<nPlace?seenAt(wx,wy+6):inSight(wx,wy+8))txt(...a)});
   drawQuestMarks(cam);
-  if(P.tx!=null){const sx=Math.round(P.tx-cam.x),sy=Math.round(P.ty-cam.y);ctx.strokeStyle='#e8b94a';ctx.lineWidth=1;ctx.strokeRect(sx-3.5,sy-3.5,7,7)}
+  wuiOver(cam);// (your goal's arrow, the arrow over what you chase, the brackets round what the pointer is on: worldui.js)
   ctx.restore();
   // minimap (the land from the tile data, a pixel per k tiles: worldart.js WorldArt.mini)
   const MS=112/MW,mk=Math.max(1,Math.round(MW/256)),mw=Math.round(MW*MS),mh=Math.round(MH*MS),mx=VW-mw-6,my=6,dot=(x,y,col,s)=>rect(ctx,col,mx+Math.floor(x/TILE*MS)-(s>>1),my+Math.floor(y/TILE*MS)-(s>>1),s,s);

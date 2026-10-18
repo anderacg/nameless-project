@@ -20,6 +20,11 @@ window.RUN=()=>{const o=[],t=T,G=t.G,P=t.P,W=t.W;
   for(const [vn,w,h,s] of views){set(w,h,s);o.push('== '+vn+' (canvas '+t.cv.width+'x'+t.cv.height+')');
    for(const [sn,x,y,busy] of [['Ashford',tw.x+40,tw.y+30,false],['busy forest',forest[0],forest[1],true]]){P.x=x;P.y=y;P.tx=null;t.reveal();const L=busy?crowd():[];
     run(sn+', still',80,()=>t.frame());
-    run(sn+', walking',120,i=>{const d=i%240<120?1:-1;t.walk(P,d,0,.15);for(const l of L)t.walk(l,-d,0,.15);t.frame()});P.x=x;P.y=y}}
+    run(sn+', walking',120,i=>{const d=i%240<120?1:-1;t.walk(P,d,0,.15);for(const l of L)t.walk(l,-d,0,.15);t.frame()});P.x=x;P.y=y;
+    // (walking to a goal you clicked, the pointer over the map: the world's UI, gfx/worldui.js, if any: its marker, trail, brackets)
+    G.mouse.x=t.VW/2+40;G.mouse.y=t.VH/2-24;G.mouse.in=true;G.mouse.type='mouse';
+    const ui=(0,eval)('typeof wuiUnder')==='function',acc={ms:0,n:0};if(ui){window.__wpa=acc;window.__wp=[t.wuiUnder,t.wuiOver];(0,eval)('wuiUnder=c=>{const a=performance.now();window.__wp[0](c);window.__wpa.ms+=performance.now()-a;window.__wpa.n++};wuiOver=c=>{const a=performance.now();window.__wp[1](c);window.__wpa.ms+=performance.now()-a}')}
+    try{run(sn+', to a goal, hovering',120,i=>{if(i%60===0){P.x=x;P.y=y;P.tx=x+200;P.ty=y+70}t.walk(P,P.tx-P.x,P.ty-P.y,.15);for(const l of L)t.walk(l,i%120<60?1:-1,0,.15);t.frame()})}
+    finally{if(ui){(0,eval)('wuiUnder=window.__wp[0];wuiOver=window.__wp[1]');o.push('  (of which the world UI, gfx/worldui.js: '+(acc.ms/Math.max(1,acc.n)).toFixed(3)+' ms a frame)')}}P.x=x;P.y=y;P.tx=null;G.mouse.in=false}}
  }catch(e){o.push('EXC '+e.message+' '+e.stack)}
  const d=document.createElement('pre');d.id='OUT';d.textContent=o.join('\n');document.body.appendChild(d)};

@@ -117,7 +117,7 @@ cv.addEventListener('pointermove',e=>{if(G.mode!=='battle'||!B)return;const p=to
 // the box or the finger's press gone, nothing sent, the selection kept; letting go after it does nothing. True if there was one
 function dragCancel(){if(G.mode!=='battle'||!B||!(B.rdrag||B.box||TOUCH.lp))return false;touchDrop();B.rdrag=null;B.box=null;return true}
 // the map: travel to a point, or meet what is there
-function worldGo(wx,wy){if(clickAt(wx,wy)||G.chase)return;P.tx=clamp(wx,8,MW*TILE-8);P.ty=clamp(wy,8,MH*TILE-8);P.stuck=0}
+function worldGo(wx,wy){if(!(clickAt(wx,wy)||G.chase)){P.tx=clamp(wx,8,MW*TILE-8);P.ty=clamp(wy,8,MH*TILE-8);P.stuck=0}wuiClick(wx,wy)}// (the click's ripple: worldui.js)
 /* ---------- touch (a phone on its side): Pointer Events with pointerType 'touch' only; the mouse, pen and keys above are as they were.
    Battle: a tap selects and a tap again sends, as before (now when the finger lifts); a long press (TOUCH.hold ms, the finger
    within TOUCH.slop CSS px) sends the selection there, or onto the enemy under it; a long press then a drag lays the line, as a
