@@ -847,8 +847,9 @@ function crossWay(u,x,y){
 // every: a soldier's own way taken again this often (s, staggered by his id); min: no sooner than this when only its goal's cell
 // moved; reach: a waypoint this near is passed; r: the half-width (px) a soldier's straight way keeps clear (a charge's too: no
 // momentum builds while it is not clear); clear: a straight way reckoned again this often (s), or when he or its end changes
-// cell; half: a group's way keeps the lesser of half its front and this clear (px); n: the ways laid so far (their ids)
-const ROUTE_UNIT={every:.5,min:.25,reach:10,r:3,clear:.5,half:24,n:0};
+// cell; half: a group's way keeps the lesser of half its front and this clear (px); n: the ways laid so far (their ids); lead,
+// wait: an advancing group's place on its way round goes on only while its men are within lead px of it, or it has waited wait s
+const ROUTE_UNIT={every:.5,min:.25,reach:10,r:3,clear:.5,half:24,n:0,lead:40,wait:3};
 /* the field's grids (T.route: foot, mounted, big; route.js routeGridOf), deep water impassable unless TERRAIN.wade (T.wade, read
    now), the cell rows wholly off the field (above top, below bot) closed; T.solid: the cells no one steps into (rock, impassable
    water); T.step: those and the cliffs as a grid of their own, for each soldier's step (terrainHold); T.blocky: any of them on the
@@ -864,11 +865,15 @@ function terrainRoutes(T,top,bot){
 function stepOk(T,ax,ay,bx,by){const cs=T.cs,i=tIx(T,ax,ay);return i===tIx(T,bx,by)||T.solid[i]===1||routeWalk(T.step,ax,ay,bx,by,255)}
 /* no step into a cell no one may enter, nor over a cliff its blocked way (battle.js updateBattle: once a frame after all movement,
    knocks, jostling and the field's clamp): each soldier's move since the frame began (was: where each stood) is refused, or slid
-   along (his x move alone, else his y move alone), if it would */
+   along (his x move alone, else his y move alone), if it would. Down a one-way cliff only by his own step (ownStep: where his own
+   feet took him this frame, over it), running, withdrawing, or your hero under your hands: one jostled over a one-way top's edge is not let fall, to walk
+   all the way round to its ramp again */
+const ownStep=u=>{if(B.terrain&&B.terrain.blocky){u.oX=u.x;u.oY=u.y;u.oT=B.t}};
+const holdOk=(T,u,ax,ay,x,y)=>stepOk(T,ax,ay,x,y)&&(T.solid[tIx(T,ax,ay)]===1||stepOk(T,x,y,ax,ay)||u.rout||withdrawing(u)||u.hero&&MANUAL_HERO||u.oT===B.t&&!stepOk(T,u.oX,u.oY,ax,ay));
 function terrainHold(was){
   const T=B&&B.terrain;if(!T||!T.blocky)return;
-  for(const u of B.units){if(u.hp<=0)continue;const p=was.get(u);if(!p)continue;const ax=p[0],ay=p[1],bx=u.x,by=u.y;if(ax===bx&&ay===by||stepOk(T,ax,ay,bx,by))continue;
-    if(stepOk(T,ax,ay,bx,ay))u.y=ay;else if(stepOk(T,ax,ay,ax,by))u.x=ax;else{u.x=ax;u.y=ay}}}
+  for(const u of B.units){if(u.hp<=0)continue;const p=was.get(u);if(!p)continue;const ax=p[0],ay=p[1],bx=u.x,by=u.y;if(ax===bx&&ay===by||holdOk(T,u,ax,ay,bx,by))continue;
+    if(holdOk(T,u,ax,ay,bx,ay))u.y=ay;else if(holdOk(T,u,ax,ay,ax,by))u.x=ax;else{u.x=ax;u.y=ay}}}
 // (a soldier's grid: big, mounted or foot; s: his stats)
 const routeWho=s=>s.big?'big':s.mounted?'mounted':'foot';
 // (is the straight way from u to (x,y) clear on grid g, ROUTE_UNIT.r either side: reckoned again when he or it changes cell, the
@@ -892,26 +897,39 @@ function steerTo(u,x,y,g,k=0){
 const STEER=[0,0];
 function steerDir(u,x,y){const T=B.terrain;if(!T||!T.blocky)return null;const w=steerTo(u,x,y,T.route[routeWho(u.s)]);if(!w)return null;
   const qx=w[0]-u.x,qy=w[1]-u.y,l=Math.hypot(qx,qy);if(!(l>1e-9))return null;STEER[0]=qx/l;STEER[1]=qy/l;return STEER}
+// (is u's straight way to t barred, on ground that blocks: a foe over a cliff's edge is not one a man keeping his place steps out to)
+const wayBarred=(u,t)=>{const T=B.terrain;return !!T&&!!T.blocky&&!lineClear(T.route[routeWho(u.s)],u.x,u.y,t.x,t.y,255,ROUTE_UNIT.r)};
 /* a group's way to its place (g.ax, g.ay) over ground that blocks (battlecontrol.js step, while it holds or advances): from its
    men's middle on the grid of its slowest kind (a big one's, else riders' when most ride), its legs keeping the lesser of half its
    front and ROUTE_UNIT.half clear; laid again for a new place (another cell), a new move order (mvId), a new grid version, or a
    cut way's end reached (dropped while it charges or withdraws).
    g.way: {p (waypoints, route.js), id, gc, v, who, ok (its place reached), cut, end (where it ends: its place, or the reachable
    point nearest)} */
+const groupWho=m=>m.some(u=>u.s.big)?'big':m.filter(u=>u.s.mounted).length*2>m.length?'mounted':'foot';
 function groupWay(g,m){
-  const T=B.terrain,who=m.some(u=>u.s.big)?'big':m.filter(u=>u.s.mounted).length*2>m.length?'mounted':'foot',gr=T.route[who],gc=routeIx(gr,g.ax,g.ay),W=g.way;
+  const T=B.terrain,who=groupWho(m),gr=T.route[who],gc=routeIx(gr,g.ax,g.ay),W=g.way;
   let cx=0,cy=0;for(const u of m){cx+=u.x;cy+=u.y}cx/=m.length;cy/=m.length;
   if(W&&W.gc===gc&&W.v===gr.v&&W.who===who&&W.mv===g.mvId&&!(W.cut&&Math.hypot(W.end[0]-cx,W.end[1]-cy)<ROUTE_UNIT.reach*3))return W;
   const sh=grpShape(g.id),half=sh?Math.min(ROUTE_UNIT.half,sh.files*(FORMS[g.form]||FORMS.line).gx/2):ROUTE_UNIT.r,p=routePath(gr,cx,cy,g.ax,g.ay,{r:half});
   return g.way={p,id:++ROUTE_UNIT.n,gc,v:gr.v,who,mv:g.mvId,ok:p.ok,cut:p.cut,end:p.length?p[p.length-1]:[g.ax,g.ay]}}
+/* an advancing group's place walking on at (x,y) (battlecontrol.js step) while the straight way there is not clear: along the way
+   round from the place (a unit vector, WAYON reused; [0,0] waiting), going on only while its men are within ROUTE_UNIT.lead px of
+   it, or after ROUTE_UNIT.wait s (g.awT): so they come up to a ramp's foot together and go up it as one, not strung out after a
+   place gone on ahead; null: straight on, as on open ground */
+const WAYON=[0,0];
+function wayOn(g,m,x,y,dt){
+  const gr=B.terrain.route[groupWho(m)];if(lineClear(gr,g.ax,g.ay,x,y,255,ROUTE_UNIT.r)){g.awT=0;return null}WAYON[0]=WAYON[1]=0;
+  let cx=0,cy=0;for(const u of m){cx+=u.x-(u.sx||0);cy+=u.y-(u.sy||0)}
+  if(Math.hypot(cx/m.length-g.ax,cy/m.length-g.ay)<=ROUTE_UNIT.lead)g.awT=0;else if((g.awT=(g.awT||0)+dt)<ROUTE_UNIT.wait)return WAYON;
+  for(const q of routePath(gr,g.ax,g.ay,x,y)){const qx=q[0]-g.ax,qy=q[1]-g.ay,l=Math.hypot(qx,qy);if(l>1){WAYON[0]=qx/l;WAYON[1]=qy/l;break}}return WAYON}
 /* the point a soldier keeping his place in his group makes for (actors.js aiUnit; null: no way laid): his place (sx,sy), pulled in
-   toward where the group's way ends while rock, water or a cliff lies between the two (u.sf: kept while his place and the way are
-   the same); straight there while that way is clear (the array's at: true); else along his group's way (his own index on it, u.gw),
-   or (pushed off it) his own way to its point he makes for */
+   toward where the group's way ends while rock, water or a cliff lies between the two, either way (a one-way cliff dropped down
+   is no way back: u.sf, kept while his place and the way are the same); straight there while that way is clear (the array's at:
+   true); else along his group's way (his own index on it, u.gw), or (pushed off it) his own way to its point he makes for */
 function slotWay(u,g,sx,sy){
   const T=B.terrain,gr=T.route[routeWho(u.s)],W=g.way;if(!W)return null;let f=u.sf;
   if(!f||f[0]!==W.id||f[1]!==sx||f[2]!==sy){const A=W.ok?[g.ax,g.ay]:W.end,ox=sx-g.ax,oy=sy-g.ay;let q=A;
-    for(const k of [1,.66,.33]){const x=A[0]+ox*k,y=A[1]+oy*k;if(gr.cost[routeIx(gr,x,y)]&&lineClear(gr,A[0],A[1],x,y)){q=[x,y];break}}f=u.sf=[W.id,sx,sy,q[0],q[1]]}
+    for(const k of [1,.8,.6,.4,.2]){const x=A[0]+ox*k,y=A[1]+oy*k;if(gr.cost[routeIx(gr,x,y)]&&lineClear(gr,A[0],A[1],x,y)&&lineClear(gr,x,y,A[0],A[1])){q=[x,y];break}}f=u.sf=[W.id,sx,sy,q[0],q[1]]}
   if(clearTo(u,gr,f[3],f[4],0)){const o=[f[3],f[4]];o.at=true;return o}
   if(u.gwId!==W.id){u.gwId=W.id;u.gw=0;u.gwT=0}const q=wayNext(u,gr,W.p,u,'gw');if(!q){const o=[f[3],f[4]];o.at=true;return o}
   return clearTo(u,gr,q[0],q[1],1)?q:steerTo(u,q[0],q[1],gr,1)||q}

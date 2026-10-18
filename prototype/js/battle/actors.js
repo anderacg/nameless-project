@@ -139,7 +139,7 @@ function aiUnit(u,dt,strike){
     if(reloc){const px=wx-u.x,py=wy-u.y,pd=Math.hypot(px,py);if(u.relocFor!==g.mvId){u.relocFor=g.mvId;u.relocT=0}u.relocT+=dt;
       if((pd>RELOCATE.near||via)&&u.relocT<RELOCATE.max){mv=true;mx=px/pd;my=py/pd}else{u.mvId=g.mvId;u.relocT=0;u.inSlot=true}}
     else if(t&&!s.range&&de<=reach){}
-    else if(t&&!s.range&&engage&&Math.hypot(t.x-sx,t.y-sy)<engage&&!holdsBank(u,t)){mv=true;mx=dx/d;my=dy/d;chase=true;round(t.x,t.y)}// (not down off a bank into the water after him: terrain.js)
+    else if(t&&!s.range&&engage&&Math.hypot(t.x-sx,t.y-sy)<engage&&!holdsBank(u,t)&&!wayBarred(u,t)){mv=true;mx=dx/d;my=dy/d;chase=true;round(t.x,t.y)}// (not down off a bank into the water after him, nor round a cliff: terrain.js)
     else if(s.range&&t&&de<=reach&&!onTheMove(s)&&!g.backing&&!(g.cease&&!gt)){}// (a foe in reach: they keep their ground and shoot, not step to their exact place: attacking first)
     else{const px=wx-u.x,py=wy-u.y,pd=Math.hypot(px,py);const going=g.going;// (its place on the move: battlecontrol.js step)
       if(pd>(u.slotted&&!going?7:2)||via&&pd>.5){mv=true;mx=px/pd;my=py/pd;u.slotted=false}else{u.inSlot=true;u.slotted=true}}// (in its slot: it faces the formation's way, and stays till pushed clearly out)
@@ -158,7 +158,7 @@ function aiUnit(u,dt,strike){
     if(u.sideT>0){u.sideT-=dt;const px=-my*u.side,py=mx*u.side;mx=mx*.3+px;my=my*.3+py;const l=Math.hypot(mx,my)||1;mx/=l;my/=l}}else{u.stk=0;u.sx0=u.x;u.sy0=u.y}
   if(mv&&!wk&&seenBy(0,u))footDust(u,dt);// (running: dust from their feet, vfx.js; none where your side cannot see him: terrain.js)
   // (the ground: woods, marsh, slopes slow him or speed him, and build his charge slower or faster: terrain.js)
-  if(mv){const sp=spd*dt*(u.slow>0?.5:1)*(u.buffT>0?1.25:1)*groundMul(u,mx,my);u.x+=mx*sp;u.y+=my*sp;u.spdNow=spd;
+  if(mv){const sp=spd*dt*(u.slow>0?.5:1)*(u.buffT>0?1.25:1)*groundMul(u,mx,my);u.x+=mx*sp;u.y+=my*sp;u.spdNow=spd;ownStep(u);// (his own step: down a one-way cliff only so, terrain.js terrainHold)
     // (he faces where he goes, backing off too (no walking backwards): he turns to his foe again when he stops to shoot)
     if(Math.abs(mx)>.35)u.face=mx>0?1:-1;u.dir=Math.atan2(my,mx);u.run=chase&&!back&&!wk&&!routed?(u.run||0)+sp*tm.run*groundRun(u,mx,my,sp):spurred?u.run:0}
   else{if(t){if(Math.abs(dx)>3&&!(s.range&&!roundFire(u)))u.face=dx>=0?1:-1;if(!u.inSlot)u.dir=Math.atan2(dy,dx)}if(!spurred)u.run=Math.max(0,(u.run||0)-CHARGE.run*dt)}
@@ -190,9 +190,11 @@ const LOST={near:10};
 function lostStep(u,g,s,lk,dt){
   u.tgt=null;u.near=null;u.shot=null;u.inSlot=false;u.skirm=false;
   const x=clamp(lk.x+(u.sx||0),8,BW-8),y=clamp(lk.y+(u.sy||0),fieldTop(),fieldBot()),px=x-u.x,py=y-u.y,pd=Math.hypot(px,py);
-  if(pd<=LOST.near){u.spdNow=0;g.hold();return}
+  // (there, or (his place in rock, or past a cliff no way leads over) at the end of his way toward it: terrain.js steerTo)
+  const W=u.wy,e=W&&!W.p.ok&&W.p.length&&W.gc===routeIx(W.g,x,y)?W.p[W.p.length-1]:null;
+  if(pd<=LOST.near||e&&Math.hypot(e[0]-u.x,e[1]-u.y)<=LOST.near){u.spdNow=0;g.hold();return}
   const w=steerDir(u,x,y),mx=w?w[0]:px/pd,my=w?w[1]:py/pd,tm=tiredMul(u),wk=walking(g)||staOf(u)<FATIGUE.runMin,spd=(wk?Math.min(s.spd,g.pace||s.spd)*MARCH.walk:s.spd)*tm.spd*formPace(u)*abilitySpeed(u);
-  const sp=spd*dt*(u.slow>0?.5:1)*(u.buffT>0?1.25:1)*groundMul(u,mx,my);u.x+=mx*sp;u.y+=my*sp;u.spdNow=spd;if(Math.abs(mx)>.35)u.face=mx>0?1:-1;u.dir=Math.atan2(my,mx);u.run=0;
+  const sp=spd*dt*(u.slow>0?.5:1)*(u.buffT>0?1.25:1)*groundMul(u,mx,my);u.x+=mx*sp;u.y+=my*sp;u.spdNow=spd;ownStep(u);if(Math.abs(mx)>.35)u.face=mx>0?1:-1;u.dir=Math.atan2(my,mx);u.run=0;
   fatigueStep(u,dt,true,wk,false,false)}
 /* a move order (the ground right-clicked, a line dragged, the next waypoint): the group relocates. Each of its men breaks off
    the fight he is in and goes to his new place, striking no one on the way (and taking blows in the back if he turns from a

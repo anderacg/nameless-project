@@ -113,9 +113,12 @@ class BattleControl{
       const W=this.way,short=!!W&&!W.ok&&m.every(u=>u.mvId===this.mvId);
       if(Math.hypot(cx-this.ax,cy-this.ay)<MARCH.reached||short){const w=this.queue.shift();this.ax=w.x;this.ay=w.y;moveOrder(this.id)}}
     const foes=B.units.filter(e=>e.team!==this.team&&e.hp>0&&!e.rout&&(!B.fog||seenBy(this.team,e))),C=this.centre(),near=foes.length?foes.reduce((a,e)=>Math.hypot(e.x-this.ax,e.y-this.ay)<Math.hypot(a.x-this.ax,a.y-this.ay)?e:a):null;
-    // an advance: its place walks on at the nearest foe till it is close (shooters stop further off)
+    // an advance: its place walks on at the nearest foe till it is close (shooters stop further off); on ground that blocks, round
+    // by the way while the straight one is not clear (a cliff's ramp, a ford: terrain.js wayOn), never to stop below a cliff
     if(this.order==='advance'&&near){const dx=near.x-this.ax,dy=near.y-this.ay,d=Math.hypot(dx,dy)||1,stop=m.some(u=>u.s.range)?(m.some(u=>u.s.magic)?60:85):FOE_CMD.clash*.6;
-      if(d>stop){this.ax=clamp(this.ax+dx/d*FOE_CMD.advance*dt,8,BW-8);this.ay=clamp(this.ay+dy/d*FOE_CMD.advance*.5*dt,fieldTop(),fieldBot())}}
+      const w=B.terrain&&B.terrain.blocky?wayOn(this,m,near.x,near.y,dt):null;
+      if(w){this.ax=clamp(this.ax+w[0]*FOE_CMD.advance*dt,8,BW-8);this.ay=clamp(this.ay+w[1]*FOE_CMD.advance*dt,fieldTop(),fieldBot())}
+      else if(d>stop){this.ax=clamp(this.ax+dx/d*FOE_CMD.advance*dt,8,BW-8);this.ay=clamp(this.ay+dy/d*FOE_CMD.advance*.5*dt,fieldTop(),fieldBot())}}
     const sh=m.filter(u=>u.s.range&&!u.empty);
     // skirmish: a foe who fights hand to hand inside its shooters' keeping distance (SKIRM.keep of their range, at most
     // SKIRM.max), the whole group backs away from him, in its ranks, facing him, at a run, till he is SKIRM.until of it off;

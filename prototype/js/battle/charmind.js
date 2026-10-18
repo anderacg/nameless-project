@@ -44,7 +44,7 @@ function charThink(u,dt){
   else{S.spT+=dt;if(u.s.mpRegen)S.mp=Math.min(S.mpMax,S.mp+CHAMP.mana*u.s.mpRegen*dt);S.win=Math.max(0,S.win-dt);for(const k in S.cds)S.cds[k]=Math.max(0,S.cds[k]-dt);
     S.shoveCd=Math.max(0,S.shoveCd-dt);S.rollCd=Math.max(0,S.rollCd-dt);S.inv=Math.max(0,S.inv-dt);
     if(S.leap)return leapStep(u,S,dt);if(S.dash)return dashStep(u,S,dt);// (a leap or a dash under way: battle/abilities.js)
-    if(S.roll>0){S.roll-=dt;u.x=clamp(u.x+S.rx*170*dt,8,BW-8);u.y=clamp(u.y+S.ry*170*dt,fieldTop(),fieldBot());u.face=S.rx>=0?1:-1;u.spdNow=170;return true}}
+    if(S.roll>0){S.roll-=dt;u.x=clamp(u.x+S.rx*170*dt,8,BW-8);u.y=clamp(u.y+S.ry*170*dt,fieldTop(),fieldBot());ownStep(u);u.face=S.rx>=0?1:-1;u.spdNow=170;return true}}
   if(withdrawing(u)||u.stun>0)return false;// (withdrawing: no skills, just away: morale.js)
   // (a skill or a move just used on his commander's call or your Auto skills: commandCharacters)
   if(u.castNow){u.castNow=false;return true}
@@ -128,7 +128,7 @@ function fallStep(u,S,dt){
   if(u.stun>0){u.stun-=dt;u.spdNow=0;return}
   const F=S.fallBack,reach=(u.s.reach||12)+2,block=drawsBow(u)?null:liveFoes(u).find(e=>Math.hypot(e.x-u.x,e.y-u.y)-(e.s.big?12:0)<=reach+1);
   const d=Math.hypot(F.x-u.x,F.y-u.y),w=d>4&&B.terrain?steerDir(u,F.x,F.y):null,dx=w?w[0]*d:F.x-u.x,dy=w?w[1]*d:F.y-u.y;u.spdNow=0;u.run=0;let moved=false;// (round rock, cliffs and impassable water: terrain.js)
-  if(d>4){const sp=Math.min(d,u.s.spd*tiredMul(u).spd*(u.slow>0?.5:1)*groundMul(u,dx/d,dy/d)*dt);u.x+=dx/d*sp;u.y+=dy/d*sp;u.face=dx>=0?1:-1;u.dir=Math.atan2(dy,dx);u.spdNow=sp/Math.max(dt,1e-6);moved=true}
+  if(d>4){const sp=Math.min(d,u.s.spd*tiredMul(u).spd*(u.slow>0?.5:1)*groundMul(u,dx/d,dy/d)*dt);u.x+=dx/d*sp;u.y+=dy/d*sp;ownStep(u);u.face=dx>=0?1:-1;u.dir=Math.atan2(dy,dx);u.spdNow=sp/Math.max(dt,1e-6);moved=true}
   if(block){u.tgt=block;if(u.cd<=0)charStrike(u,block)}
   fatigueStep(u,dt,moved,false,false,!!block)}
 // the point it would go in at: its group's ordered target (yours: your attack order), else (an AI character) the foe near with the
