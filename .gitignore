@@ -1,4 +1,7 @@
 # reference images and asset packs: kept locally, not in the repository
 doc/references/
 ux-review/
-demos__pycache__/
+# the owner's own experiments, kept out of the repository
+demos/
+# Python bytecode from the audio build scripts
+__pycache__/
