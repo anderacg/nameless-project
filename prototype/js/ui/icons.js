@@ -31,7 +31,29 @@ const ICONS={
   settings:{p:{g:'#9aa3ad',d:'#5a6270'},px:['...g.g...','.ggggggg.','.gg...gg.','ggd...dgg','.g.....g.','ggd...dgg','.gg...gg.','.ggggggg.','...g.g...']},
   book:{p:{r:'#c0504a',w:'#f4efe0',d:'#7a2a24'},px:['.rrrrrrr.','.rwwwwwr.','.rwdddwr.','.rwwwwwr.','.rwdddwr.','.rwwwwwr.','.rrrrrrr.','.ddddddd.','.........']},
   exit:{p:{b:'#8a6a44',d:'#4a3a24',y:'#e8b94a'},px:['.bbbbbb..','.bdddddb.','.bdddddb.','.bdddyd.b','.bdddddb.','.bdddddb.','.bdddddb.','.bbbbbbb.','.........']},
-  resume:{p:{g:'#78c474'},px:['.g.......','.ggg.....','.ggggg...','.ggggggg.','.ggggggg.','.ggggg...','.ggg.....','.g.......','.........']}
+  resume:{p:{g:'#78c474'},px:['.g.......','.ggg.....','.ggggg...','.ggggggg.','.ggggggg.','.ggggg...','.ggg.....','.g.......','.........']},
+  // a holding's places (ui/townui.js) and its buildings, and the people drawer (ui/peopledrawer.js)
+  stall:{p:{r:'#c0504a',w:'#f4efe0',b:'#8a6a44',y:'#e8b94a'},px:['.........','rwrwrwrwr','rwrwrwrwr','.b.....b.','.b.....b.','.byyyyyb.','.bbbbbbb.','.b.....b.','.........']},
+  mug:{p:{b:'#b07a3a',d:'#6a4a2a',w:'#f4efe0'},px:['.........','.wwwww...','.bbbbbdd.','.bdbdb.d.','.bdbdb.d.','.bdbdbdd.','.bbbbb...','.ddddd...','.........']},
+  anvil:{p:{g:'#9aa3ad',d:'#5a6270',w:'#cfd6e0'},px:['.........','.........','wwwwwww..','.gggggggg','...ggg...','...ggg...','..ddddd..','.ddddddd.','.........']},
+  shoe:{p:{s:'#cfd6e0',d:'#5a6270'},px:['.........','.ss...ss.','.sd...ds.','.ss...ss.','.sd...ds.','.ss...ss.','..ss.ss..','...sss...','.........']},
+  shield:{p:{r:'#c0504a',y:'#e8b94a'},px:['.yyyyyyy.','.yrrrrry.','.yrryrry.','.yryyyry.','.yrryrry.','.yrrrrry.','..yrrry..','...yry...','....y....']},
+  crown:{p:{y:'#e8b94a',r:'#c0504a',w:'#fff6c0'},px:['.........','.........','.w..w..w.','.yy.y.yy.','.yyyyyyy.','.yryyyry.','.yyyyyyy.','.........','.........']},
+  scroll:{p:{p:'#e8dcb8',d:'#a89870',r:'#c0504a'},px:['.........','.dpppppd.','..pdddp..','..ppppp..','..pdddp..','..ppppp..','..pddpr..','.dppppprr','.........']},
+  crate:{p:{b:'#a07850',d:'#6a4a30'},px:['.........','.ddddddd.','.dbbbbdd.','.dbbbdbd.','.dbbdbbd.','.dbdbbbd.','.ddbbbbd.','.ddddddd.','.........']},
+  tower:{p:{g:'#9aa3ad',d:'#5a6270'},px:['.g.g.g.g.','.ggggggg.','..ggggg..','..gdggg..','..ggggg..','..gggdg..','..ggggg..','..gg.gg..','.........']},
+  ladder:{p:{b:'#a07850',d:'#6a4a30'},px:['..b...b..','..bdddb..','..b...b..','..bdddb..','..b...b..','..bdddb..','..b...b..','..bdddb..','..b...b..']},
+  house:{p:{r:'#c0504a',w:'#e8dcb8',d:'#6a4a30'},px:['....r....','...rrr...','..rrrrr..','.rrrrrrr.','..wwwww..','..wwwdw..','..wwwdw..','..wwwdw..','.........']},
+  wheat:{p:{y:'#e8b94a',g:'#78a04a'},px:['....y....','..y.y.y..','..yyyyy..','...yyy...','..y.g.y..','....g....','...gg....','....g....','....g....']},
+  sheep:{p:{w:'#f4efe0',d:'#5a5048'},px:['.........','.........','..wwwww..','.wwwwwwdd','.wwwwwwdd','.wwwwwww.','..d...d..','..d...d..','.........']},
+  axe:{p:{s:'#cfd6e0',h:'#8a6a44'},px:['.ss......','sssh.....','ssshh....','.s..h....','.....h...','......h..','.......h.','........h','.........']},
+  pick:{p:{s:'#cfd6e0',h:'#8a6a44'},px:['..sssss..','.s..h..s.','s...h...s','....h....','....h....','....h....','....h....','....h....','.........']},
+  stone:{p:{g:'#9aa3ad',d:'#5a6270',w:'#cfd6e0'},px:['.........','.........','..wwww...','.wggggd..','.wggggdww','.ddddwggd','....wgggd','....ddddd','.........']},
+  anchor:{p:{s:'#9ab8d8'},px:['...sss...','...s.s...','...sss...','.sssssss.','....s....','....s....','s...s...s','.ss.s.ss.','...sss...']},
+  spool:{p:{b:'#a07850',c:'#6fa8e0',d:'#3d5a8a'},px:['.bbbbbbb.','..ccccc..','..cdcdc..','..ccccc..','..cdcdc..','..ccccc..','..cdcdc..','.bbbbbbb.','.........']},
+  barrel:{p:{b:'#b07a3a',d:'#6a4a2a'},px:['..bbbbb..','.ddddddd.','.bbbbbbb.','bbbbbbbbb','bbbbbbbbb','.bbbbbbb.','.ddddddd.','..bbbbb..','.........']},
+  sack:{p:{c:'#d8b880',d:'#8a6a44'},px:['...d.d...','....d....','...ccc...','..ccccc..','.ccccccc.','.ccccccc.','.ccccccc.','..ccccc..','.........']},
+  people:{p:{s:'#f0c8a0',b:'#6fa8e0',g:'#78c474',h:'#6a4a2a'},px:['.hh...hh.','.ss...ss.','.ss...ss.','.........','bbbb.gggg','bbbb.gggg','bbbb.gggg','bbbb.gggg','.........']}
 };
 // an icon as SVG: its pixels in its colours (crisp at any whole size)
 function icon(name,size,cls){const I=ICONS[name];if(!I)return '';size=size||16;let r='';

@@ -14,6 +14,7 @@ function act(a,arg){
     if(G.capture){toWorld();return showCapture()}return toWorld()}
   if(a==='leave'){if(G.town&&G.town.inScene)return backToScene();G.town=null;G.scene=null;return toWorld()}
   if(a==='back-town'){lootEnd();G.mode='town';renderTown();return}
+  if(a==='lord-leave'&&peopleTalkBack())return;// (talked to from the people drawer in a town: back to it)
   if(a==='lord-leave'&&G.scene&&G.mode==='scene'){G.enc=null;return backToScene()}
   if(a==='lord-leave'){const l=G.enc&&G.enc.ref;if(l)l.cool=3;G.enc=null;G.encCool=2;G.mode='world';hidePanel();return}
   if(a==='lord-attack'){const l=G.enc.ref;P.hostile[l.fac]=G.day+20;addHonor(l.fac,-15,true);log('You attack '+l.name+'. The '+FACS[l.fac].n+' is now hostile to you.','bad');return startEncounter({kind:'lord',ref:l,list:l.troops.slice(),mine:true})}
@@ -199,6 +200,8 @@ window.addEventListener('keydown',e=>{
   if(e.key==='F6'){e.preventDefault();saveGame(false,'quick');return}
   if(k==='escape'){e.preventDefault();if(dragCancel())uiSfx('back');else if(G.mode==='battle'&&B&&B.amArm){armAttackMove(false);uiSfx('back')}else onEscape();return}// (a drag first, then an armed attack-move: Esc calls it off and nothing else)
   if(k==='m'&&!e.ctrlKey&&!e.metaKey&&!e.altKey){if(!e.repeat)toggleMute();return}// M: the sound off or on, anywhere (ui.js)
+  if(k==='p'&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&!e.repeat&&peopleKey())return;// P: the people drawer, on the map and in towns (peopledrawer.js)
+  if(/^[0-9]$/.test(k)&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&!e.repeat&&G.mode!=='battle'&&railKey(k)){e.preventDefault();return}// a number: a place on the window's rail (window.js)
   if(G.mode==='battle'&&B){
     // the battle's speed: Space pauses (orders still go: a tactical pause), [ and ] slow it down and speed it up
     if(e.code==='Space'){e.preventDefault();if(!e.repeat)battlePause();return}

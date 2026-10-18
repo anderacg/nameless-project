@@ -25,7 +25,7 @@ try{
  P.woundedGroups=[{id:b.id,type:k,count:1}];P.wounded[k]=1;rejects(()=>service.trainGroup(town,b.id,to),'wounded-group','pending wounded cannot be stranded by an in-place type change');P.woundedGroups=[];P.wounded={};
  town.raided=G.day+2;rejects(()=>service.trainGroup(town,b.id,to),'training-unavailable','closed barracks reject whole-group upgrades');town.raided=0;
  // Real UI: choose quantity and duplicate, review/cancel, then confirm. No hidden mutation on draft changes.
- G.mode='world';G.modal=false;t.hidePanel();t.enterTown(town);t.act('rec-pick',k);
+ G.mode='world';G.modal=false;t.hidePanel();t.enterTown(town);t.act('tab','recruit');t.act('rec-pick',k);
  const change=(field,value)=>{const el=panel.querySelector('[data-recruit-field="'+field+'"]');el.value=String(value);el.dispatchEvent(new Event('change',{bubbles:true}))};
  before=state();change('hireTarget',b.id);change('hireCount',3);ok(state()===before&&panel.querySelector('.recruit-totals').textContent.includes(String(service.hireCost(k)*3)+'g'),'draft controls update totals without spending');
  const input=panel.querySelector('[data-recruit-field="hireCount"]');input.focus();input.value='4';input.dispatchEvent(new Event('input',{bubbles:true}));

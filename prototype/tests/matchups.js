@@ -22,7 +22,7 @@ try{
  P.gear.weapon='wyrmspear';ok(t.unitClass(t.heroStats())==='spear','the Wyrm Tooth Spear makes your hero fight as a spearman');P.gear.weapon=null;
  P.gear.body='scorpplate';ok(t.heroStats().armor==='plate'&&+t.typeMul(ST.archer,t.heroStats()).toFixed(3)===.6,'Scorpion Plate gives your hero plate against arrows');P.gear.body=null;
  // UI
- P.gold=999;G.mode='world';G.modal=false;G.lastTown=null;t.enterTown(t.townBy('Ashford'));ok(/Strong vs/.test(document.getElementById('panel').innerHTML),'recruit screen lists strengths and weaknesses');t.act('leave');
+ P.gold=999;G.mode='world';G.modal=false;G.lastTown=null;t.enterTown(t.townBy('Ashford'));t.act('tab','recruit');ok(/Strong vs/.test(document.getElementById('panel').innerHTML),'recruit screen lists strengths and weaknesses');t.act('leave');
  while(G.mode==='perk')t.act('perk',G.perkOffer[0]);
  const m={id:'troll',x:P.x+30,y:P.y,hx:P.x,hy:P.y,lv:1,n:1,cool:0};t.W.monsters.push(m);t.startMonster(m);ok(/Weak vs [^<]*spearmen/.test(document.getElementById('panel').innerHTML),'monster encounter names its weakness');t.act('flee');
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}

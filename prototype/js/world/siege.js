@@ -190,12 +190,12 @@ function fiefDay(){
   const fs=playerFiefs();if(!fs.length)return;train('stew',1.5*fs.length);const g=fs.reduce((a,t)=>a+fiefIncome(t),0);P.gold+=g;P.fiefWeek=(P.fiefWeek||0)+g;
   if(G.day%7===0){log('Your fiefs paid '+P.fiefWeek+' gold this week'+(P.tradeWeek?', and their caravans '+P.tradeWeek+' more':'')+'.','gold');P.fiefWeek=0;P.tradeWeek=0}
 }
-// the Fief tab inside a holding you own
+// the Fief inside a holding you own: its people, taxes, stores and caravans, its land, what it pays (its buildings: ui/townui.js)
 function fiefBody(t){
   const cap=fiefCap(t),row=(title,sub,acts)=>'<div class="row"><div class="info"><strong>'+title+'</strong><small>'+sub+'</small></div><div class="acts">'+acts+'</div></div>';
   const b=(act,arg,label,dis)=>'<button class="btn sm" type="button" data-act="'+act+'" data-arg="'+arg+'"'+(dis?' disabled':'')+'>'+label+'</button>';
   return fiefEconBody(t)+'<p class="muted" style="font-size:13px">'+t.name+' rules '+landOf(t)+' tiles of land, reaching '+landReach(t)+' (grows to '+(t.T.reach+growCap(t))+' in peace; clear camps nearby to push further).</p><div class="lab">Your fief · '+fiefIncome(t)+' gold a day'+(until(t,'turmoil')?' (halved while in turmoil)':'')+(ruined(t)?' (nothing while it lies ruined)':'')+'</div>'+
-    '<p class="muted" style="font-size:13px">Garrison '+t.gar+' / '+cap+': hire, station and call up soldiers in the Garrison tab.</p>'+estatesBody(t);
+    '<p class="muted" style="font-size:13px">Garrison '+t.gar+' / '+cap+': hire, station and call up soldiers in the Garrison tab of the town.</p>'+estatesBody(t);
 }
 /* the Garrison tab: everyone who would defend a holding, how well, and for how long; in your own fief, its soldiers */
 function garrisonBody(t){

@@ -1,6 +1,6 @@
 'use strict';
 /* ---------- panels ---------- */
-function showPanel(html){panel.classList.remove('wide');panel.innerHTML=html;ov.hidden=false;G.modal=true;const b=panel.querySelector('button:not([disabled]),.card');if(b)b.focus({preventScroll:true})}
+function showPanel(html){panel.classList.remove('wide','railed');panel.innerHTML=html;ov.hidden=false;G.modal=true;const b=panel.querySelector('button:not([disabled]),.card');if(b)b.focus({preventScroll:true})}
 function hidePanel(){ov.hidden=true;G.modal=false}
 /* every window's bottom bar: its navigation only; the game's choices stay in the window above it. back: [act, arg, label] on
    the left, when it was opened from another window; close: [act, arg, label, why disabled, noEsc] on the right, the way out,
@@ -10,9 +10,10 @@ function nav(back,close){const b=(a,cls,k)=>'<button class="btn'+cls+'" type="bu
 /* windows anyone can open over the map or the streets: Help (H) and the message log (L); closing goes back where you were */
 function openOver(mode,html){if(G.modal&&G.mode!==mode||!['world','scene'].includes(G.mode))return false;G.overBack=G.mode;G.mode=mode;hideTip();showPanel(html);return true}
 function closeOver(){G.mode=G.overBack||'world';G.overBack=null;hidePanel()}
-const KEYS=[['Map',[['Click','travel there, or meet what is there'],['Hover','what it is, its strength'],['Space','pause / play'],['1 2 3','game speed: 1×, 2×, 4×'],['4','travel fast (8×) till anything calls for you'],['C','your hero'],['K','skills'],['I','inventory'],['L','message log'],['G','tile grid'],['F6','save'],['Esc','close a window / menu']]],
+const KEYS=[['Map',[['Click','travel there, or meet what is there'],['Hover','what it is, its strength'],['Space','pause / play'],['1 2 3','game speed: 1×, 2×, 4×'],['4','travel fast (8×) till anything calls for you'],['C','your hero'],['K','skills'],['I','inventory'],['P','people: your companions, lords, those you know, the realms'],['L','message log'],['G','tile grid'],['F6','save'],['Esc','close a window / menu']]],
   ['Battle',[['Click / drag','select a group (a soldier or the icon over it), or box several (your hero is a group too; everyone fights on their own)'],['Right-click ground','move the selection there, in formation (walking)'],['Right-click enemy','walk in and attack that enemy'],['Double right-click','the same at a run: on an enemy, a charge'],['H C V','hold (where they stand) · charge · advance'],['Right-drag','lay out the line: where, how wide (and so how deep), facing which way; a left-click or Esc mid-drag calls it off'],['B / L / T','B: supported shield infantry ability · L: loose spacing · T: cavalry wedge (bonus starts at 6 formed riders); L/T again: line'],['Wheel / + −','zoom the battle (toward the cursor); Home: the whole field again'],['Middle-drag / arrows','pan; the same group number twice: look at it; the small map (top right): click to look there'],['Banners','over each group: its side’s pennant (yours blue, your allies’ green, the enemy’s red) with its kind’s mark and a health bar; round badges beside it when something is wrong (wavering, routing, shattered, flanked, outnumbered, charged, leader fallen, losing)'],['A','the AI commands the selected groups (an AI badge on their cards and banners; its paths violet); with none selected, your whole army; A again takes them back, and any order you give a group takes that group back'],['G I U Y','unit abilities of the selection: brace · fire arrows · spur · rally'],['Z S O','commander powers (your hero, within the command radius): Rally the Line · Stand Fast! · Scout (while deploying, with fog of war)'],['Space (deploying)','begin the battle once your band is placed'],['W','withdraw: flee the battle off your edge of the field; all withdrawn, the battle ends as your retreat'],['R F Q E X','walk or run · hold ground · cease fire · skirmish · melee mode (shooters)'],['Shift + right-click','add a waypoint; double right-click: at a run'],['Ctrl + right-click / D','attack-move: march there, turning on any enemy met on the way (melee attack, riders charge, shooters halt and shoot), then on to the place; D (the button) makes your next order on the ground one, Esc calls it off; with Shift, a waypoint; Ctrl + right-drag, a line'],['Shift + click / drag','add to the selection'],['1–9 / 0','select army group cards 1–10; Ctrl + number stores a custom selection'],['Space','pause: you can still select and give orders'],['[ / ]','slower / faster (0.5×, 1×, 2×, 5×)'],['HP bars','health bars on or off (button)']]],
   ['Touch',[['Tap','map: travel there, or meet what is there · battle: select a group; tap again: send it there (or on that enemy)'],['Hold','map: what it is and how strong (tap again to put the card away) · battle: move the selection there, or attack the enemy held (a ring fills)'],['Hold, then drag','battle: lay out the line, as a right-drag; a second finger calls it off'],['Drag','battle: box several groups'],['Pinch / two fingers','battle: zoom about them / pan']]],
+  ['Town',[['1–9 / 0','go to a place on the left (Market, Tavern, Barracks …; in your fief, a building)'],['Esc','from a place back to the town, then out'],['P','people']]],
   ['Streets',[['WASD / click','walk'],['E','talk to whoever is near'],['Gate','walk out to leave']]],
   ['Screen',[['F11','full screen'],['H','this help'],['M','sound off / on']]]];
 function openHelp(){return openOver('help','<div class="top"><h2>Controls</h2></div>'+KEYS.map(([g,ks])=>'<div class="lab">'+g+'</div><div class="keys">'+ks.map(([k,d])=>'<div><kbd>'+k+'</kbd><span>'+d+'</span></div>').join('')+'</div>').join('')+
@@ -89,7 +90,7 @@ function battleSpeedUI(){if(typeof document==='undefined')return;const sp=B?B.sp
   document.querySelectorAll('[data-bspeed]').forEach(b=>{const on=+b.dataset.bspeed===sp;b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on))});
   const p=document.getElementById('bPause');if(p){const on=!!(B&&B.paused);p.classList.toggle('on',on);p.setAttribute('aria-pressed',String(on));p.textContent=B&&B.deploy?'⚔ Begin':on?'▶ Play':'⏸ Pause'}if(B&&typeof bhudTop==='function')bhudTop()}
 // the controls in brief (Settings); every key is in Help (H)
-const CONTROLS='World map: click to travel, hover for details, Space to pause, 1 2 3 for the speed (1×, 2×, 4×), 4 to travel fast, C your hero and party, K skills, I your bag, L the message log, H help, G the tile grid, F6 to save, Esc the menu. Battle: click or drag to select, right-click to move or attack, right-drag to lay out a line, 1–9/0 to select the ten army cards, Ctrl+number to store a custom selection, Home to reset the camera, H hold, C run, V walk (the pace; a double right-click on an enemy charges), W withdraw, R walk or run, F hold ground, Q cease fire, E skirmish, X melee mode (shooters), B L T formations, A the AI in command, K auto skills, Space to pause, [ ] the speed, the wheel to zoom. Anywhere: M turns the sound off and on. Every key: Help (H).';
+const CONTROLS='World map: click to travel, hover for details, Space to pause, 1 2 3 for the speed (1×, 2×, 4×), 4 to travel fast, C your hero and party, K skills, I your bag, P people, L the message log, H help, G the tile grid, F6 to save, Esc the menu. Battle: click or drag to select, right-click to move or attack, right-drag to lay out a line, 1–9/0 to select the ten army cards, Ctrl+number to store a custom selection, Home to reset the camera, H hold, C run, V walk (the pace; a double right-click on an enemy charges), W withdraw, R walk or run, F hold ground, Q cease fire, E skirmish, X melee mode (shooters), B L T formations, A the AI in command, K auto skills, Space to pause, [ ] the speed, the wheel to zoom. Anywhere: M turns the sound off and on. Every key: Help (H).';
 const saveLine=sv=>'Day '+sv.day+' · '+RACES[sv.P.race||'human'].n+' '+((BGS[sv.P.bg]||{}).n||'hero').toLowerCase()+' · level '+sv.P.level+' · '+sv.P.gold+' gold'+(sv.at?' · '+new Date(sv.at).toLocaleString([], {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):'');
 // the slots, each a row: load it (or save into it), and delete it (two clicks)
 function slotRows(mode){return SAVE_SLOTS.filter(s=>mode==='save'?s!=='auto':true).map(s=>{const d=readSlot(s),armed=G.wipeArmed===s,over=G.overArmed===s;
@@ -142,6 +143,7 @@ const ESC_CLOSE={comp:'cm-back',help:'help-close',journal:'journal-close',town:'
 function escDismiss(){if(ov.hidden)return null;return panel.querySelector('.nav [data-nav="back"]:not([disabled])')||panel.querySelector('.nav [data-nav="close"]:not([disabled]):not([data-noesc])')}
 function onEscape(){
   uiSfx('back');
+  if(peopleEsc())return;// (the people drawer first: peopledrawer.js)
   if(G.mode==='esc')return escAct('esc-resume');
   if(G.mode==='title'){if(G.menu&&G.menu!=='main')return menuAct('menu','main');return}
   if(G.place&&G.mode==='world'){G.place=null;log('You stop placing.');return}
@@ -150,7 +152,7 @@ function onEscape(){
   showEsc();
 }
 function showEsc(msg){
-  if(G.mode!=='esc'){if(B&&B.draw)B.draw=null;G.esc={mode:G.mode,html:ov.hidden?null:panel.innerHTML,modal:G.modal}}
+  if(G.mode!=='esc'){if(B&&B.draw)B.draw=null;G.esc={mode:G.mode,html:ov.hidden?null:panel.innerHTML,cls:panel.className,modal:G.modal}}
   G.mode='esc';const from=G.esc.mode,sv=readSave(),canSave=ESC_SAVE.includes(from);
   const b=(act,label,why)=>'<button class="card menu" type="button" data-act="'+act+'"'+(why?' disabled':'')+'><strong>'+label+'</strong>'+(why?'<span>'+why+'</span>':'')+'</button>';
   showPanel('<div class="top"><h2>Paused</h2><span class="muted">Day '+G.day+' · '+(from==='battle'?'in battle':'on the road')+'</span></div><div class="menulist">'+
@@ -160,7 +162,7 @@ function showEsc(msg){
 }
 function escAct(a,arg){
   if(!a.startsWith('esc-'))return false;if(G.mode!=='esc'||!G.esc)return true;const E=G.esc;
-  const back=()=>{G.mode=E.mode;G.esc=null;if(E.html!=null){panel.innerHTML=E.html;ov.hidden=false;G.modal=E.modal}else hidePanel()};
+  const back=()=>{G.mode=E.mode;G.esc=null;if(E.html!=null){panel.innerHTML=E.html;panel.className=E.cls;ov.hidden=false;G.modal=E.modal}else hidePanel()};
   if(a==='esc-resume'){back();return true}
   // saving: the slots to save to (a slot already used asks a second click to overwrite)
   const slots=(mode,msg)=>showPanel('<div class="top"><h2>'+(mode==='save'?'Save game':'Load game')+'</h2><span class="muted">Day '+G.day+'</span></div><div class="slots">'+slotRows(mode==='save'?'save':'esc')+'</div>'+(msg?'<p class="gold">'+msg+'</p>':'')+''+nav(['esc-back',null,'Back']));

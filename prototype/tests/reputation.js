@@ -15,7 +15,7 @@ try{
  ok(t.standingAt(ash)===22&&t.canHire(ash,'hum_levy'),'home standing 22 (12 local + 10 same race) hires tier 1');
  const hm=t.townBy('Highmoor');ok(t.standingAt(hm)===10&&!t.canHire(hm,'hum_levy')&&!t.canHire(hm,'hum_squire'),'Highmoor (10) is not enough for anything yet');
  P.gold=500;town('Ashford');t.act('hire','hum_levy');ok(P.troops.hum_levy===1,'hiring works with enough standing');t.act('leave');done();
- town('Highmoor');ok(/Needs standing 15/.test(panel())&&document.querySelector('[data-act="hire"]').disabled,'the recruit screen shows the requirement and disables Hire');
+ town('Highmoor');t.act('tab','recruit');ok(/Needs standing 15/.test(panel())&&document.querySelector('[data-act="hire"]').disabled,'the recruit screen shows the requirement and disables Hire');
  t.act('hire','hum_levy');ok(P.troops.hum_levy===1&&/do not know you/.test(G.msgs[G.msgs.length-1].m),'a hire without standing is refused');t.act('leave');done();
  const elg=t.townBy('Elderglen');ok(t.standingAt(elg)===0,'other races start at zero');
  // earning reputation

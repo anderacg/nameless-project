@@ -15,7 +15,7 @@ try{
  const at=x=>{P.x=x.x;P.y=x.y+5;P.tx=null;G.mode='world';G.modal=false;t.hidePanel();G.lastTown=null;G.encCool=0};
  quiet();army();
  // attacking a friendly holding
- at(town);t.updateWorld(.01);ok(G.mode==='town','a peaceful town opens as usual');t.act('tab','tavern');ok(!/plan-siege/.test(panel()),'the tavern no longer holds the attack');t.act('tab','siege');ok(/Besiege/.test(panel())&&/plan an attack/.test(panel())&&/hostile to you for 60 days/.test(panel()),'a Besiege tab of its own plans the attack');
+ at(town);t.updateWorld(.01);ok(G.mode==='town','a peaceful town opens as usual');t.act('tab','tavern');ok(!/plan-siege/.test(panel()),'the tavern no longer holds the attack');t.act('tab','siege');ok(/Siege/.test(panel())&&/plan an attack/.test(panel())&&/hostile to you for 60 days/.test(panel()),'a Besiege tab of its own plans the attack');
  const h0=t.honorWith('karn');t.act('plan-siege');ok(G.mode==='besiege'&&/not your enemy/.test(panel()),'the siege screen warns the Karn Clans are not your enemy');
  t.act('sg-declare');ok(t.hostileTo('karn')&&t.honorWith('karn')<=h0-20,'attacking makes them hostile and costs 20 honor');
  // the camp

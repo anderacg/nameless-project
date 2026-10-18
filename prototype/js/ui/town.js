@@ -96,15 +96,17 @@ function storesAct(a,arg){
   updateHUD(true);renderTown();
 }
 onAct('st-',storesAct);
-/* a town window's own actions, which have no prefix (tab, rec-pick, hire, train, contract, ransom, buy-gear, buy, sell, tourney …):
+/* a town window's own actions, which have no prefix (tab, bld, rec-pick, hire, train, contract, ransom, buy-gear, buy, sell, tourney …):
    act() (input.js) hands them here with the town t, once no prefix, menu, encounter or hero action took them. A fief's actions first (siege.js), then
-   the tabs: recruits and training, contracts, the ransom broker, the smith, stable and market, the tournament. The window
-   redraws where it was scrolled, the focus back on the button pressed */
+   the places: tab opens one (home: the overview), bld one of your holding's buildings (townui.js); recruits and training,
+   contracts, the ransom broker, the smith, stable and market, the tournament. The window redraws where it was scrolled
+   (window.js showRail), the focus back on the button pressed */
 function townAct(a,arg,t){
   const keep=panel.scrollTop;
   if(a==='plan-siege'){G.town=null;hidePanel();G.mode='world';return openSiege(t)}
   if(fiefAct(a,arg,t)){}
-  else if(a==='tab'){G.town.tab=arg;G.town.greet=null}
+  else if(a==='tab'){G.town.tab=arg==='home'?null:arg;G.town.bld=null;G.town.direct=false;G.town.greet=null}
+  else if(a==='bld'){G.town.tab='fief';G.town.bld=arg;G.town.direct=false;G.town.greet=null}
   else if(a==='rec-pick'){G.town.pick=arg;G.town.review=null;G.town.recruitNotice=''}
   else if(['rec-review','rec-confirm','rec-cancel'].includes(a))townRecruitAction(a);
   else if(a==='hire'){const result=recruitment.hire(t,arg,1,G.town.pick===arg?G.town.hireTarget:undefined);if(result.ok&&result.target==='new'&&G.town.pick===arg)G.town.hireTarget=G.recruitTarget;recruitmentFeedback(result,t)}
@@ -124,18 +126,22 @@ function townAct(a,arg,t){
     if(a==='buy'){const r=buyGoods(t,g,n);if(r.got)addRep(t.name,r.spent/60,true)}
     else{const r=sellGoods(t,g,n);train('trade',r.earned/20);addRep(t.name,r.earned/60,true)}}
   else if(a==='tourney'){if(P.gold>=10){P.gold-=10;updateHUD(true);return startBattle({enemies:['chief'],tournament:true})}}
+  if(!G.town)return;// (placing a new building: out on the map)
   updateHUD(true);renderTown();panel.scrollTop=keep;
   if(a==='rec-pick')panel.querySelector('.recruit-order')?.scrollIntoView({block:'nearest'});
   if(a==='rec-review'&&G.town.review){panel.querySelector('[data-act="rec-confirm"]')?.focus();return}
-  const again=panel.querySelector('[data-act="'+a+'"][data-arg="'+arg+'"]:not([disabled])')||panel.querySelector('[data-act="tab"].on');if(again)again.focus({preventScroll:true});
+  const again=panel.querySelector('.rwbody [data-act="'+a+'"][data-arg="'+arg+'"]:not([disabled])')||panel.querySelector('.rail-i.on')||panel.querySelector('.rail-head');if(again)again.focus({preventScroll:true});
 }
+// the town's window (townui.js showTown): the rail of its places, and the place open: G.town.tab (none: the overview)
 function renderTown(){
   const t=G.town.ref,tab=G.town.tab,cap=partyCap(),cnt=partySize(),f=FACS[t.owner];
-  const tabs=townTabs(t);
   const kind=s=>s.range?'ranged':s.charge?'mounted charge':'melee';
   let body='';
   const closed=until(t,'sacked')?'sacked':until(t,'raided')?'raided':null;
-  if(tab==='fief'&&t.owner==='player')body=fiefBody(t);
+  if(!tab||tab==='fief'&&t.owner!=='player')body=townOverview(t);
+  else if(tab==='fief')body=G.town.bld?bldBody(t,G.town.bld):fiefBody(t);
+  else if(tab==='hall')body=hallBody(t);
+  else if(tab==='tourney')body=tourneyBody(t);
   else if(tab==='garrison')body=garrisonBody(t);
   else if(tab==='stores')body=storesBody(t);
   else if(tab==='jobs')body=jobsBody(t);
@@ -181,14 +187,11 @@ function renderTown(){
     const here=P.stay&&P.stay.town===t.name,why=stayWhy(t),fd=eatPerDay();
     body='<div class="row"><div class="info"><strong>Lodgings</strong><small>'+(here?'Your band is staying here: '+(stayFree(t)?'free, as long as you like':stayCost()+'g a day, your gold lasts until Day '+stayUntil()):'Stay and let the days pass: you recover four times as fast, morale rises, the wounded heal twice as fast. '+(why||(stayFree(t)?'Free: they know you here.':stayCost()+'g a day (5g, and 1g for every 2 of your people).')))+'</small></div><div class="acts">'+(here?'<button class="btn sm" type="button" data-act="sy-leave">Leave</button>':'<button class="btn sm" type="button" data-act="sy-stay" data-arg="'+t.name+'"'+(why?' disabled':'')+'>Stay</button>')+'</div></div>'+
       '<div class="row"><div class="info"><strong>Provisions</strong><small>Your band eats '+fd+' food a day, from its own packs. The innkeeper sells you the cheapest food in the market.</small></div><div class="acts"><button class="btn sm" type="button" data-act="sy-food" data-arg="3"'+(P.gold<1?' disabled':'')+'>3 days</button><button class="btn sm" type="button" data-act="sy-food" data-arg="7"'+(P.gold<1?' disabled':'')+'>7 days</button></div></div>'+
-      (!t.T.tourney?'':'<div class="row"><div class="info"><strong>Tournament</strong><small>One-on-one against the town champion. Win 45g and renown.</small></div><div class="acts"><button class="btn sm" type="button" data-act="tourney"'+(P.gold<10?' disabled':'')+'>Enter 10g</button></div></div>')+
       (!t.T.broker?'':'<div class="row"><div class="info"><strong>Ransom broker</strong><small>'+(prisonerCount()?'Sell your '+prisonerCount()+' prisoners':'Buys prisoners you bring in')+'</small></div><div class="acts"><button class="btn sm" type="button" data-act="ransom"'+(prisonerCount()?'':' disabled')+'>Ransom '+ransomValue()+'g</button></div></div>')+
       Object.keys(COMPS).filter(id=>compTown(id)===t&&!P.comps[id]).map(id=>{const c=COMPS[id],quote=recruitment.quoteCompanion(t,id);return '<div class="row"><div class="info"><strong>'+c.n+'</strong><small>'+c.d+'</small></div><div class="acts"><button class="btn sm" type="button" data-act="hire-comp" data-arg="'+id+'"'+(!quote.ok?' disabled title="'+recruitmentWhy(quote)+'"':'')+'>Hire '+c.cost+'g</button></div></div>'}).join('')+
-      (!t.T.contract||t.owner==='player'?'':P.fac===t.owner?'<div class="row"><div class="info"><strong>Your contract</strong><small>The '+f.n+' pays you 1 gold per troop each day.</small></div><div class="acts"><button class="btn sm" type="button" data-act="end-contract">End contract</button></div></div>'
-        :P.fac?'':'<div class="row"><div class="info"><strong>Mercenary contract</strong><small>Serve the '+f.n+' for 1 gold per troop each day. Their enemies become yours.</small></div><div class="acts"><button class="btn sm" type="button" data-act="contract">Sign</button></div></div>')+
       '<p class="muted">Rumor: '+(enemiesOf(t.owner).length?'the '+f.n+' is at war with the '+enemiesOf(t.owner).map(g=>FACS[g].n).join(' and the ')+'.':'the '+f.n+' is at peace.')+'</p>'+'<p class="muted">Bandit camps sit near '+[...new Set(camps().filter(c=>!c.cleared).map(c=>nearestOf(c,TOWNS).name))].join(', ')+'.'+(mostWanted(1).map(w=>' The most wanted is '+chiefLabel(w.c)+(w.near?', last seen near '+w.near.name:'')+': '+bountyOf(w.c)+' gold on his head.').join(''))+(mythicNews('was seen')?' '+mythicNews('was seen'):'')+'</p>';
   }
-  showPanel('<div class="top"><h2>'+t.name+'</h2><span class="gold">'+P.gold+' gold</span></div><p class="muted">Held by the <span style="color:'+f.col+'">'+f.n+'</span>. Folk: '+t.races.map(r=>RACES[r].n).join(', ')+(resText(t)?' · Its land yields '+resText(t):'')+' · '+(t.pop||0)+' people · prosperity '+Math.round(t.pros||0)+'%'+(t.stock&&foodDays(t)<3?' · <span class="bad">hungry</span>':'')+'. Garrison '+t.gar+(lordsInside(t).length?', with '+lordsInside(t).map(l=>l.name+' and '+l.troops.length+' soldiers').join(', ')+' inside':'')+'. '+WALL_N[wallOf(t)]+'. Estates: '+estateLine(t)+'.'+(besieged(t)?' <span class="bad">Under siege.</span>':'')+(until(t,'sacked')?' <span class="bad">Sacked: ruined for '+(t.sacked-G.day)+' more days.</span>':until(t,'raided')?' <span class="bad">Raided: ruined for '+(t.raided-G.day)+' more days.</span>':until(t,'turmoil')?' <span class="gold">In turmoil after changing hands.</span>':'')+' '+t.note+'</p>'+(G.town.inScene?'':'<div class="btns">'+(hasScene(t)?'<button class="btn" type="button" data-act="scene-enter">'+SCENES[t.T.scene].hint+'</button>':'')+(P.stay&&P.stay.town===t.name?'<button class="btn" type="button" data-act="sy-leave">Leave '+t.label+'</button>':stayBtn(t))+'</div>')+'<div class="tabs">'+tabs.map(x=>'<button class="btn sm'+(x[0]===tab?' on':'')+'" type="button" data-act="tab" data-arg="'+x[0]+'">'+x[1]+'</button>').join('')+'</div>'+(G.town.greet?'<p class="gold">'+G.town.greet+'</p>':'')+'<div>'+body+'</div>'+nav(null,['leave',null,G.town.inScene?'Back to the streets':P.stay&&P.stay.town===t.name?'Back to your lodgings':'Leave '+t.label]));G.town.greet=null;
-  panel.classList.add('wide');// (a town's window is larger, on every tab: the unit cards beside the recruits)
+  showTown(t,body);G.town.greet=null;
 }
-function enterTown(t){G.lastTown=t;P.tx=null;G.town={ref:t,tab:P.quests.some(q=>canReportAt(q,t)&&questReady(q))?'jobs':'recruit'};G.mode='town';log('You enter '+t.name+'.');questArrive(t);renderTown()}
+// (a quest to report here: straight to the Notices, Back to the overview; else the overview)
+function enterTown(t){G.lastTown=t;P.tx=null;G.town={ref:t,tab:P.quests.some(q=>canReportAt(q,t)&&questReady(q))?'jobs':null};G.mode='town';log('You enter '+t.name+'.');questArrive(t);renderTown()}

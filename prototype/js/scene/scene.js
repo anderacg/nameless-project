@@ -51,7 +51,7 @@ function sceneTalk(n){
   const R=SCENE_ROLES[n.role];
   if(n.role==='priest'){const fresh=t.blessDay!==G.day;if(fresh){t.blessDay=G.day;P.morale=clamp(P.morale+BLESSING.morale,0,100);updateHUD(true)}
     return sceneSay(R.n,'&ldquo;'+R.say+'&rdquo;'+(fresh?'<br><span class="good">You rest in the cool of the temple. Morale +'+BLESSING.morale+'.</span>':'<br><span class="muted">You have prayed here today.</span>'))}
-  if(R.tab&&G.town){G.town.tab=R.tab;G.town.inScene=true;G.town.greet=R.n+': &ldquo;'+R.say+'&rdquo;';G.mode='town';renderTown();updateHint()}
+  if(R.tab&&G.town){G.town.tab=R.tab;G.town.bld=null;G.town.direct=true;G.town.inScene=true;G.town.greet=R.n+': &ldquo;'+R.say+'&rdquo;';G.mode='town';renderTown();updateHint()}
 }
 function sceneSay(who,html){showPanel('<h2>'+who+'</h2><p>'+html+'</p>'+nav(null,['scene-back',null,'Back to the streets']))}
 // a townsperson's news: the place itself, a war, a monster abroad, or idle talk

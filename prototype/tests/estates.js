@@ -23,7 +23,7 @@ try{
  ash.owner='player';ash.lastOwner='player';ash.sacked=ash.raided=ash.turmoil=0;ash.wall=2;// (a city starts with great walls: take them down a step to build them back)
  ok(t.fiefIncome(ash)===t.taxOf(ash)&&t.fiefIncome(ash)>0,'a fief pays its taxes: '+t.fiefIncome(ash)+' gold a day');
  G.mode='world';G.modal=false;t.hidePanel();G.lastTown=null;t.enterTown(ash);t.act('tab','fief');const pan=()=>document.getElementById('panel').innerHTML;
- ok(/Walls and estates/.test(pan())&&/Farmland/.test(pan())&&/Fortify/.test(pan()),'the Fief tab lists walls and estates');
+ {const lists=/Walls and estates/.test(pan())&&/Farmland/.test(pan());t.act('bld','wall');ok(lists&&/Fortify/.test(pan()),'the Fief tab lists walls and estates (on the holding rail; the walls window fortifies)');t.act('tab','fief')}
  Object.assign(ash.stock,{timber:300,stone:300,tools:60,iron:60});P.gold=5000;const lv0=ash.bld.market;t.act('fief-build','market');ok(ash.work&&ash.work.k==='market'&&P.gold<5000,'building starts and costs gold');
  const g1=P.gold;t.act('fief-build','farm');ok(P.gold===g1,'one project at a time');
  t.act('leave');done();G.day=ash.work.done;t.estateDay();ok(ash.bld.market===lv0+1&&!ash.work,'the market reaches level '+(lv0+1));

@@ -78,7 +78,9 @@ js/scene/             walkable maps of the places you enter: scene.js (walking, 
                       a kind of place gets a scene by adding its generator to SCENES; its text panel stays, with a choice to walk in
 js/gfx/               worldart.js (the painted map), sprites.js (generated sprites), structures.js (placed buildings, estates' ground, camps, sites, flags), render.js (world and battle drawing, HUD),
                       scene.js (painting and drawing scenes)
-js/ui/                ui.js (panels, title, Esc menu), loading.js (the loading overlay; runSteps runs long work in steps), character, talents, inventory, town, input.js (actions, mouse, keys)
+js/ui/                ui.js (panels, title, Esc menu), loading.js (the loading overlay; runSteps runs long work in steps), character, talents, inventory, town,
+                      window.js (rail windows: a rail of places beside the chosen one's window), townui.js (a town's places, its overview, your
+                      holding's buildings), peopledrawer.js (the people drawer, P), input.js (actions, mouse, keys)
 js/main.js            game loop and boot
 graphics/             the pixel-art pack (free for personal and commercial use); not used for now
 archive/              the single-file version from before the split, and art.js (the sprite-sheet mapping, set aside)
@@ -89,7 +91,7 @@ The scripts are plain `<script>` files, not modules, so the page still works fro
 - **One name, one place.** Every top-level name is global; a second `function` with the same name would silently replace the first.
 - **Load order.** `core/core.js` first, then all of `data/`, then the systems (world, battle, scene, gfx, ui). Code that runs at load time (data tables, event listeners, `onAct` registrations) goes after everything it uses. `wiki.html` loads the same list (minus `ui/input.js` and `main.js`); keep the two in step.
 - **Data, not special cases.** Tunable numbers and kinds of things live in `js/data/`. A new monster is a `MONSTERS` entry; one that roams the whole map, like the dragon, adds a `mythic` block. The cost of a deed is a `CONDUCT` entry.
-- **Actions.** Every button names an action `prefix-name` (`data-act="cv-buy"`). A system claims its prefix once with `onAct('cv-', (a,arg)=>G.cv?asParty(G.cv).act(a,arg):true)`; a second claim throws. Actions without a registered prefix go to `act()` in `ui/input.js` (the menu, encounters); a town window's own (`tab`, `hire`, `buy`, `contract`, `ransom` …) go on to `townAct` in `ui/town.js`.
+- **Actions.** Every button names an action `prefix-name` (`data-act="cv-buy"`). A system claims its prefix once with `onAct('cv-', (a,arg)=>G.cv?asParty(G.cv).act(a,arg):true)`; a second claim throws. Actions without a registered prefix go to `act()` in `ui/input.js` (the menu, encounters); a town window's own (`tab`, `bld`, `hire`, `buy`, `contract`, `ransom` …) go on to `townAct` in `ui/town.js`.
 - **Settings.** Each remembered setting is one entry of `PREFS` (`ui/ui.js`): its default, how its browser-storage key `ashmark.<key>` reads and writes, and what a change does (`apply`). `prefSet(k,v)` changes and stores one (storage may be blocked: the value still changes for the session); the globals other files read (`GRID.on`, `BSPEED.v`, `GUIDE.on`, `HPBARS.on`, `BLOOD.on`, `BDEPLOY.on`, `AUTOSK.on`, `BAUTO.on`) are views over it. The Settings buttons go through `settingAct`. A new setting is a `PREFS` entry (plus its row on the Settings page). Tests: `tests/uiprefs.js`.
 - **Encounters.** A new kind of fight adds its entry to `ON_WIN` in `battle/encounters.js`: what winning it pays and changes.
 

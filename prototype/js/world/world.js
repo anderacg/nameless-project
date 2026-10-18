@@ -152,7 +152,7 @@ function dangerInSight(){const V=vis();
 function fastWatch(){if(G.speed!==TRAVEL_FAST)return;if(G.mode!=='world'||G.modal){setSpeed(1);return}const why=P.stay?'':dangerInSight();if(why)setSpeed(1,why)}
 function updateWorld(dt){
   if(G.paused)return;
-  fastWatch();
+  fastWatch();peopleWatch();// (who you see: peopledrawer.js)
   const d=dt*G.speed*WORLD_PACE;lodTick(dt);
   G.clock+=dt*G.speed*DAY/DAY_SECONDS;if(G.clock>=DAY){G.clock-=DAY;dayTick()}
   G.encCool=Math.max(0,G.encCool-d/WORLD_SCALE.ai.grace);regenVitals(d/DAY);

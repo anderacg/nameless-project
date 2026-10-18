@@ -34,7 +34,7 @@ try{
   rejects(()=>service.recruitPrisoner('a'),'prisoner-unavailable','an already recruited prisoner cannot be recruited again');
   ok(JSON.stringify(P)===globalBefore,'the injected service never changes the live player record');
   t.begin('soldier');G.quietEvents=true;const ash=t.townBy('Ashford');P.troops={};P.gold=1000;P.rep[ash.name]=90;ash.vol=2;
-  t.enterTown(ash);const kind=t.RACES.human.melee,quote=t.recruitment.quoteHire(ash,kind),button=document.querySelector('[data-act="hire"][data-arg="'+kind+'"]');
+  t.enterTown(ash);t.act('tab','recruit');const kind=t.RACES.human.melee,quote=t.recruitment.quoteHire(ash,kind),button=document.querySelector('[data-act="hire"][data-arg="'+kind+'"]');
   ok(quote.ok&&button&&!button.disabled&&button.textContent.includes(String(quote.cost)),'the recruit button uses the service eligibility and price');
   const g0=P.gold;t.act('hire',kind);ok(P.troops[kind]===1&&P.gold===g0-quote.cost&&ash.vol===1,'the existing hire action delegates to the service');
   const saved=JSON.stringify({gold:P.gold,troops:P.troops,txp:P.txp});t.act('hire','missing');t.act('train',kind+':missing');

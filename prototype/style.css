@@ -9,8 +9,10 @@
      4b. loading       the loading overlay over everything (loading.js): a title and its flag, a pixel bar, the step, a tip
      5. menus          the title screen, the pause menu, save slots
      6. world HUD      party card (top left), day bar (top middle), dock (bottom right), messages (bottom left), tooltip
+     6b. people        the tab on the right edge and its drawer: companions, lords, those you know, realms (peopledrawer.js)
      7. battle HUD     balance of power, time, the selected unit, orders over the unit cards
      8. screens        inventory, talents, recruiting and unit cards, companions, troop cards, help and log
+     8b. rail windows  a town's places or a holding's buildings down the left, the chosen one's window beside it (window.js)
      9. responsive     compact screens (phones, small windows), touch pointers, phones held upright
    ===================================================================================================================== */
 
@@ -294,6 +296,49 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 .screen[data-mode="battle"] .toasts{bottom:auto;top:var(--e-t);width:min(28%,340px)}
 .screen[data-mode="scene"] .wtop [data-speed]{display:none}
 
+/* ---------- 6b. people ---------- */
+/* a tab on the right edge, under the minimap (peopledrawer.js peoplePlace sets its top): the people icon and your companions'
+   faces; it opens a drawer over the right side (over a town's window too), a dim scrim over the rest that closes it when
+   tapped. Shown on the map, in a town and its streets; never in battle */
+.people{position:absolute;inset:0;z-index:22;pointer-events:none;display:none}
+.screen[data-mode="world"] .people,.screen[data-mode="town"] .people,.screen[data-mode="scene"] .people{display:block}
+.people>*{pointer-events:auto}
+.people,.people *{touch-action:pan-y}
+.pp-tab{position:absolute;right:var(--sa-r);top:calc(var(--e-t) + 130px);display:flex;flex-direction:column;align-items:center;gap:4px;width:40px;padding:7px 3px 4px;cursor:pointer;color:var(--fg);
+  background:var(--glass);border:1px solid var(--line-2);border-right:0;border-left:2px solid var(--trim);border-radius:var(--r-md) 0 0 var(--r-md);box-shadow:var(--float)}
+.pp-tab:hover,.people.open .pp-tab{border-color:var(--accent)}
+.pp-tab img{width:28px;height:28px;image-rendering:pixelated;object-fit:contain;background:rgba(0,0,0,.35);border:1px solid var(--line);border-radius:var(--r-sm)}
+.pp-tab small{font-size:var(--fs-2xs);font-weight:700;color:var(--muted)}
+.pp-tab kbd{font-size:9px;font-weight:700;color:var(--faint)}
+.people.open .pp-tab{right:calc(min(380px,92%) + var(--sa-r))}
+.pp-scrim{position:absolute;inset:0;background:rgba(4,5,9,.4)}
+.pp-drawer{position:absolute;top:0;right:0;bottom:0;width:calc(min(380px,92%) + var(--sa-r));display:flex;flex-direction:column;padding:var(--sa-t) var(--sa-r) var(--sa-b) 0;
+  background:linear-gradient(180deg,#1a1f2e,var(--panel) 120px);border-left:2px solid var(--trim);box-shadow:var(--deep);animation:ppin .16s ease-out}
+@keyframes ppin{from{transform:translateX(30px);opacity:.5}to{transform:none;opacity:1}}
+.people:not(.open) .pp-drawer,.people:not(.open) .pp-scrim{display:none}
+.pp-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px 8px}
+.pp-head h2{margin:0;font-size:var(--fs-xl);color:var(--accent)}
+.pp-tabs{padding:0 14px 8px;border-bottom:1px solid var(--line)}
+.pp-map{display:block;width:calc(100% - 28px);margin:8px 14px 0;aspect-ratio:2/1;height:auto;image-rendering:pixelated;background:var(--shade);border:1px solid var(--line-2);border-radius:var(--r-sm)}
+.pp-map[hidden]{display:none}
+.pp-list{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:4px 14px 12px;scrollbar-width:thin;scrollbar-color:var(--line-2) transparent}
+.pp-list>p{margin:10px 0 0}
+.pp-grp{margin:10px 0 2px}
+.pp-e{display:flex;gap:10px;padding:9px 0;border-top:1px solid var(--line)}
+.pp-grp+.pp-e{border-top:0}
+.pp-pic{width:38px;height:38px;flex:none;image-rendering:pixelated;object-fit:contain;background:rgba(0,0,0,.35);border:1px solid var(--line);border-radius:var(--r-sm)}
+.pp-em{display:grid;place-items:center}
+.pp-i{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.pp-i strong{font-size:var(--fs-base);overflow-wrap:anywhere}
+.pp-i small{font-size:var(--fs-md);color:var(--muted)}
+.pp-acts{display:flex;gap:5px;flex-wrap:wrap;margin-top:5px}
+.pp-acts:empty{display:none}
+.pp-card{margin-top:6px;padding:7px 9px;font-size:var(--fs-md);line-height:1.45;color:var(--fg-2);background:var(--panel-2);border:1px solid var(--line-2);border-radius:var(--r-sm)}
+/* Show on map: a ring on the world where they stand */
+.pp-ping{position:absolute;width:30px;height:30px;margin:-15px 0 0 -15px;border:2px solid var(--accent);border-radius:50%;pointer-events:none;box-shadow:0 0 0 2px rgba(0,0,0,.55),0 0 14px rgba(232,185,74,.8);animation:pping 1s ease-out infinite}
+.pp-ping[hidden]{display:none}
+@keyframes pping{0%{transform:scale(.6);opacity:1}100%{transform:scale(1.5);opacity:.2}}
+
 /* ---------- 7. battle HUD ---------- */
 .bhud{position:absolute;inset:0;pointer-events:none}
 .bhud[hidden]{display:none}
@@ -575,6 +620,65 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 .journal div{padding:3px 0;border-bottom:1px solid rgba(58,66,99,.4);color:var(--muted)}
 .journal .good{color:var(--good)}.journal .bad{color:var(--danger)}.journal .gold{color:var(--accent)}
 
+/* ---------- 8b. rail windows ---------- */
+/* window.js: the rail down the left (the holding's flag, name and your gold on top; then its places, each an icon, a name, a
+   status and its number key), the chosen place's window beside it (its own title row and bottom bar; the content scrolls).
+   The panel is a size container: on a small one (a phone on its side) the rail slims to icons with short names */
+.panel.railed{flex-direction:row;gap:0;padding:0;overflow:hidden;container-type:size}
+.rail{flex:none;width:232px;display:flex;flex-direction:column;gap:2px;padding:0 8px 10px;overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:var(--line-2) transparent;
+  background:linear-gradient(180deg,#141927,#0f121b);border-right:1px solid var(--line);border-radius:var(--r-lg) 0 0 var(--r-lg)}
+.rail-head{position:sticky;top:0;z-index:1;flex:none;display:flex;align-items:center;gap:10px;margin:0 -8px 4px;padding:14px 12px 12px;text-align:left;color:var(--fg);cursor:pointer;
+  background:linear-gradient(#1b2030,#171b29);border:0;border-bottom:1px solid var(--line)}
+.rail-head:hover .rh-t b{color:#fff}
+.rh-flag{flex:none;width:36px;height:36px;display:grid;place-items:center;background:rgba(0,0,0,.35);border:1px solid var(--line-2);border-radius:var(--r-sm)}
+.rh-t{display:flex;flex-direction:column;min-width:0;line-height:1.25}
+.rh-t b{font-size:var(--fs-lg);color:var(--accent);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rh-t small{font-size:var(--fs-sm);color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rh-t small.gold{color:var(--accent);font-weight:700}
+.rail-lab{padding:6px 6px 2px;font-size:var(--fs-2xs);font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--faint)}
+.rail-i{position:relative;flex:none;display:flex;align-items:center;gap:9px;min-height:46px;padding:5px 24px 5px 7px;text-align:left;color:var(--fg);cursor:pointer;background:transparent;border:1px solid transparent;border-radius:var(--r-md)}
+.rail-i:hover{background:rgba(255,255,255,.04);border-color:var(--line-2)}
+.rail-i.on{background:linear-gradient(90deg,rgba(232,185,74,.17),rgba(232,185,74,.03));border-color:var(--trim);box-shadow:inset 3px 0 0 var(--accent)}
+.rail-i.dim{opacity:.55}.rail-i.dim.on{opacity:1}
+.ri-ico{flex:none;width:32px;height:32px;display:grid;place-items:center;background:rgba(0,0,0,.32);border:1px solid var(--line);border-radius:var(--r-sm)}
+.rail-i.on .ri-ico{border-color:var(--trim)}
+.ri-t{display:flex;flex-direction:column;gap:1px;min-width:0}
+.ri-t b{font-size:var(--fs-base);line-height:1.2}
+.rail-i.on .ri-t b{color:var(--accent)}
+.ri-s{display:none}
+.ri-t small{font-size:var(--fs-sm);color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ri-t small.gold{color:var(--accent);font-weight:700}.ri-t small.bad{color:var(--danger)}.ri-t small.good{color:var(--good)}
+.rail-i kbd{position:absolute;right:7px;top:50%;transform:translateY(-50%);font-size:var(--fs-2xs);font-weight:700;color:var(--faint)}
+.ri-dot{display:none}
+.rwin{flex:1;min-width:0;display:flex;flex-direction:column}
+.rwin>.top{flex:none;align-items:center;flex-wrap:nowrap;padding:14px 20px 12px;background:linear-gradient(#1b2030,#181c2a);border-bottom:1px solid var(--line);border-radius:0 var(--r-lg) 0 0}
+.rw-h{display:flex;flex-direction:column;gap:2px;min-width:0}
+.rw-h .muted{font-size:var(--fs-md)}
+.rw-gold{flex:none;display:inline-flex;align-items:center;gap:5px;font-weight:700;white-space:nowrap}
+.rwbody{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;display:flex;flex-direction:column;gap:12px;padding:14px 20px 16px;scrollbar-width:thin;scrollbar-color:var(--line-2) transparent}
+.rwbody>*{flex:none}
+.rwin>.nav{flex:none;padding:12px 20px 14px;background:var(--panel);border-top:1px solid var(--line);border-radius:0 0 var(--r-lg) 0}
+/* the town's overview: its numbers, then what is notable today */
+.tstats{gap:8px 22px}
+.tnotes{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:3px}
+.tnotes li::marker{color:var(--faint)}
+@container (max-width:760px) or (max-height:520px){
+  .rail{width:76px;padding:0 4px 8px;gap:3px}
+  .rail-head{margin:0 -4px 2px;padding:8px 2px 6px;flex-direction:column;gap:3px}
+  .rh-flag{width:28px;height:28px}
+  .rh-t{align-items:center;max-width:70px}.rh-t b{font-size:var(--fs-xs)}.rh-t small:not(.gold){display:none}.rh-t small.gold{font-size:var(--fs-2xs)}
+  .rail-lab{display:none}
+  .rail-i{flex-direction:column;justify-content:center;gap:2px;min-height:50px;padding:4px 1px 3px}
+  .ri-ico{width:28px;height:28px}
+  .ri-n,.ri-t small,.rail-i kbd{display:none}
+  .ri-s{display:block;max-width:70px;font-size:var(--fs-2xs);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ri-dot{display:block;position:absolute;right:9px;top:4px;width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 1px #000}.ri-dot.bad{background:var(--danger)}
+  .rwin>.top{padding:7px 12px 6px}.rwin h2{font-size:var(--fs-lg)}.rw-h .muted{font-size:var(--fs-sm)}
+  .rwbody{padding:10px 12px 12px;gap:10px}
+  .rwin>.nav{padding:6px 12px 8px}
+  .rwbody .recwrap{flex-direction:column}.rwbody .reccard{position:static;width:100%}
+}
+
 /* ---------- 9. responsive ---------- */
 /* a touch screen: everything you press at least 44 px, and nothing that only hovering shows */
 @media (pointer:coarse){
@@ -648,6 +752,13 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
   .panel:has(> .title){padding-left:calc(24px + var(--sa-l))}
   .recwrap,.cmwrap{flex-direction:column}
   .reccard,.cmside{position:static;width:100%}
+  /* (a rail window keeps its own edges: the safe area round it, square corners; beside a town's window, room for the people tab) */
+  .panel.railed{padding:var(--sa-t) var(--sa-r) var(--sa-b) var(--sa-l)}
+  .rail,.rwin>.top,.rwin>.nav{border-radius:0}
+  .screen[data-mode="town"] .panel.railed{padding-right:calc(var(--sa-r) + 40px)}
+  /* (the people drawer: a shorter map, tighter rows, so the list has the room) */
+  .pp-head{padding:8px 12px 6px}.pp-head h2{font-size:var(--fs-lg)}.pp-tabs{padding:0 12px 6px}
+  .pp-map{aspect-ratio:4/1;width:calc(100% - 24px);margin:6px 12px 0}.pp-list{padding:2px 12px 10px}.pp-e{padding:7px 0}
 }
 @media (max-width:760px){
   .inv{grid-template-columns:minmax(0,1fr)}
