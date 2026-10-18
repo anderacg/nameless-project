@@ -16,6 +16,8 @@
 // order over the ground alone (the gallery). PX.battleCanopy(ground): every tree of them painted once into one layer (a big wood
 // zoomed out: render.js LOD). Roads and paths (spec.ways, terrain.js): worn cart tracks and trodden trails painted into the ground
 // (paintWays), a terrace's face cut to a slope where one climbs it, no tree's crown over one (a gap in the canopy).
+// The desert's life (4b): cacti, prickly pear, dead and dry shrubs, bones, small rocks, an oasis's grass and green shrubs, handed
+// back as props too (dk 4, PX.desertSprite; cv.decor how many), over painted clay pans, pebbles, flecks and wind ripples.
 // Phase 4: mountains and spires (kind 6) rise up the screen with real height, painted in the ground and handed back as props too
 // (dk 3, cut as the faces are) so a soldier behind one is under it and yours make it fade; their shadows and scree stay painted.
 // With walls a sheer cliff is grey rock, taller (12 px a level), cracked, a bright rim, a long shadow; a slope graded earth and
@@ -177,9 +179,9 @@
   // (the drawn pixels' box of a canvas)
   const boxOf=cv=>{const N=cv.width,H=cv.height,d=cv.getContext('2d').getImageData(0,0,N,H).data;let x0=N,y0=H,x1=-1,y1=-1;
     for(let y=0;y<H;y++)for(let x=0;x<N;x++)if(d[(y*N+x)*4+3]){if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y}return[x0,y0,x1,y1]};
-  // (a sprite from a tone map: 0 empty, else col[t]; the rim, every empty pixel beside one, in rim)
+  // (a sprite from a tone map: 0 empty, else col[t]; the rim, every empty pixel beside one, in rim (none: no rim))
   const fromMap=(W,H,M,col,rim)=>PX.canvas(W,H,g=>{const Pg=PX.paint(g),at=(x,y)=>x>=0&&y>=0&&x<W&&y<H?M[y*W+x]:0;
-    for(let y=0;y<H;y++)for(let x=0;x<W;x++){const t=M[y*W+x];if(t)Pg.px(col[t],x,y);else if(at(x+1,y)||at(x-1,y)||at(x,y+1)||at(x,y-1))Pg.px(rim,x,y)}});
+    for(let y=0;y<H;y++)for(let x=0;x<W;x++){const t=M[y*W+x];if(t)Pg.px(col[t],x,y);else if(rim&&(at(x+1,y)||at(x-1,y)||at(x,y+1)||at(x,y-1)))Pg.px(rim,x,y)}});
   /* a boulder: 20Ã—19, its foot (the ground row) 17, the middle 10. Clumps of rounded stone [cx,cy,rx,ry] (flat below their middle:
      they sit on the ground), lit as ellipsoids from the upper left, broken into facets, a crease where one stands before another,
      darker at the foot, a crack or two; by climate snow on the tops (frost), strata (desert), moss (swamp), lichen (grass) */
@@ -234,6 +236,47 @@
     return{s,ax:16,ay:30,box:s.box,g,gx:10,gy:6}}
   PX.battleObstacle=(kind,clim,v)=>{clim=PX.GROUND_PAL[clim]?clim:'grass';v=((v|0)%6+6)%6;const k=kind+clim+v;
     return OBST[k]||(OBST[k]=kind==='tree'?obstacleTree(clim,v):kind==='cactus'?cactusSprite(v):boulderSprite(clim,v))};
+  /* the desert's life (battleGround's decor: nothing collides): PX.desertSprite(k,v): {s, ax, ay (its foot in s), box, sh (its
+     shadow's width; g, gx, gy: a cactus's own ground)}, v 0-5 the look. saguaro and barrel: the obstacle cactus's (2 arms, 1 arm and
+     a bloom; a barrel and a small one); young (a saguaro with no arms yet, now and then a bloom), pear (a prickly pear's pads, fruit
+     now and then), dead (a dead shrub: bare grey twigs), dry (a dry shrub: a tangle of sage), skull (an ox skull, bleached), ribs (a
+     ribcage), rocks (two or three small sandstone stones), grass and green (an oasis's tall grass and a green shrub). Lit from the
+     upper left; kept, one a kind and look; seeded */
+  const DSPR={},PEAR=['#a4c070','#7ea65a','#5a8644','#3c6434'],SAGE=['#c8bc72','#a09a52','#76743e','#4e4e2c'],TWIG=['#9a8a72','#74644e','#4e4236'],
+    BONE=['#f6f0e0','#dcd2b8','#aea284','#5e5444','#e6dcc2','#8a7c64'],OASG=['#a6c45a','#7aa444','#56823a','#38602e','#e2d67a'],DSH={young:7,pear:13,dead:11,dry:12,skull:0,ribs:9,rocks:9,grass:8,green:12};
+  const SKULL=['t............t','hh..........hh','.hhh111112hhh.','...11111122...','...14111142...','....112222....','....122223....','.....2233.....'];
+  PX.desertSprite=(k,v)=>{v=((v|0)%6+6)%6;const key=k+v;if(DSPR[key])return DSPR[key];
+    if(k==='saguaro'||k==='barrel'){const c=PX.battleObstacle('cactus','desert',k==='barrel'?2+3*(v&1):[0,1,3,4][v%4]);return DSPR[key]={s:c.s,ax:c.ax,ay:c.ay,box:c.box,g:c.g,gx:c.gx,gy:c.gy}}
+    const [W,H,ax,ay]={young:[8,16,4,14],pear:[18,15,8,13],dead:[17,13,8,11],dry:[14,11,7,9],skull:[14,9,7,7],ribs:[17,10,8,8],rocks:[13,8,6,6],grass:[13,13,6,11],green:[15,12,7,10]}[k];
+    const M=new Uint8Array(W*H),R=PX.dice(PX.rng(v*61+k.length*7+5)),hs=(x,y,s)=>PX.hash(x,y,v*5+s+k.length*3);
+    const set=(x,y,t)=>{x=Math.round(x);y=Math.round(y);if(x>=0&&y>=0&&x<W&&y<H)M[y*W+x]=t};
+    const line=(x0,y0,x1,y1,t)=>{const n=Math.max(Math.abs(x1-x0),Math.abs(y1-y0))||1;for(let i=0;i<=n;i++)set(x0+(x1-x0)*i/n,y0+(y1-y0)*i/n,typeof t==='function'?t(i,n):t)};
+    // (ellipses [cx,cy,rx,ry], later over earlier, each lit as a dome from its upper left (tones 1-4); sit: flat below its middle)
+    const dome=(L,sit,j=.3)=>{for(const [cx,cy,rx,ry] of L)for(let y=0;y<H;y++)for(let x=0;x<W;x++){const dx=(x+.5-cx)/rx,dy=(y+.5-cy)/ry;if(dx*dx+(sit&&dy>0?dy*dy*dy*dy:dy*dy)>1)continue;
+      const l=-dx*.6-dy*.7+(hs(x,y,1)-.5)*j;set(x,y,l>.45?1:l>-.05?2:l>-.5?3:4)}};
+    let col,rim=null;
+    if(k==='young'){const y0=14-R.int(8,11);for(let y=y0;y<=14;y++)for(let i=0;i<4;i++){if(y===y0&&(i===0||i===3))continue;set(2+i,y,i+1-(y===y0&&i<3?1:0)||1);if(i<3&&hs(i,y,2)<.16)set(2+i,y,5)}
+      if(v%3===0){set(3,y0-1,6);set(4,y0-1,7)}col=[null,...CACTUS.slice(0,4),'#f2ead0','#e8607a','#f6d04a'];rim=PX.mix(CACTUS[4],'#0c0e16',.3)}
+    else if(k==='pear'){// (pads: the top ones first, the front one at its foot last; each ringed dark on its lower right, spines in specks, fruit on top)
+      const o=v%3-1,L=[[8+o,4.4,2.6,3.1],[4.6+o*.4,7.6,2.8,3.4],[12.4,7.2+o*.5,2.9,3.4],...(v>2?[[14.6,10.8,2.2,2.5]]:[]),[8.5,10.2,3.4,3.6]];
+      for(const [cx,cy,rx,ry] of L)for(let y=0;y<H;y++)for(let x=0;x<W;x++){const dx=(x+.5-cx)/rx,dy=(y+.5-cy)/ry,e=dx*dx+dy*dy;if(e>1)continue;const l=-dx*.6-dy*.6;
+        set(x,y,e>.66&&(dx>0||dy>0)?4:l>.35?1:l>-.25?2:3);if(e<.66&&hs(x,y,3)<.1)set(x,y,5)}
+      if(v%2===0)for(const [cx,cy,,ry] of L.slice(0,3)){set(cx-1,cy-ry,6);set(cx,cy-ry-.6,7)}col=[null,...PEAR,'#e8eccc','#a83a5e','#e07890'];rim=PX.mix(PEAR[3],'#0c0e16',.4)}
+    else if(k==='dead'){const s=v&1?1:-1;// (bare boughs out of a gnarled foot, a fork on each, bleached on their lit side)
+      for(const [x1,y1,f] of [[2,5,1],[14,4,1],[8+s,1,1],[1,9,0],[15,8,0],[5,2,0],[11,2,0]]){if(!f&&hs(x1,y1,3)<.4)continue;line(8,11,x1,y1,(i,n)=>i<n*.3?3:x1<8||y1<3?1:2);
+        const mx=Math.round(8+(x1-8)*.6),my=Math.round(11+(y1-11)*.6);line(mx,my,mx+(x1<8?-2:2),my-2,2)}set(7,11,3);set(9,11,3);set(8,10,3);col=[null,...TWIG]}
+    else if(k==='dry'){// (a sage tangle: a lacy dome, a few stiff twigs out of it, its foot dark)
+      for(let y=0;y<H;y++)for(let x=0;x<W;x++){const dx=(x+.5-7)/5.6,dy=(y+.5-5.6)/4.2,e=dx*dx+dy*dy;if(e>1||hs(x,y,4)<.18+e*.25)continue;const l=-dx*.6-dy*.7+(hs(x,y,5)-.5)*.5;set(x,y,l>.5?1:l>0?2:l>-.5?3:4)}
+      for(let n=0;n<4;n++){const a=R.R()*6.28;line(7+Math.cos(a)*2,5.6+Math.sin(a)*1.6,7+Math.cos(a)*6,5.6+Math.sin(a)*4.2,3)}for(let x=5;x<=9;x++)set(x,9,4);col=[null,...SAGE]}
+    else if(k==='skull'){SKULL.forEach((r,y)=>{for(let x=0;x<W;x++){const c=r[v&1?W-1-x:x];if(c!=='.')set(x,y,c==='h'?5:c==='t'?6:+c)}});if(v>2)set(0,0,0);col=[null,...BONE];rim='#6e624e'}
+    else if(k==='ribs'){// (a ribcage on its side: the spine along the ground, ribs bowing up from it, one broken now and then)
+      for(let x=2;x<=14;x++)set(x,8,x%2?2:3);for(let r=0;r<5;r++){if(v&1&&r===3)continue;const x0=3+r*2.4,h=5.6-r*.5;for(let y=7;y>=8-h;y--){const u=(8-y)/h;set(x0+2.2*Math.sin(u*Math.PI*.85),y,u<.5?1:2)}}
+      col=[null,...BONE];rim='#6e624e'}
+    else if(k==='rocks'){const RK=PX.GROUND_PAL.desert.rock.c;dome([[[4.5,4,3.6,2.8],[9.4,5,2.4,1.9]],[[6,3.8,4,3],[10.6,5.6,1.4,1.1]],[[3.6,5,2.2,1.7],[7.2,4,3,2.6],[10.6,5.4,1.6,1.3]]][v%3],true);col=[null,...RK.slice(0,4)];rim=PX.mix(RK[4],'#0c0e16',.35)}
+    else if(k==='grass'){const n=7+v%3;// (blades fanning out of a tuft, light at their tips, seed heads now and then)
+      for(let j=0;j<n;j++){const d=j-(n-1)/2,h=6+Math.floor(hs(j,0,6)*5),x1=6+d*1.9+(hs(j,1,6)-.5)*2;line(6+d*.7,11,x1,11-h,(i,m)=>i<m*.3?3:i<m*.75?2:1);if(v%2&&j%3===0)set(x1,11-h,5)}col=[null,...OASG]}
+    else{dome([[7.5,6.5,4.6,3.8],[4.4,7.8,3,2.6],[10.8,7.6,3.2,2.7],[7,3.6,3,2.4]],false,.5);if(v%3===0)for(let n=0;n<3;n++)set(4+n*3,4+(n&1)*2,5);col=[null,...OASG.slice(0,4),'#f0ece0'];rim=PX.mix(OASG[3],'#0c0e16',.35)}
+    const s=fromMap(W,H,M,col,rim);return DSPR[key]={s,ax,ay,box:boxOf(s),sh:DSH[k]}};
 
   // the plain climate ground (when the game gives no base: the gallery), and the desert's own bare ground under a base (from row
   // y0: the arena's top band kept)
@@ -604,6 +647,13 @@
         else{// (a path: a trodden strip a little lighter than the ground, no ruts, its edge soft and ragged, a tuft now and then)
           if(d>e+1){continue}if(d>e){if(h<.3)mix(i,TC[0],.15*sl);continue}const ed=Math.min(1,Math.max(0,(e-d)/2.5));mix(i,TC[NP(x,y)>.55?0:1],(.18+.32*ed)*sl);if(BNK&&ed<.5)mix(i,BNK,.25);
           if(h<.05)mix(i,TU[1],.4);else if(h>.995)put(i,STN)}}})();
+    // (3b, the desert) its sand: wind ripples over the dunes, and on the open sand in a patch here and there, fading in and out (never
+    //      on a face, a way or an oasis); noise only, no stream
+    if(clim==='desert'){const NA=noise(W,H,80,seed+101),NW=noise(W,H,16,seed+102),RD=hx('#ae8a4e'),RL=hx('#f8e6b0'),A4=new Float32Array((W>>2)+1),y0=base?16:0,W2=new Float32Array((W>>1)+1),WY=new Int32Array((W>>1)+1).fill(-1);
+      for(let y=y0;y<H;y++){if(!(y&3)||y===y0)for(let x=0;x<W;x+=4)A4[x>>2]=NA(x,y);
+        for(let x=0;x<W;x++){const i=y*W+x,t=T[i],a=t?.5+.5*A4[x>>2]:(A4[x>>2]-.6)*2.5;if(a<=.04||F[i]||Q[i]>.2||DR&&DR[i]<255)continue;
+          const h=x>>1;if(WY[h]!==y>>1){WY[h]=y>>1;W2[h]=NW(x&~1,y&~1)}// (the ripples' wander, on a 2-px lattice, as needed)
+          const ph=(y+x*.4+W2[h]*12)/5.5,f=ph-Math.floor(ph),s=Math.min(1,a)*(t?1:.6);if(f<.18)mix(i*4,RD,.2*s);else if(f<.34)mix(i*4,RL,.18*s)}}}
     // (3c) mountains and spires (kind 6): see rockMasses
     const RS=kind.includes(6)?rockMasses():null;
     g.putImageData(img,0,0);
@@ -715,6 +765,44 @@
     // glints on the open pools (still: the ground is painted once); lily pads on warm water
     for(let j=0;j<R;j++)for(let i=0;i<C;i++){if(kind[j*C+i]!==2)continue;for(let n=0;n<2;n++){const tx=i*cs+R2.int(0,13),ty=j*cs+R2.int(0,15);
       if(Wat(tx,ty)!==2||Wat(tx+2,ty)!==2||Wat(tx,ty-1)!==2)continue;if(!P.ice&&R2.chance(.35)){Pg.rect('#5e7a3e',tx,ty,2,1);Pg.px('#7a9650',tx,ty)}else Pg.rect(P.glint,tx,ty,P.ice?3:2,1)}}
+    /* (4b) the desert's life (decoration: nothing collides, slows or hides anyone). Flat: clay pans cracked by the sun, pebbles, dark
+       flecks, tufts. Standing (DEC, handed back as props dk 4): cacti, prickly pear, dead and dry shrubs, a skull or ribcage now and
+       then, small rocks, in spaced clusters of 2-5 and a few alone, by area; fewer on the dunes, in the deployment zones and the
+       open lane; more rocks and dry shrubs on a rocky field (erg, spires) and by rock; an oasis's green fringe thick with tall grass
+       and green shrubs. Its own stream (R5): nothing else changes */
+    const DEC=[];
+    if(clim==='desert'){const R5=PX.dice(PX.rng(seed*89+29)),rc=spec.recipe&&typeof spec.recipe==='object'?spec.recipe:{},Zn=spec.zone,zo=Zn?Zn[1]:.3*W,ln=rc.lane,A=W*H,rocky=/erg|spires/.test(rc.layout||'');
+      const rockN=(x,y)=>{const i=Math.floor(x/cs),j=Math.floor(y/cs);for(let b=-2;b<=2;b++)for(let a=-2;a<=2;a++)if(cell(kind,i+a,j+b)===6)return true;return false};
+      const wt=(x,y)=>(x<zo||x>W-zo?.35:1)*(ln&&y>ln.y0&&y<ln.y1?.45:1)*(Tat(x,y)?.45:1);
+      const ok=(x,y,q=.3)=>x>=6&&y>=24&&x<W-6&&y<H-3&&!Fat(x,y)&&!Fat(x-5,y)&&!Fat(x+5,y)&&!Fat(x,y-10)&&!Fat(x,y+3)&&!Fat(x+7,y+2)&&!Fat(x-3,y+3)&&!Wat(x,y)&&!Wat(x,y+3)&&!onWay(x,y)&&!onWay(x,y-5)&&Q[y*W+x]<=q&&(!hasW||Dl(x,y)>12&&!keep(x,y));
+      const near=(x,y,dx,dy)=>DEC.some(d=>Math.abs(d.x-x)<dx&&Math.abs(d.y-y)<dy)||TREES.some(t=>Math.abs(t.x-x)<7&&Math.abs(t.y-y)<5);
+      const pickK=L=>{let r=R5.R()*L.reduce((a,b)=>a+b[1],0);for(const [k,w] of L){r-=w;if(r<0)return k}return L[0][0]};
+      const KW=[['saguaro',3],['young',1.2],['barrel',2],['pear',2],['dead',1.4],['dry',2.2],['rocks',1.8],['bones',.3]],KR=[['saguaro',1.6],['young',.7],['barrel',1.3],['pear',1],['dead',2],['dry',3.4],['rocks',4.6],['bones',.35]];
+      // (flat: clay pans, each a wobbly ellipse of pale clay split into plates; pebbles; flecks)
+      for(let n=Math.max(2,Math.round(A/170000));n>0;n--)for(let tr=0;tr<8;tr++){const cx=R5.int(30,W-30),cy=R5.int(30,H-12),rw=R5.int(14,28),rh=R5.int(6,11),S=[];
+        if(Tat(cx,cy)||!ok(cx,cy,.05)||!ok(cx-rw,cy,.05)||!ok(cx+rw,cy,.05))continue;for(let k=R5.int(5,8);k>0;k--)S.push([cx+R5.int(-rw,rw),cy+R5.int(-rh,rh)]);
+        for(let y=cy-rh-1;y<=cy+rh+1;y++)for(let x=cx-rw-1;x<=cx+rw+1;x++){const e=((x-cx)/rw)**2+((y-cy)/rh)**2;if(e>1-PX.hash(x,y,seed+104)*.18||Fat(x,y)||Tat(x,y)||onWay(x,y))continue;
+          let d1=1e9,d2=1e9;for(const [sx,sy] of S){const d=Math.hypot(x-sx,(y-sy)*1.6);if(d<d1){d2=d1;d1=d}else if(d<d2)d2=d}Pg.px(d2-d1<1.1?'#b08c58':e>.8?'#dcc08a':PX.hash(x,y,seed+105)<.06?'#d4b880':'#e6d09e',x,y)}break}
+      for(let n=Math.round(A/7000*(rocky?1.6:1));n>0;n--){const x=R5.int(8,W-8),y=R5.int(24,H-4),m=R5.int(3,6);if(Tat(x,y)&&R5.chance(.6)||!ok(x,y,.2))continue;
+        for(let k=0;k<m;k++){const px=x+R5.int(-6,6),py=y+R5.int(-3,3);if(Fat(px,py)||onWay(px,py))continue;Pg.px(k%3?'#b08c60':'#8a6a4a',px,py);if(k%2===0){Pg.px('#e8d0a0',px-1,py);Pg.px('#6e5238',px,py+1)}}}
+      for(let n=Math.round(A/3000);n>0;n--){const x=R5.int(4,W-4),y=R5.int(20,H-2);if(!Fat(x,y)&&!onWay(x,y)&&!Wat(x,y)&&Q[y*W+x]<.2)Pg.px('#7e6046',x,y)}
+      // (standing: the clusters, spaced 64 px apart at least, each round a main kind; then a few alone)
+      const CL=[];for(let c=Math.round(A/34000);c>0;c--)for(let tr=0;tr<10;tr++){const x=R5.int(12,W-12),y=R5.int(28,H-6);if(!ok(x,y)||!R5.chance(wt(x,y))||CL.some(p=>(p[0]-x)**2+(p[1]-y)**2<4096)||near(x,y,8,5))continue;
+        CL.push([x,y]);const L=rocky||rockN(x,y)?KR:KW,main=pickK(L),m=R5.int(2,5);let bones=false;
+        for(let k=0,t2=0;k<m&&t2<m*6;t2++){const px=k?x+R5.int(-22,22):x,py=k?y+R5.int(-11,11):y;if(k&&(!ok(px,py)||near(px,py,8,5)))continue;
+          let kk=k&&R5.chance(.55)?pickK(L):main;if(kk==='bones'){kk=bones?'rocks':R5.chance(.55)?'skull':'ribs';bones=true}DEC.push({x:px,y:py,k:kk,v:R5.int(0,5)});k++}
+        for(let k=R5.int(1,3);k>0;k--)DETAIL.tuft(Pg,x+R5.int(-18,18),y+R5.int(-8,8),R5.int(0,999),P);break}
+      for(let c=Math.round(A/40000);c>0;c--){const x=R5.int(12,W-12),y=R5.int(28,H-6);if(ok(x,y)&&R5.chance(wt(x,y))&&!near(x,y,12,8))DEC.push({x,y,k:pickK(rocky||rockN(x,y)?[['rocks',5],['dry',3],['dead',1.4]]:[['rocks',3],['dry',2.5],['dead',1.2],['young',.6],['barrel',.5]]),v:R5.int(0,5)})}
+      // (an oasis's fringe, past its palms: tall grass and green shrubs, green tufts painted between; then round it out to twice its
+      //  radius, thinning: grass and green shrubs near, sage, prickly pear and young cacti farther)
+      if(kind.includes(2)){for(let y=10,row=0;y<H;y+=7,row++)for(let x=(row&1)*5;x<W;x+=10){const tx=x+R5.int(-2,2),ty=y+R5.int(-2,2),v=R5.int(0,999);if(tx<0||ty<0||tx>=W||ty>=H)continue;const q=Q[ty*W+tx];if(q<.1||q>.62)continue;
+          if(q<.55&&R5.chance(.4)&&!Fat(tx,ty)&&!onWay(tx,ty))DETAIL.tuft(Pg,tx+R5.int(-3,3),ty+R5.int(-2,2),v,{tuft:OASG});
+          if(R5.chance(q>.25?.5:.22)&&ok(tx,ty,.62)&&!near(tx,ty,7,4))DEC.push({x:tx,y:ty,k:R5.chance(.6)?'grass':q>.25||R5.chance(.5)?'green':'dry',v:v%6})}
+        for(const o of rc.marsh||[])for(let y=Math.round(o.y-2*o.r),row=0;y<o.y+2*o.r;y+=6,row++)for(let x=Math.round(o.x-2*o.r)+(row&1)*5;x<o.x+2*o.r;x+=10){const tx=x+R5.int(-2,2),ty=y+R5.int(-2,2),d=Math.hypot(tx-o.x,(ty-o.y)*1.2)/o.r,v=R5.int(0,999);
+          if(d<.9||d>2)continue;const f=1-(d-.9)/1.1;if(R5.chance(.3*f)&&ok(tx,ty,.25))DETAIL.tuft(Pg,tx,ty,v,{tuft:OASG});
+          if(R5.chance(.32*f)&&ok(tx,ty,.62)&&!near(tx,ty,8,5))DEC.push({x:tx,y:ty,k:d<1.3?(R5.chance(.55)?'grass':'green'):pickK([['green',2],['grass',1.5],['dry',1.5],['pear',1],['young',.7]]),v:v%6})}}
+      // (their ground: a cactus's own (its shadow and contact shade), else a soft shadow as wide as the kind's)
+      DEC.sort((a,b)=>a.y-b.y||a.x-b.x);for(const d of DEC){const S=PX.desertSprite(d.k,d.v);if(S.g)g.drawImage(S.g,d.x-S.gx,d.y-S.gy);else if(S.sh)g.drawImage(shadowSprite(S.sh),d.x-(S.sh>>1)+2,d.y-(S.sh>>2)-1)}}
     /* (5) what stands up out of the ground, for the game to draw sorted by depth with the soldiers (cv.props, sorted by y):
        trees {dk:1, x, y (the trunk's foot), s (its sprite), dx, dy (where s is drawn), box (its drawn pixels, field px)}, and the
        plateaus' south cliff faces {dk:2, x, y (its foot: the face's lowest row), s, dx, dy, box (as a tree's), sx, sy, w, h}: the
@@ -732,7 +820,9 @@
         open=next}};
       if(cutF)cut(1,2);if(RS)cut(3,3,RS);
       fg.putImageData(fi,0,0);for(const p of props)if(p.dk>=2){p.x=p.sx+(p.w>>1);p.box=[p.sx,p.sy,p.sx+p.w-1,p.sy+p.h-1];p.dx=p.sx;p.dy=p.sy;p.s=PX.canvas(p.w,p.h,q=>q.drawImage(fc,p.sx,p.sy,p.w,p.h,0,0,p.w,p.h));delete p.lt;delete p.lb;delete p.yb;delete p.id}}
-    props.sort((a,b)=>a.y-b.y||a.x-b.x);cv.props=props;cv.trees=TREES.length;
+    // (the desert's life {dk:4, ...as a tree's, dc: its kind}: decoration, faded over your men as a tree is; cv.decor how many)
+    for(const d of DEC){const S=PX.desertSprite(d.k,d.v),b=S.box,dx=d.x-S.ax,dy=d.y-S.ay;props.push({dk:4,x:d.x,y:d.y,s:S.s,dx,dy,box:[dx+b[0],dy+b[1],dx+b[2],dy+b[3]],dc:d.k})}
+    props.sort((a,b)=>a.y-b.y||a.x-b.x);cv.props=props;cv.trees=TREES.length;cv.decor=DEC.length;
     return cv};
   // the standing props of a ground (trees and cliff faces, PX.battleGround's cv.props) drawn in their order over it: the gallery's
   // preview (the game sorts them in with its soldiers: render.js). view: [x0,y0,x1,y1] field px, or all

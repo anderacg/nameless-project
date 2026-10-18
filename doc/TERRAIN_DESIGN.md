@@ -626,6 +626,26 @@ The owner: "Battle map road looks bland, it's just like S S S, and it is even dr
 
 **Changed expectations:** `tests/fieldvariety.js` "a road that goes on north or south crosses the field that way too" now looks for a road cell in every row within the middle half of the field (was the middle 40%): the road may go round what lies in the middle. Road cells (`B.terrain.road`), `recipe.ways` and the painted ground change on every field with a way, and the ramps on every field with cliffs; the terrain-off fingerprints (battlecommands, actorrules, attackrules, battlesetup, battleresolution, `visual/moraleaudit`, `rts` seeds 1, 2, 44) are byte-identical.
 
+### Desert life as built (2026-10-18)
+
+The owner: "Can you ensure that the desert battle map contains the cactus or relevant details generated." Decoration only, as the woods' trees are: the fields keep no scattered colliding props, the desert no woods and no water but an oasis. All in `engine/ground.js` (`PX.battleGround` step 4b, `PX.desertSprite`), from a stream of its own (`seed*89+29`); nothing in `terrain.js` changed.
+- **Standing** (props `dk: 4`, `dc` their kind; `cv.decor` how many): saguaros (the obstacle cactus's: two arms, one and a bloom), young saguaros, barrel cacti, prickly pear (fruit now and then), dead shrubs, dry sage, an ox skull or a ribcage now and then (one a cluster at most), small sandstone rocks. Sorted by their feet with the soldiers and faded over your men (`render.js` as a tree; no LOD canopy: they are few). Each has its shadow painted (a cactus its own).
+- **Where:** clusters of 2–5 round a main kind, 64 px apart at least, one a 34,000 px² of the ground, and a few pieces alone (one a 40,000). A spot in a deployment zone counts ×.35, in the open lane ×.45, on a dune ×.45, so those stay fairly clear. Erg and spires fields, and any spot within two cells of rock, take more rocks and dry sage. Never on a face, a slope, a way, the water or the oasis's heart.
+- **An oasis:** past its palms, tall grass and green shrubs on its green fringe; round it out to twice its radius, thinning, grass and green shrubs near, then sage, prickly pear and young cacti; green tufts painted between.
+- **Painted** (flat): sun-cracked clay pans (a pale wobbly ellipse split into plates), pebble scatters, dark flecks, tufts round each cluster, and wind ripples over the dunes and in a patch here and there on the open sand (noise only).
+- **Fairness:** none of it is in `B.terrain`; the cells, levels and routes are as built and nobody steps round it. Fields with terrain off and every other climate are unchanged (47 grounds hashed pixel for pixel, props included, against the snapshot: grass, frost and swamp, every recipe, today's size and larger).
+
+| Field (desert, 3 seeds) | Pieces | Paint | A frame of them, whole field in 1280×720 | Zoomed ×2 (every prop) |
+|---|---|---|---|---|
+| 1100×600 | 70–90 (an oasis 100–150) | 35–80 ms (about +25) | 0.2 ms | 0.1–0.3 ms |
+| 1600×900 | 155–220 | 85–155 ms | 0.3–0.5 ms | 0.2–0.4 ms |
+| 2000×1200 | 260–340 | 145–285 ms | 0.5–0.6 ms | 0.1–0.7 ms |
+| 3200×1800 | 665–745 | 410–720 ms (about +90) | 1.2–1.6 ms | 0.2–1.0 ms |
+
+(Headless, software canvas, timings noisy by load.) A whole `drawBattle` frame of a huge desert battle, 300 soldiers, with and without the decor: 12.7 / 13.4 ms at the fit (×0.30), 5.6 / 6.5 ms at ×1: within the noise.
+
+**Tests:** `tests/desertlife.js` (17 checks): every layout stands its life, every kind stands, the flat details painted; lighter in the zones and the lane; rockier on erg; counts by area; clustered; an oasis denser and greener; decoration only (cells and routes as built, `B.obs` empty, a soldier walks straight through a saguaro's foot, the fade over yours); seeded and never `Math.random`; no decor in other climates; each sprite on its foot.
+
 ## 9. Owner decisions (with recommendations)
 
 **Decided 2026-10-17: the owner accepted all ten recommendations (D1–D10) and approved building phase 1.**

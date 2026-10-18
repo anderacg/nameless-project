@@ -89,6 +89,7 @@ cv.addEventListener('pointerdown',e=>{
   // second touch sends them)
   // (the camera, camera.js: the middle button pans, a click on the small map looks there; every point is on the field)
   else if(G.mode==='battle'&&B){const mh=miniHit(p),q=toField(p);
+    if(e.button===0&&B.rdrag){B.rdrag=null;return}// (a left-click during a right-drag calls it off: dragCancel below)
     if(e.button===1&&B.cam){e.preventDefault();B.cam.drag={x:p.x,y:p.y}}
     else if(mh&&e.button===0)camCentre(mh.x,mh.y);
     else if(e.button===2&&e.pointerType==='mouse')B.rdrag={x0:q.x,y0:q.y,x1:q.x,y1:q.y,shift:e.shiftKey};// (let go: an order, or a line if dragged)
@@ -107,7 +108,11 @@ window.addEventListener('pointerup',e=>{if(e.pointerType==='touch'&&touchUp(e))r
 cv.addEventListener('pointermove',e=>{if(G.mode!=='battle'||!B)return;const p=toCanvas(e);
   {const q=toField(p);B.hov=q;{const ic=iconAt(q.x,q.y);B.iconHov=ic?ic.g:null}cv.style.cursor=B.sel!=='all'&&rtsUnitAt(q.x,q.y,1)?'crosshair':rtsUnitAt(q.x,q.y,0)?'pointer':''}// (what you point at: a ring, battlehud.js)
   if(B.cam&&B.cam.drag){camPan(B.cam.drag.x-p.x,B.cam.drag.y-p.y);B.cam.drag={x:p.x,y:p.y};return}// (middle-drag: pan)
+  if(B.rdrag&&e.pointerType==='mouse'&&e.buttons&1){B.rdrag=null;return}// (the left button pressed mid right-drag comes as a move: called off)
   if(B.box||B.rdrag){const q=toField(p),o=B.box||B.rdrag;o.x1=q.x;o.y1=q.y}});
+// a drag under way in battle called off (Esc; a left-click during a right-drag; a second finger: touchDown): the line ghost,
+// the box or the finger's press gone, nothing sent, the selection kept; letting go after it does nothing. True if there was one
+function dragCancel(){if(G.mode!=='battle'||!B||!(B.rdrag||B.box||TOUCH.lp))return false;touchDrop();B.rdrag=null;B.box=null;return true}
 // the map: travel to a point, or meet what is there
 function worldGo(wx,wy){if(clickAt(wx,wy)||G.chase)return;P.tx=clamp(wx,8,MW*TILE-8);P.ty=clamp(wy,8,MH*TILE-8);P.stuck=0}
 /* ---------- touch (a phone on its side): Pointer Events with pointerType 'touch' only; the mouse, pen and keys above are as they were.
@@ -190,7 +195,7 @@ window.addEventListener('keydown',e=>{
   if(e.target&&/INPUT|TEXTAREA|SELECT/.test(e.target.tagName))return;
   const k=keyOf(e);
   if(e.key==='F6'){e.preventDefault();saveGame(false,'quick');return}
-  if(k==='escape'){e.preventDefault();onEscape();return}
+  if(k==='escape'){e.preventDefault();if(dragCancel())uiSfx('back');else onEscape();return}// (a drag first: Esc calls it off and nothing else)
   if(k==='m'&&!e.ctrlKey&&!e.metaKey&&!e.altKey){if(!e.repeat)toggleMute();return}// M: the sound off or on, anywhere (ui.js)
   if(G.mode==='battle'&&B){
     // the battle's speed: Space pauses (orders still go: a tactical pause), [ and ] slow it down and speed it up
