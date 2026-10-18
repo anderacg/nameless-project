@@ -9,11 +9,12 @@ const VIEW={h:320,w:400};
 let VW=576,VH=360,HUD_PX=.5;// (HUD_PX: game pixels to one CSS pixel)
 const cv=$('#game'),ctx=cv.getContext('2d');
 cv.width=VW;cv.height=VH;ctx.imageSmoothingEnabled=false;
-// the battlefield: BH high, and as wide as the screen's shape asks (BW: FIELD_W, set as a battle starts: battle.js). In a battle
-// the canvas runs at BVW x BVH (the field's height, the screen's shape) in the same space on screen, so the field is seen whole,
-// zoomed out (frame, render.js); its HUD is drawn at the screen's scale
-const BH=600,FIELD_W={min:960,max:1300};
-let BW=960,BVW=960,BVH=BH;
+// the battlefield: BW x BH, set as a battle starts by its size (setup.js FIELD_SIZES); with sizes off (the older test suites) today's
+// field, FIELD_H high and as wide as the screen's shape asks (FIELD_W). In a battle the canvas runs at BVW x BVH (FIELD_H field px
+// down at zoom 1, the screen's shape) in the same space on screen; the camera fits the whole field in it (camera.js camFit), and
+// its HUD is drawn at the screen's scale
+const FIELD_H=600,FIELD_W={min:960,max:1300};
+let BW=960,BH=FIELD_H,BVW=960,BVH=FIELD_H;
 function setRes(w,h){if(cv.width===w&&cv.height===h)return;cv.width=w;cv.height=h;ctx.imageSmoothingEnabled=false}
 // (the test suites keep the old fixed view, 576 x 360, so their clicks and sums stay put; ?v= is a look at the real thing)
 const FIXED_VIEW=/[?&]test=/.test(location.search)&&!/[?&]v=/.test(location.search);
@@ -21,7 +22,7 @@ const FIXED_VIEW=/[?&]test=/.test(location.search)&&!/[?&]v=/.test(location.sear
 function fitScreen(){
   const scr=cv.parentElement,dpr=window.devicePixelRatio||1,aw=innerWidth,ah=innerHeight;
   const s=FIXED_VIEW?Math.max(1,Math.floor(Math.min(aw*dpr/576,ah*dpr/360))):Math.max(1,Math.floor(Math.min(ah*dpr/VIEW.h,aw*dpr/VIEW.w)));
-  VW=FIXED_VIEW?576:Math.ceil(aw*dpr/s);VH=FIXED_VIEW?360:Math.ceil(ah*dpr/s);BVH=BH;BVW=Math.round(BH*VW/VH);
+  VW=FIXED_VIEW?576:Math.ceil(aw*dpr/s);VH=FIXED_VIEW?360:Math.ceil(ah*dpr/s);BVH=FIELD_H;BVW=Math.round(FIELD_H*VW/VH);
   const w=VW*s/dpr,h=VH*s/dpr;HUD_PX=dpr/s;cv.style.width=w+'px';cv.style.height=h+'px';
   if(FIXED_VIEW){scr.style.width=w+'px';scr.style.height=h+'px'}else{scr.style.width=aw+'px';scr.style.height=ah+'px'}
   if(typeof B!=='undefined'&&B&&B.cam&&typeof camClamp==='function')camClamp();

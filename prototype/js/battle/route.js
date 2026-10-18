@@ -15,6 +15,8 @@ const ROUTE={unit:16,budget:4096,cache:64,deep:false,near:16,dist:8};
 // (the 8 steps in TDX's order: E SE S SW W NW N NE)
 const ROUTE_DC=[1,1,0,-1,-1,-1,0,1],ROUTE_DR=[0,1,1,1,0,-1,-1,-1];
 // an open grid of C×R cells of cs px
+// (a query's budget on grid g: ROUTE.budget, or a quarter of its cells on a field larger than that (a huge one: setup.js FIELD_SIZES))
+const routeBudget=g=>Math.max(ROUTE.budget,(g.C*g.R)>>2);
 function routeGrid(C,R,cs){const N=C*R;return{C,R,cs,cost:new Uint8Array(N).fill(ROUTE.unit),wall:new Uint8Array(N),v:1,pv:0,mv:null,off:null,lo:ROUTE.unit,memo:new Map()}}
 /* the grid of a battle's ground (B.terrain): each kind's cost by TGROUND's speed for who ('foot', 'mounted' or 'big'), a bridge
    or open ground ROUTE.unit; deep water impassable when o.deep (default ROUTE.deep), else waded at its cost (as crossWay weighs
@@ -111,7 +113,7 @@ function routePath(g,ax,ay,bx,by,o={}){
   const s0=s;if(!cost[s]&&!g.mv[s]){s=routeNear(g,s);if(s<0)return res([],false,false,0)}
   const key=s*N+t,hit=o.cache!==false&&g.memo.get(key);let P,L,end,cut=false,n=0;
   if(hit){P=hit.p;L=P.length;end=P[L-1]}
-  else{L=routeSearch(g,s,t,o.budget??ROUTE.budget);const S=ROUTE_WS;P=S.path;end=S.end;cut=S.cut;n=S.n;
+  else{L=routeSearch(g,s,t,o.budget??routeBudget(g));const S=ROUTE_WS;P=S.path;end=S.end;cut=S.cut;n=S.n;
     if(o.cache!==false&&!cut){if(g.memo.size>=ROUTE.cache)g.memo.delete(g.memo.keys().next().value);g.memo.set(key,{p:P.slice(0,L)})}}
   // (the points: the start, the cells' centres between (the first too if he starts off it), the goal, or the point of the end
   // cell nearest it; pc: each point's cell's cost)

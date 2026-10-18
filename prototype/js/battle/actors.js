@@ -102,7 +102,7 @@ function aiUnit(u,dt,strike){
   // (whether g.tgt is set: read once here (nothing before his blow below changes it, and hold() leaves none); only its truth is used)
   const gt=!!g&&g.hasTarget&&targetStands(g);if(g&&g.hasTarget&&!gt)g.hold();
   // (set on a target his side sees none of now: they make for where it was last seen, terrain.js sightGoal)
-  if(gt&&B.terrain){const lk=sightGoal(g,u.team);if(lk)return lostStep(u,g,s,lk,dt)}
+  if(gt&&B.sight){const lk=sightGoal(g,u.team);if(lk)return lostStep(u,g,s,lk,dt)}
   if(gt){
     // Re-evaluate immediately on an order change or casualty; otherwise retain the normal thinking interval.
     const member=e=>e&&e.hp>0&&!e.left&&e.team!==u.team&&(g.targetGroupId!==null?e.grp===g.targetGroupId:e.id===g.targetUnitId);

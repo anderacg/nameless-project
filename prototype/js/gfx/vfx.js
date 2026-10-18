@@ -70,7 +70,8 @@ function drawBody(g,c,q,k){const S=c.sp,X=Math.round(c.x),Y=Math.round(c.y);
   g.save();g.translate(X,Y);if(c.face<0)g.scale(-1,1);
   // (a beast, a mount: slumped low where it stood; its rider thrown forward of it)
   if(S.beast){const sp=S.beast,w=sp.width,h=sp.height,x0=-Math.floor(w/2),Q=q*q;
-    if(S.how==='over'){g.rotate(Q*Math.PI/2);g.drawImage(sp,x0,-h+2)}
+    if(S.down&&q>=.6)g.drawImage(S.down,x0,-h+2);// (down: lying dead, engine/beasts.js)
+    else if(S.how==='over'){g.rotate(Q*Math.PI/2);g.drawImage(sp,x0,-h+2)}
     else if(S.how==='back'){const s=1-1.7*Q;if(s<0)g.translate(0,Math.round((h-2)*s*.5));g.scale(1,Math.abs(s)<.05?.05:s);g.drawImage(sp,x0,-h+2)}
     else{const s=1-(S.how==='melt'?.75:.5)*Q;g.drawImage(sp,x0,Math.round((-h+2)*s),w,Math.max(1,Math.round(h*s)))}}
   else{if(S.mount){if(q<1){const m=S.mount,s=1-.5*q*q;g.drawImage(m,-16,Math.round(1-31*s),32,Math.max(1,Math.round(32*s)))}else g.drawImage(S.down,-16,-19);g.translate(4,7)}
@@ -84,7 +85,7 @@ function drawCorpses(){
   const live=[];
   for(const c of B.corpses){if(c.baked||!c.sp)continue;const t=B.t-(c.td||0),q=Math.min(1,t/GORE.fall),k=Math.min(1,Math.max(0,(t-GORE.fall)/GORE.pool));
     if(k>=1||q>=1&&(!BLOOD.on||c.dry)){drawBody(lg,c,1,1);c.baked=true}else live.push([c,q,k])}
-  ctx.drawImage(L,0,0);for(const [c,q,k] of live)drawBody(ctx,c,q,k)}
+  drawInView(L);for(const [c,q,k] of live)drawBody(ctx,c,q,k)}
 /* ---------- C: movement. Feet kick up dust as they run (riders and big beasts a cloud), the colour of the ground; arrows stay
    where they strike, in the ground or in a man (in his shield, with splinters, when it takes them from the front) ---------- */
 const dustCol=()=>({desert:'214,190,140',frost:'232,238,244',swamp:'118,118,92'}[B&&B.env&&B.env.c]||'170,152,112');

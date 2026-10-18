@@ -57,7 +57,7 @@ class BattleResolution{
     // the unit of the battle: your troop group with the most kills (then the most damage dealt); none if none of them fought
     if(!o.tournament){const K=b.grpKills||{};this.unitOfBattle=Object.values(b.groups).filter(g=>g.player&&g.sourceGroupId).map(g=>({id:g.sourceGroupId,name:g.name,kills:K[g.id]||0,damage:Math.round(g.resolve?.damageDealt||0)}))
       .filter(x=>x.kills||x.damage).sort((x,y)=>y.kills-x.kills||y.damage-x.damage)[0]||null}
-    B=null;updateHint();
+    B=null;fieldDone();updateHint();// (the field back to today's height: setup.js)
     if(o.tournament){
       let html;if(win){P.gold+=45;P.renown+=6;gainXp(25);if(G.town)addRep(G.town.ref.name,8);html='<h2>Champion</h2><p>The crowd chants your name. You take <strong class="gold">45 gold</strong> and gain renown.</p>';log('You win the tournament.','good')}
       else{html='<h2>Beaten</h2><p>The champion takes your entry fee and sends you off with a bruised pride.</p>';log('You lose the tournament.','bad')}

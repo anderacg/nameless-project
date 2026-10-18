@@ -27,7 +27,7 @@ try{
  ok(ids.length===3&&first!==second&&t.grpUnits(first.id).length===8&&t.grpUnits(second.id).length===6,'duplicate troop types have independent IDs and cards');
  ok(first.form==='loose'&&first.files===4&&b.groups[ids[2]].form==='wedge','formation and frontage settings reach their exact groups');
  ok(b.units.every(u=>!u.hero)&&b.hero.hp===0,'troop-only armies contain no extra participating hero');
- ok(document.querySelector('[data-grp="'+first.id+'"] .cn').textContent==='First <Guard>'&&!document.querySelector('[data-grp="'+first.id+'"] .cn Guard'),'custom army labels remain safe literal text');
+ {const c=document.querySelector('[data-grp="'+first.id+'"]');ok(c.title.startsWith('First <Guard>: ')&&c.getAttribute('aria-label')===c.title&&!c.querySelector('Guard'),'custom army labels remain safe literal text (the card’s tooltip and label)')}
  t.selectGroup(first.id);t.setOrder('withdraw');ok(first.order==='withdraw'&&second.order==='hold','commands stay independent across duplicate groups');
  L.step(3);ok(b.t>0&&b.paused,'multi-group simulation advances through normal stepping');
  const initial=JSON.stringify(L.last);D.applyBattleConfig({...config,leftGroups:[{type:'dragon',count:1}]});b.units[0].s.dmg=999;L.restart();

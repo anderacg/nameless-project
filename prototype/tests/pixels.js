@@ -43,7 +43,8 @@ try{
  const tw=t.townBy('Ashford');P.x=tw.x+40;P.y=tw.y+30;G.mode='world';G.modal=false;t.hidePanel();W.sites.forEach(s=>s.seen=true);
  if(W.monsters[0]){W.monsters[0].x=P.x+60;W.monsters[0].y=P.y}const dm=t.mythicOf('dragon')||t.spawnMythic('dragon');if(dm){dm.x=P.x-60;dm.y=P.y-20}
  const ctx=t.ctx,orig=ctx.drawImage,off=[];
- ctx.drawImage=function(img,...a){const m=ctx.getTransform(),whole=v=>Math.abs(v-Math.round(v))<1e-6,[dx,dy]=a.length===8?[a[4],a[5]]:[a[0],a[1]];
+ ctx.drawImage=function(img,...a){if(img===((t.WFOGV||{}).edge||{}).comp)return orig.call(ctx,img,...a);// (the fog: a soft overlay drawn up smooth, as the battle's: fog.js drawWorldFog)
+   const m=ctx.getTransform(),whole=v=>Math.abs(v-Math.round(v))<1e-6,[dx,dy]=a.length===8?[a[4],a[5]]:[a[0],a[1]];
    const sw=a.length===8?a[2]:img.width,sh=a.length===8?a[3]:img.height,dw=a.length>=4?(a.length===8?a[6]:a[2]):sw,dh=a.length>=4?(a.length===8?a[7]:a[3]):sh;
    if(Math.abs(Math.abs(m.a)-1)>1e-9||Math.abs(Math.abs(m.d)-1)>1e-9||m.b||m.c||dw!==sw||dh!==sh)off.push('scaled '+img.width+'x'+img.height);
    else if(!whole(m.a*dx+m.e)||!whole(m.d*dy+m.f))off.push('at '+(m.a*dx+m.e).toFixed(2)+','+(m.d*dy+m.f).toFixed(2)+' ('+img.width+'x'+img.height+') '+(new Error().stack.split('\n')[2]||'').trim().split('/').pop());
@@ -56,14 +57,16 @@ try{
   const add=(n,c)=>list.push([n,c]);add('party',t.partySprite('#e8b94a','',0));add('party mounted',t.partySprite('#e8b94a','#8a6a4a',1));add('bandit',t.banditSprite(0));add('follower',t.followerSprite('#3d74d6',0));
   add('caravan',t.caravanSprite('#3d74d6'));add('refugee',t.refugeeSprite(0));[0,1,2].forEach(v=>{add('ship trade',t.shipSprite({seed:v,big:true,col:'#3d74d6'}));add('ship fishing',t.shipSprite({seed:v,big:false}))});[0,1,2].forEach(v=>{add('ship trade',t.shipSprite({seed:v,big:true,col:'#3d74d6'}));add('ship fishing',t.shipSprite({seed:v,big:false}))});Object.keys(t.JOBS).forEach(j=>add('worker '+j,t.folkSprite(j,0)));Object.keys(t.CRITTERS).forEach(c=>add('critter '+c,t.critterSprite(c)));
   Object.keys(t.ST).forEach(u=>{for(const pose of [0,3,7,10,13])add(u+' pose '+pose,t.unitSprite(u,0,false,0,pose))});add('hero',t.unitSprite('hero',0,true,0,7));
-  Object.keys(t.MONSTERS).forEach(m=>add('monster '+m,t.unitSprite(t.MONSTERS[m].unit,1,false)));['tree','cactus','rock'].forEach(k=>add('obstacle '+k,t.obstacleSprite(k,'grass')));add('townsfolk',t.personSprite('folk','human',1,0));
+  Object.keys(t.MONSTERS).forEach(m=>add('monster '+m,t.unitSprite(t.MONSTERS[m].unit,1,false)));add('townsfolk',t.personSprite('folk','human',1,0));
   const bad=list.filter(([,c])=>!pow(c)).map(([n,c])=>n+' '+c.width+'x'+c.height),by={};list.forEach(([n,c])=>{(by[c.width]=by[c.width]||new Set()).add(n.split(' ')[0])});
   ok(!bad.length,list.length+' sprites, each in a power-of-two cell: '+Object.keys(by).map(k=>k+'x'+k+' '+[...by[k]].slice(0,6).join('/')).join(', ')+(bad.length?' — not: '+bad.slice(0,6).join(', '):''));
   ok(t.followerSprite('#3d74d6',1).width===16,'army followers stand as tall as their lord, in a 16x16 cell')}
- // ---- the tile grid: off by default; on, a line runs down every tile edge and nowhere else
+ // ---- the tile grid: off by default; on, a line runs down every tile edge and nowhere else (all the land known, and the clock
+ // held, so neither the fog's dark nor its drifting mist stands in the way)
  t.setGrid(false);
  {const z=t.townBy('Ashford');P.x=z.x+30;P.y=z.y+20;G.paused=true;const col=x=>{const a=ctx.getImageData(x,0,1,t.VH).data;return a};
-  t.drawWorld();const ex=((16-G.cam.x%16)%16)+64,a0=col(ex),m0=col(ex+8);t.setGrid(true);t.drawWorld();const a1=col(ex),m1=col(ex+8);t.setGrid(false);
+  const S0=W.seen,pn=performance.now,now=pn.call(performance);W.seen=new Uint8Array(S0.length).fill(1);performance.now=()=>now;let ex,a0,m0,a1,m1;try{
+  t.drawWorld();ex=((16-G.cam.x%16)%16)+64;a0=col(ex);m0=col(ex+8);t.setGrid(true);t.drawWorld();a1=col(ex);m1=col(ex+8);t.setGrid(false)}finally{W.seen=S0;performance.now=pn}
   let de=0,dm=0;for(let i=0;i<a0.length;i+=4){if(a0[i]!==a1[i])de++;if(m0[i]!==m1[i])dm++}const rows=t.VH;
   ok(de>rows*.9&&dm<rows*.15,'the tile grid (Settings, or G on the map) draws a line down every tile edge ('+de+' of '+rows+' pixels changed) and leaves the tiles themselves alone ('+dm+')')}
  // ---- the screen

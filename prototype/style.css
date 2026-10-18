@@ -337,12 +337,23 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 .abtn.on{box-shadow:inset 0 0 0 1px var(--accent),0 0 8px rgba(255,210,90,.55)}
 .abtn.on:disabled{opacity:1;cursor:default}
 .abtn[data-abil="fire"]{color:#ffb070}
+/* the commander bar (commandpowers.js bhudPowers): round, gold-rimmed buttons down the left of the field, apart from the order bar;
+   a sweep that empties as the cooldown runs out, the seconds (or left on), lit while Stand Fast! is on; dimmed when it cannot be used */
+.cmdbar{position:absolute;left:var(--e-l);top:50%;transform:translateY(-50%);display:flex;flex-direction:column;align-items:center;gap:6px;padding:6px 5px;background:var(--glass);border:1px solid var(--line-2);border-left:2px solid var(--trim);border-radius:var(--r-md);box-shadow:var(--float)}
+.cmdbar[hidden],.cbtn[hidden]{display:none}
+.cmdh{font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+.cbtn{position:relative;width:42px;height:42px;display:inline-flex;align-items:center;justify-content:center;padding:0;border-radius:50%;color:#ffe08a;cursor:pointer;overflow:hidden;background:radial-gradient(circle at 50% 35%,#5a2a22,#2a1410);border:2px solid #b8913a;box-shadow:inset 0 0 0 1px rgba(0,0,0,.6)}
+.cbtn:hover{border-color:#ffe08a;color:#fff}
+.cbtn .ccd{position:absolute;inset:0;border-radius:50%;background:conic-gradient(rgba(0,0,0,.66) var(--cd,0deg),transparent 0);pointer-events:none}
+.cbtn .ct{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);text-align:center;font-size:12px;font-weight:700;line-height:1;color:#fff;text-shadow:0 1px 2px #000;pointer-events:none}
+.cbtn .k{position:absolute;right:6px;bottom:3px;font-size:8px;font-weight:700;color:#d8c08a;line-height:1}
+.cbtn.off{opacity:.55;cursor:not-allowed}
+.cbtn.on{opacity:1;box-shadow:0 0 10px rgba(255,214,110,.75),inset 0 0 0 1px #ffe08a}
 .bcards{display:flex;gap:5px;align-items:flex-end;min-width:0;max-width:100%;overflow-x:auto;padding:4px 1px;scrollbar-width:thin}
 .bcards .ucard{flex-shrink:0}
-.ucard:not(.all) .cn{right:23px}
 .ucount{position:absolute;right:3px;bottom:17px;font-size:11px;line-height:1;font-weight:700;color:var(--accent);background:rgba(0,0,0,.65);padding:1px 2px}
 @media (min-width:761px){.bcmd:has(.bcards.many){max-width:calc(100% - 270px);left:auto;right:var(--e-r);transform:none;align-items:flex-end}.bcards.many .ucard{width:70px}.bcards.many .ucard.all{width:48px}}
-@media (min-width:761px) and (max-width:1100px){.bcards.many .ucard{width:54px}.bcards.many .ucard.all{width:44px}}
+@media (min-width:761px) and (max-width:1100px){.bcards.many .ucard{width:54px}.bcards.many .ucard.all{width:44px}.bcards.many .ucard .si:nth-child(n+3){display:none}}
 .ucard{position:relative;display:block;width:84px;height:86px;padding:0;overflow:hidden;color:var(--fg);cursor:pointer;
   background:linear-gradient(#2b3350,#141824);border:1px solid var(--line-2);border-radius:var(--r-md);transition:transform .1s}
 .ucard.all{width:56px;height:62px}
@@ -350,21 +361,22 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 .ucard.on{border-color:#ffd25a;box-shadow:0 0 0 1px #ffd25a,0 0 12px rgba(255,210,90,.5);transform:translateY(-3px)}
 .ucard:disabled{opacity:.3;cursor:default;transform:none}
 .ucard .upic{position:absolute;left:50%;top:10px;transform:translateX(-50%);width:44px;height:44px;image-rendering:pixelated;object-fit:contain;pointer-events:none}
-.ucard .uall{position:absolute;left:0;right:0;top:16px;text-align:center;font-size:var(--fs-xs);font-weight:700;letter-spacing:.06em;color:var(--accent)}
+.ucard .uall{position:absolute;left:0;right:0;top:9px;display:flex;justify-content:center;align-items:center;gap:2px;font-size:11px;font-weight:700;line-height:1;color:var(--accent)}
 .ucard .ukey{position:absolute;left:4px;top:3px;font-size:9px;font-weight:700;color:var(--faint)}
-.ucard .cn{position:absolute;left:2px;right:2px;bottom:17px;font-size:var(--fs-sm);font-weight:700;line-height:1;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 1px #000}
-.ucard.all .cn{bottom:17px;font-size:var(--fs-xs)}
 .ucard .utop{position:absolute;right:3px;top:2px;display:flex;flex-direction:column;align-items:flex-end;gap:1px;color:var(--accent);font-size:var(--fs-2xs);font-weight:700}
 .ucard .csh{font-size:var(--fs-2xs);color:var(--muted);line-height:1}
-.ucard .cmi{position:absolute;left:3px;top:13px;display:flex;flex-direction:column;gap:1px}
-.ucard .cmi .mico{width:11px;height:11px}
+.ucard .cmi{position:absolute;left:3px;right:22px;bottom:16px;height:11px;display:flex;gap:1px;overflow:hidden}
+.ucard.all .cmi{right:3px}
+/* (a status icon: a round badge, its rim the colour of its kind (moraleicons.js BADGE_KIND; si-g good, si-w a warning, si-b bad kept as its tone), a count beside it on the All card) */
+.ucard .si{display:inline-flex;align-items:center;flex-shrink:0;filter:drop-shadow(0 1px 0 #000)}
+.ucard .si svg{width:11px;height:11px}
+.ucard .si b{margin-left:1px;font-size:10px;line-height:1;font-weight:700;color:var(--fg)}
+.bcards.many .ucard .si:nth-child(n+4){display:none}
 .ucard .ubars{position:absolute;left:4px;right:4px;bottom:4px;display:grid;gap:1px}
 .ucard .ub{display:block;height:3px;background:rgba(0,0,0,.6);border-radius:2px;overflow:hidden}
 .ucard .chp{display:block;height:100%;background:#78c474}
 .ucard .cmo{display:block;height:100%;background:#6fa8e0}.ucard .cmo.low{background:#ffb04a}
 .ucard .cst{display:block;height:100%;background:#d8b84a}.ucard .cst.low{background:#c8703a}
-.ucard .cf{display:none}
-.ucard .cf.warn{display:block;position:absolute;left:0;right:0;bottom:30px;font-size:var(--fs-2xs);font-weight:700;text-align:center;color:#ffb04a;text-shadow:0 1px 1px #000}
 /* (a narrower window: the orders move right, beside the selected unit) */
 @media (max-width:1100px){.bcmd{max-width:calc(100% - 280px);left:auto;right:var(--e-r);transform:none;align-items:flex-end}.binfo{width:210px}}
 @media (min-width:761px) and (max-width:1100px){.bcards{min-width:0;max-width:100%;overflow-x:auto;padding:4px 1px;scrollbar-width:thin}.bcards .ucard{flex-shrink:0}}
@@ -547,6 +559,7 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
   .dockrow.sys .dbtn{min-width:44px;min-height:44px}
   .obtn{width:42px;height:42px}
   .obtn.abtn{width:44px;height:44px}
+  .cbtn{width:46px;height:46px}
   .btime .btn{min-height:38px}
   .slot{min-width:40px;min-height:40px}
   .tip{display:none!important}
@@ -586,14 +599,16 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
   .obtn{width:34px;height:32px}
   .ucard{width:64px;height:64px}.ucard.all{width:48px;height:52px}
   .ucard .upic{width:28px;height:28px;top:7px}
-  .ucard .cn{font-size:var(--fs-xs);bottom:16px}
-  .ucard .uall{top:12px}
-  .ucard .cmi,.ucard .csh{display:none}
+  .ucard .uall{top:6px}.ucard .uall .gico{width:14px;height:14px}
+  .ucard .cmi{right:18px;bottom:15px;height:9px}.ucard.all .cmi{right:2px}.ucard .si svg{width:9px;height:9px}.ucard .si b{font-size:9px}
+  .ucard .csh{display:none}
+  .cmdbar{gap:4px;padding:4px 3px}.cmdh{display:none}.cbtn{width:36px;height:36px}
 }
 /* a phone on its side, or a touch screen of that size: buttons big enough for a thumb, the rest as small as above */
 @media (pointer:coarse) and ((max-height:600px) or (max-width:820px)){
   .obtn{width:40px;height:40px}
   .obtn.abtn{width:44px;height:44px}
+  .cbtn{width:44px;height:44px}
   .tbtn{min-width:40px;height:38px}
   .btime .btn{min-height:36px;padding:1px 7px}
 }

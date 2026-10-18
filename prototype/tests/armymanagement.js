@@ -38,7 +38,7 @@ try{
  ok([...document.querySelectorAll('.bcards [data-grp]')].slice(1).map(e=>e.dataset.grp).join()===available.join(),'rendered card DOM follows the same order');
  B.ctrl={};t.ctrlGroup('1');ok(B.sel===available[0]&&B.sel==='p_'+bow.id,'key 1 selects the first reordered troop, not a fixed hero bucket');
  const aid='p_'+a.id;t.selectGroup(aid);t.setOrder('hold');
- const card=document.querySelector('[data-grp="'+aid+'"]');ok(card.querySelector('.cn').textContent===r.nameOf(a.id)&&!card.querySelector('.cn b'),'custom group names remain safe literal text on battle cards');
+ const card=document.querySelector('[data-grp="'+aid+'"]');ok(card.title.startsWith(r.nameOf(a.id)+': ')&&card.getAttribute('aria-label')===card.title&&![...card.querySelectorAll('b')].some(e=>!e.closest('.si')),'custom group names remain safe literal text in battle cards’ tooltips');
  ok(document.getElementById('bInfo').textContent.includes(r.nameOf(a.id))&&!document.getElementById('bInfo').querySelector('.bi-title b'),'selected battle details show the custom name safely');
  const last=document.getElementById('log').lastElementChild;ok(last.textContent.includes(r.nameOf(a.id))&&!last.querySelector('b'),'order messages do not interpret group names as markup');
  ok(B.groups.hero.name==='Commander','the hero group alias also reaches battle');

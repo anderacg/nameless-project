@@ -13,7 +13,7 @@ class Monster extends WorldObject{
   // its figure (a mythic one in flight, bobbing, drawn over what it flies above), its count and level by how it means to fight
   draw(ents,cam,V){if(!this.inView(V))return;const m=this,M=MONSTERS[m.id],Y=M.mythic;
     ents.push({y:m.y+(Y&&Y.fly?30:0),f:()=>{
-      const s=unitSprite(M.unit,1,false),w=s.width,h=s.ch,sx=Math.round(m.x-cam.x),sy=Math.round(m.y-cam.y),lift=Y&&Y.fly?6-Math.round(Math.sin(performance.now()/260)*2):0;
+      const s=monsterMapSprite(m.id,Math.floor(performance.now()/(Y?260:D_STEP*1.4)+(m.hx||0))%(Y?2:4)),w=s.width,h=s.ch,sx=Math.round(m.x-cam.x),sy=Math.round(m.y-cam.y),lift=Y&&Y.fly?6-Math.round(Math.sin(performance.now()/260)*2):0;
       ctx.fillStyle='rgba(0,0,0,.3)';if(Y)ctx.fillRect(sx-8,sy-1,16,3);else ctx.fillRect(sx-5,sy-1,10,2);
       ctx.save();ctx.translate(sx,sy-lift);if(Y?m.dir<0:faceDir(m)<0)ctx.scale(-1,1);ctx.drawImage(s,-(w>>1),-s.height+2);ctx.restore();
       if(!Y)txt((m.n>1?m.n+' ':'')+'Lv'+m.lv,sx,sy-h,STANCE_COL[M.aggro||stance(monPower(m))==='afraid'?stance(monPower(m)):'wary'],'center')}})}

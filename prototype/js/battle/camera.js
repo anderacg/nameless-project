@@ -3,10 +3,12 @@
    Wheel: zoom toward the cursor. Middle-drag or the arrow keys: pan. + and -: zoom on the middle. 0: the whole field again.
    A group's number twice quickly: look at it. A small map of the field (top right) shows every soldier and where you look;
    click it to look there. The camera runs on real time, so it moves while the battle is paused. ---------- */
-// zooms: the steps of the wheel (1: the whole field); pan: arrow-key speed (screen px a second); mini: the small map (HUD px)
-const BCAM={zooms:[1,1.25,1.5,2,2.5,3],pan:420,dbl:350,mini:{w:80,h:50,x:6,y:24},miniBelow:58};
-// (the whole field: the zoom that fits it in the view (BVW x BVH, the screen's shape), 1 unless the screen is narrower than it)
-const camFit=()=>Math.min(1,BVW/BW,BVH/BH);
+// zooms: the steps of the wheel past the whole field's (those under it unused: .5 and .75 only on a field larger than the view,
+// setup.js FIELD_SIZES); pan: arrow-key speed (screen px a second); mini: the small map (HUD px)
+const BCAM={zooms:[.5,.75,1,1.25,1.5,2,2.5,3],pan:420,dbl:350,mini:{w:80,h:50,x:6,y:24},miniBelow:58};
+// (the whole field: the zoom that fits it in the view (BVW x BVH, the screen's shape): today's field 1 unless the screen is narrower
+// than it (the view FIELD_H high, as the field); a larger one under 1, a small one a little over)
+const camFit=()=>Math.min(BVW/BW,BVH/BH);
 const camZooms=()=>{const f=camFit();return[f,...BCAM.zooms.filter(z=>z>f+.01)]};
 function camInit(){B.cam={z:camFit(),fit:true,x:0,y:0,keys:{},lt:0};camClamp()}
 const bcam=()=>B&&B.cam||{z:1,x:0,y:0,keys:{}};
@@ -42,13 +44,14 @@ function camTick(){
 const miniRect=()=>{const m=BCAM.mini,h=Math.round(m.w*BH/BW);return{x:VW-m.x-m.w,y:Math.max(m.y,Math.ceil(BCAM.miniBelow*HUD_PX)),w:m.w,h}};
 function miniHit(p){if(!B||!B.cam)return null;const r=miniRect(),sx=BVW/VW,sy=BVH/VH,x=p.x/sx,y=p.y/sy;
   if(x<r.x||x>r.x+r.w||y<r.y||y>r.y+r.h)return null;return{x:(x-r.x)/r.w*BW,y:(y-r.y)/r.h*BH}}
-// drawn in the HUD (its scale): the field, every soldier a dot (but enemies your side does not see: terrain.js seenBy), the view a box
+// drawn in the HUD (its scale): the field (its fog: battlefog.js), every soldier a dot (but enemies your side does not see: terrain.js seenBy), the view a box
 function drawMiniField(){
   if(!B.cam)return;const r=miniRect(),c=B.cam,kx=r.w/BW,ky=r.h/BH;
   ctx.fillStyle='rgba(10,12,18,.75)';ctx.fillRect(r.x-1,r.y-1,r.w+2,r.h+2);
   // (a field with terrain: its painted ground, a pixel a cell, terraces' edges dark (engine/ground.js), dimmed under the dots)
   const gm=B.terrain&&B.ground&&(B.groundMini||(B.groundMini=PX.battleGroundMini({...B.terrain,climate:B.env.c},B.ground)));
   if(gm){ctx.globalAlpha=.8;ctx.drawImage(gm,r.x,r.y,r.w,r.h);ctx.globalAlpha=1}else{ctx.fillStyle='rgba(90,120,70,.55)';ctx.fillRect(r.x,r.y,r.w,r.h)}
+  fogMiniField(r);// (the ground out of your side's sight shaded: battlefog.js)
   for(const u of B.units){if(u.hp<=0||!seenBy(0,u))continue;ctx.fillStyle=u.hero?'#e8b94a':u.team?(u.rout?'#f2c0b8':'#e0605a'):(u.rout?'#c8d8f0':'#6fa8e0');ctx.fillRect(Math.round(r.x+u.x*kx),Math.round(r.y+u.y*ky),1,1)}
   ctx.strokeStyle='#e4e0cf';ctx.lineWidth=1;ctx.strokeRect(Math.round(r.x+c.x*kx)+.5,Math.round(r.y+c.y*ky)+.5,Math.round(BVW/c.z*kx),Math.round(BVH/c.z*ky));
   if(c.z>camFit()+.01)txt(c.z+'×',r.x+r.w-2,r.y+r.h+8,'#98a0ba','right');

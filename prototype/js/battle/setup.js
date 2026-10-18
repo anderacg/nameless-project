@@ -1,5 +1,37 @@
 'use strict';
 /* ---------- battle construction and field setup ---------- */
+/* ---------- the field's size (FIELD_SIZES), chosen as a battle starts, before anything is laid out on it ----------
+   THE CONTRACT with the ground's generator (terrain.js) and whatever else lays out the field: BattleSetup.start sets BW, BH (field
+   px) and BFIELD (the size: {key, n, w, h, back, depth, band}; null with sizes off) FIRST, before groundSpec, spawning,
+   measureField and buildTerrain. Generation reads BW/BH (or spec.W) as ever, and may read BFIELD.key for a recipe's density;
+   fieldZone(team) is each side's deployment zone (field px, BFIELD.back px of open ground behind it), fieldBand(top,bot) the rows
+   its lines form up over. Out of a battle BH is FIELD_H again (fieldDone), so the world's previews of a field (encounters.js
+   coverAt, terrain.js groundEnv) read today's field.
+   on: off (tests/harness.js), today's field: FIELD_H high, as wide as the screen's shape (FIELD_W), each side against its edge.
+   order: smallest first; w, h: the field (px: multiples of 32 across, 16 down: route and fog cells 16 px, spatial 32); back: open
+   ground behind each side's deployment zone (px), depth: the zone's depth (px); band: the rows a side's lines form up over (px, the
+   field's middle; 0 the whole field); heads: under this many soldiers in the battle that size, else the largest; the world tile
+   steps it one up on open plains, one down in forest, a mountain pass or a swamp (fieldNudge); types: a typed battle's sizes
+   ([least, most]: a bridge's river and an ambush's road keep their measure) */
+const FIELD_SIZES={on:true,order:['small','big','large','vlarge','huge'],
+  small:{n:'Small',w:960,h:544,back:32,depth:288,band:0},big:{n:'Big',w:1280,h:720,back:96,depth:320,band:0},
+  large:{n:'Large',w:1792,h:1008,back:256,depth:352,band:760},vlarge:{n:'Very large',w:2400,h:1344,back:512,depth:384,band:840},
+  huge:{n:'Huge',w:3200,h:1792,back:832,depth:416,band:920},
+  heads:[60,150,300,600],types:{bridge:['big','large'],ambush:['small','big']}};
+let BFIELD=null;
+// (the size for a battle of heads soldiers on world tile r ({t, c}: regionAt's; none for a tournament), of battle type kind)
+function fieldSizeFor(heads,r,kind){
+  const F=FIELD_SIZES,O=F.order,T=kind&&F.types[kind];let i=F.heads.findIndex(n=>heads<n);if(i<0)i=O.length-1;if(r)i+=fieldNudge(r);
+  return O[clamp(i,T?O.indexOf(T[0]):0,T?O.indexOf(T[1]):O.length-1)]}
+const fieldNudge=r=>r.t===T_FOREST||r.t===T_MOUNT||r.c==='swamp'?-1:r.t===T_OPEN||r.t===T_ROAD?1:0;
+// (the field set to a size (BW, BH, BFIELD), or today's (key null); back to today's height out of a battle)
+function fieldSet(key){if(!key){BFIELD=null;BW=clamp(BVW,FIELD_W.min,FIELD_W.max);BH=FIELD_H;return null}const S=FIELD_SIZES[key];BFIELD={key,...S};BW=S.w;BH=S.h;return BFIELD}
+function fieldDone(){BH=FIELD_H;BFIELD=null}
+// a side's deployment zone (field px): BFIELD.back off its own edge, BFIELD.depth deep; today's from its edge (deploy.js DEPLOY.zone)
+function fieldZone(team){const F=BFIELD,a=F?F.back:8,b=F?F.back+F.depth:Math.round(BW*DEPLOY.zone);return{x0:team?BW-b:a,x1:team?BW-a:b,y0:fieldTop(),y1:fieldBot()}}
+// (where a side's line stands: 97 px into its zone, today's 105 off its edge; the rows it forms up over: the field's middle band)
+const fieldLine=team=>{const x=(BFIELD?BFIELD.back:8)+97;return team?BW-x:x};
+function fieldBand(top,bot){const b=BFIELD&&BFIELD.band;if(!b||bot-top<=b)return[top,bot];const m=(top+bot)/2;return[m-b/2,m+b/2]}
 function formation(list,team){
   const dir=team?-1:1,base=team?BW-72:72,out=[];// (each side starts at its edge of the field)
   // (infantry in front; mages a step behind them (their reach is short); archers at the back; riders on the flanks)
@@ -136,8 +168,8 @@ class BattleSetup{
       ids.forEach((id,index)=>{
         const gr=groups[id],m=units.filter(u=>u.grp===id),same=ids.filter(k=>groups[k].type===gr.type);
         if(same.length>1&&!gr.customName)gr.name+=' '+(same.indexOf(id)+1);
-        const top=this.field.top,bottom=this.field.bot;
-        gr.ax=team?BW-105:105;gr.ay=top+(bottom-top)*(index+.5)/Math.max(1,ids.length);
+        const [top,bottom]=fieldBand(this.field.top,this.field.bot);
+        gr.ax=fieldLine(team);gr.ay=top+(bottom-top)*(index+.5)/Math.max(1,ids.length);
         if(gr.role==='arc')gr.ax+=team?35:-35;if(gr.role==='mag')gr.ax+=team?20:-20;
         if(this.opts.sandbox){gr.ax=m.reduce((n,u)=>n+u.x,0)/m.length;gr.ay=m.reduce((n,u)=>n+u.y,0)/m.length}
         else if(gr.role!=='hero'&&!gr.files)gr.files=Math.max(1,Math.min(8,Math.floor((bottom-top)/Math.max(1,ids.length)/FORMS.line.gx)));
@@ -153,8 +185,10 @@ class BattleSetup{
     // marsh are the field's only features (the owner, 2026-10-17, reversing D10); without terrain the obstacles as ever: terrain.js)
     const TR=this.ground?buildTerrain({...this.ground,W:BW,top:FI.top,bot:FI.bot}):null;if(TR&&!opts.sandbox)env.text=groundEnvText(env,TR);
     const st={units,hero,groups,env,arena:arenaFor(env.c),ftop:FI.top,fbot:FI.bot,obs:opts.tournament||TR?[]:placeObstacles(env,FI.top,FI.bot),sel:'all',rings:[],arrows:[],parts:[],floats:[],slashes:[],corpses:[],aim:0,blocking:false,touchBlock:false,mt:null,over:false,endT:0,kills:0,slain:[],lost:{},heroDown:false,opts,t:0};
-    if(TR)st.terrain=TR;if(TR&&this.btype)st.btype=this.btype;return st;
+    if(TR)st.terrain=TR;if(TR&&this.btype)st.btype=this.btype;if(this.fogOn())st.fog=true;if(BFIELD)st.fsize=BFIELD.key;return st;
   }
+  // (fog of war: field battles, terrain or none, with the setting on; never a tournament, a siege or a raid: battlefog.js)
+  fogOn(){const e=G.enc;return FOG.on&&!this.opts.tournament&&!this.opts.sandbox&&!(e&&['siege','raid','tourney'].includes(e.kind))}
   // (the battle's type (BTYPE): the encounter's (encounters.js battleTypeFor), only with terrain; the lab's own: lab.js)
   // (an ambush is sprung once: run down after it, you face them again on an open field (e.btype false))
   battleType(){const e=!this.opts.tournament&&!this.opts.sandbox&&G.enc,bt=e&&e.btype;if(!bt||!this.ground||bt.kind!=='bridge'&&bt.kind!=='ambush')return null;if(bt.kind==='ambush')e.btype=false;return{...bt}}
@@ -214,13 +248,19 @@ class BattleSetup{
   present(){
     G.mode='battle';hidePanel();bbar.hidden=false;buildSlotBar();setOrderUI();battleSpeedUI();autoUI();updateHint();
     for(const u of this.units)u.y=clamp(u.y,fieldTop(),fieldBot());for(const g of playerGroups())if(B.groups[g].ay)B.groups[g].placeAt(B.groups[g].ax,clamp(B.groups[g].ay,fieldTop(),fieldBot()));
-    log(this.opts.tournament?'The crowd roars. Defeat the champion.':'The lines meet in the '+this.env.name.toLowerCase()+'. '+this.env.text);
+    log((this.opts.tournament?'The crowd roars. Defeat the champion.':'The lines meet in the '+this.env.name.toLowerCase()+'. '+this.env.text)+(BFIELD?' '+BFIELD.n+' field.':''));
     if(B.btype)typeSay();
   }
   // (the battle's terrain: its recipe and seed, or null; the lab's own: lab.js)
   groundSpec(){return groundSpecFor(this.opts,this.env)}
+  /* (the field's size (FIELD_SIZES): by the soldiers coming to it, the world tile and the battle's type; null with sizes off. Counted
+     from the armies before anyone spawns: the ground's recipe and the spawns already read the field) */
+  fieldSize(){if(!FIELD_SIZES.on)return null;const o=this.opts,e=!o.tournament&&G.enc,bt=e&&e.btype,n=x=>Array.isArray(x)?x.length:x&&typeof x==='object'?Object.values(x).reduce((a,v)=>a+(+v||0),0):0;
+    let heads=1+o.enemies.length;if(!o.tournament)heads+=compsInBand().length+P.list.length;if(e)for(const l of [...(e.allies||[]),...(e.foes||[])])heads+=n(l.troops)+1;
+    const kind=bt&&TERRAIN.on&&!['siege','raid','tourney'].includes(e.kind)&&(bt.kind==='bridge'||bt.kind==='ambush')?bt.kind:null;
+    return fieldSizeFor(heads,o.tournament?null:regionAt(P.x,P.y),kind)}
   start(){
-    BW=clamp(BVW,FIELD_W.min,FIELD_W.max);
+    fieldSet(this.fieldSize());// (the field's size first: everything after lays out on it, the ground's generation too)
     damageTypesInit();
     this.env=battleEnv(this.opts.tournament);
     this.ground=this.groundSpec();groundEnv(this.env,this.ground);// (the ground's recipe and seed before anyone spawns: D2, terrain.js)
@@ -234,7 +274,7 @@ class BattleSetup{
     this.initialize();
     this.present();
     terrainStep();// (shooters on high ground: their range from where they stand at the start, terrain.js)
-    sightStep(true);// (who sees whom from the start: those in woods or behind a rise unseen, terrain.js)
+    sightStep(true);// (who sees whom from the start: those in woods, behind a rise or out of sight in the fog unseen, terrain.js)
   }
 }
 // (an ambush's cover a ridge, not woods: always in a desert, BTYPE.ridge of the time on hills, by the ground's seed)

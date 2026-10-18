@@ -159,7 +159,7 @@ function commandCharacters(dt){
     if(S.fallBack){if(!ai&&!AUTOSK.on)S.fallBack=null;else{if((S.fbT=(S.fbT||0)-dt)<=0){S.fbT=CHAR_AI.think;fallLook(u,S)}continue}}
     /* (your hero under your own hands: yours alone) */if(!ai&&!AUTOSK.on)continue;
     const g=u.grp&&B.groups[u.grp],sent=!!g&&relocating(u,g);if(S.leap||S.dash||S.roll>0)continue;
-    if(ai&&!sent&&!(g&&g.hasTarget)&&!(B.t-(S.backIn??-99)<CHAR_FALL.keep)){let best=null,bd=CHAR_AI.duel;for(const e of B.units)if(e.team!==u.team&&e.hp>0&&isChar(e)){const d=Math.hypot(e.x-u.x,e.y-u.y);if(d<bd){bd=d;best=e}}if(best){u.tgt=best;u.rt=.5}}
+    if(ai&&!sent&&!(g&&g.hasTarget)&&!(B.t-(S.backIn??-99)<CHAR_FALL.keep)){let best=null,bd=CHAR_AI.duel;for(const e of B.units)if(e.team!==u.team&&e.hp>0&&isChar(e)&&seenBy(u.team,e)){const d=Math.hypot(e.x-u.x,e.y-u.y);if(d<bd){bd=d;best=e}}if(best){u.tgt=best;u.rt=.5}}
     if((S.think=(S.think||0)-dt)<=0){S.think=CHAR_AI.think;if(sent)continue;if(charBasics(u)||chooseAbility(u))u.castNow=true}}}
 // a champion's own: the shove or bash (those in front knocked back and staggered), the roll (away, unhurt while it lasts)
 function champShove(u,t,M){

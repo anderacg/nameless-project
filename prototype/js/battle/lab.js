@@ -26,17 +26,25 @@ class LabBattleSetup extends BattleSetup{
      a river {x, meander (px), crossings: [{kind: 'ford'|'bridge', y, w (px)}], frozen, stream}; phase 4: a hill's cliff (sheer
      all round), oneway (its cliffs climbed nowhere, dropped down anywhere), ramps ([degrees]: 0 east, 90 south; [90] by default),
      rocks [{x, y, r, h (its peak, in levels of 14 px)}]: mountains and spires; no fairness checks). Recipe 'crags': the hills recipe with its
-     cliffs and mountains always (fairness-checked). A frost lab field is a frost one (more rock). Not tied to TERRAIN.on */
+     cliffs and mountains always (fairness-checked). A frost lab field is a frost one (more rock). Not tied to TERRAIN.on.
+     Field variety (terrain.js): a recipe's layout (one of its own: terrainLayouts), edges {n, s, w, e: 'forest', 'hills', 'peaks',
+     'water', 'marsh', 'open'} (the neighbours), road (true: a road across; 'ns': on north to south too), elven (elven woods); 'auto'
+     on a forest is a forest tile (in the swamp, the mire wood) */
   groundSpec(){const c=this.config,g=c.ground==='none'&&c.type!=='field'?'auto':c.ground;if(!g||g==='none'||!this.env)return null;// (a typed battle needs ground: 'auto' for 'none')
-    const frost=this.env.c==='frost';if(g==='auto')return{recipe:terrainRecipeOf(this.env.t,this.env.c,0),seed:c.seed,frost};
-    return g.recipe?{recipe:g.recipe==='river'?'open':g.recipe==='crags'?'hills':g.recipe,seed:g.seed??c.seed,oasis:!!g.oasis,river:g.recipe==='river'?{...g.river||{}}:g.river?{...g.river}:null,frost,crags:g.recipe==='crags'}:{explicit:g,seed:g.seed??c.seed}}
+    const frost=this.env.c==='frost',forest=this.env.t===T_FOREST;if(g==='auto')return{recipe:terrainRecipeOf(this.env.t,this.env.c,0),seed:c.seed,frost,forest};
+    return g.recipe?{recipe:g.recipe==='river'?'open':g.recipe==='crags'?'hills':g.recipe,seed:g.seed??c.seed,oasis:!!g.oasis,river:g.recipe==='river'?{...g.river||{}}:g.river?{...g.river}:null,frost,crags:g.recipe==='crags',forest,
+      ...(g.layout?{layout:g.layout}:{}),...(g.edges?{edges:{...g.edges}}:{}),...(g.road?{road:{ew:true,ns:g.road==='ns'}}:{}),...(g.elven?{elven:true}:{})}:{explicit:g,seed:g.seed??c.seed}}
   /* the lab's battle type (config.type, setup.js BTYPE): 'field' (none); 'bridge' or 'ambush' with the left side the one set upon
      (holding the bridge, or caught on the road); {kind, side: the one set upon ('left' or 'right'), ford (a bridge's: a ford far
      off it, true or false; by the seed when not given)}. Its ground as config.ground has it ('none': 'auto'); an ambush's is its own */
   battleType(){const t=this.config.type;if(!t||t==='field'||!this.ground)return null;const k=typeof t==='string'?t:t.kind,s=typeof t==='object'&&t.side==='right'?1:0;
     return k==='bridge'?{kind:k,def:s,ford:typeof t==='object'&&t.ford!=null?t.ford:hash(this.config.seed|0,7,4447)<BTYPE.ford}:{kind:'ambush',hid:1-s}}
+  /* the lab's field size (config.size: a FIELD_SIZES key, forced, sizes on or off); else, sizes on, by its soldiers, its terrain and
+     climate as a world tile's, and its type (setup.js fieldSizeFor) */
+  fieldSize(){const c=this.config;if(c.size)return c.size;if(!FIELD_SIZES.on)return null;const k=typeof c.type==='string'?c.type:c.type&&c.type.kind;
+    return fieldSizeFor([...c.leftGroups,...c.rightGroups].reduce((n,g)=>n+g.count,0),{t:{open:T_OPEN,forest:T_FOREST,hill:T_HILL}[c.terrain],c:c.climate},k==='bridge'||k==='ambush'?k:null)}
   createGroups(){
-    super.createGroups();const c=this.config,top=this.field.top,bottom=this.field.bot;
+    super.createGroups();const c=this.config,top=this.field.top,bottom=this.field.bot,Z=[fieldZone(0),fieldZone(1)];
     for(const row of this.rows){const gr=this.groups[row.id],m=this.units.filter(u=>u.grp===row.id),rows=row.team?c.rightGroups:c.leftGroups;
       gr.player=row.team===0;gr.ally=false;gr.foe=row.team===1;gr.form=row.form;gr.files=row.files;
       if(row.name){gr.name=row.name;gr.customName=true}
@@ -47,16 +55,25 @@ class LabBattleSetup extends BattleSetup{
       if(!FORMS[row.form].wedge)gr.files=files;
       const S=formSlots(gr.form,m.length,gr.face,gr.files),xs=S.map(p=>p[0]),ys=S.map(p=>p[1]),xmin=Math.min(...xs),xmax=Math.max(...xs),ymin=Math.min(...ys),ymax=Math.max(...ys);
       if(ymax-ymin>bottom-top-4)throw Error('A formation is too wide for the field. Reduce its files.');
-      const left=c.deploy&&row.team?BW*.7+12:12,right=c.deploy&&!row.team?BW*.3-12:BW-12;
+      // (deploying, each side in its zone (setup.js fieldZone); today's field: the outer .3 of it, as ever)
+      const left=c.deploy&&row.team?(BFIELD?Z[1].x0:BW*.7)+12:12,right=c.deploy&&!row.team?(BFIELD?Z[0].x1:BW*.3)-12:BW-12;
       if(xmax-xmin>right-left)throw Error('A formation is too deep for its starting zone. Increase its files.');
-      const centre=c.deploy?BW*(row.team?.74:.26):BW/2+(row.team?1:-1)*c.distance/2,
+      const centre=c.deploy?(BFIELD?(Z[row.team].x0+Z[row.team].x1)/2:BW*(row.team?.74:.26)):BW/2+(row.team?1:-1)*c.distance/2,
         x=centre+(row.team?1:-1)*column*150,y=top+(bottom-top)*(lane+.5)/perColumn;
       gr.ax=clamp(x,left-xmin,right-xmax);gr.ay=clamp(y,top-ymin,bottom-ymax);
       m.forEach((u,i)=>{u.sx=S[i][0];u.sy=S[i][1];u.x=gr.ax+u.sx;u.y=gr.ay+u.sy;u.dir=gr.face;u.face=row.team?-1:1});
     }
     this.playerOrder=this.rows.filter(r=>!r.team).map(r=>r.id);
   }
-  initialize(){super.initialize();const c=this.config;for(const u of this.units){u.mor0=Math.round(clamp(unitMoraleOf(u.s),20,100));u.mor=u.mor0}groupMoraleInit(this.units);B.noMorale=!c.morale;B.auto=c.ai;B.paused=c.paused;heroState()}
+  // (fog of war: the config's fog key, else as the game has it (FOG.on): battlefog.js)
+  fogOn(){const f=this.config.fog;return f==null?FOG.on:!!f}
+  initialize(){super.initialize();const c=this.config;for(const u of this.units){u.mor0=Math.round(clamp(unitMoraleOf(u.s),20,100));u.mor=u.mor0}groupMoraleInit(this.units);B.noMorale=!c.morale;B.auto=c.ai;B.paused=c.paused;heroState();this.powers()}
+  /* commander powers (commandpowers.js): the config's powers key (true/false; left out, COMMAND_POWERS.on); commander {left, right}:
+     a side's null (none), or {group (its row index: that group's first soldier commands; left out, the game's rule: your hero,
+     their first leader), lead (his Leadership, 0-10)} */
+  powers(){const c=this.config;if(c.powers!=null)B.cmdOn=c.powers;const C=c.commander;if(!C)return;B.cmdForce={};B.cmdLead={};
+    for(const [side,team] of [['left',0],['right',1]]){if(!Object.hasOwn(C,side))continue;const v=C[side];if(v===null){B.cmdForce[team]=null;continue}
+      if(v.group!=null){const row=this.rows.find(r=>r.team===team&&r.index===v.group),u=row&&B.units.find(x=>x.grp===row.id&&x.hp>0);B.cmdForce[team]=u?u.id:null}if(v.lead!=null)B.cmdLead[team]=v.lead}}
 }
 const BattleLab={
   session:null,last:null,
@@ -78,6 +95,8 @@ const BattleLab={
     if(!raw||typeof raw!=='object'||Array.isArray(raw))throw Error('Supply a battle configuration.');
     const mode=raw.mode||(raw.leftGroups!==undefined||raw.rightGroups!==undefined?'army':'duel');if(!['duel','army'].includes(mode))throw Error('Unknown battle configuration mode.');
     const c={left:'hum_bow',leftCount:1,right:'hum_foot',rightCount:1,distance:220,terrain:'open',climate:'grass',seed:42,ai:true,paused:true,morale:true,deploy:mode==='army',ground:'none',type:'field',...raw,mode};
+    // (size: a field size (setup.js FIELD_SIZES: small, big, large, vlarge or 'very large', huge), forced; none: as the battle would choose)
+    if(c.size!=null){const k=c.size==='very large'?'vlarge':c.size;if(typeof k!=='string'||!FIELD_SIZES.order.includes(k))throw Error('Size: use '+FIELD_SIZES.order.join(', ')+'.');c.size=k}
     for(const [side,team] of [['left',0],['right',1]]){
       const rows=c[side+'Groups']??[{type:c[side],count:c[side+'Count']}],seen=new Set();
       if(!Array.isArray(rows)||!rows.length||rows.length>ARMY_LIMIT||mode==='duel'&&rows.length!==1)throw Error('Each army needs 1–10 groups, including characters.');
@@ -94,12 +113,20 @@ const BattleLab={
       });
       if(c[side+'Groups'].reduce((n,g)=>n+g.count,0)>200)throw Error('Limit each army to 200 fighters for sandbox performance.');
     }
-    if(!Number.isFinite(c.distance)||c.distance<40||c.distance>800)throw Error('Separation must be 40–800 field pixels.');
+    if(!Number.isFinite(c.distance)||c.distance<40||c.distance>Math.max(800,c.size?FIELD_SIZES[c.size].w-400:0))throw Error('Separation must be 40–'+Math.max(800,c.size?FIELD_SIZES[c.size].w-400:0)+' field pixels.');
     if(!['open','forest','hill'].includes(c.terrain)||!CLIMS.includes(c.climate))throw Error('Unknown terrain or climate.');
     if(!Number.isInteger(c.seed)||c.seed<0||c.seed>4294967295)throw Error('Seed must be an unsigned 32-bit integer.');
     for(const k of ['ai','paused','morale','deploy'])if(typeof c[k]!=='boolean')throw Error(k+' must be true or false.');
-    c.ground=this.validGround(c.ground);c.type=this.validType(c.type);
-    return Object.fromEntries(['mode','leftGroups','rightGroups','distance','terrain','climate','seed','ai','paused','morale','deploy','ground','type'].map(k=>[k,c[k]]));
+    c.ground=this.validGround(c.ground);c.type=this.validType(c.type);if(c.fog!=null&&typeof c.fog!=='boolean')throw Error('fog must be true or false.');
+    if(c.powers!=null&&typeof c.powers!=='boolean')throw Error('powers must be true or false.');if(c.commander!=null)c.commander=this.validCommander(c.commander,c);
+    return Object.fromEntries(['mode','leftGroups','rightGroups','distance','terrain','climate','seed','ai','paused','morale','deploy','ground','type',...(c.fog!=null?['fog']:[]),...(c.size!=null?['size']:[]),...(c.powers!=null?['powers']:[]),...(c.commander!=null?['commander']:[])].map(k=>[k,c[k]]));
+  },
+  // (the commander key, normalized: see LabBattleSetup.powers)
+  validCommander(v,c){const bad=m=>{throw Error('Commander: '+m)};if(typeof v!=='object'||Array.isArray(v))bad('use {left, right}, each null or {group, lead}.');const o={};
+    for(const side of ['left','right']){if(!Object.hasOwn(v,side))continue;const s=v[side];if(s===null){o[side]=null;continue}if(typeof s!=='object'||Array.isArray(s))bad(side+' is null or {group, lead}.');const q={};
+      if(s.group!=null){if(!Number.isInteger(s.group)||s.group<0||s.group>=c[side+'Groups'].length)bad(side+' group is the index of one of its rows.');q.group=s.group}
+      if(s.lead!=null){if(typeof s.lead!=='number'||!(s.lead>=0&&s.lead<=10))bad(side+' lead is 0-10.');q.lead=s.lead}o[side]=q}
+    return o
   },
   // (the type key, normalized: see LabBattleSetup.battleType)
   validType(t){if(t==null||t==='field'||t==='bridge'||t==='ambush')return t??'field';const bad=m=>{throw Error('Type: '+m)};
@@ -113,7 +140,13 @@ const BattleLab={
     const num=(v,a,b)=>typeof v==='number'&&Number.isFinite(v)&&v>=a&&v<=b,flags=(v,ks,w)=>{const o={};for(const k of ks)if(v[k]!=null){if(typeof v[k]!=='boolean')bad(w+' '+k+' must be true or false.');if(v[k])o[k]=true}return o};
     if(g.recipe!=null){if(g.recipe!=='river'&&g.recipe!=='crags'&&!Object.hasOwn(TERRAIN_RECIPE,g.recipe))bad('unknown recipe ('+Object.keys(TERRAIN_RECIPE).join(', ')+', river, crags).');const r={recipe:g.recipe};if(seed!==undefined)r.seed=seed;if(g.oasis)r.oasis=true;
       if(g.river!=null&&g.river!==false){if(g.river!==true&&(typeof g.river!=='object'||Array.isArray(g.river)))bad('river must be true or {bridge, frozen, stream}.');r.river=g.river===true?{}:flags(g.river,['bridge','frozen','stream'],'river')}
-      else if(g.recipe==='river')r.river={};return r}
+      else if(g.recipe==='river')r.river={};
+      // (field variety: a layout of the recipe's own, the edges, a road, elven woods)
+      if(g.layout!=null){const L=terrainLayouts(g.recipe==='river'?'open':g.recipe==='crags'?'hills':g.recipe);if(!L.includes(g.layout))bad('layout must be one of '+L.join(', ')+'.');r.layout=g.layout}
+      if(g.edges!=null){if(typeof g.edges!=='object'||Array.isArray(g.edges))bad('edges must be {n, s, w, e}.');const K=['forest','hills','peaks','water','marsh','open'],o={};for(const k of Object.keys(g.edges)){if(!['n','s','w','e'].includes(k)||!K.includes(g.edges[k]))bad('edges: n, s, w or e, each one of '+K.join(', ')+'.');o[k]=g.edges[k]}r.edges=o}
+      if(g.road!=null&&g.road!==false){if(g.road!==true&&g.road!=='ns')bad("road must be true or 'ns'.");r.road=g.road}
+      if(g.elven!=null){if(typeof g.elven!=='boolean')bad('elven must be true or false.');if(g.elven)r.elven=true}
+      return r}
     const out={};
     for(const k of ['hills','woods','marsh']){const l=g[k]??[];if(!Array.isArray(l)||l.length>8)bad(k+' must be a list of at most 8.');
       out[k]=l.map(p=>{if(!p||!num(p.x,0,1)||!num(p.y,0,1)||!num(p.r,16,400))bad(k+' need x, y (0-1) and r (16-400 px).');
@@ -126,6 +159,8 @@ const BattleLab={
       if(l.length)out.rivers=l.map(v=>{if(!v||!num(v.x,.05,.95))bad('a river needs x (0.05-0.95).');if(v.meander!=null&&!num(v.meander,0,64))bad('a river meander is 0-64 px.');const cr=v.crossings??[];if(!Array.isArray(cr)||cr.length>4)bad('a river has at most 4 crossings.');
         const o={x:v.x,crossings:cr.map(c=>{if(!c||!['ford','bridge'].includes(c.kind)||!num(c.y,0,1))bad("a crossing needs kind ('ford' or 'bridge') and y (0-1).");if(c.w!=null&&!num(c.w,16,200))bad('a crossing w is 16-200 px.');const q={kind:c.kind,y:c.y};if(c.w!=null)q.w=c.w;return q}),...flags(v,['frozen','stream'],'river')};
         if(v.meander!=null)o.meander=v.meander;return o})}
+    // (a road across its own features: true (west to east), 'ns' (north to south too) or the share of the field's height it crosses at)
+    if(g.road!=null&&g.road!==false){if(g.road!==true&&g.road!=='ns'&&!num(g.road,0,1))bad("road must be true, 'ns' or a y share (0-1).");out.road=g.road}
     if(seed!==undefined)out.seed=seed;return out},
   builtins(){return [
     {name:'Combined arms',config:{leftGroups:[{type:'hum_foot',count:20},{type:'hum_bow',count:12},{type:'hum_knight',count:6,form:'wedge'}],rightGroups:[{type:'hum_foot',count:20},{type:'hum_bow',count:12},{type:'hum_knight',count:6,form:'wedge'}]}},
@@ -163,7 +198,7 @@ const BattleLab={
   },
   restart(){if(!this.active)throw Error('No active battle test.');const c=structuredClone(this.last);this.exit();return this.start(c)},
   exit(){
-    const s=this.session;if(!s)return 'No active battle test.';B=null;Math.random=s.random;BW=s.width;BATTLE_MOOD=s.mood;
+    const s=this.session;if(!s)return 'No active battle test.';B=null;Math.random=s.random;fieldDone();BW=s.width;BATTLE_MOOD=s.mood;
     this.restoreRecord(P,s.player);this.restoreRecord(G,s.game);this.session=null;
     panel.innerHTML=s.html;panel.classList.toggle('wide',s.wide);ov.hidden=s.overlay;bbar.hidden=s.bar;updateHUD(true);updateHint();
     if(typeof DevConsole!=='undefined')DevConsole.labStatus();return 'Exited test; campaign restored. No rewards or losses applied.';

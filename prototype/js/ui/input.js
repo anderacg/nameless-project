@@ -213,6 +213,8 @@ window.addEventListener('keydown',e=>{
     if(k==='c')return setOrder('charge');if(k==='v')return setOrder('advance');
     // formations: B shield wall, L loose, T wedge (pressed again: line)
     if(!e.repeat){if(k==='b')return toggleFlag('shieldWall');const fk=FORM_PICK.find(f=>FORMS[f].key.toLowerCase()===k);if(fk)return setForm(fk)}
+    // commander powers: Z rally the line, S stand fast, O scout (commandpowers.js)
+    if(!e.repeat){const cp=powerKey(k);if(cp)return commandPower(cp)}
     // unit abilities: G brace, I fire arrows, U spur, Y rally (unitabilities.js)
     if(!e.repeat){const ab=UNIT_ABIL_ORDER.find(id=>UNIT_ABILITIES[id].key.toLowerCase()===k);if(ab)return groupAbility(ab)}
     /* (moving your hero with WASD, sprinting with Shift, blocking with B: set aside)

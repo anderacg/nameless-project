@@ -1,6 +1,6 @@
 # Terrain that matters: design proposal
 
-**Status:** phases 1 and 2 built and committed; phase 3 (depth-sorted trees and cliff faces, concealment, ambush) built 2026-10-18, awaiting the owner's art approval and the `commander.js` sight filter (see §8, "Phase 3 as built"); phase 4's simulation (impassable deep water, cliffs, one-way hills, mountains, routing) built 2026-10-18 on top of phase 3, its art in parallel (see §8, "Phase 4 routing as built"); battle types *Hold the bridge* and *Ambush* built 2026-10-18 on top of both (see §8, "Battle types as built"). Written first as a proposal against HEAD 460c917 on `battle-rts-and-world`.
+**Status:** phases 1 and 2 built and committed; phase 3 (depth-sorted trees and cliff faces, concealment, ambush) built 2026-10-18, awaiting the owner's art approval and the `commander.js` sight filter (see §8, "Phase 3 as built"); phase 4's simulation (impassable deep water, cliffs, one-way hills, mountains, routing) built 2026-10-18 on top of phase 3, its art in parallel (see §8, "Phase 4 routing as built"); battle types *Hold the bridge* and *Ambush* built 2026-10-18 on top of both (see §8, "Battle types as built"). Field variety (battlefields that reflect the world map: real forests, a recipe per tile kind, edges from the neighbours, roads, any field size) built 2026-10-18 (see §8, "Field variety as built"). Written first as a proposal against HEAD 460c917 on `battle-rts-and-world`.
 **Plan item:** IMPLEMENTATION_PLAN §4 battle fun pipeline item 3: "hills (range, downhill charge), river and bridge chokepoints, woods that hide and slow cavalry". It also prepares item 5 (battle types: *hold the bridge*, *ambush*).
 **Readers:** the owner, who makes the decisions in §9, and the developer agents who will build it.
 
@@ -286,7 +286,15 @@ Agents are split by files that do not overlap. The **`B.terrain` shape in §4 is
 - **Fair both ways (player side).** Unseen enemies are not drawn and are not on the minimap. They have no icon (`moraleicons.js`) and cannot be clicked (`commands.js` `rtsUnitAt`). Free fire skips them (`shooterTarget`, and the fallback `nearestSeen`, `meleeTarget` and `roomyFoe`).
 - **An order at a target gone from sight** goes to where it was last seen: the soldiers march to their slots round that point and shoot nothing (`actors.js` `lostStep`). Once they are there with the target still unseen, the order lapses and the group holds. Anyone who comes near enough is seen again, and the order goes on as before. The order line points at the last known place.
 - **Ambush.** A group wholly unseen by its foes within 3 s before its charge lands multiplies its charges' shock by 1.5 for 1.5 s (`AMBUSH`), once a battle, with an "Ambush!" callout.
-- **Still to do.** The enemy captain is not yet bound by sight: `commander.js` must filter its `assess`, `foes` and target picks through `seenBy`/`visibleFoes`. `charmind.js` (characters' own targeting) is unfiltered too.
+- **Still to do.** The enemy captain is not yet bound by sight: `commander.js` must filter its `assess`, `foes` and target picks through `seenBy`/`visibleFoes`. `charmind.js` (characters' own targeting) is unfiltered too. (Since done: `assess` and `liveFoes` filter; see "Fog of war as built".)
+
+### Fog of war as built (2026-10-18)
+
+- **The rule** (`battle/battlefog.js` `FOG`, through `terrain.js` `sightStep`): with `B.fog`, a side sees an enemy soldier only when one of its living, non-routing soldiers is within his sight range with a clear line. Foot 220 px, shooters 260, riders 300, characters 280; big units seen ×1.5 farther; +25% per level the viewer stands above the cell he looks at. Rises and rock block as `riseBlocked`; woods keep the 64/96 px rule; `sightStruck` reveals for 3 s. The API is unchanged (`seenBy`, `visibleFoes`, `lastSeen`, `sightGoal`), and the sight state moved to `B.sight` (`B.terrain.sight` is the same object), so it also runs with no terrain.
+- **Where:** field battles on any ground (rivers, bridge and ambush types included), terrain on or off; never tournaments, sieges or raids (`BattleSetup.fogOn`). `FOG.on` is the Settings toggle (`PREFS.bfog`); the lab has a `fog` key.
+- **Grid:** per side, 16-px cells `vis` (seen) and `rng` (in range). A viewer cell's disc is filled directly unless its box holds a cell a level above it (`hiSum`); then rays from ray templates (`fogCast`), cached per cell and range for the battle. An ambush now needs the group hidden in a wood or within its foes' range behind the ground (`rng`), not merely beyond sight.
+- **Display:** a soft fog over the field and the small map (`fogDraw`, `fogMiniField`), easing over 0.3 s; ghosts at enemy groups' last known places (`fogGhosts`, `drawFogGhosts`), fading over 15 s.
+- **AI:** blind captains advance as a line after 3 s (`captainSearch`); the lull and posture clocks run from the first sighting (`captainMem.seen`).
 
 ### Phase 4 routing as built (2026-10-18, simulation)
 
@@ -442,6 +450,181 @@ Two battle types are built on the phase 3+4 snapshot: `BTYPE` in `setup.js`, and
 - the panels' frame;
 - the lab key;
 - terrain off.
+
+### Field variety as built (2026-10-18)
+
+The owner: "Make battlemap variations based on world map: if you are in forest, you have to have a lot of trees in the map." Built in `battle/terrain.js` (generation, recipes, fairness), with two small hooks in `commander.js` and the lab's `ground` key in `lab.js`. With `TERRAIN.on` false nothing changes.
+
+**What the world says** (`terrainAt`, the tile and its 8 neighbours):
+- **The recipe:** as before, plus **peaks** (a hill tile with 3 or more peak tiles round it). A forest tile in the swamp is the **mire wood**; a forest tile within `TERRAIN_DENSE.elfR` (10) tiles of an elves-only town is **elven woods**.
+- **Edges** (`terrainEdges`): each side's three tiles, the middle one counting twice, 2 of 4 at least: `forest`, `hills`, `peaks`, `water`, `marsh` (a swamp beside a field that is not), or `open` (open land beside a forest's field). A kind like the field's own counts for nothing.
+- **A road:** the tile is a road. It crosses the field west to east, and north to south too where the world's road goes on that way.
+- **A frozen river:** a frost field with no water near gets one at `TERRAIN_RIVER.frostP` (.35). It is all ice and crossed anywhere. Swamp streams now come at .6 (was .5).
+
+**Recipes by tile kind.** Several layouts each, picked by the tile's seed (`TERRAIN_RECIPE`):
+
+| Tile | Layouts |
+|---|---|
+| Plains | plain, hill, copse, wooded hill, copses, **rise** (one broad low hill). In the frost: **snowwood** (snowy copses in pairs), copses, wooded hill, plain, hill |
+| Forest | **deepwood** (58–64% woods), **stands** (50–56%, big stands and clearings), **hillwood** (a low hill under the trees, a clearing on its top), **glade** (a wide glade in the middle); elven: **elvenwood** (55–62%, old stands, two deer paths) |
+| Hills | pair, ridge, wooded ridge, pair with a wooded flank, **rolling** (a level-2 hill in the middle and a low pair), **ridges** (two long ridges); cliffs at .36 / .24 (were .3 / .2) |
+| Peaks | **pass** (mountains along both edges, the lane down the valley between), **saddle** (a hill between four mountains), **gorge** (one great crag off the middle, spires) |
+| Swamp | marsh, **fen** (30–38% marsh, dead trees, dry hummocks, a causeway), **mere** (marsh pools and dead stands); a forest tile: **mirewood** (40–46% woods, 14–18% marsh) |
+| Desert | plain, dune, **dunes** (two long dunes), **erg** (a dune down the middle and a pair), **spires** (rock spires always); still no woods and no water but an oasis |
+
+**Dense fields** (`TERRAIN_DENSE_LAYOUT`, `densePlan`, laid by `denseLay` once hills, rock and rivers are down):
+- **Woods by share.** Seeded noise over the cells, two octaves at the layout's stand size. Each half's deployment zone and its middle take the most wooded cells up to their share. The zone gets the field's share ×(1 − `zoneLess` .2), and the middle gets the rest. What a band cannot hold goes to the other band. Both halves are done alike, so the cover is fair by construction.
+- **The glades.** Each army has a deployment glade: a ragged ellipse at .45 of its zone from its edge, .42 of the zone wide each way and .3 of the field high each way. Clearings come in mirrored pairs; the middle glade and the hilltop clearing have their own.
+- **The way through:**
+  - A road tile has a **road**: 2 cells wide, a cell of verge cleared each side, `T.road` 1.
+  - Otherwise, a **deer path** (2 cells, `T.road` 2) at `pathP` (.65), or a **chain of clearings**.
+  - Elven woods have a second path round the other way. A fen's causeway is always a path.
+  - A way runs edge to edge through both glades and crosses deep water at a crossing (laid like a real road since: see "Roads laid like real ones").
+- **Open neighbours** thin the woods toward their side (`edge` .4 over `band` .22 of the field's height).
+- **Frost:** a frost forest is ×.92 woods (snow fields), never under half the field. The snowy firs are the art's frost palette.
+- **Short fields** (a phone's, the lab's) get smaller clearings (`ks` = field height/520, .55 at least).
+
+**Roads on other fields:** edge to edge near the open lane's height, verges cleared (laid like a real road: see "Roads laid like real ones"). **A road is a little faster:** ×1.1 (`TERRAIN_ROAD.spd`, in `groundMul`), and the HUD line says "On the road (+10% speed)". The ground paints them (see "Sizes, variety and the art joined").
+
+**Edges** (`edgePlan`):
+- **North and south shape their own edge:**
+  - forest: copses along it, ×.75 in the zones;
+  - hills: a low ridge along it (no cliffs);
+  - peaks: crags in its middle stretch, never in a zone;
+  - water, marsh: reed marsh on its shore.
+- **West and east would favour one army** (D5), so they shape both ends alike: woods or marsh at the zones' outer corners, a low hill in a corner, spires just off the zones.
+- A desert takes no woods, water or marsh from its neighbours.
+
+**Larger fields** (`fieldScale`, `TERRAIN_SIZE`). The playable area is compared with ref 572,000 px² (1100 × 520) ×1.3 slack:
+- Beyond that, a field gets an extra mirrored pair of its recipe's `extra` features per ref (copses, hillocks, marsh, dunes), and features up to ×1.5 larger (the 4th root of the area).
+- Dense layouts lay by share, so their coverage holds at any size; their clearings scale with the area.
+- Today's sizes are as before.
+- **The join with the field-size work:** `buildTerrain({W, H, top, bot})`. H is the field's height; it defaults to `BH`, so once `BH` follows the chosen size, nothing more is needed. `riverPlan`, `riverExplicit`, `terrainExplicit` and `rasterTerrain` (`plan.H`) take it too. The deployment zones are the sized field's (see "Sizes, variety and the art joined").
+
+**Fairness** (`terrainFair`):
+- **A dense field (`T.dense`)**, in place of the 25% zone rule:
+  - both zones' shares of cover (woods and marsh) within `fair` (8 points) of each other, and the same for open ground;
+  - each army's glade 70% open at its heart;
+  - an open way from glade to glade (`openWay`: 2×2 blocks of open, ford or bridge cells);
+  - each zone's middle reaching the other's (`route.js` `reachable`, both ways).
+- **Every field, as before:** the halves within 15%, rivers, no rock in a zone or the lane, and reach.
+- **When no sub-seed is fair**, features are dropped in this order: rocks, cliffs, woods, marsh, hills, the dense woods, then the river.
+- **Hills:** a layout's hills are centred or mirrored by another. A pair's shoulders, an edge's ridge and hummocks are `low` (no cliffs).
+
+**The AI** (`commander.js`, only on dense fields):
+- A defending captain may hold a glade or clearing on its half (`TERRAIN_AI.gladeHold`, 1 level's worth). Its infantry stands at the glade's edge toward the foe, who must come through the woods with his formations broken.
+- Riders riding to a spot keep to the roads, paths and clearings' chains when their straight way is 35% woods or more and the way is 10% quicker (`terrain.js` `wayRide`).
+- `B.terrain.ai` gains `dense`, `glades` ({x, y, r, half}) and `ways` ([[x, y], …]). On a dense field, `ai.woods` lists only stands up to 256 px (`denseStands`); the great wood is no patch to ride round.
+
+**For the art** (built since: see "Sizes, variety and the art joined"):
+- `B.terrain.road` (1 road, 2 path) and `recipe.ways` are there to paint a dirt track (now painted).
+- `B.terrain.deep` marks a wood's heart (wood two cells all round). It could be painted as canopy in the ground instead of standing sprites (not done: see below).
+- `recipe.elven` and `recipe.frost` could pick an older or snowier tree mix.
+
+**Measured** (headless, software canvas; `tests/visual/fieldperf.js`):
+
+| Field | Generation | Paint | Trees | Of them in `deep` | A frame of props, whole field | Zoomed ×2 |
+|---|---|---|---|---|---|---|
+| 1100×600 forest | 2–3 ms | 85 ms (old forest about 37) | about 1,000 | 30–37% | 0.9 ms | 0.4 ms |
+| 1600×900 forest | 3–4 ms | 170 ms | about 2,400 | 33–45% | 8.7 ms | 0.4 ms |
+| 2000×1200 forest | 5–6 ms | 270 ms | about 3,700 | 39–47% | 9.5 ms | 0.5 ms |
+| 3200×1800 forest | 10–13 ms | 640 ms | about 9,000 | 47–55% | 22 ms | 0.5 ms |
+
+- The simulation is no dearer on a forest: 1.9 / 4.9 ms a frame at 400 / 800 soldiers, against 2.0 / 5.0 with no terrain.
+- **At today's sizes this is fine.**
+- **On a big field zoomed out, the props cost too much.** Drawn downscaled one by one, they take 9–22 ms a frame. The recommended art change is a level of detail: below zoom ×0.9, draw one tree layer painted once with the ground, not the sorted sprites. Painting `deep` as canopy would also halve the sprites.
+
+**AI on AI** (`tests/visual/fieldbalance.js`; fog on, mirror armies of 20 foot, 12 bows and 6 riders, 30 seeds):
+
+| Field | Left / right wins | Length, mean / median | Unfinished |
+|---|---|---|---|
+| Forest | 16 / 14 | 43 / 42 s | 0 |
+| Hills | 20 / 10 | 46 / 43 s | 0 |
+| Plains | 21 / 9 | 36 / 31 s | 0 |
+| Flat field (control, same code before and after) | 21 / 9 | — | 0 |
+
+- **The left-hand lean is the lab's.** At 1d84c88, the flat control gives the same 21 / 9.
+- **The swamp** (10 seeds): 5 / 5, 48 s.
+- **Riders still spend most of their time in the woods:** 73% of it, against 54% of the field. Their charges go straight at their targets (`actors.js`); only their rides to a spot keep to the ways. (Since: their captains' charges keep to the ways too; see below.)
+
+### Sizes, variety and the art joined (2026-10-18)
+
+**The zones.** `terrain.js` `terrainZone(W, H)`: a sized field (`BFIELD`, when the field built is that one) gives `[back, back + depth]` px off each edge (`fieldZone`); otherwise null, today's outer `TERRAIN.zone` (30%). `buildTerrain` passes it to the plan (`P.zone`, `spec.zone` to force one) and the grid (`T.zone`). Read through `zOut`, `zIn`, `zHi`, `zMid`; with null every expression is today's, so today's fields are the same cell for cell.
+- **Dense fields:** each army's glade at `.45` of its real zone (`G.x`, `G.rx` of the zone's depth); the woods laid by share over the zone and the rest of the half (the ground behind the zone is in "the rest"); clearings spread over the half outside the zone (`outZ`), not all crowded into the narrow middle a big field leaves.
+- **Fairness** (`terrainFair`, `terrainReachFair`): cover, open ground, wood and water counted in the real zones; reach from zone middle to zone middle; every passable cell from the edge to the zone's far side reaches.
+- **Rock** keeps off the zone and the ground behind it (`zHi`).
+- **A pass on a sized field:** its crags as big as the field's height asks (`fh/520`, at most `TERRAIN_ROCK.pass` 2.2) and more of them: two more mirrored pairs along each edge in the middle and one in the ground behind each zone. Rock still never enters a zone's columns (the fairness rule), so the valley's walls have gaps there.
+- **Measured** (`tests/fieldvariety.js`, sizes on): forests at every size 50–64% woods, 120 fields, glades in their zones, fair, nothing dropped; a lab battle on a forest at each size, the lines in their glades; held bridges at big and large and ambushes at small and big fight to the end, nobody in deep water.
+
+**Big woods zoomed out** (`render.js` `LOD {on, z: .9, trees: 2000, rate: 5}`, `engine/ground.js` `PX.battleCanopy`): on a field of more than 2,000 standing trees (`ground.trees`), under zoom ×0.9, the trees are one canopy layer (every tree sprite painted once, in order, into a field-sized canvas, made when first needed and kept) drawn after the corpses and ground effects, under the selection marks and the men; cliff faces and mountains stay sorted sprites. Zoomed in, the sorted sprites as before (depth order, the fade over your men), culled to the view. Across ×0.9 the two cross-fade over 0.2 s of real time (`TREE_A`). Today's fields have well under 2,000 trees (about 1,000 on a forest), so they never use it; their frames are pixel-identical to before (a pixel hash over 4 seeds each: no terrain, hills, plains, forest, swamp, and a large forest at ×1). The canopy layer costs a field-sized canvas (22 MB on a huge field). Not done: painting `deep` as canopy at every zoom (men in a wood's heart would stand on top of its crowns zoomed in).
+
+| Field (forest, whole field in a 1280×720 view) | Trees | Props a frame, sprites | With the canopy layer | Canopy made once |
+|---|---|---|---|---|
+| 1100×600 | 940–1,040 | 2.5–2.7 ms | (no LOD: zoom ×1.16) | — |
+| 1600×900 | 2,000–2,400 | 4.9–5.8 ms | 0.4–0.5 ms | 3–4 ms |
+| 2000×1200 | 3,300–3,800 | 7.7–8.3 ms | 0.5–0.6 ms | 6–9 ms |
+| 3200×1800 | 8,000–9,000 | 15.8–18.4 ms | 0.8–0.9 ms | 18–19 ms |
+
+(`tests/visual/fieldperf.js`, each frame timed to a pixel read back; zoomed in ×2, 1.6–2 ms either way.) A whole `drawBattle` frame of a huge forest battle, 300 soldiers, at the fit (×0.30): 20.8 ms before, 9.7 ms with the canopy; at ×1, 4.9 / 5.0 ms.
+
+**Roads and paths painted** (`engine/ground.js` `paintWays`, step 3b of `PX.battleGround`, from `spec.ways` or `recipe.ways`; `WAYPAL` by climate). Each way's line smoothed (Catmull-Rom); each pixel near it takes its distance, how far along it lies and its kind.
+- **A road:** a worn cart track 20 px wide (restyled since: see "Roads laid like real ones"). Packed snow with snow banked at its verges in the frost, sand in the desert, mud in the swamp.
+- **A path:** a trodden strip 8 px wide (restyled since).
+- **Over marsh:** a way's stretch with marsh round it (a road: 7 of the 7×7 cells round a point, its verges being cleared; a path: 6 of 5×5; gaps of up to 3 samples closed, runs under 4 dropped) is a causeway (a road: raised earth, a log along each side every 14 px, its south face and shadow) or a boardwalk (a path: planks across, 4 px a plank, a beam each side lit on the north, a post every 16 px).
+- Never on water or a sheer face; fainter on a slope (and see below: a face cut for a climbing road). Details, lone trees and copses, and a river bank's reeds keep off it (checked after their draws: the seeded stream is unchanged, and a field with no way paints exactly as before).
+- An ambush's road (straight down its middle) is in `recipe.ways` for the art alone: no `T.road`, so no faster going.
+
+**Riders' charges keep to the ways** (`commander.js` `captainCav`, `TERRAIN_AI.wayCharge` 160): on a dense field an AI charge at a mark over 160 px off whose straight way runs through the woods (`wayRide`: 35% woods or more, 10% quicker by the way) first rides for the road, path or clearings' chain, and goes in from there. Effect (a one-off count, 10 seeds, the field-balance armies, fog on): on today's field with the lab's armies 500 px apart, the riders' time in woods stays 68% (their fights are short and in the woods); on a large field with the armies 1,100 px apart it falls from 63% to 58%, wins 6/4 either way, lengths about the same.
+
+**Tests:** `tests/fieldvariety.js` (35 checks):
+- forest coverage at six sizes (960×290 playable up to 3200×1800), 300 fields with frost, elven, river and road variants;
+- the glades, the fairness numbers and reach;
+- each kind's signature;
+- roads, and the road speed;
+- edges, from the lab and from the world;
+- the same tile, the same field, and tiles that vary;
+- generation time by size;
+- no `Math.random`;
+- the AI's reading;
+- the lab key;
+- terrain off;
+- a world battle in a forest.
+
+`tests/terrain.js`'s hill-symmetry check now allows hills mirrored round a middle one (rolling, erg, isles).
+
+### Roads laid like real ones, and natural ramps (2026-10-18)
+
+The owner: "Battle map road looks bland, it's just like S S S, and it is even drawn above the hills." The road was a Catmull-Rom line through a few fixed points (edge, glade, the crossing nearest the lane, glade, edge) with an even sine meander on top, laid without a look at the ground: it ran straight over hills and cliffs. Then, on the ramps: "make ramp looks natural, no need wood planks, etc. just natural ramp!!!", and on the roads: "cart tracks can have, just make it look natural".
+
+**Planning** (`terrain.js` `wayPlan`, `wayGrid`, `wayCells`, `TERRAIN_WAY`; `denseLay` lays every road, deer path, causeway and chain of clearings with it, on dense fields and others alike):
+- **A least-cost line over the cells** (`route.js` `routeSearch` on a grid of the way's own, laid once the hills, rock, rivers and cliffs are down). A cell's cost: open ground 12, ×1 to ×3.4 by seeded two-octave noise (the way wanders as ground does); wood +14 for a road (+4 a path: paths live in woods), marsh +26 (+16), a ford +44 (+14: a road takes a bridge where there is one), +10 a level of plateau, +80 a slope band (+45), +12 a low cell at a terrace's foot (it keeps off a face); a dense field's stands-to-be (its woods' noise as `denseLay` will lay them) as dear as woods, so a forest road threads the gaps. Rock and deep water are closed; **cliffs are closed both ways** (a one-way hill's too), so a way crosses a terrace's edge only at a slope or a ramp. Rows off the field are closed.
+- **Ends:** where the world's road crosses the edges, as before: west to east (the cheapest edge cell near the lane's height, ±32 px, or near each glade's on a dense field), and top to bottom for one that goes on north or south; the line is carried straight on off the field unless rock or deep water lies there. Legs pass through each army's glade on a dense field; the elven woods' second path keeps its waypoints round the other way.
+- **Loops cut; crossings pinned:** a deep river's crossing on the line is held straight over, from 56 px off one mouth to 56 px off the other.
+- **Shape:** simplified to within 20 px (a path 12; Douglas-Peucker, the pins kept), smoothed (Chaikin, three times), resampled every 4 px, and swayed across its line by seeded value noise: up to 34 px (a path 12), its wavelength 190-330 px (a path 90-150) stretched and squeezed by noise of its own, its strength by an envelope that dies to 30% (straighter stretches); a path has a finer wobble on top (3.5 px, 30-52 px). No sway within 44 px (a path 30) of an end or a pin. **No sine.**
+- **The corridor:** every sample must lie in a cell within 3 of the least-cost cells and like them (kind, level, slope band), with no cliff crossed from the last; where one strays its sway is eased (halved, then dropped, over ±14 samples), where the smoothing strays the line is simplified less (20, 10, 6, 0 px), and at worst the least-cost cells' middles are the line. The points kept (`ways[].p`, every 16 px, was 32) are closer where a chord between two would cut a cliff's corner.
+- **The same tile, the same road** (the way's noise from the field's seed); tiles differ. A way that could not get through without crossing a cliff (never seen in 150 fields) falls back to the foot's cliffs, then none, marked `fall`.
+- **Cells:** `B.terrain.road` as before (1 road, ×1.1; 2 path), but a road cell only on the sample's own level or a slope, never over a cliff's rim. The AI reads `ai.ways` as ever (`wayRide`, `wayCharge`).
+- **The lab:** its own grounds (`{hills, woods, …}`) take `road`: `true` (west to east at the middle), `'ns'` (north to south too) or a share of the field's height.
+
+**Height in the art** (`engine/ground.js`):
+- The ways' lines are reckoned first (2b: `DR`, `DS`, `DK`, now with each pixel's side of the line and a **climb** flag: the terrace level under the line changes within 20 px), then the colour pass. Where a climbing way passes a terrace's face (on a field with no cliffs every edge's earth face is climbable) the face within its half-width and 3 px is **cut to a slope** (`cutW`: graded, worn, `F` 4, no face prop); the side walls likewise. A sheer face is never cut and never painted over (and a road never climbs one). A road climbing a ramp simply runs up its slope, ruts and all, a little stronger than on other slopes (×.85).
+- **Trees keep their crowns off a way's line** (`crownWay`; a wood's trees decided after their draws, so the seeded stream is the same): the forest road shows through the canopy layer zoomed out.
+
+**Roads restyled, natural and low in contrast:** worn earth fading in over a soft, ragged edge, its tone varying smoothly, lighter bare patches; **two faint wheel ruts**, each wandering on its own side of the line (noise, ±1.6 px about 4.6 px out) and fading in and out, so they draw together and apart; a patchy grassy crown between; the odd stone; now and then a puddle in a rut (ice in the frost); its width wandering a little (±2 px). **A path:** a trodden strip a little lighter than the ground, no ruts. Causeways and boardwalks as before.
+
+**Ramps, purely natural** (the phase-4 switchback track of plank-like stripes and the stone cairns are gone, `paintRamps` with them): where a cliff-ringed plateau's edge is a ramp the cliff breaks and the hillside slopes down through the gap, as tall as the cliff beside it (12 px a level): the plateau's own ground and grass shaded in four steps down toward the ground's, the earth showing through in its middle (worn, lighter), grass tufts, its west side in shade and its east side lit, a few loose stones of scree in a soft fan at its foot; the face's end each side a **rock shoulder** (the west one's end in shade, the east one's lit). East, west and north ramps likewise across their edges (`rampPx`, `rampFan`, `rampSide` in `wlTop`/`wlLow`). By climate: snow lying over it in the frost, sand in the desert, mud and moss in the swamp. Its pixels are `F` 4: never a face prop, nothing stands there. A level-2 climb is one long slope. **A field with no cliffs and no way paints exactly as before** (24 such fields hashed pixel for pixel against the snapshot).
+
+**Measured** (`tests/roads.js`, 150 fields: every recipe and its layouts, rivers with bridges, frost, crags; 200 ways):
+- no leg of any way crosses a cliff (13,000+ legs walked on a grid with cliffs closed both ways), none lies on rock or deep water but at a crossing; no way fell back;
+- roads round hills: of 80 roads whose straight way meets a hill, 0.0% of the road lies on a terrace against 19.1% of the straight line;
+- not periodic: the autocorrelation of a road's turning, past its first zero, peaks over .6 on 0 of 188 roads (mean .23); the old even sine meander peaks at .98;
+- the same tile, the same road (points and cells); the next tile another;
+- ends: west-east roads come in off the west edge and leave off the east, north-south ones run top to bottom; both armies reach the road alike (the road's distance from each zone's middle differs by 44 px on average, 102 at the 90th percentile);
+- riders keep to the ways on a dense field (`wayRide`) as before;
+- planning time a field (all its ways): today's 1.0-1.2 ms, 1600×900 2.0-2.5, 2000×1200 2.8-3.3, 3200×1800 6.8-8.7;
+- the art: no road line under a cliff face prop, no face prop over a ramp's middle, a forest road's line open through the canopy.
+
+**Changed expectations:** `tests/fieldvariety.js` "a road that goes on north or south crosses the field that way too" now looks for a road cell in every row within the middle half of the field (was the middle 40%): the road may go round what lies in the middle. Road cells (`B.terrain.road`), `recipe.ways` and the painted ground change on every field with a way, and the ramps on every field with cliffs; the terrain-off fingerprints (battlecommands, actorrules, attackrules, battlesetup, battleresolution, `visual/moraleaudit`, `rts` seeds 1, 2, 44) are byte-identical.
 
 ## 9. Owner decisions (with recommendations)
 

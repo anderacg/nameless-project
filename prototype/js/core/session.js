@@ -13,7 +13,7 @@ class GameSession{
 }
 const gameSession=new GameSession(G,P,W);
 function resetSession(savedPlayer){
-  gameSession.reset(savedPlayer);B=null;bandits=[];bbar.hidden=true;BATTLE_MOOD=null;
+  gameSession.reset(savedPlayer);B=null;fieldDone();bandits=[];bbar.hidden=true;BATTLE_MOOD=null;
   const messages=$('#log');if(messages)messages.textContent='';
   setSpeed(G.speed);pauseUI();
 }

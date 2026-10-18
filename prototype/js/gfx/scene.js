@@ -27,9 +27,8 @@ function sceneCv(S){
       if(d.k==='lamp'){r('#3a3a40',px+7,py+3,2,12);r('#e8c060',px+6,py+1,4,3);S.lights.push({x:px+8,y:py+2,r:10})}
       if(d.k==='stall'){const aw=['#c84a3a','#3a74c8','#c8a03a','#4a9a4a'][d.v%4];r('#6a4a2a',px+2,py+6,28,9);r('#8a6a3a',px+2,py+6,28,2);r(aw,px,py-1,32,6);for(let i=0;i<32;i+=6)r('#f0ece0',px+i,py-1,3,6);r('#6a4a2a',px+1,py+4,1,11);r('#6a4a2a',px+30,py+4,1,11);
         for(let i=0;i<4;i++)r(['#c8a03a','#e05a3a','#78c474','#e8e4d0'][(d.v+i)%4],px+5+i*6,py+7,4,3)}
-      if(d.k==='tree'){const c=S.clim;if(c==='desert'){r('#7a5a32',px+7,py+2,2,13);r('#5a8a3a',px+1,py,14,3);r('#4a7a32',px+3,py-2,10,2)}
-        else if(c==='frost'){r('#4a3a2a',px+7,py+11,2,4);r('#2f5a40',px+2,py+3,12,8);r('#3a6a4a',px+4,py-2,8,6);r('#eef2f6',px+3,py+3,10,2);r('#eef2f6',px+5,py-2,6,2)}
-        else{r('#5a3a20',px+7,py+9,2,6);r(c==='swamp'?'#4a5a30':'#2f6a30',px+1,py-1,14,11);r(c==='swamp'?'#5a6a3a':'#3f8a3e',px+3,py-2,9,6);r('#1f4a20',px+2,py+8,12,2)}}}
+      // (a tree: the battlefield's small one of the climate's species (engine/ground.js PX.smallTree), its shadow to the lower right)
+      if(d.k==='tree'){const P=PX.GROUND_PAL[S.clim]||PX.GROUND_PAL.grass,sp=P.species.length?P.species[d.v%P.species.length][0]:'palm';g.drawImage(PX.battleShadow(14),px+5,py+11);g.drawImage(PX.smallTree(PX.GROUND_PAL[S.clim]?S.clim:'grass',sp,d.v%3),px,py)}}
     // the pier's boat
     if(S.pier){const px=(S.pier.x+3)*TILE,py=(S.pier.y+2)*TILE+2;r('#6a4a2a',px,py,24,6);r('#8a6a3a',px+2,py,20,2);r('#e8e4d0',px+10,py-14,1,14);r('#e8e4d0',px+11,py-12,8,9)}
     // buildings, back to front

@@ -128,7 +128,7 @@ try{
   R.mor=80;R.routed=false;R.shattered=false;R.sync();const u=inf[0];u.inSlot=true;B.groups[testGroup('inf')].face=0;t.flankMul(u,{x:u.x-20,y:u.y});
   ok(t.grpMorale(inf).weak.includes('flanked'),'hit from behind: flanked');R.shockAt=B.t;R.outAt=B.t;B.leadFell=[B.t];B.losing=[true,false];
   const w=t.grpMorale(inf).weak;ok(['flanked','outnumbered','charged','leader','losing'].every(k=>w.includes(k)),'and outnumbered, charged, its leader fallen, its side losing ('+w.join(', ')+')');
-  t.setOrderUI();const card=document.querySelector('[data-grp="'+testGroup('inf')+'"]');ok(card.querySelectorAll('.cmi svg.mico').length===5&&/flanked/.test(card.title),'the card shows a badge for each weakness (steady: no morale badge) ('+card.title+')');
+  t.setOrderUI();const card=document.querySelector('[data-grp="'+testGroup('inf')+'"]');ok(card.querySelectorAll('.cmi svg.mico').length===t.CARD.show&&['flanked','overwhelmed','charged','leader fallen','army depleted'].every(w=>card.title.includes(w)),'the card shows a badge for its weaknesses, '+t.CARD.show+' at most, all five in its tooltip (steady: no morale badge) ('+card.title+')');
   B.t+=10;B.losing=[false,false];ok(!t.grpMorale(inf).weak.length,'weaknesses pass once it is left alone');
   let drawn=0;const fr=t.ctx.fillRect.bind(t.ctx);t.ctx.fillRect=(...a)=>{drawn++;return fr(...a)};t.drawUnitIcons();t.ctx.fillRect=fr;ok(drawn>60,'icons over the groups, yours and theirs: plate, type and health ('+drawn+' rects)');
   ok(t.unitIcon('hero',[B.hero])==='hero'&&t.unitIcon(testGroup('inf'),t.grpUnits(testGroup('inf')))==='spear'&&t.unitIcon(testGroup('arc'),t.grpUnits(testGroup('arc')))==='bow','each icon shows what the unit is (your hero: a crown; spearmen: a spear; archers: a bow)');
@@ -421,15 +421,15 @@ try{
  // the icons: walking (advance), running (charge), a white flag (withdraw), the same flag over a unit that runs
  ok(t.ORDER_ICON.withdraw[0].includes('b')&&t.ORDER_ICON.charge.some(r=>r.includes('b'))&&t.GLYPH.routing,'advance walks, charge runs, withdraw is a white flag (and so is a routed unit\u2019s badge)');
  // no flicker: closing on their foes and pointing their weapons, men do not flip their facing or their weapon's angle back and
- // forth from one frame to the next; and the icons of groups that come close are set side by side, never on top of each other
+ // forth from one frame to the next; and the icons follow their groups, never jumping (they may overlap: none here are at blows)
  {P.troops={hum_spear:8};G.mode='world';G.modal=false;t.hidePanel();const L=['orc_grunt','orc_grunt','orc_shield','orc_shield','hum_levy','hum_levy','militia','militia'];G.enc={kind:'party',ref:{cool:0,x:P.x,y:P.y},list:L};
   t.startBattle({enemies:L,tournament:false});const B=t.B;B.obs=[];B.noMorale=true;const es=B.units.filter(u=>u.team===1),my=B.units.filter(u=>u.team===0&&!u.hero),mx=my.reduce((a,u)=>a+u.x,0)/my.length;
-  B.units.forEach(u=>u.hp=u.max=u.max*20);es.forEach(u=>{u.x=mx+140+Math.random()*20;u.grp=null});const fl={},ix={};es.forEach(u=>{fl[u.id]=[];ix[u.id]=[]});let ov=0;
+  B.units.forEach(u=>u.hp=u.max=u.max*20);es.forEach(u=>{u.x=mx+140+Math.random()*20;u.grp=null});const fl={},ix={};es.forEach(u=>{fl[u.id]=[];ix[u.id]=[]});let jump=0,off=0;const was={};
   for(let f=0;f<700;f++){t.updateBattle(.016);t.frame();es.forEach(u=>{if(u.nearW)u.wasNear=true;fl[u.id].push(u.face);if(u.wIdx!=null)ix[u.id].push(u.wIdx)});
-   const I=B.icons||[];for(let a=0;a<I.length;a++)for(let b=a+1;b<I.length;b++){const p=I[a],q=I[b];if(p.x<q.x+q.w&&q.x<p.x+p.w&&p.y<q.y+q.h&&q.y<p.y+p.h)ov++}}
+   for(const r of B.icons||[]){const w=was[r.g],c=t.fromField({x:r.cx,y:r.cy});if(w)jump=Math.max(jump,Math.hypot(r.x-w.x,r.y-w.y));off=Math.max(off,Math.abs(r.x+r.w/2-c.x));was[r.g]={x:r.x,y:r.y}}}
   const flips=a=>{let n=0;for(let k=2;k<a.length;k++)if(a[k]!==a[k-1]&&a[k]===a[k-2])n++;return n},F=es.reduce((a,u)=>a+flips(fl[u.id]),0),X=es.reduce((a,u)=>a+flips(ix[u.id]),0);
   ok(es.filter(u=>u.wasNear).length>=6&&F===0&&X===0,'closing in and pointing their weapons, none flickers ('+es.filter(u=>u.wasNear).length+' came to grips; '+F+' facing and '+X+' weapon flips)');
-  ok(ov===0,'and the icons of groups close together never sit on top of each other ('+ov+' overlaps)');B.over=true;B.endT=0;t.B=null}
+  ok(jump<=6&&off<=24,'and the icons follow their groups, over them, never jumping (at most '+Math.round(jump)+' px a frame, '+Math.round(off)+' px off its middle)');B.over=true;B.endT=0;t.B=null}
  // steady: a man in his place stays there till pushed clearly out; a shooter stands while his foe is in his range
  {const B=fight(['militia']);B.obs=[];const e=B.units.find(u=>u.team===1);e.x=t.BW-30;e.s={...e.s,spd:0};e.cd=99;const inf=t.grpUnits(testGroup('inf')),u=inf[0];
   const g=B.groups[testGroup('inf')];inf.forEach(m=>{m.x=g.ax+m.sx;m.y=g.ay+m.sy});for(let j=0;j<10;j++)t.updateBattle(.03);ok(u.slotted,'in his place');const sx=g.ax+u.sx;u.y=g.ay+u.sy;u.x=sx+4;t.updateBattle(.03);ok(u.spdNow===0,'nudged a little, he stays (no step, stop, step as his neighbours jostle)');

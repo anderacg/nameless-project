@@ -15,8 +15,9 @@ function setAutoSkills(on){prefSet('autoskills',on);if(B)log('Auto skills '+(AUT
 // the AI in command of your army, kept for the next battle (setAuto)
 const BAUTO=prefView('bauto');
 function setDeploy(on){prefSet('bdeploy',on)}
-// the deployment zone (field px); holding a bridge, your whole bank (B.dzone: setup.js arrangeType)
-const deployZone=()=>({x0:8,x1:B&&B.dzone?B.dzone.x1:Math.round(BW*DEPLOY.zone),y0:fieldTop(),y1:fieldBot()});
+// the deployment zone (field px): your side's (setup.js fieldZone: on a sized field with open ground behind it); holding a bridge,
+// on to the bank (B.dzone: setup.js arrangeType)
+const deployZone=()=>{const Z=fieldZone(0);if(B&&B.dzone)Z.x1=Math.max(Z.x0+FORMS.line.gx*2,B.dzone.x1);return Z};
 function deployInit(opts){B.deploy=!!(opts.deploy&&(opts.sandbox||BDEPLOY.on)&&!opts.tournament);B.auto=!opts.tournament&&BAUTO.on;if(B.deploy&&GUIDE.on)log('Deploy your band: right-click or right-drag in the shaded zone, then Space to begin.')}
 // keep a point in the zone
 const inZone=(x,y)=>{const Z=deployZone();return{x:clamp(x,Z.x0,Z.x1),y:clamp(y,Z.y0,Z.y1)}};

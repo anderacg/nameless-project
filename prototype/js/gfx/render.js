@@ -56,15 +56,13 @@ function drawWorld(){
   // nothing that moves shows outside it; labels likewise (a place's, where you know the land; anyone's, only in your sight)
   {const mg=memCv().getContext('2d');mg.clearRect(0,0,VW,VH);mg.drawImage(cv,0,0)}const nPlace=TXTQ.length,px0=P.x-cam.x,py0=P.y-cam.y;
   ents.filter(e=>!e.st).sort((a,b)=>a.y-b.y).forEach(e=>e.f());
-  ctx.save();ctx.beginPath();ctx.rect(0,0,VW,VH);ctx.arc(px0,py0,V,0,Math.PI*2,true);ctx.clip('evenodd');ctx.drawImage(memCv(),0,0);ctx.restore();
+  fogMem(memCv(),px0,py0,V);
   const q=TXTQ;TXTQ=null;q.forEach((a,i)=>{const wx=a[1]+cam.x,wy=a[2]+cam.y;if(i<nPlace?seenAt(wx,wy+6):inSight(wx,wy+8))txt(...a)});
   drawEnv(cam,V,1);
   drawQuestMarks(cam);
   if(P.tx!=null){const sx=Math.round(P.tx-cam.x),sy=Math.round(P.ty-cam.y);ctx.strokeStyle='#e8b94a';ctx.lineWidth=1;ctx.strokeRect(sx-3.5,sy-3.5,7,7)}
-  // fog and night
-  // the land you remember, outside your sight, lies dim; land you have never seen is dark
-  const px=P.x-cam.x,py=P.y-cam.y,gr=ctx.createRadialGradient(px,py,V*.82,px,py,V);gr.addColorStop(0,'rgba(5,8,20,0)');gr.addColorStop(1,'rgba(5,8,20,.5)');ctx.fillStyle=gr;ctx.fillRect(0,0,VW,VH);
-  drawDark(cam);
+  // fog and night: the land you remember, outside your sight, lies dim; land you have never seen is dark (fog.js)
+  drawWorldFog(cam,V);
   // the tile grid and a building being placed lie over the fog
   if(GRID.on||G.place)drawGrid(cam.x,cam.y,VW,VH,cam.x,cam.y,1);
   if(G.place)drawPlace(cam);
@@ -105,11 +103,12 @@ function drawUnit(u){
   if(u.buffT>0){ctx.fillStyle='rgba(232,185,74,.35)';ctx.fillRect(x-6,y-2,12,3)}
   const hit=u.hitAt!=null&&B.t-u.hitAt<.09;
   // (moving: a step in the last few frames, so a man who stops and starts as he settles does not flicker between standing and walking)
-  {const step=u.plx!=null&&Math.hypot(u.x-u.plx,u.y-u.ply)>.02;u.plx=u.x;u.ply=u.y;u.movF=step?6:Math.max(0,(u.movF||0)-(B.paused?0:1));const moved=u.movF>0;const beast=!!(ST[u.type]&&ST[u.type].beast),cl=moved&&typeof climbState==='function'?climbState(u):null;let pose=beast?0:procPose(u,moved);
+  {const step=u.plx!=null&&Math.hypot(u.x-u.plx,u.y-u.ply)>.02;u.plx=u.x;u.ply=u.y;u.movF=step?6:Math.max(0,(u.movF||0)-(B.paused?0:1));const moved=u.movF>0;const beast=!!(ST[u.type]&&ST[u.type].beast),cl=moved&&typeof climbState==='function'?climbState(u):null;let pose=beast?beastPose(u,moved):procPose(u,moved);
     // (on a hill's slope (the ground's climbState): walking or running up, bent forward on short slow steps; down, leaning on long ones)
-    if(cl&&((pose>=2&&pose<=5)||(pose>=15&&pose<=18)))pose=cl==='up'?19+Math.floor(B.t*5+(u.v||0))%4:23+Math.floor(B.t*9+(u.v||0))%4;
-    const sp=beast?(pose?unitSprite(u.type,u.team,u.hero,u.v,pose):s):unitSprite(u.type,u.team,u.hero,u.v,pose,true,!!u.inMelee);
-    let bx=0,bo=0;if(beast){if(moved)bo=-(Math.floor(B.t*8+(u.v||0))%2);if(u.atkAt!=null&&B.t-u.atkAt<ATK_ANIM)bx=Math.round(3*Math.sin((B.t-u.atkAt)/ATK_ANIM*Math.PI))}
+    if(cl&&!beast&&((pose>=2&&pose<=5)||(pose>=15&&pose<=18)))pose=cl==='up'?19+Math.floor(B.t*5+(u.v||0))%4:23+Math.floor(B.t*9+(u.v||0))%4;
+    const sp=beast?unitSprite(u.type,u.team,u.hero,u.v,pose):unitSprite(u.type,u.team,u.hero,u.v,pose,true,!!u.inMelee);
+    // (a beast's blow: its pose, and a short lunge with it; its steps bob in its frames)
+    let bx=0,bo=0;if(beast&&u.atkAt!=null&&B.t-u.atkAt<ATK_ANIM)bx=Math.round(2*Math.sin((B.t-u.atkAt)/ATK_ANIM*Math.PI))
     ctx.save();ctx.translate(x,y-z+bo);if(deep||ford){const sk=deep?2:0;ctx.translate(0,sk);ctx.beginPath();ctx.rect(-64,-128,128,128-sk-(deep?2:0));ctx.clip()}if(u.face<0)ctx.scale(-1,1);if(ghost)ctx.globalAlpha=.55;ctx.drawImage(hit?whiteOf(sp):sp,-Math.floor(sp.width/2)+bx,-sp.height+2);if(!beast)drawHeld(u,u.inMelee?sidearmLook(u):unitLook(u),sp,-Math.floor(sp.width/2)+bx,-sp.height+2,hit);ctx.restore();
     // (climbing: a little grit trickles down the slope behind him now and then; coming down, a puff at the heel: from his id and the
     // battle's time, drawn only)
@@ -159,6 +158,14 @@ function drawSlash(s){
    bodies cover (PF: the least feet y there), so a prop looks at a few cells, not at every soldier */
 const PROPFADE={a:.4,rate:4,cell:8};
 let PF=null,PFT=0;
+/* the woods zoomed out (a level of detail): a field of more than LOD.trees standing trees, seen at a zoom under LOD.z, has its trees
+   drawn as one canopy layer (engine/ground.js PX.battleCanopy, painted once and kept) under the soldiers, not thousands of sprites
+   sorted in with them; cliff faces and mountains stay sorted. Across LOD.z the two cross-fade over 1/LOD.rate s (real time). Only
+   art: who is seen, hidden or drawn is as ever. TREE_A: the sprites' share this frame (1 - the layer's) */
+const LOD={on:true,z:.9,trees:2000,rate:5};
+let TREE_A=1;
+function lodStep(){const g=B.ground;if(!g||!LOD.on||!(g.trees>LOD.trees)){if(g)g.lod=0;return 0}const to=(B.cam?B.cam.z:1)<LOD.z?1:0,now=performance.now();
+  if(g.lod==null){g.lod=to;g.lodT=now}const st=Math.min(.1,(now-g.lodT)/1000)*LOD.rate;g.lodT=now;g.lod=g.lod<to?Math.min(to,g.lod+st):Math.max(to,g.lod-st);return g.lod}
 function propsInView(out,v0,v1,v2,v3){
   const L=B.ground&&B.ground.props;if(!L||!L.length)return;const c=PROPFADE.cell,gw=Math.ceil(BW/c)+1,gh=Math.ceil(BH/c)+1;
   if(!PF||PF.length!==gw*gh)PF=new Float32Array(gw*gh);PF.fill(1e9);let any=false;
@@ -166,44 +173,55 @@ function propsInView(out,v0,v1,v2,v3){
     const ga=Math.max(0,Math.floor(y0/c)),gb=Math.min(gh-1,Math.floor(y1/c)),ha=Math.max(0,Math.floor(x0/c)),hb=Math.min(gw-1,Math.floor(x1/c));
     for(let gy=ga;gy<=gb;gy++)for(let gx=ha;gx<=hb;gx++){const i=gy*gw+gx;if(u.y<PF[i])PF[i]=u.y}}
   const now=performance.now(),st=PFT?Math.min(.1,(now-PFT)/1000)*PROPFADE.rate:1;PFT=now;
-  for(const p of L){const b=p.box;if(b[2]<v0||b[0]>v2||b[3]<v1||b[1]>v3)continue;let cov=false;
+  const noT=TREE_A<=0;for(const p of L){if(noT&&p.dk===1)continue;const b=p.box;if(b[2]<v0||b[0]>v2||b[3]<v1||b[1]>v3)continue;let cov=false;
     if(any){const ga=Math.max(0,Math.floor(b[1]/c)),gb=Math.min(gh-1,Math.floor(b[3]/c)),ha=Math.max(0,Math.floor(b[0]/c)),hb=Math.min(gw-1,Math.floor(b[2]/c));
       for(let gy=ga;gy<=gb&&!cov;gy++){const o=gy*gw;for(let gx=ha;gx<=hb;gx++)if(PF[o+gx]<p.y){cov=true;break}}}
     const to=cov?PROPFADE.a:1,a=p.al==null?1:p.al;p.al=a<to?Math.min(to,a+st):Math.max(to,a-st);out.push(p)}}
 // one standing prop: a tree, or a section of a cliff face (faded by propsInView)
-function drawProp(o){const a=o.al==null?1:o.al;if(a<1)ctx.globalAlpha=a;ctx.drawImage(o.s,o.dx,o.dy);if(a<1)ctx.globalAlpha=1}
+function drawProp(o){const a=(o.al==null?1:o.al)*(o.dk===1?TREE_A:1);if(a<1)ctx.globalAlpha=a;ctx.drawImage(o.s,o.dx,o.dy);if(a<1)ctx.globalAlpha=1}
 // what stands on the field, in the order it is drawn (by feet): obstacles and the living; with terrain the trees and cliff faces
-// in view sorted in too, and of the enemy only those your side sees (terrain.js seenBy)
+// in view sorted in too, and of the enemy only those your side sees (terrain.js seenBy: woods, rises, the fog). Only those in view
+// (ENT_PAD px round it for their bodies; a big field zoomed in leaves most of them out)
+const ENT_PAD={x:64,up:24,down:96};
 function battleEnts(){
-  let ents;if(B.terrain&&B.ground){const c=B.cam,z=c?c.z:1,vx=c?c.x:0,vy=c?c.y:0;ents=B.obs.slice();propsInView(ents,vx-16,vy-16,vx+BVW/z+16,vy+BVH/z+40);for(const u of B.units)if(u.hp>0&&seenBy(0,u))ents.push(u)}
-  else ents=[...B.obs,...B.units.filter(u=>u.hp>0)];
+  const c=B.cam,z=c?c.z:1,vx=c?c.x:0,vy=c?c.y:0,x0=vx-ENT_PAD.x,x1=vx+BVW/z+ENT_PAD.x,y0=vy-ENT_PAD.up,y1=vy+BVH/z+ENT_PAD.down,inV=o=>o.x>=x0&&o.x<=x1&&o.y>=y0&&o.y<=y1;
+  let ents;if(B.terrain&&B.ground){ents=B.obs.filter(inV);propsInView(ents,vx-16,vy-16,vx+BVW/z+16,vy+BVH/z+40);for(const u of B.units)if(u.hp>0&&inV(u)&&seenBy(0,u))ents.push(u)}
+  else ents=[...B.obs.filter(inV),...B.units.filter(u=>u.hp>0&&inV(u)&&seenBy(0,u))];
   return ents.sort((a,b)=>a.y-b.y)}
+// (a field-sized layer (the ground, the blood, the shooters' reach), only the part in view: the same pixels as drawing it whole)
+function drawInView(img){const c=B.cam,z=c?c.z:1,vx=c?c.x:0,vy=c?c.y:0,W=img.width,H=img.height,x0=clamp(Math.floor(vx)-2,0,W),y0=clamp(Math.floor(vy)-2,0,H),x1=clamp(Math.ceil(vx+BVW/z)+2,0,W),y1=clamp(Math.ceil(vy+BVH/z)+2,0,H);
+  if(x1>x0&&y1>y0)ctx.drawImage(img,x0,y0,x1-x0,y1-y0,x0,y0,x1-x0,y1-y0)}
 function drawBattle(){
   warmStep();// (sprites made ahead before they are needed: sprites.js)
   // the camera (camera.js): the field drawn at its zoom and pan, the HUD over it at the screen's scale
   if(B.cam)camTick();const Cz=B.cam?B.cam.z:1;
   // (deploying, the battle's clock stands: who sees whom is reckoned on the real one as your men are placed, terrain.js)
-  if(B.terrain&&B.deploy){const n=performance.now(),S=B.terrain.sight;if(!S||!(n-(S.rt||0)<250)){sightStep(true);B.terrain.sight.rt=n}}ctx.fillStyle='#07090e';ctx.fillRect(0,0,BVW,BVH);ctx.save();if(B.cam){ctx.scale(Cz,Cz);ctx.translate(-Math.round(B.cam.x*Cz)/Cz,-Math.round(B.cam.y*Cz)/Cz)}
+  if(sightOn()&&B.deploy){const n=performance.now(),S=B.sight;if(!S||!(n-(S.rt||0)<250)){sightStep(true);B.sight.rt=n}}ctx.fillStyle='#07090e';ctx.fillRect(0,0,BVW,BVH);ctx.save();if(B.cam){ctx.scale(Cz,Cz);ctx.translate(-Math.round(B.cam.x*Cz)/Cz,-Math.round(B.cam.y*Cz)/Cz)}
   // (a field with terrain: its own ground, painted once over the arena: engine/ground.js; units, as ever, over it)
-  ctx.drawImage(B.terrain?B.ground||(B.ground=PX.battleGround({...B.terrain,climate:B.env.c,base:B.arena})):B.arena,0,0);
+  drawInView(B.terrain?B.ground||(B.ground=PX.battleGround({...B.terrain,climate:B.env.c,base:B.arena})):B.arena);
   // (a river moves: glints and current over its water, engine/ground.js PX.battleWater, on the ground's own clock (real time, still
   // while paused); still water for those who ask for less motion (vfx.js reducedMotion))
   if(B.terrain&&B.ground.water){const gw=B.ground,now=performance.now();if(!B.paused&&gw.wl)gw.wt=(gw.wt||0)+Math.min(.1,(now-gw.wl)/1000);gw.wl=now;
     if(!reducedMotion()){const c=B.cam,z=c?c.z:1,vx=c?c.x:0,vy=c?c.y:0;PX.battleWater(ctx,gw,gw.wt||0,[vx,vy,vx+BVW/z,vy+BVH/z])}}{const t=fieldTop()-FIELD_EDGE.body+6,b=fieldBot()+4;ctx.fillStyle='rgba(8,10,16,.35)';if(t>0)ctx.fillRect(0,0,BW,t);if(b<BH)ctx.fillRect(0,b,BW,BH-b);ctx.fillStyle='rgba(232,224,200,.18)';if(t>0)ctx.fillRect(0,t,BW,1);if(b<BH)ctx.fillRect(0,b,BW,1)}// (the field's edges in sight: battle.js fieldTop)
   if(!B.deploy)drawExit();drawDeploy();// (the withdrawal edge: morale.js; the deployment zone: deploy.js)
   drawCorpses();vfxGround();// (the fallen and their blood; dust, shockwaves: vfx.js)
+  {const l=B.terrain&&B.ground?lodStep():0;TREE_A=1-l;if(l>0){if(l<1)ctx.globalAlpha=l;drawInView(PX.battleCanopy(B.ground));ctx.globalAlpha=1}}// (a big wood zoomed out: its canopy layer, LOD)
   for(const g of playerGroups()){const gr=B.groups[g];if((gr.order!=='hold'&&gr.order!=='advance')||!grpUnits(g).length)continue;
     const fx_=Math.round(gr.ax),fy=Math.round(gr.ay);rect(ctx,C.wood,fx_,fy-14,1,14);rect(ctx,C.team[0],fx_+1,fy-14,6,4);rect(ctx,'#e4e0cf',fx_+3,fy-13,2,2)}
   // your selection underlined; the box you drag; where you last sent them (a ring), or whom you set them on (red)
-  drawFireRange();drawSelection();drawOrderLines();// (shooters' reach and line of fire: battlehud.js)
+  drawFireRange();drawSelection();// (shooters' reach and line of fire: battlehud.js)
+  if(!orderPathsOn())drawOrderLines();// (Settings → Order paths off: the straight lines; on, ui/orderpaths.js draws the paths over the men below)
   drawFormGhost();// (a line being dragged: formations.js)
+  drawCommandPowers();// (the command radius, Stand Fast!'s glow: commandpowers.js)
   if(B.box){const b=B.box;ctx.strokeStyle='#e8b94a';ctx.lineWidth=1;ctx.strokeRect(Math.min(b.x0,b.x1)+.5,Math.min(b.y0,b.y1)+.5,Math.abs(b.x1-b.x0),Math.abs(b.y1-b.y0))}
   if(B.mark&&B.mark.t>0){const m=B.mark;ctx.strokeStyle=m.foe?'#ff6a5a':'#e8b94a';ctx.globalAlpha=Math.min(1,m.t*2);ctx.beginPath();ctx.ellipse(m.x,m.y,8*(1.4-m.t*.5),4*(1.4-m.t*.5),0,0,7);ctx.stroke();ctx.globalAlpha=1;m.t-=1/60}
-  battleEnts().forEach(o=>o.kind?(sp=>ctx.drawImage(sp,Math.round(o.x)-(sp.width>>1),Math.round(o.y)+4-sp.height))(obstacleSprite(o.kind,B.env.c)):o.dk?drawProp(o):drawUnit(o));
+  obstacleGround();battleEnts().forEach(o=>o.kind?drawObstacle(o):o.dk?drawProp(o):drawUnit(o));// (obstacles: their ground, then each in the depth order: sprites.js)
+  drawOrderPaths();// (where your groups are going, routed and cut as they walk, over the men, trees and rock: ui/orderpaths.js)
   for(const a of B.arrows){if(a.arc){const z=Math.max(0,a.z),ang=Math.atan2(a.vy-a.vz,a.vx),sc=Math.min(1,z/50);
       ctx.fillStyle='rgba(0,0,0,'+(.35-sc*.2).toFixed(2)+')';ctx.fillRect(Math.round(a.x-2),Math.round(a.y),4,1);
       ctx.save();ctx.translate(Math.round(a.x),Math.round(a.y-4-z));ctx.rotate(ang);ctx.fillStyle='#e8e4d0';ctx.fillRect(-4,0,7,1);ctx.fillStyle='#c9ced8';ctx.fillRect(3,0,2,1);ctx.fillStyle='#d8d0c0';ctx.fillRect(-5,-1,2,1);ctx.fillRect(-5,1,2,1);ctx.restore();continue}
     if(a.magic){if(Math.random()<.6)vfx({k:'ember',x:a.x+rnd(-2,2),y:a.y+rnd(-2,2),vx:rnd(-12,12),vy:rnd(-12,6),life:rnd(.2,.4),col:a.col});const fl=Math.floor(performance.now()/80)%2;ctx.fillStyle=a.col;ctx.globalAlpha=.35;ctx.beginPath();ctx.arc(a.x,a.y,5+fl,0,7);ctx.fill();ctx.globalAlpha=1;ctx.beginPath();ctx.arc(a.x,a.y,2.5,0,7);ctx.fill();ctx.fillStyle='#fff';ctx.fillRect(Math.round(a.x)-1,Math.round(a.y)-1,2,2);continue}ctx.save();ctx.translate(Math.round(a.x),Math.round(a.y));ctx.rotate(a.a);ctx.fillStyle='#e8e4d0';ctx.fillRect(-4,0,7,1);ctx.fillStyle='#c9ced8';ctx.fillRect(3,0,2,1);ctx.restore()}
+  fogDraw();// (the fog of war over the field outside your side's sight: battlefog.js)
   const h=B.hero;
   // No persistent short aim arc; selected shooters already have the shared range fan.
   if(h&&h.hp>0&&B.blocking){ctx.strokeStyle='#9fc0ff';ctx.lineWidth=3;ctx.beginPath();ctx.arc(h.x,h.y-6,13,B.aim-.9,B.aim+.9);ctx.stroke()}
@@ -215,7 +233,7 @@ function drawBattle(){
   // (a number pops up big and settles)
   for(const f of B.floats){const a=f.age||0,k=a<.12?1+(1-a/.12)*.6:1;if(k===1){txt(f.t,Math.round(f.x),Math.round(f.y),f.c,'center');continue}ctx.save();ctx.translate(Math.round(f.x),Math.round(f.y));ctx.scale(k,k);txt(f.t,0,0,f.c,'center');ctx.restore()}
   ctx.restore();
-  drawUnitIcons();// (each group's type, health, morale and weaknesses, over it, the same size at any zoom: ui/moraleicons.js)
+  drawFogGhosts();drawUnitIcons();// (the fog's ghosts, where enemy groups were last seen; each group's type, health, morale and weaknesses, over it, the same size at any zoom: ui/moraleicons.js)
   // the HUD at the screen's scale over the zoomed-out field
   ctx.save();ctx.scale(BVW/VW,BVH/VH);
   drawHeroHud();drawMiniField();// (the small map of the field, top right: camera.js)

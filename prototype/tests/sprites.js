@@ -8,7 +8,7 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),out=()=>{cons
   ok((0,eval)('typeof ART')==='undefined'&&!document.querySelector('script[src="js/art.js"]')&&!document.getElementById('artBtn'),'no sprite sheets are loaded and there is no art switch');
   ok(t.TOWNS.every(x=>{const c=t.lotCentre(x);return c&&t.lotSprite(x,c).width===c.n*16}),'every holding has a centre building, its picture exactly its cell');
   ok(['cave','ruins','shrine','hideout','travelers'].every(ty=>t.siteSprite({type:ty,seed:7,i:1,x:100,y:100,kind:0}).width>0),'every kind of site has a generated sprite');
-  ok(['grass','frost','desert','swamp'].every(c=>t.obstacleSprite('tree',c).width>0&&t.obstacleSprite('rock',c).width>0),'trees and rocks for every climate');
+  ok(['grass','frost','desert','swamp'].every(c=>['tree','rock','cactus'].every(k=>{const o=t.PX.battleObstacle(k,c,0);return o.s.width>0&&o.g.width>0})),'trees, rocks and cacti for every climate');
   ok(Object.keys(t.CRITTERS).every(k=>t.critterSprite(k).width>0),'every critter has a sprite');
   ok(Object.keys(t.ST).every(k=>t.unitSprite(k,1,false).width>0),'every fighter has a sprite');
   // drawing
@@ -61,6 +61,29 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),out=()=>{cons
   sw.atkStyle='swing';const at=f=>{sw.atkAt=B.t-f*t.ATK_ANIM;return st(sw,'sword')};const a0=at(.05),a1=at(.42),a2=at(.6);ok(a0<a1&&a1<a2&&a0<-100&&a2>30&&at(.2)===a0,'a blow: a wind-up held a moment, then a fast strike from raised behind to down in front ('+[a0,a1,a2].map(Math.round).join(' \u2192 ')+')');
   sp.atkStyle='thrust';sp.atkAt=B.t-.4*t.ATK_ANIM;ok(t.holdOf(sp,'spear')[1]>1,'a thrust drives the spear forward');
   sp.atkAt=null;sp.tgt=null;sp.spdNow=sp.s.spd;sp.plx=sp.x-1;ok(t.procPose(sp,true)>=15&&t.procPose(sp,true)<=18,'running shows the run');sp.spdNow=sp.s.spd*.5;ok(t.procPose(sp,true)>=2&&t.procPose(sp,true)<=5,'walking the walk');
+  B.over=true;B.endT=0;t.B=null;G.mode='world'}
+ // obstacles (a field without terrain): drawn in the ground's style (engine/ground.js PX.battleObstacle: a battle tree of the
+ // climate's, a boulder of its rock, a cactus), never the old sprites; where they stand and what they block as before
+ {ok((0,eval)('typeof obstacleSprite')==='undefined'&&!/paintDecor/.test(t.paintArena.toString())&&/PX\.battleDetails/.test(t.paintArena.toString())&&/PX\.smallTree/.test(t.sceneCv.toString()),'the old sprites are gone: no obstacleSprite; the battle ground\u2019s small things are the terrain\u2019s; a town\u2019s trees are the ground\u2019s small ones');
+  // (placement: as before the art changed, seeds 1, 2, 3, 7 and 44, every climate and ground: kinds, places and radii)
+  const mr0=Math.random;let h=0;for(const s of [1,2,3,7,44])for(const c of ['grass','frost','desert','swamp'])for(const tt of [t.T_OPEN,t.T_FOREST,t.T_HILL]){Math.random=t.seeded(s);for(const q of t.placeObstacles({c,t:tt}))h=(Math.imul(h,31)+q.kind.length*1009+q.x*7+q.y*131+q.r*17)|0}Math.random=mr0;
+  ok(h===2075583050,'obstacles stand where they stood, as large (placement fingerprint '+h+' on a '+t.BW+'x'+t.BH+' field)');
+  const SP={grass:['oak','birch'],frost:['pine'],desert:['palm'],swamp:['willow','dead']},bad=[],looks={};let rnd=0;
+  world2();P.troops={hum_spear:2};t.startBattle({enemies:['militia'],tournament:false});const B=t.B,ctx=t.ctx,orig=ctx.drawImage,drawn=new Set();
+  ctx.drawImage=function(img,...a){drawn.add(img);return orig.call(ctx,img,...a)};
+  try{for(const c of ['grass','frost','desert','swamp']){B.env.c=c;B.obs=['tree','rock','cactus'].flatMap((k,i)=>[0,1,2,3].map(j=>({kind:k,x:200+j*40+i*3,y:200+i*40+j*7,r:k==='rock'?7:k==='cactus'?5:6})));
+    const before=JSON.stringify(B.obs);drawn.clear();const mr=Math.random;Math.random=()=>{rnd++;return mr()};try{t.obstacleGround();B.obs.forEach(t.drawObstacle)}finally{Math.random=mr}t.drawBattle();
+    for(const o of B.obs){const k=t.obstacleLook(o);(looks[o.kind+c]=looks[o.kind+c]||new Set()).add(k);if(!drawn.has(k.s)||!drawn.has(k.g))bad.push(c+' '+o.kind+' not drawn');
+      if(o.kind==='tree'&&!SP[c].some(sp=>[0,1,2].some(v=>t.PX.battleTree(c,sp,v)===k.s)))bad.push(c+' tree not a battle tree')}
+    if(JSON.stringify(B.obs)!==before)bad.push(c+' drawing changed the obstacles')}}finally{ctx.drawImage=orig}
+  ok(!bad.length&&!rnd,'each kind draws with the new sprite and its ground in each climate, a tree a battle tree of the climate\u2019s, by a hash of where it stands (no Math.random), the obstacles untouched'+(bad.length?': '+bad.slice(0,4).join('; '):rnd?': Math.random '+rnd+'x':''));
+  ok(Object.values(looks).every(s=>s.size>=2),'obstacles of one kind vary in look ('+Object.entries(looks).map(([k,s])=>k+' '+s.size).join(', ')+')');
+  ok(t.obstacleLook({kind:'rock',x:5,y:9,r:7})===t.obstacleLook({kind:'rock',x:5,y:9,r:7})&&t.PX.battleObstacle('cactus','desert',2)===t.PX.battleObstacle('cactus','desert',2)&&t.PX.battleObstacle('tree','frost',1).s===t.PX.battleTree('frost','pine',1),'their sprites are made once and kept (one a kind, climate and look)');
+  // (the footprint: a boulder about 2r across, its foot just before the point; a cactus, a trunk on it; true pixels, opaque or empty)
+  let foot='',semi=0;for(const c of ['grass','frost','desert','swamp'])for(let v=0;v<6;v++)for(const [k,r] of [['rock',7],['cactus',5],['tree',6]]){const o=t.PX.battleObstacle(k,c,v),b=o.box,w=b[2]-b[0]+1,y1=b[3]-o.ay,cx=(b[0]+b[2])/2-o.ax;
+    if(k==='rock'&&(w<2*r||w>2*r+6||y1<3||y1>5||Math.abs(cx)>1.5)||k!=='rock'&&(y1<1||y1>3))foot+=k+' '+c+' '+v+' ('+w+' wide, foot '+y1+') ';
+    const d=o.s.getContext('2d').getImageData(0,0,o.s.width,o.s.height).data;for(let i=3;i<d.length;i+=4)if(d[i]&&d[i]<255)semi++}
+  ok(!foot,'each obstacle\u2019s footprint is about what blocks'+(foot?': '+foot:''));ok(!semi,'obstacle sprites are true pixels ('+semi+' half-clear)');
   B.over=true;B.endT=0;t.B=null;G.mode='world'}
  // smooth frames: a battle's sprites are made ahead, a little each frame, so no pose is first drawn mid-fight
  {world2();P.troops={hum_spear:4,hum_bow:3};t.startBattle({enemies:['orc_grunt','orc_hunter'],tournament:false});const n0=t.WARM.q.length;ok(n0>40,'a battle lists the sprites it will need ('+n0+')');

@@ -32,9 +32,10 @@ try{
  {let bad=[],dropped=0,tried=0;const recs=Object.keys(t.TERRAIN_RECIPE);
   for(let i=0;i<200;i++){const W=960+(i*37)%341,top=30+(i*13)%50,bot=600-((i*7)%40)-10,T=t.buildTerrain({recipe:recs[i%recs.length],seed:(i*2654435761+99)>>>0,W,top,bot}),f=t.terrainFair(T,W,top,bot);
    tried+=T.recipe.tries;if(T.recipe.dropped.length)dropped++;
-   const hs=T.recipe.hills,sym=/^pair/.test(T.recipe.layout)?hs.length===2&&Math.abs(hs[0].x+hs[1].x-W)<=TR.mirror+1e-9&&hs[0].x<W/2&&hs[1].x>W/2:!hs.length||hs.every(h=>Math.abs(h.x-W/2)<TR.centre*W);
+   // (field variety: a layout may pair its hills round a middle one (rolling, erg, fen's isles): each hill centred or mirrored by another)
+   const hs=T.recipe.hills,sym=/^pair/.test(T.recipe.layout)?hs.length===2&&Math.abs(hs[0].x+hs[1].x-W)<=TR.mirror+1e-9&&hs[0].x<W/2&&hs[1].x>W/2:hs.every(h=>Math.abs(h.x-W/2)<TR.centre*W||hs.some(o=>o!==h&&Math.abs(h.x+o.x-W)<=TR.mirror+1e-9&&(h.x<W/2)!==(o.x<W/2)));
    if(!f.ok||!sym)bad.push(recs[i%recs.length]+'#'+i+(f.zone?'':' zone')+(f.score?'':' score')+(f.lane?'':' lane')+(sym?'':' hills'))}
-  ok(!bad.length,'fairness over 200 tiles: deployment zones ≤'+TR.zoneWood*100+'% woods, halves within '+TR.score*100+'%, a '+TR.lane+'-px open lane, hills centred or mirrored'+(bad.length?': '+bad.slice(0,6).join('; '):''));
+  ok(!bad.length,'fairness over 200 tiles: deployment zones ≤'+TR.zoneWood*100+'% woods (a forest’s or a fen’s: alike cover, glades and an open way), halves within '+TR.score*100+'%, a '+TR.lane+'-px open lane, hills centred or mirrored'+(bad.length?': '+bad.slice(0,6).join('; '):''));
   const seen=new Set(),woodHigh={n:0},deserts={wood:0,marsh:0};for(let i=0;i<300;i++){const rc=recs[i%recs.length],T=t.buildTerrain({recipe:rc,seed:(i*40503+7)>>>0,W:1100,top:40,bot:560});seen.add(rc+':'+T.recipe.layout);
    if(T.kind.some((k,j)=>k===K.wood&&T.lvl[j]>0))woodHigh.n++;if(rc==='desert'){if(T.has.wood)deserts.wood++;if(T.has.marsh)deserts.marsh++}}
   const all=Object.entries(t.TERRAIN_RECIPE).flatMap(([k,R])=>R.layouts.map(l=>k+':'+l[0]));

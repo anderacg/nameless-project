@@ -78,7 +78,10 @@ class BattleResolve{
   bucket(){const at=Math.floor(B.t/GROUP_RESOLVE.bucket)*GROUP_RESOLVE.bucket;this.events=this.events.filter(e=>B.t-e.at<=GROUP_RESOLVE.history);let e=this.events.at(-1);if(!e||e.at!==at){e={at,in:0,out:0,missiles:0,deaths:0};this.events.push(e)}return e}
   recent(){return this.events.filter(e=>B.t-e.at<GROUP_RESOLVE.window).reduce((n,e)=>({in:n.in+e.in,out:n.out+e.out,missiles:n.missiles+e.missiles}),{in:0,out:0,missiles:0})}
   ceiling(){return Math.min(100,this.base-GROUP_RESOLVE.attrition*this.casualties.length/this.initialCount-GROUP_RESOLVE.wounds*Math.min(1,this.damageTaken/this.initialHP)+CONFIDENCE.max*this.confidence)}
-  shock(n,ordinary=true){this.mor-=n*(ordinary?(1-CONFIDENCE.resist*this.confidence)*(1-COHESION.resist*this.cohesion):1);this.refreshState();this.sync()}
+  shock(n,ordinary=true){this.mor-=n*(ordinary?(1-CONFIDENCE.resist*this.confidence)*(1-COHESION.resist*this.cohesion):1)*(this.standing()?COMMAND_POWERS.stand.shock:1);this.standFloor();this.refreshState();this.sync()}
+  // (Stand Fast!, commandpowers.js: shaken less meanwhile, and never under MORALE.waver while it lasts)
+  standing(){return B.t<(this.standUntil??-Infinity)}
+  standFloor(){if(this.standing()&&!this.routed&&this.mor<MORALE.waver)this.mor=MORALE.waver}
   hurt(amount,missile){this.damageTaken+=amount;const e=this.bucket();e.in+=amount;if(missile)e.missiles+=amount;this.lastHurtAt=B.t;this.shock(GROUP_RESOLVE.hurt*amount/this.initialHP*this.steady)}
   dealt(amount){this.damageDealt+=amount;this.bucket().out+=amount;this.lastDealtAt=B.t}
   death(u){if(this.casualties.includes(u.id))return false;this.casualties.push(u.id);this.bucket().deaths++;this.shock(GROUP_RESOLVE.death/this.initialCount*this.steady);return true}
@@ -109,6 +112,7 @@ class BattleResolve{
     if(this.routed){this.confidence=0;if(quiet&&!this.rallied&&!this.shattered){this.rallyT=(this.rallyT||0)+dt;this.mor=Math.min(MORALE.rally,this.mor+MORALE.rallyBack*dt);if(this.mor>=MORALE.rally&&this.rallyT>=GROUP_RESOLVE.rallyQuiet)this.rally()}else this.rallyT=0;this.refreshState();this.sync();return false}
     this.confidence=!withdrawingGroup&&!this.missilePressure&&this.mor>0&&B.t>=this.confidenceBlockedUntil?view.confidence:0;
     if(!withdrawingGroup){const pressure=(view.outmatched*AWARENESS.outmatched+view.overwhelmed*AWARENESS.overwhelmed)*(1-COHESION.resist*this.cohesion)+GROUP_RESOLVE.missileRate*this.missilePressure;this.mor-=pressure*dt;if(view.overwhelmed>.1)this.outAt=B.t}
+    this.standFloor();
     if(this.mor<=0){if(quiet)this.mor=Math.min(this.ceiling(),this.mor+MORALE.back*dt);const broken=moraleBreaking(this,dt);this.refreshState();this.sync();return broken}
     moraleBreaking(this,0);const cap=this.ceiling()-this.lossStrain;
     if(quiet)this.mor+=Math.min(Math.max(0,cap-this.mor),(MORALE.back+(this.live().some(inspired)?1:0))*dt);
@@ -229,33 +233,100 @@ function moraleDecide(dt,owners,live){
 function rout(u){
   if(!u||u.hp<=0)return;resolveOf(u)?.route();
 }
-// a routing soldier's moment: away from the enemy, toward its own edge; there it leaves the field
+// a routing soldier's moment: away from the enemy, toward its way off the field (its own edge; EXITS.on: its group's exit); there
+// it leaves the field
 function routStep(u,dt){
-  const ex=u.team?BW-MORALE.edge:MORALE.edge,e=nearest(u);let mx=Math.sign(ex-u.x)||1,my=0;
-  {const w=B.terrain?steerDir(u,ex,u.y):null;if(w){mx=w[0];my=w[1]}}// (round rock, cliffs and impassable water to the edge: terrain.js)
+  const any=exitsOn(),X=any?exitFor(u):null,ex=any?X.x:u.team?BW-MORALE.edge:MORALE.edge,ey=any?X.y:u.y,e=nearest(u);let mx=Math.sign(ex-u.x)||1,my=0;
+  if(any){const l=Math.hypot(ex-u.x,ey-u.y);if(l>1e-9){mx=(ex-u.x)/l;my=(ey-u.y)/l}}
+  {const w=B.terrain?steerDir(u,ex,ey):null;if(w){mx=w[0];my=w[1]}}// (round rock, cliffs and impassable water to the edge: terrain.js)
   if(e){const dx=u.x-e.x,dy=u.y-e.y,d=Math.hypot(dx,dy)||1;if(d<80){mx+=dx/d*.6;my+=dy/d*.6}}
   const m=Math.hypot(mx,my)||1,sp=u.s.spd*1.1*dt*(u.slow>0?.5:1)*groundMul(u,mx/m,my/m);u.x+=mx/m*sp;u.y+=my/m*sp;u.spdNow=u.s.spd;u.dir=Math.atan2(my,mx);u.face=mx>=0?1:-1;u.run=0;fatigueStep(u,dt,true,false,false);
-  if(u.team?u.x>=BW-MORALE.edge-2:u.x<=MORALE.edge+2){u.fled=true;if(u.team===1)B.fledFoes=(B.fledFoes||0)+1;else B.fledMine=(B.fledMine||0)+1;leaveField(u)}
+  if(any?exitReached(u,exitOf(u),2):u.team?u.x>=BW-MORALE.edge-2:u.x<=MORALE.edge+2){u.fled=true;if(u.team===1)B.fledFoes=(B.fledFoes||0)+1;else B.fledMine=(B.fledMine||0)+1;leaveField(u)}
 }
 // a soldier off the field (at its edge): out of the fight, alive (not a loss); its health kept for after (your hero's)
 function leaveField(u){if(B.opts.sandbox&&BattleLab.active)BattleLab.event('field_exit',u,{cause:u.rout?'routed':'withdrawn'});u.hpLeft=u.hp;u.hp=0;u.left=true;if(u.team===0&&!u.lord)B.lastOut='left';if(u.grp){if(B.sel===u.grp&&!grpUnits(u.grp).length)B.sel='all';setOrderUI()}}
 
 /* withdrawing (W) is fleeing the battle: the group drops its fight, briefly disengages if in melee, then runs for your edge of the field (the side you formed up on,
-   marked there while any of yours withdraw), straight back, striking no one; there they leave the field, alive. The enemy may run
+   marked there while any of yours withdraw; EXITS.on: its exit, the safest way off by any open edge), straight back, striking no one; there they leave the field, alive. The enemy may run
    them down on the way: that is the rearguard's cost. Once all of yours have withdrawn (or fallen), the battle is over: your
    retreat, and the summary shows what it cost. Running costs stamina; fatigue slows it and exhaustion forces a walk. */
 const WITHDRAW={band:14,disengage:.8,backstep:.35,contact:6};// combat seconds to break melee contact; backstep is a share of current speed
 const withdrawing=u=>{const g=u.grp&&B.groups[u.grp];return !!g&&g.order==='withdraw'};
-// the withdrawal edge: your side of the field (x), its strip (w); y is the middle of where your band formed up (for the lines)
-function exitInit(units){const m=units.filter(u=>u.team===0&&!u.lord);B.exit={x:MORALE.edge,w:WITHDRAW.band,y:m.length?m.reduce((a,u)=>a+u.y,0)/m.length:BH/2}}
-// where a soldier withdraws to: the nearest point of your edge, straight back
-const exitFor=u=>({x:u.team?BW-MORALE.edge:B.exit.x,y:clamp(u.y,fieldTop(),fieldBot())});
+// the withdrawal edge: your side of the field (x), its strip (w); y is the middle of where your band formed up (for the lines);
+// EXITS.on, every open stretch of the field's edges (B.exits)
+function exitInit(units){const m=units.filter(u=>u.team===0&&!u.lord);B.exit={x:MORALE.edge,w:WITHDRAW.band,y:m.length?m.reduce((a,u)=>a+u.y,0)/m.length:BH/2};if(EXITS.on)B.exits=exitSpans()}
+// where a soldier withdraws to: the nearest point of your edge, straight back; EXITS.on: of his exit's stretch, near its chosen point
+function exitFor(u){
+  if(!exitsOn())return{x:u.team?BW-MORALE.edge:B.exit.x,y:clamp(u.y,fieldTop(),fieldBot())};
+  const X=exitOf(u),lo=Math.max(X.a,X.s-EXITS.wide),hi=Math.min(X.b,X.s+EXITS.wide);return exitPoint(X.side,clamp(X.side==='W'||X.side==='E'?u.y:u.x,lo,hi))}
+/* ---- the ways off the field (EXITS.on; off (tests/harness.js): your edge and theirs, straight back, as ever) ----
+   Own side, flanks if cut off (the owner, 2026-10-18): each side runs for its own edge (team 0 west, team 1 east), the best point
+   of it that is not cut off; a flank or the far edge only when no point of home can be reached (water, rock, cliffs) or every one
+   is cut off: an enemy group (at least EXITS.cutBy of their number) nearer that point than they are, or standing across the
+   straight way there (beyond the first EXITS.sample px, within EXITS.across px of it). One chasing from behind cuts nothing off.
+   Among the ways then left (not cut off first, home first), the cost below decides.
+   Every open stretch of the field's four edges is a way off it: B.exits [{side: 'W' 'E' 'N' 'S', a, b}] (px along that edge; N and
+   S on the rows in sight, fieldTop and fieldBot), where a foot soldier may stand (no deep water, rock or closed rows: terrain.js
+   T.route); stretches under EXITS.min are none. A withdrawing or routing group takes the point along them (every EXITS.step px)
+   that costs least: its way's length (route.js routeDist on its grid, round cliffs, rock and water; straight with nothing that
+   blocks; none it cannot reach), dearer toward the enemy and cheaper away from them (× 1 - EXITS.away × the cosine between its
+   way and the way from them: the enemy groups still fighting, each by its strength against its own (clamped to EXITS.str) and
+   nearness (1 / (1 + (d/EXITS.near)²)), their sum at most 1), and its danger: the enemy its straight line passes near (each sample,
+   every EXITS.sample px, within EXITS.danger px of one: (1 - d/danger)² × their strength) × EXITS.weight × the line's length a
+   sample; and the chase: an enemy group with less of a lead on that point than EXITS.lead px (its way there less his) could cut
+   them off, × EXITS.chase × their strength per px it lacks. Chosen as it starts, looked at again every EXITS.every s, and kept unless another
+   costs under EXITS.keep of it. Each man makes for the nearest point of that stretch within EXITS.wide px of its chosen point (a
+   broad front, straight back where he can); a soldier with no group has his own. g.exitTo, u.exitTo: {side, a, b, s, x, y, cost, at} */
+const EXITS={on:true,step:48,min:48,inset:2,sample:64,samples:24,danger:200,weight:4,str:[.25,3],away:.5,near:300,lead:400,chase:1,cutBy:.25,across:120,every:2,keep:.8,wide:120};
+const exitsOn=()=>EXITS.on&&!!(B&&B.exits&&B.exits.length);
+// (a point of a side's edge, s px along it; and his along that side)
+function exitPoint(side,s){const k=MORALE.edge;return side==='W'?{x:k,y:s}:side==='E'?{x:BW-k,y:s}:side==='N'?{x:s,y:fieldTop()+EXITS.inset}:{x:s,y:fieldBot()-EXITS.inset}}
+const exitReached=(u,X,band)=>X.side==='W'?u.x<=X.x+band:X.side==='E'?u.x>=X.x-band:X.side==='N'?u.y<=X.y+band:u.y>=X.y-band;
+// (the open stretches of the four edges: where the foot grid lets a man stand, sampled every 8 px)
+function exitSpans(){
+  const T=B.terrain,g=T&&T.route&&T.route.foot,top=fieldTop(),bot=fieldBot(),out=[],ok=p=>!g||g.cost[routeIx(g,p.x,p.y)]>0;
+  for(const [side,a0,b0] of [['W',top,bot],['E',top,bot],['N',8,BW-8],['S',8,BW-8]]){let a=null,b=null;
+    const shut=()=>{if(a!=null&&b-a>=EXITS.min)out.push({side,a,b});a=null};
+    for(let s=a0;;s=Math.min(b0,s+8)){if(ok(exitPoint(side,s))){if(a==null)a=s;b=s}else shut();if(s>=b0)break}shut()}
+  return out}
+// (the danger of the straight way from C to P: the enemy near it, and those who could get there first; foes [{x, y, s}])
+function exitDanger(C,P,foes){
+  const L=Math.hypot(P.x-C.x,P.y-C.y),n=Math.min(EXITS.samples,Math.max(1,Math.ceil(L/EXITS.sample))),R=EXITS.danger;if(!foes.length||!(L>0))return 0;let s=0,c=0;
+  for(let k=1;k<=n;k++){const x=C.x+(P.x-C.x)*k/n,y=C.y+(P.y-C.y)*k/n;for(const f of foes){const d=Math.hypot(f.x-x,f.y-y);if(d<R)s+=f.s*(1-d/R)**2}}
+  for(const f of foes){const lead=Math.hypot(f.x-P.x,f.y-P.y)-L;if(lead<EXITS.lead)c+=f.s*(EXITS.lead-lead)}
+  return s*L/n*EXITS.weight+c*EXITS.chase}
+/* (the exit for those m of a side (team): the least cost of every point of every stretch, as EXITS has it; cur, the one it holds,
+   kept unless the best costs under EXITS.keep of it; null when none can be reached) */
+function exitChoose(m,team,cur){
+  const n=m.length,C={x:m.reduce((a,u)=>a+u.x,0)/n,y:m.reduce((a,u)=>a+u.y,0)/n},T=B.terrain,who=m.some(u=>u.s.big)?'big':m.filter(u=>u.s.mounted).length*2>n?'mounted':'foot';
+  const g=T&&T.blocky&&T.route?T.route[who]:null,D=g?routeDist(g,C.x,C.y):null,foes=[],home=team?'E':'W';
+  for(const id in B.groups){if(B.groups[id].team===team)continue;const f=grpUnits(id).filter(u=>!u.rout&&!withdrawing(u));if(!f.length)continue;
+    foes.push({x:f.reduce((a,u)=>a+u.x,0)/f.length,y:f.reduce((a,u)=>a+u.y,0)/f.length,s:clamp(f.length/n,EXITS.str[0],EXITS.str[1]),r:f.length/n})}
+  // (away: the way from the enemy, by their strength and nearness, at most a unit)
+  let ax=0,ay=0;for(const f of foes){const dx=C.x-f.x,dy=C.y-f.y,d=Math.hypot(dx,dy)||1,w=f.s/(1+(d/EXITS.near)**2);ax+=dx/d*w;ay+=dy/d*w}{const l=Math.hypot(ax,ay);if(l>1){ax/=l;ay/=l}}
+  const cost=(side,s)=>{const P=exitPoint(side,s),dx=P.x-C.x,dy=P.y-C.y,l=Math.hypot(dx,dy)||1;let len;if(D){const v=D[routeIx(g,P.x,P.y)];if(!isFinite(v))return null;len=v*g.cs/(2*ROUTE.unit)}else len=l;
+    // (rank: 0 home and clear, 1 elsewhere and clear, 2 cut off)
+    return{P,c:len*(1-EXITS.away*(dx*ax+dy*ay)/l)+exitDanger(C,P,foes),k:exitCut(C,P,foes)?2:side===home?0:1}};
+  let best=null;for(const X of B.exits){const L=X.b-X.a,k=Math.max(1,Math.round(L/EXITS.step));
+    for(let i=0;i<=k;i++){const s=X.a+L*i/k,q=cost(X.side,s);if(q&&(!best||q.k<best.rank||q.k===best.rank&&q.c<best.cost))best={side:X.side,a:X.a,b:X.b,s,x:q.P.x,y:q.P.y,cost:q.c,rank:q.k,at:B.t}}}
+  if(cur&&best&&B.exits.some(X=>X.side===cur.side&&X.a===cur.a&&X.b===cur.b)){const q=cost(cur.side,cur.s);if(q&&q.k<=best.rank&&best.cost>=q.c*EXITS.keep)return{...cur,x:q.P.x,y:q.P.y,cost:q.c,rank:q.k,at:B.t}}
+  return best}
+// (is the straight way from C to P cut off: an enemy group of at least EXITS.cutBy of theirs nearer P than they are, or across the
+// way ahead of them)
+function exitCut(C,P,foes){const dx=P.x-C.x,dy=P.y-C.y,L=Math.hypot(dx,dy);if(!(L>0))return false;
+  for(const f of foes){if(f.r<EXITS.cutBy)continue;if(Math.hypot(f.x-P.x,f.y-P.y)<L)return true;const fx=f.x-C.x,fy=f.y-C.y,t=(fx*dx+fy*dy)/L;if(t>=EXITS.sample&&t<=L&&Math.abs(fx*dy-fy*dx)/L<EXITS.across)return true}
+  return false}
+// (his exit: his group's, or his own with none; chosen afresh every EXITS.every s; none to be had: his own edge, straight back)
+function exitOf(u){
+  const g=u.grp&&B.groups[u.grp],h=g||u,X=h.exitTo;if(X&&B.t<X.at+EXITS.every)return X;
+  const m=g?grpUnits(g.id):[];h.exitTo=exitChoose(m.length?m:[u],u.team,X)||{side:u.team?'E':'W',a:fieldTop(),b:fieldBot(),s:clamp(u.y,fieldTop(),fieldBot()),x:u.team?BW-MORALE.edge:MORALE.edge,y:u.y,cost:Infinity,at:B.t};
+  return h.exitTo}
 // (the grid open, spatial.js: only those within the longest reach of him, in their order)
 function withdrawThreat(u){return (spatialOn()?SG.near(u.x,u.y,Math.max(SG.reach,BLADE.reach)+3+12+WITHDRAW.contact+1,u.team,true):B.units).some(e=>e.hp>0&&e.team!==u.team&&!e.rout&&(!e.s.range||e.inMelee)&&Math.hypot(e.x-u.x,e.y-u.y)<=(e.inMelee?BLADE.reach:e.s.reach||11)+3+(u.s.big?12:0)+WITHDRAW.contact)}
 function withdrawStep(u,dt){
   u.run=0;u.inSlot=false;u.spdNow=0;
   const threat=withdrawThreat(u);
-  const atExit=u.team?u.x>=BW-MORALE.edge-WITHDRAW.band:u.x<=B.exit.x+B.exit.w;
+  const atExit=exitsOn()?exitReached(u,exitOf(u),WITHDRAW.band):u.team?u.x>=BW-MORALE.edge-WITHDRAW.band:u.x<=B.exit.x+B.exit.w;
   const leave=()=>{if(u.team===0)B.withdrawn=(B.withdrawn||0)+1;leaveField(u)};
   // One bounded disengagement per withdrawal order, triggered on first melee contact (including at the exit).
   // Keep an uncontested exit immediate; no synthetic losses or escape roll is added here.
@@ -276,12 +347,27 @@ function retreating(){
   return !B.units.some(u=>u.team===0&&!u.lord&&u.hp>0&&!u.rout);
 }
 function retreatNow(){B.over=true;B.endT=END_WAIT;B.win=false;B.retreat=true;log('Your band withdraws from the battle'+(B.caught?': '+B.caught+' cut down on the way.':'.'),'bad')}
-// the withdrawal edge on the field: a faint strip along your edge, bright with a word while any of yours withdraw
+// the withdrawal edge on the field: a faint strip along your edge, bright with a word while any of yours withdraw; EXITS.on, along
+// every open stretch of every edge, bright where a group of yours makes for it (blue, with a word withdrawing), faintly red where
+// one of theirs that you see runs for it
 function drawExit(){
+  if(exitsOn()&&!B.opts.tournament)return drawExits();
   const X=B.exit;if(!X||B.opts.tournament)return;const on=B.units.some(u=>u.hp>0&&withdrawing(u));
   ctx.fillStyle=on?'rgba(111,168,224,.22)':'rgba(228,224,207,.06)';ctx.fillRect(0,18,X.x+X.w,BH-24);
   ctx.save();ctx.setLineDash([3,3]);ctx.strokeStyle=on?'rgba(111,168,224,.9)':'rgba(228,224,207,.25)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(X.x+X.w+.5,18);ctx.lineTo(X.x+X.w+.5,BH-6);ctx.stroke();ctx.restore();
   if(on){ctx.save();ctx.translate(X.x+X.w/2+3,BH/2);ctx.rotate(-Math.PI/2);txt('Withdraw',0,0,'#9fc0ff','center');ctx.restore()}
+}
+function drawExits(){
+  const top=fieldTop(),bot=fieldBot(),D=MORALE.edge+WITHDRAW.band,use=new Map();
+  // (who makes for which stretch: yours (withdrawing or running), theirs running that you see)
+  for(const id in B.groups){const g=B.groups[id],X=g.exitTo;if(!X)continue;const m=grpUnits(id),run=m.filter(u=>u.rout||withdrawing(u));if(!run.length||g.team&&!run.some(u=>seenBy(0,u)))continue;
+    const k=X.side+X.a,q=use.get(k)||{mine:false,theirs:false,word:null};if(g.team)q.theirs=true;else{q.mine=true;if(g.order==='withdraw')q.word=X}use.set(k,q)}
+  const box=(X,d)=>X.side==='W'?[0,X.a,d,X.b-X.a]:X.side==='E'?[BW-d,X.a,d,X.b-X.a]:X.side==='N'?[X.a,top-6,X.b-X.a,d+6]:[X.a,bot-d,X.b-X.a,d+6];
+  for(const X of B.exits){const q=use.get(X.side+X.a),[x,y,w,h]=box(X,D);
+    ctx.fillStyle=q&&q.mine?'rgba(111,168,224,.22)':q&&q.theirs?'rgba(224,96,90,.14)':'rgba(228,224,207,.06)';ctx.fillRect(x,y,w,h);
+    ctx.save();ctx.setLineDash([3,3]);ctx.strokeStyle=q&&q.mine?'rgba(111,168,224,.9)':q&&q.theirs?'rgba(224,96,90,.5)':'rgba(228,224,207,.25)';ctx.lineWidth=1;ctx.beginPath();
+    if(X.side==='W'||X.side==='E'){const lx=X.side==='W'?D+.5:BW-D-.5;ctx.moveTo(lx,X.a);ctx.lineTo(lx,X.b)}else{const ly=X.side==='N'?top+D+.5:bot-D-.5;ctx.moveTo(X.a,ly);ctx.lineTo(X.b,ly)}ctx.stroke();ctx.restore();
+    if(q&&q.word){const W=q.word,P=exitPoint(W.side,W.s);ctx.save();if(W.side==='W'||W.side==='E'){ctx.translate(W.side==='W'?D/2+3:BW-D/2+3,P.y);ctx.rotate(-Math.PI/2)}else ctx.translate(P.x,W.side==='N'?top+D/2+3:bot-D/2+3);txt('Withdraw',0,0,'#9fc0ff','center');ctx.restore()}}
 }
 // charge momentum: how far it has run at its target, 0 to 1
 const momentum=u=>clamp((u.run||0)/CHARGE.run,0,1);
@@ -315,5 +401,7 @@ function grpMorale(m){
   const st=grpStamina(m);if(st!=null&&st*FATIGUE.max<FATIGUE.tired)weak.push('tired');
   const confident=owners.every(r=>!r.routed&&r.mor>0&&r.control?.order!=='withdraw'&&r.confidence>.1);
   if(owners.some(r=>!r.routed&&r.outmatched>.1))weak.push('outmatched');if(owners.some(r=>r.lossStrain>1))weak.push('recentloss');if(owners.some(r=>r.missilePressure>0))weak.push('missile');
-  return {v,rout,waver,state,weak,team,confident,breaking,cohesion:avg('cohesion'),lossStrain:avg('lossStrain'),missilePressure:avg('missilePressure')};
+  const o={v,rout,waver,state,weak,team,confident,breaking,cohesion:avg('cohesion'),lossStrain:avg('lossStrain'),missilePressure:avg('missilePressure')};
+  if(owners.some(r=>r.standing()))o.stand=true;// (Stand Fast!: its badge, moraleicons.js)
+  return o;
 }

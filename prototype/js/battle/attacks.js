@@ -3,7 +3,7 @@
 // Targeting and activation stay with actors/commanders. These helpers execute an attack and preserve its existing effects.
 function fx(x,y,c,n){for(let i=0;i<n;i++)B.parts.push({x,y,vx:(Math.random()-.5)*70,vy:(Math.random()-.5)*70,life:.35,c})}
 function applyDmg(t,amt,m,dt,source,missile){
-  if(B.terrain)sightStruck(source,t);// (whoever strikes or shoots at a side is seen by it: terrain.js)
+  if(B.sight)sightStruck(source,t);// (whoever strikes or shoots at a side is seen by it: terrain.js)
   if((t.hero?B.hx&&B.hx.inv:t.ch&&t.ch.inv)>0){B.floats.push({x:t.x,y:t.y-16,t:'Dodge',life:.4,c:'#cfe0ff'});return}// (rolling, leaping, dashing: unhurt)
   if(t.hero)amt*=1-tm('dr');
   if(t.wardT>0)amt*=.75;
@@ -64,7 +64,7 @@ function aimErr(u,p){
 const spreadOf=E=>(Math.random()-.5)*E.a;
 function outOfAmmo(u){u.s={...u.s,range:0,reach:Math.max(u.s.reach||0,10),dmg:u.s.dmg*.6};u.empty=true;B.floats.push({x:u.x,y:u.y-20,t:'Out of ammo',life:.7,c:'#9aa3ad'})}
 function attack(u,t){
-  const s=u.s;u.cd=s.cd*(.9+Math.random()*.2);u.atkAt=B.t;if(B.terrain)sightStruck(u,t);// (a blow or a shot loosed gives him away: terrain.js)
+  const s=u.s;u.cd=s.cd*(.9+Math.random()*.2);u.atkAt=B.t;if(B.sight)sightStruck(u,t);// (a blow or a shot loosed gives him away: terrain.js)
   if(s.range){const flat=s.magic||s.flat,E=aimErr(u);fireBolt(u,Math.atan2(t.y-(flat?u.y-6:u.y),t.x-u.x)+spreadOf(E),s.dmg*(.85+Math.random()*.3)*(u.buffT>0?1.3:1)*arrowMul(u),arrowSrc(u,s),Math.hypot(t.x-u.x,t.y-u.y),{sc:E.d});if(!s.magic&&sfxOn()&&sndTurn('loose'))sfxAt('loose',u.x,u.y)}// (fire arrows: unitabilities.js)
   else{let dm=s.dmg*(.8+Math.random()*.4)*chargeMul(u,t)*tiredMul(u).dmg;fatigueBlow(u);// (a charge: by how far it ran, braced spears blunt it, morale.js; tired, softer: fatigue.js)
     hit(u,t,dm);meleeFollow(u,t,dm)}

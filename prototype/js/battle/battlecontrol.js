@@ -67,8 +67,9 @@ class BattleControl{
   charge(o){if(this.resolve?.routed)return;o=o||{};breakWall(this.id);this.queue=[];this.tgt=null;this.order='charge';if(o.run!=null)this.run=!!o.run}
   // walk on at the foe, in its ranks (step)
   advance(){if(this.resolve?.routed)return;if(this.order!=='advance'){this.regroup();this.order='advance';this.tgt=null}}
-  // off the field by your edge, striking no one
-  withdraw(){if(this.resolve?.routed)return;if(this.order!=='withdraw'){if(B.opts.sandbox&&BattleLab.active)BattleLab.event('withdraw_order',null,{groupId:this.id,side:this.team?'right':'left'});for(const u of this.units)delete u.withdrawal}this.tgt=null;this.queue=[];this.run=false;this.regroup();this.order='withdraw';this.ax=this.team?BW-MORALE.edge:B.exit?B.exit.x:MARCH.edge}
+  // off the field by your edge, striking no one (EXITS.on: by the safest open edge, its exit chosen now: morale.js exitOf)
+  withdraw(){if(this.resolve?.routed)return;if(this.order!=='withdraw'){if(B.opts.sandbox&&BattleLab.active)BattleLab.event('withdraw_order',null,{groupId:this.id,side:this.team?'right':'left'});for(const u of this.units)delete u.withdrawal;delete this.exitTo}this.tgt=null;this.queue=[];this.run=false;this.regroup();this.order='withdraw';this.ax=this.team?BW-MORALE.edge:B.exit?B.exit.x:MARCH.edge;
+    const m=this.units.filter(u=>u.hp>0);if(exitsOn()&&m.length){const X=exitOf(m[0]);this.ax=X.x;this.ay=X.y}}
   // its pace: walk (keeping its ranks) or run; this order at a run (the AI's charges)
   setWalk(walk){if(this.resolve?.routed)return;this.walk=!!walk;this.run=false;if(!walk)breakWall(this.id)}
   setRun(run){if(this.resolve?.routed)return;this.run=!!run;if(run)breakWall(this.id)}
@@ -111,7 +112,7 @@ class BattleControl{
       // (a place out of reach (terrain.js groupWay: its way ends short of it): its men there as near as they get)
       const W=this.way,short=!!W&&!W.ok&&m.every(u=>u.mvId===this.mvId);
       if(Math.hypot(cx-this.ax,cy-this.ay)<MARCH.reached||short){const w=this.queue.shift();this.ax=w.x;this.ay=w.y;moveOrder(this.id)}}
-    const foes=B.units.filter(e=>e.team!==this.team&&e.hp>0&&!e.rout),C=this.centre(),near=foes.length?foes.reduce((a,e)=>Math.hypot(e.x-this.ax,e.y-this.ay)<Math.hypot(a.x-this.ax,a.y-this.ay)?e:a):null;
+    const foes=B.units.filter(e=>e.team!==this.team&&e.hp>0&&!e.rout&&(!B.fog||seenBy(this.team,e))),C=this.centre(),near=foes.length?foes.reduce((a,e)=>Math.hypot(e.x-this.ax,e.y-this.ay)<Math.hypot(a.x-this.ax,a.y-this.ay)?e:a):null;
     // an advance: its place walks on at the nearest foe till it is close (shooters stop further off)
     if(this.order==='advance'&&near){const dx=near.x-this.ax,dy=near.y-this.ay,d=Math.hypot(dx,dy)||1,stop=m.some(u=>u.s.range)?(m.some(u=>u.s.magic)?60:85):FOE_CMD.clash*.6;
       if(d>stop){this.ax=clamp(this.ax+dx/d*FOE_CMD.advance*dt,8,BW-8);this.ay=clamp(this.ay+dy/d*FOE_CMD.advance*.5*dt,fieldTop(),fieldBot())}}

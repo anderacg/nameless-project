@@ -3,7 +3,7 @@
    right, the selected unit's details at the bottom left, the orders over a row of unit cards at the bottom middle. On the field:
    rings under the soldiers you have selected, a softer one under the group you point at, and lines from each selected group to
    where it is going (or whom it is set on). ---------- */
-// the order and flag icons: 9×9 pixel maps (a: the button's colour, b: dimmer)
+// the order and flag icons: 9×9 pixel maps (a: the button's colour, b: dimmer), on the buttons only (the cards: badgeSVG)
 const ORDER_ICON={
   shieldWall:['.aaaaaaa.','.a..a..a.','.a..a..a.','.aaaaaaa.','.a..a..a.','.a..a..a.','..aaaaa..','...aaa...','....a....'],
   hold:['...a.a...','.a.a.a.a.','.a.a.a.a.','.a.a.a.a.','.aaaaaaa.','.aaaaaaa.','..aaaaa..','..aaaaa..','...aaa...'],
@@ -34,38 +34,89 @@ function portrait(type,hero){const k=(hero?'hero:':'')+type;if(!PORTRAITS[k]){tr
 // the kind most of a group is (its card's picture and its numbers)
 function repOf(m){const c={};for(const u of m)c[u.type]=(c[u.type]||0)+1;let best=null;for(const k in c)if(!best||c[k]>c[best])best=k;return best}
 const pct=x=>Math.round(clamp(x,0,1)*100)+'%';
-// (its shooters' shots left, of all they carried: '31/40'; none for fighters and casters)
-const ammoText=m=>{const sh=m.filter(u=>u.s.range||u.empty);if(!sh.length||sh.every(u=>!isFinite(quiverOf(u.s))&&!u.empty))return '';const tot=sh.reduce((a,u)=>a+(isFinite(quiverOf(u.s))?quiverOf(u.s):0),0),left=sh.reduce((a,u)=>a+(u.empty?0:u.ammo==null?quiverOf(u.s):u.ammo),0);return isFinite(tot)&&tot?left+'/'+tot:''};
+// (its shooters' shots left, of all they carried: {left, tot}, said '31/40'; none for fighters and casters)
+const quiverLeft=m=>{const sh=m.filter(u=>u.s.range||u.empty);if(!sh.length||sh.every(u=>!isFinite(quiverOf(u.s))&&!u.empty))return null;const tot=sh.reduce((a,u)=>a+(isFinite(quiverOf(u.s))?quiverOf(u.s):0),0),left=sh.reduce((a,u)=>a+(u.empty?0:u.ammo==null?quiverOf(u.s):u.ammo),0);return isFinite(tot)&&tot?{left,tot}:null};
+const ammoText=m=>{const q=quiverLeft(m);return q?q.left+'/'+q.tot:''};
 function groupAbilityText(g){const gr=B.groups[g],m=grpUnits(g);if(!gr)return '';const eligible=m.filter(shieldEligible).length,parts=[];
   if(eligible)parts.push('Shield wall: '+eligible+'/'+m.length+' eligible, '+m.filter(shieldWallActive).length+' active'+(gr.shieldWall?'':' (off)'));
   if(gr.form==='wedge'){const n=wedgeMembers(g).length;parts.push('Wedge: '+n+' formed cavalry, +'+Math.round(wedgeBonus(n)*1000)/10+'% charge')}
   return parts.join(' · ')}
 function moraleContextText(mo){if(!mo||mo.cohesion==null)return '';return (mo.weak.includes('outmatched')?'Outmatched · ':'')+(mo.weak.includes('outnumbered')?'Locally overwhelmed · ':'')+'Cohesion '+Math.round(mo.cohesion*100)+'%'+(mo.lossStrain>0.1?' · Recent-loss pressure '+mo.lossStrain.toFixed(1):'')}
-// a unit card: its key, picture, name and count, shape and formation, morale icons, health and morale
+/* a unit card, all pictures and no words: its key, its soldiers' portrait (All: the troops icon), how many, its shape and
+   formation, up to CARD.show status icons, its health, morale and stamina bars. The words are in its tooltip (title and
+   aria-label; a long press on a phone shows them) and in each icon's own (an SVG title). Its statuses, most pressing first
+   (cardStatus; the rest only in the words): 0 its morale failing (and how many run or break), 1 its order (none shown while it
+   just holds), 2 its pace while on the move, 3 an ability on, 4 out of shots or spent, 5 its flags, 6 a character falling back,
+   7 few shots left or tired, 8 hidden from the enemy or in woods, 9 confident, 10 what weakens it */
+const CARD={show:4,low:.25,moved:14};
+// a status: p its rank, k its key (data-st, and its badge: moraleicons.js GLYPH, rimmed by its kind, BADGE_KIND), svg its badge
+// (none: in the words only), w its words; n a count beside it, tone its kind (si-g good, si-w a warning, si-b bad), s its words
+// in the card's tooltip (w, lower case)
+function cardStatus(g,m,mo,stm){
+  const gr=g!=='all'&&B.groups[g],out=[],add=(p,k,w,o,shown=true)=>out.push({p,k,svg:shown?badgeSVG(k,11):null,w,s:w[0].toLowerCase()+w.slice(1),...o});
+  if(mo){const st=stateIcon(mo.state);
+    if(st)add(0,st,MORALE_STATE[mo.state].n+((st==='routing'||st==='shattered')&&mo.rout?': '+mo.rout+' running':st==='breaking'&&mo.breaking?': '+mo.breaking+' breaking':''));
+    if(mo.rout&&st!=='routing'&&st!=='shattered')add(0,'routing',mo.rout+' running',{n:mo.rout});
+    if(mo.breaking&&st!=='breaking')add(0,'breaking',mo.breaking+' breaking',{n:mo.breaking})}
+  if(gr){const live=m.filter(u=>!u.rout),c=live.length?{x:live.reduce((a,u)=>a+u.x,0)/live.length,y:live.reduce((a,u)=>a+u.y,0)/live.length}:null;
+    const moving=gr.order!=='hold'||gr.hasTarget||!!(gr.queue&&gr.queue.length)||!!c&&Math.hypot(gr.ax-c.x,gr.ay-c.y)>CARD.moved,tg=gr.hasTarget&&gr.targetGroupId&&B.groups[gr.targetGroupId];
+    if(gr.order==='withdraw')add(1,'withdraw','Withdrawing',{tone:'si-w'});
+    else if(gr.hasTarget)add(1,'attack','Attacking'+(tg?': '+calloutName(tg):''),{tone:'si-b'});
+    else if(gr.order==='charge')add(1,'charge','Charging',{tone:'si-b'});
+    else if(gr.order==='advance')add(1,'advance','Advancing');
+    else add(1,moving?'move':'hold',moving?'Moving':'Holding',null,moving);
+    const walk=walking(gr);add(2,walk?'walk':'run',walk?'At a walk':'At a run',null,moving);
+    for(const id of UNIT_ABIL_ORDER)if(abilityActive(gr,id))add(3,id,UNIT_ABILITIES[id].n+' on',{tone:'si-g'});
+    const q=quiverLeft(m),sta=stm==null?null:stm*FATIGUE.max;
+    if(q&&!q.left)add(4,'noammo','Out of ammunition',{tone:'si-b'});
+    if(sta!=null&&sta<FATIGUE.spent)add(4,'spent','Exhausted: stamina '+Math.round(sta));
+    if(gr.shieldWall)add(5,'shieldWall','Shield wall');
+    if(gr.firm)add(5,'firm','Holding their ground');
+    if(gr.cease)add(5,'cease','Cease fire');
+    if(gr.skirmish)add(5,'skirmish','Skirmishing');
+    if(gr.melee&&m.some(u=>u.s.range))add(5,'melee','Melee mode: bows put away');
+    // (read off its state, never made: charmind.js champ would roll a new one)
+    if(m.some(u=>{const S=u.hero?B.hx:u.ch;return S&&S.fallBack}))add(6,'fallback','Falling back',{tone:'si-w'});
+    if(q&&q.left&&q.left<q.tot*CARD.low)add(7,'ammo','Low on ammunition: '+q.left+'/'+q.tot,{tone:'si-w'});
+    if(sta!=null&&sta>=FATIGUE.spent&&sta<FATIGUE.tired)add(7,'tired','Tired: stamina '+Math.round(sta));
+    if(sightOn()&&m.length){const hid=m.every(u=>!seenBy(1,u));add(8,hid?'hidden':'seen',hid?'Hidden from the enemy':'Seen by the enemy',{tone:'si-g'},hid)}
+    if(m.filter(inWood).length*2>m.length)add(8,'woods','In woods',{tone:'si-g'})}
+  if(mo){if(mo.stand)add(3,'standfast','Standing fast (Stand Fast!)');// (commandpowers.js)
+    if(mo.confident)add(9,'confident','Confident',{s:'confident'});
+    for(const w of mo.weak)if(w!=='tired'||!out.some(o=>o.k==='tired'||o.k==='spent'))add(10,w,WEAK_N[w],{s:WEAK_N[w].split(':')[0].toLowerCase()})}
+  return out.sort((a,b)=>a.p-b.p);
+}
+// a status icon on a card: its words its tooltip (an SVG title, kept when it has its own)
+const cardIco=o=>'<i class="si'+(o.tone?' '+o.tone:'')+'" data-st="'+o.k+'">'+(o.svg.includes('<title>')?o.svg:o.svg.replace('>','><title>'+htmlText(o.w)+'</title>'))+(o.n?'<b>'+o.n+'</b>':'')+'</i>';
 function bhudCards(){
   const row=document.querySelector('.bcards');if(!row)return;
+  // (a long press on a card, on a phone: its words, the tooltip a mouse would show; input.js holdCard)
+  if(!row.dataset.hold){row.dataset.hold='1';let tm=0;const off=()=>clearTimeout(tm);
+    row.addEventListener('pointerdown',e=>{const b=e.pointerType==='touch'&&e.target.closest('.ucard');if(!b)return;off();tm=setTimeout(()=>{if(b.isConnected&&b.title)holdCard('<p>'+htmlText(b.title)+'</p>',e.clientX,e.clientY)},TOUCH.hold)});
+    ['pointerup','pointercancel','pointerleave'].forEach(t=>row.addEventListener(t,off))}
   const ids=['all',...playerGroups()],signature=ids.join('|');if(row.dataset.groups===signature)return;
   row.dataset.groups=signature;row.classList.toggle('many',ids.length>8);row.replaceChildren();ids.forEach((id,i)=>{const b=document.createElement('button');b.type='button';b.className='ucard'+(id==='all'?' all':'');b.dataset.grp=id;b.dataset.key=i?String(i%10):'';row.appendChild(b)});
 }
 function bhudCard(b,g){
   const m=g==='all'?playerGroups().flatMap(grpUnits):grpUnits(g),n=m.length,on=B.sel===g||Array.isArray(B.sel)&&B.sel.includes(g),gr=B.groups[g];
   const hp=m.reduce((a,u)=>a+u.hp,0)/Math.max(1,m.reduce((a,u)=>a+u.max,0)),mo=B.noMorale?null:grpMorale(m),sh=g!=='all'&&g!=='hero'&&gr?grpShape(g):null,rep=g==='hero'?'hero':repOf(m),stm=grpStamina(m);
-  const fl=[gr&&gr.walk?'walk':'',gr&&gr.firm?'firm':'',gr&&gr.cease?'cease fire':'',g!=='all'&&ammoText(m)?'ammo '+ammoText(m):'',gr&&gr.skirmish?'skirm':'',gr&&gr.melee===false&&grpUnits(g).some(u=>u.s.range)?'melee mode off':'',mo?.confident?'confident':'',mo&&mo.breaking?mo.breaking+' breaking':'',mo&&mo.rout?mo.rout+' running':''].filter(Boolean).join(' · ');
-  b.innerHTML='<span class="ukey">'+(b.dataset.key||'')+'</span>'+(g==='all'?'<span class="uall">All</span>':rep?'<img class="upic" src="'+portrait(rep,g==='hero')+'" alt="">':'')+
-    '<span class="cn">'+(g==='all'?'All '+n:htmlText(groupName(g)))+'</span>'+(g==='all'?'':'<span class="ucount">'+n+'</span>')+'<span class="utop">'+(sh?'<small class="csh">'+sh.files+'×'+sh.ranks+'</small>':'')+(gr&&g!=='hero'&&gr.form&&gr.form!=='line'?formIcon(gr.form,18,12):'')+'</span>'+
-    (mo&&g!=='all'?'<span class="cmi">'+moraleCardIcons(mo)+'</span>':'')+
-    '<span class="ubars"><span class="ub"><i class="chp" style="width:'+pct(hp)+'"></i></span>'+(mo?'<span class="ub"><i class="cmo'+(mo.v<MORALE.waver/100?' low':'')+'" style="width:'+pct(mo.v)+'"></i></span>':'')+(stm!=null?'<span class="ub"><i class="cst'+(stm*FATIGUE.max<FATIGUE.tired?' low':'')+'" style="width:'+pct(stm)+'"></i></span>':'')+'</span>'+
-    (fl?'<small class="cf'+(mo&&(mo.rout||mo.waver)?' warn':'')+'">'+fl+'</small>':'');
-  b.title=(g==='all'?'Every soldier you have':groupName(g)+(gr?' · '+FORMS[gr.form||'line'].n+(sh?' '+sh.files+' wide, '+sh.ranks+' deep':'')+' · '+gr.order:''))+(mo?' · '+moraleWords(mo):'')+(b.dataset.key?' ('+b.dataset.key+')':'');
-  if(g!=='all'&&groupAbilityText(g))b.title+=' · '+groupAbilityText(g);
-  b.disabled=g!=='all'&&!n;b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on));
+  const st=cardStatus(g,m,mo,stm),vis=st.filter(o=>o.svg).slice(0,CARD.show);
+  // (built again only when it changes, so a tooltip under the pointer stays; the bars on their own, as they move each moment)
+  const head='<span class="ukey">'+(b.dataset.key||'')+'</span>'+(g==='all'?'<span class="uall">'+icon('troops',18)+'<b>'+n+'</b></span>':(rep?'<img class="upic" src="'+portrait(rep,g==='hero')+'" alt="">':'')+'<span class="ucount">'+n+'</span>')+
+    '<span class="utop">'+(sh?'<small class="csh">'+sh.files+'×'+sh.ranks+'</small>':'')+(gr&&g!=='hero'&&gr.form&&gr.form!=='line'?formIcon(gr.form,18,12):'')+'</span>'+(vis.length?'<span class="cmi">'+vis.map(cardIco).join('')+'</span>':'');
+  if(b.cardHead!==head){b.cardHead=head;b.innerHTML=head+'<span class="ubars"></span>'}
+  const bars='<span class="ub"><i class="chp" style="width:'+pct(hp)+'"></i></span>'+(mo?'<span class="ub"><i class="cmo'+(mo.v<MORALE.waver/100?' low':'')+'" style="width:'+pct(mo.v)+'"></i></span>':'')+(stm!=null?'<span class="ub"><i class="cst'+(stm*FATIGUE.max<FATIGUE.tired?' low':'')+'" style="width:'+pct(stm)+'"></i></span>':''),bb=b.querySelector('.ubars');
+  if(bb.cardBars!==bars){bb.cardBars=bars;bb.innerHTML=bars}
+  b.title=(g==='all'?'All troops: '+n:groupName(g)+': '+n+(gr&&g!=='hero'?' · '+FORMS[gr.form||'line'].n.toLowerCase()+(sh?' '+sh.files+' wide, '+sh.ranks+' deep':''):''))+(mo?' · morale '+Math.round(mo.v*100)+' ('+MORALE_STATE[mo.state].n.toLowerCase()+')':'')+
+    (st.length?' · '+st.map(o=>o.s).join(' · '):'')+(g!=='all'&&groupAbilityText(g)?' · '+groupAbilityText(g):'')+(b.dataset.key?' ('+b.dataset.key+')':'');
+  b.setAttribute('aria-label',b.title);b.disabled=g!=='all'&&!n;b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on));
 }
 // the selected unit's details (bottom left): one group in full; several, a line each
 function bhudInfo(){
   const el=document.getElementById('bInfo');if(!el||!B)return;const gs=selGroups().filter(g=>grpUnits(g).length);
   if(!gs.length){el.innerHTML='<p class="muted">No one left to command.</p>';return}
   const stat=(g)=>{const m=grpUnits(g),gr=B.groups[g],mo=B.noMorale?null:grpMorale(m),hp=m.reduce((a,u)=>a+u.hp,0),mx=m.reduce((a,u)=>a+u.max,0);return{m,gr,mo,hp,mx}};
-  if(gs.length>1){el.innerHTML='<div class="bi-title">'+(B.sel==='all'?'All troops':gs.length+' units')+'</div>'+gs.map(g=>{const S=stat(g);return '<div class="bi-row"><img class="bi-mini" src="'+portrait(g==='hero'?'hero':repOf(S.m),g==='hero')+'" alt=""><span class="bi-n">'+htmlText(groupName(g))+' <b>'+S.m.length+'</b></span><span class="ub"><i class="chp" style="width:'+pct(S.hp/Math.max(1,S.mx))+'"></i></span>'+(S.mo?moraleSVG(stateIcon(S.mo.state),null,12)+(S.mo.confident?moraleSVG('confident',null,12):''):'')+'</div>'}).join('');return}
+  if(gs.length>1){el.innerHTML='<div class="bi-title">'+(B.sel==='all'?'All troops':gs.length+' units')+'</div>'+gs.map(g=>{const S=stat(g);return '<div class="bi-row"><img class="bi-mini" src="'+portrait(g==='hero'?'hero':repOf(S.m),g==='hero')+'" alt=""><span class="bi-n">'+htmlText(groupName(g))+' <b>'+S.m.length+'</b></span><span class="ub"><i class="chp" style="width:'+pct(S.hp/Math.max(1,S.mx))+'"></i></span>'+(S.mo?badgeSVG(stateIcon(S.mo.state),12)+(S.mo.confident?badgeSVG('confident',12):''):'')+'</div>'}).join('');return}
   const g=gs[0],S=stat(g),gr=S.gr,rep=g==='hero'?'hero':repOf(S.m),st=g==='hero'?B.hero.s:ST[rep]||S.m[0].s,sh=g!=='hero'?grpShape(g):null;
   const flags=[S.mo&&S.mo.breaking?'Breaking: '+S.mo.breaking+' (morale collapse)':'',gr.walk?'Walking':'Running',gr.firm?'Holding ground':'',gr.cease?'Cease fire':'',gr.skirmish?'Skirmishing':'',gr.melee===false&&grpUnits(g).some(u=>u.s.range)?'Melee mode off':'',S.mo?.confident?'Confident: local superiority':''].filter(Boolean).join(' · ');
   el.innerHTML='<div class="bi-head"><img class="bi-pic" src="'+portrait(rep,g==='hero')+'" alt=""><div><div class="bi-title">'+htmlText(g==='hero'&&!gr.customName?(P.name||'Your hero'):groupName(g))+'</div><small>'+(g==='hero'?'Your hero':S.m.length+' × '+(ST[rep]?ST[rep].n:rep))+'</small>'+
@@ -74,8 +125,8 @@ function bhudInfo(){
     (g==='hero'&&B.hx?'<div class="bi-bar sp"><i style="width:'+pct(B.hx.sp/maxSP())+'"></i><em>Stamina '+Math.round(B.hx.sp)+'</em></div><div class="bi-bar mp"><i style="width:'+pct(B.hx.mp/maxMP())+'"></i><em>Mana '+Math.round(B.hx.mp)+'</em></div>':'')+
     (g!=='hero'&&grpStamina(S.m)!=null?(st=>'<div class="bi-bar st"><i class="'+(st*FATIGUE.max<FATIGUE.tired?'low':'')+'" style="width:'+pct(st)+'"></i><em>Stamina '+Math.round(st*FATIGUE.max)+(st*FATIGUE.max<FATIGUE.spent?' · spent':st*FATIGUE.max<FATIGUE.tired?' · tired':'')+'</em></div>')(grpStamina(S.m)):'')+
     (S.mo?'<div class="bi-bar mo"><i class="'+(S.mo.v<MORALE.waver/100?'low':'')+'" style="width:'+pct(S.mo.v)+'"></i><em>Morale '+Math.round(S.mo.v*100)+' · '+MORALE_STATE[S.mo.state].n+'</em></div>'+
-      (S.mo.confident?'<div class="bi-weak"><span title="'+CONFIDENCE_LABEL+'">'+moraleSVG('confident',null,14)+'Confident</span></div>':'')+
-      (S.mo.weak.length?'<div class="bi-weak">'+S.mo.weak.map(w=>'<span title="'+WEAK_N[w]+'">'+moraleSVG(w,null,12)+WEAK_N[w].split(':')[0]+'</span>').join('')+'</div>':''):'')+
+      (S.mo.confident?'<div class="bi-weak"><span title="'+CONFIDENCE_LABEL+'">'+badgeSVG('confident',14)+'Confident</span></div>':'')+
+      (S.mo.weak.length?'<div class="bi-weak">'+S.mo.weak.map(w=>'<span title="'+WEAK_N[w]+'">'+badgeSVG(w,12)+WEAK_N[w].split(':')[0]+'</span>').join('')+'</div>':''):'')+
     (st?'<div class="bi-stats"><span><b>Damage</b>'+Math.round(st.dmg)+'</span><span><b>'+(st.range?'Range':'Reach')+'</b>'+(st.range||st.reach)+'</span><span><b>Speed</b>'+Math.round(st.spd)+'</span><span><b>Health</b>'+Math.round(st.hp)+'</span>'+(ammoText(S.m)?'<span><b>Ammo</b>'+ammoText(S.m)+'</span>':'')+'</div>':'')+
     (flags?'<small class="bi-flags">'+flags+'</small>':'')+(moraleContextText(S.mo)?'<small class="bi-flags">'+moraleContextText(S.mo)+'</small>':'')+(groupAbilityText(g)?'<small class="bi-flags">'+groupAbilityText(g)+'</small>':'')+(st&&g!=='hero'?'<small class="vs">'+vsLine(st)+'</small>':'');
 }
@@ -100,6 +151,7 @@ const ABIL_ICON={
   rally:['a........','aaaaaa...','abbbbba..','abbbba...','aaaaaaa..','a........','a........','a........','aa.......']
 };
 function bhudAbilities(){
+  bhudPowers();// (the commander bar, on the same clock: commandpowers.js)
   const bar=document.querySelector('#bbar .borders');if(!bar||!B)return;let el=bar.querySelector('.abils');
   if(!el){el=document.createElement('div');el.className='ogrp abils';el.setAttribute('role','group');el.setAttribute('aria-label','Unit abilities (G brace, I fire arrows, U spur, Y rally)');
     el.addEventListener('click',e=>{const b=e.target.closest('[data-abil]');if(b&&!b.disabled)groupAbility(b.dataset.abil)});bar.appendChild(el)}
@@ -209,7 +261,7 @@ function drawReach(us,col){
     const a=arcAim(u),sh=r0?-r0/Math.sin(SHOOT.arc/2):0,r=Math.max(0,u.s.range+r0-sh),ox=Math.cos(a)*sh,oy=Math.sin(a)*sh;g.moveTo(u.x+ox,u.y+oy);g.arc(u.x+ox,u.y+oy,r,a-SHOOT.arc/2,a+SHOOT.arc/2);g.closePath()}g.fill()};
   g.globalCompositeOperation='source-over';g.fillStyle='rgba('+col+',1)';disc(0);g.globalCompositeOperation='destination-out';disc(-FIRE.edge);
   g.globalCompositeOperation='source-over';g.fillStyle='rgba('+col+','+FIRE.fill+')';disc(-FIRE.edge);
-  ctx.save();ctx.globalAlpha=.75;ctx.drawImage(c,0,0);ctx.restore()}
+  ctx.save();ctx.globalAlpha=.75;drawInView(c);ctx.restore()}
 // One formation envelope, anchored by the median inferred slot anchor. The hull sweeps both frontage ends through
 // the firing arc. Minimum member range is an indicative range, not guaranteed coverage from every soldier's position.
 const medianValue=a=>{a.sort((x,y)=>x-y);return a[Math.floor(a.length/2)]||0};
@@ -223,7 +275,7 @@ function drawFormationReach(id,col){
   g.clearRect(0,0,BW,BH);g.globalCompositeOperation='source-over';g.fillStyle='rgba('+col+',1)';fill(0);
   g.globalCompositeOperation='destination-out';g.fillStyle='rgba(0,0,0,1)';fill(-FIRE.edge);
   g.globalCompositeOperation='source-over';g.fillStyle='rgba('+col+','+FIRE.fill+')';fill(-FIRE.edge);
-  ctx.save();ctx.globalAlpha=.75;ctx.drawImage(c,0,0);ctx.restore();
+  ctx.save();ctx.globalAlpha=.75;drawInView(c);ctx.restore();
 }
 // the trees a straight line from a to b passes through
 const treesOn=(a,b)=>B.obs.filter(o=>{if(o.kind!=='tree')return false;const dx=b.x-a.x,dy=b.y-a.y,L=dx*dx+dy*dy||1,k=clamp(((o.x-a.x)*dx+(o.y-6-a.y)*dy)/L,0,1);return Math.hypot(a.x+dx*k-o.x,a.y+dy*k-(o.y-6))<o.r+2}).length;
@@ -244,16 +296,16 @@ function drawFireRange(){
   }
 }
 // lines from each selected group to where it is going: a move (gold, with its men's places there, faint), the next waypoints,
-// an attack (red, to the one it is set on, or to those it charges), withdrawing (blue, straight back to your edge)
+// an attack (red, to the one it is set on, or to those it charges), withdrawing (blue, straight back to your edge, or its exit: morale.js)
 function drawOrderLines(){
   if(B.deploy)return;// (every selected group, All included)
   const line=(a,b,col,dash)=>{ctx.save();ctx.strokeStyle=col;ctx.lineWidth=1;ctx.setLineDash(dash||[4,3]);ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();ctx.restore();
     const an=Math.atan2(b.y-a.y,b.x-a.x);ctx.fillStyle=col;ctx.beginPath();ctx.moveTo(b.x,b.y);ctx.lineTo(b.x-Math.cos(an-.5)*5,b.y-Math.sin(an-.5)*5);ctx.lineTo(b.x-Math.cos(an+.5)*5,b.y-Math.sin(an+.5)*5);ctx.fill()};
   for(const g of selGroups()){const m=grpUnits(g).filter(u=>!u.rout);if(!m.length)continue;const gr=B.groups[g],c={x:m.reduce((a,u)=>a+u.x,0)/m.length,y:m.reduce((a,u)=>a+u.y,0)/m.length};
     // (an attack on those gone from sight: to where they were last seen, terrain.js sightGoal)
-    const target=B.terrain&&sightGoal(gr,0)||gr.targetPoint();if(target){line(c,target,'rgba(255,106,90,.9)',[]);ctx.strokeStyle='#ff6a5a';ctx.beginPath();ctx.ellipse(target.x,target.y,8,4,0,0,7);ctx.stroke();continue}
+    const target=sightGoal(gr,0)||gr.targetPoint();if(target){line(c,target,'rgba(255,106,90,.9)',[]);ctx.strokeStyle='#ff6a5a';ctx.beginPath();ctx.ellipse(target.x,target.y,8,4,0,0,7);ctx.stroke();continue}
     if(gr.order==='charge'){const ts=[...new Set(m.map(u=>u.tgt).filter(t=>t&&t.hp>0))];if(ts.length){const t={x:ts.reduce((a,u)=>a+u.x,0)/ts.length,y:ts.reduce((a,u)=>a+u.y,0)/ts.length};if(Math.hypot(t.x-c.x,t.y-c.y)>12)line(c,t,'rgba(255,106,90,.7)')}continue}
-    if(gr.order==='withdraw'&&B.exit){line(c,exitFor(c),'rgba(111,168,224,.9)');continue}
+    if(gr.order==='withdraw'&&B.exit){line(c,exitFor({x:c.x,y:c.y,team:gr.team,grp:g}),'rgba(111,168,224,.9)');continue}
     const a={x:gr.ax,y:gr.ay};
     if(Math.hypot(a.x-c.x,a.y-c.y)>14){line(c,a,'rgba(255,210,90,.85)');ctx.fillStyle='rgba(255,210,90,.35)';for(const u of m)ctx.fillRect(Math.round(a.x+(u.sx||0))-1,Math.round(a.y+(u.sy||0))-1,2,2)}
     let p=a;for(const w of gr.queue||[]){line(p,w,'rgba(255,210,90,.55)');p=w}}

@@ -21,9 +21,9 @@ const ATK_BASE={swing:6,thrust:9,overhead:12};
 function unitSprite(type,team,hero,v,pose,bare,arm){
   // a companion wears what you gave them: their weapon, armour and helm show (cg)
   const cg=COMPS[type]&&P.comps&&P.comps[type]&&P.comps[type].gear||null;
+  // (a beast or a monster: its own figure (engine/beasts.js), one of three variants, its poses: beastSprite)
+  if(ST[type]&&ST[type].beast)return beastSprite(type,team,v,pose);
   v=hero?0:(v||0)%6;pose=pose||0;const key=type+team+(hero?'h'+P.race+(P.gear.weapon||'')+(P.gear.body||'')+(P.gear.head||''):'')+(cg?'g'+(cg.weapon||'')+(cg.body||'')+(cg.head||''):'')+'v'+v+'p'+pose+(bare?'b':'')+(arm?'s':'');if(spr[key])return spr[key];
-  if(type==='dragon')return spr[key]=cellOf(dragonSprite(32));
-  if(ST[type]&&ST[type].beast)return spr[key]=cellOf(outlined(ST[type].big?bigBeastSprite(type):beastSprite(type)));
   // soldiers, your hero and companions: the template figures (people.js)
   const cid=COMPS[type]?type:'',L0=lookOf(type,team,hero,v,cid,cg),L=arm?{...L0,weapon:null}:L0;
   // (a bare body in a blow is the body standing: its weapon is drawn apart, so one sprite serves all nine blow frames)
@@ -34,11 +34,31 @@ function unitSprite(type,team,hero,v,pose,bare,arm){
    crisp; a rider thrown from his mount, which lies low beside him; a beast slumped where it stood. stand: him upright (his fall
    turns it about his feet), body: him lying, ax, ay: his feet in it; wk: the weapon he dropped; mount: his mount standing, down: lying */
 const CORPSES=new WeakMap(),BEAST_FALL={troll:'over',spider:'back',scorpion:'back',slime:'melt'};
+/* the beasts and monsters (engine/beasts.js PX.beast): the people's style, side-on, in a power-of-two cell (the dragon 64, a troll
+   or a wyrm 32, a slime 16, the rest 32), feet on its bottom row; three variants; the poses as the people's (BEAST_POSES: 0-1
+   standing, 2-5 walking, 15-18 running, 6-8 the attack, 9-11 the dragon's breath) and lying dead (PX.BEAST_DEAD). One of yours
+   (team 0) wears the side's blue; a wild one nothing. Cached by kind, side, variant and pose (the climbs walk, the other blows
+   strike) */
+const BEAST_POSES=PX.BEAST_POSES;
+const beastPoseOf=(type,p)=>p===PX.BEAST_DEAD?p:p>=19?2+(p-19)%4:p>=12&&p<=14?p-6:p>=9&&p<=11&&type!=='dragon'?p-3:p;
+function beastSprite(type,team,v,pose){v=(v||0)%3;pose=beastPoseOf(type,pose||0);const k='bst'+type+(team?1:0)+v+'p'+pose;
+  return spr[k]||(spr[k]=cellOf(PX.beast(type,{v,pose,team:team?1:0})))}
+// a beast's pose now: striking (or breathing fire, winding up a spit), running or walking as it moves, leaping (a pounce), breathing
+function beastPose(u,moved){
+  if(u.s.breath&&u.br!=null&&u.br>3.5-ATK_ANIM*1.5)return 9+Math.min(2,Math.floor((3.5-u.br)/(ATK_ANIM*1.5)*3));
+  if(u.atkAt!=null&&B.t-u.atkAt<ATK_ANIM)return 6+Math.min(2,Math.floor((B.t-u.atkAt)/ATK_ANIM*3));
+  if(u.shot)return 6;
+  if((u.z||0)>1)return 16;
+  if(moved)return u.spdNow>u.s.spd*.75?15+Math.floor(B.t*12+(u.v||0))%4:2+Math.floor(B.t*8+(u.v||0))%4;
+  return (B.t*.8+((u.id||0)*.37)%1)%1<.45?1:0}
+// a monster on the world map: the dragon on the wing (its own small figure in a 32 cell, wings up, then level); the rest walking, f 0-3
+function monsterMapSprite(id,f){const M=MONSTERS[id],k='mm'+M.unit+(f||0);if(spr[k])return spr[k];
+  return spr[k]=M.mythic?cellOf(PX.beastMap(M.unit,f||0)):unitSprite(M.unit,1,false,0,2+((f||0)%4))}
 function corpseOf(u){
   const base=unitSprite(u.type,u.team,u.hero,u.v,0,true);let c=CORPSES.get(base);if(c)return c;
-  // (a beast: one that stands upright falls as a man does; a spider or a scorpion ends on its back; a slime runs flat; the rest lie
-  // on their side, which seen at the field's slant is their shape pressed low)
-  if(u.type==='dragon'||ST[u.type]&&ST[u.type].beast)c={beast:base,how:BEAST_FALL[u.type]||'side'};
+  // (a beast: it sinks as it falls (a troll over as a man does, a spider or a scorpion onto its back, a slime running flat, the rest
+  // pressed low), then lies in its dead pose, down: engine/beasts.js)
+  if(ST[u.type]&&ST[u.type].beast)c={beast:base,down:unitSprite(u.type,u.team,false,u.v,PX.BEAST_DEAD),how:BEAST_FALL[u.type]||'side'};
   else{const L=unitLook(u),wk=heldWeapon(L),g=pgrid(24,20);drawFigure(g,{...L,mount:null,weapon:wk?null:L.weapon},4,3,-1,null,-1);const lie=pturn(g);poutline(g);poutline(lie);
     c={stand:pcanvas(g),body:pcanvas(lie),ax:2,ay:12,wk,team:L.team};
     if(L.mount){const m=pgrid(32,32),d=pgrid(32,22);drawMount(m,L,-1);drawMountDown(d,L);poutline(m);poutline(d);c.mount=pcanvas(m);c.down=pcanvas(d)}}
@@ -47,10 +67,11 @@ function corpseOf(u){
 /* the sprites a battle will need, made a little each frame before they are first shown (WARM.budget ms a frame, during the
    deployment and the opening): every body of every kind, side and look on the field, standing, breathing, walking and
    running, and their weapons at every angle. A pose first drawn mid-fight would otherwise cost a hitch */
-const WARM={q:[],budget:4};
+// (the beasts' poses in a queue of their own, b, made after the rest)
+const WARM={q:[],b:[],budget:4};
 function warmBattle(units){
-  WARM.q=[];const seen=new Set(),late=[];
-  for(const u of units){if(ST[u.type]&&ST[u.type].beast)continue;const v=u.hero?0:(u.v||0)%6,k=u.type+'|'+u.team+'|'+(u.hero?1:0)+'|'+v;if(seen.has(k))continue;seen.add(k);
+  WARM.q=[];WARM.b=[];const seen=new Set(),late=[];
+  for(const u of units){if(ST[u.type]&&ST[u.type].beast){const k=u.type+'|'+(u.team?1:0)+'|'+(u.v||0)%3;if(!seen.has(k)){seen.add(k);for(const p of [...BEAST_POSES,PX.BEAST_DEAD])WARM.b.push(()=>unitSprite(u.type,u.team,false,u.v,p))}continue}const v=u.hero?0:(u.v||0)%6,k=u.type+'|'+u.team+'|'+(u.hero?1:0)+'|'+v;if(seen.has(k))continue;seen.add(k);
     for(const p of [0,1,2,3,4,5,15,16,17,18])WARM.q.push(()=>unitSprite(u.type,u.team,u.hero,u.v,p,true));
     const L=unitLook(u),w=heldWeapon(L);
     if(w){const sk=pal(L.skin)[1],kw=w+L.team+sk;if(!seen.has(kw)){seen.add(kw);for(let i=0;i<WEAPON_STEPS;i++)WARM.q.push(()=>weaponSprite(w,L.team,sk,i))}}
@@ -58,7 +79,7 @@ function warmBattle(units){
     // (and last, how he lies when he falls, and the weapon he drops: vfx.js drawCorpses)
     late.push(()=>corpseOf(u));if(u.s.range&&!u.s.magic){for(const p of [0,2,3,4,5,6,7,8])late.push(()=>unitSprite(u.type,u.team,u.hero,u.v,p,true,true));const sk=pal(L.skin)[1],kw='sword'+L.team+sk;if(!seen.has(kw)){seen.add(kw);for(let i=0;i<WEAPON_STEPS;i++)late.push(()=>weaponSprite('sword',L.team,sk,i))}}if(w)for(const i of [0,1,WEAPON_STEPS-1,WEAPON_STEPS/2,WEAPON_STEPS/2+1])late.push(()=>weaponSprite(w,L.team,PPAL.wood[2],i))}
   WARM.q.push(...late)}
-function warmStep(){const t0=performance.now();while(WARM.q.length&&performance.now()-t0<WARM.budget)WARM.q.shift()()}
+function warmStep(){const t0=performance.now();while((WARM.q.length||WARM.b.length)&&performance.now()-t0<WARM.budget)(WARM.q.length?WARM.q:WARM.b).shift()()}
 // a soldier's look (what unitSprite draws him from), for the weapon in his hand
 // a shooter's sidearm: a short sword, on the weapon layer
 const sidearmLook=u=>u.side||(u.side={...unitLook(u),weapon:'sword'});
@@ -73,15 +94,6 @@ function procPose(u,moved){
   // (standing: breathing, slow, each on his own rhythm)
   return (B.t*.8+((u.id||0)*.37)%1)%1<.45?1:0;
 }
-function dragonSprite(w){const k='dr'+w;return spr[k]||(spr[k]=mkc(32,24,g=>{
-  const r=(c,x,y,ww,hh)=>rect(g,c,x,y,ww,hh),B='#b8403a',D='#7e2a26',Wg='#5e1f1c',Y='#e8a04a';
-  r(Wg,6,1,4,2);r(Wg,4,3,8,3);r(Wg,2,6,10,2);r(D,8,3,1,5);r(D,5,5,1,3);
-  r(B,8,10,14,7);r(D,8,16,14,1);r(Y,11,14,9,2);
-  r(B,4,12,5,3);r(B,1,14,4,2);r(D,0,15,2,1);
-  r(B,21,7,4,6);r(B,24,4,6,5);r(D,24,8,6,1);r('#ffe08a',27,5,1,1);r('#e4e0cf',25,3,1,2);r('#e4e0cf',28,3,1,2);r('#ff7a30',30,7,2,1);
-  r(D,10,17,2,5);r(D,18,17,2,5);r(C.dark,9,21,4,1);r(C.dark,17,21,4,1);
-  r(Wg,14,2,4,2);r(Wg,13,4,7,4);r(Wg,12,8,6,2);
-}))}
 // a banner bearer on the map (people.js): the party's leader in the banner's colour, on foot or riding a mount of colour mc; f the step
 function partySprite(col,mc,f){f=f||0;const k='p'+col+(mc||'')+f;if(spr[k])return spr[k];
   const you=col==='#e8b94a',R=RACE_LOOK[you?P.race:'human']||RACE_LOOK.human;
@@ -102,43 +114,23 @@ const worldCv=()=>mapCv||(mapCv=paintWorld());
 const miniCv=mkc(MW,MH,g=>{for(let y=0;y<MH;y++)for(let x=0;x<MW;x++)rect(g,PAL[CLIMS[climate[y*MW+x]]].mini[tiles[y*MW+x]],x,y,1,1)});
 /* battle arenas: one per climate, built when first needed */
 const ARENAS={};
-function arenaFor(c){const k=c+BW;return ARENAS[k]||(ARENAS[k]=paintArena(c))}
-function obstacleSprite(kind,clim){const k='ob'+kind+clim;return spr[k]||(spr[k]=cellOf(outlined(mkc(14,16,g=>{
-  const r=(c,x,y,w,h)=>rect(g,c,x,y,w,h);
-  if(kind==='tree'){
-    if(clim==='frost'){r('#5a3a20',6,12,2,4);r('#2a4a3a',2,8,10,5);r('#2a4a3a',3,4,8,4);r('#2a4a3a',5,1,4,3);r('#e8eef4',3,8,8,1);r('#e8eef4',4,4,6,1);r('#e8eef4',5,1,4,1)}
-    else if(clim==='swamp'){r('#5a4a34',6,3,2,13);r('#5a4a34',3,5,3,1);r('#5a4a34',8,7,4,1);r('#2a3a24',2,0,10,4)}
-    else{r('#5a3a20',6,10,2,6);r('#2a5a2a',1,3,12,8);r('#2f6a30',3,0,8,4);r('#3f8a3e',3,3,4,3)}
-  }else if(kind==='cactus'){r('#5a8a3a',6,2,3,14);r('#5a8a3a',2,6,2,5);r('#5a8a3a',2,10,4,2);r('#5a8a3a',11,4,2,5);r('#5a8a3a',9,8,4,2);r('#7aaa50',7,3,1,12)}
-  else{const d=clim==='desert';r(d?'#7a4a2e':'#5d6472',1,8,12,8);r(d?'#9a6a4a':'#7d8494',2,5,10,8);r(d?'#b5835a':'#a7adba',4,4,5,3);if(clim==='frost')r('#eef3f8',3,4,7,2)}
-}))))}
-function beastSprite(type){const k='bs'+type;return spr[k]||(spr[k]=mkc(14,14,g=>{
-  const r=(c,x,y,w,h)=>rect(g,c,x,y,w,h);
-  if(type==='wolf'){r('#6b737d',2,6,9,4);r('#9aa3ad',2,6,9,2);r('#6b737d',10,4,3,3);r('#9aa3ad',11,3,1,1);r('#1a1410',12,5,1,1);r('#ffd24a',11,4,1,1);r('#6b737d',0,5,2,2);
-    r('#4a525c',3,10,1,4);r('#4a525c',5,10,1,4);r('#4a525c',8,10,1,4);r('#4a525c',10,10,1,4)}
-  else if(type==='slime'){r('#5a9a3a',3,8,9,6);r('#8ad06a',4,7,7,2);r('#a8e888',5,7,2,1);r('#3a7a2a',3,13,9,1);r('#1a1410',5,9,1,2);r('#1a1410',9,9,1,2)}
-  else if(type==='boar'){r('#5a3a28',2,6,10,5);r('#7a5038',3,5,8,3);r('#5a3a28',11,6,3,4);r('#e8e4d0',13,8,1,2);r('#1a1410',12,7,1,1);r('#3a2418',1,5,2,2);
-    r('#3a2418',3,11,1,3);r('#3a2418',5,11,1,3);r('#3a2418',9,11,1,3);r('#3a2418',11,11,1,3)}
-  else if(type==='tiger'){r('#e08a2a',1,6,10,5);r('#f0a848',2,6,8,2);r('#e08a2a',10,4,4,4);r('#1a1410',3,6,1,4);r('#1a1410',6,6,1,4);r('#1a1410',9,6,1,3);r('#f4ecd8',11,6,3,2);
-    r('#3ac04a',12,5,1,1);r('#e08a2a',0,4,2,2);r('#c06a1a',2,11,1,3);r('#c06a1a',4,11,1,3);r('#c06a1a',8,11,1,3);r('#c06a1a',10,11,1,3)}
-  else if(type==='bear'){r('#5a3e2a',1,4,11,7);r('#6e4e36',2,3,9,3);r('#5a3e2a',10,2,4,5);r('#5a3e2a',10,1,1,1);r('#5a3e2a',13,1,1,1);r('#1a1410',12,4,1,1);r('#2a1e14',13,5,1,1);
-    r('#3e2a1c',2,11,2,3);r('#3e2a1c',5,11,2,3);r('#3e2a1c',8,11,2,3);r('#3e2a1c',11,11,2,3)}
-  else if(type==='spider'){r('#2a2230',4,6,6,5);r('#3a3044',5,5,4,3);r('#2a2230',9,6,3,3);r('#e0605a',10,6,1,1);r('#e0605a',11,7,1,1);r('#8a3a8a',5,8,3,1);
-    for(let i=0;i<4;i++){r('#2a2230',1+i,10-i%2,1,4);r('#2a2230',11-i,10-i%2,1,4)}}
-  else if(type==='griffin'){r('#c8a060',3,7,8,4);r('#e8dcc0',8,3,4,5);r('#f0c040',12,5,2,1);r('#1a1410',10,4,1,1);r('#8a6a3a',1,2,6,3);r('#a8844a',0,4,7,2);r('#e8dcc0',4,2,3,2);
-    r('#8a6a3a',4,11,1,3);r('#8a6a3a',9,11,1,3);r('#c8a060',0,8,3,1)}
-  else{r('#8a5a2b',3,7,7,4);r('#b5733e',4,7,5,2);r('#8a5a2b',9,8,3,2);r('#e8a04a',11,7,2,2);r('#8a5a2b',1,5,3,2);r('#8a5a2b',1,2,2,3);r('#c8885a',2,1,3,1);r('#e0605a',4,1,1,1);
-    for(let i=0;i<3;i++){r('#5a3a20',4+i*2,11,1,3);r('#5a3a20',3+i*2,11,1,1)}}
-}))}
-function bigBeastSprite(type){const k='bb'+type;return spr[k]||(spr[k]=type==='troll'?mkc(22,24,g=>{
-  const r=(c,x,y,w,h)=>rect(g,c,x,y,w,h),S='#6a8a6a',D='#4a6a4e',L='#8aa88a';
-  r(D,6,18,3,6);r(D,13,18,3,6);r(S,4,8,14,11);r(L,6,9,10,4);r(S,7,2,8,7);r(D,7,7,8,1);r('#ffd24a',9,4,1,1);r('#ffd24a',12,4,1,1);r('#e8e4d0',9,7,1,1);r('#e8e4d0',12,7,1,1);
-  r(S,1,9,3,10);r(S,18,9,3,9);r('#7a5a3a',19,4,2,16);r('#9a7a52',18,3,4,4);r('#5a3a28',4,14,14,2)
-}):mkc(30,18,g=>{
-  const r=(c,x,y,w,h)=>rect(g,c,x,y,w,h),S='#c8964a',D='#9a6a32',L='#e0b870';
-  r(D,0,12,30,6);r(S,2,9,24,6);r(L,4,9,18,2);for(let i=0;i<5;i++)r(D,5+i*4,8,2,1);
-  r(S,20,2,8,9);r(D,20,9,8,2);r('#e8e4d0',26,9,1,3);r('#e8e4d0',28,9,1,3);r('#e0605a',24,4,2,1);r('#5a3a1a',27,6,2,1);r('#d8b86a',0,15,30,3)
-}))}
+// (by climate and field size: only the field size in use kept, a huge field's ground being large)
+function arenaFor(c){const s='|'+BW+'x'+BH,k=c+s;if(!ARENAS[k]){for(const q of Object.keys(ARENAS))if(!q.endsWith(s))delete ARENAS[q];ARENAS[k]=paintArena(c)}return ARENAS[k]}
+/* the obstacles of a field without terrain (B.obs: setup.js placeObstacles) in the ground's style (engine/ground.js
+   PX.battleObstacle: a tree of the climate's, a boulder of its rock, a cactus), each its look by where it stands (a hash, never
+   Math.random); drawing only: where they stand and what they block (r) are the battle's. obstacleGround: their shadows, roots and
+   scree, under everyone, once a frame (render.js, before the depth-sorted list), and each one covering one of your men behind it
+   fading to PROPFADE.a, as a terrain prop does (OBFADE, by obstacle); drawObstacle: one standing, in the depth order */
+const obstacleLook=o=>PX.battleObstacle(o.kind,B.env.c,Math.floor(PX.hash(o.x,o.y,71)*6));
+const OBFADE=new WeakMap();let OBT=0;
+function obstacleGround(){
+  const L=B.obs;if(!L||!L.length)return;const c=B.cam,z=c?c.z:1,vx=c?c.x:0,vy=c?c.y:0,x0=vx-ENT_PAD.x,x1=vx+BVW/z+ENT_PAD.x,y0=vy-ENT_PAD.up,y1=vy+BVH/z+ENT_PAD.down;
+  const now=performance.now(),st=OBT?Math.min(.1,(now-OBT)/1000)*PROPFADE.rate:1;OBT=now;let men=null;
+  for(const o of L){if(o.x<x0||o.x>x1||o.y<y0||o.y>y1)continue;const k=obstacleLook(o),b=k.box,bx=o.x-k.ax,by=o.y-k.ay;ctx.drawImage(k.g,Math.round(o.x)-k.gx,Math.round(o.y)-k.gy);
+    if(!men)men=B.units.filter(u=>u.hp>0&&u.team===0);let cov=false;
+    for(const u of men){const s=u.s.big?2:1;if(u.y<o.y&&u.x+5*s>=bx+b[0]&&u.x-5*s<=bx+b[2]&&u.y-1>=by+b[1]&&u.y-15*s<=by+b[3]){cov=true;break}}
+    const to=cov?PROPFADE.a:1,a=OBFADE.has(o)?OBFADE.get(o):1;OBFADE.set(o,a<to?Math.min(to,a+st):Math.max(to,a-st))}}
+function drawObstacle(o){const k=obstacleLook(o),a=OBFADE.has(o)?OBFADE.get(o):1;if(a<1)ctx.globalAlpha=a;ctx.drawImage(k.s,Math.round(o.x)-k.ax,Math.round(o.y)-k.ay);if(a<1)ctx.globalAlpha=1}
 /* inventory icons: 16x16, one shape per icon kind, tinted by the item's color */
 const shade=(hex,f)=>'#'+[1,3,5].map(i=>Math.max(0,Math.min(255,Math.round(parseInt(hex.slice(i,i+2),16)*f))).toString(16).padStart(2,'0')).join('');
 function itemIcon(def){const k='ic'+def.icon+def.col;return spr[k]||(spr[k]=mkc(16,16,g=>{
