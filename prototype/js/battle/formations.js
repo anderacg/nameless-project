@@ -9,7 +9,9 @@
 const FORMS={
   line:{n:'Line',files:8,gx:14,gy:13,d:'Ranks across the front, as wide as you drag the line.'},
   loose:{n:'Loose',files:8,gx:24,gy:22,who:'foot',key:'L',d:'Wider spacing only; no direct damage bonus or penalty.'},
-  wedge:{n:'Wedge',wedge:true,gx:13,gy:12,drag:'fixed',who:'cav',key:'T',d:'Cavalry spearhead: 6 formed cavalry give +5% charge, +2.5 percentage points per additional rider, capped at +30% at 16. Scattered or routing riders do not count.'}
+  wedge:{n:'Wedge',wedge:true,gx:13,gy:12,drag:'fixed',who:'cav',key:'T',d:'Cavalry spearhead: 6 formed cavalry give +5% charge, +2.5 percentage points per additional rider, capped at +30% at 16. Scattered or routing riders do not count.'},
+  // (beasts: no ranks, a ragged clump files wide, each beast off its place by a fixed jitter, beastmind.js; never one of yours to pick: FORM_ORDER)
+  pack:{n:'Pack',pack:true,files:5,gx:17,gy:15,drag:'fixed',who:'beast',d:'Beasts keep no ranks: a loose, ragged spread.'}
 };
 const FORM_ORDER=['line','loose','wedge'],FORM_PICK=['loose','wedge'];
 const WALL={near:16,front:.65,spd:.6},WEDGE={min:6,start:.05,step:.025,cap:.3,slot:28};
@@ -28,7 +30,7 @@ function wedgeMembers(g){
   return m.filter(u=>Math.hypot(u.x-x-(u.sx||0),u.y-y-(u.sy||0))<=WEDGE.slot&&angGap(u.dir??gr.face,gr.face||0)<1.05);
 }
 const wedgeBonus=n=>n<WEDGE.min?0:Math.min(WEDGE.cap,WEDGE.start+(n-WEDGE.min)*WEDGE.step);
-const FORM_WHO={melee:u=>!u.s.range&&!u.s.charge,shield:u=>!u.s.range&&!u.s.mounted&&tagsOf(u.s).includes('shield'),foot:u=>!u.s.mounted,cav:u=>!!u.s.charge},WHO_N={melee:'melee infantry',shield:'shielded infantry',foot:'foot troops',cav:'cavalry'};
+const FORM_WHO={melee:u=>!u.s.range&&!u.s.charge,shield:u=>!u.s.range&&!u.s.mounted&&tagsOf(u.s).includes('shield'),foot:u=>!u.s.mounted,cav:u=>!!u.s.charge,beast:u=>!!(u.s.beast||u.s.big)},WHO_N={melee:'melee infantry',shield:'shielded infantry',foot:'foot troops',cav:'cavalry',beast:'beasts'};
 const DEPTH={ranks:4,charge:.7};// a block this many ranks deep takes a charge's bonus at this much of its force (not from behind)
 const FORM_DRAG=8;// a right-click dragged further than this lays out a line
 // does formation f suit group g (most of its soldiers are of the kind it is for)
@@ -40,6 +42,7 @@ function grpShape(g){const gr=B.groups[g],n=grpUnits(g).length;if(!gr||!n)return
 function formSlots(f,n,a,files){
   const F=FORMS[f]||FORMS.line,out=[];if(n<=0)return out;
   if(F.wedge){let r=0,i=0;while(i<n){const k=Math.min(r+1,n-i);for(let j=0;j<k;j++)out.push([-r*F.gy,(j-(k-1)/2)*F.gx]);i+=k;r++}}
+  else if(F.pack){const w=Math.max(1,Math.min(n,files||F.files));for(let i=0;i<n;i++){const r=Math.floor(i/w),c=i%w,rowN=Math.min(w,n-r*w);out.push([-r*F.gy+((i*37)%11-5)*1.6,(c-(rowN-1)/2+(r%2)*.5)*F.gx+((i*53)%9-4)*1.5])}}
   else{const w=Math.max(1,Math.min(n,files||F.files));for(let i=0;i<n;i++){const r=Math.floor(i/w),c=i%w,rowN=Math.min(w,n-r*w);out.push([-r*F.gy,(c-(rowN-1)/2)*F.gx])}}
   const mr=out.reduce((s,p)=>s+p[0],0)/out.length,ca=Math.cos(a),sa=Math.sin(a);
   return out.map(([fx,lat])=>{const x=fx-mr;return[x*ca-lat*sa,x*sa+lat*ca]});

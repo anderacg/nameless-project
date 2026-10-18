@@ -210,6 +210,7 @@ tr:last-child td{border-bottom:0}
 <script src="js/battle/combat.js"></script>
 <script src="js/battle/charmind.js"></script>
 <script src="js/battle/commander.js"></script>
+<script src="js/battle/beastmind.js"></script>
 <script src="js/battle/abilities.js"></script>
 <script src="js/battle/formations.js"></script>
 <script src="js/battle/morale.js"></script>
@@ -457,6 +458,13 @@ section('threats','Monsters and threats','Up to '+MONSTER_CAP+' monsters roam at
     kv([['Appears','From day '+Y.first+', in the '+Y.lair.join(' or ')+'. Another comes '+Y.back+' days after one is slain.'],['Hunts','Spots you within '+Y.see+' px'+(Y.fly?' and flies over anything':'')+'.'],
       ['Ravages',(Y.ravage?'Kills '+pct(Y.ravage)+' of any army it lands on. ':'')+(Y.scorch?pct(Y.scorch)+' a day: burns a nearby holding’s fields and halves its garrison.':'')],
       ['Hoard',(H.gold?H.gold+' gold':'')+(H.renown?', '+H.renown+' renown':'')+', '+M.xp+' XP'+(H.gear?', gear of tier '+H.gear[0]+'–'+H.gear[1]:'')+(H.egg?', and '+pct(H.egg[1])+' to find a '+ITEMS[H.egg[0]].n:'')+'.'],['Fame','+'+Y.fame+' reputation nearby.']])+'</article>'}).join('')+'</div>'+
+  sub('Beasts in battle','Beasts keep no ranks: they stand in a loose, ragged pack, and each kind fights its own way. Wolves and boars come in small packs, bears and trolls alone or in pairs. Your own beasts follow your orders; under Auto, their kind’s way.',
+    table(['Beast','Way','How it fights'],Object.entries(BEAST_TACTICS.kinds).map(([k,K])=>{const P=BEAST_TACTICS.pack,say={
+      pack:'Packs of '+(K.size||[])[0]+'–'+(K.size||[])[1]+' pick one prey together (routing, shooters, wounded or alone), circle to its flanks and rear and bite from several sides at once, then pull back and come round again. Bitten from two sides, the prey is <b>surrounded</b> and its morale drops. A pack that loses '+Math.round(P.hurt*100)+'% of its health in one bite breaks off and regroups.',
+      rush:'Small groups charge headlong at the nearest foe, back off a few steps and charge again: every charge lands with its full momentum.',
+      brute:K.crowd?'Picks the most crowded group and breathes fire on it.':'Alone or in pairs, goes straight for the thickest fight (else the strongest group) and bullies through.',
+      ambush:(K.cover===0?'Waits where it is':'Hides in the nearest wood')+' and strikes when you pass within '+(K.strike||BEAST_TACTICS.ambush.strike)+' px (or is found, or tires of waiting); once sprung it can be seen.',
+      swoop:'Swoops round to the rear of your shooters (else your flanks), dives in, wheels away and comes again.',blob:'A slow advance; spits from range.'}[K.way];return[ST[k].n,K.way[0].toUpperCase()+K.way.slice(1),say]})))+
   sub('Bandits and armies','',table(['Threat','Where','Fields','Notes'],[['Bandits','Grassland and frost','Militia, archers, spearmen, orc grunts','Up to '+BANDITS+' roam. Grow by one fighter every 12 days. Drop gold and prisoners, and plunder caravans.'],
      ['Desert raiders','Desert','Spear throwers, militia, orc grunts','Same as bandits.'],['Bog raiders','Swamp','Orc grunts, spear throwers, militia','Same as bandits.'],
      ['Bandit camps',CAMP_SPOTS.length+' across the map (seen once you have explored their ground)','7–9 raiders and a chieftain','Pay 25 extra gold. Return 10 days after you clear them; clearing one pushes the nearest holding’s land out.'],

@@ -323,7 +323,8 @@ function captain(team,key){
   // (ck: this captain's own memory (captainMem): your army's and your allies' are on one side but each its own)
   // (in the fog (battlefog.js) a lull is reckoned from the later of the last blow and its first sight of the foe (Q.seen); one that
   // has never seen the foe goes looking after FOG.scout s: captainSearch)
-  const ck=key==null?team:key,N0=captainGroups(team,key),S=assess(team),foes=S.foes;
+  const ck=key==null?team:key,N0=captainGroups(team,key),Z=beastsOf(N0),S=assess(team),foes=S.foes;
+  if(Z.length)captainBeasts(team,ck,S,Z);// (its beasts their own ways, taken out of its arms: beastmind.js; none with BEAST_TACTICS off)
   if(!foes.length){const seen=B.fog&&B.captains&&B.captains[ck]&&B.captains[ck].seen||0;if(!typeHolds(team,S)&&(B.t-Math.max(B.lastHit||0,seen)>FOE_CMD.lull||B.fog&&B.t>FOG.scout&&!foesKnown(team)))captainSearch(team,N0);return N0}
   // (its temperament, once, from its army's troops (temperFor); the enemy's style told as the battle opens)
   const Q=captainMem(ck);if(B.fog&&Q.seen==null)Q.seen=B.t;if(Q.temper===undefined){Q.temper=temperFor(team,key);if(ck===1&&TEMPER_SAY[Q.temper])log(TEMPER_SAY[Q.temper])}

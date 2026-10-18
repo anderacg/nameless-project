@@ -245,6 +245,7 @@ class BattleSetup{
     return{road:[mid-h-A.road,mid+h+A.road],woods:ridge?[]:woods,ridges,place}}
   initialize(){
     B.speed=BSPEED.v;B.paused=false;
+    if(BEAST_TACTICS.on)beastPacks();// (beasts in the pack spread, an AI group of them split into packs: beastmind.js)
     for(const g of Object.keys(B.groups))layForm(g);
     moraleInit(this.units,this.opts);
     fatigueInit(this.units);

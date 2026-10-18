@@ -36,7 +36,7 @@ try{
  // ---- every note an AI keeps on a group is in AI_NOTES (battlecontrol.js aiReset clears them when Auto hands a group over), or
  // is the group's own field (its constructor's) or phase/t: each `<v>.<name>=` (also +=, ++…) in the captains (commander.js) and
  // the character mind (charmind.js, once it has its own file) on a group variable (g, q, or a name bound to B.groups[…]) is read
- {const files=['js/battle/commander.js','js/battle/charmind.js'].map(f=>{let s='';try{s=get(f)}catch(e){}return [f,s]}).filter(([f,s])=>s||srcs.includes(f));
+ {const files=['js/battle/commander.js','js/battle/charmind.js','js/battle/beastmind.js'].map(f=>{let s='';try{s=get(f)}catch(e){}return [f,s]}).filter(([f,s])=>s||srcs.includes(f));
   const own=new Set([...Object.getOwnPropertyNames(new t.BattleControl('structure_probe',0)),...t.AI_NOTES,'phase','t']),bad=[],wrote=new Set(),W1=/\s*(?:=(?![=>])|[-+*\/%|&]=|\+\+|--)/.source;
   for(const [f,s] of files){const vars=new Set(['g','q',...[...s.matchAll(/(?<![\w$.])([\w$]+)\s*=\s*(?:[\w$.]+&&)?B\.groups\[/g)].map(m=>m[1])]),hit=(v,k)=>{wrote.add(k);if(!own.has(k))bad.push(f.split('/').pop()+': '+v+'.'+k)};
    for(const m of s.matchAll(new RegExp('(?<![\\w$.])([\\w$]+)\\.([\\w$]+)'+W1,'g')))if(vars.has(m[1]))hit(m[1],m[2]);

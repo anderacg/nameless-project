@@ -199,7 +199,7 @@ These files still share live `B`, `G` and `P` records and runtime callbacks. Thi
 
 | Owner | Main runtime connections |
 | --- | --- |
-| `commands.js` / `commander.js` / `charmind.js` | Player orders (`commands.js`, one `playerOrder` path) and AI captains (`commander.js`: `captain` builds a shared context with `captainCtx`, then `captainInf`, `captainRally`, `captainShooters`, `captainCav`, `captainHero`; each captain's memory is one object, `captainMem(ck)` = `B.captains[ck]`) all issue orders through `BattleControl`; the character mind (heroes, companions, lords, chieftains; fall-back) is `charmind.js`. |
+| `commands.js` / `commander.js` / `charmind.js` | Player orders (`commands.js`, one `playerOrder` path) and AI captains (`commander.js`: `captain` builds a shared context with `captainCtx`, then `captainInf`, `captainRally`, `captainShooters`, `captainCav`, `captainHero`; each captain's memory is one object, `captainMem(ck)` = `B.captains[ck]`) all issue orders through `BattleControl`; the character mind (heroes, companions, lords, chieftains; fall-back) is `charmind.js`; beasts' ways (packs, rushes, ambushes: `captainBeasts`, handed the beast groups by `captain` through `beastsOf`) are `beastmind.js`. |
 | `battlecontrol.js` | Owns group order state and relocation generations; uses actor target queries and formation helpers. |
 | `actors.js` | Reads orders; delegates character turns, attacks, fatigue and rout/withdraw movement. |
 | `attacks.js` | Executes damage/strikes, launches projectiles, and calls morale, XP, character and visual helpers. |
@@ -260,7 +260,19 @@ Tuning lives in `MORALE`, `CONFIDENCE`, `AWARENESS`, `COHESION`, `LOSS_MEMORY`, 
 - **Rivers:** moves over a river go by the nearest ford or bridge, with files narrowed to it.
 - **Races:** dwarves look further for high ground and hold crossings longer; orcs charge up anything short of a two-level climb.
 
-Tunables: `AI_TACTICS` in `battle/commander.js`, `CHAR_FALL` in `battle/charmind.js`. Tests: `tests/aitactics.js`, `tests/charfallback.js`. Balance: with the AI rallying, equal infantry fights rout at ~46–49% losses (~8 s).
+**Beasts in battle** (`BEAST_TACTICS` in `battle/beastmind.js`; `tests/beastai.js`). Under an AI captain (the enemy's, your allies', yours under Auto) each group of beasts fights its kind's way, taken out of the captain's arms first, so in a mixed horde wolves circle while trolls hit the front. Beasts never rout; your beasts follow your orders.
+- **The look:** no ranks: every group of beasts stands in the ragged `pack` spread (`FORMS.pack`, not one of your formations). At the start an AI group of wolves splits into packs of 3–5 (`id~2`, `id~3`…), boars into twos and threes, bears and trolls into loners or pairs.
+- **Wolves (`pack`):** the packs pick one prey together (routing, shooters, wounded, alone; distance counts most) and circle it, each to a side of its own from its rear round, the shorter way and only where a way can be walked (`canReach`: no stall at a cliff). All on their sides (or 3 s), they bite at once; after 4 s at grips a pack pulls back 60 px and comes round to a fresh side, unless the prey's morale is under 50 (then it worries on). A prey bitten from two sides at once is **surrounded**: 6 morale a think. A pack that loses 75% of its health in one bite breaks off 140 px and gathers; too few left, it joins another pack.
+- **Boars (`rush`):** headlong at the nearest, 2.5 s at grips, 70 px back (a run-up: the next charge lands with full momentum), again.
+- **Bears, trolls (`brute`):** straight at the thickest fight (most of a group's men at grips with theirs), else the strongest group; the dragon at the most crowded one (its breath as ever).
+- **Spiders, scorpions, the tiger, the wyrm (`ambush`):** into the nearest spot deep in a wood (the wyrm: where it is), unseen (`seenBy`); a seen foe within 130 px (tiger, scorpion 110; wyrm 150), a wound while waiting, or 15 s (tiger 20, wyrm 8), and they strike; sprung, they are seen by those they fight.
+- **Griffins (`swoop`):** mark the shooters (else the foe's edges and rear), circle to the mark's rear, dive, wheel 160 px away, come again from the other side. **Slimes (`blob`):** a slow advance.
+- **Close in:** within 70 px of its mark a group charges, each beast at the foe nearest him (one set on a single man of a crowd would stand idle behind the others); one that spits (spiders, slimes) stands and spits once its mark is in reach (on a charge it would back off a foe closing on it, into a corner).
+- **Off:** `BEAST_TACTICS.on=false` (the test harness, like `TERRAIN.on`), beasts fight as before: one group, a line, the captain's arms. The fingerprint suites run with it off and stay byte-identical.
+
+Balance (`ai:true` lab, terrain and fog on, 500 px apart, seeds 1–8; men's wins of 8, length, men lost, before → after): wolves ×10 vs 10 foot + 6 bows 4, 19 s, 52% → 7, 29 s, 46%; boars ×4 vs 8 + 4: 8, 19 s, 25% → 8, 18 s, 15%; trolls ×2 vs 8 + 4: 8, 37 s, 28% → 8, 39 s, 33%; spiders ×12 vs 6 + 4 in a forest: 6, 50 s, 19% → 7, 36 s, 21% (every strike from hiding); griffins ×2 vs 8 + 10 on hills: 2, 26 s, 78% → 2, 42 s, 77%; a mixed horde (8 wolves, a troll, 3 boars, 4 spiders) vs 10 + 6 + 2 knights: 7, 45 s, 34% → 8, 37 s, 37%. A wolf battle sees about 4–5 bites from 3 packs, 3 regroups and pull-backs, and 2–3 surrounded thinks; boars rush twice, griffins dive twice.
+
+Tunables: `AI_TACTICS` in `battle/commander.js`, `CHAR_FALL` in `battle/charmind.js`, `BEAST_TACTICS` in `battle/beastmind.js`. Tests: `tests/aitactics.js`, `tests/charfallback.js`, `tests/beastai.js`. Balance: with the AI rallying, equal infantry fights rout at ~46–49% losses (~8 s).
 
 ## Charges, bracing and morale-off rules (effect audit, 2026-10-17)
 

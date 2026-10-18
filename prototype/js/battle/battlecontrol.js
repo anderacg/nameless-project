@@ -13,8 +13,9 @@
 // (every FORM_SWAP.every seconds its places are shared out again, a swap made when it saves FORM_SWAP.gain px of walking)
 const FORM_SWAP={every:1,gain:6};
 // the AI's own notes on a group (commander.js): its phase and time in it, its stand, hunt and way home, its screen and lead, a
-// recovery and a plug, a cavalry's rest, melee count, charge time and flank, a form's time, where it last stood
-const AI_NOTES=['stand','hunt','huntBack','screenBack','recover','plug','pushed','pushRun','rest','inMelee','chargeAt','flankSide','formAt','lax','lay'];
+// recovery and a plug, a cavalry's rest, melee count, charge time and flank, a form's time, where it last stood; a beast's side,
+// nerve, lair and prey (beastmind.js)
+const AI_NOTES=['stand','hunt','huntBack','screenBack','recover','plug','pushed','pushRun','rest','inMelee','chargeAt','flankSide','formAt','lax','lay','side','mark','lurk','prey'];
 // A new relocation generation belongs to group orders; actors only compare it with their completed mvId.
 function moveOrder(g){const gr=B.groups[g];if(gr)gr.mvId=(gr.mvId||0)+1}
 class BattleControl{
