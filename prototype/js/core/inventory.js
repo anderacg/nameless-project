@@ -30,8 +30,9 @@ class Inventory{
     merged.sort(compare);this.owner.inv=merged.concat(Array(this.capacity()-merged.length).fill(null));
   }
 }
-const itemDef=s=>s.k==='gear'?ITEMS[s.id]:s.k==='good'?GOODS[s.id]:MATS[s.id];
-const stackOf=(k,id)=>k==='gear'?1:k==='good'?GOODS[id].stack:STACK;
+// (a letter: a robbed messenger's, one to a slot, its record with it: world/letters.js)
+const itemDef=s=>s.k==='gear'?ITEMS[s.id]:s.k==='good'?GOODS[s.id]:s.k==='letter'?letterDef(s):MATS[s.id];
+const stackOf=(k,id)=>k==='gear'||k==='letter'?1:k==='good'?GOODS[id].stack:STACK;
 const itemRank=I=>I.tier!=null?I.tier:{common:2,rare:4,epic:6}[I.r];
 const playerInventory=new Inventory(P,()=>INV_SIZE+gm('slots'),stackOf);
 const invCap=()=>playerInventory.capacity();
@@ -47,6 +48,6 @@ const goodTake=(g,n)=>playerInventory.take('good',g,n);
 function invAdd(k,id,n){if(looting()){lootPile(k,id,n);return n}return playerInventory.add(k,id,n)}
 const fitInv=()=>playerInventory.resize();
 function sortInventory(){
-  const so=Object.fromEntries(Object.keys(SLOTS).map((k,i)=>[k,i])),ko={gear:0,good:1,mat:2},go=Object.keys(GOODS);
-  playerInventory.sort((a,b)=>a.k!==b.k?ko[a.k]-ko[b.k]:a.k==='good'?go.indexOf(a.id)-go.indexOf(b.id)||b.n-a.n:a.k==='gear'?(so[ITEMS[a.id].slot]-so[ITEMS[b.id].slot]||itemRank(ITEMS[b.id])-itemRank(ITEMS[a.id])||ITEMS[a.id].n.localeCompare(ITEMS[b.id].n)):(MATS[b.id].v-MATS[a.id].v||b.n-a.n));
+  const so=Object.fromEntries(Object.keys(SLOTS).map((k,i)=>[k,i])),ko={gear:0,good:1,mat:2,letter:3},go=Object.keys(GOODS);
+  playerInventory.sort((a,b)=>a.k!==b.k?ko[a.k]-ko[b.k]:a.k==='good'?go.indexOf(a.id)-go.indexOf(b.id)||b.n-a.n:a.k==='gear'?(so[ITEMS[a.id].slot]-so[ITEMS[b.id].slot]||itemRank(ITEMS[b.id])-itemRank(ITEMS[a.id])||ITEMS[a.id].n.localeCompare(ITEMS[b.id].n)):a.k==='letter'?String(a.id).localeCompare(b.id):(MATS[b.id].v-MATS[a.id].v||b.n-a.n));
 }

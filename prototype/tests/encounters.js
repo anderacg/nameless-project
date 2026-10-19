@@ -7,7 +7,10 @@
 // nothing drawn leaking a shift into the ground's scene. Phase 2's eight new kinds: where and when each comes, its behaviour (the
 // cart stays, the thief runs across your view and is chased on the map, the poacher runs if he sees you first, the processions
 // walk the roads to their end, the horse bolts then grazes, the beggar and the messenger walk and ride up), every choice's outcome,
-// a confirm before each robbery, their lifetimes and the abandoned cart
+// a confirm before each robbery, their lifetimes and the abandoned cart. Phase 4: the pilgrims (walking the roads to a real
+// shrine and ending there, or praying at one near you; no shrine of their own), the fake wounded (a lure: the wounded traveller
+// to the eye, its Insight at Scouting 0, 3 and 5, each choice, left be) and the sealed letter (its contents, the witness, its
+// page's verbs and their conditions, stale, saved and loaded)
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);
 try{
  const t=T,G=t.G,P=t.P,W=t.W,TILE=t.TILE,ev=s=>(0,eval)(s);try{localStorage.clear()}catch(e){}
@@ -31,7 +34,17 @@ try{
  const WALKERS=['funeral','wedding'];let walkSpot=null;{const p0=[P.x,P.y];walkSpot=findT2((tx,ty)=>{if(t.tAt(tx,ty)!==t.T_ROAD||(tx+ty)%2)return false;P.x=(tx+.5)*TILE-10;P.y=(ty+.5)*TILE;W.road=null;
    const fits=WALKERS.every(k=>t.ROAD_ENC[k].ok()&&t.roadSpawn(k,P.x+10,P.y));W.road=null;return fits});P.x=p0[0];P.y=p0[1]}
  ok(!!walkSpot,'a spot for the processions: a road with a shrine or ruins and another holding within their walk ('+(walkSpot&&walkSpot.tx+','+walkSpot.ty)+')');
- const spawnK=(k,dx=10,dy=0)=>{if(WALKERS.includes(k))at(walkSpot.x-10,walkSpot.y);else goHome();R().on=[];return t.roadSpawn(k,P.x+dx,P.y+dy)};
+ // (phase 4: the pilgrims' spots, by a real shrine: on a road from which the nearest one is past the spawn ring but within their
+ // walk (they walk there: pilWalk), and one with a shrine just past your sight (they pray there: pilPray))
+ let pilWalk=null,pilPray=null;{const p0=[P.x,P.y],SN=t.ENC_SPAWN.near;
+  for(const s of W.sites.filter(s=>s.type==='shrine')){if(pilWalk&&pilPray)break;const stx=Math.floor(s.x/TILE),sty=Math.floor(s.y/TILE);
+   for(let r=6;r<=26&&!(pilWalk&&pilPray);r++)for(let a=0;a<24&&!(pilWalk&&pilPray);a++){const tx=stx+Math.round(Math.cos(a*.2618)*r),ty=sty+Math.round(Math.sin(a*.2618)*r);if(t.tAt(tx,ty)!==t.T_ROAD)continue;
+    P.x=(tx+.5)*TILE;P.y=(ty+.5)*TILE;W.road=null;const d=Math.hypot(s.x-P.x,s.y-P.y),V0=t.vis();
+    if(!pilPray&&d>=V0+10&&d<=V0+SN[1]-10){const e=t.roadSpawn('pilgrims',P.x+10,P.y);if(e&&e.pray)pilPray={x:P.x,y:P.y,s:t.roadShrineOf(e)}}
+    else if(!pilWalk&&d>V0+SN[1]+30&&t.climAt(P.x,P.y)!=='desert'){const e=t.roadSpawn('pilgrims',P.x+10,P.y);if(e&&!e.pray)pilWalk={x:P.x,y:P.y,s:t.roadShrineOf(e)}}}}
+  W.road=null;P.x=p0[0];P.y=p0[1]}
+ ok(!!pilWalk&&!!pilPray,'spots for the pilgrims: walking to the '+(pilWalk&&pilWalk.s.name)+' ('+(pilWalk&&Math.round(pilWalk.x/TILE)+','+Math.round(pilWalk.y/TILE))+'), praying at the '+(pilPray&&pilPray.s.name));
+ const spawnK=(k,dx=10,dy=0)=>{if(WALKERS.includes(k))at(walkSpot.x-10,walkSpot.y);else if(k==='pilgrims')at(pilWalk.x,pilWalk.y);else goHome();R().on=[];return t.roadSpawn(k,P.x+dx,P.y+dy)};
 
  // ---- the pity timer: travel only
  {goHome();t.updateRoad(.05);ok(!W.road,'standing still: no timer kept, nothing saved');
@@ -86,7 +99,7 @@ try{
  {goHome();const e=t.roadSpawn('caravan',P.x+60,P.y),L=t.ENC_LIFE.scene;ok(e.end-e.t0>=L[0]&&e.end-e.t0<=L[1],'scene: the caravan fight is under way, '+(e.end-e.t0).toFixed(1)+' h to run');
   G.clock+=(e.end-t.roadNow()+.1)*t.DAY/24;frames(1);ok(e.gone&&R().on.some(x=>x.trace&&x.k==='wreck'),'and ends by itself: plundered, a burnt wagon left');G.clock=t.DAY*.3}
  // lifetimes by behaviour, and leaving when far
- {const bad=[];for(const k of Object.keys(t.ROAD_ENC)){goHome();for(let i=0;i<5;i++){R().on=[];const Dk=t.ROAD_ENC[k],e=WALKERS.includes(k)?spawnK(k,30):t.roadSpawn(k,P.x+30,P.y),L=t.ENC_LIFE[Dk.life||(e.beh==='flee'?'flee':Dk.beh)],h=e.end-e.t0;if(h<L[0]-1e-9||h>L[1]+1e-9)bad.push(k+' '+h.toFixed(2))}}
+ {const bad=[];for(const k of Object.keys(t.ROAD_ENC)){goHome();for(let i=0;i<5;i++){R().on=[];const Dk=t.ROAD_ENC[k],e=WALKERS.includes(k)||k==='pilgrims'?spawnK(k,30):t.roadSpawn(k,P.x+30,P.y),L=t.ENC_LIFE[Dk.life||(e.beh==='flee'?'flee':Dk.beh)],h=e.end-e.t0;if(h<L[0]-1e-9||h>L[1]+1e-9)bad.push(k+' '+h.toFixed(2))}}
   const L=t.ENC_LIFE;ok(!bad.length,'lifetimes by behaviour: approach '+L.approach.join('–')+' h, stay '+L.stay.join('–')+' h, flee at most '+L.flee[1]+' h, scene '+L.scene.join('–')+' h; the thief running '+L.run.join('–')+' h, the horse as one that stays, a procession '+L.walk.join('–')+' h (as long as its walk)'+(bad.length?': '+bad.join(', '):''));
   goHome();const a=t.roadSpawn('bard',P.x+60,P.y);G.clock+=(a.end-t.roadNow()+.05)*t.DAY/24;frames(1);ok(a.beh==='leave'&&!a.gone,'an approach whose time is up walks off');frames(3000);ok(a.gone,'and is gone once out of your sight');G.clock=t.DAY*.3;
   goHome();const s=t.roadSpawn('hunters',P.x+50,P.y);P.x+=V*t.ENC_LIFE.leave+60;frames(1);ok(s.gone,'anything leaves once you are '+t.ENC_LIFE.leave+'× your sight away');
@@ -125,7 +138,7 @@ try{
  const meet=(k,set)=>{const e=spawnK(k);if(set)set(e);t.roadMeet(e);return e};
  const acts=()=>qa('.rwbody .rkact').map(b=>b.querySelector('b').textContent),pickA=i=>t.act('enc-do',String(i)),sure=()=>q('.nav [data-nav="close"]').click();
  const ks=Object.keys(t.ROAD_ENC),NEW=['mud','thief','poacher','funeral','wedding','horse','beggar','messenger'];
- ok(ks.length===22&&['traveller','merchant','pilgrims','deserters','gamblers','mine','hunters','child','bard','wisps','caravan','ambush','refugees','warning'].concat(NEW).every(k=>ks.includes(k)),'the 14 people events, now on the map, and phase 2’s 8 new ones: '+ks.join(', '));
+ ok(ks.length===23&&['traveller','merchant','pilgrims','deserters','gamblers','mine','hunters','child','bard','wisps','caravan','ambush','refugees','warning'].concat(NEW,['lure']).every(k=>ks.includes(k)),'the 14 people events, now on the map, phase 2’s 8 new ones and phase 4’s lure: '+ks.join(', '));
  {const bad=[];ev('TERRAIN.on=true');for(const k of ks){const e=meet(k);const Dk=D(k),want=Dk.acts.filter(a=>!a.when||a.when(e)).map(a=>a.label).join('|'),got=acts().join('|'),leave=q('.nav [data-nav="close"]');
    if(!(q('#panel.paged')&&q('.pg-banner')&&q('.rwin h2').textContent===Dk.n&&got===want&&(t.roadForced(e)?!leave:leave&&leave.dataset.act==='enc-leave'&&leave.textContent===(Dk.leave||'Leave'))&&q('.rwbody>p').textContent.length>20))bad.push(k+' ['+got+']')}
   ev('TERRAIN.on=false');world();ok(!bad.length,'every kind has its page: its banner, its name, what you see, its choices as key actions and Leave (none for the ambush)'+(bad.length?': '+bad.join('; '):''))}
@@ -138,11 +151,28 @@ try{
  // the peddler
  {P.gold=2000;P.inv=Array(t.INV_SIZE).fill(null);const e=meet('merchant'),p=t.roadPrice(e);pickA(0);ok(P.inv.some(x=>x&&x.k==='gear'&&x.id===e.item)&&P.gold===2000-p,'the peddler sells his piece of gear ('+t.ITEMS[e.item].n+', '+p+' gold)');world();
   P.gold=1;meet('merchant');ok(q('.rkact').disabled&&/Not enough gold/.test(panel()),'unaffordable: disabled, with the reason');pickA(0);ok(G.mode==='road'&&P.gold===1,'and does nothing');world();P.gold=500}
- // the shrine and its pilgrims
- {P.morale=50;meet('pilgrims');pickA(0);ok(P.morale===58,'Pray with them: morale +8');world();
-  const g0=P.gold,x0=P.xp+P.level*1e5;P.morale=50;meet('pilgrims');pickA(1);ok(P.gold===g0-20&&P.morale===62&&P.xp+P.level*1e5>x0,'Give alms: 20 gold, morale +12, XP');world();
-  P.morale=50;meet('pilgrims');pickA(2);sure();ok(P.gold===g0-8&&P.morale===42,'Take the coins (asks first): +12 gold, morale −8');world();
-  const A=t.townBy('Ashford');at(A.x+60,A.y+60);const e=t.roadSpawn('pilgrims',P.x+10,P.y),r1=e.to&&t.repAt(e.to);t.roadMeet(e);pickA(0);ok(e.to&&t.repAt(e.to)>r1&&/good words about you in/.test(panel()),'near a holding they speak well of you there ('+e.to+')');world()}
+ // the pilgrims (phase 4): only with a real shrine within their walk; walking the roads to the nearest and ending there, or, one
+ // just past your sight, praying at it beside its own picture; never a shrine of their own
+ {const TP=t.ENC_TUNE.pilgrims,SH=W.sites.filter(s=>s.type==='shrine');at(pilWalk.x,pilWalk.y);const S0=W.sites;W.sites=S0.filter(s=>s.type!=='shrine');R().on=[];
+  ok(!D('pilgrims').ok()&&!t.roadSpawn('pilgrims',P.x+10,P.y),'no real shrine within reach: no pilgrims');W.sites=S0;ok(D('pilgrims').ok(),'a real shrine within their walk: they can come');
+  const w=spawnK('pilgrims'),g=w.goal(),sh=t.roadShrineOf(w),far=t.roadWalkFar(),dd=s=>Math.hypot(s.x-w.x,s.y-w.y),near=SH.filter(s=>dd(s)>=t.ENC_WALK.min&&dd(s)<=far&&t.Router.reach(w,s)).sort((a,b)=>dd(a)-dd(b))[0],lay=t.ENC_SCENE.lay(w,true);
+  ok(!w.pray&&w.beh==='walk'&&sh&&sh===near&&Math.hypot(g.x-sh.x,g.y-sh.y)<14&&w.n>=TP.n[0]&&w.n<=TP.n[1]&&lay.length===w.n&&lay.every(p=>p.k==='walk'),'walking: '+w.n+' pilgrims bound for the nearest real shrine they can reach, the '+w.site+' ('+Math.round(dd(sh))+' px off), no shrine of their own');
+  w.seen=1;let last=null,i=0;for(;i<6000&&!w.gone;i++){last=[w.x,w.y];t.updateRoad(.25);P.x=w.x-30;P.y=w.y}
+  ok(w.gone&&Math.hypot(g.x-last[0],g.y-last[1])<14&&!R().on.some(x=>x.trace),'they walk the roads to it and end there ('+Math.round(Math.hypot(g.x-last[0],g.y-last[1]))+' px from it), leaving nothing');
+  at(pilPray.x,pilPray.y);R().on=[];const p=t.roadSpawn('pilgrims',P.x+10,P.y),s=pilPray.s,pl=t.ENC_SCENE.lay(p,true),L=t.ENC_LIFE.stay;
+  ok(p.pray&&p.beh==='stay'&&p.site===s.name&&Math.hypot(p.x-s.x,p.y-s.y)<16&&pl.length===p.n&&pl.some(x=>x.k==='kneel')&&pl.every(x=>x.k==='kneel'||x.k==='stand')&&p.end-p.t0>=L[0]&&p.end-p.t0<=L[1],
+    'a real shrine just past your sight: '+p.n+' pilgrims kneel and stand before the '+s.name+', by its own picture ('+pl.map(x=>x.k).join(', ')+'), for '+(p.end-p.t0).toFixed(1)+' h');
+  const x0=p.x,y0=p.y;s.seen=false;frames(100);ok(p.x===x0&&p.y===y0&&!p.gone,'and stay at their prayers');
+  ok(p.seen&&s.seen&&s.inView(t.vis())&&p.view().ps.length===t.ENC_SCENE.pics(p).length+s.view().ps.length,'heard or seen, their shrine is known (drawn on the map), and on their page’s banner with them');
+  ok(t.ROAD_ENC.pilgrims.scene(w).concat(t.ROAD_ENC.pilgrims.scene(p)).every(x=>x[0]!=='bld'),'no shrine of their own, walking or praying');
+  // their choices, fitted to each
+  world();P.morale=50;at(pilPray.x,pilPray.y);R().on=[];const q1=t.roadSpawn('pilgrims',P.x+10,P.y);t.roadMeet(q1);ok(acts().join('|')==='Pray with them|Give alms|Take the coins'&&/kneel at the/.test(panel()),'praying: Pray with them, Give alms, Take the coins, Leave');
+  pickA(0);ok(P.morale===50+TP.morale,'Pray with them: morale +'+TP.morale);world();
+  P.morale=50;const q2=meet('pilgrims'),h0=t.roadNow();ok(acts().join('|')==='Walk and pray with them|Give alms|Take the coins'&&/walk the road to the/.test(panel()),'walking: Walk and pray with them, Give alms, Take the coins, Leave');
+  pickA(1);ok(P.morale===50+TP.morale&&Math.abs(t.roadNow()-h0-TP.walk)<1e-6,'Walk and pray with them: morale +'+TP.morale+', '+TP.walk+' hour with them');world();
+  const g0=P.gold,xp0=P.xp+P.level*1e5;P.morale=50;meet('pilgrims');pickA(2);ok(P.gold===g0-TP.alms&&P.morale===50+TP.almsMorale&&P.xp+P.level*1e5>xp0,'Give alms: '+TP.alms+' gold, morale +'+TP.almsMorale+', XP');world();
+  P.morale=50;meet('pilgrims');pickA(3);ok(q('#panel.confirm')&&P.gold===g0-TP.alms,'Take the coins asks first');sure();ok(P.gold===g0-TP.alms+TP.coins&&P.morale===50-TP.coinsMorale,'confirmed: +'+TP.coins+' gold, morale −'+TP.coinsMorale);world();
+  const A=t.townBy('Ashford'),e=meet('pilgrims',e=>{e.to=A.name}),r1=t.repAt(A.name);pickA(1);ok(t.repAt(A.name)>r1&&/good words about you in/.test(panel()),'from a holding near, they speak well of you there ('+A.name+')');world();G.clock=t.DAY*.3}
  // deserters
  {P.troops={hum_levy:2};P.gold=100;const e=meet('deserters',e=>{e.fac=e.fac||'kingdom'});const n0=t.troopCount();pickA(0);ok(t.troopCount()===n0+2&&P.troops[e.unit]>=2&&P.gold===85,'Take them in: two '+t.ST[e.unit].n+'s for 15 gold');world();
   const f=meet('deserters',e=>{e.fac=Object.keys(t.FACS).find(x=>x!=='player')}),h0=t.honorWith(f.fac),g1=P.gold;pickA(1);sure();ok(t.honorWith(f.fac)>h0&&P.gold===g1+10,'Turn them in (asks first): honour with the '+t.FACS[f.fac].n+', a 10-gold bounty');world();
@@ -222,8 +252,10 @@ try{
   goHome();const k=t.roadSpawn('thief',P.x+40,P.y);k.fac=Object.keys(t.FACS).find(x=>x!=='player');k.nab=1;t.roadMeet(k);const h0=t.honorWith(k.fac),g1=P.gold;pickA(2);ok(q('#panel.confirm')&&P.gold===g1,'Keep it asks first');sure();
   ok(P.gold===g1+k.purse&&t.honorWith(k.fac)===h0-TU.thief.honor,'confirmed: his '+k.purse+' gold yours, honor with the '+t.FACS[k.fac].n+' −'+TU.thief.honor);world();
   // slow and clumsy, he gets away
-  goHome();P.attr.agi=0;P.morale=10;const s=t.roadSpawn('thief',P.x+V+10,P.y);s.x=P.x+90;s.y=P.y;t.roadMeet(s);const n1=G.msgs.length;pickA(0);for(i=0;i<3000&&G.mode==='world'&&!s.gone;i++)t.updateWorld(.05);
-  ok(s.gone&&G.mode==='world'&&!G.chase&&!s.nab&&/slips away/.test(logsSince(n1)),'Agility 0, your band weary: he gets away');P.morale=60;
+  // (made certain: he runs far faster than any band, so the way you go that day cannot let you close on him)
+  goHome();P.attr.agi=0;P.morale=10;const s=t.roadSpawn('thief',P.x+V+10,P.y);s.x=P.x+90;s.y=P.y;t.roadMeet(s);const n1=G.msgs.length,sr=t.ENC_SPD.run;t.ENC_SPD.run=200;
+  try{pickA(0);for(i=0;i<3000&&G.mode==='world'&&!s.gone;i++)t.updateWorld(.05)}finally{t.ENC_SPD.run=sr}
+  ok(s.gone&&G.mode==='world'&&!G.chase&&!s.nab&&/slips away/.test(logsSince(n1)),'Agility 0, your band weary, he runs faster than you: he gets away ('+i+' moments)');P.morale=60;
   // Agility and Riding: how soon you close on him (catchHours), how near you must come
   P.attr.agi=0;const h1=t.catchHours(80);P.attr.agi=8;const h2=t.catchHours(80),r2=t.catchReach();P.gear.mount='m_horse';const h3=t.catchHours(80);P.gear.mount=null;P.attr.agi=2;
   ok(h2<h1&&h3<h2&&r2>CA.reach,'Agility and Riding help: 80 px off, you close on him in '+h1.toFixed(2)+' h (Agility 0), '+h2.toFixed(2)+' h (Agility 8), '+h3.toFixed(2)+' h mounted; your reach '+r2+' px')}
@@ -271,17 +303,127 @@ try{
   const un=W.sites.filter(s=>!s.seen&&s.scoutable).length;stub(0,()=>pickA(0));ok(W.sites.filter(s=>!s.seen&&s.scoutable).length===un-1&&/It is on your map now/.test(panel()),'Read the news: a place you have not found goes on your map');world();
   meet('messenger');stub(.99,()=>pickA(0));ok(/are at war|keep the peace/.test(panel()),'or the wars ("'+(q('.pg-msg')||{}).textContent+'")');world();
   const n=t.roadNews;W.lords.forEach((l,i)=>{l.x=P.x+40*i;l.y=P.y});const lw=stub(.5,()=>n());ok(/ of the .* rides near /.test(lw),'or where a lord rides ("'+lw+'")');clear();
-  const r=meet('messenger'),T0=t.townBy(r.home),r0=t.repAt(r.home),h0=t.honorWith(r.fac),g0=P.gold;pickA(1);ok(q('#panel.confirm')&&P.gold===g0,'Rob asks first');sure();
-  ok(P.gold===g0+r.purse+r.letter&&t.repAt(r.home)===r0-t.CONDUCT.robMessenger.rep&&t.honorWith(r.fac)===h0-t.CONDUCT.robMessenger.honor&&T0.owner===r.fac,'confirmed: his purse and a sealed letter to sell ('+(r.purse+r.letter)+' gold); reputation in '+r.home+' −'+t.CONDUCT.robMessenger.rep+', honor with the '+t.FACS[r.fac].n+' −'+t.CONDUCT.robMessenger.honor);world()}
+  cleanBag();const r=meet('messenger'),T0=t.townBy(r.home),r0=t.repAt(r.home),h0=t.honorWith(r.fac),g0=P.gold;pickA(1);ok(q('#panel.confirm')&&P.gold===g0&&!P.inv.some(Boolean),'Rob asks first');sure();
+  const sl=P.inv.find(x=>x&&x.k==='letter');
+  ok(P.gold===g0+r.purse&&sl&&sl.id===r.letter.id&&sl.n===1&&sl.L.to===r.letter.to&&sl.L.kind===r.letter.kind&&(sl.L.seen===0||sl.L.seen===1)&&t.repAt(r.home)===r0-t.CONDUCT.robMessenger.rep&&t.honorWith(r.fac)===h0-t.CONDUCT.robMessenger.honor&&T0.owner===r.fac&&/sealed letter, addressed to/.test(panel()),
+    'confirmed: his purse ('+r.purse+' gold, no letter’s price) and his sealed letter in your bag ('+(sl&&sl.L.kind)+', to '+(sl&&sl.L.to)+'); reputation in '+r.home+' −'+t.CONDUCT.robMessenger.rep+', honor with the '+t.FACS[r.fac].n+' −'+t.CONDUCT.robMessenger.honor);world();
+  P.inv.fill(null).forEach((x,i)=>{P.inv[i]={k:'good',id:'grain',n:1}});const r2=meet('messenger'),g2=P.gold;pickA(1);sure();ok(P.gold===g2+r2.purse&&!P.inv.some(x=>x&&x.k==='letter')&&/bag is full/.test(panel()),'your bag full: the purse, and the letter stays in the mud');cleanBag();world()}
  // ---- the ambush: unseen below Scouting 2, it springs as you pass; a forced choice
  {ev('TERRAIN.on=true');const findT=f=>{for(let ty=12;ty<t.MH-12;ty++)for(let tx=12;tx<t.MW-12;tx++)if(f(tx,ty))return[(tx+.5)*TILE,(ty+.5)*TILE];return null};
   const c=findT((tx,ty)=>t.tAt(tx,ty)===t.T_ROAD&&t.coverAt((tx+.5)*TILE,(ty+.5)*TILE)==='forest'&&far(tx,ty));ok(!!c,'a road through a wood');at(c[0],c[1]);P.troops={hum_levy:6};
   ok(t.ROAD_ENC.ambush.ok(),'the ambush can come where there is cover');ev('TERRAIN.on=false');ok(!t.ROAD_ENC.ambush.ok(),'never without battle terrain');ev('TERRAIN.on=true');
-  P.sk.scout.lv=1;const e=t.roadSpawn('ambush',P.x+60,P.y);frames(1);ok(!e.inView(t.vis())&&!e.seen&&!e.marked()&&t.pickAt(e.x,e.y-4)!==e,'Scouting 1: unseen, unmarked, nothing to click');
+  // (25 px off: well inside your sight even should it stand among the trees, which hide one past 0.45 of it; still short of its spring)
+  P.sk.scout.lv=1;const e=t.roadSpawn('ambush',P.x+25,P.y);frames(1);ok(!e.inView(t.vis())&&!e.seen&&!e.marked()&&t.pickAt(e.x,e.y-4)!==e,'Scouting 1: unseen, unmarked, nothing to click');
   P.sk.scout.lv=2;frames(1);ok(e.inView(t.vis())&&e.seen&&e.marked()&&G.msgs.slice(-3).some(m=>/movement in the trees/.test(m.m)),'Scouting 2: “movement in the trees”, marked ('+[e.inView(t.vis()),!!e.seen,e.marked(),G.mode,(G.msgs.slice(-1)[0]||{}).m].join(' · ')+')');P.sk.scout.lv=0;
   P.x=e.x-30;P.y=e.y;frames(1);ok(G.mode==='world','not yet sprung at 30 px');P.x=e.x-10;frames(1);ok(G.mode==='road'&&G.road===e&&!q('.nav [data-nav="close"]')&&!t.escDismiss(),'passing it, it springs: a forced choice, no Leave');
   pickA(0);ok(G.enc&&G.enc.btype&&G.enc.btype.kind==='ambush'&&G.enc.btype.hid===1&&/Ambush!/.test(panel()),'Close up and fight: the ambush battle');t.act('flee');world();
   at(c[0],c[1]);P.gold=100;t.invAdd('good','grain',10);const f0=t.foodN(),m0=P.morale=50,g=t.roadSpawn('ambush',P.x+10,P.y);t.roadMeet(g);pickA(1);ok(P.gold===85&&t.foodN()===f0-4&&P.morale===46&&g.gone&&q('.nav [data-nav="close"]'),'Cut the baggage loose: −4 food, −15 gold, morale −4; then Leave');world();ev('TERRAIN.on=false')}
+
+ // ======== phase 4: the fake wounded (a lure; ENC_TUNE.lure)
+ {const TU4=t.ENC_TUNE.lure;goHome();P.troops={hum_levy:6};P.sk.scout.lv=0;G.clock=t.DAY*.3;
+  // where and how often: woods by a road; rarer than the real one, likelier at night, in the wild, near bands and camps
+  const w0=t.roadW('lure');G.clock=t.DAY*.75;const wn=t.roadW('lure');G.clock=t.DAY*.3;
+  const fake=[0,1,2].map(i=>({x:P.x+40+i*5,y:P.y}));t.bandits.push(...fake);const wb=t.roadW('lure');t.bandits.push(...fake,...fake);const wmax=t.roadW('lure');G.clock=t.DAY*.75;const wall=t.roadW('lure');G.clock=t.DAY*.3;t.bandits.length=0;
+  ok(w0<t.roadW('traveller')&&wn>w0&&wb>w0&&wall<=TU4.cap+1e-9&&wall<t.roadW('traveller'),'the lure: rarer than the wounded traveller ('+w0.toFixed(2)+' vs '+t.roadW('traveller')+'), likelier at night ('+wn.toFixed(2)+') and near bands ('+wb.toFixed(2)+'), never past '+TU4.cap+' ('+wall.toFixed(2)+')');
+  {const A=t.townBy('Ashford');at(A.x+60,A.y+60);const held=!!t.landHold(P.x,P.y),wh=t.roadW('lure');goHome();const wild=!t.landHold(P.x,P.y),ww=t.roadW('lure');ok(!held||!wild||ww>wh,'likelier in the wild than on a holding’s land ('+ww.toFixed(2)+' vs '+wh.toFixed(2)+')')}
+  P.troops={hum_levy:2};ok(!D('lure').ok(),'not with fewer than 3 soldiers');P.troops={hum_levy:6};ok(D('lure').ok(),'with a band, anywhere');
+  {const lw=findT2((tx,ty)=>t.ENC_ON.lure(tx,ty)&&t.TOWNS.every(z=>Math.hypot(z.tx-tx,z.ty-ty)>14));let ps=[];if(lw)for(let a=0;a<8&&!ps.length;a++){const V0=t.vis(),x=lw.x+Math.cos(a*.785)*(V0+80),y=lw.y+Math.sin(a*.785)*(V0+80);if(!t.passable(t.tAt(Math.floor(x/TILE),Math.floor(y/TILE))))continue;
+    at(x,y);const sd=t.seeded(77);for(let i=0;i<40;i++){const p=stub(sd,()=>t.roadSpot('lure'));if(p)ps.push(p)}}
+   ok(ps.length>0&&ps.every(([x,y])=>t.ENC_ON.lure(Math.floor(x/TILE),Math.floor(y/TILE))&&t.nearTile(Math.floor(x/TILE),Math.floor(y/TILE),t.T_ROAD,1)),'placed by a road with woods or hills beside it ('+ps.length+' of 40)')}
+  // to the eye, the wounded traveller: its name, call, sound, tooltip, highlight, picture
+  goHome();R().on=[];const tr=t.roadSpawn('traveller',P.x+30,P.y),lu=t.roadSpawn('lure',P.x+30,P.y+20);lu.end=tr.end;
+  const pt=t.ENC_SCENE.pics(tr),pl=t.ENC_SCENE.pics(lu);
+  ok(['n','call','hear','tip','ico','beh'].every(k=>lu.D[k]===tr.D[k])&&!lu.D.hidden&&!lu.D.foe&&t.wuiKind(lu)===t.wuiKind(tr)&&pl.length===1&&pl[0][0]===pt[0][0]&&t.tipFor(lu)===t.tipFor(tr),'on the map it is the wounded traveller: the same name, call-out ("'+lu.D.call+'"), log line, tooltip, highlight and picture');
+  ok(lu.foes.length>=5&&lu.foes.length<=7+Math.floor(G.day/15)&&['bandits','raiders','bog'].includes(lu.band),'bandits hide near: a band the size of an ambush’s ('+lu.foes.length+' '+lu.band+')');
+  // Insight: below 3, his page is the real one's; at 3 the brush moves; at 5 how many and the odds
+  const pg=e=>{t.roadMeet(e);const h=[q('.rwin h2').textContent,q('.rwbody>p').textContent,(q('.pg-facts')||{}).innerHTML,acts().join('|'),(q('.nav [data-nav="close"]')||{}).textContent].join(' ¦ ');world();return h};
+  for(const lv of [0,2]){P.sk.scout.lv=lv;const a=pg(lu),b=pg(tr);ok(a===b,'Scouting '+lv+': his page reads exactly as the real one’s ('+a.replace(/<[^>]+>/g,'').slice(0,140)+'…)')}
+  P.sk.scout.lv=3;{const a=pg(lu);ok(/something moves in the brush behind him/.test(a)&&!/lie in wait/.test(a)&&/Approach ready\|Call them out ¦/.test(a),'Scouting 3: “something moves in the brush behind him”; Approach ready, Call them out, Leave')}
+  P.sk.scout.lv=5;{const a=pg(lu);ok(new RegExp(lu.foes.length+' bandits lie in wait: .*odds').test(a),'Scouting 5: how many and the odds ('+(a.match(/\d+ bandits lie in wait[^<]*<span[^>]*>[^<]*<\/span>[^<]*/)||[''])[0].replace(/<[^>]+>/g,'')+')')}
+  P.sk.scout.lv=0;
+  // its choices
+  const lure=(set)=>{goHome();P.troops={hum_levy:6};R().on=[];const e=t.roadSpawn('lure',P.x+10,P.y);if(set)set(e);t.roadMeet(e);return e};
+  t.invAdd('good','grain',10);{const e=lure(),n=e.foes.length,f0=t.foodN();pickA(0);
+   ok(G.enc&&G.enc.btype&&G.enc.btype.kind==='ambush'&&G.enc.btype.hid===1&&G.enc.list.length===n&&[...G.enc.list].sort().join()===[...e.foes].sort().join()&&e.gone&&t.foodN()===f0&&/Ambush!/.test(panel()),'Scouting 0, Tend his wounds: the ambush springs, their '+n+' with the ambush’s edge');t.act('flee');world()}
+  {const e=lure(),g0=P.gold;pickA(1);ok(q('#panel.confirm')&&P.gold===g0,'Take his purse asks first, as the real one’s');sure();ok(G.enc&&G.enc.btype&&G.enc.btype.kind==='ambush'&&P.gold===g0,'and springs the ambush');t.act('flee');world()}
+  P.sk.scout.lv=3;
+  {const e=lure();pickA(2);ok(G.enc&&!G.enc.btype&&G.enc.list.length===e.foes.length&&e.gone,'warned, Approach ready: the fight, without their ambush edge');t.act('flee');world()}
+  {const e=lure(e=>{e.foes=e.foes.concat(['militia','militia'])});stub(0,()=>pickA(3));ok(e.out&&!e.gone&&!G.enc&&G.mode==='road'&&acts().join('|')==='Fight them'&&q('.nav [data-nav="close"]')&&new RegExp(e.foes.length+' bandits rise from the brush').test(panel()),'Call them out ('+e.foes.length+', too many to scare): they show themselves; Fight them, or Leave');
+   ok(t.ENC_SCENE.lay(e,true).filter(p=>p.k==='soldier').length===3&&t.ENC_SCENE.lay(e,true).some(p=>p.k==='stand'),'on the map, the “wounded man” on his feet and the bandits round him');
+   pickA(4);ok(G.enc&&!G.enc.btype&&G.enc.list.length===e.foes.length,'Fight them: no ambush edge');t.act('flee');world()}
+  {const e=lure();stub(.999,()=>pickA(3));t.act('enc-leave');ok(G.mode==='world'&&e.out&&!e.gone&&/You ride on/.test(G.msgs[G.msgs.length-1].m),'called out, Leave: you ride on, they watch you go');world()}
+  {P.sk.lead.lv=5;P.attr.cha=6;const e=lure(e=>{e.foes=e.foes.slice(0,5)}),c=t.roadScare();stub(0,()=>pickA(3));ok(e.gone&&e.done&&!G.enc&&!qa('.rwbody .rkact').length&&/melt back into the woods/.test(panel()),'a small band ('+e.foes.length+') may be scared off by your Leadership and Charisma ('+Math.round(c*100)+'%): they melt back into the woods');world();P.sk.lead.lv=0;P.attr.cha=2}
+  {const e=lure();t.act('enc-leave');ok(G.mode==='world'&&G.msgs[G.msgs.length-1].m==='You leave him to his fate.','Leave: you leave him to his fate')}
+  P.sk.scout.lv=0;
+  // left be: the bandits move on, no body; the word on the road
+  {goHome();R().on=[];const e=t.roadSpawn('lure',P.x+40,P.y);e.seen=1;const n0=G.msgs.length;G.clock+=(e.end-t.roadNow()+.1)*t.DAY/24;frames(1);
+   ok(e.gone&&!R().on.some(x=>x.trace)&&/Word on the road: a “wounded man”/.test(logsSince(n0)),'left be: the bandits move on (no body), and word gets round');G.clock=t.DAY*.3}
+  world()}
+
+ // ======== phase 4: the sealed letter (world/letters.js; ENC_TUNE.letter)
+ {const TL=t.ENC_TUNE.letter,FS=Object.keys(t.FACS).filter(x=>x!=='player'),rk=t.rk,setRel=(a,b,s)=>{W.rel[rk(a,b)]={s,since:1}};
+  const f=FS.find(x=>t.fiefsOf(x).length>1),g=FS.find(x=>x!==f&&t.fiefsOf(x).length),g2=FS.find(x=>x!==f&&x!==g&&t.fiefsOf(x).length),h=t.fiefsOf(f)[0],rel0=JSON.stringify(W.rel);
+  for(const a of FS)for(const b of FS)if(a<b)setRel(a,b,'peace');setRel(f,g,'war');if(g2)setRel(g,g2,'war');
+  let mkN=0;const only=(k,fn)=>{const w0={...TL.w};for(const q in TL.w)TL.w[q]=q===k?1:0;try{return fn()}finally{Object.assign(TL.w,w0)}},mk=k=>only(k,()=>t.letterMake({i:900+(++mkN),fac:f,home:h.name,x:h.x,y:h.y+40}));
+  const l=W.lords.find(o=>o.fac===f&&!o.dead),gt=t.fiefsOf(g)[0];const ls0={state:l.state,tgt:l.tgt,inside:l.inside};l.inside=null;l.state='march';l.tgt=gt.name;
+  // its contents, chosen when he comes, from the world as it stands
+  const A=mk('army'),K=mk('attack'),Dl=mk('deal'),N=mk('news'),base=L=>L.fac===f&&L.from&&t.townBy(L.from).owner===f&&L.stale-L.day>=TL.stale[0]&&L.stale-L.day<=TL.stale[1]&&L.seal===1&&L.seen===0&&/^L\d+$/.test(L.id);
+  ok(base(A)&&A.kind==='army'&&A.lord===l.id&&A.ln===l.name&&A.tgt===gt.name&&A.n===l.troops.length&&A.to===h.name&&A.toFac===f&&A.from!==A.to,'a lord’s army: '+l.name+' marching on '+A.tgt+' with '+A.n+' ('+A.from+' to '+A.to+', stale on day '+A.stale+')');
+  ok(base(K)&&K.kind==='attack'&&K.vs===g&&t.townBy(K.tgt).owner===g&&K.to===h.name,'a holding his realm means to attack: '+K.tgt+' of the '+t.FACS[g].n);
+  ok(base(Dl)&&Dl.kind==='deal'&&Dl.with!==f&&!t.atWar(f,Dl.with)&&t.townBy(Dl.to).owner===Dl.with&&Dl.toFac===Dl.with&&Dl.rel===t.relOf(f,Dl.with).s&&(Dl.vs===null||t.atWar(f,Dl.vs)),'a deal between two realms: the '+t.FACS[f].n+' to the '+t.FACS[Dl.with].n+' at '+Dl.to+(Dl.vs?', against the '+t.FACS[Dl.vs].n:''));
+  ok(base(N)&&N.kind==='news'&&N.to===h.name&&(N.site===null||W.sites.some(s=>s.tx===N.site[0]&&s.ty===N.site[1]&&!s.seen)),'plain news'+(N.site?', of a place you have not found':''));
+  ok(A.worth>K.worth*.5&&N.worth<A.worth&&[A,K,Dl,N].every(L=>L.worth>=Math.round(TL.worth[0]*TL.kind[L.kind])&&L.worth<=Math.round(TL.worth[1]*TL.kind[L.kind])),'worth by its kind: army '+A.worth+', attack '+K.worth+', deal '+Dl.worth+', news '+N.worth+' gold');
+  ok(/marches with/.test(t.letterText(A))&&/will fall on/.test(t.letterText(K))&&/offers the/.test(t.letterText(Dl))&&/All is well at/.test(t.letterText(N)),'and what it says, in the sender’s words');
+  // with no lord marching and no war: no army, no attack
+  {const st=l.state;l.state='rest';setRel(f,g,'peace');const ks=new Set();const s=t.seeded(5);for(let i=0;i<40;i++)ks.add(stub(s,()=>t.letterMake({i:950+i,fac:f,home:h.name,x:h.x,y:h.y})).kind);l.state=st;setRel(f,g,'war');
+   ok(!ks.has('army')&&!ks.has('attack')&&ks.has('news'),'no lord marching and no war: only deals and news ('+[...ks].join(', ')+')')}
+  // the witness, when you rob him: who was near, less by Scouting and the night
+  {goHome();R().on=[];const m=t.roadSpawn('messenger',P.x+20,P.y),W0=TL.witness;P.sk.scout.lv=0;G.clock=t.DAY*.3;const p0=t.letterWitness(m);
+   W.caravans.push({x:m.x+30,y:m.y});const p1=t.letterWitness(m);W.caravans.length=0;G.clock=t.DAY*.75;const pn=t.letterWitness(m);G.clock=t.DAY*.3;P.sk.scout.lv=5;const ps=t.letterWitness(m);P.sk.scout.lv=0;
+   const A2=t.townBy('Ashford');at(A2.x+60,A2.y+60);R().on=[];const mh=t.roadSpawn('messenger',P.x+20,P.y),ph=t.letterWitness(mh);
+   ok(Math.abs(p0-W0.base)<1e-9&&Math.abs(p1-(W0.base+W0.per))<1e-9&&Math.abs(pn-W0.base*W0.night)<1e-9&&Math.abs(ps-W0.base*(1-5*W0.scout))<1e-9&&ph>=W0.base+W0.hold-1e-9,
+     'the witness roll: '+Math.round(p0*100)+'% alone on the road, '+Math.round(p1*100)+'% with a caravan near, '+Math.round(pn*100)+'% by night, '+Math.round(ps*100)+'% at Scouting 5, '+Math.round(ph*100)+'% by a holding');
+   cleanBag();t.roadMeet(mh);pickA(1);stub(0,()=>sure());const s1=P.inv.find(x=>x&&x.k==='letter');ok(s1&&s1.L.seen===1&&/saw it all/.test(panel()),'seen: stored on the letter (“someone on the road saw it all”)');world();
+   cleanBag();goHome();R().on=[];const mu=t.roadSpawn('messenger',P.x+20,P.y);t.roadMeet(mu);pickA(1);stub(.999,()=>sure());const s2=P.inv.find(x=>x&&x.k==='letter');ok(s2&&s2.L.seen===0&&/Nobody saw you/.test(panel()),'unseen: “nobody saw you”');world();cleanBag()}
+  // its page from the bag: its verbs (Back to the bag, the way out to the map)
+  const put=L=>{cleanBag();P.inv[3]={k:'letter',id:L.id,n:1,L};return P.inv[3]};
+  {world();const L=mk('army');put(L);t.openInv();t.act('inv-sel','3');ok(/Sealed letter/.test(panel())&&q('[data-act="ltr-open"]')&&q('.invgrid canvas'),'in the bag: a sealed letter (its icon), and Look it over');
+   t.act('ltr-open',L.id);ok(G.mode==='letter'&&q('#panel.paged')&&q('.rwin h2').textContent==='Sealed letter'&&acts().join('|')==='Break the seal|Sell it to a rival|Deliver it|Burn it'&&q('.nav [data-nav="back"]').textContent==='Back to the bag'&&q('.nav [data-nav="close"]').textContent==='Back to map','its page: Break the seal, Sell it to a rival, Deliver it, Burn it; Back to the bag, Back to map');
+   ok(qa('.rkact')[1].disabled&&qa('.rkact')[2].disabled&&/Only in a holding of a realm at war with/.test(panel())&&new RegExp('Only at '+L.to).test(panel())&&!/ltr-text/.test(panel()),'on the map: no selling, no delivering, and why; its words unread');
+   const n0=G.msgs.length;t.act('ltr-do','0');const at=t.townBy(L.tgt);
+   ok(L.seal===0&&q('.rwin h2').textContent==='Opened letter'&&/marches with/.test(q('.ltr-text').textContent)&&/A letter of the .*marches with/.test(logsSince(n0))&&t.seenTile(Math.floor(at.x/TILE),Math.floor(at.y/TILE))&&acts().join('|')==='Sell it to a rival|Deliver it|Burn it'&&P.inv[3]&&P.inv[3].L===L,'Break the seal: you read it (“'+t.letterText(L).slice(1,40)+'…”), in your log, '+L.tgt+' on your map; it stays in the bag, opened');
+   t.act('ltr-back');ok(G.mode==='inv'&&G.invSel===3&&/Opened letter/.test(panel()),'Back: the bag, the letter chosen');t.act('ltr-open',L.id);t.act('ltr-close');ok(G.mode==='world'&&t.ov.hidden,'Back to map')}
+  {world();const L=mk('news'),s=t.letterSite(L);put(L);if(s){t.openInv();t.act('ltr-open',L.id);t.act('ltr-do','0');ok(s.seen&&/is on your map now/.test(panel()),'news of a place: the '+s.label+' goes on your map');world()}}
+  // sell it to a rival: only in a holding of a realm at war with the sender; more while sealed
+  const town=(T,L)=>{world();t.enterTown(T);t.act('ltr-open',L.id+':town')};
+  {const L=put(mk('army')).L,g0=P.gold,r0=t.repAt(gt.name);world();t.enterTown(gt);ok(/Your letters/.test(panel())&&/they would buy it/.test(panel())&&q('[data-act="ltr-open"]'),'in a rival’s holding, its overview shows your letter');
+   t.act('ltr-open',L.id+':town');ok(G.mode==='letter'&&!qa('.rkact')[1].disabled&&qa('.rkact')[2].disabled&&q('.nav [data-nav="back"]').textContent==='Back'&&new RegExp('Leave ').test(q('.nav [data-nav="close"]').textContent),'its page there: sell it, not deliver it; Back to the holding, Leave');
+   const want=Math.round(L.worth*TL.sell);t.act('ltr-do','1');ok(P.gold===g0+want&&t.repAt(gt.name)===r0+TL.rep.sell&&!P.inv.some(x=>x&&x.k==='letter')&&/pays/.test(panel())&&!qa('.rwbody .rkact').length,'Sell it, sealed, in '+gt.name+' (the '+t.FACS[g].n+', at war with its sender): +'+want+' gold, reputation +'+TL.rep.sell+'; gone from the bag');
+   t.act('ltr-back');ok(G.mode==='town'&&!/Your letters/.test(panel()),'Back: the holding')}
+  {const L=put({...mk('army'),seal:0}).L,g0=P.gold;town(gt,L);const want=Math.max(1,Math.round(L.worth*TL.sell*TL.opened));t.act('ltr-do','1');ok(P.gold===g0+want,'opened, it sells for less: '+want+' gold');}
+  {const L=put(mk('army')).L,peace=t.fiefsOf(f).find(x=>x!==h)||h;town(peace,L);ok(qa('.rkact')[1].disabled&&/is not at war with/.test(panel()),'in a holding not at war with its sender ('+peace.name+'): no selling')}
+  // deliver it: at the holding it is addressed to; a reward, less opened; seen, it costs you
+  {const L=put(mk('army')).L,g0=P.gold,r0=t.repAt(h.name);town(h,L);ok(!qa('.rkact')[2].disabled&&qa('.rkact')[1].disabled,'at '+h.name+', where it is addressed: deliver it (its own realm will not buy it)');
+   const want=Math.round(L.worth*TL.deliver);t.act('ltr-do','2');ok(P.gold===g0+want&&t.repAt(h.name)===r0+TL.rep.deliver&&!P.inv.some(x=>x&&x.k==='letter')&&/thanks you/.test(panel()),'Deliver it, sealed, unseen: +'+want+' gold, reputation +'+TL.rep.deliver)}
+  {const L=put({...mk('army'),seal:0}).L,g0=P.gold,r0=t.repAt(h.name);town(h,L);t.act('ltr-do','2');const want=Math.round(L.worth*TL.deliver*TL.opened);ok(P.gold===g0+want&&t.repAt(h.name)===r0+Math.ceil(TL.rep.deliver/2)&&/frowns at the broken seal/.test(panel()),'opened: +'+want+' gold and half the reputation, a frown at the broken seal')}
+  {const L=put({...mk('army'),seen:1}).L,g0=P.gold,r0=t.repAt(h.name);town(h,L);t.act('ltr-do','2');ok(q('#panel.confirm')&&P.gold===g0,'the robbery seen: delivering asks first');q('.nav [data-nav="close"]').click();
+   ok(P.gold===g0&&t.repAt(h.name)===r0-TL.rep.seen&&/eyes narrow/.test(panel()),'and costs reputation −'+TL.rep.seen+' instead of a reward')}
+  {const L=put(mk('army')).L;town(gt,L);ok(new RegExp('Only at '+h.name).test(panel())&&qa('.rkact')[2].disabled,'elsewhere: no delivering');world()}
+  // stale: its news has happened (its lord arrived, the attack came, the deal settled) or it is old: worth little, and it says so
+  {const L=mk('army');ok(!t.letterStale(L),'fresh while its lord still marches');l.state='siege';ok(/reached/.test(t.letterStale(L)),'stale once he lays siege ('+t.letterStale(L)+')');l.state='march';l.tgt=h.name;ok(/elsewhere/.test(t.letterStale(L)),'or rides elsewhere');l.tgt=gt.name;
+   const K2=mk('attack'),T2=t.townBy(K2.tgt),o2=T2.owner;ok(!t.letterStale(K2),'an attack: fresh');T2.owner=f;ok(/changed hands/.test(t.letterStale(K2)),'stale once '+K2.tgt+' falls');T2.owner=o2;
+   const D2=mk('deal');setRel(f,D2.with,D2.rel==='ally'?'peace':'ally');ok(/settled/.test(t.letterStale(D2)),'a deal: stale once the realms settle it');setRel(f,D2.with,D2.rel);
+   const day0=G.day;G.day=L.stale;ok(/days old/.test(t.letterStale(L)),'any: stale after its days ('+(L.stale-L.day)+')');
+   put(L);const g0=P.gold;town(gt,L);ok(/stale: whatever it says has surely happened by now; worth little/.test(panel()),'its page says so');const want=Math.max(1,Math.round(L.worth*TL.sell*TL.old));t.act('ltr-do','1');ok(P.gold===g0+want,'and it sells for little: '+want+' gold');G.day=day0;world()}
+  // burn it
+  {const L=put(mk('news')).L;t.openInv();t.act('ltr-open',L.id);t.act('ltr-do','3');ok(q('#panel.confirm')&&P.inv[3],'Burn it asks first');q('.nav [data-nav="close"]').click();ok(!P.inv.some(x=>x&&x.k==='letter')&&/curls up in the fire/.test(panel()),'burnt: gone');world()}
+  // saved and loaded: the messenger's letter is made when he comes, and saved with him
+  {goHome();R().on=[];const m=t.roadSpawn('messenger',P.x+90,P.y);const snap=JSON.stringify(m.letter);G.mode='world';G.modal=false;t.saveGame(true);W.road=null;t.loadGame();
+   const m2=W.road.on.find(x=>x.k==='messenger');ok(m2&&JSON.stringify(m2.letter)===snap&&m2.letter.id==='L'+m2.i,'the messenger’s letter, chosen when he comes ('+m2.letter.kind+', to '+m2.letter.to+'), is saved and loaded with him');world()}
+  // and with the bag
+  {const L={...mk('deal'),seal:0,seen:1};put(L);world();const snap=JSON.stringify(P.inv[3]);t.saveGame(true);P.inv[3]=null;t.loadGame();
+   ok(JSON.stringify(P.inv[3])===snap&&P.inv[3].L.kind==='deal'&&P.inv[3].L.seal===0&&P.inv[3].L.seen===1&&t.itemDef(P.inv[3]).n==='Opened letter','a letter in the bag is saved and loaded as it was (opened, seen, its contents)');cleanBag()}
+  const ls1=W.lords.find(o=>o.id===l.id);if(ls1)Object.assign(ls1,ls0);W.rel=JSON.parse(rel0);world()}
 
  // ---- the save: the encounters, the timer, the day's count and the cooldowns
  {goHome();R().c=7.5;R().cd={bard:G.day};const e=t.roadSpawn('merchant',P.x+90,P.y);e.seen=1;const b=t.roadSpawn('traveller',P.x+50,P.y+30),th=t.roadSpawn('thief',P.x+70,P.y-20);G.mode='world';G.modal=false;

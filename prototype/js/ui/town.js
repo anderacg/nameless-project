@@ -198,7 +198,7 @@ function renderTown(){
       note:'Every unit you buy or sell moves the price.'}])+'<div class="lab lab-qty"><span>Goods</span>'+railQty(q,'qty')+'</div>'+goods.map(k=>{const p=buyP(t,k),s=sellP(t,k),room=goodRoom(k),n=goodN(k),st=t.stock[k]||0,ms=marketState(t,k);
       return railRow(GOODS[k].n+(ms?' <span class="'+(ms==='shortage'?'bad':'good')+'" style="font-size:12px">'+cap1(ms)+'</span>':''),'Buy '+p+'g · Sell '+s+'g · '+st+' in the market · '+GOODS[k].stack+' per slot',
         railBtn('buy',k+':'+q,'Buy',P.gold<p*q?'Not enough gold':room<q?'No room in your bag':st<q?'The market has '+st:'')+railBtn('sell',k+':'+q,'Sell',n<q?'You have '+n:''),'×'+n)}).join('');
-    const stock=P.inv.map((x,i)=>[x,i]).filter(([x])=>x&&x.k!=='good');
+    const stock=P.inv.map((x,i)=>[x,i]).filter(([x])=>x&&x.k!=='good'&&x.k!=='letter');// (a letter is sold on its own page: world/letters.js)
     if(stock.length)body+='<div class="lab" style="margin-top:6px">From your inventory</div>'+stock.map(([x,i])=>x.k==='mat'
       ?'<div class="row"><div class="info"><strong>'+MATS[x.id].n+'</strong><small>Trophy · '+matPrice(x.id)+'g each</small></div><span class="own">×'+x.n+'</span><div class="acts">'+railBtn('sell-loot',i,'Sell')+'</div><span class="own gold">'+matPrice(x.id)*x.n+'g</span></div>'
       :'<div class="row"><div class="info"><strong style="color:'+RARITY[ITEMS[x.id].r]+'">'+ITEMS[x.id].n+'</strong><small>'+SLOTS[ITEMS[x.id].slot]+' · '+ITEMS[x.id].d+'</small></div><div class="acts">'+railBtn('sell-item',i,'Sell')+'</div><span class="own gold">'+itemPrice(x.id)+'g</span></div>').join('');

@@ -66,7 +66,8 @@ function lootAct(a,arg){
   const take=s=>{const n=lootRoom(s);if(!n)return 0;const got=invAdd(s.k,s.id,n);s.n-=got;if(got)L.took=true;return got};
   if(a==='lt-take'){const s=L.pile[+arg];if(s){take(s);L.pile=L.pile.filter(x=>x.n>0)}}
   if(a==='lt-all'){for(const s of L.pile)take(s);L.pile=L.pile.filter(x=>x.n>0)}
-  if(a==='lt-drop'){const s=P.inv[+arg];if(s){P.inv[+arg]=null;if(s.k==='gear')L.pile.push({k:'gear',id:s.id,n:1});else{const x=L.pile.find(p=>p.k===s.k&&p.id===s.id);if(x)x.n+=s.n;else L.pile.push({...s})}}}
+  // (a letter stays in the bag: its record goes nowhere else)
+  if(a==='lt-drop'){const s=P.inv[+arg];if(s&&s.k!=='letter'){P.inv[+arg]=null;if(s.k==='gear')L.pile.push({k:'gear',id:s.id,n:1});else{const x=L.pile.find(p=>p.k===s.k&&p.id===s.id);if(x)x.n+=s.n;else L.pile.push({...s})}}}
   if(a==='lt-leave'){const left=L.pile.map(s=>(s.n>1?s.n+' ':'')+itemDef(s).n.toLowerCase());if(left.length)log('You leave '+left.join(', ')+' behind.','bad');const next=V.next;lootEnd();return act(next)}
   renderLoot();
 }

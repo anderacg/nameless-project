@@ -1,6 +1,6 @@
 # Random encounters on the map: design
 
-Status: **approved** (2026-10-19); phase 1 built (2026-10-19: `world/encounters.js`, `tests/encounters.js`); **phase 2 built** (2026-10-19: the 8 new encounters of normal priority, as data in `ROAD_ENC` with their numbers in `ENC_TUNE`; the shared chase and catch in `RoadEncounter` and `ENC_CATCH`; stand-in figures until phase 3's props).
+Status: **approved** (2026-10-19); phase 1 built (2026-10-19: `world/encounters.js`, `tests/encounters.js`); **phase 2 built** (2026-10-19: the 8 new encounters of normal priority, as data in `ROAD_ENC` with their numbers in `ENC_TUNE`; the shared chase and catch in `RoadEncounter` and `ENC_CATCH`; stand-in figures until phase 3's props); **phase 4 in part built** (2026-10-19: the sealed letter as a real item, `world/letters.js`; the fake wounded (a lure); the pilgrims at real shrines; see "Phase 4 as built" below).
 
 ## 1. The idea
 
@@ -49,7 +49,7 @@ Any of them leaves at once when you are about 1.5× your sight away. Traces fade
 |---|---|---|---|
 | Wounded traveller | a man lying by the road (the fallen pose) | stays; calls out | Help (bandage, food) · Rob · Leave |
 | Wandering merchant | a peddler with a mule (caravan sprite, small) | approaches | Trade · Leave |
-| Roadside shrine pilgrims | 2–3 pilgrims at a little shrine (prop) | stays | Pray with them · Give alms · Leave |
+| Pilgrims (built 2026-10-19: real shrines) | 2–4 pilgrims on the road to the nearest real shrine on the map; or, a shrine just past your sight, kneeling and standing at it, beside the map's own shrine (no shrine of their own) | walks to the shrine and ends there; or stays, praying | Pray with them (walking: Walk and pray with them, an hour) · Give alms · Take the coins (asks first) · Leave |
 | Deserters | 3–5 soldiers of a realm, no banner | stay; may flee if you are that realm's | Recruit · Turn them in · Leave |
 | Gamblers | soldiers round a fire with dice | stay | Play (pick a stake) · Leave |
 | Collapsed mine | a shaft mouth and old carts (hill) | stays | Search (risk) · Leave |
@@ -68,7 +68,7 @@ Any of them leaves at once when you are about 1.5× your sight away. Traces fade
 |---|---|---|---|
 | Cart stuck in mud | a farmer pushing a cart (by water or swamp) | stays; calls out | Help push (stamina) · Rob · Leave |
 | Thief on the run | a man running, a shouting victim behind | flees | Chase (catch: reward or loot) · Let go |
-| Fake wounded (a lure) | a "wounded man", bandits hidden near | calls out | Help (Scouting 3+ warns you) · Leave |
+| Fake wounded (a lure) (built 2026-10-19) | the wounded traveller to the eye (his picture, call-out, highlight and page), bandits hidden in the woods or hills by the road, a band the size of an ambush's | stays; calls out | Below Scouting 3, his page is the real one's: helping or robbing him springs the ambush (their edge) · Scouting 3: "something moves in the brush behind him": Approach ready (no edge) · Call them out (they show themselves: fight or leave; a small band may run, by Leadership and Charisma) · Scouting 5: how many and the odds · Leave. Rarer than the real one; likelier at night, in the wild, near bands and camps. Ignored: the bandits move on (word on the road) |
 | Execution | a gallows (prop), soldiers, a prisoner | stays | Watch · Free him (fight the guards) · Leave |
 | Duel challenge | a lone swordsman | approaches | Accept (hero duel) · Refuse |
 | Poacher | a hunter with a deer, in a lord's wood | flees if seen | Turn him in · Buy the meat · Leave |
@@ -77,7 +77,7 @@ Any of them leaves at once when you are about 1.5× your sight away. Traces fade
 | Runaway horse | a saddled horse | flees, then stops | Catch (Riding check: the mount is yours) · Leave |
 | Beggar | an old man | approaches | Give · Ignore |
 | Prisoner wagon | guards escorting a cage cart | passes along the road | Free the prisoners (fight) · Leave |
-| Messenger | a rider | approaches | Read (a rumour or quest) · Rob (a letter to sell) |
+| Messenger | a rider | approaches | Read (a rumour or quest) · Rob (his purse and his sealed letter: an item, phase 4) |
 
 ## 4. Art: the figures and props
 
@@ -139,6 +139,22 @@ Today, robbing a messenger pays his purse plus 20–35 gold "for the letter" at 
 - **Sealed or opened:** a sealed letter sells and delivers for more; an opened one tells you what it says. You choose which matters more.
 - **It goes stale:** after its news has happened (the lord arrived, the attack came, about 5–10 days), it is worth little to anyone.
 - **Reuses:** the rumour helpers (`roadNews`), `addRep`/`wrong`, the bag and item pages, the realms' wars and lords' targets.
+
+### Phase 4 as built (2026-10-19, in part)
+
+**The sealed letter** (`world/letters.js`; its numbers `ENC_TUNE.letter`):
+
+- **Its contents** are chosen when the messenger comes (`letterMake`), from the world as it stands, by weight among the kinds there can be: **army** (a lord of his realm marching, laying siege or riding to relieve: his name, his target, his men), **attack** (a holding of a realm at war with his that it means to fall on), **deal** (an alliance against a common enemy, or friendship and trade, offered a realm at peace with his: addressed to that realm's nearest holding), **news** (plain news, perhaps of a place you have not found). From (another holding of his realm), to, the day, when it goes stale (5–10 days) and its worth (30–45 gold × its kind's) are saved with him, and then with the letter.
+- **Robbing him:** his purse, and the letter into a free slot of your bag (a full bag: it stays in the mud); the instant "letter's price" is gone. The **witness roll** is made then and stored on the letter: 8% + 12% for each soul within 120 px of him (workers out, caravans, patrols, refugees, lords, bands, other encounters) + 25% within 160 px of a holding, × (1 − 7% a Scouting level), halved by night, 2–90%. The page says whether someone saw.
+- **In the bag:** one to a slot, never stacked; its record goes with it (saved as the bag is). Its icon is a folded letter, its wax seal whole or broken. Look it over (or a double-click) opens its page; a holding's overview lists the letters it would take (Show it).
+- **Its page** (`PageScreen`, verbs only; Back to the bag or the holding on the left, Back to map or Leave on the right): **Break the seal** (you read it: its words in your log; the place it names goes on your map, or the land round the holding it names; it stays, opened), **Sell it to a rival** (only in a holding of a realm at war with the sender: 1.2× its worth, reputation +4 there), **Deliver it** (only at the holding it is addressed to, while its realm still holds it: 0.8× its worth, reputation +5; seen, it asks first and costs reputation −6 instead), **Burn it** (asks first). Opened, it fetches half (and half the reputation); stale, 15%.
+- **Stale:** its lord has reached his target, rides elsewhere or has fallen; the holding to be attacked is besieged or changed hands; the realms settled the deal; or its days are up. Its page says so.
+
+**The fake wounded (a lure)** (`ROAD_ENC.lure`, `ENC_TUNE.lure`): as in §3. It shares the wounded traveller's name, call, log line, tooltip, highlight, picture, text and facts; its band (5–7, more as the days go by, the ambush's kind by the land) is mustered when it comes and is the one you fight (`roadFight(e, true, edge)`: the ambush's battle with its edge, or without). Weight 0.5 × 1.6 at night × 1.4 off a holding's land × (1 + 0.3 for each band or camp within 400 px, at most 3), never over 1.6 (the real one weighs 2). Calling them out scares a band of 6 or fewer at 20% + 6% a Leadership level + 5% a point of Charisma (5–85%).
+
+**The pilgrims** (`ROAD_ENC.pilgrims`): the made-up roadside shrine is gone. A real shrine (the map's shrine sites) just past your sight, with open ground before it: they are found praying there (stay; heard or seen, the shrine goes on your map, and it shows on their page's banner); else they walk the roads to the nearest real shrine they can reach in their time (as the funeral walks) and end there. No shrine within reach: they do not come. Kneeling is the standing figure with its thighs folded away (a stand-in until phase 3's poses).
+
+Choices made in building it: the letter's record rides in its bag slot rather than a list of its own, so the bag's save carries it and nothing is left behind when it is dropped or burnt; a letter cannot be put back on a loot pile; it is read and sold from its own page only (the market's "From your inventory" leaves it out); its page is reached from the bag on the map and from a holding's overview (the bag does not open in a holding); "in a holding" is the holding you are in; the witness is shown to you, so you can choose; the lure's warning and Insight read your Scouting when its page opens.
 
 ## 6. Questions for the owner
 

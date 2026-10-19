@@ -226,6 +226,7 @@ function itemIcon(def){const k='ic'+def.icon+def.col;return spr[k]||(spr[k]=mkc(
     case 'cheese':r(c,2,6,12,7);r(c,4,4,8,2);r(c,7,3,4,1);r(lt,3,6,10,1);r(dk,2,12,12,1);r(dk,5,8,2,2);r(dk,10,9,2,2);r(dk,8,11,1,1);break;
     case 'fruit':r(c,2,6,6,6);r(c,8,7,6,6);r(lt,3,7,2,2);r(lt,9,8,2,2);r(dk,2,11,6,1);r(dk,8,12,6,1);r('#5a3a20',5,4,1,2);r('#3f8a3e',6,3,2,1);r('#5a3a20',11,5,1,2);break;
     case 'mount':r(c,8,6,4,8);r(c,5,3,6,4);r(c,2,5,5,4);r(c,9,1,2,2);r(dk,11,3,2,10);r(dk,12,13,1,2);r('#1a1410',6,4,1,1);r(dk,2,8,1,1);r('#c8a24a',4,6,5,1);r(lt,6,3,3,1);r(dk,2,9,4,1);break;
+    case 'letter':r(dk,2,4,12,9);r(c,2,4,12,8);r(lt,3,5,10,1);for(let i=0;i<6;i++){r(dk,2+i,4+i);r(dk,13-i,4+i)}if(def.seal){r('#8a1e1a',6,8,4,3);r('#c0302a',7,8,2,2)}else{r('#8a1e1a',5,10,2,1);r('#8a1e1a',9,11,2,1)}break;
     case 'belt':r(c,1,6,14,4);r(dk,1,9,14,1);r('#c8a24a',6,5,4,6);r(c,7,6,2,4);r(lt,2,6,4,1);r(lt,11,6,3,1);break;
   }
 }))}

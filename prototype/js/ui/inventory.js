@@ -39,7 +39,7 @@ function openInv(){if(G.mode!=='world'||G.modal)return;G.mode='inv';G.invSel=nul
 const selGear=()=>{const k=G.invSel;if(k==null||String(k).startsWith('eq:'))return null;const s=P.inv[k];return s&&s.k==='gear'?s.id:null};
 function slotHtml(s,key,label,cls){
   const sel=String(G.invSel)===String(key),def=s&&itemDef(s),rc=s&&s.k==='gear'?RARITY[ITEMS[s.id].r]:'';
-  const name=s?def.n+(s.k==='gear'?', '+ITEMS[s.id].r+' '+kindLabel(ITEMS[s.id]):s.k==='good'?', '+s.n:', '+s.n+' trophies'):label;
+  const name=s?def.n+(s.k==='gear'?', '+ITEMS[s.id].r+' '+kindLabel(ITEMS[s.id]):s.k==='good'?', '+s.n:s.k==='letter'?', to '+s.L.to:', '+s.n+' trophies'):label;
   return '<button class="slot'+(s?'':' empty')+(cls?' '+cls:'')+(sel?' sel':'')+'" type="button" data-act="inv-sel" data-arg="'+key+'" draggable="'+(!!s)+'" aria-pressed="'+sel+'" aria-label="'+name+'" title="'+name+'"'+(rc?' style="--rc:'+rc+'"':'')+'>'+
     (s?'<span data-icon="'+s.k+':'+s.id+'"></span>'+(s.n>1?'<b class="cnt">'+s.n+'</b>':''):String(key).startsWith('eq:')?'<small>'+label+'</small>':'')+'</button>';
 }
@@ -50,6 +50,7 @@ function detailHtml(){
   const eq=String(k).startsWith('eq:'),key=eq?k.slice(3):null,s=eq?(P.gear[key]?{k:'gear',id:P.gear[key],n:1}:null):P.inv[k];
   if(!s)return '<p class="muted">'+(eq?(blockedWhy(key)||SLOTS[slotOfKey(key)]+' slot is empty. '+(MOUNT_KEYS.includes(key)?'Stables and smiths sell mount gear.':key==='offhand'?'Hold a shield, a tome, a torch, or a second one-handed weapon.':'Smiths sell gear, and monsters and enemies drop it.')):'Empty slot.')+'</p>';
   if(s.k==='good'){const D=GOODS[s.id];return '<h3>'+D.n+'</h3><p class="muted">Trade good · '+s.n+' of '+D.stack+' in this slot</p><p>'+D.d+'</p><p class="muted">Worth about '+D.base+'g each. Prices change from town to town.</p><div class="btns">'+dropBtn(k)+'</div>'}
+  if(s.k==='letter')return letterDetail(k,s);// (its page: world/letters.js)
   if(s.k==='mat'){const M=MATS[s.id];return '<h3>'+M.n+'</h3><p class="muted">Trophy · stack of '+s.n+' (max '+STACK+')</p><p>Worth about '+M.v+'g each, '+M.v*s.n+'g for the stack. Sell it at any town market.</p><div class="btns">'+dropBtn(k)+'</div>'}
   const I=ITEMS[s.id],head='<h3 style="color:'+RARITY[I.r]+'">'+I.n+'</h3><p class="muted">'+cap1(I.r)+' '+kindLabel(I)+' · worth about '+I.v+'g</p><p>'+I.d+'</p>';
   if(eq){const g=key==='weapon'&&I.hand==='hybrid'?'<p class="gold">'+(offI()?'One-handed grip: your off hand is full.':'Two-handed grip: +20% damage, +4 reach.')+'</p>':key==='offhand'&&I.slot==='weapon'?'<p class="gold">Dual wield: half its damage adds to your main hand, and your combo turns quick.</p>':MOUNT_KEYS.includes(key)?'<p class="muted">Worn by your '+(mountDef()?mountDef().n:'mount')+'.</p>':'';
@@ -111,5 +112,5 @@ panel.addEventListener('dragover',e=>{if(G.mode==='inv'&&e.target.closest('.slot
 panel.addEventListener('drop',e=>{const b=e.target.closest('.slot');if(!b||G.mode!=='inv')return;e.preventDefault();
   const f=e.dataTransfer.getData('text/plain'),t=b.dataset.arg,num=x=>x.startsWith('eq:')?x:+x;invMove(num(f),num(t));G.invSel=num(t);G.invArm=null;updateHUD(true);renderInv()});
 panel.addEventListener('dblclick',e=>{const b=e.target.closest('.slot');if(!b||G.mode!=='inv')return;const k=b.dataset.arg;
-  if(k.startsWith('eq:')){if(P.gear[k.slice(3)])invAct('inv-unequip',k.slice(3))}else if(P.inv[+k]&&P.inv[+k].k==='gear')invAct('inv-equip',k)});
+  if(k.startsWith('eq:')){if(P.gear[k.slice(3)])invAct('inv-unequip',k.slice(3))}else if(P.inv[+k]&&P.inv[+k].k==='gear')invAct('inv-equip',k);else if(P.inv[+k]&&P.inv[+k].k==='letter')act('ltr-open',P.inv[+k].id)});
 onAct('inv-',invAct);
