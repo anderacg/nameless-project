@@ -19,7 +19,7 @@
    the arrows and chevrons of the battle are (ui/orderpaths.js). Real time. Under reducedMotion all holds still: no ripple or
    puff, the arrow and brackets standing, the dots not marching ---------- */
 const WUI_K={ripple:.42,drop:.3,land:.13,bob:1.3,poof:.42,ping:1.2,breathe:1.4,gap:6,march:10,draw:.35,ease:20,repick:120,steps:8000,off:8,rebuild:250,
-  col:{foe:'#ff5a48',friend:'#76d86a',neutral:'#ece6d4',comp:'#e8b94a',hold:'#e8b94a',ground:'#f2ecd8',gold:'#e8b94a'},dark:'#140e08'};
+  col:{foe:'#ff5a48',friend:'#76d86a',neutral:'#ece6d4',comp:'#e8b94a',hold:'#e8b94a',ground:'#f2ecd8',gold:'#e8b94a',enc:'#4aa0f0'},dark:'#140e08'};
 // (its state: the effects playing (ripples, puffs), the goal you walk to and when it was set, what you chase, the way there,
 // the brackets (b: where they stand now, world px; to: where they go) and what the pointer was last picked on)
 const WUI={fx:[],dest:null,tgt:null,way:null,s:0,dots:[],hov:null,hp:{t:-1e9,x:NaN,y:NaN,o:null},now:0};
@@ -167,7 +167,7 @@ function wuiOver(cam){if(G.mode==='title')return;const now=WUI.now||performance.
    not yet seen, over the fog too), its call-out over that for ENC_LIFE.say s the first time you see it there; off the screen,
    an arrow at the screen's edge pointing to it, the "!" beside it. All in real time, still under reducedMotion ---- */
 // (the "!": a gold pin, its "!" cut out of it and outlined dark, its point on what it marks)
-WUI_ARROW.bang=['.#####.','###.###','###.###','###.###','#######','###.###','.#####.','..###..','...#...'];
+WUI_ARROW.bang=['###','###','###','###','###','.#.','...','###','###'];// (a plain "!", in the encounters' blue: WUI_K.col.enc)
 // (the arrow at the screen's edge in eight directions, k: 0 east, then each 45° clockwise: a head and a short shaft, laid out
 // from its shape once each, so it stays crisp as the map's arrows are)
 function wuiEdge(k,col){const key='edge'+k;if(!WUI_ARROW[key]){const a=k*Math.PI/4,ux=Math.cos(a),uy=Math.sin(a),rows=[];
@@ -175,16 +175,19 @@ function wuiEdge(k,col){const key='edge'+k;if(!WUI_ARROW[key]){const a=k*Math.PI
   return wuiArrow(key,col)}
 /* (under them: sound waves, rings rippling out from their feet along the ground one after another, fading as they spread; the
    map's own crisp rings (wuiRing), WAVE: s a ring takes (t), rings at once (n), how far past the scene it spreads (px), the
-   ground's tilt (ry: of rx), its strength at the start (a). Still, under reducedMotion: one ring half out) */
-const WAVE={t:1.8,n:3,px:20,ry:.5,a:.85};
-function wuiRoadUnder(cam,now,rm){const V=vis(),col=WUI_K.col.gold;for(const e of roadList()){if(!e.marked()||!e.inView(V))continue;const b=e.box(),x=Math.round(wuiX((b[0]+b[2])/2,cam)),y=Math.round(wuiY(b[3]-1,cam)),r0=Math.max(6,Math.round((b[2]-b[0])*.5));
-  for(let i=0;i<(rm?1:WAVE.n);i++){const q=rm?.5:((now/1000/WAVE.t+i/WAVE.n+(e.seed||0)*.37)%1),rx=r0+Math.round(q*WAVE.px),c=wuiRing(rx,Math.max(1,Math.round(rx*WAVE.ry)),col);
-    ctx.globalAlpha=WAVE.a*(1-q)*Math.min(1,q*6);wuiPut(c,x,y,c.cx,c.cy)}ctx.globalAlpha=1}}
-function wuiRoadOver(cam,now,rm){const V=vis(),col=WUI_K.col.gold,bang=wuiArrow('bang',col),p=rm?1:(1+Math.sin(now/1000*5))/2,bob=rm?0:Math.round(p*2);
+   ground's tilt (ry: of rx), its strength at the start (a); edge: how far they spread round the arrow at the screen's edge (round,
+   not tilted). In the encounters' blue (WUI_K.col.enc), as their "!". Still, under reducedMotion: one ring half out) */
+const WAVE={t:1.8,n:3,px:20,ry:.5,a:.85,edge:12};
+// (the rings round (x, y) from r0 out: ry their height to their width; k a phase of its own, so two side by side do not beat as one)
+function wuiWaves(x,y,r0,px,ry,k,now,rm){const col=WUI_K.col.enc;for(let i=0;i<(rm?1:WAVE.n);i++){const q=rm?.5:((now/1000/WAVE.t+i/WAVE.n+k*.37)%1),rx=r0+Math.round(q*px),c=wuiRing(rx,Math.max(1,Math.round(rx*ry)),col);
+  ctx.globalAlpha=WAVE.a*(1-q)*Math.min(1,q*6);wuiPut(c,x,y,c.cx,c.cy)}ctx.globalAlpha=1}
+function wuiRoadUnder(cam,now,rm){const V=vis();for(const e of roadList()){if(!e.marked()||!e.inView(V))continue;const b=e.box();
+  wuiWaves(Math.round(wuiX((b[0]+b[2])/2,cam)),Math.round(wuiY(b[3]-1,cam)),Math.max(6,Math.round((b[2]-b[0])*.5)),WAVE.px,WAVE.ry,e.seed||0,now,rm)}}
+function wuiRoadOver(cam,now,rm){const V=vis(),col=WUI_K.col.enc,bang=wuiArrow('bang',col),p=rm?1:(1+Math.sin(now/1000*5))/2,bob=rm?0:Math.round(p*2);
   for(const e of roadList()){if(!e.marked())continue;const b=e.box(),x=Math.round(wuiX((b[0]+b[2])/2,cam)),top=Math.floor(wuiY(b[1],cam)),y=wuiY(e.y,cam);
     if(x>=0&&x<=VW&&top>=4&&y<=VH){const by=top-2-bob;ctx.globalAlpha=.75+.25*p;wuiPut(bang,x,by,bang.cx,bang.tip);ctx.globalAlpha=1;
       if(e.D.call&&e.inView(V)){let t0=ROAD_SAY.get(e);if(t0==null)ROAD_SAY.set(e,t0=now);const q=(now-t0)/1000;if(q<ENC_LIFE.say){ctx.globalAlpha=Math.min(1,(ENC_LIFE.say-q)*2);txt(e.D.call,x,by-bang.tip-3,'#fff2c8','center');ctx.globalAlpha=1}}
       continue}
     const mx=12,my=24,cx=VW/2,cy=VH/2,dx=x-cx,dy=(top+y)/2-cy,k=Math.min((cx-mx)/Math.max(1e-6,Math.abs(dx)),(cy-my)/Math.max(1e-6,Math.abs(dy))),ax=Math.round(cx+dx*k),ay=Math.round(cy+dy*k),a=Math.atan2(dy,dx),c=wuiEdge((Math.round(a/(Math.PI/4))+8)%8,col);
-    ctx.globalAlpha=.8+.2*p;ctx.drawImage(c,ax-6+Math.round(Math.cos(a)*bob),ay-6+Math.round(Math.sin(a)*bob));ctx.globalAlpha=1;
+    wuiWaves(ax,ay,5,WAVE.edge,1,e.seed||0,now,rm);ctx.globalAlpha=.8+.2*p;ctx.drawImage(c,ax-6+Math.round(Math.cos(a)*bob),ay-6+Math.round(Math.sin(a)*bob));ctx.globalAlpha=1;
     wuiPut(bang,Math.round(ax-Math.cos(a)*17),Math.round(ay-Math.sin(a)*17)+4,bang.cx,bang.tip)}}

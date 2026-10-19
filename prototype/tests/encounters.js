@@ -103,14 +103,14 @@ try{
  // ---- the highlights: heard or seen, a log line and a sound; the "!", the glow, the call-out on the screen; the arrow off it
  {goHome();P.sk.scout.lv=0;const n0=G.msgs.length,e=t.roadSpawn('traveller',P.x+V+60,P.y+10);frames(1);
   ok(e.seen&&G.msgs.slice(n0).some(m=>/calls out from the road to the east/.test(m.m)),'heard: a log line ("'+(G.msgs[G.msgs.length-1]||{}).m+'")');
-  const bang=t.wuiArrow('bang',t.WUI_K.col.gold),edges=[0,1,2,3,4,5,6,7].map(k=>t.wuiEdge(k,t.WUI_K.col.gold));
-  const spy=fn=>{const r={bang:0,arrow:0,glow:0,say:0};const di=CanvasRenderingContext2D.prototype.drawImage,rg=CanvasRenderingContext2D.prototype.createRadialGradient;
+  const bang=t.wuiArrow('bang',t.WUI_K.col.enc),edges=[0,1,2,3,4,5,6,7].map(k=>t.wuiEdge(k,t.WUI_K.col.enc));
+  const spy=fn=>{const r={bang:0,arrow:0,glow:0,say:0};const di=CanvasRenderingContext2D.prototype.drawImage,wr=window.wuiRing;
     CanvasRenderingContext2D.prototype.drawImage=function(s,...a){if(s===bang)r.bang++;if(edges.includes(s))r.arrow++;return di.call(this,s,...a)};
-    CanvasRenderingContext2D.prototype.createRadialGradient=function(...a){r.glow++;return rg.apply(this,a)};
-    try{fn()}finally{CanvasRenderingContext2D.prototype.drawImage=di;CanvasRenderingContext2D.prototype.createRadialGradient=rg}return r};
+    window.wuiRing=(...a)=>{r.glow++;return wr(...a)};// (its sound waves: the map's rings, worldui.js wuiRoadUnder)
+    try{fn()}finally{CanvasRenderingContext2D.prototype.drawImage=di;window.wuiRing=wr}return r};
   const on=spy(()=>t.frame());ok(on.bang>0&&on.arrow===0,'on the screen (not yet in sight): a "!" over it, no arrow');
-  e.x=P.x+40;e.y=P.y;t.ROAD_SAY.delete(e);const s1=spy(()=>t.frame());ok(s1.bang>0&&s1.glow>0&&t.ROAD_SAY.get(e)!=null,'in sight: the "!", a glow round it, and its call-out ("'+t.ROAD_ENC.traveller.call+'")');
-  e.x=P.x+t.VW/2+60;e.y=P.y;const off=spy(()=>t.frame());ok(off.arrow>0&&off.bang>0,'off the screen: an arrow at the screen’s edge, the "!" beside it');
+  e.x=P.x+40;e.y=P.y;t.ROAD_SAY.delete(e);const s1=spy(()=>t.frame());ok(s1.bang>0&&s1.glow>0&&t.ROAD_SAY.get(e)!=null,'in sight: the "!", sound waves round it, and its call-out ("'+t.ROAD_ENC.traveller.call+'")');
+  e.x=P.x+t.VW/2+60;e.y=P.y;const off=spy(()=>t.frame());ok(off.arrow>0&&off.bang>0&&off.glow>0,'off the screen: an arrow at the screen’s edge with sound waves round it, the "!" beside it');
   t.roadMeet(e);world();const met=spy(()=>t.frame());ok(met.bang===0&&met.arrow===0&&!e.marked(),'met: no more highlights');
 }
 
@@ -278,7 +278,7 @@ try{
   const c=findT((tx,ty)=>t.tAt(tx,ty)===t.T_ROAD&&t.coverAt((tx+.5)*TILE,(ty+.5)*TILE)==='forest'&&far(tx,ty));ok(!!c,'a road through a wood');at(c[0],c[1]);P.troops={hum_levy:6};
   ok(t.ROAD_ENC.ambush.ok(),'the ambush can come where there is cover');ev('TERRAIN.on=false');ok(!t.ROAD_ENC.ambush.ok(),'never without battle terrain');ev('TERRAIN.on=true');
   P.sk.scout.lv=1;const e=t.roadSpawn('ambush',P.x+60,P.y);frames(1);ok(!e.inView(t.vis())&&!e.seen&&!e.marked()&&t.pickAt(e.x,e.y-4)!==e,'Scouting 1: unseen, unmarked, nothing to click');
-  P.sk.scout.lv=2;frames(1);ok(e.inView(t.vis())&&e.seen&&e.marked()&&/movement in the trees/.test(G.msgs[G.msgs.length-1].m),'Scouting 2: “movement in the trees”, marked');P.sk.scout.lv=0;
+  P.sk.scout.lv=2;frames(1);ok(e.inView(t.vis())&&e.seen&&e.marked()&&G.msgs.slice(-3).some(m=>/movement in the trees/.test(m.m)),'Scouting 2: “movement in the trees”, marked ('+[e.inView(t.vis()),!!e.seen,e.marked(),G.mode,(G.msgs.slice(-1)[0]||{}).m].join(' · ')+')');P.sk.scout.lv=0;
   P.x=e.x-30;P.y=e.y;frames(1);ok(G.mode==='world','not yet sprung at 30 px');P.x=e.x-10;frames(1);ok(G.mode==='road'&&G.road===e&&!q('.nav [data-nav="close"]')&&!t.escDismiss(),'passing it, it springs: a forced choice, no Leave');
   pickA(0);ok(G.enc&&G.enc.btype&&G.enc.btype.kind==='ambush'&&G.enc.btype.hid===1&&/Ambush!/.test(panel()),'Close up and fight: the ambush battle');t.act('flee');world();
   at(c[0],c[1]);P.gold=100;t.invAdd('good','grain',10);const f0=t.foodN(),m0=P.morale=50,g=t.roadSpawn('ambush',P.x+10,P.y);t.roadMeet(g);pickA(1);ok(P.gold===85&&t.foodN()===f0-4&&P.morale===46&&g.gone&&q('.nav [data-nav="close"]'),'Cut the baggage loose: −4 food, −15 gold, morale −4; then Leave');world();ev('TERRAIN.on=false')}
