@@ -42,7 +42,7 @@ const ENC_SPAWN={base:.004,rate:.0016,cap:.15,land:{road:1.5,held:1,wild:.6},per
 const ENC_LIFE={approach:[2,3],stay:[6,8],flee:[2,2],run:[2,3],scene:[3,8],walk:[4,10],trace:24,leave:1.5,slack:24,say:4,hail:20,spring:18,spook:.6,pray:[2,3],dying:6,linger:6};
 // how fast they walk (px of world time, as a party's base, yours 34): hurrying to you, a rider coming, running from you, running
 // across your view, a procession, going away, bolting
-const ENC_SPD={approach:24,ride:32,flee:20,run:36,walk:20,leave:12,bolt:34};
+const ENC_SPD={approach:24,ride:32,flee:20,run:36,walk:20,leave:12,bolt:34,stray:16};
 /* the chase and the catch, shared (RoadEncounter run, chaseStep; the thief, the runaway horse): one you chase runs from you at
    ENC_SPD.run × (1 − agi × your Agility), never under lo of it, and you go after him at sprint × your pace (your Riding in it
    when mounted: world.js updateWorld, roadSprint); you have him within reach + agiReach × your Agility; he is away after hours,
@@ -71,6 +71,9 @@ const ENC_WALK={min:64,wind:.75,far:400};
    uncovers on your map); and the old ones: traveller (Tend his wounds: food; rep and renown × (1 + your care: ENC_STAT.care);
    gift: × your care, the chance he gives you gold [from, to] from his purse), hunters (Join the hunt: xp; meat × (1 + your
    ENC_STAT.hunt); furs × it) */
+/* strayed sheep: n strays (from, to), r: px from the shepherd they wander (from, to), shy: px you come before one trots off,
+   hours: how long he waits once you help, rep and good (wool or cheese) a sheep brought back, all: more when every one is */
+const ENC_SHEEP={n:[3,4],r:[40,80],shy:26,hours:3,rep:1,good:1,all:{rep:2,morale:3}};
 const ENC_TUNE={traveller:{food:3,rep:4,renown:1,gift:.6,gold:[5,10]},hunters:{xp:15,meat:3,furs:2},mud:{sp:20,hours:1,rep:3,give:[2,4],goods:[3,5],coins:[3,8]},thief:{purse:[20,40],reward:10,rep:4,honor:3},poacher:{see:1.15,scout:.1,rep:3,bounty:10,meat:4,price:8},
   funeral:{n:[3,5],honor:2,morale:4},wedding:{morale:10,hours:2,gift:25,rep:5},beggar:{gold:[5,10,20],honor:[1,2,3]},messenger:{purse:[8,16]},
   pilgrims:{n:[2,4],morale:8,rep:3,walk:1,alms:20,almsMorale:12,xp:25,coins:12,coinsMorale:8},
@@ -282,6 +285,15 @@ const ROAD_ENC={
     left:()=>'He goes back to his sheep, shaking his head.',
     acts:[{icon:'eye',label:'Listen',facts:()=>['Scouting','word of a band'],run:()=>{train('scout',6);const n=bandits.length;spawnBandit(false);const b=bandits.length>n&&bandits[bandits.length-1];
       return'He warns of raiders on the move'+(b?' to the '+compass(b.x-P.x,b.y-P.y):'')+'. You keep your eyes open.'}}]},
+  sheep:{n:'Strayed sheep',ico:'sheep',w:1.2,ok:()=>roadDay()&&!!nearHold()&&!['desert','swamp'].includes(climAt(P.x,P.y)),on:'open',beh:'stay',call:'My sheep! They have scattered!',
+    hear:'A shepherd shouts after his flock to the {d}.',tip:'A shepherd, his flock scattered',they:'stay; his strays graze about and shy from you',
+    setup:e=>roadStrays(e),ending:e=>sheepEnd(e),
+    scene:e=>[['worker','herder',0,0],...ROAD_FLOCK.slice(0,e.got||0).map(([dx,dy],i)=>['beast','sheep',dx,dy,{v:i}])],
+    text:e=>e.help?'The shepherd waits with '+(e.got?'the '+e.got+' you have brought back':'his crook raised')+'. '+sheepLeft(e)+' still astray.':'A shepherd runs about, crook raised: his sheep have scattered across the fields.',
+    facts:e=>[e.n+' sheep astray',e.help&&(e.got||0)+' back with him','ride into each stray to drive it home','Agility lets you grab them from farther'],
+    left:e=>e.help?'You leave the shepherd to his sheep.':'He goes on calling after his flock.',
+    acts:[{icon:'sheep',label:'Round them up',again:true,when:e=>!e.help,facts:e=>['ride after each stray','reputation and '+GOODS[sheepGood(e)].n.toLowerCase()+' for each one back'],tip:'Ride out after them and drive them back to him.',
+      run:e=>{e.help=1;e.end=Math.max(e.end,roadNow()+ENC_SHEEP.hours);for(const o of sheepStrays(e)){o.seen=1;o.end=e.end}return'You ride out after the strays. Ride into each one to send it home.'}}]},
   // ---- phase 2: the new ones (their numbers: ENC_TUNE)
   mud:{n:'Cart stuck in the mud',ico:'wheat',w:1.5,ok:()=>roadDay()&&climAt(P.x,P.y)!=='desert',on:'mud',beh:'stay',call:'Give us a push!',hear:'Someone shouts for help with a cart on the road to the {d}.',trace:'cart',tip:'A farmer and his cart, stuck fast',
     setup:e=>{const x=ENC_TUNE.mud,t=nearestOf(e,TOWNS);e.home=t.name;e.race=t.races[0];e.got=rint(x.give[0],x.give[1]);e.load=rint(x.goods[0],x.goods[1]);e.coins=rint(x.coins[0],x.coins[1])},
@@ -437,6 +449,28 @@ function roadCatchHorse(e){const id='m_'+e.mk;train('ride',4);
     const g=itemPrice(id);P.gold+=g;return'You take the reins, and sell the '+ITEMS[id].n+' on for '+g+' gold.'}
   e.beh='bolt';return'It shies, rears and bolts. Gone.'}
 // what an encounter left unresolved leaves when its time is up: the body, the burnt wagon (fading over its last hours)
+/* the parts of another (pk: its i), never coming on their own: a stray sheep of the shepherd's (graze: it stands and grazes, and
+   trots off from you within ENC_SHEEP.shy; once you help him, ride into it, within catchReach, and it is back with the flock) */
+const ROAD_PART={stray:{n:'A stray sheep',ico:'sheep',beh:'graze',part:true,tip:'A sheep astray',scene:e=>[['beast','sheep',0,0,{v:e.seed%6}]],
+  meet:o=>{const h=sheepOf(o);if(h&&h.help&&!h.ended)roadHerd(o,h);else log('A stray sheep. Its shepherd must be near.')},ending:o=>{const h=sheepOf(o);if(h)sheepCheck(h)}}};
+// (the flock round the shepherd: where each sheep brought back stands, dx, dy)
+const ROAD_FLOCK=[[-8,1],[-13,-2],[-6,-3],[8,2],[12,-1],[-10,4]];
+const sheepGood=e=>e.seed%2?'wool':'cheese',sheepOf=o=>roadList().find(h=>h.i===o.pk&&!h.gone)||null;
+const sheepStrays=h=>roadList().filter(o=>o.pk===h.i&&!o.gone&&!o.caught),sheepLeft=h=>{const n=sheepStrays(h).length;return n===1?'One':n?String(n):'None'};
+// the strays, round the shepherd on open ground you can reach (fewer than two: no such shepherd here)
+function roadStrays(e){const S=ENC_SHEEP,R=roadSt(),n=rint(S.n[0],S.n[1]),at=[];
+  for(let k=0;k<60&&at.length<n;k++){const a=Math.random()*6.2832,d=S.r[0]+Math.random()*(S.r[1]-S.r[0]),x=e.x+Math.cos(a)*d,y=e.y+Math.sin(a)*d,tx=Math.floor(x/TILE),ty=Math.floor(y/TILE);
+    if(tx<2||ty<2||tx>=MW-2||ty>=MH-2||!passable(tAt(tx,ty))||occAt(tx,ty)||!Router.reach(P,{x,y})||at.some(([u,v])=>Math.hypot(u-x,v-y)<14))continue;at.push([x,y])}
+  if(at.length<2)return false;e.n=at.length;e.got=0;
+  for(const [x,y] of at)R.on.push(asRoadEnc({rd:1,i:++R.id,k:'stray',pk:e.i,x,y,dir:x<e.x?-1:1,beh:'graze',race:e.race,t0:e.t0,end:e.end,d0:Math.hypot(x-P.x,y-P.y),seed:rint(1,9999),seen:0,met:0,done:0}))}
+// a stray driven home: back with the flock (it leaves the map; the shepherd counts it)
+function roadHerd(o,h){o.caught=1;h.got=(h.got||0)+1;train('athl',2);log('You drive a stray back to the shepherd ('+h.got+' of '+h.n+').');sfx('notify');o.over()}
+// every stray back or gone: he is done, and on his way with his flock
+function sheepCheck(h){if(!h.help||h.ended||sheepStrays(h).length)return;h.done=1;h.goOff()}
+// the shepherd's thanks, once, for what came back (he ends, or walks off): reputation and his wool or cheese a sheep, more for all
+function sheepEnd(h){if(h.ended)return;h.ended=1;const n=h.got||0;if(!h.help||!n)return;const S=ENC_SHEEP,all=n>=h.n,t=nearHold(),g=sheepGood(h),k=invAdd('good',g,S.good*n);
+  if(t)addRep(t.name,S.rep*n+(all?S.all.rep:0),true);if(all)P.morale=clamp(P.morale+S.all.morale,0,100);updateHUD(true);
+  log((all?'Every sheep home. ':n+' of his '+h.n+' sheep home. ')+'The shepherd thanks you'+(k?' with '+k+' '+GOODS[g].n.toLowerCase():'')+(t?'; '+t.name+' will hear of it':'')+'.','good')}
 const ROAD_TRACE={body:{n:'A dead traveller',scene:()=>[['down','traveller',0,0,{blood:1}]]},wreck:{n:'A burnt wagon',scene:()=>[['wreck','',0,0],['smoke','',-1,-6]]},
   cart:{n:'An abandoned cart',scene:()=>[['mud','',0,0],['oldcart','',0,0]]}};
 /* ---------- how one ends: nothing ends while you can see it (owner, 2026-10-19). Its time up out of your sight, it ends there
@@ -447,7 +481,7 @@ const ROAD_TRACE={body:{n:'A dead traveller',scene:()=>[['down','traveller',0,0,
    hours past his time he dies before your eyes: the wounded traveller). A procession reaching a shrine or ruins in your sight
    stays there a while (ENC_LIFE.pray: the pilgrims kneel, the mourners stand by their dead) and then walks off; at a holding's
    gate it ends (they went in) ---------- */
-const ENC_END={stay:'leave',scene:'leave'};
+const ENC_END={stay:'leave',scene:'leave',graze:'unseen'};
 const roadEnds=e=>e.D.ends&&e.beh===e.D.beh?e.D.ends:ENC_END[e.beh]||'unseen';
 // (the pieces that walk off: its people (as they walk), or its kind's goes; none left behind (o.at))
 const ROAD_GOERS=['walk','stand','kneel','soldier','refugee','worker','beast','rider','horse'];
@@ -556,7 +590,7 @@ const ENC_SCENE=new EncounterScene();
 const ROAD_SAY=new WeakMap();// (when its call-out first showed: real ms, kept aside)
 class RoadEncounter extends WorldObject{
   get mapKind(){return 'road'}
-  get D(){return ROAD_ENC[this.k]||ROAD_TRACE[this.k]}
+  get D(){return ROAD_ENC[this.k]||ROAD_TRACE[this.k]||ROAD_PART[this.k]}
   here(){return !this.gone&&roadList().includes(this)}
   get meetsAnyTime(){return true}
   chaseable(){return !this.gone&&!this.done&&!this.trace}
@@ -567,7 +601,7 @@ class RoadEncounter extends WorldObject{
   inView(V){if(this.gone||this.trace&&roadNow()<this.from)return false;const D=this.D;if(D.hidden&&skill('scout')<INSIGHT.rough)return false;return D.glow?this.fromYou()<V*1.3:spotted(this,V)}
   pick(at){if(this.chaseable()&&this.inView(at.V)){const b=this.box();at.box(this,b[0],b[1],b[2],b[3]);at.add(this,10,4)}}
   box(){return ENC_SCENE.box(this)}
-  meet(){if(!this.chaseable())return;if(this.chase)this.nabbed();else roadMeet(this)}
+  meet(){if(!this.chaseable())return;if(this.D.meet)this.D.meet(this);else if(this.chase)this.nabbed();else roadMeet(this)}
   tip(){const D=this.D;return '<b>'+D.n+'</b><small>'+(D.tip||'')+'</small>'+(this.chaseable()?'<span class="act">Click: meet</span>':'')}
   draw(ents,cam,V){if(this.inView(V))ENC_SCENE.draw(this,ents,cam)}
   mapDot(V){return this.marked()&&this.inView(V)?['#e8b94a',2]:null}
@@ -577,7 +611,7 @@ class RoadEncounter extends WorldObject{
   /* a moment of it (d: world time, V: your sight, now: hours): true when it opened its page (it reached you, or you sprang it) */
   step(d,V,now){const D=this.D,dist=this.fromYou(),see=this.inView(V);
     if(this.trace){if(now>=this.end)this.gone=1;return false}
-    if(!this.seen&&!this.met&&(see||D.hear&&dist<V+ENC_SPAWN.near[1]+16))this.notice();
+    if(!this.seen&&!this.met&&!D.part&&(see||D.hear&&dist<V+ENC_SPAWN.near[1]+16))this.notice();
     if(see)this.vw=1;// (it has been in your sight)
     if(this.chase)return this.chaseStep(d,V,now,dist);
     if(dist>Math.max(ENC_LIFE.leave*V,this.d0+ENC_LIFE.slack)||this.done&&!see){this.over();return false}
@@ -600,6 +634,8 @@ class RoadEncounter extends WorldObject{
       if(this.x!==ox)this.dir=this.x>ox?1:-1}
     else if(this.beh==='leave'){if(this.lg===undefined)this.lg=roadOffGoal(this);this.off(d);if(!see&&dist>V*.8){this.over();return false}}
     else if(this.beh==='bolt'){go(-dx,-dy,ENC_SPD.bolt);if(!see){this.over();return false}}
+    // (a stray: grazes, and trots off from you when you come close; once its shepherd has your help, ride into it to send it home)
+    else if(this.beh==='graze'){const h=sheepOf(this);if(h&&h.help&&!h.ended&&dist<=catchReach()&&!G.modal){roadHerd(this,h);return false}if(dist<ENC_SHEEP.shy)go(-dx,-dy,ENC_SPD.stray)}
     if(D.spring&&!this.met&&dist<=ENC_LIFE.spring&&!G.modal){roadMeet(this);return true}
     return false}
   // a procession's goal: the gate of the holding it walks to (tw), or the place (gx, gy)
@@ -615,8 +651,8 @@ class RoadEncounter extends WorldObject{
   nabbed(){this.chase=0;this.nab=1;roadMeet(this)}
   /* it leaves the map. Passed by (you knew of it, never met it): the timer falls by a quarter to a half. Unresolved, its story
      ends by itself: its trace, from when its time would have been up */
-  over(){if(this.gone)return;this.gone=1;const R=roadSt(),D=this.D,S=ENC_SPAWN;
-    if(this.seen&&!this.met){R.c*=1-S.pass[0]-Math.random()*(S.pass[1]-S.pass[0]);if(D.after&&!this.done)log(D.after(this))}
+  over(){if(this.gone)return;this.gone=1;const R=roadSt(),D=this.D,S=ENC_SPAWN;if(D.ending)D.ending(this);
+    if(this.seen&&!this.met&&!D.part){R.c*=1-S.pass[0]-Math.random()*(S.pass[1]-S.pass[0]);if(D.after&&!this.done)log(D.after(this))}
     if(D.trace&&!this.done)this.drop(Math.max(roadNow(),this.end))}
   // its trace where it is, from the hour at
   drop(at){const R=roadSt();R.on.push(asRoadEnc({rd:1,i:++R.id,k:this.D.trace,trace:1,x:this.x,y:this.y,dir:this.dir,race:this.race,seed:this.seed,from:at,end:at+ENC_LIFE.trace}))}
@@ -626,7 +662,7 @@ class RoadEncounter extends WorldObject{
     if(how==='leave'&&this.beh!=='leave'&&!(this.fled&&!this.calm))this.goOff();
     return this.beh==='leave'&&now>=this.end+L.linger&&dist>V*.8}
   // packs up and walks off: its people only; its trace (the cart, the burnt wagon) left now in its place, and it done with
-  goOff(){this.beh='leave';this.left=1;if(this.D.trace&&!this.done){this.drop(roadNow());this.done=1}}
+  goOff(){this.beh='leave';this.left=1;if(this.D.ending)this.D.ending(this);if(this.D.trace&&!this.done){this.drop(roadNow());this.done=1}}
   // a procession at its goal (there) in your sight: it stays a while (praying, at the shrine); with no way on, it walks off
   arrive(now,there){if(!there){this.end=Math.min(this.end,now);this.goOff();return}const L=ENC_LIFE.pray;this.beh='stay';this.pray=1;this.end=now+L[0]+Math.random()*(L[1]-L[0])}
   /* a step walking off (ENC_OFF): along the road to its tile lg; then (or with none) by the land's ways to its spot la away from

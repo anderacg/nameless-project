@@ -141,7 +141,7 @@ try{
  const meet=(k,set)=>{const e=spawnK(k);if(set)set(e);t.roadMeet(e);return e};
  const acts=()=>qa('.rwbody .rkact').map(b=>b.querySelector('b').textContent),pickA=i=>t.act('enc-do',String(i)),sure=()=>q('.nav [data-nav="close"]').click();
  const ks=Object.keys(t.ROAD_ENC),NEW=['mud','thief','poacher','funeral','wedding','horse','beggar','messenger'];
- ok(ks.length===23&&['traveller','merchant','pilgrims','deserters','gamblers','mine','hunters','child','bard','wisps','caravan','ambush','refugees','warning'].concat(NEW,['lure']).every(k=>ks.includes(k)),'the 14 people events, now on the map, phase 2’s 8 new ones and phase 4’s lure: '+ks.join(', '));
+ ok(ks.length===24&&['traveller','merchant','pilgrims','deserters','gamblers','mine','hunters','child','bard','wisps','caravan','ambush','refugees','warning'].concat(NEW,['lure','sheep']).every(k=>ks.includes(k)),'the 14 people events, now on the map, phase 2’s 8 new ones, phase 4’s lure and the strayed sheep: '+ks.join(', '));
  {const bad=[];ev('TERRAIN.on=true');for(const k of ks){const e=meet(k);const Dk=D(k),want=Dk.acts.filter(a=>!a.when||a.when(e)).map(a=>a.label).join('|'),got=acts().join('|'),leave=q('.nav [data-nav="close"]');
    if(!(q('#panel.paged')&&q('.pg-banner')&&q('.rwin h2').textContent===Dk.n&&got===want&&(t.roadForced(e)?!leave:leave&&leave.dataset.act==='enc-leave'&&leave.textContent===(Dk.leave||'Leave'))&&q('.rwbody>p').textContent.length>20))bad.push(k+' ['+got+']')}
   ev('TERRAIN.on=false');world();ok(!bad.length,'every kind has its page: its banner, its name, what you see, its choices as key actions and Leave (none for the ambush)'+(bad.length?': '+bad.join('; '):''))}
@@ -331,6 +331,18 @@ try{
   ok(P.gold===g0+r.purse&&sl&&sl.id===r.letter.id&&sl.n===1&&sl.L.to===r.letter.to&&sl.L.kind===r.letter.kind&&(sl.L.seen===0||sl.L.seen===1)&&t.repAt(r.home)===r0-t.CONDUCT.robMessenger.rep&&t.honorWith(r.fac)===h0-t.CONDUCT.robMessenger.honor&&T0.owner===r.fac&&/sealed letter, addressed to/.test(panel()),
     'confirmed: his purse ('+r.purse+' gold, no letter’s price) and his sealed letter in your bag ('+(sl&&sl.L.kind)+', to '+(sl&&sl.L.to)+'); reputation in '+r.home+' −'+t.CONDUCT.robMessenger.rep+', honor with the '+t.FACS[r.fac].n+' −'+t.CONDUCT.robMessenger.honor);world();
   P.inv.fill(null).forEach((x,i)=>{P.inv[i]={k:'good',id:'grain',n:1}});const r2=meet('messenger'),g2=P.gold;pickA(1);sure();ok(P.gold===g2+r2.purse&&!P.inv.some(x=>x&&x.k==='letter')&&/bag is full/.test(panel()),'your bag full: the purse, and the letter stays in the mud');cleanBag();world()}
+ // ---- strayed sheep: a shepherd and his strays (ROAD_PART); help, ride into each, his thanks for what came back
+ {goHome();R().on=[];const h=spawnK('sheep',40,0);ok(h&&h.n>=2&&h.n<=4&&t.sheepStrays(h).length===h.n&&t.sheepStrays(h).every(o=>o.pk===h.i&&o.D.part&&!o.seen),'the shepherd comes with '+(h&&h.n)+' strays round him, unseen as his till you help');
+  const S=t.sheepStrays(h),o0=S[0];P.x=o0.x+t.ENC_SHEEP.shy-4;P.y=o0.y;const x0=o0.x;frames(4);ok(Math.hypot(o0.x-x0,0)>0&&!o0.caught,'a stray trots off from you when you come near ('+Math.round(o0.x-x0)+' px), not caught before you help');
+  const n0=G.msgs.length;o0.meet();ok(!o0.caught&&/shepherd must be near/.test(G.msgs.slice(n0).map(m=>m.m).join()),'met before you help: only a word that its shepherd is near');
+  t.roadMeet(h);ok(acts().join('|')==='Round them up','his page: Round them up');pickA(0);ok(h.help&&S.every(o=>o.seen)&&!h.done&&acts().length===0,'help: the strays marked, he waits, nothing more to choose');world();
+  const g=t.sheepGood(h),gd0=t.goodN(g),r0=t.repAt(t.nearHold().name);S.slice(0,-1).forEach(o=>{P.x=o.x+4;P.y=o.y;frames(2)});
+  ok(S.slice(0,-1).every(o=>o.caught&&o.gone)&&h.got===h.n-1&&!h.ended,'ride into a stray: it is back with the flock ('+h.got+' of '+h.n+')');
+  {const sv=JSON.parse(JSON.stringify(t.roadSave()));const left=sv.road.on.filter(e=>e.pk===h.i);ok(left.length===1&&left[0].k==='stray','saved: the stray still out, its shepherd known (pk)')}
+  const last=S[S.length-1];P.x=last.x+4;P.y=last.y;frames(2);
+  ok(h.ended&&h.done&&h.beh==='leave'&&t.goodN(g)-gd0===h.n*t.ENC_SHEEP.good&&t.repAt(t.nearHold().name)-r0>=h.n*t.ENC_SHEEP.rep,'every one home: his '+t.GOODS[g].n.toLowerCase()+' a sheep, reputation, and he walks off with his flock');
+  goHome();R().on=[];const h2=spawnK('sheep',40,0);h2.help=1;const S2=t.sheepStrays(h2);P.x=S2[0].x+4;P.y=S2[0].y;frames(2);const gd1=t.goodN(t.sheepGood(h2));S2.slice(1).forEach(o=>o.over());
+  ok(h2.ended&&h2.got===1&&t.goodN(t.sheepGood(h2))-gd1===t.ENC_SHEEP.good,'the rest wander off: thanks for the one back, and he goes')}
  // ---- the ambush: unseen below Scouting 2, it springs as you pass; a forced choice
  {ev('TERRAIN.on=true');const findT=f=>{for(let ty=12;ty<t.MH-12;ty++)for(let tx=12;tx<t.MW-12;tx++)if(f(tx,ty))return[(tx+.5)*TILE,(ty+.5)*TILE];return null};
   const c=findT((tx,ty)=>t.tAt(tx,ty)===t.T_ROAD&&t.coverAt((tx+.5)*TILE,(ty+.5)*TILE)==='forest'&&far(tx,ty));ok(!!c,'a road through a wood');at(c[0],c[1]);P.troops={hum_levy:6};

@@ -173,6 +173,15 @@ The owner's rule: **your stats only add.** The base is what anyone gets today; s
 | Funeral / Wedding | Pay respects / Join / Give a gift | Charisma +8% | honour, morale, reputation × (1 + it), up to twice |
 | Runaway horse | Catch it | Riding +8%, Agility +4% | as before, 25% → at most 90% (on the helper, the same numbers) |
 
+### Strayed sheep (built 2026-10-19, from the owner's small-encounters backlog)
+
+A shepherd on open land near a holding, by day; 3-4 of his sheep scattered 40-80 px round him (`ROAD_PART.stray`, parts of
+his encounter that never come alone). **Round them up**: the strays are marked; ride into each (within your grab reach, which
+Agility widens) and it goes back to his flock; they trot off when you come close. His thanks, once, for what came back: his
+wool or cheese and reputation a sheep, more (and morale) when every one is home; then he walks off with his flock. Numbers:
+`ENC_SHEEP`. The rest of that backlog (fortune teller, toll, warm campfire, herbalist, runaway serf, flotsam, snowed-in
+travellers) is noted, not built.
+
 ## 6. Questions for the owner
 
 1. ~~Spawn rate~~: decided (a pity timer, 2 a day, no repeat within 5 days; passed by: −25–50%).
