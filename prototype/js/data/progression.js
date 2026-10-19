@@ -30,7 +30,7 @@ const SKILLS={
   // the road
   scout:{n:'Scouting',a:'agi',d:'+8 map vision per level, and a better read of people and places before you act: at 2 a rough one (how they look, roughly how many), at 5 the numbers and the odds. Rises as you travel and spot new places'},
   ride:{n:'Riding',a:'agi',d:'+2% travel speed per level while mounted. Rises as you ride'},
-  wood:{n:'Woodcraft',a:'agi',d:'Woods slow your band 6% less per level (with Pathfinder, less again). Rises as you travel through woods'},
+  wood:{n:'Woodcraft',a:'agi',d:'Woods slow your band 6% less per level on the map (with Pathfinder, less again), and you yourself in battle. Rises as you travel through woods'},
   hunt:{n:'Hunting',a:'agi',d:'An extra kill every 3 levels and 5% more hides per level when you hunt. Rises with each beast you bring down'},
   surv:{n:'Survival',a:'int',d:'Frost, desert and swamp cost your band 6% less per level, and swamp fever strikes less often. Rises each day you camp in harsh land'},
   // trade and rule

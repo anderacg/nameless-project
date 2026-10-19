@@ -749,9 +749,13 @@ function groundWade(u){const T=B&&B.terrain;if(!T||!T.has.water)return 0;const G
 const slopeWay=(T,i,mx,my)=>{const d=T.up[i];if(d<0||!(mx||my))return 0;const dot=(mx*TDX[d]+my*TDY[d])/(Math.hypot(mx,my)||1);return dot>HILL.dot?1:dot<-HILL.dot?-1:0};
 // speed on the ground, moving (mx,my): woods and marsh by foot/mounted/big, climbing and descending slopes; floored at TERRAIN.floor;
 // a road (T.road 1: field variety) TERRAIN_ROAD.spd
+// (a character's skill k in battle: your hero's, a companion's or a lord's; none for the troops)
+const unitSkill=(u,k)=>u.hero?skill(k):u.unit&&u.unit.isChar?u.unit.skill(k):0;
 function groundMul(u,mx,my){
   const T=B&&B.terrain;if(!T)return 1;const i=tIx(T,u.x,u.y),k=T.kind[i],Gd=TGROUND[k];let m=1;
-  if(Gd&&!groundHome(u,Gd.home))m*=u.s.big?Gd.spd.big:u.s.mounted?Gd.spd.mounted:Gd.spd.foot;else if(T.road&&T.road[i]===1)m*=TERRAIN_ROAD.spd;
+  if(Gd&&!groundHome(u,Gd.home)){let g=u.s.big?Gd.spd.big:u.s.mounted?Gd.spd.mounted:Gd.spd.foot;
+    // (Woodcraft: a character who has it is slowed less in the woods, as on the map: world.js WOODCRAFT)
+    if(k===TKIND.wood&&g<1){const w=unitSkill(u,'wood');if(w>0)g=1-(1-g)*(1-Math.min(WOODCRAFT.cap,WOODCRAFT.per*w))}m*=g}else if(T.road&&T.road[i]===1)m*=TERRAIN_ROAD.spd;
   const w=slopeWay(T,i,mx,my);if(w>0){if(!groundHome(u,HILL.home))m*=u.s.big?HILL.climb.big:u.s.mounted?HILL.climb.mounted:HILL.climb.foot}else if(w<0)m*=HILL.descend;
   return m<TERRAIN.floor?TERRAIN.floor:m}
 /* how fast charge momentum builds here (sp: this step's distance); it also follows the height the run comes from (u.rlv, a level
