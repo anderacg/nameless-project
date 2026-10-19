@@ -967,7 +967,12 @@
     // every tile in the field rect [x0,y0,x1,y1) painted now (a view about to be shown; the tests)
     ready(x0,y0,x1,y1){const S=PX.GROUND_TILE.size;for(let cy=Math.max(0,Math.floor(y0/S));cy<=Math.min(this.rows-1,Math.floor((y1-1)/S));cy++)for(let cx=Math.max(0,Math.floor(x0/S));cx<=Math.min(this.cols-1,Math.floor((x1-1)/S));cx++){this.view.add(cy*this.cols+cx);this.tile(cy*this.cols+cx)}}
     // the overview's part over the field rect [x0,y0,x1,y1), at the field's scale
-    blitOver(g,x0,y0,x1,y1){const O=this.over,a=Math.floor(x0/2),b=Math.floor(y0/2),c=Math.min(O.width,Math.ceil(x1/2)),d=Math.min(O.height,Math.ceil(y1/2));if(c>a&&d>b)g.drawImage(O,a,b,c-a,d-b,a*2,b*2,(c-a)*2,(d-b)*2)}
+    blitOver(g,x0,y0,x1,y1){const O=this.over,a=Math.floor(x0/2),b=Math.floor(y0/2),c=Math.min(O.width,Math.ceil(x1/2)),d=Math.min(O.height,Math.ceil(y1/2));if(c>a&&d>b)this.blit(g,O,a,b,c-a,d-b,a*2,b*2,(c-a)*2,(d-b)*2)}
+    /* a piece drawn on g with its edges on whole pixels of g's canvas: zoomed by a fraction, two tiles side by side each left their
+       edge pixel part covered, and the dark under them showed through as a hairline where they meet (a grid over the field) */
+    blit(g,img,sx,sy,sw,sh,dx,dy,dw,dh){const m=g.getTransform();if(m.a===1&&m.d===1&&Number.isInteger(m.e)&&Number.isInteger(m.f)){g.drawImage(img,sx,sy,sw,sh,dx,dy,dw,dh);return}
+      const L=Math.round(m.a*dx+m.e),T=Math.round(m.d*dy+m.f),R=Math.round(m.a*(dx+dw)+m.e),D=Math.round(m.d*(dy+dh)+m.f);if(R<=L||D<=T)return;
+      g.save();g.setTransform(1,0,0,1,0,0);g.drawImage(img,sx,sy,sw,sh,L,T,R-L,D-T);g.restore()}
     // (the overview made from the tiles, one by one: a ground whose whole was never painted at once (an arena's))
     overview(){const O=this.over=PX.canvas(Math.ceil(this.width/2),Math.ceil(this.height/2)),g=O.getContext('2d');g.imageSmoothingEnabled=true;g.imageSmoothingQuality='low';
       for(let k=0;k<this.cols*this.rows;k++){const [x,y,w,h]=this.rect(k);g.drawImage(this.tile(k),0,0,w,h,x/2,y/2,w/2,h/2)}}
@@ -982,7 +987,7 @@
       const miss=[];
       for(const k of this.view){const [X,Y,w,h]=this.rect(k),sx=Math.max(x0,X),sy=Math.max(y0,Y),sw=Math.min(x1,X+w)-sx,sh=Math.min(y1,Y+h)-sy;let cv=this.tiles.get(k);
         if(cv){this.tiles.delete(k);this.tiles.set(k,cv)}else if(this.over&&!T.sync){miss.push(k);this.blitOver(g,sx,sy,sx+sw,sy+sh);continue}else cv=this.tile(k);
-        g.drawImage(cv,sx-X,sy-Y,sw,sh,sx,sy,sw,sh)}
+        this.blit(g,cv,sx-X,sy-Y,sw,sh,sx,sy,sw,sh)}
       const dx=this.last?Math.sign(x0-this.last[0]):0,dy=this.last?Math.sign(y0-this.last[1]):0,mx=(c0+c1)/2,my=(r0+r1)/2,ring=[];this.last=[x0,y0];
       for(let cy=r0-1;cy<=r1+1;cy++)for(let cx=c0-1;cx<=c1+1;cx++){const k=cy*this.cols+cx;if(cx<0||cy<0||cx>=this.cols||cy>=this.rows||this.view.has(k))continue;ring.push([(cx-mx)*dx+(cy-my)*dy,Math.hypot(cx-mx,cy-my),k])}
       ring.sort((a,b)=>b[0]-a[0]||a[1]-b[1]);ring.length=Math.min(ring.length,Math.max(0,this.cap-this.view.size));
