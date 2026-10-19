@@ -21,6 +21,18 @@ class Monster extends WorldObject{
       if(!Y)txt((m.n>1?m.n+' ':'')+'Lv'+m.lv,sx,sy-h,STANCE_COL[M.aggro||stance(monPower(m))==='afraid'?stance(monPower(m)):'wary'],'center')}})}
   mapDot(V){const Y=MONSTERS[this.id].mythic;return this.fromYou()<V?[Y?'#ff7a30':'#c58af0',Y?2:1]:null}
   tip(){const M=MONSTERS[this.id];return '<b>'+(M.n||this.id)+(this.n>1?' ×'+this.n:'')+'</b><small>Level '+this.lv+tipOdds(monPower(this))+'</small><span class="act">Click: fight</span>'}
+  // as one side of a fight on the map (fights.js), the face every party there shows: its fighters (n of its kind), its strength
+  // (monPower; in a fight, its fighters at its level), its name, no realm; it loses its fighters one by one (n goes down)
+  get troops(){return Array(this.n).fill(MONSTERS[this.id].unit)}
+  set troops(list){this.n=list.length;this.pw=0}
+  power(){return monPower(this)}
+  fightPower(){return power(this.troops)*lvPow(this.lv)}
+  label(){return MONSTERS[this.id].n}
+  get faction(){return null}
+  removeAny(k=1){const n=Math.min(k,this.n);this.n-=n;this.pw=0;return Array(n).fill(MONSTERS[this.id].unit)}
+  // a blow in a fight on the map (blow: the strength of the fighter that dealt it): a wound (hurt); wounds as strong as one of
+  // the pack fell it, so a troll takes the blows of many militia
+  takeLoss(blow){const one=this.fightPower()/Math.max(1,this.n);this.hurt=(this.hurt||0)+blow;while(this.n>0&&this.hurt>=one){this.hurt-=one;this.removeAny(1)}}
 }
 const asMonster=asClass(Monster);
 const monLevel0=()=>1+Math.floor(G.day/20),monLevel=()=>monLevel0()+(Math.random()<.3?1:0);// (monLevel0: without the chance of one more)
@@ -30,24 +42,40 @@ function spawnMonster(initial){
   const ids=Object.keys(MONSTERS).filter(id=>!MONSTERS[id].mythic),wt=id=>MONSTERS[id].w/(1+W.monsters.filter(m=>m.id===id).length);
   let r=Math.random()*ids.reduce((a,id)=>a+wt(id),0),id=ids[0];for(const f of ids){r-=wt(f);if(r<=0){id=f;break}}
   const M=MONSTERS[id];
-  for(let k=0;k<200;k++){
+  // (in the wilds; after 200 tries, its ground not found there, at a land's far edge: lairLand)
+  for(let k=0;k<400;k++){
     const x=rint(2,MW-3)*TILE+8,y=rint(2,MH-3)*TILE+8,tags=habitatAt(x,y);
-    if(!M.where.some(w=>tags.includes(w))||Math.hypot(x-P.x,y-P.y)<WORLD_SCALE.spawn.monster[initial?0:1]||TOWNS.some(t=>Math.hypot(t.x-x,t.y-y)<WORLD_SCALE.spawn.monsterHold))continue;
+    if(!M.where.some(w=>tags.includes(w))||Math.hypot(x-P.x,y-P.y)<WORLD_SCALE.spawn.monster[initial?0:1]||TOWNS.some(t=>Math.hypot(t.x-x,t.y-y)<WORLD_SCALE.spawn.monsterHold)||!lairLand(x,y,k>=200))continue;
     W.monsters.push(asMonster({id,x,y,hx:x,hy:y,lv:monLevel(),n:rint(M.count[0],M.count[1]),t:0,a:0,cool:0}));return;
   }
 }
+// where a beast may make its lair (the owner, 2026-10-19): in the wilds, on no holding's land; or, when rim (its kind's ground
+// not found in the wilds this time), within WORLD_SCALE.spawn.rim tiles of a land's edge, away from every holding and estate
+const lairLand=(x,y,rim)=>!landHold(x,y)||!!rim&&landRim(x,y,WORLD_SCALE.spawn.rim)&&farFromHomes(x,y,WORLD_SCALE.spawn.away);
 function monsterDay(){for(let k=0;k<3;k++)if(W.monsters.length<MONSTER_CAP&&Math.random()<.6)spawnMonster(false);mythicDay()}
 // a beast's moment (parties.js lodThink; hide: how well you are hidden from it): a mythic one roams; the rest hunt you, keep
 // off, or wander near the lair. True when it falls on you
 const BEAST_MIND={think(m,d,hide){
+    if(inFight(m))return false;// (fighting on the map: fights.js)
     if(MONSTERS[m.id].mythic)return roamMythic(m,d);
     const A=WORLD_SCALE.ai,M=MONSTERS[m.id],dx=P.x-m.x,dy=P.y-m.y,dist=Math.hypot(dx,dy);m.cool=Math.max(0,m.cool-d);
     const st=stance(monPower(m)),hunt=M.aggro&&Math.hypot(P.x-m.hx,P.y-m.hy)<A.lairHunt;
     if(m.cool>0||!stanceMove(m,st,dist,dx,dy,WORLD_SCALE.sight.monster*hide,moveStep(26*Math.min(1,speedAt(m.x,m.y)||1),d),hunt)){m.t-=d;if(m.t<=0){m.t=2+Math.random()*4;m.a=Math.random()*6.283}
       // wander, but stay near the lair
       const hx=m.hx-m.x,hy=m.hy-m.y;if(Math.hypot(hx,hy)>A.lairLeash)m.a=Math.atan2(hy,hx);walk(m,Math.cos(m.a),Math.sin(m.a),moveStep(10,d))}
+    // a band it meets: it falls on them, and they fight back (a fight on the map)
+    {const b=beastMeets(m);if(b){startFight([asMonster(m)],[b]);return false}}
     if(M.aggro&&stance(monPower(m))==='attack'&&dist<10&&m.cool<=0&&G.encCool<=0&&!G.modal){startMonster(m);return true}
     return false}};
+// the band a beast falls on: one it meets, out of any fight; neither of them set out by a quest, nor a mythic beast (it ravages
+// armies its own way: roamMythic)
+const fightsOnMap=m=>!m.qid&&!MONSTERS[m.id].mythic;
+const beastMeets=m=>m.cool<=0&&fightsOnMap(m)&&bandits.find(b=>!b.qid&&!b.fight&&!b.gone&&Math.hypot(b.x-m.x,b.y-m.y)<DEFEND.meet)||null;
+// beaten in a fight on the map: cut down as it flees (DEFEND.rout of the pack, rounded up: a lone beast dies), and those left
+// break off, wounded, and slink back to its lair
+function beastRouted(m){m.fight=null;m.n=Math.max(0,m.n-Math.ceil(m.n*DEFEND.rout));m.pw=0;const near=Math.hypot(m.x-P.x,m.y-P.y)<vis()*1.5,nm=MONSTERS[m.id].n.toLowerCase(),many=/s$/.test(nm);
+  if(m.n<=0){W.monsters=W.monsters.filter(x=>x!==m);if(near)log('The '+nm+(many?' are':' is')+' slain near '+nearestOf(m,TOWNS).name+'.');return}
+  m.cool=6;m.a=Math.atan2(m.hy-m.y,m.hx-m.x);m.t=3;if(near)log('The '+nm+(many?' break off and slink':' breaks off and slinks')+' away.')}
 function updateMonsters(d){return lodEach(W.monsters,BEAST_MIND,d,hiddenAt(P.x,P.y)?.55:1)}
 function startMonster(m){const M=MONSTERS[m.id];startEncounter({kind:'monster',ref:m,lv:m.lv,list:Array(m.n).fill(M.unit)})}
 // roll trophies and gear for a won monster fight, into the bag (the victory panel lists them with the rest of the spoils)
@@ -72,9 +100,9 @@ const mythicOf=id=>W.monsters.find(m=>m.id===id);
 const mythicNews=(verb)=>W.monsters.filter(m=>MONSTERS[m.id].mythic).map(m=>cap1(an(MONSTERS[m.id].n.toLowerCase()))+' '+verb+' near '+nearestOf(m,TOWNS).name+'.').join(' ');
 function spawnMythic(id){
   const M=MONSTERS[id],Y=M.mythic,lairs=Y.lair.map(l=>LAIR_TILES[l]());
-  // its favorite ground first; the others only if that keeps failing
+  // its favorite ground first; the others only if that keeps failing; in the wilds, or late at a land's far edge (lairLand)
   for(let k=0;k<160;k++){const tx=rint(3,MW-4),ty=rint(3,MH-4),tt=tAt(tx,ty),ok=k<100?tt===lairs[0]:lairs.includes(tt);if(!ok)continue;
-    const x=(tx+.5)*TILE,y=(ty+.5)*TILE;if(Math.hypot(x-P.x,y-P.y)<WORLD_SCALE.spawn.mythic)continue;
+    const x=(tx+.5)*TILE,y=(ty+.5)*TILE;if(Math.hypot(x-P.x,y-P.y)<WORLD_SCALE.spawn.mythic||!lairLand(x,y,k>=130))continue;
     const m=asMonster({id,x,y,hx:x,hy:y,tx:x,ty:y,lv:1,n:1,t:0,a:0,cool:5,dir:1});W.monsters.push(m);
     log(cap1(an(M.n.toLowerCase()))+' has been sighted near '+nearestOf(m,TOWNS).name+'!','bad');return m}
   W.mythic[id]={back:G.day+2};return null;

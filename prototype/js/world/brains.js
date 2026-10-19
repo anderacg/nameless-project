@@ -19,10 +19,12 @@ class Brain{
   think(o,d){return false}
 }
 
-// a lord: marches to war, lays siege, rests in his realm's holdings; hunts you if your realms are at odds and he is the stronger
+// a lord: marches to war, lays siege, rests in his realm's holdings; hunts you if your realms are at odds and he is the stronger;
+// at home, rides out against bands and beasts that come near his realm's holdings and estates (defence.js)
 class LordBrain extends Brain{
   think(l,d){
     if(l.dead)return false;this.cool(l,d);
+    if(l.defend&&lordDefends(l,d))return false;
     if(l.inside){const h=townBy(l.inside);if(l.state==='rest'&&l.tgt===l.inside&&h&&h.owner===l.fac)return false;l.leave()}
     if(inFight(l))return false;
     const v=this.look(l),pd=v.d,hostile=hostileTo(l.fac)&&!lordSpares(l),mul=lordSpeed(l)/26;// (26: a lord's old pace)
@@ -81,7 +83,8 @@ class CompanionBrain extends Brain{
   }
 }
 
-// a holding's patrol: on its watch it walks from estate to estate, runs down bandits and enemies it can beat on its land,
+// a holding's patrol: on its watch it walks from estate to estate, runs down bandits, beasts (defence.js patrolPrey: the one its
+// holding sets it on, or one in its sight) and enemies it can beat on its land,
 // arrests you if you are wanted or hostile, and goes home when its watch ends, when it is weak, or when an army is too near
 class PatrolBrain extends Brain{
   think(p,d){
@@ -97,7 +100,7 @@ class PatrolBrain extends Brain{
       if(this.canMeet(p,pd)){patrolMeet(p);return true}}
     else if(threat&&!home&&Math.hypot(threat.x-p.x,threat.y-p.y)<16)startFight([p],[threat]);
     else{
-      const b=!home&&bandits.find(o=>!o.qid&&!o.fight&&Math.hypot(o.x-p.x,o.y-p.y)<PATROL.see&&patrolLand(p,o.x,o.y));
+      const b=!home&&patrolPrey(p);
       if(b){const bd=Math.hypot(b.x-p.x,b.y-p.y);Router.travel(p,b,sp*1.2)||walk(p,b.x-p.x,b.y-p.y,Math.min(bd,sp*1.2));
         if(bd<10)startFight([p],[b])}
       else if(home){Router.travel(p,gateGoal(t),sp);if(Math.hypot(t.x-p.x,t.y+12-p.y)<8)watchBack(t,p)}
@@ -144,6 +147,7 @@ function updateCParties(d){lodEach(cparties(),BRAINS.cparty,d)}
 function updatePatrols(d){
   // the change of the watch: the one on duty sets out (checked twice a second)
   if((watchCheck-=d)<=0){watchCheck=.5;for(const t of TOWNS)sendWatch(t)}
+  landDefence(d);// (threats on the land: the watch and the lords at home ride out: defence.js)
   if(lodEach(W.patrols,BRAINS.patrol,d))return true;
   W.patrols=W.patrols.filter(p=>!p.gone);return false;
 }

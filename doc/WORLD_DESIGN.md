@@ -1301,17 +1301,27 @@ Bandits per 1,000 tiles of settled land and fringe stay about 0.9 at every prese
 - **Lords:**
   - choose targets and rest places by travel days;
   - avoid wild regions (cost ×4);
-  - new states: `claim` (annex a hamlet) and `hold` (a defending lord holds the crossing on his border nearest an enemy army, so *Hold the bridge* battles arise naturally).
+  - new states: `claim` (annex a hamlet) and `hold` (a defending lord holds the crossing on his border nearest an enemy army, so *Hold the bridge* battles arise naturally);
+  - at or near home (resting, going home or riding his lands), rides out against a band or beast on his realm's land that comes near one of its holdings or estates, when he can beat it, and goes back to what he was doing; never from a campaign or siege (built: §11.1).
 - **Bands:**
-  - spawn from a precomputed fringe mask weighted to roads;
+  - spawn from a precomputed fringe mask weighted to roads, never within `WORLD_SCALE.spawn.away` of a holding or estate (built: §11.1);
   - roost in camps (`ai.camp` 220 px, unchanged);
   - raid hamlets;
   - river bands prey on barges and wait at fords.
-- **Monsters:** home ranges as today; wild ones 1–2 levels above `monLevel()`.
+- **Monsters:** home ranges as today, their lairs in the wilds (§11.1); wild ones 1–2 levels above `monLevel()`.
 - **Caravans and barges:** a realm picks the faster of road and river. Caravans keep to great roads (×0.9 cost); barges follow navigable water. Both pay tolls at foreign bridges (caravans) or at river tolls by a holding's landing (barges).
-- **Patrols:** unchanged; their beat is their holding's land.
+- **Patrols:** their beat is their holding's land; they ride out at bands and beasts on it (§11.1).
 - **Pathing:** through `Router` (R11; the two-level router at every preset from Phase 2). Seasons toggle crossing edges. AI never plans over ice.
 - **Far parties** run at the far tier (§3.5), and they resolve meetings by auto-resolve.
+
+### 11.1 The wilds are dangerous, the lands are defended (built)
+
+The owner decided this on 2026-10-19. Numbers: `WORLD_SCALE.spawn` (`away`, `rim`) and `DEFEND` (`data/factions.js`); code: `world/defence.js`, `monsters.js`, `world.js` `spawnBandit`, `fights.js`; tests: `tests/landdefence.js`.
+
+- **Monsters spawn in the wilds only:** never on a holding's land (`landHold` null). If a kind's habitat is not found in the wilds in 200 tries, it may spawn within `rim` tiles of a land's edge, at least `away` from every holding and estate. Habitats and the other rules stand. Mythic beasts' lairs follow the same rule; a quest's beast is placed by its quest.
+- **Bandits spawn away from living areas:** at least `away` (120 px) from any holding and any of its estates; they may still lurk on a land's outer reaches. Bandit camps stand on the map's fixed spots and are not spawned.
+- **Bandits and monsters fight:** a beast that meets a band (`DEFEND.meet`) falls on it, and the band fights back: a map fight (`fights.js`). Every fighter there shows one face: `mapKind`, `troops`, `power()`, `fightPower()`, `label()`, `faction`, `takeLoss()`. A beast fights at its level; a blow wounds it, and it loses one of its pack when its wounds reach one beast's strength. Beaten, `DEFEND.rout` of its pack (a lone beast) falls as it flees. You may join against the beast (your battle with it, the side you joined beside you); a beast's side cannot be joined. Fights with beasts save and load.
+- **Holdings protect their land:** a band or beast on a holding's land that its watch sees, or within `DEFEND.see` of the holding or one of its estates, brings the watch on duty out after it (`sendWatch`), if the watch is `DEFEND.edge` times as strong. A lord at or near home rides out against one near his realm's holdings or estates (`near`, `ride`, `leash`, `cool`). Estate guards are unchanged. Wild game is not a threat. Mythic beasts and quest targets stay out of map fights.
 
 ---
 

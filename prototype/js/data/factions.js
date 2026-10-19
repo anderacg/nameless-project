@@ -28,6 +28,15 @@ const WATCH={refill:1,
 // base + per x every fighter in it (world time), each side wearing the other down by their strength; a side whose strength
 // falls below rout x the other's breaks. join: how close a lord or patrol must be to ride in
 const FIGHT={base:3,per:.25,rout:.3,join:60};
+// the land defended (world/defence.js; the owner, 2026-10-19). A threat: a bandit band or a beast (not a mythic one, nor one a
+// quest set out), out of any fight. A holding sends its watch at one on its land that the watch (PATROL.see) or the holding or
+// one of its estates (see, px) has in sight, if the watch is at least edge times as strong. A lord at or near home (resting,
+// going home or riding his lands, within home px of one of his realm's holdings) rides at one on his realm's land that comes
+// within near px of one of its holdings or estates and within ride px of him, on the same edge; he gives it up past leash px
+// from where he set out, and after it waits cool (worldTime: a day is DAY, 12) before he looks again. A beast falls on a band
+// it meets (meet px), and the band fights back; a beast beaten in a fight on the map is cut down as it flees, rout of its pack
+// (rounded up: a lone beast dies). look: how often the land is looked over (the map's own time, as the watch check)
+const DEFEND={see:110,edge:1.2,home:200,near:80,ride:200,leash:260,cool:3,meet:12,rout:.5,look:.5};
 // personal relations (world/relations.js): you and each lord, and lords with each other, from -100 to 100, apart from
 // realm honor. levels name them; the rest is what moves them, and what they buy. A lord's friends and rivals feel some of
 // what you do to them (ripple). Relations drift back toward where they started by decay a day.

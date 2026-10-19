@@ -27,7 +27,7 @@
 // G.quietEvents is on, and the view is the tests' fixed 576 x 360. Hash: FNV-1a 32-bit over bytes, char codes or 32-bit words;
 // W8's places at 1e-6 px.
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.push('INFO '+m),t=T,G=t.G,P=t.P,W=t.W;
-const EXPECT={W1:'65e24662',W2:'2b49a168',W3:'dc546553',W4:'46450e62',W5:'6587a43c',W6:'1850a1f2',W7:'de907005',W8:'d2be3a92',B2:'1d2e7bc4'};// (at 0a42712; B2 at R3; W6-W8 at Phase 1; W6 at depth, smooth walking and pasture herds and label layout; W7, B2 at save v3)
+const EXPECT={W1:'65e24662',W2:'2b49a168',W3:'dc546553',W4:'46450e62',W5:'6587a43c',W6:'089d600e',W7:'053d11da',W8:'0f46a757',B2:'9b654422'};// (at 0a42712; B2 at R3; W6-W8 at Phase 1; W6 at depth, smooth walking and pasture herds and label layout; W7, B2 at save v3)
 // (W7, W8 merged: the two watches together with day and night half and half: 2109e5d0, aec30b66)
 // (W6, W7, W8, B2 re-recorded 2026-10-19, on purpose: wild game placed by its woods (data/critters.js CRITTER_WOODS, rare;
 //  a1c79a2 to 56f7e97) draws the shared randomness differently, so the beasts stand elsewhere and the world runs on from there: was
@@ -77,6 +77,14 @@ const EXPECT={W1:'65e24662',W2:'2b49a168',W3:'dc546553',W4:'46450e62',W5:'6587a4
 //  town's citadel or castle's keep stood with no walls until its walls next changed (tests/loadlook.js); the centre is now drawn
 //  with its holding's walls as they stand (wallOf, gfx/structures.js lotSprite) and its lot keeps no fort, so TOWNS as JSON lost
 //  that key. Was W3 b7aebfe4; W1, W2, W4-W8 and B2 unchanged)
+// (W6, W7, W8 and B2 re-recorded 2026-10-19, on purpose: the wilds are dangerous, the lands are defended (the owner's rules,
+//  world/defence.js, tests/landdefence.js). Beasts make their lairs in the wilds, on no holding's land (monsters.js lairLand), and
+//  bands spawn at least WORLD_SCALE.spawn.away from any holding and estate (world.js spawnBandit), so begin's beasts and bands
+//  stand elsewhere and draw the shared randomness differently (B2: the save straight after begin); the world runs on from there,
+//  with watches and lords riding at bands and beasts on their land and beasts falling on bands (W8's places, W7's save). W6
+//  moved where a band or beast stood in view: the middle spot by day and night, the third by night (06897de7 4b880f03
+//  2bfb2642; the first spot's two and the third's by day unchanged). Was W6 1850a1f2, W7 de907005, W8 d2be3a92, B2 1d2e7bc4;
+//  W1-W5 unchanged)
 const r0=Math.random,pn=performance.now,t0=pn.call(performance);
 try{
  try{localStorage.clear()}catch(e){}

@@ -58,7 +58,7 @@ function worldLoad(w){
   for(const o of w.own)if(o[3].base)TOWNS.push(Holding.fromRec(o));else townBy(o[2]).loadRec(o);
   Object.assign(W,{treas:w.treas,rel:w.rel,dead:w.dead,lords:w.lords.map(asParty),exiles:w.exiles,mythic:w.mythic,
     shops:w.shops,caravans:w.caravans.map(asParty),ships:[],refugees:w.refugees,patrols:w.patrols.map(asParty),fights:w.fights,
-    lrel:w.lrel,uidN:w.uidN,fightN:w.fightN,folk:[],critters:w.critters,monsters:w.monsters});
+    lrel:w.lrel,uidN:w.uidN,fightN:w.fightN,folk:[],critters:w.critters,monsters:w.monsters.map(asMonster)});
   occRebuild();seenLoad(w.seen);W.sites=w.sites.map(siteOf);W.sites.forEach(s=>s.placed());W.critters.forEach(herdToFields);roadLoad(w.road);
 }
 /* loading a save, as steps behind "Returning to {world}…" (loading.js runSteps): the save read (gunzipped: a step that waits);

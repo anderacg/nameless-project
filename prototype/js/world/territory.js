@@ -76,6 +76,13 @@ function landFresh(){
 onHolding(()=>{landSig=''});
 const landIdx=(x,y)=>{landFresh();const tx=Math.floor(x/TILE),ty=Math.floor(y/TILE);return tx<0||ty<0||tx>=MW||ty>=MH?-1:LAND[ty*MW+tx]};
 const landHold=(x,y)=>{const i=landIdx(x,y);return i>=0?TOWNS[i]:null};
+// within r tiles of where the land at (x, y) ends: a tile that near is another holding's, or wild (water is no one's edge)
+const landRim=(x,y,r)=>{const i=landIdx(x,y),tx=Math.floor(x/TILE),ty=Math.floor(y/TILE);
+  for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++){const nx=tx+dx,ny=ty+dy;if(nx>=0&&ny>=0&&nx<MW&&ny<MH&&LAND[ny*MW+nx]!==i&&tAt(nx,ny)!==T_WATER)return true}
+  return false};
+// where people live: a holding and its built estates (world objects with a place: estates.js); is (x, y) at least r px from all of them
+const homesOf=t=>[t,...t.estates()];
+const farFromHomes=(x,y,r)=>!TOWNS.some(t=>!t.gone&&homesOf(t).some(o=>Math.hypot(o.x-x,o.y-y)<r));
 const landName=(x,y)=>{const t=landHold(x,y);return t?t.name+' lands':'Wild lands'};
 const landOf=t=>{landFresh();return landTiles[TOWNS.indexOf(t)]||0};
 const landsOf=f=>{landFresh();return TOWNS.reduce((a,t,i)=>a+(t.owner===f?landTiles[i]:0),0)};

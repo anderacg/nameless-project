@@ -27,8 +27,11 @@ const WORLD_SCALE={
     folkBandit:70,folkFear:90,// a worker hurries home from bandits, or from you while his holding fears you
     slipAway:40// running from the guards puts this between you
   },
-  // where new things appear: never nearer you than [at the start, later], nor a holding
-  spawn:{bandit:[220,260],monster:[180,240],monsterHold:64,mythic:200,critter:[120,200],critterHold:56},
+  // where new things appear: never nearer you than [at the start, later], nor a holding. The owner, 2026-10-19: bands never
+  // nearer a holding or any of its built estates than away (outlaws lurk out on a land's reaches, by the roads); a beast makes
+  // its lair in the wilds, on no holding's land, or, its kind's ground not found there this time, within rim tiles of a land's
+  // edge and away from every holding and estate (monsters.js lairLand)
+  spawn:{bandit:[220,260],monster:[180,240],monsterHold:64,mythic:200,critter:[120,200],critterHold:56,away:120,rim:3},
   // trade and work (tiles): realm caravans' range and their cost of distance, where refugees go, a holding's veins and its own
   econ:{caravanNear:10,caravanFar:90,caravanCost:150,refuge:70,resRange:10,homeRange:24},
   // deeds and who hears of them (tiles): field deeds and road events count for a holding this near, a sack angers those this near

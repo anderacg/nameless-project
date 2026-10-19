@@ -1,22 +1,26 @@
 'use strict';
 /* ---------- fights: battles between parties on the map, which take time and can be joined ---------- */
 // W.fights: Fight {id, x, y, sides:[[uid…],[uid…]], t, dur, acc:[a,b]} (a world object, below; saved as its plain fields).
-// When parties clash (lords, patrols, bandit bands, caravans) they stop where they are and fight it out over a while: dur
-// grows with every fighter in it, so a skirmish of a few is over quickly and a clash of armies grinds on. Each moment each
+// When parties clash (lords, patrols, bandit bands, caravans; beasts with bands and with the land's defenders: defence.js)
+// they stop where they are and fight it out over a while: dur grows with every fighter in it, so a skirmish of a few is over
+// quickly and a clash of armies grinds on. Each moment each
 // side loses fighters at a rate set by the other's share of the strength, so the stronger side wins more and more easily; a
 // side that falls far behind breaks and is routed.
 // Lords and patrols nearby ride in on the side of their friends against their enemies. You can join either side: then
 // the fight becomes your battle, everyone in it fighting beside you or against you.
 const uidOf=o=>o.uid||(o.uid='u'+(++W.uidN));
-// every party that can fight on the map, by uid
-function partyBy(u){return cparties().find(o=>o.uid===u)||W.lords.find(o=>o.uid===u&&!o.dead)||bandits.find(o=>o.uid===u)||W.patrols.find(o=>o.uid===u&&!o.gone)||W.caravans.find(o=>o.uid===u&&!o.gone)||null}
+// every party that can fight on the map, by uid (a beast too: monsters.js)
+function partyBy(u){return cparties().find(o=>o.uid===u)||W.lords.find(o=>o.uid===u&&!o.dead)||bandits.find(o=>o.uid===u)||W.patrols.find(o=>o.uid===u&&!o.gone)||W.caravans.find(o=>o.uid===u&&!o.gone)||asMonster(W.monsters.find(o=>o.uid===u))||null}
 // (each says for itself what it is, mapKind; its name, label(); its realm, faction; its fighters, troops: a caravan's are its
-// guards, CaravanParty: parties.js)
+// guards, CaravanParty: parties.js; how strong it is, power(), and in a fight here, fightPower(): its fighters, at its level for
+// a beast; and how it takes a blow there, takeLoss: a party loses one fighter, a beast is wounded and loses one of its pack when
+// its wounds come to one beast's strength)
 const fightOf=o=>o&&o.fight?W.fights.find(f=>f.id===o.fight):null;
 // is a party busy fighting? (a stale mark, from a fight that is gone, is cleared)
 const inFight=o=>{if(!o.fight)return false;if(fightOf(o))return true;o.fight=null;return false};
 const sideParties=(f,s)=>f.sides[s].map(partyBy).filter(Boolean);
 const sideTroops=(f,s)=>sideParties(f,s).flatMap(o=>o.troops);
+const sidePower=(f,s)=>sideParties(f,s).reduce((a,o)=>a+o.fightPower(),0);
 
 // two groups of parties clash; one already fighting pulls the others into its fight
 function startFight(A,B){
@@ -44,13 +48,15 @@ function routParty(o,winners){
   if(k==='lord'){defeatLord(o);if(near||o.fac===P.fac)log(o.name+' is routed near '+nearestOf(o,TOWNS).name+'.',o.fac===P.fac?'bad':'')}
   else if(k==='band'){bandits=bandits.filter(x=>x!==o);chiefEscapes(o.ld)}// (its chieftain gets away)
   else if(k==='patrol')patrolBeaten(o);
+  else if(k==='monster')beastRouted(o);
   else{o.gone=true;W.caravans=W.caravans.filter(x=>x!==o);const lord=winners.find(w=>w.mapKind==='lord'),band=winners.find(w=>w.mapKind==='band');
     if(lord){const home=nearestOf(lord,fiefsOf(lord.fac));if(home){ensureEcon(home);for(const g in o.goods)home.stock[g]=(home.stock[g]||0)+o.goods[g]}}
     else if(band)band.add('militia')// (it arms one more with the plunder)
     if(o.mine||o.fac===P.fac||near)log((lord?lord.name+' seizes':band?'Bandits plunder':'The enemy takes')+' a caravan of '+o.from+(o.mine?', one of yours':'')+'.',o.mine||o.fac===P.fac?'bad':'')}
 }
 // a party that came through: free to go on its way
-function freeParty(o){o.fight=null;o.cool=3;const k=o.mapKind;if(k==='band'){o.n=o.size;o.pw=0}if(k==='caravan'&&!o.guards)o.guards=1;if(k==='lord'&&o.state!=='siege')lordThink(o)}
+// (a lord who rode out to defend his land goes back to what he was doing: defence.js)
+function freeParty(o){o.fight=null;o.cool=3;const k=o.mapKind;if(k==='band'){o.n=o.size;o.pw=0}if(k==='caravan'&&!o.guards)o.guards=1;if(k==='lord'){if(o.defend)lordDefended(o);else if(o.state!=='siege')lordThink(o)}}
 function endFight(f,win){
   const W0=sideParties(f,win),L=sideParties(f,1-win),lw=W0.filter(o=>o.mapKind==='lord'),ll=L.filter(o=>o.mapKind==='lord');
   {const foes=L.reduce((a,o)=>a+o.troops.length,0)+Math.round((f.n0||0)/3);lw.forEach(o=>lordWins(o,foes));W0.filter(o=>o.mapKind==='band').forEach(o=>chiefWins(o,foes));W0.filter(o=>o.cid).forEach(o=>{compXp(o.cid,12+2*foes);compTrain(o.cid,'lead',3)})}
@@ -69,13 +75,14 @@ function updateFights(d){
       if(Math.hypot(o.x-f.x,o.y-f.y)<FIGHT.join){const s=sideFor(f,o);if(s>=0){joinFight(f,o,s);if(Math.hypot(f.x-P.x,f.y-P.y)<vis()*1.5)log(o.label()+' rides into the battle near '+nearestOf(f,TOWNS).name+'.')}}
     // each side wears the other down by its share of the strength; the whole fight takes about dur
     // the pace is set by how many started (and joined): an even fight takes about dur, a lopsided one less
-    const pw=[0,1].map(s=>power(sideTroops(f,s))*lordTac(sideParties(f,s))),rate=(f.n0||sideTroops(f,0).length+sideTroops(f,1).length)/Math.max(1,f.dur);
+    const pw=[0,1].map(s=>sidePower(f,s)*lordTac(sideParties(f,s))),rate=(f.n0||sideTroops(f,0).length+sideTroops(f,1).length)/Math.max(1,f.dur);
     for(const s of [0,1]){f.acc[s]+=d*rate*pw[1-s]/Math.max(1,pw[0]+pw[1]);
       while(f.acc[s]>=1){f.acc[s]--;const ps=sideParties(f,s).filter(o=>o.troops.length);if(!ps.length)break;let r=Math.random()*ps.reduce((a,o)=>a+o.troops.length,0),o=ps[0];for(const p of ps){r-=p.troops.length;if(r<=0){o=p;break}}
         // a lord's Medicine: some of his fallen live
         if(o.mapKind==='lord'){lordTrain(o,'med',2);if(Math.random()<.07*lordSkill(o,'med'))continue}
-        o.removeAny(1);if(!o.troops.length)routParty(o,sideParties(f,1-s))}}
-    f.t+=d;const p0=power(sideTroops(f,0)),p1=power(sideTroops(f,1));
+        // (one blow of the other side: as strong as its average fighter)
+        o.takeLoss(sidePower(f,1-s)/Math.max(1,sideTroops(f,1-s).length));if(!o.troops.length)routParty(o,sideParties(f,1-s))}}
+    f.t+=d;const p0=sidePower(f,0),p1=sidePower(f,1);
     if(!p0||p0<FIGHT.rout*p1)endFight(f,1);else if(!p1||p1<FIGHT.rout*p0)endFight(f,0);
   }
 }
@@ -84,13 +91,15 @@ function updateFights(d){
 function fightMeet(f){
   G.fg=f;G.mode='dialog';P.tx=null;G.chase=null;const where=nearestOf(f,TOWNS).name;
   const side=s=>{const ps=sideParties(f,s),tr=sideTroops(f,s);return '<div class="row"><div class="info"><strong>'+ps.map(o=>{const fc=o.faction;return '<span'+(fc?' style="color:'+(fc==='player'?FACS.player.col:FACS[fc].col)+'"':'')+'>'+o.label()+' ('+o.troops.length+')</span>'}).join(', ')+'</strong><small>'+tr.length+' fighters · power '+rating(tr)+'</small></div><div class="acts">'+dlgBtn('fg-join',s,'Join them',joinWhy(f,s))+'</div></div>'};
-  const p0=power(sideTroops(f,0)),p1=power(sideTroops(f,1)),share=Math.round(p0/Math.max(1,p0+p1)*100);
+  const p0=sidePower(f,0),p1=sidePower(f,1),share=Math.round(p0/Math.max(1,p0+p1)*100);
   showPanel('<h2>Battle near '+where+'</h2><p class="muted">The fight has gone on a while ('+Math.round(f.t/Math.max(.1,f.dur)*100)+'% of its likely length). Your power: '+partyPower()+'.</p>'+side(0)+
     '<div style="height:8px;background:#7e2a26;border:1px solid var(--line)"><div style="height:100%;width:'+share+'%;background:#3d74d6"></div></div>'+side(1)+
     '<p class="muted">Joining a side means fighting its enemies, beside everyone on your side; realms you fight against turn hostile for 20 days.</p>'+nav(null,['dlg-close',null,'Watch from afar']));
 }
-// why you can't join a side: your employer fights on the other one, or it is a side of bandits
-function joinWhy(f,s){const other=sideParties(f,1-s),mine=sideParties(f,s);if(P.fac&&other.some(o=>o.faction===P.fac))return 'Your employer is on the other side';if(other.some(o=>o.faction==='player'))return 'Your own people are on the other side';if(mine.some(o=>o.mapKind==='band'))return 'They are bandits';return ''}
+// why you can't join a side: your employer fights on the other one, it is a side of bandits (unless they fight a beast), or
+// it is a beast's (it fights for no one)
+function joinWhy(f,s){const other=sideParties(f,1-s),mine=sideParties(f,s);if(P.fac&&other.some(o=>o.faction===P.fac))return 'Your employer is on the other side';if(other.some(o=>o.faction==='player'))return 'Your own people are on the other side';
+  if(mine.some(o=>o.mapKind==='monster'))return 'It is a wild beast';if(mine.some(o=>o.mapKind==='band')&&!other.some(o=>o.mapKind==='monster'))return 'They are bandits';return ''}
 // the parties of a side as battle forces: lords as they are; the rest wrapped with their fighters, name and realm
 function forceOf(o){const k=o.mapKind;if(k==='lord')return o;partyRoster(o).groups;return{kind:k,src:o,name:o.label(),fac:o.faction,troops:o.troops.slice(),army:o.army?structuredClone(o.army):undefined}}
 // after your battle: write the forces' fighters back to their parties
@@ -103,7 +112,10 @@ function fightAct(a,arg){
   const f=G.fg;if(!f||!W.fights.includes(f)){closeDialog();return}
   if(a==='fg-join'){const s=+arg;if(joinWhy(f,s))return;
     for(const o of sideParties(f,1-s)){const fc=o.faction;if(fc&&fc!=='player'&&!hostileTo(fc)){P.hostile[fc]=Math.max(P.hostile[fc]||0,G.day+20);addHonor(fc,-10,true);log('The '+FACS[fc].n+' turns hostile to you.','bad')}}
-    G.fg=null;startEncounter({kind:'field',ref:f,side:s,list:[],allies:sideParties(f,s).map(forceOf),foes:sideParties(f,1-s).map(forceOf),title:'Battle near '+nearestOf(f,TOWNS).name})}
+    // (against a beast: your battle with it, as when you meet it (monsters.js startMonster), the side you joined beside you)
+    G.fg=null;const m=sideParties(f,1-s).find(o=>o.mapKind==='monster');
+    if(m)return startEncounter({kind:'monster',ref:m,lv:m.lv,list:m.troops.slice(),mine:true,allies:sideParties(f,s).map(forceOf),foes:sideParties(f,1-s).filter(o=>o!==m).map(forceOf)});
+    startEncounter({kind:'field',ref:f,side:s,list:[],allies:sideParties(f,s).map(forceOf),foes:sideParties(f,1-s).map(forceOf),title:'Battle near '+nearestOf(f,TOWNS).name})}
 }
 onAct('fg-',fightAct);
 // you won the battle: the fight is over, your side goes on its way
