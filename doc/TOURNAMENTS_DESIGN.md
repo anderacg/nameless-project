@@ -1,6 +1,6 @@
 # Tournaments: design
 
-Status: **draft for the owner's review** (2026-10-19). Nothing here is built yet. The numbers live in one tunables table (`TOURNEY`), so they are easy to change.
+Status: **designed, the owner's answers in** (2026-10-19, §9); waiting for the owner's go. Nothing here is built yet. The numbers live in one tunables table (`TOURNEY`), so they are easy to change.
 
 ## 1. The idea
 
@@ -44,7 +44,7 @@ Tournaments become **events**:
 
 ## 5. The Grand Stadium (a new site)
 
-- One per world, placed by the generator: a large **stone stadium** on neutral or central land, near a main road, away from borders. On the classic map, a fixed spot.
+- **One per world, placed by the generator** on a **natural tile** (owner: it need not be central). Its ground is **neutral land: no holding's territory covers it, and no one can conquer or claim it** (the territory and claim code leave a ring round it out; a `neutral` flag on its tiles). Near a road, away from borders. On the classic map, a fixed spot.
 - **Most of the year it is quiet:** a caretaker, a practice yard (training bouts for a fee; no prize), the hall of past champions (names and years).
 - **During the Grand Tournament:** crowds, pavilions, every realm's banner, merchants (a temporary market), and the bracket.
 - **Art:** a new engine structure in the house style (an oval of stone stands, gates, banners); a site page like the others (the single-page style).
@@ -83,11 +83,11 @@ They reuse the duel (battle with `tournament:true`) or the stat contests.
   5. **Archery and joust** contests. **M**
   6. The **small fighting events** on the road. **S–M**
 
-## 9. Questions for the owner
+## 9. The owner's answers (2026-10-19)
 
-1. **Bouts:** melee duel and team melee for sure? Archery and joust as stat contests (fast, with pictures), or as real battles later?
-2. **Nonlethal:** the loser yields and is wounded, never killed. Right?
-3. **Betting:** yes or no?
-4. **The year:** 120 days (the Grand Tournament once in that), or a different length?
-5. **The Grand Stadium:** a neutral spot near the middle of the world, or beside the largest city?
-6. **Your own tournaments:** once you hold a holding (founding, World Phase 4b), can you host one (cost, prestige)? For later.
+1. **Bouts:** yes: melee duel and team melee as battles; archery and joust as quick stat contests (real battles possibly later).
+2. **Nonlethal:** yes: the loser yields and is wounded, never killed.
+3. **Betting:** yes.
+4. **The year:** yes, 120 days, the Grand Tournament once in it.
+5. **The Grand Stadium:** need not be central; it stands on a **natural tile** on **neutral land no one can conquer or claim** (§5).
+6. **Hosting your own:** **no**: tournaments are the holdings' and the stadium's own events, not yours to host.
