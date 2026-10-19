@@ -66,7 +66,7 @@ try{
   ok(files.length>=20&&!bad.length&&!/B\.fallBack/.test(hud)&&told.length>=10,'the fight tells the HUD and the lab by battleEvent ('+[...new Set(told.map(x=>x.slice(13,-1)))].join(' ')+'), never calls them'+(bad.length?': '+bad.join('; '):'')+(/B\.fallBack/.test(hud)?'; battlehud.js polls B.fallBack':''))}
  ok(typeof t.BattleControl.prototype.suggest==='undefined','the unused advisory-target setter is removed; attack orders remain the focus-fire API');
  // ---- actions
- const want=['lr-','fg-','pt-','scene-','cv-','sg-','cap-','inv-','sk-','tree-','slot-','esc-','ev-','site-','wk-','rf-','es-','pl-','dlg-'];
+ const want=['lr-','fg-','pt-','scene-','cv-','sg-','cap-','inv-','sk-','tree-','slot-','esc-','enc-','site-','wk-','rf-','es-','pl-','dlg-'];
  ok(want.every(p=>typeof t.ACTS[p]==='function')&&!t.ACTS['herd-'],'each dialog system owns its action prefix: '+Object.keys(t.ACTS).join(' ')+' (no herders’ window: nothing is bought from a herd)');
  let threw=false;try{t.onAct('cv-',()=>0)}catch(e){threw=/Two systems/.test(e.message)}ok(threw,'a second claim on a prefix is refused');
  // ---- encounters

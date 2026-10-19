@@ -306,7 +306,7 @@ const PEOPLE_STEPS=8,MAP_WALK=[[1,2,[[1],[2]]],[1,2,[[1],[3,1]]],[1,2,[[0],[3]]]
 const MAP_HELD={sword:[2,4,'steel','guard'],great:[1,4,'steel','guard'],dagger:[3,4,'steel','guard'],axe:[2,6,'wood','axe'],bigaxe:[1,6,'wood','axe'],
   hammer:[2,6,'wood','hammer'],spear:[0,6,'wood','tip'],pike:[0,6,'wood','tip'],javelin:[1,6,'wood','tip'],lance:[0,6,'wood','tip'],staff:[0,6,'wood','gem'],
   hoe:[1,6,'wood','hoe'],pick:[2,6,'wood','pick'],crook:[0,6,'wood','crook'],rod:[1,6,'wood','rod'],bow:[2,6,'wood','bow'],longbow:[1,6,'wood','bow'],
-  xbow:[5,5,'wood','xbow'],sling:[6,6,'leather','sling']};
+  xbow:[5,5,'wood','xbow'],sling:[6,6,'leather','sling'],lute:[2,5,'wood','lute']};
 function drawMapFigure(g,o,ox,oy,walk,cut){
   const T=o.short?PEOPLE_MAP_T.filter((r,i)=>i!==4):PEOPLE_MAP_T,Lc=lettersOf(o),set=(x,y,c)=>pset(g,ox+x,oy+y,c),ly=T.length,w=walk>0?walk%PEOPLE_STEPS:0,S=MAP_WALK[w];
   T.forEach((row,y)=>{if(cut==null||y<=cut)[...row].forEach((c,x)=>{if(c!=='.')set(x,y,Lc[c])})});
@@ -342,14 +342,16 @@ function drawMapFigure(g,o,ox,oy,walk,cut){
     if(hd==='rod'){set(5,y0-1,Wd[1]);set(6,y0,'#d8dce4');set(6,y0+1,'#d8dce4')}
     if(hd==='bow'){set(4,y0,Wd[2]);set(4,y1,Wd[2]);for(let y=y0+1;y<y1;y++){set(5,y,Wd[1]);set(4,y,PPAL.linen[1])}}
     if(hd==='xbow'){set(5,y0,Wd[1]);set(5,y0-1,S[1]);set(5,y0+1,S[1])}
+    if(hd==='lute'){set(4,y0,Wd[2]);set(4,y0+1,Wd[1]);set(5,y1-1,Wd[0]);set(5,y1,Wd[1]);set(4,y1,Wd[2])}// (a bard's: its neck up, its round body under the hand)
     set(3,5,pal(o.skin)[1])}// (the hand)
   if(o.load&&cut==null)drawMapLoad(set,o.load);
 }
 // a load carried on the back (the left of a figure facing right): a sack, a churn, logs, a basket or a sack of ore
-const LOADS={farmer:['sack','#ece4cc'],herder:['churn','#d8dce4'],woodcutter:['logs','#9a6436'],miner:['sack','#7a808e'],fisher:['basket','#a8804e'],quarry:['sack','#a8a49a']};
+const LOADS={farmer:['sack','#ece4cc'],herder:['churn','#d8dce4'],woodcutter:['logs','#9a6436'],miner:['sack','#7a808e'],fisher:['basket','#a8804e'],quarry:['sack','#a8a49a'],pack:['pack','#8a6a44']};
 function drawMapLoad(set,job){const L=LOADS[job]||LOADS.farmer,R=rampOf(L[1]);
   if(L[0]==='logs'){set(-1,2,'#e8c890');set(-1,3,R[0]);set(-1,4,R[2]);set(-1,5,'#c8a070');return}
   set(-1,3,R[0]);set(-1,4,R[1]);set(-1,5,R[2]);
+  if(L[0]==='pack'){set(-1,2,R[0]);set(-2,3,R[1]);set(-2,4,R[2]);set(-2,5,R[3])}// (a peddler's: a tall pack, two wide)
   if(L[0]==='sack')set(-1,5,R[3]);if(L[0]==='churn')set(-1,3,R[3]);if(L[0]==='basket')set(-1,3,'#9ab8c8')}
 // (a map figure's grid: a person's interior placed at (3, 1: his middle on a 16 cell's), room round it for a load on his back and
 // what is in his hand; f the step, cut as drawMapFigure)

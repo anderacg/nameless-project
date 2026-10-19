@@ -17,7 +17,7 @@ const KEYS=[['Map',[['Click','travel there, or meet what is there'],['Hover','wh
   ['Streets',[['WASD / click','walk'],['E','talk to whoever is near'],['Gate','walk out to leave']]],
   ['Screen',[['F11','full screen'],['H','this help'],['M','sound off / on']]]];
 function openHelp(){return openOver('help','<div class="top"><h2>Controls</h2></div>'+KEYS.map(([g,ks])=>'<div class="lab">'+g+'</div><div class="keys">'+ks.map(([k,d])=>'<div><kbd>'+k+'</kbd><span>'+d+'</span></div>').join('')+'</div>').join('')+
-  '<p class="muted">Hover anything on the map to see what it is and how strong it is against you. Messages fade from the screen after a few seconds; L shows them all.</p>'+nav(null,['help-close',null,'Close']))}
+  '<p class="muted">Hover anything on the map to see what it is and how strong it is against you. People you meet on the road call out: a pulsing ! marks them (an arrow at the screen’s edge when they are off it); click one to ride over and meet them, or ride on. Messages fade from the screen after a few seconds; L shows them all.</p>'+nav(null,['help-close',null,'Close']))}
 function openJournal(){return openOver('journal','<div class="top"><h2>Message log</h2><span class="muted">'+G.msgs.length+' messages</span></div><div class="journal">'+
   G.msgs.slice().reverse().map(x=>'<div'+(x.cls?' class="'+x.cls+'"':'')+'>'+(x.day!=null?'<span class="muted">Day '+x.day+' · </span>':'')+x.m+'</div>').join('')+'</div>'+nav(null,['journal-close',null,'Close']))}
 onAct('help-',()=>closeOver());onAct('journal-',()=>closeOver());

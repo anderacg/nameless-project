@@ -98,10 +98,9 @@ try{
   const h2=document.querySelector('#panel h2');ok(h2&&!document.querySelector('#panel .nav')&&!t.escDismiss()&&document.querySelector('#panel .btns [data-act="fight"]'),'the pre-battle panel keeps the frame: its header, the fight’s choices, no bar (a forced choice: Esc picks none)');
   t.act('fight');const B=t.B;ok(B.btype&&B.btype.kind==='ambush'&&B.btype.hid===1&&!B.deploy&&B.units.filter(u=>u.team===1&&u.hp>0).every(u=>u.hid&1),'the battle: no deployment even with it on, every one of theirs unseen');
   ok(G.enc.btype===false,'sprung once: run down after it, you would face them on an open field');world();ev('BDEPLOY.on=false')}
- {at(forest.tx,forest.ty);const E=t.roadEvents().find(x=>x.id==='ambush');ok(E&&E.ok()&&!t.EVENTS.includes(E),'the ambush road event can happen where there is cover (a terrain event, kept apart from EVENTS)');
-  world();G.event={id:'ambush'};G.mode='event';t.showEvent();ok(/On the road/.test(panel())&&/ambush/.test(panel())&&!document.querySelector('#panel .nav'),'the road event: its header, the choices, no bar (a forced choice)');
-  t.act('ev-choose','0');const nav=document.querySelector('#panel .nav'),last=document.querySelector('#panel').lastElementChild;ok(nav&&last===nav&&t.escDismiss()&&t.escDismiss().dataset.act==='ev-done','its outcome ends with the bar: Continue on the right, Esc presses it');
-  t.act('ev-done');ok(G.enc&&G.enc.btype&&G.enc.btype.kind==='ambush'&&G.enc.btype.hid===1&&/Ambush!/.test(panel()),'and leads into the ambush: the pre-battle panel says Ambush!');world()}
+ {at(forest.tx,forest.ty);const D=t.ROAD_ENC.ambush;ok(D&&D.ok()&&!t.EVENTS.some(x=>x.id==='ambush'),'the ambush on the road can come where there is cover (an encounter on the map: world/encounters.js)');
+  world();const E=t.roadSpawn('ambush',P.x+8,P.y);t.roadMeet(E);ok(G.mode==='road'&&/ambush/.test(panel())&&!document.querySelector('#panel .nav [data-nav="close"]'),'its page: the choices, no Leave (a forced choice)');
+  t.act('enc-do','0');ok(G.enc&&G.enc.btype&&G.enc.btype.kind==='ambush'&&G.enc.btype.hid===1&&/Ambush!/.test(panel()),'and Close up and fight leads into the ambush: the pre-battle panel says Ambush!');world()}
  {at(forest.tx,forest.ty);const e=meet({mine:true});ok(!e.btype&&/data-act="bt-spring"[^>]*>Spring an ambush/.test(panel()),'riding at them where there is cover: the panel offers Spring an ambush');
   t.act('bt-spring');const B=t.B,mid=(B.ftop+B.fbot)/2,mine=B.units.filter(u=>u.team===0&&u.hp>0),theirs=Object.values(B.groups).filter(g=>g.team===1&&t.grpUnits(g.id).length);
   ok(B&&B.btype.kind==='ambush'&&B.btype.hid===0&&!B.deploy&&mine.every(u=>u.hid&2),'sprung: your band starts hidden beside the road ('+mine.length+' unseen), no deployment');
@@ -119,7 +118,7 @@ try{
  {ev('TERRAIN.on=false');at(bridge.tx,bridge.ty);const n=counted(()=>{t.battleTypeFor({kind:'party',band:'bandits'})});const e=meet();
   ok(n===0&&e.btype===undefined&&!/bridge/i.test(panel())&&!/bt-spring/.test(panel()),'terrain off: no battle type at a bridge (none set on the encounter, no word of it on the panel, no Math.random drawn)');
   t.act('fight');ok(t.B&&t.B.btype===undefined&&!t.B.terrain&&!t.B.dzone,'the battle as ever: no B.btype, no ground, no zone of its own');world();
-  at(forest.tx,forest.ty);ok(!t.roadEvents().some(x=>x.id==='ambush')&&t.roadEvents()===t.EVENTS,'and no ambush road event (the same list of road events as ever)');meet({mine:true});ok(!/bt-spring/.test(panel()),'nor Spring an ambush');world()}
+  at(forest.tx,forest.ty);ok(!t.ROAD_ENC.ambush.ok(),'and no ambush on the road');meet({mine:true});ok(!/bt-spring/.test(panel()),'nor Spring an ambush');world()}
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}
 finally{try{if(T.BattleLab.active)T.BattleLab.exit()}catch(e){}}
 const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d)};

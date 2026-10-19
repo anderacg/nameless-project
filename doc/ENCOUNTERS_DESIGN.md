@@ -1,6 +1,6 @@
 # Random encounters on the map: design
 
-Status: **approved** (2026-10-19); phase 1 being built.
+Status: **approved** (2026-10-19); phase 1 built (2026-10-19: `world/encounters.js`, `tests/encounters.js`).
 
 ## 1. The idea
 

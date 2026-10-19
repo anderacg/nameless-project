@@ -13,6 +13,8 @@
      tooltip is input.js's own (#tip).
    - Chasing a party or making for a holding: a ring pulsing round it and an arrow bobbing over it (while it is in sight), till
      you meet it or go elsewhere.
+   - An encounter on the road you know of and have not met (world/encounters.js): a glow round it, a pulsing "!" over it, its
+     call-out the first time it is on the screen, and an arrow at the screen's edge while it is off it (wuiRoadUnder, wuiRoadOver).
    In whole game pixels on the camera's grid (what moves or eases, to 1/VS px as a mover is: render.js snapV), outlined dark as
    the arrows and chevrons of the battle are (ui/orderpaths.js). Real time. Under reducedMotion all holds still: no ripple or
    puff, the arrow and brackets standing, the dots not marching ---------- */
@@ -26,6 +28,7 @@ function wuiKind(o){const k=objKind(o);if(!k)return 'ground';
   if(k==='band'||k==='monster'||k==='fight')return 'foe';if(k==='cparty')return 'comp';if(k==='town'||k==='estate')return 'hold';
   if(k==='lord'||k==='patrol'){const f=o.faction;return hostileTo(f)?'foe':f==='player'||f===P.fac?'friend':'neutral'}
   if(k==='site')return o instanceof Lair&&!o.cleared?'foe':'neutral';
+  if(k==='road')return o.D.foe?'foe':'neutral';
   return 'neutral'}
 /* ---- pictures, made once each ---- */
 const WUIP=new Map(),wuiMix=(h,t)=>'#'+[1,3,5].map(i=>{const v=parseInt(h.slice(i,i+2),16);return Math.round(t>0?v+(255-v)*t:v*(1+t)).toString(16).padStart(2,'0')}).join('');
@@ -144,6 +147,7 @@ function wuiUnder(cam){const now=performance.now(),dt=Math.min(.1,Math.max(0,(no
   if(WUI.tgt&&WUI.tgt.o.inView(vis())){const o=WUI.tgt.o,T=wuiTargetAt(o,cam),col=WUI_K.col[wuiKind(o)],e=(now-WUI.tgt.t)/1000;
     const c=wuiRing(T.rx,Math.ceil(T.rx*.45),col);ctx.globalAlpha=rm?.9:.8+.2*Math.sin(e*5.5);wuiPut(c,T.x,T.y,c.cx,c.cy);
     if(!rm){const q=(e%WUI_K.ping)/WUI_K.ping,r=T.rx+Math.round(q*6),p=wuiRing(r,Math.ceil(r*.45),col);ctx.globalAlpha=.8*(1-q);wuiPut(p,T.x,T.y,p.cx,p.cy)}ctx.globalAlpha=1}
+  wuiRoadUnder(cam,now,rm);
   for(const f of WUI.fx){const q=(now-f.t)/1000/(f.k==='ripple'?WUI_K.ripple:WUI_K.poof),x=f.x-cam.x,y=f.y-cam.y;if(q<0||q>=1)continue;const e=1-(1-q)*(1-q);
     if(f.k==='ripple'){for(const [d,m] of [[0,1],[.14,.6]]){const qq=Math.max(0,(q-d)/(1-d)),ee=1-(1-qq)*(1-qq),r=2+Math.round(ee*11),c=wuiRing(r,Math.max(1,Math.round(r*.5)),f.col);ctx.globalAlpha=m*(1-qq);wuiPut(c,x,y,c.cx,c.cy)}
       if(q<.3){ctx.globalAlpha=1-q/.3;ctx.fillStyle='#fff8e0';ctx.fillRect(x-1,y,3,1);ctx.fillRect(x,y-1,1,3)}}
@@ -155,5 +159,28 @@ function wuiUnder(cam){const now=performance.now(),dt=Math.min(.1,Math.max(0,(no
 function wuiOver(cam){if(G.mode==='title')return;const now=WUI.now||performance.now(),rm=reducedMotion();
   if(WUI.dest){const d=WUI.dest;wuiDrop(Math.round(d.x)-cam.x,Math.round(d.y)-cam.y,d.t,WUI_K.col.gold,now,rm,true)}
   if(WUI.tgt&&WUI.tgt.o.inView(vis())){const o=WUI.tgt.o,T=wuiTargetAt(o,cam);wuiDrop(T.x,T.top,WUI.tgt.t,WUI_K.col[wuiKind(o)],now,rm,false)}
+  wuiRoadOver(cam,now,rm);
   const h=WUI.hov;if(h){const b=h.b,col=WUI_K.col[h.kind],x0=wuiX(b[0],cam),y0=wuiY(b[1],cam),x1=wuiX(b[2],cam),y1=wuiY(b[3],cam),br=rm?0:(1+Math.sin(now/1000/WUI_K.breathe*6.2832))/2;
     wuiBrackets(x0,y0,x1,y1,col,h.kind==='ground'?.75:1,rm?0:Math.round(br),h.kind==='ground'?.5+.5*br:1+br)}}
+/* ---- the encounters on the road (world/encounters.js), each you know of and have not met (marked). Under the banners: a soft
+   glow round its figures, breathing, while you see it. Over the labels: a pulsing "!" over it while it is on the screen (heard and
+   not yet seen, over the fog too), its call-out over that for ENC_LIFE.say s the first time you see it there; off the screen,
+   an arrow at the screen's edge pointing to it, the "!" beside it. All in real time, still under reducedMotion ---- */
+// (the "!": a gold pin, its "!" cut out of it and outlined dark, its point on what it marks)
+WUI_ARROW.bang=['.#####.','###.###','###.###','###.###','#######','###.###','.#####.','..###..','...#...'];
+// (the arrow at the screen's edge in eight directions, k: 0 east, then each 45° clockwise: a head and a short shaft, laid out
+// from its shape once each, so it stays crisp as the map's arrows are)
+function wuiEdge(k,col){const key='edge'+k;if(!WUI_ARROW[key]){const a=k*Math.PI/4,ux=Math.cos(a),uy=Math.sin(a),rows=[];
+  for(let y=0;y<11;y++){let r='';for(let x=0;x<11;x++){const px=x-5,py=y-5,al=px*ux+py*uy,pr=Math.abs(py*ux-px*uy);r+=al>=-1.5&&al<=5&&pr<=(5-al)*.85||al>=-5&&al<-1.5&&pr<=1.1?'#':'.'}rows.push(r)}WUI_ARROW[key]=rows}
+  return wuiArrow(key,col)}
+function wuiRoadUnder(cam,now,rm){const V=vis();for(const e of roadList()){if(!e.marked()||!e.inView(V))continue;const b=e.box(),x=wuiX((b[0]+b[2])/2,cam),y=wuiY((b[1]+b[3])/2+2,cam),p=rm?.5:(1+Math.sin(now/1000*3.2))/2,r=Math.max(13,(b[2]-b[0])*.62)+3*p;
+  ctx.save();ctx.translate(x,y);ctx.scale(1,.62);const g=ctx.createRadialGradient(0,0,1,0,0,r);g.addColorStop(0,'rgba(255,214,120,'+(.3+.15*p).toFixed(3)+')');g.addColorStop(1,'rgba(255,200,90,0)');
+  ctx.globalCompositeOperation='lighter';ctx.fillStyle=g;ctx.fillRect(-r,-r,2*r,2*r);ctx.restore()}}
+function wuiRoadOver(cam,now,rm){const V=vis(),col=WUI_K.col.gold,bang=wuiArrow('bang',col),p=rm?1:(1+Math.sin(now/1000*5))/2,bob=rm?0:Math.round(p*2);
+  for(const e of roadList()){if(!e.marked())continue;const b=e.box(),x=Math.round(wuiX((b[0]+b[2])/2,cam)),top=Math.floor(wuiY(b[1],cam)),y=wuiY(e.y,cam);
+    if(x>=0&&x<=VW&&top>=4&&y<=VH){const by=top-2-bob;ctx.globalAlpha=.75+.25*p;wuiPut(bang,x,by,bang.cx,bang.tip);ctx.globalAlpha=1;
+      if(e.D.call&&e.inView(V)){let t0=ROAD_SAY.get(e);if(t0==null)ROAD_SAY.set(e,t0=now);const q=(now-t0)/1000;if(q<ENC_LIFE.say){ctx.globalAlpha=Math.min(1,(ENC_LIFE.say-q)*2);txt(e.D.call,x,by-bang.tip-3,'#fff2c8','center');ctx.globalAlpha=1}}
+      continue}
+    const mx=12,my=24,cx=VW/2,cy=VH/2,dx=x-cx,dy=(top+y)/2-cy,k=Math.min((cx-mx)/Math.max(1e-6,Math.abs(dx)),(cy-my)/Math.max(1e-6,Math.abs(dy))),ax=Math.round(cx+dx*k),ay=Math.round(cy+dy*k),a=Math.atan2(dy,dx),c=wuiEdge((Math.round(a/(Math.PI/4))+8)%8,col);
+    ctx.globalAlpha=.8+.2*p;ctx.drawImage(c,ax-6+Math.round(Math.cos(a)*bob),ay-6+Math.round(Math.sin(a)*bob));ctx.globalAlpha=1;
+    wuiPut(bang,Math.round(ax-Math.cos(a)*17),Math.round(ay-Math.sin(a)*17)+4,bang.cx,bang.tip)}}

@@ -22,12 +22,12 @@ function walk(o,dx,dy,step,ok){
 const REACH=14;
 // everything on the map, each made one of its kind, in the order a click weighs them when two are as near (pickAt): each
 // holding then its built estates, the parties (lords, bands, patrols, your companions'), the beasts, the sites, the herds, the
-// caravans, the refugees, the workers, the ships (never clicked), then the fights (none picked: a click on a party in one meets
+// caravans, the refugees, the encounters on the road, the workers, the ships (never clicked), then the fights (none picked: a click on a party in one meets
 // it, interact). Not you.
-const worldObjects=()=>[...TOWNS.flatMap(t=>[t,...t.estates()]),...W.parties,...W.monsters.map(asMonster),...W.sites,...W.critters.map(asHerd),...W.caravans,...W.refugees.map(asRefugees),...W.folk.map(asWorker),...W.ships.map(asShip),...W.fights.map(asFight)];
+const worldObjects=()=>[...TOWNS.flatMap(t=>[t,...t.estates()]),...W.parties,...W.monsters.map(asMonster),...W.sites,...W.critters.map(asHerd),...W.caravans,...W.refugees.map(asRefugees),...roadList(),...W.folk.map(asWorker),...W.ships.map(asShip),...W.fights.map(asFight)];
 // a thing on the map made one of its kind if it is still plain data (new, from a save or a test), by its fields: a herd (crit),
-// refugees (rf), a worker (folk), a ship (its path over the water), a beast (a MONSTERS kind). Parties are made theirs by asParty
-const asWorldObject=o=>!o||o instanceof WorldObject?o:o.crit?asHerd(o):o.rf?asRefugees(o):o.folk?asWorker(o):o.path?asShip(o):MONSTERS[o.id]&&!o.type?asMonster(o):o;
+// refugees (rf), an encounter on the road (rd), a worker (folk), a ship (its path over the water), a beast (a MONSTERS kind). Parties are made theirs by asParty
+const asWorldObject=o=>!o||o instanceof WorldObject?o:o.crit?asHerd(o):o.rf?asRefugees(o):o.rd?asRoadEnc(o):o.folk?asWorker(o):o.path?asShip(o):MONSTERS[o.id]&&!o.type?asMonster(o):o;
 // what lies under a click: the nearest clickable thing you can see
 function pickAt(wx,wy){
   const V=vis(),c=[],add=(o,r,dy)=>{const d=Math.hypot(o.x-wx,o.y-(dy||0)-wy);if(d<r&&Math.hypot(o.x-P.x,o.y-P.y)<V*1.2)c.push([d,o])};
@@ -140,7 +140,7 @@ function dayTick(){
   if(P.fac){P.gold+=troopCount();addHonor(P.fac,1,true)}
   worldDay();patrolDay();relDay();monsterDay();siteDay();critterDay();siegeDay();landDay();econDay();estateDay();caravanDay();shipDay();compDay();woundedDay();chiefDay();refugeeDay();caravanUpkeep();fiefDay();questDay();
   saveGame(true);
-  if(!P.stay&&Math.random()<.32)roadEvent();
+  if(!P.stay&&Math.random()<ROAD_EVENT_DAY)roadEvent();
 }
 /* the speed you set holds till you change it (the owner, 2026-10-19): no drop to 1x on arriving, on danger in sight, or when an
    event or a window opens (windows pause the map anyway). dangerInSight stays for whoever asks what is about */
@@ -173,7 +173,7 @@ function updateWorld(dt){
       if(walk(P,dx,dy,step)){P.stuck=0;train('scout',step/TILE*.08);if(mountDef())train('ride',step/TILE*.1)}else{P.stuck+=d;if(P.stuck>.4){P.tx=null;P.stuck=0}}
     }
   }
-  if(updateSites())return;
+  if(updateSites()||updateRoad(d))return;// (the sites you reach; the encounters on the road: encounters.js)
   updateFights(d);
   updateShips(d);
   // every party's brain (brains.js), then the beasts and the wanderers

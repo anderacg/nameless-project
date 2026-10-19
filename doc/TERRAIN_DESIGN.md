@@ -418,7 +418,7 @@ Two battle types are built on the phase 3+4 snapshot: `BTYPE` in `setup.js`, and
   - The ambushers' first charge out of hiding gets `AMBUSH`'s shock and the "Ambush!" callout, as phase 3 built them.
   - The AI lying in wait goes straight in for `BTYPE.rush` (6 s): its foot charges and its riders ride at once. A column of the AI's marches on west along the road until it sees whoever lies in wait.
 - **Spring an ambush:** riding at a band, lord, patrol or caravan where there is cover, the panel offers it beside Fight (`bt-spring`). Your band starts hidden beside the road and theirs in march order on it.
-- **The ambush road event** (only with terrain and cover; `TERRAIN_EVENTS` in `events.js`, kept apart from `EVENTS` so a game without terrain draws from the very same list): fight (the ambush above), or cut the baggage loose and run (−4 food, −15 gold, −4 morale).
+- **The ambush on the road** (only with terrain and cover; since the encounters on the map, `ROAD_ENC.ambush` in `world/encounters.js`, doc/ENCOUNTERS_DESIGN.md: unseen below Scouting 2, it springs as you pass): fight (the ambush above), or cut the baggage loose and run (−4 food, −15 gold, −4 morale).
 - **Telling the player:** the panel says **Ambush!** and its ground line says "The road runs between woods / dune ridges / low ridges". The battle opens with "Ambushed!" (or "Lie in wait").
 - **Window frame:** the pre-battle panel and the event's choice page stay forced choices with no bar. Esc pauses there. The event's outcome ends with the `nav` bar, "Continue".
 
