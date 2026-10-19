@@ -47,7 +47,8 @@ function holdingEnts(t,ents,cam,V){
         if(ESTATES[l.k]&&sabotaged(t,l.k)){const now=performance.now()/1000;for(let i=0;i<6;i++){const ph=(now*.35+i/6)%1;ctx.globalAlpha=(1-ph)*.6;rect(ctx,ph<.3?'#4a4440':'#7a7470',Math.round(X+N/2-1+Math.sin(ph*6+i)*3+ph*5),Math.round(Y-N*.6-ph*20),2,2)}ctx.globalAlpha=1}
         if(l.k==='centre'&&l.st!=='ruined'){if(s.flag)drawFlag(col,X+s.flag[0],Y-N+s.flag[1],t.seed);holdingLabel(t,cam,X,Y,N)}
         if(ESTATES[l.k]){const m=lotMid(l);if(Math.hypot(m.x-P.x,m.y-P.y)<60)txt(ESTATES[l.k].n,Math.round(m.x-cam.x),Y+8,'#c8c2ae','center')}}});
-      if(l.k==='port'&&l.st==='built')for(const o of estateBoats(t,bldLv(t,'port')))ents.push({y:o.y,f:()=>drawMoored(o,cam)})}
+      if(l.k==='port'&&l.st==='built')for(const o of estateBoats(t,bldLv(t,'port')))ents.push({y:o.y,f:()=>drawMoored(o,cam)});
+      if(l.k==='pasture'&&l.st==='built'&&live)penEnts(t,ents,cam)}// (its herd, inside its fence: critters.js)
 }
 // a building site: what is built so far (from the ground up, as the work goes on) behind scaffolding, a worker on the planks
 // hammering; for an upgrade (full) the building stands whole with scaffolding against its side
@@ -90,9 +91,10 @@ function pierOf(t){
 const CROPS={grass:[['#c8a848','#a88a38'],['#86a440','#68862e'],['#c8a848','#a88a38'],['#9a7a4a','#7a5c36']],frost:[['#b8b090','#9a9274'],['#8a9a6a','#6e7e54']],
   desert:[['#c8a050','#a8843e'],['#8aa048','#6a8436']],swamp:[['#8a9a48','#6e7e3a'],['#6a9a5a','#4e7a46']]};
 const SOIL={grass:'#6e5434',frost:'#8a8070',desert:'#a07a48',swamp:'#4e4430'};
-// the flat part of an estate at its level, as one picture placed at (cv.x, cv.y) on the map
+// the flat part of an estate at its level, as one picture placed at (cv.x, cv.y) on the map; kept on its lot (l._eg) until its level
+// changes: an estate pulled down and placed again elsewhere, or another world's holding of the same name, draws its own
 function estateGround(t,k,lv){
-  const key='eg'+t.name+k+lv;if(spr[key]!==undefined)return spr[key];const p=bldSpots(t)[k];if(!p)return spr[key]=null;
+  const l=lotAt(t,k),p=bldSpots(t)[k];if(!l||!p)return null;if(l._eg!==undefined&&l._egLv===lv)return l._eg;l._egLv=lv;
   const c=climAt(p.x,p.y),plots=plotsAt(t,k,lv),pier=k==='port'?pierOf(t):null,plen=pier?10+lv*6:0,tiles=[[p.tx,p.ty],...plots];
   let x0=Math.min(...tiles.map(q=>q[0]))*TILE-2,y0=Math.min(...tiles.map(q=>q[1]))*TILE-2,x1=(Math.max(...tiles.map(q=>q[0]))+1)*TILE+2,y1=(Math.max(...tiles.map(q=>q[1]))+1)*TILE+2;
   if(pier){x0=Math.min(x0,pier.x-plen-6);x1=Math.max(x1,pier.x+plen+6);y0=Math.min(y0,pier.y-plen-6);y1=Math.max(y1,pier.y+plen+6)}
@@ -133,7 +135,7 @@ function estateGround(t,k,lv){
     if(k==='mine'){for(let i=0;i<14;i++)r(i%3?'#5a5650':'#7a766e',X+10+Math.floor(h(i,1,12)*7),Y+11+Math.floor(h(i,2,12)*4),1,1);r('#6a6a6a',X+4,Y+15,8,1)}
     if(pier){const pi=PX.pier({dir:pier.dir,len:plen,seed:t.seed});g.drawImage(pi.img,Math.round(pier.x-pi.ox-x0),Math.round(pier.y-pi.oy-y0))}
   });
-  cv.x=x0;cv.y=y0;return spr[key]=cv;
+  cv.x=x0;cv.y=y0;return l._eg=cv;
 }
 // boats moored at a port's pier, drawn as the ships that sail (ships.js shipSprite, moored): a rowing boat (16 x 16) for each
 // level up to two, and at a port of the third level a cog (32 x 32) with its sail furled in place of the second. Along a pier
@@ -142,9 +144,9 @@ function estateGround(t,k,lv){
 // the pier, a little off its side. Each is kept only where its whole hull floats on water, clear of the other boat (else the
 // next place along the pier or on its other side; a cog that fits nowhere gives way to a rowing boat). Each: {b:{img,ax,ay},
 // x, y (the middle of its waterline), seed, big, box (its hull on the map: [left, top, right, bottom]), ropes (its mooring
-// lines, from its posts to the pier: [x0, y0, x1, y1], the boat's end first)}
+// lines, from its posts to the pier: [x0, y0, x1, y1], the boat's end first)}; kept on the port's lot (l._bt) by its level and flag
 function estateBoats(t,lv){
-  const pr=pierOf(t);if(!pr||!lv)return[];const col=t.owner&&FACS[t.owner]?FACS[t.owner].col:null,key='bt'+t.name+lv+(col||'');if(spr[key])return spr[key];
+  const pr=pierOf(t),l=lotAt(t,'port');if(!pr||!lv||!l)return[];const col=t.owner&&FACS[t.owner]?FACS[t.owner].col:null,key=lv+(col||'');if(l._bt&&l._btK===key)return l._bt;l._btK=key;
   const len=10+lv*6,v=pr.dir==='n'||pr.dir==='s',sg=pr.dir==='s'||pr.dir==='e'?1:-1,out=[];
   const wet=(x,y)=>x>=0&&y>=0&&x<MW*TILE&&y<MH*TILE&&tAt(Math.floor(x/TILE),Math.floor(y/TILE))===T_WATER;// (on the map: not the sea past its edge)
   const span=v?null:[Math.min(pr.x,pr.x+sg*len),Math.max(pr.x,pr.x+sg*len)];
@@ -170,7 +172,7 @@ function estateBoats(t,lv){
         if(v){const p=posts[1];ropes.push([p[0],p[1],pr.x+side*4,p[1]+2])}
         else for(const p of posts){const ex=Math.max(span[0]+1,Math.min(span[1]-1,p[0]-face*2));if(Math.abs(ex-p[0])<8)ropes.push([p[0],p[1],ex,side>0?pr.y+2:pr.y-3])}
         out.push({b:{img,ax:n>>1,ay:n-1},x:L+(n>>1),y,seed,big,box,up,ropes});done=true;break}}}
-  return spr[key]=out;
+  return l._bt=out;
 }
 // a moored boat rocks gently at its lines (a pixel, slower than one under way)
 function drawMoored(o,cam){

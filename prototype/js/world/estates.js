@@ -102,11 +102,12 @@ const estateGuards=(t,k)=>{const lv=bldLv(t,k),near=Math.hypot(bldSpots(t)[k].x-
   for(let i=0;i<n;i++){const c=RACES[t.races[i%t.races.length]];a.push(i%3===2?c.ranged:c.melee)}return a};
 /* met on the map: the estate's own areas down the rail (window.js), as the rooms of a house: its overview (the rail's header:
    what it is, its level, owner and state: townui.js bldTop), where its workers live (folk: a card for them, Talk: folk.js
-   workerMeet), a pasture's pens (herd: its herders, Buy livestock: critters.js showHerd), its fields, its works (what it made
-   and its stores: townui.js bldWorks); what is done to the estate itself is on its overview (estateDeeds): building your own,
-   raiding someone else's (its guards, sabotage, plunder and burning). G.est: the estate; G.estTab: the area open (null: the overview).
-   The worker's talk and the herders' window open on the same rail; Back returns to the area they were met in */
-// each kind's areas, by what they hold: folk (its workers' home), herd (its herd's pens), fields, works (what it makes, its stores)
+   workerMeet), a pasture's pens (herd: its herd and what the pasture makes of it, to look at: nothing is sold), its fields, its
+   works (what it made and its stores: townui.js bldWorks); what is done to the estate itself is on its overview (estateDeeds):
+   building your own, raiding someone else's (its guards, sabotage, plunder and burning). G.est: the estate; G.estTab: the area
+   open (null: the overview). The worker's talk opens on the same rail; Back returns to the area he was met in */
+// each kind's areas, by what they hold: folk (its workers' home), herd (its herd's pens: only while it has one), fields, works
+// (what it makes, its stores)
 const ESTATE_AREAS={farm:{folk:'Farmhouse',fields:'Fields',works:'Barn'},pasture:{folk:'Herders’ hut',herd:'Pens',works:'Dairy'},lumber:{folk:'Woodcutters’ camp',works:'Log yard'},
   mine:{folk:'Miners’ camp',works:'Mine shaft'},quarry:{folk:'Quarrymen’s lodge',fields:'Quarry pit',works:'Stone yard'},port:{folk:'Fishers’ huts',works:'Piers'},
   workshop:{works:'Workshop'},smithy:{works:'Forge'},brewery:{works:'Brewhouse'}};
@@ -116,7 +117,7 @@ function estateMenus(o){
   const t=townBy(o.town),ms=[];if(!t)return ms;const k=o.k,E=ESTATES[k],A=ESTATE_AREAS[k]||{},lv=bldLv(t,k),own=t.owner==='player';
   const hands=W.folk.filter(f=>f.home===t.name&&f.k===k).length,herd=k==='pasture'&&lv&&herdOf(t),L=(t.last||{}).out||{},M=MAKE[k]||{};
   if(lv&&E.work&&A.folk)ms.push(['folk',A.folk,'house',hands?hands+' '+E.work+(hands>1?'s':'')+' about':'nobody about']);
-  if(herd&&A.herd)ms.push(['herd',A.herd,'sheep',herd.n+' '+CRITTERS[herd.id].n.toLowerCase()+' grazing; the herders sell']);
+  if(herd&&A.herd)ms.push(['herd',A.herd,'sheep',herd.n+' '+CRITTERS[herd.id].n.toLowerCase()+' grazing']);
   if(lv&&PLOTS[k]&&A.fields)ms.push(['fields',A.fields,HOLD_ICO[k],plotsAt(t,k,lv).length+' of '+PLOTS_AT[k](lv)+' worked']);
   if(lv&&A.works&&(M.out||E.goods.length))ms.push(['works',A.works,WORKS_ICO[k]||HOLD_ICO[k],Object.keys(M.out||{}).some(g=>L[g])?'made '+Object.keys(M.out).filter(g=>L[g]).map(g=>L[g]+' '+GOODS[g].n.toLowerCase()).join(', ')+' yesterday':'nothing made yesterday']);
   return ms;
@@ -131,7 +132,7 @@ function estateRail(o,tab,w,key){const t=townBy(o.town),lv=bldLv(t,o.k);
 function estateMeet(o){
   const t=townBy(o.town),k=o.k;if(!t||!bldLv(t,k))return;G.est=o;G.estTab=null;G.mode='dialog';P.tx=null;G.chase=null;showEstate();
 }
-// back from a worker's talk or the herders' window: the estate again, at the area they were met in
+// back from a worker's talk: the estate again, at the area he was met in
 function estateBack(o,tab){estateMeet(o);if(G.est){G.estTab=tab;showEstate()}}
 function showEstate(){
   const o=G.est,t=townBy(o.town),k=o.k,ms=estateMenus(o),tab=ms.some(m=>m[0]===G.estTab)?G.estTab:null;G.estTab=tab;ensureEcon(t);
@@ -143,7 +144,10 @@ function showEstate(){
         acts:[['es-folk',f.id,'Talk'],['es-recruit',f.id,'Recruit',workerRecruitWhy(t,f)]]}})):'<p class="muted">Nobody is in: '+(ws.length?'they are out with the day’s load.':'the '+E.work+'s are out of sight.')+'</p>')+
       (away?'<p class="muted">'+away+' more out on the road to '+t.name+' with the day’s load: meet them there.</p>':'')+(lostHands(t,k)?'<p class="bad">'+lostHands(t,k)+' pair'+(lostHands(t,k)>1?'s':'')+' of hands short: it makes '+Math.round(handsLeft(t,k)*100)+'% until someone new moves in.</p>':'')+
       '<p class="muted" style="font-size:13px">A worker you recruit becomes a '+ST[recruitKind(t,{k,job:E.work})].n.toLowerCase()+' (tier 0, trains into '+ST[UP[recruitKind(t,{k,job:E.work})][0]].n+'s). The estate is a pair of hands short for '+REFILL_DAYS+' days'+(t.owner==='player'?'':'; '+t.name+' minds it a little (reputation −2)')+'.</p>'}
-  else if(tab==='herd'){const c=herdOf(t);body='<p>The herders watch you over their staffs while the '+CRITTERS[c.id].n.toLowerCase()+' graze: '+c.n+' in the pens, '+plotsAt(t,k,lv).length+' of '+PLOTS_AT[k](lv)+' fields fenced.</p>'+herdRows(c)+(G.herdMsg?'<p class="gold">'+G.herdMsg+'</p>':'')}
+  else if(tab==='herd'){const c=herdOf(t),D=CRITTERS[c.id],out=(MAKE[k]||{}).out||{},f=plotsAt(t,k,lv).length;
+    body='<p>The '+D.n.toLowerCase()+' graze behind the fence while the herders watch over them. The herd is the '+E.n.toLowerCase()+'’s own: what it gives goes to '+t.name+'.</p>'+
+      railCards([{pic:critterPic(c.id),name:D.n,role:'The herd of the '+E.n.toLowerCase(),n:c.n,facts:[f+' of '+PLOTS_AT[k](lv)+' fields fenced',['Not for sale','muted']],
+        note:'Each day at level '+lv+' it makes about '+Object.keys(out).map(g=>Math.round(out[g]*lv*10)/10+' '+GOODS[g].n.toLowerCase()).join(', ')+' for '+t.name+'’s stores.'}])}
   else if(tab==='fields'){const n=plotsAt(t,k,lv).length,need=PLOTS_AT[k](lv);
     body='<p>'+E.d+'</p>'+railRow('Fields worked',n<need?'<span class="bad">No open ground for more: it makes '+Math.round(fieldShare(t,k)*100)+'%</span>':'All its level works',null,n+' / '+need)+
       (lv<bldCap(t,k)?railRow('At level '+(lv+1),'It would work '+PLOTS_AT[k](lv+1)+' fields',null,null):'')}
@@ -191,11 +195,10 @@ function estateFief(a,arg){
 const sabotageChance=(t,k)=>clamp(.35+.03*skill('scout')+.02*P.attr.agi+(darkness()>.5?.2:0)-.06*bldLv(t,k)-(partySize()>20?.1:0),.1,.9);
 function sabotage(t,k){t.sab=t.sab||{};t.sab[k]=G.day+3+2*bldLv(t,k)}
 function estateAct(a,arg){
-  // the rail: one of its areas, or home: its overview (from its workers or its herd too)
-  if(a==='es-tab'){const o=G.mode==='herd'?G.herdFrom:G.est||G.wkFrom,t=o&&townBy(o.town);if(!t)return;if(!G.est){G.wk=G.wkFrom=G.herd=G.herdFrom=null;G.est=o;G.mode='dialog'}
+  // the rail: one of its areas, or home: its overview (from its workers too)
+  if(a==='es-tab'){const o=G.est||G.wkFrom,t=o&&townBy(o.town);if(!t)return;if(!G.est){G.wk=G.wkFrom=null;G.est=o;G.mode='dialog'}
     G.estTab=arg==='home'?null:arg;return showEstate()}
   const o=G.est,t=o&&townBy(o.town);if(!t||!bldLv(t,o.k)){closeDialog();return}
-  if(a==='es-herd'){const c=herdOf(t);if(c){G.est=null;openHerd(c,o)}return}
   if(a==='es-folk'){const ws=W.folk.filter(f=>f.home===t.name&&f.k===o.k),f=arg&&ws.find(x=>x.id===arg)||ws.find(f=>f.st==='in')||ws[0];if(f){G.est=null;workerMeet(f,o)}return}// (one by his id, from his card)
   if(a==='es-recruit'){const f=W.folk.find(x=>x.id===arg&&x.home===t.name&&x.k===o.k);if(f&&workerRecruit(f))updateHUD(true);return showEstate()}
   if(a==='es-ask')return estateAsk(t,o.k,arg);

@@ -1,7 +1,8 @@
 'use strict';
 // Estates, walls and folk: what each holding has built and where; prices and fief income from estates; building in your fief;
 // walls in sieges (defender level, AI siege length, garrison cap, breach on capture); raids and sacks burn estates;
-// farmers and woodcutters walking to work; caravans carrying goods, being robbed, traded with and attacked; saves.
+// farmers and woodcutters walking to work; caravans carrying goods, being robbed, traded with and attacked; saves; each estate's
+// pieces (ground, boats, herd, workers) stay with it.
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);
 try{
  const t=T,G=t.G,P=t.P,W=t.W,TW=t.TOWNS;try{localStorage.clear()}catch(e){}
@@ -83,6 +84,26 @@ try{
   P.x=far.x;P.y=far.y;P.tx=null;const d0=G.day;for(let i=0;i<179;i++){G.encCool=99;t.updateWorld(1)}const mid=G.day;for(let i=0;i<2;i++){G.encCool=99;t.updateWorld(1)}
   ok(mid===d0&&G.day===d0+1,'a day on the map lasts 180 seconds at 1x');
   G.clock=t.DAY*.59;const l=t.darkness();G.clock=t.DAY*.61;const dusk=t.darkness();G.clock=t.DAY*.8;const n=t.darkness();ok(l===0&&dusk>0&&dusk<1&&n===1,'daylight for 60% of the day, then dusk and night ('+t.timeOfDay()+')');G.mode='world'}
+ // ---- each estate's pieces stay with it: its fields, pens, pits and pier (estateGround), a port's moored boats (estateBoats), a
+ // pasture's herd (critters.js penSpots) and its workers. Kept on the estate's lot: pulled down and placed again elsewhere (or a
+ // holding of the same name in another world), its pieces are drawn at the new place, never the old
+ {const TILE=t.TILE,bad=[],kinds=new Set();
+  for(const x of TW)for(const l of x.lots||[]){const k=l.k,lv=t.bldLv(x,k);if(!t.ESTATES[k]||!lv)continue;const g=t.estateGround(x,k,lv);if(!g)continue;kinds.add(k);
+    const tiles=[[l.x,l.y],...t.plotsAt(x,k,lv)],inside=([tx,ty])=>tx*TILE>=g.x&&ty*TILE>=g.y&&(tx+1)*TILE<=g.x+g.width&&(ty+1)*TILE<=g.y+g.height;
+    if(!tiles.every(inside)||g.width>(l.n+8)*TILE*2)bad.push(x.name+' '+k);
+    if(k==='port')for(const b of t.estateBoats(x,lv)){const pr=t.pierOf(x);if(!pr||Math.hypot(b.x-pr.x,b.y-pr.y)>10+lv*6+40)bad.push(x.name+' boat')}}
+  ok(!bad.length&&kinds.size>=5,'every estate\'s ground lies on its own lot and fields, every moored boat by its pier ('+[...kinds].join(', ')+')'+(bad.length?': '+bad.slice(0,4).join('; '):''));
+  // pulled down and placed again three tiles east: its ground, and a port's boats, follow it
+  const moved=[];for(const k of ['farm','pasture','quarry','lumber','mine','port']){const x=TW.find(z=>t.bldLv(z,k)&&t.lotAt(z,k)&&t.estateGround(z,k,t.bldLv(z,k)));if(!x)continue;const l=t.lotAt(x,k),lv=t.bldLv(x,k),g0=t.estateGround(x,k,lv),b0=k==='port'&&t.estateBoats(x,lv).map(b=>b.x);
+    t.lotDrop(x,l);const n={...l,id:0,x:l.x+3,plots:(l.plots||[]).map(([a,b])=>[a+3,b])};for(const q of Object.keys(n))if(q[0]==='_')delete n[q];t.lotAdd(x,n);x._spots=null;
+    const g1=t.estateGround(x,k,lv),b1=k==='port'&&t.estateBoats(x,lv).map(b=>b.x);moved.push(k+(g1&&g0&&g1!==g0&&(k==='port'||g1.x===g0.x+3*TILE&&g1.y===g0.y)?'':' STAYED')+(k==='port'&&b0&&b1&&b0.length?(b1.join()!==b0.join()?'':' boats STAYED'):''));
+    t.lotDrop(x,n);t.lotAdd(x,l);x._spots=null}
+  ok(moved.length>=4&&moved.every(m=>!/STAYED/.test(m)),'an estate placed again elsewhere draws its pieces there, not where it stood ('+moved.join(', ')+')');
+  // its workers: those at work inside go with it; one out on the road goes home first
+  {const x=TW.find(z=>Object.keys(t.bldSpots(z)).some(k=>t.bldLv(z,k)&&t.ESTATES[k].work)),k=Object.keys(t.bldSpots(x)).find(k=>t.bldLv(x,k)&&t.ESTATES[k].work),lv=t.bldLv(x,k);
+   W.folk=[];t.FOLK_SEEN.clear();P.x=x.x;P.y=x.y+30;G.clock=t.DAY*.2;for(let i=0;i<5;i++)t.updateFolk(.05);const ws=W.folk.filter(f=>f.home===x.name&&f.k===k);ws.slice(1).forEach(f=>f.st='in');if(ws[0])ws[0].st='out';
+   x.bld[k]=0;t.updateFolk(.05);const left=W.folk.filter(f=>f.home===x.name&&f.k===k);ok(ws.length>=2&&left.length===1&&left[0]===ws[0],'an estate burnt to nothing: its workers inside go with it, the one on the road walks home first ('+ws.length+' → '+left.length+')');
+   x.bld[k]=lv;W.folk=[];t.FOLK_SEEN.clear()}}
  t.updateHUD(true);P.x=ash.x;P.y=ash.y+40;G.clock=t.DAY*.2;for(let i=0;i<60;i++)t.updateFolk(.05);t.frame();ok(true,'estates, walls, folk and caravans draw');
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}
 const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d)};

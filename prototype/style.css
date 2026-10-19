@@ -623,7 +623,16 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
    you), the chosen area's window beside it (its own title row and bottom bar; the content scrolls): its people as cards in a
    grid that wraps (.rcards), its things as rows.
    The panel is a size container: on a small one (a phone on its side) the rail slims to icons with short names */
-.panel.railed{flex-direction:row;gap:0;padding:0;overflow:hidden;container-type:size}
+.panel.railed,.panel.paged{flex-direction:row;gap:0;padding:0;overflow:hidden;container-type:size}
+/* a page (window.js PageScreen): the window alone, no rail; its icon by its name; on top its banner, the place's picture from edge
+   to edge at a whole scale (--k: 4, 2 on a small screen; its picture --bw × --bh), then what you know and its key actions */
+.panel.paged .rwin>.top{justify-content:flex-start;gap:12px;border-radius:var(--r-lg) var(--r-lg) 0 0}.panel.paged .rw-h{flex:1}
+.panel.paged .rwin>.nav{border-radius:0 0 var(--r-lg) var(--r-lg)}
+.pg-banner{--k:4;flex:none;margin:-14px -20px 0;height:calc(var(--bh)*var(--k)*1px);background-color:#10131c;background-position:center;background-repeat:no-repeat;
+  background-size:calc(var(--bw)*var(--k)*1px) calc(var(--bh)*var(--k)*1px);image-rendering:pixelated;border-bottom:1px solid var(--line);box-shadow:inset 0 0 36px rgba(0,0,0,.45)}
+.panel .pg-facts{margin:0;font-size:var(--fs-md)}
+.panel.paged .rwbody>.rkacts{position:sticky;bottom:0;z-index:1;padding-top:8px;background:var(--panel);box-shadow:0 -10px 10px -4px var(--panel)}
+.panel .pg-msg{margin:0;padding:8px 12px;background:rgba(232,185,74,.08);border:1px solid var(--trim);border-radius:var(--r-md)}
 .rail{flex:none;width:232px;display:flex;flex-direction:column;gap:2px;padding:0 8px 10px;overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:var(--line-2) transparent;
   background:linear-gradient(180deg,#141927,#0f121b);border-right:1px solid var(--line);border-radius:var(--r-lg) 0 0 var(--r-lg)}
 .rail-head{position:sticky;top:0;z-index:1;flex:none;display:flex;align-items:center;gap:10px;margin:0 -8px 4px;padding:14px 12px 12px;text-align:left;color:var(--fg);cursor:pointer;
@@ -687,20 +696,6 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 .rka-t b{font-size:var(--fs-base)}.rka-t small{font-size:var(--fs-sm);color:var(--muted)}.rka-t small.rka-why{color:var(--danger)}
 .rkact kbd{position:absolute;right:8px;top:7px;font-size:var(--fs-2xs);font-weight:700;color:var(--faint)}
 .panel .rka-note{margin:0;font-size:var(--fs-sm);color:var(--muted)}
-/* a first page of big tiles (window.js RailScreen tiles): a framed picture over its name and lines, the whole tile opening the area,
-   its one action under it; two or three a row, smaller when there are many */
-.rtiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}.rtiles.many{grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}
-.rtile{display:flex;flex-direction:column;min-width:0;background:linear-gradient(180deg,#232a40,#1a1f30);border:1px solid var(--line-2);border-radius:var(--r-md);overflow:hidden;box-shadow:0 2px 0 rgba(0,0,0,.3)}
-.rtile:hover,.rtile:focus-within{border-color:var(--accent)}
-.rt-open{position:relative;display:flex;flex-direction:column;gap:8px;padding:10px;text-align:left;color:var(--fg);background:transparent;border:0;cursor:pointer}
-.rt-pic{position:relative;display:flex;justify-content:center;background:#0d1018;border:1px solid var(--line);border-radius:var(--r-sm);overflow:hidden}
-.rt-pic::after{content:'';position:absolute;inset:0;box-shadow:inset 0 0 28px rgba(0,0,0,.55),inset 0 0 0 2px rgba(0,0,0,.35);pointer-events:none}
-.rt-pic img{display:block;width:256px;height:112px;image-rendering:pixelated}
-.rt-t{display:flex;flex-direction:column;gap:2px;line-height:1.3}.rt-t b{font-size:var(--fs-lg);color:var(--accent)}.rt-t small{font-size:var(--fs-sm);color:var(--muted)}
-.rt-open kbd{position:absolute;right:16px;top:16px;font-size:var(--fs-2xs);font-weight:700;color:#fff;background:rgba(0,0,0,.55);border:1px solid var(--line-2);border-radius:4px;padding:1px 5px}
-.rt-act{display:flex;gap:6px;padding:0 10px 10px}.rt-act .btn{flex:1;min-height:38px}
-@container ovl (max-width:760px) or (max-height:520px){.rtiles,.rtiles.many{grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:8px}.rt-pic img{width:128px;height:56px}.rt-open{padding:8px;gap:6px}}
-@media (pointer:coarse){.rt-open kbd{display:none}}
 /* a picker or a confirm (window.js railPicker, railConfirm): the list to choose from, a count or a tick each, the total */
 .pk-list{display:flex;flex-direction:column}
 .pk-row.on{background:rgba(232,185,74,.06)}
@@ -725,8 +720,8 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
   .ri-dot{left:auto;right:12px;top:3px}
   .rcards{grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:8px}
   .rcard{padding:8px 9px;gap:6px}.rc-pic{width:36px;height:36px}
-  .rwin>.top{padding:7px 12px 6px}.rwin h2{font-size:var(--fs-lg)}.rw-h .muted{font-size:var(--fs-sm)}
-  .rwbody{padding:10px 12px 12px;gap:10px}
+  .rwin>.top{padding:7px 12px 6px}.rwin h2{font-size:var(--fs-lg)}.rw-h .muted{font-size:var(--fs-sm)}.rwin>.top .rh-flag{width:28px;height:28px}
+  .rwbody{padding:10px 12px 12px;gap:10px}.pg-banner{--k:2;margin:-10px -12px 0}
   .rwin>.nav{padding:6px 12px 8px}
   .rwbody .recwrap{flex-direction:column}.rwbody .reccard{position:static;width:100%}
 }
@@ -746,7 +741,7 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
   .panel.railed .rail-i{flex:none;width:62px}
   .panel.railed .rwin{min-height:0}
   .panel.railed .rwbody .rcards{grid-template-columns:minmax(0,1fr)}
-  .panel.railed .rkacts{grid-template-columns:minmax(0,1fr)}
+  .panel.railed .rkacts,.panel.paged .rkacts{grid-template-columns:minmax(0,1fr)}
 }
 
 /* ---------- 9. responsive ---------- */
@@ -823,8 +818,8 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
   .recwrap,.cmwrap{flex-direction:column}
   .reccard,.cmside{position:static;width:100%}
   /* (a rail window keeps its own edges: the safe area round it, square corners; beside a town's window, room for the people tab) */
-  .panel.railed{padding:var(--sa-t) var(--sa-r) var(--sa-b) var(--sa-l)}
-  .rail,.rwin>.top,.rwin>.nav{border-radius:0}
+  .panel.railed,.panel.paged{padding:var(--sa-t) var(--sa-r) var(--sa-b) var(--sa-l)}
+  .rail,.rwin>.top,.rwin>.nav,.panel.paged .rwin>.top,.panel.paged .rwin>.nav{border-radius:0}
   .screen[data-mode="town"] .panel.railed{padding-right:calc(var(--sa-r) + 40px)}
   /* (the people drawer: a shorter map, tighter rows, so the list has the room) */
   .pp-head{padding:8px 12px 6px}.pp-head h2{font-size:var(--fs-lg)}.pp-tabs{padding:0 12px 6px}

@@ -11,6 +11,8 @@ const ICONS={
   prisoners:{p:{c:'#9aa3ad',d:'#5a6270'},px:['..ccc....','.c...c...','.c...c...','ccccccc..','ccdddcc..','cccdccc..','ccccccc..','.........','.........']},
   wounded:{p:{r:'#e0605a',w:'#f4efe0'},px:['.........','..wwwww..','.wwwrwww.','.wwwrwww.','.wrrrrrw.','.wwwrwww.','.wwwrwww.','..wwwww..','.........']},
   furs:{p:{b:'#a07850',d:'#6a4a30'},px:['.b.....b.','.bbbbbbb.','..bdbdb..','..bbbbb..','..bbbbb..','..bdbdb..','.bb...bb.','.........','.........']},
+  eye:{p:{d:'#8a96a8',w:'#f4efe0',k:'#3a7ac8',b:'#1a2030'},px:['.........','.........','..ddddd..','.dwwkwwd.','dwwkbkwwd','.dwwkwwd.','..ddddd..','.........','.........']},
+  truce:{p:{p:'#8a6a44',w:'#f4efe0',s:'#c8c4b4'},px:['.pwwwww..','.pwwwwsw.','.pwwws...','.pws.....','.p.......','.p.......','.p.......','ppp......','.........']},
   region:{p:{r:'#e0605a',w:'#f4efe0',d:'#8a2a24'},px:['..rrrrr..','.rrrrrrr.','.rrwwwrr.','.rrwwwrr.','.rrrrrrr.','..rrrrr..','...rrr...','....d....','.........']},
   renown:{p:{y:'#e8b94a',w:'#fff6c0'},px:['....y....','....y....','...ywy...','yyyyyyyyy','.yyyyyyy.','..yyyyy..','..yy.yy..','.yy...yy.','.........']},
   banner:{p:{p:'#8a6a44',f:'#6fa8e0'},px:['.pfffff..','.pffffff.','.pfffff..','.pffff...','.p.......','.p.......','.p.......','ppp......','.........']},

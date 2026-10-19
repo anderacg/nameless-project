@@ -27,7 +27,7 @@
 // G.quietEvents is on, and the view is the tests' fixed 576 x 360. Hash: FNV-1a 32-bit over bytes, char codes or 32-bit words;
 // W8's places at 1e-6 px.
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.push('INFO '+m),t=T,G=t.G,P=t.P,W=t.W;
-const EXPECT={W1:'65e24662',W2:'2b49a168',W3:'7a0dcbac',W4:'46450e62',W5:'6587a43c',W6:'0a25d50c',W7:'a53f54ac',W8:'d4c01429',B2:'6f533c8c'};// (at 0a42712; B2 at R3; W6-W8 at Phase 1; W6 at depth and smooth walking; W7, B2 at save v3)
+const EXPECT={W1:'65e24662',W2:'2b49a168',W3:'7a0dcbac',W4:'46450e62',W5:'6587a43c',W6:'b82e8af1',W7:'a53f54ac',W8:'d4c01429',B2:'6f533c8c'};// (at 0a42712; B2 at R3; W6-W8 at Phase 1; W6 at depth and smooth walking; W7, B2 at save v3)
 // (W5, W6 re-recorded in Phase 0 wave 1, on purpose, a fix: the painted world and the minimap were the title screen's, from the
 //  lots main.js lays out at load, never repainted for a game's own (begin lays out others); now begin repaints them, so the map
 //  shows the real lots. W6 moved only at the third spot (2688, 768) by night and day; was W5 aceeae00, W6 7a99f543)
@@ -45,6 +45,11 @@ const EXPECT={W1:'65e24662',W2:'2b49a168',W3:'7a0dcbac',W4:'46450e62',W5:'6587a4
 //  builder on his planks step by the clock, so they show another frame of the new cycles; with their frames held at 0 every part
 //  is as before. The world drawn at the screen's scale (core.js VS) is 1 in the tests' fixed view, so nothing else moves. W1-W5,
 //  W7, W8 and B2 unchanged)
+// (W6 again, 0a25d50c to b82e8af1, a pasture's herd made part of its estate (critters.js penEnts, drawn with the holding's lots):
+//  a cow to each fenced tile or two of a smaller kind, each kept inside its fence as it grazes (before: one animal a tile swinging
+//  3 px either way, a cow over the rails). Only the spots by a pasture moved: the first (Ashford's cattle) and the third (Karn
+//  Hold's goats), by day and by night (999c849a a10a58b9 f3510035 cff909bc, now 2b5e65e0 a8d18b3d 598f1d1e aad55e57); the middle
+//  spot's parts, W1-W5, W7, W8 and B2 unchanged: the herds move as before, only where they are drawn changed)
 // (W7 and B2 re-recorded in Phase 2 wave 1, once, on purpose (doc/WORLD_DESIGN.md §15.2, D7, D43): save v3, the format only:
 //  v 3, world.v 3, world.map {gen 'classic-0', settings null, sum} and world.edits [] added, world.seen as run lengths (fog.js
 //  seenSave). The same save turned back into v2's form (v 2, no map or edits, seen a bit a tile) still hashes to the old values,

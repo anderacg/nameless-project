@@ -54,8 +54,9 @@ function folkDoor(t,k){const sp=bldSpots(t)[k];return sp?{x:sp.x+rint(-3,3),y:sp
 // out on the map (seen, and met where he walks): on the way to the holding or back
 const folkOut=f=>f.st==='out'||f.st==='back';
 function updateFolk(d){
-  // workers belong to nearby holdings only; far ones go
-  const A=WORLD_SCALE.ai;W.folk=W.folk.filter(f=>{const t=townBy(f.home);return t&&Math.hypot(t.x-P.x,t.y-P.y)<A.folkNear+A.folkForget&&!f.gone});
+  // workers belong to nearby holdings only; far ones go, and so do those whose estate is gone (pulled down or burnt to nothing:
+  // one out on the road goes home first)
+  const A=WORLD_SCALE.ai;W.folk=W.folk.filter(f=>{const t=townBy(f.home);return t&&Math.hypot(t.x-P.x,t.y-P.y)<A.folkNear+A.folkForget&&!f.gone&&(f.st!=='in'||bldLv(t,f.k)>0)});
   for(const key of FOLK_SEEN){const t=townBy(key.split('|')[0]);if(!t||Math.hypot(t.x-P.x,t.y-P.y)>A.folkNear+A.folkForget)FOLK_SEEN.delete(key)}/* (out of reach: met afresh next time) */
   const now=dayPart(),win=now>=DELIVER.from&&now<DELIVER.to;
   for(const t of TOWNS){if(!t.bld||Math.hypot(t.x-P.x,t.y-P.y)>A.folkNear||ruined(t))continue;const sp=bldSpots(t);

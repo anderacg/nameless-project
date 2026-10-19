@@ -35,6 +35,29 @@ function parleyAct(a){
     return notice('New recruits',k+' brigands join your band. Your honest soldiers grumble (morale −'+c.morale+'), and every realm thinks a little less of you (−'+c.honorAll+' honor).','gold')}
   if(a==='pl-free'&&kind==='band'){P.renown+=1;bandGone(o);mood('mercy');G.par=null;return notice('Set free','You break their weapons and send them off. Some may find honest work; some will not.','good')}
 }
+/* a bandit camp or hideout, from its page (sites.js Lair): parley as with a band. Pay them to break camp (tribute: a price a
+   head of what you see, 12 gold), and they ride away, any bands sheltering there back on the road: no fight, no loot, no bounty.
+   Or, if they fear you as a cornered band would (stance: afraid), call on them to yield, at the band's yieldChance: they do, and
+   you choose their fate as a band's (lairFate: prisoners and their plunder, recruits, or let go), their chieftain your captive
+   if you take them prisoner; they do not, and it is the fight. Either way the place is empty for a while, as if beaten (lairGone) */
+const tribute=s=>12*s.guess().n;
+function lairGone(s,gone){questNotify('site',s);if(gone)(s.bands||[]).forEach(b=>{questNotify('band',b);chiefEscapes(b.ld)});else campEmpty(s);s.bands=[];clearPlace(s,SITE_TYPES[s.type].respawn)}
+function lairPay(s){const g=tribute(s);if(P.gold<g)return '';P.gold-=g;chiefEscapes(s.ld);s.ld=null;lairGone(s,false);
+  return 'You pay '+g+' gold. By nightfall they have broken camp and ridden off; the '+s.T.n.toLowerCase()+' lies empty.'}
+// (their power as you know it: as your scouts saw it, else as they look (Lair guess), the same the parley shows. They yield: their
+// fate is yours (G.siteSpy.yielded: everyone there, their own as scouted or rolled now); they refuse: the fight, with the same)
+function lairYield(s){const y=s.spied(),pw=y?s.power(s.all(y.list)):s.guess().pw;if(stance(pw)!=='afraid')return '';
+  const ok=Math.random()<yieldChance({power:()=>pw},'band'),own=y?y.list:s.foes();train('pers',ok?6:2);
+  if(!ok){log((s.ld?s.ld.name:'Their chieftain')+' refuses to yield and draws steel.','bad');s.fight(true,own);return ''}
+  G.siteSpy=Object.assign(G.siteSpy&&G.siteSpy.s===s?G.siteSpy:{s,ok:false},{yielded:s.all(own)});return 'They throw down their weapons.'}
+function lairFate(s,list,how){const ld=s.ld;s.ld=null;let m;
+  if(how==='cage'){const n=cage(list),gold=rint(5,15)+list.length*2;P.gold+=gold;P.renown+=2;if(ld)captureChief(ld);
+    m=n+' of them are bound and marched with you'+(list.length>n?'; the rest are disarmed and chased off':'')+'. You take '+gold+' gold they had stolen'+(ld?', and '+ld.name+' captive (hand him over for '+bountyOf(ld)+' gold: Hero, Party)':'')+'.'}
+  else if(how==='join'&&partyRoom()>0){let k=0;for(const u of list)if(u!=='chief'&&partyRoom()>0&&partyRoster(P).canAdd(u)){P.add(u);k++}
+    const c=CONDUCT.takeBrigands;P.morale=clamp(P.morale-c.morale,0,100);FIDS.forEach(f=>addHonor(f,-c.honorAll,true));mood('cruel');chiefEscapes(ld);
+    m=k+' brigands join your band. Your honest soldiers grumble (morale −'+c.morale+'), and every realm thinks a little less of you (−'+c.honorAll+' honor).'}
+  else{P.renown+=1;mood('mercy');chiefEscapes(ld);m='You break their weapons and send them off. Some may find honest work; some will not.'}
+  G.siteSpy=null;lairGone(s,true);return m}
 // what happens when you reach a roaming party: a hostile one that fears you is cornered; else the fight it wants
 function meetBand(b){if(cornered(b,'band'))return parley(b,'band');startEncounter({kind:'party',ref:b,n:b.n,list:b.troops.slice(),band:b.kind||'bandits'})}
 onAct('pl-',parleyAct);

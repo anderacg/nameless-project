@@ -79,32 +79,43 @@ onAct('pk-',(a,arg)=>{if(a!=='pk-set'||!PICK||!panel.classList.contains('picker'
 function railConfirm(o){PICK=null;showPanel('<div class="top"><h2>'+o.title+'</h2>'+(o.sub?'<span class="muted">'+o.sub+'</span>':'')+'</div>'+(o.text?'<p>'+o.text+'</p>':'')+
   (o.facts&&o.facts.length?'<ul class="tnotes">'+o.facts.map(f=>'<li>'+f+'</li>').join('')+'</ul>':'')+nav(o.back,o.confirm));panel.classList.add('picker','confirm')}
 const railQty=(n,a)=>'<div class="qty" role="group" aria-label="How many">'+[1,5].map(k=>'<button class="btn sm'+(n===k?' on':'')+'" type="button" data-act="'+a+'" data-arg="'+k+'" aria-pressed="'+(n===k)+'">×'+k+'</button>').join('')+'</div>';
-/* a rail screen's first page (its overview), past its own description and key actions: what is in each area. RailScreen is
-   the base: the areas as a short list (towns, holdings, estates). A screen type that wants a richer first page extends it and
-   picks tiles(): one big tile per area, a picture over two or three lines, the whole tile opening the area (its digit in a
-   corner), and the area's one action on it when it has one (sites.js SiteScreen). areas: [{act, arg, n (its name), note (a few
-   words, for the list), pic (tilePic), lines (for a tile), btn ([act, arg, label, why]: its one action)}] */
+/* a rail screen's first page (its overview), past its own description and key actions: what is in each area, as a short list.
+   RailScreen is the base (towns, holdings, estates, the travellers); areas: [{n (its name), note (a few words)}] */
 class RailScreen{
   overview(areas){return areas.length?'<ul class="tnotes">'+areas.map(x=>'<li>'+x.n+(x.note?': '+x.note:'')+'.</li>').join('')+'</ul><p class="muted" style="font-size:13px">Choose on the left'+(G.mouse&&G.mouse.type==='touch'?'':' (or its number key)')+'.</p>':''}
-  tiles(areas){return '<div class="rtiles'+(areas.length>4?' many':'')+'">'+areas.map((x,i)=>'<div class="rtile"><button class="rt-open" type="button" data-act="'+x.act+'" data-arg="'+x.arg+'" title="'+htmlText(x.n)+'">'+
-    '<span class="rt-pic" style="background:'+(TILE_BG[x.pic]||'')+'"><img src="'+(TILE_PICS[x.pic]||'')+'" data-pk="'+htmlText(x.pic||'')+'" alt=""></span><span class="rt-t"><b>'+x.n+'</b>'+(x.lines||[]).filter(Boolean).map(l=>'<small>'+l+'</small>').join('')+'</span>'+(i<RAIL_KEYS.length?'<kbd>'+RAIL_KEYS[i]+'</kbd>':'')+'</button>'+
-    (x.btn?'<div class="rt-act">'+railBtn(...x.btn)+'</div>':'')+'</div>').join('')+'</div>'}
 }
 const RAIL_SCREEN=new RailScreen();
-/* a tile's picture: sprites (a canvas, or several side by side: a building, a site, a few people) standing on a little patch of
-   their ground (env: the climate; the frame round it the same sky and ground, under a soft vignette), scaled up by a whole number, never smoothed; an icon (ico: icons.js)
-   at ×4 where no sprite fits. 128 × 56 pixels, shown at ×2; cached by key (tilePic gives the key, a tile's pic) */
-const TILE_PICS={},TILE_CV={},TILE_BG={},TILE_GROUND={grass:'#4a6a34',forest:'#365a2e',frost:'#aab8c4',desert:'#b8995a',swamp:'#46553a'};
-function tilePic(key,mk,env){if(TILE_PICS[key]!=null)return key;let url='';
-  try{const W=128,H=56,g0=TILE_GROUND[env]||TILE_GROUND.grass,cv=mkc(W,H,g=>{g.imageSmoothingEnabled=false;
-      const sky=g.createLinearGradient(0,0,0,H);sky.addColorStop(0,'#1b2133');sky.addColorStop(.62,'#2a3146');sky.addColorStop(.63,g0);sky.addColorStop(1,g0);g.fillStyle=sky;g.fillRect(0,0,W,H);
-      let ss=mk();if(ss&&ss.ico){const I=ICONS[ss.ico],c=mkc(9,9,h=>I.px.forEach((row,y)=>[...row].forEach((ch,x)=>{if(I.p[ch]){h.fillStyle=I.p[ch];h.fillRect(x,y,1,1)}})));ss=[c];ss.k=4}
-      ss=[].concat(ss||[]).filter(Boolean);const crop=c=>{const w=c.cw||c.width,h=c.ch||c.height;return [c,(c.width-w)>>1,c.height-h,w,h]};const cs=ss.map(c=>c.cw?crop(c):[c,0,0,c.width,c.height]);
-      const tw=cs.reduce((a,c)=>a+c[3],0)+2*(cs.length-1),th=Math.max(...cs.map(c=>c[4])),k=ss.k||Math.max(1,Math.min(4,Math.floor(Math.min((H-6)/th,(W-8)/tw))));
-      let x=(W-tw*k)>>1;const base=H-4;for(const [c,sx,sy,w,h] of cs){g.drawImage(c,sx,sy,w,h,x,base-h*k,w*k,h*k);x+=(w+2)*k}
-      });TILE_BG[key]='linear-gradient(#1b2133,#2a3146 62%,'+g0+' 62%,'+g0+')';
-    url=cv.toDataURL();TILE_CV[key]=cv}catch(e){url=''}
-  TILE_PICS[key]=url;return key}
+/* a page: a place with nothing to walk between (sites.js: a shrine, ruins, a cave, a bandit camp or hideout), all of it on one
+   page, no rail: its header (its icon, its name, what and where, your gold), its banner (a picture of the place only: banner()),
+   the last result, what it is and what you know of it, its key actions (railKeyActions: Q W E R), and its bottom bar (Back on the
+   left from a step inside it, the way out on the right). show(o, key): o {ico, title, sub, banner (its picture: pageBanner's
+   spec), msg, body, acts, note (railKeyActions), back, close}; drawn again with the same key, it keeps its scroll.
+   banner(b): the place as it stands on the map, its ground and what grows round it cropped from the painted world round its
+   point, its own pictures stamped on (pageBanner), the width of the window at a whole scale (×4; ×2 on a small screen: style.css),
+   never smoothed; no frame, no words */
+class PageScreen extends RailScreen{
+  banner(b){const k=pageBanner(b);return '<div class="pg-banner" role="img" aria-label="'+htmlText(b.alt||'')+'" data-pk="'+htmlText(k)+'" style="--bw:'+PAGE_BANNER.w+';--bh:'+PAGE_BANNER.h+';background-image:url('+BANNERS[k]+')"></div>'}
+  show(o,key){const old=panel.querySelector('.rwbody'),keep=old&&panel.dataset.page===key?old.scrollTop:0;
+    showPanel('<section class="rwin"><div class="top"><span class="rh-flag">'+icon(o.ico,22)+'</span><div class="rw-h"><h2>'+o.title+'</h2>'+(o.sub?'<span class="muted">'+o.sub+'</span>':'')+'</div><span class="gold rw-gold">'+icon('gold',14)+' '+P.gold+' gold</span></div>'+
+      '<div class="rwbody">'+(o.banner?this.banner(o.banner):'')+(o.msg?'<p class="gold pg-msg">'+o.msg+'</p>':'')+(o.body||'')+railKeyActions(o.acts||[],o.note)+'</div>'+nav(o.back,o.close)+'</section>');
+    panel.classList.add('wide','paged');panel.dataset.page=key;const b=panel.querySelector('.rwbody');if(b)b.scrollTop=keep}
+}
+const PAGE_SCREEN=new PageScreen();
+// a page's line of what you know at a glance: its parts (words, or markup) side by side
+const pageFacts=ps=>'<p class="pg-facts">'+ps.filter(Boolean).join(' · ')+'</p>';
+/* a page's banner picture: PAGE_BANNER w × h map pixels round the place's point (b.x, b.y: its foot, foot pixels from the top),
+   the painted world there (WorldArt's chunks: the ground, the woods, rock and roads), then its pictures (b.ps: [canvas, x, y,
+   alpha] at map pixels: its shadow, its sprite, a fire, a flag); cached by b.key (BANNERS: its picture as a data URL; BANNER_CV:
+   the canvas). Off the map's edge, the night's dark */
+const PAGE_BANNER={w:420,h:40,foot:35},BANNERS={},BANNER_CV={};
+function pageBanner(b){const k=b.key;if(BANNERS[k]!=null)return k;let url='';
+  try{const B=PAGE_BANNER,x0=Math.round(b.x-B.w/2),y0=Math.round(b.y-B.foot),W=MW*TILE,H=MH*TILE,cv=mkc(B.w,B.h,g=>{g.imageSmoothingEnabled=false;g.fillStyle='#10131c';g.fillRect(0,0,B.w,B.h);
+      for(let cy=Math.max(0,Math.floor(y0/CHUNK));cy<=Math.min(WorldArt.rows-1,Math.floor((y0+B.h-1)/CHUNK));cy++)for(let cx=Math.max(0,Math.floor(x0/CHUNK));cx<=Math.min(WorldArt.cols-1,Math.floor((x0+B.w-1)/CHUNK));cx++)
+        g.drawImage(WorldArt.chunk(cx,cy),cx*CHUNK-x0,cy*CHUNK-y0);
+      if(x0<0||y0<0||x0+B.w>W||y0+B.h>H){g.fillStyle='#10131c';g.fillRect(0,0,-x0,B.h);g.fillRect(W-x0,0,B.w,B.h);g.fillRect(0,0,B.w,-y0);g.fillRect(0,H-y0,B.w,B.h)}
+      for(const [c,px,py,al] of b.ps||[]){if(!c)continue;g.globalAlpha=al??1;g.drawImage(c,Math.round(px-x0),Math.round(py-y0))}g.globalAlpha=1});
+    url=cv.toDataURL();BANNER_CV[k]=cv}catch(e){url=''}
+  BANNERS[k]=url;return k}
 function showRail(o,key){
   const old=panel.querySelector('.rwbody'),keep=old&&panel.dataset.rail===key?old.scrollTop:0,rk=panel.querySelector('.rail'),rkeep=rk&&panel.dataset.railLab===(o.label||'')?rk.scrollTop:0;
   showPanel(railWindow(o));panel.classList.add('wide','railed');panel.dataset.rail=key;panel.dataset.railLab=o.label||'';
@@ -112,9 +123,10 @@ function showRail(o,key){
 }
 // (every other window is a plain one: showPanel takes the rail's classes off with the rest)
 // drawn again after an action: the focus back on the button pressed (else the chosen entry, else the header)
-function railFocus(a,arg){if(!panel.classList.contains('railed'))return;const b=panel.querySelector('.rwbody [data-act="'+a+'"][data-arg="'+arg+'"]:not([disabled])')||panel.querySelector('.rail-i.on')||panel.querySelector('.rail-head');if(b)b.focus({preventScroll:true})}
+const railShown=()=>!ov.hidden&&(panel.classList.contains('railed')||panel.classList.contains('paged'));
+function railFocus(a,arg){if(!railShown())return;const b=panel.querySelector('.rwbody [data-act="'+a+'"][data-arg="'+arg+'"]:not([disabled])')||panel.querySelector('.rail-i.on')||panel.querySelector('.rail-head');if(b)b.focus({preventScroll:true})}
 // a number key picks the rail's entry with that key (the window in front has a rail): true if one was there
 function railKey(k){if(ov.hidden||!panel.classList.contains('railed'))return false;const b=panel.querySelector('.rail-i[data-key="'+k+'"]');if(!b)return false;act(b.dataset.act,b.dataset.arg);return true}
 // a letter key (Q, W, E, R) presses the key action with that letter on the window in front: true if one was there (pressed, or
 // disabled: the key is taken either way)
-function railActKey(k){if(ov.hidden||!panel.classList.contains('railed'))return false;const b=panel.querySelector('.rkact[data-rk="'+k+'"]');if(!b)return false;if(!b.disabled)act(b.dataset.act,b.dataset.arg);return true}
+function railActKey(k){if(!railShown())return false;const b=panel.querySelector('.rkact[data-rk="'+k+'"]');if(!b)return false;if(!b.disabled)act(b.dataset.act,b.dataset.arg);return true}

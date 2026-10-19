@@ -1,6 +1,6 @@
 'use strict';
 /* ---------- panels ---------- */
-function showPanel(html){panel.classList.remove('wide','railed');panel.innerHTML=html;ov.hidden=false;G.modal=true;const b=panel.querySelector('button:not([disabled]),.card');if(b)b.focus({preventScroll:true})}
+function showPanel(html){panel.classList.remove('wide','railed','paged');panel.innerHTML=html;ov.hidden=false;G.modal=true;const b=panel.querySelector('button:not([disabled]),.card');if(b)b.focus({preventScroll:true})}
 function hidePanel(){ov.hidden=true;G.modal=false}
 /* every window's bottom bar: its navigation only; the game's choices stay in the window above it. back: [act, arg, label] on
    the left, when it was opened from another window; close: [act, arg, label, why disabled, noEsc] on the right, the way out,
@@ -161,8 +161,8 @@ function showTitle(screen){
 /* Esc: close what can be closed; otherwise open the Esc menu, which pauses everything and remembers the screen under it */
 // screens Esc closes, and the action that closes each
 // where you may save (the Esc menu and saveGame agree): anywhere calm, never mid-fight or mid-choice
-const ESC_SAVE=['world','town','char','inv','skills','site','herd','besiege','scene'];
-const ESC_CLOSE={comp:'cm-back',help:'help-close',journal:'journal-close',town:'leave',char:'char-close',inv:'inv-close',skills:'sk-close',site:'site-leave',herd:'herd-leave',besiege:'sg-leave'};
+const ESC_SAVE=['world','town','char','inv','skills','site','besiege','scene'];
+const ESC_CLOSE={comp:'cm-back',help:'help-close',journal:'journal-close',town:'leave',char:'char-close',inv:'inv-close',skills:'sk-close',site:'site-leave',besiege:'sg-leave'};
 // Esc closes the window in front, one press at a time: its bottom bar's Back (an inner window back to the one behind it), else
 // its way out (ui.js nav). A panel that only offers real choices (a fight, a perk, the fate of a holding) has no bar and is
 // never chosen for you: Esc then pauses with the Esc menu, as it does once no window is left.

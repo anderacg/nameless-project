@@ -1,12 +1,12 @@
 'use strict';
-// Clicking a town, enemy, site or herd you already stand beside opens it at once, without walking away and back.
+// Clicking a town, enemy, site or wild game you already stand beside opens it at once, without walking away and back.
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);
 try{
  const t=T,G=t.G,P=t.P,W=t.W;try{localStorage.clear()}catch(e){}
  const done=()=>{while(G.mode==='perk')t.act('perk',G.perkOffer[0])};
  t.act('begin','soldier');W.critters=[];W.lords=[];
  // (nobody else wanders by: workers, patrols, caravans and refugees come and go at random and would take the click)
- const reset=()=>{t.hidePanel();G.mode='world';G.modal=false;G.enc=null;G.town=null;G.site=null;G.herd=null;P.tx=null;W.folk=[];W.patrols=[];W.caravans=[];W.refugees=[]};
+ const reset=()=>{t.hidePanel();G.mode='world';G.modal=false;G.enc=null;G.town=null;G.site=null;P.tx=null;W.folk=[];W.patrols=[];W.caravans=[];W.refugees=[]};
  // a real click on the canvas, at a world position
  const click=(wx,wy)=>{t.drawWorld();const cv=document.querySelector('canvas'),r=cv.getBoundingClientRect(),x=r.left+(wx-G.cam.x)*r.width/t.VW,y=r.top+(wy-G.cam.y)*r.height/t.VH;
    cv.dispatchEvent(new PointerEvent('pointerdown',{clientX:x,clientY:y,pointerType:'mouse',bubbles:true}))};
@@ -24,7 +24,9 @@ try{
  reset();W.monsters=[];const s=W.sites.find(x=>x.type==='shrine');s.seen=true;P.x=s.x+6;P.y=s.y;G.lastSite=s;t.updateWorld(.01);ok(G.mode==='world','standing on a site you left does not reopen it');
  click(s.x,s.y-4);ok(G.mode==='site'&&G.site===s,'clicking it opens the shrine again');t.act('site-leave');
  // a herd
- reset();const h={crit:true,id:'cow',x:P.x+10,y:P.y,hx:P.x,hy:P.y,n:3,home:'Ashford',t:0,a:0,dir:1,tire:0,cool:4,milked:0};W.critters=[h];click(h.x,h.y-4);ok(G.mode==='herd','clicking a herd beside you opens the herders');t.act('herd-leave');
+ reset();const h={crit:true,id:'deer',x:P.x+10,y:P.y,hx:P.x,hy:P.y,n:3,t:0,a:0,dir:1,tire:0,cool:4};W.critters=[h];const m0=t.goodN('meat');click(h.x,h.y-4);ok(t.goodN('meat')>m0,'clicking wild game beside you hunts it at once');
+ // (livestock is never clicked: it lives in its pasture, drawn with it; a click there finds what stands behind it)
+ reset();const cw={crit:true,id:'cow',x:P.x+10,y:P.y,hx:P.x,hy:P.y,n:3,home:'Ashford',t:0,a:0,dir:1,tire:0,cool:4,milked:0};W.critters=[cw];click(cw.x,cw.y-4);ok(G.mode!=='herd'&&t.pickAt(cw.x,cw.y-4)!==cw,'a herd of livestock is not clicked: nothing to buy');
  // a click on something far away walks you there; you meet it only on contact
  reset();W.critters=[];const far2=t.TOWNS.find(x=>x!==ash&&Math.hypot(x.x-ash.x,x.y-ash.y)<30*t.TILE)||t.TOWNS[1];P.x=far2.x+60;P.y=far2.y;G.lastTown=null;
  W.patrols=[];W.caravans=[];W.refugees=[];W.folk=[];t.bandits.length=0;W.monsters=[];G.encCool=1e9;// nobody on the road to meet on the way

@@ -28,7 +28,7 @@ try{
  ok(j2.every((b,i)=>strip(b)===strip(j1[i])),'the saved bands have the same values before and after a load (but the pw power cache)');
  ok(JSON.stringify(t.readSlot('2').world.sites.map(s=>Object.keys(s).sort().join()))===JSON.stringify(s1.world.sites.map(s=>Object.keys(s).sort().join())),'every saved site has the same fields before and after a load');
  // attacking the camp after loading: its own raiders and chieftain, and every sheltering band's troops
- G.mode='world';G.modal=false;t.hidePanel();G.encCool=0;G.enc=null;t.enterSite(c);
+ G.mode='world';G.modal=false;t.hidePanel();G.encCool=0;G.enc=null;t.enterSite(c);t.act('site-attack');// (walking up opens its page: Attack, the fight)
  const L=G.enc&&G.enc.list||[],tail=want.flat();
  ok(G.enc&&G.enc.kind==='camp'&&G.enc.ref===c,'attacking the camp after loading opens its encounter');
  ok(L.length&&L.every(k=>typeof k==='string'&&t.ST[k]),'the enemy list has no undefined or unknown soldier ('+L.length+' soldiers)');
@@ -43,7 +43,7 @@ try{
  // and a battle at the camp after loading fights the bands' soldiers
  t.loadGame('1');c=camp();
  ok(c.bands.length===2&&c.bands.every(b=>b instanceof t.BandParty),'bands sheltering in the camp are parties after another load');
- G.mode='world';G.modal=false;t.hidePanel();G.encCool=0;G.enc=null;t.enterSite(c);t.act('fight');
+ G.mode='world';G.modal=false;t.hidePanel();G.encCool=0;G.enc=null;t.enterSite(c);t.act('site-attack');t.act('fight');
  const B=t.B,foes=B?B.units.filter(u=>u.team===1):[],cnt=a=>a.reduce((m,k)=>(m[k]=(m[k]||0)+1,m),{}),fc=cnt(foes.map(u=>u.type)),bc=cnt(tail);
  ok(B&&foes.length&&foes.every(u=>t.ST[u.type]),'the battle at the camp starts with real soldiers ('+foes.length+' foes)');
  ok(B&&Object.keys(bc).every(k=>(fc[k]||0)>=bc[k]),'the battle has the sheltering bands\' troops ('+JSON.stringify(bc)+' within '+JSON.stringify(fc)+')');

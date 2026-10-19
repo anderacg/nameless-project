@@ -30,7 +30,7 @@ try{
   // (a party on its leader's figure too: a lord's whole horse and banner; render.js partyFig)
   W.parties.forEach(o=>{if(!o.onMap())return;add(o,10,4);if(o!==P&&Math.hypot(o.x-wx,o.y-wy)<32){const F=partyFig(o,o.look(),0);fig(o,F.s,F.x,F.y,F.flip)}});W.monsters.forEach(m=>add(m,11,6));
   // each kind of site says where it is clicked (sites.js)
-  W.sites.forEach(s=>{if(s.pickable())s.box(box,camp)});W.critters.forEach(k=>{if(!k.decor)add(k,9,4)});/* (a pasture's herd is only to be seen: the pasture answers) */(W.caravans||[]).forEach(k=>{add(k,11,5);const s=caravanPic(k);fig(k,s,k.x-(s.width>>1),k.y+1-s.height,k.dir<0)});(W.refugees||[]).forEach(k=>add(k,10,4));
+  W.sites.forEach(s=>{if(s.pickable())s.box(box,camp)});W.critters.forEach(k=>{if(!CRITTERS[k.id].live)add(k,9,4)});/* (a pasture's herd is only to be seen: the pasture answers; since ui5 no livestock is picked: it lives in its pasture, drawn with it) */(W.caravans||[]).forEach(k=>{add(k,11,5);const s=caravanPic(k);fig(k,s,k.x-(s.width>>1),k.y+1-s.height,k.dir<0)});(W.refugees||[]).forEach(k=>add(k,10,4));
   // (workers: met at their estate while they work inside it; out on the road with a delivery, met where they walk: folk.js)
   (W.folk||[]).forEach(k=>{if(folkOut(k))add(k,6,4)});
   c.sort((a,b)=>a[0]-b[0]);return c.length?c[0][1]:null;
@@ -58,7 +58,7 @@ try{
  const pt=t.asParty({pt:true,watch:'day',home:tw.name,fac:tw.owner,troops:['hum_spear','hum_spear','hum_bow'],x:cx-22,y:cy+8,wx:null,wy:null,cool:0,dir:1});W.patrols.push(pt);
  const cv=t.asParty({cv:true,fac:tw.owner,from:tw.name,to:other.name,x:cx+30,y:cy+6,goods:{grain:5},guards:3,cool:0,dir:-1});W.caravans.push(cv);
  P.comps={brann:{ap:5,role:''}};t.compInit('brann').lv=3;P.troops={hum_levy:6};t.cpGive('brann','hum_levy',4);const cp=P.comps.brann.party;Object.assign(cp,{x:cx+14,y:cy-12,order:'stay'});
- const mo=W.monsters[0];if(mo)Object.assign(mo,{x:cx-12,y:cy-14});const cr=W.critters.find(k=>!k.decor);if(cr)Object.assign(cr,{x:cx-30,y:cy-4});
+ const mo=W.monsters[0];if(mo)Object.assign(mo,{x:cx-12,y:cy-14});const cr=W.critters.find(k=>!t.CRITTERS[k.id].live);if(cr)Object.assign(cr,{x:cx-30,y:cy-4});
  const rf=t.sendRefugees(tw,other,'hardship');if(rf)Object.assign(rf,{x:cx+40,y:cy-10});
  const parties=[L,b,pt,cv,cp];
  // ---- every party is a world object of its kind

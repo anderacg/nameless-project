@@ -164,11 +164,14 @@ try{
       if(Math.hypot(r.x-P.x,r.y-P.y)<90)txt('Refugees '+r.n,sx,sy-12,r.fear?'#ff9a90':'#c8c2ae','center')}})}
 }`;
  window.__oldObjKind=ev('('+OLD_OBJKIND.replace('const objKind=','').replace(/;$/,'').replace('o instanceof WorldObject','o instanceof Party')+')');
- const oldObjKind=window.__oldObjKind,oldPick=ev('('+OLD_PICK+')');
- const oldInteract=ev('('+OLD_INTERACT.replace('objKind(o)','__oldObjKind(o)').replace('o instanceof WorldObject','o instanceof Party')+')');
+ // (livestock, on purpose since: it lives in its holding's pasture, drawn with it (critters.js penEnts), never picked, met or
+ // hovered, and nothing is bought from it; the old texts are read with that: a kept herd was picked, met (openHerd) and carded)
+ const kept=s=>s.replace('W.critters.forEach(k=>{if(!k.decor)add(k,9,4)})','W.critters.forEach(k=>{if(!CRITTERS[k.id].live)add(k,9,4)})').replace('if(CRITTERS[o.id].live)openHerd(o);else hunt(o)','if(!CRITTERS[o.id].live)hunt(o)').replace("if(k==='critter'){const D=CRITTERS[o.id];return","if(k==='critter'){const D=CRITTERS[o.id];if(D.live)return '';return");
+ const oldObjKind=window.__oldObjKind,oldPick=ev('('+kept(OLD_PICK)+')');
+ const oldInteract=ev('('+kept(OLD_INTERACT).replace('objKind(o)','__oldObjKind(o)').replace('o instanceof WorldObject','o instanceof Party')+')');
  // (the helpers named there that are gone since, read as their methods now: item 10)
  const since=s=>s.replace(/siteKnown\(s\)/g,'s.known()').replace(/bandPower\(o\)/g,'o.power()').replace(/o\.list\|\|\[\]/g,'o.troops');
- const oldTip=ev('('+since(OLD_TIP).replace('objKind(o)','__oldObjKind(o)')+')');
+ const oldTip=ev('('+kept(since(OLD_TIP)).replace('objKind(o)','__oldObjKind(o)')+')');
  // (the chase: dropped when, and met during the cool-down after a fight: its two lines, read as two tests)
  const oldDrop=ev('(o=>{const k=__oldObjKind(o);return '+OLD_CHASE.slice(OLD_CHASE.indexOf('if(!k')+3,OLD_CHASE.indexOf(')G.chase=null'))+'})');
  const oldCool=ev('(k=>'+OLD_CHASE.match(/(\[\'town\'[^\]]*\])\.includes\(k\)/)[0]+')');
@@ -271,7 +274,7 @@ try{
   ok(['town','estate','site','critter','refugee','worker','patrol','caravan'].every(k=>t.worldObjects().find(q=>q.mapKind===k).meetsAnyTime)&&!['lord','band','cparty','monster'].some(k=>t.worldObjects().find(q=>q.mapKind===k).meetsAnyTime),'met at once even after a fight: places, herds, folk, patrols and caravans; not lords, bands, beasts or your companions');
   if(cs){world();G.chase=cs;cs.cleared=G.day+9;t.updateWorld(.001);ok(G.chase===null,'a chase after a camp just cleared ends');cs.cleared=false;world()}}
  // ---- meeting: the same way for each kind, with the same result, as before
- {const spies=['approachHolding','startMonster','refugeeMeet','workerMeet','estateMeet','openHerd','hunt','lordMeet','meetBand','patrolMeet','openComp','fightMeet'],orig={};let got=[];
+ {const spies=['approachHolding','startMonster','refugeeMeet','workerMeet','estateMeet','hunt','lordMeet','meetBand','patrolMeet','openComp','fightMeet'],orig={};let got=[];
   for(const k of spies){orig[k]=window[k];window[k]=(...a)=>{got.push(k+':'+(a[0]&&(a[0].mapKind||a[0].name||a[0].id||a[0].cid))+':'+G.youAttack)}}
   const qs=[tw,...ests,mo,dr,deer,cow,rf,rf2,wk,ship,L,b,pt,cp,...sites,{x:1},null],res=[];
   try{for(const q of qs){const run=fn=>{world();got=[];const was={};if(q instanceof t.Site)q.enter=function(){got.push('enter:'+this.type)};if(q&&q.crit){q.cool=0}const r=fn(q),gs=got.join(),c=q&&q.cool,ls=G.lastSite;if(q instanceof t.Site)delete q.enter;G.lastSite=null;return [r,gs,c,ls===q,G.youAttack].join('|')};

@@ -1,34 +1,44 @@
 'use strict';
-/* ---------- critters: wild game to hunt and livestock to buy (or rustle) ---------- */
+/* ---------- critters: wild game to hunt, and the livestock of the holdings' pastures ---------- */
 // W.critters: {crit:true, id, x, y, hx, hy, n, home (holding name, livestock only), t, a, dir, tire, cool, milked}
-// a herd on the map (plain data, saved as it is; made a Herd in place: asHerd): a world object (parties.js). Met: game is
-// hunted, livestock opens its herders' panel
+// a herd on the map (plain data, saved as it is; made a Herd in place: asHerd): a world object (parties.js). Wild game roams,
+// is seen, hovered and met (hunted). Livestock lives in its holding's pasture: drawn there with the estate, inside its fence
+// (penEnts, from structures.js holdingEnts), never a figure of its own; a holding with no pasture keeps its animals out of sight.
+// Nothing is bought from a herd: the pasture's meat, milk, cheese and wool go to its holding (economy.js)
 class Herd extends WorldObject{
   get mapKind(){return 'critter'}
   here(){return W.critters.includes(this)}
   get meetsAnyTime(){return true}
-  meet(){this.cool=4;if(CRITTERS[this.id].live)openHerd(this);else hunt(this)}
-  // a pasture's herd (decor): the fields it grazes, only to be seen (the pasture answers a click: estates.js); else none
-  pasture(){return this.decor&&fieldsOf(townBy(this.home),'pasture')||null}
-  inView(V){return this.pasture()?this.fromYou()<=V:spotted(this,V)}
-  pick(at){if(!this.decor)at.add(this,9,4)}
-  // a pasture's herd: one animal on each worked field tile, grazing to and fro on it; any other: up to three of its animals,
-  // behind and beside the first, a walk of PX.MAP_STEPS frames to a body length walked (critterSprite; render.js stepOf), its
-  // count near you; each at its own place to the screen's pixel (render.js subT)
-  draw(ents,cam,V){if(!this.inView(V))return;const c=this,F=c.pasture();
-    if(F){F.tiles.slice(0,c.n).forEach(([tx,ty],i)=>{const y=ty*TILE+TILE-3;ents.push({y,f:()=>{const now=performance.now(),ph=now/2600+i*1.9+tx,mv=Math.cos(ph),fr=Math.abs(mv)>.6?Math.floor(now*PX.MAP_STEPS/(2*D_STEP)+i*3)%PX.MAP_STEPS:0,
-      X=tx*TILE+TILE/2+Math.sin(ph)*3;subT({x:X,y});const a=critterSprite(c.id,fr),x=Math.round(X-cam.x),sy=Math.round(y-cam.y),w=Math.max(4,a.cw-2);
-      ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(x-(w>>1),sy-1,w,2);ctx.save();ctx.translate(x,sy);if(mv<0)ctx.scale(-1,1);ctx.drawImage(a,-(a.width>>1),-a.height+1);ctx.restore()}})});return}
+  get wild(){return !CRITTERS[this.id].live}
+  meet(){this.cool=4;if(this.wild)hunt(this)}
+  // its holding's pasture fields, where it lives (livestock only; none: no pasture, or none worked)
+  pasture(){return !this.wild&&this.home&&fieldsOf(townBy(this.home),'pasture')||null}
+  inView(V){return this.wild&&spotted(this,V)}
+  pick(at){if(this.wild)at.add(this,9,4)}
+  // up to three of its animals, behind and beside the first, a walk of PX.MAP_STEPS frames to a body length walked (critterSprite;
+  // render.js stepOf), its count near you; each at its own place to the screen's pixel (render.js subT)
+  draw(ents,cam,V){if(!this.inView(V))return;const c=this;
     ents.push({y:c.y,f:()=>{subT(c);const s=critterSprite(c.id),sx=Math.round(c.x-cam.x),sy=Math.round(c.y-cam.y),k=Math.min(3,c.n||1),sp=Math.max(4,Math.round(s.cw*.55)),go=mapStepping(c),N=PX.MAP_STEPS;
       for(let i=k-1;i>=0;i--){const ox=i===0?0:i===1?-sp:Math.round(sp*.4),oy=i===0?0:i===1?-1:-3,fr=go?(frameOf(c,Math.max(4,s.cw)/N,N)+i*3)%N:0,a=critterSprite(c.id,fr),w=Math.max(4,a.cw-2);
         ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(sx+(c.dir<0?-ox:ox)-(w>>1),sy+oy-1,w,2);
         ctx.save();ctx.translate(sx+(c.dir<0?-ox:ox),sy+oy);if(c.dir<0)ctx.scale(-1,1);ctx.drawImage(a,-(a.width>>1),-a.height+1);ctx.restore()}
-      if(c.n>1&&!c.decor&&c.fromYou()<90)txt(String(c.n),sx,sy-s.ch-4,CRITTERS[c.id].live?'#e8d8a0':'#c8e0a0','center')}})}
-  tip(){const D=CRITTERS[this.id];return '<b>'+D.n+(this.n>1?' ×'+this.n:'')+'</b><small>'+(D.live?'Livestock of '+this.home:'Wild game')+'</small><span class="act">Click: '+(D.live?'look':'hunt')+'</span>'}
+      if(c.n>1&&c.fromYou()<90)txt(String(c.n),sx,sy-s.ch-4,'#c8e0a0','center')}})}
+  tip(){const D=CRITTERS[this.id];return this.wild?'<b>'+D.n+(this.n>1?' ×'+this.n:'')+'</b><small>Wild game</small><span class="act">Click: hunt</span>':''}// (livestock: never hovered)
 }
 const asHerd=asClass(Herd);
-// the herds on the map: the pastures' first, then the rest (render.js drawWorld)
-function drawHerds(ents,cam,V){const hs=W.critters.map(asHerd);for(const c of hs)if(c.pasture())c.draw(ents,cam,V);for(const c of hs)if(!c.pasture())c.draw(ents,cam,V)}
+// the wild herds on the map (render.js drawWorld); livestock is drawn with its pasture (penEnts)
+function drawHerds(ents,cam,V){for(const c of W.critters.map(asHerd))if(c.wild)c.draw(ents,cam,V)}
+// a pasture's herd, drawn with its estate (structures.js holdingEnts, while its pasture is in sight): its animals inside the
+// fence, a cow to a fenced tile or two of the smaller kinds (one at the front of the tile, one at the back), each grazing to and
+// fro on its own tile by the clock, turning as it goes, never past its fence (penSpots: where each stands at time now: x, y its
+// feet, a its picture, flip). None while the pasture has no worked fields or no herd. Seen only: the pasture answers a click
+// (estates.js), its Pens tell of the herd
+function penSpots(t,now){const c=herdOf(t),F=c&&fieldsOf(t,'pasture');if(!F)return [];const T=F.tiles,per=CRITTERS[c.id].size>=3?1:2,out=[];
+  for(let j=0;j<Math.min(c.n,T.length*per);j++){const [tx,ty]=T[j%T.length],ph=now/2600+hash(tx,ty,t.seed+j)*6.283,mv=Math.cos(ph),fr=Math.abs(mv)>.6?Math.floor(now*PX.MAP_STEPS/(2*D_STEP)+j*3)%PX.MAP_STEPS:0,
+    a=critterSprite(c.id,fr),amp=Math.max(0,Math.min(3,(TILE-4-a.cw)>>1));out.push({x:tx*TILE+TILE/2+Math.sin(ph)*amp,y:ty*TILE+(j<T.length?TILE-3:TILE-8),a,flip:mv<0,tx,ty})}
+  return out}
+function penEnts(t,ents,cam){penSpots(t,0).forEach((s0,j)=>ents.push({y:s0.y,f:()=>{const s=penSpots(t,performance.now())[j];if(!s)return;subT(s);const x=Math.round(s.x-cam.x),sy=Math.round(s.y-cam.y),w=Math.max(4,s.a.cw-2);
+  ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(x-(w>>1),sy-1,w,2);ctx.save();ctx.translate(x,sy);if(s.flip)ctx.scale(-1,1);ctx.drawImage(s.a,-(s.a.width>>1),-s.a.height+1);ctx.restore()}}))}
 function spawnCritter(initial){
   const ids=Object.keys(CRITTERS).filter(k=>!CRITTERS[k].live),wt=id=>CRITTERS[id].w/(1+W.critters.filter(c=>c.id===id).length*.3);
   let r=Math.random()*ids.reduce((a,id)=>a+wt(id),0),id=ids[0];for(const f of ids){r-=wt(f);if(r<=0){id=f;break}}
@@ -81,7 +91,7 @@ function critterDay(){
   TOWNS.filter(t=>t.T.herds&&!herdOf(t)&&Math.random()<.25).forEach(spawnHerd);
 }
 // move every herd: wild game bolts when you come close and tires as it runs; livestock just grazes
-// a herd's moment (parties.js lodThink; hide: how well you are hidden from it). True when you met livestock (its panel opens)
+// a herd's moment (parties.js lodThink; hide: how well you are hidden from it): wild game you reach is hunted
 const HERD_MIND={think(c,d,hide){
     const A=WORLD_SCALE.ai,D=CRITTERS[c.id],dx=c.x-P.x,dy=c.y-P.y,dist=Math.hypot(dx,dy),ox=c.x,oy=c.y;c.cool=Math.max(0,c.cool-d);
     // (fleeing: its grazing ground goes with it, and it keeps on away a little after, so it does not turn back into you)
@@ -92,7 +102,7 @@ const HERD_MIND={think(c,d,hide){
       if(!c.idle){const ok=D.live?(x,y)=>grazeOk(c.id,x,y,c.pen):(x,y)=>habitatOk(c.id,x,y);if(!walk(c,Math.cos(c.a),Math.sin(c.a),moveStep(D.live?4:8,d),ok)){c.a=Math.atan2(hy,hx)+(Math.random()-.5);c.idle=true}}}
     // (it faces the way it went, turning only on a clear step sideways: no flicker as it swerves or runs straight up or down)
     {const mx=c.x-ox,my=c.y-oy;if(Math.abs(mx)>Math.hypot(mx,my)*.35&&Math.abs(mx)>.01)c.dir=mx>0?1:-1}
-    if(dist<10&&!c.decor&&c.cool<=0&&G.encCool<=0&&!G.modal){c.cool=4;if(G.chase===c)G.chase=null;if(D.live){openHerd(c);return true}hunt(c)}
+    if(dist<10&&!D.live&&c.cool<=0&&G.encCool<=0&&!G.modal){c.cool=4;if(G.chase===c)G.chase=null;hunt(c)}
     return false}};
 function updateCritters(d){return lodEach(W.critters,HERD_MIND,d,P.stay?0:hiddenAt(P.x,P.y)?.6:1)}
 // a hunt: one animal, plus one for every 4 bows or slings and every 3 levels of Scouting; the rest scatter
@@ -105,36 +115,6 @@ function hunt(c){
   gainXp(kills*D.xp);train('hunt',kills*3);
   log('You bring down '+(kills>1?kills+' '+D.n.toLowerCase():an(D.one))+': '+got.join(', ')+'.'+(meat<kills*D.meat?' Your bag is full, so you leave some meat.':''),'good');
   updateHUD(true);
-}
-/* livestock: the herders' panel */
-// (from: the estate it was opened from, its pasture: on its rail (estates.js estateRail), Back returns there)
-function openHerd(c,from){G.herd=c;G.herdFrom=from||null;G.herdMsg='';G.mode='herd';P.tx=null;showHerd()}
-const milkCost=n=>n*3;
-// what the herders sell, as rows (window.js): a beast, milk, or one taken; their window and a pasture's Pens (estates.js) both
-function herdRows(c){const D=CRITTERS[c.id],t=townBy(c.home),price=Math.round(D.price*(1-.015*skill('trade')));
-  return railRow('Buy '+an(D.one),'Slaughtered on the spot: +'+D.meat+' meat · '+c.n+' grazing',railBtn('herd-buy',null,'Buy',c.n<2?'They will not sell their last one':P.gold<price?'Not enough gold':goodRoom('meat')<D.meat?'No room in your bag':''),price+'g')+
-    (D.milk?railRow('Buy milk','+'+D.milk+' milk, fresh today',railBtn('herd-milk',null,'Buy',c.milked===G.day?'Already milked today':P.gold<milkCost(D.milk)?'Not enough gold':goodRoom('milk')<D.milk?'No room in your bag':''),milkCost(D.milk)+'g'):'')+
-    railRow('Take one','+'+D.meat+' meat for free. The herders will tell '+(t?t.name:'everyone')+': reputation −12, honor −3',railBtn('herd-steal',null,'Take',c.n<1?'None left':goodRoom('meat')<D.meat?'No room in your bag':''))}
-function showHerd(){
-  const c=G.herd,D=CRITTERS[c.id],t=townBy(c.home),own=t?' of '+t.name:'';
-  const body='<p>The herders'+own+' watch you over their staffs while the '+D.n.toLowerCase()+' graze.</p>'+herdRows(c)+
-    (G.herdMsg?'<p class="gold">'+G.herdMsg+'</p>':''),close=['herd-leave',null,'Leave'];
-  if(G.herdFrom)estateRail(G.herdFrom,'herd',{title:D.n,sub:c.n+' grazing · herders'+own,body,back:['herd-back',null,'Back'],close},'herd');
-  else showPanel('<div class="top"><h2>'+D.n+'</h2><span class="muted">'+c.n+' grazing · herders'+own+' · <span class="gold">'+P.gold+' gold</span></span></div>'+body+nav(null,close));
-}
-function herdAct(a){
-  if(!a.startsWith('herd-'))return false;
-  // (from their window, or from a pasture's Pens on the map: estates.js)
-  const pens=G.mode==='dialog'&&G.est&&G.estTab==='herd',c=pens?herdOf(townBy(G.est.town)||{}):G.herd;if(!(G.mode==='herd'||pens)||!c)return true;const D=CRITTERS[c.id],t=townBy(c.home),price=Math.round(D.price*(1-.015*skill('trade')));
-  const done=m=>{G.herdMsg=m;log(m);updateHUD(true);if(pens){showEstate();railFocus(a)}else showHerd()};
-  if(pens&&(a==='herd-leave'||a==='herd-back'))return true;
-  if(a==='herd-leave'){G.herd=null;G.herdFrom=null;G.mode='world';G.encCool=1;hidePanel();return true}
-  if(a==='herd-back'&&G.herdFrom){const o=G.herdFrom;G.herd=null;G.herdFrom=null;estateBack(o,'herd');return true}
-  if(a==='herd-buy'&&c.n>=2&&P.gold>=price&&goodRoom('meat')>=D.meat){P.gold-=price;c.n--;invAdd('good','meat',D.meat);train('trade',price/30);if(t)addRep(t.name,price/80,true);done('You buy '+an(D.one)+' for '+price+' gold. +'+D.meat+' meat.')}
-  else if(a==='herd-milk'&&D.milk&&c.milked!==G.day&&P.gold>=milkCost(D.milk)&&goodRoom('milk')>=D.milk){P.gold-=milkCost(D.milk);c.milked=G.day;invAdd('good','milk',D.milk);done('The herders fill your skins: +'+D.milk+' milk.')}
-  else if(a==='herd-steal'&&c.n>=1&&goodRoom('meat')>=D.meat){c.n--;invAdd('good','meat',D.meat);if(t){addRep(t.name,-12,true);addHonor(t.owner,-3,true)}
-    if(c.n<=0)W.critters=W.critters.filter(x=>x!==c);done('You drive off '+an(D.one)+' while the herders shout. '+(t?t.name+' will remember this.':''))}
-  return true;
 }
 /* sprites: the animals on the world map's scale (doc/WORLD_DESIGN.md §10.1: a person stands 10 high there, a house 16): a cow 9 × 5
    inside its outline, a deer 7 × 6 (a stag or a reindeer with its antlers over that), a sheep, a pig or a goat 4 × 3, a hen, a
@@ -162,4 +142,3 @@ function critterSprite(id,f){f=(f||0)%PX.MAP_STEPS;const k='cr'+id+f;if(spr[k])r
   const D=CRITTERS[id],T=CRITTER_MAP[id],R=PX.ramp(D.col),rows=T.rows.concat(PX.mapLegs(T.legs[0],T.legs[1],f)),g=pgrid(Math.max(...rows.map(r=>r.length))+2,rows.length+2),
     col={h:R[0],H:R[1],d:R[2],k:R[3],w:'#f4f0e8',e:'#1a1410',n:'#e8a0a0',b:'#e8b94a',y:'#d8963a',r:'#d83a2a',a:'#d8c8a0',o:'#a89a7a',s:D.spots||R[3],...(T.x||{})};
   rows.forEach((r,y)=>[...r].forEach((c,x)=>{if(col[c])pset(g,x+1,y+1,col[c])}));poutline(g);return spr[k]=cellOf(pcanvas(g))}
-onAct('herd-',herdAct);

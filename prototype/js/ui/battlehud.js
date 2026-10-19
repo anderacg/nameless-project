@@ -32,12 +32,13 @@ function bhudInit(){
 }
 // a unit's portrait: its sprite, drawn once into a picture (cached by kind)
 const PORTRAITS={};
-function portrait(type,hero){return spritePic((hero?'hero:':'')+type,()=>unitSprite(type,0,!!hero,0))}
+function portrait(type,hero,v){return spritePic((hero?'hero:':'')+type+(v?':'+v:''),()=>unitSprite(type,0,!!hero,v||0))}// (v: one of its looks)
 // any figure's picture the same way (mk: its sprite cell): a worker at his trade (workerPic), a townsperson (personPic: the
 // smith, the innkeeper, a merchant…)
 function spritePic(k,mk){if(!PORTRAITS[k]){try{const sp=mk(),n=sp.width,S=Math.min(n,Math.max(sp.cw||n,(sp.ch||n)+3));// (the figure itself, cropped from its cell: feet at the bottom, centred)
     PORTRAITS[k]=mkc(S,S,g=>g.drawImage(sp,(n-S)>>1,n-S,S,S,0,0,S,S)).toDataURL()}catch(e){PORTRAITS[k]=''}}return PORTRAITS[k]}
 const workerPic=(job,race,v)=>spritePic('wk:'+job+':'+race+':'+(v??1),()=>workerSprite(job,0,race,v??1));
+const critterPic=id=>spritePic('cr:'+id,()=>critterSprite(id));// an animal (critters.js)
 const personPic=(look,race,v)=>spritePic('ps:'+look+':'+race+':'+(v||0),()=>personSprite(look,race,v||0,0));
 // the kind most of a group is (its card's picture and its numbers)
 function repOf(m){const c={};for(const u of m)c[u.type]=(c[u.type]||0)+1;let best=null;for(const k in c)if(!best||c[k]>c[best])best=k;return best}
