@@ -16,23 +16,25 @@
    under its fog of war: ambientBattle) a few birds burst out of the trees in view as it begins, and crows circle the field once
    it is over. on: a view over Settings → Ambient life (PREFS ambient, ui.js; off in tests/harness.js: tests/ambient.js turns
    it on). Every distance in px (the map's, the field's), every time in s; [a, b]: from a to b ---------- */
-const AMBIENT={margin:40,storm:.3,rain:.6,snow:.5,calm:.5,slow:.6,
+/* (owner, 2026-10-19: too many: about a third of the first numbers; density: one value for them all; the hours: dusk and dawn
+   livelier, midday quieter (hours, by timeOfDay); the land: half as much on a holding's land or by a road (tame)) */
+const AMBIENT={margin:40,storm:.3,rain:.6,snow:.5,calm:.5,slow:.6,density:1,hours:{Dawn:1.5,Dusk:1.5,Midday:.6},tame:.5,
   // a flock over: n birds, at speed px a second, alt px up, its shadow on the ground below
-  flock:{every:10,max:2,n:[3,7],speed:[24,34],alt:[46,72]},
+  flock:{every:25,max:1,n:[3,7],speed:[24,34],alt:[46,72]},
   // birds pecking on open ground, a field's or one within near tiles of a holding (elsewhere away × as often); off they fly
   // when anyone comes within scare px (or after life s), climbing rise px a second to top px up
-  peck:{every:4,max:3,n:[2,4],near:10,away:.3,scare:30,life:[14,28],speed:[50,70],rise:30,top:42},
+  peck:{every:12,max:1,n:[2,4],near:10,away:.3,scare:30,life:[14,28],speed:[50,70],rise:30,top:42},
   // crows circling a place (a fight, a trace on the road, ruins), r px round it, spin radians a second
-  crow:{every:1.2,max:3,n:[2,4],r:[12,22],spin:.45,alt:[22,36]},
+  crow:{every:1.2,max:1,n:[2,3],r:[12,22],spin:.45,alt:[22,36]},
   // a gull over water within shore tiles of land, gliding about where it came (range px) for life s, then on its way
-  gull:{every:6,max:3,shore:2,speed:[16,24],alt:[22,36],life:[14,24],range:48},
-  fly:{every:1.4,max:7,speed:[6,12],life:[7,13]},
+  gull:{every:15,max:1,shore:2,speed:[16,24],alt:[22,36],life:[14,24],range:48},
+  fly:{every:5,max:2,speed:[6,12],life:[7,13]},
   // fireflies on warm nights in the woods (only within near × your sight: what a wood hides) and over the marsh
-  glow:{every:.3,max:24,life:[4,9],near:.45},
-  fish:{every:2.2,max:2,shore:3,life:1.2},
-  hare:{every:8,max:2,scare:36,speed:[70,90],life:[12,24]},
+  glow:{every:1,max:8,life:[4,9],near:.45},
+  fish:{every:6,max:1,shore:3,life:1.2},
+  hare:{every:20,max:1,scare:36,speed:[70,90],life:[12,24]},
   // a squirrel on the floor of a wood near you: it sits wait s, then darts off into the trees
-  squirrel:{every:8,max:1,scare:26,speed:[60,75],near:.45,wait:[.8,2.5]},
+  squirrel:{every:25,max:1,scare:26,speed:[60,75],near:.45,wait:[.8,2.5]},
   // battle: birds out of trees trees (n each), flying off at speed, climbing rise px a second; crows over the fallen
   battle:{trees:[2,3],n:[3,5],speed:[44,70],rise:[22,34],life:5,crows:[3,5],r:[24,46],alt:[36,56],spin:.4}};
 Object.defineProperty(AMBIENT,'on',{get:()=>prefGet('ambient'),set:v=>{PREFS.ambient.v=!!v},enumerable:true});
@@ -68,7 +70,9 @@ function ambientCan(k,x,y){
   if(k==='squirrel')return d<.4&&t===T_FOREST&&c!=='desert'&&near(AMBIENT.squirrel.near);
   return false}
 // (how many of kind k, × its numbers and its rate: birds fewer in foul weather, all fewer with reducedMotion)
-function ambMul(k){const w=ambWeather();let m=reducedMotion()?AMBIENT.calm:1;if(AMB_BIRDS[k])m*=w==='storm'?AMBIENT.storm:w==='rain'?AMBIENT.rain:w==='snow'?AMBIENT.snow:1;return m}
+// (a spot on a holding's land or by a road kept only tame of the time: life keeps to the wilds and the marsh)
+const ambWild=(x,y)=>{const tx=Math.floor(x/TILE),ty=Math.floor(y/TILE);return !(landHold(x,y)||nearTile(tx,ty,T_ROAD,1))||ambR()<AMBIENT.tame};
+function ambMul(k){const w=ambWeather();let m=(reducedMotion()?AMBIENT.calm:1)*AMBIENT.density*(AMBIENT.hours[timeOfDay()]||1);if(AMB_BIRDS[k])m*=w==='storm'?AMBIENT.storm:w==='rain'?AMBIENT.rain:w==='snow'?AMBIENT.snow:1;return m}
 // (whoever is about in the box, to scatter from)
 function ambFigures(x0,y0,x1,y1){const out=[],add=o=>{if(o&&o.x>=x0&&o.x<=x1&&o.y>=y0&&o.y<=y1)out.push(o)};
   if(!P.stay)add(P);for(const o of W.parties)if(!o.dead&&!o.inside)add(o);for(const f of W.folk||[])if(f.st!=='in'&&f.st!=='town')add(f);
@@ -137,7 +141,7 @@ function ambientWorld(ents,cam,V){
     if(k==='crow'){const have=new Set(L.filter(e=>e.k==='crow').map(e=>e.ak)),a=[...anc.values()].find(a=>!have.has(a[0]));if(a&&ambientCan(k,a[1],a[2]))L.push(Object.assign(ambSpawn(k,a[1],a[2]),{ak:a[0]}));continue}
     // (a few tries at a spot in your sight)
     for(let j=0;j<4;j++){const r=V*.92*Math.sqrt(ambR()),a=ambR()*6.283,x=P.x+Math.cos(a)*r,y=P.y+Math.sin(a)*r;
-      if(inV(x,y)&&ambientCan(k,x,y)&&!(A.scare&&ambNear(F,x,y)[1]<A.scare*1.6)){L.push(ambSpawn(k,x,y));break}}}
+      if(inV(x,y)&&ambientCan(k,x,y)&&!(A.scare&&ambNear(F,x,y)[1]<A.scare*1.6)&&ambWild(x,y)){L.push(ambSpawn(k,x,y));break}}}
   for(const e of L)if(AMB_GROUND[e.k]&&!(e.k==='peck'&&e.st!=='peck'))ents.push({y:e.y,nf:1,f:()=>ambGround(e,cam)})}
 // ---- the pictures: tiny, crisp, made once (rows of letters, each a colour; '.' clear), each also facing left
 let AMBS=null;

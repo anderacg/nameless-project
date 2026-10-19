@@ -7,6 +7,11 @@
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),ev=x=>(0,eval)(x),pn=performance.now;let now=1e7;
 try{
  const t=T,G=t.G,P=t.P,W=t.W,TILE=t.TILE,MW=t.MW,MH=t.MH,A=t.AMBIENT,AV=t.AMBV;try{localStorage.clear()}catch(e){}
+ // (the hours and the tame land, owner 2026-10-19: checked on their own below; the rest read with them set aside)
+ const H0=A.hours,T0=A.tame,DAYF=f=>{G.clock=t.DAY*f};
+ {const c0=G.clock;DAYF(.03);const dawn=t.ambMul('flock');DAYF(.3);const mid=t.ambMul('flock');DAYF(.15);const morn=t.ambMul('flock');G.clock=c0;
+  ok(Math.abs(dawn/morn-H0.Dawn)<1e-9&&Math.abs(mid/morn-H0.Midday)<1e-9,'the hours: dawn ×'+H0.Dawn+', midday ×'+H0.Midday+', the rest as they are ('+[dawn,mid,morn].map(v=>v.toFixed(2)).join(', ')+')')}
+ A.hours={};
  t.act('begin','soldier');G.quietEvents=true;G.mode='world';G.modal=false;t.hidePanel();G.encCool=1e9;
  // (a quiet map: no one about but you)
  const park=()=>{for(const l of W.parties){l.x=-9999;l.y=-9999}W.monsters=[];W.critters=[];W.caravans=[];W.folk=[];W.refugees=[];W.fights=[];if(W.road)W.road.on=[]};park();
@@ -107,6 +112,10 @@ try{
   Bt.over=true;t.ambientBattle();const cr=AV.bt.list.filter(b=>b.k==='crow');
   ok(cr.length>=2&&cr.length<=A.battle.crows[1],'once it is over, '+cr.length+' crows circle the field');
   Math.random=R0;ok(n===0,'the battle’s birds draw no Math.random ('+n+')');Bt.ground=g0;Bt.over=false}
+ // the tame land: on a holding's land or by a road a spot is kept only A.tame of the time; in the wilds always
+ {const A0=t.TOWNS[0],wild=(()=>{for(let ty=8;ty<MH-8;ty++)for(let tx=8;tx<MW-8;tx++){const x=(tx+.5)*TILE,y=(ty+.5)*TILE;if(t.tAt(tx,ty)===t.T_OPEN&&!t.landHold(x,y)&&!t.nearTile(tx,ty,t.T_ROAD,1))return[x,y]}})();
+  A.tame=0;const onLand=t.ambWild(A0.x+30,A0.y+30),inWild=wild&&t.ambWild(wild[0],wild[1]);A.tame=1;const kept=t.ambWild(A0.x+30,A0.y+30);A.tame=T0;
+  A.hours=H0;ok(!onLand&&inWild&&kept,'life keeps to the wilds: a spot on a holding’s land kept only '+T0+' of the time, in the wilds always')}
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}
 performance.now=pn;
 const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d)};
