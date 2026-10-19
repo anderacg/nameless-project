@@ -45,7 +45,7 @@ function spawnCritter(initial){
   const D=CRITTERS[id];
   for(let k=0;k<200;k++){
     const x=rint(2,MW-3)*TILE+8,y=rint(2,MH-3)*TILE+8,tags=habitatAt(x,y);
-    if(!D.where.some(w=>tags.includes(w))||D.where.includes('forest')&&!tags.includes('forest')&&Math.random()>CRITTER_WOODS.keep||Math.hypot(x-P.x,y-P.y)<WORLD_SCALE.spawn.critter[initial?0:1]||TOWNS.some(t=>Math.hypot(t.x-x,t.y-y)<WORLD_SCALE.spawn.critterHold))continue;
+    if(!D.where.some(w=>tags.includes(w))||D.where.includes('forest')&&!tags.includes('forest')&&Math.random()>CRITTER_WOODS.keep||D.rare&&tags.some(g=>D.rare[g]!=null&&Math.random()>D.rare[g])||Math.hypot(x-P.x,y-P.y)<WORLD_SCALE.spawn.critter[initial?0:1]||TOWNS.some(t=>Math.hypot(t.x-x,t.y-y)<WORLD_SCALE.spawn.critterHold))continue;
     W.critters.push(asHerd({crit:true,id,x,y,hx:x,hy:y,n:rint(D.herd[0],D.herd[1]),t:0,a:0,dir:1,tire:0,cool:0}));return;
   }
 }

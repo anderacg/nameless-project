@@ -8,13 +8,15 @@
 // (game of the woods (where has 'forest') is found mostly in them: a spot it may live on outside a wood is kept only keep of the
 // time when it is placed (critters.js spawnCritter); its kinds of the open alone (goats, gazelles…) as ever)
 const CRITTER_WOODS={keep:.3};
+// (rare: {habitat: share}: a spot of that habitat kept only that share of the time when one is placed: snow hares now and then in a
+// snowy wood, mostly on the open snow)
 const CRITTERS={
   rabbit:{n:'Rabbits',one:'rabbit',where:['grass','forest'],herd:[2,4],meat:1,mat:['rabbitfur',.5],xp:2,spd:30,shy:50,w:4,size:1,col:'#b8a088'},
   deer:{n:'Deer',one:'deer',where:['forest','grass'],herd:[2,4],meat:4,mat:['hide',.6],xp:5,spd:40,shy:70,w:3,size:2,col:'#a0683a'},
   stag:{n:'Stag',one:'stag',where:['forest','hills'],herd:[1,1],meat:6,mat:['antler',.8],xp:12,spd:44,shy:80,w:1.2,size:3,col:'#8a5a30',antlers:true},
   ibex:{n:'Mountain goats',one:'mountain goat',where:['hills'],herd:[2,3],meat:3,mat:['hide',.4],xp:4,spd:34,shy:60,w:2,size:2,col:'#d8d0c0',horns:true},
   reindeer:{n:'Reindeer',one:'reindeer',where:['frost'],herd:[3,5],meat:5,mat:['antler',.4],xp:6,spd:38,shy:70,w:3,size:2,col:'#7a6a5a',antlers:true},
-  hare:{n:'Snow hares',one:'snow hare',where:['frost'],herd:[2,3],meat:1,mat:['rabbitfur',.6],xp:2,spd:32,shy:50,w:2,size:1,col:'#eef3f8'},
+  hare:{n:'Snow hares',one:'snow hare',where:['frost','snowwood'],rare:{snowwood:.12},herd:[2,3],meat:1,mat:['rabbitfur',.6],xp:2,spd:32,shy:50,w:2,size:1,col:'#eef3f8'},
   gazelle:{n:'Gazelles',one:'gazelle',where:['desert'],herd:[2,4],meat:3,mat:['hide',.4],xp:5,spd:48,shy:85,w:3,size:2,col:'#d0a060',horns:true},
   fowl:{n:'Marsh fowl',one:'marsh fowl',where:['swamp'],herd:[3,6],meat:1,mat:null,xp:2,spd:28,shy:45,w:3,size:1,col:'#6a7a5a',bird:true},
   cow:{n:'Cattle',one:'cow',live:true,herd:[2,4],meat:8,spd:12,size:3,col:'#e8e4d0',spots:'#3a2a20',horns:true},
