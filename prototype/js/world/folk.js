@@ -28,11 +28,11 @@ const asWorker=asClass(EstateWorker);
 const FOLK_SEEN=new Set();
 const dayPart=()=>G.clock/DAY;
 // the hours a delivery may start (share of the day: the afternoon to the end of dusk), and how long it takes inside the gate
-const DELIVER={from:.45,to:.66,stop:[1.5,3.5]};
+const DELIVER={from:.375,to:.575,stop:[1.5,3.5]};// (afternoon to dusk, the day half of 50/50: core.js NIGHT_AT)
 // the hours of field work (the morning and midday, to the first delivery), the share of workers out on a day (each by his id and
 // the day), their pace (px), how long they stop at a stop of their round and at its work (a tree, the rock, the pier's end), how
 // far from the estate their round may go (tiles), and how many spots one works just outside the door
-const FIELD={from:.08,to:DELIVER.from,out:.6,speed:26,carry:.7,hurry:37,pause:[1.5,5],work:[3,6],reach:4,spots:[2,3]};
+const FIELD={from:.07,to:DELIVER.from,out:.6,speed:26,carry:.7,hurry:37,pause:[1.5,5],work:[3,6],reach:4,spots:[2,3]};
 /* each worker is someone: id (his holding, estate and number there), a name and a look (v) of his people, seeded from that id
    (FOLK_COUNT: how many each estate has had, this session; never saved). Recruited where he works (workerRecruit), he leaves his
    estate a pair of hands short (t.lost[k]: the days the gaps fill again) until someone new moves in, REFILL_DAYS later */

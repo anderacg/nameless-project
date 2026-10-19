@@ -84,7 +84,7 @@ try{
   const far=[30,60,90,120,150].flatMap(x=>[30,60,90,120].map(y=>({x:(x+.5)*16,y:(y+.5)*16}))).filter(p=>t.passable(t.terrAt(p.x,p.y))).sort((a,b)=>Math.min(...t.TOWNS.map(o=>Math.hypot(o.x-b.x,o.y-b.y)))-Math.min(...t.TOWNS.map(o=>Math.hypot(o.x-a.x,o.y-a.y))))[0];
   P.x=far.x;P.y=far.y;P.tx=null;const d0=G.day;for(let i=0;i<179;i++){G.encCool=99;t.updateWorld(1)}const mid=G.day;for(let i=0;i<2;i++){G.encCool=99;t.updateWorld(1)}
   ok(mid===d0&&G.day===d0+1,'a day on the map lasts 180 seconds at 1x');
-  G.clock=t.DAY*.59;const l=t.darkness();G.clock=t.DAY*.61;const dusk=t.darkness();G.clock=t.DAY*.8;const n=t.darkness();ok(l===0&&dusk>0&&dusk<1&&n===1,'daylight for 60% of the day, then dusk and night ('+t.timeOfDay()+')');G.mode='world'}
+  G.clock=t.DAY*.49;const l=t.darkness();G.clock=t.DAY*.51;const dusk=t.darkness();G.clock=t.DAY*.75;const n=t.darkness();ok(l===0&&dusk>0&&dusk<1&&n===1,'daylight for half the day, then dusk and night ('+t.timeOfDay()+')');G.mode='world'}
  // ---- each estate's pieces stay with it: its fields, pens, pits and pier (estateGround), a port's moored boats (estateBoats), a
  // pasture's herd (critters.js penSpots) and its workers. Kept on the estate's lot: pulled down and placed again elsewhere (or a
  // holding of the same name in another world), its pieces are drawn at the new place, never the old
