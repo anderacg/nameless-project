@@ -121,7 +121,7 @@ function survive(){
 const PARTY_MOR={drift:.1};
 function bandNerve(){let n=0,sum=0;for(const k in P.troops){const c=P.troops[k]||0;if(c>0&&ST[k]){n+=c;sum+=c*unitMoraleOf(ST[k])}}return n?sum/n:null}
 function dayTick(){
-  G.day++;
+  G.day++;for(const t of TOWNS)guardsDay(t);// (estates' fallen guards replaced from the holding's people: estates.js)
   const cnt=troopCount()+woundedN()+cparties().reduce((a,p)=>a+p.troops.length,0),wage=Math.ceil(cnt*.5+mountedN()*.5)+2*compCount(),eat=eatPerDay();
   if(wage>0){if(P.gold>=wage)P.gold-=wage;else{P.gold=0;P.morale-=6;log('You cannot pay your troops. Morale falls.','bad');mood('unpaid')}}
   if(foodN()>=eat)foodTake(eat);else{foodTake(eat);P.morale-=8;log('Your band goes hungry. Buy food in a town, or hunt.','bad');mood('hungry')}

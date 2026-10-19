@@ -52,7 +52,7 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t
     // ---- your own farm: managed right there
     const ash=t.townBy('Ashford');ash.owner='player';ash.lastOwner='player';ash.sacked=ash.raided=ash.turmoil=0;t.ensureEcon(ash);world();
     Object.assign(ash.stock,{timber:300,stone:300,tools:60,iron:60});ash.work=null;P.gold=3000;
-    W.folk=[];t.FOLK_SEEN.clear();P.x=ash.x;P.y=ash.y+40;G.clock=t.DAY*.2;for(let i=0;i<300;i++)t.updateFolk(.05);
+    W.folk=[];t.FOLK_SEEN.clear();P.x=ash.x;P.y=ash.y+40;G.clock=t.DAY*.02;for(let i=0;i<300;i++)t.updateFolk(.05);t.updateFolk(60);// (all inside at dawn; the full crews: only some are there at first)
     t.estateMeet(t.estatePick(ash,'farm'));
     ok(h2()==='Farmland of Ashford'&&menus().join()==='folk,fields,works'&&names().join()==='Farmhouse,Fields,Barn'&&!/Fief tab/.test(panel()),'your own farm: Farmhouse, Fields and Barn: '+names().join(', '));
     t.act('es-tab','works');ok(h2()==='Barn'&&/Production/.test(panel())&&/In store/.test(panel()),'its Barn: what it made and its stores');

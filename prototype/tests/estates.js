@@ -43,10 +43,11 @@ try{
  {const v=t.townBy('Brookhollow');const b0=t.bldTotal(v);const out=t.burnEstates(v,2);ok(t.bldTotal(v)===b0-out.length&&out.length===2,'a sack burns two estates ('+out.join(', ')+')')}
  // AI builds over time
  {const f=TW.filter(x=>x.owner!=='player'),b0=f.reduce((a,x)=>a+t.bldTotal(x)+t.wallOf(x),0);for(let i=0;i<40;i++){G.day++;t.estateDay()}const b1=f.reduce((a,x)=>a+t.bldTotal(x)+t.wallOf(x),0);ok(b1>b0,'realms build and fortify over time ('+b0+' → '+b1+')')}
- // folk: every estate's workers work inside it, and carry the day's load to the holding between the afternoon and dusk
- W.folk=[];P.x=ash.x;P.y=ash.y+40;G.clock=t.DAY*.2;for(let i=0;i<300;i++)t.updateFolk(.05);
+ // folk: every estate's workers work inside it (in the morning and at midday some out on its ground: tests/fieldwork.js), and
+ // carry the day's load to the holding between the afternoon and dusk
+ W.folk=[];P.x=ash.x;P.y=ash.y+40;G.clock=t.DAY*.02;for(let i=0;i<300;i++)t.updateFolk(.05);
  const ws=W.folk.filter(f=>f.home==='Ashford');ok(ws.length>=2,ws.length+' workers from Ashford: '+[...new Set(ws.map(f=>f.job))].join(', '));
- ok(ws.every(f=>f.st==='in'&&!t.folkOut(f)),'in the morning they are all at work inside their estates (unseen)');
+ ok(ws.every(f=>f.st==='in'&&!t.folkOut(f)),'at dawn they are all at work inside their estates (unseen)');
  {const f=ws[0],o=t.pickAt(f.x,f.y-4);ok(!o||o!==f,'one at work inside is not picked by a click (his estate is): '+(o&&(o.k||o.name||o.job)))}
  {let out=0,town=0,back=0,loaded=false;for(let i=0;i<4000;i++){G.clock=Math.min(t.DAY*.69,t.DAY*(.4+i*.00008));t.updateFolk(.05);const a=W.folk.filter(f=>f.home==='Ashford');
     out=Math.max(out,a.filter(f=>f.st==='out').length);town=Math.max(town,a.filter(f=>f.st==='town').length);back=Math.max(back,a.filter(f=>f.st==='back').length)}
@@ -101,7 +102,7 @@ try{
   ok(moved.length>=4&&moved.every(m=>!/STAYED/.test(m)),'an estate placed again elsewhere draws its pieces there, not where it stood ('+moved.join(', ')+')');
   // its workers: those at work inside go with it; one out on the road goes home first
   {const x=TW.find(z=>Object.keys(t.bldSpots(z)).some(k=>t.bldLv(z,k)&&t.ESTATES[k].work)),k=Object.keys(t.bldSpots(x)).find(k=>t.bldLv(x,k)&&t.ESTATES[k].work),lv=t.bldLv(x,k);
-   W.folk=[];t.FOLK_SEEN.clear();P.x=x.x;P.y=x.y+30;G.clock=t.DAY*.2;for(let i=0;i<5;i++)t.updateFolk(.05);const ws=W.folk.filter(f=>f.home===x.name&&f.k===k);ws.slice(1).forEach(f=>f.st='in');if(ws[0])ws[0].st='out';
+   W.folk=[];t.FOLK_SEEN.clear();P.x=x.x;P.y=x.y+30;G.clock=t.DAY*.2;for(let i=0;i<5;i++)t.updateFolk(.05);t.updateFolk(60);const ws=W.folk.filter(f=>f.home===x.name&&f.k===k);ws.slice(1).forEach(f=>f.st='in');if(ws[0])ws[0].st='out';
    x.bld[k]=0;t.updateFolk(.05);const left=W.folk.filter(f=>f.home===x.name&&f.k===k);ok(ws.length>=2&&left.length===1&&left[0]===ws[0],'an estate burnt to nothing: its workers inside go with it, the one on the road walks home first ('+ws.length+' → '+left.length+')');
    x.bld[k]=lv;W.folk=[];t.FOLK_SEEN.clear()}}
  t.updateHUD(true);P.x=ash.x;P.y=ash.y+40;G.clock=t.DAY*.2;for(let i=0;i<60;i++)t.updateFolk(.05);t.frame();ok(true,'estates, walls, folk and caravans draw');

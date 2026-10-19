@@ -98,7 +98,11 @@ const breach=t=>{t.wall=Math.max(0,wallOf(t)-1);if(t.work&&t.work.k==='wall')t.w
 
 /* someone else's estate: plunder or burn it */
 /* estates: plunder or burn what a holding has built in its fields */
-const estateGuards=(t,k)=>{const lv=bldLv(t,k),near=Math.hypot(bldSpots(t)[k].x-t.x,bldSpots(t)[k].y-t.y)<WORLD_SCALE.land.estateGuard*TILE,n=2+2*lv+(near?Math.min(4,t.gar||0):0),a=[];
+// an estate's guards: 2 + 2 a level of its own, less those fallen whose places are not filled yet (t.gd[k]: the day each comes
+// back, GUARDS.refill days after, one a day), and up to 4 of the garrison when it stands near the walls
+const GUARDS={refill:5,gar:4,minPop:20};
+const guardsDown=(t,k)=>((t.gd&&t.gd[k])||[]).filter(d=>d>G.day).length;
+const estateGuards=(t,k)=>{const lv=bldLv(t,k),near=Math.hypot(bldSpots(t)[k].x-t.x,bldSpots(t)[k].y-t.y)<WORLD_SCALE.land.estateGuard*TILE,n=Math.max(0,2+2*lv-guardsDown(t,k))+(near?Math.min(GUARDS.gar,t.gar||0):0),a=[];
   for(let i=0;i<n;i++){const c=RACES[t.races[i%t.races.length]];a.push(i%3===2?c.ranged:c.melee)}return a};
 /* met on the map: the estate's own areas down the rail (window.js), as the rooms of a house: its overview (the rail's header:
    what it is, its level, owner and state: townui.js bldTop), where its workers live (folk: a card for them, Talk: folk.js
@@ -139,9 +143,10 @@ function showEstate(){
   const E=ESTATES[k],lv=bldLv(t,k),emp=P.fac&&P.fac===t.owner,ws=W.folk.filter(f=>f.home===t.name&&f.k===k),race=t.races[0],m=ms.find(x=>x[0]===tab);let body;
   if(!tab)body=(sabotaged(t,k)?'<p class="bad">Wrecked: it makes nothing until day '+t.sab[k]+'.</p>':'')+(lv&&PLOTS[k]&&fieldShare(t,k)<1?'<p class="bad">Fields: '+plotsAt(t,k,lv).length+' of the '+PLOTS_AT[k](lv)+' its level works (no open ground for more: it makes '+Math.round(fieldShare(t,k)*100)+'%).</p>':'')+
     (until(t,'fear')?'<p class="bad">The workers are afraid to come out.</p>':'')+bldTop(t,k)+estateDeeds(t,k)+RAIL_SCREEN.overview(ms.map(([k,n,ico,note])=>({act:'es-tab',arg:k,n,note})));
-  else if(tab==='folk'){const inn=ws.filter(f=>f.st==='in'),away=ws.length-inn.length;
+  else if(tab==='folk'){const inn=ws.filter(f=>f.st==='in'),field=ws.filter(f=>f.st==='field').length,away=ws.length-inn.length-field;// (only those inside: the rest are met where they are, folk.js)
     body=(inn.length?railCards(inn.map(f=>{const kk=recruitKind(t,f);return {pic:workerPic(f.job,race,f.v),name:f.name,role:cap1(f.job)+' of the '+E.n.toLowerCase(),facts:['At work inside',until(t,'fear')?['Afraid to come out','bad']:'',remembers(t,f)?['Remembers you','bad']:'','Recruit: '+ST[kk].n.toLowerCase()+', '+hireCost(kk)+'g'],
-        acts:[['es-folk',f.id,'Talk'],['es-recruit',f.id,'Recruit',workerRecruitWhy(t,f)]]}})):'<p class="muted">Nobody is in: '+(ws.length?'they are out with the day’s load.':'the '+E.work+'s are out of sight.')+'</p>')+
+        acts:[['es-folk',f.id,'Talk'],['es-recruit',f.id,'Recruit',workerRecruitWhy(t,f)]]}})):'<p class="muted">Nobody is in: '+(field?'they are at work outside.':ws.length?'they are out with the day’s load.':'the '+E.work+'s are out of sight.')+'</p>')+
+      (field?'<p class="muted">'+field+(inn.length?' more':'')+' at work outside on the '+E.n.toLowerCase()+': meet '+(field>1?'them':'him')+' there.</p>':'')+
       (away?'<p class="muted">'+away+' more out on the road to '+t.name+' with the day’s load: meet them there.</p>':'')+(lostHands(t,k)?'<p class="bad">'+lostHands(t,k)+' pair'+(lostHands(t,k)>1?'s':'')+' of hands short: it makes '+Math.round(handsLeft(t,k)*100)+'% until someone new moves in.</p>':'')+
       '<p class="muted" style="font-size:13px">A worker you recruit becomes a '+ST[recruitKind(t,{k,job:E.work})].n.toLowerCase()+' (tier 0, trains into '+ST[UP[recruitKind(t,{k,job:E.work})][0]].n+'s). The estate is a pair of hands short for '+REFILL_DAYS+' days'+(t.owner==='player'?'':'; '+t.name+' minds it a little (reputation −2)')+'.</p>'}
   else if(tab==='herd'){const c=herdOf(t),D=CRITTERS[c.id],out=(MAKE[k]||{}).out||{},f=plotsAt(t,k,lv).length;
@@ -211,8 +216,16 @@ function estateAct(a,arg){
     startEncounter({kind:'estate',mine:true,ref:{town:t.name,k:o.k,burn,x:o.x,y:o.y,fac:t.owner,cool:0},list:estateGuards(t,o.k),title:'Guards of the '+ESTATES[o.k].n.toLowerCase()+' of '+t.name})}
 }
 // won the fight at an estate (from concludeEncounter): the spoils and the damage
+// beaten (or fled the field): the guards there are gone, their own posts filled again one a day after GUARDS.refill days, the
+// garrison's men lost from the garrison
+function guardsBeaten(t,k){const lv=bldLv(t,k),down=guardsDown(t,k),own=Math.max(0,2+2*lv-down),near=Math.hypot(bldSpots(t)[k].x-t.x,bldSpots(t)[k].y-t.y)<WORLD_SCALE.land.estateGuard*TILE;
+  t.gd=t.gd||{};const L=(t.gd[k]||[]).filter(d=>d>G.day),last=L.length?Math.max(...L):G.day+GUARDS.refill-1;for(let i=1;i<=own;i++)L.push(last+i);t.gd[k]=L;t.pop=Math.max(10,(t.pop||0)-own);// (the dead are the holding's people)
+  if(near)t.gar=Math.max(0,(t.gar||0)-Math.min(GUARDS.gar,t.gar||0))}
+// a new day: each post whose time has come is filled from the holding's people (one person each); too few people left (GUARDS.minPop)
+// and it waits another day
+function guardsDay(t){if(!t.gd)return;for(const k in t.gd){const L=t.gd[k];for(let i=0;i<L.length;i++)if(L[i]<=G.day){if((t.pop||0)>GUARDS.minPop){t.pop--;L.splice(i--,1)}else L[i]=G.day+1}if(!L.length)delete t.gd[k]}}
 function estateWon(e){
-  const r=e.ref,t=townBy(r.town);if(!t)return '';ensureEcon(t);const lv=bldLv(t,r.k),M=MAKE[r.k]||{},got=[];
+  const r=e.ref,t=townBy(r.town);if(!t)return '';ensureEcon(t);guardsBeaten(t,r.k);const lv=bldLv(t,r.k),M=MAKE[r.k]||{},got=[];
   if(r.sab){sabotage(t,r.k);const cost=wrong(t,{rep:CONDUCT.plunderEstate.rep,honor:CONDUCT.plunderEstate.honor});return ' You beat its guards and wreck the '+ESTATES[r.k].n.toLowerCase()+' of '+t.name+' anyway: idle for '+(t.sab[r.k]-G.day)+' days ('+cost+').'}
   for(const g in M.out||{}){const n=Math.min(t.stock[g]||0,Math.ceil(M.out[g]*Math.max(1,lv)*3));if(n<=0)continue;const k=invAdd('good',g,n);t.stock[g]-=n;if(k)got.push(k+' '+GOODS[g].n.toLowerCase())}
   const gold=rint(10,25)*Math.max(1,lv),c=r.burn?CONDUCT.burnEstate:CONDUCT.plunderEstate;P.gold+=gold;
