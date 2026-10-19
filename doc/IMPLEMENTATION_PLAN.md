@@ -247,6 +247,7 @@ In the order the owner last saw them, smallest first; the **Priorities** above g
     4. **Disturbance remembered:** birds you scare stay away a while (a busy road stays quiet); crows and vultures gather after a battle, stay a day, follow armies on the march.
     5. **Better movement:** flocks bank and turn as one, flap and glide, land in trees and on roofs; shadows fall from the sun's side through the day.
    Size: 1 + 2 a medium batch (where and when things appear; art reused), 3 small-medium (sprites), 4 + 5 small. Still decorative only: never saved, its own randomness.
+14. **Tournaments as events** ([TOURNAMENTS_DESIGN.md](TOURNAMENTS_DESIGN.md), designed 2026-10-19 with the owner's answers; waits for the go): the Grand Tournament once a year (120 days) at a new **Grand Stadium** on neutral, unclaimable natural land; regional tournaments at big holdings, small ones (fairs) at small holdings, announced ahead (notices, rumours); small fighting events on the road, never near a holding's own tournament. Melee duel and team melee as battles, archery and joust as stat contests; nonlethal (yield, wounded); betting; lords attend; replaces today's always-on fight at the lists. Phases 1-6 in its doc (M, M, M, M-L, M, S-M). No hosting your own.
 
 ---
 
