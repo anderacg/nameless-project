@@ -34,7 +34,8 @@ Focused regression suites: `armygroups`, `armyedges`, `groups`, `battlesetup`, `
 ## Layout
 
 ```
-Ashmark.html          page markup; loads style.css, the PX engine (../engine: pixel, buildings, pieces), then the scripts below, in this order
+Ashmark.html          page markup; loads style.css, the PX engine (../engine: pixel, buildkit, buildings, pieces, ground, worldnature, beasts,
+                      model), then the scripts below (the full order is the <script> list in Ashmark.html)
 style.css
 js/core/              core.js (DOM, canvas, constants, helpers, the action registry), state.js (state factories, G, P, derived stats),
                       roster.js (TroopRoster, count/list helpers), army.js (ArmyRoster, persistent groups and slot budget), garrison.js (GarrisonService),
@@ -48,17 +49,28 @@ js/data/              tables only, no game logic: races, factions, units, monste
                       scenes (who you meet inside a place, buildings, building styles)
 js/world/             the campaign map and everything on it
   map.js territory.js   terrain, climate, pathfinding; each holding's land
+  fog.js                the fog of war: the land you have explored (W.seen) and what you see now
+  worldmap.js           the WorldMap: its size and layers, one map in at a time (WM); battleSite, what a battle reads of its tile
+  worldsettings.js worldgen.js worldplace.js
+                        the world generator (doc/WORLD_DESIGN.md, behind WORLD.gen): the clamped settings, the terrain stages 1-6,
+                        the placement stages 7-9 (holdings, roads and crossings, camps); seeded, never Math.random
   router.js             every way over the land behind three calls: Router.travel (a step toward a point, or a holding's gate:
                         gateGoal), Router.reach, Router.days; today's flow fields and searches underneath
   realms.js siege.js    factions, diplomacy and lords; sieges, raids, captures and fiefs
   leaders.js            how every leader grows (hero, lords, companions, bandit chieftains); the chieftains
+  characters.js         everyone who fights is a Unit: a Troop (one per kind of soldier) or a Character (one person who grows)
+  relations.js          how each lord feels about you, and about each other
   parties.js            every party's soldiers as counts; its kind's class (look, sight, shelter); W.parties; your band (P)
   brains.js             how each kind of party behaves on the map; updateParties runs them all
   captives.js           leaders in battle; captured, ransomed, let go or escaped
+  patrols.js            every holding's guards ride its land: a day watch and a night watch
+  defence.js            the land defended: monsters in the wilds, bandits away from homes, the watch and lords ride out at them
+  fights.js             fights between parties on the map, which take time and can be joined
   stay.js               staying in a holding (your band), and the shelter rules for you and your companions
-  economy.js estates.js stock, production, prices, treasuries; estates and walls
+  economy.js estates.js stock, production, prices, treasuries; estates, their guards, and walls
   lots.js               placed buildings on the grid: layouts, placing, building time, houses
-  folk.js caravans.js   workers in the fields; caravans (realms' and yours)
+  folk.js caravans.js   workers at the estates (inside, out on their fields in the morning, carrying loads to the holding);
+                        caravans (realms' and yours)
   companions.js         companions who grow as you do (level, gear, disciplines, perks) and lead parties of your soldiers
   ships.js              fishing boats out to the fishing grounds by day; trade ships between ports on the same sea
   resources.js          ore veins and fishing grounds, and what each holding's mines and ports bring up
@@ -66,6 +78,7 @@ js/world/             the campaign map and everything on it
   conduct.js            charging deeds against a holding (CONDUCT), and the small map dialogs
   sites.js              caves, ruins, shrines, hideouts, travellers and the bandit camps
   encounters.js         encounters on the road: the people you meet travelling, as scenes on the map (doc/ENCOUNTERS_DESIGN.md)
+  letters.js            the sealed letter a robbed messenger carries: its contents, and its page from your bag
   monsters.js critters.js events.js quests.js reputation.js
   world.js              travel, the daily tick, the world update
 js/battle/            encounters.js (dialogs, outcomes by kind: ON_WIN), parley.js (cornered parties), setup.js (BattleSetup, field
@@ -74,17 +87,26 @@ js/battle/            encounters.js (dialogs, outcomes by kind: ON_WIN), parley.
                       battlecontrol.js (group mechanics), commands.js (player selection and orders),
                       attacks.js (damage and attack execution), projectiles.js (launch, flight and impact stepping),
                       combat.js (the hero's manual control: combos, dodge, block, the bow, skills; set aside for now,
-                      MANUAL_HERO in battle.js)
+                      MANUAL_HERO in battle.js), spatial.js (the spatial grid), terrain.js (the field's ground and sight), route.js
+                      (route-finding round cliffs and water), battlefog.js (fog of war), charmind.js (characters' mind), commander.js
+                      (the AI captains), beastmind.js (beasts' tactics), abilities.js (casting), formations.js, morale.js (group resolve),
+                      fatigue.js (stamina), unitabilities.js (Brace, Fire arrows, Spur, Rally), physics.js (mass, turning, impact),
+                      commandpowers.js (the commander's powers), camera.js, deploy.js (deployment and Auto), lab.js (the battle laboratory)
 js/scene/             walkable maps of the places you enter: scene.js (walking, paths, talking, in and out), town.js (town layouts);
                       a kind of place gets a scene by adding its generator to SCENES; its text panel stays, with a choice to walk in
-js/gfx/               worldart.js (the painted map), sprites.js (generated sprites), structures.js (placed buildings, estates' ground, camps, sites, flags), render.js (world and battle drawing, HUD),
+js/gfx/               worldart.js (the painted map), sprites.js (generated sprites), people.js (every person and troop, from one template),
+                      structures.js (placed buildings, estates' ground, camps, sites, flags), render.js (world and battle drawing, HUD),
+                      depth.js (what stands in front of a figure on the map, and its fade), vfx.js (battle effects), worldui.js (the map's
+                      pointer marks, route trail and encounter highlights), mist.js (mist in the fog), weapons.js (battle weapons),
                       scene.js (painting and drawing scenes)
 js/ui/                ui.js (panels, title, Esc menu), loading.js (the loading overlay; runSteps runs long work in steps), character, talents, inventory, town,
                       window.js (rail windows: a rail of places beside the chosen one's window), townui.js (a town's places, its overview, your
-                      holding's buildings), peopledrawer.js (the people drawer, P), input.js (actions, mouse, keys)
+                      holding's buildings), peopledrawer.js (the people drawer, P), input.js (actions, mouse, keys), map.js (the full map:
+                      a placeholder until world Phase 2 wave 2), loot.js (the spoils), icons.js, battlehud.js, moraleicons.js (morale
+                      badges and marks), orderpaths.js (where your groups are going), unitcard.js, developer.js (developer console)
 js/main.js            game loop and boot
-graphics/             the pixel-art pack (free for personal and commercial use); not used for now
-archive/              the single-file version from before the split, and art.js (the sprite-sheet mapping, set aside)
+archive/              art.js (the sprite-sheet mapping for the graphics/ pixel-art pack, set aside; the pack is not in the repository)
+audio/                offline music scripts (Python: a MIDI/WAV soundtrack generator); the game's own sound is core/audio.js, music.js
 ```
 
 The scripts are plain `<script>` files, not modules, so the page still works from `file://`. Their top-level `const` and `function` names are shared across files. The rules that follow (checked by `tests/structure.js`):
@@ -111,7 +133,7 @@ Things in the world are plain data (so a save is plain JSON) read through a clas
 - **Parties** (`world/parties.js`): lords, bandit bands, patrols, caravans, your companions' parties and your own band (`P`) keep soldiers as counts (`o.tc`; yours are `P.troops`). `o.troops` (and a band's `list`) is a read-only view; change soldiers with `add`, `remove`, `removeAny`, `cull`, or by setting `troops`. Each kind's class says how it looks (`look`), whether you can see it (`inView`: nearer in cover) and where it may shelter (`shelterWhy`, `enter`, `leave`; `inside` is the holding's name). Plain data becomes its class with `asParty(o)`. `W.parties` lists every party on the map.
 - **Caravans** (`CaravanParty`, `world/caravans.js`) save only how many guards they have (`guards`); their kinds and formations are rolled from that and kept off the record (re-rolled when `guards` is set; a change to their soldiers sets `guards`). Behaviour is methods: `meet`, `act`, `demands`/`demandAct`, `fears`, `price`/`pays`, `loot`, `seize`, `arrive`/`endLeg`, `look`. They are not in `W.parties` (they are drawn and picked as their carts: `draw`, `pick`), but they are in `worldObjects()`. Tests: `tests/caravanparty.js`.
 - **World objects** (`WorldObject`, `world/parties.js`): everything on the map says what it is (`mapKind`: `town`, `estate`, `lord`, `band`, `patrol`, `caravan`, `cparty`, `monster`, `site`, `critter`, `refugee`, `road`, `worker`, `ship`, `fight`; your band `you`), whether it is still on the map (`here`: in its kind's list), whether a chase after it goes on (`chaseable`), whether it is met as soon as you reach it even just after a fight (`meetsAnyTime`), whether you see it (`inView`; the shared rule is `spotted(o,V)`, nearer in woods and hills; a mythic beast from afar), where a click answers on it (`pick(at)`), how you meet it (`meet`), what the pointer shows (`tip`), how it is drawn (`draw(ents,cam,V)`) and its minimap dot (`mapDot(V)`). `pickAt`, `objKind`, `interact`, `tipFor`, the chase and the minimap go through them. `worldObjects()` (`world/world.js`) lists everything in the order a click weighs two that are as near: each holding then its built estates, the parties, beasts, sites, herds, caravans, refugees, workers, ships, fights (no pick, no dot: a click on one of its parties meets it). The minimap's dots come from `worldObjects()` by layer (`MAP_LAYER`, `gfx/render.js`). Holdings are `HoldingObject` (put under `Holding` in `world/estates.js`, as `data/holdings.js` loads first); an estate is one `Estate` per holding and kind (`estatePick`, never saved); then `Site`, `Monster`, `Herd`, `Refugees`, `EstateWorker`, `Ship`, `Fight` (`world/fights.js`). Behaviour only: saves stay plain JSON; plain data (a save's, a test's) is made its kind in place when the map next asks (`asClass`, `asWorldObject`). `drawWorld` still calls each kind in its old order (ties in depth keep it). Tests: `tests/worldobject.js`, `tests/worldobjects2.js`.
-- **Encounters on the road** (`world/encounters.js`, doc/ENCOUNTERS_DESIGN.md): the people you meet travelling (a wounded traveller, a peddler, hunters, a caravan under attack, an ambush…) are `RoadEncounter`s (`mapKind` `road`) in `W.road.on`, each a kind of `ROAD_ENC` (its rule `ok`, ground `on`, behaviour `beh`: approach, stay, flee, scene; its scene, page text, Insight facts and choices). They come by a pity timer (`ENC_SPAWN`: the hours travelled since the last met, `W.road.c`; at most 2 a day, a kind not again within 5 days), last by `ENC_LIFE`, are drawn from their pieces by `EncounterScene` (today's map figures, beasts, cart, tent, fire, shrine, mine), highlighted while unmet (`gfx/worldui.js` `wuiRoadUnder`, `wuiRoadOver`: the pin, glow, call-out, edge arrow) and met on a `PageScreen` page (`enc-` actions). Nothing ends while you can see it: its time up in your sight, each ends its kind's way (`ROAD_ENC` `ends`, else its behaviour's: `ENC_END`; walking off along the road, `ENC_OFF`) and is gone once out of your sight. A few leave a trace (`ROAD_TRACE`). `W.road` is saved once there is one. `world/events.js` keeps only the instant events (the weather, the sickness, the finds). Tests: `tests/encounters.js`.
+- **Encounters on the road** (`world/encounters.js`, doc/ENCOUNTERS_DESIGN.md): the people you meet travelling (a wounded traveller, a peddler, hunters, a caravan under attack, an ambush…) are `RoadEncounter`s (`mapKind` `road`) in `W.road.on`, each a kind of `ROAD_ENC` (its rule `ok`, ground `on`, behaviour `beh`: approach, stay, flee, scene; its scene, page text, Insight facts and choices). They come by a pity timer (`ENC_SPAWN`: the hours travelled since the last met, `W.road.c`; at most 2 a day, a kind not again within 5 days), last by `ENC_LIFE`, are drawn from their pieces by `EncounterScene` (today's map figures, beasts, cart, tent, fire, shrine, mine), highlighted while unmet (`gfx/worldui.js` `wuiRoadUnder`, `wuiRoadOver`: the blue "!", sound waves rippling out, the call-out, and waves rolling in at the screen's edge while it is off the screen) and met on a `PageScreen` page (`enc-` actions). Nothing ends while you can see it: its time up in your sight, each ends its kind's way (`ROAD_ENC` `ends`, else its behaviour's: `ENC_END`; walking off along the road, `ENC_OFF`) and is gone once out of your sight. A few leave a trace (`ROAD_TRACE`). `W.road` is saved once there is one. `world/events.js` keeps only the instant events (the weather, the sickness, the finds). Tests: `tests/encounters.js`.
 - **Brains** (`world/brains.js`): what each kind does each moment (`think`), on the shared steps of `Brain` (cool-down, sight, meeting you). `updateParties(d)` runs them all.
 - **Leaders** (`world/leaders.js`): the hero, lords, companions and bandit chieftains grow by one rule (`Leader`: level × 60 experience a level, disciplines by use); `leaderOf(o)` reads any of them. Leaders fight at the head of their men and can be taken captive (`world/captives.js`).
 

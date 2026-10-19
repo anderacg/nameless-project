@@ -1,6 +1,6 @@
 # Robbing villagers, ruins, and knowing the odds: design
 
-Status: **approved by the owner** (2026-10-19); **built** (2026-10-19: `tests/conduct.js`). All numbers live in one tunables table per system, so they are easy to change.
+Status: **approved by the owner** (2026-10-19, 2111f51); **built** (2026-10-19, 980033f: `tests/conduct.js`). Nothing in it is open (checked 2026-10-19). All numbers live in one tunables table per system, so they are easy to change.
 
 ## 1. Insight: what you can tell before you act
 

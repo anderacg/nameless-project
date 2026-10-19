@@ -1,6 +1,6 @@
 # Travel supplies: stamina, food, drink and furs: design
 
-Status: **planned next** (owner, 2026-10-19: "don't do it yet, plan for next"); the owner's answers are in (liquor and ale, the hero, Make camp and the ring). Nothing here is built yet. Every number lives in one tunables table (`SUPPLY`), so it is easy to change.
+Status: **planned next** (owner, 2026-10-19: "don't do it yet, plan for next"); the owner's answers are in (liquor and ale, the hero, Make camp and the ring). Nothing here is built yet (checked 2026-10-19 at 7324310: no `SUPPLY`, `world/supply.js` or `ui/ring.js`; design a674aab); its place in the queue is IMPLEMENTATION_PLAN §10.10 (Priority 21), waiting for the owner's go. Every number lives in one tunables table (`SUPPLY`), so it is easy to change.
 
 ## 1. The idea
 

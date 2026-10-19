@@ -1,6 +1,6 @@
 # Random encounters on the map: design
 
-Status: **approved** (2026-10-19); phase 1 built (2026-10-19: `world/encounters.js`, `tests/encounters.js`); **phase 2 built** (2026-10-19: the 8 new encounters of normal priority, as data in `ROAD_ENC` with their numbers in `ENC_TUNE`; the shared chase and catch in `RoadEncounter` and `ENC_CATCH`; stand-in figures until phase 3's props); **phase 4 in part built** (2026-10-19: the sealed letter as a real item, `world/letters.js`; the fake wounded (a lure); the pilgrims at real shrines; see "Phase 4 as built" below).
+Status (checked 2026-10-19): **approved** (2026-10-19); phase 1 built (2026-10-19, 17224a0: `world/encounters.js`, `tests/encounters.js`); **phase 2 built** (8f1c621) (2026-10-19: the 8 new encounters of normal priority, as data in `ROAD_ENC` with their numbers in `ENC_TUNE`; the shared chase and catch in `RoadEncounter` and `ENC_CATCH`; stand-in figures until phase 3's props); **phase 4 in part built** (2026-10-19, 937ca04: the sealed letter as a real item, `world/letters.js`; the fake wounded (a lure); the pilgrims at real shrines; see "Phase 4 as built" below). Also built 2026-10-19: the sound-wave highlights (3baad24, aed29cd, b3560c5), the healed traveller walking off bandaged (51841e8), nothing ending in sight (7c895f0), stat checks (8f072a3), strayed sheep (19c0cae), the gamblers' cap (da995ab). **Open:** phase 3 (the props) and the rest of phase 4 (prisoner wagon, execution, duel), and the small-encounters backlog; their order is in IMPLEMENTATION_PLAN §10 (items 2, 3 and 9), which owns the queue; this doc owns the designs.
 
 ## 1. The idea
 
@@ -23,7 +23,7 @@ Today a "road event" is a window that pops up at random (`world/events.js`, 21 o
 | Limits | At most **2 encounters a day**, and the **same kind not again within 5 in-game days**. |
 | Where | Just beyond your sight ring, 40–120 px out, on walkable ground: on or by a road for travellers, in a wood for hunters, on hills for the mine. Never inside a holding. |
 | Which | Weighted by climate, terrain, time of day (some only at night), how near a holding is, your band (size, honour, renown), and a cooldown per kind (no repeat for N days). |
-| Shown | Drawn like other map figures (depth order, fog, smooth movement). **No pause** (owner): instead, highlights: a pulsing **"!"** with a soft glow round its figures while unmet; a call-out line ("Help! Over here!") and a soft sound when it first comes into view; an **arrow at the screen edge** when it is just off-screen; a log line ("Someone calls out from the road to the east"). |
+| Shown | Drawn like other map figures (depth order, fog, smooth movement). **No pause** (owner): instead, highlights: a pulsing **"!"** with a soft glow round its figures while unmet; a call-out line ("Help! Over here!") and a soft sound when it first comes into view; an **arrow at the screen edge** when it is just off-screen; a log line ("Someone calls out from the road to the east"). **As built (2026-10-19):** sound waves ripple out from it instead of the glow (3baad24); a plain blue "!" (aed29cd); off the screen, waves rolling in "((((" at the screen's edge instead of the arrow (b3560c5; `gfx/worldui.js` `wuiArc`, `WAVE`). |
 | Behaviour | **Approach:** walks toward you and stops beside you. **Stay:** waits in place. **Flee:** runs from you. **Scene:** a fight or event already under way, which ends on its own after a time. |
 | Meet | Click it (you walk there), or it reaches you. Its page opens; some force a choice (an ambush springs). |
 | Leave | It despawns when you are far away, after its time is up, or when its story ends; never while you can see it (owner, 2026-10-19: its time up in your sight, it ends its kind's way and is gone once out of your sight; see below). A few leave a trace: a body, a burnt wagon, a rumour in the next tavern. |
@@ -103,8 +103,8 @@ Any of them leaves at once when you are about 1.5× your sight away. Traces fade
 - **Phased:**
   1. the system, plus today's 14 people events moved onto the map;
   2. the 8 new ones of normal priority: cart stuck in mud, thief on the run, poacher, funeral, wedding, runaway horse, beggar, messenger;
-  3. the new props;
-  4. **lower priority, kept in the game, built last** (owner, 2026-10-19): fake wounded (lure), prisoner wagon, execution, duel challenge. The duel needs a one-on-one hero fight first.
+  3. the new props (open: IMPLEMENTATION_PLAN §10.2);
+  4. **lower priority, kept in the game, built last** (owner, 2026-10-19): fake wounded (lure; built, 937ca04), prisoner wagon, execution, duel challenge (open: IMPLEMENTATION_PLAN §10.9). The duel needs a one-on-one hero fight first.
      Also in phase 4: **the sealed letter** as a real item (owner, 2026-10-19; see below).
 
   The owner reviews screenshots after each phase.
@@ -122,7 +122,7 @@ Any of them leaves at once when you are about 1.5× your sight away. Traces fade
 | Beggar | on a road near a holding; likelier when your purse is fat | walks up to you | Give 5, 10 or 20 gold (honor with the land's realm) · Ignore |
 | Messenger | on a road; a realm's rider in its colours | rides up to you (faster than one on foot) | Read the news (a place you have not found goes on your map, where a lord rides, or the wars) · Rob (asks first: his purse and a sealed letter's price; reputation and honor with his realm) |
 
-Choices made in building it: the procession's time is its walk (4–10 h) rather than the scene's 3–8 h, since holdings stand 300+ px apart; the thief keeps his own 2–3 h and comes at the edge of your sight, so he crosses it; the chase is a sprint (×1.6) so a band on foot can catch a runner; the messenger's sealed letter is paid in gold (no letter item yet); a poacher may be on your own land too. Figures are stand-ins: the cart is the caravan's (a mud patch under it), the bier a shrouded body between two bearers, the dead deer the map's deer on its back, the horse the map's horse with a saddle, the messenger a rider on it.
+Choices made in building it: the procession's time is its walk (4–10 h) rather than the scene's 3–8 h, since holdings stand 300+ px apart; the thief keeps his own 2–3 h and comes at the edge of your sight, so he crosses it; the chase is a sprint (×1.6) so a band on foot can catch a runner; the messenger's sealed letter is paid in gold (no letter item yet; since 937ca04 a real item, see "Phase 4 as built"); a poacher may be on your own land too. Figures are stand-ins: the cart is the caravan's (a mud patch under it), the bier a shrouded body between two bearers, the dead deer the map's deer on its back, the horse the map's horse with a saddle, the messenger a rider on it.
 
 ### The sealed letter (phase 4; owner, 2026-10-19)
 
@@ -166,21 +166,21 @@ The owner's rule: **your stats only add.** The base is what anyone gets today; s
 |---|---|---|---|
 | Wounded traveller | Tend his wounds | Medicine +15%, Intellect +3% (care, 0–1) | still always heals; reputation and renown × (1 + care), a chance (care × 60%) of 5–10 gold from his purse; `e.care` kept on him for later chains or escorts. The lure's Tend shows the same and springs the ambush (no check) |
 | Cart in the mud | Help push | Strength +5%, Athletics +5% | up to 60% less stamina (or time) |
-| Gamblers | Play | Intellect or Charisma (the higher) +1.5% | 48% → at most 65% |
+| Gamblers | Play | Intellect or Charisma (the higher) +1.5% | 48% → at most 65%. They play at most 5 hands and quit once 100 gold down to you (`ENC_GAMBLE`, da995ab) |
 | Collapsed mine | Search it | Survival +4%, Intellect +1% (gear: +2%, +1%) | 60% → at most 85% (gear 40% → 55%) |
 | Will-o'-wisps | Follow them | Intellect +2.5% | 50% → at most 75% |
 | Hunters' camp | Join the hunt | Survival +10%, Hunting +5%, Archery +5% | meat × (1 + it), up to 6; furs × it, up to 2 |
 | Funeral / Wedding | Pay respects / Join / Give a gift | Charisma +8% | honour, morale, reputation × (1 + it), up to twice |
 | Runaway horse | Catch it | Riding +8%, Agility +4% | as before, 25% → at most 90% (on the helper, the same numbers) |
 
-### Strayed sheep (built 2026-10-19, from the owner's small-encounters backlog)
+### Strayed sheep (built 2026-10-19, 19c0cae, from the owner's small-encounters backlog)
 
 A shepherd on open land near a holding, by day; 3-4 of his sheep scattered 40-80 px round him (`ROAD_PART.stray`, parts of
 his encounter that never come alone). **Round them up**: the strays are marked; ride into each (within your grab reach, which
 Agility widens) and it goes back to his flock; they trot off when you come close. His thanks, once, for what came back: his
 wool or cheese and reputation a sheep, more (and morale) when every one is home; then he walks off with his flock. Numbers:
 `ENC_SHEEP`. The rest of that backlog (fortune teller, toll, warm campfire, herbalist, runaway serf, flotsam, snowed-in
-travellers) is noted, not built.
+travellers) is noted, not built: IMPLEMENTATION_PLAN §10.3.
 
 ## 6. Questions for the owner
 

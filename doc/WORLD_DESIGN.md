@@ -1,6 +1,7 @@
 # A bigger, seeded world: design
 
-**Status:** **Approved by the owner 2026-10-18 (D1–D39 as recommended).** Final design, revision 3. Phase 0 waves 1 and 2 are built (2026-10-18, §2.2; R15–R17 to come). Written against the working tree of `battle-rts-and-world` (with its uncommitted changes). Phase 0 is ready to launch (§15.1).
+**Status:** **Approved by the owner 2026-10-18 (D1–D39 as recommended; D40–D45 the same day).** Final design, revision 3. Written against the working tree of `battle-rts-and-world` (with its uncommitted changes).
+**Progress (checked 2026-10-19 at 7324310):** **Phase 0 complete** (2026-10-18: b94cbe2, 097ec15, 5e9453d, 02c8f50, 7fa4680, 65b50ca, 328f892), but for R12's daily-job slicing, which rides with Phase 2 wave 2. **Phase 1 built** (2026-10-18, f08c720; 8× relabelled 608b9f2). **Phase 2:** wave 0 built (2026-10-18, 855ca1a), wave 1 built behind `WORLD.gen` (2026-10-19, 2ed6578; the classic climates and anchors and the suites that assume today's map under `-Gen` deferred to wave 3); **waves 2–4 wait for the owner's go**. §11.1 (the land defended) built 2026-10-19 (e5bca02, 7638472); §12.5 (depth sorting) built 2026-10-18 (08f93f6), the fade since changed (see there). Phases 2b–7 not started. The queue across all docs is IMPLEMENTATION_PLAN "Priorities"; this doc owns the phases.
 **Plan item:** IMPLEMENTATION_PLAN "Deferred: Procedural world (a seeded map)", made active by the owner on 2026-10-18. It also prepares world cliffs, which battles will take their cliffs from (TERRAIN_DESIGN §8).
 **Readers:** the owner, whose decisions are recorded in §16, and the developer agents who will build it.
 
@@ -850,7 +851,7 @@ Every number below sits in `FOUNDING` (`data/world.js`) for Phase 6's retune.
 
 | Change | Where |
 |---|---|
-| New kind `camp`, a `tier` and `next` on every kind, the `TIERS` table | `data/holdings.js` |
+| New kind `camp`, a `tier` and `next` on every kind, the `TIERS` table | `data/holdings.js` (`tier`/`next` built in Phase 0, R4, 097ec15. Note 2026-10-19: the name `TIERS` is already taken, by the LOD tiers' `WeakMap` in `world/parties.js` (R12); one of the two needs another name before Phase 4b) |
 | `FoundingSite` (site), placement in the generator | `world/sites.js`, `world/worldplace.js` |
 | Found, upgrade and tier-down projects, free-founding rules, upkeep, raids on your holdings | new `world/founding.js`; `world/estates.js` (`t.work` of kind `tier`) |
 | The centre growing in place | `world/lots.js` (reserved block, centre replacement) |
@@ -1382,7 +1383,7 @@ All new places are `PX` generators, previewed in `gallery.html`, and approved by
 ### 12.5 Depth sorting and see-through (built separately, earlier)
 
 - **Trees and buildings stay painted** in the chunk.
-- **Overdraw what stands in front:** for each figure in view, the sprites in front of it (their box overlaps the figure, their foot is lower on screen) are drawn again over it: in full over others, at 0.4 alpha over your own party (`PROPFADE`, as in battle). That is about 2–6 sprites per figure.
+- **Overdraw what stands in front:** for each figure in view, the sprites in front of it (their box overlaps the figure, their foot is lower on screen) are drawn again over it: in full over others, at 0.4 alpha over your own party (`PROPFADE`, as in battle). That is about 2–6 sprites per figure. **Changed 2026-10-19:** trees and buildings in front of **any** figure in your sight fade (1f4f2dd), to `WDEPTH.fade` 0.3 (`gfx/depth.js`; the owner set 0.3 in 5fa658b). Battle keeps 0.4 over yours only until IMPLEMENTATION_PLAN §3.5.
 - **What the world art must provide:** an index per chunk of its standing sprites (`{x, y, s, box}`, from the nature plan and the lots), sorted by foot y. Ranges keep column-cut faces.
 - **Later:** toll houses, mills, ferry landings and Phase 7 cliff faces join the index.
 
@@ -1486,6 +1487,8 @@ New rows: hamlets annexed, sieges, days per march, caravan and barge trips, cros
 ## 15. Phased plan
 
 Agents are split by files that don't overlap (5 at most). **The `WM` shape (§9.1) is the contract.** The game stays playable after every phase.
+
+**Status (2026-10-19):** 0 built (328f892; R12's daily-job slicing left, with Phase 2 wave 2) · 1 built (f08c720) · 2 waves 0–1 built behind `WORLD.gen` (855ca1a, 2ed6578), waves 2–4 wait for the owner's go · 2b, 3, 4, 4b, 5, 6, 7 not started. Holding growth tiers (IMPLEMENTATION_PLAN §6) are owned here, Phase 4b.
 
 | Phase | Scope | Agents and files | Effort |
 |---|---|---|---|
@@ -1614,7 +1617,7 @@ Written against f08c720 (Phase 1 merged). Phase 2 builds the generator **behind 
   - **The script lists** (`Ashmark.html`, `wiki.html`, the load order and static checks in `tests/structure.js`) and the runners (`tests/run-tests.ps1`, `tests/run-tests.sh`) belong to **A** for all of Phase 2. Wave 0 adds every planned new file, so no one else should need them; send A the line for any other.
   - **The building redesign runs alongside.** `engine/buildings.js`, `engine/model.js`, `engine/buildkit.js`, `engine/gallery.html` and `tests/visual/buildpreview.js` are off limits to every Phase 2 agent. Art the owner must approve (rivers, steep hills) is shown through a `tests/visual/` scene, not the gallery.
   - **Never touch a `demos/` folder**: not in diffs, stashes (`-u`), `add -A` or patches.
-- **Tests:** always `.\tests\run-tests.ps1 -Parallel 1 -TimeoutSeconds 240` (the owner's PC), never a higher `-Parallel`. Add `-Gen` for the flag-on world. A suite must finish within 240 s at `-Parallel 1`: long seed sweeps and timings go into `tests/visual/` reports, run by name.
+- **Tests:** always `.\tests\run-tests.ps1 -Parallel 1 -TimeoutSeconds 240` (the owner's PC), never a higher `-Parallel`. Add `-Gen` for the flag-on world. A suite must finish within 240 s at `-Parallel 1`: long seed sweeps and timings go into `tests/visual/` reports, run by name. **Since 2026-10-19 (owner):** agents run only their targeted suites; the coordinator runs the full sweep once after each merge, so "the full sweep" in the done list below is the coordinator's.
 - **Done means:**
   1. the full sweep has no failure the baseline did not have (the coordinator records f08c720's known failures before wave 0);
   2. `-Suites worldprint -Seed 1` shows W1–W8 equal to their constants (the one allowed change is in the hash table below);
@@ -1792,7 +1795,7 @@ save = {v:3, at, …today's fields…, world:{v:3,
 
 #### 15.2.2 The waves
 
-**Wave 0: the contracts in code** (alone, first; effort S)
+**Wave 0: the contracts in code** (alone, first; effort S) — **built 2026-10-18** (855ca1a)
 
 | Agent | Scope | May edit | Must not edit | Depends on |
 |---|---|---|---|---|
@@ -1800,7 +1803,7 @@ save = {v:3, at, …today's fields…, world:{v:3,
 
 The load order wave 0 sets: `world/map.js`, `world/router.js`, `world/fog.js`, `world/resources.js`, `world/worldsettings.js`, `world/worldgen.js`, `world/worldplace.js`, `world/worldmap.js` (whose load line calls `installClassic`); `ui/map.js` (new, C's) after `ui/ui.js`.
 
-**Wave 1** (3 agents in parallel, after wave 0; merged in this order)
+**Wave 1** (3 agents in parallel, after wave 0; merged in this order) — **built 2026-10-19** (2ed6578, integrated; deferred to wave 3: the classic climates and anchors, and the suites that assume today's map under `-Gen`)
 
 | Agent | Scope | May edit | Must not edit (closest neighbours) | Depends on |
 |---|---|---|---|---|
@@ -1808,7 +1811,7 @@ The load order wave 0 sets: `world/map.js`, `world/router.js`, `world/fog.js`, `
 | **B** | **Placement, stages 7–9** (§8.8, 8.11, 8.12), coded against wave 0's stub terrain: suitability per people, capitals, realms grown by Poisson disc, kinds by rules, ports and river ports, the bridge town, the spacing table; names from syllable tables (unique), prices and notes; lords' names past each realm's four (D10); roads and tracks by 8-direction least-cost search, smoothed (§8.11), with bridges (water run ≤ 3), fords (streams and rivers), ferries (great rivers at towns and river ports) and crossing spacing; bandit camps (`density().camps`); deposits with fish in rivers and lakes, scaled by `economy`; the checks of stages 7–9. Classic: the 37 holdings keep their names, races, kinds, realms, styles, prices, notes and `TOWNS` order, at the anchors snapped to a suitable tile within 4 | `world/worldplace.js`, `world/resources.js` (`genDeposits`), `world/realms.js` (`addMissingLords` reads `WM.lords`; first stocks × `economy`), `tests/worldplace.js` (new) | `world/worldgen.js` and `data/places.js` (A), `world/lots.js`, `world/territory.js` (Phase 3) | Wave 0 |
 | **C** | **Saves and sessions.** Save v3 (above): `world.map`, gzip with a plain header, v2 refused, the checksum check, regeneration on load; fog in run lengths; `begin(k, settings)` with the generation steps and world reuse; `monsters` and `bandits` on the spawns; `runSteps` waiting on a step that returns a Promise (gunzip); **page open with the flag on**: the classic world forged behind the overlay (`main.js`, `worldmap.js`'s load line, the load-time minimap in `sprites.js`), while the wiki and tests stay synchronous; the plain New game choice (a World row: Classic · Normal · Large · Huge with a fresh seed shown, only with the flag; Huge on every device, with a slow-on-this-device note on phones (D44); hidden only without `CompressionStream`); the save line ("Large · redwater") | `core/save.js`, `world/fog.js` (`seenSave`, `seenLoad`), `core/session.js`, `main.js`, `world/worldmap.js` (the load line only), `gfx/sprites.js` (the load-time `WorldArt.mini()` line only), `ui/loading.js`, `ui/ui.js` (New game, `saveLine`), `tests/harness.js` (plain saves under sync), `tests/armygroups.js` (v2 refused), `tests/worldsave.js` (new), `tests/loading.js`, `tests/worldprint.js` (W7 only) | `world/worldgen.js`, `world/worldplace.js`, `world/router.js`, `gfx/render.js`, `gfx/worldart.js` | Wave 0 (codes against the stub world) |
 
-**Wave 2** (3 agents in parallel, after wave 1 is merged)
+**Wave 2** (3 agents in parallel, after wave 1 is merged) — **waits for the owner's go**; it also takes R12's daily-job slicing (`econDay`, `caravanDay`, `landDay`: §2.2, left from Phase 0)
 
 | Agent | Scope | May edit | Must not edit | Depends on |
 |---|---|---|---|---|
@@ -1816,7 +1819,7 @@ The load order wave 0 sets: `world/map.js`, `world/router.js`, `world/fog.js`, `
 | **D** | **The way graph and the two-level router** (§3.6) behind the unchanged calls (flag on); `Router.close`, `Router.stats`; `buildWayGraph` from roads, crossings, landings and chunk portals. **Ships** keep off rivers that are not navigable; rivers join waters only where navigable. **River art:** water tiles shaded by width, banks of reeds and stones, fords lighter with stepping stones, bridges stone or wood, ferry landings, rapids in white water, brooks as 1–3 px lines along `flow`, through `PX.worldNaturePaint`'s spec. **Roads at any angle (owner, 2026-10-18):** each road is painted as a smooth curve through its smoothed line (§8.11), not square stamps per tile. It has worn verges, ruts and a width that varies, from great road to track, and joins cleanly at forks and gates. Today's map is unchanged with the flag off (W5 and W6 hold). **Coasts (owner's reference look, 2026-10-18, a light touch):** a sand rim, a pale shallow-water halo with soft cloudy edges and a few wave strokes, in today's palette. **The minimap** at 1 px per k tiles, k = ⌈w ÷ 256⌉ (today's map: 1, so W6 holds). Prefetch checked at Large and Huge. LOD tiers stay infinite (counts are today's until Phase 6) | `world/router.js`, `world/ships.js`, `gfx/worldart.js`, `engine/worldnature.js`, `gfx/render.js` (the minimap only), `tests/router.js` (new), `tests/worldchunks.js`, `tests/visual/rivers.js` (new: every river piece, for the owner's approval) | `world/worldmap.js` (E), `battle/*` (E), `ui/*` (C) | A (rivers), B (roads, crossings) |
 | **E** | **The battle link and D41** (§13): `battleSite`'s new fields (§15.2.1); river width, the world's bridge, ford-only rivers, the ferry's ford, delta and floodplain marsh; the high-ground kinds as layouts. **The steep hill:** climbable anywhere but very slow and tiring; ranks break on the climb; no charge momentum uphill; cavalry crawls; downhill charges hit hard; a strong height bonus; scree (no cavalry charge across it, shooters reach farther downhill); mixed edges with a gentler shoulder. Routing prices steep edges, so groups take a shoulder or ramp when one is near; the AI holds steep crests and attacks by the shoulder or ramp. Its own look (a darker stony bank) | `world/worldmap.js` (`battleSite` only), `battle/terrain.js`, `battle/encounters.js` (`bridgeNear` from crossings), `battle/route.js` (steep costs), `battle/commander.js` (crests, shoulders), `battle/morale.js` (cohesion on a steep climb only), `battle/lab.js` (`labSite` takes river width, crossing and high ground), `engine/ground.js` (the steep bank and scree), `tests/battlesite.js`, `tests/steephills.js` (new), `tests/visual/terrainbalance.js` (a steep-hill row) | `battle/setup.js`, `gfx/*`, `world/router.js` (D) | A (`river`, `high`), B (`crossings`) |
 
-**Wave 3: the classic seed and the proof** (3 agents in parallel, after wave 2; **E merges last**)
+**Wave 3: the classic seed and the proof** (3 agents in parallel, after wave 2; **E merges last**) — not started
 
 | Agent | Scope | May edit | Must not edit | Depends on |
 |---|---|---|---|---|
@@ -1824,7 +1827,7 @@ The load order wave 0 sets: `world/map.js`, `world/router.js`, `world/fog.js`, `
 | **B** | **The classic anchors** proven: positions by §8.15's formula, snapped within 4; Willowmere an island village with bridges (`routes`); Stonebridge at a bridge on the great river; the League's ports on one sea (`ships`). Fixes for `worldsanity` failures in stages 7–9, and the relax order | `world/worldplace.js`, `world/resources.js`, `world/realms.js` (lords, stocks), `tests/worldplace.js`, `tests/classicseed.js` (new: every §8.15 hint as a check) | `world/worldgen.js`, `data/places.js` (A) | Wave 2 |
 | **E** | **The proof.** `tests/worldsanity.js`: §8.14's Phase 2 rows on 8 seeds at Normal and 2 at Large, within 240 s; `tests/visual/worldsanity.js`: 30 and 10, by name. Suites adapted to pass **with the flag on and off**, reading places, never literal coordinates: `mapview`, `territory`, `routes`, `worldnature`, `ships`, `captives`, `battletypes`, `controlaudit`, `visual/shot`. *Hold the bridge*'s share (`visual/btypebalance`, `battletypes` trigger counts) with the flag on: ≤ 25%. `tests/visual/worldscale.js` (new: per preset, generation time and peak memory, chunk paint, router, `updateWorld`, save size plain and gzipped); `visual/loadtimes` per size. Then **records G1–G8 and the sums** | The suites named, `tests/worldsanity.js` (new), `tests/visual/worldsanity.js` (new), `tests/visual/worldscale.js` (new), `tests/visual/loadtimes.js`, `tests/worldprint.js` (G1–G8, flag on) | Game code (send failures to A or B), `tests/worldgen.js`, `tests/rivers.js` (A), `tests/worldplace.js`, `tests/classicseed.js` (B) | A's and B's wave-3 merges (for the hashes) |
 
-**Wave 4: the flip** (alone, after the owner has played Classic and a few random seeds with `?gen=1` and accepted them; effort S)
+**Wave 4: the flip** (alone, after the owner has played Classic and a few random seeds with `?gen=1` and accepted them; effort S) — not started
 
 | Agent | Scope | May edit | Must not edit | Depends on |
 |---|---|---|---|---|

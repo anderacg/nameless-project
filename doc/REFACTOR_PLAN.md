@@ -2,11 +2,13 @@
 
 From a read-only review of the prototype at commit 4d24715 (99 scripts, ~11.5k dense lines, 1.18 MB). The OOP direction is sound — `BattleControl` is the single order API for player and AI, `BattleResolve` owns group morale, `Party`/`Brain` subclasses, holdings and sites rebuilt from plain JSON — so this plan fixes concentrated debt only. **No over-engineering:** plain JS, global scripts, no build step, plain-JSON v2 saves, terse house style are deliberate constraints.
 
+**Status (checked 2026-10-19):** wave 1 (items 1–8) done; items 9–13 and 15–17 done; **item 14 in part** (`centroid`, `reachOf` in `commander.js`, da077f5; no `edgeGap`, copies outside `commander.js` not folded); **item 18 open** (`BattleResolve.sync()` still writes the soldiers' morale mirrors). Item 9's last estates, buildings and deposits step is IMPLEMENTATION_PLAN §5.3 (lots and deposits still plain).
+
 ## Owner decisions (2026-10-17)
 - **Wave 1 approved:** items 1–8 below, after the test-suite cleanup lands.
 - **Fall-back ending:** every player order to a group ends a character's fall-back — moves, attacks, Hold, pace (including the R key), formations and flags — **but not using a unit ability**.
 
-## A. Do now (wave 1) — **done 2026-10-17** (commits 3859184, 9ed0d7d, f8045a1 and the captain/charmind split)
+## A. Do now (wave 1) — **done 2026-10-17** (commits 3859184, 9ed0d7d, f8045a1 and the captain/charmind split, da077f5; item 8's check is in `tests/structure.js`, f8045a1)
 | # | Refactor | Problem | Change | Effort |
 |---|---|---|---|---|
 | 1 | Split `commander.js` | Character mind (lines ~1–173: `CHAR_AI`, `charAuto`, `charBasics`, `CHAR_FALL`, `commandCharacters`) and army captains (~175–520) in one 59 KB file | Pure move of the character mind to a new `js/battle/characters.js` (loaded before commander.js in both HTML files) | S |
@@ -23,14 +25,14 @@ Parallel split (no file overlap): **A** items 1+2 (commander.js, new characters.
 ## B. Do when touching the area
 9. **`WorldObject` base** (plan 5.2) — **steps 1–2 done 2026-10-17** (everything on the map; `tipFor` → `tip()`); **the rest done 2026-10-18** (WORLD_DESIGN R8: `Fight` a `WorldObject` in `worldObjects()`; the minimap's dots from `worldObjects()` by `MAP_LAYER`, no five lists) (item 10's `partyName`/`partyFac` done: `label()`/`faction`): five parallel per-kind switch sites (`drawWorld`, `pickAt`, `objKind`→`interact`/`tipFor`/chase, `partyKind`, visibility rule ×3, `estatePick` stand-in) → base with `kind`, `inView`, `pick`, `tip`, `meet`, `draw`, `mapDot` and a `worldObjects()` iterator; incremental (parties → sites → estates → movers); saves stay plain JSON.
 10. **Party polymorphism** (`kind` getter, `power()` replacing `rating/bandPower/cpPower` — note `bandPower` silently generates troops — `label()`, faction), then remove compatibility wrappers (`partyAdd/Remove/Transfer*`, `canEnter/lordEnter/lordLeave`, `caravanMeet/caravanLoot/seizeCaravan`, `siteKnown/siteClear/stockTravelers`, `BandParty.list`, `champSkill`, `brainOf`, defensive `asParty` at use sites) with the test agent. `partyClassOf` infers class from field shape; an explicit saved kind would change the save shape (owner's call). **Done 2026-10-17/18:** every Party has `mapKind` (the kind getter: a band's own `kind` field is its bandit kind), `power()`, `label()` and `faction`; a band musters its fighters only in `asParty` (made or loaded; the event ambush now musters a real band); companions' parties are made on loading; the wrappers and `partyKind`/`partyName`/`partyFac`/`troopsOf`/`cpPower`/`brainOf` are gone. encounters.js and charmind.js call the methods directly (`caravanLoot`/`seizeCaravan`, `BandParty.list`, `bandPower`, `champSkill` gone). **Done 2026-10-18:** the last shims (`partyRemove`, `asParty` in render.js) are gone; setup.js keeps its `asParty` (it builds plain refs from tests into armies).
-11. **(Done 2026-10-18)** **Battle event hook** with battle-fun "juice": `battleEvent(type,data)` + listeners (HUD callouts, lab telemetry) instead of direct `callout*`/`BattleLab.event` calls in simulation code and HUD polling of `B.fallBack`.
+11. **(Done 2026-10-18, 097ec15)** **Battle event hook** with battle-fun "juice": `battleEvent(type,data)` + listeners (HUD callouts, lab telemetry) instead of direct `callout*`/`BattleLab.event` calls in simulation code and HUD polling of `B.fallBack`.
 12. **(Done 2026-10-17)** **Town actions** out of `input.js` `act()` into `town.js` `townAct` (keep action names).
-13. **(Done 2026-10-18)** **Readable battle tick:** extract `pushApart`, `keepOffObstacles`, `checkBattleOver` from `updateBattle` (same order).
-14. **Geometry helpers** `centroid`, `edgeGap`, `reachOf` (≈15/10/7 inline copies) — same arithmetic order so fingerprints hold.
+13. **(Done 2026-10-18, 097ec15)** **Readable battle tick:** extract `pushApart`, `keepOffObstacles`, `checkBattleOver` from `updateBattle` (same order).
+14. **Geometry helpers** `centroid`, `edgeGap`, `reachOf` (≈15/10/7 inline copies) — same arithmetic order so fingerprints hold. **In part (2026-10-17, da077f5):** `centroid` and `reachOf` replace the copies in `commander.js`; `edgeGap` and the copies in other files remain.
 15. **(Done 2026-10-17)** Drop ~45 defensive `W.x||[]` guards (all lists exist after `makeWorldState`).
 16. **(Done 2026-10-17)** One `PREFS` settings table (8 copy-pasted localStorage IIFEs + act lines).
 17. **(Done 2026-10-17)** `G.youAttack` set/cleared with `setTimeout` → `try/finally` around `interact`.
-18. Later, with the test agent: retire per-soldier morale mirrors (`sync()` writes 12 fields/tick; only resolution.js reads them in game code), re-recording fingerprints with a stated reason.
+18. **(Open)** Later, with the test agent (before or after a world phase, never during one: WORLD_DESIGN §2.3, D16): retire per-soldier morale mirrors (`sync()` writes 12 fields/tick; only resolution.js reads them in game code), re-recording fingerprints with a stated reason.
 
 ## C. Don't do
 ECS/component split for soldiers; an AI state-machine framework (at most a `setPhase` helper); command objects/undo; a `G.mode` state machine (fold only with the "two Esc mechanisms" debt item); moving world windows into `js/ui/`; renaming vocabularies; splitting `aiUnit`; an explicit saved party kind (save shape — owner's call); a mid-line `//` structure test (no live cases); reformatting, modules, a build step or JSON data.

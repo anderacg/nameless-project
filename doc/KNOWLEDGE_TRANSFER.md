@@ -6,7 +6,7 @@ This is a handover for whoever continues work on the Ashmark prototype. It expla
 - the design rules the project owner has set;
 - the habits that keep work safe.
 
-It reflects the state on **2026-10-15**. The plan for what comes next is in [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md).
+It reflects the state on **2026-10-15**; facts that had gone stale (git, tests, the code map, livestock) were corrected on 2026-10-19. What was built since is summed up in the plan's "Where things stand", and the file list is in the README. The plan for what comes next is in [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md).
 
 The original vision is in [Game Feature Plan 2D Pixel-Art Sandbox Warband RPG.md](Game%20Feature%20Plan%202D%20Pixel-Art%20Sandbox%20Warband%20RPG.md). The code-level layout rules are in [prototype/README.md](../prototype/README.md). Read both.
 
@@ -27,19 +27,19 @@ Ashmark is a 2D pixel-art warband RPG in the spirit of *Mount & Blade: Bannerlor
 F:/Game Project/
   Nameless/
     doc/                 design docs (this file, the plan, the feature plan, references/)
-    engine/              PX engine: procedural pixel-art generators for buildings and sites (pixel.js, buildings.js, pieces.js)
-                         gallery.html previews them; *-preview.html are art experiments kept for reference
-    prototype/           THE GAME (its own git repo)
+    engine/              PX engine: procedural pixel-art generators (pixel.js, buildkit.js, buildings.js, model.js, pieces.js, ground.js,
+                         worldnature.js, beasts.js); gallery.html previews them (the *-preview.html experiments were removed)
+    prototype/           THE GAME
       Ashmark.html       open this: no build step, works from file://
       wiki.html          in-game reference, built from the live data tables
       style.css          the whole interface stylesheet
       js/                about 10,500 dense lines, plain <script> files (not modules)
-      tests/             about 63 headless test suites + run-tests.sh + harness.js
-      archive/ audio/    old single-file version; sounds
+      tests/             about 170 headless test suites (+ tests/visual/ reports) + run-tests.ps1/.sh + harness.js
+      archive/ audio/    art.js (the sprite-sheet mapping, set aside); the offline music scripts
 ```
 
 - **Run:** double-click `prototype/Ashmark.html`, or open it in Chrome or Edge. There is no server, bundler or npm.
-- **Git:** the repo is `Nameless/prototype`. The last commit is `b141f8a`, and a large amount of work since then is uncommitted. **Commit only when the owner asks.**
+- **Git:** the repo is `Nameless` (`doc/`, `engine/`, `prototype/`); everything is committed as it lands (about 145 commits by 2026-10-19), with detailed messages. The owner's own `demos/` folder is never committed. **Commit only when the owner asks.**
 - **Environment used so far:**
   - Windows 11, Git Bash for shell scripts, Python 3 for scripted edits.
   - Headless Chrome (`C:/Program Files/Google/Chrome/Application/chrome.exe`) for tests and screenshots.
@@ -63,11 +63,8 @@ bash tests/run-tests.sh rts menu     # chosen suites
 ```
 
 - **How a run works:** each suite opens `Ashmark.html?test=<suite>` in headless Chrome. The harness exposes every global through `T` (a proxy: `t.updateBattle(...)`, `t.P`, `t.G`...). Lines starting with `FAIL`, `EXC` or `ERR` fail the run.
-- **Last full run (2026-10-15): 1850 pass, 2 fail.** Both failures were in one siege raid test that then passed five times running alone.
-- **Known intermittent tests** (random world state):
-  - siege "village lords ride to stop your raid", and the walk-away check after it;
-  - biomes "trees stop about a quarter of arrows";
-  - patrols "in the grace after a fight…".
+- **Full sweeps** are run by the coordinator once after each merge (owner, 2026-10-19: agents run targeted suites only); the results are in the commit messages.
+- **Known intermittent tests:** the 2026-10-15 ones (siege raid, biomes arrows, patrols grace) were steadied on 2026-10-17 (10b925e). The current list is in the plan's "Technical debt and watch-outs".
 
   Rerun a suite alone before assuming you broke something.
 - **Tests use a fixed view.** With `?test=` and no `?v=`, `FIXED_VIEW` in `core.js` keeps the old fixed 576×360 view and a 960-wide battlefield, so the tests' positions and sums stay put. Add `&v=...` to see the real full-screen layout.
@@ -105,10 +102,10 @@ bash tests/run-tests.sh rts menu     # chosen suites
 | Core | `js/core/core.js` | Canvas, view size (`VW/VH`, `fitScreen`), battlefield (`BW/BH`, `BVW/BVH`), helpers, `onAct` |
 | State | `js/core/state.js`, `save.js` | `G` (game state), `P` (player band), `W` (world lists); save slots in localStorage |
 | Data | `js/data/*.js` | Races, factions, units (`ST`), monsters, critters, matchups (damage and armour), gear, progression, holdings, places, economy (`ESTATES`, `JOBS`), conduct, scenes, abilities |
-| World | `js/world/*.js` | `map.js` (terrain, `routeTo` pathfinding), `parties.js` / `brains.js` (all parties), `realms.js`, `siege.js`, `lots.js` (placed buildings), `estates.js`, `folk.js` (workers), `critters.js` (animals), `sites.js`, `caravans.js`, `characters.js` (Unit/Troop/Character), `world.js` (tick, clicks) |
-| Battle | `js/battle/*.js` | `battle.js` (units, `aiUnit`, shooting), `battlecontrol.js` (**BattleControl**), `commander.js` (AI), `formations.js`, `morale.js`, `fatigue.js`, `camera.js`, `deploy.js`, `encounters.js` (outcomes), `abilities.js`, `combat.js` (manual hero, set aside) |
+| World | `js/world/*.js` | `map.js` (terrain), `router.js` (all travel: `Router`), `worldmap.js` / `worldgen.js` / `worldplace.js` / `worldsettings.js` (the world and its generator), `parties.js` / `brains.js` (all parties, `WorldObject`), `realms.js`, `siege.js`, `lots.js` (placed buildings), `estates.js` (and their guards), `folk.js` (workers, field work), `critters.js` (animals), `sites.js`, `encounters.js` / `letters.js` (encounters on the road), `defence.js` (the land defended), `patrols.js` (the two watches), `fights.js` (fights on the map), `caravans.js`, `characters.js` (Unit/Troop/Character), `world.js` (tick, clicks) |
+| Battle | `js/battle/*.js` | `battle.js` (frame orchestration), `actors.js` (`aiUnit`, targeting), `battlecontrol.js` (**BattleControl**), `commander.js` (AI captains), `charmind.js` (characters' mind), `beastmind.js` (beasts), `terrain.js` / `route.js` / `battlefog.js` (ground, routing, sight), `formations.js`, `morale.js`, `fatigue.js`, `physics.js`, `unitabilities.js`, `commandpowers.js`, `camera.js`, `deploy.js`, `setup.js` / `resolution.js`, `encounters.js` (outcomes), `abilities.js`, `combat.js` (manual hero, set aside) |
 | Graphics | `js/gfx/*.js` | `people.js` (**all people sprites**), `sprites.js` (cells, map sprites), `render.js` (world and battle drawing), `structures.js` (buildings), `worldart.js` (terrain), `vfx.js`, `weapons.js` |
-| UI | `js/ui/*.js`, `style.css` | `ui.js` (`showPanel`, **`nav()`**, title, Esc menu), `character.js`, `town.js`, `inventory.js`, `talents.js`, `battlehud.js`, `unitcard.js`, `input.js` |
+| UI | `js/ui/*.js`, `style.css` | `ui.js` (`showPanel`, **`nav()`**, title, Esc menu), `window.js` (rail windows and `PageScreen`), `townui.js`, `peopledrawer.js`, `character.js`, `town.js`, `inventory.js`, `talents.js`, `battlehud.js`, `unitcard.js`, `input.js` |
 | Scenes | `js/scene/*.js` | Walkable town interiors |
 | Engine | `../engine/*.js` | `PX` namespace: building and site generators |
 
@@ -171,14 +168,14 @@ bash tests/run-tests.sh rts menu     # chosen suites
   - Clicking an estate opens `estateMeet`: its own menus down a rail (`ui/window.js`, as in towns; never the holding's other estates). The rail's header is its overview (`bldInfo`); the menus that apply are its Workers, Livestock (pasture), Manage (your own: `bldBuild`, upgrade, place, pull down) and Raid (someone else's: sabotage, plunder, burn). The worker talk and the herders open on the same rail, Back to the overview.
 - **Rail windows** (`ui/window.js`): the one base of towns, your holding, estates and sites (`showRail`, `railKey`, `railFocus`). Screens give data only; no other file builds rail markup (`tests/estateui.js` checks it). A site's places come from its class's `places(r,btn,row)` (default: one place with its whole `panel`).
 - **Workers** (`folk.js`) follow a daily routine:
-  - They work **inside** their estate's building, unseen (`st:'in'`).
+  - They work **inside** their estate's building, unseen (`st:'in'`), or in the morning and at midday out on its ground (`'field'`, since a3458b4).
   - Once a day, at a random hour between afternoon and dusk (`DELIVER`), each carries a load to the holding's gate (`'out'`), stops inside briefly (`'town'`), walks back (`'back'`) and goes in again.
   - Workers inside are met through the estate. One on the road can be clicked.
   - A scare sends anyone on the road back in.
 - **Animals** (`critters.js`):
   - Wild game flees and is hunted. A fleeing animal faces the way it moves, and its home range moves with it, so it doesn't spin back toward you.
-  - A **pasture's herd is decoration only** (`decor:true`): one *small* animal per field tile (`BEASTS_SMALL`). Its trade is the pasture's "Buy livestock".
-  - Village herds without a pasture are still met by walking into them.
+  - A **pasture's herd is decoration only** (`decor:true`), grazing inside its fenced tiles. Nothing is bought from it (since adb14da): its meat, milk, cheese and wool go to its holding, and the pasture's Pens only tell of it.
+  - A holding with no pasture keeps its animals out of sight (since adb14da; they were met by walking into them).
 
 ---
 

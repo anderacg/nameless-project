@@ -1,6 +1,6 @@
 # Game Feature Plan: 2D Pixel-Art Sandbox Warband RPG
 
-Oct 10, 2026 · @Adisorn · updated Oct 15, 2026
+Oct 10, 2026 · @Adisorn · updated Oct 15, 2026 · status tags checked against the code Oct 19, 2026
 
 This is the game's design vision. It records what the game is meant to be and how far each feature has come. Two companion documents cover the rest:
 - **[IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md):** the work order.
@@ -42,16 +42,19 @@ Nine systems make up the game; combat is the one that had to be right first.
 
 ### A. Overworld
 
-- **[Built]** Top-down tile map with party sprites moving in real time (pause and 1×/2×/3× speed).
+- **[Built]** Top-down tile map with party sprites moving in real time (pause and 1×/2×/4×/8× speed, f08c720).
+- **[Partly]** A seeded world generator with size presets ([WORLD_DESIGN.md](WORLD_DESIGN.md)): terrain, rivers, holdings and roads built behind `WORLD.gen` (2ed6578); the full map, the classic seed and the switch-over are to come.
 - **[Built]** Terrain affects speed and vision: forest, hills, snow, desert, swamp, rivers, roads.
 - **[Built]** Towns, cities, castles, villages, bandit camps and hideouts, caves, ruins, shrines, and roaming armies and monsters. Holdings are placed buildings on a grid and grow over time.
 - **[Partly]** Day/night with a food and morale clock for your party. **[Not yet]** Seasons.
-- **[Built]** Fog of war, with scouting range set by the Scouting skill.
+- **[Built]** Fog of war, with scouting range set by the Scouting skill. Scouting also reads situations before you act (Insight, 980033f).
 - **[Built]** Life on the map:
   - workers carry their estate's goods to town each afternoon;
   - herds graze on pastures;
   - wild game flees and can be hunted;
-  - caravans, patrols, refugees and ships move about.
+  - caravans, patrols, refugees and ships move about;
+  - holdings defend their land (a day and a night watch), monsters keep to the wilds and fight bands (e5bca02, d24621e);
+  - **[Built]** encounters on the road: small scenes on the map you can ride to or pass by (ENCOUNTERS_DESIGN.md; 17224a0, 8f1c621, 937ca04).
 
 ### B. Character and progression
 
@@ -89,6 +92,7 @@ Battles are real-time and top-down, in Total War style.
 - **[Changed]** "Player control of one unit while commanding the rest" was set aside on Oct 13. The manual hero controls (combos, dodge, block, bow) are kept in the code behind a switch in case they return.
 - **[Not yet]** Directional melee (swing angles, blocking by matching direction).
 - **[Built]** Auto-resolve, sieges and village raids, and tournaments.
+- **[Built]** Terrain that matters (hills, woods, marsh, rivers, cliffs, mountains), fog of war, battle types (Hold the bridge, Ambush), unit abilities, commander powers and unit physics ([TERRAIN_DESIGN.md](TERRAIN_DESIGN.md); e527d86, 3f24f1d, b81c21f, da78db0).
 
 ### E. Economy and trade
 
@@ -111,9 +115,9 @@ Battles are real-time and top-down, in Total War style.
 ### G. Quests and content
 
 - **[Built]** Contracts from holdings and lords: bounty, beast hunt, lair clearing, supply run, hunting, courier, reinforcements, war and raid.
-- **[Not yet]** Escort, rescue and defend contracts.
+- **[Not yet]** Escort, rescue and defend contracts. Escort is planned in [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) §10.7, which owns it; defend a caravan as a battle type in §4.5.
 - **[Not yet]** Authored story arcs per companion and faction story chains.
-- **[Built]** Random events on the road: 20 kinds, including refugees, fever, storms, deserters and merchants. **[Not yet]** Ambush events.
+- **[Built]** Random events on the road: the people in them are now encounters on the map (wounded travellers, merchants, deserters, refugees, a sealed letter to rob…); weather and sickness stay instant events. **[Built]** Ambush events (e527d86; on the map, 17224a0).
 - **[Not yet]** A late-game main threat (invasion or civil war). The dragon is a roaming danger, but not a story climax yet.
 
 ### H. UI and presentation
@@ -127,14 +131,14 @@ Battles are real-time and top-down, in Total War style.
   - every window has the same layout, with navigation (Back, close) in a bottom bar;
   - a Total War-style battle HUD.
 - **[Partly]** Walkable town streets. Other interiors are planned (castle, cave, ruins, mine, dragon lair).
-- **[Not yet]** Music in the game. A chiptune generator script exists in `prototype/audio/`.
+- **[Built]** Music and sound in the game: generative music and synthesised effects (4796112; `core/music.js`, `core/audio.js`).
 
 ### I. Technical
 
 - **[Changed]** Data lives in `js/data/` tables, not JSON. Browsers block reading JSON files from disk, so moving to JSON is deferred until there's a way to load it.
 - **[Built]** Save slots, quick save (F6) and autosave.
-- **[Built]** About 63 automated browser test suites cover every system.
-- **[Partly]** The world simulation runs every frame on a daily tick. It is not deterministic or seeded.
+- **[Built]** About 170 automated browser test suites (and some 40 report-only `tests/visual/` suites) cover every system.
+- **[Partly]** The world simulation runs every frame on a daily tick. The world it runs on can now be generated from a seed (behind `WORLD.gen`); play itself is not deterministic.
 
 ## Status
 
@@ -142,7 +146,7 @@ The original roadmap planned five phases over 10 to 14 months, starting from a c
 - All the MVP must-haves are built.
 - So are several items once marked "cut if needed": sieges, tournaments, companions, quests and captives.
 
-What remains (finishing mobile, the backlog above, polish and audio) is ordered in **[IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md)**.
+What remains (the bigger seeded world, travel supplies, the backlog above, a real-phone check and polish) is ordered in **[IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md)** ("Priorities").
 
 ## Scope control
 
@@ -170,4 +174,4 @@ The MVP was travel, recruitment, real-time battles, trading, and a small war bet
 - **World sim balance.** Factions can snowball or stall. The `worldsim` test reports five 120-day campaigns to check this.
 - **Content volume.** Procedural quests, events and troop trees keep hand-authoring down. Story arcs are still to come.
 - **Scope creep.** Keep a strict feature-freeze date before polish.
-- **New: mobile.** Touch controls for battle (pinch zoom, long-press orders) are the main gap.
+- **New: mobile.** Touch controls for battle and map are built (pinch zoom, long-press orders, 39c4785); a check on a real phone is still to do.
