@@ -135,7 +135,7 @@ function finishRaid(t,f){
   const food=tk('grain',Math.round(rint(10,18)*f))+tk('meat',Math.round(rint(4,10)*f))+tk('cheese',Math.round(rint(0,6)*f)),gold=Math.round((rint(40,80)+G.day)*f);
   t.pop=Math.max(10,Math.round(t.pop*(1-.1*f)));for(const g of FOODS)t.stock[g]=Math.round((t.stock[g]||0)*(1-.4*f));P.gold+=gold;P.morale=clamp(P.morale+5*f,0,100);
   if(f>=.5)W.critters=W.critters.filter(c=>c.home!==t.name);
-  t.raided=G.day+12;const burnt=f>=1?burnEstates(t,1):[];
+  t.raided=G.day+12;const burnt=f>=1?burnEstates(t,1):[];newsRecord('raid',t,{town:t.name});// (news.js)
   if(f>=1){log('You raid '+t.name+' to the ground: '+food+' food and '+gold+' gold'+(burnt.length?', and burn its '+burnt.join(' and '):'')+'. Its people will not forget.','bad');questNotify('raid',t)}
   else log('You break off the raid of '+t.name+' with '+food+' food and '+gold+' gold.','bad');
 }

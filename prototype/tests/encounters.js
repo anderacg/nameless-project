@@ -183,9 +183,9 @@ try{
   ok(p.seen&&s.seen&&s.inView(t.vis())&&p.view().ps.length===t.ENC_SCENE.pics(p).length+s.view().ps.length,'heard or seen, their shrine is known (drawn on the map), and on their page’s banner with them');
   ok(t.ROAD_ENC.pilgrims.scene(w).concat(t.ROAD_ENC.pilgrims.scene(p)).every(x=>x[0]!=='bld'),'no shrine of their own, walking or praying');
   // their choices, fitted to each
-  world();P.morale=50;at(pilPray.x,pilPray.y);R().on=[];const q1=t.roadSpawn('pilgrims',P.x+10,P.y);t.roadMeet(q1);ok(acts().join('|')==='Pray with them|Give alms|Take the coins'&&/kneel at the/.test(panel()),'praying: Pray with them, Give alms, Take the coins, Leave');
+  world();P.morale=50;at(pilPray.x,pilPray.y);R().on=[];const q1=t.roadSpawn('pilgrims',P.x+10,P.y);t.roadMeet(q1);ok(acts().join('|')==='Pray with them|Give alms|Take the coins|Ask for news'&&/kneel at the/.test(panel()),'praying: Pray with them, Give alms, Take the coins, Ask for news (news.js), Leave');
   pickA(0);ok(P.morale===50+TP.morale,'Pray with them: morale +'+TP.morale);world();
-  P.morale=50;const q2=meet('pilgrims'),h0=t.roadNow();ok(acts().join('|')==='Walk and pray with them|Give alms|Take the coins'&&/walk the road to the/.test(panel()),'walking: Walk and pray with them, Give alms, Take the coins, Leave');
+  P.morale=50;const q2=meet('pilgrims'),h0=t.roadNow();ok(acts().join('|')==='Walk and pray with them|Give alms|Take the coins|Ask for news'&&/walk the road to the/.test(panel()),'walking: Walk and pray with them, Give alms, Take the coins, Ask for news, Leave');
   pickA(1);ok(P.morale===50+TP.morale&&Math.abs(t.roadNow()-h0-TP.walk)<1e-6,'Walk and pray with them: morale +'+TP.morale+', '+TP.walk+' hour with them');world();
   const g0=P.gold,xp0=P.xp+P.level*1e5;P.morale=50;meet('pilgrims');pickA(2);ok(P.gold===g0-TP.alms&&P.morale===50+TP.almsMorale&&P.xp+P.level*1e5>xp0,'Give alms: '+TP.alms+' gold, morale +'+TP.almsMorale+', XP');world();
   P.morale=50;meet('pilgrims');pickA(3);ok(q('#panel.confirm')&&P.gold===g0-TP.alms,'Take the coins asks first');sure();ok(P.gold===g0-TP.alms+TP.coins&&P.morale===50-TP.coinsMorale,'confirmed: +'+TP.coins+' gold, morale −'+TP.coinsMorale);world();

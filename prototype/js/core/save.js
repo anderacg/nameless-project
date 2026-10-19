@@ -45,7 +45,7 @@ function saveGame(quiet,slot){
 // the world part of a save: the world it is (map: made again from it on a load), the tiles play changed (edits: none yet), every
 // holding's own record (holdings.js saveRec), then the world's lists
 function worldSave(){return {v:SAVE_V,map:{gen:WM.gen,settings:WM.settings,sum:WM.sum},edits:[],seen:seenSave(),own:TOWNS.map(t=>t.saveRec()),rel:W.rel,dead:W.dead,lords:W.lords,exiles:W.exiles||[],mythic:W.mythic,monsters:W.monsters,sites:W.sites,
-  caravans:W.caravans,refugees:W.refugees,patrols:W.patrols,fights:W.fights,lrel:W.lrel||{},uidN:W.uidN||0,fightN:W.fightN||0,treas:W.treas,critters:W.critters,shops:W.shops||{},...roadSave()}}
+  caravans:W.caravans,refugees:W.refugees,patrols:W.patrols,fights:W.fights,lrel:W.lrel||{},uidN:W.uidN||0,fightN:W.fightN||0,treas:W.treas,critters:W.critters,shops:W.shops||{},...roadSave(),...newsSave()}}
 // does the world part fit this world (made: the holdings it made, by default the world's in): a record for each holding the world
 // made, the rest founded ones of a kind there is (read before anything is put back, so a save that doesn't fit leaves the game as
 // it was)
@@ -60,7 +60,7 @@ function worldLoad(w){
   Object.assign(W,{treas:w.treas,rel:w.rel,dead:w.dead,lords:w.lords.map(asParty),exiles:w.exiles,mythic:w.mythic,
     shops:w.shops,caravans:w.caravans.map(asParty),ships:[],refugees:w.refugees,patrols:w.patrols.map(asParty),fights:w.fights,
     lrel:w.lrel,uidN:w.uidN,fightN:w.fightN,folk:[],critters:w.critters,monsters:w.monsters.map(asMonster)});
-  occRebuild();seenLoad(w.seen);W.sites=w.sites.map(siteOf);W.sites.forEach(s=>s.placed());W.critters.forEach(herdToFields);roadLoad(w.road);
+  occRebuild();seenLoad(w.seen);W.sites=w.sites.map(siteOf);W.sites.forEach(s=>s.placed());W.critters.forEach(herdToFields);roadLoad(w.road);newsLoad(w.news);
 }
 /* loading a save, as steps behind "Returning to {world}…" (loading.js runSteps): the save read (gunzipped: a step that waits);
    the world it was made in made again first when it is not the one in (another gen or other settings: session.js forgeSteps,

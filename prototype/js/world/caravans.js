@@ -79,9 +79,10 @@ class CaravanParty extends Party{
   meet(){
     const c=this;G.cv=c;G.mode='dialog';P.tx=null;G.chase=null;c.cool=4;const f=c.fac==='player'?FACS.player:FACS[c.fac],hostile=!c.mine&&hostileTo(c.fac),mine=c.mine;
     const btn=(act,arg,label,why)=>'<button class="btn sm" type="button" data-act="'+act+'"'+(arg!=null?' data-arg="'+arg+'"':'')+(why?' disabled title="'+why+'"':'')+'>'+label+'</button>';
+    const rum=hostile?'':rumourSay(rumourSource('caravan',c.from+'>'+c.to,[c,townBy(c.from),townBy(c.to)],{from:'a caravan master'}));// (news along its road: news.js)
     const wants=mine||hostile?[]:Object.keys(GOODS).filter(g=>goodN(g)>0&&!GOODS[g].ammo&&townBy(c.to)&&marketState(townBy(c.to),g)==='shortage').slice(0,4);
     showPanel('<div class="top"><h2>'+(mine?'Your caravan':'Caravan of '+c.from)+'</h2><span class="muted">'+(mine&&c.leg==='back'?'Heading home to '+c.home:'Bound for '+c.to)+'</span></div>'+
-      '<p class="muted">Flying the colors of the <span style="color:'+f.col+'">'+f.n+'</span>. '+c.guards+' guards walk beside the carts.</p><p>Carrying '+cargoText(c)+(c.purse?', and '+c.purse+' gold from its sales':'')+'.</p>'+
+      '<p class="muted">Flying the colors of the <span style="color:'+f.col+'">'+f.n+'</span>. '+c.guards+' guards walk beside the carts.</p><p>Carrying '+cargoText(c)+(c.purse?', and '+c.purse+' gold from its sales':'')+'.</p>'+(rum?'<p>The caravan master: &ldquo;'+rum+'&rdquo;</p>':'')+
       (mine?'<p class="good">'+(c.repeat?'A standing route: '+c.home+' → '+(c.dest||c.to)+' and back, again and again.':'One run: '+c.home+' → '+(c.dest||c.to)+', then home.')+'</p>':hostile?'':
         Object.keys(c.goods).map(g=>{const p=c.price(g),n=Math.min(5,c.goods[g]);return '<div class="row"><div class="info"><strong>Buy '+GOODS[g].n.toLowerCase()+'</strong><small>'+p+'g each · '+c.goods[g]+' aboard · you have '+goodN(g)+'</small></div><div class="acts">'+
           btn('cv-buy',g,'Buy '+n+' for '+p*n+'g',P.gold<p*n?'Not enough gold':goodRoom(g)<n?'No room in your bag':'')+'</div></div>'}).join('')+
@@ -106,7 +107,7 @@ class CaravanParty extends Party{
   // the spoils: its cargo (what fits) and the strongbox
   loot(){
     const c=this,got=Object.keys(c.goods).map(g=>{const n=invAdd('good',g,c.goods[g]);return n?n+' '+GOODS[g].n.toLowerCase():''}).filter(Boolean),gold=rint(20,50)+c.guards*5;P.gold+=gold;
-    W.caravans=W.caravans.filter(x=>x!==c);addRep(c.from,-8,true);
+    W.caravans=W.caravans.filter(x=>x!==c);addRep(c.from,-8,true);newsRecord('caravan',c,{from:c.from});// (news.js)
     return ' You take the caravan: '+(got.length?got.join(', ')+' and ':'')+gold+' gold from its strongbox.';
   }
   // a toll from a weak one; a hostile one that fears you may hand over its cargo

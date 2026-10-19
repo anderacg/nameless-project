@@ -93,7 +93,7 @@ function lordThink(l){
 }
 // you beat a lord's army: a bounty from your employer, a broken siege, and honor with his enemies (from ON_WIN)
 function lordWon(l,res){
-  let txt='';
+  let txt='';newsRecord('lord',l,{lord:l.name,fac:l.fac});if(l.state==='siege'&&townBy(l.tgt))newsRecord('relieved',townBy(l.tgt),{town:l.tgt,lord:l.name,fac:l.fac});// (news.js)
   if(P.fac&&atWar(P.fac,l.fac)){res.gold+=40;P.renown+=5;txt+=' Your employer adds a 40 gold bounty.'}
   if(l.state==='siege'){const st=townBy(l.tgt);if(st&&!hostileTo(st.owner)){addRep(st.name,10,true);if(st.owner!=='player')addHonor(st.owner,8,true);lordsInside(st).forEach(o=>changeRel(o,RELATION.breakSiege,'you broke the siege of '+st.name));txt+=' You break the siege of '+st.name+'. Its people cheer you in.'}}
   rippleRel(l,RELATION.beatThem,'you beat them in battle');questNotify('lord',l);captureLord(l);log(l.name+' is taken captive. The '+FACS[l.fac].n+' will remember this.');txt+=' You take '+l.name+' captive: ransom him or let him go (Hero, Party).';
@@ -112,11 +112,12 @@ function resolveSiege(l,t){
     const prev=t.owner;cull(l,clamp(.1+.5*(pd/pa)**2,.05,.6));lordWins(l,t.gar||6);lordsInside(t).forEach(o=>{defeatLord(o);log(o.name+' is taken inside the walls of '+t.name+'.',o.fac===P.fac?'bad':'')});t.owner=l.fac;t.gar=4;l.state='rest';
     // conquest leaves its mark: turmoil for a while, and sometimes the victors sack the place
     t.turmoil=G.day+8;breach(t);const sacked=Math.random()<.35;if(sacked){t.sacked=G.day+15;burnEstates(t,2);sackStock(t,.5,.25)}
+    newsRecord('fell',t,{town:t.name,fac:l.fac,lord:l.name,sacked:sacked?1:0});
     log(t.name+' falls to '+l.name+' of the '+FACS[l.fac].n+(sacked?', who sacks it':'')+'.'+(mine?' You have lost your fief.':''),l.fac===P.fac?'good':prev===P.fac||mine?'bad':'gold');
     W.lords.forEach(o=>{if(!o.dead&&o!==l&&o.tgt===t.name)lordThink(o)});
     stayFall(t);
     if(!mine&&!fiefsOf(prev).length)fallFaction(prev);
-  }else{cull(l,.55);lordXp(l,6);lordTrain(l,'tact',2);t.gar=Math.max(2,Math.round(t.gar*.6));log('The siege of '+t.name+' fails. '+l.name+' falls back.');lordThink(l)}
+  }else{cull(l,.55);lordXp(l,6);lordTrain(l,'tact',2);t.gar=Math.max(2,Math.round(t.gar*.6));newsRecord('relieved',t,{town:t.name,lord:l.name,fac:l.fac});log('The siege of '+t.name+' fails. '+l.name+' falls back.');lordThink(l)}
 }
 function worldDay(){
   for(let i=0;i<FIDS.length;i++)for(let j=i+1;j<FIDS.length;j++){
@@ -156,8 +157,9 @@ function worldDay(){
 function lordMeet(l){
   if(hostileTo(l.fac)&&!lordSpares(l))return cornered(l,'lord')?parley(l,'lord'):startEncounter({kind:'lord',ref:l,list:l.troops.slice()});
   G.enc={kind:'lord',ref:l};G.mode=l.inside&&G.scene?'scene':'dialog';P.tx=null;const f=FACS[l.fac];
+  const rum=rumourSay(rumourSource('lord',l.id,l,{fac:l.fac,from:l.name}));// (his realm's news: news.js)
   const st=hostileTo(l.fac)?'Your realms are at odds, but '+l.name+' will not draw on a friend.':P.fac===l.fac?'You serve the '+f.n+'.':P.fac?'Your employer is at '+(relOf(P.fac,l.fac).s==='ally'?'alliance':'peace')+' with them.':'They have no quarrel with you.';
   showPanel('<h2>'+l.name+'</h2><p class="muted">Lord of the <span style="color:'+f.col+'">'+f.n+'</span>, leading '+l.troops.length+' soldiers (power '+l.power()+' vs your '+partyPower()+').</p><p class="muted">Level '+lordStats(l).lv+' · renown '+(l.renown||0)+' · Leadership '+lordSkill(l,'lead')+' · Tactics '+lordSkill(l,'tact')+' · Medicine '+lordSkill(l,'med')+' · leads up to '+lcapOf(l)+'.</p><p>'+st+'</p>'+
-    relHtml(l)+(l.inside?'<p class="muted">Holding court in '+l.inside+', with '+l.troops.length+' soldiers quartered alongside the garrison.</p>':'')+lordJobHtml(l)+'<div class="btns">'+(P.fac===l.fac||l.inside?'':'<button class="btn" type="button" data-act="lord-attack">Attack</button>')+'</div>'+
+    (rum?'<p>'+l.name+': &ldquo;'+rum+'&rdquo;</p>':'')+relHtml(l)+(l.inside?'<p class="muted">Holding court in '+l.inside+', with '+l.troops.length+' soldiers quartered alongside the garrison.</p>':'')+lordJobHtml(l)+'<div class="btns">'+(P.fac===l.fac||l.inside?'':'<button class="btn" type="button" data-act="lord-attack">Attack</button>')+'</div>'+
     (P.fac===l.fac||l.inside?'':'<p class="muted">Attacking makes the '+f.n+' hostile to you for 20 days.</p>')+nav(null,['lord-leave',null,'Leave']));
 }

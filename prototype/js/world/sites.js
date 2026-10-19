@@ -231,7 +231,8 @@ const RUIN_OCC={
       P.gold-=c;G.siteSpy={s,told:true};
       if(arg==='lore'){gainXp(H.xp);done('By his fire the hermit tells of the old kings and the wars that broke them. (+'+H.xp+' XP)');return true}
       const far=W.sites.filter(x=>!x.seen&&x.scoutable).sort((a,b)=>Math.hypot(a.x-s.x,a.y-s.y)-Math.hypot(b.x-s.x,b.y-s.y))[0];if(far)far.seen=true;
-      done(far?'He tells of the '+far.label+' to the '+compass(far.x-s.x,far.y-s.y)+'. It is on your map now.':'He knows nothing you have not found.');return true}},
+      const it=rumourFrom(rumourSource('hermit',s.tx+','+s.ty,s)).today[0];// (and a rumour of the land round his ruin, one a day: news.js)
+      done([far?'He tells of the '+far.label+' to the '+compass(far.x-s.x,far.y-s.y)+'. It is on your map now.':'',it?'He has heard: “'+rumourText(it)+'”':''].filter(Boolean).join(' ')||'He knows nothing you have not heard.');return true}},
   hunters:{w:1.5,clim:{desert:1.5},line:'Rival treasure hunters pick over the rubble, maps spread on a stone.',
     make:(s,o,R)=>{const b=Object.keys(BASES);o.find=gearId(b[Math.floor(R()*b.length)],Math.min(MATERIALS.length-1,gearTop()))},
     page:(s,o)=>{const y=G.siteSpy,talked=y&&y.s===s&&y.told,c=gearPrice(o.find),map=ruinMap(s);
@@ -469,13 +470,13 @@ class TravellersCamp extends Site{
       body:railCards([{pic:personPic('merchant',race),name:'The traders',role:TR.n,facts:[left?left+' goods for sale':['Sold out','bad'],'They move on in '+Math.max(1,s.until-G.day)+' days']}])+'<div class="lab">Goods</div>'+
         Object.keys(s.stock).map(g=>{const p=travPrice(g),n=s.stock[g],k=Math.min(5,n);return railRow(GOODS[g].n,p+'g each · '+n+' left · you have '+goodN(g)+(k?' · '+k+' for '+p*k+'g':''),railBtn('site-buy',g,'Buy',!k?'Sold out':P.gold<p*k?'Not enough gold':goodRoom(g)<k?'No room in your bag':''))}).join('')+
         (P.inv.some(x=>x&&x.k==='mat')?railRow('Your trophies','They pay a little less than a town market: '+Math.round(P.inv.reduce((a,x)=>a+(x&&x.k==='mat'?matPrice(x.id)*x.n:0),0)*.85)+'g for all',railBtn('site-sellpick',null,'Sell')):'')},
-      {k:'fire',n:'Campfire',short:'Fire',ico:'fire',note:[u&&(s.mercs?s.mercs+' sellsword'+(s.mercs>1?'s':'')+' willing':'no sellswords left'),TR.special&&!s.special&&(TR.special==='bless'?'a blessing':'a song'),s.news?'':'news',s.fire===G.day?'rested today':'rest'].filter(Boolean).join(' · '),
+      {k:'fire',n:'Campfire',short:'Fire',ico:'fire',note:[u&&(s.mercs?s.mercs+' sellsword'+(s.mercs>1?'s':'')+' willing':'no sellswords left'),TR.special&&!s.special&&(TR.special==='bless'?'a blessing':'a song'),s.news===G.day?'':'news',s.fire===G.day?'rested today':'rest'].filter(Boolean).join(' · '),
       body:railCards([...s.swords().map(w=>{const c=w.c;return {pic:portrait(w.k,false,w.v),name:w.name,role:'Sellsword · '+ST[w.k].n,facts:['Tier '+ST[w.k].tier,c+'g','No standing needed'],
           acts:[['site-hire',w.i,'Hire',P.gold<c?'Not enough gold':partySize()>=partyCap()?'Your party is full':!partyRoster(P).canAdd(w.k)?'No room for another group':'']]}}),
         u&&!s.mercs&&{pic:portrait(u),name:'The sellswords',role:'Gone with their pay',facts:[['No one left to hire','bad']]},
         TR.special==='bless'&&{pic:personPic('priest',race),name:'The pilgrims',role:'Robed, singing softly',facts:[s.special?'They have blessed you':'A blessing: your mana restored, morale +8'],acts:[['site-bless',null,'Kneel',s.special?'They have blessed you already':'']]},
         TR.special==='song'&&{pic:personPic('innkeeper',race,2),name:'The minstrels',role:'A fiddle and painted wagons',facts:[s.special?'They sing of you already':'15 gold: renown +3, morale +5'],acts:[['site-song',null,'Pay 15g',s.special?'They already sing of you':P.gold<15?'Not enough gold':'']]},
-        {pic:personPic('folk',race,5),name:'A greybeard by the fire',role:'Knows the roads',facts:[s.news?'You have heard his news':'Tells of places you have not found'],acts:[['site-news',null,'Ask for news',s.news?'You have heard their news':'']]}])+
+        {pic:personPic('folk',race,5),name:'A greybeard by the fire',role:'Knows the roads',facts:[s.news===G.day?'You have heard his news today':s.news?'Tells what he hears on the roads':'Tells of places you have not found'],acts:[['site-news',null,'Ask for news',s.news===G.day?'You have heard their news today':'']]}])+
         '<div class="lab">The fire</div>'+railRow('Share their fire','Recover half your missing health, stamina and mana. Morale +5',railBtn('site-fire',null,'Rest',s.fire===G.day?'You rested here today':''))}]}
   act(a,arg,done){const s=this;
     if(a==='site-buy'){const g=arg,p=travPrice(g),k=Math.min(5,s.stock[g]||0);if(k&&P.gold>=p*k&&goodRoom(g)>=k){P.gold-=p*k;s.stock[g]-=k;invAdd('good',g,k);train('trade',k*p/40);done('You buy '+k+' '+GOODS[g].n.toLowerCase()+' for '+p*k+' gold.')}}
@@ -487,10 +488,10 @@ class TravellersCamp extends Site{
     else if(a==='site-hire'){const w=s.swords().find(x=>x.i===+arg),c=w&&w.c;
       if(w&&s.mercs>0&&P.gold>=c&&partySize()<partyCap()&&partyRoster(P).canAdd(w.k)){P.gold-=c;s.mercs--;(s.hired=s.hired||[]).push(w.i);P.add(w.k);done(w.name+' takes your coin and joins you as '+an(ST[w.k].n.toLowerCase())+'.')}}
     else if(a==='site-fire'&&s.fire!==G.day){const m=vitals();s.fire=G.day;P.hp+=(m[0]-P.hp)/2;P.sp+=(m[1]-P.sp)/2;P.mp+=(m[2]-P.mp)/2;P.morale=clamp(P.morale+5,0,100);done('You share their fire and their stew. Everyone sleeps well.')}
-    else if(a==='site-news'&&!s.news){s.news=true;
-      const far=W.sites.filter(o=>!o.seen&&o.scoutable&&!(o instanceof TravellersCamp)).sort((a,b)=>Math.hypot(a.x-s.x,a.y-s.y)-Math.hypot(b.x-s.x,b.y-s.y)).slice(0,2);
-      far.forEach(o=>o.seen=true);
-      done(far.length?'They tell you of '+far.map(o=>'the '+o.label+' to the '+compass(o.x-s.x,o.y-s.y)).join(', and ')+'. Both are on your map now.':'They have no news you have not heard.')}
+    else if(a==='site-news'&&s.news!==G.day){const first=!s.news;s.news=G.day;
+      const far=first?W.sites.filter(o=>!o.seen&&o.scoutable&&!(o instanceof TravellersCamp)).sort((a,b)=>Math.hypot(a.x-s.x,a.y-s.y)-Math.hypot(b.x-s.x,b.y-s.y)).slice(0,2):[];
+      far.forEach(o=>o.seen=true);const it=rumourFrom(rumourSource('camp',s.tx+','+s.ty,s)).today[0];
+      done([far.length?'They tell you of '+far.map(o=>'the '+o.label+' to the '+compass(o.x-s.x,o.y-s.y)).join(', and ')+'. '+(far.length>1?'Both are':'It is')+' on your map now.':'',it?'“'+rumourText(it)+'”':''].filter(Boolean).join(' ')||'They have no news you have not heard.')}
     else if(a==='site-bless'&&!s.special){s.special=true;vitals();P.mp=maxMP();P.morale=clamp(P.morale+8,0,100);done('The pilgrims pray over you. Your mind is clear.')}
     else if(a==='site-song'&&!s.special&&P.gold>=15){s.special=true;P.gold-=15;P.renown+=3;P.morale=clamp(P.morale+5,0,100);done('By the next town, children are singing of you. (+3 renown)')}
     return true}

@@ -675,6 +675,9 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 .tstats{gap:8px 22px}
 .tnotes{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:3px}
 .tnotes li::marker{color:var(--faint)}
+/* the tavern's rumours (news.js rumourHtml): a new one bright with a violet "?" as on the map, those heard before muted */
+.rum-new,.rwbody p.muted:has(.rum-q){margin:0}
+.rum-q{display:inline-block;width:1.2em;font-weight:700;color:#cdb8ff;text-align:center}
 /* an area's people: a card each (window.js railCard), in a grid that wraps; rows keep the same rhythm round them */
 .rcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(232px,1fr));gap:10px}
 .rcard{display:flex;flex-direction:column;gap:7px;min-width:0;padding:10px 11px;background:linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,.01));border:1px solid var(--line);border-radius:var(--r-md)}

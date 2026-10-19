@@ -37,7 +37,7 @@ class LordBrain extends Brain{
       const tx=t.x+(l.state==='siege'?(l.id.endsWith('0')?-16:16):0),ty=t.y+12,dd=Math.hypot(tx-l.x,ty-l.y);
       if(dd>4)Router.travel(l,{x:tx,y:ty,tw:t},moveStep(26*mul,d));
       else if(l.state==='march'){
-        if(atWar(l.fac,t.owner)){l.state='siege';l.sd=0;if(Math.hypot(t.x-P.x,t.y-P.y)<vis()*1.5||t.owner===P.fac||t.owner==='player')log(l.name+' of the '+FACS[l.fac].n+' lays siege to '+t.name+(t.owner==='player'?', your fief!':'.'),t.owner===P.fac||t.owner==='player'?'bad':'')}
+        if(atWar(l.fac,t.owner)){l.state='siege';l.sd=0;newsRecord('siege',t,{town:t.name,lord:l.name,fac:l.fac});if(Math.hypot(t.x-P.x,t.y-P.y)<vis()*1.5||t.owner===P.fac||t.owner==='player')log(l.name+' of the '+FACS[l.fac].n+' lays siege to '+t.name+(t.owner==='player'?', your fief!':'.'),t.owner===P.fac||t.owner==='player'?'bad':'')}
         else lordThink(l);
       }else if(l.state==='home'||l.state==='patrol'||l.state==='relieve'){l.state='rest';if(!l.shelterWhy(t))l.enter(t)}
       else if(l.state==='rest'&&!l.shelterWhy(t))l.enter(t);

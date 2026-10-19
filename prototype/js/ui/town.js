@@ -114,7 +114,7 @@ function townAct(a,arg,t){
     facts:['Defenders’ power '+ep+' vs yours '+pp,'Garrison '+t.gar+(def.lords.length?', with '+def.lords.map(l=>l.name).join(' and ')+' inside':''),walled(t)?'You will need a siege camp: ladders take '+LADDER_DAYS+' days.':'You can raid it or seize it.'],confirm:['plan-siege',null,'Plan the attack'],back:['tab','home','Back']})}// (a lord holding court: his own talk, Leave back here: peopledrawer.js)
   if(fiefAct(a,arg,t)){}
   else if(a==='qty')G.town.qty=+arg===5?5:1;// (the window's ×1 / ×5: its Buy and Sell)
-  else if(a==='tab'){G.town.tab=arg==='home'?null:arg;G.town.bld=null;G.town.direct=false;G.town.greet=null}
+  else if(a==='tab'){G.town.tab=arg==='home'?null:arg;G.town.bld=null;G.town.direct=false;G.town.greet=null;G.town.news=null}
   else if(a==='bld'){G.town.tab='fief';G.town.bld=arg;G.town.direct=false;G.town.greet=null}
   else if(a==='rec-pick'){G.town.pick=arg;G.town.review=null;G.town.recruitNotice=''}
   else if(['rec-review','rec-confirm','rec-cancel'].includes(a))townRecruitAction(a);
@@ -210,7 +210,10 @@ function renderTown(){
         acts:[here?['sy-leave',null,'Leave']:['sy-stay',t.name,'Stay',why]]},
       t.T.broker&&{pic:personPic('merchant',race,1),name:'The ransom broker',role:'Buys prisoners you bring in',facts:[prisonerCount()?prisonerCount()+' prisoners with you':'No prisoners with you',prisonerCount()?['Worth '+ransomValue()+'g','gold']:''],acts:[['ransom-pick',null,'Ransom',prisonerCount()?'':'No prisoners']]},
       ...compsHere(t).map(id=>{const c=COMPS[id],quote=recruitment.quoteCompanion(t,id);return {pic:portrait(id),name:c.n,role:'Companion, looking for work',note:c.d,acts:[['hire-comp',id,'Hire '+c.cost+'g',quote.ok?'':recruitmentWhy(quote)||'Not available']]}})])+
-      '<div class="lab">Rumours</div><p class="muted">Rumor: '+(enemiesOf(t.owner).length?'the '+f.n+' is at war with the '+enemiesOf(t.owner).map(g=>FACS[g].n).join(' and the ')+'.':'the '+f.n+' is at peace.')+'</p>'+'<p class="muted">Bandit camps sit near '+[...new Set(camps().filter(c=>!c.cleared).map(c=>nearestOf(c,TOWNS).name))].join(', ')+'.'+(mostWanted(1).map(w=>' The most wanted is '+chiefLabel(w.c)+(w.near?', last seen near '+w.near.name:'')+': '+bountyOf(w.c)+' gold on his head.').join(''))+(mythicNews('was seen')?' '+mythicNews('was seen'):'')+'</p>';
+      // (the rumours: real news near here, two new a day (news.js), heard as you come in and kept while you stay: G.town.news;
+      // then the standing talk of the realm: its wars, the camps, the most wanted, a mythic beast abroad)
+      '<div class="lab">Rumours</div>'+rumourHtml(G.town.news||(G.town.news=rumourFrom(rumourSource('tavern',t.name,t,{from:'the tavern of '+t.name}))))+
+      '<div class="lab">Talk of the realm</div><p class="muted">'+(enemiesOf(t.owner).length?'The '+f.n+' is at war with the '+enemiesOf(t.owner).map(g=>FACS[g].n).join(' and the ')+'.':'The '+f.n+' is at peace.')+'</p>'+'<p class="muted">Bandit camps sit near '+[...new Set(camps().filter(c=>!c.cleared).map(c=>nearestOf(c,TOWNS).name))].join(', ')+'.'+(mostWanted(1).map(w=>' The most wanted is '+chiefLabel(w.c)+(w.near?', last seen near '+w.near.name:'')+': '+bountyOf(w.c)+' gold on his head.').join(''))+(mythicNews('was seen')?' '+mythicNews('was seen'):'')+'</p>';
   }
   showTown(t,body);G.town.greet=null;
 }

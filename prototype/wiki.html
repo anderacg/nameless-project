@@ -202,6 +202,7 @@ tr:last-child td{border-bottom:0}
 <script src="js/world/captives.js"></script>
 <script src="js/world/relations.js"></script>
 <script src="js/world/quests.js"></script>
+<script src="js/world/news.js"></script>
 <script src="js/ui/talents.js"></script>
 <script src="js/world/world.js"></script>
 <script src="js/battle/encounters.js"></script>
@@ -550,7 +551,8 @@ section('life','Life on the map','The world goes on without you.',kv([['Workers'
   ['Recruiting','A captive may join you as a companion, the character he was: his level, the skill tree he grew, his skills and gear (Recruit, in the Party tab). A bandit chieftain right away, if your honor allows: an outlaw in your band costs '+RECRUIT.honor+' honor with every realm, and a realm you serve will not stand for it if your honor with them would fall below 0. A lord only when his realm has fallen, or once he is disgraced (taken by you '+RECRUIT.shame+' times); he then leaves his realm for good.'],
   ['In cover','Any party in woods or hills is seen only from nearer; your companions’ parties you always see.'],
   ['Caravans','Carts with guards carry goods along the roads between friendly holdings, and your own carry yours. Besides trading with them, you can demand a toll from a weak one, attack it for its cargo, or (with a fief) seize it so it drives its cargo to your fief and works for you. A hostile caravan that fears you may hand over its cargo without a fight.'],['Day and night','Clouds drift over by day; smoke rises from every holding; snow falls in the frost; fireflies glow on warm nights.'],
-  ['Wars','Realms make war and peace, besiege each other’s holdings, sack them, raise walls and build estates. Lords fight each other when their armies meet.']]));
+  ['Wars','Realms make war and peace, besiege each other’s holdings, sack them, raise walls and build estates. Lords fight each other when their armies meet.'],
+  ['Rumours','Talk points at real things. What happens on the map is remembered as news for '+NEWS.days+' days (at most '+NEWS.keep+' things at once): a holding besieged, taken, relieved or raided, a lord beaten, a caravan robbed or burnt, a big band or a beast on a holding’s land, a battle and who won it, a body or a burnt wagon by the road. '+'You hear it from the people you meet, each telling only what is new to you, only news near them, newest and weightiest first, and only so much a day: '+Object.entries({tavern:'a holding’s tavern',estate:'an estate’s workers',watch:'a holding’s watch captain (news on its land)',caravan:'a caravan master (along his road)',lord:'a lord (his realm’s lands and wars)',road:'the peddler, the bard, the pilgrims or the messenger on the road',refugees:'refugees (why they fled)',camp:'the travellers’ greybeard',hermit:'the ruin hermit'}).map(([k,n])=>n+' '+RUMOUR_SOURCES[k].cap).join(', ')+' a day (the road’s talkers: once a meeting). A tavern hears what happened within '+NEWS.radius+' px. Once its new rumours are told, it has nothing new until tomorrow; what you heard before is listed under it. '+'Each rumour you hear goes into your log and puts a faint violet “?” on the map and the minimap near where it happened (not quite on the spot), the rumour as its tooltip, for '+NEWS.markDays+' days.']]));
 
 /* sound */
 section('sound','Sound','Music and sound effects are made as you play (nothing is downloaded); the first key or click starts them.',

@@ -82,7 +82,7 @@ cv.addEventListener('pointermove',e=>{const p=toCanvas(e);G.mouse.x=p.x;G.mouse.
   // the tooltip: what is under the pointer on the map
   const tip=$('#tip');if(holdCardUp()&&e.pointerType==='touch')return;// (a long press's card stays until the next tap: below)
   if(G.mode!=='world'||G.modal||e.pointerType==='touch'){tip.hidden=true;return}
-  const o=pickAt(G.cam.x+p.x,G.cam.y+p.y),h=o?tipFor(o):'';if(!h){tip.hidden=true;return}
+  const o=pickAt(G.cam.x+p.x,G.cam.y+p.y),h=o&&tipFor(o)||rumourTip(G.cam.x+p.x,G.cam.y+p.y);if(!h){tip.hidden=true;return}// (nothing there: a rumour's "?", news.js)
   tip.innerHTML=h;tip.classList.remove('hold');tip.hidden=false;const r=cv.getBoundingClientRect(),x=e.clientX-r.left+16,y=e.clientY-r.top+14;
   tip.style.left=Math.min(x,r.width-tip.offsetWidth-6)+'px';tip.style.top=Math.min(y,r.height-tip.offsetHeight-6)+'px'});
 cv.addEventListener('pointerleave',()=>{G.mouse.in=false;if(!holdCardUp())hideTip();if(B)B.hov=null;cv.style.cursor=''});
@@ -150,7 +150,7 @@ function touchTimer(){const l=TOUCH.lp;l.timer=setTimeout(()=>touchTick(performa
 // to drag from there), on the map the card of what is under it (nothing there: the lift still travels)
 function touchTick(now){const l=TOUCH.lp;if(!l||l.armed||l.box||l.off||now-l.t0<TOUCH.hold)return false;
   if(l.mode==='battle'){if(B!==l.B||G.mode!=='battle'){touchDrop();return false}l.armed=true;B.box=null;B.rdrag={x0:l.q.x,y0:l.q.y,x1:l.q.x,y1:l.q.y,shift:false}}
-  else{const o=G.mode==='world'&&!G.modal?pickAt(l.wx,l.wy):null,h=o?tipFor(o):'';if(!h){l.off=true;return false}l.armed=true;holdCard(h,l.cx,l.cy)}
+  else{const w=G.mode==='world'&&!G.modal,o=w?pickAt(l.wx,l.wy):null,h=o&&tipFor(o)||(w?rumourTip(l.wx,l.wy):'');if(!h){l.off=true;return false}l.armed=true;holdCard(h,l.cx,l.cy)}
   try{if(navigator.vibrate)navigator.vibrate(12)}catch(err){}return true}
 function touchMove(e,p){const T=TOUCH,pt=T.pts.get(e.pointerId);if(!pt)return;pt.x=p.x;pt.y=p.y;pt.cx=e.clientX;pt.cy=e.clientY;
   // (the map: a step in or out each time the fingers are MAPZOOM.PINCH times as far apart, or as near, as at the last step)

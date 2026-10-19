@@ -168,6 +168,7 @@ function wuiOver(cam){if(G.mode==='title')return;const now=WUI.now||performance.
    at the screen's edge toward it, its waves rolling in from there "((((" (arcs round a point just past the edge), the "!" just
    inside them. All in real time, still under reducedMotion ---- */
 WUI_ARROW.bang=['###','###','###','###','###','.#.','...','###','###'];// (a plain "!", in the encounters' blue: WUI_K.col.enc)
+WUI_ARROW.ask=['.###.','##.##','...##','..##.','.##..','.##..','.....','.##..','.##..'];// (a "?": a rumour heard, world/news.js drawRumourMarks)
 /* (under them: sound waves, rings rippling out from their feet along the ground one after another, fading as they spread; the
    map's own crisp rings (wuiRing), WAVE: s a ring takes (t), rings at once (n), how far past the scene it spreads (px), the
    ground's tilt (ry: of rx), its strength at the start (a); at the screen's edge: arcs at once, how far they roll in (edge, px),

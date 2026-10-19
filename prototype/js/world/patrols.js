@@ -67,8 +67,8 @@ function patrolMeet(p){
   if(c&&p.fac!=='player')return showPanel('<h2>The '+X.n.toLowerCase()+' of '+p.home+' stops you</h2><p><b>'+cap+'</b>: &ldquo;You have wronged the people of '+p.home+'. Pay '+c.fine+' gold to set it right, or answer for it.&rdquo;</p>'+
     '<p class="muted">'+p.troops.length+' guards of the <span style="color:'+f.col+'">'+f.n+'</span> (power '+p.power()+' vs your '+partyPower()+'). Refusing makes the '+f.n+' hostile for 20 days.</p><div class="btns">'+
     dlgBtn('pt-pay',null,'Pay '+c.fine+' gold',P.gold<c.fine?'Not enough gold':'',true)+dlgBtn('pt-fight',null,'Refuse and fight')+'</div>'+nav(null,['pt-run',null,'Run for it']));
-  const S=X.say,line=p.fac==='player'?S.mine:bandits.some(b=>patrolLand(p,b.x,b.y))?S.band:S.quiet[G.day%S.quiet.length];
-  showPanel('<h2>'+watchName(p)+'</h2><p class="muted">'+cap+' and '+p.troops.length+' soldiers of the <span style="color:'+f.col+'">'+f.n+'</span>, '+X.beat+' '+p.home+'.</p><p><b>'+cap+'</b>: &ldquo;'+line+'&rdquo;</p><div class="btns">'+
+  const S=X.say,line=p.fac==='player'?S.mine:bandits.some(b=>patrolLand(p,b.x,b.y))?S.band:S.quiet[G.day%S.quiet.length],rum=t?rumourSay(rumourSource('watch',p.home,t,{from:'the watch of '+p.home})):'';// (news on its land: news.js)
+  showPanel('<h2>'+watchName(p)+'</h2><p class="muted">'+cap+' and '+p.troops.length+' soldiers of the <span style="color:'+f.col+'">'+f.n+'</span>, '+X.beat+' '+p.home+'.</p><p><b>'+cap+'</b>: &ldquo;'+line+'&rdquo;</p>'+(rum?'<p><b>'+cap+'</b>: &ldquo;Keep your eyes open. '+rum+'&rdquo;</p>':'')+'<div class="btns">'+
     (p.fac==='player'||P.fac===p.fac?'':dlgBtn('pt-attack',null,'Attack (the '+f.n+' turns hostile)'))+'</div>'+nav(null,['dlg-close',null,'Leave']));
 }
 function patrolAct(a){
