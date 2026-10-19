@@ -81,6 +81,9 @@ const ENC_TUNE={traveller:{food:3,rep:4,renown:1,gift:.6,gold:[5,10]},hunters:{x
   letter:{stale:[5,10],worth:[30,45],kind:{army:1.4,attack:1.3,deal:1.1,news:.6},w:{army:1,attack:1,deal:.7,news:.8},sell:1.2,deliver:.8,opened:.5,old:.15,
     rep:{sell:4,deliver:5,seen:6},witness:{r:120,base:.08,per:.12,hold:.25,holdR:160,scout:.07,night:.5,lo:.02,hi:.9},reveal:5}};
 const ENC_DICE=.48;// (a hand of bones won)
+// (the gamblers play at most hands hands with you, and quit early once they are quit gold down to you: no endless purse)
+const ENC_GAMBLE={hands:5,quit:100};
+const diceLeft=e=>ENC_GAMBLE.hands-(e.hands||0);
 /* ---------- your stats on the road (owner, 2026-10-19: stats only add to what anyone gets, up to a cap; a stat of 0 is today's
    odds or outcome, never worse). ENC_STAT, each check: {base (what anyone gets), parts: [[stat, per]…] (a stat: a discipline,
    P.sk, or an attribute, str, agi, int, cha; a list of them: the highest counts), cap}. statOdds(k): base + Σ stat × per, at
@@ -225,10 +228,12 @@ const ROAD_ENC={
     setup:e=>{const t=nearestOf(P,TOWNS);e.race=t.races[0];e.fac=t.owner&&FACS[t.owner]?t.owner:null},
     scene:e=>[['cloth','',0,1],['soldier','',-6,0,{col:roadCol(e),v:0}],['soldier','',6,0,{col:roadCol(e),v:2,face:-1}],['soldier','',1,-4,{col:roadCol(e),v:5}],['fire','',-13,-2]],
     text:()=>'Off-duty soldiers wave you over to a game of bones. Pick your stake.',
-    facts:()=>[statRead('dice',{vague:'they seem to win a fair share',rough:p=>p<.5?'the dice favour them a little':'you can read their game',what:'to win a hand',more:'know the odds'}),statHelps('dice')],
+    facts:e=>[statRead('dice',{vague:'they seem to win a fair share',rough:p=>p<.5?'the dice favour them a little':'you can read their game',what:'to win a hand',more:'know the odds'}),statHelps('dice'),diceLeft(e)+(diceLeft(e)===1?' hand':' hands')+' left in them'],
     left:()=>'You leave them to it.',
     acts:[10,20,50].map(s=>({icon:'gold',label:'Play for '+s,facts:()=>[s+' gold a hand'],again:true,need:()=>P.gold<s&&'Not enough gold.',
-      run:()=>{if(Math.random()<statOdds('dice')){P.gold+=s;return'You win '+s+' gold. They grumble.'}P.gold-=s;return'You lose '+s+' gold. They laugh.'}}))},
+      run:e=>{const w=Math.random()<statOdds('dice');P.gold+=w?s:-s;e.hands=(e.hands||0)+1;e.net=(e.net||0)+(w?s:-s);const m=w?'You win '+s+' gold. They grumble.':'You lose '+s+' gold. They laugh.';
+        if(e.net>=ENC_GAMBLE.quit){e.done=1;return m+' "Enough! You have had enough of our coin." They sweep up the bones.'}
+        if(diceLeft(e)<=0){e.done=1;return m+' "That is the last hand," they say, and pack up the bones.'}return m}}))},
   mine:{n:'Collapsed mine',ico:'pick',w:2,ok:()=>terrAt(P.x,P.y)===T_HILL||nearMount(),on:'hill',beh:'stay',ends:'unseen',tip:'An old shaft in the hillside',
     scene:()=>[['bld','minehead',0,2]],
     text:()=>'A collapsed mine shaft opens into the hillside. Old carts still sit inside.',

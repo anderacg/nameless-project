@@ -196,7 +196,11 @@ try{
   meet('deserters',e=>{e.fac=null});ok(qa('.rkact')[1].disabled&&/serve no realm/.test(panel()),'no realm to turn them in to: disabled');world();
   goHome();const fac=Object.keys(t.FACS).find(x=>x!=='player');P.fac=fac;const A=t.nearestOf(P,t.TOWNS),own=A.owner;A.owner=fac;const z=t.roadSpawn('deserters',P.x+30,P.y);A.owner=own;P.fac=null;ok(z.fac===fac&&z.beh==='flee','deserters of your own realm run from you');world()}
  // gamblers
- {P.gold=100;meet('gamblers');stub(0,()=>pickA(1));ok(P.gold===120&&/You win 20/.test(panel())&&qa('.rkact').length===3,'a hand for 20, won: +20 gold, and they deal again');stub(.99,()=>pickA(2));ok(P.gold===70&&/You lose 50/.test(panel()),'a hand for 50, lost: −50');world()}
+ {P.gold=100;meet('gamblers');stub(0,()=>pickA(1));ok(P.gold===120&&/You win 20/.test(panel())&&qa('.rkact').length===3,'a hand for 20, won: +20 gold, and they deal again');stub(.99,()=>pickA(2));ok(P.gold===70&&/You lose 50/.test(panel()),'a hand for 50, lost: −50');world();
+  {P.gold=500;const e=meet('gamblers');const G0=t.ENC_GAMBLE;for(let i=0;i<G0.hands;i++)stub(.99,()=>pickA(0));
+   ok(e.hands===G0.hands&&e.done&&qa('.rkact').length===0&&/last hand/.test(panel()),'at most '+G0.hands+' hands: then they pack up the bones ('+e.hands+')');world();
+   P.gold=500;const f=meet('gamblers');let n=0;while(!f.done&&n<9){stub(0,()=>pickA(2));n++}
+   ok(f.done&&f.net>=G0.quit&&n===Math.ceil(G0.quit/50)&&/had enough of our coin/.test(panel()),'and they quit once '+G0.quit+' gold down to you ('+n+' hands won at 50)');world()}}
  // the mine
  {const i0=t.goodN('iron');meet('mine');stub(.5,()=>pickA(0));ok(t.goodN('iron')===i0+5&&/tunnels hold/.test(panel()),'Search it, lucky: 5 iron');world();
   P.troops={hum_levy:3};meet('mine');stub(.99,()=>pickA(0));ok(t.troopCount()===2&&/caves in/.test(panel()),'unlucky: a tunnel caves in on a soldier');world()}
