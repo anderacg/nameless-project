@@ -101,7 +101,9 @@ function bandPace(){
   const g=roleOf('guide');if(g&&compInBand(g))p*=1.03+.01*compSkill(g,'scout');if(has('forced'))p*=1.15;
   return Math.min(1.8,p);
 }
-function travelMul(){let t=speedAt(P.x,P.y,P.race,mountIgn())||1;if(t<1&&has('path'))t=1-(1-t)/2;return bandPace()*t*(mountedShare(bandSpeeds())>=.5&&roughFor(P.x,P.y,mountIgn())?.8:1)}
+// (Woodcraft: in a wood, its slowing cut by WOODCRAFT.per a level, up to cap)
+const WOODCRAFT={per:.06,cap:.6,xp:.1};
+function travelMul(){let t=speedAt(P.x,P.y,P.race,mountIgn())||1;if(t<1&&has('path'))t=1-(1-t)/2;if(t<1&&terrAt(P.x,P.y)===T_FOREST)t=1-(1-t)*(1-Math.min(WOODCRAFT.cap,WOODCRAFT.per*skill('wood')));return bandPace()*t*(mountedShare(bandSpeeds())>=.5&&roughFor(P.x,P.y,mountIgn())?.8:1)}
 // daily price of the land you camp in; holdings shelter you from all of it
 function survive(){
   const clim=climAt(P.x,P.y),home=RACES[P.race].home,shelter=TOWNS.some(t=>Math.hypot(t.x-P.x,t.y-P.y)<WORLD_SCALE.land.shelter);
@@ -172,7 +174,7 @@ function updateWorld(dt){
     else{
       const step=Math.min(dist,moveStep(MAP_BASE*travelMul(),d)*(P.morale<25?.8:1)*roadSprint());// (roadSprint: after a thief on the road, encounters.js)
       P.dir=dx>=0?1:-1;
-      if(walk(P,dx,dy,step)){P.stuck=0;train('scout',step/TILE*.08);if(mountDef())train('ride',step/TILE*.1)}else{P.stuck+=d;if(P.stuck>.4){P.tx=null;P.stuck=0}}
+      if(walk(P,dx,dy,step)){P.stuck=0;train('scout',step/TILE*.08);if(mountDef())train('ride',step/TILE*.1);if(terrAt(P.x,P.y)===T_FOREST)train('wood',step/TILE*WOODCRAFT.xp)}else{P.stuck+=d;if(P.stuck>.4){P.tx=null;P.stuck=0}}
     }
   }
   if(updateSites()||updateRoad(d))return;// (the sites you reach; the encounters on the road: encounters.js)

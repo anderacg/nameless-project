@@ -7,7 +7,8 @@ class GameSession{
     // Define saved fields as own data: assigning after deletion would invoke Party's inherited troops-list setter on P's counts.
     const replace=(record,data)=>{for(const k of Object.keys(record))delete record[k];Object.defineProperties(record,Object.getOwnPropertyDescriptors(data))};
     replace(this.runtime,makeRuntimeState());if(race)this.runtime.race=race;if(quiet!==undefined)this.runtime.quietEvents=quiet;
-    replace(this.player,{...makePlayerState(),...(savedPlayer||{})});
+    // (a skill the save does not have yet, one added since: from 0)
+    replace(this.player,{...makePlayerState(),...(savedPlayer||{}),...(savedPlayer&&savedPlayer.sk?{sk:{...mkSkills(),...savedPlayer.sk}}:{})});
     replace(this.world,makeWorldState());
   }
 }
