@@ -162,22 +162,23 @@ function wuiOver(cam){if(G.mode==='title')return;const now=WUI.now||performance.
   wuiRoadOver(cam,now,rm);
   const h=WUI.hov;if(h){const b=h.b,col=WUI_K.col[h.kind],x0=wuiX(b[0],cam),y0=wuiY(b[1],cam),x1=wuiX(b[2],cam),y1=wuiY(b[3],cam),br=rm?0:(1+Math.sin(now/1000/WUI_K.breathe*6.2832))/2;
     wuiBrackets(x0,y0,x1,y1,col,h.kind==='ground'?.75:1,rm?0:Math.round(br),h.kind==='ground'?.5+.5*br:1+br)}}
-/* ---- the encounters on the road (world/encounters.js), each you know of and have not met (marked). Under the banners: a soft
-   glow round its figures, breathing, while you see it. Over the labels: a pulsing "!" over it while it is on the screen (heard and
+/* ---- the encounters on the road (world/encounters.js), each you know of and have not met (marked). Under the banners: sound
+   waves rippling out from its feet while you see it. Over the labels: a pulsing "!" over it while it is on the screen (heard and
    not yet seen, over the fog too), its call-out over that for ENC_LIFE.say s the first time you see it there; off the screen,
-   an arrow at the screen's edge pointing to it, the "!" beside it. All in real time, still under reducedMotion ---- */
-// (the "!": a gold pin, its "!" cut out of it and outlined dark, its point on what it marks)
+   at the screen's edge toward it, its waves rolling in from there "((((" (arcs round a point just past the edge), the "!" just
+   inside them. All in real time, still under reducedMotion ---- */
 WUI_ARROW.bang=['###','###','###','###','###','.#.','...','###','###'];// (a plain "!", in the encounters' blue: WUI_K.col.enc)
-// (the arrow at the screen's edge in eight directions, k: 0 east, then each 45° clockwise: a head and a short shaft, laid out
-// from its shape once each, so it stays crisp as the map's arrows are)
-function wuiEdge(k,col){const key='edge'+k;if(!WUI_ARROW[key]){const a=k*Math.PI/4,ux=Math.cos(a),uy=Math.sin(a),rows=[];
-  for(let y=0;y<11;y++){let r='';for(let x=0;x<11;x++){const px=x-5,py=y-5,al=px*ux+py*uy,pr=Math.abs(py*ux-px*uy);r+=al>=-1.5&&al<=5&&pr<=(5-al)*.85||al>=-5&&al<-1.5&&pr<=1.1?'#':'.'}rows.push(r)}WUI_ARROW[key]=rows}
-  return wuiArrow(key,col)}
 /* (under them: sound waves, rings rippling out from their feet along the ground one after another, fading as they spread; the
    map's own crisp rings (wuiRing), WAVE: s a ring takes (t), rings at once (n), how far past the scene it spreads (px), the
-   ground's tilt (ry: of rx), its strength at the start (a); edge: how far they spread round the arrow at the screen's edge (round,
-   not tilted). In the encounters' blue (WUI_K.col.enc), as their "!". Still, under reducedMotion: one ring half out) */
-const WAVE={t:1.8,n:3,px:20,ry:.5,a:.85,edge:12};
+   ground's tilt (ry: of rx), its strength at the start (a); at the screen's edge: arcs at once, how far they roll in (edge, px),
+   their half width (span, radians), how far past the edge their centre lies (src, px). In the encounters' blue (WUI_K.col.enc), as their "!". Still, under reducedMotion: one ring half out) */
+const WAVE={t:1.8,n:3,px:20,ry:.5,a:.85,edge:22,arcs:4,span:.75,src:10};
+// (an arc of a wave rolling in from the screen's edge: radius r, its middle facing d (sixteenths of a turn, 0 east, clockwise),
+// WAVE.span radians each way; crisp, shadowed as the rings are; its centre at (cx, cy) in the picture)
+function wuiArc(r,d,col){const k='c'+r+','+d+col;let c=WUIP.get(k);if(c)return c;const pts=new Set(),a0=d/16*6.2832,n=Math.max(8,Math.round(4*r*WAVE.span));
+  for(let i=0;i<=n;i++){const a=a0-WAVE.span+2*WAVE.span*i/n;pts.add((Math.round(r+1+Math.cos(a)*r))+','+(Math.round(r+1+Math.sin(a)*r)))}
+  c=mkc(2*r+3,2*r+4,g=>{const P2=[...pts].map(p=>p.split(',').map(Number));g.globalAlpha=.7;for(const [x,y] of P2)rect(g,WUI_K.dark,x,y+1);g.globalAlpha=1;for(const [x,y] of P2)rect(g,col,x,y)});
+  c.cx=r+1;c.cy=r+1;WUIP.set(k,c);return c}
 // (the rings round (x, y) from r0 out: ry their height to their width; k a phase of its own, so two side by side do not beat as one)
 function wuiWaves(x,y,r0,px,ry,k,now,rm){const col=WUI_K.col.enc;for(let i=0;i<(rm?1:WAVE.n);i++){const q=rm?.5:((now/1000/WAVE.t+i/WAVE.n+k*.37)%1),rx=r0+Math.round(q*px),c=wuiRing(rx,Math.max(1,Math.round(rx*ry)),col);
   ctx.globalAlpha=WAVE.a*(1-q)*Math.min(1,q*6);wuiPut(c,x,y,c.cx,c.cy)}ctx.globalAlpha=1}
@@ -188,6 +189,7 @@ function wuiRoadOver(cam,now,rm){const V=vis(),col=WUI_K.col.enc,bang=wuiArrow('
     if(x>=0&&x<=VW&&top>=4&&y<=VH){const by=top-2-bob;ctx.globalAlpha=.75+.25*p;wuiPut(bang,x,by,bang.cx,bang.tip);ctx.globalAlpha=1;
       if(e.D.call&&e.inView(V)){let t0=ROAD_SAY.get(e);if(t0==null)ROAD_SAY.set(e,t0=now);const q=(now-t0)/1000;if(q<ENC_LIFE.say){ctx.globalAlpha=Math.min(1,(ENC_LIFE.say-q)*2);txt(e.D.call,x,by-bang.tip-3,'#fff2c8','center');ctx.globalAlpha=1}}
       continue}
-    const mx=12,my=24,cx=VW/2,cy=VH/2,dx=x-cx,dy=(top+y)/2-cy,k=Math.min((cx-mx)/Math.max(1e-6,Math.abs(dx)),(cy-my)/Math.max(1e-6,Math.abs(dy))),ax=Math.round(cx+dx*k),ay=Math.round(cy+dy*k),a=Math.atan2(dy,dx),c=wuiEdge((Math.round(a/(Math.PI/4))+8)%8,col);
-    wuiWaves(ax,ay,5,WAVE.edge,1,e.seed||0,now,rm);ctx.globalAlpha=.8+.2*p;ctx.drawImage(c,ax-6+Math.round(Math.cos(a)*bob),ay-6+Math.round(Math.sin(a)*bob));ctx.globalAlpha=1;
-    wuiPut(bang,Math.round(ax-Math.cos(a)*17),Math.round(ay-Math.sin(a)*17)+4,bang.cx,bang.tip)}}
+    const mx=12,my=24,cx=VW/2,cy=VH/2,dx=x-cx,dy=(top+y)/2-cy,k=Math.min((cx-mx)/Math.max(1e-6,Math.abs(dx)),(cy-my)/Math.max(1e-6,Math.abs(dy))),ax=Math.round(cx+dx*k),ay=Math.round(cy+dy*k),a=Math.atan2(dy,dx),ux=Math.cos(a),uy=Math.sin(a);
+    const d=(Math.round((a+Math.PI)/(Math.PI/8))%16+16)%16,sx=Math.round(ax+ux*WAVE.src),sy=Math.round(ay+uy*WAVE.src),nA=rm?2:WAVE.arcs;
+    for(let i=0;i<nA;i++){const q=rm?(i+1)/(nA+1):((now/1000/WAVE.t+i/nA+(e.seed||0)*.37)%1),c=wuiArc(4+Math.round(q*WAVE.edge),d,col);ctx.globalAlpha=WAVE.a*Math.min(1,q*5)*(1-q*q);wuiPut(c,sx,sy,c.cx,c.cy)}
+    ctx.globalAlpha=.8+.2*p;const in_=WAVE.edge-WAVE.src+12;wuiPut(bang,Math.round(ax-ux*in_),Math.round(ay-uy*in_)+4,bang.cx,bang.tip);ctx.globalAlpha=1}}

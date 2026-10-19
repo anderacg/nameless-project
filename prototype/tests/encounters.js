@@ -103,14 +103,14 @@ try{
  // ---- the highlights: heard or seen, a log line and a sound; the "!", the glow, the call-out on the screen; the arrow off it
  {goHome();P.sk.scout.lv=0;const n0=G.msgs.length,e=t.roadSpawn('traveller',P.x+V+60,P.y+10);frames(1);
   ok(e.seen&&G.msgs.slice(n0).some(m=>/calls out from the road to the east/.test(m.m)),'heard: a log line ("'+(G.msgs[G.msgs.length-1]||{}).m+'")');
-  const bang=t.wuiArrow('bang',t.WUI_K.col.enc),edges=[0,1,2,3,4,5,6,7].map(k=>t.wuiEdge(k,t.WUI_K.col.enc));
-  const spy=fn=>{const r={bang:0,arrow:0,glow:0,say:0};const di=CanvasRenderingContext2D.prototype.drawImage,wr=window.wuiRing;
-    CanvasRenderingContext2D.prototype.drawImage=function(s,...a){if(s===bang)r.bang++;if(edges.includes(s))r.arrow++;return di.call(this,s,...a)};
-    window.wuiRing=(...a)=>{r.glow++;return wr(...a)};// (its sound waves: the map's rings, worldui.js wuiRoadUnder)
-    try{fn()}finally{CanvasRenderingContext2D.prototype.drawImage=di;window.wuiRing=wr}return r};
-  const on=spy(()=>t.frame());ok(on.bang>0&&on.arrow===0,'on the screen (not yet in sight): a "!" over it, no arrow');
+  const bang=t.wuiArrow('bang',t.WUI_K.col.enc);
+  const spy=fn=>{const r={bang:0,arrow:0,glow:0,say:0};const di=CanvasRenderingContext2D.prototype.drawImage,wr=window.wuiRing,wa=window.wuiArc;
+    CanvasRenderingContext2D.prototype.drawImage=function(s,...a){if(s===bang)r.bang++;return di.call(this,s,...a)};
+    window.wuiRing=(...a)=>{r.glow++;return wr(...a)};window.wuiArc=(...a)=>{r.arrow++;return wa(...a)};// (its sound waves: the map's rings, worldui.js wuiRoadUnder; at the screen's edge, arcs)
+    try{fn()}finally{CanvasRenderingContext2D.prototype.drawImage=di;window.wuiRing=wr;window.wuiArc=wa}return r};
+  const on=spy(()=>t.frame());ok(on.bang>0&&on.arrow===0,'on the screen (not yet in sight): a "!" over it, no waves at the edge');
   e.x=P.x+40;e.y=P.y;t.ROAD_SAY.delete(e);const s1=spy(()=>t.frame());ok(s1.bang>0&&s1.glow>0&&t.ROAD_SAY.get(e)!=null,'in sight: the "!", sound waves round it, and its call-out ("'+t.ROAD_ENC.traveller.call+'")');
-  e.x=P.x+t.VW/2+60;e.y=P.y;const off=spy(()=>t.frame());ok(off.arrow>0&&off.bang>0&&off.glow>0,'off the screen: an arrow at the screen’s edge with sound waves round it, the "!" beside it');
+  e.x=P.x+t.VW/2+60;e.y=P.y;const off=spy(()=>t.frame());ok(off.arrow>0&&off.bang>0,'off the screen: its waves rolling in at the screen’s edge "((((", the "!" inside them');
   t.roadMeet(e);world();const met=spy(()=>t.frame());ok(met.bang===0&&met.arrow===0&&!e.marked(),'met: no more highlights');
 }
 
