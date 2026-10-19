@@ -27,8 +27,8 @@
 // G.quietEvents is on, and the view is the tests' fixed 576 x 360. Hash: FNV-1a 32-bit over bytes, char codes or 32-bit words;
 // W8's places at 1e-6 px.
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.push('INFO '+m),t=T,G=t.G,P=t.P,W=t.W;
-const EXPECT={W1:'65e24662',W2:'2b49a168',W3:'7a0dcbac',W4:'46450e62',W5:'6587a43c',W6:'b82e8af1',W7:'e9081003',W8:'cf581bc0',B2:'6f533c8c'};// (at 0a42712; B2 at R3; W6-W8 at Phase 1; W6 at depth, smooth walking and pasture herds and label layout; W7, B2 at save v3)
-// (W7, W8 again: day and night half and half, core.js NIGHT_AT .5 (was .6): the watches, camps and workers keep the new hours)
+const EXPECT={W1:'65e24662',W2:'2b49a168',W3:'b7aebfe4',W4:'46450e62',W5:'6587a43c',W6:'b82e8af1',W7:'2109e5d0',W8:'aec30b66',B2:'5c35ee22'};// (at 0a42712; B2 at R3; W6-W8 at Phase 1; W6 at depth, smooth walking and pasture herds and label layout; W7, B2 at save v3)
+// (W7, W8 merged: the two watches together with day and night half and half: 2109e5d0, aec30b66)
 // (W8 again, d0699187 to ef75dd4c: workers walk at a travelling party's pace, slower with a load: FIELD.speed 26, carry .7, hurry 37)
 // (W5, W6 re-recorded in Phase 0 wave 1, on purpose, a fix: the painted world and the minimap were the title screen's, from the
 //  lots main.js lays out at load, never repainted for a game's own (begin lays out others); now begin repaints them, so the map
@@ -64,6 +64,11 @@ const EXPECT={W1:'65e24662',W2:'2b49a168',W3:'7a0dcbac',W4:'46450e62',W5:'6587a4
 //  from dawn into the morning, so the workers near you are now 1 to a full crew as you come near (17, was 23) and some walk out
 //  to work their rounds: W8 hashes their places, and the workers' draws of Math.random (fewer made, gaps filling) move every party
 //  after them. W7 starts from the world W8 leaves. Was W7 a53f54ac, W8 d4c01429; W1-W6 and B2 unchanged)
+// (W3, W7, W8 and B2 re-recorded, on purpose, for the two standing watches (world/patrols.js watchesOf, tests/watches.js): every
+//  holding keeps t.watches (its day and night captains, make-ups, strength and rest), so TOWNS as JSON (W3) and the saves (W7,
+//  B2) carry it; each watch goes out as it is made (riders and archers by day, spearmen and shield foot by night, not garList's
+//  mix), so the patrols walk at other paces and W8's places move. Was W3 7a0dcbac, W7 42990e29, W8 ef75dd4c, B2 6f533c8c;
+//  W1, W2, W4-W6 unchanged)
 const r0=Math.random,pn=performance.now,t0=pn.call(performance);
 try{
  try{localStorage.clear()}catch(e){}

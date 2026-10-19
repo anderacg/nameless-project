@@ -110,14 +110,14 @@ function banditSprite(f){f=(f||0)%PEOPLE_STEPS;const k='bd'+f;return spr[k]||(sp
    left (x 2). Its look b (Party.banner): k, the shape: 'banner' a swallow-tailed standard (a realm's lords, you, your
    companions), 'pennant' a tapering pennant (a holding's guards), 'trade' a small pennant on a short pole (a caravan), 'rag' a
    tattered standard (bandits, desert raiders, bog raiders); col its field, dev its device (BANNER_DEV: a realm's emblem by its
-   id, a crown for you, a star for a companion, a skull, a coin). In the field's hue-shifted ramp (engine PX.ramp), lit from the
+   id, a crown for you, a star for a companion, a skull, a coin, a lit lantern (a night watch's pennant: gilt, its flame pale)). In the field's hue-shifted ramp (engine PX.ramp), lit from the
    top left, a fold in shade; the device light on a dark field, dark on a light one; the people's outline (people.js). f: the
    flutter (0, 1) */
 // (a band's rag by its kind: bandits, desert raiders, bog raiders)
 const BAND_FLAG={bandits:'#8a2a2a',raiders:'#b07a38',bog:'#4e6a3a'};
 const BANNER_DEV={vale:['..w..','..w..','wwwww','..x..','..x..'],karn:['wwwww','wwwww','..x..','..x..','..x..'],sylvan:['..w..','.www.','wwwww','.www.','..x..'],
   horde:['w...w','.w.w.','..x..','.w.w.','w...w'],salt:['..w..','wwwww','..w..','w.w.w','.www.'],crown:['.....','w.w.w','wwwww','wxwxw','.....'],
-  star:['.....','..w..','.www.','..w..','.....'],skull:['.www.','wxwxw','.www.','.w.w.','.....'],coin:['ww','wx']};
+  star:['.....','..w..','.www.','..w..','.....'],skull:['.www.','wxwxw','.www.','.w.w.','.....'],coin:['ww','wx'],lantern:['.g.','gfg','gfg','.g.']};
 function bannerSprite(b,f){f=f?1:0;const key='bn'+b.k+b.col+b.dev+f;if(spr[key])return spr[key];
   const g=pgrid(12,16),s=(x,y,c)=>pset(g,x,y,c),R=PX.ramp(b.col),Wd=PPAL.wood,G=PPAL.gold,trade=b.k==='trade',top=trade?6:2;
   const lum=[1,3,5].reduce((a,i,k)=>a+parseInt(b.col.slice(i,i+2),16)*[.3,.59,.11][k],0)/255,D=lum>.6?['#5a2a2a','#3a1a22']:['#f4ecd8','#c8bca0'];
@@ -131,8 +131,8 @@ function bannerSprite(b,f){f=f?1:0;const key='bn'+b.k+b.col+b.dev+f;if(spr[key])
   if(b.k==='rag'){s(7,top+3,R[3]);s(9,top+5,R[3])}// (a hole, a stain)
   // the device, in the middle of the field
   const T=BANNER_DEV[b.dev];if(T&&!trade){const h=T.length,w=T[0].length,x0=b.k==='banner'||b.k==='rag'?4:trade?4:3,y0=top+(b.k==='banner'||b.k==='rag'?2:trade?1:1);
-    const sm=b.k==='pennant'?[[0,0],[1,0],[0,1],[1,1]]:null;
-    if(sm)for(const [x,y] of sm)s(x0+x+1,y0+y,(x+y)%2?D[1]:D[0]);else T.forEach((r,y)=>[...r].forEach((c,x)=>{if(c!=='.')s(x0+x,y0+y,c==='w'?D[0]:D[1])}))}
+    const sm=b.k==='pennant'&&b.dev!=='lantern'?[[0,0],[1,0],[0,1],[1,1]]:null,lx=b.dev==='lantern'?1:0,C={w:D[0],x:D[1],g:G[1],f:'#fff2a0'};
+    if(sm)for(const [x,y] of sm)s(x0+x+1,y0+y,(x+y)%2?D[1]:D[0]);else T.forEach((r,y)=>[...r].forEach((c,x)=>{if(c!=='.')s(x0+x+lx,y0+y,C[c])}))}
   if(trade)T&&T.forEach((r,y)=>[...r].forEach((c,x)=>{if(c!=='.')s(4+x,top+1+y,c==='w'?G[0]:G[2])}));
   poutline(g);return spr[key]=cellOf(pcanvas(g))}
 /* pre-rendered world map: ground colors per climate, then terrain on top; mini: the minimap's colour of each kind of tile (T_OPEN

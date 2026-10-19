@@ -25,7 +25,7 @@ try{
    pt=t.asParty({pt:true,watch:'day',home:tw.name,fac:tw.owner,troops:['hum_spear','hum_bow'],x:0,y:0,cool:0,dir:1}),cv=t.asParty({cv:true,fac:tw.owner,from:tw.name,to:tw.name,x:0,y:0,goods:{},guards:3,cool:0,dir:1});
   ok([L,b,pt,cv,P].map(q=>q.mapKind).join()==='lord,band,patrol,caravan,you','what it is');
   ok(L.power()===t.rating(L.troops)&&pt.power()===t.rating(pt.troops)&&cv.power()===t.rating(cv.troops)&&P.power()===t.partyPower(),'how strong');
-  ok(L.label()===L.name&&pt.label()==='Guards of '+tw.name&&cv.label()==='Caravan of '+tw.name&&b.label()===t.BANDS[b.kind][0].replace(' ahead','')&&P.label()==='Your band','its name');
+  ok(L.label()===L.name&&pt.label()==='Day watch of '+tw.name&&cv.label()==='Caravan of '+tw.name&&b.label()===t.BANDS[b.kind][0].replace(' ahead','')&&P.label()==='Your band','its name');
   ok(L.faction===L.fac&&pt.faction===tw.owner&&cv.faction===tw.owner&&b.faction===null&&P.faction==='player','and whose it is')}
  // companions
  {P.comps={brann:{ap:5,role:''}};const c=t.compInit('brann');c.lv=3;P.troops={hum_levy:6};t.cpGive('brann','hum_levy',4);

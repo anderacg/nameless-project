@@ -85,7 +85,7 @@ class CompanionBrain extends Brain{
 // arrests you if you are wanted or hostile, and goes home when its watch ends, when it is weak, or when an army is too near
 class PatrolBrain extends Brain{
   think(p,d){
-    const t=townBy(p.home);if(!t||t.owner!==p.fac||!p.troops.length){p.gone=true;return false}
+    const t=townBy(p.home);if(!t||t.owner!==p.fac||!p.troops.length){if(t&&t.owner===p.fac)watchBack(t,p);p.gone=true;return false}
     if(inFight(p))return false;
     this.cool(p,d);const sp=moveStep(partySpeed(p,p.troops)*.75,d),ox=p.x;
     const threat=W.lords.find(l=>!l.dead&&!l.inside&&atWar(l.fac,p.fac)&&Math.hypot(l.x-p.x,l.y-p.y)<PATROL.see);
@@ -100,7 +100,7 @@ class PatrolBrain extends Brain{
       const b=!home&&bandits.find(o=>!o.qid&&!o.fight&&Math.hypot(o.x-p.x,o.y-p.y)<PATROL.see&&patrolLand(p,o.x,o.y));
       if(b){const bd=Math.hypot(b.x-p.x,b.y-p.y);Router.travel(p,b,sp*1.2)||walk(p,b.x-p.x,b.y-p.y,Math.min(bd,sp*1.2));
         if(bd<10)startFight([p],[b])}
-      else if(home){Router.travel(p,gateGoal(t),sp);if(Math.hypot(t.x-p.x,t.y+12-p.y)<8){t.gar+=p.troops.length;p.gone=true}}
+      else if(home){Router.travel(p,gateGoal(t),sp);if(Math.hypot(t.x-p.x,t.y+12-p.y)<8)watchBack(t,p)}
       else{const at=p.wx!=null&&Math.hypot(p.wx-p.x,p.wy-p.y)<6;// on its beat: stop a moment at each building, then on to the next
         if(at&&(p.wait||0)>0)p.wait-=d;else{if(p.wx==null||at||Math.random()<d*.02)patrolWaypoint(p,t);if(!Router.travel(p,{x:p.wx,y:p.wy},sp))p.wx=null}}}// (no way there over land: another stop next time)
     this.face(p,ox);return false;

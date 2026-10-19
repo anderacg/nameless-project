@@ -53,7 +53,7 @@ class Holding{
      plain data (base: its realm and HOLDING_DATA), so a load makes it again (fromRec); one the world made keeps its kind once
      that is no longer the kind it was made (kind), so a load puts the change back (holdingOf). (A save of the world as made is
      today's, byte for byte; v3 (doc/WORLD_DESIGN.md §9.3) will keep every holding's kind) */
-  saveRec(){const t=this,d=MADE_HOLDINGS[TOWNS.indexOf(t)],x={s:t.sacked||0,r:t.raided||0,u:t.turmoil||0,g:t.grow,b:t.bld,w:t.wall,k:t.work,f:t.fear||0,cr:t.crime||null,wo:t.watchOff||0,
+  saveRec(){const t=this,d=MADE_HOLDINGS[TOWNS.indexOf(t)],x={s:t.sacked||0,r:t.raided||0,u:t.turmoil||0,g:t.grow,b:t.bld,w:t.wall,k:t.work,f:t.fear||0,cr:t.crime||null,wa:t.watches||null,
       l:(t.lots||[]).map(l=>({id:l.id,k:l.k,type:l.type,x:l.x,y:l.y,n:l.n,lv:l.lv,seed:l.seed,st:l.st,plots:l.plots})),e:t.stock?{st:t.stock,pop:t.pop,pros:t.pros,tax:t.tax,vol:t.vol,pf:t.popF}:null};
     {const m=Object.entries(t.mem||{}).filter(([k,d])=>d>G.day);if(m.length)x.m=Object.fromEntries(m)}
     {const g=Object.entries(t.gd||{}).map(([k,L])=>[k,L.filter(d=>d>G.day)]).filter(([k,L])=>L.length);if(g.length)x.gd=Object.fromEntries(g)}// (its estates' fallen guards, estates.js guardsBeaten: only while a post is empty)// (its people's memory of you, folk.js remembers: only while someone remembers)
@@ -61,7 +61,7 @@ class Holding{
     return [t.owner,t.gar,t.name,x]}
   // its state from its record (on the holding as the world first stood: useWorld)
   loadRec(o){const t=this,x=o[3];if(x.kind)holdingOf(t,x.kind);t.owner=o[0];t.gar=o[1];t.lastOwner=t.owner;
-    t.sacked=x.s;t.raided=x.r;t.turmoil=x.u;t.grow=x.g;t.fear=x.f;t.crime=x.cr;t.watchOff=x.wo;
+    t.sacked=x.s;t.raided=x.r;t.turmoil=x.u;t.grow=x.g;t.fear=x.f;t.crime=x.cr;if(x.wa)t.watches=x.wa;else delete t.watches;
     t.bld=x.b;t.wall=x.w;t.work=x.k;t.lots=x.l;if(x.m)t.mem=x.m;else delete t.mem;if(x.gd)t.gd=x.gd;else delete t.gd;
     const e=x.e;if(e){t.stock=e.st;t.pop=e.pop;t.pros=e.pros;t.tax=e.tax;t.vol=e.vol;t.popF=e.pf}return t}
   // a founded holding made again from its record

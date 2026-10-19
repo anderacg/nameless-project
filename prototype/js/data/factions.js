@@ -11,7 +11,19 @@ const FACS={
 // city guards: every holding sends a patrol out of its garrison to ride its land (world/patrols.js); how many, and the guard it
 // keeps behind, by its kind (holdings.js patrol). days: how long it stays out; see: how far it spots trouble (px); speed: on foot;
 // fine: gold per point of reputation a crime cost, demanded when the guards catch you; wanted: days they remember it
-const PATROL={days:2,see:110,speed:24,fine:3,wanted:5,rest:1};// rest: days a holding sends no watch after its guards are beaten
+const PATROL={days:2,see:110,speed:24,fine:3,wanted:5,rest:1};// rest: days a beaten watch keeps in
+// the two standing watches of every holding (world/patrols.js watchesOf): n its name; its make-up, its first kinds (lead) then
+// drawn from its mix (seeded by the holding; 'spear' is its people's second footman), by the holding's peoples in turn; beat:
+// what it is about; say: its words when it stops you (quiet: one by the day; band: bandits on its land; mine: your own fief's).
+// The day watch rides the roads (riders and archers among its foot), the night watch keeps close by torchlight (spearmen and
+// shield foot) under a dark pennant with a lantern (pennant). refill: men a day a watch takes back from the garrison for its fallen
+const WATCH={refill:1,
+  day:{n:'Day watch',lead:['horse','ranged'],mix:['melee','shield','horse','melee','ranged','shield'],beat:'riding the roads of',
+    say:{quiet:['Roads are clear to the next milestone. Keep to them and keep moving.','Carts, drovers, pilgrims: all on the move, and all of it ours to watch. On your way.','Clear and dry. Ride on while the light lasts.'],
+      band:'Bandits on our roads. We will have them by noon; keep your blade loose till then.',mine:'The roads are clear, my lord. Nothing moves on them we have not seen.'}},
+  night:{n:'Night watch',lead:['spear','shield'],mix:['spear','shield','melee'],beat:'keeping the dark round of',pennant:'#1c2238',
+    say:{quiet:['Who goes there? ... Hm. Keep to the lit lanes, stranger, and be quick about it.','Nothing honest walks about this late. Say your business, then get indoors.','Quiet tonight. Too quiet. Keep your torch where we can see it.'],
+      band:'There are cutthroats out past the fields tonight. Stay in the light.',mine:'The gates are shut and the lanes are lit, my lord. All quiet.'}}};
 // battles on the map between parties (world/fights.js) take time, so you (and others nearby) can join: one lasts about
 // base + per x every fighter in it (world time), each side wearing the other down by their strength; a side whose strength
 // falls below rout x the other's breaks. join: how close a lord or patrol must be to ride in

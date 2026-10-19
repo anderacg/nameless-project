@@ -154,7 +154,7 @@ const ON_WIN={
   lord:{big:true,fame:0,drop:()=>Math.random()<.6?randomGear(1,gearTop()+1):null,won:(e,slain,res)=>lordWon(e.ref,res)},
   caravan:{fame:0,won:e=>e.seize?e.ref.seize():e.ref.loot()},
   estate:{fame:0,won:e=>estateWon(e)},
-  patrol:{fame:0,won:e=>patrolWon(e)},
+  patrol:{fame:0,won:(e,slain)=>patrolWon(e,slain)},
   field:{won:e=>fieldWon(e)+(e.spoils||'')},
   siege:{big:true,fame:0,won:e=>siegeWon(e)},
   raid:{fame:0,won:e=>siegeWon(e)},

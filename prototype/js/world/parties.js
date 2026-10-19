@@ -133,11 +133,11 @@ class PatrolParty extends Party{
   here(){return W.patrols.includes(this)}
   meet(){patrolMeet(this)}
   get meetsAnyTime(){return true}
-  label(){return 'Guards of '+this.home}
-  tip(){return '<b>'+(this.watch==='night'?'Night watch':'Guards')+' of '+this.home+'</b><small>'+tipFac(this.fac)+' · '+this.troops.length+' soldiers'+(hostileTo(this.fac)?tipOdds(this.power()):'')+'</small><span class="act">Click: meet</span>'}
+  label(){return watchName(this)}
+  tip(){return '<b>'+watchName(this)+'</b><small>'+tipFac(this.fac)+' · '+this.troops.length+' soldiers'+(hostileTo(this.fac)?tipOdds(this.power()):'')+'</small><span class="act">Click: meet</span>'}
   mapDot(V){return this.fromYou()<V?[this.fac==='player'?FACS.player.col:FACS[this.fac].col,1]:null}
   get brain(){return BRAINS.patrol}
-  banner(){return{k:'pennant',col:this.fac==='player'?FACS.player.col:FACS[this.fac].col,dev:this.fac}}// (its holding's realm's pennant)
+  banner(){return watchOf(this)==='night'?{k:'pennant',col:WATCH.night.pennant,dev:'lantern'}:{k:'pennant',col:this.fac==='player'?FACS.player.col:FACS[this.fac].col,dev:this.fac}}// (the day watch: its holding's realm's pennant; the night watch: a dark one with a lantern)
   look(){const col=this.fac==='player'?FACS.player.col:FACS[this.fac].col,near=Math.hypot(this.x-P.x,this.y-P.y)<120;
     return{col,race:this.fac==='player'?P.race:FACS[this.fac].races[0],dir:this.dir||1,moving:true,seed:this.home.length*13,torch:watchOf(this)==='night',label:near?String(this.size):'',labelCol:hostileTo(this.fac)?STANCE_COL[stance(this.power())]:crimeAt(townBy(this.home))&&this.fac!=='player'?'#ff9a90':col}}
 }

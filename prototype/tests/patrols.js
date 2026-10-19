@@ -37,15 +37,15 @@ try{
  h.gar=Math.max(h.gar,h.T.gar);t.patrolDay();ok(t.patrolOf(h),'and a fresh patrol rides out the next day');
  // crime: rob a worker, and the guards come for you
  const q=t.patrolOf(h);world();h.crime=null;t.wrong(h,t.CONDUCT.robWorker);ok(t.crimeAt(h)&&t.crimeAt(h).fine===t.CONDUCT.robWorker.rep*t.PATROL.fine,'a crime is remembered with a fine ('+t.crimeAt(h).fine+' gold)');
- P.x=q.x+60;P.y=q.y;q.cool=0;G.encCool=0;q.back=G.day+5;for(let i=0;i<60&&G.mode==='world';i++){t.updatePatrols(.05)}
- ok(G.mode==='dialog'&&/stop you/.test(panel())&&G.pt===q,'the guards come and stop you');
+ q.cool=0;G.encCool=0;q.back=G.day+5;for(let i=0;i<400&&G.mode==='world';i++){if(i%40===0){P.x=q.x+40;P.y=q.y}t.updatePatrols(.05)}// (kept near: the day watch rides its beat, so it may turn away first)
+ ok(G.mode==='dialog'&&/stops you/.test(panel())&&G.pt===q,'the guards come and stop you');
  P.gold=500;t.act('pt-pay');ok(!t.crimeAt(h)&&P.gold===500-t.CONDUCT.robWorker.rep*t.PATROL.fine,'paying the fine closes the matter');t.act('dlg-ok');
  world();t.wrong(h,t.CONDUCT.robWorker);G.encCool=0;t.patrolMeet(q);t.act('pt-fight');ok(G.enc&&G.enc.kind==='patrol'&&t.hostileTo(q.fac),'refusing means a fight, and their realm turns hostile');
  P.troops={hum_knight:20};t.act('auto');ok(!W.patrols.includes(q)&&/scattered/.test(panel()),'beating them scatters the patrol');t.act('cont');while(G.mode==='perk')t.act('perk',G.perkOffer[0]);
  // a hostile realm's guards attack; a friendly one's just talk
  world();h.gar=Math.max(h.gar,h.T.gar);t.patrolDay();const r=t.patrolOf(h);if(r){P.x=r.x+30;P.y=r.y;P.troops={hum_levy:1};r.cool=0;G.encCool=0;for(let i=0;i<40&&G.mode==='world';i++)t.updatePatrols(.05);ok(G.enc&&G.enc.kind==='patrol','guards of a hostile realm attack you');t.act('flee')}
  world();P.hostile={};if(!W.patrols.length){for(const tw of t.TOWNS)tw.gar=Math.max(tw.gar,tw.T.gar);t.patrolDay()}// (none out this time: send them)
- let fr=W.patrols.find(x=>!t.hostileTo(x.fac)&&!t.crimeAt(t.townBy(x.home)));if(!fr){fr=W.patrols[0];const h0=t.townBy(fr.home);if(h0)h0.crime=null;P.fac=null}t.patrolMeet(fr);ok(/Guards of|night watch of/.test(panel())&&/Leave/.test(panel()),'friendly guards just talk');// (by night it is the night watch)
+ let fr=W.patrols.find(x=>!t.hostileTo(x.fac)&&!t.crimeAt(t.townBy(x.home)));if(!fr){fr=W.patrols[0];const h0=t.townBy(fr.home);if(h0)h0.crime=null;P.fac=null}t.patrolMeet(fr);ok(/(Day|Night) watch of/.test(panel())&&/Leave/.test(panel()),'friendly guards just talk');// (by night it is the night watch)
  window.dispatchEvent(new KeyboardEvent('keydown',{code:'Escape',key:'Escape'}));ok(G.mode==='world','Esc leaves them');
  // saved, drawn
  h.crime={until:G.day+3,fine:12};const np=W.patrols.length;t.saveGame(true);W.patrols=[];h.crime=null;t.loadGame();ok(W.patrols.length===np&&t.townBy(h.name).crime&&t.townBy(h.name).crime.fine===12,'patrols and crimes are saved');
@@ -55,10 +55,10 @@ try{
   for(let i=0;i<N;i++){t.patrolWaypoint(pp,z);if(z.lots.some(l=>pp.wx>=(l.x-1)*16&&pp.wx<=(l.x+l.n+1)*16&&pp.wy>=(l.y-1)*16&&pp.wy<=(l.y+l.n+1)*16))near++;pp.x=pp.wx;pp.y=pp.wy}
   ok(near>=N*.7,'a patrol walks its beat among the buildings of '+z.name+' ('+near+' of '+N+' stops beside one), and only now and then rides out')}
  // beaten guards are not replaced at once: their holding sends no watch until tomorrow
- {world();G.encCool=0;const ps=W.patrols.slice().sort((a,b)=>t.townBy(b.home).gar-t.townBy(a.home).gar),q=ps[0],hq=t.townBy(q.home);delete hq.watchOff;P.x=q.x+30;P.y=q.y;P.tx=null;
+ {world();G.encCool=0;const ps=W.patrols.slice().sort((a,b)=>t.townBy(b.home).gar-t.townBy(a.home).gar),q=ps[0],hq=t.townBy(q.home);delete hq.watches;P.x=q.x+30;P.y=q.y;P.tx=null;
   t.patrolMeet(q);t.act('pt-attack');const r=Math.random;Math.random=()=>0;const tr0=P.troops;P.troops={hum_spear:60};t.act('auto');Math.random=r;t.act('cont');P.troops=tr0;
   for(let i=0;i<200;i++){t.updateWorld(.05);if(G.mode!=='world')world()}ok(!W.patrols.some(x=>x.home===q.home),'beat a holding\u2019s guards: no new watch rides out at once ('+hq.gar+' still in the garrison)');
-  hq.gar=Math.max(hq.gar,hq.T.patrol.keep+hq.T.patrol.size);G.day+=1;t.updatePatrols(.6);ok(W.patrols.some(x=>x.home===q.home),'a day later, it sends one again')}
+  hq.gar=Math.max(hq.gar,hq.T.patrol.keep+hq.T.patrol.size);for(let k=0;k<hq.T.patrol.size;k++){G.day+=1;t.patrolDay()}t.updatePatrols(.6);ok(W.patrols.some(x=>x.home===q.home),'days later, its fallen made good from the garrison, it sends one again')}
  // in the grace after a fight, hostile guards keep a few steps off instead of standing on you
  // (the strongest watch: a small one afraid of your hero does not hunt you at all, and walks its beat wherever it leads; it is
  // put on open ground 40 px off in plain line to you, not in a river it cannot walk out of; and the dice are seeded)
