@@ -1,6 +1,6 @@
 # Random encounters on the map: design
 
-Status: **approved** (2026-10-19); phase 1 built (2026-10-19: `world/encounters.js`, `tests/encounters.js`).
+Status: **approved** (2026-10-19); phase 1 built (2026-10-19: `world/encounters.js`, `tests/encounters.js`); **phase 2 built** (2026-10-19: the 8 new encounters of normal priority, as data in `ROAD_ENC` with their numbers in `ENC_TUNE`; the shared chase and catch in `RoadEncounter` and `ENC_CATCH`; stand-in figures until phase 3's props).
 
 ## 1. The idea
 
@@ -35,7 +35,9 @@ Today a "road event" is a window that pops up at random (`world/events.js`, 21 o
 | Approach | 2–3 h (15–22 s), or until you outpace it | walks off |
 | Stay | 6–8 h (45–60 s) | packs up and moves on; some leave a trace: the wounded traveller dies (a body), an abandoned cart |
 | Flee | until out of sight, at most 2 h | gone |
-| Scene | 3–8 h (22–60 s) | plays out: the caravan plundered (a burnt wagon), the procession arrives |
+| Scene | 3–8 h (22–60 s) | plays out: the caravan plundered (a burnt wagon) |
+| Walk (phase 2: a procession) | as long as its walk, 4–10 h | it arrives and ends: its goal is chosen within 10 h of walking |
+| Run (phase 2: the thief across your view) | 2–3 h | gone once out of sight |
 
 Any of them leaves at once when you are about 1.5× your sight away. Traces fade after a day, and may become a tavern rumour. One table per behaviour (`ENC_LIFE`).
 
@@ -104,7 +106,20 @@ Any of them leaves at once when you are about 1.5× your sight away. Traces fade
 
   The owner reviews screenshots after each phase.
 
-  The owner reviews screenshots after each phase.
+### Phase 2 as built (2026-10-19)
+
+| Encounter | Where and when | Behaviour | Choices and outcomes |
+|---|---|---|---|
+| Cart stuck in the mud | on a road by water, a ford or a bog; by day | stays, calls out | Help push (stamina, or an hour if you are spent: reputation in its holding, a little grain) · Rob (asks first: grain and coins, costs as robbing a worker) · Leave. Ignored: an abandoned cart for a day |
+| Thief on the run | on a road near a holding, by day; comes at the edge of your sight | runs across your view from his victim (left where he was robbed); a click opens his page at once | Chase (you sprint after him on the map, ×1.6 your pace; he runs slower for your Agility, your reach grows with it, a mount and Riding make you faster; he is away after 1.5 h or out of sight; Scouting 5 reads whether you can) · caught: Return the purse (reward, reputation) or Keep it (asks first; honor) · Let go |
+| Poacher | the edge of a lord's wood (a holding's land with an owner) | stays; runs if he sees you first (at 1.15× your sight, less 0.1 a Scouting level) | Turn him in (reputation, a bounty) · Buy the meat · Leave |
+| Funeral procession | on a road near a holding with a shrine or ruins in reach, by day | walks the roads to the shrine or ruins and ends there | Pay respects (honor with its realm, morale) · Leave |
+| Wedding party | on a road between two holdings, by day; likelier when your band's morale is low | walks to the other holding, a lute player leading, music over them | Join (morale, 2 hours) · Give a gift (gold, reputation) · Leave |
+| Runaway horse | open land, not a bog; likelier with no mount | bolts as you come (half your sight), runs 40–64 px, then grazes | Catch it (Riding and Agility; Insight reads the odds): the region's mount (camel, pony or horse), or its worth if you have one; missed, it bolts · Leave |
+| Beggar | on a road near a holding; likelier when your purse is fat | walks up to you | Give 5, 10 or 20 gold (honor with the land's realm) · Ignore |
+| Messenger | on a road; a realm's rider in its colours | rides up to you (faster than one on foot) | Read the news (a place you have not found goes on your map, where a lord rides, or the wars) · Rob (asks first: his purse and a sealed letter's price; reputation and honor with his realm) |
+
+Choices made in building it: the procession's time is its walk (4–10 h) rather than the scene's 3–8 h, since holdings stand 300+ px apart; the thief keeps his own 2–3 h and comes at the edge of your sight, so he crosses it; the chase is a sprint (×1.6) so a band on foot can catch a runner; the messenger's sealed letter is paid in gold (no letter item yet); a poacher may be on your own land too. Figures are stand-ins: the cart is the caravan's (a mud patch under it), the bier a shrouded body between two bearers, the dead deer the map's deer on its back, the horse the map's horse with a saddle, the messenger a rider on it.
 
 ## 6. Questions for the owner
 
