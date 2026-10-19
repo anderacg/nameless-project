@@ -32,8 +32,8 @@ function dbImage(s,a1,a2,a3,a4,a5,a6,a7,a8){const n=arguments.length;
 function dbRect(x,y,w,h){dbAdd(x,y,w,h);return WDEPTH.fr.call(this,x,y,w,h)}
 // what stands in front of a figure whose feet are at map y fy, over the scene's box x0..x1, y0..y1 (its corner at (ox, oy) on the
 // map): its scene's pixels put back over it (the context's transform: the scene's onto the screen), each thing's at its fade;
-// own: what covers it is marked to fade
-function overdrawBox(x0,y0,x1,y1,ox,oy,fy,own,cam){
+// own: what covers it is marked to fade; nf: nothing is (ambient life: gfx/ambient.js, a hare in a wood fades no crown)
+function overdrawBox(x0,y0,x1,y1,ox,oy,fy,own,cam,nf){
   const w=x1-x0+1,h=y1-y0+1,wx0=x0+ox,wy0=y0+oy,wx1=x1+ox,wy1=y1+oy,C=WDEPTH.C,AL=WDEPTH.al;C.length=0;
   WorldArt.standing(wx0,wy0,wx1,wy1,(S,k)=>{const f=S.Y+S.E[k*4+3];if(f>fy)C.push([f,S,k])});
   for(const p of WDEPTH.pics){const D=picFeet(p[0]),px=p[1]+cam.x,py=p[2]+cam.y;if(py+D.foot>fy&&px<=wx1&&px+D.w>wx0&&py+D.top<=wy1&&py+D.h>wy0)C.push([py+D.foot,null,p])}
@@ -48,7 +48,7 @@ function overdrawBox(x0,y0,x1,y1,ox,oy,fy,own,cam){
         for(let x=Math.max(cx0,dx+b[0]);x<=Math.min(cx1,dx+b[2]);x++)if(a[ro+x]){M[(mo+x)*4+3]=A;n++}}}}
     else{const [img,px,py]=k,D=picFeet(img),F=D.F,X=px+cam.x,Y=py+cam.y;key=img;const A=Math.round((AL.has(key)?AL.get(key):1)*255);
       for(let y=Math.max(wy0,Y+D.top);y<=Math.min(wy1,Y+D.h-1);y++){const ro=(y-Y)*D.w-X,mo=(y-wy0)*st-wx0;for(let x=Math.max(wx0,X);x<=Math.min(wx1,X+D.w-1);x++){const f=F[ro+x];if(f>=0&&Y+f>fy){M[(mo+x)*4+3]=A;n++}}}}
-    if(n){any=1;WDEPTH.cov.add(key)}}
+    if(n){any=1;if(!nf)WDEPTH.cov.add(key)}}
   if(!any)return;
   const cv=WDEPTH.cv,g=cv.getContext('2d');g.putImageData(I,0,0,0,0,w,h);g.globalCompositeOperation='source-in';g.drawImage(memCv(),x0,y0,w,h,0,0,w,h);g.globalCompositeOperation='source-over';
   ctx.drawImage(cv,0,0,w,h,x0,y0,w,h)}
@@ -64,7 +64,7 @@ function worldOverdraw(list,cam){
   try{for(const e of list){if(e.top){top.push(e);continue}if(!WDEPTH.on){drawMover(e);continue}
     B[0]=B[1]=1e9;B[2]=B[3]=-1e9;WDEPTH.trk=true;drawMover(e);WDEPTH.trk=false;
     const x0=Math.max(0,Math.floor((B[0]-m.e)/k)),y0=Math.max(0,Math.floor((B[1]-m.f)/k)),x1=Math.min(cw,Math.ceil((B[2]-m.e)/k))-1,y1=Math.min(ch,Math.ceil((B[3]-m.f)/k))-1;
-    if(x1>=x0&&y1>=y0){WDEPTH.boxes.push([x0,y0,x1,y1,e.y,!!e.own]);overdrawBox(x0,y0,x1,y1,cam.x,cam.y,e.y,!!e.own,cam)}}}
+    if(x1>=x0&&y1>=y0){WDEPTH.boxes.push([x0,y0,x1,y1,e.y,!!e.own]);overdrawBox(x0,y0,x1,y1,cam.x,cam.y,e.y,!!e.own,cam,!!e.nf)}}}
   finally{WDEPTH.trk=false;if(di)ctx.drawImage=WDEPTH.di;else delete ctx.drawImage;if(fr)ctx.fillRect=WDEPTH.fr;else delete ctx.fillRect}
   for(const e of top)drawMover(e);WDEPTH.pics.length=0}
 // a world goes in: no fades carried over
