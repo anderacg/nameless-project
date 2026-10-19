@@ -10,7 +10,8 @@
 // a confirm before each robbery, their lifetimes and the abandoned cart. Phase 4: the pilgrims (walking the roads to a real
 // shrine and ending there, or praying at one near you; no shrine of their own), the fake wounded (a lure: the wounded traveller
 // to the eye, its Insight at Scouting 0, 3 and 5, each choice, left be) and the sealed letter (its contents, the witness, its
-// page's verbs and their conditions, stale, saved and loaded)
+// page's verbs and their conditions, stale, saved and loaded). How they end: nothing ends while you can see it (each kind its way,
+// gone once out of your sight; out of it, as ever; the caps; saved and loaded mid-leave and mid-prayer)
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);
 try{
  const t=T,G=t.G,P=t.P,W=t.W,TILE=t.TILE,ev=s=>(0,eval)(s);try{localStorage.clear()}catch(e){}
@@ -91,23 +92,23 @@ try{
  // ---- behaviours
  {goHome();const e=t.roadSpawn('merchant',P.x+150,P.y),d0=e.fromYou();frames(20);ok(e.fromYou()<d0-5,'approach: the peddler walks to you ('+Math.round(d0)+' → '+Math.round(e.fromYou())+' px)');
   frames(2000);ok(G.mode==='road'&&G.road===e&&q('.rwin h2').textContent===D('merchant').n,'reaching you, he is met: his page opens');t.act('enc-leave');ok(G.mode==='world'&&e.beh==='leave','Leave: he goes on his way');
-  const x1=e.fromYou();frames(40);ok(e.fromYou()>x1,'walking off');}
+  const x1=e.fromYou();frames(200);ok(e.fromYou()>x1+5,'walking off (along the road: '+Math.round(x1)+' → '+Math.round(e.fromYou())+' px)');}
  {goHome();const S0=W.sites;W.sites=[];P.tx=P.x+2000;P.ty=P.y;const d=V+80,e=t.roadSpawn('merchant',P.x+Math.cos(.3)*d,P.y+Math.sin(.3)*d);for(let i=0;i<1500&&G.mode==='world'&&!e.gone;i++)t.updateWorld(.05);W.sites=S0;
   ok(G.mode==='road'&&G.road===e,'while you travel, one walking up meets you on your way (it hurries to where your ways cross)');world()}
  {goHome();const e=t.roadSpawn('traveller',P.x+60,P.y),x=e.x,y=e.y;frames(200);ok(e.x===x&&e.y===y&&!e.gone,'stay: the wounded traveller stays where he lies')}
  {goHome();const e=t.roadSpawn('wisps',P.x+40,P.y),d0=e.fromYou();frames(30);ok(e.fromYou()>d0+3,'flee: the lights drift away as you come ('+Math.round(d0)+' → '+Math.round(e.fromYou())+' px)')}
  {goHome();const e=t.roadSpawn('caravan',P.x+60,P.y),L=t.ENC_LIFE.scene;ok(e.end-e.t0>=L[0]&&e.end-e.t0<=L[1],'scene: the caravan fight is under way, '+(e.end-e.t0).toFixed(1)+' h to run');
-  G.clock+=(e.end-t.roadNow()+.1)*t.DAY/24;frames(1);ok(e.gone&&R().on.some(x=>x.trace&&x.k==='wreck'),'and ends by itself: plundered, a burnt wagon left');G.clock=t.DAY*.3}
+  G.clock+=(e.end-t.roadNow()+.1)*t.DAY/24;P.x=e.x-V*1.2;frames(1);ok(e.gone&&R().on.some(x=>x.trace&&x.k==='wreck'),'and ends by itself out of your sight: plundered, a burnt wagon left');G.clock=t.DAY*.3}
  // lifetimes by behaviour, and leaving when far
- {const bad=[];for(const k of Object.keys(t.ROAD_ENC)){goHome();for(let i=0;i<5;i++){R().on=[];const Dk=t.ROAD_ENC[k],e=WALKERS.includes(k)||k==='pilgrims'?spawnK(k,30):t.roadSpawn(k,P.x+30,P.y),L=t.ENC_LIFE[Dk.life||(e.beh==='flee'?'flee':Dk.beh)],h=e.end-e.t0;if(h<L[0]-1e-9||h>L[1]+1e-9)bad.push(k+' '+h.toFixed(2))}}
+ {const bad=[];for(const k of Object.keys(t.ROAD_ENC)){goHome();for(let i=0;i<5;i++){R().on=[];const Dk=t.ROAD_ENC[k],e=WALKERS.includes(k)||k==='pilgrims'?spawnK(k):t.roadSpawn(k,P.x+30,P.y);if(!e){bad.push(k+' none at '+Math.round(P.x)+','+Math.round(P.y));continue}const L=t.ENC_LIFE[Dk.life||(e.beh==='flee'?'flee':Dk.beh)],h=e.end-e.t0;if(h<L[0]-1e-9||h>L[1]+1e-9)bad.push(k+' '+h.toFixed(2))}}
   const L=t.ENC_LIFE;ok(!bad.length,'lifetimes by behaviour: approach '+L.approach.join('–')+' h, stay '+L.stay.join('–')+' h, flee at most '+L.flee[1]+' h, scene '+L.scene.join('–')+' h; the thief running '+L.run.join('–')+' h, the horse as one that stays, a procession '+L.walk.join('–')+' h (as long as its walk)'+(bad.length?': '+bad.join(', '):''));
   goHome();const a=t.roadSpawn('bard',P.x+60,P.y);G.clock+=(a.end-t.roadNow()+.05)*t.DAY/24;frames(1);ok(a.beh==='leave'&&!a.gone,'an approach whose time is up walks off');frames(3000);ok(a.gone,'and is gone once out of your sight');G.clock=t.DAY*.3;
   goHome();const s=t.roadSpawn('hunters',P.x+50,P.y);P.x+=V*t.ENC_LIFE.leave+60;frames(1);ok(s.gone,'anything leaves once you are '+t.ENC_LIFE.leave+'× your sight away');
   goHome();const m=t.roadSpawn('merchant',P.x+V+100,P.y);P.x-=20;frames(1);ok(!m.gone,'(not one just come past your sight, you a little farther)');P.x-=200;frames(1);ok(m.gone,'outpaced: gone')}
 
  // ---- traces: ignored, the traveller dies (a body), fading after a day; tended, none
- {goHome();const e=t.roadSpawn('traveller',P.x+40,P.y);e.seen=1;G.clock+=(e.end-t.roadNow()+.1)*t.DAY/24;frames(1);const b=R().on.find(x=>x.trace&&x.k==='body');
-  ok(e.gone&&b&&b.from<=t.roadNow()&&Math.abs(b.end-b.from-t.ENC_LIFE.trace)<1e-9&&b.x===e.x,'ignored, the wounded traveller dies: a body by the road, for a day');
+ {goHome();const e=t.roadSpawn('traveller',P.x+40,P.y);e.seen=1;G.clock+=(e.end-t.roadNow()+.1)*t.DAY/24;P.x=e.x-V*1.2;frames(1);const b=R().on.find(x=>x.trace&&x.k==='body');P.x=e.x-40;
+  ok(e.gone&&b&&b.from<=t.roadNow()&&Math.abs(b.end-b.from-t.ENC_LIFE.trace)<1e-9&&b.x===e.x,'ignored, the wounded traveller dies (out of your sight): a body by the road, for a day');
   ok(b&&b.inView(V)&&!b.chaseable()&&!b.marked()&&t.objKind(b)==='road'&&t.pickAt(b.x,b.y-4)!==b,'drawn, never highlighted nor clicked');
   G.clock+=t.DAY*1.01;if(G.clock>=t.DAY){G.day+=Math.floor(G.clock/t.DAY);G.clock%=t.DAY}frames(1);ok(b.gone&&!b.inView(V),'gone after a day');G.clock=t.DAY*.3;
   goHome();const f=t.roadSpawn('traveller',P.x+40,P.y);P.gold=500;t.invAdd('good','grain',10);t.roadMeet(f);t.act('enc-do','0');world();P.x+=V*2+200;frames(1);ok(f.gone&&!R().on.some(x=>x.trace),'tended, he walks away: no body');
@@ -157,8 +158,21 @@ try{
   ok(!D('pilgrims').ok()&&!t.roadSpawn('pilgrims',P.x+10,P.y),'no real shrine within reach: no pilgrims');W.sites=S0;ok(D('pilgrims').ok(),'a real shrine within their walk: they can come');
   const w=spawnK('pilgrims'),g=w.goal(),sh=t.roadShrineOf(w),far=t.roadWalkFar(),dd=s=>Math.hypot(s.x-w.x,s.y-w.y),near=SH.filter(s=>dd(s)>=t.ENC_WALK.min&&dd(s)<=far&&t.Router.reach(w,s)).sort((a,b)=>dd(a)-dd(b))[0],lay=t.ENC_SCENE.lay(w,true);
   ok(!w.pray&&w.beh==='walk'&&sh&&sh===near&&Math.hypot(g.x-sh.x,g.y-sh.y)<14&&w.n>=TP.n[0]&&w.n<=TP.n[1]&&lay.length===w.n&&lay.every(p=>p.k==='walk'),'walking: '+w.n+' pilgrims bound for the nearest real shrine they can reach, the '+w.site+' ('+Math.round(dd(sh))+' px off), no shrine of their own');
-  w.seen=1;let last=null,i=0;for(;i<6000&&!w.gone;i++){last=[w.x,w.y];t.updateRoad(.25);P.x=w.x-30;P.y=w.y}
-  ok(w.gone&&Math.hypot(g.x-last[0],g.y-last[1])<14&&!R().on.some(x=>x.trace),'they walk the roads to it and end there ('+Math.round(Math.hypot(g.x-last[0],g.y-last[1]))+' px from it), leaving nothing');
+  w.seen=1;let last=null,i=0;for(;i<6000&&!w.gone&&w.beh==='walk';i++){last=[w.x,w.y];t.updateRoad(.25);P.x=w.x-30;P.y=w.y}
+  ok(!w.gone&&w.beh==='stay'&&w.pray&&Math.hypot(g.x-last[0],g.y-last[1])<14&&!R().on.some(x=>x.trace),'they walk the roads to it ('+Math.round(Math.hypot(g.x-last[0],g.y-last[1]))+' px from it); reaching it in your sight, they stay there, leaving nothing');
+  // (nothing ends while you can see it: they pray at it a while (ENC_LIFE.pray), then walk off and are gone once out of your sight;
+  // saved and loaded mid-prayer)
+  {const LP=t.ENC_LIFE.pray,h=w.end-t.roadNow(),ks=t.ENC_SCENE.lay(w,true).map(p=>p.k),x0=w.x,y0=w.y;
+   ok(h>=LP[0]-1e-9&&h<=LP[1]+1e-9&&ks.includes('kneel')&&ks.every(k=>k==='kneel'||k==='stand'),'they kneel and pray at the '+w.site+' for '+h.toFixed(1)+' h ('+ks.join(', ')+')');
+   frames(100);ok(w.x===x0&&w.y===y0&&!w.gone,'at their prayers while you watch');
+   G.mode='world';G.modal=false;const snap=JSON.stringify(w);t.saveGame(true);W.road=null;t.loadGame();const w2=R().on.find(x=>x.i===w.i);
+   ok(w2&&w2 instanceof t.RoadEncounter&&JSON.stringify(w2)===snap&&w2.pray&&w2.beh==='stay','saved and loaded mid-prayer, as they were');
+   pilPray.s=W.sites.find(x=>x.tx===pilPray.s.tx&&x.ty===pilPray.s.ty);// (the load made the sites anew)
+   t.roadMeet(w2);ok(acts()[0]==='Pray with them'&&/kneel at the/.test(panel()),'met at their prayers: Pray with them');world();
+   G.clock+=(w2.end-t.roadNow()+.1)*t.DAY/24;frames(1);const k2=t.ENC_SCENE.lay(w2,true).map(p=>p.k);
+   ok(!w2.gone&&w2.beh==='leave'&&w2.left&&k2.length===w2.n&&k2.every(k=>k==='walk'),'their prayers said, in your sight, they get up and walk off ('+k2.join(', ')+')');
+   let pre=true,j=0;for(;j<8000&&!w2.gone;j++){pre=w2.inView(t.vis());t.updateRoad(.05)}
+   ok(w2.gone&&!pre&&!R().on.some(x=>x.trace),'and are gone once out of your sight ('+j+' moments), leaving nothing');G.clock=t.DAY*.3}
   at(pilPray.x,pilPray.y);R().on=[];const p=t.roadSpawn('pilgrims',P.x+10,P.y),s=pilPray.s,pl=t.ENC_SCENE.lay(p,true),L=t.ENC_LIFE.stay;
   ok(p.pray&&p.beh==='stay'&&p.site===s.name&&Math.hypot(p.x-s.x,p.y-s.y)<16&&pl.length===p.n&&pl.some(x=>x.k==='kneel')&&pl.every(x=>x.k==='kneel'||x.k==='stand')&&p.end-p.t0>=L[0]&&p.end-p.t0<=L[1],
     'a real shrine just past your sight: '+p.n+' pilgrims kneel and stand before the '+s.name+', by its own picture ('+pl.map(x=>x.k).join(', ')+'), for '+(p.end-p.t0).toFixed(1)+' h');
@@ -230,7 +244,7 @@ try{
   P.sp=0;const f=meet('mud'),h0=t.roadNow();ok(/an hour of your time/.test(panel()),'tired out, it costs an hour of your time instead');pickA(0);ok(Math.abs(t.roadNow()-h0-TU.mud.hours)<1e-6&&P.sp===0,'and the hour passes');world();
   const m=meet('mud'),T0=t.townBy(m.home),r1=t.repAt(m.home),g1=P.gold,gr=t.goodN('grain');pickA(1);ok(q('#panel.confirm')&&P.gold===g1&&t.goodN('grain')===gr,'Rob asks first, and nothing is taken yet');sure();
   ok(P.gold===g1+m.coins&&t.goodN('grain')===gr+m.load&&t.repAt(m.home)===r1-t.CONDUCT.robWorker.rep&&(T0.owner==='player'||!!t.crimeAt(T0))&&/coins from his cart/.test(panel()),'confirmed: '+m.load+' grain and '+m.coins+' coins; it costs as robbing a worker does (reputation in '+m.home+' −'+t.CONDUCT.robWorker.rep+', its guards want you)');world();
-  goHome();const c=t.roadSpawn('mud',P.x+40,P.y);c.seen=1;G.clock+=(c.end-t.roadNow()+.1)*t.DAY/24;frames(1);const tr=R().on.find(x=>x.trace&&x.k==='cart');
+  goHome();const c=t.roadSpawn('mud',P.x+40,P.y);c.seen=1;G.clock+=(c.end-t.roadNow()+.1)*t.DAY/24;P.x=c.x-V*1.2;frames(1);const tr=R().on.find(x=>x.trace&&x.k==='cart');
   ok(c.gone&&tr&&Math.abs(tr.end-tr.from-t.ENC_LIFE.trace)<1e-9&&tr.D.n==='An abandoned cart'&&t.ENC_SCENE.pics(tr).length===2&&!tr.chaseable(),'ignored: an abandoned cart left by the road for a day, never clicked');G.clock=t.DAY*.3;
   goHome();P.sp=SP;const hp=t.roadSpawn('mud',P.x+20,P.y);t.roadMeet(hp);pickA(0);world();P.x+=V*2+200;frames(1);ok(hp.gone&&!R().on.some(x=>x.trace),'helped out: no cart left behind')}
 
@@ -271,9 +285,13 @@ try{
 
  // ---- the processions: walk the roads to their goal and end there; Pay respects; Join, Give a gift
  {for(const k of WALKERS){const e=spawnK(k),g=e.goal(),d0=Math.hypot(g.x-e.x,g.y-e.y),L=t.ENC_LIFE.walk,h=e.end-e.t0;e.seen=1;let gx=g.x,gy=g.y,last=null;
-    let i=0;for(;i<6000&&!e.gone;i++){last=[e.x,e.y];t.updateRoad(.25);P.x=e.x-30;P.y=e.y}
-    const at2=Math.hypot(gx-last[0],gy-last[1]);
-    ok(e.gone&&at2<14&&h>=L[0]&&h<=L[1]&&!R().on.some(x=>x.trace),D(k).n+': walks the roads to '+(k==='funeral'?'the '+e.site:e.tw)+' ('+Math.round(d0)+' px as the crow flies, '+h.toFixed(1)+' h to go) and ends there ('+Math.round(at2)+' px from it)')}
+    let i=0;for(;i<6000&&!e.gone&&e.beh==='walk';i++){last=[e.x,e.y];t.updateRoad(.25);P.x=e.x-30;P.y=e.y}
+    const at2=Math.hypot(gx-last[0],gy-last[1]),say=D(k).n+': walks the roads to '+(k==='funeral'?'the '+e.site:e.tw)+' ('+Math.round(d0)+' px as the crow flies, '+h.toFixed(1)+' h to go)';
+    if(k==='wedding')ok(e.gone&&at2<14&&h>=L[0]&&h<=L[1]&&!R().on.some(x=>x.trace),say+' and ends at its gate, though you see it: they went in ('+Math.round(at2)+' px from it)');
+    else{const LP=t.ENC_LIFE.pray,hs=e.end-t.roadNow();ok(!e.gone&&e.beh==='stay'&&at2<14&&h>=L[0]&&h<=L[1]&&hs>=LP[0]-1e-9&&hs<=LP[1]+1e-9&&!R().on.some(x=>x.trace),say+'; there in your sight, they stand by their dead a while ('+hs.toFixed(1)+' h)');
+      G.clock+=(e.end-t.roadNow()+.1)*t.DAY/24;frames(1);const ks=t.ENC_SCENE.lay(e,true).map(p=>p.k);
+      ok(!e.gone&&e.beh==='leave'&&e.left&&ks.every(k=>k==='walk')&&/walk home from/.test(D(k).text(e)),'then walk home, their dead laid to rest ('+ks.join(', ')+')');
+      let pre=true,j=0;for(;j<8000&&!e.gone;j++){pre=e.inView(t.vis());t.updateRoad(.05)}ok(e.gone&&!pre,'and are gone once out of your sight');G.clock=t.DAY*.3}}
   world();const f=meet('funeral',e=>{e.fac=Object.keys(t.FACS).find(x=>x!=='player')}),h0=t.honorWith(f.fac);P.morale=50;pickA(0);ok(t.honorWith(f.fac)===h0+TU.funeral.honor&&P.morale===50+TU.funeral.morale,'Pay respects: honor with the '+t.FACS[f.fac].n+' +'+TU.funeral.honor+', morale +'+TU.funeral.morale);world();
   ok(f.beh==='walk','and they walk on');
   P.morale=50;const w=meet('wedding'),c0=t.roadNow();pickA(0);ok(P.morale===50+TU.wedding.morale&&Math.abs(t.roadNow()-c0-TU.wedding.hours)<1e-6,'Join the wedding: morale +'+TU.wedding.morale+', '+TU.wedding.hours+' hours of your time');world();G.clock=t.DAY*.3;
@@ -356,7 +374,7 @@ try{
   {const e=lure();t.act('enc-leave');ok(G.mode==='world'&&G.msgs[G.msgs.length-1].m==='You leave him to his fate.','Leave: you leave him to his fate')}
   P.sk.scout.lv=0;
   // left be: the bandits move on, no body; the word on the road
-  {goHome();R().on=[];const e=t.roadSpawn('lure',P.x+40,P.y);e.seen=1;const n0=G.msgs.length;G.clock+=(e.end-t.roadNow()+.1)*t.DAY/24;frames(1);
+  {goHome();R().on=[];const e=t.roadSpawn('lure',P.x+40,P.y);e.seen=1;const n0=G.msgs.length;G.clock+=(e.end-t.roadNow()+.1)*t.DAY/24;P.x=e.x-V*1.2;frames(1);
    ok(e.gone&&!R().on.some(x=>x.trace)&&/Word on the road: a “wounded man”/.test(logsSince(n0)),'left be: the bandits move on (no body), and word gets round');G.clock=t.DAY*.3}
   world()}
 
@@ -424,6 +442,58 @@ try{
   {const L={...mk('deal'),seal:0,seen:1};put(L);world();const snap=JSON.stringify(P.inv[3]);t.saveGame(true);P.inv[3]=null;t.loadGame();
    ok(JSON.stringify(P.inv[3])===snap&&P.inv[3].L.kind==='deal'&&P.inv[3].L.seal===0&&P.inv[3].L.seen===1&&t.itemDef(P.inv[3]).n==='Opened letter','a letter in the bag is saved and loaded as it was (opened, seen, its contents)');cleanBag()}
   const ls1=W.lords.find(o=>o.id===l.id);if(ls1)Object.assign(ls1,ls0);W.rel=JSON.parse(rel0);world()}
+
+ // ======== how they end: nothing ends while you can see it (owner, 2026-10-19; ENC_END). Its time up in your sight, each ends its
+ // kind's way and is gone once out of it; out of your sight, it ends there as ever. (The processions and the pilgrims: above)
+ {const LF=t.ENC_LIFE,past=(e,h=.1)=>{G.clock+=(e.end-t.roadNow()+h)*t.DAY/24},away=e=>{P.x=e.x-t.vis()*1.2;P.y=e.y},ks=e=>t.ENC_SCENE.lay(e,true).map(p=>p.k);
+  const nTr=k=>R().on.filter(x=>x.trace&&x.k===k&&!x.gone).length;
+  // (walking off, you standing still: how many moments, whether it was in your sight the moment before it went, how much of its way
+  // along the road was on road tiles)
+  const walkOff=e=>{let pre=true,i=0,n=0,on=0;for(;i<12000&&!e.gone;i++){const r=t.ROAD_OFF.get(e);if(r&&r.i<r.path.length){n++;if(t.tAt(Math.floor(e.x/TILE),Math.floor(e.y/TILE))===t.T_ROAD)on++}pre=e.inView(t.vis());t.updateRoad(.05)}return{i,pre,n,on}};
+  // (a road tile a few tiles along the road from you)
+  const roadBy=n=>{const s=t.roadTileBy(P.x,P.y);let best=null,bd=0;for(const k of t.roadAlong(s,n).keys()){const x=(k%t.MW+.5)*TILE,y=(Math.floor(k/t.MW)+.5)*TILE,d=Math.hypot(x-P.x,y-P.y);if(d>bd){bd=d;best=[x,y]}}return best};
+  // ---- the ones that stay and move on (gamblers, hunters, deserters, the poacher): pack up and walk off, along the road where there is one
+  {goHome();R().on=[];const p=roadBy(3),e=t.roadSpawn('gamblers',p[0],p[1]);e.seen=1;const d0=e.fromYou();past(e);frames(1);
+   ok(!e.gone&&e.beh==='leave'&&e.left&&e.inView(t.vis())&&e.chaseable(),'gamblers, their time up in your sight: they do not vanish, they pack up and walk off');
+   ok(ks(e).length===3&&ks(e).every(k=>k==='soldier'),'only the people go: no cloth, no fire ('+ks(e).join(', ')+')');
+   ok(Array.isArray(e.lg)&&t.tAt(e.lg[0],e.lg[1])===t.T_ROAD,'a road by them: they take it, away from you (to '+e.lg.join(',')+')');
+   // saved and loaded mid-leave
+   G.mode='world';G.modal=false;const snap=JSON.stringify(e);t.saveGame(true);W.road=null;t.loadGame();const e2=R().on.find(x=>x.i===e.i);
+   ok(e2&&JSON.stringify(e2)===snap&&e2.left&&e2.beh==='leave','saved and loaded mid-leave, as they were');
+   const w=walkOff(e2);ok(e2.gone&&!w.pre&&w.n>10&&w.on>=w.n*.9,'they walk off along the road ('+w.on+' of '+w.n+' moments on its tiles) and are gone once out of your sight ('+w.i+' moments)');
+   goHome();R().on=[];const f=t.roadSpawn('gamblers',P.x+40,P.y);f.seen=1;past(f);away(f);frames(1);ok(f.gone,'out of your sight at their time: gone, as ever')}
+  {goHome();R().on=[];const e=t.roadSpawn('hunters',P.x+40,P.y);e.seen=1;past(e);frames(1);const k=ks(e);
+   ok(!e.gone&&e.left&&k.length===2&&k.every(x=>x==='walk'),'the hunters walk off, the camp with them: only the hunters drawn ('+k.join(', ')+')');const w=walkOff(e);ok(e.gone&&!w.pre,'gone once out of your sight')}
+  {goHome();R().on=[];const e=t.roadSpawn('poacher',P.x+40,P.y);e.seen=1;past(e);frames(1);ok(!e.gone&&e.left&&ks(e).join()==='carcass,walk','the poacher drags his deer off');walkOff(e);ok(e.gone,'and is gone once out of your sight')}
+  // ---- the cart stuck in the mud: the farmer walks off, the abandoned cart left now, in place
+  {goHome();R().on=[];const p=roadBy(3),e=t.roadSpawn('mud',p[0],p[1]);e.seen=1;const x0=e.x,y0=e.y;past(e);frames(1);const tr=R().on.find(x=>x.trace&&x.k==='cart');
+   ok(!e.gone&&e.left&&e.done&&ks(e).join()==='worker'&&tr&&tr.x===x0&&tr.y===y0&&tr.inView(t.vis())&&tr.from<=t.roadNow(),'the cart stuck in the mud, its time up in your sight: the farmer walks off, the abandoned cart left at once where it stuck');
+   ok(!e.marked()&&!e.chaseable(),'(him done with: no highlight, nothing to click)');
+   const w=walkOff(e);ok(e.gone&&!w.pre&&nTr('cart')===1&&!tr.gone,'he is gone once out of your sight; the cart stays, one cart')}
+  // ---- the wounded traveller: dies only while you are not looking (or, watched long past his time, before your eyes)
+  {goHome();R().on=[];const e=t.roadSpawn('traveller',P.x+40,P.y);e.seen=1;past(e);frames(50);
+   ok(!e.gone&&e.beh==='stay'&&e.chaseable()&&!nTr('body')&&ks(e).join()==='down','the wounded traveller, his time up in your sight: he holds on, still there to help');
+   t.roadMeet(e);ok(/Tend his wounds/.test(acts().join('|')),'and can still be met');world();
+   away(e);frames(1);const b=R().on.find(x=>x.trace&&x.k==='body');ok(e.gone&&b&&b.x===e.x,'out of your sight, he dies: his body where he lay');
+   goHome();R().on=[];const f=t.roadSpawn('traveller',P.x+40,P.y);f.seen=1;past(f,LF.dying-.2);frames(1);ok(!f.gone,'watched, he lasts '+LF.dying+' h past his time');
+   past(f,LF.dying+.1);frames(1);ok(f.gone&&nTr('body')===1&&R().on.find(x=>x.trace).inView(t.vis()),'then dies before your eyes: the body in his place')}
+  // ---- places and the hidden: the collapsed mine, the lure, the ambush end only out of your sight
+  {goHome();R().on=[];const e=t.roadSpawn('mine',P.x+40,P.y);e.seen=1;past(e,30);frames(50);ok(!e.gone&&!e.left,'the collapsed mine: never gone while you see it');away(e);frames(1);ok(e.gone,'gone once out of your sight')}
+  {goHome();R().on=[];P.troops={hum_levy:6};const e=t.roadSpawn('lure',P.x+40,P.y);e.seen=1;const n0=G.msgs.length;past(e,30);frames(50);ok(!e.gone&&!/Word on the road/.test(logsSince(n0)),'the lure: the “wounded man” stays while you see him');
+   away(e);frames(1);ok(e.gone&&!nTr('body')&&/Word on the road/.test(logsSince(n0)),'out of your sight, the bandits move on (no body), word gets round')}
+  {ev('TERRAIN.on=true');goHome();R().on=[];P.sk.scout.lv=2;const e=t.roadSpawn('ambush',P.x+40,P.y);frames(1);past(e,30);frames(50);ok(e.inView(t.vis())&&!e.gone,'the ambush, seen (Scouting 2): still there past its time');away(e);frames(1);ok(e.gone,'gone once out of your sight');
+   P.sk.scout.lv=0;goHome();R().on=[];const f=t.roadSpawn('ambush',P.x+40,P.y);past(f);frames(1);ok(f.gone,'unseen (Scouting 0): it moves on at its time');ev('TERRAIN.on=false')}
+  // ---- the caravan under attack: plays out before you: the raiders ride off, the burnt wagon left
+  {goHome();R().on=[];const e=t.roadSpawn('caravan',P.x+60,P.y);e.seen=1;const x0=e.x;past(e);frames(1);const wr=R().on.find(x=>x.trace&&x.k==='wreck');
+   ok(!e.gone&&e.left&&e.done&&e.beh==='leave'&&wr&&wr.x===x0&&wr.inView(t.vis())&&ks(e).length===3&&t.ENC_SCENE.lay(e,true).every(p=>p.k==='soldier'&&p.o.band),'the caravan fight, its time up in your sight: it plays out, the raiders ride off and the burnt wagon is left; no caravan folk remain ('+ks(e).join(', ')+')');
+   t.frame();const bx=e.box();ok(t.pickAt((bx[0]+bx[2])/2,(bx[1]+bx[3])/2)!==e,'(the raiders not to be met)');const w=walkOff(e);ok(e.gone&&!w.pre&&nTr('wreck')===1,'the raiders gone once out of your sight; the wagon stays')}
+  // ---- the ones that run: gone once out of your sight, as ever; the grazing horse wanders off
+  {goHome();R().on=[];const e=t.roadSpawn('wisps',P.x+t.vis()*.8,P.y);past(e);frames(1);ok(!e.gone&&e.inView(t.vis()),'the wisps, seen past their time: still there');P.x=e.x-t.vis()*1.4;frames(1);ok(e.gone,'gone once out of your sight')}
+  {goHome();R().on=[];const e=t.roadSpawn('horse',P.x+t.vis()*.8,P.y);past(e);frames(1);ok(!e.gone&&e.beh==='leave'&&e.left&&ks(e).join()==='horse','the grazing horse, its time up in your sight, wanders off');const q0=[e.x,e.y];frames(60);const mv=Math.hypot(e.x-q0[0],e.y-q0[1]);ok(mv>0&&mv<=t.moveStep(t.ENC_SPD.leave,.05)*60+1e-6,'slowly, at a walk ('+mv.toFixed(1)+' px in 60 moments)');walkOff(e);ok(e.gone,'gone once out of your sight')}
+  // ---- one walking off: never forced away in sight; past its time, a cap so nothing lingers
+  {goHome();R().on=[];const e=t.roadSpawn('bard',P.x+40,P.y);past(e,LF.linger-.5);const fol=()=>{P.x=e.x-40;P.y=e.y;frames(1)};fol();ok(e.beh==='leave'&&!e.gone,'one walking off, '+(LF.linger-.5)+' h past its time, followed: still there');
+   past(e,LF.linger+.1);fol();ok(!e.gone,'past '+LF.linger+' h, near you: still there');P.x=e.x-t.vis()*.9;P.y=e.y;frames(1);ok(e.gone,'and gone once past 0.8 × your sight ('+LF.linger+' h past its time: the cap)')}
+  G.clock=t.DAY*.3;world()}
 
  // ---- the save: the encounters, the timer, the day's count and the cooldowns
  {goHome();R().c=7.5;R().cd={bard:G.day};const e=t.roadSpawn('merchant',P.x+90,P.y);e.seen=1;const b=t.roadSpawn('traveller',P.x+50,P.y+30),th=t.roadSpawn('thief',P.x+70,P.y-20);G.mode='world';G.modal=false;

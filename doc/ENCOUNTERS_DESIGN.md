@@ -26,18 +26,20 @@ Today a "road event" is a window that pops up at random (`world/events.js`, 21 o
 | Shown | Drawn like other map figures (depth order, fog, smooth movement). **No pause** (owner): instead, highlights: a pulsing **"!"** with a soft glow round its figures while unmet; a call-out line ("Help! Over here!") and a soft sound when it first comes into view; an **arrow at the screen edge** when it is just off-screen; a log line ("Someone calls out from the road to the east"). |
 | Behaviour | **Approach:** walks toward you and stops beside you. **Stay:** waits in place. **Flee:** runs from you. **Scene:** a fight or event already under way, which ends on its own after a time. |
 | Meet | Click it (you walk there), or it reaches you. Its page opens; some force a choice (an ambush springs). |
-| Leave | It despawns when you are far away, after its time is up, or when its story ends. A few leave a trace: a body, a burnt wagon, a rumour in the next tavern. |
+| Leave | It despawns when you are far away, after its time is up, or when its story ends; never while you can see it (owner, 2026-10-19: its time up in your sight, it ends its kind's way and is gone once out of your sight; see below). A few leave a trace: a body, a burnt wagon, a rumour in the next tavern. |
 
 ### How long an ignored encounter lasts (one in-game hour is 7.5 s at 1×)
 
 | Behaviour | Lasts | Then |
 |---|---|---|
-| Approach | 2–3 h (15–22 s), or until you outpace it | walks off |
-| Stay | 6–8 h (45–60 s) | packs up and moves on; some leave a trace: the wounded traveller dies (a body), an abandoned cart |
-| Flee | until out of sight, at most 2 h | gone |
-| Scene | 3–8 h (22–60 s) | plays out: the caravan plundered (a burnt wagon) |
-| Walk (phase 2: a procession) | as long as its walk, 4–10 h | it arrives and ends: its goal is chosen within 10 h of walking |
+| Approach | 2–3 h (15–22 s), or until you outpace it | walks off (along the road where there is one); gone once out of your sight |
+| Stay | 6–8 h (45–60 s) | out of your sight: ends there (the wounded traveller's body, the abandoned cart). In your sight, by its kind: **moves on** (gamblers, hunters, deserters, the poacher with his deer): packs up and walks off along the road, its people only (the tent, fire and dice stay out of the picture), gone once out of your sight; the **cart in the mud**: the farmer walks off and the abandoned cart is left at once in its place; the **wounded traveller** holds on (still there to help) and dies only while you are not looking, or before your eyes once you have watched him 6 h past his time; the **collapsed mine**, the **lure** and the **ambush** end only out of your sight |
+| Flee | until out of sight, at most 2 h | gone once out of your sight (the thief, a spooked poacher, the wisps); a grazing horse past its time in your sight wanders off slowly |
+| Scene | 3–8 h (22–60 s) | out of your sight: plundered (a burnt wagon). In your sight it plays out: the raiders ride off (raiders only: the caravan's folk are dead or fled) and the burnt wagon is left at once in its place |
+| Walk (phase 2: a procession) | as long as its walk, 4–10 h | it arrives: out of your sight it ends; at a holding's gate it ends (they went in); at a shrine or ruins in your sight it stays 2–3 h (the pilgrims kneel and pray, as the pilgrims found praying do; the mourners stand by their dead), then walks off and is gone once out of your sight |
 | Run (phase 2: the thief across your view) | 2–3 h | gone once out of sight |
+
+**Nothing ends while you can see it** (owner, 2026-10-19). An encounter whose time is up in your sight does not vanish: it ends its kind's way (above) and disappears only once out of your sight. One walking off is never forced away in your sight; 6 h past its time it ends once past 0.8× your sight, so nothing lingers. Out of your sight, it ends at its time as before. Built as data: each kind's `ends` in `ROAD_ENC` (`leave`, `unseen`, `die`), else its behaviour's (`ENC_END`: stay and scene walk off; the rest wait till you are not looking); `goes` picks which of its pieces walk off; the numbers in `ENC_LIFE` (`pray`, `dying`, `linger`). Passing one by still cuts the pity timer once, when it truly ends.
 
 Any of them leaves at once when you are about 1.5× your sight away. Traces fade after a day, and may become a tavern rumour. One table per behaviour (`ENC_LIFE`).
 

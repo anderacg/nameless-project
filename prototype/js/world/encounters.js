@@ -18,8 +18,9 @@
      itself), walk (a procession: walks the roads to its goal and ends there), leave (going: walks off), bolt (gone at a run).
      The chase and the catch (ENC_CATCH: the thief run down on the map, the runaway horse caught by hand) are shared, by your
      Agility and Riding. How long each lasts unmet: ENC_LIFE. Everything leaves once you are
-     far (leave × your sight, or farther than it first stood); met and done with, once out of your sight. A few, their time up
-     unresolved, leave a trace (the body, the burnt wagon) that fades after a day.
+     far (leave × your sight, or farther than it first stood); met and done with, once out of your sight. Nothing ends while
+     you can see it (ENC_END): its time up in your sight, it ends its kind's way (walks off, waits, plays out) and is gone once
+     out of it. A few, their time up unresolved, leave a trace (the body, the burnt wagon) that fades after a day.
    - Shown (no pause): heard or seen the first time, a log line and a soft sound; then, while unmet, highlights (gfx/worldui.js
      wuiRoadUnder, wuiRoadOver): a glow round its figures, a pulsing "!" over it, its call-out line, an arrow at the screen's
      edge while it is off the screen. Its figures: today's map people and beasts, a cart, a tent, a fire, a shrine, a mine's
@@ -35,7 +36,10 @@ const ENC_SPAWN={base:.004,rate:.0016,cap:.15,land:{road:1.5,held:1,wild:.6},per
 // sight (or slack px farther than it first stood); say: real seconds its call-out shows; hail: px at which one walking up to you
 // stops you (it has reached you); spring: px at which an ambush springs
 // (run: one running across your view; walk: a procession, ending sooner where it arrives; spook: × your sight, one that flees runs as you come within it)
-const ENC_LIFE={approach:[2,3],stay:[6,8],flee:[2,2],run:[2,3],scene:[3,8],walk:[4,10],trace:24,leave:1.5,slack:24,say:4,hail:20,spring:18,spook:.6};
+// (its time up in your sight (ENC_END): pray: [from, to] hours a procession stays at the shrine or ruins it walked to; dying: hours
+// past his time the wounded traveller lasts while you watch him; linger: hours past its time after which one walking off ends
+// once past 0.8 × your sight, though still in it)
+const ENC_LIFE={approach:[2,3],stay:[6,8],flee:[2,2],run:[2,3],scene:[3,8],walk:[4,10],trace:24,leave:1.5,slack:24,say:4,hail:20,spring:18,spook:.6,pray:[2,3],dying:6,linger:6};
 // how fast they walk (px of world time, as a party's base, yours 34): hurrying to you, a rider coming, running from you, running
 // across your view, a procession, going away, bolting
 const ENC_SPD={approach:24,ride:32,flee:20,run:36,walk:20,leave:12,bolt:34};
@@ -125,9 +129,11 @@ function roadFight(e,amb,edge=amb){e.done=1;e.gone=1;G.road=null;const k=amb?e.b
    heard(e) (what follows when it is first heard or seen), under(e) (pictures under its own on its page's banner: a place it is at);
    and leave (its Leave's word), life (its time by another behaviour's: ENC_LIFE), near (px past your sight it comes, if not ENC_SPAWN's), spd (ENC_SPD: how fast it comes), far (a
    click on it opens its page at once: one you cannot walk up to), wary() (× your sight: he flees if he sees you there before you see him), stop (flees
-   a little way, then stops), spook (× your sight: it runs as you come), lost (the log line when one you chase gets away), they (what it does, in the wiki's words) */
+   a little way, then stops), spook (× your sight: it runs as you come), lost (the log line when one you chase gets away), they (what it does, in the wiki's words);
+   ends (how it ends when its time is up in your sight, if not its behaviour's: ENC_END), goes(piece) (which of its pieces go
+   when it walks off, if not its people) */
 const ROAD_ENC={
-  traveller:{n:'Wounded traveller',ico:'wounded',w:2,ok:()=>true,on:'road',beh:'stay',call:'Help! Over here!',hear:'Someone calls out from the road to the {d}.',trace:'body',tip:'Lying by the road',
+  traveller:{n:'Wounded traveller',ico:'wounded',w:2,ok:()=>true,on:'road',beh:'stay',ends:'die',call:'Help! Over here!',hear:'Someone calls out from the road to the {d}.',trace:'body',tip:'Lying by the road',
     scene:()=>[['down','traveller',0,0,{blood:1}]],
     text:()=>'A wounded traveller lies by the road, robbed and left for dead. He clutches a purse the bandits missed.',
     facts:e=>[insight(['badly hurt','he will not last the day without help','he has about '+Math.max(1,Math.round(e.end-roadNow()))+' hours left'],'know how long he has'),'a purse: about 20 gold'],
@@ -141,7 +147,7 @@ const ROAD_ENC={
      count how many and the odds; below it, his page is the real one's, and helping him (or robbing him) springs the ambush. Warned:
      come ready (no ambush edge), or call them out (they show themselves: fight, or leave; a small band may run). Left be, the
      bandits move on (after: the word on the road) */
-  lure:{n:'Wounded traveller',wn:'Fake wounded (a lure)',ico:'wounded',w:1,wf:()=>roadLureW(),ok:()=>troopCount()>=3,on:'lure',beh:'stay',call:'Help! Over here!',hear:'Someone calls out from the road to the {d}.',tip:'Lying by the road',they:'stay; bandits lie hidden near',
+  lure:{n:'Wounded traveller',wn:'Fake wounded (a lure)',ico:'wounded',w:1,wf:()=>roadLureW(),ok:()=>troopCount()>=3,on:'lure',beh:'stay',ends:'unseen',call:'Help! Over here!',hear:'Someone calls out from the road to the {d}.',tip:'Lying by the road',they:'stay; bandits lie hidden near',
     setup:e=>{e.band=roadBand(e.x,e.y);e.foes=makeEnemies(roadBandN(),false,e.band)},
     scene:e=>e.out?[['stand','traveller',0,0],['soldier','',-9,-3,{band:1,col:ENC_RAIDER,v:1}],['soldier','',9,-4,{band:1,col:ENC_RAIDER,v:3,face:-1}],['soldier','',14,1,{band:1,col:ENC_RAIDER,v:5,face:-1}]]:[['down','traveller',0,0,{blood:1}]],
     text:e=>e.out?'The “wounded man” gets up, grinning. '+e.foes.length+' bandits rise from the brush behind him, weapons out.':ROAD_ENC.traveller.text(e),
@@ -168,12 +174,12 @@ const ROAD_ENC={
     setup:e=>roadPilgrims(e),heard:e=>{const s=e.pray&&roadShrineOf(e);if(s)s.seen=true},under:e=>{const s=e.pray&&roadShrineOf(e);return s?s.view().ps:[]},
     scene:e=>(e.pray?[['kneel','pilgrim',-10,-3,{v:1}],['kneel','pilgrim',10,-2,{v:2,face:-1}],['stand','pilgrim',-4,2,{v:3}],['stand','pilgrim',5,3,{v:4,face:-1}]]
       :[['walk','pilgrim',0,0,{v:1}],['walk','pilgrim',-8,1,{v:2}],['walk','pilgrim',-15,-1,{v:3}],['walk','pilgrim',-22,1,{v:4}]]).slice(0,e.n),
-    text:e=>e.pray?'Pilgrims'+(e.to?' from '+e.to:'')+' kneel at the '+e.site+', singing low. Offerings of coin lie in a bowl before its altar.'
-      :'Pilgrims'+(e.to?' from '+e.to:'')+' walk the road to the '+e.site+', singing, a bowl of offerings carried before them.',
+    text:e=>roadPraying(e)?'Pilgrims'+(e.to?' from '+e.to:'')+' kneel at the '+e.site+', singing low. Offerings of coin lie in a bowl before its altar.'
+      :'Pilgrims'+(e.to?' from '+e.to:'')+(e.left?' walk on from the '+e.site+', their prayers said, singing, a bowl of offerings carried before them.':' walk the road to the '+e.site+', singing, a bowl of offerings carried before them.'),
     facts:e=>[e.n+' pilgrims',e.to&&'they will speak of you in '+e.to],
-    left:e=>e.pray?'You leave them to their prayers.':'They walk on, singing.',
-    acts:[{icon:'morale',label:'Pray with them',when:e=>!!e.pray,facts:e=>['morale +'+ENC_TUNE.pilgrims.morale,e.to&&'reputation in '+e.to],run:e=>roadPray(e)},
-      {icon:'morale',label:'Walk and pray with them',when:e=>!e.pray,facts:e=>['morale +'+ENC_TUNE.pilgrims.morale,ENC_TUNE.pilgrims.walk+' hour with them',e.to&&'reputation in '+e.to],run:e=>{roadHours(ENC_TUNE.pilgrims.walk);return roadPray(e)}},
+    left:e=>roadPraying(e)?'You leave them to their prayers.':'They walk on, singing.',
+    acts:[{icon:'morale',label:'Pray with them',when:e=>roadPraying(e),facts:e=>['morale +'+ENC_TUNE.pilgrims.morale,e.to&&'reputation in '+e.to],run:e=>roadPray(e)},
+      {icon:'morale',label:'Walk and pray with them',when:e=>!roadPraying(e),facts:e=>['morale +'+ENC_TUNE.pilgrims.morale,ENC_TUNE.pilgrims.walk+' hour with them',e.to&&'reputation in '+e.to],run:e=>{roadHours(ENC_TUNE.pilgrims.walk);return roadPray(e)}},
       {icon:'gold',label:'Give alms',facts:()=>{const x=ENC_TUNE.pilgrims;return[x.alms+' gold','morale +'+x.almsMorale,'+'+x.xp+' XP']},need:()=>P.gold<ENC_TUNE.pilgrims.alms&&'Not enough gold.',
         run:()=>{const x=ENC_TUNE.pilgrims;P.gold-=x.alms;P.morale+=x.almsMorale;gainXp(x.xp);return'You feel watched over. (+'+x.xp+' XP)'}},
       {icon:'sack',label:'Take the coins',facts:()=>['+'+ENC_TUNE.pilgrims.coins+' gold','morale −'+ENC_TUNE.pilgrims.coinsMorale],ask:()=>'Take the offerings from the pilgrims’ bowl? Nobody will sleep well.',
@@ -196,7 +202,7 @@ const ROAD_ENC={
     left:()=>'You leave them to it.',
     acts:[10,20,50].map(s=>({icon:'gold',label:'Play for '+s,facts:()=>[s+' gold a hand'],again:true,need:()=>P.gold<s&&'Not enough gold.',
       run:()=>{if(Math.random()<ENC_DICE){P.gold+=s;return'You win '+s+' gold. They grumble.'}P.gold-=s;return'You lose '+s+' gold. They laugh.'}}))},
-  mine:{n:'Collapsed mine',ico:'pick',w:2,ok:()=>terrAt(P.x,P.y)===T_HILL||nearMount(),on:'hill',beh:'stay',tip:'An old shaft in the hillside',
+  mine:{n:'Collapsed mine',ico:'pick',w:2,ok:()=>terrAt(P.x,P.y)===T_HILL||nearMount(),on:'hill',beh:'stay',ends:'unseen',tip:'An old shaft in the hillside',
     scene:()=>[['bld','minehead',0,2]],
     text:()=>'A collapsed mine shaft opens into the hillside. Old carts still sit inside.',
     facts:()=>[insight(['the timbers creak','the tunnels look unsafe, though more hold than fall','6 in 10 tunnels hold: iron inside, maybe more'],'know the risk')],
@@ -227,14 +233,14 @@ const ROAD_ENC={
     facts:()=>[insight(['who knows where they lead','half the tales end in treasure','an even chance: 40 gold, or a night lost'],'know the tales')],
     left:()=>'The lights fade behind you.',
     acts:[{icon:'moon',label:'Follow them',facts:()=>['treasure, or a night lost'],run:()=>{if(Math.random()<.5){P.gold+=40;return'They lead to a drowned chest with 40 gold.'}P.morale-=6;return'They lead you in circles until dawn.'}}]},
-  caravan:{n:'Caravan under attack',ico:'sword',w:1.2,ok:()=>troopCount()>=3,on:'road',beh:'scene',call:'Raiders! Help us!',hear:'Shouts and the clash of steel on the road to the {d}.',trace:'wreck',foe:true,tip:'Raiders falling on a caravan',
+  caravan:{n:'Caravan under attack',ico:'sword',w:1.2,ok:()=>troopCount()>=3,on:'road',beh:'scene',goes:p=>!!(p[4]&&p[4].band),call:'Raiders! Help us!',hear:'Shouts and the clash of steel on the road to the {d}.',trace:'wreck',foe:true,tip:'Raiders falling on a caravan',
     setup:e=>{e.n=rint(4,6)+Math.floor(G.day/15);const t=nearestOf(P,TOWNS);e.fac=t.owner&&FACS[t.owner]?t.owner:null},
     scene:e=>[['cart','',0,0,{col:roadCol(e)}],['soldier','',18,2,{col:roadCol(e),v:2}],['soldier','',20,-3,{col:roadCol(e),v:4}],['dust','',25,0],['soldier','',29,1,{band:1,col:ENC_RAIDER,v:1,face:-1}],['soldier','',32,-3,{band:1,col:ENC_RAIDER,v:4,face:-1}],['soldier','',30,5,{band:1,col:ENC_RAIDER,v:5,face:-1}]],
     text:()=>'A merchant caravan is under attack by raiders just ahead.',
     facts:e=>[insight(['raiders','about '+roughly(e.n)+' raiders',e.n+' raiders'],'know how many'),'it will not hold out long'],
     left:()=>'You wait until the screams stop.',
     acts:[{icon:'sword',label:'Join the fight',facts:e=>[insight(['raiders','about '+roughly(e.n),e.n+' raiders'],'know how many')],run:e=>{roadFight(e);return'You draw steel and ride at the raiders.'}}]},
-  ambush:{n:'Ambush',ico:'sword',w:1.5,ok:()=>TERRAIN.on&&troopCount()>=3&&!!coverAt(P.x,P.y),on:'cover',beh:'stay',hidden:true,spring:true,forced:true,vanish:true,foe:true,call:'Movement in the trees…',hear:null,tip:'Movement in the trees',
+  ambush:{n:'Ambush',ico:'sword',w:1.5,ok:()=>TERRAIN.on&&troopCount()>=3&&!!coverAt(P.x,P.y),on:'cover',beh:'stay',ends:'unseen',hidden:true,spring:true,forced:true,vanish:true,foe:true,call:'Movement in the trees…',hear:null,tip:'Movement in the trees',
     scene:()=>[['soldier','',-4,0,{band:1,col:ENC_RAIDER,v:1,a:.7}],['soldier','',5,-2,{band:1,col:ENC_RAIDER,v:3,face:-1,a:.7}]],
     text:e=>'The road runs on between '+COVER_SAY[coverAt(e.x,e.y)||'field']+'. No birdsong. Too late, your outriders see the glint of steel beside the road: an ambush.',
     acts:[{icon:'sword',label:'Close up and fight',facts:()=>['caught in their trap'],run:e=>{roadFight(e,true);return'Your band closes up on the road, weapons drawn.'}},
@@ -273,7 +279,7 @@ const ROAD_ENC={
         run:e=>{const x=ENC_TUNE.thief;P.gold+=x.reward;addRep(e.home,x.rep,true);mood('kind');return'You hand the purse back. Its owner pays you '+x.reward+' gold and will speak well of you in '+e.home+'.'}},
       {icon:'bag',label:'Keep it',when:e=>!!e.nab,facts:e=>['+'+e.purse+' gold',e.fac&&'honor with the '+FACS[e.fac].n+' −'+ENC_TUNE.thief.honor],ask:()=>'Keep the stolen purse for yourself? Its owner saw who caught the thief.',
         run:e=>{P.gold+=e.purse;if(e.fac)addHonor(e.fac,-ENC_TUNE.thief.honor,true);return'You pocket the '+e.purse+' gold and send the thief off with a kick.'+(e.fac?' Word reaches the '+FACS[e.fac].n+'.':'')}}]},
-  poacher:{n:'Poacher',ico:'furs',w:1.5,ok:()=>!!roadOwned(P.x,P.y)&&climAt(P.x,P.y)!=='frost'&&nearTile(Math.floor(P.x/TILE),Math.floor(P.y/TILE),T_FOREST,4),on:'lordwood',beh:'stay',wary:()=>{const x=ENC_TUNE.poacher;return Math.max(.4,x.see-x.scout*skill('scout'))},tip:'A hunter with a deer, in a lord’s wood',they:'stay; run if he sees you first',
+  poacher:{n:'Poacher',ico:'furs',w:1.5,ok:()=>!!roadOwned(P.x,P.y)&&climAt(P.x,P.y)!=='frost'&&nearTile(Math.floor(P.x/TILE),Math.floor(P.y/TILE),T_FOREST,4),on:'lordwood',beh:'stay',goes:()=>true,wary:()=>{const x=ENC_TUNE.poacher;return Math.max(.4,x.see-x.scout*skill('scout'))},tip:'A hunter with a deer, in a lord’s wood',they:'stay; run if he sees you first',
     setup:e=>{const t=roadOwned(e.x,e.y)||nearestOf(e,TOWNS);e.home=t.name;e.race=t.races[0]},
     scene:()=>[['carcass','deer',7,1],['stand','hunter',-4,0,{v:1}]],
     text:e=>'A man in a hood kneels over a deer he has brought down in the woods of '+e.home+'. The hunting here is its lord’s alone.',
@@ -286,7 +292,7 @@ const ROAD_ENC={
   funeral:{n:'Funeral procession',ico:'altar',w:1,ok:()=>roadDay()&&!!nearHold()&&roadSites().length>0,on:'road',beh:'walk',hear:'A slow dirge drifts from the road to the {d}.',tip:'Mourners bearing a bier',
     setup:e=>{const x=ENC_TUNE.funeral,t=nearestOf(e,TOWNS),s=roadGoal(e,roadSites());if(!s)return false;e.home=t.name;e.race=t.races[0];e.fac=roadFac(t);e.n=rint(x.n[0],x.n[1]);e.gx=s.x;e.gy=s.y+10;e.site=s.name;roadWalkEnd(e)},
     scene:e=>[['walk','mourner',8,0,{v:0}],['down','shroud',0,-3,{v:5}],['walk','mourner',-8,0,{v:1}],...[[-16,-1],[-22,2],[-28,0]].slice(0,e.n-2).map(([dx,dy],i)=>['walk','mourner',dx,dy,{v:i+2}])],
-    text:e=>'Mourners from '+e.home+' bear one of their dead on a bier to the '+e.site+', singing low.',
+    text:e=>'Mourners from '+e.home+(e.left?' walk home from the '+e.site+', their dead laid to rest.':e.pray?' stand by their dead at the '+e.site+', heads bowed.':' bear one of their dead on a bier to the '+e.site+', singing low.'),
     facts:e=>[e.n+' mourners'],
     left:()=>'They pass on, still singing.',
     acts:[{icon:'altar',label:'Pay respects',facts:e=>[e.fac&&'honor with the '+FACS[e.fac].n+' +'+ENC_TUNE.funeral.honor,'morale +'+ENC_TUNE.funeral.morale],
@@ -299,7 +305,7 @@ const ROAD_ENC={
     acts:[{icon:'mug',label:'Join',facts:()=>['morale +'+ENC_TUNE.wedding.morale,ENC_TUNE.wedding.hours+' hours'],run:()=>{const x=ENC_TUNE.wedding;roadHours(x.hours);P.morale+=x.morale;return'You drink to the bride and dance a while. Your band marches on merrier.'}},
       {icon:'gold',label:'Give a gift',facts:e=>[ENC_TUNE.wedding.gift+' gold','reputation in '+e.home],need:()=>P.gold<ENC_TUNE.wedding.gift&&'Not enough gold.',
         run:e=>{const x=ENC_TUNE.wedding;P.gold-=x.gift;addRep(e.home,x.rep,true);return'The couple thank you, and '+e.home+' will remember your gift.'}}]},
-  horse:{n:'Runaway horse',ico:'shoe',w:1,wf:()=>P.gear.mount?1:1.5,ok:()=>climAt(P.x,P.y)!=='swamp',on:'open',beh:'flee',life:'stay',stop:true,spook:ENC_CATCH.spook,tip:'A saddled horse, no rider',they:'bolt, then graze',
+  horse:{n:'Runaway horse',ico:'shoe',w:1,wf:()=>P.gear.mount?1:1.5,ok:()=>climAt(P.x,P.y)!=='swamp',on:'open',beh:'flee',life:'stay',ends:'leave',stop:true,spook:ENC_CATCH.spook,tip:'A saddled horse, no rider',they:'bolt, then graze',
     setup:e=>{e.mk=roadMount(e);e.stop=rint(ENC_CATCH.bolt[0],ENC_CATCH.bolt[1]);e.coat=['horse','chestnut','horseB','horseG'][e.seed%4]},
     scene:e=>[['horse','',0,0,{coat:e.coat}]],
     text:e=>'A saddled '+(e.mk==='horse'?'horse':MOUNTS[e.mk].n.toLowerCase())+' with no rider, its reins trailing, '+(e.calm?'grazing by the way. It keeps one eye on you.':'wild-eyed.'),
@@ -355,6 +361,7 @@ function roadPilgrims(e){const x=ENC_TUNE.pilgrims,V=vis(),t=nearHold(),d=(s,o)=
   if(pray){const L=ENC_LIFE.stay;e.pray=1;e.site=pray.name;e.st=[pray.tx,pray.ty];e.x=pray.x;e.y=pray.y+ENC_PRAY.dy;e.dir=1;e.beh='stay';e.d0=d(e,P);e.end=e.t0+L[0]+Math.random()*(L[1]-L[0]);return}
   const far=roadWalkFar(),s=roadShrines().filter(s=>d(s,e)>=ENC_WALK.min&&d(s,e)<=far&&Router.reach(e,s)).sort((a,b)=>d(a,e)-d(b,e))[0];if(!s)return false;
   e.site=s.name;e.st=[s.tx,s.ty];e.gx=s.x;e.gy=s.y+ENC_PRAY.dy;roadWalkEnd(e)}
+const roadPraying=e=>!!e.pray&&!e.left;// (at their prayers: at the shrine, not yet walking on)
 // (Pray with them: morale, and they speak well of you at home)
 function roadPray(e){const x=ENC_TUNE.pilgrims,t=e.to&&townBy(e.to);P.morale+=x.morale;if(t)addRep(t.name,x.rep,true);return'A quiet moment. The band rises calmer.'+(t?' The pilgrims spread good words about you in '+t.name+'.':'')}
 /* the lure (ENC_TUNE.lure): its weight (the night, the wild, the bands and camps near you); warned (Scouting); the odds of its
@@ -393,6 +400,43 @@ function roadCatchHorse(e){const id='m_'+e.mk;train('ride',4);
 // what an encounter left unresolved leaves when its time is up: the body, the burnt wagon (fading over its last hours)
 const ROAD_TRACE={body:{n:'A dead traveller',scene:()=>[['down','traveller',0,0,{blood:1}]]},wreck:{n:'A burnt wagon',scene:()=>[['wreck','',0,0],['smoke','',-1,-6]]},
   cart:{n:'An abandoned cart',scene:()=>[['mud','',0,0],['oldcart','',0,0]]}};
+/* ---------- how one ends: nothing ends while you can see it (owner, 2026-10-19). Its time up out of your sight, it ends there
+   (its trace, if any); in your sight, it ends its kind's way (its ends, else its behaviour's here), and is gone once out of it:
+   leave (packs up and walks off, along the road where there is one: its people only (goes), its trace left at once in its
+   place, the farmer's cart, the raiders' burnt wagon; one that is running walks off once it has stopped), unseen (stays as it
+   is, or runs on, till you are not looking: the mine, the lure, the ambush, one running), die (as unseen, but ENC_LIFE.dying
+   hours past his time he dies before your eyes: the wounded traveller). A procession reaching a shrine or ruins in your sight
+   stays there a while (ENC_LIFE.pray: the pilgrims kneel, the mourners stand by their dead) and then walks off; at a holding's
+   gate it ends (they went in) ---------- */
+const ENC_END={stay:'leave',scene:'leave'};
+const roadEnds=e=>e.D.ends&&e.beh===e.D.beh?e.D.ends:ENC_END[e.beh]||'unseen';
+// (the pieces that walk off: its people (as they walk), or its kind's goes; none left behind (o.at))
+const ROAD_GOERS=['walk','stand','kneel','soldier','refugee','worker','beast','rider','horse'];
+function roadPieces(e){const ps=e.D.scene(e);if(!e.left)return ps;const f=e.D.goes||(p=>ROAD_GOERS.includes(p[0]));
+  return ps.filter(p=>f(p)&&!(p[4]&&p[4].at)).map(p=>p[0]==='stand'||p[0]==='kneel'?['walk',...p.slice(1)]:p)}
+/* the way one walking off takes (ENC_OFF): from the road beside it (within near tiles), along the road to the road tile
+   farthest from you within steps tiles of it (lg: its tile, saved); none (no road by it, or the road only runs toward you):
+   away from you, as once it has come to that tile: to a spot far × your sight from you (la, saved), by the land's ways, round
+   water. Its tiles to pass are found again when needed (ROAD_OFF: kept aside) */
+const ENC_OFF={near:1,steps:40,far:1.6,offs:[0,.5,-.5,1,-1,1.5,-1.5,2,-2,2.6,-2.6]};
+const ROAD_OFF=new WeakMap();
+// (the road tile by a point: its own, else the nearest within near tiles; -1: none)
+function roadTileBy(x,y){const tx=Math.floor(x/TILE),ty=Math.floor(y/TILE),n=ENC_OFF.near;let best=-1,bd=Infinity;
+  for(let j=-n;j<=n;j++)for(let i=-n;i<=n;i++){const X=tx+i,Y=ty+j;if(tAt(X,Y)!==T_ROAD)continue;const d=Math.hypot((X+.5)*TILE-x,(Y+.5)*TILE-y);if(d<bd){bd=d;best=Y*MW+X}}
+  return best}
+// (the road tiles within n steps of s, along the road: each one's way back; stop: done once it is found)
+function roadAlong(s,n,stop){const from=new Map([[s,-1]]),dep=new Map([[s,0]]),q=[s];
+  for(let h=0;h<q.length;h++){const i=q[h],x=i%MW,y=(i-x)/MW,d=dep.get(i);if(i===stop)break;if(d>=n)continue;
+    for(let b=-1;b<=1;b++)for(let a=-1;a<=1;a++){const X=x+a,Y=y+b,k=Y*MW+X;if(!a&&!b||X<0||Y<0||X>=MW||Y>=MH||from.has(k)||tAt(X,Y)!==T_ROAD)continue;from.set(k,i);dep.set(k,d+1);q.push(k)}}
+  return from}
+// (a spot away from you, off.far × your sight from you, it can walk to: the first of its ways (offs, rad from straight away)
+// on open ground on its own piece of land; null: none)
+function roadAwayAt(e){const R=vis()*ENC_OFF.far,a0=Math.atan2(e.y-P.y,e.x-P.x);
+  for(const da of ENC_OFF.offs){const a=a0+da,x=P.x+Math.cos(a)*R,y=P.y+Math.sin(a)*R;if(x>=TILE&&y>=TILE&&x<(MW-1)*TILE&&y<(MH-1)*TILE&&passable(terrAt(x,y))&&Router.reach(e,{x,y}))return[Math.round(x),Math.round(y)]}
+  return null}
+function roadOffGoal(e){const s=roadTileBy(e.x,e.y);if(s<0)return null;const far=k=>Math.hypot((k%MW+.5)*TILE-P.x,(Math.floor(k/MW)+.5)*TILE-P.y);let best=s,bd=far(s);
+  for(const k of roadAlong(s,ENC_OFF.steps).keys()){const d=far(k);if(d>bd){bd=d;best=k}}
+  return bd>far(s)+TILE?[best%MW,Math.floor(best/MW)]:null}
 
 /* ---------- its figures: an EncounterScene lays out each kind's pieces from its data (scene(e): [piece, which, dx, dy, opts], dx
    mirrored as it faces left: walk / stand (a person of ENC_LOOK, stepping as it moves), kneel (one kneeling), down (the fallen pose), soldier (a
@@ -432,7 +476,7 @@ const ROAD_LIVE=['wisp','dust','smoke','notes'];
 class EncounterScene{
   // its pieces now: {k, s (the picture, null for one drawn live), x, y (its feet on the map), face, a, o}; still: standing (the banner)
   lay(e,still){const m=e.dir<0?-1:1,go=!still&&mapStepping(e),f=go?frameOf(e,WALK.foot,WALK.n):0,out=[];
-    for(const [k,w,dx,dy,o={}] of e.D.scene(e)){const fr=go&&!o.at?(f+(o.v||0)*3)%WALK.n:0;
+    for(const [k,w,dx,dy,o={}] of roadPieces(e)){const fr=go&&!o.at?(f+(o.v||0)*3)%WALK.n:0;
       out.push({k,s:ROAD_LIVE.includes(k)?null:this.pic(k,w,e,o,fr),x:o.at?o.at[0]:e.x+dx*m,y:o.at?o.at[1]:e.y+dy,face:(o.face||1)*(o.at?1:m),a:o.a??1,o})}
     return out}
   pic(k,w,e,o,f){const r=e.race||'human',v=o.v||0;
@@ -498,7 +542,8 @@ class RoadEncounter extends WorldObject{
     if(see)this.vw=1;// (it has been in your sight)
     if(this.chase)return this.chaseStep(d,V,now,dist);
     if(dist>Math.max(ENC_LIFE.leave*V,this.d0+ENC_LIFE.slack)||this.done&&!see){this.over();return false}
-    if(now>=this.end){if(this.beh==='approach')this.beh='leave';else if(this.beh!=='leave'||now>=this.end+2){this.over();return false}}
+    // (its time up: one coming to you turns away; out of your sight it ends, in it its kind's way: ENC_END)
+    if(now>=this.end){if(this.beh==='approach')this.beh='leave';if(!see||this.timeUp(now,dist,V)){this.over();return false}}
     // (one wary of you that sees you before you see it runs; a click on one you cannot walk up to opens its page at once)
     if(D.wary&&this.beh==='stay'&&!this.seen&&!this.met&&dist<V*D.wary()){this.beh='flee';this.spooked=1}
     if(D.far&&G.chase===this&&!this.met&&!G.modal&&see){roadMeet(this);return true}
@@ -509,9 +554,12 @@ class RoadEncounter extends WorldObject{
     // startled, runs its whole way and is calm after it, and grazes; the rest are gone once they have run out of your sight)
     else if(this.beh==='flee'&&!this.met){if(!this.calm&&(this.hx!=null||this.spooked||dist<V*(D.spook||ENC_LIFE.spook))){if(D.stop)this.spooked=1;this.run(d,ENC_SPD[this.hx!=null?'run':'flee']);this.fled=1;if(D.stop&&this.ran>=this.stop)this.calm=1}
       if(this.fled&&!D.stop&&this.vw&&!see){this.over();return false}}
-    // (a procession: on along the roads to its goal; there, or with no way on, it ends)
-    else if(this.beh==='walk'){const g=this.goal(),ox=this.x;if(!g||Math.hypot(g.x-this.x,g.y-this.y)<10||!Router.travel(this,g,moveStep(ENC_SPD.walk,d))){this.over();return false}if(this.x!==ox)this.dir=this.x>ox?1:-1}
-    else if(this.beh==='leave'){go(-dx,-dy,ENC_SPD.leave);if(!see&&dist>V*.8){this.over();return false}}
+    // (a procession: on along the roads to its goal; there, or with no way on, it ends out of your sight or at a holding's gate;
+    // else it stays at its place a while, or, with no way on, walks off)
+    else if(this.beh==='walk'){const g=this.goal(),ox=this.x,there=!!g&&Math.hypot(g.x-this.x,g.y-this.y)<10;
+      if(there||!g||!Router.travel(this,g,moveStep(ENC_SPD.walk,d))){if(!see||there&&g.tw){this.over();return false}this.arrive(now,there);return false}
+      if(this.x!==ox)this.dir=this.x>ox?1:-1}
+    else if(this.beh==='leave'){if(this.lg===undefined)this.lg=roadOffGoal(this);this.off(d);if(!see&&dist>V*.8){this.over();return false}}
     else if(this.beh==='bolt'){go(-dx,-dy,ENC_SPD.bolt);if(!see){this.over();return false}}
     if(D.spring&&!this.met&&dist<=ENC_LIFE.spring&&!G.modal){roadMeet(this);return true}
     return false}
@@ -530,7 +578,30 @@ class RoadEncounter extends WorldObject{
      ends by itself: its trace, from when its time would have been up */
   over(){if(this.gone)return;this.gone=1;const R=roadSt(),D=this.D,S=ENC_SPAWN;
     if(this.seen&&!this.met){R.c*=1-S.pass[0]-Math.random()*(S.pass[1]-S.pass[0]);if(D.after&&!this.done)log(D.after(this))}
-    if(D.trace&&!this.done){const at=Math.max(roadNow(),this.end);R.on.push(asRoadEnc({rd:1,i:++R.id,k:D.trace,trace:1,x:this.x,y:this.y,dir:this.dir,race:this.race,seed:this.seed,from:at,end:at+ENC_LIFE.trace}))}}
+    if(D.trace&&!this.done)this.drop(Math.max(roadNow(),this.end))}
+  // its trace where it is, from the hour at
+  drop(at){const R=roadSt();R.on.push(asRoadEnc({rd:1,i:++R.id,k:this.D.trace,trace:1,x:this.x,y:this.y,dir:this.dir,race:this.race,seed:this.seed,from:at,end:at+ENC_LIFE.trace}))}
+  /* its time up in your sight (ENC_END): true when it ends here and now. Walking off: once, unless it is still running; one
+     walking off lingering past its time ends once far, though in your sight; the dying die */
+  timeUp(now,dist,V){const how=roadEnds(this),L=ENC_LIFE;if(how==='die')return now>=this.end+L.dying;
+    if(how==='leave'&&this.beh!=='leave'&&!(this.fled&&!this.calm))this.goOff();
+    return this.beh==='leave'&&now>=this.end+L.linger&&dist>V*.8}
+  // packs up and walks off: its people only; its trace (the cart, the burnt wagon) left now in its place, and it done with
+  goOff(){this.beh='leave';this.left=1;if(this.D.trace&&!this.done){this.drop(roadNow());this.done=1}}
+  // a procession at its goal (there) in your sight: it stays a while (praying, at the shrine); with no way on, it walks off
+  arrive(now,there){if(!there){this.end=Math.min(this.end,now);this.goOff();return}const L=ENC_LIFE.pray;this.beh='stay';this.pray=1;this.end=now+L[0]+Math.random()*(L[1]-L[0])}
+  /* a step walking off (ENC_OFF): along the road to its tile lg; then (or with none) by the land's ways to its spot la away from
+     you; with none, straight away from you */
+  off(d){const s=moveStep(ENC_SPD.leave,d),g=this.lg,ox=this.x;
+    if(g){const goal=g[1]*MW+g[0];let r=ROAD_OFF.get(this);
+      if(!r||r.goal!==goal){const st=roadTileBy(this.x,this.y),fr=st<0?null:roadAlong(st,ENC_OFF.steps*2,goal),path=[];if(fr&&fr.has(goal))for(let k=goal;k!==-1;k=fr.get(k))path.unshift(k);
+        // (it joins the road ahead: at the first of its tiles farther from you than it is, never back past you)
+        const d0=this.fromYou(),far=k=>Math.hypot((k%MW+.5)*TILE-P.x,(Math.floor(k/MW)+.5)*TILE-P.y);let i=1;while(i<path.length&&far(path[i])<=d0)i++;r={goal,path,i};ROAD_OFF.set(this,r)}
+      while(r.i<r.path.length){const k=r.path[r.i],cx=(k%MW+.5)*TILE,cy=(Math.floor(k/MW)+.5)*TILE,dd=Math.hypot(cx-this.x,cy-this.y);if(dd<2){r.i++;continue}
+        if(walk(this,cx-this.x,cy-this.y,Math.min(dd,s))&&Math.abs(cx-this.x)>.5)this.dir=cx>=this.x?1:-1;return}}
+    if(this.la===undefined)this.la=roadAwayAt(this);
+    if(!(this.la&&Router.travel(this,{x:this.la[0],y:this.la[1]},s)))walk(this,this.x-P.x,this.y-P.y,s);
+    if(Math.abs(this.x-ox)>.01)this.dir=this.x>ox?1:-1}
 }
 // (while you travel toward a goal, where one hurrying to you meets you on your way: the point ahead you both reach at once, you
 // at your pace, it at its own, vo (|r − u·vp·t| = vo·t, its first t); none if it cannot catch you there, or you are not moving: it
