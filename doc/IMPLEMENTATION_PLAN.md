@@ -159,6 +159,8 @@ In the order the owner last saw them, smallest first. Designs: [ENCOUNTERS_DESIG
 8. **Chain quests** (batch C, after 7): a small framework of steps (escort, go to, clear a camp, deliver); "The Wounded Traveller": heal, escort home, his family asks you to clear the bandits' camp, an heirloom and reputation.
 9. **Encounters, phase 4 remainder:** prisoner wagon and execution (need the phase 3 cage cart and gallows); **duel challenge** needs a one-on-one hero fight first (RTS-style or manual hero: the owner decides).
 10. **Travel supplies** ([SUPPLY_DESIGN.md](SUPPLY_DESIGN.md), planned next, large): band stamina as fuel (Tired under 20, Exhausted under 5), food and drink by the hour (ale and liquor slow the drain and lift morale, water does neither), furs in the frost, water in the desert, band health; the hero tires with the band; stamina carried into battle; **Make camp** and the **action ring** (left-click and hold); the band's status card. Steps 1-4 as in its doc; step 1 after the stat checks (built) because the cart's push spends the hero's stamina today.
+11. **The world, Phase 2 wave 2** ([WORLD_DESIGN.md](WORLD_DESIGN.md), waits for the owner's go): the full map on M, the router, river, road and coast art with 8-direction roads painted as curves, R12 (slicing the daily jobs), battle rivers, D41 steep hills.
+12. **Building redesign, stage 2** (waits for the owner's go; stage 1, the shared kit, is built): 3/4 top-down buildings in the people style, natural facings, town ground, life effects.
 
 ---
 
@@ -171,6 +173,11 @@ In the order the owner last saw them, smallest first. Designs: [ENCOUNTERS_DESIG
 | **Art derived from the `graphics/` pack** | Order: recolour → kit-bash (dwarves, elves, mounted hero) → missing animals. Bake offline to `graphics/generated/`. |
 | **Entering hostile holdings** | See section 7. |
 | **Manual hero control** | Kept behind `MANUAL_HERO`. Don't delete it; ask before changing it. |
+| **World lighting** | A time-of-day grade, a pixel light map, lit windows, night battles; proposed 2026-10-18, the owner will discuss it later. |
+| **HD-2D demo** | A WebGL pixelated-3D prototype; reconsider only after the current world plan is finished. |
+| **Place pictures** | Immersion pictures for places, areas, sites and encounters (an engine scene composer was proposed); shelved 2026-10-19. |
+| **Realm rulers** | Kings and queens over the lords; later, by the owner's call. |
+| **A calmer label-overlap fix** | The party label layout was reverted (1d9f5c3: it re-laid labels every frame and the map looked like it shook); a fade for overlapping labels is the gentler way, when the owner wants it. |
 
 ---
 
