@@ -8,4 +8,12 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),out=()=>{cons
   ok(G.shake===0,'and the leftover shake is cleared on the map');
   G.shake=12;const tr=[],T0=t.ctx.translate;t.ctx.translate=function(x,y){tr.push([x,y]);return T0.call(this,x,y)};t.frame();t.ctx.translate=T0;
   ok(G.shake===0&&!tr.some(([x,y])=>Number.isInteger(x)&&Number.isInteger(y)&&(Math.abs(x)>=1||Math.abs(y)>=1)&&Math.abs(x)<=6&&Math.abs(y)<=6),'a whole map frame drawn with a leftover shake moves nothing by a shake’s offset');
+  // the ground's scene (memCv) keeps no shift between frames: the pasture animals once left their fraction of a pixel in it
+  // (critters.js penEnts), and it piled up frame on frame, the ground sliding under the labels and figures
+  {const ev=x=>(0,eval)(x);ev('VS=3');const A=t.townBy('Ashford');t.P.x=A.x;t.P.y=A.y+30;t.P.tx=null;const pn=performance.now;let now=1e7;performance.now=()=>now;
+   const pic=()=>{const m=t.MEM,d=m.getContext('2d').getImageData(0,0,m.width,Math.floor(m.height/3)).data;let h=0;for(let i=0;i<d.length;i+=16)h=(h*31+d[i])|0;return h};
+   t.frame();const h0=pic();let moved=0,tf=0;for(let i=0;i<90;i++){now+=16.7;t.frame();const T2=t.MEM.getContext('2d').getTransform();if(T2.e||T2.f)tf++;if(i%10===9&&pic()!==h0)moved++}
+   performance.now=pn;ev('VS=1');
+   ok(tf===0,'the ground’s scene starts every frame unshifted ('+tf+' frames carried a shift)');
+   ok(moved===0,'standing by Ashford’s pasture at scale 3, the upper ground stays put for 90 frames ('+moved+' of 9 samples moved)')}
  }catch(e){o.push('EXC '+e.message+' '+e.stack)}out()};

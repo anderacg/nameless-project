@@ -75,7 +75,7 @@ function drawWorld(){
   reveal();const V=vis(),C=G.cam;C.x=snapV(clamp(P.x-VW/2,0,MW*TILE-VW));C.y=snapV(clamp(P.y-VH/2,0,MH*TILE-VH));
   const cam={x:Math.floor(C.x),y:Math.floor(C.y)},fx=C.x-cam.x,fy=C.y-cam.y,scr=ctx,low=memCv(),hi=VS>1,ents=[];let nPlace=0;
   // what stands, into the scene in game pixels (memCv: its extra pixel each way counted in VW, VH while it is drawn)
-  ctx=low.getContext('2d');ctx.clearRect(0,0,low.width,low.height);if(hi){VW++;VH++}
+  ctx=low.getContext('2d');ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,low.width,low.height);if(hi){VW++;VH++}// (its transform reset each frame: nothing drawn into it can leave a shift that piles up)
   try{
   WorldArt.draw(ctx,cam);// (the painted map by chunks, those in view: worldart.js)
   drawEnv(cam,V,0);drawLand(cam);drawEstates(cam,V);
@@ -370,8 +370,7 @@ function setOrderUI(){
 // the world's speed (SPEEDS, TRAVEL_FAST: core.js), lit on its button; why: Travel fast ends (world.js fastWatch), said in the log.
 // Travel fast will not start with danger in sight
 function setSpeed(n,why){
-  if(n===TRAVEL_FAST&&G.speed!==n&&G.mode==='world'){const d=dangerInSight();if(d){log('No travelling fast with '+d.replace(/ in sight$| ahead$/,'')+' about.','bad');n=1}}
-  else if(why&&G.speed===TRAVEL_FAST&&n!==TRAVEL_FAST)log('Travel fast ends: '+why+'.','bad');
+  if(why&&G.speed===TRAVEL_FAST&&n!==TRAVEL_FAST)log('Travel fast ends: '+why+'.','bad');
   G.speed=n;document.querySelectorAll('[data-speed]').forEach(b=>{const on=+b.dataset.speed===n;b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on))})}
 function pauseUI(){const b=$('#pause');if(!b)return;b.innerHTML=icon(G.paused?'play':'pause',14);b.setAttribute('aria-label',G.paused?'Play':'Pause');b.classList.toggle('on',!!G.paused)}
 function togglePause(){G.paused=!G.paused;pauseUI();updateHUD(true)}

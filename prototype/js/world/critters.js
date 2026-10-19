@@ -37,8 +37,8 @@ function penSpots(t,now){const c=herdOf(t),F=c&&fieldsOf(t,'pasture');if(!F)retu
   for(let j=0;j<Math.min(c.n,T.length*per);j++){const [tx,ty]=T[j%T.length],ph=now/2600+hash(tx,ty,t.seed+j)*6.283,mv=Math.cos(ph),fr=Math.abs(mv)>.6?Math.floor(now*PX.MAP_STEPS/(2*D_STEP)+j*3)%PX.MAP_STEPS:0,
     a=critterSprite(c.id,fr),amp=Math.max(0,Math.min(3,(TILE-4-a.cw)>>1));out.push({x:tx*TILE+TILE/2+Math.sin(ph)*amp,y:ty*TILE+(j<T.length?TILE-3:TILE-8),a,flip:mv<0,tx,ty})}
   return out}
-function penEnts(t,ents,cam){penSpots(t,0).forEach((s0,j)=>ents.push({y:s0.y,f:()=>{const s=penSpots(t,performance.now())[j];if(!s)return;subT(s);const x=Math.round(s.x-cam.x),sy=Math.round(s.y-cam.y),w=Math.max(4,s.a.cw-2);
-  ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(x-(w>>1),sy-1,w,2);ctx.save();ctx.translate(x,sy);if(s.flip)ctx.scale(-1,1);ctx.drawImage(s.a,-(s.a.width>>1),-s.a.height+1);ctx.restore()}}))}
+function penEnts(t,ents,cam){penSpots(t,0).forEach((s0,j)=>ents.push({y:s0.y,f:()=>{const s=penSpots(t,performance.now())[j];if(!s)return;ctx.save();subT(s);const x=Math.round(s.x-cam.x),sy=Math.round(s.y-cam.y),w=Math.max(4,s.a.cw-2);// (its fraction of a pixel kept inside save/restore: drawn into the scene, a shift left over would pile up frame on frame)
+  ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(x-(w>>1),sy-1,w,2);ctx.translate(x,sy);if(s.flip)ctx.scale(-1,1);ctx.drawImage(s.a,-(s.a.width>>1),-s.a.height+1);ctx.restore()}}))}
 function spawnCritter(initial){
   const ids=Object.keys(CRITTERS).filter(k=>!CRITTERS[k].live),wt=id=>CRITTERS[id].w/(1+W.critters.filter(c=>c.id===id).length*.3);
   let r=Math.random()*ids.reduce((a,id)=>a+wt(id),0),id=ids[0];for(const f of ids){r-=wt(f);if(r<=0){id=f;break}}

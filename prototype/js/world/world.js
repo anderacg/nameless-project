@@ -142,15 +142,14 @@ function dayTick(){
   saveGame(true);
   if(!P.stay&&Math.random()<.32)roadEvent();
 }
-/* Travel fast (TRAVEL_FAST) holds only while nothing calls for you: it drops to 1x the moment anything hostile is in sight (a
-   band, an army or a patrol of a realm at odds with you, a beast that hunts, a fight), an event or any window opens (main.js
-   calls this every frame, whatever is shown), or you arrive where you were going (updateWorld); it will not start with one in sight */
+/* the speed you set holds till you change it (the owner, 2026-10-19): no drop to 1x on arriving, on danger in sight, or when an
+   event or a window opens (windows pause the map anyway). dangerInSight stays for whoever asks what is about */
 function dangerInSight(){const V=vis();
   if(W.fights.some(f=>asFight(f).inView(V)))return 'a fight ahead';
   for(const o of W.parties){const k=o.mapKind;if(o.inView(V)&&(k==='band'||(k==='lord'||k==='patrol')&&hostileTo(o.faction)))return k==='band'?'bandits in sight':k==='lord'?'an enemy army in sight':'enemy guards in sight'}
   for(const m of W.monsters){const M=MONSTERS[m.id];if((M.mythic||M.aggro||stance(monPower(m))==='attack')&&asMonster(m).inView(V))return (M.mythic?'the ':'')+(M.n||m.id).toLowerCase()+' in sight'}
   return ''}
-function fastWatch(){if(G.speed!==TRAVEL_FAST)return;if(G.mode!=='world'||G.modal){setSpeed(1);return}const why=P.stay?'':dangerInSight();if(why)setSpeed(1,why)}
+function fastWatch(){}// (kept for its callers: the speed is yours to change)
 function updateWorld(dt){
   if(G.paused)return;
   fastWatch();peopleWatch();// (who you see: peopledrawer.js)
@@ -167,7 +166,7 @@ function updateWorld(dt){
     if(Math.hypot(o.x-P.x,o.y-P.y)<=REACH&&!G.modal&&(G.encCool<=0||o.meetsAnyTime)){interact(o);return}}}
   if(P.tx!=null){
     const dx=P.tx-P.x,dy=P.ty-P.y,dist=Math.hypot(dx,dy);
-    if(dist<2){P.tx=null;if(G.speed===TRAVEL_FAST)setSpeed(1,'you have arrived')}
+    if(dist<2)P.tx=null;
     else{
       const step=Math.min(dist,moveStep(MAP_BASE*travelMul(),d)*(P.morale<25?.8:1));
       P.dir=dx>=0?1:-1;
