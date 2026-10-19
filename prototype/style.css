@@ -416,6 +416,10 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 .cbtn .k{position:absolute;right:6px;bottom:3px;font-size:8px;font-weight:700;color:#d8c08a;line-height:1}
 .cbtn.off{opacity:.55;cursor:not-allowed}
 .cbtn.on{opacity:1;box-shadow:0 0 10px rgba(255,214,110,.75),inset 0 0 0 1px #ffe08a}
+/* the AI button (A), under the powers: violet as the AI's badges; lit with your whole army the AI's, a softer ring with some of it */
+.cbtn.cai{margin-top:4px;color:#d8c8ff;background:radial-gradient(circle at 50% 35%,#3a2a5a,#1a1228);border-color:#8a6ac8}
+.cbtn.cai.on{box-shadow:0 0 10px rgba(170,130,255,.8),inset 0 0 0 1px #c8a8ff;color:#fff}
+.cbtn.cai.some{box-shadow:0 0 0 2px rgba(170,130,255,.55)}
 .bcards{display:flex;gap:5px;align-items:flex-end;min-width:0;max-width:100%;overflow-x:auto;padding:4px 1px;scrollbar-width:thin}
 .bcards .ucard{flex-shrink:0}
 .ucount{position:absolute;right:3px;bottom:17px;font-size:11px;line-height:1;font-weight:700;color:var(--accent);background:rgba(0,0,0,.65);padding:1px 2px}

@@ -45,7 +45,6 @@ document.querySelectorAll('[data-form]').forEach(b=>b.addEventListener('click',(
 document.querySelectorAll('[data-flag]').forEach(b=>b.addEventListener('click',()=>toggleFlag(b.dataset.flag)));
 document.querySelectorAll('[data-bspeed]').forEach(b=>b.addEventListener('click',()=>setBattleSpeed(+b.dataset.bspeed)));
 $('#bPause').addEventListener('click',()=>battlePause());
-$('#bAuto').addEventListener('click',()=>autoKey());// (the selected groups, or with none the whole army: deploy.js)
 {const b=document.getElementById('bAmove');if(b)b.addEventListener('click',()=>armAttackMove())}// (the next ground order an attack-move: commands.js)
 {const b=document.getElementById('bSkills');if(b)b.addEventListener('click',()=>setAutoSkills(!AUTOSK.on))}
 $('#hpBtn').addEventListener('click',()=>setHpBars(!HPBARS.on));setHpBars(HPBARS.on);

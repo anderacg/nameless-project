@@ -106,15 +106,20 @@ function powersThink(dt){
 const POWER_ICON={
   rally:['aa.......','aaaaaa...','abbbbba..','abbbba...','aaaaaaa..','a........','a........','a.......a','aa.....aa'],
   stand:['.aaaaaaa.','aabbbbbaa','aab.a.baa','aab.a.baa','aabaaabaa','.ab.a.ba.','.aab.baa.','..aabaa..','....a....'],
-  scout:['.........','..aaaaa..','.a.....a.','a..bbb..a','a.bbabb.a','a..bbb..a','.a.....a.','..aaaaa..','.........']};
+  scout:['.........','..aaaaa..','.a.....a.','a..bbb..a','a.bbabb.a','a..bbb..a','.a.....a.','..aaaaa..','.........'],
+  ai:['.........','.aa..aaa.','a..a..a..','a..a..a..','aaaa..a..','a..a..a..','a..a..a..','a..a.aaa.','.........']};
+// (the AI button under the powers: your groups handed to the AI (deploy.js autoKey, A); yours alone, no commander's power, so the
+// AI's commanders never use it, and it shows with the powers off)
+const AI_TIP='AI (A): the AI commands the selected groups, or with none selected your whole army; A again takes them back, and any order you give a group takes that group back';
 function bhudPowers(){
   const bar=typeof document!=='undefined'&&document.getElementById('bbar');if(!bar||!B)return;let el=document.getElementById('bCmd');
-  if(!el){el=document.createElement('div');el.id='bCmd';el.className='cmdbar';el.setAttribute('role','group');el.setAttribute('aria-label','Commander powers (Z rally the line, S stand fast, O scout)');
-    el.innerHTML='<span class="cmdh">Command</span>'+POWER_ORDER.map(id=>'<button type="button" class="cbtn" data-power="'+id+'"><i class="ccd" aria-hidden="true"></i>'+pixelSVG(POWER_ICON[id],20)+'<span class="ct" aria-hidden="true"></span><span class="k">'+COMMAND_POWERS[id].key+'</span></button>').join('');
-    el.addEventListener('click',e=>{const b=e.target.closest('[data-power]');if(b)commandPower(b.dataset.power)});
+  if(!el){el=document.createElement('div');el.id='bCmd';el.className='cmdbar';el.setAttribute('role','group');el.setAttribute('aria-label','Commander powers (Z rally the line, S stand fast, O scout) and the AI (A)');
+    el.innerHTML='<span class="cmdh">Command</span>'+POWER_ORDER.map(id=>'<button type="button" class="cbtn" data-power="'+id+'"><i class="ccd" aria-hidden="true"></i>'+pixelSVG(POWER_ICON[id],20)+'<span class="ct" aria-hidden="true"></span><span class="k">'+COMMAND_POWERS[id].key+'</span></button>').join('')+
+      '<button type="button" class="cbtn cai" id="bAuto" aria-pressed="false" title="'+AI_TIP+'" aria-label="'+AI_TIP+'">'+pixelSVG(POWER_ICON.ai,20)+'<span class="k">A</span></button>';
+    el.addEventListener('click',e=>{if(e.target.closest('#bAuto')){autoKey();return}const b=e.target.closest('[data-power]');if(b)commandPower(b.dataset.power)});
     el.addEventListener('pointerover',e=>{const b=e.target.closest('[data-power]');if(B)B.cmdHov=b?b.dataset.power:null});el.addEventListener('pointerleave',()=>{if(B)B.cmdHov=null});
-    bar.appendChild(el)}
-  el.hidden=!powersOn();if(el.hidden)return;
+    bar.appendChild(el);autoUI()}
+  const pw=powersOn();el.hidden=false;if(!pw){for(const b of el.querySelectorAll('[data-power]'))b.hidden=true;return}
   const c=commanderOf(0),R=c?Math.round(commandRadius(0)):0;
   for(const b of el.querySelectorAll('[data-power]')){const id=b.dataset.power,A=COMMAND_POWERS[id],st=powerStatus(0,id);b.hidden=id==='scout'&&!B.fog;
     const off=!!st.why,cool=st.cooldown>0;b.classList.toggle('off',off);b.setAttribute('aria-disabled',String(off));b.classList.toggle('on',st.left>0);

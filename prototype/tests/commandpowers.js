@@ -19,7 +19,7 @@ window.RUN=()=>{const t=T,L=t.BattleLab,o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL '
  // ---- off: the harness's switch and the lab's key
  let f=start([{type:'hero',count:1},{type:'hum_foot',count:8}],[{type:'hum_foot',count:6}],{powers:undefined},[[0,0],[0,-80]]);
  ok(!t.powersOn()&&t.powerWhyNot(0,'stand')==='Commander powers are off'&&!t.usePower(0,'stand'),'off (COMMAND_POWERS.on false, no lab key): no power ('+t.powerWhyNot(0,'stand')+')');
- t.bhudPowers();ok(document.getElementById('bCmd')&&document.getElementById('bCmd').hidden,'and the commander bar is hidden');
+ t.bhudPowers();{const c=document.getElementById('bCmd');ok(c&&!c.hidden&&[...c.querySelectorAll('[data-power]')].every(b=>b.hidden)&&c.querySelector('#bAuto')&&!c.querySelector('#bAuto').hidden,'and the commander bar shows only the AI button (yours, no power)')}
  {const key=k=>window.dispatchEvent(new KeyboardEvent('keydown',{key:k,code:'Key'+k.toUpperCase(),bubbles:true}));key('s');key('z');
   L.step(60);ok(!f.b.cmdp&&f.b.cpT===undefined&&f.ms[1].resolve.standUntil===undefined,'its keys do nothing and the AI’s think touches nothing (no B.cmdp, no timer)')}
  f=start([{type:'hero',count:1},{type:'hum_foot',count:8}],[{type:'hum_foot',count:6}],{powers:false});ok(!t.powersOn()&&!t.usePower(0,'stand'),'the lab’s powers:false turns them off as well');
