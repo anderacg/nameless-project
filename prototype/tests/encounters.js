@@ -146,7 +146,8 @@ try{
  {const pics=ks.map(k=>t.ENC_SCENE.pics(spawnK(k)).length);ok(pics.every(n=>n>0),'every kind is drawn from its pieces ('+pics.join(' ')+')')}
  world();P.morale=50;
  // the wounded traveller
- {P.gold=100;t.invAdd('good','grain',10);const f0=t.foodN(),r0=P.renown;meet('traveller');pickA(0);ok(t.foodN()===f0-3&&P.renown===r0+1&&/recovers/.test(panel())&&!qa('.rwbody .rkact').length,'Tend his wounds: −3 food, +1 renown; then only Leave');world();
+ {P.gold=100;t.invAdd('good','grain',10);const f0=t.foodN(),r0=P.renown;const h=meet('traveller');pickA(0);ok(t.foodN()===f0-3&&P.renown===r0+1&&/gets to his feet/.test(panel())&&!qa('.rwbody .rkact').length,'Tend his wounds: −3 food, +1 renown; then only Leave');world();
+  {const ps=t.roadPieces(h);ok(h.healed&&h.left&&h.beh==='leave'&&ps.length===1&&ps[0][0]==='walk'&&ps[0][1]==='healed'&&t.ENC_LOOK.healed('human',0).helm==='bandage'&&!W.road.on.some(o=>o.trace&&o.k==='body'),'tended: on his feet, bandaged (ENC_LOOK.healed), walking off along the road; no body left')}
   meet('traveller');const g0=P.gold;pickA(1);ok(q('#panel.confirm')&&P.gold===g0,'Take his purse asks first');t.onEscape();ok(G.mode==='road'&&q('#panel.paged'),'Back: his page again');pickA(1);sure();ok(P.gold===g0+20&&/You take 20 gold/.test(panel()),'confirmed: +20 gold');world();
   const e=meet('traveller');t.act('enc-leave');ok(G.msgs[G.msgs.length-1].m==='You leave him to his fate.','Leave: you leave him to his fate')}
  // the peddler

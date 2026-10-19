@@ -328,6 +328,7 @@ function drawMapFigure(g,o,ox,oy,walk,cut){
   if(h==='straw'){const C=PPAL.cloth;top(C[0],C[1],C[1]);set(0,1,C[2]);set(4,1,C[2])}
   if(h==='crown')top(PPAL.gold[1],PPAL.red[1],PPAL.gold[2]);
   if(h==='circlet'){set(2,0,PPAL.gold[1]);set(3,0,PPAL.gold[2])}
+  if(h==='bandage'){set(0,1,'#d8d2c4');set(1,1,'#f2efe6');set(2,1,'#a8302a');set(3,1,'#f2efe6');set(4,1,'#d8d2c4')}// (a bandage round the brow, blood on it: one tended on the road)
   if(h==='skull'){top(Wt[0],Wt[1],Wt[2]);set(3,1,PEOPLE_OUT)}
   // what is in the hand, before him
   const H=MAP_HELD[o.weapon];if(H&&(cut==null||cut>=4)){const [y0,y1,mat,hd]=H,Wd=PPAL.wood,S=PPAL.steel,c=mat==='steel'?S[1]:mat==='leather'?PPAL.leather[1]:Wd[1];

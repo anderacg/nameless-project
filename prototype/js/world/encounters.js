@@ -98,7 +98,7 @@ const ENC_ON={road:(tx,ty)=>nearTile(tx,ty,T_ROAD,1),open:(tx,ty)=>tAt(tx,ty)===
   lordwood:(tx,ty)=>tAt(tx,ty)===T_OPEN&&nearTile(tx,ty,T_FOREST,1)&&![-1,0,1].some(i=>tAt(tx+i,ty+1)===T_FOREST)&&climAt((tx+.5)*TILE,(ty+.5)*TILE)!=='frost'&&!!roadOwned((tx+.5)*TILE,(ty+.5)*TILE),
   lure:(tx,ty)=>nearTile(tx,ty,T_ROAD,1)&&(nearTile(tx,ty,T_FOREST,2)||nearTile(tx,ty,T_HILL,1))};
 // the people in them (folk of the nearest holding's race, v a variant): today's map figures in small variants
-const ENC_LOOK={traveller:(r,v)=>({...folkLook('folk',r,v),robe:false,helm:'bare',outer:'blue',team:'linen'}),
+const ENC_LOOK={traveller:(r,v)=>({...folkLook('folk',r,v),robe:false,helm:'bare',outer:'blue',team:'linen'}),healed:(r,v)=>({...ENC_LOOK.traveller(r,v),helm:'bandage'}),
   peddler:(r,v)=>({...folkLook('merchant',r,v),load:'pack',weapon:'crook'}),pilgrim:(r,v)=>({...folkLook('priest',r,v),weapon:v%2?'crook':null}),
   hunter:(r,v)=>({...folkLook('folk',r,v),robe:false,helm:'hood',hood:'forest',outer:'leather',team:'forest',weapon:v%2?'bow':'spear'}),
   child:(r,v)=>({...folkLook('folk',r,v),robe:false,short:true,beard:null,helm:'bare',weapon:null}),
@@ -134,12 +134,12 @@ function roadFight(e,amb,edge=amb){e.done=1;e.gone=1;G.road=null;const k=amb?e.b
    when it walks off, if not its people) */
 const ROAD_ENC={
   traveller:{n:'Wounded traveller',ico:'wounded',w:2,ok:()=>true,on:'road',beh:'stay',ends:'die',call:'Help! Over here!',hear:'Someone calls out from the road to the {d}.',trace:'body',tip:'Lying by the road',
-    scene:()=>[['down','traveller',0,0,{blood:1}]],
+    scene:e=>e.healed?[['walk','healed',0,0]]:[['down','traveller',0,0,{blood:1}]],// (tended: up on his feet, bandaged, and on his way)
     text:()=>'A wounded traveller lies by the road, robbed and left for dead. He clutches a purse the bandits missed.',
     facts:e=>[insight(['badly hurt','he will not last the day without help','he has about '+Math.max(1,Math.round(e.end-roadNow()))+' hours left'],'know how long he has'),'a purse: about 20 gold'],
     left:()=>'You leave him to his fate.',
     acts:[{icon:'food',label:'Tend his wounds',facts:()=>['−3 food','reputation, renown +1'],need:()=>foodN()<3&&'You have no food to spare.',tip:'Bandage him and share your food.',
-        run:()=>{foodTake(3);const t=nearHold();if(t)addRep(t.name,4,true);P.renown+=1;return'He recovers and swears to tell '+(t?t.name:'everyone')+' of your kindness.'}},
+        run:e=>{foodTake(3);const t=nearHold();if(t)addRep(t.name,4,true);P.renown+=1;e.healed=1;e.done=1;e.goOff();return'Bandaged and fed, he gets to his feet. He swears to tell '+(t?t.name:'everyone')+' of your kindness, and limps off down the road.'}},
       {icon:'gold',label:'Take his purse',facts:()=>['+20 gold','honour, morale −3'],ask:()=>'Take the last coins of a dying man? Your band will see it, and word gets round.',
         run:()=>{P.gold+=20;const t=nearHold(),f=t&&FACS[t.owner]&&t.owner;if(f)addHonor(f,-5,true);P.morale-=3;return'You take 20 gold. Some of your band look away.'+(f?' Word reaches the '+FACS[f].n+'.':'')}}]},
   /* the fake wounded (phase 4): the wounded traveller to the eye (his name, picture, call, page and choices), bandits lying in the
