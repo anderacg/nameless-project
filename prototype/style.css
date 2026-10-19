@@ -631,6 +631,8 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 .pg-banner{--k:4;flex:none;margin:-14px -20px 0;height:calc(var(--bh)*var(--k)*1px);background-color:#10131c;background-position:center;background-repeat:no-repeat;
   background-size:calc(var(--bw)*var(--k)*1px) calc(var(--bh)*var(--k)*1px);image-rendering:pixelated;border-bottom:1px solid var(--line);box-shadow:inset 0 0 36px rgba(0,0,0,.45)}
 .panel .pg-facts{margin:0;font-size:var(--fs-md)}
+/* an Insight read that more Scouting would sharpen (window.js insight): its tooltip names the level */
+.ins{text-decoration:underline dotted;text-underline-offset:2px;cursor:help}
 .panel.paged .rwbody>.rkacts{position:sticky;bottom:0;z-index:1;padding-top:8px;background:var(--panel);box-shadow:0 -10px 10px -4px var(--panel)}
 .panel .pg-msg{margin:0;padding:8px 12px;background:rgba(232,185,74,.08);border:1px solid var(--trim);border-radius:var(--r-md)}
 .rail{flex:none;width:232px;display:flex;flex-direction:column;gap:2px;padding:0 8px 10px;overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:var(--line-2) transparent;

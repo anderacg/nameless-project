@@ -9,7 +9,7 @@ const SITE_TYPES={
   cave:{n:'Cave',ico:'cave',col:'#c58af0',respawn:25,d:'A monster lair cut into a hill or mountain. Beat its beasts for their trophies and a treasure chest.'},
   travelers:{n:'Travellers',ico:'fire',col:'#78c474',d:'A camp on the road. Trade, hire sellswords, rest by the fire and hear news. They move on after a few days.'},
   hideout:{n:'Bandit hideout',ico:'sword',col:'#e0605a',respawn:10,d:'Bandits and their chieftain, guarding their plunder.'},
-  ruins:{n:'Ruins',ico:'ruin',col:'#e8d8a0',respawn:40,d:'Search them for old treasure, but something may still guard it.'},
+  ruins:{n:'Ruins',ico:'ruin',col:'#e8d8a0',respawn:40,d:'Old treasure, found only once, and guardians that may wake. Once searched, others move in.'},
   shrine:{n:'Shrine',ico:'altar',col:'#7fd8e8',d:'Pray once a week to recover and gain insight.'}
 };
 const CAVE_NAMES=['Wolfden','Bonehollow','Darkmaw','Echo Cave','Gloomhole','Dripstone Cave','Old Burrow','Frostmaw','Sunken Grotto','Ashpit','Howling Cave','Mossy Hollow','Black Cleft','Glittercave'];
@@ -114,13 +114,16 @@ class Site extends WorldObject{
   spyLine(){return ''}
   alarm(){}
   // its Scout key action (railKeyActions)
-  scoutDeed(){const tried=G.siteSpy&&G.siteSpy.s===this;return{icon:'eye',label:'Scout',act:'site-scout',facts:[Math.round(scoutChance()*100)+'% unseen','once a visit'],why:tried?'Your scouts have had their look':'',
+  scoutDeed(){const tried=G.siteSpy&&G.siteSpy.s===this,ch=scoutChance();return{icon:'eye',label:'Scout',act:'site-scout',facts:[insight(['they may spot your scouts',oddsWord(ch)+' to go unseen',Math.round(ch*100)+'% unseen'],'know the odds'),'once a visit'],why:tried?'Your scouts have had their look':'',
     tip:'Send your scouts for a close look: unseen, they see exactly what is there. Seen, it comes for you. Scouting and Agility help, and the night; a big band is harder to hide.'}}
   // the day's change: back after being cleared, and whatever its kind does
   day(){if(this.cleared&&G.day>=this.back){this.cleared=false;this.returned()}}
   returned(){}
   // the treasure it may hold (siteChest): extra gold, and the chance of gear
   get chest(){return{gold:0,gear:.7}}
+  // its beasts beaten (encounters.js ON_WIN.cave): its chest, and it lies empty; withdrawn from or beaten by them: nothing kept
+  lairWon(){const x=siteChest(this);clearPlace(this,this.T.respawn);return x}
+  lairLost(e){}
   // on the map: a patch of ground under it, its banner's colour, a banner of its own (travellers), clicked where
   get patch(){return true}
   flagCol(){return '#2a1e14'}
@@ -156,7 +159,11 @@ class Cave extends Site{
   get scouts(){return true}
   box(box){box(this,this.x-8,this.y-16-CAVE_MOUTH,this.x+8,this.y+2)}
   get lair(){const M=MONSTERS[this.id];return{M,U:ST[M.unit],n:M.count[1]+1}}
-  about(r){const {M,n}=this.lair;return '<p>A cave mouth in the '+r.name.toLowerCase()+'. '+(this.spied()?M.n+' lair here, more than you would meet in the open.':'Bones and tracks litter the ground: '+beastSize(M.unit)+' tracks, '+fewSay(n)+' of them, going in and out.')+'</p><p class="muted">'+this.T.d+'</p>'}
+  // (from outside, by Insight (window.js insight): bones and tracks; how big and how many; what lairs there, at about what level)
+  get lvAbout(){return monLevel0()+1}
+  about(r){const {M,U,n}=this.lair;return '<p>'+(this.within?'Deep in the cellars of the '+this.within+'. ':'A cave mouth in the '+r.name.toLowerCase()+'. ')+(this.spied()?M.n+' lair here, more than you would meet in the open.':
+    'Bones and tracks litter the ground'+insight([', going in and out.',': '+beastSize(M.unit)+' tracks, '+fewSay(n)+' of them, going in and out.',': '+n+' × '+U.n.toLowerCase()+' by their sign, level '+this.lvAbout+' or '+(this.lvAbout+1)+'.'],'know what lairs there'))+'</p>'+(this.within?'':'<p class="muted">'+this.T.d+'</p>')}
+  lairWon(){if(!this.within)return super.lairWon();clearPlace(this,this.T.respawn);return ''}
   // (its fight's level, rolled now and kept for it: caveFight)
   spyRoll(){return{lv:monLevel()+1}}
   spyLine(){const {U,n}=this.lair;return 'Your scouts creep to the mouth and back unseen: '+n+' × '+U.n.toLowerCase()+', level '+this.spied().lv+'.'}
@@ -164,8 +171,8 @@ class Cave extends Site{
   power(lv){const {M,n}=this.lair;return rating(Array(n).fill(M.unit),lv)}
   page(r){const {M,U,n}=this.lair,y=this.spied(),loot=y&&['trophy: '+MATS[M.mat].n.toLowerCase(),...M.gear.map(([it,ch])=>ITEMS[it].n+' ('+Math.round(Math.min(1,ch*(1+.1*(y.lv-1)))*100)+'%)'),'a chest'].join(', ');
     return{body:this.about(r)+(y?'<div class="lab">What your scouts saw</div>'+railCards([{pic:portrait(M.unit),name:U.n,role:'Lairing in the cave',n,facts:['Level '+y.lv,['Stronger than usual','bad'],'Power '+this.power(y.lv)+' vs your '+partyPower()],note:'Likely loot: '+loot+'.'}]):
-        pageFacts([cap1(fewSay(n))+', '+beastSize(M.unit),'you cannot tell what without a closer look','a chest, they say'])),
-      acts:[this.scoutDeed(),{icon:'cave',label:'Enter',act:'site-ask',facts:[y?'power '+this.power(y.lv)+' vs '+partyPower():'what lairs there: unknown','a chest'],tip:'Go in and fight whatever lairs there. It asks you first.'}],
+        pageFacts([insight(['tracks and bones',cap1(fewSay(n))+', '+beastSize(M.unit),n+' × '+U.n.toLowerCase()+', power '+this.power(this.lvAbout)+' vs your '+partyPower()],'know what lairs there'),insightLv()<2&&'you cannot tell what without a closer look',!this.within&&'a chest, they say'])),
+      acts:[this.scoutDeed(),{icon:'cave',label:'Enter',act:'site-ask',facts:[y?'power '+this.power(y.lv)+' vs '+partyPower():insightLv()===2?'power about '+this.power(this.lvAbout)+' vs '+partyPower():'what lairs there: unknown',!this.within&&'a chest'],tip:'Go in and fight whatever lairs there. It asks you first.'}],
       note:'Whatever lairs here fights harder than in the open.'}}
   act(a,arg,done){if(super.act(a,arg,done))return true;if(this.cleared)return false;const y=this.spied(),{U,n}=this.lair;
     if(a==='site-ask'){railConfirm({title:'Enter the '+this.name+'?',sub:this.T.n,text:y?n+' × '+U.n.toLowerCase()+' (level '+y.lv+') wait in the dark. Once inside, you fight.':'Something lairs in the dark. Once inside, you fight.',
@@ -174,20 +181,160 @@ class Cave extends Site{
   get clearJob(){return true}
 }
 
-// ruins: search them for old treasure, or old lore; something may still guard them
+/* ruins (doc/CONDUCT_RUINS_DESIGN.md §3, §4): a treasure found once (looted: searched, never refilled), and guardians that wake at
+   RUIN.wake of searches. Three checks, shown by Insight (window.js insight), may spare you the fight: Awareness before you search
+   (Scouting and Agility: you hear them stir, and may still leave; stirs: kept until it is searched), Stealth as you search
+   (Agility, the night, a band of RUIN.small or fewer: you take it unheard) and Lore (Intellect: the carvings tell what guards it,
+   its rolls made then and kept for the fight, as a scout's are; once a visit). Woken, they fight at once (sealed: no leaving);
+   beaten, their treasure is yours; withdrawn from or beaten by, the ruin remembers them (guard: kind, count, level): Attack or
+   Leave, no new roll. Searched, after its cooldown others move in (occ: chosen from RUIN_OCC by its climate and land, seeded by
+   the ruin and its cycle, cyc), each a cooldown long; cleared, it lies empty a cooldown; theirs is their own loot or bounty,
+   never the ruin's treasure. Those that are a site of their own (bandits: a hideout's page; creatures: a cave's; travellers: the
+   travellers' rail) are one (occ.s), shown and acted on through it; the others' pages are RUIN_OCC's. Its picture never changes.
+   RUIN: wake, chest (the share of quiet searches with a chest), aware [base, a Scouting level, an Agility point], stealth [base,
+   an Agility point, the night, a small band (−: a bigger one)], lore [base, an Intellect point], the hermit's prices and XP, a
+   map's price, drop (the cultists' and robbers' chance of gear), fight (how many of them: [from, to]) */
+const RUIN={wake:.3,chest:.75,aware:[.25,.05,.03],stealth:[.2,.03,.2,.15],small:12,lore:[.2,.06],hermit:{rumour:5,lore:10,xp:25},map:30,drop:.25,fight:[5,9]};
+const awareChance=()=>{const A=RUIN.aware;return clamp(A[0]+A[1]*skill('scout')+A[2]*P.attr.agi,.05,.95)};
+const stealthChance=()=>{const S=RUIN.stealth;return clamp(S[0]+S[1]*P.attr.agi+(darkness()>.5?S[2]:0)+(partySize()<=RUIN.small?S[3]:-S[3]),.05,.9)};
+const loreChance=()=>clamp(RUIN.lore[0]+RUIN.lore[1]*P.attr.int,.05,.95);
+// the people of the land round it (its holding's, or the nearest), and the realm that cares what you do to them
+const ruinHold=s=>landHold(s.x,s.y)||nearestOf(s,TOWNS);
+const ruinRealm=s=>{const h=ruinHold(s);return h&&h.owner&&h.owner!=='player'?h.owner:null};
+/* who moves into searched ruins: w (its weight), × clim (by the climate there), × land (held: on a holding's land; wild: off
+   it); line (what you see); make(s, o, R): what they are (R: the ruin's cycle's seeded draws); page(s, o, r): their page
+   ({body, acts}); act(s, o, a, arg, done): their actions (true: handled). Those with a site of their own (o.s) have neither */
+const RUIN_OCC={
+  refugees:{w:3,clim:{frost:1.4},land:{held:1.6,wild:.6},line:'Homeless folk shelter among the stones, thin faces round a smoky fire.',
+    make:(s,o,R)=>{const h=ruinHold(s);o.n=6+Math.floor(R()*9);o.race=h?h.races[Math.floor(R()*h.races.length)]:'human'},
+    page:(s,o)=>{const C=CONDUCT.helpRefugees,f=ruinRealm(s);
+      return{body:railCards([{pic:personPic('folk',o.race,3),name:'The homeless',role:'Sheltering in the ruins',n:o.n,facts:[['Hungry','bad'],'Nowhere else to go']}])+
+          pageFacts([f?'The '+FACS[f].n+' will hear how you treat them':'Nobody will hear how you treat them']),
+        acts:[{icon:'gold',label:'Give',act:'site-help',arg:'gold',facts:[C.gold+'g',f?'honor +'+C.honor:'kindness'],why:P.gold<C.gold?'Not enough gold':'',tip:'Give them '+C.gold+' gold to find a new home.'},
+          {icon:'food',label:'Feed',act:'site-help',arg:'food',facts:[C.food+' food',f?'honor +'+C.honor:'kindness'],why:foodN()<C.food?'Not enough food':'',tip:'Share '+C.food+' of your food with them.'},
+          {icon:'sword',label:'Chase off',act:'site-chase',facts:[f?'honor −'+CONDUCT.chaseRefugees.honor:'cruelty','the ruins yours'],tip:'Drive them out into the cold. It asks you first.'}]}},
+    act:(s,o,a,arg,done)=>{const C=CONDUCT.helpRefugees,f=ruinRealm(s);
+      if(a==='site-help'){if(arg==='gold'?P.gold<C.gold:foodN()<C.food)return true;if(arg==='gold')P.gold-=C.gold;else foodTake(C.food);if(f)addHonor(f,C.honor,true);mood('kind');s.occGone();
+        done('They bless you, gather their bundles and set off for a new home.'+(f?' The '+FACS[f].n+' hears of it (honor +'+C.honor+').':''));return true}
+      if(a==='site-chase'){railConfirm({title:'Chase them off?',sub:s.name,text:'Your soldiers drive the homeless out of the ruins and into the cold.',facts:[f?'Honor with the '+FACS[f].n+' −'+CONDUCT.chaseRefugees.honor:'Nobody will know'],confirm:['site-chased',null,'Chase off'],back:['site-tab','home','Back']});return true}
+      if(a==='site-chased'){if(f)addHonor(f,-CONDUCT.chaseRefugees.honor,true);mood('cruel');s.occGone();done('They stumble off into the wilds.'+(f?' The '+FACS[f].n+' will hear of it (honor −'+CONDUCT.chaseRefugees.honor+').':''));return true}
+      return false}},
+  travellers:{w:2,land:{held:1.4,wild:.6},line:'Travellers have pitched their camp among the broken walls.',
+    make:(s,o,R)=>{const c=occupantSite(s,'travelers');c.kind=Math.floor(R()*TRAVELERS.length);c.stockUp();c.until=s.back;o.s=c}},
+  hermit:{w:1.5,clim:{frost:1.3,swamp:1.3},land:{held:.6,wild:1.5},line:'A hermit has made his home in the old cellars, alone with his books and bones.',
+    make:(s,o,R)=>{const h=ruinHold(s);o.race=h?h.races[0]:'human';o.v=Math.floor(R()*6)},
+    page:(s,o)=>{const H=RUIN.hermit,y=G.siteSpy,told=y&&y.s===s&&y.told,why=told?'He has said his piece for today':'';
+      return{body:railCards([{pic:personPic('priest',o.race,o.v),name:'The hermit',role:'Living in the ruins',facts:['Knows the land','Knows the old kings']}]),
+        acts:[{icon:'region',label:'Ask',act:'site-hermit',arg:'rumour',facts:['rumours: a place you have not found',H.rumour+'g'],why:why||(P.gold<H.rumour?'Not enough gold':''),tip:'Pay him for what he has heard of the land. Once a visit.'},
+          {icon:'book',label:'Listen',act:'site-hermit',arg:'lore',facts:['lore of the old kings','+'+H.xp+' XP · '+H.lore+'g'],why:why||(P.gold<H.lore?'Not enough gold':''),tip:'Pay him to tell of the old kings. Once a visit.'}],note:'Once a visit: rumours or lore.'}},
+    act:(s,o,a,arg,done)=>{const H=RUIN.hermit,y=G.siteSpy;if(a!=='site-hermit'||y&&y.s===s&&y.told)return false;const c=arg==='lore'?H.lore:H.rumour;if(P.gold<c)return true;
+      P.gold-=c;G.siteSpy={s,told:true};
+      if(arg==='lore'){gainXp(H.xp);done('By his fire the hermit tells of the old kings and the wars that broke them. (+'+H.xp+' XP)');return true}
+      const far=W.sites.filter(x=>!x.seen&&x.scoutable).sort((a,b)=>Math.hypot(a.x-s.x,a.y-s.y)-Math.hypot(b.x-s.x,b.y-s.y))[0];if(far)far.seen=true;
+      done(far?'He tells of the '+far.label+' to the '+compass(far.x-s.x,far.y-s.y)+'. It is on your map now.':'He knows nothing you have not found.');return true}},
+  hunters:{w:1.5,clim:{desert:1.5},line:'Rival treasure hunters pick over the rubble, maps spread on a stone.',
+    make:(s,o,R)=>{const b=Object.keys(BASES);o.find=gearId(b[Math.floor(R()*b.length)],Math.min(MATERIALS.length-1,gearTop()))},
+    page:(s,o)=>{const y=G.siteSpy,talked=y&&y.s===s&&y.told,c=gearPrice(o.find),map=ruinMap(s);
+      return{body:railCards([{pic:personPic('merchant','human',4),name:'Treasure hunters',role:'Your rivals here',facts:[o.sold?'They have sold you their find':'A find to sell',o.map?'They have sold you their map':'A map of the old places']}]),
+        acts:[{icon:'mug',label:'Talk',act:'site-hunt',arg:'talk',facts:['what they know of the ruins','once a visit'],why:talked?'They have told you what they know':''},
+          {icon:'crate',label:'Trade',act:'site-hunt',arg:'find',facts:[o.sold?'sold':ITEMS[o.find].n,c+'g'],why:o.sold?'They have sold it':P.gold<c?'Not enough gold':'',tip:'Buy what they dug up: '+ITEMS[o.find].n+'.'},
+          {icon:'scroll',label:'Buy',act:'site-hunt',arg:'map',facts:['their map: ruins you have not found',RUIN.map+'g'],why:o.map?'You have their map':!map?'They have no map you lack':P.gold<RUIN.map?'Not enough gold':'',tip:'Buy their map: it shows ruins you have not found.'}]}},
+    act:(s,o,a,arg,done)=>{if(a!=='site-hunt')return false;const y=G.siteSpy;
+      if(arg==='talk'&&!(y&&y.s===s&&y.told)){G.siteSpy={s,told:true};const r=W.sites.filter(x=>x instanceof Ruins&&x!==s&&x.seen&&!x.looted).sort((a,b)=>Math.hypot(a.x-s.x,a.y-s.y)-Math.hypot(b.x-s.x,b.y-s.y))[0];
+        done(r?'They swear the '+r.name+' to the '+compass(r.x-s.x,r.y-s.y)+' still hides its treasure, and that something guards it.':'They grumble that every ruin they know of is picked clean.')}
+      else if(arg==='find'&&!o.sold){const c=gearPrice(o.find);if(P.gold>=c&&invAdd('gear',o.find,1)){P.gold-=c;o.sold=true;done('You buy their find: the '+ITEMS[o.find].n+', for '+c+' gold.')}}
+      else if(arg==='map'&&!o.map&&P.gold>=RUIN.map){const r=ruinMap(s);if(r){P.gold-=RUIN.map;o.map=true;r.seen=true;done('Their map shows the '+r.name+' to the '+compass(r.x-s.x,r.y-s.y)+'. It is on your map now.')}}
+      return true}},
+  bandits:{w:2,land:{held:.8,wild:1.4},line:'Bandits have made the ruins their den.',make:(s,o)=>{o.s=occupantSite(s,'hideout')}},
+  creatures:{w:1.5,clim:{frost:1.4,swamp:1.4},land:{held:.5,wild:1.6},line:'Something has made its lair in the deep cellars.',make:(s,o)=>{o.s=occupantSite(s,'cave')}},
+  cultists:{w:1,clim:{swamp:2,desert:1.3},land:{held:.6,wild:1.4},line:'Robed cultists chant by torchlight in the old hall.',say:['robed figures by torchlight','cultists'],foes:['hedge','militia','militia'],make:(s,o,R)=>ruinFoes(o,R)},
+  robbers:{w:1,land:{held:1.4,wild:.8},line:'Grave robbers dig in the old barrows by lantern light.',say:['figures digging by lantern light','grave robbers'],foes:['militia','archer'],make:(s,o,R)=>ruinFoes(o,R)},
+  empty:{w:2,line:'Only wind in the stones.',page:s=>({body:pageFacts(['Nobody lives here now','others may come in '+Math.max(1,s.back-G.day)+' days'])})}
+};
+// a band of cultists or grave robbers (their kinds in turn); their page (what you can tell of them, Attack), and their fight
+function ruinFoes(o,R){const F=RUIN_OCC[o.k].foes,n=RUIN.fight[0]+Math.floor(R()*(RUIN.fight[1]-RUIN.fight[0]+1));o.list=Array.from({length:n},(_,i)=>F[(i+Math.floor(R()*F.length))%F.length])}
+const ruinFoesPage=(s,o)=>{const O=RUIN_OCC[o.k],pw=rating(o.list),pp=partyPower(),lk=looks(pw/Math.max(1,pp)),cs=Object.entries(countsOf(o.list)).map(([k,n])=>n+' × '+ST[k].n.toLowerCase()).join(', ');
+  return{body:pageFacts([insight([O.say[0],cap1(roughly(o.list.length))+' '+O.say[1]+', <span class="'+lk[1]+'">'+lk[0].replace('They','they')+'</span>',cs+', power '+pw+' vs your '+pp],'know their strength'),'a purse and maybe a find, if you drive them out']),
+    acts:[{icon:'sword',label:'Attack',act:'site-ask',facts:[insight(['what they are: unknown',lk[0].replace('They look ',''),'power '+pw+' vs '+pp],'know their strength')],tip:'Drive them out of the ruins. It asks you first.'}]}};
+for(const k of ['cultists','robbers'])Object.assign(RUIN_OCC[k],{page:ruinFoesPage,
+  act:(s,o,a,arg,done)=>{const O=RUIN_OCC[o.k];
+    if(a==='site-ask'){railConfirm({title:'Attack the '+O.say[1]+'?',sub:s.name,text:'You drive them out of the ruins: '+roughly(o.list.length)+' of them.',facts:[insightLv()===2?'Power '+rating(o.list)+' vs your '+partyPower():looks(rating(o.list)/Math.max(1,partyPower()))[0]],confirm:['site-attack',null,'Attack'],back:['site-tab','home','Back']});return true}
+    if(a==='site-attack'){G.site=null;startEncounter({kind:'ruin',mine:true,ref:s,list:o.list.slice(),allies:[],foes:[],word:O.say[1],title:cap1(O.say[1])+' in the '+s.name});return true}
+    return false}});
+// a ruin you have not found, the nearest (the hunters' map)
+const ruinMap=s=>W.sites.filter(x=>x instanceof Ruins&&x!==s&&!x.seen).sort((a,b)=>Math.hypot(a.x-s.x,a.y-s.y)-Math.hypot(b.x-s.x,b.y-s.y))[0]||null;
+// who comes this cycle: drawn by weight, seeded by the ruin and its cycle (never Math.random)
+function ruinOccupant(s){const R=seeded((s.seed*7919+(s.cyc||0)*104729)>>>0),c=climAt(s.x,s.y),land=landHold(s.x,s.y)?'held':'wild',ks=Object.keys(RUIN_OCC),
+    w=ks.map(k=>{const O=RUIN_OCC[k];return O.w*((O.clim||{})[c]??1)*((O.land||{})[land]??1)});
+  let r=R()*w.reduce((a,b)=>a+b,0),k=ks[ks.length-1];for(let i=0;i<ks.length;i++){r-=w[i];if(r<0){k=ks[i];break}}
+  const o={k};if(RUIN_OCC[k].make)RUIN_OCC[k].make(s,o,R);return o}
+// occupants that are a site of their own: one of its kind on the ruin's point, of the ruin (within: its name), made as genSites makes one
+function occupantSite(s,type){const o=Object.assign(Object.create(SITE_CLASS[type].prototype),{i:s.i,type,tx:s.tx,ty:s.ty,x:s.x,y:s.y,seed:s.seed,seen:true,cleared:false,back:0});o.setup(W.sites,climAt(s.x,s.y));o.within=s.name;return o}
 class Ruins extends Site{
-  get screen(){return PAGE_SCREEN}
+  get screen(){const s=this.occSite;return s?s.screen:PAGE_SCREEN}
   setup(sites){this.name=unusedName(RUIN_NAMES,sites)}
+  restore(){if(this.occ&&this.occ.s)siteOf(this.occ.s)}
   get chest(){return{gold:40,gear:.9}}
-  about(r){return '<p>Broken walls in the '+r.name.toLowerCase()+', older than any kingdom on your maps.</p><p class="muted">'+this.T.d+'</p>'}
-  page(r){return{body:this.about(r)+pageFacts([this.cleared?'Searched: empty for now':'Treasure, old lore, or guardians that do not sleep']),
-    acts:[{icon:'ruin',label:'Search',act:'site-search',facts:['treasure, lore','or guardians'],why:this.cleared?'Searched: empty for now':'',tip:'Search the ruins: a sealed chest, the old kings’ carvings, or guardians that wake.'}]}}
+  // its occupants that are a site of their own, while they hold it
+  get occSite(){const o=this.occ;return this.looted&&!this.cleared&&o&&o.s&&!o.s.cleared?o.s:null}
+  // the day: occupants gone (beaten, paid, chased off, helped: their site cleared, or gone) leave it empty a cooldown; then
+  // (or when their cooldown is up) the next cycle's move in
+  day(){this.settle();if(this.looted&&G.day>=this.back&&G.site!==this){this.cleared=false;this.cyc=(this.cyc||0)+1;this.back=G.day+this.T.respawn;this.occ=ruinOccupant(this)}}
+  settle(){const o=this.occ;if(this.looted&&o&&!this.cleared&&(o.gone||o.s&&o.s.cleared)){this.cleared=true;this.back=G.day+this.T.respawn}}
+  occGone(){this.occ.gone=true;this.settle()}
+  enter(){this.settle();return super.enter()}
+  about(r){const s=this.occSite;if(s&&s.screen===RAIL_SCREEN)return '<p>'+RUIN_OCC[this.occ.k].line+'</p>'+s.about(r);
+    return '<p>Broken walls in the '+r.name.toLowerCase()+', older than any kingdom on your maps.</p><p class="muted">'+this.T.d+'</p>'}
+  places(r){return this.occSite.places(r)}
+  page(r,step){this.settle();const o=this.occ;
+    if(this.cleared)return{body:this.about(r)+'<p>Only wind in the stones.</p>'+pageFacts(['Others may shelter here in '+Math.max(1,this.back-G.day)+' days'])};
+    if(this.guard)return this.guardPage(r);
+    if(!this.looted)return this.treasurePage(r);
+    const s=this.occSite,K=RUIN_OCC[o&&o.k||'empty'];if(s){const p=s.page(r,step);return{...p,body:'<p>'+K.line+'</p>'+p.body}}
+    const p=K.page(this,o,r,step);return{...p,body:'<p>'+K.line+'</p>'+p.body}}
+  // the treasure, its guardians asleep (what the carvings told: lore), the three checks as Insight shows them
+  treasurePage(r){const y=this.lore(),w=this.stirs,aw=awareChance(),st=stealthChance(),lc=loreChance();
+    return{body:this.about(r)+(w?'<p class="bad">Something stirs below… whatever guards the treasure is waking.</p>':'')+(y?'<div class="lab">What the carvings say</div>'+this.guardCards(y,'Asleep below, guarding the treasure'):'')+
+        pageFacts(['A treasure, found only once',y?'guarded by '+y.n+' × '+ST[MONSTERS[y.id].unit].n.toLowerCase():'guardians that may wake']),
+      acts:[{icon:'ruin',label:w?'Search anyway':'Search',act:'site-search',facts:[w?'<span class="bad">they are stirring</span>':insight(['you may hear them stir',oddsWord(aw)+' to hear them stir',pct(aw)+' to hear them stir'],'know the odds'),insight(['you may go unheard',oddsWord(st)+' to go unheard',pct(st)+' unheard'],'know the odds')],
+          tip:'Search the ruins for their treasure. Its guardians may wake: Scouting and Agility may warn you first, and you may still leave; Agility, the night and a band of '+RUIN.small+' or fewer help you take it unheard. Woken, they fight at once: there is no leaving.'},
+        {icon:'book',label:'Read',act:'site-lore',facts:[insight(['the old carvings',oddsWord(lc)+' to read them',pct(lc)+' to read them'],'know the odds'),'once a visit'],why:this.loreTried()?(y?'You have read what guards it':'The carvings are too worn'):'',
+          tip:'Read the carvings on its walls (Intellect): they tell what guards the treasure, how many and how strong.'}]}}
+  // guardians you met and left: Attack or Leave, as you found them
+  guardPage(r){const g=this.guard,M=MONSTERS[g.id];
+    return{body:this.about(r)+'<div class="lab">Guardians</div>'+this.guardCards(g,'Awake, guarding the treasure')+pageFacts(['Guardians: '+g.n+' × '+ST[M.unit].n+', level '+g.lv]),
+      acts:[{icon:'sword',label:'Attack',act:'site-ask',facts:['power '+this.guardPower(g)+' vs '+partyPower(),'the treasure beyond'],tip:'Fight the guardians you found here: beaten, their treasure is yours. It asks you first.'}]}}
+  guardPower(g){return rating(Array(g.n).fill(MONSTERS[g.id].unit),g.lv)}
+  guardCards(g,role){const M=MONSTERS[g.id];return railCards([{pic:portrait(M.unit),name:ST[M.unit].n,role,n:g.n,facts:['Level '+g.lv,'Power '+this.guardPower(g)+' vs your '+partyPower()]}])}
+  // what the carvings told this visit (G.siteSpy: its rolls, kept for the fight); read them already
+  lore(){const y=G.siteSpy;return y&&y.s===this&&y.ok&&y.id?y:null}
+  loreTried(){const y=G.siteSpy;return !!(y&&y.s===this&&y.lore)}
+  guardRoll(){const id=caveMonster(this.x,this.y);return{id,n:MONSTERS[id].count[1]+1,lv:monLevel()+1}}
+  guardFight(g,sealed){G.site=null;this.id=g.id;this.lv=g.lv;startEncounter({kind:'cave',ref:this,lv:g.lv,list:Array(g.n).fill(MONSTERS[g.id].unit),sealed:sealed||null})}
+  // searching: woken (unless you hear them first: stirs, or go unheard), the fight at once; else the chest or the old lore
+  search(done){const r=Math.random(),wake=this.stirs||r<RUIN.wake;
+    if(wake&&!this.stirs&&Math.random()<awareChance()){this.stirs=true;train('scout',3);return done('Something stirs below… Your scouts hear it first: whatever guards the treasure is waking. Search anyway, or leave.')}
+    if(wake&&Math.random()>=stealthChance()){log('Stones shift in the dark. The guardians wake and bar the way out!','bad');return this.guardFight(this.lore()||this.guardRoll(),'The guardians bar the way out')}
+    delete this.stirs;this.looted=true;this.cleared=true;this.back=G.day+this.T.respawn;
+    if(wake)return done('Soft-footed, your people slip past the guardians and lift a sealed chest from under their noses.'+siteChest(this));
+    if(r<RUIN.chest)return done('Under a fallen slab you find a sealed chest.'+siteChest(this));
+    gainXp(30);P.renown+=2;done('No treasure, but the carvings tell of the old kings. You learn much. (+30 XP, +2 renown)')}
+  // the guardians beaten (encounters.js ON_WIN.cave): their treasure, for sure; left or beaten by them, it remembers them
+  lairWon(){delete this.guard;delete this.stirs;this.looted=true;const x=' Beyond them lies the treasure.'+siteChest(this);clearPlace(this,this.T.respawn);return x}
+  lairLost(e){if(!this.looted)this.guard={id:this.id,n:Math.max(1,e.list.length),lv:e.lv}}
+  // the cultists or grave robbers beaten (ON_WIN.ruin): their purse, and the ruins empty
+  occWon(e){const g=rint(10,25)+3*e.list.length;P.gold+=g;this.occGone();return ' They leave behind a purse of '+g+' gold.'}
   act(a,arg,done){
-    if(a!=='site-search'||this.cleared)return false;const r=Math.random();
-    if(r<.3){G.site=null;this.id=caveMonster(this.x,this.y);caveFight(this);log('Stones shift in the dark. The ruins have guardians.','bad');return true}
-    this.cleared=true;this.back=G.day+this.T.respawn;
-    if(r<.75){done('Under a fallen slab you find a sealed chest.'+siteChest(this));return true}
-    gainXp(30);P.renown+=2;done('No treasure, but the carvings tell of the old kings. You learn much. (+30 XP, +2 renown)');return true}
+    if(this.guard){if(a==='site-ask'){const g=this.guard;railConfirm({title:'Attack the guardians?',sub:this.name,text:g.n+' × '+ST[MONSTERS[g.id].unit].n.toLowerCase()+' (level '+g.lv+') stand between you and the treasure.',
+        facts:['Power '+this.guardPower(g)+' vs your '+partyPower()],confirm:['site-fight',null,'Attack'],back:['site-tab','home','Back']});return true}
+      if(a==='site-fight'){this.guardFight(this.guard);return true}return false}
+    if(!this.looted){
+      if(a==='site-search'){this.search(done);return true}
+      if(a==='site-lore'&&!this.loreTried()){const ok=Math.random()<loreChance(),g=ok&&(this.lore()||this.guardRoll());G.siteSpy={s:this,lore:true,ok,...(g||{})};
+        done(ok?'The carvings warn of what sleeps below: '+g.n+' × '+ST[MONSTERS[g.id].unit].n.toLowerCase()+', level '+g.lv+'.':'The carvings are too worn to read.');return true}
+      return false}
+    if(this.cleared)return false;const s=this.occSite;if(s)return s.act(a,arg,done);
+    const o=this.occ,K=o&&RUIN_OCC[o.k];return !!(K&&K.act&&K.act(this,o,a,arg,done))}
 }
 
 // a shrine: pray once a week to recover, or leave an offering
@@ -242,18 +389,19 @@ class Lair extends Site{
     if(step==='parley'){const pw=y?s.power(s.all(y.list)):g.pw,afraid=stance(pw)==='afraid',ch=Math.round(yieldChance({power:()=>pw},'band')*100),tb=tribute(s);
       return{title:'Parley',body:'<p>You ride up with a white rag on a spear. '+(ld?ld.name+' steps out':'Their chieftain steps out')+' to hear you, '+roughly(g.n)+' at his back.</p>',
         acts:[{icon:'gold',label:'Pay them to go',act:'site-pay',facts:[tb+'g','they break camp'],why:P.gold<tb?'Not enough gold':'',tip:'Buy them off: '+tb+' gold and they break camp and ride away, any bands sheltering with them. No fight, no loot, no bounty; the place lies empty for a while.'},
-          {icon:'prisoners',label:'Demand surrender',act:'site-yield',facts:[afraid?ch+'% they yield':'they do not fear you','else they fight'],why:afraid?'':'They do not fear you: it takes about twice their strength',tip:'Call on them to yield, as a cornered band would. If they do, you choose their fate: prisoners, recruits or let go. If not, they fight.'}],
+          {icon:'prisoners',label:'Demand surrender',act:'site-yield',facts:[afraid?insight(['they might yield, or not',oddsWord(ch/100)+' they yield',ch+'% they yield'],'know the odds'):'they do not fear you','else they fight'],why:afraid?'':'They do not fear you: it takes about twice their strength',tip:'Call on them to yield, as a cornered band would. If they do, you choose their fate: prisoners, recruits or let go. If not, they fight.'}],
         note:'They '+(afraid?'eye your band warily.':'laugh at your band.'),back:['site-tab','home','Back']}}
     const all=y&&s.all(y.list),pw=all?s.power(all):g.pw,lk=looks(pw/Math.max(1,partyPower())),gold=all?all.length*4+25:0;
     return{body:'<p class="muted">'+s.T.d+'</p>'+(y?'<div class="lab">What your scouts saw</div>'+railCards(Object.entries(countsOf(all)).map(([k,n])=>({pic:portrait(k),name:k==='chief'&&ld?chiefLabel(ld):ST[k].n,role:k==='chief'?'Their chieftain · bounty '+bountyOf(ld)+'g':'Tier '+ST[k].tier,n})))+
         '<ul class="tnotes"><li>Power <b>'+pw+'</b> vs your '+partyPower()+'.</li><li>Loot: about '+gold+' gold in their purses, likely a piece of gear (4 in 5), and '+(ld?ld.name:'their chieftain')+' to take captive ('+bountyOf(ld)+'g bounty).</li></ul>':
-        pageFacts([cap1(roughly(g.n))+' '+band.toLowerCase()+(s.sheltering().length?', bands among them sheltering for the night':''),'<span class="'+lk[1]+'">'+lk[0].replace('They','they')+'</span>'])+
+        pageFacts([insight([band+' in their tents',cap1(roughly(g.n))+' '+band.toLowerCase(),g.n+' '+band.toLowerCase()+' and their chieftain'],'know their numbers')+(s.sheltering().length?', bands among them sheltering for the night':''),
+          insight(['you cannot tell how strong','<span class="'+lk[1]+'">'+lk[0].replace('They','they')+'</span>','power '+g.pw+' vs your '+partyPower()],'know their strength')])+
         '<ul class="tnotes"><li>Led by '+(ld?chiefLabel(ld)+', '+bountyOf(ld)+' gold on his head':'a chieftain')+'.</li><li>Talk of plunder piled in the tents.</li></ul>'),
-      acts:[s.scoutDeed(),{icon:'sword',label:'Attack',act:'site-ask',facts:[y?'power '+pw+' vs '+partyPower():lk[0].replace('They look ','')],tip:'Storm it: its fighters, its chieftain and any band sheltering there. It asks you first.'},
+      acts:[s.scoutDeed(),{icon:'sword',label:'Attack',act:'site-ask',facts:[y?'power '+pw+' vs '+partyPower():insight(['what waits inside: unknown',lk[0].replace('They look ',''),'power about '+pw+' vs '+partyPower()],'know their strength')],tip:'Storm it: its fighters, its chieftain and any band sheltering there. It asks you first.'},
         {icon:'truce',label:'Parley',act:'site-tab',arg:'parley',facts:['pay them off','or make them yield'],tip:'Talk: pay them to break camp, or, if they fear you, demand their surrender.'}]}}
   act(a,arg,done){if(super.act(a,arg,done))return true;if(this.cleared)return false;const s=this,y=s.spied();
     if(a==='site-ask'){const g=s.guess(),all=y&&s.all(y.list);railConfirm({title:'Attack the '+s.T.n.toLowerCase()+'?',sub:s.name,text:'You storm it: '+(all?all.length+' fighters':roughly(g.n)+' of them, as far as you can tell')+', their chieftain at their head.',
-      facts:[all?'Power '+s.power(all)+' vs your '+partyPower():looks(g.pw/Math.max(1,partyPower()))[0],'You may still call it off before the first blow'],confirm:['site-attack',null,'Attack'],back:['site-tab','home','Back']});return true}
+      facts:[all?'Power '+s.power(all)+' vs your '+partyPower():insight(['You cannot tell how strong they are',looks(g.pw/Math.max(1,partyPower()))[0],'Power about '+g.pw+' vs your '+partyPower()],'know their strength'),'You may still call it off before the first blow'],confirm:['site-attack',null,'Attack'],back:['site-tab','home','Back']});return true}
     if(a==='site-attack'){s.fight(true,y&&y.list);return true}
     if(a==='site-pay'){const m=lairPay(s);if(m){G.siteTab=null;done(m)}return true}
     if(a==='site-yield'){const m=lairYield(s);if(m){G.siteTab='yield';done(m)}return true}

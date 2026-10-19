@@ -32,7 +32,7 @@ try{
  strong();t.act('auto');ok(hid.cleared&&hid.back===G.day+10,'beating it clears the hideout for 10 days');t.act('cont');done();
  // ruins
  let fights=0,chests=0,lore=0;
- for(let k=0;k<40;k++){const r=of('ruins')[k%of('ruins').length];r.cleared=false;go(r);const gg=P.gold;t.act('site-search');
+ for(let k=0;k<40;k++){const r=of('ruins')[k%of('ruins').length];r.cleared=false;r.looted=false;delete r.stirs;delete r.guard;go(r);const gg=P.gold;t.act('site-search');
    if(G.enc){fights++;strong();t.act('auto');t.act('cont');done()}else{if(P.gold>gg)chests++;else lore++;t.act('site-leave')}}
  ok(fights&&chests&&lore,'searching ruins finds chests ('+chests+'), lore ('+lore+') or guardians ('+fights+')');
  // shrine
@@ -77,7 +77,7 @@ try{
  // off, or make them yield if they fear you); Leave. Cleared, it lies empty. Bands that catch you on the road fight as before
  {const q=s=>document.querySelector(s),qa=s=>[...document.querySelectorAll(s)],world=()=>{G.mode='world';G.modal=false;t.hidePanel();G.encCool=0;G.enc=null;G.site=null;G.siteSpy=null;G.par=null;G.lastSite=null;P.tx=null;G.chase=null};
   const lucky=(a,arg,r)=>{const r0=Math.random;let f=true;const s=t.seeded(91);Math.random=()=>f?(f=false,r):s();try{t.act(a,arg)}finally{Math.random=r0}};
-  const c=t.camps()[1],acts=()=>qa('.rwbody .rkact').map(b=>b.dataset.act+':'+b.dataset.rk).join();P.troops={hum_knight:4,hum_long:4};P.gold=2000;
+  const c=t.camps()[1],acts=()=>qa('.rwbody .rkact').map(b=>b.dataset.act+':'+b.dataset.rk).join();P.troops={hum_knight:4,hum_long:4};P.gold=2000;P.sk.scout.lv=3;// (a rough read before scouting: window.js insight; tests/conduct.js reads every level)
   world();c.cleared=false;c.bands=[];P.x=c.x;P.y=c.y+6;t.updateSites();
   ok(G.mode==='site'&&G.site===c&&!G.enc&&q('#panel.paged')&&!q('.rail')&&q('.rwin h2').textContent===c.name&&acts()==='site-scout:q,site-ask:w,site-tab:e'&&/Fewer than|handful|dozen|score|fifteen|dozens/.test(q('.pg-facts').textContent)&&q('.rwbody>.pg-banner')&&!q('.pg-banner').textContent.trim(),
     'walking up to a bandit camp opens its page: no fight, its picture (a banner, no words), what you can see ('+q('.pg-facts').textContent+'), Scout, Attack and Parley (Q W E)');
@@ -100,9 +100,9 @@ try{
     ok(q('.rwin h2').textContent==='Parley'&&ks.map(b=>b.dataset.act).join()==='site-pay,site-yield'&&ks[1].disabled&&/do not fear/.test(ks[1].title)&&new RegExp(tb+'g').test(ks[0].textContent)&&q('.nav [data-nav="back"]').dataset.act==='site-tab','Parley: pay '+tb+'g to break camp; no surrender while they do not fear you; Back');
     const g0=P.gold;t.act('site-pay');ok(P.gold===g0-tb&&c.cleared&&!c.ld&&G.mode==='site'&&/lies empty/.test(panel())&&/ridden off/.test(panel()),'paid: they break camp and ride off, the camp empty');
     t.act('site-leave');ok(G.mode==='world'&&!G.site,'Leave: the map')}
-  {c.cleared=false;c.returned();c.bands=[];world();P.troops={hum_knight:40,hum_long:30};t.enterSite(c);t.act('site-tab','parley');const y=q('.rkact[data-act="site-yield"]');ok(y&&!y.disabled&&/% they yield/.test(y.textContent),'with a band that frightens them, Demand surrender ('+y.querySelector('small').textContent+')');
+  {c.cleared=false;c.returned();c.bands=[];world();P.troops={hum_knight:40,hum_long:30};P.sk.scout.lv=5;t.enterSite(c);t.act('site-tab','parley');const y=q('.rkact[data-act="site-yield"]');P.sk.scout.lv=3;ok(y&&!y.disabled&&/% they yield/.test(y.textContent),'with a band that frightens them, Demand surrender ('+y.querySelector('small').textContent+')');
     lucky('site-yield',null,0);ok(G.siteTab==='yield'&&q('.rwin h2').textContent==='They yield'&&qa('.rwbody .rkact').map(b=>b.dataset.arg).join()==='cage,join,free'&&q('.nav [data-nav="close"]').dataset.act==='site-fate','they yield: take them prisoner, into your band, or let them go');
-    const ld=c.ld,p0=t.prisonerCount(),g0=P.gold;t.act('site-fate','cage');ok(c.cleared&&t.prisonerCount()>p0&&P.gold>g0&&t.captives().some(x=>x.ld===ld)&&/lies empty/.test(panel()),'prisoners: bound and marched with you, their plunder and their chieftain yours, the camp empty')}
+    P.prisoners={};const ld=c.ld,p0=t.prisonerCount(),g0=P.gold;t.act('site-fate','cage');/* (room for them: the fights before may have filled it) */ok(c.cleared&&t.prisonerCount()>p0&&P.gold>g0&&t.captives().some(x=>x.ld===ld)&&/lies empty/.test(panel()),'prisoners: bound and marched with you, their plunder and their chieftain yours, the camp empty')}
   {c.cleared=false;c.returned();c.bands=[];world();t.enterSite(c);t.act('site-tab','parley');lucky('site-yield',null,.999);ok(G.enc&&G.enc.kind==='camp'&&G.enc.ref===c&&!c.cleared,'they refuse: the camp fight');t.act('flee')}
   {c.cleared=false;c.returned();c.bands=[];world();P.troops={hum_knight:40,hum_long:30};t.enterSite(c);t.act('site-tab','parley');lucky('site-yield',null,0);P.troops={hum_knight:2};const n0=t.troopCount();t.act('site-fate','join');ok(c.cleared&&t.troopCount()>n0&&G.mode==='site'&&/brigands join/.test(panel()),'into your band: the brigands join ('+(t.troopCount()-n0)+')')}
   // cleared: it lies empty, Leave only

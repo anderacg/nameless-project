@@ -55,12 +55,13 @@ class Holding{
      today's, byte for byte; v3 (doc/WORLD_DESIGN.md §9.3) will keep every holding's kind) */
   saveRec(){const t=this,d=MADE_HOLDINGS[TOWNS.indexOf(t)],x={s:t.sacked||0,r:t.raided||0,u:t.turmoil||0,g:t.grow,b:t.bld,w:t.wall,k:t.work,f:t.fear||0,cr:t.crime||null,wo:t.watchOff||0,
       l:(t.lots||[]).map(l=>({id:l.id,k:l.k,type:l.type,x:l.x,y:l.y,n:l.n,lv:l.lv,seed:l.seed,st:l.st,plots:l.plots})),e:t.stock?{st:t.stock,pop:t.pop,pros:t.pros,tax:t.tax,vol:t.vol,pf:t.popF}:null};
+    {const m=Object.entries(t.mem||{}).filter(([k,d])=>d>G.day);if(m.length)x.m=Object.fromEntries(m)}// (its people's memory of you, folk.js remembers: only while someone remembers)
     if(!d){x.base={realm:HOME[t.name]};for(const k of HOLDING_DATA)if(t[k]!==undefined)x.base[k]=t[k]}else if(t.kind!==d.kind)x.kind=t.kind;
     return [t.owner,t.gar,t.name,x]}
   // its state from its record (on the holding as the world first stood: useWorld)
   loadRec(o){const t=this,x=o[3];if(x.kind)holdingOf(t,x.kind);t.owner=o[0];t.gar=o[1];t.lastOwner=t.owner;
     t.sacked=x.s;t.raided=x.r;t.turmoil=x.u;t.grow=x.g;t.fear=x.f;t.crime=x.cr;t.watchOff=x.wo;
-    t.bld=x.b;t.wall=x.w;t.work=x.k;t.lots=x.l;
+    t.bld=x.b;t.wall=x.w;t.work=x.k;t.lots=x.l;if(x.m)t.mem=x.m;else delete t.mem;
     const e=x.e;if(e){t.stock=e.st;t.pop=e.pop;t.pros=e.pros;t.tax=e.tax;t.vol=e.vol;t.popF=e.pf}return t}
   // a founded holding made again from its record
   static fromRec(o){return makeHolding(o[3].base).loadRec(o)}

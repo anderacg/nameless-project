@@ -33,7 +33,7 @@ try{
  P.x=wt.x+30;P.y=wt.y+30;G.clock=t.DAY*.25;W.folk=[];wt.fear=0;for(let i=0;i<300;i++)t.updateFolk(.05);
  const f=W.folk.find(x=>x.home===wt.name);ok(f,'workers walk out to the estates of '+wt.name);
  world();P.x=f.x;P.y=f.y;t.interact(f);ok(G.wk===f&&/We |Good times|bread/.test(panel()),'a worker tells you how '+wt.name+' fares');
- const ws=t.workerScale(wt),wr=t.repAt(wt.name);t.act('wk-rob');
+ const ws=t.workerScale(wt),wr=t.repAt(wt.name);{const r0=Math.random;Math.random=()=>.999;try{t.act('wk-rob')}finally{Math.random=r0}}// (they give in: tests/conduct.js has them fight back)
  ok(t.repAt(wt.name)<wr&&wt.fear>G.day&&t.workerScale(wt)<=ws*.5+1e-9,'robbing a worker costs reputation and frightens the fields: half the work for days');t.act('dlg-ok');
  for(let i=0;i<60;i++)t.updateFolk(.05);ok(!W.folk.some(x=>x.home===wt.name&&(x.st==='out'||x.st==='town')),'and its workers on the road hurry back to their estates');
  wt.fear=0;W.folk=[];t.FOLK_SEEN.clear();for(let i=0;i<300;i++)t.updateFolk(.05);const f2=W.folk.find(x=>x.home===wt.name);

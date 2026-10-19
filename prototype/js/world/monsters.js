@@ -22,7 +22,7 @@ class Monster extends WorldObject{
   tip(){const M=MONSTERS[this.id];return '<b>'+(M.n||this.id)+(this.n>1?' ×'+this.n:'')+'</b><small>Level '+this.lv+tipOdds(monPower(this))+'</small><span class="act">Click: fight</span>'}
 }
 const asMonster=asClass(Monster);
-const monLevel=()=>1+Math.floor(G.day/20)+(Math.random()<.3?1:0);
+const monLevel0=()=>1+Math.floor(G.day/20),monLevel=()=>monLevel0()+(Math.random()<.3?1:0);// (monLevel0: without the chance of one more)
 const lvMul=lv=>(1+.2*(lv-1))*(1+.12*(lv-1));
 function spawnMonster(initial){
   // pick the kind first, favoring kinds that are scarce on the map, then find it a home in its habitat

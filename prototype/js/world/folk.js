@@ -42,7 +42,7 @@ const handsLeft=(t,k)=>{const n=lostHands(t,k);return n?Math.max(0,1-n/Math.min(
 const tradeOf=f=>f.k==='quarry'?'quarryman':f.job;
 const recruitKind=(t,f)=>peasantKind(t.races[0],tradeOf(f));
 function workerRecruitWhy(t,f){const k=recruitKind(t,f),c=hireCost(k);
-  return P.fac&&P.fac===t.owner?'Your employer’s people':partyRoom()<1?'Your band is full':!partyRoster(P).canAdd(k)?'No room for another group':P.gold<c?'Not enough gold':t.owner!=='player'&&!canHire(t,k)?'They do not trust you yet':''}
+  return P.fac&&P.fac===t.owner?'Your employer’s people':remembers(t,f)?'They will not follow you':partyRoom()<1?'Your band is full':!partyRoster(P).canAdd(k)?'No room for another group':P.gold<c?'Not enough gold':t.owner!=='player'&&!canHire(t,k)?'They do not trust you yet':''}
 function workerRecruit(f){const t=townBy(f.home);if(!t||!W.folk.includes(f)||workerRecruitWhy(t,f))return false;const k=recruitKind(t,f),c=hireCost(k);
   P.gold-=c;P.add(k);f.gone=true;W.folk=W.folk.filter(x=>x!==f);t.pop=Math.max(10,(t.pop||0)-1);t.lost=t.lost||{};t.lost[f.k]=[...(t.lost[f.k]||[]).filter(d=>d>G.day),G.day+REFILL_DAYS];
   if(t.owner!=='player')addRep(t.name,-2,true);log(f.name+' the '+f.job+' takes your coin and joins your band as '+an(ST[k].n.toLowerCase())+'. The '+ESTATES[f.k].n.toLowerCase()+' of '+t.name+' is a pair of hands short for a few days.','gold');return true}
@@ -87,29 +87,76 @@ function folkSprite(job,frame,race,v,carry){return workerSprite(job,frame,race,v
 // (only those out on the road: the rest are at work inside their estate, or delivering inside the gate)
 function drawFolk(ents,cam,V){for(const f of W.folk)asWorker(f).draw(ents,cam,V)}
 
-/* meeting a worker: talk, hire, rob or press-gang */
+/* meeting a worker: talk, hire, rob or press-gang. His window: what he says, then his deeds as key actions (window.js
+   railKeyActions): Hire, Rob and Press-gang, the two last asking first (railConfirm); Rob shows what he carries and the Insight
+   read of whether they would fight back (window.js insight) */
 // (from: the estate it was opened from: on its rail (estates.js estateRail), Back returns there)
 function workerMeet(f,from){
   const t=townBy(f.home);if(!t)return;G.wk=f;G.wkFrom=from||null;G.mode='dialog';P.tx=null;G.chase=null;ensureEcon(t);
   const short=Object.keys(GOODS).filter(g=>marketState(t,g)==='shortage').slice(0,3).map(g=>GOODS[g].n.toLowerCase()),glut=Object.keys(GOODS).filter(g=>marketState(t,g)==='surplus').slice(0,3).map(g=>GOODS[g].n.toLowerCase());
-  const own=t.owner==='player',lv=levyOf(t.races[0]),c=hireCost(lv),[g,n]=jobGood(t,f.job);
-  const title=cap1(an(f.job))+' of '+t.name,sub=t.owner?'Subject of the '+FACS[t.owner].n:'',body='<p>&ldquo;'+(foodDays(t)<2?'There is hardly any bread left in '+t.name+'.':t.pros>70?'Good times in '+t.name+'.':'We get by.')+(short.length?' We are short of '+short.join(', ')+'.':'')+(glut.length?' There is plenty of '+glut.join(', ')+'.':'')+'&rdquo;</p>'+
-    '<p class="muted">'+t.name+': '+t.pop+' people, prosperity '+Math.round(t.pros)+'%, food for '+foodDays(t)+' days.</p><div class="btns">'+
-    dlgBtn('wk-hire',null,'Hire as '+ST[lv].n.toLowerCase()+' '+c+'g',partyRoom()<1?'Your band is full':P.gold<c?'Not enough gold':!canHire(t,lv)&&!own?'They do not trust you':'')+
-    (own?'':dlgBtn('wk-rob',null,'Rob them ('+n+' '+GOODS[g].n.toLowerCase()+')'))+(own?'':dlgBtn('wk-press',null,'Press-gang into your band',partyRoom()<1?'Your band is full':''))+
-    '</div>'+(own?'':'<p class="muted">Robbing or press-ganging: reputation in '+t.name+' falls, the '+(t.owner?FACS[t.owner].n:'owner')+' resents it, and its workers flee the fields for a while.</p>'),close=['dlg-close',null,'Leave'];
+  const own=t.owner==='player',mem=remembers(t,f);
+  const title=cap1(an(f.job))+' of '+t.name,sub=t.owner?'Subject of the '+FACS[t.owner].n:'',body='<p>&ldquo;'+(mem?warySay(f):(foodDays(t)<2?'There is hardly any bread left in '+t.name+'.':t.pros>70?'Good times in '+t.name+'.':'We get by.')+(short.length?' We are short of '+short.join(', ')+'.':'')+(glut.length?' There is plenty of '+glut.join(', ')+'.':''))+'&rdquo;</p>'+
+    '<p class="muted">'+t.name+': '+t.pop+' people, prosperity '+Math.round(t.pros)+'%, food for '+foodDays(t)+' days.'+(mem?' <span class="bad">They remember what you did.</span>':'')+'</p>'+
+    railKeyActions(workerDeeds(t,f),own?'':'Robbing or press-ganging: reputation in '+t.name+' falls, the '+(t.owner?FACS[t.owner].n:'owner')+' resents it, and its workers flee the fields for a while.'),close=['dlg-close',null,'Leave'];
   if(from)estateRail(from,'folk',{title,sub,body,back:['wk-back',null,'Back'],close},'wk');
   else showPanel('<div class="top"><h2>'+title+'</h2><span class="muted">'+sub+'</span></div>'+body+nav(null,close));
 }
-function workerAct(a){
+// his deeds: Hire; someone else's worker, Rob and Press-gang (each asks first: wk-ask)
+function workerDeeds(t,f){const own=t.owner==='player',lv=levyOf(t.races[0]),c=hireCost(lv),mem=remembers(t,f),rb=CONDUCT.robWorker,pg=CONDUCT.pressWorker;
+  return [{icon:'troops',label:'Hire',act:'wk-hire',facts:['as '+an(ST[lv].n.toLowerCase()),c+'g'],why:mem?'They will not follow you':partyRoom()<1?'Your band is full':P.gold<c?'Not enough gold':!canHire(t,lv)&&!own?'They do not trust you':'',
+      tip:'Hire the '+f.job+' as '+an(ST[lv].n.toLowerCase())+' for '+c+' gold: '+t.name+' has one less pair of hands.'},
+    !own&&{icon:'bag',label:'Rob',act:'wk-ask',arg:'rob',facts:[robCarries(t,f),mem?'':robRead(t,f,robOdds(t,f))],why:mem?'They have nothing left to give you':'',
+      tip:'Take what they carry. They may fight back, with any guards near: then it is a fight. Reputation −'+rb.rep+', honor −'+rb.honor+'; killing them costs far more. It asks you first.'},
+    !own&&{icon:'prisoners',label:'Press-gang',act:'wk-ask',arg:'press',facts:['into your band','reputation −'+pg.rep+' · honor −'+pg.honor],why:partyRoom()<1?'Your band is full':'',
+      tip:'Drag the '+f.job+' into your ranks: reputation −'+pg.rep+', honor −'+pg.honor+', morale −'+pg.morale+', and his estate remembers you for '+ROB.estate+' days. It asks you first.'}]}
+/* robbing (doc/CONDUCT_RUINS_DESIGN.md §2; its numbers: ROB, data/conduct.js). What he carries goes by what he is doing (robLoot);
+   whether they fight back, by their power against yours and their nerve (robOdds); given in, you take it (robTake); fighting
+   back, it is a fight with them as their peasant kinds (data/units.js), and the estate's guards if near (robFight: won,
+   villagersWon; fled or lost, villagersLost). A robbed worker remembers you for days, his whole estate after a killing or a
+   press-gang (t.mem: his id, or the estate's kind, to the day they forget; saved: holdings.js); while they do, they will not
+   talk to you as before, nor be robbed or hired */
+const robLoot=f=>ROB.loot[f.st==='in'||f.st==='out'?f.st:'town'];
+const remembers=(t,f)=>{const m=t.mem||{};return Math.max(m[f.id]||0,m[f.k]||0)>G.day};
+function remember(t,key,days){t.mem=t.mem||{};t.mem[key]=Math.max(t.mem[key]||0,G.day+days)}
+const WARY_SAY=['You’ve taken enough from us.','Leave us be. There is nothing more to take.','We remember you. Go away.','Please, no more. We have children to feed.'];
+const warySay=f=>WARY_SAY[folkHash(f.id)%WARY_SAY.length];
+// (the workers within reach of him, the estate's guards if he is within reach of it: their kinds, their power, the chance they resist)
+function robOdds(t,f){const R=ROB.reach*TILE,sp=bldSpots(t)[f.k],ws=W.folk.filter(x=>x.home===f.home&&x.k===f.k&&Math.hypot(x.x-f.x,x.y-f.y)<=R);if(!ws.includes(f))ws.unshift(f);
+  const gs=sp&&Math.hypot(sp.x-f.x,sp.y-f.y)<=R?estateGuards(t,f.k):[],list=ws.map(x=>recruitKind(t,x)).concat(gs),pw=rating(list),
+    nerve=(ROB.nerve[t.races[0]]||1)*(until(t,'fear')?ROB.fear:1)*((t.pros||0)>=ROB.loveAt?ROB.love:1);
+  return{ws,gs,list,pw,ch:clamp(ROB.k*pw/Math.max(1,partyPower())*nerve,ROB.resist[0],ROB.resist[1])}}
+function robCarries(t,f){const L=robLoot(f),[g]=jobGood(t,f.job);return (L.goods[1]?L.goods[0]+'–'+L.goods[1]+' '+GOODS[g].n.toLowerCase()+', ':'')+L.coins[0]+'–'+L.coins[1]+' coins'}
+// the Insight read (window.js insight): what anyone sees, how they look, or the numbers and the chance
+function robRead(t,f,o){const n=o.ws.length,g=o.gs.length,who=n>1?f.job+'s':f.job,tone=o.ch>=.5?'bad':o.ch>=.2?'gold':'good';
+  return insight([(n>1?'a group of '+who+' with their':an(f.job)+' with his')+' tools'+(g?', guards about':''),
+    '<span class="'+tone+'">'+(o.ch>=.5?'they look ready to fight':o.ch>=.2?'they may fight back':'they cower')+'</span>'+(g?', '+roughly(g)+' guards near':''),
+    n+' '+who+(g?' and '+g+' guards':'')+', power '+o.pw+' vs your '+partyPower()+': <span class="'+tone+'">'+Math.round(o.ch*100)+'% they fight back</span>'],'know their odds')}
+function robTake(t,f){const L=robLoot(f),[g]=jobGood(t,f.job),n=L.goods[1]?rint(L.goods[0],L.goods[1]):0;ensureEcon(t);
+  const k=n?invAdd('good',g,Math.min(n,Math.max(1,t.stock[g]||0))):0;if(k)t.stock[g]=Math.max(0,(t.stock[g]||0)-k);const gold=rint(L.coins[0],L.coins[1]);P.gold+=gold;
+  return (k?k+' '+GOODS[g].n.toLowerCase()+' and ':'')+gold+' coins'}
+function robFight(t,f,o){G.wk=G.wkFrom=null;const who=o.ws.length>1?f.job+'s':f.job;log('The '+who+' of '+t.name+' will not give up what is theirs!','bad');
+  startEncounter({kind:'villagers',mine:true,ref:{town:t.name,k:f.k,f,ws:o.ws,x:f.x,y:f.y,fac:t.owner,cool:0},list:o.list.slice(),allies:[],foes:[],word:'villagers'+(o.gs.length?' and guards':''),title:'The '+who+' of '+t.name+' fight back'})}
+// won (encounters.js ON_WIN.villagers): what he carried, and the dead: the estate short of their hands and remembering you
+function villagersWon(e){const r=e.ref,t=townBy(r.town);if(!t)return '';const got=robTake(t,r.f),c=CONDUCT.killWorkers,n=r.ws.length;
+  r.ws.forEach(x=>x.gone=true);W.folk=W.folk.filter(x=>!r.ws.includes(x));t.pop=Math.max(10,(t.pop||0)-n);t.lost=t.lost||{};t.lost[r.k]=[...(t.lost[r.k]||[]).filter(d=>d>G.day),...r.ws.map(()=>G.day+REFILL_DAYS)];
+  remember(t,r.k,ROB.estate);const cost=wrong(t,{...c,hostile:rint(c.hostile[0],c.hostile[1])});mood('cruel');
+  return ' You take '+got+' from the dead. Killing the people of '+t.name+' costs you dearly: '+cost+'. Its '+ESTATES[r.k].n.toLowerCase()+' will remember you.'}
+// fled, or beaten (ON_WIN.villagers lost): nothing taken, word spreads, and the holding's guards want you
+function villagersLost(e){const r=e.ref,t=townBy(r.town);if(!t)return;const cost=wrong(t,CONDUCT.robFailed),c=crimeAt(t);if(c)c.until=Math.max(c.until,G.day+ROB.hostile);
+  log('The people of '+t.name+' drove you off with nothing. Word spreads ('+cost+'), and its guards want you for '+ROB.hostile+' days.','bad')}
+function workerAct(a,arg){
   const f=G.wk,t=f&&townBy(f.home);if(!t){closeDialog();return}
   if(a==='wk-back'){const o=G.wkFrom;G.wk=null;G.wkFrom=null;if(o)estateBack(o,'folk');else closeDialog();return}
+  if(a==='wk-talk')return workerMeet(f,G.wkFrom);
+  // (Rob and Press-gang ask first: what it does and costs, Rob what they carry and the read of them; Confirm does it, Back his talk)
+  if(a==='wk-ask'){const d=workerDeeds(t,f).find(x=>x&&x.arg===arg);if(!d||d.why)return workerMeet(f,G.wkFrom);
+    return railConfirm({title:d.label+' '+f.name+'?',sub:cap1(f.job)+' of '+t.name,text:d.tip.replace(' It asks you first.',''),facts:arg==='rob'?['They carry '+d.facts[0],d.facts[1]]:d.facts,confirm:[arg==='rob'?'wk-rob':'wk-press',null,d.label],back:['wk-talk',null,'Back']})}
   const take=()=>{f.gone=true;W.folk=W.folk.filter(x=>x!==f);t.pop=Math.max(10,t.pop-1)};
-  if(a==='wk-hire'){const lv=levyOf(t.races[0]),c=hireCost(lv);if(partyRoom()<1||!partyRoster(P).canAdd(lv)||P.gold<c||!canHire(t,lv)&&t.owner!=='player')return;P.gold-=c;P.add(lv);take();
+  if(a==='wk-hire'){const lv=levyOf(t.races[0]),c=hireCost(lv);if(remembers(t,f)||partyRoom()<1||!partyRoster(P).canAdd(lv)||P.gold<c||!canHire(t,lv)&&t.owner!=='player')return;P.gold-=c;P.add(lv);take();
     return notice('A new recruit','The '+f.job+' lays down the '+(f.job==='farmer'?'hoe':'tools')+' and joins your band as '+an(ST[lv].n.toLowerCase())+'. '+t.name+' has one less pair of hands.','good')}
-  if(a==='wk-rob'){const [g,n]=jobGood(t,f.job);ensureEcon(t);const k=invAdd('good',g,Math.min(n,Math.max(1,t.stock[g]||0)));t.stock[g]=Math.max(0,(t.stock[g]||0)-k);const gold=rint(2,6);P.gold+=gold;
-    const cost=wrong(t,CONDUCT.robWorker);mood('cruel');return notice('Robbed','You take '+k+' '+GOODS[g].n.toLowerCase()+' and '+gold+' coins. The workers of '+t.name+' run for home. It costs you: '+cost+'.','bad')}
-  if(a==='wk-press'){if(partyRoom()<1)return;const lv=levyOf(t.races[0]);if(!partyRoster(P).canAdd(lv))return;P.add(lv);take();const cost=wrong(t,CONDUCT.pressWorker);mood('cruel');
+  if(a==='wk-rob'){if(t.owner==='player'||remembers(t,f))return;const o=robOdds(t,f);remember(t,f.id,ROB.memory);if(Math.random()<o.ch)return robFight(t,f,o);
+    const got=robTake(t,f),cost=wrong(t,CONDUCT.robWorker);mood('cruel');return notice('Robbed','You take '+got+'. The workers of '+t.name+' run for home. It costs you: '+cost+'.','bad')}
+  if(a==='wk-press'){if(partyRoom()<1)return;const lv=levyOf(t.races[0]);if(!partyRoster(P).canAdd(lv))return;P.add(lv);take();remember(t,f.k,ROB.estate);const cost=wrong(t,CONDUCT.pressWorker);mood('cruel');
     return notice('Press-ganged','Your soldiers drag the '+f.job+' into the ranks. '+cap1(an(ST[lv].n.toLowerCase()))+' joins, unwilling, and the fields of '+t.name+' empty for days. It costs you: '+cost+'.','bad')}
 }
 onAct('wk-',workerAct);

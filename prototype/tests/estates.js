@@ -54,7 +54,7 @@ try{
   for(let i=0;i<2000&&W.folk.some(f=>f.home==='Ashford'&&f.st!=='in');i++){G.clock=t.DAY*.75;t.updateFolk(.05)}
   ok(W.folk.filter(f=>f.home==='Ashford').every(f=>f.st==='in'&&f.done===G.day),'by night all have delivered and gone back inside')}
  {const night=W.folk.filter(f=>f.home==='Ashford'),k=night[0].k,n0=night.filter(f=>f.k===k).length;t.estateMeet(t.estatePick(ash,k));ok(document.querySelector('.rail [data-act="es-tab"][data-arg="folk"]'),'the estate offers its '+t.ESTATES[k].work+'s');
-  P.gold=500;P.troops={};t.act('es-folk');ok(G.mode==='dialog'&&/Hire as/.test(document.getElementById('panel').textContent),'and talking to them opens the worker dialog');
+  P.gold=500;P.troops={};t.act('es-folk');ok(G.mode==='dialog'&&document.querySelector('#panel [data-act="wk-hire"]'),'and talking to them opens the worker dialog');
   t.act('wk-back');ok(G.est&&document.querySelector('.rail [data-act="es-tab"][data-arg="folk"]'),'Back returns to the estate');t.act('es-folk');t.act('wk-hire');
   ok(W.folk.filter(f=>f.home==='Ashford'&&f.k===k).length===n0-1,'hiring one takes him from the estate');G.mode='world';G.modal=false;t.hidePanel()}
  // caravans

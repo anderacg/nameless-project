@@ -103,6 +103,16 @@ class PageScreen extends RailScreen{
 const PAGE_SCREEN=new PageScreen();
 // a page's line of what you know at a glance: its parts (words, or markup) side by side
 const pageFacts=ps=>'<p class="pg-facts">'+ps.filter(Boolean).join(' · ')+'</p>';
+/* Insight (doc/CONDUCT_RUINS_DESIGN.md §1): how much you can tell before you act, by Scouting, the same everywhere (robbing
+   villagers, a camp's or a cave's page before your scouts look, a parley's odds, the ruins' checks). INSIGHT: the levels of a
+   rough read and of the full picture. It decides only what is shown: the rolls are made as ever. insight(reads, more): reads
+   [vague (what anyone sees), rough (a rough read), exact (numbers, kinds, power, the chance in %)], the one your Scouting
+   reveals; a vague or rough one names in its tooltip the level that would tell more ('Scouting 5: know their odds');
+   oddsWord(p): a chance in rough words */
+const INSIGHT={rough:2,exact:5};
+const insightLv=()=>{const s=skill('scout');return s>=INSIGHT.exact?2:s>=INSIGHT.rough?1:0};
+function insight(reads,more){const l=insightLv();if(l===2)return reads[2];return '<span class="ins" title="Scouting '+(l?INSIGHT.exact:INSIGHT.rough)+': '+htmlText(more||'know more')+'">'+reads[l]+'</span>'}
+const oddsWord=p=>p<.2?'little chance':p<.45?'some chance':p<.7?'a fair chance':'a good chance';
 /* a page's banner picture: PAGE_BANNER w × h map pixels round the place's point (b.x, b.y: its foot, foot pixels from the top),
    the painted world there (WorldArt's chunks: the ground, the woods, rock and roads), then its pictures (b.ps: [canvas, x, y,
    alpha] at map pixels: its shadow, its sprite, a fire, a flag); cached by b.key (BANNERS: its picture as a data URL; BANNER_CV:

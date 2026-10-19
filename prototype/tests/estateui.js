@@ -69,7 +69,7 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t
         'the '+t.ESTATE_AREAS[k].folk+': a card for each '+f.job+' at work there now (not the one out on the road), his own name and portrait, Talk and Recruit ('+inn.map(x=>x.name).join(', ')+')');
       ok(new Set(ws().map(x=>x.name+x.v)).size>1||ws().length<2,'each worker his own name and look, seeded');
       fits('the workers\' area',[['folk',()=>{}]]);
-      c.querySelector('[data-act="es-folk"]').click();ok(G.wk&&q('#panel.railed')&&on()==='folk'&&/Hire as/.test(panel())&&q('.nav [data-nav="back"]').dataset.act==='wk-back','Talk: the worker\'s talk in the window, on the estate\'s rail');
+      c.querySelector('[data-act="es-folk"]').click();ok(G.wk&&q('#panel.railed')&&on()==='folk'&&q('.rwbody .rkact[data-act="wk-hire"]')&&q('.nav [data-nav="back"]').dataset.act==='wk-back','Talk: the worker\'s talk in the window, on the estate\'s rail');
       fits('the worker\'s window',[['worker',()=>{}]]);
       t.act('wk-back');ok(G.mode==='dialog'&&G.est&&!G.wk&&G.estTab==='folk','Back: the '+t.ESTATE_AREAS[k].folk+' again');
       t.act('es-folk');ok(G.wk&&on()==='folk','(Talk to the '+f.job+'s, as before, opens it too)');t.onEscape();ok(G.est&&!G.wk,'Esc from the worker: the estate again');
@@ -96,7 +96,7 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t
     world();
     // ---- sites. A shrine, ruins, a cave, a bandit camp or hideout: one page each, no rail (window.js PageScreen): its header,
     // what it is, its picture tiles (each tile's action under it, its digit), its key actions, Leave in the bar
-    const S=W.sites,of=ty=>S.find(s=>s.type===ty),pages=[],ACTS={cave:'site-scout:q,site-ask:w',ruins:'site-search:q',shrine:'site-pray:q,site-pray:w',camp:'site-scout:q,site-ask:w,site-tab:e',hideout:'site-scout:q,site-ask:w,site-tab:e'};
+    const S=W.sites,of=ty=>S.find(s=>s.type===ty),pages=[],ACTS={cave:'site-scout:q,site-ask:w',ruins:'site-search:q,site-lore:w',shrine:'site-pray:q,site-pray:w',camp:'site-scout:q,site-ask:w,site-tab:e',hideout:'site-scout:q,site-ask:w,site-tab:e'};
     // (a page fits a phone on its side: no rail, nothing sideways, its bottom bar on screen)
     const fitsPage=(name,go)=>{const scr=q('#screen'),css=scr.style.cssText;scr.style.cssText+=';width:844px;height:390px';const bad=[];
       for(const [n,f] of go){f();q('#panel').style.animation='none';const p=q('#panel'),b=q('.rwbody'),s=scr.getBoundingClientRect(),pr=p.getBoundingClientRect(),nv=q('.rwin>.nav');

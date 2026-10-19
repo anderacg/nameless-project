@@ -28,7 +28,7 @@ const SKILLS={
   eng:{n:'Engineering',a:'int',d:'10% a day per level that a siege camp gains an extra day of work. Rises each day of a siege'},
   pers:{n:'Persuasion',a:'cha',d:'Cornered foes are 3% likelier per level to yield. Rises each time you demand a surrender'},
   // the road
-  scout:{n:'Scouting',a:'agi',d:'+8 map vision per level. Rises as you travel and spot new places'},
+  scout:{n:'Scouting',a:'agi',d:'+8 map vision per level, and a better read of people and places before you act: at 2 a rough one (how they look, roughly how many), at 5 the numbers and the odds. Rises as you travel and spot new places'},
   ride:{n:'Riding',a:'agi',d:'+2% travel speed per level while mounted. Rises as you ride'},
   hunt:{n:'Hunting',a:'agi',d:'An extra kill every 3 levels and 5% more hides per level when you hunt. Rises with each beast you bring down'},
   surv:{n:'Survival',a:'int',d:'Frost, desert and swamp cost your band 6% less per level, and swamp fever strikes less often. Rises each day you camp in harsh land'},

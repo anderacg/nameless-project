@@ -12,7 +12,7 @@ const CHIEF_NAMES={
 };
 const CHIEF_SK=['lead','tact'];
 // every chieftain on the map: those leading bands, and those holding camps and hideouts
-const allChiefs=()=>[...bandits,...W.sites,...W.exiles,...(P.captives||[])].map(o=>o.ld).filter(Boolean);// (with those rebuilding and those you hold)
+const allChiefs=()=>[...bandits,...W.sites,...W.sites.map(s=>s.occ&&s.occ.s).filter(Boolean),...W.exiles,...(P.captives||[])].map(o=>o.ld).filter(Boolean);// (with those rebuilding, those in ruins (sites.js Ruins) and those you hold)
 const chiefHolder=c=>bandits.find(b=>b.ld===c)||W.sites.find(s=>s.ld===c)||null;
 // (also: places still being made, not yet on the map, whose names are taken too)
 function newChief(band,lv,also){
