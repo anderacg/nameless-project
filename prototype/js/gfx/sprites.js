@@ -239,14 +239,13 @@ function txt(s,x,y,col,al){if(TXTQ&&(ctx===TXTQ.ctx||ctx===TXTQ.lo)){TXTQ.push([
   if(CVS>1&&ctx===ctx0){const c=txtPic(s,col,al);ctx.drawImage(c,x-c.ox,y-c.oy);return}
   ctx.font=TXT_FONT;ctx.textAlign=al||'left';ctx.textBaseline='alphabetic';ctx.fillStyle='#000';ctx.fillText(s,x+1,y+1);ctx.fillStyle=col||'#e4e0cf';ctx.fillText(s,x,y)}
 // (a label's picture: drawn as txt draws it at a whole pixel, its pen (ox, oy) a whole pixel in it, so its letters fall on the
-// same pixels; kept by text, colour and alignment, the lot let go when it grows past 600 or a font comes in. Its letters' box,
-// shadow and all: from x - ox + 1, width - 3 wide, ba over its pen's row to bd under it (render.js labelLayout)
+// same pixels; kept by text, colour and alignment, the lot let go when it grows past 600 or a font comes in)
 const TXTC=new Map();let TXTM=null;
 if(document.fonts&&document.fonts.addEventListener)document.fonts.addEventListener('loadingdone',()=>TXTC.clear());
 function txtPic(s,col,al){s=String(s);const k=s+'|'+col+'|'+al;let c=TXTC.get(k);if(c)return c;if(TXTC.size>600)TXTC.clear();
-  const m=TXTM||(TXTM=mkc(1,1,()=>{}).getContext('2d'));m.font=TXT_FONT;const mt=m.measureText(s),w=Math.ceil(mt.width),ox=1+(al==='center'?Math.ceil(w/2):al==='right'?w:0),oy=10;
+  const m=TXTM||(TXTM=mkc(1,1,()=>{}).getContext('2d'));m.font=TXT_FONT;const w=Math.ceil(m.measureText(s).width),ox=1+(al==='center'?Math.ceil(w/2):al==='right'?w:0),oy=10;
   c=mkc(w+4,14,g=>{g.font=TXT_FONT;g.textAlign=al||'left';g.textBaseline='alphabetic';g.fillStyle='#000';g.fillText(s,ox+1,oy+1);g.fillStyle=col||'#e4e0cf';g.fillText(s,ox,oy)});
-  c.ox=ox;c.oy=oy;c.ba=Math.ceil(mt.actualBoundingBoxAscent||6);c.bd=Math.ceil(mt.actualBoundingBoxDescent||0)+1;TXTC.set(k,c);return c}
+  c.ox=ox;c.oy=oy;TXTC.set(k,c);return c}
 
 /* how big a host looks: followers trail the banner, more of them the bigger the band, at most 9 (render.js drawHost) */
 const hostSize=n=>n<5?0:Math.min(9,Math.round(Math.sqrt(n)*1.7)-2);
