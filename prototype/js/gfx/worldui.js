@@ -13,7 +13,7 @@
      tooltip is input.js's own (#tip).
    - Chasing a party or making for a holding: a ring pulsing round it and an arrow bobbing over it (while it is in sight), till
      you meet it or go elsewhere.
-   - An encounter on the road you know of and have not met (world/encounters.js): a glow round it, a pulsing "!" over it, its
+   - An encounter on the road you know of and have not met (world/encounters.js): sound waves rippling out from it, a pulsing "!" over it, its
      call-out the first time it is on the screen, and an arrow at the screen's edge while it is off it (wuiRoadUnder, wuiRoadOver).
    In whole game pixels on the camera's grid (what moves or eases, to 1/VS px as a mover is: render.js snapV), outlined dark as
    the arrows and chevrons of the battle are (ui/orderpaths.js). Real time. Under reducedMotion all holds still: no ripple or
@@ -173,9 +173,13 @@ WUI_ARROW.bang=['.#####.','###.###','###.###','###.###','#######','###.###','.##
 function wuiEdge(k,col){const key='edge'+k;if(!WUI_ARROW[key]){const a=k*Math.PI/4,ux=Math.cos(a),uy=Math.sin(a),rows=[];
   for(let y=0;y<11;y++){let r='';for(let x=0;x<11;x++){const px=x-5,py=y-5,al=px*ux+py*uy,pr=Math.abs(py*ux-px*uy);r+=al>=-1.5&&al<=5&&pr<=(5-al)*.85||al>=-5&&al<-1.5&&pr<=1.1?'#':'.'}rows.push(r)}WUI_ARROW[key]=rows}
   return wuiArrow(key,col)}
-function wuiRoadUnder(cam,now,rm){const V=vis();for(const e of roadList()){if(!e.marked()||!e.inView(V))continue;const b=e.box(),x=wuiX((b[0]+b[2])/2,cam),y=wuiY((b[1]+b[3])/2+2,cam),p=rm?.5:(1+Math.sin(now/1000*3.2))/2,r=Math.max(13,(b[2]-b[0])*.62)+3*p;
-  ctx.save();ctx.translate(x,y);ctx.scale(1,.62);const g=ctx.createRadialGradient(0,0,1,0,0,r);g.addColorStop(0,'rgba(255,214,120,'+(.3+.15*p).toFixed(3)+')');g.addColorStop(1,'rgba(255,200,90,0)');
-  ctx.globalCompositeOperation='lighter';ctx.fillStyle=g;ctx.fillRect(-r,-r,2*r,2*r);ctx.restore()}}
+/* (under them: sound waves, rings rippling out from their feet along the ground one after another, fading as they spread; the
+   map's own crisp rings (wuiRing), WAVE: s a ring takes (t), rings at once (n), how far past the scene it spreads (px), the
+   ground's tilt (ry: of rx), its strength at the start (a). Still, under reducedMotion: one ring half out) */
+const WAVE={t:1.8,n:3,px:20,ry:.5,a:.85};
+function wuiRoadUnder(cam,now,rm){const V=vis(),col=WUI_K.col.gold;for(const e of roadList()){if(!e.marked()||!e.inView(V))continue;const b=e.box(),x=Math.round(wuiX((b[0]+b[2])/2,cam)),y=Math.round(wuiY(b[3]-1,cam)),r0=Math.max(6,Math.round((b[2]-b[0])*.5));
+  for(let i=0;i<(rm?1:WAVE.n);i++){const q=rm?.5:((now/1000/WAVE.t+i/WAVE.n+(e.seed||0)*.37)%1),rx=r0+Math.round(q*WAVE.px),c=wuiRing(rx,Math.max(1,Math.round(rx*WAVE.ry)),col);
+    ctx.globalAlpha=WAVE.a*(1-q)*Math.min(1,q*6);wuiPut(c,x,y,c.cx,c.cy)}ctx.globalAlpha=1}}
 function wuiRoadOver(cam,now,rm){const V=vis(),col=WUI_K.col.gold,bang=wuiArrow('bang',col),p=rm?1:(1+Math.sin(now/1000*5))/2,bob=rm?0:Math.round(p*2);
   for(const e of roadList()){if(!e.marked())continue;const b=e.box(),x=Math.round(wuiX((b[0]+b[2])/2,cam)),top=Math.floor(wuiY(b[1],cam)),y=wuiY(e.y,cam);
     if(x>=0&&x<=VW&&top>=4&&y<=VH){const by=top-2-bob;ctx.globalAlpha=.75+.25*p;wuiPut(bang,x,by,bang.cx,bang.tip);ctx.globalAlpha=1;
