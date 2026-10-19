@@ -2,8 +2,8 @@
 // World depth (doc/WORLD_DESIGN.md §12.5, gfx/depth.js): what stands in front of a figure on the map is drawn again over it. The
 // chunks' standing index (engine/worldnature.js standIndex, WorldArt.standing) and the structures' pictures give what stands; each
 // figure, once drawn, has the kept scene's pixels put back over it where something whose foot is lower stands. A party behind a
-// tree is under its crown; yours (and your companions') shows through at PROPFADE.a, fading there smoothly; an enemy is covered,
-// not faded; one in front has nothing over it; banners and labels stay on top; nothing outside your sight changes (the fog);
+// tree is under its crown; every figure in your sight shows through at WDEPTH.fade, fading there smoothly (yours,
+// an enemy's, a beast's alike); one in front has nothing over it; banners and labels stay on top; nothing outside your sight changes (the fog);
 // the index is the same after the map is painted afresh. The structures' shadows are their own pictures, laid in one pass as
 // one mask (two never darken each other). Each case compares the frame with the depth on, off (WDEPTH.on: figures over all, as
 // before) and without the figure (the scene), at one held clock (performance.now), so only the depth differs.
@@ -28,7 +28,7 @@ try{
    for(let j=0;j<B.s.height;j++)for(let k=0;k<B.s.width;k++)if(d[(j*B.s.width+k)*4+3])m.add((B.y-G.cam.y+j)*VW+B.x-G.cam.x+k);return m};
  const look=(q,fy,hide,show)=>{settle();const on=grab(true),box=D.boxes.find(b=>b[4]===fy),off=grab(false),fl=flag(q);hide();const z=grab(true);show();if(!box)return null;
    const px=[];for(let y=box[1];y<=box[3];y++)for(let x=box[0];x<=box[2];x++){const i=(y*VW+x)*4;if(!same(off,z,i)&&!fl.has(y*VW+x))px.push(y*VW+x)}return{on,off,z,box,px}};
- const near=(a,b,c,i)=>{for(let k=0;k<3;k++)if(Math.abs(a[i+k]-Math.round(.4*c[i+k]+.6*b[i+k]))>3)return false;return true};// (on ≈ .4 scene + .6 figure)
+ const F=D.fade,near=(a,b,c,i)=>{for(let k=0;k<3;k++)if(Math.abs(a[i+k]-Math.round(F*c[i+k]+(1-F)*b[i+k]))>3)return false;return true};// (on ≈ fade × scene + the rest figure)
  const deep=[];for(let y=4;y<MH-4;y++)for(let x=4;x<MW-4;x++){let f=true;for(let b=-2;b<=2&&f;b++)for(let a=-3;a<=3;a++)if(tAt(x+a,y+b)!==t.T_FOREST){f=false;break}if(f)deep.push([x,y])}
  let edge=null;for(let y=6;y<MH-6&&!edge;y++)for(let x=6;x<MW-6;x++)if([[0,0],[0,-1],[-1,0],[1,0],[-1,-1],[1,-1]].every(([a,b])=>tAt(x+a,y+b)===t.T_FOREST)&&[[0,1],[0,2],[-1,1],[1,1],[2,1],[3,1],[3,2],[2,2]].every(([a,b])=>tAt(x+a,y+b)===t.T_OPEN)){edge=[x,y];break}
  ok(deep.length>20&&edge,'a deep wood ('+deep.length+' tiles 7 x 5 deep) and a wood\'s south edge onto open ground ('+edge+') to stand in');
@@ -39,11 +39,11 @@ try{
   ok(a.n===b.n&&a.h===b.h&&a.sorted&&a.spr>30000&&a.rock>1000,'the standing index: '+a.spr+' sprites (trees, small things standing; crossing a chunk\'s edge, in each) and '+a.rock+' column runs of rock, sorted by foot; the same after the map is painted afresh ('+b.n+', '+(a.h===b.h?'same':'differs')+')');
   ok(a.bytes/a.n<16,'it costs '+(a.bytes/a.n).toFixed(1)+' bytes an entry, '+(a.bytes/1048576).toFixed(2)+' MB over the whole classic map ('+WA.cols*WA.rows+' chunks)');
   info('index: '+a.n+' entries, '+(a.bytes/1024).toFixed(0)+' KB')}
- // ---- an enemy band behind the wood's edge: covered, not faded; its banner over all
+ // ---- an enemy band behind the wood's edge: the crowns before it fade as over yours (WDEPTH.fade); its banner over all
  {park();const [x,y]=edge;P.x=x*TILE+8+30;P.y=(y+1)*TILE+12;P.dir=-1;const b=t.bandits[0];b.n=12;b.fight=null;b.x=x*TILE+8;b.y=y*TILE+7;const by=b.y;
   const L=look(b,by,()=>{b.x=-999},()=>{b.x=x*TILE+8});
-  if(!L)ok(false,'the band behind the trees is drawn');else{const m=front(L.box,by);let inM=0,cov=0,bad=0,free=0;for(const p of L.px){const i=p*4;if(m.has(p)){inM++;if(same(L.on,L.z,i))cov++;else bad++}else if(!same(L.on,L.off,i))free++}
-   ok(inM>15&&cov===inM&&!bad&&!free,'an enemy band behind trees: the crowns in front of it ('+inM+' of its '+L.px.length+' px) cover it in full ('+cov+'; '+bad+' not), the rest of it untouched ('+free+' changed)');
+  if(!L)ok(false,'the band behind the trees is drawn');else{const m=front(L.box,by);let inM=0,cov=0,bad=0,free=0;for(const p of L.px){const i=p*4;if(m.has(p)){inM++;if(near(L.on,L.off,L.z,i))cov++;else bad++}else if(!same(L.on,L.off,i))free++}
+   ok(inM>15&&cov===inM&&!bad&&!free,'an enemy band behind trees: the crowns in front of it ('+inM+' of its '+L.px.length+' px) fade to '+F+' over it ('+cov+'; '+bad+' not), the rest of it untouched ('+free+' changed)');
    const B=t.bannerAt(b,Math.floor(now/420+b.x*.13)%2),bd=B.s.getContext('2d').getImageData(0,0,B.s.width,B.s.height).data;let n=0,diff=0;
    for(let j=0;j<B.s.height;j++)for(let k=0;k<B.s.width;k++){if(bd[(j*B.s.width+k)*4+3]<255)continue;const X=B.x-G.cam.x+k,Y=B.y-G.cam.y+j;if(X<0||Y<0||X>=VW||Y>=VH)continue;n++;if(!same(L.on,L.off,(Y*VW+X)*4))diff++}
    ok(n>20&&!diff,'its banner stays on top: '+n+' banner px the same with the depth on and off ('+diff+' differ)');
@@ -52,20 +52,20 @@ try{
  // ---- hidden by the fog: a band in the wood out of your sight is not drawn, so nothing of it shows
  {park();const [x,y]=deep[0];P.x=x*TILE+8;P.y=y*TILE+8;const b=t.bandits[0];b.x=P.x+t.vis();b.y=P.y-2;settle();const on=grab(true),off=grab(false);let d=0;for(let i=0;i<VW*VH*4;i+=4)if(!same(on,off,i)&&Math.hypot((i/4)%VW-(P.x-G.cam.x),(i/4/VW|0)-(P.y-G.cam.y))>t.vis())d++;
   ok(!D.boxes.some(q=>q[4]===b.y)&&!d,'a band hidden in the wood beyond your sight is not drawn, and the depth reveals nothing there ('+d+' px)')}
- // ---- your band in a deep wood: the crowns before it fade to PROPFADE.a, smoothly, and it shows through
+ // ---- your band in a deep wood: the crowns before it fade to WDEPTH.fade, smoothly, and it shows through
  {park();const [x,y]=deep[Math.floor(deep.length/2)];P.x=x*TILE+8;P.y=y*TILE+8;const fy=P.y;
   const L=look(P,fy,()=>{P.stay={}},()=>{P.stay=null});
   if(!L)ok(false,'your band is drawn');else{const m=front(L.box,fy);let inM=0,good=0,free=0;for(const p of L.px){const i=p*4;if(m.has(p)){inM++;if(near(L.on,L.off,L.z,i))good++}else if(!same(L.on,L.off,i))free++}
    grab(true);const al=[...D.cov].map(k=>D.al.get(k));
    if(good<inM)for(const p of L.px){const i=p*4;if(m.has(p)&&!near(L.on,L.off,L.z,i))info('off '+(p%VW)+','+(p/VW|0)+' on '+[...L.on.slice(i,i+3)]+' fig '+[...L.off.slice(i,i+3)]+' scene '+[...L.z.slice(i,i+3)])}
-   ok(inM>15&&good===inM&&!free&&al.length&&al.every(a=>Math.abs(a-t.PROPFADE.a)<1e-9),'your band in a deep wood: the '+al.length+' crowns before it fade to '+t.PROPFADE.a+'; its '+inM+' px under them show through ('+good+' at .4 scene + .6 band), the rest untouched ('+free+')');
+   ok(inM>15&&good===inM&&!free&&al.length&&al.every(a=>Math.abs(a-F)<1e-9),'your band in a deep wood: the '+al.length+' crowns before it fade to '+F+'; its '+inM+' px under them show through ('+good+' at '+F+' scene + '+(1-F)+' band), the rest untouched ('+free+')');
    D.al.clear();D.cov.clear();D.t=0;t.drawWorld();now+=50;t.drawWorld();const a1=[...D.cov].map(k=>D.al.get(k));now+=50;t.drawWorld();const a2=[...D.cov].map(k=>D.al.get(k));
    ok(a1.length&&a1.every(a=>Math.abs(a-.8)<1e-9)&&a2.every(a=>Math.abs(a-.6)<1e-9),'smoothly, as in battle: '+t.PROPFADE.rate+' a second (a frame of 50 ms: 1 to '+a1[0].toFixed(1)+', then '+a2[0].toFixed(1)+')')}}
  // ---- your band behind a house in Ashford: the house fades the same way
  {park();const tw=t.townBy('Ashford'),l=tw.lots.find(l=>l.k==='house'&&l.st==='built'&&l.n===1);P.x=(l.x+.5)*TILE;P.y=l.y*TILE+9;const fy=P.y;
   const L=look(P,fy,()=>{P.stay={}},()=>{P.stay=null});
   if(!L)ok(false,'your band in Ashford is drawn');else{let ch=0,good=0;for(const p of L.px){const i=p*4;if(same(L.on,L.off,i))continue;ch++;if(near(L.on,L.off,L.z,i))good++}
-   ok(ch>10&&good===ch,'your band behind a house in Ashford: the house shows over it at .4 ('+ch+' px, '+good+' as .4 house + .6 band)')}}
+   ok(ch>10&&good===ch,'your band behind a house in Ashford: the house shows over it at '+F+' ('+ch+' px, '+good+' as '+F+' house + '+(1-F)+' band)')}}
  // ---- a lord in front of the trees: nothing over him
  {park();const [x,y]=edge;const l=W.lords.find(q=>!q.dead);Object.assign(l,{inside:null,fight:null,x:x*TILE+8,y:(y+1)*TILE+7,troops:Array(16).fill('hum_spear')});P.x=l.x+56;P.y=l.y+16;const fy=l.y;
   const L=look(l,fy,()=>{l.x=-999},()=>{l.x=x*TILE+8});

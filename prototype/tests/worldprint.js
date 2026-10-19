@@ -27,8 +27,12 @@
 // G.quietEvents is on, and the view is the tests' fixed 576 x 360. Hash: FNV-1a 32-bit over bytes, char codes or 32-bit words;
 // W8's places at 1e-6 px.
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.push('INFO '+m),t=T,G=t.G,P=t.P,W=t.W;
-const EXPECT={W1:'65e24662',W2:'2b49a168',W3:'b7aebfe4',W4:'46450e62',W5:'6587a43c',W6:'b82e8af1',W7:'2109e5d0',W8:'aec30b66',B2:'5c35ee22'};// (at 0a42712; B2 at R3; W6-W8 at Phase 1; W6 at depth, smooth walking and pasture herds and label layout; W7, B2 at save v3)
+const EXPECT={W1:'65e24662',W2:'2b49a168',W3:'b7aebfe4',W4:'46450e62',W5:'6587a43c',W6:'1850a1f2',W7:'de907005',W8:'d2be3a92',B2:'1d2e7bc4'};// (at 0a42712; B2 at R3; W6-W8 at Phase 1; W6 at depth, smooth walking and pasture herds and label layout; W7, B2 at save v3)
 // (W7, W8 merged: the two watches together with day and night half and half: 2109e5d0, aec30b66)
+// (W6, W7, W8, B2 re-recorded 2026-10-19, on purpose: wild game placed by its woods (data/critters.js CRITTER_WOODS, rare;
+//  a1c79a2 to 56f7e97) draws the shared randomness differently, so the beasts stand elsewhere and the world runs on from there: was
+//  W6 b82e8af1, W7 2109e5d0, W8 aec30b66, B2 5c35ee22 (W6 17092e81 then). W6 again, 17092e81 to 1850a1f2, drawing only: what stands
+//  in front of any figure in your sight fades to WDEPTH.fade .2 (gfx/depth.js), not only over yours. W1-W5 unchanged)
 // (W8 again, d0699187 to ef75dd4c: workers walk at a travelling party's pace, slower with a load: FIELD.speed 26, carry .7, hurry 37)
 // (W5, W6 re-recorded in Phase 0 wave 1, on purpose, a fix: the painted world and the minimap were the title screen's, from the
 //  lots main.js lays out at load, never repainted for a game's own (begin lays out others); now begin repaints them, so the map

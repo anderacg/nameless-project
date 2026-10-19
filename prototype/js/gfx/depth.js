@@ -7,15 +7,15 @@
 // lower on the screen than its feet, within the box it drew in (tracked as it draws). What stands: the chunks' standing index
 // (WorldArt.standing: each tree, the small things standing, the ranges' rock in column runs, by its foot) and the pictures of the
 // structures as they were drawn this frame (depthPic: a building's body, not its shadow, each pixel by the foot of its column's
-// run of pixels, so a cluster's back house stands behind one in its gap, its front house before him). Over your party and your
-// companions' (own) whatever covers them fades to PROPFADE.a at PROPFADE.rate a second (real time), as in battle, and stays so
-// over anyone else it covers then; over the rest it covers in full. A flying beast (top) is drawn after them all, over
+// run of pixels, so a cluster's back house stands behind one in its gap, its front house before him). Over every figure drawn (all
+// in your sight: what the fog hides is not drawn) whatever covers it fades to WDEPTH.fade (owner, 2026-10-19: a bear deep in a wood
+// was lost under the crowns; yours and everyone's the same) at PROPFADE.rate a second (real time), as in battle. A flying beast (top) is drawn after them all, over
 // everything. Banners and labels come later, the fog after the figures (it puts the kept scene back outside your sight: nothing
 // hidden shows). WDEPTH.on false: figures drawn as before, over everything (the tests compare); boxes: this frame's figures'
 // boxes [x0, y0, x1, y1 (the kept scene's pixels: the screen's game pixels on the camera's whole pixels), feet y, own]. The
 // screen may be at a finer scale than the game's pixels (core.js VS): the box a figure drew in is taken back to the scene's game
 // pixels, its mask made there, and laid over him scaled up as the scene was.
-const WDEPTH={on:true,trk:false,di:null,fr:null,pics:[],al:new Map(),cov:new Set(),t:0,cv:null,img:null,C:[],box:[0,0,0,0],boxes:[]};
+const WDEPTH={on:true,fade:.2,trk:false,di:null,fr:null,pics:[],al:new Map(),cov:new Set(),t:0,cv:null,img:null,C:[],box:[0,0,0,0],boxes:[]};
 // a structure's picture as drawn this frame at (x, y) on the screen (before the shake): its opaque pixels stand by their feet
 function depthPic(img,x,y){if(img&&WDEPTH.on)WDEPTH.pics.push([img,Math.round(x),Math.round(y)])}
 // (a picture's feet: for each opaque pixel the row its column's run of opaque pixels ends on, -1 where it is clear; kept on it)
@@ -48,7 +48,7 @@ function overdrawBox(x0,y0,x1,y1,ox,oy,fy,own,cam){
         for(let x=Math.max(cx0,dx+b[0]);x<=Math.min(cx1,dx+b[2]);x++)if(a[ro+x]){M[(mo+x)*4+3]=A;n++}}}}
     else{const [img,px,py]=k,D=picFeet(img),F=D.F,X=px+cam.x,Y=py+cam.y;key=img;const A=Math.round((AL.has(key)?AL.get(key):1)*255);
       for(let y=Math.max(wy0,Y+D.top);y<=Math.min(wy1,Y+D.h-1);y++){const ro=(y-Y)*D.w-X,mo=(y-wy0)*st-wx0;for(let x=Math.max(wx0,X);x<=Math.min(wx1,X+D.w-1);x++){const f=F[ro+x];if(f>=0&&Y+f>fy){M[(mo+x)*4+3]=A;n++}}}}
-    if(n){any=1;if(own)WDEPTH.cov.add(key)}}
+    if(n){any=1;WDEPTH.cov.add(key)}}
   if(!any)return;
   const cv=WDEPTH.cv,g=cv.getContext('2d');g.putImageData(I,0,0,0,0,w,h);g.globalCompositeOperation='source-in';g.drawImage(memCv(),x0,y0,w,h,0,0,w,h);g.globalCompositeOperation='source-over';
   ctx.drawImage(cv,0,0,w,h,x0,y0,w,h)}
@@ -58,7 +58,7 @@ function overdrawBox(x0,y0,x1,y1,ox,oy,fy,own,cam){
 function worldOverdraw(list,cam){
   const now=performance.now(),st=WDEPTH.t?Math.min(.1,Math.max(0,now-WDEPTH.t)/1000)*PROPFADE.rate:1,AL=WDEPTH.al,cov=WDEPTH.cov;WDEPTH.t=now;
   for(const k of cov)if(!AL.has(k))AL.set(k,1);
-  for(const [k,a] of AL){const to=cov.has(k)?PROPFADE.a:1,v=a<to?Math.min(to,a+st):Math.max(to,a-st);if(v>=1&&to>=1)AL.delete(k);else AL.set(k,v)}
+  for(const [k,a] of AL){const to=cov.has(k)?WDEPTH.fade:1,v=a<to?Math.min(to,a+st):Math.max(to,a-st);if(v>=1&&to>=1)AL.delete(k);else AL.set(k,v)}
   cov.clear();WDEPTH.boxes.length=0;const top=[],m=ctx.getTransform(),k=m.a||1,mem=memCv(),cw=mem.width,ch=mem.height,B=WDEPTH.box;
   const own=k=>Object.prototype.hasOwnProperty.call(ctx,k),di=own('drawImage'),fr=own('fillRect');WDEPTH.di=ctx.drawImage;WDEPTH.fr=ctx.fillRect;if(WDEPTH.on){ctx.drawImage=dbImage;ctx.fillRect=dbRect}
   try{for(const e of list){if(e.top){top.push(e);continue}if(!WDEPTH.on){drawMover(e);continue}
