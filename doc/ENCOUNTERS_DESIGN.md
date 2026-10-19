@@ -103,6 +103,7 @@ Any of them leaves at once when you are about 1.5× your sight away. Traces fade
   2. the 8 new ones of normal priority: cart stuck in mud, thief on the run, poacher, funeral, wedding, runaway horse, beggar, messenger;
   3. the new props;
   4. **lower priority, kept in the game, built last** (owner, 2026-10-19): fake wounded (lure), prisoner wagon, execution, duel challenge. The duel needs a one-on-one hero fight first.
+     Also in phase 4: **the sealed letter** as a real item (owner, 2026-10-19; see below).
 
   The owner reviews screenshots after each phase.
 
@@ -120,6 +121,24 @@ Any of them leaves at once when you are about 1.5× your sight away. Traces fade
 | Messenger | on a road; a realm's rider in its colours | rides up to you (faster than one on foot) | Read the news (a place you have not found goes on your map, where a lord rides, or the wars) · Rob (asks first: his purse and a sealed letter's price; reputation and honor with his realm) |
 
 Choices made in building it: the procession's time is its walk (4–10 h) rather than the scene's 3–8 h, since holdings stand 300+ px apart; the thief keeps his own 2–3 h and comes at the edge of your sight, so he crosses it; the chase is a sprint (×1.6) so a band on foot can catch a runner; the messenger's sealed letter is paid in gold (no letter item yet); a poacher may be on your own land too. Figures are stand-ins: the cart is the caravan's (a mud patch under it), the bier a shrouded body between two bearers, the dead deer the map's deer on its back, the horse the map's horse with a saddle, the messenger a rider on it.
+
+### The sealed letter (phase 4; owner, 2026-10-19)
+
+Today, robbing a messenger pays his purse plus 20–35 gold "for the letter" at once; there is no letter. It becomes a real item:
+
+- **What you get:** the robbed messenger's **sealed letter** (an item in your bag, one at a time per messenger), with real contents chosen when he spawns: where a lord's army is heading, a holding his realm means to attack, a deal between two realms, or plain news. From, to and what it says are saved with it.
+- **What you can do with it** (its page from the bag, verbs only):
+
+| Verb | Does |
+|---|---|
+| **Break the seal** | You read it: its news goes on your map or in your log (the lord's route, the target, the deal). It stays in your bag, opened. |
+| **Sell it to a rival** | In a holding of a realm at war with the sender: gold (more if still sealed) and reputation there. |
+| **Deliver it** | Take it to the holding it is addressed to: a reward and reputation. They do not learn you robbed the rider, unless the robbery was seen (a witness roll, by who was near, lowered by Scouting and night). An opened letter pays less and may raise questions. |
+| **Burn it** | Gone; nobody learns what it said. |
+
+- **Sealed or opened:** a sealed letter sells and delivers for more; an opened one tells you what it says. You choose which matters more.
+- **It goes stale:** after its news has happened (the lord arrived, the attack came, about 5–10 days), it is worth little to anyone.
+- **Reuses:** the rumour helpers (`roadNews`), `addRep`/`wrong`, the bag and item pages, the realms' wars and lords' targets.
 
 ## 6. Questions for the owner
 
