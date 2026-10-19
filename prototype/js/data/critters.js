@@ -5,6 +5,9 @@
 // Livestock (live) lives in its holding's pasture, inside the fence (critters.js penEnts): to be seen, never sold; what the pasture
 // makes of it (meat, milk, cheese, wool) goes to the holding (economy.js).
 // spd: map speed while fleeing (your band walks at 36, more on a road or a mount); shy: how close you get before it bolts.
+// (game of the woods (where has 'forest') is found mostly in them: a spot it may live on outside a wood is kept only keep of the
+// time when it is placed (critters.js spawnCritter); its kinds of the open alone (goats, gazelles…) as ever)
+const CRITTER_WOODS={keep:.3};
 const CRITTERS={
   rabbit:{n:'Rabbits',one:'rabbit',where:['grass','forest'],herd:[2,4],meat:1,mat:['rabbitfur',.5],xp:2,spd:30,shy:50,w:4,size:1,col:'#b8a088'},
   deer:{n:'Deer',one:'deer',where:['forest','grass'],herd:[2,4],meat:4,mat:['hide',.6],xp:5,spd:40,shy:70,w:3,size:2,col:'#a0683a'},
