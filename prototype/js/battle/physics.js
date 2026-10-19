@@ -29,12 +29,13 @@ const PHYSICS={on:true,
      of each man close behind him (within supR, up to supN) the one struck is backed by; wall: a shield wall's mass ×; wedge: a
      wedge rider's mass × (1 + wedge × its bonus); down: thrown faster than this (px/s) × his own mass, he is down downT × (thrown/that) s
      (downMin to downMax); splash: those within splashR of him thrown by this share (down too, by a wedge); brace: a braced
-     spear's counter, braceHurt × his blow × the momentum, the rider stopped, thrown back braceBack of his speed and staggered
-     braceStun s; blow: a heavy beast's blow (at least blowMass) throws by blow × its share of the two masses; shake: the
+     spear's counter, braceHurt × his blow × the momentum, the rider stopped, thrown back braceBack of his speed (out of
+     their reach: room to break away), staggered braceStun s and his unit shaken braceShock × the momentum (a failed charge
+     breaks some of them: morale.js shake); blow: a heavy beast's blow (at least blowMass) throws by blow × its share of the two masses; shake: the
      momentum (mass × px/s) of a full jolt of the view (vfx.js jolt: never with reduced motion); downShock: a man knocked down
      shakes his unit's morale this much (morale.js shake) */
   hit:{kb:1.1,support:.6,supR:16,supN:3,wall:2.5,wedge:3,down:45,downT:.8,downMin:.5,downMax:1.4,splash:.5,splashR:16,
-    braceHurt:1,braceBack:.25,braceStun:.4,blow:65,blowMass:4,shake:300,downShock:2},
+    braceHurt:1,braceBack:.8,braceStun:.4,braceShock:20,blow:65,blowMass:4,shake:300,downShock:2},
   // routers: their way wanders up to wob rad off, by jit rad a second, drawn back back a second; a stumble trip times a second
   // (his speed × tripK)
   rout:{wob:.6,jit:3,back:.5,trip:.25,tripK:.4},
@@ -103,9 +104,9 @@ function physImpact(u,t,m){
   physThrow(t,a,dv,true);
   for(const o of spatialOn()?SG.near(t.x,t.y,H.splashR+1,t.team,false):B.units)if(o!==t&&o.team===t.team&&o.hp>0&&!o.s.big&&Math.hypot(o.x-t.x,o.y-t.y)<H.splashR)physThrow(o,a,dv*H.splash*physMass(t)/physMass(o),wb>0);
   u.vel=Math.min(u.vel,vc);if((u.s.charge||u.s.big)&&m>SHAKE.charge)jolt(SHAKE.amp*clamp(ma*va/H.shake,0,1.25))}
-// braced spears take a charge (morale.js chargeMul, physics on): the rider stopped dead, thrown back, staggered, and hurt
+// braced spears take a charge (morale.js chargeMul, physics on): the rider stopped dead, thrown back, staggered, shaken and hurt
 function physBraced(u,t,m){
-  const H=PHYSICS.hit,a=Math.atan2(u.y-t.y,u.x-t.x),v=u.vel||0;u.vel=0;u.kx=(u.kx||0)+Math.cos(a)*v*H.braceBack;u.ky=(u.ky||0)+Math.sin(a)*v*H.braceBack;stun(u,H.braceStun);
+  const H=PHYSICS.hit,a=Math.atan2(u.y-t.y,u.x-t.x),v=u.vel||0;u.vel=0;u.kx=(u.kx||0)+Math.cos(a)*v*H.braceBack;u.ky=(u.ky||0)+Math.sin(a)*v*H.braceBack;stun(u,H.braceStun);if(!steady(u))shake(u,H.braceShock*m);
   hit(t,u,meleeDmgOf(t.s)*H.braceHurt*m);fx(t.x,t.y-6,'#cfe0ff',4)}
 // a heavy beast's blow (attacks.js attack, physics on): the one it hits thrown by its weight, and down if hard enough
 function physBlow(u,t){const H=PHYSICS.hit,ma=physMass(u);if(ma<H.blowMass||t.hp<=0)return;const mt=physMass(t);physThrow(t,Math.atan2(t.y-u.y,t.x-u.x),H.blow*ma/(ma+mt),true)}

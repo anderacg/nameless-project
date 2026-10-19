@@ -41,7 +41,8 @@ function chargeJolt(u,m){if(m>SHAKE.charge&&(u.s.charge||u.s.big))jolt(SHAKE.amp
 // each drawn frame: the jolt runs down on real time; the offset to draw at, or null (paused: no blow's shake, only a jolt fading)
 function shakeView(bat){
   const now=performance.now()/1000,J=bat&&B&&B.jolt;if(J){joltStep(J.lt?Math.min(.1,now-J.lt):0);J.lt=now}
-  if(!shakeOn())return null;const a=Math.max(bat&&B.paused?0:G.shake/2,bat?joltAmp():0);if(a<.5)return null;
+  if(!bat){G.shake=0;return null}// (only a battle shakes: a blow's shake left over must never shake the map)
+  if(!shakeOn())return null;const a=Math.max(B.paused?0:G.shake/2,joltAmp());if(a<.5)return null;
   return{x:Math.round(Math.sin(now*SHAKE.hz)*a),y:Math.round(Math.cos(now*SHAKE.hz*1.3)*a)}}
 // one falls: the body tips over (drawCorpses), lies, and bleeds; a puff of dust. Its weapon drops beside it
 function vfxDeath(t,corpse){

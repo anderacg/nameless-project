@@ -27,7 +27,8 @@
 // G.quietEvents is on, and the view is the tests' fixed 576 x 360. Hash: FNV-1a 32-bit over bytes, char codes or 32-bit words;
 // W8's places at 1e-6 px.
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.push('INFO '+m),t=T,G=t.G,P=t.P,W=t.W;
-const EXPECT={W1:'65e24662',W2:'2b49a168',W3:'7a0dcbac',W4:'46450e62',W5:'6587a43c',W6:'b82e8af1',W7:'a53f54ac',W8:'d4c01429',B2:'6f533c8c'};// (at 0a42712; B2 at R3; W6-W8 at Phase 1; W6 at depth and smooth walking; W7, B2 at save v3)
+const EXPECT={W1:'65e24662',W2:'2b49a168',W3:'7a0dcbac',W4:'46450e62',W5:'6587a43c',W6:'34d5bbd5',W7:'a53f54ac',W8:'d4c01429',B2:'6f533c8c'};// (at 0a42712; B2 at R3; W6-W8 at Phase 1; W6 at depth, smooth walking and pasture herds and label layout; W7, B2 at save v3)
+// (W6 again, merged: the pasture herds in their pens (b82e8af1) together with the label layout (4033f0b4): 34d5bbd5)
 // (W5, W6 re-recorded in Phase 0 wave 1, on purpose, a fix: the painted world and the minimap were the title screen's, from the
 //  lots main.js lays out at load, never repainted for a game's own (begin lays out others); now begin repaints them, so the map
 //  shows the real lots. W6 moved only at the third spot (2688, 768) by night and day; was W5 aceeae00, W6 7a99f543)
@@ -54,6 +55,10 @@ const EXPECT={W1:'65e24662',W2:'2b49a168',W3:'7a0dcbac',W4:'46450e62',W5:'6587a4
 //  v 3, world.v 3, world.map {gen 'classic-0', settings null, sum} and world.edits [] added, world.seen as run lengths (fog.js
 //  seenSave). The same save turned back into v2's form (v 2, no map or edits, seen a bit a tile) still hashes to the old values,
 //  checked once. B2 hashes a save too. Was W7 3ef9ffd9, B2 00a93435; W1-W6 and W8 unchanged)
+// (W6 again, 0a25d50c to 4033f0b4, the labels laid out (render.js labelLayout, tests/labels.js): a party's label nudged up off a
+//  holding's name or a label laid before it. Only the third spot moved, by day and night (f3510035 to d9650abf, cff909bc to
+//  8e5a398c): two parties stand together there, their labels "12" and "8" on one spot, and the "8" now sits 6 px over the "12".
+//  W1-W5, W7, W8 and B2 unchanged)
 const r0=Math.random,pn=performance.now,t0=pn.call(performance);
 try{
  try{localStorage.clear()}catch(e){}

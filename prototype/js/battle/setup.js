@@ -71,18 +71,20 @@ function placeObstacles(env,y0,y1){y0=y0==null?FIELD_EDGE.top:y0;y1=y1==null?BH-
    cannot be measured). A soldier's feet are its place, so the top leaves room for its body. */
 const FIELD_EDGE={top:18,bot:6,body:22,pass:18};
 const fieldTop=()=>B&&B.ftop!=null?B.ftop:FIELD_EDGE.top,fieldBot=()=>B&&B.fbot!=null?B.fbot:BH-FIELD_EDGE.bot;
-// (measured before the field is laid out, so its rocks and trees go where the fight can be seen)
+// (measured before the field is laid out, so its rocks and trees go where the fight can be seen; the HUD laid out unseen and put
+// back as it was: it shows only once it is filled in for this battle, as the field opens (present). Shown here, it stood empty or
+// as the last battle left it through the start's other steps, behind the loading overlay while that is still clear)
 function measureField(){
   if(MAPZOOM.on){MAPZOOM.map=false;fitScreen()}// (the screen at its own scale first, whatever the map's zoom: core.js MAPZOOM)
-  const def={top:FIELD_EDGE.top,bot:BH-FIELD_EDGE.bot};bbar.hidden=false;{const sc=document.getElementById('screen');if(sc)sc.dataset.mode='battle'}// (the HUD laid out as in battle)
-  const cv=document.querySelector('canvas'),r=cv&&cv.getBoundingClientRect();if(!r||r.height<50)return def;const k=BVH/r.height/camFit(),box=sel=>{const e=bbar.querySelector(sel);return e&&e.offsetParent!==null?e.getBoundingClientRect():null};
-  // (measured without the unit-ability buttons (battlehud.js): which abilities show depends on the selection, and the last battle's
-  // were still there, so the field and the groups' widths would change with them)
-  const ab=bbar.querySelector('.abils'),abH=ab&&ab.hidden;if(ab)ab.hidden=true;
-  try{const tops=['.btop','.btime'].map(box).filter(Boolean),bot=box('.bcmd');
+  const def={top:FIELD_EDGE.top,bot:BH-FIELD_EDGE.bot},was=bbar.hidden;bbar.style.visibility='hidden';bbar.hidden=false;{const sc=document.getElementById('screen');if(sc)sc.dataset.mode='battle'}// (the HUD laid out as in battle)
+  const ab=bbar.querySelector('.abils'),abH=ab&&ab.hidden;
+  try{const cv=document.querySelector('canvas'),r=cv&&cv.getBoundingClientRect();if(!r||r.height<50)return def;const k=BVH/r.height/camFit(),box=sel=>{const e=bbar.querySelector(sel);return e&&e.offsetParent!==null?e.getBoundingClientRect():null};
+    // (measured without the unit-ability buttons (battlehud.js): which abilities show depends on the selection, and the last battle's
+    // were still there, so the field and the groups' widths would change with them)
+    if(ab)ab.hidden=true;const tops=['.btop','.btime'].map(box).filter(Boolean),bot=box('.bcmd');
     const top=tops.length?Math.max(...tops.map(b=>b.bottom))-r.top:0,bh=bot?r.bottom-bot.top:0;
     return{top:Math.round(clamp(top*k+FIELD_EDGE.body,FIELD_EDGE.top,BH*.3)),bot:Math.round(clamp(BH-bh*k-FIELD_EDGE.bot,BH*.6,BH-FIELD_EDGE.bot))}}
-  finally{if(ab)ab.hidden=abH}}
+  finally{if(ab)ab.hidden=abH;bbar.hidden=was;bbar.style.visibility=''}}
 /* ---------- battle types (IMPLEMENTATION_PLAN §4 item 5; doc/TERRAIN_DESIGN.md §8, phase 5): B.btype, absent on an open field ----------
    {kind:'bridge', def, ford}: a fight at a river crossing: one bridge over deep water nobody can wade (ford: and a ford far off
    it); def, the team set upon, stands on its bank by the bridge, the other comes on from its own edge and must cross.
@@ -254,8 +256,10 @@ class BattleSetup{
     warmBattle(this.units);
     deployInit(this.opts);
   }
+  // (the HUD filled in, then shown: at once when the start runs in one go (LOADING.sync: nothing is painted in between), else with
+  // the battle's first frame (render.js frame), so it never shows half made, nor over the map it leaves)
   present(){
-    G.mode='battle';hidePanel();bbar.hidden=false;buildSlotBar();setOrderUI();battleSpeedUI();autoUI();updateHint();
+    G.mode='battle';hidePanel();if(LOADING.sync)bbar.hidden=false;else B.hudWait=true;buildSlotBar();setOrderUI();battleSpeedUI();autoUI();updateHint();
     for(const u of this.units)u.y=clamp(u.y,fieldTop(),fieldBot());for(const g of playerGroups())if(B.groups[g].ay)B.groups[g].placeAt(B.groups[g].ax,clamp(B.groups[g].ay,fieldTop(),fieldBot()));
     log((this.opts.tournament?'The crowd roars. Defeat the champion.':'The lines meet in the '+this.env.name.toLowerCase()+'. '+this.env.text)+(BFIELD?' '+BFIELD.n+' field.':''));
     if(B.btype)typeSay();

@@ -41,8 +41,22 @@ function bannerAt(o,f){const b=o.banner&&o.banner();if(!b||typeof b!=='object')r
 function drawBanners(cam){const now=performance.now(),still=reducedMotion(),mine=q=>q.o===P||q.o.faction==='player'?1:0;
   BANNERQ.sort((a,b)=>mine(a)-mine(b)||a.o.y-b.o.y);
   for(const q of BANNERQ){const B=bannerAt(q.o,still?0:Math.floor(now/420+q.o.x*.13)%2);if(!B)continue;const d=VS>1?subOf(q.o):[0,0],X=B.x-cam.x+d[0],Y=B.y-cam.y+d[1];ctx.drawImage(B.s,X,Y);
-    if(q.label)txt(q.label[0],X+7,Y+opaqueBox(B.s)[1]-2,q.label[1],'center')}
+    if(q.label){const n=TXTQ?TXTQ.length:0;txt(q.label[0],X+7,Y+opaqueBox(B.s)[1]-2,q.label[1],'center');if(TXTQ&&TXTQ.length>n)TXTQ[n].who=mine(q)?1:2}}
   BANNERQ=[]}
+/* the labels laid out as they are drawn (drawWorld; q the queue, its first nPlace the places'): those shown (a place's where you
+   know the land, anyone else's in your sight) keep their places, the holdings' names first; then the parties' over their
+   banners (drawBanners: who 1 yours, 2 the rest), each nudged up, a label it covers at a time, just clear of it, up to max px,
+   till clear of every label laid before it. One still covered is hidden while it is, never yours (it stays where it was). A
+   label keeps its party's fraction of a pixel (subOf): crisp, gliding with it, resting still on a name it passes over */
+const LABEL_LAY={max:18};
+function labelBox(a){const c=txtPic(a[0],a[3],a[4]);return[a[1]-c.ox+1,a[2]-c.ba,c.width-3,c.ba+c.bd]}
+function labelLayout(q,nPlace,cam){
+  const L=LABEL_LAY,out=q.filter((a,i)=>{const wx=a[1]+cam.x,wy=a[2]+cam.y;return i<nPlace?seenAt(wx,wy+6):inSight(wx,wy+8)}),laid=[],e=.01;
+  const hit=b=>laid.find(o=>b[0]<o[0]+o[2]-e&&o[0]<b[0]+b[2]-e&&b[1]<o[1]+o[3]-e&&o[1]<b[1]+b[3]-e);
+  for(const a of out)if(!a.who)laid.push(labelBox(a));
+  for(const w of [1,2])for(const a of out){if(a.who!==w)continue;const b=labelBox(a),y0=b[1];let o;while((o=hit(b))&&y0-o[1]+b[3]<=L.max)b[1]=o[1]-b[3];
+    if(o){if(w>1){a.hide=true;continue}b[1]=y0}a[2]-=y0-b[1];laid.push(b)}
+  return out.filter(a=>!a.hide)}
 // (an animal's step on the map, ms a frame)
 const D_STEP=150;
 // the tile grid over the view: a line along every tile edge from (x0, y0) for w by h world pixels, drawn offset by (ox, oy),
@@ -124,7 +138,7 @@ function drawWorld(){
     ctx.save();ctx.globalCompositeOperation='lighter';ctx.fillStyle=g;ctx.fillRect(L.x-r,L.y-r,2*r,2*r);ctx.restore();const f=Math.floor(now/120+L.x)%2;rect(ctx,'#e8803a',L.x-1+f,L.y-2,2,2);rect(ctx,'#ffe090',L.x,L.y-1-f,1,1)}}
   wuiUnder(cam);// (the way you walk, your goal's ring, a click's ripple, the ring round what you chase: worldui.js)
   drawBanners(cam);// (the parties' banners, over all, their labels queued with the rest)
-  const q=TXTQ;TXTQ=null;q.forEach((a,i)=>{const wx=a[1]+cam.x,wy=a[2]+cam.y;if(i<nPlace?seenAt(wx,wy+6):inSight(wx,wy+8))txt(...a)});
+  const q=TXTQ;TXTQ=null;labelLayout(q,nPlace,cam).forEach(a=>txt(...a));// (laid out: no party's label over a holding's name)
   drawQuestMarks(cam);
   wuiOver(cam);// (your goal's arrow, the arrow over what you chase, the brackets round what the pointer is on: worldui.js)
   ctx.restore();
@@ -322,7 +336,7 @@ function frame(){
   setRes(bat?BVW:map?VW*VS:VW,bat?BVH:map?VH*VS:VH,map?VS:1);
   ctx.save();if(map&&VS>1)ctx.scale(VS,VS);
   {const s=shakeView(bat);if(s)ctx.translate(s.x,s.y)}// (a blow's shake, a charge's jolt: drawn only, vfx.js)
-  if(bat)drawBattle();
+  if(bat){drawBattle();if(B.hudWait){B.hudWait=false;bbar.hidden=false}}// (its HUD shown with its first frame: setup.js present)
   else if(scn)drawScene();
   else if(G.mode==='title'){ctx.fillStyle='#0b0d14';ctx.fillRect(0,0,VW,VH);drawWorld()}
   else drawWorld();
