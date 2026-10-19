@@ -36,7 +36,8 @@ function drawMover(e){if(VS<=1){e.f();return}const nt=TXTQ?TXTQ.length:0,nl=LIGH
    stance against you, as before). They flutter in real time, still under reducedMotion (vfx.js). A click on one picks its party
    (Party.pick, world.js pickAt) */
 const BANNER_GAP=2;let BANNERQ=[];
-function bannerAt(o,f){const b=o.banner&&o.banner();if(!b)return null;const s=bannerSprite(b,f);return{s,x:Math.round(o.x)-4,y:o.headY()-BANNER_GAP-14}}
+// (a party's banner only: a site's banner() is its camp flag's colour, structures.js)
+function bannerAt(o,f){const b=o.banner&&o.banner();if(!b||typeof b!=='object')return null;const s=bannerSprite(b,f);return{s,x:Math.round(o.x)-4,y:o.headY()-BANNER_GAP-14}}
 function drawBanners(cam){const now=performance.now(),still=reducedMotion(),mine=q=>q.o===P||q.o.faction==='player'?1:0;
   BANNERQ.sort((a,b)=>mine(a)-mine(b)||a.o.y-b.o.y);
   for(const q of BANNERQ){const B=bannerAt(q.o,still?0:Math.floor(now/420+q.o.x*.13)%2);if(!B)continue;const d=VS>1?subOf(q.o):[0,0],X=B.x-cam.x+d[0],Y=B.y-cam.y+d[1];ctx.drawImage(B.s,X,Y);
