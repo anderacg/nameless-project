@@ -6,7 +6,7 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),out=()=>{cons
  const t=T,G=t.G;
  try{t.act('begin','soldier');G.quietEvents=true;
   const z=t.TOWNS.find(x=>x.owner&&x.owner!=='player'&&Object.keys(t.ESTATES).some(k=>t.bldLv(x,k)));const k=Object.keys(t.ESTATES).find(k=>t.bldLv(z,k));
-  const lv=t.bldLv(z,k),own=2+2*lv,n0=t.estateGuards(z,k).length,g0=z.gar||0;
+  const lv=t.bldLv(z,k),own=t.GUARDS.base+t.GUARDS.per*lv,n0=t.estateGuards(z,k).length,g0=z.gar||0;
   t.guardsBeaten(z,k);const n1=t.estateGuards(z,k).length;
   ok(n1===n0-own-(n0-own),'beaten, the estate\u2019s own guards are gone ('+n0+' to '+n1+'; own '+own+')');
   ok((z.gar||0)<=g0,'and any garrison men who stood with them are lost to the garrison ('+g0+' to '+(z.gar||0)+')');
@@ -14,7 +14,7 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),out=()=>{cons
   ok(a===n1&&b>a&&c>=own,'their posts stay empty '+(t.GUARDS.refill-1)+' days, then fill one a day ('+a+', '+b+', '+c+')');
   G.day=d0;t.guardsBeaten(z,k);ok(!!(z.gd&&z.gd[k]&&z.gd[k].length),'the empty posts are kept on the holding (saved while one is empty)');
   // population: the dead are the holding's people; each post filled takes one more; too few people and it waits
-  {G.day=d0;delete z.gd;const lv2=t.bldLv(z,k),own2=2+2*lv2;z.pop=200;t.guardsBeaten(z,k);ok(z.pop===200-own2,'the fallen guards were the holding’s people ('+own2+' fewer: '+z.pop+')');
+  {G.day=d0;delete z.gd;const lv2=t.bldLv(z,k),own2=t.GUARDS.base+t.GUARDS.per*lv2;z.pop=200;t.guardsBeaten(z,k);ok(z.pop===200-own2,'the fallen guards were the holding’s people ('+own2+' fewer: '+z.pop+')');
    const p0=z.pop;for(let i=0;i<t.GUARDS.refill+own2+1;i++){G.day++;t.guardsDay(z)}ok(z.pop===p0-own2&&t.estateGuards(z,k).length>=own2,'each post filled again takes one person ('+p0+' to '+z.pop+')');
    G.day=d0;delete z.gd;z.pop=t.GUARDS.minPop;t.guardsBeaten(z,k);const pl=z.pop;for(let i=0;i<t.GUARDS.refill+own2+3;i++){G.day++;t.guardsDay(z)}
    ok(z.gd&&z.gd[k]&&z.gd[k].length===own2&&z.pop===pl,'a holding with too few people cannot fill them (posts wait; '+pl+' people)')}

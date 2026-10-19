@@ -98,11 +98,11 @@ const breach=t=>{t.wall=Math.max(0,wallOf(t)-1);if(t.work&&t.work.k==='wall')t.w
 
 /* someone else's estate: plunder or burn it */
 /* estates: plunder or burn what a holding has built in its fields */
-// an estate's guards: 2 + 2 a level of its own, less those fallen whose places are not filled yet (t.gd[k]: the day each comes
-// back, GUARDS.refill days after, one a day), and up to 4 of the garrison when it stands near the walls
-const GUARDS={refill:5,gar:4,minPop:20};
+// an estate's guards: GUARDS.base + GUARDS.per a level of its own, less those fallen whose places are not filled yet (t.gd[k]: the day each comes
+// back, GUARDS.refill days after, one a day), and up to GUARDS.gar of the garrison when it stands near the walls
+const GUARDS={base:1,per:1,refill:5,gar:2,minPop:20};// (own guards: base + per a level; gar: the garrison's most that stand with them)
 const guardsDown=(t,k)=>((t.gd&&t.gd[k])||[]).filter(d=>d>G.day).length;
-const estateGuards=(t,k)=>{const lv=bldLv(t,k),near=Math.hypot(bldSpots(t)[k].x-t.x,bldSpots(t)[k].y-t.y)<WORLD_SCALE.land.estateGuard*TILE,n=Math.max(0,2+2*lv-guardsDown(t,k))+(near?Math.min(GUARDS.gar,t.gar||0):0),a=[];
+const estateGuards=(t,k)=>{const lv=bldLv(t,k),near=Math.hypot(bldSpots(t)[k].x-t.x,bldSpots(t)[k].y-t.y)<WORLD_SCALE.land.estateGuard*TILE,n=Math.max(0,GUARDS.base+GUARDS.per*lv-guardsDown(t,k))+(near?Math.min(GUARDS.gar,t.gar||0):0),a=[];
   for(let i=0;i<n;i++){const c=RACES[t.races[i%t.races.length]];a.push(i%3===2?c.ranged:c.melee)}return a};
 /* met on the map: the estate's own areas down the rail (window.js), as the rooms of a house: its overview (the rail's header:
    what it is, its level, owner and state: townui.js bldTop), where its workers live (folk: a card for them, Talk: folk.js
@@ -218,7 +218,7 @@ function estateAct(a,arg){
 // won the fight at an estate (from concludeEncounter): the spoils and the damage
 // beaten (or fled the field): the guards there are gone, their own posts filled again one a day after GUARDS.refill days, the
 // garrison's men lost from the garrison
-function guardsBeaten(t,k){const lv=bldLv(t,k),down=guardsDown(t,k),own=Math.max(0,2+2*lv-down),near=Math.hypot(bldSpots(t)[k].x-t.x,bldSpots(t)[k].y-t.y)<WORLD_SCALE.land.estateGuard*TILE;
+function guardsBeaten(t,k){const lv=bldLv(t,k),down=guardsDown(t,k),own=Math.max(0,GUARDS.base+GUARDS.per*lv-down),near=Math.hypot(bldSpots(t)[k].x-t.x,bldSpots(t)[k].y-t.y)<WORLD_SCALE.land.estateGuard*TILE;
   t.gd=t.gd||{};const L=(t.gd[k]||[]).filter(d=>d>G.day),last=L.length?Math.max(...L):G.day+GUARDS.refill-1;for(let i=1;i<=own;i++)L.push(last+i);t.gd[k]=L;t.pop=Math.max(10,(t.pop||0)-own);// (the dead are the holding's people)
   if(near)t.gar=Math.max(0,(t.gar||0)-Math.min(GUARDS.gar,t.gar||0))}
 // a new day: each post whose time has come is filled from the holding's people (one person each); too few people left (GUARDS.minPop)
