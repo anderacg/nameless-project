@@ -47,8 +47,8 @@ const ENC_SPD={approach:24,ride:32,flee:20,run:36,walk:20,leave:12,bolt:34};
    ENC_SPD.run × (1 − agi × your Agility), never under lo of it, and you go after him at sprint × your pace (your Riding in it
    when mounted: world.js updateWorld, roadSprint); you have him within reach + agiReach × your Agility; he is away after hours,
    or once lose × your sight from you. A startled beast runs bolt px [from, to], then stops (spook: × your sight, it bolts as you
-   come). A catch by hand: odds base + ride × Riding + agi × Agility, between lo and hi */
-const ENC_CATCH={sprint:1.6,agi:.04,lo:.6,reach:14,agiReach:2,hours:1.5,lose:1,bolt:[40,64],spook:.5,odds:{base:.25,ride:.08,agi:.04,lo:.1,hi:.9}};
+   come). A catch by hand: a stat check (ENC_STAT.horse: Riding and Agility) */
+const ENC_CATCH={sprint:1.6,agi:.04,lo:.6,reach:14,agiReach:2,hours:1.5,lose:1,bolt:[40,64],spook:.5};
 // a procession's way (walk): its goal at least min px from where it comes into the world, and near enough to reach in its
 // longest time (ENC_LIFE.walk) at its pace, the roads winding (wind: the share of its way that is straight on); places within far
 // px of you (the kinds' ok)
@@ -68,14 +68,36 @@ const ENC_WALK={min:64,wind:.75,far:400};
    worth its lord pays; opened: × for an opened one, old: × for a stale one; rep: sell, deliver, seen (what delivering costs when
    the robbery was seen); witness: the roll when you rob the rider: base + per for each soul within r px of him + hold when a
    holding is within holdR px, × (1 − scout × Scouting), × night by night, between lo and hi; reveal: tiles round a place its news
-   uncovers on your map) */
-const ENC_TUNE={mud:{sp:20,hours:1,rep:3,give:[2,4],goods:[3,5],coins:[3,8]},thief:{purse:[20,40],reward:10,rep:4,honor:3},poacher:{see:1.15,scout:.1,rep:3,bounty:10,meat:4,price:8},
+   uncovers on your map); and the old ones: traveller (Tend his wounds: food; rep and renown × (1 + your care: ENC_STAT.care);
+   gift: × your care, the chance he gives you gold [from, to] from his purse), hunters (Join the hunt: xp; meat × (1 + your
+   ENC_STAT.hunt); furs × it) */
+const ENC_TUNE={traveller:{food:3,rep:4,renown:1,gift:.6,gold:[5,10]},hunters:{xp:15,meat:3,furs:2},mud:{sp:20,hours:1,rep:3,give:[2,4],goods:[3,5],coins:[3,8]},thief:{purse:[20,40],reward:10,rep:4,honor:3},poacher:{see:1.15,scout:.1,rep:3,bounty:10,meat:4,price:8},
   funeral:{n:[3,5],honor:2,morale:4},wedding:{morale:10,hours:2,gift:25,rep:5},beggar:{gold:[5,10,20],honor:[1,2,3]},messenger:{purse:[8,16]},
   pilgrims:{n:[2,4],morale:8,rep:3,walk:1,alms:20,almsMorale:12,xp:25,coins:12,coinsMorale:8},
   lure:{w:.5,night:1.6,wild:1.4,bandit:.3,bands:3,near:400,cap:1.6,warn:3,count:5,scare:{max:6,base:.2,lead:.06,cha:.05,lo:.05,hi:.85}},
   letter:{stale:[5,10],worth:[30,45],kind:{army:1.4,attack:1.3,deal:1.1,news:.6},w:{army:1,attack:1,deal:.7,news:.8},sell:1.2,deliver:.8,opened:.5,old:.15,
     rep:{sell:4,deliver:5,seen:6},witness:{r:120,base:.08,per:.12,hold:.25,holdR:160,scout:.07,night:.5,lo:.02,hi:.9},reveal:5}};
 const ENC_DICE=.48;// (a hand of bones won)
+/* ---------- your stats on the road (owner, 2026-10-19: stats only add to what anyone gets, up to a cap; a stat of 0 is today's
+   odds or outcome, never worse). ENC_STAT, each check: {base (what anyone gets), parts: [[stat, per]…] (a stat: a discipline,
+   P.sk, or an attribute, str, agi, int, cha; a list of them: the highest counts), cap}. statOdds(k): base + Σ stat × per, at
+   most cap. A chance (horse: Catch it; dice: a hand won; mine: the tunnels hold, mineGear: gear deep inside; wisps: the
+   treasure) or a share added on top (care: how well you tend the wounded traveller, 0–1, kept on him as e.care; push: of the
+   stamina and time a cart takes, taken off; hunt, respect: × (1 + it) the haul, or the honour, reputation and morale given).
+   statRead: a chance's Insight read (vague, rough or exact by Scouting); statHelps: the stats that help, by name; statParts:
+   each stat's worth, for the wiki ---------- */
+const ENC_STAT={horse:{base:.25,parts:[['ride',.08],['agi',.04]],cap:.9},dice:{base:ENC_DICE,parts:[[['int','cha'],.015]],cap:.65},
+  mine:{base:.6,parts:[['surv',.04],['int',.01]],cap:.85},mineGear:{base:.4,parts:[['surv',.02],['int',.01]],cap:.55},wisps:{base:.5,parts:[['int',.025]],cap:.75},
+  care:{base:0,parts:[['med',.15],['int',.03]],cap:1},push:{base:0,parts:[['str',.05],['athl',.05]],cap:.6},
+  hunt:{base:0,parts:[['surv',.1],['hunt',.05],['archery',.05]],cap:1},respect:{base:0,parts:[['cha',.08]],cap:1}};
+const statOf=s=>Array.isArray(s)?Math.max(...s.map(statOf)):Math.max(0,s in P.attr?P.attr[s]:skill(s));
+const statOdds=k=>{const S=ENC_STAT[k];return Math.min(S.cap,S.parts.reduce((a,[s,p])=>a+p*statOf(s),S.base))};
+const statMore=(k,v)=>Math.round(v*(1+statOdds(k)));// (a share's worth on top of v)
+const statName=s=>Array.isArray(s)?s.map(statName).join(' or '):ATTRS[s]?ATTRS[s][0]:SKILLS[s].n;
+function statHelps(k){const n=ENC_STAT[k].parts.map(([s])=>statName(s));return(n.length>1?n.slice(0,-1).join(', ')+' and '+n[n.length-1]+' help':n[0]+(Array.isArray(ENC_STAT[k].parts[0][0])?' (the higher) helps':' helps'))}
+const statParts=k=>ENC_STAT[k].parts.map(([s,p])=>'+'+Math.round(p*1000)/10+'% '+(Array.isArray(s)||ATTRS[s]?'a point of ':'a level of ')+statName(s)).join(', ');
+// (o: vague, what (the words after a rough or exact chance), rough(p) and exact(p) (words of their own), more (its tooltip))
+function statRead(k,o){const p=statOdds(k);return insight([o.vague,o.rough?o.rough(p):oddsWord(p)+' '+o.what,o.exact?o.exact(p):Math.round(p*100)+'% '+o.what],o.more||'know your odds')}
 const ENC_RAIDER='#4a2c26';// (raiders' rags: darker than any realm's colours, so a fight reads at a glance)
 const roadNow=()=>G.day*24+G.clock/DAY*24;// (the world's clock, in hours)
 const roadDay=()=>G.clock/DAY<NIGHT_AT;// (by day: the kinds that walk the roads in daylight)
@@ -110,6 +132,8 @@ const ENC_LOOK={traveller:(r,v)=>({...folkLook('folk',r,v),robe:false,helm:'bare
   villager:(r,v)=>({...folkLook('folk',r,v),helm:'bare',weapon:null}),
   beggar:(r,v)=>({...folkLook('folk',r,v),robe:false,hair:'grey',beard:'grey',helm:'hood',hood:'leather',outer:'linen',team:'dark',cape:'leather',weapon:'crook'}),
   messenger:(r,v)=>({...folkLook('folk',r,v),robe:false,helm:'cap',outer:'leather',team:'white',weapon:null})};
+// (Tend his wounds' tooltip, the real wounded traveller's and the lure's: roadTend)
+const ROAD_TEND_TIP='Bandage him and share your food. Medicine and Intellect: the better he mends, the more he owes you.';
 const roadCol=e=>e.fac&&FACS[e.fac]?FACS[e.fac].col:'#8a7458',roadPrice=e=>Math.round(ITEMS[e.item].v*.7);
 // a fight on the road, as today's events made them: the raiders on a caravan, or an ambush's band (amb: its own band by the land,
 // its fighters mustered here; or the lure's, mustered when it came: e.band, e.foes); edge (as amb unless given): you in their
@@ -138,8 +162,8 @@ const ROAD_ENC={
     text:()=>'A wounded traveller lies by the road, robbed and left for dead. He clutches a purse the bandits missed.',
     facts:e=>[insight(['badly hurt','he will not last the day without help','he has about '+Math.max(1,Math.round(e.end-roadNow()))+' hours left'],'know how long he has'),'a purse: about 20 gold'],
     left:()=>'You leave him to his fate.',
-    acts:[{icon:'food',label:'Tend his wounds',facts:()=>['−3 food','reputation, renown +1'],need:()=>foodN()<3&&'You have no food to spare.',tip:'Bandage him and share your food.',
-        run:e=>{foodTake(3);const t=nearHold();if(t)addRep(t.name,4,true);P.renown+=1;e.healed=1;e.done=1;e.goOff();return'Bandaged and fed, he gets to his feet. He swears to tell '+(t?t.name:'everyone')+' of your kindness, and limps off down the road.'}},
+    acts:[{icon:'food',label:'Tend his wounds',facts:()=>roadTendFacts(),need:()=>foodN()<ENC_TUNE.traveller.food&&'You have no food to spare.',tip:ROAD_TEND_TIP,
+        run:e=>roadTend(e)},
       {icon:'gold',label:'Take his purse',facts:()=>['+20 gold','honour, morale −3'],ask:()=>'Take the last coins of a dying man? Your band will see it, and word gets round.',
         run:()=>{P.gold+=20;const t=nearHold(),f=t&&FACS[t.owner]&&t.owner;if(f)addHonor(f,-5,true);P.morale-=3;return'You take 20 gold. Some of your band look away.'+(f?' Word reaches the '+FACS[f].n+'.':'')}}]},
   /* the fake wounded (phase 4): the wounded traveller to the eye (his name, picture, call, page and choices), bandits lying in the
@@ -153,7 +177,7 @@ const ROAD_ENC={
     text:e=>e.out?'The “wounded man” gets up, grinning. '+e.foes.length+' bandits rise from the brush behind him, weapons out.':ROAD_ENC.traveller.text(e),
     facts:e=>e.out?[e.foes.length+' bandits',roadLureOdds(e)]:[...ROAD_ENC.traveller.facts(e),roadWarned()&&'<span class="bad">something moves in the brush behind him</span>',skill('scout')>=ENC_TUNE.lure.count&&'<span class="bad">'+e.foes.length+' bandits lie in wait: '+roadLureOdds(e)+'</span>'],
     left:e=>e.out?'You ride on. The bandits watch you go.':'You leave him to his fate.',after:()=>'Word on the road: a “wounded man” lay by the road as bait for bandits.',
-    acts:[{icon:'food',label:'Tend his wounds',when:e=>!roadWarned(),facts:()=>['−3 food','reputation, renown +1'],need:()=>foodN()<3&&'You have no food to spare.',tip:'Bandage him and share your food.',run:e=>roadSpring(e)},
+    acts:[{icon:'food',label:'Tend his wounds',when:e=>!roadWarned(),facts:()=>roadTendFacts(),need:()=>foodN()<ENC_TUNE.traveller.food&&'You have no food to spare.',tip:ROAD_TEND_TIP,run:e=>roadSpring(e)},
       {icon:'gold',label:'Take his purse',when:e=>!roadWarned(),facts:()=>['+20 gold','honour, morale −3'],ask:()=>'Take the last coins of a dying man? Your band will see it, and word gets round.',run:e=>roadSpring(e)},
       {icon:'sword',label:'Approach ready',when:e=>roadWarned()&&!e.out,facts:e=>['no ambush: they lose their edge',skill('scout')>=ENC_TUNE.lure.count&&e.foes.length+' bandits'],tip:'Walk up to him with your band closed up and weapons drawn.',
         run:e=>{roadFight(e,true,false);return'Your band closes up, weapons drawn. The bandits break cover too late.'}},
@@ -198,24 +222,25 @@ const ROAD_ENC={
     setup:e=>{const t=nearestOf(P,TOWNS);e.race=t.races[0];e.fac=t.owner&&FACS[t.owner]?t.owner:null},
     scene:e=>[['cloth','',0,1],['soldier','',-6,0,{col:roadCol(e),v:0}],['soldier','',6,0,{col:roadCol(e),v:2,face:-1}],['soldier','',1,-4,{col:roadCol(e),v:5}],['fire','',-13,-2]],
     text:()=>'Off-duty soldiers wave you over to a game of bones. Pick your stake.',
-    facts:()=>[insight(['they seem to win a fair share','the dice favour them a little',Math.round(ENC_DICE*100)+'% to win a hand'],'know the odds')],
+    facts:()=>[statRead('dice',{vague:'they seem to win a fair share',rough:p=>p<.5?'the dice favour them a little':'you can read their game',what:'to win a hand',more:'know the odds'}),statHelps('dice')],
     left:()=>'You leave them to it.',
     acts:[10,20,50].map(s=>({icon:'gold',label:'Play for '+s,facts:()=>[s+' gold a hand'],again:true,need:()=>P.gold<s&&'Not enough gold.',
-      run:()=>{if(Math.random()<ENC_DICE){P.gold+=s;return'You win '+s+' gold. They grumble.'}P.gold-=s;return'You lose '+s+' gold. They laugh.'}}))},
+      run:()=>{if(Math.random()<statOdds('dice')){P.gold+=s;return'You win '+s+' gold. They grumble.'}P.gold-=s;return'You lose '+s+' gold. They laugh.'}}))},
   mine:{n:'Collapsed mine',ico:'pick',w:2,ok:()=>terrAt(P.x,P.y)===T_HILL||nearMount(),on:'hill',beh:'stay',ends:'unseen',tip:'An old shaft in the hillside',
     scene:()=>[['bld','minehead',0,2]],
     text:()=>'A collapsed mine shaft opens into the hillside. Old carts still sit inside.',
-    facts:()=>[insight(['the timbers creak','the tunnels look unsafe, though more hold than fall','6 in 10 tunnels hold: iron inside, maybe more'],'know the risk')],
+    facts:()=>[statRead('mine',{vague:'the timbers creak',rough:p=>p<.75?'the tunnels look unsafe, though more hold than fall':'you can tell which tunnels will hold',exact:p=>Math.round(p*100)+'% the tunnels hold: iron inside, and a '+Math.round(statOdds('mineGear')*100)+'% chance of gear',more:'know the risk'}),statHelps('mine')],
     left:()=>'You mark it on your map and move on.',
     acts:[{icon:'pick',label:'Search it',facts:()=>['iron, maybe gear','a cave-in may cost you'],tip:'Go in with lamps and see what is left.',
-      run:()=>{if(Math.random()<.6){const k=invAdd('good','iron',5);let x=' You haul out '+k+' iron.';if(Math.random()<.4){const id=randomGear(1,3);if(invAdd('gear',id,1))x+=' Deep inside lies a '+ITEMS[id].n+'.'}return'The tunnels hold.'+x}
+      run:()=>{if(Math.random()<statOdds('mine')){const k=invAdd('good','iron',5);let x=' You haul out '+k+' iron.';if(Math.random()<statOdds('mineGear')){const id=randomGear(1,3);if(invAdd('gear',id,1))x+=' Deep inside lies a '+ITEMS[id].n+'.'}return'The tunnels hold.'+x}
         const ks=Object.keys(P.troops).filter(k=>P.troops[k]>0);if(ks.length){const k=ks[rint(0,ks.length-1)];P.remove(k);return'A tunnel caves in. You lose '+an(ST[k].n.toLowerCase())+'.'}P.morale-=8;return'A tunnel caves in. You barely crawl out.'}}]},
   hunters:{n:'Hunters’ camp',ico:'fire',w:2,ok:()=>terrAt(P.x,P.y)===T_FOREST||climAt(P.x,P.y)==='frost',on:'wood',beh:'stay',hear:'Smoke rises from a hunters’ fire to the {d}.',tip:'Hunters drying pelts by a fire',
     scene:()=>[['bld','tent',-12,1],['prop','woodpile',13,0],['fire','',2,2],['stand','hunter',-3,5,{v:1}],['stand','hunter',8,5,{v:2,face:-1}]],
     text:()=>'A camp of hunters drying pelts by the fire.',
     left:()=>'You nod and ride past.',
     acts:[{icon:'furs',label:'Buy 3 furs',facts:()=>['15 gold'],need:()=>P.gold<15?'Not enough gold.':goodRoom('furs')<3&&'No room in your bag.',run:()=>{P.gold-=15;invAdd('good','furs',3);return'Three warm furs for the road.'}},
-      {icon:'eye',label:'Join the hunt',facts:()=>['+15 XP','Scouting','meat'],run:()=>{gainXp(15);train('scout',8);const k=invAdd('good','meat',3);return'A good chase. (+15 XP, '+k+' meat)'}}]},
+      {icon:'eye',label:'Join the hunt',facts:()=>{const h=roadHaul();return['+'+ENC_TUNE.hunters.xp+' XP','Scouting',h.meat+' meat'+(h.furs?', '+h.furs+' furs':''),statHelps('hunt')]},tip:'Ride with them after deer. Survival, Hunting and Archery bring home more.',
+        run:()=>{const x=ENC_TUNE.hunters,h=roadHaul();gainXp(x.xp);train('scout',8);const k=invAdd('good','meat',h.meat),f=h.furs?invAdd('good','furs',h.furs):0;return'A good chase. (+'+x.xp+' XP, '+k+' meat'+(f?', '+f+' furs':'')+')'}}]},
   child:{n:'Lost child',ico:'people',w:1,ok:()=>!!nearHold(),on:'road',beh:'approach',call:'Please, help me!',hear:'A child is crying on the road to the {d}.',tip:'A child alone',
     setup:e=>{const t=nearHold();e.to=t.name;e.race=t.races[0]},
     scene:()=>[['walk','child',0,0]],
@@ -230,9 +255,9 @@ const ROAD_ENC={
   wisps:{n:'Will-o’-wisps',ico:'moon',w:3,ok:()=>climAt(P.x,P.y)==='swamp'&&darkness()>0,on:'bog',beh:'flee',glow:true,vanish:true,hear:'Pale lights flicker over the bog to the {d}.',tip:'Pale lights over the bog',
     scene:()=>[['wisp','',0,0,{v:0}],['wisp','',-9,-3,{v:1}],['wisp','',8,-6,{v:2}]],
     text:()=>'Pale lights dance over the bog, drifting deeper into the mire.',
-    facts:()=>[insight(['who knows where they lead','half the tales end in treasure','an even chance: 40 gold, or a night lost'],'know the tales')],
+    facts:()=>[statRead('wisps',{vague:'who knows where they lead',rough:p=>p<.6?'half the tales end in treasure':'you know the old tales: most end in treasure',exact:p=>Math.round(p*100)+'%: 40 gold, or a night lost',more:'know the tales'}),statHelps('wisps')],
     left:()=>'The lights fade behind you.',
-    acts:[{icon:'moon',label:'Follow them',facts:()=>['treasure, or a night lost'],run:()=>{if(Math.random()<.5){P.gold+=40;return'They lead to a drowned chest with 40 gold.'}P.morale-=6;return'They lead you in circles until dawn.'}}]},
+    acts:[{icon:'moon',label:'Follow them',facts:()=>['treasure, or a night lost'],run:()=>{if(Math.random()<statOdds('wisps')){P.gold+=40;return'They lead to a drowned chest with 40 gold.'}P.morale-=6;return'They lead you in circles until dawn.'}}]},
   caravan:{n:'Caravan under attack',ico:'sword',w:1.2,ok:()=>troopCount()>=3,on:'road',beh:'scene',goes:p=>!!(p[4]&&p[4].band),call:'Raiders! Help us!',hear:'Shouts and the clash of steel on the road to the {d}.',trace:'wreck',foe:true,tip:'Raiders falling on a caravan',
     setup:e=>{e.n=rint(4,6)+Math.floor(G.day/15);const t=nearestOf(P,TOWNS);e.fac=t.owner&&FACS[t.owner]?t.owner:null},
     scene:e=>[['cart','',0,0,{col:roadCol(e)}],['soldier','',18,2,{col:roadCol(e),v:2}],['soldier','',20,-3,{col:roadCol(e),v:4}],['dust','',25,0],['soldier','',29,1,{band:1,col:ENC_RAIDER,v:1,face:-1}],['soldier','',32,-3,{band:1,col:ENC_RAIDER,v:4,face:-1}],['soldier','',30,5,{band:1,col:ENC_RAIDER,v:5,face:-1}]],
@@ -264,8 +289,8 @@ const ROAD_ENC={
     text:e=>'A farmer from '+e.home+' leans on the back of his cart, its wheels sunk to the hubs in the mud. His ox strains and gets nowhere.',
     facts:e=>['a load of grain for '+e.home],
     left:()=>'You leave him to his mud.',
-    acts:[{icon:'hero',label:'Help push',facts:e=>[roadPush()?'−'+ENC_TUNE.mud.sp+' stamina':'an hour of your time','reputation in '+e.home,'+'+e.got+' grain'],tip:'Put your shoulder to the wheel.',
-        run:e=>{const x=ENC_TUNE.mud;if(roadPush())P.sp-=x.sp;else roadHours(x.hours);addRep(e.home,x.rep,true);const k=invAdd('good','grain',e.got);mood('kind');return'The cart lurches free. The farmer thanks you'+(k?' with '+k+' grain':'')+' and will speak well of you in '+e.home+'.'}},
+    acts:[{icon:'hero',label:'Help push',facts:e=>[roadPush()?'−'+roadPushSp()+' stamina':roadPushTime(),'reputation in '+e.home,'+'+e.got+' grain',statHelps('push')],tip:'Put your shoulder to the wheel. Strength and Athletics make it quicker work.',
+        run:e=>{const x=ENC_TUNE.mud;if(roadPush())P.sp-=roadPushSp();else roadHours(roadPushH());addRep(e.home,x.rep,true);const k=invAdd('good','grain',e.got);mood('kind');return'The cart lurches free. The farmer thanks you'+(k?' with '+k+' grain':'')+' and will speak well of you in '+e.home+'.'}},
       {icon:'bag',label:'Rob',facts:e=>[e.load+' grain and '+e.coins+' coins','reputation −'+CONDUCT.robWorker.rep+' · honor −'+CONDUCT.robWorker.honor],ask:e=>'Rob a farmer of '+e.home+' stuck in the mud? '+e.home+' will hear of it, and its workers will keep off the fields.',
         run:e=>{const k=invAdd('good','grain',e.load),t=townBy(e.home);P.gold+=e.coins;const cost=t?wrong(t,CONDUCT.robWorker):'';mood('cruel');return'You take '+(k?k+' grain and ':'')+e.coins+' coins from his cart.'+(cost?' It costs you: '+cost+'.':'')}}]},
   thief:{n:'Thief on the run',ico:'bag',w:1.2,ok:()=>roadDay()&&!!nearHold(),on:'road',near:[0,20],beh:'flee',life:'run',far:true,leave:'Let go',call:'Stop, thief!',hear:'Someone shouts “Stop, thief!” on the road to the {d}.',tip:'A man running off with a purse',they:'run across your view',
@@ -295,23 +320,23 @@ const ROAD_ENC={
     text:e=>'Mourners from '+e.home+(e.left?' walk home from the '+e.site+', their dead laid to rest.':e.pray?' stand by their dead at the '+e.site+', heads bowed.':' bear one of their dead on a bier to the '+e.site+', singing low.'),
     facts:e=>[e.n+' mourners'],
     left:()=>'They pass on, still singing.',
-    acts:[{icon:'altar',label:'Pay respects',facts:e=>[e.fac&&'honor with the '+FACS[e.fac].n+' +'+ENC_TUNE.funeral.honor,'morale +'+ENC_TUNE.funeral.morale],
-      run:e=>{const x=ENC_TUNE.funeral;if(e.fac)addHonor(e.fac,x.honor,true);P.morale+=x.morale;return'You bare your head as the bier passes. The mourners nod their thanks.'}}]},
+    acts:[{icon:'altar',label:'Pay respects',facts:e=>[e.fac&&'honor with the '+FACS[e.fac].n+' +'+statMore('respect',ENC_TUNE.funeral.honor),'morale +'+statMore('respect',ENC_TUNE.funeral.morale),statHelps('respect')],
+      run:e=>{const x=ENC_TUNE.funeral;if(e.fac)addHonor(e.fac,statMore('respect',x.honor),true);P.morale+=statMore('respect',x.morale);return'You bare your head as the bier passes. The mourners nod their thanks.'}}]},
   wedding:{n:'Wedding party',ico:'mug',w:1,wf:()=>P.morale<50?1.5:1,ok:()=>roadDay()&&!!nearHold()&&TOWNS.filter(z=>Math.hypot(z.x-P.x,z.y-P.y)<ENC_WALK.far+ENC_SPAWN.near[1]).length>1,on:'road',beh:'walk',call:'Drink to the bride!',hear:'Music and laughter on the road to the {d}.',tip:'A wedding party with a lute player',
     setup:e=>{const t=nearestOf(e,TOWNS),to=roadGoal(e,TOWNS.filter(z=>z!==t));if(!to)return false;e.home=t.name;e.tw=to.name;e.race=t.races[0];roadWalkEnd(e)},
     scene:()=>[['notes','',12,0],['walk','bard',12,0],['walk','villager',3,-1,{v:1}],['walk','villager',-3,2,{v:2}],['walk','villager',-11,0,{v:3}],['walk','villager',-17,2,{v:4}]],
     text:e=>'A wedding party from '+e.home+' dances along the road to '+e.tw+' behind a lute player, the bride in flowers.',
     left:()=>'Their music fades behind you.',
-    acts:[{icon:'mug',label:'Join',facts:()=>['morale +'+ENC_TUNE.wedding.morale,ENC_TUNE.wedding.hours+' hours'],run:()=>{const x=ENC_TUNE.wedding;roadHours(x.hours);P.morale+=x.morale;return'You drink to the bride and dance a while. Your band marches on merrier.'}},
-      {icon:'gold',label:'Give a gift',facts:e=>[ENC_TUNE.wedding.gift+' gold','reputation in '+e.home],need:()=>P.gold<ENC_TUNE.wedding.gift&&'Not enough gold.',
-        run:e=>{const x=ENC_TUNE.wedding;P.gold-=x.gift;addRep(e.home,x.rep,true);return'The couple thank you, and '+e.home+' will remember your gift.'}}]},
+    acts:[{icon:'mug',label:'Join',facts:()=>['morale +'+statMore('respect',ENC_TUNE.wedding.morale),ENC_TUNE.wedding.hours+' hours',statHelps('respect')],run:()=>{const x=ENC_TUNE.wedding;roadHours(x.hours);P.morale+=statMore('respect',x.morale);return'You drink to the bride and dance a while. Your band marches on merrier.'}},
+      {icon:'gold',label:'Give a gift',facts:e=>[ENC_TUNE.wedding.gift+' gold','reputation in '+e.home+' +'+statMore('respect',ENC_TUNE.wedding.rep),statHelps('respect')],need:()=>P.gold<ENC_TUNE.wedding.gift&&'Not enough gold.',
+        run:e=>{const x=ENC_TUNE.wedding;P.gold-=x.gift;addRep(e.home,statMore('respect',x.rep),true);return'The couple thank you, and '+e.home+' will remember your gift.'}}]},
   horse:{n:'Runaway horse',ico:'shoe',w:1,wf:()=>P.gear.mount?1:1.5,ok:()=>climAt(P.x,P.y)!=='swamp',on:'open',beh:'flee',life:'stay',ends:'leave',stop:true,spook:ENC_CATCH.spook,tip:'A saddled horse, no rider',they:'bolt, then graze',
     setup:e=>{e.mk=roadMount(e);e.stop=rint(ENC_CATCH.bolt[0],ENC_CATCH.bolt[1]);e.coat=['horse','chestnut','horseB','horseG'][e.seed%4]},
     scene:e=>[['horse','',0,0,{coat:e.coat}]],
     text:e=>'A saddled '+(e.mk==='horse'?'horse':MOUNTS[e.mk].n.toLowerCase())+' with no rider, its reins trailing, '+(e.calm?'grazing by the way. It keeps one eye on you.':'wild-eyed.'),
-    facts:e=>[insight(['skittish',oddsWord(catchOdds())+' to catch it',Math.round(catchOdds()*100)+'% to catch it'],'know your odds'),P.gear.mount?'you have a mount: it is worth '+itemPrice('m_'+e.mk)+' gold':'a '+MOUNTS[e.mk].n],
+    facts:e=>[statRead('horse',{vague:'skittish',what:'to catch it'}),statHelps('horse'),P.gear.mount?'you have a mount: it is worth '+itemPrice('m_'+e.mk)+' gold':'a '+MOUNTS[e.mk].n],
     left:()=>'You leave it to its grazing.',
-    acts:[{icon:'shoe',label:'Catch it',facts:e=>['Riding',P.gear.mount?'+'+itemPrice('m_'+e.mk)+' gold':'a '+MOUNTS[e.mk].n],tip:'Walk up slowly and take the reins. Fail and it bolts.',run:e=>roadCatchHorse(e)}]},
+    acts:[{icon:'shoe',label:'Catch it',facts:e=>[P.gear.mount?'+'+itemPrice('m_'+e.mk)+' gold':'a '+MOUNTS[e.mk].n],tip:'Walk up slowly and take the reins. Fail and it bolts.',run:e=>roadCatchHorse(e)}]},
   beggar:{n:'Beggar',ico:'gold',w:1.2,wf:()=>P.gold>=200?1.5:1,ok:()=>!!nearHold(),on:'road',beh:'approach',leave:'Ignore',call:'Alms, my lord?',hear:'An old man calls to you from the road to the {d}.',tip:'An old man with a bowl',
     setup:e=>{const t=nearestOf(e,TOWNS);e.race=t.races[0];e.fac=roadFac(t)},
     scene:()=>[['walk','beggar',0,0]],
@@ -332,7 +357,21 @@ const ROAD_ENC={
 };
 // (the realm a holding's people answer to: none for yours, or none at all)
 const roadFac=t=>t&&t.owner&&t.owner!=='player'&&FACS[t.owner]?t.owner:null;
-const roadPush=()=>(P.sp||0)>=ENC_TUNE.mud.sp;// (strength left to push a cart: else it takes time)
+/* pushing a cart (ENC_TUNE.mud), less by your Strength and Athletics (ENC_STAT.push): its stamina, if you have that much left;
+   else its time (roadPushTime: in words) */
+const roadPushSp=()=>Math.round(ENC_TUNE.mud.sp*(1-statOdds('push'))),roadPushH=()=>ENC_TUNE.mud.hours*(1-statOdds('push'));
+const roadPush=()=>(P.sp||0)>=roadPushSp();
+const roadPushTime=()=>{const h=roadPushH();return h===1?'an hour of your time':h>1?h+' hours of your time':Math.round(h*60)+' minutes of your time'};
+/* Tend his wounds (the real wounded traveller, ENC_TUNE.traveller): he always mends; your Medicine and Intellect, how well
+   (ENC_STAT.care, 0–1: kept on him as e.care, for what may follow), and the more he owes you: reputation and renown × (1 + it),
+   and a chance (gift × it) he presses a little gold from his purse on you. The lure shows the same (its tend springs the ambush) */
+const roadCareWord=c=>c<.25?'he will live':c<.5?'he will mend':c<.8?'he will recover well':'he will be on his feet in days';
+const roadTendFacts=()=>{const x=ENC_TUNE.traveller,c=statOdds('care');return['−'+x.food+' food','reputation +'+statMore('care',x.rep)+', renown +'+statMore('care',x.renown),'Medicine: '+roadCareWord(c),c>0&&'maybe a gift from his purse']};
+function roadTend(e){const x=ENC_TUNE.traveller,c=statOdds('care'),t=nearHold();foodTake(x.food);if(t)addRep(t.name,statMore('care',x.rep),true);P.renown+=statMore('care',x.renown);
+  e.care=Math.round(c*100)/100;e.healed=1;e.done=1;e.goOff();const g=c>0&&Math.random()<c*x.gift?rint(x.gold[0],x.gold[1]):0;P.gold+=g;
+  return'Bandaged and fed, he gets to his feet. He swears to tell '+(t?t.name:'everyone')+' of your kindness, and '+(c<.5?'limps':'walks')+' off down the road.'+(g?' He presses '+g+' gold from his purse into your hand.':'')}
+// Join the hunt (ENC_TUNE.hunters): the haul, more by your Survival, Hunting and Archery (ENC_STAT.hunt): meat × (1 + it), furs × it
+const roadHaul=()=>{const x=ENC_TUNE.hunters,h=statOdds('hunt');return{meat:Math.round(x.meat*(1+h)),furs:Math.round(x.furs*h)}};
 // (a runaway's kind: the mount of the region, by its climate)
 const roadMount=e=>({desert:'camel',swamp:'strider',frost:'pony'})[climAt(e.x,e.y)]||'horse';
 // (one running across your view: from where it starts toward a point beside you, a little over a third of your sight to one
@@ -386,7 +425,7 @@ const roadSprint=()=>G.chase&&G.chase.rd&&G.chase.chase?ENC_CATCH.sprint:1;
 const catchSpd=()=>ENC_SPD.run*Math.max(ENC_CATCH.lo,1-ENC_CATCH.agi*P.attr.agi);
 const catchReach=()=>ENC_CATCH.reach+ENC_CATCH.agiReach*P.attr.agi;
 function catchHours(dist){const g=MAP_BASE*travelMul()*(P.morale<25?.8:1)*ENC_CATCH.sprint-catchSpd();return dist<=catchReach()?0:g>0?(dist-catchReach())/moveStep(g,WORLD_PACE*DAY_SECONDS/24):Infinity}
-const catchOdds=()=>{const o=ENC_CATCH.odds;return clamp(o.base+o.ride*skill('ride')+o.agi*P.attr.agi,o.lo,o.hi)};
+const catchOdds=()=>statOdds('horse');
 // (the thief's Insight read: can you run him down, from here)
 function roadChaseRead(e){const h=catchHours(e.fromYou()),H=ENC_CATCH.hours;
   return insight(['he runs like a hare',h<=H*.6?'you could run him down':h<=H?'it will be close':'he is too quick for you',h===Infinity?'he runs faster than you: you cannot catch him':'you would close on him in '+h.toFixed(1)+' h; he is away after '+H+' h'],'know if you can catch him')}

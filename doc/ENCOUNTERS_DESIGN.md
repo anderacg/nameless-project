@@ -158,6 +158,21 @@ Today, robbing a messenger pays his purse plus 20–35 gold "for the letter" at 
 
 Choices made in building it: the letter's record rides in its bag slot rather than a list of its own, so the bag's save carries it and nothing is left behind when it is dropped or burnt; a letter cannot be put back on a loot pile; it is read and sold from its own page only (the market's "From your inventory" leaves it out); its page is reached from the bag on the map and from a holding's overview (the bag does not open in a holding); "in a holding" is the holding you are in; the witness is shown to you, so you can choose; the lure's warning and Insight read your Scouting when its page opens.
 
+### Stats on the road (2026-10-19)
+
+The owner's rule: **your stats only add.** The base is what anyone gets today; stats add on top of it, up to a cap, and a stat of 0 is never worse than today (no new ways to fail). One table, `ENC_STAT` (`{base, parts: [[stat, per]…], cap}`), and one helper, `statOdds(k)` (base + Σ stat × per, at most cap), with `statRead` (the chance through Insight: vague, rough or exact by Scouting) and `statHelps` (which stats help, on the page, so you learn what to train).
+
+| Encounter | Choice | Stats | With stats |
+|---|---|---|---|
+| Wounded traveller | Tend his wounds | Medicine +15%, Intellect +3% (care, 0–1) | still always heals; reputation and renown × (1 + care), a chance (care × 60%) of 5–10 gold from his purse; `e.care` kept on him for later chains or escorts. The lure's Tend shows the same and springs the ambush (no check) |
+| Cart in the mud | Help push | Strength +5%, Athletics +5% | up to 60% less stamina (or time) |
+| Gamblers | Play | Intellect or Charisma (the higher) +1.5% | 48% → at most 65% |
+| Collapsed mine | Search it | Survival +4%, Intellect +1% (gear: +2%, +1%) | 60% → at most 85% (gear 40% → 55%) |
+| Will-o'-wisps | Follow them | Intellect +2.5% | 50% → at most 75% |
+| Hunters' camp | Join the hunt | Survival +10%, Hunting +5%, Archery +5% | meat × (1 + it), up to 6; furs × it, up to 2 |
+| Funeral / Wedding | Pay respects / Join / Give a gift | Charisma +8% | honour, morale, reputation × (1 + it), up to twice |
+| Runaway horse | Catch it | Riding +8%, Agility +4% | as before, 25% → at most 90% (on the helper, the same numbers) |
+
 ## 6. Questions for the owner
 
 1. ~~Spawn rate~~: decided (a pity timer, 2 a day, no repeat within 5 days; passed by: −25–50%).
