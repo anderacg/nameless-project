@@ -1,6 +1,6 @@
 # Ashmark — Implementation Plan
 
-This is the work queue as of **2026-10-15**, in priority order. For how the code works and the owner's rules, read [KNOWLEDGE_TRANSFER.md](KNOWLEDGE_TRANSFER.md) first.
+This is the work queue as of **2026-10-15**, in priority order; the items the owner agreed on 2026-10-19 are added to their sections below (marked *agreed 2026-10-19*), with section 10 new. For how the code works and the owner's rules, read [KNOWLEDGE_TRANSFER.md](KNOWLEDGE_TRANSFER.md) first.
 
 **How to use this plan**
 - Take items in order unless the owner picks another.
@@ -61,6 +61,9 @@ Check each one in a sprite lineup at 6–8× and on the map, then get the owner'
    - **Ability use:** captains call `g.useAbility(id)` (Brace against charging cavalry, Rally when wavering, Spur on attack, Fire arrows against armour or beasts).
    - **Characters fall back and reassess** (owner's request): after a defensive roll (badly hurt and surrounded), a character moves away toward its own troops, watches, and goes back in only when it's OK (stamina recovered, the target area no longer a trap or friendly troops already fighting there); your hero resumes your order then. Health isn't a hard gate (it doesn't regenerate in battle).
 
+5. **Woods see-through in battle** (*agreed 2026-10-19*): as on the world map, trees in front of any soldier you can see fade, to the same level as yours (the map's `WDEPTH.fade`; battle's `PROPFADE` today only fades over your men, to .4). Hidden soldiers stay hidden.
+6. **An outline on your selected groups** (*agreed 2026-10-19*): a glowing 1 px outline round each soldier of your **selected** groups (not hover; touch screens get it too), drawn above the trees so you follow them through woods; in their colour (gold for yours).
+
 ---
 
 ## 4. Battle fun pipeline (pick with the owner; not started)
@@ -74,6 +77,7 @@ Recommended order, with what already exists to build on:
 5. **Battle types:** ~~ambush (surrounded, no deploy)~~, defend a caravan, ~~hold the bridge~~, run down a fleeing enemy. — **Hold the bridge** and **Ambush** built 2026-10-18 on the terrain phase 3+4 snapshot (`BTYPE` in `battle/setup.js`, triggers and the panel's *Spring an ambush* in `battle/encounters.js`, an ambush road event, AI in `commander.js`, lab `type` key; [TERRAIN_DESIGN.md](TERRAIN_DESIGN.md) §8, "Battle types as built"). Defend a caravan and run down a fleeing enemy are still to come.
 6. ~~**Race fighting styles**~~ **Built 2026-10-17** (`TEMPERAMENT` in `commander.js`: dwarves hold, elves skirmish, orcs frenzy, mixed hunts the wavering; human = base). Beasts get no style yet.
 7. **Reinforcements that arrive mid-battle** from the field's edge. Reinforcements exist today but are present from the start.
+8. **Band auras: the band learns from its leader** (*agreed 2026-10-19, held: needs more design and balancing*): one `BAND_AURA` table, a leader's skill giving troops about **30%** of its own bonus (the best in the band counts); in battle only troops **within the commander's radius** (`commandRadius`), on the map always; **companions lead too**, their auras reaching the troops near them. Candidates: Woodcraft (woods), Athletics (stamina), Archery (archers' damage), Blocking (shield troops), One-/Two-Handed (that grip), Riding (cavalry turning), Hunting (meat). Don't double count what is already band-wide (Scouting sight, Survival, Medicine, Leadership, Tactics, companion roles). A "led" mark on unit cards; aura lines in the unit info.
 
 On hold by the owner's call: a battle scale of one unit ≈ 100 men.
 
@@ -138,6 +142,23 @@ These are in the [Game Feature Plan](Game%20Feature%20Plan%202D%20Pixel-Art%20Sa
 | Politics | Lord traits and grudges; **founding your own kingdom** (laws, vassals, diplomacy) |
 | Quests | Escort, rescue and defend contracts; faction story chains; ambush road events; a late-game threat (invasion or civil war) |
 | Presentation | Music in the game (a chiptune generator exists in `prototype/audio/`); more walkable interiors (see section 7) |
+
+---
+
+## 10. The road, the world and quests (*agreed 2026-10-19*; each waits for the owner's go)
+
+In the order the owner last saw them, smallest first. Designs: [ENCOUNTERS_DESIGN.md](ENCOUNTERS_DESIGN.md), [SUPPLY_DESIGN.md](SUPPLY_DESIGN.md).
+
+1. **Small quick wins:** the shrine's name label over kneeling pilgrims (lift or fade it); save a holding's remembered look in the fog (`l._mem`, `t._memCol` are not saved today); Scouting in battle (offered, not agreed).
+2. **Encounters, phase 3: the new props** (cage cart, gallows, roadside shrine, mine mouth, dice on a cloth, bier, broken cart), replacing the stand-ins.
+3. **The small-encounters backlog** (on the shared stat-odds helper; strayed sheep built 2026-10-19): fortune teller, toll on the road (Scouting 3 sees through false "lord's men"), a warm campfire (read the tracks), herbalist, runaway serf, flotsam on the shore, snowed-in travellers / sandstorm survivors.
+4. **New jobs** (`world/quests.js`): Wanted: a named outlaw (a bounty that grows, he comes back with a grudge), Guard the harvest, Intercept a rider (sealed letters), Scout the land, the white stag, Collect a debt.
+5. **The world feels alive:** tavern rumours that point at real events; enemies who remember you; night with character (howls, more ambushes and wisps); monster trophies and a first-kill line.
+6. **Bandit raids:** bands rob workers, plunder and sometimes burn estates, attack caravans, and rarely raid an unwalled village (big bands only); shown as "Raiding: X" with progress; successful raiders grow (more men, a promoted chief); the land's defence (built 2026-10-19) answers. Build after nothing else touches `brains.js`/patrols.
+7. **The healed traveller, escort and Ander The Fallen** (batch B): any encounter choice can lead to a next page; healed (bandaged, built), he joins (99%: a first-tier troop of his people) or asks to be escorted home (a house or estate); the escortee rides **inside your party** as a passenger (eats, no fighting, no slot, not targeted), lost if too slow or a battle is lost; the lost child and refugees move onto the same escort. **Ander The Fallen**: a unique companion, chance 1% × `HIDDEN_RATE` (default 1, never twice a game), a veteran sellsword (high Strength and Agility, good Leadership, a scar, a dark cloak); escort him **and** destroy the bandit camps, then he joins.
+8. **Chain quests** (batch C, after 7): a small framework of steps (escort, go to, clear a camp, deliver); "The Wounded Traveller": heal, escort home, his family asks you to clear the bandits' camp, an heirloom and reputation.
+9. **Encounters, phase 4 remainder:** prisoner wagon and execution (need the phase 3 cage cart and gallows); **duel challenge** needs a one-on-one hero fight first (RTS-style or manual hero: the owner decides).
+10. **Travel supplies** ([SUPPLY_DESIGN.md](SUPPLY_DESIGN.md), planned next, large): band stamina as fuel (Tired under 20, Exhausted under 5), food and drink by the hour (ale and liquor slow the drain and lift morale, water does neither), furs in the frost, water in the desert, band health; the hero tires with the band; stamina carried into battle; **Make camp** and the **action ring** (left-click and hold); the band's status card. Steps 1-4 as in its doc; step 1 after the stat checks (built) because the cart's push spends the hero's stamina today.
 
 ---
 
