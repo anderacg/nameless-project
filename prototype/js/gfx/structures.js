@@ -6,14 +6,16 @@
 
 /* placed buildings */
 // a building's picture: from the engine by its type, its people, its seed and the climate it stands in; a ruined one is its building
-// burnt (charred, with ash); cached on the lot until it changes. Its ground shadow is a picture of its own (sh, and the lot's _sh),
-// laid in the shadow pass under every building (drawShadows), never baked under its walls
+// burnt (charred, with ash); cached on the lot until it changes. The centre stands with its holding's walls (wallOf: read from the
+// holding each time, never kept on the lot, so a loaded game draws them as the game it was saved from did). Its ground shadow is a
+// picture of its own (sh, and the lot's _sh), laid in the shadow pass under every building (drawShadows), never baked under its walls
 function lotSprite(t,l){
-  if(l._s&&l._st===l.st&&l._lv===l.lv&&l._fort===l.fort)return l._s;const c=climAt((l.x+l.n/2)*TILE,(l.y+l.n/2)*TILE);
-  const b=PX.building({type:l.type,style:lotPeople(t,l),seed:l.seed,env:c,snow:c==='frost',lv:l.k==='house'||l.k==='centre'?1:l.lv,...(l.k==='centre'?{view:'top',fort:l.fort||0}:{})});
+  const F=l.k==='centre'?wallOf(t):null;
+  if(l._s&&l._st===l.st&&l._lv===l.lv&&l._fort===F)return l._s;const c=climAt((l.x+l.n/2)*TILE,(l.y+l.n/2)*TILE);
+  const b=PX.building({type:l.type,style:lotPeople(t,l),seed:l.seed,env:c,snow:c==='frost',lv:l.k==='house'||l.k==='centre'?1:l.lv,...(l.k==='centre'?{view:'top',fort:F}:{})});
   let cv=mkc(b.w,b.h,g=>g.drawImage(b.img,0,0));
   if(l.st==='ruined')cv=charred(cv,l.seed);
-  cv.flag=b.flag;cv.sh=l._sh=solidShadow(b.shadow);l._st=l.st;l._lv=l.lv;l._fort=l.fort;return l._s=cv;
+  cv.flag=b.flag;cv.sh=l._sh=solidShadow(b.shadow);l._st=l.st;l._lv=l.lv;l._fort=F;return l._s=cv;
 }
 // burnt: every pixel darkened toward soot, a scatter of ash and the last embers (still whole pixels, never half-see-through)
 function charred(src,seed){return mkc(src.width,src.height,g=>{g.drawImage(src,0,0);const d=g.getImageData(0,0,src.width,src.height),a=d.data;

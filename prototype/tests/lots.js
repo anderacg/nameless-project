@@ -11,8 +11,8 @@ try{
  ok(new Set(sig).size===sig.length,'every town is laid out its own way ('+sig.length+' towns, '+new Set(sig).size+' layouts)');
  ok(TW.every(z=>t.housing(z)>=z.pop),'every holding starts with room for its people (houses and centre)');
  // ---- walls are the centre's fortification: no wall pieces on the map, nothing blocks travel
- ok(TW.every(z=>!z.lots.some(l=>l.k==='wall')&&t.lotCentre(z).fort===t.wallOf(z)),'every holding’s walls are its centre’s fortification (no wall pieces stand on the map)');
- {const z=TW.find(q=>t.wallOf(q)>=2),c=t.lotCentre(z),s0=t.lotSprite(z,c);t.breach(z);const s1=t.lotSprite(z,c);ok(c.fort===t.wallOf(z)&&s1!==s0,'a breach lowers it, and the centre is drawn with its lower walls ('+t.WALL_N[t.wallOf(z)]+')')}
+ ok(TW.every(z=>{const c=t.lotCentre(z);t.lotSprite(z,c);return !z.lots.some(l=>l.k==='wall')&&c._fort===t.wallOf(z)}),'every holding’s walls are its centre’s fortification (no wall pieces stand on the map)');
+ {const z=TW.find(q=>t.wallOf(q)>=2),c=t.lotCentre(z),s0=t.lotSprite(z,c);t.breach(z);const s1=t.lotSprite(z,c);ok(c._fort===t.wallOf(z)&&s1!==s0,'a breach lowers it, and the centre is drawn with its lower walls ('+t.WALL_N[t.wallOf(z)]+')')}
  {const nf=TW.filter(z=>!t.lotSprite(z,t.lotCentre(z)).flag),more=TW.filter(z=>z.lots.some(l=>l.k!=='centre'&&t.lotSprite(z,l).flag));
   ok(!nf.length&&!more.length,'every holding flies one flag, from its centre'+(nf.length?' (none at '+nf.map(z=>z.name).join(', ')+')':'')+(more.length?' (more at '+more.map(z=>z.name).join(', ')+')':''))}
  // ---- placing by hand

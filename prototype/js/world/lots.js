@@ -112,7 +112,7 @@ function initLots(t){
   if(t.lots)t.lots.slice().forEach(l=>lotDrop(t,l));t.lots=[];landFresh();occReserve();
   const R=seeded(t.seed*977+13),n0=lotSize(typeFor(t,'centre',R)),cx=t.tx-(n0>>1),cy=t.ty-n0+1;
   // the centre stands on the holding's own tile, its gate on its front row where the roads end: parties arrive there and set out
-  lotAdd(t,{k:'centre',type:typeFor(t,'centre',R),x:cx,y:cy,n:n0,lv:1,seed:t.seed*31+7,st:'built',fort:wallOf(t)});
+  lotAdd(t,{k:'centre',type:typeFor(t,'centre',R),x:cx,y:cy,n:n0,lv:1,seed:t.seed*31+7,st:'built'});
   // houses round it: enough for its people (the centre houses some), a few to spare
   const pop=t.pop||t.T.pop0;let room=housing(t),tries=0;
   while(room<pop*1.1&&tries++<t.T.tries){const type=typeFor(t,'house',R),n=lotSize(type),p=lotSpot(t,n,'open',1,t.T.ring,R,{gap:'row',jit:.8});if(!p)continue;lotAdd(t,{k:'house',type,x:p[0],y:p[1],n,lv:1,seed:Math.floor(R()*1e6),st:'built'});room=housing(t)}
@@ -147,12 +147,11 @@ function fieldsFor(t,l,k){
   while(out.length<PLOTS[k]){const c=cand.find(c=>!out.includes(c)&&touch.some(q=>Math.abs(q[0]-c[0])+Math.abs(q[1]-c[1])===1));if(!c)break;out.push(c);touch.push(c)}
   return out.map(c=>[c[0],c[1]]);
 }
-// keep the lots in step with what the holding has: build what it has gained, ruin what war has cost it, and raise or
-// show its centre's fortification
+// keep the lots in step with what the holding has: build what it has gained, ruin what war has cost it (its centre's
+// fortification is its walls, wallOf, drawn as they stand: structures.js lotSprite)
 function syncLots(t){
   if(!t.lots){initLots(t);return}
   for(const k of Object.keys(ESTATES)){const lv=bldLv(t,k),l=lotAt(t,k),w=t.work&&t.work.k===k;if(lv&&!l&&!estateLot(t,k))t.bld[k]=0;else if(l){l.lv=Math.max(1,lv);const st=lv?'built':w?'building':'ruined';if(l.st!==st){l.st=st;l._s=null}}}
-  const c=lotCentre(t);if(c&&c.fort!==wallOf(t)){c.fort=wallOf(t);c._s=null}
   t._spots=null;
 }
 
