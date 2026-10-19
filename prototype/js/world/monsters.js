@@ -1,7 +1,7 @@
 'use strict';
 /* ---------- monsters ---------- */
 // habitat tags for a spot: its climate on open ground, or 'forest' / 'hills' on those tiles
-// (a wood in the frost is also 'snowwood': the snow hares' (data/critters.js), no one else's)
+// (a wood in the frost is also 'snowwood': the reindeer's and snow hares' (data/critters.js), no monster's)
 function habitatAt(x,y){const t=terrAt(x,y),c=t===T_FOREST&&climAt(x,y);return t===T_FOREST?['forest',c==='swamp'?'swamp':c==='frost'?'snowwood':'']:t===T_HILL?['hills']:t===T_OPEN?[climAt(x,y)]:[]}
 /* a beast on the map (W.monsters: plain data, saved as it is; made a Monster in place: asMonster): a world object (parties.js) */
 class Monster extends WorldObject{
