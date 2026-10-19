@@ -58,7 +58,7 @@ try{
   if(k==='critter'){const D=CRITTERS[o.id];return '<b>'+D.n+(o.n>1?' ×'+o.n:'')+'</b><small>'+(D.live?'Livestock of '+o.home:'Wild game')+'</small><span class="act">Click: '+(D.live?'look':'hunt')+'</span>'}
   if(k==='caravan')return '<b>Caravan</b><small>'+(o.from||'')+' → '+(o.to||'')+(o.fac?' · '+fc(o.fac):'')+'</small><span class="act">Click: meet</span>';
   if(k==='refugee')return '<b>Refugees</b><small>From '+o.from+' to '+o.to+'</small><span class="act">Click: meet</span>';
-  if(k==='patrol')return '<b>'+(o.watch==='night'?'Night watch':'Guards')+' of '+o.home+'</b><small>'+fc(o.fac)+' · '+o.troops.length+' soldiers'+(hostileTo(o.fac)?vs(rating(o.troops)):'')+'</small><span class="act">Click: meet</span>';
+  if(k==='patrol')return '<b>'+(o.watch==='night'?'Night watch':'Day watch')+' of '+o.home+'</b><small>'+fc(o.fac)+' · '+o.troops.length+' soldiers'+(hostileTo(o.fac)?vs(rating(o.troops)):'')+'</small><span class="act">Click: meet</span>';
   if(k==='cparty')return '<b>'+COMPS[o.cid].short+'’s party</b><small>Your companion · '+o.troops.length+' soldiers · '+({follow:'riding with you',patrol:'patrolling '+o.base,return:'coming back'})[o.order]+'</small><span class="act">Click: orders</span>';
   // (a worker now has a name of his own, seeded from his estate (folk.js folkName): his card leads with it, the rest as before)
   if(k==='worker')return '<b>'+(o.name?o.name+', '+o.job:cap1(o.job))+'</b><small>Of '+o.home+'</small><span class="act">Click: talk</span>';
