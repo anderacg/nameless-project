@@ -36,10 +36,11 @@ function saveGame(quiet,slot){
   // (every band's groups made from its counts before it is written: they are saved with it, and the world fingerprint W7 counts on it)
   partyRoster(P).groups;for(const o of allParties())partyRoster(o).groups;
   slot=slot||'auto';const d={v:SAVE_V,at:Date.now(),mw:MW,P:{...P,tx:null,ty:null,stuck:0},day:G.day,clock:G.clock,speed:G.speed,last:G.lastTown&&G.lastTown.name,bandits,perkOffer:G.perkOffer||null,world:worldSave()},json=JSON.stringify(d);
-  const put=s=>{try{localStorage.setItem(slotKey(slot),s);if(!quiet)log('Game saved'+(slot==='auto'?'':' ('+slotName(slot)+')')+'.','good')}
-    catch(e){if(!quiet)log('Could not save. Browser storage is unavailable.','bad')}};
+  // (true once it is stored; false when the browser would not keep it: the menu says which, never "saved" for a save that failed)
+  const put=s=>{try{localStorage.setItem(slotKey(slot),s);if(!quiet)log('Game saved'+(slot==='auto'?'':' ('+slotName(slot)+')')+'.','good');return true}
+    catch(e){if(!quiet)log('Could not save. Browser storage is unavailable.','bad');return false}};
   if(LOADING.sync||!SAVE_ZIP)return put(json);
-  const p=SAVING=(SAVING||Promise.resolve()).then(()=>gzip64(json)).then(z=>JSON.stringify({...saveHead(d),z}),()=>json).then(put).then(()=>{if(SAVING===p)SAVING=null});return p;
+  const p=SAVING=(SAVING||Promise.resolve()).then(()=>gzip64(json)).then(z=>JSON.stringify({...saveHead(d),z}),()=>json).then(put).then(ok=>{if(SAVING===p)SAVING=null;return ok});return p;
 }
 // the world part of a save: the world it is (map: made again from it on a load), the tiles play changed (edits: none yet), every
 // holding's own record (holdings.js saveRec), then the world's lists

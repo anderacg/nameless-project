@@ -197,8 +197,8 @@ function escAct(a,arg){
   if(a==='esc-loads'){if(!readSave())return true;slots('load');return true}
   if(a==='esc-save'){if(!ESC_SAVE.includes(E.mode))return true;const s=arg||'quick';if(arg&&readSlot(s)&&G.overArmed!==s){G.overArmed=s;slots('save');return true}
     // (a gzipped save is written a moment later: the list shows it once it is)
-    G.overArmed=null;G.mode=E.mode;const p=saveGame(true,s);G.mode='esc';const done=()=>{if(G.mode!=='esc'||G.esc!==E)return;if(arg)slots('save','Game saved ('+slotName(s)+').');else showEsc('Game saved.')};
-    if(p)p.then(done);else done();return true}
+    G.overArmed=null;G.mode=E.mode;const p=saveGame(true,s);G.mode='esc';const done=ok=>{if(G.mode!=='esc'||G.esc!==E)return;const m=ok?'Game saved'+(arg?' ('+slotName(s)+')':'')+'.':'Could not save: your browser would not store it (private window, or storage full or blocked).';if(arg)slots('save',m);else showEsc(m)};
+    if(p&&p.then)p.then(done);else done(p);return true}
   if(a==='esc-load'){if(!readSave(arg))return true;G.esc=null;if(B){B=null;fieldDone();bbar.hidden=true}loadGame(arg);return true}
   if(a==='esc-main'){G.mode=E.mode;G.esc=null;if(E.html==null)hidePanel();showTitle();return true}
   if(a==='esc-exit'){G.esc=null;if(B){B=null;fieldDone();bbar.hidden=true}G.mode='title';G.resume=null;try{window.close()}catch(e){}showTitle('exit');return true}

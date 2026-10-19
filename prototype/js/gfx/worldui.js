@@ -14,7 +14,7 @@
    - Chasing a party or making for a holding: a ring pulsing round it and an arrow bobbing over it (while it is in sight), till
      you meet it or go elsewhere.
    - An encounter on the road you know of and have not met (world/encounters.js): sound waves rippling out from it, a pulsing "!" over it, its
-     call-out the first time it is on the screen, and an arrow at the screen's edge while it is off it (wuiRoadUnder, wuiRoadOver).
+     call-out the first time it is on the screen, and its waves rolling in at the screen's edge while it is off it (wuiRoadUnder, wuiRoadOver).
    In whole game pixels on the camera's grid (what moves or eases, to 1/VS px as a mover is: render.js snapV), outlined dark as
    the arrows and chevrons of the battle are (ui/orderpaths.js). Real time. Under reducedMotion all holds still: no ripple or
    puff, the arrow and brackets standing, the dots not marching ---------- */
