@@ -168,7 +168,8 @@ bash tests/run-tests.sh rts menu     # chosen suites
 - **Placed buildings** (`lots.js`): an occupancy grid with power-of-two footprints. Realms grow their holdings, and in your fiefs you place what you build.
 - **Estates and fields** (`estates.js`):
   - `fieldsOf(t,k)` returns an estate's worked field tiles and their middle; `onFields` and `fieldSpot` are helpers.
-  - Clicking an estate opens `estateMeet`. It offers **Buy livestock** (pasture), **Talk to the <workers>**, sabotage, plunder and burn.
+  - Clicking an estate opens `estateMeet`: its own menus down a rail (`ui/window.js`, as in towns; never the holding's other estates). The rail's header is its overview (`bldInfo`); the menus that apply are its Workers, Livestock (pasture), Manage (your own: `bldBuild`, upgrade, place, pull down) and Raid (someone else's: sabotage, plunder, burn). The worker talk and the herders open on the same rail, Back to the overview.
+- **Rail windows** (`ui/window.js`): the one base of towns, your holding, estates and sites (`showRail`, `railKey`, `railFocus`). Screens give data only; no other file builds rail markup (`tests/estateui.js` checks it). A site's places come from its class's `places(r,btn,row)` (default: one place with its whole `panel`).
 - **Workers** (`folk.js`) follow a daily routine:
   - They work **inside** their estate's building, unseen (`st:'in'`).
   - Once a day, at a random hour between afternoon and dusk (`DELIVER`), each carries a load to the holding's gate (`'out'`), stops inside briefly (`'town'`), walks back (`'back'`) and goes in again.

@@ -52,9 +52,9 @@ try{
   ok(out>0&&town>0&&back>0,'between the afternoon and dusk they carry their load to the holding and walk back (out '+out+', in town '+town+', back '+back+')');
   for(let i=0;i<2000&&W.folk.some(f=>f.home==='Ashford'&&f.st!=='in');i++){G.clock=t.DAY*.75;t.updateFolk(.05)}
   ok(W.folk.filter(f=>f.home==='Ashford').every(f=>f.st==='in'&&f.done===G.day),'by night all have delivered and gone back inside')}
- {const night=W.folk.filter(f=>f.home==='Ashford'),k=night[0].k,n0=night.filter(f=>f.k===k).length;t.estateMeet(t.estatePick(ash,k));ok(new RegExp('Talk to the '+t.ESTATES[k].work).test(document.getElementById('panel').textContent),'the estate offers its '+t.ESTATES[k].work+'s');
+ {const night=W.folk.filter(f=>f.home==='Ashford'),k=night[0].k,n0=night.filter(f=>f.k===k).length;t.estateMeet(t.estatePick(ash,k));ok(document.querySelector('.rail [data-act="es-tab"][data-arg="folk"]'),'the estate offers its '+t.ESTATES[k].work+'s');
   P.gold=500;P.troops={};t.act('es-folk');ok(G.mode==='dialog'&&/Hire as/.test(document.getElementById('panel').textContent),'and talking to them opens the worker dialog');
-  t.act('wk-back');ok(new RegExp('Talk to the '+t.ESTATES[k].work).test(document.getElementById('panel').textContent),'Back returns to the estate');t.act('es-folk');t.act('wk-hire');
+  t.act('wk-back');ok(G.est&&document.querySelector('.rail [data-act="es-tab"][data-arg="folk"]'),'Back returns to the estate');t.act('es-folk');t.act('wk-hire');
   ok(W.folk.filter(f=>f.home==='Ashford'&&f.k===k).length===n0-1,'hiring one takes him from the estate');G.mode='world';G.modal=false;t.hidePanel()}
  // caravans
  W.caravans=[];const from=t.townBy('Saltmere');from.owner=t.HOME.Saltmere;from.sacked=from.raided=0;const fill=()=>{from.stock.cloth=400;from.stock.timber=400};fill();let c=null;for(let i=0;i<20&&!c;i++)c=t.sendCaravan(from);

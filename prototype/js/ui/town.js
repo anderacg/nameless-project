@@ -130,7 +130,7 @@ function townAct(a,arg,t){
   updateHUD(true);renderTown();panel.scrollTop=keep;
   if(a==='rec-pick')panel.querySelector('.recruit-order')?.scrollIntoView({block:'nearest'});
   if(a==='rec-review'&&G.town.review){panel.querySelector('[data-act="rec-confirm"]')?.focus();return}
-  const again=panel.querySelector('.rwbody [data-act="'+a+'"][data-arg="'+arg+'"]:not([disabled])')||panel.querySelector('.rail-i.on')||panel.querySelector('.rail-head');if(again)again.focus({preventScroll:true});
+  railFocus(a,arg);
 }
 // the town's window (townui.js showTown): the rail of its places, and the place open: G.town.tab (none: the overview)
 function renderTown(){

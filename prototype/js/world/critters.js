@@ -107,18 +107,20 @@ function hunt(c){
   updateHUD(true);
 }
 /* livestock: the herders' panel */
-// (from: the estate it was opened from, its pasture: Back returns there)
+// (from: the estate it was opened from, its pasture: on its rail (estates.js estateRail), Back returns there)
 function openHerd(c,from){G.herd=c;G.herdFrom=from||null;G.herdMsg='';G.mode='herd';P.tx=null;showHerd()}
 const milkCost=n=>n*3;
 function showHerd(){
   const c=G.herd,D=CRITTERS[c.id],t=townBy(c.home),own=t?' of '+t.name:'',btn=(act,label,why)=>'<button class="btn sm" type="button" data-act="'+act+'"'+(why?' disabled title="'+why+'"':'')+'>'+label+'</button>';
   const row=(title,sub,acts)=>'<div class="row"><div class="info"><strong>'+title+'</strong><small>'+sub+'</small></div><div class="acts">'+acts+'</div></div>';
   const price=Math.round(D.price*(1-.015*skill('trade')));
-  showPanel('<div class="top"><h2>'+D.n+'</h2><span class="muted">'+c.n+' grazing · herders'+own+' · <span class="gold">'+P.gold+' gold</span></span></div><p>The herders'+own+' watch you over their staffs while the '+D.n.toLowerCase()+' graze.</p>'+
+  const body='<p>The herders'+own+' watch you over their staffs while the '+D.n.toLowerCase()+' graze.</p>'+
     row('Buy '+an(D.one),'Slaughtered on the spot: +'+D.meat+' meat',btn('herd-buy','Buy '+price+'g',c.n<2?'They will not sell their last one':P.gold<price?'Not enough gold':goodRoom('meat')<D.meat?'No room in your bag':''))+
     (D.milk?row('Buy milk','+'+D.milk+' milk, fresh today',btn('herd-milk','Buy '+milkCost(D.milk)+'g',c.milked===G.day?'Already milked today':P.gold<milkCost(D.milk)?'Not enough gold':goodRoom('milk')<D.milk?'No room in your bag':'')):'')+
     row('Take one','+'+D.meat+' meat for free. The herders will tell '+(t?t.name:'everyone')+': reputation −12, honor −3',btn('herd-steal','Take it',c.n<1?'None left':goodRoom('meat')<D.meat?'No room in your bag':''))+
-    (G.herdMsg?'<p class="gold">'+G.herdMsg+'</p>':'')+nav(G.herdFrom?['herd-back',null,'Back']:null,['herd-leave',null,'Leave']));
+    (G.herdMsg?'<p class="gold">'+G.herdMsg+'</p>':''),close=['herd-leave',null,'Leave'];
+  if(G.herdFrom)estateRail(G.herdFrom,'herd',{title:D.n,sub:c.n+' grazing · herders'+own,body,back:['herd-back',null,'Back'],close},'herd');
+  else showPanel('<div class="top"><h2>'+D.n+'</h2><span class="muted">'+c.n+' grazing · herders'+own+' · <span class="gold">'+P.gold+' gold</span></span></div>'+body+nav(null,close));
 }
 function herdAct(a){
   if(!a.startsWith('herd-'))return false;

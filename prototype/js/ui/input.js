@@ -20,6 +20,7 @@ function act(a,arg){
   if(a==='lord-attack'){const l=G.enc.ref;P.hostile[l.fac]=G.day+20;addHonor(l.fac,-15,true);log('You attack '+l.name+'. The '+FACS[l.fac].n+' is now hostile to you.','bad');return startEncounter({kind:'lord',ref:l,list:l.troops.slice(),mine:true})}
   if(a.startsWith('q-')){const tq=G.town&&G.town.ref;questAct(a,arg,G.mode==='town'?tq:null);if(a.startsWith('q-lord'))return;updateHUD(true);if(G.mode==='char')return renderChar();if(G.mode==='town')renderTown();return}
   if(charAct(a,arg))return;
+  if(G.est&&G.mode==='dialog'&&estateFief(a,arg))return;// (your own estate's window on the map: its building buttons, estates.js)
   const t=G.town&&G.town.ref;if(t)return townAct(a,arg,t);// (the rest: a town's window and its tabs, town.js)
 }
 panel.addEventListener('click',e=>{if(e.target.closest('[data-recruit-field]'))return;const b=e.target.closest('[data-act]');if(b)act(b.dataset.act,b.dataset.arg)});

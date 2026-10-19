@@ -5,12 +5,12 @@
 // spots: stands on the map's fixed CAMP_SPOTS (places.js), in plain sight (known once its ground is explored), instead of
 // scattered at random and hidden until your scouts find it (how many of each: the world's DENSITY, data/world.js)
 const SITE_TYPES={
-  camp:{n:'Bandit camp',spots:true,col:'#e0605a',respawn:10,d:'A big camp in plain sight: raiders and their chieftain, and the roving bands that shelter here by night.'},
-  cave:{n:'Cave',col:'#c58af0',respawn:25,d:'A monster lair cut into a hill or mountain. Beat its beasts for their trophies and a treasure chest.'},
-  travelers:{n:'Travellers',col:'#78c474',d:'A camp on the road. Trade, hire sellswords, rest by the fire and hear news. They move on after a few days.'},
-  hideout:{n:'Bandit hideout',col:'#e0605a',respawn:10,d:'Bandits and their chieftain, guarding their plunder.'},
-  ruins:{n:'Ruins',col:'#e8d8a0',respawn:40,d:'Search them for old treasure, but something may still guard it.'},
-  shrine:{n:'Shrine',col:'#7fd8e8',d:'Pray once a week to recover and gain insight.'}
+  camp:{n:'Bandit camp',ico:'sword',spots:true,col:'#e0605a',respawn:10,d:'A big camp in plain sight: raiders and their chieftain, and the roving bands that shelter here by night.'},
+  cave:{n:'Cave',ico:'cave',col:'#c58af0',respawn:25,d:'A monster lair cut into a hill or mountain. Beat its beasts for their trophies and a treasure chest.'},
+  travelers:{n:'Travellers',ico:'fire',col:'#78c474',d:'A camp on the road. Trade, hire sellswords, rest by the fire and hear news. They move on after a few days.'},
+  hideout:{n:'Bandit hideout',ico:'sword',col:'#e0605a',respawn:10,d:'Bandits and their chieftain, guarding their plunder.'},
+  ruins:{n:'Ruins',ico:'ruin',col:'#e8d8a0',respawn:40,d:'Search them for old treasure, but something may still guard it.'},
+  shrine:{n:'Shrine',ico:'altar',col:'#7fd8e8',d:'Pray once a week to recover and gain insight.'}
 };
 const CAVE_NAMES=['Wolfden','Bonehollow','Darkmaw','Echo Cave','Gloomhole','Dripstone Cave','Old Burrow','Frostmaw','Sunken Grotto','Ashpit','Howling Cave','Mossy Hollow','Black Cleft','Glittercave'];
 const RUIN_NAMES=['Fallen Tower','Old Watchfort','Sunken Temple','Broken Arch','Kingsgrave','Ruined Abbey','Lost Hall','Crumbled Keep','Elder Barrow','Shattered Gate'];
@@ -76,8 +76,11 @@ class Site extends WorldObject{
   // walking in: a fight, or its window; false if nothing opened
   enter(){
     if(this.cleared&&this.empties){log('The '+this.name+' lies empty. Come back in '+Math.max(1,this.back-G.day)+' days.');return false}
-    G.site=this;G.siteMsg='';G.mode='site';showSite();return true}
-  // its window's body, and its actions (done(m): show the result)
+    G.site=this;G.siteMsg='';G.siteTab=null;G.mode='site';showSite();return true}
+  // its window (showSite): what it is (about: its overview), its places down the rail (places: each {k, n, short, ico, st,
+  // tone, body}; one by default, its whole panel), and its actions (done(m): show the result)
+  about(r){return '<p class="muted">'+this.T.d+'</p>'}
+  places(r,btn,row){return [{k:'main',n:this.T.n,ico:this.T.ico,st:'',body:this.panel(r,btn,row)}]}
   panel(r,btn,row){return ''}
   act(a,arg,done){return false}
   // the day's change: back after being cleared, and whatever its kind does
@@ -115,9 +118,9 @@ class Cave extends Site{
   get patch(){return false}
   get mouth(){return true}
   box(box){box(this,this.x-8,this.y-16-CAVE_MOUTH,this.x+8,this.y+2)}
-  panel(r,btn,row){const M=MONSTERS[this.id];
-    return '<p>A cave mouth in the '+r.name.toLowerCase()+'. Bones and tracks litter the ground: '+M.n.toLowerCase()+' lair here, more than you would meet in the open.</p><p class="muted">'+this.T.d+' Trophy: '+MATS[M.mat].n+'.</p>'+
-      row('Enter the cave',M.count[1]+1+' × '+ST[M.unit].n+', stronger than usual',btn('site-fight',null,'Enter'))}
+  about(r){const M=MONSTERS[this.id];return '<p>A cave mouth in the '+r.name.toLowerCase()+'. Bones and tracks litter the ground: '+M.n.toLowerCase()+' lair here, more than you would meet in the open.</p><p class="muted">'+this.T.d+' Trophy: '+MATS[M.mat].n+'.</p>'}
+  places(r,btn,row){const M=MONSTERS[this.id],n=M.count[1]+1+' × '+ST[M.unit].n;
+    return [{k:'enter',n:'Enter the cave',short:'Enter',ico:'cave',st:n,tone:'bad',body:row('Enter the cave',n+', stronger than usual',btn('site-fight',null,'Enter'))}]}
   act(a){if(a==='site-fight'&&!this.cleared){G.site=null;caveFight(this);return true}return false}
   get clearJob(){return true}
 }
@@ -126,7 +129,8 @@ class Cave extends Site{
 class Ruins extends Site{
   setup(sites){this.name=unusedName(RUIN_NAMES,sites)}
   get chest(){return{gold:40,gear:.9}}
-  panel(r,btn,row){return '<p>Broken walls in the '+r.name.toLowerCase()+', older than any kingdom on your maps.</p><p class="muted">'+this.T.d+'</p>'+row('Search the ruins','Treasure, old lore, or guardians that do not sleep',btn('site-search',null,'Search'))}
+  about(r){return '<p>Broken walls in the '+r.name.toLowerCase()+', older than any kingdom on your maps.</p><p class="muted">'+this.T.d+'</p>'}
+  places(r,btn,row){return [{k:'search',n:'Search the ruins',short:'Search',ico:'ruin',st:this.cleared?'searched':'treasure or guardians',body:row('Search the ruins','Treasure, old lore, or guardians that do not sleep',btn('site-search',null,'Search'))}]}
   act(a,arg,done){
     if(a!=='site-search'||this.cleared)return false;const r=Math.random();
     if(r<.3){G.site=null;this.id=caveMonster(this.x,this.y);caveFight(this);log('Stones shift in the dark. The ruins have guardians.','bad');return true}
@@ -139,10 +143,10 @@ class Ruins extends Site{
 class Shrine extends Site{
   setup(sites,clim){this.name=SHRINE_NAMES[terrAt(this.x,this.y)===T_FOREST?'forest':clim]}
   get empties(){return false}
-  panel(r,btn,row){const ready=G.day>=this.back;
-    return '<p>The '+this.name+' stands alone in the '+r.name.toLowerCase()+'. Old offerings lie at its foot.</p><p class="muted">'+this.T.d+'</p>'+
-      row('Pray','Restores your stamina and mana and some health. Morale +6',btn('site-pray','0','Pray',ready?'':'Wait '+(this.back-G.day)+' more days'))+
-      row('Leave an offering','25 gold: fully restores you, morale +10 and +40 XP',btn('site-pray','1','Offer 25g',!ready?'Wait '+(this.back-G.day)+' more days':P.gold<25?'Not enough gold':''))}
+  about(r){return '<p>The '+this.name+' stands alone in the '+r.name.toLowerCase()+'. Old offerings lie at its foot.</p><p class="muted">'+this.T.d+'</p>'}
+  places(r,btn,row){const ready=G.day>=this.back,wait='in '+(this.back-G.day)+' days';
+    return [{k:'pray',n:'Pray',ico:'altar',st:ready?'ready':wait,tone:ready?'gold':'',body:row('Pray','Restores your stamina and mana and some health. Morale +6',btn('site-pray','0','Pray',ready?'':'Wait '+(this.back-G.day)+' more days'))},
+      {k:'offer',n:'Leave an offering',short:'Offering',ico:'gold',st:ready?'25 gold':wait,body:row('Leave an offering','25 gold: fully restores you, morale +10 and +40 XP',btn('site-pray','1','Offer 25g',!ready?'Wait '+(this.back-G.day)+' more days':P.gold<25?'Not enough gold':''))}]}
   act(a,arg,done){
     if(a!=='site-pray'||G.day<this.back)return false;const m=vitals();
     if(arg==='1'){if(P.gold<25)return true;P.gold-=25;restoreVitals();P.morale=clamp(P.morale+10,0,100);gainXp(40);this.back=G.day+7;done('You leave 25 gold at the '+this.name+'. Warmth runs through you. (+40 XP)');return true}
@@ -194,15 +198,17 @@ class TravellersCamp extends Site{
   flagCol(){return this.TR.col}
   banner(){return this.TR.col}
   box(box,camp){camp(this,siteSprite(this))}
-  panel(r,btn,row){const TR=this.TR,s=this;
-    return '<p>'+TR.d+'</p><p class="muted">They break camp in '+Math.max(1,s.until-G.day)+' days.</p>'+
-      Object.keys(s.stock).map(g=>{const p=travPrice(g),n=s.stock[g],k=Math.min(5,n);return row('Buy '+GOODS[g].n.toLowerCase(),p+'g each · '+n+' left · you have '+goodN(g),btn('site-buy',g,'Buy '+k+' for '+p*k+'g',!k?'Sold out':P.gold<p*k?'Not enough gold':goodRoom(g)<k?'No room in your bag':''))}).join('')+
-      (P.inv.some(x=>x&&x.k==='mat')?row('Sell trophies','They pay a little less than a town market',btn('site-sell',null,'Sell all '+Math.round(P.inv.reduce((a,x)=>a+(x&&x.k==='mat'?matPrice(x.id)*x.n:0),0)*.85)+'g')):'')+
-      (s.unit?row('Hire a sellsword',ST[s.unit].n+' · tier '+ST[s.unit].tier+' · no standing needed · '+s.mercs+' willing',btn('site-hire',null,'Hire '+mercCost(s.unit)+'g',!s.mercs?'No one left to hire':P.gold<mercCost(s.unit)?'Not enough gold':partySize()>=partyCap()?'Your party is full':'')):'')+
-      row('Share their fire','Recover half your missing health, stamina and mana. Morale +5',btn('site-fire',null,'Rest',s.fire===G.day?'You rested here today':''))+
-      row('Ask for news','They tell you of places you have not found',btn('site-news',null,'Ask',s.news?'You have heard their news':''))+
+  about(r){return '<p>'+this.TR.d+'</p><p class="muted">They break camp in '+Math.max(1,this.until-G.day)+' days.</p>'}
+  // trade (their goods, your trophies), their sellswords, their fire (and a blessing or a song), their news
+  places(r,btn,row){const TR=this.TR,s=this,left=Object.keys(s.stock).filter(g=>s.stock[g]>0).length;
+    return [{k:'trade',n:'Trade',ico:'stall',st:left?left+' goods for sale':'sold out',body:Object.keys(s.stock).map(g=>{const p=travPrice(g),n=s.stock[g],k=Math.min(5,n);return row('Buy '+GOODS[g].n.toLowerCase(),p+'g each · '+n+' left · you have '+goodN(g),btn('site-buy',g,'Buy '+k+' for '+p*k+'g',!k?'Sold out':P.gold<p*k?'Not enough gold':goodRoom(g)<k?'No room in your bag':''))}).join('')+
+      (P.inv.some(x=>x&&x.k==='mat')?row('Sell trophies','They pay a little less than a town market',btn('site-sell',null,'Sell all '+Math.round(P.inv.reduce((a,x)=>a+(x&&x.k==='mat'?matPrice(x.id)*x.n:0),0)*.85)+'g')):'')},
+      s.unit&&{k:'hire',n:'Sellswords',short:'Hire',ico:'sword',st:s.mercs?s.mercs+' willing':'none left',body:row('Hire a sellsword',ST[s.unit].n+' · tier '+ST[s.unit].tier+' · no standing needed · '+s.mercs+' willing',btn('site-hire',null,'Hire '+mercCost(s.unit)+'g',!s.mercs?'No one left to hire':P.gold<mercCost(s.unit)?'Not enough gold':partySize()>=partyCap()?'Your party is full':''))},
+      {k:'fire',n:'Campfire',short:'Fire',ico:'fire',st:s.fire===G.day?'rested today':TR.special&&!s.special?(TR.special==='bless'?'rest · a blessing':'rest · a song'):'rest',tone:TR.special&&!s.special?'gold':'',
+        body:row('Share their fire','Recover half your missing health, stamina and mana. Morale +5',btn('site-fire',null,'Rest',s.fire===G.day?'You rested here today':''))+
       (TR.special==='bless'?row('Ask for a blessing','Fully restores your mana. Morale +8',btn('site-bless',null,'Kneel',s.special?'They have blessed you already':'')):'')+
-      (TR.special==='song'?row('Pay for a song','15 gold: they will sing of you on the road. Renown +3, morale +5',btn('site-song',null,'Pay 15g',s.special?'They already sing of you':P.gold<15?'Not enough gold':'')):'')}
+      (TR.special==='song'?row('Pay for a song','15 gold: they will sing of you on the road. Renown +3, morale +5',btn('site-song',null,'Pay 15g',s.special?'They already sing of you':P.gold<15?'Not enough gold':'')):'')},
+      {k:'news',n:'News',ico:'scroll',st:s.news?'heard':'ask around',body:row('Ask for news','They tell you of places you have not found',btn('site-news',null,'Ask',s.news?'You have heard their news':''))}].filter(Boolean)}
   act(a,arg,done){const s=this;
     if(a==='site-buy'){const g=arg,p=travPrice(g),k=Math.min(5,s.stock[g]||0);if(k&&P.gold>=p*k&&goodRoom(g)>=k){P.gold-=p*k;s.stock[g]-=k;invAdd('good',g,k);train('trade',k*p/40);done('You buy '+k+' '+GOODS[g].n.toLowerCase()+' for '+p*k+' gold.')}}
     else if(a==='site-sell'){let g=0;P.inv.forEach((x,i)=>{if(x&&x.k==='mat'){g+=matPrice(x.id)*x.n;P.inv[i]=null}});g=Math.round(g*.85);if(g){P.gold+=g;train('trade',g/20);done('The travellers buy your trophies for '+g+' gold.')}}
@@ -277,18 +283,25 @@ function caveFight(s){
   startEncounter({kind:'cave',ref:s,lv:s.lv,list:Array(M.count[1]+1).fill(M.unit)});
 }
 
-/* the panel: its kind's body and actions */
+/* the window (window.js): the site's places down the rail, the chosen one's window beside it (G.siteTab; none: its overview,
+   what it is and how each place stands); the last result (G.siteMsg) under whichever is open */
 function showSite(){
   const s=G.site,r=regionAt(s.x,s.y),btn=(act,arg,label,why)=>'<button class="btn sm" type="button" data-act="'+act+'"'+(arg!=null?' data-arg="'+arg+'"':'')+(why?' disabled title="'+why+'"':'')+'>'+label+'</button>';
   const row=(title,sub,acts)=>'<div class="row"><div class="info"><strong>'+title+'</strong><small>'+sub+'</small></div><div class="acts">'+acts+'</div></div>';
-  showPanel('<div class="top"><h2>'+s.name+'</h2><span class="muted">'+s.T.n+' · '+r.name+' · <span class="gold">'+P.gold+' gold</span></span></div>'+s.panel(r,btn,row)+
-    (G.siteMsg?'<p class="gold">'+G.siteMsg+'</p>':'')+nav(null,['site-leave',null,'Leave']));
+  const ps=s.places(r,btn,row),p=ps.find(x=>x.k===G.siteTab),where=s.T.n+' · '+r.name;if(!p)G.siteTab=null;
+  showRail({head:{act:['site-tab','home'],on:!p,ico:s.T.ico,name:s.name,sub:where,back:!!p},label:'Places',gold:true,
+    items:ps.map(x=>({act:'site-tab',arg:x.k,ico:x.ico,n:x.n,short:x.short,st:x.st,tone:x.tone,on:x===p})),
+    title:p?p.n:s.name,sub:p?s.name:where,
+    body:(p?p.body:s.about(r)+'<ul class="tnotes">'+ps.map(x=>'<li>'+x.n+(x.st?': '+x.st:'')+'.</li>').join('')+'</ul><p class="muted" style="font-size:13px">Choose a place on the left'+(G.mouse&&G.mouse.type==='touch'?'':' (or its number key)')+'.</p>')+
+      (G.siteMsg?'<p class="gold">'+G.siteMsg+'</p>':''),
+    back:p?['site-tab','home','Back']:null,close:['site-leave',null,'Leave']},'site:'+s.i+':'+(G.siteTab||''));
 }
 function siteAct(a,arg){
   if(!a.startsWith('site-'))return false;
   const s=G.site;if(G.mode!=='site'||!s)return true;
-  const done=m=>{G.siteMsg=m;log(m.replace(/<[^>]+>/g,''));updateHUD(true);showSite()};
+  const done=m=>{G.siteMsg=m;log(m.replace(/<[^>]+>/g,''));updateHUD(true);showSite();railFocus(a,arg)};
   if(a==='site-leave'){G.site=null;G.mode='world';hidePanel();saveGame(true);return true}
+  if(a==='site-tab'){G.siteTab=arg==='home'?null:arg;G.siteMsg='';showSite();return true}// (a place on the rail, or home: the overview)
   s.act(a,arg,done);return true;
 }
 onAct('site-',siteAct);

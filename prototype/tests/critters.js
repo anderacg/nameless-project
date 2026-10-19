@@ -48,7 +48,7 @@ try{
  // (a pasture's herd is only to be seen: walking into it opens nothing, a click on its fields picks the pasture, whose herders trade)
  t.updateCritters(.01);ok(G.mode==='world'&&cow.decor,'walking into a pasture\'s herd opens nothing (it is only to be seen)');
  {const F=t.fieldsOf(ash,'pasture');if(F){const at=t.fieldSpot(F),o=t.pickAt(at.x,at.y);ok(o&&o.est&&o.k==='pasture','a click on its fields picks the pasture: '+(o&&(o.k||o.name||o.id)))}}
- t.estateMeet(t.estatePick(ash,'pasture'));ok(/Buy livestock/.test(panel()),'the pasture offers to buy from its herd');t.act('es-herd');ok(/Back/.test(panel()),'opened from the pasture, the herders’ panel has a Back');
+ t.estateMeet(t.estatePick(ash,'pasture'));ok(/data-act="es-tab" data-arg="herd"/.test(panel()),'the pasture offers to buy from its herd');t.act('es-herd');ok(/Back/.test(panel()),'opened from the pasture, the herders’ panel has a Back');
  t.act('herd-back');ok(G.mode==='dialog'&&/Pasture of Ashford/.test(panel()),'Back returns to the pasture');t.act('es-herd');
  ok(G.mode==='herd'&&/Cattle/.test(panel())&&/Buy milk/.test(panel()),'the herders\' panel: from the pasture');
  const g0=P.gold;t.act('herd-buy');ok(t.goodN('meat')===8&&P.gold<g0&&cow.n===3,'buy a cow: 8 meat');

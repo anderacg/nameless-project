@@ -42,7 +42,7 @@ try{
  // ---- estates
  wt.fear=0;const ek=Object.keys(t.bldSpots(wt)).find(k=>t.bldLv(wt,k)),sp=t.bldSpots(wt)[ek];world();P.x=sp.x+20;P.y=sp.y+20;
  const pick=t.pickAt(sp.x,sp.y);ok(pick&&pick.est&&pick.k===ek,'estates on the map can be clicked');
- P.troops={hum_knight:25};P.hostile={};world();P.x=sp.x;P.y=sp.y;t.interact(pick);ok(G.est&&/Plunder its stores/.test(panel()),'an estate offers plunder or burning');
+ P.troops={hum_knight:25};P.hostile={};world();P.x=sp.x;P.y=sp.y;t.interact(pick);t.act('es-tab','raid');ok(G.est&&/Plunder its stores/.test(panel()),'an estate offers plunder or burning');
  const own=wt.owner,lv0=t.bldLv(wt,ek),pr0=wt.pros;t.act('es-burn');
  ok(G.enc&&G.enc.kind==='estate'&&t.hostileTo(own),'attacking an estate means fighting its guards, and its realm turns hostile');
  t.act('auto');ok(/burn the/.test(panel())&&t.bldLv(wt,ek)===lv0-1&&wt.pros<pr0,'burning it knocks it down a level ('+lv0+' → '+t.bldLv(wt,ek)+') and impoverishes '+wt.name);t.act('cont');while(G.mode==='perk')t.act('perk',G.perkOffer[0]);

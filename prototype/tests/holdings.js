@@ -38,7 +38,7 @@ try{
   ok(full>0&&none===0,'a farm with its fields makes grain ('+full+'); without them, none')}
  // sabotage
  {const z=t.TOWNS.find(q=>q.owner&&q.owner!=='player'&&t.bldLv(q,'farm')),o0=t.estatePick(z,'farm');P.fac=null;P.hostile={};const rnd=Math.random;world();
-  Math.random=()=>0;t.estateMeet(o0);ok(/data-act="es-sabotage"/.test(document.getElementById('panel').innerHTML),'an estate can be sabotaged');t.act('es-sabotage');Math.random=rnd;
+  Math.random=()=>0;t.estateMeet(o0);t.act('es-tab','raid');ok(/data-act="es-sabotage"/.test(document.getElementById('panel').innerHTML),'an estate can be sabotaged');t.act('es-sabotage');Math.random=rnd;
   ok(t.sabotaged(z,'farm')&&!t.hostileTo(z.owner),'unseen, it is wrecked for '+(z.sab.farm-G.day)+' days and its realm does not know who did it');
   const g0=z.stock.grain;z.pop=z.T.pop0*2;t.produce(z);const lv=t.bldLv(z,'farm');ok(z.stock.grain-g0<6*lv,'while wrecked it makes nothing');
   world();z.sab={};Math.random=()=>.999;t.estateMeet(o0);t.act('es-sabotage');Math.random=rnd;ok(G.enc&&G.enc.kind==='estate'&&G.enc.ref.sab&&t.hostileTo(z.owner),'caught, you must fight its guards');t.act('flee');world()}

@@ -35,13 +35,13 @@ try{
  ok(fights&&chests&&lore,'searching ruins finds chests ('+chests+'), lore ('+lore+') or guardians ('+fights+')');
  // shrine
  const sh=of('shrine')[0];go(sh);const m=t.vitals();P.sp=1;P.mp=1;t.act('site-pray','0');ok(P.sp===m[1]&&P.mp===m[2]&&sh.back===G.day+7,'praying restores stamina and mana');
- ok(document.querySelector('[data-act="site-pray"]').disabled,'and only once a week');t.act('site-leave');
+ t.act('site-tab','pray');ok(document.querySelector('[data-act="site-pray"]').disabled,'and only once a week');t.act('site-leave');
  // travellers
  const tr=of('travelers').find(s=>t.TRAVELERS[s.kind].race)||of('travelers')[0];if(!t.TRAVELERS[tr.kind].race){tr.kind=0;tr.stockUp()}
  go(tr);ok(G.mode==='site'&&new RegExp(tr.name).test(panel()),'a camp of '+tr.name.toLowerCase());
  P.gold=2000;P.troops={};P.inv=P.inv.map(()=>null);const g=Object.keys(tr.stock)[0],n0=t.goodN(g);t.act('site-buy',g);ok(t.goodN(g)===n0+5,'buy '+g+' from them');
  const u=tr.unit;t.act('site-hire');ok(P.troops[u]===1,'hire a sellsword ('+t.ST[u].n+') with no standing');
- P.hp=10;t.act('site-fire');ok(P.hp>10&&document.querySelector('[data-act="site-fire"]').disabled,'rest by their fire once a day');
+ P.hp=10;t.act('site-tab','fire');t.act('site-fire');ok(P.hp>10&&document.querySelector('[data-act="site-fire"]').disabled,'rest by their fire once a day');
  const seen0=S.filter(s=>s.seen).length;t.act('site-news');ok(S.filter(s=>s.seen).length===seen0+2&&/on your map/.test(panel()),'news puts two new places on your map');
  t.invAdd('mat','pelt',3);const g1=P.gold;t.act('site-sell');ok(P.gold>g1&&!t.invCount('mat','pelt'),'they buy trophies');
  t.act('site-leave');ok(G.mode==='world','Leave returns to the map');

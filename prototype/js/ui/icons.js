@@ -53,7 +53,12 @@ const ICONS={
   spool:{p:{b:'#a07850',c:'#6fa8e0',d:'#3d5a8a'},px:['.bbbbbbb.','..ccccc..','..cdcdc..','..ccccc..','..cdcdc..','..ccccc..','..cdcdc..','.bbbbbbb.','.........']},
   barrel:{p:{b:'#b07a3a',d:'#6a4a2a'},px:['..bbbbb..','.ddddddd.','.bbbbbbb.','bbbbbbbbb','bbbbbbbbb','.bbbbbbb.','.ddddddd.','..bbbbb..','.........']},
   sack:{p:{c:'#d8b880',d:'#8a6a44'},px:['...d.d...','....d....','...ccc...','..ccccc..','.ccccccc.','.ccccccc.','.ccccccc.','..ccccc..','.........']},
-  people:{p:{s:'#f0c8a0',b:'#6fa8e0',g:'#78c474',h:'#6a4a2a'},px:['.hh...hh.','.ss...ss.','.ss...ss.','.........','bbbb.gggg','bbbb.gggg','bbbb.gggg','bbbb.gggg','.........']}
+  people:{p:{s:'#f0c8a0',b:'#6fa8e0',g:'#78c474',h:'#6a4a2a'},px:['.hh...hh.','.ss...ss.','.ss...ss.','.........','bbbb.gggg','bbbb.gggg','bbbb.gggg','bbbb.gggg','.........']},
+  // the sites' (sites.js): a campfire, a cave mouth, broken columns, an altar stone with its light
+  fire:{p:{r:'#e0605a',y:'#e8b94a',w:'#fff6c0',b:'#7a4a22'},px:['....r....','...rr....','...ryr.r.','..ryyrrr.','.rryywyr.','.ryywwyr.','..rywyr..','.b.bbb.b.','bbb...bbb']},
+  cave:{p:{g:'#8a8478',d:'#5a5448',k:'#1a1410',s:'#6a5a3a'},px:['...ggg...','..ggggg..','.gggdggg.','.ggdkdgg.','ggdkkkdgg','gdkkkkkdg','gdkkkkkdg','gdkkkkkdg','sssssssss']},
+  ruin:{p:{s:'#d8d0b8',d:'#8a8270'},px:['.........','.ss......','.sss..s..','.s.s.ss..','.s.s.s.s.','.s.s.s.s.','.s.s.s.s.','.d.d.d.d.','ddddddddd']},
+  altar:{p:{y:'#7fd8e8',s:'#b8c0cc',d:'#6a7488'},px:['....y....','...yyy...','....y....','..sssss..','...sds...','...sds...','...sds...','.sssssss.','ddddddddd']}
 };
 // an icon as SVG: its pixels in its colours (crisp at any whole size)
 function icon(name,size,cls){const I=ICONS[name];if(!I)return '';size=size||16;let r='';

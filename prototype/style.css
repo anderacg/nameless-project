@@ -621,8 +621,9 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 .journal .good{color:var(--good)}.journal .bad{color:var(--danger)}.journal .gold{color:var(--accent)}
 
 /* ---------- 8b. rail windows ---------- */
-/* window.js: the rail down the left (the holding's flag, name and your gold on top; then its places, each an icon, a name, a
-   status and its number key), the chosen place's window beside it (its own title row and bottom bar; the content scrolls).
+/* window.js, the one base of every rail screen (a town, your holding, an estate on the map, a site): the rail down the left
+   (the banner, name and your gold on top; then its places, each an icon, a name, a status and its number key), the chosen
+   place's window beside it (its own title row and bottom bar; the content scrolls).
    The panel is a size container: on a small one (a phone on its side) the rail slims to icons with short names */
 .panel.railed{flex-direction:row;gap:0;padding:0;overflow:hidden;container-type:size}
 .rail{flex:none;width:232px;display:flex;flex-direction:column;gap:2px;padding:0 8px 10px;overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:var(--line-2) transparent;
@@ -666,7 +667,7 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
   .rail{width:76px;padding:0 4px 8px;gap:3px}
   .rail-head{margin:0 -4px 2px;padding:8px 2px 6px;flex-direction:column;gap:3px}
   .rh-flag{width:28px;height:28px}
-  .rh-t{align-items:center;max-width:70px}.rh-t b{font-size:var(--fs-xs)}.rh-t small:not(.gold){display:none}.rh-t small.gold{font-size:var(--fs-2xs)}
+  .rh-t{align-items:center;max-width:70px}.rh-t b{font-size:var(--fs-xs);max-width:100%}.rh-t small:not(.gold){display:none}.rh-t small.gold{font-size:var(--fs-2xs)}
   .rail-lab{display:none}
   .rail-i{flex-direction:column;justify-content:center;gap:2px;min-height:50px;padding:4px 1px 3px}
   .ri-ico{width:28px;height:28px}

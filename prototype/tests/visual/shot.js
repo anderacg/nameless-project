@@ -5,7 +5,16 @@ window.RUN=()=>{
   window.requestAnimationFrame=()=>0;t.act('begin','soldier');
   const go=()=>{
     if(new URLSearchParams(location.search).get('grid'))t.setGrid(true);
-    if(scene==='skills'){const bg=new URLSearchParams(location.search).get('bg');if(bg)t.act('begin',bg);P.level=9;P.tp=8;(bg?[]:['might0','might1','might2','mighta0','finesse0','h_might_finesse']).forEach(id=>{P.tp++;t.takeNode(id)});G.mode='world';G.modal=false;t.hidePanel();t.openSkills(new URLSearchParams(location.search).get('tab')||'talents');t.act('tree-sel','might3')}
+    // ?scene=estate|worker|herd&k=…&mine=1&tab=… (an estate met on the map, a menu of it; its workers; a pasture's herders),
+    // ?scene=site&type=…&tab=…
+    if(['estate','worker','herd','site'].includes(scene)){const q=new URLSearchParams(location.search),k=q.get('k')||(scene==='herd'?'pasture':'farm');P.troops={hum_knight:6,hum_long:4};P.gold=900;P.fac=null;P.hostile={};
+      const tw=q.get('mine')||scene==='herd'?t.townBy('Ashford'):t.TOWNS.find(x=>x.owner&&x.owner!=='player'&&t.bldLv(x,k)&&!x.sacked&&!x.raided);for(let d=0;d<3;d++)t.econDay();
+      if(q.get('mine')||scene==='herd'){tw.owner='player';tw.lastOwner='player';Object.assign(tw.stock,{timber:300,stone:300,tools:60,iron:60})}
+      G.mode='world';G.modal=false;t.hidePanel();
+      if(scene==='site'){const s=W.sites.find(x=>x.type===(q.get('type')||'travelers'));s.cleared=false;s.seen=true;P.x=s.x;P.y=s.y+14;t.drawWorld();G.lastSite=null;t.enterSite(s);if(q.get('tab'))t.act('site-tab',q.get('tab'))}
+      else{const sp=t.bldSpots(tw)[k];P.x=sp.x;P.y=sp.y+10;G.clock=t.DAY*.3;W.folk=[];for(let i=0;i<200;i++)t.updateFolk(.05);if(scene==='herd'){W.critters=[];t.initCritters()}t.drawWorld();
+        t.estateMeet(t.estatePick(tw,k));if(scene==='worker')t.act('es-folk');if(scene==='herd')t.act('es-herd');if(q.get('tab'))t.act('es-tab',q.get('tab'))}}
+    else if(scene==='skills'){const bg=new URLSearchParams(location.search).get('bg');if(bg)t.act('begin',bg);P.level=9;P.tp=8;(bg?[]:['might0','might1','might2','mighta0','finesse0','h_might_finesse']).forEach(id=>{P.tp++;t.takeNode(id)});G.mode='world';G.modal=false;t.hidePanel();t.openSkills(new URLSearchParams(location.search).get('tab')||'talents');t.act('tree-sel','might3')}
     else if(scene==='inv'){const g=t.gearId;P.gear.weapon=g('spear',2);P.gear.offhand=g('shield',1);P.gear.head=g('helm',2);P.gear.body=g('mail',1);P.gear.cape=g('cloak',3);P.gear.feet=g('boots',1);P.gear.belt=g('belt',2);
       P.gear.ring0=g('ring',2);P.gear.ring5=g('ring',4);P.gear.ring6=g('ring',1);P.gear.mount='m_horse';P.gear.marmor=g('barding',2);P.gear.macc=g('saddle',1);t.fitInv();
       [g('greatsword',3),g('dagger',2),g('tome',2),g('chanfron',1),'wyrmspear'].forEach(id=>t.invAdd('gear',id,1));t.invAdd('good','meat',12);t.invAdd('good','spice',8);t.invAdd('mat','pelt',7);

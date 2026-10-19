@@ -34,8 +34,10 @@ function placeStatus(t,k){
   if(k==='siege'){const [n,c]=odds(rating(siegeDefenders(t).list,siegeLv(t)));return [n+' to attack',c==='bad'?'bad':'']}
   return ['',''];
 }
-// the rail's header: the holding's colours, its name and owner, your gold; a click: its overview (‹ when that is a step back)
-function townHead(t,back){const f=FACS[t.owner];return '<span class="rh-flag">'+facFlag(t.owner,22)+'</span><span class="rh-t"><b>'+(back?'‹ ':'')+t.name+'</b><small>'+(f?'<span style="color:'+f.col+'">'+(t.owner==='player'?'Yours':f.n)+'</span>':cap1(t.label))+'</small><small class="gold">'+P.gold+' gold</small></span>'}
+// the rail's header (window.js): the holding's colours, its name and owner (with your gold); a click: its overview (‹ when that is
+// a step back). Also an estate's rail (estates.js)
+const ownerTag=t=>{const f=FACS[t.owner];return f?'<span style="color:'+f.col+'">'+(t.owner==='player'?'Yours':f.n)+'</span>':cap1(t.label)};
+const townHead=(t,back)=>({fac:t.owner,name:t.name,sub:ownerTag(t),back});
 
 /* the overview: what the holding is, who holds it and how it fares, and what is notable here today */
 function townOverview(t){
@@ -70,6 +72,7 @@ const tourneyBody=t=>'<p>One-on-one against the town champion, before the crowd.
 const HOLD_ICO={wall:'tower',house:'house',farm:'wheat',pasture:'sheep',lumber:'axe',mine:'pick',quarry:'stone',port:'anchor',workshop:'spool',smithy:'anvil',brewery:'barrel',granary:'sack',market:'stall'};
 const bldName=k=>k==='wall'?'Walls':k==='house'?'Houses':ESTATES[k].n;
 const bldKeys=()=>['wall','house',...Object.keys(ESTATES)];
+const bldShort=k=>k==='workshop'?'Weavers':k==='lumber'?'Wood':bldName(k).split(' ')[0];
 // a building's status: being built, wrecked, idle and why, short of hands or fields, or working
 function bldStatus(t,k){
   const w=t.work,pct=()=>'building '+Math.round(workProg(t)*100)+'%';
@@ -87,10 +90,12 @@ function bldStatus(t,k){
   return ['level '+lv+(M.out?' · working':''),'good'];
 }
 function holdingItems(t){return [{act:'tab',arg:'fief',ico:'banner',n:'Holding',short:'Holding',st:fiefIncome(t)+' gold a day',tone:'good',on:!G.town.bld},
-  ...bldKeys().map(k=>{const [st,tone]=bldStatus(t,k),lv=ESTATES[k]?bldLv(t,k):1;return {act:'bld',arg:k,ico:HOLD_ICO[k],n:bldName(k),short:k==='workshop'?'Weavers':k==='lumber'?'Wood':bldName(k).split(' ')[0],st,tone,on:G.town.bld===k,dim:!lv&&!(t.work&&t.work.k===k)}})]}
-// a building's window: what it is and does, its state, its workers, what it made, the stores of what it makes, and building it
-function bldBody(t,k){
-  const [st,tone]=bldStatus(t,k),w=t.work,L=t.last||{},cell=(n,v,c)=>'<span><b>'+n+'</b><span'+(c?' class="'+c+'"':'')+'>'+v+'</span></span>';
+  ...bldKeys().map(k=>{const [st,tone]=bldStatus(t,k),lv=ESTATES[k]?bldLv(t,k):1;return {act:'bld',arg:k,ico:HOLD_ICO[k],n:bldName(k),short:bldShort(k),st,tone,on:G.town.bld===k,dim:!lv&&!(t.work&&t.work.k===k)}})]}
+// a building's window: what it is and does, its state, its workers, what it made, the stores of what it makes (bldInfo, also an
+// estate's window on the map, here: you stand at it: estates.js), and building it (bldBuild)
+const bldBody=(t,k)=>bldInfo(t,k)+bldBuild(t,k);
+function bldInfo(t,k,here){
+  const [st,tone]=bldStatus(t,k),L=t.last||{},cell=(n,v,c)=>'<span><b>'+n+'</b><span'+(c?' class="'+c+'"':'')+'>'+v+'</span></span>';
   let h='<p>'+(k==='wall'?'The fortification of the centre: walls make every defender stronger, sieges longer and the garrison bigger.':k==='house'?'Houses give the people room to live; a full holding grows no more and sends people away.':ESTATES[k].d)+'</p>';
   if(k==='wall'||k==='house')h+='<div class="loot-stats">'+cell('State',st,tone)+(k==='wall'?cell('Defenders fight as','level '+(1+wallOf(t)))+cell('Garrison up to',fiefCap(t)):cell('People',Math.round(t.pop||0))+cell('Room for',housing(t)))+'</div>';
   else{const lv=bldLv(t,k),M=MAKE[k]||{},gs=ESTATES[k].goods,hands=W.folk.filter(f=>f.home===t.name&&f.k===k),ws=workerScale(t);
@@ -98,8 +103,12 @@ function bldBody(t,k){
       (PLOTS[k]&&lv?cell('Fields',plotsAt(t,k,lv).length+' of '+PLOTS_AT[k](lv)):'')+'</div>';
     if(lv&&M.out)h+='<div class="lab">Production</div><p style="font-size:14px">'+(Object.keys(M.out).some(g=>(L.out||{})[g])?'Made yesterday: '+Object.keys(M.out).filter(g=>(L.out||{})[g]).map(g=>L.out[g]+' '+GOODS[g].n.toLowerCase()).join(', ')+'.':'Nothing made yesterday.')+
       (M.in?' Uses '+Object.keys(M.in).map(g=>M.in[g]*lv+' '+GOODS[g].n.toLowerCase()).join(' and ')+' a day from the stores.':'')+
-      (ESTATES[k].work?' '+(hands.length?hands.length+' '+ESTATES[k].work+(hands.length>1?'s':'')+' about'+(hands.some(f=>f.st!=='in')?', '+hands.filter(f=>f.st!=='in').length+' carrying the day’s load':'')+'; meet them at the estate on the map.':'Its '+ESTATES[k].work+'s are met at the estate on the map.'):'')+'</p>';
+      (ESTATES[k].work?' '+(hands.length?hands.length+' '+ESTATES[k].work+(hands.length>1?'s':'')+' about'+(hands.some(f=>f.st!=='in')?', '+hands.filter(f=>f.st!=='in').length+' carrying the day’s load':'')+(here?'.':'; meet them at the estate on the map.'):here?'':'Its '+ESTATES[k].work+'s are met at the estate on the map.'):'')+'</p>';
     if(gs.length){ensureEcon(t);h+='<div class="lab">In store</div><p style="font-size:14px">'+gs.map(g=>GOODS[g].n+' <b>'+Math.floor(t.stock[g]||0)+'</b>'+(marketState(t,g)?' <span class="'+(marketState(t,g)==='shortage'?'bad':'good')+'">('+marketState(t,g)+')</span>':'')).join(' · ')+'</p>'}}
+  return h;
+}
+function bldBuild(t,k){
+  const w=t.work;let h='';
   if(w&&w.k===k)h+='<p class="gold" style="font-size:13px">Done in '+Math.max(1,w.done-G.day)+' days'+(besieged(t)?' (stopped by the siege)':'')+'.</p>';
   else if(w)h+='<p class="muted" style="font-size:13px">Builders are busy with '+(w.k==='wall'?'the walls':w.k==='house'?'a house':'the '+ESTATES[w.k].n.toLowerCase())+' for '+Math.max(1,w.done-G.day)+' more days. One project at a time.</p>';
   return h+'<div class="lab">'+(k==='wall'?'Fortify':k==='house'?'Build':'Build, upgrade or pull down')+'</div>'+estateRow(t,k);
@@ -110,7 +119,7 @@ function showTown(t,body){
   const s=G.town,tab=s.tab,hold=tab==='fief'&&t.owner==='player',bld=hold&&s.bld,P0=PLACES[tab];
   const items=hold?holdingItems(t):townPlaces(t).map(k=>{const [st,tone]=placeStatus(t,k),p=PLACES[k];return {act:'tab',arg:k,ico:p.ico,n:p.n,short:p.short,st,tone,on:k===tab}});
   const close=['leave',null,s.inScene?'Back to the streets':P.stay&&P.stay.town===t.name?'Back to your lodgings':'Leave '+t.label];
-  showRail({head:{act:['tab','home'],on:!tab,html:townHead(t,hold)},label:hold?'Walls and estates':'Places',items,
+  showRail({head:{act:['tab','home'],on:!tab,...townHead(t,hold)},label:hold?'Walls and estates':'Places',items,
     title:bld?bldName(bld):P0&&tab?(hold?'Your holding':P0.n):t.name,sub:tab?t.name+(hold?' · '+(bld?'your holding':fiefIncome(t)+' gold a day'):''):cap1(t.label)+(t.owner?' of the '+FACS[t.owner].n:''),gold:true,
     body:(s.greet?'<p class="gold">'+s.greet+'</p>':'')+body,back:bld?['tab','fief','Back']:tab&&!s.direct?['tab','home','Back']:null,close},'town:'+t.name+':'+(tab||'')+':'+(bld||''));
 }

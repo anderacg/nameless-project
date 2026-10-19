@@ -67,17 +67,18 @@ function folkSprite(job,frame,race,v,carry){return workerSprite(job,frame,race,v
 function drawFolk(ents,cam,V){for(const f of W.folk)asWorker(f).draw(ents,cam,V)}
 
 /* meeting a worker: talk, hire, rob or press-gang */
-// (from: the estate it was opened from: Back returns there)
+// (from: the estate it was opened from: on its rail (estates.js estateRail), Back returns there)
 function workerMeet(f,from){
   const t=townBy(f.home);if(!t)return;G.wk=f;G.wkFrom=from||null;G.mode='dialog';P.tx=null;G.chase=null;ensureEcon(t);
   const short=Object.keys(GOODS).filter(g=>marketState(t,g)==='shortage').slice(0,3).map(g=>GOODS[g].n.toLowerCase()),glut=Object.keys(GOODS).filter(g=>marketState(t,g)==='surplus').slice(0,3).map(g=>GOODS[g].n.toLowerCase());
   const own=t.owner==='player',lv=levyOf(t.races[0]),c=hireCost(lv),[g,n]=jobGood(t,f.job);
-  showPanel('<div class="top"><h2>'+cap1(an(f.job))+' of '+t.name+'</h2><span class="muted">'+(t.owner?'Subject of the '+FACS[t.owner].n:'')+'</span></div>'+
-    '<p>&ldquo;'+(foodDays(t)<2?'There is hardly any bread left in '+t.name+'.':t.pros>70?'Good times in '+t.name+'.':'We get by.')+(short.length?' We are short of '+short.join(', ')+'.':'')+(glut.length?' There is plenty of '+glut.join(', ')+'.':'')+'&rdquo;</p>'+
+  const title=cap1(an(f.job))+' of '+t.name,sub=t.owner?'Subject of the '+FACS[t.owner].n:'',body='<p>&ldquo;'+(foodDays(t)<2?'There is hardly any bread left in '+t.name+'.':t.pros>70?'Good times in '+t.name+'.':'We get by.')+(short.length?' We are short of '+short.join(', ')+'.':'')+(glut.length?' There is plenty of '+glut.join(', ')+'.':'')+'&rdquo;</p>'+
     '<p class="muted">'+t.name+': '+t.pop+' people, prosperity '+Math.round(t.pros)+'%, food for '+foodDays(t)+' days.</p><div class="btns">'+
     dlgBtn('wk-hire',null,'Hire as '+ST[lv].n.toLowerCase()+' '+c+'g',partyRoom()<1?'Your band is full':P.gold<c?'Not enough gold':!canHire(t,lv)&&!own?'They do not trust you':'')+
     (own?'':dlgBtn('wk-rob',null,'Rob them ('+n+' '+GOODS[g].n.toLowerCase()+')'))+(own?'':dlgBtn('wk-press',null,'Press-gang into your band',partyRoom()<1?'Your band is full':''))+
-    '</div>'+(own?'':'<p class="muted">Robbing or press-ganging: reputation in '+t.name+' falls, the '+(t.owner?FACS[t.owner].n:'owner')+' resents it, and its workers flee the fields for a while.</p>')+nav(G.wkFrom?['wk-back',null,'Back']:null,['dlg-close',null,'Leave']));
+    '</div>'+(own?'':'<p class="muted">Robbing or press-ganging: reputation in '+t.name+' falls, the '+(t.owner?FACS[t.owner].n:'owner')+' resents it, and its workers flee the fields for a while.</p>'),close=['dlg-close',null,'Leave'];
+  if(from)estateRail(from,'folk',{title,sub,body,back:['wk-back',null,'Back'],close},'wk');
+  else showPanel('<div class="top"><h2>'+title+'</h2><span class="muted">'+sub+'</span></div>'+body+nav(null,close));
 }
 function workerAct(a){
   const f=G.wk,t=f&&townBy(f.home);if(!t){closeDialog();return}
