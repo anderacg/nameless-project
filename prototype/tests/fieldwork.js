@@ -66,6 +66,8 @@ try{
   const R=t.WORLD_SCALE.ai.folkBandit,hit=()=>ws().filter(x=>x.k===f.k);run(1);const fast=f.gin;run(600);
   ok(n0>0&&fast&&hit().every(x=>x.st==='in'||Math.hypot(b.x-x.x,b.y-x.y)>=R)&&f.st==='in','bandits come near the '+f.k+': its workers within '+R+' px hurry in ('+hit().map(x=>x.st).join(', ')+')');
   t.bandits.length=0;run(5);ok(f.st==='field','the bandits gone, out again');
+  {const ms=W.monsters.splice(0),m=t.asMonster({id:'wolf',x:f.x+20,y:f.y,hx:f.x+20,hy:f.y,lv:1,n:3,t:0,a:0,cool:1e9});W.monsters.push(m);run(600);
+   ok(f.st==='in','a beast near the '+f.k+': its workers go in too ('+f.st+')');W.monsters.length=0;W.monsters.push(...ms);run(5);ok(f.st==='field','the beast gone, out again')}
   ash.fear=G.day+2;run(600);ok(fld()===0,'the holding afraid of you: all go in ('+ws().length+')');ash.fear=0;run(5);ok(fld()===ws().length,'and out again once it is not ('+fld()+')');
   P.siege={town:'Ashford'};run(600);ok(fld()===0&&t.besieged(ash),'under siege: all inside');P.siege=null;run(5);ok(fld()===ws().length,'the siege over: out again');F.out=.6}
  // ---- met on the map: a click on a field worker beside you opens his talk; robbing him, a little of his product and a few coins

@@ -68,10 +68,12 @@ const folkSeen=f=>folkOut(f)||f.st==='field';
    nearest rock or hill, back with what he cut; a farmer along a row of his fields and back, stopping to work; a herder round the
    pens, outside the fence; a fisher out to the end of the pier and back. With nothing of his trade in reach, he works just outside
    the door (a herder by the pens, a woodcutter at the log yard). He goes in by the way he came at the end of the hours, or while
-   bandits are near, the holding fears you or is besieged, and comes out again once it is safe */
+   bandits or a beast are near (folkThreat), the holding fears you or is besieged, and comes out again once it is safe */
 const fieldTime=now=>now>=FIELD.from&&now<FIELD.to;
 const fieldOut=f=>folkHash(f.id+'|'+G.day)%1000/1000<FIELD.out;
-const fieldDanger=(t,f)=>until(t,'fear')||besieged(t)||bandits.some(b=>Math.hypot(b.x-f.x,b.y-f.y)<WORLD_SCALE.ai.folkBandit);
+// (a bandit band or a beast within r of (x, y): the workers keep clear of both)
+const folkThreat=(x,y,r)=>bandits.some(b=>Math.hypot(b.x-x,b.y-y)<r)||W.monsters.some(m=>Math.hypot(m.x-x,m.y-y)<r);
+const fieldDanger=(t,f)=>until(t,'fear')||besieged(t)||folkThreat(f.x,f.y,WORLD_SCALE.ai.folkBandit);
 // the stretches of an estate's front row (px across its tile) its 1st, 2nd and 3rd man work along (inner: by a town workshop's door)
 const FRONT_AT={mine:[[10,15.5],[4.5,9.5],[.5,4.5]],inner:[[3,7],[9,13],[6,10]],_:[[.5,4.5],[11.5,15.5],[5,11]]};
 // rock a miner cuts: hills, or ground at the foot of a mountain
@@ -152,7 +154,7 @@ function updateFolk(d){
         W.folk.push(asWorker(folkName({id:key+'|'+no,folk:true,home:t.name,k,job,x:at.x,y:at.y,tx:at.x,ty:at.y,st:'in',leave,done:now>leave?G.day:-1,dir:1,ph:Math.random()*6,fresh:first},t.races[0])))}}}
   for(const f of W.folk){
     const t=townBy(f.home),fresh=f.fresh;f.fresh=false;if(!t){f.gone=true;continue}
-    const threat=bandits.some(b=>Math.hypot(b.x-f.x,b.y-f.y)<A.folkBandit)||until(t,'fear')&&Math.hypot(P.x-f.x,P.y-f.y)<A.folkFear;
+    const threat=folkThreat(f.x,f.y,A.folkBandit)||until(t,'fear')&&Math.hypot(P.x-f.x,P.y-f.y)<A.folkFear;
     // at work inside: out with the day's load at his hour (not while the holding is besieged or afraid); in the field hours, out
     // to his work on the estate's ground if it is his day for it and safe (already at it as you first come near)
     if(f.st==='in'){f.moving=false;if(win&&f.done!==G.day&&now>=f.leave&&!besieged(t)&&!until(t,'fear')){const g=folkHome(t);f.st='out';f.tx=g.x;f.ty=g.y}
