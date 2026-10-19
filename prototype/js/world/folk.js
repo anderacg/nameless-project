@@ -18,7 +18,7 @@ class EstateWorker extends WorldObject{
   draw(ents,cam,V){if(!this.inView(V))return;const f=this;
     ents.push({y:f.y,f:()=>{subT(f);const fr=f.moving&&mapStepping(f)?(frameOf(f,WALK.foot,WALK.n)+Math.floor(f.ph*WALK.n))%WALK.n:0,t=townBy(f.home),s=folkSprite(f.job,fr,t&&t.races?t.races[0]:'human',Math.floor(f.ph*7),f.st==='out'),sx=Math.round(f.x-cam.x),sy=Math.round(f.y-cam.y);
       ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(sx-2,sy-1,5,2);ctx.save();ctx.translate(sx,sy);if(f.dir<0)ctx.scale(-1,1);ctx.drawImage(s,-8,-14);ctx.restore()}})}
-  tip(){return '<b>'+cap1(this.job)+'</b><small>Of '+this.home+'</small><span class="act">Click: talk</span>'}
+  tip(){return '<b>'+(this.name?this.name+', '+this.job:cap1(this.job))+'</b><small>Of '+this.home+'</small><span class="act">Click: talk</span>'}
 }
 const asWorker=asClass(EstateWorker);
 // (the estates whose workers you have come near: town|estate; forgotten once you are far)
@@ -26,6 +26,26 @@ const FOLK_SEEN=new Set();
 const dayPart=()=>G.clock/DAY;
 // the hours a delivery may start (share of the day: the afternoon to the end of dusk), and how long it takes inside the gate
 const DELIVER={from:.45,to:.66,stop:[1.5,3.5]};
+/* each worker is someone: id (his holding, estate and number there), a name and a look (v) of his people, seeded from that id
+   (FOLK_COUNT: how many each estate has had, this session; never saved). Recruited where he works (workerRecruit), he leaves his
+   estate a pair of hands short (t.lost[k]: the days the gaps fill again) until someone new moves in, REFILL_DAYS later */
+const FOLK_NAMES={human:['Alys','Bran','Cedric','Dora','Edwin','Gwen','Hob','Ida','Jory','Maud','Ned','Osric','Peg','Rafe','Tilda','Wat'],
+  dwarf:['Bofri','Dagna','Durli','Grimma','Helga','Korri','Nali','Thrain','Ulfa','Vigdis'],elf:['Aelin','Caelir','Elowen','Faelar','Ilyth','Lorien','Naeris','Saelith','Thalia','Varis'],
+  orc:['Brak','Durza','Gash','Hruk','Krenna','Mogg','Nazra','Rukk','Shagra','Ugak']};
+const FOLK_COUNT=new Map(),REFILL_DAYS=3;
+const folkHash=s=>{let h=2166136261;for(const c of s)h=Math.imul(h^c.charCodeAt(0),16777619);return h>>>0};
+function folkName(f,race){const N=FOLK_NAMES[race]||FOLK_NAMES.human,h=folkHash(f.id);f.name=N[h%N.length];f.v=(h>>>8)%4;return f}
+// the hands an estate is short (recruited away, not yet replaced), and the share of its work still done
+const lostHands=(t,k)=>((t.lost||{})[k]||[]).filter(d=>d>G.day).length;
+const handsLeft=(t,k)=>{const n=lostHands(t,k);return n?Math.max(0,1-n/Math.min(3,bldLv(t,k)+1)):1};
+// a worker's trade as a soldier (a quarry's miners are quarrymen), the peasant he becomes (data/units.js), and why not
+const tradeOf=f=>f.k==='quarry'?'quarryman':f.job;
+const recruitKind=(t,f)=>peasantKind(t.races[0],tradeOf(f));
+function workerRecruitWhy(t,f){const k=recruitKind(t,f),c=hireCost(k);
+  return P.fac&&P.fac===t.owner?'Your employer’s people':partyRoom()<1?'Your band is full':!partyRoster(P).canAdd(k)?'No room for another group':P.gold<c?'Not enough gold':t.owner!=='player'&&!canHire(t,k)?'They do not trust you yet':''}
+function workerRecruit(f){const t=townBy(f.home);if(!t||!W.folk.includes(f)||workerRecruitWhy(t,f))return false;const k=recruitKind(t,f),c=hireCost(k);
+  P.gold-=c;P.add(k);f.gone=true;W.folk=W.folk.filter(x=>x!==f);t.pop=Math.max(10,(t.pop||0)-1);t.lost=t.lost||{};t.lost[f.k]=[...(t.lost[f.k]||[]).filter(d=>d>G.day),G.day+REFILL_DAYS];
+  if(t.owner!=='player')addRep(t.name,-2,true);log(f.name+' the '+f.job+' takes your coin and joins your band as '+an(ST[k].n.toLowerCase())+'. The '+ESTATES[f.k].n.toLowerCase()+' of '+t.name+' is a pair of hands short for a few days.','gold');return true}
 
 /* workers */
 function folkHome(t){return{x:t.x+rint(-6,6),y:t.y+10}}
@@ -42,8 +62,8 @@ function updateFolk(d){
     for(const k in sp){const lv=bldLv(t,k),job=ESTATES[k]&&ESTATES[k].work;if(!lv||!job)continue;
       // (all of them there as you come near; one taken or fled comes back only slowly, so a hire or a press-gang shows)
       const key=t.name+'|'+k,first=!FOLK_SEEN.has(key);FOLK_SEEN.add(key);
-      for(let have=W.folk.filter(f=>f.home===t.name&&f.k===k).length;have<Math.min(3,lv+1)&&(first||Math.random()<d*.02);have++){const at=folkDoor(t,k),leave=DELIVER.from+Math.random()*(DELIVER.to-DELIVER.from);
-        W.folk.push(asWorker({folk:true,home:t.name,k,job,x:at.x,y:at.y,tx:at.x,ty:at.y,st:'in',leave,done:now>leave?G.day:-1,dir:1,ph:Math.random()*6}))}}}
+      for(let have=W.folk.filter(f=>f.home===t.name&&f.k===k).length;have<Math.min(3,lv+1)-lostHands(t,k)&&(first||Math.random()<d*.02);have++){const no=(FOLK_COUNT.get(key)||0)+1;FOLK_COUNT.set(key,no);const at=folkDoor(t,k),leave=DELIVER.from+Math.random()*(DELIVER.to-DELIVER.from);
+        W.folk.push(asWorker(folkName({id:key+'|'+no,folk:true,home:t.name,k,job,x:at.x,y:at.y,tx:at.x,ty:at.y,st:'in',leave,done:now>leave?G.day:-1,dir:1,ph:Math.random()*6},t.races[0])))}}}
   for(const f of W.folk){
     const t=townBy(f.home);if(!t){f.gone=true;continue}
     const threat=bandits.some(b=>Math.hypot(b.x-f.x,b.y-f.y)<A.folkBandit)||until(t,'fear')&&Math.hypot(P.x-f.x,P.y-f.y)<A.folkFear;
@@ -82,7 +102,7 @@ function workerMeet(f,from){
 }
 function workerAct(a){
   const f=G.wk,t=f&&townBy(f.home);if(!t){closeDialog();return}
-  if(a==='wk-back'){const o=G.wkFrom;G.wk=null;G.wkFrom=null;if(o)estateMeet(o);else closeDialog();return}
+  if(a==='wk-back'){const o=G.wkFrom;G.wk=null;G.wkFrom=null;if(o)estateBack(o,'folk');else closeDialog();return}
   const take=()=>{f.gone=true;W.folk=W.folk.filter(x=>x!==f);t.pop=Math.max(10,t.pop-1)};
   if(a==='wk-hire'){const lv=levyOf(t.races[0]),c=hireCost(lv);if(partyRoom()<1||!partyRoster(P).canAdd(lv)||P.gold<c||!canHire(t,lv)&&t.owner!=='player')return;P.gold-=c;P.add(lv);take();
     return notice('A new recruit','The '+f.job+' lays down the '+(f.job==='farmer'?'hoe':'tools')+' and joins your band as '+an(ST[lv].n.toLowerCase())+'. '+t.name+' has one less pair of hands.','good')}

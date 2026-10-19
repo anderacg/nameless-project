@@ -42,8 +42,7 @@ try{
  P.hostile={[town.owner]:G.day+5};ok(/hostile/.test(t.stayWhy(town)),'refused by a hostile realm');P.hostile={};
  P.gold=2;ok(/Not enough gold/.test(t.stayWhy(town)),'and when you cannot pay for a day');P.gold=500;
  // the tavern: no instant rest; provisions
- world();t.enterTown(town);t.act('tab','tavern');ok(!/data-act="rest"/.test(panel())&&/Lodgings/.test(panel())&&/data-act="sy-food" data-arg="7"/.test(panel()),'the tavern offers lodgings and provisions, no instant rest');
- {t.ensureEcon(town);for(const g of t.FOODS)town.stock[g]=(town.stock[g]||0)+60;const f0=t.foodN();t.act('sy-food','3');ok(t.foodN()-f0>=t.eatPerDay()*3,'provisions: food for 3 days ('+(t.foodN()-f0)+')')}
+ world();t.enterTown(town);t.act('tab','tavern');ok(!/data-act="rest"/.test(panel())&&/Lodgings/.test(panel())&&!/sy-food/.test(panel())&&!('buyProvisions' in window),'the tavern offers lodgings, no instant rest and no food (food comes from the market)');
  t.act('leave');
  // hostility puts you out
  setSt(town,35);world();t.startStay(town);P.hostile={[town.owner]:G.day+5};t.stayTick(.01);ok(!P.stay,'if its realm turns hostile, you are put out');P.hostile={};

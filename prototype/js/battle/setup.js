@@ -73,6 +73,7 @@ const FIELD_EDGE={top:18,bot:6,body:22,pass:18};
 const fieldTop=()=>B&&B.ftop!=null?B.ftop:FIELD_EDGE.top,fieldBot=()=>B&&B.fbot!=null?B.fbot:BH-FIELD_EDGE.bot;
 // (measured before the field is laid out, so its rocks and trees go where the fight can be seen)
 function measureField(){
+  if(MAPZOOM.on){MAPZOOM.map=false;fitScreen()}// (the screen at its own scale first, whatever the map's zoom: core.js MAPZOOM)
   const def={top:FIELD_EDGE.top,bot:BH-FIELD_EDGE.bot};bbar.hidden=false;{const sc=document.getElementById('screen');if(sc)sc.dataset.mode='battle'}// (the HUD laid out as in battle)
   const cv=document.querySelector('canvas'),r=cv&&cv.getBoundingClientRect();if(!r||r.height<50)return def;const k=BVH/r.height/camFit(),box=sel=>{const e=bbar.querySelector(sel);return e&&e.offsetParent!==null?e.getBoundingClientRect():null};
   // (measured without the unit-ability buttons (battlehud.js): which abilities show depends on the selection, and the last battle's

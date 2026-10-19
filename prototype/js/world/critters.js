@@ -110,24 +110,26 @@ function hunt(c){
 // (from: the estate it was opened from, its pasture: on its rail (estates.js estateRail), Back returns there)
 function openHerd(c,from){G.herd=c;G.herdFrom=from||null;G.herdMsg='';G.mode='herd';P.tx=null;showHerd()}
 const milkCost=n=>n*3;
+// what the herders sell, as rows (window.js): a beast, milk, or one taken; their window and a pasture's Pens (estates.js) both
+function herdRows(c){const D=CRITTERS[c.id],t=townBy(c.home),price=Math.round(D.price*(1-.015*skill('trade')));
+  return railRow('Buy '+an(D.one),'Slaughtered on the spot: +'+D.meat+' meat · '+c.n+' grazing',railBtn('herd-buy',null,'Buy',c.n<2?'They will not sell their last one':P.gold<price?'Not enough gold':goodRoom('meat')<D.meat?'No room in your bag':''),price+'g')+
+    (D.milk?railRow('Buy milk','+'+D.milk+' milk, fresh today',railBtn('herd-milk',null,'Buy',c.milked===G.day?'Already milked today':P.gold<milkCost(D.milk)?'Not enough gold':goodRoom('milk')<D.milk?'No room in your bag':''),milkCost(D.milk)+'g'):'')+
+    railRow('Take one','+'+D.meat+' meat for free. The herders will tell '+(t?t.name:'everyone')+': reputation −12, honor −3',railBtn('herd-steal',null,'Take',c.n<1?'None left':goodRoom('meat')<D.meat?'No room in your bag':''))}
 function showHerd(){
-  const c=G.herd,D=CRITTERS[c.id],t=townBy(c.home),own=t?' of '+t.name:'',btn=(act,label,why)=>'<button class="btn sm" type="button" data-act="'+act+'"'+(why?' disabled title="'+why+'"':'')+'>'+label+'</button>';
-  const row=(title,sub,acts)=>'<div class="row"><div class="info"><strong>'+title+'</strong><small>'+sub+'</small></div><div class="acts">'+acts+'</div></div>';
-  const price=Math.round(D.price*(1-.015*skill('trade')));
-  const body='<p>The herders'+own+' watch you over their staffs while the '+D.n.toLowerCase()+' graze.</p>'+
-    row('Buy '+an(D.one),'Slaughtered on the spot: +'+D.meat+' meat',btn('herd-buy','Buy '+price+'g',c.n<2?'They will not sell their last one':P.gold<price?'Not enough gold':goodRoom('meat')<D.meat?'No room in your bag':''))+
-    (D.milk?row('Buy milk','+'+D.milk+' milk, fresh today',btn('herd-milk','Buy '+milkCost(D.milk)+'g',c.milked===G.day?'Already milked today':P.gold<milkCost(D.milk)?'Not enough gold':goodRoom('milk')<D.milk?'No room in your bag':'')):'')+
-    row('Take one','+'+D.meat+' meat for free. The herders will tell '+(t?t.name:'everyone')+': reputation −12, honor −3',btn('herd-steal','Take it',c.n<1?'None left':goodRoom('meat')<D.meat?'No room in your bag':''))+
+  const c=G.herd,D=CRITTERS[c.id],t=townBy(c.home),own=t?' of '+t.name:'';
+  const body='<p>The herders'+own+' watch you over their staffs while the '+D.n.toLowerCase()+' graze.</p>'+herdRows(c)+
     (G.herdMsg?'<p class="gold">'+G.herdMsg+'</p>':''),close=['herd-leave',null,'Leave'];
   if(G.herdFrom)estateRail(G.herdFrom,'herd',{title:D.n,sub:c.n+' grazing · herders'+own,body,back:['herd-back',null,'Back'],close},'herd');
   else showPanel('<div class="top"><h2>'+D.n+'</h2><span class="muted">'+c.n+' grazing · herders'+own+' · <span class="gold">'+P.gold+' gold</span></span></div>'+body+nav(null,close));
 }
 function herdAct(a){
   if(!a.startsWith('herd-'))return false;
-  const c=G.herd;if(G.mode!=='herd'||!c)return true;const D=CRITTERS[c.id],t=townBy(c.home),price=Math.round(D.price*(1-.015*skill('trade')));
-  const done=m=>{G.herdMsg=m;log(m);updateHUD(true);showHerd()};
+  // (from their window, or from a pasture's Pens on the map: estates.js)
+  const pens=G.mode==='dialog'&&G.est&&G.estTab==='herd',c=pens?herdOf(townBy(G.est.town)||{}):G.herd;if(!(G.mode==='herd'||pens)||!c)return true;const D=CRITTERS[c.id],t=townBy(c.home),price=Math.round(D.price*(1-.015*skill('trade')));
+  const done=m=>{G.herdMsg=m;log(m);updateHUD(true);if(pens){showEstate();railFocus(a)}else showHerd()};
+  if(pens&&(a==='herd-leave'||a==='herd-back'))return true;
   if(a==='herd-leave'){G.herd=null;G.herdFrom=null;G.mode='world';G.encCool=1;hidePanel();return true}
-  if(a==='herd-back'&&G.herdFrom){const o=G.herdFrom;G.herd=null;G.herdFrom=null;estateMeet(o);return true}
+  if(a==='herd-back'&&G.herdFrom){const o=G.herdFrom;G.herd=null;G.herdFrom=null;estateBack(o,'herd');return true}
   if(a==='herd-buy'&&c.n>=2&&P.gold>=price&&goodRoom('meat')>=D.meat){P.gold-=price;c.n--;invAdd('good','meat',D.meat);train('trade',price/30);if(t)addRep(t.name,price/80,true);done('You buy '+an(D.one)+' for '+price+' gold. +'+D.meat+' meat.')}
   else if(a==='herd-milk'&&D.milk&&c.milked!==G.day&&P.gold>=milkCost(D.milk)&&goodRoom('milk')>=D.milk){P.gold-=milkCost(D.milk);c.milked=G.day;invAdd('good','milk',D.milk);done('The herders fill your skins: +'+D.milk+' milk.')}
   else if(a==='herd-steal'&&c.n>=1&&goodRoom('meat')>=D.meat){c.n--;invAdd('good','meat',D.meat);if(t){addRep(t.name,-12,true);addHonor(t.owner,-3,true)}

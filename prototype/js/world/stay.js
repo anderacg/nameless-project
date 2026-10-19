@@ -87,17 +87,8 @@ function stayFall(t){
   for(const k in P.troops){const n=Math.round(P.troops[k]*.25);if(n)lost[k]=n}applyLosses(lost);
   leaveStay(t.name+' falls with your band inside. You are thrown out with the defeated'+(Object.keys(lost).length?', and lose '+lossText(lost):'')+'.','bad');
 }
-// buy food for some days at the tavern: the cheapest food the market has, a unit at a time
-function buyProvisions(t,days){
-  const want=eatPerDay()*days;let got=0,spent=0;
-  while(got<want){const g=FOODS.filter(k=>(t.stock[k]||0)>=1&&goodRoom(k)>=1).sort((a,b)=>marketPrice(t,a)-marketPrice(t,b))[0];if(!g)break;
-    const r=buyGoods(t,g,1);if(!r.got)break;got+=r.got;spent+=r.spent}
-  if(got){addRep(t.name,spent/60,true);log('You buy '+got+' food for '+spent+' gold ('+(got>=want?days+' days':'about '+Math.floor(got/Math.max(1,eatPerDay()))+' days')+').','gold')}
-  else log('You cannot buy food here: '+(P.gold<1?'no gold':'no room in your bag, or none for sale')+'.','bad');
-}
 function stayAct(a,arg){
   if(a==='sy-stay'){const t=townBy(arg);if(t)startStay(t);return}
-  if(a==='sy-food'){const t=G.town&&G.town.ref;if(t){buyProvisions(t,+arg);updateHUD(true);renderTown()}return}
   if(a==='sy-leave'){if(G.mode!=='world'&&G.mode!=='town'&&G.mode!=='scene')return;if(G.mode!=='world'){G.town=null;G.scene=null;G.mode='world';hidePanel()}leaveStay();return}
   const t=stayTown();if(!t){closeDialog();return}
   if(a==='sy-wait'){G.mode='world';hidePanel();log('Your band waits inside the walls of '+t.name+'.');return}

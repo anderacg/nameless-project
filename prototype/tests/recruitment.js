@@ -39,7 +39,7 @@ try{
   const g0=P.gold;t.act('hire',kind);ok(P.troops[kind]===1&&P.gold===g0-quote.cost&&ash.vol===1,'the existing hire action delegates to the service');
   const saved=JSON.stringify({gold:P.gold,troops:P.troops,txp:P.txp});t.act('hire','missing');t.act('train',kind+':missing');
   ok(JSON.stringify({gold:P.gold,troops:P.troops,txp:P.txp})===saved,'invalid UI action arguments cannot mutate the roster or funds');
-  P.txp[kind]=t.txpNeed(kind);t.renderTown();const to=t.UP[kind][0],train=document.querySelector('[data-act="train"][data-arg="'+kind+':'+to+'"]');
+  P.txp[kind]=t.txpNeed(kind);t.renderTown();const to=t.UP[kind][0],train=document.querySelector('[data-act="train-pick"][data-arg="'+kind+':'+to+'"]');
   ok(train&&!train.disabled&&t.recruitment.quoteTraining(ash,kind,to).ok,'training eligibility agrees between the screen and service');
   t.act('train',kind+':'+to);ok(P.troops[to]===1&&!P.troops[kind],'the training action changes the roster through the service');
   t.act('leave');G.mode='world';t.saveGame(true);const snapshot=JSON.stringify({gold:P.gold,troops:P.troops,txp:P.txp});t.begin('hedge');t.loadGame();

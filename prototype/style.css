@@ -147,7 +147,7 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 
 /* ---------- 4. windows ---------- */
 /* the overlay dims the game; the panel is one size whatever it holds: its title row and its action row stay put, the rest scrolls */
-.overlay{position:absolute;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;
+.overlay{container:ovl/size;position:absolute;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;
   padding:calc(12px + var(--sa-t)) calc(12px + var(--sa-r)) calc(12px + var(--sa-b)) calc(12px + var(--sa-l));
   background:radial-gradient(ellipse at center,rgba(8,10,16,.72),rgba(4,5,9,.9));overflow:auto}
 .panel{width:min(820px,100%);height:min(620px,100%);flex:none;overflow:auto;overscroll-behavior:contain;display:flex;flex-direction:column;gap:12px;padding:18px 20px;
@@ -274,6 +274,9 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 .dbtn .badge{background:var(--accent);color:var(--accent-ink);font-size:9px;font-weight:700;padding:1px 4px;border-radius:var(--r-sm)}
 .dockrow.sys .dbtn{flex-direction:row;min-width:40px;min-height:32px;padding:3px 8px}
 .dockrow.sys .dbtn .dl,.dockrow.sys .dbtn kbd{display:none}
+/* (the map's zoom, + and −: on the map only, dimmed at the end of its range) */
+.dbtn.zoom{display:none}.screen[data-mode="world"] .dbtn.zoom{display:inline-flex}
+.dbtn:disabled{opacity:.4;cursor:default;border-color:var(--line-2);color:var(--fg)}
 
 /* messages (bottom left): the newest at the bottom, each fading after a few seconds (L opens them all) */
 .toasts{position:absolute;left:var(--e-l);bottom:var(--e-b);width:min(46%,500px);display:flex;flex-direction:column;gap:3px;pointer-events:none}
@@ -304,13 +307,7 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 .screen[data-mode="world"] .people,.screen[data-mode="town"] .people,.screen[data-mode="scene"] .people{display:block}
 .people>*{pointer-events:auto}
 .people,.people *{touch-action:pan-y}
-.pp-tab{position:absolute;right:var(--sa-r);top:calc(var(--e-t) + 130px);display:flex;flex-direction:column;align-items:center;gap:4px;width:40px;padding:7px 3px 4px;cursor:pointer;color:var(--fg);
   background:var(--glass);border:1px solid var(--line-2);border-right:0;border-left:2px solid var(--trim);border-radius:var(--r-md) 0 0 var(--r-md);box-shadow:var(--float)}
-.pp-tab:hover,.people.open .pp-tab{border-color:var(--accent)}
-.pp-tab img{width:28px;height:28px;image-rendering:pixelated;object-fit:contain;background:rgba(0,0,0,.35);border:1px solid var(--line);border-radius:var(--r-sm)}
-.pp-tab small{font-size:var(--fs-2xs);font-weight:700;color:var(--muted)}
-.pp-tab kbd{font-size:9px;font-weight:700;color:var(--faint)}
-.people.open .pp-tab{right:calc(min(380px,92%) + var(--sa-r))}
 .pp-scrim{position:absolute;inset:0;background:rgba(4,5,9,.4)}
 .pp-drawer{position:absolute;top:0;right:0;bottom:0;width:calc(min(380px,92%) + var(--sa-r));display:flex;flex-direction:column;padding:var(--sa-t) var(--sa-r) var(--sa-b) 0;
   background:linear-gradient(180deg,#1a1f2e,var(--panel) 120px);border-left:2px solid var(--trim);box-shadow:var(--deep);animation:ppin .16s ease-out}
@@ -622,8 +619,9 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 
 /* ---------- 8b. rail windows ---------- */
 /* window.js, the one base of every rail screen (a town, your holding, an estate on the map, a site): the rail down the left
-   (the banner, name and your gold on top; then its places, each an icon, a name, a status and its number key), the chosen
-   place's window beside it (its own title row and bottom bar; the content scrolls).
+   (the banner, name and your gold on top; then its areas, each an icon, a name and its number key, a dot where something needs
+   you), the chosen area's window beside it (its own title row and bottom bar; the content scrolls): its people as cards in a
+   grid that wraps (.rcards), its things as rows.
    The panel is a size container: on a small one (a phone on its side) the rail slims to icons with short names */
 .panel.railed{flex-direction:row;gap:0;padding:0;overflow:hidden;container-type:size}
 .rail{flex:none;width:232px;display:flex;flex-direction:column;gap:2px;padding:0 8px 10px;overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:var(--line-2) transparent;
@@ -637,7 +635,7 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 .rh-t small{font-size:var(--fs-sm);color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .rh-t small.gold{color:var(--accent);font-weight:700}
 .rail-lab{padding:6px 6px 2px;font-size:var(--fs-2xs);font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--faint)}
-.rail-i{position:relative;flex:none;display:flex;align-items:center;gap:9px;min-height:46px;padding:5px 24px 5px 7px;text-align:left;color:var(--fg);cursor:pointer;background:transparent;border:1px solid transparent;border-radius:var(--r-md)}
+.rail-i{position:relative;flex:none;display:flex;align-items:center;gap:9px;min-height:42px;padding:5px 24px 5px 7px;text-align:left;color:var(--fg);cursor:pointer;background:transparent;border:1px solid transparent;border-radius:var(--r-md)}
 .rail-i:hover{background:rgba(255,255,255,.04);border-color:var(--line-2)}
 .rail-i.on{background:linear-gradient(90deg,rgba(232,185,74,.17),rgba(232,185,74,.03));border-color:var(--trim);box-shadow:inset 3px 0 0 var(--accent)}
 .rail-i.dim{opacity:.55}.rail-i.dim.on{opacity:1}
@@ -647,10 +645,9 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 .ri-t b{font-size:var(--fs-base);line-height:1.2}
 .rail-i.on .ri-t b{color:var(--accent)}
 .ri-s{display:none}
-.ri-t small{font-size:var(--fs-sm);color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ri-t small.gold{color:var(--accent);font-weight:700}.ri-t small.bad{color:var(--danger)}.ri-t small.good{color:var(--good)}
 .rail-i kbd{position:absolute;right:7px;top:50%;transform:translateY(-50%);font-size:var(--fs-2xs);font-weight:700;color:var(--faint)}
-.ri-dot{display:none}
+/* something here needs you (a quest to report): a small gold dot by the icon */
+.ri-dot{position:absolute;left:33px;top:5px;width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 2px #121622,0 0 6px rgba(232,185,74,.7)}
 .rwin{flex:1;min-width:0;display:flex;flex-direction:column}
 .rwin>.top{flex:none;align-items:center;flex-wrap:nowrap;padding:14px 20px 12px;background:linear-gradient(#1b2030,#181c2a);border-bottom:1px solid var(--line);border-radius:0 var(--r-lg) 0 0}
 .rw-h{display:flex;flex-direction:column;gap:2px;min-width:0}
@@ -663,6 +660,58 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 .tstats{gap:8px 22px}
 .tnotes{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:3px}
 .tnotes li::marker{color:var(--faint)}
+/* an area's people: a card each (window.js railCard), in a grid that wraps; rows keep the same rhythm round them */
+.rcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(232px,1fr));gap:10px}
+.rcard{display:flex;flex-direction:column;gap:7px;min-width:0;padding:10px 11px;background:linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,.01));border:1px solid var(--line);border-radius:var(--r-md)}
+.rcard[data-act]{cursor:pointer}.rcard[data-act]:hover{border-color:var(--line-2);background:rgba(255,255,255,.05)}
+.rcard.sel{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);background:rgba(232,185,74,.08)}
+.rc-head{display:flex;align-items:center;gap:10px;min-width:0}
+.rc-pic{width:44px;height:44px;flex:none;image-rendering:pixelated;object-fit:contain;background:#141822;border:1px solid var(--line);border-radius:var(--r-sm)}
+.rc-em{display:grid;place-items:center}
+.rc-id{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px;line-height:1.25}
+.rc-id strong{overflow-wrap:anywhere}.rc-id small{color:var(--muted);font-size:var(--fs-sm)}
+.rc-n{flex:none;align-self:flex-start;padding:1px 7px;font-size:var(--fs-sm);font-variant-numeric:tabular-nums;color:var(--accent);background:rgba(0,0,0,.3);border:1px solid var(--line);border-radius:999px}
+.rc-facts{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:var(--fs-sm);color:var(--muted)}
+.rc-facts span.gold{color:var(--accent)}.rc-facts span.bad{color:var(--danger)}.rc-facts span.good{color:var(--good)}
+.rcard .rc-note{margin:0;font-size:var(--fs-sm);color:var(--muted);line-height:1.4}
+.rc-acts{display:flex;flex-wrap:wrap;gap:6px;margin-top:auto}
+.rwbody .lab{margin-bottom:-4px}
+/* the whole place's key actions (window.js railKeyActions): big buttons in a bar, an icon, the label, its cost or chance, its letter key */
+.rkacts{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px}
+.rkact{position:relative;display:flex;align-items:center;gap:10px;min-height:58px;padding:9px 30px 9px 10px;text-align:left;color:var(--fg);cursor:pointer;
+  background:linear-gradient(180deg,#2a3150,#20263d);border:1px solid var(--line-2);border-radius:var(--r-md);box-shadow:inset 0 1px 0 rgba(255,255,255,.06)}
+.rkact:hover:not([disabled]){border-color:var(--accent);background:linear-gradient(180deg,#333b5e,#252c46)}
+.rkact[disabled]{cursor:not-allowed;opacity:.62}
+.rka-ico{flex:none;width:36px;height:36px;display:grid;place-items:center;background:rgba(0,0,0,.35);border:1px solid var(--line);border-radius:var(--r-sm)}
+.rka-t{display:flex;flex-direction:column;gap:1px;min-width:0;line-height:1.25}
+.rka-t b{font-size:var(--fs-base)}.rka-t small{font-size:var(--fs-sm);color:var(--muted)}.rka-t small.rka-why{color:var(--danger)}
+.rkact kbd{position:absolute;right:8px;top:7px;font-size:var(--fs-2xs);font-weight:700;color:var(--faint)}
+.panel .rka-note{margin:0;font-size:var(--fs-sm);color:var(--muted)}
+/* a first page of big tiles (window.js RailScreen tiles): a framed picture over its name and lines, the whole tile opening the area,
+   its one action under it; two or three a row, smaller when there are many */
+.rtiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}.rtiles.many{grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}
+.rtile{display:flex;flex-direction:column;min-width:0;background:linear-gradient(180deg,#232a40,#1a1f30);border:1px solid var(--line-2);border-radius:var(--r-md);overflow:hidden;box-shadow:0 2px 0 rgba(0,0,0,.3)}
+.rtile:hover,.rtile:focus-within{border-color:var(--accent)}
+.rt-open{position:relative;display:flex;flex-direction:column;gap:8px;padding:10px;text-align:left;color:var(--fg);background:transparent;border:0;cursor:pointer}
+.rt-pic{position:relative;display:flex;justify-content:center;background:#0d1018;border:1px solid var(--line);border-radius:var(--r-sm);overflow:hidden}
+.rt-pic::after{content:'';position:absolute;inset:0;box-shadow:inset 0 0 28px rgba(0,0,0,.55),inset 0 0 0 2px rgba(0,0,0,.35);pointer-events:none}
+.rt-pic img{display:block;width:256px;height:112px;image-rendering:pixelated}
+.rt-t{display:flex;flex-direction:column;gap:2px;line-height:1.3}.rt-t b{font-size:var(--fs-lg);color:var(--accent)}.rt-t small{font-size:var(--fs-sm);color:var(--muted)}
+.rt-open kbd{position:absolute;right:16px;top:16px;font-size:var(--fs-2xs);font-weight:700;color:#fff;background:rgba(0,0,0,.55);border:1px solid var(--line-2);border-radius:4px;padding:1px 5px}
+.rt-act{display:flex;gap:6px;padding:0 10px 10px}.rt-act .btn{flex:1;min-height:38px}
+@container ovl (max-width:760px) or (max-height:520px){.rtiles,.rtiles.many{grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:8px}.rt-pic img{width:128px;height:56px}.rt-open{padding:8px;gap:6px}}
+@media (pointer:coarse){.rt-open kbd{display:none}}
+/* a picker or a confirm (window.js railPicker, railConfirm): the list to choose from, a count or a tick each, the total */
+.pk-list{display:flex;flex-direction:column}
+.pk-row.on{background:rgba(232,185,74,.06)}
+.pk-n{min-width:5ch;text-align:center;font-variant-numeric:tabular-nums;align-self:center}
+.pk-tick.on{border-color:var(--accent);color:var(--accent)}
+.panel .pk-total{margin:0;font-size:var(--fs-lg)}.pk-total b{color:var(--accent)}
+/* a window's ×1 / ×5 quantity toggle (window.js railQty): the Buy and Sell under it take that many */
+.qty{display:inline-flex;gap:0;align-self:flex-start}.qty .btn{border-radius:0;min-width:46px}.qty .btn:first-child{border-radius:var(--r-sm) 0 0 var(--r-sm)}.qty .btn:last-child{border-radius:0 var(--r-sm) var(--r-sm) 0}
+.qty .btn.on{background:var(--accent);color:#1a1408;border-color:var(--accent)}
+.lab-qty{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+@media (pointer:coarse){.rkact kbd{display:none}}
 @container (max-width:760px) or (max-height:520px){
   .rail{width:76px;padding:0 4px 8px;gap:3px}
   .rail-head{margin:0 -4px 2px;padding:8px 2px 6px;flex-direction:column;gap:3px}
@@ -671,13 +720,33 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
   .rail-lab{display:none}
   .rail-i{flex-direction:column;justify-content:center;gap:2px;min-height:50px;padding:4px 1px 3px}
   .ri-ico{width:28px;height:28px}
-  .ri-n,.ri-t small,.rail-i kbd{display:none}
+  .ri-n,.rail-i kbd{display:none}
   .ri-s{display:block;max-width:70px;font-size:var(--fs-2xs);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .ri-dot{display:block;position:absolute;right:9px;top:4px;width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 1px #000}.ri-dot.bad{background:var(--danger)}
+  .ri-dot{left:auto;right:12px;top:3px}
+  .rcards{grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:8px}
+  .rcard{padding:8px 9px;gap:6px}.rc-pic{width:36px;height:36px}
   .rwin>.top{padding:7px 12px 6px}.rwin h2{font-size:var(--fs-lg)}.rw-h .muted{font-size:var(--fs-sm)}
   .rwbody{padding:10px 12px 12px;gap:10px}
   .rwin>.nav{padding:6px 12px 8px}
   .rwbody .recwrap{flex-direction:column}.rwbody .reccard{position:static;width:100%}
+}
+/* every window on a narrow screen (a phone, either way up): a row stacks, its name and line, its facts, then its buttons on a line
+   of their own, full width and big enough to tap */
+@container ovl (max-width:760px) or (max-height:520px){
+  .panel .row{flex-wrap:wrap;row-gap:6px}.panel .row .info{flex:1 1 60%}
+  .panel .row .acts{flex:1 1 100%;justify-content:stretch;flex-wrap:nowrap}.panel .row .acts>.btn{flex:1 1 0;min-height:40px}
+  .panel .row .acts>small{align-self:center}
+}
+/* a phone held upright (the overlay taller than wide): the rail a strip of icons along the top, the window the full width under
+   it; the cards one a row */
+@container ovl (orientation:portrait) and (max-width:700px){
+  .panel.railed{flex-direction:column}
+  .panel.railed .rail{width:auto;flex-direction:row;align-items:stretch;gap:2px;padding:0 4px;overflow-x:auto;overflow-y:hidden;border-right:0;border-bottom:1px solid var(--line);border-radius:0;flex:none}
+  .panel.railed .rail-head{position:sticky;left:0;top:auto;margin:0 2px 0 -4px;padding:6px 6px;flex-direction:column;border-bottom:0;border-right:1px solid var(--line);min-width:64px}
+  .panel.railed .rail-i{flex:none;width:62px}
+  .panel.railed .rwin{min-height:0}
+  .panel.railed .rwbody .rcards{grid-template-columns:minmax(0,1fr)}
+  .panel.railed .rkacts{grid-template-columns:minmax(0,1fr)}
 }
 
 /* ---------- 9. responsive ---------- */
@@ -777,8 +846,6 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 }
 /* Developer overlay is separate from game panels: opening it freezes, but never replaces, the underlying screen. */
 /* (a small tab at the middle of the right edge, clear of the time bar, the minimap, the cards and the dock; ` or F2 opens the tools too) */
-#dev-toggle{position:fixed;right:var(--sa-r);top:50%;transform:translateY(-50%);z-index:10001;background:#182431;color:#ffe0a0;border:1px solid #8e7955;border-right:0;padding:6px 3px;font:10px monospace;cursor:pointer;opacity:.7;writing-mode:vertical-rl}
-#dev-toggle:hover,#dev-toggle:focus-visible{opacity:1}
 #dev-console{position:fixed;inset:0;z-index:10002;background:#0009;padding:clamp(8px,3vw,32px);overflow:auto;color:#e4e9ef;font:14px/1.5 monospace}
 #dev-console[hidden],#dev-lab-bar[hidden]{display:none}
 .dev-window{max-width:850px;margin:auto;padding:18px;border:1px solid #8e7955;background:#101922;box-shadow:0 12px 60px #000b}

@@ -10,7 +10,7 @@ try{
  const sp=[.5,1,2,5],OLD={grid:s=>s==='1',bspeed:s=>sp.includes(+s)?+s:1,hpbars:s=>s!=='0',blood:s=>s!=='0',guide:s=>s!=='0',bdeploy:s=>s!=='0',autoskills:s=>s!=='0',bauto:s=>s==='1',bfog:s=>s!=='0',opaths:s=>['all','sel','off'].includes(s)?s:'sel'};
  const DEF={grid:false,bspeed:1,hpbars:true,blood:true,guide:true,bdeploy:true,autoskills:true,bauto:false,bfog:true,opaths:'sel'};
  const VIEW={grid:['GRID','on'],bspeed:['BSPEED','v'],hpbars:['HPBARS','on'],blood:['BLOOD','on'],guide:['GUIDE','on'],bdeploy:['BDEPLOY','on'],autoskills:['AUTOSK','on'],bauto:['BAUTO','on'],bfog:['FOG','on']};
- ok(Object.keys(t.PREFS).sort().join()===[...Object.keys(OLD),'mute','volmaster','volmusic','volsfx'].sort().join(),'the ten settings (fog of war: battlefog.js; order paths: ui/orderpaths.js) and the four of sound (audio.js) in one table: '+Object.keys(t.PREFS).join(', '));
+ ok(Object.keys(t.PREFS).sort().join()===[...Object.keys(OLD),'mute','volmaster','volmusic','volsfx','mapzoom'].sort().join(),'the ten settings (fog of war: battlefog.js; order paths: ui/orderpaths.js), the four of sound (audio.js) and the map zoom (tests/mapzoom.js) in one table: '+Object.keys(t.PREFS).join(', '));
  const inputs=[null,'1','0','','junk','2','0.5','.5','5','7','true'];
  for(const k in OLD){const bad=inputs.filter(s=>{if(s==null)localStorage.removeItem('ashmark.'+k);else localStorage.setItem('ashmark.'+k,s);return t.prefLoad(k)!==OLD[k](s)});
    ok(!bad.length&&t.PREFS[k].def===DEF[k],k+' reads ashmark.'+k+' as before (default '+DEF[k]+')'+(bad.length?': differs for '+bad.join('|'):''))}
@@ -53,7 +53,7 @@ try{
  t.W.shops=t.W.shops||{};delete t.W.shops[ash.name];P.rep[ash.name]=90;ash.vol=5;
  {G.town=null;const g0=P.gold,n0=t.goodN('grain'),r=t.act('buy','grain:1');ok(r===undefined&&P.gold===g0&&t.goodN('grain')===n0,'outside a town a town action does nothing')}
  t.enterTown(ash);t.act('tab','trade');ok(G.mode==='town'&&G.town.tab==='trade'&&/data-act="buy"/.test(panel()),'tab: the trade tab');
- {const n0=t.goodN('grain'),g0=P.gold;t.act('buy','grain:5');const f=document.activeElement;ok(t.goodN('grain')===n0+5&&P.gold<g0,'buy: 5 grain for '+(g0-P.gold)+'g');
+ {const n0=t.goodN('grain'),g0=P.gold;t.act('qty','5');t.act('buy','grain:5');const f=document.activeElement;ok(t.goodN('grain')===n0+5&&P.gold<g0,'buy: 5 grain for '+(g0-P.gold)+'g');
   ok(f&&f.dataset.act==='buy'&&f.dataset.arg==='grain:5','the window redraws with the focus on the button pressed');
   const g1=P.gold;t.act('sell','grain:5');ok(t.goodN('grain')===n0&&P.gold>g1,'sell: 5 grain for '+(P.gold-g1)+'g')}
  {const gid=t.gearId(Object.keys(t.BASES)[0],0);t.invAdd('gear',gid,1);const i=P.inv.findIndex(x=>x&&x.k==='gear'&&x.id===gid),g=t.itemPrice(gid),g0=P.gold;t.act('sell-item',String(i));

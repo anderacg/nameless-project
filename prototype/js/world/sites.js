@@ -45,6 +45,9 @@ function campClear(type,tx,ty){const [x0,y0,w,h]=campFoot(type);
   for(let j=y0-1;j<=y0+h;j++)for(let i=x0-1;i<=x0+w;i++){const t=tAt(tx+i,ty+j),own=i>=x0&&i<x0+w&&j>=y0&&j<y0+h;if(occAt(tx+i,ty+j)||t!==T_OPEN&&(own||t!==T_ROAD))return false}return true}
 const unusedName=(list,sites)=>{const free=list.filter(n=>!sites.some(o=>o.name===n));return free.length?free[rint(0,free.length-1)]:list[rint(0,list.length-1)]};
 
+// the first page of a site with a few rich areas: one big tile each (window.js RailScreen tiles), its one action on it
+class SiteScreen extends RailScreen{overview(areas){return this.tiles(areas)}}
+const SITE_SCREEN=new SiteScreen();
 class Site extends WorldObject{
   get mapKind(){return 'site'}
   here(){return W.sites.includes(this)}
@@ -77,11 +80,16 @@ class Site extends WorldObject{
   enter(){
     if(this.cleared&&this.empties){log('The '+this.name+' lies empty. Come back in '+Math.max(1,this.back-G.day)+' days.');return false}
     G.site=this;G.siteMsg='';G.siteTab=null;G.mode='site';showSite();return true}
-  // its window (showSite): what it is (about: its overview), its places down the rail (places: each {k, n, short, ico, st,
-  // tone, body}; one by default, its whole panel), and its actions (done(m): show the result)
+  // its window (showSite): what it is (about: its overview), its areas down the rail (places: each {k, n, short, ico, note (a
+  // few words on what is there, for the overview), body (its window: people as cards, things as rows: window.js)}; one by
+  // default, its whole panel), and its actions (done(m): show the result)
   about(r){return '<p class="muted">'+this.T.d+'</p>'}
-  places(r,btn,row){return [{k:'main',n:this.T.n,ico:this.T.ico,st:'',body:this.panel(r,btn,row)}]}
-  panel(r,btn,row){return ''}
+  places(r){return [{k:'main',n:this.T.n,ico:this.T.ico,body:this.panel(r)}]}
+  // its first page past what it is (window.js RailScreen): the areas as a list; a site with a few rich areas shows them as tiles
+  get screen(){return RAIL_SCREEN}
+  // (a tile's picture: its own sprite on its ground, or what mk draws)
+  pic(part,mk){return tilePic('site:'+this.type+':'+this.seed+':'+(this.kind??'')+':'+part,mk||(()=>siteSprite(this)),climAt(this.x,this.y))}
+  panel(r){return ''}
   act(a,arg,done){return false}
   // the day's change: back after being cleared, and whatever its kind does
   day(){if(this.cleared&&G.day>=this.back){this.cleared=false;this.returned()}}
@@ -109,6 +117,7 @@ class Site extends WorldObject{
 
 // a cave: a monster lair in a hill or mountain; its beasts fight harder than in the open, and guard a chest
 class Cave extends Site{
+  get screen(){return SITE_SCREEN}
   static ground(tx,ty){return tAt(tx,ty)===T_HILL||tAt(tx,ty)===T_MOUNT}
   static clear(tx,ty){return!occAt(tx,ty)&&passable(tAt(tx,ty+1))&&!occAt(tx,ty+1)}
   static point(tx,ty){return[(tx+.5)*TILE,(ty+1)*TILE+CAVE_MOUTH]}
@@ -119,18 +128,20 @@ class Cave extends Site{
   get mouth(){return true}
   box(box){box(this,this.x-8,this.y-16-CAVE_MOUTH,this.x+8,this.y+2)}
   about(r){const M=MONSTERS[this.id];return '<p>A cave mouth in the '+r.name.toLowerCase()+'. Bones and tracks litter the ground: '+M.n.toLowerCase()+' lair here, more than you would meet in the open.</p><p class="muted">'+this.T.d+' Trophy: '+MATS[M.mat].n+'.</p>'}
-  places(r,btn,row){const M=MONSTERS[this.id],n=M.count[1]+1+' × '+ST[M.unit].n;
-    return [{k:'enter',n:'Enter the cave',short:'Enter',ico:'cave',st:n,tone:'bad',body:row('Enter the cave',n+', stronger than usual',btn('site-fight',null,'Enter'))}]}
+  places(r){const M=MONSTERS[this.id],n=M.count[1]+1;
+    return [{k:'enter',n:'Cave mouth',short:'Mouth',ico:'cave',note:n+' × '+ST[M.unit].n+' in the dark',pic:this.pic('mouth'),lines:[n+' × '+ST[M.unit].n+' in the dark','Stronger than usual · a chest'],btn:['site-fight',null,'Enter'],body:'<p class="muted">Tracks lead in. Whatever lairs here fights harder than in the open.</p>'+
+      railCards([{pic:portrait(M.unit),name:ST[M.unit].n,role:'Lairing in the cave',n,facts:[['Stronger than usual','bad'],'Trophy: '+MATS[M.mat].n,'A chest'],acts:[['site-fight',null,'Enter the cave']]}])}]}
   act(a){if(a==='site-fight'&&!this.cleared){G.site=null;caveFight(this);return true}return false}
   get clearJob(){return true}
 }
 
 // ruins: search them for old treasure, or old lore; something may still guard them
 class Ruins extends Site{
+  get screen(){return SITE_SCREEN}
   setup(sites){this.name=unusedName(RUIN_NAMES,sites)}
   get chest(){return{gold:40,gear:.9}}
   about(r){return '<p>Broken walls in the '+r.name.toLowerCase()+', older than any kingdom on your maps.</p><p class="muted">'+this.T.d+'</p>'}
-  places(r,btn,row){return [{k:'search',n:'Search the ruins',short:'Search',ico:'ruin',st:this.cleared?'searched':'treasure or guardians',body:row('Search the ruins','Treasure, old lore, or guardians that do not sleep',btn('site-search',null,'Search'))}]}
+  places(r){return [{k:'search',n:'Ruined hall',short:'Hall',ico:'ruin',note:this.cleared?'searched':'treasure or guardians',pic:this.pic('hall'),lines:[this.cleared?'Searched: empty for now':'Treasure, old lore, or guardians','Older than any kingdom'],btn:['site-search',null,'Search'],body:railRow('Search the ruins','Treasure, old lore, or guardians that do not sleep',railBtn('site-search',null,'Search'))}]}
   act(a,arg,done){
     if(a!=='site-search'||this.cleared)return false;const r=Math.random();
     if(r<.3){G.site=null;this.id=caveMonster(this.x,this.y);caveFight(this);log('Stones shift in the dark. The ruins have guardians.','bad');return true}
@@ -141,12 +152,14 @@ class Ruins extends Site{
 
 // a shrine: pray once a week to recover, or leave an offering
 class Shrine extends Site{
+  get screen(){return SITE_SCREEN}
   setup(sites,clim){this.name=SHRINE_NAMES[terrAt(this.x,this.y)===T_FOREST?'forest':clim]}
   get empties(){return false}
   about(r){return '<p>The '+this.name+' stands alone in the '+r.name.toLowerCase()+'. Old offerings lie at its foot.</p><p class="muted">'+this.T.d+'</p>'}
-  places(r,btn,row){const ready=G.day>=this.back,wait='in '+(this.back-G.day)+' days';
-    return [{k:'pray',n:'Pray',ico:'altar',st:ready?'ready':wait,tone:ready?'gold':'',body:row('Pray','Restores your stamina and mana and some health. Morale +6',btn('site-pray','0','Pray',ready?'':'Wait '+(this.back-G.day)+' more days'))},
-      {k:'offer',n:'Leave an offering',short:'Offering',ico:'gold',st:ready?'25 gold':wait,body:row('Leave an offering','25 gold: fully restores you, morale +10 and +40 XP',btn('site-pray','1','Offer 25g',!ready?'Wait '+(this.back-G.day)+' more days':P.gold<25?'Not enough gold':''))}]}
+  places(r){const ready=G.day>=this.back,wait='in '+(this.back-G.day)+' days',when=ready?'':' · <span class="gold">again '+wait+'</span>';
+    const why=ready?'':'Wait '+(this.back-G.day)+' more days';
+    return [{k:'pray',n:'Altar',ico:'altar',note:ready?'you may pray':'you may pray again '+wait,pic:this.pic('altar'),lines:['Stamina, mana, some health · morale +6',ready?'You may pray · once a week':'Again '+wait],btn:['site-pray','0','Pray',why],body:'<p class="muted">'+this.T.d+'</p>'+railRow('Pray','Restores your stamina and mana and some health. Morale +6'+when,railBtn('site-pray','0','Pray',ready?'':'Wait '+(this.back-G.day)+' more days'))},
+      {k:'offer',n:'Offering stone',short:'Offering',ico:'gold',note:ready?'25 gold':wait,pic:this.pic('offer',()=>({ico:'gold'})),lines:['25 gold · a blessing','Fully restored · morale +10 · +40 XP'],btn:['site-pray','1','Offer 25g',why||(P.gold<25?'Not enough gold':'')],body:railRow('Leave an offering','25 gold: fully restores you, morale +10 and +40 XP'+when,railBtn('site-pray','1','Offer 25g',!ready?'Wait '+(this.back-G.day)+' more days':P.gold<25?'Not enough gold':''))}]}
   act(a,arg,done){
     if(a!=='site-pray'||G.day<this.back)return false;const m=vitals();
     if(arg==='1'){if(P.gold<25)return true;P.gold-=25;restoreVitals();P.morale=clamp(P.morale+10,0,100);gainXp(40);this.back=G.day+7;done('You leave 25 gold at the '+this.name+'. Warmth runs through you. (+40 XP)');return true}
@@ -184,6 +197,7 @@ class BanditCamp extends Lair{
 const travPrice=g=>Math.max(2,Math.ceil(GOODS[g].base*1.1*(1-.015*skill('trade'))));
 const mercCost=k=>Math.round(hireCost(k)*1.3);
 class TravellersCamp extends Site{
+  get screen(){return SITE_SCREEN}
   static ground(tx,ty){return tAt(tx,ty)!==T_ROAD&&nearTile(tx,ty,T_ROAD,1)}
   static clear(tx,ty){return campClear('travelers',tx,ty)}
   get TR(){return TRAVELERS[this.kind]||TRAVELERS[0]}
@@ -199,20 +213,30 @@ class TravellersCamp extends Site{
   banner(){return this.TR.col}
   box(box,camp){camp(this,siteSprite(this))}
   about(r){return '<p>'+this.TR.d+'</p><p class="muted">They break camp in '+Math.max(1,this.until-G.day)+' days.</p>'}
-  // trade (their goods, your trophies), their sellswords, their fire (and a blessing or a song), their news
-  places(r,btn,row){const TR=this.TR,s=this,left=Object.keys(s.stock).filter(g=>s.stock[g]>0).length;
-    return [{k:'trade',n:'Trade',ico:'stall',st:left?left+' goods for sale':'sold out',body:Object.keys(s.stock).map(g=>{const p=travPrice(g),n=s.stock[g],k=Math.min(5,n);return row('Buy '+GOODS[g].n.toLowerCase(),p+'g each · '+n+' left · you have '+goodN(g),btn('site-buy',g,'Buy '+k+' for '+p*k+'g',!k?'Sold out':P.gold<p*k?'Not enough gold':goodRoom(g)<k?'No room in your bag':''))}).join('')+
-      (P.inv.some(x=>x&&x.k==='mat')?row('Sell trophies','They pay a little less than a town market',btn('site-sell',null,'Sell all '+Math.round(P.inv.reduce((a,x)=>a+(x&&x.k==='mat'?matPrice(x.id)*x.n:0),0)*.85)+'g')):'')},
-      s.unit&&{k:'hire',n:'Sellswords',short:'Hire',ico:'sword',st:s.mercs?s.mercs+' willing':'none left',body:row('Hire a sellsword',ST[s.unit].n+' · tier '+ST[s.unit].tier+' · no standing needed · '+s.mercs+' willing',btn('site-hire',null,'Hire '+mercCost(s.unit)+'g',!s.mercs?'No one left to hire':P.gold<mercCost(s.unit)?'Not enough gold':partySize()>=partyCap()?'Your party is full':''))},
-      {k:'fire',n:'Campfire',short:'Fire',ico:'fire',st:s.fire===G.day?'rested today':TR.special&&!s.special?(TR.special==='bless'?'rest · a blessing':'rest · a song'):'rest',tone:TR.special&&!s.special?'gold':'',
-        body:row('Share their fire','Recover half your missing health, stamina and mana. Morale +5',btn('site-fire',null,'Rest',s.fire===G.day?'You rested here today':''))+
-      (TR.special==='bless'?row('Ask for a blessing','Fully restores your mana. Morale +8',btn('site-bless',null,'Kneel',s.special?'They have blessed you already':'')):'')+
-      (TR.special==='song'?row('Pay for a song','15 gold: they will sing of you on the road. Renown +3, morale +5',btn('site-song',null,'Pay 15g',s.special?'They already sing of you':P.gold<15?'Not enough gold':'')):'')},
-      {k:'news',n:'News',ico:'scroll',st:s.news?'heard':'ask around',body:row('Ask for news','They tell you of places you have not found',btn('site-news',null,'Ask',s.news?'You have heard their news':''))}].filter(Boolean)}
+  // their wagons (the traders: their goods, your trophies) and their campfire (their sellswords, the pilgrims or minstrels,
+  // whoever has news, and the fire to rest by)
+  places(r){const TR=this.TR,s=this,left=Object.keys(s.stock).filter(g=>s.stock[g]>0).length,race=TR.race||'human',u=s.unit,mc=u&&mercCost(u);
+    return [{k:'trade',n:'Wagons',ico:'stall',note:left?left+' goods for sale':'sold out',pic:this.pic('wagons:'+race,()=>[personSprite('merchant',race,0,0),personSprite('merchant',race,3,0)]),lines:[left?left+' goods for sale':'Sold out','They move on in '+Math.max(1,s.until-G.day)+' days'],
+      body:railCards([{pic:personPic('merchant',race),name:'The traders',role:TR.n,facts:[left?left+' goods for sale':['Sold out','bad'],'They move on in '+Math.max(1,s.until-G.day)+' days']}])+'<div class="lab">Goods</div>'+
+        Object.keys(s.stock).map(g=>{const p=travPrice(g),n=s.stock[g],k=Math.min(5,n);return railRow(GOODS[g].n,p+'g each · '+n+' left · you have '+goodN(g)+(k?' · '+k+' for '+p*k+'g':''),railBtn('site-buy',g,'Buy',!k?'Sold out':P.gold<p*k?'Not enough gold':goodRoom(g)<k?'No room in your bag':''))}).join('')+
+        (P.inv.some(x=>x&&x.k==='mat')?railRow('Your trophies','They pay a little less than a town market: '+Math.round(P.inv.reduce((a,x)=>a+(x&&x.k==='mat'?matPrice(x.id)*x.n:0),0)*.85)+'g for all',railBtn('site-sellpick',null,'Sell')):'')},
+      {k:'fire',n:'Campfire',short:'Fire',ico:'fire',pic:this.pic('fire:'+race+':'+(u||''),()=>[u&&unitSprite(u,0,false,0),personSprite('folk',race,5,0),TR.special==='bless'&&personSprite('priest',race,0,0),TR.special==='song'&&personSprite('innkeeper',race,2,0)]),
+      lines:[u?(s.mercs?s.mercs+' sellswords willing':'No sellswords left'):'No sellswords',[TR.special&&!s.special&&(TR.special==='bless'?'A blessing':'A song'),!s.news&&'news'].filter(Boolean).join(' · ')||'Nothing new to hear',s.fire===G.day?'Rested here today':'Rest by the fire'],note:[u&&(s.mercs?s.mercs+' sellswords willing':'no sellswords left'),TR.special&&!s.special&&(TR.special==='bless'?'a blessing':'a song'),s.news?'':'news',s.fire===G.day?'rested today':'rest'].filter(Boolean).join(' · '),
+      body:railCards([u&&{pic:portrait(u),name:ST[u].n,role:'Sellsword · tier '+ST[u].tier,n:s.mercs,facts:[[s.mercs+' willing',s.mercs?'':'bad'],'No standing needed',mc+'g each'],acts:[['site-hirepick',null,'Hire',!s.mercs?'No one left to hire':P.gold<mc?'Not enough gold':partySize()>=partyCap()?'Your party is full':'']]},
+        TR.special==='bless'&&{pic:personPic('priest',race),name:'The pilgrims',role:'Robed, singing softly',facts:[s.special?'They have blessed you':'A blessing: your mana restored, morale +8'],acts:[['site-bless',null,'Kneel',s.special?'They have blessed you already':'']]},
+        TR.special==='song'&&{pic:personPic('innkeeper',race,2),name:'The minstrels',role:'A fiddle and painted wagons',facts:[s.special?'They sing of you already':'15 gold: renown +3, morale +5'],acts:[['site-song',null,'Pay 15g',s.special?'They already sing of you':P.gold<15?'Not enough gold':'']]},
+        {pic:personPic('folk',race,5),name:'A greybeard by the fire',role:'Knows the roads',facts:[s.news?'You have heard his news':'Tells of places you have not found'],acts:[['site-news',null,'Ask for news',s.news?'You have heard their news':'']]}])+
+        '<div class="lab">The fire</div>'+railRow('Share their fire','Recover half your missing health, stamina and mana. Morale +5',railBtn('site-fire',null,'Rest',s.fire===G.day?'You rested here today':''))}]}
   act(a,arg,done){const s=this;
     if(a==='site-buy'){const g=arg,p=travPrice(g),k=Math.min(5,s.stock[g]||0);if(k&&P.gold>=p*k&&goodRoom(g)>=k){P.gold-=p*k;s.stock[g]-=k;invAdd('good',g,k);train('trade',k*p/40);done('You buy '+k+' '+GOODS[g].n.toLowerCase()+' for '+p*k+' gold.')}}
-    else if(a==='site-sell'){let g=0;P.inv.forEach((x,i)=>{if(x&&x.k==='mat'){g+=matPrice(x.id)*x.n;P.inv[i]=null}});g=Math.round(g*.85);if(g){P.gold+=g;train('trade',g/20);done('The travellers buy your trophies for '+g+' gold.')}}
-    else if(a==='site-hire'){const k=s.unit,c=mercCost(k);if(k&&s.mercs>0&&P.gold>=c&&partySize()<partyCap()&&partyRoster(P).canAdd(k)){P.gold-=c;s.mercs--;P.add(k);done(cap1(an(ST[k].n.toLowerCase()))+' takes your coin and joins you.')}}
+    // (Sell and Hire choose first: which trophies, how many sellswords; their Confirm sends site-sell with the bag's slots, site-hire with the count)
+    else if(a==='site-sellpick'){const it=P.inv.map((x,i)=>[x,i]).filter(([x])=>x&&x.k==='mat');if(it.length)railPicker({title:'Sell trophies',sub:s.name,total:'They pay',unit:'g',confirm:['site-sell','Sell'],back:['site-tab','trade','Back'],encode:sel=>Object.keys(sel).filter(i=>sel[i]).join(','),
+      items:it.map(([x,i])=>({id:i,name:MATS[x.id].n+' ×'+x.n,sub:Math.round(matPrice(x.id)*x.n*.85)+'g',max:1,unit:Math.round(matPrice(x.id)*x.n*.85)}))});return true}
+    else if(a==='site-hirepick'){const k=s.unit,c=k&&mercCost(k),n=k?Math.min(s.mercs,Math.max(0,partyCap()-partySize()),Math.floor(P.gold/c)):0;if(n>0)railPicker({title:'Hire sellswords',sub:s.name,total:'It costs',unit:'g',confirm:['site-hire','Hire'],back:['site-tab','fire','Back'],sel:{merc:1},encode:sel=>String(sel.merc||0),
+      items:[{id:'merc',name:ST[k].n,sub:c+'g each · '+s.mercs+' willing · no standing needed',pic:portrait(k),max:n,unit:c}]});return true}
+    else if(a==='site-sell'){let g=0;const pick=arg?String(arg).split(',').map(Number):null;P.inv.forEach((x,i)=>{if(x&&x.k==='mat'&&(!pick||pick.includes(i))){g+=matPrice(x.id)*x.n;P.inv[i]=null}});g=Math.round(g*.85);if(g){P.gold+=g;train('trade',g/20);done('The travellers buy your trophies for '+g+' gold.')}}
+    else if(a==='site-hire'){const k=s.unit,c=mercCost(k);let n=0;for(let i=0;i<Math.max(1,+arg||1);i++){if(!(k&&s.mercs>0&&P.gold>=c&&partySize()<partyCap()&&partyRoster(P).canAdd(k)))break;P.gold-=c;s.mercs--;P.add(k);n++}
+      if(n)done(n>1?n+' '+ST[k].n.toLowerCase()+'s take your coin and join you.':cap1(an(ST[k].n.toLowerCase()))+' takes your coin and joins you.')}// (one, or arg of them from its picker)
     else if(a==='site-fire'&&s.fire!==G.day){const m=vitals();s.fire=G.day;P.hp+=(m[0]-P.hp)/2;P.sp+=(m[1]-P.sp)/2;P.mp+=(m[2]-P.mp)/2;P.morale=clamp(P.morale+5,0,100);done('You share their fire and their stew. Everyone sleeps well.')}
     else if(a==='site-news'&&!s.news){s.news=true;
       const far=W.sites.filter(o=>!o.seen&&o.scoutable&&!(o instanceof TravellersCamp)).sort((a,b)=>Math.hypot(a.x-s.x,a.y-s.y)-Math.hypot(b.x-s.x,b.y-s.y)).slice(0,2);
@@ -283,16 +307,14 @@ function caveFight(s){
   startEncounter({kind:'cave',ref:s,lv:s.lv,list:Array(M.count[1]+1).fill(M.unit)});
 }
 
-/* the window (window.js): the site's places down the rail, the chosen one's window beside it (G.siteTab; none: its overview,
-   what it is and how each place stands); the last result (G.siteMsg) under whichever is open */
+/* the window (window.js): the site's areas down the rail, the chosen one's window beside it (G.siteTab; none: its overview,
+   what it is and what is in each area); the last result (G.siteMsg) under whichever is open */
 function showSite(){
-  const s=G.site,r=regionAt(s.x,s.y),btn=(act,arg,label,why)=>'<button class="btn sm" type="button" data-act="'+act+'"'+(arg!=null?' data-arg="'+arg+'"':'')+(why?' disabled title="'+why+'"':'')+'>'+label+'</button>';
-  const row=(title,sub,acts)=>'<div class="row"><div class="info"><strong>'+title+'</strong><small>'+sub+'</small></div><div class="acts">'+acts+'</div></div>';
-  const ps=s.places(r,btn,row),p=ps.find(x=>x.k===G.siteTab),where=s.T.n+' · '+r.name;if(!p)G.siteTab=null;
+  const s=G.site,r=regionAt(s.x,s.y),ps=s.places(r),p=ps.find(x=>x.k===G.siteTab),where=s.T.n+' · '+r.name;if(!p)G.siteTab=null;
   showRail({head:{act:['site-tab','home'],on:!p,ico:s.T.ico,name:s.name,sub:where,back:!!p},label:'Places',gold:true,
-    items:ps.map(x=>({act:'site-tab',arg:x.k,ico:x.ico,n:x.n,short:x.short,st:x.st,tone:x.tone,on:x===p})),
+    items:ps.map(x=>({act:'site-tab',arg:x.k,ico:x.ico,n:x.n,short:x.short,on:x===p})),
     title:p?p.n:s.name,sub:p?s.name:where,
-    body:(p?p.body:s.about(r)+'<ul class="tnotes">'+ps.map(x=>'<li>'+x.n+(x.st?': '+x.st:'')+'.</li>').join('')+'</ul><p class="muted" style="font-size:13px">Choose a place on the left'+(G.mouse&&G.mouse.type==='touch'?'':' (or its number key)')+'.</p>')+
+    body:(p?p.body:s.about(r)+s.screen.overview(ps.map(x=>({...x,act:'site-tab',arg:x.k}))))+
       (G.siteMsg?'<p class="gold">'+G.siteMsg+'</p>':''),
     back:p?['site-tab','home','Back']:null,close:['site-leave',null,'Leave']},'site:'+s.i+':'+(G.siteTab||''));
 }

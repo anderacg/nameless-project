@@ -60,7 +60,8 @@ try{
   if(k==='refugee')return '<b>Refugees</b><small>From '+o.from+' to '+o.to+'</small><span class="act">Click: meet</span>';
   if(k==='patrol')return '<b>'+(o.watch==='night'?'Night watch':'Guards')+' of '+o.home+'</b><small>'+fc(o.fac)+' · '+o.troops.length+' soldiers'+(hostileTo(o.fac)?vs(rating(o.troops)):'')+'</small><span class="act">Click: meet</span>';
   if(k==='cparty')return '<b>'+COMPS[o.cid].short+'’s party</b><small>Your companion · '+o.troops.length+' soldiers · '+({follow:'riding with you',patrol:'patrolling '+o.base,return:'coming back'})[o.order]+'</small><span class="act">Click: orders</span>';
-  if(k==='worker')return '<b>'+cap1(o.job)+'</b><small>Of '+o.home+'</small><span class="act">Click: talk</span>';
+  // (a worker now has a name of his own, seeded from his estate (folk.js folkName): his card leads with it, the rest as before)
+  if(k==='worker')return '<b>'+(o.name?o.name+', '+o.job:cap1(o.job))+'</b><small>Of '+o.home+'</small><span class="act">Click: talk</span>';
   return '';
 }`,OLD_CHASE=`  if(G.chase){const o=G.chase,k=objKind(o);if(!k||o.dead||k==='site'&&!o.pickable()||k==='estate'&&!bldLv(townBy(o.town)||{},o.k))G.chase=null;else{P.tx=o.x;P.ty=o.y;
     if(Math.hypot(o.x-P.x,o.y-P.y)<=REACH&&!G.modal&&(G.encCool<=0||['town','site','critter','caravan','refugee','worker','estate','patrol'].includes(k))){interact(o);return}}}`;

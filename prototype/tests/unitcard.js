@@ -26,8 +26,9 @@ try{
  const ash=t.townBy('Ashford');P.troops={hum_levy:3};P.gold=500;P.rep[ash.name]=90;ash.vol=5;G.mode='world';G.modal=false;t.hidePanel();G.lastTown=null;t.enterTown(ash);t.act('tab','recruit');
  ok(document.getElementById('panel').classList.contains('wide'),'a town’s window is the larger one');
  const card=()=>{const e=document.querySelector('.reccard .ucard-x');return e&&e.dataset.unit};
- const hires=[...document.querySelectorAll('.recrow[data-act="rec-pick"]')].map(e=>e.dataset.arg);ok(hires.length>=2&&card()===hires[0],'the first troop’s card shows until you pick ('+card()+')');
- t.act('rec-pick',hires[1]);ok(card()===hires[1]&&document.querySelector('.recrow.sel').dataset.arg===hires[1],'click another: its card, its row marked');
+ // (the Barracks lists its recruits and trainings as cards now, window.js railCard: a card picks as a row did, .sel marks it)
+ const hires=[...document.querySelectorAll('.rcard[data-act="rec-pick"]')].map(e=>e.dataset.arg);ok(hires.length>=2&&card()===hires[0],'the first troop’s card shows until you pick ('+card()+')');
+ t.act('rec-pick',hires[1]);ok(card()===hires[1]&&document.querySelector('.rcard.sel').dataset.arg===hires[1],'click another: its card, its row marked');
  const tr=hires.find(a=>a.includes('>'));ok(tr&&(t.act('rec-pick',tr),card()===tr.split('>')[1])&&/against Levy/.test(panel()),'a training row shows the trained troop’s card, against the one it comes from');
  const n0=P.troops.hum_levy||0;t.act('hire','hum_levy');ok(P.troops.hum_levy===n0+1,'hiring still works from the list');
  t.act('leave');G.mode='world';t.showPanel('<p>x</p>');ok(!document.getElementById('panel').classList.contains('wide'),'other windows keep their size');t.hidePanel();

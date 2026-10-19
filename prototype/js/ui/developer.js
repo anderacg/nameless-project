@@ -119,7 +119,7 @@ const DevConsole={
   },
   init(){
     if(this.root)return;
-    const toggle=document.createElement('button');toggle.id='dev-toggle';toggle.type='button';toggle.textContent='DEV';toggle.title='Developer tools (` or F2)';toggle.onclick=()=>this.opened?this.close():this.show();document.body.append(toggle);
+    // (opened from Settings → Developer tools, or ` or F2: ui.js settingAct)
     const root=this.root=document.createElement('section');root.id='dev-console';root.hidden=true;root.setAttribute('role','dialog');root.setAttribute('aria-label','Developer tools');root.setAttribute('aria-modal','true');
     root.innerHTML='<div class="dev-window"><header><strong>Developer tools</strong><button type="button" data-dev-tab="console">Console</button><button type="button" data-dev-tab="battle">Battle test</button><button type="button" data-dev-close aria-label="Close developer tools">Close · Esc</button></header><p>Simulation pauses while this window is open. Campaign cheats can be saved; tests are isolated.</p><div data-dev-console><div data-dev-output role="log" aria-live="polite"></div><form data-dev-form><label for="dev-command">Command</label><input id="dev-command" data-dev-command autocomplete="off" spellcheck="false" placeholder="help"><button type="submit">Run</button></form></div><section data-dev-report hidden><h2>Battle laboratory report</h2><button type="button" data-lab-export>Download JSON</button><div data-lab-report-content></div></section>'+this.battleFormHtml()+'</div>';
     document.body.append(root);this.applyBattleConfig({leftGroups:[{type:'hum_bow',count:1}],rightGroups:[{type:'hum_foot',count:1}]});this.fillLabPresets();

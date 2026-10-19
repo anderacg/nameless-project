@@ -4,7 +4,8 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,D=t.DevCo
  const rejects=(fn,m)=>{let failed=false;try{fn()}catch(e){failed=true}ok(failed,m)};
  try{
   window.requestAnimationFrame=()=>0;
-  ok(!!document.getElementById('dev-toggle')&&!!document.getElementById('dev-console'),'developer tools have a visible entry point and an accessible dialog');
+  ok(!document.getElementById('dev-toggle')&&!!document.getElementById('dev-console'),'developer tools: no floating tab, an accessible dialog');
+  {const m=G.mode;t.showTitle('settings');const b=document.querySelector('#panel [data-act="dev-open"]');ok(b&&/Developer tools/.test(document.getElementById('panel').textContent),'Settings has a Developer tools entry');if(b)b.click();ok(D.opened,'and it opens the developer tools');D.close();G.mode=m}
   const mode=G.mode;key(window,'F2');ok(D.opened&&G.mode===mode&&document.activeElement.matches('[data-dev-command]'),'F2 opens console without replacing the current game screen');
   const input=D.root.querySelector('[data-dev-command]');input.value='money 10';D.root.querySelector('[data-dev-form]').dispatchEvent(new Event('submit',{bubbles:true,cancelable:true}));
   ok(P.gold===10&&input.value==='','console form executes an explicit command');key(input,'ArrowUp');ok(input.value==='money 10','Up arrow recalls command history');

@@ -10,7 +10,9 @@ window.RUN=()=>{const o=[],t=T,G=t.G,P=t.P,W=t.W;
  try{
   window.requestAnimationFrame=()=>0;t.act('begin','soldier');G.mode='world';G.modal=false;t.hidePanel();G.encCool=1e9;G.quietEvents=true;G.clock=t.DAY*.25;
   const hasVS=(0,eval)('typeof VS')!=='undefined';o.push('canvas: '+(hasVS?'the world at the screen\'s scale (VS)':'game pixels, scaled by CSS'));
-  const views=[['desktop 3x 576x360',576,360,3],['phone 844x390 @3',844,390,3]];
+  // (and the map zoomed out on the phone, core.js MAPZOOM: its farthest step, 2 (1266 x 585 game px); at 1 (2532 x 1170) a frame cost 4x the 3x one, so
+  // MAPZOOM.OUT leaves it out)
+  const views=[['desktop 3x 576x360',576,360,3],['phone 844x390 @3',844,390,3],['phone zoomed out @2',1266,585,2]];
   const set=(w,h,s)=>{(0,eval)('VW='+w+';VH='+h+(hasVS?';VS='+s:''));t.frame()};
   const tw=t.townBy('Ashford');
   let forest=null;for(let ty=10;ty<t.MH-10&&!forest;ty++)for(let tx=10;tx<t.MW-10&&!forest;tx++){let n=0;for(let j=-3;j<=3;j++)for(let i=-3;i<=3;i++)if(t.tAt(tx+i,ty+j)===t.T_FOREST)n++;

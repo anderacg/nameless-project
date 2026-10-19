@@ -25,15 +25,30 @@ let BW=960,BH=FIELD_H,BVW=960,BVH=FIELD_H;
 function setRes(w,h,k=1){CVS=k;if(cv.width===w&&cv.height===h)return;cv.width=w;cv.height=h;ctx0.imageSmoothingEnabled=false}
 // (the test suites keep the old fixed view, 576 x 360, so their clicks and sums stay put; ?v= is a look at the real thing)
 const FIXED_VIEW=/[?&]test=/.test(location.search)&&!/[?&]v=/.test(location.search);
+/* the world map's zoom: its scale a whole number of device pixels to a game pixel still, so the art stays crisp. z: the scale
+   asked for (0 auto: the window's own, s0, as ever; Settings → Map zoom, the wheel, + and −, the buttons, a pinch: mapZoom),
+   kept within lo (out: at most OUT game px in view, and no more than the map; a phone's farthest is then 2, as at 1 a frame
+   costs 4x: tests/visual/smoothperf.js) and hi (in: at least IN px across, IN_H down).
+   Only while the map is drawn (map: render.js frame); battles, scenes and the HUD keep s0 (vw x vh, the view at it). k(): the
+   HUD's share of a game pixel on the zoomed map (the minimap keeps its size on the screen) */
+const MAPZOOM={z:0,map:false,on:false,s0:1,lo:1,hi:1,vw:576,vh:360,IN:320,IN_H:180,OUT:1.7e6,PINCH:1.25,WHEEL:140,wt:0,k(){return this.on?this.s0/VS:1}};
 // the screen is the window; the canvas fills it at a whole-number scale (a game pixel's last part may run past the edge)
 function fitScreen(){
-  const scr=cv.parentElement,dpr=window.devicePixelRatio||1,aw=innerWidth,ah=innerHeight;
-  const s=FIXED_VIEW?Math.max(1,Math.floor(Math.min(aw*dpr/576,ah*dpr/360))):Math.max(1,Math.floor(Math.min(ah*dpr/VIEW.h,aw*dpr/VIEW.w)));
-  VW=FIXED_VIEW?576:Math.ceil(aw*dpr/s);VH=FIXED_VIEW?360:Math.ceil(ah*dpr/s);BVH=FIELD_H;BVW=Math.round(FIELD_H*VW/VH);
-  const w=VW*s/dpr,h=VH*s/dpr;HUD_PX=dpr/s;VS=s;cv.style.width=w+'px';cv.style.height=h+'px';
+  const scr=cv.parentElement,dpr=window.devicePixelRatio||1,aw=innerWidth,ah=innerHeight,Z=MAPZOOM;
+  const s0=FIXED_VIEW?Math.max(1,Math.floor(Math.min(aw*dpr/576,ah*dpr/360))):Math.max(1,Math.floor(Math.min(ah*dpr/VIEW.h,aw*dpr/VIEW.w)));
+  // (the screen in device pixels: the window, or the tests' fixed view at its scale; the view at a scale s: dw/s x dh/s)
+  const dw=FIXED_VIEW?576*s0:aw*dpr,dh=FIXED_VIEW?360*s0:ah*dpr,fit=s=>Math.ceil(dw/s)*Math.ceil(dh/s)<=Z.OUT&&Math.ceil(dw/s)<=MW*TILE&&Math.ceil(dh/s)<=MH*TILE;
+  Z.s0=s0;Z.vw=Math.ceil(dw/s0);Z.vh=Math.ceil(dh/s0);Z.hi=Math.max(s0,Math.floor(Math.min(dw/Z.IN,dh/Z.IN_H)));Z.lo=s0;while(Z.lo>1&&fit(Z.lo-1))Z.lo--;
+  const s=Z.map&&Z.z?Math.max(Z.lo,Math.min(Z.hi,Z.z)):s0;Z.on=s!==s0;
+  VW=Math.ceil(dw/s);VH=Math.ceil(dh/s);BVH=FIELD_H;BVW=Math.round(FIELD_H*Z.vw/Z.vh);
+  const w=VW*s/dpr,h=VH*s/dpr;HUD_PX=dpr/s0;VS=s;cv.style.width=w+'px';cv.style.height=h+'px';
   if(FIXED_VIEW){scr.style.width=w+'px';scr.style.height=h+'px'}else{scr.style.width=aw+'px';scr.style.height=ah+'px'}
   if(typeof B!=='undefined'&&B&&B.cam&&typeof camClamp==='function')camClamp();
+  if(typeof zoomUI==='function')zoomUI();
 }
+// a step of the map's zoom (d: 1 in, -1 out) within its range, remembered (ui.js PREFS mapzoom); back at s0 it is auto again.
+// False at the end of the range
+function mapZoom(d){const Z=MAPZOOM,cur=Z.map?VS:Z.s0,s=Math.max(Z.lo,Math.min(Z.hi,cur+d));if(s===cur)return false;prefSet('mapzoom',s===Z.s0?0:s);return true}
 addEventListener('resize',fitScreen);fitScreen();
 const ov=$('#ov'),panel=$('#panel'),bbar=$('#bbar');
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));

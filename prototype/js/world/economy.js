@@ -55,7 +55,7 @@ function produce(t,ly){
   const add=(g,n)=>{if(n<=0)return;const v=n+(Math.random()<n%1?1:0);st[g]=(st[g]||0)+Math.floor(v);out[g]=(out[g]||0)+Math.floor(v)};
   for(const k in MAKE){const lv=bldLv(t,k),M=MAKE[k];if(!lv||!M.out||sabotaged(t,k))continue;
     // workshops first take their inputs: as many batches as the stock allows; farms, pastures and quarries make what their fields allow
-    let f=lv*ws*fieldShare(t,k);if(M.in)for(const g in M.in)f=Math.min(f,(st[g]||0)/M.in[g]);if(f<=0)continue;
+    let f=lv*ws*fieldShare(t,k)*handsLeft(t,k);if(M.in)for(const g in M.in)f=Math.min(f,(st[g]||0)/M.in[g]);if(f<=0)continue;
     if(M.in)for(const g in M.in)st[g]-=Math.round(M.in[g]*f);
     const O=k==='mine'||k==='port'?resOut(t,k):M.out;// mines and ports bring up what their land holds (resources.js)
     for(const g in O)add(g,O[g]*f*(k==='farm'?FARM_CLIM[clim]:1));

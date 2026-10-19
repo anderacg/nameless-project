@@ -19,7 +19,7 @@ try{
  const go=s=>{P.x=s.x;P.y=s.y;P.tx=null;G.mode='world';G.modal=false;t.hidePanel();G.encCool=0;G.lastSite=null;return t.updateSites()};
  const strong=()=>{P.troops={hum_knight:25,hum_long:15};P.hp=null;t.vitals()};
  // cave
- const cave=of('cave')[0];go(cave);ok(cave.seen&&G.mode==='site'&&new RegExp(cave.name).test(panel())&&/Enter/.test(panel()),'reaching a cave spots it and opens its panel');
+ const cave=of('cave')[0];go(cave);ok(cave.seen&&G.mode==='site'&&new RegExp(cave.name).test(panel())&&/Cave mouth/.test(panel()),'reaching a cave spots it and opens its panel');
  t.act('site-fight');ok(G.enc&&G.enc.kind==='cave'&&G.enc.list.length===t.MONSTERS[cave.id].count[1]+1&&new RegExp(cave.name).test(panel()),'entering starts a lair fight');
  strong();const g0=P.gold,inv0=P.inv.filter(Boolean).length;t.act('auto');
  ok(cave.cleared&&cave.back===G.day+25&&P.gold>g0&&/chest/.test(panel()),'winning empties the cave and opens its chest (+'+(P.gold-g0)+' gold)');t.act('cont');done();

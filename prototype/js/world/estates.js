@@ -100,45 +100,87 @@ const breach=t=>{t.wall=Math.max(0,wallOf(t)-1);if(t.work&&t.work.k==='wall')t.w
 /* estates: plunder or burn what a holding has built in its fields */
 const estateGuards=(t,k)=>{const lv=bldLv(t,k),near=Math.hypot(bldSpots(t)[k].x-t.x,bldSpots(t)[k].y-t.y)<WORLD_SCALE.land.estateGuard*TILE,n=2+2*lv+(near?Math.min(4,t.gar||0):0),a=[];
   for(let i=0;i<n;i++){const c=RACES[t.races[i%t.races.length]];a.push(i%3===2?c.ranged:c.melee)}return a};
-/* met on the map: the estate's own menus down the rail (window.js), as a holding's places: its overview (the rail's header: what
-   it is, its level and owner, its fields, what it made and its stores: townui.js bldInfo), its Workers (folk.js workerMeet), its
-   Livestock (a pasture's herd: critters.js showHerd), Manage (your own: townui.js bldBuild, upgrade, place, pull down) and Raid
-   (someone else's: its guards, sabotage, plunder and burning). G.est: the estate; G.estTab: the menu open (null: the overview).
-   The workers and the herd open on the same rail, Back to the overview */
-// its menus that apply: [key, name, icon, status, tone]
+/* met on the map: the estate's own areas down the rail (window.js), as the rooms of a house: its overview (the rail's header:
+   what it is, its level, owner and state: townui.js bldTop), where its workers live (folk: a card for them, Talk: folk.js
+   workerMeet), a pasture's pens (herd: its herders, Buy livestock: critters.js showHerd), its fields, its works (what it made
+   and its stores: townui.js bldWorks); what is done to the estate itself is on its overview (estateDeeds): building your own,
+   raiding someone else's (its guards, sabotage, plunder and burning). G.est: the estate; G.estTab: the area open (null: the overview).
+   The worker's talk and the herders' window open on the same rail; Back returns to the area they were met in */
+// each kind's areas, by what they hold: folk (its workers' home), herd (its herd's pens), fields, works (what it makes, its stores)
+const ESTATE_AREAS={farm:{folk:'Farmhouse',fields:'Fields',works:'Barn'},pasture:{folk:'Herders’ hut',herd:'Pens',works:'Dairy'},lumber:{folk:'Woodcutters’ camp',works:'Log yard'},
+  mine:{folk:'Miners’ camp',works:'Mine shaft'},quarry:{folk:'Quarrymen’s lodge',fields:'Quarry pit',works:'Stone yard'},port:{folk:'Fishers’ huts',works:'Piers'},
+  workshop:{works:'Workshop'},smithy:{works:'Forge'},brewery:{works:'Brewhouse'}};
+const WORKS_ICO={farm:'crate',pasture:'barrel'};
+// its areas that apply: [key, name, icon, a few words on what is there (its overview's list)]
 function estateMenus(o){
-  const t=townBy(o.town),ms=[];if(!t)return ms;const k=o.k,E=ESTATES[k],lv=bldLv(t,k),own=t.owner==='player';
-  const hands=W.folk.filter(f=>f.home===t.name&&f.k===k).length,herd=k==='pasture'&&lv&&herdOf(t);
-  if(lv&&E.work)ms.push(['folk',cap1(E.work)+'s','people',hands?hands+' about':'nobody about','']);
-  if(herd)ms.push(['herd','Livestock','sheep',herd.n+' '+CRITTERS[herd.id].n.toLowerCase()+' grazing','']);
-  if(own){const [st,tone]=bldStatus(t,k),cap=bldCap(t,k);ms.push(['manage','Manage','house',t.work&&t.work.k===k?st:!lv?'not built':lv<cap?'upgrade '+bldCost(k,lv+1)+'g':'at its best',t.work&&t.work.k===k?tone:''])}
-  else if(lv&&!(P.fac&&P.fac===t.owner)){const g=estateGuards(t,k);ms.push(['raid','Raid','sword',g.length+' guards · power '+rating(g),'bad'])}
+  const t=townBy(o.town),ms=[];if(!t)return ms;const k=o.k,E=ESTATES[k],A=ESTATE_AREAS[k]||{},lv=bldLv(t,k),own=t.owner==='player';
+  const hands=W.folk.filter(f=>f.home===t.name&&f.k===k).length,herd=k==='pasture'&&lv&&herdOf(t),L=(t.last||{}).out||{},M=MAKE[k]||{};
+  if(lv&&E.work&&A.folk)ms.push(['folk',A.folk,'house',hands?hands+' '+E.work+(hands>1?'s':'')+' about':'nobody about']);
+  if(herd&&A.herd)ms.push(['herd',A.herd,'sheep',herd.n+' '+CRITTERS[herd.id].n.toLowerCase()+' grazing; the herders sell']);
+  if(lv&&PLOTS[k]&&A.fields)ms.push(['fields',A.fields,HOLD_ICO[k],plotsAt(t,k,lv).length+' of '+PLOTS_AT[k](lv)+' worked']);
+  if(lv&&A.works&&(M.out||E.goods.length))ms.push(['works',A.works,WORKS_ICO[k]||HOLD_ICO[k],Object.keys(M.out||{}).some(g=>L[g])?'made '+Object.keys(M.out).filter(g=>L[g]).map(g=>L[g]+' '+GOODS[g].n.toLowerCase()).join(', ')+' yesterday':'nothing made yesterday']);
   return ms;
 }
-// the rail round a window w ({title, sub, body, back, close}): tab the menu chosen
+// (a slim rail: the last word of a long name)
+const areaShort=n=>{const w=n.split(' ');return w.length>1?cap1(w[w.length-1]):n};
+// the rail round a window w ({title, sub, body, back, close}): tab the area chosen
 function estateRail(o,tab,w,key){const t=townBy(o.town),lv=bldLv(t,o.k);
   showRail({head:{act:['es-tab','home'],on:!tab,fac:t.owner,name:ESTATES[o.k].n,sub:(lv?'Level '+lv:'Not built')+' · '+ownerTag(t),back:!!tab},label:'Estate of '+t.name,gold:true,...w,
-    items:estateMenus(o).map(([k,n,ico,st,tone])=>({act:'es-tab',arg:k,ico,n,st,tone,on:k===tab}))},'est:'+t.name+':'+o.k+':'+(tab||'')+':'+(key||''));
+    items:estateMenus(o).map(([k,n,ico])=>({act:'es-tab',arg:k,ico,n,short:areaShort(n),on:k===tab}))},'est:'+t.name+':'+o.k+':'+(tab||'')+':'+(key||''));
 }
 function estateMeet(o){
   const t=townBy(o.town),k=o.k;if(!t||!bldLv(t,k))return;G.est=o;G.estTab=null;G.mode='dialog';P.tx=null;G.chase=null;showEstate();
 }
+// back from a worker's talk or the herders' window: the estate again, at the area they were met in
+function estateBack(o,tab){estateMeet(o);if(G.est){G.estTab=tab;showEstate()}}
 function showEstate(){
   const o=G.est,t=townBy(o.town),k=o.k,ms=estateMenus(o),tab=ms.some(m=>m[0]===G.estTab)?G.estTab:null;G.estTab=tab;ensureEcon(t);
-  const E=ESTATES[k],lv=bldLv(t,k),emp=P.fac&&P.fac===t.owner,hands=W.folk.filter(f=>f.home===t.name&&f.k===k).length;let body;
+  const E=ESTATES[k],lv=bldLv(t,k),emp=P.fac&&P.fac===t.owner,ws=W.folk.filter(f=>f.home===t.name&&f.k===k),race=t.races[0],m=ms.find(x=>x[0]===tab);let body;
   if(!tab)body=(sabotaged(t,k)?'<p class="bad">Wrecked: it makes nothing until day '+t.sab[k]+'.</p>':'')+(lv&&PLOTS[k]&&fieldShare(t,k)<1?'<p class="bad">Fields: '+plotsAt(t,k,lv).length+' of the '+PLOTS_AT[k](lv)+' its level works (no open ground for more: it makes '+Math.round(fieldShare(t,k)*100)+'%).</p>':'')+
-    (until(t,'fear')?'<p class="bad">The workers are afraid to come out.</p>':'')+bldInfo(t,k,true)+(ms.length?'<ul class="tnotes">'+ms.map(m=>'<li>'+m[1]+': '+m[3]+'.</li>').join('')+'</ul><p class="muted" style="font-size:13px">Choose on the left'+(G.mouse&&G.mouse.type==='touch'?'':' (or its number key)')+'.</p>':'');
-  else if(tab==='folk')body='<p class="muted">Its '+E.work+'s are all at work out of sight, or on the road to '+t.name+'.</p><div class="btns">'+dlgBtn('es-folk',null,'Talk to the '+E.work+'s · '+hands,hands?'':'Nobody about')+'</div>';
-  else if(tab==='herd')body='<div class="btns">'+dlgBtn('es-herd',null,'Buy livestock')+'</div>';
-  else if(tab==='manage')body=bldBuild(t,k);
-  else body='<p>'+estateGuards(t,k).length+' guards watch it (power '+rating(estateGuards(t,k))+' vs your '+partyPower()+').</p><div class="btns">'+
-     dlgBtn('es-sabotage',null,'Sabotage it ('+Math.round(sabotageChance(t,k)*100)+'% unseen)',emp?'Your employer':sabotaged(t,k)?'Already wrecked':'')+dlgBtn('es-plunder',null,'Plunder its stores',emp?'Your employer':troopCount()<3?'Need 3 troops':'')+
-     dlgBtn('es-burn',null,'Burn it',emp?'Your employer':troopCount()<3?'Need 3 troops':'')+'</div>'+
-     '<p class="muted">Sabotage: you slip in and wreck its work: it makes nothing for '+(3+2*lv)+' days. Unseen, only rumour follows you (reputation there −'+CONDUCT.sabotageEstate.rep+'); caught, you fight its guards and pay as for a plunder. Night, Scouting and Agility help; a big band and a big estate make it harder.</p>'+
-     '<p class="muted">Plunder: you fight the guards and take what the estate made for '+t.name+': reputation there −'+CONDUCT.plunderEstate.rep+', honor −'+CONDUCT.plunderEstate.honor+(hostileTo(t.owner)?'':', and the '+FACS[t.owner].n+' turns hostile for '+CONDUCT.plunderEstate.hostile+' days')+'. Burning also knocks it down a level and costs more: reputation −'+CONDUCT.burnEstate.rep+', honor −'+CONDUCT.burnEstate.honor+(hostileTo(t.owner)?'':', hostile for '+CONDUCT.burnEstate.hostile+' days')+'; its people may leave.</p>';
-  const m=ms.find(x=>x[0]===tab);
+    (until(t,'fear')?'<p class="bad">The workers are afraid to come out.</p>':'')+bldTop(t,k)+estateDeeds(t,k)+RAIL_SCREEN.overview(ms.map(([k,n,ico,note])=>({act:'es-tab',arg:k,n,note})));
+  else if(tab==='folk'){const inn=ws.filter(f=>f.st==='in'),away=ws.length-inn.length;
+    body=(inn.length?railCards(inn.map(f=>{const kk=recruitKind(t,f);return {pic:workerPic(f.job,race,f.v),name:f.name,role:cap1(f.job)+' of the '+E.n.toLowerCase(),facts:['At work inside',until(t,'fear')?['Afraid to come out','bad']:'','Recruit: '+ST[kk].n.toLowerCase()+', '+hireCost(kk)+'g'],
+        acts:[['es-folk',f.id,'Talk'],['es-recruit',f.id,'Recruit',workerRecruitWhy(t,f)]]}})):'<p class="muted">Nobody is in: '+(ws.length?'they are out with the day’s load.':'the '+E.work+'s are out of sight.')+'</p>')+
+      (away?'<p class="muted">'+away+' more out on the road to '+t.name+' with the day’s load: meet them there.</p>':'')+(lostHands(t,k)?'<p class="bad">'+lostHands(t,k)+' pair'+(lostHands(t,k)>1?'s':'')+' of hands short: it makes '+Math.round(handsLeft(t,k)*100)+'% until someone new moves in.</p>':'')+
+      '<p class="muted" style="font-size:13px">A worker you recruit becomes a '+ST[recruitKind(t,{k,job:E.work})].n.toLowerCase()+' (tier 0, trains into '+ST[UP[recruitKind(t,{k,job:E.work})][0]].n+'s). The estate is a pair of hands short for '+REFILL_DAYS+' days'+(t.owner==='player'?'':'; '+t.name+' minds it a little (reputation −2)')+'.</p>'}
+  else if(tab==='herd'){const c=herdOf(t);body='<p>The herders watch you over their staffs while the '+CRITTERS[c.id].n.toLowerCase()+' graze: '+c.n+' in the pens, '+plotsAt(t,k,lv).length+' of '+PLOTS_AT[k](lv)+' fields fenced.</p>'+herdRows(c)+(G.herdMsg?'<p class="gold">'+G.herdMsg+'</p>':'')}
+  else if(tab==='fields'){const n=plotsAt(t,k,lv).length,need=PLOTS_AT[k](lv);
+    body='<p>'+E.d+'</p>'+railRow('Fields worked',n<need?'<span class="bad">No open ground for more: it makes '+Math.round(fieldShare(t,k)*100)+'%</span>':'All its level works',null,n+' / '+need)+
+      (lv<bldCap(t,k)?railRow('At level '+(lv+1),'It would work '+PLOTS_AT[k](lv+1)+' fields',null,null):'')}
+  else if(tab==='works')body=bldWorks(t,k,true);
   estateRail(o,tab,{title:m?m[1]:E.n+' of '+t.name,sub:m?E.n+' of '+t.name:(lv?'Level '+lv:'Not built')+' · '+ownerTag(t),body,back:tab?['es-tab','home','Back']:null,close:['dlg-close',null,'Leave']});
 }
+// what you can do to the estate itself, on its overview, as its key actions (window.js railKeyActions): build up or pull down your
+// own; sabotage, plunder or burn someone else's (its guards above them: a card, for what you would face); nothing for your employer's
+function estateDeeds(t,k){const E=ESTATES[k],lv=bldLv(t,k),emp=P.fac&&P.fac===t.owner,w=t.work;
+  if(t.owner==='player'){const cap=bldCap(t,k);
+    return '<div class="lab">The '+E.n.toLowerCase()+'</div>'+(w&&w.k===k?'<p class="gold" style="font-size:13px">Done in '+Math.max(1,w.done-G.day)+' days'+(besieged(t)?' (stopped by the siege)':'')+'.</p>':
+      w?'<p class="muted" style="font-size:13px">Builders are busy with '+(w.k==='wall'?'the walls':w.k==='house'?'a house':'the '+ESTATES[w.k].n.toLowerCase())+' for '+Math.max(1,w.done-G.day)+' more days. One project at a time.</p>':'')+
+      railKeyActions(estateDeedList(t,k),lv>=cap?'At its best: level '+lv+' of '+cap+'.':'Built with gold and materials from '+t.name+'’s stock.')}
+  if(!lv||emp)return '';
+  const g=estateGuards(t,k),c=countsOf(g),host=hostileTo(t.owner),pb=CONDUCT.plunderEstate,bn=CONDUCT.burnEstate;
+  return '<div class="lab">Raid it</div>'+railCards([{pic:portrait(g[0]),name:'Its guards',role:'Watching the '+E.n.toLowerCase()+' of '+t.name,n:g.length,facts:Object.keys(c).map(u=>c[u]+' × '+ST[u].n),
+      note:g.length+' guards watch it (power '+rating(g)+' vs your '+partyPower()+').'}])+
+    railKeyActions(estateDeedList(t,k),'Caught or fighting, '+(host?'you are already the '+FACS[t.owner].n+'’s enemy':'the '+FACS[t.owner].n+' turns hostile ('+pb.hostile+'–'+bn.hostile+' days)')+'. Each asks you first.');
+}
+// the estate's deeds: {icon, label, facts, act, arg, why, tip, ask (it cannot be undone: a confirm first, estateAsk), go (the act
+// its Confirm sends)}: your own, build up or pull down; someone else's, sabotage, plunder, burn
+function estateDeedList(t,k){const E=ESTATES[k],lv=bldLv(t,k);
+  if(t.owner==='player'){const cap=bldCap(t,k),c=bldCost(k,lv+1),mats=ESTATE_MAT(k,lv+1),short=matsLacking(t,mats),w=t.work;
+    return [cap&&lv<cap&&{icon:'house',label:lv?'Upgrade':'Place',act:'fief-build',arg:k,facts:[c+'g · '+workDays(t,lv+1)+' days','to level '+(lv+1),matsText(mats)],tip:(lv?'Upgrade':'Place')+' the '+E.n.toLowerCase()+': '+mt0(t,mats),
+        why:w?'Already building':!lv&&!needsMet(t,k)?'Needs '+needsText(k):P.gold<c?'Not enough gold':short.length?'Short of '+short.join(', '):''},
+      lv&&{icon:'axe',label:'Pull down',act:'es-ask',arg:'demolish',go:['fief-demolish',k],facts:['+'+Math.floor(bldCost(k,Math.max(1,lv))/2)+'g back','gone for good'],tip:'Pull the '+E.n.toLowerCase()+' down: half its last level’s cost back; it is gone for good'}].filter(Boolean)}
+  const g=estateGuards(t,k),no=troopCount()<3?'Need 3 troops':'',host=hostileTo(t.owner),pb=CONDUCT.plunderEstate,bn=CONDUCT.burnEstate;
+  return [{icon:'moon',label:'Sabotage',act:'es-ask',arg:'sabotage',go:['es-sabotage'],facts:[Math.round(sabotageChance(t,k)*100)+'% unseen','idle '+(3+2*lv)+' days'],why:sabotaged(t,k)?'Already wrecked':'',
+      tip:'Sabotage it: slip in and wreck its work, so it makes nothing for '+(3+2*lv)+' days. Unseen, only rumour follows you (reputation −'+CONDUCT.sabotageEstate.rep+'); caught, you fight its guards and pay as for a plunder. Night, Scouting and Agility help; a big band and a big estate make it harder.'},
+    {icon:'bag',label:'Plunder',act:'es-ask',arg:'plunder',go:['es-plunder'],facts:['fight '+g.length+' guards','reputation −'+pb.rep+' · honor −'+pb.honor],why:no,
+      tip:'Plunder its stores: fight the guards and take what the estate made for '+t.name+': reputation there −'+pb.rep+', honor −'+pb.honor+(host?'':', and the '+FACS[t.owner].n+' turns hostile for '+pb.hostile+' days')+'.'},
+    {icon:'fire',label:'Burn',act:'es-ask',arg:'burn',go:['es-burn'],facts:['fight '+g.length+' guards','down a level · reputation −'+bn.rep],why:no,
+      tip:'Burn it: fight the guards, take what it made and burn it: it drops a level; reputation −'+bn.rep+', honor −'+bn.honor+(host?'':', hostile for '+bn.hostile+' days')+'; its people may leave.'}]}
+// a deed that cannot be undone asks first (window.js railConfirm): what it does and costs; Confirm sends its act, Back the overview
+function estateAsk(t,k,which){const d=estateDeedList(t,k).find(x=>x.arg===which);if(!d||d.why)return showEstate();
+  railConfirm({title:d.label+' the '+ESTATES[k].n.toLowerCase()+'?',sub:ESTATES[k].n+' of '+t.name,text:d.tip,facts:d.facts,confirm:[d.go[0],d.go[1]??null,d.label],back:['es-tab','home','Back']})}
+const mt0=(t,mats)=>{const l=matsLacking(t,mats);return 'needs '+matsText(mats)+(l.length?' (short: '+l.join(', ')+')':'')};
 // your own estate's building buttons (estateRow: fief-build, fief-demolish), as in your Fief (siege.js fiefAct); placing a new one
 // goes out to the map
 function estateFief(a,arg){
@@ -149,14 +191,14 @@ function estateFief(a,arg){
 const sabotageChance=(t,k)=>clamp(.35+.03*skill('scout')+.02*P.attr.agi+(darkness()>.5?.2:0)-.06*bldLv(t,k)-(partySize()>20?.1:0),.1,.9);
 function sabotage(t,k){t.sab=t.sab||{};t.sab[k]=G.day+3+2*bldLv(t,k)}
 function estateAct(a,arg){
-  // the rail: one of its menus, or home: its overview (from its workers or its herd too)
+  // the rail: one of its areas, or home: its overview (from its workers or its herd too)
   if(a==='es-tab'){const o=G.mode==='herd'?G.herdFrom:G.est||G.wkFrom,t=o&&townBy(o.town);if(!t)return;if(!G.est){G.wk=G.wkFrom=G.herd=G.herdFrom=null;G.est=o;G.mode='dialog'}
-    G.estTab=arg==='home'?null:arg;// (its workers and its herd open straight in the window, when there is someone to meet)
-    if(bldLv(t,o.k)&&(arg==='herd'&&herdOf(t)||arg==='folk'&&W.folk.some(f=>f.home===t.name&&f.k===o.k)))return estateAct(arg==='herd'?'es-herd':'es-folk');
-    return showEstate()}
+    G.estTab=arg==='home'?null:arg;return showEstate()}
   const o=G.est,t=o&&townBy(o.town);if(!t||!bldLv(t,o.k)){closeDialog();return}
   if(a==='es-herd'){const c=herdOf(t);if(c){G.est=null;openHerd(c,o)}return}
-  if(a==='es-folk'){const ws=W.folk.filter(f=>f.home===t.name&&f.k===o.k),f=ws.find(f=>f.st==='in')||ws[0];if(f){G.est=null;workerMeet(f,o)}return}
+  if(a==='es-folk'){const ws=W.folk.filter(f=>f.home===t.name&&f.k===o.k),f=arg&&ws.find(x=>x.id===arg)||ws.find(f=>f.st==='in')||ws[0];if(f){G.est=null;workerMeet(f,o)}return}// (one by his id, from his card)
+  if(a==='es-recruit'){const f=W.folk.find(x=>x.id===arg&&x.home===t.name&&x.k===o.k);if(f&&workerRecruit(f))updateHUD(true);return showEstate()}
+  if(a==='es-ask')return estateAsk(t,o.k,arg);
   if(a==='es-sabotage'&&P.fac!==t.owner&&t.owner!=='player'&&!sabotaged(t,o.k)){const k=o.k;G.est=null;train('scout',4);
     if(Math.random()<sabotageChance(t,k)){sabotage(t,k);addRep(t.name,-CONDUCT.sabotageEstate.rep,true);closeDialog();
       return notice('Sabotaged','Under cover your people foul the '+ESTATES[k].n.toLowerCase()+' of '+t.name+'. It will make nothing for '+(t.sab[k]-G.day)+' days, and nobody saw who did it.','good')}
@@ -182,6 +224,7 @@ function estatesBody(t){
   const w=t.work,wn=wallOf(t)+1;
   return '<div class="lab" style="margin-top:6px">Walls and estates · built with gold and materials from '+t.name+'&rsquo;s stock</div>'+
     (w?'<p class="gold" style="font-size:13px">Building: '+(w.k==='wall'?WALL_N[w.lv||wn]:ESTATES[w.k].n+' level '+(bldLv(t,w.k)+1))+', done in '+Math.max(1,w.done-G.day)+' days'+(besieged(t)?' (stopped by the siege)':'')+'. One project at a time.</p>':'')+
+    '<ul class="tnotes">'+bldKeys().filter(k=>!ESTATES[k]||bldLv(t,k)||w&&w.k===k).map(k=>{const [st,tone]=bldStatus(t,k);return '<li>'+bldName(k)+': <span class="'+tone+'">'+st+'</span>.</li>'}).join('')+'</ul>'+
     '<p class="muted" style="font-size:13px">Choose the walls, the houses or an estate on the left to build, upgrade or pull it down.</p>';
 }
 // one row: k is 'wall', 'house' or an estate; what it is now and what the next step needs, and its buttons (what an estate

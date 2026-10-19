@@ -32,7 +32,7 @@ try{
  ok(G.mode==='capture'&&/Take it in peace/.test(panel())&&/Sack it/.test(panel()),'you choose its fate');
  const r0=P.renown;t.act('cap-peace');t.act('cont');done();
  ok(town.owner==='player'&&town.turmoil>G.day&&P.renown>r0&&!P.siege,town.name+' becomes your fief, in turmoil');
- at(town);t.updateWorld(.01);ok(G.mode==='town'&&/Fief/.test(panel())&&/turmoil/.test(panel()),'entering your fief shows the Fief tab');
+ at(town);t.updateWorld(.01);ok(G.mode==='town'&&/Steward’s office/.test(panel())&&/turmoil/.test(panel()),'entering your fief shows the Fief tab');
  t.act('tab','recruit');ok(/No one will enlist/.test(panel()),'no recruits while it is in turmoil');
  t.act('tab','fief');const gar=town.gar,kn=P.troops.hum_knight;t.act('fief-station','hum_knight:5');ok(town.gar===gar+5&&P.troops.hum_knight===kn-5,'station 5 knights in the garrison');
  t.act('leave');done();P.troops={};P.wounded={};const gold=P.gold;G.day=town.turmoil;t.dayTick();ok(P.gold-gold>=t.fiefIncome(town)-1&&t.fiefIncome(town)>0,'your fief pays its taxes: '+t.fiefIncome(town)+' gold a day');

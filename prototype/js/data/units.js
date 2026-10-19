@@ -61,4 +61,13 @@ const UP={militia:['spearman'],archer:['ranger'],
   elf_spear:['elf_eternal'],elf_eternal:['elf_phoenix'],
   orc_grunt:['orc_brute'],orc_brute:['orc_ironjaw','orc_reaver'],orc_thrower:['orc_hunter','orc_shaman'],orc_wolf:['orc_warg','orc_wolfbow'],
   orc_shield:['orc_warrior'],orc_warrior:['orc_black']};
+// the estates' workers, recruited where they work (folk.js workerRecruit), as in Mount & Blade's villages: a peasant of each
+// trade and people, tier 0 and cheap, each trade a little different (a woodcutter hits harder, a herder is quicker, a miner and a
+// quarryman tougher, a farmer's hoe and a fisher's pole reach further), each training into its people's first footmen
+const TRADES={farmer:{n:'Farmer',reach:14,dt:'pierce'},herder:{n:'Herder',spd:44,dt:'blunt'},woodcutter:{n:'Woodcutter',dmg:5,dt:'slash'},miner:{n:'Miner',hp:26,dt:'pierce'},
+  fisher:{n:'Fisher',reach:13,dt:'pierce'},quarryman:{n:'Quarryman',hp:26,dmg:5,dt:'blunt'}};
+const PEASANT_OF={human:['hum','hum_levy'],dwarf:['dw','dw_clan'],elf:['elf','elf_glade'],orc:['orc','orc_grunt']};
+const peasantKind=(race,job)=>(PEASANT_OF[race]||PEASANT_OF.human)[0]+'_'+job;
+for(const r in PEASANT_OF)for(const j in TRADES){const T=TRADES[j],id=peasantKind(r,j);
+  ST[id]={n:T.n,tier:0,hp:T.hp||22,dmg:T.dmg||4,spd:T.spd||36,reach:T.reach||11,range:0,cd:1,race:r,charge:false,peasant:j,dt:T.dt};HIRE[id]=8;UP[id]=[PEASANT_OF[r][1]]}
 const RANSOM=[0,15,30,60];

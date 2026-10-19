@@ -60,6 +60,10 @@ $('#charBtn').addEventListener('click',()=>{if(G.mode==='char')act('char-close')
 $('#helpBtn').addEventListener('click',()=>{if(G.mode==='help')closeOver();else openHelp()});
 $('#journalBtn').addEventListener('click',()=>{if(G.mode==='journal')closeOver();else openJournal()});
 $('#fsBtn').addEventListener('click',toggleFull);
+// the map's zoom buttons (shown on the map only: style.css), each dimmed at its end of the range (core.js mapZoom)
+$('#zoomIn').addEventListener('click',()=>{if(G.mode==='world'&&!G.modal)mapZoom(1)});$('#zoomOut').addEventListener('click',()=>{if(G.mode==='world'&&!G.modal)mapZoom(-1)});
+function zoomUI(){const i=$('#zoomIn'),o=$('#zoomOut'),Z=MAPZOOM,s=Z.map?VS:Z.s0;if(i)i.disabled=s>=Z.hi;if(o)o.disabled=s<=Z.lo}
+zoomUI();
 document.addEventListener('fullscreenchange',fitScreen);
 $('#skillBtn').addEventListener('click',()=>{if(G.mode==='skills')act('sk-close');else openSkills()});
 $('#invBtn').addEventListener('click',()=>{if(G.mode==='inv')act('inv-close');else openInv()});
@@ -127,6 +131,7 @@ function worldGo(wx,wy){if(!(clickAt(wx,wy)||G.chase)){P.tx=clamp(wx,8,MW*TILE-8
    Map: a tap travels; a long press on something shows its card (the tooltip), which the next tap puts away, travelling nowhere ---------- */
 // hold: ms to a long press; slop: CSS px a finger may wander in it; ring: the filling ring's radius (CSS px, round the finger)
 const TOUCH={hold:450,slop:10,ring:34,pts:new Map(),lp:null,pinch:null,spent:new Set()};
+const touchSpan=()=>{const [a,b]=[...TOUCH.pts.values()];return Math.max(1,Math.hypot(a.cx-b.cx,a.cy-b.cy))};// (two fingers apart, CSS px: the map's pinch)
 const touchMid=()=>{const [a,b]=[...TOUCH.pts.values()];return{x:(a.x+b.x)/2,y:(a.y+b.y)/2,d:Math.max(1,Math.hypot(a.x-b.x,a.y-b.y))}};
 const holdCardUp=()=>{const t=$('#tip');return!!t&&!t.hidden&&t.classList.contains('hold')};
 // the press under way (TOUCH.lp) dropped: its box or line gone, nothing sent
@@ -134,7 +139,7 @@ function touchDrop(){const l=TOUCH.lp;if(!l)return;clearTimeout(l.timer);TOUCH.l
 function touchDown(e,p){const T=TOUCH,id=e.pointerId;
   if(e.isPrimary&&T.pts.size){touchDrop();T.pts.clear();T.spent.clear();T.pinch=null}// (the first finger of a new touch: anything a lost lift left behind goes)
   if(G.mode==='world'){if(holdCardUp()){hideTip();touchDrop();T.pts.set(id,p);T.spent.add(id);return true}if(G.place||P.stay)return false;// (the card up: this tap only puts it away)
-    T.pts.set(id,p);if(T.pts.size>1){touchDrop();T.spent.add(id);return true}
+    p.cx=e.clientX;p.cy=e.clientY;T.pts.set(id,p);if(T.pts.size>1){touchDrop();T.spent.add(id);if(T.pts.size===2){for(const k of T.pts.keys())T.spent.add(k);T.pinch={map:true,d0:touchSpan()}}return true}// (two fingers: a pinch, never a tap: zooms the map by steps, touchMove)
     T.lp={id,mode:'world',cx:e.clientX,cy:e.clientY,wx:G.cam.x+p.x,wy:G.cam.y+p.y,t0:performance.now()};touchTimer();return true}
   if(G.mode!=='battle'||!B)return false;T.pts.set(id,p);
   if(T.pts.size===2){touchDrop();for(const k of T.pts.keys())T.spent.add(k);const m=touchMid();T.pinch={d0:m.d,z0:B.cam?B.cam.z:1,w:toField(m)};return true}
@@ -148,7 +153,9 @@ function touchTick(now){const l=TOUCH.lp;if(!l||l.armed||l.box||l.off||now-l.t0<
   if(l.mode==='battle'){if(B!==l.B||G.mode!=='battle'){touchDrop();return false}l.armed=true;B.box=null;B.rdrag={x0:l.q.x,y0:l.q.y,x1:l.q.x,y1:l.q.y,shift:false}}
   else{const o=G.mode==='world'&&!G.modal?pickAt(l.wx,l.wy):null,h=o?tipFor(o):'';if(!h){l.off=true;return false}l.armed=true;holdCard(h,l.cx,l.cy)}
   try{if(navigator.vibrate)navigator.vibrate(12)}catch(err){}return true}
-function touchMove(e,p){const T=TOUCH,pt=T.pts.get(e.pointerId);if(!pt)return;pt.x=p.x;pt.y=p.y;
+function touchMove(e,p){const T=TOUCH,pt=T.pts.get(e.pointerId);if(!pt)return;pt.x=p.x;pt.y=p.y;pt.cx=e.clientX;pt.cy=e.clientY;
+  // (the map: a step in or out each time the fingers are MAPZOOM.PINCH times as far apart, or as near, as at the last step)
+  if(T.pinch&&T.pinch.map){if(T.pts.size>=2&&G.mode==='world'&&!G.modal){const d=touchSpan(),r=d/T.pinch.d0;if(r>=MAPZOOM.PINCH||r<=1/MAPZOOM.PINCH){mapZoom(r>1?1:-1);T.pinch.d0=d}}return}
   if(T.pinch){if(T.pts.size>=2&&B&&G.mode==='battle'){const m=touchMid();camPinch(T.pinch.w,T.pinch.z0*m.d/T.pinch.d0,m.x,m.y)}return}
   const l=T.lp;if(!l||l.id!==e.pointerId)return;touchTick(performance.now());
   if(l.armed||l.box||Math.hypot(e.clientX-l.cx,e.clientY-l.cy)<=T.slop)return;
@@ -185,8 +192,9 @@ function drawTouchHold(){const l=TOUCH.lp;if(!l||l.mode!=='battle'||l.B!==B||l.b
   ctx.lineWidth=3*k;ctx.strokeStyle='rgba(10,12,18,.45)';ctx.beginPath();ctx.arc(l.q.x,l.q.y,R,0,7);ctx.stroke();
   ctx.strokeStyle='rgba('+col+','+(l.armed?1:.85)+')';ctx.beginPath();ctx.arc(l.q.x,l.q.y,R,-Math.PI/2,-Math.PI/2+f*Math.PI*2);ctx.stroke();
   if(l.armed){ctx.fillStyle='rgba('+col+',.9)';ctx.beginPath();ctx.arc(l.q.x,l.q.y,2.5*k,0,7);ctx.fill()}ctx.lineWidth=1}
-// the wheel zooms the battle toward the cursor (camera.js)
-cv.addEventListener('wheel',e=>{if(G.mode==='battle'&&B&&!G.modal){e.preventDefault();const p=toCanvas(e);camZoom(e.deltaY<0?1:-1,p.x,p.y)}},{passive:false});
+// the wheel zooms the battle toward the cursor (camera.js); on the map a step a notch, one each MAPZOOM.WHEEL ms at most (core.js)
+cv.addEventListener('wheel',e=>{if(G.mode==='battle'&&B&&!G.modal){e.preventDefault();const p=toCanvas(e);camZoom(e.deltaY<0?1:-1,p.x,p.y)}
+  else if(G.mode==='world'&&!G.modal&&e.deltaY){e.preventDefault();const now=performance.now();if(now-MAPZOOM.wt>=MAPZOOM.WHEEL){MAPZOOM.wt=now;mapZoom(e.deltaY<0?1:-1)}}},{passive:false});
 // the arrow keys pan while held
 window.addEventListener('keyup',e=>{if(B&&B.cam){const k=keyOf(e);if(k.startsWith('arrow'))B.cam.keys[k]=false}});
 window.addEventListener('blur',()=>{if(B&&B.cam)B.cam.keys={}});
@@ -203,6 +211,7 @@ window.addEventListener('keydown',e=>{
   if(k==='m'&&!e.ctrlKey&&!e.metaKey&&!e.altKey){if(!e.repeat)toggleMute();return}// M: the sound off or on, anywhere (ui.js)
   if(k==='p'&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&!e.repeat&&peopleKey())return;// P: the people drawer, on the map and in towns (peopledrawer.js)
   if(/^[0-9]$/.test(k)&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&!e.repeat&&G.mode!=='battle'&&railKey(k)){e.preventDefault();return}// a number: a place on the window's rail (window.js)
+  if(/^[qwer]$/.test(k)&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&!e.repeat&&G.mode!=='battle'&&railActKey(k)){e.preventDefault();return}// Q, W, E, R: the window's key actions (window.js)
   if(G.mode==='battle'&&B){
     // the battle's speed: Space pauses (orders still go: a tactical pause), [ and ] slow it down and speed it up
     if(e.code==='Space'){e.preventDefault();if(!e.repeat)battlePause();return}
@@ -242,6 +251,7 @@ window.addEventListener('keydown',e=>{
     if(e.code==='Space'){e.preventDefault();if(!e.repeat)togglePause()}
     if(k>='1'&&k<='3')setSpeed(SPEEDS[k-1]);if(k==='4'&&!e.repeat)setSpeed(G.speed===TRAVEL_FAST?1:TRAVEL_FAST);
     if(k==='c')openChar();if(k==='i')openInv();if(k==='k')openSkills();if(k==='h')openHelp();if(k==='l')openJournal();
+    if(!e.repeat&&(k==='='||k==='+'||k==='-')){mapZoom(k==='-'?-1:1);return}// + and −: the map's zoom (core.js)
     if(k==='g'&&!e.repeat){setGrid(!GRID.on);log(GRID.on?'Tile grid on (G to hide).':'Tile grid off.')}
   }else if(G.mode==='help'&&k==='h'||G.mode==='journal'&&k==='l')closeOver();
   else if(G.mode==='char'&&k==='c')act('char-close');

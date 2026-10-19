@@ -392,6 +392,8 @@ function followerSprite(col,f,v,race,band){v=(v||0)%6;f=(f||0)%PEOPLE_STEPS;race
 const WORK_LOOK={farmer:{helm:'straw',outer:'cloth',team:'linen',weapon:'hoe'},herder:{helm:'hood',hood:'leather',outer:'fur',team:'leather',weapon:'crook'},
   woodcutter:{helm:'bare',outer:'forest',team:'leather',weapon:'axe'},miner:{helm:'cap',helmC:'iron',outer:'leather',team:'dark',weapon:'pick'},fisher:{helm:'bare',outer:'blue',team:'linen',weapon:'rod'},
   builder:{helm:'cap',helmC:'leather',outer:'linen',team:'leather',weapon:'hammer'}};
+// (the peasants recruited from the estates wear their trade's clothes and carry its tool: data/units.js TRADES)
+for(const k in ST)if(ST[k].peasant){const {team,...L}=WORK_LOOK[ST[k].peasant]||{...WORK_LOOK.miner,weapon:'hammer'};PEOPLE_LOOK[k]=L}
 function workerSprite(job,f,race,v,carry){v=(v||0)%4;f=(f||0)%PEOPLE_STEPS;race=race||'human';const k='wk'+job+f+race+v+(carry?'c':'');if(spr[k])return spr[k];
   const L={...folkLook('folk',race,v*3+1),robe:false,...(WORK_LOOK[job]||WORK_LOOK.farmer)};if(carry){L.weapon=null;L.load=job}// (loaded: his tool left behind)
   return spr[k]=mapPerson(L,f)}

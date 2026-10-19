@@ -128,8 +128,9 @@ function drawWorld(){
   drawQuestMarks(cam);
   wuiOver(cam);// (your goal's arrow, the arrow over what you chase, the brackets round what the pointer is on: worldui.js)
   ctx.restore();
-  // minimap (the land from the tile data, a pixel per k tiles: worldart.js WorldArt.mini)
-  const MS=112/MW,mk=Math.max(1,Math.round(MW/256)),mw=Math.round(MW*MS),mh=Math.round(MH*MS),mx=VW-mw-6,my=6,dot=(x,y,col,s)=>rect(ctx,col,mx+Math.floor(x/TILE*MS)-(s>>1),my+Math.floor(y/TILE*MS)-(s>>1),s,s);
+  // minimap (the land from the tile data, a pixel per k tiles: worldart.js WorldArt.mini; the same size on the screen at any map
+  // zoom: zk, core.js MAPZOOM)
+  const zk=MAPZOOM.k(),MS=112*zk/MW,mk=Math.max(1,Math.round(MW/256)),mw=Math.round(MW*MS),mh=Math.round(MH*MS),mx=VW-mw-Math.round(6*zk),my=Math.round(6*zk),dot=(x,y,col,s)=>{s=Math.max(1,Math.round(s*zk));rect(ctx,col,mx+Math.floor(x/TILE*MS)-(s>>1),my+Math.floor(y/TILE*MS)-(s>>1),s,s)};
   ctx.fillStyle='#000';ctx.fillRect(mx-1,my-1,mw+2,mh+2);ctx.drawImage(atSize(WorldArt.mini(mk),mw,mh),mx,my);ctx.globalAlpha=.4;ctx.drawImage(atSize(landMiniCv(),mw,mh),mx,my);ctx.globalAlpha=1;ctx.drawImage(atSize(fogMiniCv(),mw,mh),mx,my);
   // each its own dot (WorldObject mapDot), layer by layer (MAP_LAYER; in a layer, as worldObjects lists them): the holdings and
   // sites you know of, then the beasts, parties and caravans in sight over them
@@ -315,7 +316,9 @@ function frame(){
   // (loading: the overlay over the last frame, nothing drawn under it, so no effect draws a random number meanwhile: ui/loading.js)
   if(G.mode==='loading'){if(typeof loadingFrame==='function')loadingFrame();return}
   const bat=B&&(G.mode==='battle'||G.mode==='esc'&&G.esc&&G.esc.mode==='battle'),scn=!bat&&G.scene&&(G.mode==='scene'||G.mode==='town'&&G.town&&G.town.inScene||G.mode==='esc'&&G.esc&&(G.esc.mode==='scene'||G.esc.mode==='town'&&G.town&&G.town.inScene)),map=!bat&&!scn;
-  // (a battle: the field's height, the screen's shape; the world map: the screen's own pixels, VS a game pixel: core.js)
+  // (a battle: the field's height, the screen's shape; the world map: the screen's own pixels, VS a game pixel: core.js; the map's
+  // zoom only on the map: core.js MAPZOOM)
+  if(map!==MAPZOOM.map){MAPZOOM.map=map;if(MAPZOOM.z)fitScreen()}
   setRes(bat?BVW:map?VW*VS:VW,bat?BVH:map?VH*VS:VH,map?VS:1);
   ctx.save();if(map&&VS>1)ctx.scale(VS,VS);
   {const s=shakeView(bat);if(s)ctx.translate(s.x,s.y)}// (a blow's shake, a charge's jolt: drawn only, vfx.js)

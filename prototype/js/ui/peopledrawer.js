@@ -1,12 +1,12 @@
 'use strict';
-/* ---------- people: a tab on the right edge with your companions' faces; P or a tap opens a drawer of the people you know
+/* ---------- people: the People button in the bottom bar (or P) opens a drawer from the right edge of the people you know
    (your companions, the lords by realm, those you have met, the realms), each with where they are, how they feel about you,
    and Show on map, Profile and Talk. On the map, in a town's window and in its streets; never in battle (style.css hides it).
    It knows only what you could: a lord's whereabouts while he is in your sight (the map's rule: parties.js spotted), inside the
    holding you are in, or as you last saw him (PEOPLE.seen, for PEOPLE.memory days; kept for this session only, never saved).
    Show on map centres the drawer's small map on them and rings them on the world when they are on the screen (it moves no
    camera: the map follows your band) ---------- */
-const PEOPLE={on:false,tab:'comps',card:null,look:null,memory:3,seen:new Map(),back:null,timer:0,el:null,faces:'',html:''};
+const PEOPLE={on:false,tab:'comps',card:null,look:null,memory:3,seen:new Map(),back:null,timer:0,el:null,html:''};
 onWorld(()=>PEOPLE.seen.clear());// (a new world, or a game loaded: what you remember goes with it)
 // (world.js updateWorld, every step): lords in your sight are remembered where you saw them; reads only
 function peopleWatch(){const V=vis();for(const l of W.lords)if(!l.dead&&!l.gone&&!l.inside&&spotted(l,V))PEOPLE.seen.set(l.id,{x:l.x,y:l.y,day:G.day,n:l.troops.length})}
@@ -27,8 +27,6 @@ function peopleToggle(on){
 }
 const peopleKey=()=>{if(!ppAvail()&&!PEOPLE.on)return false;peopleToggle();return true};
 const peopleEsc=()=>{if(!PEOPLE.on)return false;peopleToggle(false);return true};
-// the collapsed tab: the people icon and up to three companions' faces
-function peopleTabHtml(){const ids=Object.keys(P.comps||{});return icon('people',20)+ids.slice(0,3).map(id=>'<img src="'+portrait(id)+'" alt="">').join('')+(ids.length>3?'<small>+'+(ids.length-3)+'</small>':'')+'<kbd>P</kbd>'}
 // one entry: a face or an emblem, the name, where, how they feel, and its buttons; card: its profile, when open
 function ppEntry(id,pic,name,lines,acts,card){return '<div class="pp-e" data-id="'+id+'">'+pic+'<div class="pp-i"><strong>'+name+'</strong>'+lines.map(s=>'<small>'+s+'</small>').join('')+
   '<div class="pp-acts">'+acts.join('')+'</div>'+(PEOPLE.card===id&&card?'<div class="pp-card">'+card+'</div>':'')+'</div></div>'}
@@ -63,7 +61,7 @@ function peopleBody(){
 // a realm's seat on the map: its city, else its first holding, if you know where it is
 function realmSeat(f){const hs=fiefsOf(f).filter(t=>seenTile(t.tx,t.ty));return hs.find(t=>t.kind==='city')||hs[0]||null}
 function peopleRender(){
-  const E=PEOPLE.el;if(!E)return;PEOPLE.faces=Object.keys(P.comps||{}).join();E.tab.innerHTML=peopleTabHtml();if(!PEOPLE.on)return;
+  const E=PEOPLE.el;if(!E)return;if(!PEOPLE.on)return;
   const keep=E.list.scrollTop;E.tabs.innerHTML=[['comps','Companions'],['lords','Lords'],['known','Known'],['realms','Realms']].map(([k,n])=>'<button class="btn sm'+(PEOPLE.tab===k?' on':'')+'" type="button" data-pp="tab" data-arg="'+k+'" aria-pressed="'+(PEOPLE.tab===k)+'">'+n+'</button>').join('');
   const h=peopleBody();if(h!==PEOPLE.html){PEOPLE.html=h;E.list.innerHTML=h;E.list.scrollTop=keep}peopleMap();// (redrawn only when something it says changed: a button is never swapped under a click)
 }
@@ -112,14 +110,10 @@ function peopleClick(e){const b=e.target.closest('[data-pp]');if(!b||b.disabled)
 // built once the page is there (not in the wiki, which has no game screen)
 function peopleInit(){
   const scr=document.getElementById('screen');if(!scr||PEOPLE.el)return;const root=document.createElement('div');root.className='people';root.id='people';
-  root.innerHTML='<div class="pp-scrim"></div><button class="pp-tab" type="button" title="People: companions, lords, realms (P)" aria-label="People (P)" aria-expanded="false"></button><span class="pp-ping" hidden></span>'+
+  root.innerHTML='<div class="pp-scrim"></div><span class="pp-ping" hidden></span>'+
     '<aside class="pp-drawer" role="dialog" aria-label="People"><div class="pp-head"><h2>People</h2><button class="btn sm" type="button" data-pp="close" title="Close (P or Esc)">Close</button></div><div class="pp-tabs tabs" role="group" aria-label="Who"></div><canvas class="pp-map" hidden></canvas><div class="pp-list"></div></aside>';
-  scr.appendChild(root);const q=s=>root.querySelector(s);PEOPLE.el={root,tab:q('.pp-tab'),tabs:q('.pp-tabs'),list:q('.pp-list'),map:q('.pp-map'),ping:q('.pp-ping')};
-  q('.pp-tab').addEventListener('click',()=>peopleToggle());q('.pp-scrim').addEventListener('click',()=>peopleToggle(false));q('.pp-drawer').addEventListener('click',peopleClick);
-  peoplePlace();addEventListener('resize',peoplePlace);peopleRender();
-  // (the tab's faces follow your companions as they come and go)
-  setInterval(()=>{const k=Object.keys(P.comps||{}).join();if(k!==PEOPLE.faces){PEOPLE.faces=k;PEOPLE.el.tab.innerHTML=peopleTabHtml()}},1000);
+  scr.appendChild(root);const q=s=>root.querySelector(s);PEOPLE.el={root,tab:document.getElementById('peopleBtn')||document.createElement('button'),tabs:q('.pp-tabs'),list:q('.pp-list'),map:q('.pp-map'),ping:q('.pp-ping')};
+  PEOPLE.el.tab.addEventListener('click',()=>peopleToggle());q('.pp-scrim').addEventListener('click',()=>peopleToggle(false));q('.pp-drawer').addEventListener('click',peopleClick);
+  peopleRender();
 }
-// the tab sits under the minimap (render.js: 112 game px wide, 6 from the top)
-function peoplePlace(){const E=PEOPLE.el;if(E&&MW)E.tab.style.top=Math.round((6+Math.round(MH*112/MW)+10)/HUD_PX)+'px'}
 peopleInit();
