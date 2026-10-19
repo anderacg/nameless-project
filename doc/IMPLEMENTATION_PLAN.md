@@ -37,7 +37,7 @@ Sizes: **S** a session or less, **M** a few sessions, **L** a phase of its own. 
 
 | # | Item | Size | Depends on | Owner? | Detail |
 |---|---|---|---|---|---|
-| 1 | **A failed save says "Game saved."** The pause menu's save (`ui.js` `esc-save`) shows success whatever `saveGame` did; still so at HEAD. *Moved up: a player can lose a game believing it saved.* | S | — | — | [UX_UI_REVIEW.md](UX_UI_REVIEW.md) UX-01 |
+| 1 | ~~**A failed save says "Game saved."**~~ **Fixed 2026-10-19 (6c7eb51).** The pause menu's save (`ui.js` `esc-save`) shows success whatever `saveGame` did; still so at HEAD. *Moved up: a player can lose a game believing it saved.* | S | — | — | [UX_UI_REVIEW.md](UX_UI_REVIEW.md) UX-01 |
 | 2 | **Flaky tests:** `monsters` "spiders web your fighters" (unseeded); the encounters' chance-based phase-2 checks (steadied in 937ca04 and 8f072a3: confirm); `mappolish` (reran clean, 5949c93). Seed or fix what the assertions hang on | S | the coordinator's next full sweep, to know which still flake | — | Technical debt |
 | 3 | **Terrain phases 3–4: the art approval** (standing trees, cliff faces, mountains, spires, ramps). The AI sight filter is **built** (e527d86, 3f24f1d: `commander.js` `seenBy`, `charmind.js` `liveFoes`); only the approval is open | S | screenshots | **Owner** (approval) | [TERRAIN_DESIGN.md](TERRAIN_DESIGN.md) §8 |
 | 4 | **Woods see-through in battle** | S | — | — | §3.5 |
@@ -273,7 +273,7 @@ In the order the owner last saw them, smallest first; the **Priorities** above g
 - **Frame cost:** the world frame rose from about 1.2 to 3 ms with placed buildings; since then the map is drawn from chunks (R6) and LOD hooks exist (R12, inert). Profile with `Ashmark.html?test=visual/perf` before adding more map entities.
 - **Interior painter:** interior scenes still use their own painter rather than the PX engine.
 - **Two Esc mechanisms:** `ESC_CLOSE` in `ui.js` still maps modes to close actions for screens with no open window (walking the streets). Fold it into the window frame if possible.
-- **A save failure reported as success** (UX-01): see Priority 1.
+- **A save failure reported as success** (UX-01): fixed 2026-10-19 (6c7eb51).
 - **Comment drift:** `gfx/worldui.js`'s header still says encounters show "an arrow at the screen's edge"; the arrow became waves in b3560c5.
 - **Temporary files:** `tests/zz_*.js` must never be committed.
 

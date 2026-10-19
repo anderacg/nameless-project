@@ -3,7 +3,7 @@
 Reviewed 2026-10-16. This is stage 1 of the agreed UX improvement plan: verification and prioritization. No gameplay or interface implementation has been changed.
 
 **Status (checked 2026-10-19):** the fixes were never queued in the implementation plan; they are now (IMPLEMENTATION_PLAN Priorities 1 and 8).
-- **UX-01 still open** (verified): `escAct('esc-save')` in `ui/ui.js` still shows "Game saved." whatever `saveGame(true, …)` did.
+- **UX-01 fixed 2026-10-19 (6c7eb51):** the menu's Save reports a save the browser refused ("Could not save"); `tests/menu.js` checks it.
 - **UX-09 built:** touch inspection on the map, pinch and pan, long-press orders and lines (39c4785), safe areas and no page zoom (8f01013).
 - **UX-05 probably fixed:** Esc or a left-click now drops a right-drag before the window chain (a0ae05e, `dragCancel`, `tests/dragcancel.js`); re-check the plain right-down, Esc, right-up case.
 - **UX-02, 03, 04, 06, 07, 08, 10, 11 and the design improvements:** not re-checked since; the UI has changed a lot (rail windows, people drawer, phone layout: adfcf2d, b6d4bb1, 8ecb177).
