@@ -12,6 +12,8 @@ try{
    cv.dispatchEvent(new PointerEvent('pointerdown',{clientX:x,clientY:y,pointerType:'mouse',bubbles:true}))};
  // town: leave it, stay close, click it again
  const ash=t.townBy('Ashford');reset();P.x=ash.x;P.y=ash.y+12;G.lastTown=ash;t.updateWorld(.01);ok(G.mode==='world','standing at a town you just left does not reopen it by itself');
+ {reset();G.lastTown=null;P.x=ash.x-8;P.y=ash.y+3;P.tx=ash.x+80;P.ty=ash.y+3;G.chase=null;t.updateWorld(.01);ok(G.mode==='world'&&P.tx!=null,'riding past a holding on your way elsewhere does not open it');
+  P.tx=null;t.updateWorld(.01);ok(G.mode==='town'||G.mode==='besiege'||G.mode==='dialog','stopping at it does ('+G.mode+')');t.hidePanel();G.mode='world';G.modal=false}
  click(ash.x,ash.y);ok(G.mode==='town'&&G.town.ref===ash,'clicking it opens Ashford again');t.act('leave');done();
  // a click on a far town still just walks there
  reset();const far=t.TOWNS.find(x=>Math.hypot(x.x-P.x,x.y-P.y)>200);click(far.x,far.y);ok(G.mode==='world'&&P.tx!=null,'a far town is walked to, not opened');

@@ -185,7 +185,8 @@ function updateWorld(dt){
   updateFolk(d);
   for(const t of TOWNS){
     const dd=Math.hypot(P.x-t.x,P.y-t.y);
-    if(dd<11&&G.lastTown!==t&&!G.modal){
+    // (it opens when you stop at it or ride to it (a click on it: the chase); passing by or through on your way, it does not)
+    if(dd<11&&G.lastTown!==t&&!G.modal&&(P.tx==null||G.chase===t)){
       approachHolding(t);
       return;
     }
