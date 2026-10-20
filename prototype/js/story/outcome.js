@@ -206,12 +206,13 @@ const Outcome={
       },
       text:()=>'',
     },
-    // start: another happening, {k, x, y} (an encounter of kind k there: encounters.js roadSpawn; res.started)
+    // start: another happening (res.started): {k, x, y} an encounter of kind k there (encounters.js roadSpawn); {thread, memory}
+    // a thread of that kind, what it knows to begin with (story/thread.js Thread.start)
     start:{
       apply(v,ctx,res){
-        res.started=roadSpawn(v.k,v.x,v.y);
+        res.started=v.thread?Thread.start(v.thread,v.memory):roadSpawn(v.k,v.x,v.y);
       },
-      text:v=>'then: '+kindOf('encounter',v.k).n.toLowerCase(),
+      text:v=>'then: '+(v.thread?kindOf('thread',v.thread):kindOf('encounter',v.k)).n.toLowerCase(),
     },
     // band: a band of raiders set on the map (world.js spawnBandit; res.band, it)
     band:{

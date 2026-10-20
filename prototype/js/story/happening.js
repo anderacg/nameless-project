@@ -1,14 +1,15 @@
 'use strict';
 /* ---------- happenings, and the Encounter shape (doc/STORY_DESIGN.md §2, §3.8–3.10; the story wave, S1) ----------
    A Happening is one running thing of the story: an encounter on the road, an incident (story/incident.js), a quest
-   (story/quest.js); a gathering or a thread later (each its shape, a subclass). Its record is plain data, saved as it is ({k, i,
+   (story/quest.js), a thread (story/thread.js), a gathering (story/gathering.js): each its shape, a subclass. Its record is plain data, saved as it is ({k, i,
    ...its state}; a quest's names its kind type and its number id, as it always did: kindId); the class is put on it
    in place (Happening.as), the class its kind names (story/kinds.js: spec.cls) or its shape's. Every happening is a thing of
    the world (parties.js WorldObject), so the map's lists take an encounter as any other thing.
    - id (its number: i), k (its kind's id), kind (its kind: kindOf);
    - presence (§3.9): marker() (its mark on the map: {x, y, icon, col, tip}, or null), page() (what its ChoicePage shows),
      say(line, cls) (a log line);
-   - lifetime (§3.10): ends (how it ends: its shape's policy), announceEnd() (the bus's '<shape>:ended', {e}: once it is over);
+   - lifetime (§3.10): ends (how it ends: its shape's policy), announceEnd(how) (the bus's '<shape>:ended', {e, how}: once it
+     is over; how: the way it ended, where its shape says);
    - the save (§3.8): save() (its record: its own fields, nothing derived), Happening.load(rec) (wrapped by its kind's class, its
      kind's defaults filled in where the record has none, the way new fields load without a migration; a record whose kind no
      longer exists: null, dropped quietly).
@@ -38,8 +39,14 @@ class Happening extends WorldObject{
   get ends(){
     return null;
   }
-  announceEnd(){
-    worldEmit(this.shape+':ended',{e:this});
+  // (the bus's event when it is over: '<shape>:ended'; a gathering's is its closing)
+  get endEvent(){
+    return this.shape+':ended';
+  }
+  // over: {e} on the bus, and how it ended when its shape says (a quest 'paid' or 'failed'; an encounter 'done' or 'left'), the
+  // key a thread's step branches by (story/thread.js)
+  announceEnd(how){
+    worldEmit(this.endEvent,how===undefined?{e:this}:{e:this,how});
   }
   // ---- the save
   save(){
@@ -68,6 +75,9 @@ class Happening extends WorldObject{
     return this.as(rec);
   }
 }
+// the story's own store in the world (§3.8): W.story, made with the first thing in it (a thread, a gathering's calendar), saved by
+// each shape's own piece (story/thread.js, story/gathering.js) only once it holds anything
+const storyW=()=>W.story||(W.story={});
 
 /* ---------- the encounters' behaviours: small strategies, chosen by data (the record's beh; its kind's beh to begin with) ----------
    Each: step(e, m) (a moment of it, m: {d (world time), V (your sight), now (hours), dist (from you), see (in your sight), dx, dy
@@ -380,7 +390,7 @@ class Encounter extends Happening{
       if(D.after&&!this.done)this.say(D.after(this));
     }
     if(D.trace&&!this.done)this.drop(Math.max(roadNow(),this.end));
-    this.announceEnd();
+    this.announceEnd(this.done?'done':'left');
   }
   // its trace where it is, from the hour at
   drop(at){

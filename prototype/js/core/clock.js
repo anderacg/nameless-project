@@ -64,12 +64,12 @@ const Clock={
   every(n){
     return G.day%n===0;
   },
-  // the year (from 1) and the day of the year (from 1), CLOCK.year days to a year
+  // the year (from 1) and the day of the year (from 1), CLOCK.year days to a year: today's, or day d's (a gathering's calendar)
   year(){
     return Math.floor((G.day-1)/CLOCK.year)+1;
   },
-  dayOfYear(){
-    return (G.day-1)%CLOCK.year+1;
+  dayOfYear(d){
+    return ((d===undefined?G.day:d)-1)%CLOCK.year+1;
   },
   // the world-paced seconds of an hour, and the hours in d world-paced seconds (the road's travel: encounters.js)
   hourSecs(){

@@ -20,7 +20,7 @@ try{
  // ---- the systems and save registries (core/systems.js, core/saves.js; doc/CORE_DESIGN.md K1): loaded before any system that
  // registers in them, and the world's day and frame run in the order the loop called them by hand (the shared Math.random: the
  // world fingerprints, tests/worldprint.js, hold it)
- {const w0=order.findIndex(s=>s.startsWith('world/')),day='estate guards,band,realms,patrols,relations,monsters,sites,herds,sieges,lands,economy,estates,caravans,ships,companions,wounded,chieftains,refugees,caravan upkeep,fiefs,quests,autosave,road events',
+ {const w0=order.findIndex(s=>s.startsWith('world/')),day='estate guards,band,realms,patrols,relations,monsters,sites,herds,sieges,lands,economy,estates,caravans,ships,companions,wounded,chieftains,refugees,caravan upkeep,fiefs,quests,autosave,road events,gatherings',
    frame='stay,capture,raids,lands,march,sites,road,fights,ships,parties,monsters,herds,refugees,folk,arrival';
   ok(order.indexOf('core/systems.js')>=dataFirst&&order.indexOf('core/saves.js')>=dataFirst&&order.indexOf('core/systems.js')<w0&&order.indexOf('core/saves.js')<order.indexOf('core/save.js'),'the registries load after the data, before the systems');
   ok(t.Systems.names('day').join()===day,'the day, in its order: '+t.Systems.names('day').join(', '));
@@ -90,7 +90,7 @@ try{
  ok(W.mythic.dragon.back===G.day+t.MONSTERS.dragon.mythic.back,'and the next one comes '+t.MONSTERS.dragon.mythic.back+' days later');t.act('cont');
  t.saveGame(true);W.mythic={};t.loadGame();ok(W.mythic.dragon&&W.mythic.dragon.back===G.day+30,'the wait is saved');
  {const keys=Object.keys(t.worldSave()).join(),want='v,map,edits,seen,own,rel,dead,lords,exiles,mythic,monsters,sites,caravans,refugees,patrols,fights,lrel,uidN,fightN,treas,critters,shops';
-  ok(keys===want||keys.startsWith(want+',')&&/^(,road)?(,news)?$/.test(keys.slice(want.length)),'the world part of a save keeps its keys in their order: '+keys)}
+  ok(keys===want||keys.startsWith(want+',')&&/^(,road)?(,news)?(,threads)?(,gatherings)?$/.test(keys.slice(want.length)),'the world part of a save keeps its keys in their order: '+keys)}
  // ---- the old collision: two handlers answered 'fief-take'
  const tw=t.townBy('Ashford');tw.owner='player';tw.gar=6;t.ensureEcon(tw);tw.stock.grain=50;G.mode='world';G.modal=false;t.hidePanel();G.lastTown=null;t.enterTown(tw);t.act('tab','fief');
  const gar=tw.gar,grain=t.goodN('grain');t.act('fief-take','grain:10');

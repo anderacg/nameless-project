@@ -132,4 +132,19 @@ const Kit={
     T.startEncounter(e);
     return e;
   },
+  // ---- the story's test kinds (doc/STORY_DESIGN.md S5): the game registers no thread nor gathering yet, so the suites that prove
+  // their frameworks (threads, kinds) register these, once, inside the test page only
+  storyKinds(){
+    if(T.kindOf('thread','test_thread'))return;
+    // a thread: a job taken at the memory's town; paid, an encounter where the memory says; failed, a page of two choices
+    T.defineKind('thread','test_thread',{n:'A test thread',steps:[
+      {id:'job',start:{quest:'supply',town:th=>th.memory.town},remember:d=>({giver:d.e.giver}),then:{paid:'meet',failed:'regret'}},
+      {id:'meet',start:{encounter:'merchant',x:th=>th.memory.x,y:th=>th.memory.y}},
+      {id:'regret',start:{page:{title:'Word from the giver',text:th=>(th.memory.giver||'The giver')+' is disappointed in you.',choices:[
+        {icon:'gold',label:'Make amends',how:'amends',out:()=>({gold:-5,say:'You pay for the trouble.'})},
+        {icon:'shoe',label:'Shrug it off',how:'shrug',out:()=>({log:'You shrug it off.'})}]}},then:{amends:null,shrug:null}}]});
+    // a gathering: at the first three holdings, every 12 days, told of 3 days ahead, open for 2, a fee of 10
+    T.defineKind('gathering','test_fair',{n:'Test fair',ico:'banner',text:'Stalls and games on the green.',places:()=>T.TOWNS.slice(0,3).map(h=>h.name),
+      schedule:{every:12},announce:3,lasts:2,fee:10});
+  },
 };

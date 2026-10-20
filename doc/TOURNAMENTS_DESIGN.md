@@ -1,6 +1,6 @@
 # Tournaments: design
 
-Status: **designed, the owner's answers in** (2026-10-19, §9); waiting for the owner's go. Nothing here is built yet. The numbers live in one tunables table (`TOURNEY`), so they are easy to change.
+Status: **designed, the owner's answers in** (2026-10-19, §9); waiting for the owner's go. Nothing here is built yet, but **its framework exists** (2026-10-21): the story wave's Gathering shape (`js/story/gathering.js`, doc/STORY_DESIGN.md §9, S5) already schedules a kind at its places (every N days on a seeded offset per place, or a day of the year: the Grand Tournament's), announces it N days ahead (`gathering:announced`, for the notices and rumours), opens and closes it (`gathering:opened`, `gathering:closed`), keeps its entrants, saves its calendar and shows its entry page. Each tournament size is then one gathering kind, with its own page and bracket. The numbers live in one tunables table (`TOURNEY`), so they are easy to change.
 
 ## 1. The idea
 

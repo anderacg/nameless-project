@@ -26,9 +26,14 @@
    | fight:ended      | {fight, won, lost}      | a battle on the map: world/fights.js endFight           | news (fight, band)|
    | trace:left       | {e, trace}              | an encounter's trace: story/happening.js drop           | news (trace)      |
    | land:threat      | {town, foe}             | a beast or band on its land: world/defence.js           | news (beast, band)|
-   | encounter:ended  | {e}                     | story/happening.js (Happening.announceEnd)              | (none yet)        |
+   | encounter:ended  | {e, how: done or left}  | story/happening.js (Happening.announceEnd)              | threads' steps    |
    | incident:ended   | {e}                     | story/incident.js                                       | (none yet)        |
-   | quest:ended      | {e}                     | story/quest.js (paid or failed)                         | (none yet)        |
+   | quest:ended      | {e, how: paid or failed}| story/quest.js (paid or failed)                         | threads' steps    |
+   | page:chosen      | {e, how}                | story/thread.js (a thread's page: the choice's how)     | threads' steps    |
+   | thread:ended     | {e, how}                | story/thread.js (its last step ended: that step's key)  | (none yet)        |
+   | gathering:announced | {e, at, day}         | story/gathering.js (told of: its place, the day it opens)| (none yet)       |
+   | gathering:opened | {e, at, day}            | story/gathering.js                                      | (none yet)        |
+   | gathering:closed | {e, at, day}            | story/gathering.js (its end: the day it closed)         | (none yet)        |
    A new event is one worldEmit where it happens and one row here. */
 const WORLD_EARS=new Map();
 // listen to one type of event; returns fn (to pass to worldOff)

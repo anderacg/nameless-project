@@ -13,7 +13,7 @@
    - ready(), progress(), todo(): can it be handed in, how far along it is, what is left;
    - handsOver (goods or troops handed over, not a deed reported) and handOver(t); arrive(t) (at a holding: a courier paid).
    The rest is the same for every kind: accept(), pay(where), turnIn(t), fail(why), lapse() (its due day passed), and the
-   bus's 'quest:ended' once it is paid or failed. Never ticked per frame: its progress comes from the bus (Quest.listen), its
+   bus's 'quest:ended' once it is paid or failed ({e, how: 'paid' or 'failed'}). Never ticked per frame: its progress comes from the bus (Quest.listen), its
    due day from the day's tick (world/quests.js). */
 class Quest extends Happening{
   get shape(){
@@ -122,7 +122,7 @@ class Quest extends Happening{
     if(r.honor)addHonor(this.fac,r.honor,true);
     P.quests=P.quests.filter(x=>x!==this);
     log('Quest complete: '+this.title+'. +'+r.gold+' gold'+(r.rep?', +'+r.rep+' reputation':'')+(r.honor?', +'+r.honor+' honor':'')+'.','good');
-    this.announceEnd();
+    this.announceEnd('paid');
   }
   // handed in at the holding t: what it asked for given over, then paid
   turnIn(t){
@@ -143,7 +143,7 @@ class Quest extends Happening{
     log('Quest failed: '+this.title+'. '+why,'bad');
     const giver=this.lord&&W.lords.find(l=>l.name===this.giver);
     if(giver)changeRel(giver,RELATION.jobFailed,'you failed their work');
-    this.announceEnd();
+    this.announceEnd('failed');
   }
   lapse(){
     if(G.day>this.due&&!this.done)this.fail(this.reportTo+' is disappointed.');

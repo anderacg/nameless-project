@@ -10,7 +10,9 @@
 // covered the day it is registered. The story wave's S2 and S3 kinds too: every Incident kind (the road events) comes somewhere,
 // befalls you as its outcome says (every race, both ways of a roll), its line logged, over at once; every Quest kind (the jobs)
 // is offered somewhere, taken, saved and loaded as it was, done by its own deed heard on the bus (no other's), reported and
-// paid, or failed on its due day. Written on the test kit (tests/kit.js).
+// paid, or failed on its due day. S5: every Thread kind (its steps hold together; every way through it, answered on the bus, saved
+// and loaded at each step, ended once) and every Gathering kind (a year of its calendar, on schedule and in order; its page): the
+// game registers none yet, so the test kinds (Kit.storyKinds). Written on the test kit (tests/kit.js).
 Kit.suite(({ok,info})=>{
  const t=T,G=t.G,P=t.P,W=t.W,DAY=t.DAY,K=t.Kinds,O=t.Outcome,E=t.Encounter;Kit.begin('soldier',73);Kit.clear();Kit.world();
  const U='hum_levy',fac=Object.keys(t.FACS).find(f=>f!=='player'),SHAPE='encounter';
@@ -149,5 +151,68 @@ Kit.suite(({ok,info})=>{
    {P.quests=[];const q2=Kit.seeded(13,()=>t.makeQuest(k,home,q.lord?W.lords.find(l=>l.name===q.giver):null));if(q2&&Kit.seeded(14,()=>q2.accept())){const d0=G.day,m0=G.msgs[G.msgs.length-1];G.day=q2.due+1;t.questDay();G.day=d0;if(P.quests.length||ended.filter(z=>z===q2).length!==1||!G.msgs.slice(G.msgs.indexOf(m0)+1).some(m=>/^Quest failed/.test(m.m)))bad.push(k+' (failed)')}else bad.push(k+' (a second not taken)')}
    P.quests=[];Kit.world()}}finally{t.worldOff('quest:ended',fn)}
   ok(!bad.length,'every job kind is offered in a fitting place, taken, saved and loaded as it was, done by its own deed on the bus (and no other), reported and paid, or failed on its due day'+(bad.length?': '+bad.slice(0,8).join('; '):''))}
+ // ================= the Thread kinds (story/thread.js), every one (the game registers none yet: the test kind, tests/kit.js
+ // Kit.storyKinds): its steps are data that hold together; every way through it (each branch) walked, each step answered by its
+ // own event on the bus (another's ignored), its record saved and loaded at each step; it ends once, by its last step's key
+ {Kit.storyKinds();const SH='thread',Th=t.Thread,all=K.all(SH),bad=[];let nPaths=0;Kit.world();Kit.clear();Kit.goHome();
+  const nexts=s=>s.then==null?[]:typeof s.then==='string'?[s.then]:Object.values(s.then).filter(Boolean);
+  const keys=s=>s.then&&typeof s.then==='object'?Object.keys(s.then):['done'];
+  const ended=[],fn=ev=>ended.push(ev);t.worldOn('thread:ended',fn);
+  try{for(const D of all){const ids=D.steps.map(s=>s.id),first=D.first||ids[0];
+   if(!D.n||!ids.length||new Set(ids).size!==ids.length)bad.push(D.id+' (its name, or its steps)');
+   for(const s of D.steps){const k=Th.starterOf(s);
+    if(s.start&&!k)bad.push(D.id+'.'+s.id+' (a start of no kind)');
+    if(k&&k!=='page'&&!t.kindOf(k,s.start[k]))bad.push(D.id+'.'+s.id+' (no '+k+' kind '+s.start[k]+')');
+    if(k==='page'&&!(s.start.page.choices||[]).length)bad.push(D.id+'.'+s.id+' (a page with no choices)');
+    if(!Th.until(s)&&k!=='incident')bad.push(D.id+'.'+s.id+' (nothing to wait for)');
+    for(const n of nexts(s))if(!ids.includes(n))bad.push(D.id+'.'+s.id+' (then '+n+': no such step)')}
+   {const seen=new Set([first]),q=[first];while(q.length){const s=D.steps.find(x=>x.id===q.shift());if(s)for(const n of nexts(s))if(!seen.has(n)){seen.add(n);q.push(n)}}
+    if(seen.size!==ids.length)bad.push(D.id+' (steps never reached: '+ids.filter(i=>!seen.has(i)).join(', ')+')')}
+   // (every way through it: the keys to answer each step by, in turn)
+   const paths=[],walk=(id,path)=>{const s=D.steps.find(x=>x.id===id);for(const k of keys(s)){const p=path.concat([[id,k]]),n=Th.next(s,k);if(n&&p.length<12)walk(n,p);else paths.push(p)}};walk(first,[]);
+   for(const path of paths){Kit.world();P.quests=[];W.road=null;P.gold=300;const n0=ended.length;
+    const th=Kit.seeded(31+nPaths,()=>Th.start(D.id,{town:'Ashford',x:P.x+60,y:P.y}));nPaths++;let z=th;
+    for(let i=0;i<path.length&&z.at;i++){const [id,k]=path[i];if(z.at!==id){bad.push(D.id+' '+path.map(p=>p.join(':')).join('>')+' (at '+z.at+', not '+id+')');break}
+     if(!z.wait&&z.current.start){bad.push(D.id+'.'+id+' (begun, nothing waited for)');break}
+     // (saved and loaded as it was: by itself, and through the save once, on its first step)
+     const snap=JSON.stringify(z),y=Th.load(JSON.parse(JSON.stringify(z.save())));if(!y||JSON.stringify(y)!==snap||!(y instanceof (D.cls||Th)))bad.push(D.id+'.'+id+' (its record)');
+     if(!i&&nPaths===1){Kit.world();t.saveGame(true);t.loadGame();const l=W.story.threads.on.find(x=>x.i===z.i);if(!l||JSON.stringify(l)!==snap||!(l instanceof (D.cls||Th)))bad.push(D.id+' (the save)');else z=l}
+     const type=Th.until(z.current),w=z.wait;
+     t.worldEmit(type,{e:{shape:w&&w.shape,id:-1},how:k});if(z.at!==id)bad.push(D.id+'.'+id+' (moved on by another\'s '+type+')');
+     t.worldEmit(type,{e:{shape:w&&w.shape,id:w&&w.id},how:k});Kit.world()}
+    const got=ended.slice(n0),last=path[path.length-1];
+    if(got.length!==1||got[0].e!==z||got[0].how!==last[1]||z.at||W.story.threads.on.includes(z)||z.past.map(p=>p.join(':')).join()!==path.map(p=>p.join(':')).join())bad.push(D.id+' '+path.map(p=>p.join(':')).join('>')+' (ended '+got.length+'×, past '+z.past.map(p=>p.join(':')).join()+')')}
+   Kit.world();P.quests=[];W.road=null}}finally{t.worldOff('thread:ended',fn)}
+  ok(all.length>=1&&!bad.length,'every thread kind: its steps hold together, every way through it walked step by step on the bus (another\'s event ignored), saved and loaded at each step, ended once by its last step ('+all.length+' kinds, '+nPaths+' ways)'+(bad.length?': '+bad.slice(0,8).join('; '):''))}
+ // ================= the Gathering kinds (story/gathering.js), every one (the test kind, as above): a year of its calendar, every
+ // place told of it, open and closed on its schedule in that order, the calendar sorted all the while, saved and loaded midway;
+ // its page, and entering it
+ {Kit.storyKinds();const SH='gathering',Ga=t.Gathering,all=K.all(SH),bad=[],Y=t.CLOCK.year;Kit.world();Kit.clear();Kit.goHome();
+  delete t.storyW().gatherings;const d0=G.day,heard=[],ears=['announced','opened','closed'].map(w=>[w,t.worldOn('gathering:'+w,d=>heard.push({w,k:d.e.k,at:d.at,day:d.day,now:G.day}))]);
+  const sorted=C=>C.on.every((g,i)=>!i||C.on[i-1].due<g.due||C.on[i-1].due===g.due&&C.on[i-1].i<g.i);
+  try{for(const D of all){const s=D.schedule||{},a=D.announce||0,l=D.lasts||1;
+    if(!D.n||!(s.every>0&&a+l<=s.every||s.day>=1&&s.day<=Y)||!(D.places().length>0)||D.places().some(n=>!t.townBy(n)))bad.push(D.id+' (its data: name, schedule, places)')}
+   Ga.day();const C=W.story.gatherings;
+   for(let d=1;d<=Y;d++){G.day++;Ga.day();if(!sorted(W.story.gatherings))bad.push('the calendar out of order on day '+G.day);
+    if(d===Y>>1){const snap=JSON.stringify(W.story.gatherings);Kit.world();t.saveGame(true);t.loadGame();const z=W.story.gatherings;if(z===C||JSON.stringify(z)!==snap||!z.on.every(g=>g instanceof (g.kind.cls||Ga)))bad.push('saved and loaded midway')}}
+   for(const D of all){const s=D.schedule,a=D.announce||0,l=D.lasts||1;
+    for(const at of D.places()){const ev=heard.filter(h=>h.k===D.id&&h.at===at);
+     if(ev.length<3)bad.push(D.id+' at '+at+' (only '+ev.length+' changes in a year)');
+     let prev=null;for(let j=0;j+2<ev.length;j+=3){const [x,o,c]=ev.slice(j,j+3);
+      if(x.w!=='announced'||o.w!=='opened'||c.w!=='closed'){bad.push(D.id+' at '+at+' (out of order)');break}
+      if(x.now!==Math.max(d0+1,x.day-a)||o.now!==o.day||x.day!==o.day||c.now!==o.day+l||c.day!==c.now)bad.push(D.id+' at '+at+' (opens '+o.day+': told '+x.now+', closed '+c.now+')');
+      if(s.every&&Ga.opens(D,at,o.day)!==o.day||s.day&&t.Clock.dayOfYear(o.day)!==s.day)bad.push(D.id+' at '+at+' (opens '+o.day+', off its schedule)');
+      if(prev&&o.day-prev!==(s.every||Y))bad.push(D.id+' at '+at+' (opens '+o.day+' after '+prev+')');prev=o.day}}}
+   // (its page: its choices, and entering it once)
+   for(const D of all){const g=W.story.gatherings.on.find(x=>x.k===D.id&&(x.st==='announced'||x.st==='open'))||W.story.gatherings.on.find(x=>x.k===D.id);
+    if(!g){bad.push(D.id+' (none coming)');continue}if(g.st==='planned')g.st='announced';const p=g.page();P.gold=500;
+    if(!p||!p.choices.length||!p.choices.every(c=>c instanceof t.Choice)||p.act!=='gth-do')bad.push(D.id+' (its page)');
+    if(!D.choices){const g0=P.gold;Kit.world();g.show();t.act('gth-do','0');t.act('gth-do','0');
+     if(g.entrants.join()!=='you'||P.gold!==g0-(D.fee||0)||!/you among them/.test(Kit.panel()))bad.push(D.id+' (entered: '+g.entrants.join()+', '+(g0-P.gold)+' gold)');
+     t.act('gth-close');if(G.mode!=='world')bad.push(D.id+' (its page closed: '+G.mode+')')}}}
+  finally{for(const [w,f] of ears)t.worldOff('gathering:'+w,f)}
+  ok(Ga.load({k:'nope',i:1})===null,'a gathering whose kind is gone loads as nothing');
+  ok(all.length>=1&&!bad.length,'every gathering kind: a year of its calendar at each place, told of '+all.map(D=>D.announce||0).join('/')+' days ahead, open and closed on its schedule, in order, the calendar sorted, saved and loaded midway; its page, entered once ('+all.length+' kinds, '+heard.length+' changes)'+(bad.length?': '+bad.slice(0,8).join('; '):''));
+  delete t.storyW().gatherings;Kit.world()}
  Kit.world();W.road=null;
 });
