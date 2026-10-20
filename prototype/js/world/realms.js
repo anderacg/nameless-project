@@ -93,10 +93,10 @@ function lordThink(l){
 }
 // you beat a lord's army: a bounty from your employer, a broken siege, and honor with his enemies (from ON_WIN)
 function lordWon(l,res){
-  let txt='';newsRecord('lord',l,{lord:l.name,fac:l.fac});if(l.state==='siege'&&townBy(l.tgt))newsRecord('relieved',townBy(l.tgt),{town:l.tgt,lord:l.name,fac:l.fac});// (news.js)
+  let txt='';worldEmit('lord:routed',{lord:l});if(l.state==='siege'&&townBy(l.tgt))worldEmit('siege:broken',{town:townBy(l.tgt),lord:l});// (the bus: news.js)
   if(P.fac&&atWar(P.fac,l.fac)){res.gold+=40;P.renown+=5;txt+=' Your employer adds a 40 gold bounty.'}
   if(l.state==='siege'){const st=townBy(l.tgt);if(st&&!hostileTo(st.owner)){addRep(st.name,10,true);if(st.owner!=='player')addHonor(st.owner,8,true);lordsInside(st).forEach(o=>changeRel(o,RELATION.breakSiege,'you broke the siege of '+st.name));txt+=' You break the siege of '+st.name+'. Its people cheer you in.'}}
-  rippleRel(l,RELATION.beatThem,'you beat them in battle');questNotify('lord',l);captureLord(l);log(l.name+' is taken captive. The '+FACS[l.fac].n+' will remember this.');txt+=' You take '+l.name+' captive: ransom him or let him go (Hero, Party).';
+  rippleRel(l,RELATION.beatThem,'you beat them in battle');worldEmit('lord:beaten',{lord:l});captureLord(l);log(l.name+' is taken captive. The '+FACS[l.fac].n+' will remember this.');txt+=' You take '+l.name+' captive: ransom him or let him go (Hero, Party).';
   FIDS.filter(f=>atWar(f,l.fac)).forEach(f=>addHonor(f,5));addHonor(l.fac,-10);
   return txt;
 }
@@ -112,12 +112,12 @@ function resolveSiege(l,t){
     const prev=t.owner;cull(l,clamp(.1+.5*(pd/pa)**2,.05,.6));lordWins(l,t.gar||6);lordsInside(t).forEach(o=>{defeatLord(o);log(o.name+' is taken inside the walls of '+t.name+'.',o.fac===P.fac?'bad':'')});t.owner=l.fac;t.gar=4;l.state='rest';
     // conquest leaves its mark: turmoil for a while, and sometimes the victors sack the place
     Timed.of(t).set('turmoil',8);breach(t);const sacked=Math.random()<.35;if(sacked){Timed.of(t).set('sacked',15);burnEstates(t,2);sackStock(t,.5,.25)}
-    newsRecord('fell',t,{town:t.name,fac:l.fac,lord:l.name,sacked:sacked?1:0});
+    worldEmit('holding:taken',{town:t,lord:l,sacked});
     log(t.name+' falls to '+l.name+' of the '+FACS[l.fac].n+(sacked?', who sacks it':'')+'.'+(mine?' You have lost your fief.':''),l.fac===P.fac?'good':prev===P.fac||mine?'bad':'gold');
     W.lords.forEach(o=>{if(!o.dead&&o!==l&&o.tgt===t.name)lordThink(o)});
     stayFall(t);
     if(!mine&&!fiefsOf(prev).length)fallFaction(prev);
-  }else{cull(l,.55);lordXp(l,6);lordTrain(l,'tact',2);t.gar=Math.max(2,Math.round(t.gar*.6));newsRecord('relieved',t,{town:t.name,lord:l.name,fac:l.fac});log('The siege of '+t.name+' fails. '+l.name+' falls back.');lordThink(l)}
+  }else{cull(l,.55);lordXp(l,6);lordTrain(l,'tact',2);t.gar=Math.max(2,Math.round(t.gar*.6));worldEmit('siege:broken',{town:t,lord:l});log('The siege of '+t.name+' fails. '+l.name+' falls back.');lordThink(l)}
 }
 function worldDay(){
   for(let i=0;i<FIDS.length;i++)for(let j=i+1;j<FIDS.length;j++){

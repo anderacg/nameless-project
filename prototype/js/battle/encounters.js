@@ -147,10 +147,10 @@ function lossText(lost){const k=Object.keys(lost).filter(x=>lost[x]>0);return k.
 const gearTop=()=>Math.min(MATERIALS.length-1,1+Math.floor(G.day/20));
 const clearPlace=(o,days)=>{o.cleared=true;o.back=G.day+days;pacify(o.x,o.y)};
 const ON_WIN={
-  party:{drop:()=>Math.random()<.3?randomGear(0,gearTop()):null,won:e=>{questNotify('band',e.ref);bandits=bandits.filter(x=>x!==e.ref);return ''}},
-  camp:{big:true,fame:10,drop:()=>Math.random()<.8?randomGear(0,gearTop()):null,won:e=>{questNotify('site',e.ref);(e.ref.bands||[]).forEach(b=>{questNotify('band',b);chiefEscapes(b.ld)});e.ref.bands=[];clearPlace(e.ref,10);return ''}},
-  monster:{won:(e,slain,res)=>{const m=e.ref;questNotify('monster',m);W.monsters=W.monsters.filter(x=>x!==m);gainXp(monsterXp(m,slain));return monsterLoot(m,slain)+(MONSTERS[m.id].mythic?mythicSlain(m,res):'')}},
-  cave:{won:(e,slain)=>{questNotify('site',e.ref);gainXp(monsterXp(e.ref,slain));return monsterLoot(e.ref,slain)+e.ref.lairWon()},lost:e=>e.ref.lairLost(e)},
+  party:{drop:()=>Math.random()<.3?randomGear(0,gearTop()):null,won:e=>{worldEmit('band:beaten',{band:e.ref});bandits=bandits.filter(x=>x!==e.ref);return ''}},
+  camp:{big:true,fame:10,drop:()=>Math.random()<.8?randomGear(0,gearTop()):null,won:e=>{worldEmit('site:cleared',{site:e.ref});(e.ref.bands||[]).forEach(b=>{worldEmit('band:beaten',{band:b});chiefEscapes(b.ld)});e.ref.bands=[];clearPlace(e.ref,10);return ''}},
+  monster:{won:(e,slain,res)=>{const m=e.ref;worldEmit('monster:slain',{monster:m});W.monsters=W.monsters.filter(x=>x!==m);gainXp(monsterXp(m,slain));return monsterLoot(m,slain)+(MONSTERS[m.id].mythic?mythicSlain(m,res):'')}},
+  cave:{won:(e,slain)=>{worldEmit('site:cleared',{site:e.ref});gainXp(monsterXp(e.ref,slain));return monsterLoot(e.ref,slain)+e.ref.lairWon()},lost:e=>e.ref.lairLost(e)},
   lord:{big:true,fame:0,drop:()=>Math.random()<.6?randomGear(1,gearTop()+1):null,won:(e,slain,res)=>lordWon(e.ref,res)},
   caravan:{fame:0,won:e=>e.seize?e.ref.seize():e.ref.loot()},
   estate:{fame:0,won:e=>estateWon(e)},

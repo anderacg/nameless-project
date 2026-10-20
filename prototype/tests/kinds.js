@@ -7,7 +7,10 @@
 // describeOutcome says (the change measured), and has its facts written from it (its own lines after); its live record saves
 // and loads as it was (by itself and through the save registry), wrapped by its kind's class; and it ends cleanly: never at
 // once in your sight, gone out of it once its time is up (its trace, if it leaves one), announced once on the bus. A new kind is
-// covered the day it is registered. Written on the test kit (tests/kit.js).
+// covered the day it is registered. The story wave's S2 and S3 kinds too: every Incident kind (the road events) comes somewhere,
+// befalls you as its outcome says (every race, both ways of a roll), its line logged, over at once; every Quest kind (the jobs)
+// is offered somewhere, taken, saved and loaded as it was, done by its own deed heard on the bus (no other's), reported and
+// paid, or failed on its due day. Written on the test kit (tests/kit.js).
 Kit.suite(({ok,info})=>{
  const t=T,G=t.G,P=t.P,W=t.W,DAY=t.DAY,K=t.Kinds,O=t.Outcome,E=t.Encounter;Kit.begin('soldier',73);Kit.clear();Kit.world();
  const U='hum_levy',fac=Object.keys(t.FACS).find(f=>f!=='player'),SHAPE='encounter';
@@ -98,5 +101,53 @@ Kit.suite(({ok,info})=>{
  if(skipped.length)info('  not done here (greyed): '+skipped.join('; '));
  ok(!bad.save.length,'every kind\'s live record saves and loads as it was, wrapped by its class (by itself and through the save)'+L(bad.save));
  ok(!bad.end.length,'every kind ends cleanly: not at once in your sight, gone out of it once its time is up (its trace left), announced once'+L(bad.end));
+ // ================= the Incident kinds (story/incident.js; the road events, world/events.js), every one
+ {const SH='incident',I=t.Incident,all=K.all(SH),ids=all.map(k=>k.id),day=K.on(SH,'day'),bad=[];
+  ok(all.length>=6&&day.length===all.length&&all.every(k=>k.trigger==='day'&&t.kindOf(SH,k.id)===k)&&t.EVENTS===day,'the incidents: registered once each with the trigger day, the daily roll\'s bucket (EVENTS) in their order ('+ids.join(', ')+')');
+  // (a fitting context: the first tile of a climate and terrain its conditions allow)
+  const spots=[];for(const c of ['grass','frost','desert','swamp'])for(const tr of [t.T_OPEN,t.T_FOREST,t.T_HILL]){let i=-1;for(let j=0;j<t.MW*t.MH;j++)if(t.CLIMS[t.climate[j]]===c&&t.tiles[j]===tr){i=j;break}if(i>=0)spots.push([(i%t.MW+.5)*t.TILE,(Math.floor(i/t.MW)+.5)*t.TILE])}
+  let nDid=0;
+  for(const D of all){const at=spots.find(([x,y])=>{P.x=x;P.y=y;return D.ok(t.storyCtx())});if(!at){bad.push(D.id+' (no spot)');continue}
+   for(const race of Object.keys(t.RACES))for(const v of [.2,.8]){P.x=at[0];P.y=at[1];P.race=race;P.morale=50;P.gold=300;P.inv=P.inv.map(()=>null);t.invAdd('good','grain',10);
+    const c=t.storyCtx(),o=Kit.stub(v,()=>D.run(c));if(!O.is(o)||Array.isArray(o)){bad.push(D.id+' (not an outcome)');continue}
+    const a={g:P.gold,f:t.foodN(),m:P.morale},n0=G.msgs.length,said=[],fn=ev=>said.push(ev.e);t.worldOn('incident:ended',fn);let e=null;
+    try{e=Kit.stub(v,()=>I.befall(D,c))}finally{t.worldOff('incident:ended',fn)}
+    const got=[];for(const key of Object.keys(o)){if(key==='gold')got.push(O.signed(P.gold-a.g)+' gold');else if(key==='food')got.push(O.signed(t.foodN()-a.f)+' food');else if(key==='morale')got.push('morale '+O.signed(P.morale-a.m));else if(key!=='log')got.push('?'+key)}
+    const last=G.msgs[G.msgs.length-1],line=[].concat(o.log);nDid++;
+    if(got.join(' · ')!==t.describeOutcome(o))bad.push(D.id+' '+race+': did ['+got.join(' · ')+'], says ['+t.describeOutcome(o)+']');
+    if(G.msgs.length!==Math.min(150,n0+1)||last.m!==line[0]||last.cls!==line[1])bad.push(D.id+' (its line)');
+    if(!(e instanceof I)||e.kind!==D||said.length!==1||said[0]!==e)bad.push(D.id+' (its record, or its end)')}}
+  ok(I.load({k:'nope'})===null&&I.load({k:ids[0]}) instanceof I,'an incident\'s record loads as one of its class; one whose kind is gone, as nothing');
+  ok(nDid>=all.length*2&&!bad.length,'every incident comes somewhere, and befalls you as its outcome says, its line and tone logged, over at once ('+nDid+' runs, every race, both ways of a roll)'+(bad.length?': '+bad.slice(0,8).join('; '):''))}
+ // ================= the Quest kinds (story/quest.js; the jobs, world/quests.js), every one
+ {const SH='quest',Q=t.Quest,all=K.all(SH),ids=all.map(k=>k.id),bad=[];Kit.world();Kit.clear();
+  ok(ids.join()==='bounty,beast,clear,supply,hunt,courier,troops,lordkill,raid'&&all.every(k=>k.cls&&k.cls.prototype instanceof Q&&t.kindOf(SH,k.id)===k),'the job kinds: registered once each, each a subclass of Quest ('+all.map(k=>k.cls.name).join(', ')+')');
+  // (every realm at war with every other, so a lord has war work; a lord's kinds are made by a lord)
+  const facs=Object.keys(t.FACS).filter(f=>f!=='player');for(const a of facs)for(const b of facs)if(a<b)W.rel[t.rk(a,b)]={s:'war',since:G.day};W.lords.forEach(l=>{l.dead=false});
+  // (the deed's own event, for one taken: what it waits for, found on the map)
+  const own={'band:beaten':q=>({band:t.bandits.find(b=>b.qid===q.id)}),'monster:slain':q=>({monster:W.monsters.find(m=>m.qid===q.id)}),'site:cleared':q=>({site:W.sites[q.site]}),'lord:beaten':q=>({lord:W.lords.find(l=>l.name===q.target)}),'holding:razed':q=>({town:t.townBy(q.village)})};
+  const ended=[],fn=ev=>ended.push(ev.e);t.worldOn('quest:ended',fn);
+  try{for(const D of all){const k=D.id;let q=null,home=null;
+   for(const h of t.TOWNS){for(const l of [null,...W.lords.filter(l=>!l.dead)]){try{q=Kit.seeded(11,()=>t.makeQuest(k,h,l))}catch(x){q=null}if(q){home=h;break}}if(q)break}
+   if(!q){bad.push(k+' (no offer anywhere)');continue}
+   if(!(q instanceof D.cls)||q.kind!==D||q.type!==k||Object.keys(q.reward).join()!=='gold,rep,honor,xp'||!q.title||!q.text||!(q.days>0))bad.push(k+' (its offer)');
+   // (taken: on your list, numbered, its due day, where it points, how far along)
+   P.quests=[];const n0=P.qid||0;if(!Kit.seeded(12,()=>q.accept())){bad.push(k+' (not taken)');continue}
+   if(P.quests[0]!==q||q.id!==n0+1||q.due!==G.day+q.days||q.done!==false||typeof q.progress()!=='string')bad.push(k+' (taken)');
+   if(!q.handsOver&&!q.goal())bad.push(k+' (no goal)');
+   // (saved and loaded: the same record, made its class again when used)
+   {const snap=JSON.stringify(P.quests);t.saveGame(true);P.quests=[];t.loadGame();const z=P.quests[0];if(JSON.stringify(P.quests)!==snap||!(Q.as(z) instanceof D.cls))bad.push(k+' (the save)');q=z}
+   // (its deed: another's does nothing, its own does it, once)
+   if(q.deed){const d=own[q.deed]&&own[q.deed](q),m0=G.msgs.length;
+    if(!d||!Object.values(d)[0]){bad.push(k+' (its deed: '+q.deed+', nothing of it found)');P.quests=[];continue}
+    t.worldEmit(q.deed,{band:{qid:-1},monster:{qid:-1},site:{i:-1},lord:{name:'nobody'},town:{name:'nowhere'}});if(q.done)bad.push(k+' (done by another\'s deed)');
+    t.worldEmit(q.deed,d);t.worldEmit(q.deed,d);if(!q.done||!q.ready()||G.msgs.length!==Math.min(150,m0+1)||!/^Quest done/.test(G.msgs[G.msgs.length-1].m))bad.push(k+' (its deed heard: '+q.deed+')');
+    // (reported where it may be: paid, off your list, ended once)
+    const at=t.TOWNS.find(h=>q.reportableAt(h)),g0=P.gold;if(!at||!q.turnIn(at)||P.quests.length||P.gold<g0+q.reward.gold||ended.filter(z=>z===q).length!==1)bad.push(k+' (reported)')}
+   else if(q.handsOver){const at=t.TOWNS.find(h=>q.reportableAt(h));P.inv=P.inv.map(()=>null);P.troops={};if(q.ready()||q.turnIn(at)||!P.quests.includes(q))bad.push(k+' (handed in with nothing)')}
+   // (another taken, and failed when its due day passes: off your list, ended once)
+   {P.quests=[];const q2=Kit.seeded(13,()=>t.makeQuest(k,home,q.lord?W.lords.find(l=>l.name===q.giver):null));if(q2&&Kit.seeded(14,()=>q2.accept())){const d0=G.day,m0=G.msgs[G.msgs.length-1];G.day=q2.due+1;t.questDay();G.day=d0;if(P.quests.length||ended.filter(z=>z===q2).length!==1||!G.msgs.slice(G.msgs.indexOf(m0)+1).some(m=>/^Quest failed/.test(m.m)))bad.push(k+' (failed)')}else bad.push(k+' (a second not taken)')}
+   P.quests=[];Kit.world()}}finally{t.worldOff('quest:ended',fn)}
+  ok(!bad.length,'every job kind is offered in a fitting place, taken, saved and loaded as it was, done by its own deed on the bus (and no other), reported and paid, or failed on its due day'+(bad.length?': '+bad.slice(0,8).join('; '):''))}
  Kit.world();W.road=null;
 });

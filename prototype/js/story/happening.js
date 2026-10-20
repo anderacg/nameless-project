@@ -1,7 +1,8 @@
 'use strict';
 /* ---------- happenings, and the Encounter shape (doc/STORY_DESIGN.md §2, §3.8–3.10; the story wave, S1) ----------
-   A Happening is one running thing of the story: an encounter on the road today; an incident, a quest, a gathering or a thread
-   later (each its shape, a subclass). Its record is plain data, saved as it is ({k, i, ...its state}); the class is put on it
+   A Happening is one running thing of the story: an encounter on the road, an incident (story/incident.js), a quest
+   (story/quest.js); a gathering or a thread later (each its shape, a subclass). Its record is plain data, saved as it is ({k, i,
+   ...its state}; a quest's names its kind type and its number id, as it always did: kindId); the class is put on it
    in place (Happening.as), the class its kind names (story/kinds.js: spec.cls) or its shape's. Every happening is a thing of
    the world (parties.js WorldObject), so the map's lists take an encounter as any other thing.
    - id (its number: i), k (its kind's id), kind (its kind: kindOf);
@@ -21,7 +22,7 @@ class Happening extends WorldObject{
     return this.i;
   }
   get kind(){
-    return kindOf(this.shape,this.k);
+    return kindOf(this.shape,this.constructor.kindId(this));
   }
   // ---- presence
   marker(){
@@ -44,9 +45,13 @@ class Happening extends WorldObject{
   save(){
     return {...this};
   }
+  // (a record's kind: its k; a shape whose records name it otherwise says so: a quest's type)
+  static kindId(rec){
+    return rec.k;
+  }
   // (the class for a record: its kind's own, or this shape's)
   static classFor(rec){
-    const K=kindOf(this.prototype.shape,rec.k);
+    const K=kindOf(this.prototype.shape,this.kindId(rec));
     return K&&K.cls||this;
   }
   // a record made one of its class, in place (new, from a save or a test): the same object, its fields as they were
@@ -57,7 +62,7 @@ class Happening extends WorldObject{
     return rec;
   }
   static load(rec){
-    const K=rec&&kindOf(this.prototype.shape,rec.k);
+    const K=rec&&kindOf(this.prototype.shape,this.kindId(rec));
     if(!K)return null;
     if(K.defaults)for(const [f,v] of Object.entries(K.defaults))if(!(f in rec))rec[f]=structuredClone(v);
     return this.as(rec);
@@ -379,7 +384,7 @@ class Encounter extends Happening{
   }
   // its trace where it is, from the hour at
   drop(at){
-    newsRecord('trace',this,{t:this.D.trace});
+    worldEmit('trace:left',{e:this,trace:this.D.trace});
     const R=roadSt();
     R.on.push(asRoadEnc({rd:1,i:++R.id,k:this.D.trace,trace:1,x:this.x,y:this.y,dir:this.dir,race:this.race,seed:this.seed,from:at,end:at+ENC_LIFE.trace}));
   }

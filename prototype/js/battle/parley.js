@@ -16,7 +16,7 @@ function parleyFight(o,kind){G.par=null;if(kind==='lord')return startEncounter({
 function parleyYield(){
   const {o,kind}=G.par,lord=kind==='lord',list=o.troops;
   if(lord){const ransom=80+5*list.length;P.gold+=ransom;rippleRel(o,RELATION.ransom,'you took their ransom');P.renown+=8;addHonor(o.fac,-5,true);FIDS.filter(f=>atWar(f,o.fac)).forEach(f=>addHonor(f,3,true));
-    const pr=cage(list);questNotify('lord',o);defeatLord(o);G.par=null;mood('ransom');
+    const pr=cage(list);worldEmit('lord:beaten',{lord:o});defeatLord(o);G.par=null;mood('ransom');
     return notice(o.name+' yields','The sword is handed over, and '+ransom+' gold paid as ransom. '+(pr?pr+' of the soldiers become your prisoners; the rest are sent home unarmed.':'The soldiers are sent home unarmed.')+' Renown +8; the '+FACS[o.fac].n+' will not forget the shame (−5 honor).','good')}
   G.mode='dialog';showPanel('<h2>They yield</h2><p>The '+(o.kind==='raiders'?'raiders':'bandits')+' throw down their weapons. What becomes of them?</p><div class="btns">'+
     dlgBtn('pl-cage',null,'Take them prisoner ('+Math.min(list.length,prisonCap()-prisonerCount())+' fit)',prisonerCount()>=prisonCap()?'No room for prisoners':'',true)+
@@ -24,7 +24,7 @@ function parleyYield(){
     '<p class="muted">Brigands in your ranks lower morale and every realm\'s opinion of you. Setting them free is merciful, but the roads stay dangerous.</p>');
 }
 function cage(list){let n=0;for(const k of list){if(prisonerCount()>=prisonCap())break;if(!ST[k]||ST[k].tier>=4||ST[k].beast)continue;P.prisoners[k]=(P.prisoners[k]||0)+1;n++}return n}
-function bandGone(o){bandits=bandits.filter(x=>x!==o);questNotify('band',o);repNear(o.x,o.y,3)}
+function bandGone(o){bandits=bandits.filter(x=>x!==o);worldEmit('band:beaten',{band:o});repNear(o.x,o.y,3)}
 function parleyAct(a){
   const p=G.par;if(!p){closeDialog();return}const {o,kind}=p;
   if(a==='pl-fight')return parleyFight(o,kind);
@@ -41,7 +41,7 @@ function parleyAct(a){
    you choose their fate as a band's (lairFate: prisoners and their plunder, recruits, or let go), their chieftain your captive
    if you take them prisoner; they do not, and it is the fight. Either way the place is empty for a while, as if beaten (lairGone) */
 const tribute=s=>12*s.guess().n;
-function lairGone(s,gone){questNotify('site',s);if(gone)(s.bands||[]).forEach(b=>{questNotify('band',b);chiefEscapes(b.ld)});else campEmpty(s);s.bands=[];clearPlace(s,SITE_TYPES[s.type].respawn)}
+function lairGone(s,gone){worldEmit('site:cleared',{site:s});if(gone)(s.bands||[]).forEach(b=>{worldEmit('band:beaten',{band:b});chiefEscapes(b.ld)});else campEmpty(s);s.bands=[];clearPlace(s,SITE_TYPES[s.type].respawn)}
 function lairPay(s){const g=tribute(s);if(P.gold<g)return '';P.gold-=g;chiefEscapes(s.ld);s.ld=null;lairGone(s,false);
   return 'You pay '+g+' gold. By nightfall they have broken camp and ridden off; the '+s.T.n.toLowerCase()+' lies empty.'}
 // (their power as you know it: as your scouts saw it, else as they look (Lair guess), the same the parley shows. They yield: their

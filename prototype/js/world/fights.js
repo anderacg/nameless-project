@@ -45,12 +45,12 @@ function sideFor(f,o){
 function routParty(o,winners){
   const k=o.mapKind,near=Math.hypot(o.x-P.x,o.y-P.y)<vis()*1.5;o.fight=null;
   if(k==='cparty'){const c=P.comps[o.cid];if(c){c.party=null;c.hurt=G.day+3;log(COMPS[o.cid].short+'’s party is broken. '+COMPS[o.cid].short+' limps back to you, wounded for 3 days.','bad')}return}
-  if(k==='lord'){if(o.state==='siege'&&townBy(o.tgt))newsRecord('relieved',townBy(o.tgt),{town:o.tgt,lord:o.name,fac:o.fac});newsRecord('lord',o,{lord:o.name,fac:o.fac});defeatLord(o);if(near||o.fac===P.fac)log(o.name+' is routed near '+Spatial.nearestHolding(o.x,o.y).name+'.',o.fac===P.fac?'bad':'')}
+  if(k==='lord'){if(o.state==='siege'&&townBy(o.tgt))worldEmit('siege:broken',{town:townBy(o.tgt),lord:o});worldEmit('lord:routed',{lord:o});defeatLord(o);if(near||o.fac===P.fac)log(o.name+' is routed near '+Spatial.nearestHolding(o.x,o.y).name+'.',o.fac===P.fac?'bad':'')}
   else if(k==='band'){bandits=bandits.filter(x=>x!==o);chiefEscapes(o.ld)}// (its chieftain gets away)
   else if(k==='patrol')patrolBeaten(o);
   else if(k==='monster')beastRouted(o);
   else{o.gone=true;W.caravans=W.caravans.filter(x=>x!==o);const lord=winners.find(w=>w.mapKind==='lord'),band=winners.find(w=>w.mapKind==='band');
-    newsRecord('caravan',o,{from:o.from,lord:lord?lord.name:'',band:band?1:0});// (news.js)
+    worldEmit('caravan:beaten',{caravan:o,lord,band});// (the bus: news.js)
     if(lord){const home=Spatial.nearest(fiefsOf(lord.fac),lord.x,lord.y);if(home){ensureEcon(home);for(const g in o.goods)home.stock[g]=(home.stock[g]||0)+o.goods[g]}}
     else if(band)band.add('militia')// (it arms one more with the plunder)
     if(o.mine||o.fac===P.fac||near)log((lord?lord.name+' seizes':band?'Bandits plunder':'The enemy takes')+' a caravan of '+o.from+(o.mine?', one of yours':'')+'.',o.mine||o.fac===P.fac?'bad':'')}
@@ -62,7 +62,7 @@ function endFight(f,win){
   const W0=sideParties(f,win),L=sideParties(f,1-win),lw=W0.filter(o=>o.mapKind==='lord'),ll=L.filter(o=>o.mapKind==='lord');
   {const foes=L.reduce((a,o)=>a+o.troops.length,0)+Math.round((f.n0||0)/3);lw.forEach(o=>lordWins(o,foes));W0.filter(o=>o.mapKind==='band').forEach(o=>chiefWins(o,foes));W0.filter(o=>o.cid).forEach(o=>{compXp(o.cid,12+2*foes);compTrain(o.cid,'lead',3)})}
   lw.forEach((a,i)=>lw.slice(i+1).forEach(b=>changeLordRel(a,b,RELATION.together)));ll.forEach(a=>lw.forEach(b=>changeLordRel(a,b,RELATION.beaten)));
-  newsFight(f,W0,L);L.forEach(o=>routParty(o,W0));W0.forEach(freeParty);// (the news of it before the beaten are gone: news.js)
+  worldEmit('fight:ended',{fight:f,won:W0,lost:L});L.forEach(o=>routParty(o,W0));W0.forEach(freeParty);// (the bus: the news of it before the beaten are gone: news.js)
   W.fights=W.fights.filter(x=>x!==f);
   if(Math.hypot(f.x-P.x,f.y-P.y)<vis()*1.5&&W0.length&&L.length)log(W0.map(o=>o.label()).join(' and ')+' win'+(W0.length>1?'':'s')+' the battle near '+Spatial.nearestHolding(f.x,f.y).name+'.');
 }

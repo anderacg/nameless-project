@@ -230,7 +230,7 @@ function estateWon(e){
   for(const g in M.out||{}){const n=Math.min(t.stock[g]||0,Math.ceil(M.out[g]*Math.max(1,lv)*3));if(n<=0)continue;const k=invAdd('good',g,n);t.stock[g]-=n;if(k)got.push(k+' '+GOODS[g].n.toLowerCase())}
   const gold=rint(10,25)*Math.max(1,lv),c=r.burn?CONDUCT.burnEstate:CONDUCT.plunderEstate;P.gold+=gold;
   const cost=wrong(t,{rep:c.rep,honor:c.honor,fear:c.fear,pros:c.pros});
-  if(r.burn){t.bld[r.k]=Math.max(0,lv-1);Timed.of(t).extend('raided',4);mood('cruel');syncLots(t);newsRecord('raid',bldSpots(t)[r.k]||t,{town:t.name,estate:r.k})}
+  if(r.burn){t.bld[r.k]=Math.max(0,lv-1);Timed.of(t).extend('raided',4);mood('cruel');syncLots(t);worldEmit('estate:burnt',{town:t,estate:r.k})}
   return ' You '+(r.burn?'burn the '+ESTATES[r.k].n.toLowerCase()+' of '+t.name+' (now level '+bldLv(t,r.k)+')':'plunder the '+ESTATES[r.k].n.toLowerCase()+' of '+t.name)+': '+(got.length?got.join(', ')+' and ':'')+gold+' gold. Its workers flee and '+t.name+' grows poorer ('+cost+').';
 }
 

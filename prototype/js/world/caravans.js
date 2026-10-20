@@ -107,7 +107,7 @@ class CaravanParty extends Party{
   // the spoils: its cargo (what fits) and the strongbox
   loot(){
     const c=this,got=Object.keys(c.goods).map(g=>{const n=invAdd('good',g,c.goods[g]);return n?n+' '+GOODS[g].n.toLowerCase():''}).filter(Boolean),gold=rint(20,50)+c.guards*5;P.gold+=gold;
-    W.caravans=W.caravans.filter(x=>x!==c);addRep(c.from,-8,true);newsRecord('caravan',c,{from:c.from});// (news.js)
+    W.caravans=W.caravans.filter(x=>x!==c);addRep(c.from,-8,true);worldEmit('caravan:robbed',{caravan:c});// (the bus: news.js)
     return ' You take the caravan: '+(got.length?got.join(', ')+' and ':'')+gold+' gold from its strongbox.';
   }
   // a toll from a weak one; a hostile one that fears you may hand over its cargo

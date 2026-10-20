@@ -65,6 +65,6 @@ function landDefence(d){
   if((defendCheck-=d)>0)return;defendCheck=DEFEND.look;
   const lords=W.lords.filter(lordAtHome);
   for(const o of threats()){const t=landHold(o.x,o.y);if(!t||!t.owner||ruined(t)||besieged(t))continue;const hd=homeDist(t,o.x,o.y);
-    watchAt(t,o,hd);newsThreat(o);// (talk of it: news.js)
+    watchAt(t,o,hd);worldEmit('land:threat',{town:t,foe:o});// (talk of it: the bus, news.js)
     if(hd<DEFEND.near){const l=lords.find(l=>!l.defend&&l.fac===t.owner&&Math.hypot(l.x-o.x,l.y-o.y)<DEFEND.ride&&canBeat(l.power(),o));if(l)lordRides(l,o,t)}}
 }

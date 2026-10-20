@@ -1,8 +1,9 @@
 'use strict';
 /* ---------- news and rumours: talk that points at real things (the owner, 2026-10-19). W.news keeps what really happened on
-   the map, as it happens (items: {id, k (its kind: NEWS_KINDS), x, y, day, near (the nearest holding's name), detail}): the
-   hooks where it happens call newsRecord (fights.js, realms.js, brains.js, siege.js, estates.js, caravans.js, defence.js,
-   encounters.js). Recording draws no random number and changes nothing else, so the world runs as it did; the words are picked
+   the map, as it happens (items: {id, k (its kind: NEWS_KINDS), x, y, day, near (the nearest holding's name), detail}): it
+   listens to the world's events on the bus (core/bus.js: emitted in fights.js, realms.js, brains.js, siege.js, estates.js,
+   caravans.js, defence.js, story/happening.js; NEWS_HEARS below) and records each (newsRecord). Recording draws no random
+   number and changes nothing else, so the world runs as it did; the words are picked
    when you hear it, from the item's id. Kept bounded: NEWS.keep items, each NEWS.days days, and the same kind near the same
    holding within NEWS.merge days is one item, brought up to date.
    You hear it from the people you meet, every one through the same service (rumourFrom), each its own daily cap keyed by who
@@ -73,6 +74,23 @@ function newsThreat(o){
   if(o.mapKind==='monster')return newsRecord('beast',o,{id:o.id,n:o.n});
   if(o.mapKind==='band'&&rating(o.troops,chiefLv(o))>=NEWS.band)newsRecord('band',o,{chief:o.ld?o.ld.name:'',label:o.label(),n:o.troops.length});
 }
+/* what it hears: each world event (core/bus.js) recorded as its kind, with its facts (names, never objects), at the moment it
+   happens (the bus calls at once, in order) */
+const NEWS_HEARS={
+  'siege:laid':d=>newsRecord('siege',d.town,{town:d.town.name,lord:d.lord.name,fac:d.lord.fac}),
+  'siege:broken':d=>newsRecord('relieved',d.town,{town:d.town.name,lord:d.lord.name,fac:d.lord.fac}),
+  'holding:taken':d=>newsRecord('fell',d.town,{town:d.town.name,fac:d.lord.fac,lord:d.lord.name,sacked:d.sacked?1:0}),
+  'holding:raided':d=>newsRecord('raid',d.town,{town:d.town.name}),
+  // (by the burnt estate, if it still stands on the map)
+  'estate:burnt':d=>newsRecord('raid',bldSpots(d.town)[d.estate]||d.town,{town:d.town.name,estate:d.estate}),
+  'lord:routed':d=>newsRecord('lord',d.lord,{lord:d.lord.name,fac:d.lord.fac}),
+  'caravan:robbed':d=>newsRecord('caravan',d.caravan,{from:d.caravan.from}),
+  'caravan:beaten':d=>newsRecord('caravan',d.caravan,{from:d.caravan.from,lord:d.lord?d.lord.name:'',band:d.band?1:0}),
+  'fight:ended':d=>newsFight(d.fight,d.won,d.lost),
+  'trace:left':d=>newsRecord('trace',d.e,{t:d.trace}),
+  'land:threat':d=>newsThreat(d.foe),
+};
+for(const [type,fn] of Object.entries(NEWS_HEARS))worldOn(type,fn);
 
 /* ---- the words (when you hear it) ---- */
 const newsWhen=it=>{const a=Clock.daysSince(it.day);return a<=0?'today':a===1?'yesterday':a<=3?['two','three'][a-2]+' days back':'some days back'};
