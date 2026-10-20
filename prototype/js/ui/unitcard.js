@@ -42,7 +42,7 @@ function unitCard(k,from){
 // a character's card (a companion, a lord, a chieftain; your hero): its own numbers, its traits and the skills it casts
 function charCard(c){
   const s=c.stats(),A=c.actives().map(id=>[ABILITIES[id].n,abilityText(id,s)]);
-  return cardHtml({key:c.key,hero:c.role==='hero',s,name:cap1(c.role==='hero'?(P.name||'You'):c.name),sub:'Level '+c.lv+' · '+CHAR_ROLES[c.role].n+(c.race?' · '+RACES[c.race].n:''),
+  return cardHtml({key:c.key,hero:c.role==='hero',s,name:cap1(c.role==='hero'?(P.name||'You'):c.name),sub:'Level '+c.lv+' · '+c.roleName+(c.race?' · '+RACES[c.race].n:''),
     abil:unitAbilities(s),skills:A,foot:c.role==='companion'?'Upkeep 2g a day':''})}
 // the card itself: picture, name and class, the numbers as bars (▲▼ against another's), abilities and skills, strong and weak, cost
 function cardHtml(o){

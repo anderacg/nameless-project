@@ -48,20 +48,14 @@ function inShape(x,y,a,R,c,e){
 // (regen, delay: the manual control's breath, set aside. Under RTS command your stamina comes back as a soldier's does: fatigue.js)
 // mana comes back in battle only with the talents for it (mpRegen: MANA_REGEN a second at +100%); health only by a skill, a talent or gear
 const STAM={swing:[8,8,14],dodge:22,sprint:20,regen:18,delay:.6,guard:1.2},MANA_REGEN=2.5,SPRINT_MUL=1.6;
-const maxSP=()=>60+P.attr.agi*5+P.level*2+tm('sp')+4*skill('athl'),maxMP=()=>Math.round((30+P.attr.int*6+P.level*2+gm('mp'))*(1+tm('mpPct')));
-// health, stamina and mana persist between battles; null means full (a new hero or an old save)
-function vitals(){
-  const m=[heroStats().hp,maxSP(),maxMP()];
-  if(P.hp==null)P.hp=m[0];if(P.sp==null)P.sp=m[1];if(P.mp==null)P.mp=m[2];
-  P.hp=clamp(P.hp,0,m[0]);P.sp=clamp(P.sp,0,m[1]);P.mp=clamp(P.mp,0,m[2]);return m;
-}
+// your hero's stamina and mana, health, stamina and mana kept between battles, and their recovery: methods of your band (P:
+// parties.js PlayerParty), under their older names here
+const maxSP=()=>P.maxSP(),maxMP=()=>P.maxMP();
+function vitals(){return P.vitals()}
 // recovery on the map, per day of travel: health 20% (+3% per Medicine level), stamina 50%, mana 35%; doubled near a holding
 const REGEN_DAY={hp:.2,sp:.5,mp:.35};
-function regenVitals(days){
-  const m=vitals(),sh=TOWNS.some(t=>Math.hypot(t.x-P.x,t.y-P.y)<48)?2:1;
-  P.hp=Math.min(m[0],P.hp+m[0]*(REGEN_DAY.hp+.03*skill('med'))*sh*days);P.sp=Math.min(m[1],P.sp+m[1]*REGEN_DAY.sp*sh*days);P.mp=Math.min(m[2],P.mp+m[2]*REGEN_DAY.mp*sh*days);
-}
-const restoreVitals=()=>{const m=vitals();P.hp=m[0];P.sp=m[1];P.mp=m[2]};
+function regenVitals(days){P.regenVitals(days)}
+const restoreVitals=()=>P.restoreVitals();
 // Active skills: each is learned on the skill tree (learn: the node) and cast from a skill slot (keys 1 to 0).
 // magic: its power grows with Spellcraft; needs: a weapon requirement.
 // your hero's active skills: the actives of the one ability list (data/abilities.js), each learned on its node of the tree

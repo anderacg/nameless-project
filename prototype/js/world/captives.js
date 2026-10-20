@@ -5,7 +5,7 @@
    with a new army or band. Broken by anyone else, he gets away and rebuilds. Your companions are never killed: knocked down,
    they are wounded for a few days. Lose a battle, and your captives slip away. ---------- */
 // P.captives: [{k:'lord', id, name, fac, lv} | {k:'chief', ld}]; W.exiles: [{ld, back}] chieftains rebuilding a band
-// (a leader's numbers: his own, as every character's: charStats, characters.js)
+// (a leader's numbers: his own, as every character's: Character.base, characters.js)
 const captives=()=>P.captives=P.captives||[];
 const lordUnit=l=>{const rs=facRaces(l.fac),r=RACES[rs[0]]||RACES.human;return r.horse||r.melee};
 // the leaders fighting in this encounter, each with the side it fights on (team 1: against you)

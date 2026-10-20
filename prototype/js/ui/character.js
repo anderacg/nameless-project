@@ -138,7 +138,7 @@ function armyGroupsHtml(){
     '<p class="muted">Recruitment: '+(G.recruitTarget==='new'?'create a new group':gs.find(g=>g.id===G.recruitTarget)?'reinforce '+htmlText(armyGroupLabel(G.recruitTarget,r))+' when recruiting its type':'reinforce the first matching group')+'. Select a different target here before recruiting.</p>';
 }
 
-// what an attribute does for a companion, a lord or a chieftain (characters.js charStats)
+// what an attribute does for a companion, a lord or a chieftain (characters.js Character.base)
 const CHAR_ATTR_FX={str:'+4 health and +0.5 damage a point',agi:'+2 speed and 3% faster blows a point',int:'Nothing in battle yet',cha:'Nothing in battle yet'};
 /* a companion's window: level, stats, disciplines, perks, the gear you give them, and a party of your soldiers to lead */
 function openComp(id){if(!P.comps[id])return;if(G.mode!=='char'&&(G.modal||G.mode!=='world'))return;G.compBack=G.mode==='char'?'char':'world';G.mode='comp';G.compSel=id;G.compTransfer={};G.compTransferNotice='';renderComp()}
@@ -187,7 +187,7 @@ function renderComp(){
   let h='<div class="top"><h2>'+C0.n+'</h2><span class="muted">Level '+c.lv+' · '+c.xp+'/'+c.lv*60+' xp · '+apName(c.ap)+'</span><button type="button" class="btn sm" data-act="cm-army">Army transfers</button></div>'+
     '<div class="cmwrap"><div class="cmside">'+charCard(ch)+'</div><div class="cmmain">'+
     '<p class="muted">'+(st.block?'Blocks '+Math.round(st.block*100)+'% of each blow. ':'')+'They share the experience you gain while they ride with you, and a skill point comes with each level.</p>'+
-    row('Skill tree'+(c.tp?' · <span class="gold">'+c.tp+' point'+(c.tp>1?'s':'')+' to spend</span>':''),(c.tree.length-1)+' learned, as '+an(ch.cls)+' ('+ch.actives().map(k=>HSKILLS[k].n).join(', ')+(ch.actives().length?'':'no active skills yet')+')','<button class="btn sm primary" type="button" data-act="cm-tree">Open</button>')+
+    row('Skill tree'+(c.tp?' · <span class="gold">'+c.tp+' point'+(c.tp>1?'s':'')+' to spend</span>':''),(c.tree.length-1)+' learned, as '+an(ch.cls())+' ('+ch.actives().map(k=>HSKILLS[k].n).join(', ')+(ch.actives().length?'':'no active skills yet')+')','<button class="btn sm primary" type="button" data-act="cm-tree">Open</button>')+
     '<div class="lab">Attributes · from the skill tree</div><div class="keys">'+Object.keys(ATTRS).map(k=>'<div><kbd>'+c.attr[k]+'</kbd><span title="'+CHAR_ATTR_FX[k]+'">'+ATTRS[k][0]+'</span></div>').join('')+'</div>'+
     '<div class="lab">Disciplines · rise as they fight, lead and work</div><div class="keys">'+Object.keys(COMP_SK).map(k=>'<div><kbd>'+c.sk[k].lv+'</kbd><span>'+COMP_SK[k]+'</span></div>').join('')+'</div>'+
     '<div class="lab">Perks · one every third level</div>'+(c.perks.length?'<p>'+c.perks.map(p=>COMP_PERKS[p].n+' ('+COMP_PERKS[p].d+')').join(', ')+'</p>':'<p class="muted">None yet.</p>')+

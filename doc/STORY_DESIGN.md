@@ -225,6 +225,14 @@ This becomes the **story wave (S)**:
 
 S goes first because nearly every queued feature (escort, chains, tournaments, jobs, encounters, raids' rumours) is built on it.
 
+**Wave A (characters and the player): built 2026-10-20**, in parallel with S1, behaviour-preserving: the world fingerprint (`worldprint -Seed 1`) and the five battle fingerprint suites unchanged, no re-records; saves byte-identical (the classes wrap the plain records, `P`, `P.comps`, the lords' and chieftains').
+- **Characters** (`world/characters.js`): the loose functions are `Character` methods: `stats()` (was `charStats`; the formula is `base()`), `cls()` (`classOf`), `kit()` (`charKit`), `autoTree()`, `outfit()`, `meleeSkill()` (`meleeSkOf`), with `trained(k)`, `gearMod`, `treeMod`, `hasPerk`; `train` and `skill` kept.
+- **Roles are classes**, one step under `Character` (no deeper): `Hero` (characters.js), `Companion` (companions.js), `Lord` and `Chieftain` (leaders.js). Each overrides only what differs (key, race, name, numbers, learning, `levelled`/`grew`/`rose`, `aiOwned`, `outfitWeapons`); `CHAR_ROLES` and the `role==='hero'` branches are gone; `charOf(o)` picks the class by the record (`charRole`).
+- **Companions:** `Companion` has `inBand()`, `canLead()`, `partyCap()`, `equipment()`, `fits`, `equip`, `unequip`; `compOf(id)` gives it; the `comp…` names are aliases.
+- **Leaders:** `Lord.won(foes)` (`lordWins`), `Chieftain.won(foes)` (`chiefWins`), `bounty()`, `holder()`; the pure record helpers (`bountyOf`, `chiefLabel`, `lordStats`, `lordSkill`, `lcapOf`) stay functions.
+- **The player's numbers** are `PlayerParty` methods (`P`: your band and your hero's record at once): `headcount`, `cap`, `room`, `prisonCap`, `eatPerDay`, `sight`, `skill`, `treeMod`, `gearMod`, `hasPerk`, `roleBonus`, `heroStats`, `maxSP`, `maxMP`, `vitals`, `regenVitals`, `restoreVitals`…; the old global names (`skill`, `partyCap`, `tm`, `gm`, `has`, `vitals`…) are one-line aliases.
+- **Left:** callers still use the old names (they move as files are touched); `lordSkill` and `lcapOf` could become `Lord` methods once every caller holds a real lord party.
+
 ## 8. The owner's answers (2026-10-20)
 
 1. **Names:** yes: the story system, with encounters, incidents, quests, gatherings and threads.

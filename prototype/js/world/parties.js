@@ -180,6 +180,80 @@ class PlayerParty extends Party{
   look(){return{col:'#3d74d6',rider:mountDef()?mountDef().col:'',dir:this.dir||1,moving:this.tx!=null,seed:5,label:'',labelCol:'#fff'}}
   banner(){return{k:'banner',col:FACS.player.col,dev:'crown'}}
   headY(){const m=mountDef();return Math.round(this.y)+3-16+opaqueBox(partySprite('#e8b94a',m?m.col:'',0))[1]}
+  /* your numbers (their older names in state.js and combat.js are aliases of these). P is your band and your hero's record at
+     once: here, the band's size and room, what it eats and how far it sees; then your hero's disciplines with everything that
+     adds to them, what her gear, tree and perks give, her fighting numbers, and her health, stamina and mana */
+  troopCount(){return sum(this.troops)}
+  compCount(){return Object.keys(this.comps).length}
+  woundedCount(){return sum(this.wounded||{})}
+  // riders in your band (their horses want feed and their wages are higher)
+  mountedCount(){return Object.keys(this.troops).reduce((a,k)=>a+(ST[k]&&ST[k].mounted?this.troops[k]:0),0)}
+  // everyone you lead: soldiers, companions and the wounded
+  headcount(){return this.troopCount()+this.compCount()+this.woundedCount()}
+  prisonerCount(){return sum(this.prisoners)}
+  // how many you may lead: your level, renown, Leadership and Charisma, and your talents
+  cap(){
+    const n=8+this.level*3+Math.floor(this.renown/25)+this.skill('lead')+Math.floor(this.attr.cha/2)+this.treeMod('cap');
+    return Math.max(3,Math.round(n*(1+this.treeMod('capPct'))))}
+  // room left: negative while over capacity (callers decide whether a transfer is allowed)
+  room(){return this.cap()-this.headcount()}
+  prisonCap(){return 2+this.skill('lead')+(this.hasPerk('warden')?6:0)+this.treeMod('prison')}
+  // food a day: everyone, their horses and your prisoners, a quarter each; marching hard eats more, a quartermaster less
+  eatPerDay(){
+    const n=(this.headcount()+this.mountedCount()+this.prisonerCount()+1)/4;
+    return Math.ceil(n*(this.hasPerk('forced')?1.2:1)*(this.hasPerk('quarter')?.75:1)*(roleOf('quarter')?.75:1)*(1-this.treeMod('food')))}
+  // how far you see: your Scouting, the ground you stand on and your gear
+  sight(){return (110+8*this.skill('scout'))*visMulAt(this.x,this.y)*(1+this.gearMod('vis'))}
+  // what your skill tree gives (tmOf: any character's), and the disciplines it adds
+  treeMod(k){return tmOf(this,k)}
+  treeSkill(k){return treeSkOf(this,k)}
+  // perks: the old picks, or the talent notables that grant them
+  hasPerk(p){return this.perks.includes(p)||typeof TREE!=='undefined'&&(this.tree||[]).some(id=>TREE[id]&&TREE[id].m.perk===p)}
+  // a companion in a role adds their own discipline: 2, and a third of their Scouting (scout) or Medicine (surgeon)
+  roleBonus(k){
+    const id=k==='scout'?roleOf('scout'):k==='med'?roleOf('surgeon'):null;
+    if(!id||!(typeof compInBand!=='function'||compInBand(id)))return 0;
+    return 2+Math.floor((typeof compSkill==='function'?compSkill(id,k):0)/3)}
+  // one stat summed over your equipped gear (a mount's gear only with a mount; an off-hand weapon's damage at half), and your talents
+  gearMod(k){
+    let a=0;
+    for(const key in this.gear){
+      const id=this.gear[key];if(!id||!ITEMS[id])continue;if(MOUNT_KEYS.includes(key)&&!this.gear.mount)continue;
+      const I=ITEMS[id];let v=I.m[k]||0;if(key==='offhand'&&I.slot==='weapon'&&k==='dmg')v*=.5;a+=v}
+    return a+this.treeMod(k)}
+  gearSkill(k){return Object.values(this.gear).reduce((a,id)=>a+(id&&ITEMS[id].m.sk&&ITEMS[id].m.sk[k]||0),0)}
+  // a discipline: as you trained it, with your companions' roles, your gear and your tree (charOf(P).skill: as trained only)
+  skill(k){return this.sk[k].lv+this.roleBonus(k)+this.gearSkill(k)+this.treeSkill(k)}
+  // your hero's numbers in battle: her level, attributes, disciplines, gear and talents
+  heroStats(){
+    const tm=k=>this.treeMod(k),gm=k=>this.gearMod(k),melee=this.skill(meleeSk()),two=hybridTwo(),kind=heroKind();
+    return {n:'You',
+      hp:Math.round((50+10*this.level+4*this.attr.str+gm('hp'))*(1+tm('hpPct'))),
+      dmg:(8+2*this.level+this.bonus+this.attr.str*.5+melee*.6+gm('dmg'))*(1+tm('dmgPct'))*(two?1.2:1),
+      spd:(48+this.attr.agi*2)*(1+gm('spd')),
+      reach:21+melee*.4+gm('reach')+(two?4:0),
+      range:heroRange(),magic:kind==='magic',
+      dt:itemDt(this.gear.weapon)||(kind==='magic'?'arcane':'blunt'),armor:itemArmor(this.gear.body)||'none',race:this.race,
+      cd:.45*(1-this.attr.agi*.03)*(1+gm('cd')),
+      tags:Object.values(this.gear).map(id=>id&&ITEMS[id].tag).filter(Boolean)}}
+  // stamina pays for physical effort, mana for skills
+  maxSP(){return 60+this.attr.agi*5+this.level*2+this.treeMod('sp')+4*this.skill('athl')}
+  maxMP(){return Math.round((30+this.attr.int*6+this.level*2+this.gearMod('mp'))*(1+this.treeMod('mpPct')))}
+  // health, stamina and mana persist between battles; null means full (a new hero or an old save). Returns their maxima
+  vitals(){
+    const m=[this.heroStats().hp,this.maxSP(),this.maxMP()];
+    if(this.hp==null)this.hp=m[0];if(this.sp==null)this.sp=m[1];if(this.mp==null)this.mp=m[2];
+    this.hp=clamp(this.hp,0,m[0]);this.sp=clamp(this.sp,0,m[1]);this.mp=clamp(this.mp,0,m[2]);
+    return m}
+  // recovery on the map, per day of travel (combat.js REGEN_DAY; Medicine helps health); doubled near a holding
+  regenVitals(days){
+    const m=this.vitals(),sh=TOWNS.some(t=>Math.hypot(t.x-this.x,t.y-this.y)<48)?2:1;
+    this.hp=Math.min(m[0],this.hp+m[0]*(REGEN_DAY.hp+.03*this.skill('med'))*sh*days);
+    this.sp=Math.min(m[1],this.sp+m[1]*REGEN_DAY.sp*sh*days);
+    this.mp=Math.min(m[2],this.mp+m[2]*REGEN_DAY.mp*sh*days)}
+  restoreVitals(){
+    const m=this.vitals();
+    this.hp=m[0];this.sp=m[1];this.mp=m[2]}
 }
 Object.setPrototypeOf(P,PlayerParty.prototype);
 // which kind a plain party is

@@ -14,28 +14,54 @@ const COMP_LEAD={lv:2,ap:2};// who may lead a party: level 2 and trusting you
 const compTown=id=>townBy(COMPS[id].town)||capitalOf(COMPS[id].race);
 function compInit(id){const c=P.comps[id];if(!c)return null;if(c.lv)return c;
   Object.assign(c,{lv:1,xp:0,gear:{},sk:{},perks:[],perkPend:0,party:null,hurt:0});for(const k in COMP_SK)c.sk[k]={lv:(COMP_START[id]||{})[k]||0,xp:0};return c}
-const compSkill=(id,k)=>{const c=compInit(id);return c&&c.sk[k]?c.sk[k].lv:0};
+/* ---------- a companion: a Character (characters.js) over its record, P.comps[id]. It fights as its own kind (ST[id]), with the
+   one formula's numbers; a perk to choose every third level; gear you give it in its seven slots (COMP_SLOTS); it may lead a
+   party of your soldiers once it is level COMP_LEAD.lv and trusts you (ap) ---------- */
+class Companion extends Character{
+  get role(){return 'companion'}
+  get roleName(){return 'Companion'}
+  get key(){return this.id}
+  get race(){return ST[this.id].race}
+  get name(){return COMPS[this.id].short}
+  // a perk to choose every third level, and news of each
+  grew(up){
+    const o=this.o;
+    for(let lv=o.lv-up+1;lv<=o.lv;lv++){if(lv%3===0)o.perkPend++;log(this.name+' reaches level '+lv+(lv%3===0?': a perk to choose (Hero, Party tab)':'')+'.','gold')}}
+  rose(k,lv){log(this.name+'’s '+COMP_SK[k]+' rises to '+lv+'.','gold')}
+  // in your band: not away leading a party, not lying wounded
+  inBand(){return !this.o.party&&!(this.o.hurt>G.day)}
+  // leading a party: who may, and how many soldiers (its level, its Leadership as it trained it, the Captain perk)
+  canLead(){return this.o.lv>=COMP_LEAD.lv&&this.o.ap>=COMP_LEAD.ap}
+  partyCap(){return 4+2*this.o.lv+this.trained('lead')+(this.hasPerk('captain')?4:0)}
+  // gear: what fits a slot from your bag, and giving or taking it back
+  equipment(){return new EquipmentService(this.o,playerInventory,{items:ITEMS,slots:COMP_SLOTS,slotType:slotOfKey,mountKeys:[],dualWield:false})}
+  fits(slot){
+    const e=this.equipment();
+    return e.blockedWhy(slot)?[]:P.inv.map((x,i)=>[x,i]).filter(([x])=>x&&x.k==='gear'&&e.accepts(slot,x.id))}
+  equip(slot,i){return equipmentFeedback(this.equipment().equip(i,slot))}
+  unequip(slot){return equipmentFeedback(this.equipment().unequip(slot))}
+}
+// the companion of an id (its record made first: compInit), or null
+const compOf=id=>{const c=compInit(id);return c&&charOf(c,id)};
+// (the older names: the companion's methods)
+const compSkill=(id,k)=>{const c=compOf(id);return c?c.trained(k):0};
 // (leaders.js: as every leader grows)
-function compTrain(id,k,n){const c=compInit(id);if(c)leaderOf(c,id).train(k,n)}
-function compXp(id,n){const c=compInit(id);if(c)leaderOf(c,id).gainXp(n)}
-const compHas=(id,p)=>!!compInit(id)&&compInit(id).perks.includes(p);
-// in your band: not away leading a party, not lying wounded
-const compInBand=id=>{const c=compInit(id);return !!c&&!c.party&&!(c.hurt>G.day)};
+function compTrain(id,k,n){const c=compOf(id);if(c)c.train(k,n)}
+function compXp(id,n){const c=compOf(id);if(c)c.gainXp(n)}
+const compHas=(id,p)=>{const c=compOf(id);return !!c&&c.hasPerk(p)};
+const compInBand=id=>{const c=compOf(id);return !!c&&c.inBand()};
 const compsInBand=()=>Object.keys(P.comps).filter(compInBand);
-// the melee discipline of the weapon they hold
-const compMeleeSk=id=>meleeSkOf(compInit(id));
-// their battle stats: their own, grown by level, gear, disciplines and perks
-function compStats(id){return charStats(charOf(compInit(id),id))}// (characters.js: one formula for every character)
-// gear: what fits a slot, and giving or taking it back
-const compEquipment=id=>{const c=compInit(id);return c?new EquipmentService(c,playerInventory,{items:ITEMS,slots:COMP_SLOTS,slotType:slotOfKey,mountKeys:[],dualWield:false}):null};
-const compFits=(id,slot)=>{const e=compEquipment(id);return !e||e.blockedWhy(slot)?[]:P.inv.map((x,i)=>[x,i]).filter(([x])=>x&&x.k==='gear'&&e.accepts(slot,x.id))};
-function compEquip(id,slot,i){const e=compEquipment(id);return !!e&&equipmentFeedback(e.equip(i,slot))}
-function compUnequip(id,slot){const e=compEquipment(id);return !!e&&equipmentFeedback(e.unequip(slot))}
+const compMeleeSk=id=>compOf(id).meleeSkill();
+function compStats(id){return compOf(id).stats()}
+const compEquipment=id=>{const c=compOf(id);return c?c.equipment():null};
+const compFits=(id,slot)=>{const c=compOf(id);return c?c.fits(slot):[]};
+function compEquip(id,slot,i){const c=compOf(id);return !!c&&c.equip(slot,i)}
+function compUnequip(id,slot){const c=compOf(id);return !!c&&c.unequip(slot)}
 
 /* leading a party */
 const cparties=()=>Object.keys(P.comps).map(id=>compInit(id)&&P.comps[id].party).filter(Boolean);
-const cpartyCap=id=>4+2*compInit(id).lv+compSkill(id,'lead')+(compHas(id,'captain')?4:0);
-const canLead=id=>{const c=compInit(id);return c.lv>=COMP_LEAD.lv&&c.ap>=COMP_LEAD.ap};
+const cpartyCap=id=>compOf(id).partyCap();
+const canLead=id=>compOf(id).canLead();
 // Plans are transient. Forming a party builds a private candidate, attached only after a successful transfer.
 function cpTransferPlan(id,direction,source,n,target='new'){
   const fail=code=>({quote:{ok:false,code}});

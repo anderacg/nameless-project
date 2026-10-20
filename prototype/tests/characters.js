@@ -45,14 +45,14 @@ try{
   const o=u.unit.o;o.tree.push('arcana0','arcana1','arcana2','arcanad0');o.slots[9]='heal';u.hp=u.max*.3;C2.cds={};C2.mp=999;const h0=u.hp;ok(t.chooseAbility(u)&&u.hp>h0&&C2.cds.heal>0,'badly hurt (Healing learned and slotted), the chooser picks Healing first');
   B.over=true;B.endT=0;t.B=null}
  // the kit: every character but your hero has its own skill tree, fighting skills and gear; one formula for them all
- {const L2=W.lords.find(l=>l!==L)||L;for(const k of ['kit','tree','tp','slots','attr','gear','gearT'])delete L2[k];L2.lv=7;L2.sk={lead:{lv:1,xp:0}};const c2=new t.Character(L2,'lord');t.charKit(c2);
-  ok(L2.tree.length===9&&L2.tp===0&&t.CLASS_PATHS[c2.cls],'a lord at 7 has grown his tree himself: 8 points along a '+c2.cls+'\u2019s path ('+L2.tree.slice(1).join(', ')+')');
+ {const L2=W.lords.find(l=>l!==L)||L;for(const k of ['kit','tree','tp','slots','attr','gear','gearT'])delete L2[k];L2.lv=7;L2.sk={lead:{lv:1,xp:0}};const c2=new t.Lord(L2);t.charKit(c2);
+  ok(L2.tree.length===9&&L2.tp===0&&t.CLASS_PATHS[c2.cls()],'a lord at 7 has grown his tree himself: 8 points along a '+c2.cls()+'\u2019s path ('+L2.tree.slice(1).join(', ')+')');
   ok(c2.actives().length>0&&Object.values(L2.attr).reduce((a,b)=>a+b,0)>0,'its skills in his slots ('+c2.actives().join(', ')+'), its attributes from the tree ('+JSON.stringify(L2.attr)+')');
   ok(L2.gear.weapon===t.gearId(t.OUTFIT[c2.race][0],2)&&L2.gear.body===t.gearId('mail',2)&&L2.gear.head===t.gearId('helm',2),'and wears gear of his level (tier 2: '+[L2.gear.weapon,L2.gear.body,L2.gear.head].join(', ')+')');
   ok(t.FIGHT_SK.every(k=>L2.sk[k]&&L2.sk[k].lv===2),'and fights with the skills of his level (One-Handed, Two-Handed, Archery 2)');
   L2.xp=0;const lv0=L2.lv,n0=L2.tree.length;c2.gainXp(t.LV_XP(L2.lv)+t.LV_XP(L2.lv+1));ok(L2.lv===lv0+2&&L2.tree.length===n0+2&&L2.tp===0&&L2.gearT===3,'two levels on: two more nodes he chose, and better gear (tier '+L2.gearT+')')}
  ok(['warrior','guardian','rider','archer','caster'].every(k=>t.CLASS_PATHS[k].every(n=>t.TREE[n])),'every class\u2019s path is made of real nodes');
- {P.comps={tavi:{ap:0,role:''},elske:{ap:0,role:''}};ok(t.charOf(t.compInit('tavi'),'tavi').cls==='archer'&&t.charOf(t.compInit('elske'),'elske').cls==='caster','Tavi grows as an archer, Elske as a caster')}
+ {P.comps={tavi:{ap:0,role:''},elske:{ap:0,role:''}};ok(t.charOf(t.compInit('tavi'),'tavi').cls()==='archer'&&t.charOf(t.compInit('elske'),'elske').cls()==='caster','Tavi grows as an archer, Elske as a caster')}
  {P.comps={brann:{ap:0,role:''}};const cb=t.compInit('brann');cb.lv=1;cb.xp=0;const cc=t.charOf(cb,'brann');t.charKit(cc);
   ok(same(t.compStats('brann'),t.charStats(cc)),'a companion\u2019s numbers are the same formula');
   const n0=cb.tree.length;cc.gainXp(60);ok(cb.lv===2&&cb.tp===1&&cb.tree.length===n0,'with you, a level brings a point for you to spend (it does not choose for itself)');

@@ -26,12 +26,12 @@ const LORD_SK=['lead','tact','med'];
 function lordStats(l){if(l.lv)return l;l.lv=rint(2,6);l.xp=0;l.renown=l.lv*8;l.sk={};for(const k of LORD_SK)l.sk[k]={lv:Math.min(10,Math.floor(l.lv/2)+rint(0,1)),xp:0};return l}
 const lordSkill=(l,k)=>{const s=lordStats(l).sk[k];return s?s.lv:0};
 function lordTrain(l,k,n){leaderOf(l).train(k,n)}
-function lordXp(l,n){leaderOf(l).gainXp(n)}// (leaders.js)
+function lordXp(l,n){leaderOf(l).gainXp(n)}// (leaders.js Lord)
 const lcapOf=l=>{lordStats(l);return Math.round(9+3*l.lv+Math.floor((l.renown||0)/25)+lordSkill(l,'lead'))+4*Math.max(0,FIEF0-fiefsOf(l.fac).length)};
 // how much a lord's Tactics makes his army count for in a fight
 const lordTac=ls=>1+.05*Math.max(0,...ls.filter(o=>W.lords.includes(o)).map(o=>lordSkill(o,'tact')));
 // a lord who won: experience and renown, and his Leadership and Tactics rise
-function lordWins(l,foes){lordXp(l,12+2*foes);l.renown=(l.renown||0)+Math.ceil(foes/3);lordTrain(l,'lead',3+foes*.5);lordTrain(l,'tact',2)}
+function lordWins(l,foes){leaderOf(l).won(foes)}// (leaders.js Lord)
 const cull=(l,frac)=>{if(l instanceof Party)return l.cull(frac);const r=new TroopRoster({tc:countsOf(l.troops)},'tc');r.cull(frac);l.troops=r.list;return l};
 const facRaces=f=>{const rs=[...new Set(fiefsOf(f).flatMap(t=>t.races))];return rs.length?rs:FACS[f].races};
 function armyOf(f,n){const rs=facRaces(f),a=[],types=[];for(let i=0;i<n;i++){const c=RACES[rs[rint(0,rs.length-1)]],r=Math.random();let type=r<.24?c.melee:r<.36?c.shield:r<.5?UP[c.melee][0]:r<.6?UP[c.shield][0]:r<.76?c.ranged:r<.84?UP[c.ranged][0]:r<.91?c.mage:c.horse;
