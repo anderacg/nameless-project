@@ -19,9 +19,10 @@ class Incident extends Happening{
     this.announceEnd();
     return this;
   }
+  // (one by weight, from the stream 'incidents': core/rng.js)
   static pick(kinds,c){
     const ok=kinds.filter(K=>K.ok(c));
-    let r=Math.random()*ok.reduce((a,K)=>a+K.w,0),hit=ok[0];
+    let r=rngOf('incidents').next()*ok.reduce((a,K)=>a+K.w,0),hit=ok[0];
     for(const K of ok){
       r-=K.w;
       if(r<=0){

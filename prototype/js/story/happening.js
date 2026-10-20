@@ -386,7 +386,7 @@ class Encounter extends Happening{
     const R=roadSt(),D=this.D,S=ENC_SPAWN;
     this.ending();
     if(this.seen&&!this.met&&!D.part){
-      R.c*=1-S.pass[0]-Math.random()*(S.pass[1]-S.pass[0]);
+      R.c*=1-S.pass[0]-roadRng().next()*(S.pass[1]-S.pass[0]);
       if(D.after&&!this.done)this.say(D.after(this));
     }
     if(D.trace&&!this.done)this.drop(Math.max(roadNow(),this.end));
@@ -426,7 +426,7 @@ class Encounter extends Happening{
     const L=ENC_LIFE.pray;
     this.beh='stay';
     this.pray=1;
-    this.end=now+L[0]+Math.random()*(L[1]-L[0]);
+    this.end=now+L[0]+roadRng().next()*(L[1]-L[0]);
   }
   /* a step walking off (encounters.js ENC_OFF): along the road to its tile lg; then (or with none) by the land's ways to its spot
      la away from you; with none, straight away from you */

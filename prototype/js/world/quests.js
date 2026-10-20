@@ -8,12 +8,14 @@
    any holding of his faction. */
 const QUEST_MAX=4,JOB_OFFERS=2,JOB_REFRESH=7;
 const BAND_NAMES=['Red Vipers','Ash Crows','Black Hounds','Grey Wolves','Bone Saws','Mud Rats','Iron Jaws','Night Owls','Rusty Knives','Hollow Men','Crooked Spears','Burnt Hands'];
+// (the jobs' own dice: the stream 'quests', core/rng.js, so a job kind added or changed never moves the world's Math.random)
+const questRng=()=>rngOf('quests');
 const qScale=()=>1+G.day/60,qTiles=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y)/TILE;
 const questBy=id=>P.quests.find(q=>q.id===id);
 // a free spot 8 to 16 tiles from a holding, on ground you can reach
 function spotNear(t,lo,hi,ok){
-  const from=startHolding();
-  for(let k=0;k<300;k++){const a=Math.random()*6.283,d=(lo+Math.random()*(hi-lo))*TILE,x=t.x+Math.cos(a)*d,y=t.y+Math.sin(a)*d,tx=Math.floor(x/TILE),ty=Math.floor(y/TILE);
+  const from=startHolding(),r=questRng();
+  for(let k=0;k<300;k++){const a=r.next()*6.283,d=(lo+r.next()*(hi-lo))*TILE,x=t.x+Math.cos(a)*d,y=t.y+Math.sin(a)*d,tx=Math.floor(x/TILE),ty=Math.floor(y/TILE);
     if(tx<2||ty<2||tx>=MW-2||ty>=MH-2||!passable(tAt(tx,ty))||!Router.reach(from,{x:(tx+.5)*TILE,y:(ty+.5)*TILE})||TOWNS.some(o=>Math.hypot(o.x-x,o.y-y)<48)||(ok&&!ok(x,y)))continue;return{x:(tx+.5)*TILE,y:(ty+.5)*TILE}}
   return null;
 }
@@ -21,8 +23,8 @@ function spotNear(t,lo,hi,ok){
 // a bounty: a band of its own name near the holding; done when you break it (in a fight, or it gives up to you)
 class BountyQuest extends Quest{
   setup(t){
-    this.band=BAND_NAMES[rint(0,BAND_NAMES.length-1)];
-    this.n=rint(4,6)+Math.floor(G.day/12);
+    this.band=questRng().pick(BAND_NAMES);
+    this.n=questRng().int(4,6)+Math.floor(G.day/12);
     this.days=8;
     this.title='Bounty: the '+this.band;
     this.text='The '+this.band+', a band of about '+this.n+', have been robbing travellers near '+t.name+'. Find them and break them.';
@@ -32,7 +34,9 @@ class BountyQuest extends Quest{
     const p=spotNear(t,8,16);
     if(!p)return false;
     const kind=climAt(p.x,p.y)==='desert'?'raiders':climAt(p.x,p.y)==='swamp'?'bog':'bandits';
-    bandits.push(asParty({x:p.x,y:p.y,n:this.n,kind,list:makeEnemies(this.n,false,kind),t:0,a:0,idle:true,cool:0,qid:this.id,name:this.band,ld:newChief(kind,2+Math.floor(G.day/20))}));
+    // (its fighters and its chief made from the jobs' stream too)
+    const list=Rng.use('quests',()=>makeEnemies(this.n,false,kind)),ld=Rng.use('quests',()=>newChief(kind,2+Math.floor(G.day/20)));
+    bandits.push(asParty({x:p.x,y:p.y,n:this.n,kind,list,t:0,a:0,idle:true,cool:0,qid:this.id,name:this.band,ld}));
     this.x=p.x;
     this.y=p.y;
   }
@@ -53,10 +57,10 @@ class BeastQuest extends Quest{
   setup(t){
     const c=t.clim,ids=Object.keys(MONSTERS).filter(id=>MONSTERS[id].where.includes(c)||MONSTERS[id].where.includes('forest')&&c==='grass');
     if(!ids.length)return false;
-    this.mon=ids[rint(0,ids.length-1)];
+    this.mon=questRng().pick(ids);
     const M=MONSTERS[this.mon];
     this.n=Math.max(M.count[0],M.count[1]);
-    this.lv=monLevel()+1;
+    this.lv=monLevel(questRng())+1;
     this.days=10;
     this.title='Beast hunt: '+M.n.toLowerCase();
     this.text=cap1(M.n.toLowerCase())+' have been killing livestock outside '+t.name+'. They are bigger than most. Kill them.';
@@ -116,8 +120,8 @@ class SupplyQuest extends Quest{
     ensureEcon(t);
     const goods=Object.keys(GOODS).filter(g=>!GOODS[g].spoil&&!GOODS[g].ammo&&needOf(t,g)>.05).sort((a,b)=>(t.stock[a]||0)/targetStock(t,a)-(t.stock[b]||0)/targetStock(t,b));
     if(!goods.length)return false;
-    this.good=goods[rint(0,Math.min(1,goods.length-1))];
-    this.n=rint(8,15);
+    this.good=goods[questRng().int(0,Math.min(1,goods.length-1))];
+    this.n=questRng().int(8,15);
     this.days=10;
     this.title='Supply run: '+GOODS[this.good].n.toLowerCase();
     this.text=t.name+' is short of '+GOODS[this.good].n.toLowerCase()+'. Bring '+this.n+' here.';
@@ -144,10 +148,10 @@ class SupplyQuest extends Quest{
 // a hunt: deer hides for the tanner, or meat for a feast, handed over
 class HuntQuest extends Quest{
   setup(t){
-    const hides=Math.random()<.4;
+    const hides=questRng().chance(.4);
     this.mat=hides?'hide':null;
     this.good=hides?null:'meat';
-    this.n=hides?rint(3,5):rint(12,20);
+    this.n=hides?questRng().int(3,5):questRng().int(12,20);
     this.days=12;
     this.title=hides?'Hides for the tanner':'Meat for the feast';
     this.text=hides?'The tanner of '+t.name+' wants '+this.n+' deer hides.':t.name+' is holding a feast and needs '+this.n+' meat.';
@@ -185,7 +189,7 @@ class CourierQuest extends Quest{
   setup(t){
     const dest=TOWNS.filter(o=>o!==t&&!hostileTo(o.owner)&&qTiles(o,t)>18&&qTiles(o,t)<60);
     if(!dest.length)return false;
-    const d=dest[rint(0,dest.length-1)];
+    const d=questRng().pick(dest);
     this.to=d.name;
     this.days=Math.ceil(qTiles(d,t)/8)+5;
     this.title='Letter for '+d.name;
@@ -213,7 +217,7 @@ class CourierQuest extends Quest{
 // reinforcements: troops of a tier or better handed over to the garrison (the greenest that qualify first)
 class TroopsQuest extends Quest{
   setup(t){
-    this.n=rint(3,5);
+    this.n=questRng().int(3,5);
     this.tier=2;
     this.days=12;
     this.title='Reinforce '+t.name;
@@ -248,7 +252,7 @@ class LordkillQuest extends Quest{
   setup(t,lord){
     const foes=W.lords.filter(o=>!o.dead&&atWar(this.fac,o.fac));
     if(!foes.length)return false;
-    const f=foes[rint(0,foes.length-1)];
+    const f=questRng().pick(foes);
     this.target=f.name;
     this.tfac=f.fac;
     this.days=20;
@@ -317,14 +321,14 @@ const makeQuest=(type,t,lord)=>Quest.make(type,t,lord);
 function jobsAt(t){
   P.jobs=P.jobs||{};const j=P.jobs[t.name];
   if(!j||Clock.daysSince(j.day)>=JOB_REFRESH){const list=[],kinds=t.T.jobs.slice();
-    for(let k=0;k<12&&list.length<JOB_OFFERS;k++){const q=makeQuest(kinds[rint(0,kinds.length-1)],t);if(q&&!list.some(o=>o.type===q.type))list.push(q)}
+    for(let k=0;k<12&&list.length<JOB_OFFERS;k++){const q=makeQuest(questRng().pick(kinds),t);if(q&&!list.some(o=>o.type===q.type))list.push(q)}
     P.jobs[t.name]={day:G.day,list}}
   return P.jobs[t.name].list;
 }
 // a lord's job: war work if his faction is at war (raids only for those who serve him), else a bounty or a beast near his lands
 function lordJob(l){
   const t=Spatial.nearest(fiefsOf(l.fac).length?fiefsOf(l.fac):TOWNS,l.x,l.y);const kinds=enemiesOf(l.fac).length?(P.fac===l.fac?['lordkill','raid']:['lordkill']):['bounty','beast'];
-  for(let k=0;k<6;k++){const q=makeQuest(kinds[rint(0,kinds.length-1)],t,l);if(q)return q}return null;
+  for(let k=0;k<6;k++){const q=makeQuest(questRng().pick(kinds),t,l);if(q)return q}return null;
 }
 /* taking a quest, where it points, how far along it is, reporting and failing: the quest's own (story/quest.js); the names
    the panels, the map and the town call */

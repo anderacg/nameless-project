@@ -60,7 +60,8 @@ function lordDefends(l,d){
 
 /* every DEFEND.look of the map's time (brains.js updatePatrols): each threat on a holding's land, its watch; and, near one of
    its homes, the first lord of its realm at home within reach who can beat it */
-let defendCheck=0;
+// (from 0 again in a new game or a load, as patrols.js watchCheck: never the last game's timer)
+let defendCheck=0;onWorld(()=>{defendCheck=0});
 function landDefence(d){
   if((defendCheck-=d)>0)return;defendCheck=DEFEND.look;
   const lords=W.lords.filter(lordAtHome);

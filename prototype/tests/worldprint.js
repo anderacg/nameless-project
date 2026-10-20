@@ -27,7 +27,17 @@
 // G.quietEvents is on, and the view is the tests' fixed 576 x 360. Hash: FNV-1a 32-bit over bytes, char codes or 32-bit words;
 // W8's places at 1e-6 px.
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.push('INFO '+m),t=T,G=t.G,P=t.P,W=t.W;
-const EXPECT={W1:'65e24662',W2:'2b49a168',W3:'dc546553',W4:'46450e62',W5:'6587a43c',W6:'089d600e',W7:'74c85482',W8:'0f46a757',B2:'2c4b512f'};// (at 0a42712; B2 at R3; W6-W8 at Phase 1; W6 at depth, smooth walking and pasture herds and label layout; W7, B2 at save v3)
+const EXPECT={W1:'65e24662',W2:'2b49a168',W3:'dc546553',W4:'46450e62',W5:'6587a43c',W6:'33d059e4',W7:'d7c2a900',W8:'742df600',B2:'fd6d5be4'};// (at 0a42712; B2 at R3; W6-W8 at Phase 1; W6 at depth, smooth walking and pasture herds and label layout; W7, B2 at save v3)
+// (W6, W7, W8 and B2 re-recorded 2026-10-21 S4: story and content systems on named streams, seeded per world and per game (owner accepted once); the estates' sort keys drawn before sorting (doc/STORY_DESIGN.md §9).
+//  The wild game and the beasts begin places draw from their streams ('critters', 'monsters', core/rng.js), seeded by the world
+//  and by the game's number, one draw of Math.random as the game begins (Rng.newGame, before the wild game is placed), so they
+//  stand elsewhere (W6's first spot by day and night: f4403dad 3d69a9d9, were 2b5e65e0 a8d18b3d) and the world draws Math.random
+//  differently from there (W8); the save holds the game's number and the streams' states (world.rng: B2, W7); the realms'
+//  building choice draws one key a kind before its sort (world/estates.js), not inside its comparator (W7). Checked by switching
+//  each off: the streams back on Math.random (no game's number drawn, their save piece left out), W6, W8 and B2 are as before and
+//  W7 is f9b6f403 (the estates' keys alone); the estates' comparator as it was too, every hash is as before (the house builder's
+//  log line and the new game's timers reset in defence.js and patrols.js move nothing); the streams with no game's number give
+//  W6 935d7896, W8 ca1ff21b. Was W6 089d600e, W7 74c85482, W8 0f46a757, B2 2c4b512f; W1-W5 unchanged)
 // (W7 re-recorded 2026-10-19, the save only: the world's news (world/news.js W.news, saved once there is any) is in it after
 //  3 days. Recording draws no Math.random and changes nothing else: with W.news left out of the save, W7 is c1557699 as before;
 //  was W7 c1557699; W1-W6, W8 and B2 (a fresh game: no news yet, none saved) unchanged)

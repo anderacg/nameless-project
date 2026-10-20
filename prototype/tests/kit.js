@@ -124,6 +124,15 @@ const Kit={
   seeded(seed,fn){
     return Kit.stub(T.seeded(seed),fn);
   },
+  /* a named stream's draws fixed while fn runs (core/rng.js: the story's and the content's, 'road', 'quests'…; what Kit.stub
+     and Kit.rolls do for Math.random): v a number (every draw), a function, or a list (its values in turn, then the stream's
+     own). Its int, chance, pick and weighted read them too */
+  stubStream(name,v,fn){
+    const s=T.rngOf(name),own=s.next;
+    let i=0;
+    s.next=Array.isArray(v)?()=>i<v.length?v[i++]:own.call(s):typeof v==='function'?v:()=>v;
+    try{return fn()}finally{delete s.next}
+  },
   // ---- meetings
   // a meeting on the map (e: as startEncounter takes it, {kind, ref, list…}), from the map
   meet(e){

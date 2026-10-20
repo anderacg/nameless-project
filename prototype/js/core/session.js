@@ -65,8 +65,9 @@ function startGame(k,b){
   for(const src of [b.sk,rc.sk])for(const s in src||{})P.apt[s]=(P.apt[s]||0)+.25*src[s];
   P.origin=originOf(k);P.tree=[P.origin];applyNode(P.origin,1);G.skSel=P.origin;
   P.gear.weapon=gearId(b.weapon||'sword',0);for(const g in b.cargo)invAdd('good',g,b.cargo[g]);if(b.ammo)invAdd('good',b.ammo[0],b.ammo[1]);
-  // (a new game on the map: every system's world reset first, onWorld)
-  useWorld(WM);initWorld();W.sites=genSites();fogReset();initCritters();
+  // (a new game on the map: every system's world reset first, onWorld; the game's number for its random streams, core/rng.js,
+  // drawn before the wild game and the beasts are placed from them)
+  useWorld(WM);initWorld();W.sites=genSites();fogReset();Rng.newGame();initCritters();
   const home=capitalOf(P.race);if(b.rep)P.rep[home.name]=b.rep;
   P.x=(home.tx+.5)*TILE;P.y=(home.ty+2.5)*TILE;G.mode='world';G.lastTown=home;
   for(let i=0,n=Math.round(BANDITS*spawnMul('bandits'));i<n;i++)spawnBandit(true);

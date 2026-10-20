@@ -3,8 +3,11 @@
 // Behavioral assertions below are retained; old category-bucket fingerprints no longer describe this architecture.
 // Setup snapshots were captured before extraction. Geometry is fixed only for parity; real HUD measurement is checked too.
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t.P,W=t.W;
+  // (chief_reuse re-recorded 2026-10-21 S4: story and content systems on named streams, seeded per world and per game (owner accepted once); the estates' sort keys drawn before sorting: begin draws the game's number and places the wild game and the beasts from
+  // their own streams, so the shared Math.random this case's world runs on after it goes differently; with the streams switched back
+  // to Math.random it is 2aa140f4 as before; the battle's own rules unchanged)
   // (chief_reuse re-recorded 2026-10-19: wild game placed by its woods (be9cb52, 56f7e97) and the wilds' spawns (e5bca02) draw the shared randomness differently, so the reused chief's world differs; the battle's own rules unchanged)
-  const expected={field:'65c78ccc',reinforced:'1137fce4'/* (re-recorded: your allies' men in their own green cloth (battle.js SIDE, sprites.js allyLook), so their sprites are warmed apart from yours (WARM.q's length); nothing of the battle else) */,chief_reuse:'2aa140f4',siege:'5bbc07b7',beasts:'981e3c34'/* (re-recorded: spider stats changed in the balance pass) */,tournament:'11b1a925',deployment_off:'04e59939',narrow:'09cd58d9',wide:'e206f675'};
+  const expected={field:'65c78ccc',reinforced:'1137fce4'/* (re-recorded: your allies' men in their own green cloth (battle.js SIDE, sprites.js allyLook), so their sprites are warmed apart from yours (WARM.q's length); nothing of the battle else) */,chief_reuse:'a69d5122',siege:'5bbc07b7',beasts:'981e3c34'/* (re-recorded: spider stats changed in the balance pass) */,tournament:'11b1a925',deployment_off:'04e59939',narrow:'09cd58d9',wide:'e206f675'};
   const original={random:Math.random,measure:t.measureField,width:t.BVW,height:t.BVH,deploy:t.BDEPLOY.on,auto:t.BAUTO.on,speed:t.BSPEED.v,guide:t.GUIDE.on};
   const stable=x=>Array.isArray(x)?x.map(stable):x&&typeof x==='object'?Object.fromEntries(Object.keys(x).sort().map(k=>[k,stable(x[k])])):x;
   const fingerprint=x=>{let h=2166136261;for(const c of JSON.stringify(stable(x)))h=Math.imul(h^c.charCodeAt(0),16777619)>>>0;return h.toString(16).padStart(8,'0')};

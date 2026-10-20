@@ -39,14 +39,18 @@ function penSpots(t,now){const c=herdOf(t),F=c&&fieldsOf(t,'pasture');if(!F)retu
   return out}
 function penEnts(t,ents,cam){penSpots(t,0).forEach((s0,j)=>ents.push({y:s0.y,f:()=>{const s=penSpots(t,performance.now())[j];if(!s)return;ctx.save();subT(s);const x=Math.round(s.x-cam.x),sy=Math.round(s.y-cam.y),w=Math.max(4,s.a.cw-2);// (its fraction of a pixel kept inside save/restore: drawn into the scene, a shift left over would pile up frame on frame)
   ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(x-(w>>1),sy-1,w,2);ctx.translate(x,sy);if(s.flip)ctx.scale(-1,1);ctx.drawImage(s.a,-(s.a.width>>1),-s.a.height+1);ctx.restore()}}))}
+// (the wild game's and the herds' own dice: the stream 'critters', core/rng.js, so a kind added or a spawning rule changed never
+// moves the world's Math.random)
+const critRng=()=>rngOf('critters');
 function spawnCritter(initial){
   const ids=Object.keys(CRITTERS).filter(k=>!CRITTERS[k].live),wt=id=>CRITTERS[id].w/(1+W.critters.filter(c=>c.id===id).length*.3);
-  let r=Math.random()*ids.reduce((a,id)=>a+wt(id),0),id=ids[0];for(const f of ids){r-=wt(f);if(r<=0){id=f;break}}
+  const R=critRng();
+  let r=R.next()*ids.reduce((a,id)=>a+wt(id),0),id=ids[0];for(const f of ids){r-=wt(f);if(r<=0){id=f;break}}
   const D=CRITTERS[id];
   for(let k=0;k<200;k++){
-    const x=rint(2,MW-3)*TILE+8,y=rint(2,MH-3)*TILE+8,tags=habitatAt(x,y);
-    if(!D.where.some(w=>tags.includes(w))||D.where.includes('forest')&&!tags.includes('forest')&&Math.random()>CRITTER_WOODS.keep||D.rare&&tags.some(g=>D.rare[g]!=null&&Math.random()>D.rare[g])||Math.hypot(x-P.x,y-P.y)<WORLD_SCALE.spawn.critter[initial?0:1]||TOWNS.some(t=>Math.hypot(t.x-x,t.y-y)<WORLD_SCALE.spawn.critterHold))continue;
-    W.critters.push(asHerd({crit:true,id,x,y,hx:x,hy:y,n:rint(D.herd[0],D.herd[1]),t:0,a:0,dir:1,tire:0,cool:0}));return;
+    const x=R.int(2,MW-3)*TILE+8,y=R.int(2,MH-3)*TILE+8,tags=habitatAt(x,y);
+    if(!D.where.some(w=>tags.includes(w))||D.where.includes('forest')&&!tags.includes('forest')&&R.next()>CRITTER_WOODS.keep||D.rare&&tags.some(g=>D.rare[g]!=null&&R.next()>D.rare[g])||Math.hypot(x-P.x,y-P.y)<WORLD_SCALE.spawn.critter[initial?0:1]||TOWNS.some(t=>Math.hypot(t.x-x,t.y-y)<WORLD_SCALE.spawn.critterHold))continue;
+    W.critters.push(asHerd({crit:true,id,x,y,hx:x,hy:y,n:R.int(D.herd[0],D.herd[1]),t:0,a:0,dir:1,tire:0,cool:0}));return;
   }
 }
 // can this kind of livestock stand here? its own ground and climate, never a road, a holding's yard, or another estate's plot
@@ -63,7 +67,7 @@ const habitatOk=(id,x,y)=>{const tags=habitatAt(x,y);return CRITTERS[id].where.s
 // (a copy of a shuffled by binary insertion, a draw a comparison: what sort(()=>Math.random()-.5) did on a fresh page. That sort
 // is not a function of its draws: once the browser optimizes its caller it compares in another order and draws fewer, so a
 // new game's later draws hung on how warm the page was)
-function drawShuffle(a){a=a.slice();for(let s=1;s<a.length;s++){const p=a[s];let l=0,r=s;while(l<r){const m=(l+r)>>1;if(Math.random()-.5<0)r=m;else l=m+1}a.splice(s,1);a.splice(l,0,p)}return a}
+function drawShuffle(a){const R=critRng();a=a.slice();for(let s=1;s<a.length;s++){const p=a[s];let l=0,r=s;while(l<r){const m=(l+r)>>1;if(R.next()-.5<0)r=m;else l=m+1}a.splice(s,1);a.splice(l,0,p)}return a}
 // one herd grazing beside a holding, of an animal its people keep and its land can feed: inside the pasture fence if it has one
 function spawnHerd(t){
   const kinds=drawShuffle(LIVESTOCK[t.races[0]]||LIVESTOCK.human),sp=typeof bldSpots==='function'&&bldLv(t,'pasture')?bldSpots(t).pasture:null;
@@ -71,13 +75,13 @@ function spawnHerd(t){
   // the pasture itself (estates.js estateMeet))
   if(sp){const F=fieldsOf(t,'pasture'),lv=bldLv(t,'pasture'),w=16+6*lv,h=12+3*lv,pen=F?{town:t.name,k:'pasture'}:{x:sp.x-w/2+3,y:sp.y-h/2+3,w:w-6,h:h-6},at=F||sp,
       grazers=kinds.filter(id=>id!=='hen'),id=(grazers.length?grazers:kinds)[0],D=CRITTERS[id];
-    W.critters.push(asHerd({crit:true,decor:true,id,x:at.x,y:at.y,hx:at.x,hy:at.y,pen,n:rint(D.herd[0],D.herd[1]),home:t.name,t:0,a:0,dir:1,tire:0,cool:0,milked:0}));return true}
+    W.critters.push(asHerd({crit:true,decor:true,id,x:at.x,y:at.y,hx:at.x,hy:at.y,pen,n:critRng().int(D.herd[0],D.herd[1]),home:t.name,t:0,a:0,dir:1,tire:0,cool:0,milked:0}));return true}
   for(const id of kinds){const D=CRITTERS[id],near=id==='hen';
-    for(let k=0;k<160;k++){const a=Math.random()*6.283,d=(near?22:30)+Math.random()*(near?10:18)+k*.5,// wider out if it finds no room close by
+    for(let k=0;k<160;k++){const R=critRng(),a=R.next()*6.283,d=(near?22:30)+R.next()*(near?10:18)+k*.5,// wider out if it finds no room close by
       x=t.x+Math.cos(a)*d,y=t.y+12+Math.sin(a)*d;
       // the spot and the ground around it, so the herd has room to graze
       if(!grazeOk(id,x,y)||[[8,0],[-8,0],[0,6],[0,-6]].filter(([a2,b2])=>grazeOk(id,x+a2,y+b2)).length<3)continue;
-      W.critters.push(asHerd({crit:true,id,x,y,hx:x,hy:y,n:rint(D.herd[0],D.herd[1]),home:t.name,t:0,a:0,dir:1,tire:0,cool:0,milked:0}));return true}}
+      W.critters.push(asHerd({crit:true,id,x,y,hx:x,hy:y,n:critRng().int(D.herd[0],D.herd[1]),home:t.name,t:0,a:0,dir:1,tire:0,cool:0,milked:0}));return true}}
   return false;
 }
 const herdOf=t=>W.critters.find(c=>c.home===t.name);
@@ -86,9 +90,10 @@ function herdToFields(c){const t=c.home&&townBy(c.home),F=t&&bldLv(t,'pasture')&
 function initCritters(){TOWNS.filter(t=>t.T.herds).forEach(spawnHerd);for(let i=0;i<CRITTER_START;i++)spawnCritter(true)}
 // each day: game returns, herds regrow and empty pastures restock
 function critterDay(){
-  for(let k=0;k<3;k++)if(W.critters.filter(c=>!c.home).length<CRITTER_CAP&&Math.random()<.7)spawnCritter(false);
-  for(const c of W.critters){const D=CRITTERS[c.id];if(c.n<D.herd[1]&&Math.random()<(c.home?.35:.15))c.n++}
-  TOWNS.filter(t=>t.T.herds&&!herdOf(t)&&Math.random()<.25).forEach(spawnHerd);
+  const R=critRng();
+  for(let k=0;k<3;k++)if(W.critters.filter(c=>!c.home).length<CRITTER_CAP&&R.chance(.7))spawnCritter(false);
+  for(const c of W.critters){const D=CRITTERS[c.id];if(c.n<D.herd[1]&&R.chance(c.home?.35:.15))c.n++}
+  TOWNS.filter(t=>t.T.herds&&!herdOf(t)&&R.chance(.25)).forEach(spawnHerd);
 }
 // move every herd: wild game bolts when you come close and tires as it runs; livestock just grazes
 // a herd's moment (parties.js lodThink; hide: how well you are hidden from it): wild game you reach is hunted
@@ -97,9 +102,9 @@ const HERD_MIND={think(c,d,hide){
     // (fleeing: its grazing ground goes with it, and it keeps on away a little after, so it does not turn back into you)
     if(!D.live&&dist<D.shy*hide){const sp=moveStep(D.spd*(c.tire>4?.4:1)*Math.min(1,speedAt(c.x,c.y)||1),d);walk(c,dx,dy,sp);c.tire+=d;
       c.hx=c.x;c.hy=c.y;c.a=Math.atan2(dy,dx);c.t=Math.max(c.t,1.5);c.idle=false}
-    else{c.tire=Math.max(0,c.tire-d*.5);c.t-=d;if(c.t<=0){c.t=2+Math.random()*4;c.a=Math.random()*6.283;c.idle=Math.random()<.5}
+    else{c.tire=Math.max(0,c.tire-d*.5);c.t-=d;if(c.t<=0){const R=critRng();c.t=2+R.next()*4;c.a=R.next()*6.283;c.idle=R.chance(.5)}
       const hx=c.hx-c.x,hy=c.hy-c.y;if(Math.hypot(hx,hy)>(D.live?(c.pen?A.penLeash:A.herdLeash):A.gameLeash))c.a=Math.atan2(hy,hx);
-      if(!c.idle){const ok=D.live?(x,y)=>grazeOk(c.id,x,y,c.pen):(x,y)=>habitatOk(c.id,x,y);if(!walk(c,Math.cos(c.a),Math.sin(c.a),moveStep(D.live?4:8,d),ok)){c.a=Math.atan2(hy,hx)+(Math.random()-.5);c.idle=true}}}
+      if(!c.idle){const ok=D.live?(x,y)=>grazeOk(c.id,x,y,c.pen):(x,y)=>habitatOk(c.id,x,y);if(!walk(c,Math.cos(c.a),Math.sin(c.a),moveStep(D.live?4:8,d),ok)){c.a=Math.atan2(hy,hx)+(critRng().next()-.5);c.idle=true}}}
     // (it faces the way it went, turning only on a clear step sideways: no flicker as it swerves or runs straight up or down)
     {const mx=c.x-ox,my=c.y-oy;if(Math.abs(mx)>Math.hypot(mx,my)*.35&&Math.abs(mx)>.01)c.dir=mx>0?1:-1}
     if(dist<10&&!D.live&&c.cool<=0&&G.encCool<=0&&!G.modal){c.cool=4;if(G.chase===c)G.chase=null;hunt(c)}
@@ -108,10 +113,10 @@ function updateCritters(d){return lodEach(W.critters,HERD_MIND,d,P.stay?0:hidden
 // a hunt: one animal, plus one for every 4 bows or slings and every 3 levels of Scouting; the rest scatter
 const rangedCount=()=>Object.keys(P.troops).reduce((a,k)=>a+(ST[k].range?P.troops[k]:0),0);
 function hunt(c){
-  const D=CRITTERS[c.id],kills=Math.min(c.n,1+Math.floor(rangedCount()/4)+Math.floor(skill('hunt')/3)+(Math.random()<.4?1:0));
+  const D=CRITTERS[c.id],kills=Math.min(c.n,1+Math.floor(rangedCount()/4)+Math.floor(skill('hunt')/3)+(critRng().chance(.4)?1:0));
   c.n-=kills;if(c.n<=0)W.critters=W.critters.filter(x=>x!==c);else{c.tire=0;c.cool=6}
   const meat=invAdd('good','meat',kills*D.meat),got=[meat+' meat'];
-  if(D.mat){let m=0;for(let i=0;i<kills;i++)if(Math.random()<D.mat[1]*(1+.05*skill('hunt')))m++;if(m){const k=invAdd('mat',D.mat[0],m);if(k)got.push(k+' '+MATS[D.mat[0]].n.toLowerCase()+(k>1?'s':''))}}
+  if(D.mat){let m=0;for(let i=0;i<kills;i++)if(critRng().chance(D.mat[1]*(1+.05*skill('hunt'))))m++;if(m){const k=invAdd('mat',D.mat[0],m);if(k)got.push(k+' '+MATS[D.mat[0]].n.toLowerCase()+(k>1?'s':''))}}
   gainXp(kills*D.xp);train('hunt',kills*3);
   log('You bring down '+(kills>1?kills+' '+D.n.toLowerCase():an(D.one))+': '+got.join(', ')+'.'+(meat<kills*D.meat?' Your bag is full, so you leave some meat.':''),'good');
   updateHUD(true);

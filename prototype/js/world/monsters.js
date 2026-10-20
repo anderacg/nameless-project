@@ -35,24 +35,28 @@ class Monster extends WorldObject{
   takeLoss(blow){const one=this.fightPower()/Math.max(1,this.n);this.hurt=(this.hurt||0)+blow;while(this.n>0&&this.hurt>=one){this.hurt-=one;this.removeAny(1)}}
 }
 const asMonster=asClass(Monster);
-const monLevel0=()=>1+Math.floor(G.day/20),monLevel=()=>monLevel0()+(Math.random()<.3?1:0);// (monLevel0: without the chance of one more)
+// (the beasts' own dice: the stream 'monsters', core/rng.js, so a kind added or a weight changed never moves the world's Math.random)
+const monRng=()=>rngOf('monsters');
+// (monLevel0: without the chance of one more; r: the stream it rolls on, Math.random by default: the sites')
+const monLevel0=()=>1+Math.floor(G.day/20),monLevel=r=>monLevel0()+((r?r.next():Math.random())<.3?1:0);
 const lvMul=lv=>(1+.2*(lv-1))*(1+.12*(lv-1));
 function spawnMonster(initial){
   // pick the kind first, favoring kinds that are scarce on the map, then find it a home in its habitat
   const ids=Object.keys(MONSTERS).filter(id=>!MONSTERS[id].mythic),wt=id=>MONSTERS[id].w/(1+W.monsters.filter(m=>m.id===id).length);
-  let r=Math.random()*ids.reduce((a,id)=>a+wt(id),0),id=ids[0];for(const f of ids){r-=wt(f);if(r<=0){id=f;break}}
+  const R=monRng();
+  let r=R.next()*ids.reduce((a,id)=>a+wt(id),0),id=ids[0];for(const f of ids){r-=wt(f);if(r<=0){id=f;break}}
   const M=MONSTERS[id];
   // (in the wilds; after 200 tries, its ground not found there, at a land's far edge: lairLand)
   for(let k=0;k<400;k++){
-    const x=rint(2,MW-3)*TILE+8,y=rint(2,MH-3)*TILE+8,tags=habitatAt(x,y);
+    const x=R.int(2,MW-3)*TILE+8,y=R.int(2,MH-3)*TILE+8,tags=habitatAt(x,y);
     if(!M.where.some(w=>tags.includes(w))||Math.hypot(x-P.x,y-P.y)<WORLD_SCALE.spawn.monster[initial?0:1]||TOWNS.some(t=>Math.hypot(t.x-x,t.y-y)<WORLD_SCALE.spawn.monsterHold)||!lairLand(x,y,k>=200))continue;
-    W.monsters.push(asMonster({id,x,y,hx:x,hy:y,lv:monLevel(),n:rint(M.count[0],M.count[1]),t:0,a:0,cool:0}));return;
+    W.monsters.push(asMonster({id,x,y,hx:x,hy:y,lv:monLevel(R),n:R.int(M.count[0],M.count[1]),t:0,a:0,cool:0}));return;
   }
 }
 // where a beast may make its lair (the owner, 2026-10-19): in the wilds, on no holding's land; or, when rim (its kind's ground
 // not found in the wilds this time), within WORLD_SCALE.spawn.rim tiles of a land's edge, away from every holding and estate
 const lairLand=(x,y,rim)=>!landHold(x,y)||!!rim&&landRim(x,y,WORLD_SCALE.spawn.rim)&&farFromHomes(x,y,WORLD_SCALE.spawn.away);
-function monsterDay(){for(let k=0;k<3;k++)if(W.monsters.length<MONSTER_CAP&&Math.random()<.6)spawnMonster(false);mythicDay()}
+function monsterDay(){for(let k=0;k<3;k++)if(W.monsters.length<MONSTER_CAP&&monRng().chance(.6))spawnMonster(false);mythicDay()}
 // a beast's moment (parties.js lodThink; hide: how well you are hidden from it): a mythic one roams; the rest hunt you, keep
 // off, or wander near the lair. True when it falls on you
 const BEAST_MIND={think(m,d,hide){
@@ -60,7 +64,7 @@ const BEAST_MIND={think(m,d,hide){
     if(MONSTERS[m.id].mythic)return roamMythic(m,d);
     const A=WORLD_SCALE.ai,M=MONSTERS[m.id],dx=P.x-m.x,dy=P.y-m.y,dist=Math.hypot(dx,dy);m.cool=Math.max(0,m.cool-d);
     const st=stance(monPower(m)),hunt=M.aggro&&Math.hypot(P.x-m.hx,P.y-m.hy)<A.lairHunt;
-    if(m.cool>0||!stanceMove(m,st,dist,dx,dy,WORLD_SCALE.sight.monster*hide,moveStep(26*Math.min(1,speedAt(m.x,m.y)||1),d),hunt)){m.t-=d;if(m.t<=0){m.t=2+Math.random()*4;m.a=Math.random()*6.283}
+    if(m.cool>0||!stanceMove(m,st,dist,dx,dy,WORLD_SCALE.sight.monster*hide,moveStep(26*Math.min(1,speedAt(m.x,m.y)||1),d),hunt)){m.t-=d;if(m.t<=0){const R=monRng();m.t=2+R.next()*4;m.a=R.next()*6.283}
       // wander, but stay near the lair
       const hx=m.hx-m.x,hy=m.hy-m.y;if(Math.hypot(hx,hy)>A.lairLeash)m.a=Math.atan2(hy,hx);walk(m,Math.cos(m.a),Math.sin(m.a),moveStep(10,d))}
     // a band it meets: it falls on them, and they fight back (a fight on the map)
@@ -83,7 +87,7 @@ function monsterLoot(m,slain){
   const M=MONSTERS[m.id],mats=slain.filter(k=>k===M.unit).length;
   if(mats&&M.mat){const kept=invAdd('mat',M.mat,mats);if(kept<mats)log('Your bag is full. You leave '+(mats-kept)+' '+MATS[M.mat].n.toLowerCase()+(mats-kept>1?'s':'')+' behind.','bad')}
   if(M.meat&&mats)invAdd('good','meat',mats*M.meat);
-  for(const [it,ch] of M.gear)if(Math.random()<ch*(1+.1*(m.lv-1))){
+  for(const [it,ch] of M.gear)if(monRng().chance(ch*(1+.1*(m.lv-1)))){
     if(invAdd('gear',it,1))log('You found '+ITEMS[it].n+' ('+ITEMS[it].r+')! Open your inventory with I.','gold');
     else log('Your bag is full. You leave '+ITEMS[it].n+' behind.','bad');
   }
@@ -101,7 +105,8 @@ const mythicNews=(verb)=>W.monsters.filter(m=>MONSTERS[m.id].mythic).map(m=>cap1
 function spawnMythic(id){
   const M=MONSTERS[id],Y=M.mythic,lairs=Y.lair.map(l=>LAIR_TILES[l]());
   // its favorite ground first; the others only if that keeps failing; in the wilds, or late at a land's far edge (lairLand)
-  for(let k=0;k<160;k++){const tx=rint(3,MW-4),ty=rint(3,MH-4),tt=tAt(tx,ty),ok=k<100?tt===lairs[0]:lairs.includes(tt);if(!ok)continue;
+  const R=monRng();
+  for(let k=0;k<160;k++){const tx=R.int(3,MW-4),ty=R.int(3,MH-4),tt=tAt(tx,ty),ok=k<100?tt===lairs[0]:lairs.includes(tt);if(!ok)continue;
     const x=(tx+.5)*TILE,y=(ty+.5)*TILE;if(Math.hypot(x-P.x,y-P.y)<WORLD_SCALE.spawn.mythic||!lairLand(x,y,k>=130))continue;
     const m=asMonster({id,x,y,hx:x,hy:y,tx:x,ty:y,lv:1,n:1,t:0,a:0,cool:5,dir:1});W.monsters.push(m);
     log(cap1(an(M.n.toLowerCase()))+' has been sighted near '+Spatial.nearestHolding(m.x,m.y).name+'!','bad');return m}
@@ -110,14 +115,14 @@ function spawnMythic(id){
 function mythicDay(){
   for(const id of mythicIds()){const M=MONSTERS[id],Y=M.mythic,m=mythicOf(id),st=W.mythic[id]||(W.mythic[id]={back:Y.first});
     if(!m){if(G.day>=st.back)spawnMythic(id);continue}
-    if(Y.scorch&&Math.random()<Y.scorch){const t=Spatial.nearestHolding(m.x,m.y);if(Math.hypot(t.x-m.x,t.y-m.y)<WORLD_SCALE.ai.mythicScorch){t.gar=Math.floor(t.gar/2);m.tx=t.x;m.ty=t.y-20;m.t=6;log('The '+M.n.toLowerCase()+' burns the fields of '+t.name+'. Its garrison is halved.','bad')}}}
+    if(Y.scorch&&monRng().chance(Y.scorch)){const t=Spatial.nearestHolding(m.x,m.y);if(Math.hypot(t.x-m.x,t.y-m.y)<WORLD_SCALE.ai.mythicScorch){t.gar=Math.floor(t.gar/2);m.tx=t.x;m.ty=t.y-20;m.t=6;log('The '+M.n.toLowerCase()+' burns the fields of '+t.name+'. Its garrison is halved.','bad')}}}
 }
 // one frame of a mythic monster: hunt you if it sees you, else roam; returns true if it starts a fight
 function roamMythic(m,d){
   const M=MONSTERS[m.id],Y=M.mythic;m.cool=Math.max(0,m.cool-d);
   const pd=Math.hypot(P.x-m.x,P.y-m.y),hunt=!P.stay&&pd<Y.see*(hiddenAt(P.x,P.y)?.55:1)&&m.cool<=0;let tx=m.tx,ty=m.ty;
   if(hunt){tx=P.x;ty=P.y}
-  else{m.t-=d;if(m.t<=0||Math.hypot(tx-m.x,ty-m.y)<4){m.t=4+Math.random()*5;const R=WORLD_SCALE.ai.mythicRoam;m.tx=tx=clamp(m.x+rint(-R[0],R[0]),24,MW*TILE-24);m.ty=ty=clamp(m.y+rint(-R[1],R[1]),24,MH*TILE-24)}}
+  else{m.t-=d;if(m.t<=0||Math.hypot(tx-m.x,ty-m.y)<4){const r=monRng(),R=WORLD_SCALE.ai.mythicRoam;m.t=4+r.next()*5;m.tx=tx=clamp(m.x+r.int(-R[0],R[0]),24,MW*TILE-24);m.ty=ty=clamp(m.y+r.int(-R[1],R[1]),24,MH*TILE-24)}}
   const dx=tx-m.x,dy=ty-m.y,dl=Math.hypot(dx,dy);
   if(dl>1){const sp=Math.min(dl,moveStep(Y.speed[hunt?1:0],d));if(Y.fly){m.x+=dx/dl*sp;m.y+=dy/dl*sp}else walk(m,dx,dy,sp);m.dir=dx>=0?1:-1}
   if(Y.ravage)for(const l of W.lords)if(!l.dead&&!l.inside&&!((l.dcool||0)>G.day)&&Math.hypot(l.x-m.x,l.y-m.y)<16){l.dcool=G.day+3;cull(l,Y.ravage);log('The '+M.n.toLowerCase()+' falls upon the army of '+l.name+'. '+(Y.ravage>=.5?'Half':'Many')+' are lost.','bad');if(l.troops.length<3)defeatLord(l)}
@@ -129,8 +134,8 @@ function mythicSlain(m,res){
   const M=MONSTERS[m.id],Y=M.mythic,H=Y.hoard||{};let txt='';
   W.mythic[m.id]={back:G.day+Y.back};res.fame=Y.fame;
   if(H.gold)res.gold+=H.gold;if(H.renown)P.renown+=H.renown;if(H.text)txt+=' '+H.text;
-  if(H.gear){const g=randomGear(H.gear[0],H.gear[1]);if(!invAdd('gear',g,1))log('Your bag is full. You leave a '+ITEMS[g].n+' behind.','bad')}
-  if(H.egg&&Math.random()<H.egg[1]&&invAdd('gear',H.egg[0],1))txt+=' Among the gold, an egg hatches: a <span style="color:'+RARITY[ITEMS[H.egg[0]].r]+'">'+ITEMS[H.egg[0]].n+'</span>.';
+  if(H.gear){const g=Rng.use('monsters',()=>randomGear(H.gear[0],H.gear[1]));if(!invAdd('gear',g,1))log('Your bag is full. You leave a '+ITEMS[g].n+' behind.','bad')}
+  if(H.egg&&monRng().chance(H.egg[1])&&invAdd('gear',H.egg[0],1))txt+=' Among the gold, an egg hatches: a <span style="color:'+RARITY[ITEMS[H.egg[0]].r]+'">'+ITEMS[H.egg[0]].n+'</span>.';
   log('The '+M.n.toLowerCase()+' is slain! Your name rings across Ashmark.','gold');
   return txt;
 }

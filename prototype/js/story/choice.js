@@ -51,8 +51,9 @@ class Choice{
   chance(){
     return statOdds(this.odds);
   }
+  // (the road's stream: its odds are the road's checks, core/rng.js)
   roll(){
-    return Math.random()<this.chance();
+    return rngOf('road').chance(this.chance());
   }
   read(o){
     return statRead(this.odds,o);

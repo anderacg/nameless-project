@@ -25,7 +25,7 @@ defineKinds('incident',{trigger:'day'},{
   // (the roll first: a real spring or a mirage)
   mirage:{w:2,ok:(c=storyCtx())=>c.climate==='desert',
     run:()=>{
-      if(Math.random()<.5)return {morale:5,log:['Your scouts find a real spring among the dunes. Everyone drinks deep.','good']};
+      if(rngOf('incidents').chance(.5))return {morale:5,log:['Your scouts find a real spring among the dunes. Everyone drinks deep.','good']};
       return {morale:-2,log:['The lake on the horizon was only a mirage. Spirits sag.','bad']};
     }},
 });
@@ -41,5 +41,6 @@ function roadEvent(){
   const c=storyCtx(),K=Incident.pick(EVENTS,c);
   if(K)Incident.befall(K,c);
 }
-// the day's last word: now and then an event on the road, never while you stay somewhere (core/systems.js)
-Systems.add({name:'road events',order:{day:230},day:()=>{if(!P.stay&&Math.random()<ROAD_EVENT_DAY)roadEvent()}});
+// the day's last word: now and then an event on the road, never while you stay somewhere (core/systems.js; its roll from the
+// stream 'incidents', core/rng.js)
+Systems.add({name:'road events',order:{day:230},day:()=>{if(!P.stay&&rngOf('incidents').chance(ROAD_EVENT_DAY))roadEvent()}});

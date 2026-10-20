@@ -22,7 +22,9 @@ try{
  const world=()=>{t.hidePanel();G.mode='world';G.modal=false;G.enc=null;G.road=null;G.chase=null;P.tx=null;G.encCool=0;G.paused=false};
  const clear=()=>{t.bandits.length=0;W.lords.forEach(l=>{l.x=-9999;l.y=-9999});W.monsters=[];W.caravans=[];W.refugees=[];W.folk=[];W.patrols=[];W.fights=[];W.critters=[];W.road=null};
  const R=()=>t.roadSt(),D=k=>t.ROAD_ENC[k],r0=Math.random;
- const stub=(v,fn)=>{const k=Math.random;Math.random=typeof v==='function'?v:()=>v;try{return fn()}finally{Math.random=k}};
+ // (the dice fixed while fn runs: the road's and the letter's streams (core/rng.js, S4) and Math.random for the rest, all
+ // drawing from v, as Math.random alone did before the streams)
+ const stub=(v,fn)=>Kit.stub(v,()=>Kit.stubStream('road',v,()=>Kit.stubStream('letters',v,fn)));
  // a place: open, walkable ground all round (12 tiles), a road through it, far from holdings and sites
  const far=(tx,ty)=>t.TOWNS.every(z=>Math.hypot(z.tx-tx,z.ty-ty)>10)&&W.sites.every(s=>Math.hypot(s.tx-tx,s.ty-ty)>4);
  const around=(tx,ty,r,f)=>{for(let j=-r;j<=r;j++)for(let i=-r;i<=r;i++)if(!f(t.tAt(tx+i,ty+j)))return false;return true};

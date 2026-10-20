@@ -20,20 +20,21 @@ const letterFac=f=>FACS[f]?FACS[f].n:'a fallen realm';
 function letterDef(s){const L=letterOf(s),open=L&&!L.seal;
   return{n:open?'Opened letter':'Sealed letter',icon:'letter',col:open?'#d8c8a0':'#e8dcb8',seal:!open,d:L?'From the '+letterFac(L.fac)+' at '+L.from+', to the lord of '+L.to+'.':'A letter.'}}
 
-/* ---------- its contents, when the messenger comes: of the kinds there can be, by ENC_TUNE.letter.w ---------- */
-function letterMake(e){const x=ENC_TUNE.letter,f=e.fac,own=fiefsOf(f),home=townBy(e.home)||own[0]||Spatial.nearestHolding(e.x,e.y),others=own.filter(t=>t!==home);
-  const from=others.length?others[rint(0,others.length-1)]:home,kinds=[];
+/* ---------- its contents, when the messenger comes: of the kinds there can be, by ENC_TUNE.letter.w (its draws, and the witness
+   roll's, from the stream 'letters': core/rng.js) ---------- */
+function letterMake(e){const r=rngOf('letters'),x=ENC_TUNE.letter,f=e.fac,own=fiefsOf(f),home=townBy(e.home)||own[0]||Spatial.nearestHolding(e.x,e.y),others=own.filter(t=>t!==home);
+  const from=others.length?r.pick(others):home,kinds=[];
   const ls=W.lords.filter(l=>l.fac===f&&!l.dead&&['march','siege','relieve'].includes(l.state)&&townBy(l.tgt));
-  if(ls.length)kinds.push(['army',()=>{const l=ls[rint(0,ls.length-1)];return{to:home,lord:l.id,ln:l.name,tgt:l.tgt,n:l.troops.length}}]);
+  if(ls.length)kinds.push(['army',()=>{const l=r.pick(ls);return{to:home,lord:l.id,ln:l.name,tgt:l.tgt,n:l.troops.length}}]);
   const foes=enemiesOf(f).filter(g=>g!=='player'&&fiefsOf(g).length);
-  if(foes.length)kinds.push(['attack',()=>{const g=foes[rint(0,foes.length-1)];return{to:home,vs:g,tgt:Spatial.nearest(fiefsOf(g),home.x,home.y).name}}]);
+  if(foes.length)kinds.push(['attack',()=>{const g=r.pick(foes);return{to:home,vs:g,tgt:Spatial.nearest(fiefsOf(g),home.x,home.y).name}}]);
   const pals=FIDS.filter(g=>g!==f&&g!=='player'&&!W.dead[g]&&!atWar(f,g)&&fiefsOf(g).length);
-  if(pals.length)kinds.push(['deal',()=>{const g=pals[rint(0,pals.length-1)],c=enemiesOf(f).find(c=>c!==g&&c!=='player'&&atWar(g,c))||enemiesOf(f).find(c=>c!==g&&c!=='player')||null;
+  if(pals.length)kinds.push(['deal',()=>{const g=r.pick(pals),c=enemiesOf(f).find(c=>c!==g&&c!=='player'&&atWar(g,c))||enemiesOf(f).find(c=>c!==g&&c!=='player')||null;
     return{to:Spatial.nearest(fiefsOf(g),e.x,e.y),with:g,vs:c,rel:relOf(f,g).s}}]);
   kinds.push(['news',()=>{const s=W.sites.filter(s=>s.scoutable&&!s.seen).sort((a,b)=>Math.hypot(a.x-home.x,a.y-home.y)-Math.hypot(b.x-home.x,b.y-home.y))[0];return{to:home,site:s?[s.tx,s.ty]:null}}]);
-  let r=Math.random()*kinds.reduce((a,[k])=>a+x.w[k],0),pick=kinds[kinds.length-1];for(const q of kinds){r-=x.w[q[0]];if(r<=0){pick=q;break}}
+  let w=r.next()*kinds.reduce((a,[k])=>a+x.w[k],0),pick=kinds[kinds.length-1];for(const q of kinds){w-=x.w[q[0]];if(w<=0){pick=q;break}}
   const k=pick[0],o=pick[1](),to=o.to;delete o.to;
-  return{id:'L'+e.i,kind:k,fac:f,from:from.name,to:to.name,toFac:to.owner,day:G.day,stale:G.day+rint(x.stale[0],x.stale[1]),worth:Math.round(rint(x.worth[0],x.worth[1])*x.kind[k]),seal:1,seen:0,...o}}
+  return{id:'L'+e.i,kind:k,fac:f,from:from.name,to:to.name,toFac:to.owner,day:G.day,stale:G.day+r.int(x.stale[0],x.stale[1]),worth:Math.round(r.int(x.worth[0],x.worth[1])*x.kind[k]),seal:1,seen:0,...o}}
 const letterSite=L=>L.site?W.sites.find(s=>s.tx===L.site[0]&&s.ty===L.site[1]):null;
 // what it says (its news, in the sender's words)
 function letterText(L){const F=letterFac(L.fac);
@@ -58,7 +59,7 @@ function letterWitness(e){const w=ENC_TUNE.letter.witness,near=o=>o&&o!==e&&Math
     W.lords.filter(l=>!l.dead&&!l.inside&&near(l)).length+bandits.filter(near).length+roadList().filter(o=>!o.trace&&!o.gone&&near(o)).length,
     hold=TOWNS.some(t=>!t.gone&&Math.hypot(t.x-e.x,t.y-e.y)<w.holdR);
   return clamp((w.base+w.per*n+(hold?w.hold:0))*(1-w.scout*skill('scout'))*(darkness()>0?w.night:1),w.lo,w.hi)}
-function letterTake(e){const L={...e.letter,seen:Math.random()<letterWitness(e)?1:0},i=P.inv.indexOf(null);
+function letterTake(e){const L={...e.letter,seen:rngOf('letters').chance(letterWitness(e))?1:0},i=P.inv.indexOf(null);
   if(i<0)return ', but your bag is full: his sealed letter stays in the mud';
   P.inv[i]={k:'letter',id:L.id,n:1,L};return ' and his sealed letter, addressed to '+L.to+'. '+(L.seen?'Someone on the road saw it all':'Nobody saw you')}
 

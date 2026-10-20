@@ -35,7 +35,9 @@ function sendWatch(t){
 }
 // home (or scattered): those still standing rejoin the garrison; the fallen are lost to the watch
 function watchBack(t,p){t.gar+=p.troops.length;const X=watchesOf(t)[watchOf(p)];X.n=Math.max(0,X.n-((p.sent||p.troops.length)-p.troops.length));p.gone=true}
-let watchCheck=0;
+// (the half-second check for watches to send, brains.js updateParties: from 0 again in a new game or a load, so a game never
+// runs on from the last one's timer and the same game plays the same in one page)
+let watchCheck=0;onWorld(()=>{watchCheck=0});
 const crimeAt=t=>t&&t.crime&&t.crime.until>G.day?t.crime:null;
 // is (x, y) land the patrol guards: its holding's, or another holding of the same realm's
 const patrolLand=(p,x,y)=>{const h=landHold(x,y);return !!h&&(h.name===p.home||h.owner===p.fac)};

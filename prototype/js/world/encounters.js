@@ -105,6 +105,8 @@ const statParts=k=>ENC_STAT[k].parts.map(([s,p])=>'+'+Math.round(p*1000)/10+'% '
 // (o: vague, what (the words after a rough or exact chance), rough(p) and exact(p) (words of their own), more (its tooltip))
 function statRead(k,o){const p=statOdds(k);return insight([o.vague,o.rough?o.rough(p):oddsWord(p)+' '+o.what,o.exact?o.exact(p):Math.round(p*100)+'% '+o.what],o.more||'know your odds')}
 const ENC_RAIDER='#4a2c26';// (raiders' rags: darker than any realm's colours, so a fight reads at a glance)
+// (the road's own dice: its stream, core/rng.js, so a kind added or a weight changed never moves the world's Math.random)
+const roadRng=()=>rngOf('road');
 const roadNow=()=>Clock.hours();// (the world's clock, in hours: clock.js)
 const roadDay=()=>Clock.isDay;// (by day: the kinds that walk the roads in daylight)
 // (time spent with them: h hours on the clock, a new day rolling over as it does on the map)
@@ -147,7 +149,7 @@ const roadCol=e=>e.fac&&FACS[e.fac]?FACS[e.fac].col:'#8a7458',roadPrice=e=>Math.
 // its fighters mustered here; or the lure's, mustered when it came: e.band, e.foes); edge (as amb unless given): you in their
 // trap, the ambush's battle; false: you came ready for them
 const roadBand=(x,y)=>{const c=climAt(x,y);return c==='desert'?'raiders':c==='swamp'?'bog':'bandits'};
-const roadBandN=()=>rint(5,7)+Math.floor(G.day/15);
+const roadBandN=()=>roadRng().int(5,7)+Math.floor(G.day/15);
 function roadFight(e,amb,edge=amb){e.done=1;e.gone=1;G.road=null;const k=amb?e.band||roadBand(P.x,P.y):'bandits',n=e.foes?e.foes.length:amb?roadBandN():e.n,b=asParty({x:P.x,y:P.y,cool:0,n,kind:k,...(e.foes?{troops:e.foes.slice()}:{})});
   startEncounter({kind:'party',ref:b,n,list:b.troops.slice(),band:k,...(edge?{btype:{kind:'ambush',hid:1}}:{})})}
 /* the kinds: Encounter kinds (story/kinds.js defineKinds; their trigger 'travelHour', the pity timer's: ROAD_ENC is their view;
@@ -182,16 +184,16 @@ const ROAD_FLED=new Choice({icon:'scroll',label:'Ask why they fled',again:true,f
    catchReach) and it is back with the flock */
 class Shepherd extends Encounter{
   setup(){
-    const S=ENC_SHEEP,R=roadSt(),n=rint(S.n[0],S.n[1]),at=[];
+    const S=ENC_SHEEP,R=roadSt(),r=roadRng(),n=r.int(S.n[0],S.n[1]),at=[];
     for(let k=0;k<60&&at.length<n;k++){
-      const a=Math.random()*6.2832,d=S.r[0]+Math.random()*(S.r[1]-S.r[0]),x=this.x+Math.cos(a)*d,y=this.y+Math.sin(a)*d,tx=Math.floor(x/TILE),ty=Math.floor(y/TILE);
+      const a=r.next()*6.2832,d=S.r[0]+r.next()*(S.r[1]-S.r[0]),x=this.x+Math.cos(a)*d,y=this.y+Math.sin(a)*d,tx=Math.floor(x/TILE),ty=Math.floor(y/TILE);
       if(tx<2||ty<2||tx>=MW-2||ty>=MH-2||!passable(tAt(tx,ty))||occAt(tx,ty)||!Router.reach(P,{x,y})||at.some(([u,v])=>Math.hypot(u-x,v-y)<14))continue;
       at.push([x,y]);
     }
     if(at.length<2)return false;
     this.n=at.length;
     this.got=0;
-    for(const [x,y] of at)R.on.push(asRoadEnc({rd:1,i:++R.id,k:'stray',pk:this.i,x,y,dir:x<this.x?-1:1,beh:'graze',race:this.race,t0:this.t0,end:this.end,d0:Math.hypot(x-P.x,y-P.y),seed:rint(1,9999),seen:0,met:0,done:0}));
+    for(const [x,y] of at)R.on.push(asRoadEnc({rd:1,i:++R.id,k:'stray',pk:this.i,x,y,dir:x<this.x?-1:1,beh:'graze',race:this.race,t0:this.t0,end:this.end,d0:Math.hypot(x-P.x,y-P.y),seed:r.int(1,9999),seen:0,met:0,done:0}));
   }
   // his wool or his cheese (for each sheep back); his strays still out, and how many, in words
   good(){
@@ -272,7 +274,7 @@ defineKinds('encounter',{trigger:'travelHour'},{
      come ready (no ambush edge), or call them out (they show themselves: fight, or leave; a small band may run). Left be, the
      bandits move on (after: the word on the road) */
   lure:{n:'Wounded traveller',wn:'Fake wounded (a lure)',ico:'wounded',w:1,wf:()=>roadLureW(),ok:(c=storyCtx())=>c.troops>=3,on:'lure',beh:'stay',ends:'unseen',call:'Help! Over here!',hear:'Someone calls out from the road to the {d}.',tip:'Lying by the road',they:'stay; bandits lie hidden near',
-    setup:e=>{e.band=roadBand(e.x,e.y);e.foes=makeEnemies(roadBandN(),false,e.band)},
+    setup:e=>{e.band=roadBand(e.x,e.y);e.foes=Rng.use('road',()=>makeEnemies(roadBandN(),false,e.band))},
     scene:e=>e.out?[['stand','traveller',0,0],['soldier','',-9,-3,{band:1,col:ENC_RAIDER,v:1}],['soldier','',9,-4,{band:1,col:ENC_RAIDER,v:3,face:-1}],['soldier','',14,1,{band:1,col:ENC_RAIDER,v:5,face:-1}]]:[['down','traveller',0,0,{blood:1}]],
     text:e=>e.out?'The “wounded man” gets up, grinning. '+e.foes.length+' bandits rise from the brush behind him, weapons out.':ROAD_ENC.traveller.text(e),
     facts:e=>e.out?[e.foes.length+' bandits',roadLureOdds(e)]:[...ROAD_ENC.traveller.facts(e),roadWarned()&&'<span class="bad">something moves in the brush behind him</span>',skill('scout')>=ENC_TUNE.lure.count&&'<span class="bad">'+e.foes.length+' bandits lie in wait: '+roadLureOdds(e)+'</span>'],
@@ -282,11 +284,11 @@ defineKinds('encounter',{trigger:'travelHour'},{
       {icon:'sword',label:'Approach ready',when:e=>roadWarned()&&!e.out,also:e=>['no ambush: they lose their edge',skill('scout')>=ENC_TUNE.lure.count&&e.foes.length+' bandits'],tip:'Walk up to him with your band closed up and weapons drawn.',
         out:()=>({fight:{amb:true,edge:false},say:'Your band closes up, weapons drawn. The bandits break cover too late.'})},
       {icon:'eye',label:'Call them out',when:e=>roadWarned()&&!e.out,again:true,facts:e=>[e.foes.length<=ENC_TUNE.lure.scare.max?insight(['they may run',oddsWord(roadScare())+' they run','a '+Math.round(roadScare()*100)+'% chance they run'],'know if they run'):'too many to scare off','then fight, or leave'],tip:'Shout to the brush that you see them. Leadership and Charisma may scare a small band off.',
-        run:e=>{e.out=1;if(e.foes.length<=ENC_TUNE.lure.scare.max&&Math.random()<roadScare())return{end:true,gone:true,say:'You call them out. Seeing your band ready, they melt back into the woods, their “wounded man” limping after them.'};
+        run:e=>{e.out=1;if(e.foes.length<=ENC_TUNE.lure.scare.max&&roadRng().chance(roadScare()))return{end:true,gone:true,say:'You call them out. Seeing your band ready, they melt back into the woods, their “wounded man” limping after them.'};
           return'You call them out. '+e.foes.length+' bandits rise from the brush, weapons out.'}},
       {icon:'sword',label:'Fight them',when:e=>!!e.out,also:e=>[e.foes.length+' bandits',roadLureOdds(e)],out:()=>({fight:{amb:true,edge:false},say:'You ride at them.'})}]},
   merchant:{n:'Wandering merchant',ico:'stall',w:2,ok:()=>true,on:'road',beh:'approach',call:'Wares! Fine wares!',hear:'A peddler hails you from the road to the {d}.',tip:'A peddler with his pack',
-    setup:e=>{e.item=randomGear(0,Math.min(MATERIALS.length-1,1+Math.floor(G.day/15)))},
+    setup:e=>{e.item=Rng.use('road',()=>randomGear(0,Math.min(MATERIALS.length-1,1+Math.floor(G.day/15))))},
     scene:()=>[['walk','peddler',0,0]],
     text:e=>{const I=ITEMS[e.item];return 'A travelling peddler opens his pack: a <span style="color:'+RARITY[I.r]+'">'+I.n+'</span> ('+I.d+') for '+roadPrice(e)+' gold.'},
     left:()=>'The peddler shrugs and moves on.',
@@ -335,9 +337,9 @@ defineKinds('encounter',{trigger:'travelHour'},{
     left:()=>'You mark it on your map and move on.',
     acts:[{icon:'pick',label:'Search it',facts:()=>['iron, maybe gear','a cave-in may cost you'],odds:'mine',tip:'Go in with lamps and see what is left.',
       // (both rolls first, then the haul: the iron into your bag before the gear, as ever)
-      run:(e,c)=>{if(c.roll()){const id=Math.random()<statOdds('mineGear')?randomGear(1,3):null;
+      run:(e,c)=>{if(c.roll()){const id=roadRng().chance(statOdds('mineGear'))?Rng.use('road',()=>randomGear(1,3)):null;
           return{goods:{iron:5},...(id?{gear:id}:{}),say:r=>'The tunnels hold. You haul out '+r.goods.iron+' iron.'+(r.gear?' Deep inside lies a '+ITEMS[id].n+'.':'')}}
-        const ks=Object.keys(P.troops).filter(k=>P.troops[k]>0);if(ks.length){const k=ks[rint(0,ks.length-1)];return{lose:k,say:'A tunnel caves in. You lose '+an(ST[k].n.toLowerCase())+'.'}}return{morale:-8,say:'A tunnel caves in. You barely crawl out.'}}}]},
+        const ks=Object.keys(P.troops).filter(k=>P.troops[k]>0);if(ks.length){const k=ks[roadRng().int(0,ks.length-1)];return{lose:k,say:'A tunnel caves in. You lose '+an(ST[k].n.toLowerCase())+'.'}}return{morale:-8,say:'A tunnel caves in. You barely crawl out.'}}}]},
   hunters:{n:'Hunters’ camp',ico:'fire',w:2,ok:(c=storyCtx())=>c.terrain===T_FOREST||c.climate==='frost',on:'wood',beh:'stay',hear:'Smoke rises from a hunters’ fire to the {d}.',tip:'Hunters drying pelts by a fire',
     scene:()=>[['bld','tent',-12,1],['prop','woodpile',13,0],['fire','',2,2],['stand','hunter',-3,5,{v:1}],['stand','hunter',8,5,{v:2,face:-1}]],
     text:()=>'A camp of hunters drying pelts by the fire.',
@@ -363,7 +365,7 @@ defineKinds('encounter',{trigger:'travelHour'},{
     left:()=>'The lights fade behind you.',
     acts:[{icon:'moon',label:'Follow them',facts:()=>['treasure, or a night lost'],odds:'wisps',run:(e,c)=>c.roll()?{gold:40,say:'They lead to a drowned chest with 40 gold.'}:{morale:-6,say:'They lead you in circles until dawn.'}}]},
   caravan:{n:'Caravan under attack',ico:'sword',w:1.2,ok:(c=storyCtx())=>c.troops>=3,on:'road',beh:'scene',goes:p=>!!(p[4]&&p[4].band),call:'Raiders! Help us!',hear:'Shouts and the clash of steel on the road to the {d}.',trace:'wreck',foe:true,tip:'Raiders falling on a caravan',
-    setup:e=>{e.n=rint(4,6)+Math.floor(G.day/15);const t=Spatial.nearestHolding(P.x,P.y);e.fac=t.owner&&FACS[t.owner]?t.owner:null},
+    setup:e=>{e.n=roadRng().int(4,6)+Math.floor(G.day/15);const t=Spatial.nearestHolding(P.x,P.y);e.fac=t.owner&&FACS[t.owner]?t.owner:null},
     scene:e=>[['cart','',0,0,{col:roadCol(e)}],['soldier','',18,2,{col:roadCol(e),v:2}],['soldier','',20,-3,{col:roadCol(e),v:4}],['dust','',25,0],['soldier','',29,1,{band:1,col:ENC_RAIDER,v:1,face:-1}],['soldier','',32,-3,{band:1,col:ENC_RAIDER,v:4,face:-1}],['soldier','',30,5,{band:1,col:ENC_RAIDER,v:5,face:-1}]],
     text:()=>'A merchant caravan is under attack by raiders just ahead.',
     facts:e=>[insight(['raiders','about '+roughly(e.n)+' raiders',e.n+' raiders'],'know how many'),'it will not hold out long'],
@@ -396,7 +398,7 @@ defineKinds('encounter',{trigger:'travelHour'},{
       run:e=>{e.help=1;e.end=Math.max(e.end,roadNow()+ENC_SHEEP.hours);for(const o of e.strays()){o.seen=1;o.end=e.end}return'You ride out after the strays. Ride into each one to send it home.'}}]},
   // ---- phase 2: the new ones (their numbers: ENC_TUNE)
   mud:{n:'Cart stuck in the mud',ico:'wheat',w:1.5,ok:(c=storyCtx())=>c.isDay&&c.climate!=='desert',on:'mud',beh:'stay',call:'Give us a push!',hear:'Someone shouts for help with a cart on the road to the {d}.',trace:'cart',tip:'A farmer and his cart, stuck fast',
-    setup:e=>{const x=ENC_TUNE.mud,t=Spatial.nearestHolding(e.x,e.y);e.home=t.name;e.race=t.races[0];e.got=rint(x.give[0],x.give[1]);e.load=rint(x.goods[0],x.goods[1]);e.coins=rint(x.coins[0],x.coins[1])},
+    setup:e=>{const x=ENC_TUNE.mud,t=Spatial.nearestHolding(e.x,e.y);e.home=t.name;e.race=t.races[0];const r=roadRng();e.got=r.int(x.give[0],x.give[1]);e.load=r.int(x.goods[0],x.goods[1]);e.coins=r.int(x.coins[0],x.coins[1])},
     scene:()=>[['mud','',-6,0],['cart','',0,0,{col:'#9a8a6a'}],['worker','farmer',-17,1]],
     text:e=>'A farmer from '+e.home+' leans on the back of his cart, its wheels sunk to the hubs in the mud. His ox strains and gets nowhere.',
     facts:e=>['a load of grain for '+e.home],
@@ -406,7 +408,7 @@ defineKinds('encounter',{trigger:'travelHour'},{
       {icon:'bag',label:'Rob',ask:e=>'Rob a farmer of '+e.home+' stuck in the mud? '+e.home+' will hear of it, and its workers will keep off the fields.',
         out:e=>({goods:{grain:e.load},gold:e.coins,wrong:[townBy(e.home),CONDUCT.robWorker],mood:'cruel',say:r=>'You take '+(r.goods.grain?r.goods.grain+' grain and ':'')+e.coins+' coins from his cart.'+(r.cost?' It costs you: '+r.cost+'.':'')})}]},
   thief:{n:'Thief on the run',ico:'bag',w:1.2,ok:(c=storyCtx())=>c.isDay&&!!c.nearHold,on:'road',near:[0,20],beh:'flee',life:'run',far:true,leave:'Let go',call:'Stop, thief!',hear:'Someone shouts “Stop, thief!” on the road to the {d}.',tip:'A man running off with a purse',they:'run across your view',
-    setup:e=>{const x=ENC_TUNE.thief,t=nearHold()||Spatial.nearestHolding(e.x,e.y);e.home=t.name;e.race=t.races[0];e.fac=roadFac(t);e.purse=rint(x.purse[0],x.purse[1]);e.vx=e.x;e.vy=e.y;roadAcross(e)},
+    setup:e=>{const x=ENC_TUNE.thief,t=nearHold()||Spatial.nearestHolding(e.x,e.y);e.home=t.name;e.race=t.races[0];e.fac=roadFac(t);e.purse=roadRng().int(x.purse[0],x.purse[1]);e.vx=e.x;e.vy=e.y;roadAcross(e)},
     scene:e=>[['walk','thief',0,0],['stand','victim',0,0,{at:[e.vx,e.vy],face:e.x>=e.vx?1:-1}]],
     text:e=>e.nab?'You run the thief down. He throws the purse at your feet: '+e.purse+' gold.':'A man sprints off with a purse in his fist. Back on the road its owner, a merchant of '+e.home+', shouts after him.',
     facts:e=>e.nab?[]:[roadChaseRead(e),'a stolen purse: about '+e.purse+' gold'],
@@ -427,7 +429,7 @@ defineKinds('encounter',{trigger:'travelHour'},{
       {icon:'food',label:'Buy the meat',need:()=>P.gold<ENC_TUNE.poacher.price?'Not enough gold.':goodRoom('meat')<1&&'No room in your bag.',
         out:()=>{const x=ENC_TUNE.poacher;return{gold:-x.price,goods:{meat:x.meat},say:r=>'He sells you '+r.goods.meat+' meat, cheap, and melts into the trees.'}}}]},
   funeral:{n:'Funeral procession',ico:'altar',w:1,ok:(c=storyCtx())=>c.isDay&&!!c.nearHold&&roadSites().length>0,on:'road',beh:'walk',hear:'A slow dirge drifts from the road to the {d}.',tip:'Mourners bearing a bier',
-    setup:e=>{const x=ENC_TUNE.funeral,t=Spatial.nearestHolding(e.x,e.y),s=roadGoal(e,roadSites());if(!s)return false;e.home=t.name;e.race=t.races[0];e.fac=roadFac(t);e.n=rint(x.n[0],x.n[1]);e.gx=s.x;e.gy=s.y+10;e.site=s.name;roadWalkEnd(e)},
+    setup:e=>{const x=ENC_TUNE.funeral,t=Spatial.nearestHolding(e.x,e.y),s=roadGoal(e,roadSites());if(!s)return false;e.home=t.name;e.race=t.races[0];e.fac=roadFac(t);e.n=roadRng().int(x.n[0],x.n[1]);e.gx=s.x;e.gy=s.y+10;e.site=s.name;roadWalkEnd(e)},
     scene:e=>[['walk','mourner',8,0,{v:0}],['down','shroud',0,-3,{v:5}],['walk','mourner',-8,0,{v:1}],...[[-16,-1],[-22,2],[-28,0]].slice(0,e.n-2).map(([dx,dy],i)=>['walk','mourner',dx,dy,{v:i+2}])],
     text:e=>'Mourners from '+e.home+(e.left?' walk home from the '+e.site+', their dead laid to rest.':e.pray?' stand by their dead at the '+e.site+', heads bowed.':' bear one of their dead on a bier to the '+e.site+', singing low.'),
     facts:e=>[e.n+' mourners'],
@@ -443,7 +445,7 @@ defineKinds('encounter',{trigger:'travelHour'},{
       {icon:'gold',label:'Give a gift',also:()=>[statHelps('respect')],need:()=>P.gold<ENC_TUNE.wedding.gift&&'Not enough gold.',
         out:e=>{const x=ENC_TUNE.wedding;return{gold:-x.gift,rep:[e.home,statMore('respect',x.rep)],say:'The couple thank you, and '+e.home+' will remember your gift.'}}}]},
   horse:{n:'Runaway horse',ico:'shoe',w:1,wf:()=>P.gear.mount?1:1.5,ok:(c=storyCtx())=>c.climate!=='swamp',on:'open',beh:'flee',life:'stay',ends:'leave',stop:true,spook:ENC_CATCH.spook,tip:'A saddled horse, no rider',they:'bolt, then graze',
-    setup:e=>{e.mk=roadMount(e);e.stop=rint(ENC_CATCH.bolt[0],ENC_CATCH.bolt[1]);e.coat=['horse','chestnut','horseB','horseG'][e.seed%4]},
+    setup:e=>{e.mk=roadMount(e);e.stop=roadRng().int(ENC_CATCH.bolt[0],ENC_CATCH.bolt[1]);e.coat=['horse','chestnut','horseB','horseG'][e.seed%4]},
     scene:e=>[['horse','',0,0,{coat:e.coat}]],
     text:e=>'A saddled '+(e.mk==='horse'?'horse':MOUNTS[e.mk].n.toLowerCase())+' with no rider, its reins trailing, '+(e.calm?'grazing by the way. It keeps one eye on you.':'wild-eyed.'),
     facts:e=>[statRead('horse',{vague:'skittish',what:'to catch it'}),statHelps('horse'),P.gear.mount?'you have a mount: it is worth '+itemPrice('m_'+e.mk)+' gold':'a '+MOUNTS[e.mk].n],
@@ -457,8 +459,8 @@ defineKinds('encounter',{trigger:'travelHour'},{
     acts:ENC_TUNE.beggar.gold.map((g,i)=>({icon:'gold',label:'Give '+g+' gold',need:()=>P.gold<g&&'Not enough gold.',
       out:e=>{const h=ENC_TUNE.beggar.honor[i];return{gold:-g,...(e.fac?{honor:[e.fac,h]}:{morale:2*h}),mood:'kind',say:'He blesses you and your band. ('+g+' gold given)'}}}))},
   messenger:{n:'Messenger',ico:'scroll',w:1,ok:()=>FIDS.length>0,on:'road',beh:'approach',spd:'ride',call:'News from the realm!',hear:'Hoofbeats: a rider on the road to the {d}.',tip:'A realm’s rider',
-    setup:e=>{const x=ENC_TUNE.messenger,t=Spatial.nearestHolding(e.x,e.y),f=roadFac(t)||FIDS.filter(k=>k!=='player')[rint(0,FIDS.filter(k=>k!=='player').length-1)],h=Spatial.nearestHolding(e.x,e.y,z=>z.owner===f)||t;
-      e.fac=f;e.home=h.name;e.race=h.races[0];e.purse=rint(x.purse[0],x.purse[1]);e.coat=['horse','chestnut','horseB'][e.seed%3];e.letter=letterMake(e)},
+    setup:e=>{const x=ENC_TUNE.messenger,t=Spatial.nearestHolding(e.x,e.y),f=roadFac(t)||FIDS.filter(k=>k!=='player')[roadRng().int(0,FIDS.filter(k=>k!=='player').length-1)],h=Spatial.nearestHolding(e.x,e.y,z=>z.owner===f)||t;
+      e.fac=f;e.home=h.name;e.race=h.races[0];e.purse=roadRng().int(x.purse[0],x.purse[1]);e.coat=['horse','chestnut','horseB'][e.seed%3];e.letter=letterMake(e)},
     scene:e=>[['rider','messenger',0,0,{col:roadCol(e),coat:e.coat}]],
     text:e=>'A rider in the colours of the '+FACS[e.fac].n+' reins in beside you, a sealed letter in his satchel.',
     facts:e=>['bound for '+e.letter.to],
@@ -485,7 +487,7 @@ const roadTendFacts=()=>{const x=ENC_TUNE.traveller,c=statOdds('care');return['�
 // (he is on his feet and his gift rolled first, then the outcome: the food, the word of you, the gold; nothing of yours is read
 // in between, and the one draw is the same)
 function roadTend(e){const x=ENC_TUNE.traveller,c=statOdds('care'),t=nearHold();
-  e.care=Math.round(c*100)/100;e.healed=1;e.done=1;e.goOff();const g=c>0&&Math.random()<c*x.gift?rint(x.gold[0],x.gold[1]):0;
+  e.care=Math.round(c*100)/100;e.healed=1;e.done=1;e.goOff();const r=roadRng(),g=c>0&&r.chance(c*x.gift)?r.int(x.gold[0],x.gold[1]):0;
   return{food:-x.food,rep:[t&&t.name,statMore('care',x.rep)],renown:statMore('care',x.renown),gold:g,
     say:'Bandaged and fed, he gets to his feet. He swears to tell '+(t?t.name:'everyone')+' of your kindness, and '+(c<.5?'limps':'walks')+' off down the road.'+(g?' He presses '+g+' gold from his purse into your hand.':'')}}
 // Join the hunt (ENC_TUNE.hunters): the haul, more by your Survival, Hunting and Archery (ENC_STAT.hunt): meat × (1 + it), furs × it
@@ -494,7 +496,7 @@ const roadHaul=()=>{const x=ENC_TUNE.hunters,h=statOdds('hunt');return{meat:Math
 const roadMount=e=>({desert:'camel',swamp:'strider',frost:'pony'})[climAt(e.x,e.y)]||'horse';
 // (one running across your view: from where it starts toward a point beside you, a little over a third of your sight to one
 // side, and on)
-function roadAcross(e){const V=vis(),ux=P.x-e.x,uy=P.y-e.y,L=Math.hypot(ux,uy)||1,s=Math.random()<.5?1:-1,qx=P.x-uy/L*s*V*.35,qy=P.y+ux/L*s*V*.35,M=Math.hypot(qx-e.x,qy-e.y)||1;
+function roadAcross(e){const V=vis(),ux=P.x-e.x,uy=P.y-e.y,L=Math.hypot(ux,uy)||1,s=roadRng().chance(.5)?1:-1,qx=P.x-uy/L*s*V*.35,qy=P.y+ux/L*s*V*.35,M=Math.hypot(qx-e.x,qy-e.y)||1;
   e.hx=(qx-e.x)/M;e.hy=(qy-e.y)/M;e.x+=e.hx*10;e.y+=e.hy*10}
 /* a procession's places to go: the shrines and ruins near you; its goal, of those (or of the holdings), the one whose way passes
    nearest you (the least detour from where it is through you), not too near, not too far to walk in its time (ENC_WALK), and
@@ -513,9 +515,9 @@ function roadWalkEnd(e){const g=e.goal(),L=ENC_LIFE.walk;e.end=e.t0+clamp(Math.h
 const ENC_PRAY={dy:12};
 const roadShrines=()=>W.sites.filter(s=>s.type==='shrine'&&Math.hypot(s.x-P.x,s.y-P.y)<ENC_WALK.far+ENC_SPAWN.near[1]);
 const roadShrineOf=e=>e.st?W.sites.find(s=>s.tx===e.st[0]&&s.ty===e.st[1]):null;// (their shrine: st, its tile; names repeat)
-function roadPilgrims(e){const x=ENC_TUNE.pilgrims,V=vis(),t=nearHold(),d=(s,o)=>Math.hypot(s.x-o.x,s.y-o.y);e.to=t?t.name:null;e.n=rint(x.n[0],x.n[1]);
+function roadPilgrims(e){const x=ENC_TUNE.pilgrims,V=vis(),t=nearHold(),d=(s,o)=>Math.hypot(s.x-o.x,s.y-o.y);e.to=t?t.name:null;e.n=roadRng().int(x.n[0],x.n[1]);
   const pray=roadShrines().filter(s=>d(s,P)>=V&&d(s,P)<=V+ENC_SPAWN.near[1]&&passable(tAt(Math.floor(s.x/TILE),Math.floor((s.y+ENC_PRAY.dy)/TILE)))).sort((a,b)=>d(a,P)-d(b,P))[0];
-  if(pray){const L=ENC_LIFE.stay;e.pray=1;e.site=pray.name;e.st=[pray.tx,pray.ty];e.x=pray.x;e.y=pray.y+ENC_PRAY.dy;e.dir=1;e.beh='stay';e.d0=d(e,P);e.end=e.t0+L[0]+Math.random()*(L[1]-L[0]);return}
+  if(pray){const L=ENC_LIFE.stay;e.pray=1;e.site=pray.name;e.st=[pray.tx,pray.ty];e.x=pray.x;e.y=pray.y+ENC_PRAY.dy;e.dir=1;e.beh='stay';e.d0=d(e,P);e.end=e.t0+L[0]+roadRng().next()*(L[1]-L[0]);return}
   const far=roadWalkFar(),s=roadShrines().filter(s=>d(s,e)>=ENC_WALK.min&&d(s,e)<=far&&Router.reach(e,s)).sort((a,b)=>d(a,e)-d(b,e))[0];if(!s)return false;
   e.site=s.name;e.st=[s.tx,s.ty];e.gx=s.x;e.gy=s.y+ENC_PRAY.dy;roadWalkEnd(e)}
 const roadPraying=e=>!!e.pray&&!e.left;// (at their prayers: at the shrine, not yet walking on)
@@ -533,9 +535,9 @@ function roadSpring(e){const m='You kneel beside him, and he grins. Bandits burs
 function roadNews(){const out=[],s=W.sites.filter(x=>!x.seen&&x.scoutable).sort((a,b)=>Math.hypot(a.x-P.x,a.y-P.y)-Math.hypot(b.x-P.x,b.y-P.y))[0],
     ls=W.lords.filter(l=>!l.dead&&!l.inside&&l.x>=0&&l.y>=0&&FACS[l.fac]),wars=FIDS.flatMap(a=>FIDS.filter(b=>a<b&&atWar(a,b)).map(b=>[a,b]));
   if(s)out.push(()=>{s.seen=true;return'the '+s.label+' lies to the '+compass(s.x-P.x,s.y-P.y)+'. It is on your map now'});
-  if(ls.length)out.push(()=>{const l=ls[rint(0,ls.length-1)];return l.name+' of the '+FACS[l.fac].n+' rides near '+Spatial.nearestHolding(l.x,l.y).name+', to the '+compass(l.x-P.x,l.y-P.y)});
-  out.push(()=>{if(!wars.length)return'the realms keep the peace, for now';const w=wars[rint(0,wars.length-1)];return'the '+FACS[w[0]].n+' and the '+FACS[w[1]].n+' are at war'});
-  return out[rint(0,out.length-1)]()}
+  if(ls.length)out.push(()=>{const l=roadRng().pick(ls);return l.name+' of the '+FACS[l.fac].n+' rides near '+Spatial.nearestHolding(l.x,l.y).name+', to the '+compass(l.x-P.x,l.y-P.y)});
+  out.push(()=>{if(!wars.length)return'the realms keep the peace, for now';const w=roadRng().pick(wars);return'the '+FACS[w[0]].n+' and the '+FACS[w[1]].n+' are at war'});
+  return roadRng().pick(out)()}
 /* the chase and the catch (ENC_CATCH), shared: how fast one you chase runs (by your Agility), how near you must come, the hours
    you would take to close on one dist px away at your sprint (Infinity: never); the odds of a catch by hand (Riding, Agility);
    roadSprint: × your pace on the map while you chase one (world.js updateWorld) */
@@ -551,7 +553,7 @@ function roadChaseRead(e){const h=catchHours(e.fromYou()),H=ENC_CATCH.hours;
 function roadChase(e){e.chase=roadNow()+ENC_CATCH.hours;e.hx=e.hy=null;G.road=null;G.mode='world';hidePanel();G.chase=e;P.tx=e.x;P.ty=e.y;P.stuck=0;const m='You run after the thief!';log(m);return m}
 // Catch it: a Riding check (and Agility); caught, the mount is yours (its worth in gold if you have one); missed, it bolts
 function roadCatchHorse(e){const id='m_'+e.mk;train('ride',4);
-  if(Math.random()<catchOdds()){e.gone=1;if(!P.gear.mount){P.gear.mount=id;fitInv();return'You take the reins and swing into the saddle: the '+ITEMS[id].n+' is yours.'}
+  if(roadRng().chance(catchOdds())){e.gone=1;if(!P.gear.mount){P.gear.mount=id;fitInv();return'You take the reins and swing into the saddle: the '+ITEMS[id].n+' is yours.'}
     const g=itemPrice(id);P.gold+=g;return'You take the reins, and sell the '+ITEMS[id].n+' on for '+g+' gold.'}
   e.beh='bolt';return'It shies, rears and bolts. Gone.'}
 /* the parts of another (pk: its i), never coming on their own (no trigger): a stray sheep of the shepherd's (its class, Stray:
@@ -692,13 +694,13 @@ function drawRoad(ents,cam,V){for(const e of roadList())e.draw(ents,cam,V)}
 // toward: dir) the open side when only one is (a wood's edge: its camp out of the trees), else you. None if its setup finds no
 // way for it from there (a procession with nowhere to go)
 const roadOpen=(x,y,i)=>{const q=tAt(Math.floor(x/TILE)+i,Math.floor(y/TILE));return q===T_OPEN||q===T_ROAD};
-function roadSpawn(k,x,y){const D=ROAD_ENC[k],R=roadSt(),now=roadNow(),L=ENC_LIFE[D.life||D.beh],t=Spatial.nearestHolding(x,y),side=roadOpen(x,y,1)!==roadOpen(x,y,-1)?(roadOpen(x,y,1)?1:-1):0;
-  const e=asRoadEnc({rd:1,i:++R.id,k,x,y,dir:side||(P.x>=x?1:-1),beh:D.beh,race:t&&t.races?t.races[rint(0,t.races.length-1)]:'human',t0:now,end:now+L[0]+Math.random()*(L[1]-L[0]),d0:Math.hypot(x-P.x,y-P.y),seed:rint(1,9999),seen:0,met:0,done:0});
+function roadSpawn(k,x,y){const D=ROAD_ENC[k],R=roadSt(),r=roadRng(),now=roadNow(),L=ENC_LIFE[D.life||D.beh],t=Spatial.nearestHolding(x,y),side=roadOpen(x,y,1)!==roadOpen(x,y,-1)?(roadOpen(x,y,1)?1:-1):0;
+  const e=asRoadEnc({rd:1,i:++R.id,k,x,y,dir:side||(P.x>=x?1:-1),beh:D.beh,race:t&&t.races?t.races[r.int(0,t.races.length-1)]:'human',t0:now,end:now+L[0]+r.next()*(L[1]-L[0]),d0:Math.hypot(x-P.x,y-P.y),seed:r.int(1,9999),seen:0,met:0,done:0});
   if(e.setup()===false)return null;R.on.push(e);if(R.day!==G.day){R.day=G.day;R.n=0}R.n++;R.cd[k]=G.day;return e}
 // a spot for its ground (ENC_ON): past your sight by near px, ahead of where you are going (within arc; else wider after half the
 // tries), on ground you can walk to, nothing built on it, clear of the holdings
-function roadSpot(on,arc,near){const S=ENC_SPAWN,V=vis(),fit=ENC_ON[on],a0=P.tx!=null?Math.atan2(P.ty-P.y,P.tx-P.x):Math.random()*6.2832,N=near||S.near;
-  for(let i=0;i<S.tries;i++){const a=a0+(Math.random()*2-1)*(arc||S.arc*(i<S.tries/2?1:2.86)),r=V+N[0]+Math.random()*(N[1]-N[0]),x=P.x+Math.cos(a)*r,y=P.y+Math.sin(a)*r,tx=Math.floor(x/TILE),ty=Math.floor(y/TILE);
+function roadSpot(on,arc,near){const S=ENC_SPAWN,V=vis(),fit=ENC_ON[on],R=roadRng(),a0=P.tx!=null?Math.atan2(P.ty-P.y,P.tx-P.x):R.next()*6.2832,N=near||S.near;
+  for(let i=0;i<S.tries;i++){const a=a0+(R.next()*2-1)*(arc||S.arc*(i<S.tries/2?1:2.86)),r=V+N[0]+R.next()*(N[1]-N[0]),x=P.x+Math.cos(a)*r,y=P.y+Math.sin(a)*r,tx=Math.floor(x/TILE),ty=Math.floor(y/TILE);
     if(tx<2||ty<2||tx>=MW-2||ty>=MH-2||!passable(tAt(tx,ty))||occAt(tx,ty)||!fit(tx,ty))continue;
     if(TOWNS.some(t=>Math.hypot(t.tx-tx,t.ty-ty)<S.hold)||!Router.reach(P,{x,y}))continue;
     return[x,y]}
@@ -707,13 +709,13 @@ const roadW=k=>{const D=ROAD_ENC[k];return D.w*(D.wf?D.wf():1)};
 // which comes: of the kinds the pity timer can start (its bucket: story/kinds.js) that can come here and now (not too soon again),
 // by weight; tried at its own ground, else another
 function roadPick(){const R=roadSt(),c=storyCtx(),ks=Kinds.on('encounter','travelHour').map(K=>K.id).filter(k=>!(R.cd[k]!=null&&G.day-R.cd[k]<ENC_SPAWN.again)&&ROAD_ENC[k].ok(c));
-  while(ks.length){let r=Math.random()*ks.reduce((a,k)=>a+roadW(k),0),k=ks[0];for(const q of ks){r-=roadW(q);if(r<=0){k=q;break}}
+  while(ks.length){let r=roadRng().next()*ks.reduce((a,k)=>a+roadW(k),0),k=ks[0];for(const q of ks){r-=roadW(q);if(r<=0){k=q;break}}
     const D=ROAD_ENC[k],p=roadSpot(D.on,D.beh==='approach'?ENC_SPAWN.arcTo:0,D.near),e=p&&roadSpawn(k,p[0],p[1]);if(e)return e;ks.splice(ks.indexOf(k),1)}
   return null}
 // the hour's roll: none past perDay a day or while one is about; else the pity timer's chance, by the land you are on
 function roadRoll(){const R=roadSt(),S=ENC_SPAWN;if(R.day!==G.day){R.day=G.day;R.n=0}
   if(R.n>=S.perDay||R.on.some(e=>!e.trace&&!e.gone))return null;
-  return Math.random()<roadChance()?roadPick():null}
+  return roadRng().chance(roadChance())?roadPick():null}
 const roadChance=()=>{const S=ENC_SPAWN;return Math.min(S.cap,S.base+S.rate*roadSt().c)*S.land[storyCtx().landKind]};
 // a moment's travel: the hours you moved add to the timer; each whole one, the roll (ROAD_AT: where you were, how far you went
 // last moment: kept aside)

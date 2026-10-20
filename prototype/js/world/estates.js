@@ -74,8 +74,10 @@ class Buildings{
     if(t.lots&&t.pop>=t.layout.housing()*.9&&!t.econ.lacking(HOUSE_COST.mats).length&&payRealm(t.owner,HOUSE_COST.gold)){if(this.start('house',HOUSE_DAYS))t.econ.take(HOUSE_COST.mats);else refundRealm(t.owner,HOUSE_COST.gold);return}// (no free plot: nothing spent)
     let k=null;if(wallOf(t)<t.T.wallMax&&(front||Math.random()<.2))k='wall';
     else{const ks=Object.keys(ESTATES).filter(e=>bldLv(t,e)<this.cap(e)&&(bldLv(t,e)||this.needsMet(e)));t.econ.ensure();
-      const want=e=>{const gs=ESTATES[e].goods;let w=gs.reduce((a,g)=>a+Math.max(0,1-(t.stock[g]||0)/t.econ.target(g)),0);if(e==='granary')w+=t.econ.foodDays()<5?.6:0;if(e==='market')w+=.3;return w+Math.random()*.3};
-      k=ks.sort((p,q)=>want(q)-want(p))[0]||null}
+      // (each one's want worked out once, its random share drawn then, one a kind in the list's order, before the sort: the draws
+      // never hang on the order the engine's sort compares in)
+      const want=new Map(ks.map(e=>{const gs=ESTATES[e].goods;let w=gs.reduce((a,g)=>a+Math.max(0,1-(t.stock[g]||0)/t.econ.target(g)),0);if(e==='granary')w+=t.econ.foodDays()<5?.6:0;if(e==='market')w+=.3;return [e,w+Math.random()*.3]}));
+      k=ks.sort((p,q)=>want.get(q)-want.get(p))[0]||null}
     if(!k)return;
     const lv=k==='wall'?wallOf(t)+1:bldLv(t,k)+1,mats=k==='wall'?WALL_MAT[lv]:ESTATE_MAT(k,lv),gold=k==='wall'?WALL_COST[lv]:bldCost(k,lv);
     if(t.econ.lacking(mats).length||!payRealm(t.owner,gold))return;
@@ -118,13 +120,15 @@ class Buildings{
     return true}
   // a house is finished
   houseDone(w){const l=LOT[w.lot];if(l){l.st='built';l._s=null}}
-  // your order for a new house (at: its plot, placed by hand): gold first, its materials once it starts. (It neither says so
-  // nor answers true once it starts: kept as it was)
+  // your order for a new house (at: its plot, placed by hand): gold first, its materials once it starts; true once it starts
   house(at){
     const t=this.t;
     if(t.work||P.gold<HOUSE_COST.gold||t.econ.lacking(HOUSE_COST.mats).length)return false;P.gold-=HOUSE_COST.gold;
     if(!this.start('house',HOUSE_DAYS,at)){P.gold+=HOUSE_COST.gold;return false}
-    t.econ.take(HOUSE_COST.mats)}
+    t.econ.take(HOUSE_COST.mats);
+    log('Builders start on a new house in '+t.name+'.');
+    return true;
+  }
   // your order: fortify, or place or raise an estate (at: its spot, placed by hand)
   build(k,at){
     const t=this.t;

@@ -3,8 +3,11 @@
 // Behavioral assertions below are retained; old category-bucket fingerprints no longer describe this architecture.
 // Outcome fingerprints captured before extraction. No battle frames are simulated: each fixture supplies an explicit field result.
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t.P,W=t.W,originalRandom=Math.random;
+  // (monster_win re-recorded 2026-10-21 S4: story and content systems on named streams, seeded per world and per game (owner accepted once); the estates' sort keys drawn before sorting: a beast's loot is rolled on the 'monsters' stream (world/monsters.js
+  // monsterLoot), not Math.random; with the streams switched back to Math.random it is c95d35c7 as before, and every other case is
+  // unchanged)
   // (re-recorded 2026-10-19: a new skill, Woodcraft (6b911d6), in every character's skill table, which these snapshots hold; with it taken out every one matches as before: the battle's behaviour unchanged)
-  const expected={"field_win":"095840fd","field_loss":"dfbba318","retreat_away":"c2c81503","retreat_caught":"9102b338","carried_retreat":"fbddc708","tournament_win":"92b90207","tournament_loss":"5ec88907","siege_win":"5496f267","siege_loss":"8677d140","lord_win":"1883f361","lord_loss":"0c5560f7","monster_win":"c95d35c7","auto_win":"ce5dbf85","auto_loss":"c67be098","auto_resolve":"e4ba3c51"};
+  const expected={"field_win":"095840fd","field_loss":"dfbba318","retreat_away":"c2c81503","retreat_caught":"9102b338","carried_retreat":"fbddc708","tournament_win":"92b90207","tournament_loss":"5ec88907","siege_win":"5496f267","siege_loss":"8677d140","lord_win":"1883f361","lord_loss":"0c5560f7","monster_win":"1744f530","auto_win":"ce5dbf85","auto_loss":"c67be098","auto_resolve":"e4ba3c51"};
   const stable=x=>Array.isArray(x)?x.map(stable):x&&typeof x==='object'?Object.fromEntries(Object.keys(x).sort().map(k=>[k,stable(x[k])])):x;
   const hash=x=>{let h=2166136261;for(const c of JSON.stringify(stable(x)))h=Math.imul(h^c.charCodeAt(0),16777619)>>>0;return h.toString(16).padStart(8,'0')};
   const cases=['field_win','field_loss','retreat_away','retreat_caught','carried_retreat','tournament_win','tournament_loss','siege_win','siege_loss','lord_win','lord_loss','monster_win','auto_win','auto_loss','auto_resolve'];

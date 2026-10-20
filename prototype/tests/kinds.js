@@ -54,7 +54,7 @@ Kit.suite(({ok,info})=>{
    let x=spawnOf(k,false);if(!x)return;if(k==='thief')x.nab=1;
    // (shown with no draw and no change)
    const look=()=>JSON.stringify([P.gold,P.morale,P.rep,P.honor,P.inv,P.troops,G.clock,G.msgs.length,W.road&&W.road.on.length]);
-   const b0=look();let d=0;const r0=Math.random;Math.random=()=>{d++;return r0()};let o=null;try{o=c.preview(x)}finally{Math.random=r0}
+   const b0=look(),s0=JSON.stringify(t.Rng.states());let d=0;const r0=Math.random;Math.random=()=>{d++;return r0()};let o=null;try{o=c.preview(x)}finally{Math.random=r0}if(JSON.stringify(t.Rng.states())!==s0)d++;
    if(d||look()!==b0||!O.is(o)){bad.pure.push(k+'#'+i);return}
    // (its facts: written from it, its own lines after)
    const fs=(c.factsFor(x)||[]).filter(Boolean),said=O.facts(o),own=c.also?(c.also(x)||[]).filter(Boolean):[];
@@ -87,7 +87,9 @@ Kit.suite(({ok,info})=>{
    try{const V=t.vis(),now=t.roadNow();
     if(!x.trace){const ang=Math.atan2(x.y-P.y,x.x-P.x);P.x=x.x-Math.cos(ang)*V*.6;P.y=x.y-Math.sin(ang)*V*.6;G.clock+=(x.end-now+.01)*DAY/24;while(G.clock>=DAY){G.clock-=DAY;G.day++}
      Kit.frames(1,.05,d=>t.updateRoad(d));const seen=x.inView(V);if(seen&&x.gone)bad.end.push(k+' (gone at once, in your sight)');Kit.world();G.road=null;G.chase=null}
-    P.x=x.x-V*1.4;P.y=x.y;const later=Math.max(x.end,t.roadNow())+t.ENC_LIFE.dying+t.ENC_LIFE.linger+1;G.clock+=(later-t.roadNow())*DAY/24;while(G.clock>=DAY){G.clock-=DAY;G.day++}
+    const later=Math.max(x.end,t.roadNow())+t.ENC_LIFE.dying+t.ENC_LIFE.linger+1;G.clock+=(later-t.roadNow())*DAY/24;while(G.clock>=DAY){G.clock-=DAY;G.day++}
+    // (out of your sight as it is then: by day, or on open ground, you see farther than you did when its time came up)
+    for(let i=0;i<3;i++){P.x=x.x-Math.max(V,t.vis())*1.4;P.y=x.y}
     Kit.frames(5,.05,d=>t.updateRoad(d));Kit.world();
     const tr=D.trace&&!x.done?t.roadList().find(o=>o.trace&&o.k===D.trace&&o.x===x.x&&o.y===x.y):null;
     if(!x.gone)bad.end.push(k+' (still there: '+x.beh+')');else if(D.trace&&!x.done&&!tr)bad.end.push(k+' (no '+D.trace+')');
@@ -111,9 +113,9 @@ Kit.suite(({ok,info})=>{
   let nDid=0;
   for(const D of all){const at=spots.find(([x,y])=>{P.x=x;P.y=y;return D.ok(t.storyCtx())});if(!at){bad.push(D.id+' (no spot)');continue}
    for(const race of Object.keys(t.RACES))for(const v of [.2,.8]){P.x=at[0];P.y=at[1];P.race=race;P.morale=50;P.gold=300;P.inv=P.inv.map(()=>null);t.invAdd('good','grain',10);
-    const c=t.storyCtx(),o=Kit.stub(v,()=>D.run(c));if(!O.is(o)||Array.isArray(o)){bad.push(D.id+' (not an outcome)');continue}
+    const c=t.storyCtx(),o=Kit.stub(v,()=>Kit.stubStream('incidents',v,()=>D.run(c)));if(!O.is(o)||Array.isArray(o)){bad.push(D.id+' (not an outcome)');continue}
     const a={g:P.gold,f:t.foodN(),m:P.morale},n0=G.msgs.length,said=[],fn=ev=>said.push(ev.e);t.worldOn('incident:ended',fn);let e=null;
-    try{e=Kit.stub(v,()=>I.befall(D,c))}finally{t.worldOff('incident:ended',fn)}
+    try{e=Kit.stub(v,()=>Kit.stubStream('incidents',v,()=>I.befall(D,c)))}finally{t.worldOff('incident:ended',fn)}
     const got=[];for(const key of Object.keys(o)){if(key==='gold')got.push(O.signed(P.gold-a.g)+' gold');else if(key==='food')got.push(O.signed(t.foodN()-a.f)+' food');else if(key==='morale')got.push('morale '+O.signed(P.morale-a.m));else if(key!=='log')got.push('?'+key)}
     const last=G.msgs[G.msgs.length-1],line=[].concat(o.log);nDid++;
     if(got.join(' · ')!==t.describeOutcome(o))bad.push(D.id+' '+race+': did ['+got.join(' · ')+'], says ['+t.describeOutcome(o)+']');

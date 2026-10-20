@@ -73,8 +73,8 @@ Kit.suite(({ok,info})=>{
  // ---- the road's choices: showing an outcome does nothing; their facts written from it (the lines kept by hand: INFO)
  {const ks=Object.keys(t.ROAD_ENC),miss=[],kept=[];let pure=0,impure=[];
   for(const k of ks){let e=null;for(const z of t.TOWNS){if(e)break;Kit.world();Kit.clear();Kit.goHome(z);W.road=null;for(let i=0;i<12&&!e;i++)e=t.roadSpawn(k,P.x+10+i*24,P.y+(i%3)*20)}if(!e){info('  (no '+k+' to try)');continue}if(k==='thief')e.nab=1;
-   e.D.acts.forEach((c,i)=>{if(!c.out)return;const before=JSON.stringify([P.gold,P.morale,P.rep,P.honor,P.inv,P.troops,G.clock,G.msgs.length]);let d=0;const r0=Math.random;Math.random=()=>{d++;return r0()};
-    let o=null;try{o=c.preview(e)}finally{Math.random=r0}const after=JSON.stringify([P.gold,P.morale,P.rep,P.honor,P.inv,P.troops,G.clock,G.msgs.length]);if(d||before!==after||!t.Outcome.is(o))impure.push(k+'#'+i);else pure++;
+   e.D.acts.forEach((c,i)=>{if(!c.out)return;const before=JSON.stringify([P.gold,P.morale,P.rep,P.honor,P.inv,P.troops,G.clock,G.msgs.length]);let d=0;const r0=Math.random,s0=JSON.stringify(t.Rng.states());Math.random=()=>{d++;return r0()};
+    let o=null;try{o=c.preview(e)}finally{Math.random=r0}if(JSON.stringify(t.Rng.states())!==s0)d++;const after=JSON.stringify([P.gold,P.morale,P.rep,P.honor,P.inv,P.troops,G.clock,G.msgs.length]);if(d||before!==after||!t.Outcome.is(o))impure.push(k+'#'+i);else pure++;
     const fs=(c.factsFor(e)||[]).filter(Boolean),said=t.Outcome.facts(o),own=c.also?(c.also(e)||[]).filter(Boolean):[];
     if(c.facts||fs.slice(0,said.length).join(' · ')!==said.join(' · ')||fs.length!==said.length+own.length||fs.some(f=>/\bhonor\b/.test(f)))miss.push(k+' “'+c.label+'” ['+fs.join(' · ')+']');
     if(own.length)kept.push(k+' “'+c.label+'”: '+own.join(' · ').replace(/<[^>]+>/g,''))})}
@@ -92,7 +92,7 @@ Kit.suite(({ok,info})=>{
   ok(c.shown({here:1})&&!c.shown({})&&new C({label:'x'}).shown({}),'when: offered only then (none: always)');
   ok(c.why({poor:1})==='Too poor'&&c.why({})==='','need: why it is greyed, \'\' when free');
   ok(c.asks({risky:1})==='Are you sure?'&&c.asks({})===null&&new C({}).asks({})===null,'ask: the confirm\'s words, or none');
-  ok(c.chance()===t.statOdds('wisps')&&Kit.stub(.01,()=>c.roll())===true&&Kit.stub(.99,()=>c.roll())===false&&c.helps()===t.statHelps('wisps')&&c.read({vague:'v',what:'w'})===t.statRead('wisps',{vague:'v',what:'w'}),'odds: its chance (statOdds), a roll, its Insight read and the stats that help');
+  ok(c.chance()===t.statOdds('wisps')&&Kit.stubStream('road',.01,()=>c.roll())===true&&Kit.stubStream('road',.99,()=>c.roll())===false&&c.helps()===t.statHelps('wisps')&&c.read({vague:'v',what:'w'})===t.statRead('wisps',{vague:'v',what:'w'}),'odds: its chance (statOdds), a roll, its Insight read and the stats that help');
   ok(c.factsFor({}).join()==='+5 gold'&&new C({facts:()=>['by hand'],out:()=>({gold:5})}).factsFor({}).join()==='by hand'&&new C({run:()=>'x'}).factsFor({})===undefined,'its facts: from its outcome, or by hand where kept, or none');
   const g0=P.gold;ok(c.perform({})==='You got 5.'&&P.gold===g0+5,'perform: its outcome done, its line given');
   ok(new C({run:(s,ch)=>ch instanceof C?'plain line':'?'}).perform({})==='plain line'&&new C({run:()=>({renown:1,say:'r'})}).perform({})==='r','a hook: a plain line, or an outcome for its plain part');
