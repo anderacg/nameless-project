@@ -10,6 +10,15 @@ const FLANK={flank:1.25,rear:1.5,arrow:.5};
 // second with no enemy within quiet; rally: it rallies at; waver: wavering under; shaken: shaken under (moraleStateOf)
 const MORALE={hurt:25,death:6,near:60,side:1,flank:3,rear:6,crowd:50,lead:20,cascade:8,quiet:60,back:2,
   rallyBack:6,rally:40,waver:30,shaken:60,cry:15,charge:15,inspire:90,edge:10};
+/* the word of a lost group (the owner, 2026-10-20): when one of a side's groups routs or is cut down to the last man, the whole
+   army hears of it, each of its other groups a little later the farther it stands, as word spreads (armyWord): after delay s +
+   per s a 100 px, at most max. The hit: hit × the lost group's size against its side's average group (clamped to size) × elite
+   (its men of eliteTier or more on average) × lead (the hero's or a leader's own group) × nearness (1 beside it, down to far at
+   span px) × fade^n (n: the word this group has already heard: losses stack, each a little less) × the hearer's steadiness; an
+   ordinary shock (confidence, cohesion and Stand Fast! soften it). A rout's neighbours within the cascade's reach
+   (GROUP_RESOLVE.routeRadius) take the cascade instead, never both; a group is lost once (routing, then cut down: one word).
+   say: a hit this big or more shows the word over the group (moraleSay). on: off, only the cascade, as before */
+MORALE.army={on:true,delay:.5,per:.5,max:4.5,hit:6,size:[.4,2],elite:1.4,eliteTier:3,lead:1.5,span:900,far:.45,fade:.7,say:3};
 // Local superiority offers bounded confidence, never immunity. Fresh panic/leader loss temporarily overrides it.
 const CONFIDENCE={radius:220,ratio:1.25,full:3,max:12,recover:1.5,resist:.3,cascadeCooldown:1,panic:2,leaderPause:4};
 const AWARENESS={near:100,close:45,outmatched:.65,overwhelmed:2.25,every:.2};
@@ -127,6 +136,7 @@ class BattleResolve{
     this.routeAt=B.t;this.refreshState();this.sync();const m=this.live(),p=this.point();
     for(const u of m){u.tgt=null;u.shot=null}moraleSay(m[0],this.shattered?'Shattered':'Routs!',this.team?'#ffe08a':'#ff9a90');battleEvent('rout',{r:this,m});sfxAt('rout',p.x,p.y);// (its banner: battlehud.js; the lab's rows: lab.js; its horn and cry: audio.js)
     (B.routShocks||(B.routShocks=[])).push({team:this.team,groupId:this.groupId,unitId:this.unitId,x:p.x,y:p.y});B.moraleNext=0;
+    armyWord(this,p,'rout');
   }
   rally(){this.routed=false;this.rallied=true;this.rallyT=0;this.breakT=0;this.mor=Math.max(MORALE.rally,this.mor);const g=this.control;if(g)g.hold();this.refreshState();this.sync();for(const u of this.live()){u.tgt=null;u.shot=null}if(this.live()[0])moraleSay(this.live()[0],'Rallies','#9fe09a');battleEvent('rally',{r:this});if(sfxOn()){const p=this.point();sfxAt('rally',p.x,p.y)}}
 }
@@ -196,6 +206,7 @@ function moraleDeath(t,source){
   if(withdrawing(t))B.caught=(B.caught||0)+1;// (cut down withdrawing: the rearguard)
   if(t.team===0&&!t.lord)B.lastOut='died';
   if(B.noMorale)return;const lead=t.hero||t.leader,own=resolveOf(t);if(own&&!own.death(t))return;
+  if(own&&!own.live().length)armyWord(own,{x:t.x,y:t.y},'cut');// (the last of a group cut down: the army hears of it)
   for(const r of battleResolves()){if(!r.live().length)continue;const d=Math.hypot(r.point().x-t.x,r.point().y-t.y);
     if(r.team===t.team){if(lead){r.confidence=0;r.confidenceBlockedUntil=Math.max(r.confidenceBlockedUntil,B.t+CONFIDENCE.leaderPause);r.breakUrgentUntil=B.t+CONFIDENCE.leaderPause;r.shock(MORALE.lead,false)}else if(r!==own&&d<MORALE.near)r.shock(MORALE.death/Math.max(1,own?.initialCount||r.initialCount))}
     else if(lead){r.mor=Math.min(100,r.mor+MORALE.lead/2);r.sync()}else if(d<MORALE.near||r===resolveOf(source))r.reassure()}
@@ -227,7 +238,31 @@ function moraleDecide(dt,owners,live){
     const p=r.point();if(Math.hypot(p.x-s.x,p.y-s.y)>=GROUP_RESOLVE.routeRadius)continue;
     r.routShockAt=B.t;r.confidence=0;r.confidenceBlockedUntil=Math.max(r.confidenceBlockedUntil,B.t+CONFIDENCE.panic);r.shock(MORALE.cascade*(1-COHESION.cascade*r.cohesion),false);
   }
+  armyHear();// (and the word of a lost group, reaching the rest of its army)
 }
+/* (a group of r's side lost, at p (how: 'rout' or 'cut'): the word to every other group of that side, each at its own time,
+   B.armyWord [{at, gid, hit, say}], heard in moraleDecide (armyHear); a group alone (no group id) is no group lost) */
+function armyWord(r,p,how){
+  const A=MORALE.army;if(!A.on||B.noMorale||r.groupId===null||r.armyLost)return;r.armyLost=true;
+  const side=battleResolves().filter(o=>o.team===r.team&&o.groupId!==null),others=side.filter(o=>o!==r&&!o.routed&&o.live().length);if(!others.length)return;
+  const avg=side.reduce((n,o)=>n+o.initialCount,0)/side.length,m=r.members(),tier=m.reduce((n,u)=>n+(u.s.tier||1),0)/Math.max(1,m.length);
+  const lead=B.units.some(u=>u.grp===r.groupId&&(u.hero||u.leader)),base=A.hit*clamp(r.initialCount/Math.max(1,avg),A.size[0],A.size[1])*(tier>=A.eliteTier?A.elite:1)*(lead?A.lead:1);
+  const say=armySay(r,p,others,how),Q=B.armyWord||(B.armyWord=[]);
+  for(const o of others){const q=o.point(),d=Math.hypot(q.x-p.x,q.y-p.y);if(how==='rout'&&d<GROUP_RESOLVE.routeRadius)continue;// (the cascade's: moraleDecide)
+    Q.push({at:B.t+Math.min(A.max,A.delay+A.per*d/100),gid:o.groupId,hit:base*(1-(1-A.far)*Math.min(1,d/A.span)),say})}}
+// (what is said: where the lost group stood in its army, facing the other: its left or right flank, or its centre)
+function armySay(r,p,others,how){
+  const C=others.map(o=>o.point()),cx=C.reduce((n,q)=>n+q.x,0)/C.length,cy=C.reduce((n,q)=>n+q.y,0)/C.length,F=B.units.filter(u=>u.team!==r.team&&fighting(u));
+  let fx=r.team?-1:1,fy=0;if(F.length){const ex=F.reduce((n,u)=>n+u.x,0)/F.length-cx,ey=F.reduce((n,u)=>n+u.y,0)/F.length-cy,l=Math.hypot(ex,ey);if(l>1){fx=ex/l;fy=ey/l}}
+  const s=(p.x-cx)*fy-(p.y-cy)*fx,w=Math.max(60,...C.map(q=>Math.abs((q.x-cx)*fy-(q.y-cy)*fx)))/3;
+  return (Math.abs(s)<w?'The centre':s>0?'The left flank':'The right flank')+(how==='cut'?' has fallen!':' is broken!')}
+// (the word heard, each in its time: a routing or emptied group hears none; fade^n of it, n the word it has heard before)
+function armyHear(){
+  const Q=B.armyWord;if(!Q||!Q.length)return;const A=MORALE.army;
+  for(let i=0;i<Q.length;){const w=Q[i];if(B.t+1e-9<w.at){i++;continue}Q.splice(i,1);
+    const g=B.groups[w.gid],r=g&&g.resolve;if(!r||r.routed||!r.live().length)continue;
+    const n=r.armyHeard||0,hit=w.hit*Math.pow(A.fade,n)*r.steady;r.armyHeard=n+1;r.wordAt=B.t;r.shock(hit);
+    if(hit>=A.say){const u=r.live()[0];moraleSay(u,w.say,r.team?'#ffe08a':'#ff9a90',1.4)}}}
 // Commit a rout after sustained breaking (or an explicit forced rout); neighbour shocks remain deferred.
 function rout(u){
   if(!u||u.hp<=0)return;resolveOf(u)?.route();

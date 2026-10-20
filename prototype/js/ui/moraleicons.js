@@ -38,6 +38,7 @@ const GLYPH={
   spur:['g.g.g','.ggg.','gg.gg','.ggg.','g.g.g'],
   fire:['..g..','.gg..','.ggg.','ggggg','.ggg.'],
   rally:['ggggg','.ggg.','.ggg.','.ggg.','.g.g.'],
+  scout:['g...g','.ggg.','gg.gg','.ggg.','g...g'],
   noammo:['g...g','g...g','g...g','g...g','ggggg'],
   ammo:['..g..','.ggg.','g.g.g','g.g.g','ggggg'],
   shieldWall:['gg.gg','gg.gg','gg.gg','gg.gg','.g.g.'],
@@ -60,7 +61,7 @@ const BADGE_RIM={breaking:'#ff8040',rallying:'#9fe09a',missile:'#e8a75a',confide
    (Stand Fast! too), a warning amber (few shots, tired, falling back), something bad red (no shots, spent), a flag steel blue,
    sight teal; morale and weaknesses keep their own rims above */
 const BADGE_CAT={order:'#e0b050',pace:'#c8ccd4',ability:'#6cd06c',warning:'#e8a040',bad:'#e0605a',flag:'#8ca4c0',sight:'#4cc0a8',ai:'#b48cf0'};
-const BADGE_KIND={ai:'ai',amove:'order',move:'order',attack:'order',charge:'order',advance:'order',withdraw:'order',walk:'pace',run:'pace',brace:'ability',spur:'ability',fire:'ability',rally:'ability',standfast:'ability',
+const BADGE_KIND={ai:'ai',amove:'order',move:'order',attack:'order',charge:'order',advance:'order',withdraw:'order',walk:'pace',run:'pace',brace:'ability',spur:'ability',fire:'ability',rally:'ability',scout:'ability',standfast:'ability',
   ammo:'warning',tired:'warning',fallback:'warning',noammo:'bad',spent:'bad',shieldWall:'flag',firm:'flag',cease:'flag',skirmish:'flag',melee:'flag',hidden:'sight',seen:'sight',woods:'sight'};
 for(const k in BADGE_KIND)BADGE_RIM[k]=BADGE_CAT[BADGE_KIND[k]];
 const CONFIDENCE_LABEL='Confident: visible, distance-weighted fighting strength advantage. Up to +'+CONFIDENCE.max+' morale and '+Math.round(CONFIDENCE.resist*100)+'% less ordinary morale shock. Panic and leader loss can suppress it.';

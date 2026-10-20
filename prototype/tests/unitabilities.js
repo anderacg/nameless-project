@@ -1,8 +1,10 @@
 'use strict';
 // Unit abilities (battle/unitabilities.js): who has which, cooldowns and durations on the combat clock, each effect measured
 // against the same fixture without it, the order bar's ability buttons and keys, and the refusals (routing, morale off, over).
+// Scout ahead (the owner, 2026-10-20): only the scout kinds (data/units.js SCOUT_KINDS), farther sight in the fog and more speed
+// while on, then its cooldown; with the fog off only the speed (its tooltip says so); the AI's captains using it to find the foe.
 window.RUN=()=>{const t=T,L=t.BattleLab,o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);try{
- const UA=t.UNIT_ABILITIES,ids=g=>t.groupAbilities(g).map(a=>a.id).join(',');
+ const UA=t.UNIT_ABILITIES,ids=g=>t.groupAbilities(g).map(a=>a.id).join(','),G0=()=>t.G;
  // (a paused lab battle; the groups by their place in the left/right lists; the foe parked far away unless a case brings it)
  const start=(left,right=[{type:'hum_foot',count:6}],extra={})=>{if(L.active)L.exit();L.start({leftGroups:left,rightGroups:right,morale:true,deploy:false,paused:true,ai:false,seed:42,...extra});
   const b=t.B;b.obs=[];const mine=t.playerGroups().map(id=>b.groups[id]),foes=Object.values(b.groups).filter(g=>g.foe);
@@ -14,7 +16,7 @@ window.RUN=()=>{const t=T,L=t.BattleLab,o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL '
  let f=start([{type:'hum_spear',count:10},{type:'hum_bow',count:8},{type:'hum_knight',count:6},{type:'hum_mage',count:4},{type:'hum_xbow',count:6},{type:'hum_hbow',count:4},{type:'hum_foot',count:8}]);
  let [spear,bow,knight,mage,xbow,hbow,foot]=f.mine;
  ok(ids(spear)==='brace,rally'&&ids(bow)==='fire,rally'&&ids(xbow)==='fire,rally','spear infantry can brace, bow and crossbow archers loose fire arrows, and foot units rally');
- ok(ids(knight)==='spur'&&ids(mage)==='rally'&&ids(foot)==='rally'&&ids(hbow)==='fire','cavalry spur; casters get no fire arrows; mounted archers loose fire arrows but neither rally (not infantry) nor spur (no lance charge) ('+[knight,mage,foot,hbow].map(ids).join(' / ')+')');
+ ok(ids(knight)==='spur'&&ids(mage)==='rally'&&ids(foot)==='rally'&&ids(hbow)==='fire,scout','cavalry spur; casters get no fire arrows; mounted archers loose fire arrows and scout ahead but neither rally (not infantry) nor spur (no lance charge) ('+[knight,mage,foot,hbow].map(ids).join(' / ')+')');
  const half=spear.units.slice(0,6);half.forEach(u=>u.s={...u.s,tags:[]});ok(!t.groupHasAbility(spear,'brace')&&t.abilityWhyNot(spear,'brace')==='Not for this unit','a group has an ability only while most of its living, steady members qualify');
  half.forEach(u=>u.hp=0);ok(t.groupHasAbility(spear,'brace'),'the dead no longer count against it');
  ok(t.groupAbilities(spear.id).length===2&&t.groupAbilities(spear.id)[0].n==='Brace'&&spear.abilities().length===2,'groupAbilities accepts a control or an ID; BattleControl.abilities() is the same list');
@@ -82,6 +84,36 @@ window.RUN=()=>{const t=T,L=t.BattleLab,o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL '
  f.b.t=foot.abil.rally.readyAt;r.mor=95;ok(foot.useAbility('rally')&&r.mor===100,'capped at 100');
  f.b.t=foot.abil.rally.readyAt;r.route();ok(r.routed&&!foot.useAbility('rally')&&t.abilityWhyNot(foot,'rally')==='Routing','no rally while routing');
  f=start([{type:'hum_foot',count:10}],undefined,{morale:false});ok(f.b.noMorale&&ids(f.mine[0])==='rally'&&!f.mine[0].useAbility('rally')&&t.abilityWhyNot(f.mine[0],'rally')==='Morale is off','with morale off Rally is listed but refused');
+ // ---- Scout ahead: only the scout kinds; characters never
+ {const K=[...t.SCOUT_KINDS];ok(K.length>=8&&K.every(k=>t.ST[k]&&!t.ST[k].beast&&!t.ST[k].big&&!t.COMPS[k])&&['ranger','orc_hunter','elf_marks','hum_hbow','orc_wolf','elf_hart'].every(t.isScout)&&!['hum_knight','hum_bow','hum_spear','elf_archer','dw_iron','orc_grunt','brann','tavi'].some(t.isScout),'the scout kinds are light, fast troops ('+K.join(', ')+'), none heavy, none a character');
+  const f5=start([{type:'ranger',count:6},{type:'orc_wolf',count:6},{type:'elf_marks',count:6},{type:'hum_bow',count:6},{type:'hum_knight',count:6},{type:'orc_hunter',count:6}]),[rg,wolf,mk,hb,kn,hu]=f5.mine;
+  ok(ids(rg)==='fire,rally,scout'&&ids(wolf)==='spur,scout'&&ids(mk)==='fire,rally,scout'&&ids(hu)==='fire,rally,scout','rangers, hunters, marksmen and wolf riders have Scout ahead ('+[rg,wolf,mk,hu].map(ids).join(' / ')+')');
+  ok(!t.groupHasAbility(hb,'scout')&&!t.groupHasAbility(kn,'scout')&&t.abilityWhyNot(kn,'scout')==='Not for this unit'&&!kn.useAbility('scout'),'bowmen and knights do not, and are refused it');
+  ok(!UA.scout.who({type:'ranger',s:t.ST.ranger,hero:true})&&!UA.scout.who({type:'ranger',s:t.ST.ranger,comp:true})&&UA.scout.who({type:'ranger',s:t.ST.ranger}),'a character never counts as a scout, whatever his kind')}
+ // ---- Scout ahead: the fog pushed back and the speed while on, then the cooldown
+ {const f6=start([{type:'hum_hbow',count:6},{type:'hum_hbow',count:6}],[{type:'hum_foot',count:6}],{fog:true}),[s1,s2]=f6.mine,b6=f6.b,foe=f6.foes[0];
+  foe.units.forEach(u=>{u.x=s1.units[0].x+400;u.y=s1.units[0].y});s2.placeAt(s1.ax,s1.ay+300);t.layForm(s2.id);s2.units.forEach(u=>{u.x=s2.ax+u.sx;u.y=s2.ay+u.sy});t.sightStep(true);const u0=s1.units[0],R0=t.fogRange(u0);
+  ok(b6.fog&&R0===t.FOG.mounted&&foe.units.every(u=>!t.seenBy(0,u)),'(fog: the riders see '+R0+' px; the foot 400 px off are unseen)');
+  ok(s1.useAbility('scout')&&t.abilityActive(s1,'scout')&&!t.abilityActive(s2,'scout'),'Scout ahead is used, on for that group alone');
+  ok(t.fogRange(u0)===Math.round(R0*UA.scout.sight)&&t.fogRange(s2.units[0])===R0&&foe.units.every(u=>t.seenBy(0,u)),'its sight reaches '+t.fogRange(u0)+' px (x'+UA.scout.sight+') in the fog: the foot 400 px off are seen at once');
+  ok(t.abilitySpeed(u0)===UA.scout.speed&&t.abilitySpeed(s2.units[0])===1,'and the scouts are faster (x'+UA.scout.speed+')');
+  foe.units.forEach(u=>u.x+=2000);s1.moveTo(900,s1.ay);s2.moveTo(900,s2.ay);const a0=snap(s1.units),c0=snap(s2.units);L.step(30);
+  const m1=s1.units.reduce((n,u,i)=>n+u.x-a0[i].x,0)/6,m2=s2.units.reduce((n,u,i)=>n+u.x-c0[i].x,0)/6;ok(m1>m2*1.12,'covering more ground ('+m1.toFixed(1)+' px against '+m2.toFixed(1)+' px)');
+  ok(t.abilityWhyNot(s1,'scout')==='Ready in '+Math.ceil(s1.abil.scout.readyAt-b6.t-1e-9)+' s'&&!s1.useAbility('scout'),'a second use waits for its cooldown');
+  b6.t=s1.abil.scout.at+UA.scout.dur+.01;t.sightStep(true);ok(!t.abilityActive(s1,'scout')&&t.fogRange(u0)===R0&&t.abilitySpeed(u0)===1,'after its '+UA.scout.dur+' s their sight and speed are as before');
+  ok(!s1.useAbility('scout')&&/^Ready in \d+ s$/.test(t.abilityWhyNot(s1,'scout')),'then it rests ('+t.abilityWhyNot(s1,'scout')+')');
+  b6.t=s1.abil.scout.readyAt+.01;ok(t.abilityWhyNot(s1,'scout')===''&&UA.scout.cd>UA.scout.dur,'ready again after its '+UA.scout.cd+' s cooldown');
+  t.selectGroup(s1.id);const sb=document.querySelector('#bbar .abils [data-abil="scout"]');ok(sb&&sb.querySelector('.k').textContent==='O'&&/Scout ahead \(O\)/.test(sb.title)&&!/Fog of war is off/.test(sb.title),'its button on the order bar: key O, a tooltip with no fog warning while the fog is on');
+  G0().mode='battle';window.dispatchEvent(new KeyboardEvent('keydown',{key:'o',code:'KeyO',bubbles:true}));ok(s1.abil.scout.at===b6.t,'O scouts ahead with the selection')}
+ {const f7=start([{type:'hum_hbow',count:6}],undefined,{fog:false}),s=f7.mine[0],u=s.units[0],R=t.fogRange(u);t.selectGroup(s.id);const sb=document.querySelector('#bbar .abils [data-abil="scout"]');
+  ok(!f7.b.fog&&sb&&/Fog of war is off: only the speed applies/.test(sb.title),'with the fog off its tooltip says only the speed applies');
+  ok(s.useAbility('scout')&&t.abilitySpeed(u)===UA.scout.speed&&t.fogRange(u)===Math.round(R*UA.scout.sight),'and it still speeds them (the fog range is read only by the fog)')}
+ // ---- Scout ahead: the AI's captains use it to find the foe, never with every foe in sight
+ {const f8=start([{type:'hum_foot',count:6}],[{type:'orc_wolf',count:6},{type:'orc_grunt',count:6}],{fog:true,ai:true,distance:800});const [wf,gr]=f8.foes;L.step(40);
+  ok(wf.abil&&wf.abil.scout&&wf.abil.scout.at<1&&!(gr.abil&&gr.abil.scout),'in the fog, seeing none of yours, their wolf riders scout ahead at once ('+(wf.abil&&wf.abil.scout?wf.abil.scout.at.toFixed(2)+' s':'not used')+'); the grunts cannot');
+  f8.b.t=Math.max(wf.abil.scout.readyAt,UA.scout.aiEarly)+1;f8.foes.forEach(g=>g.units.forEach(u=>{u.x=f8.mine[0].units[0].x+60;u.y=f8.mine[0].units[0].y}));t.sightStep(true);const at=wf.abil.scout.at;L.step(40);
+  ok(wf.abil.scout.at===at,'with yours in plain sight after its first '+UA.scout.aiEarly+' s it is not used again');
+  const f9=start([{type:'hum_foot',count:6}],[{type:'orc_wolf',count:6}],{fog:false,ai:true,distance:800});L.step(60);ok(!(f9.foes[0].abil&&f9.foes[0].abil.scout),'with no fog (and no ground hiding them) every foe is seen: never used')}
  // ---- the enemy (an AI captain) uses the same API
  f=start([{type:'hum_foot',count:6}],[{type:'hum_bow',count:6}]);ok(f.foes[0].useAbility('fire')&&t.abilityActive(f.foes[0],'fire'),'an enemy group uses its abilities through the same API');
  // ---- the order bar

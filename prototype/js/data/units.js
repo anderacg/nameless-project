@@ -45,6 +45,11 @@ for(const k in ST){const s=ST[k];if(!s.range||s.bow||s.beast)continue;s.range=Ma
 // riders: every charging horse, ram, stag and wolf, and the mounted archers (who shoot instead of charging); riders cost more
 // to keep, and ride faster on grass and slower in swamps
 for(const k in ST)if(ST[k].charge||['hum_hbow','elf_hartbow','orc_wolfbow'].includes(k))ST[k].mounted=true;
+// scouts: the light, fast troops who range ahead (their ability Scout ahead: battle/unitabilities.js), every people's own: rangers
+// and hunters, the elves' marksmen, light horse and the riders who shoot; no character (the owner, 2026-10-20: "only for scout units").
+// By kind (isScout), not a stat of the kind: a troop's numbers stay as they were
+const SCOUT_KINDS=new Set(['ranger','horse','hum_squire','hum_hbow','dw_ram','elf_marks','elf_hart','elf_hartbow','orc_hunter','orc_wolf','orc_wolfbow']);
+const isScout=k=>SCOUT_KINDS.has(k);
 ST.hedge={n:'Hedge Witch',tier:1,hp:18,dmg:6,spd:34,reach:0,range:85,cd:1.8,look:'mage',magic:true,bolt:'#d070e0'};
 ST.slime={n:'Bog Slime',tier:1,hp:24,dmg:5,spd:24,reach:0,range:75,cd:1.7,beast:true,magic:true,bolt:'#a0e060',home:['swamp']};
 ST.wolf={n:'Frost Wolf',tier:1,hp:26,dmg:6,spd:62,reach:10,range:0,cd:.8,beast:true,home:['frost']};

@@ -1,12 +1,12 @@
 'use strict';
-/* ---------- unit abilities: a group's own special orders (Brace, Fire arrows, Spur, Rally), each with a duration and a cooldown
+/* ---------- unit abilities: a group's own special orders (Brace, Fire arrows, Spur, Rally, Scout ahead), each with a duration and a cooldown
    on the combat clock (B.t: a pause or deployment freezes both). UNIT_ABILITIES is the registry: n (its name), d (what it does),
    key (its hotkey), who (does one soldier qualify; a group has the ability when at least half of its living, steady, non-routing
    troops do: heroes, companions, lords and beasts never count), dur and cd (combat seconds; the cooldown runs from the moment
    it is used), use (its effect, at once), snd (the cue heard from the group as it is used: audio.js) and, for the timed ones,
    holds (still on?) and step (each moment while on). The lasting
    effects are read where they happen: actors.js (a braced soldier stands, a spurred rider is faster and keeps his momentum),
-   morale.js chargeMul (a charge on a braced soldier's flank), attacks.js (a fire arrow). An end hook (end) runs once when it runs out. One API for you and an AI captain alike: g.useAbility(id) (BattleControl; false when refused),
+   morale.js chargeMul (a charge on a braced soldier's flank), attacks.js (a fire arrow), battlefog.js fogRange (a scout's sight). An end hook (end) runs once when it runs out. One API for you and an AI captain alike: g.useAbility(id) (BattleControl; false when refused),
    groupAbilities(g) (what it has, each with its state), abilityWhyNot(g,id) (why not now: '' when it can). A group's state:
    g.abil[id]={at,until,readyAt}, created on first use and not enumerable (never in saves or group snapshots) ---------- */
 const UNIT_ABILITIES={
@@ -31,7 +31,15 @@ const UNIT_ABILITIES={
   // gain: morale at once (from 0, if they are breaking); morale: needs morale on
   rally:{n:'Rally',key:'Y',dur:0,cd:60,snd:'rally',gain:15,morale:true,who:u=>!u.s.mounted&&!u.s.charge,
     d:'Officers steady the ranks: +15 shared morale at once (at most 100), and a unit that is Breaking stops breaking. Not while routing, nor with morale off.',
-    use(g){const r=g.resolve;r.mor=Math.min(100,Math.max(0,r.mor)+this.gain);r.breakT=0;delete r.breakLimit;r.refreshState();r.sync();const m=abilityTroops(g);if(m[0])moraleSay(m[0],'Rally!','#9fe09a',.8)}}
+    use(g){const r=g.resolve;r.mor=Math.min(100,Math.max(0,r.mor)+this.gain);r.breakT=0;delete r.breakLimit;r.refreshState();r.sync();const m=abilityTroops(g);if(m[0])moraleSay(m[0],'Rally!','#9fe09a',.8)}},
+  // only scout troops (data/units.js isScout, by kind; never a character, the owner 2026-10-20). sight: their sight range in the fog of war
+  // (battlefog.js fogRange; nothing with the fog off); speed: theirs (abilitySpeed, with Spur's); aiEarly: the AI's captains use
+  // it while some enemy is unseen in the fight's first aiEarly s, or whenever they see none (commander.js captainScout)
+  scout:{n:'Scout ahead',key:'O',dur:12,cd:45,sight:1.6,speed:1.25,aiEarly:20,who:u=>isScout(u.type)&&!steady(u),
+    get d(){return 'Scouts range ahead: for '+this.dur+' s they see '+Math.round((this.sight-1)*100)+'% farther through the fog of war and move '+Math.round((this.speed-1)*100)+'% faster. Only scout troops: rangers, hunters, marksmen and light riders.'},
+    // (the tooltip's word on the fog: battlehud.js bhudAbilities)
+    note:()=>B&&B.fog?'':' Fog of war is off: only the speed applies.',
+    use(g){if(B.fog&&sightOn())sightStep(true);const m=abilityTroops(g);if(m[0])moraleSay(m[0],'Scout ahead!','#bfe6ff',.8)}}
 };
 const UNIT_ABIL_ORDER=Object.keys(UNIT_ABILITIES);
 // a group's orders as Spur found them (a new order since: its pace is that order's)
@@ -74,8 +82,10 @@ function abilityStep(g,dt){
 // ---- the effects, where they happen
 // a soldier under one of his group's abilities (he qualifies himself, and it is on)
 function unitAbility(u,id){const g=u&&u.grp&&B.groups[u.grp];return !!(g&&g.abil&&!u.rout&&abilityActive(g,id)&&UNIT_ABILITIES[id].who(u))}
-// his speed (actors.js aiUnit): spurred, faster
-const abilitySpeed=u=>unitAbility(u,'spur')?UNIT_ABILITIES.spur.spd:1;
+// his speed (actors.js aiUnit): spurred, faster; scouting ahead, faster (both: both)
+const abilitySpeed=u=>(unitAbility(u,'spur')?UNIT_ABILITIES.spur.spd:1)*(unitAbility(u,'scout')?UNIT_ABILITIES.scout.speed:1);
+// his sight in the fog (battlefog.js fogRange): scouting ahead, farther
+const abilitySight=u=>unitAbility(u,'scout')?UNIT_ABILITIES.scout.sight:1;
 // braced, he stands where he is (actors.js aiUnit)
 const abilityStands=u=>unitAbility(u,'brace');
 // spurred, he keeps his momentum while he is not chasing (actors.js aiUnit)

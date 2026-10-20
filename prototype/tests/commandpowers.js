@@ -1,8 +1,7 @@
 'use strict';
 // Commander powers (battle/commandpowers.js): the commander (your hero, their lord or chieftain), the command radius and the
 // cooldowns by Leadership, Rally the Line (morale.js's own rally, its anti-spam lock), Stand Fast! (no wavering while it lasts),
-// Scout (the enemy seen through the fog while deploying and for the fight's first seconds, then the fog again; the AI's the
-// same), none without a commander or with powers off, the AI using each, the commander bar and its keys, no order (a
+// no Scout (gone, the owner 2026-10-20: scouting is the scout units' own Scout ahead, tests/unitabilities.js), none without a commander or with powers off, the AI using each, the commander bar and its keys, no order (a
 // character's fall-back goes on), the lab's powers and commander keys, and no Math.random in the new code.
 window.RUN=()=>{const t=T,L=t.BattleLab,o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.push('INFO '+m),CP=t.COMMAND_POWERS,G=t.G;try{
  t.act('begin','soldier');G.quietEvents=true;t.GUIDE.on=false;
@@ -91,9 +90,9 @@ window.RUN=()=>{const t=T,L=t.BattleLab,o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL '
  // ---- the commander bar, its keys, the radius on the field
  f=start([{type:'hero',count:1},{type:'hum_foot',count:8},{type:'hum_foot',count:8}],[{type:'hum_foot',count:6}],{},[[0,0],[0,-90],[0,90]]);b=f.b;b.cmdLead={0:0};
  t.bhudPowers();let bar=document.getElementById('bCmd');const btn=id=>bar.querySelector('[data-power="'+id+'"]');
- ok(bar&&!bar.hidden&&['rally','stand','scout'].every(id=>btn(id))&&btn('rally').querySelector('.k').textContent==='Z'&&btn('stand').querySelector('.k').textContent==='S'&&btn('scout').querySelector('.k').textContent==='O','the commander bar: Rally the Line (Z), Stand Fast! (S), Scout (O)');
+ ok(bar&&!bar.hidden&&['rally','stand'].every(id=>btn(id))&&btn('rally').querySelector('.k').textContent==='Z'&&btn('stand').querySelector('.k').textContent==='S','the commander bar: Rally the Line (Z), Stand Fast! (S)');
+ ok(!btn('scout')&&[...bar.querySelectorAll('[data-power]')].map(x=>x.dataset.power).join()==='rally,stand'&&bar.querySelector('#bAuto')&&!('scout' in CP)&&t.POWER_ORDER.join()==='rally,stand'&&!/scout/i.test(bar.getAttribute('aria-label')),'no Scout on it (the commander’s Scout is gone, the owner 2026-10-20): Rally, Stand Fast! and the AI button');
  ok(bar.className==='cmdbar'&&!bar.closest('.borders')&&btn('stand').classList.contains('cbtn')&&!btn('stand').classList.contains('obtn'),'apart from the order bar and its unit abilities, a style of its own');
- ok(btn('scout').hidden,'Scout is hidden with no fog of war');
  ok(/Stand Fast!/.test(btn('stand').title)&&/Cooldown 45 s/.test(btn('stand').title)&&/within range/.test(btn('stand').title)&&/radius 220 px/.test(btn('stand').title),'its tooltip: name, effect, cooldown, radius, “needs the units within range”');
  ok(btn('rally').classList.contains('off')&&btn('rally').getAttribute('aria-disabled')==='true'&&/Unavailable: No routing or wavering/.test(btn('rally').title),'Rally dimmed with its reason while no one routs or wavers');
  const key=k=>window.dispatchEvent(new KeyboardEvent('keydown',{key:k,code:'Key'+k.toUpperCase(),bubbles:true}));
@@ -101,7 +100,7 @@ window.RUN=()=>{const t=T,L=t.BattleLab,o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL '
  t.bhudPowers();ok(btn('stand').classList.contains('on')&&btn('stand').querySelector('.ct').textContent==='45'&&parseFloat(btn('stand').querySelector('.ccd').style.getPropertyValue('--cd'))>350,'lit while on, its cooldown sweep full and the seconds shown ('+btn('stand').querySelector('.ct').textContent+')');
  L.step(120);t.bhudPowers();const sw=parseFloat(btn('stand').querySelector('.ccd').style.getPropertyValue('--cd'));ok(sw<360&&sw>300,'the sweep empties as the cooldown runs ('+sw+'°)');
  R(f.ms[2]).route();btn('rally').dispatchEvent(new MouseEvent('click',{bubbles:true}));ok(b.cmdp[0].rally&&!R(f.ms[2]).routed,'a click (or tap) on Rally the Line rallies');
- const cs=t.KEYS.find(k=>k[0]==='Battle')[1].find(k=>k[0]==='Z S O');ok(cs&&/Rally the Line/.test(cs[1])&&/Stand Fast!/.test(cs[1])&&/Scout/.test(cs[1]),'the controls list has them (Z S O)');
+ const cs=t.KEYS.find(k=>k[0]==='Battle')[1].find(k=>k[0]==='Z S');ok(cs&&/Rally the Line/.test(cs[1])&&/Stand Fast!/.test(cs[1])&&!/Scout/.test(cs[1]),'the controls list has them (Z S), no Scout');
  btn('stand').dispatchEvent(new PointerEvent('pointerover',{bubbles:true}));ok(b.cmdHov==='stand','pointing at a power arms its radius on the field');
  {let arcs=0;const c=t.ctx,a0=c.arc;c.arc=function(){arcs++;return a0.apply(this,arguments)};try{t.drawCommandPowers()}finally{c.arc=a0}ok(arcs>=1,'which is drawn round your commander ('+arcs+' arc)')}
  bar.dispatchEvent(new PointerEvent('pointerleave'));ok(b.cmdHov===null,'and goes when the pointer leaves');
@@ -111,22 +110,13 @@ window.RUN=()=>{const t=T,L=t.BattleLab,o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL '
   ok(b.cmdp[0].stand.at===b.t&&S.fallBack&&Object.values(b.groups).map(g=>g.orderSeq|0).join()===seq,'a power is no order: no group’s order count moves, your hero’s fall-back goes on');
   b.t+=CP.rally.cd+1;b.auto=true;R(f.ms[1]).route();key('z');ok(b.cmdp[0].rally.at===b.t&&b.auto,'nor does it take command back from Auto');b.auto=false;
   S.fallBack={at:b.t,x:h.x-40,y:h.y,ord:t.ordKey(hgr)};t.selectGroup(h.grp);t.toggleFlag('firm');t.fallLook(h,S);ok(!S.fallBack,'(while a flag to the hero’s group ends it, as ever)')}
- // ---- Scout: the enemy seen through the fog while deploying and the first seconds; then fog again
- const fogStart=()=>{const r=start([{type:'hero',count:1},{type:'hum_foot',count:8}],[{type:'brann',count:1},{type:'hum_foot',count:8}],{fog:true,deploy:true},[[0,0],[0,-60]],[[0,0],[0,-60]]);r.b.cmdLead={0:0,1:0};t.sightStep(true);return r};
- f=fogStart();b=f.b;const theirs=()=>b.units.filter(u=>u.team===1&&u.hp>0),mine=()=>b.units.filter(u=>u.team===0&&u.hp>0);
- ok(b.fog&&b.deploy&&theirs().every(u=>!t.seenBy(0,u)),'(fog, deploying: the enemy far off, unseen)');
- t.bhudPowers();bar=document.getElementById('bCmd');ok(!btn('scout').hidden&&!btn('scout').classList.contains('off')&&btn('stand').classList.contains('off'),'with fog the Scout button shows, ready while deploying (the others wait for the fight)');
- ok(t.usePower(0,'scout')&&theirs().every(u=>t.seenBy(0,u)),'Scout: every enemy soldier seen through the fog at once');
- ok(!t.usePower(0,'scout')&&t.powerWhyNot(0,'scout')==='Used (once a battle)','once a battle');
- const ex=f.fs[1];ex.units.forEach(u=>{u.y-=40});t.sightStep(true);ok(ex.units.every(u=>{const p=t.lastSeen(0,u);return p&&p.x===u.x&&p.y===u.y}),'their places as they are now, updating');
- t.beginFight();while(b.t<5)L.step(10);ok(b.t>4&&b.t<CP.scout.dur&&theirs().every(u=>t.seenBy(0,u)),'still seen in the fight’s first seconds ('+b.t.toFixed(1)+' s)');
- theirs().forEach(u=>{u.x=t.BW-40;u.s={...u.s,spd:0}});mine().forEach(u=>{u.s={...u.s,spd:0}});
- while(b.t<CP.scout.dur+.6)L.step(10);ok(theirs().every(u=>!t.seenBy(0,u)),'after '+CP.scout.dur+' s the fog closes over them again ('+b.t.toFixed(1)+' s)');
- ok(b.cmdp[1]&&b.cmdp[1].scout&&b.cmdp[1].scout.at<.1,'fair: their commander scouted too, as the fight began ('+(b.cmdp[1]&&b.cmdp[1].scout?b.cmdp[1].scout.at.toFixed(2):'-')+' s)');
- f=fogStart();b=f.b;t.beginFight();mine().forEach(u=>{u.s={...u.s,spd:0}});theirs().forEach(u=>{u.s={...u.s,spd:0}});L.step(30);
- ok(b.cmdp[1].scout&&mine().every(u=>t.seenBy(1,u))&&!theirs().some(u=>t.seenBy(0,u)),'their captains see your army at the fight’s start; you, without scouting, see none of theirs');
- while(b.t<CP.scout.dur+.6)L.step(10);ok(!mine().some(u=>t.seenBy(1,u)),'and the fog closes for them too after '+CP.scout.dur+' s');
- f=fogStart();b=f.b;t.beginFight();b.t=CP.scout.dur;ok(t.powerWhyNot(0,'scout')==='Only before the battle','past its window it cannot be used');
+ // ---- no Scout in the fog either: no power sees through it, the AI's commander uses none, the fog stays over the enemy
+ {const r=start([{type:'hero',count:1},{type:'hum_foot',count:8}],[{type:'brann',count:1},{type:'hum_foot',count:8}],{fog:true,deploy:true},[[0,0],[0,-60]],[[0,0],[0,-60]]);b=r.b;b.cmdLead={0:0,1:0};t.sightStep(true);
+  const theirs=()=>b.units.filter(u=>u.team===1&&u.hp>0),mine=()=>b.units.filter(u=>u.team===0&&u.hp>0);
+  t.bhudPowers();bar=document.getElementById('bCmd');ok(!btn('scout')&&t.powerWhyNot(0,'scout')==='Unknown power'&&!t.usePower(0,'scout'),'with fog of war there is still no Scout button, and no such power');
+  G.mode='battle';key('o');ok(!b.cmdp||!b.cmdp[0],'O calls no power');
+  t.beginFight();mine().forEach(u=>{u.s={...u.s,spd:0}});theirs().forEach(u=>{u.s={...u.s,spd:0}});L.step(30);
+  ok(!(b.cmdp&&b.cmdp[1]&&b.cmdp[1].scout)&&!mine().some(u=>t.seenBy(1,u))&&!theirs().some(u=>t.seenBy(0,u)),'their commander scouts nothing at the fight’s start: each side sees none of the other through the fog')}
  // ---- the lab's keys
  ok(L.validate({leftGroups:[{type:'hum_foot',count:2}],rightGroups:[{type:'hum_foot',count:2}]}).powers===undefined,'the lab leaves the powers key out when not given (old configurations unchanged)');
  {const c=L.validate({leftGroups:[{type:'hum_foot',count:2}],rightGroups:[{type:'hum_foot',count:2},{type:'hum_bow',count:2}],powers:true,commander:{left:null,right:{group:1,lead:7}}});ok(c.powers===true&&c.commander.left===null&&c.commander.right.group===1&&c.commander.right.lead===7,'and keeps powers and commander when given')}

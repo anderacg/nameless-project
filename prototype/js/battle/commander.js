@@ -277,6 +277,12 @@ function posture(ck,S){
    as a line, each group keeping its place across the field, FOG.probe px ahead of the army's middle (shooters FOE_CMD.behind
    back), at a walk, till it sees them */
 const foesKnown=team=>B.units.some(u=>u.team!==team&&u.hp>0&&lastSeen(team,u));
+/* Scout ahead (unitabilities.js, scout units only): a captain's scouts range ahead to find the foe, while some of the foe still
+   fighting is unseen, and either it sees none of them or the fight is in its first UNIT_ABILITIES.scout.aiEarly s; with every foe
+   in sight (no fog, no terrain hiding them) never */
+function captainScout(team,N,S){
+  const X=UNIT_ABILITIES.scout;if(!(S.foes.length===0||B.t<X.aiEarly)||!B.units.some(u=>u.team!==team&&fighting(u)&&!seenBy(team,u)))return;
+  for(const id of Object.values(N).flat()){const g=B.groups[id];if(g&&!abilityWhyNot(g,'scout'))g.useAbility('scout')}}
 function captainSearch(team,N){
   const hid=B.units.filter(u=>u.team!==team&&fighting(u));if(!hid.length)return;let x=0,y=0,c=0;for(const u of hid){const p=lastSeen(team,u);if(p){x+=p.x;y+=p.y;c++}}
   const Z=BFIELD&&fieldZone(1-team),far={x:Z?(Z.x0+Z.x1)/2:team?BW*.15:BW*.85,y:(fieldTop()+fieldBot())/2},ids=Object.values(N).flat().filter(id=>B.groups[id]&&B.groups[id].order!=='withdraw'&&grpUnits(id).length);
@@ -327,6 +333,7 @@ function captain(team,key){
   // has never seen the foe goes looking after FOG.scout s: captainSearch)
   const ck=key==null?team:key,N0=captainGroups(team,key),Z=beastsOf(N0),S=assess(team),foes=S.foes;
   if(Z.length)captainBeasts(team,ck,S,Z);// (its beasts their own ways, taken out of its arms: beastmind.js; none with BEAST_TACTICS off)
+  captainScout(team,N0,S);// (its scouts range ahead while the foe is unseen)
   if(!foes.length){const seen=B.fog&&B.captains&&B.captains[ck]&&B.captains[ck].seen||0;if(!typeHolds(team,S)&&(B.t-Math.max(B.lastHit||0,seen)>FOE_CMD.lull||B.fog&&B.t>FOG.scout&&!foesKnown(team)))captainSearch(team,N0);return N0}
   // (its temperament, once, from its army's troops (temperFor); the enemy's style told as the battle opens)
   const Q=captainMem(ck);if(B.fog&&Q.seen==null)Q.seen=B.t;if(Q.temper===undefined){Q.temper=temperFor(team,key);if(ck===1&&TEMPER_SAY[Q.temper])log(TEMPER_SAY[Q.temper])}

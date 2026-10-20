@@ -12,15 +12,16 @@
    its edge mist, wisps drifting in it: gfx/mist.js), the same on the small map (fogMiniField), and a fading mark where an
    enemy group was last seen (ghosts).
    on: a view over the Settings' "Fog of war (battle)" (PREFS bfog, ui.js; tests/harness.js turns it off for the older suites);
-   foot, shoot, mounted, char: sight range by kind (px; the most of those that fit him: a mounted archer 300); big: a big one
+   foot, shoot, mounted, char: sight range by kind (px; the most of those that fit him: a mounted archer 300; Scout ahead, a scout
+   unit's ability, × its sight while on: unitabilities.js); big: a big one
    (monsters, dragons) is seen from this much farther; high: +range a level the viewer stands above the cell he looks at; cell:
    the grid (px, the terrain's cells with terrain); fade: s a cell takes to clear or darken; dark: the fog's darkness (0-1);
    col: its colour; soft: blurs of its edge (each a cell's width); ghost: s a lost group's mark lasts; clear: cells round it (each way) that, all in sight and empty, clear it;
    scout, probe: an AI captain that has never seen the foe advances after scout s, its line probe px ahead of its middle */
 const FOG={foot:220,shoot:260,mounted:300,char:280,big:1.5,high:.25,cell:16,fade:.3,dark:.58,col:[10,14,24],soft:2,ghost:15,clear:2,scout:3,probe:140};
 Object.defineProperty(FOG,'on',{get:()=>prefGet('bfog'),set:v=>{PREFS.bfog.v=!!v},enumerable:true});
-// (a viewer's sight range by his kind)
-function fogRange(u){if(u.hero||u.leader||u.comp)return FOG.char;const s=u.s;let r=FOG.foot;if(s.range&&FOG.shoot>r)r=FOG.shoot;if(s.mounted&&FOG.mounted>r)r=FOG.mounted;return r}
+// (a viewer's sight range by his kind; a scout scouting ahead sees farther: unitabilities.js abilitySight)
+function fogRange(u){if(u.hero||u.leader||u.comp)return FOG.char;const s=u.s;let r=FOG.foot;if(s.range&&FOG.shoot>r)r=FOG.shoot;if(s.mounted&&FOG.mounted>r)r=FOG.mounted;return Math.round(r*abilitySight(u))}
 /* each side's sight (sightStep, fog on): S.fog {C, R, cs, vis: {team: Uint8Array}, rng, src: {team: [{x, y, r, lv, i}]}}. live:
    the living; uc, ul: each one's cell and level */
 function fogGrid(S,T,live,uc,ul,teams){

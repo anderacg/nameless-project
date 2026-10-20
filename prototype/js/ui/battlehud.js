@@ -160,12 +160,13 @@ const ABIL_ICON={
   brace:['....a....','...aaa...','....a....','....a....','....a....','...ba....','..b.a....','.b..a....','aaaaaaaaa'],
   fire:['....a....','...aa....','...aab...','..aabba..','.aabbba..','.abbbbaa.','.abbbbba.','..abbba..','...aaa...'],
   spur:['.........','a...a....','.a...a...','..a...a..','...a...a.','..a...a..','.a...a...','a...a....','.........'],
-  rally:['a........','aaaaaa...','abbbbba..','abbbba...','aaaaaaa..','a........','a........','a........','aa.......']
+  rally:['a........','aaaaaa...','abbbbba..','abbbba...','aaaaaaa..','a........','a........','a........','aa.......'],
+  scout:['.........','..aaaaa..','.a.....a.','a..bbb..a','a.bbabb.a','a..bbb..a','.a.....a.','..aaaaa..','.........']
 };
 function bhudAbilities(){
   bhudPowers();// (the commander bar, on the same clock: commandpowers.js)
   const bar=document.querySelector('#bbar .borders');if(!bar||!B)return;let el=bar.querySelector('.abils');
-  if(!el){el=document.createElement('div');el.className='ogrp abils';el.setAttribute('role','group');el.setAttribute('aria-label','Unit abilities (G brace, I fire arrows, U spur, Y rally)');
+  if(!el){el=document.createElement('div');el.className='ogrp abils';el.setAttribute('role','group');el.setAttribute('aria-label','Unit abilities (G brace, I fire arrows, U spur, Y rally, O scout ahead)');
     el.addEventListener('click',e=>{const b=e.target.closest('[data-abil]');if(b&&!b.disabled)groupAbility(b.dataset.abil)});bar.appendChild(el)}
   const gs=selGroups().filter(g=>grpUnits(g).length).map(g=>B.groups[g]),ids=UNIT_ABIL_ORDER.filter(id=>gs.some(g=>groupHasAbility(g,id)));
   if(el.dataset.ids!==ids.join()){el.dataset.ids=ids.join();el.replaceChildren(...ids.map(id=>{const b=document.createElement('button');b.type='button';b.className='obtn abtn';b.dataset.abil=id;
@@ -176,7 +177,7 @@ function bhudAbilities(){
     const back=!ready.length&&!on.length&&cool.length?Math.min(...cool.map(x=>x.cooldown)):0,left=on.length?Math.max(...on.map(x=>x.left)):0;
     b.classList.toggle('on',on.length>0);b.setAttribute('aria-pressed',String(on.length>0));b.disabled=!ready.length;
     b.querySelector('.acd').style.height=back?pct(back/A.cd):'0%';b.querySelector('.at').textContent=on.length?Math.ceil(left-1e-9):back?Math.ceil(back-1e-9):'';
-    b.title=A.n+' ('+A.key+'): '+A.d+(A.dur?' Lasts '+A.dur+' s.':'')+' Cooldown '+A.cd+' s.'+(on.length?' Active: '+Math.ceil(left-1e-9)+' s left.':'')+(ready.length?ready.length<st.length?' Ready for '+ready.length+' of '+st.length+' selected units.':' Ready.':' Unavailable: '+(back?'ready in '+Math.ceil(back-1e-9)+' s':st[0].why)+'.');
+    b.title=A.n+' ('+A.key+'): '+A.d+(A.note?A.note():'')+(A.dur?' Lasts '+A.dur+' s.':'')+' Cooldown '+A.cd+' s.'+(on.length?' Active: '+Math.ceil(left-1e-9)+' s left.':'')+(ready.length?ready.length<st.length?' Ready for '+ready.length+' of '+st.length+' selected units.':' Ready.':' Unavailable: '+(back?'ready in '+Math.ceil(back-1e-9)+' s':st[0].why)+'.');
     b.setAttribute('aria-label',b.title)}
 }
 /* callouts: a short banner at the top middle of the field for the big moments, in the colour of the side it is about: a group
