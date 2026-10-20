@@ -39,11 +39,11 @@ Sizes: **S** a session or less, **M** a few sessions, **L** a phase of its own. 
 |---|---|---|---|---|---|
 | 1 | ~~**A failed save says "Game saved."**~~ **Fixed 2026-10-19 (6c7eb51).** The pause menu's save (`ui.js` `esc-save`) shows success whatever `saveGame` did; still so at HEAD. *Moved up: a player can lose a game believing it saved.* | S | — | — | [UX_UI_REVIEW.md](UX_UI_REVIEW.md) UX-01 |
 | 2 | **Flaky tests:** `monsters` "spiders web your fighters" (unseeded); the encounters' chance-based phase-2 checks (steadied in 937ca04 and 8f072a3: confirm); `mappolish` (reran clean, 5949c93). Seed or fix what the assertions hang on | S | the coordinator's next full sweep, to know which still flake | — | Technical debt |
-| 3 | **Terrain phases 3–4: the art approval** (standing trees, cliff faces, mountains, spires, ramps). The AI sight filter is **built** (e527d86, 3f24f1d: `commander.js` `seenBy`, `charmind.js` `liveFoes`); only the approval is open | S | screenshots | **Owner** (approval) | [TERRAIN_DESIGN.md](TERRAIN_DESIGN.md) §8 |
+| 3 | ~~**Terrain phases 3–4: the art approval**~~ **Approved by the owner 2026-10-20:** "I like the current version"; keep everything as it is in the code. | — | — | — | [TERRAIN_DESIGN.md](TERRAIN_DESIGN.md) |
 | 4 | **Woods see-through in battle** | S | — | — | §3.5 |
 | 5 | **An outline on your selected groups** | S | — | — | §3.6 |
 | 6 | **Quick wins:** the shrine's label over kneeling pilgrims; save a holding's remembered look in the fog | S | — | go | §10.1 |
-| 7 | **Scouting in battle** (offered, not agreed) | S | — | **Owner** (decision) | §10.1 |
+| 7 | **Scout ahead, a unit ability** (owner 2026-10-20): only scout units (troop kinds tagged scout: light, fast troops) get it on their ability bar: for a while the group sees farther and moves faster, then it rests; the AI uses it too. **The commander's Scout power is removed.** | S | — | — | battle/unitabilities.js, commandpowers.js |
 | 8 | **Check the rest of the UX review** (UX-02 to UX-11): mark what later work fixed, fix what is left | S | — | — | [UX_UI_REVIEW.md](UX_UI_REVIEW.md) |
 | 9 | **Test on a real phone** (Android Chrome, iOS Safari) | S | a device | **Owner** | §1.5 |
 
@@ -54,7 +54,7 @@ Sizes: **S** a session or less, **M** a few sessions, **L** a phase of its own. 
 | 10 | **The small encounters:** fortune teller, toll on the road, a warm campfire, herbalist, runaway serf, flotsam, snowed-in travellers / sandstorm survivors | S each | the stat-odds helper (built, 8f072a3) | go | §10.3 |
 | 11 | **The world feels alive:** ~~rumours of real events~~ (built 2026-10-19); enemies who remember you; night with character; monster trophies and a first-kill line | S–M each | — | go | §10.5 |
 | 12 | **New jobs:** a named outlaw, guard the harvest, intercept a rider, scout the land, the white stag, collect a debt | S–M each | intercept a rider: the letters (built, 937ca04) | go | §10.4 |
-| 13 | **A bigger morale hit when a whole group is lost.** *Kept small and late in this band: a breaking group already shocks its neighbours (`MORALE.cascade`).* | S | — | **Owner** (still wanted?) | §3.2 |
+| 13 | **Army-wide morale hit when a group is lost** (owner 2026-10-20): when a group routs or is wiped out, the whole army feels it (more for an elite or big group, or the hero's own), not only the groups beside it; **each group feels it a little later, as word spreads** (a delay by distance), like a real battle. | S | — | — | §3.2, battle/morale.js |
 
 **3. Medium gameplay features**
 
@@ -64,7 +64,7 @@ Sizes: **S** a session or less, **M** a few sessions, **L** a phase of its own. 
 | 15 | **The healed traveller, escort and Ander The Fallen** (batch B) | M | the healed traveller (built, 51841e8) | go | §10.7 |
 | 16 | **Chain quests** (batch C): "The Wounded Traveller" | M | #15 | go | §10.8 |
 | 17 | **Encounters, phase 3: the new props** | M | — | **Owner** (art approval) | §10.2, [ENCOUNTERS_DESIGN.md](ENCOUNTERS_DESIGN.md) §4 |
-| 18 | **Encounters, phase 4 remainder:** prisoner wagon, execution, duel | M | #17 (cage cart, gallows); the duel needs a one-on-one hero fight | **Owner** (RTS-style or manual hero duel) | §10.9 |
+| 18 | **Encounters, phase 4 remainder:** prisoner wagon, execution, duel | M | #17 (cage cart, gallows); the duel needs a one-on-one hero fight | the duel: **later** (owner 2026-10-20: "maybe in the future, not for now") | §10.9 |
 | 19 | **Battle types:** defend a caravan, run down a fleeing enemy. *Placed here: medium, fun, and built on the battle types already there.* | M | `BTYPE` (built, e527d86) | pick with the owner | §4.5 |
 | 20 | **Reinforcements that arrive mid-battle** | M | — | pick with the owner | §4.7 |
 
