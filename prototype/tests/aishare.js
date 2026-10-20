@@ -20,8 +20,10 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
   // ======== the whole army: the A key with nothing selected (its old path) against every group flagged one by one. Fingerprints
   // recorded on the code before groups could be handed over (commit 13af1f5). A battle's start leans on what earlier battles left
   // in the page (its caches): the world battle is this page's first, as it was recorded; the lab's are compared after one to warm up
+  // (re-recorded 2026-10-21, 8146f06e to 29dca01d: the wild game placed by its woods (a1c79a2..56f7e97) draws the shared
+  // randomness differently before the battle; missed then, as the five battle fingerprint suites were re-recorded in 4d8ca8c)
   {const B=battle(4242);B.noMorale=true;B.sel=null;key('a');const a=B.auto&&t.aiAll();run(B,60);const fp=print(B);
-   ok(a&&fp==='8146f06e','A with nothing selected, your army and an ally’s against the enemy (seed 4242, no morale): the whole-army AI plays the very battle it did before ('+fp+', recorded 8146f06e, '+B.t.toFixed(1)+' s)')}
+   ok(a&&fp==='29dca01d','A with nothing selected, your army and an ally’s against the enemy (seed 4242, no morale): the whole-army AI plays the very battle it did before ('+fp+', recorded 29dca01d, '+B.t.toFixed(1)+' s)')}
   {const L=t.BattleLab,Gp=(type,count)=>({type,count}),lab=mor=>{if(L.active)L.exit();G.mode='world';G.modal=false;L.start({leftGroups:[Gp('hum_spear',16),Gp('hum_bow',12),Gp('hum_knight',6)],rightGroups:[Gp('hum_levy',20),Gp('hum_bow',12),Gp('hum_spear',10)],deploy:false,ai:false,paused:false,morale:mor,seed:42});return t.B};
    Math.random=t.seeded(1);t.act('begin','soldier');G.quietEvents=true;t.GUIDE.on=false;const REC={false:'596d6d9c',true:'17c1387b'};run(lab(false),60);// (to warm up)
    for(const mor of [false,true]){let B=lab(mor);B.sel=null;key('a');const a=B.auto;run(B,60);const whole=print(B);
