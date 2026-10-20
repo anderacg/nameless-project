@@ -160,7 +160,7 @@ const Outcome={
       text:([t,c])=>{
         if(!t)return '';
         const own=t.owner&&t.owner!=='player';
-        return [c.rep&&'reputation in '+t.name+' −'+c.rep,c.morale&&'morale −'+c.morale,own&&c.honor&&'honor with the '+FACS[t.owner].n+' −'+c.honor].filter(Boolean);
+        return [c.rep&&'reputation in '+t.name+' −'+c.rep,c.morale&&'morale −'+c.morale,own&&c.honor&&'honour with the '+FACS[t.owner].n+' −'+c.honor].filter(Boolean);
       },
     },
     // log: a line (or [line, its class])
@@ -211,7 +211,7 @@ const Outcome={
       apply(v,ctx,res){
         res.started=roadSpawn(v.k,v.x,v.y);
       },
-      text:v=>'then: '+ROAD_ENC[v.k].n.toLowerCase(),
+      text:v=>'then: '+kindOf('encounter',v.k).n.toLowerCase(),
     },
     // band: a band of raiders set on the map (world.js spawnBandit; res.band, it)
     band:{

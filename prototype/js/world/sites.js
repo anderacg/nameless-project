@@ -341,9 +341,9 @@ class Ruins extends Site{
 // a shrine: pray once a week to recover, or leave an offering (its two choices: story/choice.js Choices, s the shrine; its
 // page's key actions send site-pray with their place, 0 or 1)
 const SHRINE_CHOICES=Choice.list([
-  {icon:'altar',label:'Pray',facts:()=>['stamina, mana, health','morale +6'],need:s=>s.prayWait(),tip:'Kneel at the altar: your stamina and mana come back, some health, morale +6. Once a week.',
+  {icon:'altar',label:'Pray',need:s=>s.prayWait(),tip:'Kneel at the altar: your stamina and mana come back, some health, morale +6. Once a week.',
     out:s=>({vitals:'rest',morale:{n:6,min:0,max:100},say:'You kneel at the '+s.name+'. Your strength returns.'})},
-  {icon:'gold',label:'Offer 25g',facts:()=>['fully restored','morale +10 · +40 XP'],need:s=>s.prayWait()||(P.gold<25?'Not enough gold':''),tip:'Leave 25 gold on the offering stone: fully restored, morale +10, +40 XP. Once a week.',
+  {icon:'gold',label:'Offer 25g',need:s=>s.prayWait()||(P.gold<25?'Not enough gold':''),tip:'Leave 25 gold on the offering stone: fully restored, morale +10, +40 XP. Once a week.',
     out:s=>({gold:-25,vitals:'full',morale:{n:10,min:0,max:100},xp:40,say:'You leave 25 gold at the '+s.name+'. Warmth runs through you. (+40 XP)'})}]);
 class Shrine extends Site{
   get screen(){return PAGE_SCREEN}

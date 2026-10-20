@@ -12,8 +12,8 @@
      out(s): its outcome (Outcome, story/outcome.js), built without doing anything and without a draw, so it can be shown
        as well as done; or run(s, choice): a hook for what an outcome cannot say (a roll, a chase, its own state), returning
        an outcome for its plain part or the result's line;
-     facts(s): what its button says. Written by hand where today's words are kept (none: written from out's outcome,
-       Outcome.facts).
+     facts(s): what its button says: written from out's outcome (Outcome.facts), and also(s) the lines no outcome can say,
+       after it (a trap, a stat that helps); by hand only for a run hook, whose outcome is known only once done.
    perform(s) does it and gives the result's line. Choice.list(specs) makes a list of them (one made already is kept).
    ChoicePage (on window.js PageScreen) shows any of them: its header, its banner, the last result, what you see (text and
    its facts, or a body of its own), the choices as key actions, and its bottom bar (nav: Back on the left, the way out on
@@ -39,11 +39,13 @@ class Choice{
   preview(s){
     return this.out?this.out(s):null;
   }
-  // its button's words: by hand, else from its outcome
+  // its button's words: from its outcome (and its own lines after), else by hand
   factsFor(s){
     if(this.facts)return this.facts(s);
     const o=this.preview(s);
-    return o?Outcome.facts(o):undefined;
+    if(!o)return undefined;
+    const fs=Outcome.facts(o);
+    return this.also?fs.concat(this.also(s)):fs;
   }
   // ---- its odds (ENC_STAT)
   chance(){

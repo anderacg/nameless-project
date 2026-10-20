@@ -14,7 +14,7 @@ function wrong(t,c){
   if(c.fear)frighten(t,c.fear);
   if(c.morale){P.morale=clamp(P.morale-c.morale,0,100);cost.push('morale −'+c.morale)}
   if(t.owner&&t.owner!=='player'){
-    if(c.honor){addHonor(t.owner,-c.honor,true);cost.push('honor with the '+FACS[t.owner].n+' −'+c.honor);W.lords.filter(l=>l.fac===t.owner&&!l.dead).forEach(l=>changeRel(l,RELATION.harmRealm,'you wronged the people of '+t.name))}
+    if(c.honor){addHonor(t.owner,-c.honor,true);cost.push('honour with the '+FACS[t.owner].n+' −'+c.honor);W.lords.filter(l=>l.fac===t.owner&&!l.dead).forEach(l=>changeRel(l,RELATION.harmRealm,'you wronged the people of '+t.name))}
     if(c.hostile&&!hostileTo(t.owner)){Timed.of(P,'hostile').extend(t.owner,c.hostile);log('The '+FACS[t.owner].n+' turns hostile to you for '+c.hostile+' days.','bad')}
   }
   return cost.join(', ');

@@ -73,16 +73,16 @@ function letterGiveWhy(L,h){if(!h||h.name!==L.to)return 'Only at '+L.to+', where
 // (its verbs: Choices, story/choice.js; need: why not here)
 const LETTER_VERBS=Choice.list([
   {icon:'scroll',label:'Break the seal',when:L=>!!L.seal,facts:()=>['you read it','it then sells and delivers for less'],tip:'Read what it says: its news goes on your map and in your log.',run:L=>letterRead(L)},
-  {icon:'gold',label:'Sell it to a rival',facts:L=>['+'+letterWorth(L,ENC_TUNE.letter.sell)+' gold','reputation there +'+ENC_TUNE.letter.rep.sell],need:L=>letterSellWhy(L,letterHere()),tip:'A realm at war with its sender pays for what it says.',
+  {icon:'gold',label:'Sell it to a rival',need:L=>letterSellWhy(L,letterHere()),tip:'A realm at war with its sender pays for what it says.',
     out:L=>{const x=ENC_TUNE.letter,h=letterHere(),g=letterWorth(L,x.sell);
       return{gold:g,rep:[h&&h.name,x.rep.sell],call:()=>letterDrop(L),say:()=>'The steward of '+h.name+' pays '+g+' gold for the '+letterFac(L.fac)+'’s letter'+(L.seal?', its seal unbroken':'')+'.'}}},
-  {icon:'house',label:'Deliver it',facts:L=>L.seen?['they know you robbed the rider','reputation −'+ENC_TUNE.letter.rep.seen]:['+'+letterWorth(L,ENC_TUNE.letter.deliver)+' gold','reputation +'+(L.seal?ENC_TUNE.letter.rep.deliver:Math.ceil(ENC_TUNE.letter.rep.deliver/2))],
+  {icon:'house',label:'Deliver it',also:L=>L.seen?['they know you robbed the rider']:[],
     need:L=>letterGiveWhy(L,letterHere()),ask:L=>L.seen?'Word of the robbery came ahead of you: they know who took it from their rider. Deliver it anyway?':null,tip:'Hand it to the lord it is addressed to, as if you found it on the road.',
     out:L=>{const x=ENC_TUNE.letter,h=letterHere(),drop=()=>letterDrop(L);
       if(L.seen)return{call:drop,rep:[h&&h.name,-x.rep.seen],say:()=>'The lord of '+h.name+' takes the letter, and his eyes narrow: word came ahead of you that you robbed his rider. (reputation −'+x.rep.seen+')'};
       const g=letterWorth(L,x.deliver),r=L.seal?x.rep.deliver:Math.ceil(x.rep.deliver/2);
       return{call:drop,gold:g,rep:[h&&h.name,r],say:()=>'The lord of '+h.name+' thanks you for the letter his rider lost'+(L.seal?'':', though he frowns at the broken seal')+', and pays you '+g+' gold.'}}},
-  {icon:'fire',label:'Burn it',facts:()=>['it is gone','nobody learns what it said'],ask:()=>'Burn the letter? Nobody will learn what it said.',out:L=>({call:()=>letterDrop(L),say:'The letter curls up in the fire. Nobody will learn what it said.'})}]);
+  {icon:'fire',label:'Burn it',also:()=>['it is gone','nobody learns what it said'],ask:()=>'Burn the letter? Nobody will learn what it said.',out:L=>({call:()=>letterDrop(L),say:'The letter curls up in the fire. Nobody will learn what it said.'})}]);
 // out of the bag
 function letterDrop(L){const i=letterSlot(L.id);if(i>=0)P.inv[i]=null;G.ltr.done=1}
 // Break the seal: you read it; its news on your map (the place it names, or round the holding it names) and in your log

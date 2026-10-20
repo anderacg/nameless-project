@@ -1,9 +1,10 @@
 'use strict';
 // The story wave's S0 parts (doc/STORY_DESIGN.md §3.2, §3.4, §3.5): the context (one a frame, made once, what the direct lookups
 // say), outcomes (every handler applies and describes; the words are what it did; the keys are done in their order; showing one
-// does nothing), choices (when, need, ask, odds, facts by hand or from the outcome, perform) and the one ChoicePage (its header,
-// what you see, the choices, Back on the left and the way out on the right). Also lists, as INFO, where a road choice's
-// hand-written words differ from what its outcome would say (kept as they are for now). Written on the test kit (tests/kit.js).
+// does nothing), choices (when, need, ask, odds, facts from the outcome with their own lines after, or by hand for a hook,
+// perform) and the one ChoicePage (its header, what you see, the choices, Back on the left and the way out on the right). S1: the
+// facts of every choice that declares its outcome (the road's, the sealed letter's, the shrine's) are written from it, in one
+// spelling (honour); the lines kept by hand (also) are listed as INFO. Written on the test kit (tests/kit.js).
 Kit.suite(({ok,info})=>{
  const t=T,G=t.G,P=t.P,W=t.W,TILE=t.TILE,DAY=t.DAY,S=t.Story,O=t.Outcome;Kit.begin('soldier',41);Kit.clear();Kit.world();
  const ash=Kit.goHome(),fac=Object.keys(t.FACS).find(f=>f!=='player'),U='hum_levy';
@@ -69,14 +70,23 @@ Kit.suite(({ok,info})=>{
    const samples=[{gold:-15,goods:{furs:3}},{food:-3,renown:1,morale:3},{gold:20,honor:[fac,-5],morale:-3},{rep:['Ashford',4],gold:10},{sp:-8,rep:['Ashford',3],goods:{iron:2}},{troops:{[U]:2},gold:-15},{gold:40},{morale:-6}],bad=[];
    for(const o of samples){fresh();P.gold=100;const a=snap();O.apply(o,{});const w=said(a,snap(),o).join(' · ');if(w!==t.describeOutcome(o))bad.push(w+' ≠ '+t.describeOutcome(o))}
    ok(!bad.length,'what describeOutcome says is what applyOutcome did, for '+samples.length+' outcomes'+(bad.length?': '+bad.join('; '):''))}}
- // ---- the road's choices: showing an outcome does nothing; the hand-written words that differ from the outcome's (INFO)
- {const ks=Object.keys(t.ROAD_ENC),miss=[];let pure=0,impure=[];
+ // ---- the road's choices: showing an outcome does nothing; their facts written from it (the lines kept by hand: INFO)
+ {const ks=Object.keys(t.ROAD_ENC),miss=[],kept=[];let pure=0,impure=[];
   for(const k of ks){let e=null;for(const z of t.TOWNS){if(e)break;Kit.world();Kit.clear();Kit.goHome(z);W.road=null;for(let i=0;i<12&&!e;i++)e=t.roadSpawn(k,P.x+10+i*24,P.y+(i%3)*20)}if(!e){info('  (no '+k+' to try)');continue}if(k==='thief')e.nab=1;
    e.D.acts.forEach((c,i)=>{if(!c.out)return;const before=JSON.stringify([P.gold,P.morale,P.rep,P.honor,P.inv,P.troops,G.clock,G.msgs.length]);let d=0;const r0=Math.random;Math.random=()=>{d++;return r0()};
     let o=null;try{o=c.preview(e)}finally{Math.random=r0}const after=JSON.stringify([P.gold,P.morale,P.rep,P.honor,P.inv,P.troops,G.clock,G.msgs.length]);if(d||before!==after||!t.Outcome.is(o))impure.push(k+'#'+i);else pure++;
-    if(c.facts){const hand=(c.facts(e)||[]).filter(Boolean).join(' · '),said=t.Outcome.describe(o);if(hand!==said)miss.push(k+' “'+c.label+'”: by hand ['+hand.replace(/<[^>]+>/g,'')+'], its outcome ['+said+']')}})}
+    const fs=(c.factsFor(e)||[]).filter(Boolean),said=t.Outcome.facts(o),own=c.also?(c.also(e)||[]).filter(Boolean):[];
+    if(c.facts||fs.slice(0,said.length).join(' · ')!==said.join(' · ')||fs.length!==said.length+own.length||fs.some(f=>/\bhonor\b/.test(f)))miss.push(k+' “'+c.label+'” ['+fs.join(' · ')+']');
+    if(own.length)kept.push(k+' “'+c.label+'”: '+own.join(' · ').replace(/<[^>]+>/g,''))})}
   ok(pure>=20&&!impure.length,'every road choice that declares its outcome shows it with no draw and no change ('+pure+' of them)'+(impure.length?': not '+impure.join(' '):''));
-  info('facts written by hand that differ from their outcome\'s ('+miss.length+'), kept as they are for now:');for(const m of miss)info('  '+m)}
+  // (the sealed letter's verbs and the shrine's: a messenger's letter, sealed and unseen, opened and seen; a real shrine)
+  {Kit.world();Kit.clear();Kit.goHome();W.road=null;let m=null;for(let i=0;i<12&&!m;i++)m=t.roadSpawn('messenger',P.x+10+i*24,P.y);const sh=W.sites.find(x=>x.type==='shrine');
+   for(const L of m?[{...m.letter,seal:1,seen:0},{...m.letter,seal:0,seen:1}]:[])t.LETTER_VERBS.forEach(c=>{if(!c.out)return;const fs=(c.factsFor(L)||[]).filter(Boolean),said=t.Outcome.facts(c.preview(L)),own=c.also?(c.also(L)||[]).filter(Boolean):[];
+    if(c.facts||fs.join(' · ')!==said.concat(own).join(' · '))miss.push('letter “'+c.label+'” ['+fs.join(' · ')+']');if(own.length)kept.push('letter “'+c.label+'”'+(L.seen?' (seen)':'')+': '+own.join(' · '))});
+   if(sh)t.SHRINE_CHOICES.forEach(c=>{const fs=c.factsFor(sh);if(c.facts||fs.join(' · ')!==t.Outcome.describe(c.preview(sh)))miss.push('shrine “'+c.label+'” ['+fs.join(' · ')+']')});
+   ok(m&&sh&&t.SHRINE_CHOICES[1].factsFor(sh).join(' · ')==='−25 gold · fully restored · morale +10 · +40 XP','and the sealed letter\'s and the shrine\'s (the offering shows its cost: '+(sh?t.SHRINE_CHOICES[1].factsFor(sh).join(' · '):'no shrine')+')')}
+  ok(!miss.length,'every choice that declares its outcome has its facts written from it (its own lines after), one spelling: honour'+(miss.length?': not '+miss.join('; '):''));
+  info('lines kept by hand, after the outcome\'s ('+kept.length+'): what no outcome can say');for(const m of kept)info('  '+m)}
  // ---- choices
  {const C=t.Choice,c=new C({icon:'gold',label:'Try',when:s=>!!s.here,need:s=>s.poor&&'Too poor',ask:s=>s.risky?'Are you sure?':null,odds:'wisps',out:()=>({gold:5,say:'You got 5.'}),tip:'a tip'});
   ok(c.shown({here:1})&&!c.shown({})&&new C({label:'x'}).shown({}),'when: offered only then (none: always)');
