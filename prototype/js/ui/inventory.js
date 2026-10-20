@@ -1,7 +1,6 @@
 'use strict';
 /* ---------- inventory screen and command feedback ---------- */
-const HANDS={one:'one-handed',two:'two-handed',hybrid:'hybrid'};
-const kindLabel=I=>I.slot==='weapon'?HANDS[I.hand||'one']+' weapon':SLOTS[I.slot].toLowerCase();
+// (what each thing in the bag is, its words, its worth and its verbs: its kind, core/items.js itemKind)
 function equipmentFeedback(result){
   if(result.reason)log(result.reason,'bad');
   if(result.ok&&result.moved.length)log('Into the bag: '+result.moved.join(', ')+'.');
@@ -38,8 +37,8 @@ function openInv(){if(G.mode!=='world'||G.modal)return;G.mode='inv';G.invSel=nul
 // the selected bag item, if it is gear
 const selGear=()=>{const k=G.invSel;if(k==null||String(k).startsWith('eq:'))return null;const s=P.inv[k];return s&&s.k==='gear'?s.id:null};
 function slotHtml(s,key,label,cls){
-  const sel=String(G.invSel)===String(key),def=s&&itemDef(s),rc=s&&s.k==='gear'?RARITY[ITEMS[s.id].r]:'';
-  const name=s?def.n+(s.k==='gear'?', '+ITEMS[s.id].r+' '+kindLabel(ITEMS[s.id]):s.k==='good'?', '+s.n:s.k==='letter'?', to '+s.L.to:', '+s.n+' trophies'):label;
+  const sel=String(G.invSel)===String(key),K=s&&itemKind(s),rc=s?K.colour(s):'';
+  const name=s?K.title(s):label;
   return '<button class="slot'+(s?'':' empty')+(cls?' '+cls:'')+(sel?' sel':'')+'" type="button" data-act="inv-sel" data-arg="'+key+'" draggable="'+(!!s)+'" aria-pressed="'+sel+'" aria-label="'+name+'" title="'+name+'"'+(rc?' style="--rc:'+rc+'"':'')+'>'+
     (s?'<span data-icon="'+s.k+':'+s.id+'"></span>'+(s.n>1?'<b class="cnt">'+s.n+'</b>':''):String(key).startsWith('eq:')?'<small>'+label+'</small>':'')+'</button>';
 }
@@ -49,18 +48,19 @@ function detailHtml(){
   const k=G.invSel;if(k==null)return '<p class="muted">Select an item to see what it does. Drag it onto the body to wear it, or double-click it.</p>';
   const eq=String(k).startsWith('eq:'),key=eq?k.slice(3):null,s=eq?(P.gear[key]?{k:'gear',id:P.gear[key],n:1}:null):P.inv[k];
   if(!s)return '<p class="muted">'+(eq?(blockedWhy(key)||SLOTS[slotOfKey(key)]+' slot is empty. '+(MOUNT_KEYS.includes(key)?'Stables and smiths sell mount gear.':key==='offhand'?'Hold a shield, a tome, a torch, or a second one-handed weapon.':'Smiths sell gear, and monsters and enemies drop it.')):'Empty slot.')+'</p>';
-  if(s.k==='good'){const D=GOODS[s.id];return '<h3>'+D.n+'</h3><p class="muted">Trade good · '+s.n+' of '+D.stack+' in this slot</p><p>'+D.d+'</p><p class="muted">Worth about '+D.base+'g each. Prices change from town to town.</p><div class="btns">'+dropBtn(k)+'</div>'}
+  const K=itemKind(s);
+  if(s.k==='good')return '<h3>'+K.name(s)+'</h3><p class="muted">Trade good · '+s.n+' of '+K.stack(s.id)+' in this slot</p><p>'+K.describe(s)+'</p><p class="muted">Worth about '+K.worth(s)+'g each. Prices change from town to town.</p><div class="btns">'+dropBtn(k)+'</div>';
   if(s.k==='letter')return letterDetail(k,s);// (its page: world/letters.js)
-  if(s.k==='mat'){const M=MATS[s.id];return '<h3>'+M.n+'</h3><p class="muted">Trophy · stack of '+s.n+' (max '+STACK+')</p><p>Worth about '+M.v+'g each, '+M.v*s.n+'g for the stack. Sell it at any town market.</p><div class="btns">'+dropBtn(k)+'</div>'}
-  const I=ITEMS[s.id],head='<h3 style="color:'+RARITY[I.r]+'">'+I.n+'</h3><p class="muted">'+cap1(I.r)+' '+kindLabel(I)+' · worth about '+I.v+'g</p><p>'+I.d+'</p>';
+  if(s.k==='mat')return '<h3>'+K.name(s)+'</h3><p class="muted">Trophy · stack of '+s.n+' (max '+K.stack(s.id)+')</p><p>Worth about '+K.worth(s)+'g each, '+K.worth(s)*s.n+'g for the stack. Sell it at any town market.</p><div class="btns">'+dropBtn(k)+'</div>';
+  const I=ITEMS[s.id],head='<h3 style="color:'+K.colour(s)+'">'+K.name(s)+'</h3><p class="muted">'+cap1(I.r)+' '+K.label(s)+' · worth about '+K.worth(s)+'g</p><p>'+K.describe(s)+'</p>';
   if(eq){const g=key==='weapon'&&I.hand==='hybrid'?'<p class="gold">'+(offI()?'One-handed grip: your off hand is full.':'Two-handed grip: +20% damage, +4 reach.')+'</p>':key==='offhand'&&I.slot==='weapon'?'<p class="gold">Dual wield: half its damage adds to your main hand, and your combo turns quick.</p>':MOUNT_KEYS.includes(key)?'<p class="muted">Worn by your '+(mountDef()?mountDef().n:'mount')+'.</p>':'';
     return head+g+'<p class="muted">Equipped'+(key==='offhand'?' in your off hand':key==='weapon'?' in your main hand':'')+'.</p><div class="btns"><button class="btn sm" type="button" data-act="inv-unequip" data-arg="'+key+'"'+(invFree()?'':' disabled')+'>Unequip</button></div>'}
-  const tk=targetKey(s.id),cur=P.gear[tk],why=blockedWhy(tk),diff=gearDiff(s.id,tk),off=I.slot==='weapon'&&accepts('offhand',s.id);
+  const tk=K.keyOn(s.id),cur=P.gear[tk],why=K.verb('equip').why(k),diff=gearDiff(s.id,tk),off=K.verb('off').shown(k);
   const push=!why&&twoHanded(s.id)&&P.gear.offhand?'<p class="muted">Takes both hands: your '+ITEMS[P.gear.offhand].n+' goes into the bag.</p>':'';
   return head+'<p class="lab">'+(cur?'Compared with your '+ITEMS[cur].n:'Compared with an empty '+SLOTS[slotOfKey(tk)].toLowerCase()+' slot')+'</p><p class="diff">'+(diff.join(' · ')||'<span class="muted">No change.</span>')+'</p>'+push+
     (why?'<p class="bad">'+why+'</p>':'')+
     '<div class="btns"><button class="btn sm primary" type="button" data-act="inv-equip" data-arg="'+k+'"'+(why?' disabled':'')+'>'+(I.slot==='weapon'?(cur?'Swap main hand':'Main hand'):cur?'Swap':'Equip')+'</button>'+
-    (off?'<button class="btn sm" type="button" data-act="inv-off" data-arg="'+k+'"'+(blockedWhy('offhand')?' disabled':'')+'>'+(P.gear.offhand?'Swap off hand':'Off hand')+'</button>':'')+dropBtn(k)+'</div>';
+    (off?'<button class="btn sm" type="button" data-act="inv-off" data-arg="'+k+'"'+(K.verb('off').why(k)?' disabled':'')+'>'+(P.gear.offhand?'Swap off hand':'Off hand')+'</button>':'')+dropBtn(k)+'</div>';
 }
 // where each slot sits on the 270 × 436 body, and five fingers by each hand (off hand first, main hand second)
 const DOLL={ear:[58,30,'Earring'],head:[115,14,'Head'],face:[172,30,'Face'],arms:[24,84,'Arms'],body:[115,90,'Body'],cape:[206,84,'Cape'],
@@ -97,10 +97,11 @@ function invAct(a,arg){
   if(a!=='inv-drop')G.invArm=null;
   if(a==='inv-sel')G.invSel=String(G.invSel)===String(key)?null:key;
   else if(a==='inv-tab')G.invTab=arg;
-  else if(a==='inv-equip'){const s=P.inv[key];if(s&&s.k==='gear'){const tk=targetKey(s.id);if(invEquip(key))G.invSel='eq:'+tk}}
-  else if(a==='inv-off'){if(equipInto(key,'offhand'))G.invSel='eq:offhand'}
+  // (a piece's verbs: its kind's Choices, core/items.js)
+  else if(a==='inv-equip'){const s=P.inv[key];if(s&&s.k==='gear'){const tk=targetKey(s.id);if(itemKind(s).verb('equip').perform(key))G.invSel='eq:'+tk}}
+  else if(a==='inv-off'){const s=P.inv[key],v=s&&s.k==='gear'&&itemKind(s).verb('off');if(v&&v.perform(key))G.invSel='eq:offhand'}
   else if(a==='inv-unequip'){if(invUnequip(arg))G.invSel=null}
-  else if(a==='inv-drop'){if(String(G.invArm)===String(key)){const s=P.inv[key];P.inv[key]=null;G.invArm=null;G.invSel=null;if(s)log('You leave '+(s.k==='good'?s.n+' '+itemDef(s).n.toLowerCase():s.n>1?s.n+' '+itemDef(s).n.toLowerCase()+'s':'the '+itemDef(s).n)+' behind.')}else G.invArm=key}
+  else if(a==='inv-drop'){if(String(G.invArm)===String(key)){const s=P.inv[key];G.invArm=null;G.invSel=null;if(s)itemKind(s).verb('drop').perform(key);else P.inv[key]=null}else G.invArm=key}
   else if(a==='inv-sort')invSort();
   updateHUD(true);renderInv();
   const again=panel.querySelector('[data-act="'+a+'"][data-arg="'+arg+'"]:not([disabled])')||panel.querySelector('.slot.sel');if(again)again.focus({preventScroll:true});

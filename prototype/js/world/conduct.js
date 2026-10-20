@@ -13,10 +13,8 @@ function wrong(t,c){
   if(c.pros)t.pros=Math.max(0,t.pros-c.pros);
   if(c.fear)frighten(t,c.fear);
   if(c.morale){P.morale=clamp(P.morale-c.morale,0,100);cost.push('morale −'+c.morale)}
-  if(t.owner&&t.owner!=='player'){
-    if(c.honor){addHonor(t.owner,-c.honor,true);cost.push('honour with the '+FACS[t.owner].n+' −'+c.honor);W.lords.filter(l=>l.fac===t.owner&&!l.dead).forEach(l=>changeRel(l,RELATION.harmRealm,'you wronged the people of '+t.name))}
-    if(c.hostile&&!hostileTo(t.owner)){Timed.of(P,'hostile').extend(t.owner,c.hostile);log('The '+FACS[t.owner].n+' turns hostile to you for '+c.hostile+' days.','bad')}
-  }
+  // (its realm: honour, its lords' regard, hostility: realms.js Realm.wronged)
+  if(t.owner&&t.owner!=='player')realmOf(t.owner).wronged(t,c,cost);
   return cost.join(', ');
 }
 // frightened workers run home and keep away: half the holding's output for a few days

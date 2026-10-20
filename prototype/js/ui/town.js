@@ -58,8 +58,9 @@ function townRecruitControls(t,pick){
 const price=(town,good)=>marketPrice(town,good);
 const buyP=(t,g)=>nextBuy(t,g);
 const sellP=(t,g)=>nextSell(t,g);
-const matPrice=k=>Math.round(MATS[k].v*(.75+.01*skill('trade')));
-const itemPrice=id=>Math.round(ITEMS[id].v*(.6+.01*skill('trade')));
+// (a trophy's and a piece's price at a market, a piece's at a smith or stable: their kinds', core/items.js)
+const matPrice=k=>ITEM_KINDS.mat.price({id:k});
+const itemPrice=id=>ITEM_KINDS.gear.price({id});
 // a smith's stock: up to 6 pieces a week, forged from the metals in its holding's stock (FORGE: wood, bronze from copper and tin,
 // iron, silver, gold, mithril, adamant), each piece taking its metal; it favours the best metal it has
 const forgeTiers=t=>{ensureEcon(t);return FORGE.map((m,k)=>Object.keys(m).every(g=>(t.stock[g]||0)>=m[g])?k:-1).filter(k=>k>=0)};
@@ -74,9 +75,9 @@ function smithStock(t){
 // the metals a smith has to work with, and what it lacks: for its tab
 const forgeText=t=>{const ok=forgeTiers(t),has=MATERIALS.filter((m,k)=>k&&ok.includes(k)).map(m=>m.k);return has.length?'It can forge '+has.join(', ')+' and wooden pieces from the metals in '+t.name+'.':'There is no metal in '+t.name+': only wooden pieces until some is mined or brought in.'};
 // a stable's mounts: commons everywhere, horses in towns, rare beasts by the folk who live there or the land around
-function stableStock(t){const clim=climAt(t.x,t.y);return Object.keys(MOUNTS).filter(k=>{const M=MOUNTS[k];if(M.drop)return false;return t.sellsMount(M,clim)}).map(k=>'m_'+k)}
-const canBuyMount=(t,id)=>ITEMS[id].r==='common'||standingAt(t)>=REP_NEED[2];
-const gearPrice=id=>Math.round(ITEMS[id].v*(1.2-.01*skill('trade')));
+const stableStock=t=>ITEM_KINDS.mount.stockAt(t);
+const canBuyMount=(t,id)=>ITEM_KINDS.mount.canBuyAt({id},t);
+const gearPrice=id=>ITEM_KINDS.gear.cost({id});
 const ransomValue=()=>Object.keys(P.prisoners).reduce((a,k)=>a+P.prisoners[k]*RANSOM[ST[k].tier],0);
 // a castle's stores: it has no market, but it keeps a stockpile of what its land and the caravans bring (what you carry off if
 // you sack it). In a castle of yours you keep goods there: put them in from your bags or take them out, free
@@ -130,8 +131,7 @@ function townAct(a,arg,t){
   else if(a==='buy-mount'){const id=arg,p=gearPrice(id);if(stableStock(t).includes(id)&&canBuyMount(t,id)&&P.gold>=p&&P.gear.mount!==id){
     if(!P.gear.mount){P.gear.mount=id;P.gold-=p;fitInv();log('You buy a '+ITEMS[id].n+' and ride it out of the stable.','gold')}
     else if(invAdd('gear',id,1)){P.gold-=p;log('You buy a '+ITEMS[id].n+'. Swap mounts in your inventory.','gold')}}}
-  else if(a==='sell-loot'){const x=P.inv[+arg];if(x&&x.k==='mat'){const g=matPrice(x.id)*x.n;P.gold+=g;P.inv[+arg]=null;train('trade',g/20);log('You sell '+x.n+' '+MATS[x.id].n.toLowerCase()+(x.n>1?'s':'')+' for '+g+' gold.','gold')}}
-  else if(a==='sell-item'){const x=P.inv[+arg];if(x&&x.k==='gear'){const g=itemPrice(x.id);P.gold+=g;P.inv[+arg]=null;train('trade',g/20);log('You sell the '+ITEMS[x.id].n+' for '+g+' gold.','gold')}}
+  else if(a==='sell-loot'||a==='sell-item'){const x=P.inv[+arg];if(x&&x.k===(a==='sell-loot'?'mat':'gear'))itemKind(x).verb('sell').perform(+arg)}// (a trophy, a piece of gear: its kind's Sell, core/items.js)
   else if(a==='buy'||a==='sell'){const [g,nStr]=arg.split(':');let n=+nStr;
     if(a==='buy'){const r=buyGoods(t,g,n);if(r.got)addRep(t.name,r.spent/60,true)}
     else{const r=sellGoods(t,g,n);train('trade',r.earned/20);addRep(t.name,r.earned/60,true)}}

@@ -55,4 +55,4 @@ const heroEquipment=new EquipmentService(P,playerInventory,{items:ITEMS,slots:EQ
 const accepts=(key,id)=>heroEquipment.accepts(key,id);
 const twoHanded=id=>heroEquipment.twoHanded(id);
 const blockedWhy=key=>heroEquipment.blockedWhy(key);
-const targetKey=id=>{const sl=ITEMS[id].slot;if(sl!=='ring')return sl;const f=EQUIP.filter(k=>k.startsWith('ring'));return f.find(k=>!P.gear[k])||f[0]};
+// (the key a piece goes to: core/items.js Gear.keyOn, targetKey)

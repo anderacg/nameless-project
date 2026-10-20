@@ -30,10 +30,7 @@ class Inventory{
     merged.sort(compare);this.owner.inv=merged.concat(Array(this.capacity()-merged.length).fill(null));
   }
 }
-// (a letter: a robbed messenger's, one to a slot, its record with it: world/letters.js)
-const itemDef=s=>s.k==='gear'?ITEMS[s.id]:s.k==='good'?GOODS[s.id]:s.k==='letter'?letterDef(s):MATS[s.id];
-const stackOf=(k,id)=>k==='gear'||k==='letter'?1:k==='good'?GOODS[id].stack:STACK;
-const itemRank=I=>I.tier!=null?I.tier:{common:2,rare:4,epic:6}[I.r];
+// (what each record is, its stack and its order: its kind, core/items.js itemKind)
 const playerInventory=new Inventory(P,()=>INV_SIZE+gm('slots'),stackOf);
 const invCap=()=>playerInventory.capacity();
 const invFree=()=>playerInventory.free;
@@ -47,7 +44,10 @@ const goodTake=(g,n)=>playerInventory.take('good',g,n);
 // Rewards can collect on the loot pile; equipment transfers call Inventory directly because they already belong to the player.
 function invAdd(k,id,n){if(looting()){lootPile(k,id,n);return n}return playerInventory.add(k,id,n)}
 const fitInv=()=>playerInventory.resize();
+// sorted: by kind (gear, goods, trophies, letters), then as each kind sorts its own
 function sortInventory(){
-  const so=Object.fromEntries(Object.keys(SLOTS).map((k,i)=>[k,i])),ko={gear:0,good:1,mat:2,letter:3},go=Object.keys(GOODS);
-  playerInventory.sort((a,b)=>a.k!==b.k?ko[a.k]-ko[b.k]:a.k==='good'?go.indexOf(a.id)-go.indexOf(b.id)||b.n-a.n:a.k==='gear'?(so[ITEMS[a.id].slot]-so[ITEMS[b.id].slot]||itemRank(ITEMS[b.id])-itemRank(ITEMS[a.id])||ITEMS[a.id].n.localeCompare(ITEMS[b.id].n)):a.k==='letter'?String(a.id).localeCompare(b.id):(MATS[b.id].v-MATS[a.id].v||b.n-a.n));
+  playerInventory.sort((a,b)=>{
+    const A=itemKind(a),B=itemKind(b);
+    return a.k!==b.k?A.place-B.place:A.compare(a,b);
+  });
 }

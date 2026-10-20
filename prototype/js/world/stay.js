@@ -93,7 +93,7 @@ function stayAct(a,arg){
   const t=stayTown();if(!t){closeDialog();return}
   if(a==='sy-wait'){G.mode='world';hidePanel();log('Your band waits inside the walls of '+t.name+'.');return}
   if(a==='sy-defend'){const l=siegeLordsAt(t)[+arg];if(!l||P.fac&&P.fac===l.fac)return;
-    if(!hostileTo(l.fac)){Timed.of(P,'hostile').extend(l.fac,20);addHonor(l.fac,-15,true)}
+    realmOf(l.fac).provoke(20,15);
     leaveStay('You lead your band out of the gate of '+t.name+' against '+l.name+'.');G.encCool=0;startEncounter({kind:'lord',ref:l,list:l.troops.slice(),mine:true});return}
   if(a==='sy-slip'){const ls=siegeLordsAt(t),l=ls.slice().sort((a,b)=>lordSpeed(b)-lordSpeed(a))[0];if(!l)return;
     const e={kind:'lord',ref:l,list:l.troops.slice(),foes:ls.filter(o=>o!==l&&Math.hypot(o.x-l.x,o.y-l.y)>40),mine:false};if(fleeOdds(e).ch<=0)return;

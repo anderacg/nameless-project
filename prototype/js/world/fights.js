@@ -112,7 +112,7 @@ function routForce(f,mine){if(!f.src){defeatLord(f);return ''}if(f.kind==='garri
 function fightAct(a,arg){
   const f=G.fg;if(!f||!W.fights.includes(f)){closeDialog();return}
   if(a==='fg-join'){const s=+arg;if(joinWhy(f,s))return;
-    for(const o of sideParties(f,1-s)){const fc=o.faction;if(fc&&fc!=='player'&&!hostileTo(fc)){Timed.of(P,'hostile').extend(fc,20);addHonor(fc,-10,true);log('The '+FACS[fc].n+' turns hostile to you.','bad')}}
+    for(const o of sideParties(f,1-s)){const fc=o.faction;if(fc&&fc!=='player'&&realmOf(fc).provoke(20,10))log('The '+FACS[fc].n+' turns hostile to you.','bad')}
     // (against a beast: your battle with it, as when you meet it (monsters.js startMonster), the side you joined beside you)
     G.fg=null;const m=sideParties(f,1-s).find(o=>o.mapKind==='monster');
     if(m)return startEncounter({kind:'monster',ref:m,lv:m.lv,list:m.troops.slice(),mine:true,allies:sideParties(f,s).map(forceOf),foes:sideParties(f,1-s).filter(o=>o!==m).map(forceOf)});

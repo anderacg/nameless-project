@@ -41,9 +41,7 @@ const OUTER_ARMOR={steel:'mail',iron:'mail',silver:'mail',gold:'mail',rust:'mail
 const UNIT_ARMOR={chief:'mail',elf_eternal:'mail',elf_blade:'leather',slime:'none'};
 const ITEM_DT={sword:'slash',greatsword:'slash',axe:'slash',spear:'pierce',dagger:'pierce',warhammer:'blunt',bow:'pierce',crossbow:'pierce',staff:'arcane',wand:'arcane'};
 const ITEM_ARMOR={bearcoat:'hide',trollhide:'hide',silkvest:'leather',scorpplate:'plate'};
-// a weapon's damage type, a body armour's class (by its id: g_<base>_<tier>, or a monster piece)
-function itemDt(id){const I=id&&ITEMS[id];if(!I)return null;return I.dt||ITEM_DT[I.base]||(I.icon==='club'?'blunt':I.icon==='spear'||I.icon==='dagger'?'pierce':'slash')}
-function itemArmor(id){const I=id&&ITEMS[id];if(!I)return null;return I.armor||ITEM_ARMOR[id]||(I.base==='mail'?I.tier<2?'leather':I.tier<4?'mail':'plate':'leather')}
+// (a weapon's damage type, a body armour's class, by its id: core/items.js Gear.damageType, armourClass; itemDt, itemArmor)
 // every troop kind its type and armour, from its look (once at load, and for any kind added since: a recruit)
 function damageTypesInit(){for(const [k,s] of Object.entries(ST)){const L=(typeof PEOPLE_LOOK!=='undefined'&&(PEOPLE_LOOK[k]||PEOPLE_LOOK[s.look]))||{};
   if(!s.dt)s.dt=UNIT_DT[k]||WEAPON_DT[L.weapon]||(s.magic?'arcane':s.range?'pierce':'slash');

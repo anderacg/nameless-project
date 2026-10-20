@@ -12,12 +12,12 @@ const looting=()=>!!(G.loot&&G.loot.capture);
 // onto the pile: goods and trophies stack; each piece of gear is its own
 function lootPile(k,id,n){const p=G.loot.pile;if(n<=0)return;if(k==='gear'){for(let i=0;i<n;i++)p.push({k,id,n:1});return}const x=p.find(s=>s.k===k&&s.id===id);if(x)x.n+=n;else p.push({k,id,n})}
 // gear first, best first; then trophies, then goods
-const lootRank=s=>s.k==='gear'?100+itemRank(ITEMS[s.id]):s.k==='mat'?50+MATS[s.id].v/10:GOODS[s.id].base/10;
+const lootRank=s=>itemKind(s).lootRank(s);
 // how many of a pile entry your bag can take now
 function lootRoom(s){const max=stackOf(s.k,s.id);let r=0;for(const x of P.inv)r+=!x?max:x.k===s.k&&x.id===s.id&&max>1?max-x.n:0;return Math.min(s.n,r)}
-const lootDesc=s=>{const def=itemDef(s);return s.k==='gear'?cap1(ITEMS[s.id].r)+' '+kindLabel(ITEMS[s.id]):s.k==='mat'?'Trophy · '+MATS[s.id].v+'g':'Goods · '+def.stack+' a slot'};
+const lootDesc=s=>itemKind(s).lootLine(s);
 function lootTile(s,i){
-  const def=itemDef(s),rc=s.k==='gear'?RARITY[ITEMS[s.id].r]:'',room=lootRoom(s);
+  const def=itemDef(s),rc=itemKind(s).colour(s),room=lootRoom(s);
   return '<button class="loot-item" type="button" data-act="lt-take" data-arg="'+i+'"'+(room?' title="Take '+(room<s.n?room+' of ':'')+def.n+'"':' disabled title="No room in your bag"')+'>'+
     '<span class="slot" style="'+(rc?'--rc:'+rc:'')+'"><span data-icon="'+s.k+':'+s.id+'"></span>'+(s.n>1?'<b class="cnt">'+s.n+'</b>':'')+'</span>'+
     '<span><strong'+(rc?' style="color:'+rc+'"':'')+'>'+def.n+(s.n>1?' ×'+s.n:'')+'</strong><small>'+lootDesc(s)+(room?'':' · no room')+'</small></span></button>';

@@ -2,39 +2,68 @@
 /* ---------- relations: how each lord feels about you, and about each other ---------- */
 // P.lrel[lordId]: you and a lord, -100..100, starting at 0, with P.lrelWhy[lordId] the last few reasons. W.lrel['a|b']: the
 // change between two lords on top of where they started (lords of one realm start friendly, others anywhere from cool to
-// warm, the same every game). What moves them and what they buy is in RELATION (data/factions.js).
-const relWith=l=>l&&P.lrel?P.lrel[l.id]||0:0;
+// warm, the same every game). What moves them and what they buy is in RELATION (data/factions.js). A realm's own standing with
+// another and its honour are the realm's (realms.js Realm); these are the lords' own, over the same saved maps. The old names
+// (relWith, changeRel, rippleRel, lordRel, changeLordRel, lordFriends, lordRivals, lordHelps, lordSpares, relDay) are aliases.
 const relLevel=v=>RELATION.levels.find(([t])=>v>=t);
 const relName=v=>relLevel(v)[1];
 const relTag=v=>{const [,n,c]=relLevel(v);return '<span class="'+c+'">'+n+' ('+(v>0?'+':'')+Math.round(v)+')</span>'};
-// change how a lord feels about you; big changes are told in the log
-function changeRel(l,n,why){
-  if(!l||!n)return;P.lrel=P.lrel||{};P.lrelWhy=P.lrelWhy||{};const v=clamp(relWith(l)+n,-100,100);P.lrel[l.id]=v;
-  (P.lrelWhy[l.id]=P.lrelWhy[l.id]||[]).push({d:G.day,n:Math.round(n),why});P.lrelWhy[l.id]=P.lrelWhy[l.id].slice(-4);
-  if(Math.abs(n)>=5)log(l.name+(n>0?' thinks better of you':' thinks less of you')+': '+why+' ('+(n>0?'+':'')+Math.round(n)+').',n>0?'good':'bad');
-}
-// a deed against (or for) a lord: their friends feel some of it, their rivals the opposite
-function rippleRel(l,n,why){
-  changeRel(l,n,why);
-  for(const o of W.lords){if(o===l||o.dead)continue;const r=lordRel(l,o);
-    if(r>=RELATION.friend)changeRel(o,Math.round(n*RELATION.ripple),(n<0?'you wronged ':'you helped ')+'their friend '+l.name);
-    else if(r<=RELATION.rival)changeRel(o,-Math.round(n*RELATION.ripple*.75),(n<0?'you humbled ':'you helped ')+'their rival '+l.name)}
-}
-// between lords: where they start (same realm: friendly; else seeded from their names) plus what has happened since
+// between lords: the pair's key, and where they start (same realm: friendly; else seeded from their names)
 const lordKey=(a,b)=>a.id<b.id?a.id+'|'+b.id:b.id+'|'+a.id;
 const lordRel0=(a,b)=>{const k=lordKey(a,b);let h=0;for(const c of k)h=(h*31+c.charCodeAt(0))|0;return a.fac===b.fac?15+Math.abs(h)%21:(Math.abs(h)%41)-20};
-const lordRel=(a,b)=>clamp(lordRel0(a,b)+(W.lrel[lordKey(a,b)]||0),-100,100);
-function changeLordRel(a,b,n){if(!a||!b||a===b||!n)return;const k=lordKey(a,b);W.lrel[k]=(W.lrel[k]||0)+n}
-const lordFriends=l=>W.lords.filter(o=>o!==l&&!o.gone&&lordRel(l,o)>=RELATION.friend);
-const lordRivals=l=>W.lords.filter(o=>o!==l&&!o.gone&&lordRel(l,o)<=RELATION.rival);
-// friendship's favours
-const lordHelps=l=>relWith(l)>=RELATION.helpAt&&!hostileTo(l.fac);
-const lordSpares=l=>relWith(l)>=RELATION.spareAt&&!(P.fac&&atWar(P.fac,l.fac));
-// the days soften everything a little
-function relDay(){
-  const k=1-RELATION.decay;for(const id in P.lrel||{}){P.lrel[id]*=k;if(Math.abs(P.lrel[id])<.5)delete P.lrel[id]}
-  for(const id in W.lrel){W.lrel[id]*=k;if(Math.abs(W.lrel[id])<.5)delete W.lrel[id]}
-}
+const Relations={
+  // how a lord feels about you
+  withYou(l){return l&&P.lrel?P.lrel[l.id]||0:0},
+  // change it, with the reason kept (the last four); big changes are told in the log
+  change(l,n,why){
+    if(!l||!n)return;
+    P.lrel=P.lrel||{};
+    P.lrelWhy=P.lrelWhy||{};
+    const v=clamp(this.withYou(l)+n,-100,100);
+    P.lrel[l.id]=v;
+    (P.lrelWhy[l.id]=P.lrelWhy[l.id]||[]).push({d:G.day,n:Math.round(n),why});
+    P.lrelWhy[l.id]=P.lrelWhy[l.id].slice(-4);
+    if(Math.abs(n)>=5)log(l.name+(n>0?' thinks better of you':' thinks less of you')+': '+why+' ('+(n>0?'+':'')+Math.round(n)+').',n>0?'good':'bad');
+  },
+  // a deed against (or for) a lord: their friends feel some of it, their rivals the opposite
+  ripple(l,n,why){
+    this.change(l,n,why);
+    for(const o of W.lords){
+      if(o===l||o.dead)continue;
+      const r=this.between(l,o);
+      if(r>=RELATION.friend)this.change(o,Math.round(n*RELATION.ripple),(n<0?'you wronged ':'you helped ')+'their friend '+l.name);
+      else if(r<=RELATION.rival)this.change(o,-Math.round(n*RELATION.ripple*.75),(n<0?'you humbled ':'you helped ')+'their rival '+l.name);
+    }
+  },
+  // two lords: where they started plus what has happened since (W.lrel)
+  between(a,b){return clamp(lordRel0(a,b)+(W.lrel[lordKey(a,b)]||0),-100,100)},
+  shift(a,b,n){
+    if(!a||!b||a===b||!n)return;
+    const k=lordKey(a,b);
+    W.lrel[k]=(W.lrel[k]||0)+n;
+  },
+  friends(l){return W.lords.filter(o=>o!==l&&!o.gone&&this.between(l,o)>=RELATION.friend)},
+  rivals(l){return W.lords.filter(o=>o!==l&&!o.gone&&this.between(l,o)<=RELATION.rival)},
+  // friendship's favours: he rides to help you unless his realm is hostile, and spares you unless it is at war with your employer
+  helps(l){return this.withYou(l)>=RELATION.helpAt&&!hostileTo(l.fac)},
+  spares(l){return this.withYou(l)>=RELATION.spareAt&&!(P.fac&&atWar(P.fac,l.fac))},
+  // the days soften everything a little
+  day(){
+    const k=1-RELATION.decay;
+    for(const id in P.lrel||{}){P.lrel[id]*=k;if(Math.abs(P.lrel[id])<.5)delete P.lrel[id]}
+    for(const id in W.lrel){W.lrel[id]*=k;if(Math.abs(W.lrel[id])<.5)delete W.lrel[id]}
+  },
+};
+const relWith=l=>Relations.withYou(l);
+const changeRel=(l,n,why)=>Relations.change(l,n,why);
+const rippleRel=(l,n,why)=>Relations.ripple(l,n,why);
+const lordRel=(a,b)=>Relations.between(a,b);
+const changeLordRel=(a,b,n)=>Relations.shift(a,b,n);
+const lordFriends=l=>Relations.friends(l);
+const lordRivals=l=>Relations.rivals(l);
+const lordHelps=l=>Relations.helps(l);
+const lordSpares=l=>Relations.spares(l);
+const relDay=()=>Relations.day();
 
 /* in a lord's audience: where you stand, and what you can ask */
 function relHtml(l){
@@ -55,4 +84,4 @@ function relAct(a,arg){
 }
 onAct('lr-',relAct);
 // its work in the world's day and frame (core/systems.js)
-Systems.add({name:'relations',order:{day:50},day:relDay});
+Systems.add({name:'relations',order:{day:50},day:()=>Relations.day()});
