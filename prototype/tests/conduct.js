@@ -126,7 +126,9 @@ try{
    strong();t.act('site-attack');ok(G.enc&&G.enc.kind==='camp'&&G.enc.ref===r.occ.s,'Attack: their fight');t.act('auto');ok(/Victory/.test(panel())&&!/chest holds/.test(panel()),'beaten: their loot, not the ruin\'s treasure');done();
    t.siteDay();ok(r.cleared&&r.back===G.day+40,'and the ruins lie empty a cooldown')}
  {const r=occupy('creatures');ok(page(r,'creatures')&&acts()==='site-scout:q,site-ask:w'&&r.occ.s instanceof t.Cave&&/cellars of the/.test(text())&&!/a chest/.test(text()),'creatures: the cave\'s page (Scout, Enter), in the cellars, no chest of their own');
-   strong();t.act('site-fight');ok(G.enc&&G.enc.kind==='cave'&&G.enc.ref===r.occ.s,'Enter: their fight');t.act('auto');ok(/Victory/.test(panel())&&!/chest holds/.test(panel()),'beaten: their trophies only');done();enter(r);ok(r.cleared&&G.mode==='world','then it lies empty')}
+   // (what lairs in the cave is the cave's own roll (caveMonster), and a troll or a griffin pair can rout the band: dire boars
+   // here, and the fight seeded, so the check is about what a won cave fight pays)
+   r.occ.s.id='boar';strong();rolls([],()=>{t.act('site-fight');ok(G.enc&&G.enc.kind==='cave'&&G.enc.ref===r.occ.s,'Enter: their fight');t.act('auto')});ok(/Victory/.test(panel())&&!/chest holds/.test(panel()),'beaten: their trophies only');done();enter(r);ok(r.cleared&&G.mode==='world','then it lies empty')}
  for(const k of ['cultists','robbers']){const r=occupy(k);ok(page(r,k)&&acts()==='site-ask:q','the '+t.RUIN_OCC[k].say[1]+': Attack');t.act('site-ask');ok(q('#panel.confirm')&&q('.nav [data-nav="close"]').dataset.act==='site-attack','it asks first');
    strong();t.act('site-attack');ok(G.enc&&G.enc.kind==='ruin'&&G.enc.ref===r&&G.enc.list.length===r.occ.list.length,'a fight with '+G.enc.list.length);const g0=P.gold;t.act('auto');ok(/purse of \d+ gold/.test(panel())&&P.gold>g0&&r.cleared&&!/chest holds/.test(panel()),'beaten: their purse (and maybe a find), never the treasure');done()}
  {const r=occupy('empty');ok(page(r,'empty')&&!qa('.rwbody .rkact').length&&/Only wind in the stones/.test(text()),'empty: only wind in the stones, nothing to do')}

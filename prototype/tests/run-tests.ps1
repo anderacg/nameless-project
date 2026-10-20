@@ -4,13 +4,18 @@ param(
   [uint32[]]$Seed = @(),
   [ValidateRange(1,600)][int]$TimeoutSeconds = 90,
   [ValidateRange(1,16)][int]$Parallel = 1,
-  [switch]$Gen
+  [switch]$Gen,
+  [ValidateRange(0,1000)][int]$Repeat = 0,
+  [switch]$Sweep
 )
 # Native Windows runner: isolated headless browsers (one per -Parallel worker), a fresh tab per suite, no npm dependencies.
 # Usage from PowerShell: .\tests\run-tests.ps1 -Suites parties,troopxp [-Seed 1,2] [-Parallel 4] [-Gen]
 # -Gen: the generated world (the page's address gets gen=1: data/world.js WORLD.gen, doc/WORLD_DESIGN.md, 15.2).
 # Output: "== suite" (and "# seed=N"), the suite's lines (PASS/FAIL/EXC/ERR/INFO...), then "# N pass, N fail, N.N s".
 # The last lines ("# summary: ...") total every suite; the exit code is 1 if any line of any suite reads FAIL, EXC or ERR.
+# The flake finder: -Repeat N runs each suite N times unseeded (-Repeat N -Sweep: once with each seed 1..N instead; -Seed is
+# then ignored). Each run prints one line ("== suite #k", its seed, counts, and its failing lines), then "# flaky:" lists every
+# check (numbers in its text read as #) that failed in some runs but not all, with its counts, and "# always fails:" the rest.
 $ErrorActionPreference = 'Stop'
 if (!$Browser) {
   $Browser = @('C:\Program Files\Google\Chrome\Application\chrome.exe', 'C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe') |
@@ -24,7 +29,8 @@ if (!$Suites.Count) {
 }
 foreach ($suite in $Suites) { if ($suite -notmatch '^(visual/)?\w+$') { throw "Invalid suite name: $suite" } }
 $runs = @(); foreach ($suite in $Suites) {
-  if ($Seed.Count) { foreach ($value in $Seed) { $runs += [pscustomobject]@{Index=$runs.Count; Suite=$suite; Seed=$value} } }
+  if ($Repeat) { foreach ($k in 1..$Repeat) { $runs += [pscustomobject]@{Index=$runs.Count; Suite=$suite; Seed=$(if ($Sweep) { [uint32]$k } else { $null }); Rep=$k} } }
+  elseif ($Seed.Count) { foreach ($value in $Seed) { $runs += [pscustomobject]@{Index=$runs.Count; Suite=$suite; Seed=$value} } }
   else { $runs += [pscustomobject]@{Index=$runs.Count; Suite=$suite; Seed=$null} }
 }
 $queue = New-Object 'Collections.Concurrent.ConcurrentQueue[object]'
@@ -141,16 +147,46 @@ $worker = {
 }
 
 $totals = @{pass=0; fail=0; ms=0.0; failing=New-Object Collections.Generic.List[string]; workerErrors=New-Object Collections.Generic.List[string]}
+$checks = @{}
 function Write-Result($r) {
   if ($r.Index -lt 0) { Write-Output $r.Out; $totals.workerErrors.Add($r.Out); return }
-  Write-Output "== $($r.Suite)"
-  if ($null -ne $r.Seed) { Write-Output ('# seed=' + $r.Seed) }
-  Write-Output $r.Out
   # count every line: a suite may print a multi-line block, so a first-line filter would hide failures
   $lines = $r.Out -split "`r?`n"
   $pass = @($lines | Where-Object { $_ -match '^PASS( |$)' }).Count
-  $fail = @($lines | Where-Object { $_ -match '^(FAIL|EXC|ERR)( |$)' }).Count
-  Write-Output ('# {0} pass, {1} fail, {2:N1} s' -f $pass, $fail, ($r.Ms / 1000))
+  $failed = @($lines | Where-Object { $_ -match '^(FAIL|EXC|ERR)( |$)' })
+  $fail = $failed.Count
+  if ($Repeat) {
+    # the flake finder: one line per run, its failing lines under it, and each check's outcome kept for the report
+    Write-Output ('== {0} #{1}{2}: {3} pass, {4} fail, {5:N1} s' -f $r.Suite, $runs[$r.Index].Rep, $(if ($null -ne $r.Seed) { ' seed=' + $r.Seed } else { '' }), $pass, $fail, ($r.Ms / 1000))
+    # (an exception's stack runs on over the next lines: a few of them with it)
+    $more = 0
+    foreach ($l in $lines) {
+      if ($l -match '^(FAIL|EXC|ERR)( |$)') { Write-Output ('   ' + $l); $more = $(if ($l -match '^EXC') { 6 } else { 0 }) }
+      elseif ($more -and $l -notmatch '^(PASS|INFO)( |$)') { Write-Output ('     ' + $l); $more-- }
+      else { $more = 0 }
+    }
+    if (!$checks.ContainsKey($r.Suite)) { $checks[$r.Suite] = @{runs=0; keys=@{}} }
+    $c = $checks[$r.Suite]; $c.runs++
+    $seen = @{}
+    foreach ($l in $lines) {
+      if ($l -notmatch '^(PASS|FAIL|EXC|ERR)( |$)') { continue }
+      $bad = $l -notmatch '^PASS'
+      # (EXC and ERR lines carry stacks and file positions: keep their first words only)
+      $key = ($l -replace '^(PASS|FAIL) ?', '') -replace '-?\d+(\.\d+)?', '#'
+      if ($l -match '^(EXC|ERR)') { $key = $l.Substring(0, [Math]::Min(80, $l.Length)) -replace '-?\d+(\.\d+)?', '#' }
+      if (!$seen.ContainsKey($key)) { $seen[$key] = $false }
+      if ($bad) { $seen[$key] = $true }
+    }
+    foreach ($key in $seen.Keys) {
+      if (!$c.keys.ContainsKey($key)) { $c.keys[$key] = @{fail=0; pass=0; seeds=New-Object Collections.Generic.List[string]} }
+      if ($seen[$key]) { $c.keys[$key].fail++; $c.keys[$key].seeds.Add($(if ($null -ne $r.Seed) { "$($r.Seed)" } else { "#$($runs[$r.Index].Rep)" })) } else { $c.keys[$key].pass++ }
+    }
+  } else {
+    Write-Output "== $($r.Suite)"
+    if ($null -ne $r.Seed) { Write-Output ('# seed=' + $r.Seed) }
+    Write-Output $r.Out
+    Write-Output ('# {0} pass, {1} fail, {2:N1} s' -f $pass, $fail, ($r.Ms / 1000))
+  }
   $totals.pass += $pass; $totals.fail += $fail; $totals.ms += $r.Ms
   if ($fail) { $totals.failing.Add($(if ($null -ne $r.Seed) { "$($r.Suite) (seed $($r.Seed))" } else { $r.Suite })) }
 }
@@ -187,6 +223,21 @@ if ($workers -eq 1) {
 # a run no worker reached (its browser failed) still counts as a failure
 foreach ($run in $runs) { if (!$printed.ContainsKey($run.Index)) { Write-Result ([pscustomobject]@{Index=$run.Index; Suite=$run.Suite; Seed=$run.Seed; Out='ERR runner: not run (no test browser)'; Ms=0}) } }
 Write-Output ('# summary: {0} runs, {1} pass, {2} fail, suites {3:N1} s, wall {4:N1} s, {5} browser(s){6}' -f $runs.Count, $totals.pass, $totals.fail, ($totals.ms / 1000), $wall.Elapsed.TotalSeconds, $workers, $(if ($Gen) { ', gen=1' } else { '' }))
-if ($totals.failing.Count) { Write-Output ('# failing: ' + ($totals.failing -join ', ')) }
+if ($totals.failing.Count -and !$Repeat) { Write-Output ('# failing: ' + ($totals.failing -join ', ')) }
+if ($Repeat) {
+  # a check that failed in some runs is flaky; a check that failed every time it ran (or that only shows when it fails) is
+  # listed apart; the runs where it failed: their seeds (-Sweep) or their run numbers
+  $flaky = @(); $always = @()
+  foreach ($s in @($checks.Keys | Sort-Object)) {
+    $c = $checks[$s]
+    foreach ($key in @($c.keys.Keys | Sort-Object)) {
+      $k = $c.keys[$key]; if (!$k.fail) { continue }
+      $line = '#   {0}: {1}/{2} runs failed: {3}  [{4}]' -f $s, $k.fail, $c.runs, $key, ($k.seeds -join ',')
+      if ($k.fail -lt $c.runs) { $flaky += $line } else { $always += $line }
+    }
+  }
+  Write-Output ('# flaky: {0} check(s)' -f $flaky.Count); $flaky | ForEach-Object { Write-Output $_ }
+  if ($always.Count) { Write-Output ('# always fails: {0} check(s)' -f $always.Count); $always | ForEach-Object { Write-Output $_ } }
+}
 if ($totals.fail -or $totals.failing.Count -or $totals.workerErrors.Count) { exit 1 }
 exit 0

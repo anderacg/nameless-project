@@ -73,7 +73,8 @@ try{
   for(let i=0;i<6;i++){R().on=[];if(stub(first0(s),()=>t.roadRoll()))n++}
   ok(n===2&&R().n===2,'at most 2 a day ('+n+' of 6 sure rolls came)');
   G.day++;R().on=[];ok(!!stub(first0(s),()=>t.roadRoll()),'the next day, one comes again');
-  R().n=0;ok(R().on.length===1&&!stub(first0(s),()=>t.roadRoll()),'none while one is about');
+  // (one about: the one that came, its parts aside: a shepherd who came brings his strays)
+  R().n=0;ok(R().on.filter(e=>!e.D.part).length===1&&!stub(first0(s),()=>t.roadRoll()),'none while one is about');
   const kinds=[],s1=t.seeded(100);for(let i=0;i<60;i++){R().on=[];R().n=0;R().cd={traveller:G.day-4};const e=stub(s1,()=>t.roadPick());if(e)kinds.push(e.k)}
   ok(kinds.length>40&&!kinds.includes('traveller'),'a kind not again within 5 days ('+kinds.length+' came, no wounded traveller 4 days after the last)');
   const k2=[],s2=t.seeded(300);for(let i=0;i<120;i++){R().on=[];R().n=0;R().cd={traveller:G.day-5};const e=stub(s2,()=>t.roadPick());if(e)k2.push(e.k)}
@@ -85,9 +86,15 @@ try{
     ok(ps.length>0&&!bad.length,m+': '+ps.length+' of 30 placed, all '+S.near[0]+'–'+S.near[1]+' px past your sight on '+on+' ground'+(bad.length?' (bad: '+bad.length+')':''));return ps};
   goHome();check('road','by a road');P.tx=P.x+500;P.ty=P.y;const ps=check('wild','off the road');ok(ps.filter(([x])=>x>P.x).length>=ps.length*.7,'mostly ahead of the way you go ('+ps.filter(([x])=>x>P.x).length+' of '+ps.length+' east)');P.tx=null;
   const findT=f=>{for(let ty=12;ty<t.MH-12;ty++)for(let tx=12;tx<t.MW-12;tx++)if(f(tx,ty))return[(tx+.5)*TILE,(ty+.5)*TILE];return null};
-  {const w=findT((tx,ty)=>t.tAt(tx,ty)===t.T_FOREST&&around(tx,ty,2,x=>x===t.T_FOREST)&&far(tx,ty)&&t.climAt((tx+.5)*TILE,(ty+.5)*TILE)!=='frost');if(w){at(w[0],w[1]);check('wood','hunters by a wood')}else ok(false,'no forest to test')}
-  {const h=findT((tx,ty)=>t.tAt(tx,ty)===t.T_HILL&&around(tx,ty,4,x=>x===t.T_HILL)&&far(tx,ty));if(h){at(h[0],h[1]);check('hill','the mine in the hills')}else ok(false,'no hills to test')}
-  {const b=findT((tx,ty)=>t.climAt((tx+.5)*TILE,(ty+.5)*TILE)==='swamp'&&t.passable(t.tAt(tx,ty))&&far(tx,ty)&&around(tx,ty,9,x=>t.passable(x)));if(b){at(b[0],b[1]);check('bog','the wisps in a bog')}else ok(false,'no bog to test')}
+  // (a spot whose ring, 40-120 px past your sight, is a twentieth or more ground of that kind you can walk to: the first spot that
+  // fits otherwise moves with the world's sites (far), and a small hill or wood can leave its ring bare of that ground)
+  const ringFit=(tx,ty,on)=>{const V=t.vis(),c={x:(tx+.5)*TILE,y:(ty+.5)*TILE},r0=(V+S.near[0])/TILE,r1=(V+S.near[1])/TILE,R1=Math.ceil(r1);let n=0,k=0;
+    for(let j=-R1;j<=R1;j++)for(let i=-R1;i<=R1;i++){const d=Math.hypot(i,j),X=tx+i,Y=ty+j;if(d<r0||d>r1)continue;n++;
+      if(X>=2&&Y>=2&&X<t.MW-2&&Y<t.MH-2&&t.passable(t.tAt(X,Y))&&!t.occAt(X,Y)&&t.ENC_ON[on](X,Y)&&t.Router.reach(c,{x:(X+.5)*TILE,y:(Y+.5)*TILE}))k++}
+    return k>=n/20};
+  {const w=findT((tx,ty)=>t.tAt(tx,ty)===t.T_FOREST&&around(tx,ty,2,x=>x===t.T_FOREST)&&far(tx,ty)&&t.climAt((tx+.5)*TILE,(ty+.5)*TILE)!=='frost'&&ringFit(tx,ty,'wood'));if(w){at(w[0],w[1]);check('wood','hunters by a wood')}else ok(false,'no forest to test')}
+  {const h=findT((tx,ty)=>t.tAt(tx,ty)===t.T_HILL&&around(tx,ty,4,x=>x===t.T_HILL)&&far(tx,ty)&&ringFit(tx,ty,'hill'));if(h){at(h[0],h[1]);check('hill','the mine in the hills')}else ok(false,'no hills to test')}
+  {const b=findT((tx,ty)=>t.climAt((tx+.5)*TILE,(ty+.5)*TILE)==='swamp'&&t.passable(t.tAt(tx,ty))&&far(tx,ty)&&around(tx,ty,9,x=>t.passable(x))&&ringFit(tx,ty,'bog'));if(b){at(b[0],b[1]);check('bog','the wisps in a bog')}else ok(false,'no bog to test')}
   {const A=t.townBy('Ashford');at(A.x,A.y+40);const ps=[],sd=t.seeded(900);for(let i=0;i<40;i++){const p=stub(sd,()=>t.roadSpot('road'));if(p)ps.push(p)}
    ok(ps.every(([x,y])=>t.TOWNS.every(z=>Math.hypot(z.tx-Math.floor(x/TILE),z.ty-Math.floor(y/TILE))>=S.hold)),'never inside a holding (beside Ashford: '+ps.length+' placed, none within '+S.hold+' tiles of one)')}}
 
@@ -336,16 +343,20 @@ try{
     'confirmed: his purse ('+r.purse+' gold, no letter’s price) and his sealed letter in your bag ('+(sl&&sl.L.kind)+', to '+(sl&&sl.L.to)+'); reputation in '+r.home+' −'+t.CONDUCT.robMessenger.rep+', honor with the '+t.FACS[r.fac].n+' −'+t.CONDUCT.robMessenger.honor);world();
   P.inv.fill(null).forEach((x,i)=>{P.inv[i]={k:'good',id:'grain',n:1}});const r2=meet('messenger'),g2=P.gold;pickA(1);sure();ok(P.gold===g2+r2.purse&&!P.inv.some(x=>x&&x.k==='letter')&&/bag is full/.test(panel()),'your bag full: the purse, and the letter stays in the mud');cleanBag();world()}
  // ---- strayed sheep: a shepherd and his strays (ROAD_PART); help, ride into each, his thanks for what came back
- {goHome();R().on=[];const h=spawnK('sheep',40,0);ok(h&&h.n>=2&&h.n<=4&&t.sheepStrays(h).length===h.n&&t.sheepStrays(h).every(o=>o.pk===h.i&&o.D.part&&!o.seen),'the shepherd comes with '+(h&&h.n)+' strays round him, unseen as his till you help');
+ // (the strays fall 40-80 px round him, only 14 apart: two can stand within your reach (catchReach), and riding into one would
+ // drive both home; spread: each set 60 px out from him, evenly round, so riding into one drives only that one)
+ const spread=h=>{if(!h)return;const S=t.sheepStrays(h);S.forEach((o,i)=>{const a=.3+i*2*Math.PI/S.length;o.x=h.x+Math.cos(a)*60;o.y=h.y+Math.sin(a)*60})};
+ {goHome();R().on=[];const h=spawnK('sheep',40,0);spread(h);ok(h&&h.n>=2&&h.n<=4&&t.sheepStrays(h).length===h.n&&t.sheepStrays(h).every(o=>o.pk===h.i&&o.D.part&&!o.seen),'the shepherd comes with '+(h&&h.n)+' strays round him, unseen as his till you help');
   const S=t.sheepStrays(h),o0=S[0];P.x=o0.x+t.ENC_SHEEP.shy-4;P.y=o0.y;const x0=o0.x;frames(4);ok(Math.hypot(o0.x-x0,0)>0&&!o0.caught,'a stray trots off from you when you come near ('+Math.round(o0.x-x0)+' px), not caught before you help');
   const n0=G.msgs.length;o0.meet();ok(!o0.caught&&/shepherd must be near/.test(G.msgs.slice(n0).map(m=>m.m).join()),'met before you help: only a word that its shepherd is near');
   t.roadMeet(h);ok(acts().join('|')==='Round them up','his page: Round them up');pickA(0);ok(h.help&&S.every(o=>o.seen)&&!h.done&&acts().length===0,'help: the strays marked, he waits, nothing more to choose');world();
-  const g=t.sheepGood(h),gd0=t.goodN(g),r0=t.repAt(t.nearHold().name);S.slice(0,-1).forEach(o=>{P.x=o.x+4;P.y=o.y;frames(2)});
+  // (his thanks go to the holding nearest where the last one comes home: the one to read, as it was before)
+  const g=t.sheepGood(h),gd0=t.goodN(g),rep0={...P.rep};S.slice(0,-1).forEach(o=>{P.x=o.x+4;P.y=o.y;frames(2)});
   ok(S.slice(0,-1).every(o=>o.caught&&o.gone)&&h.got===h.n-1&&!h.ended,'ride into a stray: it is back with the flock ('+h.got+' of '+h.n+')');
   {const sv=JSON.parse(JSON.stringify(t.roadSave()));const left=sv.road.on.filter(e=>e.pk===h.i);ok(left.length===1&&left[0].k==='stray','saved: the stray still out, its shepherd known (pk)')}
   const last=S[S.length-1];P.x=last.x+4;P.y=last.y;frames(2);
-  ok(h.ended&&h.done&&h.beh==='leave'&&t.goodN(g)-gd0===h.n*t.ENC_SHEEP.good&&t.repAt(t.nearHold().name)-r0>=h.n*t.ENC_SHEEP.rep,'every one home: his '+t.GOODS[g].n.toLowerCase()+' a sheep, reputation, and he walks off with his flock');
-  goHome();R().on=[];const h2=spawnK('sheep',40,0);h2.help=1;const S2=t.sheepStrays(h2);P.x=S2[0].x+4;P.y=S2[0].y;frames(2);const gd1=t.goodN(t.sheepGood(h2));S2.slice(1).forEach(o=>o.over());
+  ok(h.ended&&h.done&&h.beh==='leave'&&t.goodN(g)-gd0===h.n*t.ENC_SHEEP.good&&t.repAt(t.nearHold().name)-(rep0[t.nearHold().name]||0)>=h.n*t.ENC_SHEEP.rep,'every one home: his '+t.GOODS[g].n.toLowerCase()+' a sheep, reputation, and he walks off with his flock');
+  goHome();R().on=[];const h2=spawnK('sheep',40,0);spread(h2);h2.help=1;const S2=t.sheepStrays(h2);P.x=S2[0].x+4;P.y=S2[0].y;frames(2);const gd1=t.goodN(t.sheepGood(h2));S2.slice(1).forEach(o=>o.over());
   ok(h2.ended&&h2.got===1&&t.goodN(t.sheepGood(h2))-gd1===t.ENC_SHEEP.good,'the rest wander off: thanks for the one back, and he goes')}
  // ---- the ambush: unseen below Scouting 2, it springs as you pass; a forced choice
  {ev('TERRAIN.on=true');const findT=f=>{for(let ty=12;ty<t.MH-12;ty++)for(let tx=12;tx<t.MW-12;tx++)if(f(tx,ty))return[(tx+.5)*TILE,(ty+.5)*TILE];return null};
@@ -402,7 +413,9 @@ try{
 
  // ======== phase 4: the sealed letter (world/letters.js; ENC_TUNE.letter)
  {const TL=t.ENC_TUNE.letter,FS=Object.keys(t.FACS).filter(x=>x!=='player'),rk=t.rk,setRel=(a,b,s)=>{W.rel[rk(a,b)]={s,since:1}};
-  const f=FS.find(x=>t.fiefsOf(x).length>1),g=FS.find(x=>x!==f&&t.fiefsOf(x).length),g2=FS.find(x=>x!==f&&x!==g&&t.fiefsOf(x).length),h=t.fiefsOf(f)[0],rel0=JSON.stringify(W.rel);
+  // (f: a realm of two holdings or more with a lord alive: the lords parked off the map (clear) stand together, and those at war
+  // fight there while the map runs; a realm can come out of it with every lord beaten)
+  const f=FS.find(x=>t.fiefsOf(x).length>1&&W.lords.some(o=>o.fac===x&&!o.dead)),g=FS.find(x=>x!==f&&t.fiefsOf(x).length),g2=FS.find(x=>x!==f&&x!==g&&t.fiefsOf(x).length),h=t.fiefsOf(f)[0],rel0=JSON.stringify(W.rel);
   for(const a of FS)for(const b of FS)if(a<b)setRel(a,b,'peace');setRel(f,g,'war');if(g2)setRel(g,g2,'war');
   let mkN=0;const only=(k,fn)=>{const w0={...TL.w};for(const q in TL.w)TL.w[q]=q===k?1:0;try{return fn()}finally{Object.assign(TL.w,w0)}},mk=k=>only(k,()=>t.letterMake({i:900+(++mkN),fac:f,home:h.name,x:h.x,y:h.y+40}));
   const l=W.lords.find(o=>o.fac===f&&!o.dead),gt=t.fiefsOf(g)[0];const ls0={state:l.state,tgt:l.tgt,inside:l.inside};l.inside=null;l.state='march';l.tgt=gt.name;
@@ -474,8 +487,13 @@ try{
   // (walking off, you standing still: how many moments, whether it was in your sight the moment before it went, how much of its way
   // along the road was on road tiles)
   const walkOff=e=>{let pre=true,i=0,n=0,on=0;for(;i<12000&&!e.gone;i++){const r=t.ROAD_OFF.get(e);if(r&&r.i<r.path.length){n++;if(t.tAt(Math.floor(e.x/TILE),Math.floor(e.y/TILE))===t.T_ROAD)on++}pre=e.inView(t.vis());t.updateRoad(.05)}return{i,pre,n,on}};
-  // (a road tile a few tiles along the road from you)
-  const roadBy=n=>{const s=t.roadTileBy(P.x,P.y);let best=null,bd=0;for(const k of t.roadAlong(s,n).keys()){const x=(k%t.MW+.5)*TILE,y=(Math.floor(k/t.MW)+.5)*TILE,d=Math.hypot(x-P.x,y-P.y);if(d>bd){bd=d;best=[x,y]}}return best};
+  // (a road tile a few tiles along the road from you: the farthest whose way off along the road (roadOffGoal) leads away from
+  // you all the way, else the farthest. Where the road's far end lies past you, one walking off cuts across beside the road
+  // round you, joining it ahead (never back past you): off the road by design, as the test spot (home) moves with the sites)
+  const awayAll=(x,y)=>{const g=t.roadOffGoal({x,y}),st=t.roadTileBy(x,y);if(!g||st<0)return false;const goal=g[1]*t.MW+g[0],fr=t.roadAlong(st,t.ENC_OFF.steps*2,goal),d0=Math.hypot(x-P.x,y-P.y);
+    if(!fr.has(goal))return false;for(let k=fr.get(goal);k!==st&&k!==-1;k=fr.get(k))if(Math.hypot((k%t.MW+.5)*TILE-P.x,(Math.floor(k/t.MW)+.5)*TILE-P.y)<=d0)return false;return true};
+  const roadBy=n=>{const s=t.roadTileBy(P.x,P.y),c=[];for(const k of t.roadAlong(s,n).keys()){const x=(k%t.MW+.5)*TILE,y=(Math.floor(k/t.MW)+.5)*TILE;c.push([x,y,Math.hypot(x-P.x,y-P.y)])}
+    c.sort((a,b)=>b[2]-a[2]);const w=c.find(([x,y])=>awayAll(x,y))||c[0];return w&&w[2]>0?[w[0],w[1]]:null};
   // ---- the ones that stay and move on (gamblers, hunters, deserters, the poacher): pack up and walk off, along the road where there is one
   {goHome();R().on=[];const p=roadBy(3),e=t.roadSpawn('gamblers',p[0],p[1]);e.seen=1;const d0=e.fromYou();past(e);frames(1);
    ok(!e.gone&&e.beh==='leave'&&e.left&&e.inView(t.vis())&&e.chaseable(),'gamblers, their time up in your sight: they do not vanish, they pack up and walk off');

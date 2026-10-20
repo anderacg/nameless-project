@@ -18,16 +18,17 @@ Kit.suite(({ok})=>{
  G.chase=boar;for(let k=0;k<200&&G.mode==='world';k++)t.updateWorld(.05);ok(G.mode==='dialog'&&G.enc.kind==='monster','clicking a boar hunts it');t.act('flee');reset();W.monsters=W.monsters.filter(m=>m!==boar);
  // abilities, levels and rewards
  P.troops={hum_spear:8,hum_long:4};P.inv=Array(t.INV_SIZE).fill(null);
- const win=(id,lv,force)=>{const m=near(id,lv);if(force)MONSTERS[id].gear=MONSTERS[id].gear.map(([g])=>[g,1]);G.encCool=0;t.startMonster(m);
+ // (keep: the beasts kept whole until that is seen: two level-1 spiders can fall to the spears before a web of theirs lands)
+ const win=(id,lv,force,keep)=>{const m=near(id,lv);if(force)MONSTERS[id].gear=MONSTERS[id].gear.map(([g])=>[g,1]);G.encCool=0;t.startMonster(m);
    const xp0=P.xp+P.level*1000;t.act('fight');const B=t.B,mu=B.units.find(u=>u.type===MONSTERS[id].unit);
    let seen={pounce:0,web:0,heal:0},i=0;
-   while(t.B&&i<12000){B.units.forEach(u=>{if(u.team===0)u.hp=u.max});const hp=mu.hp;t.updateBattle(.033);if(t.B){if(i%15===0)t.frame();/* (drawn now and then: what is seen is read from the simulation) */
+   while(t.B&&i<12000){B.units.forEach(u=>{if(u.team===0||keep&&!seen[keep])u.hp=u.max});const hp=mu.hp;t.updateBattle(.033);if(t.B){if(i%15===0)t.frame();/* (drawn now and then: what is seen is read from the simulation) */
      if(B.floats.some(f=>f.t==='POUNCE'))seen.pounce=1;if(B.units.some(u=>u.slow>0))seen.web=1;if(mu.hp>hp&&mu.hp>0)seen.heal=1}i++}
    if(G.loot)t.act('lt-all');// carry the spoils off
    return{m,mu,seen,xp:P.xp+P.level*1000-xp0}};
  let r=win('tiger',3,true);ok(r.mu.max>ST.tiger.hp,'level 3 tiger is tougher ('+r.mu.max+' hp vs '+ST.tiger.hp+')');ok(r.seen.pounce,'tigers pounce');
  ok(t.invCount('mat','tigerpelt')===1&&t.invCount('gear','clawblade')===1,'tiger drops a pelt and the claw blade into the inventory');ok(!W.monsters.includes(r.m),'slain monster leaves the map');t.act('cont');done();
- r=win('spider',1);ok(r.seen.web,'spiders web your fighters');t.act('cont');done();
+ r=win('spider',1,false,'web');ok(r.seen.web,'spiders web your fighters');t.act('cont');done();
  r=win('troll',1);ok(r.seen.heal,'trolls regenerate');t.act('cont');done();
  // gear
  const slotOf=(k,id)=>P.inv.findIndex(x=>x&&x.k===k&&x.id===id),dmg0=(P.gear.weapon=null,t.heroStats().dmg);G.mode='world';t.openInv();ok(G.mode==='inv'&&document.querySelectorAll('.invgrid .slot').length===t.INV_SIZE,'inventory opens with '+t.INV_SIZE+' slots');t.act('inv-equip',String(slotOf('gear','clawblade')));

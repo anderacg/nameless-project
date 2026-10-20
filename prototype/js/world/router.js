@@ -57,7 +57,9 @@ function findPath(x0,y0,x1,y1,pad){
 function routeTo(o,x,y,step){
   const dd=Math.hypot(x-o.x,y-o.y);if(dd<=1)return true;
   const goal=Math.floor(y/TILE)*MW+Math.floor(x/TILE);let r=ROUTES.get(o);
-  if(!r||r.goal!==goal){r={goal,path:clearLine(o.x,o.y,x,y)?[]:findPath(o.x,o.y,x,y),i:0};ROUTES.set(o,r)}
+  // (the search keeps to a box round both ends; a way that leaves the box is searched for over the whole map, where the point
+  // lies on the walker's own piece of land: false only when it cannot be reached at all)
+  if(!r||r.goal!==goal){r={goal,path:clearLine(o.x,o.y,x,y)?[]:findPath(o.x,o.y,x,y)||(Router.reach(o,{x,y})?findPath(o.x,o.y,x,y,Math.max(MW,MH)):null),i:0};ROUTES.set(o,r)}
   if(!r.path)return false;
   while(r.i<r.path.length){const k=r.path[r.i],cx=(k%MW+.5)*TILE,cy=(Math.floor(k/MW)+.5)*TILE,d=Math.hypot(cx-o.x,cy-o.y);
     if(d<3){r.i++;continue}walk(o,cx-o.x,cy-o.y,Math.min(d,step));return true}
