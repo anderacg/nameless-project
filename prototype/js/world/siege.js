@@ -6,24 +6,21 @@
 const LADDER_DAYS=2,RAM_DAYS=4,STARVE_DAY=6;
 // Any holding with walls (a palisade or better: wallOf) is taken by siege: a camp, ladders, then the assault. One without walls
 // (a village that never built them, or a castle whose walls were breached) is raided or seized outright.
-const walled=t=>wallOf(t)>0;
+const walled=t=>t.walled();// (the old names: holdings.js Holding)
 // P.raid = {town, t}: your band plundering an unwalled holding; it takes RAID_TIME on the map and the holding is closed meanwhile
 const RAID_TIME=DAY*.5;
 const until=(t,k)=>Timed.of(t).has(k);// (the old name: timed.js)
-const ruined=t=>Timed.of(t).has('sacked')||Timed.of(t).has('raided');
+const ruined=t=>t.ruined();
 // a fief pays its taxes (people x tax rate x prosperity) and market dues; its land feeds it through the economy
-const fiefIncome=t=>Math.round(taxOf(t)*(1+.03*skill('stew')));// Stewardship adds to what your fiefs pay
+const fiefIncome=t=>t.fiefIncome();
 const playerFiefs=()=>TOWNS.filter(t=>t.owner==='player');
-const fiefCap=t=>t.T.gar+6+3*wallOf(t);
-// who holds the walls: the garrison, plus any lord of the owner resting inside
-function siegeDefenders(t){const lords=lordsInside(t);return{list:garList(t).concat(...lords.map(l=>l.troops)),lords}}
-// the lords besieging a holding; while any are (or while you siege or raid it) it is closed: no trade, recruits, jobs or rest
-const siegeLordsAt=t=>W.lords.filter(l=>!l.dead&&l.state==='siege'&&l.tgt===t.name);
+const fiefCap=t=>t.garCap();
+const siegeDefenders=t=>t.defenders();
+const siegeLordsAt=t=>t.besiegers();
 const myRaid=t=>P.raid&&P.raid.town===t.name?P.raid:null;
-const closedNow=t=>siegeLordsAt(t).length>0||!!mySiege(t)||!!myRaid(t);
+const closedNow=t=>t.closed();
 const mySiege=t=>P.siege&&P.siege.town===t.name?P.siege:null;
-// how hard the walls make the defenders: 1 + the wall level (no walls 1 … great walls 4), one less once your ram is built
-const siegeLv=t=>Math.max(1,1+wallOf(t)-((mySiege(t)||{days:0}).days>=RAM_DAYS?1:0));
+const siegeLv=t=>t.siegeLv();
 
 /* the siege panel */
 function openSiege(t){G.lastTown=t;P.tx=null;G.chase=null;G.bes=t;G.mode='besiege';showSiege()}
@@ -178,14 +175,8 @@ function captureAct(a){
   return true;
 }
 // fiefs pay every day; a weekly note in the log
-// sacking: the soldiers carry off what fits of the most valuable stock, the rest of share is burned; people flee or die
-function sackStock(t,share,killed,mine){
-  ensureEcon(t);const taken=[];
-  const gs=Object.keys(t.stock).filter(g=>t.stock[g]>0).sort((a,b)=>GOODS[b].base*t.stock[b]-GOODS[a].base*t.stock[a]);
-  for(const g of gs){const n=Math.floor(t.stock[g]*share);t.stock[g]-=n;if(mine&&taken.length<3&&n>0){const k=invAdd('good',g,Math.min(n,20));if(k)taken.push(k+' '+GOODS[g].n.toLowerCase())}}
-  t.pop=Math.max(10,Math.round(t.pop*(1-killed)));t.pros=Math.max(0,t.pros-30);
-  return taken.join(', ')||'little else';
-}
+// sacking: the soldiers carry off the most valuable stock, the rest of share is burned; people flee or die (economy.js Economy sack)
+const sackStock=(t,share,killed,mine)=>Economy.of(t).sack(share,killed,mine);
 function fiefDay(){
   const fs=playerFiefs();if(!fs.length)return;train('stew',1.5*fs.length);const g=fs.reduce((a,t)=>a+fiefIncome(t),0);P.gold+=g;P.fiefWeek=(P.fiefWeek||0)+g;
   if(Clock.every(7)){log('Your fiefs paid '+P.fiefWeek+' gold this week'+(P.tradeWeek?', and their caravans '+P.tradeWeek+' more':'')+'.','gold');P.fiefWeek=0;P.tradeWeek=0}

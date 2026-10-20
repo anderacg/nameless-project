@@ -16,7 +16,7 @@ const fiefsOf=f=>TOWNS.filter(t=>t.owner===f);
 const facCol=t=>t.owner?FACS[t.owner].col:'#98a0ba';
 const hostileTo=f=>!!f&&f!=='player'&&((!!P.fac&&atWar(P.fac,f))||Timed.of(P,'hostile').has(f));
 const townBy=n=>TOWNS.find(t=>t.name===n);
-const besieged=t=>W.lords.some(l=>!l.dead&&l.state==='siege'&&l.tgt===t.name)||!!(P.siege&&P.siege.town===t.name)||!!(P.raid&&P.raid.town===t.name);
+const besieged=t=>t.besieged();// (the old name: holdings.js Holding)
 const nearestOf=(o,list)=>Spatial.nearest(list,o.x,o.y);// (the old name: core/spatial.js)
 /* lords grow as you do: a level from what they win in battle (l.lv, l.xp: level x 60 to the next, as yours), renown, and the
    disciplines of command, which rise by use (l.sk: Leadership by winning, Tactics by fighting, Medicine by tending their fallen;
@@ -39,14 +39,13 @@ function armyOf(f,n){const rs=facRaces(f),a=[],types=[];for(let i=0;i<n;i++){con
 // a holding's guards come from its people: each new one is a volunteer (t.vol, the pool you recruit from too) who leaves the
 // population for the garrison. A holding needs at least GUARD_FLOOR people left; returns how many it could draft (up to n)
 const GUARD_FLOOR=20;
-function draftLocals(t,n){ensureEcon(t);const k=Math.max(0,Math.min(n,Math.floor(t.vol||0),Math.floor((t.pop||0)-GUARD_FLOOR)));if(k){t.vol-=k;t.pop-=k}return k}
-const canDraft=t=>(t.vol||0)>=1&&(t.pop||0)-GUARD_FLOOR>=1;
+const draftLocals=(t,n)=>t.draft(n);// (holdings.js Holding draft)
+const canDraft=t=>t.canDraft();
 function garList(t){const a=[];for(let i=0;i<t.gar;i++){const c=RACES[t.races[i%t.races.length]];a.push(i%7===6?c.mage:i%3===2?c.ranged:i%4===1?c.shield:i%2?UP[c.melee][0]:c.melee)}return a}
-// a holding's first day: its realm, garrison and peace, its estates and economy (its lots: initLots); a generated world's economy
-// setting (doc/WORLD_DESIGN.md §4.1) on its first stocks (ECON_STOCK: poor or rich)
+// a holding's first day (holdings.js Holding setUp); a generated world's economy setting (doc/WORLD_DESIGN.md §4.1) on its
+// first stocks (ECON_STOCK: poor or rich)
 const ECON_STOCK={poor:.75,rich:1.3};
-function initHolding(t){t.owner=t.lastOwner=HOME[t.name];t.gar=t.T.gar;t.sacked=t.raided=t.turmoil=0;t.grow=GROW0;initEstates(t);initEconomy(t);
-  const e=WM.settings&&ECON_STOCK[WM.settings.economy];if(e)for(const g in t.stock)t.stock[g]=Math.round(t.stock[g]*e)}
+const initHolding=t=>t.setUp();
 // told when a holding is added or lost while the world runs: fn(t, 'add' | 'gone')
 const HOLDING_HOOKS=[],onHolding=fn=>HOLDING_HOOKS.push(fn);
 // a holding made while the world runs (founded): its name kept unique, held by its realm (yours unless given), set up as the

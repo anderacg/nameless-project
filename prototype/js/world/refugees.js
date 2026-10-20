@@ -20,15 +20,9 @@ class Refugees extends WorldObject{
 }
 const asRefugees=asClass(Refugees);
 const REFUGEE_CAP=density().refugees,REFUGEE_SPD=11;
-// why people would leave a holding, or '' if they stay
-function fleeReason(t){ensureEcon(t);return Timed.of(t).has('sacked')?'sacked':Timed.of(t).has('raided')?'raided':foodDays(t)<1?'hunger':besieged(t)?'siege':t.pros<25?'hardship':Timed.of(t).has('turmoil')&&t.pros<45?'conquest':housingFull(t)?'crowded':''}
-// where they go: the nearest holding not at war with theirs that is fed, unbesieged and clearly better off
-function refuge(t){
-  let best=null,bd=1e9;const crowded=housingFull(t)&&fleeReason(t)==='crowded';
-  for(const o of TOWNS){if(o===t||!o.owner||besieged(o)||ruined(o)||atWar(o.owner,t.owner))continue;ensureEcon(o);if(crowded?(housing(o)-(o.pop||0)<15||foodDays(o)<3):(o.pros<t.pros+15||foodDays(o)<3))continue;
-    const d=Math.hypot(o.tx-t.tx,o.ty-t.ty);if(d<bd&&d<WORLD_SCALE.econ.refuge){bd=d;best=o}}
-  return best;
-}
+// why people would leave a holding, or '' if they stay; where they go (holdings.js Holding fleeReason, refuge)
+const fleeReason=t=>t.fleeReason();
+const refuge=t=>t.refuge();
 function sendRefugees(t,to,why){
   const n=Math.min(t.pop-20,rint(6,14)+(why==='sacked'?8:0));if(n<4)return null;t.pop-=n;ensureEcon(t);
   const goods={};for(const g of ['grain','cheese','cloth']){const k=Math.min(t.stock[g]||0,rint(0,3));if(k){goods[g]=k;t.stock[g]-=k}}
@@ -38,8 +32,8 @@ function sendRefugees(t,to,why){
   return r;
 }
 function refugeeDay(){
-  for(const t of TOWNS){if(W.refugees.length>=REFUGEE_CAP)break;const why=fleeReason(t);if(!why||t.pop<=30||Math.random()>(why==='hardship'||why==='conquest'||why==='crowded'?.12:.3))continue;
-    if(W.refugees.some(r=>r.from===t.name))continue;const to=refuge(t);if(to)sendRefugees(t,to,why)}
+  for(const t of TOWNS){if(W.refugees.length>=REFUGEE_CAP)break;const why=t.fleeReason();if(!why||t.pop<=30||Math.random()>(why==='hardship'||why==='conquest'||why==='crowded'?.12:.3))continue;
+    if(W.refugees.some(r=>r.from===t.name))continue;const to=t.refuge();if(to)sendRefugees(t,to,why)}
 }
 function refugeesArrive(r,to){
   ensureEcon(to);to.pop+=r.n;for(const g in r.goods)to.stock[g]=(to.stock[g]||0)+r.goods[g];to.pros=Math.max(0,to.pros-Math.min(4,r.n/8));

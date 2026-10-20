@@ -13,80 +13,161 @@ function setEconMode(m){ECON.mode=ECON_MODES[m]?m:'full';try{localStorage.setIte
 const T_GOODS=()=>Object.keys(GOODS);
 const isFood=g=>!!GOODS[g].food;
 
-/* setting a holding up: people, prosperity, and stock shaped by what it is known for (its old trade profile) */
-function initEconomy(t){
-  t.pop=t.T.pop0;t.pros=55;t.tax=1;t.vol=Math.round(t.pop/12);t.stock={};t.popF=0;t.hist=[];
-  for(const g of T_GOODS()){const m=(t.mod&&t.mod[g])||1,tg=targetStock(t,g);t.stock[g]=Math.round(Math.max(2,tg)*Math.min(3,Math.pow(1/m,2))*(.8+Math.random()*.4))}
-  // regional goods (metals, gems, rare fish, pearls): a store of what its own land yields, none of the rest
-  for(const g of T_GOODS())if(GOODS[g].res)t.stock[g]=resOf(t)[g]?Math.round(Math.max(4,targetStock(t,g))*(1+Math.random())):0;
-}
-const ensureEcon=t=>{if(!t.stock)initEconomy(t)};
+/* a holding's economy (t.econ): its stock, its people and prosperity, what they need and what things cost there, and its day. A
+   part of the holding, kept aside (never saved): it reads and writes the holding's own plain fields (t.stock, t.pop, t.pros, t.tax,
+   t.vol, t.popF, t.last), which its save record keeps as they are (holdings.js saveRec) */
+const ECONS=new WeakMap();
+class Economy{
+  constructor(t){this.t=t}
+  // a holding's economy (made once and kept aside)
+  static of(t){
+    let e=ECONS.get(t);
+    if(!e)ECONS.set(t,e=new Economy(t));
+    return e}
+  /* setting it up: people, prosperity, and stock shaped by what it is known for (its old trade profile) */
+  init(){
+    const t=this.t;
+    t.pop=t.T.pop0;t.pros=55;t.tax=1;t.vol=Math.round(t.pop/12);t.stock={};t.popF=0;t.hist=[];
+    for(const g of T_GOODS()){const m=(t.mod&&t.mod[g])||1,tg=this.target(g);t.stock[g]=Math.round(Math.max(2,tg)*Math.min(3,Math.pow(1/m,2))*(.8+Math.random()*.4))}
+    // regional goods (metals, gems, rare fish, pearls): a store of what its own land yields, none of the rest
+    for(const g of T_GOODS())if(GOODS[g].res)t.stock[g]=resOf(t)[g]?Math.round(Math.max(4,this.target(g))*(1+Math.random())):0}
+  ensure(){
+    if(!this.t.stock)this.init()}
+  /* demand: what the people and garrison want each day, what workshops take, and what a building project still needs */
+  need(g){
+    const t=this.t,N=t.T.needs,per=t.pop/100;let n=0;
+    if(isFood(g))n=(N.food*per+t.gar/4)/3;
+    else n=((N[g]||0)+(t.T.wants[g]||0))*per;
+    if(g==='furs'&&climAt(t.x,t.y)==='frost')n+=1.5*per;
+    for(const k in MAKE){const i=MAKE[k].in;if(i&&i[g])n+=i[g]*bldLv(t,k)}
+    const w=t.work&&projectNeed(t.work);if(w&&w[g])n+=w[g]/5;
+    return n}
+  // it aims to keep ten days of what it needs; prices rise below that and fall above it
+  target(g){return Math.max(6,this.need(g)*10)}
+  storeCap(){
+    const t=this.t;
+    return t.T.store*(1+.5*bldLv(t,'granary'))}
+  // its food: in store, eaten a day (its people, its garrison and the troops inside), and how many days it lasts
+  food(){
+    const t=this.t;
+    return FOODS.reduce((a,g)=>a+(t.stock[g]||0),0)}
+  foodNeed(){
+    const t=this.t;
+    return t.T.needs.food*t.pop/100+(t.gar+insideTroops(t).length)/4}
+  foodDays(){return Math.floor(this.food()/Math.max(.1,this.foodNeed()))}
+  /* prices: base x √(target ÷ stock), between 0.4x and 3x; ruin adds 40% */
+  price(g){
+    const t=this.t;this.ensure();
+    const s=t.stock[g]||0,tg=this.target(g);
+    return Math.max(1,Math.round(GOODS[g].base*clamp(Math.sqrt(tg/(s+1)),.4,3)*(t.ruined()?1.4:1)))}
+  // short of a good, or well stocked with it ('' between)
+  state(g){
+    const r=(this.t.stock[g]||0)/this.target(g);
+    return r<.35?'shortage':r>1.8?'surplus':''}
+  // what one unit costs you to buy, and fetches you to sell
+  buyPrice(g){return Math.max(1,Math.ceil(this.price(g)*spreadBuy()))}
+  sellPrice(g){return Math.max(1,Math.floor(this.price(g)*spreadSell()))}
 
-/* demand: what the people and garrison want each day, what workshops take, and what a building project still needs */
-function needOf(t,g){
-  const N=t.T.needs,per=t.pop/100;let n=0;
-  if(isFood(g))n=(N.food*per+t.gar/4)/3;
-  else n=((N[g]||0)+(t.T.wants[g]||0))*per;
-  if(g==='furs'&&climAt(t.x,t.y)==='frost')n+=1.5*per;
-  for(const k in MAKE){const i=MAKE[k].in;if(i&&i[g])n+=i[g]*bldLv(t,k)}
-  const w=t.work&&projectNeed(t.work);if(w&&w[g])n+=w[g]/5;
-  return n;
-}
-// a holding aims to keep ten days of what it needs; prices rise below that and fall above it
-const targetStock=(t,g)=>Math.max(6,needOf(t,g)*10);
-const storeCap=t=>t.T.store*(1+.5*bldLv(t,'granary'));
-const foodStock=t=>FOODS.reduce((a,g)=>a+(t.stock[g]||0),0);
-const foodNeed=t=>t.T.needs.food*t.pop/100+(t.gar+insideTroops(t).length)/4;
-const foodDays=t=>Math.floor(foodStock(t)/Math.max(.1,foodNeed(t)));
+  /* the day */
+  // how much of its estates' work its people can staff (half while they are afraid to go out)
+  workerScale(){
+    const t=this.t,need=Object.keys(MAKE).reduce((a,k)=>a+(MAKE[k].out&&Object.keys(MAKE[k].out).length?bldLv(t,k)*WORKERS:0),0);
+    return (need?Math.min(1,t.pop*.6/need):1)*((t.fear||0)>G.day?.5:1)}
+  // what its estates make (each estate's own work: estates.js Estate produce), and what its land yields (ly: landYield's)
+  produce(ly){
+    const t=this.t,st=t.stock,ws=this.workerScale(),clim=climAt(t.x,t.y),out={};
+    const add=(g,n)=>{if(n<=0)return;const v=n+(Math.random()<n%1?1:0);st[g]=(st[g]||0)+Math.floor(v);out[g]=(out[g]||0)+Math.floor(v)};
+    for(const k in MAKE)t.estate(k).produce(ws,clim,add);
+    if(ly){add('grain',ly.grain*FARM_CLIM[clim]);add('timber',ly.timber);add('stone',ly.stone)}
+    return out}
+  // its people and garrison eat and use things up: how well fed (fs) and how content (sat) they are, the kinds of food, what was used
+  consume(){
+    const t=this.t,st=t.stock,N=t.T.needs,per=t.pop/100,use={};
+    const fn=this.foodNeed(),ate=takeFood(st,fn),fs=fn?ate/fn:1;use.food=ate;
+    const kinds=FOODS.filter(g=>(st[g]||0)>0).length;
+    let sum=fs*3,wt=3;
+    for(const g in N){if(g==='food')continue;const n=N[g]*per+(g==='furs'&&climAt(t.x,t.y)==='frost'?1.5*per:0);if(n<=0)continue;const k=Math.min(n,st[g]||0);st[g]-=k;use[g]=k;sum+=k/n;wt++}
+    // wants: taken when there is some, never missed (they do not touch contentment)
+    const Wt=t.T.wants;for(const g in Wt){const k=Math.min(Wt[g]*per,st[g]||0);if(k>0){st[g]-=k;use[g]=(use[g]||0)+k}}
+    return{fs,sat:sum/wt,kinds,use}}
+  // food spoils (half as fast with a granary), and nothing is kept beyond its stores' room
+  spoil(){
+    const t=this.t,half=bldLv(t,'granary')?.5:1;
+    for(const g of FOODS){const r=GOODS[g].spoil;if(r&&t.stock[g])t.stock[g]-=Math.floor(t.stock[g]*r*half+Math.random())}
+    const cap=this.storeCap();for(const g in t.stock)t.stock[g]=Math.max(0,Math.min(cap,Math.round(t.stock[g])))}
+  // its people grow when fed and content, starve in famine; prosperity follows needs, taxes and war (c: the day's consume)
+  grow(c){
+    const t=this.t,cap=Math.min(t.T.popCap*(1+.15*bldLv(t,'granary'))+Math.floor(landOf(t)/12),t.lots?t.layout.housing():1e9);
+    if(c.fs<1){t.pop=Math.max(10,t.pop-Math.ceil(t.pop*.03*(1-c.fs)));}
+    else if(t.pros>40&&t.pop<cap){t.popF=(t.popF||0)+t.pop*.004*(t.pros/100);if(t.popF>=1){const k=Math.floor(t.popF);t.pop+=k;t.popF-=k}}
+    let d=(c.sat*100-t.pros)*.08+(c.kinds>=3?.5:0)+[1,0,-1.5][t.tax==null?1:t.tax];
+    if(Timed.of(t).has('turmoil'))d-=2;if(t.ruined())d-=3;if(t.besieged())d-=1.5;
+    t.pros=clamp(t.pros+d,0,100);
+    t.vol=Math.min(Math.round(t.pop/10),(t.vol||0)+t.pop/150*(t.pros/60))}
+  // a day: its estates and land produce, its people eat, food spoils, its people grow or starve (ly: what its land yields)
+  day(ly){
+    const t=this.t;
+    this.ensure();
+    const out=this.produce(ly),c=this.consume();
+    this.spoil();
+    this.grow(c);
+    t.last={out,use:c.use,fs:c.fs,sat:c.sat}}
+  // a day's taxes at its rate (fiefs pay you; the rest pay their realm), plus market dues
+  tax(rate){
+    const t=this.t;
+    return t.ruined()?0:Math.round(t.pop*TAX_RATE[rate==null?(t.tax==null?1:t.tax):rate]*(.4+t.pros/100)*(Timed.of(t).has('turmoil')?.5:1)+3*bldLv(t,'market'))}
 
-/* prices: base x √(target ÷ stock), between 0.4x and 3x; ruin adds 40% */
-function marketPrice(t,g){ensureEcon(t);const s=t.stock[g]||0,tg=targetStock(t,g);return Math.max(1,Math.round(GOODS[g].base*clamp(Math.sqrt(tg/(s+1)),.4,3)*(ruined(t)?1.4:1)))}
-const marketState=(t,g)=>{const r=(t.stock[g]||0)/targetStock(t,g);return r<.35?'shortage':r>1.8?'surplus':''};
+  /* trading with its market: each unit changes its stock, and so the next unit's price */
+  // you buy up to n of a good: what you got and spent
+  buy(g,n){
+    const t=this.t;this.ensure();let got=0,spent=0;
+    for(let i=0;i<n;i++){if((t.stock[g]||0)<1)break;const p=this.buyPrice(g);if(P.gold<p||goodRoom(g)<1)break;
+      P.gold-=p;spent+=p;t.stock[g]--;invAdd('good',g,1);got++}
+    if(got&&isFood(g)&&this.foodDays()<3){addRep(t.name,-got/2,true);log('The people of '+t.name+' watch you carry off food they need.','bad')}
+    return{got,spent}}
+  // you sell up to n of a good: what you sold and earned
+  sell(g,n){
+    const t=this.t;this.ensure();let sold=0,earned=0;
+    for(let i=0;i<n;i++){if(goodN(g)<1)break;const p=this.sellPrice(g);goodTake(g,1);t.stock[g]=(t.stock[g]||0)+1;P.gold+=p;earned+=p;sold++}
+    return{sold,earned}}
+
+  /* building materials from its stock: what is short of a project's (as words), and taking them */
+  lacking(mats){
+    const t=this.t;this.ensure();
+    return Object.keys(mats).filter(g=>(t.stock[g]||0)<mats[g]).map(g=>(mats[g]-(t.stock[g]||0))+' '+GOODS[g].n.toLowerCase())}
+  take(mats){
+    for(const g in mats)this.t.stock[g]-=mats[g]}
+  // sacked: the soldiers carry off what fits of the most valuable stock (mine: you, up to three goods), the rest of share is burned;
+  // killed: the share of its people who flee or die. Returns what you took, in words
+  sack(share,killed,mine){
+    const t=this.t;this.ensure();const taken=[];
+    const gs=Object.keys(t.stock).filter(g=>t.stock[g]>0).sort((a,b)=>GOODS[b].base*t.stock[b]-GOODS[a].base*t.stock[a]);
+    for(const g of gs){const n=Math.floor(t.stock[g]*share);t.stock[g]-=n;if(mine&&taken.length<3&&n>0){const k=invAdd('good',g,Math.min(n,20));if(k)taken.push(k+' '+GOODS[g].n.toLowerCase())}}
+    t.pop=Math.max(10,Math.round(t.pop*(1-killed)));t.pros=Math.max(0,t.pros-30);
+    return taken.join(', ')||'little else'}
+}
+// (the older names: the economy's methods)
+const initEconomy=t=>Economy.of(t).init();
+const ensureEcon=t=>Economy.of(t).ensure();
+const needOf=(t,g)=>Economy.of(t).need(g);
+const targetStock=(t,g)=>Economy.of(t).target(g);
+const storeCap=t=>Economy.of(t).storeCap();
+const foodStock=t=>Economy.of(t).food();
+const foodNeed=t=>Economy.of(t).foodNeed();
+const foodDays=t=>Economy.of(t).foodDays();
+const marketPrice=(t,g)=>Economy.of(t).price(g);
+const marketState=(t,g)=>Economy.of(t).state(g);
+const workerScale=t=>Economy.of(t).workerScale();
+const produce=(t,ly)=>Economy.of(t).produce(ly);
+const consume=t=>Economy.of(t).consume();
+const spoil=t=>Economy.of(t).spoil();
+const people=(t,c)=>Economy.of(t).grow(c);
+const taxOf=(t,rate)=>Economy.of(t).tax(rate);
 // take food from a stock, perishables first; returns how much it found
 function takeFood(st,n){let left=n;for(const g of FOODS){if(left<=0)break;const k=Math.min(left,st[g]||0);st[g]-=k;left-=k}return n-left}
-
-/* the day */
-const workerScale=t=>{const need=Object.keys(MAKE).reduce((a,k)=>a+(MAKE[k].out&&Object.keys(MAKE[k].out).length?bldLv(t,k)*WORKERS:0),0);return (need?Math.min(1,t.pop*.6/need):1)*((t.fear||0)>G.day?.5:1)};
 // what the land itself yields without any estate: a little food from open ground, timber from forest, stone from the hills
 function landYield(){const y=TOWNS.map(()=>({grain:0,timber:0,stone:0}));if(typeof LAND==='undefined')return y;landFresh();
   for(let k=0;k<LAND.length;k++){const i=LAND[k];if(i<0)continue;const tt=tiles[k];if(tt===T_OPEN)y[i].grain+=1/50;else if(tt===T_FOREST)y[i].timber+=1/60;else if(tt===T_HILL)y[i].stone+=1/60}return y}
-function produce(t,ly){
-  const st=t.stock,ws=workerScale(t),clim=climAt(t.x,t.y),out={};
-  const add=(g,n)=>{if(n<=0)return;const v=n+(Math.random()<n%1?1:0);st[g]=(st[g]||0)+Math.floor(v);out[g]=(out[g]||0)+Math.floor(v)};
-  for(const k in MAKE){const lv=bldLv(t,k),M=MAKE[k];if(!lv||!M.out||sabotaged(t,k))continue;
-    // workshops first take their inputs: as many batches as the stock allows; farms, pastures and quarries make what their fields allow
-    let f=lv*ws*fieldShare(t,k)*handsLeft(t,k);if(M.in)for(const g in M.in)f=Math.min(f,(st[g]||0)/M.in[g]);if(f<=0)continue;
-    if(M.in)for(const g in M.in)st[g]-=Math.round(M.in[g]*f);
-    const O=k==='mine'||k==='port'?resOut(t,k):M.out;// mines and ports bring up what their land holds (resources.js)
-    for(const g in O)add(g,O[g]*f*(k==='farm'?FARM_CLIM[clim]:1));
-    if(k==='workshop'&&clim==='frost')add('furs',f)}
-  if(ly){add('grain',ly.grain*FARM_CLIM[clim]);add('timber',ly.timber);add('stone',ly.stone)}
-  return out;
-}
-function consume(t){
-  const st=t.stock,N=t.T.needs,per=t.pop/100,use={};
-  const fn=foodNeed(t),ate=takeFood(st,fn),fs=fn?ate/fn:1;use.food=ate;
-  const kinds=FOODS.filter(g=>(st[g]||0)>0).length;
-  let sum=fs*3,wt=3;
-  for(const g in N){if(g==='food')continue;const n=N[g]*per+(g==='furs'&&climAt(t.x,t.y)==='frost'?1.5*per:0);if(n<=0)continue;const k=Math.min(n,st[g]||0);st[g]-=k;use[g]=k;sum+=k/n;wt++}
-  // wants: taken when there is some, never missed (they do not touch contentment)
-  const Wt=t.T.wants;for(const g in Wt){const k=Math.min(Wt[g]*per,st[g]||0);if(k>0){st[g]-=k;use[g]=(use[g]||0)+k}}
-  return{fs,sat:sum/wt,kinds,use};
-}
-function spoil(t){const half=bldLv(t,'granary')?.5:1;for(const g of FOODS){const r=GOODS[g].spoil;if(r&&t.stock[g])t.stock[g]-=Math.floor(t.stock[g]*r*half+Math.random())}
-  const cap=storeCap(t);for(const g in t.stock)t.stock[g]=Math.max(0,Math.min(cap,Math.round(t.stock[g])))}
-// people grow when fed and content, starve in famine; prosperity follows needs, taxes and war
-function people(t,c){
-  const cap=Math.min(t.T.popCap*(1+.15*bldLv(t,'granary'))+Math.floor(landOf(t)/12),t.lots?housing(t):1e9);
-  if(c.fs<1){t.pop=Math.max(10,t.pop-Math.ceil(t.pop*.03*(1-c.fs)));}
-  else if(t.pros>40&&t.pop<cap){t.popF=(t.popF||0)+t.pop*.004*(t.pros/100);if(t.popF>=1){const k=Math.floor(t.popF);t.pop+=k;t.popF-=k}}
-  let d=(c.sat*100-t.pros)*.08+(c.kinds>=3?.5:0)+[1,0,-1.5][t.tax==null?1:t.tax];
-  if(Timed.of(t).has('turmoil'))d-=2;if(ruined(t))d-=3;if(besieged(t))d-=1.5;
-  t.pros=clamp(t.pros+d,0,100);
-  t.vol=Math.min(Math.round(t.pop/10),(t.vol||0)+t.pop/150*(t.pros/60));
-}
-// a day's taxes at the holding's rate (fiefs pay you; the rest pay their realm), plus market dues
-const taxOf=(t,rate)=>ruined(t)?0:Math.round(t.pop*TAX_RATE[rate==null?(t.tax==null?1:t.tax):rate]*(.4+t.pros/100)*(Timed.of(t).has('turmoil')?.5:1)+3*bldLv(t,'market'));
 
 const treas=f=>{if(W.treas[f]==null)W.treas[f]=TREAS0+60*fiefsOf(f).length;return W.treas[f]};
 // pay for something a realm wants: gold from its treasury, food from a holding's stock; false if it cannot (never in off mode)
@@ -112,25 +193,22 @@ function realmDay(){
     if(!light&&(W.treas[f]<0||hungry)&&(f===P.fac||Math.random()<.1)&&Clock.every(3))log('The '+FACS[f].n+(W.treas[f]<0?' cannot pay its soldiers':' cannot feed its armies')+'. Men desert.',f===P.fac?'bad':'')}
   W.tolls={};
 }
+// the world's day for the economy: each holding's (Economy day), then the realms' treasuries
 function econDay(){
   const ly=landYield();
-  TOWNS.forEach((t,i)=>{ensureEcon(t);const out=produce(t,ly[i]),c=consume(t);spoil(t);people(t,c);t.last={out,use:c.use,fs:c.fs,sat:c.sat}});
+  TOWNS.forEach((t,i)=>t.econ.day(ly[i]));
   realmDay();
 }
 
-/* trading with a holding's market: each unit changes its stock, and so the next unit's price */
+/* trading with a holding's market: each unit changes its stock, and so the next unit's price (Economy buy, sell) */
 const spreadBuy=()=>1.08*(1-.015*skill('trade')),spreadSell=()=>.92*(1+.01*skill('trade'));
-function buyGoods(t,g,n){ensureEcon(t);let got=0,spent=0;for(let i=0;i<n;i++){if((t.stock[g]||0)<1)break;const p=Math.max(1,Math.ceil(marketPrice(t,g)*spreadBuy()));if(P.gold<p||goodRoom(g)<1)break;
-    P.gold-=p;spent+=p;t.stock[g]--;invAdd('good',g,1);got++}
-  if(got&&isFood(g)&&foodDays(t)<3){addRep(t.name,-got/2,true);log('The people of '+t.name+' watch you carry off food they need.','bad')}
-  return{got,spent};}
-function sellGoods(t,g,n){ensureEcon(t);let sold=0,earned=0;for(let i=0;i<n;i++){if(goodN(g)<1)break;const p=Math.max(1,Math.floor(marketPrice(t,g)*spreadSell()));goodTake(g,1);t.stock[g]=(t.stock[g]||0)+1;P.gold+=p;earned+=p;sold++}
-  return{sold,earned};}
-const nextBuy=(t,g)=>Math.max(1,Math.ceil(marketPrice(t,g)*spreadBuy())),nextSell=(t,g)=>Math.max(1,Math.floor(marketPrice(t,g)*spreadSell()));
+const buyGoods=(t,g,n)=>Economy.of(t).buy(g,n);
+const sellGoods=(t,g,n)=>Economy.of(t).sell(g,n);
+const nextBuy=(t,g)=>Economy.of(t).buyPrice(g),nextSell=(t,g)=>Economy.of(t).sellPrice(g);
 
 const projectNeed=w=>w.k==='wall'?WALL_MAT[w.lv]:ESTATE_MAT(w.k,w.lv);
-const matsLacking=(t,mats)=>{ensureEcon(t);return Object.keys(mats).filter(g=>(t.stock[g]||0)<mats[g]).map(g=>(mats[g]-(t.stock[g]||0))+' '+GOODS[g].n.toLowerCase())};
-const takeMats=(t,mats)=>{for(const g in mats)t.stock[g]-=mats[g]};
+const matsLacking=(t,mats)=>Economy.of(t).lacking(mats);
+const takeMats=(t,mats)=>Economy.of(t).take(mats);
 const matsText=m=>Object.keys(m).map(g=>m[g]+' '+GOODS[g].n.toLowerCase()).join(', ');
 
 /* the fief panel: people, taxes, the stores, and the caravans you send from here */

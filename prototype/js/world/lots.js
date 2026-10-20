@@ -13,8 +13,8 @@ onWorld(m=>{const F=m.first;OCC=F?F.occ.slice():new Int32Array(MW*MH);for(const 
 const occAt=(x,y)=>x<0||y<0||x>=MW||y>=MH?-1:OCC[y*MW+x];
 const lotTiles=(l,f)=>{for(let j=0;j<l.n;j++)for(let i=0;i<l.n;i++)f(l.x+i,l.y+j)};
 function occMark(l,v){lotTiles(l,(x,y)=>{OCC[y*MW+x]=v});(l.plots||[]).forEach(([x,y])=>{OCC[y*MW+x]=v})}
-function lotAdd(t,l){t._can=null;t._spots=null;l.id=l.id||lotN++;lotN=Math.max(lotN,l.id+1);(t.lots=t.lots||[]).push(l);LOT[l.id]=l;l.town=t.name;occMark(l,l.id);return l}
-function lotDrop(t,l){t._can=null;t._spots=null;occMark(l,0);t.lots=t.lots.filter(o=>o!==l);delete LOT[l.id]}
+const lotAdd=(t,l)=>Layout.of(t).add(l);// (the old names: Layout add, drop, below)
+const lotDrop=(t,l)=>Layout.of(t).drop(l);
 // rebuild the grid from every holding's lots (after a load)
 // the tiles no building may take: the bandits' camps
 // a bandit camp's 2 x 2 tiles (its own, the one right of it and the two behind) and a tile round them
@@ -101,41 +101,90 @@ function lotSpot(t,n,rule,rmin,rmax,R,o){
     if(s<bs){bs=s;best=[x,y]}}
   return best;
 }
-const lotAt=(t,k)=>(t.lots||[]).find(l=>l.k===k);
-const lotCentre=t=>lotAt(t,'centre');
+const lotAt=(t,k)=>Layout.of(t).at(k);
+const lotCentre=t=>Layout.of(t).centre();
 // the tile middle of a lot, in pixels (where its workers go, where it is clicked)
 const lotMid=l=>({tx:l.x+(l.n>>1),ty:l.y+l.n-1,x:(l.x+l.n/2)*TILE,y:(l.y+l.n)*TILE-6});
-const housing=t=>(t.lots||[]).reduce((a,l)=>a+(l.st==='built'?HOUSING[l.type]&&(l.k==='house'||l.k==='centre')?HOUSING[l.type]:0:0),0);
+const housing=t=>Layout.of(t).housing();
 
-/* laying a holding out */
-function initLots(t){
-  if(t.lots)t.lots.slice().forEach(l=>lotDrop(t,l));t.lots=[];landFresh();occReserve();
-  const R=seeded(t.seed*977+13),n0=lotSize(typeFor(t,'centre',R)),cx=t.tx-(n0>>1),cy=t.ty-n0+1;
-  // the centre stands on the holding's own tile, its gate on its front row where the roads end: parties arrive there and set out
-  lotAdd(t,{k:'centre',type:typeFor(t,'centre',R),x:cx,y:cy,n:n0,lv:1,seed:t.seed*31+7,st:'built'});
-  // houses round it: enough for its people (the centre houses some), a few to spare
-  const pop=t.pop||t.T.pop0;let room=housing(t),tries=0;
-  while(room<pop*1.1&&tries++<t.T.tries){const type=typeFor(t,'house',R),n=lotSize(type),p=lotSpot(t,n,'open',1,t.T.ring,R,{gap:'row',jit:.8});if(!p)continue;lotAdd(t,{k:'house',type,x:p[0],y:p[1],n,lv:1,seed:Math.floor(R()*1e6),st:'built'});room=housing(t)}
-  // the buildings of its inner estates
-  for(const k of INNER)if(bldLv(t,k)&&!estateLot(t,k,R))t.bld[k]=0;// no room: the holding has no such estate
-  // then the works outside
-  for(const k of Object.keys(ESTATES))if(!INNER.includes(k)&&bldLv(t,k)&&!estateLot(t,k,R))t.bld[k]=0;
-  t._spots=null;
-}
-// the box round a holding's inner lots: the town, which fields and outer works keep clear of
-function innerBox(t){let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;for(const l of t.lots||[])if(l.k==='centre'||l.k==='house'||INNER.includes(l.k)){x0=Math.min(x0,l.x);y0=Math.min(y0,l.y);x1=Math.max(x1,l.x+l.n-1);y1=Math.max(y1,l.y+l.n-1)}
-  return x1<x0?null:{x0,y0,x1,y1}}
-// the town and a lane round it: fields and outer works keep clear of it
-function wallBox(t){const b=innerBox(t);return b&&{x0:b.x0-2,y0:b.y0-2,x1:b.x1+2,y1:b.y1+2}}
-// place an estate's building (and keep its fields): inner ones near the centre, outer ones on their ground beyond the walls;
-// at: the tile chosen for it (when you place it yourself); st: 'built' or 'building'
-function estateLot(t,k,R,at,st){
-  R=R||seeded(t.seed*131+k.length);if(lotAt(t,k))return lotAt(t,k);const type=typeFor(t,k,R),n=lotSize(type),inner=INNER.includes(k),wb=wallBox(t);
-  // (an estate with fields stands only where they have room, lotSpot o.fields)
-  const p=at?at:inner?(lotSpot(t,n,'open',1,6,R,{estate:true})||lotSpot(t,n,'open',1,9,R,{estate:true})):lotSpot(t,n,groundOf(k),3,k==='port'&&t.style==='port'?20:12,R,{estate:true,outside:wb&&{x0:wb.x0-1,y0:wb.y0-1,x1:wb.x1+1,y1:wb.y1+1},fields:PLOTS[k]?k:null});
-  if(!p)return null;const l=lotAdd(t,{k,type,x:p[0],y:p[1],n,lv:bldLv(t,k)||1,seed:Math.floor(R()*1e6),st:st||'built'});
-  if(PLOTS[k]){l.plots=fieldsFor(t,l,k);occMark(l,l.id)}
-  t._spots=null;return l;
+/* a holding's layout (t.layout): its lots, where each stands on the grid, and what they house. A part of the holding, kept aside
+   (never saved), over its plain t.lots, which its save record keeps as they are. (A lot stays a plain record: its tiles and its
+   middle are small helpers, lotTiles and lotMid, used on any box; the grid's own searches, lotFits, lotSpot and fieldsFor, stay
+   functions of the grid) */
+const LAYOUTS=new WeakMap();
+class Layout{
+  constructor(t){this.t=t}
+  // a holding's layout (made once and kept aside)
+  static of(t){
+    let y=LAYOUTS.get(t);
+    if(!y)LAYOUTS.set(t,y=new Layout(t));
+    return y}
+  // its lots (none yet: an empty list)
+  get list(){return this.t.lots||[]}
+  // a lot placed, on the grid and in its list (a new one numbered); and taken away
+  add(l){
+    const t=this.t;
+    t._can=null;t._spots=null;l.id=l.id||lotN++;lotN=Math.max(lotN,l.id+1);(t.lots=t.lots||[]).push(l);LOT[l.id]=l;l.town=t.name;occMark(l,l.id);
+    return l}
+  drop(l){
+    const t=this.t;
+    t._can=null;t._spots=null;occMark(l,0);t.lots=t.lots.filter(o=>o!==l);delete LOT[l.id]}
+  // the lot of a part (an estate's key, 'centre')
+  at(k){return this.list.find(l=>l.k===k)}
+  centre(){return this.at('centre')}
+  // the people its built houses and centre give room for; full: its people fill them (it grows no more and sends people away)
+  housing(){return this.list.reduce((a,l)=>a+(l.st==='built'?HOUSING[l.type]&&(l.k==='house'||l.k==='centre')?HOUSING[l.type]:0:0),0)}
+  full(){
+    const t=this.t;
+    return !!t.lots&&(t.pop||0)>=this.housing()}
+  // k -> {tx, ty, x, y}: where each estate's building stands (its front middle tile); only estates that have a building (kept: t._spots)
+  spots(){
+    const t=this.t;
+    if(t._spots)return t._spots;const sp={};
+    for(const l of t.lots||[])if(ESTATES[l.k]){const m=lotMid(l);sp[l.k]={tx:m.tx,ty:m.ty,x:m.x,y:m.y}}
+    return t._spots=sp}
+
+  /* laying it out */
+  init(){
+    const t=this.t;
+    if(t.lots)t.lots.slice().forEach(l=>this.drop(l));t.lots=[];landFresh();occReserve();
+    const R=seeded(t.seed*977+13),n0=lotSize(typeFor(t,'centre',R)),cx=t.tx-(n0>>1),cy=t.ty-n0+1;
+    // the centre stands on the holding's own tile, its gate on its front row where the roads end: parties arrive there and set out
+    this.add({k:'centre',type:typeFor(t,'centre',R),x:cx,y:cy,n:n0,lv:1,seed:t.seed*31+7,st:'built'});
+    // houses round it: enough for its people (the centre houses some), a few to spare
+    const pop=t.pop||t.T.pop0;let room=this.housing(),tries=0;
+    while(room<pop*1.1&&tries++<t.T.tries){const type=typeFor(t,'house',R),n=lotSize(type),p=lotSpot(t,n,'open',1,t.T.ring,R,{gap:'row',jit:.8});if(!p)continue;this.add({k:'house',type,x:p[0],y:p[1],n,lv:1,seed:Math.floor(R()*1e6),st:'built'});room=this.housing()}
+    // the buildings of its inner estates
+    for(const k of INNER)if(bldLv(t,k)&&!this.estateLot(k,R))t.bld[k]=0;// no room: the holding has no such estate
+    // then the works outside
+    for(const k of Object.keys(ESTATES))if(!INNER.includes(k)&&bldLv(t,k)&&!this.estateLot(k,R))t.bld[k]=0;
+    t._spots=null}
+  // the box round its inner lots: the town, which fields and outer works keep clear of
+  innerBox(){
+    let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
+    for(const l of this.list)if(l.k==='centre'||l.k==='house'||INNER.includes(l.k)){x0=Math.min(x0,l.x);y0=Math.min(y0,l.y);x1=Math.max(x1,l.x+l.n-1);y1=Math.max(y1,l.y+l.n-1)}
+    return x1<x0?null:{x0,y0,x1,y1}}
+  // the town and a lane round it: fields and outer works keep clear of it
+  wallBox(){
+    const b=this.innerBox();
+    return b&&{x0:b.x0-2,y0:b.y0-2,x1:b.x1+2,y1:b.y1+2}}
+  // place an estate's building (and keep its fields): inner ones near the centre, outer ones on their ground beyond the walls;
+  // at: the tile chosen for it (when you place it yourself); st: 'built' or 'building'
+  estateLot(k,R,at,st){
+    const t=this.t;
+    R=R||seeded(t.seed*131+k.length);if(this.at(k))return this.at(k);const type=typeFor(t,k,R),n=lotSize(type),inner=INNER.includes(k),wb=this.wallBox();
+    // (an estate with fields stands only where they have room, lotSpot o.fields)
+    const p=at?at:inner?(lotSpot(t,n,'open',1,6,R,{estate:true})||lotSpot(t,n,'open',1,9,R,{estate:true})):lotSpot(t,n,groundOf(k),3,k==='port'&&t.style==='port'?20:12,R,{estate:true,outside:wb&&{x0:wb.x0-1,y0:wb.y0-1,x1:wb.x1+1,y1:wb.y1+1},fields:PLOTS[k]?k:null});
+    if(!p)return null;const l=this.add({k,type,x:p[0],y:p[1],n,lv:bldLv(t,k)||1,seed:Math.floor(R()*1e6),st:st||'built'});
+    if(PLOTS[k]){l.plots=fieldsFor(t,l,k);occMark(l,l.id)}
+    t._spots=null;return l}
+  // keep the lots in step with what the holding has: build what it has gained, ruin what war has cost it (its centre's
+  // fortification is its walls, wallOf, drawn as they stand: structures.js lotSprite)
+  sync(){
+    const t=this.t;
+    if(!t.lots){this.init();return}
+    for(const k of Object.keys(ESTATES)){const lv=bldLv(t,k),l=this.at(k),w=t.work&&t.work.k===k;if(lv&&!l&&!this.estateLot(k))t.bld[k]=0;else if(l){l.lv=Math.max(1,lv);const st=lv?'built':w?'building':'ruined';if(l.st!==st){l.st=st;l._s=null}}}
+    t._spots=null}
 }
 // the field tiles a farm, pasture or quarry may grow over (all it will ever need, kept now): one connected patch beside it
 function fieldsFor(t,l,k){
@@ -147,32 +196,25 @@ function fieldsFor(t,l,k){
   while(out.length<PLOTS[k]){const c=cand.find(c=>!out.includes(c)&&touch.some(q=>Math.abs(q[0]-c[0])+Math.abs(q[1]-c[1])===1));if(!c)break;out.push(c);touch.push(c)}
   return out.map(c=>[c[0],c[1]]);
 }
-// keep the lots in step with what the holding has: build what it has gained, ruin what war has cost it (its centre's
-// fortification is its walls, wallOf, drawn as they stand: structures.js lotSprite)
-function syncLots(t){
-  if(!t.lots){initLots(t);return}
-  for(const k of Object.keys(ESTATES)){const lv=bldLv(t,k),l=lotAt(t,k),w=t.work&&t.work.k===k;if(lv&&!l&&!estateLot(t,k))t.bld[k]=0;else if(l){l.lv=Math.max(1,lv);const st=lv?'built':w?'building':'ruined';if(l.st!==st){l.st=st;l._s=null}}}
-  t._spots=null;
-}
+// (the older names: the layout's methods)
+const initLots=t=>Layout.of(t).init();
+const innerBox=t=>Layout.of(t).innerBox();
+const wallBox=t=>Layout.of(t).wallBox();
+const estateLot=(t,k,R,at,st)=>Layout.of(t).estateLot(k,R,at,st);
+const syncLots=t=>Layout.of(t).sync();
 
-/* building takes time: more people build faster (between 0.6 and 2 times the pace of a holding of its usual size) */
-const buildSpeed=t=>Math.max(.6,Math.min(2,(t.pop||t.T.pop0)/t.T.pop0));
-const workDays=(t,lv)=>Math.max(1,Math.ceil(buildDays(lv)/buildSpeed(t)));
-// how far a holding's project has got, 0..1
-const workProg=t=>{const w=t.work;if(!w)return 0;const tot=Math.max(.01,w.done-(w.start!=null?w.start:w.done-buildDays(w.lv)));return Math.max(0,Math.min(1,1-(w.done-G.day-Clock.frac)/tot))};
-// a project begins: a new estate's building goes up on its spot (chosen, or the best free one) as a building site
-function startWork(t,k,lv,at){t.work={k,lv,done:G.day+workDays(t,lv),start:G.day};
-  if(k==='house'){const R=seeded(G.day*31+t.seed+(t.lots||[]).length),type=typeFor(t,'house',R),n=lotSize(type),p=at||lotSpot(t,n,'open',1,9,R,{gap:'row',jit:.8});
-    if(!p){t.work=null;return false}t.work.lot=lotAdd(t,{k:'house',type,x:p[0],y:p[1],n,lv:1,seed:Math.floor(R()*1e6),st:'building'}).id;return true}
-  if(k!=='wall'&&ESTATES[k]){const l=lotAt(t,k);if(!l)estateLot(t,k,null,at,'building');else if(!bldLv(t,k)){l.st='building';l._s=null}}return true}
-// a house is finished
-function houseDone(t,w){const l=LOT[w.lot];if(l){l.st='built';l._s=null}}
+/* building takes time (estates.js Buildings: speed, days, progress, start, houseDone) */
+const buildSpeed=t=>Buildings.of(t).speed();
+const workDays=(t,lv)=>Buildings.of(t).days(lv);
+const workProg=t=>Buildings.of(t).progress();
+const startWork=(t,k,lv,at)=>Buildings.of(t).start(k,lv,at);
+const houseDone=(t,w)=>Buildings.of(t).houseDone(w);
 
 /* houses: what a new one costs */
 const HOUSE_COST={gold:40,mats:{timber:6,tools:1}};
 const HOUSE_DAYS=1;
 // a holding's people may grow to the room its houses give (and its centre): a full holding grows no more and sends people away
-const housingFull=t=>!!t.lots&&(t.pop||0)>=housing(t);
+const housingFull=t=>Layout.of(t).full();
 
 /* placing a building by hand: a ghost follows the pointer, snapped to the grid, green where it may stand, red where not */
 function placeRule(k){return k==='house'||INNER.includes(k)?{g:'open',inner:true,gap:k==='house'?'row':true}:{g:groundOf(k),inner:false,gap:true}}
@@ -196,15 +238,8 @@ function placeClick(wx,wy){
   if(pl.k==='house')buildHouse(t,[x,y]);else buildAct(t,pl.k,[x,y]);
   if(t.work)G.place=null;
 }
-function buildHouse(t,at){
-  if(t.work||P.gold<HOUSE_COST.gold||matsLacking(t,HOUSE_COST.mats).length)return false;P.gold-=HOUSE_COST.gold;
-  if(!startWork(t,'house',HOUSE_DAYS,at)){P.gold+=HOUSE_COST.gold;return false}takeMats(t,HOUSE_COST.mats);// (materials only once it starts)log('Builders start on a new house in '+t.name+'.');return true;
-}
-// pull a building down: half of what it last cost comes back; its estate is gone
-function demolish(t,l){
-  if(!l||l.k==='centre')return;
-  if(ESTATES[l.k]){const lv=bldLv(t,l.k),back=Math.floor(bldCost(l.k,Math.max(1,lv))/2);t.bld[l.k]=0;if(t.work&&t.work.k===l.k)t.work=null;P.gold+=back;lotDrop(t,l);log('The '+ESTATES[l.k].n.toLowerCase()+' of '+t.name+' is pulled down (+'+back+' gold).');return}
-  if(t.work&&t.work.lot===l.id)t.work=null;P.gold+=HOUSE_COST.gold>>1;lotDrop(t,l);log('A house in '+t.name+' is pulled down (+'+(HOUSE_COST.gold>>1)+' gold).');
-}
+const buildHouse=(t,at)=>Buildings.of(t).house(at);
+// pull a building down: half of what it last cost comes back; its estate is gone (estates.js Buildings demolish)
+const demolish=(t,l)=>Buildings.of(t).demolish(l);
 
 

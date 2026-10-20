@@ -49,6 +49,74 @@ class Holding{
   sellsMount(M,clim){const m=this.T.mounts;if(m.includes(M.where))return true;if(M.where!=='any'&&M.where!=='town'&&M.where!=='castle'&&m.includes('local'))return M.race?this.races.includes(M.race):M.clim===clim;return false}
   // does it take a band in to stay (free: they know you, stay.js)
   takesGuests(free){return true}
+
+  /* its parts, each kept aside (never saved: they work on the holding's own plain fields, which its save record keeps): its
+     economy (world/economy.js Economy: stock, people, prices, its day), what it has built (world/estates.js Buildings: estates,
+     walls, projects), where its lots stand (world/lots.js Layout), and each of its estates (world/estates.js Estate) */
+  get econ(){return Economy.of(this)}
+  get buildings(){return Buildings.of(this)}
+  get layout(){return Layout.of(this)}
+  estate(k){return estateOf(this,k)}
+
+  // its first day: its realm, garrison and peace, its estates and economy (its lots: layout.init); a generated world's economy
+  // setting (doc/WORLD_DESIGN.md §4.1) on its first stocks (realms.js ECON_STOCK: poor or rich)
+  setUp(){
+    this.owner=this.lastOwner=HOME[this.name];this.gar=this.T.gar;this.sacked=this.raided=this.turmoil=0;this.grow=GROW0;
+    this.buildings.init();
+    this.econ.init();
+    const e=WM.settings&&ECON_STOCK[WM.settings.economy];if(e)for(const g in this.stock)this.stock[g]=Math.round(this.stock[g]*e)}
+
+  /* at war (siege.js): its walls, a siege, its garrison, ruin */
+  walled(){return wallOf(this)>0}
+  // the lords besieging it; while any are, or while you siege or raid it, it is besieged and closed: no trade, recruits, jobs or rest
+  besiegers(){return W.lords.filter(l=>!l.dead&&l.state==='siege'&&l.tgt===this.name)}
+  besieged(){
+    const n=this.name;
+    return W.lords.some(l=>!l.dead&&l.state==='siege'&&l.tgt===n)||!!(P.siege&&P.siege.town===n)||!!(P.raid&&P.raid.town===n)}
+  closed(){return this.besiegers().length>0||!!mySiege(this)||!!myRaid(this)}
+  // who holds the walls: the garrison, plus any lord of the owner resting inside
+  defenders(){
+    const lords=lordsInside(this);
+    return{list:garList(this).concat(...lords.map(l=>l.troops)),lords}}
+  // how hard the walls make the defenders: 1 + the wall level (no walls 1 … great walls 4), one less once your ram is built
+  siegeLv(){return Math.max(1,1+wallOf(this)-((mySiege(this)||{days:0}).days>=RAM_DAYS?1:0))}
+  // the most its garrison may hold (your fief's)
+  garCap(){return this.T.gar+6+3*wallOf(this)}
+  // sacked or raided, for now
+  ruined(){return Timed.of(this).has('sacked')||Timed.of(this).has('raided')}
+  // a fief pays its taxes (people x tax rate x prosperity) and market dues; Stewardship adds to what your fiefs pay
+  fiefIncome(){return Math.round(this.econ.tax()*(1+.03*skill('stew')))}
+
+  /* its people (realms.js): guards drafted from its volunteers, who leave its people; a holding needs at least GUARD_FLOOR left.
+     Returns how many it could draft (up to n) */
+  draft(n){
+    this.econ.ensure();
+    const k=Math.max(0,Math.min(n,Math.floor(this.vol||0),Math.floor((this.pop||0)-GUARD_FLOOR)));
+    if(k){this.vol-=k;this.pop-=k}
+    return k}
+  canDraft(){return (this.vol||0)>=1&&(this.pop||0)-GUARD_FLOOR>=1}
+  // its estates' fallen guards replaced from its people, first thing each day (estates.js Estate refillGuards)
+  refillGuards(){
+    if(!this.gd)return;
+    for(const k in this.gd)this.estate(k).refillGuards()}
+  // why its people would leave it (refugees.js), or '' if they stay
+  fleeReason(){
+    this.econ.ensure();const tm=Timed.of(this);
+    return tm.has('sacked')?'sacked':tm.has('raided')?'raided':this.econ.foodDays()<1?'hunger':this.besieged()?'siege':this.pros<25?'hardship':tm.has('turmoil')&&this.pros<45?'conquest':this.layout.full()?'crowded':''}
+  // where they go: the nearest holding not at war with it that is fed, unbesieged and clearly better off (crowded: one with room)
+  refuge(){
+    let best=null,bd=1e9;const crowded=this.layout.full()&&this.fleeReason()==='crowded';
+    for(const o of TOWNS){if(o===this||!o.owner||o.besieged()||o.ruined()||atWar(o.owner,this.owner))continue;o.econ.ensure();if(crowded?(o.layout.housing()-(o.pop||0)<15||o.econ.foodDays()<3):(o.pros<this.pros+15||o.econ.foodDays()<3))continue;
+      const d=Math.hypot(o.tx-this.tx,o.ty-this.ty);if(d<bd&&d<WORLD_SCALE.econ.refuge){bd=d;best=o}}
+    return best}
+  // its land over the day (territory.js): conquest burns the borderland, war and ruin shrink it, peace grows it
+  landDay(){
+    const t=this,was=Math.floor(t.grow||0);t.grow=t.grow==null?GROW0:t.grow;
+    if(t.lastOwner!=null&&t.lastOwner!==t.owner)t.grow=Math.max(0,t.grow-2);
+    t.lastOwner=t.owner;
+    if(t.besieged()||Timed.of(t).has('sacked')||Timed.of(t).has('raided'))t.grow=Math.max(0,t.grow-.25);
+    else if(t.grow<growCap(t))t.grow=Math.min(growCap(t),t.grow+GROW_DAY*(Timed.of(t).has('turmoil')?.5:1));
+    const now=Math.floor(t.grow);if(t.owner==='player'&&now!==was)log(now>was?'The lands of '+t.name+' reach further.':'The lands of '+t.name+' shrink.',now>was?'good':'bad')}
   /* its record in a save (save.js worldSave): [owner, garrison, name, its state]. One founded while the world ran also keeps its
      plain data (base: its realm and HOLDING_DATA), so a load makes it again (fromRec); one the world made keeps its kind once
      that is no longer the kind it was made (kind), so a load puts the change back (holdingOf). (A save of the world as made is
