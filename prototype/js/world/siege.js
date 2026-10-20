@@ -9,8 +9,8 @@ const LADDER_DAYS=2,RAM_DAYS=4,STARVE_DAY=6;
 const walled=t=>wallOf(t)>0;
 // P.raid = {town, t}: your band plundering an unwalled holding; it takes RAID_TIME on the map and the holding is closed meanwhile
 const RAID_TIME=DAY*.5;
-const until=(t,k)=>(t[k]||0)>G.day;
-const ruined=t=>until(t,'sacked')||until(t,'raided');
+const until=(t,k)=>Timed.of(t).has(k);// (the old name: timed.js)
+const ruined=t=>Timed.of(t).has('sacked')||Timed.of(t).has('raided');
 // a fief pays its taxes (people x tax rate x prosperity) and market dues; its land feeds it through the economy
 const fiefIncome=t=>Math.round(taxOf(t)*(1+.03*skill('stew')));// Stewardship adds to what your fiefs pay
 const playerFiefs=()=>TOWNS.filter(t=>t.owner==='player');
@@ -86,12 +86,12 @@ function siegeAct(a,arg){
   if(!a.startsWith('sg-'))return false;
   const t=G.bes;if(G.mode!=='besiege'||!t)return true;
   if(a==='sg-leave'||a==='sg-wait'){G.mode='world';hidePanel();return true}
-  if(a==='sg-relieve'){const l=siegeLordsAt(t)[+arg];if(l){if(!hostileTo(l.fac)){P.hostile[l.fac]=Math.max(P.hostile[l.fac]||0,G.day+20);addHonor(l.fac,-15,true)}startEncounter({kind:'lord',ref:l,list:l.troops.slice()})}return true}
+  if(a==='sg-relieve'){const l=siegeLordsAt(t)[+arg];if(l){if(!hostileTo(l.fac)){Timed.of(P,'hostile').extend(l.fac,20);addHonor(l.fac,-15,true)}startEncounter({kind:'lord',ref:l,list:l.troops.slice()})}return true}
   if(a==='sg-stopraid'&&myRaid(t)){finishRaid(t,myRaid(t).t/RAID_TIME);G.mode='world';hidePanel();return true}
   if((a==='sg-join'||a==='sg-join-auto')&&joinFacs(t).includes(arg)&&troopCount()>=3){
-    if(!hostileTo(t.owner)){P.hostile[t.owner]=Math.max(P.hostile[t.owner]||0,G.day+60);addHonor(t.owner,-20,true);log('You join the '+FACS[arg].n+' against '+t.name+'. The '+FACS[t.owner].n+' is now hostile.','bad')}
+    if(!hostileTo(t.owner)){Timed.of(P,'hostile').extend(t.owner,60);addHonor(t.owner,-20,true);log('You join the '+FACS[arg].n+' against '+t.name+'. The '+FACS[t.owner].n+' is now hostile.','bad')}
     startAssault(t,'siege',a==='sg-join-auto',arg);return true}
-  if(a==='sg-declare'&&P.fac!==t.owner){P.hostile[t.owner]=Math.max(P.hostile[t.owner]||0,G.day+60);addHonor(t.owner,-20);log('You turn your band against '+t.name+'. The '+FACS[t.owner].n+' is now hostile.','bad');showSiege();return true}
+  if(a==='sg-declare'&&P.fac!==t.owner){Timed.of(P,'hostile').extend(t.owner,60);addHonor(t.owner,-20);log('You turn your band against '+t.name+'. The '+FACS[t.owner].n+' is now hostile.','bad');showSiege();return true}
   if(!hostileTo(t.owner))return true;
   if(a==='sg-camp'&&walled(t)&&troopCount()>=5){P.siege={town:t.name,days:0};log('You make camp outside '+t.name+'. The siege begins.','gold');
     W.lords.forEach(l=>{if(!l.dead&&l.fac===t.owner&&l.state!=='siege')lordThink(l)});showSiege();return true}
@@ -135,7 +135,7 @@ function finishRaid(t,f){
   const food=tk('grain',Math.round(rint(10,18)*f))+tk('meat',Math.round(rint(4,10)*f))+tk('cheese',Math.round(rint(0,6)*f)),gold=Math.round((rint(40,80)+G.day)*f);
   t.pop=Math.max(10,Math.round(t.pop*(1-.1*f)));for(const g of FOODS)t.stock[g]=Math.round((t.stock[g]||0)*(1-.4*f));P.gold+=gold;P.morale=clamp(P.morale+5*f,0,100);
   if(f>=.5)W.critters=W.critters.filter(c=>c.home!==t.name);
-  t.raided=G.day+12;const burnt=f>=1?burnEstates(t,1):[];newsRecord('raid',t,{town:t.name});// (news.js)
+  Timed.of(t).set('raided',12);const burnt=f>=1?burnEstates(t,1):[];newsRecord('raid',t,{town:t.name});// (news.js)
   if(f>=1){log('You raid '+t.name+' to the ground: '+food+' food and '+gold+' gold'+(burnt.length?', and burn its '+burnt.join(' and '):'')+'. Its people will not forget.','bad');questNotify('raid',t)}
   else log('You break off the raid of '+t.name+' with '+food+' food and '+gold+' gold.','bad');
 }
@@ -155,20 +155,20 @@ function captureAct(a){
   const t=G.capture;if(G.mode!=='capture'||!t)return true;
   const prev=t.owner,sack=a==='cap-sack'||a==='cap-leave',lines=[];
   G.capture=null;P.siege=null;breach(t);P.renown+=t.T.renown;
-  if(prev!=='player'){P.hostile[prev]=Math.max(P.hostile[prev]||0,G.day+60);addHonor(prev,-15,true)}
+  if(prev!=='player'){Timed.of(P,'hostile').extend(prev,60);addHonor(prev,-15,true)}
   if(sack){const loot=Math.round(t.T.sack*(1+G.day/50));P.gold+=loot;P.morale=clamp(P.morale+12,0,100);
     let got=sackStock(t,.5,.3,true);
     addRep(t.name,-40,true);TOWNS.forEach(o=>{if(o!==t&&Math.hypot(o.x-t.x,o.y-t.y)<WORLD_SCALE.law.siegeOutrage*TILE)addRep(o.name,-10,true)});FIDS.forEach(g=>addHonor(g,-6,true));
-    t.sacked=G.day+20;const burnt=burnEstates(t,2);lines.push('You sack '+t.name+': '+loot+' gold and '+got+(burnt.length?'. Your soldiers burn its '+burnt.join(' and '):'')+'. Word spreads of what you did.');mood('ransom')}
+    Timed.of(t).set('sacked',20);const burnt=burnEstates(t,2);lines.push('You sack '+t.name+': '+loot+' gold and '+got+(burnt.length?'. Your soldiers burn its '+burnt.join(' and '):'')+'. Word spreads of what you did.');mood('ransom')}
   else{addRep(t.name,-5,true);FIDS.forEach(g=>{if(g!==prev)addHonor(g,3,true)});lines.push('You spare '+t.name+'. Even your enemies speak of your restraint.')}
   if(a==='cap-leave'){t.gar=1;lines.push('You leave the '+t.label+' to the '+FACS[prev].n+', empty and burning.')}
   else{
     const lead=P.fac||G.capWith;let to=lead&&a!=='cap-keep'?lead:'player';
     if(a==='cap-keep'&&!P.fac&&G.capWith){addHonor(G.capWith,-15,true);lines.push('You keep it for yourself. The '+FACS[G.capWith].n+', who led the siege, will not forget it.')}
-    if(a==='cap-keep'&&P.fac){const e=P.fac;addHonor(e,-30,true);P.fac=null;P.hostile[e]=G.day+30;lines.push('You keep it for yourself. The '+FACS[e].n+' calls you a traitor.')}
+    if(a==='cap-keep'&&P.fac){const e=P.fac;addHonor(e,-30,true);P.fac=null;Timed.of(P,'hostile').set(e,30);lines.push('You keep it for yourself. The '+FACS[e].n+' calls you a traitor.')}
     if(to!=='player'){const pay=t.T.handover;P.gold+=pay;addHonor(to,15,true);lines.push('The '+FACS[to].n+' takes '+t.name+' and pays you '+pay+' gold.')}
     else lines.push(t.name+' is your fief now. Garrison it from the Fief tab when you enter.');
-    t.owner=to;t.gar=to==='player'?2:4;t.turmoil=G.day+10;
+    t.owner=to;t.gar=to==='player'?2:4;Timed.of(t).set('turmoil',10);
     W.lords.forEach(o=>{if(!o.dead&&o.tgt===t.name)lordThink(o)});
     if(prev!=='player'&&!fiefsOf(prev).length)fallFaction(prev);
   }
@@ -188,13 +188,13 @@ function sackStock(t,share,killed,mine){
 }
 function fiefDay(){
   const fs=playerFiefs();if(!fs.length)return;train('stew',1.5*fs.length);const g=fs.reduce((a,t)=>a+fiefIncome(t),0);P.gold+=g;P.fiefWeek=(P.fiefWeek||0)+g;
-  if(G.day%7===0){log('Your fiefs paid '+P.fiefWeek+' gold this week'+(P.tradeWeek?', and their caravans '+P.tradeWeek+' more':'')+'.','gold');P.fiefWeek=0;P.tradeWeek=0}
+  if(Clock.every(7)){log('Your fiefs paid '+P.fiefWeek+' gold this week'+(P.tradeWeek?', and their caravans '+P.tradeWeek+' more':'')+'.','gold');P.fiefWeek=0;P.tradeWeek=0}
 }
 // the Fief inside a holding you own: its people, taxes, stores and caravans, its land, what it pays (its buildings: ui/townui.js)
 function fiefBody(t){
   const cap=fiefCap(t),row=(title,sub,acts)=>'<div class="row"><div class="info"><strong>'+title+'</strong><small>'+sub+'</small></div><div class="acts">'+acts+'</div></div>';
   const b=(act,arg,label,dis)=>'<button class="btn sm" type="button" data-act="'+act+'" data-arg="'+arg+'"'+(dis?' disabled':'')+'>'+label+'</button>';
-  return fiefEconBody(t)+'<p class="muted" style="font-size:13px">'+t.name+' rules '+landOf(t)+' tiles of land, reaching '+landReach(t)+' (grows to '+(t.T.reach+growCap(t))+' in peace; clear camps nearby to push further).</p><div class="lab">Your fief · '+fiefIncome(t)+' gold a day'+(until(t,'turmoil')?' (halved while in turmoil)':'')+(ruined(t)?' (nothing while it lies ruined)':'')+'</div>'+
+  return fiefEconBody(t)+'<p class="muted" style="font-size:13px">'+t.name+' rules '+landOf(t)+' tiles of land, reaching '+landReach(t)+' (grows to '+(t.T.reach+growCap(t))+' in peace; clear camps nearby to push further).</p><div class="lab">Your fief · '+fiefIncome(t)+' gold a day'+(Timed.of(t).has('turmoil')?' (halved while in turmoil)':'')+(ruined(t)?' (nothing while it lies ruined)':'')+'</div>'+
     '<p class="muted" style="font-size:13px">Garrison '+t.gar+' / '+cap+': hire, station and call up soldiers in the Garrison tab of the town.</p>'+estatesBody(t);
 }
 /* the Garrison tab: everyone who would defend a holding, how well, and for how long; in your own fief, its soldiers */
@@ -211,7 +211,7 @@ function garrisonBody(t){
       (fd!=null?' Its stores feed the garrison'+(def.lords.length?' and the lords\' soldiers':'')+' for about '+fd+' days under siege.':'')+'</p>';
   // its state
   const notes=[besieged(t)&&'<span class="bad">Under siege'+(siegeLordsAt(t).length?' by '+siegeLordsAt(t).map(l=>l.name).join(' and '):mySiege(t)?' by you':'')+'.</span>',
-    until(t,'sacked')&&'<span class="bad">Sacked: the garrison is held at half until day '+t.sacked+'.</span>',until(t,'turmoil')&&'<span class="gold">In turmoil after changing hands, until day '+t.turmoil+'.</span>',
+    Timed.of(t).has('sacked')&&'<span class="bad">Sacked: the garrison is held at half until day '+Timed.of(t).end('sacked')+'.</span>',Timed.of(t).has('turmoil')&&'<span class="gold">In turmoil after changing hands, until day '+Timed.of(t).end('turmoil')+'.</span>',
     !mine&&crimeAt(t)&&'<span class="bad">The guards want you for a crime here: '+crimeAt(t).fine+' gold, until day '+crimeAt(t).until+'.</span>'].filter(Boolean);
   if(notes.length)html+='<p style="font-size:14px">'+notes.join(' ')+'</p>';
   // the soldiers on the walls

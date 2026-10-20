@@ -65,7 +65,7 @@ const itemPrice=id=>Math.round(ITEMS[id].v*(.6+.01*skill('trade')));
 const forgeTiers=t=>{ensureEcon(t);return FORGE.map((m,k)=>Object.keys(m).every(g=>(t.stock[g]||0)>=m[g])?k:-1).filter(k=>k>=0)};
 function smithStock(t){
   W.shops=W.shops||{};const sh=W.shops[t.name];
-  if(!sh||G.day-sh.day>=7){const items=[],bases=Object.keys(BASES);
+  if(!sh||Clock.daysSince(sh.day)>=7){const items=[],bases=Object.keys(BASES);
     for(let i=0;i<6;i++){const ok=forgeTiers(t);if(!ok.length)break;const w=ok.map(k=>k?1+k*.25:.6);let x=Math.random()*w.reduce((a,b)=>a+b,0),tier=ok[0];for(let j=0;j<ok.length;j++){x-=w[j];if(x<0){tier=ok[j];break}}
       for(const g in FORGE[tier])t.stock[g]-=FORGE[tier][g];items.push(gearId(bases[rint(0,bases.length-1)],tier))}
     W.shops[t.name]={day:G.day,items}}
@@ -120,7 +120,7 @@ function townAct(a,arg,t){
   else if(['rec-review','rec-confirm','rec-cancel'].includes(a))townRecruitAction(a);
   else if(a==='hire'){const result=recruitment.hire(t,arg,1,G.town.pick===arg?G.town.hireTarget:undefined);if(result.ok&&result.target==='new'&&G.town.pick===arg)G.town.hireTarget=G.recruitTarget;recruitmentFeedback(result,t)}
   else if(a==='train'){const [k,to,ns]=String(arg).split(':');for(let i=0;i<Math.max(1,+ns||1);i++){const r=recruitment.train(t,k,to);recruitmentFeedback(r,t);if(!r.ok)break}}// (k:to, or k:to:n from its picker)
-  else if(a==='contract'){if(!P.fac){P.fac=t.owner;delete P.hostile[t.owner];log('You sign on with the '+FACS[t.owner].n+'. Their enemies are now yours.','gold')}}
+  else if(a==='contract'){if(!P.fac){P.fac=t.owner;Timed.of(P,'hostile').clear(t.owner);log('You sign on with the '+FACS[t.owner].n+'. Their enemies are now yours.','gold')}}
   else if(a==='end-contract'){if(P.fac===t.owner){P.fac=null;log('You end your contract with the '+FACS[t.owner].n+'.')}}
   else if(a==='hire-comp')recruitmentFeedback(recruitment.hireCompanion(t,arg),t);
   else if(a==='ransom'){const pick=arg?Object.fromEntries(String(arg).split(',').map(x=>x.split(':')).filter(([k,n])=>ST[k]&&P.prisoners[k]>0).map(([k,n])=>[k,Math.min(P.prisoners[k],Math.max(0,Math.floor(+n)||0))])):{...P.prisoners},n=Object.values(pick).reduce((a,b)=>a+b,0),v=Object.keys(pick).reduce((a,k)=>a+pick[k]*RANSOM[ST[k].tier],0);
@@ -152,7 +152,7 @@ function renderTown(){
   const t=G.town.ref,tab=G.town.tab,cap=partyCap(),cnt=partySize(),f=FACS[t.owner];
   const kind=s=>s.range?'ranged':s.charge?'mounted charge':'melee';
   let body='';
-  const closed=until(t,'sacked')?'sacked':until(t,'raided')?'raided':null;
+  const closed=Timed.of(t).has('sacked')?'sacked':Timed.of(t).has('raided')?'raided':null;
   if(!tab||tab==='fief'&&t.owner!=='player')body=townOverview(t);
   else if(tab==='fief')body=G.town.bld?bldBody(t,G.town.bld):fiefBody(t);
   else if(tab==='hall')body=hallBody(t);
@@ -161,7 +161,7 @@ function renderTown(){
   else if(tab==='stores')body=storesBody(t);
   else if(tab==='jobs')body=jobsBody(t);
   else if(tab==='siege')body=siegeBody(t);
-  else if(tab==='recruit'&&(closed||until(t,'turmoil')))body='<p class="muted">'+(closed?'No one here will take up arms: '+t.name+' was '+closed+' and is still burying its dead.':t.name+' is in turmoil after changing hands. No one will enlist for '+(t.turmoil-G.day)+' more days.')+'</p>';
+  else if(tab==='recruit'&&(closed||Timed.of(t).has('turmoil')))body='<p class="muted">'+(closed?'No one here will take up arms: '+t.name+' was '+closed+' and is still burying its dead.':t.name+' is in turmoil after changing hands. No one will enlist for '+Timed.of(t).daysLeft('turmoil')+' more days.')+'</p>';
   else if((tab==='smith'||tab==='stable')&&closed)body='<p class="muted">The '+(tab==='smith'?'smithy':'stable')+' was burned when '+t.name+' was '+closed+'. It reopens in '+(t[closed]-G.day)+' days.</p>';
   else if(tab==='recruit'){
     const hires=t.races.flatMap(r=>t.hires(r));
@@ -179,7 +179,7 @@ function renderTown(){
       (t.T.train?'<div class="lab" style="margin-top:6px">Train (troop trees)</div>'+(trainCards.length?railCards(trainCards):'<p class="muted">None of your troops can train further.</p>'):'')+'</div><div class="reccard">'+(pick?unitCard(pick.split('>').pop(),pick.includes('>')?pick.split('>')[0]:null):'')+'</div></div>';
   }else if(tab==='smith'){
     const st=smithStock(t),q=G.town.qty||1;
-    body=railCards([{pic:personPic('smith',t.races[0]),name:'The smith',role:'At the forge of '+t.name,facts:[st.length?st.length+' pieces for sale':'Sold out','New stock in '+(7-(G.day-W.shops[t.name].day)%7)+' days'],
+    body=railCards([{pic:personPic('smith',t.races[0]),name:'The smith',role:'At the forge of '+t.name,facts:[st.length?st.length+' pieces for sale':'Sold out','New stock in '+(7-Clock.daysSince(W.shops[t.name].day)%7)+' days'],
       note:forgeText(t)+' Bring copper and tin, silver, gold, mithril or adamantite to its market and the smith will forge with them.'}])+'<div class="lab">For sale</div>'+(st.length?st.map((id,i)=>{const I=ITEMS[id],p=gearPrice(id);
       return '<div class="row"><div class="info"><strong style="color:'+RARITY[I.r]+'">'+I.n+'</strong><small>'+SLOTS[I.slot]+' · '+I.d+'</small><small class="diff">'+(gearDiff(id).join(' · ')||'<span class="muted">No change from what you wear.</span>')+'</small></div><div class="acts">'+railBtn('buy-gear',i,'Buy',P.gold<p?'Not enough gold':!invFree()?'Your bag is full':'')+'</div><span class="own gold">'+p+'g</span></div>'}).join('')
       :'<p class="muted">Sold out until the next delivery.</p>')+
@@ -213,7 +213,7 @@ function renderTown(){
       // (the rumours: real news near here, two new a day (news.js), heard as you come in and kept while you stay: G.town.news;
       // then the standing talk of the realm: its wars, the camps, the most wanted, a mythic beast abroad)
       '<div class="lab">Rumours</div>'+rumourHtml(G.town.news||(G.town.news=rumourFrom(rumourSource('tavern',t.name,t,{from:'the tavern of '+t.name}))))+
-      '<div class="lab">Talk of the realm</div><p class="muted">'+(enemiesOf(t.owner).length?'The '+f.n+' is at war with the '+enemiesOf(t.owner).map(g=>FACS[g].n).join(' and the ')+'.':'The '+f.n+' is at peace.')+'</p>'+'<p class="muted">Bandit camps sit near '+[...new Set(camps().filter(c=>!c.cleared).map(c=>nearestOf(c,TOWNS).name))].join(', ')+'.'+(mostWanted(1).map(w=>' The most wanted is '+chiefLabel(w.c)+(w.near?', last seen near '+w.near.name:'')+': '+bountyOf(w.c)+' gold on his head.').join(''))+(mythicNews('was seen')?' '+mythicNews('was seen'):'')+'</p>';
+      '<div class="lab">Talk of the realm</div><p class="muted">'+(enemiesOf(t.owner).length?'The '+f.n+' is at war with the '+enemiesOf(t.owner).map(g=>FACS[g].n).join(' and the ')+'.':'The '+f.n+' is at peace.')+'</p>'+'<p class="muted">Bandit camps sit near '+[...new Set(camps().filter(c=>!c.cleared).map(c=>Spatial.nearestHolding(c.x,c.y).name))].join(', ')+'.'+(mostWanted(1).map(w=>' The most wanted is '+chiefLabel(w.c)+(w.near?', last seen near '+w.near.name:'')+': '+bountyOf(w.c)+' gold on his head.').join(''))+(mythicNews('was seen')?' '+mythicNews('was seen'):'')+'</p>';
   }
   showTown(t,body);G.town.greet=null;
 }

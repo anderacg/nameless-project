@@ -81,8 +81,8 @@ function cpDisband(id,home){const c=P.comps[id];if(!c||!c.party)return;const p=c
 const cpStayOk=t=>!yourShelterWhy(t);// (a companion's party shelters by your rules: parties.js)
 const cpStayCost=p=>STAY_BASE+Math.ceil(p.troops.length/2);
 function cpOrder(id,o){const p=compInit(id).party;if(!p)return;if(p.inside)p.leave();p.order=o;p.wx=null;
-  if(o==='stay'){const h=nearestOf(p,TOWNS.filter(cpStayOk));if(!h){p.order='follow';log(COMPS[id].short+' finds no holding that will take them in.','bad');return}p.base=h.name;log(COMPS[id].short+' will shelter in '+h.name+(stayFree(h)?'':' ('+cpStayCost(p)+'g a day from your purse)')+' and hire there.');return}
-  if(o==='patrol'){const h=nearestOf(P,TOWNS.filter(t=>!hostileTo(t.owner)))||nearestOf(P,TOWNS);p.base=h.name;log(COMPS[id].short+' will patrol the land of '+h.name+'.')}
+  if(o==='stay'){const h=Spatial.nearestHolding(p.x,p.y,cpStayOk);if(!h){p.order='follow';log(COMPS[id].short+' finds no holding that will take them in.','bad');return}p.base=h.name;log(COMPS[id].short+' will shelter in '+h.name+(stayFree(h)?'':' ('+cpStayCost(p)+'g a day from your purse)')+' and hire there.');return}
+  if(o==='patrol'){const h=Spatial.nearestHolding(P.x,P.y,t=>!hostileTo(t.owner))||Spatial.nearestHolding(P.x,P.y);p.base=h.name;log(COMPS[id].short+' will patrol the land of '+h.name+'.')}
   else if(o==='follow')log(COMPS[id].short+' will ride with you.');else log(COMPS[id].short+' is coming back to your band.')}
 // each moment on the map: keep clear of what it cannot beat, run down bandits and weak enemies near it, otherwise follow
 // you, patrol its holding's land, or come back to you

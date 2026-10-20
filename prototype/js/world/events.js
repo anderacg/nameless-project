@@ -2,7 +2,7 @@
 /* ---------- road events: what befalls you on the road without anyone to meet (the weather, sickness, a find). Each: w = weight,
    ok() = can it happen here and now, run() = what it does, returning a log line and its tone. The people you meet on the road are
    encounters on the map now (world/encounters.js, doc/ENCOUNTERS_DESIGN.md), no longer events ---------- */
-const nearHold=()=>{const t=nearestOf(P,TOWNS);return t&&Math.hypot(t.x-P.x,t.y-P.y)<WORLD_SCALE.law.eventNear*TILE?t:null};
+const nearHold=()=>{const t=Spatial.nearestHolding(P.x,P.y);return t&&Math.hypot(t.x-P.x,t.y-P.y)<WORLD_SCALE.law.eventNear*TILE?t:null};
 const gainGrain=n=>invAdd('good','grain',n);
 const EVENTS=[
   {id:'wagon',w:2,ok:()=>true,run:()=>{P.gold+=15;return['You find an abandoned wagon and sell what is in it for 15 gold.','good']}},

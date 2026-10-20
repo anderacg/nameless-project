@@ -29,9 +29,9 @@ class LordBrain extends Brain{
     if(inFight(l))return false;
     const v=this.look(l),pd=v.d,hostile=hostileTo(l.fac)&&!lordSpares(l),mul=lordSpeed(l)/26;// (26: a lord's old pace)
     const relief=hostile&&l.state==='relieve'&&!!P.siege&&P.siege.town===l.tgt,st=hostile?(relief?'attack':stance(l.power())):null,see=this.sight(WORLD_SCALE.sight.lord)*(relief?2:1);
-    if(st==='afraid'&&l.state==='siege'&&pd<see){l.state='home';l.tgt=nearestOf(l,fiefsOf(l.fac)).name;log(l.name+' abandons the siege as your band approaches.','good')}
+    if(st==='afraid'&&l.state==='siege'&&pd<see){l.state='home';l.tgt=Spatial.nearest(fiefsOf(l.fac),l.x,l.y).name;log(l.name+' abandons the siege as your band approaches.','good')}
     const dread=W.lords.find(o=>!o.dead&&!o.inside&&o!==l&&atWar(o.fac,l.fac)&&Math.hypot(o.x-l.x,o.y-l.y)<WORLD_SCALE.ai.dread&&o.power()>=l.power()*1.5);
-    if(dread&&l.state==='march'&&fiefsOf(l.fac).length){l.state='home';l.tgt=nearestOf(l,fiefsOf(l.fac)).name}
+    if(dread&&l.state==='march'&&fiefsOf(l.fac).length){l.state='home';l.tgt=Spatial.nearest(fiefsOf(l.fac),l.x,l.y).name}
     if(!(hostile&&l.cool<=0&&l.state!=='siege'&&stanceMove(l,st,pd,v.dx,v.dy,see,moveStep(26*mul,d),true))){
       const t=townBy(l.tgt);if(!t){lordThink(l);return false}
       const tx=t.x+(l.state==='siege'?(l.id.endsWith('0')?-16:16):0),ty=t.y+12,dd=Math.hypot(tx-l.x,ty-l.y);
@@ -133,7 +133,7 @@ const BRAINS={lord:new LordBrain(),band:new BandBrain(),cparty:new CompanionBrai
 /* each kind's moment, and then what the kind does together */
 function updateBands(d){
   // bands shelter in a camp at night (its site's bands, sites.js) and ride out at dawn
-  const night=G.clock/DAY>=NIGHT_AT;if(!night)camps().forEach(campEmpty);const met=lodEach(bandits,BRAINS.band,d,night);
+  const night=Clock.isNight;if(!night)camps().forEach(campEmpty);const met=lodEach(bandits,BRAINS.band,d,night);
   if(bandits.some(b=>b.gone))bandits=bandits.filter(b=>!b.gone);return met;
 }
 function updateLords(d){

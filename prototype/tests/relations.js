@@ -3,11 +3,10 @@
 // sparing them and gifts win them; beating, ransoming and failing them sours them, and their friends and rivals feel some
 // of it. Friends help you in battle, sworn friends won't attack you, warm ones lend soldiers, cold ones give no work. Lords
 // who win together grow closer; rivals won't ride to each other's aid. It all softens over time and is saved.
-window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);
-try{
- const t=T,G=t.G,P=t.P,W=t.W,R=t.RELATION;try{localStorage.clear()}catch(e){}
+Kit.suite(({ok})=>{
+ const t=T,G=t.G,P=t.P,W=t.W,R=t.RELATION;Kit.fresh();
  t.act('begin','soldier');t.bandits.length=0;W.monsters=[];W.patrols=[];G.quietEvents=true;G.encCool=1e9;
- const panel=()=>document.getElementById('panel').innerHTML,world=()=>{G.mode='world';G.modal=false;t.hidePanel();G.enc=null},done=()=>{t.act('cont');while(G.mode==='perk')t.act('perk',G.perkOffer[0]);world()};
+ const panel=Kit.panel,world=()=>Kit.world(),done=()=>Kit.done({cont:true,world:true});
  const L=W.lords.filter(l=>!l.dead),a=L[0],mates=L.filter(l=>l!==a&&l.fac===a.fac);
  ok(L.every(l=>t.relWith(l)===0)&&t.relName(0)==='Neutral','every lord starts neutral toward you');
  ok(mates.every(m=>t.lordRel(a,m)>=15),'lords of one realm start as friends ('+mates.map(m=>t.lordRel(a,m)).join(', ')+')');
@@ -48,5 +47,4 @@ try{
  // saved, and listed
  t.P.lrel[b.id]=33;W.lrel={'x|y':7};t.saveGame(true);t.P.lrel={};W.lrel={};t.loadGame();ok(t.relWith(W.lords.find(l=>l.id===b.id))===33&&W.lrel['x|y']===7,'relations are saved');
  world();t.openChar();t.act('char-tab','lords');ok(/Lords/.test(panel())&&new RegExp(b.name).test(panel())&&/Friend|Warm/.test(panel()),'the character screen lists every lord and how they feel');t.act('char-close');
-}catch(e){o.push('EXC '+e.message+' '+e.stack)}
-const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d)};
+});

@@ -9,7 +9,7 @@ const STAY_FREE=30,STAY_BASE=5;
 const stayMen=()=>troopCount()+woundedN()+compsInBand().length;
 const stayCost=()=>STAY_BASE+Math.ceil(stayMen()/2);
 const stayFree=t=>t.owner==='player'||!!P.fac&&t.owner===P.fac||standingAt(t)>=STAY_FREE;
-const worldTime=()=>G.day*DAY+G.clock;
+const worldTime=()=>Clock.worldTime();// (clock.js)
 const stayTown=()=>P.stay&&townBy(P.stay.town);
 // why you may not stay here ('' if you may)
 // (the rules for you and your companions' parties; every party has its own: parties.js shelterWhy)
@@ -93,7 +93,7 @@ function stayAct(a,arg){
   const t=stayTown();if(!t){closeDialog();return}
   if(a==='sy-wait'){G.mode='world';hidePanel();log('Your band waits inside the walls of '+t.name+'.');return}
   if(a==='sy-defend'){const l=siegeLordsAt(t)[+arg];if(!l||P.fac&&P.fac===l.fac)return;
-    if(!hostileTo(l.fac)){P.hostile[l.fac]=Math.max(P.hostile[l.fac]||0,G.day+20);addHonor(l.fac,-15,true)}
+    if(!hostileTo(l.fac)){Timed.of(P,'hostile').extend(l.fac,20);addHonor(l.fac,-15,true)}
     leaveStay('You lead your band out of the gate of '+t.name+' against '+l.name+'.');G.encCool=0;startEncounter({kind:'lord',ref:l,list:l.troops.slice(),mine:true});return}
   if(a==='sy-slip'){const ls=siegeLordsAt(t),l=ls.slice().sort((a,b)=>lordSpeed(b)-lordSpeed(a))[0];if(!l)return;
     const e={kind:'lord',ref:l,list:l.troops.slice(),foes:ls.filter(o=>o!==l&&Math.hypot(o.x-l.x,o.y-l.y)>40),mine:false};if(fleeOdds(e).ch<=0)return;

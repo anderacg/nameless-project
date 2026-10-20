@@ -26,7 +26,7 @@ class EstateWorker extends WorldObject{
 const asWorker=asClass(EstateWorker);
 // (the estates whose workers you have come near: town|estate; forgotten once you are far)
 const FOLK_SEEN=new Set();
-const dayPart=()=>G.clock/DAY;
+const dayPart=()=>Clock.frac;
 // the hours a delivery may start (share of the day: the afternoon to the end of dusk), and how long it takes inside the gate
 const DELIVER={from:.375,to:.575,stop:[1.5,3.5]};// (afternoon to dusk, the day half of 50/50: core.js NIGHT_AT)
 // the hours of field work (the morning and midday, to the first delivery), the share of workers out on a day (each by his id and
@@ -73,7 +73,7 @@ const fieldTime=now=>now>=FIELD.from&&now<FIELD.to;
 const fieldOut=f=>folkHash(f.id+'|'+G.day)%1000/1000<FIELD.out;
 // (a bandit band or a beast within r of (x, y): the workers keep clear of both)
 const folkThreat=(x,y,r)=>bandits.some(b=>Math.hypot(b.x-x,b.y-y)<r)||W.monsters.some(m=>Math.hypot(m.x-x,m.y-y)<r);
-const fieldDanger=(t,f)=>until(t,'fear')||besieged(t)||folkThreat(f.x,f.y,WORLD_SCALE.ai.folkBandit);
+const fieldDanger=(t,f)=>Timed.of(t).has('fear')||besieged(t)||folkThreat(f.x,f.y,WORLD_SCALE.ai.folkBandit);
 // the stretches of an estate's front row (px across its tile) its 1st, 2nd and 3rd man work along (inner: by a town workshop's door)
 const FRONT_AT={mine:[[10,15.5],[4.5,9.5],[.5,4.5]],inner:[[3,7],[9,13],[6,10]],_:[[.5,4.5],[11.5,15.5],[5,11]]};
 // rock a miner cuts: hills, or ground at the foot of a mountain
@@ -154,10 +154,10 @@ function updateFolk(d){
         W.folk.push(asWorker(folkName({id:key+'|'+no,folk:true,home:t.name,k,job,x:at.x,y:at.y,tx:at.x,ty:at.y,st:'in',leave,done:now>leave?G.day:-1,dir:1,ph:Math.random()*6,fresh:first},t.races[0])))}}}
   for(const f of W.folk){
     const t=townBy(f.home),fresh=f.fresh;f.fresh=false;if(!t){f.gone=true;continue}
-    const threat=folkThreat(f.x,f.y,A.folkBandit)||until(t,'fear')&&Math.hypot(P.x-f.x,P.y-f.y)<A.folkFear;
+    const threat=folkThreat(f.x,f.y,A.folkBandit)||Timed.of(t).has('fear')&&Math.hypot(P.x-f.x,P.y-f.y)<A.folkFear;
     // at work inside: out with the day's load at his hour (not while the holding is besieged or afraid); in the field hours, out
     // to his work on the estate's ground if it is his day for it and safe (already at it as you first come near)
-    if(f.st==='in'){f.moving=false;if(win&&f.done!==G.day&&now>=f.leave&&!besieged(t)&&!until(t,'fear')){const g=folkHome(t);f.st='out';f.tx=g.x;f.ty=g.y}
+    if(f.st==='in'){f.moving=false;if(win&&f.done!==G.day&&now>=f.leave&&!besieged(t)&&!Timed.of(t).has('fear')){const g=folkHome(t);f.st='out';f.tx=g.x;f.ty=g.y}
       else if(fieldTime(now)&&fieldOut(f)&&!fieldDanger(t,f))goField(t,f,fresh);continue}
     if(f.st==='field'){fieldWork(t,f,d,now);continue}
     // delivering inside the gate: then back to the estate
@@ -206,14 +206,14 @@ function workerDeeds(t,f){const own=t.owner==='player',lv=levyOf(t.races[0]),c=h
    press-gang (t.mem: his id, or the estate's kind, to the day they forget; saved: holdings.js); while they do, they will not
    talk to you as before, nor be robbed or hired */
 const robLoot=f=>ROB.loot[f.st==='field'?'in':f.st==='in'||f.st==='out'?f.st:'town'];// (at work out of doors: as at work inside)
-const remembers=(t,f)=>{const m=t.mem||{};return Math.max(m[f.id]||0,m[f.k]||0)>G.day};
-function remember(t,key,days){t.mem=t.mem||{};t.mem[key]=Math.max(t.mem[key]||0,G.day+days)}
+const remembers=(t,f)=>{const m=Timed.of(t,'mem');return m.has(f.id)||m.has(f.k)};
+function remember(t,key,days){Timed.of(t,'mem').extend(key,days)}
 const WARY_SAY=['You’ve taken enough from us.','Leave us be. There is nothing more to take.','We remember you. Go away.','Please, no more. We have children to feed.'];
 const warySay=f=>WARY_SAY[folkHash(f.id)%WARY_SAY.length];
 // (the workers within reach of him, the estate's guards if he is within reach of it: their kinds, their power, the chance they resist)
 function robOdds(t,f){const R=ROB.reach*TILE,sp=bldSpots(t)[f.k],ws=W.folk.filter(x=>x.home===f.home&&x.k===f.k&&Math.hypot(x.x-f.x,x.y-f.y)<=R);if(!ws.includes(f))ws.unshift(f);
   const gs=sp&&Math.hypot(sp.x-f.x,sp.y-f.y)<=R?estateGuards(t,f.k):[],list=ws.map(x=>recruitKind(t,x)).concat(gs),pw=rating(list),
-    nerve=(ROB.nerve[t.races[0]]||1)*(until(t,'fear')?ROB.fear:1)*((t.pros||0)>=ROB.loveAt?ROB.love:1);
+    nerve=(ROB.nerve[t.races[0]]||1)*(Timed.of(t).has('fear')?ROB.fear:1)*((t.pros||0)>=ROB.loveAt?ROB.love:1);
   return{ws,gs,list,pw,ch:clamp(ROB.k*pw/Math.max(1,partyPower())*nerve,ROB.resist[0],ROB.resist[1])}}
 function robCarries(t,f){const L=robLoot(f),[g]=jobGood(t,f.job);return (L.goods[1]?L.goods[0]+'–'+L.goods[1]+' '+GOODS[g].n.toLowerCase()+', ':'')+L.coins[0]+'–'+L.coins[1]+' coins'}
 // the Insight read (window.js insight): what anyone sees, how they look, or the numbers and the chance

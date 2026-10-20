@@ -15,12 +15,12 @@ function wrong(t,c){
   if(c.morale){P.morale=clamp(P.morale-c.morale,0,100);cost.push('morale −'+c.morale)}
   if(t.owner&&t.owner!=='player'){
     if(c.honor){addHonor(t.owner,-c.honor,true);cost.push('honor with the '+FACS[t.owner].n+' −'+c.honor);W.lords.filter(l=>l.fac===t.owner&&!l.dead).forEach(l=>changeRel(l,RELATION.harmRealm,'you wronged the people of '+t.name))}
-    if(c.hostile&&!hostileTo(t.owner)){P.hostile[t.owner]=Math.max(P.hostile[t.owner]||0,G.day+c.hostile);log('The '+FACS[t.owner].n+' turns hostile to you for '+c.hostile+' days.','bad')}
+    if(c.hostile&&!hostileTo(t.owner)){Timed.of(P,'hostile').extend(t.owner,c.hostile);log('The '+FACS[t.owner].n+' turns hostile to you for '+c.hostile+' days.','bad')}
   }
   return cost.join(', ');
 }
 // frightened workers run home and keep away: half the holding's output for a few days
-const frighten=(t,days)=>{t.fear=Math.max(t.fear||0,G.day+days);for(const f of W.folk)if(f.home===t.name&&folkOut(f)){f.st='back';const door=folkDoor(t,f.k);f.tx=door.x;f.ty=door.y}};// (its workers on the road hurry back in: folk.js)
+const frighten=(t,days)=>{Timed.of(t).extend('fear',days);for(const f of W.folk)if(f.home===t.name&&folkOut(f)){f.st='back';const door=folkDoor(t,f.k);f.tx=door.x;f.ty=door.y}};// (its workers on the road hurry back in: folk.js)
 
 /* dialogs */
 // a dialog button; why (if set) disables it and says why

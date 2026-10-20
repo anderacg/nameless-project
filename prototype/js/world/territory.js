@@ -93,8 +93,8 @@ function landDay(){
     const was=Math.floor(t.grow||0);t.grow=t.grow==null?GROW0:t.grow;
     if(t.lastOwner!=null&&t.lastOwner!==t.owner)t.grow=Math.max(0,t.grow-2);
     t.lastOwner=t.owner;
-    if(besieged(t)||until(t,'sacked')||until(t,'raided'))t.grow=Math.max(0,t.grow-.25);
-    else if(t.grow<growCap(t))t.grow=Math.min(growCap(t),t.grow+GROW_DAY*(until(t,'turmoil')?.5:1));
+    if(besieged(t)||Timed.of(t).has('sacked')||Timed.of(t).has('raided'))t.grow=Math.max(0,t.grow-.25);
+    else if(t.grow<growCap(t))t.grow=Math.min(growCap(t),t.grow+GROW_DAY*(Timed.of(t).has('turmoil')?.5:1));
     const now=Math.floor(t.grow);if(t.owner==='player'&&now!==was)log(now>was?'The lands of '+t.name+' reach further.':'The lands of '+t.name+' shrink.',now>was?'good':'bad');
   }
 }

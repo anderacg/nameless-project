@@ -27,4 +27,4 @@ const chiefLv=o=>o&&o.ld?1+Math.floor(o.ld.lv/3):1;
 // a chieftain whose band won a battle (it grows by nothing else): experience by how many it beat
 function chiefWins(o,foes){const c=o&&o.ld;if(!c)return;c.wins=(c.wins||0)+1;const L=leaderOf(c);L.gainXp(20+4*foes);L.train('lead',2+foes*.5);L.train('tact',2);o.pw=0}
 // the most wanted, for the taverns' talk: the highest chieftains, with where they are
-function mostWanted(n){return allChiefs().sort((a,b)=>b.lv-a.lv||(b.wins||0)-(a.wins||0)).slice(0,n).map(c=>{const o=chiefHolder(c);return{c,o,near:o?nearestOf(o,TOWNS):null}})}
+function mostWanted(n){return allChiefs().sort((a,b)=>b.lv-a.lv||(b.wins||0)-(a.wins||0)).slice(0,n).map(c=>{const o=chiefHolder(c);return{c,o,near:o?Spatial.nearestHolding(o.x,o.y):null}})}

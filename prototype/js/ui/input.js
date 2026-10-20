@@ -17,7 +17,7 @@ function act(a,arg){
   if(a==='lord-leave'&&peopleTalkBack())return;// (talked to from the people drawer in a town: back to it)
   if(a==='lord-leave'&&G.scene&&G.mode==='scene'){G.enc=null;return backToScene()}
   if(a==='lord-leave'){const l=G.enc&&G.enc.ref;if(l)l.cool=3;G.enc=null;G.encCool=2;G.mode='world';hidePanel();return}
-  if(a==='lord-attack'){const l=G.enc.ref;P.hostile[l.fac]=G.day+20;addHonor(l.fac,-15,true);log('You attack '+l.name+'. The '+FACS[l.fac].n+' is now hostile to you.','bad');return startEncounter({kind:'lord',ref:l,list:l.troops.slice(),mine:true})}
+  if(a==='lord-attack'){const l=G.enc.ref;Timed.of(P,'hostile').set(l.fac,20);addHonor(l.fac,-15,true);log('You attack '+l.name+'. The '+FACS[l.fac].n+' is now hostile to you.','bad');return startEncounter({kind:'lord',ref:l,list:l.troops.slice(),mine:true})}
   if(a.startsWith('q-')){const tq=G.town&&G.town.ref;questAct(a,arg,G.mode==='town'?tq:null);if(a.startsWith('q-lord'))return;updateHUD(true);if(G.mode==='char')return renderChar();if(G.mode==='town')renderTown();return}
   if(charAct(a,arg))return;
   if(G.est&&G.mode==='dialog'&&estateFief(a,arg))return;// (your own estate's window on the map: its building buttons, estates.js)

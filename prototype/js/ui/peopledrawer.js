@@ -12,10 +12,10 @@ onWorld(()=>PEOPLE.seen.clear());// (a new world, or a game loaded: what you rem
 function peopleWatch(){const V=vis();for(const l of W.lords)if(!l.dead&&!l.gone&&!l.inside&&spotted(l,V))PEOPLE.seen.set(l.id,{x:l.x,y:l.y,day:G.day,n:l.troops.length})}
 // what you know of a lord: {x, y, where, n (his soldiers, when you know), here (in this place with you)}; null: unknown
 function lordKnown(l){
-  if(l.dead||l.gone)return null;const near=(x,y)=>{const t=nearestOf({x,y},TOWNS);return t?' near '+t.name:''};
+  if(l.dead||l.gone)return null;const near=(x,y)=>{const t=Spatial.nearestHolding(x,y);return t?' near '+t.name:''};
   if(l.inside&&G.town&&G.town.ref.name===l.inside){const t=G.town.ref;return {x:t.x,y:t.y,where:'Here, in '+t.name,n:l.troops.length,here:true}}
   if(!l.inside&&spotted(l,vis()))return {x:l.x,y:l.y,where:'In sight'+near(l.x,l.y),n:l.troops.length,here:G.mode==='world'&&Math.hypot(l.x-P.x,l.y-P.y)<=REACH*2};
-  const s=PEOPLE.seen.get(l.id);if(s&&G.day-s.day<=PEOPLE.memory)return {x:s.x,y:s.y,where:'Seen'+near(s.x,s.y)+(s.day===G.day?' today':' on day '+s.day),n:s.n};
+  const s=PEOPLE.seen.get(l.id);if(s&&Clock.daysSince(s.day)<=PEOPLE.memory)return {x:s.x,y:s.y,where:'Seen'+near(s.x,s.y)+(s.day===G.day?' today':' on day '+s.day),n:s.n};
   return null;
 }
 const ppAvail=()=>['world','town','scene'].includes(G.mode)&&!(G.mode!=='town'&&G.modal);

@@ -14,10 +14,10 @@ const atWar=(a,b)=>!!a&&!!b&&a!==b&&(a==='player'?hostileTo(b):b==='player'?host
 const enemiesOf=f=>FIDS.filter(g=>atWar(f,g));
 const fiefsOf=f=>TOWNS.filter(t=>t.owner===f);
 const facCol=t=>t.owner?FACS[t.owner].col:'#98a0ba';
-const hostileTo=f=>!!f&&f!=='player'&&((!!P.fac&&atWar(P.fac,f))||(P.hostile[f]||0)>G.day);
+const hostileTo=f=>!!f&&f!=='player'&&((!!P.fac&&atWar(P.fac,f))||Timed.of(P,'hostile').has(f));
 const townBy=n=>TOWNS.find(t=>t.name===n);
 const besieged=t=>W.lords.some(l=>!l.dead&&l.state==='siege'&&l.tgt===t.name)||!!(P.siege&&P.siege.town===t.name)||!!(P.raid&&P.raid.town===t.name);
-const nearestOf=(o,list)=>{let b=null,bd=1e9;for(const t of list){const d=Math.hypot(t.x-o.x,t.y-o.y);if(d<bd){bd=d;b=t}}return b};
+const nearestOf=(o,list)=>Spatial.nearest(list,o.x,o.y);// (the old name: core/spatial.js)
 /* lords grow as you do: a level from what they win in battle (l.lv, l.xp: level x 60 to the next, as yours), renown, and the
    disciplines of command, which rise by use (l.sk: Leadership by winning, Tactics by fighting, Medicine by tending their fallen;
    levels 0-10, (level+1) x 20 to the next, as yours). Their army is capped as yours is: 8 + 3 a level + renown/25 + Leadership
@@ -87,8 +87,8 @@ function lordThink(l){
   const own=fiefsOf(l.fac);if(!own.length){l.dead=true;l.gone=true;return}
   const foes=TOWNS.filter(t=>atWar(l.fac,t.owner)),hit=own.find(besieged);
   if(hit&&l.troops.length>=9){l.state='relieve';l.tgt=hit.name;return}
-  if(l.troops.length<9||(!foes.length&&l.troops.length<lcapOf(l)-4)){l.state='home';l.tgt=nearestOf(l,own).name;return}
-  if(foes.length){l.state='march';l.tgt=nearestOf(l,foes).name;return}
+  if(l.troops.length<9||(!foes.length&&l.troops.length<lcapOf(l)-4)){l.state='home';l.tgt=Spatial.nearest(own,l.x,l.y).name;return}
+  if(foes.length){l.state='march';l.tgt=Spatial.nearest(foes,l.x,l.y).name;return}
   l.state='patrol';l.tgt=own[rint(0,own.length-1)].name;
 }
 // you beat a lord's army: a bounty from your employer, a broken siege, and honor with his enemies (from ON_WIN)
@@ -111,7 +111,7 @@ function resolveSiege(l,t){
   if(pa>pd){
     const prev=t.owner;cull(l,clamp(.1+.5*(pd/pa)**2,.05,.6));lordWins(l,t.gar||6);lordsInside(t).forEach(o=>{defeatLord(o);log(o.name+' is taken inside the walls of '+t.name+'.',o.fac===P.fac?'bad':'')});t.owner=l.fac;t.gar=4;l.state='rest';
     // conquest leaves its mark: turmoil for a while, and sometimes the victors sack the place
-    t.turmoil=G.day+8;breach(t);const sacked=Math.random()<.35;if(sacked){t.sacked=G.day+15;burnEstates(t,2);sackStock(t,.5,.25)}
+    Timed.of(t).set('turmoil',8);breach(t);const sacked=Math.random()<.35;if(sacked){Timed.of(t).set('sacked',15);burnEstates(t,2);sackStock(t,.5,.25)}
     newsRecord('fell',t,{town:t.name,fac:l.fac,lord:l.name,sacked:sacked?1:0});
     log(t.name+' falls to '+l.name+' of the '+FACS[l.fac].n+(sacked?', who sacks it':'')+'.'+(mine?' You have lost your fief.':''),l.fac===P.fac?'good':prev===P.fac||mine?'bad':'gold');
     W.lords.forEach(o=>{if(!o.dead&&o!==l&&o.tgt===t.name)lordThink(o)});
@@ -121,14 +121,14 @@ function resolveSiege(l,t){
 }
 function worldDay(){
   for(let i=0;i<FIDS.length;i++)for(let j=i+1;j<FIDS.length;j++){
-    const a=FIDS[i],b=FIDS[j];if(W.dead[a]||W.dead[b])continue;const r=relOf(a,b),age=G.day-r.since;
+    const a=FIDS[i],b=FIDS[j];if(W.dead[a]||W.dead[b])continue;const r=relOf(a,b),age=Clock.daysSince(r.since);
     if(r.s==='peace'&&age>=6&&Math.random()<WAR_RATE)setRel(a,b,'war');
     else if(r.s==='war'&&age>=8&&Math.random()<Math.min(.35,.04+(age-8)*.01+(Math.abs(fiefsOf(a).length-fiefsOf(b).length)>=2?.08:0)+(Math.min(fiefsOf(a).length,fiefsOf(b).length)<=1?.25:0)+(econWeary(a)||econWeary(b)?.12:0)))setRel(a,b,'peace');
     else if(r.s==='peace'&&FIDS.some(c=>c!==a&&c!==b&&atWar(a,c)&&atWar(b,c))&&Math.random()<.3)setRel(a,b,'ally');
     else if(r.s==='ally'&&!FIDS.some(c=>c!==a&&c!==b&&atWar(a,c)&&atWar(b,c))&&Math.random()<.2)setRel(a,b,'peace');
   }
   // the realms refill their garrisons a guard a day, paid from the treasury and drafted from the holding's own people
-  TOWNS.forEach(t=>{const cap=Math.round(t.T.gar*(until(t,'sacked')?.5:1));if(t.owner&&t.owner!=='player'&&!besieged(t)&&t.gar<cap&&canDraft(t)&&payRealm(t.owner,6,t,1)&&draftLocals(t,1))t.gar++});
+  TOWNS.forEach(t=>{const cap=Math.round(t.T.gar*(Timed.of(t).has('sacked')?.5:1));if(t.owner&&t.owner!=='player'&&!besieged(t)&&t.gar<cap&&canDraft(t)&&payRealm(t.owner,6,t,1)&&draftLocals(t,1))t.gar++});
   for(const l of W.lords){
     if(l.gone)continue;
     if(l.dead){

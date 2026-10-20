@@ -11,7 +11,7 @@
 // if their realm is hostile to you. Your own fiefs' guards ride for you.
 const patrolOf=t=>W.patrols.find(p=>p.home===t.name);
 // the watch on duty: the night watch from nightfall to dawn
-const watchNow=()=>G.clock/DAY>=NIGHT_AT?'night':'day';
+const watchNow=()=>Clock.isNight?'night':'day';
 const watchOf=p=>p.watch||'day';
 const watchName=p=>WATCH[watchOf(p)].n+' of '+p.home;
 /* a holding's two standing watches (t.watches: day, night), each {cap (its captain: a name of the holding's people, seeded by the
@@ -75,7 +75,7 @@ function patrolAct(a){
   const p=G.pt;if(!p){closeDialog();return}const t=townBy(p.home),c=crimeAt(t);
   if(a==='pt-pay'&&c&&P.gold>=c.fine){P.gold-=c.fine;t.crime=null;addRep(t.name,2,true);G.pt=null;return notice('Fine paid','The guards take '+c.fine+' gold and let you pass. The matter is closed.','good')}
   if(a==='pt-run'){const l=Math.hypot(P.x-p.x,P.y-p.y)||1;walk(P,(P.x-p.x)/l,(P.y-p.y)/l,WORLD_SCALE.ai.slipAway);p.cool=8;G.pt=null;closeDialog();G.encCool=4;log('You slip away from the guards of '+p.home+'. They will be looking for you.','bad');return}
-  if(a==='pt-fight'||a==='pt-attack'){if(!hostileTo(p.fac)){P.hostile[p.fac]=Math.max(P.hostile[p.fac]||0,G.day+20);addHonor(p.fac,a==='pt-fight'?-5:-10,true)}G.pt=null;
+  if(a==='pt-fight'||a==='pt-attack'){if(!hostileTo(p.fac)){Timed.of(P,'hostile').extend(p.fac,20);addHonor(p.fac,a==='pt-fight'?-5:-10,true)}G.pt=null;
     return startEncounter({kind:'patrol',ref:p,list:p.troops.slice(),title:watchName(p)})}
 }
 onAct('pt-',patrolAct);

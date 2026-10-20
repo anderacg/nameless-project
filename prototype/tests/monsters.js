@@ -1,11 +1,10 @@
 'use strict';
 // Monsters: habitats, hunting vs passive, abilities, levels, XP and loot, gear stats, trophy sales, save/load.
 // (How a 12-troop army fares against each monster: visual/monsterbalance.js.)
-window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);
-try{
- const t=T,G=t.G,P=t.P,W=t.W,MONSTERS=t.MONSTERS,ST=t.ST;try{localStorage.clear()}catch(e){}
- const done=()=>{while(G.mode==='perk')t.act('perk',G.perkOffer[0])};
- const reset=()=>{G.mode='world';G.modal=false;G.enc=null;t.hidePanel()};
+Kit.suite(({ok})=>{
+ const t=T,G=t.G,P=t.P,W=t.W,MONSTERS=t.MONSTERS,ST=t.ST;Kit.fresh();
+ const done=()=>Kit.done();
+ const reset=()=>Kit.world();
  t.act('begin','soldier');W.critters=[];W.sites=[];W.lords.forEach(l=>{l.x=-999;l.y=-999});// nothing else in the way of the chases
  ok(W.monsters.length===t.MONSTER_START,t.MONSTER_START+' monsters roam a new world');
  for(let d=0;d<40;d++){G.day++;t.monsterDay()}
@@ -42,5 +41,4 @@ try{
  // save and load
  const n=W.monsters.length;t.saveGame();W.monsters=[];P.gear.weapon=null;t.act('load');ok(W.monsters.length===n&&P.gear.weapon==='clawblade','save/load keeps monsters and gear');
  t.frame();
-}catch(e){o.push('EXC '+e.message+' '+e.stack)}
-const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d)};
+});

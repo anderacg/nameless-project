@@ -2,10 +2,9 @@
 // Leaders: the hero, lords, companions and bandit chieftains grow by one set of rules (a level from experience, level x 60 to
 // the next; disciplines by use, (level + 1) x 20). Chieftains are named, grow only by winning battles, harden their band,
 // carry a bounty that is yours when you hand them over, and the taverns talk of the most wanted.
-window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);
-try{
- const t=T,G=t.G,P=t.P,W=t.W;try{localStorage.clear()}catch(e){}t.act('begin','soldier');G.quietEvents=true;
- const done=()=>{while(G.mode==='perk')t.act('perk',G.perkOffer[0])},world=()=>{t.hidePanel();G.mode='world';G.modal=false;G.enc=null};
+Kit.suite(({ok})=>{
+ const t=T,G=t.G,P=t.P,W=t.W;Kit.begin();
+ const done=()=>Kit.done(),world=()=>Kit.world();
  // one rule for every kind
  const L=W.lords[0];t.lordStats(L);L.lv=1;L.xp=0;P.comps={brann:{ap:0,role:''}};const c=t.compInit('brann');c.lv=1;c.xp=0;
  const ch=t.newChief('bandits',1);t.bandits.push(t.asParty({x:-999,y:-999,n:4,kind:'bandits',list:['militia'],t:0,a:0,cool:0,ld:ch}));
@@ -40,5 +39,4 @@ try{
  {const s=W.sites.find(x=>x.type==='camp'),old=s.ld.name;t.clearPlace(s,10);G.day=s.back;t.siteDay();ok(!s.cleared&&s.ld&&s.ld!==null&&s.ld.lv>=1,'a cleared camp returns under a new chieftain ('+old+' → '+s.ld.name+')')}
  // saves
  {world();const b=t.bandits[0],n=b.ld.name,lv=b.ld.lv;t.saveGame(true);t.loadGame();const b2=t.bandits.find(x=>x.ld&&x.ld.name===n);ok(b2&&b2.ld.lv===lv&&t.leaderOf(b2.ld).role==='chieftain','a save keeps the chieftains')}
-}catch(e){o.push('EXC '+e.message+' '+e.stack)}
-const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d)};
+});

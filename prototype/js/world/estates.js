@@ -142,9 +142,9 @@ function showEstate(){
   const o=G.est,t=townBy(o.town),k=o.k,ms=estateMenus(o),tab=ms.some(m=>m[0]===G.estTab)?G.estTab:null;G.estTab=tab;ensureEcon(t);
   const E=ESTATES[k],lv=bldLv(t,k),emp=P.fac&&P.fac===t.owner,ws=W.folk.filter(f=>f.home===t.name&&f.k===k),race=t.races[0],m=ms.find(x=>x[0]===tab);let body;
   if(!tab)body=(sabotaged(t,k)?'<p class="bad">Wrecked: it makes nothing until day '+t.sab[k]+'.</p>':'')+(lv&&PLOTS[k]&&fieldShare(t,k)<1?'<p class="bad">Fields: '+plotsAt(t,k,lv).length+' of the '+PLOTS_AT[k](lv)+' its level works (no open ground for more: it makes '+Math.round(fieldShare(t,k)*100)+'%).</p>':'')+
-    (until(t,'fear')?'<p class="bad">The workers are afraid to come out.</p>':'')+bldTop(t,k)+estateDeeds(t,k)+RAIL_SCREEN.overview(ms.map(([k,n,ico,note])=>({act:'es-tab',arg:k,n,note})));
+    (Timed.of(t).has('fear')?'<p class="bad">The workers are afraid to come out.</p>':'')+bldTop(t,k)+estateDeeds(t,k)+RAIL_SCREEN.overview(ms.map(([k,n,ico,note])=>({act:'es-tab',arg:k,n,note})));
   else if(tab==='folk'){const inn=ws.filter(f=>f.st==='in'),field=ws.filter(f=>f.st==='field').length,away=ws.length-inn.length-field;// (only those inside: the rest are met where they are, folk.js)
-    body=(inn.length?railCards(inn.map(f=>{const kk=recruitKind(t,f);return {pic:workerPic(f.job,race,f.v),name:f.name,role:cap1(f.job)+' of the '+E.n.toLowerCase(),facts:['At work inside',until(t,'fear')?['Afraid to come out','bad']:'',remembers(t,f)?['Remembers you','bad']:'','Recruit: '+ST[kk].n.toLowerCase()+', '+hireCost(kk)+'g'],
+    body=(inn.length?railCards(inn.map(f=>{const kk=recruitKind(t,f);return {pic:workerPic(f.job,race,f.v),name:f.name,role:cap1(f.job)+' of the '+E.n.toLowerCase(),facts:['At work inside',Timed.of(t).has('fear')?['Afraid to come out','bad']:'',remembers(t,f)?['Remembers you','bad']:'','Recruit: '+ST[kk].n.toLowerCase()+', '+hireCost(kk)+'g'],
         acts:[['es-folk',f.id,'Talk'],['es-recruit',f.id,'Recruit',workerRecruitWhy(t,f)]]}})):'<p class="muted">Nobody is in: '+(field?'they are at work outside.':ws.length?'they are out with the day’s load.':'the '+E.work+'s are out of sight.')+'</p>')+
       (field?'<p class="muted">'+field+(inn.length?' more':'')+' at work outside on the '+E.n.toLowerCase()+': meet '+(field>1?'them':'him')+' there.</p>':'')+
       (away?'<p class="muted">'+away+' more out on the road to '+t.name+' with the day’s load: meet them there.</p>':'')+(lostHands(t,k)?'<p class="bad">'+lostHands(t,k)+' pair'+(lostHands(t,k)>1?'s':'')+' of hands short: it makes '+Math.round(handsLeft(t,k)*100)+'% until someone new moves in.</p>':'')+
@@ -230,7 +230,7 @@ function estateWon(e){
   for(const g in M.out||{}){const n=Math.min(t.stock[g]||0,Math.ceil(M.out[g]*Math.max(1,lv)*3));if(n<=0)continue;const k=invAdd('good',g,n);t.stock[g]-=n;if(k)got.push(k+' '+GOODS[g].n.toLowerCase())}
   const gold=rint(10,25)*Math.max(1,lv),c=r.burn?CONDUCT.burnEstate:CONDUCT.plunderEstate;P.gold+=gold;
   const cost=wrong(t,{rep:c.rep,honor:c.honor,fear:c.fear,pros:c.pros});
-  if(r.burn){t.bld[r.k]=Math.max(0,lv-1);t.raided=Math.max(t.raided||0,G.day+4);mood('cruel');syncLots(t);newsRecord('raid',bldSpots(t)[r.k]||t,{town:t.name,estate:r.k})}
+  if(r.burn){t.bld[r.k]=Math.max(0,lv-1);Timed.of(t).extend('raided',4);mood('cruel');syncLots(t);newsRecord('raid',bldSpots(t)[r.k]||t,{town:t.name,estate:r.k})}
   return ' You '+(r.burn?'burn the '+ESTATES[r.k].n.toLowerCase()+' of '+t.name+' (now level '+bldLv(t,r.k)+')':'plunder the '+ESTATES[r.k].n.toLowerCase()+' of '+t.name)+': '+(got.length?got.join(', ')+' and ':'')+gold+' gold. Its workers flee and '+t.name+' grows poorer ('+cost+').';
 }
 

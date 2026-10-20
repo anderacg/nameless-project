@@ -1,10 +1,9 @@
 'use strict';
 // Reputation: a lone start in your race's home town, standing gates hiring by tier, and how reputation and honor are earned or lost.
-window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);
-try{
- const t=T,G=t.G,P=t.P,W=t.W;try{localStorage.clear()}catch(e){}
- const done=()=>{while(G.mode==='perk')t.act('perk',G.perkOffer[0])};
- const panel=()=>document.getElementById('panel').innerHTML;
+Kit.suite(({ok})=>{
+ const t=T,G=t.G,P=t.P,W=t.W;Kit.fresh();
+ const done=()=>Kit.done();
+ const panel=Kit.panel;
  const town=n=>{G.mode='world';G.modal=false;G.lastTown=null;t.enterTown(t.townBy(n))};
  // starts
  t.act('race','orc');t.act('begin','merchant');const sun=t.townBy('Sunreach');
@@ -38,5 +37,4 @@ try{
  // realms tab and save
  G.mode='world';G.modal=false;t.openChar();t.act('char-tab','realms');ok(/Your reputation/.test(panel())&&/Your honor/.test(panel()),'realms tab lists reputation and honor');t.act('char-close');
  const rep=JSON.stringify(P.rep),hon=JSON.stringify(P.honor);t.saveGame();P.rep={};P.honor={};t.act('load');ok(JSON.stringify(P.rep)===rep&&JSON.stringify(P.honor)===hon,'save/load keeps reputation and honor');
-}catch(e){o.push('EXC '+e.message+' '+e.stack)}
-const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d)};
+});

@@ -41,14 +41,14 @@ function makeQuest(type,t,lord){
 }
 function jobsAt(t){
   P.jobs=P.jobs||{};const j=P.jobs[t.name];
-  if(!j||G.day-j.day>=JOB_REFRESH){const list=[],kinds=t.T.jobs.slice();
+  if(!j||Clock.daysSince(j.day)>=JOB_REFRESH){const list=[],kinds=t.T.jobs.slice();
     for(let k=0;k<12&&list.length<JOB_OFFERS;k++){const q=makeQuest(kinds[rint(0,kinds.length-1)],t);if(q&&!list.some(o=>o.type===q.type))list.push(q)}
     P.jobs[t.name]={day:G.day,list}}
   return P.jobs[t.name].list;
 }
 // a lord's job: war work if his faction is at war (raids only for those who serve him), else a bounty or a beast near his lands
 function lordJob(l){
-  const t=nearestOf(l,fiefsOf(l.fac).length?fiefsOf(l.fac):TOWNS);const kinds=enemiesOf(l.fac).length?(P.fac===l.fac?['lordkill','raid']:['lordkill']):['bounty','beast'];
+  const t=Spatial.nearest(fiefsOf(l.fac).length?fiefsOf(l.fac):TOWNS,l.x,l.y);const kinds=enemiesOf(l.fac).length?(P.fac===l.fac?['lordkill','raid']:['lordkill']):['bounty','beast'];
   for(let k=0;k<6;k++){const q=makeQuest(kinds[rint(0,kinds.length-1)],t,l);if(q)return q}return null;
 }
 /* taking a quest: spawn whatever must be hunted */
@@ -67,7 +67,7 @@ function acceptQuest(q){
 }
 // where a quest points you now: its target, or home once it is done
 function questGoal(q){
-  if(q.done||['supply','hunt','troops'].includes(q.type)){const t=q.lord?nearestOf(P,fiefsOf(q.fac).filter(x=>!hostileTo(x.owner)))||townBy(q.home):townBy(q.home);return t?{x:t.x,y:t.y,name:t.name}:null}
+  if(q.done||['supply','hunt','troops'].includes(q.type)){const t=q.lord?Spatial.nearest(fiefsOf(q.fac).filter(x=>!hostileTo(x.owner)),P.x,P.y)||townBy(q.home):townBy(q.home);return t?{x:t.x,y:t.y,name:t.name}:null}
   if(q.type==='bounty'){const b=bandits.find(x=>x.qid===q.id)||camps().flatMap(c=>c.bands||[]).find(x=>x.qid===q.id);return b?{x:b.x,y:b.y,name:(b.ld?b.ld.name+' and ':'')+'the '+q.band}:null}
   if(q.type==='beast'){const m=W.monsters.find(x=>x.qid===q.id);return m?{x:m.x,y:m.y,name:MONSTERS[q.mon].n.toLowerCase()}:null}
   if(q.type==='lordkill'){const l=W.lords.find(x=>x.name===q.target&&!x.dead);return l?{x:l.x,y:l.y,name:q.target}:null}
@@ -141,7 +141,7 @@ function questAct(a,arg,t){
   else if(a==='q-turnin'&&t){const q=questBy(+arg);if(q&&canReportAt(q,t)){if(q.done&&!['supply','hunt','troops'].includes(q.type))payQuest(q,t.name);else turnIn(q,t)}}
   else if(a==='q-abandon'){const q=questBy(+arg);if(q)failQuest(q,'You gave it up.')}
   else if(a==='q-lord'&&G.enc&&G.enc.kind==='lord'){const l=G.enc.ref;if(G.lordJob&&acceptQuest(G.lordJob)){G.lordJob=null;l.asked=G.day}lordMeet(l);return true}
-  else if(a==='q-lord-report'&&G.enc&&G.enc.kind==='lord'){const l=G.enc.ref;P.quests.filter(q=>q.lord&&q.giver===l.name&&q.done).forEach(q=>payQuest(q,nearestOf(l,fiefsOf(l.fac)).name));lordMeet(l);return true}
+  else if(a==='q-lord-report'&&G.enc&&G.enc.kind==='lord'){const l=G.enc.ref;P.quests.filter(q=>q.lord&&q.giver===l.name&&q.done).forEach(q=>payQuest(q,Spatial.nearest(fiefsOf(l.fac),l.x,l.y).name));lordMeet(l);return true}
   return 'refresh';
 }
 // the lord dialog's job section

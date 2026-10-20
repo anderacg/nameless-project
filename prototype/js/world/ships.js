@@ -65,7 +65,7 @@ function fishingSpot(t,d){
   return null;
 }
 function sendBoats(){
-  const tod=G.clock/DAY;if(tod<.22||tod>.4)return;
+  const tod=Clock.frac;if(tod<.22||tod>.4)return;
   for(const t of TOWNS){const lv=bldLv(t,'port');if(!lv||ruined(t)||besieged(t)||shipsOf(t,'fish').length>=lv||Math.random()>.02)continue;
     const d=dockOf(t),at=d&&fishingSpot(t,d);if(at)launch(t,'fish',null,at,{big:false,until:(.56+Math.random()*.12)*DAY})}
 }
@@ -102,7 +102,7 @@ const SHIP_MIND={think(s,d,tod){
       else{if(s.k==='trade'){const to=townBy(s.to);if(to)caravanArrive(s,to)}s.gone=true}}
     else{s.x+=dx/l*step;s.y+=dy/l*step}
     return false}};
-function updateShips(d){sendBoats();lodEach(W.ships,SHIP_MIND,d,G.clock/DAY);W.ships=W.ships.filter(s=>!s.gone)}
+function updateShips(d){sendBoats();lodEach(W.ships,SHIP_MIND,d,Clock.frac);W.ships=W.ships.filter(s=>!s.gone)}
 
 /* on the map, on the map's scale (a man 10 high, as the caravan's ox cart: caravans.js; doc/WORLD_DESIGN.md §10.1): a fishing boat
    is a rowing boat some 12 long, its fisherman in it, in a 16×16 cell; a trade ship is a cog some 26 long and 20 high, high

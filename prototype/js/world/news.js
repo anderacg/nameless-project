@@ -44,20 +44,20 @@ const NEWS_KINDS={
 
 /* ---- recording ---- */
 // the holding an event is told by: the nearest standing one
-const newsNear=at=>nearestOf(at,TOWNS.filter(t=>!t.gone));
+const newsNear=at=>Spatial.nearestHolding(at.x,at.y,t=>!t.gone);
 // an event: k (NEWS_KINDS), at (where: {x, y}), detail (its own facts: names, never objects). The same kind by the same holding
 // within NEWS.merge days, or the same one that moves seen again (its kind's same: a beast, a chieftain's band, while the
 // news of it lasts), is brought up to date instead (place, holding, day, facts), keeping its id (heard stays heard). Returns it
 function newsRecord(k,at,detail){
   const K=NEWS_KINDS[k];if(!K||!at||!isFinite(at.x)||!isFinite(at.y))return null;const t=newsNear(at);if(!t)return null;
-  const N=newsW(),x=Math.round(at.x),y=Math.round(at.y),old=N.items.find(it=>it.k===k&&(G.day-it.day<=NEWS.merge&&it.near===t.name||K.same&&K.same(it,detail,x,y)));
+  const N=newsW(),x=Math.round(at.x),y=Math.round(at.y),old=N.items.find(it=>it.k===k&&(Clock.daysSince(it.day)<=NEWS.merge&&it.near===t.name||K.same&&K.same(it,detail,x,y)));
   if(old){Object.assign(old,{x,y,near:t.name,day:G.day,detail:{...old.detail,...detail}});return old}
   const it={id:++N.n,k,x,y,day:G.day,near:t.name,detail:{...detail}};N.items.push(it);newsTrim();return it;
 }
 // (gone: news older than NEWS.days, the oldest past NEWS.keep, heard ids of news gone, yesterday's counts, faded marks)
-function newsTrim(){const N=newsW();N.items=N.items.filter(it=>G.day-it.day<NEWS.days);if(N.items.length>NEWS.keep)N.items.splice(0,N.items.length-NEWS.keep);
+function newsTrim(){const N=newsW();N.items=N.items.filter(it=>Clock.daysSince(it.day)<NEWS.days);if(N.items.length>NEWS.keep)N.items.splice(0,N.items.length-NEWS.keep);
   const ids=new Set(N.items.map(it=>it.id));for(const id in N.heard)if(!ids.has(+id))delete N.heard[id];
-  for(const k in N.told)if(N.told[k].day!==G.day)delete N.told[k];N.marks=N.marks.filter(m=>G.day-m.day<NEWS.markDays)}
+  for(const k in N.told)if(N.told[k].day!==G.day)delete N.told[k];N.marks=N.marks.filter(m=>Clock.daysSince(m.day)<NEWS.markDays)}
 // who fought, in a sentence: a lord or your companion by name, the watch, a band by its chieftain, a beast, a caravan
 function newsWho(o){const k=o.mapKind,n=o.label();if(k==='patrol')return 'the '+n[0].toLowerCase()+n.slice(1);if(k==='band')return o.ld?o.ld.name+'’s band':'a band of '+n.toLowerCase();
   if(k==='monster'){const [b,pl]=beastN(o);return pl?b.toLowerCase():b[0].toLowerCase()+b.slice(1)}return k==='caravan'?'a caravan of '+o.from:n}
@@ -75,7 +75,7 @@ function newsThreat(o){
 }
 
 /* ---- the words (when you hear it) ---- */
-const newsWhen=it=>{const a=G.day-it.day;return a<=0?'today':a===1?'yesterday':a<=3?['two','three'][a-2]+' days back':'some days back'};
+const newsWhen=it=>{const a=Clock.daysSince(it.day);return a<=0?'today':a===1?'yesterday':a<=3?['two','three'][a-2]+' days back':'some days back'};
 // where, roughly: by an estate of its holding, by the holding, or to one side of it ("east of Millbrook")
 function newsWhere(it,road){const t=townBy(it.near);if(!t)return road?'on the road':'in the wilds';const d=Math.hypot(it.x-t.x,it.y-t.y);
   if(!road){let e=null,ed=NEWS.at;for(const [k,p] of Object.entries(bldSpots(t)))if(bldLv(t,k)>0){const q=Math.hypot(it.x-p.x,it.y-p.y);if(q<ed){ed=q;e=k}}
@@ -109,8 +109,8 @@ function newsKnows(src,it){
   if(src.land&&src.at[0]&&landHold(it.x,it.y)===src.at[0])return true;
   return src.at.some(p=>Math.hypot(p.x-it.x,p.y-it.y)<=src.r)}
 // what it could tell you new now: recent, known to it, not heard; weightiest and newest first, its own kinds first
-function rumourCands(src){const N=newsW(),score=it=>NEWS_KINDS[it.k].w+(src.prefer&&src.prefer.includes(it.k)?NEWS.prefer:0)-NEWS.age*(G.day-it.day);
-  return N.items.filter(it=>N.heard[it.id]==null&&G.day-it.day<NEWS.days&&newsKnows(src,it)).sort((a,b)=>score(b)-score(a)||b.id-a.id)}
+function rumourCands(src){const N=newsW(),score=it=>NEWS_KINDS[it.k].w+(src.prefer&&src.prefer.includes(it.k)?NEWS.prefer:0)-NEWS.age*Clock.daysSince(it.day);
+  return N.items.filter(it=>N.heard[it.id]==null&&Clock.daysSince(it.day)<NEWS.days&&newsKnows(src,it)).sort((a,b)=>score(b)-score(a)||b.id-a.id)}
 // heard: kept as heard (no source tells it as new again), its "?" on the map near it, and the log
 function rumourHear(it,src){const N=newsW(),t=rumourText(it),j=k=>(hash(it.id,k,7919)-.5)*2*NEWS.off;N.heard[it.id]=G.day;
   N.marks=N.marks.filter(m=>m.id!==it.id);N.marks.push({id:it.id,x:Math.round(it.x+j(1)),y:Math.round(it.y+j(2)),day:G.day,t});
@@ -132,8 +132,8 @@ function rumourHtml(r){
     (old.length?'<div class="lab">Heard before</div>'+old.slice(0,6).map(it=>line(it,'muted')).join(''):'')}
 
 /* ---- the marks on the map: a faint "?" by each rumour you heard (over the labels: render.js), fading over its last day ---- */
-const rumourMarks=()=>newsW().marks.filter(m=>G.day-m.day<NEWS.markDays);
-const rumourFade=m=>clamp(m.day+NEWS.markDays-G.day-G.clock/DAY,0,1);
+const rumourMarks=()=>newsW().marks.filter(m=>Clock.daysSince(m.day)<NEWS.markDays);
+const rumourFade=m=>clamp(m.day+NEWS.markDays-G.day-Clock.frac,0,1);
 const RUMOUR_COL='#cdb8ff';
 function drawRumourMarks(cam){const c=wuiArrow('ask',RUMOUR_COL);for(const m of rumourMarks()){const a=rumourFade(m),sx=Math.round(m.x-cam.x),sy=Math.round(m.y-cam.y);
   if(a<=0||sx<-10||sy<-10||sx>VW+10||sy>VH+16)continue;ctx.save();ctx.globalAlpha=.8*a;wuiPut(c,sx,sy-2,c.cx,c.tip);ctx.restore()}}

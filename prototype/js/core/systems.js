@@ -4,7 +4,7 @@
      Systems.add({name, order:{frame, hour, day}, frame(d, dt), hour(h), day(), ends})
    - frame(d, dt): each moment on the map (world.js updateWorld): d the world's time, dt the real one;
    - day(): once a day (world.js dayTick), after the day is counted;
-   - hour(h): once an hour (no system has one yet: the Clock, core/clock.js, will call Systems.hour);
+   - hour(h): once an hour (no system has one yet; the Clock, core/clock.js Clock.advance, calls Systems.hour as each hour begins);
    - order: one number for each phase the system works in, its place there (lowest first). Two systems never share a place:
      the world shares one Math.random, so the order is everything (the world fingerprints, tests/worldprint.js, hold it);
    - ends: its frame may end the world's frame (something opened: a page, a fight, a holding): when it returns true, the

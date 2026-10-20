@@ -19,8 +19,8 @@ if (!$Browser) {
 if (!$Browser) { throw 'No Chrome or Edge found.' }
 $projectRoot = Split-Path -Parent $PSScriptRoot
 if (!$Suites.Count) {
-  # every suite in tests/ (not tests/visual: screenshot scenes and reports, run by name)
-  $Suites = @(Get-ChildItem -LiteralPath $PSScriptRoot -Filter '*.js' | Where-Object BaseName -ne 'harness' | Sort-Object Name | ForEach-Object BaseName)
+  # every suite in tests/ (not tests/visual: screenshot scenes and reports, run by name; not the harness nor the test kit)
+  $Suites = @(Get-ChildItem -LiteralPath $PSScriptRoot -Filter '*.js' | Where-Object { $_.BaseName -notin @('harness', 'kit') } | Sort-Object Name | ForEach-Object BaseName)
 }
 foreach ($suite in $Suites) { if ($suite -notmatch '^(visual/)?\w+$') { throw "Invalid suite name: $suite" } }
 $runs = @(); foreach ($suite in $Suites) {

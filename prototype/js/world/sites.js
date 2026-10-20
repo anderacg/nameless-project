@@ -199,7 +199,7 @@ const awareChance=()=>{const A=RUIN.aware;return clamp(A[0]+A[1]*skill('scout')+
 const stealthChance=()=>{const S=RUIN.stealth;return clamp(S[0]+S[1]*P.attr.agi+(darkness()>.5?S[2]:0)+(partySize()<=RUIN.small?S[3]:-S[3]),.05,.9)};
 const loreChance=()=>clamp(RUIN.lore[0]+RUIN.lore[1]*P.attr.int,.05,.95);
 // the people of the land round it (its holding's, or the nearest), and the realm that cares what you do to them
-const ruinHold=s=>landHold(s.x,s.y)||nearestOf(s,TOWNS);
+const ruinHold=s=>landHold(s.x,s.y)||Spatial.nearestHolding(s.x,s.y);
 const ruinRealm=s=>{const h=ruinHold(s);return h&&h.owner&&h.owner!=='player'?h.owner:null};
 /* who moves into searched ruins: w (its weight), × clim (by the climate there), × land (held: on a holding's land; wild: off
    it); line (what you see); make(s, o, R): what they are (R: the ruin's cycle's seeded draws); page(s, o, r): their page

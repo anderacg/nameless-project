@@ -21,15 +21,15 @@ function letterDef(s){const L=letterOf(s),open=L&&!L.seal;
   return{n:open?'Opened letter':'Sealed letter',icon:'letter',col:open?'#d8c8a0':'#e8dcb8',seal:!open,d:L?'From the '+letterFac(L.fac)+' at '+L.from+', to the lord of '+L.to+'.':'A letter.'}}
 
 /* ---------- its contents, when the messenger comes: of the kinds there can be, by ENC_TUNE.letter.w ---------- */
-function letterMake(e){const x=ENC_TUNE.letter,f=e.fac,own=fiefsOf(f),home=townBy(e.home)||own[0]||nearestOf(e,TOWNS),others=own.filter(t=>t!==home);
+function letterMake(e){const x=ENC_TUNE.letter,f=e.fac,own=fiefsOf(f),home=townBy(e.home)||own[0]||Spatial.nearestHolding(e.x,e.y),others=own.filter(t=>t!==home);
   const from=others.length?others[rint(0,others.length-1)]:home,kinds=[];
   const ls=W.lords.filter(l=>l.fac===f&&!l.dead&&['march','siege','relieve'].includes(l.state)&&townBy(l.tgt));
   if(ls.length)kinds.push(['army',()=>{const l=ls[rint(0,ls.length-1)];return{to:home,lord:l.id,ln:l.name,tgt:l.tgt,n:l.troops.length}}]);
   const foes=enemiesOf(f).filter(g=>g!=='player'&&fiefsOf(g).length);
-  if(foes.length)kinds.push(['attack',()=>{const g=foes[rint(0,foes.length-1)];return{to:home,vs:g,tgt:nearestOf(home,fiefsOf(g)).name}}]);
+  if(foes.length)kinds.push(['attack',()=>{const g=foes[rint(0,foes.length-1)];return{to:home,vs:g,tgt:Spatial.nearest(fiefsOf(g),home.x,home.y).name}}]);
   const pals=FIDS.filter(g=>g!==f&&g!=='player'&&!W.dead[g]&&!atWar(f,g)&&fiefsOf(g).length);
   if(pals.length)kinds.push(['deal',()=>{const g=pals[rint(0,pals.length-1)],c=enemiesOf(f).find(c=>c!==g&&c!=='player'&&atWar(g,c))||enemiesOf(f).find(c=>c!==g&&c!=='player')||null;
-    return{to:nearestOf(e,fiefsOf(g)),with:g,vs:c,rel:relOf(f,g).s}}]);
+    return{to:Spatial.nearest(fiefsOf(g),e.x,e.y),with:g,vs:c,rel:relOf(f,g).s}}]);
   kinds.push(['news',()=>{const s=W.sites.filter(s=>s.scoutable&&!s.seen).sort((a,b)=>Math.hypot(a.x-home.x,a.y-home.y)-Math.hypot(b.x-home.x,b.y-home.y))[0];return{to:home,site:s?[s.tx,s.ty]:null}}]);
   let r=Math.random()*kinds.reduce((a,[k])=>a+x.w[k],0),pick=kinds[kinds.length-1];for(const q of kinds){r-=x.w[q[0]];if(r<=0){pick=q;break}}
   const k=pick[0],o=pick[1](),to=o.to;delete o.to;
@@ -47,7 +47,7 @@ function letterStale(L){
   if(L.kind==='army'){const l=W.lords.find(o=>o.id===L.lord);if(!l||l.dead)return 'its lord has fallen';if(l.tgt===L.tgt&&(l.state==='siege'||l.inside===L.tgt))return 'its lord has reached '+L.tgt;if(l.tgt!==L.tgt)return 'its lord rides elsewhere now'}
   if(L.kind==='attack'){const t=townBy(L.tgt);if(!t||t.owner!==L.vs)return L.tgt+' has changed hands';if(besieged(t))return 'the attack on '+L.tgt+' has come'}
   if(L.kind==='deal'&&relOf(L.fac,L.with).s!==L.rel)return 'the realms have settled it';
-  return G.day>=L.stale?'it is '+(G.day-L.day)+' days old':''}
+  return G.day>=L.stale?'it is '+Clock.daysSince(L.day)+' days old':''}
 // what it fetches: its worth × mul, less opened, little once stale
 const letterWorth=(L,mul)=>{const x=ENC_TUNE.letter;return Math.max(1,Math.round(L.worth*mul*(L.seal?1:x.opened)*(letterStale(L)?x.old:1)))};
 

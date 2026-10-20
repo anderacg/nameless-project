@@ -1,13 +1,12 @@
 'use strict';
 // Quests: holdings offer jobs that refresh weekly; bounties, beast hunts and clearances spawn or mark their targets and finish when
 // the deed is done; supplies, hunts and reinforcements are handed in; couriers pay on arrival; lords give war work; deadlines fail.
-window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);
-try{
- const t=T,G=t.G,P=t.P,W=t.W;try{localStorage.clear()}catch(e){}
- const done=()=>{while(G.mode==='perk')t.act('perk',G.perkOffer[0])};
- const panel=()=>document.getElementById('panel').innerHTML;
+Kit.suite(({ok})=>{
+ const t=T,G=t.G,P=t.P,W=t.W;Kit.fresh();
+ const done=()=>Kit.done();
+ const panel=Kit.panel;
  const army=()=>{P.troops={hum_knight:25,hum_long:15};P.hp=null;t.vitals()};
- const world=()=>{t.hidePanel();G.mode='world';G.modal=false;G.enc=null;G.town=null;G.encCool=0};
+ const world=()=>Kit.world({town:null,encCool:0});
  const win=()=>{army();t.act('auto');t.act('cont');done();world()};
  t.act('begin','soldier');W.critters=[];W.lords.forEach(l=>{l.x=-999;l.y=-999});
  const ash=t.townBy('Ashford'),near=x=>{W.lords.forEach(l=>{if(l.state==='siege')l.state='rest'});P.x=x.x;P.y=x.y+5;P.tx=null;world();G.encCool=99;G.lastTown=null};// lift any siege so the gates open; no roaming band may catch you at the gate
@@ -65,5 +64,4 @@ try{
  // save and the map
  world();const qq=t.makeQuest('bounty',ash);t.acceptQuest(qq);t.saveGame();P.quests=[];t.act('load');ok(P.quests.length===1&&P.quests[0].id===qq.id&&t.bandits.some(b=>b.qid===qq.id),'quests and their targets survive a reload');
  near(ash);P.y+=40;world();t.frame();ok(true,'the map draws quest markers');
-}catch(e){o.push('EXC '+e.message+' '+e.stack)}
-const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d)};
+});

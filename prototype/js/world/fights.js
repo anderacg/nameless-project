@@ -30,7 +30,7 @@ function startFight(A,B){
   const x=all.reduce((s,o)=>s+o.x,0)/all.length,y=all.reduce((s,o)=>s+o.y,0)/all.length,n=all.reduce((s,o)=>s+o.troops.length,0);
   const f=asFight({id:'f'+(++W.fightN),x,y,sides:[A.map(uidOf),B.map(uidOf)],t:0,n0:n,dur:FIGHT.base+FIGHT.per*n,acc:[0,0]});
   all.forEach(o=>{o.fight=f.id});W.fights.push(f);fightPlace(f);
-  if(Math.hypot(x-P.x,y-P.y)<vis()*1.5||all.some(o=>o.faction===P.fac||o.mine))log('Battle near '+nearestOf(f,TOWNS).name+': '+A.map(o=>o.label()).join(', ')+' against '+B.map(o=>o.label()).join(', ')+'.',all.some(o=>o.mine)?'bad':'');
+  if(Math.hypot(x-P.x,y-P.y)<vis()*1.5||all.some(o=>o.faction===P.fac||o.mine))log('Battle near '+Spatial.nearestHolding(f.x,f.y).name+': '+A.map(o=>o.label()).join(', ')+' against '+B.map(o=>o.label()).join(', ')+'.',all.some(o=>o.mine)?'bad':'');
   return f;
 }
 function joinFight(f,o,s){if(o.fight)return;f.sides[s].push(uidOf(o));o.fight=f.id;const k=o.troops.length;f.n0=(f.n0||0)+k;f.dur+=FIGHT.per*k;fightPlace(f)}
@@ -45,13 +45,13 @@ function sideFor(f,o){
 function routParty(o,winners){
   const k=o.mapKind,near=Math.hypot(o.x-P.x,o.y-P.y)<vis()*1.5;o.fight=null;
   if(k==='cparty'){const c=P.comps[o.cid];if(c){c.party=null;c.hurt=G.day+3;log(COMPS[o.cid].short+'’s party is broken. '+COMPS[o.cid].short+' limps back to you, wounded for 3 days.','bad')}return}
-  if(k==='lord'){if(o.state==='siege'&&townBy(o.tgt))newsRecord('relieved',townBy(o.tgt),{town:o.tgt,lord:o.name,fac:o.fac});newsRecord('lord',o,{lord:o.name,fac:o.fac});defeatLord(o);if(near||o.fac===P.fac)log(o.name+' is routed near '+nearestOf(o,TOWNS).name+'.',o.fac===P.fac?'bad':'')}
+  if(k==='lord'){if(o.state==='siege'&&townBy(o.tgt))newsRecord('relieved',townBy(o.tgt),{town:o.tgt,lord:o.name,fac:o.fac});newsRecord('lord',o,{lord:o.name,fac:o.fac});defeatLord(o);if(near||o.fac===P.fac)log(o.name+' is routed near '+Spatial.nearestHolding(o.x,o.y).name+'.',o.fac===P.fac?'bad':'')}
   else if(k==='band'){bandits=bandits.filter(x=>x!==o);chiefEscapes(o.ld)}// (its chieftain gets away)
   else if(k==='patrol')patrolBeaten(o);
   else if(k==='monster')beastRouted(o);
   else{o.gone=true;W.caravans=W.caravans.filter(x=>x!==o);const lord=winners.find(w=>w.mapKind==='lord'),band=winners.find(w=>w.mapKind==='band');
     newsRecord('caravan',o,{from:o.from,lord:lord?lord.name:'',band:band?1:0});// (news.js)
-    if(lord){const home=nearestOf(lord,fiefsOf(lord.fac));if(home){ensureEcon(home);for(const g in o.goods)home.stock[g]=(home.stock[g]||0)+o.goods[g]}}
+    if(lord){const home=Spatial.nearest(fiefsOf(lord.fac),lord.x,lord.y);if(home){ensureEcon(home);for(const g in o.goods)home.stock[g]=(home.stock[g]||0)+o.goods[g]}}
     else if(band)band.add('militia')// (it arms one more with the plunder)
     if(o.mine||o.fac===P.fac||near)log((lord?lord.name+' seizes':band?'Bandits plunder':'The enemy takes')+' a caravan of '+o.from+(o.mine?', one of yours':'')+'.',o.mine||o.fac===P.fac?'bad':'')}
 }
@@ -64,7 +64,7 @@ function endFight(f,win){
   lw.forEach((a,i)=>lw.slice(i+1).forEach(b=>changeLordRel(a,b,RELATION.together)));ll.forEach(a=>lw.forEach(b=>changeLordRel(a,b,RELATION.beaten)));
   newsFight(f,W0,L);L.forEach(o=>routParty(o,W0));W0.forEach(freeParty);// (the news of it before the beaten are gone: news.js)
   W.fights=W.fights.filter(x=>x!==f);
-  if(Math.hypot(f.x-P.x,f.y-P.y)<vis()*1.5&&W0.length&&L.length)log(W0.map(o=>o.label()).join(' and ')+' win'+(W0.length>1?'':'s')+' the battle near '+nearestOf(f,TOWNS).name+'.');
+  if(Math.hypot(f.x-P.x,f.y-P.y)<vis()*1.5&&W0.length&&L.length)log(W0.map(o=>o.label()).join(' and ')+' win'+(W0.length>1?'':'s')+' the battle near '+Spatial.nearestHolding(f.x,f.y).name+'.');
 }
 function updateFights(d){
   for(const f of [...W.fights]){
@@ -73,7 +73,7 @@ function updateFights(d){
     if(!f.sides[0].length||!f.sides[1].length){const win=f.sides[0].length?0:1;sideParties(f,win).forEach(freeParty);W.fights=W.fights.filter(x=>x!==f);continue}
     // lords and patrols nearby ride in
     for(const o of [...W.lords.filter(l=>!l.dead&&!l.inside&&!l.fight),...W.patrols.filter(p=>!p.fight)])
-      if(Math.hypot(o.x-f.x,o.y-f.y)<FIGHT.join){const s=sideFor(f,o);if(s>=0){joinFight(f,o,s);if(Math.hypot(f.x-P.x,f.y-P.y)<vis()*1.5)log(o.label()+' rides into the battle near '+nearestOf(f,TOWNS).name+'.')}}
+      if(Math.hypot(o.x-f.x,o.y-f.y)<FIGHT.join){const s=sideFor(f,o);if(s>=0){joinFight(f,o,s);if(Math.hypot(f.x-P.x,f.y-P.y)<vis()*1.5)log(o.label()+' rides into the battle near '+Spatial.nearestHolding(f.x,f.y).name+'.')}}
     // each side wears the other down by its share of the strength; the whole fight takes about dur
     // the pace is set by how many started (and joined): an even fight takes about dur, a lopsided one less
     const pw=[0,1].map(s=>sidePower(f,s)*lordTac(sideParties(f,s))),rate=(f.n0||sideTroops(f,0).length+sideTroops(f,1).length)/Math.max(1,f.dur);
@@ -90,7 +90,7 @@ function updateFights(d){
 
 /* you and a fight */
 function fightMeet(f){
-  G.fg=f;G.mode='dialog';P.tx=null;G.chase=null;const where=nearestOf(f,TOWNS).name;
+  G.fg=f;G.mode='dialog';P.tx=null;G.chase=null;const where=Spatial.nearestHolding(f.x,f.y).name;
   const side=s=>{const ps=sideParties(f,s),tr=sideTroops(f,s);return '<div class="row"><div class="info"><strong>'+ps.map(o=>{const fc=o.faction;return '<span'+(fc?' style="color:'+(fc==='player'?FACS.player.col:FACS[fc].col)+'"':'')+'>'+o.label()+' ('+o.troops.length+')</span>'}).join(', ')+'</strong><small>'+tr.length+' fighters · power '+rating(tr)+'</small></div><div class="acts">'+dlgBtn('fg-join',s,'Join them',joinWhy(f,s))+'</div></div>'};
   const p0=sidePower(f,0),p1=sidePower(f,1),share=Math.round(p0/Math.max(1,p0+p1)*100);
   showPanel('<h2>Battle near '+where+'</h2><p class="muted">The fight has gone on a while ('+Math.round(f.t/Math.max(.1,f.dur)*100)+'% of its likely length). Your power: '+partyPower()+'.</p>'+side(0)+
@@ -112,11 +112,11 @@ function routForce(f,mine){if(!f.src){defeatLord(f);return ''}if(f.kind==='garri
 function fightAct(a,arg){
   const f=G.fg;if(!f||!W.fights.includes(f)){closeDialog();return}
   if(a==='fg-join'){const s=+arg;if(joinWhy(f,s))return;
-    for(const o of sideParties(f,1-s)){const fc=o.faction;if(fc&&fc!=='player'&&!hostileTo(fc)){P.hostile[fc]=Math.max(P.hostile[fc]||0,G.day+20);addHonor(fc,-10,true);log('The '+FACS[fc].n+' turns hostile to you.','bad')}}
+    for(const o of sideParties(f,1-s)){const fc=o.faction;if(fc&&fc!=='player'&&!hostileTo(fc)){Timed.of(P,'hostile').extend(fc,20);addHonor(fc,-10,true);log('The '+FACS[fc].n+' turns hostile to you.','bad')}}
     // (against a beast: your battle with it, as when you meet it (monsters.js startMonster), the side you joined beside you)
     G.fg=null;const m=sideParties(f,1-s).find(o=>o.mapKind==='monster');
     if(m)return startEncounter({kind:'monster',ref:m,lv:m.lv,list:m.troops.slice(),mine:true,allies:sideParties(f,s).map(forceOf),foes:sideParties(f,1-s).filter(o=>o!==m).map(forceOf)});
-    startEncounter({kind:'field',ref:f,side:s,list:[],allies:sideParties(f,s).map(forceOf),foes:sideParties(f,1-s).map(forceOf),title:'Battle near '+nearestOf(f,TOWNS).name})}
+    startEncounter({kind:'field',ref:f,side:s,list:[],allies:sideParties(f,s).map(forceOf),foes:sideParties(f,1-s).map(forceOf),title:'Battle near '+Spatial.nearestHolding(f.x,f.y).name})}
 }
 onAct('fg-',fightAct);
 // you won the battle: the fight is over, your side goes on its way

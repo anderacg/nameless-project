@@ -100,7 +100,7 @@ class CaravanParty extends Party{
     if(a==='cv-sell'){const g=arg,p=c.pays(g),n=goodTake(g,Math.min(5,goodN(g)));if(n){P.gold+=p*n;c.goods[g]=(c.goods[g]||0)+n;train('trade',n*p/40);log('You sell '+n+' '+GOODS[g].n.toLowerCase()+' to the caravan.')}c.meet();updateHUD(true);return true}
     if(a==='cv-repeat'&&c.mine){c.repeat=!c.repeat;c.meet();return true}
     if(a==='cv-disband'&&c.mine){if(c.purse){P.gold+=c.purse;c.purse=0}const got=Object.keys(c.goods).map(g=>invAdd('good',g,c.goods[g])).reduce((x,y)=>x+y,0);W.caravans=W.caravans.filter(x=>x!==c);G.cv=null;G.mode='world';hidePanel();log('You disband the caravan'+(got?' and take '+got+' goods into your bag':'')+'.');updateHUD(true);return true}
-    if(a==='cv-attack'&&!c.mine&&P.fac!==c.fac){if(!hostileTo(c.fac)){P.hostile[c.fac]=Math.max(P.hostile[c.fac]||0,G.day+20);addHonor(c.fac,-10,true)}G.cv=null;
+    if(a==='cv-attack'&&!c.mine&&P.fac!==c.fac){if(!hostileTo(c.fac)){Timed.of(P,'hostile').extend(c.fac,20);addHonor(c.fac,-10,true)}G.cv=null;
       startEncounter({kind:'caravan',ref:c,list:c.troops.slice(),title:'Caravan of '+c.from});return true}
     return true;
   }
@@ -115,7 +115,7 @@ class CaravanParty extends Party{
   demands(hostile){
     const c=this;if(c.mine)return '';
     return hostile?(c.fears()?dlgBtn('cv-yield',null,'Demand their cargo'):''):dlgBtn('cv-toll',null,'Demand a toll',c.tolled?'Already paid':P.fac===c.fac?'Your employer':'')+
-      (playerFiefs().length?dlgBtn('cv-seize',null,'Attack and seize it for '+nearestOf(c,playerFiefs()).name,P.fac===c.fac?'Your employer':''):'');
+      (playerFiefs().length?dlgBtn('cv-seize',null,'Attack and seize it for '+Spatial.nearest(playerFiefs(),c.x,c.y).name,P.fac===c.fac?'Your employer':''):'');
   }
   demandAct(a){
     const c=this,worth=Object.keys(c.goods).reduce((s,g)=>s+GOODS[g].base*c.goods[g],0),from=townBy(c.from);
@@ -125,13 +125,13 @@ class CaravanParty extends Party{
       c.meet();updateHUD(true);return true}
     if(a==='cv-yield'&&hostileTo(c.fac)){if(Math.random()<.75){const txt=c.loot();G.cv=null;mood('cruel');notice('The caravan yields','The guards throw down their spears rather than die for another man\'s goods.'+txt,'good')}
       else{log('The guards will not give up the carts.','bad');G.cv=null;startEncounter({kind:'caravan',ref:c,list:c.troops.slice(),title:'Caravan of '+c.from})}return true}
-    if(a==='cv-seize'&&playerFiefs().length&&P.fac!==c.fac){if(!hostileTo(c.fac)){P.hostile[c.fac]=Math.max(P.hostile[c.fac]||0,G.day+20);addHonor(c.fac,-10,true)}G.cv=null;
+    if(a==='cv-seize'&&playerFiefs().length&&P.fac!==c.fac){if(!hostileTo(c.fac)){Timed.of(P,'hostile').extend(c.fac,20);addHonor(c.fac,-10,true)}G.cv=null;
       startEncounter({kind:'caravan',ref:c,seize:true,list:c.troops.slice(),title:'Caravan of '+c.from});return true}
     return false;
   }
   // a beaten caravan becomes yours: it drives its cargo to your nearest fief and is then yours to send again
   seize(){
-    const c=this,home=nearestOf(c,playerFiefs());if(!home)return c.loot();
+    const c=this,home=Spatial.nearest(playerFiefs(),c.x,c.y);if(!home)return c.loot();
     addRep(c.from,-8,true);// (the holding it came from resents it, before the carts become yours)
     Object.assign(c,{mine:true,fac:'player',home:home.name,to:home.name,dest:home.name,from:home.name,leg:'out',repeat:false,order:{},guards:Math.max(1,Math.floor(c.guards/2)),cool:4,purse:0});
     return ' Your soldiers take the carts and drive them to '+home.name+': '+cargoText(c)+'.';

@@ -81,12 +81,12 @@ function people(t,c){
   if(c.fs<1){t.pop=Math.max(10,t.pop-Math.ceil(t.pop*.03*(1-c.fs)));}
   else if(t.pros>40&&t.pop<cap){t.popF=(t.popF||0)+t.pop*.004*(t.pros/100);if(t.popF>=1){const k=Math.floor(t.popF);t.pop+=k;t.popF-=k}}
   let d=(c.sat*100-t.pros)*.08+(c.kinds>=3?.5:0)+[1,0,-1.5][t.tax==null?1:t.tax];
-  if(until(t,'turmoil'))d-=2;if(ruined(t))d-=3;if(besieged(t))d-=1.5;
+  if(Timed.of(t).has('turmoil'))d-=2;if(ruined(t))d-=3;if(besieged(t))d-=1.5;
   t.pros=clamp(t.pros+d,0,100);
   t.vol=Math.min(Math.round(t.pop/10),(t.vol||0)+t.pop/150*(t.pros/60));
 }
 // a day's taxes at the holding's rate (fiefs pay you; the rest pay their realm), plus market dues
-const taxOf=(t,rate)=>ruined(t)?0:Math.round(t.pop*TAX_RATE[rate==null?(t.tax==null?1:t.tax):rate]*(.4+t.pros/100)*(until(t,'turmoil')?.5:1)+3*bldLv(t,'market'));
+const taxOf=(t,rate)=>ruined(t)?0:Math.round(t.pop*TAX_RATE[rate==null?(t.tax==null?1:t.tax):rate]*(.4+t.pros/100)*(Timed.of(t).has('turmoil')?.5:1)+3*bldLv(t,'market'));
 
 const treas=f=>{if(W.treas[f]==null)W.treas[f]=TREAS0+60*fiefsOf(f).length;return W.treas[f]};
 // pay for something a realm wants: gold from its treasury, food from a holding's stock; false if it cannot (never in off mode)
@@ -109,7 +109,7 @@ function realmDay(){
     // armies eat from the realm's best-stocked holdings
     let hungry=0;for(const l of lords){const need=Math.ceil(l.troops.length/6),src=own.slice().sort((a,b)=>foodStock(b)-foodStock(a))[0];const got=src?takeFood(src.stock,need):0;if(got<need)hungry++}
     if(!light&&(W.treas[f]<0||hungry))for(const l of lords){if(l.troops.length>4&&(W.treas[f]<0||hungry&&Math.random()<.5)){const n=Math.max(1,Math.round(l.troops.length*.06));l.removeAny(n)}}
-    if(!light&&(W.treas[f]<0||hungry)&&(f===P.fac||Math.random()<.1)&&G.day%3===0)log('The '+FACS[f].n+(W.treas[f]<0?' cannot pay its soldiers':' cannot feed its armies')+'. Men desert.',f===P.fac?'bad':'')}
+    if(!light&&(W.treas[f]<0||hungry)&&(f===P.fac||Math.random()<.1)&&Clock.every(3))log('The '+FACS[f].n+(W.treas[f]<0?' cannot pay its soldiers':' cannot feed its armies')+'. Men desert.',f===P.fac?'bad':'')}
   W.tolls={};
 }
 function econDay(){

@@ -21,7 +21,7 @@ class Refugees extends WorldObject{
 const asRefugees=asClass(Refugees);
 const REFUGEE_CAP=density().refugees,REFUGEE_SPD=11;
 // why people would leave a holding, or '' if they stay
-function fleeReason(t){ensureEcon(t);return until(t,'sacked')?'sacked':until(t,'raided')?'raided':foodDays(t)<1?'hunger':besieged(t)?'siege':t.pros<25?'hardship':until(t,'turmoil')&&t.pros<45?'conquest':housingFull(t)?'crowded':''}
+function fleeReason(t){ensureEcon(t);return Timed.of(t).has('sacked')?'sacked':Timed.of(t).has('raided')?'raided':foodDays(t)<1?'hunger':besieged(t)?'siege':t.pros<25?'hardship':Timed.of(t).has('turmoil')&&t.pros<45?'conquest':housingFull(t)?'crowded':''}
 // where they go: the nearest holding not at war with theirs that is fed, unbesieged and clearly better off
 function refuge(t){
   let best=null,bd=1e9;const crowded=housingFull(t)&&fleeReason(t)==='crowded';
@@ -69,7 +69,7 @@ function refugeeMeet(r){
   showPanel('<div class="top"><h2>Refugees from '+r.from+'</h2><span class="muted">Bound for '+r.to+'</span></div>'+
     '<p>'+r.n+' '+RACES[r.race].n.toLowerCase()+' folk on the road, because '+REFUGEE_WHY[r.why]+'. They carry '+(Object.keys(r.goods).length?Object.keys(r.goods).map(g=>r.goods[g]+' '+GOODS[g].n.toLowerCase()).join(', ')+' and ':'')+(r.purse?'a few coins':'almost nothing')+'.</p><div class="btns">'+
     dlgBtn('rf-feed',null,'Share '+CONDUCT.feedRefugees.food+' food',r.fed?'Already fed':foodN()<CONDUCT.feedRefugees.food?'Not enough food':'')+
-    (mine.length&&townBy(r.to).owner!=='player'?dlgBtn('rf-settle',null,'Offer them a home in '+nearestOf(r,mine).name):'')+
+    (mine.length&&townBy(r.to).owner!=='player'?dlgBtn('rf-settle',null,'Offer them a home in '+Spatial.nearest(mine,r.x,r.y).name):'')+
     dlgBtn('rf-recruit',null,'Ask for volunteers ('+k+')',k<1?(partyRoom()<1?'Your band is full':'Too few of them'):r.asked?'Already asked':'')+
     dlgBtn('rf-rob',null,'Rob them',r.robbed?'Nothing left to take':'')+'</div>'+
     '<p class="muted">Kindness is remembered in '+r.from+' and '+r.to+'; robbing refugees shames you with both, and with their lords.</p>'+nav(null,['dlg-close',null,'Leave']));
@@ -79,7 +79,7 @@ function refugeeAct(a){
   const C=CONDUCT;
   if(a==='rf-feed'&&!r.fed&&foodN()>=C.feedRefugees.food){const c=C.feedRefugees;foodTake(c.food);r.fed=true;if(from)addRep(from.name,c.rep,true);if(to)addRep(to.name,c.repTo,true);if(from&&from.owner&&from.owner!=='player')addHonor(from.owner,c.honor,true);mood('kind');
     return notice('Fed','They bless your name. Reputation in '+r.from+' +'+c.rep+' and in '+r.to+' +'+c.repTo+'.','good')}
-  if(a==='rf-settle'){const home=nearestOf(r,playerFiefs().filter(t=>!besieged(t)));if(!home)return;r.to=home.name;const c=C.settleRefugees;if(from)addRep(from.name,c.rep,true);if(from&&from.owner&&from.owner!=='player')addHonor(from.owner,-c.honor,true);
+  if(a==='rf-settle'){const home=Spatial.nearest(playerFiefs().filter(t=>!besieged(t)),r.x,r.y);if(!home)return;r.to=home.name;const c=C.settleRefugees;if(from)addRep(from.name,c.rep,true);if(from&&from.owner&&from.owner!=='player')addHonor(from.owner,-c.honor,true);
     return notice('A new home','They turn toward '+home.name+'. '+r.n+' more people will live and pay taxes there. The '+(from&&from.owner&&from.owner!=='player'?FACS[from.owner].n+' grumbles at losing them (−'+c.honor+' honor).':'road is long.'),'good')}
   if(a==='rf-recruit'&&!r.asked){const k=Math.min(3,Math.floor(r.n/4),partyRoom());if(k<1)return;const lv=levyOf(r.race);if(!partyRoster(P).canAdd(lv))return;r.asked=true;P.add(lv,k);r.n-=k;if(from)addRep(from.name,-2,true);
     return notice('Volunteers',k+' of them take up arms with you as '+ST[lv].n.toLowerCase()+(k>1?'s':'')+'. Fewer will reach '+r.to+'.','good')}

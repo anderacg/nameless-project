@@ -55,8 +55,8 @@ function drawGrid(x0,y0,w,h,ox,oy,px){
 // how dark it is (0 day … 1 night): dusk over the first tenth of the night, full dark, then dawn over its last tenth
 // a picture redrawn once at the size it is shown, so the screen never scales it (true pixels); kept until the source changes
 function atSize(c,w,h){if(c._at&&c._at.width===w&&c._at.height===h)return c._at;return c._at=mkc(w,h,g=>g.drawImage(c,0,0,w,h))}
-function darkness(){const t=G.clock/DAY;if(t<NIGHT_AT)return 0;const n=(t-NIGHT_AT)/(1-NIGHT_AT);return n<.2?n/.2:n>.8?(1-n)/.2:1}
-const timeOfDay=()=>{const t=G.clock/DAY;return t<.07?'Dawn':t<.25?'Morning':t<.375?'Midday':t<NIGHT_AT?'Afternoon':t<NIGHT_AT+.1?'Dusk':t<.9?'Night':'Before dawn'};
+function darkness(){return Clock.darkness()}// (clock.js)
+const timeOfDay=()=>Clock.part();// (clock.js)
 // which way a lord, band or beast faces: the way it is going; standing still, the way it last went (at first, toward you); in a
 // fight, toward its foe (fights.js sets dir). Kept per mover between frames, not saved
 const FACE=new WeakMap();

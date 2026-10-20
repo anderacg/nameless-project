@@ -162,7 +162,7 @@ function updateWorld(dt){
   if(G.paused)return;
   fastWatch();peopleWatch();// (who you see: peopledrawer.js)
   const d=dt*G.speed*WORLD_PACE;lodTick(dt);
-  G.clock+=dt*G.speed*DAY/DAY_SECONDS;if(G.clock>=DAY){G.clock-=DAY;dayTick()}
+  Clock.advance(dt*G.speed*DAY/DAY_SECONDS);// (a new day: dayTick; a new hour: Systems.hour; core/clock.js)
   G.encCool=Math.max(0,G.encCool-d/WORLD_SCALE.ai.grace);regenVitals(d/DAY);
   // then every system's step in its order (core/systems.js; Systems.names('frame') lists them: a stay first, a holding you reach
   // last); one that opens something ends the frame

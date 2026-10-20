@@ -14,4 +14,4 @@ function addHonor(f,n,quiet){
   if(!quiet)log('The '+FACS[f].n+(n>0?' honors you':' resents you')+' ('+(n>0?'+':'')+n+' honor).',n>0?'good':'bad');
 }
 // deeds in the field count for the nearest holding within law.repNear tiles (data/world.js), and a little for its owner
-function repNear(x,y,n){const t=nearestOf({x,y},TOWNS);if(t&&Math.hypot(t.x-x,t.y-y)<WORLD_SCALE.law.repNear*TILE){addRep(t.name,n);addHonor(t.owner,Math.max(1,Math.round(n/3)),true)}}
+function repNear(x,y,n){const t=Spatial.nearestHolding(x,y);if(t&&Math.hypot(t.x-x,t.y-y)<WORLD_SCALE.law.repNear*TILE){addRep(t.name,n);addHonor(t.owner,Math.max(1,Math.round(n/3)),true)}}

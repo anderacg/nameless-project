@@ -43,7 +43,9 @@ js/core/              core.js (DOM, canvas, constants, helpers, the action regis
                       talents.js (TalentService and character talent commands), session.js (GameSession and new game), save.js,
                       systems.js (Systems: the world's day and frame, each system's work registered in its own file with its order),
                       saves.js (Saves: the world part of a save, each piece registered with its key, order, save, load and defaults)
-                      audio.js (the sound: context, buses, synth parts, the SFX cues), music.js (generative music, its moods, audioWatch)
+                      audio.js (the sound: context, buses, synth parts, the SFX cues), music.js (generative music, its moods, audioWatch);
+                      the core parts (doc/CORE_DESIGN.md, after data/): clock.js (Clock: the world's time), timed.js (Timed: states that
+                      last days), bus.js (worldOn/worldEmit), rng.js (rngOf: named random streams), spatial.js (Spatial: nearest, within)
 js/data/              tables only, no game logic: races, factions, units, monsters (incl. mythic ones like the dragon), critters,
                       matchups, gear, progression (pasts, skills, perks, companions), tree, holdings (the kinds of holding and their
                       classes), places (goods, holdings, camp spots),
@@ -122,6 +124,13 @@ The scripts are plain `<script>` files, not modules, so the page still works fro
 - **Encounters.** A new kind of fight adds its entry to `ON_WIN` in `battle/encounters.js`: what winning it pays and changes.
 
 ### Shared helpers and cleanup
+
+**The core parts** (doc/CORE_DESIGN.md, K2; loaded after `data/`, before `core/state.js`; checked by `tests/coreparts.js`):
+- `core/clock.js` `Clock`: the day, `hour`, `frac` (the share of today), `isNight`/`isDay`, `part()` (Dawn… Before dawn), `darkness()`, `worldTime()` (clock units), `hours()` (hours, the road's clock), `hoursSince`, `daysSince`, `every(n)`, `year()`/`dayOfYear()` (`CLOCK.year` 120 days), `passHours(h)` and `advance(u)` (updateWorld's step: `dayTick` on a new day, then `Systems.hour(h)` on each new hour). It reads `G.day`/`G.clock` in the old helpers' very arithmetic; `timeOfDay`, `darkness`, `worldTime`, `roadNow`, `roadDay`, `roadHours`, `dayPart`, `watchNow` stay as its aliases.
+- `core/timed.js` `Timed.of(record, field?)`: `has`, `end`, `daysLeft`, `set(state, days)`, `extend` (only later), `clear`, `onEnd` + `check()`; a view over the saved end-day fields (a holding's `fear`, `raided`, `sacked`, `turmoil`; `P.hostile[fac]`; `t.mem`), so saves are unchanged. `until(t,k)` (siege.js) is its alias.
+- `core/bus.js`: `worldOn(type, fn)`, `worldOff`, `worldEmit(type, data)`, the world's twin of `battleOn`; nothing emits yet (the story wave). The HUD is still redrawn by hand (`updateHUD(true)`): the suites call it and read `#stats` at once.
+- `core/rng.js`: `rngOf(name)`, a mulberry32 stream per name seeded by the world and the name (`next`, `int`, `chance`, `pick`, `weighted`; `Rng.states()`/`restore`); nothing draws from it or saves it yet.
+- `core/spatial.js` `Spatial`: `nearest(list, x, y, filter?)`, `nearestHolding(x, y, filter?)`, `within(list, x, y, r)`, and `index(list, cell)`, a grid that answers as the full scan does (ties too). `nearestOf` (realms.js) is its alias.
 
 `core/core.js` owns the generic numeric helpers (`sum`, `seeded`, `angGap`); the seeded RNG sequence and angle wrapping are shared unchanged by simulation, rendering and combat. `core/state.js` owns `partyRoom` alongside party size/capacity. It deliberately returns a negative value while over capacity. `core/roster.js` owns count/list conversion; companion and garrison displays reuse `countsOf` without modifying saved counts.
 
@@ -539,7 +548,7 @@ Implementation: `js/ui/developer.js`, `js/battle/lab.js`; the normal setup and s
 
 ## Running tests
 
-Each suite in `tests/` runs headless in Chrome or Edge by opening `Ashmark.html?test=<suite>`. Windows (PowerShell):
+Each suite in `tests/` runs headless in Chrome or Edge by opening `Ashmark.html?test=<suite>`. `tests/harness.js` loads `tests/kit.js` first, the shared helpers (`Kit.suite`, `Kit.begin`, `Kit.world`, `Kit.done`, `Kit.goHome`, `Kit.travel`, `Kit.frames`, `Kit.stub`/`rolls`/`seeded`, `Kit.meet`, `Kit.panel`/`text`, `Kit.q`/`qa`, `Kit.key`); it is not a suite, and the sweep leaves it out. Suites on it so far: `relations`, `reputation`, `leaders`, `quests`, `monsters`, `coreparts`. Windows (PowerShell):
 
 ```
 .\tests\run-tests.ps1                                  # every suite (about 4 min)

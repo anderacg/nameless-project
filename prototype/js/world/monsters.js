@@ -74,7 +74,7 @@ const beastMeets=m=>m.cool<=0&&fightsOnMap(m)&&bandits.find(b=>!b.qid&&!b.fight&
 // beaten in a fight on the map: cut down as it flees (DEFEND.rout of the pack, rounded up: a lone beast dies), and those left
 // break off, wounded, and slink back to its lair
 function beastRouted(m){m.fight=null;m.n=Math.max(0,m.n-Math.ceil(m.n*DEFEND.rout));m.pw=0;const near=Math.hypot(m.x-P.x,m.y-P.y)<vis()*1.5,nm=MONSTERS[m.id].n.toLowerCase(),many=/s$/.test(nm);
-  if(m.n<=0){W.monsters=W.monsters.filter(x=>x!==m);if(near)log('The '+nm+(many?' are':' is')+' slain near '+nearestOf(m,TOWNS).name+'.');return}
+  if(m.n<=0){W.monsters=W.monsters.filter(x=>x!==m);if(near)log('The '+nm+(many?' are':' is')+' slain near '+Spatial.nearestHolding(m.x,m.y).name+'.');return}
   m.cool=6;m.a=Math.atan2(m.hy-m.y,m.hx-m.x);m.t=3;if(near)log('The '+nm+(many?' break off and slink':' breaks off and slinks')+' away.')}
 function updateMonsters(d){return lodEach(W.monsters,BEAST_MIND,d,hiddenAt(P.x,P.y)?.55:1)}
 function startMonster(m){const M=MONSTERS[m.id];startEncounter({kind:'monster',ref:m,lv:m.lv,list:Array(m.n).fill(M.unit)})}
@@ -97,20 +97,20 @@ const LAIR_TILES={mountains:()=>T_MOUNT,hills:()=>T_HILL};
 const mythicIds=()=>Object.keys(MONSTERS).filter(id=>MONSTERS[id].mythic);
 const mythicOf=id=>W.monsters.find(m=>m.id===id);
 // a line of news about the mythic monsters abroad, for the realms page and tavern talk
-const mythicNews=(verb)=>W.monsters.filter(m=>MONSTERS[m.id].mythic).map(m=>cap1(an(MONSTERS[m.id].n.toLowerCase()))+' '+verb+' near '+nearestOf(m,TOWNS).name+'.').join(' ');
+const mythicNews=(verb)=>W.monsters.filter(m=>MONSTERS[m.id].mythic).map(m=>cap1(an(MONSTERS[m.id].n.toLowerCase()))+' '+verb+' near '+Spatial.nearestHolding(m.x,m.y).name+'.').join(' ');
 function spawnMythic(id){
   const M=MONSTERS[id],Y=M.mythic,lairs=Y.lair.map(l=>LAIR_TILES[l]());
   // its favorite ground first; the others only if that keeps failing; in the wilds, or late at a land's far edge (lairLand)
   for(let k=0;k<160;k++){const tx=rint(3,MW-4),ty=rint(3,MH-4),tt=tAt(tx,ty),ok=k<100?tt===lairs[0]:lairs.includes(tt);if(!ok)continue;
     const x=(tx+.5)*TILE,y=(ty+.5)*TILE;if(Math.hypot(x-P.x,y-P.y)<WORLD_SCALE.spawn.mythic||!lairLand(x,y,k>=130))continue;
     const m=asMonster({id,x,y,hx:x,hy:y,tx:x,ty:y,lv:1,n:1,t:0,a:0,cool:5,dir:1});W.monsters.push(m);
-    log(cap1(an(M.n.toLowerCase()))+' has been sighted near '+nearestOf(m,TOWNS).name+'!','bad');return m}
+    log(cap1(an(M.n.toLowerCase()))+' has been sighted near '+Spatial.nearestHolding(m.x,m.y).name+'!','bad');return m}
   W.mythic[id]={back:G.day+2};return null;
 }
 function mythicDay(){
   for(const id of mythicIds()){const M=MONSTERS[id],Y=M.mythic,m=mythicOf(id),st=W.mythic[id]||(W.mythic[id]={back:Y.first});
     if(!m){if(G.day>=st.back)spawnMythic(id);continue}
-    if(Y.scorch&&Math.random()<Y.scorch){const t=nearestOf(m,TOWNS);if(Math.hypot(t.x-m.x,t.y-m.y)<WORLD_SCALE.ai.mythicScorch){t.gar=Math.floor(t.gar/2);m.tx=t.x;m.ty=t.y-20;m.t=6;log('The '+M.n.toLowerCase()+' burns the fields of '+t.name+'. Its garrison is halved.','bad')}}}
+    if(Y.scorch&&Math.random()<Y.scorch){const t=Spatial.nearestHolding(m.x,m.y);if(Math.hypot(t.x-m.x,t.y-m.y)<WORLD_SCALE.ai.mythicScorch){t.gar=Math.floor(t.gar/2);m.tx=t.x;m.ty=t.y-20;m.t=6;log('The '+M.n.toLowerCase()+' burns the fields of '+t.name+'. Its garrison is halved.','bad')}}}
 }
 // one frame of a mythic monster: hunt you if it sees you, else roam; returns true if it starts a fight
 function roamMythic(m,d){

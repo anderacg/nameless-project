@@ -159,7 +159,7 @@ function syncLots(t){
 const buildSpeed=t=>Math.max(.6,Math.min(2,(t.pop||t.T.pop0)/t.T.pop0));
 const workDays=(t,lv)=>Math.max(1,Math.ceil(buildDays(lv)/buildSpeed(t)));
 // how far a holding's project has got, 0..1
-const workProg=t=>{const w=t.work;if(!w)return 0;const tot=Math.max(.01,w.done-(w.start!=null?w.start:w.done-buildDays(w.lv)));return Math.max(0,Math.min(1,1-(w.done-G.day-G.clock/DAY)/tot))};
+const workProg=t=>{const w=t.work;if(!w)return 0;const tot=Math.max(.01,w.done-(w.start!=null?w.start:w.done-buildDays(w.lv)));return Math.max(0,Math.min(1,1-(w.done-G.day-Clock.frac)/tot))};
 // a project begins: a new estate's building goes up on its spot (chosen, or the best free one) as a building site
 function startWork(t,k,lv,at){t.work={k,lv,done:G.day+workDays(t,lv),start:G.day};
   if(k==='house'){const R=seeded(G.day*31+t.seed+(t.lots||[]).length),type=typeFor(t,'house',R),n=lotSize(type),p=at||lotSpot(t,n,'open',1,9,R,{gap:'row',jit:.8});

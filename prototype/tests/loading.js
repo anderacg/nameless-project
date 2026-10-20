@@ -83,7 +83,7 @@ try{
  fresh();G.mode='world';G.modal=false;t.hidePanel();
  const TOWNS=t.TOWNS,n0=TOWNS.length,MW=t.MW,MH=t.MH,w3=J(TOWNS),save=s=>{G.mode='world';const k=LD.sync;LD.sync=true;t.saveGame(true,s);LD.sync=k;return t.readSlot(s)};
  {const s=save('1');
-  ok(s.world.own.length===n0&&s.world.own.every((r,i)=>r[2]===TOWNS[i].name&&Object.keys(r[3]).join()==='s,r,u,g,b,w,k,f,cr,wo,l,e'),'each holding saves its own record, today\'s tuple: owner, garrison, name, its state (nothing more while it is as the world made it)')}
+  ok(s.world.own.length===n0&&s.world.own.every((r,i)=>r[2]===TOWNS[i].name&&Object.keys(r[3]).join()==='s,r,u,g,b,w,k,f,cr,wa,l,e'),'each holding saves its own record, today\'s tuple: owner, garrison, name, its state (nothing more while it is as the world made it)')}
  // a load starts from the world as it first stood: nothing play left on a holding stays
  TOWNS[0].junk=1;TOWNS[3].grow=9;t.loadGame('1');G.quietEvents=true;
  ok(!('junk' in TOWNS[0])&&TOWNS[3].grow===t.readSlot('1').world.own[3][3].g&&J(TOWNS.map(z=>z.saveRec()))===J(t.readSlot('1').world.own),'a load puts each holding back as the world made it, then its record: nothing left from play that the save does not hold');

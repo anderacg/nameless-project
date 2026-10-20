@@ -1,5 +1,5 @@
 'use strict';
-// Loads tests/<suite>.js, runs its RUN(), and the suite writes results into <pre id="OUT"> for run-tests.sh to read.
+// Loads tests/kit.js (the shared helpers) and tests/<suite>.js, runs its RUN(), and the suite writes results into <pre id="OUT"> for run-tests.sh to read.
 window.ERR=[];
 addEventListener('error',e=>ERR.push(e.message+' @'+(e.filename||'').split('/').pop()+':'+e.lineno));
 // T.name reads any top-level game binding by name, including let/const ones that change (T.B, T.bandits)
@@ -24,5 +24,8 @@ function testGroup(role){
     if(document.getElementById('OUT'))window.requestAnimationFrame=()=>0;
   }catch(e){fail('EXC '+e.message+'\n'+e.stack)}};
   s.onerror=()=>fail('FAIL no suite named '+suite);
-  document.body.appendChild(s);
+  // the test kit first (tests/kit.js: the shared helpers, Kit.*), then the suite
+  const kit=document.createElement('script');kit.src='tests/kit.js';
+  kit.onload=()=>document.body.appendChild(s);kit.onerror=()=>fail('FAIL the test kit (tests/kit.js) did not load');
+  document.body.appendChild(kit);
 })();

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Runs the headless test suites in Chrome or Edge and prints each suite's results.
-# Usage: tests/run-tests.sh [-j N] [-s SEED] [-g] [suite ...]   (default: every suite in tests/ except the harness)
+# Usage: tests/run-tests.sh [-j N] [-s SEED] [-g] [suite ...]   (default: every suite in tests/ except the harness and the kit)
 #   -j N     run N suites at once (a browser and profile each)      -s SEED  seed Math.random (?seed=SEED)
 #   -g       the generated world (?gen=1: data/world.js WORLD.gen)
 # After each suite: "# N pass, N fail, N.N s"; at the end "# summary: ...". Exits non-zero if any line reads FAIL, EXC or ERR.
@@ -21,7 +21,7 @@ done
 [ -z "$browser" ] && { echo "No Chrome or Edge found."; exit 1; }
 page="$(pwd)/Ashmark.html"; command -v cygpath >/dev/null && page="$(cygpath -m "$page")"
 work="$(mktemp -d)"; trap 'rm -rf "$work"' EXIT
-suites=("$@"); [ ${#suites[@]} -eq 0 ] && for f in tests/*.js; do n=$(basename "$f" .js); [ "$n" != harness ] && suites+=("$n"); done
+suites=("$@"); [ ${#suites[@]} -eq 0 ] && for f in tests/*.js; do n=$(basename "$f" .js); [ "$n" != harness ] && [ "$n" != kit ] && suites+=("$n"); done
 query=""; [ -n "$seed" ] && query="&seed=$seed"; [ -n "$gen" ] && query="$query&gen=1"
 now() { date +%s%3N; }
 run_one() { # index suite slot: writes $work/<index>.out, then <index>.ms (a profile per slot, reused: a new one is slow to start)

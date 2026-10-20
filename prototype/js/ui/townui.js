@@ -13,7 +13,7 @@ const PLACES={trade:{n:'Market square',short:'Market',ico:'stall'},tavern:{n:'Ta
 // the lists where it holds tournaments
 function townPlaces(t){const ks=townTabs(t).map(x=>x[0]);if(t.kind!=='village'||lordsInside(t).length)ks.push('hall');if(t.T.tourney)ks.push('tourney');
   return Object.keys(PLACES).filter(k=>k!=='siege'&&ks.includes(k))}// (an attack on the whole holding: on its overview)
-const shut=t=>until(t,'sacked')?'sacked':until(t,'raided')?'raided':null;
+const shut=t=>Timed.of(t).has('sacked')?'sacked':Timed.of(t).has('raided')?'raided':null;
 // a quest of yours to report here (the Notice board's dot on the rail); the companions waiting in its tavern
 const questHere=t=>P.quests.some(q=>canReportAt(q,t)&&questReady(q));
 const compsHere=t=>Object.keys(COMPS).filter(id=>compTown(id)===t&&!P.comps[id]);
@@ -25,8 +25,8 @@ const townHead=(t,back)=>({fac:t.owner,name:t.name,sub:ownerTag(t),back});
 /* the overview: what the holding is, who holds it and how it fares, and what is notable here today */
 function townOverview(t){
   const f=FACS[t.owner],ls=lordsInside(t),cell=(n,v,c)=>'<span><b>'+n+'</b><span'+(c?' class="'+c+'"':'')+'>'+v+'</span></span>',fd=t.stock?foodDays(t):null,st=standingAt(t);
-  const notes=[besieged(t)&&['bad','Under siege.'],until(t,'sacked')&&['bad','Sacked: ruined for '+(t.sacked-G.day)+' more days.'],!until(t,'sacked')&&until(t,'raided')&&['bad','Raided: ruined for '+(t.raided-G.day)+' more days.'],
-    until(t,'turmoil')&&['gold','In turmoil after changing hands.'],t.stock&&foodDays(t)<3&&['bad','Hungry: food for '+foodDays(t)+' days.'],
+  const notes=[besieged(t)&&['bad','Under siege.'],Timed.of(t).has('sacked')&&['bad','Sacked: ruined for '+Timed.of(t).daysLeft('sacked')+' more days.'],!Timed.of(t).has('sacked')&&Timed.of(t).has('raided')&&['bad','Raided: ruined for '+Timed.of(t).daysLeft('raided')+' more days.'],
+    Timed.of(t).has('turmoil')&&['gold','In turmoil after changing hands.'],t.stock&&foodDays(t)<3&&['bad','Hungry: food for '+foodDays(t)+' days.'],
     ls.length&&['', 'Lords inside: '+ls.map(l=>l.name+' and '+l.troops.length+' soldiers').join(', ')+'.'],
     P.stay&&P.stay.town===t.name&&['good','Your band is staying here.'],
     questHere(t)&&['gold','A quest of yours is ready to report at the Notice board.'],

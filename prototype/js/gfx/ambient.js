@@ -60,7 +60,7 @@ function ambientCan(k,x,y){
   if(!inSight(x,y))return false;
   const tx=Math.floor(x/TILE),ty=Math.floor(y/TILE),t=tAt(tx,ty),c=climAt(x,y),w=ambWeather(),d=darkness(),near=f=>Math.hypot(x-P.x,y-P.y)<vis()*f;
   if(k==='flock')return d<.35;
-  if(k==='peck'){if(!(d<.35&&t===T_OPEN&&w!=='storm'))return false;const L=ambLot(tx,ty);if(L===2)return false;if(L===1)return true;const h=nearestOf({x,y},TOWNS);return !!h&&Math.hypot(h.x-x,h.y-y)<AMBIENT.peck.near*TILE}
+  if(k==='peck'){if(!(d<.35&&t===T_OPEN&&w!=='storm'))return false;const L=ambLot(tx,ty);if(L===2)return false;if(L===1)return true;const h=Spatial.nearestHolding(x,y);return !!h&&Math.hypot(h.x-x,h.y-y)<AMBIENT.peck.near*TILE}
   if(k==='crow')return d<.6;
   if(k==='gull')return d<.35&&ambShore(x,y,AMBIENT.gull.shore);
   if(k==='fly')return d<.1&&w==='clear'&&(c==='grass'||c==='swamp')&&t===T_OPEN&&ambLot(tx,ty)<2;
