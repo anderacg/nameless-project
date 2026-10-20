@@ -70,18 +70,19 @@ const letterHere=()=>G.town&&G.town.ref||null;
 function letterSellWhy(L,h){if(!h)return 'Only in a holding of a realm at war with the '+letterFac(L.fac)+'.';
   return h.owner&&h.owner!=='player'&&atWar(h.owner,L.fac)?'':(h.owner&&FACS[h.owner]?'The '+FACS[h.owner].n:h.name)+' is not at war with the '+letterFac(L.fac)+'.'}
 function letterGiveWhy(L,h){if(!h||h.name!==L.to)return 'Only at '+L.to+', where it is addressed.';return h.owner===L.toFac?'':L.to+' is no longer the '+letterFac(L.toFac)+'’s.'}
-const LETTER_VERBS=[
+// (its verbs: Choices, story/choice.js; need: why not here)
+const LETTER_VERBS=Choice.list([
   {icon:'scroll',label:'Break the seal',when:L=>!!L.seal,facts:()=>['you read it','it then sells and delivers for less'],tip:'Read what it says: its news goes on your map and in your log.',run:L=>letterRead(L)},
-  {icon:'gold',label:'Sell it to a rival',facts:L=>['+'+letterWorth(L,ENC_TUNE.letter.sell)+' gold','reputation there +'+ENC_TUNE.letter.rep.sell],why:L=>letterSellWhy(L,letterHere()),tip:'A realm at war with its sender pays for what it says.',
-    run:L=>{const x=ENC_TUNE.letter,h=letterHere(),g=letterWorth(L,x.sell);P.gold+=g;addRep(h.name,x.rep.sell,true);letterDrop(L);
-      return 'The steward of '+h.name+' pays '+g+' gold for the '+letterFac(L.fac)+'’s letter'+(L.seal?', its seal unbroken':'')+'.'}},
+  {icon:'gold',label:'Sell it to a rival',facts:L=>['+'+letterWorth(L,ENC_TUNE.letter.sell)+' gold','reputation there +'+ENC_TUNE.letter.rep.sell],need:L=>letterSellWhy(L,letterHere()),tip:'A realm at war with its sender pays for what it says.',
+    out:L=>{const x=ENC_TUNE.letter,h=letterHere(),g=letterWorth(L,x.sell);
+      return{gold:g,rep:[h&&h.name,x.rep.sell],call:()=>letterDrop(L),say:()=>'The steward of '+h.name+' pays '+g+' gold for the '+letterFac(L.fac)+'’s letter'+(L.seal?', its seal unbroken':'')+'.'}}},
   {icon:'house',label:'Deliver it',facts:L=>L.seen?['they know you robbed the rider','reputation −'+ENC_TUNE.letter.rep.seen]:['+'+letterWorth(L,ENC_TUNE.letter.deliver)+' gold','reputation +'+(L.seal?ENC_TUNE.letter.rep.deliver:Math.ceil(ENC_TUNE.letter.rep.deliver/2))],
-    why:L=>letterGiveWhy(L,letterHere()),ask:L=>L.seen?'Word of the robbery came ahead of you: they know who took it from their rider. Deliver it anyway?':null,tip:'Hand it to the lord it is addressed to, as if you found it on the road.',
-    run:L=>{const x=ENC_TUNE.letter,h=letterHere();letterDrop(L);
-      if(L.seen){addRep(h.name,-x.rep.seen,true);return 'The lord of '+h.name+' takes the letter, and his eyes narrow: word came ahead of you that you robbed his rider. (reputation −'+x.rep.seen+')'}
-      const g=letterWorth(L,x.deliver),r=L.seal?x.rep.deliver:Math.ceil(x.rep.deliver/2);P.gold+=g;addRep(h.name,r,true);
-      return 'The lord of '+h.name+' thanks you for the letter his rider lost'+(L.seal?'':', though he frowns at the broken seal')+', and pays you '+g+' gold.'}},
-  {icon:'fire',label:'Burn it',facts:()=>['it is gone','nobody learns what it said'],ask:()=>'Burn the letter? Nobody will learn what it said.',run:L=>{letterDrop(L);return 'The letter curls up in the fire. Nobody will learn what it said.'}}];
+    need:L=>letterGiveWhy(L,letterHere()),ask:L=>L.seen?'Word of the robbery came ahead of you: they know who took it from their rider. Deliver it anyway?':null,tip:'Hand it to the lord it is addressed to, as if you found it on the road.',
+    out:L=>{const x=ENC_TUNE.letter,h=letterHere(),drop=()=>letterDrop(L);
+      if(L.seen)return{call:drop,rep:[h&&h.name,-x.rep.seen],say:()=>'The lord of '+h.name+' takes the letter, and his eyes narrow: word came ahead of you that you robbed his rider. (reputation −'+x.rep.seen+')'};
+      const g=letterWorth(L,x.deliver),r=L.seal?x.rep.deliver:Math.ceil(x.rep.deliver/2);
+      return{call:drop,gold:g,rep:[h&&h.name,r],say:()=>'The lord of '+h.name+' thanks you for the letter his rider lost'+(L.seal?'':', though he frowns at the broken seal')+', and pays you '+g+' gold.'}}},
+  {icon:'fire',label:'Burn it',facts:()=>['it is gone','nobody learns what it said'],ask:()=>'Burn the letter? Nobody will learn what it said.',out:L=>({call:()=>letterDrop(L),say:'The letter curls up in the fire. Nobody will learn what it said.'})}]);
 // out of the bag
 function letterDrop(L){const i=letterSlot(L.id);if(i>=0)P.inv[i]=null;G.ltr.done=1}
 // Break the seal: you read it; its news on your map (the place it names, or round the holding it names) and in your log
@@ -94,8 +95,8 @@ function letterPage(){const g=G.ltr,L=g.L,F=letterFac(L.fac),old=letterStale(L),
   const body='<p>'+(L.seal?'A letter under the wax seal of the '+F+', taken from their rider on the road. It is addressed to the lord of '+L.to+'.':'The '+F+'’s letter to the lord of '+L.to+', its seal broken. It reads:')+'</p>'+
     (L.seal?'':'<blockquote class="ltr-text">'+letterText(L)+'</blockquote>')+
     pageFacts(['from '+L.from,old?'<span class="bad">stale: '+(L.seal?'whatever it says has surely happened by now':old)+'; worth little</span>':'its news is fresh',L.seen?'<span class="bad">someone saw you rob the rider</span>':'nobody saw you rob the rider']);
-  PAGE_SCREEN.show({ico:'scroll',title:L.seal?'Sealed letter':'Opened letter',sub:'The '+F+' to '+L.to+(h?' · in '+h.name:''),msg:g.msg,body,
-    acts:g.done?[]:LETTER_VERBS.map((c,i)=>[c,i]).filter(([c])=>!c.when||c.when(L)).map(([c,i])=>({icon:c.icon,label:c.label,facts:c.facts(L),act:'ltr-do',arg:i,why:c.why&&c.why(L)||'',tip:c.tip})),
+  CHOICE_PAGE.show({ico:'scroll',title:L.seal?'Sealed letter':'Opened letter',sub:'The '+F+' to '+L.to+(h?' · in '+h.name:''),msg:g.msg,body,
+    choices:LETTER_VERBS,subject:L,act:'ltr-do',done:g.done,
     back:['ltr-back',null,g.from==='town'?'Back':'Back to the bag'],close:['ltr-close',null,g.from==='town'?'Leave '+h.label:'Back to map']},'letter:'+L.id)}
 function letterAct(a,arg){
   if(a==='ltr-open'){const [id,from]=String(arg).split(':'),i=letterSlot(id);if(i<0||!['inv','town'].includes(G.mode))return;G.ltr={id,L:P.inv[i].L,from:from==='town'?'town':'inv',msg:'',done:0};G.mode='letter';letterPage();return}
@@ -103,9 +104,9 @@ function letterAct(a,arg){
   if(a==='ltr-back'){G.ltr=null;G.mode=g.from;if(g.from==='town')renderTown();else{const i=letterSlot(g.id);G.invSel=i>=0?i:null;G.invArm=null;renderInv()}return}
   if(a==='ltr-close'){G.ltr=null;if(g.from==='town'){G.mode='town';return act('leave')}G.mode='world';hidePanel();return}
   if(a==='ltr-again'){letterPage();return}
-  if(a==='ltr-do'&&!g.done){const i=parseInt(arg),c=LETTER_VERBS[i];if(!c||c.when&&!c.when(g.L)||c.why&&c.why(g.L))return;
-    const q=c.ask&&c.ask(g.L);if(q&&!String(arg).endsWith('!'))return railConfirm({title:c.label+'?',sub:g.L.seal?'Sealed letter':'Opened letter',text:q,facts:c.facts(g.L).filter(Boolean),confirm:['ltr-do',i+'!',c.label],back:['ltr-again',null,'Back']});
-    g.msg=c.run(g.L);log(g.msg);updateHUD(true);letterPage();railFocus(a,arg)}}
+  if(a==='ltr-do'&&!g.done){const i=parseInt(arg),c=CHOICE_PAGE.choose(LETTER_VERBS,arg,g.L);if(!c)return;
+    if(c.asks(g.L)&&!String(arg).endsWith('!'))return CHOICE_PAGE.confirm(c,g.L,{sub:g.L.seal?'Sealed letter':'Opened letter',act:'ltr-do',i,back:['ltr-again',null,'Back']});
+    g.msg=c.perform(g.L);log(g.msg);updateHUD(true);letterPage();railFocus(a,arg)}}
 onAct('ltr-',letterAct);
 // (the bag's detail on one: what it is, and its page)
 function letterDetail(k,s){const L=s.L,def=letterDef(s),old=letterStale(L);

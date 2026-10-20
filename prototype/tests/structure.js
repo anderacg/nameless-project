@@ -14,7 +14,7 @@ try{
  const seen={},dups=[];
  for(const f of srcs){const txt=get(f);for(const m of txt.matchAll(/^(?:function\s+([\w$]+)\s*\(|(?:const|let)\s+([\w$]+)\s*=)/gm)){const n=m[1]||m[2];if(seen[n]&&seen[n]!==f)dups.push(n+' ('+seen[n]+', '+f+')');else seen[n]=f}}
  ok(srcs.length>=40&&!dups.length,Object.keys(seen).length+' top-level names in '+srcs.length+' scripts, none declared twice'+(dups.length?': '+dups.join('; '):''));
- ok(srcs.every(s=>/^js\/(core|data|world|battle|scene|gfx|ui)\/[\w]+\.js$|^js\/main\.js$/.test(s)),'every script lives in its folder: core, data, world, battle, scene, gfx or ui');
+ ok(srcs.every(s=>/^js\/(core|data|story|world|battle|scene|gfx|ui)\/[\w]+\.js$|^js\/main\.js$/.test(s)),'every script lives in its folder: core, data, story, world, battle, scene, gfx or ui');
  const order=srcs.map(s=>s.replace(/^js\//,'')),dataFirst=order.findIndex(s=>!s.startsWith('core/core')&&!s.startsWith('data/'));
  ok(order[0]==='core/core.js'&&order.slice(1,dataFirst).every(s=>s.startsWith('data/'))&&order.slice(dataFirst).every(s=>!s.startsWith('data/')),'core loads first, then all the data, then the systems');
  // ---- the systems and save registries (core/systems.js, core/saves.js; doc/CORE_DESIGN.md K1): loaded before any system that

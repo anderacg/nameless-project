@@ -1,6 +1,6 @@
 # The story system: encounters, events, quests and everything that happens: design
 
-Status: **draft for the owner's review** (2026-10-20). Nothing here is built yet. This is a **refactor first** design (the owner's rule): it changes how the code is organised, not how the game plays, and the new features (escort, chain quests, tournaments, new jobs, the small encounters) are then built on it.
+Status: **approved** (the owner's answers, §8, 2026-10-20); building: **S0 built** (2026-10-20, §9). This is a **refactor first** design (the owner's rule): it changes how the code is organised, not how the game plays, and the new features (escort, chain quests, tournaments, new jobs, the small encounters) are then built on it.
 
 ## 1. The question: are they all the same thing?
 
@@ -195,7 +195,7 @@ A new kind is covered the day it's added (today's encounters suite already does 
 
 | Step | What | Size | Fingerprints |
 |---|---|---|---|
-| **S0** | Foundations: the bus (§3.6), the context (§3.2), Outcomes with their text (§3.5), Choices and the ChoicePage (§3.4); today's encounter choices expressed through them | M | unchanged |
+| **S0** | Foundations: the bus (§3.6), the context (§3.2), Outcomes with their text (§3.5), Choices and the ChoicePage (§3.4); today's encounter choices expressed through them. **Built 2026-10-20** (§9) | M | unchanged |
 | **S1** | The registry and `Happening` with the **Encounter** shape; today's encounters onto it (behaviours as small strategies: approach, stay, flee, walk, graze, bolt) | M | unchanged |
 | **S2** | **Incident** shape; today's road events onto it | S | unchanged |
 | **S3** | **Quest** shape: today's 9 kinds as subclasses; progress through the bus (`questNotify` goes); the news listens on the bus (`newsRecord` calls go) | M | unchanged |
@@ -231,3 +231,17 @@ S goes first because nearly every queued feature (escort, chains, tournaments, j
 2. **Named streams (S4):** accepted: one deliberate fingerprint re-record, so new content never shifts the world again.
 3. **Tests for the refactor steps:** the fingerprints plus each area's suites (no full sweep).
 4. **Order:** this wave first. A core wave (the systems registry, clock, timed states, event bus, save registry, spatial helper, stream helper, test kit) is proposed to come just before it: see [CORE_DESIGN.md](CORE_DESIGN.md) once written.
+
+## 9. Status
+
+**S0 (built 2026-10-20), behaviour-preserving:** the world fingerprint (`worldprint -Seed 1`) and the five battle fingerprint suites unchanged, no re-records; the encounters suite's seeded runs (12, 3) print the very same lines; a scratch probe run on the old code and the new (every road choice in 3 Insight levels and 2 seeds: its page, its confirm, what it did, the draws; the kinds' conditions at 4,600 spots and hours; the spot rules on 8,400 tiles; 120 picks; a long seeded journey; the sealed letter's verbs in the bag and in holdings; the shrine) printed the same, line for line.
+- **The context** (`js/story/context.js`): `storyCtx()`, a `StoryContext` (where: worked out once when first read; when and who: read live; the weather); one a frame inside `Story.frame` (the road's moment, `updateRoad`), fresh outside; `Story.at(tx, ty)` for a tile. The road's 24 kinds' `ok(c)` read it (`roadPick` passes one for the whole roll), the chance its `landKind`, and the spot rules (`ENC_ON`) a tile's. `roadLand` is its alias.
+- **Outcomes** (`js/story/outcome.js`): `Outcome.apply` (`applyOutcome`), `Outcome.facts` / `describeOutcome`, 27 handlers (gold, food, goods, gear, troops, lose, wounded, rep, honor, renown, morale, xp, train, sp, hours, vitals, mood, wrong, log, news, fight, chase, end, gone, start, band, call), applied in the order the keys are written, none drawing Math.random.
+- **Choices** (`js/story/choice.js`): `Choice` (when, need, ask, again, odds, out or run, facts) and the one `ChoicePage` (`CHOICE_PAGE`, on `PageScreen`: header, what you see, the choices, `nav()` with Back left and the way out right; its confirm).
+- **On them:** every road encounter's choices (`ROAD_ENC[k].acts` are Choices; `showRoad`, `roadAct`); the sealed letter's verbs (`LETTER_VERBS`, `letterPage`, `letterAct`); the shrine's page (`SHRINE_CHOICES`).
+  - Declared outcomes (`out`): 33 choices of 19 kinds (the traveller's Take his purse; the lure's Approach ready and Fight them; the peddler; the pilgrims' Pray, alms and coins; the deserters; the hunters; the child; the bard; the caravan; the ambush; the refugees' Escort and food; the warning; the cart in the mud; the thief's Chase, Return, Keep; the poacher; the funeral; the wedding; the beggar; the messenger's Rob), the letter's Sell, Deliver and Burn, the shrine's Pray and Offer.
+  - Hooks kept (a roll, a chase, their own state), returning outcomes for their plain part: the traveller's Tend (his care and gift), the lure's Tend and Take (the ambush springs) and Call them out (the scare roll), the gamblers' hands, the mine's search, the wisps, the pilgrims' Walk and pray (the hour first), the horse's catch; plain lines: Ask for news, Ask why they fled, the sheep's Round them up, the messenger's Read the news, the letter's Break the seal.
+- **The bus:** one new event, `encounter:ended` (`{e}`, from `RoadEncounter.over`); nobody listens yet.
+- **Facts kept by hand** (no visible change): 29 road choices, the letter's 4 verbs and the shrine's 2 say other words than their outcomes would (missing numbers, `honor`/`honour`, a cost written `15 gold` for `−15 gold`, the order, extra hints such as "Charisma helps"); `tests/story.js` lists them (INFO) for the owner. Written from the outcome already, the same words as before: the pilgrims' Take the coins, the ambush's Cut the baggage loose, the refugees' Give food, the warning's Listen.
+
+**Left for S1 and after:** the kinds registry and `Happening` with the Encounter shape (the hooks above become its small strategies); the hand-written facts once the owner picks the words; the other site pages (ruins, caves, camps, the hermit, the travellers) onto Choices; the road events (`world/events.js` `EVENTS[].ok`) onto the context with the Incident shape (S2); the emitters (`questNotify`, `newsRecord`) onto the bus (S3).

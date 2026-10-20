@@ -338,20 +338,27 @@ class Ruins extends Site{
     const o=this.occ,K=o&&RUIN_OCC[o.k];return !!(K&&K.act&&K.act(this,o,a,arg,done))}
 }
 
-// a shrine: pray once a week to recover, or leave an offering
+// a shrine: pray once a week to recover, or leave an offering (its two choices: story/choice.js Choices, s the shrine; its
+// page's key actions send site-pray with their place, 0 or 1)
+const SHRINE_CHOICES=Choice.list([
+  {icon:'altar',label:'Pray',facts:()=>['stamina, mana, health','morale +6'],need:s=>s.prayWait(),tip:'Kneel at the altar: your stamina and mana come back, some health, morale +6. Once a week.',
+    out:s=>({vitals:'rest',morale:{n:6,min:0,max:100},say:'You kneel at the '+s.name+'. Your strength returns.'})},
+  {icon:'gold',label:'Offer 25g',facts:()=>['fully restored','morale +10 · +40 XP'],need:s=>s.prayWait()||(P.gold<25?'Not enough gold':''),tip:'Leave 25 gold on the offering stone: fully restored, morale +10, +40 XP. Once a week.',
+    out:s=>({gold:-25,vitals:'full',morale:{n:10,min:0,max:100},xp:40,say:'You leave 25 gold at the '+s.name+'. Warmth runs through you. (+40 XP)'})}]);
 class Shrine extends Site{
   get screen(){return PAGE_SCREEN}
   setup(sites,clim){this.name=SHRINE_NAMES[terrAt(this.x,this.y)===T_FOREST?'forest':clim]}
   get empties(){return false}
   about(r){return '<p>The '+this.name+' stands alone in the '+r.name.toLowerCase()+'. Old offerings lie at its foot.</p><p class="muted">'+this.T.d+'</p>'}
-  page(r){const ready=G.day>=this.back,why=ready?'':'Wait '+(this.back-G.day)+' more days';
+  // (why you may not pray yet: '' once a week has passed)
+  prayWait(){return G.day>=this.back?'':'Wait '+(this.back-G.day)+' more days'}
+  page(r){const ready=G.day>=this.back;
     return{body:this.about(r)+'<ul class="tnotes"><li>Pray at the altar: your stamina and mana restored, some health, morale +6.</li><li>Leave 25 gold on the offering stone: fully restored, morale +10, +40 XP.</li><li>'+(ready?'You may pray: once a week.':'<span class="gold">You may pray again in '+(this.back-G.day)+' days.</span>')+'</li></ul>',
-      acts:[{icon:'altar',label:'Pray',act:'site-pray',arg:'0',facts:['stamina, mana, health','morale +6'],why,tip:'Kneel at the altar: your stamina and mana come back, some health, morale +6. Once a week.'},
-        {icon:'gold',label:'Offer 25g',act:'site-pray',arg:'1',facts:['fully restored','morale +10 · +40 XP'],why:why||(P.gold<25?'Not enough gold':''),tip:'Leave 25 gold on the offering stone: fully restored, morale +10, +40 XP. Once a week.'}]}}
+      acts:CHOICE_PAGE.buttons(SHRINE_CHOICES,this,'site-pray')}}
+  // (arg 1: the offering, anything else the prayer; then a week before the next)
   act(a,arg,done){
-    if(a!=='site-pray'||G.day<this.back)return false;const m=vitals();
-    if(arg==='1'){if(P.gold<25)return true;P.gold-=25;restoreVitals();P.morale=clamp(P.morale+10,0,100);gainXp(40);this.back=G.day+7;done('You leave 25 gold at the '+this.name+'. Warmth runs through you. (+40 XP)');return true}
-    P.sp=m[1];P.mp=m[2];P.hp=Math.min(m[0],P.hp+m[0]*.25);P.morale=clamp(P.morale+6,0,100);this.back=G.day+7;done('You kneel at the '+this.name+'. Your strength returns.');return true}
+    if(a!=='site-pray'||G.day<this.back)return false;const offer=arg==='1';
+    if(offer&&P.gold<25)return true;const m=SHRINE_CHOICES[offer?1:0].perform(this);this.back=G.day+7;done(m);return true}
 }
 
 /* a bandit lair, a hideout or a camp: a chieftain and his raiders. Walking up opens its page: what you can see from outside
