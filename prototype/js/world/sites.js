@@ -582,3 +582,5 @@ function siteAct(a,arg){
   s.act(a,arg,done);return true;
 }
 onAct('site-',siteAct);
+// its work in the world's day and frame (core/systems.js)
+Systems.add({name:'sites',order:{day:70,frame:60},day:siteDay,frame:updateSites,ends:true});

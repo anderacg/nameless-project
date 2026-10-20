@@ -163,3 +163,5 @@ function fiefEconAct(a,arg,t){
     const err=hireCaravan(t.name,v('cv-to'),cargo,+v('cv-guards')||3,v('cv-rep'));if(err)log(err,'bad');return true}
   return false;
 }
+// its work in the world's day and frame (core/systems.js)
+Systems.add({name:'economy',order:{day:110},day:econDay});

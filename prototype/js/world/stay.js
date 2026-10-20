@@ -101,3 +101,5 @@ function stayAct(a,arg){
 }
 onAct('sy-',stayAct);
 $('#staybar')&&$('#staybar').addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(b)act(b.dataset.act,b.dataset.arg)});
+// its work in the world's day and frame (core/systems.js) (a stay's moment ends the frame while it runs: stayTick)
+Systems.add({name:'stay',order:{frame:10},frame:d=>P.stay&&stayTick(d),ends:true});

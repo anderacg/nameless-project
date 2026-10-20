@@ -305,3 +305,6 @@ function estatePick(t,k){let m=ESTATE_OBJ.get(t);if(!m)ESTATE_OBJ.set(t,m={});co
 const drawEstates=(cam,V)=>drawLotGround(cam,V);
 const estateEnts=(ents,cam,V)=>lotEnts(ents,cam,V);
 onAct('es-',estateAct);
+// (the estates' fallen guards replaced from the holding's people, first thing each day; then the estates' own day)
+Systems.add({name:'estate guards',order:{day:10},day:()=>{for(const t of TOWNS)guardsDay(t)}});
+Systems.add({name:'estates',order:{day:120},day:estateDay});

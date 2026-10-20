@@ -158,3 +158,5 @@ function updateCaravans(d){
 }
 // every party's moment: true if one of them opened an encounter
 function updateParties(d){updateCParties(d);return updateBands(d)||updateLords(d)||updateCaravans(d)||updatePatrols(d)}
+// its work in the world's day and frame (core/systems.js) (every party's brain)
+Systems.add({name:'parties',order:{frame:100},frame:updateParties,ends:true});

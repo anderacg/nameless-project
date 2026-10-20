@@ -91,3 +91,5 @@ function captiveAct(a,arg){
   updateHUD(true);if(G.mode==='char')renderChar();
 }
 onAct('ct-',captiveAct);
+// its work in the world's day and frame (core/systems.js)
+Systems.add({name:'chieftains',order:{day:170},day:chiefDay});

@@ -42,10 +42,35 @@ function saveGame(quiet,slot){
   if(LOADING.sync||!SAVE_ZIP)return put(json);
   const p=SAVING=(SAVING||Promise.resolve()).then(()=>gzip64(json)).then(z=>JSON.stringify({...saveHead(d),z}),()=>json).then(put).then(ok=>{if(SAVING===p)SAVING=null;return ok});return p;
 }
-// the world part of a save: the world it is (map: made again from it on a load), the tiles play changed (edits: none yet), every
-// holding's own record (holdings.js saveRec), then the world's lists
-function worldSave(){return {v:SAVE_V,map:{gen:WM.gen,settings:WM.settings,sum:WM.sum},edits:[],seen:seenSave(),own:TOWNS.map(t=>t.saveRec()),rel:W.rel,dead:W.dead,lords:W.lords,exiles:W.exiles||[],mythic:W.mythic,monsters:W.monsters,sites:W.sites,
-  caravans:W.caravans,refugees:W.refugees,patrols:W.patrols,fights:W.fights,lrel:W.lrel||{},uidN:W.uidN||0,fightN:W.fightN||0,treas:W.treas,critters:W.critters,shops:W.shops||{},...roadSave(),...newsSave()}}
+// the world part of a save (the save registry, core/saves.js: every piece in its order): the world it is (map: made again from it
+// on a load), the tiles play changed (edits: none yet), what you have seen (fog.js), every holding's own record (holdings.js
+// saveRec), then the world's lists, the road's encounters (encounters.js) and the news (news.js), each once there is any
+function worldSave(){return Saves.save()}
+Saves.add({key:'v',        order:10,  save:()=>SAVE_V});
+Saves.add({key:'map',      order:20,  save:()=>({gen:WM.gen,settings:WM.settings,sum:WM.sum})});
+Saves.add({key:'edits',    order:30,  save:()=>[]});
+// (each holding the world made takes its record back, by name; those founded in that game are made again from theirs, after
+// them and in their order; once all are in, the lots' ground is laid again: lots.js occRebuild)
+Saves.add({key:'own',      order:50,  save:()=>TOWNS.map(t=>t.saveRec()),
+  load:own=>{for(const o of own)if(o[3].base)TOWNS.push(Holding.fromRec(o));else townBy(o[2]).loadRec(o)},settle:()=>occRebuild()});
+// the world's lists, kept as they stand (the parties and beasts made their kinds again on a load: asParty, asMonster)
+Saves.add({key:'rel',      order:60,  save:()=>W.rel,          load:v=>{W.rel=v}});
+Saves.add({key:'dead',     order:70,  save:()=>W.dead,         load:v=>{W.dead=v}});
+Saves.add({key:'lords',    order:80,  save:()=>W.lords,        load:v=>{W.lords=v.map(asParty)}});
+Saves.add({key:'exiles',   order:90,  save:()=>W.exiles||[],   load:v=>{W.exiles=v}});
+Saves.add({key:'mythic',   order:100, save:()=>W.mythic,       load:v=>{W.mythic=v}});
+Saves.add({key:'monsters', order:110, save:()=>W.monsters,     load:v=>{W.monsters=v.map(asMonster)}});
+Saves.add({key:'sites',    order:120, save:()=>W.sites,        settle:v=>{W.sites=v.map(siteOf);W.sites.forEach(s=>s.placed())}});
+Saves.add({key:'caravans', order:130, save:()=>W.caravans,     load:v=>{W.caravans=v.map(asParty)}});
+Saves.add({key:'refugees', order:140, save:()=>W.refugees,     load:v=>{W.refugees=v}});
+Saves.add({key:'patrols',  order:150, save:()=>W.patrols,      load:v=>{W.patrols=v.map(asParty)}});
+Saves.add({key:'fights',   order:160, save:()=>W.fights,       load:v=>{W.fights=v}});
+Saves.add({key:'lrel',     order:170, save:()=>W.lrel||{},     load:v=>{W.lrel=v}});
+Saves.add({key:'uidN',     order:180, save:()=>W.uidN||0,      load:v=>{W.uidN=v}});
+Saves.add({key:'fightN',   order:190, save:()=>W.fightN||0,    load:v=>{W.fightN=v}});
+Saves.add({key:'treas',    order:200, save:()=>W.treas,        load:v=>{W.treas=v}});
+Saves.add({key:'critters', order:210, save:()=>W.critters,     load:v=>{W.critters=v},settle:v=>{v.forEach(herdToFields)}});
+Saves.add({key:'shops',    order:220, save:()=>W.shops||{},    load:v=>{W.shops=v}});
 // does the world part fit this world (made: the holdings it made, by default the world's in): a record for each holding the world
 // made, the rest founded ones of a kind there is (read before anything is put back, so a save that doesn't fit leaves the game as
 // it was)
@@ -53,15 +78,9 @@ function worldFits(w,made){const names=new Set((made||MADE_HOLDINGS).map(h=>h.na
   for(const n of names)if(!own.some(o=>o[2]===n))bad('no record of '+n);
   for(const o of own){const x=o[3]||bad('a holding without its state'),k=x.base?x.base.kind:x.kind;
     if(!x.base!==names.has(o[2]))bad(o[2]+(x.base?' is founded twice':' is not in it'));if((x.base||x.kind)&&!HOLDING_TYPES[k])bad('no kind of holding called '+k)}}
-// the world part put back, on the world as it first stood (useWorld): each holding the world made takes its record back (by
-// name), those founded in that game are made again from theirs, after them and in their order; then the world's lists
-function worldLoad(w){
-  for(const o of w.own)if(o[3].base)TOWNS.push(Holding.fromRec(o));else townBy(o[2]).loadRec(o);
-  Object.assign(W,{treas:w.treas,rel:w.rel,dead:w.dead,lords:w.lords.map(asParty),exiles:w.exiles,mythic:w.mythic,
-    shops:w.shops,caravans:w.caravans.map(asParty),ships:[],refugees:w.refugees,patrols:w.patrols.map(asParty),fights:w.fights,
-    lrel:w.lrel,uidN:w.uidN,fightN:w.fightN,folk:[],critters:w.critters,monsters:w.monsters.map(asMonster)});
-  occRebuild();seenLoad(w.seen);W.sites=w.sites.map(siteOf);W.sites.forEach(s=>s.placed());W.critters.forEach(herdToFields);roadLoad(w.road);newsLoad(w.news);
-}
+// the world part put back, on the world as it first stood (useWorld): every piece in its order (Saves.load), the ships and the
+// workers out on the map left to be made again
+function worldLoad(w){W.ships=[];W.folk=[];Saves.load(w)}
 /* loading a save, as steps behind "Returning to {world}…" (loading.js runSteps): the save read (gunzipped: a step that waits);
    the world it was made in made again first when it is not the one in (another gen or other settings: session.js forgeSteps,
    the generator's stages); then, in one step, the save checked against that world (another checksum: another world version,
@@ -93,3 +112,5 @@ function applySave(d){
 }
 // delete a slot's save (the latest, if none is named)
 function wipeSave(slot){const s=slot||latestSlot();try{if(s)localStorage.removeItem(slotKey(s))}catch(e){}G.wipeArmed=false;G.resume=null;showTitle('load')}
+// the autosave, each day once every system has had its day (core/systems.js)
+Systems.add({name:'autosave',order:{day:220},day:()=>{saveGame(true)}});

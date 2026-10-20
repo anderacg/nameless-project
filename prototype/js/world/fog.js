@@ -25,6 +25,8 @@ function seenSave(){const S=seenArr(),b=[],put=n=>{for(;n>127;n>>>=7)b.push(n&12
 function seenLoad(str){fogReset();if(!str)return;try{const s=atob(str),S=W.seen;let i=0,v=0;
   for(let p=0;p<s.length;v^=1){let n=0,k=0,c;do{c=s.charCodeAt(p++);n|=(c&127)<<k;k+=7}while(c&128&&k<28);if(i+n>S.length)throw 0;if(v)S.fill(1,i,i+n);i+=n}
   if(i!==S.length)throw 0}catch(e){fogReset()}}
+// (what you have seen, in the world part of a save: the save registry, core/saves.js)
+Saves.add({key:'seen',order:40,save:seenSave,load:seenLoad});
 
 /* drawing: the battle fog's, over the ground and under the HUD (drawWorldFog, from render.js drawWorld): your sight clear;
    beyond it, from WFOG.ring of vis() out, the battle's dim (FOG.col, FOG.dark) over all the land you remember; over land you

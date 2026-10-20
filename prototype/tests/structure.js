@@ -1,6 +1,7 @@
 'use strict';
 // Structure: the rules that keep the code organized. No two scripts declare the same top-level name (a second `function`
-// would silently replace the first); the wiki loads the game's scripts in the game's order; the world generator draws no
+// would silently replace the first); the wiki loads the game's scripts in the game's order; the world's systems run their day
+// and frame in their order, and the world part of a save keeps its keys in theirs (core/systems.js, core/saves.js); the world generator draws no
 // Math.random and calls nothing that differs between browsers; every dialog's actions are owned
 // by exactly one system; every kind of encounter knows what winning it means; monsters are data (the dragon is one); and the
 // fief stores' "Take" no longer calls up a garrison soldier.
@@ -16,6 +17,14 @@ try{
  ok(srcs.every(s=>/^js\/(core|data|world|battle|scene|gfx|ui)\/[\w]+\.js$|^js\/main\.js$/.test(s)),'every script lives in its folder: core, data, world, battle, scene, gfx or ui');
  const order=srcs.map(s=>s.replace(/^js\//,'')),dataFirst=order.findIndex(s=>!s.startsWith('core/core')&&!s.startsWith('data/'));
  ok(order[0]==='core/core.js'&&order.slice(1,dataFirst).every(s=>s.startsWith('data/'))&&order.slice(dataFirst).every(s=>!s.startsWith('data/')),'core loads first, then all the data, then the systems');
+ // ---- the systems and save registries (core/systems.js, core/saves.js; doc/CORE_DESIGN.md K1): loaded before any system that
+ // registers in them, and the world's day and frame run in the order the loop called them by hand (the shared Math.random: the
+ // world fingerprints, tests/worldprint.js, hold it)
+ {const w0=order.findIndex(s=>s.startsWith('world/')),day='estate guards,band,realms,patrols,relations,monsters,sites,herds,sieges,lands,economy,estates,caravans,ships,companions,wounded,chieftains,refugees,caravan upkeep,fiefs,quests,autosave,road events',
+   frame='stay,capture,raids,lands,march,sites,road,fights,ships,parties,monsters,herds,refugees,folk,arrival';
+  ok(order.indexOf('core/systems.js')>=dataFirst&&order.indexOf('core/saves.js')>=dataFirst&&order.indexOf('core/systems.js')<w0&&order.indexOf('core/saves.js')<order.indexOf('core/save.js'),'the registries load after the data, before the systems');
+  ok(t.Systems.names('day').join()===day,'the day, in its order: '+t.Systems.names('day').join(', '));
+  ok(t.Systems.names('frame').join()===frame,'the frame, in its order: '+t.Systems.names('frame').join(', '))}
  const wiki=[...get('wiki.html').matchAll(/<script src="(js\/[^"]+)"/g)].map(m=>m[1]);
  ok(wiki.join()===srcs.filter(s=>!/ui\/input\.js|main\.js/.test(s)).join(),'the wiki loads the same scripts in the same order (all but input and main)');
  // ---- the generator (doc/WORLD_DESIGN.md §8.1, §15.2): its scripts in Phase 2's load order (worldmap.js last, its load line
@@ -80,6 +89,8 @@ try{
  ok(!W.monsters.includes(D)&&P.gold>=g0+t.MONSTERS.dragon.mythic.hoard.gold&&P.renown>=r0+t.MONSTERS.dragon.mythic.hoard.renown,'slaying it pays its hoard ('+(P.gold-g0)+' gold)');
  ok(W.mythic.dragon.back===G.day+t.MONSTERS.dragon.mythic.back,'and the next one comes '+t.MONSTERS.dragon.mythic.back+' days later');t.act('cont');
  t.saveGame(true);W.mythic={};t.loadGame();ok(W.mythic.dragon&&W.mythic.dragon.back===G.day+30,'the wait is saved');
+ {const keys=Object.keys(t.worldSave()).join(),want='v,map,edits,seen,own,rel,dead,lords,exiles,mythic,monsters,sites,caravans,refugees,patrols,fights,lrel,uidN,fightN,treas,critters,shops';
+  ok(keys===want||keys.startsWith(want+',')&&/^(,road)?(,news)?$/.test(keys.slice(want.length)),'the world part of a save keeps its keys in their order: '+keys)}
  // ---- the old collision: two handlers answered 'fief-take'
  const tw=t.townBy('Ashford');tw.owner='player';tw.gar=6;t.ensureEcon(tw);tw.stock.grain=50;G.mode='world';G.modal=false;t.hidePanel();G.lastTown=null;t.enterTown(tw);t.act('tab','fief');
  const gar=tw.gar,grain=t.goodN('grain');t.act('fief-take','grain:10');

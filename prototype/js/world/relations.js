@@ -54,3 +54,5 @@ function relAct(a,arg){
   lordMeet(l);
 }
 onAct('lr-',relAct);
+// its work in the world's day and frame (core/systems.js)
+Systems.add({name:'relations',order:{day:50},day:relDay});

@@ -163,3 +163,5 @@ function lordMeet(l){
     (rum?'<p>'+l.name+': &ldquo;'+rum+'&rdquo;</p>':'')+relHtml(l)+(l.inside?'<p class="muted">Holding court in '+l.inside+', with '+l.troops.length+' soldiers quartered alongside the garrison.</p>':'')+lordJobHtml(l)+'<div class="btns">'+(P.fac===l.fac||l.inside?'':'<button class="btn" type="button" data-act="lord-attack">Attack</button>')+'</div>'+
     (P.fac===l.fac||l.inside?'':'<p class="muted">Attacking makes the '+f.n+' hostile to you for 20 days.</p>')+nav(null,['lord-leave',null,'Leave']));
 }
+// its work in the world's day and frame (core/systems.js)
+Systems.add({name:'realms',order:{day:30},day:worldDay});

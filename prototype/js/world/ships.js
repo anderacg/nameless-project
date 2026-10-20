@@ -146,3 +146,5 @@ function shipSprite(o){
 }
 // every ship in sight (Ship draw)
 function drawShips(ents,cam,V){for(const s of W.ships)asShip(s).draw(ents,cam,V)}
+// its work in the world's day and frame (core/systems.js)
+Systems.add({name:'ships',order:{day:140,frame:90},day:shipDay,frame:updateShips});

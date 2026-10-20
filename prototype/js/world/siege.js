@@ -244,3 +244,8 @@ function fiefAct(a,arg,t){
   return true;
 }
 onAct('sg-',siegeAct);onAct('cap-',captureAct);
+// its work in the world's day and frame (core/systems.js) (a capture waiting opens before anything else moves)
+Systems.add({name:'capture',order:{frame:20},frame:()=>{if(G.capture&&!G.modal){showCapture();return true}},ends:true});
+Systems.add({name:'raids',order:{frame:30},frame:raidTick});
+Systems.add({name:'sieges',order:{day:90},day:siegeDay});
+Systems.add({name:'fiefs',order:{day:200},day:fiefDay});

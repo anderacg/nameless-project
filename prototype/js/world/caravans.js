@@ -202,3 +202,6 @@ function caravanSprite(col,f){
 // drover: CaravanParty.pick)
 const caravanCol=c=>c.fac==='player'||!FACS[c.fac]?FACS.player.col:FACS[c.fac].col,caravanPic=c=>caravanSprite(caravanCol(c));
 function drawCaravans(ents,cam,V){for(const c of W.caravans)c.draw(ents,cam,V)}
+// its work in the world's day and frame (core/systems.js)
+Systems.add({name:'caravans',order:{day:130},day:caravanDay});
+Systems.add({name:'caravan upkeep',order:{day:190},day:caravanUpkeep});

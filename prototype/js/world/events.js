@@ -22,3 +22,5 @@ function roadEvent(){
   const ok=EVENTS.filter(e=>e.ok());let r=Math.random()*ok.reduce((a,e)=>a+e.w,0),ev=ok[0];for(const e of ok){r-=e.w;if(r<=0){ev=e;break}}
   if(!ev)return;const [m,c]=ev.run();log(m,c);
 }
+// the day's last word: now and then an event on the road, never while you stay somewhere (core/systems.js)
+Systems.add({name:'road events',order:{day:230},day:()=>{if(!P.stay&&Math.random()<ROAD_EVENT_DAY)roadEvent()}});

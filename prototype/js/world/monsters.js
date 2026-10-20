@@ -134,3 +134,5 @@ function mythicSlain(m,res){
   log('The '+M.n.toLowerCase()+' is slain! Your name rings across Ashmark.','gold');
   return txt;
 }
+// its work in the world's day and frame (core/systems.js)
+Systems.add({name:'monsters',order:{day:60,frame:110},day:monsterDay,frame:updateMonsters,ends:true});

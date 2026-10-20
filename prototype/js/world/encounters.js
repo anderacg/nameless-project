@@ -758,6 +758,8 @@ function roadAct(a,arg){const e=G.road;if(G.mode!=='road'||!e)return;const D=e.D
     if(!c.again){e.done=1;roadDone(e)}G.roadMsg=m;log(m);showRoad();railFocus(a,arg)}}
 onAct('enc-',roadAct);
 
-/* ---------- the save: W.road, once there is one (absent: none, as every save before it) ---------- */
-const roadSave=()=>W.road?{road:{...W.road,on:W.road.on.filter(e=>!e.gone)}}:{};
-function roadLoad(r){W.road=r||null;if(r)r.on.forEach(asRoadEnc)}
+/* ---------- the save: W.road, once there is one (absent: none, as every save before it; the save registry, core/saves.js) ---------- */
+Saves.add({key:'road',order:230,defaults:null,save:()=>W.road?{...W.road,on:W.road.on.filter(e=>!e.gone)}:undefined,load:r=>{W.road=r;if(r)r.on.forEach(asRoadEnc)}});
+const roadSave=()=>Saves.saveOf('road');
+// its work in the world's day and frame (core/systems.js) (the travel, then each encounter on the road)
+Systems.add({name:'road',order:{frame:70},frame:updateRoad,ends:true});

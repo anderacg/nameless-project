@@ -92,3 +92,5 @@ function refugeeAct(a){
 // (a refugee on the map: people.js refugeeSprite)
 function drawRefugees(ents,cam,V){for(const r of W.refugees)asRefugees(r).draw(ents,cam,V)}
 onAct('rf-',refugeeAct);
+// its work in the world's day and frame (core/systems.js)
+Systems.add({name:'refugees',order:{day:180,frame:130},day:refugeeDay,frame:updateRefugees,ends:true});

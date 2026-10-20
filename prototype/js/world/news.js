@@ -141,6 +141,7 @@ function drawRumourMarks(cam){const c=wuiArrow('ask',RUMOUR_COL);for(const m of 
 function rumourTip(wx,wy){const m=rumourMarks().filter(m=>rumourFade(m)>0&&Math.abs(m.x-wx)<=6&&wy>=m.y-16&&wy<=m.y-2)[0];
   return m?'<b>A rumour</b><small>'+m.t+'</small><small class="muted">Heard on day '+m.day+'</small>':''}
 
-/* ---- the save: W.news once there is any (none: as every save before it) ---- */
-const newsSave=()=>{const N=W.news;return N&&(N.items.length||N.marks.length||Object.keys(N.heard).length||Object.keys(N.told).length)?{news:N}:{}};
-function newsLoad(n){W.news={items:[],n:0,heard:{},told:{},marks:[],...(n||{})}}
+/* ---- the save: W.news once there is any (none: as every save before it; the save registry, core/saves.js) ---- */
+Saves.add({key:'news',order:240,defaults:{items:[],n:0,heard:{},told:{},marks:[]},
+  save:()=>{const N=W.news;return N&&(N.items.length||N.marks.length||Object.keys(N.heard).length||Object.keys(N.told).length)?N:undefined},load:n=>{W.news=n}});
+const newsLoad=n=>Saves.loadOf('news',n);

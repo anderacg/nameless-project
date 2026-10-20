@@ -162,3 +162,5 @@ function drawQuestMarks(cam){
   for(const q of P.quests){const g=questGoal(q);if(!g)continue;const sx=Math.round(g.x-cam.x),sy=Math.round(g.y-cam.y);
     if(sx<-10||sy<-10||sx>VW+10||sy>VH+10)continue;txt(q.done||questReady(q)?'?':'!',sx,sy-24+Math.round(Math.sin(t)*2),'#ffe040','center')}
 }
+// its work in the world's day and frame (core/systems.js)
+Systems.add({name:'quests',order:{day:210},day:questDay});

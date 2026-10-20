@@ -141,3 +141,5 @@ class Fight extends WorldObject{
 // (a fight from a save is plain data until the map asks)
 const asFight=asClass(Fight);
 function drawFights(ents,cam,V){for(const f of W.fights)asFight(f).draw(ents,cam,V)}
+// its work in the world's day and frame (core/systems.js)
+Systems.add({name:'fights',order:{frame:80},frame:updateFights});

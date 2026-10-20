@@ -88,3 +88,5 @@ function patrolWon(e,slain){const p=e.ref;p.troops=p.troops.slice(0,Math.max(0,e
 
 /* on the map: guards on foot behind their banner */
 // drawn with every party (render.js drawParties; its look: parties.js)
+// its work in the world's day and frame (core/systems.js)
+Systems.add({name:'patrols',order:{day:40},day:patrolDay});

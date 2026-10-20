@@ -47,3 +47,11 @@ The same few patterns are re-written all over the code (counted 2026-10-20):
 | **K2: time, states and helpers** | clock, timed states, event bus, random streams, spatial helper, test kit | `core/clock.js`, `core/timed.js`, `core/bus.js`, `core/rng.js`, `core/spatial.js`, `tests/kit.js`, the call sites of `until(…)` and the time helpers outside `world.js` |
 
 Then the story wave (S0–S5), on these.
+
+## 5. Status
+
+| Part | Status |
+|---|---|
+| Systems registry | **built (K1, 2026-10-20)**: `core/systems.js`. 23 day and 15 frame systems, each registered in its own file (`Systems.add`); `dayTick` and `updateWorld` run `Systems.day()` and `Systems.frame()` in today's exact order (fingerprints unchanged; `tests/structure.js` pins the order). `Systems.hour()` is ready, not called yet: the Clock (K2) calls it |
+| Save registry | **built (K1, 2026-10-20)**: `core/saves.js`. The world part of a save is 24 pieces (`Saves.add`: `seen` in fog.js, `road` in encounters.js, `news` in news.js, the rest in save.js); the saved JSON is byte-identical (W7, B2 unchanged); defaults merged on load, then a settle pass (lots, sites, herds). The envelope (`P`, day, clock, speed, bandits…) stays in `saveGame` / `applySave` |
+| Event bus, clock, timed states, random streams, spatial helper, test kit | K2 |

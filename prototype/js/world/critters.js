@@ -142,3 +142,5 @@ function critterSprite(id,f){f=(f||0)%PX.MAP_STEPS;const k='cr'+id+f;if(spr[k])r
   const D=CRITTERS[id],T=CRITTER_MAP[id],R=PX.ramp(D.col),rows=T.rows.concat(PX.mapLegs(T.legs[0],T.legs[1],f)),g=pgrid(Math.max(...rows.map(r=>r.length))+2,rows.length+2),
     col={h:R[0],H:R[1],d:R[2],k:R[3],w:'#f4f0e8',e:'#1a1410',n:'#e8a0a0',b:'#e8b94a',y:'#d8963a',r:'#d83a2a',a:'#d8c8a0',o:'#a89a7a',s:D.spots||R[3],...(T.x||{})};
   rows.forEach((r,y)=>[...r].forEach((c,x)=>{if(col[c])pset(g,x+1,y+1,col[c])}));poutline(g);return spr[k]=cellOf(pcanvas(g))}
+// its work in the world's day and frame (core/systems.js)
+Systems.add({name:'herds',order:{day:80,frame:120},day:critterDay,frame:updateCritters,ends:true});

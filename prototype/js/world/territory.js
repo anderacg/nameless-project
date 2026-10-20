@@ -131,3 +131,5 @@ function landMiniCv(){
   landFresh();if(landMini&&landMini.ver===landVer)return landMini;
   landMini=mkc(MW,MH,g=>{for(let k=0;k<LAND.length;k++){const i=LAND[k];if(i<0)continue;rect(g,landCol(TOWNS[i].owner),k%MW,Math.floor(k/MW),1,1)}});landMini.ver=landVer;return landMini;
 }
+// its work in the world's day and frame (core/systems.js)
+Systems.add({name:'lands',order:{day:100,frame:40},day:landDay,frame:landWatch});

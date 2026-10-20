@@ -97,3 +97,5 @@ function compDay(){
     if(c.role==='scout'&&compInBand(id))compTrain(id,'scout',3);if(c.role==='surgeon'&&compInBand(id))compTrain(id,'med',2)}
 }
 // on the map: drawn with every party (render.js drawParties; its look: parties.js)
+// its work in the world's day and frame (core/systems.js)
+Systems.add({name:'companions',order:{day:150},day:compDay});

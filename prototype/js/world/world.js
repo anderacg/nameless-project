@@ -124,8 +124,15 @@ function survive(){
 // your troops' average Morale (matchups.js unitMoraleOf), by their numbers; null with none
 const PARTY_MOR={drift:.1};
 function bandNerve(){let n=0,sum=0;for(const k in P.troops){const c=P.troops[k]||0;if(c>0&&ST[k]){n+=c;sum+=c*unitMoraleOf(ST[k])}}return n?sum/n:null}
+// a new day: counted, then every system's day in its order (core/systems.js; Systems.names('day') lists them: the estates'
+// guards and your band first, the autosave and a road event last)
 function dayTick(){
-  G.day++;for(const t of TOWNS)guardsDay(t);// (estates' fallen guards replaced from the holding's people: estates.js)
+  G.day++;
+  Systems.day();
+}
+// your band's day: wages and food (spoiling, a varied larder), quarrels, desertion, the land's price, morale; a new band on the
+// roads now and then; your fame; a realm's pay
+function bandDay(){
   const cnt=troopCount()+woundedN()+cparties().reduce((a,p)=>a+p.troops.length,0),wage=Math.ceil(cnt*.5+mountedN()*.5)+2*compCount(),eat=eatPerDay();
   if(wage>0){if(P.gold>=wage)P.gold-=wage;else{P.gold=0;P.morale-=6;log('You cannot pay your troops. Morale falls.','bad');mood('unpaid')}}
   if(foodN()>=eat)foodTake(eat);else{foodTake(eat);P.morale-=8;log('Your band goes hungry. Buy food in a town, or hunt.','bad');mood('hungry')}
@@ -142,9 +149,6 @@ function dayTick(){
   if(bandits.length<BANDITS&&Math.random()<.6)spawnBandit(false);
   if(P.renown>=250&&!G.rankSeen){G.rankSeen=1;log('Your name carries across Ashmark. A throne is within reach.','gold')}
   if(P.fac){P.gold+=troopCount();addHonor(P.fac,1,true)}
-  worldDay();patrolDay();relDay();monsterDay();siteDay();critterDay();siegeDay();landDay();econDay();estateDay();caravanDay();shipDay();compDay();woundedDay();chiefDay();refugeeDay();caravanUpkeep();fiefDay();questDay();
-  saveGame(true);
-  if(!P.stay&&Math.random()<ROAD_EVENT_DAY)roadEvent();
 }
 /* the speed you set holds till you change it (the owner, 2026-10-19): no drop to 1x on arriving, on danger in sight, or when an
    event or a window opens (windows pause the map anyway). dangerInSight stays for whoever asks what is about */
@@ -160,14 +164,18 @@ function updateWorld(dt){
   const d=dt*G.speed*WORLD_PACE;lodTick(dt);
   G.clock+=dt*G.speed*DAY/DAY_SECONDS;if(G.clock>=DAY){G.clock-=DAY;dayTick()}
   G.encCool=Math.max(0,G.encCool-d/WORLD_SCALE.ai.grace);regenVitals(d/DAY);
-  if(P.stay&&stayTick(d))return;
-  if(G.capture&&!G.modal){showCapture();return}
-  raidTick(d);landWatch();
+  // then every system's step in its order (core/systems.js; Systems.names('frame') lists them: a stay first, a holding you reach
+  // last); one that opens something ends the frame
+  Systems.frame(d,dt);
+}
+// your march: a siege you leave behind is lifted; whatever you chase, then your step toward where you go (true: you reached
+// what you chased and met it)
+function marchStep(d){
   if(P.siege){const st=townBy(P.siege.town);if(!st||Math.hypot(P.x-st.x,P.y-st.y)>WORLD_SCALE.war.siegeLeash){P.siege=null;log('You march away and the siege'+(st?' of '+st.name:'')+' is lifted.','bad')}}
   // (a chase ends when what you chase is gone or not worth it: WorldObject here, chaseable; reached, it is met, unless you just
   // fought and it would fight you: meetsAnyTime)
   if(G.chase){const o=G.chase;if(!objKind(o)||!o.chaseable())G.chase=null;else{P.tx=o.x;P.ty=o.y;
-    if(Math.hypot(o.x-P.x,o.y-P.y)<=REACH&&!G.modal&&(G.encCool<=0||o.meetsAnyTime)){interact(o);return}}}
+    if(Math.hypot(o.x-P.x,o.y-P.y)<=REACH&&!G.modal&&(G.encCool<=0||o.meetsAnyTime)){interact(o);return true}}}
   if(P.tx!=null){
     const dx=P.tx-P.x,dy=P.ty-P.y,dist=Math.hypot(dx,dy);
     if(dist<2)P.tx=null;
@@ -177,18 +185,15 @@ function updateWorld(dt){
       if(walk(P,dx,dy,step)){P.stuck=0;train('scout',step/TILE*.08);if(mountDef())train('ride',step/TILE*.1);if(terrAt(P.x,P.y)===T_FOREST)train('wood',step/TILE*WOODCRAFT.xp)}else{P.stuck+=d;if(P.stuck>.4){P.tx=null;P.stuck=0}}
     }
   }
-  if(updateSites()||updateRoad(d))return;// (the sites you reach; the encounters on the road: encounters.js)
-  updateFights(d);
-  updateShips(d);
-  // every party's brain (brains.js), then the beasts and the wanderers
-  if(updateParties(d)||updateMonsters(d)||updateCritters(d)||updateRefugees(d))return;
-  updateFolk(d);
+}
+// a holding you reach opens (true), unless you only pass it
+function arriveStep(){
   for(const t of TOWNS){
     const dd=Math.hypot(P.x-t.x,P.y-t.y);
     // (it opens when you stop at it or ride to it (a click on it: the chase); passing by or through on your way, it does not)
     if(dd<11&&G.lastTown!==t&&!G.modal&&(P.tx==null||G.chase===t)){
       approachHolding(t);
-      return;
+      return true;
     }
     if(G.lastTown===t&&dd>28)G.lastTown=null;
   }
@@ -204,3 +209,9 @@ function woundedDay(){const W0=P.wounded||{},near=TOWNS.some(t=>!hostileTo(t.own
     W0[k]-=returned;back+=returned;if(!W0[k])delete W0[k]}
   P.woundedGroups=(P.woundedGroups||[]).filter(g=>g.count>0);
   if(back)log(back+' of your wounded '+(back>1?'are':'is')+' fit to fight again.','good')}
+
+// this file's work in the world's day and frame (core/systems.js)
+Systems.add({name:'band',order:{day:20},day:bandDay});
+Systems.add({name:'march',order:{frame:50},frame:marchStep,ends:true});
+Systems.add({name:'wounded',order:{day:160},day:woundedDay});
+Systems.add({name:'arrival',order:{frame:150},frame:arriveStep,ends:true});

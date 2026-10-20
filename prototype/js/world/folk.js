@@ -250,3 +250,5 @@ function workerAct(a,arg){
     return notice('Press-ganged','Your soldiers drag the '+f.job+' into the ranks. '+cap1(an(ST[lv].n.toLowerCase()))+' joins, unwilling, and the fields of '+t.name+' empty for days. It costs you: '+cost+'.','bad')}
 }
 onAct('wk-',workerAct);
+// its work in the world's day and frame (core/systems.js)
+Systems.add({name:'folk',order:{frame:140},frame:updateFolk});
