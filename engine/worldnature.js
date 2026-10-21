@@ -340,12 +340,14 @@
   };
   const KIND=PX.WN_KIND,LAY=[[[3,5],[11,4],[7,10],[14,10],[2,14],[10,15]],[[6,4],[14,6],[2,9],[10,10],[5,15],[13,14]],[[2,6],[9,4],[14,8],[6,11],[12,13],[3,15]]];
   PX.WN_APRON=8;
+  // brooks (PX.worldNatureSteps 2b): the flow (bits 0-4 of spec.flow, worldgen.js's log2) a brook starts at, is 2 px wide from, 3 px
+  const BROOK=[6,7,8];
   PX.worldNaturePlan=spec=>{const W=spec.W,H=spec.H,C=spec.C,R=spec.R,ts=spec.ts||16,K=spec.kind,CI=spec.clim,seed=(spec.seed|0)||1;
     const kAt=(x,y)=>x<0||y<0||x>=C||y>=R?KIND.water:K[y*C+x],cAt=(x,y)=>CLIMS[CI[Math.max(0,Math.min(R-1,y))*C+Math.max(0,Math.min(C-1,x))]]||'grass',h=(x,y,k)=>PX.hash(x,y,seed*977+k);
     // kept clear: the clear ground, water, a bridge's tile, and the beach (3 px of land along the water, where the game lays its shore)
     const clear=spec.clear instanceof PX.TileMask?spec.clear:PX.TileMask.of(spec.clear,C,R,ts),keep=clear.copy();
     const bridge=(x,y)=>kAt(x,y)===KIND.road&&(kAt(x-1,y)===KIND.water&&kAt(x+1,y)===KIND.water||kAt(x,y-1)===KIND.water&&kAt(x,y+1)===KIND.water);
-    for(let ty=0;ty<R;ty++)for(let tx=0;tx<C;tx++){const X=tx*ts,Y=ty*ts;if(K[ty*C+tx]===KIND.water||bridge(tx,ty)){keep.fill(X,Y,ts,ts);continue}const wa=(a,b)=>tx+a>=0&&ty+b>=0&&tx+a<C&&ty+b<R&&K[(ty+b)*C+tx+a]===KIND.water;
+    for(let ty=0;ty<R;ty++)for(let tx=0;tx<C;tx++){const X=tx*ts,Y=ty*ts;if(K[ty*C+tx]===KIND.water||K[ty*C+tx]===KIND.ford||bridge(tx,ty)){keep.fill(X,Y,ts,ts);continue}const wa=(a,b)=>tx+a>=0&&ty+b>=0&&tx+a<C&&ty+b<R&&K[(ty+b)*C+tx+a]===KIND.water;
       if(wa(0,-1))keep.fill(X,Y,ts,3);if(wa(0,1))keep.fill(X,Y+ts-3,ts,3);if(wa(-1,0))keep.fill(X,Y,3,ts);if(wa(1,0))keep.fill(X+ts-3,Y,3,ts)}
     // (each water's size, up to 255, so a desert's palms stand by an oasis or a lake, not along the sea)
     const WS=new Uint8Array(C*R);{const st=[];for(let q0=0;q0<C*R;q0++){if(K[q0]!==KIND.water||WS[q0])continue;const L=[q0];WS[q0]=-1;st.push(q0);while(st.length){const q=st.pop(),i=q%C,j=(q-i)/C;for(const [a,b] of [[1,0],[-1,0],[0,1],[0,-1]]){const x=i+a,y=j+b,n=y*C+x;if(x>=0&&y>=0&&x<C&&y<R&&K[n]===KIND.water&&!WS[n]){WS[n]=-1;st.push(n);L.push(n)}}}for(const q of L)WS[q]=Math.min(255,L.length)}}
@@ -357,7 +359,7 @@
     const RH=new Float32Array(C*R);for(let ty=0;ty<R;ty++)for(let tx=0;tx<C;tx++){if(K[ty*C+tx]!==KIND.mount)continue;let d=0;for(let b=-2;b<=2;b++)for(let a=-2;a<=2;a++)if(kAt(tx+a,ty+b)===KIND.mount)d++;
       RH[ty*C+tx]=cAt(tx,ty)==='desert'?8*Math.max(1,Math.round((1.2+3.2*Math.min(1,(d-1)/18))*(.55+.6*h(tx,ty,63)))):(14+24*Math.min(1,(d-1)/20))*(great(tx,ty)?1.4:1)*(.9+.2*h(tx,ty,62))}
     const ro={W,H,C,R,ts,h:(i,j)=>RH[j*C+i],clim:cAt,seed:seed+5,shade:true,kept:(x,y)=>keep.at(x,y)},{lab,M}=massLabel(C,R,ro.h,cAt);
-    return{W,H,C,R,ts,K,seed,kAt,cAt,h,clear,keep,WS,RH,ro,lab,M,md:[],mdQ:[],mdBytes:0,mdCap:32<<20,hill:K.some(k=>k===KIND.hill),
+    return{W,H,C,R,ts,K,seed,kAt,cAt,h,clear,keep,WS,RH,ro,lab,M,md:[],mdQ:[],mdBytes:0,mdCap:32<<20,hill:K.some(k=>k===KIND.hill),F:spec.flow||null,RV:spec.river||null,WR:spec.water||null,
       get bytes(){return keep.bytes+(clear===spec.clear?0:clear.bytes)+WS.byteLength+RH.byteLength+lab.byteLength+this.mdBytes}}};
   // a mass's height field: kept (the oldest let go past mdCap bytes, never the one asked for)
   // (two windows may reckon one at once: the first to finish keeps it)
@@ -398,6 +400,24 @@
           const cl=cAt((X/ts)|0,ty),o=i*4,c=hillPx(cl,PX.WORLD_NATURE[cl],[D[o],D[o+1],D[o+2]],zat(X+1,Y)-zat(X-1,Y),zat(X,Y+1)-zat(X,Y-1),zh,X,Y,7,sh);D[o]=c[0];D[o+1]=c[1];D[o+2]=c[2];touch(i,1)}
         if(!((Y-wy0+1)&7))yield}}
     lap('hills');yield;
+    // (2b) brooks (the generated world's, spec.flow and river): each land tile whose flow is a brook's (bits 0-4 at least BROOK[0]) and
+    //     no river's, a line 1-3 px wide (by its flow, BROOK) from the middle of its way in (from the neighbour that feeds it most) to
+    //     the middle of its way out (flow's bits 5-7), bending through the tile's own point (its middle moved a little by its hash),
+    //     in its climate's water tones (spec.water); never on clear ground or water, but over the beach, so it meets the water
+    if(P.F){const F=P.F,RV=P.RV,DX=[1,1,0,-1,-1,-1,0,1],DY=[0,1,1,1,0,-1,-1,-1],lvl=i=>K[i]===KIND.water||K[i]===KIND.mount||RV[i]&3?0:F[i]&31,brook=i=>lvl(i)>=BROOK[0];
+      const pt=(x,y)=>K[y*C+x]===KIND.water?[x*ts+8,y*ts+8]:[x*ts+8+(h(x,y,95)-.5)*6,y*ts+8+(h(x,y,96)-.5)*6];
+      for(let ty=Math.max(0,ty0-2);ty<=Math.min(R-1,ty1+2);ty++){if(!(ty&3))yield;for(let tx=Math.max(0,tx0-2);tx<=Math.min(C-1,tx1+2);tx++){const i=ty*C+tx;if(!brook(i))continue;
+        const d=F[i]>>5,nx=tx+DX[d],ny=ty+DY[d];if(nx<0||ny<0||nx>=C||ny>=R)continue;let ux=-1,uy=-1,ub=0;
+        for(let k=0;k<8;k++){const x=tx-DX[k],y=ty-DY[k];if(x<0||y<0||x>=C||y>=R)continue;const j=y*C+x;if(brook(j)&&F[j]>>5===k&&lvl(j)>ub){ub=lvl(j);ux=x;uy=y}}
+        const c=pt(tx,ty),n=pt(nx,ny),u0=ux<0?c:pt(ux,uy),a=[(u0[0]+c[0])/2,(u0[1]+c[1])/2],b=[(c[0]+n[0])/2,(c[1]+n[1])/2],wd=lvl(i)>=BROOK[2]?3:lvl(i)>=BROOK[1]?2:1;
+        const WT=(P.WR&&P.WR[cAt(tx,ty)])||[[120,170,220],[80,130,190]],core=WT[0],edge=WT[1];
+        // (the edge pixels first, then the core over them: a line 2 or 3 wide has a darker rim)
+        for(let pass=wd>1?1:0;pass>=0;pass--)for(let s=0;s<=48;s++){const u=s/48,w0=(1-u)*(1-u),w1=2*(1-u)*u,w2=u*u,px=w0*a[0]+w1*c[0]+w2*b[0],py=w0*a[1]+w1*c[1]+w2*b[1];
+          for(let yy=-1;yy<=1;yy++)for(let xx=-1;xx<=1;xx++){if(wd<2&&(xx||yy)||wd<3&&(xx<0||yy<0)||(wd>1&&(xx||yy)?1:0)!==pass)continue;const X=Math.floor(px)+xx,Y=Math.floor(py)+yy;
+            if(X<wx0||Y<wy0||X>=wx1||Y>=wy1||CLR.at(X,Y)||kAt((X/ts)|0,(Y/ts)|0)===KIND.water)continue;
+            const q=at(X,Y),o=q*4,col=pass?edge:core;D[o]=col[0];D[o+1]=col[1];D[o+2]=col[2];touch(q,1)}}}}
+      yield}
+    lap('brooks');yield;
     // (3) the small things lying on the ground, and what stands: gathered by tile, from 3 tiles round the window (the farthest a
     //     thing or its shadow reaches from its tile)
     const items=[],flats=[];let own=0;

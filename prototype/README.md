@@ -67,7 +67,8 @@ js/world/             the campaign map and everything on it
                         the world generator (doc/WORLD_DESIGN.md, behind WORLD.gen): the clamped settings, the terrain stages 1-6,
                         the placement stages 7-9 (holdings, roads and crossings, camps); seeded, never Math.random
   router.js             every way over the land behind three calls: Router.travel (a step toward a point, or a holding's gate:
-                        gateGoal), Router.reach, Router.days; today's flow fields and searches underneath
+                        gateGoal), Router.reach, Router.days (and Router.close, Router.stats); today's flow fields and searches
+                        underneath; on the generated world the way graph (buildWayGraph) and the two-level router
   realms.js siege.js    the realms (Realm: wars and peace, honour and hostility, holdings and lords) and their lords; sieges,
                         raids, captures and fiefs
   leaders.js            the Lord and Chieftain roles (characters who choose for themselves); the bandit chieftains
@@ -94,7 +95,8 @@ js/world/             the campaign map and everything on it
                         caravans (realms' and yours)
   companions.js         the Companion role: companions who grow as you do (level, gear, disciplines, perks) and lead
                         parties of your soldiers
-  ships.js              fishing boats out to the fishing grounds by day; trade ships between ports on the same sea
+  ships.js              fishing boats out to the fishing grounds by day; trade ships between ports on the same sea; on the
+                        generated world boats sail only the navigable rivers
   resources.js          ore veins and fishing grounds, and what each holding's mines and ports bring up
   refugees.js           people leaving ruined (or full) holdings
   conduct.js            charging deeds against a holding (CONDUCT), and the small map dialogs
@@ -611,6 +613,8 @@ After each suite the runner prints `# N pass, N fail, N.N s`, and at the end `# 
 ## Art
 
 Everything is drawn by code (`js/gfx/sprites.js`, `js/gfx/worldart.js`); nothing is loaded from `graphics/`. Buildings on the world map come from the PX engine in `../engine` (see its README and `gallery.html`), and so do its woods, hills, mountain ranges and small things (`worldnature.js`, `gallery.html?view=nature`). Every holding is a set of placed buildings, each on its own tiles of the grid (`js/world/lots.js`): its centre (keep, citadel or hall, whose walls are the holding's fortification: Fortify upgrades it), houses for its people, the buildings of its estates, and fields, pastures and pits flat on the tiles they keep. Realms grow their holdings over time; in your fiefs you place what you build, and it goes up behind scaffolding. Flags are their own animated sprite.
+
+The generated world (`?gen=1`) has its own water and roads (`worldart.js`, doc/WORLD_DESIGN.md §12.1): water rounded at its corners and shaded by width, banks with reeds and stones, fords with stepping stones, stone and wooden bridges, ferries, rapids, brooks along the flow (painted by `worldnature.js`), sand rims and shallows on the coasts, and roads painted along their smoothed lines at any angle. `tests/visual/rivers.js` shows every piece for approval (a page of crops: screenshot it at 1400 x 2200); today's map is painted as before.
 
 To look at the result, take a screenshot of a prepared scene (`scene` is `world` or `battle`; `town`, `mount` and `zoom` are optional):
 

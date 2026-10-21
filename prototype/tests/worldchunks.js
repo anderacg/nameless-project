@@ -6,7 +6,9 @@
 // painted into each chunk it touches); a chunk painted a slice at a time equals one painted at once, its slices short; the LRU
 // keeps no more than its cap, never lets a chunk in view go, and paints ahead of the view; invalidate forgets the plan and the
 // chunks near a change (or all), and the chunks it keeps are still right; the minimap comes from the tile data; what it costs.
-// On the map the scripts leave at load (no begin), as W5's picture.
+// On the map the scripts leave at load (no begin), as W5's picture. With -Gen (the generated classic seed, its water and roads
+// painted by the generated world's art) the same checks, its picture's hash an INFO line; then the prefetch at Large and Huge:
+// walking across each at Travel fast's pace (8x: a chunk in some 420 frames), 4 ms of painting a frame, the ring ahead is ready.
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.push('INFO '+m),t=T,WA=t.WorldArt,cap0=WA.cap,slice0=WA.slice;
 try{
  const TILE=t.TILE,MW=t.MW,MH=t.MH,W=MW*TILE,H=MH*TILE,CS=t.CHUNK,cols=WA.cols,rows=WA.rows,MB=b=>(b/1048576).toFixed(1)+' MB';
@@ -21,7 +23,7 @@ try{
    'the plan comes first, painting nothing: isClear reads its clear ground (a holding and its gate clear, off the map not) ('+planMs.toFixed(0)+' ms)');
  // ---- one window: the whole map, no seam anywhere (today's one canvas)
  const r1={},one=paint(0,0,W,H,r1),ref=img(one,0,0,W,H),h1=fnv(ref);
- ok(h1==='aceeae00','the map painted as one window (no seam anywhere: today\'s one canvas) is the baseline picture ('+h1+', W5 at b94cbe2: tests/worldprint.js; '+r1.wall.toFixed(0)+' ms)');
+ if(t.WORLD.gen)info('the generated classic seed painted as one window: '+h1+' ('+r1.wall.toFixed(0)+' ms)');else ok(h1==='aceeae00','the map painted as one window (no seam anywhere: today\'s one canvas) is the baseline picture ('+h1+', W5 at b94cbe2: tests/worldprint.js; '+r1.wall.toFixed(0)+' ms)');
  // ---- stitched: every chunk into the whole picture, and no seam round any border
  q=performance.now();const whole=WA.whole(),wMs=performance.now()-q,nd=diff(img(whole,0,0,W,H),ref);
  ok(nd===0&&whole.width===W&&whole.height===H,cols*rows+' chunks of '+CS+' px ('+cols+' x '+rows+') stitched (worldCv) are that picture pixel for pixel ('+nd+' differ; '+wMs.toFixed(0)+' ms)');
@@ -83,6 +85,17 @@ try{
  {WA.cap=cap0;WA.ensure();WA.chunk(1,1);const b=WA.bytes(),Pn=WA.plan.nature,per=b.plan/(MW*MH);
   ok(b.plan<4*1048576&&b.chunks===CS*CS*4,'memory: the plan '+MB(b.plan)+' ('+per.toFixed(1)+' B a tile: clear ground '+MB(WA.plan.clear.bytes)+', kept-clear '+MB(Pn.keep.bytes)+', ranges\' height fields '+MB(Pn.mdBytes)+'), a chunk '+MB(CS*CS*4)+', the LRU at most '+WA.cap+' ('+MB(WA.cap*CS*CS*4)+'); at Huge (1024 x 768) the plan about '+MB(per*1024*768)+', the chunks the same');
   info('memory: one canvas for the whole map would be '+MB(W*H*4)+' here, '+MB(16384*12288*4)+' at Huge; worldCv\'s canvas is only made when asked (the blit until render.js draws by chunks, the wiki, the tests)')}
+
+ // ---- the prefetch at Large and Huge (with -Gen): the camera walks across the middle of each world at 8x's pace, the painter
+ //      given 4 ms a frame; the chunks that come into view were painted before they did, the LRU held at its cap
+ if(t.WORLD.gen){const W0=t.WM;
+  try{for(const [name,s] of [['Large',{preset:'large',seed:'1'}],['Huge',{preset:'huge',seed:'1'}]]){const q=performance.now(),m=t.genWorld(s).map,gm=performance.now()-q;t.useWorld(m);
+    const W=t.MW*TILE,H=t.MH*TILE,VW=t.VW,VH=t.VH,g=t.ctx,cam={x:0,y:Math.round(H/2-VH/2)},v=CS/420,cols=WA.cols;WA.cap=cap0;WA.slice=4;WA.last=null;let met=0,ready=0,over=0,frames=0,late=[];
+    const view=()=>{const r=new Set();for(let cy=Math.floor(cam.y/CS);cy<=Math.floor((cam.y+VH-1)/CS);cy++)for(let cx=Math.floor(cam.x/CS);cx<=Math.floor((cam.x+VW-1)/CS);cx++)r.add(cy*cols+cx);return r};
+    const end=Math.min(W-VW,6*CS),p0=performance.now();WA.draw(g,cam);
+    for(;cam.x<end;frames++){cam.x=Math.min(end,Math.round((frames+1)*v));cam.y=Math.round(H/2-VH/2+Math.sin(frames/700)*CS*.6);for(const k of view())if(!WA.view.has(k)){met++;if(WA.chunks.has(k))ready++;else late.push(k)}WA.draw(g,cam);if(WA.chunks.size>WA.cap)over++}
+    ok(met>=4&&ready>=met*.95&&!over,name+' ('+t.MW+' x '+t.MH+'): crossing '+(end/CS).toFixed(0)+' chunks at 8x pace with 4 ms of painting a frame, '+ready+' of the '+met+' chunks coming into view were painted before they did; never more than '+WA.cap+' kept ('+frames+' frames in '+((performance.now()-p0)/1000).toFixed(1)+' s; the world made in '+(gm/1000).toFixed(1)+' s)')}}
+  finally{if(t.WM!==W0)t.useWorld(W0)}}
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}
 finally{WA.cap=cap0;WA.slice=slice0;WA.invalidate()}
 const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d)};

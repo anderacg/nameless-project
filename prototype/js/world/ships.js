@@ -23,8 +23,10 @@ class Ship extends WorldObject{
 const asShip=asClass(Ship);
 const SHIP_SPD=26,BOAT_SPD=13,SHIP_CAP=density().ships;// (SHIP_CAP: trade ships at sea at once)
 // open water a boat can sail: not the frozen lakes of the frost (their ports fish through the ice). The sea round the edge
-// of the world is the coastal route that joins the ports of different shores
-const isWater=(x,y)=>x>=0&&y>=0&&x<MW&&y<MH&&tiles[y*MW+x]===T_WATER&&climate[y*MW+x]!==CLIM.frost;
+// of the world is the coastal route that joins the ports of different shores. Of the generated world's rivers (WM.river) only
+// the navigable reaches, under their bridges and over their fords too (doc/WORLD_DESIGN.md §6.6.3): a river joins the sea or a
+// lake for boats only where it is navigable
+const isWater=(x,y)=>{if(x<0||y<0||x>=MW||y>=MH)return false;const i=y*MW+x,t=tiles[i],r=WM.river[i];return(t===T_WATER?!(r&3)||r&4:r&4&&(t===T_ROAD||t===T_FORD))&&climate[i]!==CLIM.frost};
 
 // the bodies of water: every water tile labelled by the sea or lake it belongs to
 let WATER_ID=null;

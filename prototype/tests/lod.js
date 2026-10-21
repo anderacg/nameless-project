@@ -41,7 +41,7 @@ try{
   ok(checked>0&&!bad,'reach equals today\'s travel-cost field on every open tile, from 6 holdings ('+checked+' tiles, '+bad+' differ)');
   const h=t.startHolding(),far=t.TOWNS.slice().sort((p,q)=>Math.hypot(q.x-h.x,q.y-h.y)-Math.hypot(p.x-h.x,p.y-h.y))[0];
   {const a={x:h.x+40,y:h.y+30},b={...a};for(let i=0;i<400;i++){t.travelTo(a,far,far.x,far.y+12,1.5);R.travel(b,t.gateGoal(far),1.5)}
-   ok(a.x===b.x&&a.y===b.y&&Math.hypot(a.x-h.x,a.y-h.y)>100,'travel to a holding steps as travelTo did ('+Math.round(Math.hypot(a.x-h.x,a.y-h.y))+' px on)')}
+   if(!t.WORLD.gen)ok(a.x===b.x&&a.y===b.y&&Math.hypot(a.x-h.x,a.y-h.y)>100,'travel to a holding steps as travelTo did ('+Math.round(Math.hypot(a.x-h.x,a.y-h.y))+' px on)')}
   {const a={x:h.x+40,y:h.y+30},b={...a},gx=h.x-300,gy=h.y+200;let ra,rb;for(let i=0;i<300;i++){ra=t.routeTo(a,gx,gy,1.5);rb=R.travel(b,{x:gx,y:gy},1.5)}
    ok(a.x===b.x&&a.y===b.y&&ra===rb,'travel to a point steps as routeTo did, and says the same of the way ('+ra+')')}
   const sea=(()=>{for(let i=0;i<MW*MH;i++)if(t.tiles[i]===t.T_WATER)return{x:(i%MW+.5)*TILE,y:(((i/MW)|0)+.5)*TILE}})();

@@ -69,6 +69,9 @@ let OVR=null;const overCv=()=>OVR&&OVR.width===VW+1&&OVR.height===VH+1?OVR:(OVR=
 // the minimap's layers, bottom first, by what each thing is (mapKind): the holdings, then the sites, the beasts, the parties and
 // the caravans and the encounters on the road over them; a kind not here is not dotted
 const MAP_LAYER={town:0,site:1,monster:2,lord:3,band:3,patrol:3,cparty:3,caravan:4,road:4};
+// the minimap's rectangle on the screen, in game pixels: the top right corner, 112 wide at any map size, the same size on the
+// screen at any map zoom (zk, core.js MAPZOOM); s: its pixels a tile (drawWorld draws it here, the full map's tap reads it)
+function worldMiniRect(){const zk=MAPZOOM.k(),s=112*zk/MW,w=Math.round(MW*s),h=Math.round(MH*s);return{x:VW-w-Math.round(6*zk),y:Math.round(6*zk),w,h,s}}
 const faceDir=o=>{let f=FACE.get(o);if(!f)FACE.set(o,f={x:o.x,d:o.x>P.x?-1:1});if(Math.abs(o.x-f.x)>.05){f.d=o.x>f.x?1:-1;f.x=o.x}return o.fight&&o.dir?o.dir:f.d};
 function drawWorld(){
   // (the camera to 1/VS px: G.cam; cam its whole pixels, the rest (fx, fy) the shift of everything drawn on the screen)
@@ -131,9 +134,9 @@ function drawWorld(){
   drawQuestMarks(cam);drawRumourMarks(cam);// (the quests' marks, then the rumours' faint "?": news.js)
   wuiOver(cam);// (your goal's arrow, the arrow over what you chase, the brackets round what the pointer is on: worldui.js)
   ctx.restore();
-  // minimap (the land from the tile data, a pixel per k tiles: worldart.js WorldArt.mini; the same size on the screen at any map
-  // zoom: zk, core.js MAPZOOM)
-  const zk=MAPZOOM.k(),MS=112*zk/MW,mk=Math.max(1,Math.round(MW/256)),mw=Math.round(MW*MS),mh=Math.round(MH*MS),mx=VW-mw-Math.round(6*zk),my=Math.round(6*zk),dot=(x,y,col,s)=>{s=Math.max(1,Math.round(s*zk));rect(ctx,col,mx+Math.floor(x/TILE*MS)-(s>>1),my+Math.floor(y/TILE*MS)-(s>>1),s,s)};
+  // minimap (the land from the tile data, a pixel per k tiles: worldart.js WorldArt.mini, k = ceil(MW / 256); where it lies on the
+  // screen: worldMiniRect)
+  const zk=MAPZOOM.k(),{x:mx,y:my,w:mw,h:mh,s:MS}=worldMiniRect(),mk=Math.ceil(MW/256),dot=(x,y,col,s)=>{s=Math.max(1,Math.round(s*zk));rect(ctx,col,mx+Math.floor(x/TILE*MS)-(s>>1),my+Math.floor(y/TILE*MS)-(s>>1),s,s)};
   ctx.fillStyle='#000';ctx.fillRect(mx-1,my-1,mw+2,mh+2);ctx.drawImage(atSize(WorldArt.mini(mk),mw,mh),mx,my);ctx.globalAlpha=.4;ctx.drawImage(atSize(landMiniCv(),mw,mh),mx,my);ctx.globalAlpha=1;ctx.drawImage(atSize(fogMiniCv(),mw,mh),mx,my);
   // each its own dot (WorldObject mapDot), layer by layer (MAP_LAYER; in a layer, as worldObjects lists them): the holdings and
   // sites you know of, then the beasts, parties and caravans in sight over them

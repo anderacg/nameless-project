@@ -76,7 +76,7 @@ function fullMapKey(){if(G.mode==='fullmap'){closeOver();return true}return full
 onAct('map-',(a,arg)=>{if(a==='map-close'&&G.mode==='fullmap')closeOver();else if(a==='map-zoom')fullMapZoom(arg==='in'?1:-1)});
 // the minimap's place on the screen, in game px, as render.js drawWorld draws it (the same size at any map zoom), and whether
 // point p (input.js toCanvas) is on it
-function fullMapMiniRect(){const zk=MAPZOOM.k(),MS=112*zk/MW,w=Math.round(MW*MS),h=Math.round(MH*MS);return {x:VW-w-Math.round(6*zk),y:Math.round(6*zk),w,h}}
+function fullMapMiniRect(){return worldMiniRect()}// (the minimap's own rectangle: gfx/render.js)
 function fullMapHit(p){const r=fullMapMiniRect();return p.x>=r.x-1&&p.y>=r.y-1&&p.x<r.x+r.w+1&&p.y<r.y+r.h+1}
 // + and − zoom while it is open
 window.addEventListener('keydown',e=>{if(G.mode!=='fullmap'||e.ctrlKey||e.metaKey||e.altKey||e.repeat)return;const k=keyOf(e);if(k==='='||k==='+'||k==='-'){e.preventDefault();fullMapZoom(k==='-'?-1:1)}});

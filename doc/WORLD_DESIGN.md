@@ -267,6 +267,13 @@ Today's flow field per holding is Float64 over every tile: 6.3 MB each at Huge, 
 4. **Seasons and events toggle edges:** a ford closed by a flood, a dry riverbed open, a burnt bridge. Local A\* also reads each tile's seasonal passability (frozen water is walkable), so the player can cross the ice. AI routes keep to the graph: lords don't plan over ice, but a band near you may chase you across it.
 5. **Travel days** between any two places (`Router.days`) come from graph costs. AI targets (§11) and the caravan range use them.
 
+**As built (wave 2, D; behind `WORLD.gen`, today's map keeps Phase 0's wrapper):**
+- **Nodes:** the holdings' tiles (where their roads start), road junctions (where a shared stretch begins or ends), both ends of every crossing, a landing by each port, the camps, and the chunk portals. A border's open run is cut into pieces of at most 10 tiles (`WAY.run`), a portal pair in the middle of each, because one portal per long run kept trips 10–20% over the best. Crossing tiles never hold a portal: their crossing's edge joins the two ends. The classic seed: 1,751 nodes and 1,876 static edges; Large seed 1: 3,531 and 3,742.
+- **Edges:** roads and tracks between nodes on them, at their own tiles' costs each way; crossings (a ferry 0.05 day); a portal's step; river legs between landings on navigable rivers, over no rapids (no seed made one yet: ports are few on rivers). Costs are days at `WAY.pace` (= `MAP_BASE`, which loads after the generator first runs at load; `tests/router.js` checks they agree). Inside a chunk, the costs between its nodes come from a search over its tiles from each node, made when first needed (an LRU of 512 chunks).
+- **Trips:** within 40 tiles (`WAY.near`) the tiles alone (`findPath`), as today. Longer: a search in the start's chunk to its nodes (or the node it stands on, or a gate beside it), A\* over the graph to the goal chunk's nodes (or a holding's gate), then each leg walked when it is reached: a road's own tiles, a bridge's or ford's tiles, a ferry sailed straight across, a search between two nodes of a chunk, the last stretch. The pair cache (1,024) answers gate-to-gate trips. A holding with no way is walked to straight, as today's field does.
+- **Measured** (`tests/router.js`, 200 random trips over 40 tiles against a full A\* over the tiles): 3.5% dearer on average at Normal, 2.9% at Large; a trip planned in 0.4–0.5 ms (median, every chunk's table made).
+- **`Router.close(xi, shut)`** shuts a crossing's edges and tiles (local searches keep off them, its chunks' tables are made again, walkers find their ways again). **`Router.reach`** treats a ferry's two landings as one piece of land.
+
 ### 3.7 Generation time and memory
 
 Generation runs on the main thread in stages, behind a **"Forging the world…" screen** with a bar and the stage's name ("Raising mountains", "Carving rivers", "Founding holdings", "Laying roads"). It yields every ≤ 50 ms so the page never freezes.
@@ -1347,6 +1354,7 @@ The owner decided this on 2026-10-19. Numbers: `WORLD_SCALE.spawn` (`away`, `rim
   - **seasonal rivers**, all year: a pale gravel edge and a dotted bank line, so the player can learn them.
 - **Season overlays** each frame, on the river tiles in view only (never a repaint): ice and snow on frozen rivers; brown high water and spread marsh on flooded ones; a dry stony bed and sandbars on dry ones.
 - **Engine:** through `PX.worldNaturePaint` with new spec fields (`temp`, `moist`, `elev`, `feat`, `flow`, `river`); the overlays are `PX.riverSeason(state, w, dir)`. Gallery: `?view=nature&blend=1`, `?view=rivers` (every width, delta, ford, ferry, toll bridge, rapids, and each seasonal state). The owner approves before integration.
+- **As built (wave 2, D), waiting for the owner's approval** (`tests/visual/rivers.js`, not the gallery, which the building redesign owns): on the generated world only (`gfx/worldart.js`; today's map is painted as before, pixel for pixel). Water by the pixel: each water tile's corners rounded and its edges wobbling a pixel or two, so a river's stairs read as bends; rivers shaded by width; a muddy bank with reeds and stones; a seasonal river's pale gravel edge and dotted line; fords lighter, with stepping stones; stone and wooden bridges; a ferry's two landings, its raft and the rope; white water on rapids. Brooks: 1–3 px lines along `flow`, bending through each tile, painted by `PX.worldNatureSteps` from the spec's new `flow`, `river` and `water`. Coasts: a sand rim, a pale shallow halo with cloudy edges, wave strokes and foam, in today's palette. Roads: painted along their lines (Chaikin-softened twice), each pixel by how deep it lies in the nearest band: a worn verge, a dark edge, the middle with ruts (a track grassed between them), a great road wider than a track and a little wider or narrower along the way; forks and gates join where the bands meet. Not built: current glints that drift downstream, toll houses, deltas as fanned reeds, the season overlays (Phase 5).
 
 ### 12.2 Soft territory borders
 
@@ -1756,6 +1764,8 @@ After `genWorld`, `begin` and the load add their own steps (C): install (`instal
 ```
 
 River legs (`ek` 3 and 4) are built now and used by nobody until Phase 5 (passage and barges). Land routes never take them.
+
+**As built (wave 2, D):** `cost` is in days at `WAY.pace` (`router.js`, kept equal to `MAP_BASE`). The router's own fields beside the contract's: `w`, `h`, `cs` (32: a chunk's tiles a side), `cols`, `coff` and `cnode` (the nodes by chunk), `leg` (a road edge's road in `WM.roads` and the places on its path it runs from and to). `ek` 5 is a portal pair's step across its border; the costs inside a chunk live in `chunk`, not in `to`.
 
 **The router** (`world/router.js`): **the three calls stay exactly as they are** (§2.2 R11). Callers never read the graph.
 

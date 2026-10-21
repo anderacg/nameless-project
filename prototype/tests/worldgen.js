@@ -60,7 +60,7 @@ try{
  ok(!back&&fr.length>=10,'each stage yields its share done, 0-1, never going back ('+fr.length+' yields)');
  ok(!calls,'generating draws no Math.random ('+calls+' calls)');
  {const m=R1.map,s=t.classicSettings();
-  ok(shape.every(k=>k in R1)&&Object.keys(R1).length===shape.length&&Array.isArray(R1.hamlets)&&!R1.hamlets.length&&Array.isArray(R1.sacred)&&R1.lair===null&&R1.graph===null&&R1.lords===null,'genWorld returns {'+Object.keys(R1).join(', ')+'} (no hamlets, sacred places or lair yet; no way graph: router.js buildWayGraph is a stub)');
+  ok(shape.every(k=>k in R1)&&Object.keys(R1).length===shape.length&&Array.isArray(R1.hamlets)&&!R1.hamlets.length&&Array.isArray(R1.sacred)&&R1.lair===null&&!!R1.graph&&R1.graph.n>0&&R1.graph===R1.map.graph&&R1.lords===null,'genWorld returns {'+Object.keys(R1).join(', ')+'} (no hamlets, sacred places or lair yet; the way graph built: router.js buildWayGraph)');
   ok(m instanceof t.WorldMap&&m.gen==='ashmark-1'&&m.classic===true&&m.salt===0&&m.w===448&&m.h===320&&m.seed==='CLASSIC'&&m.seedNum===t.seedNum('CLASSIC')&&J(m.settings)===J(s)&&layersOk(m),
    'its map: ashmark-1, classic, salt 0, 448 x 320, seed CLASSIC ('+m.seedNum+'), its settings clamped, every layer ('+t.MAP_LAYERS.join(' ')+') at w x h');
   ok(['rivers','basins','crossings','roads','regions','cliffs'].every(k=>Array.isArray(m[k]))&&m.rivers===R1.rivers&&m.crossings===R1.crossings&&m.regions===R1.regions&&m.rivers.every(r=>r.path.length>=8&&r.path.every(i=>m.kind[i]===t.T_WATER||m.kind[i]===t.T_ROAD||m.kind[i]===t.T_FORD)&&(m.kind[r.mouth]===t.T_WATER||(m.river[r.mouth]&3)>0)&&(m.river[r.path[0]]&3)>0)
