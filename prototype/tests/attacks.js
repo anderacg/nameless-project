@@ -142,5 +142,14 @@ try{
   ok(t.shapeDt('thrust','slash')==='pierce'&&t.shapeDt('slam','slash')==='blunt'&&t.shapeDt('arc','slash')==='slash','a combo\u2019s thrust pierces, its slam crushes, its sweep is its weapon\u2019s');
   P.gear.weapon=t.gearId('warhammer',0);P.gear.body=t.gearId('mail',4);ok(t.heroStats().dt==='blunt'&&t.heroStats().armor==='plate','your hero: a warhammer crushes, golden armour is plate');P.gear.body=null;ok(t.heroStats().armor==='none','no armour, unarmoured');
   ok(/Slash · physical · Mail armour/.test(t.unitCard('hum_sword')),'the unit card says it (Slash · physical · Mail armour)');}
+ // who trains as a missile hits (owner, 2026-10-21): the shooter's Archery, an arrow and a bolt alike, your hero's (your own
+ // shots) or a companion's; magic, a companion's Spellcraft (your hero's is trained as you cast)
+ {const tr0=window.train,ct0=window.compTrain,got=[];window.train=(k,n)=>got.push('hero:'+k);window.compTrain=(id,k,n)=>got.push(id+':'+k);try{
+   const who=a=>{got.length=0;t.Missile.of(a).trains();return got.join()},hero={team:0,hero:true},comp={team:0,comp:true,type:'brann'};
+   ok(who({arc:true,src:{heroShot:true},by:hero})==='hero:archery'&&who({src:{heroShot:true,flat:true},by:hero})==='hero:archery','your hero’s arrows and crossbow bolts both train Archery');
+   ok(who({arc:true,src:{},by:comp})==='brann:archery'&&who({src:{flat:true},by:comp})==='brann:archery','a companion’s arrows and bolts both train Archery');
+   ok(who({magic:true,src:{magic:true},by:comp})==='brann:spell'&&who({magic:true,src:{magic:true,heroShot:true},by:hero})==='','magic trains a companion’s Spellcraft; your hero’s is trained as you cast');
+   ok(who({arc:true,src:{},by:{team:0}})===''&&who({src:{flat:true},by:{team:1}})==='','a troop’s shots train no one');
+ }finally{window.train=tr0;window.compTrain=ct0}}
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}
 const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d)};

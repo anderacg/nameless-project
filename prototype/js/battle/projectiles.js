@@ -38,6 +38,9 @@ class Missile{
     B.arrows=B.arrows.filter(a=>a.life>0&&a.x>-4&&a.x<BW+4&&a.y>-4&&a.y<BH+4);
   }
   static fly(dt){for(const a of B.arrows)Missile.of(a).step(dt)}
+  // whom it trains as it hits: the shooter's Archery, an arrow and a bolt alike: your hero's (your own shots: heroShot) or a
+  // companion's (owner, 2026-10-21)
+  trains(){const a=this.a;if(a.src&&a.src.heroShot)train('archery',1.5);else if(a.by&&a.by.comp)compTrain(a.by.type,'archery',1.5)}
   // it strikes e: his guard, a web, the shooter's training, the wound, its look and sound, the arrow left in him, the XP
   strike(e){
     const a=this.a,mu=matchup(a.src||{},e.s);let dm=a.dmg*mu;
@@ -56,8 +59,6 @@ class ArcMissile extends Missile{
     if(a.z<=0&&a.t>.03){a.life=0;B.parts.push({x:a.x,y:a.y-1,vx:0,vy:0,life:5,c:'#c9b48a',stuck:a.vx>=0?1:-1});vfx({k:'dust',x:a.x,y:a.y,vx:0,vy:-3,r:1,grow:5,life:.3,col:dustCol()});if(sfxOn()&&sndTurn('ground'))sfxAt('arrowhit',a.x,a.y,{vol:.4})}// (it stays where it lands a while; a thud, softer)
   }
   blocked(dm){const a=this.a;dm*=blockMul();fx(a.x,a.y-6,'#cfe0ff',4);return dm}
-  // (your hero's arrows train Archery; a companion's arcs train nothing, as before)
-  trains(){const a=this.a;if(a.src&&a.src.heroShot)train('archery',1.5)}
 }
 // a crossbow bolt flies straight and low: trees and woods may stop it
 class Bolt extends Missile{
@@ -68,16 +69,17 @@ class Bolt extends Missile{
   }
   cover(dt){
     const a=this.a;if(a.elf)return;
-    for(let k=0;k<B.obs.length;k++){const o=B.obs[k];if(o.kind==='tree'&&!treePast(a,k)&&Math.hypot(a.x-o.x,a.y-(o.y-6))<o.r+2){treeMark(a,k);if(Math.random()<.25){a.life=0;fx(a.x,a.y,'#8b5a2b',2)}}}
+    // (each tree it passes may stop it; once one has, the trees behind it roll no more, as an arrow's)
+    for(let k=0;k<B.obs.length;k++){const o=B.obs[k];if(o.kind==='tree'&&!treePast(a,k)&&Math.hypot(a.x-o.x,a.y-(o.y-6))<o.r+2){treeMark(a,k);if(Math.random()<.25){a.life=0;fx(a.x,a.y,'#8b5a2b',2);return}}}
     if(a.life>0&&B.terrain&&B.terrain.has.wood&&woodStops(a,a.x,a.y+6,a.x-a.vx*dt,a.y+6-a.vy*dt)){a.life=0;fx(a.x,a.y,'#8b5a2b',2)}// (a bolt flies low: woods stop it, terrain.js)
   }
   blocked(dm){const a=this.a,bl=blockMul();dm*=bl;fx(a.x,a.y,'#cfe0ff',4);return dm}
-  // (a companion's bolts train their Archery; your hero's crossbow bolts train nothing, as before)
-  trains(){const a=this.a;if(a.by&&a.by.comp)compTrain(a.by.type,'archery',1.5)}
 }
 // a bolt of magic: through trees and woods; a shield takes at most half of it; it bursts where it hits (a fireball: an explosion)
 class MagicBolt extends Bolt{
   cover(dt){}
+  // (magic trains Spellcraft: a companion's as it hits; your hero's as you cast, combat.js)
+  trains(){const a=this.a;if(a.by&&a.by.comp)compTrain(a.by.type,'spell',1.5)}
   blocked(dm){const a=this.a,bl=blockMul();dm*=Math.max(.5,bl);fx(a.x,a.y,'#cfe0ff',4);return dm}
   strike(e){
     super.strike(e);const a=this.a,sr=a.src&&a.src.splash||18,sm=a.src&&a.src.splashMul||.5;if(sr>=28)vfxExplode(a.x,a.y,sr,a.col);// (a fireball: an explosion, vfx.js)
