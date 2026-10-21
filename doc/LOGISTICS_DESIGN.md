@@ -1,6 +1,6 @@
 # Logistics: food and water as supply pools, the pack train, march preview: design
 
-Status: **design only** (owner, 2026-10-21: "everything just design for now, not implement yet"). It builds on the owner's general design, [army-logistics-food-water-design.md](army-logistics-food-water-design.md) (its UI reference: [assets/army-logistics-ui-reference.png](assets/army-logistics-ui-reference.png)), and on Supply as built ([SUPPLY_DESIGN.md](SUPPLY_DESIGN.md), `world/supply.js`, 2026-10-21). Nothing here is built. **It rests on item categories** ([ITEMS_DESIGN.md](ITEMS_DESIGN.md)): the categories **Food**, **Drink** and **Carrier** route an item to the food pool, the water pool or the pack train, and **Quest items** never take room.
+Status: **design only** (owner, 2026-10-21: "everything just design for now, not implement yet"). It builds on the owner's general design, [army-logistics-food-water-design.md](references/assets/army-logistics-food-water-design.md) (its UI reference: [assets/army-logistics-ui-reference.png](references/assets/army-logistics-ui-reference.png)), and on Supply as built ([SUPPLY_DESIGN.md](SUPPLY_DESIGN.md), `world/supply.js`, 2026-10-21). Nothing here is built. **It rests on item categories** ([ITEMS_DESIGN.md](ITEMS_DESIGN.md)): the categories **Food**, **Drink** and **Carrier** route an item to the food pool, the water pool or the pack train, and **Quest items** never take room.
 
 **The owner's decisions (2026-10-21):**
 - **Food and water both become pools.** Neither is kept as bag items any more.
@@ -211,7 +211,7 @@ Phases 2 and 3 can run as two agents in parallel once phase 1 is in. 4 and 5 fol
 
 ## 12. The owner's design, part by part
 
-How each part of [army-logistics-food-water-design.md](army-logistics-food-water-design.md) lands here: **in** (this design), **adapted** (in, changed to fit Ashmark), **later** (§9 or another plan), **out** (not planned, with why).
+How each part of [army-logistics-food-water-design.md](references/assets/army-logistics-food-water-design.md) lands here: **in** (this design), **adapted** (in, changed to fit Ashmark), **later** (§9 or another plan), **out** (not planned, with why).
 
 | The owner's design | Here | Where |
 |---|---|---|
