@@ -7,7 +7,7 @@
    sfx(name, opts) plays a cue of SFX; sfxAt(name, x, y) one heard from a point of the battlefield (panned, quieter far from the
    middle of the camera). Each cue has its own rate limit; at most AUDIO.voices sounds play at once.
    AUDIO.on false (tests/harness.js) or no WebAudio: every call is a cheap no-op that returns false and never throws.
-   The volumes and mute are settings (ui.js PREFS: volmaster, volmusic, volsfx, mute; M mutes) ---------- */
+   The volumes and mute are settings (ui.js PREFS: volmaster, volmusic, volsfx, mute; Shift+M mutes) ---------- */
 // the sounds' own dice: never Math.random, so a seeded battle draws the same numbers with sound or without
 function mkRng(seed){let s=seed>>>0;return()=>{s=s+0x6D2B79F5|0;let t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 const AUDIO={on:true,ctx:null,bus:null,noise:null,rng:mkRng(0xA5B1),

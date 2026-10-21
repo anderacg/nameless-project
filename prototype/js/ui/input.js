@@ -89,6 +89,7 @@ cv.addEventListener('pointerleave',()=>{G.mouse.in=false;if(!holdCardUp())hideTi
 cv.addEventListener('pointerdown',e=>{
   const p=toCanvas(e);G.mouse.x=p.x;G.mouse.y=p.y;G.mouse.in=true;G.mouse.type=e.pointerType;
   if(G.modal)return;
+  if(G.mode==='world'&&!G.place&&e.button===0&&fullMapHit(p)){fullMapOpen();return}// (a click or a tap on the minimap: the full map, map.js)
   if(e.pointerType==='touch'&&touchDown(e,p))return;// (a finger in battle or on the map: below; it acts when it lifts)
   if(G.mode==='world'){const wx=G.cam.x+p.x,wy=G.cam.y+p.y;if(G.place){if(e.button===2){G.place=null;log('You stop placing.')}else placeClick(wx,wy);return}if(P.stay)return stayClick(wx,wy);worldGo(wx,wy)}
   else if(G.mode==='scene')sceneClick(p.x,p.y);
@@ -207,7 +208,7 @@ window.addEventListener('keydown',e=>{
   const k=keyOf(e);
   if(e.key==='F6'){e.preventDefault();saveGame(false,'quick');return}
   if(k==='escape'){e.preventDefault();if(dragCancel())uiSfx('back');else if(G.mode==='battle'&&B&&B.amArm){armAttackMove(false);uiSfx('back')}else onEscape();return}// (a drag first, then an armed attack-move: Esc calls it off and nothing else)
-  if(k==='m'&&!e.ctrlKey&&!e.metaKey&&!e.altKey){if(!e.repeat)toggleMute();return}// M: the sound off or on, anywhere (ui.js)
+  if(k==='m'&&!e.ctrlKey&&!e.metaKey&&!e.altKey){if(!e.repeat){if(e.shiftKey)toggleMute();else fullMapKey()}return}// M: the full map (map.js); Shift+M: the sound off or on, anywhere (ui.js)
   if(k==='p'&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&!e.repeat&&peopleKey())return;// P: the people drawer, on the map and in towns (peopledrawer.js)
   if(/^[0-9]$/.test(k)&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&!e.repeat&&G.mode!=='battle'&&railKey(k)){e.preventDefault();return}// a number: a place on the window's rail (window.js)
   if(/^[qwer]$/.test(k)&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&!e.repeat&&G.mode!=='battle'&&railActKey(k)){e.preventDefault();return}// Q, W, E, R: the window's key actions (window.js)

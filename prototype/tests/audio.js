@@ -1,7 +1,7 @@
 'use strict';
 // Sound (audio.js, music.js): off, every call is a no-op; every cue and mood builds and is heard (rendered offline, never past
 // full scale); the per-cue limit and the voice cap hold under a battle's pile-up; the settings are stored and mute silences;
-// M mutes; the music follows the scene (title, road, town, battle, its stinger, then on); a lab battle is heard (its blows,
+// Shift+M mutes (M opens the full map); the music follows the scene (title, road, town, battle, its stinger, then on); a lab battle is heard (its blows,
 // shots, charges and routs) and fought the same with sound on or off. Sound is played into an
 // OfflineAudioContext whose clock the test moves (a Proxy over it), so nothing reaches the speakers.
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.push('INFO '+m),t=T,A=t.AUDIO,MU=t.MUSIC,G=t.G,P=t.P;
@@ -59,8 +59,8 @@ try{
   clock(4);t.prefSet('volmusic',.3);t.prefSet('volsfx',.6);ok(key('volmusic')==='0.3'&&key('volsfx')==='0.6'&&A.vol.music===.3&&Math.abs(A.level.music-.09)<1e-9&&Math.abs(A.level.sfx-.36*A.fxBoost)<1e-9,'a volume set is stored (ashmark.volmusic "0.3") and put on its bus at once (gain '+A.level.music.toFixed(2)+')');
   t.prefSet('mute',true);const m1=t.sfx('click');ok(key('mute')==='1'&&A.muted&&A.level.master===0&&!m1,'mute: stored, master at 0, and a cue then makes nothing');
   t.prefSet('mute',false);ok(key('mute')==='0'&&!A.muted&&t.sfx('click'),'sound back on: cues play');
-  const press=()=>window.dispatchEvent(new KeyboardEvent('keydown',{code:'KeyM',key:'m'}));G.mode='world';G.modal=false;press();const on1=t.prefGet('mute')&&key('mute')==='1'&&A.muted;press();
-  ok(on1&&!t.prefGet('mute')&&key('mute')==='0'&&/Sound on/.test(G.msgs[G.msgs.length-1].m),'M mutes, and M again brings the sound back ("Sound on.")');
+  const press=()=>window.dispatchEvent(new KeyboardEvent('keydown',{code:'KeyM',key:'M',shiftKey:true}));G.mode='world';G.modal=false;press();const on1=t.prefGet('mute')&&key('mute')==='1'&&A.muted;press();
+  ok(on1&&!t.prefGet('mute')&&key('mute')==='0'&&/Sound on/.test(G.msgs[G.msgs.length-1].m),'Shift+M mutes, and Shift+M again brings the sound back ("Sound on.")');
   t.showTitle('settings');const pn=()=>document.getElementById('panel');
   ok(pn().querySelectorAll('[data-act="sound"]').length===2&&['volmaster','volmusic','volsfx'].every(k=>pn().querySelectorAll('[data-act="'+k+'"]').length===5)&&/data-nav="back"/.test(pn().innerHTML),'Settings: Sound off/on and three volumes (0–100%), the bottom bar\'s Back still there');
   t.act('sound','off');const off=A.muted&&pn().querySelector('[data-act="sound"][data-arg="off"]').classList.contains('on');t.act('volsfx','0.25');

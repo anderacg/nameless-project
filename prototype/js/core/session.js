@@ -54,7 +54,7 @@ function begin(k,settings){
   const b=BGS[k];if(!b)return false;if(settings===undefined&&WORLD.gen)settings=newWorldSettings();
   const want=settings&&{gen:'ashmark-1',settings:normSettings(settings)},made=want&&worldKey(want)!==worldKey(WM)?{}:null;
   runSteps('Forging the world…',[...(made?[...forgeSteps(want.gen,want.settings,r=>made.r=r),{id:'install',label:'Drawing borders',w:150,run:()=>forgeInstall(made.r)}]:[]),
-    {id:'world',label:made?'Peopling the land':'Founding holdings',w:made?150:4,run:()=>startGame(k,b)},{id:'paint',label:'Painting the first lands',w:made?150:3,run:paintView}],
+    {id:'world',label:'Peopling the land',w:made?150:4,run:()=>startGame(k,b)},{id:'paint',label:'Painting the first lands',w:made?150:3,run:paintView}],
     {back:['Back to the title',()=>showTitle()]}).catch(()=>{});// (a failure shows itself: its error view)
 }
 function startGame(k,b){

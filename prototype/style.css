@@ -13,6 +13,7 @@
      7. battle HUD     balance of power, time, the selected unit, orders over the unit cards
      8. screens        inventory, talents, recruiting and unit cards, companions, troop cards, help and log
      8b. rail windows  a town's places or a holding's buildings down the left, the chosen one's window beside it (window.js)
+     8c. full map      the world's map in a window (M, or the minimap): the map, its marks, its legend (map.js)
      9. responsive     compact screens (phones, small windows), touch pointers, phones held upright
    ===================================================================================================================== */
 
@@ -752,6 +753,42 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
   .panel.railed .rwbody .rcards{grid-template-columns:minmax(0,1fr)}
   .panel.railed .rkacts,.panel.paged .rkacts{grid-template-columns:minmax(0,1fr)}
 }
+
+/* ---------- 8c. full map ---------- */
+/* map.js: a plain window (its header with the zoom on the right, the map beside its legend from edge to edge, its bottom bar);
+   the map scrolls in its view, centred while it is smaller; its picture is scaled up without smoothing; the marks lie over it,
+   centred on their tile */
+.panel.fmap{gap:0;overflow:hidden;container-type:size}
+.panel.fmap>.top{align-items:center;flex-wrap:nowrap}
+.fm-head{flex:1;display:flex;flex-direction:column;gap:2px;min-width:0}.fm-head .muted{font-size:var(--fs-md)}
+.fm-zoom{flex:none;display:flex;gap:4px}.fm-zoom .btn{min-width:36px;font-size:var(--fs-lg)}
+.fm{flex:1;min-height:0;display:flex;margin:0 -20px}
+.fm-view{flex:1;min-width:0;display:flex;overflow:auto;overscroll-behavior:contain;background:#0a0c12;cursor:zoom-in;touch-action:pan-x pan-y;user-select:none;-webkit-user-select:none;scrollbar-width:thin;scrollbar-color:var(--line-2) transparent}
+.fm-view[data-ppt="6"]{cursor:grab}.fm-view:focus-visible{outline:1px solid var(--line-2);outline-offset:-1px}
+.fm-pic{position:relative;flex:none;margin:auto}
+.fm-cv{display:block;width:100%;height:100%;image-rendering:pixelated}
+.fm-pic>*:not(canvas){position:absolute;transform:translate(-50%,-50%)}
+/* a holding: its kind's shape in its realm's colour (as you last saw it), its name under it; a crossing; you */
+.fm-h{display:grid;place-items:center}
+.fm-k{--s:7px;display:block;width:var(--s);height:var(--s);background:var(--c);border:1px solid #07090e;box-shadow:0 0 0 1px rgba(255,255,255,.35)}
+.fm-k.city{--s:9px}.fm-k.castle{rotate:45deg}.fm-k.village{--s:5px;border-radius:50%}
+.fm-h b{position:absolute;left:50%;top:100%;transform:translateX(-50%);margin-top:1px;font-size:10px;font-weight:700;line-height:1;white-space:nowrap;color:#f4ecd6;text-shadow:0 0 2px #000,0 1px 1px #000,0 0 3px #000;pointer-events:none}
+.fm-x{display:block;width:5px;height:5px;border:1px solid #07090e}
+.fm-x.bridge{background:#b8b0a0}.fm-x.ford{background:#ecdcaa;border-radius:50%}.fm-x.ferry{background:#7a4e2a;border-radius:1px 1px 3px 3px}
+.fm-you{display:block;width:10px;height:10px;border:2px solid #fff;border-radius:50%;background:var(--accent);box-shadow:0 0 0 1px #000,0 0 6px rgba(255,255,255,.8);animation:blink 1.2s steps(2) infinite}
+/* the legend: a swatch and a name a line, by group */
+.fm-leg{flex:none;width:190px;overflow:auto;overscroll-behavior:contain;display:flex;flex-direction:column;gap:4px;padding:12px 14px;border-left:1px solid var(--line);font-size:var(--fs-sm);scrollbar-width:thin}
+.fm-leg .lab{margin-top:4px}
+.fm-leg ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:3px}
+.fm-leg li{display:flex;align-items:center;gap:8px;min-width:0}.fm-leg li span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fm-leg li>i{flex:none;margin:0 2px}
+.fm-sw{display:block;width:12px;height:9px;border:1px solid #07090e;border-radius:1px}
+@container (max-width:760px) or (max-height:520px){
+  .panel.fmap h2{font-size:var(--fs-lg)}.fm-head .muted{font-size:var(--fs-sm)}
+  .fm-leg{width:136px;padding:6px 8px;gap:2px;font-size:var(--fs-xs)}.fm-leg li{gap:6px}
+}
+@media (max-width:720px),(max-height:520px){.fm{margin:0 -14px}}
+@media (prefers-reduced-motion:reduce){.fm-you{animation:none}}
 
 /* ---------- 9. responsive ---------- */
 /* a touch screen: everything you press at least 44 px, and nothing that only hovering shows */

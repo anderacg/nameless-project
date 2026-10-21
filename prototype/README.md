@@ -131,7 +131,7 @@ js/ui/                ui.js (panels, title, Esc menu), loading.js (the loading o
                       places: Place, definePlace, PLACES; class wave D),
                       window.js (rail windows: a rail of places beside the chosen one's window), townui.js (a town's places, its overview, your
                       holding's buildings), estate.js (an estate's window on the map, and the Fief's Estates section), peopledrawer.js (the people drawer, P), input.js (actions, mouse, keys), map.js (the full map:
-                      a placeholder until world Phase 2 wave 2), loot.js (the spoils), icons.js, battlehud.js, moraleicons.js (morale
+                      M or a click on the minimap), loot.js (the spoils), icons.js, battlehud.js, moraleicons.js (morale
                       badges and marks), orderpaths.js (where your groups are going), unitcard.js, developer.js (developer console)
 js/main.js            game loop and boot
 archive/              art.js (the sprite-sheet mapping for the graphics/ pixel-art pack, set aside; the pack is not in the repository)
@@ -625,7 +625,7 @@ Everything heard is synthesised by WebAudio as it plays (`js/core/audio.js`, `js
 - **Music:** `music(mood)`: `menu`, `world`, `town`, `battle` (Dorian, Mixolydian, Aeolian; lute or harp, drone, recorder or fiddle, frame drum and tabor) and the stingers `victory` and `defeat`. Each mood draws three motifs from its seed; each four-bar phrase is made anew from them (repeated, moved, inverted, a note split, a new cadence and chord walk), so it is recognisable but never loops. A lookahead scheduler puts notes on the audio clock 0.4 s ahead; a new mood crossfades over 1.8 s; a stinger plays out before the next mood comes in.
 - **The game:** `audioWatch()` (main.js's loop) sets the mood from the scene (title, road, town window or streets, battle, its stinger once over; the Esc menu keeps what is under it) and plays the encounter alert, a town's gate and bells, the day's chime, level-up and the horn as a fight begins. Every button (one listener in ui.js) clicks, confirms (primary), goes back (a bottom bar), chinks coin (gold changed) or refuses (a red message).
 - **The battle:** each hook asks `sfxOn()` first, so with sound off it reckons nothing. Blows and missiles (attacks.js `Fighter.hit`, projectiles.js `Missile.strike`; `blowSound`): on a shield's front `block` (the test vfxHit splinters by), an arrow or bolt `arrowhit`, steel on mail or plate `clash`, magic, beasts and the rest `hit`; a ranged troop's shot `loose` (attacks.js `Fighter.attack`, not magic); an arrow into the ground a soft `arrowhit`. Only one in `SND_EVERY` of each kind is played (a counter, never a dice), then the cues' `gap` and `max` (the blows, shots and strikes at most 16 at once) and the voice cap. morale.js: `rout` as a group routs (`route`), `rally` as it rallies; unitabilities.js: each ability's `snd` (Brace `brace`, Spur `gallop`, Rally `rally`); commands.js `setOrder`: your charge order, `gallop` with riders in the selection, else `charge`; commander.js: `gallop` as AI riders set off on a charge; battlehud.js `calloutAmbush`: `charge` from the ambushers.
-- **Settings:** Settings → Sound: on/off and three volumes (`PREFS` `mute`, `volmaster`, `volmusic`, `volsfx`, stored as `ashmark.<key>`). **M** mutes anywhere.
+- **Settings:** Settings → Sound: on/off and three volumes (`PREFS` `mute`, `volmaster`, `volmusic`, `volsfx`, stored as `ashmark.<key>`). **Shift+M** mutes anywhere (M opens the full map).
 - **Off:** `AUDIO.on=false` (`tests/harness.js` sets it) or no WebAudio: every call is a cheap no-op that never throws. Sound never touches `Math.random` (own `mkRng`), so seeded battles are unchanged.
 - **Gallery:** `sounds.html` plays every cue (battle cues also at the left and right edge), each mood and stinger, has the volume sliders, a voice-cap box, a peak meter and a battle-stress button (60 random battle cues in 2 s). Tests: `tests/audio.js` (offline rendering: every cue and mood heard, never past full scale; limits; settings; the mood following the scene; a lab battle heard, under the cap, and fought the same with sound on or off).
 
@@ -636,3 +636,12 @@ minimap top right, a short hint top middle, messages bottom left (they fade; L s
 (Hero C, Skills K, Bag I, Log L, Help H, pause and speed, save, full screen, menu), battle orders bottom middle in a battle.
 Hover anything on the map for what it is, its strength against you and what a click does. Fog of war (js/world/fog.js) keeps
 what you have explored.
+
+**The full map** (`ui/map.js`; doc/WORLD_DESIGN.md §3.4, §12.4): **M**, or a click or a tap on the minimap, opens the whole world
+in a window (header with the world's name, size, how much you have explored and − + for the zoom; the map beside its legend;
+Close). M again or Esc closes it; the world waits meanwhile. The picture is made from the tile data (`fullMapPic`: the minimap's
+colours, rivers by width, each realm's tint and a stronger line where two realms meet, the dark over land never seen); the
+holdings (by kind, named from town up, villages from 2 px a tile), the crossings on land you have seen and you are marks over it.
+It opens at the largest scale that fits, never under 1 px a tile (1 px per 2 tiles on a map wider than 640: Huge), so Normal
+shows at 1 px a tile, Large scrolls and Huge is 512 × 384; + − step it, a click zooms in where it lands (1:1 by region at
+Huge), a drag pans. On a phone on its side the legend slims to a column and the map scrolls. Tests: `tests/fullmap.js`.
