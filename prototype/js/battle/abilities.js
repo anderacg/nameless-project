@@ -11,7 +11,7 @@ function kitOf(u,id){
     strike:(e,m,o)=>heroHit(e,m,o||{}),
     can:keep=>X.sp>=A.sp+(keep&&A.sp?CHAR_AI.keepSp:0)&&X.mp>=A.mp,
     pay:()=>{if(!spend(A.sp,A.mp))return false;if(A.mp)train('spell',1.5);return true}}}
-  const C=champ(u),ch=u.unit&&u.unit.isChar?u.unit:null,sp=ch?ch.skill('spell'):0,A=ch?abilOf(ch.o,id,sp):{...ABILITIES[id],...NO_TUNE};
+  const C=ChampionMind.stateOf(u),ch=u.unit&&u.unit.isChar?u.unit:null,sp=ch?ch.skill('spell'):0,A=ch?abilOf(ch.o,id,sp):{...ABILITIES[id],...NO_TUNE};
   return{u,st:C,A,sm:ABILITIES[id].magic?1+.04*sp:1,hero:false,
     strike:(e,m,o)=>{o=o||{};hit(u,e,u.s.dmg*m,o.dt);if(o.kb)knock(e,u.x,u.y,o.kb);if(o.stun)stun(e,o.stun)},
     can:keep=>C.sp>=A.sp+(keep&&A.sp?CHAR_AI.keepSp:0)&&C.mp>=A.mp,
@@ -94,6 +94,6 @@ function chooseAbility(u){
   for(const id of ABILITY_ORDER){if(!ids.includes(id))continue;const S=ABILITIES[id],K=kitOf(u,id);
     if(K.st.cds[id]>0||!K.can(true)||S.melee&&hasBow(u)||S.needs==='bow'&&(!hasBow(u)||K.hero&&goodN('arrows')<4))continue;
     const at=ABILITY_WHEN[id](u,K,c);if(!at)continue;const p=at===true?null:at;
-    if(K.hero){if(p)aimAt(u,p);castSkill(id);return K.st.cds[id]>0}
+    if(K.hero){if(p)CharacterMind.of(u).aimAt(p);castSkill(id);return K.st.cds[id]>0}
     return castAbility(u,id,p||{x:close.x,y:close.y})}
   return false}

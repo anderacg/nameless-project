@@ -208,7 +208,6 @@ const charState=u=>CharacterMind.of(u).state;
 const champCombo=u=>ChampionMind.comboOf(u);
 const charShield=u=>CharacterMind.of(u).shield();
 const charBow=u=>CharacterMind.of(u).bow();
-function aimAt(u,p){return CharacterMind.of(u).aimAt(p)}
 function charAuto(u,dt){if(u)CharacterMind.of(u).auto(dt)}
 function charThink(u,dt){return CharacterMind.of(u).own(dt)}
 function charStrike(u,t){return CharacterMind.of(u).strike(t)}
