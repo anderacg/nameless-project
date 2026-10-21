@@ -41,7 +41,31 @@ Anything that gave food goods now feeds the pool instead:
 
 **Consumption** stays hourly, as Supply runs it now, with the same modifiers (march ×1.5, frost, Forced March, the Quartermaster…). Only the units change: Food from the food pool, by kind (fresh first, as today); Water from the drink pool (water first, or liquor first when chosen).
 
+**The owner's modifiers, on top of today's** (one table, `PROVISIONS.mods`):
+
+| Condition | Food | Water | Today |
+|---|---:|---:|---|
+| Marching | ×1.5 | ×1 (resting ×0.5) | as now |
+| Forced March | ×1.1 | ×1.5 | food ×1.2 today; water new |
+| Desert, extreme heat | ×1.1 | ×2 | water new (today the desert drains stamina instead) |
+| Cold, snow | ×1.3 | ×1.1 | food ×1.5 by Survival today (frostEat) |
+| Mounted band | ×1.1 | ×1.2 | mounts eat food today; water new |
+| Resting in a holding | ×0.9 | ×0.8 | new |
+
+**One order every hour** (the owner's): find what can resupply you here (a well, a friendly holding's market), resupply, then consume, then set the state and its effects. A band that reaches a friendly holding in the hour its water runs out drinks there first and never suffers for it.
+
 **What the bag keeps:** by category ([ITEMS_DESIGN.md](ITEMS_DESIGN.md)): Weapon, Armour, Mount, Ammunition, Resource, Trade good, Trophy, Valuable. **Food** and **Drink** route to their pools and **Carrier** to the train: one rule, the category's `route`, so nothing checks `GOODS[g].food` by hand any more.
+
+**States** (the card's tags; the owner's table, mapped onto Supply as built):
+
+| State | When | Effect |
+|---|---|---|
+| **Supplied** | both pools above your target reserve | none |
+| **Low supplies** (the owner's *Rationing* state) | a pool under the target reserve | a yellow tag and the days left; no penalty, a warning |
+| **Thirsty / Parched / Dying of thirst** (the owner's *Dehydrated*) | the water pool empty | as built: SUPPLY_DESIGN.md §4 |
+| **Hungry / Starving** | the food pool empty | as built: SUPPLY_DESIGN.md §3 |
+| **Foraging** | a Forage camp order | §7 |
+| **Besieged** | inside a holding under siege | later (§9): the holding's stores feed you, and they run down |
 
 ## 3. Capacity: what the band can carry
 
@@ -146,6 +170,7 @@ Food on arrival: 4 days · Water on arrival: 0 days
 - It adds the free water on the way: wells of holdings you pass within reach, rivers, lakes and oases next to the route.
 - It counts friendly holdings where auto-resupply would buy.
 - It marks the **first failure** (food, water or furs) and the **nearest fix** (a well, a holding, a river) with its detour.
+- **The Supplies window** (the reference image's left panel, in the frame rule): the band's banner and size, where it marches; **Food** and **Water** each as a bar with `current / capacity` and **days** large; the state's warning (e.g. WATER CRITICAL); **Supply source**: the nearest place that resupplies you (a friendly holding, a well) and how far; **Route status**: clear, or threatened (bands, beasts or enemy lords near your route, from the land defence's threats). The rations and resupply orders on the right, as the reference's Orders column (Normal rations, Rationing, Forage, Purchase). It fits a phone on its side: the panel and the orders stack.
 - **The full map (M)** draws the route coloured by supply: green fine, yellow low, red failing. Wells, oases and friendly holdings show as supply points.
 - The preview is a projection only; nothing is spent until you march.
 
@@ -184,7 +209,51 @@ Food on arrival: 4 days · Water on arrival: 0 days
 
 Phases 2 and 3 can run as two agents in parallel once phase 1 is in. 4 and 5 follow.
 
-## 12. Questions for the owner
+## 12. The owner's design, part by part
+
+How each part of [army-logistics-food-water-design.md](army-logistics-food-water-design.md) lands here: **in** (this design), **adapted** (in, changed to fit Ashmark), **later** (§9 or another plan), **out** (not planned, with why).
+
+| The owner's design | Here | Where |
+|---|---|---|
+| Inventory items vs an abstract army stockpile | **in** | §2: the bag keeps gear and goods; food and water are pools |
+| Food Supply and Water Supply | **in** | §2 |
+| Fodder, medical, ammunition and material, fuel | **later** | fodder §9; medical with disease (swamp fever exists); ammunition stays the quiver; fuel with Phase 5's winter |
+| Item conversion values | **adapted** | §2 `PROVISIONS`: by kind, 1 = a man for a day; dried rations and luxury provisions can be new food kinds |
+| Purified and dirty water (disease risk) | **later** | with medical supply and disease: swamp water unsafe (the owner's region table) |
+| Capacity from army size, wagons, pack animals, ships | **adapted** | §3, §4: men, your mount, the pack train; ships later, with river barges (World Phase 5) |
+| Over capacity: slower and more exposed to raids | **in** | §3 slower; §4 a big train is seen farther and raided |
+| Daily consumption with modifiers | **adapted** | §2: hourly (as Supply runs), the owner's modifiers added |
+| One order of operations | **in** | §2 |
+| States: Supplied, Rationing, Dehydrated, Starving, Foraging, Besieged | **adapted** | §2's states: Rationing becomes Low supplies (a warning), Dehydrated is Thirsty to Dying of thirst; Besieged later |
+| Water dangerous sooner than food | **in** | as built (SUPPLY_DESIGN.md) |
+| Manual donation and transfer presets | **adapted** | §5 Provision: fill to target, +1 day, +3 days; "transfer all" from a holding's stores you own |
+| Automatic resupply with a target reserve | **adapted** | §6: in friendly holdings you stand in; over a supply line (depots, convoys) later |
+| Local purchase (prices rise, stock drops) | **in** | §5, through today's economy |
+| Foraging (slower, depletes, relations, weak in desert and winter, makes you visible) | **in** | §7 |
+| Raiding for supplies | **later** | with bandit raids (`bandit-raids-plan`); plundering estates exists today |
+| Infrastructure capture (wells, bridges, granaries, oases, ports) | **later** | §9, with sites and sieges |
+| Supply network: nodes and routes, interdiction | **later** | §9: convoys (your caravans), depots; the router's way graph is ready for it |
+| Region logistics profiles (farmland to city) | **adapted** | §7's forage yields and water by terrain and climate (one table); water safety later |
+| Seasonal events (drought, harvest, winter, flood, blockade) | **later** | World Phase 5 (the calendar, seasonal rivers) |
+| Orders: rations, forced march, forage, purchase, await convoy, raid | **adapted** | §6 rations and resupply; Forage §7; Forced March exists (a perk); await convoy and raid later |
+| Army panel (days first, state, source, route) | **in** | §8 the Supplies window |
+| Map overlays | **later** | §9 |
+| March preview (days, food and water left, first failure) | **in** | §8 |
+| Several armies on a strategic map | **later** | companion parties (§9) |
+| Data model, simulation sequence | **adapted** | §10: the band's record (`BAND`), hourly |
+| MVP list | **in** | phases 0–3 cover its items 1–5 and 7; foraging (its 6) is phase 5 |
+| Balancing principles | **in** | kept as the rule for every number |
+| Acceptance criteria | **in** | below |
+
+**Acceptance (the owner's, for one band now; several armies later):**
+- Food and water bought, looted or found show at once as days in the pools.
+- The band eats and drinks as it travels; the card and the Supplies window show days left, the state, the source and the reason for any shortage.
+- In a friendly holding it resupplies to its target without a click (when auto-resupply is on).
+- Terrain and climate change what it needs (the modifiers) and what it finds (foraging, water).
+- Food and water shortages feel different (as built: thirst first and deadly, hunger slower).
+- The march preview shows the days, what is left on arrival and the first failure before you go.
+
+## 13. Questions for the owner
 
 1. **Units:** 1 Food and 1 Water = one man for a day. Is that the right scale?
 2. **What each man carries:** 3 days of food and 2 of water. Is that right?

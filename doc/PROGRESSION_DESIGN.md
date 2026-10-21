@@ -48,7 +48,7 @@ All characters share one progression engine, the **trees** (today's `TREE`, gene
 ### 3.1 Tiers stay as they are
 XP by kind (`P.txp`), spent to upgrade to the next tier along `UP`, at the barracks' price. Nothing changes here.
 
-### 3.2 A speciality belongs to an army group
+### 3.2 A speciality belongs to an army group (owner, 2026-10-21: "yes, by group")
 Troops are counts, not individuals, so a speciality cannot be per soldier. It belongs to an **army group**: the groups you already manage in the Army panel (`{id, type, count, form}`, up to `ARMY_LIMIT`), like a regiment in Total War.
 
 - **Earned:** a group gains **drill** from battles (its kills, its survival, the battle's size, your Leadership) and, slowly, from days in camp with a drillmaster (a companion's role, or a perk).
@@ -109,7 +109,7 @@ Phase 1 stands alone; 2 and 3 can run in parallel after it; 4 goes with the woun
 
 ## 7. Questions for the owner
 
-1. **Troop specialities per army group (a regiment), not per soldier.** Is that right?
+1. ~~Troop specialities per army group (a regiment), not per soldier?~~ **Decided (owner, 2026-10-21): by group.**
 2. **How many points** per group: 3, or more for elite tiers?
 3. **Drill from camp:** should a drillmaster in camp also give drill, or only battles?
 4. **Recruits diluting a veteran group:** yes, or should a group's specialities never weaken?
