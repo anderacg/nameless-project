@@ -60,7 +60,7 @@ function troopCards(tr){
   const W=P.wounded||{},bar=(v,max,cls,lab,txt)=>'<div class="tc-bar '+cls+'" title="'+lab+'"><i style="width:'+Math.round(clamp(v/Math.max(1,max),0,1)*100)+'%"></i><em>'+txt+'</em></div>';
   const nerve=bandNerve(),wounded=woundedN(),fac=.6+.4*clamp(P.morale,0,100)/100;
   const head='<div class="tc-band">'+bar(P.morale,100,'mo','Your band\u2019s morale','Band morale '+Math.round(P.morale)+' / 100')+
-    '<small class="muted">'+(nerve!=null?'Your troops\u2019 nerve '+Math.round(nerve)+': your band\u2019s morale drifts toward it day by day. ':'')+(wounded?wounded+' wounded, mending. ':'')+'</small></div>';
+    '<small class="muted">'+(nerve!=null?'Your troops\u2019 nerve '+Math.round(nerve)+': your band\u2019s morale drifts toward it day by day. ':'')+'</small></div>'+woundedPanel();
   if(!tr.length&&!Object.keys(W).some(k=>W[k]>0))return head+'<p class="muted">No troops. Hire some in town.</p>';
   const kinds=[...new Set([...tr,...Object.keys(W).filter(k=>W[k]>0&&ST[k])])];
   return head+'<div class="tcards">'+kinds.map(k=>{const s=ST[k],n=P.troops[k]||0,w=W[k]||0,mx=Math.round(unitMoraleOf(s)),now=Math.round(mx*fac),need=n*txpNeed(k),xp=Math.floor(txpOf(k)),ready=UP[k]?txpReady(k):0;

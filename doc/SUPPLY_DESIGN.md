@@ -44,7 +44,15 @@ Today travel is free: food is eaten once a day whether you march or sit, stamina
 
 - **Eaten every hour**, not once a day: `eatPerDay() / 24` an hour, ×1 at rest and ×1.5 while marching (owner: yes). Forced March, the Quartermaster and the rest of today's modifiers still apply.
 - Spoiling and the order foods are eaten in stay as today (`FOODS`).
-- **With no food:** stamina does not recover, morale falls 2 an hour, and after a day men desert or fall sick, as starvation does today.
+- **With no food** (owner, 2026-10-21: food matters less than water, but it can kill, much later), by stages (`SUPPLY.hunger`), each with its tag on the card:
+
+| Stage | From | Effect |
+|---|---|---|
+| **Hungry** | at once | morale −1 every 2 hours; stamina comes back at half speed |
+| **Starving** | 3 days (72 h) | the march drains ×1.25; morale −1 an hour |
+| Desertion | 4 days (96 h) | every 12 h a man deserts (the kind you have most of) |
+| Sickness | 7 days (168 h) | every 12 h a man also falls sick (hunger) |
+| Death | 10 days (240 h) | every 12 h a sick man (else a fit one) dies of hunger |
 - The card shows food in **days left at the current rate** (marching or resting).
 
 ## 4. Drink: water, ale and liquor (owner: they keep stamina up)
@@ -58,8 +66,17 @@ Today travel is free: food is eaten once a day whether you march or sit, stamina
 Owner (2026-10-19): ale and liquor slow the drain and lift morale; water does neither, it only keeps the drain at the normal rate. No instant swig.
 
 - **Rations:** the band drinks `(people + 1) / 6` an hour while marching, half that at rest; water first, then ale, then liquor (cheapest first). A setting picks liquor first for a hard march.
-- **No drink:** stamina drains ×1.5 and recovers half as fast.
-- **The desert (owner: yes):** without water (ale and liquor do not count there), stamina drains ×2 and does not recover; after half a day, men fall sick from thirst. Today's daily desert morale loss goes away; this replaces it.
+- **No drink:** stamina drains ×1.5 and recovers half as fast. **The desert (owner: yes):** without water (ale and liquor do not count there), stamina drains ×2 and does not recover. Today's daily desert morale loss goes away; this replaces it.
+- **Thirst kills, after the sickness** (owner, 2026-10-21: water before food), by stages (`SUPPLY.thirst`), the hours counted double in the desert, each with its tag on the card:
+
+| Stage | From (desert) | Effect |
+|---|---|---|
+| **Thirsty** | at once | the drain above |
+| **Parched** | 12 h (6 h) | pace −15%; morale −1 an hour |
+| **Dying of thirst** | 24 h (12 h) | every 6 h (3 h) a man falls sick (thirst) |
+| Deaths | 48 h (24 h) | every 6 h (3 h) a sick man (else a fit one) dies of thirst |
+
+- **Water fills at once** (owner, 2026-10-21): standing at a holding's well, or stopped beside water, the skins fill within half a second (`supplyFrame`), not on the hour; a new game starts by your home's well, never thirsty. Water and liquor are not market goods (the well is free; the tapster sells liquor).
 
 ## 5. Furs (the frost)
 
@@ -73,7 +90,9 @@ Owner (2026-10-19): ale and liquor slow the drain and lift morale; water does ne
 - **Health bar** = the share of your band fit to fight: `fit / (fit + wounded)`, the hero counted as one.
 - Falls with battle losses (the wounded), frostbite, thirst, hunger and swamp fever.
 - Rises as the wounded heal: as today (Medicine, a surgeon), faster in camp or a holding.
-- Hovering it shows: fit, wounded, and what is hurting them.
+- Hovering it shows: fit, wounded, how many of them are sick, what is hurting them, and the men lost lately.
+- **The sick** are wounded (out of the line, riding with you, eating, healing as the wounded do), with the cause kept (`BAND.sick`: thirst, hunger, exhaustion, frostbite). **The lost** (died of thirst or hunger, deserted) are kept for 7 days (`BAND.lost`). Both are saved only when there are any.
+- **The troops tab** (Hero window) has a **Wounded and sick** section: each kind's wounded and sick and why, the share fit again each day and what would raise it (camp, a holding, Medicine), and **Lost on the road** these 7 days.
 
 ## 7. Make camp (owner: add it)
 

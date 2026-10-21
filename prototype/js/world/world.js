@@ -205,7 +205,8 @@ function arriveStep(){
 
 // the wounded heal: each day a share of them is fit again (more with Medicine, more near a friendly holding, faster in camp or
 // staying in a holding)
-function woundedDay(){const W0=P.wounded||{},near=TOWNS.some(t=>!hostileTo(t.owner)&&Math.hypot(t.x-P.x,t.y-P.y)<WORLD_SCALE.land.healNear),r=Math.min(.9,(.2+.03*skill('med')+(near?.2:0))*(P.stay?2:P.camp?SUPPLY.camp.heal:1));let back=0;
+function healShare(){const near=TOWNS.some(t=>!hostileTo(t.owner)&&Math.hypot(t.x-P.x,t.y-P.y)<WORLD_SCALE.land.healNear);return{near,share:Math.min(.9,(.2+.03*skill('med')+(near?.2:0))*(P.stay?2:P.camp?SUPPLY.camp.heal:1))}}
+function woundedDay(){const W0=P.wounded||{},r=healShare().share;let back=0;
   for(const k in W0){const n=W0[k];if(!n)continue;let h=Math.min(n,Math.floor(n*r+Math.random())),returned=0;
     for(const g of (P.woundedGroups||[]).filter(g=>g.type===k&&g.count)){if(!h)break;const m=partyRoster(P).restore(g,Math.min(h,g.count));g.count-=m;h-=m;returned+=m}
     // A blocked originating group keeps its wounded; they never silently reinforce a duplicate group.
@@ -213,6 +214,7 @@ function woundedDay(){const W0=P.wounded||{},near=TOWNS.some(t=>!hostileTo(t.own
     if(h&&tracked===0)returned+=partyRoster(P).add(k,h);
     W0[k]-=returned;back+=returned;if(!W0[k])delete W0[k]}
   P.woundedGroups=(P.woundedGroups||[]).filter(g=>g.count>0);
+  sickTrim();// (the sick never more than the wounded left: supply.js)
   if(back)log(back+' of your wounded '+(back>1?'are':'is')+' fit to fight again.','good')}
 
 // this file's work in the world's day and frame (core/systems.js)

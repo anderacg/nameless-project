@@ -217,7 +217,7 @@ class PlayerParty extends Party{
      SUPPLY.exhausted) and its pace by it; food and drink rations an hour (moving: on the march); the furs it needs in the frost;
      and its health: the hero (as one), the fit and the hurt companions with your soldiers, fit of the whole */
   staminaState(){return this.bsta<SUPPLY.exhausted?'exhausted':this.bsta<SUPPLY.tired?'tired':'fresh'}
-  staminaPace(){const st=this.staminaState();return st==='fresh'?1:SUPPLY.pace[st]}
+  staminaPace(){const st=this.staminaState();return (st==='fresh'?1:SUPPLY.pace[st])*(BAND.dry>=SUPPLY.thirst.parched?SUPPLY.thirst.pace:1)}// (Parched: supply.js)
   foodHour(moving){return this.eatPerDay()/24*(moving?SUPPLY.eat.march:SUPPLY.eat.rest)}
   drinkHour(moving){return (this.headcount()+1)/SUPPLY.drink.per*(moving?1:SUPPLY.drink.rest)}
   furNeed(){return Math.ceil((this.headcount()+1)/SUPPLY.furPer)}

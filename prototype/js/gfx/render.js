@@ -360,7 +360,7 @@ function updateHUD(force){
   const days=d=>(d>=10?Math.floor(d):Math.floor(d*10)/10)+'d',rate=S.r.n,go=S.go?'on the march':'at rest';
   const arrow=rate<0?' ▼':rate>0&&P.bsta<100?' ▲':'',word={tired:'Tired',exhausted:'Exhausted'}[S.st],hurt=BAND.hurt.map(h=>h.why).join(', ');
   const staTip='Your band’s stamina '+Math.round(P.bsta)+' / 100'+(rate?': '+(rate>0?'+':'')+Math.round(rate*10)/10+' an hour ('+S.r.why.join(', ')+')':'')+'. Tired under '+SUPPLY.tired+', Exhausted under '+SUPPLY.exhausted+'.';
-  const hpTip='Your band’s health: '+F.fit+' fit, '+F.wounded+' wounded'+(hurt?'. Lately: '+hurt:'')+'.';
+  const hpTip='Your band’s health: '+F.fit+' fit, '+F.wounded+' wounded'+(hurt?'. Lately: '+hurt:'')+'. '+healthLines();
   const foodTip='Food: '+(FOODS.filter(g=>goodN(g)).map(g=>GOODS[g].n+' '+goodN(g)).join(', ')||'none')+' · about '+days(S.foodDays)+' '+go;
   const drinkTip='Drink: '+(drinkOrder(S.L).filter(g=>goodN(g)).map(g=>GOODS[g].n+' '+goodN(g)).join(', ')||'none')+' · about '+days(S.drinkDays)+' '+go+(S.L.desert?' (in the desert, water only)':'')+(BAND.liquor?' · liquor first':'');
   el.innerHTML='<div class="pc-head"><img class="pc-pic" src="'+portrait('hero',true)+'" alt=""><div class="pc-who"><b>'+RACES[P.race].n+' '+(BGS[P.bg]?BGS[P.bg].n:'')+'</b><small>Level '+P.level+' · '+rankName()+'</small></div>'+

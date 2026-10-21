@@ -15,10 +15,15 @@
    tired, exhausted: the states' thresholds; pace: the band's pace in them; tiredMorale: −n morale every so many hours Tired or
    worse; worn: an exhausted band has a man fall sick (wounded) every so many hours.
    eat: food an hour is eatPerDay ÷ 24 × rest or march; frostEat: the frost eats this much more (× your Survival's share).
-   hunger: with no food, −morale an hour; after grace hours a man deserts or falls sick (by turns) every so many hours.
+   hunger (the owner, 2026-10-21: food lesser than water, but it can kill, much later): with no food, −morale every so many hours
+   and rest × rest; Starving from starving hours: the march drains × starveDrain and −starveMorale an hour; from desert hours a man
+   deserts every toll hours, from sick hours one also falls sick, from die hours a sick man (else a fit one) dies.
    drink: rations an hour (people + 1) ÷ per on the march, × rest stopped; order: what is drunk first (cheapest; liquor first when
    you choose: BAND.liquor); each drink's drain and morale (a day, while you drink it).
-   thirst: the desert with no water: after grace hours a man falls sick every so many hours.
+   thirst (the owner: water before food; it kills, after the sickness): nothing to drink, the hours counted × desert in the desert
+   with no water: Thirsty at once (the drain above), Parched from parched hours (pace × pace, −morale an hour), Dying of thirst
+   from dying hours (a man falls sick every toll hours), and from death hours a sick man (else a fit one) dies every toll hours.
+   lost: the men lost for good (died, deserted) shown for days on the card and in the troops tab.
    fill: waterskins fill to days of drink on the march, free, beside water (within near tiles) or a holding's well (within well
    px); furPer: 1 fur for every so many people in the frost; frost: frostbite after every so many hours' worth of shortage (a
    man wounded), and −morale a night short of furs (survive, world.js).
@@ -27,21 +32,23 @@
 const SUPPLY={march:2,rough:1.5,night:1.3,forced:1.5,dry:1.5,desertDry:2,cold:.5,mounted:.7,skill:.03,skillCap:.5,guide:.9,
   rest:{stop:2,camp:8,stay:10},dryRest:.5,
   tired:20,exhausted:5,pace:{tired:.85,exhausted:.6},tiredMorale:{every:3,n:1},worn:{every:8},
-  eat:{rest:1,march:1.5},frostEat:.5,hunger:{morale:2,grace:24,every:12},
+  eat:{rest:1,march:1.5},frostEat:.5,hunger:{morale:1,every:2,rest:.5,starving:72,starveDrain:1.25,starveMorale:1,desert:96,sick:168,die:240,toll:12},
   drink:{per:6,rest:.5,order:['water','ale','liquor'],water:{drain:1,morale:0},ale:{drain:.9,morale:1},liquor:{drain:.8,morale:2}},
-  thirst:{grace:12,every:6},
+  thirst:{desert:2,parched:12,pace:.85,morale:1,dying:24,death:48,toll:6},lost:{days:7,keep:20},
   fill:{days:2,near:3,well:40},furPer:5,frost:{every:6,morale:1},
   battleMin:25,camp:{heal:1.5,caught:8},hint:60,hurt:3};
 
 /* the band's own record, kept beside P (not on it: P is your hero's record too, which every battle's snapshot holds whole): its
    camp ({at: the hour it was made} or null) and the hour's counters: food and drink due (fractions of a ration), hours hungry,
    thirsty, exhausted and Tired, the cold's shortage piling up toward frostbite; liquor first (your choice), the hint seen, and
-   what hurt it lately ({why, day}). A fresh one for each new game or load (onWorld); saved in the world part once it is not
+   what hurt it lately ({why, day}); the sick among the wounded and of what ({kind: {why: n}}, never more than P.wounded), and
+   the men lost for good lately ([{k, why, day}]: died of thirst or hunger, deserted). A fresh one for each new game or load (onWorld); saved in the world part once it is not
    fresh (core/saves.js) */
-const freshBand=()=>({camp:null,eat:0,drink:0,hungry:0,dry:0,worn:0,tired:0,cold:0,liquor:false,hint:false,hurt:[]}),BAND_FRESH=JSON.stringify(freshBand());
+const freshBand=()=>({camp:null,eat:0,drink:0,hungry:0,dry:0,worn:0,tired:0,cold:0,liquor:false,hint:false,hurt:[],sick:{},lost:[]}),BAND_FRESH=JSON.stringify(freshBand());
 let BAND=freshBand();
 onWorld(()=>{BAND=freshBand()});
-Saves.add({key:'band',order:280,defaults:freshBand(),save:()=>JSON.stringify(BAND)===BAND_FRESH?undefined:BAND,load:v=>{BAND=v}});
+// (the sick and the lost written only when there are any, so a save with none is as it was; filled in again on loading)
+Saves.add({key:'band',order:280,defaults:freshBand(),save:()=>{if(JSON.stringify(BAND)===BAND_FRESH)return;const {sick,lost,...o}=BAND;return Object.keys(sick).length||lost.length?BAND:o},load:v=>{BAND={...freshBand(),...v}}});
 
 /* ---------- where you stand, as your supplies see it ---------- */
 // the climate; rough ground; a harsh desert or frost (not your race's home, no holding near to shelter you); water beside you (a
@@ -99,11 +106,12 @@ function staminaRate(moving,dr,L){
     if(ride)mul(S.mounted,'mostly mounted');
     if(sk)mul(1-Math.min(S.skillCap,S.skill*sk),ride?'Riding':'Athletics');
     {const g=roleOf('guide');if(g&&compInBand(g))mul(S.guide,'a Guide')}
+    if(BAND.hungry>=S.hunger.starving)mul(S.hunger.starveDrain,'starving');
     return{n:-n,why}}
-  if(!foodN())return{n:0,why:['no food: no rest']};
   if(L.desert&&!dr)return{n:0,why:['no water in the desert: no rest']};
   let n=P.stay?S.rest.stay:P.camp?S.rest.camp:S.rest.stop;why.push((P.stay?'staying in a holding':P.camp?'in camp':'stopped')+' +'+n);
   if(!dr){n*=S.dryRest;why.push('nothing to drink '+x(S.dryRest))}
+  if(!foodN()){n*=S.hunger.rest;why.push('no food '+x(S.hunger.rest))}
   return{n,why}}
 // (how far you had walked when the hour began: WALKED, worldobject.js; never saved) and whether you walked in the hour since
 const SUPPLY_WALK={at:0};
@@ -112,9 +120,41 @@ function supplyMoved(){const w=WALKED.get(P)||0,m=w-SUPPLY_WALK.at>=1;SUPPLY_WAL
 // while he heals (P.wounded), or your hero's health with none; kept for the card
 function supplyHurt(why,desert){
   const ks=Object.keys(P.troops).filter(k=>P.troops[k]>0).sort((a,b)=>P.troops[b]-P.troops[a]),k=ks[0],u=BAND;
-  if(k){P.remove(k);if(!desert)P.wounded[k]=(P.wounded[k]||0)+1;log(desert?cap1(an(ST[k].n.toLowerCase()))+' deserts, hungry.':cap1(why)+': '+an(ST[k].n.toLowerCase())+' falls sick.','bad')}
+  if(k){P.remove(k);if(desert)supplyLost(k,'deserted');else{P.wounded[k]=(P.wounded[k]||0)+1;const s=u.sick[k]||(u.sick[k]={});s[why]=(s[why]||0)+1}
+    log(desert?cap1(an(ST[k].n.toLowerCase()))+' deserts, hungry.':cap1(why)+': '+an(ST[k].n.toLowerCase())+' falls sick.','bad')}
   else if(!desert){const m=vitals();P.hp=Math.max(1,P.hp-m[0]*.1);log(cap1(why)+' wears you down.','bad')}
   u.hurt=[{why,day:G.day},...u.hurt.filter(h=>h.why!==why)].slice(0,SUPPLY.hurt)}
+// a man dies of it (why: thirst or hunger): a sick one first (sick of it, else of anything), else the fit kind you have most of; with
+// none, your hero's health. Gone for good: kept for the card (supplyLost)
+function supplyDie(why){
+  const u=BAND,W=P.wounded||{},sick=Object.keys(u.sick).filter(q=>W[q]>0&&sum(u.sick[q])>0);
+  let k=sick.filter(q=>u.sick[q][why]>0).sort((a,b)=>u.sick[b][why]-u.sick[a][why])[0]||sick[0];
+  if(k){const s=u.sick[k],c=s[why]>0?why:Object.keys(s).find(w=>s[w]>0);if(!--s[c])delete s[c];if(!sum(s))delete u.sick[k];if(!--W[k])delete W[k];woundedTrim(k)}
+  else{k=Object.keys(P.troops).filter(q=>P.troops[q]>0).sort((a,b)=>P.troops[b]-P.troops[a])[0];if(k)P.remove(k)}
+  if(k){supplyLost(k,why);log(cap1(an(ST[k].n.toLowerCase()))+' dies of '+why+'.','bad')}
+  else{const m=vitals();P.hp=Math.max(1,P.hp-m[0]*.1);log(cap1(why)+' wears you down.','bad')}
+  u.hurt=[{why,day:G.day},...u.hurt.filter(h=>h.why!==why)].slice(0,SUPPLY.hurt)}
+// (one lost for good, kept a few days; the wounded groups of a kind never hold more than its wounded; the sick never more than
+// the wounded of their kind, the ones fit again counted off the sick last)
+function supplyLost(k,why){const u=BAND,L=SUPPLY.lost;u.lost=[{k,why,day:G.day},...u.lost.filter(x=>G.day-x.day<L.days)].slice(0,L.keep)}
+function woundedTrim(k){let over=(P.woundedGroups||[]).filter(g=>g.type===k).reduce((a,g)=>a+g.count,0)-((P.wounded||{})[k]||0);
+  for(const g of P.woundedGroups||[])if(over>0&&g.type===k&&g.count){const m=Math.min(over,g.count);g.count-=m;over-=m}}
+function sickTrim(){const u=BAND,W=P.wounded||{};
+  for(const k in u.sick){let over=sum(u.sick[k])-(W[k]||0);for(const w in u.sick[k]){if(over<=0)break;const m=Math.min(over,u.sick[k][w]);u.sick[k][w]-=m;over-=m;if(!u.sick[k][w])delete u.sick[k][w]}
+    if(!sum(u.sick[k]))delete u.sick[k]}}
+const sickN=()=>{sickTrim();return Object.keys(BAND.sick).reduce((a,k)=>a+sum(BAND.sick[k]),0)};
+// how many marks start+n·every (n ≥ 0) the count passed going from a to b
+const passed=(a,b,start,every)=>b<start?0:Math.floor((b-start)/every)-Math.floor((a-start)/every);
+// a stage's tag and its words: what it does now and what comes next, in hours of what it lacks (k: hours count × k)
+const inHours=(h,k)=>{const n=Math.max(1,Math.ceil(h/k));return n+' hour'+(n>1?'s':'')};
+function thirstTag(L){const T=SUPPLY.thirst,h=BAND.dry,k=L.desert?T.desert:1,w=L.desert?'In the desert with no water: stamina drains twice as fast and does not come back. ':'Nothing to drink: stamina drains faster and comes back slower. ';
+  if(h>=T.death)return['Dying of thirst','bad',w+'Your men are dying: one every '+inHours(T.toll,k)+'. Find water now.'];
+  if(h>=T.dying)return['Dying of thirst','bad',w+'A man falls sick every '+inHours(T.toll,k)+'; in '+inHours(T.death-h,k)+' they start to die.'];
+  if(h>=T.parched)return['Parched','bad',w+'Your pace is '+Math.round((1-T.pace)*100)+'% slower and morale falls. In '+inHours(T.dying-h,k)+' men fall sick.'];
+  return['Thirsty','bad',w+'In '+inHours(T.parched-h,k)+' your band is parched.']}
+function hungerTag(){const H=SUPPLY.hunger,h=BAND.hungry,next=h<H.starving?['starving',H.starving]:h<H.desert?['men desert',H.desert]:h<H.sick?['men fall sick',H.sick]:h<H.die?['men die',H.die]:null;
+  const now=h>=H.die?'Men die of hunger, one every '+H.toll+' hours. ':h>=H.desert?'Men desert'+(h>=H.sick?' and fall sick':'')+', one every '+H.toll+' hours. ':'';
+  return[h>=H.starving?'Starving':'Hungry','bad',(h>=H.starving?'No food for days: the march drains more and morale falls every hour. ':'No food: rest comes back at half speed and morale slips. ')+now+(next?'In '+inHours(next[1]-h,1)+': '+next[0]+'.':'')]}
 /* the band's hour (Systems.hour): waterskins fill beside water (stopped) or at a holding's well; it eats and drinks (more on the
    march); its stamina drains or comes back; and what it lacks takes its toll: tiredness and hunger in morale, exhaustion, hunger,
    thirst and the cold in men */
@@ -131,10 +171,20 @@ function supplyHour(){
   const st=P.staminaState();
   if(st!=='fresh'){if(++u.tired%S.tiredMorale.every===0)P.morale-=S.tiredMorale.n}else u.tired=0;
   if(st==='exhausted'){if(++u.worn%S.worn.every===0)supplyHurt('exhaustion')}else u.worn=0;
-  if(hungry){if(!u.hungry++){log('Your band goes hungry. Buy food in a town, or hunt.','bad');mood('hungry')}P.morale-=S.hunger.morale;
-    const h=u.hungry-S.hunger.grace;if(h>=0&&h%S.hunger.every===0)supplyHurt('hunger',h/S.hunger.every%2===0)}else u.hungry=0;
-  if(L.desert&&!dr){if(!u.dry++)log('No water in the desert: your band thirsts. Find an oasis, a river or a holding.','bad');
-    const h=u.dry-S.thirst.grace;if(h>=0&&h%S.thirst.every===0)supplyHurt('thirst')}else u.dry=0;
+  // hunger, by its stages (SUPPLY.hunger): morale, then Starving, then men desert, fall sick and at last die
+  if(hungry){const H=S.hunger,h=++u.hungry;if(h===1){log('Your band goes hungry. Buy food in a town, or hunt.','bad');mood('hungry')}
+    if(h>=H.starving){P.morale-=H.starveMorale;if(h===H.starving)log('Your band is starving: the march drains it more, and soon men will leave.','bad')}else if(h%H.every===0)P.morale-=H.morale;
+    if(passed(h-1,h,H.desert,H.toll))supplyHurt('hunger',true);
+    if(passed(h-1,h,H.sick,H.toll))supplyHurt('hunger');
+    if(passed(h-1,h,H.die,H.toll))supplyDie('hunger')}else u.hungry=0;
+  // thirst, by its stages (SUPPLY.thirst; the desert's hours count double): Parched, then men fall sick, then they die
+  if(!dr){const T=S.thirst,a=u.dry,h=u.dry+=L.desert?T.desert:1;
+    if(!a)log(L.desert?'No water in the desert: your band thirsts. Find an oasis, a river or a holding.':'Nothing to drink: your band thirsts. Find a river, a lake or a holding’s well.','bad');
+    if(h>=T.parched){P.morale-=T.morale;if(a<T.parched)log('Your band is parched: it slows, and soon men will fall sick.','bad')}
+    if(a<T.death&&h>=T.death)log('Your men begin to die of thirst.','bad');
+    for(let i=passed(a,h,T.dying,T.toll);i>0;i--)supplyHurt('thirst');
+    for(let i=passed(a,h,T.death,T.toll);i>0;i--)supplyDie('thirst')}else u.dry=0;
+  sickTrim();
   // (frostbite: the hours short of furs, weighted by how short, until a man is bitten)
   const cold=L.frost?coldShare():0;if(cold){u.cold+=cold;if(u.cold>=S.frost.every){u.cold-=S.frost.every;supplyHurt('frostbite')}}else u.cold=0;
   P.morale=clamp(P.morale,0,100);
@@ -142,6 +192,19 @@ function supplyHour(){
 }
 Systems.add({name:'supply',order:{hour:10,frame:55},hour:supplyHour,frame:supplyFrame});
 
+/* ---------- the wounded and the sick (the troops tab, character.js troopCards; the card's health tip): each kind's wounded, those
+   of them sick and of what, the share fit again by tomorrow (world.js healShare) and what would raise it; the men lost lately ---------- */
+const WHY_SICK={thirst:'thirst',hunger:'hunger',exhaustion:'exhaustion',frostbite:'frostbite'};
+function lostLines(){const by={};for(const x of BAND.lost.filter(x=>G.day-x.day<SUPPLY.lost.days)){const w=x.why==='deserted'?'Deserted':'Died of '+x.why;(by[w]=by[w]||{})[x.k]=(by[w][x.k]||0)+1}
+  return Object.keys(by).map(w=>w+': '+Object.keys(by[w]).map(k=>ST[k].n+' ×'+by[w][k]).join(', '))}
+function healthLines(){sickTrim();const s=sickN(),l=lostLines();return (s?s+' of them sick. ':'')+(l.length?'Lost lately: '+l.join('; ')+'.':'')}
+function woundedPanel(){
+  sickTrim();const W=P.wounded||{},ks=Object.keys(W).filter(k=>W[k]>0),l=lostLines();if(!ks.length&&!l.length)return '';
+  const r=healShare(),help=[P.camp||P.stay?'':'rest in camp or a holding',r.near?'':'a friendly holding near'].filter(Boolean);
+  const rows=ks.map(k=>{const s=BAND.sick[k]||{},sn=sum(s),wn=W[k]-sn;
+    return '<li>'+ST[k].n+' ×'+W[k]+': '+[wn?wn+' wounded':'',...Object.keys(s).map(w=>s[w]+' sick ('+(WHY_SICK[w]||w)+')')].filter(Boolean).join(', ')+'</li>'}).join('');
+  return '<div class="lab">Wounded and sick</div>'+(ks.length?'<ul class="tnotes">'+rows+'</ul><p class="muted" style="font-size:13px">About '+Math.round(r.share*100)+'% are fit again each day'+(help.length?'; more with '+help.join(' and '):'')+' (Medicine helps too).</p>':'')+
+    (l.length?'<p class="bad" style="font-size:13px">Lost on the road, these '+SUPPLY.lost.days+' days: '+l.join('; ')+'.</p>':'')}
 /* ---------- the camp (§7): Z, the dock's Camp, or the action ring. Your band stops and pitches its tents; stamina comes back
    faster (SUPPLY.rest.camp), the wounded mend faster (SUPPLY.camp.heal: world.js woundedDay); fast forward stops when anything
    hostile comes into sight; any travel order breaks it; a hostile band that finds you in it catches you unready ---------- */
@@ -172,8 +235,8 @@ function supplyNow(){
   const furs={have:goodN('furs'),need:P.furNeed(),show:L.frost||goodN('furs')>0||nearFrost()};
   if(st==='tired')tags.push(['Tired','warn','Stamina under '+S.tired+': your pace is '+Math.round((1-S.pace.tired)*100)+'% slower and morale slips. Stop or make camp to rest.']);
   if(st==='exhausted')tags.push(['Exhausted','bad','Stamina under '+S.exhausted+': your pace is '+Math.round((1-S.pace.exhausted)*100)+'% slower, you cannot outrun anyone, and men fall sick.']);
-  if(!dr)tags.push(['Thirsty','bad',L.desert?'No water in the desert: stamina drains twice as fast and does not come back.':'Nothing to drink: stamina drains faster and comes back slower.']);
-  if(!foodN())tags.push(['Hungry','bad','No food: no rest, and morale falls every hour.']);
+  if(!dr)tags.push(thirstTag(L));
+  if(!foodN()||BAND.hungry)tags.push(hungerTag());
   if(L.frost&&coldShare())tags.push(['Cold','bad','Short of furs in the frost ('+furs.have+' of '+furs.need+'): stamina drains faster, and frostbite takes men.']);
   if(P.camp)tags.push(['In camp','good','Resting: stamina +'+S.rest.camp+' an hour, the wounded mend faster. Any travel order breaks camp.']);
   return{L,go,dr,r,st,foodDays,drinkDays,furs,fit:P.fitness(),tags}}

@@ -51,7 +51,7 @@ try{
  ok(rate(false)===S.rest.stop,'stopped: +'+S.rest.stop+' an hour');
  P.camp={at:0};ok(rate(false)===S.rest.camp,'in camp: +'+S.rest.camp);P.camp=null;
  bag({grain:60});ok(rate(false)===S.rest.stop*S.dryRest,'with nothing to drink, half as fast');
- bag({water:200});ok(rate(false)===0,'with no food, none');
+ bag({water:200});ok(near(rate(false),S.rest.stop*S.hunger.rest),'with no food, ×'+S.hunger.rest);
  at('desert');bag({grain:60});ok(rate(false)===0,'in the desert with no water, none');
  // ---- Tired and Exhausted
  reset();at('open');bag({water:200,grain:60});{const p0=t.bandPace();P.bsta=19.9;const tired=t.bandPace(),st1=P.staminaState();P.bsta=4.9;const ex=t.bandPace(),st2=P.staminaState();P.bsta=20;
@@ -63,14 +63,28 @@ try{
   ok(ate===e,'at rest the band eats a day’s food in a day, by the hour ('+ate+' of '+e+')');ok(Math.abs(drank-dr)<=1,'and drinks (people + 1) ÷ '+S.drink.per+' ÷ 2 an hour ('+drank+', about '+dr+')')}
  reset();at('open');bag({water:400,grain:200});{const e=t.eatPerDay(),g0=t.goodN('grain');hours(24,true);const ate=g0-t.goodN('grain');
   ok(Math.abs(ate-e*S.eat.march)<=1,'on the march, ×'+S.eat.march+' ('+ate+', about '+e*S.eat.march+')')}
- reset();at('open');bag({water:200});{const m0=P.morale;hour(false);ok(P.morale===m0-S.hunger.morale&&t.BAND.hungry===1&&/goes hungry/.test(G.msgs.map(x=>x.m).join()),'no food: hungry, morale −'+S.hunger.morale+' an hour');
-  hours(S.hunger.grace-2,false);const n0=P.troops.hum_levy;hour(false);ok(P.troops.hum_levy===n0-1&&!t.woundedN(),'a day hungry, a man deserts');hours(S.hunger.every,false);ok(t.woundedN()===1,'then by turns one falls sick')}
+ // ---- hunger by its stages (stopped by a river: never short of water): Hungry, Starving, men desert, fall sick, at last die
+ {const H=S.hunger,msgs=()=>G.msgs.map(x=>x.m).join(),lost=w=>t.BAND.lost.filter(x=>x.why===w).length,tag=()=>t.supplyNow().tags.map(x=>x[0]).join();
+  reset();P.troops={hum_levy:30};at('river');bag({});const m0=P.morale;hour(false);const m1=P.morale;hour(false);
+  ok(t.BAND.hungry===2&&m1===m0&&P.morale===m0-H.morale&&/goes hungry/.test(msgs())&&/Hungry/.test(tag()),'no food: Hungry, morale −'+H.morale+' every '+H.every+' hours');
+  hours(H.starving-2,false);ok(t.BAND.hungry===H.starving&&/starving/.test(msgs())&&/Starving/.test(tag())&&t.staminaRate(true,'water',t.supplyLand()).why.includes('starving ×'+H.starveDrain),'after '+H.starving+' hours Starving: the march drains ×'+H.starveDrain);
+  hours(H.desert-H.starving-1,false);const n0=P.troops.hum_levy;hour(false);ok(P.troops.hum_levy===n0-1&&!t.woundedN()&&lost('deserted')===1,'after '+H.desert+' hours a man deserts');
+  hours(H.sick-H.desert,false);ok(t.woundedN()===1&&t.BAND.sick.hum_levy.hunger===1,'after '+H.sick+' hours one falls sick as well (of hunger)');
+  hours(H.die-H.sick,false);ok(lost('hunger')===1&&/dies of hunger/.test(msgs()),'after '+H.die+' hours a sick man dies of hunger');
+  ok(/Wounded and sick/.test(t.woundedPanel())&&/sick \(hunger\)/.test(t.woundedPanel())&&/Died of hunger: Levy ×1/i.test(t.woundedPanel())&&/Deserted/.test(t.woundedPanel()),'the troops tab lists the sick and why, and the men lost on the road')}
  // ---- water by water, and at a holding's well
  reset();at('river');bag({grain:60});hour(false);{const want=Math.ceil(P.drinkHour(true)*24*S.fill.days);ok(t.goodN('water')===want-Math.floor(P.drinkHour(false)),'stopped by a river, the waterskins fill free ('+t.goodN('water')+')')}
  reset();at('open');bag({grain:60});hour(false);ok(t.goodN('water')===0,'out on dry ground they do not');
  reset();Kit.goHome();bag({grain:60});hour(true);ok(t.goodN('water')>0,'a holding’s well fills them, marching by or not');
  // ---- the desert's thirst and the frost's frostbite
- reset();at('desert');bag({grain:200});P.bsta=50;hours(S.thirst.grace,false);ok(t.BAND.dry===S.thirst.grace&&near(P.bsta,50)&&t.woundedN()===1&&/thirst/.test(t.BAND.hurt.map(h=>h.why).join()),'the desert with no water: no rest, and after '+S.thirst.grace+' hours a man falls sick from thirst');
+ // ---- thirst by its stages, sooner in the desert: Thirsty, Parched (slower), men fall sick, then the sick die
+ {const T=S.thirst,tag=()=>t.supplyNow().tags.map(x=>x[0]).join(),lost=()=>t.BAND.lost.filter(x=>x.why==='thirst').length;
+  reset();P.troops={hum_levy:30};at('desert');bag({grain:400});P.bsta=50;hour(false);ok(t.BAND.dry===T.desert&&near(P.bsta,50)&&/Thirsty/.test(tag()),'the desert with no water: Thirsty, no rest, its hours counting ×'+T.desert);
+  const p0=P.staminaPace();hours(T.parched/T.desert-1,false);ok(t.BAND.dry===T.parched&&/Parched/.test(tag())&&near(P.staminaPace(),p0*T.pace),'Parched after '+T.parched/T.desert+' hours there: pace ×'+T.pace);
+  hours((T.dying-T.parched)/T.desert,false);ok(t.woundedN()===1&&t.BAND.sick.hum_levy.thirst===1&&/Dying of thirst/.test(tag()),'then a man falls sick of thirst');
+  hours((T.death-T.dying)/T.desert,false);const sick=(T.death-T.dying)/T.toll+1;ok(lost()===1&&t.woundedN()===sick-1&&P.troops.hum_levy===30-sick,'then they die, a sick man first ('+sick+' fell sick, 1 died)')}
+ {reset();P.troops={hum_levy:30};at('open');bag({grain:400});hours(S.thirst.parched,false);const p=/Parched/.test(t.supplyNow().tags.map(x=>x[0]).join());hours(S.thirst.dying-S.thirst.parched,false);
+  ok(p&&t.woundedN()===1,'with nothing to drink anywhere: Parched after '+S.thirst.parched+' hours, a man sick after '+S.thirst.dying)}
  reset();at('frost');bag({grain:200,water:400});hours(S.frost.every,false);ok(t.woundedN()===1&&/frostbite/.test(t.BAND.hurt.map(h=>h.why).join()),'with no furs in the frost, frostbite takes a man every '+S.frost.every+' hours');
  reset();at('frost');bag({grain:200,water:400,furs:P.furNeed()});hours(S.frost.every*2,false);ok(!t.woundedN(),'with furs enough, none');
  // ---- the hint, once
@@ -102,6 +116,8 @@ try{
  // ---- saves
  reset();at('open');P.bsta=42;t.BAND.liquor=true;t.BAND.hint=true;G.mode='world';t.saveGame(true,'quick');P.bsta=100;ev('BAND=freshBand()');t.loadGame('quick');
  ok(Math.abs(P.bsta-42)<1e-9&&t.BAND.liquor===true&&t.BAND.hint===true,'save and load keep the band’s stamina and its record');
+ P.wounded={hum_levy:2};t.BAND.sick={hum_levy:{thirst:1}};t.BAND.lost=[{k:'hum_levy',why:'thirst',day:G.day}];G.mode='world';t.saveGame(true,'quick');ev('BAND=freshBand()');t.loadGame('quick');
+ ok(t.BAND.sick.hum_levy&&t.BAND.sick.hum_levy.thirst===1&&t.BAND.lost.length===1&&t.BAND.lost[0].why==='thirst','and the sick and the men lost lately (written only when there are any)');
  Kit.begin('soldier',4242);ok(P.bsta===100&&!t.BAND.liquor&&!t.BAND.hint,'a new game starts fresh');
  // a new game never begins thirsty: by your home's well the card counts the well's water, and the skins fill the moment you stand
  // there (supplyFrame, every half a second), not on the hour
