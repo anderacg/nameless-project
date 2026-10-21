@@ -32,7 +32,10 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),out=()=>{cons
   const m=t.worldCv().getContext('2d').getImageData(t.townBy('Ashford').x-200,t.townBy('Ashford').y-200,400,400).data,cols=new Set();for(let i=0;i<m.length;i+=16)cols.add(m[i]>>3<<10|m[i+1]>>3<<5|m[i+2]>>3);
   ok(cols.size>40,'the world map is painted in '+cols.size+' shades around Ashford');
   t.worldCv();let roads=0,clearRoads=0;for(let i=0;i<t.tiles.length;i++)if(t.tiles[i]===t.T_ROAD){roads++;if(t.isClear((i%t.MW+.5)*16,(Math.floor(i/t.MW)+.5)*16))clearRoads++}
-  ok(roads&&clearRoads===roads&&t.TOWNS.every(x=>t.isClear(x.x,x.y)),'roads and each holding’s own tile (its centre) (and the gate before it) are kept clear of trees, hills and peaks');
+  // (today's map: every road tile; a generated one paints its roads along their softened lines, not by tile (gfx/worldart.js
+  // artGenPlan), so its clear band is checked along the painted segments: a raw line's corner may lie beside the road)
+  const segs=t.WM.gen!=='classic-0'&&t.WorldArt.ensure().segs;let pts=0,clearPts=0;if(segs)for(let k=0;k<segs.length;k+=5)for(const f of [0,.25,.5,.75,1]){pts++;if(t.isClear(segs[k]+(segs[k+2]-segs[k])*f,segs[k+1]+(segs[k+3]-segs[k+1])*f))clearPts++}
+  ok((segs?pts&&clearPts===pts:roads&&clearRoads===roads)&&t.TOWNS.every(x=>t.isClear(x.x,x.y)),'roads and each holding’s own tile (its centre) (and the gate before it) are kept clear of trees, hills and peaks'+(segs?' (along the '+pts+' points of the painted roads)':''));
   ok(t.TOWNS.every(x=>Object.entries(t.bldSpots(x)).every(([k,p])=>{const l=t.lotOf(p.tx,p.ty);return l&&l.k===k&&l.town===x.name})),'every estate stands on a building of its own holding (its yard drawn over whatever the map painted there)');
   ok(t.arenaFor('desert')!==t.arenaFor('frost')&&t.arenaFor('grass').width===t.BW&&t.arenaFor('grass').height===t.BH,'each climate has its own battle ground, as large as the battlefield');}
  // weapons held apart from the body: the battle sprite leaves the melee weapon off and knows where the hand is
