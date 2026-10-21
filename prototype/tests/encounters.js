@@ -1,5 +1,5 @@
 'use strict';
-// Encounters on the road (world/road.js, doc/ENCOUNTERS_DESIGN.md phases 1 and 2): the pity timer (travel only, met resets it,
+// Encounters on the road (world/encounters.js, world/road.js, doc/ENCOUNTERS_DESIGN.md phases 1 and 2): the pity timer (travel only, met resets it,
 // passed by takes 25–50% off), at most 2 a day and no kind again within 5 days, placed past your sight on its own ground, each
 // behaviour (approach, stay, flee, scene), their lifetimes and leaving when you are far, the traces, the highlights ("!", the
 // glow, the call-out, the arrow at the screen's edge), a click opens the page, each of the 14 kinds' page, choices and outcomes

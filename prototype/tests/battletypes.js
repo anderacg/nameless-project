@@ -98,7 +98,7 @@ try{
   const h2=document.querySelector('#panel h2');ok(h2&&!document.querySelector('#panel .nav')&&!t.escDismiss()&&document.querySelector('#panel .btns [data-act="fight"]'),'the pre-battle panel keeps the frame: its header, the fight’s choices, no bar (a forced choice: Esc picks none)');
   t.act('fight');const B=t.B;ok(B.btype&&B.btype.kind==='ambush'&&B.btype.hid===1&&!B.deploy&&B.units.filter(u=>u.team===1&&u.hp>0).every(u=>u.hid&1),'the battle: no deployment even with it on, every one of theirs unseen');
   ok(G.enc.btype===false,'sprung once: run down after it, you would face them on an open field');world();ev('BDEPLOY.on=false')}
- {at(forest.tx,forest.ty);const D=t.ROAD_ENC.ambush;ok(D&&D.ok()&&!t.EVENTS.some(x=>x.id==='ambush'),'the ambush on the road can come where there is cover (an encounter on the map: world/road.js)');
+ {at(forest.tx,forest.ty);const D=t.ROAD_ENC.ambush;ok(D&&D.ok()&&!t.EVENTS.some(x=>x.id==='ambush'),'the ambush on the road can come where there is cover (an encounter on the map: world/encounters.js)');
   world();const E=t.roadSpawn('ambush',P.x+8,P.y);t.roadMeet(E);ok(G.mode==='road'&&/ambush/.test(panel())&&!document.querySelector('#panel .nav [data-nav="close"]'),'its page: the choices, no Leave (a forced choice)');
   t.act('enc-do','0');ok(G.enc&&G.enc.btype&&G.enc.btype.kind==='ambush'&&G.enc.btype.hid===1&&/Ambush!/.test(panel()),'and Close up and fight leads into the ambush: the pre-battle panel says Ambush!');world()}
  {at(forest.tx,forest.ty);const e=meet({mine:true});ok(!e.btype&&/data-act="bt-spring"[^>]*>Spring an ambush/.test(panel()),'riding at them where there is cover: the panel offers Spring an ambush');

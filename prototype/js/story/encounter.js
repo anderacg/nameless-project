@@ -102,7 +102,7 @@ const Behaviours={
       if(m.dist<ENC_SHEEP.shy)e.go(-m.dx,-m.dy,ENC_SPD.stray,m.d);
     },
   },
-  /* the chase (Chase on its page: road.js roadChase), shared: it runs from you at catchSpd; within catchReach you have it
+  /* the chase (Chase on its page: encounters.js roadChase), shared: it runs from you at catchSpd; within catchReach you have it
      (nabbed: its page again, the catch's choices); it is away after ENC_CATCH.hours, or once lose × your sight from you */
   chase:{
     step(e,m){
@@ -124,7 +124,7 @@ const Behaviours={
   },
 };
 
-/* ---------- an encounter on the map (world/road.js: its kinds, their numbers, its figures, its page). Its record: {rd, i, k, x,
+/* ---------- an encounter on the map (world/encounters.js: its kinds; data/encounters.js: their numbers; its figures, its page). Its record: {rd, i, k, x,
    y, dir, beh, race, t0, end (hours), d0 (how far it first stood), seed, seen (heard or seen: highlighted from then), met, done,
    ...its kind's}; a trace: {rd, i, k, trace, from, end}. A kind's hooks (setup, ending, meet) are called through it, so a kind
    of its own class overrides them as methods ---------- */
@@ -350,7 +350,7 @@ class Encounter extends Happening{
     this.pray=1;
     this.end=now+L[0]+roadRng().next()*(L[1]-L[0]);
   }
-  /* a step walking off (road.js ENC_OFF): along the road to its tile lg; then (or with none) by the land's ways to its spot
+  /* a step walking off (data/encounters.js ENC_OFF): along the road to its tile lg; then (or with none) by the land's ways to its spot
      la away from you; with none, straight away from you */
   off(d){
     const s=moveStep(ENC_SPD.leave,d),g=this.lg,ox=this.x;

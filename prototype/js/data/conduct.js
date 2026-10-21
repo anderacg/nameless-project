@@ -15,7 +15,7 @@ const CONDUCT={
   burnEstate:{rep:18,honor:8,hostile:30,pros:15,fear:3},
   sabotageEstate:{rep:3},// unseen; caught, it costs as a plunder does
   toll:{rep:4,honor:3},
-  robMessenger:{rep:6,honor:6},// a realm's rider on the road (world/road.js), robbed: his realm's nearest holding
+  robMessenger:{rep:6,honor:6},// a realm's rider on the road (world/encounters.js), robbed: his realm's nearest holding
   takeBrigands:{honorAll:2,morale:4},
   // the homeless sheltering in searched ruins (sites.js RUIN_OCC): help them with gold or food (honor with the realm whose land
   // it is), or chase them off

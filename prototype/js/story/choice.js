@@ -7,7 +7,7 @@
      need(s): why it is greyed ('' or false: free to choose);
      ask(s): the confirm before it (what cannot be undone; none or null: no confirm);
      again: the page stays open after it;
-     odds: an ENC_STAT check (road.js): chance() its odds, roll() the draw, read(o) its Insight read, helps() the
+     odds: an ENC_STAT check (world/encounters.js statOdds): chance() its odds, roll() the draw, read(o) its Insight read, helps() the
        stats that help;
      out(s): its outcome (Outcome, story/outcome.js), built without doing anything and without a draw, so it can be shown
        as well as done; or run(s, choice): a hook for what an outcome cannot say (a roll, a chase, its own state), returning

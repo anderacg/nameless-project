@@ -3,7 +3,7 @@
    defineKind(shape, id, spec) registers a kind of a shape ('encounter' today; the incidents, quests, gatherings and threads
    later) once. The spec is the kind itself, plain data with hooks (its numbers, names, weights, its scene, its choices), as
    most of the road's are; kindOf(shape, id) gives it back, with its id and shape written on it.
-   - spec.cls: the kind's own subclass of its shape's class, only where it has real behaviour of its own (road.js: the
+   - spec.cls: the kind's own subclass of its shape's class, only where it has real behaviour of its own (world/encounters.js: the
      shepherd and his strays). None: the shape's class.
    - spec.trigger: when a kind may begin ('travelHour': the road's pity timer). Each trigger has its bucket, filled as the kinds
      are defined at load, in their order, so a trigger looks only at the kinds it can start: Kinds.on(shape, trigger) (a list),
