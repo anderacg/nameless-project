@@ -27,8 +27,10 @@ try{
  {const L=t.asParty({id:'X',name:'Lord X',fac:t.FIDS[0],x:P.x+60,y:P.y,troops:Array(12).fill('hum_spear'),state:'march',dead:false,cool:0});b=band(12);
   t.startEncounter({kind:'party',ref:b,n:12,band:'bandits',foes:[L]});ok(t.fleeOdds(G.enc).ch===0&&/closing in/.test(panel()),'with more of them closing in around you, you cannot flee');world()}
  {const dm=t.mythicOf('dragon')||t.spawnMythic('dragon');if(dm){dm.x=P.x+8;dm.y=P.y;t.startEncounter({kind:'monster',ref:dm,list:['dragon']});const f=t.fleeOdds(G.enc);ok(f.ch===0&&/on the wing/.test(panel()),'nor from a dragon on the wing ('+(f.why||f.ch)+')');world()}else ok(true,'(no dragon)')}
- // a patrol that met you does not crowd you while it cools down
- {const z=t.TOWNS.find(q=>q.owner&&q.owner!=='player');P.hostile={[z.owner]:G.day+30};const p=t.asParty({pt:true,watch:t.watchNow(),home:z.name,fac:z.owner,troops:t.garList({gar:6,races:z.races}),x:P.x+40,y:P.y,cool:8,dir:1});W.patrols=[p];
-  const d0=Math.hypot(p.x-P.x,p.y-P.y);for(let i=0;i<20;i++)t.updatePatrols(.05);ok(Math.hypot(p.x-P.x,p.y-P.y)>=d0-12,'a patrol cooling down does not ride up and stand on you');P.hostile={}}
+ // a patrol that met you does not crowd you while it cools down: one strong enough to ride at you (with no cool-down it would)
+ // keeps to its beat (its next stop set away from you, and the
+ // dice pinned, so a random stop that happens to lie past you, or a new one picked, never reads as riding at you)
+ {const z=t.TOWNS.find(q=>q.owner&&q.owner!=='player');P.hostile={[z.owner]:G.day+30};const p=t.asParty({pt:true,watch:t.watchNow(),home:z.name,fac:z.owner,troops:t.garList({gar:30,races:z.races}),x:P.x+40,y:P.y,cool:8,dir:1,wx:P.x+120,wy:P.y});W.patrols=[p];
+  const r0=Math.random;Math.random=t.seeded(7);try{const d0=Math.hypot(p.x-P.x,p.y-P.y);for(let i=0;i<20;i++)t.updatePatrols(.05);ok(Math.hypot(p.x-P.x,p.y-P.y)>=d0-12,'a patrol cooling down does not ride up and stand on you')}finally{Math.random=r0}P.hostile={}}
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}
 const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d)};
