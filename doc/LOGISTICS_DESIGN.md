@@ -1,6 +1,6 @@
 # Logistics: food and water as supply pools, the pack train, march preview: design
 
-Status: **design only** (owner, 2026-10-21: "everything just design for now, not implement yet"). It builds on the owner's general design, [army-logistics-food-water-design.md](references/assets/army-logistics-food-water-design.md) (its UI reference: [assets/army-logistics-ui-reference.png](references/assets/army-logistics-ui-reference.png)), and on Supply as built ([SUPPLY_DESIGN.md](SUPPLY_DESIGN.md), `world/supply.js`, 2026-10-21). Nothing here is built. **It rests on item categories** ([ITEMS_DESIGN.md](ITEMS_DESIGN.md)): the categories **Food**, **Drink** and **Carrier** route an item to the food pool, the water pool or the pack train, and **Quest items** never take room.
+Status: **design only** (owner, 2026-10-21: "everything just design for now, not implement yet"). It builds on the owner's general design, [army-logistics-food-water-design.md](references/assets/army-logistics-food-water-design.md) (its UI reference: [assets/army-logistics-ui-reference.png](references/assets/army-logistics-ui-reference.png)), and on Supply as built ([SUPPLY_DESIGN.md](SUPPLY_DESIGN.md), `world/supply.js`, 2026-10-21). Nothing here is built. **It rests on item categories** ([ITEMS_DESIGN.md](ITEMS_DESIGN.md)): the categories **Food**, **Water** and **Carrier** route an item to the food pool, the water pool or the pack train, and **Quest items** never take room.
 
 **The owner's decisions (2026-10-21):**
 - **Food and water both become pools.** Neither is kept as bag items any more.
@@ -25,7 +25,7 @@ Both live with the band, beside your hero's record (`BAND`, `world/supply.js`), 
 | | Food | Water |
 |---|---|---|
 | **Unit** | 1 Food = one man's food for a day | 1 Water = one man's water for a day on the march |
-| **Kept by kind** | grain, meat, fish, milk, cheese, fruit… (shown as one number) | water, ale, liquor (shown as one number) |
+| **Kept by kind** | grain, meat, fish, milk, cheese, fruit… (shown as one number) | one number: ale and liquor count as water and add morale as they go in (owner, ITEMS_DESIGN.md §2a) |
 | **Why by kind** | spoilage stays (fresh food spoils, grain and cheese keep), and so does the varied larder's morale (3+ kinds) | ale and liquor keep their effects (slower drain, morale) |
 | **Shown** | **days left** at the current rate, with `current / capacity` beside it | the same |
 
@@ -54,7 +54,7 @@ Anything that gave food goods now feeds the pool instead:
 
 **One order every hour** (the owner's): find what can resupply you here (a well, a friendly holding's market), resupply, then consume, then set the state and its effects. A band that reaches a friendly holding in the hour its water runs out drinks there first and never suffers for it.
 
-**What the bag keeps:** by category ([ITEMS_DESIGN.md](ITEMS_DESIGN.md)): Weapon, Armour, Mount, Ammunition, Resource, Trade good, Trophy, Valuable. **Food** and **Drink** route to their pools and **Carrier** to the train: one rule, the category's `route`, so nothing checks `GOODS[g].food` by hand any more.
+**What the bag keeps:** by category ([ITEMS_DESIGN.md](ITEMS_DESIGN.md)): Weapon, Armour, Mount, Ammunition, Resource, Trade good, Trophy, Valuable. **Food** and **Water** route to their pools and **Carrier** to the train: one rule, the category's `route`, so nothing checks `GOODS[g].food` by hand any more.
 
 **States** (the card's tags; the owner's table, mapped onto Supply as built):
 
@@ -186,7 +186,7 @@ Food on arrival: 4 days · Water on arrival: 0 days
 ## 10. What changes in today's code
 
 - **`world/supply.js`:** the pools by kind replace the bag's food and drink goods. Capacity, the train and the policies are added. The hourly eating and drinking keep their rules, in the new units. `fillSkins` becomes "fill to capacity". The card shows `days` and `current / capacity`.
-- **Inventory:** the item categories' `route` sends Food and Drink to the pools and Carriers to the train (`core/inventory.js add`); the market's food rows become **Provision**. Item categories are built first (ITEMS_DESIGN.md, S–M), as this phase's first step or just before it.
+- **Inventory:** the item categories' `route` sends Food and Water to the pools and Carriers to the train (`core/inventory.js add`); the market's food rows become **Provision**. Item categories are built first (ITEMS_DESIGN.md, S–M), as this phase's first step or just before it.
 - **Loot, hunting, encounters, quests:** their food rewards go to the pool. The supply job (`world/quests.js`) delivers from it.
 - **The trade window:** you sell from the pool (sell surplus food), and buy into it.
 - **New:** `data/logistics.js` (`PROVISIONS`, `CARRIERS`, the policies' numbers), the Supplies window (frame rule: header, the two pools with days, the train, rations and resupply, Provision presets; Back and Close), the march preview bar, the pack train on the map.
