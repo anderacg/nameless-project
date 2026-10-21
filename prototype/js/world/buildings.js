@@ -1,6 +1,8 @@
 'use strict';
 /* ---------- what each holding has built: its estates' levels, its walls and the project underway (Buildings, the holding's
-   t.buildings); split from estates.js, which keeps the estates themselves (Estate: their fields, workers, guards and pages) ---------- */
+   t.buildings); split from estates.js, which keeps the estates themselves (Estate: their fields, workers and guards) ---------- */
+// t.bld = {farm:lv, …}: 0 is none, up to its kind's estMax. t.wall = 0..its wallMax (holdings.js). t.work = {k, lv, done}: the project underway.
+// Walls make defenders stronger, sieges longer and the garrison bigger; a breach on capture costs a level.
 const bldCost=(k,lv)=>ESTATES[k].cost*lv*lv;
 // what an estate needs built first (ESTATE_NEEDS), in words
 const needsText=k=>Object.entries(ESTATE_NEEDS[k]||{}).map(([e,lv])=>ESTATES[e].n+' '+lv).join(' and ');

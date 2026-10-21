@@ -88,7 +88,7 @@ js/world/             the campaign map and everything on it
   stay.js               staying in a holding (your band), and the shelter rules for you and your companions
   economy.js            a holding's Economy (stock, production, prices, people; its day) and the treasuries
   buildings.js          what a holding has built: its Buildings (estates' levels, walls, projects; its day)
-  estates.js            each Estate (fields, guards, sabotage, its day's work) and its pages
+  estates.js            each Estate (fields, guards, sabotage, its day's work) and the spoils of raiding one; its window is ui/estate.js
   lots.js               placed buildings on the grid: a holding's Layout (its lots), the grid's searches, placing by hand
   folk.js caravans.js   workers at the estates (inside, out on their fields in the morning, carrying loads to the holding);
                         caravans (realms' and yours)
@@ -128,7 +128,7 @@ js/gfx/               worldart.js (the painted map), sprites.js (generated sprit
 js/ui/                ui.js (panels, title, Esc menu), loading.js (the loading overlay; runSteps runs long work in steps), character, talents, inventory, town (a holding's
                       places: Place, definePlace, PLACES; class wave D),
                       window.js (rail windows: a rail of places beside the chosen one's window), townui.js (a town's places, its overview, your
-                      holding's buildings), peopledrawer.js (the people drawer, P), input.js (actions, mouse, keys), map.js (the full map:
+                      holding's buildings), estate.js (an estate's window on the map, and the Fief's Estates section), peopledrawer.js (the people drawer, P), input.js (actions, mouse, keys), map.js (the full map:
                       a placeholder until world Phase 2 wave 2), loot.js (the spoils), icons.js, battlehud.js, moraleicons.js (morale
                       badges and marks), orderpaths.js (where your groups are going), unitcard.js, developer.js (developer console)
 js/main.js            game loop and boot

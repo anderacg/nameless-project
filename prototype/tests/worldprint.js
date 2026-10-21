@@ -33,7 +33,7 @@ const EXPECT={W1:'65e24662',W2:'2b49a168',W3:'dc546553',W4:'46450e62',W5:'6587a4
 //  and by the game's number, one draw of Math.random as the game begins (Rng.newGame, before the wild game is placed), so they
 //  stand elsewhere (W6's first spot by day and night: f4403dad 3d69a9d9, were 2b5e65e0 a8d18b3d) and the world draws Math.random
 //  differently from there (W8); the save holds the game's number and the streams' states (world.rng: B2, W7); the realms'
-//  building choice draws one key a kind before its sort (world/estates.js), not inside its comparator (W7). Checked by switching
+//  building choice draws one key a kind before its sort (world/buildings.js), not inside its comparator (W7). Checked by switching
 //  each off: the streams back on Math.random (no game's number drawn, their save piece left out), W6, W8 and B2 are as before and
 //  W7 is f9b6f403 (the estates' keys alone); the estates' comparator as it was too, every hash is as before (the house builder's
 //  log line and the new game's timers reset in defence.js and patrols.js move nothing); the streams with no game's number give
