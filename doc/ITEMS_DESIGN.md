@@ -9,7 +9,8 @@ Status: **design only** (owner, 2026-10-21: "item should have type, for example,
 - **Water is its own category** (owner): water, and ale and liquor with it. Given to the water pool, ale and liquor count as water and **add a little morale** as they go in (§2a).
 - **Morale** stands beside the food and water pools (it exists today: the band's morale, 0–100), as the third bar of the Supplies window.
 - **No more arrows and bolts as items** (owner): a **Quiver** is equipment (it takes a bag slot when not worn); it sets how many shots your hero and the special units carry into a battle. Normal troops' ammunition comes from their tier and specialities (§2b).
-- **The bag tabs** (§3): agreed. It comes before logistics phase 1 ([LOGISTICS_DESIGN.md](LOGISTICS_DESIGN.md)), which routes food and drink by category.
+- **The bag tabs** (§3): agreed.
+- **(2026-10-22)** Ale and liquor give their morale once, as they go into the pool, replacing today's slower drain: **yes**. Quivers **full at every battle's start**, and each shows its **arrow type** (wooden, bronze…); equipment upgrades come later. The quiver sizes: **agreed for now**, kept in a table so more can be added. It comes before logistics phase 1 ([LOGISTICS_DESIGN.md](LOGISTICS_DESIGN.md)), which routes food and drink by category.
 
 ## 1. What exists
 
@@ -75,15 +76,17 @@ Each kind's verbs (`ItemKind.verbs`) ask the category: a Quest item never shows 
 
 - **Arrows and bolts stop being items.** Markets no longer sell them, smithies no longer make them (their `out` gives tools and more), and nobody starts with any.
 - **A Quiver** is equipment, in a new equip slot. Bows, crossbows, slings and javelins need one. Unworn, it takes a bag slot like any gear.
-- **Its size is your shots in a battle:** every battle starts with the quiver full, as troops' quivers do today, so there is no counting arrows between battles.
+- **Its size is your shots in a battle:** every battle starts with the quiver full (owner: agreed), as troops' quivers do today, so there is no counting arrows between battles.
+- **Every quiver carries an arrow type** (owner), shown in its name and tooltip: "Hunter's quiver · 30 bronze arrows". The types are a table of their own, `ARROWS` (wooden, bronze, iron, steel; elven and dwarven makes; bolts for crossbows: wooden, iron, steel), each with its name, icon and a damage factor (1 for all now). **Equipment upgrades** (owner: later) can then raise a quiver's arrows from wooden to iron, or its size, without new item kinds.
+- **Flexible** (owner): quivers are a data table, `QUIVERS` (`data/gear.js`): each entry is its name, size, arrow type, its weapons (bow, crossbow, sling, javelin), where it is sold, its worth and rarity. A new quiver is one more line; nothing in code lists them.
 
-  | Quiver | Shots | Where |
-  |---|---|---|
-  | Worn quiver | 20 | anyone; your first |
-  | Hunter's quiver | 30 | markets |
-  | Soldier's quiver / bolt case | 40 | towns, the smith |
-  | Master's quiver | 60 | cities, rare loot |
-  | Elven / dwarven make | 50, +accuracy or +damage | their people's holdings |
+  | Quiver | Shots | Arrows | Where |
+  |---|---|---|---|
+  | Worn quiver | 20 | wooden | anyone; your first |
+  | Hunter's quiver | 30 | bronze | markets |
+  | Soldier's quiver / bolt case | 40 | iron (bolts: iron) | towns, the smith |
+  | Elven / dwarven make | 50, +accuracy or +damage | elven / dwarven | their people's holdings |
+  | Master's quiver | 60 | steel | cities, rare loot |
 - **Who carries one:** your hero, companions, lords, chieftains and unique units (the characters). A character with a bow and no quiver shoots a handful (5) before drawing his sword.
 - **Normal troops** keep today's per-kind quivers (`AMMO`, `quiverOf`). Their size grows with their **tier** (a higher kind's `ammo`) and with **specialities** (PROGRESSION_DESIGN.md: e.g. the bow line's "Full quiver" +25%).
 - Today's after-battle gathering of arrows goes away with the arrows.
@@ -155,7 +158,7 @@ A new item kind, `Valuable` (`core/items.js`), over a new table, `VALUABLES` (`d
 2. ~~Quest items~~: decided: they take a bag slot, and the bag overfills (§4a).
 3. ~~Valuables~~: decided: now (§4b).
 4. ~~Bag tabs~~: agreed.
-5. **Overfill:** −4% pace a slot over, never below −60%. Right?
-6. **Ale and liquor:** a one-off morale bonus as they go into the pool (as above), replacing today's slower stamina drain while drinking them. Right?
-7. **Quivers:** full at the start of every battle (no counting arrows between battles), as troops do today. Right, or should a quiver need refilling (at a holding, or from a supply pool, logistics later)?
-8. **The quiver sizes** in §2b: right?
+5. **Overfill:** −4% pace a slot over, never below −60%. Right? (*Not yet answered; the default until then.*)
+6. ~~Ale and liquor~~: decided: a one-off morale bonus into the pool, replacing the slower drain.
+7. ~~Quivers~~: decided: full at every battle's start; each shows its arrow type (`ARROWS`); upgrades later.
+8. ~~The quiver sizes~~: agreed for now, in the `QUIVERS` table, so more can be added.
