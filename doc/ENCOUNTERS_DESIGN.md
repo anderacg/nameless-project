@@ -1,6 +1,6 @@
 # Random encounters on the map: design
 
-Status (checked 2026-10-19): **approved** (2026-10-19); phase 1 built (2026-10-19, 17224a0: `world/encounters.js`, `tests/encounters.js`); **phase 2 built** (8f1c621) (2026-10-19: the 8 new encounters of normal priority, as data in `ROAD_ENC` with their numbers in `ENC_TUNE`; the shared chase and catch in `RoadEncounter` and `ENC_CATCH`; stand-in figures until phase 3's props); **phase 4 in part built** (2026-10-19, 937ca04: the sealed letter as a real item, `world/letters.js`; the fake wounded (a lure); the pilgrims at real shrines; see "Phase 4 as built" below). Also built 2026-10-19: the sound-wave highlights (3baad24, aed29cd, b3560c5), the healed traveller walking off bandaged (51841e8), nothing ending in sight (7c895f0), stat checks (8f072a3), strayed sheep (19c0cae), the gamblers' cap (da995ab). **Open:** phase 3 (the props) and the rest of phase 4 (prisoner wagon, execution, duel), and the small-encounters backlog; their order is in IMPLEMENTATION_PLAN §10 (items 2, 3 and 9), which owns the queue; this doc owns the designs.
+Status (checked 2026-10-19): **approved** (2026-10-19); phase 1 built (2026-10-19, 17224a0: `world/road.js`, `tests/encounters.js`); **phase 2 built** (8f1c621) (2026-10-19: the 8 new encounters of normal priority, as data in `ROAD_ENC` with their numbers in `ENC_TUNE`; the shared chase and catch in `RoadEncounter` and `ENC_CATCH`; stand-in figures until phase 3's props); **phase 4 in part built** (2026-10-19, 937ca04: the sealed letter as a real item, `world/letters.js`; the fake wounded (a lure); the pilgrims at real shrines; see "Phase 4 as built" below). Also built 2026-10-19: the sound-wave highlights (3baad24, aed29cd, b3560c5), the healed traveller walking off bandaged (51841e8), nothing ending in sight (7c895f0), stat checks (8f072a3), strayed sheep (19c0cae), the gamblers' cap (da995ab). **Open:** phase 3 (the props) and the rest of phase 4 (prisoner wagon, execution, duel), and the small-encounters backlog; their order is in IMPLEMENTATION_PLAN §10 (items 2, 3 and 9), which owns the queue; this doc owns the designs.
 
 ## 1. The idea
 
@@ -94,7 +94,7 @@ Any of them leaves at once when you are about 1.5× your sight away. Traces fade
 
 ## 5. How it is built
 
-- **`world/encounters.js` (new):**
+- **`world/road.js` (new):**
   - `class RoadEncounter extends WorldObject`: position, kind, behaviour (approach, stay, flee, scene), scene pieces, timers.
   - Spawn and despawn rules; the data table `ROAD_ENC` (kind → where, when, weights, cooldown, behaviour, scene, page).
 - **The page:** through `PageScreen`, so buttons are verbs, confirms come from the base, and Insight reads from Scouting.

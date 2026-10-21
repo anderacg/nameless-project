@@ -2,7 +2,7 @@
 /* ---------- a story place (split from story/context.js): what a happening's conditions read about a spot on the map, worked out
    once, when first read: its terrain and climate, whose land it is, a road or the mountains near, a wood's edge, the cover for an
    ambush. StoryContext (context.js) is the one where you stand, with the when and who; Story.at(tx, ty) one for any tile;
-   encounters.js roadLand reads one directly. It only reads: no Math.random, no changes. ---------- */
+   road.js roadLand reads one directly. It only reads: no Math.random, no changes. ---------- */
 class StoryPlace{
   constructor(x,y){
     this.x=x;
@@ -52,7 +52,7 @@ class StoryPlace{
   get woodsEdge(){
     return this.once('woodsEdge',()=>this.terrain===T_OPEN&&this.by(T_FOREST,1)&&![-1,0,1].some(i=>tAt(this.tx+i,this.ty+1)===T_FOREST));
   }
-  // the cover here for an ambush (battle/encounters.js coverAt: 'forest', 'hills', 'field' or null)
+  // the cover here for an ambush (battle/engage.js coverAt: 'forest', 'hills', 'field' or null)
   get cover(){
     return this.once('cover',()=>coverAt(this.x,this.y));
   }

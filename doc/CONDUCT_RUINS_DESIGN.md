@@ -92,7 +92,7 @@ When you choose Rob, the workers decide whether to resist:
   - `world/folk.js`: worker loot by state, resistance, memory;
   - `data/conduct.js`: `killWorkers`;
   - `world/sites.js`: ruin occupants, guardians memory, checks;
-  - `battle/encounters.js`: the villager fight, forced guardian fights;
+  - `battle/engage.js`: the villager fight, forced guardian fights;
   - a small shared helper for the Insight reads.
 - **Reuses:** the peasant troop kinds, the bandit-camp and cave pages, travellers, refugees, `parley.js`, and `PageScreen`.
 - **Tests:**

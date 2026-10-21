@@ -81,7 +81,7 @@ function drawWorld(){
   drawEnv(cam,V,0);drawLand(cam);drawEstates(cam,V);
   // each thing on the map draws itself onto the frame's list (WorldObject draw), in the order they always went (two as deep stay
   // in it): the sites, the parties, the beasts, the herds, you, then the workers, caravans, ships, refugees, the encounters on
-  // the road (encounters.js) and fights
+  // the road (road.js) and fights
   for(const s of W.sites)s.draw(ents,cam,V);
   // the holdings (and their estates) are drawn as their placed buildings (lotEnts, called with the estates below)
   drawParties(ents,cam,V);// lords, bands, patrols and your companions' parties (each party draws itself: parties.js)

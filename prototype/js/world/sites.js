@@ -121,7 +121,7 @@ class Site extends WorldObject{
   returned(){}
   // the treasure it may hold (siteChest): extra gold, and the chance of gear
   get chest(){return{gold:0,gear:.7}}
-  // its beasts beaten (encounters.js ON_WIN.cave): its chest, and it lies empty; withdrawn from or beaten by them: nothing kept
+  // its beasts beaten (engage.js ON_WIN.cave): its chest, and it lies empty; withdrawn from or beaten by them: nothing kept
   lairWon(){const x=siteChest(this);clearPlace(this,this.T.respawn);return x}
   lairLost(e){}
   // on the map: a patch of ground under it, its banner's colour, a banner of its own (travellers), clicked where
@@ -320,7 +320,7 @@ class Ruins extends Site{
     if(wake)return done('Soft-footed, your people slip past the guardians and lift a sealed chest from under their noses.'+siteChest(this));
     if(r<RUIN.chest)return done('Under a fallen slab you find a sealed chest.'+siteChest(this));
     gainXp(30);P.renown+=2;done('No treasure, but the carvings tell of the old kings. You learn much. (+30 XP, +2 renown)')}
-  // the guardians beaten (encounters.js ON_WIN.cave): their treasure, for sure; left or beaten by them, it remembers them
+  // the guardians beaten (engage.js ON_WIN.cave): their treasure, for sure; left or beaten by them, it remembers them
   lairWon(){delete this.guard;delete this.stirs;this.looted=true;const x=' Beyond them lies the treasure.'+siteChest(this);clearPlace(this,this.T.respawn);return x}
   lairLost(e){if(!this.looted)this.guard={id:this.id,n:Math.max(1,e.list.length),lv:e.lv}}
   // the cultists or grave robbers beaten (ON_WIN.ruin): their purse, and the ruins empty

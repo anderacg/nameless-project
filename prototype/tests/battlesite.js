@@ -6,7 +6,7 @@
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.push('INFO '+m);
 try{
  const t=T,P=t.P,G=t.G,TILE=t.TILE,MW=t.MW,MH=t.MH,tAt=t.tAt,climAt=t.climAt,{T_OPEN,T_FOREST,T_HILL,T_WATER,T_ROAD,T_MOUNT}=t;
- // ---- today's direct reads (as setup.js, terrain.js and encounters.js read the world before R17)
+ // ---- today's direct reads (as setup.js, terrain.js and engage.js read the world before R17)
  const oldEnv=()=>{const r=t.regionAt(P.x,P.y),tt=r.t===T_MOUNT||r.t===T_WATER?T_HILL:r.t,c=r.c;
   const text=tt===T_FOREST?'Trees block movement and stop some arrows. Elves shoot through them.':tt===T_HILL?'High ground: archers reach 15% farther.'
    :c==='frost'?'Snow slows everyone but dwarves and wolves.':c==='desert'?'The heat slows melee attacks, except for orcs and scorpions.':c==='swamp'?'Mud slows everyone and stalls cavalry charges. Orcs wade through.':'Open ground: cavalry rides 15% faster.';

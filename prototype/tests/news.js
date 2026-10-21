@@ -48,7 +48,7 @@ try{
   ok(items().some(it=>it.k==='beast'&&it.detail.id==='wolf')&&items().some(it=>it.k==='band'&&it.detail.n===30),'a beast and a big band on a holding’s land are talked of (defence.js landDefence)');
   ok(t.rating(big.troops,t.chiefLv(big))>=N.band,'the band is big enough ('+t.rating(big.troops,t.chiefLv(big))+' ≥ '+N.band+')');
   W.monsters=[];t.bandits.length=0;W.patrols=[];W.lords.forEach(l=>{l.defend=null})}
- {fresh();const e=t.roadSpawn('traveller',A.x+50,A.y+30);if(e){e.drop(t.roadNow());ok(items().some(it=>it.k==='trace'&&it.detail.t==='body'),'a trace left on the road: news of it (encounters.js drop)')}else ok(false,'a road encounter to leave a trace')}
+ {fresh();const e=t.roadSpawn('traveller',A.x+50,A.y+30);if(e){e.drop(t.roadNow());ok(items().some(it=>it.k==='trace'&&it.detail.t==='body'),'a trace left on the road: news of it (road.js drop)')}else ok(false,'a road encounter to leave a trace')}
  {fresh();const L=W.lords.find(l=>!l.dead&&l.fac!==A.owner),r=Math.random;Math.random=()=>.99;Object.assign(L,{inside:null,state:'siege',tgt:A.name,troops:['hum_levy'],sd:0});t.resolveSiege(L,A);Math.random=r;
   ok(items().some(it=>it.k==='relieved'&&it.detail.town===A.name),'a siege that fails: news (realms.js resolveSiege)');W.lords.forEach(l=>{l.fight=null})}
 

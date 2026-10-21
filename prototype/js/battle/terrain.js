@@ -640,7 +640,7 @@ class BattleTerrain{
     return s+(v&&v.deep?TERRAIN.wade?' Deep water: wading is slow and tiring, no one shoots from it and blows land soft; cross at the fords and bridges.':' Deep water cannot be crossed: only at the fords and bridges.':'')+(v&&(v.stream||v.frozen)?' '+(v.frozen?'The ice is slippery going, but it can be crossed anywhere.':'The stream slows all but orcs.'):v&&n('ford')?' Fords slow all but orcs and break formations.':'')+
       (has.hills?' High ground: archers reach farther and charges downhill hit harder; the climb is hard going.':'')+(sheer?' Sheer cliffs ring a hill: it is climbed only by its ramps.':'')+(onew?' A hill is climbed by one ramp only, though men can drop down its cliffs.':'')+
       (has.rock?' Rock bars the way and hides what lies behind it.':'')+(has.wood?' Woods slow riders and break formations'+(D?', and hide whoever stands in them.':'.'):'')+(has.marsh?' Marsh slows and tires all but orcs.':'')+(rc.road?' Men march a little faster on the road.':'')}
-  // the battleground's text (its env's, with the ground's when there will be terrain; the pre-battle panel, encounters.js): no river
+  // the battleground's text (its env's, with the ground's when there will be terrain; the pre-battle panel, engage.js): no river
   // against a monster or in a cave (as groundSpecFor)
   // bt: the battle's type (setup.js BTYPE): a held bridge's river; an ambush's road and cover
   static envText(env,kind,bt){

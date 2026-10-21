@@ -42,7 +42,7 @@ const WORLD_SCALE={
   // war: a realm fortifies a holding with an enemy this near (tiles); walking this far off ends your raid or siege (px)
   war:{front:60,raidLeash:80,siegeLeash:80},
   // a battle's reach into the world round its tile (tiles; worldmap.js battleSite): an elven town this near makes elven woods;
-  // road bridges seen this far (the battle's own reaches, terrain.js TERRAIN_RIVER.near and encounters.js BTYPE_WORLD.near, within it)
+  // road bridges seen this far (the battle's own reaches, terrain.js TERRAIN_RIVER.near and engage.js BTYPE_WORLD.near, within it)
   battle:{elfR:10,bridge:2}
 };
 const moveStep=(px,d)=>px*d*WORLD_SCALE.move;

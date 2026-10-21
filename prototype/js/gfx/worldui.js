@@ -13,7 +13,7 @@
      tooltip is input.js's own (#tip).
    - Chasing a party or making for a holding: a ring pulsing round it and an arrow bobbing over it (while it is in sight), till
      you meet it or go elsewhere.
-   - An encounter on the road you know of and have not met (world/encounters.js): sound waves rippling out from it, a pulsing "!" over it, its
+   - An encounter on the road you know of and have not met (world/road.js): sound waves rippling out from it, a pulsing "!" over it, its
      call-out the first time it is on the screen, and its waves rolling in at the screen's edge while it is off it (wuiRoadUnder, wuiRoadOver).
    In whole game pixels on the camera's grid (what moves or eases, to 1/VS px as a mover is: render.js snapV), outlined dark as
    the arrows and chevrons of the battle are (ui/orderpaths.js). Real time. Under reducedMotion all holds still: no ripple or
@@ -162,7 +162,7 @@ function wuiOver(cam){if(G.mode==='title')return;const now=WUI.now||performance.
   wuiRoadOver(cam,now,rm);
   const h=WUI.hov;if(h){const b=h.b,col=WUI_K.col[h.kind],x0=wuiX(b[0],cam),y0=wuiY(b[1],cam),x1=wuiX(b[2],cam),y1=wuiY(b[3],cam),br=rm?0:(1+Math.sin(now/1000/WUI_K.breathe*6.2832))/2;
     wuiBrackets(x0,y0,x1,y1,col,h.kind==='ground'?.75:1,rm?0:Math.round(br),h.kind==='ground'?.5+.5*br:1+br)}}
-/* ---- the encounters on the road (world/encounters.js), each you know of and have not met (marked). Under the banners: sound
+/* ---- the encounters on the road (world/road.js), each you know of and have not met (marked). Under the banners: sound
    waves rippling out from its feet while you see it. Over the labels: a pulsing "!" over it while it is on the screen (heard and
    not yet seen, over the fog too), its call-out over that for ENC_LIFE.say s the first time you see it there; off the screen,
    at the screen's edge toward it, its waves rolling in from there "((((" (arcs round a point just past the edge), the "!" just

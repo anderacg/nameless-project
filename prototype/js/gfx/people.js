@@ -369,7 +369,7 @@ function mapGrid(o,f,cut){const g=pgrid(11,11-(o.short?1:0)-(cut!=null?PEOPLE_MA
 const MAP_HORSE=['.........hh','........hHe','.mhhhhhhHd.','m.HHHHHHHd.'],HORSE_LEGS=[2,3,7,8];
 const HORSE_UNDER=[0,0,0,0],HORSE_STRIDE=[HORSE_UNDER,[0,1,0,1],[-1,1,-1,1],HORSE_UNDER,HORSE_UNDER,[1,0,1,0],[1,-1,1,-1],HORSE_UNDER],HORSE_LIFT=[0,10,0,5,0,5,0,10];
 // (the map's horse on its own in g, its body's top left at (X, H0), its coat mountCol, step f: a rider seated on it (mapFigure), or
-// a saddle on an empty one (a runaway: encounters.js roadHorse); returns its pixel setter)
+// a saddle on an empty one (a runaway: encounterscene.js roadHorse); returns its pixel setter)
 function drawMapHorse(g,mountCol,f,X,H0){const H=pal(mountCol),Mn=pal('dark'),hs=(x,y,c)=>pset(g,X+x,H0+y,c);
   MAP_HORSE.forEach((r,y)=>[...r].forEach((c,x)=>{const col={h:H[0],H:H[1],d:H[2],k:'#27272c',e:'#27272c',m:Mn[2]}[c];if(col)hs(x,y,col)}));
   // the legs: the far pair in shade behind, the near pair over them; the lower half stepping by the stride

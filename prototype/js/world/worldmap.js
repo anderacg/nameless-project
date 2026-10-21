@@ -45,7 +45,7 @@ class WorldMap{
     return battleSiteOf({tx,ty,t,c,name:REGION_NAMES[c][t],kinds,clims,road:t===T_ROAD?{ns:kinds[1]===T_ROAD||kinds[7]===T_ROAD}:null,bridge,elven,salt:this.salt})}
 }
 /* a BattleSite (doc/WORLD_DESIGN.md R17, §13): one plain object, the hand-off from the world to a battle. The battle reads nothing
-   else of the world (setup.js battleEnv, fieldSize; terrain.js terrainOf, terrainEdges; encounters.js bridgeNear, coverAt).
+   else of the world (setup.js battleEnv, fieldSize; terrain.js terrainOf, terrainEdges; engage.js bridgeNear, coverAt).
    tx, ty: the tile; t, c, name: its kind, climate and name (as map.js regionAt); kinds, clims: the 3 x 3 tiles round it, row by
    row from the north-west (4: the tile; off the map water and grass); road: the tile is a road ({ns}: it runs on north or south);
    bridge: how far the nearest road bridge is (tiles, the larger of dx, dy), up to WORLD_SCALE.battle.bridge, else null; elven: an

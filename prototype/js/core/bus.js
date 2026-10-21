@@ -8,10 +8,10 @@
    your hand; the rest: by anyone.
    | event            | data                    | emitted where                                           | heard by          |
    |------------------|-------------------------|---------------------------------------------------------|-------------------|
-   | band:beaten      | {band}                  | you broke it: battle/encounters.js (a band, a camp's),  | quests (bounty)   |
+   | band:beaten      | {band}                  | you broke it: battle/engage.js (a band, a camp's),  | quests (bounty)   |
    |                  |                         | battle/parley.js (bandGone, lairGone)                   |                   |
-   | monster:slain    | {monster}               | you slew it: battle/encounters.js                       | quests (beast)    |
-   | site:cleared     | {site}                  | you cleared it: battle/encounters.js (camp, cave),      | quests (clear)    |
+   | monster:slain    | {monster}               | you slew it: battle/engage.js                       | quests (beast)    |
+   | site:cleared     | {site}                  | you cleared it: battle/engage.js (camp, cave),      | quests (clear)    |
    |                  |                         | battle/parley.js (lairGone)                             |                   |
    | lord:beaten      | {lord}                  | you beat him: world/realms.js lordWon, parley.js (yield)| quests (lordkill) |
    | holding:razed    | {town}                  | you raided it to the ground: world/siege.js finishRaid  | quests (raid)     |

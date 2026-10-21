@@ -52,7 +52,7 @@ function pickAt(wx,wy){
 // what a thing on the map is (its mapKind), while it is still on the map (here); null for anything else
 const objKind=o=>(o=asWorldObject(o)) instanceof WorldObject&&o.here()?o.mapKind:null;
 // meet whatever you have reached, each its own way (WorldObject meet; G.youAttack: you started whatever fight this opens at once:
-// encounters.js startEncounter)
+// engage.js startEncounter)
 function interact(o){
   const k=objKind(o);P.tx=null;G.chase=null;G.youAttack=true;
   try{
@@ -180,7 +180,7 @@ function marchStep(d){
     const dx=P.tx-P.x,dy=P.ty-P.y,dist=Math.hypot(dx,dy);
     if(dist<2)P.tx=null;
     else{
-      const step=Math.min(dist,moveStep(MAP_BASE*travelMul(),d)*(P.morale<25?.8:1)*roadSprint());// (roadSprint: after a thief on the road, encounters.js)
+      const step=Math.min(dist,moveStep(MAP_BASE*travelMul(),d)*(P.morale<25?.8:1)*roadSprint());// (roadSprint: after a thief on the road, road.js)
       P.dir=dx>=0?1:-1;
       if(walk(P,dx,dy,step)){P.stuck=0;train('scout',step/TILE*.08);if(mountDef())train('ride',step/TILE*.1);if(terrAt(P.x,P.y)===T_FOREST)train('wood',step/TILE*WOODCRAFT.xp)}else{P.stuck+=d;if(P.stuck>.4){P.tx=null;P.stuck=0}}
     }

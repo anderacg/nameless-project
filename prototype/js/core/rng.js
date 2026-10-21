@@ -9,7 +9,7 @@
    back. Saved with the game's number (the save registry's last piece, 'rng'); a new game starts every stream afresh.
    The streams (the story wave's S4, doc/STORY_DESIGN.md §9): the story and the content that gets tuned often draw from their
    own, so adding a kind or changing a weight never moves the world's Math.random:
-     'road'       the encounters on the road (world/encounters.js, story/happening.js, story/choice.js: the hour's roll, the
+     'road'       the encounters on the road (world/road.js, story/happening.js, story/choice.js: the hour's roll, the
                   pity timer, the kind, its spot, its setup, its time, its behaviours, its choices' rolls);
      'letters'    the sealed letter (world/letters.js: its contents, the witness roll);
      'incidents'  the road events (world/events.js, story/incident.js: the day's roll, the kind, the mirage);

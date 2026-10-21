@@ -1,5 +1,5 @@
 'use strict';
-/* ---------- the sealed letter (doc/ENCOUNTERS_DESIGN.md, phase 4): what a messenger on the road (world/encounters.js) carries, and,
+/* ---------- the sealed letter (doc/ENCOUNTERS_DESIGN.md, phase 4): what a messenger on the road (world/road.js) carries, and,
    robbed, a real thing in your bag. Its contents are chosen when he comes (letterMake) from the world as it stands: where one of
    his realm's lords marches (army), a holding of an enemy his realm means to fall on (attack), a deal offered another realm
    (deal), or plain news (news, maybe of a place you have not found). From (a holding of his realm) and to (the holding it is

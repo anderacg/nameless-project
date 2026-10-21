@@ -178,7 +178,7 @@ const Outcome={
       },
       text:()=>'word gets round',
     },
-    // fight: {amb, edge} (encounters.js roadFight: an ambush's band, you in their trap), true: the plain one
+    // fight: {amb, edge} (road.js roadFight: an ambush's band, you in their trap), true: the plain one
     fight:{
       apply(v,ctx){
         if(v===true)roadFight(ctx.e);
@@ -186,7 +186,7 @@ const Outcome={
       },
       text:()=>'a fight',
     },
-    // chase: after it on the map (encounters.js roadChase; its line, res.say)
+    // chase: after it on the map (road.js roadChase; its line, res.say)
     chase:{
       apply(v,ctx,res){
         res.say=roadChase(ctx.e);
@@ -206,7 +206,7 @@ const Outcome={
       },
       text:()=>'',
     },
-    // start: another happening (res.started): {k, x, y} an encounter of kind k there (encounters.js roadSpawn); {thread, memory}
+    // start: another happening (res.started): {k, x, y} an encounter of kind k there (road.js roadSpawn); {thread, memory}
     // a thread of that kind, what it knows to begin with (story/thread.js Thread.start)
     start:{
       apply(v,ctx,res){

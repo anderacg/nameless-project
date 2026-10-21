@@ -223,7 +223,7 @@ Your army under Auto uses the same captain, so the player gets the same reading.
 
 **Text.**
 - **Log line** at the start: "A river with one ford; a hill on your side."
-- **Pre-battle panel** (`encounters.js`, the "Battleground:" line): the same, from the recipe.
+- **Pre-battle panel** (`engage.js`, the "Battleground:" line): the same, from the recipe.
 - **Wiki:** a "Terrain" subsection under *The field and its effects*, with a table built from `TERRAIN_GROUND` and `HILL`, the same way the unit-abilities table is built, so it stays in parity.
 
 ---
@@ -271,7 +271,7 @@ Agents are split by files that do not overlap. The **`B.terrain` shape in §4 is
 | **2. Rivers and AI** (built 2026-10-17/18, d208962, 9038878) | Deep, ford and bridge generation and rules (wadeable); captains read the ground (§5) | **A:** `terrain.js` rivers, plus `actors.js` `shotStep`. **D (AI):** `commander.js` (`TERRAIN_AI`, temperament keys), `tests/aiterrain.js`. **B:** water and bridge art | M |
 | **3. Hidden in woods** (built 2026-10-18, e527d86; art approval open) | Spotting: a unit in a wood is unseen by a team with no living soldier within 64 px (96 from higher ground) and none it struck or shot in the last 3 s. Unseen enemies are not drawn and not on the minimap; free fire skips them; captains' `assess` and `foes` filter them (fair both ways). A hidden group's first charge gives `CHARGE.shock`×1.5 and an "Ambush!" callout | **A:** `terrain.js` spotting (every 0.25 s); `actors.js` `shooterTarget`. **D:** `commander.js` filter. **B:** `render.js`, `camera.js`, `ui/battlehud.js` callout and chips | M |
 | **4. Routing** (simulation and art built 2026-10-18, e527d86; art approval open) | Impassable deep water with crossing routing for every group; cliffs (sheer and one-way hills, ramps); mountains and rock spires; every step guarded; AI by route length (see "Phase 4 routing as built") | **A:** `terrain.js` generation, grids and steering; hooks in `battle.js`, `battlecontrol.js`, `actors.js`, `morale.js`, `charmind.js`, `commander.js`, `lab.js`; `route.js` (`routeFlood`, `routeDist`); `tests/routing.js`. **B:** mountains, spires and cliff edges in `engine/` and `render.js` | L |
-| **5. Battle types** (shared with item 5; built 2026-10-18, e527d86) | *Hold the bridge* and *Ambush* battle types; the defender's ground is the bridge itself | `setup.js` `BTYPE`, `encounters.js` triggers and panel, `terrain.js` fields, `commander.js` AI, `lab.js` `type`, `events.js` road event; `tests/battletypes.js`, `tests/visual/btypebalance.js` | M |
+| **5. Battle types** (shared with item 5; built 2026-10-18, e527d86) | *Hold the bridge* and *Ambush* battle types; the defender's ground is the bridge itself | `setup.js` `BTYPE`, `engage.js` triggers and panel, `terrain.js` fields, `commander.js` AI, `lab.js` `type`, `events.js` road event; `tests/battletypes.js`, `tests/visual/btypebalance.js` | M |
 
 ---
 
@@ -420,7 +420,7 @@ Two battle types are built on the phase 3+4 snapshot: `BTYPE` in `setup.js`, and
   - The ambushers' first charge out of hiding gets `AMBUSH`'s shock and the "Ambush!" callout, as phase 3 built them.
   - The AI lying in wait goes straight in for `BTYPE.rush` (6 s): its foot charges and its riders ride at once. A column of the AI's marches on west along the road until it sees whoever lies in wait.
 - **Spring an ambush:** riding at a band, lord, patrol or caravan where there is cover, the panel offers it beside Fight (`bt-spring`). Your band starts hidden beside the road and theirs in march order on it.
-- **The ambush on the road** (only with terrain and cover; since the encounters on the map, `ROAD_ENC.ambush` in `world/encounters.js`, doc/ENCOUNTERS_DESIGN.md: unseen below Scouting 2, it springs as you pass): fight (the ambush above), or cut the baggage loose and run (−4 food, −15 gold, −4 morale).
+- **The ambush on the road** (only with terrain and cover; since the encounters on the map, `ROAD_ENC.ambush` in `world/road.js`, doc/ENCOUNTERS_DESIGN.md: unseen below Scouting 2, it springs as you pass): fight (the ambush above), or cut the baggage loose and run (−4 food, −15 gold, −4 morale).
 - **Telling the player:** the panel says **Ambush!** and its ground line says "The road runs between woods / dune ridges / low ridges". The battle opens with "Ambushed!" (or "Lie in wait").
 - **Window frame:** the pre-battle panel and the event's choice page stay forced choices with no bar. Esc pauses there. The event's outcome ends with the `nav` bar, "Continue".
 

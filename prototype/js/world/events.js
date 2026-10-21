@@ -2,7 +2,7 @@
 /* ---------- road events: what befalls you on the road without anyone to meet (the weather, sickness, a find). They are the
    incidents (story/incident.js, the Incident shape), kinds registered with the trigger 'day': w = weight, ok(c) = can it happen
    here and now (c: the story context), run() = what it does, returning its outcome (its log line and tone in it). The people
-   you meet on the road are encounters on the map now (world/encounters.js, doc/ENCOUNTERS_DESIGN.md), no longer events ---------- */
+   you meet on the road are encounters on the map now (world/road.js, doc/ENCOUNTERS_DESIGN.md), no longer events ---------- */
 const nearHold=()=>{const t=Spatial.nearestHolding(P.x,P.y);return t&&Math.hypot(t.x-P.x,t.y-P.y)<WORLD_SCALE.law.eventNear*TILE?t:null};
 const gainGrain=n=>invAdd('good','grain',n);
 defineKinds('incident',{trigger:'day'},{

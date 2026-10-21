@@ -72,7 +72,7 @@ They reuse the duel (battle with `tournament:true`) or the stat contests.
   - `ui/townui.js` and `ui/town.js`: **the lists** place shows the schedule ("Regional tournament in 6 days"), the entry, the bracket, the bookmaker, and practice bouts.
   - `battle/resolution.js`: the tournament result by kind and round, the yield-and-wounded rule, prizes.
   - The Grand Stadium: a site in `world/sites.js`, its structure in the engine, its page; generator placement.
-  - `world/encounters.js`: the small fighting events.
+  - `world/road.js`: the small fighting events.
 - **Reuses:** the duel battle (`tournament:true`), the stat-odds helper, the news and rumours, notices, Insight, sites and pages, the lords' brains.
 - **Tests:** the schedule (cadence, no clashes, the year), announcements reaching taverns, entering and the fee, the bracket advancing and forfeits, nonlethal (yield and wounded), prizes per kind, lords attending and not from wars, no small event near an announced tournament, save and load mid-tournament, fingerprints guarded.
 - **Phases:**

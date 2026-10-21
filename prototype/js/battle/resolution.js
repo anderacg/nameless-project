@@ -121,7 +121,7 @@ class BattleResolution{
       if(auto){const n=troopCount(),each=TROOP_XP.auto*(TROOP_XP.fight+(win?TROOP_XP.win:0)+(n?kills*TROOP_XP.kill*2/n:0));for(const k in P.troops)txpGain(k,each*P.troops[k])}
       else for(const k in txp||{})txpGain(k,txp[k]);txpClamp();const ready=Object.keys(P.troops).reduce((a,k)=>a+txpReady(k),0);
       if(ready>before)html+='<p class="gold">Your troops learn from the fight: '+ready+' soldier'+(ready>1?'s are':' is')+' ready to train at a barracks.</p>'}
-    if(!win)encLost(e);// (withdrawn or beaten: what that costs or leaves behind, encounters.js ON_WIN lost)
+    if(!win)encLost(e);// (withdrawn or beaten: what that costs or leaves behind, engage.js ON_WIN lost)
     G.encCool=retreat?4:3;G.enc=null;G.mode='dialog';
     const report=groupLosses?{groups:groupLosses.slice().sort((a,b)=>a.slot-b.slot).map(row=>({id:row.id,type:row.type,name:row.name,start:row.start,
       fit:row.start-row.count-row.rearguard,wounded:row.wounded,killed:row.count-row.wounded+row.rearguard,saved:row.saved,rearguard:row.rearguard})),characters:this.characterReport||[],...(this.unitOfBattle?{best:this.unitOfBattle}:{})}:null;

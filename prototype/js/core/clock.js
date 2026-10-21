@@ -4,13 +4,13 @@
    core.js DAY, DAY_SECONDS, NIGHT_AT). Clock reads it in the very arithmetic the old helpers used, so every number comes out
    the same to the last bit; advance (world.js updateWorld's step) and passHours (the road's wait) move it on, running dayTick
    on a new day and then Systems.hour on each new hour (core/systems.js). The old helpers stay as aliases of it: timeOfDay and
-   darkness (render.js), worldTime (stay.js), roadNow, roadDay and roadHours (encounters.js), dayPart (folk.js), watchNow
+   darkness (render.js), worldTime (stay.js), roadNow, roadDay and roadHours (road.js), dayPart (folk.js), watchNow
    (patrols.js).
    The units:
    - frac: the share of today gone, 0 to 1 (the first NIGHT_AT of it daylight);
    - hour: the hour of the day, 0 to 24;
    - worldTime: clock units since the world began (DAY of them a day: the timers that count in clock units);
-   - hours: hours since the world began (the road's timers: encounters.js).
+   - hours: hours since the world began (the road's timers: road.js).
    CLOCK.year: the days of a year (the tournaments' calendar, doc/TOURNAMENTS_DESIGN.md: the owner's 120). */
 const CLOCK={year:120};
 const Clock={
@@ -71,7 +71,7 @@ const Clock={
   dayOfYear(d){
     return ((d===undefined?G.day:d)-1)%CLOCK.year+1;
   },
-  // the world-paced seconds of an hour, and the hours in d world-paced seconds (the road's travel: encounters.js)
+  // the world-paced seconds of an hour, and the hours in d world-paced seconds (the road's travel: road.js)
   hourSecs(){
     return WORLD_PACE*DAY_SECONDS/24;
   },
@@ -89,7 +89,7 @@ const Clock={
     }
     this.hoursFrom(h0);
   },
-  // the clock on by h hours at once (waiting on the road: encounters.js roadHours), each new day's tick run, then each new hour's
+  // the clock on by h hours at once (waiting on the road: road.js roadHours), each new day's tick run, then each new hour's
   passHours(h){
     const h0=this.hourCount();
     G.clock+=h*DAY/24;

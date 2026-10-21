@@ -2,12 +2,12 @@
 /* ---------- the story context (doc/STORY_DESIGN.md §3.2; the story wave, S0) ----------
    What a happening's conditions read, in one place: where you are, when it is, who you are, and the weather.
    - storyCtx() (Story.ctx) is that snapshot for you. Inside a frame of the road (Story.frame: the encounters' frame,
-     world/encounters.js updateRoad) it is made once and shared by every reader; outside one (a page, a test, the wiki) each
+     world/road.js updateRoad) it is made once and shared by every reader; outside one (a page, a test, the wiki) each
      call makes a fresh one, so nothing ever reads a stale one.
    - Where (the tile, its terrain and climate, whose land, the holdings near, a road or the wild, cover) is worked out once,
      when first read (StoryPlace, story/storyplace.js, which StoryContext extends). When (the Clock) and who (your band, renown, honour, skills: the accessors) are read live: they are
      cheap, and a choice or a wait may change them.
-   - Story.at(tx, ty): the same where-part for any tile (at its middle), for the spot rules (encounters.js ENC_ON).
+   - Story.at(tx, ty): the same where-part for any tile (at its middle), for the spot rules (road.js ENC_ON).
    Nothing here draws Math.random or changes anything: it only reads. A new fact (the season) is one getter here. */
 class StoryContext extends StoryPlace{
   constructor(){

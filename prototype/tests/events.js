@@ -1,7 +1,7 @@
 'use strict';
 // Road events: the weather, the sickness and the finds, instant as ever: every one can fire somewhere, each logs its line and opens
 // no window, and they come about as often as they did. The people met on the road are encounters on the map now
-// (world/encounters.js, tests/encounters.js), out of this roll.
+// (world/road.js, tests/encounters.js), out of this roll.
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);
 try{
  const t=T,G=t.G,P=t.P;try{localStorage.clear()}catch(e){}

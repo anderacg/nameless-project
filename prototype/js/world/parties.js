@@ -50,7 +50,7 @@ class Party extends WorldObject{
   leave(){const t=townBy(this.inside);this.inside=null;if(t){this.x=t.x+rint(-6,6);this.y=t.y+14}}
   // how it looks on the map (render.js drawParties): colour, rider, moving, label
   look(){return{col:'#888',dir:this.dir||1,moving:true,seed:0,label:String(this.size),labelCol:'#ccc'}}
-  // its fighting strength (encounters.js rating), and its realm; in a fight on the map, its fighters as they are (fights.js)
+  // its fighting strength (engage.js rating), and its realm; in a fight on the map, its fighters as they are (fights.js)
   power(){return rating(this.troops)}
   fightPower(){return power(this.troops)}
   takeLoss(blow){this.removeAny(1)}

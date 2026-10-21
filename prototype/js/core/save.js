@@ -44,7 +44,7 @@ function saveGame(quiet,slot){
 }
 // the world part of a save (the save registry, core/saves.js: every piece in its order): the world it is (map: made again from it
 // on a load), the tiles play changed (edits: none yet), what you have seen (fog.js), every holding's own record (holdings.js
-// saveRec), then the world's lists, the road's encounters (encounters.js) and the news (news.js), each once there is any
+// saveRec), then the world's lists, the road's encounters (road.js) and the news (news.js), each once there is any
 function worldSave(){return Saves.save()}
 Saves.add({key:'v',        order:10,  save:()=>SAVE_V});
 Saves.add({key:'map',      order:20,  save:()=>({gen:WM.gen,settings:WM.settings,sum:WM.sum})});

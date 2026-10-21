@@ -226,7 +226,7 @@ function robTake(t,f){const L=robLoot(f),[g]=jobGood(t,f.job),n=L.goods[1]?rint(
   return (k?k+' '+GOODS[g].n.toLowerCase()+' and ':'')+gold+' coins'}
 function robFight(t,f,o){G.wk=G.wkFrom=null;const who=o.ws.length>1?f.job+'s':f.job;log('The '+who+' of '+t.name+' will not give up what is theirs!','bad');
   startEncounter({kind:'villagers',mine:true,ref:{town:t.name,k:f.k,f,ws:o.ws,gs:o.gs.length,x:f.x,y:f.y,fac:t.owner,cool:0},list:o.list.slice(),allies:[],foes:[],word:'villagers'+(o.gs.length?' and guards':''),title:'The '+who+' of '+t.name+' fight back'})}
-// won (encounters.js ON_WIN.villagers): what he carried, and the dead: the estate short of their hands and remembering you
+// won (engage.js ON_WIN.villagers): what he carried, and the dead: the estate short of their hands and remembering you
 function villagersWon(e){const r=e.ref,t=townBy(r.town);if(!t)return '';if(r.gs)guardsBeaten(t,r.k);const got=robTake(t,r.f),c=CONDUCT.killWorkers,n=r.ws.length;
   r.ws.forEach(x=>x.gone=true);W.folk=W.folk.filter(x=>!r.ws.includes(x));t.pop=Math.max(10,(t.pop||0)-n);t.lost=t.lost||{};t.lost[r.k]=[...(t.lost[r.k]||[]).filter(d=>d>G.day),...r.ws.map(()=>G.day+REFILL_DAYS)];
   remember(t,r.k,ROB.estate);const cost=wrong(t,{...c,hostile:rint(c.hostile[0],c.hostile[1])});mood('cruel');

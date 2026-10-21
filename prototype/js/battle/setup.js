@@ -5,7 +5,7 @@
    px) and BFIELD (the size: {key, n, w, h, back, depth, band}; null with sizes off) FIRST, before groundSpec, spawning,
    measureField and buildTerrain. Generation reads BW/BH (or spec.W) as ever, and may read BFIELD.key for a recipe's density;
    fieldZone(team) is each side's deployment zone (field px, BFIELD.back px of open ground behind it), fieldBand(top,bot) the rows
-   its lines form up over. Out of a battle BH is FIELD_H again (fieldDone), so the world's previews of a field (encounters.js
+   its lines form up over. Out of a battle BH is FIELD_H again (fieldDone), so the world's previews of a field (engage.js
    coverAt, terrain.js groundEnv) read today's field.
    on: off (tests/harness.js), today's field: FIELD_H high, as wide as the screen's shape (FIELD_W), each side against its edge.
    order: smallest first; w, h: the field (px: multiples of 32 across, 16 down: route and fog cells 16 px, spatial 32); back: open
@@ -90,7 +90,7 @@ function measureField(){
    it); def, the team set upon, stands on its bank by the bridge, the other comes on from its own edge and must cross.
    {kind:'ambush', hid}: hid, the team lying in wait, starts hidden in cover on one flank of a road or both; the other in march
    order on the road down the middle, with no deployment. Only with terrain (B.terrain): the world asks for them
-   (encounters.js battleTypeFor, the pre-battle panel's Spring an ambush), and the lab (lab.js type).
+   (engage.js battleTypeFor, the pre-battle panel's Spring an ambush), and the lab (lab.js type).
    bridgeY: the bridge's middle off the open lane's (share of the field's height, either way); ford: the chance of a ford far off
    it (by the world tile; the lab's by its seed); fordGap: the least ground between them (px); front: the holders' line this far
    off the water (px, besides half its depth), behind: their shooters this much behind it (characters 1.6×, riders 2.4×), flank:
@@ -199,7 +199,7 @@ class BattleSetup{
   }
   // (fog of war: field battles, terrain or none, with the setting on; never a tournament, a siege or a raid: battlefog.js)
   fogOn(){const e=G.enc;return FOG.on&&!this.opts.tournament&&!this.opts.sandbox&&!(e&&['siege','raid','tourney'].includes(e.kind))}
-  // (the battle's type (BTYPE): the encounter's (encounters.js battleTypeFor), only with terrain; the lab's own: lab.js)
+  // (the battle's type (BTYPE): the encounter's (engage.js battleTypeFor), only with terrain; the lab's own: lab.js)
   // (an ambush is sprung once: run down after it, you face them again on an open field (e.btype false))
   battleType(){const e=!this.opts.tournament&&!this.opts.sandbox&&G.enc,bt=e&&e.btype;if(!bt||!this.ground||bt.kind!=='bridge'&&bt.kind!=='ambush')return null;if(bt.kind==='ambush')e.btype=false;return{...bt}}
   // (its ground: a held bridge's river; an ambush's has no recipe of its own (its cover: createState), and no deployment)
