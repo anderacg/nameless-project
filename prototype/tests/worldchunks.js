@@ -6,7 +6,11 @@
 // painted into each chunk it touches); a chunk painted a slice at a time equals one painted at once, its slices short; the LRU
 // keeps no more than its cap, never lets a chunk in view go, and paints ahead of the view; invalidate forgets the plan and the
 // chunks near a change (or all), and the chunks it keeps are still right; the minimap comes from the tile data; what it costs.
-// (the one-window picture re-recorded 2026-10-22 with W5, on purpose: swamp water a lighter peat blue, the owner's pick; was aceeae00)
+// (the one-window picture re-recorded 2026-10-22 with W5, on purpose: swamp water a lighter peat blue, the owner's pick; was aceeae00.
+//  Again 2026-10-22 with W5, on purpose, the owner's play-test: the frost's snow blended into the grass and the fen's sparse
+//  mangroves (gfx/worldart.js snowCover, engine/worldnature.js FEN); was 963ff854)
+// With -Gen also the generated world's roads, crossings and fords as the owner's play-test asked (2026-10-22): every road's end at
+// a holding led into its gate, a bridge's deck met on its axis by a ramp, a fork's end on the way it joins, a ford's shallows soft.
 // On the map the scripts leave at load (no begin), as W5's picture. With -Gen (the generated classic seed, its water and roads
 // painted by the generated world's art) the same checks, its picture's hash an INFO line; then the prefetch at Large and Huge:
 // walking across each at Travel fast's pace (8x: a chunk in some 420 frames), 4 ms of painting a frame, the ring ahead is ready.
@@ -24,7 +28,7 @@ try{
    'the plan comes first, painting nothing: isClear reads its clear ground (a holding and its gate clear, off the map not) ('+planMs.toFixed(0)+' ms)');
  // ---- one window: the whole map, no seam anywhere (today's one canvas)
  const r1={},one=paint(0,0,W,H,r1),ref=img(one,0,0,W,H),h1=fnv(ref);
- if(t.WORLD.gen)info('the generated classic seed painted as one window: '+h1+' ('+r1.wall.toFixed(0)+' ms)');else ok(h1==='963ff854','the map painted as one window (no seam anywhere: today\'s one canvas) is the baseline picture ('+h1+', W5 at b94cbe2: tests/worldprint.js; '+r1.wall.toFixed(0)+' ms)');
+ if(t.WORLD.gen)info('the generated classic seed painted as one window: '+h1+' ('+r1.wall.toFixed(0)+' ms)');else ok(h1==='d68036d6','the map painted as one window (no seam anywhere: today\'s one canvas) is the baseline picture ('+h1+', W5 at b94cbe2: tests/worldprint.js; '+r1.wall.toFixed(0)+' ms)');
  // ---- stitched: every chunk into the whole picture, and no seam round any border
  q=performance.now();const whole=WA.whole(),wMs=performance.now()-q,nd=diff(img(whole,0,0,W,H),ref);
  ok(nd===0&&whole.width===W&&whole.height===H,cols*rows+' chunks of '+CS+' px ('+cols+' x '+rows+') stitched (worldCv) are that picture pixel for pixel ('+nd+' differ; '+wMs.toFixed(0)+' ms)');
@@ -87,6 +91,33 @@ try{
   ok(b.plan<4*1048576&&b.chunks===CS*CS*4,'memory: the plan '+MB(b.plan)+' ('+per.toFixed(1)+' B a tile: clear ground '+MB(WA.plan.clear.bytes)+', kept-clear '+MB(Pn.keep.bytes)+', ranges\' height fields '+MB(Pn.mdBytes)+'), a chunk '+MB(CS*CS*4)+', the LRU at most '+WA.cap+' ('+MB(WA.cap*CS*CS*4)+'); at Huge (1024 x 768) the plan about '+MB(per*1024*768)+', the chunks the same');
   info('memory: one canvas for the whole map would be '+MB(W*H*4)+' here, '+MB(16384*12288*4)+' at Huge; worldCv\'s canvas is only made when asked (the blit until render.js draws by chunks, the wiki, the tests)')}
 
+ // ---- the generated world's roads (gfx/worldart.js artGenPlan: gateLead, straightOn, joinEnds) and fords (fordAt)
+ if(t.WORLD.gen){const P=WA.ensure(),S=P.segs,G=t.GENART,X=[],ends=new Map(),key=(x,y)=>Math.round(x*10)+','+Math.round(y*10);
+  for(let k=0;k<S.length;k+=5)if(S[k+4]<2)for(const e of [0,2]){const q=key(S[k+e],S[k+e+1]);ends.set(q,(ends.get(q)||0)+1)}
+  // (every holding: a road's end at the gate (into it by GENART.gate), its last leg coming up from below; no road under its centre)
+  const gates=t.TOWNS.map(h=>{const b=t.centreBox(h);return[h.tx*TILE,(b.y+b.n-G.gate)*TILE,b]});let led=0,under=0;
+  for(const [gx,gy,b] of gates){let hit=false;for(let k=0;k<S.length;k+=5)for(const e of [0,2]){const x=S[k+e],y=S[k+e+1],ox=S[k+2-e],oy=S[k+3-e];if(Math.hypot(x-gx,y-gy)<.6&&oy>y&&Math.abs(ox-x)<Math.abs(oy-y))hit=true}if(hit)led++;
+    for(let k=0;k<S.length;k+=5)for(let f=0;f<=1;f+=.125){const x=S[k]+(S[k+2]-S[k])*f,y=S[k+1]+(S[k+3]-S[k+1])*f;if(x>b.x*TILE+1&&x<(b.x+b.n)*TILE-1&&y>b.y*TILE+1&&y<gy-1)under++}}
+  ok(led===gates.length&&!under,'every holding\'s roads are led round its centre into its gate: '+led+' of '+gates.length+' gates met by a road coming up from below, '+under+' road points under a centre');
+  // (every bridge a road comes to: a ramp at that end on its deck's axis, from under the deck outward; the roads there on that axis
+  //  as far as the ramp runs)
+  let br=0,ramps=0,stray=0,off=0;for(let k=0;k<S.length;k+=5)if(S[k+4]>=2)ramps++;
+  for(const c of t.WM.crossings){if(c.kind!=='bridge')continue;const ax=c.i%MW,ay=(c.i-ax)/MW,bx=c.j%MW,by=(c.j-bx)/MW,hor=ay===by,mid=(hor?ay:ax)*TILE+8,lo=hor?Math.min(ax,bx):Math.min(ay,by),hi=hor?Math.max(ax,bx):Math.max(ay,by);
+    const E=[lo*TILE+TILE-4,hi*TILE+4],u=(x,y)=>hor?x:y,v=(x,y)=>hor?y:x,run=[0,0];
+    for(let k=0;k<S.length;k+=5)if(S[k+4]>=2&&Math.abs(v(S[k],S[k+1])-mid)<.01&&Math.abs(v(S[k+2],S[k+3])-mid)<.01)E.forEach((e,n)=>{const s=n?1:-1,a=(u(S[k],S[k+1])-e)*s,b=(u(S[k+2],S[k+3])-e)*s;if(a<0&&a>=-3&&b>a){run[n]=Math.max(run[n],b);stray++}});
+    if(!run[0]&&!run[1])continue;br++;
+    for(let k=0;k<S.length;k+=5){if(S[k+4]>=2)continue;const a=S[k],b=S[k+1],c2=S[k+2],d=S[k+3];
+      for(let f=0;f<=1;f+=.1){const x=a+(c2-a)*f,y=b+(d-b)*f;E.forEach((e,n)=>{const du=(u(x,y)-e)*(n?1:-1);if(du>=0&&du<=run[n]&&Math.abs(v(x,y)-mid)<10&&Math.abs(v(x,y)-mid)>1.5)off++})}}}
+  ok(br&&stray===ramps&&!off,br+' bridges with roads: each deck met by a ramp on its axis where a road comes to it ('+ramps+' ramps, '+(ramps-stray)+' off a deck’s end), the roads onto them on that axis as far as the ramps run ('+off+' points of a road off it)');
+  // (every line's loose end (an end of one segment only, not at a gate, on land) lies on another road's way)
+  let loose=0,all=0;for(const [q,n] of ends){if(n!==1)continue;const [x,y]=q.split(',').map(v=>v/10);if(gates.some(([gx,gy])=>Math.hypot(x-gx,y-gy)<1)||P.wk[(y>>4)*MW+(x>>4)])continue;all++;let best=1e9;
+    for(let k=0;k<S.length;k+=5){const a=S[k],b=S[k+1],vx=S[k+2]-a,vy=S[k+3]-b,L=vx*vx+vy*vy;if(Math.hypot(a-x,b-y)<.01||Math.hypot(S[k+2]-x,S[k+3]-y)<.01)continue;const tt=L?Math.max(0,Math.min(1,((x-a)*vx+(y-b)*vy)/L)):0;best=Math.min(best,Math.hypot(a+vx*tt-x,b+vy*tt-y))}
+    if(best>1.5)loose++}
+  ok(all&&!loose,'forks and junctions join: '+all+' road ends that meet another road, each on its way ('+loose+' short of it)');
+  // (every ford: shallow on its line, fading out across it (soft, no square edge), the river beyond)
+  let fd=0,soft=0;for(const [ax,ay,bx,by] of P.fords){fd++;const f=fd,mx=(ax+bx)/2,my=(ay+by)/2,hor=Math.abs(ay-by)<1,s=[0,2,4,6,8,10,12,14,16,18,20].map(d=>t.fordAt(P,f,Math.floor(hor?mx:mx+d),Math.floor(hor?my+d:my)));
+    if(s[0]>.4&&s[0]>s[6]&&!s[10]&&s.filter(v=>v>0&&v<1).length>=2)soft++}
+  ok(fd===t.WM.crossings.filter(c=>c.kind==='ford').length&&soft===fd,fd+' fords: shallow on their line, fading out over some '+G.ford.soft+' px across it ('+soft+' soft)')}
  // ---- the prefetch at Large and Huge (with -Gen): the camera walks across the middle of each world at 8x's pace, the painter
  //      given 4 ms a frame; the chunks that come into view were painted before they did, the LRU held at its cap
  if(t.WORLD.gen){const W0=t.WM;

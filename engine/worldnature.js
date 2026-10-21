@@ -5,7 +5,8 @@
 // silhouettes only, a ground shadow to the lower right. Sprites sit in power-of-two boxes (8, 16, 32, 64; the drawn pixels may be
 // smaller), their foot on (ax, ay). Variety comes from structure (species, shapes; seeded), never Math.random.
 // PX.worldTree(clim,sp,v,dim): a tree in a 16 box (PX.WORLD_SPECIES: grass oak, birch, pine; frost snowy pine, fir; swamp willow,
-//   dead, mossy oak; desert palm, by an oasis), v 0-3 its shape, dim 1 one deep in a wood (darker and cooler).
+//   dead, mossy oak, and the fen's own mangrove standing alone on the open; desert palm, by an oasis), v 0-3 its shape, dim 1 one
+//   deep in a wood (darker and cooler).
 // PX.worldPeak(clim,v,n): a mountain alone in an n box (16 a crag or spire, 32 and 64 a massif), v 0-5: drawn as the ranges are.
 // PX.worldRange(o): mountain ranges as the battle's (ground.js rockMasses): each mass of rock tiles a height field (fluted cones on
 //   some of its tiles, as high as the tile lies deep in the range, over a lower body, steep at its edge; sandstone buttes in the
@@ -24,8 +25,9 @@
 //   2 outline), rgb, sh (its shadow: offsets from the foot).
 // PX.worldNature(spec): all of it over a painted map, in depth order. spec: {D (the map's RGBA pixels), W, H (px), C, R (tiles of
 //   ts px, 16), kind (a byte a tile: PX.WN_KIND, the game's own codes), clim (a byte a tile: 0 grass, 1 frost, 2 desert, 3 swamp),
-//   clear (where nothing may stand: roads, holdings, estates: a PX.TileMask, or a byte a pixel), seed, touch (optional: a byte a
-//   pixel, set to 1 where nature drew on land, 2 where it drew on water)}. Woods darken their floor and stand as one mass (outlined
+//   clear (where nothing may stand: roads, holdings, estates: a PX.TileMask, or a byte a pixel), seed, snow (optional: the snow's
+//   cover a tile, 0-1: drifts only where it lies whole), touch (optional: a byte a pixel, set to 1 where nature drew on land, 2
+//   where it drew on water)}. Woods darken their floor and stand as one mass (outlined
 //   round its edge only, deeper trees dimmer); hills shade the ground; ranges rise; small things lie and stand on the open; palms by
 //   desert water. Nothing on clear ground, a beach (3 px of land along water) or water (but pads and floes on water). Returns its
 //   counts and timings. Same spec, same picture. A big map is painted a window at a time instead (a chunk: the game's world map):
@@ -44,10 +46,10 @@
      floor a wood's ground; tuft colours; bush the climate's bush */
   const LEAF={oak:['#9cb058','#6a9242','#426c3a','#28463a'],moak:['#94a058','#687a3e','#465a34','#2a3a30'],birch:['#c4c468','#96aa4c','#668840','#3e5c3a'],
     pine:['#78a05e','#4c7c4a','#305c44','#1e3a38'],spine:['#6a8c74','#46705e','#2e5048','#1c3438'],fir:['#628472','#3e665a','#2a4a46','#1c3036'],
-    willow:['#a0a660','#748840','#506636','#30402e'],palm:['#bcc65e','#88a444','#5a7c38','#34522e'],dead:['#8a9a4a','#5e6e34','#3e4a2c','#2a3226']};
-  const TRUNK={def:['#8e6a48','#624830','#3e3028'],birch:['#eee8d8','#c4beae','#8a8478'],dead:['#9a8a70','#6c5e4c','#463c36'],palm:['#c4a06a','#94744a','#62503a']};
+    willow:['#a0a660','#748840','#506636','#30402e'],mangrove:['#6e7e46','#4a5e34','#33442e','#1f2b26'],palm:['#bcc65e','#88a444','#5a7c38','#34522e'],dead:['#8a9a4a','#5e6e34','#3e4a2c','#2a3226']};
+  const TRUNK={def:['#8e6a48','#624830','#3e3028'],birch:['#eee8d8','#c4beae','#8a8478'],dead:['#9a8a70','#6c5e4c','#463c36'],palm:['#c4a06a','#94744a','#62503a'],mangrove:['#7a6852','#544638','#342c26']};
   const SNOW=['#fbfcff','#dce4f0','#aebcd2'],DIM='#1c2836';
-  PX.WORLD_SPECIES={grass:['oak','birch','pine'],frost:['spine','fir'],swamp:['willow','dead','moak'],desert:['palm']};
+  PX.WORLD_SPECIES={grass:['oak','birch','pine'],frost:['spine','fir'],swamp:['willow','dead','moak','mangrove'],desert:['palm']};
   PX.WORLD_NATURE={
     grass:{hill:{lit:'#c8cc78',shade:'#284638',k:[.14,.15]},floor:'#2c4426',tuft:['#a2c062','#5e8c3a','#3e6a2e'],bush:'oak'},
     frost:{hill:{lit:'#ffffff',shade:'#8a98b8',k:[.22,.12]},floor:'#a6b2c4',tuft:['#d8c890','#ac9c6c','#857650'],bush:'spine'},
@@ -107,6 +109,13 @@
     else if(sp==='fir'){trunk(M,N,7,13,15);cone(M,N,1,13,[3.8,3.4,4.2,3.6][v],[3,3,4,3][v],[0,0,.1,.2][v],s,true)}
     else if(sp==='willow'){trunk(M,N,7,10,15);const o=[0,1,-1,0][v];clumps(M,N,[[8,6.8,4.3],[4.4+o*.3,7.8,3],[11.6+o*.3,7.6,3],[8+o*.5,4,3.2]],6.5,4,6,s);
       for(let x=2;x<N-2;x++){if(PX.hash(x,v,s+2)<.4)continue;let y0=-1;for(let y=N-1;y>=0;y--)if(M[y*N+x]>=1&&M[y*N+x]<=4){y0=y;break}if(y0<0)continue;const n=2+Math.floor(PX.hash(x,v,s+3)*3);for(let k=1;k<=n&&y0+k<N;k++)M[(y0+k)*N+x]=k===n?4:3}}
+    else if(sp==='mangrove'){// (low and dark: a broad, flat crown on a short trunk over arched stilt roots splayed into the mud)
+      const RT=[[[7,10,4,12,3,15],[8,10,11,12,12,15],[7,11,6,13,6,15],[8,11,9,13,9,15]],[[7,10,3,12,2,15],[8,10,12,12,13,14],[8,11,8,13,9,15]],
+        [[7,10,5,12,4,15],[7,10,3,11,1,13],[8,10,10,12,11,15],[7,11,7,13,7,15]],[[7,10,4,11,2,14],[8,10,11,12,13,15],[7,11,5,13,5,15],[8,11,10,13,10,15]]][v];
+      for(let y=8;y<=11;y++){M[y*N+7]=5;M[y*N+8]=7}
+      for(const [x0,y0,x1,y1,x2,y2] of RT){line(M,N,x0,y0,x1,y1,x1<x0?5:6);line(M,N,x1,y1,x2,y2,x1<x0?6:7)}
+      const o=[0,.5,-.5,.3][v],CL=[[8+o,7,3],[4.8+o,7.4,2.6],[11.2+o,7.2,2.6],[2.9+o,8.2,1.7],[13.1+o,8,1.7],[6.6+o,5.6,2.3],[9.6+o,5.4,2.3]];
+      clumps(M,N,v===1?CL.slice(0,5).concat([[8+o,5.4,2.4]]):v===3?CL.filter((c,k)=>k!==3):CL,7,4,7,s)}
     else if(sp==='dead'){const lean=[-.1,.12,0,.07][v],tx=y=>7+Math.round((15-y)*lean);for(let y=[3,4,2,5][v];y<=15;y++){M[y*N+tx(y)]=5;M[y*N+tx(y)+1]=7}M[15*N+6]=6;M[15*N+9]=7;
       const BR=[[[9,-5,-4],[6,4,-4],[11,4,-3]],[[8,-4,-5],[10,5,-3],[5,-2,-3]],[[9,-5,-3],[7,5,-4],[12,-3,-2],[4,2,-2]],[[10,-4,-4],[8,4,-5]]][v];
       for(const [y0,dx,dy] of BR){const x0=tx(y0)+(dx>0?1:0),x1=x0+dx,y1=y0+dy;line(M,N,x0,y0,x1,y1,(i,n)=>i>n*.5?6:dx<0?5:7);if(PX.hash(x1,y1,s)>.35&&x1>0&&x1<N-1&&y1>0){M[y1*N+x1]=12;if(y1+1<N)M[(y1+1)*N+x1]=13}}}
@@ -342,6 +351,9 @@
   PX.WN_APRON=8;
   // brooks (PX.worldNatureSteps 2b): the flow (bits 0-4 of spec.flow, worldgen.js's log2) a brook starts at, is 2 px wide from, 3 px
   const BROOK=[6,7,8];
+  // the fen's own trees (PX.worldNatureSteps 3): on open swamp ground, up to three a tile, each standing with a chance p, more or less
+  // by groves (a smooth noise over g tiles, swinging it by swing): some .6 a tile, about a third of a wood's cover
+  const FEN={p:.2,swing:.5,g:4};
   PX.worldNaturePlan=spec=>{const W=spec.W,H=spec.H,C=spec.C,R=spec.R,ts=spec.ts||16,K=spec.kind,CI=spec.clim,seed=(spec.seed|0)||1;
     const kAt=(x,y)=>x<0||y<0||x>=C||y>=R?KIND.water:K[y*C+x],cAt=(x,y)=>CLIMS[CI[Math.max(0,Math.min(R-1,y))*C+Math.max(0,Math.min(C-1,x))]]||'grass',h=(x,y,k)=>PX.hash(x,y,seed*977+k);
     // kept clear: the clear ground, water, a bridge's tile, and the beach (3 px of land along the water, where the game lays its shore)
@@ -359,7 +371,7 @@
     const RH=new Float32Array(C*R);for(let ty=0;ty<R;ty++)for(let tx=0;tx<C;tx++){if(K[ty*C+tx]!==KIND.mount)continue;let d=0;for(let b=-2;b<=2;b++)for(let a=-2;a<=2;a++)if(kAt(tx+a,ty+b)===KIND.mount)d++;
       RH[ty*C+tx]=cAt(tx,ty)==='desert'?8*Math.max(1,Math.round((1.2+3.2*Math.min(1,(d-1)/18))*(.55+.6*h(tx,ty,63)))):(14+24*Math.min(1,(d-1)/20))*(great(tx,ty)?1.4:1)*(.9+.2*h(tx,ty,62))}
     const ro={W,H,C,R,ts,h:(i,j)=>RH[j*C+i],clim:cAt,seed:seed+5,shade:true,kept:(x,y)=>keep.at(x,y)},{lab,M}=massLabel(C,R,ro.h,cAt);
-    return{W,H,C,R,ts,K,seed,kAt,cAt,h,clear,keep,WS,RH,ro,lab,M,md:[],mdQ:[],mdBytes:0,mdCap:32<<20,hill:K.some(k=>k===KIND.hill),F:spec.flow||null,RV:spec.river||null,WR:spec.water||null,
+    return{W,H,C,R,ts,K,seed,kAt,cAt,h,clear,keep,WS,RH,ro,lab,M,md:[],mdQ:[],mdBytes:0,mdCap:32<<20,hill:K.some(k=>k===KIND.hill),SN:spec.snow||null,F:spec.flow||null,RV:spec.river||null,WR:spec.water||null,
       get bytes(){return keep.bytes+(clear===spec.clear?0:clear.bytes)+WS.byteLength+RH.byteLength+lab.byteLength+this.mdBytes}}};
   // a mass's height field: kept (the oldest let go past mdCap bytes, never the one asked for)
   // (two windows may reckon one at once: the first to finish keeps it)
@@ -367,7 +379,7 @@
     while(P.mdBytes>P.mdCap&&P.mdQ.length>1){const id=P.mdQ.shift(),d=P.md[id];delete P.md[id];if(d)P.mdBytes-=d.bytes}return md}
   const MASS_REACH=128;// (px round a mass's tiles its rock, outline and shadow may reach: generous)
   PX.worldNatureSteps=function*(P,win,D,TO){
-    const t0=performance.now(),W=P.W,H=P.H,C=P.C,R=P.R,ts=P.ts,K=P.K,kAt=P.kAt,cAt=P.cAt,h=P.h,TM=P.keep,CLR=P.clear,I=win.inner||win,out={trees:0,hills:0,peaks:0,decor:0,flat:0,rock:0,cross:{things:0,rises:0,masses:0},tm:{}};
+    const t0=performance.now(),W=P.W,H=P.H,C=P.C,R=P.R,ts=P.ts,K=P.K,kAt=P.kAt,cAt=P.cAt,h=P.h,TM=P.keep,CLR=P.clear,I=win.inner||win,out={trees:0,fen:0,hills:0,peaks:0,decor:0,flat:0,rock:0,cross:{things:0,rises:0,masses:0},tm:{}};
     const wx0=win.x,wy0=win.y,ww=win.w,wh=win.h,wx1=wx0+ww,wy1=wy0+wh,at=(x,y)=>(y-wy0)*ww+x-wx0;let tl=t0;const lap=n=>{const t=performance.now();out.tm[n]=t-tl;tl=t};
     const ownT=(tx,ty)=>tx*ts>=I.x&&tx*ts<I.x+I.w&&ty*ts>=I.y&&ty*ts<I.y+I.h?1:0,ownP=(x,y)=>x>=I.x&&x<I.x+I.w&&y>=I.y&&y<I.y+I.h,inI=(x0,y0,x1,y1)=>x0<I.x+I.w&&x1>I.x&&y0<I.y+I.h&&y1>I.y;
     // S: a byte a pixel: what stands there (low 3 bits: 0 ground, 2 rock, 3 wood, 4 a small thing; 8 a range's outline), 64 shaded,
@@ -443,7 +455,7 @@
         const hill=k===KIND.hill;
         if(c==='grass'){if(hh(10)<(hill?.25:.45))for(let i=0;i<1+(hh(11)>.6?1:0);i++)D0('tuft',Math.floor(hh(12+i)*4),13+i,15+i);if(!hill&&hh(17)<.12)D0('flowers',Math.floor(hh(18)*4),19,20);
           if(hh(21)<(hill?.08:.05))D0('bush',Math.floor(hh(22)*4),23,24,1);if(hh(25)<(hill?.08:.03))D0('stone',Math.floor(hh(26)*4),27,28,1)}
-        else if(c==='frost'){if(!hill&&hh(10)<.26)D0('drift',Math.floor(hh(11)*4),12,13);if(hh(14)<(hill?.1:.05))D0('stone',Math.floor(hh(15)*4),16,17,1);if(hh(18)<.045)D0('shrub',Math.floor(hh(19)*4),20,21,1);if(!hill&&hh(22)<.03)D0('bush',Math.floor(hh(23)*4),24,25,1)}
+        else if(c==='frost'){if(!hill&&hh(10)<.26&&(!P.SN||P.SN[ty*C+tx]>=.85))D0('drift',Math.floor(hh(11)*4),12,13);if(hh(14)<(hill?.1:.05))D0('stone',Math.floor(hh(15)*4),16,17,1);if(hh(18)<.045)D0('shrub',Math.floor(hh(19)*4),20,21,1);if(!hill&&hh(22)<.03)D0('bush',Math.floor(hh(23)*4),24,25,1)}
         else if(c==='desert'){// (by water: an oasis, palms and green; elsewhere ripples, cacti, rocks, scrub, now and then bones)
           let wet=0;for(let b=-1;b<=1;b++)for(let a=-1;a<=1;a++){const x=tx+a,y=ty+b;if(x>=0&&y>=0&&x<C&&y<R&&K[y*C+x]===KIND.water&&WS[y*C+x]<=120)wet++}
           if(wet&&!hill){for(let i=0;i<1+(hh(30)>.4?1:0)+(wet>2&&hh(31)>.5?1:0);i++){const [x,y]=at2(32+i,35+i);if(stand(PX.worldTree('desert','palm',Math.floor(hh(38+i)*4),0),x,y,3))out.trees+=own}
@@ -451,7 +463,11 @@
           else{if(!hill&&hh(10)<.3)D0('ripple',Math.floor(hh(11)*4),12,13);if(hh(14)<(hill?.04:.05))D0('cactus',Math.floor(hh(15)*4),16,17,1);if(hh(18)<(hill?.2:.03))D0(hill?'rock':'stone',Math.floor(hh(19)*4),20,21,1);
             if(hh(22)<.035)D0('scrub',Math.floor(hh(23)*4),24,25,1);if(!hill&&hh(26)<.012)D0('bones',Math.floor(hh(27)*4),28,29)}}
         else{if(!hill&&hh(10)<.14)D0('pool',Math.floor(hh(11)*4),12,13);if(hh(14)<.32)D0('reeds',Math.floor(hh(15)*4),16,17);if(hh(18)<.26)D0('moss',Math.floor(hh(19)*4),20,21);if(hh(22)<.04)D0('mushroom',Math.floor(hh(23)*4),24,25);
-          if(hh(26)<.04)D0('stump',Math.floor(hh(27)*4),28,29,1);if(hh(30)<(hill?.08:.025))D0('bush',Math.floor(hh(31)*4),32,33,1)}}}}
+          if(hh(26)<.04)D0('stump',Math.floor(hh(27)*4),28,29,1);if(hh(30)<(hill?.08:.025))D0('bush',Math.floor(hh(31)*4),32,33,1);
+          // (the fen's sparse mangroves, by groves)
+          if(k===KIND.open){const p=FEN.p+FEN.swing*(VN(tx/FEN.g,ty/FEN.g,73)-.5),L=LAY[Math.floor(hh(59)*3)];
+            for(let n=0;n<3;n++){if(hh(60+n)>=p)continue;const x=X+L[n*2][0]+Math.round((hh(63+n)-.5)*4),y=Y+L[n*2][1]+Math.round((hh(66+n)-.5)*3);
+              if(kAt((x/ts)|0,(y/ts)|0)===KIND.water)continue;if(stand(PX.worldTree(c,'mangrove',Math.floor(hh(69+n)*4),0),x,y,3)){out.trees+=own;out.fen+=own}}}}}}}
     yield;let n=0;
     // (a sprite's pixels in the window: rows j0..j1, columns i0..i1 of its box)
     const clip=(N,X0,Y0)=>[Math.max(0,wx0-X0),Math.min(N,wx1-X0),Math.max(0,wy0-Y0),Math.min(N,wy1-Y0)];

@@ -40,9 +40,21 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 //  (G8), the save after it (G7) and the save straight after begin (GB2: your place) move. Checked by putting the old spot back in
 //  gateSpot with every other change of that work kept (the hero routed round water, Hurry, the encounters halved, hunger and thirst
 //  on your hero, camps on clear ground): all nine as before. Was G6 fd29ebee, G7 dccc7da8, G8 dfad1cf1, GB2 bc14e9a8; G1-G5 unchanged)
-const GEXPECT={W1:'94e87250',W2:'6bc88128',W3:'0240c3fb',W4:'ceb55e1f',W5:'ab5e5d34',W6:'41cdb7ab',W7:'8a722172',W8:'f540d98e',B2:'b4f0d917'};
+// (G5, G6 re-recorded 2026-10-22, on purpose, the owner's play-test of the generated world (gfx/worldart.js, engine/worldnature.js):
+//  roads led round each holding's centre into its gate over worn ground, crossings met straight on their axis and a bridge's deck
+//  by a ramp, forks carried onto the way they join, fords as soft rippled shallows with scattered stones, the frost's snow blended
+//  into the grass, the fen's sparse mangroves. G6 moved at the first two spots (by day and night); the third's are as before. Was
+//  G5 ab5e5d34, G6 fd29ebee (parts e1e70f57 36a23691 58231b1f 228b75d3); G1-G4, G7, G8 and GB2 unchanged)
+// (G6 with both: the spawn's first spot and the art's two spots: measured on the two together at the merge: fb7895ea)
+const GEXPECT={W1:'94e87250',W2:'6bc88128',W3:'0240c3fb',W4:'ceb55e1f',W5:'4ea4e263',W6:'fb7895ea',W7:'8a722172',W8:'f540d98e',B2:'b4f0d917'};
 const SUMS={classic:'7333836c','Normal s1':'128cfb7e','Normal s2':'2b581da4','Normal s3':'c38ac906','Large s1':'5af09941'};
-const EXPECT={W1:'65e24662',W2:'2b49a168',W3:'dc546553',W4:'46450e62',W5:'0152341c',W6:'33d059e4',W7:'5dae222a',W8:'742df600',B2:'fd6d5be4'};// (at 0a42712; B2 at R3; W6-W8 at Phase 1; W6 at depth, smooth walking and pasture herds and label layout; W7, B2 at save v3)
+const EXPECT={W1:'65e24662',W2:'2b49a168',W3:'dc546553',W4:'46450e62',W5:'c3d24a9e',W6:'481b04b2',W7:'5dae222a',W8:'742df600',B2:'fd6d5be4'};// (at 0a42712; B2 at R3; W6-W8 at Phase 1; W6 at depth, smooth walking and pasture herds and label layout; W7, B2 at save v3)
+// (W5, W6 re-recorded 2026-10-22, on purpose, the owner's play-test (the same climates on today's map): the frost's snow blended
+//  into the grass (gfx/worldart.js snowCover, landRGB: its cover rising over the frost's edge and with height, thinning out in
+//  patches over the grass beside it) and the fen's sparse mangroves (engine/worldnature.js FEN). W6 moved at the first and third
+//  spots, both by the frost (by day and night: f4403dad 3d69a9d9 598f1d1e 2bfb2642 to ab2f2712 f43b5c0a 22ae8270 75c2f1c9; the
+//  frost alone: with the mangroves taken out W6 is the same); the middle's are as before. Was W5 0152341c, W6 33d059e4; W1-W4,
+//  W7, W8 and B2 unchanged)
 // (W5 re-recorded 2026-10-22, on purpose: swamp water a lighter peat blue (gfx/worldart.js WATER_RGB.swamp), the owner's pick from
 //  tests/visual/swampwater.js (C), so the fen's rivers read as water; today's map has fen water too. Was 6587a43c.)
 // (W7 re-recorded again 2026-10-21, on purpose (owner: "water registered too slow"): your waterskins fill the moment you stand at a

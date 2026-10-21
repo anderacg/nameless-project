@@ -2,7 +2,8 @@
 /* ---------- the world, painted in detail, a chunk at a time ---------- */
 // The world map is painted in chunks of CHUNK px (512: 32 × 32 tiles), never as one canvas (a big map's would pass what a browser
 // allows). A chunk: ground per pixel (each climate's colors in soft light and dark patches, fine speckle, ragged borders between
-// climates, water shading from shallows to deep), the camps' and estates' trampled ground, the land's nature (engine/
+// climates, water shading from shallows to deep, the frost's snow laid over by its cover, thinning out in patches: snowCover), the
+// camps' and estates' trampled ground, the land's nature (engine/
 // worldnature.js: woods, hills, mountain ranges and small things), then beaches and ice rims, roads that join their neighbors,
 // bridges and ore veins. Each chunk is exactly the whole map's picture there (no seams): it is painted over a window PX.WN_APRON px
 // larger, kept to the chunk, and whatever stands across its edge (a tree, a range, a road) is painted into every chunk it touches.
@@ -11,6 +12,11 @@
 // drawEnv adds what moves.
 const GROUND_RGB={grass:[[70,110,50],[84,126,58],[104,146,70]],frost:[[192,203,218],[214,222,232],[238,243,249]],desert:[[196,162,88],[214,182,104],[232,204,132]],swamp:[[58,72,42],[72,88,52],[90,106,62]]};
 const WATER_RGB={grass:[[96,150,204],[58,104,166],[36,70,126]],frost:[[184,212,232],[150,184,212],[124,160,196]],desert:[[96,156,196],[58,112,164],[38,80,134]],swamp:[[104,138,146],[74,110,126],[50,82,104]]};// (swamp: a lighter peat blue, the owner's pick 2026-10-22, tests/visual/swampwater.js C; was [[84,112,88],[64,90,72],[48,70,56]])
+// the frost blended (doc/WORLD_DESIGN.md §15 Phase 3, snowCover, landRGB): the frost's tiles counted over r tiles each way; on the
+// generated world how cold below the frost line, temp (WM.temp) a step of 1; its height past elev (WM.elev), high a step of 1;
+// today's map: a hill's and a mountain's (hill); the ground under the snow dulled toward tundra (dull: how fast with the cover); the
+// snow's edge, soft over edge of its noise, its rim a pale shade
+const FROST={r:3,temp:12,elev:150,high:200,hill:[.1,.2],dull:1.2,edge:.035,tundra:[[118,126,106],[134,142,120],[156,162,140]],rim:[170,184,204]};
 const SHORE={grass:['#d6c48c','#b8a46e'],frost:['#f4f8fc','#c8d8e8'],desert:['#ecd49a','#c8ac70'],swamp:['#6a6040','#504830']};
 const hs=(x,y,s)=>{let h=Math.imul(x,374761393)+Math.imul(y,668265263)+Math.imul(s,1274126177);h=Math.imul(h^h>>>13,1274126177);return((h^h>>>16)>>>0)/4294967296};
 const mixc=(a,b,t)=>[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t,a[2]+(b[2]-a[2])*t];
@@ -33,7 +39,7 @@ const mkcv=(w,h)=>{const c=document.createElement('canvas');c.width=w;c.height=h
 
 // the plan: the clear ground; the water's depth (tiles from the nearest land, up to 4; 9 deeper); the trampled patches (camps, the
 // timber and ore estates), in order; the holdings' tiles (roads lead into them) and the road tiles shifted to their gates; the
-// land's nature's (PX.worldNaturePlan)
+// snow's cover (snowCover); the land's nature's (PX.worldNaturePlan)
 function worldArtPlan(){
   const clear=new PX.TileMask(MW,MH,TILE),mark=(x,y,w,h)=>clear.fill(x|0,y|0,w,h);
   const dep=new Uint8Array(MW*MH);for(let i=0;i<MW*MH;i++)dep[i]=tiles[i]===T_WATER?9:0;
@@ -48,9 +54,10 @@ function worldArtPlan(){
   // where a road tile's path runs through: its middle, but at a holding's gate (and its own tile) half a tile to the left, so the
   // road comes up to the middle of the centre building's door (its gate lies on the line between two tiles)
   const P={clear,dep,tramples,towns:new Set(TOWNS.map(t=>t.ty*MW+t.tx)),shift:new Set(TOWNS.flatMap(t=>[t.ty*MW+t.tx,(t.ty+1)*MW+t.tx])),gen:WM.gen!=='classic-0'};
+  P.snow=snowCover(P.gen);
   // (the roads' bands and a margin kept clear, before the land's nature: by tile on today's map, along their lines on the generated)
   if(P.gen)artGenPlan(P,mark);else for(let ty=0;ty<MH;ty++)for(let tx=0;tx<MW;tx++)roadStamps(P,tx,ty,0,(x,y,w)=>mark(x-1,y-1,w+2,w+2));
-  P.nature=PX.worldNaturePlan({W:MW*TILE,H:MH*TILE,C:MW,R:MH,ts:TILE,kind:tiles,clim:climate,clear,seed:7,...P.gen?{flow:WM.flow,river:WM.river,water:WATER_RGB}:{}});
+  P.nature=PX.worldNaturePlan({W:MW*TILE,H:MH*TILE,C:MW,R:MH,ts:TILE,kind:tiles,clim:climate,clear,seed:7,snow:P.snow,...P.gen?{flow:WM.flow,river:WM.river,water:WATER_RGB}:{}});
   CLEAR=clear;return P;
 }
 // a road tile's band: from its path point to halfway to each road neighbor (so a shifted one still meets its neighbours), a square
@@ -63,13 +70,42 @@ function roadStamps(P,tx,ty,pass,st){
   st(X-h,Y-h,w,col);for(const [a,b] of arms){const mx=(X+pathX(P,tx+a,ty+b))/2,my=Y+b*8,n=Math.max(Math.abs(mx-X),Math.abs(my-Y));
     for(let s=0;s<=n;s++){const jx=Math.round((hs(tx*8+s,ty,a+3*b)-.5)*1.2);st(Math.round(X+(mx-X)*s/n)-h+(b?jx:0),Math.round(Y+(my-Y)*s/n)-h+(a?jx:0),w,col)}}
 }
-// the ground of the window x0, y0, w×h (px) into D, its RGBA: a smooth light field (one value per tile corner) and the water's depth
-// read between the corners; a row of pixels a step
+// the snow's cover a tile (0-1; doc/WORLD_DESIGN.md §15 Phase 3, the frost blended): how deep in the frost it lies (the frost's
+// tiles counted over FROST.r tiles each way: -1 clear of it, 1 deep in it), on the generated world raised or lowered by how cold it
+// is below the frost line or warm above it (WM.temp; the line halfway between the warmest frost tile and the coldest other land), by
+// half at most; and its height near the frost (FROST); a frost tile's at least .55, any other's at most .45, and 0 clear of it
+function snowCover(gen){const N=MW*MH,F=CLIMS.indexOf('frost'),r=FROST.r,n=(2*r+1)*(2*r+1),A=new Float32Array(N),S=new Float32Array(N),Tm=WM.temp,El=WM.elev;
+  for(let i=0;i<N;i++)A[i]=climate[i]===F?1:0;
+  // (two running sums, along the rows then down the columns, the edge tiles standing on beyond the map)
+  for(let y=0;y<MH;y++){const o=y*MW,at=x=>A[o+Math.max(0,Math.min(MW-1,x))];let s=0;for(let x=-r;x<=r;x++)s+=at(x);for(let x=0;x<MW;x++){S[o+x]=s;s+=at(x+r+1)-at(x-r)}}
+  for(let x=0;x<MW;x++){const at=y=>S[Math.max(0,Math.min(MH-1,y))*MW+x];let s=0;for(let y=-r;y<=r;y++)s+=at(y);for(let y=0;y<MH;y++){A[y*MW+x]=s;s+=at(y+r+1)-at(y-r)}}
+  let TL=0;if(gen){let a=-1,b=256;for(let i=0;i<N;i++){if(tiles[i]===T_WATER)continue;if(climate[i]===F)a=Math.max(a,Tm[i]);else b=Math.min(b,Tm[i])}TL=a<0?-1e3:b>255?a:(a+b)/2}
+  for(let i=0;i<N;i++){const fr=climate[i]===F,t=tiles[i];let d=Math.max(-1,Math.min(1,2*A[i]/n-1));if(gen)d=Math.max(-1,Math.min(1,d+.5*Math.max(-1,Math.min(1,(TL-Tm[i])/FROST.temp))));
+    const hg=gen?Math.max(0,El[i]-FROST.elev)/FROST.high:t===T_HILL?FROST.hill[0]:t===T_MOUNT?FROST.hill[1]:0,v=Math.max(0,Math.min(1,.5+.5*d+hg*(d+1)));
+    S[i]=fr?Math.max(.55,v):Math.min(.45,v)}
+  return S}
+// a land pixel: its climate's ground P3 (GROUND_RGB's) lit v (0-1), with its speckle. Under the snow's cover sn (0-1, read between
+// the tile corners) the grass and the frost alike: a ground dulled toward FROST.tundra as the cover grows, and the snow laid over it
+// where the cover beats the pixel's own noise (two smooth octaves and a grain): whole near 1, in patches thinning out below a half,
+// a pale shade at each patch's rim. Clear of the snow (sn 0), the climate's own ground as ever (a frost pixel there the grass's)
+const lit=(P3,v)=>v<.5?mixc(P3[0],P3[1],v*2):mixc(P3[1],P3[2],(v-.5)*2);
+function landRGB(P3,v,sn,x,y){const ph=hs(x,y,9),spk=(c,Q)=>ph<.035?mixc(c,Q[2],.6):ph>.965?mixc(c,Q[0],.7):c,G=GROUND_RGB.grass,F=GROUND_RGB.frost;
+  if(P3!==G&&P3!==F)return spk(lit(P3,v),P3);if(!(sn>0))return spk(lit(G,v),G);
+  const u=Math.min(1,sn*FROST.dull),T=FROST.tundra,Q=[mixc(G[0],T[0],u),mixc(G[1],T[1],u),mixc(G[2],T[2],u)],c=spk(lit(Q,v),Q);
+  const a=(.25+.5*sn+Math.max(0,sn-.9)*4-(.55*wnoise2(x/6,y/6,31)+.3*wnoise2(x/2.3,y/2.3,32)+.15*hs(x,y,33)))/FROST.edge+.5;
+  return a<=0?c:a>=1?spk(lit(F,v),F):mixc(c,FROST.rim,Math.min(1,a*1.6))}
+// the snow's cover at the tile corners of a window's tiles tx0..tx1+1, ty0..ty1+1 (LW wide): each the mean of the tiles round it
+function snowGrid(P,tx0,ty0,tx1,ty1,LW){const SG=new Float32Array(LW*(ty1-ty0+2)),S=P.snow;
+  for(let y=ty0;y<=ty1+1;y++)for(let x=tx0;x<=tx1+1;x++){let s=0,n=0;for(const [a,b] of [[0,0],[-1,0],[0,-1],[-1,-1]]){const tx=x+a,ty=y+b;if(tx<0||ty<0||tx>=MW||ty>=MH)continue;s+=S[ty*MW+tx];n++}SG[(y-ty0)*LW+x-tx0]=n?s/n:0}
+  return SG}
+// the ground of the window x0, y0, w×h (px) into D, its RGBA: a smooth light field (one value per tile corner), the water's depth and
+// the snow's cover read between the corners; a row of pixels a step
 function* groundSteps(P,D,x0,y0,w,h){
   if(P.gen)return yield* artGenGround(P,D,x0,y0,w,h);
   const Wp=MW*TILE,Hp=MH*TILE,tx0=x0>>4,ty0=y0>>4,tx1=(x0+w-1)>>4,ty1=(y0+h-1)>>4,LW=tx1-tx0+2,LG=new Float32Array(LW*(ty1-ty0+2)),DG=new Float32Array(LW*(ty1-ty0+2)),dep=P.dep;
   for(let y=ty0;y<=ty1+1;y++)for(let x=tx0;x<=tx1+1;x++){const k=(y-ty0)*LW+x-tx0;LG[k]=(fbm(x/4.5,y/4.5,77)-.5)*2;
     let s=0,n=0;for(const [a,b] of [[0,0],[-1,0],[0,-1],[-1,-1]]){const tx=x+a,ty=y+b;if(tx<0||ty<0||tx>=MW||ty>=MH)continue;s+=Math.min(4,dep[ty*MW+tx]===9?4:dep[ty*MW+tx]);n++}DG[k]=n?s/n:4}
+  const SG=snowGrid(P,tx0,ty0,tx1,ty1,LW);
   const BR=(tx,ty)=>{const i=ty*MW+tx;return tx>0&&ty>0&&tx<MW-1&&ty<MH-1&&tiles[i]===T_ROAD&&(tiles[i-1]===T_WATER&&tiles[i+1]===T_WATER||tiles[i-MW]===T_WATER&&tiles[i+MW]===T_WATER)};
   const CL=CLIMS.map(c=>GROUND_RGB[c]),WL=CLIMS.map(c=>WATER_RGB[c]);
   for(let y=y0;y<y0+h;y++){const ty=y>>4,fy=(y&15)/16;
@@ -80,8 +116,7 @@ function* groundSteps(P,D,x0,y0,w,h){
       const bl=A=>{const a=A[q],b=A[q+1],cc=A[q+LW],d=A[q+LW+1];return a+(b-a)*fx+(cc-a)*fy+(a-b-cc+d)*fx*fy};
       if(tiles[i]===T_WATER||BR(tx,ty)){const d=bl(DG),P3=WL[ci],wv=hs(x>>1,y,8);c=d<1.5?mixc(P3[0],P3[1],Math.max(0,d-.5)):mixc(P3[1],P3[2],Math.min(1,(d-1.5)/2.5));
         if(wv<.02)c=mixc(c,[255,255,255],.25)}
-      else{const L=bl(LG),P3=CL[ci],b4=hs(x>>2,y>>2,3);let v=.5+.38*L+.22*(b4-.5);v=Math.max(0,Math.min(1,v));c=v<.5?mixc(P3[0],P3[1],v*2):mixc(P3[1],P3[2],(v-.5)*2);
-        const ph=hs(x,y,9);if(ph<.035)c=mixc(c,P3[2],.6);else if(ph>.965)c=mixc(c,P3[0],.7)}
+      else{const L=bl(LG),b4=hs(x>>2,y>>2,3);let v=.5+.38*L+.22*(b4-.5);v=Math.max(0,Math.min(1,v));c=landRGB(CL[ci],v,bl(SG),x,y)}
       D[o]=c[0];D[o+1]=c[1];D[o+2]=c[2];D[o+3]=255}
     if(!((y-y0+1)&7))yield}
 }
@@ -116,17 +151,26 @@ const OVER=[
    bridge: the plan's wk), its edges wobbling a pixel or two, its outer corners rounded and its inner ones a little (within the
    3 px by the water that the land's nature keeps clear), so a river's stairs read as bends. Over the window painted and a margin,
    each pixel's distance to the water's edge (wdist), and by it: rivers shaded by width (light at the bank, deeper in the middle
-   of a wide one), a ford's shallows lighter; the sea and lakes as before, with a pale shallow halo along the shore (soft, cloudy
+   of a wide one), a ford a band of rippled shallows along its line, fading from the river's colour, with a gravel tongue rounding
+   into each bank; the sea and lakes as before, with a pale shallow halo along the shore (soft, cloudy
    edges), a few wave strokes and foam at the edge; on land a sand rim by the sea and lakes, a muddy bank by a river (a seasonal
    river's pale gravel and a dotted line). Roads (artGenRoads) follow their lines (WM.roads' line: the generator's smoothed ways, at
    any angle): each pixel shaded by how far inside the nearest band it lies: a worn verge, a dark edge, the middle with ruts (a
    track's middle grassed between them) and stones, a great road wider than a track, a little wider or narrower along the way;
-   forks and gates join where the bands meet. Over the land's nature (OVER_GEN): reeds and stones on the river banks, the
-   crossings (stone or wooden bridges, a ford's stepping stones, a ferry's landings, its raft and rope), white water on the
-   rapids, the ore veins.
+   a fork's end carried onto the way it joins (joinEnds); a road's end at a holding led round its centre into its gate (gateLead), over worn ground
+   there; each crossing met straight on its axis (straightOn), a bridge's deck by a ramp of road as wide. Over the land's nature
+   (OVER_GEN): reeds and stones on the river banks, the crossings (stone or wooden bridges, a ford's stepping stones scattered
+   along its line, a ferry's landings, its raft and rope), white water on the rapids, the ore veins.
    GENART: corners' radii (outer, inner), the edges' wobble (px either way), the shallows' halo, the sand rim, a river's bank (px
-   from the water); half a track's and a great road's width, the verge beyond it; the margin painted round a window (px) */
-const GENART={round:7,inner:5,wob:1.6,halo:11,sand:2.6,bank:2.4,road:[2.3,3.6],verge:2.8,margin:14};
+   from the water); half a track's and a great road's width, the verge beyond it; the margin painted round a window (px); round a
+   holding's centre the yard a road is led round (tiles), how far into the gate it ends (tiles) and the notch in the centre it
+   may run into there (px either side of the gate, up from the centre's foot), how far a fork's end is carried on
+   to the way it joins (tiles), and the worn ground before the gate
+   [rx, ry, amount]; how far back along a crossing's axis its road runs straight onto it (tiles, at most), a bridge's ramp (px
+   long) and its deck's half width (wood, stone); a ford's shallows (half their width, px, and how soft their edge; the sand they
+   lighten toward, the gravel on the banks) */
+const GENART={round:7,inner:5,wob:1.6,halo:11,sand:2.6,bank:2.4,road:[2.3,3.6],verge:2.8,margin:14,yard:.5,gate:.4,notch:[5,8],join:.75,worn:[10,4,.32],lead:.9,ramp:9,deck:[5,6],
+  ford:{w:9,soft:7,sand:[214,204,166],gravel:[158,146,114]}};
 const rgbOf=c=>[parseInt(c.slice(1,3),16),parseInt(c.slice(3,5),16),parseInt(c.slice(5,7),16)];
 const SHORE_RGB=Object.fromEntries(Object.entries(SHORE).map(([k,v])=>[k,v.map(rgbOf)])),ROAD_RGB=Object.fromEntries(Object.entries(ROADC).map(([k,v])=>[k,v.map(rgbOf)]));
 const MUD={grass:[96,80,52],frost:[150,156,168],desert:[150,120,72],swamp:[62,54,36]},SEA_FOAM={grass:[200,224,244],frost:[232,242,250],desert:[206,228,244],swamp:[122,154,122]};
@@ -134,20 +178,80 @@ const MUD={grass:[96,80,52],frost:[150,156,168],desert:[150,120,72],swamp:[62,54
 const wnoise=(t,s)=>{const i=Math.floor(t),f=t-i,u=f*f*(3-2*f);return hs(i,s,71)*(1-u)+hs(i+1,s,71)*u};
 const wnoise2=(x,y,s)=>{const i=Math.floor(x),j=Math.floor(y),fx=x-i,fy=y-j,u=fx*fx*(3-2*fx),v=fy*fy*(3-2*fy),a=hs(i,j,s),b=hs(i+1,j,s),c=hs(i,j+1,s),d=hs(i+1,j+1,s);return a+(b-a)*u+(c-a)*v+(a-b-c+d)*u*v};
 // the plan's part: the water by tile (wk: 0 land, 1 sea or lake, 2 river, 3 ford, 4 a bridge's water), the roads' segments (segs:
-// [x0, y0, x1, y1, great] px, from their lines; a road tile no line runs through, as lots.js leads roads round a holding's centre
-// to its gate, joined centre to centre to the road tiles round it) and their bands kept clear, the holdings' centres (box: no
-// road painted under them)
-function artGenPlan(P,mark){const N=MW*MH,K=P.wk=new Uint8Array(N),Rv=WM.river,Fe=WM.feat;
+// [x0, y0, x1, y1, k] px, from their lines (gateLead, straightOn); k 0 a track, 1 a great road, 2-5 a bridge's ramp: segW) and
+// their bands kept clear, the holdings' centres (box: 1 no road painted there; 2 and 3 the tiles left and right of the gate, a
+// road only in its notch) and the worn ground before their gates, the fords (fords: each its line bank to bank, px; fd: 1 + its index on the tiles
+// round it)
+function artGenPlan(P,mark){const N=MW*MH,K=P.wk=new Uint8Array(N),Rv=WM.river,Fe=WM.feat,G=GENART;
   for(let i=0;i<N;i++){const t=tiles[i];K[i]=t===T_WATER?(Rv[i]&3?2:1):t===T_FORD?3:t===T_ROAD&&Fe[i]&32?4:0}
-  const S=[];
+  const S=[],seg=(...a)=>S.push(...a);
   // (each line cut at its corners twice, Chaikin's way, its ends kept: a stretch the generator left in steps reads as a gentle bend)
   const soft=l=>{for(let t=0;t<2;t++){const o=[l[0],l[1]];for(let j=2;j<l.length;j+=2){const a=l[j-2],b=l[j-1],c=l[j],d=l[j+1];o.push(a*.75+c*.25,b*.75+d*.25,a*.25+c*.75,b*.25+d*.75)}o.push(l[l.length-2],l[l.length-1]);l=o}return l};
-  for(const r of WM.roads){const k=r.kind==='road'?1:0;for(const l0 of r.line){const l=soft(l0);for(let j=2;j<l.length;j+=2){const a=l[j-2]*TILE,b=l[j-1]*TILE,c=l[j]*TILE,d=l[j+1]*TILE;
-    S.push(a,b,c,d,k)}}}
-  for(let k=0;k<S.length;k+=5){const a=S[k],b=S[k+1],c=S[k+2],d=S[k+3],hw=Math.ceil(GENART.road[S[k+4]]*1.15)+2,n=Math.max(1,Math.ceil(Math.max(Math.abs(c-a),Math.abs(d-b))/3));
+  // (the holdings' centres, each with its gate's x; the crossings by their two ends)
+  const boxes=typeof centreBox==='function'?TOWNS.map(t=>Object.assign(centreBox(t),{gx:t.tx})):[],XE=new Map(),ramped=new Set();
+  for(const c of WM.crossings){XE.set(c.i,[c,c.j]);XE.set(c.j,[c,c.i]);for(const q of c.tiles)XE.set(q,[c,-1])}
+  const LS=[];for(const r of WM.roads){const k=r.kind==='road'?1:0;for(const l0 of r.line){const l=gateLead(l0,boxes);if(l.length>=4)LS.push([soft(straightOn(offDeck(l,XE),XE,k,ramped,seg)),k])}}
+  joinEnds(LS,(x,y)=>boxes.some(b=>x>=b.x-G.yard&&x<=b.x+b.n+G.yard&&y>=b.y-G.yard&&y<=b.y+b.n+G.yard));for(const [l,k] of LS)for(let j=2;j<l.length;j+=2)seg(l[j-2]*TILE,l[j-1]*TILE,l[j]*TILE,l[j+1]*TILE,k);
+  for(let k=0;k<S.length;k+=5){const a=S[k],b=S[k+1],c=S[k+2],d=S[k+3],hw=Math.ceil(segW(S[k+4],0)*1.15)+2,n=Math.max(1,Math.ceil(Math.max(Math.abs(c-a),Math.abs(d-b))/3));
     for(let s=0;s<=n;s++)mark(Math.round(a+(c-a)*s/n)-hw,Math.round(b+(d-b)*s/n)-hw,2*hw+1,2*hw+1)}
   P.segs=Float32Array.from(S);const B=P.box=new Uint8Array(N);
-  if(typeof centreBox==='function')for(const t of TOWNS){const b=centreBox(t);for(let y=Math.max(0,b.y);y<Math.min(MH,b.y+b.n);y++)for(let x=Math.max(0,b.x);x<Math.min(MW,b.x+b.n);x++)B[y*MW+x]=1}}
+  for(const b of boxes)for(let y=Math.max(0,b.y);y<Math.min(MH,b.y+b.n);y++)for(let x=Math.max(0,b.x);x<Math.min(MW,b.x+b.n);x++)B[y*MW+x]=y<b.y+b.n-1?1:x===b.gx-1?2:x===b.gx?3:1;
+  for(const t of TOWNS)P.tramples.push([t.x,t.y+3,...G.worn]);
+  const FD=P.fd=new Int16Array(N),FL=P.fords=[];
+  for(const c of WM.crossings){if(c.kind!=='ford')continue;const ax=c.i%MW,ay=(c.i-ax)/MW,bx=c.j%MW,by=(c.j-bx)/MW;FL.push([(ax+.5)*TILE,(ay+.5)*TILE,(bx+.5)*TILE,(by+.5)*TILE]);
+    for(let y=Math.max(0,Math.min(ay,by)-1);y<=Math.min(MH-1,Math.max(ay,by)+1);y++)for(let x=Math.max(0,Math.min(ax,bx)-1);x<=Math.min(MW-1,Math.max(ax,bx)+1);x++)FD[y*MW+x]=FL.length}}
+// (a segment's half width (px) at t (0-1) along it, by its kind k: a track's or a great road's; a ramp's (k 2 + great + 2 if the
+//  bridge is stone) from as wide as the deck is inside at its start to its road's at its end)
+const segW=(k,t)=>{const G=GENART;if(k<2)return G.road[k];const w0=G.deck[(k-2)>>1]-1,w1=G.road[(k-2)&1];return w0+(w1-w0)*t};
+// (a line [x, y, ...] in tiles, its ends led to the gates: an end within a holding's centre or GENART.yard tiles round it is cut
+//  where the line first comes into that yard (from its far end), then led round the yard's corners, the nearer way, to the middle
+//  of the tile below the gate, and up into the gate; as lots.js leads the road tiles round the centre. A line wholly in a yard (a
+//  stretch through the holding) is left out: [])
+const revLine=l=>{const o=[];for(let j=l.length-2;j>=0;j-=2)o.push(l[j],l[j+1]);return o};
+function gateLead(l,boxes){const m=GENART.yard,rev=revLine;
+  const lead=l=>{const n=l.length,ex=l[n-2],ey=l[n-1],b=boxes.find(b=>ex>=b.x-m&&ex<=b.x+b.n+m&&ey>=b.y-m&&ey<=b.y+b.n+m);if(!b||n<4)return l;
+    const x0=b.x-m,y0=b.y-m,x1=b.x+b.n+m,y1=b.y+b.n+m,gx=b.gx;
+    for(let j=2;j<n;j+=2){const ax=l[j-2],ay=l[j-1],dx=l[j]-ax,dy=l[j+1]-ay;let t0=0,t1=1,ok=true;
+      // (Liang and Barsky's clip: where the leg comes into the yard, if it does)
+      for(const [p,q] of [[-dx,ax-x0],[dx,x1-ax],[-dy,ay-y0],[dy,y1-ay]]){if(!p){if(q<0)ok=false;continue}const r=q/p;if(p<0)t0=Math.max(t0,r);else t1=Math.min(t1,r)}
+      if(!ok||t0>t1)continue;if(t0<=0)return l[0]>=x0&&l[0]<=x1&&l[1]>=y0&&l[1]<=y1?[]:l;
+      const cx=ax+dx*t0,cy=ay+dy*t0,o=l.slice(0,j),e=1e-6,add=(x,y)=>{if(Math.abs(o[o.length-2]-x)>.05||Math.abs(o[o.length-1]-y)>.05)o.push(x,y)};add(cx,cy);
+      if(Math.abs(cy-y1)>e){const sx=Math.abs(cx-x0)<e?x0:Math.abs(cx-x1)<e?x1:cx<gx?x0:x1;add(sx,Math.abs(cy-y0)<e?y0:cy);add(sx,y1)}
+      add(gx,y1);add(gx,b.y+b.n-GENART.gate);return o}
+    return l};
+  const a=lead(l);return a.length?rev(lead(rev(a))):a}
+// (each end of a softened line that stops on another's way (a fork, a junction) carried on to the nearest point of that line as
+//  softened, within GENART.join tiles: the softening moves a line off the point its end was snapped to); not an end at a gate (at(x, y))
+function joinEnds(LS,at){const J=GENART.join,bb=LS.map(([l])=>{let a=1e9,b=1e9,c=-1e9,d=-1e9;for(let j=0;j<l.length;j+=2){a=Math.min(a,l[j]);b=Math.min(b,l[j+1]);c=Math.max(c,l[j]);d=Math.max(d,l[j+1])}return[a-J,b-J,c+J,d+J]});
+  LS.forEach(([l],n)=>{for(const e of [0,1]){const px=e?l[l.length-2]:l[0],py=e?l[l.length-1]:l[1];let best=J*J,bx=0,by=0,hit=false;if(at(px,py))continue;
+    LS.forEach(([m],q)=>{const B=bb[q];if(q===n||px<B[0]||py<B[1]||px>B[2]||py>B[3])return;
+      for(let j=2;j<m.length;j+=2){const ax=m[j-2],ay=m[j-1],vx=m[j]-ax,vy=m[j+1]-ay,L=vx*vx+vy*vy,t=L?Math.max(0,Math.min(1,((px-ax)*vx+(py-ay)*vy)/L)):0,x=ax+vx*t,y=ay+vy*t,d=(x-px)*(x-px)+(y-py)*(y-py);
+        if(d<best){best=d;bx=x;by=y;hit=true}}});
+    if(hit&&best>1e-4){if(e)l.push(bx,by);else l.unshift(bx,by)}}})}
+// (a line's end on a crossing's water (a stretch laid from the middle of its deck) moved back to the middle of the crossing's end
+//  tile on the line's side, the points it passes over on the way dropped)
+function offDeck(l,XE){const at=(x,y)=>Math.floor(y)*MW+Math.floor(x),cen=t=>[t%MW+.5,(t-t%MW)/MW+.5];
+  const fix=l=>{const n=l.length,e=n>=4&&XE.get(at(l[0],l[1]));if(!e||e[1]>=0)return l;const c=e[0],[ix,iy]=cen(c.i),[jx,jy]=cen(c.j),A=(x,y)=>(x-ix)*(jx-ix)+(y-iy)*(jy-iy),a0=A(l[0],l[1]);
+    const [ex,ey]=A(l[2],l[3])<a0?[ix,iy]:[jx,jy],ae=A(ex,ey);let q=2;while(q<n-2&&(A(l[q],l[q+1])-a0)*(ae-a0)>0&&Math.abs(A(l[q],l[q+1])-a0)<Math.abs(ae-a0))q+=2;
+    return[ex,ey,...l.slice(q)]};
+  return revLine(fix(revLine(fix(l))))}
+// (a line's crossings met straight: where the line comes to the middle of a crossing's end tile from the land, on its way onto
+//  the crossing (the next point the other end's middle) or ending there, a point is put on the crossing's axis on the land side
+//  (GENART.lead tiles out, at most half the way to that next point, less as the way turns off the axis there), so the softened
+//  line runs onto it on its axis; a bridge's deck is met at that end by a ramp of road on its axis, as wide as the deck is inside,
+//  narrowing to the road's width over GENART.ramp px or that straight run (seg, once an end). XE: each crossing end's tile to [the
+//  crossing, its other end's tile], each of its water tiles to [the crossing, -1])
+function straightOn(l,XE,k,ramped,seg){const G=GENART,o=[],n=l.length,mid=v=>Math.abs(v-Math.floor(v)-.5)<.02,at=(x,y)=>Math.floor(y)*MW+Math.floor(x);
+  for(let j=0;j<n;j+=2){const x=l[j],y=l[j+1],e=mid(x)&&mid(y)?XE.get(at(x,y)):null;if(!e||e[1]<0){o.push(x,y);continue}
+    const [c,ot]=e,ox=ot%MW+.5,oy=(ot-ot%MW)/MW+.5,on=q=>q>=0&&q<n&&Math.abs(l[q]-ox)<.02&&Math.abs(l[q+1]-oy)<.02,b=on(j-2),a=on(j+2);
+    if(!b&&!a&&j&&j<n-2){o.push(x,y);continue}
+    const L=Math.hypot(x-ox,y-oy),ux=(x-ox)/L,uy=(y-oy)/L;let d=G.lead;
+    if(j&&!b||j<n-2&&!a){const q=j&&!b?j-2:j+2,dx=l[q]-x,dy=l[q+1]-y,h=Math.hypot(dx,dy);d=Math.min(G.lead,.5*h*Math.max(.25,(dx*ux+dy*uy)/h))}
+    if(j&&!b)o.push(x+ux*d,y+uy*d);o.push(x,y);if(j<n-2&&!a)o.push(x+ux*d,y+uy*d);
+    const key=c.i===at(x,y)?'i':'j';if(c.kind!=='bridge'||ramped.has(c[key]))continue;ramped.add(c[key]);
+    const hor=Math.abs(uy)<.5,lo=(hor?x-ox:y-oy)<0,u=lo?Math.floor(hor?x:y)*TILE+TILE-2:Math.floor(hor?x:y)*TILE+2,u1=u+(lo?-1:1)*(Math.max(2,Math.min(G.ramp,d*TILE*.75))+2),m=(hor?y:x)*TILE,g=2+k+(c.stone?2:0);
+    if(hor)seg(u,m,u1,m,g);else seg(m,u,m,u1,g)}
+  return o}
 // is map pixel (x, y) water (1) or land (0): its tile's, but at a corner rounded (outer, where the two tiles beside it are the other
 // kind; inner, where those and the one across are) and along an edge moved by its wobble (the same from either side)
 function wpx(K,x,y){const tx=x>>4,ty=y>>4,fx=x&15,fy=y&15,R=GENART.round,Ri=GENART.inner,at=(u,v)=>u<0||v<0||u>=MW||v>=MH||K[v*MW+u]>0,w=at(tx,ty);
@@ -179,9 +283,9 @@ function* artGenGround(P,D,x0,y0,w,h){
   const Wp=MW*TILE,Hp=MH*TILE,tx0=x0>>4,ty0=y0>>4,tx1=(x0+w-1)>>4,ty1=(y0+h-1)>>4,LW=tx1-tx0+2,LG=new Float32Array(LW*(ty1-ty0+2)),DG=new Float32Array(LW*(ty1-ty0+2)),dep=P.dep;
   for(let y=ty0;y<=ty1+1;y++)for(let x=tx0;x<=tx1+1;x++){const k=(y-ty0)*LW+x-tx0;LG[k]=(fbm(x/4.5,y/4.5,77)-.5)*2;
     let s=0,n=0;for(const [a,b] of [[0,0],[-1,0],[0,-1],[-1,-1]]){const tx=x+a,ty=y+b;if(tx<0||ty<0||tx>=MW||ty>=MH)continue;s+=Math.min(4,dep[ty*MW+tx]===9?4:dep[ty*MW+tx]);n++}DG[k]=n?s/n:4}
-  const CL=CLIMS.map(c=>GROUND_RGB[c]),WL=CLIMS.map(c=>WATER_RGB[c]);
+  const CL=CLIMS.map(c=>GROUND_RGB[c]),WL=CLIMS.map(c=>WATER_RGB[c]),SG=snowGrid(P,tx0,ty0,tx1,ty1,LW),FD=P.fd,FG=G.ford;
   for(let y=y0;y<y0+h;y++){const ty=y>>4,fy=(y&15)/16;
-    for(let x=x0;x<x0+w;x++){const tx=x>>4,fx=(x&15)/16,o=((y-y0)*w+x-x0)*4,r=(y-Y0)*RW+x-X0,dd=DT[r];
+    for(let x=x0;x<x0+w;x++){const tx=x>>4,fx=(x&15)/16,o=((y-y0)*w+x-x0)*4,r=(y-Y0)*RW+x-X0,dd=DT[r],f=FD[ty*MW+tx];
       const jx=Math.min(Wp-1,Math.max(0,x+Math.floor((hs(x/3|0,y/3|0,5)-.5)*14))),jy=Math.min(Hp-1,Math.max(0,y+Math.floor((hs(x/3|0,y/3|0,6)-.5)*14)));
       const ci=climate[(jy>>4)*MW+(jx>>4)],cn=CLIMS[ci],q=(ty-ty0)*LW+tx-tx0,bl=A=>{const a=A[q],b=A[q+1],cc=A[q+LW],d=A[q+LW+1];return a+(b-a)*fx+(cc-a)*fy+(a-b-cc+d)*fx*fy};let c;
       if(M[r]){const j=wnear(K,tx,ty),k=j<0?1:K[j],P3=WL[ci];
@@ -190,26 +294,31 @@ function* artGenGround(P,D,x0,y0,w,h){
           if(dd<1.3&&hs(x,y,4)>.3)c=SEA_FOAM[cn];
           else if(dd>3.5&&dd<G.halo-1){const sy=y>>2,sx=x+(sy&1)*4;if(hs(sx>>3,sy,29)<.08&&(sx&7)<4&&(y&3)===1)c=mixc(c,[255,255,255],.4)}}
         else{const wr=Math.max(1,Rv[j]&3),t1=Math.min(1,dd/(2+wr*2));c=mixc(P3[0],P3[1],.2+.6*t1);if(wr===3)c=mixc(c,P3[2],Math.max(0,Math.min(1,(dd-5)/8))*.6);if(cn==='swamp')c=mixc(c,[56,92,100],.35);if(dd<1.2)c=mixc(c,[200,190,150],.2);
-          if(k===3){c=mixc(c,DIRT[cn],.38);if(hs(x>>1,y,8)<.07)c=mixc(c,[255,255,255],.35)}}
+          if(f){const sh=fordAt(P,f,x,y);if(sh>0){c=mixc(c,mixc(P3[0],FG.sand,.35),.6*sh);if(sh>.3&&y%3===((x>>3)&1)&&hs(x>>1,(y/3)|0,44)<.22)c=mixc(c,[240,246,250],.45)}}}
         if(hs(x>>1,y,8)<.02)c=mixc(c,[255,255,255],.25)}
-      else{const L=bl(LG),P3=CL[ci],b4=hs(x>>2,y>>2,3);let v=.5+.38*L+.22*(b4-.5);v=Math.max(0,Math.min(1,v));c=v<.5?mixc(P3[0],P3[1],v*2):mixc(P3[1],P3[2],(v-.5)*2);
-        const ph=hs(x,y,9);if(ph<.035)c=mixc(c,P3[2],.6);else if(ph>.965)c=mixc(c,P3[0],.7);
+      else{const L=bl(LG),b4=hs(x>>2,y>>2,3);let v=.5+.38*L+.22*(b4-.5);v=Math.max(0,Math.min(1,v));c=landRGB(CL[ci],v,bl(SG),x,y);
         if(dd<4.5){const j=wnear(K,tx,ty);if(j>=0){const k=K[j];
           if(k===1){const [s0,s1]=SHORE_RGB[cn];if(dd<G.sand)c=dd<1.3?mixc(s0,s1,.5):hs(x,y,13)<.15?s1:s0;else if(dd<G.sand+1.5)c=mixc(c,s0,.45*(1-(dd-G.sand)/1.5))}
           else if(Rv[j]&8){if(dd<2.8)c=mixc(c,[190,182,162],.6);if(dd>=1.8&&dd<2.9&&(x+y)%3===0)c=mixc(c,[104,98,86],.7)}
-          else if(dd<G.bank+1)c=mixc(c,MUD[cn],.55*Math.min(1,(G.bank+1-dd)/2))}}}
+          else if(dd<G.bank+1)c=mixc(c,MUD[cn],.55*Math.min(1,(G.bank+1-dd)/2))}}
+        if(f&&dd<7){const sh=fordAt(P,f,x,y)*Math.min(1,(7-dd)/3);if(sh>0)c=mixc(c,FG.gravel,.6*sh)}}
       D[o]=c[0];D[o+1]=c[1];D[o+2]=c[2];D[o+3]=255}
     if(!((y-y0+1)&3))yield}
 }
+// (how shallow a ford f's water is at pixel (x, y), 0-1: within GENART.ford.w of its line bank to bank, a little more or less
+//  along it, its edge soft over ford.soft px; round at each end, over the bank)
+const fordAt=(P,f,x,y)=>{const [ax,ay,bx,by]=P.fords[f-1],vx=bx-ax,vy=by-ay,L=vx*vx+vy*vy,ex=x+.5-ax,ey=y+.5-ay,t=Math.max(0,Math.min(1,(ex*vx+ey*vy)/L)),dx=ex-vx*t,dy=ey-vy*t,F=GENART.ford;
+  return Math.max(0,Math.min(1,(F.w*(.7+.6*wnoise(t*Math.sqrt(L)/5,f*7))+(wnoise2(x/5,y/5,f+47)-.5)*6-Math.sqrt(dx*dx+dy*dy))/F.soft))};
 // the roads over the window's ground (paintSteps, before the land's nature): each pixel by the band it lies deepest in (SC: half
-// the band's width, a little more or less along the way, less its distance from the line; DL: that distance; KF: a great road)
-function* artGenRoads(P,D,x0,y0,w,h){const S=P.segs,K=P.wk,B=P.box,RD=GENART.road,V=GENART.verge,R=RD[1]*1.15+V+1,SC=new Float32Array(w*h).fill(-99),DL=new Float32Array(w*h),KF=new Uint8Array(w*h);
+// the band's width there, a road's a little more or less along the way, less its distance from the line; DL: that distance; KF: a
+// great road's)
+function* artGenRoads(P,D,x0,y0,w,h){const S=P.segs,K=P.wk,B=P.box,G=GENART,RD=GENART.road,V=GENART.verge,R=Math.max(GENART.road[1]*1.15,GENART.deck[1])+V+1,SC=new Float32Array(w*h).fill(-99),DL=new Float32Array(w*h),KF=new Uint8Array(w*h);
   for(let k=0;k<S.length;k+=5){const a=S[k],b=S[k+1],c=S[k+2],d=S[k+3],g=S[k+4];if(Math.max(a,c)+R<x0||Math.min(a,c)-R>=x0+w||Math.max(b,d)+R<y0||Math.min(b,d)-R>=y0+h)continue;
     const vx=c-a,vy=d-b,L=vx*vx+vy*vy,px0=Math.max(x0,Math.floor(Math.min(a,c)-R)),px1=Math.min(x0+w-1,Math.ceil(Math.max(a,c)+R)),py0=Math.max(y0,Math.floor(Math.min(b,d)-R)),py1=Math.min(y0+h-1,Math.ceil(Math.max(b,d)+R));
     for(let y=py0;y<=py1;y++)for(let x=px0;x<=px1;x++){const ex=x+.5-a,ey=y+.5-b,t=L?Math.max(0,Math.min(1,(ex*vx+ey*vy)/L)):0,dx=ex-vx*t,dy=ey-vy*t,dl=Math.sqrt(dx*dx+dy*dy);if(dl>R)continue;
-      const s=RD[g]*(.88+.24*wnoise2(x/40,y/40,61))-dl,o=(y-y0)*w+x-x0;if(s>SC[o]){SC[o]=s;DL[o]=dl;KF[o]=g}}
+      const s=(g<2?RD[g]*(.88+.24*wnoise2(x/40,y/40,61)):segW(g,t))-dl,o=(y-y0)*w+x-x0;if(s>SC[o]){SC[o]=s;DL[o]=dl;KF[o]=g&1}}
     if(!(k%80))yield}
-  for(let y=y0;y<y0+h;y++){if(!((y-y0+1)&31))yield;for(let x=x0;x<x0+w;x++){const o=(y-y0)*w+x-x0,s=SC[o];if(s<=-V)continue;const i=(y>>4)*MW+(x>>4);if(K[i]||B[i]||wpx(K,x,y))continue;
+  for(let y=y0;y<y0+h;y++){if(!((y-y0+1)&31))yield;for(let x=x0;x<x0+w;x++){const o=(y-y0)*w+x-x0,s=SC[o];if(s<=-V)continue;const i=(y>>4)*MW+(x>>4),bi=B[i];if(K[i]||bi===1||bi>1&&((y&15)<16-G.notch[1]||(bi===2?16-(x&15):(x&15)+1)>G.notch[0])||wpx(K,x,y))continue;
     const cl=CLIMS[climate[i]],RC=ROAD_RGB[cl],q=o*4,cur=[D[q],D[q+1],D[q+2]];let c;
     if(s<=0){if(hs(x,y,57)<.25+.4*(-s/V))continue;c=mixc(cur,DIRT[cl],.42*(1+s/V))}
     else if(s<=1.1)c=KF[o]?RC[0]:mixc(RC[1],RC[0],.4);
@@ -221,15 +330,16 @@ function* artGenRoads(P,D,x0,y0,w,h){const S=P.segs,K=P.wk,B=P.box,RD=GENART.roa
 function artGenXing(P,r,c){const ax=c.i%MW,ay=(c.i-ax)/MW,bx=c.j%MW,by=(c.j-bx)/MW,hor=ay===by,lo=hor?Math.min(ax,bx):Math.min(ay,by),hi=hor?Math.max(ax,bx):Math.max(ay,by),mid=(hor?ay:ax)*TILE+8;
   // (a rect along the crossing: from u0 to u1 along it, v0 to v1 across it, px)
   const R=(col,u0,u1,v0,v1)=>hor?r(col,u0,v0,u1-u0,v1-v0):r(col,v0,u0,v1-v0,u1-u0);
-  if(c.kind==='bridge'){const u0=lo*TILE+TILE-4,u1=hi*TILE+4,hw=c.stone?6:5;
+  if(c.kind==='bridge'){const u0=lo*TILE+TILE-4,u1=hi*TILE+4,hw=GENART.deck[c.stone?1:0];
     if(c.stone){R('#24323e',u0+4,u1-4,mid+hw,mid+hw+2);R('#a69e8e',u0,u1,mid-hw,mid+hw);
       for(let u=u0;u<u1;u++)for(let v=mid-hw+2;v<mid+hw-2;v++)if((v-mid)%3===0||(u+((v-mid+12)/3|0)*3)%6===0)R('#8e8676',u,u+1,v,v+1);
       R('#6e665a',u0,u1,mid-hw,mid-hw+2);R('#c8c0ae',u0,u1,mid-hw,mid-hw+1);R('#6e665a',u0,u1,mid+hw-2,mid+hw);R('#c8c0ae',u0,u1,mid+hw-2,mid+hw-1);
       for(let u=u0+8;u<u1-6;u+=10)R('#121c26',u,u+4,mid+hw,mid+hw+1);R('#7e7666',u0-1,u0+2,mid-hw-1,mid+hw+1);R('#7e7666',u1-2,u1+1,mid-hw-1,mid+hw+1)}
     else{R('#8a6038',u0,u1,mid-hw,mid+hw);for(let u=u0;u<u1;u+=2)R('#6a4628',u,u+1,mid-hw,mid+hw);R('#3e2818',u0,u1,mid-hw-1,mid-hw);R('#3e2818',u0,u1,mid+hw,mid+hw+1);
       for(let u=u0+5;u<u1-3;u+=7){R('#2a1a10',u,u+1,mid+hw+1,mid+hw+3);R('#2a1a10',u+3,u+4,mid-hw-2,mid-hw-1)}}}
-  else if(c.kind==='ford'){const K=P.wk,n=(hi-lo)*4;for(let s=1;s<n;s++){const u=lo*TILE+8+s*4,v=mid+(s&1?2:-2)-1,x=hor?u-1:v,y=hor?v:u-1;if(K[(y>>4)*MW+(x>>4)]!==3)continue;
-      r('#3c4048',x,y+2,3,1);r('#8e8a80',x,y,3,2);r('#c8c4b8',x,y,2,1)}}
+  else if(c.kind==='ford'){const K=P.wk;// (stones 2 or 3 px, a few px apart, scattered either side of the line; only in the water)
+    for(let u=lo*TILE+10,q=0;u<hi*TILE+6;q++){const h=n=>hs(c.i+q,c.j,n+120),v=mid+Math.round((h(1)-.5)*8)-1,sw=h(2)<.4?3:2,x=hor?u:v,y=hor?v:u;u+=3+Math.floor(h(3)*4);
+      if(!wpx(K,x,y)||!wpx(K,x+sw-1,y+2))continue;r('#3c4048',x,y+2,sw,1);r('#8e8a80',x,y,sw,2);r('#c8c4b8',x,y,1,1);if(h(4)<.5)r('#d8e8f0',x+sw,y+1,1,1)}}
   else{const dir=hi===(hor?bx:by)?1:-1,ends=[[c.i,dir],[c.j,-dir]],tip=[];
     for(const [t,d] of ends){const e=hor?t%MW:(t/MW|0),u0=d>0?e*TILE+TILE-3:e*TILE+3-9,u1=u0+9;R('#7a5432',u0,u1,mid-3,mid+3);for(let u=u0;u<u1;u+=2)R('#5a3c22',u,u+1,mid-3,mid+3);
       R('#2a1a10',d>0?u1-1:u0,d>0?u1:u0+1,mid-4,mid-3);R('#2a1a10',d>0?u1-1:u0,d>0?u1:u0+1,mid+3,mid+5);tip.push(d>0?u1:u0)}
@@ -329,7 +439,7 @@ const WorldArt={
         if(c&&!NATURE_TOUCH){g.drawImage(c.cv,X,Y);this.cnt.set(k,c)}else{const rec={cx,cy};runGen(paintSteps(this.ensure(),X,Y,w,h,g,X,Y,rec));this.cnt.set(k,rec)}}
       this.dirty.clear();
       // (the counts and phases summed over the chunks)
-      const N={trees:0,hills:0,peaks:0,decor:0,flat:0,rock:0,ms:0},tm={};for(const c of this.cnt.values()){for(const q in N)N[q]+=q==='ms'?c.n.ms:c.n[q];for(const q in c.n.tm)tm[q]=(tm[q]||0)+c.n.tm[q]}
+      const N={trees:0,fen:0,hills:0,peaks:0,decor:0,flat:0,rock:0,ms:0},tm={};for(const c of this.cnt.values()){for(const q in N)N[q]+=q==='ms'?c.n.ms:c.n[q];for(const q in c.n.tm)tm[q]=(tm[q]||0)+c.n.tm[q]}
       let s=0;N.t=Object.keys(tm).map(q=>q+' '+(s+=tm[q]).toFixed(0)).join(', ');NATURE=N}
     return this.full},
   mini(k=1){return this.minis[k]||(this.minis[k]=mkc(Math.ceil(MW/k),Math.ceil(MH/k),g=>{const Rv=WM.river,Fe=WM.feat;

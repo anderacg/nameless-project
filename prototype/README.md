@@ -692,6 +692,8 @@ Everything is drawn by code (`js/gfx/sprites.js`, `js/gfx/worldart.js`); nothing
 
 The generated world (`?gen=1`) has its own water and roads (`worldart.js`, doc/WORLD_DESIGN.md §12.1): water rounded at its corners and shaded by width, banks with reeds and stones, fords with stepping stones, stone and wooden bridges, ferries, rapids, brooks along the flow (painted by `worldnature.js`), sand rims and shallows on the coasts, and roads painted along their smoothed lines at any angle. `tests/visual/rivers.js` shows every piece for approval (a page of crops: screenshot it at 1400 x 2200); today's map is painted as before.
 
+After the owner's play-test (2026-10-22): every road's end at a holding is led round its centre (`GENART.yard`) and up into its gate, over worn ground (`gateLead`); a crossing is met straight on its axis and a bridge's deck by a ramp of road as wide as it (`straightOn`, `offDeck`); a fork's end is carried onto the way it joins (`joinEnds`); a ford is a band of rippled shallows fading from the river's colour, rounded into gravel on each bank, its stepping stones scattered along it (`fordAt`). On both maps the frost's snow is laid by its cover a tile (`snowCover`, `FROST`: how deep in the frost, how cold below the frost line on the generated world, how high), rising over the frost's edge and thinning out in patches over the grass beside it (`landRGB`), and the swamp's open ground stands with sparse low mangroves (`engine/worldnature.js` `FEN`). `tests/visual/worldart.js` shows each of these in the game's own view for approval (screenshot it at 1200 x 2340, `&gen=1` or not).
+
 To look at the result, take a screenshot of a prepared scene (`scene` is `world` or `battle`; `town`, `mount` and `zoom` are optional):
 
 ```

@@ -3,7 +3,8 @@
 // sprite sits in a power-of-two box at whole pixels, its navy outline round its silhouette only; the looks are seeded (the same
 // again, and told apart by their shapes, not their colours alone); the map's woods, hills and ranges are painted with them; nothing
 // is painted on a road, a holding, an estate or water (but lily pads and floes); painting reads no Math.random and changes no map
-// data; and how long the world takes to paint.
+// data; the fen's sparse mangroves and the frost's snow blended into the grass (the owner's play-test, 2026-10-22); and how long
+// the world takes to paint.
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);
 try{
  const t=T,TILE=t.TILE,MW=t.MW,MH=t.MH,Wp=MW*TILE,Hp=MH*TILE,CL=['grass','frost','desert','swamp'];t.act('begin','soldier');t.G.quietEvents=true;
@@ -59,6 +60,23 @@ try{
   for(let ty=0;ty<MH;ty++)for(let tx=0;tx<MW;tx++)if(t.tiles[ty*MW+tx]===t.T_ROAD)for(let j=6;j<10;j++)for(let i=6;i<10;i++)if(TO[(ty*TILE+j)*Wp+tx*TILE+i]&&CLR.at(tx*TILE+i,ty*TILE+j))roads++;
   ok(n>1e6&&!onClear&&!lots&&!roads,'nature painted '+n+' pixels, none on a road, a holding’s yard or building, an estate’s plot or a field ('+onClear+' on clear ground, '+lots+' on a lot, '+roads+' on a road)');
   ok(!onWater&&!offWater,'nothing on the water but its lily pads and floes, and those only on water ('+onWater+', '+offWater+')')}
+ // ---- the fen's own trees: mangroves on its open ground, sparse (some .6 a tile, about a third of a wood's cover)
+ {let nS=0;for(let i=0;i<MW*MH;i++)if(t.tiles[i]===t.T_OPEN&&t.CLIMS[t.climate[i]]==='swamp')nS++;const f=N.fen/Math.max(1,nS),wd=(N.trees-N.fen)/Math.max(1,nF);
+  ok(nS&&f>.3&&f<1&&f<wd/3,'the swamp’s open ground ('+nS+' tiles) stands with sparse mangroves: '+N.fen+' ('+f.toFixed(2)+' a tile, against a wood’s '+wd.toFixed(1)+')')}
+ // ---- the frost blended: the snow's cover (gfx/worldart.js snowCover) thins out over the grass beside the frost in patches, rises
+ //      over the frost's edge and lies whole deep in it; no grass far from it is touched (snow: a pale blue-white pixel)
+ {const S=t.WorldArt.ensure().snow,d=cv.getContext('2d').getImageData(0,0,Wp,Hp).data,F=t.CLIMS.indexOf('frost'),G=t.CLIMS.indexOf('grass');
+  const share=(tx,ty)=>{let n=0,m=0;for(let y=1;y<TILE;y+=2)for(let x=1;x<TILE;x+=2){const o=((ty*TILE+y)*Wp+tx*TILE+x)*4;m++;if(d[o]>185&&d[o+1]>190&&d[o+2]>200)n++}return n/m};
+  // (the open tiles with only open ground round them, by how far they lie from the frost's edge: -1 grass beside it, 1 frost beside
+  //  grass, 4 frost 4 tiles in, 0 grass 6 tiles from any frost)
+  const near=(tx,ty,r,c)=>{for(let b=-r;b<=r;b++)for(let a=-r;a<=r;a++){const x=tx+a,y=ty+b;if(x>=0&&y>=0&&x<MW&&y<MH&&t.climate[y*MW+x]===c)return true}return false};
+  const B={'-1':[],1:[],4:[],0:[]};
+  for(let ty=6;ty<MH-6;ty++)for(let tx=6;tx<MW-6;tx++){let open=true;for(let b=-1;b<=1&&open;b++)for(let a=-1;a<=1;a++)if(t.tiles[(ty+b)*MW+tx+a]!==t.T_OPEN){open=false;break}if(!open)continue;
+    const c=t.climate[ty*MW+tx];if(c===G&&near(tx,ty,1,F))B[-1].push(share(tx,ty));else if(c===F&&near(tx,ty,1,G))B[1].push(share(tx,ty));else if(c===F&&!near(tx,ty,4,G))B[4].push(share(tx,ty));else if(c===G&&!near(tx,ty,6,F)&&B[0].length<4000)B[0].push(share(tx,ty))}
+  const mean=a=>a.reduce((s,v)=>s+v,0)/Math.max(1,a.length),M={};for(const k in B)M[k]=mean(B[k]);
+  ok(B[-1].length>20&&B[1].length>20&&B[4].length>20&&M[0]<.01&&M[-1]>.03&&M[-1]<.45&&M[1]>M[-1]+.15&&M[1]<.95&&M[4]>.93,'the frost’s snow blends into the grass: snow on '+(M[0]*100).toFixed(1)+'% of the grass far from it, '+(M[-1]*100).toFixed(0)+'% of the grass beside it ('+B[-1].length+' tiles: patches), '+(M[1]*100).toFixed(0)+'% of the frost at its edge ('+B[1].length+'), '+(M[4]*100).toFixed(0)+'% 4 tiles in ('+B[4].length+')');
+  let lo=0,hi=0;for(let i=0;i<MW*MH;i++){if(t.climate[i]===F&&S[i]<.55)lo++;if(t.climate[i]!==F&&S[i]>.45)hi++}
+  ok(!lo&&!hi,'the snow’s cover a tile: every frost tile’s at least .55, every other’s at most .45 ('+lo+', '+hi+' off)')}
  // ---- the oasis: palms only by a small water in the desert
  {let near=0,far=0;const P2=new Set();for(let v=0;v<4;v++){const s=PX.worldTree('desert','palm',v,0);for(let i=0;i<s.a.length;i++)if(s.a[i]===1)P2.add(s.rgb[i*3]+','+s.rgb[i*3+1]+','+s.rgb[i*3+2])}
   const d=cv.getContext('2d').getImageData(0,0,Wp,Hp).data;
