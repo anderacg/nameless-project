@@ -43,7 +43,7 @@ try{
   'world/folk.js':['FOLK_R','<70)','<90;','*d)'],
   'world/estates.js':['<60)','7*TILE'],
   'world/reputation.js':['15*TILE'],
-  'world/events.js':['15*TILE'],
+  'core/spatial.js':['15*TILE'],
   'world/siege.js':['>80)','20*TILE'],
   'world/world.js':['initial?220:260','bd=220','<48)','>80)','<80)','travelMul()*d'],
   'data/economy.js':['RES_RANGE=10','HOME_RANGE=24']};
@@ -69,7 +69,7 @@ try{
     if(t.TOWNS.some(h=>Math.hypot(h.x-(tx+.5)*16,h.y-(ty+.5)*16)<60))continue;if(n++===k)return [(tx+.5)*16,(ty+.5)*16]}return null};
   const grounds={open:spot(t.T_OPEN,'grass'),road:spot(t.T_ROAD,'grass'),forest:spot(t.T_FOREST,'grass'),hills:spot(t.T_HILL,'grass'),swamp:spot(t.T_OPEN,'swamp')};
   const speed=([x,y])=>{P.x=x;P.y=y;P.dir=1;P.tx=x+60;P.ty=y;G.chase=null;const x0=P.x,y0=P.y;t.updateWorld(.05);const px=Math.hypot(P.x-x0,P.y-y0)/.05;P.tx=null;return px};
-  P.gear.mount=null;P.sk.ride.lv=0;P.sk.athl.lv=0;P.perks=[];P.comps={};P.wounded={};P.morale=60;P.hp=t.vitals()[0];
+  P.gear.mount=null;P.sk.ride.lv=0;P.sk.athl.lv=0;P.perks=[];P.comps={};P.wounded={};P.morale=60;P.hp=t.vitals()[0];(0,eval)('BAND=freshBand()');P.bsta=100;// (the pace by ground alone: fresh, not Parched or Tired after the day above, world/supply.js)
   const rows=[],bad=[],kmDay=v=>v*t.DAY_SECONDS/t.TILE*.25,want={foot:{open:[8.9,.05],road:[11.6,.05],forest:[5.3,.05]},horse:{open:[13.3,.08],road:[17.3,.08]}},race0=P.race;
   for(const [who,setup] of [['foot',()=>{P.race='dwarf';P.gear.mount=null;P.troops={hum_levy:10}}],['horse',()=>{P.race='dwarf';P.gear.mount='m_horse';P.troops={hum_knight:10}}],['human foot',()=>{P.race='human';P.gear.mount=null;P.troops={hum_levy:10}}]]){setup();
    for(const g in grounds){if(!grounds[g])continue;P.x=grounds[g][0];P.y=grounds[g][1];const v=speed(grounds[g]),tm=(P.x=grounds[g][0],P.y=grounds[g][1],t.travelMul()),today=t.MAP_BASE*tm*.6,now=t.MAP_BASE*tm*t.WORLD_PACE*S.move;
