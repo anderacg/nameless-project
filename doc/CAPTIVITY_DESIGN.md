@@ -108,10 +108,10 @@ Held in the captor's holding (a lord's castle dungeon) or camp (a cage).
 | 4 | The traits (Slippery, Silver tongue, Old soldier) | **S** |
 | Later | A walkable prison and breakouts (the owner's "more mechanics") | **L** |
 
-## 9. Questions for the owner
+## 9. The owner's answers (2026-10-22: "use the defaults")
 
-1. **The escape roll:** about how likely by default: 1 in 4 for an average hero on foot, more mounted, at night or in woods?
-2. **Monsters:** they take no captives (left for dead, wake wounded where you fell). Right?
-3. **Serving bandits:** do their raids cost you reputation and honour as if you did them yourself?
-4. **Prison's length:** with no ransom and no escape, are you let go after a while (a few weeks) or held until something happens?
-5. **The stash:** how long before it is sold off: two weeks, a month?
+1. **The escape roll:** about 1 in 4 for an average hero on foot; better mounted, at night, in woods or hills.
+2. **Monsters** take no captives: left for dead, you wake wounded where you fell.
+3. **Serving bandits:** their raids cost you reputation and honour as if you had done them yourself.
+4. **Prison:** with no ransom and no escape, you are let go after about **3 weeks**.
+5. **The stash** is sold off after about **a month**.
