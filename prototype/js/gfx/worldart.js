@@ -10,7 +10,7 @@
 // WorldArt keeps the chunks near you (an LRU), paints those in view at once and those ahead a few ms a frame, and blits them.
 // drawEnv adds what moves.
 const GROUND_RGB={grass:[[70,110,50],[84,126,58],[104,146,70]],frost:[[192,203,218],[214,222,232],[238,243,249]],desert:[[196,162,88],[214,182,104],[232,204,132]],swamp:[[58,72,42],[72,88,52],[90,106,62]]};
-const WATER_RGB={grass:[[96,150,204],[58,104,166],[36,70,126]],frost:[[184,212,232],[150,184,212],[124,160,196]],desert:[[96,156,196],[58,112,164],[38,80,134]],swamp:[[84,112,88],[64,90,72],[48,70,56]]};
+const WATER_RGB={grass:[[96,150,204],[58,104,166],[36,70,126]],frost:[[184,212,232],[150,184,212],[124,160,196]],desert:[[96,156,196],[58,112,164],[38,80,134]],swamp:[[104,138,146],[74,110,126],[50,82,104]]};// (swamp: a lighter peat blue, the owner's pick 2026-10-22, tests/visual/swampwater.js C; was [[84,112,88],[64,90,72],[48,70,56]])
 const SHORE={grass:['#d6c48c','#b8a46e'],frost:['#f4f8fc','#c8d8e8'],desert:['#ecd49a','#c8ac70'],swamp:['#6a6040','#504830']};
 const hs=(x,y,s)=>{let h=Math.imul(x,374761393)+Math.imul(y,668265263)+Math.imul(s,1274126177);h=Math.imul(h^h>>>13,1274126177);return((h^h>>>16)>>>0)/4294967296};
 const mixc=(a,b,t)=>[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t,a[2]+(b[2]-a[2])*t];

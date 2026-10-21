@@ -6,6 +6,7 @@
 // painted into each chunk it touches); a chunk painted a slice at a time equals one painted at once, its slices short; the LRU
 // keeps no more than its cap, never lets a chunk in view go, and paints ahead of the view; invalidate forgets the plan and the
 // chunks near a change (or all), and the chunks it keeps are still right; the minimap comes from the tile data; what it costs.
+// (the one-window picture re-recorded 2026-10-22 with W5, on purpose: swamp water a lighter peat blue, the owner's pick; was aceeae00)
 // On the map the scripts leave at load (no begin), as W5's picture. With -Gen (the generated classic seed, its water and roads
 // painted by the generated world's art) the same checks, its picture's hash an INFO line; then the prefetch at Large and Huge:
 // walking across each at Travel fast's pace (8x: a chunk in some 420 frames), 4 ms of painting a frame, the ring ahead is ready.
@@ -23,7 +24,7 @@ try{
    'the plan comes first, painting nothing: isClear reads its clear ground (a holding and its gate clear, off the map not) ('+planMs.toFixed(0)+' ms)');
  // ---- one window: the whole map, no seam anywhere (today's one canvas)
  const r1={},one=paint(0,0,W,H,r1),ref=img(one,0,0,W,H),h1=fnv(ref);
- if(t.WORLD.gen)info('the generated classic seed painted as one window: '+h1+' ('+r1.wall.toFixed(0)+' ms)');else ok(h1==='aceeae00','the map painted as one window (no seam anywhere: today\'s one canvas) is the baseline picture ('+h1+', W5 at b94cbe2: tests/worldprint.js; '+r1.wall.toFixed(0)+' ms)');
+ if(t.WORLD.gen)info('the generated classic seed painted as one window: '+h1+' ('+r1.wall.toFixed(0)+' ms)');else ok(h1==='963ff854','the map painted as one window (no seam anywhere: today\'s one canvas) is the baseline picture ('+h1+', W5 at b94cbe2: tests/worldprint.js; '+r1.wall.toFixed(0)+' ms)');
  // ---- stitched: every chunk into the whole picture, and no seam round any border
  q=performance.now();const whole=WA.whole(),wMs=performance.now()-q,nd=diff(img(whole,0,0,W,H),ref);
  ok(nd===0&&whole.width===W&&whole.height===H,cols*rows+' chunks of '+CS+' px ('+cols+' x '+rows+') stitched (worldCv) are that picture pixel for pixel ('+nd+' differ; '+wMs.toFixed(0)+' ms)');
