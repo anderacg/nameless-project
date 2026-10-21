@@ -214,7 +214,7 @@ function marchStep(d){
    (HERO_WAY: a walk sliding back and forth along a shore gets nowhere, and stops) */
 const HERO_WAY={x:NaN,y:NaN,d:Infinity};
 function heroStep(dx,dy,dist,step){
-  if(clearLine(P.x,P.y,P.tx,P.ty))return walk(P,dx,dy,step);
+  if(passable(terrAt(P.x,P.y))&&clearLine(P.x,P.y,P.tx,P.ty))return walk(P,dx,dy,step);// (not while on a ferry's water: its leg goes on by the router)
   const x0=P.x,y0=P.y;if(Router.travel(P,{x:P.tx,y:P.ty},step)){if(P.x!==x0)P.dir=P.x>x0?1:-1;return P.x!==x0||P.y!==y0}
   const W=HERO_WAY;if(W.x!==P.tx||W.y!==P.ty){W.x=P.tx;W.y=P.ty;W.d=dist}
   if(!walk(P,dx,dy,step))return false;const nd=Math.hypot(P.tx-P.x,P.ty-P.y);if(nd>=W.d-step*.25)return false;W.d=nd;return true}

@@ -1,7 +1,7 @@
 # A bigger, seeded world: design
 
 **Status:** **Approved by the owner 2026-10-18 (D1–D39 as recommended; D40–D45 the same day).** Final design, revision 3. Written against the working tree of `battle-rts-and-world` (with its uncommitted changes).
-**Progress (checked 2026-10-19 at 7324310):** **Phase 0 complete** (2026-10-18: b94cbe2, 097ec15, 5e9453d, 02c8f50, 7fa4680, 65b50ca, 328f892), but for R12's daily-job slicing, which rides with Phase 2 wave 2. **Phase 1 built** (2026-10-18, f08c720; 8× relabelled 608b9f2). **Phase 2:** wave 0 built (2026-10-18, 855ca1a), wave 1 built behind `WORLD.gen` (2026-10-19, 2ed6578; the classic climates and anchors and the suites that assume today's map under `-Gen` deferred to wave 3); **waves 2–4 wait for the owner's go**. §11.1 (the land defended) built 2026-10-19 (e5bca02, 7638472); §12.5 (depth sorting) built 2026-10-18 (08f93f6), the fade since changed (see there). Phases 2b–7 not started. The queue across all docs is IMPLEMENTATION_PLAN "Priorities"; this doc owns the phases.
+**Progress (checked 2026-10-19 at 7324310):** **Phase 0 complete** (2026-10-18: b94cbe2, 097ec15, 5e9453d, 02c8f50, 7fa4680, 65b50ca, 328f892), but for R12's daily-job slicing, which rides with Phase 2 wave 2. **Phase 1 built** (2026-10-18, f08c720; 8× relabelled 608b9f2). **Phase 2:** wave 0 built (2026-10-18, 855ca1a), wave 1 built behind `WORLD.gen` (2026-10-19, 2ed6578; the classic climates and anchors and the suites that assume today's map under `-Gen` deferred to wave 3); **waves 2–4 wait for the owner's go**. §11.1 (the land defended) built 2026-10-19 (e5bca02, 7638472); §12.5 (depth sorting) built 2026-10-18 (08f93f6), the fade since changed (see there). Phases 3–7 not started. The queue across all docs is IMPLEMENTATION_PLAN "Priorities"; this doc owns the phases. **Phase 2b built** (2026-10-22, behind `WORLD.gen`): the New world screen, the World page, the save line, a seeded start, and fewer holdings by default (§4 status).
 **Plan item:** IMPLEMENTATION_PLAN "Deferred: Procedural world (a seeded map)", made active by the owner on 2026-10-18. It also prepares world cliffs, which battles will take their cliffs from (TERRAIN_DESIGN §8).
 **Readers:** the owner, whose decisions are recorded in §16, and the developer agents who will build it.
 
@@ -323,6 +323,8 @@ Neither canvas size (painting is chunked), typed arrays nor pixel coordinates is
 
 ## 4. New game: world settings
 
+**Status: built 2026-10-22 (Phase 2b, behind `WORLD.gen`):** `ui/worldsetup.js` (the screen, §4.6; its section 5b of `style.css`), `world/worldsettings.js` (`HOLDING_DENSITY`, `densityHoldings`, `worldCode`, `parseWorldCode`), `world/worldgen.js` `genSketch` (§4.3), `core/session.js` (a past's card leads here; `seededStart`: a generated world but Classic starts as its seed says; Start reuses a full preview), the Esc menu's World page and the save line (`ui/ui.js`), `tests/worldsettings.js`. **The owner, 2026-10-22: "the holdings seem a bit too much":** a holdings density (Fewer, Normal, More: 0.8×, 1×, 1.37× the area's default) and lower defaults, **27 / 40 / 66** at Normal / Large / Huge (about 27% fewer; More gives the 37 / 55 / 90 first planned); Classic keeps its 37. With them two clamps of stage 7 (`world/worldplace.js`): a port only on the open sea (`placeOpen`), each realm's land within 24% as placed (`PLACE.even`). As built, a few things differ from below: the sketch is about 70 ms; its mountains come from stage 2's rules on its cells, not its draws, so they are approximate too; the counts line shows holdings, rivers (of 30 tiles and more) and land, as hamlets and sacred places come with Phase 4; the preview shows the real map wherever it is made (the classic world the page forged, the world in, a full preview).
+
 The owner: "during new game can we set a parameter so we can select how big the map is, how many holdings we want to generate, provide map seed info, and other parameters that you require to generate the world."
 
 ### 4.1 The settings
@@ -333,7 +335,7 @@ The list is kept to knobs that change the world in ways you would notice. Every 
 |---|---|---|---|
 | **Size** | **Normal** (phones), **Large** (desktop), Huge (every device; slow on phones, D44), Custom | `w × h` (§3.1) | Custom: width 320–1024 and height 224–768, in steps of 32 (one chunk); width ÷ height between 1.2 and 1.6; at most 786,432 tiles (Huge) on every device (D44) |
 | **Seed** | Typed text, **Random**, or pasted from a **world code** | Every stage's stream (§8.1) | Up to 24 characters, hashed to 32 bits; empty means random |
-| **Realm holdings** | A number. **37** at Normal, **55** at Large, **90** at Huge | Holdings placed per realm (§8.8). Shared among the five realms in today's ratio (8/7/7/7/8); lords follow (about 1 per 1.85 holdings) | At least 25 (5 per realm: a city, a town, a castle, 2 villages). At most 60 at Normal, 110 at Large and 200 at Huge, ×0.75 with Vast wild, ×0.85 with More sea. The slider's top moves with them and says why ("up to 51 for this land") |
+| **Realm holdings** | A number. **27** at Normal, **40** at Large, **66** at Huge (the owner, 2026-10-22; were 37 / 55 / 90), set by a density (Fewer 0.8×, **Normal**, More 1.37×) or by hand | Holdings placed per realm (§8.8). Shared among the five realms in today's ratio (8/7/7/7/8); lords follow (about 1 per 1.85 holdings) | At least 25 (5 per realm: a city, a town, a castle, 2 villages). At most 60 at Normal, 110 at Large and 200 at Huge, ×0.75 with Vast wild, ×0.85 with More sea. The slider's top moves with them and says why ("up to 51 for this land") |
 | **Realms** | **5**: not a setting | — | Fixed. The five factions are written content (peoples, colours, troops, lords), so changing their number would need new factions, not a slider |
 | **Hamlets** | None, Few, **Normal**, Many (0, 0.5×, 1×, 1.6× the size's base: 24 / 45 / 100) | Natural villages (§8.9) | Capped by fringe land: at most 1 per 900 fringe tiles |
 | **Sacred places** | Rare, **Normal**, Common (0.5×, 1×, 1.5×) | Stones, groves, monasteries, altars, shrines (§8.10) | Capped by quiet spots (their spacing rules) |
@@ -363,11 +365,11 @@ Presets are chips across the top. Choosing one fills every setting; touching a s
 | Preset | Size | Holdings | Hamlets | Sacred | Wild | Water | Rivers | Mountains | Climate | Monsters | Bandits | Economy |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | **Classic** | Normal (fixed) | today's 37 (fixed) | Normal | Normal | Normal | Coasts | Normal | Normal | Temperate | free | free | Normal |
-| **Normal** | Normal | 37 | Normal | Normal | Normal | Coasts | Normal | Normal | Temperate | Normal | Normal | Normal |
-| **Large** | Large | 55 | Normal | Normal | Normal | Coasts | Normal | Normal | Temperate | Normal | Normal | Normal |
-| **Huge** | Huge | 90 | Normal | Normal | Normal | Coasts | Normal | Normal | Temperate | Normal | Normal | Normal |
-| **Wild Frontier** | Large | 38 (0.7×) | Few | Common | Vast | Continent | Wet | Rugged | Cold | Deadly | Many | Rich |
-| **Crowded Realms** | Normal | 55 (1.5×) | Many | Normal | Few | Coasts | Normal | Normal | Temperate | Calm | Normal | Normal |
+| **Normal** | Normal | 27 | Normal | Normal | Normal | Coasts | Normal | Normal | Temperate | Normal | Normal | Normal |
+| **Large** | Large | 40 | Normal | Normal | Normal | Coasts | Normal | Normal | Temperate | Normal | Normal | Normal |
+| **Huge** | Huge | 66 | Normal | Normal | Normal | Coasts | Normal | Normal | Temperate | Normal | Normal | Normal |
+| **Wild Frontier** | Large | 28 (0.7×) | Few | Common | Vast | Continent | Wet | Rugged | Cold | Deadly | Many | Rich |
+| **Crowded Realms** | Normal | 40 (1.5×) | Many | Normal | Few | Coasts | Normal | Normal | Temperate | Calm | Normal | Normal |
 
 Founding sites are Normal in every preset except **Wild Frontier** (Many) and **Crowded Realms** (Few). Start is Wanderer in every preset; any preset may switch it to Settler, Classic included.
 
@@ -1501,7 +1503,7 @@ New rows: hamlets annexed, sieges, days per march, caravan and barge trips, cros
 
 Agents are split by files that don't overlap (5 at most). **The `WM` shape (§9.1) is the contract.** The game stays playable after every phase.
 
-**Status (2026-10-19):** 0 built (328f892; R12's daily-job slicing left, with Phase 2 wave 2) · 1 built (f08c720) · 2 waves 0–1 built behind `WORLD.gen` (855ca1a, 2ed6578), waves 2–4 wait for the owner's go · 2b, 3, 4, 4b, 5, 6, 7 not started. Holding growth tiers (IMPLEMENTATION_PLAN §6) are owned here, Phase 4b.
+**Status (2026-10-19):** 0 built (328f892; R12's daily-job slicing left, with Phase 2 wave 2) · 1 built (f08c720) · 2 waves 0–1 built behind `WORLD.gen` (855ca1a, 2ed6578), waves 2–4 wait for the owner's go · 2b built (2026-10-22, behind `WORLD.gen`: §4) · 3, 4, 4b, 5, 6, 7 not started. Holding growth tiers (IMPLEMENTATION_PLAN §6) are owned here, Phase 4b.
 
 | Phase | Scope | Agents and files | Effort |
 |---|---|---|---|

@@ -6,6 +6,7 @@
      genWorld(settings): the same steps run at once (the tests, the wiki, LOADING.sync): the result,
        {map, holdings, camps, lords, hamlets, sacred, lair, regions, rivers, crossings, graph, tries, relaxed}
        holdings: places.js's schema (CLASSIC_PLACES) plus their tiles; installWorld (worldmap.js) puts it in
+     genSketch(settings): the New world screen's quick sketch (§4.3: a coarse pass, at the end of this file)
    The stage context g: s (the clamped settings), map (a WorldMap), rng(stage, attempt) (genRng: the stage's own stream), work
    (working fields, dropped at the end), hints (CLASSIC_HINTS when classic), attempt, tick() (true once about 10 ms of work have
    passed since the last yield: when a stage yields, never what it makes), and what the stages hand on (holdings, camps, lords,
@@ -165,21 +166,27 @@ function genHints(g,kind){if(!g.hints)return[];const A=classicAnchors(),m=g.map,
    under 40 tiles sunk, water pockets under 12 filled; feat lake (water cut off from the sea) and coast (land on the sea).
    Classic: no inland sea or big lake on a holding's anchor; land round every anchor, the League's bay with an inlet up to each
    port, Willowmere's isle (genLandHints) */
-function* genLand(g){
-  const m=g.map,W=m.w,H=m.h,N=W*H,K=m.kind,F=m.feat,s=g.s,T=GEN_LAND,R=g.rng('land',g.attempt),sc=Math.sqrt(N/143360);
+/* (the land's field, before its cut: stage 1's first draws from its stream R, in their order (the noise salts, the share wanted, the
+   inland seas and big lakes); at(x, y) its value at tile point (x, y) of a W x H map, want the land share drawn. The quick sketch
+   samples the same field (genSketch)) */
+function genLandField(s,W,H,R,hints){
+  const N=W*H,T=GEN_LAND,sc=Math.sqrt(N/143360);
   const sw=genSalt(R),sx=genSalt(R),sb=genSalt(R),sr=genSalt(R),S=W*.27,SW=W*.16,AW=W*.07,rag=s.land==='sea';
   const pk=a=>a[0]+Math.floor(R()*(a[1]-a[0]+1)),sh=T.share[s.land],want=sh[0]+R()*(sh[1]-sh[0]);
   let ns=pk(T.seas[s.land]),nl=pk(T.lakes[s.land]);if(s.land==='coasts'&&R()<.5){ns=1;nl=0}if(N>=400000)ns=Math.max(ns,2+(R()<.5?1:0));
-  const bl=[],AN=g.hints?classicAnchors():[];for(let k=0;k<ns+nl;k++){const sea=k<ns,r=sea?W*(.055+R()*.035):(8+R()*8)*Math.max(1,sc*.8);
+  const bl=[],AN=hints?classicAnchors():[];for(let k=0;k<ns+nl;k++){const sea=k<ns,r=sea?W*(.055+R()*.035):(8+R()*8)*Math.max(1,sc*.8);
     for(let t=0;t<30;t++){const x=W*(.2+R()*.6),y=H*(.2+R()*.6);if(bl.every(b=>(b.x-x)*(b.x-x)+(b.y-y)*(b.y-y)>(b.r+r+12)*(b.r+r+12))&&AN.every(a=>(a.tx-x)*(a.tx-x)+(a.ty-y)*(a.ty-y)>(r*1.4+8)*(r*1.4+8))){bl.push({x,y,r,d:sea?.7:.6,s:genSalt(R)});break}}}
+  return{want,at(x,y){
+    const wx=x+(gfbm(x/SW,y/SW,sw,3)-.5)*4*AW,wy=y+(gfbm(x/SW,y/SW,sx,3)-.5)*4*AW;
+    let v=gfbm(wx/S,wy/S,sb,5)+(gfbm(wx/(S*.3),wy/(S*.3),sr,3)-.5)*(rag?.6:.35);
+    {const ex=2*(x+(wx-x)*.4)/W-1,ey=2*(y+(wy-y)*.4)/H-1;v-=sstep((Math.sqrt(ex*ex*.8+ey*ey*.8+ex*ex*ey*ey*.6)-.45)/.65)*1.1+(1-sstep(Math.min(x,W-1-x,y,H-1-y)/(W*.04)))*.6}
+    for(const b of bl)v-=b.d*sstep(1-genReach(wx,wy,b.x,b.y,b.r,b.s));
+    return v}}}
+function* genLand(g){
+  const m=g.map,W=m.w,H=m.h,N=W*H,K=m.kind,F=m.feat,T=GEN_LAND,R=g.rng('land',g.attempt),LF=genLandField(g.s,W,H,R,g.hints),want=LF.want;
   const V=g.work.landv=new Float32Array(N);
   for(let y=0;y<H;y++){
-    for(let x=0;x<W;x++){
-      const wx=x+(gfbm(x/SW,y/SW,sw,3)-.5)*4*AW,wy=y+(gfbm(x/SW,y/SW,sx,3)-.5)*4*AW;
-      let v=gfbm(wx/S,wy/S,sb,5)+(gfbm(wx/(S*.3),wy/(S*.3),sr,3)-.5)*(rag?.6:.35);
-      {const ex=2*(x+(wx-x)*.4)/W-1,ey=2*(y+(wy-y)*.4)/H-1;v-=sstep((Math.sqrt(ex*ex*.8+ey*ey*.8+ex*ex*ey*ey*.6)-.45)/.65)*1.1+(1-sstep(Math.min(x,W-1-x,y,H-1-y)/(W*.04)))*.6}
-      for(const b of bl)v-=b.d*sstep(1-genReach(wx,wy,b.x,b.y,b.r,b.s));
-      V[y*W+x]=v}
+    for(let x=0;x<W;x++)V[y*W+x]=LF.at(x,y);
     if(g.tick())yield y/H*.6}
   {const q=V.slice().sort(),cut=q[Math.min(N-1,Math.floor((1-want)*N))];for(let i=0;i<N;i++)V[i]-=cut}
   if(g.hints){genLandHints(g,V,R);const q=V.slice().sort(),cut=q[Math.min(N-1,Math.floor((1-want)*N))];for(let i=0;i<N;i++)V[i]-=cut}
@@ -573,3 +580,108 @@ function* genRegions(g){g.map.region.fill(0);g.map.regions=[];yield 1}
 // 10. the way graph (router.js buildWayGraph: Phase 2 wave 2's), then the checksum; the result
 function* genGraph(g){const m=g.map;m.graph=buildWayGraph(g);yield .5;m.sum=m.checksum(g.holdings);g.work=null;
   return{map:m,holdings:g.holdings,camps:g.camps,lords:g.lords,hamlets:[],sacred:[],lair:null,regions:m.regions,rivers:m.rivers,crossings:m.crossings,graph:m.graph,tries:g.tries,relaxed:g.relaxed}}
+
+/* ---------- the quick sketch (§4.3, D28): the world these settings make, roughly, for the New game screen's preview, in tens of
+   ms at any size: a WorldMap of GEN_SKETCH.n cells across (k tiles a cell), each cell taken at its middle tile point.
+   Real at those points: the land (stage 1's field and stream, genLandField, cut at its share), the climates' temperature and
+   moisture noise (stage 3's salts and cuts) and the forests' patches (stage 5's). Approximate: the elevation (the rise from the
+   coast, the hill country, highlands and ranges as coarse walks: stage 2's rules, not its draws), the rivers (a coarse drainage,
+   as much river as stage 4's share of the land asks), the holdings (each people's liking on the coarse land, worldplace.js
+   placeSuit: the capitals apart and balanced, then each realm's in turn, as stage 7). No classic hints: the screen shows the
+   classic world itself. Its result: {map (kind, clim, temp, moist, elev, river (its width), feat (2 a lake)), k, holdings ({tx,
+   ty} a cell, realm, kind), rivers (how many of 30 tiles or more reach water), land (its share), ms} ---------- */
+const GEN_SKETCH={n:256,rangeR:40,river:30};
+function genSketch(settings){
+  const t0=performance.now(),s=normSettings(settings),n=seedNum(s.seed),W=s.w,H=s.h,k=Math.max(1,W/GEN_SKETCH.n),cw=Math.round(W/k),ch=Math.round(H/k),N=cw*ch;
+  const m=new WorldMap(cw,ch,s.seed),K=m.kind,E=m.elev,X=i=>(i%cw+.5)*k,Y=i=>((i-i%cw)/cw+.5)*k,run=it=>{let r;while(!(r=it.next()).done);return r.value};
+  const g={s,map:m,tick:()=>false},far=is=>{const D=run(genFar(g,is,255));for(let i=0;i<N;i++)D[i]=Math.min(255,Math.round(D[i]*k));return D};
+  m.settings=s;m.seedNum=n;
+  // the land: stage 1's field at each cell, cut at its share; water off the rim's a lake
+  {const LF=genLandField(s,W,H,genRng(n,'land',0),null),V=new Float32Array(N);for(let i=0;i<N;i++)V[i]=LF.at(X(i),Y(i));
+    const cut=V.slice().sort()[Math.min(N-1,Math.floor((1-LF.want)*N))];
+    for(let i=0;i<N;i++){const x=i%cw,y=(i-x)/cw;K[i]=!x||!y||x===cw-1||y===ch-1||V[i]<cut?T_WATER:T_OPEN}
+    const L=new Int32Array(N);run(genPieces(g,L,i=>K[i]===T_WATER));for(let i=0;i<N;i++)if(L[i]>0)m.feat[i]=2}
+  let land=0;for(let i=0;i<N;i++)if(K[i]!==T_WATER)land++;
+  // elevation: the rise from the coast and the hill country (stage 2's), highlands and ranges by its rules on the cells
+  const D=far(i=>K[i]===T_WATER),T=GEN_ELEV,R=genRng(n,'elev',0),A=W*H/143360,ap=Math.sqrt(A)*Math.sqrt(Math.sqrt(Math.sqrt(A))),mul={flat:.6,normal:1,rugged:1.5}[s.mountains];
+  const span=a=>Math.max(1,Math.round((a[0]+R()*(a[1]-a[0]))*ap*mul)),Rg=new Float32Array(N),Ef=new Float32Array(N),sp=[],hl=[],SL=W*.25;
+  const s1=genSalt(R),s2=genSalt(R),s3=genSalt(R),s4=genSalt(R),s5=genSalt(R),sn=genSalt(R);
+  const at=(x,y)=>Math.min(ch-1,Math.max(0,Math.floor(y/k)))*cw+Math.min(cw-1,Math.max(0,Math.floor(x/k))),near=(x,y,r)=>sp.some(q=>q.some(p=>(p[0]-x)*(p[0]-x)+(p[1]-y)*(p[1]-y)<r*r));
+  // (a ridge on the cells within w of (px, py), times st; a pass's notch)
+  const ridge=(px,py,w,st)=>{for(let cy=Math.max(0,Math.floor((py-w)/k));cy<=Math.min(ch-1,(py+w)/k);cy++)for(let cx=Math.max(0,Math.floor((px-w)/k));cx<=Math.min(cw-1,(px+w)/k);cx++){
+    const i=cy*cw+cx,d=Math.sqrt((X(i)-px)*(X(i)-px)+(Y(i)-py)*(Y(i)-py))/w;if(d<1){const v=(1-d)*(1-d)*st;if(v>Rg[i])Rg[i]=v}}};
+  const notch=(px,py,r)=>{for(let cy=Math.max(0,Math.floor((py-r)/k));cy<=Math.min(ch-1,(py+r)/k);cy++)for(let cx=Math.max(0,Math.floor((px-r)/k));cx<=Math.min(cw-1,(px+r)/k);cx++){
+    const i=cy*cw+cx,d=Math.sqrt((X(i)-px)*(X(i)-px)+(Y(i)-py)*(Y(i)-py))/r;if(d<1)Rg[i]*=1-T.passDip*sstep(1-d)}};
+  for(let t=0,nr=span(T.ranges);sp.length<nr&&t<300;t++){const x0=8+R()*(W-16),y0=8+R()*(H-16),i0=at(x0,y0);if(K[i0]===T_WATER||D[i0]<14||near(x0,y0,GEN_SKETCH.rangeR))continue;
+    let ux=R()-.5,uy=R()-.5;{const l=Math.sqrt(ux*ux+uy*uy)||1;ux/=l;uy/=l}const len=T.rangeLen[0]+R()*(T.rangeLen[1]-T.rangeLen[0]);
+    const walk=(dx,dy)=>{const o=[];let x=x0,y=y0,c=0;for(let j=0;j<len/3;j++){c=Math.max(-.07,Math.min(.07,c*.9+(R()-.5)*.09));const nx=dx-dy*c,ny=dy+dx*c,l=Math.sqrt(nx*nx+ny*ny);dx=nx/l;dy=ny/l;x+=dx*1.5;y+=dy*1.5;
+      if(x<6||y<6||x>=W-6||y>=H-6)break;const i=at(x,y);if(K[i]===T_WATER||D[i]<3||near(x,y,26))break;o.push([x,y])}return o};
+    const pts=walk(-ux,-uy).reverse().concat([[x0,y0]],walk(ux,uy));if(pts.length<24)continue;
+    const w=T.rangeW[0]+R()*(T.rangeW[1]-T.rangeW[0]),L=(pts.length-1)*1.5,kk=sp.length*7.3;sp.push(pts);
+    // (its width wandering along it, as stage 2's; then a pass every passEvery tiles)
+    pts.forEach(([px,py],j)=>{const a=j*1.5,st=Math.min(1,a/22,(L-a)/22);if(st>0)ridge(px,py,w*(.75+.5*noise(a/22,kk,sn)),st)});
+    for(let a=T.passEvery[0]*.5+R()*16;a<L-10;a+=T.passEvery[0]+R()*(T.passEvery[1]-T.passEvery[0])){const p=pts[Math.min(pts.length-1,Math.round(a/1.5))];notch(p[0],p[1],T.passR*w)}}
+  for(let t=0,nh=span(T.highlands);hl.length<nh&&t<300;t++){const x=12+R()*(W-24),y=12+R()*(H-24),i=at(x,y);
+    if(K[i]===T_WATER||D[i]<18||hl.some(h=>(h.x-x)*(h.x-x)+(h.y-y)*(h.y-y)<(h.r+60)*(h.r+60)))continue;let ux=R()-.5,uy=R()-.5;const l=Math.sqrt(ux*ux+uy*uy)||1;
+    hl.push({x,y,r:T.plateau[0]+R()*(T.plateau[1]-T.plateau[0]),h:T.plateauH[0]+R()*(T.plateauH[1]-T.plateauH[0]),s:genSalt(R),ux:ux/l,uy:uy/l,st:1+R()*.7})}
+  // (the land: the rise from the coast, the hill country, the highlands ragged, the ranges rough on top)
+  for(let i=0;i<N;i++){if(K[i]===T_WATER){Ef[i]=60;continue}const x=X(i),y=Y(i),d=D[i];
+    let e=66+24*sstep(Math.min(d,30)/30)+(gfbm(x/36,y/36,s1,3)-.5)*24*Math.min(1,d/10)+Math.max(0,gfbm(x/SL,y/SL,s5,3)-.35)*90*Math.min(1,d/15);
+    e+=(gfbm(x/6,y/6,s3,3)-.5)*72*sstep((gfbm(x/48,y/48,s2,2)-.47)*5)*Math.min(1,d/6);
+    for(const h of hl){const v=sstep((1-genReach(x,y,h.x,h.y,h.r,h.s,h.ux,h.uy,h.st))*2.2);if(v)e+=v*h.h*(.55+.9*(gfbm(x/18,y/18,h.s+30,3)-.3))}
+    if(Rg[i]>0){Rg[i]*=1-.3*Math.min(1,Math.abs(2*gfbm(x/14,y/14,s4,3)-1)*2.5);e+=T.peak*Rg[i]}Ef[i]=e}
+  // kinds: a mountain on a range, a hill by its height or the relief of the cells round it (stage 2's)
+  for(let i=0;i<N;i++){if(K[i]===T_WATER){E[i]=60;continue}const x=i%cw,y=(i-x)/cw,e=Ef[i];let hi=e,lo=e;
+    for(let b=-1;b<=1;b++)for(let a=-1;a<=1;a++){const nx=x+a,ny=y+b;if(nx<0||ny<0||nx>=cw||ny>=ch)continue;const v=Ef[ny*cw+nx];if(v>hi)hi=v;if(v<lo)lo=v}
+    E[i]=Math.max(65,Math.min(255,Math.round(e)));K[i]=e>=T.mount&&Rg[i]>=T.foot||Rg[i]>=T.ridge?T_MOUNT:e>=T.hill||hi-lo>=T.relief?T_HILL:T_OPEN}
+  // the climates: stage 3's wind, noise and cuts, on the cells (a wind's gain and loss over k tiles a cell, its blur 6 tiles)
+  const C=GEN_CLIMATE,RC=genRng(n,'climate',0),st=genSalt(RC),sm=genSalt(RC),sw=genSalt(RC),sx=genSalt(RC),Tf=new Float32Array(N),Mf=new Float32Array(N);
+  const dt={cold:-.08,temperate:0,warm:.08}[s.climate],dm={dry:-.08,normal:0,wet:.08}[s.rivers],S=W*.15,AW=W*.04,br=Math.max(1,Math.round(6/k));
+  for(let y=0;y<ch;y++){let h=1;for(let x=0;x<cw;x++){const i=y*cw+x;if(K[i]===T_WATER){h+=(1-h)*Math.min(1,.12*k);Mf[i]=h*.55;continue}
+    const up=x?Math.max(0,E[i]-E[i-1]):0;Mf[i]=h*(.5+up/k*.05);h=Math.max(0,h-h*Math.min(1,.0045*k+up*.012))}}
+  for(let r=0;r<2;r++)for(const [len,a,b] of [[cw,1,cw],[ch,cw,1]])for(let o=0;o<(a===1?ch:cw);o++){const row=new Float32Array(len);for(let t=0;t<len;t++)row[t]=Mf[o*b+t*a];let sum=0;
+    for(let t=-br;t<len;t++){if(t+br<len)sum+=row[t+br];if(t-br-1>=0)sum-=row[t-br-1];if(t>=0)Mf[o*b+t*a]=sum/(Math.min(len-1,t+br)-Math.max(0,t-br)+1)}}
+  for(let i=0;i<N;i++){const x=X(i),y=Y(i),wx=x+(gfbm(x/S,y/S,sw,2)-.5)*4*AW,wy=y+(gfbm(x/S,y/S,sx,2)-.5)*4*AW,el=Math.max(0,E[i]-64)/191;
+    Tf[i]=.06+.88*wy/(H-1)+(gfbm(wx/S,wy/S,st,3)-.5)*.48-.35*el+dt;Mf[i]+=.22*(1-Math.min(D[i],18)/18)+(gfbm(wx/S,wy/S,sm,3)-.5)*.6+dm}
+  {const pass=(want,lo,hi,score,ok)=>{const a=new Float32Array(land);let c=0;for(let i=0;i<N;i++)if(K[i]!==T_WATER&&ok(i))a[c++]=score(i);return genCut(a.subarray(0,c),land,want,lo,hi)};
+    const low=i=>1-Math.min(1,Math.max(0,E[i]-64)/50),fs=i=>-Tf[i],ds=i=>Tf[i]-C.desert.dry*Mf[i],ss=i=>Mf[i]*(1-C.swamp.low)+low(i)*C.swamp.low;
+    const cf=pass(-C.frost.at,C.frost.lo,C.frost.hi,fs,()=>true),cd=pass(C.desert.at,C.desert.lo,C.desert.hi,ds,i=>fs(i)<=cf),tw=-cf+C.swamp.warm,cs=pass(C.swamp.at,C.swamp.lo,C.swamp.hi,ss,i=>fs(i)<=cf&&ds(i)<=cd&&Tf[i]>tw);
+    for(let i=0;i<N;i++){m.temp[i]=Math.max(0,Math.min(255,Math.round(Tf[i]*255)));m.moist[i]=Math.max(0,Math.min(255,Math.round(Mf[i]*255)));
+      m.clim[i]=fs(i)>cf?CLIM.frost:ds(i)>cd?CLIM.desert:Tf[i]>tw&&ss(i)>cs?CLIM.swamp:CLIM.grass}}
+  let rivers=0;
+  // the rivers: the cells' pits filled from the water, each draining to its lowest neighbour, rain (moisture) gathered down; river
+  // where the flow is in the top share of the land stage 4 makes river (one tile wide in a cell of k), wider by its flow
+  {const Z=new Float64Array(N);for(let i=0;i<N;i++)Z[i]=Ef[i];const ord=run(genFlood(g,Z,i=>K[i]===T_WATER,0,1)),dn=new Int32Array(N).fill(-1),fl=new Float32Array(N),ln=new Float32Array(N);
+    for(let i=0;i<N;i++){if(K[i]===T_WATER)continue;const x=i%cw,y=(i-x)/cw;let lo=Z[i];
+      for(const [a,b] of DIR8){const nx=x+a,ny=y+b;if(nx<0||ny<0||nx>=cw||ny>=ch)continue;const j=ny*cw+nx;if(Z[j]<lo){lo=Z[j];dn[i]=j}}}
+    for(let i=0;i<N;i++)fl[i]=K[i]===T_WATER?0:.2+Mf[i];
+    for(let q=ord.length-1;q>=0;q--){const i=ord[q],j=dn[i];if(j>=0){fl[j]+=fl[i];ln[j]=Math.max(ln[j],ln[i]+k)}}
+    const RV=GEN_RIVER,want=Math.max(1,Math.round(land*RV.share*{dry:.6,normal:1,wet:1.5}[s.rivers]/k)),f=[];for(let i=0;i<N;i++)if(K[i]!==T_WATER)f.push(fl[i]);
+    f.sort((a,b)=>b-a);const cut=f[Math.min(f.length-1,want)]||Infinity;
+    for(let i=0;i<N;i++){if(K[i]===T_WATER||fl[i]<cut)continue;m.river[i]=fl[i]>=cut*RV.river*RV.river?3:fl[i]>=cut*RV.river?2:1;if(dn[i]>=0&&K[dn[i]]===T_WATER&&ln[i]>=GEN_SKETCH.river)rivers++}}
+  // the forests: stage 5's patches over the climates and moisture, thinning up high
+  {const TF=GEN_FOREST,RF=genRng(n,'forest',0),sa=genSalt(RF),sw5=genSalt(RF),S5=W*.06,AW5=W*.02;
+    for(let i=0;i<N;i++){if(K[i]!==T_OPEN||m.river[i])continue;const x=X(i),y=Y(i),wx=x+(gfbm(x/S5,y/S5,sw5,2)-.5)*4*AW5,wy=y+(gfbm(x/S5,y/S5,sw5+5,2)-.5)*4*AW5;
+      const d=TF.base[m.clim[i]]*TF.k*(.25+.75*m.moist[i]/255)*1.2*sstep((gfbm(wx/S5,wy/S5,sa,4)-.3)*3)*(1-sstep((E[i]-140)/60));if(d>TF.wood)K[i]=T_FOREST}}
+  // the holdings: each people's liking (placeSuit, on distances in tiles); the capitals the best of 200 draws apart and balanced,
+  // then the realms in turn, a holding each within reach of its own, spaced as stage 7 spaces them
+  const F={dW:far(i=>K[i]===T_WATER),dR:far(i=>m.river[i]>0),dN:far(i=>m.river[i]>1),dM:far(i=>K[i]===T_MOUNT),dF:far(i=>K[i]===T_FOREST)};
+  const RH=genRng(n,'holdings',0),d2=(i,j)=>(X(i)-X(j))*(X(i)-X(j))+(Y(i)-Y(j))*(Y(i)-Y(j)),gap=PLACE.cap*Math.sqrt(W*W+H*H),P=[];
+  const site=i=>{const x=i%cw,y=(i-x)/cw;return x>=2&&y>=2&&x<cw-2&&y<ch-2&&K[i]!==T_WATER&&K[i]!==T_MOUNT},cand={};
+  for(const f of PLACE_REALMS){const p=PLACE_PEOPLE[f],L=[];for(let i=0;i<N;i++)if(!(i%2)&&!(((i-i%cw)/cw)%2)&&site(i))L.push([placeSuit(m,F,p,i),i]);L.sort((a,b)=>b[0]-a[0]||a[1]-b[1]);
+    const top=cand[f]=[];for(const c of L){if(top.length>=48)break;if(top.every(o=>d2(o[1],c[1])>=576))top.push(c)}}
+  const worth=pk=>PLACE_REALMS.reduce((a,f)=>a+pk[f][0],0)-3*Math.max(0,placeSkew(PLACE_REALMS.map(f=>pk[f][1]),d2)-PLACE.skew*.8);
+  let best=null;
+  for(let t=0;t<200;t++){const ord=PLACE_REALMS.slice(),pick={};let ok=true;for(let q=ord.length-1;q>0;q--){const j=Math.floor(RH()*(q+1));[ord[q],ord[j]]=[ord[j],ord[q]]}
+    for(const f of ord){const L=cand[f];let got=null;for(let u=0;u<16&&!got&&L.length;u++){const c=L[Math.floor(RH()*RH()*L.length)];if(Object.values(pick).every(o=>d2(o[1],c[1])>=gap*gap))got=c}if(!got){ok=false;break}pick[f]=got}
+    if(ok){const v=worth(pick);if(!best||v>best.v)best={v,pick}}}
+  for(const f of PLACE_REALMS){const c=best?best.pick[f]:cand[f][0];if(c)P.push({f,kind:'city',i:c[1]})}
+  const quota=placeQuota(s.holdings),left={};for(const f of PLACE_REALMS)left[f]=placeKinds(f,quota[f]);
+  for(let more=true;more;){more=false;
+    for(const f of PLACE_REALMS){if(!left[f].length)continue;more=true;const kind=left[f].shift(),own=P.filter(h=>h.f===f);if(!own.length)continue;const p=PLACE_PEOPLE[f];let top=null;
+      for(let u=0;u<60;u++){const b=own[Math.floor(RH()*own.length)].i,dx=RH()*81-40,dy=RH()*81-40,dd=dx*dx+dy*dy;if(dd>PLACE.reach*PLACE.reach||dd<144)continue;
+        const x=X(b)+dx,y=Y(b)+dy;if(x<0||y<0||x>=W||y>=H)continue;const i=at(x,y);if(!site(i))continue;let nd=Infinity,mine=false,bad=false;
+        for(const h of P){const e=d2(h.i,i),gp=h.kind==='city'&&kind==='city'?gap:placeGap(h.kind,kind);if(e<gp*gp){bad=true;break}if(e<nd){nd=e;mine=h.f===f}}
+        if(bad||!mine)continue;const v=placeSuit(m,F,p,i)-.2*Math.sqrt(d2(own[0].i,i))/100+RH()*.15;if(!top||v>top.v)top={v,i}}
+      if(top)P.push({f,kind,i:top.i})}}
+  return{map:m,k,holdings:P.map(h=>({tx:h.i%cw,ty:(h.i-h.i%cw)/cw,realm:h.f,kind:h.kind})),rivers,land:land/N,ms:performance.now()-t0}}

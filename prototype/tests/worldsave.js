@@ -45,7 +45,7 @@ try{
   fresh(S);ok(t.WM===m,'a new game with the same settings uses it again (as it first stood)');
   play(200);save('1');t.loadGame('1');const g0=save('1'),sum=t.WM.sum;
   const L1=t.saveLine(t.readSlot('1')),L0=t.saveLine(JSON.parse(s0));
-  ok(/^Normal · redwater · Day \d+ · /.test(L1)&&(t.WORLD.gen?/^Classic · Day/:/^Day/).test(L0),'the save line names the world: "'+L1.split(' · ').slice(0,3).join(' · ')+'"; the default world: "'+L0.split(' · ')[0]+'"');
+  ok(/^Redwater · Normal · seed redwater · Day \d+ · /.test(L1)&&(t.WORLD.gen?/^Ashmark · Classic · Day/:/^Day/).test(L0),'the save line names the world, its preset and seed (Phase 2b): "'+L1.split(' · ').slice(0,4).join(' · ')+'"; the default world: "'+L0.split(' · ').slice(0,t.WORLD.gen?3:1).join(' · ')+'"');
   // a new game without settings: with WORLD.gen the New game screen's choice (Classic at first), else the world in
   fresh();ok(t.WORLD.gen?t.worldKey(t.WM)===home:t.WM===m,'a new game without settings: '+(t.WORLD.gen?'the New game screen\'s choice, the classic seed':'the world in')+' ('+t.WM.gen+')');
   // the default world back by a load (made again first, flag off); a game in it starts as one in the page's own does (the

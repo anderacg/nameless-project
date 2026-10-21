@@ -44,19 +44,27 @@ const worldName=m=>!m.settings||m.settings.preset==='classic'||!m.settings.seed?
 const SPAWN_MUL={calm:.6,few:.6,normal:1,deadly:1.5,many:1.5},spawnMul=k=>WM.settings&&SPAWN_MUL[WM.settings[k]]||1;
 
 /* a new game, as steps behind "Forging the world…" (loading.js runSteps). settings: its world's (worldsettings.js); left out, with
-   WORLD.gen the New game screen's choice (ui.js newWorldSettings), else the world in (today's map, or the one a load made again).
-   A world other than the one in is made first
-   (forgeSteps: the generator's stages), then put in ("Drawing borders": forgeInstall); the one in is used again as it first stood
+   WORLD.gen the New world screen's choice (worldsetup.js newWorldSettings), else the world in (today's map, or the one a load made
+   again). k: your past; 'world:<past>' (a past's card on the New game page, with WORLD.gen) opens the New world screen first
+   (worldsetup.js worldSetup, D30), whose Forge the world comes back here with its settings.
+   A world other than the one in is made first (forgeSteps: the generator's stages; none when the New world screen's full preview
+   made it: worldPreviewTake), then put in ("Drawing borders": forgeInstall); the one in is used again as it first stood
    (WM.first: useWorld). Then the game put in, in one step (the session, your hero from your race and past, the world as it first
    stood, its sites, beasts and bands), then the land round you painted. A failure before the putting in leaves the last game as
    it was */
 function begin(k,settings){
+  if(typeof k==='string'&&k.startsWith('world:'))return worldSetup(k.slice(6));
   const b=BGS[k];if(!b)return false;if(settings===undefined&&WORLD.gen)settings=newWorldSettings();
-  const want=settings&&{gen:'ashmark-1',settings:normSettings(settings)},made=want&&worldKey(want)!==worldKey(WM)?{}:null;
-  runSteps('Forging the world…',[...(made?[...forgeSteps(want.gen,want.settings,r=>made.r=r),{id:'install',label:'Drawing borders',w:150,run:()=>forgeInstall(made.r)}]:[]),
+  const want=settings&&{gen:'ashmark-1',settings:normSettings(settings)},made=want&&worldKey(want)!==worldKey(WM)?{r:worldPreviewTake(want.settings)}:null,t0=performance.now();
+  runSteps('Forging the world…',[...(made?[...(made.r?[]:forgeSteps(want.gen,want.settings,r=>{made.r=r;forgeTimed(want.settings,performance.now()-t0)})),{id:'install',label:'Drawing borders',w:150,run:()=>forgeInstall(made.r)}]:[]),
     {id:'world',label:'Peopling the land',w:made?150:4,run:()=>startGame(k,b)},{id:'paint',label:'Painting the first lands',w:made?150:3,run:paintView}],
     {back:['Back to the title',()=>showTitle()]}).catch(()=>{});// (a failure shows itself: its error view)
 }
+/* (a generated world but the classic one starts as its seed says (doc/WORLD_DESIGN.md §4.4, D30): its first sites, herds, bands and
+   beasts drawn with the game's number 0 (core/rng.js: the streams from the world's seed alone) and Math.random the 'start'
+   stream's, so one world code starts one world; then the game's number drawn, and what happens in play stays random. The classic
+   world and today's map as ever: from the game's number) */
+const seededStart=()=>WM.gen==='ashmark-1'&&!WM.classic,startDraws=(own,fn)=>own?Rng.use('start',fn):fn();
 function startGame(k,b){
   resetSession();P.bg=k;P.gold=b.gold;P.troops={...b.troops};P.bonus=b.bonus;
   const rc=RACES[P.race=G.race||'human'];
@@ -67,11 +75,14 @@ function startGame(k,b){
   P.gear.weapon=gearId(b.weapon||'sword',0);for(const g in b.cargo)invAdd('good',g,b.cargo[g]);if(b.ammo)invAdd('good',b.ammo[0],b.ammo[1]);
   // (a new game on the map: every system's world reset first, onWorld; the game's number for its random streams, core/rng.js,
   // drawn before the wild game and the beasts are placed from them)
-  useWorld(WM);initWorld();W.sites=genSites();fogReset();Rng.newGame();initCritters();
+  // (a generated world but the classic one: its first sites, herds, bands and beasts from its seed, seededStart)
+  const own=seededStart();useWorld(WM);initWorld();if(own)Rng.reset();
+  startDraws(own,()=>{W.sites=genSites()});fogReset();if(!own)Rng.newGame();startDraws(own,initCritters);
   const home=capitalOf(P.race);if(b.rep)P.rep[home.name]=b.rep;
   heroAtGate(home);G.mode='world';G.lastTown=home;// (in front of its gate, on land: world.js gateSpot)
-  for(let i=0,n=Math.round(BANDITS*spawnMul('bandits'));i<n;i++)spawnBandit(true);
-  for(let i=0,n=Math.round(MONSTER_START*spawnMul('monsters'));i<n;i++)spawnMonster(true);
+  startDraws(own,()=>{for(let i=0,n=Math.round(BANDITS*spawnMul('bandits'));i<n;i++)spawnBandit(true);
+    for(let i=0,n=Math.round(MONSTER_START*spawnMul('monsters'));i<n;i++)spawnMonster(true)});
+  if(own)Rng.newGame();
   hidePanel();G.msgs=[];log('You ride out of '+home.name+' alone, as '+(rc.n==='Elf'||rc.n==='Orc'?'an ':'a ')+rc.n.toLowerCase()+' '+b.n.toLowerCase()+'. Win fame around here and the locals will follow you.');updateHint();updateHUD(true);
 }
 // the land you are about to see, painted now, inside the loading steps, not in the first frame: the chunks under the view the

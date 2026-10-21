@@ -8,6 +8,7 @@
      4. windows        the overlay and the panel: one size, a fixed title row and action row, the content scrolls
      4b. loading       the loading overlay over everything (loading.js): a title and its flag, a pixel bar, the step, a tip
      5. menus          the title screen, the pause menu, save slots
+     5b. new world     the world's settings beside its preview (worldsetup.js), the Esc menu's World page
      6. world HUD      party card (top left), day bar (top middle), dock (bottom right), messages (bottom left), tooltip
      6b. people        the tab on the right edge and its drawer: companions, lords, those you know, realms (peopledrawer.js)
      6c. supplies      the band card's stamina and health bars and its tags, the camp, the action ring (world/supply.js, ui/ring.js)
@@ -227,6 +228,38 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 .slotrow .card.slot .mt span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .slotrow>.btn{align-self:center;min-width:72px}
 .cvform small{display:block;margin-top:3px}
+
+/* ---------- 5b. new world ---------- */
+/* worldsetup.js: the settings down the left (they scroll), the preview beside them (it stays), the bottom bar under both; on a
+   phone on its side the preview narrows to about 240 px. The World page (the Esc menu's): a name and its value a row */
+.panel.wsp{overflow:hidden}
+.ws{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 420px;gap:18px}
+.ws-set{min-height:0;overflow:auto;overscroll-behavior:contain;display:flex;flex-direction:column;gap:8px;padding-right:4px;scrollbar-width:thin;scrollbar-color:var(--line-2) transparent}
+.ws-set .muted{font-size:var(--fs-md)}
+.ws-line{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.ws-seed{flex:1;min-width:120px;max-width:280px;min-height:var(--tap);padding:4px 10px;font:inherit;color:var(--fg);background:var(--shade);border:1px solid var(--line-2);border-radius:var(--r-sm)}
+.ws-seed:focus{border-color:var(--accent);outline:none}.ws-seed:disabled{opacity:.55}
+.ws-code{font-size:var(--fs-md);color:var(--muted)}.ws-code b,.ws-page b{color:var(--accent);font-variant-numeric:tabular-nums;user-select:text;-webkit-user-select:text;overflow-wrap:anywhere}
+.ws-num{display:inline-flex;align-items:center;gap:6px}.ws-num b{min-width:4ch;text-align:center;font-variant-numeric:tabular-nums}.ws-num .btn{min-width:32px;padding:3px 0}
+.ws-adv{align-self:flex-start}
+.ws-advs{display:flex;flex-direction:column;gap:6px;padding:8px 0 4px;border-top:1px solid var(--line)}
+.ws-row{display:grid;grid-template-columns:130px minmax(0,1fr);align-items:center;gap:10px}
+.ws-k{color:var(--fg-2);font-size:var(--fs-md)}.ws-k small{color:var(--faint)}
+.ws-view{min-height:0;overflow:auto;display:flex;flex-direction:column;gap:6px}
+.ws-cv{display:block;width:auto;height:auto;max-width:100%;flex:none;align-self:flex-start;image-rendering:pixelated;background:#0a0c12;border:1px solid var(--line-2)}
+.ws-view p{margin:0;font-size:var(--fs-md)}.ws-cap{font-size:var(--fs-sm)!important}.ws-counts{color:var(--fg)}
+.ws-note{font-size:var(--fs-md)}
+.ws-page{display:flex;flex-direction:column;gap:6px}.ws-page .ws-row{grid-template-columns:150px minmax(0,1fr)}
+@media (max-width:1060px){.ws{grid-template-columns:minmax(0,1fr) 340px}}
+@media (max-width:860px),(max-height:520px){
+  .ws{grid-template-columns:minmax(0,1fr) 244px;gap:12px}
+  .ws-row{grid-template-columns:104px minmax(0,1fr)}.ws-set{gap:6px}
+  .ws-cv{max-height:170px}.ws-view{gap:4px}.ws-view p{font-size:var(--fs-sm)}
+  .ws-cap{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:var(--fs-xs)!important}
+  .ws-view .btns{gap:4px;flex-wrap:nowrap}.ws-view .btns .btn{padding:3px 7px;font-size:var(--fs-sm)}
+}
+@media (pointer:coarse) and (max-height:520px){.ws .tabs .btn.sm,.ws-num .btn{min-height:36px}}
+@media (max-width:520px) and (orientation:portrait){.ws{grid-template-columns:minmax(0,1fr);overflow:auto}.ws-set{overflow:visible}}
 
 /* ---------- 6. world HUD ---------- */
 /* HUD frames: dark glass, a hairline, a gold top edge */

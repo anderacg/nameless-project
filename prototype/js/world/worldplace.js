@@ -50,8 +50,9 @@ const placeGap=(a,b)=>PLACE_GAP[a]&&PLACE_GAP[a][b]||PLACE_GAP[b]&&PLACE_GAP[b][
    rivals within this share of their mean), suit (a capital's least liking), day (tiles: a day's travel, for a fair start), land
    (a realm's suitable tiles within landR of its capital, at Normal: x1.5 at Large, x2.4 at Huge), lords ([holdings, lords a
    realm] points, D10), bridge, ford, ferry (the most water each spans), gap (a river's crossings at most this far apart), spread
-   (each realm's land within this share of their mean: placeRealmLand) */
-const PLACE={reach:40,cap:.3,skew:.25,suit:.6,day:60,land:2000,landR:90,lords:[[37,4],[55,6],[90,9],[200,18]],bridge:3,ford:3,ferry:12,gap:60,spread:.3};
+   (each realm's land within this share of their mean: placeRealmLand), even (the same, asked of the holdings as stage 7 places
+   them: under spread, as the roads laid after can move a realm's land some 10% more with the fewer holdings of 2026-10-22) */
+const PLACE={reach:40,cap:.3,skew:.25,suit:.6,day:60,land:2000,landR:90,lords:[[37,4],[55,6],[90,9],[200,18]],bridge:3,ford:3,ferry:12,gap:60,spread:.3,even:.24};
 // the land a realm's holdings will claim, reckoned as territory.js does at the start (placeRealmLand): its travel cost by tile kind
 // (its LAND_COST, which loads after the generator runs; 0 closed) and a holding's first growth past its kind's reach (its GROW0)
 const PLACE_CLAIM={cost:[1,1.7,1.5,0,.8,4,1.5],grow:4};
@@ -74,8 +75,9 @@ const PLACE_WORD={human:'human',dwarf:'dwarven',elf:'elven',orc:'orc',league:'Le
 
 /* the fields stages 7-9 read (once a world; g.work.place): distances (tiles, 4 ways, to 255) to sea or lake water (dW), rivers
    (dR), navigable rivers (dN), peaks (dM) and forest (dF); each river tile's river (rv, -1 elsewhere) and its place along that
-   river's path (rp); bodies of water (wl, 4 ways; sea: the largest at the map's rim); the land a road can join (conn: walkable
-   land, rivers, and water a bridge spans; main its largest piece) */
+   river's path (rp); bodies of water (wl, 4 ways; sea: the largest at the map's rim); the open sea (open: water joined to the rim
+   by water no road can bridge, or by rivers, whose bridges keep them: placeOpen); the land a road can join (conn: walkable land,
+   rivers, and water a bridge spans; main its largest piece) */
 function* placeFields(g){
   const m=g.map,W=m.w,H=m.h,N=W*H,K=m.kind,Rv=m.river,F={};
   F.dW=yield* genFar(g,i=>K[i]===T_WATER&&!(Rv[i]&3));F.dR=yield* genFar(g,i=>(Rv[i]&3)>0);F.dN=yield* genFar(g,i=>(Rv[i]&4)>0);
@@ -85,7 +87,7 @@ function* placeFields(g){
   for(let a=0;a<q.length;a++){const i=q[a],x=i%W,y=(i-x)/W;for(const [dx,dy] of DIR8){const nx=x+dx,ny=y+dy,j=ny*W+nx;if(m.has(nx,ny)&&rv[j]<0&&(Rv[j]&3)){rv[j]=rv[i];rp[j]=rp[i];q.push(j)}}}
   F.wl=new Int32Array(N);const ws=yield* genPieces(g,F.wl,i=>K[i]===T_WATER);F.sea=-1;
   for(let i=0;i<N;i++){const x=i%W,y=(i-x)/W;if((x===0||y===0||x===W-1||y===H-1)&&F.wl[i]>=0&&(F.sea<0||ws[F.wl[i]]>ws[F.sea]))F.sea=F.wl[i]}
-  const run=F.run=placeRuns(m);F.conn=new Int32Array(N);
+  const run=F.run=placeRuns(m);F.open=placeOpen(m,run);F.conn=new Int32Array(N);
   const cs=yield* genPieces(g,F.conn,i=>K[i]!==T_MOUNT&&(K[i]!==T_WATER||(Rv[i]&3)>0||run[i]<=PLACE.bridge));
   F.main=cs.indexOf(Math.max(...cs));return F}
 // (each water tile's span: the shorter of its straight runs of water, across and down, to 255)
@@ -101,9 +103,15 @@ function placeSuit(m,F,p,i){
   if(p==='elf')return(dF<=2&&!(f&8)?.35:dF<=5?.15:0)+(c===GR?.3:c===SW?.05:-.5)+(dR<=3&&dF<=4?.15:0)+(k===T_OPEN?.1:0);
   if(p==='orc')return(c===DE?.45:c===SW?.3:c===GR&&m.temp[i]>150?.15:c===FR?-.6:0)+(dW<=6||dR<=4?.3:0)+(k===T_OPEN?.1:0);
   return(dW<=2?.5:0)+(F.dN[i]<=2?.4:0)+(dR<=3&&dW<=4?.2:0)-(dW>6&&F.dN[i]>4?.4:0)+(c===GR||c===SW?.1:0)}
-// (the body of water a port at tile i sails from: water within 2 joined to the sea, or a navigable river; else -1)
+// (the body of water a port at tile i sails from: water within 2 on the open sea (a strait a road may bridge later leaves a port
+// on a lake: fewer holdings, 2026-10-22, met it), or a navigable river; else -1)
 function placePort(m,F,i){const W=m.w,x=i%W,y=(i-x)/W;let r=-1;
-  for(let b=-2;b<=2;b++)for(let a=-2;a<=2;a++){const j=(y+b)*W+x+a;if(m.has(x+a,y+b)&&m.kind[j]===T_WATER&&(F.wl[j]===F.sea||(m.river[j]&4))&&r<0)r=F.wl[j]}return r}
+  for(let b=-2;b<=2;b++)for(let a=-2;a<=2;a++){const j=(y+b)*W+x+a;if(m.has(x+a,y+b)&&m.kind[j]===T_WATER&&(F.open[j]||(m.river[j]&4))&&r<0)r=F.wl[j]}return r}
+// (the open sea: water joined 4 ways to the map's rim through water wider than a bridge spans (PLACE.bridge) or rivers, a byte a tile)
+function placeOpen(m,S){const W=m.w,H=m.h,N=W*H,K=m.kind,O=new Uint8Array(N),q=new Int32Array(N),ok=i=>K[i]===T_WATER&&(S[i]>PLACE.bridge||(m.river[i]&3)>0);let a=0,b=0;
+  for(let i=0;i<N;i++){const x=i%W,y=(i-x)/W;if((!x||!y||x===W-1||y===H-1)&&ok(i)){O[i]=1;q[b++]=i}}
+  while(a<b){const i=q[a++],x=i%W;for(const j of [x>0?i-1:-1,x<W-1?i+1:-1,i-W,i+W])if(j>=0&&j<N&&!O[j]&&ok(j)){O[j]=1;q[b++]=j}}
+  return O}
 // (the tiles reached from tile s over walkable ground, 4 ways, and over ferries; shut: fords on flooding rivers closed)
 function placeReach(m,s,shut){
   const W=m.w,H=m.h,N=W*H,K=m.kind,Rd=new Uint8Array(N),q=new Int32Array(N),fx=new Map();let a=0,b=0;
@@ -455,7 +463,7 @@ function* genCamps(g){
 /* the checks of stages 7-9 (§8.14), set on worldgen.js's GEN_STAGES rows: a reason to try the stage again, or null.
    holdings: as many as asked, by realm (PLACE_SHARE); capitals 0.3 x the diagonal apart, each liked at PLACE.suit or more, their
    nearest rivals within PLACE.skew of the mean, each with PLACE.land suitable tiles round it; a fair start (3 holdings within a
-   day's travel of each capital); each realm's land within PLACE.spread of their mean (placeRealmLand); every port on water
+   day's travel of each capital); each realm's land within PLACE.even of their mean (placeRealmLand); every port on water
    joined to the sea or a navigable river. Its relaxation, the last rung of §4.5's order (hamlets, sacred places and the wild
    share come with Phase 4): one holding fewer a realm, twice at most, where too few fit or a capital has no fair start. roads: every pair joined; every holding reachable from the first capital, also with every ford on a
    flooding river shut (a river's crossings within PLACE.gap need no retry: the pass makes them wherever a crossing can be made,
@@ -472,7 +480,7 @@ function placeCheck(id){return g=>{
       if(n<need)return c.name+' has '+n+' suitable tiles';
       if(Hd.filter(h=>h!==c&&(h.tx-c.tx)*(h.tx-c.tx)+(h.ty-c.ty)*(h.ty-c.ty)<=PLACE.day*PLACE.day).length<3)return c.name+' has no fair start'}
     const L=placeRealmLand(m,Hd),mean=L.reduce((a,b)=>a+b,0)/L.length,far=Math.max(...L.map(v=>Math.abs(v-mean)/mean));
-    if(far>PLACE.spread)return 'realm land unbalanced ('+L.join('/')+')';
+    if(far>PLACE.even)return 'realm land unbalanced ('+L.join('/')+')';
     const bad=Hd.find(h=>h.style==='port'&&placePort(m,F,ti(h))<0);return bad?bad.name+' a port on no sea':null}
   if(id==='roads'){if(g.work.roadFail.length)return 'no road '+g.work.roadFail[0];
     for(const shut of [false,true]){const Rd=placeReach(m,Hd[0].ty*W+Hd[0].tx,shut),h=Hd.find(h=>!Rd[h.ty*W+h.tx]);if(h)return h.name+' unreachable'+(shut?' with the flooding fords shut':'')}

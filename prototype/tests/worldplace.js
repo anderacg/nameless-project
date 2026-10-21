@@ -10,7 +10,7 @@
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.push('INFO '+m),t=T,J=JSON.stringify;
 try{
  const pn=()=>performance.now(),gen=s=>{const S=t.genWorldSteps(s),ms={};let r;for(const st of S){const a=pn(),it=st.run();let v;while(!(v=it.next()).done);r=v.value;ms[st.id]=pn()-a}r.ms=ms;r.stats={...t.PLACE_STATS};return r};
- const worlds=[['classic',t.classicSettings()],['Normal redwater',{preset:'normal',seed:'redwater'}],['Normal bluewater',{preset:'normal',seed:'bluewater'}],['Large redwater',{preset:'large',seed:'redwater'}]];
+ const worlds=[['classic',t.classicSettings()],['Normal redwater',{preset:'normal',seed:'redwater'}],['Normal bluewater',{preset:'normal',seed:'bluewater'}],['Large redwater',{preset:'large',seed:'redwater',holdings:55}]];// (Large at More, 55 holdings: a world with lords of its own, D10)
  const R={};for(const [k,s] of worlds)R[k]=gen(s);
  for(const [name] of worlds){const r=R[name],m=r.map,W=m.w,H=m.h,K=m.kind,Hd=r.holdings,ti=h=>h.ty*W+h.tx,d2=(a,b)=>(a.tx-b.tx)*(a.tx-b.tx)+(a.ty-b.ty)*(a.ty-b.ty),cl=m.classic;
   info(name+': '+Object.keys(r.ms).map(k=>k+' '+r.ms[k].toFixed(0)).join(', ')+' ms; '+r.stats.roads+' roads, '+(r.stats.ms/Math.max(1,r.stats.roads)).toFixed(1)+' ms a road (most '+r.stats.max.toFixed(1)+'); tries '+t.GEN_STAGES.slice(6,9).map(s=>s.id+' '+r.tries[s.id]).join(', ')+'; relaxed: '+(r.relaxed.join('; ')||'nothing'));

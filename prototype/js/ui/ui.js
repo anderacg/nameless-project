@@ -1,6 +1,6 @@
 'use strict';
 /* ---------- panels ---------- */
-function showPanel(html){panel.classList.remove('wide','railed','paged','fmap');panel.innerHTML=html;ov.hidden=false;G.modal=true;const b=panel.querySelector('button:not([disabled]),.card');if(b)b.focus({preventScroll:true})}
+function showPanel(html){panel.classList.remove('wide','railed','paged','fmap','wsp');panel.innerHTML=html;ov.hidden=false;G.modal=true;const b=panel.querySelector('button:not([disabled]),.card');if(b)b.focus({preventScroll:true})}
 function hidePanel(){ov.hidden=true;G.modal=false}
 /* every window's bottom bar: its navigation only; the game's choices stay in the window above it. back: [act, arg, label] on
    the left, when it was opened from another window; close: [act, arg, label, why disabled, noEsc] on the right, the way out,
@@ -95,9 +95,11 @@ function battleSpeedUI(){if(typeof document==='undefined')return;const sp=B?B.sp
   const p=document.getElementById('bPause');if(p){const on=!!(B&&B.paused);p.classList.toggle('on',on);p.setAttribute('aria-pressed',String(on));p.textContent=B&&B.deploy?'⚔ Begin':on?'▶ Play':'⏸ Pause'}if(B&&typeof bhudTop==='function')bhudTop()}
 // the controls in brief (Settings); every key is in Help (H)
 const CONTROLS='World map: click to travel, hover for details, Space to pause, 1 2 3 for the speed (1×, 2×, 4×), 4 to hurry (your band marches faster), C your hero and party, K skills, I your bag, P people, L the message log, M the full map (or click the minimap), H help, + − or the wheel to zoom, G the tile grid, F6 to save, Esc the menu. Battle: click or drag to select, right-click to move or attack, right-drag to lay out a line, 1–9/0 to select the ten army cards, Ctrl+number to store a custom selection, Home to reset the camera, H hold, C run, V walk (the pace; a double right-click on an enemy charges), W withdraw, R walk or run, F hold ground, Q cease fire, E skirmish, X melee mode (shooters), B L T formations, A the AI in command, K auto skills, Space to pause, [ ] the speed, the wheel to zoom. Anywhere: Shift+M turns the sound off and on. Every key: Help (H).';
-// (the world a save was made in, for its line: "Large · redwater"; the classic world, today's map: nothing)
+// (the world a save was made in, for its line: its name, its preset and its seed, "Redwater · Large · seed redwater"; the classic
+// world "Ashmark · Classic"; today's map: nothing)
 const WORLD_N={classic:'Classic',normal:'Normal',large:'Large',huge:'Huge',frontier:'Frontier',crowded:'Crowded'};
-const worldLine=s=>!s?'':s.preset==='classic'?'Classic · ':(WORLD_N[s.preset]||s.w+' × '+s.h)+' · '+s.seed+' · ';
+const worldKind=s=>WORLD_N[s.preset]||'Custom '+s.w+' × '+s.h;
+const worldLine=s=>!s?'':worldName({settings:s})+' · '+worldKind(s)+(s.preset==='classic'?'':' · seed '+s.seed)+' · ';
 const saveLine=sv=>worldLine(sv.world&&sv.world.map&&sv.world.map.settings)+'Day '+sv.day+' · '+RACES[sv.P.race||'human'].n+' '+((BGS[sv.P.bg]||{}).n||'hero').toLowerCase()+' · level '+sv.P.level+' · '+sv.P.gold+' gold'+(sv.at?' · '+new Date(sv.at).toLocaleString([], {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):'');
 // the slots, each a row: load it (or save into it), and delete it (two clicks)
 // (a slot an older version saved is refused (doc/WORLD_DESIGN.md D7): it says so, and can be deleted)
@@ -108,30 +110,13 @@ function slotRows(mode){return SAVE_SLOTS.filter(s=>mode==='save'?s!=='auto':tru
 // Small, code-drawn origin illustrations keep the new-game cards vivid without loading extra sprite sheets.
 const ORIGIN_ART={soldier:['#273747','#c1844d','#d7b974','M0 82h320v30H0z M28 55h38v27H28z M36 40h22v15H36z M234 48h54v34h-54z M246 30h28v18h-28z','sword'],guard:['#314641','#b68449','#d6c48b','M0 82h320v30H0z M20 55h42v27H20z M28 40h26v15H28z M250 50h40v32h-40z','spear'],woodcutter:['#233b32','#8f6844','#b9a168','M0 76h320v36H0z M15 0h24v75H15z M54 0h17v74H54z M258 12h14v60h-14z M284 0h23v77h-23z','axe'],exile:['#29384a','#bb7658','#b8c0a0','M0 82h320v30H0z M20 38h30v44H20z M36 18h30v30H36z M256 28h18v54h-18z M270 12h34v35h-34z','bow'],merchant:['#4a3b38','#be8650','#dfc377','M0 82h320v30H0z M16 52h50v30H16z M25 36h34v16H25z M254 53h40v29h-40z','crossbow'],hedge:['#34354e','#9077a8','#c2acd0','M0 82h320v30H0z M18 56h42v26H18z M29 39h23v17H29z M245 52h48v30h-48z M263 32h15v20h-15z','staff'],apprentice:['#37414b','#7393a0','#d1b678','M0 82h320v30H0z M20 59h40v23H20z M30 43h21v16H30z M250 58h45v24h-45z M266 40h14v18h-14z','wand']};
 function originArt(key){const [sky,coat,glow,land,weapon]=ORIGIN_ART[key]||ORIGIN_ART.soldier;const stars=key==='hedge'||key==='apprentice'?'<path d="M36 18v8m-4-4h8M260 18v7m-3-3h6M111 34v5m-2-2h4" stroke="#e8d58c" stroke-width="2"/>':'';const arms=weapon==='bow'?'<path d="M210 38q-22 26 0 52M210 39q18 25 0 51M210 40v50" fill="none" stroke="#c79655" stroke-width="3"/><path d="M209 64h-21" stroke="#e5d6b5" stroke-width="2"/>':weapon==='spear'?'<path d="M211 27v72" stroke="#9f7048" stroke-width="4"/><path d="M211 24l-5 12h10z" fill="#c7c8bb"/>':weapon==='axe'?'<path d="M210 49v48" stroke="#9a6942" stroke-width="5"/><path d="M207 49q19-12 22 3l-13 8-9-3z" fill="#bfc2b6"/>':weapon==='crossbow'?'<path d="M195 61h33m-16-13v27m-15-23q15 19 30 0" fill="none" stroke="#bd9259" stroke-width="4"/>':weapon==='staff'?'<path d="M211 34v64" stroke="#94744e" stroke-width="4"/><path d="M211 27l5 6-5 6-5-6z" fill="#c2a9da"/>':weapon==='wand'?'<path d="M209 49l7 46" stroke="#ab8150" stroke-width="4"/><path d="M207 44l3-7 5 6-4 7z" fill="#b9dcdf"/>':'<path d="M210 40v57" stroke="#927047" stroke-width="4"/><path d="M205 33h10v30h-10z" fill="#b8c6cc"/><path d="M205 34h10" stroke="#ead9ac" stroke-width="2"/>';return '<svg class="origin-art" viewBox="0 0 320 112" aria-hidden="true" focusable="false" shape-rendering="crispEdges"><rect width="320" height="112" fill="'+sky+'"/><circle cx="268" cy="24" r="12" fill="'+glow+'" opacity=".9"/><path d="M0 69l42-28 41 28 48-38 55 40 48-31 86 39v22H0z" fill="#17242b" opacity=".8"/>'+stars+'<path d="'+land+'" fill="#3a493f"/><ellipse cx="164" cy="96" rx="34" ry="6" fill="#172127" opacity=".7"/><path d="M151 48h27v12h8v25h-7v12h-28V85h-7V60h7z" fill="'+coat+'"/><rect x="155" y="34" width="20" height="19" fill="#c89a70"/><path d="M152 38h25v5h-25z" fill="#382b2a"/><path d="M151 60l-12 20 5 3 16-14m18-9 13 16-4 4-17-13" fill="none" stroke="'+coat+'" stroke-width="7"/><path d="M152 94v13m20-13v13" stroke="#222a31" stroke-width="7"/>'+arms+'<path d="M0 108h320" stroke="'+glow+'" stroke-width="4" opacity=".7"/></svg>'}
-/* New game's World row (with WORLD.gen; doc/WORLD_DESIGN.md §15.2.2 C, until Phase 2b's screen): Classic · Normal · Large · Huge,
-   the others with a fresh seed shown (crypto.getRandomValues: never Math.random) and New seed. Huge on every device (D44): on a
-   phone (a coarse pointer, the short side of the screen under 900 px) with a slow-to-forge note; hidden only where saves cannot
-   be gzipped (D8). Sparse until later: densities stay today's until Phase 6. begin reads the choice (newWorldSettings) */
-const NEW_WORLD={size:'classic',seed:''};
-const SEED_A=['red','ash','iron','oak','frost','stone','wolf','raven','amber','thorn','elder','storm','salt','moon','gold','black','silver','high','deep','wild','briar','cold','dusk','fern','grey','hawk','mist','pine','rook','sun','west','yew'],
-  SEED_B=['water','fell','ford','mere','wood','vale','crest','hollow','brook','gate','moor','reach','field','marsh','barrow','haven','spire','fen','dale','watch','holm','stead','wick','burn','combe','tor','ness','ley','mouth','shaw','well','by'];
-const freshSeed=()=>{const r=crypto.getRandomValues(new Uint32Array(1))[0];return SEED_A[r&31]+SEED_B[r>>>5&31]};
-const phoneSlow=()=>matchMedia('(pointer: coarse)').matches&&Math.min(screen.width,screen.height)<900;
-function newWorldSettings(){const N=NEW_WORLD;if(N.size==='huge'&&!SAVE_ZIP)N.size='classic';
-  return N.size==='classic'?classicSettings():normSettings({preset:N.size,seed:N.seed||(N.seed=freshSeed())})}
-function worldRow(){if(!WORLD.gen)return '';const N=NEW_WORLD,s=newWorldSettings(),on=z=>N.size===z;
-  return '<div class="lab">World</div><div class="tabs" role="group" aria-label="World">'+['classic','normal','large','huge'].filter(z=>z!=='huge'||SAVE_ZIP).map(z=>'<button class="btn sm'+(on(z)?' on':'')+'" type="button" data-act="world-size" data-arg="'+z+'" aria-pressed="'+on(z)+'">'+WORLD_N[z]+'</button>').join('')+
-    (on('classic')?'':'<button class="btn sm" type="button" data-act="world-seed">New seed</button>')+'</div><p class="muted">'+
-    (on('classic')?'The world of Ashmark, the same for everyone.':'Seed '+s.seed+' · '+s.w+' × '+s.h+' tiles · '+s.holdings+' holdings'+(on('huge')?' · sparse until later'+(phoneSlow()?' · slow to forge on this device, about 30 s':''):''))+'</p>'}
-onAct('world-',(a,arg)=>{if(a==='world-size'&&['classic','normal','large','huge'].includes(arg))NEW_WORLD.size=arg;if(a==='world-seed')NEW_WORLD.seed=freshSeed();
-  showTitle('new');const b=panel.querySelector('[data-act="'+a+'"]'+(a==='world-size'?'.on':''));if(b)b.focus({preventScroll:true})});
 /* the main menu: Continue, New game, Load game, Settings (settingAct), Wiki, Exit */
 function showTitle(screen){
   // (the main menu leaves the game behind: no Resume here; the pause menu (Esc) is where you resume)
   G.resume=null;G.mode='title';G.menu=screen||'main';G.race=G.race||'human';const sv=readSave(),back=nav(['menu','main','Back']);
   const card=(act,arg,title,sub,dis,ic)=>'<button class="card menu" type="button" data-act="'+act+'"'+(arg?' data-arg="'+arg+'"':'')+(dis?' disabled':'')+'>'+(ic?'<span class="mi">'+icon(ic,28)+'</span>':'')+'<span class="mt"><strong>'+title+'</strong><span>'+sub+'</span></span></button>';
-  if(G.menu==='new')return showPanel('<div class="top"><h2>New game</h2></div><div class="lab">Choose your race</div><div class="tabs" role="group" aria-label="Race">'+Object.keys(RACES).map(r=>'<button class="btn sm'+(G.race===r?' on':'')+'" type="button" data-act="race" data-arg="'+r+'" aria-pressed="'+(G.race===r)+'">'+RACES[r].n+'</button>').join('')+'</div><p class="muted">'+RACES[G.race].d+' Troops of your own race cost 15% less to hire.</p>'+worldRow()+
-    '<div class="lab">Choose your past · it decides your weapon</div><div class="cards origin-cards">'+Object.keys(BGS).map(k=>{const B0=BGS[k],w=BASES[B0.weapon];return '<button class="card origin-card" type="button" data-act="begin" data-arg="'+k+'">'+originArt(k)+'<strong>'+B0.n+'</strong><span class="gold">'+w.n+' · '+(w.kind==='ranged'?'Ranged':w.kind==='magic'?'Magic':'Melee')+'</span><span>'+B0.d+'</span></button>'}).join('')+'</div>'+ 
+  if(G.menu==='new')return showPanel('<div class="top"><h2>New game</h2></div><div class="lab">Choose your race</div><div class="tabs" role="group" aria-label="Race">'+Object.keys(RACES).map(r=>'<button class="btn sm'+(G.race===r?' on':'')+'" type="button" data-act="race" data-arg="'+r+'" aria-pressed="'+(G.race===r)+'">'+RACES[r].n+'</button>').join('')+'</div><p class="muted">'+RACES[G.race].d+' Troops of your own race cost 15% less to hire.</p>'+
+    '<div class="lab">Choose your past · it decides your weapon'+(WORLD.gen?' · then your world':'')+'</div><div class="cards origin-cards">'+Object.keys(BGS).map(k=>{const B0=BGS[k],w=BASES[B0.weapon];return '<button class="card origin-card" type="button" data-act="begin" data-arg="'+(WORLD.gen?'world:':'')+k+'">'+originArt(k)+'<strong>'+B0.n+'</strong><span class="gold">'+w.n+' · '+(w.kind==='ranged'?'Ranged':w.kind==='magic'?'Magic':'Melee')+'</span><span>'+B0.d+'</span></button>'}).join('')+'</div>'+ 
     (sv?'<p class="bad" style="font-size:13px">Starting a new game will replace your saved game when it next saves.</p>':'')+back);
   if(G.menu==='load')return showPanel('<div class="top"><h2>Load game</h2></div><div class="slots">'+slotRows('title')+'</div>'+(SAVE_SLOTS.some(oldSlot)?'<p class="muted">Saves made by an older version cannot be loaded (the world is made differently now): start a new game.</p>':'')+(sv?'':'<p class="muted">No saved game yet. The game saves itself each day and when you leave a town (Autosave); F6 saves at any time (Quick save); the menu (Esc) saves to a slot of your own.</p>')+back);
   if(G.menu==='settings')return showPanel('<div class="top"><h2>Settings</h2></div>'+
@@ -173,7 +158,7 @@ function onEscape(){
   uiSfx('back');
   if(peopleEsc())return;// (the people drawer first: peopledrawer.js)
   if(G.mode==='esc')return escAct('esc-resume');
-  if(G.mode==='title'){if(G.menu&&G.menu!=='main')return menuAct('menu','main');return}
+  if(G.mode==='title'){const b=G.menu&&G.menu!=='main'&&escDismiss();if(b)return act(b.dataset.act,b.dataset.arg);if(G.menu&&G.menu!=='main')return menuAct('menu','main');return}
   if(G.place&&G.mode==='world'){G.place=null;log('You stop placing.');return}
   const b=escDismiss();if(b)return act(b.dataset.act,b.dataset.arg);
   if(ESC_CLOSE[G.mode])return act(ESC_CLOSE[G.mode]);
@@ -189,10 +174,13 @@ function showEsc(msg){
     (msg?'<p class="gold">'+msg+'</p>':'')+'<p class="muted" style="font-size:13px">Esc resumes.</p>'+nav(null,['esc-resume',null,'Resume']));
 }
 // the world you play in (the Esc menu): its name, its kind and its seed, with a Copy button (the generated world's settings: the
-// owner, 2026-10-22); today's map: Ashmark, Classic, no seed
+// owner, 2026-10-22), and World: its page (worldsetup.js worldPage: every setting, the world code); today's map: Ashmark, Classic,
+// no seed
 function escWorld(){const s=WM&&WM.settings;
-  return '<div class="esc-world"><span>'+(s?htmlText(worldName(WM))+' · '+(WORLD_N[s.preset]||s.w+' × '+s.h)+(s.seed?' · seed <b>'+htmlText(s.seed)+'</b>':''):'Ashmark · Classic')+'</span>'+
-    (s&&s.seed?'<button class="btn sm" type="button" data-act="esc-seed">Copy seed</button>':'')+'</div>'}
+  return '<div class="esc-world"><span>'+(s?htmlText(worldName(WM))+' · '+htmlText(worldKind(s))+(s.seed?' · seed <b>'+htmlText(s.seed)+'</b>':''):'Ashmark · Classic')+'</span>'+
+    (s&&s.seed?'<button class="btn sm" type="button" data-act="esc-seed">Copy seed</button>':'')+'<button class="btn sm" type="button" data-act="esc-wpage">World</button></div>'}
+// (the World page: Back to the menu, Resume)
+const escWorldPage=msg=>showPanel('<div class="top"><h2>World</h2><span class="muted">Day '+G.day+'</span></div>'+worldPage()+(msg?'<p class="gold">'+msg+'</p>':'')+nav(['esc-back',null,'Back'],['esc-resume',null,'Resume']));
 // text onto the clipboard: true once it is there (the browser's clipboard, else the old copy command); false if neither would
 function copyText(t){const old=()=>{const a=document.createElement('textarea');a.value=t;a.style.cssText='position:fixed;opacity:0';document.body.appendChild(a);a.select();let ok=false;try{ok=document.execCommand('copy')}catch(e){}a.remove();return ok};
   try{if(navigator.clipboard&&navigator.clipboard.writeText)return navigator.clipboard.writeText(t).then(()=>true,old)}catch(e){}return Promise.resolve(old())}
@@ -201,6 +189,8 @@ function escAct(a,arg){
   const back=()=>{G.mode=E.mode;G.esc=null;if(E.html!=null){panel.innerHTML=E.html;panel.className=E.cls;ov.hidden=false;G.modal=E.modal}else hidePanel()};
   if(a==='esc-resume'){back();return true}
   if(a==='esc-seed'){const s=WM&&WM.settings&&WM.settings.seed;if(s)copyText(s).then(ok=>{if(G.mode==='esc'&&G.esc===E)showEsc(ok?'Seed '+s+' copied.':'Could not copy it: the seed is '+s+'.')});return true}
+  if(a==='esc-wpage'){escWorldPage();return true}
+  if(a==='esc-code'){const s=WM&&WM.settings;if(s){const c=worldCode(s);copyText(c).then(ok=>{if(G.mode==='esc'&&G.esc===E)escWorldPage(ok?'World code '+c+' copied.':'Could not copy it: the code is '+c+'.')})}return true}
   // saving: the slots to save to (a slot already used asks a second click to overwrite)
   const slots=(mode,msg)=>showPanel('<div class="top"><h2>'+(mode==='save'?'Save game':'Load game')+'</h2><span class="muted">Day '+G.day+'</span></div><div class="slots">'+slotRows(mode==='save'?'save':'esc')+'</div>'+(msg?'<p class="gold">'+msg+'</p>':'')+''+nav(['esc-back',null,'Back']));
   if(a==='esc-back'){G.overArmed=null;showEsc();return true}
@@ -222,7 +212,7 @@ function menuAct(a,arg){
   G.wipeArmed=false;
   if(arg==='wiki'){try{window.open('wiki.html','_blank')}catch(e){}return true}
   if(arg==='exit'){try{window.close()}catch(e){}showTitle('exit');return true}
-  if(arg==='new')NEW_WORLD.seed='';// (each visit a fresh seed)
+  if(arg==='new')worldSetupFresh();// (each visit a fresh seed: worldsetup.js)
   showTitle(arg);const b=panel.querySelector('.card,button');if(b)b.focus({preventScroll:true});return true;
 }
 onAct('esc-',escAct);

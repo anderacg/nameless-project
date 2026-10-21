@@ -13,7 +13,7 @@ try{
  try{localStorage.clear()}catch(e){}
  const N=t.normSettings,J=JSON.stringify,K=t.SETTING_KEYS,pn=()=>performance.now();
  // ---- the settings
- {const d=N({});ok(J(Object.keys(d))===J(K)&&d.v===1&&d.preset==='custom'&&d.w===448&&d.h===320&&d.holdings===37&&d.seed===''&&d.seasonal===true,'nothing given: Normal\'s settings, as custom, every key in order ('+K.join(' ')+')');
+ {const d=N({});ok(J(Object.keys(d))===J(K)&&d.v===1&&d.preset==='custom'&&d.w===448&&d.h===320&&d.holdings===27&&d.seed===''&&d.seasonal===true,'nothing given: Normal\'s settings, as custom, every key in order ('+K.join(' ')+')');
   ok(N({v:7}).v===1&&N({preset:'bogus'}).preset==='custom'&&t.SETTING_CHOICES.preset.every(p=>N({preset:p}).preset===p)&&!('foo' in N({foo:1})),'v is always 1; an unknown preset is custom, the others kept; unknown keys dropped');
   const sz=(w,h)=>{const s=N({w,h});return s.w+'x'+s.h};
   ok(sz(100,100)==='320x224'&&sz(5000,5000)==='1024x768'&&sz(500,300)==='512x320'&&sz(640,200)==='640x416'&&sz(1024,224)==='1024x640'&&sz('640','448')==='640x448'&&sz('x',null)==='448x320',
@@ -22,8 +22,8 @@ try{
   ok(!bad.length,'300 random sizes all clamp to a step of 32, an aspect of 1.2-1.6 and at most 786,432 tiles'+(bad.length?': '+bad.slice(0,5).join(' '):''));
   ok(N({seed:'  red water  '}).seed==='red water'&&N({seed:'x'.repeat(40)}).seed.length===24&&N({seed:42}).seed==='42'&&N({preset:'classic',seed:'x'}).seed==='CLASSIC','seed: trimmed, cut to 24 characters, text; Classic\'s is CLASSIC');
   const hd=o2=>N({holdings:999,...o2}).holdings;
-  ok(N({holdings:5}).holdings===25&&hd({})===60&&hd({wild:'vast'})===45&&hd({land:'sea'})===51&&hd({wild:'vast',land:'sea'})===38&&hd({preset:'large'})===110&&hd({preset:'huge'})===200&&hd({w:544,h:384})===82&&N({holdings:'x'}).holdings===37&&N({preset:'large'}).holdings===55&&N({holdings:40.9}).holdings===40,
-   'holdings: at least 25; at most 60 at Normal (Vast wild 45, More sea 51, both 38), 110 at Large, 200 at Huge, linear between (544x384: '+hd({w:544,h:384})+'); floored; else the preset\'s');
+  ok(N({holdings:5}).holdings===25&&hd({})===60&&hd({wild:'vast'})===45&&hd({land:'sea'})===51&&hd({wild:'vast',land:'sea'})===38&&hd({preset:'large'})===110&&hd({preset:'huge'})===200&&hd({w:544,h:384})===82&&N({holdings:'x'}).holdings===27&&N({preset:'large'}).holdings===40&&N({holdings:40.9}).holdings===40,
+   'holdings: at least 25; at most 60 at Normal (Vast wild 45, More sea 51, both 38), 110 at Large, 200 at Huge, linear between (544x384: '+hd({w:544,h:384})+'); floored; else the preset\'s (27 at Normal, 40 at Large: fewer, the owner, 2026-10-22)');
   const ch=Object.keys(t.SETTING_CHOICES).filter(k=>k!=='preset'),wrong=ch.filter(k=>N({[k]:'bogus'})[k]!==N({})[k]||!t.SETTING_CHOICES[k].every(v=>N({[k]:v})[k]===v));
   ok(!wrong.length&&N({seasonal:'yes'}).seasonal===true&&N({seasonal:false}).seasonal===false,'every choice ('+ch.join(', ')+') keeps its values and takes its default for anything else; seasonal: true but for false'+(wrong.length?': '+wrong.join(', '):''));
   const pick=a=>a[Math.floor(R()*a.length)],idem=[];
@@ -34,7 +34,7 @@ try{
   ok(C.w===448&&C.h===320&&C.seed==='CLASSIC'&&C.holdings===37&&['hamlets','sacred','wild','land','rivers','mountains','climate','seasonal','economy','sites'].every(k=>C[k]===N({})[k])&&C.monsters==='deadly'&&C.bandits==='many'&&C.start==='settler'&&J(t.classicSettings({monsters:'deadly',bandits:'many',start:'settler'}))===J(C),
    'Classic locks size, seed, holdings and every map setting to the defaults; monsters, bandits and start stay free (classicSettings takes them)');
   const pr=Object.keys(t.WORLD_PRESETS).map(p=>{const s=N(t.defaultSettings(p));return p+' '+s.w+'x'+s.h+' '+s.holdings});
-  ok(pr.join()==='classic 448x320 37,normal 448x320 37,large 640x448 55,huge 1024x768 90,frontier 640x448 38,crowded 448x320 55'&&Object.keys(t.WORLD_PRESETS).every(p=>{const d=t.defaultSettings(p),n=N(d);return K.every(k=>n[k]===d[k])}),'the presets clamp to themselves: '+pr.join(', '));
+  ok(pr.join()==='classic 448x320 37,normal 448x320 27,large 640x448 40,huge 1024x768 66,frontier 640x448 28,crowded 448x320 40'&&Object.keys(t.WORLD_PRESETS).every(p=>{const d=t.defaultSettings(p),n=N(d);return K.every(k=>n[k]===d[k])}),'the presets clamp to themselves: '+pr.join(', '));
   ok(t.settingsKey(N({seed:'a'}))===t.settingsKey({seed:'a',foo:2})&&t.settingsKey(N({seed:'a'}))!==t.settingsKey(N({seed:'b'}))&&t.settingsKey(null)==='','settingsKey: equal for equal clamped settings, different for different ones; empty for none');
   ok(t.seedNum('')===2166136261&&t.seedNum('a')===0xe40c292c&&t.seedNum('CLASSIC')>>>0===t.seedNum('CLASSIC')&&t.seedNum('ab')!==t.seedNum('ba'),'seedNum: FNV-1a 32 of the text (CLASSIC: '+t.seedNum('CLASSIC')+')')}
  // ---- T_FORD in every table indexed by kind
@@ -132,7 +132,7 @@ try{
   ok(t.WM===m&&t.MW===448&&t.MH===320&&t.tiles===m.kind&&t.TOWNS.length===37&&t.CAMP_SPOTS.length===R.camps.length&&t.DEPOSITS.length>0,'installWorld puts it in: the map in use, its 37 holdings, '+R.camps.length+' camps and '+t.DEPOSITS.length+' deposits');
   t.act('begin','soldier');G.quietEvents=true;G.mode='world';G.modal=false;t.hidePanel();
   const home=t.capitalOf(P.race);
-  ok(t.WM===m&&P.x>0&&P.y>0&&P.x<m.w*t.TILE&&P.y<m.h*t.TILE&&Math.abs(P.x-(home.tx+.5)*t.TILE)<1&&W.sites.length>0&&t.bandits.length>0&&W.monsters.length>0&&t.TOWNS.every(h=>h.owner),'a new game on it: you at '+home.name+', '+W.sites.length+' sites, '+t.bandits.length+' bands, '+W.monsters.length+' beasts, every holding held');
+  ok(t.WM===m&&P.x>0&&P.y>0&&P.x<m.w*t.TILE&&P.y<m.h*t.TILE&&Math.abs(P.x-t.gateSpot(home).x)<1&&W.sites.length>0&&t.bandits.length>0&&W.monsters.length>0&&t.TOWNS.every(h=>h.owner),'a new game on it: you at '+home.name+' (its gate: world.js gateSpot), '+W.sites.length+' sites, '+t.bandits.length+' bands, '+W.monsters.length+' beasts, every holding held');
   const reach=t.TOWNS.slice(1).filter(h=>t.Router.reach(t.TOWNS[0],h)).length,d=t.Router.days(t.TOWNS[0],t.TOWNS[1]),o2={x:P.x,y:P.y};let go=true;for(let k=0;k<30&&go;k++)go=t.Router.travel(o2,t.gateGoal(t.TOWNS[1]),3);
   ok(reach===36&&isFinite(d)&&d>0&&go===true&&(o2.x!==P.x||o2.y!==P.y),'the Router answers: every holding reachable from '+t.TOWNS[0].name+' ('+reach+' of 36), '+t.TOWNS[1].name+' '+d.toFixed(1)+' days off, a walker on its way there');
   for(let f=0;f<60;f++)t.updateWorld(.05);ok(true,'the world runs a few seconds on it')}

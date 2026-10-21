@@ -65,7 +65,8 @@ js/world/             the campaign map and everything on it
   worldmap.js           the WorldMap: its size and layers, one map in at a time (WM); battleSite, what a battle reads of its tile
                         (a generated world's river, crossing, height and high ground too)
   worldsettings.js worldgen.js worldplace.js
-                        the world generator (doc/WORLD_DESIGN.md, behind WORLD.gen): the clamped settings, the terrain stages 1-6,
+                        the world generator (doc/WORLD_DESIGN.md, behind WORLD.gen): the clamped settings (their presets, the
+                        holdings' density, the world code), the terrain stages 1-6 and the New world screen's quick sketch,
                         the placement stages 7-9 (holdings, roads and crossings, camps; the classic seed's
                         anchors and hints: tests/classicseed.js); seeded, never Math.random
   router.js             every way over the land behind three calls: Router.travel (a step toward a point, or a holding's gate:
@@ -136,7 +137,7 @@ js/gfx/               worldart.js (the painted map), sprites.js (generated sprit
                       depth.js (what stands in front of a figure on the map, and its fade), vfx.js (battle effects), worldui.js (the map's
                       pointer marks, route trail and encounter highlights), mist.js (mist in the fog), weapons.js (battle weapons),
                       scenedraw.js (painting and drawing the walkable scenes: scene/)
-js/ui/                ui.js (panels, title, Esc menu with the world's name and seed, the game-over window), loading.js (the loading overlay; runSteps runs long work in steps), character, talents, inventory, town (a holding's
+js/ui/                ui.js (panels, title, Esc menu with the world's name and seed and its World page, the game-over window), loading.js (the loading overlay; runSteps runs long work in steps), worldsetup.js (the New world screen: a world's settings before you forge it), character, talents, inventory, town (a holding's
                       places: Place, definePlace, PLACES; class wave D),
                       window.js (rail windows: a rail of places beside the chosen one's window), townui.js (a town's places, its overview, your
                       holding's buildings), estate.js (an estate's window on the map, and the Fief's Estates section), peopledrawer.js (the people drawer, P), input.js (actions, mouse, keys), map.js (the full map:
@@ -728,3 +729,21 @@ holdings (by kind, named from town up, villages from 2 px a tile), the crossings
 It opens at the largest scale that fits, never under 1 px a tile (1 px per 2 tiles on a map wider than 640: Huge), so Normal
 shows at 1 px a tile, Large scrolls and Huge is 512 × 384; + − step it, a click zooms in where it lands (1:1 by region at
 Huge), a drag pans. On a phone on its side the legend slims to a column and the map scrolls. Tests: `tests/fullmap.js`.
+
+**The New world screen** (`ui/worldsetup.js`; doc/WORLD_DESIGN.md §4, Phase 2b; with `?gen=1`): after your race and past (a
+past's card names `world:<past>`, `session.js` `begin`), the world's settings, then "Forging the world…". Left (it scrolls):
+the presets (Classic, Normal, Large, Huge, Wild Frontier, Crowded Realms; touching a setting makes it Custom, and a mix that is a
+preset's again shows as that preset), the seed (typed, Random; a world code typed or pasted there sets everything), the world code
+with Copy (`worldsettings.js` `worldCode`, `parseWorldCode`: `ASH1-<preset>-<every setting and the size, base 36>-<seed>`), the
+size (or Custom: width and height with − and +), the holdings (Fewer, Normal, More: `HOLDING_DENSITY` times the area's default,
+27 / 40 / 66 at Normal / Large / Huge, More today's 37 / 55 / 90; or a number with − and +) and the Advanced fold-out (the rest,
+those later phases read marked later). Classic locks everything that changes the map; monsters, bandits and your start stay open.
+Every change is clamped at once, with a note when a limit moved a value. Right: the preview, your start city ringed: the quick
+sketch (`worldgen.js` `genSketch`: the real land field and climate noise at 256 points across, mountains, rivers and holdings
+approximate; about 70 ms at any size), redrawn 200 ms after a change, or the real map when it is made (the classic world the
+page forged, a Full preview: the real generator behind the loading overlay, which Forge the world then uses); Reroll,
+Regenerate, the counts and the time it takes to forge here (measured once, kept in `localStorage`). A generated world but
+Classic starts as its seed says (`session.js` `seededStart`: its first sites, herds, bands and beasts with the game's number 0
+and Math.random the 'start' stream's), so one code starts one world; what happens in play stays random. The Esc menu's World
+button opens the World page (every setting, the world code with Copy, what it holds); a save's line reads "Redwater · Large ·
+seed redwater". Tests: `tests/worldsettings.js`; screenshots: `tests/visual/worldsetup.js` (`?gen=1&test=visual/worldsetup&v=1`).
