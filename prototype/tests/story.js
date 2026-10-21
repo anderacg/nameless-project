@@ -31,6 +31,8 @@ Kit.suite(({ok,info})=>{
   fresh();let f0=t.foodN();run({food:-3},null,(r,f)=>t.foodN()===f0-3&&r.food===3&&f.join()==='−3 food','food');
   let i0=t.goodN('iron');run({goods:{iron:2}},null,(r,f)=>t.goodN('iron')===i0+2&&r.goods.iron===2&&f.join()==='+2 iron','goods');
   run({gear:'g_sword_0'},null,(r,f)=>r.gear==='g_sword_0'&&P.inv.some(s=>s&&s.k==='gear'&&s.id==='g_sword_0')&&f.join()==='a '+t.ITEMS.g_sword_0.n,'gear');
+  run({item:{give:'map'}},{e:{shape:'quest',id:77}},(r,f)=>r.item==='map'&&P.inv.some(s=>s&&s.k==='quest'&&s.id==='map'&&s.by==='quest:77')&&f.join()==='the old map','a quest item, bound to its quest');
+  run({item:{take:'map'}},null,(r,f)=>!P.inv.some(s=>s&&s.k==='quest')&&f.join()==='you hand over the old map','a quest item handed over');
   run({troops:{[U]:2}},null,(r,f)=>P.troops[U]===8&&f.join()==='+2 '+t.ST[U].n,'troops');
   run({lose:U},null,(r,f)=>P.troops[U]===7&&r.lost===U&&f.join()==='−1 '+t.ST[U].n,'a soldier lost');
   run({wounded:{[U]:1}},null,(r,f)=>P.troops[U]===6&&P.wounded[U]===1&&f.join()==='1 '+t.ST[U].n+' wounded','wounded');

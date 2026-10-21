@@ -1,11 +1,12 @@
 'use strict';
-// Equipment transfers must conserve items, obey handedness, and roll back when the shared bag is full.
+// Equipment transfers must conserve items, obey handedness, and roll back when the shared bag is full (at its limit: its size and
+// BAG.maxOver overflow slots, core/inventory.js).
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);
 try{
   const t=T,P=t.P,g=t.gearId;try{localStorage.clear()}catch(e){}
   t.begin('soldier');P.comps={brann:{ap:0,role:''}};const c=t.compInit('brann');
   const sword=g('sword',1),shield=g('shield',1),great=g('greatsword',2);
-  const setup=()=>{P.gear=t.emptyGear();P.inv=Array(t.INV_SIZE).fill(null).map(()=>({k:'mat',id:'silk',n:t.STACK}));c.gear={weapon:sword,offhand:shield};P.inv[0]={k:'gear',id:great,n:1}};
+  const setup=()=>{P.gear=t.emptyGear();P.inv=Array(t.INV_SIZE+t.BAG.maxOver).fill(null).map(()=>({k:'mat',id:'silk',n:t.STACK}));c.gear={weapon:sword,offhand:shield};P.inv[0]={k:'gear',id:great,n:1}};
   const snapshot=()=>JSON.stringify({gear:c.gear,inv:P.inv});
   setup();let before=snapshot();
   ok(!t.compEquip('brann','weapon',0),'a full bag refuses a companion two-handed swap');

@@ -29,7 +29,7 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,P=t.P,G=t
    e.x=850;e.y=450;const rx=h.x+100;t.rtsOrder(rx,h.y);for(let i=0;i<220;i++)step();
    ok(Math.abs(h.x-rx)<8&&h.face===1,weapon+': moving right after attacking left does not leave the hero stuck facing left');
    // Use the actual character controller and weapon execution, not just a strike callback.
-   t.invAdd('good',weapon==='bow'?'arrows':'bolts',20);t.heroState().sp=999;t.heroState().mp=999;h.cd=0;h.shot=null;B.arrows=[];e.x=h.x-100;e.y=h.y;t.rtsOrder(e.x,e.y-6);
+   P.gear.quiver=weapon==='bow'?'q_hunter':'q_wornCase';B.hero.ammo=null;t.heroState().sp=999;t.heroState().mp=999;h.cd=0;h.shot=null;B.arrows=[];e.x=h.x-100;e.y=h.y;t.rtsOrder(e.x,e.y-6);
    for(let i=0;i<120&&!B.arrows.length;i++){g.step(.03);t.charAuto(h,.03)}
    ok(h.face===-1&&B.arrows.some(a=>a.by===h&&a.vx<0),weapon+': normal hero controller launches a real projectile left after turning');
    B.arrows=[];h.cd=0;h.shot=null;e.x=h.x+100;e.y=h.y;t.rtsOrder(e.x,e.y-6);

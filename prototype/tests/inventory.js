@@ -8,14 +8,15 @@ try{
  const slotOf=(k,id)=>P.inv.findIndex(x=>x&&x.k===k&&x.id===id);
  t.act('begin','soldier');
  ok(P.inv.length===N&&P.inv.filter(Boolean).length===1&&P.inv[0].id==='grain'&&P.gear.weapon===gid('sword',0),'a new hero has '+N+' bag slots, one of them grain, and a Wooden Sword');
- ok(t.EQUIP.length===26&&['weapon','offhand','mount','mhead','marmor','macc'].every(k=>t.EQUIP.includes(k))&&t.EQUIP.filter(k=>k.startsWith('ring')).length===10,'26 equipment slots: two hands, a mount with 3 gear slots, and 10 fingers');
+ ok(t.EQUIP.length===27&&['weapon','offhand','quiver','mount','mhead','marmor','macc'].every(k=>t.EQUIP.includes(k))&&t.EQUIP.filter(k=>k.startsWith('ring')).length===10,'27 equipment slots: two hands, a quiver, a mount with 3 gear slots, and 10 fingers');
  // tiers
  const names=t.MATERIALS.map((m,i)=>t.ITEMS[gid('sword',i)].n).join(', ');ok(names==='Wooden Sword, Bronze Sword, Iron Sword, Silver Sword, Golden Sword, Mithril Sword, Adamant Sword','seven material tiers: '+names);
  ok(t.ITEMS[gid('sword',6)].m.dmg>t.ITEMS[gid('sword',3)].m.dmg&&t.ITEMS[gid('sword',3)].m.dmg>t.ITEMS[gid('sword',0)].m.dmg&&t.ITEMS[gid('sword',6)].v===12*64,'higher tiers hit harder and cost more');
  ok(t.ITEMS[gid('mail',2)].tag==='heavy'&&!t.ITEMS[gid('mail',1)].tag,'iron armor and up counts as heavy');
  // stacking and a full bag
  empty();ok(t.invAdd('mat','pelt',25)===25&&P.inv[0].n===t.STACK&&P.inv[1].n===5,'trophies stack to '+t.STACK);
- empty();for(let i=0;i<N;i++)t.invAdd('gear',gid('ring',0),1);ok(t.invFree()===0&&t.invAdd('mat','silk',1)===0,'a full bag takes nothing more');
+ empty();for(let i=0;i<N;i++)t.invAdd('gear',gid('ring',0),1);ok(t.invFree()===0&&t.invAdd('mat','silk',1)===1&&P.inv.length===N+1,'a full bag still takes more, into an overflow slot (tests/burden.js)');
+ empty();for(let i=0;i<N+t.BAG.maxOver;i++)t.invAdd('gear',gid('ring',0),1);ok(t.invAdd('mat','silk',1)===0,'at its limit it takes nothing more');
  // every slot accepts its own kind
  empty();const seen=new Set(),kinds=Object.keys(t.BASES).filter(b=>{const sl=t.BASES[b].slot;if(seen.has(sl)||t.MOUNT_KEYS.includes(sl))return false;seen.add(sl);return true});kinds.forEach(b=>t.invAdd('gear',gid(b,1),1));for(let n=0;n<40&&P.inv.some(Boolean);n++)t.invEquip(P.inv.findIndex(Boolean));
  ok(['weapon','offhand','head','body','arms','legs','feet','face','ear','cape','bag','belt','ring0'].every(k=>P.gear[k])&&!P.inv.some(Boolean),'each piece equips into its own slot');
@@ -25,7 +26,7 @@ try{
  const hp10=t.gm('hp');ok(hp10>0,'rings add up (+'+hp10+' health)');
  // pack and belt
  empty();t.invAdd('gear',gid('pack',2),1);t.invEquip(0);ok(P.inv.length===N+4&&t.invCap()===N+4,'an iron pack adds 4 bag slots');
- for(let i=0;i<N+4;i++)t.invAdd('mat','silk',t.STACK);ok(!t.invUnequip('bag')&&P.gear.bag,'you cannot take off a full pack');P.inv=P.inv.map((x,i)=>i<5?x:null);
+ for(let i=0;i<N+4+t.BAG.maxOver;i++)t.invAdd('mat','silk',t.STACK);ok(!t.invUnequip('bag')&&P.gear.bag,'you cannot take off a pack with the bag at its limit');P.inv=P.inv.map((x,i)=>i<5?x:null);
  ok(t.invUnequip('bag')&&P.inv.length===N,'an emptied pack comes off and the bag shrinks');
  empty();t.invAdd('gear',gid('belt',3),1);t.invEquip(0);ok(t.invCap()===N+2,'a silver belt adds 2 bag slots');
  // drag and drop
@@ -40,11 +41,11 @@ try{
  t.invSort();const order=P.inv.filter(Boolean).map(x=>x.id+(x.k==='mat'?'×'+x.n:''));ok(order.join(',')==='wyrmspear,g_sword_1,g_helm_5,bearcoat,g_ring_2,scale×2,pelt×7','sort by slot, then best first, then trophies ('+order.join(', ')+')');
  // the screen
  G.mode='world';G.modal=false;t.hidePanel();window.dispatchEvent(new KeyboardEvent('keydown',{key:'i'}));ok(G.mode==='inv','I opens the inventory');
- ok(document.querySelectorAll('.doll .slot').length===26&&document.querySelectorAll('.doll .slot.ring').length===10&&document.querySelectorAll('.invgrid .slot').length===P.inv.length,'the body with 16 slots, 10 fingers, and the bag');
+ ok(document.querySelectorAll('.doll .slot').length===27&&document.querySelectorAll('.doll .slot.ring').length===10&&document.querySelectorAll('.invgrid .slot').length===P.inv.length,'the body with 17 slots, 10 fingers, and the bag');
  ok(document.querySelector('.doll .slot[data-arg="eq:offhand"]')&&document.querySelector('.doll .slot[data-arg="eq:mhead"].off'),'off hand on the body; mount gear greyed with no mount');
  t.act('inv-sel','0');ok(/Wyrm Tooth Spear/.test(document.querySelector('.invR').innerHTML)&&/Compared with/.test(document.querySelector('.invR').innerHTML)&&/hybrid/.test(document.querySelector('.invR').innerHTML),'details pane shows the item, its grip and a comparison');
  ok(document.querySelector('.doll .slot[data-arg="eq:weapon"].fit')&&!document.querySelector('.doll .slot[data-arg="eq:offhand"].fit'),'the main hand glows for a hybrid spear; the off hand does not');
- t.act('inv-tab','mat');ok(document.querySelectorAll('.invgrid .slot.dim').length===P.inv.filter(x=>x&&x.k!=='mat').length,'the Trophies tab dims everything else');t.act('inv-tab','all');
+ t.act('inv-tab','trophies');ok(document.querySelectorAll('.invgrid .slot.dim').length===P.inv.filter(x=>x&&x.k!=='mat').length,'the Trophies & valuables tab dims everything else');t.act('inv-tab','all');
  t.act('inv-drop','0');ok(P.inv[0],'first drop click asks to confirm');t.act('inv-drop','0');ok(!P.inv[0],'second click drops it');
  window.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape'}));ok(G.mode==='world','Escape closes the inventory');
  const blank=[...Object.values(t.ITEMS),...Object.values(t.MATS),...Object.values(t.GOODS)].filter(d=>{const c=t.itemIcon(d),px=c.getContext('2d').getImageData(0,0,16,16).data;let n=0;for(let i=3;i<px.length;i+=4)if(px[i])n++;return n<20});
@@ -63,8 +64,8 @@ try{
  ok(!t.accepts('offhand',gid('greatsword',1))&&!t.accepts('offhand',gid('spear',1))&&t.accepts('offhand',gid('dagger',1))&&t.accepts('offhand',gid('torch',1)),'the off hand takes one-handed weapons and off-hand pieces only');
  empty();P.gear.weapon=gid('sword',2);t.invAdd('gear',gid('sword',2),1);const d0=t.gm('dmg');t.equipInto(0,'offhand');ok(t.grip()==='dual'&&Math.abs(t.gm('dmg')-d0*1.5)<.01,'dual wield: the off-hand sword adds half its damage');
  ok(t.weaponCombo()===t.COMBOS.dual,'dual wield swaps the combo for quick twin strikes');
- empty();for(let i=0;i<N;i++)t.invAdd('mat','silk',t.STACK);P.gear.weapon=gid('sword',1);P.gear.offhand=gid('shield',1);P.inv[0]={k:'gear',id:gid('warhammer',1),n:1};
- ok(!t.invEquip(0)&&P.gear.offhand===gid('shield',1)&&P.gear.weapon===gid('sword',1),'a full bag refuses a two-handed swap that has nowhere to put the shield');
+ empty();for(let i=0;i<N+t.BAG.maxOver;i++)t.invAdd('mat','silk',t.STACK);P.gear.weapon=gid('sword',1);P.gear.offhand=gid('shield',1);P.inv[0]={k:'gear',id:gid('warhammer',1),n:1};
+ ok(!t.invEquip(0)&&P.gear.offhand===gid('shield',1)&&P.gear.weapon===gid('sword',1),'a bag at its limit refuses a two-handed swap that has nowhere to put the shield');
  // hybrid: a spear is two-handed with the off hand empty, one-handed with a shield
  empty();P.gear.weapon=gid('spear',2);const r2=t.heroStats().reach,m2=t.heroStats().dmg;ok(t.grip()==='two'&&t.weaponCombo()===t.COMBOS.thrust,'a lone spear is held in two hands and thrusts');
  P.gear.offhand=gid('shield',0);ok(t.grip()==='shield'&&t.heroStats().reach===r2-4&&t.heroStats().dmg<m2&&t.weaponCombo()===t.COMBOS.phalanx,'spear and shield: one-handed jabs, less reach and damage');

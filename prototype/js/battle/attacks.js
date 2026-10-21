@@ -13,10 +13,11 @@ function blowSound(src,t,arrow,magic){
   const ts=t.s||{},k=magic?'hit':tagsOf(ts).includes('shield')&&sideOf(t,src)==='front'?'block':arrow?'arrowhit':
     ts.beast||ts.big||src.s&&src.s.beast||!/^(mail|plate)$/.test(armorOf(ts))?'hit':'clash';
   if(sndTurn(k))sfxAt(k,t.x,t.y)}
-// a quiver per battle: at least 32 for every shooter (bows and slings 40, crossbows 32); casters and beasts never run out.
+// a quiver per battle: at least 32 for every shooter (bows and slings 40, crossbows 32); casters and beasts never run out; a
+// character's, its quiver's shots (its stats' shots: world/characters.js Character fieldStats, core/items.js Quiver).
 // When it is empty the unit draws a blade: melee reach, weaker blows.
 const AMMO={min:32,bow:40,xbow:32,sling:40};// (every shooter starts with at least AMMO.min: bows and slings 40, crossbows 32)
-const quiverOf=s=>s.magic||s.beast||s.big?Infinity:Math.max(AMMO.min,s.ammo||(s.flat?AMMO.xbow:s.bow?AMMO.bow:AMMO.sling));
+const quiverOf=s=>s.magic||s.beast||s.big?Infinity:s.shots!=null?s.shots:Math.max(AMMO.min,s.ammo||(s.flat?AMMO.xbow:s.bow?AMMO.bow:AMMO.sling));
 /* how true a shot flies, for every shooter alike: a spread round the aim (a, radians, from side to side) and, for an arrow's arc,
    how far long or short it may fall (d, a share). By the weapon (a bow, a crossbow or sling or bolt of magic: flat), then halved
    for an elf; a soldier steadier by his kind's tier, a character by their skill (Archery, Spellcraft for magic) and their

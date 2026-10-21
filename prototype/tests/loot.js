@@ -22,11 +22,11 @@ try{
  const ci=G.loot.pile.findIndex(x=>x.id==='bearcoat');t.act('lt-take',String(ci));ok(has('bearcoat')&&!G.loot.pile.some(x=>x.id==='bearcoat')&&tiles().length===2,'clicking an item takes it');
  t.act('lt-all');ok(has('bearhide')&&!G.loot.pile.length&&/You took everything/.test(html())&&/data-act="cont"/.test(html()),'Take all that fits takes the rest');
  t.act('cont');world();
- // a full bag: what would not fit is named
- const keep=P.inv.slice();for(let i=0;i<P.inv.length;i++)if(!P.inv[i])P.inv[i]={k:'mat',id:'goo',n:1};
+ // a bag at its limit (past its size, BAG.maxOver overflow slots: core/inventory.js): what you cannot carry is named
+ const keep=P.inv.slice();for(let i=0;i<P.inv.length;i++)if(!P.inv[i])P.inv[i]={k:'mat',id:'goo',n:1};for(let i=0;i<t.BAG.maxOver;i++)P.inv.push({k:'mat',id:'goo',n:1});
  const w={id:'wolf',x:P.x+5,y:P.y,hx:P.x,hy:P.y,lv:1,n:4,t:0,a:0,cool:0};W.monsters.push(w);t.startMonster(w);t.concludeEncounter(true,{},4,true,['wolf','wolf','wolf','wolf']);
- ok(/no room/.test(html())&&panel().querySelector('[data-act="lt-all"]').disabled,'with a full bag, the spoils wait on the ground ('+tiles().join(', ')+')');
- const gi=P.inv.findIndex(x=>x&&x.id==='goo');t.act('lt-drop',String(gi));ok(!P.inv[gi]&&G.loot.pile.some(x=>x.id==='goo'),'putting something back makes room');
+ ok(/cannot carry any more/.test(html())&&panel().querySelector('[data-act="lt-all"]').disabled,'with the bag at its limit, the spoils wait on the ground ('+tiles().join(', ')+')');
+ const gi=P.inv.findIndex(x=>x&&x.id==='goo'),u0=P.inv.filter(Boolean).length;t.act('lt-drop',String(gi));ok(P.inv.filter(Boolean).length===u0-1&&G.loot.pile.some(x=>x.id==='goo'),'putting something back makes room');
  const pi=G.loot.pile.findIndex(x=>x.id==='pelt');t.act('lt-take',String(pi));ok(P.inv.some(x=>x&&x.id==='pelt'),'and the pelts go in its place');
  t.act('lt-leave');ok(!G.loot&&G.msgs.some(m=>/You leave .*behind/.test(m.m)),'leaving the rest is a choice you make, and the log says what was left');world();P.inv=keep;
  // a defeat: what you lost
@@ -36,10 +36,10 @@ try{
  // prisoners taken show by kind
  P.troops={hum_knight:6};P.prisoners={};G.enc={kind:'party',ref:{x:P.x,y:P.y,cool:0},list:Array(9).fill('militia')};t.concludeEncounter(true,{},9,true,Array(9).fill('militia'));
  ok(/^\+\d+ \(\d+ (militia|bandit)/i.test(chip('Prisoners')),'prisoners taken: '+chip('Prisoners'));t.act('cont');world();
- // a real battle: the summary includes arrows gathered from the field
- P.troops={hum_knight:8};P.gear.weapon=t.gearId('bow',1);t.invAdd('good','arrows',30);G.enc={kind:'party',ref:{x:P.x,y:P.y,cool:0},list:['militia','militia']};
- t.startBattle({enemies:G.enc.list,tournament:false});t.B.fired=20;t.B.units.filter(u=>u.team===1).forEach(u=>u.hp=0);let i=0;while(t.B&&i<400){t.updateBattle(.05);i++}
- ok(!t.B&&/Victory/.test(html())&&tiles().some(s=>/Arrows/.test(s)),'after a fought battle, arrows gathered from the field are among the spoils');
+ // a real battle: no arrows gathered from the field (a quiver is full again at the next: doc/ITEMS_DESIGN.md §2b)
+ P.troops={hum_knight:8};P.gear.weapon=t.gearId('bow',1);P.gear.quiver='q_hunter';G.enc={kind:'party',ref:{x:P.x,y:P.y,cool:0},list:['militia','militia']};
+ t.startBattle({enemies:G.enc.list,tournament:false});t.B.hero.ammo=10;t.B.units.filter(u=>u.team===1).forEach(u=>u.hp=0);let i=0;while(t.B&&i<400){t.updateBattle(.05);i++}
+ ok(!t.B&&/Victory/.test(html())&&!tiles().some(s=>/Arrows|Bolts/.test(s)),'after a fought battle, no arrows among the spoils');
  t.act('lt-leave');world();
  ok(!G.loot,'the watch ends with the summary');
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}

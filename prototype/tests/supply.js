@@ -1,7 +1,7 @@
 'use strict';
 // Supplies (doc/SUPPLY_DESIGN.md, world/supply.js): your hero's stamina is your band's. It drains on the march (faster on rough
 // ground, at night, with nothing to drink, in the desert with no water, short of furs in the frost; slower mostly mounted, with
-// Athletics, ale or liquor) and comes back stopped, faster in camp or staying in a holding (not with no food, nor in the desert with
+// Athletics) and comes back stopped, faster in camp or staying in a holding (not with no food, nor in the desert with
 // no water); Tired under 20 and Exhausted under 5 slow you, and cost morale and men. Food and drink by the hour, more on the march;
 // waterskins fill free by water or at a holding's well; the desert's thirst and the frost's frostbite take men; liquor at the
 // tavern; the band goes into a battle at its stamina (never under 25) and comes out at its side's; the card; saves.
@@ -37,9 +37,9 @@ try{
  G.clock=t.DAY*.8;ok(near(rate(true),-S.march*S.night),'at night: ×'+S.night);G.clock=t.DAY*.3;
  P.perks=['forced'];ok(near(rate(true),-S.march*S.forced),'Forced March: ×'+S.forced);P.perks=[];
  bag({grain:60});ok(near(rate(true),-S.march*S.dry),'nothing to drink: ×'+S.dry);
- bag({grain:60,ale:20});ok(near(rate(true),-S.march*S.drink.ale.drain),'on ale: ×'+S.drink.ale.drain);
+ bag({grain:60,ale:20});ok(near(rate(true),-S.march),'on ale: the drain at its rate (ale and liquor lift morale as they come in: tests/itemcats.js)');
  bag({grain:60,liquor:20,water:20});ok(near(rate(true),-S.march),'water first, liquor kept (cheapest first)');
- t.BAND.liquor=true;ok(near(rate(true),-S.march*S.drink.liquor.drain),'liquor first, as you choose: ×'+S.drink.liquor.drain);t.BAND.liquor=false;
+ t.BAND.liquor=true;ok(near(rate(true),-S.march)&&t.drinkNext(t.supplyLand())==='liquor','liquor first, as you choose: at its rate too');t.BAND.liquor=false;
  bag({water:200,grain:60});P.sk.athl.lv=5;ok(near(rate(true),-S.march*(1-S.skill*5)),'Athletics 5 on foot: −'+Math.round(S.skill*500)+'%');P.sk.athl.lv=0;
  P.troops={hum_knight:6};P.gear.mount='m_horse';ok(near(rate(true),-S.march*S.mounted),'a band mostly mounted: ×'+S.mounted);P.troops={hum_levy:5};P.gear.mount=null;
  at('frost');{const r0=rate(true);bag({water:200,grain:60,furs:t.P.furNeed()});const r1=rate(true);

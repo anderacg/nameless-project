@@ -8,7 +8,8 @@
 // store: the market's room for each good · gar: garrison · patrol: the watch it sends out (size) and the guard it keeps (keep) ·
 // wall0 / wallMax: fortification at the start / at best (WALL_N) · estMax: highest estate level · reach / growMax: its land, tiles
 // out from it, and how far that grows in peace · ring / tries: how far from the centre its houses stand, how hard it looks for room ·
-// needs / wants: what 100 of its people use each day (wants: luxuries) · jobs: the work it offers (quests.js) · sack: gold for
+// needs / wants: what 100 of its people use each day (wants: luxuries, and a castle's old stores of arrows and bolts, which
+// nobody makes now: doc/ITEMS_DESIGN.md §2b) · jobs: the work it offers (quests.js) · sack: gold for
 // sacking it · income: a fief's daily base · handover: what a realm pays you for it · renown: for taking it · guards: extra
 // caravan guards · tabs: its window · hires: the kinds of troop it raises (RACES) · train / tourney / broker / contract: what
 // its barracks and tavern offer · mounts: which stables' horses it sells (MOUNTS where; 'local': by race and climate) ·
@@ -30,7 +31,7 @@ const HOLDING_TYPES={
     tabs:['recruit','trade','smith','stable','jobs','tavern'],hires:['melee','shield','ranged'],train:true,tourney:true,broker:true,contract:true,
     mounts:['any','town','castle','local'],herds:true,scene:'town',temple:true,smoke:4},
   castle:{n:'castle',tier:4,next:[],centre:{_:'keep'},pop0:80,popCap:170,store:220,gar:18,patrol:{size:8,keep:6},wall0:3,wallMax:3,estMax:2,
-    reach:18,growMax:10,ring:9,tries:60,needs:{food:5,cloth:.5,timber:.6,tools:.6,iron:.6,ale:.5,arrows:3,bolts:1.5},wants:{copper:.15,tin:.08,silver:.04},
+    reach:18,growMax:10,ring:9,tries:60,needs:{food:5,cloth:.5,timber:.6,tools:.6,iron:.6,ale:.5},wants:{copper:.15,tin:.08,silver:.04,arrows:3,bolts:1.5},
     jobs:['troops','courier','bounty','clear'],sack:200,income:15,handover:200,renown:30,guards:2,
     tabs:['recruit','stores','smith','stable','jobs'],hires:['melee','shield','ranged','horse'],train:true,
     mounts:['any','town','castle','local'],fort:true,smoke:3}

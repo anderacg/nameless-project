@@ -17,10 +17,22 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t
   // never water or a lot) instead of 24 px below its point. With that line put back they are as before: was field_loss f3feadff, siege_loss a05dc589, lord_loss e8d3f300, auto_loss c67be098.
   // With the flag on (expectedGen) every case re-recorded the same day: a new game starts at the gate spot too (the play-test's
   // spawn fix), so every world battle here begins from another point; was field_win 71fef104, field_loss 33c63e52, retreat_away 249b5402, retreat_caught 2ccb4f6b, carried_retreat 1843af89, tournament_win 7d9254c0, tournament_loss 008c9530, siege_win 2ecb0423, siege_loss 35e26cb8, lord_win fdd09868, lord_loss b686fa28, monster_win f103fcac, auto_win 32ebc6c8, auto_loss 15c791d8, auto_resolve 6ca68a22.)
-  const expected={"field_win":"523fac16","field_loss":"e4336b5e","retreat_away":"a840d970","retreat_caught":"09ec5ce9","carried_retreat":"08e292c1","tournament_win":"92b90207","tournament_loss":"5ec88907","siege_win":"80306dc2","siege_loss":"f4d44ad0","lord_win":"17a8e3f0","lord_loss":"dac2841d","monster_win":"45e897e7","auto_win":"ce5dbf85","auto_loss":"7cb76bed","auto_resolve":"e4ba3c51"};
+  // (re-recorded 2026-10-22, on purpose, for item categories (doc/ITEMS_DESIGN.md): every snapshot holds P whole (as your army's source),
+  // and your gear now has its quiver slot (P.gear.quiver: data/monsters.js EQUIP); the fixtures' 30 arrows are a hunter's quiver now (30
+  // shots); the loot window by category (its heads, the bag's used / size, a good's line its category); a beaten lord's and chieftain's
+  // purse of valuables (world/captives.js spoilsWon). Checked: with the quiver slot left out of EQUIP, arrows and bolts items again, the
+  // hero's ammunition as before (combat.js ammoOf, haveAmmo, the arrows taken from the bag, gathered after a win; no quiver's shots in the
+  // stats) and the starting arrows put back, the loot window and the goods' loot line as before and no valuables, every case is as it was,
+  // the generated world's too (expectedGen: was field_win f2cfb06a, field_loss 0a370c86, retreat_away 7db51a1b, retreat_caught 3fc9c439,
+  // carried_retreat ec2e41fc, tournament_win 3e71de67, tournament_loss b33918e3, siege_win e1464782, siege_loss 56b03238, lord_win
+  // 5b5044be, lord_loss 477adf53, monster_win 29a47cc3, auto_win 181f4419, auto_loss 743570d1, auto_resolve 07999931). Was field_win
+  // 523fac16, field_loss e4336b5e, retreat_away a840d970, retreat_caught 09ec5ce9, carried_retreat 08e292c1, tournament_win 92b90207,
+  // tournament_loss 5ec88907, siege_win 80306dc2, siege_loss f4d44ad0, lord_win 17a8e3f0, lord_loss dac2841d, monster_win 45e897e7,
+  // auto_win ce5dbf85, auto_loss 7cb76bed, auto_resolve e4ba3c51)
+  const expected={"field_win":"d9854f5b","field_loss":"be2d7b95","retreat_away":"792018d7","retreat_caught":"89bcad9a","carried_retreat":"771f1322","tournament_win":"ad286363","tournament_loss":"bec39e00","siege_win":"06447060","siege_loss":"e4132a89","lord_win":"aea0a09c","lord_loss":"4aaf687e","monster_win":"53f4da45","auto_win":"9b997552","auto_loss":"d3346a46","auto_resolve":"744acd83"};
   // (the outcomes hold the world round you: the holdings near you, the way a retreat or a defeat takes you. The generated classic
   // world's own, recorded with G1-G8 (doc/WORLD_DESIGN.md §15.2: wave 3's last merge, 2026-10-22), hold with the flag on)
-  const expectedGen={field_win:'f2cfb06a',field_loss:'0a370c86',retreat_away:'7db51a1b',retreat_caught:'3fc9c439',carried_retreat:'ec2e41fc',tournament_win:'3e71de67',tournament_loss:'b33918e3',siege_win:'e1464782',siege_loss:'56b03238',lord_win:'5b5044be',lord_loss:'477adf53',monster_win:'29a47cc3',auto_win:'181f4419',auto_loss:'743570d1',auto_resolve:'07999931'},REC=t.WM.gen==='classic-0'?expected:expectedGen;
+  const expectedGen={field_win:'5f81601b',field_loss:'2b41a711',retreat_away:'be45a6ac',retreat_caught:'7d2560e2',carried_retreat:'4761ee13',tournament_win:'7929d6eb',tournament_loss:'f413bd34',siege_win:'a68850b0',siege_loss:'9ae97e15',lord_win:'aa5c506c',lord_loss:'a5132700',monster_win:'b15b90a5',auto_win:'a0d26ce6',auto_loss:'2f16733e',auto_resolve:'c63c7a13'},REC=t.WM.gen==='classic-0'?expected:expectedGen;
   const stable=x=>Array.isArray(x)?x.map(stable):x&&typeof x==='object'?Object.fromEntries(Object.keys(x).sort().map(k=>[k,stable(x[k])])):x;
   const hash=x=>{let h=2166136261;for(const c of JSON.stringify(stable(x)))h=Math.imul(h^c.charCodeAt(0),16777619)>>>0;return h.toString(16).padStart(8,'0')};
   const cases=['field_win','field_loss','retreat_away','retreat_caught','carried_retreat','tournament_win','tournament_loss','siege_win','siege_loss','lord_win','lord_loss','monster_win','auto_win','auto_loss','auto_resolve'];
@@ -30,7 +42,7 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t
       // World generation depends on boot-time road/layout state. Supply explicit campaign inputs instead of snapshotting random bystanders.
       W.lords=[];W.sites=[];W.monsters=[];W.exiles=[];W.rel={};W.lrel={};W.treas={};t.bandits.length=0;t.TOWNS.forEach(h=>h.crime=null);Math.random=t.seeded(2100+index);
       P.troops={hum_spear:6,hum_bow:3,hum_knight:2};P.comps={};P.gold=200;P.renown=30;P.morale=60;P.hp=25;P.sp=30;P.mp=8;P.sk.med={lv:3,xp:0};
-      P.prisoners={militia:2};P.captives=[{k:'chief',ld:t.newChief('bandits',2)}];P.gear.weapon=t.gearId('bow',1);t.invAdd('good','arrows',30);
+      P.prisoners={militia:2};P.captives=[{k:'chief',ld:t.newChief('bandits',2)}];P.gear.weapon=t.gearId('bow',1);P.gear.quiver='q_hunter';
       const band=t.asParty({kind:'bandits',troops:Array(name==='retreat_caught'?40:4).fill('militia'),x:P.x+8,y:P.y,cool:0,ld:t.newChief('bandits',2)});t.bandits.push(band);
       let e={kind:'party',ref:band,list:band.troops.slice(),allies:[],foes:[],mine:false},town=null,lord=null;
       const tournament=name.startsWith('tournament'),auto=name.startsWith('auto'),retreat=name.includes('retreat'),win=name.endsWith('_win')||name==='auto_resolve';

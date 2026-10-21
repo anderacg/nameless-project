@@ -46,7 +46,9 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 //  into the grass, the fen's sparse mangroves. G6 moved at the first two spots (by day and night); the third's are as before. Was
 //  G5 ab5e5d34, G6 fd29ebee (parts e1e70f57 36a23691 58231b1f 228b75d3); G1-G4, G7, G8 and GB2 unchanged)
 // (G6 with both: the spawn's first spot and the art's two spots: measured on the two together at the merge: fb7895ea)
-const GEXPECT={W1:'94e87250',W2:'6bc88128',W3:'0240c3fb',W4:'ceb55e1f',W5:'4ea4e263',W6:'fb7895ea',W7:'8a722172',W8:'f540d98e',B2:'b4f0d917'};
+// (G7 and GB2 re-recorded 2026-10-22, on purpose, for item categories, as W7 and B2 below, for the same reasons and checked the same
+//  way: both back as they were. Was G7 8a722172, GB2 b4f0d917; G1-G6 and G8 unchanged)
+const GEXPECT={W1:'94e87250',W2:'6bc88128',W3:'0240c3fb',W4:'ceb55e1f',W5:'4ea4e263',W6:'fb7895ea',W7:'9517c6f9',W8:'f540d98e',B2:'f56d6d82'};
 // (the random presets' sums re-recorded 2026-10-22, on purpose, Phase 2b: the owner's "the holdings seem a bit too much": Normal
 //  27 holdings by default (was 37), Large 40 (was 55), so their settings (in the sum) and placement change; with them two clamps
 //  of stage 7 the fewer holdings needed (worldplace.js): a port only on the open sea (placeOpen: a strait a road bridged had left
@@ -54,13 +56,19 @@ const GEXPECT={W1:'94e87250',W2:'6bc88128',W3:'0240c3fb',W4:'ceb55e1f',W5:'4ea4e
 //  redwater's to 38%). Checked by putting back 37 / 55 holdings, the old port rule and 30% at stage 7: all four as before, and the
 //  classic world unchanged throughout. Were Normal s1 128cfb7e, s2 2b581da4, s3 c38ac906, Large s1 5af09941)
 const SUMS={classic:'7333836c','Normal s1':'103bc267','Normal s2':'bf4d8d77','Normal s3':'23d160c1','Large s1':'ab0227f1'};
-const EXPECT={W1:'65e24662',W2:'2b49a168',W3:'dc546553',W4:'46450e62',W5:'c3d24a9e',W6:'481b04b2',W7:'5dae222a',W8:'742df600',B2:'fd6d5be4'};// (at 0a42712; B2 at R3; W6-W8 at Phase 1; W6 at depth, smooth walking and pasture herds and label layout; W7, B2 at save v3)
+const EXPECT={W1:'65e24662',W2:'2b49a168',W3:'dc546553',W4:'46450e62',W5:'c3d24a9e',W6:'481b04b2',W7:'055dd3a6',W8:'742df600',B2:'290c6cb7'};// (at 0a42712; B2 at R3; W6-W8 at Phase 1; W6 at depth, smooth walking and pasture herds and label layout; W7, B2 at save v3)
 // (W5, W6 re-recorded 2026-10-22, on purpose, the owner's play-test (the same climates on today's map): the frost's snow blended
 //  into the grass (gfx/worldart.js snowCover, landRGB: its cover rising over the frost's edge and with height, thinning out in
 //  patches over the grass beside it) and the fen's sparse mangroves (engine/worldnature.js FEN). W6 moved at the first and third
 //  spots, both by the frost (by day and night: f4403dad 3d69a9d9 598f1d1e 2bfb2642 to ab2f2712 f43b5c0a 22ae8270 75c2f1c9; the
 //  frost alone: with the mangroves taken out W6 is the same); the middle's are as before. Was W5 0152341c, W6 33d059e4; W1-W4,
 //  W7, W8 and B2 unchanged)
+// (W7 and B2 re-recorded 2026-10-22, on purpose, for item categories (doc/ITEMS_DESIGN.md): your gear has a quiver slot now
+//  (data/monsters.js EQUIP: P.gear.quiver, null, in every save: B2, W7), and no smithy makes arrows or bolts, a castle's stores of
+//  them now among its wants, not its needs (data/economy.js MAKE, data/holdings.js: so its aim, and TOWNS (W3), stay as they were),
+//  so the three days' economy runs otherwise (W7). Checked: with the quiver slot left out of EQUIP, arrows and bolts items again,
+//  the hero's ammunition and the starting arrows as before, and the smithy and the castles' needs as they were, W7 and B2 are as
+//  before (with the smithy's change alone kept, W7 is ec5768d5). Was W7 5dae222a, B2 fd6d5be4; W1-W6 and W8 unchanged)
 // (W5 re-recorded 2026-10-22, on purpose: swamp water a lighter peat blue (gfx/worldart.js WATER_RGB.swamp), the owner's pick from
 //  tests/visual/swampwater.js (C), so the fen's rivers read as water; today's map has fen water too. Was 6587a43c.)
 // (W7 re-recorded again 2026-10-21, on purpose (owner: "water registered too slow"): your waterskins fill the moment you stand at a

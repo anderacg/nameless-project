@@ -60,7 +60,7 @@ try{
   ok(P.gold===g0+g&&!P.inv[i]&&last()==='You sell the '+t.ITEMS[gid].n+' for '+g+' gold.','sell-item: '+last())}
  {const m=Object.keys(t.MATS)[0];t.invAdd('mat',m,2);const i=P.inv.findIndex(x=>x&&x.k==='mat'&&x.id===m),n=P.inv[i].n,g=t.matPrice(m)*n,g0=P.gold;t.act('sell-loot',String(i));
   ok(P.gold===g0+g&&!P.inv[i]&&last()==='You sell '+n+' '+t.MATS[m].n.toLowerCase()+(n>1?'s':'')+' for '+g+' gold.','sell-loot: '+last())}
- t.act('tab','smith');{const a0=t.goodN('arrows');t.act('buy-ammo','arrows:10');ok(t.goodN('arrows')===a0+10&&last()==='You buy 10 '+t.GOODS.arrows.n.toLowerCase()+'.','buy-ammo: '+last())}
+ t.act('tab','smith');{t.act('buy-quiver','q_soldier');ok(last()==='You buy a soldier’s quiver · 40 iron arrows. Wear it in your inventory.','buy-quiver: '+last())}
  {const st=t.smithStock(ash),first=st[0],n0=st.length,c0=t.invCount('gear',first);t.act('buy-gear','0');ok(first&&st.length===n0-1&&t.invCount('gear',first)===c0+1&&last()==='You buy the '+t.ITEMS[first].n+'.','buy-gear: '+last())}
  t.act('tab','stable');{const id=t.stableStock(ash).find(k=>t.canBuyMount(ash,k));P.gear.mount=null;const g0=P.gold;t.act('buy-mount',id);
   ok(P.gear.mount===id&&P.gold===g0-t.gearPrice(id)&&last()==='You buy a '+t.ITEMS[id].n+' and ride it out of the stable.','buy-mount: '+last())}

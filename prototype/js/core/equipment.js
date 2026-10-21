@@ -25,10 +25,10 @@ class EquipmentService{
       if(!change())return undo();const moved=[];
       for(const key of this.displaced()){
         const id=this.owner.gear[key],name=this.rules.items[id].n;
-        if(!this.inventory.add('gear',id,1))return undo('Your bag is full. Make room for the '+name+' first.');
+        if(!this.inventory.add('gear',id,1))return undo(BAG_FULL+'. Make room for the '+name+' first.');
         this.owner.gear[key]=null;moved.push(name);
       }
-      if(!this.inventory.resize())return undo(fail||'Empty the extra bag slots before you swap that.');
+      if(!this.inventory.resize())return undo(fail||BAG_FULL+': empty some bag slots before you swap that.');
       return {ok:true,reason:'',moved};
     }catch(e){undo();throw e}
   }
@@ -40,9 +40,9 @@ class EquipmentService{
   }
   unequip(key,to){
     const id=this.owner.gear[key];if(!this.rules.slots.includes(key)||!id)return {ok:false,reason:'',moved:[]};
-    const i=Number.isInteger(to)&&to>=0&&to<this.inventory.slots.length&&!this.inventory.slots[to]?to:this.inventory.slots.indexOf(null);
-    if(i<0)return {ok:false,reason:'Your bag is full. Make room before you take that off.',moved:[]};
-    return this.transaction(()=>{this.owner.gear[key]=null;this.inventory.slots[i]={k:'gear',id,n:1};return true},'Empty the extra bag slots before you take that off.');
+    const i=Number.isInteger(to)&&to>=0&&to<this.inventory.slots.length&&!this.inventory.slots[to]?to:-1;
+    if(i<0&&!this.inventory.spare)return {ok:false,reason:BAG_FULL+'. Make room before you take that off.',moved:[]};
+    return this.transaction(()=>{this.owner.gear[key]=null;if(i>=0)this.inventory.slots[i]={k:'gear',id,n:1};else this.inventory.put({k:'gear',id,n:1});return true},BAG_FULL+': empty some bag slots before you take that off.');
   }
   swap(a,b){
     const x=this.owner.gear[a],y=this.owner.gear[b];

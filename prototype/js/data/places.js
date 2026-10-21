@@ -1,23 +1,26 @@
 'use strict';
 /* ---------- data: trade goods, towns, castles, villages and bandit camps ---------- */
-// trade goods live in the bag like any other item; stack is how many fit in one bag slot.
+// trade goods live in the bag like any other item; stack is how many fit in one bag slot; cat: its category (data/items.js
+// ITEM_CATS) where its kind's default (core/items.js Good: food, drink, a regional good's resource, else trade) is not it.
 // food: the band eats any of these; spoil is the share of a stack that goes bad each day
 const GOODS={grain:{n:'Grain',base:8,stack:30,icon:'sack',col:'#d8b860',food:true,spoil:0,d:'Keeps for months. Plain, but it fills bellies.'},
   meat:{n:'Meat',base:10,stack:20,icon:'meat',col:'#c0503a',food:true,spoil:.08,d:'From the hunt or the herd. Spoils within a couple of weeks.'},
   fish:{n:'Fish',base:7,stack:20,icon:'fish',col:'#8ab0c8',food:true,spoil:.1,d:'Cheap by the water. Spoils quickly.'},
   milk:{n:'Milk',base:5,stack:20,icon:'jug',col:'#eeeae0',food:true,spoil:.2,d:'Fresh from the herds. Drink it within days.'},
   cheese:{n:'Cheese',base:13,stack:25,icon:'cheese',col:'#e8c040',food:true,spoil:0,d:'Hard dwarven and farm cheeses. Never spoils.'},
-  arrows:{n:'Arrows',base:1,stack:50,icon:'arrows',col:'#c8b48a',ammo:true,d:'Ammunition for bows. Each shot uses one; after a won battle you gather some back.'},
-  bolts:{n:'Bolts',base:2,stack:40,icon:'bolts',col:'#9aa3ad',ammo:true,d:'Ammunition for crossbows. Each shot uses one; after a won battle you gather some back.'},
+  // (ammo: no longer an item (doc/ITEMS_DESIGN.md §2b: a quiver holds your shots); only a holding's old stores of them, kept as goods
+  // so the world's draws stay as they were; nobody makes them now)
+  arrows:{n:'Arrows',base:1,stack:50,icon:'arrows',col:'#c8b48a',ammo:true,d:'A holding’s old stores of arrows.'},
+  bolts:{n:'Bolts',base:2,stack:40,icon:'bolts',col:'#9aa3ad',ammo:true,d:'A holding’s old stores of bolts.'},
   fruit:{n:'Fruit',base:9,stack:25,icon:'fruit',col:'#d84a3a',food:true,spoil:.05,d:'Apples, dates and berries. Slow to spoil.'},
-  iron:{n:'Iron',base:28,stack:15,icon:'ingot',col:'#9aa3ad',d:'Heavy bars for smiths. Cheap in the mountain holds.'},
+  iron:{cat:'resource',n:'Iron',base:28,stack:15,icon:'ingot',col:'#9aa3ad',d:'Heavy bars for smiths. Cheap in the mountain holds.'},
   cloth:{n:'Cloth',base:20,stack:20,icon:'bolt',col:'#b05a4a',d:'Bolts of woven cloth from the lowland towns.'},
-  timber:{n:'Timber',base:14,stack:15,icon:'logs',col:'#8b5a2b',d:'Cut logs from the forests. Bulky for what it is worth.'},
-  furs:{n:'Furs',base:24,stack:20,icon:'pelt',col:'#8a6a4a',d:'Keep your band warm in the frost: carry 1 for every 5 people.'},
-  stone:{n:'Stone',base:6,stack:25,icon:'stone',col:'#a7a49a',d:'Cut blocks from the quarries. Walls and halls are built of it.'},
-  wool:{n:'Wool',base:9,stack:25,icon:'wool',col:'#eeeae0',d:'Shorn from the herds. Weavers turn it into cloth.'},
+  timber:{cat:'resource',n:'Timber',base:14,stack:15,icon:'logs',col:'#8b5a2b',d:'Cut logs from the forests. Bulky for what it is worth.'},
+  furs:{cat:'resource',n:'Furs',base:24,stack:20,icon:'pelt',col:'#8a6a4a',d:'Keep your band warm in the frost: carry 1 for every 5 people.'},
+  stone:{cat:'resource',n:'Stone',base:6,stack:25,icon:'stone',col:'#a7a49a',d:'Cut blocks from the quarries. Walls and halls are built of it.'},
+  wool:{cat:'resource',n:'Wool',base:9,stack:25,icon:'wool',col:'#eeeae0',d:'Shorn from the herds. Weavers turn it into cloth.'},
   tools:{n:'Tools',base:30,stack:10,icon:'tools',col:'#9aa3ad',d:'Saws, picks and hammers from the smithies. Every building project and estate wears them out.'},
-  ale:{n:'Ale',base:12,stack:15,icon:'barrel',col:'#c88a3a',d:'Brewed from grain. Towns drink it; content people work harder. On the road it counts as a ration: it slows the drain on your band\u2019s stamina and lifts spirits.'},
+  ale:{cat:'water',n:'Ale',base:12,stack:15,icon:'barrel',col:'#c88a3a',d:'Brewed from grain. Towns drink it; content people work harder. On the road it counts as a drink, and it lifts your band\u2019s spirits as it comes into your stores.'},
   spice:{n:'Spice',base:34,stack:25,icon:'jar',col:'#d87a30',d:'Light and precious. Worth the most per bag slot.'},
   // regional goods (res): only mines and ports whose land holds them bring them up (resources.js), so they are cheap at the source
   // and dear everywhere else
@@ -25,18 +28,18 @@ const GOODS={grain:{n:'Grain',base:8,stack:30,icon:'sack',col:'#d8b860',food:tru
   tin:{n:'Tin',base:18,stack:15,icon:'ingot',col:'#c8ccd0',res:'ore',d:'Bright and brittle. Bronze needs it as much as copper.'},
   silver:{n:'Silver',base:60,stack:15,icon:'ingot',col:'#dfe4ea',res:'ore',d:'Mined deep in the mountains. Coin, plate and silver arms.'},
   gold:{n:'Gold',base:110,stack:15,icon:'ingot',col:'#e8c040',res:'ore',d:'Washed and dug from the desert hills and a few mountain seams.'},
-  gems:{n:'Gems',base:90,stack:20,icon:'gem',col:'#d84a8a',res:'ore',d:'Rough stones from desert and mountain mines. Towns pay well for them.'},
+  gems:{cat:'valuable',n:'Gems',base:90,stack:20,icon:'gem',col:'#d84a8a',res:'ore',d:'Rough stones from desert and mountain mines. Towns pay well for them.'},
   mithril:{n:'Mithril',base:240,stack:15,icon:'ingot',col:'#7fd8e8',res:'ore',d:'Light as silver, hard as steel. Found only under the frozen peaks.'},
   adamant:{n:'Adamantite',base:400,stack:15,icon:'ingot',col:'#b07af0',res:'ore',d:'The rarest metal of all, in a handful of deep mountain seams.'},
   salmon:{n:'Salmon',base:16,stack:20,icon:'fish',col:'#e88a6a',food:true,spoil:.08,res:'fish',d:'Caught in cold rivers and northern waters. Prized at every table.'},
   eel:{n:'Eel',base:11,stack:20,icon:'fish',col:'#6a7a4a',food:true,spoil:.07,res:'fish',d:'Trapped in the bogs and slow waters of the swamp.'},
-  pearls:{n:'Pearls',base:150,stack:25,icon:'pearl',col:'#f0ece0',res:'fish',d:'Dived for in warm southern waters. A fortune in a pouch.'}};
-// the road's drinks (world/supply.js SUPPLY.drink; ale, a trade good above, counts as one too): goods in the bag like any other
+  pearls:{cat:'valuable',n:'Pearls',base:150,stack:25,icon:'pearl',col:'#f0ece0',res:'fish',d:'Dived for in warm southern waters. A fortune in a pouch.'}};
+// the road's drinks (world/supply.js SUPPLY.drink; ale, a trade good above, counts as one too; all three of the category Water): goods in the bag like any other
 // (GOODS[id]), but no market trades them. They are kept out of GOODS's keys (not enumerable), so no holding stocks or prices them
 // and the world's draws stay as they were. Water fills free from a river, a lake, an oasis or a holding's well; liquor is sold in
 // taverns, at its base price
-const DRINK_GOODS={water:{n:'Water',base:1,stack:50,icon:'jug',col:'#6aa8d8',drink:true,d:'Waterskins. Your band drinks on the march: with water, stamina drains at its normal rate. Refill free beside a river, a lake, an oasis or a well.'},
-  liquor:{n:'Liquor',base:14,stack:20,icon:'vial',col:'#d89a3a',drink:true,d:'Spirits from the taverns. A ration of it slows the drain on your band’s stamina more than ale, and lifts spirits.'}};
+const DRINK_GOODS={water:{n:'Water',base:1,stack:50,icon:'jug',col:'#6aa8d8',drink:true,d:'Waterskins. Your band drinks on the march: with something to drink, stamina drains at its normal rate. Refill free beside a river, a lake, an oasis or a well.'},
+  liquor:{n:'Liquor',base:14,stack:20,icon:'vial',col:'#d89a3a',drink:true,d:'Spirits from the taverns. It lifts your band’s spirits more than ale as it comes into your stores, and counts as a drink on the road.'}};
 for(const k in DRINK_GOODS)Object.defineProperty(GOODS,k,{value:DRINK_GOODS[k],enumerable:false});
 // the classic holdings: plain data, each made one of its kind, with its prices and its point, by makeHolding (holdings.js);
 // realm: the realm it starts under

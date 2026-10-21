@@ -12,15 +12,15 @@ try{
  // a new hero
  for(const bg of Object.keys(t.BGS)){t.act('begin',bg);ok(!P.gear.mount,bg+' starts on foot')}
  t.act('begin','merchant');
- ok(!('cargo' in P)&&t.goodN('grain')===10&&t.goodN('cloth')===4&&t.goodN('bolts')===20&&P.inv.filter(Boolean).length===3,'starting goods and bolts sit in the bag: 3 slots');
+ ok(!('cargo' in P)&&t.goodN('grain')===10&&t.goodN('cloth')===4&&!t.goodN('bolts')&&P.gear.quiver==='q_wornCase'&&P.inv.filter(Boolean).length===2,'starting goods sit in the bag (2 slots), the bolt case on you');
  // stacking
  empty();ok(t.invAdd('good','grain',30)===30&&slots('grain')===1,'30 grain fit one slot');t.invAdd('good','grain',1);ok(slots('grain')===2,'the 31st grain takes a second slot');
  ok(t.invAdd('good','iron',16)===16&&slots('iron')===2,'iron stacks only 15 to a slot');
  ok(t.goodTake('grain',1)===1&&slots('grain')===1,'taking from the small stack first frees its slot');
  // a full bag
- empty();for(let i=0;i<P.inv.length;i++)t.invAdd('gear',t.gearId('ring',0),1);ok(t.goodRoom('grain')===0&&t.invAdd('good','grain',5)===0,'a full bag holds no goods');
+ empty();for(let i=0,n=t.invCap()+t.BAG.maxOver;i<n;i++)t.invAdd('gear',t.gearId('ring',0),1);ok(t.goodRoom('grain')===0&&t.invAdd('good','grain',5)===0,'a bag at its limit holds no more goods');
  const ash=t.townBy('Ashford');G.mode='world';G.modal=false;G.lastTown=null;P.gold=1000;t.enterTown(ash);t.act('tab','trade');
- ok(document.querySelector('[data-act="buy"][data-arg="grain:1"]').disabled,'Buy is disabled with a full bag');
+ ok(document.querySelector('[data-act="buy"][data-arg="grain:1"]').disabled,'Buy is disabled with the bag at its limit');
  P.inv[0]=null;t.act('buy','grain:5');ok(t.goodN('grain')===5,'buying fills a free slot');
  const g0=P.gold;t.act('sell','grain:5');ok(t.goodN('grain')===0&&P.gold>g0&&!P.inv[0],'selling empties it');
  ok(!/data-act="sell-item" data-arg="0"/.test(panel()),'goods are not listed again under your inventory');t.act('leave');done();
@@ -49,8 +49,8 @@ try{
  t.frame();ok(Object.keys(t.spr).some(k=>k.startsWith('p#e8b94a'+t.ITEMS.m_horse.col)),'the hero rides on the map');
  t.act('buy-mount','m_mule');ok(P.gear.mount==='m_horse'&&t.invCount('gear','m_mule')===1,'a second mount goes in the bag');t.act('leave');done();
  const i=P.inv.findIndex(s=>s&&s.id==='m_mule');t.invEquip(i);ok(P.gear.mount==='m_mule'&&t.invCap()===N+4&&t.invCount('gear','m_horse')===1,'a mule adds 4 saddlebag slots');
- for(let k=0;k<P.inv.length;k++)if(!P.inv[k])P.inv[k]={k:'good',id:'timber',n:1};const h=P.inv.findIndex(s=>s&&s.id==='m_horse');
- ok(!t.invEquip(h)&&P.gear.mount==='m_mule','you cannot swap off a mule with full saddlebags');
+ for(let k=0;k<P.inv.length;k++)if(!P.inv[k])P.inv[k]={k:'good',id:'timber',n:1};for(let k=0;k<t.BAG.maxOver;k++)P.inv.push({k:'good',id:'timber',n:1});const h=P.inv.findIndex(s=>s&&s.id==='m_horse');
+ ok(!t.invEquip(h)&&P.gear.mount==='m_mule','you cannot swap off a mule with full saddlebags (the bag at its limit)');P.inv.splice(t.invCap());
  // ground
  P.race='human';P.gear.mount='m_elk';t.fitInv();ok(at(forest,t.travelMul)>at(forest,()=>t.speedAt(P.x,P.y,'human')*(1+t.gm('travel')))*1.5,'an elk crosses forest at full speed');
  P.gear.mount='m_griffin';const fl=[forest,hill,spot('swamp',t.T_OPEN),spot('desert',t.T_OPEN)].map(s=>at(s,t.travelMul));

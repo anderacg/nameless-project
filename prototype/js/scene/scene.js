@@ -57,7 +57,7 @@ function sceneSay(who,html){showPanel('<h2>'+who+'</h2><p>'+html+'</p>'+nav(null
 // a townsperson's news: the place itself, a war, a monster abroad, or idle talk
 function sceneGossip(t){
   const opts=[...SCENE_GOSSIP];ensureEcon(t);
-  const short=Object.keys(GOODS).filter(g=>marketState(t,g)==='shortage').map(g=>GOODS[g].n.toLowerCase());if(short.length)opts.push('We are short of '+short.slice(0,2).join(' and ')+'. Prices are up.');
+  const short=Object.keys(GOODS).filter(g=>itemGood(g)&&marketState(t,g)==='shortage').map(g=>GOODS[g].n.toLowerCase());if(short.length)opts.push('We are short of '+short.slice(0,2).join(' and ')+'. Prices are up.');
   if(foodDays(t)<3)opts.push('There is hardly any bread left. People are leaving.');
   const war=FIDS.flatMap(a=>FIDS.filter(b=>a<b&&atWar(a,b)).map(b=>[a,b]))[0];if(war)opts.push('The '+FACS[war[0]].n+' and the '+FACS[war[1]].n+' are at war. Bad for trade.');
   const myth=mythicNews('was seen');if(myth)opts.push(myth+' Nobody sleeps well.');

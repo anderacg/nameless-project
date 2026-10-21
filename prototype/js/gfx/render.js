@@ -362,16 +362,17 @@ function updateHUD(force){
   const staTip='Your band’s stamina '+Math.round(P.bsta)+' / 100'+(rate?': '+(rate>0?'+':'')+Math.round(rate*10)/10+' an hour ('+S.r.why.join(', ')+')':'')+'. Tired under '+SUPPLY.tired+', Exhausted under '+SUPPLY.exhausted+'.';
   const hpTip='Your band’s health: '+F.fit+' fit, '+F.wounded+' wounded'+(hurt?'. Lately: '+hurt:'')+'. '+healthLines();
   const foodTip='Food: '+(FOODS.filter(g=>goodN(g)).map(g=>GOODS[g].n+' '+goodN(g)).join(', ')||'none')+' · about '+days(S.foodDays)+' '+go;
+  const tags=[...S.tags,burdenTag()].filter(Boolean);// (an overfilled bag: Burdened, core/inventory.js)
   const drinkTip='Drink: '+(drinkOrder(S.L).filter(g=>goodN(g)).map(g=>GOODS[g].n+' '+goodN(g)).join(', ')||'none')+' · about '+days(S.drinkDays)+' '+go+(S.L.desert?' (in the desert, water only)':'')+(BAND.liquor?' · liquor first':'');
   el.innerHTML='<div class="pc-head"><img class="pc-pic" src="'+portrait('hero',true)+'" alt=""><div class="pc-who"><b>'+RACES[P.race].n+' '+(BGS[P.bg]?BGS[P.bg].n:'')+'</b><small>Level '+P.level+' · '+rankName()+'</small></div>'+
       (P.tp?'<span class="pc-pts" title="Talent points to spend (K)">+'+P.tp+'</span>':'')+'</div>'+
     '<div class="bars">'+bar(P.bsta,100,'sta '+S.st,'Stamina'+arrow+' '+Math.round(P.bsta)+(word?'<b>'+word+'</b>':''),staTip)+
       bar(F.fit,F.fit+F.wounded,'hp'+(F.share<.5?' low':''),'Health '+F.fit+'/'+(F.fit+F.wounded),hpTip)+'</div>'+
-    (S.tags.length?'<div class="pc-tags">'+S.tags.map(([t,c,w])=>'<span class="tag '+c+'" title="'+w+'">'+t+'</span>').join('')+'</div>':'')+
+    (tags.length?'<div class="pc-tags">'+tags.map(([t,c,w])=>'<span class="tag '+c+'" title="'+w+'">'+t+'</span>').join('')+'</div>':'')+
     '<div class="pc-res">'+chip('gold',P.gold,'Gold',false,'gold')+chip('food',days(S.foodDays),foodTip,S.foodDays<1)+chip('mug',days(S.drinkDays),drinkTip,S.drinkDays<1)+
       (S.furs.show?chip('furs',S.furs.have+'<small>/'+S.furs.need+'</small>','Furs: '+S.furs.need+' needed in the frost (1 for every '+SUPPLY.furPer+' people)',S.L.frost&&S.furs.have<S.furs.need):'')+
       chip('troops',cnt+'<small>/'+cap+'</small>','Troops: '+cnt+' of '+cap)+chip('power',partyPower(),'Party power','', 'gold')+chip('morale',Math.round(P.morale),'Morale'+(bandNerve()!=null?' (your troops’ nerve: '+Math.round(bandNerve())+', it drifts toward it)':''),P.morale<30)+
-      chip('speed',sp.toFixed(1)+'×','Your band’s pace before the ground: the slowest of you, its size, the wounded, mounts, Athletics or Riding, a Guide, Forced March, tiredness, Hurry',sp<.8)+
+      chip('speed',sp.toFixed(1)+'×','Your band’s pace before the ground: the slowest of you, its size, the wounded, mounts, Athletics or Riding, a Guide, Forced March, tiredness, Hurry, an overfilled bag',sp<.8)+
       (prisonerCount()?chip('prisoners',prisonerCount(),'Prisoners'):'')+'</div>'+
     '<div class="pc-line" title="Where you are">'+icon('region',12)+'<span>'+regionAt(P.x,P.y).name+' · <span style="color:'+(lh?landCol(lh.owner):'#9a958a')+'">'+landName(P.x,P.y)+'</span></span></div>'+
     '<div class="pc-line" title="Renown and whom you serve">'+icon('renown',12)+'<span>'+P.renown+'</span>'+icon('banner',12)+'<span'+(P.fac?' style="color:'+FACS[P.fac].col+'"':'')+'>'+(P.fac?FACS[P.fac].n:'Independent')+'</span></div>';

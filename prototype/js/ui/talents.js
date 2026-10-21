@@ -83,7 +83,7 @@ function skillBarBody(){
       :'<p class="muted">No active skills yet. Learn them on the Skill tree.</p>')+
     '<div class="lab" style="margin-top:6px">Basic moves</div>'+
     (heroKind()==='melee'?row('Combo','<span>'+CB.map(c=>c.n+' ×'+c.mult).join(' → ')+'</span>',CB.length<3?'<span class="muted">A third blow at '+SKILLS[meleeSk()].n+' '+COMBO_UP.third+'</span>':P.fin?'<span class="gold">'+(P.fin==='stun'?'Stunning':'Crushing')+' finisher</span>':finReady()?'<span class="gold">Choose its finishing style on the Skill tree</span>':'<span class="muted">Choose its finishing style at '+SKILLS[meleeSk()].n+' '+COMBO_UP.fin+'</span>')
-     :heroKind()==='ranged'?row('Shoot ('+ITEMS[P.gear.weapon].n.toLowerCase()+')',(ammoOf()?'Uses '+GOODS[ammoOf()].n.toLowerCase()+' ('+goodN(ammoOf())+' left). ':'')+'Your hero draws and looses at whoever is in range.')
+     :heroKind()==='ranged'?row('Shoot ('+ITEMS[P.gear.weapon].n.toLowerCase()+')',heroQuiverText()+'Your hero draws and looses at whoever is in range.')
      :row('Cast ('+ITEMS[P.gear.weapon].n.toLowerCase()+')','Magic bolts, '+heroShot().mult+'× damage, splash half to enemies beside the target, ignore armor and trees · '+heroShot().mp+' mana each · every '+heroShot().cd+'s'))+
     row('Dodge Roll',SPECIAL.find(S=>S.id==='dodge').d())+
     (k?row(k==='bash'?'Shield Bash':'Shove',SPECIAL.find(S=>S.id===k).d()):'');

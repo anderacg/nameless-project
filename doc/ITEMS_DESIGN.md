@@ -1,6 +1,6 @@
 # Items: categories: design
 
-Status: **design only** (owner, 2026-10-21: "item should have type, for example, Quest item, Food, Water, Resource etc."). Nothing here is built.
+Status: **built** (2026-10-22): the categories (`data/items.js` `ITEM_CATS`, `ItemKind.cat`), the bag's tabs, the market and the loot screen by category, quest items (`QuestItem`, the outcome `item`, the sealed letter one), the overfilled bag (`BAG`, the Burdened tag, the red overflow slots, `bandPace`), valuables (`Valuable`, `VALUABLES`), Water and the drinks' morale once, quivers in place of arrows (`QUIVERS`, `ARROWS`, the quiver slot). Food and Water still go to the bag: their pools, and Carriers to the pack train, come with logistics phase 1. The tests: `tests/itemcats.js`, `tests/quivers.js`, `tests/burden.js`, `tests/valuables.js`. (Owner, 2026-10-21: "item should have type, for example, Quest item, Food, Water, Resource etc.")
 
 **The owner's answers (2026-10-22):**
 - **Quest items take a bag slot**, like any item.

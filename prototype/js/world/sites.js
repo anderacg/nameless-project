@@ -119,8 +119,8 @@ class Site extends WorldObject{
   // the day's change: back after being cleared, and whatever its kind does
   day(){if(this.cleared&&G.day>=this.back){this.cleared=false;this.returned()}}
   returned(){}
-  // the treasure it may hold (siteChest): extra gold, and the chance of gear
-  get chest(){return{gold:0,gear:.7}}
+  // the treasure it may hold (siteChest): extra gold, the chance of gear, and its valuables (VALUE_FINDS: a cave's)
+  get chest(){return{gold:0,gear:.7,finds:'cave'}}
   // its beasts beaten (engage.js ON_WIN.cave): its chest, and it lies empty; withdrawn from or beaten by them: nothing kept
   lairWon(){const x=siteChest(this);clearPlace(this,this.T.respawn);return x}
   lairLost(e){}
@@ -275,7 +275,7 @@ class Ruins extends Site{
   get screen(){const s=this.occSite;return s?s.screen:PAGE_SCREEN}
   setup(sites){this.name=unusedName(RUIN_NAMES,sites)}
   restore(){if(this.occ&&this.occ.s)siteOf(this.occ.s)}
-  get chest(){return{gold:40,gear:.9}}
+  get chest(){return{gold:40,gear:.9,finds:'ruin'}}
   // its occupants that are a site of their own, while they hold it
   get occSite(){const o=this.occ;return this.looted&&!this.cleared&&o&&o.s&&!o.s.cleared?o.s:null}
   // the day: occupants gone (beaten, paid, chased off, helped: their site cleared, or gone) leave it empty a cooldown; then
@@ -551,13 +551,23 @@ function updateSites(){
 const enterSite=s=>s.enter();
 // the day's changes: emptied places fill again, travellers pack up and move on
 function siteDay(){for(const s of W.sites)s.day()}
-// a cave or ruin's chest: gold that grows with the days, and usually a piece of gear
+// a cave or ruin's chest: gold that grows with the days, usually a piece of gear, and maybe valuables
 function siteChest(s){
   const C=s.chest,top=Math.min(MATERIALS.length-1,1+Math.floor(G.day/20)),gold=rint(30,70)+G.day*2+C.gold;P.gold+=gold;
   let x=' The chest holds <strong class="gold">'+gold+' gold</strong>';
   if(Math.random()<C.gear){const id=randomGear(Math.max(0,top-1),Math.min(MATERIALS.length-1,top+1));
-    x+=invAdd('gear',id,1)?' and a <span style="color:'+RARITY[ITEMS[id].r]+'">'+ITEMS[id].n+'</span>':'. Your bag is too full for the '+ITEMS[id].n;}
-  return x+'.';
+    x+=invAdd('gear',id,1)?' and a <span style="color:'+RARITY[ITEMS[id].r]+'">'+ITEMS[id].n+'</span>':'. '+BAG_FULL+': you leave the '+ITEMS[id].n;}
+  return x+'.'+valuablesFound(C.finds);
+}
+/* valuables found (doc/ITEMS_DESIGN.md §4b) where: a cave's or a ruin's chest, a bandit camp's plunder, a beaten chieftain's or
+   lord's purse (VALUE_FINDS: the chance of any, how many, of which rarities, each by its weight). Drawn from the stream
+   'valuables' (core/rng.js: so the world's Math.random stays as it was), into your bag (or onto the loot pile): in words ('' none) */
+function valuablesFound(where){
+  const F=VALUE_FINDS[where],r=rngOf('valuables');if(!F||!r.chance(F.p))return '';
+  const ids=Object.keys(VALUABLES).filter(k=>F.r.includes(VALUABLES[k].r)),got={};
+  for(let i=r.int(F.n[0],F.n[1]);i>0;i--){const id=r.weighted(ids,k=>VALUE_RARITY[VALUABLES[k].r]);got[id]=(got[id]||0)+1}
+  const said=Object.entries(got).map(([id,n])=>{const k=invAdd('val',id,n),w=VALUABLES[id].n.toLowerCase();return k?k>1?k+' × '+w:an(w):''}).filter(Boolean);
+  return said.length?' '+(where==='lord'||where==='chief'?'His purse holds ':where==='camp'?'Among their plunder: ':'Among the gold: ')+said.join(', ')+'.':' '+BAG_FULL+': you leave their valuables.';
 }
 // (lv: its level as your scouts saw it; else rolled now)
 function caveFight(s,lv){

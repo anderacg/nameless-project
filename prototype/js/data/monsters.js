@@ -54,11 +54,11 @@ const ITEMS={
 // how monster weapons are held: one hand, two hands, or hybrid (either)
 Object.assign(ITEMS.fangdagger,{hand:'one'});Object.assign(ITEMS.clawblade,{hand:'one'});Object.assign(ITEMS.trollclub,{hand:'two'});Object.assign(ITEMS.wyrmspear,{hand:'hybrid'});
 const RARITY={common:'#c8c2ae',rare:'#6a9cf0',epic:'#c58af0'};
-// equipment: 16 slots plus 10 fingers. An item's slot names its kind; rings fit any finger.
-const SLOTS={weapon:'Main hand',offhand:'Off hand',head:'Head',face:'Face',ear:'Earring',body:'Body',cape:'Cape',arms:'Arms',belt:'Belt',legs:'Legs',feet:'Feet',bag:'Bag',mount:'Mount',mhead:'Barding head',marmor:'Barding',macc:'Mount accessory',ring:'Ring'};
+// equipment: 17 slots plus 10 fingers. An item's slot names its kind; rings fit any finger.
+const SLOTS={weapon:'Main hand',offhand:'Off hand',quiver:'Quiver',head:'Head',face:'Face',ear:'Earring',body:'Body',cape:'Cape',arms:'Arms',belt:'Belt',legs:'Legs',feet:'Feet',bag:'Bag',mount:'Mount',mhead:'Barding head',marmor:'Barding',macc:'Mount accessory',ring:'Ring'};
 // the mount's gear (MOUNT_KEYS) only counts while you ride
 const MOUNT_KEYS=['mhead','marmor','macc'];
-const EQUIP=['weapon','offhand','head','face','ear','body','cape','arms','belt','legs','feet','bag','mount',...MOUNT_KEYS,...Array.from({length:10},(_,i)=>'ring'+i)];
+const EQUIP=['weapon','offhand','head','face','ear','body','cape','arms','belt','legs','feet','bag','quiver','mount',...MOUNT_KEYS,...Array.from({length:10},(_,i)=>'ring'+i)];
 const slotOfKey=k=>k.startsWith('ring')?'ring':k;
 const emptyGear=()=>Object.fromEntries(EQUIP.map(k=>[k,null]));
 const INV_SIZE=30,STACK=20;

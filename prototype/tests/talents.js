@@ -64,7 +64,7 @@ try{
  ok(P.slots[0]==='fireball'&&P.slots.filter(x=>x==='fireball').length===1,'the Skill bar puts Fireball on slot 1 (and takes it off its old slot)');
  ok(/Skill slots/.test(panel())&&/Basic moves/.test(panel())&&/Dodge Roll/.test(panel())&&!/press 1 to 0|Right-click|Space ·|F ·/.test(panel())&&document.querySelectorAll('select[data-act="slot-set"]').length===10,'the Skill bar shows ten slots, your active skills and your basic moves, with no keys (battles are commanded)');t.act('sk-close');
  // each new skill in battle
- P.troops={hum_spear:4};P.gear.weapon=t.gearId('bow',2);t.invAdd('good','arrows',60);const fight=()=>{G.mode='world';G.modal=false;t.hidePanel();G.enc={kind:'party',ref:{cool:0,x:P.x,y:P.y},list:['militia','militia','militia']};t.startBattle({enemies:G.enc.list,tournament:false});const B=t.B;
+ P.troops={hum_spear:4};P.gear.weapon=t.gearId('bow',2);P.gear.quiver='q_master';const fight=()=>{G.mode='world';G.modal=false;t.hidePanel();G.enc={kind:'party',ref:{cool:0,x:P.x,y:P.y},list:['militia','militia','militia']};t.startBattle({enemies:G.enc.list,tournament:false});const B=t.B;
    B.units.filter(u=>u.team===1).forEach((u,i)=>{u.x=B.hero.x+18;u.y=B.hero.y+(i-1)*8;u.cd=99;u.s={...u.s,spd:0}});B.aim=0;const X=t.heroState();X.sp=999;X.mp=999;return B};
  const foes=B=>B.units.filter(u=>u.team===1);let B=fight();
  const slotOf=id=>P.slots.indexOf(id);P.slots=['whirl','quake','dash','volley','fireball','nova','heal','cry','banner','leap'];t.buildSlotBar();
@@ -72,7 +72,7 @@ try{
  const key=k=>t.castSlot(k==='0'?9:+k-1);// (the skill keys are set aside with the manual control: the slots are cast directly)
  key('2');ok(foes(B).every(u=>u.stun>0||u.hp<u.max),'key 2: Earthquake staggers everyone around you');
  B=fight();foes(B).forEach(u=>{u.max=u.hp=999});const hx=B.hero.x;key('3');for(let i=0;i<200&&t.B&&B.hx.dash;i++)t.updateBattle(.02);if(!t.B){t.act('cont');while(G.mode==='perk')t.act('perk',G.perkOffer[0])}ok(B.hero.x>hx+40&&foes(B).some(u=>u.hp<u.max),'key 3: Blade Dash carries you through them, cutting');
- B=fight();const ar0=t.goodN('arrows');B.arrows=[];key('4');ok(B.arrows.length===8&&t.goodN('arrows')===ar0-4,'key 4: Rain of Arrows looses 8 arrows for 4');
+ B=fight();const ar0=t.heroShotsLeft();B.arrows=[];key('4');ok(B.arrows.length===8&&t.heroShotsLeft()===ar0-4,'key 4: Rain of Arrows looses 8 arrows for 4 of your quiver\'s');
  P.gear.weapon=t.gearId('sword',1);B=fight();key('4');ok(!B.arrows.length&&B.floats.some(f=>/needs a bow/.test(f.t)),'without a bow Rain of Arrows will not cast');
  B=fight();B.arrows=[];key('5');ok(B.arrows.length===1&&B.arrows[0].magic&&B.arrows[0].src.splash>30,'key 5: Fireball flies with a wide burst');
  B=fight();key('6');ok(foes(B).every(u=>u.slow>0),'key 6: Frost Nova slows everyone around you');

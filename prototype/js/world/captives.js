@@ -25,6 +25,12 @@ function captureLord(l){
   l.inside=null;l.dead=true;l.held=true;l.troops=[];l.back=1e9;l.state='rest';// (back when ransomed or let go)
 }
 function captureChief(ld){if(ld)captives().push({k:'chief',ld})}
+// the valuables a won fight brings (doc/ITEMS_DESIGN.md §4b; world/sites.js valuablesFound): a beaten lord's purse, a chieftain's
+// (asked before he is taken: resolution.js), a bandit camp's plunder
+function spoilsWon(e){
+  if(!e)return '';
+  return (e.kind==='lord'?valuablesFound('lord'):'')+((e.kind==='party'||e.kind==='camp')&&e.ref&&e.ref.ld?valuablesFound('chief'):'')+(e.kind==='camp'?valuablesFound('camp'):'');
+}
 // a chieftain who got away: back with a new band in a few days
 function chiefEscapes(ld,days){if(!ld)return;W.exiles.push({ld,back:G.day+(days||rint(4,8))})}
 // a captive let go (or slipped away): a lord rides home to raise a new army, a chieftain to gather a new band

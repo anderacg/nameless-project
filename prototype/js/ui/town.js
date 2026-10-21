@@ -32,6 +32,18 @@ const forgeText=t=>{const ok=forgeTiers(t),has=MATERIALS.filter((m,k)=>k&&ok.inc
 const stableStock=t=>ITEM_KINDS.mount.stockAt(t);
 const canBuyMount=(t,id)=>ITEM_KINDS.mount.canBuyAt({id},t);
 const gearPrice=id=>ITEM_KINDS.gear.cost({id});
+// the quivers a holding sells at a place of it (trade, smith: core/items.js Quiver stockAt), as rows to buy (act: the place's verb)
+const quiverStock=(t,place)=>ITEM_KINDS.quiver.stockAt(t,place);
+function quiverRows(t,place,act){
+  const ids=quiverStock(t,place);if(!ids.length)return '';
+  return '<div class="lab" style="margin-top:6px">Quivers · your shots in every battle</div>'+ids.map(id=>{const I=ITEMS[id],p=gearPrice(id),own=P.gear.quiver===id;
+    return '<div class="row"><div class="info"><strong style="color:'+RARITY[I.r]+'">'+ITEM_KINDS.quiver.title({id})+'</strong><small>'+I.d+'</small></div><div class="acts">'+railBtn(act,id,'Buy',P.gold<p?'Not enough gold':playerInventory.room('gear',id)<1?BAG_FULL:'')+'</div><span class="own gold">'+p+'g</span></div>'}).join('');
+}
+// a quiver bought where it is sold (place): into your bag, your standing up a little
+function quiverBuy(id,t,place){
+  const p=gearPrice(id);if(!quiverStock(t,place).includes(id)||P.gold<p||!invAdd('gear',id,1))return;
+  P.gold-=p;addRep(t.name,ITEMS[id].v/120,true);log('You buy a '+ITEM_KINDS.quiver.title({id}).toLowerCase()+'. Wear it in your inventory.','gold');
+}
 const ransomValue=()=>Object.keys(P.prisoners).reduce((a,k)=>a+P.prisoners[k]*RANSOM[ST[k].tier],0);
 
 /* ---------- a holding's places (doc/STORY_DESIGN.md §7, wave D) ----------
@@ -107,22 +119,27 @@ function definePlace(id,spec){
 // the place whose verb an action is (none: the window's own, or nobody's)
 const placeActing=a=>Object.values(PLACES).find(p=>p.handles(a))||null;
 
-/* the market square: its goods (bought and sold one unit at a time, each moving the price), and what you carry to sell */
+/* the market square: its goods by category (bought and sold one unit at a time, each moving the price; a holding's old arrows are
+   none), its quivers, and what you carry to sell, by category (what its category lets you sell: a quest item never) */
+// (a market's goods, and your things, grouped: each category's rows under its name, in ITEM_CATS's order)
+const byCategory=(list,catOf,row)=>Object.keys(ITEM_CATS).map(c=>{const xs=list.filter(x=>catOf(x)===c);return xs.length?'<div class="lab lab-cat">'+ITEM_CATS[c].n+'</div>'+xs.map(row).join(''):''}).join('');
 class Market extends Place{
   constructor(id){
-    super(id,{n:'Market square',short:'Market',ico:'stall',verbs:{buy:'buy',sell:'sell','sell-loot':'sellOwn','sell-item':'sellOwn'}});
+    super(id,{n:'Market square',short:'Market',ico:'stall',verbs:{buy:'buy',sell:'sell','sell-loot':'sellOwn','sell-item':'sellOwn','sell-own':'sellOwn','market-quiver':'buyQuiver'}});
   }
   body(t){
-    ensureEcon(t);const q=G.town.qty||1,goods=Object.keys(GOODS).filter(k=>(t.stock[k]||0)>0||goodN(k)>0||needOf(t,k)>.05);
-    const scarce=Object.keys(GOODS).filter(g=>marketState(t,g)==='shortage');
-    let body=railCards([{pic:personPic('merchant',t.races[0]),name:'The merchants',role:'Stalls of '+t.name,facts:[scarce.length>1?[scarce.length+' goods scarce','bad']:scarce.length?['Short of '+GOODS[scarce[0]].n.toLowerCase(),'bad']:'Prices fair','Your bag '+(P.inv.length-invFree())+' / '+P.inv.length+' slots'],
-      note:'Every unit you buy or sell moves the price.'}])+'<div class="lab lab-qty"><span>Goods</span>'+railQty(q,'qty')+'</div>'+goods.map(k=>{const p=buyP(t,k),s=sellP(t,k),room=goodRoom(k),n=goodN(k),st=t.stock[k]||0,ms=marketState(t,k);
+    const goodCat=k=>ITEM_KINDS.good.catId({id:k});
+    ensureEcon(t);const q=G.town.qty||1,goods=Object.keys(GOODS).filter(k=>goodCat(k)&&((t.stock[k]||0)>0||goodN(k)>0||needOf(t,k)>.05));
+    const scarce=goods.filter(g=>marketState(t,g)==='shortage'),I=playerInventory;
+    let body=railCards([{pic:personPic('merchant',t.races[0]),name:'The merchants',role:'Stalls of '+t.name,facts:[scarce.length>1?[scarce.length+' goods scarce','bad']:scarce.length?['Short of '+GOODS[scarce[0]].n.toLowerCase(),'bad']:'Prices fair','Your bag '+I.used+' / '+I.size+' slots',I.over?[I.over+' over: burdened','bad']:''],
+      note:'Every unit you buy or sell moves the price.'}])+'<div class="lab lab-qty"><span>Goods</span>'+railQty(q,'qty')+'</div>'+byCategory(goods,goodCat,k=>{const p=buyP(t,k),s=sellP(t,k),room=goodRoom(k),n=goodN(k),st=t.stock[k]||0,ms=marketState(t,k);
       return railRow(GOODS[k].n+(ms?' <span class="'+(ms==='shortage'?'bad':'good')+'" style="font-size:12px">'+cap1(ms)+'</span>':''),'Buy '+p+'g · Sell '+s+'g · '+st+' in the market · '+GOODS[k].stack+' per slot',
-        railBtn('buy',k+':'+q,'Buy',P.gold<p*q?'Not enough gold':room<q?'No room in your bag':st<q?'The market has '+st:'')+railBtn('sell',k+':'+q,'Sell',n<q?'You have '+n:''),'×'+n)}).join('');
-    const stock=P.inv.map((x,i)=>[x,i]).filter(([x])=>x&&x.k!=='good'&&x.k!=='letter');// (a letter is sold on its own page: world/letters.js)
-    if(stock.length)body+='<div class="lab" style="margin-top:6px">From your inventory</div>'+stock.map(([x,i])=>x.k==='mat'
-      ?'<div class="row"><div class="info"><strong>'+MATS[x.id].n+'</strong><small>Trophy · '+matPrice(x.id)+'g each</small></div><span class="own">×'+x.n+'</span><div class="acts">'+railBtn('sell-loot',i,'Sell')+'</div><span class="own gold">'+matPrice(x.id)*x.n+'g</span></div>'
-      :'<div class="row"><div class="info"><strong style="color:'+RARITY[ITEMS[x.id].r]+'">'+ITEMS[x.id].n+'</strong><small>'+SLOTS[ITEMS[x.id].slot]+' · '+ITEMS[x.id].d+'</small></div><div class="acts">'+railBtn('sell-item',i,'Sell')+'</div><span class="own gold">'+itemPrice(x.id)+'g</span></div>').join('');
+        railBtn('buy',k+':'+q,'Buy',P.gold<p*q?'Not enough gold':room<q?BAG_FULL:st<q?'The market has '+st:'')+railBtn('sell',k+':'+q,'Sell',n<q?'You have '+n:''),'×'+n)});
+    body+=quiverRows(t,'trade','market-quiver');
+    // (your things a market buys: not goods, sold above by the unit; a letter on its own page, world/letters.js)
+    const own=P.inv.map((x,i)=>[x,i]).filter(([x])=>x&&x.k!=='good'&&(itemCat(x)||{}).sell);
+    if(own.length)body+='<div class="lab" style="margin-top:6px">From your inventory</div>'+byCategory(own,([x])=>itemKind(x).catId(x),([x,i])=>{const K=itemKind(x),g=K.fetches(x,t),c=K.colour(x);
+      return '<div class="row"><div class="info"><strong'+(c?' style="color:'+c+'"':'')+'>'+K.name(x)+'</strong><small>'+(x.k==='gear'?SLOTS[ITEMS[x.id].slot]+' · '+ITEMS[x.id].d:K.cat(x).n+' · '+K.price(x,t)+'g each')+'</small></div>'+(x.n>1?'<span class="own">×'+x.n+'</span>':'')+'<div class="acts">'+railBtn('sell-own',i,'Sell')+'</div><span class="own gold">'+g+'g</span></div>'});
     return body;
   }
   // goods (g:n): bought, your standing up a little; sold, Trading learned and your standing up
@@ -134,10 +151,12 @@ class Market extends Place{
     const [g,nStr]=arg.split(':');let n=+nStr;
     const r=sellGoods(t,g,n);train('trade',r.earned/20);addRep(t.name,r.earned/60,true);
   }
-  // a trophy (sell-loot), a piece of gear (sell-item) from your bag: its kind's Sell (core/items.js)
+  // a thing from your bag (sell-own; sell-loot and sell-item, as trophies and gear were sold): its kind's Sell, where its category
+  // allows it (core/items.js)
   sellOwn(arg,t,a){
-    const x=P.inv[+arg];if(x&&x.k===(a==='sell-loot'?'mat':'gear'))itemKind(x).verb('sell').perform(+arg);
+    const x=P.inv[+arg],v=x&&itemKind(x).verb('sell');if(v&&v.shown(+arg))v.perform(+arg);
   }
+  buyQuiver(arg,t){quiverBuy(arg,t,this.id)}
 }
 definePlace('trade',Market);
 
@@ -176,10 +195,10 @@ class Tavern extends Place{
 }
 definePlace('tavern',Tavern);
 
-/* the smithy: its forge's pieces for sale (its week's stock), and ammunition by the bundle */
+/* the smithy: its forge's pieces for sale (its week's stock), and its quivers */
 class Smithy extends Place{
   constructor(id){
-    super(id,{n:'Smithy',ico:'anvil',verbs:{'buy-gear':'buyGear','buy-ammo':'buyAmmo'}});
+    super(id,{n:'Smithy',ico:'anvil',verbs:{'buy-gear':'buyGear','buy-quiver':'buyQuiver'}});
   }
   shut(t){
     const closed=Place.closed(t);
@@ -195,21 +214,18 @@ class Smithy extends Place{
     return W.shops[t.name].items;
   }
   body(t){
-    const st=this.stock(t),q=G.town.qty||1;
+    const st=this.stock(t);
     return railCards([{pic:personPic('smith',t.races[0]),name:'The smith',role:'At the forge of '+t.name,facts:[st.length?st.length+' pieces for sale':'Sold out','New stock in '+(7-Clock.daysSince(W.shops[t.name].day)%7)+' days'],
       note:forgeText(t)+' Bring copper and tin, silver, gold, mithril or adamantite to its market and the smith will forge with them.'}])+'<div class="lab">For sale</div>'+(st.length?st.map((id,i)=>{const I=ITEMS[id],p=gearPrice(id);
-      return '<div class="row"><div class="info"><strong style="color:'+RARITY[I.r]+'">'+I.n+'</strong><small>'+SLOTS[I.slot]+' · '+I.d+'</small><small class="diff">'+(gearDiff(id).join(' · ')||'<span class="muted">No change from what you wear.</span>')+'</small></div><div class="acts">'+railBtn('buy-gear',i,'Buy',P.gold<p?'Not enough gold':!invFree()?'Your bag is full':'')+'</div><span class="own gold">'+p+'g</span></div>'}).join('')
-      :'<p class="muted">Sold out until the next delivery.</p>')+
-      '<div class="lab lab-qty" style="margin-top:6px"><span>Ammunition · 10 a bundle</span>'+railQty(q,'qty')+'</div>'+['arrows','bolts'].map(g=>{const p=buyP(t,g),n=10*q;return railRow(GOODS[g].n,p+'g each · '+(t.stock&&t.stock[g]||0)+' in stock · you have '+goodN(g)+' · '+n+' for '+p*n+'g',railBtn('buy-ammo',g+':'+n,'Buy',P.gold<p*n?'Not enough gold':goodRoom(g)<n?'No room in your bag':''))}).join('');
+      return '<div class="row"><div class="info"><strong style="color:'+RARITY[I.r]+'">'+I.n+'</strong><small>'+SLOTS[I.slot]+' · '+I.d+'</small><small class="diff">'+(gearDiff(id).join(' · ')||'<span class="muted">No change from what you wear.</span>')+'</small></div><div class="acts">'+railBtn('buy-gear',i,'Buy',P.gold<p?'Not enough gold':playerInventory.room('gear',id)<1?BAG_FULL:'')+'</div><span class="own gold">'+p+'g</span></div>'}).join('')
+      :'<p class="muted">Sold out until the next delivery.</p>')+quiverRows(t,'smith','buy-quiver');
   }
   // a piece (its place in the stock): yours, your standing up a little
   buyGear(arg,t){
     const st=this.stock(t),id=st[+arg];if(id&&P.gold>=gearPrice(id)&&invAdd('gear',id,1)){P.gold-=gearPrice(id);st.splice(+arg,1);addRep(t.name,ITEMS[id].v/120,true);log('You buy the '+ITEMS[id].n+'.','gold')}
   }
-  // ammunition (g:n): from the holding's stock, at the market's price
-  buyAmmo(arg,t){
-    const [g,ns]=arg.split(':'),n=+ns;if(GOODS[g]&&GOODS[g].ammo){const r=buyGoods(t,g,n);if(r.got)log('You buy '+r.got+' '+GOODS[g].n.toLowerCase()+'.');else log('The smith has no '+GOODS[g].n.toLowerCase()+' to sell.','bad')}
-  }
+  // a quiver (its id): yours, your standing up a little
+  buyQuiver(arg,t){quiverBuy(arg,t,this.id)}
 }
 definePlace('smith',Smithy);
 

@@ -1,10 +1,11 @@
 'use strict';
 /* ---------- the spoils: what a fight brought in, and what you choose to carry away ---------- */
 // lootStart() snapshots your gold, XP, renown, bag and prisoners and opens a pile: while it is collecting, everything a
-// fight pays out in things (drops, trophies, hoards, cargo, chests, arrows gathered from the field) lands on the pile instead
-// of in your bag (invAdd sends it there). lootShow() then lays the pile beside your bag: take what you want while there is
-// room, put things from your bag back on the pile to make room, and leave the rest. Gold, XP, renown and prisoners are
-// counted from the snapshot. Leaving things behind is your choice, so Esc never does it for you.
+// fight pays out in things (drops, trophies, hoards, cargo, chests, valuables) lands on the pile instead of in your bag (invAdd
+// sends it there). lootShow() then lays the pile beside your bag, grouped by category (data/items.js ITEM_CATS): take what you
+// want while you can carry it (past the bag's size into overflow slots, a burden on your pace, up to its limit: core/inventory.js;
+// a quest item always), put things from your bag back on the pile to make room, and leave the rest. Gold, XP, renown and
+// prisoners are counted from the snapshot. Leaving things behind is your choice, so Esc never does it for you.
 const xpTotal=()=>{let n=P.xp;for(let l=1;l<P.level;l++)n+=l*60;return n};
 function lootSnap(){return{gold:P.gold,xp:xpTotal(),lv:P.level,renown:P.renown,pris:{...P.prisoners}}}
 function lootStart(){if(!G.loot)G.loot={from:lootSnap(),pile:[],capture:true};return G.loot}
@@ -13,14 +14,15 @@ const looting=()=>!!(G.loot&&G.loot.capture);
 function lootPile(k,id,n){const p=G.loot.pile;if(n<=0)return;if(k==='gear'){for(let i=0;i<n;i++)p.push({k,id,n:1});return}const x=p.find(s=>s.k===k&&s.id===id);if(x)x.n+=n;else p.push({k,id,n})}
 // gear first, best first; then trophies, then goods
 const lootRank=s=>itemKind(s).lootRank(s);
-// how many of a pile entry your bag can take now
-function lootRoom(s){const max=stackOf(s.k,s.id);let r=0;for(const x of P.inv)r+=!x?max:x.k===s.k&&x.id===s.id&&max>1?max-x.n:0;return Math.min(s.n,r)}
+// how many of a pile entry your bag can take now (a bound one, a quest item: all of it)
+const lootBound=s=>{const c=itemCat(s);return !!c&&!c.drop};
+const lootRoom=s=>lootBound(s)?s.n:Math.min(s.n,playerInventory.room(s.k,s.id));
 const lootDesc=s=>itemKind(s).lootLine(s);
 function lootTile(s,i){
   const def=itemDef(s),rc=itemKind(s).colour(s),room=lootRoom(s);
-  return '<button class="loot-item" type="button" data-act="lt-take" data-arg="'+i+'"'+(room?' title="Take '+(room<s.n?room+' of ':'')+def.n+'"':' disabled title="No room in your bag"')+'>'+
+  return '<button class="loot-item" type="button" data-act="lt-take" data-arg="'+i+'"'+(room?' title="Take '+(room<s.n?room+' of ':'')+def.n+'"':' disabled title="'+BAG_FULL+'"')+'>'+
     '<span class="slot" style="'+(rc?'--rc:'+rc:'')+'"><span data-icon="'+s.k+':'+s.id+'"></span>'+(s.n>1?'<b class="cnt">'+s.n+'</b>':'')+'</span>'+
-    '<span><strong'+(rc?' style="color:'+rc+'"':'')+'>'+def.n+(s.n>1?' ×'+s.n:'')+'</strong><small>'+lootDesc(s)+(room?'':' · no room')+'</small></span></button>';
+    '<span><strong'+(rc?' style="color:'+rc+'"':'')+'>'+def.n+(s.n>1?' ×'+s.n:'')+'</strong><small>'+lootDesc(s)+(room?'':' · '+BAG_FULL.toLowerCase())+'</small></span></button>';
 }
 // the summary: what you gained or lost, the pile, your bag, then your band's losses
 function lootHtml(lost,saved){
@@ -31,12 +33,14 @@ function lootHtml(lost,saved){
   if(b.renown!==a.renown)chips.push(['Renown',sign(b.renown-a.renown),'']);
   const pk=[...new Set([...Object.keys(a.pris),...Object.keys(b.pris)])],pd=pk.map(k=>[k,(b.pris[k]||0)-(a.pris[k]||0)]).filter(([,n])=>n),pn=pd.reduce((s,[,n])=>s+n,0);
   if(pd.length)chips.push(['Prisoners',pn>0?'+'+pn+' ('+pd.filter(([,n])=>n>0).map(([k,n])=>n+' '+ST[k].n.toLowerCase()).join(', ')+')':pn<0?sign(pn)+', escaped':'±0',pn>0?'good':'bad']);
-  L.pile.sort((x,y)=>lootRank(y)-lootRank(x));
-  const losses=lost&&Object.keys(lost).filter(k=>lost[k]>0),used=P.inv.filter(Boolean).length;
+  // (by category, in ITEM_CATS's order; within one the best first: each tile keeps its place in the pile)
+  L.pile.sort((x,y)=>(CAT_AT[itemKind(x).catId(x)]??99)-(CAT_AT[itemKind(y).catId(y)]??99)||lootRank(y)-lootRank(x));
+  const losses=lost&&Object.keys(lost).filter(k=>lost[k]>0),I=playerInventory;I.settle();const used=I.used,size=I.size;
+  const groups=[];L.pile.forEach((s,i)=>{const c=itemCat(s),g=groups[groups.length-1];if(g&&g.c===c)g.i.push(i);else groups.push({c,i:[i]})});
   return (chips.length?'<div class="lab">Spoils</div><div class="loot-stats">'+chips.map(([n,v,c])=>'<span><b>'+n+'</b><span class="'+c+'">'+v+'</span></span>').join('')+'</div>':'')+
-    (L.pile.length?'<div class="lab">On the ground · click to take</div><div class="loot">'+L.pile.map(lootTile).join('')+'</div>':L.took?'<p class="muted">You took everything.</p>':'<p class="muted">No goods or gear to take.</p>')+
-    (L.pile.length||L.took?'<div class="lab">Your bag · '+used+' / '+P.inv.length+' · click something to put it back</div><div class="invgrid">'+P.inv.map((s,i)=>s?
-      '<button class="slot" type="button" data-act="lt-drop" data-arg="'+i+'" title="Put '+itemDef(s).n+' back"'+(s.k==='gear'?' style="--rc:'+RARITY[ITEMS[s.id].r]+'"':'')+'><span data-icon="'+s.k+':'+s.id+'"></span>'+(s.n>1?'<b class="cnt">'+s.n+'</b>':'')+'</button>':'<span class="slot empty"></span>').join('')+'</div>':'')+
+    (L.pile.length?'<div class="lab">On the ground · click to take</div>'+groups.map(g=>'<div class="loot-cat">'+(g.c?g.c.n:'Other')+'</div><div class="loot">'+g.i.map(i=>lootTile(L.pile[i],i)).join('')+'</div>').join(''):L.took?'<p class="muted">You took everything.</p>':'<p class="muted">No goods or gear to take.</p>')+
+    (L.pile.length||L.took?'<div class="lab">Your bag · '+used+' / '+size+(I.over?' · <span class="bad">'+I.over+' over: pace −'+Math.round((1-I.burden())*100)+'%</span>':'')+' · click something to put it back</div><div class="invgrid">'+P.inv.map((s,i)=>{const ov=i>=size?' over':'';return s?
+      '<button class="slot'+ov+(lootBound(s)?' bound':'')+'" type="button" data-act="lt-drop" data-arg="'+i+'" title="'+(lootBound(s)?itemDef(s).n+': a quest item, kept':'Put '+itemDef(s).n+' back')+'"'+(s.k==='gear'?' style="--rc:'+RARITY[ITEMS[s.id].r]+'"':'')+'><span data-icon="'+s.k+':'+s.id+'"></span>'+(s.n>1?'<b class="cnt">'+s.n+'</b>':'')+'</button>':'<span class="slot empty'+ov+'"></span>'}).join('')+'</div>':'')+
     (lost?'<div class="lab">Your losses</div><p class="'+(losses.length?'':'muted')+'" style="font-size:14px">'+(losses.length?lossText(lost):'None.')+(saved?' '+saved+' more were wounded but saved by your medicine.':'')+'</p>':'');
 }
 // the end-of-fight panel: head (the story), the spoils, and the way on (next: the action that continues)
@@ -55,7 +59,7 @@ function battleReportHtml(report){
 }
 function renderLoot(){
   const V=G.lootView,L=G.loot;if(!V||!L)return;const n=L.pile.reduce((a,s)=>a+s.n,0),any=L.pile.some(lootRoom);
-  showPanel(V.head+battleReportHtml(V.report)+lootHtml(V.lost,V.saved)+(L.pile.length?'<div class="btns"><button class="btn primary" type="button" data-act="lt-all"'+(any?'':' disabled title="No room in your bag"')+'>Take all that fits</button></div>'+nav(null,['lt-leave',null,'Continue · leave '+n+' behind',null,true])
+  showPanel(V.head+battleReportHtml(V.report)+lootHtml(V.lost,V.saved)+(L.pile.length?'<div class="btns"><button class="btn primary" type="button" data-act="lt-all"'+(any?'':' disabled title="'+BAG_FULL+'"')+'>Take all you can carry</button></div>'+nav(null,['lt-leave',null,'Continue · leave '+n+' behind',null,true])
     :nav(null,[V.next,null,V.next==='back-town'?'Back to town':'Continue'])));
   fillIcons();updateHUD(true);
 }
@@ -63,11 +67,11 @@ function renderLoot(){
 const lootEnd=()=>{G.loot=null;G.lootView=null};
 function lootAct(a,arg){
   const L=G.loot,V=G.lootView;if(!L||!V)return;
-  const take=s=>{const n=lootRoom(s);if(!n)return 0;const got=invAdd(s.k,s.id,n);s.n-=got;if(got)L.took=true;return got};
+  const take=s=>{const n=lootRoom(s);if(!n)return 0;const got=playerInventory.add(s.k,s.id,n,lootBound(s));s.n-=got;if(got)L.took=true;return got};
   if(a==='lt-take'){const s=L.pile[+arg];if(s){take(s);L.pile=L.pile.filter(x=>x.n>0)}}
   if(a==='lt-all'){for(const s of L.pile)take(s);L.pile=L.pile.filter(x=>x.n>0)}
-  // (a letter stays in the bag: its record goes nowhere else)
-  if(a==='lt-drop'){const s=P.inv[+arg];if(s&&s.k!=='letter'){P.inv[+arg]=null;if(s.k==='gear')L.pile.push({k:'gear',id:s.id,n:1});else{const x=L.pile.find(p=>p.k===s.k&&p.id===s.id);if(x)x.n+=s.n;else L.pile.push({...s})}}}
+  // (a quest item stays in the bag: bound, as a letter, whose record goes nowhere else)
+  if(a==='lt-drop'){const s=P.inv[+arg];if(s&&!lootBound(s)){P.inv[+arg]=null;if(s.k==='gear')L.pile.push({k:'gear',id:s.id,n:1});else{const x=L.pile.find(p=>p.k===s.k&&p.id===s.id);if(x)x.n+=s.n;else L.pile.push({...s})}}}
   if(a==='lt-leave'){const left=L.pile.map(s=>(s.n>1?s.n+' ':'')+itemDef(s).n.toLowerCase());if(left.length)log('You leave '+left.join(', ')+' behind.','bad');const next=V.next;lootEnd();return act(next)}
   renderLoot();
 }

@@ -11,7 +11,7 @@
    - Outcome.facts(o) and describeOutcome(o): its text from the same object ('+20 gold · honour with the Vale −5 · morale −3'),
      so what a button says and what it does cannot drift apart. Silent effects (a companion's mood, a log line, the end) say
      nothing.
-   A new effect (a title, a trophy, a passenger) is one more handler here, with its text. */
+   A new effect (a title, a trophy, a passenger) is one more handler here, with its text (a quest item: item). */
 const Outcome={
   // (a number with its sign: +3, −3)
   signed(n){
@@ -50,6 +50,16 @@ const Outcome={
         res.gear=invAdd('gear',v,1)?v:null;
       },
       text:v=>'a '+ITEMS[v].n,
+    },
+    // item: {give: id}, a quest item (QUEST_ITEMS) into your bag, bound to the quest or thread this is part of (core/items.js
+    // QuestItem: gone when it ends; res.item: it); {take: id}, one out of it (handed over)
+    item:{
+      apply(v,ctx,res){
+        const Q=ITEM_KINDS.quest;
+        if(v.give)res.item=Q.give(v.give,ctx.e)?v.give:null;
+        if(v.take)Q.take(v.take);
+      },
+      text:v=>[v.give&&'the '+QUEST_ITEMS[v.give].n.toLowerCase(),v.take&&'you hand over the '+QUEST_ITEMS[v.take].n.toLowerCase()],
     },
     // troops: {unit: n}, joining your band
     troops:{

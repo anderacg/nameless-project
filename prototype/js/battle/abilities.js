@@ -38,7 +38,7 @@ const CAST={
     for(const e of withinOf(u.x,u.y,R,foesOf(u)))K.strike(e,.9*A.dmg,{kb:8,stun:.6+A.stun,dt:'blunt'});shakeIt(5)},
   dash(u,K,at){const a=angleOf(K,at||{x:u.x+1,y:u.y});K.st.dash={sx:u.x,sy:u.y,tx:clamp(u.x+Math.cos(a)*80,8,BW-8),ty:clamp(u.y+Math.sin(a)*80,fieldTop(),fieldBot()),t:0,dur:.2,hit:[],mult:1.1*K.A.dmg};
     K.st.inv=.25;u.face=Math.cos(a)>=0?1:-1},
-  volley(u,K,at){const A=K.A;if(K.hero)goodTake('arrows',4);const c=aimOf(K,at,130);
+  volley(u,K,at){const A=K.A;if(K.hero)heroSpendShots(4);const c=aimOf(K,at,130);
     for(let k=0;k<8;k++){const an=Math.random()*6.283,rr=Math.random()*28*A.r,px=c.x+Math.cos(an)*rr,py=c.y+Math.sin(an)*rr;
       fireBolt(u,Math.atan2(py-u.y,px-u.x),u.s.dmg*.7*A.dmg,{...u.s,magic:false,flat:false,bolt:'#ffe08a',heroShot:K.hero,dt:'pierce'},Math.hypot(px-u.x,py-u.y),{exact:true,speed:ARC_SPEED*(1.1+Math.random()*.3)})}},
   fireball(u,K,at){const A=K.A;fireBolt(u,angleOf(K,at),u.s.dmg*2*A.dmg*K.sm,{...u.s,range:140,magic:true,bolt:'#ff7a30',splash:32*A.r,splashMul:.7,dt:'fire'},K.hero?cursorDist(u):Math.hypot(at.x-u.x,at.y-u.y))},
@@ -92,7 +92,7 @@ function chooseAbility(u){
   const knot=r=>{let best=null,bn=0;for(const e of aim){const n=near(e.x,e.y,r,foes);if(n>bn){bn=n;best=e}}return best&&{x:best.x,y:best.y,n:bn}};
   const c={foes,mine,near,close,d,knot};
   for(const id of ABILITY_ORDER){if(!ids.includes(id))continue;const S=ABILITIES[id],K=kitOf(u,id);
-    if(K.st.cds[id]>0||!K.can(true)||S.melee&&hasBow(u)||S.needs==='bow'&&(!hasBow(u)||K.hero&&goodN('arrows')<4))continue;
+    if(K.st.cds[id]>0||!K.can(true)||S.melee&&hasBow(u)||S.needs==='bow'&&(!hasBow(u)||K.hero&&heroShotsLeft()<4))continue;
     const at=ABILITY_WHEN[id](u,K,c);if(!at)continue;const p=at===true?null:at;
     if(K.hero){if(p)CharacterMind.of(u).aimAt(p);castSkill(id);return K.st.cds[id]>0}
     return castAbility(u,id,p||{x:close.x,y:close.y})}

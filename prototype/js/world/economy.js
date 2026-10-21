@@ -213,7 +213,7 @@ const matsText=m=>Object.keys(m).map(g=>m[g]+' '+GOODS[g].n.toLowerCase()).join(
 /* the fief panel: people, taxes, the stores, and the caravans you send from here */
 function fiefEconBody(t){
   ensureEcon(t);const L=t.last||{out:{},use:{}},b=(act,arg,label,why,on)=>'<button class="btn sm'+(on?' on':'')+'" type="button" data-act="'+act+'" data-arg="'+arg+'"'+(why?' disabled title="'+why+'"':'')+'>'+label+'</button>';
-  const goods=Object.keys(GOODS).filter(g=>(t.stock[g]||0)>0||goodN(g)>0||needOf(t,g)>.05);
+  const goods=Object.keys(GOODS).filter(g=>itemGood(g)&&((t.stock[g]||0)>0||goodN(g)>0||needOf(t,g)>.05));
   const cap=t.T.popCap*(1+.15*bldLv(t,'granary'))+Math.floor(landOf(t)/12);
   const dests=TOWNS.filter(o=>o!==t&&(o.owner==='player'||!hostileTo(o.owner))).sort((a,c)=>Math.hypot(a.x-t.x,a.y-t.y)-Math.hypot(c.x-t.x,c.y-t.y)).slice(0,14);
   const gsel=id=>'<select id="'+id+'" class="sel"><option value="">—</option>'+goods.filter(g=>(t.stock[g]||0)>0).map(g=>'<option value="'+g+'">'+GOODS[g].n+' ('+t.stock[g]+')</option>').join('')+'</select>';

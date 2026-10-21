@@ -38,7 +38,7 @@ try{
  B.over=true;B.endT=0;t.updateBattle(.01);t.act('cont');done();
  // the hero: bows and staves
  ok(t.ITEMS.g_bow_2&&t.ITEMS.g_bow_2.kind==='ranged'&&t.ITEMS.g_staff_3.kind==='magic'&&t.ITEMS.g_staff_3.m.mp>0,'bows and staves come in every material');
- const pw0=t.partyPower();P.inv=P.inv.map(()=>null);t.invAdd('good','arrows',150);t.invAdd('good','bolts',40);P.gear.weapon='g_bow_2';ok(t.heroKind()==='ranged'&&t.heroStats().range>0,'a bow makes you a ranged fighter');
+ const pw0=t.partyPower();P.inv=P.inv.map(()=>null);P.gear.quiver='q_master';P.gear.weapon='g_bow_2';ok(t.heroKind()==='ranged'&&t.heroStats().range>0,'a bow makes you a ranged fighter');
  B=fresh(['militia'],{});const h=B.hero;t.heroState();const sp0=B.hx.sp;B.aim=0;h.cd=0;B.arrows=[];t.swing();
  ok(B.arrows.length===1&&B.arrows[0].team===0&&!B.arrows[0].magic&&B.hx.sp<sp0,'with a bow, Attack shoots an arrow and costs stamina');
  t.updateSkillBar();ok(/^Shoot \(\d+\)$/.test(document.getElementById('swing').textContent),'the button says Shoot, with arrows left');B.over=true;B.endT=0;t.updateBattle(.01);t.act('cont');done();
@@ -78,7 +78,7 @@ try{
  // the bow: hold to draw, let go to shoot; holding a full draw drains stamina; the wheel sets the range; right-click shoves
  // (seeded, on open ground: a random tree by your hero or where the arrow comes down catches a low arrow 35% of the time)
  {const r0=Math.random;Math.random=t.seeded(9);try{
- t.invAdd('good','arrows',100);P.gear.weapon=t.gearId('bow',2);G.bowRange=180;B=fresh(['militia'],{});B.obs=[];B.units.forEach(u=>{if(!u.hero){u.x=560;u.cd=99;u.s={...u.s,spd:0}}});const hb2=B.hero;t.heroState().sp=999;
+ P.gear.quiver='q_master';P.gear.weapon=t.gearId('bow',2);G.bowRange=180;B=fresh(['militia'],{});B.obs=[];B.units.forEach(u=>{if(!u.hero){u.x=560;u.cd=99;u.s={...u.s,spd:0}}});const hb2=B.hero;t.heroState().sp=999;
  const cvs=document.querySelector('canvas'),R2=cvs.getBoundingClientRect(),at2=(x,y)=>({clientX:R2.left+x*R2.width/t.VW,clientY:R2.top+y*R2.height/t.VH,pointerType:'mouse',bubbles:true});
  // (the mouse and the wheel no longer draw the bow: set aside with the manual control; its mechanics are called directly)
  const press=(btn,x,y)=>btn===2?t.shove():t.drawStart(),release=()=>{if(t.B&&t.B.draw)t.drawRelease()};
@@ -106,25 +106,24 @@ try{
  ok(!t.has('guide'),'without it there is no path guide');P.tree.push('finesseb2');ok(t.has('guide'),'learning Hawkeye turns the guide on');t.drawBattle();P.tree=P.tree.filter(x=>x!=='finesseb2');
  P.gear.weapon=t.gearId('crossbow',1);ok(!t.isBow(),'crossbows shoot at once, no drawing');B.over=true;B.endT=0;t.updateBattle(.01);t.act('cont');done();P.gear.weapon=t.gearId('sword',0);G.mouse.in=false;
  }finally{Math.random=r0}}
- // ammunition: shots use arrows or bolts, none left means no shot, some come back after a win; troops have quivers
- P.gear.weapon=t.gearId('bow',1);P.inv=P.inv.map(()=>null);t.invAdd('good','arrows',3);B=fresh(['militia'],{});B.units.forEach(u=>{if(!u.hero){u.x=560;u.cd=99;u.s={...u.s,spd:0}}});t.heroState().sp=999;B.aim=0;
- for(let k=0;k<3;k++){B.hero.cd=0;t.swing()}ok(t.goodN('arrows')===0&&B.arrows.length===3,'each shot uses an arrow');
- B.hero.cd=0;t.swing();t.drawStart();ok(B.arrows.length===3&&!B.draw&&B.floats.some(f=>/Out of arrows/.test(f.t)),'with none left you cannot shoot');
- B.win=true;B.over=true;B.endT=0;t.updateBattle(.01);t.act('lt-all');ok(t.goodN('arrows')>=1,'after a win you gather some back ('+t.goodN('arrows')+' of 3)');t.act('cont');done();
- P.gear.weapon=t.gearId('crossbow',1);ok(t.ammoOf()==='bolts','crossbows use bolts');P.gear.weapon=t.gearId('staff',1);ok(t.ammoOf()===null,'magic needs no ammunition');
+ // shots: your quiver's (doc/ITEMS_DESIGN.md §2b), none left means no shot, nothing gathered after a win; troops have quivers
+ P.gear.weapon=t.gearId('bow',1);P.gear.quiver=null;P.inv=P.inv.map(()=>null);B=fresh(['militia'],{});B.units.forEach(u=>{if(!u.hero){u.x=560;u.cd=99;u.s={...u.s,spd:0}}});t.heroState().sp=999;B.aim=0;
+ for(let k=0;k<t.QUIVER.none;k++){B.hero.cd=0;t.swing()}ok(B.hero.ammo===0&&B.arrows.length===t.QUIVER.none,'with no quiver a bow has '+t.QUIVER.none+' shots, each one spent');
+ B.hero.cd=0;t.swing();t.drawStart();ok(B.arrows.length===t.QUIVER.none&&!B.draw&&B.floats.some(f=>/Out of arrows/.test(f.t)),'with none left you cannot shoot');
+ B.win=true;B.over=true;B.endT=0;t.updateBattle(.01);t.act('lt-all');ok(!P.inv.some(s=>s&&/arrows|bolts/.test(s.id)),'after a win nothing is gathered: no arrows to gather');t.act('cont');done();
+ P.gear.weapon=t.gearId('crossbow',1);P.gear.quiver='q_boltCase';ok(t.heroShots()===40,'a crossbow shoots its bolt case\'s bolts');P.gear.weapon=t.gearId('staff',1);ok(t.heroShots()===null,'magic needs no quiver');P.gear.quiver=null;
  B=fresh(['hum_bow'],{hum_spear:1});const ar3=B.units.find(u=>u.type==='hum_bow'),sp3=B.units.find(u=>u.type==='hum_spear');B.arrows=[];
  const qv=t.quiverOf(ar3.s);for(let k=0;k<qv;k++)t.attack(ar3,sp3);ok(qv>=32&&B.arrows.length===qv&&ar3.empty&&!ar3.s.range&&ar3.s.reach>=10,'a bowman has '+qv+' arrows, then draws a blade');
  ok(t.quiverOf(ST.dw_xbow)===32&&t.quiverOf(ST.orc_thrower)>=32&&t.quiverOf(ST.hum_bow)===40&&t.quiverOf(ST.hum_mage)===Infinity,'every shooter carries at least 32: bows 40, crossbows 32; casters never run out');
  B.over=true;B.endT=0;t.updateBattle(.01);t.act('cont');done();
- // buying ammunition, and a ranged start comes with a quiver
- const ash3=t.townBy('Ashford');P.gold=500;G.mode='world';G.modal=false;t.hidePanel();t.enterTown(ash3);t.act('tab','smith');ok(/Ammunition/.test(document.getElementById('panel').innerHTML),'smiths sell ammunition');
- ash3.stock.arrows=200;const a0=t.goodN('arrows');t.act('buy-ammo','arrows:25');ok(t.goodN('arrows')===a0+25,'buy 25 arrows');t.act('leave');done();
- ok(t.TOWNS.filter(x=>x.mod&&x.races.includes('elf')).every(x=>x.mod.arrows<1)&&t.TOWNS.filter(x=>x.mod&&x.races.includes('dwarf')).every(x=>x.mod.bolts<1),'elves sell arrows cheap, dwarves bolts');
- t.act('begin','exile');ok(P.gear.weapon===t.gearId('bow',0)&&t.goodN('arrows')===30,'the Exiled archer starts with a bow and 30 arrows');t.act('begin','soldier');
+ // buying a quiver, and a ranged start comes with one
+ const ash3=t.townBy('Ashford');P.gold=500;G.mode='world';G.modal=false;t.hidePanel();t.enterTown(ash3);t.act('tab','smith');ok(/Quivers/.test(document.getElementById('panel').innerHTML)&&!/Ammunition/.test(document.getElementById('panel').innerHTML),'smiths sell quivers, not ammunition');
+ t.act('buy-quiver','q_soldier');ok(P.inv.some(s=>s&&s.id==='q_soldier'),'buy a soldier\'s quiver');t.act('leave');done();
+ t.act('begin','exile');ok(P.gear.weapon===t.gearId('bow',0)&&P.gear.quiver==='q_worn'&&!t.goodN('arrows'),'the Exiled archer starts with a bow and a worn quiver (20 arrows)');t.act('begin','soldier');
  // a past decides your weapon: seven pasts cover every weapon
  const wb=Object.values(t.BGS).map(b=>b.weapon);ok(wb.length===7&&['sword','spear','axe','bow','crossbow','staff','wand'].every(b=>wb.includes(b)),'seven pasts, one for each weapon: '+wb.join(', '));
  t.showTitle('new');ok(!document.querySelector('[data-act="weapon"]')&&/Crossbow · Ranged/.test(document.getElementById('panel').innerHTML),'there is no weapon choice; each past shows its weapon');
- t.act('begin','merchant');ok(P.gear.weapon===t.gearId('crossbow',0)&&t.goodN('bolts')===20&&t.heroKind()==='ranged'&&t.heroStats().tags.includes('pierce'),'the Merchant’s child starts with a wooden crossbow and 20 bolts');
+ t.act('begin','merchant');ok(P.gear.weapon===t.gearId('crossbow',0)&&P.gear.quiver==='q_wornCase'&&t.heroShots()===20&&t.heroKind()==='ranged'&&t.heroStats().tags.includes('pierce'),'the Merchant’s child starts with a wooden crossbow and a worn bolt case (20 bolts)');
  const xb=t.heroShot();P.gear.weapon=t.gearId('bow',0);const bw=t.heroShot();ok(xb.mult>bw.mult&&xb.cd>bw.cd,'crossbows hit harder and slower than bows');
  P.gear.weapon=t.gearId('wand',0);const wd=t.heroShot();P.gear.weapon=t.gearId('staff',0);const sf=t.heroShot();ok(t.heroKind()==='magic'&&wd.mp<sf.mp&&wd.cd<sf.cd&&wd.mult<sf.mult,'wands are cheaper and faster than staves, but weaker');
  P.gear.weapon=t.gearId('axe',0);ok(t.heroKind()==='melee'&&t.heroStats().tags.includes('pierce')&&t.ITEMS[t.gearId('axe',0)].m.dmg>t.ITEMS[t.gearId('sword',0)].m.dmg,'an axe is melee, hits harder and pierces');

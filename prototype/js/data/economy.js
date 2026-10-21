@@ -10,7 +10,7 @@ const ESTATES={
   quarry:{n:'Quarry',goods:['stone'],cost:90,ground:'rock',work:'miner',d:'Cut stone for walls and halls: 4 stone a day per level.'},
   port:{n:'Port',goods:['fish','spice'],cost:140,ground:'shore',work:'fisher',d:'Piers and boats: 5 fish a day per level, and ships bring spice.'},
   workshop:{n:'Weavers & Tanners',goods:['cloth','furs'],cost:90,ground:null,d:'Turns 2 wool into 2 cloth a day per level; trappers bring furs in the frost.'},
-  smithy:{n:'Smithy',goods:['tools','arrows','bolts'],cost:110,ground:null,d:'Turns 1 iron and 1 timber into 1 tools, 6 arrows and 3 bolts a day per level.'},
+  smithy:{n:'Smithy',goods:['tools'],cost:110,ground:null,d:'Turns 1 iron and 1 timber into 1 tools a day per level.'},
   brewery:{n:'Brewery',goods:['ale'],cost:80,ground:null,d:'Turns 2 grain into 2 ale a day per level. Ale keeps people content.'},
   granary:{n:'Granary',goods:[],cost:90,ground:null,d:'+50% storage per level, food spoils half as fast, and more people can live here.'},
   market:{n:'Market',goods:[],cost:110,ground:null,d:'Stalls and a counting house: +3 gold a day in dues per level, and caravans set out more often.'}
@@ -23,7 +23,7 @@ const WALL_N=['No walls','Palisade','Stone walls','Great walls'],WALL_COST=[0,10
 /* what each estate makes per level per day, from what (inputs come out of the holding's stock), and what people need (economy.js) */
 const MAKE={
   farm:{out:{grain:6,fruit:.8}},pasture:{out:{meat:1.5,milk:2,cheese:.6,wool:2}},lumber:{out:{timber:4}},mine:{out:{iron:3}},quarry:{out:{stone:4}},
-  port:{out:{fish:5,spice:.6}},workshop:{in:{wool:2},out:{cloth:2}},smithy:{in:{iron:1,timber:1},out:{tools:1,arrows:6,bolts:3}},brewery:{in:{grain:2},out:{ale:2}},
+  port:{out:{fish:5,spice:.6}},workshop:{in:{wool:2},out:{cloth:2}},smithy:{in:{iron:1,timber:1},out:{tools:1}},brewery:{in:{grain:2},out:{ale:2}},
   market:{},granary:{}
 };
 const FARM_CLIM={grass:1,frost:.5,desert:.7,swamp:.75};

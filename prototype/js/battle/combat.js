@@ -87,9 +87,16 @@ function bowRangeStep(step){G.bowRange=clamp(bowRange()+step,BOW_RANGE[0],BOW_RA
 const cursorDist=h=>B.aiAim?Math.hypot(B.aiAim.x-h.x,B.aiAim.y-h.y):G.mouse.in&&G.mouse.type==='mouse'?Math.hypot(G.mouse.x-h.x,G.mouse.y+6-h.y):150;
 // where the shot you are drawing will land, and how high it climbs on the way
 function bowLanding(p){const h=B.hero;if(!h)return null;const d=Math.min(bowRange(),aimReach(p));return{x:h.x+Math.cos(B.aim)*d,y:h.y+Math.sin(B.aim)*d,d,H:Math.min(44,d*d/700)}}
-// a bow shoots arrows, a crossbow bolts; magic needs none
-const ammoOf=()=>{const w=P.gear.weapon&&ITEMS[P.gear.weapon];return w&&w.base==='crossbow'?'bolts':w&&w.base==='bow'?'arrows':null};
-function haveAmmo(){const a=ammoOf();if(!a||goodN(a)>0)return true;if(B&&B.hero)B.floats.push({x:B.hero.x,y:B.hero.y-26,t:'Out of '+GOODS[a].n.toLowerCase(),life:.8,c:'#ff9a90'});return false}
+/* your hero's quiver (doc/ITEMS_DESIGN.md §2b): the shots her bow or crossbow carries into a battle, her quiver's (core/items.js
+   Quiver shots: none, or one that does not fit it, QUIVER.none), full at each battle's start and kept on her soldier as every
+   shooter's are (u.ammo: the battle's HUD and the captains read it); magic needs none (null) */
+const heroShots=()=>quiverShots(P.gear,P.gear.weapon,null);
+function heroShotsLeft(){const h=B&&B.hero;if(!h)return heroShots();if(h.ammo==null)h.ammo=heroShots();return h.ammo}
+function heroSpendShots(n){if(heroShotsLeft()!=null)B.hero.ammo=Math.max(0,B.hero.ammo-n)}
+function haveShots(){const n=heroShotsLeft();if(n==null||n>0)return true;if(B&&B.hero)B.floats.push({x:B.hero.x,y:B.hero.y-26,t:'Out of '+(isBow()?'arrows':'bolts'),life:.8,c:'#ff9a90'});return false}
+// her quiver in words (the Skills page: ui/talents.js), '' when she shoots none
+function heroQuiverText(){const n=heroShots(),id=P.gear.quiver,Q=id&&ITEMS[id]&&QUIVERS[ITEMS[id].quiver];if(n==null)return '';
+  return Q&&n===Q.shots?'Your '+Q.n.toLowerCase()+': '+arrowsText(Q)+' a battle, full again at each start. ':'No quiver that fits it: '+n+' shots a battle. '}
 const heroShot=()=>{const w=P.gear.weapon&&ITEMS[P.gear.weapon];return w&&w.shot||SHOT[heroKind()]||SHOT.ranged};
 // right-click: a quick shove that knocks enemies in front back and staggers them, for very little damage
 const SHOVE={sp:8,cd:.7,mult:.25,kb:30,stun:.35},BASH={sp:10,cd:.8,mult:.5,kb:40,stun:.7};
@@ -127,7 +134,7 @@ class HeroHands{
     knock(e,h.x,h.y,o.kb||0);if(o.stun)stun(e,o.stun);
     X.combo++;X.comboT=2.2;B.bestCombo=Math.max(B.bestCombo||0,X.combo);// (the longest chain: told in the log when the battle ends)
   }
-  drawStart(){const h=B.hero;if(!h||h.hp<=0||B.blocking||this.busy()||h.cd>0||!haveAmmo())return;B.draw={t:0}}
+  drawStart(){const h=B.hero;if(!h||h.hp<=0||B.blocking||this.busy()||h.cd>0||!haveShots())return;B.draw={t:0}}
   drawRelease(force){const p=force!=null?force:clamp(B.draw.t/DRAW_TIME,.15,1);B.draw=null;this.shoot('ranged',p)}
   // holding a full draw: stamina drains; at zero the arm gives out
   drawHold(dt){
@@ -136,8 +143,8 @@ class HeroHands{
     if(X.sp<=0){B.floats.push({x:h.x,y:h.y-28,t:'Arm gives out',life:.8,c:'#9aa3ad'});X.sp=heroShot().sp;X.drawRelease(.35)}
   }
   shoot(kind,power){
-    const h=B.hero,X=this,S=heroShot();if(h.cd>0){X.buf=true;return}X.buf=false;if(!haveAmmo()||!X.spend(S.sp,S.mp))return;
-    const am=ammoOf();if(am){goodTake(am,1);B.fired=(B.fired||0)+1}
+    const h=B.hero,X=this,S=heroShot();if(h.cd>0){X.buf=true;return}X.buf=false;if(!haveShots()||!X.spend(S.sp,S.mp))return;
+    heroSpendShots(1);
     h.cd=S.cd*(h.s.cd/.45);h.atkAt=B.t;h.face=Math.cos(B.aim)>=0?1:-1;
     const dmg=h.s.dmg*S.mult*(.9+Math.random()*.2)*(h.buffT>0?1.3:1)*(kind==='magic'?spellMul():1+.04*skill('archery')),src={...h.s,bolt:'#ffe08a',flat:!!S.flat,heroShot:true};if(kind==='magic')train('spell',.5);
     // (as true as any shooter's: attacks.js aimErr, by their skill, their bow and their draw)
@@ -184,7 +191,7 @@ class HeroHands{
   cast(id){
     const h=B.hero,S=HSKILLS[id];if(!h||h.hp<=0||this.busy())return;
     if(!knows(id)){B.floats.push({x:h.x,y:h.y-26,t:'Learn '+S.n+' on the skill tree',life:.9,c:'#98a0ba'});return}
-    if(S.needs==='bow'&&(!isBow()||goodN('arrows')<4)){B.floats.push({x:h.x,y:h.y-26,t:S.n+' needs a bow and 4 arrows',life:.9,c:'#98a0ba'});return}
+    if(S.needs==='bow'&&(!isBow()||heroShotsLeft()<4)){B.floats.push({x:h.x,y:h.y-26,t:S.n+' needs a bow and 4 arrows',life:.9,c:'#98a0ba'});return}
     castAbility(h,id);// (one cast for every caster: battle/abilities.js)
   }
   // called from your hero's moment with their own time step; returns true while a roll or leap owns the hero's movement
@@ -210,7 +217,7 @@ class HeroHands{
       if(L&&has('guide')){const a=B.draw?.9:.35;ctx.fillStyle='rgba(255,224,138,'+a+')';
         for(let k=1;k<12;k++){const f=k/12;ctx.fillRect(Math.round(h.x+(L.x-h.x)*f)-1,Math.round(h.y+(L.y-h.y)*f-4-4*L.H*f*(1-f))-1,2,2)}
         ctx.strokeStyle='rgba(255,224,138,'+a+')';ctx.lineWidth=1;const lx=Math.round(L.x)+.5,ly=Math.round(L.y)+.5;ctx.beginPath();ctx.moveTo(lx-3,ly-3);ctx.lineTo(lx+3,ly+3);ctx.moveTo(lx+3,ly-3);ctx.lineTo(lx-3,ly+3);ctx.stroke()}
-      txt('BOW · '+goodN('arrows')+' arrows · range '+bowRange()+' (wheel)'+(B.draw&&B.draw.t>=DRAW_TIME?' · holding drains stamina':'')+(has('guide')?'':' · learn Hawkeye for a guide'),6,VH-36,B.draw&&B.draw.t>=DRAW_TIME?'#ffb04a':'#e8d8a0');}
+      txt('BOW · '+heroShotsLeft()+' arrows · range '+bowRange()+' (wheel)'+(B.draw&&B.draw.t>=DRAW_TIME?' · holding drains stamina':'')+(has('guide')?'':' · learn Hawkeye for a guide'),6,VH-36,B.draw&&B.draw.t>=DRAW_TIME?'#ffb04a':'#e8d8a0');}
     // stamina and mana under the health bar (with the manual control; under RTS command, in the hero's details: battlehud.js)
     if(MANUAL_HERO){ctx.fillStyle='#000';ctx.fillRect(5,20,62,4);ctx.fillRect(5,25,62,4);
       ctx.fillStyle=X.spT<STAM.delay?'#c8a24a':'#78c474';ctx.fillRect(6,21,Math.round(60*X.sp/maxSP()),2);
@@ -222,7 +229,7 @@ class HeroHands{
     if(B.banner){const b=B.banner;ctx.fillStyle='rgba(232,185,74,.12)';ctx.beginPath();ctx.arc(b.x,b.y-4,b.r,0,7);ctx.fill();rect(ctx,'#5a3a20',Math.round(b.x),Math.round(b.y)-22,1,22);rect(ctx,'#e8b94a',Math.round(b.x)+1,Math.round(b.y)-22,7,5)}
   }
   updateBar(){
-    const X=this;$('#swing').textContent={melee:'Attack',ranged:'Shoot',magic:'Cast'}[heroKind()]+(ammoOf()?' ('+goodN(ammoOf())+')':'');
+    const X=this;$('#swing').textContent={melee:'Attack',ranged:'Shoot',magic:'Cast'}[heroKind()]+(heroShots()!=null?' ('+heroShotsLeft()+')':'');
     document.querySelectorAll('[data-slot]').forEach(b=>{const id=P.slots[+b.dataset.slot];if(!id)return;const A=abil(id),lock=!knows(id);b.disabled=lock||X.cds[id]>0;
       b.textContent=SLOT_KEYS[+b.dataset.slot]+' '+A.n+(lock?' (not learned)':X.cds[id]>0?' '+Math.ceil(X.cds[id]):'');b.title=A.d+' Costs '+costText(A)+'.'});
     const db=document.querySelector('[data-skill="dodge"]');if(db){db.disabled=X.rollCd>0||X.sp<dodgeCost();db.textContent='F Dodge'+(X.rollCd>0?' '+X.rollCd.toFixed(1):'')}

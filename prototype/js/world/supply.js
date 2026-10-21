@@ -1,7 +1,7 @@
 'use strict';
 /* ---------- supplies (doc/SUPPLY_DESIGN.md): travel is not free. Your band's stamina (P.bsta, 0-100: your hero's stamina is the
    band's, kept in her sp: parties.js PlayerParty) runs down on the march and comes back when you stop, make camp or stay in a holding; it
-   eats and drinks every hour, more on the march; drink (water, ale, liquor) keeps the drain at its rate or slows it; the frost
+   eats and drinks every hour, more on the march; drink (water, ale, liquor) keeps the drain at its rate; the frost
    wants furs and the desert water. Below SUPPLY.tired the band is Tired, below SUPPLY.exhausted Exhausted (its pace: bandPace).
    It goes into a battle at its stamina and comes out at its side's (battle/fatigue.js). The band's own numbers are PlayerParty's
    (staminaState, foodHour, drinkHour, furNeed, fitness); here: the tunables, the hour, the camp and what the card and the ring
@@ -10,7 +10,7 @@
    Stamina an hour on the march: march, × rough (hills, forest, mountains, swamp, snow, sand), × night, × forced (Forced March),
    × dry with nothing to drink (desertDry: the desert with no water), × 1 + cold × the share of furs you lack in the frost, ×
    mounted (mostly riders), × 1 − skill a level of Athletics (on foot) or Riding (mounted, at most skillCap off), × guide (a Guide in
-   the band), × the drink's drain (drink: water 1, ale .9, liquor .8). Stopped it comes back: rest (stop, in camp, staying in a
+   the band). Stopped it comes back: rest (stop, in camp, staying in a
    holding), × dryRest with nothing to drink; none with no food, nor in the desert with no water.
    tired, exhausted: the states' thresholds; pace: the band's pace in them; tiredMorale: −n morale every so many hours Tired or
    worse; worn: an exhausted band has a man fall sick (wounded) every so many hours.
@@ -24,7 +24,8 @@
    forcedMarch: Hurry (key 4, the top bar, the action ring) marches the band × pace, its stamina draining × drain; it ends once
    the band is Exhausted (world.js fastWatch). Not the Forced March perk (forced, above).
    drink: rations an hour (people + 1) ÷ per on the march, × rest stopped; order: what is drunk first (cheapest; liquor first when
-   you choose: BAND.liquor); each drink's drain and morale (a day, while you drink it).
+   you choose: BAND.liquor); each drink's morale, a ration, once, as it comes into your stores (drinkIn; the owner, 2026-10-22:
+   doc/ITEMS_DESIGN.md §2a, in place of the slower drain while you drank ale or liquor).
    thirst (the owner: water before food; it kills, after the sickness): nothing to drink, the hours counted × desert in the desert
    with no water: Thirsty at once (the drain above), Parched from parched hours (pace × pace, −morale an hour), Dying of thirst
    from dying hours (a man falls sick every toll hours), and from death hours a sick man (else a fit one) dies every toll hours.
@@ -41,7 +42,7 @@ const SUPPLY={march:2,rough:1.5,night:1.3,forced:1.5,dry:1.5,desertDry:2,cold:.5
   rest:{stop:2,camp:8,stay:10},dryRest:.5,
   tired:20,exhausted:5,pace:{tired:.85,exhausted:.6},tiredMorale:{every:3,n:1},worn:{every:8},
   eat:{rest:1,march:1.5},frostEat:.5,hunger:{morale:1,every:2,rest:.5,starving:72,starveDrain:1.25,starveMorale:1,desert:96,sick:168,die:240,toll:12,hero:{every:6,hp:.05,mp:.05}},
-  drink:{per:6,rest:.5,order:['water','ale','liquor'],water:{drain:1,morale:0},ale:{drain:.9,morale:1},liquor:{drain:.8,morale:2}},
+  drink:{per:6,rest:.5,order:['water','ale','liquor'],water:{morale:0},ale:{morale:.5},liquor:{morale:1.5}},
   thirst:{desert:2,parched:12,pace:.85,morale:1,dying:24,death:48,toll:6,hero:{hp:.1,mp:.1}},lost:{days:7,keep:20},
   fill:{days:2,near:3,well:40},furPer:5,frost:{every:6,morale:1},forcedMarch:{pace:2,drain:2.5},
   battleMin:25,camp:{heal:1.5,caught:8,r:4},hint:60,hurt:3,fever:{sick:.5,die:.2,dieMin:.05,med:.02}};
@@ -79,6 +80,8 @@ const survivalShare=()=>1-.06*skill('surv');
 function drinkOrder(L){const o=SUPPLY.drink.order;return L&&L.desert?['water']:BAND.liquor?['liquor',...o.filter(k=>k!=='liquor')]:o}
 const drinkStock=L=>drinkOrder(L).reduce((a,k)=>a+goodN(k),0);
 const drinkNext=L=>drinkOrder(L).find(k=>goodN(k)>0)||null;
+// n of a drink come into your stores (the bag: core/items.js Good gained): its morale, once (SUPPLY.drink: ale and liquor lift it)
+function drinkIn(id,n){const m=SUPPLY.drink[id]?SUPPLY.drink[id].morale*n:0;if(m)P.morale=clamp(P.morale+m,0,100)}
 // n rations drunk, in order: the drink it was on (the first that gave any), or null with none to drink
 function drinkTake(n,L){let left=n,first=null;for(const k of drinkOrder(L)){if(!left)break;const m=goodTake(k,left);if(m&&!first)first=k;left-=m}return first}
 // waterskins filled to SUPPLY.fill.days of drink on the march, as the bag's room allows, free: how many (quiet: no line)
@@ -109,7 +112,7 @@ function staminaRate(moving,dr,L){
     if(Clock.isNight)mul(S.night,'night');
     if(P.hasPerk('forced'))mul(S.forced,'Forced March');
     if(G.hurry)mul(S.forcedMarch.drain,'hurrying');
-    if(!dr)mul(L.desert?S.desertDry:S.dry,L.desert?'no water in the desert':'nothing to drink');else mul(S.drink[dr].drain,GOODS[dr].n.toLowerCase());
+    if(!dr)mul(L.desert?S.desertDry:S.dry,L.desert?'no water in the desert':'nothing to drink');
     if(L.frost)mul(1+S.cold*coldShare(),'short of furs');
     const ride=mountedShare(bandSpeeds())>=.5,sk=skill(ride?'ride':'athl');
     if(ride)mul(S.mounted,'mostly mounted');
@@ -186,7 +189,6 @@ function supplyHour(){
   const hungry=(due?foodTake(due)<due:false)||!foodN();
   // drink: rations as they come due, else on what it carries
   u.drink+=P.drinkHour(moving);const owe=Math.floor(u.drink);u.drink-=owe;const dr=owe?drinkTake(owe,L):drinkNext(L);
-  if(dr)P.morale+=S.drink[dr].morale/24;
   P.bsta=clamp(P.bsta+staminaRate(moving,dr,L).n,0,100);
   const st=P.staminaState();
   if(st!=='fresh'){if(++u.tired%S.tiredMorale.every===0)P.morale-=S.tiredMorale.n}else u.tired=0;
@@ -314,9 +316,9 @@ function mapRingItems(wx,wy,o,cx,cy){
 /* ---------- the tavern's tapster (ui/town.js Tavern): liquor for the road, at its base price, and the well's water, free ---------- */
 const LIQUOR_LOT=5;
 function tapsterCard(t,race){
-  const p=GOODS.liquor.base*LIQUOR_LOT,why=P.gold<p?'Not enough gold':goodRoom('liquor')<LIQUOR_LOT?'No room in your bag':'';
+  const p=GOODS.liquor.base*LIQUOR_LOT,why=P.gold<p?'Not enough gold':goodRoom('liquor')<LIQUOR_LOT?BAG_FULL:'';
   return{pic:personPic('innkeeper',race,2),name:'The tapster',role:'Drink for the road',facts:['Water '+goodN('water'),'Liquor '+goodN('liquor'),goodN('ale')?'Ale '+goodN('ale'):''],
-    note:'Water keeps your band’s stamina draining at its rate; ale and liquor slow the drain and lift spirits.',
+    note:'Something to drink keeps your band’s stamina draining at its rate; ale and liquor lift its spirits as they come into your stores.',
     acts:[['sup-fill',t.name,'Fill waterskins'],['sup-liquor',t.name,'Buy '+LIQUOR_LOT+' liquor · '+p+'g',why]]}}
 function supplyAct(a,arg){
   if(a==='sup-fill')fillSkins();

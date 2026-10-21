@@ -148,6 +148,8 @@ class Character extends Unit{
     return COMP_SLOTS.reduce((t,sl)=>{const it=o.gear[sl]&&ITEMS[o.gear[sl]];return t+(it&&it.m&&it.m[k]||0)},0)}
   treeMod(k){return tmOf(this.o,k)}
   hasPerk(p){return this.o.perks.includes(p)}
+  // its numbers on a battlefield, with the shots its quiver holds there (core/items.js quiverShots; none when it shoots nothing)
+  fieldStats(env,team,lv){const s=super.fieldStats(env,team,lv),g=this.o.gear||{},q=quiverShots(g,g.weapon,s);return q==null?s:{...s,shots:q}}
   /* its numbers: the kind it fights as (ST[key]), grown by its level (CHAR_GROW: its role's rate, or the one a recruit kept:
      o.grow), then attributes, gear, disciplines, its tree and perks. One formula for every character but your hero */
   base(){

@@ -19,7 +19,7 @@ try{
  // production chains
  // (no mine of its own digging iron meanwhile: a generated world may give Ashford one)
  const mine0=ash.bld.mine;ash.bld.mine=0;ash.bld.smithy=1;ash.stock.iron=0;ash.stock.timber=50;let out=t.produce(ash,null);ok(!out.tools,'a smithy without iron makes nothing');
- ash.stock.iron=50;const i0=ash.stock.iron;out=t.produce(ash,null);ok(out.tools>=1&&out.arrows>=1&&ash.stock.iron<i0,'with iron and timber it makes tools and arrows ('+out.tools+' tools, '+out.arrows+' arrows) and uses the iron');ash.bld.mine=mine0;
+ ash.stock.iron=50;const i0=ash.stock.iron;out=t.produce(ash,null);ok(out.tools>=1&&!out.arrows&&!out.bolts&&ash.stock.iron<i0,'with iron and timber it makes tools ('+out.tools+'; no arrows nor bolts now) and uses the iron');ash.bld.mine=mine0;
  ash.bld.brewery=1;ash.stock.grain=50;out=t.produce(ash,null);ok(out.ale>=1,'a brewery turns grain into ale');
  // people: famine and growth
  const keep={...ash.stock},kb={...ash.bld};['farm','pasture','port'].forEach(k=>ash.bld[k]=0);t.FOODS.forEach(g=>ash.stock[g]=0);ash.pop=600;const pop0=ash.pop;for(let i=0;i<3;i++){t.FOODS.forEach(g=>ash.stock[g]=0);t.econDay()}ok(ash.pop<pop0,'with no food, people die or leave ('+pop0+' → '+ash.pop+')');

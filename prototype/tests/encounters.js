@@ -350,7 +350,7 @@ try{
   const sl=P.inv.find(x=>x&&x.k==='letter');
   ok(P.gold===g0+r.purse&&sl&&sl.id===r.letter.id&&sl.n===1&&sl.L.to===r.letter.to&&sl.L.kind===r.letter.kind&&(sl.L.seen===0||sl.L.seen===1)&&t.repAt(r.home)===r0-t.CONDUCT.robMessenger.rep&&t.honorWith(r.fac)===h0-t.CONDUCT.robMessenger.honor&&T0.owner===r.fac&&/sealed letter, addressed to/.test(panel()),
     'confirmed: his purse ('+r.purse+' gold, no letter’s price) and his sealed letter in your bag ('+(sl&&sl.L.kind)+', to '+(sl&&sl.L.to)+'); reputation in '+r.home+' −'+t.CONDUCT.robMessenger.rep+', honor with the '+t.FACS[r.fac].n+' −'+t.CONDUCT.robMessenger.honor);world();
-  P.inv.fill(null).forEach((x,i)=>{P.inv[i]={k:'good',id:'grain',n:1}});const r2=meet('messenger'),g2=P.gold;pickA(1);sure();ok(P.gold===g2+r2.purse&&!P.inv.some(x=>x&&x.k==='letter')&&/bag is full/.test(panel()),'your bag full: the purse, and the letter stays in the mud');cleanBag();world()}
+  P.inv.fill(null).forEach((x,i)=>{P.inv[i]={k:'good',id:'grain',n:1}});for(let i=0;i<t.BAG.maxOver;i++)P.inv.push({k:'good',id:'grain',n:1});const r2=meet('messenger'),g2=P.gold;pickA(1);sure();ok(P.gold===g2+r2.purse&&P.inv.some(x=>x&&x.k==='letter')&&!/bag is full/.test(panel()),'your bag past its limit: the purse, and the letter still (a quest item, never left in the mud)');cleanBag();world()}
  // ---- strayed sheep: a shepherd and his strays (ROAD_PART); help, ride into each, his thanks for what came back
  // (the strays fall 40-80 px round him, only 14 apart: two can stand within your reach (catchReach), and riding into one would
  // drive both home; spread: each set 60 px out from him, evenly round, so riding into one drives only that one)

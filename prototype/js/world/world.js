@@ -111,7 +111,7 @@ function bandPace(){
   let p=paceRatio(sp)*sizeMul(n)*(1+gm('travel')-(m&&m.m.travel||0))*(m?1+.02*skill('ride'):1+.015*skill('athl'));
   p*=1-.5*w/Math.max(1,n+w);if(hpf<.5)p*=1-.4*(.5-hpf);
   const g=roleOf('guide');if(g&&compInBand(g))p*=1.03+.01*compSkill(g,'scout');if(has('forced'))p*=1.15;
-  return Math.min(1.8,p)*P.staminaPace();
+  return Math.min(1.8,p)*P.staminaPace()*bagPace();// (an overfilled bag: core/inventory.js)
 }
 // (Woodcraft: in a wood, its slowing cut by WOODCRAFT.per a level, up to cap)
 const WOODCRAFT={per:.06,cap:.6,xp:.1};

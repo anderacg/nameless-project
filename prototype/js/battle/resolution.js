@@ -45,7 +45,6 @@ class BattleResolution{
     const txp=b.txp||{},o=b.opts,win=b.win,retreat=!!b.retreat,caught=b.caught||0,got=b.withdrawn||0,standing=b.units.filter(u=>u.team===1&&u.hp>0).length,fallen=Object.values(b.lost).reduce((a,n)=>a+n,0);bbar.hidden=true;G.mode='dialog';lootStart();
     const lost=o.tournament?{}:b.lost,kills=b.kills,slain=b.slain,h=b.hero,X=b.hx;
     if(b.bestCombo>=3)log('Your longest chain of blows: '+b.bestCombo+' hits.');
-    if(b.fired&&b.win&&ammoOf()){const back=invAdd('good',ammoOf(),Math.floor(b.fired*(.35+Math.random()*.2)));if(back)log('You gather '+back+' '+GOODS[ammoOf()].n.toLowerCase()+' from the field.')}
     // carry the hero's condition out of the fight; a knocked-out hero comes to at 10% health
     if(h.hp>0||h.left)P.hp=h.left?h.hpLeft:h.hp;else{P.hp=Math.max(1,Math.round(h.max*.1));log('You come to after the fight, badly wounded.','bad')}
     if(X){P.sp=X.sp;P.mp=X.mp}
@@ -77,7 +76,8 @@ class BattleResolution{
       P.renown+=Math.ceil(kills*(big?1.5:1));const moodLine=battleMood(4,'victory');gainXp(kills*8+(big?30:0));
       if(troopCount()>0)train('lead',3+kills*.5);train('tact',auto?6:2);
       const taken=takePrisoners(slain),drop=O.drop&&O.drop();
-      if(drop&&!invAdd('gear',drop,1))log('Your bag is full. You leave a '+ITEMS[drop].n+' behind.','bad');
+      if(drop&&!invAdd('gear',drop,1))log(BAG_FULL+'. You leave a '+ITEMS[drop].n+' behind.','bad');
+      bounty+=spoilsWon(e);// (valuables: a lord's or chieftain's purse, a camp's plunder: captives.js)
       {const c=(e.kind==='party'||e.kind==='camp')&&e.ref&&e.ref.ld;if(c){captureChief(c);e.ref.ld=null;bounty+=' You take '+chiefLabel(c)+' captive: hand him over for '+bountyOf(c)+' gold, or let him go (Hero, Party).'}}
       bounty=(O.won(e,slain,res)||'')+bounty;
       P.gold+=res.gold;

@@ -3,7 +3,7 @@
    they fight, a perk every third level; and one you trust can lead a party of your soldiers on the map ---------- */
 // P.comps[id]: {ap, role, lv, xp, gear:{slot:itemId}, sk:{k:{lv,xp}}, perks:[], perkPend, party, hurt (wounded until day)}
 // party: {cid, uid, x, y, troops:[type], order:'follow'|'patrol'|'return'|'stay', base (holding name), inside, wx, wy, cool, dir, fight}
-const COMP_SLOTS=['weapon','offhand','head','body','arms','legs','feet'];
+const COMP_SLOTS=['weapon','offhand','quiver','head','body','arms','legs','feet'];
 const COMP_SK={oneh:'One-Handed',twoh:'Two-Handed',archery:'Archery',med:'Medicine',scout:'Scouting',lead:'Leadership'};
 // what each brings when they join (they are no beginners); the rest start at 0
 const COMP_START={brann:{oneh:3,lead:2},elske:{med:3,oneh:1},tavi:{archery:3,scout:3}};
@@ -12,8 +12,9 @@ const COMP_PERKS={brute:{n:'Brute',d:'+12% damage'},stalwart:{n:'Stalwart',d:'+1
 const COMP_LEAD={lv:2,ap:2};// who may lead a party: level 2 and trusting you
 // the holding whose tavern they wait in: their own, or (in a world without it) their people's capital
 const compTown=id=>townBy(COMPS[id].town)||capitalOf(COMPS[id].race);
+// (a bowman comes with his worn quiver)
 function compInit(id){const c=P.comps[id];if(!c)return null;if(c.lv)return c;
-  Object.assign(c,{lv:1,xp:0,gear:{},sk:{},perks:[],perkPend:0,party:null,hurt:0});for(const k in COMP_SK)c.sk[k]={lv:(COMP_START[id]||{})[k]||0,xp:0};return c}
+  Object.assign(c,{lv:1,xp:0,gear:ST[id]&&ST[id].bow?{quiver:'q_worn'}:{},sk:{},perks:[],perkPend:0,party:null,hurt:0});for(const k in COMP_SK)c.sk[k]={lv:(COMP_START[id]||{})[k]||0,xp:0};return c}
 /* ---------- a companion: a Character (characters.js) over its record, P.comps[id]. It fights as its own kind (ST[id]), with the
    one formula's numbers; a perk to choose every third level; gear you give it in its seven slots (COMP_SLOTS); it may lead a
    party of your soldiers once it is level COMP_LEAD.lv and trusts you (ap) ---------- */

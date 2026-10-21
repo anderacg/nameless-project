@@ -7,14 +7,22 @@
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t.P,random0=Math.random,measure0=t.measureField,manual0=t.MANUAL_HERO,skills0=t.AUTOSK.on,blood0=t.BLOOD.on;
  // Group targeting owns near-opponent refresh; immediate defence bypasses crowd diversion. Assertions retain hit/target behavior.
  // (re-recorded 2026-10-19: a new skill, Woodcraft (6b911d6), in every character's skill table, which these snapshots hold; with it taken out every one matches as before: the battle's behaviour unchanged)
- const expected={"nearest":"78047ff7","shooter_target":"9439d95b","range_fallback":"bb12847a","firing_arcs":"f8cb12a2","shot_cycle":"e53fe44a","held_draw":"c5694ac1","moving_draw":"7d32f531","stunned":"06c5c85a","rout":"c6baa295","withdraw":"64ba7ae1","ordered_target":"04dd9352","firm_hold":"1484470c","relocation":"380e7e73","tired_movement":"d111f1e9","crowding":"4671d8b2","melee_mode":"6e2d76a9","cease_fire":"70b540a8","regeneration":"2f0bcc1a","pounce":"fccfbe20","pounce_range":"678bbcb5","manual_movement":"a9799369","frame_dispatch":"3bd98359","frame_gates":"a48500bf"};
+ // (re-recorded 2026-10-22, on purpose, for item categories (doc/ITEMS_DESIGN.md): every snapshot holds P whole (as your army's source),
+ // and your gear now has its quiver slot (P.gear.quiver: data/monsters.js EQUIP). Checked: with the quiver slot left out of EQUIP, arrows
+ // and bolts items again, the hero's ammunition as before (combat.js ammoOf, haveAmmo, the arrows taken from the bag, gathered after a
+ // win; no quiver's shots in the stats) and the starting arrows put back, every case is as it was. Was nearest 78047ff7, shooter_target
+ // 9439d95b, range_fallback bb12847a, firing_arcs f8cb12a2, shot_cycle e53fe44a, held_draw c5694ac1, moving_draw 7d32f531, stunned
+ // 06c5c85a, rout c6baa295, withdraw 64ba7ae1, ordered_target 04dd9352, firm_hold 1484470c, relocation 380e7e73, tired_movement d111f1e9,
+ // crowding 4671d8b2, melee_mode 6e2d76a9, cease_fire 70b540a8, regeneration 2f0bcc1a, pounce fccfbe20, pounce_range 678bbcb5,
+ // manual_movement a9799369, frame_dispatch 3bd98359, frame_gates a48500bf)
+ const expected={"nearest":"fa2d24f7","shooter_target":"cce41bab","range_fallback":"8b8e23fe","firing_arcs":"b38af394","shot_cycle":"c657a076","held_draw":"88e1b815","moving_draw":"d3fab869","stunned":"d6f6aaa4","rout":"9c8c02ab","withdraw":"25292351","ordered_target":"bbc5ed26","firm_hold":"cb5292fe","relocation":"e2e64c39","tired_movement":"6dc67b7d","crowding":"028ebecc","melee_mode":"fe866a37","cease_fire":"2142132e","regeneration":"2fea5440","pounce":"cff418c2","pounce_range":"476718ad","manual_movement":"5f147247","frame_dispatch":"bc8f618b","frame_gates":"9f637cbd"};
  const stable=x=>Array.isArray(x)?x.map(stable):x&&typeof x==='object'?Object.fromEntries(Object.keys(x).sort().map(k=>[k,stable(x[k])])):x;
  const hash=x=>{let h=2166136261;for(const c of JSON.stringify(stable(x)))h=Math.imul(h^c.charCodeAt(0),16777619)>>>0;return h.toString(16).padStart(8,'0')};
  const cases=['nearest','shooter_target','range_fallback','firing_arcs','shot_cycle','held_draw','moving_draw','stunned','rout','withdraw','ordered_target','firm_hold','relocation','tired_movement','crowding','melee_mode','cease_fire','regeneration','pounce','pounce_range','manual_movement','frame_dispatch','frame_gates'];
  try{
   Math.random=t.seeded(610);t.act('begin','soldier');G.quietEvents=true;t.W.lords=[];
-  // (the snapshots hold your army's point on the map and the ground under it: on a generated world you stand where begin leaves
-  // you on today's map, on the ground there, the road by Ashford's gate)
+ // (the snapshots hold your army's point on the map and the ground under it: on a generated world you stand where begin leaves
+ // you on today's map, on the ground there, the road by Ashford's gate)
   if(t.WM.gen!=='classic-0'){P.x=584;P.y=680;t.WM.battleSite=()=>t.battleSiteOf({tx:36,ty:42,t:t.T_ROAD,c:'grass',name:'Road',kinds:[4,4,4,0,4,4,0,0,4],road:{ns:true}})}t.GUIDE.on=false;t.BDEPLOY.on=false;t.BAUTO.on=false;t.AUTOSK.on=false;t.BLOOD.on=false;
   window.__actorMeasure=measure0;(0,eval)('measureField=()=>({top:40,bot:560})');
   for(const [index,name] of cases.entries()){

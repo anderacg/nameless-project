@@ -563,6 +563,13 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 .invgrid{display:grid;grid-template-columns:repeat(auto-fill,40px);gap:4px}
 .invgrid .slot{width:40px;height:40px}
 .invgrid .slot canvas{width:26px;height:26px}
+/* the bag's categories (doc/ITEMS_DESIGN.md): the overflow slots past its size in red, a quest item's mark (bound), the Supplies
+   tab's line, the loot window's category heads */
+.slot.over{border-color:var(--danger);background:rgba(224,96,90,.14)}
+.slot.bound::after{content:'';position:absolute;left:3px;top:3px;width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 1px #000}
+.invcap.over i{background:var(--danger)}
+.invsup{margin:0;font-size:var(--fs-sm)}
+.loot-cat{margin:6px 0 2px;font-size:var(--fs-2xs);font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
 /* loot and trade */
 .loot{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:6px}
 .loot-item{display:flex;align-items:center;gap:8px;min-width:0;padding:4px 8px 4px 4px;text-align:left;cursor:pointer;background:var(--panel-2);border:1px solid var(--line);border-radius:var(--r-sm)}

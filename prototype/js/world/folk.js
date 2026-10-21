@@ -211,7 +211,7 @@ function drawFolk(ents,cam,V){for(const f of W.folk)asWorker(f).draw(ents,cam,V)
 // (from: the estate it was opened from: on its rail (estates.js estateRail), Back returns there)
 function workerMeet(f,from){
   const t=townBy(f.home);if(!t)return;G.wk=f;G.wkFrom=from||null;G.mode='dialog';P.tx=null;G.chase=null;ensureEcon(t);
-  const short=Object.keys(GOODS).filter(g=>marketState(t,g)==='shortage').slice(0,3).map(g=>GOODS[g].n.toLowerCase()),glut=Object.keys(GOODS).filter(g=>marketState(t,g)==='surplus').slice(0,3).map(g=>GOODS[g].n.toLowerCase());
+  const short=Object.keys(GOODS).filter(g=>itemGood(g)&&marketState(t,g)==='shortage').slice(0,3).map(g=>GOODS[g].n.toLowerCase()),glut=Object.keys(GOODS).filter(g=>itemGood(g)&&marketState(t,g)==='surplus').slice(0,3).map(g=>GOODS[g].n.toLowerCase());
   const own=t.owner==='player',mem=remembers(t,f),rum=mem?'':rumourSay(rumourSource('estate',f.home+':'+f.k,bldSpots(t)[f.k]||f,{from:'a worker of '+t.name}));// (his estate's rumour of the day: news.js)
   const title=cap1(an(f.job))+' of '+t.name,sub=t.owner?'Subject of the '+FACS[t.owner].n:'',body='<p>&ldquo;'+(mem?warySay(f):(foodDays(t)<2?'There is hardly any bread left in '+t.name+'.':t.pros>70?'Good times in '+t.name+'.':'We get by.')+(short.length?' We are short of '+short.join(', ')+'.':'')+(glut.length?' There is plenty of '+glut.join(', ')+'.':''))+'&rdquo;</p>'+(rum?'<p>&ldquo;And have you heard? '+rum+'&rdquo;</p>':'')+
     '<p class="muted">'+t.name+': '+t.pop+' people, prosperity '+Math.round(t.pros)+'%, food for '+foodDays(t)+' days.'+(mem?' <span class="bad">They remember what you did.</span>':'')+'</p>'+

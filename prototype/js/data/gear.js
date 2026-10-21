@@ -75,3 +75,30 @@ const ALL_GROUND=['forest','hills','grass','frost','desert','swamp'];
 Object.keys(MOUNTS).forEach(k=>{const M=MOUNTS[k],ign=M.fly?ALL_GROUND:M.ign||[];
   ITEMS['m_'+k]={n:M.n,slot:'mount',r:M.r,m:M.m,v:M.v,icon:'mount',col:M.col,ign,fly:!!M.fly,
     d:M.d+' '+describeGear(M.m)+(M.fly?' Flies over forest, hills, sand and bog at full speed.':ign.length?' Crosses '+ign.join(' and ')+' at full speed.':'')}});
+
+/* ---------- quivers (doc/ITEMS_DESIGN.md §2b): no arrows nor bolts in the bag. A quiver is worn in its own slot (unworn, it takes a
+   bag slot); its shots are its wearer's in every battle, full at each start (your hero and the characters: core/items.js Quiver).
+   ARROWS, the arrow types: n, their word; col, their look; f, their damage factor (1 for all now); bolt: crossbow bolts.
+   QUIVERS: n; shots; arrow (ARROWS); fits, the weapon (a bow or a crossbow); sold, where: market (any market square), smith (any
+   smith), city (a city's smith), or a people (their holdings); v, worth; r, rarity. A new quiver is one more line, as is a new
+   arrow. QUIVER.none: the shots of a character whose bow has no quiver (or one that does not fit it) ---------- */
+const ARROWS={wood:{n:'wooden',col:'#a0703c',f:1},bronze:{n:'bronze',col:'#cd7f32',f:1},iron:{n:'iron',col:'#a7adba',f:1},steel:{n:'steel',col:'#dfe4ea',f:1},
+  elven:{n:'elven',col:'#78c474',f:1},dwarven:{n:'dwarven',col:'#5a8fe8',f:1,bolt:true},
+  woodBolt:{n:'wooden',col:'#a0703c',f:1,bolt:true},ironBolt:{n:'iron',col:'#a7adba',f:1,bolt:true},steelBolt:{n:'steel',col:'#dfe4ea',f:1,bolt:true}};
+const QUIVERS={
+  worn:{n:'Worn quiver',shots:20,arrow:'wood',fits:'bow',sold:'market',v:12,r:'common'},
+  wornCase:{n:'Worn bolt case',shots:20,arrow:'woodBolt',fits:'crossbow',sold:'market',v:14,r:'common'},
+  hunter:{n:'Hunter’s quiver',shots:30,arrow:'bronze',fits:'bow',sold:'market',v:30,r:'common'},
+  soldier:{n:'Soldier’s quiver',shots:40,arrow:'iron',fits:'bow',sold:'smith',v:60,r:'rare'},
+  boltCase:{n:'Soldier’s bolt case',shots:40,arrow:'ironBolt',fits:'crossbow',sold:'smith',v:70,r:'rare'},
+  elven:{n:'Elven quiver',shots:50,arrow:'elven',fits:'bow',sold:'elf',v:120,r:'rare'},
+  dwarven:{n:'Dwarven bolt case',shots:50,arrow:'dwarven',fits:'crossbow',sold:'dwarf',v:130,r:'rare'},
+  master:{n:'Master’s quiver',shots:60,arrow:'steel',fits:'bow',sold:'city',v:200,r:'epic'},
+  masterCase:{n:'Master’s bolt case',shots:60,arrow:'steelBolt',fits:'crossbow',sold:'city',v:220,r:'epic'}};
+const QUIVER={none:5};
+// (their arrows in words: 30 bronze arrows)
+const arrowsText=Q=>Q.shots+' '+ARROWS[Q.arrow].n+' '+(ARROWS[Q.arrow].bolt?'bolts':'arrows');
+// ITEMS ids look like q_hunter
+Object.keys(QUIVERS).forEach(k=>{const Q=QUIVERS[k],A=ARROWS[Q.arrow];
+  ITEMS['q_'+k]={n:Q.n,slot:'quiver',r:Q.r,m:{},v:Q.v,icon:A.bolt?'bolts':'arrows',col:A.col,quiver:k,
+    d:cap1(arrowsText(Q))+' for a '+Q.fits+': your shots in every battle, the quiver full again at each start.'}});
