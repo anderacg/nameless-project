@@ -48,7 +48,7 @@ function ambR(){if(!AMBV.q)AMBV.q=((Date.now()%2147483647)^Math.imul(Math.round(
 const ambIn=a=>a[0]+ambR()*(a[1]-a[0]);
 const ambInt=a=>Math.floor(a[0]+ambR()*(a[1]-a[0]+1));
 // the weather where you are: the map has none of its own yet but the snow falling in the frost (worldart.js drawEnv; a storm on
-// the road is a line in the log, events.js), so 'snow' there, else 'clear'; 'rain' and 'storm' are read too, for when it has them
+// the road is a line in the log, incidents.js), so 'snow' there, else 'clear'; 'rain' and 'storm' are read too, for when it has them
 function ambWeather(){return climAt(P.x,P.y)==='frost'?'snow':'clear'}
 // (what stands on a tile, for the life on the ground: 0 nothing, 1 a lot's field, 2 a building or a camp's ground: lots.js OCC)
 function ambLot(tx,ty){const id=OCC?occAt(tx,ty):0;if(!id)return 0;const l=id>0&&LOT[id];if(!l)return 2;return tx>=l.x&&tx<l.x+l.n&&ty>=l.y&&ty<l.y+l.n?2:1}

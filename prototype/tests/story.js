@@ -15,7 +15,7 @@ Kit.suite(({ok,info})=>{
   const f0=S.frame;let n=0;S.frame=function(fn){n++;return f0.call(this,fn)};try{t.updateRoad(.05)}finally{S.frame=f0}ok(n===1,'the road\'s moment (updateRoad) runs in one frame');
   let bad=[],m=0;for(let ty=8;ty<t.MH-8;ty+=7)for(let tx=8;tx<t.MW-8;tx+=7){P.x=(tx+.5)*TILE+5;P.y=(ty+.5)*TILE-3;m++;const c=t.storyCtx(),x=P.x,y=P.y,lh=t.landHold(x,y);
    const want={terrain:t.terrAt(x,y),climate:t.climAt(x,y),land:lh,owned:lh&&lh.owner?lh:null,nearHold:t.nearHold(),nearest:t.Spatial.nearestHolding(x,y),byRoad:t.nearTile(Math.floor(x/TILE),Math.floor(y/TILE),t.T_ROAD,1),
-    byMountains:t.nearMount(),landKind:t.nearTile(Math.floor(x/TILE),Math.floor(y/TILE),t.T_ROAD,1)?'road':lh?'held':'wild',weather:t.ambWeather()};
+    byMountains:(()=>{const tx=Math.floor(x/TILE),ty=Math.floor(y/TILE);for(let j=-2;j<=2;j++)for(let i=-2;i<=2;i++)if(t.tAt(tx+i,ty+j)===t.T_MOUNT)return true;return false})(),landKind:t.nearTile(Math.floor(x/TILE),Math.floor(y/TILE),t.T_ROAD,1)?'road':lh?'held':'wild',weather:t.ambWeather()};
    for(const [k,v] of Object.entries(want))if(c[k]!==v)bad.push(k+'@'+tx+','+ty);
    const p=t.Story.at(tx,ty);if(p.terrain!==t.tAt(tx,ty)||p.climate!==t.climAt((tx+.5)*TILE,(ty+.5)*TILE)||p.land!==t.landHold((tx+.5)*TILE,(ty+.5)*TILE))bad.push('at '+tx+','+ty)}
   ok(!bad.length&&m>100,'where: the terrain, climate, whose land, the holdings near, a road or the wild, the weather: as the direct lookups, at '+m+' spots'+(bad.length?': '+bad.slice(0,6).join(' '):''));

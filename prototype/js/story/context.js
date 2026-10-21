@@ -14,7 +14,7 @@ class StoryContext extends StoryPlace{
     super(P.x,P.y);
   }
   // ---- where (you)
-  // the holding near enough for the law to count (events.js nearHold), or null; the nearest of all, and how far it is
+  // the holding near enough for the law to count (core/spatial.js Spatial.nearHold), or null; the nearest of all, and how far it is
   get nearHold(){
     return this.once('nearHold',()=>nearHold());
   }

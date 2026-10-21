@@ -9,7 +9,7 @@ Status: **approved** (the owner's answers, §8, 2026-10-20); building: **S0 and 
 | System | File | When it starts | What it is | How you act | How it ends |
 |---|---|---|---|---|---|
 | Road encounters | `world/road.js` | a pity timer while you travel | figures on the map | a page of choices | its lifetime, its end policy, a trace |
-| Road events | `world/events.js` | a daily roll | instant | none: it just happens | at once |
+| Road events (incidents) | `world/incidents.js` (was `world/events.js`) | a daily roll (`Incident.daily`) | instant | none: it just happens | at once |
 | Quests (jobs) | `world/quests.js` | offers at holdings and lords | a task you carry | accept, then do it | done, reported, failed or due |
 | Sites | `world/sites.js` | always there | a place | a page of choices | never (it is a place) |
 | News and rumours | `world/news.js` | real events, by direct calls | records | asked at sources | they age out |

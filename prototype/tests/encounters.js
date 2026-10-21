@@ -601,8 +601,8 @@ try{
   world();clear();t.saveGame(true);t.loadGame();ok(W.road===null&&!('road' in JSON.parse(localStorage.getItem(t.slotKey('auto'))).world),'none: nothing saved, none loaded')}
 
  // ---- the weather and sickness: still instant events, as ever
- {ok(t.EVENTS.map(e=>e.id).join()==='wagon,fever,storm,blizzard,sandstorm,mirage'&&t.EVENTS.every(e=>e.run&&!e.choices),'the road events left are instant: the weather, the sickness, the finds ('+t.EVENTS.map(e=>e.id).join(', ')+')');
-  goHome();G.quietEvents=false;const keep=t.EVENTS.slice();t.EVENTS.length=0;t.EVENTS.push(keep.find(e=>e.id==='storm'));const n0=G.msgs.length;t.roadEvent();t.EVENTS.length=0;keep.forEach(e=>t.EVENTS.push(e));
+ {ok(t.INCIDENTS.map(e=>e.id).join()==='wagon,fever,storm,blizzard,sandstorm,mirage'&&t.INCIDENTS.every(e=>e.run&&!e.choices),'the road events left are instant: the weather, the sickness, the finds ('+t.INCIDENTS.map(e=>e.id).join(', ')+')');
+  goHome();G.quietEvents=false;const keep=t.INCIDENTS.slice();t.INCIDENTS.length=0;t.INCIDENTS.push(keep.find(e=>e.id==='storm'));const n0=G.msgs.length;t.Incident.roll();t.INCIDENTS.length=0;keep.forEach(e=>t.INCIDENTS.push(e));
   ok(G.mode==='world'&&G.msgs.length===n0+1&&/storm/.test(G.msgs[n0].m),'a storm comes at once, a line in the log, no window')}
 
  // ---- drawn as a mover: nothing leaks a shift into the ground's scene (gfx/render.js memCv), at the screen's finer scale

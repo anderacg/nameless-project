@@ -10,7 +10,7 @@ Kit.suite(({ok,info})=>{
  {for(let i=0;i<2;i++)t.dayTick();Kit.world();const keys=Object.keys(t.worldSave());
   ok(!t.Kinds.all('thread').length&&!t.Kinds.all('gathering').length,'the game registers no thread and no gathering kind');
   ok(!W.story&&!keys.includes('threads')&&!keys.includes('gatherings'),'two days on, no story store is made and a save holds neither key');
-  const day=t.Systems.names('day');ok(day[day.length-1]==='gatherings'&&day[day.length-2]==='road events','the gatherings\' day check comes after every other day system')}
+  const day=t.Systems.names('day');ok(day[day.length-1]==='gatherings'&&day[day.length-2]==='incidents','the gatherings\' day check comes after every other day system')}
  Kit.storyKinds();
  const ash=t.townBy('Ashford'),ended=[],fn=ev=>ended.push(ev);t.worldOn('thread:ended',fn);
  try{

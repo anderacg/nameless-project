@@ -1,10 +1,8 @@
 'use strict';
-/* ---------- road events: what befalls you on the road without anyone to meet (the weather, sickness, a find). They are the
-   incidents (story/incident.js, the Incident shape), kinds registered with the trigger 'day': w = weight, ok(c) = can it happen
-   here and now (c: the story context), run() = what it does, returning its outcome (its log line and tone in it). The people
-   you meet on the road are encounters on the map now (world/encounters.js, world/road.js, doc/ENCOUNTERS_DESIGN.md), no longer events ---------- */
-const nearHold=()=>{const t=Spatial.nearestHolding(P.x,P.y);return t&&Math.hypot(t.x-P.x,t.y-P.y)<WORLD_SCALE.law.eventNear*TILE?t:null};
-const gainGrain=n=>invAdd('good','grain',n);
+/* ---------- the incidents: what befalls you on the road with no one to meet (the weather, sickness, a find). Incident kinds
+   (the shape: story/incident.js Incident, which rolls them once a day: Incident.daily), registered with the trigger 'day':
+   w = weight, ok(c) = can it happen here and now (c: the story context), run() = what it does, returning its outcome (its log
+   line and tone in it). The people you meet on the road are encounters (world/encounters.js, world/road.js) ---------- */
 defineKinds('incident',{trigger:'day'},{
   wagon:{w:2,ok:()=>true,
     run:()=>({gold:15,log:['You find an abandoned wagon and sell what is in it for 15 gold.','good']})},
@@ -30,17 +28,10 @@ defineKinds('incident',{trigger:'day'},{
     }},
 });
 // the day's bucket, in the order defined (the roll's, and the tests' and the wiki's list)
-const EVENTS=Kinds.on('incident','day');
-function nearMount(){const tx=Math.floor(P.x/TILE),ty=Math.floor(P.y/TILE);for(let j=-2;j<=2;j++)for(let i=-2;i<=2;i++)if(tAt(tx+i,ty+j)===T_MOUNT)return true;return false}
-// the chance of one a day (dayTick): .32 while the people were in the roll; .1 keeps the weather and the finds about as often
-// as they came then (they were about 3 in 10 of its weight)
-const ROAD_EVENT_DAY=.1;
-// called from the daily tick: one of the incidents that can come here and now, by weight, befalls you
-function roadEvent(){
-  if(G.quietEvents||G.mode!=='world'||G.modal)return;
-  const c=storyCtx(),K=Incident.pick(EVENTS,c);
-  if(K)Incident.befall(K,c);
-}
-// the day's last word: now and then an event on the road, never while you stay somewhere (core/systems.js; its roll from the
-// stream 'incidents', core/rng.js)
-Systems.add({name:'road events',order:{day:230},day:()=>{if(!P.stay&&rngOf('incidents').chance(ROAD_EVENT_DAY))roadEvent()}});
+const INCIDENTS=Kinds.on('incident','day');
+// chance: of one a day (.32 while the people met on the road were in the roll; .1 keeps the weather and the finds about as
+// often as they came then: they were about 3 in 10 of its weight)
+const INCIDENT={chance:.1};
+// the day's last word: now and then an incident, never while you stay somewhere (core/systems.js; its roll from the stream
+// 'incidents', core/rng.js)
+Systems.add({name:'incidents',order:{day:230},day:()=>Incident.daily()});

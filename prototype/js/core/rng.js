@@ -12,7 +12,7 @@
      'road'       the encounters on the road (world/road.js, story/happening.js, story/choice.js: the hour's roll, the
                   pity timer, the kind, its spot, its setup, its time, its behaviours, its choices' rolls);
      'letters'    the sealed letter (world/letters.js: its contents, the witness roll);
-     'incidents'  the road events (world/events.js, story/incident.js: the day's roll, the kind, the mirage);
+     'incidents'  the incidents (world/incidents.js, story/incident.js: the day's roll, the kind, the mirage);
      'quests'     the jobs (world/quests.js: the offers, their setups, spotNear, the bounty's band);
      'critters'   the wild game and the herds (world/critters.js: spawning, the herds' placing, the day's regrowth, grazing,
                   the hunt);

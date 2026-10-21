@@ -7,7 +7,7 @@
 // describeOutcome says (the change measured), and has its facts written from it (its own lines after); its live record saves
 // and loads as it was (by itself and through the save registry), wrapped by its kind's class; and it ends cleanly: never at
 // once in your sight, gone out of it once its time is up (its trace, if it leaves one), announced once on the bus. A new kind is
-// covered the day it is registered. The story wave's S2 and S3 kinds too: every Incident kind (the road events) comes somewhere,
+// covered the day it is registered. The story wave's S2 and S3 kinds too: every Incident kind (the incidents) comes somewhere,
 // befalls you as its outcome says (every race, both ways of a roll), its line logged, over at once; every Quest kind (the jobs)
 // is offered somewhere, taken, saved and loaded as it was, done by its own deed heard on the bus (no other's), reported and
 // paid, or failed on its due day. S5: every Thread kind (its steps hold together; every way through it, answered on the bus, saved
@@ -105,9 +105,9 @@ Kit.suite(({ok,info})=>{
  if(skipped.length)info('  not done here (greyed): '+skipped.join('; '));
  ok(!bad.save.length,'every kind\'s live record saves and loads as it was, wrapped by its class (by itself and through the save)'+L(bad.save));
  ok(!bad.end.length,'every kind ends cleanly: not at once in your sight, gone out of it once its time is up (its trace left), announced once'+L(bad.end));
- // ================= the Incident kinds (story/incident.js; the road events, world/events.js), every one
+ // ================= the Incident kinds (story/incident.js; the incidents, world/incidents.js), every one
  {const SH='incident',I=t.Incident,all=K.all(SH),ids=all.map(k=>k.id),day=K.on(SH,'day'),bad=[];
-  ok(all.length>=6&&day.length===all.length&&all.every(k=>k.trigger==='day'&&t.kindOf(SH,k.id)===k)&&t.EVENTS===day,'the incidents: registered once each with the trigger day, the daily roll\'s bucket (EVENTS) in their order ('+ids.join(', ')+')');
+  ok(all.length>=6&&day.length===all.length&&all.every(k=>k.trigger==='day'&&t.kindOf(SH,k.id)===k)&&t.INCIDENTS===day,'the incidents: registered once each with the trigger day, the daily roll\'s bucket (INCIDENTS) in their order ('+ids.join(', ')+')');
   // (a fitting context: the first tile of a climate and terrain its conditions allow)
   const spots=[];for(const c of ['grass','frost','desert','swamp'])for(const tr of [t.T_OPEN,t.T_FOREST,t.T_HILL]){let i=-1;for(let j=0;j<t.MW*t.MH;j++)if(t.CLIMS[t.climate[j]]===c&&t.tiles[j]===tr){i=j;break}if(i>=0)spots.push([(i%t.MW+.5)*t.TILE,(Math.floor(i/t.MW)+.5)*t.TILE])}
   let nDid=0;

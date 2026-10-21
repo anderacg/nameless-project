@@ -97,6 +97,11 @@ const Spatial={
   nearestHolding(x,y,filter){
     return this.nearest(TOWNS,x,y,filter);
   },
+  // the holding near enough to you for the law and the people to count (WORLD_SCALE.law.eventNear tiles), or null
+  nearHold(){
+    const t=this.nearestHolding(P.x,P.y);
+    return t&&Math.hypot(t.x-P.x,t.y-P.y)<WORLD_SCALE.law.eventNear*TILE?t:null;
+  },
   within(list,x,y,r){
     return list.filter(o=>Math.hypot(o.x-x,o.y-y)<=r);
   },
@@ -105,3 +110,4 @@ const Spatial={
     return new SpatialIndex(list,cell);
   },
 };
+const nearHold=()=>Spatial.nearHold();// (its old name, used by the encounter kinds and the story context)

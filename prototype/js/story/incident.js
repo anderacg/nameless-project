@@ -1,7 +1,7 @@
 'use strict';
 /* ---------- the Incident shape (doc/STORY_DESIGN.md §2; the story wave, S2) ----------
    An incident befalls you: no one to meet and nothing on the map; it applies at once (a log line) and is over. Its kinds
-   (world/events.js: the weather, the sickness, the finds) are plain data, registered with the trigger 'day' (the daily roll):
+   (world/incidents.js: the weather, the sickness, the finds) are plain data, registered with the trigger 'day' (the daily roll):
      w: its weight; ok(c): can it come here and now (c: the story context, storyCtx: its climate…);
      run(c): what it does: an outcome (story/outcome.js; its log line in it, as {log: [line, tone]}), any roll made first;
        or [line, tone], a line only.
@@ -34,5 +34,15 @@ class Incident extends Happening{
   }
   static befall(K,c){
     return this.as({k:K.id}).befall(c);
+  }
+  // the day's roll (world/incidents.js, Systems day 'incidents'): now and then (INCIDENT.chance), never while you stay somewhere
+  static daily(){
+    if(!P.stay&&rngOf('incidents').chance(INCIDENT.chance))Incident.roll();
+  }
+  // one of the incidents that can come here and now, by weight, befalls you (none in a window, a battle, or with quiet events)
+  static roll(){
+    if(G.quietEvents||G.mode!=='world'||G.modal)return;
+    const c=storyCtx(),K=Incident.pick(INCIDENTS,c);
+    if(K)Incident.befall(K,c);
   }
 }

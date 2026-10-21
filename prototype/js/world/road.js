@@ -2,7 +2,7 @@
 /* ---------- the road: when and where you meet someone travelling (doc/ENCOUNTERS_DESIGN.md, phases 1, 2 and 4; the kinds, who and what:
    world/encounters.js; their numbers: data/encounters.js; the shape: story/encounter.js). The people you meet are small scenes on
    the map, not windows popping up: a wounded man by the road, a peddler walking up, hunters round a fire, a caravan fighting off
-   raiders. Today's people events moved here from world/events.js (it keeps the weather, the sickness and the finds), their
+   raiders. Today's people events moved here from world/events.js, now world/incidents.js (it keeps the weather, the sickness and the finds), their
    rules and outcomes as they were; phase 2 adds eight of their own (a cart stuck in the mud, a thief on the run, a poacher, a
    funeral, a wedding party, a runaway horse, a beggar, a messenger); phase 4 the fake wounded (a lure), pilgrims bound for or
    praying at a real shrine, and the messenger's sealed letter as a real thing in your bag (world/letters.js). W.road (made with the first, saved only then: roadSave): {on (the encounters and their
