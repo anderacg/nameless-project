@@ -1,5 +1,5 @@
 'use strict';
-/* ---------- drawing scenes: the place painted once, then people, labels and light each frame, zoomed in ---------- */
+/* ---------- drawing the walkable scenes (their rules: scene/scene.js): the place painted once, then people, labels and light each frame, zoomed in ---------- */
 // sceneCv(S) paints the ground, streets, walls, water, buildings and decorations into one canvas (kept on S); drawScene
 // draws its view around you at SCENE_ZOOM, the people sorted by depth, a mark over everyone who keeps a shop, the name of
 // whoever is near and how to talk to them, and the night with lit windows.

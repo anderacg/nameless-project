@@ -178,7 +178,7 @@
     {const d=cv.getContext('2d').getImageData(0,0,N,N).data;let x0=N,y0=N,x1=-1,y1=-1;for(let y=0;y<N;y++)for(let x=0;x<N;x++)if(d[(y*N+x)*4+3]){if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y}cv.box=[x0,y0,x1,y1]}
     return TREES32[k]=cv}
   PX.battleTree=treeSprite32;
-  PX.smallTree=treeSprite;// (the 16-px trees: a town's streets, js/gfx/scene.js)
+  PX.smallTree=treeSprite;// (the 16-px trees: a town's streets, js/gfx/scenedraw.js)
   // a soft ground shadow (to the lower right: the light is upper left), half-transparent pixels on whole positions
   const SHADOW={};
   const shadowSprite=w=>SHADOW[w]||(SHADOW[w]=PX.canvas(w,Math.max(3,w>>1),g=>{const h=Math.max(3,w>>1);g.fillStyle='rgba(8,14,24,.3)';for(let y=0;y<h;y++)for(let x=0;x<w;x++)if(((x+.5-w/2)/(w/2))**2+((y+.5-h/2)/(h/2))**2<=1)g.fillRect(x,y,1,1)}));

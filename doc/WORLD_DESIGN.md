@@ -462,7 +462,7 @@ The times below are today's (headless, `visual/perf`, `worldnature`, TERRAIN_DES
 | **First world paint** | Today `worldCv()` paints the whole map on first use (`drawWorld`; `initCritters` also calls it) | ≈ 1.7 s, frozen | The chunks in view: ≈ 0.3–0.5 s, inside the steps above | Part of the new game and load steps; never on its own |
 | **Battle start** | Field size, `buildTerrain` (plan, routes), units, groups, state, **ground painting** (today done lazily in the first `drawBattle`), the canopy layer on big woods, sprite warm-up | Terrain 2–13 ms; ground paint 85 ms (today's field) to 640 ms (3200 × 1800); canopy 3–19 ms; warm-up already queued over frames (`warmBattle`) | Unchanged by world size; big fields and forests pass 300 ms | **"Marching to battle…"**: Surveying the ground · Raising the hills · Painting the field · Mustering the troops. Small battles (most) finish under 300 ms and show nothing |
 | **Siege and storming** | As battle start, plus walls and garrison setup | To be measured | Same | Same as battle |
-| **Town streets** (walkable scene) | The place painted once (`gfx/scene.js`) | To be measured | Unchanged | "Entering {town}…" if over 300 ms |
+| **Town streets** (walkable scene) | The place painted once (`gfx/scenedraw.js`) | To be measured | Unchanged | "Entering {town}…" if over 300 ms |
 | **Full preview** on the settings screen (§4.3) | The real generator | — | 2–12 s | Inline in the preview pane (the same bar, no overlay), with Cancel |
 
 ### 5.3 Structure: long tasks that yield

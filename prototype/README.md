@@ -125,7 +125,7 @@ js/gfx/               worldart.js (the painted map), sprites.js (generated sprit
                       structures.js (placed buildings, estates' ground, camps, sites, flags), render.js (world and battle drawing, HUD),
                       depth.js (what stands in front of a figure on the map, and its fade), vfx.js (battle effects), worldui.js (the map's
                       pointer marks, route trail and encounter highlights), mist.js (mist in the fog), weapons.js (battle weapons),
-                      scene.js (painting and drawing scenes)
+                      scenedraw.js (painting and drawing the walkable scenes: scene/)
 js/ui/                ui.js (panels, title, Esc menu), loading.js (the loading overlay; runSteps runs long work in steps), character, talents, inventory, town (a holding's
                       places: Place, definePlace, PLACES; class wave D),
                       window.js (rail windows: a rail of places beside the chosen one's window), townui.js (a town's places, its overview, your
