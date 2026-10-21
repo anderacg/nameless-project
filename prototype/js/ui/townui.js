@@ -3,17 +3,14 @@
    G.town.tab: the place open (null: the overview, what the town is and what is notable in it); G.town.bld: in your Fief, the
    building open (null: the holding's overview); G.town.direct: opened straight from someone in the streets (scene.js), so there
    is no window behind it to go Back to, only out. The places are the window's old tabs (townTabs, which the streets share),
-   with the lord's hall and the tournament as places of their own; each place's content is still town.js renderTown's.
-   In your own fief the Fief place turns the rail into the holding's: its walls, houses and estates, each with its own window */
-// key → its name (an area of the holding, as the rooms of a house), a short one for a slim rail, its icon; in this order down the rail
-const PLACES={trade:{n:'Market square',short:'Market',ico:'stall'},tavern:{n:'Tavern',ico:'mug'},smith:{n:'Smithy',ico:'anvil'},stable:{n:'Stable',ico:'shoe'},recruit:{n:'Barracks',ico:'shield'},
-  hall:{n:'Lord’s hall',short:'Hall',ico:'crown'},jobs:{n:'Notice board',short:'Notices',ico:'scroll'},tourney:{n:'The lists',short:'Lists',ico:'renown'},stores:{n:'Storehouse',short:'Stores',ico:'crate'},
-  garrison:{n:'Walls & garrison',short:'Walls',ico:'tower'},fief:{n:'Steward’s office',short:'Steward',ico:'banner'},siege:{n:'Siege camp',short:'Siege',ico:'ladder'}};
-// the places a holding has: its tabs, the hall where a lord holds court (towns and castles, or any holding with a lord inside),
-// the lists where it holds tournaments
-function townPlaces(t){const ks=townTabs(t).map(x=>x[0]);if(t.kind!=='village'||lordsInside(t).length)ks.push('hall');if(t.T.tourney)ks.push('tourney');
-  return Object.keys(PLACES).filter(k=>k!=='siege'&&ks.includes(k))}// (an attack on the whole holding: on its overview)
-const shut=t=>Timed.of(t).has('sacked')?'sacked':Timed.of(t).has('raided')?'raided':null;
+   with the lord's hall and the tournament as places of their own: each a Place (town.js PLACES, definePlace), its rail entry,
+   its window's content and its own actions. In your own fief the Fief place turns the rail into the holding's: its walls,
+   houses and estates, each with its own window */
+// the places a holding has on its rail, in its order (their ids: town.js PLACES): its tabs, the hall where a lord holds court
+// (towns and castles, or any holding with a lord inside), the lists where it holds tournaments (an attack on the whole holding:
+// on its overview)
+const townPlaces=t=>Object.values(PLACES).filter(p=>p.rail&&p.at(t)).map(p=>p.id);
+const shut=t=>Place.closed(t);
 // a quest of yours to report here (the Notice board's dot on the rail); the companions waiting in its tavern
 const questHere=t=>P.quests.some(q=>canReportAt(q,t)&&questReady(q));
 const compsHere=t=>Object.keys(COMPS).filter(id=>compTown(id)===t&&!P.comps[id]);
@@ -32,29 +29,16 @@ function townOverview(t){
     questHere(t)&&['gold','A quest of yours is ready to report at the Notice board.'],
     compsHere(t).length&&['gold','In the Tavern: '+compsHere(t).map(id=>COMPS[id].n).join(' and ')+' for hire.'],
     !compsHere(t).length&&t.T.broker&&prisonerCount()&&['gold','In the Tavern: the ransom broker pays '+ransomValue()+'g for your prisoners.'],
-    townPlaces(t).includes('tourney')&&['gold','The lists: a tournament today, 10 gold to enter.']].filter(Boolean);
+    PLACES.tourney.at(t)&&['gold','The lists: a tournament today, 10 gold to enter.']].filter(Boolean);
   return '<p class="muted">'+cap1(an(t.label))+' of the '+(f?'<span style="color:'+f.col+'">'+f.n+'</span>':'free folk')+'. '+t.note+'</p>'+
     '<div class="loot-stats tstats">'+[['Held by',f?'<span style="color:'+f.col+'">'+(t.owner==='player'?'You':f.n)+'</span>':'—'],['Folk',t.races.map(r=>RACES[r].n).join(', ')],['People',(t.pop||0)],['Prosperity',Math.round(t.pros||0)+'%'],
       ['Garrison',t.gar+(ls.length?' + '+ls.length+' lord'+(ls.length>1?'s':''):'')],['Walls',WALL_N[wallOf(t)]],['Food',fd==null?'—':fd+' days',fd!=null&&fd<3?'bad':''],['Your standing',st,st>=REP_NEED[1]?'gold':'']].map(x=>cell(...x)).join('')+'</div>'+
     (notes.length?'<div class="lab">Today</div><ul class="tnotes">'+notes.map(([c,s])=>'<li'+(c?' class="'+c+'"':'')+'>'+s+'</li>').join('')+'</ul>':'')+letterTownHtml(t)+
     '<p class="muted" style="font-size:13px">'+(resText(t)?'Its land yields '+resText(t)+'. ':'')+'Estates: '+estateLine(t)+'.</p>'+
     (G.town.inScene?'':'<div class="btns">'+(hasScene(t)?'<button class="btn" type="button" data-act="scene-enter">'+SCENES[t.T.scene].hint+'</button>':'')+(P.stay&&P.stay.town===t.name?'<button class="btn" type="button" data-act="sy-leave">Leave '+t.label+'</button>':stayBtn(t))+'</div>')+
-    (townTabs(t).some(x=>x[0]==='siege')&&!G.town.inScene?siegeBody(t):'')+
+    (PLACES.siege.at(t)&&!G.town.inScene?PLACES.siege.body(t):'')+
     '<p class="muted" style="font-size:13px">Choose a place on the left'+(G.mouse&&G.mouse.type==='touch'?'':' (or its number key)')+'.</p>';
 }
-
-/* the Lord's hall: who holds it, the lords holding court here (a card each: Talk), and the realm's mercenary contract */
-function hallBody(t){
-  const f=FACS[t.owner],ls=lordsInside(t),sw=g=>'<span style="color:'+FACS[g].col+'">'+FACS[g].n+'</span>',b=(a,l)=>'<button class="btn sm" type="button" data-act="'+a+'">'+l+'</button>';
-  return '<div class="lab">Held by</div><p>'+(t.owner==='player'?'You hold '+t.name+'. Its reeve keeps the ledgers in the Steward’s office.':f?'The '+sw(t.owner)+'. Your honor with them: '+honorWith(t.owner)+'. '+(enemiesOf(t.owner).length?'At war with the '+enemiesOf(t.owner).map(sw).join(' and the ')+'.':'At peace.'):'No realm.')+'</p>'+
-    '<div class="lab">Lords holding court</div>'+(ls.length?railCards(ls.map(l=>({fac:l.fac,name:l.name,role:'Lord of the '+sw(l.fac),facts:[l.troops.length+' soldiers quartered here','Toward you: '+relTag(relWith(l))],
-      acts:[['hall-talk',l.id,'Talk',hostileTo(l.fac)&&!lordSpares(l)?'Your realms are at odds':'']]}))):'<p class="muted">None today.</p>')+
-    (!t.T.contract||t.owner==='player'?'':'<div class="lab">Service</div>'+(P.fac===t.owner?railRow('Your contract','The '+f.n+' pays you 1 gold per troop each day.',b('end-contract','End contract'))
-      :P.fac?'<p class="muted">You serve the '+sw(P.fac)+'.</p>':railRow('Mercenary contract','Serve the '+f.n+' for 1 gold per troop each day. Their enemies become yours.',b('contract','Sign'))));
-}
-// the lists: one bout against the town champion
-const tourneyBody=t=>'<p>One-on-one against the town champion, before the crowd.</p>'+railCards([{pic:portrait('chief'),name:'The town champion',role:'Waiting in the lists',facts:[['Win 45 gold and renown','gold'],'Entry 10 gold · you have '+P.gold],
-  acts:[['tourney',null,'Enter 10g',P.gold<10?'Not enough gold':'']]}]);
 
 /* your holding: its walls, houses and estates down the rail, each with its window (estates.js builds their rows) */
 const HOLD_ICO={wall:'tower',house:'house',farm:'wheat',pasture:'sheep',lumber:'axe',mine:'pick',quarry:'stone',port:'anchor',workshop:'spool',smithy:'anvil',brewery:'barrel',granary:'sack',market:'stall'};
@@ -111,7 +95,7 @@ function bldBuild(t,k){
 /* the window: the rail (the town's places, or your holding's buildings) and the chosen one's window */
 function showTown(t,body){
   const s=G.town,tab=s.tab,hold=tab==='fief'&&t.owner==='player',bld=hold&&s.bld,P0=PLACES[tab];
-  const items=hold?holdingItems(t):townPlaces(t).map(k=>{const p=PLACES[k];return {act:'tab',arg:k,ico:p.ico,n:p.n,short:p.short,on:k===tab,dot:k==='jobs'&&questHere(t)}});
+  const items=hold?holdingItems(t):townPlaces(t).map(k=>PLACES[k].item(t,tab));
   const close=['leave',null,s.inScene?'Back to the streets':P.stay&&P.stay.town===t.name?'Back to your lodgings':'Leave '+t.label];
   showRail({head:{act:['tab','home'],on:!tab,...townHead(t,hold)},label:hold?'Walls and estates':'Places',items,
     title:bld?bldName(bld):P0&&tab?(hold?'Your holding':P0.n):t.name,sub:tab?t.name+(hold?' · '+(bld?'your holding':fiefIncome(t)+' gold a day'):''):cap1(t.label)+(t.owner?' of the '+FACS[t.owner].n:''),gold:true,

@@ -24,7 +24,7 @@ class Brain{
 class LordBrain extends Brain{
   think(l,d){
     if(l.dead)return false;this.cool(l,d);
-    if(l.defend&&lordDefends(l,d))return false;
+    if(l.defend&&LandDefence.lordDefends(l,d))return false;
     if(l.inside){const h=townBy(l.inside);if(l.state==='rest'&&l.tgt===l.inside&&h&&h.owner===l.fac)return false;l.leave()}
     if(inFight(l))return false;
     const v=this.look(l),pd=v.d,hostile=hostileTo(l.fac)&&!lordSpares(l),mul=lordSpeed(l)/26;// (26: a lord's old pace)
@@ -83,12 +83,12 @@ class CompanionBrain extends Brain{
   }
 }
 
-// a holding's patrol: on its watch it walks from estate to estate, runs down bandits, beasts (defence.js patrolPrey: the one its
+// a holding's patrol: on its watch it walks from estate to estate, runs down bandits, beasts (defence.js LandDefence prey: the one its
 // holding sets it on, or one in its sight) and enemies it can beat on its land,
 // arrests you if you are wanted or hostile, and goes home when its watch ends, when it is weak, or when an army is too near
 class PatrolBrain extends Brain{
   think(p,d){
-    const t=townBy(p.home);if(!t||t.owner!==p.fac||!p.troops.length){if(t&&t.owner===p.fac)watchBack(t,p);p.gone=true;return false}
+    const t=townBy(p.home);if(!t||t.owner!==p.fac||!p.troops.length){if(t&&t.owner===p.fac)t.watch.back(p);p.gone=true;return false}
     if(inFight(p))return false;
     this.cool(p,d);const sp=moveStep(partySpeed(p,p.troops)*.75,d),ox=p.x;
     const threat=W.lords.find(l=>!l.dead&&!l.inside&&atWar(l.fac,p.fac)&&Math.hypot(l.x-p.x,l.y-p.y)<PATROL.see);
@@ -100,12 +100,12 @@ class PatrolBrain extends Brain{
       if(this.canMeet(p,pd)){patrolMeet(p);return true}}
     else if(threat&&!home&&Math.hypot(threat.x-p.x,threat.y-p.y)<16)startFight([p],[threat]);
     else{
-      const b=!home&&patrolPrey(p);
+      const b=!home&&LandDefence.prey(p);
       if(b){const bd=Math.hypot(b.x-p.x,b.y-p.y);Router.travel(p,b,sp*1.2)||walk(p,b.x-p.x,b.y-p.y,Math.min(bd,sp*1.2));
         if(bd<10)startFight([p],[b])}
-      else if(home){Router.travel(p,gateGoal(t),sp);if(Math.hypot(t.x-p.x,t.y+12-p.y)<8)watchBack(t,p)}
+      else if(home){Router.travel(p,gateGoal(t),sp);if(Math.hypot(t.x-p.x,t.y+12-p.y)<8)t.watch.back(p)}
       else{const at=p.wx!=null&&Math.hypot(p.wx-p.x,p.wy-p.y)<6;// on its beat: stop a moment at each building, then on to the next
-        if(at&&(p.wait||0)>0)p.wait-=d;else{if(p.wx==null||at||Math.random()<d*.02)patrolWaypoint(p,t);if(!Router.travel(p,{x:p.wx,y:p.wy},sp))p.wx=null}}}// (no way there over land: another stop next time)
+        if(at&&(p.wait||0)>0)p.wait-=d;else{if(p.wx==null||at||Math.random()<d*.02)t.watch.beat(p);if(!Router.travel(p,{x:p.wx,y:p.wy},sp))p.wx=null}}}// (no way there over land: another stop next time)
     this.face(p,ox);return false;
   }
 }
@@ -144,19 +144,29 @@ function updateLords(d){
   return false;
 }
 function updateCParties(d){lodEach(cparties(),BRAINS.cparty,d)}
-function updatePatrols(d){
-  // the change of the watch: the one on duty sets out (checked twice a second)
-  if((watchCheck-=d)<=0){watchCheck=.5;for(const t of TOWNS)sendWatch(t)}
-  landDefence(d);// (threats on the land: the watch and the lords at home ride out: defence.js)
+// the patrols' own moments (PatrolBrain): true if one of them opened an encounter
+function movePatrols(d){
   if(lodEach(W.patrols,BRAINS.patrol,d))return true;
   W.patrols=W.patrols.filter(p=>!p.gone);return false;
+}
+// the holdings' patrols at once, as the systems run them in turn ('patrols', 'land defence', 'patrol moves'): the change of the
+// watch, the one on duty setting out (patrols.js Watches frame); threats on the land, the watch and the lords at home riding out
+// (defence.js LandDefence look); then the patrols' own moments
+function updatePatrols(d){
+  Watches.frame(d);
+  LandDefence.look(d);
+  return movePatrols(d);
 }
 function updateCaravans(d){
   if(lodEach(W.caravans,null,d))return true;
   for(const b of bandits)if(b.cvT&&Math.random()<.01)b.cvT=0;
   W.caravans=W.caravans.filter(c=>!c.gone);return false;
 }
-// every party's moment: true if one of them opened an encounter
-function updateParties(d){updateCParties(d);return updateBands(d)||updateLords(d)||updateCaravans(d)||updatePatrols(d)}
-// its work in the world's day and frame (core/systems.js) (every party's brain)
-Systems.add({name:'parties',order:{frame:100},frame:updateParties,ends:true});
+// the other parties' moments (companions', bands', lords', caravans'): true if one of them opened an encounter
+function moveParties(d){updateCParties(d);return updateBands(d)||updateLords(d)||updateCaravans(d)}
+// every party's moment, in the systems' order: true if one of them opened an encounter
+function updateParties(d){return moveParties(d)||updatePatrols(d)}
+// its work in the world's frame (core/systems.js): every party's brain, the patrols' last, after the change of the watch
+// (patrols.js, 101) and the land's defence (defence.js, 102); one that opens an encounter ends the frame
+Systems.add({name:'parties',order:{frame:100},frame:moveParties,ends:true});
+Systems.add({name:'patrol moves',order:{frame:103},frame:movePatrols,ends:true});

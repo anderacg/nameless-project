@@ -76,10 +76,11 @@ js/world/             the campaign map and everything on it
   relations.js          how each lord feels about you, and about each other (Relations)
   parties.js            every party's soldiers as counts; its kind's class (look, sight, shelter); W.parties; your band (P: PlayerParty,
                         with your numbers: size, room, food, sight, skills, gear, vitals)
-  brains.js             how each kind of party behaves on the map; updateParties runs them all
+  brains.js             how each kind of party behaves on the map; the systems parties and patrol moves run them (updateParties: all at once)
   captives.js           leaders in battle; captured, ransomed, let go or escaped
-  patrols.js            every holding's guards ride its land: a day watch and a night watch
+  patrols.js            every holding's guards ride its land: a day watch and a night watch (Watches, t.watch; class wave D)
   defence.js            the land defended: monsters in the wilds, bandits away from homes, the watch and lords ride out at them
+                        (the LandDefence service; class wave D)
   fights.js             fights between parties on the map, which take time and can be joined
   stay.js               staying in a holding (your band), and the shelter rules for you and your companions
   economy.js estates.js a holding's Economy (stock, production, prices, people; its day) and the treasuries; its Buildings
@@ -120,7 +121,8 @@ js/gfx/               worldart.js (the painted map), sprites.js (generated sprit
                       depth.js (what stands in front of a figure on the map, and its fade), vfx.js (battle effects), worldui.js (the map's
                       pointer marks, route trail and encounter highlights), mist.js (mist in the fog), weapons.js (battle weapons),
                       scene.js (painting and drawing scenes)
-js/ui/                ui.js (panels, title, Esc menu), loading.js (the loading overlay; runSteps runs long work in steps), character, talents, inventory, town,
+js/ui/                ui.js (panels, title, Esc menu), loading.js (the loading overlay; runSteps runs long work in steps), character, talents, inventory, town (a holding's
+                      places: Place, definePlace, PLACES; class wave D),
                       window.js (rail windows: a rail of places beside the chosen one's window), townui.js (a town's places, its overview, your
                       holding's buildings), peopledrawer.js (the people drawer, P), input.js (actions, mouse, keys), map.js (the full map:
                       a placeholder until world Phase 2 wave 2), loot.js (the spoils), icons.js, battlehud.js, moraleicons.js (morale
@@ -136,7 +138,7 @@ The scripts are plain `<script>` files, not modules, so the page still works fro
 - **Load order.** `core/core.js` first, then all of `data/`, then the systems (story, world, battle, scene, gfx, ui). Code that runs at load time (data tables, event listeners, `onAct` registrations) goes after everything it uses. `wiki.html` loads the same list (minus `ui/input.js` and `main.js`); keep the two in step.
 - **Data, not special cases.** Tunable numbers and kinds of things live in `js/data/`. A new monster is a `MONSTERS` entry; one that roams the whole map, like the dragon, adds a `mythic` block. The cost of a deed is a `CONDUCT` entry.
 - **Systems and saves.** A system's daily and per-frame work is one `Systems.add({name, order:{day, frame}, day, frame, ends})` line in its own file; `world.js` `dayTick` and `updateWorld` only run `Systems.day()` and `Systems.frame(d, dt)` (a frame with `ends` returning true ends the frame). The order is everything (one shared `Math.random`): `tests/structure.js` pins it and the world fingerprints hold it. A piece of the world's save is one `Saves.add({key, order, save, load, settle, defaults})` (`save` returning undefined leaves its key out); `save.js` `worldSave` / `worldLoad` run them. Keep the saved keys in their order (W7, B2 hash the save). Design: `doc/CORE_DESIGN.md` K1.
-- **Actions.** Every button names an action `prefix-name` (`data-act="cv-buy"`). A system claims its prefix once with `onAct('cv-', (a,arg)=>G.cv?asParty(G.cv).act(a,arg):true)`; a second claim throws. Actions without a registered prefix go to `act()` in `ui/input.js` (the menu, encounters); a town window's own (`tab`, `bld`, `hire`, `buy`, `contract`, `ransom` …) go on to `townAct` in `ui/town.js`.
+- **Actions.** Every button names an action `prefix-name` (`data-act="cv-buy"`). A system claims its prefix once with `onAct('cv-', (a,arg)=>G.cv?asParty(G.cv).act(a,arg):true)`; a second claim throws. Actions without a registered prefix go to `act()` in `ui/input.js` (the menu, encounters); a town window's own (`tab`, `bld`, `hire`, `buy`, `contract`, `ransom` …) go on to `townAct` in `ui/town.js`, which hands each to the place whose verb it is (`Place` `verbs`: `PLACES`, `definePlace`).
 - **Settings.** Each remembered setting is one entry of `PREFS` (`ui/ui.js`): its default, how its browser-storage key `ashmark.<key>` reads and writes, and what a change does (`apply`). `prefSet(k,v)` changes and stores one (storage may be blocked: the value still changes for the session); the globals other files read (`GRID.on`, `BSPEED.v`, `GUIDE.on`, `HPBARS.on`, `BLOOD.on`, `BDEPLOY.on`, `AUTOSK.on`, `BAUTO.on`) are views over it. The Settings buttons go through `settingAct`. A new setting is a `PREFS` entry (plus its row on the Settings page). Tests: `tests/uiprefs.js`.
 - **Encounters.** A new kind of fight adds its entry to `ON_WIN` in `battle/encounters.js`: what winning it pays and changes.
 

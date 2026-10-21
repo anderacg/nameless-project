@@ -153,7 +153,8 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t
     {const get=u=>{const x=new XMLHttpRequest();x.open('GET',u,false);x.send();return x.responseText},srcs=[...document.querySelectorAll('script[src^="js/"]')].map(s=>s.getAttribute('src'));
       const builds=srcs.filter(f=>f!=='js/ui/window.js'&&/class="rail|rail-i|rail-head|rh-flag|class="rwin|rwbody"|class="rcard|class="rc-|ri-dot|class="rkact|class="rka-|class="rtile|class="rt-|class="pg-|class="pk-|class="qty/.test(get(f).replace(/querySelector(All)?\('[^']*'\)/g,'')));
       ok(!builds.length,'no script but ui/window.js builds the rail\'s, the cards\' or the dot\'s markup'+(builds.length?': '+builds.join(', '):''));
-      const via2={'js/ui/town.js':'railCards(','js/ui/townui.js':'railCards(','js/world/estates.js':'railCards(','js/world/sites.js':'railCards('};
+      // (the town's places and the hall: ui/town.js, its Place classes since wave D)
+      const via2={'js/ui/town.js':'railCards(','js/world/estates.js':'railCards(','js/world/sites.js':'railCards('};
       ok(Object.entries(via2).every(([f,c])=>get(f).includes(c))&&['js/ui/town.js','js/world/estates.js'].every(f=>get(f).includes('railKeyActions(')),'the town, the hall, the estate and the site give their people to the one card builder (window.js railCards), and the estate and the town their key actions to railKeyActions');
       const via={'js/ui/townui.js':'showRail(','js/world/estates.js':'showRail(','js/world/sites.js':'showRail(','js/world/folk.js':'estateRail('};
       ok(Object.entries(via).every(([f,c])=>get(f).includes(c))&&get('js/world/sites.js').includes('PAGE_SCREEN.show(')&&/class PageScreen extends RailScreen/.test(get('js/ui/window.js'))&&!/estateRail\(|showPanel\(/.test(get('js/world/critters.js')),'the town, the holding, the estate (its workers) and the site screens all call the one base; the one-page sites its PageScreen; no window is built for a herd');

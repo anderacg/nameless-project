@@ -6,14 +6,14 @@
 // to the streets, so the whole town is walkable. Port towns have the sea along the east wall, with a pier.
 // The same town always gets the same layout.
 const TOWN_W=40,TOWN_H=30;
-// which panel tabs a holding offers (the town panel and the scene agree on this)
+// which panel tabs a holding offers (the town panel and the scene agree on this: the places it has, ui/town.js PLACES)
 const TAB_N={recruit:'Recruit',trade:'Trade',stores:'Stores',smith:'Smith',stable:'Stable',jobs:'Jobs',tavern:'Tavern'};
 function townTabs(t){
   const tabs=t.T.tabs.map(k=>[k,TAB_N[k]]);
-  if(t.owner==='player')tabs.unshift(['fief','Fief']);
+  if(PLACES.fief.at(t))tabs.unshift(['fief','Fief']);
   tabs.push(['garrison','Garrison']);
   // any holding that is not yours or your employer's can be attacked from its own tab
-  if(t.owner!=='player'&&P.fac!==t.owner)tabs.push(['siege','Besiege']);
+  if(PLACES.siege.at(t))tabs.push(['siege','Besiege']);
   return tabs;
 }
 // the people who work here: everyone whose tab the holding offers (the reeve instead of the steward in your own fief)

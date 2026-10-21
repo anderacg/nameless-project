@@ -52,10 +52,12 @@ class Holding{
 
   /* its parts, each kept aside (never saved: they work on the holding's own plain fields, which its save record keeps): its
      economy (world/economy.js Economy: stock, people, prices, its day), what it has built (world/estates.js Buildings: estates,
-     walls, projects), where its lots stand (world/lots.js Layout), and each of its estates (world/estates.js Estate) */
+     walls, projects), where its lots stand (world/lots.js Layout), its watch (world/patrols.js Watches: the day and night
+     watches, t.watches) and each of its estates (world/estates.js Estate) */
   get econ(){return Economy.of(this)}
   get buildings(){return Buildings.of(this)}
   get layout(){return Layout.of(this)}
+  get watch(){return Watches.of(this)}
   estate(k){return estateOf(this,k)}
 
   // its first day: its realm, garrison and peace, its estates and economy (its lots: layout.init); a generated world's economy
