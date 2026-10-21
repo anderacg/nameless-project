@@ -78,7 +78,7 @@ try{
  ok(G.msgs.filter(x=>/Make camp \(Z\)/.test(x.m)).length===n0+1,'a first hint, once: "Marching tires your band. Stop, or Make camp (Z), to rest."');
  // ---- the card
  reset();at('open');bag({water:400,grain:60});P.tx=P.x+200;P.ty=P.y;P.bsta=15;t.updateHUD(true);{const el=document.getElementById('stats'),h=el.innerHTML,bar=el.querySelector('.bar.sta');
-  ok(bar&&bar.classList.contains('tired')&&/▼/.test(bar.textContent)&&/Tired/.test(bar.textContent)&&/marching −3/.test(bar.title),'the card: stamina amber with ▼ and "Tired" marching ('+bar.textContent+'; '+bar.title+')');
+  ok(bar&&bar.classList.contains('tired')&&/▼/.test(bar.textContent)&&/Tired/.test(bar.textContent)&&bar.title.includes('marching −'+t.SUPPLY.march),'the card: stamina amber with ▼ and "Tired" marching ('+bar.textContent+'; '+bar.title+')');
   ok(el.querySelector('.bar.hp')&&/Health 6\/6/.test(el.querySelector('.bar.hp').textContent),'its health bar: fit of the whole band (hero and 5)');
   ok([...el.querySelectorAll('.pc-tags .tag')].map(x=>x.textContent).join()==='Tired','its tags: Tired');
   ok(el.querySelectorAll('.chip').length>=6&&/d</.test(h)&&!/Mana/.test(h),'food and drink chips in days; your hero’s mana is not on it')}

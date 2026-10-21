@@ -24,7 +24,7 @@
    man wounded), and −morale a night short of furs (survive, world.js).
    battleMin: your side starts a battle at the band's stamina, never under this. camp: the wounded heal × heal; caught: −morale
    when a hostile band finds you in camp. hint: the first-run hint once stamina falls under this. hurt: causes kept for the card */
-const SUPPLY={march:3,rough:1.5,night:1.3,forced:1.5,dry:1.5,desertDry:2,cold:.5,mounted:.7,skill:.03,skillCap:.5,guide:.9,
+const SUPPLY={march:2,rough:1.5,night:1.3,forced:1.5,dry:1.5,desertDry:2,cold:.5,mounted:.7,skill:.03,skillCap:.5,guide:.9,
   rest:{stop:2,camp:8,stay:10},dryRest:.5,
   tired:20,exhausted:5,pace:{tired:.85,exhausted:.6},tiredMorale:{every:3,n:1},worn:{every:8},
   eat:{rest:1,march:1.5},frostEat:.5,hunger:{morale:2,grace:24,every:12},

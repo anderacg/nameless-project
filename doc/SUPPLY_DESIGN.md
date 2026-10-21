@@ -21,7 +21,7 @@ Today travel is free: food is eaten once a day whether you march or sit, stamina
 
 | | Rule |
 |---|---|
-| Drains | Each hour you move on the map: `SUPPLY.march` 3. |
+| Drains | Each hour you move on the map: `SUPPLY.march` 2 (owner, 2026-10-21: 3 drained too fast; about 40 marched hours from full to Tired on easy ground). |
 | Faster | Rough ground (hills, forest, swamp, snow, sand) ×1.5; night ×1.3; Forced March ×1.5; no drink ×1.5; desert without water ×2; frost without furs ×1.5. |
 | Slower | A mostly mounted band ×0.7; Athletics (on foot) or Riding (mounted) −3% a level; a Guide −10%. |
 | Recovers | **Stopped** on the map: +2 an hour. **Make camp**: +8 an hour. **Staying in a holding**: +10 an hour. |
