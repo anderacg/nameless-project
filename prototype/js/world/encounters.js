@@ -121,7 +121,7 @@ const roadLand=(x,y)=>new StoryPlace(x,y).landKind;
 // a lure: by a road with woods or hills beside it for the bandits to lie in;
 // mud: by a road where it runs by water or a ford, or through a bog; a lord's wood: a wood's edge (no frost) on a holding's land
 // that has a lord (a realm's, or yours)
-// (each reads the tile's story place: story/context.js Story.at, its terrain, climate, land and cover at the tile's middle)
+// (each reads the tile's story place: story/storyplace.js StoryPlace, via story/context.js Story.at, its terrain, climate, land and cover at the tile's middle)
 const roadOwned=(x,y)=>{const t=landHold(x,y);return t&&t.owner?t:null};
 const ENC_ON={road:(tx,ty)=>Story.at(tx,ty).byRoad,open:(tx,ty)=>{const p=Story.at(tx,ty);return p.terrain===T_OPEN&&!p.byRoad},wild:(tx,ty)=>Story.at(tx,ty).terrain!==T_ROAD,
   wood:(tx,ty)=>{const p=Story.at(tx,ty);return p.woodsEdge||p.terrain===T_OPEN&&p.climate==='frost'},hill:(tx,ty)=>{const p=Story.at(tx,ty);return p.terrain===T_HILL||p.by(T_MOUNT,1)},
