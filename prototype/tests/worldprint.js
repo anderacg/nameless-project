@@ -27,7 +27,10 @@
 // G.quietEvents is on, and the view is the tests' fixed 576 x 360. Hash: FNV-1a 32-bit over bytes, char codes or 32-bit words;
 // W8's places at 1e-6 px.
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.push('INFO '+m),t=T,G=t.G,P=t.P,W=t.W;
-const EXPECT={W1:'65e24662',W2:'2b49a168',W3:'dc546553',W4:'46450e62',W5:'6587a43c',W6:'33d059e4',W7:'ca9d7773',W8:'742df600',B2:'fd6d5be4'};// (at 0a42712; B2 at R3; W6-W8 at Phase 1; W6 at depth, smooth walking and pasture herds and label layout; W7, B2 at save v3)
+const EXPECT={W1:'65e24662',W2:'2b49a168',W3:'dc546553',W4:'46450e62',W5:'6587a43c',W6:'33d059e4',W7:'5dae222a',W8:'742df600',B2:'fd6d5be4'};// (at 0a42712; B2 at R3; W6-W8 at Phase 1; W6 at depth, smooth walking and pasture herds and label layout; W7, B2 at save v3)
+// (W7 re-recorded again 2026-10-21, on purpose (owner: "water registered too slow"): your waterskins fill the moment you stand at a
+//  holding's well (world/supply.js supplyFrame, half a second), not on the hour; the run's first moments are at your home's well, before
+//  you are parked off the map, so the save carries full skins. Was ca9d7773; with supplyFrame taken out it is ca9d7773 again.)
 // (W7 re-recorded 2026-10-21, on purpose, for supplies (doc/SUPPLY_DESIGN.md, world/supply.js): your band eats and drinks by the
 //  hour, not once a day, and its stamina (your hero's sp, in the save) drains on W8's march and comes back by the hour; the band's
 //  own record (its hour's counters) is saved as the world piece 'band' once it is not fresh. Checked by switching it off: with the

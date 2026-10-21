@@ -72,6 +72,17 @@ function fillSkins(quiet){
   if(!quiet)log(got?'You fill your waterskins: '+got+' water.':want>0?'There is no room in your bag for more water.':'Your waterskins are full.',got?'good':'');
   return got}
 const canFill=L=>(L=L||supplyLand()).water||L.well;
+// the skins fill as soon as you stand at a holding's well, or stopped beside water (the owner: on the hour was too slow, a new
+// game began thirsty): looked at every half a second (real time) while they are not full
+const SUPPLY_FILL={t:0,every:.5};
+function supplyFrame(d,dt){
+  if((SUPPLY_FILL.t-=dt||0)>0)return false;
+  SUPPLY_FILL.t=SUPPLY_FILL.every;
+  if(goodN('water')>=Math.ceil(P.drinkHour(true)*24*SUPPLY.fill.days))return false;
+  const L=supplyLand(),moving=!P.stay&&(P.tx!=null||!!G.chase);
+  if(L.well||L.water&&!moving)fillSkins(true);
+  return false;
+}
 
 /* ---------- the band's stamina an hour ---------- */
 /* its change an hour (n: + it comes back, − it drains) and why, in words: moving, on the march; dr, the drink it is on (water, ale,
@@ -129,7 +140,7 @@ function supplyHour(){
   P.morale=clamp(P.morale,0,100);
   if(!u.hint&&P.bsta<S.hint){u.hint=true;log('Marching tires your band. Stop, or Make camp (Z), to rest.','gold')}
 }
-Systems.add({name:'supply',order:{hour:10},hour:supplyHour});
+Systems.add({name:'supply',order:{hour:10,frame:55},hour:supplyHour,frame:supplyFrame});
 
 /* ---------- the camp (§7): Z, the dock's Camp, or the action ring. Your band stops and pitches its tents; stamina comes back
    faster (SUPPLY.rest.camp), the wounded mend faster (SUPPLY.camp.heal: world.js woundedDay); fast forward stops when anything
@@ -156,7 +167,7 @@ function bandCampEnt(cam){return{y:P.y-2,f:()=>{subT(P);const s=campSprite(5,'tr
 // moving now or not; where you stand; the drink you are on; the stamina's rate an hour and why; its state; food and drink in
 // days at the current rate; furs (have, need, shown in or near the frost or when carried); the band's health; the tags that apply
 function supplyNow(){
-  const S=SUPPLY,L=supplyLand(),go=!P.stay&&(P.tx!=null||!!G.chase),dr=drinkNext(L),r=staminaRate(go,dr,L),st=P.staminaState(),tags=[];
+  const S=SUPPLY,L=supplyLand(),go=!P.stay&&(P.tx!=null||!!G.chase),dr=drinkNext(L)||(canFill(L)?'water':null),r=staminaRate(go,dr,L),st=P.staminaState(),tags=[];// (where the skins fill, never thirsty)
   const foodDays=foodN()/Math.max(.01,P.foodHour(go)*(L.frost?1+S.frostEat*survivalShare():1)*24),drinkDays=drinkStock(L)/Math.max(.01,P.drinkHour(go)*24);
   const furs={have:goodN('furs'),need:P.furNeed(),show:L.frost||goodN('furs')>0||nearFrost()};
   if(st==='tired')tags.push(['Tired','warn','Stamina under '+S.tired+': your pace is '+Math.round((1-S.pace.tired)*100)+'% slower and morale slips. Stop or make camp to rest.']);

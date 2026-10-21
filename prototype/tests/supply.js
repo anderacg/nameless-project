@@ -103,5 +103,9 @@ try{
  reset();at('open');P.bsta=42;t.BAND.liquor=true;t.BAND.hint=true;G.mode='world';t.saveGame(true,'quick');P.bsta=100;ev('BAND=freshBand()');t.loadGame('quick');
  ok(Math.abs(P.bsta-42)<1e-9&&t.BAND.liquor===true&&t.BAND.hint===true,'save and load keep the band’s stamina and its record');
  Kit.begin('soldier',4242);ok(P.bsta===100&&!t.BAND.liquor&&!t.BAND.hint,'a new game starts fresh');
+ // a new game never begins thirsty: by your home's well the card counts the well's water, and the skins fill the moment you stand
+ // there (supplyFrame, every half a second), not on the hour
+ {G.mode='world';G.modal=false;t.hidePanel();const w0=t.goodN('water'),c0=t.supplyNow();t.SUPPLY_FILL.t=0;t.Systems.frame(.01,.01);const w1=t.goodN('water');
+  ok(w0===0&&!c0.tags.some(x=>x[0]==='Thirsty')&&w1>0,'a new game: not thirsty by your home’s well, and the skins fill at once ('+w0+' water, then '+w1+')')}
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}
 const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d)};
