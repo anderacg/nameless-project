@@ -66,7 +66,8 @@ js/world/             the campaign map and everything on it
                         (a generated world's river, crossing, height and high ground too)
   worldsettings.js worldgen.js worldplace.js
                         the world generator (doc/WORLD_DESIGN.md, behind WORLD.gen): the clamped settings, the terrain stages 1-6,
-                        the placement stages 7-9 (holdings, roads and crossings, camps); seeded, never Math.random
+                        the placement stages 7-9 (holdings, roads and crossings, camps; the classic seed's
+                        anchors and hints: tests/classicseed.js); seeded, never Math.random
   router.js             every way over the land behind three calls: Router.travel (a step toward a point, or a holding's gate:
                         gateGoal), Router.reach, Router.days (and Router.close, Router.stats); today's flow fields and searches
                         underneath; on the generated world the way graph (buildWayGraph) and the two-level router

@@ -4,7 +4,7 @@
 // diagonal apart, a fair start, ports on water joined to the sea), the roads (every holding and camp reachable from every capital,
 // also with the flooding fords shut; road tiles 8-connected, never on a peak, no right-angle stairs; each road's line), the
 // crossings (bridges over 3 tiles of water at most, no ford on a great river, ferries only on great rivers by towns and ports,
-// at most 60 tiles apart along a river wherever one can be made, else a bare stretch as INFO), the camps (density()'s, in the fringe), D10's lords, the same world twice; a made-up
+// at most 60 tiles apart along a river wherever one can be made, else a bare stretch as INFO), the camps (density()'s, in the fringe), realm land within 30% of the mean, D10's lords, the same world twice; a made-up
 // map for the crossings' kinds; deposits and first stocks by the economy setting; lords from WM.lords. Works with the flag
 // off or on (it makes its own worlds). INFO lines: time per stage and per road, the checks' tries and relaxations.
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.push('INFO '+m),t=T,J=JSON.stringify;
@@ -23,11 +23,13 @@ try{
    ok(!near.length,name+': the spacing table holds between every two holdings, capitals '+(.3*Math.sqrt(W*W+H*H)).toFixed(0)+' tiles apart (0.3 x the diagonal)'+(near.length?': '+near.slice(0,4).join(', '):''))}
   ok(new Set(Hd.map(h=>h.name)).size===Hd.length&&Hd.every(h=>h.name&&h.note&&h.races.length&&(h.kind==='castle'||h.mod&&Object.keys(h.mod).length===6)),name+': unique names, each with its races, note and (but castles) prices: '+Hd.slice(0,3).map(h=>h.name+' ('+h.note+')').join(' '));
   {const bad=caps.filter(c=>Hd.filter(h=>h!==c&&d2(h,c)<=t.PLACE.day*t.PLACE.day).length<3);(cl?m=>info(m):m=>ok(!bad.length,m))(name+': a fair start: each capital has 3 holdings within '+t.PLACE.day+' tiles'+(bad.length?' (not: '+bad.map(c=>c.name).join(', ')+')':''))}
+  // realm land (§8.14 Balanced: each realm's within 30% of their mean), as territory.js claims it at the start (placeRealmLand)
+  {const L=t.placeRealmLand(m,Hd),mean=L.reduce((a,b)=>a+b,0)/L.length,sk=Math.max(...L.map(v=>Math.abs(v-mean)/mean));(cl?m=>info(m):m=>ok(sk<=t.PLACE.spread,m))(name+': realm land balanced, '+L.join('/')+' tiles by realm, the farthest '+Math.round(sk*100)+'% from their mean (30% at most)')}
   // ports: water within 2 tiles, joined (4 ways over water) to the map's rim or a navigable river
   {const L=new Int32Array(W*H).fill(-1),good=new Set();let n=0;for(let s=0;s<W*H;s++){if(L[s]>=0||K[s]!==t.T_WATER)continue;const st=[s];L[s]=n;let open=false;
     while(st.length){const i=st.pop(),x=i%W,y=(i-x)/W;if(!x||!y||x===W-1||y===H-1||(m.river[i]&4))open=true;for(const j of [x>0?i-1:-1,x<W-1?i+1:-1,i-W,i+W])if(j>=0&&j<W*H&&L[j]<0&&K[j]===t.T_WATER){L[j]=n;st.push(j)}}if(open)good.add(n);n++}
    const P=Hd.filter(h=>h.style==='port'),bad=P.filter(h=>{for(let b=-2;b<=2;b++)for(let a=-2;a<=2;a++){const x=h.tx+a,y=h.ty+b;if(m.has(x,y)&&good.has(L[y*W+x]))return false}return true});
-   (cl?m=>info(m+' (the classic hints: wave 3)'):m=>ok(!bad.length,m))(name+': '+P.length+' ports, each on water joined to the sea or a navigable river; styles '+['port','bridge','stilt'].map(s=>Hd.filter(h=>h.style===s).length+' '+s).join(', ')+(bad.length?': not '+bad.map(h=>h.name).join(', '):''))}
+   (cl?m=>info(m+' (the classic hints: tests/classicseed.js)'):m=>ok(!bad.length,m))(name+': '+P.length+' ports, each on water joined to the sea or a navigable river; styles '+['port','bridge','stilt'].map(s=>Hd.filter(h=>h.style===s).length+' '+s).join(', ')+(bad.length?': not '+bad.map(h=>h.name).join(', '):''))}
   // ---- reach: every holding and camp from every capital, also with every ford on a flooding river shut
   {const miss=[];for(const c of caps)for(const shut of [false,true]){const Rd=t.placeReach(m,ti(c),shut);for(const p of [...Hd,...r.camps])if(!Rd[p.ty*W+p.tx])miss.push(c.name+'>'+(p.name||p.tx+','+p.ty)+(shut?' shut':''))}
    ok(!miss.length,name+': every holding and camp reachable from every capital, also with the flooding fords shut'+(miss.length?': '+miss.slice(0,4).join(', '):''))}
