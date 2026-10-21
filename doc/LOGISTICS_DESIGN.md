@@ -1,6 +1,6 @@
 # Logistics: food and water as supply pools, the pack train, march preview: design
 
-Status: **design only** (owner, 2026-10-21: "everything just design for now, not implement yet"). It builds on the owner's general design, [army-logistics-food-water-design.md](army-logistics-food-water-design.md) (its UI reference: [assets/army-logistics-ui-reference.png](assets/army-logistics-ui-reference.png)), and on Supply as built ([SUPPLY_DESIGN.md](SUPPLY_DESIGN.md), `world/supply.js`, 2026-10-21). Nothing here is built.
+Status: **design only** (owner, 2026-10-21: "everything just design for now, not implement yet"). It builds on the owner's general design, [army-logistics-food-water-design.md](army-logistics-food-water-design.md) (its UI reference: [assets/army-logistics-ui-reference.png](assets/army-logistics-ui-reference.png)), and on Supply as built ([SUPPLY_DESIGN.md](SUPPLY_DESIGN.md), `world/supply.js`, 2026-10-21). Nothing here is built. **It rests on item categories** ([ITEMS_DESIGN.md](ITEMS_DESIGN.md)): the categories **Food**, **Drink** and **Carrier** route an item to the food pool, the water pool or the pack train, and **Quest items** never take room.
 
 **The owner's decisions (2026-10-21):**
 - **Food and water both become pools.** Neither is kept as bag items any more.
@@ -41,7 +41,7 @@ Anything that gave food goods now feeds the pool instead:
 
 **Consumption** stays hourly, as Supply runs it now, with the same modifiers (march ×1.5, frost, Forced March, the Quartermaster…). Only the units change: Food from the food pool, by kind (fresh first, as today); Water from the drink pool (water first, or liquor first when chosen).
 
-**What the bag keeps:** gear, trade goods (cloth, iron, spice…), letters, trophies. Food and drink goods can no longer sit in the bag: a food or drink good that would go into the bag goes to its pool instead.
+**What the bag keeps:** by category ([ITEMS_DESIGN.md](ITEMS_DESIGN.md)): Weapon, Armour, Mount, Ammunition, Resource, Trade good, Trophy, Valuable. **Food** and **Drink** route to their pools and **Carrier** to the train: one rule, the category's `route`, so nothing checks `GOODS[g].food` by hand any more.
 
 ## 3. Capacity: what the band can carry
 
@@ -161,7 +161,7 @@ Food on arrival: 4 days · Water on arrival: 0 days
 ## 10. What changes in today's code
 
 - **`world/supply.js`:** the pools by kind replace the bag's food and drink goods. Capacity, the train and the policies are added. The hourly eating and drinking keep their rules, in the new units. `fillSkins` becomes "fill to capacity". The card shows `days` and `current / capacity`.
-- **Inventory:** food and drink goods never go into the bag (`invAdd`'s food branch goes to the pool). The market's food rows become **Provision**.
+- **Inventory:** the item categories' `route` sends Food and Drink to the pools and Carriers to the train (`core/inventory.js add`); the market's food rows become **Provision**. Item categories are built first (ITEMS_DESIGN.md, S–M), as this phase's first step or just before it.
 - **Loot, hunting, encounters, quests:** their food rewards go to the pool. The supply job (`world/quests.js`) delivers from it.
 - **The trade window:** you sell from the pool (sell surplus food), and buy into it.
 - **New:** `data/logistics.js` (`PROVISIONS`, `CARRIERS`, the policies' numbers), the Supplies window (frame rule: header, the two pools with days, the train, rations and resupply, Provision presets; Back and Close), the march preview bar, the pack train on the map.
@@ -174,6 +174,7 @@ Food on arrival: 4 days · Water on arrival: 0 days
 
 | Phase | What | Effort |
 |---|---|---|
+| **0. Item categories** | [ITEMS_DESIGN.md](ITEMS_DESIGN.md): one category per item, its rules (bag room, route, sell, drop, tab) | **S–M** |
 | **1. The pools** | Food and water as pools by kind (spoilage, variety, ale and liquor kept); capacity from men and your mount; over capacity slower; buying and selling into the pools (Provision: fill to target, +1, +3); loot, hunting, encounters and quests into them; the card and the Supplies window. The one fingerprint re-record | **L**: 1 agent, the biggest piece: it touches the inventory, trade, loot, hunting, quests and many tests |
 | **2. The pack train** | `CARRIERS`; bought at stables and in towns; won as loot (the loot screen's train row); the encounters (abandoned cart, the mud cart, the runaway horse); drawn following the band; pace and off-road costs; upkeep; lost on a defeat | **M** |
 | **3. The march preview** | The projection along the router's route; the bottom bar; the first failure and the nearest fix; the full map's coloured route and supply points | **M** (can run beside phase 2) |
