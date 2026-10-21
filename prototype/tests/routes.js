@@ -31,8 +31,10 @@ try{
   ok(!miss.length,'from every holding’s gate, its guards and workers reach every stop and every estate they can get to'+(miss.length?': '+miss.slice(0,6).join('; '):''))}
  // the patrol on its beat
  {G.clock=t.DAY*.3;W.patrols=[];t.ensureEcon(v);v.gar=Math.max(v.gar,12);t.sendWatch(v);const p=W.patrols.find(q=>q.home===v.name);
-  if(p){const seen=new Set(),x0=p.x,y0=p.y;let moved=0,lx=p.x,ly=p.y;for(let i=0;i<1600;i++){t.updatePatrols(.05);if(p.last!=null)seen.add(p.last);moved+=Math.hypot(p.x-lx,p.y-ly);lx=p.x;ly=p.y}
-   ok(seen.size>=3&&moved>150,'Willowmere’s guards walk their beat from building to building ('+seen.size+' stops, '+Math.round(moved)+' px)')}
+  // (till it has been to 3 of them, up to 400 s: now and then the day watch rides out over its land, and on a generated world
+  // Willowmere's one bridge may take it round the lake for a minute or more)
+  if(p){const seen=new Set(),x0=p.x,y0=p.y;let moved=0,lx=p.x,ly=p.y,i=0;for(;i<8000&&!(seen.size>=3&&moved>150);i++){t.updatePatrols(.05);if(p.last!=null)seen.add(p.last);moved+=Math.hypot(p.x-lx,p.y-ly);lx=p.x;ly=p.y}
+   ok(seen.size>=3&&moved>150,'Willowmere’s guards walk their beat from building to building ('+seen.size+' stops, '+Math.round(moved)+' px in '+Math.round(i*.05)+' s)')}
   else ok(false,'Willowmere sends no patrol')}
  // the workers
  {W.folk=[];G.clock=t.DAY*.5;P.x=v.x;P.y=v.y+30;let came=0;for(let i=0;i<2400;i++){G.clock=t.DAY*.6;t.updateFolk(.05);came=Math.max(came,W.folk.filter(f=>f.home===v.name&&(f.st==='town'||f.st==='back'||f.st==='in'&&f.done===G.day)).length)}

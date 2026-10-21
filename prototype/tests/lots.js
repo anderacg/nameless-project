@@ -30,7 +30,8 @@ try{
  // ---- pulling down
  {const l=ash.lots.find(q=>t.ESTATES[q.k]&&t.bldLv(ash,q.k)&&!(ash.work&&ash.work.k===q.k));if(l){const g0=P.gold,kk=l.k;t.demolish(ash,l);ok(!t.bldLv(ash,kk)&&!t.lotAt(ash,kk)&&P.gold>g0&&!t.occAt(l.x,l.y),'pulling down the '+kk+' frees its tiles and gives some gold back')}}
  // ---- houses and people
- {const z=t.townBy('Brookhollow');t.ensureEcon(z);z.pop=t.housing(z);z.pros=80;const c={fs:1,sat:1,kinds:3};for(let i=0;i<5;i++)t.people(z,c);ok(z.pop<=t.housing(z),'a full holding grows no more ('+z.pop+' people, room for '+t.housing(z)+')');
+ // (Brookhollow, or the first holding with room for a house of any size: on a generated world a village deep in the woods has none)
+ {const room=q=>[1,2].every(n=>t.lotSpot(q,n,'open',1,9,t.seeded(1),{gap:'row',jit:.8})),z=[t.townBy('Brookhollow'),...TW].find(q=>q&&q.name!=='Ashford'&&room(q));t.ensureEcon(z);z.pop=t.housing(z);z.pros=80;const c={fs:1,sat:1,kinds:3};for(let i=0;i<5;i++)t.people(z,c);ok(z.pop<=t.housing(z),'a full holding grows no more ('+z.name+': '+z.pop+' people, room for '+t.housing(z)+')');
   ok(t.fleeReason(z)==='crowded'||t.fleeReason(z)!=='','and its people have reason to leave ('+t.fleeReason(z)+')');
   z.owner=z.owner==='player'?t.HOME[z.name]:z.owner;z.work=null;t.ensureEcon(z);z.stock.timber=100;z.stock.tools=20;W.treas[z.owner]=5000;const h0=z.lots.filter(l=>l.k==='house').length;
   // a realm takes up a project on a holding on about 1 day in 20 (estateDay), so 60 days missed it on some worlds (about 1 in 20,

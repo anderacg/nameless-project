@@ -137,7 +137,11 @@ try{
  const envAt=()=>t.battleEnv(false);
  G.enc={kind:'siege'};const sg=t.groundSpecFor({},envAt());G.enc={kind:'raid'};const rd=t.groundSpecFor({},envAt());G.enc={kind:'party'};const pt=t.groundSpecFor({},envAt()),tn=t.groundSpecFor({tournament:true},envAt());
  ok(sg===null&&rd===null&&tn===null&&pt&&pt.recipe,'D6: no terrain in sieges, raids or tournaments; a field battle has one ('+pt.recipe+')');
- const find=(clim,terr)=>{for(let i=0;i<t.MW*t.MH;i++){if(t.CLIMS[t.climate[i]]!==clim||t.tiles[i]!==terr)continue;const x=(i%t.MW+.5)*t.TILE,y=(Math.floor(i/t.MW)+.5)*t.TILE;if(t.TOWNS.every(w=>Math.hypot(w.x-x,w.y-y)>60))return{x,y}}return null};
+ // (deep: in the heart of it, its 8 neighbours alike and no river by it: on a generated world the first desert tile is an oasis by a
+ // brook, its marsh by design)
+ const find=(clim,terr,deep)=>{for(let i=0;i<t.MW*t.MH;i++){if(t.CLIMS[t.climate[i]]!==clim||t.tiles[i]!==terr)continue;
+  if(deep){const tx=i%t.MW,ty=Math.floor(i/t.MW);if([-1,0,1].some(a=>[-1,0,1].some(b=>{const j=i+b*t.MW+a;return t.CLIMS[t.climate[j]]!==clim||t.tiles[j]!==terr}))||t.WM.battleSite(tx,ty).river)continue}
+  const x=(i%t.MW+.5)*t.TILE,y=(Math.floor(i/t.MW)+.5)*t.TILE;if(t.TOWNS.every(w=>Math.hypot(w.x-x,w.y-y)>60))return{x,y}}return null};
  const fight=(spot,opts)=>{P.x=spot.x;P.y=spot.y;P.troops={hum_bow:4,hum_foot:4};const enemies=['militia','militia','archer'];G.enc={kind:'party',ref:{x:P.x,y:P.y,cool:0},list:enemies,allies:[],foes:[]};t.startBattle({enemies,tournament:false,...opts});return t.B};
  const forest=find('grass',t.T_FOREST),hill=find('grass',t.T_HILL);
  {let B1=fight(forest);const h1=gridHash(B1.terrain);
@@ -145,7 +149,7 @@ try{
   ok(B1.obs.length===0,'with terrain no scattered trees, rocks or props: the woods are the forest (the owner reversed D10; '+B1.obs.length+' obstacles)');
   const B2=fight(forest);ok(gridHash(B2.terrain)===h1,'D4: the same place gives the same field ('+h1+')')}
  {const B3=fight(hill),b=B3.units.find(u=>u.type==='hum_bow'),lv=t.levelAt(b.x,b.y);ok(B3.terrain.has.hills&&near(b.s.range,t.ST.hum_bow.range*(1+H.range*lv)),'D2: on a hill field archers reach by the level they stand on ('+lv+': '+Math.round(b.s.range)+'), no whole-field +15%')}
- {const desert=find('desert',t.T_OPEN),Bd=fight(desert);let woods=0;for(let k=0;k<200;k++){const T=t.buildTerrain({recipe:'desert',seed:k*7919+5,W:1100,top:40,bot:560});if(T.has.wood||T.has.marsh)woods++}
+ {const desert=find('desert',t.T_OPEN,true),Bd=fight(desert);let woods=0;for(let k=0;k<200;k++){const T=t.buildTerrain({recipe:'desert',seed:k*7919+5,W:1100,top:40,bot:560});if(T.has.wood||T.has.marsh)woods++}
   ok(Bd.terrain&&Bd.terrain.recipe.kind==='desert'&&!Bd.terrain.has.wood&&!Bd.terrain.has.marsh&&Bd.obs.length===0&&woods===0,'a desert field has no woods or marsh (nor any of 200 desert recipes: '+woods+'), and no scattered cacti')}
  {ev('TERRAIN.on=false');const Bf=fight(forest);ok(!Bf.terrain&&Bf.obs.filter(x=>x.kind==='tree').length>=12,'terrain off: the forest field has its scattered trees as ever ('+Bf.obs.length+')');ev('TERRAIN.on=true')}
  {ev('TERRAIN.on=false');const B4=fight(hill),b=B4.units.find(u=>u.type==='hum_bow');ok(!('terrain' in B4)&&!B4.env.terrain&&near(b.s.range,t.ST.hum_bow.range*1.15),'terrain off: no B.terrain, and the old hill rule (+15%) is back');ev('TERRAIN.on=true')}

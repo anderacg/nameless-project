@@ -7,9 +7,10 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),out=()=>{cons
  try{t.act('begin','soldier');G.quietEvents=true;
   const z=t.TOWNS.find(x=>x.owner&&x.owner!=='player'&&Object.keys(t.ESTATES).some(k=>t.bldLv(x,k)));const k=Object.keys(t.ESTATES).find(k=>t.bldLv(z,k));
   const lv=t.bldLv(z,k),own=t.GUARDS.base+t.GUARDS.per*lv,n0=t.estateGuards(z,k).length,g0=z.gar||0;
-  t.guardsBeaten(z,k);const n1=t.estateGuards(z,k).length;
-  ok(n1===n0-own-(n0-own),'beaten, the estate\u2019s own guards are gone ('+n0+' to '+n1+'; own '+own+')');
-  ok((z.gar||0)<=g0,'and any garrison men who stood with them are lost to the garrison ('+g0+' to '+(z.gar||0)+')');
+  // (an estate near the walls has some of the garrison standing with its own: those are lost, and as many more stand there next)
+  const near=t.estateOf(z,k).nearWalls();t.guardsBeaten(z,k);const n1=t.estateGuards(z,k).length,stand=near?Math.min(t.GUARDS.gar,z.gar||0):0;
+  ok(n1===stand,'beaten, the estate\u2019s own guards are gone ('+n0+' to '+n1+'; own '+own+(near?'; near the walls, '+stand+' more of the garrison stand by it':'')+')');
+  ok(g0-(z.gar||0)===(near?Math.min(t.GUARDS.gar,g0):0),'and any garrison men who stood with them are lost to the garrison ('+g0+' to '+(z.gar||0)+')');
   const d0=G.day;G.day=d0+t.GUARDS.refill-1;const a=t.estateGuards(z,k).length;G.day=d0+t.GUARDS.refill+1;const b=t.estateGuards(z,k).length;G.day=d0+t.GUARDS.refill+own+1;const c=t.estateGuards(z,k).length;
   ok(a===n1&&b>a&&c>=own,'their posts stay empty '+(t.GUARDS.refill-1)+' days, then fill one a day ('+a+', '+b+', '+c+')');
   G.day=d0;t.guardsBeaten(z,k);ok(!!(z.gd&&z.gd[k]&&z.gd[k].length),'the empty posts are kept on the holding (saved while one is empty)');

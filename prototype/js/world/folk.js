@@ -80,9 +80,10 @@ const FRONT_AT={mine:[[10,15.5],[4.5,9.5],[.5,4.5]],inner:[[3,7],[9,13],[6,10]],
 const rockAt=(x,y)=>tAt(x,y)===T_HILL||passable(tAt(x,y))&&nearT(x,y,T_MOUNT,1);
 /* his day's round: door (where he goes in and out); loop, its stops ({x, y, w: how long he stops there, load: he carries what he got
    from it to the next}); ping: to and fro along them (else round and round); home: the stop nearest the door, where he starts and
-   ends; pier: a fisher's, over the planks (not the land's ways) */
+   ends; pier: a fisher's, over the planks (not the land's ways); a herder's pens (he never steps in one) and out: his way from the
+   door to home round them when they hem the door in (penWay) */
 function fieldPlan(t,f){
-  const R=seeded(folkHash(f.id+'|'+G.day+'|w')),l=lotAt(t,f.k),p=bldSpots(t)[f.k],door={x:f.x,y:f.y},loop=[],pl={door,loop,R,day:G.day,ping:true,home:0,pier:false},
+  const R=seeded(folkHash(f.id+'|'+G.day+'|w')),l=lotAt(t,f.k),p=bldSpots(t)[f.k],door={x:f.x,y:f.y},loop=[],pl={door,loop,R,day:G.day,ping:true,home:0,pier:false,out:[]},
     rk=Math.max(0,W.folk.filter(x=>x.home===f.home&&x.k===f.k).indexOf(f)),stop=(x,y,w,load)=>({x,y,w:w||FIELD.pause,load:!!load}),pick=a=>a[(rk+Math.floor(R()*2))%Math.min(a.length,3)];// (rk: which man of its crew he is)
   if(!l||!p){loop.push(stop(door.x,door.y));return pl}
   const X=p.tx*TILE,Y=p.ty*TILE,far=FIELD.reach*TILE-8,fs=PLOTS[f.k]?plotsAt(t,f.k,bldLv(t,f.k)):[],pr=f.k==='port'&&pierOf(t);
@@ -115,13 +116,38 @@ function fieldPlan(t,f){
   const pen=s=>{if(f.k!=='pasture')return false;const n=Math.ceil(Math.hypot(s.x-door.x,s.y-door.y)*4);for(let k=0;k<=n;k++){const x=door.x+(s.x-door.x)*k/n,y=door.y+(s.y-door.y)*k/n;if(fs.some(c=>Math.abs(x-c[0]*TILE-8)<9&&Math.abs(y-c[1]*TILE-8)<9))return true}return false},
     by=s=>Math.hypot(s.x-door.x,s.y-door.y)+(pen(s)?1e4:0);
   loop.forEach((s,i)=>{if(by(s)<by(loop[pl.home]))pl.home=i});
+  // (pens hemming the door in, no stop clear of them from it: his way to home and back round their fences (out); none, he works
+  // at the door)
+  if(f.k==='pasture'&&fs.length){pl.pens=fs;if(pen(loop[pl.home])){const w=penWay(fs,l,p,door,loop,far);
+    if(w){pl.home=w.home;pl.out=w.way.map((s,o)=>({x:s.x,y:s.y,i:-1,o}))}else{loop.length=0;loop.push(front());pl.home=0}}}
   return pl}
+// (in a pen, among the animals: m px in from its fence)
+const inPen=(fs,x,y,m)=>fs.some(c=>x>c[0]*TILE+m&&x<c[0]*TILE+TILE-m&&y>c[1]*TILE+m&&y<c[1]*TILE+TILE-m);
+/* a herder's way from the door (a) to the stop of his round (loop) nearest by it, round the pens' fences: on a 2-px grid within 2
+   tiles of the pens and the building (l), never in a pen nor in the building above its front row, on ground he can walk within
+   far of its spot (p), cut to the corners where it turns. {home: that stop, way: the corners}; null: no way */
+function penWay(fs,l,p,a,loop,far){
+  const S=2,xs=fs.map(c=>c[0]).concat(l.x,l.x+l.n-1),ys=fs.map(c=>c[1]).concat(l.y,l.y+l.n-1),x0=(Math.min(...xs)-2)*TILE,y0=(Math.min(...ys)-2)*TILE,
+    nx=(Math.max(...xs)+3)*TILE/S-x0/S+1,ny=(Math.max(...ys)+3)*TILE/S-y0/S+1,
+    free=(x,y)=>passable(terrAt(x,y))&&!inPen(fs,x,y,.5)&&!(x>l.x*TILE&&x<(l.x+l.n)*TILE&&y>=l.y*TILE&&y<(l.y+l.n)*TILE-2)&&Math.hypot(x-p.x,y-p.y)<=far,
+    clear=(u,v)=>{const n=Math.ceil(Math.hypot(v.x-u.x,v.y-u.y)*2);for(let k=1;k<n;k++)if(!free(u.x+(v.x-u.x)*k/n,u.y+(v.y-u.y)*k/n))return false;return true},
+    cell=s=>{const i=Math.round((s.x-x0)/S),j=Math.round((s.y-y0)/S);return i<0||j<0||i>=nx||j>=ny?-1:j*nx+i},pt=c=>({x:x0+c%nx*S,y:y0+Math.floor(c/nx)*S});
+  // (breadth first from the door's cell)
+  const from=new Int32Array(nx*ny).fill(-1),c0=cell(a);if(c0<0)return null;from[c0]=c0;
+  for(let h=0,q=[c0];h<q.length;h++){const c=q[h],i=c%nx;for(const d of [1,-1,nx,-nx]){const m=c+d;if(m<0||m>=nx*ny||d===1&&i===nx-1||d===-1&&!i||from[m]>=0)continue;const s=pt(m);if(free(s.x,s.y)){from[m]=c;q.push(m)}}}
+  // (the stop whose cell he reaches by the fewest steps)
+  const len=c=>{let n=0;for(;c!==c0;c=from[c])n++;return n};let home=-1,best=1e9;
+  loop.forEach((s,i)=>{const c=cell(s);if(c>=0&&from[c]>=0&&clear(pt(c),s)&&len(c)<best){best=len(c);home=i}});if(home<0)return null;
+  const ps=[loop[home]];for(let c=cell(loop[home]);;c=from[c]){ps.unshift(pt(c));if(c===c0)break}ps.unshift(a);
+  // (cut to its corners: from each, the farthest point in a clear line)
+  const way=[];for(let i=0;i<ps.length-1;){let j=ps.length-1;while(j>i+1&&!clear(ps[i],ps[j]))j--;way.push(ps[j]);i=j}
+  way.pop();return{home,way}}
 // the stops from a to b along his round (the shorter way round)
 function fieldWay(pl,a,b){const n=pl.loop.length,out=[];if(pl.ping){const s=b>a?1:-1;for(let i=a;i!==b;i+=s)out.push(i)}
   else{const fw=(b-a+n)%n,s=fw<=n-fw?1:-1;for(let i=a;i!==b;i=(i+s+n)%n)out.push(i)}out.push(b);return out.map(i=>({...pl.loop[i],i}))}
 // out to his work: from the door to the round's first stop, or (now: as you first come near) already at a stop of it
 function goField(t,f,now){const pl=f.plan&&f.plan.day===G.day?f.plan:f.plan=fieldPlan(t,f);f.st='field';f.gin=false;f.load=false;f.dn=1;
-  if(now){const i=Math.floor(pl.R()*pl.loop.length);f.si=i;f.x=pl.loop[i].x;f.y=pl.loop[i].y;f.wp=[];fieldRest(f)}else{f.si=-1;f.wp=fieldWay(pl,pl.home,pl.home)}}
+  if(now){const i=Math.floor(pl.R()*pl.loop.length);f.si=i;f.x=pl.loop[i].x;f.y=pl.loop[i].y;f.wp=[];fieldRest(f)}else{f.si=-1;f.wp=pl.out.concat(fieldWay(pl,pl.home,pl.home))}}
 // a stop: a while, and maybe a turn the other way partway through
 function fieldRest(f){const R=f.plan.R,w=f.plan.loop[f.si].w;f.wait=w[0]+R()*(w[1]-w[0]);f.turn=R()<.6?f.wait*R():0}
 // a step toward the next point of his way (in haste on his way in), on the land's ways (world.js walk: round what is in the way),
@@ -129,11 +155,13 @@ function fieldRest(f){const R=f.plan.R,w=f.plan.loop[f.si].w;f.wait=w[0]+R()*(w[
 function fieldStep(f,d,fast){const p=f.wp[0],dx=p.x-f.x,dy=p.y-f.y,dd=Math.hypot(dx,dy),s=moveStep(fast?FIELD.hurry:FIELD.speed*(f.load?FIELD.carry:1),d);
   if(Math.abs(dx)>.2)f.dir=dx>0?1:-1;f.moving=true;
   if(dd<=s){WALKED.set(f,(WALKED.get(f)||0)+dd);f.x=p.x;f.y=p.y;f.wp.shift();if(p.i>=0)f.si=p.i;return true}
-  if(f.plan.pier||!walk(f,dx,dy,s)){WALKED.set(f,(WALKED.get(f)||0)+s);f.x+=dx/dd*s;f.y+=dy/dd*s}return false}
+  if(f.plan.pier||!walk(f,dx,dy,s,f.plan.pens&&((x,y)=>!inPen(f.plan.pens,x,y,1)))){WALKED.set(f,(WALKED.get(f)||0)+s);f.x+=dx/dd*s;f.y+=dy/dd*s}return false}
 // at work out of doors: home by his round and in at the door when the hours end, his day is inside or danger comes; else stop to
 // stop, carrying what he got from a stop to the next
 function fieldWork(t,f,d,now){const pl=f.plan,risk=fieldDanger(t,f);
-  if(!f.gin&&(!fieldTime(now)||!fieldOut(f)||risk||pl.day!==G.day)){f.gin=true;const at=f.wp.length&&f.wp[0].i>=0?f.wp[0].i:f.si;f.wp=(at<0?[]:fieldWay(pl,at,pl.home)).concat([{...pl.door,i:-1}])}
+  // (in by his round to home, then his way round the pens back to the door: by the corners he has passed, if still on his way out)
+  if(!f.gin&&(!fieldTime(now)||!fieldOut(f)||risk||pl.day!==G.day)){f.gin=true;const at=f.wp.length&&f.wp[0].i>=0?f.wp[0].i:f.si,o=at>=0?pl.out.length:f.wp.length&&f.wp[0].o!=null?f.wp[0].o:0;
+    f.wp=(at<0?[]:fieldWay(pl,at,pl.home)).concat(pl.out.slice(0,o).reverse(),[{...pl.door,i:-1}])}
   if(f.wp.length){if(fieldStep(f,d,f.gin)&&!f.wp.length&&!f.gin){f.load=false;fieldRest(f)}return}
   f.moving=false;if(f.gin){f.st='in';f.gin=false;f.load=false;return}
   f.wait-=d;if(f.turn&&f.wait<f.turn){f.dir=-f.dir;f.turn=0}
