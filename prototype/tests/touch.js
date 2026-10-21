@@ -2,7 +2,8 @@
 // Touch: a phone on its side. Real PointerEvents (pointerType 'touch', each finger its own pointerId) on the game canvas:
 // a pinch zooms about its middle and a two-finger drag pans, never ordering; a tap selects and a tap again sends, as before;
 // a long press sends the selection to the ground or onto an enemy, and dragged on lays the line; a second finger calls a press
-// off; on the map a long press shows what is there in a card, travelling nowhere. The mouse's own clicks are as they were.
+// off; on the map a long press opens the action ring (ui/ring.js), whose Look shows what is there in a card, travelling nowhere.
+// The mouse's own clicks are as they were.
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t.P,random0=Math.random,measure0=t.measureField;
   window.requestAnimationFrame=()=>0;try{localStorage.clear()}catch(e){}
   const cv=document.querySelector('canvas'),TO=t.TOUCH,near=(a,b,e=1)=>Math.abs(a-b)<=e,later=()=>performance.now()+TO.hold+50;
@@ -81,8 +82,10 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t
     if(!far)ok(false,'a holding on the screen to press ('+G.mode+' cam '+JSON.stringify(G.cam)+' P '+Math.round(P.x)+','+Math.round(P.y)+' VW '+t.VW+'x'+t.VH+' cv '+cv.width+' towns '+t.TOWNS.map(x=>Math.round(x.x)+','+Math.round(x.y)).join(' ')+')');else{
       const tip=document.getElementById('tip'),wc=fromW(far.x,far.y);ok(t.pickAt(far.x,far.y)===far,'the holding answers where it is pressed');
       fire('pointerdown',wc);ok(P.tx==null&&!G.chase,'pressing the map travels nowhere yet');t.touchTick(later());
-      ok(!tip.hidden&&tip.classList.contains('hold')&&tip.textContent.includes(far.name)&&/Tap:/.test(tip.innerHTML),'held: a card says what it is ('+tip.textContent.slice(0,60)+')');
-      fire('pointermove',wc);fire('pointerup',wc);cv.dispatchEvent(new PointerEvent('pointerleave',{pointerType:'touch',pointerId:1}));t.frame();
+      const look=()=>[...document.querySelectorAll('.aring .ar-btn')].find(b=>b.textContent==='Look');ok(!!t.ActionRing.now&&!!look(),'held: the action ring opens, with Look');
+      fire('pointermove',wc);fire('pointerup',wc);look().click();
+      ok(!tip.hidden&&tip.classList.contains('hold')&&tip.textContent.includes(far.name)&&/Tap:/.test(tip.innerHTML),'its Look: a card says what it is ('+tip.textContent.slice(0,60)+')');
+      cv.dispatchEvent(new PointerEvent('pointerleave',{pointerType:'touch',pointerId:1}));t.frame();
       ok(!tip.hidden&&P.tx==null&&!G.chase&&G.mode==='world','let go: the card stays, and you do not travel');
       const away=fromW(P.x+30,P.y+30);tap(away);ok(tip.hidden&&!tip.classList.contains('hold')&&P.tx==null&&!G.chase,'the next tap puts the card away and travels nowhere');
       tap(wc);ok(G.chase===far||P.tx!=null,'a quick tap still travels');P.tx=null;G.chase=null;
@@ -93,6 +96,6 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t
   // the real timer: a finger held arms the order on its own
   const end=()=>{const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d)};
   try{if(!far)return end();t.hideTip();P.tx=null;G.chase=null;const wc=fromW(far.x,far.y),tip=document.getElementById('tip');fire('pointerdown',wc);
-    setTimeout(()=>{try{ok(!tip.hidden&&tip.classList.contains('hold')&&TO.lp&&TO.lp.armed,'a finger simply held: its own timer shows the card');fire('pointerup',wc);ok(!TO.lp&&!TO.pts.size&&P.tx==null&&!G.chase,'and lifting it travels nowhere');t.hideTip()}catch(e){o.push('EXC '+e.message)}end()},TO.hold+80)}
+    setTimeout(()=>{try{ok(!!t.ActionRing.now&&TO.lp&&TO.lp.armed,'a finger simply held: its own timer opens the ring');fire('pointerup',wc);ok(!TO.lp&&!TO.pts.size&&P.tx==null&&!G.chase,'and lifting it travels nowhere');t.ActionRing.close();t.hideTip()}catch(e){o.push('EXC '+e.message)}end()},TO.hold+80)}
   catch(e){o.push('EXC '+e.message);end()}
 };

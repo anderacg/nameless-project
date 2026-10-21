@@ -17,7 +17,7 @@ const GOODS={grain:{n:'Grain',base:8,stack:30,icon:'sack',col:'#d8b860',food:tru
   stone:{n:'Stone',base:6,stack:25,icon:'stone',col:'#a7a49a',d:'Cut blocks from the quarries. Walls and halls are built of it.'},
   wool:{n:'Wool',base:9,stack:25,icon:'wool',col:'#eeeae0',d:'Shorn from the herds. Weavers turn it into cloth.'},
   tools:{n:'Tools',base:30,stack:10,icon:'tools',col:'#9aa3ad',d:'Saws, picks and hammers from the smithies. Every building project and estate wears them out.'},
-  ale:{n:'Ale',base:12,stack:15,icon:'barrel',col:'#c88a3a',d:'Brewed from grain. Towns drink it; content people work harder.'},
+  ale:{n:'Ale',base:12,stack:15,icon:'barrel',col:'#c88a3a',d:'Brewed from grain. Towns drink it; content people work harder. On the road it counts as a ration: it slows the drain on your band\u2019s stamina and lifts spirits.'},
   spice:{n:'Spice',base:34,stack:25,icon:'jar',col:'#d87a30',d:'Light and precious. Worth the most per bag slot.'},
   // regional goods (res): only mines and ports whose land holds them bring them up (resources.js), so they are cheap at the source
   // and dear everywhere else
@@ -31,6 +31,13 @@ const GOODS={grain:{n:'Grain',base:8,stack:30,icon:'sack',col:'#d8b860',food:tru
   salmon:{n:'Salmon',base:16,stack:20,icon:'fish',col:'#e88a6a',food:true,spoil:.08,res:'fish',d:'Caught in cold rivers and northern waters. Prized at every table.'},
   eel:{n:'Eel',base:11,stack:20,icon:'fish',col:'#6a7a4a',food:true,spoil:.07,res:'fish',d:'Trapped in the bogs and slow waters of the swamp.'},
   pearls:{n:'Pearls',base:150,stack:25,icon:'pearl',col:'#f0ece0',res:'fish',d:'Dived for in warm southern waters. A fortune in a pouch.'}};
+// the road's drinks (world/supply.js SUPPLY.drink; ale, a trade good above, counts as one too): goods in the bag like any other
+// (GOODS[id]), but no market trades them. They are kept out of GOODS's keys (not enumerable), so no holding stocks or prices them
+// and the world's draws stay as they were. Water fills free from a river, a lake, an oasis or a holding's well; liquor is sold in
+// taverns, at its base price
+const DRINK_GOODS={water:{n:'Water',base:1,stack:50,icon:'jug',col:'#6aa8d8',drink:true,d:'Waterskins. Your band drinks on the march: with water, stamina drains at its normal rate. Refill free beside a river, a lake, an oasis or a well.'},
+  liquor:{n:'Liquor',base:14,stack:20,icon:'vial',col:'#d89a3a',drink:true,d:'Spirits from the taverns. A ration of it slows the drain on your band’s stamina more than ale, and lifts spirits.'}};
+for(const k in DRINK_GOODS)Object.defineProperty(GOODS,k,{value:DRINK_GOODS[k],enumerable:false});
 // the classic holdings: plain data, each made one of its kind, with its prices and its point, by makeHolding (holdings.js);
 // realm: the realm it starts under
 const CLASSIC_PLACES=[

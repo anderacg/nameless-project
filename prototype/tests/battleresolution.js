@@ -7,7 +7,13 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t
   // monsterLoot), not Math.random; with the streams switched back to Math.random it is c95d35c7 as before, and every other case is
   // unchanged)
   // (re-recorded 2026-10-19: a new skill, Woodcraft (6b911d6), in every character's skill table, which these snapshots hold; with it taken out every one matches as before: the battle's behaviour unchanged)
-  const expected={"field_win":"095840fd","field_loss":"dfbba318","retreat_away":"c2c81503","retreat_caught":"9102b338","carried_retreat":"fbddc708","tournament_win":"92b90207","tournament_loss":"5ec88907","siege_win":"5496f267","siege_loss":"8677d140","lord_win":"1883f361","lord_loss":"0c5560f7","monster_win":"1744f530","auto_win":"ce5dbf85","auto_loss":"c67be098","auto_resolve":"e4ba3c51"};
+  // (the ten field cases re-recorded 2026-10-21 for supplies (doc/SUPPLY_DESIGN.md §2, world/supply.js): your hero's stamina is your
+  // band's (P.sp, which the snapshot holds), so this fixture's hero at 30 of hers is a band at 30/72: its troops start the battle at
+  // that share (battle/fatigue.js fatigueInit), and after it the band's stamina is the average its side still standing ended with
+  // (fieldStaminaBack), not your hero's 12. With those two put back as they were, every case is as recorded: was field_win 095840fd, field_loss
+  // dfbba318, retreat_away c2c81503, retreat_caught 9102b338, carried_retreat fbddc708, siege_win 5496f267, siege_loss 8677d140,
+  // lord_win 1883f361, lord_loss 0c5560f7, monster_win 1744f530; the tournaments and the auto-resolved fights unchanged)
+  const expected={"field_win":"523fac16","field_loss":"f3feadff","retreat_away":"a840d970","retreat_caught":"09ec5ce9","carried_retreat":"08e292c1","tournament_win":"92b90207","tournament_loss":"5ec88907","siege_win":"80306dc2","siege_loss":"a05dc589","lord_win":"17a8e3f0","lord_loss":"e8d3f300","monster_win":"45e897e7","auto_win":"ce5dbf85","auto_loss":"c67be098","auto_resolve":"e4ba3c51"};
   const stable=x=>Array.isArray(x)?x.map(stable):x&&typeof x==='object'?Object.fromEntries(Object.keys(x).sort().map(k=>[k,stable(x[k])])):x;
   const hash=x=>{let h=2166136261;for(const c of JSON.stringify(stable(x)))h=Math.imul(h^c.charCodeAt(0),16777619)>>>0;return h.toString(16).padStart(8,'0')};
   const cases=['field_win','field_loss','retreat_away','retreat_caught','carried_retreat','tournament_win','tournament_loss','siege_win','siege_loss','lord_win','lord_loss','monster_win','auto_win','auto_loss','auto_resolve'];
@@ -32,14 +38,14 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t
       if(name==='retreat_away'||name==='carried_retreat')e.mine=true;
       if(name==='retreat_caught')e.noFlee=true;// enough surviving foes that they do not simply let you leave
       G.enc=e;G.loot=null;G.encAgain=null;G.msgs=[];
-      const chief=band.ld,stream=Math.random;let calls=0;Math.random=()=>{calls++;return stream()};let field=null;
+      const chief=band.ld,stream=Math.random;let calls=0;Math.random=()=>{calls++;return stream()};let field=null,spMax=0;
       if(auto){if(name==='auto_resolve')t.autoResolve();else t.concludeEncounter(win,{hum_spear:2},4,true,e.list.slice(0,4))}
       else{
         if(tournament)G.town={ref:t.townBy('Ashford'),tab:'arena'};
         t.startBattle({enemies:tournament?['chief']:e.list,tournament,lv:2});field=t.B;
         field.win=win;field.over=true;field.retreat=retreat;field.caught=retreat?1:0;field.withdrawn=retreat?8:0;
         field.kills=tournament?1:4;field.slain=tournament?['chief']:e.list.slice(0,4);field.lost={hum_spear:1};field.txp={hum_bow:7};field.fired=20;field.bestCombo=4;
-        field.hero.hp=name==='carried_retreat'||name.endsWith('_loss')?0:17;field.hx.sp=12;field.hx.mp=3;
+        field.hero.hp=name==='carried_retreat'||name.endsWith('_loss')?0:17;field.hx.sp=12;field.hx.mp=3;spMax=t.maxSP();
         const own=field.units.filter(u=>u.team===0&&!u.hero&&!u.comp);
         if(own.length){own[0].hp=0;own[1].hp=0;own[1].left=true;own[1].xp=9;own.slice(2).forEach(u=>{u.mor=u.mor0*.6;u.xp=2})}
         field.units.filter(u=>u.team===1).forEach((u,i)=>{if(win||i<2)u.hp=0});if(win)field.routed=1;
@@ -66,7 +72,12 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t
       if(name==='siege_win')ok(G.capture===town&&town.gar===0,'siege victory opens the holding for a capture decision');
       if(name==='siege_loss')ok(P.siege===null&&G.capWith===null&&town.gar===6,'siege defeat clears the siege and reduces the garrison');
       if(name==='lord_win')ok(lord.held&&lord.dead&&P.captives.some(c=>c.id===lord.id),'victory over a lord records his capture');
-      if(field&&!tournament)ok(P.sp===12&&P.mp===3&&P.hp>=1,name+': hero condition carried back to campaign');
+      // (your hero's stamina is the band's: after a field battle the average its side still standing ended with, your hero's 12 of her
+      // stamina among them, on her scale as it was in the battle (a win may raise her a level after it); world/supply.js, battle/fatigue.js
+      // fieldStaminaBack)
+      if(field&&!tournament){const side=field.units.filter(u=>u.team===0&&!u.lord&&!u.leader&&(u.hp>0||u.left)),sta=u=>u.hero?12/spMax*100:u.sta,want=side.reduce((a,u)=>a+sta(u),0)/side.length;
+        ok(Math.abs(P.sp-want*spMax/100)<1e-9&&P.mp===3&&P.hp>=1,name+': hero condition carried back to campaign, the band’s stamina its side’s ('+(P.sp/spMax*100).toFixed(2)+' of '+side.length+' standing)')}
+      if(tournament)ok(P.sp===12&&P.mp===3,name+': your hero comes out of the lists as she fought them');
     }
   }catch(e){o.push('EXC '+e.message+' '+e.stack)}finally{Math.random=originalRandom}
   const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d);

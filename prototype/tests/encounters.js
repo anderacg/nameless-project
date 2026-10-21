@@ -194,7 +194,7 @@ try{
   // their choices, fitted to each
   world();P.morale=50;at(pilPray.x,pilPray.y);R().on=[];const q1=t.roadSpawn('pilgrims',P.x+10,P.y);t.roadMeet(q1);ok(acts().join('|')==='Pray with them|Give alms|Take the coins|Ask for news'&&/kneel at the/.test(panel()),'praying: Pray with them, Give alms, Take the coins, Ask for news (news.js), Leave');
   pickA(0);ok(P.morale===50+TP.morale,'Pray with them: morale +'+TP.morale);world();
-  P.morale=50;const q2=meet('pilgrims'),h0=t.roadNow();ok(acts().join('|')==='Walk and pray with them|Give alms|Take the coins|Ask for news'&&/walk the road to the/.test(panel()),'walking: Walk and pray with them, Give alms, Take the coins, Ask for news, Leave');
+  P.morale=50;t.invAdd('good','grain',10);const q2=meet('pilgrims'),h0=t.roadNow();// (fed: an hour passes, and a hungry band loses morale by the hour, world/supply.js)ok(acts().join('|')==='Walk and pray with them|Give alms|Take the coins|Ask for news'&&/walk the road to the/.test(panel()),'walking: Walk and pray with them, Give alms, Take the coins, Ask for news, Leave');
   pickA(1);ok(P.morale===50+TP.morale&&Math.abs(t.roadNow()-h0-TP.walk)<1e-6,'Walk and pray with them: morale +'+TP.morale+', '+TP.walk+' hour with them');world();
   const g0=P.gold,xp0=P.xp+P.level*1e5;P.morale=50;meet('pilgrims');pickA(2);ok(P.gold===g0-TP.alms&&P.morale===50+TP.almsMorale&&P.xp+P.level*1e5>xp0,'Give alms: '+TP.alms+' gold, morale +'+TP.almsMorale+', XP');world();
   P.morale=50;meet('pilgrims');pickA(3);ok(q('#panel.confirm')&&P.gold===g0-TP.alms,'Take the coins asks first');sure();ok(P.gold===g0-TP.alms+TP.coins&&P.morale===50-TP.coinsMorale,'confirmed: +'+TP.coins+' gold, morale −'+TP.coinsMorale);world();

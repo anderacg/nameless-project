@@ -26,7 +26,7 @@ function fieldSizeFor(heads,r,kind){
 const fieldNudge=r=>r.t===T_FOREST||r.t===T_MOUNT||r.c==='swamp'?-1:r.t===T_OPEN||r.t===T_ROAD?1:0;
 // (the field set to a size (BW, BH, BFIELD), or today's (key null); back to today's height out of a battle)
 function fieldSet(key){if(!key){BFIELD=null;BW=clamp(BVW,FIELD_W.min,FIELD_W.max);BH=FIELD_H;return null}const S=FIELD_SIZES[key];BFIELD={key,...S};BW=S.w;BH=S.h;return BFIELD}
-function fieldDone(){BH=FIELD_H;BFIELD=null}
+function fieldDone(){BH=FIELD_H;BFIELD=null;fieldStaminaBack()}// (your band's stamina back from the field: fatigue.js)
 // a side's deployment zone (field px): BFIELD.back off its own edge, BFIELD.depth deep; today's from its edge (deploy.js DEPLOY.zone)
 function fieldZone(team){const F=BFIELD,a=F?F.back:8,b=F?F.back+F.depth:Math.round(BW*DEPLOY.zone);return{x0:team?BW-b:a,x1:team?BW-a:b,y0:fieldTop(),y1:fieldBot()}}
 // (where a side's line stands: 97 px into its zone, today's 105 off its edge; the rows it forms up over: the field's middle band)
@@ -250,6 +250,7 @@ class BattleSetup{
     B.speed=BSPEED.v;B.paused=false;
     if(BEAST_TACTICS.on)beastPacks();// (beasts in the pack spread, an AI group of them split into packs: beastmind.js)
     for(const g of Object.keys(B.groups))layForm(g);
+    campCaught(this.opts);// (a band that finds you in camp catches you unready: world/supply.js)
     moraleInit(this.units,this.opts);
     fatigueInit(this.units);
     camInit();

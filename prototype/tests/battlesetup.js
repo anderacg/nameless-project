@@ -7,7 +7,12 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t
   // their own streams, so the shared Math.random this case's world runs on after it goes differently; with the streams switched back
   // to Math.random it is 2aa140f4 as before; the battle's own rules unchanged)
   // (chief_reuse re-recorded 2026-10-19: wild game placed by its woods (be9cb52, 56f7e97) and the wilds' spawns (e5bca02) draw the shared randomness differently, so the reused chief's world differs; the battle's own rules unchanged)
-  const expected={field:'65c78ccc',reinforced:'1137fce4'/* (re-recorded: your allies' men in their own green cloth (battle.js SIDE, sprites.js allyLook), so their sprites are warmed apart from yours (WARM.q's length); nothing of the battle else) */,chief_reuse:'a69d5122',siege:'5bbc07b7',beasts:'981e3c34'/* (re-recorded: spider stats changed in the balance pass) */,tournament:'11b1a925',deployment_off:'04e59939',narrow:'09cd58d9',wide:'e206f675'};
+  // (field, reinforced, chief_reuse, siege, beasts, deployment_off, narrow and wide re-recorded 2026-10-21 for supplies (doc/SUPPLY_DESIGN.md
+  // §2, world/supply.js): your hero's stamina is your band's, so this fixture's hero at 31 of her stamina is a band at 31/72, and
+  // its troops and companion start the battle at that share of their stamina (battle/fatigue.js fatigueInit), not fresh. With the
+  // old fatigueInit put back, every case is as recorded: was field 65c78ccc, reinforced 1137fce4, chief_reuse a69d5122, siege 5bbc07b7,
+  // beasts 981e3c34, deployment_off 04e59939, narrow 09cd58d9, wide e206f675; the tournament (your hero alone) unchanged)
+  const expected={field:'15b927a4',reinforced:'32935430'/* (re-recorded: your allies' men in their own green cloth (battle.js SIDE, sprites.js allyLook), so their sprites are warmed apart from yours (WARM.q's length); nothing of the battle else) */,chief_reuse:'7ee88816',siege:'2638f197',beasts:'a25047fc'/* (re-recorded: spider stats changed in the balance pass) */,tournament:'11b1a925',deployment_off:'2b8838b9',narrow:'4c20d689',wide:'148ae225'};
   const original={random:Math.random,measure:t.measureField,width:t.BVW,height:t.BVH,deploy:t.BDEPLOY.on,auto:t.BAUTO.on,speed:t.BSPEED.v,guide:t.GUIDE.on};
   const stable=x=>Array.isArray(x)?x.map(stable):x&&typeof x==='object'?Object.fromEntries(Object.keys(x).sort().map(k=>[k,stable(x[k])])):x;
   const fingerprint=x=>{let h=2166136261;for(const c of JSON.stringify(stable(x)))h=Math.imul(h^c.charCodeAt(0),16777619)>>>0;return h.toString(16).padStart(8,'0')};

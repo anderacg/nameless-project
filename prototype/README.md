@@ -88,6 +88,8 @@ js/world/             the campaign map and everything on it
                         (the LandDefence service; class wave D)
   fights.js             fights between parties on the map, which take time and can be joined
   stay.js               staying in a holding (your band), and the shelter rules for you and your companions
+  supply.js             your band's supplies (doc/SUPPLY_DESIGN.md): SUPPLY (every number), stamina, food and drink by the hour,
+                        furs and the desert's water, its health, the camp (Z), the card's numbers and the action ring's map actions
   economy.js            a holding's Economy (stock, production, prices, people; its day) and the treasuries
   buildings.js          what a holding has built: its Buildings (estates' levels, walls, projects; its day)
   estates.js            each Estate (fields, guards, sabotage, its day's work) and the spoils of raiding one; its window is ui/estate.js
@@ -135,7 +137,8 @@ js/ui/                ui.js (panels, title, Esc menu), loading.js (the loading o
                       window.js (rail windows: a rail of places beside the chosen one's window), townui.js (a town's places, its overview, your
                       holding's buildings), estate.js (an estate's window on the map, and the Fief's Estates section), peopledrawer.js (the people drawer, P), input.js (actions, mouse, keys), map.js (the full map:
                       M or a click on the minimap), loot.js (the spoils), icons.js, battlehud.js, moraleicons.js (morale
-                      badges and marks), orderpaths.js (where your groups are going), unitcard.js, developer.js (developer console)
+                      badges and marks), orderpaths.js (where your groups are going), unitcard.js, developer.js (developer console),
+                      ring.js (the action ring: a hold on the map, its round buttons: ActionRing)
 js/main.js            game loop and boot
 archive/              art.js (the sprite-sheet mapping for the graphics/ pixel-art pack, set aside; the pack is not in the repository)
 audio/                offline music scripts (Python: a MIDI/WAV soundtrack generator); the game's own sound is core/audio.js, music.js
@@ -197,6 +200,42 @@ Things in the world are plain data (so a save is plain JSON) read through a clas
 Inventory and equipment rules live outside the screens. What each bag record is comes from its item kind (`core/items.js`, above). `Inventory` operates on a record's current bag, with capacity and stacking supplied to it. `EquipmentService` operates on a wearer's gear and an `Inventory`, returning `{ok, reason, moved}` without touching the DOM or logging. Hero and companion commands use the same service; companion slot limits remain explicit. A failed transfer restores both records, including when removing a pack or mount would shrink a full bag. Equipment transfers always return existing items to the bag; only rewards use the loot pile.
 
 `GameSession` resets the live `G`, `P`, and `W` records in place from factories. New game and load share this reset, so missing save fields use defaults and transient input, loot and battle state cannot carry over. Record identity and the player's `Party` prototype survive; saves still contain plain JSON. `session.js` loads after `world/realms.js`, which creates `W`; its commands run after boot has loaded every system. A new game (`begin`) and a load (`loadGame`) run as steps (`runSteps`, `ui/loading.js`): the overlay shows only past `LOADING.delay` (300 ms), `G.mode` is `'loading'` meanwhile (no simulation), and `LOADING.sync` (the tests) runs them at once. The world's part of a save is gathered by `worldSave`/`worldLoad` (`core/save.js`), each holding writing its own record (`saveRec`, read back by `loadRec`; the same tuple as before); a holding founded while the world ran also keeps its plain data, so a load makes it again (`Holding.fromRec`).
+
+## Supplies
+
+Travel is not free (doc/SUPPLY_DESIGN.md; `world/supply.js`, every number in `SUPPLY`). Your band's stamina (`P.bsta`, 0-100) is your
+hero's: it is kept in her `P.sp`, on her scale (`maxSP`; when that grows, by a level, the share dips a little). Each hour (the system
+`supply`, `Systems.hour`) the band:
+- **eats** `eatPerDay() / 24`, ×1.5 on the march (more in the frost), fractions carried over; with no food it rests no more, loses
+  2 morale an hour, and after a day men desert or fall sick by turns;
+- **drinks** `(people + 1) / 6` rations on the march, half that stopped: water, then ale, then liquor (liquor first if you choose
+  it). Water and liquor are goods in the bag (`data/places.js` `DRINK_GOODS`) that no market trades: kept out of `GOODS`'s keys,
+  so no holding stocks them. Waterskins fill free beside a river, lake or oasis (stopped) or at a holding's well; the tavern's
+  tapster sells liquor (`tapsterCard`);
+- **tires or rests**: −3 an hour on the march (×1.5 rough ground, ×1.3 at night, ×1.5 Forced March, ×1.5 with nothing to drink,
+  ×2 in the desert with no water, up to ×1.5 short of furs in the frost; ×0.7 mostly mounted, −3% a level of Athletics or Riding,
+  ×0.9 a Guide, ×0.9 ale, ×0.8 liquor); +2 stopped, +8 in camp, +10 staying in a holding (half with nothing to drink; none with no
+  food, nor in the desert with no water). `staminaRate(moving, drink, land)` says how much and why;
+- under 20 is **Tired** (pace ×0.85: `bandPace`, morale −1 every 3 hours), under 5 **Exhausted** (pace ×0.6, a man falls sick every
+  8 hours); the desert's thirst (after 12 hours) and frostbite (6 hours' worth of shortage) take men too, as wounded.
+The band's own record (its camp and the hour's counters) is `BAND`, beside `P` (every battle snapshot holds `P` whole), saved as
+the world piece `band` once it is not fresh. The band's own numbers are `PlayerParty`'s: `staminaState`, `staminaPace`,
+`foodHour`, `drinkHour`, `furNeed`, `fitness`.
+
+- **Into battle** (`battle/fatigue.js`): your troops, companions and hero start at the band's stamina (never under
+  `SUPPLY.battleMin` 25; at full, as ever); when the field is done (`fieldDone`) the band's stamina is the average your side still
+  standing ended with. Not in a tournament or the lab.
+- **Make camp** (Z, the dock's Camp, the action ring): stamina +8 an hour, the wounded mend ×1.5, food and drink at the rest rate;
+  any travel order breaks it; faster than 1x, anything hostile in sight brings the speed back to 1x; a band that finds you in camp
+  catches you unready (morale −8). The tents are drawn by `bandCampEnt` (its line in `render.js drawWorld` is still to be added).
+- **The action ring** (`ui/ring.js`): hold the left button or a finger still on the map 0.35 s. A short click still travels (the
+  travel a press began is put back when it turns into a hold); a move calls it off. Its buttons, only those that apply
+  (`mapRingItems`): Make camp or Break camp, Travel here, Travel here fast, Fill waterskins, Drink liquor, Look (a card, for touch).
+  Let go over one, or let go and tap one; Esc, a right-click or a tap outside closes it.
+- **The card** (`render.js updateHUD`, `supplyNow`): the band's stamina bar (green, amber Tired, red Exhausted, ▼ ▲, its rate and
+  why on hover) and health (fit of the whole band, red under half, what hurt it lately on hover), the tags (Tired, Exhausted,
+  Thirsty, Hungry, Cold, In camp), food and drink in days at the current rate, furs in or near the frost. Your hero's health and
+  mana are in the Hero window (C). Tests: `tests/supply.js`, `tests/camp.js`, `tests/ring.js`.
 
 ## Recruitment and talents
 
@@ -651,9 +690,10 @@ Everything heard is synthesised by WebAudio as it plays (`js/core/audio.js`, `js
 
 ## The screen
 One screen, filling the window at a whole-number scale (F11 or the corner button for full screen). Everything lies on it: your
-party card top left (day, level, health/stamina/mana bars, gold, food, troops, power, morale; what runs short blinks red), the
-minimap top right, a short hint top middle, messages bottom left (they fade; L shows the whole log), the dock bottom right
-(Hero C, Skills K, Bag I, Log L, Help H, pause and speed, save, full screen, menu), battle orders bottom middle in a battle.
+band's card top left (your hero and level; the band's stamina and health bars, its tags; gold, food and drink in days, troops,
+power, morale, pace; what runs short is red: see Supplies), the minimap top right, a short hint top middle, messages bottom left
+(they fade; L shows the whole log), the dock bottom right (Camp Z, Hero C, Skills K, Bag I, Log L, People P, Help H, zoom, save,
+full screen, menu), battle orders bottom middle in a battle. Hold the mouse or a finger on the map for the action ring.
 Hover anything on the map for what it is, its strength against you and what a click does. Fog of war (js/world/fog.js) keeps
 what you have explored.
 

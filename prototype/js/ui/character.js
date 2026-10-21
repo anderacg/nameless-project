@@ -4,7 +4,10 @@ function openChar(){if(G.mode!=='world'||G.modal)return;G.mode='char';if(!G.char
 function renderChar(){
   const tab=G.char;let body='';
   if(tab==='hero'){
-    body='<div class="lab">Attributes · raised on the skill tree (K)</div>'+Object.keys(ATTRS).map(k=>'<div class="row"><div class="info"><strong>'+ATTRS[k][0]+'</strong><small>'+ATTRS[k][1]+'</small></div><span class="own">'+P.attr[k]+'</span></div>').join('')+
+    // (your hero's health and mana, and her stamina, which is your band's (world/supply.js): here, not on the party card)
+    const m=vitals(),vb=(v,mx,col,lab)=>'<div class="hv-bar" title="'+lab+'"><i style="width:'+Math.round(clamp(v/Math.max(1,mx),0,1)*100)+'%;background:'+col+'"></i><em'+(v<mx*.3?' class="low"':'')+'>'+lab+' '+Math.round(v)+' / '+mx+'</em></div>';
+    body='<div class="lab">Health · Stamina · Mana</div><div class="hvit">'+vb(P.hp,m[0],'#c8503a','Health')+vb(P.sp,m[1],'#78c474','Stamina (your band’s)')+vb(P.mp,m[2],'#5a8fe8','Mana')+'</div>'+
+      '<div class="lab" style="margin-top:6px">Attributes · raised on the skill tree (K)</div>'+Object.keys(ATTRS).map(k=>'<div class="row"><div class="info"><strong>'+ATTRS[k][0]+'</strong><small>'+ATTRS[k][1]+'</small></div><span class="own">'+P.attr[k]+'</span></div>').join('')+
       '<div class="lab" style="margin-top:6px">Skills</div><div class="row"><div class="info"><strong>'+(P.tp?'<span class="gold">'+P.tp+' skill point'+(P.tp>1?'s':'')+' to spend</span>':'Skill tree, skill bar and disciplines')+'</strong><small>'+(P.tree.length-1)+' skills learned. One skill point each level.</small></div><div class="acts"><button class="btn sm" type="button" data-act="open-skills">Open Skills (K)</button></div></div>'+
       (P.perks.length?'<div class="lab" style="margin-top:6px">Perks from before</div>'+P.perks.map(p=>'<div class="row"><div class="info"><strong>'+PERKS[p].n+'</strong><small>'+PERKS[p].d+'</small></div></div>').join(''):'');
   }else if(tab==='quests'){

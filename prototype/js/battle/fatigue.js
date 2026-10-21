@@ -15,8 +15,23 @@ const staOf=u=>heroSta(u)?heroState().sp/Math.max(1,maxSP())*FATIGUE.max:u.sta==
 function staSpend(u,n){if(heroSta(u)){const X=heroState();X.sp=Math.max(0,X.sp-n*maxSP()/FATIGUE.max);X.spT=0}else if(u.sta!=null)u.sta=Math.max(0,u.sta-n/(u.vig||1))}
 // what tiredness does: speed, damage, and how fast a charge builds
 function tiredMul(u){const s=staOf(u);return s<FATIGUE.spent?{spd:.7,dmg:.75,run:0}:s<FATIGUE.tired?{spd:.85,dmg:.9,run:.5}:{spd:1,dmg:1,run:1}}
+/* your band's stamina carried into a battle and back (doc/SUPPLY_DESIGN.md §2; world/supply.js): your troops, companions and
+   hero start at it (on FATIGUE's scale, never under SUPPLY.battleMin; at full, as ever), never in a tournament or the lab. When the
+   field is done (setup.js fieldDone, once the battle is over) the band's stamina is the average your side that is still standing
+   ended with (a tournament: your hero's, as she comes out of it: battle/resolution.js). FIELD_BAND: the battle it went into */
+let FIELD_BAND=null;
+const bandSoldier=u=>u.team===0&&!u.lord&&!u.leader;
+const bandFieldShare=()=>B&&B.opts&&!B.opts.tournament&&!B.opts.sandbox?Math.max(SUPPLY.battleMin,P.bsta)/100:null;
 // (vigor, unitcard.js: a hardier unit tires slower and gets its wind back faster)
-function fatigueInit(units){for(const u of units)if(!u.hero){u.sta=FATIGUE.max;u.vig=vigorOf(u.s)/100}}
+function fatigueInit(units){const k=bandFieldShare();FIELD_BAND=B?{b:B}:null;
+  for(const u of units)if(!u.hero){u.sta=k!=null&&bandSoldier(u)?FATIGUE.max*k:FATIGUE.max;u.vig=vigorOf(u.s)/100}
+  if(k!=null&&P.bsta<SUPPLY.battleMin)heroState().sp=maxSP()*k}
+function fieldStaminaBack(){
+  const F=FIELD_BAND;FIELD_BAND=null;if(!F||!F.b.over)return;const b=F.b;
+  if(b.opts.tournament||b.opts.sandbox)return;
+  const st=u=>u.hero?(b.hx?b.hx.sp/Math.max(1,maxSP())*FATIGUE.max:P.bsta):u.sta,m=b.units.filter(u=>bandSoldier(u)&&(u.hp>0||u.left)&&st(u)!=null);
+  if(m.length)P.bsta=clamp(m.reduce((a,u)=>a+st(u),0)/m.length/FATIGUE.max*100,0,100);
+  if(b.units.some(u=>bandSoldier(u)&&u.hp<=0&&!u.left))BAND.hurt=[{why:'battle wounds',day:G.day},...BAND.hurt.filter(h=>h.why!=='battle wounds')].slice(0,SUPPLY.hurt)}
 // each moment: running spends, charging spends twice that; walking, or fighting in place, neither spends nor restores; standing restores
 function fatigueStep(u,dt,moved,walking,charging,fighting){
   if(heroSta(u)){if(moved&&!walking)staSpend(u,FATIGUE.run*(charging?2:1)*dt*groundSta(u));else if(!moved&&!fighting){const X=heroState();X.sp=Math.min(maxSP(),X.sp+FATIGUE.rest*maxSP()/FATIGUE.max*(1+tm('spRegen'))*dt)}return}

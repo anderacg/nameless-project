@@ -27,7 +27,12 @@
 // G.quietEvents is on, and the view is the tests' fixed 576 x 360. Hash: FNV-1a 32-bit over bytes, char codes or 32-bit words;
 // W8's places at 1e-6 px.
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.push('INFO '+m),t=T,G=t.G,P=t.P,W=t.W;
-const EXPECT={W1:'65e24662',W2:'2b49a168',W3:'dc546553',W4:'46450e62',W5:'6587a43c',W6:'33d059e4',W7:'d7c2a900',W8:'742df600',B2:'fd6d5be4'};// (at 0a42712; B2 at R3; W6-W8 at Phase 1; W6 at depth, smooth walking and pasture herds and label layout; W7, B2 at save v3)
+const EXPECT={W1:'65e24662',W2:'2b49a168',W3:'dc546553',W4:'46450e62',W5:'6587a43c',W6:'33d059e4',W7:'ca9d7773',W8:'742df600',B2:'fd6d5be4'};// (at 0a42712; B2 at R3; W6-W8 at Phase 1; W6 at depth, smooth walking and pasture herds and label layout; W7, B2 at save v3)
+// (W7 re-recorded 2026-10-21, on purpose, for supplies (doc/SUPPLY_DESIGN.md, world/supply.js): your band eats and drinks by the
+//  hour, not once a day, and its stamina (your hero's sp, in the save) drains on W8's march and comes back by the hour; the band's
+//  own record (its hour's counters) is saved as the world piece 'band' once it is not fresh. Checked by switching it off: with the
+//  supply hour taken out and the day's eating put back (bandDay), W7 is d7c2a900 as before. Was W7 d7c2a900; W1-W6, W8 and B2
+//  unchanged: a fresh game's band record is not saved)
 // (W6, W7, W8 and B2 re-recorded 2026-10-21 S4: story and content systems on named streams, seeded per world and per game (owner accepted once); the estates' sort keys drawn before sorting (doc/STORY_DESIGN.md §9).
 //  The wild game and the beasts begin places draw from their streams ('critters', 'monsters', core/rng.js), seeded by the world
 //  and by the game's number, one draw of Math.random as the game begins (Rng.newGame, before the wild game is placed), so they

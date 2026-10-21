@@ -10,6 +10,7 @@
      5. menus          the title screen, the pause menu, save slots
      6. world HUD      party card (top left), day bar (top middle), dock (bottom right), messages (bottom left), tooltip
      6b. people        the tab on the right edge and its drawer: companions, lords, those you know, realms (peopledrawer.js)
+     6c. supplies      the band card's stamina and health bars and its tags, the camp, the action ring (world/supply.js, ui/ring.js)
      7. battle HUD     balance of power, time, the selected unit, orders over the unit cards
      8. screens        inventory, talents, recruiting and unit cards, companions, troop cards, help and log
      8b. rail windows  a town's places or a holding's buildings down the left, the chosen one's window beside it (window.js)
@@ -336,6 +337,38 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 .pp-ping{position:absolute;width:30px;height:30px;margin:-15px 0 0 -15px;border:2px solid var(--accent);border-radius:50%;pointer-events:none;box-shadow:0 0 0 2px rgba(0,0,0,.55),0 0 14px rgba(232,185,74,.8);animation:pping 1s ease-out infinite}
 .pp-ping[hidden]{display:none}
 @keyframes pping{0%{transform:scale(.6);opacity:1}100%{transform:scale(1.5);opacity:.2}}
+
+/* ---------- 6c. supplies ---------- */
+/* the band card's bars (render.js updateHUD): stamina green, amber Tired, red Exhausted, the state's word at its end; health
+   steel blue, red under half; the tags under them (Tired, Exhausted, Thirsty, Hungry, Cold, In camp), small coloured pills */
+.pcard .bar.sta i{background:#78c474}.pcard .bar.sta.tired i{background:#e0a040}.pcard .bar.sta.exhausted i{background:#d04a3a}
+.pcard .bar.hp i{background:#6a9ad0}.pcard .bar.hp.low i{background:#c8503a}
+.pcard .bar em b{float:right;padding-right:6px}
+.pcard .bar.sta.tired em b{color:#ffe0a0}.pcard .bar.sta.exhausted em b{color:#ffc0b0;animation:blink 1s steps(2) infinite}
+.pc-tags{display:flex;flex-wrap:wrap;gap:4px;margin:-3px 0 7px}
+.pc-tags .tag{font-size:var(--fs-xs);font-weight:700;line-height:1;padding:3px 7px;border:1px solid;border-radius:9px;cursor:default}
+.pc-tags .tag.warn{color:#ffe0a0;border-color:#a8782a;background:rgba(160,110,30,.28)}
+.pc-tags .tag.bad{color:#ffc0b0;border-color:#a0402e;background:rgba(160,50,40,.28)}
+.pc-tags .tag.good{color:#c4ecb0;border-color:#4e8a3a;background:rgba(70,130,50,.28)}
+/* the Hero window's own bars (character.js): your hero's health, stamina (the band's) and mana */
+.hvit{display:grid;gap:3px;margin-bottom:4px;max-width:420px}
+.hv-bar{position:relative;height:16px;background:rgba(0,0,0,.55);border:1px solid #000;border-radius:var(--r-sm);overflow:hidden}
+.hv-bar i{display:block;height:100%}
+.hv-bar em{position:absolute;inset:0;font-style:normal;font-size:var(--fs-xs);font-weight:700;line-height:14px;padding-left:6px;color:#fff;text-shadow:0 1px 1px #000}
+.hv-bar em.low{color:#ffb0a0}
+/* the action ring (ring.js): round buttons in the battle orders' style round the point held, each its name under it; each grows
+   in where it stands (never over the point held, where a finger lifts) */
+.aring{position:absolute;width:0;height:0;z-index:30;pointer-events:none}
+.aring .ar-dot{position:absolute;left:-4px;top:-4px;width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 2px rgba(0,0,0,.55)}
+.ar-btn{position:absolute;left:-25px;top:-25px;width:50px;height:50px;display:flex;align-items:center;justify-content:center;padding:0;pointer-events:auto;cursor:pointer;
+  color:#ece4c8;background:radial-gradient(circle at 50% 35%,#3a4468,#1a1e2c);border:2px solid var(--trim);border-radius:50%;box-shadow:0 0 0 2px rgba(0,0,0,.55),var(--float);
+  transform:translate(var(--x),var(--y));animation:ringGrow .14s ease-out}
+.ar-btn:hover,.ar-btn:focus-visible{border-color:var(--accent);color:#fff;background:radial-gradient(circle at 50% 35%,#4e4626,#241f12)}
+.ar-btn span{position:absolute;top:52px;left:50%;transform:translateX(-50%);white-space:nowrap;font-size:var(--fs-sm);font-weight:700;line-height:1.2;color:#fff;padding:1px 6px;
+  background:rgba(8,10,16,.78);border-radius:var(--r-sm);pointer-events:none}
+@keyframes ringGrow{from{transform:translate(var(--x),var(--y)) scale(.3);opacity:0}to{transform:translate(var(--x),var(--y)) scale(1);opacity:1}}
+/* a small screen: the card folds to its two bars and its chips, the tags into the bars' colours */
+@media (max-height:600px),(max-width:820px){.pc-tags{display:none}.pcard .bar em b{padding-right:4px}}
 
 /* ---------- 7. battle HUD ---------- */
 .bhud{position:absolute;inset:0;pointer-events:none}

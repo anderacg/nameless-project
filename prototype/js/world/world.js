@@ -54,7 +54,7 @@ const objKind=o=>(o=asWorldObject(o)) instanceof WorldObject&&o.here()?o.mapKind
 // meet whatever you have reached, each its own way (WorldObject meet; G.youAttack: you started whatever fight this opens at once:
 // engage.js startEncounter)
 function interact(o){
-  const k=objKind(o);P.tx=null;G.chase=null;G.youAttack=true;
+  const k=objKind(o);P.tx=null;G.chase=null;G.youAttack=true;if(k)breakCamp();
   try{
     if(o&&o.fight&&fightOf(o)){fightMeet(fightOf(o));return true}
     if(k)o.meet();
@@ -93,30 +93,29 @@ const lordSpeed=l=>partySpeed(l,l.troops)*(mountedShare(listSpeeds(l.troops))>=.
 const heroPace=()=>{const m=mountDef();return m?40+150*(m.m.travel||0):40};
 function bandSpeeds(){const sp=[[heroPace(),1]];for(const k in P.troops)if(P.troops[k]>0)sp.push([(ST[k]&&ST[k].spd)||PACE_REF,P.troops[k]]);for(const id of compsInBand())sp.push([(ST[id]&&ST[id].spd)||PACE_REF,1]);return sp}
 // your band's pace before the ground: the slowest of you and its size, the wounded you carry and your own wounds, Athletics on
-// foot or Riding in the saddle, gear, a Guide, Forced March; at most 1.8x
+// foot or Riding in the saddle, gear, a Guide, Forced March; at most 1.8x; then slower Tired or Exhausted (world/supply.js)
 function bandPace(){
   const sp=bandSpeeds(),n=sp.reduce((a,[,c])=>a+c,0),m=mountDef(),w=woundedN(),hpf=P.hp/Math.max(1,vitals()[0]);
   let p=paceRatio(sp)*sizeMul(n)*(1+gm('travel')-(m&&m.m.travel||0))*(m?1+.02*skill('ride'):1+.015*skill('athl'));
   p*=1-.5*w/Math.max(1,n+w);if(hpf<.5)p*=1-.4*(.5-hpf);
   const g=roleOf('guide');if(g&&compInBand(g))p*=1.03+.01*compSkill(g,'scout');if(has('forced'))p*=1.15;
-  return Math.min(1.8,p);
+  return Math.min(1.8,p)*P.staminaPace();
 }
 // (Woodcraft: in a wood, its slowing cut by WOODCRAFT.per a level, up to cap)
 const WOODCRAFT={per:.06,cap:.6,xp:.1};
 function travelMul(){let t=speedAt(P.x,P.y,P.race,mountIgn())||1;if(t<1&&has('path'))t=1-(1-t)/2;if(t<1&&terrAt(P.x,P.y)===T_FOREST)t=1-(1-t)*(1-Math.min(WOODCRAFT.cap,WOODCRAFT.per*skill('wood')));return bandPace()*t*(mountedShare(bandSpeeds())>=.5&&roughFor(P.x,P.y,mountIgn())?.8:1)}
-// daily price of the land you camp in; holdings shelter you from all of it
+// daily price of the land you camp in; holdings shelter you from all of it. (By the hour, world/supply.js: the frost's extra food,
+// its cold short of furs and frostbite; the desert's thirst.) Each night short of furs in the frost costs a little morale; swamp fever
 function survive(){
   const clim=climAt(P.x,P.y),home=RACES[P.race].home,shelter=TOWNS.some(t=>Math.hypot(t.x-P.x,t.y-P.y)<WORLD_SCALE.land.shelter);
   if(shelter)return;
   // Survival: each day in harsh land teaches it, and it softens what the land costs (sv: the share still paid)
   const harsh=clim==='frost'&&!home.includes('frost')||clim==='desert'&&!home.includes('desert')||clim==='swamp'&&!home.includes('swamp');if(harsh)train('surv',4);
-  const sv=1-.06*skill('surv');
+  const sv=survivalShare();
   if(clim==='frost'&&!home.includes('frost')){
-    foodTake(Math.ceil(eatPerDay()*.5*sv));
-    const need=Math.ceil((partySize()+1)/5);
-    if(goodN('furs')<need){P.morale-=Math.ceil(3*sv);log('Your band shivers through the night. Carry 1 fur for every 5 people in the frost ('+need+' needed).','bad')}
-  }else if(clim==='desert'&&!home.includes('desert')&&!nearWater(P.x,P.y,3)){P.morale-=Math.ceil(3*sv);log('The desert sun saps your band. Rest by an oasis or a holding.','bad')}
-  else if(clim==='swamp'&&!home.includes('swamp')&&Math.random()<Math.max(.05,.25-.02*skill('surv'))){
+    const need=P.furNeed();
+    if(goodN('furs')<need){P.morale-=Math.ceil(SUPPLY.frost.morale*sv);log('Your band shivers through the night. Carry 1 fur for every '+SUPPLY.furPer+' people in the frost ('+need+' needed).','bad')}
+  }else if(clim==='swamp'&&!home.includes('swamp')&&Math.random()<Math.max(.05,.25-.02*skill('surv'))){
     P.morale-=Math.ceil(5*sv);const ks=Object.keys(P.troops).filter(k=>P.troops[k]>0);
     if(ks.length&&Math.random()<.5){const k=ks[rint(0,ks.length-1)];P.remove(k);log('Swamp fever takes '+an(ST[k].n.toLowerCase())+'.','bad')}else log('Swamp fever spreads through the camp. Morale drops.','bad');
   }
@@ -130,16 +129,20 @@ function dayTick(){
   G.day++;
   Systems.day();
 }
-// your band's day: wages and food (spoiling, a varied larder), quarrels, desertion, the land's price, morale; a new band on the
-// roads now and then; your fame; a realm's pay
-function bandDay(){
-  const cnt=troopCount()+woundedN()+cparties().reduce((a,p)=>a+p.troops.length,0),wage=Math.ceil(cnt*.5+mountedN()*.5)+2*compCount(),eat=eatPerDay();
-  if(wage>0){if(P.gold>=wage)P.gold-=wage;else{P.gold=0;P.morale-=6;log('You cannot pay your troops. Morale falls.','bad');mood('unpaid')}}
-  if(foodN()>=eat)foodTake(eat);else{foodTake(eat);P.morale-=8;log('Your band goes hungry. Buy food in a town, or hunt.','bad');mood('hungry')}
-  // fresh food spoils; a varied larder (3 or more kinds) lifts spirits
+// your band's wages for the day (cnt: everyone paid), and its larder: fresh food spoils; a varied larder (3 or more kinds) lifts
+// spirits. (It eats by the hour: world/supply.js)
+function bandWages(cnt){const wage=Math.ceil(cnt*.5+mountedN()*.5)+2*compCount();
+  if(wage>0){if(P.gold>=wage)P.gold-=wage;else{P.gold=0;P.morale-=6;log('You cannot pay your troops. Morale falls.','bad');mood('unpaid')}}}
+function bandLarder(){
   let rot=0;for(const g of FOODS){const r=GOODS[g].spoil,n=goodN(g);if(r&&n)rot+=goodTake(g,Math.min(n,Math.floor(n*r+Math.random())))}
   if(rot>2)log(rot+' food spoils in the packs. Fresh food is eaten first; grain and cheese keep.','bad');
   const kinds=foodKinds();if(kinds>=3)P.morale+=kinds-2;
+}
+// your band's day: wages and its larder (spoiling, a varied larder), quarrels, desertion, the land's price, morale; a new band on the
+// roads now and then; your fame; a realm's pay
+function bandDay(){
+  const cnt=troopCount()+woundedN()+cparties().reduce((a,p)=>a+p.troops.length,0);
+  bandWages(cnt);bandLarder();
   for(const id in P.comps){const r=COMPS[id].rival;if(r&&P.comps[r]&&Math.random()<.12){P.comps[id].ap--;P.comps[r].ap--;log(COMPS[id].short+' and '+COMPS[r].short+' quarrel by the fire. Both are unhappy.','bad')}}
   if(P.morale<25&&cnt>0&&Math.random()<.5){const ks=Object.keys(P.troops).filter(k=>P.troops[k]>0);const k=ks[rint(0,ks.length-1)];P.remove(k);log(cap1(an(ST[k].n.toLowerCase()))+' deserts in the night.','bad')}
   survive();
@@ -168,9 +171,10 @@ function updateWorld(dt){
   // last); one that opens something ends the frame
   Systems.frame(d,dt);
 }
-// your march: a siege you leave behind is lifted; whatever you chase, then your step toward where you go (true: you reached
-// what you chased and met it)
+// your march: in camp, the camp's moment (world/supply.js campStep: a travel order breaks it, and you march on); a siege you leave
+// behind is lifted; whatever you chase, then your step toward where you go (true: you reached what you chased and met it)
 function marchStep(d){
+  if(P.camp&&!campStep())return false;
   if(P.siege){const st=townBy(P.siege.town);if(!st||Math.hypot(P.x-st.x,P.y-st.y)>WORLD_SCALE.war.siegeLeash){P.siege=null;log('You march away and the siege'+(st?' of '+st.name:'')+' is lifted.','bad')}}
   // (a chase ends when what you chase is gone or not worth it: WorldObject here, chaseable; reached, it is met, unless you just
   // fought and it would fight you: meetsAnyTime)
@@ -199,8 +203,9 @@ function arriveStep(){
   }
 }
 
-// the wounded heal: each day a share of them is fit again (more with Medicine, more near a friendly holding)
-function woundedDay(){const W0=P.wounded||{},near=TOWNS.some(t=>!hostileTo(t.owner)&&Math.hypot(t.x-P.x,t.y-P.y)<WORLD_SCALE.land.healNear),r=Math.min(.9,(.2+.03*skill('med')+(near?.2:0))*(P.stay?2:1));let back=0;
+// the wounded heal: each day a share of them is fit again (more with Medicine, more near a friendly holding, faster in camp or
+// staying in a holding)
+function woundedDay(){const W0=P.wounded||{},near=TOWNS.some(t=>!hostileTo(t.owner)&&Math.hypot(t.x-P.x,t.y-P.y)<WORLD_SCALE.land.healNear),r=Math.min(.9,(.2+.03*skill('med')+(near?.2:0))*(P.stay?2:P.camp?SUPPLY.camp.heal:1));let back=0;
   for(const k in W0){const n=W0[k];if(!n)continue;let h=Math.min(n,Math.floor(n*r+Math.random())),returned=0;
     for(const g of (P.woundedGroups||[]).filter(g=>g.type===k&&g.count)){if(!h)break;const m=partyRoster(P).restore(g,Math.min(h,g.count));g.count-=m;h-=m;returned+=m}
     // A blocked originating group keeps its wounded; they never silently reinforce a duplicate group.

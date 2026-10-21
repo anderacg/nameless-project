@@ -18,9 +18,9 @@ try{
  ok(at(spot.forest,()=>t.vis())<at(spot.grass,()=>t.vis())&&at(spot.hill,()=>t.vis())>at(spot.grass,()=>t.vis()),'vision: forest shorter, hills longer');
  // survival
  const setGood=(g,n)=>{t.goodTake(g,1e9);t.invAdd('good',g,n)};P.troops={militia:9};setGood('furs',0);setGood('grain',50);P.morale=80;at(spot.frost,()=>t.survive());
- ok(P.morale===77&&t.goodN('grain')<50,'frost without furs costs morale and extra grain');
+ ok(P.morale===79&&t.goodN('grain')===50,'frost without furs costs a little morale each night (its cold, frostbite and extra food: by the hour, tests/supply.js)');
  setGood('furs',2);P.morale=80;at(spot.frost,()=>t.survive());ok(P.morale===80,'enough furs keep the band warm');
- P.morale=80;at(spot.desert,()=>t.survive());ok(P.morale===77,'desert sun costs morale away from water');
+ P.morale=80;at(spot.desert,()=>t.survive());ok(P.morale===80,'the desert costs no morale by the day (its thirst: by the hour, tests/supply.js)');
  P.race='orc';P.morale=80;at(spot.desert,()=>t.survive());ok(P.morale===80,'orcs ignore desert heat');P.race='human';
  let fever=0;for(let k=0;k<200;k++){P.morale=80;P.troops={militia:9};P.sk.surv={lv:0,xp:0};// the untrained rate (Survival would learn from it)
   at(spot.swamp,()=>t.survive());if(P.morale<80)fever++}

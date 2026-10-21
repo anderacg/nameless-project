@@ -118,6 +118,7 @@ function fleeOdds(e){
   if(e.noFlee)return{ch:0,why:'They caught you'};
   if((e.foes||[]).length)return{ch:0,why:'More of them are closing in around you'};
   if(e.kind==='monster'&&MONSTERS[e.ref.id].mythic&&MONSTERS[e.ref.id].mythic.fly)return{ch:0,why:'It is on the wing: nothing outruns it'};
+  if(P.staminaState()==='exhausted')return{ch:0,why:'Your band is too exhausted to run'};// (world/supply.js: you cannot outrun anyone)
   const my=mySpeed(),th=chaserSpeed(e);if(th>=my*1.2)return{ch:0,why:'They are far faster than your band'};
   const rough=terrAt(P.x,P.y)===T_FOREST||terrAt(P.x,P.y)===T_HILL,night=darkness()>.5,feet=mountDef()?.01*skill('ride'):.01*skill('athl');
   return{ch:clamp(.45+1.0*(my/th-1)+(night?.1:0)+(hiddenAt(P.x,P.y)?.1:0)+feet+(has('vanish')&&(rough||night)?.15:0),.1,.9)};

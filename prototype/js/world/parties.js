@@ -192,21 +192,38 @@ class PlayerParty extends Party{
   // stamina pays for physical effort, mana for skills
   maxSP(){return 60+this.attr.agi*5+this.level*2+this.treeMod('sp')+4*this.skill('athl')}
   maxMP(){return Math.round((30+this.attr.int*6+this.level*2+this.gearMod('mp'))*(1+this.treeMod('mpPct')))}
-  // health, stamina and mana persist between battles; null means full (a new hero or an old save). Returns their maxima
+  /* health, stamina and mana persist between battles; null means full (a new hero or an old save). Returns their maxima. Your
+     hero's stamina on the map is your band's (doc/SUPPLY_DESIGN.md §2): kept in sp, on her scale (maxSP); bsta reads and sets it as
+     the band's, 0-100 (world/supply.js); it comes back by the hour there, not here */
   vitals(){
     const m=[this.heroStats().hp,this.maxSP(),this.maxMP()];
     if(this.hp==null)this.hp=m[0];if(this.sp==null)this.sp=m[1];if(this.mp==null)this.mp=m[2];
     this.hp=clamp(this.hp,0,m[0]);this.sp=clamp(this.sp,0,m[1]);this.mp=clamp(this.mp,0,m[2]);
     return m}
+  get bsta(){return this.sp==null?100:clamp(this.sp/Math.max(1,this.maxSP())*100,0,100)}
+  set bsta(v){this.sp=clamp(v,0,100)*this.maxSP()/100}
+  // your band's camp (world/supply.js: kept beside your record in BAND, not on it)
+  get camp(){return BAND.camp}
+  set camp(v){BAND.camp=v}
   // recovery on the map, per day of travel (combat.js REGEN_DAY; Medicine helps health); doubled near a holding
   regenVitals(days){
     const m=this.vitals(),sh=TOWNS.some(t=>Math.hypot(t.x-this.x,t.y-this.y)<48)?2:1;
     this.hp=Math.min(m[0],this.hp+m[0]*(REGEN_DAY.hp+.03*this.skill('med'))*sh*days);
-    this.sp=Math.min(m[1],this.sp+m[1]*REGEN_DAY.sp*sh*days);
     this.mp=Math.min(m[2],this.mp+m[2]*REGEN_DAY.mp*sh*days)}
   restoreVitals(){
     const m=this.vitals();
     this.hp=m[0];this.sp=m[1];this.mp=m[2]}
+  /* your band's supplies (world/supply.js SUPPLY): its stamina's state ('fresh', 'tired' under SUPPLY.tired, 'exhausted' under
+     SUPPLY.exhausted) and its pace by it; food and drink rations an hour (moving: on the march); the furs it needs in the frost;
+     and its health: the hero (as one), the fit and the hurt companions with your soldiers, fit of the whole */
+  staminaState(){return this.bsta<SUPPLY.exhausted?'exhausted':this.bsta<SUPPLY.tired?'tired':'fresh'}
+  staminaPace(){const st=this.staminaState();return st==='fresh'?1:SUPPLY.pace[st]}
+  foodHour(moving){return this.eatPerDay()/24*(moving?SUPPLY.eat.march:SUPPLY.eat.rest)}
+  drinkHour(moving){return (this.headcount()+1)/SUPPLY.drink.per*(moving?1:SUPPLY.drink.rest)}
+  furNeed(){return Math.ceil((this.headcount()+1)/SUPPLY.furPer)}
+  fitness(){
+    const hurt=Object.keys(this.comps).filter(id=>!this.comps[id].party&&this.comps[id].hurt>G.day).length,fit=1+this.troopCount()+compsInBand().length,wounded=this.woundedCount()+hurt;
+    return{fit,wounded,share:fit/(fit+wounded)}}
 }
 Object.setPrototypeOf(P,PlayerParty.prototype);
 // which kind a plain party is

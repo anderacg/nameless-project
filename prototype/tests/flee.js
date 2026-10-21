@@ -27,6 +27,9 @@ try{
  {const L=t.asParty({id:'X',name:'Lord X',fac:t.FIDS[0],x:P.x+60,y:P.y,troops:Array(12).fill('hum_spear'),state:'march',dead:false,cool:0});b=band(12);
   t.startEncounter({kind:'party',ref:b,n:12,band:'bandits',foes:[L]});ok(t.fleeOdds(G.enc).ch===0&&/closing in/.test(panel()),'with more of them closing in around you, you cannot flee');world()}
  {const dm=t.mythicOf('dragon')||t.spawnMythic('dragon');if(dm){dm.x=P.x+8;dm.y=P.y;t.startEncounter({kind:'monster',ref:dm,list:['dragon']});const f=t.fleeOdds(G.enc);ok(f.ch===0&&/on the wing/.test(panel()),'nor from a dragon on the wing ('+(f.why||f.ch)+')');world()}else ok(true,'(no dragon)')}
+ // an exhausted band cannot outrun anyone (world/supply.js), however slow the foe
+ {const s0=P.bsta;b=band(14);b.troops=Array(14).fill('elf_glade');t.startEncounter({kind:'party',ref:b,n:14,band:'bandits',list:b.troops.slice()});const fresh=t.fleeOdds(G.enc);
+  P.bsta=2;const ex=t.fleeOdds(G.enc);P.bsta=s0;ok(fresh.ch>0&&ex.ch===0&&/exhausted/.test(ex.why),'an exhausted band cannot flee ('+Math.round(fresh.ch*100)+'% fresh, '+ex.why+')');world()}
  // a patrol that met you does not crowd you while it cools down: one strong enough to ride at you (with no cool-down it would)
  // keeps to its beat (its next stop set away from you, and the
  // dice pinned, so a random stop that happens to lie past you, or a new one picked, never reads as riding at you)

@@ -25,7 +25,7 @@ try{
  const g0=P.gold;t.act('sell','grain:5');ok(t.goodN('grain')===0&&P.gold>g0&&!P.inv[0],'selling empties it');
  ok(!/data-act="sell-item" data-arg="0"/.test(panel()),'goods are not listed again under your inventory');t.act('leave');done();
  // eating frees slots
- empty();t.invAdd('good','grain',31);P.troops={militia:7};const eat=t.eatPerDay();t.dayTick();ok(t.goodN('grain')===31-eat&&slots('grain')===1,'the band eats '+eat+' grain and the spare slot frees up');
+ empty();t.invAdd('good','grain',31);P.troops={militia:7};const eat=t.eatPerDay();t.supplyMoved();for(let h=0;h<24;h++)t.supplyHour();// (a day at rest: it eats by the hour, world/supply.js)ok(t.goodN('grain')===31-eat&&slots('grain')===1,'the band eats '+eat+' grain and the spare slot frees up');
  P.troops={};
  // the inventory screen
  empty();t.invAdd('good','spice',4);G.mode='world';G.modal=false;t.hidePanel();t.openInv();t.act('inv-sel','0');

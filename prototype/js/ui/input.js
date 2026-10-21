@@ -56,6 +56,7 @@ $('#saveBtn').addEventListener('click',()=>saveGame(false,'quick'));
 $('#menuBtn').addEventListener('click',()=>{if(BattleLab.active)return DevConsole.show('battle');if(G.mode==='title')return;if(G.mode==='esc')return escAct('esc-resume');showEsc()});
 
 $('#charBtn').addEventListener('click',()=>{if(G.mode==='char')act('char-close');else openChar()});
+$('#campBtn').addEventListener('click',()=>toggleCamp());// (make camp or break it: world/supply.js)
 $('#helpBtn').addEventListener('click',()=>{if(G.mode==='help')closeOver();else openHelp()});
 $('#journalBtn').addEventListener('click',()=>{if(G.mode==='journal')closeOver();else openJournal()});
 $('#fsBtn').addEventListener('click',toggleFull);
@@ -78,7 +79,7 @@ blk.addEventListener('pointerdown',()=>{if(B)B.touchBlock=true});
 // (in the canvas's own pixels: the screen's game pixels (the world map's canvas has CVS of its own to one: core.js), or the
 // battlefield's in a battle)
 function toCanvas(e){const r=cv.getBoundingClientRect();return{x:(e.clientX-r.left)*cv.width/r.width/CVS,y:(e.clientY-r.top)*cv.height/r.height/CVS}}
-cv.addEventListener('pointermove',e=>{const p=toCanvas(e);G.mouse.x=p.x;G.mouse.y=p.y;G.mouse.in=true;G.mouse.type=e.pointerType;
+cv.addEventListener('pointermove',e=>{const p=toCanvas(e);G.mouse.x=p.x;G.mouse.y=p.y;G.mouse.in=true;G.mouse.type=e.pointerType;ringMove(e);
   // the tooltip: what is under the pointer on the map
   const tip=$('#tip');if(holdCardUp()&&e.pointerType==='touch')return;// (a long press's card stays until the next tap: below)
   if(G.mode!=='world'||G.modal||e.pointerType==='touch'){tip.hidden=true;return}
@@ -88,10 +89,12 @@ cv.addEventListener('pointermove',e=>{const p=toCanvas(e);G.mouse.x=p.x;G.mouse.
 cv.addEventListener('pointerleave',()=>{G.mouse.in=false;if(!holdCardUp())hideTip();if(B)B.hov=null;cv.style.cursor=''});
 cv.addEventListener('pointerdown',e=>{
   const p=toCanvas(e);G.mouse.x=p.x;G.mouse.y=p.y;G.mouse.in=true;G.mouse.type=e.pointerType;
+  if(ringTapOut())return;// (the action ring open: a press outside it only closes it, ring.js)
   if(G.modal)return;
   if(G.mode==='world'&&!G.place&&e.button===0&&fullMapHit(p)){fullMapOpen();return}// (a click or a tap on the minimap: the full map, map.js)
   if(e.pointerType==='touch'&&touchDown(e,p))return;// (a finger in battle or on the map: below; it acts when it lifts)
-  if(G.mode==='world'){const wx=G.cam.x+p.x,wy=G.cam.y+p.y;if(G.place){if(e.button===2){G.place=null;log('You stop placing.')}else placeClick(wx,wy);return}if(P.stay)return stayClick(wx,wy);worldGo(wx,wy)}
+  if(G.mode==='world'){const wx=G.cam.x+p.x,wy=G.cam.y+p.y;if(G.place){if(e.button===2){G.place=null;log('You stop placing.')}else placeClick(wx,wy);return}if(P.stay)return stayClick(wx,wy);
+    const before={tx:P.tx,ty:P.ty,chase:G.chase};worldGo(wx,wy);if(e.button===0)ringPress(e,wx,wy,before)}// (held still: the action ring, ring.js)
   else if(G.mode==='scene')sceneClick(p.x,p.y);
   // battle: RTS command (commands.js): left-click or drag to select, right-click to move or attack (a touch: select, then a
   // second touch sends them)
@@ -107,7 +110,7 @@ cv.addEventListener('pointerdown',e=>{
 });
 cv.addEventListener('contextmenu',e=>e.preventDefault());
 // the bow: let go of the button (anywhere) to shoot; the wheel sets the angle
-window.addEventListener('pointerup',e=>{if(e.pointerType==='touch'&&touchUp(e))return;
+window.addEventListener('pointerup',e=>{if(e.pointerType==='touch'&&touchUp(e))return;if(e.button===0&&ringUp(e))return;
   if(e.button===1&&B&&B.cam&&B.cam.drag){B.cam.drag=null;return}
   if(e.button===2&&B&&B.rdrag){const d=B.rdrag;B.rdrag=null;
   if(Math.hypot(d.x1-d.x0,d.y1-d.y0)>=FORM_DRAG)formDragTo(d.x0,d.y0,d.x1,d.y1,{amove:d.am});
@@ -146,12 +149,15 @@ function touchDown(e,p){const T=TOUCH,id=e.pointerId;
   if(T.pts.size>2){T.spent.add(id);return true}
   {const mh=miniHit(p);if(mh){camCentre(mh.x,mh.y);T.spent.add(id);return true}}// (the small map: look there)
   T.lp={id,mode:'battle',B,cx:e.clientX,cy:e.clientY,q:toField(p),t0:performance.now()};touchTimer();return true}
-function touchTimer(){const l=TOUCH.lp;l.timer=setTimeout(()=>touchTick(performance.now()),TOUCH.hold+5)}
+function touchTimer(){const l=TOUCH.lp;l.timer=setTimeout(()=>touchTick(performance.now()),touchHold(l)+5)}
+// (a press's time: the map's ring, RING.hold, ring.js; the battle's order, TOUCH.hold)
+const touchHold=l=>l.mode==='world'?RING.hold:TOUCH.hold;
 // the press comes due at time now (its timer; a move or the lift if the timer is late): in battle the order is armed (a line
-// to drag from there), on the map the card of what is under it (nothing there: the lift still travels)
-function touchTick(now){const l=TOUCH.lp;if(!l||l.armed||l.box||l.off||now-l.t0<TOUCH.hold)return false;
+// to drag from there), on the map the action ring opens there (ring.js; its Look shows the card of what is under it; nothing
+// to do there: the lift still travels)
+function touchTick(now){const l=TOUCH.lp;if(!l||l.armed||l.box||l.off||now-l.t0<touchHold(l))return false;
   if(l.mode==='battle'){if(B!==l.B||G.mode!=='battle'){touchDrop();return false}l.armed=true;B.box=null;B.rdrag={x0:l.q.x,y0:l.q.y,x1:l.q.x,y1:l.q.y,shift:false}}
-  else{const w=G.mode==='world'&&!G.modal,o=w?pickAt(l.wx,l.wy):null,h=o&&tipFor(o)||(w?rumourTip(l.wx,l.wy):'');if(!h){l.off=true;return false}l.armed=true;holdCard(h,l.cx,l.cy)}
+  else{if(!(G.mode==='world'&&!G.modal&&ringOpen(l.cx,l.cy,l.wx,l.wy))){l.off=true;return false}l.armed=true}
   try{if(navigator.vibrate)navigator.vibrate(12)}catch(err){}return true}
 function touchMove(e,p){const T=TOUCH,pt=T.pts.get(e.pointerId);if(!pt)return;pt.x=p.x;pt.y=p.y;pt.cx=e.clientX;pt.cy=e.clientY;
   // (the map: a step in or out each time the fingers are MAPZOOM.PINCH times as far apart, or as near, as at the last step)
@@ -165,7 +171,7 @@ function touchMove(e,p){const T=TOUCH,pt=T.pts.get(e.pointerId);if(!pt)return;pt
 function touchUp(e,cancel){const T=TOUCH,id=e.pointerId;if(!T.pts.has(id))return false;T.pts.delete(id);if(T.pinch&&T.pts.size<2)T.pinch=null;
   if(T.spent.delete(id))return true;const l=T.lp;if(!l||l.id!==id)return true;
   if(cancel){touchDrop();return true}touchTick(performance.now());clearTimeout(l.timer);T.lp=null;
-  if(l.mode==='world'){if(!l.armed&&G.mode==='world'&&!G.modal)worldGo(l.wx,l.wy);return true}
+  if(l.mode==='world'){if(l.armed)ringUp(e);else if(G.mode==='world'&&!G.modal)worldGo(l.wx,l.wy);return true}// (let go over a ring's button: picked)
   if(B!==l.B||G.mode!=='battle')return true;const q=l.q;
   if(l.armed){const d=B.rdrag;B.rdrag=null;if(d&&Math.hypot(d.x1-d.x0,d.y1-d.y0)>=FORM_DRAG)formDragTo(d.x0,d.y0,d.x1,d.y1);else rtsOrder(q.x,q.y);return true}
   if(l.box){const b=B.box;B.box=null;if(b)rtsSelect(b.x0,b.y0,b.x1,b.y1,false);return true}
@@ -207,7 +213,7 @@ window.addEventListener('keydown',e=>{
   if(e.target&&/INPUT|TEXTAREA|SELECT/.test(e.target.tagName))return;
   const k=keyOf(e);
   if(e.key==='F6'){e.preventDefault();saveGame(false,'quick');return}
-  if(k==='escape'){e.preventDefault();if(dragCancel())uiSfx('back');else if(G.mode==='battle'&&B&&B.amArm){armAttackMove(false);uiSfx('back')}else onEscape();return}// (a drag first, then an armed attack-move: Esc calls it off and nothing else)
+  if(k==='escape'){e.preventDefault();if(ActionRing.close()||dragCancel())uiSfx('back');else if(G.mode==='battle'&&B&&B.amArm){armAttackMove(false);uiSfx('back')}else onEscape();return}// (a drag first, then an armed attack-move: Esc calls it off and nothing else)
   if(k==='m'&&!e.ctrlKey&&!e.metaKey&&!e.altKey){if(!e.repeat){if(e.shiftKey)toggleMute();else fullMapKey()}return}// M: the full map (map.js); Shift+M: the sound off or on, anywhere (ui.js)
   if(k==='p'&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&!e.repeat&&peopleKey())return;// P: the people drawer, on the map and in towns (peopledrawer.js)
   if(/^[0-9]$/.test(k)&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&!e.repeat&&G.mode!=='battle'&&railKey(k)){e.preventDefault();return}// a number: a place on the window's rail (window.js)
@@ -253,6 +259,7 @@ window.addEventListener('keydown',e=>{
     if(k==='c')openChar();if(k==='i')openInv();if(k==='k')openSkills();if(k==='h')openHelp();if(k==='l')openJournal();
     if(!e.repeat&&(k==='='||k==='+'||k==='-')){mapZoom(k==='-'?-1:1);return}// + and −: the map's zoom (core.js)
     if(k==='g'&&!e.repeat){setGrid(!GRID.on);log(GRID.on?'Tile grid on (G to hide).':'Tile grid off.')}
+    if(k==='z'&&!e.repeat)toggleCamp();// Z: make camp or break it (world/supply.js)
   }else if(G.mode==='help'&&k==='h'||G.mode==='journal'&&k==='l')closeOver();
   else if(G.mode==='char'&&k==='c')act('char-close');
   else if(G.mode==='skills'&&k==='k')act('sk-close');

@@ -1,6 +1,11 @@
 # Travel supplies: stamina, food, drink and furs: design
 
-Status: **planned next** (owner, 2026-10-19: "don't do it yet, plan for next"); the owner's answers are in (liquor and ale, the hero, Make camp and the ring). Nothing here is built yet (checked 2026-10-19 at 7324310: no `SUPPLY`, `world/supply.js` or `ui/ring.js`; design a674aab); its place in the queue is IMPLEMENTATION_PLAN §10.10 (Priority 21), waiting for the owner's go. Every number lives in one tunables table (`SUPPLY`), so it is easy to change.
+Status: **built 2026-10-21**, all four phases (`world/supply.js` with every number in `SUPPLY`, `ui/ring.js`; tests `tests/supply.js`, `tests/camp.js`, `tests/ring.js`; prototype/README.md "Supplies"). As built, where it differs from the plan below:
+- **The hero's stamina** is kept where it was, in `P.sp` (her scale), and the band's 0-100 (`P.bsta`) reads and sets it: every battle snapshot holds `P` whole, so a new field there would move them all. When her maximum grows (a level, Agility, Athletics) her stamina stays as it was, so the band's share of it dips a little. The band's camp and the hour's counters are `BAND`, beside `P`, saved as the world piece `band`.
+- **Water and liquor** are goods in the bag (`data/places.js` `DRINK_GOODS`) but no market trades them (kept out of `GOODS`'s keys: a new traded good would change every holding's stock and the world's draws). Water fills **free** from a river, lake or oasis (stopped) or at **any holding's well**; the tavern's tapster sells liquor (5 for 70g). No starting water: the first hour at your home holding's well fills the skins.
+- **Frostbite** and the toll of hunger and thirst are counted, not rolled (nothing in the hour draws Math.random): frostbite after 6 hours' worth of fur shortage; hunger after a day, every 12 hours a man deserts or falls sick by turns; thirst after 12 hours, every 6 hours. A sick man is the kind you have most of, wounded.
+- **A tournament** leaves your hero's (and so the band's) stamina as she fought it; the lab is untouched.
+- **Left:** the tents at your figure (`bandCampEnt`) need one line in `gfx/render.js` `drawWorld` (agent D's part of the file); "you cannot outrun anyone" when Exhausted needs `battle/engage.js` `fleeOdds` to read `P.staminaState()`; the wiki's goods table does not list the drinks.
 
 ## 1. The idea
 

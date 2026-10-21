@@ -1,6 +1,7 @@
 'use strict';
 // Vitals: health, stamina and mana carry over between battles, recover on the map (faster near holdings), fastest while staying in a holding,
-// a knocked-out hero comes to at 10%, a lost auto-resolve costs half your health, and the HUD and encounters show it.
+// a knocked-out hero comes to at 10%, a lost auto-resolve costs half your health, and the Hero window and encounters show it. (Stamina
+// is your band's, by the hour: tests/supply.js)
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);
 try{
  const t=T,G=t.G,P=t.P;try{localStorage.clear()}catch(e){}
@@ -16,14 +17,14 @@ try{
  B.hero.hp=0;finish(B,false);ok(P.hp===Math.max(1,Math.round(m[0]*.1)),'a knocked-out hero comes to at 10% health ('+P.hp+')');
  // recovery on the map
  P.x=t.TOWNS[0].x+400;P.y=t.TOWNS[0].y+400;t.unstick(P);P.hp=10;P.sp=0;P.mp=0;t.regenVitals(1);const far=[P.hp,P.sp,P.mp].map(Math.round);
- ok(far[0]>10&&far[1]>0&&far[2]>0&&far[0]<m[0],'a day on the road restores some of each ('+far.join(' / ')+')');
+ ok(far[0]>10&&far[1]===0&&far[2]>0&&far[0]<m[0],'a day on the road restores some health and mana ('+far.join(' / ')+'; stamina is the band’s, by the hour)');
  P.x=t.TOWNS[0].x;P.y=t.TOWNS[0].y+20;P.hp=10;P.sp=0;P.mp=0;t.regenVitals(1);ok(P.hp-10>(far[0]-10)*1.8,'recovery is twice as fast near a holding');
  {const g=t.townBy('Ashford');P.rep[g.name]=40;P.hp=10;P.sp=0;P.mp=0;t.startStay(g);t.stayTick(0);t.regenVitals(.5);t.stayTick(t.DAY*.5);ok(P.hp-10>(far[0]-10)*1.8&&!!P.stay,'staying in a holding recovers you faster still');t.leaveStay();done()}
  // auto-resolve defeat
  P.troops={};const h0=P.hp;G.mode='world';G.modal=false;t.startEncounter({kind:'party',ref:t.asParty({cool:0,x:P.x,y:P.y,troops:Array(15).fill('spearman')}),list:Array(15).fill('spearman'),band:'bandits'});t.autoResolve();t.act('cont');done();
  ok(Math.abs(P.hp-Math.round(h0*.5))<=1,'losing an auto-resolved fight costs half your health');
  // display
- P.hp=20;t.updateHUD(true);ok(/Health · Stamina · Mana/.test(document.getElementById('stats').innerHTML)&&/class="low"/.test(document.getElementById('stats').innerHTML),'the HUD shows your vitals and flags low health');
+ P.hp=20;G.mode='world';G.modal=false;t.hidePanel();t.openChar();ok(/Health · Stamina · Mana/.test(document.getElementById('panel').innerHTML)&&/class="low"/.test(document.getElementById('panel').innerHTML)&&!/Mana/.test(document.getElementById('stats').innerHTML),'the Hero window shows your vitals and flags low health (not the party card)');t.act('char-close');
  G.mode='world';G.modal=false;t.startEncounter({kind:'party',ref:t.asParty({cool:0,x:P.x,y:P.y,n:3,kind:'bandits'}),n:3,band:'bandits'});ok(/You are wounded/.test(document.getElementById('panel').innerHTML),'encounters warn when you are wounded');t.act('flee');
  // saves
  P.hp=33;P.sp=12;P.mp=7;G.mode='world';G.modal=false;t.hidePanel();t.saveGame();P.hp=P.sp=P.mp=null;t.act('load');ok(P.hp===33&&P.sp===12&&P.mp===7,'save/load keeps your vitals');

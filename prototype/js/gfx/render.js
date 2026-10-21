@@ -92,6 +92,7 @@ function drawWorld(){
   drawHerds(ents,cam,V);// (a pasture's herd: one animal on each worked field tile; the rest as herds: critters.js)
   if(P.raid)ents.push({y:P.y-1,f:()=>{subT(P);txt('Raiding '+Math.round(P.raid.t/RAID_TIME*100)+'%',Math.round(P.x-cam.x),Math.round(P.y-20-cam.y),'#ff9a90','center')}});
   if(P.siege)ents.push({y:P.y-1,f:()=>{subT(P);const s=campSprite(77,'bandit'),X=Math.round(P.x-24-s.ax-cam.x),Y=Math.round(P.y+2-s.ay-cam.y);ctx.globalAlpha=SHADOW.a;ctx.drawImage(s.sh,X,Y);ctx.globalAlpha=1;ctx.drawImage(s,X,Y);drawFire(X+s.fire[0],Y+s.fire[1],0);drawFlag(FACS.player.col,X+s.flag[0],Y+s.flag[1],0);txt('Siege day '+P.siege.days,Math.round(P.x-cam.x),Math.round(P.y-18-cam.y),'#e8b94a','center')}});
+  if(P.camp)ents.push(bandCampEnt(cam));// (your camp's tents and fire: world/supply.js)
   // (you: on foot, a step each WALK.foot px you walk; mounted, your horse on the same feet, a step each WALK.ride px; your host behind, as a lord's: drawParties)
   if(!P.stay)ents.push({y:P.y,own:1,f:()=>{subT(P);const sx=Math.round(P.x-cam.x),sy=Math.round(P.y-cam.y),m=mountDef(),go=mapStepping(P),s=partySprite('#e8b94a',m?m.col:'',go?frameOf(P,m?WALK.ride:WALK.foot,WALK.n):0);
     ctx.fillStyle='rgba(0,0,0,.3)';ctx.fillRect(sx-(m?6:3),sy-1,m?12:6,2);drawHost(partySize(),'#3d74d6',sx-(m?P.dir*4:0),sy+2,P.dir,go?WALKED.get(P)||0:null,5,P.race);ctx.save();ctx.translate(sx,sy-10);ctx.scale(P.dir,1);ctx.drawImage(s,-(s.width>>1),13-s.height);ctx.restore();BANNERQ.push({o:P})}});
@@ -345,25 +346,37 @@ function frame(){
   else drawWorld();
   ctx.restore();
 }
-// your party, top left: the day, your level, health, stamina and mana as bars, then what you have; what runs short is red
-// the party card (top left): your hero (portrait, name, level), health, stamina and mana, your band's gold, food, troops, power,
-// morale and pace as icon chips, then where you are and whom you serve; the top bar: the day and the time
+/* the party card (top left), your band's (doc/SUPPLY_DESIGN.md §8; its numbers: world/supply.js supplyNow): your hero (portrait,
+   name, level, points to spend); the band's stamina (green, amber Tired, red Exhausted, the state's word at its end, an arrow for
+   which way it goes: ▼ draining, ▲ coming back; on hover its rate an hour and why) and its health (fit of the whole band, red
+   under half; on hover the fit, the wounded and what hurt them lately); the tags that apply (Tired, Exhausted, Thirsty, Hungry,
+   Cold, In camp: on hover, why); gold, food and drink in days at the current rate, furs in or near the frost or when carried,
+   troops, power, morale and pace as icon chips (what runs short is red); where you are and whom you serve. Your hero's health
+   and mana are in the Hero window (C) and the battle. The top bar: the day and the time */
 function updateHUD(force){
-  stayBanner();const el=$('#stats');if(!el)return;const cnt=partySize(),cap=partyCap(),eat=eatPerDay(),m=vitals(),fd=foodN(),days=Math.floor(fd/Math.max(1,eat));
-  const bar=(v,mx,c,lab)=>'<div class="bar" title="'+lab+'"><i style="width:'+Math.max(0,Math.min(100,Math.round(v/mx*100)))+'%;background:'+c+'"></i><em'+(v<mx*.3?' class="low"':'')+'>'+lab+' '+Math.round(v)+'/'+mx+'</em></div>';
+  stayBanner();const el=$('#stats');if(!el)return;const cnt=partySize(),cap=partyCap(),S=supplyNow(),F=S.fit,lh=landHold(P.x,P.y),sp=bandPace();
+  const bar=(v,mx,cls,txt,title)=>'<div class="bar '+cls+'" title="'+title+'"><i style="width:'+Math.max(0,Math.min(100,Math.round(v/Math.max(1,mx)*100)))+'%"></i><em>'+txt+'</em></div>';
   const chip=(ic,val,title,warn,cls)=>'<span class="chip'+(warn?' warn':'')+'" title="'+title+'">'+icon(ic,14)+'<span'+(cls?' class="'+cls+'"':'')+'>'+val+'</span></span>';
-  const frost=climAt(P.x,P.y)==='frost'&&!RACES[P.race].home.includes('frost'),furNeed=Math.ceil((cnt+1)/5),lh=landHold(P.x,P.y),sp=bandPace();
+  const days=d=>(d>=10?Math.floor(d):Math.floor(d*10)/10)+'d',rate=S.r.n,go=S.go?'on the march':'at rest';
+  const arrow=rate<0?' ▼':rate>0&&P.bsta<100?' ▲':'',word={tired:'Tired',exhausted:'Exhausted'}[S.st],hurt=BAND.hurt.map(h=>h.why).join(', ');
+  const staTip='Your band’s stamina '+Math.round(P.bsta)+' / 100'+(rate?': '+(rate>0?'+':'')+Math.round(rate*10)/10+' an hour ('+S.r.why.join(', ')+')':'')+'. Tired under '+SUPPLY.tired+', Exhausted under '+SUPPLY.exhausted+'.';
+  const hpTip='Your band’s health: '+F.fit+' fit, '+F.wounded+' wounded'+(hurt?'. Lately: '+hurt:'')+'.';
+  const foodTip='Food: '+(FOODS.filter(g=>goodN(g)).map(g=>GOODS[g].n+' '+goodN(g)).join(', ')||'none')+' · about '+days(S.foodDays)+' '+go;
+  const drinkTip='Drink: '+(drinkOrder(S.L).filter(g=>goodN(g)).map(g=>GOODS[g].n+' '+goodN(g)).join(', ')||'none')+' · about '+days(S.drinkDays)+' '+go+(S.L.desert?' (in the desert, water only)':'')+(BAND.liquor?' · liquor first':'');
   el.innerHTML='<div class="pc-head"><img class="pc-pic" src="'+portrait('hero',true)+'" alt=""><div class="pc-who"><b>'+RACES[P.race].n+' '+(BGS[P.bg]?BGS[P.bg].n:'')+'</b><small>Level '+P.level+' · '+rankName()+'</small></div>'+
       (P.tp?'<span class="pc-pts" title="Talent points to spend (K)">+'+P.tp+'</span>':'')+'</div>'+
-    '<div class="bars" title="Health · Stamina · Mana">'+bar(P.hp,m[0],'#c8503a','Health')+bar(P.sp,m[1],'#78c474','Stamina')+bar(P.mp,m[2],'#5a8fe8','Mana')+'</div>'+
-    '<div class="pc-res">'+chip('gold',P.gold,'Gold',false,'gold')+chip('food',fd+'<small> '+days+'d</small>','Food: '+(FOODS.filter(g=>goodN(g)).map(g=>GOODS[g].n+' '+goodN(g)).join(', ')||'none')+' · about '+days+' days',days<2)+
-      chip('troops',cnt+'<small>/'+cap+'</small>','Troops: '+cnt+' of '+cap)+chip('power',partyPower(),'Party power','', 'gold')+chip('morale',Math.round(P.morale),'Morale'+(bandNerve()!=null?' (your troops\u2019 nerve: '+Math.round(bandNerve())+', it drifts toward it)':''),P.morale<30)+
-      chip('speed',sp.toFixed(1)+'×','Your band\u2019s pace before the ground: the slowest of you, its size, the wounded, mounts, Athletics or Riding, a Guide, Forced March',sp<.8)+
-      (frost||goodN('furs')?chip('furs',goodN('furs')+(frost?'<small>/'+furNeed+'</small>':''),'Furs'+(frost?': '+furNeed+' needed in the frost':''),frost&&goodN('furs')<furNeed):'')+
-      (prisonerCount()?chip('prisoners',prisonerCount(),'Prisoners'):'')+(woundedN()?chip('wounded',woundedN(),'Wounded, riding with you while they heal',true):'')+'</div>'+
+    '<div class="bars">'+bar(P.bsta,100,'sta '+S.st,'Stamina'+arrow+' '+Math.round(P.bsta)+(word?'<b>'+word+'</b>':''),staTip)+
+      bar(F.fit,F.fit+F.wounded,'hp'+(F.share<.5?' low':''),'Health '+F.fit+'/'+(F.fit+F.wounded),hpTip)+'</div>'+
+    (S.tags.length?'<div class="pc-tags">'+S.tags.map(([t,c,w])=>'<span class="tag '+c+'" title="'+w+'">'+t+'</span>').join('')+'</div>':'')+
+    '<div class="pc-res">'+chip('gold',P.gold,'Gold',false,'gold')+chip('food',days(S.foodDays),foodTip,S.foodDays<1)+chip('mug',days(S.drinkDays),drinkTip,S.drinkDays<1)+
+      (S.furs.show?chip('furs',S.furs.have+'<small>/'+S.furs.need+'</small>','Furs: '+S.furs.need+' needed in the frost (1 for every '+SUPPLY.furPer+' people)',S.L.frost&&S.furs.have<S.furs.need):'')+
+      chip('troops',cnt+'<small>/'+cap+'</small>','Troops: '+cnt+' of '+cap)+chip('power',partyPower(),'Party power','', 'gold')+chip('morale',Math.round(P.morale),'Morale'+(bandNerve()!=null?' (your troops’ nerve: '+Math.round(bandNerve())+', it drifts toward it)':''),P.morale<30)+
+      chip('speed',sp.toFixed(1)+'×','Your band’s pace before the ground: the slowest of you, its size, the wounded, mounts, Athletics or Riding, a Guide, Forced March, tiredness',sp<.8)+
+      (prisonerCount()?chip('prisoners',prisonerCount(),'Prisoners'):'')+'</div>'+
     '<div class="pc-line" title="Where you are">'+icon('region',12)+'<span>'+regionAt(P.x,P.y).name+' · <span style="color:'+(lh?landCol(lh.owner):'#9a958a')+'">'+landName(P.x,P.y)+'</span></span></div>'+
     '<div class="pc-line" title="Renown and whom you serve">'+icon('renown',12)+'<span>'+P.renown+'</span>'+icon('banner',12)+'<span'+(P.fac?' style="color:'+FACS[P.fac].col+'"':'')+'>'+(P.fac?FACS[P.fac].n:'Independent')+'</span></div>';
   const d=$('#wday');if(d)d.innerHTML=icon(darkness()>.3?'moon':'sun',16)+'<span>Day '+G.day+' · '+timeOfDay()+'</span><b'+(G.paused?'':' class="off"')+'>Paused</b>';
+  const cb=$('#campBtn');if(cb){cb.classList.toggle('on',!!P.camp);cb.setAttribute('aria-pressed',String(!!P.camp))}
 }
 // a short hint at the top of the screen for where you are (H shows every control)
 function updateHint(){
