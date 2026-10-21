@@ -74,7 +74,35 @@ try{
   for(let i=0;i<n;i++){kinds[m.kind[i]]++;if(m.kind[i]!==t.T_WATER)cl[m.clim[i]]++;if(m.kind[i]===t.T_HILL)hi[m.high[i]&3]++}const H=kinds[t.T_HILL]||1;
   info('land '+(land*100/n).toFixed(1)+'%; climates of the land: '+t.CLIMS.map((c,k)=>c+' '+(cl[k]*100/land).toFixed(1)+'%').join(', ')+'; kinds: '+['open','forest','hill','water','road','mount','ford'].map((k,j)=>k+' '+(kinds[j]*100/n).toFixed(1)+'%').join(', '));
   info('high ground (D41) of '+kinds[t.T_HILL]+' hill tiles: rise '+(hi[1]*100/H).toFixed(0)+'%, steep '+(hi[2]*100/H).toFixed(0)+'%, cliffed '+(hi[3]*100/H).toFixed(0)+'%, none '+(hi[0]*100/H).toFixed(0)+'%; feat: '+[[1,'floodplain'],[2,'lake'],[4,'coast'],[8,'deep wood'],[16,'sparse edge'],[32,'bridge']].map(([b,k])=>k+' '+[...m.feat].filter(f=>f&b).length).join(', '));
-  ok(land/n>=.6&&land/n<=.8,'land is '+(land*100/n).toFixed(1)+'% of the classic map (60-80%)')}
+  ok(land/n>=.6&&land/n<=.8,'land is '+(land*100/n).toFixed(1)+'% of the classic map (60-80%)')
+  // ---- the classic terrain (§8.15's hints, CLASSIC_HINTS; Phase 2 wave 3), at the anchors (worldplace.js puts each holding within 4
+  // of its own: tests/classicseed.js checks the holdings themselves; tests/rivers.js the great river past Stonebridge)
+  {const W=m.w,H=m.h,N=W*H,K=m.kind,C=m.clim,A=t.classicAnchors(),P=t.CLASSIC_PLACES,an=s=>A.find(a=>a.name===s),pc=v=>(v*100).toFixed(0)+'%';
+   const isL=i=>K[i]!==t.T_WATER,sea=i=>K[i]===t.T_WATER&&!(m.feat[i]&2)&&!(m.river[i]&3);
+   // (a place's climate: the commonest on the land within 3 tiles of its anchor)
+   const climOf=s=>{const a=an(s),c=[0,0,0,0];for(let y=a.ty-3;y<=a.ty+3;y++)for(let x=a.tx-3;x<=a.tx+3;x++)if(m.has(x,y)&&isL(y*W+x))c[C[y*W+x]]++;return t.CLIMS[c.indexOf(Math.max(...c))]};
+   const of=c=>P.filter(p=>p.clim===c).map(p=>p.name),miss=l=>l.filter(s=>climOf(s)!==P.find(p=>p.name===s).clim),cnt=[0,0,0,0,0,0];
+   for(let i=0;i<N;i++){if(!isL(i))continue;const x=i%W,y=(i-x)/W;if(y<H*.15){cnt[0]++;if(C[i]===t.CLIM.frost)cnt[1]++}if(C[i]===t.CLIM.frost){cnt[2]++;if(y>=H/2)cnt[3]++}if(C[i]===t.CLIM.desert){cnt[4]++;if(x>=W*.55&&y>=H*.35)cnt[5]++}}
+   {const ms=miss(of('frost'));ok(cnt[1]/cnt[0]>=.7&&cnt[3]/cnt[2]<=.03&&!ms.length,'classic, frost in the north: '+pc(cnt[1]/cnt[0])+' of the northern 15% of the land, '+pc(cnt[3]/cnt[2])+' of the frost in the south half; the frost places on it'+(ms.length?': not '+ms.join(', '):''))}
+   {const ms=miss(of('desert'));ok(cnt[5]/cnt[4]>=.8&&!ms.length,'classic, desert in the south-east: '+pc(cnt[5]/cnt[4])+' of it there; the Horde’s places on it'+(ms.length?': not '+ms.join(', '):''))}
+   {const a=an('Karn Hold');let pk=0;for(let y=a.ty-36;y<=a.ty-4;y++)for(let x=a.tx-30;x<=a.tx+30;x++)if(m.has(x,y)&&K[y*W+x]===t.T_MOUNT)pk++;
+    ok(pk>=60&&climOf('Karn Hold')==='grass','classic, Karn Hold below the peaks: '+pk+' peak tiles within 36 north of its anchor, the hold on '+climOf('Karn Hold'))}
+   {const near=A.filter(a=>{for(let y=a.ty-6;y<=a.ty+6;y++)for(let x=a.tx-6;x<=a.tx+6;x++)if(m.has(x,y)&&K[y*W+x]===t.T_MOUNT)return true;return false});
+    ok(!near.length,'classic: no peak within 6 tiles of any anchor'+(near.length?': '+near.map(a=>a.name).join(', '):''))}
+   {const ms=miss(of('swamp'));ok(!ms.length,'classic, the fens: '+of('swamp').join(', ')+' in fen'+(ms.length?': not '+ms.join(', '):''))}
+   // (the League's ports: the sea within 4 tiles of each, one water in the south half that reaches the south edge)
+   {const ports=t.CLASSIC_HINTS.find(h=>h.id==='southSea').ports,L=new Int32Array(N).fill(-1);let k=0;
+    for(let s=N>>1;s<N;s++){if(L[s]>=0||!sea(s))continue;const q=[s];L[s]=k;while(q.length){const i=q.pop(),x=i%W;for(const j of [x>0?i-1:-1,x<W-1?i+1:-1,i-W,i+W])if(j>=N>>1&&j<N&&L[j]<0&&sea(j)){L[j]=k;q.push(j)}}k++}
+    const by=ports.map(s=>{const a=an(s);let b=-1,bd=99;for(let y=a.ty-4;y<=a.ty+4;y++)for(let x=a.tx-4;x<=a.tx+4;x++){const i=y*W+x,d=Math.max(Math.abs(x-a.tx),Math.abs(y-a.ty));if(m.has(x,y)&&i>=N>>1&&sea(i)&&d<bd){bd=d;b=i}}return[b,bd]});
+    const one=by.every(([b])=>b>=0&&L[b]===L[by[0][0]]),rim=by[0][0]>=0&&[...Array(W).keys()].some(x=>L[(H-1)*W+x]===L[by[0][0]]);
+    ok(one&&rim,'classic, the League’s ports on one southern sea: '+ports.map((s,k)=>s+' '+(by[k][0]<0?'dry':by[k][1]+' tiles off')).join(', ')+(one?', one water':', NOT one water')+(rim?', open to the south':', NOT open to the south'))}
+   // (Willowmere's isle: its anchor on land, water within 12 tiles every way round; the land outside joined to the main land)
+   {const a=an('Willowmere'),U=[[1,0],[2,1],[1,1],[1,2],[0,1],[-1,2],[-1,1],[-2,1],[-1,0],[-2,-1],[-1,-1],[-1,-2],[0,-1],[1,-2],[1,-1],[2,-1]];let ring=0;
+    for(const [ux,uy] of U){const l=Math.sqrt(ux*ux+uy*uy);for(let d=1;d<=12;d++){const x=Math.round(a.tx+ux/l*d),y=Math.round(a.ty+uy/l*d);if(m.has(x,y)&&K[y*W+x]===t.T_WATER){ring++;break}}}
+    const L=new Int32Array(N).fill(-1),sz=[];for(let s=0;s<N;s++){if(L[s]>=0||!isL(s))continue;const q=[s],id=sz.length;L[s]=id;let c=0;while(q.length){const i=q.pop(),x=i%W;c++;for(const j of [x>0?i-1:-1,x<W-1?i+1:-1,i-W,i+W])if(j>=0&&j<N&&L[j]<0&&isL(j)){L[j]=id;q.push(j)}}sz.push(c)}
+    const main=sz.indexOf(Math.max(...sz)),off=['Mossdell','Elderglen','Fernhollow','Thistledown'].filter(s=>L[an(s).ty*W+an(s).tx]!==main);
+    ok(isL(a.ty*W+a.tx)&&ring===16&&!off.length,'classic, Willowmere’s isle: its anchor on land with water within 12 tiles all round ('+ring+' of 16 ways); its neighbours on the main land'+(off.length?': not '+off.join(', '):''))}
+   {const ms=miss(P.map(p=>p.name));ok(!ms.length,'classic: the 37 anchors each in its own climate'+(ms.length?' (not: '+ms.map(s=>s+' '+climOf(s)).join(', ')+')':''))}}}
  // other seeds, other sizes: the same settings twice the same world, other seeds others
  {const a=pn(),A=t.genWorld({preset:'normal',seed:'redwater'}),B=t.genWorld({preset:'normal',seed:'redwater'}),Cw=t.genWorld({preset:'normal',seed:'bluewater'}),b=pn(),L=t.genWorld({preset:'large',seed:'redwater'}),c=pn(),L2=t.genWorld({preset:'large',seed:'redwater'});
   ok(A.map.sum===B.map.sum&&A.map.sum!==Cw.map.sum&&A.map.salt===t.seedNum('redwater')&&!A.map.classic,'Normal seed redwater twice: one world ('+A.map.sum.toString(16)+'); bluewater another ('+Cw.map.sum.toString(16)+'); a generated world\'s salt is its seed');

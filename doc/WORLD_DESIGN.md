@@ -292,6 +292,8 @@ Generation runs on the main thread in stages, behind a **"Forging the world…" 
 
 Larger presets scale roughly with tiles × log(tiles).
 
+**Measured (wave 3, A; headless Chrome on the owner's PC, 2026-10-22):** generation Classic 0.52–0.58 s, Normal 0.47 s, Large 0.73 s, Huge 2.7–2.8 s (Huge's mountains stage ran 3 times on seed s1: its pass check). Peak JS heap while generating (`performance.memory`, typed arrays included): Normal +11–15 MB, Large +11 MB, Huge +65 MB. Typed arrays made in the busiest stage (an upper bound on its working set): Normal 11.4 MB (rivers), Large 22.7 MB (rivers), Huge 112.5 MB (mountains, over its 3 tries; about 38 MB a try), plus the map's layers (1.9, 3.8 and 10.5 MB). All within §3.7's times; memory at Huge at the 65 MB target. Classic by stage (ms): land 104, mountains 133, climates 87, rivers 95, forests 27, holdings 21, roads 58, camps 11, ways 18.
+
 ### 3.8 Save size per preset
 
 A save is the seed plus the changes, not the map (§9.3).
@@ -1088,6 +1090,8 @@ These hold for **every allowed combination of settings** (§4.5). Counts scale w
 | B. A hand-tuned map | Exact control | 143k tiles of data; doesn't exercise the generator |
 | C. Today's 224 × 160 as classic | No test churn | Not the bigger world; two code paths |
 
+- **As built (wave 3, A: terrain):** the hints are `CLASSIC_HINTS` (`data/places.js`), read only when the world is classic, so other seeds are untouched. Land (`genLandHints`): the League's bay at its ports' middle, as wide as the holdings round it allow, open to the south by a strait aimed between the holdings, with an inlet to beside each port; land at least a little high round every anchor and a neck of land from each (ports aside) toward its realm's heart, so none stands on an isle; Willowmere's ring lake; no big lake on an anchor. Mountains: the hinted ranges (the northern peaks, Karn Hold's), no other range within 20 tiles of an anchor (no peak within 6) and no highland near one. The great river (`genValleyHint`): a trough from the highest ground of the north to the south coast, 5 tiles east of Stonebridge and straight there, winding elsewhere, its bed never rising, the land within 90 tiles tilted toward it, so the valley gathers a great river. Climates: frost along the north and at Coldmarch and Granitegate; the desert and the fens each at **home** in their hint's reach (their score up there, down elsewhere: `GEN_CLIMATE.home`), so they appear nowhere else; the Sylvan woods and the south coast a little drier, not fen. The 37 anchors all stand in their own climate. Checked by `tests/worldgen.js` (at the anchors), `tests/rivers.js` (the great river) and B's `tests/classicseed.js`.
+
 **How the anchors work:**
 1. **Positions:** each realm's centroid is doubled, and each holding's offset from it is scaled ×1.4. The result is snapped to a suitable tile within 4: Ashford (36, 40) goes to about (83, 85), Karn Hold (172, 44) to about (338, 78).
 2. **Terrain hints** in `places.js`:
@@ -1835,7 +1839,9 @@ The load order wave 0 sets: `world/map.js`, `world/router.js`, `world/fog.js`, `
 
 **E (wave 2), as built 2026-10-21** (merged 2026-10-21; TERRAIN_DESIGN §8, "World Phase 2 as built"): `WorldMap#battleSite` fills `river`, `crossing`, `elev`, `terrace`, `rough` and `high` in a generated world (its river and crossing tiles indexed once, `WM._site`); `bridge` from the world's bridges. `terrain.js`: `riverOf` (the crossing's kind), `worldOf` (`wr`: width, the bridge's make, delta, flood; `high`), `TERRAIN_RIVER.widths`, `BattleRiver.kinds` (the ferry's one ford), `FieldPlan#planWet` (`TERRAIN_WET`), `planFeatures` and `planSteep` (the kinds as layouts), the steep hill (`STEEP`, `B.terrain.steep`) with its rules, its price on the route grids (`route.js`) and its look (`engine/ground.js`); `commander.js` `steepHold`, `onSteep`; `morale.js` `steepRanks`; `lab.js` `site` and a hill's `steep`. Measured with the flag on: *Hold the bridge* on 25 of 2,253 road tiles (1.1%); steep hills in the lab: a centred one splits 4/6 (a rise 4/6), battles 66 s (52); one in a side's half wins it 17 of 20 (a rise 16). `tests/worldgen.js`'s "new fields all empty" check (A's file) fails with `-Gen` by design: its line is the coordinator's to change. The steep look awaits the owner.
 
-**Wave 3: the classic seed and the proof** (3 agents in parallel, after wave 2; **E merges last**) — not started
+**A (wave 3), as built 2026-10-22:** the classic terrain (§8.15 "As built (wave 3, A)"): `CLASSIC_HINTS` now 10 hints (`frostMarches`, `greenWest` and `northPeaks` added; the desert's and the League's places named); `worldgen.js`: `GEN_HINT_LAND` and `genLandHints` (the bay, inlets, the anchors' land and necks), ranges and highlands kept off the anchors (`GEN_ELEV.held`), `GEN_VALLEY` and `genValleyHint` rewritten, a climate's home (`GEN_CLIMATE.home`), the hint bumps worked within their boxes, and a river cut shorter than a brook by the 4-way join dropped (it left a 3-tile river on the classic map). Seeds other than Classic make the same worlds as before (their sums held). §3.7 measured (there).
+
+**Wave 3: the classic seed and the proof** (3 agents in parallel, after wave 2; **E merges last**) — A built 2026-10-22
 
 | Agent | Scope | May edit | Must not edit | Depends on |
 |---|---|---|---|---|

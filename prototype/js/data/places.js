@@ -87,16 +87,25 @@ const REP_NEED={1:15,2:30,3:50},RACE_TRUST=10;
 const CLASSIC_CAMPS=[{tx:88,ty:48},{tx:20,ty:96},{tx:116,ty:76},{tx:200,ty:84},{tx:60,ty:140},{tx:176,ty:106},{tx:146,ty:58},{tx:44,ty:130},{tx:100,ty:112},{tx:150,ty:130},{tx:28,ty:58},{tx:190,ty:30}];
 /* the classic seed's terrain hints (doc/WORLD_DESIGN.md §8.15 step 2): what Ashmark's land must say about its places, read by the
    generator when the world is classic (worldgen.js: g.hints) as soft nudges, warped-falloff bumps of temperature, moisture or
-   elevation over 12-30 tiles, never stamps. Each hint: id; kind (sea: these ports on one body of water, on side; temp, moist: a
-   bump of d (-1..1 of the field's range) over r tiles round at, or a band r tiles deep along side (dry: moisture down with it); elev: high ground on side of at; island: at stands on land ringed
-   by water, joined by bridges; river: a great river from from to to, past at, crossed there by a bridge); at: a holding's name
-   (its anchor, worldplace.js classicAnchors) or a point as shares of the map [x, y]; side: n, s, e or w; r: tiles */
+   elevation, never stamps. Each hint: id; kind:
+     sea: these ports on one bay of the sea, open to the frame on side, an inlet up to each (genLandHints);
+     temp, moist: a bump of d (-1..1 of the field's range) over r tiles round at, or a band r tiles deep along side (dry: moisture
+       down with it); clim: this climate at home in its reach, rarer elsewhere (GEN_CLIMATE.home);
+     elev: a range of peaks r tiles off at, on side;
+     island: at stands on land ringed by a narrow lake, joined by bridges;
+     river: a great river from the highest ground of the north (from) to the coast on side to, past at (just east of it), crossed
+       there by a bridge (genValleyHint);
+   at: a holding's name, or several (its anchor, worldplace.js classicAnchors), or a point as shares of the map [x, y]; note: what
+   it is for. Tuned on the classic seed at Normal (tests/worldgen.js, tests/rivers.js, tests/classicseed.js) */
 const CLASSIC_HINTS=[
   {id:'southSea',kind:'sea',side:'s',ports:['Saltmere','Gullhaven','Pearlbay','Brinewatch','Tidewatch'],note:'a south coast, the League’s ports on one sea'},
-  {id:'frostNorth',kind:'temp',side:'n',r:80,d:-1,note:'frost in the north'},
-  {id:'desertSouthEast',kind:'temp',at:[.85,.85],r:30,d:1,dry:1,note:'desert in the south-east'},
-  {id:'karnPeaks',kind:'elev',at:'Karn Hold',side:'n',r:16,note:'Karn Hold below the peaks'},
+  {id:'frostNorth',kind:'temp',side:'n',r:62,d:-1,note:'frost in the north'},
+  {id:'frostMarches',kind:'temp',at:['Coldmarch','Granitegate'],r:12,d:-1,note:'frost too at Coldmarch and on the north-east heights by Granitegate'},
+  {id:'desertSouthEast',kind:'temp',at:['Sunreach','Redspire','Skullrock','Greywell','Scorchwell','Bonepit','Dustfang'],r:22,d:1,dry:1,clim:'desert',note:'desert in the south-east, the Horde’s land'},
+  {id:'greenWest',kind:'moist',at:['Elderglen','Mossdell','Willowmere','Fernhollow','Thistledown','Pearlbay','Gullhaven'],r:16,d:-.8,note:'the Sylvan woods and the League’s south coast green, not fen'},
+  {id:'northPeaks',kind:'elev',at:[.44,.16],side:'n',r:16,note:'the northern peaks, where the great river rises'},
+  {id:'karnPeaks',kind:'elev',at:'Karn Hold',side:'n',r:20,note:'Karn Hold below the peaks'},
   {id:'willowIsle',kind:'island',at:'Willowmere',bridges:true,note:'Willowmere an island village with bridges (tests/routes.js)'},
   {id:'stonebridge',kind:'river',at:'Stonebridge',from:'n',to:'s',great:true,bridge:true,note:'a great river from the northern peaks to the south coast, past Stonebridge, bridged there'},
-  {id:'fens',kind:'moist',at:['Mirefen','Tidewatch'],r:18,d:1,clim:'swamp',note:'Mirefen and Tidewatch in fen'}
+  {id:'fens',kind:'moist',at:['Mirefen','Tidewatch','Brinewatch'],r:20,d:1,clim:'swamp',note:'Mirefen, Tidewatch and Brinewatch in fen'}
 ];

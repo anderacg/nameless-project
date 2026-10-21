@@ -5,7 +5,8 @@
 // rivers of Strahler order 4 and up); deltas fanning over 8-16 tiles; navigable runs unbroken but at rapids; floodplain beside
 // rivers; lakes and basins; seasonal flags by climate (frost all but great rivers, desert wadis, swamp streams and deltas, about
 // 30% of grass streams), none with the seasonal setting off. Phase 5's rows (riverState, crossings by season, tolls, passage,
-// barges) come with their phases.
+// barges) come with their phases. The classic seed's great river (§8.15, CLASSIC_HINTS stonebridge): past Stonebridge's anchor, fed
+// from the northern peaks, out to the southern sea.
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.push('INFO '+m),t=T;
 try{
  const worlds=[['classic',t.classicSettings()],...['1','2','3','4','5'].map(s=>['normal '+s,{preset:'normal',seed:s}]),['large 1',{preset:'large',seed:'1'}]].map(([n,s])=>[n,t.genWorld(s).map]);
@@ -45,6 +46,20 @@ try{
  say('nav',nav+' navigable rivers ('+rap+' rapids): navigable from where they are 2 wide to their end, but at their rapids; streams never');
  ok(deltas.length&&deltas.every(d=>d[2]>=8&&d[2]<=16),deltas.length+' deltas, their mouths fanning over 8-16 tiles ('+deltas.map(d=>d[0]+' '+(d[1]+1)+' channels over '+d[2]).join('; ')+')');
  say('flood',fp+' floodplain tiles, each within 3 of a river');say('lake','lakes are water (or a crossing on it) with no basin');say('basin','every land tile lies in a basin');
+ // the classic great river: a river of width 3 within 3-8 tiles east of Stonebridge's anchor (none of it west of it within 5); of the rivers
+ // that feed it above there (into it, into those, through lakes), one rising in the northern 30% within 20 tiles of a peak or high
+ // ground (elevation 170); downstream, river into river, to the sea in the southern 40%
+ {const m=worlds[0][1],W=m.w,H=m.h,N=W*H,K=m.kind,R=m.rivers,a=t.classicAnchors().find(p=>p.name==='Stonebridge'),xy=i=>[i%W,(i-i%W)/W];
+  const near=i=>{const [x,y]=xy(i);return Math.abs(y-a.ty)<=3&&x-a.tx>=3&&x-a.tx<=8},west=R.some(r=>(r.width===3)&&r.path.some(i=>{const [x,y]=xy(i);return Math.abs(y-a.ty)<=3&&x<=a.tx+1&&x>=a.tx-5}));
+  const g=R.find(r=>r.width===3&&r.path.some(near)),sea=i=>K[i]===t.T_WATER&&!(m.feat[i]&2)&&!(m.river[i]&3);
+  if(!g)ok(false,'classic: a great river 3-8 tiles east of Stonebridge’s anchor');
+  else{const lk=i=>{for(const j of [i,i-1,i+1,i-W,i+W])if(j>=0&&j<N&&K[j]===t.T_WATER&&m.feat[j]&2)return j;return -1},into=new Set(g.path.slice(0,g.path.findIndex(near)+1)),up=new Set([g]);
+   const lake=s=>{const L=new Set([s]),q=[s];while(q.length){const i=q.pop(),x=i%W;for(const j of [x>0?i-1:-1,x<W-1?i+1:-1,i-W,i+W])if(j>=0&&j<N&&!L.has(j)&&K[j]===t.T_WATER&&m.feat[j]&2){L.add(j);q.push(j)}}return L};
+   const feed=r=>{const j=lk(r.path[0]);if(j>=0)for(const i of lake(j))into.add(i)};feed(g);
+   for(let more=true;more;){more=false;for(const r of R)if(!up.has(r)&&into.has(r.mouth)){up.add(r);for(const i of r.path)into.add(i);feed(r);more=true}}
+   let top=null;for(const r of up){const [sx,sy]=xy(r.path[0]);let hi=false;for(let y=sy-20;y<=sy+20&&!hi;y++)for(let x=sx-20;x<=sx+20;x++)if(m.has(x,y)&&(K[y*W+x]===t.T_MOUNT||m.elev[y*W+x]>=170)){hi=true;break}if(hi&&(!top||sy<top[2]))top=[r,sx,sy]}
+   let dn=g;for(let k=0;k<6&&!sea(dn.mouth);k++){const n=R.find(r=>r!==dn&&r.path.includes(dn.mouth));if(!n)break;dn=n}const [mx,my]=xy(dn.mouth);
+   ok(!west&&top&&top[2]<=H*.3&&sea(dn.mouth)&&my>=H*.6,'classic: the great river '+g.name+' past Stonebridge, 3-8 tiles east of its anchor'+(west?' (and NOT clear of its west)':'')+'; '+up.size+' rivers feed it above there, the farthest north rising under high ground '+(top?top[0].name+' at ('+top[1]+', '+top[2]+')':'none')+'; out to the sea at ('+mx+', '+my+')')}}
  // seasonal flags (§6.6.4), by the climate most of a river runs through
  {const sb=[],grass=[0,0],kinds={};
   for(const [n,m] of worlds){for(const r of m.rivers){const c=[0,0,0,0];for(const i of r.path)c[m.clim[i]]++;const cl=t.CLIMS[c.indexOf(Math.max(...c))],f=r.seasonal,bits=r.path.filter(i=>(m.river[i]&3)>r.width||!!(m.river[i]&8)===!!f).length>=r.path.length*.9,delta=m.river[r.path[0]]&128;
