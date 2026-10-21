@@ -109,7 +109,7 @@ Each kind's verbs (`ItemKind.verbs`) ask the category: a Quest item never shows 
 
 Today the bag is a fixed row of slots (`P.inv`: its size from your hero and your mount's packs), and an item that does not fit is refused ("There is no room in your bag").
 
-**From now on nothing is refused.** What does not fit goes into **overflow slots** beyond the bag's size, and **the more you carry over, the slower you walk**:
+**Up to a limit, nothing is refused.** What does not fit goes into **overflow slots** beyond the bag's size, and **the more you carry over, the slower you walk**:
 
 ```text
 over = slots used − the bag's size          (0 when it fits)
@@ -118,6 +118,7 @@ pace × max(BAG.floor, 1 − BAG.per × over)   e.g. per 0.04, floor 0.4: 5 slot
 
 - One more multiplier in `bandPace`, beside stamina, Parched and the pack train's.
 - The card shows a **Burdened** tag (slots over, the pace it costs, what lightening the load gives back). The bag window shows the overflow slots in red after the bag's own.
+- **The limit** (owner, 2026-10-22): once the burden reaches its floor (−60%: `BAG.maxOver`, 15 slots over), **nothing more can be carried**. A new item is refused ("You cannot carry any more"), and loot stays on the loot screen to choose from. Quest items are the one exception: they are never left behind.
 - Dropping, selling or stowing an item frees a slot at once.
 - The numbers (`BAG.per`, `BAG.floor`) are in one table. Weight per item (rather than per slot) can come later if slots feel too coarse.
 - **With logistics:** the bag's overfill and the pools' over-capacity (LOGISTICS_DESIGN.md §3) are separate burdens, each with its own tag, and they multiply.
@@ -158,7 +159,7 @@ A new item kind, `Valuable` (`core/items.js`), over a new table, `VALUABLES` (`d
 2. ~~Quest items~~: decided: they take a bag slot, and the bag overfills (§4a).
 3. ~~Valuables~~: decided: now (§4b).
 4. ~~Bag tabs~~: agreed.
-5. **Overfill:** −4% pace a slot over, never below −60%. Right? (*Not yet answered; the default until then.*)
+5. ~~Overfill~~: decided: −4% pace a slot over, down to −60% (15 over); past that, nothing more can be carried (quest items excepted).
 6. ~~Ale and liquor~~: decided: a one-off morale bonus into the pool, replacing the slower drain.
 7. ~~Quivers~~: decided: full at every battle's start; each shows its arrow type (`ARROWS`); upgrades later.
 8. ~~The quiver sizes~~: agreed for now, in the `QUIVERS` table, so more can be added.
