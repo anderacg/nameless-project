@@ -191,6 +191,11 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 /* a menu window (the pause menu): as tall as its entries */
 .panel:has(> .menulist){width:min(480px,100%);height:auto;max-height:100%}
 .panel:has(> .menulist) > p{text-align:center;max-width:none}
+/* the pause menu's world line (ui.js escWorld): the world's name, kind and seed, the seed's Copy button beside it */
+.esc-world{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;margin:0 0 10px;color:var(--fg-2)}
+.esc-world b{color:var(--accent);user-select:text}
+/* the game over (ui.js showDeath): what killed you and when */
+.death{text-align:center}.death p{max-width:none}
 /* the title screen: the menu down the left over the world, as in most games; its other pages are ordinary windows */
 .screen[data-mode="title"] .overlay:has(.title){justify-content:flex-start;background:linear-gradient(90deg,rgba(5,7,12,.96) 0,rgba(5,7,12,.88) 34%,rgba(5,7,12,.35) 70%,rgba(5,7,12,.15))}
 .panel:has(> .title){width:min(440px,100%);height:auto;max-height:100%;background:none;border:0;box-shadow:none;border-radius:0;padding:24px 8px 24px calc(4vw + 8px);gap:20px;animation:none}
@@ -299,7 +304,7 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 /* what shows where: a battle shows its own HUD; a walk through a town has no time controls */
 .screen[data-mode="battle"] .pcard,.screen[data-mode="battle"] .hint,.screen[data-mode="battle"] .wtop,.screen[data-mode="battle"] .dock{display:none}
 .screen[data-mode="battle"] .toasts{bottom:auto;top:var(--e-t);width:min(28%,340px)}
-.screen[data-mode="scene"] .wtop [data-speed]{display:none}
+.screen[data-mode="scene"] .wtop [data-speed],.screen[data-mode="scene"] .wtop [data-hurry]{display:none}
 
 /* ---------- 6b. people ---------- */
 /* a tab on the right edge, under the minimap (peopledrawer.js peoplePlace sets its top): the people icon and your companions'

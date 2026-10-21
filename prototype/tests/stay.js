@@ -30,7 +30,7 @@ try{
  {const r=Math.random;Math.random=()=>0;P.wounded={hum_levy:20};t.woundedDay();const inside=20-t.woundedN();const s=P.stay;P.stay=null;P.wounded={hum_levy:20};P.troops={hum_levy:10};t.woundedDay();const out=20-t.woundedN();P.stay=s;Math.random=r;P.wounded={};P.troops={hum_levy:10};
   ok(inside>=out*2-1&&inside>out,'the wounded heal twice as fast ('+out+' → '+inside+' a day)')}
  // out of gold
- P.gold=3;P.stay.paidTo=t.worldTime()-.01;t.stayTick(.01);ok(!P.stay&&Math.abs(P.y-(town.y+14))<1&&P.gold===3,'when you cannot pay for another day, the innkeeper sends you out at the gate');
+ P.gold=3;P.stay.paidTo=t.worldTime()-.01;t.stayTick(.01);ok(!P.stay&&(g=>Math.abs(P.x-g.x)<1&&Math.abs(P.y-g.y)<1)(t.gateSpot(town))&&P.gold===3,'when you cannot pay for another day, the innkeeper sends you out at the gate');
  t.updateHUD(true);ok(bar().hidden,'and the banner goes');
  // free
  P.gold=50;setSt(town,35);world();t.enterTown(town);ok(/Stay · free \(they know you\)/.test(panel()),'where they know you (standing 30+), you stay free');t.act('sy-stay',town.name);

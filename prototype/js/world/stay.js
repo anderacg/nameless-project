@@ -39,7 +39,7 @@ function startStay(t){
 }
 // out of the gate (why: the message, if it was not your choice)
 function leaveStay(why,cls){
-  const t=stayTown();P.stay=null;if(t){P.x=t.x;P.y=t.y+14;G.lastTown=t}G.encCool=2;P.tx=null;G.chase=null;
+  const t=stayTown();P.stay=null;if(t){heroAtGate(t);G.lastTown=t}G.encCool=2;P.tx=null;G.chase=null;
   log(why||'You leave '+(t?t.name:'your lodgings')+' and take the road again.',cls||'');updateHUD(true);
 }
 // each moment inside: stay at the gate (unseen), recover, and watch for trouble; true if it opened a window

@@ -35,7 +35,7 @@ function classicWorld(){const camps=CLASSIC_CAMPS.map(c=>({tx:c.tx,ty:c.ty})),m=
 // (what the last game left never reaches it), then kept as it first stands: every new game in it starts there
 function forgeInstall(r){resetSession();installWorld(r);worldFirst()}
 // (the world in laid out as it first stands, from where you would start: initWorld, then kept: worldKeep)
-function worldFirst(){P.x=(startHolding().tx+.5)*TILE;P.y=(startHolding().ty+2.5)*TILE;initWorld();worldKeep()}
+function worldFirst(){heroAtGate(startHolding());initWorld();worldKeep()}
 // (a world's key: equal for the same world, made by the same gen from the same settings (worldsettings.js settingsKey))
 const worldKey=m=>m?m.gen+' '+settingsKey(m.settings):'';
 // (its name: Ashmark for the classic one, else its seed)
@@ -69,7 +69,7 @@ function startGame(k,b){
   // drawn before the wild game and the beasts are placed from them)
   useWorld(WM);initWorld();W.sites=genSites();fogReset();Rng.newGame();initCritters();
   const home=capitalOf(P.race);if(b.rep)P.rep[home.name]=b.rep;
-  P.x=(home.tx+.5)*TILE;P.y=(home.ty+2.5)*TILE;G.mode='world';G.lastTown=home;
+  heroAtGate(home);G.mode='world';G.lastTown=home;// (in front of its gate, on land: world.js gateSpot)
   for(let i=0,n=Math.round(BANDITS*spawnMul('bandits'));i<n;i++)spawnBandit(true);
   for(let i=0,n=Math.round(MONSTER_START*spawnMul('monsters'));i<n;i++)spawnMonster(true);
   hidePanel();G.msgs=[];log('You ride out of '+home.name+' alone, as '+(rc.n==='Elf'||rc.n==='Orc'?'an ':'a ')+rc.n.toLowerCase()+' '+b.n.toLowerCase()+'. Win fame around here and the locals will follow you.');updateHint();updateHUD(true);

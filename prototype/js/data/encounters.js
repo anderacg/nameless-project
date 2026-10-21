@@ -5,8 +5,8 @@
    Their rules: world/road.js (the road: when and where) and world/encounters.js (the kinds: who and what) ---------- */
 // spawning: base, rate (a travelled hour), cap; land (× by where you are); perDay, again (days); near: how far past your sight
 // (px); arc: how far off the way you go (rad; arcTo for those that walk up to you, so they can reach your way); tries (spots tried); hold: tiles from a holding; pass: what passing one by takes
-// off the timer [from, to]
-const ENC_SPAWN={base:.004,rate:.0016,cap:.15,land:{road:1.5,held:1,wild:.6},perDay:2,again:5,near:[40,120],arc:1.1,arcTo:.5,tries:60,hold:6,pass:[.25,.5]};
+// off the timer [from, to]. (base and rate halved 2026-10-22, the owner: encounters came too often; were .004 and .0016)
+const ENC_SPAWN={base:.002,rate:.0008,cap:.15,land:{road:1.5,held:1,wild:.6},perDay:2,again:5,near:[40,120],arc:1.1,arcTo:.5,tries:60,hold:6,pass:[.25,.5]};
 // how long one lasts unmet, in-game hours [from, to], by behaviour; trace: the hours a trace lies; leave: gone past this × your
 // sight (or slack px farther than it first stood); say: real seconds its call-out shows; hail: px at which one walking up to you
 // stops you (it has reached you); spring: px at which an ambush springs

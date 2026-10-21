@@ -110,7 +110,8 @@ try{
  {goHome();const e=t.roadSpawn('merchant',P.x+150,P.y),d0=e.fromYou();frames(20);ok(e.fromYou()<d0-5,'approach: the peddler walks to you ('+Math.round(d0)+' → '+Math.round(e.fromYou())+' px)');
   frames(2000);ok(G.mode==='road'&&G.road===e&&q('.rwin h2').textContent===D('merchant').n,'reaching you, he is met: his page opens');t.act('enc-leave');ok(G.mode==='world'&&e.beh==='leave','Leave: he goes on his way');
   const x1=e.fromYou();frames(200);ok(e.fromYou()>x1+5,'walking off (along the road: '+Math.round(x1)+' → '+Math.round(e.fromYou())+' px)');}
- {goHome();const S0=W.sites;W.sites=[];P.tx=P.x+2000;P.ty=P.y;const d=V+80,e=t.roadSpawn('merchant',P.x+Math.cos(.3)*d,P.y+Math.sin(.3)*d);for(let i=0;i<1500&&G.mode==='world'&&!e.gone;i++)t.updateWorld(.05);W.sites=S0;
+ // (your way straight on over open ground: a way round water is the router's (world.js heroStep), which one walking up cannot foresee)
+ {goHome();const S0=W.sites;W.sites=[];const a=[0,.4,-.4,.8,-.8,1.2,-1.2,1.6,-1.6,2.4,-2.4,Math.PI].find(a=>t.clearLine(P.x,P.y,P.x+Math.cos(a)*1200,P.y+Math.sin(a)*1200))||0;P.tx=P.x+Math.cos(a)*1200;P.ty=P.y+Math.sin(a)*1200;const d=V+80,e=t.roadSpawn('merchant',P.x+Math.cos(a+.3)*d,P.y+Math.sin(a+.3)*d);for(let i=0;i<1500&&G.mode==='world'&&!e.gone;i++)t.updateWorld(.05);W.sites=S0;
   ok(G.mode==='road'&&G.road===e,'while you travel, one walking up meets you on your way (it hurries to where your ways cross)');world()}
  {goHome();const e=t.roadSpawn('traveller',P.x+60,P.y),x=e.x,y=e.y;frames(200);ok(e.x===x&&e.y===y&&!e.gone,'stay: the wounded traveller stays where he lies')}
  {goHome();const e=t.roadSpawn('wisps',P.x+40,P.y),d0=e.fromYou();frames(30);ok(e.fromYou()>d0+3,'flee: the lights drift away as you come ('+Math.round(d0)+' → '+Math.round(e.fromYou())+' px)')}

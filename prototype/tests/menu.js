@@ -20,6 +20,9 @@ try{
  // Esc: close what is open, else pause with the Esc menu
  const esc=()=>window.dispatchEvent(new KeyboardEvent('keydown',{code:'Escape',key:'Escape'}));
  esc();ok(G.mode==='esc'&&['Save game','Load game','Main menu','Exit game'].every(n=>cards().includes(n))&&/Resume/.test(document.querySelector('.nav [data-nav="close"]').textContent),'Esc on the map opens the Esc menu, Resume in its bottom bar: '+cards().join(', '));
+ {const w=document.querySelector('#panel .esc-world'),s=t.WM.settings,cp=w&&w.querySelector('[data-act="esc-seed"]');
+  ok(w&&/Classic/.test(w.textContent)&&(s?w.textContent.includes(s.seed)&&!!cp:!cp),'the Esc menu names the world and its seed, a Copy button by the seed ('+(w&&w.textContent)+')');
+  if(cp){cp.click();ok(G.mode==='esc','Copy seed keeps the menu open')}}
  const day=G.day,clk=G.clock;t.loop&&0;esc();ok(G.mode==='world'&&!G.modal,'Esc again resumes');
  esc();t.act('esc-save');ok(t.readSave()&&/Game saved/.test(panel())&&G.mode==='esc','Save game from the Esc menu');esc();
  {const L=t.LOADING,sy=L.sync,si=Storage.prototype.setItem;L.sync=true;Storage.prototype.setItem=function(){throw new Error('QuotaExceededError')};

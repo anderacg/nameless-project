@@ -2,7 +2,7 @@
 // The action ring (doc/SUPPLY_DESIGN.md §7a, ui/ring.js): the left button held still on the map opens a ring of the actions that
 // apply there; a short click still travels; a move before it opens calls it off; let go over a button picks it, or let go first
 // and tap one; Esc, a right-click or a tap outside closes it, travelling nowhere. Only what applies: Make camp or Break camp,
-// Travel here (fast) on the ground, Fill waterskins by water, Drink liquor with liquor, Look on something. A finger's long press
+// Travel here and Hurry here on the ground (Stop hurrying while you hurry), Fill waterskins by water, Drink liquor with liquor, Look on something. A finger's long press
 // opens it too, and its Look shows the card.
 window.RUN=async()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
@@ -10,7 +10,7 @@ try{
  const t=T,G=t.G,P=t.P,ev=s=>(0,eval)(s),cv=t.cv,R=t.RING;
  Kit.begin('soldier',4242);Kit.clear();Kit.world();W0();
  function W0(){t.W.folk=[];t.W.patrols=[];t.W.caravans=[];t.W.refugees=[];t.W.critters=[]}
- const spot=(()=>{for(let ty=8;ty<t.MH-8;ty++)for(let tx=8;tx<t.MW-8;tx++){const x=(tx+.5)*16,y=(ty+.5)*16;if(t.tAt(tx,ty)===t.T_OPEN&&t.climAt(x,y)==='grass'&&!t.TOWNS.some(h=>Math.hypot(h.x-x,h.y-y)<200)&&!t.nearWater(x,y,5))return [x,y]}})();
+ const spot=(()=>{for(let ty=8;ty<t.MH-8;ty++)for(let tx=8;tx<t.MW-8;tx++){const x=(tx+.5)*16,y=(ty+.5)*16;if(t.tAt(tx,ty)===t.T_OPEN&&t.climAt(x,y)==='grass'&&!t.TOWNS.some(h=>Math.hypot(h.x-x,h.y-y)<200)&&!t.nearWater(x,y,5)&&t.campGround(x,y))return [x,y]}})();// (clear ground: Make camp pitches there at once)
  const bag=g=>{for(const k of ['water','ale','liquor'])t.goodTake(k,1e9);for(const k in g)t.playerInventory.add('good',k,g[k])};
  const reset=()=>{t.ActionRing.close();t.hideTip();Kit.world();Kit.goTo(spot[0],spot[1]);ev('BAND=freshBand()');G.encCool=99;G.speed=1;G.chase=null;P.tx=null;t.bandits.length=0;W0();t.drawWorld()};
  // (client points of a world point; a pointer event on the canvas, or at a point of the window)
@@ -26,7 +26,7 @@ try{
  // ---- held still: the ring, the travel put back
  reset();{const wx=P.x+60,p=cl(wx,P.y+20);down(p);ok(P.tx!=null,'(the press travels at once, as a click)');await held();
   ok(!!ring()&&P.tx==null&&document.querySelector('.aring'),'held still '+R.hold+' ms: the ring opens, and the travel is put back');
-  ok(labels().join()==='Make camp,Travel here,Travel here fast','on bare ground: '+labels().join(', '));
+  ok(labels().join()==='Make camp,Travel here,Hurry here','on bare ground: '+labels().join(', '));
   const b=btn('Travel here');up(b);ok(!ring()&&P.tx!=null&&Math.abs(P.tx-wx)<2,'let go over Travel here: you travel there, the ring closed ('+(b&&b.el.textContent)+', '+P.tx+' for '+wx+')')}
  // ---- a move before it opens: no ring
  reset();{const p=cl(P.x+60,P.y+20);down(p);move({clientX:p.clientX+30,clientY:p.clientY});await held();ok(!ring(),'a move before it opens calls it off');up(p)}

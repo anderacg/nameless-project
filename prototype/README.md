@@ -90,7 +90,8 @@ js/world/             the campaign map and everything on it
   fights.js             fights between parties on the map, which take time and can be joined
   stay.js               staying in a holding (your band), and the shelter rules for you and your companions
   supply.js             your band's supplies (doc/SUPPLY_DESIGN.md): SUPPLY (every number), stamina, food and drink by the hour,
-                        furs and the desert's water, its health, the camp (Z), the card's numbers and the action ring's map actions
+                        furs and the desert's water, its health, hunger and thirst on your hero and her death, the camp (Z) on
+                        clear ground, Hurry (4), the card's numbers and the action ring's map actions
   economy.js            a holding's Economy (stock, production, prices, people; its day) and the treasuries
   buildings.js          what a holding has built: its Buildings (estates' levels, walls, projects; its day)
   estates.js            each Estate (fields, guards, sabotage, its day's work) and the spoils of raiding one; its window is ui/estate.js
@@ -113,7 +114,8 @@ js/world/             the campaign map and everything on it
   quests.js             the jobs: one Quest subclass per kind (bounty, beast, clear, supply, hunt, courier, troops, lordkill, raid)
   news.js               news and rumours: records the world's events heard on the bus, told by the sources
   monsters.js critters.js reputation.js
-  world.js              travel, the daily tick, the world update
+  world.js              travel (your step: straight while the way is open, else by the router: heroStep; where you come out
+                        by a holding: gateSpot, open land in front of its gate), the daily tick, the world update
 js/battle/            engage.js (going into a fight: power and stance, allies joining, the battle type, flight, auto-resolve, outcomes by kind: ON_WIN), parley.js (cornered parties), setup.js (BattleSetup, field
                       and unit construction), resolution.js (BattleResolution, field results and campaign settlement),
                       battle.js (shared group defaults and frame orchestration), actors.js (each soldier's moment and his targeting: Actor, CharActor, HeroActor),
@@ -134,7 +136,7 @@ js/gfx/               worldart.js (the painted map), sprites.js (generated sprit
                       depth.js (what stands in front of a figure on the map, and its fade), vfx.js (battle effects), worldui.js (the map's
                       pointer marks, route trail and encounter highlights), mist.js (mist in the fog), weapons.js (battle weapons),
                       scenedraw.js (painting and drawing the walkable scenes: scene/)
-js/ui/                ui.js (panels, title, Esc menu), loading.js (the loading overlay; runSteps runs long work in steps), character, talents, inventory, town (a holding's
+js/ui/                ui.js (panels, title, Esc menu with the world's name and seed, the game-over window), loading.js (the loading overlay; runSteps runs long work in steps), character, talents, inventory, town (a holding's
                       places: Place, definePlace, PLACES; class wave D),
                       window.js (rail windows: a rail of places beside the chosen one's window), townui.js (a town's places, its overview, your
                       holding's buildings), estate.js (an estate's window on the map, and the Fief's Estates section), peopledrawer.js (the people drawer, P), input.js (actions, mouse, keys), map.js (the full map:
@@ -222,6 +224,16 @@ hero's: it is kept in her `P.sp`, on her scale (`maxSP`; when that grows, by a l
   food, nor in the desert with no water). `staminaRate(moving, drink, land)` says how much and why;
 - under 20 is **Tired** (pace ×0.85: `bandPace`, morale −1 every 3 hours), under 5 **Exhausted** (pace ×0.6, a man falls sick every
   8 hours); the desert's thirst (after 12 hours) and frostbite (6 hours' worth of shortage) take men too, as wounded.
+- **Your hero** (`SUPPLY.thirst.hero`, `SUPPLY.hunger.hero`, `heroRegen`, read by `parties.js regenVitals`): Parched or Hungry, her
+  mana stops coming back; Dying of thirst, every thirst toll takes 10% of her health and mana; Starving, 5% of each every 6 hours;
+  Starving or Dying of thirst, her health stops coming back. With no troops a toll that would make a man sick falls on her (10%).
+  At 0 health off the battlefield (`heroHurt`, `heroDies`) **the game is over**: `ui.js showDeath` (what killed her and the day; Load
+  last save, greyed with none, and Back to the title; Esc follows the bar); nothing runs on behind it (`G.dead`). A lost battle is not
+  death. Tests: `tests/gameover.js`.
+- **Hurry** (key 4, the top bar's Hurry where 8× was, the ring's Hurry here): the band marches ×2 (`hurryPace`), its stamina on the
+  march draining ×2.5 (`SUPPLY.forcedMarch`); it cannot start Exhausted and ends once Exhausted, in camp or a holding, or when an
+  event or a window opens (`world.js fastWatch`). The time's 1×, 2×, 4× are as they were; `setSpeed(8)` stays for the tests. Not the
+  Forced March perk. Tests: `tests/timecontrols.js`.
 The band's own record (its camp and the hour's counters) is `BAND`, beside `P` (every battle snapshot holds `P` whole), saved as
 the world piece `band` once it is not fresh. The band's own numbers are `PlayerParty`'s: `staminaState`, `staminaPace`,
 `foodHour`, `drinkHour`, `furNeed`, `fitness`.
@@ -231,14 +243,17 @@ the world piece `band` once it is not fresh. The band's own numbers are `PlayerP
   standing ended with. Not in a tournament or the lab.
 - **Make camp** (Z, the dock's Camp, the action ring): stamina +8 an hour, the wounded mend ×1.5, food and drink at the rest rate;
   any travel order breaks it; faster than 1x, anything hostile in sight brings the speed back to 1x; a band that finds you in camp
-  catches you unready (morale −8). The tents are drawn by `bandCampEnt` (its line in `render.js drawWorld` is still to be added).
+  catches you unready (morale −8). Only on clear ground (`campSpot`, `campGround`): no water, ford, wood, swamp or lot under the tents,
+  nothing standing there (`WorldArt.standing`); where you stand if it is, else the band walks to the nearest within 4 tiles and
+  pitches there (`G.pitch`, `campArrive`); none near: "No clear ground to camp here". The tents (`bandCampEnt`) are drawn by their
+  feet among the trees, those in front drawn whole over them.
 - **The action ring** (`ui/ring.js`): hold the left button or a finger still on the map 0.35 s. A short click still travels (the
   travel a press began is put back when it turns into a hold); a move calls it off. Its buttons, only those that apply
-  (`mapRingItems`): Make camp or Break camp, Travel here, Travel here fast, Fill waterskins, Drink liquor, Look (a card, for touch).
+  (`mapRingItems`): Make camp or Break camp, Travel here, Hurry here (Stop hurrying), Fill waterskins, Drink liquor, Look (a card, for touch).
   Let go over one, or let go and tap one; Esc, a right-click or a tap outside closes it.
 - **The card** (`render.js updateHUD`, `supplyNow`): the band's stamina bar (green, amber Tired, red Exhausted, ▼ ▲, its rate and
   why on hover) and health (fit of the whole band, red under half, what hurt it lately on hover), the tags (Tired, Exhausted,
-  Thirsty, Hungry, Cold, In camp), food and drink in days at the current rate, furs in or near the frost. Your hero's health and
+  Thirsty, Hungry, Cold, Hurrying, In camp), food and drink in days at the current rate, furs in or near the frost. Your hero's health and
   mana are in the Hero window (C). Tests: `tests/supply.js`, `tests/camp.js`, `tests/ring.js`.
 
 ## Recruitment and talents

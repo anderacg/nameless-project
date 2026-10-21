@@ -65,7 +65,8 @@ const angGap=(a,b)=>Math.abs(Math.atan2(Math.sin(a-b),Math.cos(a-b)));
 // the same share of a day; what moves goes slower on screen (data/world.js WORLD_SCALE.move)
 const DAY_SECONDS=180,NIGHT_AT=.5;
 const WORLD_PACE=.4,BATTLE_PACE=.6,HERO_PACE=.85;
-// the world's time controls (D23): 1x, 2x and 4x (keys 1-3), and Travel fast (key 4), 8x until anything calls for you (world.js fastWatch)
+// the world's time controls (D23): 1x, 2x and 4x (keys 1-3); key 4 is Hurry, the band's own pace (world/supply.js). TRAVEL_FAST: 8x, no
+// button now (the owner, 2026-10-22), kept for the tests that run the world fast (setSpeed)
 const SPEEDS=[1,2,4],TRAVEL_FAST=8;
 // actions: every button names one (data-act="prefix-name"); each system claims its prefix once with onAct, so two systems can
 // never answer the same button. Actions without a registered prefix fall through to act() in input.js (menu, encounters), and

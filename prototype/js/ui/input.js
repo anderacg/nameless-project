@@ -36,7 +36,8 @@ panel.addEventListener('change',updateRecruitDraft);
 panel.addEventListener('input',updateCompTransferDraft);
 panel.addEventListener('change',updateCompTransferDraft);
 document.addEventListener('click',e=>{
-  const s=e.target.closest('[data-speed]');if(s){const n=+s.dataset.speed;setSpeed(n===TRAVEL_FAST&&G.speed===n?1:n)}// (Travel fast toggles)
+  const s=e.target.closest('[data-speed]');if(s)setSpeed(+s.dataset.speed);
+  if(e.target.closest('[data-hurry]'))toggleHurry();// (Hurry: the band marches faster, world/supply.js)
   const o=e.target.closest('[data-order]');if(o)setOrder(o.dataset.order);
   const g=e.target.closest('[data-grp]');if(g)selectGroup(g.dataset.grp,e.shiftKey);
 });
@@ -49,6 +50,8 @@ $('#bPause').addEventListener('click',()=>battlePause());
 {const b=document.getElementById('bSkills');if(b)b.addEventListener('click',()=>setAutoSkills(!AUTOSK.on))}
 $('#hpBtn').addEventListener('click',()=>setHpBars(!HPBARS.on));setHpBars(HPBARS.on);
 $('#pause').addEventListener('click',togglePause);pauseUI();
+// the top bar's last button: Hurry (key 4), where Travel fast's 8× was (its title from SUPPLY.forcedMarch)
+{const b=$('#wtop [data-hurry]');if(b)b.title='Hurry (4): your band marches '+SUPPLY.forcedMarch.pace+'× as fast, its stamina draining '+SUPPLY.forcedMarch.drain+'× as fast, until you stop it or it is Exhausted';hurryUI()}
 // the dock's tiles: an icon over the name, the key in the corner
 document.querySelectorAll('.dbtn[data-ico]').forEach(b=>{b.innerHTML=icon(b.dataset.ico,18)+'<span class="dl">'+b.textContent+'</span>'+(b.dataset.key?'<kbd>'+b.dataset.key+'</kbd>':'')});
 $('#saveBtn').addEventListener('click',()=>saveGame(false,'quick'));
@@ -125,7 +128,7 @@ cv.addEventListener('pointermove',e=>{if(G.mode!=='battle'||!B)return;const p=to
 // the box or the finger's press gone, nothing sent, the selection kept; letting go after it does nothing. True if there was one
 function dragCancel(){if(G.mode!=='battle'||!B||!(B.rdrag||B.box||TOUCH.lp))return false;touchDrop();B.rdrag=null;B.box=null;return true}
 // the map: travel to a point, or meet what is there
-function worldGo(wx,wy){if(!(clickAt(wx,wy)||G.chase)){P.tx=clamp(wx,8,MW*TILE-8);P.ty=clamp(wy,8,MH*TILE-8);P.stuck=0}wuiClick(wx,wy)}// (the click's ripple: worldui.js)
+function worldGo(wx,wy){G.pitch=null;if(!(clickAt(wx,wy)||G.chase)){P.tx=clamp(wx,8,MW*TILE-8);P.ty=clamp(wy,8,MH*TILE-8);P.stuck=0}wuiClick(wx,wy)}// (the click's ripple: worldui.js)
 /* ---------- touch (a phone on its side): Pointer Events with pointerType 'touch' only; the mouse, pen and keys above are as they were.
    Battle: a tap selects and a tap again sends, as before (now when the finger lifts); a long press (TOUCH.hold ms, the finger
    within TOUCH.slop CSS px) sends the selection there, or onto the enemy under it; a long press then a drag lays the line, as a
@@ -255,7 +258,7 @@ window.addEventListener('keydown',e=>{
     G.keys[k]=true;if(e.shiftKey)G.keys.shift=true;
   }else if(G.mode==='world'&&!G.modal){
     if(e.code==='Space'){e.preventDefault();if(!e.repeat)togglePause()}
-    if(k>='1'&&k<='3')setSpeed(SPEEDS[k-1]);if(k==='4'&&!e.repeat)setSpeed(G.speed===TRAVEL_FAST?1:TRAVEL_FAST);
+    if(k>='1'&&k<='3')setSpeed(SPEEDS[k-1]);if(k==='4'&&!e.repeat)toggleHurry();// (4: Hurry, world/supply.js)
     if(k==='c')openChar();if(k==='i')openInv();if(k==='k')openSkills();if(k==='h')openHelp();if(k==='l')openJournal();
     if(!e.repeat&&(k==='='||k==='+'||k==='-')){mapZoom(k==='-'?-1:1);return}// + and −: the map's zoom (core.js)
     if(k==='g'&&!e.repeat){setGrid(!GRID.on);log(GRID.on?'Tile grid on (G to hide).':'Tile grid off.')}

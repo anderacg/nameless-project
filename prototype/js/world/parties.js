@@ -205,11 +205,12 @@ class PlayerParty extends Party{
   // your band's camp (world/supply.js: kept beside your record in BAND, not on it)
   get camp(){return BAND.camp}
   set camp(v){BAND.camp=v}
-  // recovery on the map, per day of travel (combat.js REGEN_DAY; Medicine helps health); doubled near a holding
+  // recovery on the map, per day of travel (combat.js REGEN_DAY; Medicine helps health); doubled near a holding. Hunger and thirst
+  // stop it (world/supply.js heroRegen: mana from Hungry or Parched on, health from Starving or Dying of thirst on)
   regenVitals(days){
-    const m=this.vitals(),sh=TOWNS.some(t=>Math.hypot(t.x-this.x,t.y-this.y)<48)?2:1;
-    this.hp=Math.min(m[0],this.hp+m[0]*(REGEN_DAY.hp+.03*this.skill('med'))*sh*days);
-    this.mp=Math.min(m[2],this.mp+m[2]*REGEN_DAY.mp*sh*days)}
+    const m=this.vitals(),sh=TOWNS.some(t=>Math.hypot(t.x-this.x,t.y-this.y)<48)?2:1,r=heroRegen();
+    if(r.hp)this.hp=Math.min(m[0],this.hp+m[0]*(REGEN_DAY.hp+.03*this.skill('med'))*sh*days);
+    if(r.mp)this.mp=Math.min(m[2],this.mp+m[2]*REGEN_DAY.mp*sh*days)}
   restoreVitals(){
     const m=this.vitals();
     this.hp=m[0];this.sp=m[1];this.mp=m[2]}

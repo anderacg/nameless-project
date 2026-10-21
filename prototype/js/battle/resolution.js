@@ -111,7 +111,7 @@ class BattleResolution{
       if(e.kind==='patrol'){const h=townBy(e.ref.home);if(h)h.crime=null}
       if(e.kind==='party'||e.kind==='camp')chiefWins(e.ref,partySize()+1);// the chieftain who beat you grows
       const safe=TOWNS.filter(t=>!hostileTo(t.owner)),near=Spatial.nearest(safe.length?safe:TOWNS,P.x,P.y);
-      P.x=near.x;P.y=near.y+24;G.lastTown=near;if(e.kind!=='camp')e.ref.cool=8;
+      heroAtGate(near);G.lastTown=near;if(e.kind!=='camp')e.ref.cool=8;
       if(e.kind==='lord'){const l=e.ref;if(auto)cull(l,.3);else if(!this.primaryLossesApplied)for(const k of slain)l.remove(k,1);lordWins(l,partySize())}
       html='<h2>Defeat</h2><p>Your band was routed. You lost '+lose+' gold and woke up near '+near.name+'.</p>'+moodLine;
       log('Defeat. You wake near '+near.name+'.','bad');

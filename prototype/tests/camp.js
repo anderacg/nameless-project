@@ -2,12 +2,14 @@
 // Make camp (doc/SUPPLY_DESIGN.md §7, world/supply.js): Z, the dock's Camp (and the action ring: tests/ring.js). Your band stops
 // and pitches its tents: stamina +8 an hour, the wounded mend faster, food and drink at the rest rate; any travel order breaks
 // camp; going faster than 1x, anything hostile in sight brings the speed back to 1x; a band that finds you in camp catches you
-// unready; there is no camping inside a holding; the camp is drawn at your figure, and saved.
+// unready; there is no camping inside a holding; the camp is drawn at your figure, and saved. Only on clear ground (the owner,
+// 2026-10-22): where you stand if it is, else your band walks to the nearest within SUPPLY.camp.r tiles and pitches there; none
+// near (a wood, a swamp): no camp. Drawn by its feet among the trees, none of them faded over it.
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);
 try{
  const t=T,G=t.G,P=t.P,S=t.SUPPLY,ev=s=>(0,eval)(s);
  Kit.begin('soldier',4242);Kit.clear();Kit.world();
- const spot=(()=>{for(let ty=8;ty<t.MH-8;ty++)for(let tx=8;tx<t.MW-8;tx++){const x=(tx+.5)*16,y=(ty+.5)*16;if(t.tAt(tx,ty)===t.T_OPEN&&t.climAt(x,y)==='grass'&&!t.TOWNS.some(h=>Math.hypot(h.x-x,h.y-y)<160)&&!t.nearWater(x,y,4))return [x,y]}})();
+ const spot=(()=>{for(let ty=8;ty<t.MH-8;ty++)for(let tx=8;tx<t.MW-8;tx++){const x=(tx+.5)*16,y=(ty+.5)*16;if(t.tAt(tx,ty)===t.T_OPEN&&t.climAt(x,y)==='grass'&&!t.TOWNS.some(h=>Math.hypot(h.x-x,h.y-y)<160)&&!t.nearWater(x,y,4)&&t.campGround(x,y))return [x,y]}})();// (clear ground: the camp pitched at once)
  const bag=g=>{for(const k of ['water','ale','liquor',...t.FOODS])t.goodTake(k,1e9);for(const k in g)t.playerInventory.add('good',k,g[k])};
  const reset=()=>{Kit.world();Kit.goTo(spot[0],spot[1]);P.troops={hum_levy:5};P.wounded={};P.woundedGroups=[];P.comps={};P.bsta=50;P.morale=60;ev('BAND=freshBand()');G.speed=1;G.encCool=99;G.clock=t.DAY*.3;bag({water:200,grain:60})};
  const msgs=re=>G.msgs.filter(x=>re.test(x.m)).length;
@@ -33,8 +35,18 @@ try{
  ok(!P.camp&&P.morale===60-S.camp.caught&&msgs(/catch your band in camp/)===1,'a band that finds you in camp catches you unready: morale −'+S.camp.caught+', the camp struck');
  ev('B.over=true;B=null');t.fieldDone();Kit.world();
  // ---- drawn at your figure, and saved
- reset();t.makeCamp();{const e=t.bandCampEnt({x:Math.floor(P.x-t.VW/2),y:Math.floor(P.y-t.VH/2)});let err='';t.ctx.save();try{e.f()}catch(x){err=x.message}t.ctx.restore();ok(!err&&e.y<P.y,'the camp, two tents and a fire, is drawn behind your figure'+(err?' ('+err+')':''))}
- G.mode='world';t.saveGame(true,'quick');ev('BAND=freshBand()');ok(!P.camp,'(a fresh record has no camp)');t.loadGame('quick');ok(!!P.camp,'saved and loaded in camp');
+ reset();t.makeCamp();{const e=t.bandCampEnt({x:Math.floor(P.x-t.VW/2),y:Math.floor(P.y-t.VH/2)});let err='';t.ctx.save();try{e.f()}catch(x){err=x.message}t.ctx.restore();ok(!err&&e.y<P.y,'the camp, two tents and a fire, is drawn behind your figure'+(err?' ('+err+')':''));
+  const c=t.campAt(P.x,P.y);ok(e.y===c.box[3]&&e.nf&&!e.st,'in the depth order by its feet (y '+e.y+', its lowest pixel), as everyone is: the trees in front drawn over it, none faded for it')}
+ // ---- only on clear ground: beside a wood your band walks to the nearest and pitches there
+ {const wood=(()=>{for(let ty=8;ty<t.MH-8;ty++)for(let tx=8;tx<t.MW-8;tx++){const x=(tx+.5)*16,y=(ty+.5)*16;if(t.tAt(tx,ty)===t.T_OPEN&&t.tAt(tx,ty-1)===t.T_FOREST&&t.climAt(x,y)==='grass'&&!t.TOWNS.some(h=>Math.hypot(h.x-x,h.y-y)<160)&&!t.nearWater(x,y,4)&&t.campSpot&&(Kit.goTo(x,y),t.campSpot()))return [x,y]}})();
+  reset();Kit.goTo(wood[0],wood[1]);ok(!t.campGround(P.x,P.y),'(by a wood: the camp would stand over its trees)');ok(t.makeCamp()&&!P.camp&&P.tx!=null&&!!G.pitch,'Make camp there: your band walks to clear ground first ('+Math.round(Math.hypot(P.tx-P.x,P.ty-P.y))+' px)');
+  const goal=[P.tx,P.ty];Kit.frames(800,.05,null,()=>!!P.camp||P.tx==null);ok(!!P.camp&&Math.hypot(P.x-goal[0],P.y-goal[1])<3&&t.campGround(P.x,P.y),'and pitches there, on clear ground: no water, wood, swamp or lot under it, nothing standing on it'+(P.camp?'':' (camp '+!!P.camp+', '+Math.round(Math.hypot(P.x-goal[0],P.y-goal[1]))+' px off, going '+P.tx+')'));
+  reset();Kit.goTo(wood[0],wood[1]);t.makeCamp();t.worldGo(P.x-60,P.y);const off=!G.pitch;Kit.frames(400,.05,null,()=>P.tx==null);ok(off&&!P.camp,'a travel order on the way calls it off')}
+ {const deep=k=>{for(let ty=12;ty<t.MH-12;ty++)for(let tx=12;tx<t.MW-12;tx++){let all=true;for(let j=-6;j<=6&&all;j++)for(let i=-6;i<=6&&all;i++)if(!k(tx+i,ty+j))all=false;if(all)return [(tx+.5)*16,(ty+.5)*16]}return null};
+  const inWood=deep((x,y)=>t.tAt(x,y)===t.T_FOREST),inFen=deep((x,y)=>t.passable(t.tAt(x,y))&&t.CLIMS[t.climate[y*t.MW+x]]==='swamp');
+  for(const [w,at] of [['deep in a wood',inWood],['in a swamp',inFen]]){if(!at){o.push('INFO no '+w+' on this map');continue}reset();Kit.goTo(at[0],at[1]);const n=msgs(/No clear ground to camp here/);
+   ok(!t.makeCamp()&&!P.camp&&P.tx==null&&msgs(/No clear ground to camp here/)===n+1,w+': no clear ground near, no camp, said in the log')}}
+ reset();t.makeCamp();G.mode='world';t.saveGame(true,'quick');ev('BAND=freshBand()');ok(!P.camp,'(a fresh record has no camp)');t.loadGame('quick');ok(!!P.camp,'saved and loaded in camp');
  Kit.begin('soldier',4242);ok(!P.camp,'a new game: no camp');
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}
 const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d)};

@@ -34,7 +34,13 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 //  B's classic anchors (today's 37 holdings at their places), the first generated classic world the plan holds still. From here
 //  they hold, re-recorded only with a reason; at the flip (wave 4) W1-W8 take their values. With the flag on, W6's spots are the
 //  same map pixels (where begin puts you, the classic world's Ashford; (1792, 1280); (2688, 768)), on that world)
-const GEXPECT={W1:'94e87250',W2:'6bc88128',W3:'0240c3fb',W4:'ceb55e1f',W5:'ab5e5d34',W6:'fd29ebee',W7:'dccc7da8',W8:'dfad1cf1',B2:'bc14e9a8'};
+// (G6, G7, G8 and GB2 re-recorded 2026-10-22, on purpose, the spawn fix (world.js gateSpot, tests/herowalk.js): a new game put you
+//  2 tiles under your home's tile, which on the generated classic world is Ashford's house lot (83, 87): you began standing on a
+//  house. Now on the open land in front of its gate, the road at (81, 87), so the first spot's pictures (G6), the march from there
+//  (G8), the save after it (G7) and the save straight after begin (GB2: your place) move. Checked by putting the old spot back in
+//  gateSpot with every other change of that work kept (the hero routed round water, Hurry, the encounters halved, hunger and thirst
+//  on your hero, camps on clear ground): all nine as before. Was G6 fd29ebee, G7 dccc7da8, G8 dfad1cf1, GB2 bc14e9a8; G1-G5 unchanged)
+const GEXPECT={W1:'94e87250',W2:'6bc88128',W3:'0240c3fb',W4:'ceb55e1f',W5:'ab5e5d34',W6:'41cdb7ab',W7:'8a722172',W8:'f540d98e',B2:'b4f0d917'};
 const SUMS={classic:'7333836c','Normal s1':'128cfb7e','Normal s2':'2b581da4','Normal s3':'c38ac906','Large s1':'5af09941'};
 const EXPECT={W1:'65e24662',W2:'2b49a168',W3:'dc546553',W4:'46450e62',W5:'0152341c',W6:'33d059e4',W7:'5dae222a',W8:'742df600',B2:'fd6d5be4'};// (at 0a42712; B2 at R3; W6-W8 at Phase 1; W6 at depth, smooth walking and pasture herds and label layout; W7, B2 at save v3)
 // (W5 re-recorded 2026-10-22, on purpose: swamp water a lighter peat blue (gfx/worldart.js WATER_RGB.swamp), the owner's pick from

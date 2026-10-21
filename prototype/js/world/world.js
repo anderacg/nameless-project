@@ -10,6 +10,18 @@ function spawnBandit(initial,ld){// (ld: a chieftain coming back)
     const c=climAt(x,y),n=rint(3,5)+Math.floor(G.day/12),kind=c==='desert'?'raiders':c==='swamp'?'bog':'bandits';bandits.push(asParty({x,y,n,kind,list:makeEnemies(n,false,kind),t:0,a:0,idle:false,cool:0,ld:ld||newChief(kind,1+Math.floor(G.day/25)+(Math.random()<.3?1:0))}));if(ld&&Math.hypot(x-P.x,y-P.y)<vis()*3)log(ld.name+' is back on the roads with a new band.','bad');return;
   }
 }
+/* where you come out onto the map by a holding (a new game, a load that left you off the land, a defeat, leaving your lodgings):
+   the nearest open land in front of its gate, 2 tiles under its tile as ever (each row nearer the holding than that GATE.back
+   tiles dearer: the gate's own row, then beside and behind it, only if nothing in front will do), within GATE.r tiles; never
+   water, a ford or the peaks, never on a building's lot, and on the holding's own land (Router.reach). Its tile's middle {x, y}.
+   (The generated world's holdings stand by rivers and coasts with lots round them: 2 tiles under one was often water or a house) */
+const GATE={r:12,back:1.5};
+function gateSpot(t){const cx=t.tx,cy=t.ty+2,c=[];
+  for(let dy=-GATE.r;dy<=GATE.r;dy++)for(let dx=-GATE.r;dx<=GATE.r;dx++){const x=cx+dx,y=cy+dy,k=tAt(x,y);if(k!==T_WATER&&k!==T_MOUNT&&k!==T_FORD&&!lotOf(x,y))c.push([Math.hypot(dx,dy)+GATE.back*Math.max(0,-dy),x,y])}
+  c.sort((a,b)=>a[0]-b[0]);const at=([,x,y])=>({x:(x+.5)*TILE,y:(y+.5)*TILE}),own=c.find(q=>Router.reach(t,at(q)));
+  return own?at(own):c.length?at(c[0]):{x:(cx+.5)*TILE,y:(cy+.5)*TILE}}
+// you put on the map at a holding's gate (gateSpot), going nowhere
+function heroAtGate(t){const s=gateSpot(t);P.x=s.x;P.y=s.y;P.tx=P.ty=null;P.stuck=0}
 // on a bridge, anyone crossing keeps to the middle of its deck
 const bridgeAt=(tx,ty)=>tAt(tx,ty)!==T_ROAD?0:tAt(tx-1,ty)===T_WATER&&tAt(tx+1,ty)===T_WATER?1:tAt(tx,ty-1)===T_WATER&&tAt(tx,ty+1)===T_WATER?2:0;
 function walk(o,dx,dy,step,ok){
@@ -163,12 +175,15 @@ function dangerInSight(){const V=vis();
   for(const o of W.parties){const k=o.mapKind;if(o.inView(V)&&(k==='band'||(k==='lord'||k==='patrol')&&hostileTo(o.faction)))return k==='band'?'bandits in sight':k==='lord'?'an enemy army in sight':'enemy guards in sight'}
   for(const m of W.monsters){const M=MONSTERS[m.id];if((M.mythic||M.aggro||stance(monPower(m))==='attack')&&asMonster(m).inView(V))return (M.mythic?'the ':'')+(M.n||m.id).toLowerCase()+' in sight'}
   return ''}
-function fastWatch(){}// (kept for its callers: the speed is yours to change)
+// Hurry (supply.js) holds only while nothing calls for you: an event, a meeting or any window opening (main.js calls this every
+// frame, whatever is shown), your band Exhausted, in camp or staying in a holding end it
+function fastWatch(){if(!G.hurry)return;const why=G.mode!=='world'||G.modal?'':P.staminaState()==='exhausted'?'your band is exhausted':P.camp||P.stay?'you stop':null;if(why!=null)setHurry(false,why)}
 function updateWorld(dt){
-  if(G.paused)return;
+  if(G.paused||G.dead)return;
   fastWatch();peopleWatch();// (who you see: peopledrawer.js)
   const d=dt*G.speed*WORLD_PACE;lodTick(dt);
   Clock.advance(dt*G.speed*DAY/DAY_SECONDS);// (a new day: dayTick; a new hour: Systems.hour; core/clock.js)
+  if(G.dead){if(G.mode!=='dead')showDeath();return}// (your hero died on the road in that time: the game is over, ui.js)
   G.encCool=Math.max(0,G.encCool-d/WORLD_SCALE.ai.grace);regenVitals(d/DAY);
   // then every system's step in its order (core/systems.js; Systems.names('frame') lists them: a stay first, a holding you reach
   // last); one that opens something ends the frame
@@ -185,14 +200,24 @@ function marchStep(d){
     if(Math.hypot(o.x-P.x,o.y-P.y)<=REACH&&!G.modal&&(G.encCool<=0||o.meetsAnyTime)){interact(o);return true}}}
   if(P.tx!=null){
     const dx=P.tx-P.x,dy=P.ty-P.y,dist=Math.hypot(dx,dy);
-    if(dist<2)P.tx=null;
+    if(dist<2){P.tx=null;campArrive()}// (the clear ground you walked to: your band pitches there, supply.js)
     else{
-      const step=Math.min(dist,moveStep(MAP_BASE*travelMul(),d)*(P.morale<25?.8:1)*roadSprint());// (roadSprint: after a thief on the road, encounters.js)
+      const step=Math.min(dist,moveStep(MAP_BASE*travelMul(),d)*(P.morale<25?.8:1)*roadSprint()*hurryPace());// (roadSprint: after a thief on the road, encounters.js; Hurry: supply.js)
       P.dir=dx>=0?1:-1;
-      if(walk(P,dx,dy,step)){P.stuck=0;train('scout',step/TILE*.08);if(mountDef())train('ride',step/TILE*.1);if(terrAt(P.x,P.y)===T_FOREST)train('wood',step/TILE*WOODCRAFT.xp)}else{P.stuck+=d;if(P.stuck>.4){P.tx=null;P.stuck=0}}
+      if(heroStep(dx,dy,dist,step)){P.stuck=0;train('scout',step/TILE*.08);if(mountDef())train('ride',step/TILE*.1);if(terrAt(P.x,P.y)===T_FOREST)train('wood',step/TILE*WOODCRAFT.xp)}else{P.stuck+=d;if(P.stuck>.4){P.tx=null;P.stuck=0;campArrive()}}
     }
   }
 }
+/* your step toward where you go: straight on while the way there is open ground (as ever); else by the router (world/router.js:
+   round water and the peaks, over a ford, a bridge or a ferry), facing the way you went. True while you get on: moved by the router,
+   or, with no way it knows (the goal off your land: water, a peak), nearer the goal than you have yet been on the way to it
+   (HERO_WAY: a walk sliding back and forth along a shore gets nowhere, and stops) */
+const HERO_WAY={x:NaN,y:NaN,d:Infinity};
+function heroStep(dx,dy,dist,step){
+  if(clearLine(P.x,P.y,P.tx,P.ty))return walk(P,dx,dy,step);
+  const x0=P.x,y0=P.y;if(Router.travel(P,{x:P.tx,y:P.ty},step)){if(P.x!==x0)P.dir=P.x>x0?1:-1;return P.x!==x0||P.y!==y0}
+  const W=HERO_WAY;if(W.x!==P.tx||W.y!==P.ty){W.x=P.tx;W.y=P.ty;W.d=dist}
+  if(!walk(P,dx,dy,step))return false;const nd=Math.hypot(P.tx-P.x,P.ty-P.y);if(nd>=W.d-step*.25)return false;W.d=nd;return true}
 // a holding you reach opens (true), unless you only pass it
 function arriveStep(){
   for(const t of TOWNS){

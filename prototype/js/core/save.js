@@ -108,7 +108,8 @@ function applySave(d){
   // (the parties made of their kinds again: bands here, your companions' parties, lords, caravans and patrols)
   bandits=d.bandits.map(asParty);for(const id in P.comps)if(P.comps[id].party)asParty(P.comps[id].party);
   worldLoad(w);G.lastTown=townBy(d.last)||null;G.perkOffer=d.perkOffer;
-  unstick(P);W.lords.forEach(unstick);bandits.forEach(unstick);W.monsters.forEach(unstick);txpClamp();
+  unstick(P);{const tx=Math.floor(P.x/TILE),ty=Math.floor(P.y/TILE),q=tAt(tx,ty);if(q===T_WATER||q===T_FORD||lotOf(tx,ty))heroAtGate(Spatial.nearestHolding(P.x,P.y))}// (never on water or a lot: world.js gateSpot)
+  W.lords.forEach(unstick);bandits.forEach(unstick);W.monsters.forEach(unstick);txpClamp();
   G.mode='world';hidePanel();G.msgs=[];log('Welcome back. It is day '+G.day+'.');updateHint();updateHUD(true);
 }
 // delete a slot's save (the latest, if none is named)
