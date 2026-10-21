@@ -1,6 +1,8 @@
 # Travel supplies: stamina, food, drink and furs: design
 
 Status: **built 2026-10-21**, all four phases (`world/supply.js` with every number in `SUPPLY`, `ui/ring.js`; tests `tests/supply.js`, `tests/camp.js`, `tests/ring.js`; prototype/README.md "Supplies"). As built, where it differs from the plan below:
+
+**Next, designed only (owner, 2026-10-21):** food and water become supply pools with a carrying capacity, a pack train (mules, camels, carts, wagons: bought, looted, found), rations and resupply policies, foraging and a march preview: [LOGISTICS_DESIGN.md](LOGISTICS_DESIGN.md).
 - **The hero's stamina** is kept where it was, in `P.sp` (her scale), and the band's 0-100 (`P.bsta`) reads and sets it: every battle snapshot holds `P` whole, so a new field there would move them all. When her maximum grows (a level, Agility, Athletics) her stamina stays as it was, so the band's share of it dips a little. The band's camp and the hour's counters are `BAND`, beside `P`, saved as the world piece `band`.
 - **Water and liquor** are goods in the bag (`data/places.js` `DRINK_GOODS`) but no market trades them (kept out of `GOODS`'s keys: a new traded good would change every holding's stock and the world's draws). Water fills **free** from a river, lake or oasis (stopped) or at **any holding's well**; the tavern's tapster sells liquor (5 for 70g). No starting water: the first hour at your home holding's well fills the skins.
 - **Frostbite** and the toll of hunger and thirst are counted, not rolled (nothing in the hour draws Math.random): frostbite after 6 hours' worth of fur shortage; hunger after a day, every 12 hours a man deserts or falls sick by turns; thirst after 12 hours, every 6 hours. A sick man is the kind you have most of, wounded.
