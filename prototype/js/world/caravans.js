@@ -25,10 +25,11 @@ function sendCaravan(t){
   return null;
 }
 function caravanDay(){
-  for(const t of TOWNS){if(W.caravans.length>=CARAVAN_CAP)break;if(!t.bld||t.owner==='player'||besieged(t)||ruined(t))continue;
-    const out=W.caravans.filter(c=>c.from===t.name&&!c.mine).length;if(out<2&&Math.random()<.25+.1*bldLv(t,'market'))sendCaravan(t)}
-  // your idle caravans try to load again
-  for(const c of myCaravans())if(c.idle){const at=townBy(c.home);if(at){c.idle=false;c.endLeg(at)}}
+  // (each holding may send one, until the roads hold CARAVAN_CAP; then your idle caravans try to load again: sliced on a big
+  // world, core/systems.js)
+  Systems.sliced(TOWNS,t=>{if(W.caravans.length>=CARAVAN_CAP||!t.bld||t.owner==='player'||besieged(t)||ruined(t))return;
+    const out=W.caravans.filter(c=>c.from===t.name&&!c.mine).length;if(out<2&&Math.random()<.25+.1*bldLv(t,'market'))sendCaravan(t)},
+    ()=>{for(const c of myCaravans())if(c.idle){const at=townBy(c.home);if(at){c.idle=false;c.endLeg(at)}}});
 }
 // arrival: goods into the destination's stock; its owner takes a toll (5% of their worth)
 function caravanArrive(c,to){

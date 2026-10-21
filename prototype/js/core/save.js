@@ -33,6 +33,7 @@ let SAVING=null;
 function saveGame(quiet,slot){
   if(typeof BattleLab!=='undefined'&&BattleLab.active){if(!quiet)log('Exit the battle test before saving.','bad');return}
   if(!ESC_SAVE.includes(G.mode)){if(!quiet)log('You can only save while traveling or in town.','bad');return}
+  Systems.drain(true);// (a sliced day's work finished first: core/systems.js)
   // (every band's groups made from its counts before it is written: they are saved with it, and the world fingerprint W7 counts on it)
   partyRoster(P).groups;for(const o of allParties())partyRoster(o).groups;
   slot=slot||'auto';const d={v:SAVE_V,at:Date.now(),mw:MW,P:{...P,tx:null,ty:null,stuck:0},day:G.day,clock:G.clock,speed:G.speed,last:G.lastTown&&G.lastTown.name,bandits,perkOffer:G.perkOffer||null,world:worldSave()},json=JSON.stringify(d);

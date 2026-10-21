@@ -51,6 +51,16 @@ Kit.suite(({ok})=>{
    if(ix.nearest(q.x,q.y)!==S.nearest(many,q.x,q.y)||ix.nearest(q.x,q.y,z=>z.i%3===0)!==S.nearest(many,q.x,q.y,z=>z.i%3===0))bi++;
    const a=ix.within(q.x,q.y,90),b=S.within(many,q.x,q.y,90);if(a.length!==b.length||a.some((z,k)=>z!==b[k]))bw++}
   ok(!bi&&!bw,'the grid answers as the full scan does: the nearest (ties and filters too) and those within, in the list\'s order ('+bi+', '+bw+' differ)')}
+ // ---- a day's work sliced (core/systems.js Systems.sliced, R12): off, all at once and then after(), as a plain loop; on (n), 1/n
+ // of the list a frame (Systems.frame), after() once at the end, and what is left finished first by the next day or a save
+ {const S=t.Systems,got=[],list=[1,2,3,4,5,6,7,8,9,10];let done=0;
+  S.sliced(list,(x,i)=>got.push(x*10+i),()=>done++);ok(got.join()===list.map((x,i)=>x*10+i).join()&&done===1&&!S.slices.length,'sliced, off: every one at once, in order, then after() (as a plain loop)');
+  got.length=0;done=0;S.sliceDay=4;try{
+   S.sliced(list,x=>got.push(x),()=>done++);const n0=got.length;S.frame(0,0);const n1=got.length;S.frame(0,0);const n2=got.length;
+   ok(n0===0&&n1===3&&n2===6&&!done,'sliced, on (4): none at once, then 3 a frame ('+[n0,n1,n2].join(', ')+')');
+   S.frame(0,0);S.frame(0,0);ok(got.join()===list.join()&&done===1&&!S.slices.length,'and once all are done, after() once, in order');
+   got.length=0;done=0;S.sliced(list,x=>got.push(x),()=>done++);S.frame(0,0);S.drain(true);ok(got.length===10&&done===1&&!S.slices.length,'what is left is finished at once by a new day or a save (drain)');
+  }finally{S.sliceDay=0;S.slices=[]}}
  // ---- the kit itself
  {G.day=3;G.clock=DAY*.2;Kit.clear();G.encCool=1e9;Kit.world();const ash=Kit.goHome();ok(P.x===ash.x&&P.y===ash.y&&P.tx==null&&Kit.frames(3)===3,'the kit: home at Ashford\'s gate, frames');
   const n=Kit.travel(ash.x+48,ash.y+8,2000);ok(n>0&&Math.hypot(P.x-ash.x-48,P.y-ash.y-8)<4,'travel: there in '+n+' steps');

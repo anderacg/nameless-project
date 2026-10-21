@@ -89,7 +89,7 @@ const landsOf=f=>{landFresh();return TOWNS.reduce((a,t,i)=>a+(t.owner===f?landTi
 
 /* its state over the days: conquest burns the borderland, war and ruin shrink it, peace grows it */
 function landDay(){
-  for(const t of TOWNS)t.landDay();// (each holding's: holdings.js Holding landDay)
+  Systems.sliced(TOWNS,t=>t.landDay());// (each holding's: holding.js Holding landDay; sliced on a big world, core/systems.js)
 }
 // clearing a camp or den settles the land around it: the holding whose land it is (or the nearest, within WORLD_SCALE.land.pacify
 // tiles) reaches further

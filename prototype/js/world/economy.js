@@ -196,8 +196,7 @@ function realmDay(){
 // the world's day for the economy: each holding's (Economy day), then the realms' treasuries
 function econDay(){
   const ly=landYield();
-  TOWNS.forEach((t,i)=>t.econ.day(ly[i]));
-  realmDay();
+  Systems.sliced(TOWNS,(t,i)=>t.econ.day(ly[i]),realmDay);// (each holding's day, then the realms': sliced on a big world, core/systems.js)
 }
 
 /* trading with a holding's market: each unit changes its stock, and so the next unit's price (Economy buy, sell) */
