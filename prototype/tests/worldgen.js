@@ -96,7 +96,9 @@ try{
  {const m=t.WM,S=m.battleSite(Math.floor(m.w/2),Math.floor(m.h/2)),fresh=['river','crossing','season','region','deep','elev','terrace','rough','high','cliff'];
   if(!t.WORLD.gen)ok(m.gen==='classic-0'&&m.w===224&&m.h===160&&m.settings===null&&m.seedNum===0&&m.graph===null&&layersOk(m)&&m.sum>0&&t.MAP_LAYERS.slice(2).every(k=>m[k].every(v=>!v)),'flag off: today\'s map (classic-0, 224 x 160, no settings), its new layers there and all 0, its sum over gen, kind and clim ('+m.sum.toString(16)+')');
   else ok(m.gen==='ashmark-1'&&m.classic&&m.w===448&&m.h===320&&m.sum===R1.map.sum&&t.TOWNS.length>=37&&t.CLASSIC_PLACES.every((p,k)=>t.TOWNS[k].name===p.name),'flag on: the generated classic world is in (ashmark-1, 448 x 320, the sum genWorld makes: '+m.sum.toString(16)+'), its holdings the classic ones in TOWNS order');
-  ok(fresh.every(k=>k in S&&S[k]===null),'its BattleSite has the new fields, all empty for now ('+fresh.join(', ')+')')}
+  // (a generated world fills river, crossing, elev, terrace, rough and high from its layers: tests/battlesite.js checks them; the
+  // rest wait for Phases 4 and 5)
+  {const empty=t.WORLD.gen?['season','region','deep','cliff']:fresh;ok(fresh.every(k=>k in S)&&empty.every(k=>S[k]===null),'its BattleSite has the new fields'+(t.WORLD.gen?', the world’s filled, '+empty.join(', ')+' empty for now':', all empty on today’s map')+' ('+fresh.join(', ')+')')}}
  // ---- installWorld, then a new game on it; the three Router calls answer
  {Math.random=t.seeded(9001);const R=t.genWorld(t.classicSettings()),m=t.installWorld(R);
   ok(t.WM===m&&t.MW===448&&t.MH===320&&t.tiles===m.kind&&t.TOWNS.length===37&&t.CAMP_SPOTS.length===R.camps.length&&t.DEPOSITS.length>0,'installWorld puts it in: the map in use, its 37 holdings, '+R.camps.length+' camps and '+t.DEPOSITS.length+' deposits');

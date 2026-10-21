@@ -37,12 +37,31 @@ class WorldMap{
   climAt(tx,ty){return this.has(tx,ty)?this.clim[ty*this.w+tx]:CLIM.grass}
   // (a road bridge: a road tile with water on both sides, east and west or north and south)
   roadBridge(tx,ty){const k=(a,b)=>this.kindAt(a,b);return k(tx,ty)===T_ROAD&&(k(tx-1,ty)===T_WATER&&k(tx+1,ty)===T_WATER||k(tx,ty-1)===T_WATER&&k(tx,ty+1)===T_WATER)}
-  // the battle at tile (tx,ty): all it reads of the world there (battleSiteOf, below)
+  /* the battle at tile (tx,ty): all it reads of the world there (battleSiteOf, below). A generated world (gen not classic-0) fills
+     the new fields (doc/WORLD_DESIGN.md §15.2.1): river (the tile's river, or the widest within 1 tile), crossing (the nearest
+     within WORLD_SCALE.battle.bridge tiles, by its tiles and its two ends), bridge from its bridges (today's map: its road bridges),
+     elev, terrace, rough and high (shoulder: a mixed hill's neighbour of least relief, worldgen.js DIR8's way). Its river and crossing tiles are indexed
+     once (WM._site, kept off every list and hash); a river tile off every river's path is its basin's river */
   battleSite(tx,ty){
-    const R=WORLD_SCALE.battle,kinds=[],clims=[];for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){kinds.push(this.kindAt(tx+dx,ty+dy));clims.push(CLIMS[this.climAt(tx+dx,ty+dy)])}
-    let bridge=null;for(let dy=-R.bridge;dy<=R.bridge;dy++)for(let dx=-R.bridge;dx<=R.bridge;dx++){const d=Math.max(Math.abs(dx),Math.abs(dy));if((bridge===null||d<bridge)&&this.roadBridge(tx+dx,ty+dy))bridge=d}
+    const R=WORLD_SCALE.battle,kinds=[],clims=[],gen=this.gen!=='classic-0';for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){kinds.push(this.kindAt(tx+dx,ty+dy));clims.push(CLIMS[this.climAt(tx+dx,ty+dy)])}
+    let bridge=null,o={};
+    if(gen){const W=this.w,i=ty*W+tx,on=this.has(tx,ty);let I=this._site;
+      if(!I||I.n!==this.crossings.length||I.m!==this.rivers.length){const N=W*this.h,xi=new Int16Array(N).fill(-1),ri=new Int16Array(N).fill(-1);
+        this.crossings.forEach((c,k)=>{for(const j of [c.i,c.j,...c.tiles])if(j>=0&&j<N)xi[j]=k});this.rivers.forEach((r,k)=>{for(const j of r.path)if(ri[j]<0)ri[j]=k});
+        Object.defineProperty(this,'_site',{value:I={n:this.crossings.length,m:this.rivers.length,xi,ri},configurable:true,writable:true})}
+      let rw=0,rt=-1,xd=null,xk=-1;
+      for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){if(!this.has(tx+dx,ty+dy))continue;const j=(ty+dy)*W+tx+dx,w=this.river[j]&3;if(w>rw||w&&w===rw&&j===i){rw=w;rt=j}}
+      for(let dy=-R.bridge;dy<=R.bridge;dy++)for(let dx=-R.bridge;dx<=R.bridge;dx++){if(!this.has(tx+dx,ty+dy))continue;const k=I.xi[(ty+dy)*W+tx+dx];if(k<0)continue;const d=Math.max(Math.abs(dx),Math.abs(dy));
+        if(xd===null||d<xd){xd=d;xk=k}if(this.crossings[k].kind==='bridge'&&(bridge===null||d<bridge))bridge=d}
+      if(rt>=0){const v=this.river[rt],k=I.ri[rt],b=this.basin[rt],bs=b?this.basins[b-1]:null,rv=k>=0?this.rivers[k]:bs&&bs.river!=null?this.rivers.find(r=>r.id===bs.river)||null:null;
+        o.river={w:rw,dir:(this.flow[rt]>>5)&7,nav:!!(v&4),delta:!!(v&128),flood:!!((this.feat[rt]|(on?this.feat[i]:0))&1),name:rv?rv.name:'',seasonal:rv&&rv.seasonal?{...rv.seasonal}:null}}
+      if(xk>=0){const c=this.crossings[xk];o.crossing={kind:c.kind,d:xd,stone:!!c.stone,toll:c.toll||null}}
+      if(on){const e=this.elev[i],h=this.high[i];o.elev=e;o.terrace=Math.max(0,Math.min(3,(e-64)>>5));o.rough=this.rough[i];
+        if(h&3){let sh=null;if(h&64){let lo=256;for(let k=0;k<8;k++){const x=tx+DIR8[k][0],y=ty+DIR8[k][1];if(!this.has(x,y))continue;const r=this.rough[y*W+x];if(r<lo){lo=r;sh=k}}}
+          o.high={kind:['','rise','steep','cliffed'][h&3],up:(h>>2)&7,scree:!!(h&32),mixed:!!(h&64),shoulder:sh}}}}
+    else for(let dy=-R.bridge;dy<=R.bridge;dy++)for(let dx=-R.bridge;dx<=R.bridge;dx++){const d=Math.max(Math.abs(dx),Math.abs(dy));if((bridge===null||d<bridge)&&this.roadBridge(tx+dx,ty+dy))bridge=d}
     const t=kinds[4],c=clims[4],elven=TOWNS.some(o=>o.races&&o.races.length===1&&o.races[0]==='elf'&&Math.hypot(o.tx-tx,o.ty-ty)<=R.elfR);
-    return battleSiteOf({tx,ty,t,c,name:REGION_NAMES[c][t],kinds,clims,road:t===T_ROAD?{ns:kinds[1]===T_ROAD||kinds[7]===T_ROAD}:null,bridge,elven,salt:this.salt})}
+    return battleSiteOf({tx,ty,t,c,name:REGION_NAMES[c][t],kinds,clims,road:t===T_ROAD?{ns:kinds[1]===T_ROAD||kinds[7]===T_ROAD}:null,bridge,elven,salt:this.salt,...o})}
 }
 /* a BattleSite (doc/WORLD_DESIGN.md R17, §13): one plain object, the hand-off from the world to a battle. The battle reads nothing
    else of the world (setup.js battleEnv, fieldSize; terrain.js terrainOf, terrainEdges; engage.js bridgeNear, coverAt).
@@ -54,7 +73,9 @@ class WorldMap{
    asks): river ({w, dir, nav, delta, flood, name, seasonal}: phase 2) and crossing ({kind, d, stone, toll}: phase 2), season (its
    river's state: phase 5), region (the recipe's bias) and deep (deep forest: phase 4), elev, terrace and rough (0-255, 0-3,
    0-255) and high ({kind: rise, steep or cliffed, up, scree, mixed, shoulder}: the kind of high ground, D41, phase 2), cliff
-   (escarpment and mesa edges: D14, D40; phase 7). The lab makes its own (lab.js labSite): kinds and clims all its own */
+   (escarpment and mesa edges: D14, D40; phase 7). Phase 2's (river, crossing, elev, terrace, rough, high) are filled in a
+   generated world (WorldMap#battleSite), and read by terrain.js (riverOf, worldOf). The lab makes its own (lab.js labSite):
+   kinds and clims all its own, and its config.site's river, crossing and high */
 function battleSiteOf(o){const S={tx:0,ty:0,t:T_OPEN,c:'grass',name:'',kinds:null,clims:null,road:null,bridge:null,elven:false,salt:0,
   river:null,crossing:null,season:null,region:null,deep:null,elev:null,terrace:null,rough:null,high:null,cliff:null,...o};S.kinds=S.kinds||Array(9).fill(S.t);S.clims=S.clims||Array(9).fill(S.c);return S}
 // (the battle at world point (x,y), px)

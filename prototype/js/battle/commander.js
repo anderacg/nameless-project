@@ -70,9 +70,11 @@ const tun=(T,tab,k)=>T&&T[k]!=null?tab[k]*T[k]:tab[k];
    the defenders holding their bank at the crossings; bank: crossing points stand this far off the water (px); gladeHold (field
    variety, a dense field's): a glade or clearing on our half as a place to hold, in levels (the infantry at its edge toward the
    foe, who must come through the woods, their formations broken); riders there keep to the roads and paths (terrain.js wayRide),
-   their charges too while their mark is over wayCharge px off */
+   their charges too while their mark is over wayCharge px off. steepHold (World Phase 2, D41): a steep top's worth as a place to
+   hold, in levels on top of its own (they hold steep crests); a foe holding a steep hill's ground above them is never charged
+   running, whatever the odds (onSteep: they walk up, by a shoulder or a ramp where the way round is near: terrain.js routes) */
 const TERRAIN_AI={on:true,holdR:220,hillGain:1,held:80,holdSafe:2,woodHold:.5,uphill:1,uphillOdds:1.3,upRun:40,upWait:2,upVolley:1.5,shooterHill:60,shooterFwd:16,woodShoot:-1,
-  woodsCav:3,upCav:1.5,downCav:1,flankProbe:3,woodPad:24,riverDefend:1.15,bank:24,gladeHold:1,wayCharge:160};
+  woodsCav:3,upCav:1.5,downCav:1,flankProbe:3,woodPad:24,riverDefend:1.15,bank:24,gladeHold:1,wayCharge:160,steepHold:1};
 /* the ground by race (multipliers on TERRAIN_AI, read through gtun as TEMPERAMENT's are through tun): dwarves seek and keep
    high ground and hold crossings; elves hold woods and shoot from under them (woodShoot turned to a liking) and seek height
    for range; orcs charge up anything but a cliff (uphill 2 levels), on worse odds, after shorter volleys, and look less far
@@ -80,6 +82,8 @@ const TERRAIN_AI={on:true,holdR:220,hillGain:1,held:80,holdSafe:2,woodHold:.5,up
 const TERRAIN_TEMPER={dwarf:{holdR:1.5,riverDefend:1.2,shooterHill:1.5},elf:{woodHold:2,woodShoot:-1,shooterHill:1.5},orc:{uphill:2,uphillOdds:.8,upVolley:.5,upCav:.5,holdR:.6}};
 // (a man standing his ground: his group holding where it is, not on its way anywhere (a crest held, not one passed over))
 const holdsGround=e=>{const g=e.grp&&B.groups[e.grp];return !g||g.order==='hold'&&!g.going};
+// (a point on a steep hill's ground: World Phase 2, terrain.js B.terrain.steep)
+const onSteep=p=>{const T=B&&B.terrain;return !!T&&!!T.steep&&(T.steep[T.ix(p.x,p.y)]&1)>0};
 // (the level under a point, or a list of men's mean)
 const lvlOf=l=>Array.isArray(l)?l.reduce((a,u)=>a+levelAt(u.x,u.y),0)/Math.max(1,l.length):levelAt(l.x,l.y);
 const wetK=k=>k===TKIND.deep||k===TKIND.ford||k===TKIND.bridge;
@@ -416,7 +420,7 @@ class Commander{
     const GT=this.ground(),ground=GT&&GT.ai||null,gt=k=>this.gt(k);let uphill=null,hold=null,holdAt=null,shootHold=null,stand=null,send=null,ride=null,flankAt=null,perch=null;
     if(ground){const Cm=centroid(mine);
       // (the foe nearest these men holds ground TERRAIN_AI.uphill levels above them, and we are not strong enough to go up anyway)
-      uphill=m=>{const I=centroid(m),e=foes.reduce((a,o)=>d2(o,I)<d2(a,I)?o:a);return levelAt(e.x,e.y)-lvlOf(m)>=gt('uphill')&&holdsGround(e)&&S.ratio<tun(T,FOE_CMD,'attackAt')*gt('uphillOdds')};
+      uphill=m=>{const I=centroid(m),e=foes.reduce((a,o)=>d2(o,I)<d2(a,I)?o:a);return levelAt(e.x,e.y)-lvlOf(m)>=gt('uphill')&&holdsGround(e)&&(S.ratio<tun(T,FOE_CMD,'attackAt')*gt('uphillOdds')||onSteep(e))};
       const river=GT.has.water&&ground.crossings.length>0&&(wadesDeep(Cm,M)||acrossRiver(Cm,M));// (a held bridge's: either bank)
       // (time enough to get there: our infantry and shooters walking (the slowest of each) before any foe who fights hand to hand
       // running there, with TERRAIN_AI.holdSafe s to spare: shooters on the move shoot nobody)
@@ -426,11 +430,12 @@ class Commander{
         runT=p=>Math.min(...foes.filter(e=>!e.s.range&&!e.rout).map(e=>d2(e,p)/Math.max(1,e.s.spd))),safe=p=>held||runT(p)>walkT(p)+gt('holdSafe'),held=this.typeHolds(S);// (a bridge's holders stand at it from the start: always safe)
       if(post!=='defend')delete Q.hold;
       else if(Q.hold===undefined){const half=Cm.x<BW/2?0:1,dir=Math.sign(M.x-Cm.x)||1,P0=A?{x:A.x+dir*40,y:A.y}:inf.length?centroid(inf):Cm,l0=levelAt(P0.x,P0.y),R=gt('holdR'),gain=gt('hillGain');
-        const ok=p=>(p.half===half||Math.abs(p.x-BW/2)<BW*.1&&d2(p,Cm)<d2(p,M))&&wayLen(P0,p)<=R&&!foes.some(e=>d2(e,p)<TERRAIN_AI.held)&&safe(p);let best=null,bv=-1;
+        // (a steep top's reach allows for the price of its own banks on the way, terrain.js STEEP.route: the climb is no reason to look elsewhere)
+        const ok=p=>(p.half===half||Math.abs(p.x-BW/2)<BW*.1&&d2(p,Cm)<d2(p,M))&&wayLen(P0,p)<=R+(p.steep?STEEP.band*GT.cs*(STEEP.route.foot-1)*p.lvl:0)&&!foes.some(e=>d2(e,p)<TERRAIN_AI.held)&&safe(p);let best=null,bv=-1;
         // (a river between: our bank at the crossings near enough our line and safe to reach (cr), top to bottom)
         if(river){const L=ground.crossings.map(c=>({c,x:(dir>0?c.x0:c.x1)-dir*TERRAIN_AI.bank,y:c.y})).filter(p=>wayLen(P0,p)<=R&&safe(p)).sort((a,b)=>B.btype&&B.btype.kind==='bridge'&&(b.c.kind==='bridge')-(a.c.kind==='bridge')||a.y-b.y);
           Q.hold=L.length?{river:true,...centroid(L),cr:L.map(p=>p.c)}:false}
-        else{for(const t of ground.tops){const v=t.lvl-l0;if(v>=gain&&ok(t)&&(v>bv||v===bv&&wayLen(P0,t)<wayLen(P0,best))){best={x:t.x,y:t.y,lvl:t.lvl};bv=v}}
+        else{for(const t of ground.tops){const v=t.lvl-l0+(t.steep?gt('steepHold'):0);if(v>=gain&&ok(t)&&(v>bv||v===bv&&wayLen(P0,t)<wayLen(P0,best))){best={x:t.x,y:t.y,lvl:t.lvl};bv=v}}
           const wv=gt('woodHold');if(wv>=gain)for(const w of ground.woods){const p={x:w.x,y:w.y,half:w.x<BW/2?0:1};if((wv>bv||wv===bv&&best.wood&&d2(p,P0)<d2(best,P0))&&ok(p)){best={x:w.x,y:w.y,wood:true};bv=wv}}
           const gv=gt('gladeHold');if(ground.dense&&gv>=gain)for(const q of ground.glades){const p={x:q.x,y:q.y,half:q.half};if((gv>bv||gv===bv&&best.glade&&d2(p,P0)<d2(best,P0))&&ok(p)){best={x:q.x,y:q.y,glade:true};bv=gv}}
           Q.hold=best||false}}
@@ -614,7 +619,7 @@ class Commander{
     // (a dense field: a charge whose straight way runs through the woods rides first for the roads, paths or clearings' chains when
     // that is quicker (terrain.js wayRide) and goes in from there; one within TERRAIN_AI.wayCharge px of its mark goes straight)
     const att=e=>{const w=ground&&ground.dense&&d2(e,C)>TERRAIN_AI.wayCharge?wayRide(C,e):null;if(w){g.standAt(w.x,w.y);return}send?send(g,cav,e,()=>g.attack(e)):g.attack(e)},sa=(x,y)=>stand?stand(g,x,y,cav):g.standAt(x,y);
-    const wait=()=>{if(!ground)return false;const e=pick();return levelAt(e.x,e.y)-lvlOf(cav)>=gt('uphill')&&holdsGround(e)&&!engaged(e)&&g.t<FOE_CMD.flankMax*gt('upWait')&&S.ratio<tun(T,FOE_CMD,'attackAt')*gt('uphillOdds')};
+    const wait=()=>{if(!ground)return false;const e=pick();return levelAt(e.x,e.y)-lvlOf(cav)>=gt('uphill')&&holdsGround(e)&&!engaged(e)&&g.t<FOE_CMD.flankMax*gt('upWait')&&(S.ratio<tun(T,FOE_CMD,'attackAt')*gt('uphillOdds')||onSteep(e))};
     // (shaken (under UNIT_AI.chargeAt): no new charge; they stand off as after one (regroup) till their resolve is back, or cavRecover s
     // (losses lower the ceiling it recovers to: worn riders would stand off for ever); one under way goes on)
     const r=rOf(id),into=()=>{if(!r||r.mor>=tun(T,UNIT_AI,'chargeAt')||g.phase==='charge'||g.phase==='regroup'&&g.t>=tun(T,UNIT_AI,'cavRecover'))return true;if(g.phase!=='regroup'){const dir=Math.sign(C.x-M.x)||1;g.phase='regroup';g.t=0;sa(C.x+dir*back,C.y)}return false};
@@ -662,7 +667,7 @@ class Commander{
       const round=!!P&&!lineClear(BT.route[groupWho(m)],Cm.x,Cm.y,P.x,P.y,255,ROUTE_UNIT.r);if(round)near=shot&&st>=FATIGUE.tired?0:nearLen(Cm,P,runFor(k,st,T),groupWho(m));
       // (on the ground: infantry charging a foe TERRAIN_AI.uphill levels above them walks up, running only the last upRun px, unless
       // strong enough to go up anyway)
-      const up=!round&&k==='inf'&&g.order==='charge'&&!!this.ground()&&(()=>{const p=tg||foes.reduce((a,e)=>Math.hypot(e.x-Cm.x,e.y-Cm.y)<Math.hypot(a.x-Cm.x,a.y-Cm.y)?e:a);return levelAt(p.x,p.y)-lvlOf(m)>=this.gt('uphill')&&holdsGround(tg?{grp:g.targetGroupId}:p)&&S.ratio<tun(T,FOE_CMD,'attackAt')*this.gt('uphillOdds')})();
+      const up=!round&&k==='inf'&&g.order==='charge'&&!!this.ground()&&(()=>{const p=tg||foes.reduce((a,e)=>Math.hypot(e.x-Cm.x,e.y-Cm.y)<Math.hypot(a.x-Cm.x,a.y-Cm.y)?e:a);return levelAt(p.x,p.y)-lvlOf(m)>=this.gt('uphill')&&holdsGround(tg?{grp:g.targetGroupId}:p)&&(S.ratio<tun(T,FOE_CMD,'attackAt')*this.gt('uphillOdds')||onSteep(p))})();
       g.setRun(g.backing||!!g.huntBack||!!g.screenBack||!!g.pushRun||!g.hunt&&g.order==='charge'&&near<(up?Math.min(TERRAIN_AI.upRun,runFor(k,st,T)):runFor(k,st,T))||k==='cav'&&g.order==='hold'&&g.phase==='flank'&&st>=FATIGUE.tired);
       if(k==='hero')continue;
       // (whether a new place is a move, its men breaking off to go: battlecontrol.js standAt)

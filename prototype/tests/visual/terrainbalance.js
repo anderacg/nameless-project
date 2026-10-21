@@ -3,12 +3,15 @@
 // foot, 12 bows, 6 riders in a wedge a side; morale on; 500 px apart; seeds 1-10) on a flat field and on phase 4's grounds:
 // cliffs (the crags recipe: sheer and one-way hills, rock; fairness-checked, its seed the battle's), mountains (two in the
 // middle with a pass between, spires), a river (the river recipe with a road bridge: a bridge and a ford, deep water impassable)
-// and one bridge with no ford. Per ground: wins left/right, unfinished (300 s), battle length (mean, median). Never fails.
-// -Seed N runs only the Nth ground (0 flat ... 4 bridge): -Seed 0,1,2,3,4 runs them one tab each, within the runner's timeout.
+// and one bridge with no ford; World Phase 2 (D41): a level-2 hill of r 120 in the middle, a rise and the same hill steep (its
+// gentler shoulder to the south, fair to both). Per ground: wins left/right, unfinished (300 s), battle length (mean, median).
+// Never fails. -Seed N runs only the Nth ground (0 flat ... 4 bridge, 5 rise, 6 steep): -Seed 0,1,2,3,4,5,6 runs them one tab
+// each, within the runner's timeout.
 window.RUN=()=>{const t=T,L=t.BattleLab,o=[],ev=s=>(0,eval)(s);
  const SEEDS=[1,2,3,4,5,6,7,8,9,10],CAP=300,arm=[{type:'hum_foot',count:20},{type:'hum_bow',count:12},{type:'hum_knight',count:6,form:'wedge'}];
  const GROUNDS={flat:s=>({hills:[],woods:[],seed:s}),cliffs:s=>({recipe:'crags',seed:s}),mountains:s=>({rocks:[{x:.5,y:.3,r:52},{x:.5,y:.74,r:48},{x:.4,y:.5,r:12},{x:.6,y:.52,r:12}],seed:s}),
-  river:s=>({recipe:'river',river:{bridge:true},seed:s}),bridge:s=>({rivers:[{x:.5,crossings:[{kind:'bridge',y:.45}]}],seed:s})};
+  river:s=>({recipe:'river',river:{bridge:true},seed:s}),bridge:s=>({rivers:[{x:.5,crossings:[{kind:'bridge',y:.45}]}],seed:s}),
+  rise:s=>({hills:[{x:.5,y:.5,r:120,top:2}],woods:[],seed:s}),steep:s=>({hills:[{x:.5,y:.5,r:120,top:2,steep:true,shoulder:90}],woods:[],seed:s})};
  try{window.requestAnimationFrame=()=>0;ev('TERRAIN.on=true');t.act('begin','soldier');t.G.quietEvents=true;t.GUIDE.on=false;
   const pick=new URLSearchParams(location.search).get('seed');
   for(const [name,gf] of Object.entries(GROUNDS).filter((e,i)=>pick===null||String(i)===pick)){const len=[];let l=0,r=0,un=0;

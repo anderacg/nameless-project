@@ -17,6 +17,10 @@
      height as the art draws it (1 at least on rock, peaks up to TERRAIN_ROCK.mh[1]; 0 for every other cell). The art reads
      wall and rockH off B.terrain (PX.battleGround({...B.terrain, climate, base})); wall is absent on a field with no cliffed hill,
      whose terrace edges the art then paints as before.
+   - Steep hills (World Phase 2, D41): B.terrain.steep, a Uint8Array(C*R), or absent (no steep hill on the field): bit 1 a steep
+     hill's ground (its top and banks), 2 a steep bank (a slope cell of it, but its gentler shoulder's), 4 scree (a scree hill's
+     steep bank), 8 a scree hill's ground. The art paints a steep bank darker and stony, scree as loose grey stone; a shoulder as a
+     rise. recipe.hills[i] and ai.tops[i]: steep, scree, shoulder (its angle, radians, as a ramp's) on a steep hill.
    B.terrain.route: {foot, mounted, big}, route.js grids of the field (deep water impassable unless TERRAIN.wade; rows wholly off
    the field closed), built with it; blocky: anything on the field blocks a step (rock, a cliff, impassable deep water), else
    none of the routing below runs and a battle is as in phase 3. */
@@ -36,10 +40,11 @@
      BattleRiver (a river's plan: plan, straight, explicit, half, kinds), FieldWays (roads and paths laid like real ones).
    - Small pure helpers stay functions (tIx, groundHome, groundSpd, unitSkill, routeWho, groupWho, fieldScale, terrainZone, zOut…,
      groundEnv); every old name is a one-line alias at the end of this file, declared as it was (function or const).
-   WORLD PHASE 2 (doc/WORLD_DESIGN.md §13, §15.2 wave 2, agent E) slots in: BattleTerrain.riverOf (BattleSite's river, its width,
-   and its crossing into the river spec), BattleRiver.half (the width: 3, 5 or 8 cells), BattleRiver.kinds (the world's bridge,
-   fords only, the ferry's ford), FieldPlan#planFeatures (BattleSite's high: rise, steep or cliffed), BattleTerrain#slopeMul (a
-   steep slope's climb; runFor, staminaFor and chargeFor beside it) and route.js routeGridOf under TerrainRoutes#build (its cost) */
+   WORLD PHASE 2 (doc/WORLD_DESIGN.md §13, §15.2 wave 2, agent E; built): BattleTerrain.riverOf and worldOf (BattleSite's river,
+   its crossing, its high ground into the spec: river, wr, high), BattleRiver.half (the width: 3, 5 or 8 cells), BattleRiver.kinds
+   (the world's bridge, fords only, the ferry's ford), FieldPlan#planWet (a delta's or floodplain's marsh), FieldPlan#planFeatures
+   and planSteep (rise, steep or cliffed), the steep hill's rules (STEEP: slopeMul, runFor, staminaFor, wadeFor, chargeFor, hitFor,
+   flag, update, rangeMul; morale.js steepRanks) and its price on the route grids (route.js routeGridOf; TerrainRoutes' wcap) */
 // on: the game's switch (tests/harness.js turns it off for the older suites); cs: cell size (px); floor: the least a speed
 // multiplier of the ground can be; tries: sub-seeds tried for a fair field; lane: an open lane edge to edge (px high); zone: the
 // deployment zones (share of BW at each edge); zoneWood: woods' largest share of a zone; score: how far the halves' advantage
@@ -63,7 +68,8 @@ const TKIND={open:0,wood:1,marsh:2,ford:3,deep:4,bridge:5,rock:6};
    stream (a swamp's: all ford).
    B.terrain.recipe.river: null, or {x, path:[middle x of each cell row], half (px, half the water's width), crossings (as above,
    all of them, a frozen river's bridge too), deep, frozen, stream, bridge (a road bridge near on the world map), sp0, sp1 (each
-   cell row's water: x0 and x1 px, -1 none), x0, x1, gap (the least ground between its crossings, px)}; recipe.rivers: all of them (a lab field can have two).
+   cell row's water: x0 and x1 px, -1 none), x0, x1, gap (the least ground between its crossings, px); a world river's (World
+   Phase 2) also w (1-3), stone (its bridge's make), delta, flood, ferry}; recipe.rivers: all of them (a lab field can have two).
    has.water: any ford, deep or bridge cell. Rivers run top to bottom across the middle (both deployment zones are dry).
    Helpers (terrain.js): riverSpan(y) → [x0,x1] of the water at y, or null; crossesDeep(ax,ay,bx,by) → does the straight way
    between cross deep water (crossingFor, phase 2's, is retired: routing replaced it, and no game code called it).
@@ -96,8 +102,14 @@ const TGROUND=[null,TERRAIN_GROUND.wood,TERRAIN_GROUND.marsh,TERRAIN_GROUND.ford
    streamP: a swamp with no water near: the chance of a ford-only stream; frostP: a frost field's with no water near: the chance of
    a frozen river (all ice, crossed anywhere); pad: a crossing's mouth off the water (px); inset: how
    far inside a crossing's edges those going over keep (px); keep: a crossing taken stays taken unless wading gets this much
-   quicker (crossWay) */
-const TERRAIN_RIVER={half:24,stream:16,meander:32,jit:.02,ford:64,bridge:32,gap:120,minGap:40,edge:40,fords:[1,2],near:2,mid:64,clear:24,streamP:.6,frostP:.35,pad:10,inset:8,keep:1.15};
+   quicker (crossWay). World Phase 2 (doc/WORLD_DESIGN.md §13): widths, half the water's width by the world river's width 1-3
+   (px: 3, 5 or 8 cells; a river with no world width keeps half) */
+const TERRAIN_RIVER={half:24,stream:16,meander:32,jit:.02,ford:64,bridge:32,gap:120,minGap:40,edge:40,fords:[1,2],near:2,mid:64,clear:24,streamP:.6,frostP:.35,pad:10,inset:8,keep:1.15,widths:[24,24,40,64]};
+/* a delta's or a floodplain's wet ground beside the world's river (World Phase 2, FieldPlan#planWet; from a stream of its own):
+   pairs, [least, most] mirrored marsh patches of radius r px, gap px off the water; chan, a delta's channels: a chain of small
+   marsh pools (radius r px, every step px) down each side, off px from the water. Each keeps out of the open lane, the crossings'
+   rows (by cross px) and the deployment zones */
+const TERRAIN_WET={pairs:[1,2],r:[34,52],gap:6,cross:40,chan:{r:[10,14],step:22,off:[30,52]}};
 /* range: a shooter's range per level he stands on; melee: a blow at a foe at least one level lower; charge: the charge bonus
    scaled by 1+charge·Δlevel (Δ clamped ±1); climb: speed going up a slope cell (dot > dot), by foot/mounted/big (the owner: a
    step up is hard going; the band 1 cell since 2026-10-18, so slower in it: a climb takes about as long); descend: going down
@@ -112,6 +124,17 @@ const TERRAIN_RIVER={half:24,stream:16,meander:32,jit:.02,ford:64,bridge:32,gap:
 const SIGHT={every:.25,near:64,high:96,memory:3,wall:255};
 const AMBUSH={shock:1.5,window:3,burst:1.5};
 const HILL={range:.075,melee:.1,charge:.35,climb:{foot:.5,mounted:.4,big:.4},descend:1.15,runUp:.6,runDown:1.25,climbSta:2,dot:.5,home:'hills'};
+/* the steep hill (D41, World Phase 2: BattleSite's high, kind steep): its banks (B.terrain.steep bit 2) are climbed anywhere, but
+   slowly and tiringly. band: its slope band, cells in from a rim a level of the drop (a rise's is TERRAIN.slope); climb, descend:
+   speed going up or down a steep bank by foot/mounted/big (TERRAIN.floor floors it: riders crawl; dwarves climb it as others climb
+   a rise, HILL.climb); sta: stamina running up one (in place of HILL.climbSta); walk: stamina a second walking up one (FATIGUE.run's
+   scale, as wading); runDown: momentum building down one (none builds going up, and none is kept: B.terrain.update); reform: s
+   after a steep climb before ranks re-form (no cohesion, morale.js); range, melee: on a steep hill's ground, a shooter's range per
+   level and a blow at a foe a level lower, on top of HILL's (a strong height bonus); charge: a charge come down off a steep hill,
+   on top of HILL.charge; scree: a shooter's range per level on a scree hill's ground (shooting down it reaches farther; and no
+   rider keeps his momentum on scree); route: a steep bank's cost on the route grids (×ROUTE.unit), by foot/mounted/big, so a way
+   goes by a shoulder or a ramp when one is near; shoulder: a mixed hill's gentler shoulder (its bank a rise there), its width (px) */
+const STEEP={band:2,climb:{foot:.32,mounted:.3,big:.3},descend:{foot:.85,mounted:.55,big:.7},sta:3.5,walk:.8,runDown:1.5,reform:2,range:.075,melee:.15,charge:.35,scree:.05,route:{foot:3,mounted:4.5,big:4},shoulder:80};
 /* what the world round the battle lays out (§3; its river: terrainAt, riverPlan). layouts: [name, weight], one picked (terrainPlan): plain
    (nothing), hill (one centred), woodedHill (one centred, trees on its top), copse (one small wood in the middle), copses (small
    woods in mirrored pairs), woods (forest patches, half the time round a low hill), pair (a hill per half, mirrored), pairFlank
@@ -230,20 +253,31 @@ class BattleTerrain{
      near has a ford-only stream at streamP ({stream}), a frost field a frozen river at frostP; a desert never (its oasis). Field
      variety: edges, the neighbours that shape each side of the field (terrainEdges); road, the tile is a road ({ew, ns}: its way
      across the field, and on along it north or south); elven, a forest near an elven town; forest, a forest tile (a swamp's is the
-     mire wood) */
+     mire wood). World Phase 2 (BattleSite's new fields, set only in a generated world; worldOf): wr, the world river's water and
+     high, its high ground */
   static ofSite(S,env){
     const {tx,ty}=S,K=S.kinds;let n=0,w=0,m=0;
     for(let i=0;i<9;i++){if(i===4)continue;const k=K[i];if(k===T_FOREST)n++;else if(k===T_WATER)w++;else if(k===T_MOUNT)m++}
     const recipe=BattleTerrain.recipeOf(env.t,env.c,n,m,K[4]===T_MOUNT),code=1+Object.keys(TERRAIN_RECIPE).indexOf(recipe)*4+Math.max(0,CLIMS.indexOf(env.c));
     const river=BattleTerrain.riverOf(S,env,recipe,code,w);
     return{recipe,seed:Math.floor(hash(tx,ty,code+S.salt)*4294967296)>>>0,tx,ty,oasis:recipe==='desert'&&(w>0||K[4]===T_WATER),river,frost:env.c==='frost',
-      edges:BattleTerrain.edgesOf(S,recipe,env.c),road:S.road?{ew:true,ns:S.road.ns}:null,elven:recipe==='forest'&&S.elven,forest:env.t===T_FOREST||n>=3}}
+      edges:BattleTerrain.edgesOf(S,recipe,env.c),road:S.road?{ew:true,ns:S.road.ns}:null,elven:recipe==='forest'&&S.elven,forest:env.t===T_FOREST||n>=3,...BattleTerrain.worldOf(S,river)}}
+  /* (World Phase 2: what BattleSite's new fields add to a ground spec, and nothing when they are empty, as with WORLD.gen off and in
+     the lab unless it asks: wr, the world river's water ({w: its width 1-3, stone: its bridge's make, delta, flood: a delta's or a
+     floodplain's wet ground}, with a river down the field: build lays it over the river spec, so a held bridge's keeps it too);
+     high, the tile's high ground ({kind: rise, steep or cliffed, up, scree, mixed, shoulder}: FieldPlan#planFeatures)) */
+  static worldOf(S,river){const o={},v=S.river,X=S.crossing;
+    if(river&&v)o.wr={w:v.w,...(X&&X.kind==='bridge'?{stone:!!X.stone}:{}),...(v.delta?{delta:true}:{}),...(v.flood?{flood:true}:{})};
+    if(S.high)o.high={...S.high};return o}
   /* (the river down the field, or null; water: the neighbouring tiles of water. Water near runs a river ({bridge: a road bridge
      within TERRAIN_RIVER.near tiles, frozen: in the frost}); a swamp with none near has a ford-only stream at streamP ({stream}), a
-     frost field a frozen river at frostP; a desert never (its oasis). WORLD PHASE 2 slots in here: BattleSite's river (its width,
-     delta, flood) and crossing (the world's bridge, a ford, a ferry) into this spec, read by BattleRiver.half and .kinds) */
+     frost field a frozen river at frostP; a desert never (its oasis). World Phase 2: BattleSite's river (a generated world's)
+     runs one by its crossing (the nearest within WORLD_SCALE.battle.bridge tiles): a bridge (the world's bridge: the field's one
+     bridge, and a ford), a ford (fords only), a ferry (one ford at its landing), or none (fords only, as with no bridge); its
+     width and wet ground: worldOf) */
   static riverOf(S,env,recipe,code,water){
     if(recipe==='desert')return null;
+    if(S.river){const k=S.crossing&&S.crossing.kind;return{bridge:k==='bridge',...(k==='ferry'?{ferry:true}:{}),frozen:env.c==='frost'}}
     if(water>0)return{bridge:S.bridge!==null&&S.bridge<=TERRAIN_RIVER.near,frozen:env.c==='frost'};
     if(recipe==='swamp'&&hash(S.tx,S.ty,code+101)<TERRAIN_RIVER.streamP)return{stream:true};
     if(env.c==='frost'&&hash(S.tx,S.ty,code+103)<TERRAIN_RIVER.frostP)return{frozen:true};
@@ -271,12 +305,16 @@ class BattleTerrain{
      sub-seeds for a fair field; then the offending features are dropped (woods, then marsh, then hills, then the river). spec.river
      (terrainAt's): a river down the middle, from a stream of its own (the rest of the field is as it would be without one, but
      for its layouts: TERRAIN_RECIPE river). Phase 4: cliffs and rock (featurePlan) from a stream of their own, dropped first (rock,
-     then cliffs) when no sub-seed is fair; spec.frost: a frost field's; then the route grids (terrainRoutes) */
+     then cliffs) when no sub-seed is fair; spec.frost: a frost field's; then the route grids (terrainRoutes). World Phase 2:
+     spec.wr, the world river's water laid over spec.river (its width; a delta's or floodplain's wet ground, planWet, from a stream
+     of its own); spec.high, the world's high ground (planFeatures) */
   static build(spec){
     const W=spec.W||BW,H=spec.H||BH,top=spec.top??FIELD_EDGE.top,bot=spec.bot??H-FIELD_EDGE.bot,seed=spec.seed>>>0,rs=k=>seeded(((seed^0x51ED270B)+Math.imul(k,0x9E3779B1))>>>0);let plan=null,T=null,tries=0;const dropped=[];
-    const riv=(p,k)=>{p.rivers=spec.river?[BattleRiver.plan(spec.river,rs(k),W,top,bot,p.lane,H)]:[];return p.planFeatures(seeded(((seed^0xC11FF00D)+Math.imul(k,0x9E3779B1))>>>0),W,top,bot,!!spec.frost,!!spec.crags)};
-    // (field variety: the world's say on the plan: terrainPlan's X)
-    const X={H,zone:spec.zone||terrainZone(W,H),edges:spec.edges,road:spec.road,elven:spec.elven,forest:spec.forest,frost:spec.frost,layout:spec.layout};
+    const RV=spec.river&&spec.wr?{...spec.wr,...spec.river}:spec.river;
+    const riv=(p,k)=>{p.rivers=RV?[BattleRiver.plan(RV,rs(k),W,top,bot,p.lane,H)]:[];if(RV&&(RV.delta||RV.flood))p.planWet(p.rivers[0],seeded(((seed^0x3A7E7A11)+Math.imul(k,0x9E3779B1))>>>0),W,top,bot,!!RV.delta);
+      return p.planFeatures(seeded(((seed^0xC11FF00D)+Math.imul(k,0x9E3779B1))>>>0),W,top,bot,!!spec.frost,!!spec.crags,spec.high)};
+    // (field variety: the world's say on the plan: terrainPlan's X; rh: a world river's half-width, which its features keep clear of)
+    const X={H,zone:spec.zone||terrainZone(W,H),edges:spec.edges,road:spec.road,elven:spec.elven,forest:spec.forest,frost:spec.frost,layout:spec.layout,...(RV&&RV.w?{rh:BattleRiver.half(RV)}:{})};
     if(spec.ambush){plan=FieldPlan.ambush(spec,W);plan.H=H;T=BattleTerrain.raster(W,plan,seed)}// (an ambush's own, over anything else: setup.js ambushLayout)
     else if(spec.explicit){plan=FieldPlan.explicit(spec.explicit,W,H);Object.assign(plan,{W,top,bot});T=BattleTerrain.raster(W,plan,seed)}
     else{for(let k=0;k<TERRAIN.tries&&!T;k++){tries=k+1;const p=riv(FieldPlan.recipe(spec.recipe,seeded((seed+Math.imul(k,0x9E3779B1))>>>0),W,top,bot,spec.oasis,!!spec.river,X),k),t=BattleTerrain.raster(W,p,seed);if(t.fair(W,top,bot,p.rivers,p.hills).ok){plan=p;T=t}}
@@ -292,8 +330,8 @@ class BattleTerrain{
     if(!T.route)T.routes.build(top,bot);
     const {kind,lvl}=T,has={hills:lvl.some(v=>v>0),wood:kind.includes(TKIND.wood),marsh:kind.includes(TKIND.marsh),water:kind.some(k=>k>=TKIND.ford&&k<=TKIND.bridge),rock:kind.includes(TKIND.rock),cliff:!!T.wall},rivers=plan.rivers||[],r0=rivers[0];
     T.index();if(T.dense)T.markDeep();
-    const box=p=>[p.x-p.r,p.y-p.r,p.x+p.r,p.y+p.r],cl=h=>h.cliff?{cliff:true,oneway:!!h.oneway,ramps:h.ramps.slice()}:{};
-    T.has=has;T.seed=seed;
+    const box=p=>[p.x-p.r,p.y-p.r,p.x+p.r,p.y+p.r],cl=h=>h.cliff?{cliff:true,oneway:!!h.oneway,ramps:h.ramps.slice()}:h.steep?{steep:true,scree:!!h.scree,shoulder:h.shoulder??null}:{};
+    if(T.steep)has.steep=true;T.has=has;T.seed=seed;
     // (an ambush's road, straight down its middle, is in recipe.ways for the art alone: no T.road, so no faster going on it)
     // (field variety: dense, the dense layout's reading (T.dense: its glades, clearings and ways, and the shares of the field its woods
     // and marsh cover); edges, what the neighbours laid by side; road, a road crosses it; elven, frost: the woods' make, for the art)
@@ -334,11 +372,19 @@ class BattleTerrain{
         if(a>b)continue;sp0[r]=a*cs;sp1[r]=(b+1)*cs;lo=Math.min(lo,a*cs);hi=Math.max(hi,(b+1)*cs);
         if(xc)for(const c of [a-1,b+1])if(c>=0&&c<C&&(kind[r*C+c]===TKIND.wood||kind[r*C+c]===TKIND.marsh))kind[r*C+c]=0}
       v.sp0=sp0;v.sp1=sp1;v.x0=lo;v.x1=hi;for(const c of v.crossings){const r=clamp(Math.floor(c.y/cs),0,R-1);c.x0=sp0[r];c.x1=sp1[r]}}
-    const S=TERRAIN.slope;
-    // (a slope cell: one with ground k cells off at least ceil(k/S) levels lower: S cells in from a rim a level down, 2S where it drops two)
-    for(let r=0;r<R;r++)for(let c=0;c<C;c++){const i=r*C+c,L=lvl[i];if(!L)continue;let low=false;const E=S*L;
+    const S0=TERRAIN.slope,anySteep=plan.hills.some(h=>h.steep);
+    // (a slope cell: one with ground k cells off at least ceil(k/S) levels lower: S cells in from a rim a level down, 2S where it
+    // drops two; a steep hill's S is STEEP.band)
+    for(let r=0;r<R;r++)for(let c=0;c<C;c++){const i=r*C+c,L=lvl[i];if(!L)continue;let low=false;const S=anySteep&&plan.hills[own[i]].steep?STEEP.band:S0,E=S*L;
       for(let rr=Math.max(0,r-E);rr<=Math.min(R-1,r+E)&&!low;rr++)for(let cc=Math.max(0,c-E);cc<=Math.min(C-1,c+E);cc++)if(lvl[rr*C+cc]<=L-Math.max(1,Math.ceil(Math.max(Math.abs(rr-r),Math.abs(cc-c))/S))){low=true;break}
       if(low){const h=plan.hills[own[i]],x=(c+.5)*cs,y=(r+.5)*cs,gx=(x-h.x)/(h.rx*h.rx),gy=(y-h.y)/(h.ry*h.ry);up[i]=((Math.round(Math.atan2(-gy,-gx)/(Math.PI/4))%8)+8)%8}}
+    // (steep hills (World Phase 2, D41): their ground, their banks but the shoulder's (a band STEEP.shoulder wide from the hill's
+    // middle out at its angle, as a ramp's), scree: B.terrain.steep's bits, at the top of this file)
+    let steep=null;if(anySteep){steep=new Uint8Array(N);const hw=STEEP.shoulder/2;
+      for(let i=0;i<N;i++){if(!lvl[i]||own[i]<0)continue;const h=plan.hills[own[i]];if(!h.steep)continue;let b=1|(h.scree?8:0);
+        if(up[i]>=0){const dx=((i%C)+.5)*cs-h.x,dy=(Math.floor(i/C)+.5)*cs-h.y,a=h.shoulder,ca=a!=null?Math.cos(a):0,sa=a!=null?Math.sin(a):0;
+          if(a==null||!(dx*ca+dy*sa>0&&Math.abs(dy*ca-dx*sa)<=hw))b|=2|(h.scree?4:0)}
+        steep[i]=b}}
     /* (cliffs, phase 4: each side of a cliffed hill's cell over which the ground falls to a lower level is a cliff, but where its
        middle lies in one of the hill's ramps (a band TERRAIN_ROCK.ramp wide from the hill's middle out at the ramp's angle): its bit
        on the low cell (no step up), and on the high one too unless the hill is one-way (route.js's bits: E 1, S 2, W 4, N 8)) */
@@ -346,7 +392,7 @@ class BattleTerrain{
     if(plan.hills.some(h=>h.cliff))for(let r=0;r<R;r++)for(let c=0;c<C;c++){const i=r*C+c,L=lvl[i],h=L?plan.hills[own[i]]:null;if(!h||!h.cliff)continue;
       for(let q=0;q<4;q++){const c2=c+DC[q],r2=r+DR[q];if(c2<0||r2<0||c2>=C||r2>=R)continue;const j=r2*C+c2;if(lvl[j]>=L||inRamp(h,(c+.5+DC[q]*.5)*cs,(r+.5+DR[q]*.5)*cs))continue;
         wall=wall||new Uint8Array(N);wall[j]|=1<<((q+2)&3);if(!h.oneway)wall[i]|=1<<q}}
-    const T=new BattleTerrain({cs,C,R,kind,lvl,up});if(plan.zone)T.zone=plan.zone;if(wall)T.wall=wall;if(rockH)T.rockH=rockH;if(plan.dense||plan.ways)T.layDense(plan);return T}
+    const T=new BattleTerrain({cs,C,R,kind,lvl,up});if(plan.zone)T.zone=plan.zone;if(wall)T.wall=wall;if(rockH)T.rockH=rockH;if(steep)T.steep=steep;if(plan.dense||plan.ways)T.layDense(plan);return T}
   /* a dense plan laid on the grid (rasterTerrain, once the hills, rock and rivers are down): its glades, clearings and ways kept open
      (a crossing's mouths too), the ways' cells marked (T.road: 1 a road, 2 a deer path or causeway); then the woods (and then the
      marsh) by the highest cells of seeded noise, so many in each half's deployment zone (the field's share ×(1-zoneLess)) and middle
@@ -488,25 +534,30 @@ class BattleTerrain{
   /* -- movement: each multiplier exactly 1 where the ground does nothing (x*1===x: a battle without it is bit-identical) -- */
   // (a flag of the ground he stands on (TERRAIN_GROUND): thin, no shield wall nor wedge (formations.js); loose, no cohesion
   // (morale.js); noShoot, no drawing (actors.js shotStep's can))
+  // (a steep bank breaks ranks as woods do: thin and loose there, World Phase 2)
   flag(u,f){
-    if(!(this.has.wood||this.has.water))return false;
-    const Gd=TGROUND[this.kind[tIx(this,u.x,u.y)]];return !!(Gd&&Gd[f])}
+    if(!(this.has.wood||this.has.water||this.steep))return false;
+    const i=tIx(this,u.x,u.y),Gd=TGROUND[this.kind[i]];if(Gd&&Gd[f])return true;return !!this.steep&&(f==='thin'||f==='loose')&&(this.steep[i]&2)>0}
   // (a soldier in formation on dry ground keeps the bank: he does not step down into a ford or deep water after a foe there, but
   // strikes him as he comes up out of it; actors.js)
   holdsBank(u,t){
     const T=this;if(!T.has.water)return false;
     const k=T.kind[tIx(T,t.x,t.y)];return(k===TKIND.ford||k===TKIND.deep)&&T.kind[tIx(T,u.x,u.y)]!==TKIND.ford&&T.kind[tIx(T,u.x,u.y)]!==TKIND.deep}
-  // stamina spent a second walking here (fatigue.js: walking elsewhere spends none): wading deep water; 0 elsewhere
+  // stamina spent a second walking here (fatigue.js: walking elsewhere spends none): wading deep water; walking up a steep bank
+  // (STEEP.walk; dwarves climb freely); 0 elsewhere
   wadeFor(u){
-    if(!this.has.water)return 0;
-    const Gd=TGROUND[this.kind[tIx(this,u.x,u.y)]];return Gd&&Gd.wade||0}
+    const T=this;if(!T.has.water&&!T.steep)return 0;
+    const i=tIx(T,u.x,u.y),Gd=TGROUND[T.kind[i]];let w=Gd&&Gd.wade||0;
+    if(T.steep&&T.steep[i]&2&&u.dir!=null&&!groundHome(u,HILL.home)&&T.slope(i,Math.cos(u.dir),Math.sin(u.dir))>0)w+=STEEP.walk;return w}
   // (going up (1), down (-1) or across (0) the slope of cell i, moving (mx,my))
   slope(i,mx,my){
     const d=this.up[i];if(d<0||!(mx||my))return 0;
     const dot=(mx*TDX[d]+my*TDY[d])/(Math.hypot(mx,my)||1);return dot>HILL.dot?1:dot<-HILL.dot?-1:0}
   /* (the speed going up (w 1) or down (-1) slope cell i: HILL's climb by foot/mounted/big (×1 for the home race), its descend.
-     WORLD PHASE 2: a steep hill's cell (D41) climbs at its own, slower rate here) */
-  slopeMul(u,i,w){return w>0?(groundHome(u,HILL.home)?1:u.s.big?HILL.climb.big:u.s.mounted?HILL.climb.mounted:HILL.climb.foot):HILL.descend}
+     A steep bank (D41): STEEP's climb and descend (the home race climbs it at HILL's climb, as others climb a rise) */
+  slopeMul(u,i,w){
+    if(this.steep&&this.steep[i]&2){const k=u.s.big?'big':u.s.mounted?'mounted':'foot';return w>0?(groundHome(u,HILL.home)?HILL.climb[k]:STEEP.climb[k]):STEEP.descend[k]}
+    return w>0?(groundHome(u,HILL.home)?1:u.s.big?HILL.climb.big:u.s.mounted?HILL.climb.mounted:HILL.climb.foot):HILL.descend}
   // speed on the ground, moving (mx,my): woods and marsh by foot/mounted/big, climbing and descending slopes; floored at TERRAIN.floor;
   // a road (T.road 1: field variety) TERRAIN_ROAD.spd
   speedFor(u,mx,my){
@@ -519,32 +570,38 @@ class BattleTerrain{
     return m<TERRAIN.floor?TERRAIN.floor:m}
   /* how fast charge momentum builds here (sp: this step's distance); it also follows the height the run comes from (u.rlv, a level
      that lags CHARGE.run px behind the runner: a charge down off a hill keeps it, a long run on the flat loses it; morale.js chargeMul) */
+  // A steep field (World Phase 2) also follows whether the run comes off a steep hill (u.rst, lagging as u.rlv: chargeFor); on a
+  // steep bank no momentum builds going up, STEEP.runDown going down, and none for riders on scree
   runFor(u,mx,my,sp){
     const T=this,i=tIx(T,u.x,u.y),k=T.kind[i],lv=T.lvl[i],Gd=TGROUND[k];
     u.rlv=u.run>0&&u.rlv!=null?u.rlv+(lv-u.rlv)*Math.min(1,sp/CHARGE.run):lv;
     let m=1;if(Gd&&Gd.run!=null&&!groundHome(u,Gd.home))m*=Gd.run;
-    const w=T.slope(i,mx,my);if(w>0)m*=HILL.runUp;else if(w<0)m*=HILL.runDown;return m}
+    const w=T.slope(i,mx,my);
+    if(T.steep){const s=T.steep[i],g=s&1;u.rst=u.run>0&&u.rst!=null?u.rst+(g-u.rst)*Math.min(1,sp/CHARGE.run):g;
+      if(s&2){if(w>0||s&4&&u.s.mounted)return 0;if(w<0)m*=STEEP.runDown;return m}}
+    if(w>0)m*=HILL.runUp;else if(w<0)m*=HILL.runDown;return m}
   // a soldier going up a slope ('up'), down one ('down') or neither (null), by his last move (u.dir, u.spdNow): the art's climbing
   // animation; climbing breaks his cohesion (morale.js cohesionReady)
   climbOf(u){
     if(!this.has.hills||!(u.spdNow>0)||u.dir==null)return null;
     const w=this.slope(tIx(this,u.x,u.y),Math.cos(u.dir),Math.sin(u.dir));return w>0?'up':w<0?'down':null}
-  // stamina drained running here (u.dir: where he goes): marsh, and running uphill (dwarves climb freely)
+  // stamina drained running here (u.dir: where he goes): marsh, and running uphill (dwarves climb freely); up a steep bank
+  // STEEP.sta (dwarves HILL.climbSta)
   staminaFor(u){
     const T=this,i=tIx(T,u.x,u.y),Gd=TGROUND[T.kind[i]];let m=1;
     if(Gd&&Gd.sta&&!groundHome(u,Gd.home))m*=Gd.sta;
-    if(u.dir!=null&&T.slope(i,Math.cos(u.dir),Math.sin(u.dir))>0&&!groundHome(u,HILL.home))m*=HILL.climbSta;return m}
-  // the charge bonus's scale (morale.js chargeMul): by the height the run came from over the foe's (±1 level: ×(1±HILL.charge)),
-  // halved against a foe standing in woods
+    if(u.dir!=null&&T.slope(i,Math.cos(u.dir),Math.sin(u.dir))>0){if(T.steep&&T.steep[i]&2)m*=groundHome(u,HILL.home)?HILL.climbSta:STEEP.sta;else if(!groundHome(u,HILL.home))m*=HILL.climbSta}return m}
+  // the charge bonus's scale (morale.js chargeMul): by the height the run came from over the foe's (±1 level: ×(1±HILL.charge);
+  // down off a steep hill HILL.charge+STEEP.charge, by how much of the run came off it: u.rst), halved against a foe standing in woods
   chargeFor(u,t){
-    const T=this,tl=T.lvl[tIx(T,t.x,t.y)],al=u.rlv!=null?u.rlv:T.lvl[tIx(T,u.x,u.y)];
-    let m=1+HILL.charge*clamp(al-tl,-1,1);if(T.kind[tIx(T,t.x,t.y)]===TKIND.wood)m*=TERRAIN_GROUND.wood.chargeIn;return m}
+    const T=this,tl=T.lvl[tIx(T,t.x,t.y)],al=u.rlv!=null?u.rlv:T.lvl[tIx(T,u.x,u.y)],hc=T.steep&&al>tl&&u.rst>0?HILL.charge+STEEP.charge*u.rst:HILL.charge;
+    let m=1+hc*clamp(al-tl,-1,1);if(T.kind[tIx(T,t.x,t.y)]===TKIND.wood)m*=TERRAIN_GROUND.wood.chargeIn;return m}
   // (the height of a blow: +1 the attacker higher, -1 lower)
   heightEdge(a,b){return clamp(this.lvl[tIx(this,a.x,a.y)]-this.lvl[tIx(this,b.x,b.y)],-1,1)}
-  // a melee blow's weight by the ground (attacks.js hit): from higher ground; struck standing in marsh, a ford or deep water; at a
-  // foe standing in deep water (hurt)
+  // a melee blow's weight by the ground (attacks.js hit): from higher ground (from a steep hill's, STEEP.melee more); struck
+  // standing in marsh, a ford or deep water; at a foe standing in deep water (hurt)
   hitFor(att,t){
-    const T=this,i=tIx(T,att.x,att.y),j=tIx(T,t.x,t.y);let m=1;if(T.lvl[i]>=T.lvl[j]+1)m*=1+HILL.melee;
+    const T=this,i=tIx(T,att.x,att.y),j=tIx(T,t.x,t.y);let m=1;if(T.lvl[i]>=T.lvl[j]+1)m*=T.steep&&T.steep[i]&1?1+HILL.melee+STEEP.melee:1+HILL.melee;
     const Gd=TGROUND[T.kind[i]];if(Gd&&Gd.hit&&!groundHome(att,Gd.home))m*=Gd.hit;
     const Gt=TGROUND[T.kind[j]];if(Gt&&Gt.hurt)m*=Gt.hurt;return m}
 
@@ -585,16 +642,25 @@ class BattleTerrain{
   /* once a frame after all movement (projectiles.js updateProjectiles): each soldier's ground (u.gk kind, u.glv level), and a
      shooter's range from the level he stands on, rewritten only when it changes (s.range is read in some 70 places: they all see
      it). His stats are copied first (a big one's can be the shared ST record); a stats record replaced since (a console edit) is
-     taken back to level 0. In deep water his charge's momentum is gone (D1) */
+     taken back to level 0. In deep water his charge's momentum is gone (D1). A steep field's (World Phase 2): going up a steep bank
+     his momentum is gone and his ranks broken (u.stc: when, morale.js steepRanks), a rider on scree loses his; a shooter's range
+     from his ground (rangeMul: a steep or scree hill's more), u.rl then keyed by level and steep bits, u.rm its multiplier */
   update(){
-    const T=this;
-    for(const u of B.units){if(u.hp<=0)continue;const i=tIx(T,u.x,u.y),lv=T.lvl[i];u.gk=T.kind[i];u.glv=lv;if(u.gk===TKIND.deep&&u.run)u.run=0;let s=u.s;if(!s||!(s.range>0))continue;
-      if(u.rS!==s){const r0=u.rS?s.range/(1+HILL.range*(u.rl||0)):s.range;s=u.s={...s};u.rS=s;u.r0=r0;u.rl=-1}
-      if(lv!==u.rl){s.range=u.r0*(1+HILL.range*lv);u.rl=lv}}}
+    const T=this,st=T.steep;
+    for(const u of B.units){if(u.hp<=0)continue;const i=tIx(T,u.x,u.y),lv=T.lvl[i];u.gk=T.kind[i];u.glv=lv;if(u.gk===TKIND.deep&&u.run)u.run=0;
+      if(st&&st[i]&2){const up=u.dir!=null&&u.spdNow>0&&T.slope(i,Math.cos(u.dir),Math.sin(u.dir))>0;if(up)u.stc=B.t;if(u.run&&(up||st[i]&4&&u.s.mounted))u.run=0}
+      let s=u.s;if(!s||!(s.range>0))continue;
+      if(u.rS!==s){const r0=u.rS?s.range/(u.rm||1+HILL.range*(u.rl||0)):s.range;s=u.s={...s};u.rS=s;u.r0=r0;u.rl=-1}
+      if(st){const key=lv|(st[i]&9)<<4;if(key!==u.rl){u.rm=T.rangeMul(i);s.range=u.r0*u.rm;u.rl=key}}
+      else if(lv!==u.rl){s.range=u.r0*(1+HILL.range*lv);u.rl=lv}}}
+  // (a shooter's range × standing in cell i: HILL.range a level; on a steep hill's ground STEEP.range more, on a scree hill's STEEP.scree)
+  rangeMul(i){const lv=this.lvl[i],s=this.steep?this.steep[i]:0;return 1+(HILL.range+(s&1?STEEP.range:0)+(s&8?STEEP.scree:0))*lv}
   // the ground under a group, for its details (the HUD: "High ground (+15% range) · Woods (slowed)"); '' with none
   label(m){
     const T=this;if(!m||!m.length)return '';const l=m.filter(u=>u.hp>0);if(!l.length)return '';const out=[],lv=Math.round(l.reduce((n,u)=>n+T.levelAt(u.x,u.y),0)/l.length);
-    if(lv>0)out.push('High ground'+(l.some(u=>u.s.range>0)?' (+'+Math.round(HILL.range*lv*100)+'% range)':''));
+    const half=f=>l.filter(f).length*2>=l.length,stp=T.steep&&half(u=>T.steep[tIx(T,u.x,u.y)]&1);
+    if(lv>0)out.push((stp?'Steep high ground':'High ground')+(l.some(u=>u.s.range>0)?' (+'+Math.round((stp?STEEP.range+HILL.range:HILL.range)*lv*100)+'% range)':''));
+    if(T.steep&&half(u=>T.steep[tIx(T,u.x,u.y)]&2))out.push(half(u=>T.steep[tIx(T,u.x,u.y)]&4)?'On scree (slow climb, no charge)':'On a steep bank (slow climb)');
     for(const K of [TKIND.wood,TKIND.marsh,TKIND.ford,TKIND.deep,TKIND.bridge]){const n=l.filter(u=>T.kindAt(u.x,u.y)===K).length;
       if(n*2>=l.length)out.push(K===TKIND.bridge?'On a bridge':TGROUND[K].n+(K===TKIND.deep&&l.some(u=>u.s.range>0)?' (slowed, cannot shoot)':' (slowed)'))}
     if(T.road&&l.filter(u=>T.road[tIx(T,u.x,u.y)]===1).length*2>=l.length)out.push('On the road (+'+Math.round((TERRAIN_ROAD.spd-1)*100)+'% speed)');
@@ -632,13 +698,14 @@ class BattleTerrain{
     if(rc.road&&!D)parts.push('a road across the field');
     // (the river a sentence of its own, first: "A river with a bridge and a ford. A hill on each side.")
     const v=has.water&&rc.river,n=k=>v.crossings.filter(c=>c.kind===k).length,one=(k,w)=>n(k)?(n(k)>1?(n(k)===2?'two ':n(k)+' ')+w+'s':'a '+w):'',cap=s=>s[0].toUpperCase()+s.slice(1)+'.';
-    const rs=v?cap(v.stream?'a shallow stream':v.frozen?'a frozen river'+(n('bridge')?' with a bridge':''):v.hold?'a river with a single bridge'+(n('ford')?' and a ford far off it':''):'a river'+(v.crossings.length?' with '+[one('bridge','bridge'),one('ford','ford')].filter(Boolean).join(' and '):'')):'';
+    const rs=v?cap(v.stream?'a shallow stream':v.frozen?'a frozen river'+(n('bridge')?' with a bridge':''):v.hold?'a river with a single bridge'+(n('ford')?' and a ford far off it':''):(v.w===3?'a great river':v.w===2?'a broad river':'a river')+(v.crossings.length?' with '+[one('bridge',v.stone===false?'wooden bridge':v.stone?'stone bridge':'bridge'),one('ford',v.ferry?"ford at the ferry's landing":'ford')].filter(Boolean).join(' and '):'')):'';
     const ds=D?cap(dense+' cover '+(D.woodShare+D.marshShare>=.57?'most':'much')+' of the field, with a glade for each army'+(rc.road?'; a road runs through them':rc.path?(L==='fen'?'; a causeway runs through':'; a deer path winds through them'):'; clearings link the glades')+
       (['n','s','w','e'].some(k=>E[k]==='open')?', thinning toward the open land':'')):'';
     if(!parts.length&&!rs&&!ds)return '';const s=[rs,ds].filter(Boolean).join(' ')+(parts.length?(rs||ds?' ':'')+cap(parts.join(', ').replace(/, ([^,]*)$/,' and $1')):'');
-    const sheer=rc.hills.some(h=>h.cliff&&!h.oneway),onew=rc.hills.some(h=>h.oneway);
+    const sheer=rc.hills.some(h=>h.cliff&&!h.oneway),onew=rc.hills.some(h=>h.oneway),stp=rc.hills.filter(h=>h.steep);
     return s+(v&&v.deep?TERRAIN.wade?' Deep water: wading is slow and tiring, no one shoots from it and blows land soft; cross at the fords and bridges.':' Deep water cannot be crossed: only at the fords and bridges.':'')+(v&&(v.stream||v.frozen)?' '+(v.frozen?'The ice is slippery going, but it can be crossed anywhere.':'The stream slows all but orcs.'):v&&n('ford')?' Fords slow all but orcs and break formations.':'')+
       (has.hills?' High ground: archers reach farther and charges downhill hit harder; the climb is hard going.':'')+(sheer?' Sheer cliffs ring a hill: it is climbed only by its ramps.':'')+(onew?' A hill is climbed by one ramp only, though men can drop down its cliffs.':'')+
+      (stp.length?' '+(stp.length>1?'The hills are steep':'The hill is steep')+': climbed anywhere, but slowly and tiringly; ranks break on the climb and riders crawl, and a charge down it hits hard.'+(stp.some(h=>h.scree)?' Scree on its banks: no rider charges across it, and archers above reach farther.':'')+(stp.some(h=>h.shoulder!=null)?' A gentler shoulder is the easier way up.':''):'')+
       (has.rock?' Rock bars the way and hides what lies behind it.':'')+(has.wood?' Woods slow riders and break formations'+(D?', and hide whoever stands in them.':'.'):'')+(has.marsh?' Marsh slows and tires all but orcs.':'')+(rc.road?' Men march a little faster on the road.':'')}
   // the battleground's text (its env's, with the ground's when there will be terrain; the pre-battle panel, engage.js): no river
   // against a monster or in a cave (as groundSpecFor)
@@ -660,12 +727,13 @@ class FieldPlan{
   // features in field px: hills {x,y,rx,ry,top,low (no cliffs: a pair's shoulders, an edge's ridge, a hummock)}, woods and marsh
   // {x,y,r}; rocks {x,y,r,h} (peaks, edges); lane: the band free patches keep out of; oasis: water near; riv: a river will run down
   // the middle (its layouts: the recipe's river list; features in pairs, clear of it by clr px). X (field variety): {H (the field's
-  // height), edges, road, elven, forest, frost, layout (the lab's: one of the recipe's)}: the layouts a field like it picks from
+  // height), edges, road, elven, forest, frost, layout (the lab's: one of the recipe's), rh (a world river's half-width: clr from
+  // it, P.rh)}: the layouts a field like it picks from
   // (TERRAIN_RECIPE), a dense layout's plan (densePlan), a larger field's extra pairs (fieldScale) and its edges (edgePlan)
   static recipe(name,rnd,W,top,bot,oasis,riv,X={}){
     const Rc=TERRAIN_RECIPE[name]||TERRAIN_RECIPE.open,mid=(top+bot)/2,fh=bot-top,f=(a,b)=>a+(b-a)*rnd(),n=(a,b)=>a+Math.floor(rnd()*(b-a+1)),e=()=>.85+.3*rnd(),Z=fieldScale(W,top,bot),sz=Z.sz;
-    const RV=TERRAIN_RIVER,clr=riv?RV.half+RV.meander+RV.jit*W/2+RV.clear:0,Ls=X.elven&&Rc.elven||X.forest&&Rc.forest||riv&&Rc.river||X.frost&&Rc.frost||Rc.layouts;
-    const P=new FieldPlan({recipe:name,hills:[],woods:[],marsh:[],layout:null,W,H:X.H||BH,top,bot,zone:X.zone||null});
+    const RV=TERRAIN_RIVER,clr=riv?(X.rh||RV.half)+RV.meander+RV.jit*W/2+RV.clear:0,Ls=X.elven&&Rc.elven||X.forest&&Rc.forest||riv&&Rc.river||X.frost&&Rc.frost||Rc.layouts;
+    const P=new FieldPlan({recipe:name,hills:[],woods:[],marsh:[],layout:null,W,H:X.H||BH,top,bot,zone:X.zone||null});if(X.rh)P.rh=X.rh;
     let ly=f(top+fh*.2,bot-fh*.2);P.lane={y0:ly-TERRAIN.lane/2-8,y1:ly+TERRAIN.lane/2+8};
     {let tot=0;const k=rnd()*Ls.reduce((a,l)=>a+l[1],0);for(const [l,w] of Ls){tot+=w;if(k<tot){P.layout=l;break}}P.layout=P.layout||Ls[0][0]}
     if(X.layout&&FieldPlan.layouts(name).includes(X.layout))P.layout=X.layout;
@@ -790,17 +858,19 @@ class FieldPlan{
      hill's ramps face up or down the field, or one to each side: both armies reach them alike; a pair's are mirrored about the
      middle) and its rock (a mountain in the middle, or a mirrored pair; spires in mirrored pairs), off the deployment zones, the
      open lane, the hills and the river. frost: a frost field (more of both); crags: the lab's (TERRAIN_ROCK.crags' chances). P.rocks:
-     [{x,y,r,h}] */
-  planFeatures(rnd,W,top,bot,frost,crags){
+     [{x,y,r,h}]. high (World Phase 2: BattleSite's high ground, D41): its kind in place of the recipe's cliff chance: rise, no
+     cliffs; cliffed, cliffs always (sheer or one-way in the recipe's proportion); steep, its hills steep (planSteep) */
+  planFeatures(rnd,W,top,bot,frost,crags,high){
     const P=this;
     const Rc=TERRAIN_RECIPE[P.recipe]||TERRAIN_RECIPE.open,X=TERRAIN_ROCK,cl=crags?X.crags.cliff:Rc.cliff||[0,0],rk=crags?X.crags.rock:Rc.rock||[0,0],fm=frost?X.frost:1,fc=frost?X.frostCliff:1,f=(a,b)=>a+(b-a)*rnd(),PI=Math.PI;
     // (cliffs only on the hills that are no one's shoulders or edges: a lone one in the middle, or a mirrored pair)
-    P.rocks=P.rocks||[];const H=P.hills.filter(h=>!h.low),HA=P.hills;
-    if(H.length&&H.length<=2&&P.layout!=='dune'){const k=rnd(),c=k<cl[1]*fc?'oneway':k<(cl[0]+cl[1])*fc?'sheer':null,two=c==='sheer'&&rnd()<X.ramps2,j=()=>(rnd()-.5)*.3;
+    P.rocks=P.rocks||[];const H=P.hills.filter(h=>!h.low),HA=P.hills,hk=high&&high.kind;
+    if(hk==='steep')P.planSteep(H,high,rnd,W);
+    else if(H.length&&H.length<=2&&P.layout!=='dune'){const k=rnd(),c=hk==='rise'?null:hk==='cliffed'?(k*(cl[0]+cl[1])<cl[1]?'oneway':'sheer'):k<cl[1]*fc?'oneway':k<(cl[0]+cl[1])*fc?'sheer':null,two=c==='sheer'&&rnd()<X.ramps2,j=()=>(rnd()-.5)*.3;
       if(c){const set=(h,ramps)=>{h.cliff=true;h.oneway=c==='oneway';h.ramps=ramps};
         if(H.length===1){const ns=rnd()<.5?PI/2:-PI/2;set(H[0],two?(rnd()<.5?[j(),PI+j()]:[PI/2+j(),-PI/2+j()]):[ns+j()])}
         else{const a=rnd()*2*PI,b=two?a+PI*(.6+.8*rnd()):null,L=H[0].x<H[1].x?H[0]:H[1],Rt=L===H[0]?H[1]:H[0],m=v=>PI-v;set(L,b==null?[a]:[a,b]);set(Rt,b==null?[m(a)]:[m(a),m(b)])}}}
-    const RV=TERRAIN_RIVER,riv=(P.rivers||[]).length>0,clr=riv?RV.half+RV.meander+RV.jit*W/2+RV.clear:0,lane=P.lane,cen=!riv&&!HA.some(h=>Math.abs(h.x-W/2)<W*TERRAIN.centre);
+    const RV=TERRAIN_RIVER,riv=(P.rivers||[]).length>0,clr=riv?(P.rh||RV.half)+RV.meander+RV.jit*W/2+RV.clear:0,lane=P.lane,cen=!riv&&!HA.some(h=>Math.abs(h.x-W/2)<W*TERRAIN.centre);
     // (a spot for rock of radius r: in the field, off the open lane, the hills and other rock)
     const free=(x,y,r)=>y>=top&&y<=bot&&(!lane||y+r*1.3<lane.y0||y-r*1.3>lane.y1)&&HA.every(h=>Math.hypot(x-h.x,y-h.y)>Math.max(h.rx,h.ry)*1.2+r+X.hill)&&P.rocks.every(o=>Math.hypot(x-o.x,y-o.y)>o.r+r+24);
     // (in the middle, or a mirrored pair: between the river's clearing and the deployment zones)
@@ -811,11 +881,34 @@ class FieldPlan{
     if(rnd()<rk[0]*fm){const r=f(X.mr[0],X.mr[1]),h=f(X.mh[0],X.mh[1]);if(!(cen&&rnd()<.5&&place(r*1.2,h,true)))place(r,h,false)}
     if(rnd()<(P.spires?1:rk[1]*fm)){const n=X.spires[0]+Math.floor(rnd()*(X.spires[1]-X.spires[0]+1));for(let i=0;i<n;i++)place(f(X.sr[0],X.sr[1]),f(X.sh[0],X.sh[1]),false);if(cen&&rnd()<X.mid)place(f(X.sr[0],X.sr[1]),f(X.sh[0],X.sh[1]),true)}
     return P}
+  /* (World Phase 2, D41: hills H made steep, scree as the world's (high.scree); a mixed one's gentler shoulder (h.shoulder, radians,
+     screen y down) toward the world's (high.shoulder: the neighbour of least relief, terrain.js TDX's order), kept fair as ramps
+     are: a lone hill's faces up or down the field, nearest the world's way; a pair's (or more) mirrored about the middle) */
+  planSteep(H,high,rnd,W){
+    const PI=Math.PI,j=()=>(rnd()-.5)*.3,a=high.shoulder!=null?high.shoulder*PI/4:rnd()*2*PI;
+    for(const h of H){h.steep=true;if(high.scree)h.scree=true}
+    if(!high.mixed||!H.length)return this;
+    if(H.length===1){const s=Math.sin(a);H[0].shoulder=(s>.01?PI/2:s<-.01?-PI/2:rnd()<.5?PI/2:-PI/2)+j()}
+    else{const e=j();for(const h of H)h.shoulder=h.x<W/2?a+e:PI-a-e}
+    return this}
+  /* (World Phase 2: a delta's or a floodplain's wet ground beside river v (BattleRiver.plan's, before it is laid): TERRAIN_WET's
+     marsh in mirrored pairs, each side of the water, off the open lane, the crossings' rows and the deployment zones; a delta's
+     channels too, a chain of small pools down each side. Marsh: the field's drop order may take it off again) */
+  planWet(v,rnd,W,top,bot,delta){
+    const P=this,X=TERRAIN_WET,f=(a,b)=>a+(b-a)*rnd(),lane=P.lane,zo=zOut(P.zone,W)+8,cr=v.crossings||[],mx=v.path.reduce((a,b)=>a+b,0)/v.path.length,reach=v.half+TERRAIN_RIVER.meander;
+    const free=(y,r)=>(!lane||y+r<lane.y0-8||y-r>lane.y1+8)&&cr.every(c=>y+r<c.y0-X.cross||y-r>c.y1+X.cross)&&y-r>=top-r*.5&&y+r<=bot+r*.5;
+    const n=X.pairs[0]+Math.floor(rnd()*(X.pairs[1]-X.pairs[0]+1));
+    for(let k=0;k<n;k++)for(let t=0;t<8;t++){const r=f(X.r[0],X.r[1]),dx=reach+X.gap+r*.5,y=f(top,bot),y2=clamp(y+(rnd()-.5)*2*TERRAIN.mirror,top,bot);
+      if(mx-dx-r<zo||mx+dx+r>W-zo||!free(y,r)||!free(y2,r))continue;P.marsh.push({x:mx-dx,y,r},{x:mx+dx,y:y2,r});break}
+    if(delta)for(const s of [-1,1]){const off=reach+f(X.chan.off[0],X.chan.off[1]),ph=rnd()*6.3;
+      for(let y=top+8;y<bot;y+=X.chan.step){const r=f(X.chan.r[0],X.chan.r[1]),x=mx+s*(off+6*Math.sin(y/70+ph));if(x-r<zo||x+r>W-zo||!free(y,r))continue;P.marsh.push({x,y,r})}}
+    return P}
   // a lab's own features (fractions of the field; r in px): no fairness checks; road: a road over them (true: west to east at the
   // middle, a share: at that height, 'ns': on north to south too), laid as any (wayPlan)
   // (phase 4: a hill's cliff (true: sheer all round), oneway (cliffs dropped down, never climbed), ramps (degrees, screen y down: 0
-  // east, 90 south; one at 90 when none is given); rocks {x, y, r, h (its peak, levels: TERRAIN_ROCK.mh's middle when not given)})
-  static explicit(g,W,H=BH){const sc=(l,k)=>(l||[]).map(p=>k?{x:p.x*W,y:p.y*H,rx:p.rx||p.r,ry:p.ry||p.r,top:p.top||1,...(p.cliff||p.oneway?{cliff:true,oneway:!!p.oneway,ramps:(p.ramps||[90]).map(a=>a*Math.PI/180)}:{})}:{x:p.x*W,y:p.y*H,r:p.r});
+  // east, 90 south; one at 90 when none is given); rocks {x, y, r, h (its peak, levels: TERRAIN_ROCK.mh's middle when not given)};
+  // World Phase 2: a hill's steep (D41: climbed anywhere, slowly), scree, shoulder (degrees, as a ramp's: its gentler side))
+  static explicit(g,W,H=BH){const sc=(l,k)=>(l||[]).map(p=>k?{x:p.x*W,y:p.y*H,rx:p.rx||p.r,ry:p.ry||p.r,top:p.top||1,...(p.cliff||p.oneway?{cliff:true,oneway:!!p.oneway,ramps:(p.ramps||[90]).map(a=>a*Math.PI/180)}:p.steep?{steep:true,...(p.scree?{scree:true}:{}),...(p.shoulder!=null?{shoulder:p.shoulder*Math.PI/180}:{})}:{})}:{x:p.x*W,y:p.y*H,r:p.r});
     return new FieldPlan({recipe:'lab',H,hills:sc(g.hills,1),woods:sc(g.woods),marsh:sc(g.marsh),rocks:(g.rocks||[]).map(p=>({x:p.x*W,y:p.y*H,r:p.r,h:p.h||Math.round((TERRAIN_ROCK.mh[0]+TERRAIN_ROCK.mh[1])/2)})),rivers:(g.rivers||[]).map(v=>BattleRiver.explicit(v,W,H)),layout:'lab',lane:null,...(g.road?{ways:[{kind:'road',y:H*(typeof g.road==='number'?g.road:.5)},...(g.road==='ns'?[{kind:'road',ns:true,x:W/2}]:[])],wns:(g.seed|0)&65535}:{})})}
   /* an ambush's field (setup.js ambushLayout: spec.ambush {road: [y0, y1], woods: [{x, y, r}], ridges: [{x, y, rx, ry}]}, field px): a
      road down the middle kept clear (rasterTerrain clears its rows of wood), and the cover beside it, woods or low ridges, round
@@ -826,12 +919,13 @@ class FieldPlan{
 
 /* ---------- BattleRiver: a river's plan (phase 2), a plain record the art and the AI read (the contract at the top) ---------- */
 class BattleRiver{
-  // (half its water's width, px: 3 cells for a river, 2 for a stream. WORLD PHASE 2: the world's width, 3, 5 or 8 cells (§13))
-  static half(rv){return rv.stream?TERRAIN_RIVER.stream:TERRAIN_RIVER.half}
+  // (half its water's width, px: 3 cells for a river, 2 for a stream; a world river's by its width (World Phase 2, §13: rv.w 1-3,
+  // TERRAIN_RIVER.widths: 3, 5 or 8 cells))
+  static half(rv){return rv.stream?TERRAIN_RIVER.stream:rv.w?TERRAIN_RIVER.widths[rv.w]:TERRAIN_RIVER.half}
   /* (its crossings' kinds: with a road bridge near, a bridge (and a ford where the water is deep); else fords[0..1] fords, deep
-     water only; none on a frozen river or a stream. One draw, for the fords. WORLD PHASE 2: the world's bridge, fords only, the
-     ferry's ford) */
-  static kinds(rv,deep,rnd){const V=TERRAIN_RIVER;return rv.bridge?['bridge',...(deep?['ford']:[])]:deep?Array(V.fords[0]+Math.floor(rnd()*(V.fords[1]-V.fords[0]+1))).fill('ford'):[]}
+     water only; none on a frozen river or a stream. One draw, for the fords. World Phase 2: the world's bridge is the bridge (rv.bridge
+     from its crossing), a ford's river has fords only (no bridge), a ferry's (rv.ferry) one ford at its landing, no draw) */
+  static kinds(rv,deep,rnd){const V=TERRAIN_RIVER;if(rv.ferry&&!rv.bridge)return deep?['ford']:[];return rv.bridge?['bridge',...(deep?['ford']:[])]:deep?Array(V.fords[0]+Math.floor(rnd()*(V.fords[1]-V.fords[0]+1))).fill('ford'):[]}
   /* a river's plan (rv: terrainAt's river spec): its middle by cell row (a gentle meander about BW/2), its crossings (the first in
      the open lane: the cavalry's road over; a road bridge's is the bridge), fair by construction (terrainFair checks it):
      {x,path,half,crossings,deep,frozen,stream,bridge}; rasterTerrain adds each row's water (sp0, sp1) and its band (x0, x1) */
@@ -844,7 +938,7 @@ class BattleRiver{
     if(rv.hold){const lo=Math.ceil((top+V.edge)/cs)*cs,hi=Math.floor((bot-V.edge)/cs)*cs,w=V.bridge,f=V.ford,m=lane?(lane.y0+lane.y1)/2:(top+bot)/2,y0=clamp(Math.round((m+(rnd()-.5)*(bot-top)*BTYPE.bridgeY-w/2)/cs)*cs,lo,hi-w);
       const cr=[{kind:'bridge',y0,y1:y0+w,w,y:y0+w/2}];let gap=V.gap;
       if(rv.ford&&deep){const up=y0-lo>hi-y0-w,fy=up?Math.ceil(lo/cs)*cs:Math.floor((hi-f)/cs)*cs,g=up?y0-fy-f:fy-y0-w;if(g>=BTYPE.fordGap){cr.push({kind:'ford',y0:fy,y1:fy+f,w:f,y:fy+f/2});gap=g}}
-      return BattleRiver.straight({x,path,half:BattleRiver.half(rv),crossings:cr,deep,frozen:!!rv.frozen,stream:false,bridge:true,hold:true,gap})}
+      return BattleRiver.straight({x,path,half:BattleRiver.half(rv),crossings:cr,deep,frozen:!!rv.frozen,stream:false,bridge:true,hold:true,gap,...BattleRiver.world(rv)})}
     const kinds=BattleRiver.kinds(rv,deep,rnd),lo=top+V.edge,hi=bot-V.edge,cr=[];
     // (the ground between crossings: gap, or on a short field what there is room for (minGap at least))
     const gap=kinds.length>1?clamp(Math.floor((hi-lo-kinds.reduce((a,k)=>a+V[k],0))/(kinds.length-1)/cs)*cs-cs,V.minGap,V.gap):V.gap;
@@ -854,7 +948,9 @@ class BattleRiver{
       if(y!=null)cr.push({kind:k,y0:y,y1:y+w,w,y:y+w/2})});
     // (not all fitted round the lane's (a short field): all packed from one end instead, gap apart)
     if(cr.length<kinds.length){cr.length=0;let y=Math.ceil(lo/cs)*cs;for(const k of rnd()<.5?kinds:kinds.slice().reverse()){const w=V[k];if(y+w>hi)break;cr.push({kind:k,y0:y,y1:y+w,w,y:y+w/2});y=Math.ceil((y+w+gap)/cs)*cs}}
-    return BattleRiver.straight({x,path,half:BattleRiver.half(rv),crossings:cr,deep,frozen:!!rv.frozen,stream:!!rv.stream,bridge:!!rv.bridge,gap})}
+    return BattleRiver.straight({x,path,half:BattleRiver.half(rv),crossings:cr,deep,frozen:!!rv.frozen,stream:!!rv.stream,bridge:!!rv.bridge,gap,...BattleRiver.world(rv)})}
+  // (a world river's own (World Phase 2), on its plan for the art and the words: w, its width; stone, its bridge's make; delta, flood)
+  static world(rv){return rv.w?{w:rv.w,...(rv.stone!=null?{stone:!!rv.stone}:{}),...(rv.delta?{delta:true}:{}),...(rv.flood?{flood:true}:{}),...(rv.ferry?{ferry:true}:{})}:{}}
   // (straight across each crossing: its rows share the middle of its own; sorted top to bottom)
   static straight(v){const cs=TERRAIN.cs,R=v.path.length;v.crossings.sort((a,b)=>a.y-b.y);
     for(const c of v.crossings){const m=v.path[clamp(Math.floor(c.y/cs),0,R-1)];for(let r=Math.max(0,Math.floor(c.y0/cs));r<Math.min(R,Math.ceil(c.y1/cs));r++)v.path[r]=m;c.x=m}return v}
@@ -975,12 +1071,14 @@ class TerrainRoutes{
   /* the field's grids (T.route: foot, mounted, big; route.js routeGridOf), deep water impassable unless TERRAIN.wade (T.wade, read
      now), the cell rows wholly off the field (above top, below bot) closed; T.solid: the cells no one steps into (rock, impassable
      water); T.step: those and the cliffs as a grid of their own, for each soldier's step (terrainHold); T.blocky: any of them on the
-     field. Again by whoever changes kind or wall (with terrainIndex) */
+     field, or a steep hill (World Phase 2: its banks priced on the grids, route.js routeGridOf; a straight way is clear only over
+     ground no dearer than a grid's wcap, so going by a shoulder or a ramp is weighed against the climb). Again by whoever changes
+     kind or wall (with terrainIndex) */
   build(top,bot){
     const T=this.T;
     if(top==null){top=T.rows?T.rows[0]:FIELD_EDGE.top;bot=T.rows?T.rows[1]:BH-FIELD_EDGE.bot}const cs=T.cs,C=T.C,R=T.R,N=C*R,wade=T.wade??TERRAIN.wade,so=new Uint8Array(N),ps=new Uint8Array(N);
     for(let i=0;i<N;i++){const k=T.kind[i],Gd=TGROUND[k];if(Gd&&Gd.solid||k===TKIND.deep&&!wade)so[i]=1;else ps[i]=1}
-    T.wade=wade;T.rows=[top,bot];T.solid=so;T.blocky=!!(T.wall&&T.wall.some(v=>v))||so.includes(1);T.step={cs,C,R,cost:ps,wall:T.wall||new Uint8Array(N)};
+    T.wade=wade;T.rows=[top,bot];T.solid=so;T.blocky=!!(T.wall&&T.wall.some(v=>v))||so.includes(1)||!!T.steep;T.step={cs,C,R,cost:ps,wall:T.wall||new Uint8Array(N)};
     const shut=g=>{for(let r=0;r<R;r++)if((r+1)*cs<=top||r*cs>=bot)g.cost.fill(0,r*C,r*C+C);return g};
     T.route={foot:shut(routeGridOf(T,{deep:!wade,who:'foot'})),mounted:shut(routeGridOf(T,{deep:!wade,who:'mounted'})),big:shut(routeGridOf(T,{deep:!wade,who:'big'}))};return T}
   // (may one step straight from (ax,ay) to (bx,by): no cell entered that no one may enter, no cliff crossed its blocked way, no
@@ -1001,11 +1099,11 @@ class TerrainRoutes{
   // (is the straight way from u to (x,y) clear on grid g, ROUTE_UNIT.r either side: reckoned again when he or it changes cell, the
   // grid's version moves, or every ROUTE_UNIT.clear s; k: which of his two such reckonings (0, 1) it is)
   clearTo(u,g,x,y,k){const key=routeIx(g,u.x,u.y)*g.cost.length+routeIx(g,x,y),c=u.lc||(u.lc=[-1,0,0,false,-1,0,0,false]),o=k*4;
-    if(c[o]===key&&c[o+1]===g.v&&B.t<c[o+2])return c[o+3];c[o]=key;c[o+1]=g.v;c[o+2]=B.t+ROUTE_UNIT.clear;return c[o+3]=lineClear(g,u.x,u.y,x,y,255,ROUTE_UNIT.r)}
+    if(c[o]===key&&c[o+1]===g.v&&B.t<c[o+2])return c[o+3];c[o]=key;c[o+1]=g.v;c[o+2]=B.t+ROUTE_UNIT.clear;return c[o+3]=lineClear(g,u.x,u.y,x,y,g.wcap||255,ROUTE_UNIT.r)}
   // (the point to make for on way p, from his place on it (o[k], a waypoint index): one within reach is passed, and one skipped while
   // the one after it lies in a clear line (looked at when he changes cell, or every ROUTE_UNIT.clear s: o[k+'C'], o[k+'T']))
   wayNext(u,g,p,o,k){if(!p.length)return null;let i=o[k]||0;const c=routeIx(g,u.x,u.y),look=c!==o[k+'C']||B.t>=(o[k+'T']||0);if(look){o[k+'C']=c;o[k+'T']=B.t+ROUTE_UNIT.clear}
-    while(i<p.length-1&&(Math.hypot(p[i][0]-u.x,p[i][1]-u.y)<ROUTE_UNIT.reach||look&&lineClear(g,u.x,u.y,p[i+1][0],p[i+1][1],255,ROUTE_UNIT.r)))i++;o[k]=i;return p[i]}
+    while(i<p.length-1&&(Math.hypot(p[i][0]-u.x,p[i][1]-u.y)<ROUTE_UNIT.reach||look&&lineClear(g,u.x,u.y,p[i+1][0],p[i+1][1],g.wcap||255,ROUTE_UNIT.r)))i++;o[k]=i;return p[i]}
   /* the point a soldier going to (x,y) on grid g makes for: null (straight there) while the straight way is clear; else the next
      point of his own way there (route.js routePath, kept in u.wy: taken again when the grid's version moves, every ROUTE_UNIT.every
      s (staggered by his id), or when the goal changes cell (after ROUTE_UNIT.min s); neighbours going alike share the path cache).
@@ -1038,7 +1136,7 @@ class TerrainRoutes{
      it, or after ROUTE_UNIT.wait s (g.awT): so they come up to a ramp's foot together and go up it as one, not strung out after a
      place gone on ahead; null: straight on, as on open ground */
   wayOn(g,m,x,y,dt){
-    const gr=this.T.route[groupWho(m)];if(lineClear(gr,g.ax,g.ay,x,y,255,ROUTE_UNIT.r)){g.awT=0;return null}WAYON[0]=WAYON[1]=0;
+    const gr=this.T.route[groupWho(m)];if(lineClear(gr,g.ax,g.ay,x,y,gr.wcap||255,ROUTE_UNIT.r)){g.awT=0;return null}WAYON[0]=WAYON[1]=0;
     let cx=0,cy=0;for(const u of m){cx+=u.x-(u.sx||0);cy+=u.y-(u.sy||0)}
     if(Math.hypot(cx/m.length-g.ax,cy/m.length-g.ay)<=ROUTE_UNIT.lead)g.awT=0;else if((g.awT=(g.awT||0)+dt)<ROUTE_UNIT.wait)return WAYON;
     for(const q of routePath(gr,g.ax,g.ay,x,y)){const qx=q[0]-g.ax,qy=q[1]-g.ay,l=Math.hypot(qx,qy);if(l>1){WAYON[0]=qx/l;WAYON[1]=qy/l;break}}return WAYON}
@@ -1073,14 +1171,14 @@ class TerrainRoutes{
      the straight distance where it is clear, or where nothing blocks; from a's cell once for every b (route.js routeDist, kept)) */
   wayLen(a,b,who='foot'){
     const T=this.T;if(!T.blocky)return Math.hypot(b.x-a.x,b.y-a.y);
-    const g=T.route[who];if(lineClear(g,a.x,a.y,b.x,b.y))return Math.hypot(b.x-a.x,b.y-a.y);
+    const g=T.route[who];if(lineClear(g,a.x,a.y,b.x,b.y,g.wcap||255))return Math.hypot(b.x-a.x,b.y-a.y);
     const D=routeDist(g,a.x,a.y),i=routeNear(g,routeIx(g,b.x,b.y));return i<0||D[i]===Infinity?Infinity:D[i]*g.cs/(2*ROUTE.unit)}
   canReach(a,b,who){return this.wayLen(a,b,who)<Infinity}
   // (the same for a spot near a: its way's length if it is no longer than max px, else Infinity; a search bounded to about that
   // ground, not the whole field's: the shooters' perch, commander.js)
   nearLen(a,b,max,who='foot'){
     const T=this.T,d=Math.hypot(b.x-a.x,b.y-a.y);if(!T.blocky||d>max)return d>max?Infinity:d;
-    const g=T.route[who];if(lineClear(g,a.x,a.y,b.x,b.y))return d;
+    const g=T.route[who];if(lineClear(g,a.x,a.y,b.x,b.y,g.wcap||255))return d;
     const n=Math.ceil(max/g.cs),p=routePath(g,a.x,a.y,b.x,b.y,{budget:4*n*n});if(!p.ok)return Infinity;
     let x=a.x,y=a.y,L=0;for(const w of p){L+=Math.hypot(w[0]-x,w[1]-y);x=w[0];y=w[1]}return L>max?Infinity:L}
   /* (field variety: riders on a dense field keep to its ways, commander.js ride): the point of the field's roads, deer paths and
@@ -1226,6 +1324,8 @@ const slopeWay=(T,i,mx,my)=>T.slope(i,mx,my);
 function groundMul(u,mx,my){const T=B&&B.terrain;return T?T.speedFor(u,mx,my):1}
 function groundRun(u,mx,my,sp){const T=B&&B.terrain;return T?T.runFor(u,mx,my,sp):1}
 function climbState(u){const T=B&&B.terrain;return T?T.climbOf(u):null}
+// (his ranks still broken from a steep climb, STEEP.reform s after it (B.terrain.update's u.stc; morale.js cohesionReady); false off a steep field)
+const steepRanks=u=>u.stc!=null&&!!B&&B.t-u.stc<STEEP.reform;
 function groundSta(u){const T=B&&B.terrain;return T?T.staminaFor(u):1}
 function groundCharge(u,t){const T=B&&B.terrain;return T?T.chargeFor(u,t):1}
 function heightEdge(a,b){const T=B&&B.terrain;return T?T.heightEdge(a,b):0}

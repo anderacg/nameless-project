@@ -62,7 +62,7 @@ function reinfAfter(e,win){
    (bandits, raiders, bog raiders; lord). Riding at a party where there is cover, you may lie in wait for it instead (Spring an
    ambush). Each drawn from the tile and the day (hash), never Math.random: the game's random sequence is untouched */
 const BTYPE_WORLD={kinds:['lord','party','patrol','caravan'],near:1,cover:{forest:.35,hills:.3,field:.15},by:{bandits:1,raiders:1.2,bog:1.2,lord:.5}};
-// (a road bridge within near tiles of tile (tx,ty): its BattleSite's, worldmap.js)
+// (a road bridge within near tiles of tile (tx,ty): its BattleSite's, worldmap.js; a generated world's from its crossings, its bridges)
 const bridgeNear=(tx,ty,S=WM.battleSite(tx,ty))=>S.bridge!==null&&S.bridge<=BTYPE_WORLD.near;
 // the cover at world point (x,y) for an ambush (its BattleSite's): 'forest', 'hills', 'field' (woods or rock on its battlefield) or null; and its words
 function coverAt(x,y){const S=battleSiteAt(x,y),env=battleEnv(false,S),g=terrainOf(S,env);if(g.recipe==='forest')return 'forest';if(S.t===T_HILL||S.t===T_MOUNT||env.t===T_HILL)return 'hills';

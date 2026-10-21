@@ -644,13 +644,26 @@
        below. Varied along each hill by seed and climate (SLV: grassy, earthy, stony): bare earth through the grass, now and then a
        low turf lip; stones and small outcrops poking through (frost: dark rock through the snow, its cap white; desert: low
        sandstone ledges, broken; swamp: mud, moss and roots). Never a continuous wall, never a prop: F 4 (nothing stands there).
-       slopeAt: the edge a plateau pixel slopes to {f (1 at the foot), q (0 S, 1 E, 2 W, 3 N), st (the levels down)}, or null */
+       slopeAt: the edge a plateau pixel slopes to {f (1 at the foot), q (0 S, 1 E, 2 W, 3 N), st (the levels down), n (its band, px),
+       sk (spec.steep's bits there)}, or null.
+       A steep hill (World Phase 2, D41: spec.steep, terrain.js): its band SLS times as long, and a steep bank (bit 2) its own look,
+       a darker stony bank: shaded deeper, the climate's rock showing through, broken ledges across its south face, outcrops and
+       stones; scree (bit 4) loose grey stone, light and dark chips; its gentler shoulder (bit 1 alone) a rise as any */
+    const STP=spec.steep&&spec.steep.length===C*R?spec.steep:null,SLS=2,stAt=(x,y)=>STP?cell(STP,Math.floor(x/cs),Math.floor(y/cs)):0;
     const SLB=[10,6,4,4],SLD=[[0,1,2],[1,0,1],[-1,0,4],[0,-1,8]],SLF=[.2,.14,.09,.05,.02],SLV={grass:[.48,.7],frost:[.42,.68],desert:[.48,.62],swamp:[.4,.78]}[clim],
       VN=noise(W,H,56,seed+71,WR),VN2=noise(W,H,20,seed+72,WR),ERT=clim==='frost'?RC[3]:clim==='swamp'?MU:FC[1],SWR=clim==='swamp';
-    const slopeAt=(x,y,t)=>{let b=null;for(let q=0;q<4;q++){const [a,c,bt]=SLD[q];for(let d=1;d<=SLB[q]*t;d++){const u=Tat(x+a*d,y+c*d);if(u>=t)continue;
-      const st=t-u,n=SLB[q]*st;if(d<=n&&(!WL||edgeK(bt,x+a*d,y+c*d)===0)){const f=n>1?1-(d-1)/(n-1):1;if(!b||f>b.f)b={f,q,st}}break}}return b};
-    const slopePx=(o,x,y,i,t,sv)=>{const f=sv.f,q=sv.q,n=SLB[q]*sv.st,h=PX.hash(x,y,seed+73),fs=Math.min(1,Math.floor(f*4+h*.9)/4),rows=Math.round((1-f)*(n-1));F[i]=4;
+    const slopeAt=(x,y,t)=>{let b=null;const sk=stAt(x,y),sb=sk&1?SLS:1;for(let q=0;q<4;q++){const [a,c,bt]=SLD[q];for(let d=1;d<=SLB[q]*t*sb;d++){const u=Tat(x+a*d,y+c*d);if(u>=t)continue;
+      const st=t-u,n=SLB[q]*st*sb;if(d<=n&&(!WL||edgeK(bt,x+a*d,y+c*d)===0)){const f=n>1?1-(d-1)/(n-1):1;if(!b||f>b.f)b={f,q,st,n,sk}}break}}return b};
+    const slopePx=(o,x,y,i,t,sv)=>{const f=sv.f,q=sv.q,n=sv.n,h=PX.hash(x,y,seed+73),fs=Math.min(1,Math.floor(f*4+h*.9)/4),rows=Math.round((1-f)*(n-1));F[i]=4;
       if(q===0)mix(o,LO,.05+.23*fs);else if(q===1)mix(o,LO,.06+.24*fs);else mix(o,HI,(q===2?.12:.09)-.05*fs);// (shade by the way it faces)
+      if(sv.sk&2){mix(o,RC[3],.3+.25*NP(x,y));mix(o,LO,(q<2?.2:.1)+.18*fs);// (a steep bank: its dark rock through the cover, deeper shade)
+        if(sv.sk&4){const k=PX.hash(x,y,seed+79);if(k<.24)put(o,RC[k<.07?0:k<.16?1:3]);else if(k>.93)mix(o,RC[1],.45);if(SNW&&k>.88&&q===0)put(o,SNW[1]);return}// (scree: loose chips)
+        if(q===0&&f>.12&&rows%4===2&&PX.hash(x>>2,rows,seed+78)<.6){put(o,RC[4]);return}// (a broken ledge across it)
+        if(q===0&&f>.12&&rows%4===1&&PX.hash(x>>2,rows+1,seed+78)<.6){put(o,RC[2]);return}// (its lit lip)
+        const cx=Math.floor(x/5),cy=Math.floor(y/5),hb=PX.hash(cx,cy,seed+81);
+        if(hb<.26){const dx=x-cx*5-2,dy=y-cy*5-2+(hb*50%1-.5),r=dx*dx+dy*dy,rr=2.5+hb*20;// (an outcrop: a lit stone, its shade below)
+          if(r<rr){put(o,RC[dx+dy<-1.4?1:dx+dy>1.4?4:dy>0?3:2]);if(SNW&&dy<-1)put(o,SNW[0]);return}if(dy>0&&r<rr+4)mix(o,LO,.35)}
+        if(h<.08)put(o,RC[h<.04?3:4]);return}
       const v=.5+(VN(x,y)*.75+VN2(x,y)*.25-.5)*2,kd=v<SLV[0]?0:v<SLV[1]?1:2;
       if(kd===1&&f>.1){const e=NP(x,y);if(e>.5)mix(o,ERT,Math.min(.6,(e-.5)*3.5));if(RMOSS&&e<.3)mix(o,RMOSS,.3);// (earthy: bare earth through the grass)
         if(q===0&&rows===1&&PX.hash(x>>3,y>>4,seed+75)<.6)mix(o,FC[3],.4);// (a low turf lip over it)
@@ -795,7 +808,9 @@
     // (4) what stands on the ground. A tree's crown never hides a cliff (its foot, middle and crown kept off the faces)
     const R2=PX.dice(PX.rng(seed*31+7)),things=[],edgeCell=(i,j)=>{for(let b=-1;b<=1;b++)for(let a=-1;a<=1;a++)if(cell(kind,i+a,j+b)!==1)return true;return false};
     // a river's bridges: their decks' boxes first (nothing else stands on them or by their ends: KO). A deck spans its cells across
-    // the flow and reaches 4 px onto each bank; stone in the frost and the hills (or by a terrace), else its climate's make
+    // the flow and reaches 4 px onto each bank; stone in the frost and the hills (or by a terrace), else its climate's make; a world
+    // river's bridge as the world has it (World Phase 2: spec.recipe.river.stone, terrain.js)
+    const WST=spec.recipe&&spec.recipe.river&&spec.recipe.river.stone!=null?!!spec.recipe.river.stone:null;
     const R3=PX.dice(PX.rng(seed*53+11)),KO=[],keep=(x,y)=>KO.some(b=>x>=b[0]&&x<b[2]&&y>=b[1]&&y<b[3]);
     const comps=k=>{const seen=new Uint8Array(C*R),out=[];for(let q0=0;q0<C*R;q0++){if(kind[q0]!==k||seen[q0])continue;const st=[q0],b={c0:C,c1:-1,r0:R,r1:-1};seen[q0]=1;
       while(st.length){const q=st.pop(),i=q%C,j=(q-i)/C;if(i<b.c0)b.c0=i;if(i>b.c1)b.c1=i;if(j<b.r0)b.r0=j;if(j>b.r1)b.r1=j;
@@ -803,7 +818,7 @@
     BRs=hasW?comps(5).map(b=>{let lo=1e9,hi=-1;const A0=(flowV?b.r0:b.c0)*cs,A1=((flowV?b.r1:b.c1)+1)*cs,s0=Math.max(0,(flowV?b.c0:b.r0)*cs-32),s1=Math.min(flowV?W:H,((flowV?b.c1:b.r1)+1)*cs+32);
       for(let a=A0;a<A1;a++)for(let q=s0;q<s1;q++){const v=flowV?Wv(q,a):Wv(a,q);if(v&&v!==255){if(q<lo)lo=q;if(q>hi)hi=q}}
       const t0=Math.min((flowV?b.c0:b.r0)*cs,lo)-4,t1=Math.max(((flowV?b.c1:b.r1)+1)*cs,hi+1)+4,box=flowV?[t0,A0,t1,A1]:[A0,t0,A1,t1];
-      let stone=RP.bridge==='stone'||/hill/.test(rk);for(let j=b.r0-2;j<=b.r1+2&&!stone;j++)for(let i=b.c0-2;i<=b.c1+2;i++)if(cell(lvl,i,j)){stone=true;break}
+      let stone=WST!=null?WST:RP.bridge==='stone'||/hill/.test(rk);for(let j=b.r0-2;j<=b.r1+2&&!stone&&WST==null;j++)for(let i=b.c0-2;i<=b.c1+2;i++)if(cell(lvl,i,j)){stone=true;break}
       KO.push([box[0]-8,box[1]-10,box[2]+8,box[3]+12]);return{box,stone,reach:[box[0]-12,box[1]-12,box[2]+12,box[3]+16]}}):[];
     const clear=(x,y)=>!Fat(x,y)&&!Fat(x,y-6)&&!Fat(x,y-12)&&!Fat(x-5,y-7)&&!Fat(x+5,y-7)&&!Wat(x,y)&&(!hasW||Dl(x,y)>9&&!keep(x,y)),SPN=noise(W,H,56,seed+20),DN=noise(W,H,40,seed+21);
     // (a standing tree, 32 px: its foot and crown kept off the cliffs (a crown never hides one), the pools and the river's banks)

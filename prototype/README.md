@@ -63,6 +63,7 @@ js/world/             the campaign map and everything on it
   map.js territory.js   terrain, climate, pathfinding; each holding's land
   fog.js                the fog of war: the land you have explored (W.seen) and what you see now
   worldmap.js           the WorldMap: its size and layers, one map in at a time (WM); battleSite, what a battle reads of its tile
+                        (a generated world's river, crossing, height and high ground too)
   worldsettings.js worldgen.js worldplace.js
                         the world generator (doc/WORLD_DESIGN.md, behind WORLD.gen): the clamped settings, the terrain stages 1-6,
                         the placement stages 7-9 (holdings, roads and crossings, camps); seeded, never Math.random
@@ -457,6 +458,21 @@ Tunables: `AI_TACTICS` in `battle/commander.js`, `CHAR_FALL` in `battle/charmind
   - Captains measure tops by the way round (a ramp on the far side is far), and go looking when they have seen no one for 10 s (`captainSearch`).
   - Cost: +0.6 ms/frame at 800 soldiers on a cliff, mountain and river field; none on fields where nothing blocks.
   - Tests: `tests/routing.js`, `tests/route.js`. Reports: `tests/visual/terrainperf.js`, `tests/visual/terrainbalance.js`.
+- **The world's ground (World Phase 2, behind `WORLD.gen`; doc/WORLD_DESIGN.md §13, §15.2.1):** a generated world fills its `BattleSite`s (`WorldMap#battleSite`: `river`, `crossing`, `elev`, `terrace`, `rough`, `high`); today's map leaves them null, so its fields are as before.
+  - **River width:** the world's width 1, 2, 3 gives 3, 5 or 8 cells of deep water (`TERRAIN_RIVER.widths`, half 24 / 40 / 64 px; `BattleRiver.half`). A held bridge keeps it (`spec.wr`, laid over the river spec).
+  - **Crossings** (the nearest within `WORLD_SCALE.battle.bridge` tiles): the world's bridge is the field's one bridge (and a ford), stone or wood as on the map; a ford's river has fords only; a ferry's one ford at its landing; none near, fords as before. *Hold the bridge* (`bridgeNear`) reads the world's bridges.
+  - **Wet ground:** a delta or floodplain lays marsh beside the river in mirrored pairs, a delta's channels too (`TERRAIN_WET`, `FieldPlan#planWet`), never in a zone or the open lane.
+  - **High ground** (D41, the tile's `high`): a rise is never cliffed, a cliffed hill always, a steep hill steep (`planFeatures`, `planSteep`); none: the recipe's chances.
+- **Steep hills** (D41; `STEEP` in `battle/terrain.js`, `B.terrain.steep`; `tests/steephills.js`):
+  - **The bank** is 2 cells a level (`STEEP.band`), climbed anywhere but slowly: foot ×0.32, riders ×0.3 (the floor: they crawl); dwarves as up a rise. Running up it tires ×3.5, walking up it tires too.
+  - **Ranks break** on it (no cohesion, no shield wall or wedge) and for 2 s after the climb (`steepRanks`, morale.js).
+  - **Momentum:** none builds or is kept going up; a charge down off it hits ×1.7 (a rise ×1.35). **Height:** range +15% a level (a rise +7.5%), blows down +25%.
+  - **Scree:** riders keep no momentum on it; shooters on a scree hill reach 5% a level farther.
+  - **A mixed hill's shoulder** is a rise; it faces up or down the field on a lone hill and is mirrored on a pair, so both armies reach it alike.
+  - **Routing** prices the banks (`STEEP.route`: foot ×3, riders ×4.5 the open cost; `route.js` `routeGridOf`, the grids' `wcap`), so groups go up by a shoulder or a ramp when one is near. A steep field routes as a cliff field does.
+  - **The AI** holds a steep crest before a rise (`TERRAIN_AI.steepHold`) and never runs up at one, whatever the odds.
+  - **Look:** a darker stony bank, broken ledges and outcrops; scree loose grey stone; the shoulder a rise (`engine/ground.js` `slopePx`). Awaiting the owner's approval.
+  - **Lab:** a hill's `steep`, `scree` and `shoulder` (degrees); `site: {river: {w, delta, flood}, crossing: {kind, stone}, high: {kind, scree, mixed, shoulder}}` (`labSite`) as a generated world's tile.
 - **Battle types** (`BTYPE` in `battle/setup.js`, `B.btype`; triggers in `battle/engage.js`; only with terrain):
   - **Hold the bridge:** a fight with a lord, band, patrol or caravan on a road bridge or next to one (not in the frost, where the river is ice, nor the desert).
     - The field: a river of impassable deep water with a single bridge in the open lane near the middle; 40% of places (by the tile) also have a ford far off it, when the field is tall enough (≥100 px between).

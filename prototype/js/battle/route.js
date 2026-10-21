@@ -21,10 +21,13 @@ function routeGrid(C,R,cs){const N=C*R;return{C,R,cs,cost:new Uint8Array(N).fill
 /* the grid of a battle's ground (B.terrain): each kind's cost by TGROUND's speed for who ('foot', 'mounted' or 'big'), a bridge
    or open ground ROUTE.unit; deep water impassable when o.deep (default ROUTE.deep), else waded at its cost (as crossWay weighs
    it). For the generator to fill: a TERRAIN_GROUND entry with solid (mountains, rock spires) or a kind past TGROUND is
-   impassable; T.wall, if any, is the cliffs (this file's edge bits) */
+   impassable; T.wall, if any, is the cliffs (this file's edge bits). A steep bank (T.steep bit 2, terrain.js STEEP: World Phase 2)
+   costs STEEP.route[who]×ROUTE.unit, and g.wcap is then the dearest cell a straight way crosses and is still clear (one less than
+   the cheapest steep bank: terrain.js TerrainRoutes), so a way goes by a shoulder or a ramp when one is near */
 function routeGridOf(T,o={}){
   const g=routeGrid(T.C,T.R,T.cs),deep=o.deep??ROUTE.deep,w=o.who||'foot',K=T.kind,U=ROUTE.unit;
   for(let i=0;i<K.length;i++){const k=K[i],Gd=TGROUND[k];g.cost[i]=k>=TGROUND.length||Gd&&Gd.solid||k===TKIND.deep&&deep?0:Gd?Math.min(255,Math.max(1,Math.round(U/(Gd.spd[w]||Gd.spd.foot)))):U}
+  if(T.steep){const S=T.steep,c=Math.min(255,Math.round(U*STEEP.route[w]));for(let i=0;i<S.length;i++)if(S[i]&2&&g.cost[i])g.cost[i]=Math.max(g.cost[i],c);g.wcap=Math.round(U*Math.min(...Object.values(STEEP.route)))-1}
   if(T.wall)g.wall.set(T.wall);return g}
 // (cell c,r's cost: 0 impassable)
 function routeCell(g,c,r,k){g.cost[r*g.C+c]=k;g.v++}
