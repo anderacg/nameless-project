@@ -93,6 +93,7 @@ Owner (2026-10-19): ale and liquor slow the drain and lift morale; water does ne
 - Falls with battle losses (the wounded), frostbite, thirst, hunger and swamp fever.
 - Rises as the wounded heal: as today (Medicine, a surgeon), faster in camp or a holding.
 - Hovering it shows: fit, wounded, how many of them are sick, what is hurting them, and the men lost lately.
+- **Swamp fever** (owner, 2026-10-21; `SUPPLY.fever`), as thirst and hunger: on a fever night (as often as before) a man **falls sick** with fever (half the time; before, he died outright), and a man already sick of it may **die** (20%, less 2% a level of Medicine, never under 5%), a sick one first.
 - **The sick** are wounded (out of the line, riding with you, eating, healing as the wounded do), with the cause kept (`BAND.sick`: thirst, hunger, exhaustion, frostbite). **The lost** (died of thirst or hunger, deserted) are kept for 7 days (`BAND.lost`). Both are saved only when there are any.
 - **The troops tab** (Hero window) has a **Wounded and sick** section: each kind's wounded and sick and why, the share fit again each day and what would raise it (camp, a holding, Medicine), and **Lost on the road** these 7 days.
 

@@ -116,8 +116,11 @@ function survive(){
     const need=P.furNeed();
     if(goodN('furs')<need){P.morale-=Math.ceil(SUPPLY.frost.morale*sv);log('Your band shivers through the night. Carry 1 fur for every '+SUPPLY.furPer+' people in the frost ('+need+' needed).','bad')}
   }else if(clim==='swamp'&&!home.includes('swamp')&&Math.random()<Math.max(.05,.25-.02*skill('surv'))){
-    P.morale-=Math.ceil(5*sv);const ks=Object.keys(P.troops).filter(k=>P.troops[k]>0);
-    if(ks.length&&Math.random()<.5){const k=ks[rint(0,ks.length-1)];P.remove(k);log('Swamp fever takes '+an(ST[k].n.toLowerCase())+'.','bad')}else log('Swamp fever spreads through the camp. Morale drops.','bad');
+    // (the owner, 2026-10-21: as thirst and hunger, a sickness first: a man falls sick with fever, and one already sick may die of it,
+    // a sick one first: world/supply.js; SUPPLY.fever)
+    const F=SUPPLY.fever;P.morale-=Math.ceil(5*sv);
+    if(Object.keys(BAND.sick).some(k=>BAND.sick[k].fever>0)&&Math.random()<Math.max(F.dieMin,F.die-F.med*skill('med')))supplyDie('fever');
+    if(Object.keys(P.troops).some(k=>P.troops[k]>0)&&Math.random()<F.sick)supplyHurt('fever');else log('Swamp fever spreads through the camp. Morale drops.','bad');
   }
 }
 // your troops' average Morale (matchups.js unitMoraleOf), by their numbers; null with none

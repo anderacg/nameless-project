@@ -25,6 +25,10 @@ try{
  let fever=0;for(let k=0;k<200;k++){P.morale=80;P.troops={militia:9};P.sk.surv={lv:0,xp:0};// the untrained rate (Survival would learn from it)
   at(spot.swamp,()=>t.survive());if(P.morale<80)fever++}
  ok(fever>20&&fever<80,'swamp fever strikes about a quarter of nights ('+fever+'/200)');
+ // (the fever by the new rules: a man falls sick of it first, and on a later fever night one sick of it may die, a sick one first)
+ {const r0=Math.random;Math.random=()=>0;try{P.troops={militia:9};P.wounded={};P.woundedGroups=[];t.BAND.sick={};t.BAND.lost=[];P.morale=80;at(spot.swamp,()=>t.survive());
+  const sick1=P.troops.militia===8&&P.wounded.militia===1&&t.BAND.sick.militia.fever===1&&!t.BAND.lost.length;at(spot.swamp,()=>t.survive());
+  ok(sick1&&t.BAND.lost.length===1&&t.BAND.lost[0].why==='fever'&&P.wounded.militia===1&&P.troops.militia===7,'swamp fever makes a man sick first; a later fever night may kill one sick of it (a sick man first)')}finally{Math.random=r0}}
  const ash=t.townBy('Ashford');P.x=ash.x;P.y=ash.y+20;P.morale=80;setGood('furs',0);t.survive();ok(P.morale===80,'holdings shelter you');
  // battlegrounds
  P.troops={hum_levy:4,dw_clan:4,hum_bow:4,hum_squire:3};

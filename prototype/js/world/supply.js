@@ -27,6 +27,8 @@
    fill: waterskins fill to days of drink on the march, free, beside water (within near tiles) or a holding's well (within well
    px); furPer: 1 fur for every so many people in the frost; frost: frostbite after every so many hours' worth of shortage (a
    man wounded), and −morale a night short of furs (survive, world.js).
+   fever: swamp fever (world.js survive, a fever night): a man falls sick (sick), and one already sick of it may die (die, less med
+   a level of Medicine, never under dieMin).
    battleMin: your side starts a battle at the band's stamina, never under this. camp: the wounded heal × heal; caught: −morale
    when a hostile band finds you in camp. hint: the first-run hint once stamina falls under this. hurt: causes kept for the card */
 const SUPPLY={march:2,rough:1.5,night:1.3,forced:1.5,dry:1.5,desertDry:2,cold:.5,mounted:.7,skill:.03,skillCap:.5,guide:.9,
@@ -36,7 +38,7 @@ const SUPPLY={march:2,rough:1.5,night:1.3,forced:1.5,dry:1.5,desertDry:2,cold:.5
   drink:{per:6,rest:.5,order:['water','ale','liquor'],water:{drain:1,morale:0},ale:{drain:.9,morale:1},liquor:{drain:.8,morale:2}},
   thirst:{desert:2,parched:12,pace:.85,morale:1,dying:24,death:48,toll:6},lost:{days:7,keep:20},
   fill:{days:2,near:3,well:40},furPer:5,frost:{every:6,morale:1},
-  battleMin:25,camp:{heal:1.5,caught:8},hint:60,hurt:3};
+  battleMin:25,camp:{heal:1.5,caught:8},hint:60,hurt:3,fever:{sick:.5,die:.2,dieMin:.05,med:.02}};
 
 /* the band's own record, kept beside P (not on it: P is your hero's record too, which every battle's snapshot holds whole): its
    camp ({at: the hour it was made} or null) and the hour's counters: food and drink due (fractions of a ration), hours hungry,
@@ -194,7 +196,7 @@ Systems.add({name:'supply',order:{hour:10,frame:55},hour:supplyHour,frame:supply
 
 /* ---------- the wounded and the sick (the troops tab, character.js troopCards; the card's health tip): each kind's wounded, those
    of them sick and of what, the share fit again by tomorrow (world.js healShare) and what would raise it; the men lost lately ---------- */
-const WHY_SICK={thirst:'thirst',hunger:'hunger',exhaustion:'exhaustion',frostbite:'frostbite'};
+const WHY_SICK={thirst:'thirst',hunger:'hunger',exhaustion:'exhaustion',frostbite:'frostbite',fever:'swamp fever'};
 function lostLines(){const by={};for(const x of BAND.lost.filter(x=>G.day-x.day<SUPPLY.lost.days)){const w=x.why==='deserted'?'Deserted':'Died of '+x.why;(by[w]=by[w]||{})[x.k]=(by[w][x.k]||0)+1}
   return Object.keys(by).map(w=>w+': '+Object.keys(by[w]).map(k=>ST[k].n+' ×'+by[w][k]).join(', '))}
 function healthLines(){sickTrim();const s=sickN(),l=lostLines();return (s?s+' of them sick. ':'')+(l.length?'Lost lately: '+l.join('; ')+'.':'')}
