@@ -114,8 +114,8 @@ js/battle/            encounters.js (dialogs, outcomes by kind: ON_WIN), parley.
                       combat.js (the hero's manual control: combos, dodge, block, the bow, skills; set aside for now,
                       MANUAL_HERO in battle.js), spatial.js (the spatial grid), terrain.js (the field's ground and sight: BattleTerrain, B.terrain itself, with
                       its parts TerrainRoutes and BattleSight; class wave E1), route.js
-                      (route-finding round cliffs and water), battlefog.js (fog of war), charmind.js (characters' mind), commander.js
-                      (the AI captains), beastmind.js (beasts' tactics), abilities.js (casting), formations.js, morale.js (group resolve),
+                      (route-finding round cliffs and water), battlefog.js (fog of war), charmind.js (characters' mind: CharacterMind, HeroMind, ChampionMind), commander.js
+                      (the AI captains: Commander, EnemyCommander), beastmind.js (beasts' tactics: PackMind; class wave E2), abilities.js (casting), formations.js, morale.js (group resolve),
                       fatigue.js (stamina), unitabilities.js (Brace, Fire arrows, Spur, Rally), physics.js (mass, turning, impact),
                       commandpowers.js (the commander's powers), camera.js, deploy.js (deployment and Auto), lab.js (the battle laboratory)
 js/scene/             walkable maps of the places you enter: scene.js (walking, paths, talking, in and out), town.js (town layouts);
@@ -275,7 +275,7 @@ These files still share live `B`, `G` and `P` records and runtime callbacks. Thi
 
 | Owner | Main runtime connections |
 | --- | --- |
-| `commands.js` / `commander.js` / `charmind.js` | Player orders (`commands.js`, one `playerOrder` path) and AI captains (`commander.js`: `captain` builds a shared context with `captainCtx`, then `captainInf`, `captainRally`, `captainShooters`, `captainCav`, `captainHero`; each captain's memory is one object, `captainMem(ck)` = `B.captains[ck]`) all issue orders through `BattleControl`; the character mind (heroes, companions, lords, chieftains; fall-back) is `charmind.js`; beasts' ways (packs, rushes, ambushes: `captainBeasts`, handed the beast groups by `captain` through `beastsOf`) are `beastmind.js`. |
+| `commands.js` / `commander.js` / `charmind.js` | Player orders (`commands.js`, one `playerOrder` path) and AI captains (`commander.js`: one `Commander` for each side, `Commander.of(ck)`, `EnemyCommander` the enemy's; each think `orders()` reads the battle with `read` (a shared context), then `infantry`, `rally`, `shooters`, `cavalry`, `hero`, and `finish`; each captain's memory is one object, `captainMem(ck)` = `B.captains[ck]`) all issue orders through `BattleControl`; the character mind (heroes, companions, lords, chieftains; fall-back) is `charmind.js` (`CharacterMind.of(u)`: `HeroMind`, `ChampionMind`); beasts' ways (packs, rushes, ambushes: `PackMind.think`, called as `captainBeasts`, handed the beast groups by `orders` through `beastsOf`; the ways the table `BEAST_WAYS`) are `beastmind.js`. The old function names stay as aliases (doc/STORY_DESIGN.md §7, wave E2). |
 | `battlecontrol.js` | Owns group order state and relocation generations; uses actor target queries and formation helpers. |
 | `actors.js` | Reads orders; delegates character turns, attacks, fatigue and rout/withdraw movement. |
 | `attacks.js` | Executes damage/strikes, launches projectiles, and calls morale, XP, character and visual helpers. |
