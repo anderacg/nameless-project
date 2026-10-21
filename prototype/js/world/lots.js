@@ -203,7 +203,7 @@ const wallBox=t=>Layout.of(t).wallBox();
 const estateLot=(t,k,R,at,st)=>Layout.of(t).estateLot(k,R,at,st);
 const syncLots=t=>Layout.of(t).sync();
 
-/* building takes time (estates.js Buildings: speed, days, progress, start, houseDone) */
+/* building takes time (buildings.js Buildings: speed, days, progress, start, houseDone) */
 const buildSpeed=t=>Buildings.of(t).speed();
 const workDays=(t,lv)=>Buildings.of(t).days(lv);
 const workProg=t=>Buildings.of(t).progress();
@@ -239,7 +239,7 @@ function placeClick(wx,wy){
   if(t.work)G.place=null;
 }
 const buildHouse=(t,at)=>Buildings.of(t).house(at);
-// pull a building down: half of what it last cost comes back; its estate is gone (estates.js Buildings demolish)
+// pull a building down: half of what it last cost comes back; its estate is gone (buildings.js Buildings demolish)
 const demolish=(t,l)=>Buildings.of(t).demolish(l);
 
 

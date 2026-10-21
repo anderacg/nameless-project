@@ -7,7 +7,7 @@
    minimap (mapDot: [colour, size] or none). here(): still on the map, in its kind's list; chaseable(): still worth walking to
    (a chase after one gone ends); meetsAnyTime: met as soon as you reach it, even just after a fight (G.encCool). Behaviour
    only: saves keep plain data, made one of its kind again on loading or when the map next asks (asClass; world.js
-   asWorldObject, worldObjects). The parties and caravans (here), holdings and estates (estates.js), sites, beasts (monsters.js),
+   asWorldObject, worldObjects). The parties and caravans (here), holdings (holding.js) and estates (estates.js), sites, beasts (monsters.js),
    herds (critters.js), refugees, workers (folk.js) and ships are world objects. ---------- */
 // (in sight: within your sight, or nearer where it hides in woods or hills)
 const spotted=(o,V)=>Math.hypot(o.x-P.x,o.y-P.y)<V*(hiddenAt(o.x,o.y)?.45:1);

@@ -20,7 +20,7 @@ class Refugees extends WorldObject{
 }
 const asRefugees=asClass(Refugees);
 const REFUGEE_CAP=density().refugees,REFUGEE_SPD=11;
-// why people would leave a holding, or '' if they stay; where they go (holdings.js Holding fleeReason, refuge)
+// why people would leave a holding, or '' if they stay; where they go (holding.js Holding fleeReason, refuge)
 const fleeReason=t=>t.fleeReason();
 const refuge=t=>t.refuge();
 function sendRefugees(t,to,why){

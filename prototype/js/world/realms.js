@@ -170,10 +170,10 @@ const armyOf=(f,n)=>realmOf(f).army(n);
 // a holding's guards come from its people: each new one is a volunteer (t.vol, the pool you recruit from too) who leaves the
 // population for the garrison. A holding needs at least GUARD_FLOOR people left; returns how many it could draft (up to n)
 const GUARD_FLOOR=20;
-const draftLocals=(t,n)=>t.draft(n);// (holdings.js Holding draft)
+const draftLocals=(t,n)=>t.draft(n);// (holding.js Holding draft)
 const canDraft=t=>t.canDraft();
 function garList(t){const a=[];for(let i=0;i<t.gar;i++){const c=RACES[t.races[i%t.races.length]];a.push(i%7===6?c.mage:i%3===2?c.ranged:i%4===1?c.shield:i%2?UP[c.melee][0]:c.melee)}return a}
-// a holding's first day (holdings.js Holding setUp); a generated world's economy setting (doc/WORLD_DESIGN.md §4.1) on its
+// a holding's first day (holding.js Holding setUp); a generated world's economy setting (doc/WORLD_DESIGN.md §4.1) on its
 // first stocks (ECON_STOCK: poor or rich)
 const ECON_STOCK={poor:.75,rich:1.3};
 const initHolding=t=>t.setUp();
