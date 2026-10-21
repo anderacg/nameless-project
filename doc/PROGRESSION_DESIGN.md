@@ -62,8 +62,8 @@ A path is a line of the tier tree (`UP`): spear, sword-and-shield, bow, crossbow
 |---|---|
 | **Spear** | Brace drill (Brace sooner and longer), Long spears (+reach), Hedge (resist cavalry charges) |
 | **Sword and shield** | Shield wall (block more in formation), Push of shields (knockback), Steady (morale) |
-| **Bow** | Volley (wider spread, stronger first volley), Steady aim (accuracy), Fire arrows (unlock) |
-| **Crossbow** | Pavise (cover while reloading), Bolt-thrower (damage vs armour) |
+| **Bow** | Volley (wider spread, stronger first volley), Steady aim (accuracy), Fire arrows (unlock), Full quiver (+25% shots: ITEMS_DESIGN.md §2b) |
+| **Crossbow** | Pavise (cover while reloading), Bolt-thrower (damage vs armour), Full case (+25% bolts) |
 | **Light cavalry** | Skirmish (wheel and return), Pursuit (run down routers), Scout ahead (longer) |
 | **Heavy cavalry** | Couched lance (charge damage), Barding (resist arrows), Reform (regroup fast) |
 | **Mages** | Ward (resist magic), Focus (cast speed), the race's school |
