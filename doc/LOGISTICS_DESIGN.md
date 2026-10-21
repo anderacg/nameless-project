@@ -170,7 +170,7 @@ Food on arrival: 4 days · Water on arrival: 0 days
 - It adds the free water on the way: wells of holdings you pass within reach, rivers, lakes and oases next to the route.
 - It counts friendly holdings where auto-resupply would buy.
 - It marks the **first failure** (food, water or furs) and the **nearest fix** (a well, a holding, a river) with its detour.
-- **The Supplies window** (the reference image's left panel, in the frame rule): the band's banner and size, where it marches; **Food** and **Water** each as a bar with `current / capacity` and **days** large; the state's warning (e.g. WATER CRITICAL); **Supply source**: the nearest place that resupplies you (a friendly holding, a well) and how far; **Route status**: clear, or threatened (bands, beasts or enemy lords near your route, from the land defence's threats). The rations and resupply orders on the right, as the reference's Orders column (Normal rations, Rationing, Forage, Purchase). It fits a phone on its side: the panel and the orders stack.
+- **The Supplies window** (the reference image's left panel, in the frame rule): the band's banner and size, where it marches; **Food** and **Water** each as a bar with `current / capacity` and **days** large; the state's warning (e.g. WATER CRITICAL); **Supply source**: the nearest place that resupplies you (a friendly holding, a well) and how far; **Route status**: clear, or threatened (bands, beasts or enemy lords near your route, from the land defence's threats). **No Orders column** (owner, 2026-10-21): the rations and resupply choices (§6) are one compact row inside the panel, under the two pools, and on the action ring; Forage is the camp's order (§7). It fits a phone on its side as one column.
 - **The full map (M)** draws the route coloured by supply: green fine, yellow low, red failing. Wells, oases and friendly holdings show as supply points.
 - The preview is a projection only; nothing is spent until you march.
 
@@ -235,7 +235,7 @@ How each part of [army-logistics-food-water-design.md](army-logistics-food-water
 | Supply network: nodes and routes, interdiction | **later** | §9: convoys (your caravans), depots; the router's way graph is ready for it |
 | Region logistics profiles (farmland to city) | **adapted** | §7's forage yields and water by terrain and climate (one table); water safety later |
 | Seasonal events (drought, harvest, winter, flood, blockade) | **later** | World Phase 5 (the calendar, seasonal rivers) |
-| Orders: rations, forced march, forage, purchase, await convoy, raid | **adapted** | §6 rations and resupply; Forage §7; Forced March exists (a perk); await convoy and raid later |
+| Orders: rations, forced march, forage, purchase, await convoy, raid | **adapted** | no Orders column (owner): §6's rations and resupply as one row in the Supplies window and on the action ring; Forage §7 (a camp order); Forced March exists (a perk); await convoy and raid later |
 | Army panel (days first, state, source, route) | **in** | §8 the Supplies window |
 | Map overlays | **later** | §9 |
 | March preview (days, food and water left, first failure) | **in** | §8 |
