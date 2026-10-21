@@ -31,6 +31,8 @@ try{
  reset();const cw={crit:true,id:'cow',x:P.x+10,y:P.y,hx:P.x,hy:P.y,n:3,home:'Ashford',t:0,a:0,dir:1,tire:0,cool:4,milked:0};W.critters=[cw];click(cw.x,cw.y-4);ok(G.mode!=='herd'&&t.pickAt(cw.x,cw.y-4)!==cw,'a herd of livestock is not clicked: nothing to buy');
  // a click on something far away walks you there; you meet it only on contact
  reset();W.critters=[];const far2=t.TOWNS.find(x=>x!==ash&&Math.hypot(x.x-ash.x,x.y-ash.y)<30*t.TILE)||t.TOWNS[1];P.x=far2.x+60;P.y=far2.y;G.lastTown=null;
+ // (60 px off it on open ground in plain line of it: east, as today's map has it, else the first way round that is)
+ for(const [dx,dy] of [[60,0],[-60,0],[0,60],[0,-60],[42,42],[-42,42],[42,-42],[-42,-42]]){const x=far2.x+dx,y=far2.y+dy;if(t.tAt(Math.floor(x/t.TILE),Math.floor(y/t.TILE))===t.T_OPEN&&t.clearLine(x,y,far2.x,far2.y)){P.x=x;P.y=y;break}}
  W.patrols=[];W.caravans=[];W.refugees=[];W.folk=[];t.bandits.length=0;W.monsters=[];G.encCool=1e9;// nobody on the road to meet on the way
  click(far2.x,far2.y);ok(G.mode==='world'&&G.chase===far2&&P.tx!=null,'clicking a holding 60 away does not open it, your band walks there');
  for(let i=0;i<400&&G.mode==='world';i++)t.updateWorld(.05);ok(G.mode==='town'||G.mode==='besiege','on arrival it opens ('+G.mode+' '+(G.mode==='dialog'?document.getElementById('panel').textContent.slice(0,160):'')+')');t.hidePanel();G.mode='world';G.modal=false;G.town=null;

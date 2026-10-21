@@ -196,7 +196,7 @@ try{
  // while the two are compared below; the parties and caravans draw themselves in both)
  // (and the parties' banners, drawn over all, as now: drawBanners; a spot on a banner picks its party, below)
  const PLINE=/if\(!P\.stay\)ents\.push\(\{y:P\.y,(?:own:1,)?f:\(\)=>\{[\s\S]*?\}\}\);/,nowP=t.drawWorld.toString().match(PLINE)[0];const onFlag=(q,x,y)=>{const B=q&&q.banner&&t.bannerAt(q,0);if(!B)return false;const b=t.opaqueBox(B.s);return x>=B.x+b[0]&&x<=B.x+b[2]&&y>=B.y+b[1]&&y<=B.y+b[3]};
- const oldDraw=ev('('+depthDraw(since(OLD_DRAW)).replace(PLINE,()=>nowP).replace('estateEnts(bents,cam,V)','__oldLotEnts(bents,cam,V)').replace('drawFolk(ents,cam,V)','__oldDrawFolk(ents,cam,V)').replace('drawShips(ents,cam,V)','__oldDrawShips(ents,cam,V)').replace('drawRefugees(ents,cam,V)','__oldDrawRefugees(ents,cam,V)').replace('worldObjects()','[...W.parties,...W.caravans.map(asParty)]').replace('atSize(miniCv,mw,mh)','atSize(WorldArt.mini(1),mw,mh)').replace("ctx.save();ctx.beginPath();ctx.rect(0,0,VW,VH);ctx.arc(px0,py0,V,0,Math.PI*2,true);ctx.clip('evenodd');ctx.drawImage(memCv(),0,0);ctx.restore();",'fogMem(memCv(),px0,py0,V);').replace(/const px=P\.x-cam\.x,py=P\.y-cam\.y,gr=[^\n]*\n\s*drawDark\(cam\);/,'drawWorldFog(cam,V);')+')');
+ const oldDraw=ev('('+depthDraw(since(OLD_DRAW)).replace(PLINE,()=>nowP).replace('estateEnts(bents,cam,V)','__oldLotEnts(bents,cam,V)').replace('drawFolk(ents,cam,V)','__oldDrawFolk(ents,cam,V)').replace('drawShips(ents,cam,V)','__oldDrawShips(ents,cam,V)').replace('drawRefugees(ents,cam,V)','__oldDrawRefugees(ents,cam,V)').replace('worldObjects()','[...W.parties,...W.caravans.map(asParty)]').replace('atSize(miniCv,mw,mh)','atSize(WorldArt.mini(Math.ceil(MW/256)),mw,mh)').replace("ctx.save();ctx.beginPath();ctx.rect(0,0,VW,VH);ctx.arc(px0,py0,V,0,Math.PI*2,true);ctx.clip('evenodd');ctx.drawImage(memCv(),0,0);ctx.restore();",'fogMem(memCv(),px0,py0,V);').replace(/const px=P\.x-cam\.x,py=P\.y-cam\.y,gr=[^\n]*\n\s*drawDark\(cam\);/,'drawWorldFog(cam,V);')+')');
  ok([OLD_PICK,OLD_INTERACT,OLD_TIP,OLD_DRAW].every(s=>s.length>500)&&/estateEnts\(bents/.test(OLD_DRAW)&&/worldObjects\(\)/.test(OLD_DRAW),'the old ways are kept as text ('+[OLD_PICK,OLD_INTERACT,OLD_TIP,OLD_DRAW].map(s=>s.length).join(', ')+' characters)');
  // ---- a crowd by a holding: a lord, a band beside him, two patrols, a caravan, your companion's party, a beast and the dragon,
  // herds wild and kept, refugees, workers on the road, every kind of site and a ship; some made as a save or a test makes them
@@ -210,7 +210,9 @@ try{
  const pn=t.asParty({pt:true,watch:'night',home:tw.name,fac:tw.owner,troops:['hum_spear','hum_bow'],x:cx-40,y:cy+20,wx:null,wy:null,cool:0,dir:-1});W.patrols.push(pn);
  const cv=t.asParty({cv:true,fac:tw.owner,from:tw.name,to:other.name,x:cx+30,y:cy+6,goods:{grain:5},guards:3,cool:0,dir:-1});W.caravans.push(cv);
  P.comps={brann:{ap:5,role:''}};t.compInit('brann').lv=3;P.troops={hum_levy:6};t.cpGive('brann','hum_levy',4);const cp=P.comps.brann.party;Object.assign(cp,{x:cx+14,y:cy-12,order:'stay'});
- const mo={id:'wolf',x:cx-12,y:cy-14,hx:cx-12,hy:cy-14,lv:2,n:3,t:0,a:0,cool:0},dr={id:'dragon',x:cx+44,y:cy-30,hx:cx,hy:cy,tx:cx,ty:cy,lv:1,n:1,t:0,a:0,cool:5,dir:-1};W.monsters.push(mo,dr);
+ // (the dragon on walkable ground: a load moves anything off water or peaks, unstick, and a generated world may have them there)
+ const [dx,dy]=[[44,-30],[44,30],[-44,30],[-44,-30],[60,0],[-60,0]].find(([a,b])=>t.passable(t.terrAt(cx+a,cy+b)))||[44,-30];
+ const mo={id:'wolf',x:cx-12,y:cy-14,hx:cx-12,hy:cy-14,lv:2,n:3,t:0,a:0,cool:0},dr={id:'dragon',x:cx+dx,y:cy+dy,hx:cx,hy:cy,tx:cx,ty:cy,lv:1,n:1,t:0,a:0,cool:5,dir:-1};W.monsters.push(mo,dr);
  const deer={crit:true,id:'deer',x:cx-30,y:cy-4,hx:cx-30,hy:cy-4,n:3,t:0,a:0,dir:1,tire:0,cool:0},cow={crit:true,id:'cow',x:cx+22,y:cy+16,hx:cx,hy:cy,n:3,home:tw.name,t:0,a:0,dir:-1,tire:0,cool:0,milked:0};W.critters.push(deer,cow);
  const rf=t.sendRefugees(tw,other,'hardship');if(rf)Object.assign(rf,{x:cx+40,y:cy-10});
  const rf2={rf:true,from:other.name,to:tw.name,n:7,why:'hunger',race:'human',goods:{},purse:3,x:cx-6,y:cy+24,dir:-1,cool:0};W.refugees.push(rf2);
@@ -253,9 +255,12 @@ try{
  // ---- pick: the same thing on every spot as before, round the crowd, the holding's estates and fields, and the sites
  {const V=t.vis(),areas=[[cx,cy,60,50,2]];for(const e of ests)areas.push([e.x,e.y,40,40,3]);
   for(const e of ests)for(const [x,y] of t.plotsAt(tw,e.k,t.bldLv(tw,e.k)).slice(0,2))areas.push([x*TILE+8,y*TILE+8,14,14,2]);
+  // (a worker at work on his estate's ground is picked since field work came (folk.js folkSeen): the old ways knew none, and
+  // picked the estate or nothing there; today's map's spots here have none at work, a generated world's may)
+  const field=(c,a)=>t.objKind(c)==='worker'&&c.st==='field'&&(!a||t.objKind(a)==='estate');
   let n=0;const diff=[],seen=new Set();
   for(const [ax,ay,rx,ry,st] of areas){const px=P.x,py=P.y;if(Math.hypot(ax-P.x,ay-P.y)>V)Object.assign(P,{x:ax,y:ay+30});
-   for(let y=ay-ry;y<=ay+ry;y+=st)for(let x=ax-rx;x<=ax+rx;x+=st){n++;const a=oldPick(x,y),c=t.pickAt(x,y);if(c)seen.add(t.objKind(c));if(a!==c&&onFlag(c,x,y))continue;if(a!==c)diff.push(Math.round(x-ax)+','+Math.round(y-ay)+' '+(t.objKind(c)||c)+'≠'+(t.objKind(a)||a))}
+   for(let y=ay-ry;y<=ay+ry;y+=st)for(let x=ax-rx;x<=ax+rx;x+=st){n++;const a=oldPick(x,y),c=t.pickAt(x,y);if(c)seen.add(t.objKind(c));if(a!==c&&(onFlag(c,x,y)||field(c,a)))continue;if(a!==c)diff.push(Math.round(x-ax)+','+Math.round(y-ay)+' '+(t.objKind(c)||c)+'≠'+(t.objKind(a)||a))}
    P.x=px;P.y=py}
   ok(!diff.length&&n>4000,'a click picks the same thing as before on all '+n+' spots ('+[...seen].sort().join(', ')+')'+(diff.length?' ('+diff.length+' differ: '+diff.slice(0,4).join('; ')+')':''));
   ok(['town','estate','lord','band','patrol','cparty','caravan','monster','site','critter','refugee','worker'].every(k=>seen.has(k)),'every kind that is clicked was picked somewhere');

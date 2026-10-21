@@ -80,7 +80,8 @@ try{
   o.push('INFO a change reckoned: '+(ti/200).toFixed(2)+' ms on average; a full reckoning '+(tf/n).toFixed(2)+' ms')}
  // saves keep reach
  v.grow=6.5;t.saveGame(true);v.grow=0;t.act('load');ok(Math.abs(t.townBy(v.name).grow-6.5)<.01,'each holding’s reach survives a reload');
- ok(t.MW===224&&t.MH===160&&t.TOWNS.length===37,'Ashmark is 224 x 160 tiles with 37 holdings');
+ // (its size the map's in use, and its settings' on a generated world; its holdings the classic 37)
+ ok(t.MW===t.WM.w&&t.MH===t.WM.h&&(!t.WM.settings||t.WM.settings.w===t.MW&&t.WM.settings.h===t.MH)&&t.TOWNS.length===t.CLASSIC_PLACES.length,'Ashmark is '+t.MW+' x '+t.MH+' tiles ('+t.WM.gen+') with '+t.TOWNS.length+' holdings');
  t.updateHUD(true);t.frame();
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}
 const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d)};

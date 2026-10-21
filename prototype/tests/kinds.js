@@ -33,7 +33,8 @@ Kit.suite(({ok,info})=>{
   if(need)return null;for(let i=0;i<12;i++){fresh();Kit.goHome(z);const e=t.roadSpawn(k,P.x+10+i*24,P.y+(i%3)*20);if(e)return e}return null};
  const spots={};
  const findCtx=k=>{for(const need of [true,false])for(const hour of [.3,.9])for(const z of t.TOWNS){G.clock=DAY*hour;const e=tryAt(z,k,need);if(e){spots[k]={z,hour,need};return e}}return null};
- const again=k=>{const s=spots[k];G.clock=DAY*s.hour;return tryAt(s.z,k,s.need)||tryAt(s.z,k,false)};
+ // (where it came first; else wherever it will come now: on a generated world a procession's walk may find its way only at some spots)
+ const again=k=>{const s=spots[k];G.clock=DAY*s.hour;return tryAt(s.z,k,s.need)||tryAt(s.z,k,false)||findCtx(k)};
  // (a kind no trigger starts: made by the one that starts it, found the first time by trying the road's kinds, those whose trace
  // it is first: one that leaves a record of it on the road as it comes (a stray scattered), or drops it as its trace)
  const parents={};
@@ -89,7 +90,8 @@ Kit.suite(({ok,info})=>{
      Kit.frames(1,.05,d=>t.updateRoad(d));const seen=x.inView(V);if(seen&&x.gone)bad.end.push(k+' (gone at once, in your sight)');Kit.world();G.road=null;G.chase=null}
     const later=Math.max(x.end,t.roadNow())+t.ENC_LIFE.dying+t.ENC_LIFE.linger+1;G.clock+=(later-t.roadNow())*DAY/24;while(G.clock>=DAY){G.clock-=DAY;G.day++}
     // (out of your sight as it is then: by day, or on open ground, you see farther than you did when its time came up)
-    for(let i=0;i<3;i++){P.x=x.x-Math.max(V,t.vis())*1.4;P.y=x.y}
+    // (the farthest sight met on the way kept: from swamp or woods to open ground, sight lengthens)
+    {let r=V;for(let i=0;i<3;i++){r=Math.max(r,t.vis());P.x=x.x-r*1.4;P.y=x.y}}
     Kit.frames(5,.05,d=>t.updateRoad(d));Kit.world();
     const tr=D.trace&&!x.done?t.roadList().find(o=>o.trace&&o.k===D.trace&&o.x===x.x&&o.y===x.y):null;
     if(!x.gone)bad.end.push(k+' (still there: '+x.beh+')');else if(D.trace&&!x.done&&!tr)bad.end.push(k+' (no '+D.trace+')');

@@ -33,8 +33,9 @@ try{
  // fields: every farm, pasture and quarry stands with room for its first fields, and makes only what its fields allow
  {const bad=[];for(const z of t.TOWNS)for(const k of ['farm','pasture','quarry'])if(t.bldLv(z,k)&&t.estatePlots(z,k).length<t.PLOTS_AT[k](1))bad.push(z.name+' '+k);
   ok(!bad.length,'every farm, pasture and quarry has open ground for its fields'+(bad.length?': '+bad.join(', '):''));
-  const z=t.TOWNS.find(q=>t.bldLv(q,'farm')),l=t.lotAt(z,'farm'),keep=l.plots;t.ensureEcon(z);z.pop=z.T.pop0*2;
-  const g0=z.stock.grain;t.produce(z);const full=z.stock.grain-g0;l.plots=[];const g1=z.stock.grain;t.produce(z);const none=z.stock.grain-g1;l.plots=keep;
+  // (the first farm, no brewery of its own using grain meanwhile: a generated world may give it one)
+  const z=t.TOWNS.find(q=>t.bldLv(q,'farm')),l=t.lotAt(z,'farm'),keep=l.plots,br=z.bld.brewery;z.bld.brewery=0;t.ensureEcon(z);z.pop=z.T.pop0*2;
+  const g0=z.stock.grain;t.produce(z);const full=z.stock.grain-g0;l.plots=[];const g1=z.stock.grain;t.produce(z);const none=z.stock.grain-g1;l.plots=keep;z.bld.brewery=br;
   ok(full>0&&none===0,'a farm with its fields makes grain ('+full+'); without them, none')}
  // sabotage
  {const z=t.TOWNS.find(q=>q.owner&&q.owner!=='player'&&t.bldLv(q,'farm')),o0=t.estatePick(z,'farm');P.fac=null;P.hostile={};const rnd=Math.random;world();

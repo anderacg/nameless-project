@@ -27,8 +27,10 @@ try{
  const stub=(v,fn)=>Kit.stub(v,()=>Kit.stubStream('road',v,()=>Kit.stubStream('letters',v,fn)));
  // a place: open, walkable ground all round (12 tiles), a road through it, far from holdings and sites
  const far=(tx,ty)=>t.TOWNS.every(z=>Math.hypot(z.tx-tx,z.ty-ty)>10)&&W.sites.every(s=>Math.hypot(s.tx-tx,s.ty-ty)>4);
+ // (the test spot has a holding near enough for the kinds that want one, the lost child's home: within the law's reach less 2 tiles)
+ const nearOne=(tx,ty)=>t.TOWNS.some(z=>Math.hypot(z.tx-tx,z.ty-ty)<t.WORLD_SCALE.law.eventNear-2);
  const around=(tx,ty,r,f)=>{for(let j=-r;j<=r;j++)for(let i=-r;i<=r;i++)if(!f(t.tAt(tx+i,ty+j)))return false;return true};
- let home=null;for(let ty=16;ty<t.MH-16&&!home;ty++)for(let tx=16;tx<t.MW-16&&!home;tx++)if(t.tAt(tx,ty)===t.T_ROAD&&far(tx,ty)&&around(tx,ty,4,x=>x===t.T_OPEN||x===t.T_ROAD)&&around(tx,ty,11,x=>t.passable(x))&&t.climAt((tx+.5)*TILE,(ty+.5)*TILE)==='grass')home={tx,ty,x:(tx+.5)*TILE,y:(ty+.5)*TILE};
+ let home=null;for(let ty=16;ty<t.MH-16&&!home;ty++)for(let tx=16;tx<t.MW-16&&!home;tx++)if(t.tAt(tx,ty)===t.T_ROAD&&far(tx,ty)&&nearOne(tx,ty)&&around(tx,ty,4,x=>x===t.T_OPEN||x===t.T_ROAD)&&around(tx,ty,11,x=>t.passable(x))&&t.climAt((tx+.5)*TILE,(ty+.5)*TILE)==='grass')home={tx,ty,x:(tx+.5)*TILE,y:(ty+.5)*TILE};
  ok(!!home,'a test spot: a road over open grassland ('+(home&&home.tx+','+home.ty)+')');
  const at=(x,y)=>{world();clear();P.x=x;P.y=y;P.stay=null;t.reveal()};const goHome=()=>at(home.x,home.y);
  G.clock=t.DAY*.3;P.troops={hum_levy:6};P.gold=500;P.sk.scout.lv=0;goHome();const V=t.vis();
@@ -36,8 +38,12 @@ try{
  const findT2=f=>{for(let ty=12;ty<t.MH-12;ty++)for(let tx=12;tx<t.MW-12;tx++)if(f(tx,ty))return{tx,ty,x:(tx+.5)*TILE,y:(ty+.5)*TILE};return null};
  // (phase 2: a spot for the processions: a road from which both a funeral and a wedding find their way, to a shrine or ruins and
  // to another holding; spawnK: one of a kind 10 px from you, there for those)
- const WALKERS=['funeral','wedding'];let walkSpot=null;{const p0=[P.x,P.y];walkSpot=findT2((tx,ty)=>{if(t.tAt(tx,ty)!==t.T_ROAD||(tx+ty)%2)return false;P.x=(tx+.5)*TILE-10;P.y=(ty+.5)*TILE;W.road=null;
-   const fits=WALKERS.every(k=>t.ROAD_ENC[k].ok()&&t.roadSpawn(k,P.x+10,P.y));W.road=null;return fits});P.x=p0[0];P.y=p0[1]}
+ // (out of the desert, where the hours they take would leave the band thirsty. A generated world's few sites may lie off every road
+ // a procession walks: then the first shrine or ruins is moved beside a holding, 5 tiles off its gate, until a spot is found)
+ const WALKERS=['funeral','wedding'];let walkSpot=null;{const p0=[P.x,P.y],seek=()=>findT2((tx,ty)=>{if(t.tAt(tx,ty)!==t.T_ROAD||(tx+ty)%2||t.climAt((tx+.5)*TILE,(ty+.5)*TILE)==='desert')return false;P.x=(tx+.5)*TILE-10;P.y=(ty+.5)*TILE;W.road=null;
+   const fits=WALKERS.every(k=>t.ROAD_ENC[k].ok()&&t.roadSpawn(k,P.x+10,P.y));W.road=null;return fits});walkSpot=seek();
+  const S=W.sites.find(x=>x.type==='shrine'||x.type==='ruins');for(const z of t.TOWNS){if(walkSpot||!S)break;const c=[[5,5],[-5,5],[5,-5],[-5,-5]].map(([a,b])=>[z.tx+a,z.ty+b]).find(([x,y])=>t.tAt(x,y)===t.T_OPEN);
+   if(c){S.tx=c[0];S.ty=c[1];S.x=(c[0]+.5)*TILE;S.y=(c[1]+.5)*TILE;walkSpot=seek()}}P.x=p0[0];P.y=p0[1]}
  ok(!!walkSpot,'a spot for the processions: a road with a shrine or ruins and another holding within their walk ('+(walkSpot&&walkSpot.tx+','+walkSpot.ty)+')');
  // (phase 4: the pilgrims' spots, by a real shrine: on a road from which the nearest one is past the spawn ring but within their
  // walk (they walk there: pilWalk), and one with a shrine just past your sight (they pray there: pilPray))
@@ -321,7 +327,7 @@ try{
   let i=0;for(;i<2000&&!e.calm;i++)t.updateRoad(.05);ok(e.calm&&e.ran>=e.stop&&e.fromYou()>d0+e.stop*.7,'runs '+Math.round(e.ran)+' px, then stops to graze');const x=e.x,y=e.y;frames(200);ok(e.x===x&&e.y===y&&!e.gone,'and grazes where it stopped, as you come');
   t.roadMeet(e);P.sk.scout.lv=5;t.showRoad();ok(new RegExp(Math.round(t.catchOdds()*100)+'% to catch it').test(panel()),'Insight (Scouting 5): the odds of a catch ('+Math.round(t.catchOdds()*100)+'%)');P.sk.scout.lv=0;
   stub(0,()=>pickA(0));ok(P.gear.mount==='m_'+e.mk&&e.gone&&/is yours/.test(panel()),'Catch it, the check made: the '+t.ITEMS['m_'+e.mk].n+' is yours');world();
-  const g0=P.gold,h=meet('horse');stub(0,()=>pickA(0));ok(P.gold===g0+t.itemPrice('m_'+h.mk)&&P.gear.mount==='m_horse','with a mount already: its worth in gold ('+t.itemPrice('m_'+h.mk)+')');world();P.gear.mount=null;
+  const g0=P.gold,h=meet('horse');stub(0,()=>pickA(0));ok(P.gold===g0+t.itemPrice('m_'+h.mk)&&P.gear.mount==='m_'+e.mk,'with a mount already (the '+t.ITEMS['m_'+e.mk].n+' caught, as the land there breeds): its worth in gold ('+t.itemPrice('m_'+h.mk)+')');world();P.gear.mount=null;
   const b=meet('horse');stub(.99,()=>pickA(0));ok(b.beh==='bolt'&&!b.gone&&/bolts/.test(panel()),'missed: it bolts');world();const bd=b.fromYou();frames(40);ok(b.fromYou()>bd+5,'at a run');frames(3000);ok(b.gone,'and is gone');
   P.attr.agi=2;P.sk.ride.lv=0;const o0=t.catchOdds();P.sk.ride.lv=5;const o1=t.catchOdds();P.sk.ride.lv=0;ok(o1>o0,'Riding makes a catch likelier ('+Math.round(o0*100)+'% → '+Math.round(o1*100)+'%)');
   const ds=findT2((tx,ty)=>t.climAt((tx+.5)*TILE,(ty+.5)*TILE)==='desert');ok(!ds||t.roadMount({x:ds.x,y:ds.y})==='camel','the mount of the region: a horse here, a camel in the desert')}
@@ -356,7 +362,8 @@ try{
   const g=t.sheepGood(h),gd0=t.goodN(g),rep0={...P.rep};S.slice(0,-1).forEach(o=>{P.x=o.x+4;P.y=o.y;frames(2)});
   ok(S.slice(0,-1).every(o=>o.caught&&o.gone)&&h.got===h.n-1&&!h.ended,'ride into a stray: it is back with the flock ('+h.got+' of '+h.n+')');
   {const sv=JSON.parse(JSON.stringify(t.roadSave()));const left=sv.road.on.filter(e=>e.pk===h.i);ok(left.length===1&&left[0].k==='stray','saved: the stray still out, its shepherd known (pk)')}
-  const last=S[S.length-1];P.x=last.x+4;P.y=last.y;frames(2);
+  // (the last one brought home by the test spot, a holding near enough to thank you on any world)
+  const last=S[S.length-1];last.x=home.x;last.y=home.y;P.x=last.x+4;P.y=last.y;frames(2);
   ok(h.ended&&h.done&&h.beh==='leave'&&t.goodN(g)-gd0===h.n*t.ENC_SHEEP.good&&t.repAt(t.nearHold().name)-(rep0[t.nearHold().name]||0)>=h.n*t.ENC_SHEEP.rep,'every one home: his '+t.GOODS[g].n.toLowerCase()+' a sheep, reputation, and he walks off with his flock');
   goHome();R().on=[];const h2=spawnK('sheep',40,0);spread(h2);h2.help=1;const S2=t.sheepStrays(h2);P.x=S2[0].x+4;P.y=S2[0].y;frames(2);const gd1=t.goodN(t.sheepGood(h2));S2.slice(1).forEach(o=>o.over());
   ok(h2.ended&&h2.got===1&&t.goodN(t.sheepGood(h2))-gd1===t.ENC_SHEEP.good,'the rest wander off: thanks for the one back, and he goes')}
@@ -384,7 +391,7 @@ try{
     at(x,y);const sd=t.seeded(77);for(let i=0;i<40;i++){const p=stub(sd,()=>t.roadSpot('lure'));if(p)ps.push(p)}}
    ok(ps.length>0&&ps.every(([x,y])=>t.ENC_ON.lure(Math.floor(x/TILE),Math.floor(y/TILE))&&t.nearTile(Math.floor(x/TILE),Math.floor(y/TILE),t.T_ROAD,1)),'placed by a road with woods or hills beside it ('+ps.length+' of 40)')}
   // to the eye, the wounded traveller: its name, call, sound, tooltip, highlight, picture
-  goHome();R().on=[];const tr=t.roadSpawn('traveller',P.x+30,P.y),lu=t.roadSpawn('lure',P.x+30,P.y+20);lu.end=tr.end;
+  goHome();R().on=[];const tr=t.roadSpawn('traveller',P.x+30,P.y),lu=t.roadSpawn('lure',P.x+30,P.y+20);lu.end=tr.end;lu.dir=tr.dir;lu.race=tr.race;// (the same people, facing the same way: each draws its own where it lies)
   const pt=t.ENC_SCENE.pics(tr),pl=t.ENC_SCENE.pics(lu);
   ok(['n','call','hear','tip','ico','beh'].every(k=>lu.D[k]===tr.D[k])&&!lu.D.hidden&&!lu.D.foe&&t.wuiKind(lu)===t.wuiKind(tr)&&pl.length===1&&pl[0][0]===pt[0][0]&&t.tipFor(lu)===t.tipFor(tr),'on the map it is the wounded traveller: the same name, call-out ("'+lu.D.call+'"), log line, tooltip, highlight and picture');
   ok(lu.foes.length>=5&&lu.foes.length<=7+Math.floor(G.day/15)&&['bandits','raiders','bog'].includes(lu.band),'bandits hide near: a band the size of an ambush’s ('+lu.foes.length+' '+lu.band+')');

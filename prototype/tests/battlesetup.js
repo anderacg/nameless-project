@@ -28,6 +28,9 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t
     const cases=['field','reinforced','chief_reuse','siege','beasts','tournament','deployment_off','narrow','wide'];
     for(const [index,name] of cases.entries()){
       Math.random=t.seeded(100+index);t.act('begin','soldier');G.quietEvents=true;t.GUIDE.on=false;
+      // (the snapshots hold your army's point on the map and the ground under it: on a generated world you stand where begin leaves
+      // you on today's map, on the ground there, the road by Ashford's gate)
+      if(t.WM.gen!=='classic-0'){P.x=584;P.y=680;t.WM.battleSite=()=>t.battleSiteOf({tx:36,ty:42,t:t.T_ROAD,c:'grass',name:'Road',kinds:[4,4,4,0,4,4,0,0,4],road:{ns:true}})}
       P.troops={hum_spear:3,hum_bow:2,hum_mage:1,hum_knight:1};P.comps={brann:{ap:5,role:''},elske:{ap:0,role:''},tavi:{ap:0,role:''}};
       t.compInit('brann').lv=3;t.compInit('elske').hurt=G.day+2;t.compInit('tavi').party=t.asParty({cid:'tavi',troops:['hum_bow'],x:P.x+200,y:P.y,order:'stay'});
       P.hp=23;P.sp=31;P.mp=7;P.morale=64;t.BDEPLOY.on=true;t.BAUTO.on=false;t.BSPEED.v=2;
@@ -40,7 +43,8 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t
         ally.troops=['hum_spear','hum_bow'];enemy.troops=['dw_clan','dw_xbow'];helper.troops=['elf_glade'];
         enemies=enemy.troops.slice();opts={enemies,tournament:false,lv:2,deploy:true};G.enc={kind:'lord',ref:enemy,list:enemies,allies:[ally],foes:[helper]};
       }else if(name==='chief_reuse'){
-        enemies=['militia','chief','archer'];opts={enemies,tournament:false,lv:2};G.enc={kind:'camp',ref:{ld:t.newChief('bandits',4)},list:enemies,allies:[],foes:[]};
+        enemies=['militia','chief','archer'];opts={enemies,tournament:false,lv:2};// (his name the one he drew on today's map, kept so the snapshot holds on a generated world too)
+        G.enc={kind:'camp',ref:{ld:{...t.newChief('bandits',4),name:'Rook One-Eye'}},list:enemies,allies:[],foes:[]};
       }else if(name==='siege'){
         const town=t.TOWNS.find(h=>h.owner==='karn'&&h.kind==='town');town.wall=3;enemies=t.garList(town);opts={enemies,tournament:false,lv:4,deploy:true};G.enc={kind:'siege',ref:town,list:enemies,allies:[],foes:[]};
       }else if(name==='beasts'){
@@ -66,7 +70,7 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t
     (0,eval)('measureField=window.__setupMeasure;BVW='+original.width+';BVH='+original.height);delete window.__setupMeasure;
     G.mode='world';G.modal=false;G.enc={kind:'party',ref:{cool:0},allies:[],foes:[],list:['militia']};t.startBattle({enemies:['militia'],tournament:false});
     ok(t.fieldTop()>=t.FIELD_EDGE.top&&t.fieldBot()<=t.BH-t.FIELD_EDGE.bot&&t.fieldBot()>t.fieldTop(),'real HUD measurement still leaves a valid fighting area');
-  }catch(e){o.push('EXC '+e.message+' '+e.stack)}finally{
+  }catch(e){o.push('EXC '+e.message+' '+e.stack)}finally{delete t.WM.battleSite;
     Math.random=original.random;if(window.__setupMeasure){(0,eval)('measureField=window.__setupMeasure');delete window.__setupMeasure}
     (0,eval)('BVW='+original.width+';BVH='+original.height);t.BDEPLOY.on=original.deploy;t.BAUTO.on=original.auto;t.BSPEED.v=original.speed;t.GUIDE.on=original.guide;
   }

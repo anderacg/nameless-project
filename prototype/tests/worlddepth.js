@@ -30,7 +30,9 @@ try{
    const px=[];for(let y=box[1];y<=box[3];y++)for(let x=box[0];x<=box[2];x++){const i=(y*VW+x)*4;if(!same(off,z,i)&&!fl.has(y*VW+x))px.push(y*VW+x)}return{on,off,z,box,px}};
  const F=D.fade,near=(a,b,c,i)=>{for(let k=0;k<3;k++)if(Math.abs(a[i+k]-Math.round(F*c[i+k]+(1-F)*b[i+k]))>3)return false;return true};// (on ≈ fade × scene + the rest figure)
  const deep=[];for(let y=4;y<MH-4;y++)for(let x=4;x<MW-4;x++){let f=true;for(let b=-2;b<=2&&f;b++)for(let a=-3;a<=3;a++)if(tAt(x+a,y+b)!==t.T_FOREST){f=false;break}if(f)deep.push([x,y])}
- let edge=null;for(let y=6;y<MH-6&&!edge;y++)for(let x=6;x<MW-6;x++)if([[0,0],[0,-1],[-1,0],[1,0],[-1,-1],[1,-1]].every(([a,b])=>tAt(x+a,y+b)===t.T_FOREST)&&[[0,1],[0,2],[-1,1],[1,1],[2,1],[3,1],[3,2],[2,2]].every(([a,b])=>tAt(x+a,y+b)===t.T_OPEN)){edge=[x,y];break}
+ // (a wood's edge: open ground south of it, nothing standing on it in front of the spot (a generated world's sparse edges paint
+ // copses and lone trees there))
+ let edge=null;for(let y=6;y<MH-6&&!edge;y++)for(let x=6;x<MW-6;x++)if([[0,0],[0,-1],[-1,0],[1,0],[-1,-1],[1,-1]].every(([a,b])=>tAt(x+a,y+b)===t.T_FOREST)&&[[0,1],[0,2],[-1,1],[1,1],[2,1],[3,1],[3,2],[2,2]].every(([a,b])=>tAt(x+a,y+b)===t.T_OPEN)&&!WA.standing(x*TILE-24,(y+1)*TILE-32,x*TILE+40,(y+1)*TILE+32).some(e=>e.y>(y+1)*TILE+7)){edge=[x,y];break}
  ok(deep.length>20&&edge,'a deep wood ('+deep.length+' tiles 7 x 5 deep) and a wood\'s south edge onto open ground ('+edge+') to stand in');
  // ---- the index: the same after the map is painted afresh; sorted by foot; small
  {const cap0=WA.cap;WA.cap=WA.cols*WA.rows;const sum=()=>{let n=0,spr=0,rock=0,h=2166136261,sorted=true,bytes=0;for(let cy=0;cy<WA.rows;cy++)for(let cx=0;cx<WA.cols;cx++){WA.standing(cx*512,cy*512,cx*512,cy*512,()=>{});const S=WA.chunks.get(cy*WA.cols+cx).n.stand;

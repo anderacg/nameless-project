@@ -6,14 +6,18 @@
 // (startBattle) and its first frame (the ground painted there until R15 moves it to the setup), on today's field and the sized
 // fields with terrain on (as the game plays); a walk into a town's streets (its scene made, then its first frame). Headless
 // Chrome on this machine: a phone is slower. (render.js draws the map by chunks, WorldArt.draw: a first world frame paints
-// only the chunks in view.) Never fails.
+// only the chunks in view.) Then, per size (doc/WORLD_DESIGN.md §3.1: Normal, Large and Huge, seed s1), a new game that forges its
+// world (begin with the settings: generated, put in, started, painted) and the same rows on it (no whole-map canvas there: §3.3).
+// Never fails.
 window.RUN=()=>{const t=T,o=[],G=t.G,P=t.P,ev=s=>(0,eval)(s),now=()=>performance.now();
  const med=a=>{a=a.slice().sort((x,y)=>x-y);return a[a.length>>1]};
- const row=(name,ms,more)=>o.push('INFO '+name.padEnd(46)+(ms.toFixed(0)+' ms').padStart(9)+(ms>t.LOADING.delay?'  overlay':'         ')+(more?'  '+more:''));
+ let LAB='';const row=(name,ms,more)=>o.push('INFO '+(LAB+name).padEnd(46)+(ms.toFixed(0)+' ms').padStart(9)+(ms>t.LOADING.delay?'  overlay':'         ')+(more?'  '+more:''));
  const time=(n,f)=>{const a=[];for(let i=0;i<n;i++){const q=now();f(i);a.push(now()-q)}return med(a)};
  const flush=()=>t.ctx.getImageData(0,0,1,1);
  try{window.requestAnimationFrame=()=>0;try{localStorage.clear()}catch(e){}
   o.push('INFO '+'case'.padEnd(46)+'median'.padStart(9)+'  (view '+t.VW+'x'+t.VH+', map '+t.MW+'x'+t.MH+')');
+  // (a world's rows: a new game in it, its paint, a load; lab: the world's name before each (LAB), whole: the whole map's paint too)
+  const sized=(lab,whole)=>{LAB=lab;
   // ---- a new game: the game put in, the view painted (begin's two steps), then the first frame
   {const put=[],paint=[],first=[];
    for(let i=0;i<3;i++){const b=t.BGS.soldier;let q=now();t.startGame('soldier',b);put.push(now()-q);G.quietEvents=true;q=now();t.paintView();paint.push(now()-q);
@@ -23,14 +27,15 @@ window.RUN=()=>{const t=T,o=[],G=t.G,P=t.P,ev=s=>(0,eval)(s),now=()=>performance
   // ---- the world's paint from cold
   {const cold=()=>t.WorldArt.invalidate();
    row('world paint: the chunks in view',time(3,()=>{cold();t.paintView()}),t.WorldArt.chunks.size+' chunks');
-   row('world paint: the whole map (worldCv)',time(2,()=>{cold();t.worldCv()}));
+   if(whole)row('world paint: the whole map (worldCv)',time(2,()=>{cold();t.worldCv()}));
    row('world paint: first frame, cold',time(3,()=>{cold();t.drawWorld();flush()}))}
   // ---- a load: read and checked, put in, the view painted, the first frame
   {G.mode='world';t.saveGame(true,'quick');const read=[],put=[],paint=[],first=[];
    for(let i=0;i<3;i++){let q=now();const d=t.readSave('quick');t.worldFits(d.world);read.push(now()-q);q=now();t.applySave(d);put.push(now()-q);G.quietEvents=true;
     q=now();t.paintView();paint.push(now()-q);q=now();t.drawWorld();flush();first.push(now()-q)}
    row('load: the save read and checked',med(read),(localStorage.getItem(t.SAVE+'.quick').length/1024).toFixed(0)+' KB');row('load: the game put in',med(put));
-   row('load: the view painted',med(paint));row('load: then its first frame',med(first));row('load: all of it',med(read)+med(put)+med(paint)+med(first))}
+   row('load: the view painted',med(paint));row('load: then its first frame',med(first));row('load: all of it',med(read)+med(put)+med(paint)+med(first))}LAB=''};
+  sized('',true);
   // ---- battles: the setup, then the first frame (the ground painted in it, for now)
   {const keep=ev('[TERRAIN.on,FIELD_SIZES.on]'),army=n=>Array.from({length:n},(_,i)=>['militia','spearman','archer'][i%3]);
    const fight=(name,n,sized)=>{ev('TERRAIN.on=true;FIELD_SIZES.on='+sized);const set=[],first=[];
@@ -43,5 +48,8 @@ window.RUN=()=>{const t=T,o=[],G=t.G,P=t.P,ev=s=>(0,eval)(s),now=()=>performance
   {const tw=t.TOWNS.find(z=>t.hasScene(z));if(tw){const a=[],f=[];for(let i=0;i<3;i++){G.mode='town';G.town=null;let q=now();t.enterScene(tw);a.push(now()-q);q=now();t.drawScene();flush();f.push(now()-q);G.scene=null;G.mode='world'}
    row('streets of '+tw.name+': made',med(a));row('streets of '+tw.name+': first frame',med(f));row('streets: all of it',med(a)+med(f))}}
   o.push('INFO a battle\'s ground moves into its setup with R15; past 300 ms there it shows "Marching to battle…"');
+  // ---- per size: a new game forging its world, then that world's rows
+  for(const p of ['normal','large','huge']){try{localStorage.clear()}catch(e){}const q=now();t.begin('soldier',{preset:p,seed:'s1'});G.quietEvents=true;
+   const lab=p[0].toUpperCase()+p.slice(1)+' '+t.MW+'x'+t.MH+': ';row(lab+'a new game, its world forged',now()-q);sized(lab,false)}
  }catch(e){o.push('EXC '+e.message+' '+e.stack)}
  const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d)};

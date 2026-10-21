@@ -28,7 +28,10 @@ try{
   ok(u&&u.max>=t.compStats('brann').hp*.8,'in battle he fights with his grown stats ('+(u&&u.max)+' health)');t.B.over=true;t.B.win=true;t.B.endT=0;t.updateBattle(.01);t.act('cont');while(G.mode==='perk')t.act('perk',G.perkOffer[0])}
  // a role uses his own discipline
  P.comps.elske={ap:0,role:'surgeon'};t.compInit('elske');ok(t.roleBonus('med')===2+Math.floor(t.compSkill('elske','med')/3),'Elske as surgeon adds her own Medicine');
- // leading a party
+ // leading a party (on open ground 8 tiles every way round you: a generated world's start may stand among hills, then the
+ // nearest such spot)
+ {const TL=t.TILE,open=(x,y)=>{for(let j=-8;j<=8;j++)for(let i=-8;i<=8;i++){const k=t.tAt(x+i,y+j);if(k!==t.T_OPEN&&k!==t.T_ROAD)return false}return true},x0=Math.floor(P.x/TL),y0=Math.floor(P.y/TL);
+  if(!open(x0,y0))find:for(let r=1;r<80;r++)for(let j=-r;j<=r;j++)for(let i=-r;i<=r;i++)if(Math.max(Math.abs(i),Math.abs(j))===r&&open(x0+i,y0+j)){P.x=(x0+i+.5)*TL;P.y=(y0+j+.5)*TL;break find}}
  G.mode='world';G.modal=false;t.hidePanel();c.ap=0;P.troops={hum_levy:8};ok(t.cpGive('brann','hum_levy',3)===0,'he will not lead your soldiers until he trusts you');
  c.ap=3;ok(t.cpGive('brann','hum_levy',4)===4&&c.party&&P.troops.hum_levy===4,'trusted, he takes 4 soldiers to lead');
  ok(!t.compsInBand().includes('brann'),'while he leads them he is not in your band');

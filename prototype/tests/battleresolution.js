@@ -14,6 +14,9 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t
   // dfbba318, retreat_away c2c81503, retreat_caught 9102b338, carried_retreat fbddc708, siege_win 5496f267, siege_loss 8677d140,
   // lord_win 1883f361, lord_loss 0c5560f7, monster_win 1744f530; the tournaments and the auto-resolved fights unchanged)
   const expected={"field_win":"523fac16","field_loss":"f3feadff","retreat_away":"a840d970","retreat_caught":"09ec5ce9","carried_retreat":"08e292c1","tournament_win":"92b90207","tournament_loss":"5ec88907","siege_win":"80306dc2","siege_loss":"a05dc589","lord_win":"17a8e3f0","lord_loss":"e8d3f300","monster_win":"45e897e7","auto_win":"ce5dbf85","auto_loss":"c67be098","auto_resolve":"e4ba3c51"};
+  // (the outcomes hold the world round you: the holdings near you, the way a retreat or a defeat takes you. The generated classic
+  // world's own, recorded with G1-G8 (doc/WORLD_DESIGN.md §15.2: wave 3's last merge, 2026-10-22), hold with the flag on)
+  const expectedGen={field_win:'71fef104',field_loss:'33c63e52',retreat_away:'249b5402',retreat_caught:'2ccb4f6b',carried_retreat:'1843af89',tournament_win:'7d9254c0',tournament_loss:'008c9530',siege_win:'2ecb0423',siege_loss:'35e26cb8',lord_win:'fdd09868',lord_loss:'b686fa28',monster_win:'f103fcac',auto_win:'32ebc6c8',auto_loss:'15c791d8',auto_resolve:'6ca68a22'},REC=t.WM.gen==='classic-0'?expected:expectedGen;
   const stable=x=>Array.isArray(x)?x.map(stable):x&&typeof x==='object'?Object.fromEntries(Object.keys(x).sort().map(k=>[k,stable(x[k])])):x;
   const hash=x=>{let h=2166136261;for(const c of JSON.stringify(stable(x)))h=Math.imul(h^c.charCodeAt(0),16777619)>>>0;return h.toString(16).padStart(8,'0')};
   const cases=['field_win','field_loss','retreat_away','retreat_caught','carried_retreat','tournament_win','tournament_loss','siege_win','siege_loss','lord_win','lord_loss','monster_win','auto_win','auto_loss','auto_resolve'];
@@ -60,7 +63,7 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t
         towns:t.TOWNS.map(h=>({name:h.name,owner:h.owner,gar:h.gar,rep:P.rep[h.name],crime:h.crime})),
         world:{lords:W.lords,exiles:W.exiles,monsters:W.monsters,treas:W.treas,rel:W.rel,lrel:W.lrel},bands:t.bandits,
         randomCalls:calls,random:[Math.random(),Math.random(),Math.random()]};
-      const fingerprint=hash(snapshot);if(expected[name])ok(fingerprint===expected[name],name+' matches independent-group outcome ('+fingerprint+')');else o.push('SNAP '+name+' '+fingerprint);
+      const fingerprint=hash(snapshot);if(REC[name])ok(fingerprint===REC[name],name+' matches independent-group outcome ('+fingerprint+')');else o.push('SNAP '+name+' '+fingerprint);
       ok(!t.B&&G.mode==='dialog'&&G.loot&&G.loot.capture===false,name+': field released and loot summary ready');
       ok(t.BATTLE_MOOD===null&&G.msgs.length===callsBefore,name+': morale carry-over consumed without snapshot side effects');
       if(tournament)ok(P.gold===(win?245:200)&&P.renown===(win?36:30)&&G.lootView.next==='back-town'&&P.troops.hum_spear===6,name+': tournament rewards and roster isolation preserved');

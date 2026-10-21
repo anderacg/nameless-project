@@ -5,6 +5,10 @@ try{
  const t=T,G=t.G,P=t.P,W=t.W;try{localStorage.clear()}catch(e){}
  t.act('begin','soldier');G.encCool=99;// no herds or sites in the way of the chases
  t.W.critters=[];t.W.sites=[];t.W.patrols=[];// no guards to step in: this is about the band and you
+ // (open ground 8 tiles every way round you: the chases are about who runs, not the ground; a generated world's start may stand
+ // among hills: then the nearest such spot)
+ {const TL=t.TILE,open=(x,y)=>{for(let j=-8;j<=8;j++)for(let i=-8;i<=8;i++){const k=t.tAt(x+i,y+j);if(k!==t.T_OPEN&&k!==t.T_ROAD)return false}return true},x0=Math.floor(P.x/TL),y0=Math.floor(P.y/TL);
+  if(!open(x0,y0))find:for(let r=1;r<80;r++)for(let j=-r;j<=r;j++)for(let i=-r;i<=r;i++)if(Math.max(Math.abs(i),Math.abs(j))===r&&open(x0+i,y0+j)){P.x=(x0+i+.5)*TL;P.y=(y0+j+.5)*TL;break find}}
  const weak=()=>{P.troops={};P.comps={}},strong=()=>{P.troops={hum_knight:12,hum_guard:12,hum_long:10};P.comps={}};
  const gap=o2=>Math.hypot(o2.x-P.x,o2.y-P.y);
  // stance thresholds

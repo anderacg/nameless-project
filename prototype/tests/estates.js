@@ -59,17 +59,22 @@ try{
   t.act('wk-back');ok(G.est&&document.querySelector('.rail [data-act="es-tab"][data-arg="folk"]'),'Back returns to the estate');t.act('es-folk');t.act('wk-hire');
   ok(W.folk.filter(f=>f.home==='Ashford'&&f.k===k).length===n0-1,'hiring one takes him from the estate');G.mode='world';G.modal=false;t.hidePanel()}
  // caravans
- W.caravans=[];const from=t.townBy('Saltmere');from.owner=t.HOME.Saltmere;from.sacked=from.raided=0;const fill=()=>{from.stock.cloth=400;from.stock.timber=400};fill();let c=null;for(let i=0;i<20&&!c;i++)c=t.sendCaravan(from);
+ W.caravans=[];const from=t.townBy('Saltmere');from.owner=t.HOME.Saltmere;from.sacked=from.raided=0;let buyer=null;const fill=()=>{from.stock.cloth=400;from.stock.timber=400;if(buyer){buyer.stock.cloth=0;buyer.stock.timber=0}};
+ // (a caravan sent, its stores filled first; a generated world may leave Saltmere no friend within a caravan's reach short of
+ // cloth or timber: then its nearest neighbour there is made one, its stores of both emptied before each caravan)
+ const send=()=>{fill();let q=t.sendCaravan(from);if(!q&&!buyer){const E=t.WORLD_SCALE.econ,d=z=>Math.hypot(z.tx-from.tx,z.ty-from.ty);
+  buyer=t.TOWNS.filter(z=>z!==from&&d(z)>E.caravanNear&&d(z)<E.caravanFar).sort((a,b)=>d(a)-d(b))[0]||null;if(buyer){buyer.owner=from.owner;buyer.sacked=buyer.raided=0;t.ensureEcon(buyer);fill();q=t.sendCaravan(from)}}return q};
+ fill();let c=null;for(let i=0;i<20&&!c;i++)c=i<19?t.sendCaravan(from):send();
  ok(c&&Object.keys(c.goods).length&&c.to!==c.from,'a caravan sets out from '+(c&&c.from)+' to '+(c&&c.to)+' with '+(c&&t.cargoText(c)));
  const to=t.townBy(c.to),gk=Object.keys(c.goods)[0],before=to.stock[gk]||0,load=c.goods[gk];P.x=-9999;P.y=-9999;for(let i=0;i<4000&&W.caravans.includes(c);i++)t.updateCaravans(.05);
  ok(!W.caravans.includes(c)&&(to.stock[gk]||0)>=before+load-2,'it travels the roads and its '+load+' '+gk+' arrive in the stores of '+c.to);
- fill();c=t.sendCaravan(from);W.caravans=[c];c.guards=3;W.patrols=[];W.lords.forEach(l=>{if(!l.inside&&Math.hypot(l.x-c.x,l.y-c.y)<150)l.x=-999});// (no one rides to help)
+ c=send();W.caravans=[c];c.guards=3;W.patrols=[];W.lords.forEach(l=>{if(!l.inside&&Math.hypot(l.x-c.x,l.y-c.y)<150)l.x=-999});// (no one rides to help)
  t.bandits.push(t.asParty({x:c.x+4,y:c.y,n:12,kind:'bandits',list:Array(12).fill('militia'),t:0,a:0,idle:true,cool:0}));t.updateCaravans(.01);for(let i=0;i<4000&&W.fights.length;i++)t.updateFights(.05);
  ok(!W.caravans.length,'a big band of bandits beats the guards and plunders a caravan');t.bandits.length=0;W.fights=[];
- fill();c=t.sendCaravan(from);W.caravans=[c];c.guards=6;t.bandits.push(t.asParty({x:c.x+4,y:c.y,n:3,kind:'bandits',list:Array(3).fill('militia'),t:0,a:0,idle:true,cool:0}));t.updateCaravans(.01);for(let i=0;i<4000&&W.fights.length;i++)t.updateFights(.05);
+ c=send();W.caravans=[c];c.guards=6;t.bandits.push(t.asParty({x:c.x+4,y:c.y,n:3,kind:'bandits',list:Array(3).fill('militia'),t:0,a:0,idle:true,cool:0}));t.updateCaravans(.01);for(let i=0;i<4000&&W.fights.length;i++)t.updateFights(.05);
  ok(W.caravans.length===1&&!t.bandits.length&&!c.fight,'six guards beat three bandits, and the caravan goes on');t.bandits.length=0;W.fights=[];
  // trade with a caravan, then attack one
- fill();c=t.sendCaravan(from);W.caravans=[c];P.x=c.x;P.y=c.y;G.mode='world';G.modal=false;t.hidePanel();P.hostile={};P.fac=null;
+ c=send();W.caravans=[c];P.x=c.x;P.y=c.y;G.mode='world';G.modal=false;t.hidePanel();P.hostile={};P.fac=null;
  t.interact(c);ok(G.mode==='dialog'&&/Caravan of/.test(pan()),'meeting a caravan opens it');
  const g=Object.keys(c.goods)[0],have=t.goodN(g);P.gold=500;t.act('cv-buy',g);ok(t.goodN(g)>have,'you can buy from it');
  if(W.caravans.includes(c)){t.act('cv-attack');ok(G.enc&&G.enc.kind==='caravan'&&t.hostileTo(c.fac),'attacking makes its owner hostile and starts a fight');
@@ -77,7 +82,7 @@ try{
  // a raid burns an estate
  {const v=t.townBy('Millbrook');const b0=t.bldTotal(v);P.raid={town:v.name,t:0};t.finishRaid(v,1);ok(t.bldTotal(v)===b0-1,'a full raid burns an estate')}
  // saves
- G.mode='world';G.modal=false;t.hidePanel();ash.bld.mine=0;ash.bld.farm=2;ash.wall=3;fill(),W.caravans=[t.sendCaravan(from)].filter(Boolean);const nc=W.caravans.length;t.saveGame(true);ash.bld.farm=0;ash.wall=0;W.caravans=[];t.act('load');
+ G.mode='world';G.modal=false;t.hidePanel();ash.bld.mine=0;ash.bld.farm=2;ash.wall=3;W.caravans=[send()].filter(Boolean);const nc=W.caravans.length;t.saveGame(true);ash.bld.farm=0;ash.wall=0;W.caravans=[];t.act('load');
  ok(t.townBy('Ashford').bld.farm===2&&t.townBy('Ashford').wall===3&&W.caravans.length===nc,'estates, walls and caravans survive a reload');
  // the clock: a day lasts 3 minutes at 1x (Phase 1, D9: it was 2); 60% daylight, 40% dusk, night and dawn
  {W.lords=[];t.bandits.length=0;W.monsters=[];W.critters=[];W.caravans=[];G.mode='world';G.modal=false;t.hidePanel();t.setSpeed(1);G.paused=false;G.clock=0;G.encCool=99;

@@ -26,7 +26,16 @@
 // The harness's switches hold (TERRAIN, FOG, AUDIO, FIELD_SIZES... off: all battle-side; the world's fog of war is on),
 // G.quietEvents is on, and the view is the tests' fixed 576 x 360. Hash: FNV-1a 32-bit over bytes, char codes or 32-bit words;
 // W8's places at 1e-6 px.
+// G1-G8 (doc/WORLD_DESIGN.md §15.2, "Which hashes may change, and when"): the same eight measures, and B2, on the generated classic
+// world (WORLD.gen on: the runner's -Gen), checked against GEXPECT in its place. And the sums the generator makes (WM.sum: the
+// classic world, seeds s1-s3 at Normal and s1 at Large), against SUMS, with the flag on or off (genWorld makes them either way).
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.push('INFO '+m),t=T,G=t.G,P=t.P,W=t.W;
+// (G1-G8, GB2 and the sums recorded 2026-10-22 in wave 3's last merge (E), on 70970ed: A's classic terrain (the hints of §8.15) and
+//  B's classic anchors (today's 37 holdings at their places), the first generated classic world the plan holds still. From here
+//  they hold, re-recorded only with a reason; at the flip (wave 4) W1-W8 take their values. With the flag on, W6's spots are the
+//  same map pixels (where begin puts you, the classic world's Ashford; (1792, 1280); (2688, 768)), on that world)
+const GEXPECT={W1:'94e87250',W2:'6bc88128',W3:'0240c3fb',W4:'ceb55e1f',W5:'ab5e5d34',W6:'fd29ebee',W7:'dccc7da8',W8:'dfad1cf1',B2:'bc14e9a8'};
+const SUMS={classic:'7333836c','Normal s1':'128cfb7e','Normal s2':'2b581da4','Normal s3':'c38ac906','Large s1':'5af09941'};
 const EXPECT={W1:'65e24662',W2:'2b49a168',W3:'dc546553',W4:'46450e62',W5:'0152341c',W6:'33d059e4',W7:'5dae222a',W8:'742df600',B2:'fd6d5be4'};// (at 0a42712; B2 at R3; W6-W8 at Phase 1; W6 at depth, smooth walking and pasture herds and label layout; W7, B2 at save v3)
 // (W5 re-recorded 2026-10-22, on purpose: swamp water a lighter peat blue (gfx/worldart.js WATER_RGB.swamp), the owner's pick from
 //  tests/visual/swampwater.js (C), so the fen's rivers read as water; today's map has fen water too. Was 6587a43c.)
@@ -159,9 +168,14 @@ try{
   ok(p2===got.W5,'begin twice: the second paints the world as the first did (W5'+(p2===got.W5?'':'; differs: '+p2)+')');
   ok(!diff.length,'begin twice: the second makes the world the first made (W1-W4'+(diff.length?'; differ: '+diff.map(id=>id+' '+w2[id][0]).join(', '):'')+')');
   check('B2',fnv().s(s).x,'begin twice: the save straight after the second begin, as a fresh page makes it ('+s.length+' chars)')}
- for(const id in EXPECT)if(lines[id])info(lines[id]);
- for(const id in EXPECT)if(EXPECT[id])ok(got[id]===EXPECT[id],id+' equals the baseline ('+got[id]+(got[id]===EXPECT[id]?'':'; baseline '+EXPECT[id])+')');
-  else o.push('FAIL '+id+' has no baseline ('+got[id]+')');
+ // (the generated classic world's: G1-G8 and GB2, against GEXPECT)
+ const GEN=t.WM.gen!=='classic-0',BASE=GEN?GEXPECT:EXPECT,name=id=>GEN?'G'+id.replace(/^W/,''):id;
+ for(const id in BASE)if(lines[id])info((GEN?'G'+lines[id].replace(/^W/,''):lines[id]));
+ for(const id in BASE)if(BASE[id])ok(got[id]===BASE[id],name(id)+' equals the baseline ('+got[id]+(got[id]===BASE[id]?'':'; baseline '+BASE[id])+')');
+  else o.push('FAIL '+name(id)+' has no baseline ('+got[id]+')');
+ // ---- the generator's sums: the classic world, seeds s1-s3 at Normal, s1 at Large
+ {const S={classic:t.classicSettings(),'Normal s1':{preset:'normal',seed:'s1'},'Normal s2':{preset:'normal',seed:'s2'},'Normal s3':{preset:'normal',seed:'s3'},'Large s1':{preset:'large',seed:'s1'}};
+  for(const k in SUMS){const h=t.genWorld(S[k]).map.sum.toString(16).padStart(8,'0');info('sum '+k+' '+h);if(SUMS[k])ok(h===SUMS[k],'the sum the generator makes, '+k+', equals the baseline ('+h+(h===SUMS[k]?'':'; baseline '+SUMS[k])+')');else o.push('FAIL sum '+k+' has no baseline ('+h+')')}}
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}
 finally{Math.random=r0;performance.now=pn}
 info('took '+((pn.call(performance)-t0)/1000).toFixed(1)+' s');

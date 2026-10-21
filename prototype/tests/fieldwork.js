@@ -84,9 +84,10 @@ try{
    ok(ids.length===inn.length&&inn.every(f=>ids.includes(f.id))&&!out.some(f=>ids.includes(f.id))&&/at work outside/.test(q('.rwbody').textContent),'the '+t.ESTATE_AREAS[hit].folk+' lists only those inside ('+inn.length+' cards; '+out.length+' at work outside, met on the map)');world()}}
  // ---- drawn as movers: the ground's scene keeps no shift while they work (tests/mapshake.js), at scale 3
  {F.out=1;G.day=8;const ev=x=>(0,eval)(x);ev('VS=3');near(ash,.2);const fm=t.bldSpots(ash).farm;P.x=fm.x+10;P.y=fm.y+24;
+  // (each sample drawn again at the start's clock: water ripples by the clock (a generated world's rivers by the farm), the ground must not move)
   const pn=performance.now;let now=1e7;performance.now=()=>now;const pic=()=>{const m=t.MEM,d=m.getContext('2d').getImageData(0,0,m.width,Math.floor(m.height/3)).data;let h=0;for(let i=0;i<d.length;i+=16)h=(h*31+d[i])|0;return h};
   const ws=W.folk.filter(f=>f.home==='Ashford'&&f.st==='field');t.frame();const h0=pic(),x0=ws.map(f=>f.x+','+f.y).join();let moved=0,tf=0,tr=0;
-  let mv=false;for(let i=0;i<90;i++){now+=16.7;t.updateFolk(.05);if(ws.map(f=>f.x+','+f.y).join()!==x0)mv=true;const m0=t.ctx.getTransform();t.frame();const T2=t.MEM.getContext('2d').getTransform(),m1=t.ctx.getTransform();if(T2.e||T2.f)tf++;if(m1.e!==m0.e||m1.f!==m0.f)tr++;if(i%10===9&&pic()!==h0)moved++}
+  let mv=false;for(let i=0;i<90;i++){now+=16.7;t.updateFolk(.05);if(ws.map(f=>f.x+','+f.y).join()!==x0)mv=true;const m0=t.ctx.getTransform();t.frame();const T2=t.MEM.getContext('2d').getTransform(),m1=t.ctx.getTransform();if(T2.e||T2.f)tf++;if(m1.e!==m0.e||m1.f!==m0.f)tr++;if(i%10===9){const n0=now;now=1e7;t.frame();if(pic()!==h0)moved++;now=n0}}
   performance.now=pn;ev('VS=1');F.out=.6;
   ok(ws.length&&mv,'('+ws.length+' at work by Ashford\'s farm, moving)');
   ok(tf===0&&tr===0,'the ground\'s scene and the screen start every frame unshifted ('+tf+', '+tr+' frames carried a shift)');

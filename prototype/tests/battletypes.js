@@ -38,6 +38,13 @@ try{
   at(forest.tx,forest.ty);G.day=7;const a=JSON.stringify(t.battleTypeFor({kind:'party',band:'bandits'})),a2=JSON.stringify(t.battleTypeFor({kind:'party',band:'bandits'}));G.day=d0;
   const n=counted(()=>{for(let i=0;i<50;i++){t.battleTypeFor({kind:'party',band:'bandits'});t.battleTypeFor({kind:'lord'})}at(bridge.tx,bridge.ty);t.battleTypeFor({kind:'party'});at(forest.tx,forest.ty)});
   ok(a===a2&&n===0,'drawn from the tile and the day: the same answer twice, no Math.random drawn (0 calls)')}
+ // ---- how many of the world's fights are a held bridge (doc/WORLD_DESIGN.md §14.3: at most 25%): the trigger on every road tile of
+ // the world in use and on every 9th other walkable tile (a patrol's fight: the bridge's rule is every kind's, and a patrol sets no
+ // ambush, whose odds are the day's, above)
+ {let rd=0,rb=0,ld=0,lb=0;for(let ty=0;ty<MH;ty++)for(let tx=0;tx<MW;tx++){const k=t.tAt(tx,ty),road=k===t.T_ROAD;if(!t.passable(k)||!road&&(ty*MW+tx)%9)continue;
+   at(tx,ty);const e=t.battleTypeFor({kind:'patrol'}),b=!!e&&e.kind==='bridge';if(road){rd++;rb+=b}else{ld++;lb+=b}}
+  info('Hold the bridge triggers: '+rb+' of '+rd+' road tiles, '+lb+' of '+ld+' other walkable tiles (every 9th)');
+  ok(rd&&rb<=.25*rd&&lb<=.25*ld,'Hold the bridge on '+(100*rb/Math.max(1,rd)).toFixed(1)+'% of the road tiles and '+(100*lb/Math.max(1,ld)).toFixed(1)+'% of the land off them, at most 25% of the world\'s fights')}
 
  // ---- hold the bridge in the world: who stands where; the field
  let held=null;

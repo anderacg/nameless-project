@@ -38,7 +38,11 @@ try{
  t.act('auto');ok(/Victory/.test(panel())&&b.dead&&!W.fights.includes(f)&&!a.fight&&!a.dead,'winning it routs the other side, ends the battle and frees your side');
  ok(/Gold|XP/.test(panel()),'and pays out like any victory');t.act('cont');while(G.mode==='perk')t.act('perk',G.perkOffer[0]);
  // not the bandits' side, not against your employer
- world();W.caravans=[];const from=t.townBy('Saltmere');from.owner=t.HOME.Saltmere;from.sacked=from.raided=0;t.ensureEcon(from);from.stock.cloth=400;from.stock.timber=400;let cv=null;for(let i=0;i<20&&!cv;i++)cv=t.sendCaravan(from);W.caravans=cv?[cv]:[];
+ world();W.caravans=[];const from=t.townBy('Saltmere');from.owner=t.HOME.Saltmere;from.sacked=from.raided=0;t.ensureEcon(from);from.stock.cloth=400;from.stock.timber=400;let cv=null;for(let i=0;i<20&&!cv;i++)cv=t.sendCaravan(from);
+ // (a generated world may leave Saltmere no friend within a caravan's reach short of cloth or timber: its nearest neighbour there made one)
+ if(!cv){const E=t.WORLD_SCALE.econ,d=z=>Math.hypot(z.tx-from.tx,z.ty-from.ty),nb=t.TOWNS.filter(z=>z!==from&&d(z)>E.caravanNear&&d(z)<E.caravanFar).sort((a,b)=>d(a)-d(b))[0];
+  if(nb){nb.owner=from.owner;nb.sacked=nb.raided=0;t.ensureEcon(nb);nb.stock.cloth=nb.stock.timber=0;cv=t.sendCaravan(from)}}
+ W.caravans=cv?[cv]:[];
  if(cv){const bd={x:cv.x+5,y:cv.y,n:12,kind:'bandits',list:Array(12).fill('militia'),t:0,a:0,idle:true,cool:0};t.bandits.push(t.asParty(bd));P.x=-9000;t.updateCaravans(.01);const fc=W.fights.find(x=>x.sides.flat().includes(cv.uid));
    ok(fc&&cv.fight,'bandits falling on a caravan start a fight with its guards');
    G.fg=fc;t.fightMeet(fc);ok(/They are bandits/.test(panel()),'you cannot side with bandits');world();

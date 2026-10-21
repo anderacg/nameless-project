@@ -8,9 +8,12 @@ try{
  const v=t.townBy('Willowmere');ok(!!v,'Willowmere, the island village');
  // the map: short bridges only, no holding on an island, walkers kept to the deck
  {const MW=t.MW,MH=t.MH,runs=[],seen=new Uint8Array(MW*MH);for(let y=0;y<MH;y++)for(let x=0;x<MW;x++){const b=t.bridgeAt(x,y);if(!b||seen[y*MW+x])continue;let n=0,cx=x,cy=y;while(t.bridgeAt(cx,cy)===b){seen[cy*MW+cx]=1;n++;cx+=b===2?1:0;cy+=b===1?1:0}runs.push(n)}
-  ok(runs.length<=6&&runs.every(n=>n<=3),'few bridges, none longer than 3 tiles ('+runs.length+': '+runs.join(', ')+')');
-  const comp=new Int32Array(MW*MH).fill(-1),size=[];let c=0;for(let i=0;i<MW*MH;i++){if(comp[i]>=0||!t.passable(t.tiles[i])||t.bridgeAt(i%MW,(i/MW)|0))continue;let k=0;const q=[i];comp[i]=c;while(q.length){const j=q.pop();k++;const x=j%MW,y=(j/MW)|0;for(const [a,b] of [[1,0],[-1,0],[0,1],[0,-1]]){const m=(y+b)*MW+x+a;if(comp[m]>=0||!t.passable(t.tiles[m])||t.bridgeAt(x+a,y+b))continue;comp[m]=c;q.push(m)}}size.push(k);c++}
-  const big=size.indexOf(Math.max(...size)),isl=t.TOWNS.filter(q=>comp[q.ty*MW+q.tx]!==big).map(q=>q.name);ok(!isl.length,'no holding stands on an island'+(isl.length?': '+isl.join(', '):''));
+  // (today's map: its road decks over water, 6 at most; a generated world: its bridges, WM.crossings, whose decks bridgeAt reads
+  // like a road squeezed between two waters)
+  const gen=t.WM.gen!=='classic-0',br=gen?t.WM.crossings.filter(c=>c.kind==='bridge').map(c=>c.tiles.length):runs;
+  ok((gen||br.length<=6)&&br.every(n=>n<=3),'few bridges, none longer than 3 tiles ('+br.length+': '+br.join(', ')+')');
+  const comp=new Int32Array(MW*MH).fill(-1),size=[];let c=0;for(let i=0;i<MW*MH;i++){if(comp[i]>=0||!t.passable(t.tiles[i]))continue;let k=0;const q=[i];comp[i]=c;while(q.length){const j=q.pop();k++;const x=j%MW,y=(j/MW)|0;for(const [a,b] of [[1,0],[-1,0],[0,1],[0,-1]]){const m=(y+b)*MW+x+a;if(comp[m]>=0||!t.passable(t.tiles[m]))continue;comp[m]=c;q.push(m)}}size.push(k);c++}
+  const big=size.indexOf(Math.max(...size)),isl=t.TOWNS.filter(q=>comp[q.ty*MW+q.tx]!==big).map(q=>q.name);ok(!isl.length,'no holding stands cut off on an island (bridge decks count as land: an isle its bridges join is on the main land)'+(isl.length?': '+isl.join(', '):''));
   const bx=(()=>{for(let y=0;y<MH;y++)for(let x=0;x<MW;x++)if(t.bridgeAt(x,y))return[x,y,t.bridgeAt(x,y)]})();
   if(bx){const w={x:(bx[0]+.5)*16+(bx[2]===1?5:0),y:(bx[1]+.5)*16+(bx[2]===2?5:0)};t.walk(w,bx[2]===1?0:1,bx[2]===1?1:0,2);ok(Math.abs((bx[2]===1?w.x:w.y)-((bx[2]===1?bx[0]:bx[1])+.5)*16)<4,'on a bridge, walkers keep to the middle of the deck')}else ok(true,'(no bridges)')}
  // a route across the water

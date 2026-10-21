@@ -25,8 +25,10 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
   // (re-recorded 2026-10-21 S4: story and content systems on named streams, seeded per world and per game (owner accepted once); the estates' sort keys drawn before sorting, 29dca01d to b739f365: begin draws the game's number and places the wild game and the
   // beasts from their own streams, so the shared Math.random the battle starts from is elsewhere; with the streams switched back to
   // Math.random it is 29dca01d as before; the AI's play unchanged)
-  {const B=battle(4242);B.noMorale=true;B.sel=null;key('a');const a=B.auto&&t.aiAll();run(B,60);const fp=print(B);
-   ok(a&&fp==='b739f365','A with nothing selected, your army and an ally’s against the enemy (seed 4242, no morale): the whole-army AI plays the very battle it did before ('+fp+', recorded b739f365, '+B.t.toFixed(1)+' s)')}
+  // (its start reads the world and begin's draws: on the generated classic world its own fingerprint, recorded with G1-G8
+  // (doc/WORLD_DESIGN.md §15.2, wave 3's last merge, 2026-10-22))
+  {const B=battle(4242);B.noMorale=true;B.sel=null;key('a');const a=B.auto&&t.aiAll();run(B,60);const fp=print(B),REC=t.WM.gen==='classic-0'?'b739f365':'a9b664e0';
+   ok(a&&fp===REC,'A with nothing selected, your army and an ally’s against the enemy (seed 4242, no morale): the whole-army AI plays the very battle it did before ('+fp+', recorded '+REC+', '+B.t.toFixed(1)+' s)')}
   {const L=t.BattleLab,Gp=(type,count)=>({type,count}),lab=mor=>{if(L.active)L.exit();G.mode='world';G.modal=false;L.start({leftGroups:[Gp('hum_spear',16),Gp('hum_bow',12),Gp('hum_knight',6)],rightGroups:[Gp('hum_levy',20),Gp('hum_bow',12),Gp('hum_spear',10)],deploy:false,ai:false,paused:false,morale:mor,seed:42});return t.B};
    Math.random=t.seeded(1);t.act('begin','soldier');G.quietEvents=true;t.GUIDE.on=false;const REC={false:'596d6d9c',true:'17c1387b'};run(lab(false),60);// (to warm up)
    for(const mor of [false,true]){let B=lab(mor);B.sel=null;key('a');const a=B.auto;run(B,60);const whole=print(B);

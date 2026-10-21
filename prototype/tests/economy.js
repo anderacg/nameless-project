@@ -17,8 +17,9 @@ try{
  ash.stock.spice=0;ok(t.buyGoods(ash,'spice',5).got===0,'you cannot buy what the market does not have');
  ash.stock.grain=0;ok(t.marketState(ash,'grain')==='shortage'&&t.marketPrice(ash,'grain')>=t.GOODS.grain.base*2,'an empty market shows a shortage and a high price');ash.stock.grain=300;ok(t.marketState(ash,'grain')==='surplus','a glut shows a surplus');
  // production chains
- ash.bld.smithy=1;ash.stock.iron=0;ash.stock.timber=50;let out=t.produce(ash,null);ok(!out.tools,'a smithy without iron makes nothing');
- ash.stock.iron=50;const i0=ash.stock.iron;out=t.produce(ash,null);ok(out.tools>=1&&out.arrows>=1&&ash.stock.iron<i0,'with iron and timber it makes tools and arrows ('+out.tools+' tools, '+out.arrows+' arrows) and uses the iron');
+ // (no mine of its own digging iron meanwhile: a generated world may give Ashford one)
+ const mine0=ash.bld.mine;ash.bld.mine=0;ash.bld.smithy=1;ash.stock.iron=0;ash.stock.timber=50;let out=t.produce(ash,null);ok(!out.tools,'a smithy without iron makes nothing');
+ ash.stock.iron=50;const i0=ash.stock.iron;out=t.produce(ash,null);ok(out.tools>=1&&out.arrows>=1&&ash.stock.iron<i0,'with iron and timber it makes tools and arrows ('+out.tools+' tools, '+out.arrows+' arrows) and uses the iron');ash.bld.mine=mine0;
  ash.bld.brewery=1;ash.stock.grain=50;out=t.produce(ash,null);ok(out.ale>=1,'a brewery turns grain into ale');
  // people: famine and growth
  const keep={...ash.stock},kb={...ash.bld};['farm','pasture','port'].forEach(k=>ash.bld[k]=0);t.FOODS.forEach(g=>ash.stock[g]=0);ash.pop=600;const pop0=ash.pop;for(let i=0;i<3;i++){t.FOODS.forEach(g=>ash.stock[g]=0);t.econDay()}ok(ash.pop<pop0,'with no food, people die or leave ('+pop0+' → '+ash.pop+')');
@@ -47,7 +48,8 @@ try{
  ok(W.caravans.includes(mc)&&(mc.leg==='out'&&mc.goods.cloth===40||mc.idle),'a standing route loads up and goes again');
  const g1=P.gold;t.caravanUpkeep();ok(P.gold===g1-t.PCV.upkeep-mc.guards*t.PCV.guardUp,'caravans cost their upkeep each day');
  W.caravans=[];const other=TW.find(x=>x!==ash&&x.kind==='village');other.owner='player';const oc=other.stock.wool||0;t.hireCaravan('Ashford',other.name,{wool:30},3,false);
- const m2=W.caravans[0];for(let i=0;i<8000&&W.caravans.includes(m2)&&m2.leg==='out';i++)t.updateCaravans(.05);ok((other.stock.wool||0)>=oc+30,'to your own fief it delivers into the stores');W.caravans=[];
+ // (as long as its way takes: on a generated world the first village may lie far off)
+ const m2=W.caravans[0];for(let i=0;i<40000&&W.caravans.includes(m2)&&m2.leg==='out';i++)t.updateCaravans(.05);ok((other.stock.wool||0)>=oc+30,'to your own fief it delivers into the stores');W.caravans=[];
  // the fief panel
  G.mode='world';G.modal=false;t.hidePanel();G.lastTown=null;t.enterTown(ash);t.act('tab','fief');const pan=()=>document.getElementById('panel').innerHTML;
  ok(/People and stores/.test(pan())&&/Send a caravan/.test(pan())&&/Taxes/.test(pan()),'the Fief tab shows people, taxes, stores and caravans');

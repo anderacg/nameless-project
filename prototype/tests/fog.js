@@ -7,7 +7,12 @@
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);
 try{
  const t=T,G=t.G,P=t.P,W=t.W,TILE=t.TILE,MW=t.MW,MH=t.MH;try{localStorage.clear()}catch(e){}
- t.act('begin','soldier');const P0={x:P.x,y:P.y};G.quietEvents=true;G.clock=t.DAY*.3;W.monsters=[];W.critters=[];t.bandits.length=0;W.caravans=[];W.folk=[];W.ships=[];W.patrols=[];W.refugees=[];
+ t.act('begin','soldier');
+ // (open, flat ground 8 tiles every way round you, where sight is the plain's: a generated world's start may stand among hills,
+ // then the nearest such spot)
+ {const open=(x,y)=>{for(let j=-8;j<=8;j++)for(let i=-8;i<=8;i++){const k=t.tAt(x+i,y+j);if(k!==t.T_OPEN&&k!==t.T_ROAD)return false}return true},x0=Math.floor(P.x/TILE),y0=Math.floor(P.y/TILE);
+  if(!open(x0,y0))find:for(let r=1;r<80;r++)for(let j=-r;j<=r;j++)for(let i=-r;i<=r;i++)if(Math.max(Math.abs(i),Math.abs(j))===r&&open(x0+i,y0+j)){P.x=(x0+i+.5)*TILE;P.y=(y0+j+.5)*TILE;t.fogReset();break find}}
+ const P0={x:P.x,y:P.y};G.quietEvents=true;G.clock=t.DAY*.3;W.monsters=[];W.critters=[];t.bandits.length=0;W.caravans=[];W.folk=[];W.ships=[];W.patrols=[];W.refugees=[];
  const world=()=>{G.mode='world';G.modal=false;t.hidePanel()};world();t.drawWorld();
  const count=()=>t.seenArr().reduce((a,v)=>a+v,0),V=t.vis();
  ok(t.seenAt(P.x,P.y)&&!t.seenAt(P.x+V*3,P.y)&&count()<MW*MH*.05,'you start knowing only the land around you ('+count()+' tiles)');
