@@ -10,12 +10,14 @@ Kit.suite(({ok})=>{
  for(let d=0;d<40;d++){G.day++;t.monsterDay()}
  ok(W.monsters.filter(m=>!MONSTERS[m.id].mythic).every(m=>MONSTERS[m.id].where.some(w=>t.habitatAt(m.hx,m.hy).includes(w))),'every monster spawned in its habitat ('+W.monsters.length+' now)');
  ok(new Set(W.monsters.map(m=>m.id)).size>=5,'variety: '+[...new Set(W.monsters.map(m=>m.id))].join(', '));
- // hunting vs waiting
+ // hunting vs waiting (on the generated world, out in the wild: a beast by a holding draws its watch, the land defence)
+ if(t.WORLD.gen){let w=null;for(let ty=10;ty<t.MH-10&&!w;ty+=3)for(let tx=10;tx<t.MW-10&&!w;tx+=3){const x=(tx+.5)*16,y=(ty+.5)*16;if(t.tAt(tx,ty)===t.T_OPEN&&t.tAt(tx+3,ty)===t.T_OPEN&&t.TOWNS.every(h=>Math.hypot(h.x-x,h.y-y)>400))w=[x,y]}if(w){P.x=w[0];P.y=w[1];P.tx=null}}
  const near=(id,lv)=>{const m={id,x:P.x+40,y:P.y,hx:P.x+40,hy:P.y,lv:lv||1,n:MONSTERS[id].count[0],cool:0,t:9,a:0};W.monsters.push(m);return m};
  G.encCool=0;P.troops={};let tg=near('tiger');const d0=Math.hypot(tg.x-P.x,tg.y-P.y);t.updateMonsters(.5);ok(Math.hypot(tg.x-P.x,tg.y-P.y)<d0,'tigers hunt you');
  W.monsters=W.monsters.filter(m=>m!==tg);
  const boar=near('boar');for(let k=0;k<20;k++)t.updateMonsters(.1);ok(G.mode==='world','boars leave you alone');
- G.chase=boar;for(let k=0;k<200&&G.mode==='world';k++)t.updateWorld(.05);ok(G.mode==='dialog'&&G.enc.kind==='monster','clicking a boar hunts it');t.act('flee');reset();W.monsters=W.monsters.filter(m=>m!==boar);
+ W.patrols=[];W.fights=[];// (no watch riding out at the boar first: on the generated world it may graze by a holding, and the land defence would be fighting it)
+ G.chase=boar;for(let k=0;k<200&&G.mode==='world';k++)t.updateWorld(.05);ok(G.mode==='dialog'&&!!G.enc&&G.enc.kind==='monster','clicking a boar hunts it');t.act('flee');reset();W.monsters=W.monsters.filter(m=>m!==boar);
  // abilities, levels and rewards
  P.troops={hum_spear:8,hum_long:4};P.inv=Array(t.INV_SIZE).fill(null);
  // (keep: the beasts kept whole until that is seen: two level-1 spiders can fall to the spears before a web of theirs lands)

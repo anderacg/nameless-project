@@ -7,9 +7,9 @@ Kit.suite(({ok})=>{
  const town=n=>{G.mode='world';G.modal=false;G.lastTown=null;t.enterTown(t.townBy(n))};
  // starts
  t.act('race','orc');t.act('begin','merchant');const sun=t.townBy('Sunreach');
- ok(!Object.keys(P.troops).length&&Math.hypot(P.x-sun.x,P.y-sun.y)<40,'an orc starts alone at Sunreach');
+ ok(!Object.keys(P.troops).length&&(g=>Math.hypot(P.x-g.x,P.y-g.y)<1)(t.gateSpot(sun)),'an orc starts alone at Sunreach');
  t.act('race','human');t.act('begin','soldier');const ash=t.townBy('Ashford');
- ok(!Object.keys(P.troops).length&&Math.hypot(P.x-ash.x,P.y-ash.y)<40&&t.repAt('Ashford')===12,'a human veteran starts alone at Ashford, known locally (12)');
+ ok(!Object.keys(P.troops).length&&(g=>Math.hypot(P.x-g.x,P.y-g.y)<1)(t.gateSpot(ash))&&t.repAt('Ashford')===12,'a human veteran starts alone at Ashford, known locally (12)');
  // standing gates hiring
  ok(t.standingAt(ash)===22&&t.canHire(ash,'hum_levy'),'home standing 22 (12 local + 10 same race) hires tier 1');
  const hm=t.townBy('Highmoor');ok(t.standingAt(hm)===10&&!t.canHire(hm,'hum_levy')&&!t.canHire(hm,'hum_squire'),'Highmoor (10) is not enough for anything yet');

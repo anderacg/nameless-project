@@ -63,7 +63,10 @@ Kit.suite(({ok})=>{
   }finally{S.sliceDay=0;S.slices=[]}}
  // ---- the kit itself
  {G.day=3;G.clock=DAY*.2;Kit.clear();G.encCool=1e9;Kit.world();const ash=Kit.goHome();ok(P.x===ash.x&&P.y===ash.y&&P.tx==null&&Kit.frames(3)===3,'the kit: home at Ashford\'s gate, frames');
-  const n=Kit.travel(ash.x+48,ash.y+8,2000);ok(n>0&&Math.hypot(P.x-ash.x-48,P.y-ash.y-8)<4,'travel: there in '+n+' steps');
+  // (between two spots of open ground near Ashford, both clear of every holding (standing by one is arriving there), on any world)
+  const pts=[];for(let r=5;r<14&&pts.length<2;r++)for(let a=0;a<24&&pts.length<2;a++){const x=ash.x+Math.cos(a*Math.PI/12)*r*16,y=ash.y+Math.sin(a*Math.PI/12)*r*16,tx=Math.floor(x/16),ty=Math.floor(y/16);
+    if(t.tAt(tx,ty)===t.T_OPEN&&!t.lotOf(tx,ty)&&t.TOWNS.every(h=>Math.hypot(h.x-x,h.y-y)>80)&&t.Router.reach(ash,{x,y})&&pts.every(q=>Math.hypot(q.x-x,q.y-y)>40))pts.push({x,y})}
+  const to=pts[1];Kit.world();P.x=pts[0].x;P.y=pts[0].y;const n=Kit.travel(to.x,to.y,2000);ok(n>0&&Math.hypot(P.x-to.x,P.y-to.y)<4,'travel: there in '+n+' steps');
   ok(Kit.rolls([.1,.2],()=>[Math.random(),Math.random()]).join()==='0.1,0.2'&&Kit.stub(.5,()=>Math.random())===.5&&Kit.seeded(7,()=>Math.random())===t.seeded(7)(),'the dice: rolls, stub and seeded, put back after');
   const e=Kit.meet({kind:'party',ref:t.asParty({x:P.x,y:P.y,cool:0,troops:['militia']}),list:['militia'],allies:[],foes:[]});ok(G.enc===e&&G.mode!=='world'&&Kit.text().length>0,'meet: a meeting opens its page ('+G.mode+')');t.act('flee');Kit.world()}
 });

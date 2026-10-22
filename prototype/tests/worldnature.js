@@ -87,7 +87,9 @@ try{
  {const h=c=>{const d=c.getContext('2d').getImageData(0,0,Wp,Hp).data;let s=0;for(let i=0;i<d.length;i+=28)s=(s*31+d[i])|0;return s},a=h(cv),ms=[];let b=0;
   for(let k=0;k<3;k++){const q=performance.now(),c=t.paintWorld();ms.push(performance.now()-q);if(k===2)b=h(c)}
   ms.sort((x,y)=>x-y);ok(a===b,'painted again, the world is the same picture');
-  ok(ms[1]<6000,'the world paints in '+ms.map(x=>x.toFixed(0)).join(', ')+' ms (median '+ms[1].toFixed(0)+'; nature alone '+t.NATURE.ms.toFixed(0)+' ms)');
+  // (the whole map in one window: the tests' and the wiki's, never the game's, which paints by chunks (worldchunks checks those); the
+  // generated world is 4x today's area and its art (fords, the frost's snow cover, 2026-10-22) costs more: 10 s there, 6 s today)
+  ok(ms[1]<(t.WORLD.gen?10000:6000),'the world paints in '+ms.map(x=>x.toFixed(0)).join(', ')+' ms (median '+ms[1].toFixed(0)+'; nature alone '+t.NATURE.ms.toFixed(0)+' ms)');
   o.push('INFO world paint median '+ms[1].toFixed(0)+' ms, nature '+t.NATURE.ms.toFixed(0)+' ms ('+t.NATURE.t+'); trees '+t.NATURE.trees+', rises '+t.NATURE.hills+', ranges '+t.NATURE.peaks+', rock px '+t.NATURE.rock+', small things '+t.NATURE.decor+' standing / '+t.NATURE.flat+' lying')}
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}
 const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d)};
