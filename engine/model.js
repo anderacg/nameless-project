@@ -96,6 +96,8 @@
   // file loads, added after the built-in ones; a name already taken is an error)
   const extra=(k,into,...taken)=>{for(const [n,v] of Object.entries((PX.MODEL_EXTRA||{})[k]||{})){if([into,...taken].some(t=>t[n]))throw new Error('the '+k+' '+n+' is taken');into[n]=v}};
   extra('materials',FIXED,BASE);
+  // (a culture's material that takes a built-in one's texture, its own colours kept: its walls coursed as stone, its roof tiled)
+  const TEX=Object.assign({},(PX.MODEL_EXTRA||{}).textures);
   let RAMP=null;const ramps=()=>RAMP||(RAMP=Object.assign({},...Object.keys(BASE).map(k=>({[k]:PX.ramp(BASE[k]).map(hx)})),...Object.keys(FIXED).map(k=>({[k]:FIXED[k].map(hx)}))));
   PX.MODEL_MAT=Object.keys(BASE).concat(Object.keys(FIXED));const MATI=Object.fromEntries(PX.MODEL_MAT.map((k,i)=>[k,i]));
   // the light: from the upper left of the screen (west, a little north, high). Walls and roofs read it on their own scales: a wall
@@ -246,7 +248,7 @@
       if(f.rf.moss&&top+(H(iu,0,sd+17)-.5)*2.5<f.fh*f.rf.moss)return['moss',cl(b+(h<.3?1:0)-(h>.9&&b>0?1:0))];// (a crag's grassy crown, its edge ragged)
       if(H(iu>>1,iv>>1,sd+31+f.sd)<(m==='thatch'||m==='shingle'?.03:.012)&&v<f.fh*.6&&m!=='awning'&&m!=='sandrock')return['moss',cl(b+(h<.5?0:1))];// moss and worn patches, low on the slope
       if(H(iu,iv,sd+41+f.sd)<.012)return[m,3];// a tile slipped (each face its own: a cone's facets never all at once)
-      switch(m){
+      switch(TEX[m]||m){
         case 'tile':{const c=Math.floor(v/2);return iv%2===0?[m,cl(b+1+(((iu>>1)+c)%2&&iu%2?1:0))]:[m,cl(b+sp)]}// courses: their lower edges scalloped
         case 'thatch':{const st=H(iu,Math.floor(v/5),sd)<.2?1:0;return[m,cl(b+st+(iv%3===0&&H(iu,iv>>1,sd+2)<.5?1:0)-(h>.92?1:0))]}// strands
         case 'slate':{const c=Math.floor(v/2),j=(iu+(c%2)*2)%3===0,pl=H((iu+(c%2)*2)/3|0,c,sd+3);return[m,cl(b+(iv%2===0?1:0)+(iv%2&&j?1:0)+(pl<.15?1:pl>.9?-1:0))]}// staggered plates
@@ -271,7 +273,7 @@
       if(u<1||u>=w-1||(P<99&&pu<1&&u<w-2)||iv===rail)return[f.frame,b];// posts and the cross-beam
       if(rail>0&&f.hz>=14&&iv<rail&&P<99&&(u<P&&Math.floor(u)===iv+1||u>w-P&&Math.floor(w-1-u)===iv+1))return[f.frame,cl(b+1)]}// braces
     if(f.frame&&f.gable&&Math.abs(u-f.fw/2)<.5)return[f.frame,b];
-    switch(m){
+    switch(TEX[m]||m){
       case 'stone':{const row=Math.floor(v/3),mort=iv%3===2,j=(iu+(row%2)*2)%5===4,q=u<2||u>=f.fw-2;
         if(q&&!f.round)return[m,mort?cl(b+1):row%2?0:cl(b-1)];return[m,cl(b+(mort||j?1:0)+(!mort&&H((iu+(row%2)*2)/5|0,row,sd+7)<.25?1:0)+wx)]}// courses, quoins
       case 'plank':return[m,cl(b+(iu%3===2?1:0)+(h<.05?1:0)+wx)];

@@ -511,9 +511,10 @@
        types: {type: (Q, o, base) => ...}: its plans for types (base(Q, o) the generic one: call it and add, or build anew),
        clusters: {kind: (C, base) => ...}: its layouts (base(C) the generic one),
        centres: {tier: {type} or {kind}, with options for its spec}: what stands at its holdings' heart, by tier,
-       materials: {name: [4 colours, lightest first]}, letters: {ch: [material, tone 0-3]}, decals: {Name: rows}: its own, for model.js
+       materials: {name: [4 colours, lightest first]}, letters: {ch: [material, tone 0-3]}, decals: {Name: rows}, textures: {material: a built-in
+         material whose texture it takes (its own colours kept), e.g. karnGranite: 'stone'}: its own, for model.js
          (PX.MODEL_EXTRA: given before model.js loads; a door's decal named Door...; a name or letter another has taken is an error)}) */
-  const EXTRA={materials:{},letters:{},decals:{}};PX.MODEL_EXTRA=EXTRA;
+  const EXTRA={materials:{},letters:{},decals:{},textures:{}};PX.MODEL_EXTRA=EXTRA;
   PX.registerBuildStyle=(name,def)=>{const own=def.own||{};
     for(const k in EXTRA)for(const [n,v] of Object.entries(def[k]||{})){if(PX.model)throw new Error(name+': its '+k+' must be registered before model.js loads');if(EXTRA[k][n])throw new Error('the '+k+' '+n+' is taken');EXTRA[k][n]=v}
     STYLES[name]=Object.assign({name},def);

@@ -15,82 +15,85 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 // redone, rough rock and crowns, the fit judged on every facing's pixels: every picture changed): a type's and a cluster's every
 // picture, ground, shadow and snow, hashed; W5 (2026-10-22), the elves' hall made elven without trees, the spire and an elves'
 // village hall in the same language (a leaf roof, pale living wood, moon lavender, arched doors and windows): those three re-recorded)
+// (2026-10-22, re-recorded at the merge of the four culture kits (agents CV, CK, CA, CS: each culture's own houses, working
+//  buildings, clusters and centres) with the shared textures for a culture's materials (model.js PX.MODEL_EXTRA.textures)):
+//  every people builds in its own culture's kit now)
 const EXPECT={
- cottage:'b0d3f47d',townhouse:'60847ac0',fisherhut:'5961a169',chapel:'ce169f7a',stall:'4ba88882',tower:'37ad4348',yurt:'028ddae9',
- longhouse:'710715a0',tavern:'6bbf2a06',smithy:'14fb0ee3',church:'f864b8b5',barn:'eafd7df3',granary:'e4b0070d',
- windmill:'c79de711',watermill:'b160667a',warehouse:'60361e14',gatehouse:'9dfa7b6f',hidehall:'4976f722',watchtower:'3fef7a8a',
- treehouse:'15ba0e8a',elfhall:'14bdf25c',spire:'95a93ca1',stonehall:'8b5bf7da',forge:'6c89bf57',keep:'8d6ea42b',
- citadel:'404c8ee0',well:'f8918598',tent:'2e5caf05',wagon:'f6a2f31c',minehead:'f28d9a07',lumbershed:'2d7d3cff',crane:'41513de8',
- village:'bf60e75b',signpost:'8ec83101',cart:'b85da340',haystack:'fe798ba8',woodpile:'4e63e063',fence:'4ccfec38',
- crates:'3bcf5dac',barrels:'3013f7a9',ruins:'b5f1bee4',shrine:'d8e7e23c',cave:'21dca353','cluster:row':'0632e784',
- 'cluster:yard':'e2acf979','cluster:farmstead':'91dd2d3b','cluster:smithy':'0b8561ee','cluster:inn':'6edb779b',
- 'cluster:chapel':'352270d7','cluster:market':'78030d10','cluster:mill':'0a9ffa5f','cluster:lumber':'467a82cc',
- 'cluster:mine':'d79ea221','cluster:quarry':'fddd64be','cluster:fishery':'f7bc3237','cluster:pasture':'66d394a6',
- 'cluster:brewery':'ffde357d','cluster:granary':'dc1bfa5a','cluster:workshop':'ef3f5ba5','cluster:quarter':'0eb6fef3',
- 'cluster:camp':'fac137cd','cluster:hideout':'9c7e04c9','cluster:travelers':'eaa68ba2'};
+ cottage:'34c8560b',townhouse:'985f15f5',fisherhut:'cfe62d10',chapel:'8335688f',stall:'be576182',tower:'8faee54b',yurt:'0beeeb0e',
+ longhouse:'f0c49654',tavern:'870e76f7',smithy:'afb5e62c',church:'736c2d01',barn:'af2bc89c',granary:'68d26177',windmill:'984bad07',
+ watermill:'0e48ac92',warehouse:'288b33c4',gatehouse:'581ee919',hidehall:'d1d9bd9c',watchtower:'e3db4487',treehouse:'163b0f4c',
+ elfhall:'e1b3379f',spire:'95a93ca1',stonehall:'64a3997d',forge:'43fa93a3',keep:'68945526',citadel:'7ed0ffd2',well:'c9ac944c',
+ tent:'740d7ba9',wagon:'0a5e0929',minehead:'26cc8bf9',lumbershed:'22bd2373',crane:'d7433000',village:'b4ca20d1',signpost:'5093798c',
+ cart:'817fedd1',haystack:'fe798ba8',woodpile:'4e63e063',fence:'4ccfec38',crates:'3bcf5dac',barrels:'3013f7a9',chiefyurt:'8f3f0c2c',
+ warcamp:'f2dbe851',horselines:'67682ced',ruins:'b51e510e',shrine:'0119973c',cave:'21dca353','cluster:row':'a5a6b478',
+ 'cluster:yard':'e32b0691','cluster:farmstead':'280bf6b5','cluster:smithy':'2c24f04b','cluster:inn':'8c8400ac',
+ 'cluster:chapel':'bc45319f','cluster:market':'705f852c','cluster:mill':'c833ce73','cluster:lumber':'47fd281e',
+ 'cluster:mine':'735ae22a','cluster:quarry':'5a296bc3','cluster:fishery':'b1198ad0','cluster:pasture':'db5354fa',
+ 'cluster:brewery':'02bf8a7a','cluster:granary':'3f427385','cluster:workshop':'d57ab4a9','cluster:quarter':'dd437ff9',
+ 'cluster:camp':'b16be927','cluster:hideout':'b4bc5b43','cluster:travelers':'eaa68ba2'};
 // (K0, 2026-10-22: recorded at the split into the cultures' files, every culture on the generic plans with its own style table)
 // each culture's own block, which only its own file changes: re-record only that block (its INFO line 'culture <name>: ...')
 const EXPECT_CULTURE={
  // vale (build-vale.js)
- vale:{cottage:'b1c9461d',townhouse:'c29dffd7',fisherhut:'1f0cce5d',chapel:'5ed1c26d',stall:'d1cd1f6e',tower:'5dfba24d',
-  longhouse:'a5bf211e',tavern:'90550c0f',smithy:'cc620965',church:'09079f2e',barn:'cbe9fa04',granary:'21a9bab6',
-  windmill:'ee16e87d',watermill:'d4074e4a',warehouse:'1a70fef6',gatehouse:'7f326322',keep:'092c8873',citadel:'c60ff7a4',
-  well:'cdf23812',tent:'ef7a0923',wagon:'7be171eb',minehead:'447ae4f6',lumbershed:'2d8e95ba',crane:'58dd680f',
-  village:'f72670cb',signpost:'0c50c7de',cart:'7e0c0104',haystack:'0141126c',woodpile:'91289e33',fence:'f1fa5cce',
-  crates:'9dc99dc3',barrels:'52cd4caf',ruins:'804efa00',shrine:'ba32e4b3',cave:'e6f63f86','cluster:row':'8e353c22',
-  'cluster:yard':'d4e7bebc','cluster:farmstead':'f7c2cc07','cluster:smithy':'eaac942f','cluster:inn':'33905c3d',
-  'cluster:chapel':'360e5923','cluster:market':'f7fc8876','cluster:mill':'fba1e04d','cluster:lumber':'856bf9cd',
-  'cluster:mine':'27b66f16','cluster:quarry':'802656b0','cluster:fishery':'07863414','cluster:pasture':'48965266',
-  'cluster:brewery':'99e833ea','cluster:granary':'afcbf29e','cluster:workshop':'55dc278b','cluster:quarter':'f1da8dbf',
-  'cluster:camp':'f328b92e','cluster:hideout':'5bc351f9','cluster:travelers':'f3676546'},
- // league (build-vale.js)
- league:{cottage:'b1c9461d',townhouse:'c29dffd7',fisherhut:'1f0cce5d',chapel:'5ed1c26d',stall:'d1cd1f6e',tower:'5dfba24d',
-  longhouse:'a5bf211e',tavern:'90550c0f',smithy:'cc620965',church:'09079f2e',barn:'cbe9fa04',granary:'21a9bab6',
-  windmill:'ee16e87d',watermill:'d4074e4a',warehouse:'1a70fef6',gatehouse:'7f326322',keep:'092c8873',citadel:'c60ff7a4',
-  well:'cdf23812',tent:'ef7a0923',wagon:'7be171eb',minehead:'447ae4f6',lumbershed:'2d8e95ba',crane:'58dd680f',
-  village:'f72670cb',signpost:'0c50c7de',cart:'7e0c0104',haystack:'0141126c',woodpile:'91289e33',fence:'f1fa5cce',
-  crates:'9dc99dc3',barrels:'52cd4caf',ruins:'804efa00',shrine:'ba32e4b3',cave:'e6f63f86','cluster:row':'8e353c22',
-  'cluster:yard':'d4e7bebc','cluster:farmstead':'f7c2cc07','cluster:smithy':'eaac942f','cluster:inn':'33905c3d',
-  'cluster:chapel':'360e5923','cluster:market':'f7fc8876','cluster:mill':'fba1e04d','cluster:lumber':'856bf9cd',
-  'cluster:mine':'27b66f16','cluster:quarry':'802656b0','cluster:fishery':'07863414','cluster:pasture':'48965266',
-  'cluster:brewery':'99e833ea','cluster:granary':'afcbf29e','cluster:workshop':'55dc278b','cluster:quarter':'f1da8dbf',
-  'cluster:camp':'f328b92e','cluster:hideout':'5bc351f9','cluster:travelers':'f3676546'},
+ vale:{cottage:'9b8c016a',townhouse:'9ee921f4',fisherhut:'a9ba02fa',chapel:'f889742d',stall:'42d9f03c',tower:'34aa3ff9',
+  longhouse:'f6b60a2d',tavern:'3725525e',smithy:'a8c6cc87',church:'0f415d72',barn:'123f5c9a',granary:'78b19834',windmill:'77c0ebc5',
+  watermill:'694f2543',warehouse:'93809849',gatehouse:'ed3adaf0',keep:'9b0fc426',citadel:'330d6c34',well:'56755f8c',tent:'de057503',
+  wagon:'7be171eb',minehead:'447ae4f6',lumbershed:'6b5a6ec9',crane:'e9b2e5fb',village:'d433ea22',signpost:'0c50c7de',
+  cart:'7e0c0104',haystack:'0141126c',woodpile:'91289e33',fence:'f1fa5cce',crates:'9dc99dc3',barrels:'52cd4caf',ruins:'804efa00',
+  shrine:'ba32e4b3',cave:'e6f63f86','cluster:row':'13cfed64','cluster:yard':'1e959f75','cluster:farmstead':'61bf6f1c',
+  'cluster:smithy':'260f5425','cluster:inn':'403393d8','cluster:chapel':'201c185f','cluster:market':'a4a2dc29',
+  'cluster:mill':'396c397a','cluster:lumber':'f72e6dcb','cluster:mine':'362ece7a','cluster:quarry':'89113cf7',
+  'cluster:fishery':'b452898c','cluster:pasture':'6238788d','cluster:brewery':'9b9d55ee','cluster:granary':'95f67ad3',
+  'cluster:workshop':'16a93211','cluster:quarter':'557bb477','cluster:camp':'f2e0be37','cluster:hideout':'3893225d',
+  'cluster:travelers':'9285ed08'},
+ // league (build-vale.js, on the Vale’s)
+ league:{cottage:'e0026d14',townhouse:'54b6ec8c',fisherhut:'3171fded',chapel:'a071ef69',stall:'b97d1b36',tower:'d67dff0f',
+  longhouse:'0205715c',tavern:'773217b3',smithy:'782a69a4',church:'113afed9',barn:'c47dd297',granary:'ff10e0bd',windmill:'ce28f19b',
+  watermill:'8a71a5d7',warehouse:'8291763c',gatehouse:'f048b0d8',keep:'3805bdd3',citadel:'5d431900',well:'4ebe9842',tent:'68d6d141',
+  wagon:'7be171eb',minehead:'447ae4f6',lumbershed:'6f1cf1b9',crane:'807e5f8b',village:'63636303',signpost:'0c50c7de',
+  cart:'7e0c0104',haystack:'0141126c',woodpile:'91289e33',fence:'f1fa5cce',crates:'9dc99dc3',barrels:'52cd4caf',ruins:'804efa00',
+  shrine:'ba32e4b3',cave:'e6f63f86','cluster:row':'483daef4','cluster:yard':'3d9d2aa1','cluster:farmstead':'b72fd12a',
+  'cluster:smithy':'8d905b12','cluster:inn':'b385d4a3','cluster:chapel':'220afa26','cluster:market':'4e514dad',
+  'cluster:mill':'4e589d8d','cluster:lumber':'06e575d1','cluster:mine':'716b7049','cluster:quarry':'d8843b0f',
+  'cluster:fishery':'d40a528b','cluster:pasture':'8a408352','cluster:brewery':'995a7b67','cluster:granary':'19fdb889',
+  'cluster:workshop':'a9a618d3','cluster:quarter':'ef485628','cluster:camp':'ac45f579','cluster:hideout':'0429e275',
+  'cluster:travelers':'a90bdc68'},
  // karn (build-karn.js)
- karn:{cottage:'e07ee2dc',townhouse:'7ccdcdab',fisherhut:'dc62e9b1',chapel:'25f36b36',stall:'d1cd1f6e',tower:'c3da43b9',
-  longhouse:'abbfd413',tavern:'bfe2dd4d',smithy:'4a927c51',church:'4139007f',barn:'459640ff',granary:'ceb5155d',
-  windmill:'22aaae0e',watermill:'40b637d8',warehouse:'d955d959',gatehouse:'41c2c44f',stonehall:'f6594731',forge:'1670346d',
-  keep:'a34f096a',citadel:'55ad3cf6',well:'9cef1b0d',tent:'ef7a0923',wagon:'7be171eb',minehead:'bf2d5163',lumbershed:'1dbd6ba3',
-  crane:'19af040b',village:'1797d73b',signpost:'0c50c7de',cart:'7e0c0104',haystack:'0141126c',woodpile:'91289e33',
-  fence:'f1fa5cce',crates:'9dc99dc3',barrels:'52cd4caf',ruins:'804efa00',shrine:'ba32e4b3',cave:'e6f63f86',
-  'cluster:row':'b510f001','cluster:yard':'884dd71d','cluster:farmstead':'27ba969b','cluster:smithy':'3b94c958',
-  'cluster:inn':'ff7ab54d','cluster:chapel':'91880e61','cluster:market':'05df7613','cluster:mill':'0af85eec',
-  'cluster:lumber':'ac7905e0','cluster:mine':'746d47e9','cluster:quarry':'2b907c28','cluster:fishery':'44b2c460',
-  'cluster:pasture':'1c2f89f3','cluster:brewery':'691b93ea','cluster:granary':'6d4ff8c5','cluster:workshop':'f2463708',
-  'cluster:quarter':'8ad221ba','cluster:camp':'f328b92e','cluster:hideout':'5bc351f9','cluster:travelers':'f3676546'},
+ karn:{cottage:'4a425d36',townhouse:'4ed98e54',fisherhut:'75f3aa32',chapel:'6730e8c0',stall:'d2669600',tower:'159eaa4f',
+  longhouse:'645104ab',tavern:'41b29164',smithy:'b5a540bf',church:'01009c2e',barn:'3279f39a',granary:'8dd0c3ed',windmill:'304bfc7c',
+  watermill:'9bebf06f',warehouse:'6f7a4cd4',gatehouse:'9f0c7b51',stonehall:'2f235361',forge:'b5a540bf',keep:'0a15c33f',
+  citadel:'19f52475',well:'0807789e',tent:'ef7a0923',wagon:'7be171eb',minehead:'d4ecf424',lumbershed:'902923b1',crane:'60309761',
+  village:'1f335979',signpost:'0c50c7de',cart:'7e0c0104',haystack:'0141126c',woodpile:'91289e33',fence:'f1fa5cce',crates:'9dc99dc3',
+  barrels:'52cd4caf',ruins:'b225d5e4',shrine:'ae0815c2',cave:'e6f63f86','cluster:row':'e770cf35','cluster:yard':'e105ed2f',
+  'cluster:farmstead':'d7f9a278','cluster:smithy':'571d6c98','cluster:inn':'7df1a642','cluster:chapel':'9b4d7e06',
+  'cluster:market':'8d15f7aa','cluster:mill':'9bf51765','cluster:lumber':'db841eea','cluster:mine':'fec17ded',
+  'cluster:quarry':'b8b139f1','cluster:fishery':'08b04c2a','cluster:pasture':'c5531294','cluster:brewery':'492ac2e6',
+  'cluster:granary':'d78ee17b','cluster:workshop':'3022eba2','cluster:quarter':'329dbbe1','cluster:camp':'d0dad721',
+  'cluster:hideout':'5bc351f9','cluster:travelers':'f3676546'},
  // ashgor (build-ashgor.js)
- ashgor:{cottage:'535ed47c',townhouse:'b291a0b6',fisherhut:'fe179cc5',chapel:'dede7a25',stall:'d1cd1f6e',tower:'14f70142',
-  yurt:'8eb1f995',longhouse:'185ae82a',tavern:'368c3fd1',smithy:'82245a1a',church:'e7f97164',barn:'b2400b82',granary:'1edf0295',
-  windmill:'ed373659',watermill:'72f69f98',warehouse:'1db024ea',gatehouse:'f84cc2fc',hidehall:'02dc3591',watchtower:'40d7e36f',
-  keep:'afab5f49',citadel:'8f362045',well:'3e239c74',tent:'ef7a0923',wagon:'7be171eb',minehead:'422a0526',lumbershed:'821c1be4',
-  crane:'a8dd6931',village:'b631fba7',signpost:'0c50c7de',cart:'7e0c0104',haystack:'0141126c',woodpile:'91289e33',
-  fence:'f1fa5cce',crates:'9dc99dc3',barrels:'52cd4caf',ruins:'804efa00',shrine:'ba32e4b3',cave:'e6f63f86',
-  'cluster:row':'f0386403','cluster:yard':'d35875cf','cluster:farmstead':'3e14ff8e','cluster:smithy':'39830318',
-  'cluster:inn':'a3dcbf06','cluster:chapel':'92a3c336','cluster:market':'f02db576','cluster:mill':'76d48cbb',
-  'cluster:lumber':'33be7304','cluster:mine':'7ab2868e','cluster:quarry':'5a65fbe2','cluster:fishery':'b3ec64b2',
-  'cluster:pasture':'59743044','cluster:brewery':'d4772842','cluster:granary':'93575272','cluster:workshop':'e6731191',
-  'cluster:quarter':'3bc16460','cluster:camp':'f328b92e','cluster:hideout':'5bc351f9','cluster:travelers':'f3676546'},
+ ashgor:{cottage:'3a1e865e',townhouse:'6978b5f3',fisherhut:'5de9645b',chapel:'ca6bb9f2',stall:'47a4e4b4',tower:'a422859b',yurt:'cc0d22e8',
+  longhouse:'33d0cacf',tavern:'768aa82f',smithy:'8c663b65',church:'e491ffb2',barn:'37974e76',granary:'ef556cc3',windmill:'84a9398b',
+  watermill:'a2635d7c',warehouse:'e644be97',gatehouse:'88836163',hidehall:'068da549',watchtower:'f14a8eed',keep:'40c9b946',
+  citadel:'84c8cf54',well:'7b032ba6',tent:'3be7d91e',wagon:'7be171eb',minehead:'69eb6a7f',lumbershed:'2c806cf7',crane:'7154d567',
+  village:'94875589',signpost:'0c50c7de',cart:'7e0c0104',haystack:'0141126c',woodpile:'91289e33',fence:'f1fa5cce',crates:'9dc99dc3',
+  barrels:'52cd4caf',chiefyurt:'fb1491fa',warcamp:'287f61a1',horselines:'a69df0b6',ruins:'804efa00',shrine:'ba32e4b3',
+  cave:'e6f63f86','cluster:row':'3f6256c3','cluster:yard':'db386909','cluster:farmstead':'f2a35d21','cluster:smithy':'cd8af3e6',
+  'cluster:inn':'dfe97c9a','cluster:chapel':'573df1b7','cluster:market':'4f01b3d2','cluster:mill':'c781a49f',
+  'cluster:lumber':'d5434ca3','cluster:mine':'20946f3b','cluster:quarry':'a44189fd','cluster:fishery':'3630ce0b',
+  'cluster:pasture':'cf0cf9df','cluster:brewery':'b82bf1a4','cluster:granary':'785d27e5','cluster:workshop':'ca262800',
+  'cluster:quarter':'f3ca8c30','cluster:camp':'9385ce67','cluster:hideout':'7de362cf','cluster:travelers':'5d9537d5'},
  // sylvan (build-sylvan.js)
- sylvan:{cottage:'c4d71806',townhouse:'7d88adb8',fisherhut:'628b9cec',chapel:'b6a107e1',stall:'d1cd1f6e',tower:'1a440b9a',
-  longhouse:'46928d13',tavern:'beb7a187',smithy:'23c39adb',church:'d7aeccf7',barn:'e72a83ae',granary:'d4d22bca',
-  windmill:'c515f53d',watermill:'66e4fa67',warehouse:'5ad485ac',gatehouse:'b5be17ab',treehouse:'89cc47d1',elfhall:'1f87af60',
-  spire:'d56cae27',keep:'6f41e31a',citadel:'903496f4',well:'b598f356',tent:'ef7a0923',wagon:'7be171eb',minehead:'dff692ec',
-  lumbershed:'fae7b12c',crane:'0f860e61',village:'1b5f0522',signpost:'0c50c7de',cart:'7e0c0104',haystack:'0141126c',
-  woodpile:'91289e33',fence:'f1fa5cce',crates:'9dc99dc3',barrels:'52cd4caf',ruins:'804efa00',shrine:'ba32e4b3',cave:'e6f63f86',
-  'cluster:row':'1421771b','cluster:yard':'b9cb282d','cluster:farmstead':'15fe9f9c','cluster:smithy':'145d3702',
-  'cluster:inn':'4d5962b8','cluster:chapel':'69d342d8','cluster:market':'9e4e9946','cluster:mill':'219bd806',
-  'cluster:lumber':'3f9c3d63','cluster:mine':'9cc6f0ea','cluster:quarry':'212e0cbc','cluster:fishery':'b2890451',
-  'cluster:pasture':'caeb5b30','cluster:brewery':'bd12afdc','cluster:granary':'0fcd8c57','cluster:workshop':'f9249924',
-  'cluster:quarter':'8f90f1ed','cluster:camp':'f328b92e','cluster:hideout':'5bc351f9','cluster:travelers':'f3676546'}
+ sylvan:{cottage:'2866254a',townhouse:'86862f92',fisherhut:'20f14781',chapel:'7a7c2819',stall:'f9301b85',tower:'63d61cbb',
+  longhouse:'a584e630',tavern:'1a1c5129',smithy:'64119c77',church:'d3974598',barn:'7d29fefb',granary:'36e3d966',windmill:'5cf78eae',
+  watermill:'4f9ffe6a',warehouse:'8fe43d77',gatehouse:'09bea18e',treehouse:'5480d2a8',elfhall:'4c1d61a4',spire:'3803d41b',
+  keep:'8c3509c9',citadel:'b183e65d',well:'123d411b',tent:'2b57db4f',wagon:'dcb20736',minehead:'d521947f',lumbershed:'307b4fff',
+  crane:'dfddb665',village:'7a5b355b',signpost:'f1013ad9',cart:'b19a410e',haystack:'0141126c',woodpile:'91289e33',fence:'f1fa5cce',
+  crates:'9dc99dc3',barrels:'52cd4caf',ruins:'804efa00',shrine:'ba32e4b3',cave:'e6f63f86','cluster:row':'38d81dde',
+  'cluster:yard':'cf83dc75','cluster:farmstead':'ae7a8e4c','cluster:smithy':'5eb5aa8c','cluster:inn':'a12f748a',
+  'cluster:chapel':'cadd8877','cluster:market':'382a156d','cluster:mill':'9b705b7a','cluster:lumber':'ef70bb60',
+  'cluster:mine':'49122f9e','cluster:quarry':'e4c72230','cluster:fishery':'b4e086e1','cluster:pasture':'b2b02b35',
+  'cluster:brewery':'44a4308f','cluster:granary':'81669ce5','cluster:workshop':'562f714a','cluster:quarter':'a9d7e778',
+  'cluster:camp':'4625d501','cluster:hideout':'c11ca49f','cluster:travelers':'f49cda9b'}
 };
 try{
  const px=c=>c.getContext('2d').getImageData(0,0,c.width,c.height).data,P=['human','dwarf','elf','orc'],FRONT=PX.MODEL_FRONT,SZ=PX.MODEL_SIZES.types,OBJ=PX.MODEL_OBJECTS;
@@ -226,8 +229,8 @@ try{
    if(a.culture!==c||b.people!==pp||!same(a,b))cb.push(pp+'/'+type)}
   for(const kind of ['smithy','row'])for(const [pp,c] of Object.entries(PX.CULTURE_OF)){if(!same(PX.clusterModel({kind,people:pp,seed:3}),PX.clusterModel({kind,culture:c,seed:3})))cb.push(pp+' cluster '+kind)}
   ok(!cb.length,'a spec\'s culture is its people\'s own unless given (human vale, dwarf karn, elf sylvan, orc ashgor), the same pixels named either way'+(cb.length?': '+cb.join(', '):''));
-  const lg=['cottage','tavern','village','citadel'].filter(type=>{const v=PX.buildingModel({type,people:'human',seed:4,fort:2});return['human','elf','orc'].some(pp=>{const m=PX.buildingModel({type,culture:'league',people:pp,seed:4,fort:2});return m.culture!=='league'||m.people!==pp||!same(m,v)})});
-  ok(!lg.length,'the culture, not the people, chooses the building: a Salt League holding builds on the Vale\'s style whether its people are human, elf or orc'+(lg.length?': '+lg.join(', '):''));
+  const lg=['cottage','tavern','village','citadel'].filter(type=>{const v=PX.buildingModel({type,culture:'league',people:'human',seed:4,fort:2});return['elf','orc'].some(pp=>{const m=PX.buildingModel({type,culture:'league',people:pp,seed:4,fort:2});return m.culture!=='league'||m.people!==pp||!same(m,v)})});
+  ok(!lg.length,'the culture, not the people, chooses the building: a Salt League holding builds alike whether its people are human, elf or orc'+(lg.length?': '+lg.join(', '):''));
   const fs=PX.clusterModel({kind:'smithy',culture:'karn',seed:2}).buildings.map(d=>d.kind),hs=PX.clusterModel({kind:'smithy',culture:'vale',seed:2}).buildings.map(d=>d.kind);
   ok(fs.includes('forge')&&!hs.includes('forge'),'a culture builds its own in place of another in its clusters (look.swap): the Clans\' smithy yard has the forge ('+fs.join(', ')+'), the Vale\'s its smithy');
   const T0={camp:['kind','camp'],hamlet:['kind','yard'],village:['type','village'],town:['type','citadel'],city:['type','citadel'],castle:['type','keep']},cz=[];
@@ -238,8 +241,8 @@ try{
   const reg=PX.registerBuildStyle('k0test',{from:'karn',look:{roof:'thatch',village:{goods:['crate','crate']}},
     own:{types:{k0hut:{cell:32,dwellings:2,look:{wall:null},plan(Q,o){const dw=Q.home('k0hut');PX.planKit.house(Q,{w:16,d:14,dw,wall:o.look.k0hut.wall||o.wall})}}}},
     types:{cottage(Q,o,base){base(Q,o);Q.prop('barrel',[0,10])}},clusters:{yard(C,base){base(C);PX.planKit.prop(C,'trough',[0,0])}},centres:{town:{type:'keep'}}});
-  const sp=PX.buildingModelSpec({type:'cottage',culture:'k0test',seed:2}),k0=PX.buildingModelSpec({type:'cottage',culture:'karn',seed:2}),hut=PX.buildingModel({type:'k0hut',people:'orc',seed:1}),lk=PX.MODEL_LOOK.k0test;
-  ok(reg&&lk.roof==='thatch'&&lk.cones===false&&lk.village.goods[0]==='crate'&&lk.village.door==='Rune'&&sp.parts.length===k0.parts.length+1&&sp.parts.some(p=>p.k==='roof'&&p.mat==='thatch')
+  const sp=PX.buildingModelSpec({type:'cottage',culture:'k0test',seed:2}),hut=PX.buildingModel({type:'k0hut',people:'orc',seed:1}),lk=PX.MODEL_LOOK.k0test;
+  ok(reg&&lk.roof==='thatch'&&lk.cones===false&&lk.village.goods[0]==='crate'&&lk.village.door==='Rune'&&sp.parts[sp.parts.length-1].type==='barrel'&&sp.parts[sp.parts.length-1].at.join()==='0,10'&&sp.parts.some(p=>p.k==='roof'&&p.mat==='thatch')
    &&PX.clusterModelSpec({kind:'yard',culture:'k0test',seed:2}).parts.some(p=>p.type==='trough')&&PX.centreModel({tier:'town',culture:'k0test',seed:2}).type==='keep'
    &&PX.MODEL_TYPES.includes('k0hut')&&PX.MODEL_SIZES.types.k0hut.cell===32&&hut.households===2&&hut.cell===32,
    'PX.registerBuildStyle: a culture built on another (from) takes its look and plans where it gives none, its plans wrap the generic (base), its own cluster layout and centre; its own type joins the lists, at its size, built by any culture');
