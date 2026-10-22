@@ -78,10 +78,12 @@
      other's [by its weight ×, at most]; rim: the other's ground's edge [below this, shaded so much toward its deepest tone]; wob: its
      edge's wobble, px either way ×2); crop rows
      by climate (c: the crop, light and deep; soil: a furrow; every px a row, furrow px of it); a fence's wood, a field wall's stone
-     (light, deep; post: px between posts) */
+     (light, deep; post: px between posts); a building's yard (its model's ground laid into the field's at yard of its colour, the
+     field's own showing through) and shadow (its model's mask softened soft px and faded over fade px of its edges, in the trees'
+     shadow tone at shadow: shadowSprite's) */
   PX.GROUND_MIX={lean:[.22,.3],rim:[.6,.35],wob:20};
   PX.GROUND_BUILT={crop:{grass:{c:['#c4b25a','#9c8c40'],soil:'#6e5636'},frost:{c:['#cdcab0','#a6a088'],soil:'#7c746a'},desert:{c:['#c6ac60','#a08844'],soil:'#a47e4e'},swamp:{c:['#86a446','#647e36'],soil:'#4c4228'}},
-    row:6,furrow:2,wood:['#9a7650','#5e4630'],stone:['#b0aa9c','#6e6a60'],post:6,pad:.4,shade:.3};
+    row:6,furrow:2,wood:['#9a7650','#5e4630'],stone:['#b0aa9c','#6e6a60'],post:6,yard:.8,shadow:.3,soft:3,fade:4};
   const hx=c=>[parseInt(c.slice(1,3),16),parseInt(c.slice(3,5),16),parseInt(c.slice(5,7),16)];
   // a smooth value noise in [0,1) over a W×H field: lattice step px, seed s (the lattice hashed once, then read). WR, a window
   // [x0,y0,x1,y1] (a tile's, R16): only the lattice over it (and NOISE_M px round) hashed ahead, any other point read as the
@@ -339,17 +341,28 @@
     if(s===1&&v%3===0){Pg.rect(P.head,sx,y-hgt-1,1,2);Pg.px(P.reed[1],sx,y-hgt-2)}
     if(P.ice&&s===0)Pg.px(P.snow?P.snow[0]:'#fff',sx+lean,y-hgt+1)}}
 
-  /* a building standing by a fight (battle follows the world: terrain.js TERRAIN_BUILT; h {w, h, k, type, people, seed}, c its
-     climate): the world's own model (engine/buildmodels.js PX.buildingModel: its type, or by its estate's kind (HOUSE_K), no larger
-     than its footprint, one of 4 looks by its seed: few to make; its snow in the frost); a plain block with a pitched roof where there is
-     no model. Kept a spec */
+  /* a building standing by a fight (battle follows the world: terrain.js TERRAIN_BUILT; h {w, h, s, k, type, people, seed}, c the
+     climate of the ground under it, yaw its facing (PX.MODEL_YAWS)): the world's own model (engine/buildmodels.js PX.buildingModel:
+     its type, or by its estate's kind (HOUSE_K), no larger than its footprint at its scale s, one of 4 looks by its seed, its
+     climate's make, its snow in the frost) at whole scale s (2: each pixel a crisp 2 x 2 block): {s, its standing picture (and its
+     snow); g, its own ragged yard (the model's ground layer and its snow's, RGBA, n x n px) or null; sh, its shadow (the model's
+     mask, softened GROUND_BUILT.soft px and faded out over fade px of its edges: 0..1 a px); n}, all on the footprint's box. A plain
+     block with a pitched roof where there is no model (a soft round shadow, no yard). Kept a spec */
   const HOUSE_K={centre:'village',house:'cottage',farm:'barn',pasture:'barn',lumber:'lumbershed',mine:'minehead',quarry:'crane',port:'fisherhut',smithy:'smithy',granary:'granary',brewery:'barn',market:'stall',workshop:'warehouse'},HSPR={};
-  function houseSprite(h,c){const key=[h.type,h.k,h.people,(h.seed|0)%4,h.w,c].join();if(HSPR[key])return HSPR[key];const S=PX.MODEL_SIZES&&PX.MODEL_SIZES.types,fit=t=>S&&S[t]&&S[t].cell<=h.w?t:null;
-    try{const type=fit(h.type)||fit(HOUSE_K[h.k])||fit('cottage');if(type&&PX.buildingModel){const m=PX.buildingModel({type,people:h.people||'human',seed:(h.seed|0)%4,env:c,snow:c==='frost'}),N=m.img.width;
-      return HSPR[key]=PX.canvas(N,N,g=>{if(m.shadow&&m.shadow.width)g.drawImage(m.shadow,0,0);g.drawImage(m.img,0,0);if(m.snow&&m.snow.img)g.drawImage(m.snow.img,0,0)})}}catch(e){}
-    const w=h.w,ht=Math.round(h.w*.9),wall=c==='desert'?['#e0c48e','#b89a6a']:['#d8ccb0','#a89c84'],roof=c==='frost'?['#eef3f8','#b8c4d2']:['#b0563c','#7a3a2a'];
-    return HSPR[key]=PX.canvas(w,ht,g=>{const r=Math.round(ht*.45);g.fillStyle=wall[1];g.fillRect(2,r,w-4,ht-r-1);g.fillStyle=wall[0];g.fillRect(2,r,w-6,ht-r-3);g.fillStyle='#4a3a2e';g.fillRect((w>>1)-2,ht-8,4,7);
-      g.fillStyle=roof[1];g.fillRect(0,2,w,r);g.fillStyle=roof[0];g.fillRect(1,2,w-2,r-3);g.fillStyle='#1c2430';g.fillRect(0,r+1,w,1)})}
+  function houseOf(h,c,yaw){const k=Math.max(1,Math.round(h.s||1)),key=[h.type,h.k,h.people,(h.seed|0)%4,h.w,k,c,yaw].join();if(HSPR[key])return HSPR[key];
+    const S=PX.MODEL_SIZES&&PX.MODEL_SIZES.types,fit=t=>S&&S[t]&&S[t].cell*k<=h.w?t:null,GB=PX.GROUND_BUILT;
+    // (a mask's softening: a box blur soft px round, faded out over its last fade px so no edge of the picture cuts it)
+    const soft=(A,n)=>{const r=GB.soft,B=new Float32Array(n*n);for(let y=0;y<n;y++)for(let x=0;x<n;x++){let s=0,t=0;for(let b=-r;b<=r;b++)for(let a=-r;a<=r;a++){const X=x+a,Y=y+b;t++;if(X>=0&&Y>=0&&X<n&&Y<n)s+=A[Y*n+X]}
+      B[y*n+x]=s/t*Math.min(1,Math.min(x,y,n-1-x,n-1-y)/GB.fade)}return B};
+    try{const type=fit(h.type)||fit(HOUSE_K[h.k])||fit('cottage');if(type&&PX.buildingModel){const m=PX.buildingModel({type,people:h.people||'human',seed:(h.seed|0)%4,yaw,env:c,snow:c==='frost'}),n=m.img.width*k;
+      const up=L=>PX.canvas(n,n,g=>{g.imageSmoothingEnabled=false;for(const q of L)if(q&&q.width)g.drawImage(q,0,0,n,n)}),dat=cv=>cv.getContext('2d').getImageData(0,0,n,n).data;
+      const s=up([m.img,m.snow&&m.snow.img]),g=m.ground&&m.ground.width?dat(up([m.ground,m.snow&&m.snow.ground])):null,sd=dat(up([m.shadow])),A=new Float32Array(n*n);for(let i=0;i<n*n;i++)A[i]=sd[i*4+3]/255;
+      return HSPR[key]={s,g,sh:soft(A,n),n}}}catch(e){}
+    const n=h.w,ht=Math.round(n*.9),wall=c==='desert'?['#e0c48e','#b89a6a']:['#d8ccb0','#a89c84'],roof=c==='frost'?['#eef3f8','#b8c4d2']:['#b0563c','#7a3a2a'],A=new Float32Array(n*n);
+    for(let y=0;y<n;y++)for(let x=0;x<n;x++)if(((x-n*.62)/(n*.45))**2+((y-n*.86)/(n*.16))**2<=1)A[y*n+x]=1;
+    const s=PX.canvas(n,n,g=>{const r=Math.round(ht*.45);g.save();g.translate(0,n-ht);g.fillStyle=wall[1];g.fillRect(2,r,n-4,ht-r-1);g.fillStyle=wall[0];g.fillRect(2,r,n-6,ht-r-3);g.fillStyle='#4a3a2e';g.fillRect((n>>1)-2,ht-8,4,7);
+      g.fillStyle=roof[1];g.fillRect(0,2,n,r);g.fillStyle=roof[0];g.fillRect(1,2,n-2,r-3);g.fillStyle='#1c2430';g.fillRect(0,r+1,n,1);g.restore()});
+    return HSPR[key]={s,g:null,sh:soft(A,n),n}}
   /* the plain field's small things (the game's arena: a battle's ground without terrain, and the base a terrain is painted over):
      the climate's open-ground details (P.detail, as battleGround paints them) on each 16-px cell from row 16 down, and in the swamp
      still pools, a mud rim, the far bank's shade, a glint, reeds at an end now and then; seeded by the cell, never Math.random.
@@ -415,11 +428,18 @@
     // (what stands by the fight (spec.built, terrain.js TERRAIN_BUILT: 1 a building, 2 crop rows, 3 a fence; spec.recipe.built its
     // houses and fields): Bat, the cell's at a pixel)
     const BT=spec.built||null,BF=BT&&spec.recipe&&spec.recipe.built||null,Bat=(x,y)=>{if(!BT)return 0;const i=Math.floor(x/cs),j=Math.floor(y/cs);return BT[(j<0?0:j>=R?R-1:j)*C+(i<0?0:i>=C?C-1:i)]};
+    // (each building's model (houseOf) on its footprint, its foot on the footprint's: its climate the ground's under it, facing the
+    // nearest way within two footprints of it, else the field's middle (its door toward where its people would go); yardAt: on a yard)
+    const faceTo=h=>{const cx=h.x+h.w/2,cy=h.y+h.h/2;let tx=W/2,ty=H/2,bd=2*h.w;for(const wy of (spec.recipe&&spec.recipe.ways)||[])for(const p of wy.p){const d=Math.hypot(p[0]-cx,p[1]-cy);if(d<bd){bd=d;tx=p[0];ty=p[1]}}
+      const dx=tx-cx,dy=ty-cy;return Math.abs(dx)>Math.abs(dy)?(dx>0?6:2):dy<0?4:0};
+    const HO=BF?BF.houses.map(h=>{const q=houseOf(h,MC&&mixAt(h.x+h.w/2,h.y+h.h/2)>.5?c2:clim,faceTo(h));return{...q,h,x0:Math.round(h.x+(h.w-q.n)/2),y0:h.y+h.h-q.n}}):[];
+    const yardAt=(x,y)=>HO.some(q=>{const u=x-q.x0,v=y-q.y0;return !!q.g&&u>=0&&v>=0&&u<q.n&&v<q.n&&q.g[(v*q.n+u)*4+3]>0});
     // (how far through: stage s of GS, f through it; band: a stage's band of cell rows, run over its cells (each) a band at a time)
     const GS=9,at=(s,f)=>(s+(f||0))/GS;yield at(1);
     const cell=(a,i,j)=>a[(j<0?0:j>=R?R-1:j)*C+(i<0?0:i>=C?C-1:i)];
-    // the cells worth painting: any with a level or a kind, and their neighbours (the slope and the ragged edge reach into them)
-    const act=new Uint8Array(C*R);for(let j=0;j<R;j++)for(let i=0;i<C;i++)if(lvl[j*C+i]||kind[j*C+i]||BT&&BT[j*C+i])for(let b=-1;b<=1;b++)for(let a=-1;a<=1;a++){const x=i+a,y=j+b;if(x>=0&&y>=0&&x<C&&y<R)act[y*C+x]=1};
+    // the cells worth painting: any with a level or a kind (or crop rows, a fence: a building's ground is the field's), and their
+    // neighbours (the slope and the ragged edge reach into them)
+    const act=new Uint8Array(C*R);for(let j=0;j<R;j++)for(let i=0;i<C;i++)if(lvl[j*C+i]||kind[j*C+i]||BT&&BT[j*C+i]>1)for(let b=-1;b<=1;b++)for(let a=-1;a<=1;a++){const x=i+a,y=j+b;if(x>=0&&y>=0&&x<C&&y<R)act[y*C+x]=1};
     const T=new Uint8Array(SW*SH),K=new Uint8Array(SW*SH),WT=new Uint8Array(SW*SH),F=new Uint8Array(SW*SH),Q=oasis||c2==='desert'?new Float32Array(SW*SH):null;
     const ci0=Math.floor(WX0/cs),ci1=Math.min(C,Math.ceil(WX1/cs)),cj0=Math.floor(WY0/cs),cj1=Math.min(R,Math.ceil(WY1/cs));
     const each=(f,j0=cj0,j1=cj1)=>{for(let j=j0;j<j1;j++)for(let i=ci0;i<ci1;i++){if(!act[j*C+i])continue;const y1=Math.min(WY1,(j+1)*cs),x1=Math.min(WX1,(i+1)*cs);for(let y=j*cs;y<y1;y++)for(let x=i*cs;x<x1;x++)f(x,y,(y-WY0)*SW+x-WX0)}};
@@ -732,14 +752,13 @@
       for(let d=1;d<=5;d++){const u=Tat(x,y-d);if(u>t){if(!WL||edgeK(2,x,y-d+1)===0)mix(o,LO,SLF[d-1]*(u-t>1?1.4:1));return}}
       for(let d=1;d<=3;d++)if(Tat(x-d,y)>t){if(!WL||edgeK(1,x-d+1,y)===0)mix(o,LO,.09-.025*d);return}
       for(let d=1;d<=2;d++)if(Tat(x,y+d)>t){if(!WL||edgeK(8,x,y+d-1)===0)mix(o,LN,d===1?.1:.05);return}};
-    /* (what stands by the fight, a pixel o at (x, y): a building's trodden yard (its picture a prop: (5)) and its soft shadow to the
-       lower right; crop rows across or down its field (a furrow every GROUND_BUILT.row px), by the climate where it lies; a fence along
-       its field's side (rails, posts, its shadow), a farm's a low stone wall. True when painted (nothing more there)) */
-    const GB=PX.GROUND_BUILT,WPT=(WAYPAL[clim]||WAYPAL.grass).c.map(hx),FW=GB.wood.map(hx),FS=GB.stone.map(hx);
+    /* (what stands by the fight, a pixel o at (x, y): crop rows across or down its field (a furrow every GROUND_BUILT.row px), by the
+       climate where it lies; a fence along its field's side (rails, posts, its shadow), a farm's a low stone wall. True when painted
+       (nothing more there); a building's cells the field's own ground) */
+    const GB=PX.GROUND_BUILT,FW=GB.wood.map(hx),FS=GB.stone.map(hx);
     const fieldOf=(x,y)=>{for(const p of BF?BF.fields:[])if(x>=p.x&&x<p.x+p.w&&y>=p.y&&y<p.y+p.h)return p;return null};
     const builtPx=(o,x,y)=>{const b=Bat(x,y);
-      if(!b){if(Bat(x-3,y-4)===1)mix(o,LO,GB.shade);return false}
-      if(b===1){mix(o,WPT[1],GB.pad);if(PX.hash(x,y,seed+130)<.08)mix(o,WPT[2],.4);return true}
+      if(!b||b===1)return false;// (a building's ground the field's own: its yard and shadow (3d))
       const p=fieldOf(x,y);if(!p)return false;const cc=MC&&mixAt(x,y)>.5?c2:clim,CR=GB.crop[cc]||GB.crop.grass;
       if(b===2){const a=p.rows?x-p.x:y-p.y,ph=((a%GB.row)+GB.row)%GB.row,h=PX.hash(x,y,seed+131);mix(o,hx(ph<GB.furrow?CR.soil:CR.c[h<.3?1:0]),ph<GB.furrow?.7:.62);return true}
       const lx=x-p.x,ly=y-p.y,ns=ly<cs||ly>=p.h-cs,M=p.pen?FW:FS,u=ns?((ly<cs?ly:ly-(p.h-cs))):(lx<cs?lx:lx-(p.w-cs)),along=ns?lx:ly;
@@ -802,6 +821,10 @@
         for(let x=WX0;x<WX1;x++){const i=IX(x,y),t=T[i],a=t?.5+.5*A4[x>>2]:(A4[x>>2]-.6)*2.5;if(a<=.04||F[i]||Q[i]>.2||DR&&DR[i]<255||MX&&mixAt(x,y)>.5)continue;
           const h=x>>1;if(WY[h]!==y>>1){WY[h]=y>>1;W2[h]=NW(x&~1,y&~1)}// (the ripples' wander, on a 2-px lattice, as needed)
           const ph=(y+x*.4+W2[h]*12)/5.5,f=ph-Math.floor(ph),s=Math.min(1,a)*(t?1:.6);if(f<.18)mix(i*4,RD,.2*s);else if(f<.34)mix(i*4,RL,.18*s)}}}
+    // (3d) what stands by the fight: each building's own ragged yard (its model's ground laid into the field's: worn earth fading into
+    // the grass, snow or sand round it, no edge of its cells showing) and its shadow (soft, the trees' tone), under its picture ((5))
+    if(HO.length){const SHT=[8,14,24];for(const q of HO){const n=q.n,G=q.g;for(let v=0;v<n;v++){const y=q.y0+v;if(y<WY0||y>=WY1)continue;for(let u=0;u<n;u++){const x=q.x0+u;if(x<WX0||x>=WX1)continue;
+      const o=((y-WY0)*SW+x-WX0)*4,j=v*n+u;if(G&&G[j*4+3])mix(o,[G[j*4],G[j*4+1],G[j*4+2]],GB.yard*G[j*4+3]/255);if(q.sh[j]>0)mix(o,SHT,GB.shadow*q.sh[j])}}}}
     yield at(5);
     // (3c) mountains and spires (kind 6): see rockMasses
     const RS=kind.includes(6)?(yield* rockMasses()):null;
@@ -915,7 +938,7 @@
     yield at(6,.6);
     // the small details, first (flat on the ground): by climate, in the open and in woods; never on a cliff, a pool or an oasis
     for(let j=1;j<R;j++){if(!(j%BR0))yield at(6,.6+.4*j/R);for(let i=0;i<C;i++){const k=kind[j*C+i],oc=MC&&MC[j*C+i]>0?1:0;if(k===2)continue;for(const [d,ch] of (oc?P2:P).detail[k===1?1:0]){if(!R2.chance(ch))continue;const x=i*cs+R2.int(2,13),y=j*cs+R2.int(3,15);
-      if(y<16||Fat(x,y)||Fat(x+3,y)||Fat(x-3,y)||Kat(x,y)!==k||onWay(x,y)||onWay(x,y-3)||oasis&&Q[y*W+x]>.25||hasW&&(Dl(x,y)<15||Dl(x-4,y)<15||Dl(x+4,y)<15||keep(x,y))||BT&&Bat(x,y))continue;L.push(0,x,y,d,R2.int(0,999),oc)}}}
+      if(y<16||Fat(x,y)||Fat(x+3,y)||Fat(x-3,y)||Kat(x,y)!==k||onWay(x,y)||onWay(x,y-3)||oasis&&Q[y*W+x]>.25||hasW&&(Dl(x,y)<15||Dl(x-4,y)<15||Dl(x+4,y)<15||keep(x,y))||BT&&(Bat(x,y)>1||yardAt(x,y)))continue;L.push(0,x,y,d,R2.int(0,999),oc)}}}
     yield at(7);
     // the river's flat details: current lines and glints on the deep (floes on a cold one, weed on a swamp's), stepping stones across
     // a ford (cracks in a frozen one), stones at the water's edge, reeds on its banks (palms by a desert's); then its bridges
@@ -1024,8 +1047,8 @@
       fg.putImageData(fi,0,0);for(const p of props)if(p.dk>=2){p.x=p.sx+(p.w>>1);p.box=[p.sx,p.sy,p.sx+p.w-1,p.sy+p.h-1];p.dx=p.sx;p.dy=p.sy;p.s=PX.canvas(p.w,p.h,q=>q.drawImage(fc,p.sx,p.sy,p.w,p.h,0,0,p.w,p.h));delete p.lt;delete p.lb;delete p.yb;delete p.id}}
     // (the desert's life {dk:4, ...as a tree's, dc: its kind}: decoration, faded over your men as a tree is; cv.decor how many)
     for(const d of DEC){const S=PX.desertSprite(d.k,d.v),b=S.box,dx=d.x-S.ax,dy=d.y-S.ay;props.push({dk:4,x:d.x,y:d.y,s:S.s,dx,dy,box:[dx+b[0],dy+b[1],dx+b[2],dy+b[3]],dc:d.k})}
-    // (what stands by the fight: each building {dk:5, ...as a tree's}, its picture (houseSprite) standing on its footprint's foot)
-    if(BF)for(const h of BF.houses){const s=houseSprite(h,MC&&mixAt(h.x+h.w/2,h.y+h.h/2)>.5?c2:clim),dx=Math.round(h.x+h.w/2-s.width/2),dy=h.y+h.h-s.height;props.push({dk:5,x:h.x+(h.w>>1),y:h.y+h.h,s,dx,dy,box:[dx,dy,dx+s.width-1,dy+s.height-1]})}
+    // (what stands by the fight: each building {dk:5, ...as a tree's}, its picture (houseOf) standing on its footprint's foot)
+    for(const q of HO){const s=q.s,h=q.h,dx=q.x0,dy=q.y0;props.push({dk:5,x:h.x+(h.w>>1),y:h.y+h.h,s,dx,dy,box:[dx,dy,dx+s.width-1,dy+s.height-1]})}
     props.sort((a,b)=>a.y-b.y||a.x-b.x);cv.props=props;cv.trees=TREES.length;cv.decor=DEC.length;cv.plan=PLn;
     return cv}
   // the standing props of a ground (trees and cliff faces, PX.battleGround's cv.props) drawn in their order over it: the gallery's

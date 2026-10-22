@@ -2,10 +2,12 @@
 // Not a test: a battle's field where the world puts it (battle follows the world, doc/TERRAIN_DESIGN.md §8), for a screenshot.
 // Ashmark.html?test=visual/battleworld&at=x,y[&off=1][&size=big][&zones=1]: the generated world's tile (x, y), its field built and
 // painted as a battle's (BattleSite, terrainOf, buildTerrain, PX.battleGround over the climate's arena) with its standing props,
-// whole at x1; off=1 the same with TERRAIN_WORLD off (the field as it was before: the "before" shot); zones=1 the deployment zones'
-// outlines. A line of words: the tile, its site's world (mix, pond, brook, lane, lots) and the field's words.
+// whole at x1; off=1 the same with TERRAIN_WORLD off (the field as it was before: the "before" shot); mirror=0 a climates' edge
+// as the world lays it (TERRAIN_MIX.mirror off); zones=1 the deployment zones' outlines. A line of words: the tile, its site's
+// world (mix, pond, brook, lane, lots) and the field's words.
 window.RUN=()=>{const t=T,o=[],q=new URLSearchParams(location.search);
  try{
+  if(q.get('mirror')==='0')t.TERRAIN_MIX.mirror=false;
   window.requestAnimationFrame=()=>0;(0,eval)('TERRAIN.on=true;FIELD_SIZES.on=true');
   const [x,y]=(q.get('at')||'246,45').split(',').map(Number),off=!!q.get('off');t.fieldSet(q.get('size')||'big');t.TERRAIN_WORLD.on=!off;
   t.P.x=(x+.5)*16;t.P.y=(y+.5)*16;const S=t.WM.battleSite(x,y),env=t.battleEnv(false,S),g=t.terrainOf(S,env),W=t.BW,H=t.BH,T0=t.buildTerrain({...g,W,H,top:24,bot:H-8});
