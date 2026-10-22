@@ -57,6 +57,7 @@ $('#menuBtn').addEventListener('click',()=>{if(BattleLab.active)return DevConsol
 
 $('#charBtn').addEventListener('click',()=>{if(G.mode==='char')act('char-close');else openChar()});
 $('#campBtn').addEventListener('click',()=>toggleCamp());// (make camp or break it: world/supply.js)
+$('#mapBtn').addEventListener('click',()=>fullMapKey());// (the full map opened, or closed: map.js)
 $('#helpBtn').addEventListener('click',()=>{if(G.mode==='help')closeOver();else openHelp()});
 $('#journalBtn').addEventListener('click',()=>{if(G.mode==='journal')closeOver();else openJournal()});
 $('#fsBtn').addEventListener('click',toggleFull);

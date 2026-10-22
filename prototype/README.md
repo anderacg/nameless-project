@@ -736,12 +736,12 @@ Everything heard is synthesised by WebAudio as it plays (`js/core/audio.js`, `js
 One screen, filling the window at a whole-number scale (F11 or the corner button for full screen). Everything lies on it: your
 band's card top left (your hero and level; the band's stamina and health bars, its tags; gold, food and drink in days, troops,
 power, morale, pace; what runs short is red: see Supplies), the minimap top right, a short hint top middle, messages bottom left
-(they fade; L shows the whole log), the dock bottom right (Camp Z, Hero C, Skills K, Bag I, Log L, People P, Help H, zoom, save,
+(they fade; L shows the whole log), the dock bottom right (Camp Z, Map M, Hero C, Skills K, Bag I, Log L, People P, Help H, zoom, save,
 full screen, menu), battle orders bottom middle in a battle. Hold the mouse or a finger on the map for the action ring.
 Hover anything on the map for what it is, its strength against you and what a click does. Fog of war (js/world/fog.js) keeps
 what you have explored.
 
-**The full map** (`ui/map.js`; doc/WORLD_DESIGN.md §3.4, §12.4): **M**, or a click or a tap on the minimap, opens the whole world
+**The full map** (`ui/map.js`; doc/WORLD_DESIGN.md §3.4, §12.4): **M**, a click or a tap on the minimap, or the dock's Map beside Camp (a phone's way in), opens the whole world
 in a window (header with the world's name, size, how much you have explored and − + for the zoom; the map beside its legend;
 Close). M again or Esc closes it; the world waits meanwhile. The picture is made from the tile data (`fullMapPic`: the minimap's
 colours, rivers by width, each realm's tint and a stronger line where two realms meet, the dark over land never seen); the

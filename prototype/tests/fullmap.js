@@ -1,6 +1,6 @@
 'use strict';
 // The full map (ui/map.js; doc/WORLD_DESIGN.md §3.4, §12.4, D45): M opens it and M closes it, and so does a click or a tap on
-// the minimap; Shift+M mutes, M alone no longer does. A window in the frame rule (header, the map and its legend, a nav() bar,
+// the minimap, and the dock's Map beside Camp (a phone's way in); Shift+M mutes, M alone no longer does. A window in the frame rule (header, the map and its legend, a nav() bar,
 // Esc). Realms, rivers by width, crossings, holdings, you and the fog; the scale (1 px a tile at Normal, 1 px per 2 tiles over
 // FULLMAP.wide) and its zoom; it fits a phone on its side (844 x 390); the picture built in 25 ms or less at Huge (a made-up Huge
 // map, so no Huge world is forged). Then the loading screens' step labels: the generator's real stages in "Forging the world…"
@@ -34,6 +34,32 @@ Kit.suite(({ok,info})=>{
   down('mouse',R.x+R.w/2,R.y+R.h/2);up('mouse',R.x+R.w/2,R.y+R.h/2);ok(G.mode==='fullmap','a click on the minimap opens it');t.act('map-close');
   world();down('touch',R.x+3,R.y+R.h-3);up('touch',R.x+3,R.y+R.h-3);ok(G.mode==='fullmap','a tap on the minimap opens it');t.act('map-close');
   world();down('mouse',R.x-30,R.y+R.h+30);up('mouse',R.x-30,R.y+R.h+30);ok(G.mode!=='fullmap','a click beside it does not open it (it travels, as ever)');Kit.world();P.tx=null;
+  // ---- the dock's Map, beside Camp (input.js): a click or a tap opens it, the world waits, its bar's Close and Esc close it ----
+  {world();const b=q('#mapBtn'),camp=q('#campBtn'),seen=e=>{const r=e.getBoundingClientRect();return r.width>0&&r.height>0},run=()=>t.loop((0,eval)('last')+16);
+    ok(b&&camp&&b.previousElementSibling===camp&&b.parentElement===camp.parentElement&&b.querySelector('svg')&&b.querySelector('.dl').textContent==='Map'&&b.querySelector('kbd').textContent==='M'&&seen(b),
+      'the dock’s Map sits beside Camp: an icon tile, its key M ('+(b&&b.title)+')');
+    const p0=G.paused;G.paused=false;const c0=G.clock;run();const goes=G.clock>c0;
+    b.click();ok(G.mode==='fullmap'&&!q('#ov').hidden&&q('#panel.fmap'),'a click on it opens the full map');
+    const c1=G.clock;run();ok(goes&&G.clock===c1,'the world waits while it is open (the clock ran on the map, stands still under it)');G.paused=p0;
+    const close=q('#panel > .nav [data-nav="close"]');close.click();ok(G.mode==='world'&&q('#ov').hidden&&!G.modal,'its bottom bar’s '+close.textContent+' closes it');
+    const tap=ty=>b.dispatchEvent(new PointerEvent(ty,{bubbles:true,button:0,pointerType:'touch',pointerId:9,isPrimary:true}));
+    tap('pointerdown');tap('pointerup');b.click();ok(G.mode==='fullmap','a tap on it opens it');
+    Kit.key('Escape','Escape');ok(G.mode==='world'&&q('#ov').hidden,'Esc closes it (its bottom bar)');
+    b.click();b.click();ok(G.mode==='world','Map again closes it, as M does');
+    scr.dataset.mode='town';ok(!seen(b)&&seen(camp),'off the map it is hidden (Camp stays)');scr.dataset.mode='world';t.frame()}
+  // ---- the dock's Map on a phone on its side: 844 x 390, on the screen, clear of the minimap; a tap opens the map on it ----
+  {const css0=scr.style.cssText;scr.style.cssText+=';width:844px;height:390px';
+    try{world();const b=q('#mapBtn'),s=scr.getBoundingClientRect(),br=b.getBoundingClientRect(),R=t.fullMapMiniRect(),r=cv.getBoundingClientRect(),k=r.width/t.VW,
+        m={left:r.left+R.x*k,top:r.top+R.y*k,right:r.left+(R.x+R.w)*k,bottom:r.top+(R.y+R.h)*k},apart=(a,c)=>a.right<=c.left||c.right<=a.left||a.bottom<=c.top||c.bottom<=a.top,
+        dock=[...b.parentElement.parentElement.querySelectorAll('.dbtn')].filter(x=>x!==b&&x.getBoundingClientRect().width>0);
+      ok(br.width>0&&br.left>=s.left-.5&&br.right<=s.right+.5&&br.top>=s.top-.5&&br.bottom<=s.bottom+.5&&apart(br,m)&&dock.every(x=>apart(br,x.getBoundingClientRect())),
+        'at 844 x 390 the Map tile is on the screen ('+Math.round(br.left-s.left)+','+Math.round(br.top-s.top)+', '+Math.round(br.width)+' x '+Math.round(br.height)+'), clear of the minimap and the other tiles');
+      b.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,button:0,pointerType:'touch',pointerId:9,isPrimary:true}));b.click();q('#panel').style.animation='none';
+      const p=q('#panel').getBoundingClientRect(),n=q('#panel > .nav').getBoundingClientRect();
+      ok(G.mode==='fullmap'&&p.left>=s.left-.5&&p.right<=s.right+.5&&p.top>=s.top-.5&&p.bottom<=s.bottom+.5&&n.bottom<=p.bottom+.5,
+        'a tap opens the full map, fitting the screen ('+Math.round(p.width)+' x '+Math.round(p.height)+'), its bottom bar on it');
+      Kit.key('Escape','Escape');ok(G.mode==='world','and Esc closes it');q('#panel').style.animation=''}
+    finally{scr.style.cssText=css0;world()}}
   // ---- the scale ----
   world();press();const v=q('.fm-view'),F=t.FULLMAP,fit=Math.min(v.clientWidth/MW,v.clientHeight/MH),want=Math.max(MW>F.wide?.5:1,...F.zooms.filter(z=>z<=fit&&z<=F.open));
   const css=()=>{const b=q('.fm-pic').getBoundingClientRect();return [Math.round(b.width),Math.round(b.height)]};

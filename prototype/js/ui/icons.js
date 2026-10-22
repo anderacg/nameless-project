@@ -23,6 +23,7 @@ const ICONS={
   bag:{p:{b:'#a07850',d:'#6a4a30',y:'#e8b94a'},px:['...ddd...','..d...d..','.bbbbbbb.','bbbbbbbbb','bbbbybbbb','bbbbbbbbb','bbbbbbbbb','.bbbbbbb.','.........']},
   log:{p:{p:'#e8dcb8',d:'#a89870'},px:['.ppppppp.','dpdddddpd','.ppppppp.','.pdddddp.','.ppppppp.','.pdddddp.','.ppppppp.','dpppppppd','.ddddddd.']},
   help:{p:{y:'#e8b94a'},px:['..yyyyy..','.yy...yy.','.....yy..','....yy...','...yy....','...yy....','.........','...yy....','.........']},
+  map:{p:{p:'#e8dcb8',d:'#a89870',b:'#6fa8e0',g:'#78a04a',r:'#c0504a'},px:['.........','ppdppdppp','bpdgpdrpr','pbdggdprp','pbdpgdrpr','ppbppdppp','ppdbbdggp','ppdppbbgp','.........']},
   save:{p:{b:'#6fa8e0',d:'#3d5a8a',w:'#f4efe0'},px:['bbbbbbbb.','bwwwwwwbb','bwwwwwwbb','bbbbbbbbb','bbbbbbbbb','bbddddbbb','bbddddbbb','bbbbbbbbb','.........']},
   full:{p:{w:'#d8d2bc'},px:['www...www','w.......w','w.......w','.........','.........','.........','w.......w','w.......w','www...www']},
   zoomin:{p:{w:'#d8d2bc',y:'#e8b94a',h:'#8a6a44'},px:['..www....','.w...w...','w..y..w..','w.yyy.w..','w..y..w..','.w...w...','..www.h..','......hh.','.......hh']},

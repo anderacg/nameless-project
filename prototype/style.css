@@ -316,6 +316,8 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 .dockrow.sys .dbtn .dl,.dockrow.sys .dbtn kbd{display:none}
 /* (the map's zoom, + and −: on the map only, dimmed at the end of its range) */
 .dbtn.zoom{display:none}.screen[data-mode="world"] .dbtn.zoom{display:inline-flex}
+/* (Map, beside Camp: on the map and under the full map only) */
+.dbtn.onmap{display:none}.screen[data-mode="world"] .dbtn.onmap,.screen[data-mode="fullmap"] .dbtn.onmap{display:inline-flex}
 .dbtn:disabled{opacity:.4;cursor:default;border-color:var(--line-2);color:var(--fg)}
 
 /* messages (bottom left): the newest at the bottom, each fading after a few seconds (L opens them all) */
