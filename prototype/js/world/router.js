@@ -175,14 +175,15 @@ function buildWayGraph(g){
   for(let cx=1;cx<cols;cx++)for(let cy=0;cy<rows;cy++){const x=cx*CS,y0=cy*CS;runs(Math.min(CS,H-y0),k=>open((y0+k)*W+x-1)&&open((y0+k)*W+x),k=>port((y0+k)*W+x-1,(y0+k)*W+x))}
   for(let cy=1;cy<rows;cy++)for(let cx=0;cx<cols;cx++){const y=cy*CS,x0=cx*CS;runs(Math.min(CS,W-x0),k=>open((y-1)*W+x0+k)&&open(y*W+x0+k),k=>port((y-1)*W+x0+k,y*W+x0+k))}
   // river legs: along each navigable river, between the landings (ports' and ferries') within 3 tiles of it in its order, but over
-  // its rapids; downstream (its path runs from its source) at barge[0] tiles a day, up at barge[1]
+  // its rapids; downstream (its path runs from its source) at barge[0] tiles a day, up at barge[1] (two landings at one place of it
+  // a tile apart: a holding's own ferry by another's, worldplace.js placeHoldXing)
   const lands=[];for(let v=0;v<tile.length;v++)if(nk[v]===3)lands.push(v);for(const c of m.crossings)if(c.kind==='ferry')lands.push(at.get(c.i),at.get(c.j));
   for(const r of m.rivers){if(!r.nav)continue;const p=r.path,on=new Map(p.map((i,k)=>[i,k])),L=[];
     for(const v of lands){const t=tile[v],x=t%W,y=(t-x)/W;let best=-1;
       for(let d=0;d<=3&&best<0;d++)for(let b=-d;b<=d;b++)for(let a=-d;a<=d;a++){const k=on.get(t+a+b*W);if(x+a>=0&&x+a<W&&y+b>=0&&y+b<H&&k!==undefined&&m.river[p[k]]&4&&(best<0||k<best))best=k}
       if(best>=0)L.push([best,v])}
     L.sort((a,b)=>a[0]-b[0]||a[1]-b[1]);
-    for(let k=1;k<L.length;k++){const [a,u]=L[k-1],[b,v]=L[k];if(u===v||r.rapids.some(([s,e])=>s<=b&&e>=a))continue;edge(u,v,(b-a)/WAY.barge[0],3,-1,-1,0,0);edge(v,u,(b-a)/WAY.barge[1],4,-1,-1,0,0)}}
+    for(let k=1;k<L.length;k++){const [a,u]=L[k-1],[b,v]=L[k];if(u===v||r.rapids.some(([s,e])=>s<=b&&e>=a))continue;edge(u,v,Math.max(1,b-a)/WAY.barge[0],3,-1,-1,0,0);edge(v,u,Math.max(1,b-a)/WAY.barge[1],4,-1,-1,0,0)}}
   // by node: the edges (off), the nodes by chunk (coff, cnode)
   const n=tile.length,M=E.length,off=new Int32Array(n+1),to=new Int32Array(M),co=new Float32Array(M),ek=new Uint8Array(M),xg=new Int16Array(M),leg=new Int32Array(M*3).fill(-1);
   for(const e of E)off[e[0]+1]++;for(let v=0;v<n;v++)off[v+1]+=off[v];const fill=off.slice(0,n);

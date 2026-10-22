@@ -89,6 +89,25 @@ const lotGround={
 };
 const nearT=(x,y,type,r)=>{for(let j=-r;j<=r;j++)for(let i=-r;i<=r;i++)if(tAt(x+i,y+j)===type)return true;return false};
 const groundOf=k=>k==='lumber'?'forest':k==='mine'||k==='quarry'?'rock':k==='port'?'shore':'open';
+/* where a holding's people walk (the owner's play-test 3: "estates spawn on the opposite side of the holdings, separated by a
+   river; workers cannot cross"): the ground walked to from its gate within LOT_WALK tiles (worldplace.js placeWalk: 4 ways over
+   walkable ground, fords and bridges, and ferries), and of it its own bank (no crossing taken). Every lot and field of it stands on
+   ground walked to (lotWalks: lotSpot, placeOk; fieldsFor), a building's door not far round (its steps from the gate at most
+   PLACE_HOLD.round[0] times the straight way's, 4 ways, and round[1], and twice the straight line's and 2: the owner's, the
+   workers' walk never much longer for a river), never on a crossing's end nor beside it (the way onto it: xEnds), its own bank first (lotSpot: across a crossing a spot counts LOT_BANK tiles
+   farther). Kept by holding (and the crossings' ends), made afresh for a new world */
+const LOT_WALK=28,LOT_BANK=4;
+let WALKS=new WeakMap(),XENDS=null;onWorld(()=>{WALKS=new WeakMap();XENDS=null});
+const xEnds=()=>{if(XENDS)return XENDS;XENDS=new Set();for(const c of WM.crossings)for(const i of [c.i,c.j,...c.tiles]){const x=i%MW,y=(i-x)/MW;for(let b=-1;b<=1;b++)for(let a=-1;a<=1;a++)XENDS.add((y+b)*MW+x+a)}return XENDS};
+function lotWalk(t){
+  let w=WALKS.get(t);if(w)return w;const g=(t.ty+1)*MW+t.tx,s=passable(tiles[g])?g:t.ty*MW+t.tx;
+  WALKS.set(t,w={all:placeWalk(WM,s,LOT_WALK),own:placeWalk(WM,s,LOT_WALK,true)});return w}
+const walkTo=(t,x,y)=>placeWalkAt(lotWalk(t).all,x,y)&&!xEnds().has(y*MW+x);
+const ownBank=(t,x,y)=>placeWalkAt(lotWalk(t).own,x,y);
+function lotWalks(t,x,y,n,far){
+  for(let j=0;j<n;j++)for(let i=0;i<n;i++)if(!walkTo(t,x+i,y+j))return false;if(far)return true;
+  const w=lotWalk(t).all,dx=x+(n>>1)-w.x0-LOT_WALK,dy=y+n-1-w.y0-LOT_WALK;
+  const d=placeWalkSteps(w,x+(n>>1),y+n-1);return d<=PLACE_HOLD.round[0]*(Math.abs(dx)+Math.abs(dy))+PLACE_HOLD.round[1]&&d<=2*Math.hypot(dx,dy)+2}
 // may an n x n lot stand at (x, y) for holding t? gap: keep a free tile between it and other buildings
 function lotFits(t,x,y,n,rule,gap){
   const ti=TOWNS.indexOf(t),okg=lotGround[rule]||lotGround.open,RB=roadPaint();
@@ -110,7 +129,8 @@ function lotSpot(t,n,rule,rmin,rmax,R,o){
     if(o.outside&&x+n>o.outside.x0&&x<=o.outside.x1&&y+n>o.outside.y0&&y<=o.outside.y1)continue;
     if(!lotFits(t,x,y,n,rule,o.gap===undefined?true:o.gap))continue;
     if(o.estate&&nearBandits(x+n/2-.5,y+n/2-.5,BANDIT_GAP+n/2+(o.fields?3:0)))continue;// (its fields reach 3 tiles out)
-    let s=d+R()*(o.jit||1.6);
+    // (its chance drawn before the walk is asked of it: a layout with every spot walked to stays as it was)
+    let s=d+R()*(o.jit||1.6);if(!lotWalks(t,x,y,n,o.far))continue;if(!ownBank(t,x+(n>>1),y+(n>>1)))s+=LOT_BANK;
     // o.fields: an estate that works fields: only where its first level's fields fit, and the more room the better
     if(o.fields){const m=fieldsFor(t,{x,y,n},o.fields).length;if(m<PLOTS_AT[o.fields](1))continue;s+=(PLOTS[o.fields]-m)*1.2}
     if(s<bs){bs=s;best=[x,y]}}
@@ -166,6 +186,9 @@ class Layout{
     const R=seeded(t.seed*977+13),n0=lotSize(typeFor(t,'centre',R)),cx=t.tx-(n0>>1),cy=t.ty-n0+1;
     // the centre stands on the holding's own tile, its gate on its front row where the roads end: parties arrive there and set out
     this.add({k:'centre',type:typeFor(t,'centre',R),x:cx,y:cy,n:n0,lv:1,seed:t.seed*31+7,st:'built'});
+    // a port town's harbour before its houses on the generated world (they would take the shore its people walk to: a League port's
+    // docks on its own sea; today's map keeps its order, its harbours on the sea)
+    if(WM.gen!=='classic-0'&&t.style==='port'&&bldLv(t,'port')&&!this.estateLot('port'))t.bld.port=0;
     // houses round it: enough for its people (the centre houses some), a few to spare; then, one still short of room for them clears
     // plots in the woods (a village deep in them, its clearing crossed by its roads)
     const pop=t.pop||t.T.pop0;let room=this.housing(),tries=0;
@@ -190,7 +213,9 @@ class Layout{
     const t=this.t;
     R=R||seeded(t.seed*131+k.length);if(this.at(k))return this.at(k);const type=typeFor(t,k,R),n=lotSize(type),inner=INNER.includes(k),wb=this.wallBox();
     // (an estate with fields stands only where they have room, lotSpot o.fields)
-    const p=at?at:inner?(lotSpot(t,n,'open',1,6,R,{estate:true})||lotSpot(t,n,'open',1,9,R,{estate:true})):lotSpot(t,n,groundOf(k),3,k==='port'&&t.style==='port'?20:12,R,{estate:true,outside:wb&&{x0:wb.x0-1,y0:wb.y0-1,x1:wb.x1+1,y1:wb.y1+1},fields:PLOTS[k]?k:null});
+    // (an outer one not far round first; where none is, one its people still walk to: no estate lost for it)
+    const ow=o=>lotSpot(t,n,groundOf(k),3,k==='port'&&t.style==='port'?20:12,R,{estate:true,outside:wb&&{x0:wb.x0-1,y0:wb.y0-1,x1:wb.x1+1,y1:wb.y1+1},fields:PLOTS[k]?k:null,far:o});
+    const p=at?at:inner?(lotSpot(t,n,'open',1,6,R,{estate:true})||lotSpot(t,n,'open',1,9,R,{estate:true})):ow(false)||ow(true);
     if(!p)return null;const l=this.add({k,type,x:p[0],y:p[1],n,lv:bldLv(t,k)||1,seed:Math.floor(R()*1e6),st:st||'built'});
     if(PLOTS[k]){l.plots=fieldsFor(t,l,k);occMark(l,l.id)}
     t._spots=null;return l}
@@ -206,7 +231,7 @@ class Layout{
 function fieldsFor(t,l,k){
   const g=k==='quarry'?(x,y)=>tAt(x,y)===T_HILL||tAt(x,y)===T_OPEN:(x,y)=>tAt(x,y)===T_OPEN,out=[],cand=[],ti=TOWNS.indexOf(t);
   const wb=wallBox(t),inRing=(x,y)=>wb&&x>=wb.x0-1&&x<=wb.x1+1&&y>=wb.y0-1&&y<=wb.y1+1,RB=roadPaint();// fields stay clear of the town, and off the roads
-  for(let y=l.y-3;y<=l.y+l.n+2;y++)for(let x=l.x-3;x<=l.x+l.n+2;x++){if(x>=l.x&&x<l.x+l.n&&y>=l.y&&y<l.y+l.n||OCC[y*MW+x]||RB[y*MW+x]||!g(x,y)||x<1||y<1||x>=MW-1||y>=MH-1||inRing(x,y))continue;const L=LAND[y*MW+x];if(L>=0&&L!==ti)continue;
+  for(let y=l.y-3;y<=l.y+l.n+2;y++)for(let x=l.x-3;x<=l.x+l.n+2;x++){if(x>=l.x&&x<l.x+l.n&&y>=l.y&&y<l.y+l.n||OCC[y*MW+x]||RB[y*MW+x]||!g(x,y)||x<1||y<1||x>=MW-1||y>=MH-1||inRing(x,y)||!walkTo(t,x,y))continue;const L=LAND[y*MW+x];if(L>=0&&L!==ti)continue;
     const d=Math.hypot(x-(l.x+l.n/2-.5),y-(l.y+l.n/2-.5));cand.push([x,y,d+hash(x,y,t.seed)*.6])}
   cand.sort((a,c)=>a[2]-c[2]);const touch=[];lotTiles(l,(x,y)=>touch.push([x,y]));
   while(out.length<PLOTS[k]){const c=cand.find(c=>!out.includes(c)&&touch.some(q=>Math.abs(q[0]-c[0])+Math.abs(q[1]-c[1])===1));if(!c)break;out.push(c);touch.push(c)}
@@ -236,7 +261,7 @@ const housingFull=t=>Layout.of(t).full();
 function placeRule(k){return k==='house'||INNER.includes(k)?{g:'open',inner:true,gap:k==='house'?'row':true}:{g:groundOf(k),inner:false,gap:true}}
 function placeOk(t,k,x,y,n){
   const r=placeRule(k),ti=TOWNS.indexOf(t);for(let j=0;j<n;j++)for(let i=0;i<n;i++)if(LAND[(y+j)*MW+x+i]!==ti)return false;
-  if(!lotFits(t,x,y,n,r.g,r.gap))return false;if(PLOTS[k]&&fieldsFor(t,{x,y,n},k).length<PLOTS_AT[k](1))return false;// room for its fields
+  if(!lotFits(t,x,y,n,r.g,r.gap)||!lotWalks(t,x,y,n))return false;if(PLOTS[k]&&fieldsFor(t,{x,y,n},k).length<PLOTS_AT[k](1))return false;// room for its fields
   if(ESTATES[k]&&nearBandits(x+n/2-.5,y+n/2-.5,BANDIT_GAP+n/2+(PLOTS[k]?3:0)))return false;// too near a bandit camp or hideout
   const d=Math.hypot(x+n/2-(t.tx+.5),y+n/2-t.ty);if(d>(r.inner?10:k==='port'&&t.style==='port'?20:13))return false;
   if(!r.inner){const wb=wallBox(t);if(wb&&x+n>wb.x0-1&&x<=wb.x1+1&&y+n>wb.y0-1&&y<=wb.y1+1)return false}return true;

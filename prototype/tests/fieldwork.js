@@ -72,6 +72,14 @@ try{
    if(G.clock<t.DAY*F.to)field=Math.max(field,a.filter(f=>f.st==='field').length);out+=a.filter(f=>f.st==='out').length;town+=a.filter(f=>f.st==='town').length}
   for(let i=0;i<3000&&W.folk.some(f=>f.home==='Ashford'&&f.st!=='in');i++){G.clock=t.DAY*.75;t.updateFolk(.05)}F.out=.6;
   ok(field>0&&out>0&&town>0&&W.folk.filter(f=>f.home==='Ashford').every(f=>f.st==='in'&&f.done===G.day),'out in the fields by midday ('+field+'), in at the end of the field hours, then the delivery in the afternoon as before, and all inside by night')}
+ // ---- the way to work and back (the owner's play-test 3: estates across a river no worker could cross): from every holding's gate
+ // to the door of each of its estates with workers, and back, a walker gets there by the router (Router.travel, as folk.js walks
+ // them), 4 px a step
+ {const bad=[];let n=0,most=0;
+  for(const tw of t.TOWNS){const sp=t.bldSpots(tw);for(const k in sp){if(!t.ESTATES[k].work)continue;n++;const home={x:tw.x,y:tw.y+10},door={x:sp[k].x,y:sp[k].y+5};
+   for(const [a,b,w] of [[home,door,'out'],[door,home,'back']]){const f={x:a.x,y:a.y};let i=0;for(;i<6000&&Math.hypot(f.x-b.x,f.y-b.y)>2;i++)if(!t.Router.travel(f,b,4))break;
+    most=Math.max(most,i);if(Math.hypot(f.x-b.x,f.y-b.y)>2)bad.push(tw.name+' '+k+' '+w+' ('+(i<6000?'no way':'still '+Math.round(Math.hypot(f.x-b.x,f.y-b.y))+' px off')+')')}}}
+  ok(n>40&&!bad.length,'from every holding’s gate each worker reaches his estate’s door, and back ('+n+' estates; the longest way '+most+' steps of 4 px)'+(bad.length?': not '+bad.slice(0,5).join(', '):''))}
  // ---- danger: bandits near, the holding afraid, a siege: in they go, and out again once it is safe
  {F.out=1;G.day=7;near(ash,.2);for(let i=0;i<5;i++)t.updateFolk(.05);const ws=()=>W.folk.filter(f=>f.home==='Ashford'),fld=()=>ws().filter(f=>f.st==='field').length,n0=fld();
   const run=n=>{for(let i=0;i<n;i++)t.updateFolk(.05)};

@@ -15,8 +15,9 @@
       water only straight across: a bridge (3 tiles of water at most), a ford (tracks, streams and rivers short of great, never
       a flooding one) or a ferry (great rivers, at towns and ports). Each road's new stretches are string-pulled and their
       corners rounded (its line, at any angle), then laid on the tiles under that line, 8-connected. Then a river's crossings at
-      most 60 tiles apart wherever a crossing can be made, and a town by a bridge its realm's bridge town. Classic: Stonebridge's
-      bridge over the great river laid first.
+      most 60 tiles apart wherever a crossing can be made; each holding's rivers crossed near it (placeHoldXing: both banks
+      within its reach on foot); and a town by a bridge its realm's bridge town. Classic: Stonebridge's bridge over the great
+      river laid first.
    9. camps: density()'s camps, Poisson-disc in the fringe: 6-16 tiles from the roads, 14 from the holdings, reachable.
    Crossings: i, j the land tiles at each end, tiles the water between (a ferry's stays water). Roads: path the tiles a to b,
    line its own stretches as polylines [[x, y, x, y...]...] in tiles (a tile's centre at +.5; a holding's end at its gate,
@@ -284,11 +285,13 @@ const PLACE_ROAD={hm:1,pull:40,slack:1.04,round:[6,3,1.5,.75],xing:{bridge:[2,8,
 // tile, its gate the tile below: {x, y, n})
 const placeBox=h=>{const n=h.kind==='village'?2:4;return{x:h.tx-(n>>1),y:h.ty-n+1,n}};
 // (the last roads stage's numbers, for the tests: roads searched, ms in all and the most for one, tiles searched, searches that
-// left their box for the whole map, and the stretches of river where no crossing can be made: bare)
-const PLACE_STATS={roads:0,ms:0,max:0,search:0,whole:0,bare:[]};
+// left their box for the whole map, the stretches of river where no crossing can be made: bare, and the holdings' own crossings:
+// holdXing laid, holdBare the rivers by a holding none could be made over, 'holding river'; the bridges' ends no road reaches:
+// stubs, 'x,y', and the bridges taken up for it: dropped, and droppedAt {river, at: its place along it})
+const PLACE_STATS={roads:0,ms:0,max:0,search:0,whole:0,bare:[],holdXing:0,holdBare:[],stubs:[],dropped:[],droppedAt:[]};
 function* genRoads(g){
   const m=g.map,W=m.w,H=m.h,N=W*H,K=m.kind,Fe=m.feat,Rv=m.river,E=m.edge,Hd=g.holdings,n=Hd.length,F=g.work.place,R=g.rng('roads',g.attempt),salt=genSalt(R);
-  m.roads=[];m.crossings=[];g.work.roadFail=[];PLACE_STATS.roads=PLACE_STATS.ms=PLACE_STATS.max=PLACE_STATS.search=PLACE_STATS.whole=0;PLACE_STATS.bare=[];
+  m.roads=[];m.crossings=[];g.work.roadFail=[];PLACE_STATS.roads=PLACE_STATS.ms=PLACE_STATS.max=PLACE_STATS.search=PLACE_STATS.whole=PLACE_STATS.holdXing=0;PLACE_STATS.bare=[];PLACE_STATS.holdBare=[];PLACE_STATS.stubs=[];PLACE_STATS.dropped=[];PLACE_STATS.droppedAt=[];
   const X=new Int32Array(N).fill(-1),LI=new Int32Array(N).fill(-1),lines=[],jit=new Float32Array(N),ter=new Uint8Array(N),ferry=new Uint8Array(N),nearH=new Uint8Array(N);
   for(let i=0;i<N;i++){const x=i%W,y=(i-x)/W;jit[i]=.8+.45*fbm(x/9,y/9,salt);ter[i]=clamp((m.elev[i]-64)>>5,0,3)}
   // ferries land within 8 tiles of a town, a city or a port; nearH: within 6 tiles of a holding (the larger of dx, dy)
@@ -364,7 +367,8 @@ function* genRoads(g){
   const snap=(l,p)=>{let best=p,bd=Infinity;for(let k=2;k<l.length;k+=2){const ax=l[k-2],ay=l[k-1],dx=l[k]-ax,dy=l[k+1]-ay,L=dx*dx+dy*dy,t=L?clamp(((p[0]-ax)*dx+(p[1]-ay)*dy)/L,0,1):0,x=ax+dx*t,y=ay+dy*t,d=(x-p[0])*(x-p[0])+(y-p[1])*(y-p[1]);if(d<bd){bd=d;best=[x,y]}}return best};
   const gate=h=>[h.tx,h.ty+1],gt=h=>(h.ty+1)*W+h.tx;
   // a road found (P: its tiles from gate to gate): its new stretches smoothed and laid (roads, crossings, feat), its line kept; its
-  // path from holding to holding (each one's own tile before its gate, where the way graph's node is)
+  // path from holding to holding (each one's own tile before its gate, where the way graph's node is); a bridge's track (ha, hb
+  // null: P from the bridge's end to a road; its line from that end's middle, where the art leads it on straight)
   const lay=(P,ha,hb,great)=>{
     const old=i=>K[i]===T_ROAD||K[i]===T_FORD||X[i]>=0,out=[],line=[];let k=0;
     while(k<P.length){if(old(P[k])){out.push(P[k++]);continue}
@@ -378,7 +382,7 @@ function* genRoads(g){
       if(out.length&&out[out.length-1]===tiles[0])out.pop();out.push(...tiles);
       const l=[];for(const p of pts){const x=Math.round(p[0]*100)/100,y=Math.round(p[1]*100)/100;if(l.length<2||l[l.length-2]!==x||l[l.length-1]!==y)l.push(x,y)}lines.push(l);line.push(l);k=t+1;
       for(const i of tiles)if(LI[i]<0)LI[i]=lines.length-1}
-    out.unshift(ha.ty*W+ha.tx);out.push(hb.ty*W+hb.tx);
+    if(ha)out.unshift(ha.ty*W+ha.tx);if(hb)out.push(hb.ty*W+hb.tx);
     // within 6 tiles of a holding a diagonal step takes a corner too (4 ways there, so lots.js leads it round the holding's centre)
     for(let k=1;k<out.length;k++){const a=out[k-1],b=out[k],ax=a%W,bx=b%W,dx=bx-ax,dy=(b-bx)/W-(a-ax)/W;
       if(dx&&dy&&(nearH[a]||nearH[b])){const c1=a+dx,c2=a+dy*W,c=free(c1)&&(!free(c2)||cost[c1]<=cost[c2])?c1:free(c2)?c2:-1;if(c>=0)out.splice(k++,0,c)}}
@@ -386,7 +390,7 @@ function* genRoads(g){
     for(let k=0;k<out.length;k++){const i=out[k];
       if(K[i]===T_WATER&&X[i]<0){let e=k;while(K[out[e]]===T_WATER&&X[out[e]]<0)e++;placeCross(m,F,X,out[k-1],out[e],out.slice(k,e),xing(out[k-1],out[k]-out[k-1],e-k,great)[0]||2,great,Hd);k=e-1;continue}
       if(K[i]!==T_FORD&&K[i]!==T_WATER)K[i]=T_ROAD;if(K[i]===T_ROAD)Fe[i]=great?Fe[i]&~128|64:Fe[i]&64?Fe[i]:Fe[i]|128}
-    for(const i of out)price(i);m.roads.push({a:ha.name,b:hb.name,kind:great?'road':'track',path:out,line})};
+    for(const i of out)price(i);m.roads.push({a:ha?ha.name:'',b:hb?hb.name:'',kind:great?'road':'track',path:out,line})};
   // the pairs: a spanning tree (nearest first, from the first holding) and each one's two nearest; great roads first, short first
   const d2=(a,b)=>(Hd[a].tx-Hd[b].tx)*(Hd[a].tx-Hd[b].tx)+(Hd[a].ty-Hd[b].ty)*(Hd[a].ty-Hd[b].ty),pairs=new Set(),key=(a,b)=>a<b?a*4096+b:b*4096+a;
   {const inT=[0],is=new Uint8Array(n);is[0]=1;while(inT.length<n){let best=null;for(const a of inT)for(let b=0;b<n;b++)if(!is[b]&&(!best||d2(a,b)<best[2]))best=[a,b,d2(a,b)];pairs.add(key(best[0],best[1]));inT.push(best[1]);is[best[1]]=1}}
@@ -418,6 +422,33 @@ function* genRoads(g){
       let s=placeSpot(m,F,X,r,on,lo+36,Math.min(hi,at[k]-5),ferry)||placeSpot(m,F,X,r,on,lo+10,lo+35,ferry)||placeSpot(m,F,X,r,on,lo+1,hi,ferry);
       if(!s){for(let a=hi+1;a<at[k]&&!s;a+=10)s=placeSpot(m,F,X,r,on,a,Math.min(a+9,at[k]-1),ferry);PLACE_STATS.bare.push(r.name+' '+lo+'-'+(s?placeAlong(m,on,s.tiles):at[k])+' of '+L)}
       if(!s)break;placeCross(m,F,X,s.i,s.j,s.tiles,s.kind,false,Hd,r.id);lo=Math.max(lo+1,placeAlong(m,on,s.tiles))}}}
+  // each holding's rivers crossed near it
+  {const off=boxed.slice();for(const o of Hd)for(let b=0;b<=2;b++)for(let a=-1;a<=1;a++)if(m.has(o.tx+a,o.ty+b))off[(o.ty+b)*W+o.tx+a]=1;
+   for(const h of Hd){placeHoldXing(m,F,X,h,gt(h),off,Hd);if(g.tick())yield .95}}
+  // every bridge on the roads (the owner's: "make sure the roads are always connected to the main bridges"): from each end of one no
+  // road joined to the holdings takes, a track to the nearest such road on its own bank within PLACE_HOLD.spur tiles (spur: the
+  // least cost over land, 8 ways, not over that bridge); then an end with none is a road itself, the bridge's way off it
+  // (PLACE_STATS.stubs), and a bridge neither of whose ends reaches one is taken up (PLACE_STATS.dropped)
+  {const on=new Uint8Array(N),ons=()=>{on.fill(0);const q=[];for(const h of Hd){const i=gt(h);if(!on[i]){on[i]=1;q.push(i)}}
+     for(let a=0;a<q.length;a++){const i=q[a],x=i%W,y=(i-x)/W;for(let d=0;d<8;d++){const nx=x+DX[d],ny=y+DY[d],j=ny*W+nx;if(m.has(nx,ny)&&!on[j]&&(K[j]===T_ROAD||K[j]===T_FORD)){on[j]=1;q.push(j)}}}};ons();
+   const R=PLACE_HOLD.spur,n=2*R+1,D=new Float32Array(n*n),Fr=new Int32Array(n*n),q=genHeap(n*n*8);
+   // (first a lead straight on from the bridge, on its axis, PLACE_HOLD.lead tiles (the art's ramp meets a road there: worldart.js
+   // straightOn; none where the ground there will not take it, or a road sooner), then the least-cost way on from its end, never
+   // onto another crossing's end (a road meets one only on its axis))
+   const ends=new Set(m.crossings.flatMap(o=>[o.i,o.j])),spur=(e,c)=>{const ct=new Set(c.tiles),s=e-(e===c.i?c.tiles[0]:c.tiles[c.tiles.length-1]),lead=[e];
+     for(let k=1;k<=PLACE_HOLD.lead;k++){const a=lead[k-1],b=a+s;if(!m.has(b%W,(b-b%W)/W)||!free(b)||tc(b,false)===Infinity||X[b]>=0||ends.has(b)||on[a]&&a!==e)break;lead.push(b)}
+     if(lead.length<=PLACE_HOLD.lead&&!on[lead[lead.length-1]])return false;for(const i of lead)ct.add(i);for(const o of ends)if(o!==e)ct.add(o);const src=lead[lead.length-1];ct.delete(src);
+     const ex=src%W,ey=(src-ex)/W,x0=ex-R,y0=ey-R,L=i=>{const x=i%W;return((i-x)/W-y0)*n+x-x0};D.fill(Infinity);D[L(src)]=0;Fr[L(src)]=-1;q.push(0,src);let to=-1;
+     while(q.size()){const i=q.pop(),di=D[L(i)],x=i%W,y=(i-x)/W;if(on[i]&&K[i]===T_ROAD&&X[i]<0&&(i!==src||src!==e)){to=i;break}
+       for(let d=0;d<8;d++){const dx=DX[d],dy=DY[d],nx=x+dx,ny=y+dy,j=ny*W+nx;if(nx<x0||ny<y0||nx>=x0+n||ny>=y0+n||!m.has(nx,ny)||ct.has(j)||E[i]&&cut(i,dx,dy))continue;
+         if(dx&&dy&&(shut(i+dx)||shut(i+dy*W)))continue;const c2=di+tc(j,false)*(dx&&dy?1.4142:1);if(c2<D[L(j)]){D[L(j)]=c2;Fr[L(j)]=i;q.push(c2,j)}}}
+     while(q.size())q.pop();if(to<0)return false;const P=[];for(let i=to;i>=0;i=Fr[L(i)])P.push(i);P.reverse();
+     lay([...lead,...P.slice(1)],null,null,false);ons();return true};
+   for(const c of m.crossings)if(c.kind==='bridge')for(const e of [c.i,c.j])if(!on[e])spur(e,c);
+   for(let k=0;k<m.crossings.length;k++){const c=m.crossings[k];if(c.kind!=='bridge'||on[c.i]&&on[c.j])continue;
+     if(!on[c.i]&&!on[c.j]){for(const i of c.tiles){K[i]=T_WATER;Fe[i]&=~(32|64|128);price(i)}m.crossings.splice(k,1);X.fill(-1);m.crossings.forEach((o,ci)=>{for(const i of o.tiles)X[i]=ci});
+       const rv=m.rivers[c.river],at=rv?placeAlong(m,new Map(rv.path.map((i,a)=>[i,a])),c.tiles):-1;PLACE_STATS.dropped.push(c.i%W+','+Math.floor(c.i/W));PLACE_STATS.droppedAt.push({river:c.river,at});k--;continue}
+     for(const e of [c.i,c.j])if(!on[e]){K[e]=T_ROAD;Fe[e]=Fe[e]&~64|128;price(e);PLACE_STATS.stubs.push(e%W+','+Math.floor(e/W))}}}
   // the bridge town: a town by a bridge (within 3 tiles), one a realm (none where a realm has one; none in the classic world, whose
   // holdings keep their own styles)
   if(!m.classic)for(const f of PLACE_REALMS){if(Hd.some(h=>h.realm===f&&h.style==='bridge'))continue;let best=null,bd=99;
@@ -459,6 +490,50 @@ function placeSpot(m,F,X,r,on,lo,hi,ferry){
       const kind=w<3&&k<=PLACE.ford?1:w===3&&k<=PLACE.bridge?2:w===3&&k<=PLACE.ferry&&(ferry[i]||ferry[j])?3:0;
       const q=kind?placeAlong(m,on,tiles):-1,v=q>=lo&&q<=hi?k*4+hi-q:Infinity;if(v<Infinity&&(!best||v<best.v))best={v,i,j,tiles,kind}}}
   return best}
+/* a holding's rivers crossed near it (the owner's play-test 3: "estates spawn on the opposite side of the holdings, separated by a
+   river; workers cannot cross"; and his: "make sure that you have bridges near holdings to connect to any estates that may spawn
+   across lands"): while a river's water lies within PLACE_HOLD.river tiles of holding h (the larger of dx, dy) and land beside that
+   river (or of a lake's or the sea's: the owner's "any estates that may spawn across lands"; a bridge only) within PLACE_HOLD.bank
+   is not walked to from its gate, or only far round (placeWalk within PLACE_HOLD.box: more steps than
+   PLACE_HOLD.round[0] times the straight way's, 4 ways, and round[1]), a crossing of it there: a straight run of water, across or
+   down, from land walked to near (not far round) to land not, its ends within PLACE_HOLD.end of h, off every holding's centre
+   (boxed) and the ground in front of its gate (a tile each side of it and below), no notch, none of it a crossing yet; a bridge (PLACE.bridge tiles at most), else on a great or navigable river a
+   ferry (PLACE.ferry); a bridge first, then the nearest (both ends), then the narrowest. One a river; where none can be made the
+   river is left (PLACE_STATS.holdBare: a pocket of land in a bend, say) */
+const PLACE_HOLD={river:8,bank:10,box:16,end:10,round:[1.4,4],spur:60,lead:2};
+function placeHoldXing(m,F,X,h,gate,boxed,Hd){
+  const W=m.w,N=W*m.h,K=m.kind,Rv=m.river,P=PLACE_HOLD,gx=gate%W,gy=(gate-gx)/W,far=i=>{const x=i%W,y=(i-x)/W;return Math.max(Math.abs(x-h.tx),Math.abs(y-h.ty))},
+    land=i=>passable(K[i])&&K[i]!==T_FORD,left=new Set(),wk=i=>F.rv[i]>=0?F.rv[i]:-2-F.wl[i];
+  for(let n=0;n<8;n++){const w=placeWalk(m,gate,P.box),near=new Set();let r=null;
+    // (walked to, and not far round)
+    const ok=i=>{const x=i%W,y=(i-x)/W,d=placeWalkSteps(w,x,y);return d>=0&&d<=P.round[0]*(Math.abs(x-gx)+Math.abs(y-gy))+P.round[1]};
+    for(let y=h.ty-P.river;y<=h.ty+P.river;y++)for(let x=h.tx-P.river;x<=h.tx+P.river;x++){const i=y*W+x;if(m.has(x,y)&&K[i]===T_WATER&&!left.has(wk(i)))near.add(wk(i))}
+    // (the first such land, row by row, beside one of them)
+    for(let y=h.ty-P.bank;y<=h.ty+P.bank&&r===null;y++)for(let x=h.tx-P.bank;x<=h.tx+P.bank&&r===null;x++){const i=y*W+x;if(!near.size||!m.has(x,y)||!passable(K[i])||ok(i))continue;
+      for(const j of [x>0?i-1:-1,x<W-1?i+1:-1,i-W,i+W])if(j>=0&&j<N&&K[j]===T_WATER&&near.has(wk(j))){r=wk(j);break}}
+    if(r===null)return;let best=null;
+    for(let y=h.ty-P.end;y<=h.ty+P.end;y++)for(let x=h.tx-P.end;x<=h.tx+P.end;x++){const t=y*W+x;if(!m.has(x,y)||K[t]!==T_WATER||wk(t)!==r||X[t]>=0)continue;
+      for(const [dx,dy] of [[1,0],[0,1]]){const s=dx+dy*W;let a=0,b=0;while(a<=PLACE.ferry&&m.has(x-dx*(a+1),y-dy*(a+1))&&K[t-s*(a+1)]===T_WATER)a++;while(b<=PLACE.ferry&&m.has(x+dx*(b+1),y+dy*(b+1))&&K[t+s*(b+1)]===T_WATER)b++;
+        const i=t-s*(a+1),j=t+s*(b+1),k=a+b+1;if(!m.has(x-dx*(a+1),y-dy*(a+1))||!m.has(x+dx*(b+1),y+dy*(b+1))||!land(i)||!land(j)||boxed[i]||boxed[j]||far(i)>P.end||far(j)>P.end||ok(i)===ok(j)||placeNotch(m,i,s)||placeNotch(m,j,s))continue;
+        const tiles=[];for(let q=1;q<=k;q++)tiles.push(i+s*q);if(tiles.some(q=>X[q]>=0))continue;const wd=Math.max(...tiles.map(q=>Rv[q]&3)),boat=tiles.some(q=>Rv[q]&36);
+        const kind=k<=PLACE.bridge?2:r>=0&&(wd===3||boat)&&k<=PLACE.ferry?3:0,v=(kind===3?100:0)+far(i)+far(j)+k*.5;
+        if(kind&&(!best||v<best.v))best=ok(i)?{v,i,j,tiles,kind}:{v,i:j,j:i,tiles:tiles.reverse(),kind}}}
+    if(!best){left.add(r);PLACE_STATS.holdBare.push(h.name+' '+(r>=0?m.rivers[r].name:'water'));continue}
+    placeCross(m,F,X,best.i,best.j,best.tiles,best.kind,false,Hd,r>=0?r:null);PLACE_STATS.holdXing++;left.add(r)}}
+// (the tiles walked to from tile s within r of it (the larger of dx, dy): 4 ways over walkable ground, and over ferries (its tiles
+// steps); bank: its own bank, none of a crossing's tiles nor a ferry. {x0, y0, n, R}: R the steps to each tile of the box n x n
+// from (x0, y0), plus 1 (0 not walked to); placeWalkAt (walked to) and placeWalkSteps (how far: -1 not) read it. The generator's
+// (a holding's rivers) and lots.js's (a holding's lots on ground its people walk to, not far round))
+function placeWalk(m,s,r,bank){
+  const W=m.w,K=m.kind,sx=s%W,sy=(s-sx)/W,x0=sx-r,y0=sy-r,n=2*r+1,R=new Uint16Array(n*n),q=[],fx=new Map(),cx=new Set();
+  for(const c of m.crossings){if(bank)for(const i of c.tiles)cx.add(i);else if(c.kind==='ferry'){fx.set(c.i,c.j);fx.set(c.j,c.i)}}
+  const go=(x,y,d)=>{if(x<x0||y<y0||x>=x0+n||y>=y0+n||!m.has(x,y))return;const k=(y-y0)*n+x-x0,i=y*W+x;if(R[k]||!passable(K[i])||cx.has(i))return;R[k]=d;q.push(i)};
+  go(sx,sy,1);
+  for(let a=0;a<q.length;a++){const i=q[a],x=i%W,y=(i-x)/W,d=R[(y-y0)*n+x-x0]+1;go(x+1,y,d);go(x-1,y,d);go(x,y+1,d);go(x,y-1,d);
+    if(fx.has(i)){const j=fx.get(i),jx=j%W,jy=(j-jx)/W;go(jx,jy,d+Math.abs(jx-x)+Math.abs(jy-y)-1)}}
+  return{x0,y0,n,R}}
+const placeWalkSteps=(w,x,y)=>x>=w.x0&&y>=w.y0&&x<w.x0+w.n&&y<w.y0+w.n?w.R[(y-w.y0)*w.n+x-w.x0]-1:-1;
+const placeWalkAt=(w,x,y)=>placeWalkSteps(w,x,y)>=0;
 
 /* 9. camps: density()'s, in the fringe (6-16 tiles from a road, 14 from a holding, outside wild regions), reachable from the
    first capital with the flooding fords shut; in a random order, the farthest apart first (28 tiles, down to 8 when short); each

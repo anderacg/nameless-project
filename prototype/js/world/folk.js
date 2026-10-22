@@ -27,8 +27,9 @@ const asWorker=asClass(EstateWorker);
 // (the estates whose workers you have come near: town|estate; forgotten once you are far)
 const FOLK_SEEN=new Set();
 const dayPart=()=>Clock.frac;
-// the hours a delivery may start (share of the day: the afternoon to the end of dusk), and how long it takes inside the gate
-const DELIVER={from:.375,to:.575,stop:[1.5,3.5]};// (afternoon to dusk, the day half of 50/50: core.js NIGHT_AT)
+// the hours a delivery may start (share of the day: the afternoon to the end of dusk), how long it takes inside the gate, and how
+// late past them one whose hour fell at their very end still sets out (grace)
+const DELIVER={from:.375,to:.575,stop:[1.5,3.5],grace:.02};// (afternoon to dusk, the day half of 50/50: core.js NIGHT_AT)
 // the hours of field work (the morning and midday, to the first delivery), the share of workers out on a day (each by his id and
 // the day), their pace (px), how long they stop at a stop of their round and at its work (a tree, the rock, the pier's end), how
 // far from the estate their round may go (tiles), and how many spots one works just outside the door
@@ -172,7 +173,9 @@ function updateFolk(d){
   // one out on the road goes home first)
   const A=WORLD_SCALE.ai;W.folk=W.folk.filter(f=>{const t=townBy(f.home);return t&&Math.hypot(t.x-P.x,t.y-P.y)<A.folkNear+A.folkForget&&!f.gone&&(f.st!=='in'&&f.st!=='field'||bldLv(t,f.k)>0)});
   for(const key of FOLK_SEEN){const t=townBy(key.split('|')[0]);if(!t||Math.hypot(t.x-P.x,t.y-P.y)>A.folkNear+A.folkForget)FOLK_SEEN.delete(key)}/* (out of reach: met afresh next time) */
-  const now=dayPart(),win=now>=DELIVER.from&&now<DELIVER.to;
+  // (his hour drawn up to the window's end: a step of the clock may pass both together, so he may still set out a little after it,
+  // DELIVER.grace: once one with his hour at its very end stayed in with his load)
+  const now=dayPart(),win=now>=DELIVER.from&&now<DELIVER.to+DELIVER.grace;
   for(const t of TOWNS){if(!t.bld||Math.hypot(t.x-P.x,t.y-P.y)>A.folkNear||ruined(t))continue;const sp=bldSpots(t);
     for(const k in sp){const lv=bldLv(t,k),job=ESTATES[k]&&ESTATES[k].work;if(!lv||!job)continue;
       // (as you come near, some of them there, 1 to the full crew, seeded by the estate and the day; the rest, and one taken or

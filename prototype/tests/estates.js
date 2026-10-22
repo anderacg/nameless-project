@@ -12,6 +12,14 @@ try{
  ok(TW.every(x=>x.bld&&x.wall!=null),'every holding has estates and a wall level');
  const spotsOk=TW.every(x=>(x.lots||[]).filter(l=>t.ESTATES[l.k]).every(l=>{let ok=true;for(let j=0;j<l.n;j++)for(let i=0;i<l.n;i++)ok=ok&&t.lotGround[t.groundOf(l.k)](l.x+i,l.y+j);return ok}));
  ok(spotsOk,'every estate stands on land that suits it (fields on open ground, woodcutters in forest, mines by rock, ports on the shore)');
+ // every house, estate and field on ground its holding's people walk to from its gate (the owner's play-test 3: estates across a
+ // river from their holding, no way over): 4 ways over walkable ground, fords, bridges and ferries within LOT_WALK tiles of the gate
+ // (worldplace.js placeWalk), and on the gate's piece of land (Router.reach); INFO: how many stand across a crossing from it
+ {const bad=[];let n=0,across=0;
+  for(const x of TW){const g0=(x.ty+1)*t.MW+x.tx,g=t.passable(t.tiles[g0])?g0:x.ty*t.MW+x.tx,w=t.placeWalk(t.WM,g,t.LOT_WALK),own=t.placeWalk(t.WM,g,t.LOT_WALK,true);
+   for(const l of x.lots||[]){if(l.k==='centre')continue;n++;const tl=[];t.lotTiles(l,(a,b)=>tl.push([a,b]));for(const p of l.plots||[])tl.push(p);
+    if(tl.some(([a,b])=>!t.placeWalkAt(w,a,b)||!t.Router.reach(x,{x:(a+.5)*t.TILE,y:(b+.5)*t.TILE})))bad.push(x.name+' '+l.k+' at '+l.x+','+l.y);else if(!t.placeWalkAt(own,l.x,l.y))across++}}
+  ok(n>100&&!bad.length,'every house, estate and field ('+n+' lots) stands on ground its holding’s people walk to from its gate ('+across+' across a ford, bridge or ferry from it)'+(bad.length?': not '+bad.slice(0,5).join(', '):''))}
  ok(TW.every(x=>Object.keys(x.bld).every(k=>x.bld[k]<=t.bldCap(x,k))),'no estate where the land has no room for it');
  const ports=TW.filter(x=>x.style==='port');ok(ports.length&&ports.every(x=>x.bld.port),'port towns have ports ('+ports.filter(x=>x.bld.port).map(x=>x.name).join(', ')+')');
  ok(TW.filter(x=>x.kind==='village').every(x=>x.bld.farm>0||!t.canHave(x,'farm')),'villages farm');

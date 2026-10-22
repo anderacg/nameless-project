@@ -77,7 +77,18 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 //  shallows (offDeck), so a few lots and fields stand otherwise. Checked: with those three as before (join .75, no turn-back lead,
 //  offDeck as before) G3, G7, G8 and GB2 are as before (G5 294ab9d0, G6 7c2e1e64: the art). Was G3 a3673959, G5 65f440b9, G6
 //  57cf6053, G7 9d580ef9, G8 0f487dba, GB2 dc1b8829; G1, G2, G4 and the sums unchanged)
-const GEXPECT={W1:'81ce84b1',W2:'5df96192',W3:'ca3464b3',W4:'3ffcfb90',W5:'00f1be5d',W6:'7c2e1e64',W7:'e73ec214',W8:'7afe2f79',B2:'65d5ff21'};
+// (all nine re-recorded 2026-10-22, on purpose, the owner's play-test 3 (agent M): each holding's rivers crossed near it, by a bridge
+//  (worldplace.js placeHoldXing), and every bridge on the roads (a track from each end no road takes, to the nearest road on its bank;
+//  a bridge no road reaches taken up), which moves the tiles (G1), the deposits laid round them (G2) and the land claimed (G4);
+//  every lot and field on ground its holding's people walk to from its gate, not far round, its own bank first, never by a crossing's
+//  end, a port town's harbour before its houses (lots.js lotWalk, lotWalks), which moves the lots (G3), the painted world (G5) and the
+//  views (G6); with the rest the three days (G7), the 600 frames (G8) and the save after begin (GB2). Checked: with the holdings'
+//  crossings and the bridges' tracks off, lots.js's walk, bank, far-round and harbour rules off, folk.js's DELIVER.grace 0 and
+//  router.js's river legs as they were, all nine are as before. Were G1 81ce84b1, G2 5df96192, G3 a3673959, G4 3ffcfb90, G5
+//  65f440b9, G6 57cf6053, G7 9d580ef9, G8 0f487dba, GB2 dc1b8829)
+// (G3, G5-G8 and GB2 measured together 2026-10-22 at the merge of agents L (the art, above) and M (the crossings and lots, above):
+//  each moved them alone, and together they give these; G1, G2, G4 are M's alone, the sums M's alone)
+const GEXPECT={W1:'02a441ce',W2:'500a5428',W3:'5cee7bef',W4:'f81e1c01',W5:'ea9098d7',W6:'92c96e76',W7:'7270d6c2',W8:'8186ed74',B2:'7149936a'};
 // (the random presets' sums re-recorded 2026-10-22, on purpose, Phase 2b: the owner's "the holdings seem a bit too much": Normal
 //  27 holdings by default (was 37), Large 40 (was 55), so their settings (in the sum) and placement change; with them two clamps
 //  of stage 7 the fewer holdings needed (worldplace.js): a port only on the open sea (placeOpen: a strait a road bridged had left
@@ -98,13 +109,24 @@ const GEXPECT={W1:'81ce84b1',W2:'5df96192',W3:'ca3464b3',W4:'3ffcfb90',W5:'00f1b
 //  road: off them a tile costs WAY.keep, 4, times as much), so the caravans of the three days go otherwise. Checked: with WAY.keep 1 W7
 //  is as before; the lots' road rule (lots.js roadPaint) and the woods' second pass for houses leave today's lots as they were (W3).
 //  Was W7 055dd3a6; W1-W6, W8 and B2 unchanged)
-const SUMS={classic:'e9ff637f','Normal s1':'edfd56e4','Normal s2':'fdb0fae4','Normal s3':'28976823','Large s1':'7df7120f'};
 // (W5, W6 re-recorded 2026-10-22, on purpose, the owner's third play-test (agent L), what of it today's map shares (no fords): the
 //  climates' edges blended as the frost's (gfx/worldart.js coverOf, landRGB: the swamp's and the desert's ground over the grass in
 //  patches thinning out, no 3-px blocks), their small things mixed across the edge and a wood's fringe (engine/worldnature.js
 //  PX.worldNatureMix, PX.WN_FRINGE). W6 moved at all three spots by day and night (958eacf8 6d74b55d f2b10c40 ec778995 9e82f728
 //  1158f5b7 to fbf2307d 8f6a8e60 402e3ff4 29e66196 a1ba5ffb 732c8bcf). Was W5 9f99c580, W6 9e08cef8; W1-W4, W7, W8 and B2 unchanged)
-const EXPECT={W1:'65e24662',W2:'2b49a168',W3:'dc546553',W4:'46450e62',W5:'0c9b579e',W6:'7c1b6803',W7:'2b496c30',W8:'742df600',B2:'290c6cb7'};// (at 0a42712; B2 at R3; W6-W8 at Phase 1; W6 at depth, smooth walking and pasture herds and label layout; W7, B2 at save v3)
+// (all five re-recorded 2026-10-22, on purpose, the owner's play-test 3 (agent M): the holdings' crossings and the bridges' tracks
+//  (G1 above). Checked: with both off and router.js's river legs as they were all five as before. Were classic e9ff637f, Normal s1
+//  edfd56e4, s2 fdb0fae4, s3 28976823, Large s1 7df7120f)
+const SUMS={classic:'2eb1e165','Normal s1':'d934ba19','Normal s2':'bd7c17d3','Normal s3':'746d0808','Large s1':'0f0a9fa1'};
+// (W3, W5, W7, W8 and B2 re-recorded 2026-10-22, on purpose, the owner's play-test 3 (agent M): every lot on ground its holding's
+//  people walk to from its gate (lots.js lotWalk): Elderglen's smithy stood on a one-tile islet in its lake, no way to it; now on its
+//  shore, which moves TOWNS (W3), the painted world (W5), the three days (W7), the 600 frames (W8) and the save after begin (B2).
+//  Today's map has no crossings and keeps its order of building (the harbours, Fernhollow's farm and pasture across its lake: an
+//  estate with no spot near falls back on one its people still walk to). Checked: with lots.js's walk rule off all five as before. Were
+//  W3 dc546553, W5 9f99c580, W7 2b496c30, W8 742df600, B2 290c6cb7; W1, W2, W4 and W6 unchanged)
+// (W5 measured together 2026-10-22 at the merge of agents L and M: L's blend and M's moved smithy at Elderglen; W6 L's alone;
+//  W3, W7, W8, B2 M's alone)
+const EXPECT={W1:'65e24662',W2:'2b49a168',W3:'019fff95',W4:'46450e62',W5:'5cc77936',W6:'7c1b6803',W7:'8ed0cfbc',W8:'b11c0021',B2:'c15ba2dd'};// (at 0a42712; B2 at R3; W6-W8 at Phase 1; W6 at depth, smooth walking and pasture herds and label layout; W7, B2 at save v3)
 // (W5, W6 re-recorded 2026-10-22, on purpose, the owner's play-test (the same climates on today's map): the frost's snow blended
 //  into the grass (gfx/worldart.js snowCover, landRGB: its cover rising over the frost's edge and with height, thinning out in
 //  patches over the grass beside it) and the fen's sparse mangroves (engine/worldnature.js FEN). W6 moved at the first and third

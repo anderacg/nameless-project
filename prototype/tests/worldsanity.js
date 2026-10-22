@@ -7,7 +7,8 @@
    its stage 7 read). Balanced: each capital's nearest rival within 25% of their mean distance, each realm's land within 30% of
    theirs. A fair start: each race's start city with 3 holdings within a day's travel (Router.days) and no wild land within 25
    tiles. Ports: each on water joined to the sea or to another port. Rivers: never uphill, each ending in water, no great river
-   freezing, crossings at most 60 tiles apart wherever one can be made (else a bare stretch, INFO). Climates: each 6% of the land or
+   freezing, crossings at most 60 tiles apart wherever one can be made (else a bare stretch, INFO). Rivers by holdings: the land
+   beside each river near a holding walked to from its gate. Estates on foot: every house, estate and field too. Climates: each 6% of the land or
    more. As INFO, the rows of later phases: no emptiness (the 95th percentile of the walk to the nearest place, 25 tiles at most:
    measured now over holdings, sites, camps and crossings; Phase 4 adds hamlets and sacred places), wild regions and the lair
    (Phase 4), the shape metrics (Phase 3: tests/worldshape.js). Each world's lines start with
@@ -61,7 +62,8 @@ Kit.suite(({ok,info})=>{
   // freezing; crossings at most 60 tiles apart along each (its source counts as one, its mouth as an end: places along it as the
   // generator reads them, worldplace.js placeAlong) wherever one can be made: a straight run of water, across or down, of 3 tiles
   // at most (12 on a great river by a town or port, a ferry), from land a road can take (walkable, no ford, the land stage 7 found
-  // joined, no notch with water on both sides) to such land, none of it a crossing yet; else a bare stretch (INFO)
+  // joined, no notch with water on both sides) to such land, none of it a crossing yet; else, or where a bridge was taken up for no
+  // road reaching it (PLACE_STATS droppedAt), a bare stretch (INFO)
   {const up=[],dry=[],ice=[];for(const r of m.rivers){const p=r.path;let u=false;for(let k=1;k<p.length;k++)if(m.elev[p[k]]>m.elev[p[k-1]])u=true;if(p.length&&m.elev[r.mouth]>m.elev[p[p.length-1]])u=true;if(u)up.push(r.name);
     if(!p.length||K[r.mouth]!==t.T_WATER&&K[r.mouth]!==t.T_FORD&&!(m.river[r.mouth]&3)&&!(m.feat[r.mouth]&32))dry.push(r.name+' ('+K[r.mouth]+')');if(r.width>=3&&(r.seasonal&&r.seasonal.freeze||p.some(i=>(m.river[i]&3)===3&&(m.river[i]&16))))ice.push(r.name)}
    const F=cap.F,Xt=new Set(m.crossings.flatMap(c=>c.tiles)),town=new Uint8Array(NN);
@@ -74,10 +76,30 @@ Kit.suite(({ok,info})=>{
    const gaps=[],bare=[];
    for(const rv of m.rivers){const on=new Map(rv.path.map((i,k)=>[i,k])),pos=[0,rv.path.length-1];for(const c of m.crossings)if(c.river===rv.id){const p=t.placeAlong(m,on,c.tiles);if(p>=0)pos.push(p)}
     pos.sort((a,b)=>a-b);for(let k=1;k<pos.length;k++){if(pos[k]-pos[k-1]<=60)continue;let c=-1;for(let q=pos[k-1]+1;q<=Math.min(pos[k-1]+60,pos[k]-1)&&c<0;q++)if(can(rv.path[q]))c=q;
-     (c<0?bare:gaps).push(rv.name+' '+pos[k-1]+'-'+pos[k]+(c<0?'':' (could at '+c+')'))}}
+     const up=t.PLACE_STATS.droppedAt.some(d=>d.river===rv.id&&d.at>pos[k-1]&&d.at<pos[k]);(c<0||up?bare:gaps).push(rv.name+' '+pos[k-1]+'-'+pos[k]+(up?' (a bridge taken up there: no road reaches it)':c<0?'':' (could at '+c+')'))}}
    pass('Rivers',!up.length&&!dry.length&&!ice.length&&!gaps.length,name+': rivers: '+m.rivers.length+' never uphill, each ending in water, no great river freezing ('+m.rivers.filter(r=>r.width>=3).length+' great), crossings ('+m.crossings.length+') at most 60 tiles apart wherever one can be made'+
     (up.length?'; uphill: '+up.slice(0,3).join(', '):'')+(dry.length?'; ending on land: '+dry.slice(0,3).join(', '):'')+(ice.length?'; freezing: '+ice.join(', '):'')+(gaps.length?'; gaps: '+gaps.slice(0,3).join(', '):''));
    if(bare.length)info(name+': bare stretches over 60 tiles where no crossing can be made: '+bare.join(', '))}
+  // ---- the owner's play-test 3 (estates across a river from their holding, no way over). Rivers by holdings: a river's water within
+  // PLACE_HOLD.river tiles of a holding, the land beside it within PLACE_HOLD.bank walked to from its gate (4 ways over walkable
+  // ground, fords, bridges and ferries, within PLACE_HOLD.box: worldplace.js placeWalk), not far round (PLACE_HOLD.round), else a
+  // crossing of it within PLACE_HOLD.end, but where none can be made (PLACE_STATS holdBare, INFO). Estates on foot: every house,
+  // estate and field of every holding on ground walked to from its gate (within LOT_WALK) and on its piece of land (Router.reach)
+  {const HP=t.PLACE_HOLD,near1=(w,h,x,y)=>{const d=t.placeWalkSteps(w,x,y);return d>=0&&d<=HP.round[0]*(Math.abs(x-h.tx)+Math.abs(y-h.ty-1))+HP.round[1]},bare=t.PLACE_STATS.holdBare,rv=new Int16Array(NN).fill(-1),miss=[],far=[];
+   // (each river tile's river, as the generator reads it: from its path out over the river's tiles, 8 ways)
+   {const q=[];for(const r of m.rivers)for(const i of r.path)if(rv[i]<0){rv[i]=r.id;q.push(i)}
+    for(let a=0;a<q.length;a++){const i=q[a],x=i%Wd,y=(i-x)/Wd;for(const [dx,dy] of t.DIR8){const j=i+dx+dy*Wd;if(m.has(x+dx,y+dy)&&rv[j]<0&&(m.river[j]&3)){rv[j]=rv[i];q.push(j)}}}}
+   const xed=(h,rr)=>m.crossings.some(c=>(c.river===rr||c.tiles.some(i=>rv[i]===rr))&&[c.i,c.j].some(i=>Math.max(Math.abs(i%Wd-h.tx),Math.abs(Math.floor(i/Wd)-h.ty))<=HP.end));
+   for(const h of TW){const w=t.placeWalk(m,at(h)+Wd,HP.box),near=new Set(),seen=new Set();
+    for(let y=h.ty-HP.river;y<=h.ty+HP.river;y++)for(let x=h.tx-HP.river;x<=h.tx+HP.river;x++)if(m.has(x,y)&&K[y*Wd+x]===t.T_WATER&&rv[y*Wd+x]>=0)near.add(rv[y*Wd+x]);
+    for(let y=h.ty-HP.bank;y<=h.ty+HP.bank;y++)for(let x=h.tx-HP.bank;x<=h.tx+HP.bank;x++){const i=y*Wd+x;if(!m.has(x,y)||!walk(K[i])||near1(w,h,x,y))continue;
+     for(const j of [i-1,i+1,i-Wd,i+Wd]){if(j<0||j>=NN||K[j]!==t.T_WATER||!near.has(rv[j]))continue;const k=h.name+' '+m.rivers[rv[j]].name;if(!seen.has(k)){seen.add(k);if(!xed(h,rv[j]))(bare.includes(k)?far:miss).push(k+' at '+x+','+y)}}}}
+   pass('Rivers by holdings',!miss.length,name+': rivers by holdings: the land beside every river within '+HP.river+' tiles of a holding walked to from its gate, not far round, else a crossing of it within '+HP.end+' tiles'+(miss.length?': not '+miss.slice(0,4).join(', '):'')+' ('+t.PLACE_STATS.holdXing+' crossings laid for it)');
+   if(far.length)info(name+': rivers by a holding no crossing can be made over: '+far.join(', '));
+   const bad=[];let n=0;for(const h of TW){const g0=at(h)+Wd,lw=t.placeWalk(m,walk(K[g0])?g0:at(h),t.LOT_WALK);
+    for(const l of h.lots||[]){if(l.k==='centre')continue;n++;const tl=[];t.lotTiles(l,(a,b)=>tl.push([a,b]));for(const p of l.plots||[])tl.push(p);
+     if(tl.some(([a,b])=>!t.placeWalkAt(lw,a,b)||!t.Router.reach(h,{x:(a+.5)*t.TILE,y:(b+.5)*t.TILE})))bad.push(h.name+' '+l.k+' at '+l.x+','+l.y)}}
+   pass('Estates on foot',n&&!bad.length,name+': estates on foot: every house, estate and field ('+n+' lots) on ground walked to from its holding’s gate'+(bad.length?': not '+bad.slice(0,4).join(', '):''))}
   // ---- climates: each 6% of the land (every tile not water) or more
   {const n=[0,0,0,0];let L=0;for(let i=0;i<NN;i++)if(K[i]!==t.T_WATER){n[m.clim[i]]++;L++}
    pass('Climates',n.every(c=>c>=L*.06),name+': climates: '+t.CLIMS.map((c,k)=>c+' '+(n[k]*100/L).toFixed(1)+'%').join(', ')+' of the land')}
