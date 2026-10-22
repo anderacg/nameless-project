@@ -4,7 +4,7 @@
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);
 try{
  const t=T,TOWNS=t.TOWNS,CAMPS=t.CAMP_SPOTS,MW=t.MW,MH=t.MH,TILE=t.TILE;
- const f=t.flowTo(TOWNS[0]),far=[...TOWNS.map(x=>[x.name,x.tx,x.ty]),...CAMPS.map((c,i)=>['camp '+i,c.tx,c.ty])].filter(([,x,y])=>!isFinite(f[y*MW+x]));
+ const far=[...TOWNS.map(x=>[x.name,x.tx,x.ty]),...CAMPS.map((c,i)=>['camp '+i,c.tx,c.ty])].filter(([,x,y])=>!t.Router.reach(TOWNS[0],{x:(x+.5)*TILE,y:(y+.5)*TILE}));
  ok(!far.length,'every holding and camp reachable from '+TOWNS[0].name+(far.length?': unreachable '+far.map(x=>x[0]).join(', '):''));
  const cnt={},land=[...t.tiles].filter(x=>t.passable(x)).length;
  for(let i=0;i<MW*MH;i++)if(t.passable(t.tiles[i])){const c=t.CLIMS[t.climate[i]];cnt[c]=(cnt[c]||0)+1}

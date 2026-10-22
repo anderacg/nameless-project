@@ -7,8 +7,7 @@
 // crossings (bridges over 3 tiles of water at most, no ford on a great river, ferries only on great rivers by towns and ports,
 // at most 60 tiles apart along a river wherever one can be made, else a bare stretch as INFO), the camps (density()'s, in the fringe), realm land within 30% of the mean, D10's lords, the same world twice; a made-up
 // map for the crossings' kinds; each holding's rivers crossed near it (on the five worlds, and a made-up map: two bridges and a
-// ferry); deposits and first stocks by the economy setting; lords from WM.lords. Works with the flag
-// off or on (it makes its own worlds). INFO lines: time per stage and per road, the checks' tries and relaxations.
+// ferry); deposits and first stocks by the economy setting; lords from WM.lords. It makes its own worlds. INFO lines: time per stage and per road, the checks' tries and relaxations.
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.push('INFO '+m),t=T,J=JSON.stringify;
 try{
  const pn=()=>performance.now(),gen=s=>{const S=t.genWorldSteps(s),ms={};let r;for(const st of S){const a=pn(),it=st.run();let v;while(!(v=it.next()).done);r=v.value;ms[st.id]=pn()-a}r.ms=ms;r.stats={...t.PLACE_STATS};return r};
@@ -115,7 +114,7 @@ try{
   if(m.settings.holdings>40){const L=r.lords,all=L?Object.values(L).flat():[];ok(L&&t.PLACE_REALMS.every(f=>L[f].length===6&&J(L[f].slice(0,4))===J(t.FACS[f].lords))&&new Set(all).size===all.length,name+': 6 lords a realm, FACS\' four first, the rest made from their people\'s names, all unique: '+(L?t.PLACE_REALMS.map(f=>L[f].slice(4).join(', ')).join('; '):'none'))}
   else ok(r.lords===null,name+': FACS\' four lords a realm will do (lords null)')}
  // ---- the world in use, when generated: every holding's gate (lots.js leads the roads round its centre to it) on the roads, joined 8 ways
- if(t.WM.gen==='ashmark-1'){t.act('begin','soldier');const MW=t.MW,MH=t.MH,road=i=>t.tiles[i]===t.T_ROAD||t.tiles[i]===t.T_FORD,gate=z=>{const c=t.lotCentre(z);return(c.y+c.n)*MW+z.tx},seen=new Uint8Array(MW*MH),q=[gate(t.TOWNS[0])];seen[q[0]]=1;
+ {t.act('begin','soldier');const MW=t.MW,MH=t.MH,road=i=>t.tiles[i]===t.T_ROAD||t.tiles[i]===t.T_FORD,gate=z=>{const c=t.lotCentre(z);return(c.y+c.n)*MW+z.tx},seen=new Uint8Array(MW*MH),q=[gate(t.TOWNS[0])];seen[q[0]]=1;
   for(let a=0;a<q.length;a++){const i=q[a],x=i%MW;for(let b=-1;b<=1;b++)for(let c=-1;c<=1;c++){const j=i+c+b*MW;if(x+c>=0&&x+c<MW&&j>=0&&j<MW*MH&&!seen[j]&&road(j)){seen[j]=1;q.push(j)}}}
   const cut=t.TOWNS.filter(z=>!road(gate(z))||!seen[gate(z)]);ok(!cut.length,'the world in use: every holding’s gate on the roads, the roads joining them all (8 ways)'+(cut.length?': not '+cut.map(z=>z.name).join(', '):''));
   // (and no road stops at the water: a road tile with one road beside it (8 ways), the water beside it (4 ways), is a crossing's, or
@@ -129,7 +128,7 @@ try{
   ok(J(R['Normal bluewater'].holdings)!==J(b.holdings),'another seed places other holdings')}
  // ---- a made-up map (200 x 120, open): a great river down x 100-105 (3 wide at y 18-22), a stream along y 60 to it, peaks
  // with a gap at x 40-160 y 100: a great road over the narrows by a bridge, a track by a ferry beside a town, a track forded
- {const m=new t.WorldMap(200,120,'test'),W=200,K=m.kind,path=[],sp=[];m.gen='ashmark-1';
+ {const m=new t.WorldMap(200,120,'test'),W=200,K=m.kind,path=[],sp=[];
   for(let y=0;y<120;y++)for(let x=0;x<200;x++){const i=y*W+x,great=x>=100&&x<=(y>=18&&y<=22?102:105),stream=y===60&&x<100;
    if(!x||!y||x===199||y===119)K[i]=t.T_WATER;else if(great||stream){K[i]=t.T_WATER;m.river[i]=great?3|4:1}else if(y===100&&x>=40&&x<=160&&(x<70||x>74))K[i]=t.T_MOUNT;m.elev[i]=K[i]===t.T_WATER?60:80}
   for(let y=1;y<119;y++)path.push(y*W+100);for(let x=1;x<100;x++)sp.push(60*W+x);
@@ -149,7 +148,7 @@ try{
  // a holding 4-7 tiles north of each, its roads all north of them, each river too short for a crossing 60 tiles apart and too long
  // to walk round within 16 tiles: a stream by Brookside and a navigable river 2 wide by Bend (bridged: the owner's), a great river
  // 6 wide by Wharf (a ferry: nothing else fits); each crossing's ends within 10 tiles of its holding, the far bank then walked to from its gate
- {const m=new t.WorldMap(180,60,'test'),W=180,K=m.kind,rv=[['Brook',1,55,0,0,1],['Wide',62,118,40,41,2|4],['Great',122,178,38,43,3|4]];m.gen='ashmark-1';
+ {const m=new t.WorldMap(180,60,'test'),W=180,K=m.kind,rv=[['Brook',1,55,0,0,1],['Wide',62,118,40,41,2|4],['Great',122,178,38,43,3|4]];
   for(let y=0;y<60;y++)for(let x=0;x<180;x++){const i=y*W+x;if(!x||!y||x===179||y===59)K[i]=t.T_WATER;m.elev[i]=80}
   m.rivers=rv.map(([name,x0,x1,y0,y1,b],id)=>{const path=[];for(let x=x0;x<=x1;x++){path.push(40*W+x);for(let y=y0||40;y<=(y1||40);y++){K[y*W+x]=t.T_WATER;m.river[y*W+x]=b;m.elev[y*W+x]=60}}
    return{id,name,path,order:b&3,width:b&3,basin:0,mouth:40*W+x1+1,nav:!!(b&4),rapids:[],seasonal:null}});
@@ -162,7 +161,7 @@ try{
   ok(H.every(h=>{const w=t.placeWalk(m,(h.ty+1)*W+h.tx,16);return t.placeWalkAt(w,h.tx,h.ty+10)&&!t.placeWalkAt(t.placeWalk(m,(h.ty+1)*W+h.tx,16,true),h.tx,h.ty+10)}),'made-up map: and the far bank walked to from each gate over it (its own bank not reaching it)')}
  // ---- ponds and oases (worldgen.js m.ponds, m.oases): never bridged nor crossed, the roads go round. A made-up map (120 x 40, open):
  // a pond 2 tiles wide down x 58-59 from y 1 to 30, two villages either side of it: their road round its end, over none of it
- {const run=pond=>{const m=new t.WorldMap(120,40,'test'),W=120,K=m.kind,T=[];m.gen='ashmark-1';
+ {const run=pond=>{const m=new t.WorldMap(120,40,'test'),W=120,K=m.kind,T=[];
    for(let y=0;y<40;y++)for(let x=0;x<120;x++){const i=y*W+x;if(!x||!y||x===119||y===39)K[i]=t.T_WATER;else if((x===58||x===59)&&y<=30){K[i]=t.T_WATER;m.feat[i]|=2;T.push(i)}m.elev[i]=K[i]===t.T_WATER?60:80}
    m.ponds=pond?[{i:15*W+58,r:2,kind:'pool',tiles:T}]:[];m.oases=[];
    const H=[{name:'Weston',realm:'vale',kind:'village',tx:50,ty:12},{name:'Easton',realm:'vale',kind:'village',tx:68,ty:12}];

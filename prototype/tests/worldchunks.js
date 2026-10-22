@@ -1,25 +1,17 @@
 'use strict';
 // World chunks (doc/WORLD_DESIGN.md R6, §3.3): the world map is painted in 512-px chunks (gfx/worldart.js WorldArt, from the plan
 // worldArtPlan and engine/worldnature.js PX.worldNaturePlan/Steps), never needing one canvas. The map painted as one window (no
-// seam anywhere: today's one canvas) is the baseline picture (worldprint's W5); the chunks stitched are that picture byte for byte,
+// seam anywhere) is the baseline picture (worldprint's W5); the chunks stitched are that picture byte for byte,
 // and so is every chunk alone and any window at all, cut across ranges, woods and roads (no seam: what stands across a border is
 // painted into each chunk it touches); a chunk painted a slice at a time equals one painted at once, its slices short; the LRU
 // keeps no more than its cap, never lets a chunk in view go, and paints ahead of the view; invalidate forgets the plan and the
 // chunks near a change (or all), and the chunks it keeps are still right; the minimap comes from the tile data; what it costs.
-// (the one-window picture re-recorded 2026-10-22 with W5, on purpose: swamp water a lighter peat blue, the owner's pick; was aceeae00.
-//  Again 2026-10-22 with W5, on purpose, the owner's play-test: the frost's snow blended into the grass and the fen's sparse
-//  mangroves (gfx/worldart.js snowCover, engine/worldnature.js FEN); was 963ff854)
-//  Again 2026-10-22 with W5, on purpose, the owner's second play-test: the water's tones across a climate's edge, the estates'
-//  ground on its land, the trees by climate and the swamp's bog forest; was d68036d6)
-//  Again 2026-10-22 with W5, on purpose, the owner's third play-test: the climates' edges blended as the frost's (the swamp's and
-//  the desert's ground over the grass in patches thinning out, their small things mixed across), a wood's fringe; was 2f990c2d)
-// With -Gen also the generated world's roads, crossings and fords as the owner's play-test asked (2026-10-22): every road's end at
+// The world's roads, crossings and fords as the owner's play-test asked (2026-10-22): every road's end at
 // a holding led into its gate, a bridge's deck met on its axis by a ramp, a fork's end on the way it joins, a ford's shallows soft;
 // and as the second play-test asked, the shores curves within a few px of their tiles, the water's tones shading across a climate's edge;
 // and as the third asked, the roads' art meeting the new roads (forks and bridges), each ford a real one (its bed showing through
 // the shallows, a track up each bank).
-// On the map the scripts leave at load (no begin), as W5's picture. With -Gen (the generated classic seed, its water and roads
-// painted by the generated world's art) the same checks, its picture's hash an INFO line; then the prefetch at Large and Huge:
+// On the map the scripts leave at load (the classic seed, no begin): the same checks, its picture's hash an INFO line; then the prefetch at Large and Huge:
 // walking across each at Travel fast's pace (8x: a chunk in some 420 frames), 4 ms of painting a frame, the ring ahead is ready.
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.push('INFO '+m),t=T,WA=t.WorldArt,cap0=WA.cap,slice0=WA.slice;
 try{
@@ -33,14 +25,9 @@ try{
  WA.invalidate();let q=performance.now();const P=WA.ensure(),planMs=performance.now()-q,T0=t.TOWNS[0];
  ok(!WA.full&&!WA.chunks.size&&t.CLEAR===P.clear&&t.isClear(T0.x,T0.y)&&t.isClear((T0.tx+.5)*TILE,(T0.ty+.5)*TILE)&&!t.isClear(-5,10)&&!t.isClear(W+3,10),
    'the plan comes first, painting nothing: isClear reads its clear ground (a holding and its gate clear, off the map not) ('+planMs.toFixed(0)+' ms)');
- // ---- one window: the whole map, no seam anywhere (today's one canvas)
- // (re-recorded 2026-10-22, the owner's fourth play-test (agent N), with W5: the hills, a wood's floor and the trees by the climates'
- //  covers; with gfx/worldart.js and engine/worldnature.js as at f97112f it is as before. Was a96d5d35)
- // (measured together 2026-10-22 at the merge of agent N with L and M, with W5: N's art over M's moved smithy. Was 2963d713)
- // (re-recorded 2026-10-22 with W5, the owner's fifth play-test (agent T): a rise's cast shadow soft, a road over the hills rising
- //  with them (engine/worldnature.js PX.WN_HILL); with PX.WN_HILL {soft: [0, 0], road: 9} it is as before. Was ae05e1de)
+ // ---- one window: the whole map, no seam anywhere
  const r1={},one=paint(0,0,W,H,r1),ref=img(one,0,0,W,H),h1=fnv(ref);
- if(t.WORLD.gen)info('the generated classic seed painted as one window: '+h1+' ('+r1.wall.toFixed(0)+' ms)');else ok(h1==='c439323a','the map painted as one window (no seam anywhere: today\'s one canvas) is the baseline picture ('+h1+', W5 at b94cbe2: tests/worldprint.js; '+r1.wall.toFixed(0)+' ms)');
+ info('the classic seed painted as one window: '+h1+' ('+r1.wall.toFixed(0)+' ms)');
  // ---- stitched: every chunk into the whole picture, and no seam round any border
  q=performance.now();const whole=WA.whole(),wMs=performance.now()-q,nd=diff(img(whole,0,0,W,H),ref);
  ok(nd===0&&whole.width===W&&whole.height===H,cols*rows+' chunks of '+CS+' px ('+cols+' x '+rows+') stitched (worldCv) are that picture pixel for pixel ('+nd+' differ; '+wMs.toFixed(0)+' ms)');
@@ -104,7 +91,7 @@ try{
   info('memory: one canvas for the whole map would be '+MB(W*H*4)+' here, '+MB(16384*12288*4)+' at Huge; worldCv\'s canvas is only made when asked (the blit until render.js draws by chunks, the wiki, the tests)')}
 
  // ---- the generated world's roads (gfx/worldart.js artGenPlan: gateLead, straightOn, joinEnds) and fords (fordAt)
- if(t.WORLD.gen){const P=WA.ensure(),S=P.segs,G=t.GENART,X=[],ends=new Map(),key=(x,y)=>Math.round(x*10)+','+Math.round(y*10);
+ {const P=WA.ensure(),S=P.segs,G=t.GENART,X=[],ends=new Map(),key=(x,y)=>Math.round(x*10)+','+Math.round(y*10);
   for(let k=0;k<S.length;k+=5)if(S[k+4]<2)for(const e of [0,2]){const q=key(S[k+e],S[k+e+1]);ends.set(q,(ends.get(q)||0)+1)}
   // (every holding: a road's end at the gate (into it by GENART.gate), its last leg coming up from below; no road under its centre)
   const gates=t.TOWNS.map(h=>{const b=t.centreBox(h);return[h.tx*TILE,(b.y+b.n-G.gate)*TILE,b]});let led=0,under=0;
@@ -175,9 +162,9 @@ try{
     for(const [x,y,w,h] of R)for(let yy=y;yy<y+h;yy++)for(let xx=x;xx<x+w;xx++){const u=hor?xx:yy,v=hor?yy:xx;if(u>=u0&&u<u1)continue;if(v<mid-hw||v>=mid+hw||t.wpx(K,xx,yy))wide++}
     for(let u=u0;u<u1;u++)for(let v=mid-hw-14;v<mid+hw+14;v++){if(v>=mid-hw-2&&v<mid+hw+3)continue;const x=hor?u:v,y=hor?v:u;if(x<0||y<0||x>=W||y>=H||!t.wpx(K,x,y)||deck(x,y)||ford(x,y))continue;const o=(y*W+x)*4;if(ref[o]>ref[o+1]&&ref[o]>ref[o+2])wet++}}
    ok(n&&!wide&&!wet,n+' bridges: each one’s abutments as wide as its deck and on land ('+wide+' px off it), the water beside each deck painted as water ('+wet+' px of bank, worn ground or stone on it)')}}
- // ---- the owner's fifth play-test (agent T, with -Gen): hills under roads at every angle, a road through a wood, brooks never cut
+ // ---- the owner's fifth play-test (agent T): hills under roads at every angle, a road through a wood, brooks never cut
  //      short, the mountains' kinds, an oasis's and ponds' rings (put into the world here: the generator's lists, WM.oases/ponds)
- if(t.WORLD.gen){const P=WA.ensure(),N=P.nature,S=P.segs,V=t.GENART.verge,lum=(d,o)=>d[o]*.3+d[o+1]*.59+d[o+2]*.11;
+ {const P=WA.ensure(),N=P.nature,S=P.segs,V=t.GENART.verge,lum=(d,o)=>d[o]*.3+d[o+1]*.59+d[o+2]*.11;
   const paintN=(X,Y,w,h)=>img(paint(X,Y,w,h),0,0,w,h);
   // (a hill crossed by a road: along road segments through hills (a point each 8 px), across the road, where the hill's shading (the
   //  picture less the same window painted with no hills) lies on both sides of the band, it lies under it too: no straight cut along
@@ -262,9 +249,9 @@ try{
     ok(palms>=4&&nn&&nf&&gn/nn>gf/nf+4,'an oasis put in the desert: '+palms+' date palms round it, its ground greener near the water ('+(gn/nn).toFixed(0)+' green over red, '+(gf/nf).toFixed(0)+' farther out)');
     ok(longest<=6&&curved===edges&&between,'a pond put on the grass: its water a curve ('+curved+' of its '+edges+' tiles drawn part water, part land: no square), no straight run of one bank colour along a tile’s edge (longest '+longest+' px), its bank '+cb.map(Math.round).join(',')+' between the water’s edge '+cw.map(Math.round).join(',')+' and the land '+cg.map(Math.round).join(','))}
    finally{t.tiles.set(T0);delete t.WM.oases;delete t.WM.ponds;if(t.WM!==W0)t.useWorld(W0);WA.invalidate()}}}
- // ---- the prefetch at Large and Huge (with -Gen): the camera walks across the middle of each world at 8x's pace, the painter
+ // ---- the prefetch at Large and Huge: the camera walks across the middle of each world at 8x's pace, the painter
  //      given 4 ms a frame; the chunks that come into view were painted before they did, the LRU held at its cap
- if(t.WORLD.gen){const W0=t.WM;
+ {const W0=t.WM;
   try{for(const [name,s] of [['Large',{preset:'large',seed:'1'}],['Huge',{preset:'huge',seed:'1'}]]){const q=performance.now(),m=t.genWorld(s).map,gm=performance.now()-q;t.useWorld(m);
     const W=t.MW*TILE,H=t.MH*TILE,VW=t.VW,VH=t.VH,g=t.ctx,cam={x:0,y:Math.round(H/2-VH/2)},v=CS/420,cols=WA.cols;WA.cap=cap0;WA.slice=4;WA.last=null;let met=0,ready=0,over=0,frames=0,late=[];
     const view=()=>{const r=new Set();for(let cy=Math.floor(cam.y/CS);cy<=Math.floor((cam.y+VH-1)/CS);cy++)for(let cx=Math.floor(cam.x/CS);cx<=Math.floor((cam.x+VW-1)/CS);cx++)r.add(cy*cols+cx);return r};

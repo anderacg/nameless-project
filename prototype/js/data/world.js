@@ -2,10 +2,6 @@
 /* ---------- data: the world's scale: its named distances, one lever for how fast everything moves on screen, and how many wild
    things each size of map holds. Arrival and touch radii (8-20 px) are not here: they follow the figures, not the world.
    Units: px unless the group says tiles. ---------- */
-// which world: gen, the generated one (doc/WORLD_DESIGN.md §15.2: the generator, world/worldgen.js), on by default since the flip
-// (wave 4, D42); today's 224 x 160 map only while the page's address has gen=0 (Ashmark.html?gen=0; the tests' -Classic switch),
-// until the owner confirms the generated map (D49)
-const WORLD={gen:!/(?:^|[?&])gen=0(?:&|$)/.test(location.search)};
 const WORLD_SCALE={
   // every step on the map is moveStep(pace, d): pace (px per world second, unscaled) x d x move. Flee odds and chase choices
   // read the unscaled paces, so this changes how fast things look, never who outruns whom. .68 (D9): a band on foot some 9 px a
@@ -47,14 +43,15 @@ const WORLD_SCALE={
   battle:{elfR:10,bridge:2}
 };
 const moveStep=(px,d)=>px*d*WORLD_SCALE.move;
-/* how many of each wild thing a world holds (doc/WORLD_DESIGN.md §10.6). classic: today's map's caps and starting counts; sites
-   by kind (sites.js SITE_TYPES), camps by the map's spots; daily: the tries a day to bring bands, beasts and game back.
-   grow: how each count follows a bigger world: today's number x (the world's measure / today's map's)^pow, rounded, by its key
+/* how many of each wild thing a world holds (doc/WORLD_DESIGN.md §10.6). classic: the base caps and starting counts (the old
+   hand-made map's, the measure every world grows from); sites by kind (sites.js SITE_TYPES), camps by the map's spots; daily: the
+   tries a day to bring bands, beasts and game back.
+   grow: how each count follows a bigger world: the base number x (the world's measure / the base's)^pow, rounded, by its key
    in by ([measure, pow]; sites, all its kinds by the one rule); daily: each kind's tries grow as the count named. The measures:
-   land (tiles not water, a ford water: today's map 32,042), holdings (the realm holdings the world was made with: today's 37),
-   ports (the world in's holdings with a port as it first stood: today's 9). pow 1 keeps today's number per tile of land, per holding or per port; above
-   1 a bigger world is busier, below 1 emptier (the bands .8: fewer to a holding than the land alone would give). Today's map is
-   the measure, so it keeps today's numbers whatever the pows; the generated classic seed grows as any world */
+   land (tiles not water, a ford water: the base 32,042), holdings (the realm holdings the world was made with: the base 37),
+   ports (the world in's holdings with a port as it first stood: the base 9). pow 1 keeps the base number per tile of land, per holding or per port; above
+   1 a bigger world is busier, below 1 emptier (the bands .8: fewer to a holding than the land alone would give). The generated
+   classic seed grows as any world */
 const DENSITY={
   classic:{bandits:30,camps:12,monsterStart:48,monsterCap:60,critterStart:96,critterCap:120,caravans:72,refugees:42,ships:30,
     sites:{cave:30,travelers:21,hideout:24,ruins:21,shrine:18},daily:{bandits:1,monsters:3,critters:3}},
@@ -66,17 +63,17 @@ const DENSITY={
 // a world's land: its tiles not water (a ford is water), counted once (kept off every list and hash, as WorldMap's _site)
 function worldLand(m){if(m._land==null)Object.defineProperty(m,'_land',{value:m.kind.reduce((n,k)=>k===T_WATER||k===T_FORD?n:n+1,0),configurable:true});return m._land}
 // a world's ports: its holdings with a port, counted once the world is in (as it first stands: a new game counts first; a port
-// built or lost in play moves nothing), kept as the land is; a world not in: today's
+// built or lost in play moves nothing), kept as the land is; a world not in: the base
 function worldPorts(m){if(m._ports==null){if(m!==WM)return DENSITY.grow.ports;Object.defineProperty(m,'_ports',{value:TOWNS.filter(t=>bldLv(t,'port')).length,configurable:true})}return m._ports}
-// a world's measures against today's map's (DENSITY.grow): its land, its holdings, its ports
+// a world's measures against the base's (DENSITY.grow): its land, its holdings, its ports
 function worldMeasures(m){const g=DENSITY.grow;return{land:worldLand(m)/g.land,holdings:(m.settings?m.settings.holdings:g.holdings)/g.holdings,ports:worldPorts(m)/g.ports}}
 /* the counts for world m (density(WM): the world in's; a world being made: its own map). No world (none in yet, or none given):
-   today's, so nothing reads the last world's by chance (the generator's camps: one world code, one world). Else each grown by
+   the base, so nothing reads the last world's by chance (the generator's camps: one world code, one world). Else each grown by
    its rule, kept on the map till a measure changes (a measure of 1, or pow 1, multiplies alone: the same in every browser) */
 function density(m){const D=DENSITY,g=D.grow;if(!m)return D.classic;
   const f=worldMeasures(m),key=f.land+' '+f.holdings+' '+f.ports;if(m._dens&&m._dens.key===key)return m._dens.t;
   const one=(v,[by,pow])=>Math.round(v*(pow===1||f[by]===1?f[by]:Math.pow(f[by],pow))),t={};
   for(const k in D.classic){const v=D.classic[k];t[k]=k==='daily'?Object.fromEntries(Object.keys(v).map(s=>[s,one(v[s],g.by[g.daily[s]])])):typeof v==='object'?Object.fromEntries(Object.keys(v).map(s=>[s,one(v[s],g.by[k])])):one(v,g.by[k])}
   Object.defineProperty(m,'_dens',{value:{key,t},configurable:true,writable:true});return t}
-// today's: roving bands at most, and beasts at the start and at most (a world's own: density(WM); tests, the wiki)
+// the base: roving bands at most, and beasts at the start and at most (a world's own: density(WM); tests, the wiki)
 const BANDITS=density().bandits,MONSTER_START=density().monsterStart,MONSTER_CAP=density().monsterCap;

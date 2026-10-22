@@ -26,20 +26,20 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
   // beasts from their own streams, so the shared Math.random the battle starts from is elsewhere; with the streams switched back to
   // Math.random it is 29dca01d as before; the AI's play unchanged)
   // (its start reads the world and begin's draws: on the generated classic world its own fingerprint, recorded with G1-G8
-  // (doc/WORLD_DESIGN.md §15.2, wave 3's last merge, 2026-10-22))
+  // (doc/WORLD_DESIGN.md §15.2, wave 3's last merge, 2026-10-22); the old hand-made map's b739f365 went with the map, D49)
   // (the generated world's e07350a9 re-recorded 2026-10-22, was d43b9569: agent S's clearings, estate tracks and farther estates
-  //  moved the ground round the test's band; with those rules off d43b9569 again, today's map's b739f365 held)
+  //  moved the ground round the test's band; with those rules off d43b9569 again, the old map's b739f365 held)
   // (the generated world's d43b9569 re-recorded 2026-10-22, was a9b664e0: the battle's ground is where the test's band stands on the
-  //  generated world, which K's roads and lots (1f40a5a), M's crossings and O's climates moved; today's map's b739f365 held)
+  //  generated world, which K's roads and lots (1f40a5a), M's crossings and O's climates moved; the old map's b739f365 held)
   // (and 1bda01e3 re-recorded 2026-10-22 (agent U), was d43b9569: the generated classic seed starts with its land's bands and beasts
-  //  (data/world.js DENSITY.grow), more draws before the battle; with it at today's counts d43b9569 holds; today's map's held)
+  //  (data/world.js DENSITY.grow), more draws before the battle; with it at today's counts d43b9569 holds; the old map's held)
   // (the generated world's 71be41f4 re-recorded 2026-10-22, was d43b9569: the owner's fifth play-test (agent R: the desert's
   //  water, springs, ponds and oases, worldgen.js) moves the generated world, and with it begin's draws and the battle's ground;
-  //  with those rules off d43b9569 as before; today's map's b739f365 held)
+  //  with those rules off d43b9569 as before; the old map's b739f365 held)
   // (the generated world's 1f049224 measured together 2026-10-22 at the merge of agents S and R (each proved its own rules off
-  //  above); today's map's b739f365 held)
+  //  above); the old map's b739f365 held)
   // (the generated world's 05ee3f4a measured together 2026-10-22 at the merge of agents R (the generator's water: no desert rain, terminal lakes, springs, ponds and oases), S (estate tracks, forest clearings, estates farther out, oases drawing holdings, stage 7 regrown, roads round ponds) and U (the camps grown with the land, port piers preferring the sea) on main 880b6e7; each agent proved its own rules off give the values before)
-  {const B=battle(4242);B.noMorale=true;B.sel=null;key('a');const a=B.auto&&t.aiAll();run(B,60);const fp=print(B),REC=t.WM.gen==='classic-0'?'b739f365':'05ee3f4a';
+  {const B=battle(4242);B.noMorale=true;B.sel=null;key('a');const a=B.auto&&t.aiAll();run(B,60);const fp=print(B),REC='05ee3f4a';
    ok(a&&fp===REC,'A with nothing selected, your army and an ally’s against the enemy (seed 4242, no morale): the whole-army AI plays the very battle it did before ('+fp+', recorded '+REC+', '+B.t.toFixed(1)+' s)')}
   {const L=t.BattleLab,Gp=(type,count)=>({type,count}),lab=mor=>{if(L.active)L.exit();G.mode='world';G.modal=false;L.start({leftGroups:[Gp('hum_spear',16),Gp('hum_bow',12),Gp('hum_knight',6)],rightGroups:[Gp('hum_levy',20),Gp('hum_bow',12),Gp('hum_spear',10)],deploy:false,ai:false,paused:false,morale:mor,seed:42});return t.B};
    Math.random=t.seeded(1);t.act('begin','soldier');G.quietEvents=true;t.GUIDE.on=false;const REC={false:'596d6d9c',true:'17c1387b'};run(lab(false),60);// (to warm up)

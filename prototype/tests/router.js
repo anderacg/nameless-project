@@ -1,11 +1,10 @@
 'use strict';
-// The router (doc/WORLD_DESIGN.md §3.6, §15.2.1; world/router.js): on today's map (WM.graph null) the three calls answer as Phase 0's
-// wrapper did (a holding's field, the box search, the land's pieces); on the generated world the way graph (buildWayGraph: its
+// The router (doc/WORLD_DESIGN.md §3.6, §15.2.1; world/router.js): the way graph (buildWayGraph: its
 // shape, every holding a node, connected like the land, the generator's rules in its text) and the two-level router: 200 random
 // trips at Normal (the classic seed) and at Large within 5% of a full A* over the tiles, their tiles walkable and joined; the pair
 // cache; Router.close shuts a crossing (ways round it) and opens it again; a walker gets from one gate to another; Router.days;
-// ships on the generated world only on water boats can sail (no river that is not navigable). The generated worlds are put in for
-// the checks (useWorld) and today's put back after, so the suite runs with the flag off and with -Gen.
+// ships only on water boats can sail (no river that is not navigable). The Large world is put in for the checks (useWorld)
+// and the world in put back after.
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.push('INFO '+m),t=T,TILE=t.TILE;let W0=null;
 try{
  W0=t.WM;const pct=(a,p)=>{const s=[...a].sort((x,y)=>x-y);return s[Math.min(s.length-1,Math.floor(s.length*p))]};
@@ -13,15 +12,8 @@ try{
  // ---- the generator's rules, by the text of buildWayGraph and what it calls
  {const src=[t.buildWayGraph,t.wayStep,t.wayDay].map(f=>f.toString()).join('\n'),bad=['Math.random','hypot','Math.sin','Math.cos','Math.exp','Math.pow','Math.log','atan2','rnd(','rint(','pick('].filter(w=>src.includes(w));
   ok(!bad.length,'buildWayGraph keeps the generator\'s rules: no Math.random, hypot, sin, cos, exp, pow, log or atan2'+(bad.length?': '+bad.join(', '):''))}
- // ---- today's map: Phase 0's wrapper
- if(!t.WORLD.gen){const s0=t.Router.stats(),A=t.TOWNS[0],B=t.TOWNS[5],a={x:A.x+40,y:A.y+30},b={x:a.x,y:a.y},g=t.gateGoal(B);
-  ok(t.WM.graph===null,'today\'s map has no way graph');
-  let same=true;for(let i=0;i<300;i++){t.Router.travel(a,g,2);t.travelTo(b,B,g.x,g.y,2);if(a.x!==b.x||a.y!==b.y){same=false;break}}
-  const p={x:A.x,y:A.y+12},q={x:p.x,y:p.y},pt={x:A.x+120,y:A.y-80};let same2=true;for(let i=0;i<300;i++){const r1=t.Router.travel(p,pt,1.5),r2=t.routeTo(q,pt.x,pt.y,1.5);if(r1!==r2||p.x!==q.x||p.y!==q.y){same2=false;break}}
-  const d=t.Router.days(B,A),f=t.flowTo(A)[B.ty*t.MW+B.tx]*TILE/t.moveStep(t.MAP_BASE,t.DAY_SECONDS*t.WORLD_PACE);
-  ok(same&&same2&&d===f&&JSON.stringify(t.Router.stats())===JSON.stringify(s0),'Router.travel walks to a holding by its field and to a point by the box search, Router.days reads the field, step for step as before; the graph is never asked ('+d.toFixed(2)+' days)')}
  // ---- the generated worlds: the classic seed (Normal) and a Large one
- const worlds=[['Normal (classic seed)',t.WORLD.gen?t.WM:t.genWorld(t.classicSettings()).map],['Large',t.genWorld({preset:'large',seed:'1'}).map]];
+ const worlds=[['Normal (classic seed)',t.WM],['Large',t.genWorld({preset:'large',seed:'1'}).map]];
  for(const [name,m] of worlds){if(t.WM!==m)t.useWorld(m);const G=m.graph,MW=t.MW,MH=t.MH,N=MW*MH;
   // the shape
   {let bad=[];const n=G.n,M=G.to.length;if(G.off.length!==n+1||G.off[0]!==0||G.off[n]!==M)bad.push('off');for(let v=0;v<n;v++)if(G.off[v+1]<G.off[v])bad.push('off order');

@@ -256,7 +256,7 @@ try{
  {const V=t.vis(),areas=[[cx,cy,60,50,2]];for(const e of ests)areas.push([e.x,e.y,40,40,3]);
   for(const e of ests)for(const [x,y] of t.plotsAt(tw,e.k,t.bldLv(tw,e.k)).slice(0,2))areas.push([x*TILE+8,y*TILE+8,14,14,2]);
   // (a worker at work on his estate's ground is picked since field work came (folk.js folkSeen): the old ways knew none, and
-  // picked the estate or nothing there; today's map's spots here have none at work, a generated world's may)
+  // picked the estate or nothing there; the spots here may have one at work)
   const field=(c,a)=>t.objKind(c)==='worker'&&c.st==='field'&&(!a||t.objKind(a)==='estate');
   let n=0;const diff=[],seen=new Set();
   for(const [ax,ay,rx,ry,st] of areas){const px=P.x,py=P.y;if(Math.hypot(ax-P.x,ay-P.y)>V)Object.assign(P,{x:ax,y:ay+30});

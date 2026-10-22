@@ -4,13 +4,13 @@
 // Esc). Realms, rivers by width, crossings, holdings, you and the fog; the scale (1 px a tile at Normal, 1 px per 2 tiles over
 // FULLMAP.wide) and its zoom; it fits a phone on its side (844 x 390); the picture built in 25 ms or less at Huge (a made-up Huge
 // map, so no Huge world is forged). Then the loading screens' step labels: the generator's real stages in "Forging the world…"
-// and "Returning to…". Run with the flag off and with -Gen.
+// and "Returning to…".
 Kit.suite(({ok,info})=>{
   const t=T,G=t.G,P=t.P,W=t.W,q=Kit.q,qa=Kit.qa,cv=document.querySelector('canvas'),scr=q('#screen');
   window.requestAnimationFrame=()=>0;
   const press=(o)=>window.dispatchEvent(new KeyboardEvent('keydown',Object.assign({code:'KeyM',key:'m',bubbles:true},o)));
   const world=()=>{Kit.world();t.frame()};
-  Kit.begin('soldier',4100);Kit.clear();world();const WM=t.WM,MW=WM.w,MH=WM.h,gen=WM.gen!=='classic-0';
+  Kit.begin('soldier',4100);Kit.clear();world();const WM=t.WM,MW=WM.w,MH=WM.h;
   info('the world: '+WM.gen+', '+MW+' x '+MH+' tiles');
   // ---- M opens it, M again closes it; Shift+M mutes, M never does ----
   const mute0=t.prefGet('mute');press();
@@ -85,13 +85,13 @@ Kit.suite(({ok,info})=>{
   {const named=qa('.fm-h b').map(b=>b.textContent),cities=t.TOWNS.filter(h=>h.T.tier>=3).map(h=>h.name);ok(cities.every(n=>named.includes(n)),'the towns, cities and castles named on it ('+named.length+' names)')}
   {const leg=q('.fm-leg').textContent,owners=[...new Set(t.TOWNS.map(h=>h.owner).filter(Boolean))];
     ok(owners.every(f=>leg.includes(t.FACS[f].n))&&/You/.test(leg)&&/Unexplored/.test(leg)&&/Road/.test(leg),'the legend: every realm holding land ('+owners.length+'), you, roads, the unexplored');
-    ok(gen?/Great river/.test(leg)&&/Brook/.test(leg):!/Great river/.test(leg),'rivers by width in the legend '+(gen?'(the generated world has them)':'only where the world has them (today\'s map: none)'));
+    ok(/Great river/.test(leg)&&/Brook/.test(leg),'rivers by width in the legend');
     ok(!xs||['bridge','ford','ferry'].every(k=>!WM.crossings.some(x=>x.kind===k)||leg.includes(t.cap1(k))),'its crossings\' kinds in the legend'+(xs?'':' (none on this map)'))}
   // a realm's tint and a river's width in the picture
   {const c=q('.fm-cv'),g=c.getContext('2d'),at=i=>{const x=i%MW,y=Math.floor(i/MW),k=MW/c.width;return [...g.getImageData(Math.floor(x/k),Math.floor(y/k),1,1).data.slice(0,3)]};
     const ti=t.LAND.findIndex((v,i)=>v>=0&&WM.kind[i]!==t.T_WATER&&!(WM.river[i]&3)),base=t.fmRgb(t.PAL[t.CLIMS[WM.clim[ti]]].mini[WM.kind[ti]]),p=at(ti);
     ok(ti>=0&&p.join()!==base.join(),'a realm\'s land is tinted ('+base.join(',')+' → '+p.join(',')+')');
-    if(gen){const wi=[1,2,3].map(w=>WM.river.findIndex(v=>(v&3)===w)),cs=wi.map(i=>i<0?null:at(i).join());ok(wi.every((i,j)=>i<0||cs[j]===t.fmRgb(F.river[j+1]).join()),'rivers coloured by width (brook, river, great river: '+cs.join(' / ')+')')}}
+    {const wi=[1,2,3].map(w=>WM.river.findIndex(v=>(v&3)===w)),cs=wi.map(i=>i<0?null:at(i).join());ok(wi.every((i,j)=>i<0||cs[j]===t.fmRgb(F.river[j+1]).join()),'rivers coloured by width (brook, river, great river: '+cs.join(' / ')+')')}}
   t.act('map-close');S.set(keep);
   // ---- a phone on its side: 844 x 390 ----
   {const css0=scr.style.cssText;scr.style.cssText+=';width:844px;height:390px';world();press();q('#panel').style.animation='none';

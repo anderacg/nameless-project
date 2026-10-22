@@ -21,9 +21,9 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t
  const cases=['nearest','shooter_target','range_fallback','firing_arcs','shot_cycle','held_draw','moving_draw','stunned','rout','withdraw','ordered_target','firm_hold','relocation','tired_movement','crowding','melee_mode','cease_fire','regeneration','pounce','pounce_range','manual_movement','frame_dispatch','frame_gates'];
  try{
   Math.random=t.seeded(610);t.act('begin','soldier');G.quietEvents=true;t.W.lords=[];
- // (the snapshots hold your army's point on the map and the ground under it: on a generated world you stand where begin leaves
- // you on today's map, on the ground there, the road by Ashford's gate)
-  if(t.WM.gen!=='classic-0'){P.x=584;P.y=680;t.WM.battleSite=()=>t.battleSiteOf({tx:36,ty:42,t:t.T_ROAD,c:'grass',name:'Road',kinds:[4,4,4,0,4,4,0,0,4],road:{ns:true}})}t.GUIDE.on=false;t.BDEPLOY.on=false;t.BAUTO.on=false;t.AUTOSK.on=false;t.BLOOD.on=false;
+ // (the snapshots hold your army's point on the map and the ground under it, fixed here: where a new game left you on the old hand-made map,
+ // on the ground there, the road by Ashford's gate)
+  P.x=584;P.y=680;t.WM.battleSite=()=>t.battleSiteOf({tx:36,ty:42,t:t.T_ROAD,c:'grass',name:'Road',kinds:[4,4,4,0,4,4,0,0,4],road:{ns:true}});t.GUIDE.on=false;t.BDEPLOY.on=false;t.BAUTO.on=false;t.AUTOSK.on=false;t.BLOOD.on=false;
   window.__actorMeasure=measure0;(0,eval)('measureField=()=>({top:40,bot:560})');
   for(const [index,name] of cases.entries()){
    Math.random=t.seeded(700+index);(0,eval)('MANUAL_HERO=false');P.troops={hum_levy:2,hum_bow:1,hum_mage:1};P.comps={};P.hp=40;P.sp=80;P.mp=20;P.morale=70;P.slots=Array(10).fill(null);P.gear.weapon=t.gearId('sword',0);P.gear.offhand=null;

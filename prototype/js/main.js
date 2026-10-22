@@ -18,7 +18,7 @@ function loop(now){
   MainMenu.frame(now);if(G.mode!=='title')frame();requestAnimationFrame(loop);
 }
 // the page opens on the main menu (ui/mainmenu.js) with no world: a new campaign or a load makes one (session.js begin, save.js
-// loadGame). The tests and the wiki make today's world at load (worldmap.js): laid out here as it first stands (session.js worldFirst)
+// loadGame). The tests and the wiki make the classic world at load (worldmap.js): laid out here as it first stands (session.js worldFirst)
 MainMenu.init();
 if(WM)worldFirst();showTitle();if(WM)updateHUD(true);
 requestAnimationFrame(loop);

@@ -677,7 +677,7 @@ The owner: "Can you adjust the area when you climb the hill? Currently it seems 
 
 ### World Phase 2 as built (wave 2, agent E, 2026-10-21)
 
-The battle link of doc/WORLD_DESIGN.md §13 and D41's steep hill, in the slots "Classes as built" named. **With `WORLD.gen` off nothing changes:** `BattleSite`'s new fields stay null, so no spec gains a key; the battle fingerprints (actorrules, attackrules, battlecommands, battleresolution, battlesetup, aishare, `rts` 1, 2, 44), `groundhash` (24 fields), `battlesite`, `worldprint -Seed 1`, `visual/battleperf`'s fp and `visual/moraleaudit` are byte-identical.
+The battle link of doc/WORLD_DESIGN.md §13 and D41's steep hill, in the slots "Classes as built" named. **With `WORLD.gen` off (the old hand-made map, deleted since: WORLD_DESIGN.md D49) nothing changed:** `BattleSite`'s new fields stayed null, so no spec gained a key; the battle fingerprints (actorrules, attackrules, battlecommands, battleresolution, battlesetup, aishare, `rts` 1, 2, 44), `groundhash` (24 fields), `battlesite`, `worldprint -Seed 1`, `visual/battleperf`'s fp and `visual/moraleaudit` are byte-identical.
 
 **From the world** (`WorldMap#battleSite`, a generated world only): `river` (the tile's river, or the widest within 1 tile: `{w, dir, nav, delta, flood, name, seasonal}`), `crossing` (the nearest within `WORLD_SCALE.battle.bridge` tiles, by its tiles and ends: `{kind, d, stone, toll}`), `bridge` (the nearest of the world's bridges, so *Hold the bridge*'s `bridgeNear` reads them), `elev`, `terrace`, `rough`, `high` (`{kind, up, scree, mixed, shoulder}`, the shoulder a mixed hill's neighbour of least relief).
 - **Into the spec** (`BattleTerrain.riverOf`, `worldOf`): a world river runs down the field by its crossing (`bridge`; `ferry`); `wr` carries its water (`w`, `stone`, `delta`, `flood`) and `high` the high ground. `build` lays `wr` over the river spec, so a held bridge's river (setup.js replaces the spec's river) keeps the world's width.
@@ -702,7 +702,7 @@ The battle link of doc/WORLD_DESIGN.md §13 and D41's steep hill, in the slots "
 
 ### Battle follows the world as built (World Phase 2b, agent BF, 2026-10-22)
 
-The owner's rule, "world first": a battle's field shows what the world map has where it is fought, and nothing battle-only. **A generated world's fights only**: on today's map (`-Classic`) every new field of the site stays null, so no spec gains a key and its battle fingerprints are byte-identical. One switch, `TERRAIN_WORLD.on` (`battle/terrain.js`), reads none of it when off (the proof of what moved).
+The owner's rule, "world first": a battle's field shows what the world map has where it is fought, and nothing battle-only. **The world's fights only** (the old hand-made map, deleted since (D49), left every new field of the site null, so its battle fingerprints held byte-identical); the lab's sites leave them null too unless its spec asks. One switch, `TERRAIN_WORLD.on` (`battle/terrain.js`), reads none of it when off (the proof of what moved).
 
 **From the world** (`WorldMap#siteNear`, called by `battleSite`; new `BattleSite` fields, null where there is nothing):
 - `temp`, `moist`: the tile's (with `elev`, already there).

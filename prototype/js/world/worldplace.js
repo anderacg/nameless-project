@@ -43,7 +43,7 @@ function* genFar(g,is,cap){
 // ---- the rules' tables
 // each realm's people (its liking of the land, its names); the League takes its sites' by the water
 const PLACE_PEOPLE={vale:'human',karn:'dwarf',sylvan:'elf',horde:'orc',salt:'league'};
-// each realm's share of the holdings (37 at Normal: 8/7/7/7/8), and its kinds in today's mix (from CLASSIC_PLACES)
+// each realm's share of the holdings (37 at Normal: 8/7/7/7/8), and its kinds in the classic mix (from CLASSIC_PLACES)
 const PLACE_SHARE={vale:8,karn:7,sylvan:7,horde:7,salt:8};
 const PLACE_REALMS=Object.keys(PLACE_SHARE);
 // the least distance (tiles) between two kinds (§8.8; capitals: PLACE.cap x the map's diagonal)
@@ -265,7 +265,7 @@ function placeClear(m,h,salt){
 function placeQuota(N){const T=PLACE_REALMS.reduce((a,f)=>a+PLACE_SHARE[f],0),o={},rem=[];let n=0;
   for(const f of PLACE_REALMS){o[f]=Math.floor(N*PLACE_SHARE[f]/T);n+=o[f];rem.push([N*PLACE_SHARE[f]/T-o[f],f])}
   rem.sort((a,b)=>b[0]-a[0]||PLACE_REALMS.indexOf(a[1])-PLACE_REALMS.indexOf(b[1]));for(let k=0;n<N;k++,n++)o[rem[k][1]]++;return o}
-// (a realm's kinds past its capital, by today's mix of its holdings (CLASSIC_PLACES), interleaved: the scarcest share first)
+// (a realm's kinds past its capital, by the classic mix of its holdings (CLASSIC_PLACES), interleaved: the scarcest share first)
 function placeKinds(f,n){
   const out=[],C=CLASSIC_PLACES.filter(p=>p.realm===f&&p.kind!=='city'),ks=['town','castle','village'],want={},rem=[];let t=0;
   for(const k of ks){const v=(n-1)*C.filter(p=>p.kind===k).length/C.length;want[k]=Math.floor(v);t+=want[k];rem.push([v-want[k],k])}

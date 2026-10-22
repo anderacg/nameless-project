@@ -11,24 +11,23 @@ try{
  ok(new Set(sig).size===sig.length,'every town is laid out its own way ('+sig.length+' towns, '+new Set(sig).size+' layouts)');
  ok(TW.every(z=>t.housing(z)>=z.pop),'every holding starts with room for its people (houses and centre)');
  // ---- nothing built on a road (the owner's play-test 2): no building (but the centre, whose gate the road leads into) and no
- // field on a road tile, nor where the road is painted: the middle of the road as the art draws it (the generated world: along its
- // smoothed lines, worldart.js artGenPlan's segments; today's map: roadStamps' middle) 2 px or more inside one of its tiles
- {const MW=t.MW,gen=t.WM.gen!=='classic-0',pts=[],own=new Map();
-  if(gen){const P={tramples:[]};t.artGenPlan(P,()=>{});const S=P.segs;for(let k=0;k<S.length;k+=5){const a=S[k],b=S[k+1],c=S[k+2],d=S[k+3],n=Math.max(1,Math.ceil(Math.hypot(c-a,d-b)));for(let s=0;s<=n;s++)pts.push([a+(c-a)*s/n,b+(d-b)*s/n])}}
-  else{const P={towns:new Set(TW.map(z=>z.ty*MW+z.tx)),shift:new Set(TW.flatMap(z=>[z.ty*MW+z.tx,(z.ty+1)*MW+z.tx]))};for(let ty=0;ty<t.MH;ty++)for(let tx=0;tx<MW;tx++)t.roadStamps(P,tx,ty,2,(x,y,w)=>pts.push([x+w/2,y+w/2]))}
+ // field on a road tile, nor where the road is painted: the middle of the road as the art draws it (along its smoothed lines,
+ // worldart.js artGenPlan's segments) 2 px or more inside one of its tiles
+ {const MW=t.MW,pts=[],own=new Map();
+  {const P={tramples:[]};t.artGenPlan(P,()=>{});const S=P.segs;for(let k=0;k<S.length;k+=5){const a=S[k],b=S[k+1],c=S[k+2],d=S[k+3],n=Math.max(1,Math.ceil(Math.hypot(c-a,d-b)));for(let s=0;s<=n;s++)pts.push([a+(c-a)*s/n,b+(d-b)*s/n])}}
   for(const z of TW)for(const l of z.lots||[])if(l.k!=='centre'){t.lotTiles(l,(x,y)=>own.set(y*MW+x,z.name+' '+l.k));for(const [x,y] of l.plots||[])own.set(y*MW+x,z.name+' '+l.k+' field')}
   const bad=new Set();for(const [i,w] of own)if(t.tiles[i]===t.T_ROAD)bad.add(w+' (a road tile)');
   for(const [x,y] of pts){const i=Math.floor(y/TILE)*MW+Math.floor(x/TILE),fx=x%TILE,fy=y%TILE;if(own.has(i)&&Math.min(fx,fy,TILE-fx,TILE-fy)>=2)bad.add(own.get(i)+' at '+Math.floor(x/TILE)+','+Math.floor(y/TILE))}
-  ok(!bad.size,'no building nor field stands on a road, its tiles or where it is painted ('+(gen?'along its lines':'by its tiles')+'; '+own.size+' tiles built on)'+(bad.size?': '+[...bad].slice(0,6).join('; '):''))}
+  ok(!bad.size,'no building nor field stands on a road, its tiles or where it is painted (along its lines; '+own.size+' tiles built on)'+(bad.size?': '+[...bad].slice(0,6).join('; '):''))}
  // ---- the estates' tracks (the owner's play-test 4: "can we have a country road or non-main road to cross between forest as well
- // when there is an estate near by"; lots.js estTrack): on the generated world every outer estate's door has a way (a road or a
+ // when there is an estate near by"; lots.js estTrack): every outer estate's door has a way (a road or a
  // track) within LOT_TRACK.near tiles of the tile before it, and every track joins the roads (8 ways) to a holding's gate; a save
- // and load lays them again alike (occRebuild); today's map has none. INFO: the tracks, their tiles, those through the woods
+ // and load lays them again alike (occRebuild). INFO: the tracks, their tiles, those through the woods
  const trackSig=()=>JSON.stringify(t.WM.roads.filter(r=>r.est).map(r=>r.path));const sig0=trackSig();
- {const MW=t.MW,MH=t.MH,K=t.tiles,gen=t.WM.gen!=='classic-0',E=t.WM.roads.filter(r=>r.est),N=t.LOT_TRACK.near,way=i=>K[i]===t.T_ROAD||K[i]===t.T_FORD,miss=[],cut=[];
+ {const MW=t.MW,MH=t.MH,K=t.tiles,E=t.WM.roads.filter(r=>r.est),N=t.LOT_TRACK.near,way=i=>K[i]===t.T_ROAD||K[i]===t.T_FORD,miss=[],cut=[];
   const seen=new Uint8Array(MW*MH),q=[];for(const z of TW){const i=(z.ty+1)*MW+z.tx;if(way(i)&&!seen[i]){seen[i]=1;q.push(i)}}
   for(let a=0;a<q.length;a++){const i=q[a],x=i%MW;for(let b=-1;b<=1;b++)for(let c=-1;c<=1;c++){const j=i+c+b*MW;if(x+c>=0&&x+c<MW&&j>=0&&j<MW*MH&&!seen[j]&&way(j)){seen[j]=1;q.push(j)}}}
-  if(gen)for(const z of TW)for(const l of z.lots||[]){if(!t.ESTATES[l.k]||t.INNER.includes(l.k))continue;const fx=l.x+(l.n>>1),fy=l.y+l.n;let hit=false;
+  for(const z of TW)for(const l of z.lots||[]){if(!t.ESTATES[l.k]||t.INNER.includes(l.k))continue;const fx=l.x+(l.n>>1),fy=l.y+l.n;let hit=false;
    for(let y=fy-N;y<=fy+N&&!hit;y++)for(let x=fx-N;x<=fx+N&&!hit;x++)if(x>=0&&y>=0&&x<MW&&y<MH&&K[y*MW+x]===t.T_ROAD)hit=true;
    if(!hit&&!E.some(r=>{const e=r.path[r.path.length-1],ex=e%MW,ey=(e-ex)/MW;return r.est===z.name&&[[l.x,l.y],...(l.plots||[])].some(([px,py],k)=>{const n=k?1:l.n;return ex>=px-1&&ex<=px+n&&ey>=py-1&&ey<=py+n})}))miss.push(z.name+' '+l.k)}
   // (a miss whose fields and building no free ground its people walk to joins to a road: hemmed in by its holding's buildings, the
@@ -39,10 +38,9 @@ try{
   const left=miss.filter(hemmed);miss.splice(0,miss.length,...miss.filter(s=>!left.includes(s)));if(left.length)info('estates no track can reach, hemmed in by their holding’s buildings and the water: '+left.join(', '));
   for(const r of E)if(!seen[r.path[0]])cut.push(r.est);
   const wood=E.filter(r=>r.path.some(i=>[1,-1,MW,-MW].filter(s=>K[i+s]===t.T_FOREST).length>=2)).length;
-  if(gen){ok(E.length&&!miss.length,'every outer estate’s door has a way within '+N+' tiles of it, a road or its own track (to it or its fields) ('+E.length+' tracks, '+E.reduce((a,r)=>a+r.path.length-1,0)+' tiles, '+wood+' through the woods)'+(miss.length?': not '+miss.slice(0,6).join(', '):''));
+  {ok(E.length&&!miss.length,'every outer estate’s door has a way within '+N+' tiles of it, a road or its own track (to it or its fields) ('+E.length+' tracks, '+E.reduce((a,r)=>a+r.path.length-1,0)+' tiles, '+wood+' through the woods)'+(miss.length?': not '+miss.slice(0,6).join(', '):''));
    ok(!cut.length,'every estate’s track joins the roads to the holdings'+(cut.length?': not '+cut.slice(0,6).join(', '):''));
-   t.saveGame(true);t.loadGame();ok(trackSig()===sig0,'a save and load lays the same tracks again')}
-  else ok(!E.length,'today’s map: no estate tracks')}
+   t.saveGame(true);t.loadGame();ok(trackSig()===sig0,'a save and load lays the same tracks again')}}
  // ---- walls are the centre's fortification: no wall pieces on the map, nothing blocks travel
  ok(TW.every(z=>{const c=t.lotCentre(z);t.lotSprite(z,c);return !z.lots.some(l=>l.k==='wall')&&c._fort===t.wallOf(z)}),'every holding’s walls are its centre’s fortification (no wall pieces stand on the map)');
  {const z=TW.find(q=>t.wallOf(q)>=2),c=t.lotCentre(z),s0=t.lotSprite(z,c);t.breach(z);const s1=t.lotSprite(z,c);ok(c._fort===t.wallOf(z)&&s1!==s0,'a breach lowers it, and the centre is drawn with its lower walls ('+t.WALL_N[t.wallOf(z)]+')')}

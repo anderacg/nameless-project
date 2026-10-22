@@ -11,7 +11,7 @@ Kit.suite(({ok})=>{
  ok(W.monsters.filter(m=>!MONSTERS[m.id].mythic).every(m=>MONSTERS[m.id].where.some(w=>t.habitatAt(m.hx,m.hy).includes(w))),'every monster spawned in its habitat ('+W.monsters.length+' now)');
  ok(new Set(W.monsters.map(m=>m.id)).size>=5,'variety: '+[...new Set(W.monsters.map(m=>m.id))].join(', '));
  // hunting vs waiting (on the generated world, out in the wild: a beast by a holding draws its watch, the land defence)
- if(t.WORLD.gen){let w=null;for(let ty=10;ty<t.MH-10&&!w;ty+=3)for(let tx=10;tx<t.MW-10&&!w;tx+=3){const x=(tx+.5)*16,y=(ty+.5)*16;if(t.tAt(tx,ty)===t.T_OPEN&&t.tAt(tx+3,ty)===t.T_OPEN&&t.TOWNS.every(h=>Math.hypot(h.x-x,h.y-y)>400))w=[x,y]}if(w){P.x=w[0];P.y=w[1];P.tx=null}}
+ {let w=null;for(let ty=10;ty<t.MH-10&&!w;ty+=3)for(let tx=10;tx<t.MW-10&&!w;tx+=3){const x=(tx+.5)*16,y=(ty+.5)*16;if(t.tAt(tx,ty)===t.T_OPEN&&t.tAt(tx+3,ty)===t.T_OPEN&&t.TOWNS.every(h=>Math.hypot(h.x-x,h.y-y)>400))w=[x,y]}if(w){P.x=w[0];P.y=w[1];P.tx=null}}
  // (no other beast near enough to come at you meanwhile: a world grown with its land holds more of them)
  W.monsters=W.monsters.filter(m=>Math.hypot(m.x-P.x,m.y-P.y)>400);
  const near=(id,lv)=>{const m={id,x:P.x+40,y:P.y,hx:P.x+40,hy:P.y,lv:lv||1,n:MONSTERS[id].count[0],cool:0,t:9,a:0};W.monsters.push(m);return m};

@@ -60,7 +60,7 @@ try{
  t.act('wipe-ask','auto');ok(t.readSave()&&/Delete\?/.test(panel()),'deleting asks for a second click');t.act('wipe','auto');ok(!t.readSlot('auto')&&G.mode==='title','and then deletes that save (the others stay)');
  // settings, wiki, exit
  t.act('menu','settings');ok(/Realm economy/.test(panel())&&!/Pack sprites/.test(panel())&&/Controls/.test(panel())&&/Back/.test(panel()),'Settings: realm economy and controls, no art switch');
- let opened=null;const wo=window.open;window.open=(u)=>{opened=u;return null};t.act('menu','wiki');window.open=wo;ok(opened==='wiki.html'+(t.WORLD.gen?'':'?gen=0'),'Wiki opens the wiki in a new tab');
+ let opened=null;const wo=window.open;window.open=(u)=>{opened=u;return null};t.act('menu','wiki');window.open=wo;ok(opened==='wiki.html','Wiki opens the wiki in a new tab');
  t.act('menu','exit');ok(/Thanks for playing/.test(panel())&&closeCalls===2,'Exit requests tab closure and says goodbye');t.act('menu','main');ok(G.menu==='main','and Back returns to the menu');
  // lean loot: a band of 8 gives far less than it used to
  t.act('menu','new');t.act('begin','soldier');P.troops={hum_knight:20};let gold=0;for(let k=0;k<6;k++){G.mode='world';G.modal=false;t.hidePanel();const g1=P.gold;t.startEncounter({kind:'party',ref:t.asParty({x:P.x,y:P.y,cool:0,troops:Array(8).fill('militia')}),n:8,list:Array(8).fill('militia')});t.autoResolve();gold+=P.gold-g1;t.act('cont');while(G.mode==='perk')t.act('perk',G.perkOffer[0])}

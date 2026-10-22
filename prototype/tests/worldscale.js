@@ -1,8 +1,8 @@
 'use strict';
-// World scale (data/world.js): the named distances, the one movement lever (moveStep) and the caps per size of map hold today's
+// World scale (data/world.js): the named distances, the one movement lever (moveStep) and the caps per size of map hold the base
 // numbers exactly; every cap and site count reads the table (MAP_DENS, which grew them from the map's area, is gone); and none of
 // the moved numbers is left written out in the files that now read the table. Phase 1 (doc/WORLD_DESIGN.md §10.2, D9, D25): a
-// realistic pace on today's map: the day 180 s at a world pace of .4 (so every timer counted per game day lasts as it did), the
+// realistic pace: the day 180 s at a world pace of .4 (so every timer counted per game day lasts as it did), the
 // lever at .68 (a band on foot some 9 px a second on open ground, 25 km a day), the grace after a fight 1.47 times as long (the
 // gap you open in it as before), the AI on the same lever, and the walk cycles by the distance walked.
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);
@@ -18,25 +18,25 @@ try{
   law:{repNear:15,eventNear:15,siegeOutrage:20},land:{shelter:48,healNear:80,estateGuard:7,friendly:50,pacify:35},war:{front:60,raidLeash:80,siegeLeash:80},battle:{elfR:10,bridge:2}};
  ok(JSON.stringify(S)===JSON.stringify(want),'WORLD_SCALE holds every moved distance at today\'s value, the lever and the grace at Phase 1\'s ('+Object.keys(S).join(', ')+')');
  const classic={bandits:30,camps:12,monsterStart:48,monsterCap:60,critterStart:96,critterCap:120,caravans:72,refugees:42,ships:30,sites:{cave:30,travelers:21,hideout:24,ruins:21,shrine:18},daily:{bandits:1,monsters:3,critters:3}};
- ok(JSON.stringify(D.classic)===JSON.stringify(classic)&&t.density()===D.classic,'DENSITY.classic holds today\'s caps, and it is the one in use (the classic world: '+(t.WM.gen==='classic-0'?'today\'s map':'the classic seed')+')');
+ ok(JSON.stringify(D.classic)===JSON.stringify(classic)&&t.density()===D.classic,'DENSITY.classic holds today\'s caps, and it is the one in use (the classic world: the classic seed)');
  // ---- every cap reads the table; the site kinds scattered at random are the table's, and none keeps a count of its own
  const C=D.classic,K=Object.keys(t.SITE_TYPES);
  ok(t.CARAVAN_CAP===C.caravans&&t.REFUGEE_CAP===C.refugees&&t.CRITTER_CAP===C.critterCap&&t.CRITTER_START===C.critterStart,'caravan, refugee and critter caps read the table');
  ok(C.bandits===t.BANDITS&&C.monsterCap===t.MONSTER_CAP&&C.monsterStart===t.MONSTER_START&&C.ships===t.SHIP_CAP&&t.density(t.WM).camps===t.CAMP_SPOTS.length,'bandits, monsters and ships read the table, and the world\'s camps are the map\'s spots ('+t.CAMP_SPOTS.length+')');
- // ---- a bigger world (DENSITY.grow): today's numbers x (its land / today's map's)^pow, caravans and refugees by its holdings,
- // ships by its ports; the bands at a pow of .8; today's map today's numbers, the classic seed grown as any world; the land
+ // ---- a bigger world (DENSITY.grow): the base numbers x (its land / the base's)^pow, caravans and refugees by its holdings,
+ // ships by its ports; the bands at a pow of .8; the classic seed grown as any world; the land
  // counted once, off every list
  {const g=D.grow,by=JSON.stringify(g.by),fake=(land,hold,cl)=>{const k=new Uint8Array(land+900).fill(t.T_OPEN);k.fill(t.T_WATER,land,land+600);k.fill(t.T_FORD,land+600);return{kind:k,settings:{holdings:hold},classic:!!cl}};
   const J=JSON.stringify,today=fake(g.land,g.holdings),big=fake(g.land*4,g.holdings*2),d4=t.density(big);
-  {const cl=t.WM.gen==='classic-0',L=t.worldLand(t.WM),N=t.density(t.WM);
-   ok(cl?L===g.land&&J(N)===J(C)&&t.worldPorts(t.WM)===g.ports:N.monsterStart===Math.round(C.monsterStart*L/g.land)&&N.monsterStart>C.monsterStart,
-    cl?'today\'s map has '+g.land+' tiles of land and '+g.ports+' ports, the measures every world is set against: today\'s numbers':'the classic seed grows as any world: '+L+' tiles of land, '+(L/g.land).toFixed(2)+' times today\'s map\'s: '+N.bandits+' bands, '+N.monsterStart+' / '+N.monsterCap+' beasts, '+N.critterStart+' / '+N.critterCap+' game')}
+  {const L=t.worldLand(t.WM),N=t.density(t.WM);
+   ok(N.monsterStart===Math.round(C.monsterStart*L/g.land)&&N.monsterStart>C.monsterStart,
+    'the classic seed grows as any world: '+L+' tiles of land, '+(L/g.land).toFixed(2)+' times the base: '+N.bandits+' bands, '+N.monsterStart+' / '+N.monsterCap+' beasts, '+N.critterStart+' / '+N.critterCap+' game')}
   ok(J(t.density(today))===J(C)&&t.worldLand(today)===g.land&&!Object.keys(today).includes('_land')&&!J(today).includes('_dens'),'a world with today\'s land and holdings holds today\'s numbers (water and fords not land; the count kept off its keys)');
   ok(d4.bandits===Math.round(30*Math.pow(4,.8))&&d4.daily.bandits===Math.round(Math.pow(4,.8))&&d4.camps===48&&d4.monsterStart===192&&d4.monsterCap===240&&d4.critterStart===384&&d4.critterCap===480&&d4.sites.cave===120&&d4.sites.shrine===72&&d4.daily.monsters===12&&d4.daily.critters===12,
    'four times the land: four times the camps, beasts, game, sites and the tries a day to bring them back; the bands and their tries 4^.8 times ('+d4.monsterStart+' / '+d4.monsterCap+' beasts, '+d4.critterStart+' / '+d4.critterCap+' game, '+d4.bandits+' bands)');
   ok(d4.caravans===144&&d4.refugees===84&&d4.ships===30&&t.density(big)===d4,'twice the holdings: twice the caravans and refugees; the ships by the ports of the world in (another\'s: today\'s); kept on the map');
   try{g.by.monsterCap=['land',1.1];const a=t.density(fake(g.land,g.holdings)).monsterCap,b=t.density(fake(g.land*4,g.holdings)).monsterCap;
-   ok(a===60&&b===Math.round(60*Math.pow(4,1.1)),'a pow above 1 makes a bigger world busier (cap '+b+' at four times the land, not 240), today\'s map as ever ('+a+')');
+   ok(a===60&&b===Math.round(60*Math.pow(4,1.1)),'a pow above 1 makes a bigger world busier (cap '+b+' at four times the land, not 240), the base as ever ('+a+')');
    g.by.monsterCap=['land',1];ok(t.density(fake(g.land*4,g.holdings,true)).monsterStart===192,'a classic world grows as any world');
   }finally{g.by=JSON.parse(by)}}
  ok(JSON.stringify(K.filter(k=>!t.SITE_TYPES[k].spots))===JSON.stringify(Object.keys(C.sites))&&K.every(k=>!('count' in t.SITE_TYPES[k])),'the table counts every kind of site but the camps, and SITE_TYPES keeps no counts');

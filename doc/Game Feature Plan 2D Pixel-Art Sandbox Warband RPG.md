@@ -43,7 +43,7 @@ Nine systems make up the game; combat is the one that had to be right first.
 ### A. Overworld
 
 - **[Built]** Top-down tile map with party sprites moving in real time (pause and 1×/2×/4×/8× speed, f08c720).
-- **[Partly]** A seeded world generator with size presets ([WORLD_DESIGN.md](WORLD_DESIGN.md)): terrain, rivers, holdings and roads built behind `WORLD.gen` (2ed6578); the full map, the classic seed and the switch-over are to come.
+- **[Partly]** A seeded world generator with size presets ([WORLD_DESIGN.md](WORLD_DESIGN.md)): terrain, rivers, holdings and roads (2ed6578), the full map and the classic seed built (2026-10-22); since the switch-over it is the only world (the old hand-made map deleted, D49).
 - **[Built]** Terrain affects speed and vision: forest, hills, snow, desert, swamp, rivers, roads.
 - **[Built]** Towns, cities, castles, villages, bandit camps and hideouts, caves, ruins, shrines, and roaming armies and monsters. Holdings are placed buildings on a grid and grow over time.
 - **[Partly]** Day/night with a food and morale clock for your party. **[Not yet]** Seasons.
@@ -138,7 +138,7 @@ Battles are real-time and top-down, in Total War style.
 - **[Changed]** Data lives in `js/data/` tables, not JSON. Browsers block reading JSON files from disk, so moving to JSON is deferred until there's a way to load it.
 - **[Built]** Save slots, quick save (F6) and autosave.
 - **[Built]** About 170 automated browser test suites (and some 40 report-only `tests/visual/` suites) cover every system.
-- **[Partly]** The world simulation runs every frame on a daily tick. The world it runs on is generated from a seed by default (today's hand-made map behind `?gen=0`); play itself is not deterministic.
+- **[Partly]** The world simulation runs every frame on a daily tick. The world it runs on is generated from a seed (the old hand-made map is retired: WORLD_DESIGN.md D49); play itself is not deterministic.
 
 ## Status
 

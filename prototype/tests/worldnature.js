@@ -181,8 +181,8 @@ try{
   for(let k=0;k<3;k++){const q=performance.now(),c=t.paintWorld();ms.push(performance.now()-q);if(k===2)b=h(c)}
   ms.sort((x,y)=>x-y);ok(a===b,'painted again, the world is the same picture');
   // (the whole map in one window: the tests' and the wiki's, never the game's, which paints by chunks (worldchunks checks those); the
-  // generated world is 4x today's area and its art (fords, the frost's snow cover, 2026-10-22) costs more: 10 s there, 6 s today)
-  ok(ms[1]<(t.WORLD.gen?10000:6000),'the world paints in '+ms.map(x=>x.toFixed(0)).join(', ')+' ms (median '+ms[1].toFixed(0)+'; nature alone '+t.NATURE.ms.toFixed(0)+' ms)');
+  // generated world is 4x the old map's area and its art (fords, the frost's snow cover, 2026-10-22) costs more: 10 s, was 6 s)
+  ok(ms[1]<10000,'the world paints in '+ms.map(x=>x.toFixed(0)).join(', ')+' ms (median '+ms[1].toFixed(0)+'; nature alone '+t.NATURE.ms.toFixed(0)+' ms)');
   o.push('INFO world paint median '+ms[1].toFixed(0)+' ms, nature '+t.NATURE.ms.toFixed(0)+' ms ('+t.NATURE.t+'); trees '+t.NATURE.trees+', rises '+t.NATURE.hills+', ranges '+t.NATURE.peaks+', rock px '+t.NATURE.rock+', small things '+t.NATURE.decor+' standing / '+t.NATURE.flat+' lying')}
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}
 const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d)};

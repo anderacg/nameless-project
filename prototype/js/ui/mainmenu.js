@@ -2,7 +2,7 @@
 /* ---------- the main menu (the owner, 2026-10-22: the game opens on it, no world made until a campaign starts or a save loads) ----------
    One screen over the game's canvas (Ashmark.html #mainmenu): the scene drawn in code behind it all (gfx/menuart.js MenuScene),
    down the left the banner (its iron and cloth, the emblem, ASHMARK, an ornament) with four buttons: New Campaign (the New game
-   page, then with WORLD.gen the New world screen, then forging: ui.js showTitle, session.js begin), Continue (the latest save,
+   page, then the New world screen, then forging: ui.js showTitle, session.js begin), Continue (the latest save,
    dimmed with none: save.js loadGame), Settings (ui.js's Settings window), Quit (the tab closed where the browser lets a page
    close itself, else the farewell page that says to close it); under them Load game and Wiki. A line of lore at the bottom right
    changes every MAINMENU.loreMs. The title's other pages (ui.js showTitle) are windows over the scene, the banner hidden.

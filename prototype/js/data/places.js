@@ -42,7 +42,8 @@ const DRINK_GOODS={water:{n:'Water',base:1,stack:50,icon:'jug',col:'#6aa8d8',dri
   liquor:{n:'Liquor',base:14,stack:20,icon:'vial',col:'#d89a3a',drink:true,d:'Spirits from the taverns. It lifts your band’s spirits more than ale as it comes into your stores, and counts as a drink on the road.'}};
 for(const k in DRINK_GOODS)Object.defineProperty(GOODS,k,{value:DRINK_GOODS[k],enumerable:false});
 // the classic holdings: plain data, each made one of its kind, with its prices and its point, by makeHolding (holdings.js);
-// realm: the realm it starts under
+// realm: the realm it starts under; tx, ty: where it stood on the old hand-made map (224 x 160), which the classic seed's anchors
+// are drawn from (worldplace.js classicAnchors)
 const CLASSIC_PLACES=[
   {name:'Ashford',realm:'vale',races:['human'],kind:'city',clim:'grass',tx:36,ty:40,col:'#e8b94a',seed:1,mod:{grain:.7,iron:1.4,cloth:1.1,timber:1,furs:1.3,spice:1.4},note:'Farmland on open grassland. Grain is cheap here.'},
   {name:'Karn Hold',realm:'karn',races:['dwarf'],kind:'city',clim:'grass',tx:172,ty:44,col:'#5a8fe8',seed:2,mod:{grain:1.3,iron:.7,cloth:1.2,timber:1.3,furs:.7,spice:1.3},note:'Dwarven mining town below the peaks. Iron and furs sell cheap.'},
@@ -86,8 +87,6 @@ const CLASSIC_PLACES=[
 const FOODS=Object.keys(GOODS).filter(g=>GOODS[g].food).sort((a,b)=>GOODS[b].spoil-GOODS[a].spoil);
 // standing needed to hire by troop tier, and the trust your own race gives
 const REP_NEED={1:15,2:30,3:50},RACE_TRUST=10;
-// where the bandit camps stand on the classic map (CAMP_SPOTS, holdings.js; both made into the world by worldmap.js installClassic)
-const CLASSIC_CAMPS=[{tx:88,ty:48},{tx:20,ty:96},{tx:116,ty:76},{tx:200,ty:84},{tx:60,ty:140},{tx:176,ty:106},{tx:146,ty:58},{tx:44,ty:130},{tx:100,ty:112},{tx:150,ty:130},{tx:28,ty:58},{tx:190,ty:30}];
 /* the classic seed's terrain hints (doc/WORLD_DESIGN.md §8.15 step 2): what Ashmark's land must say about its places, read by the
    generator when the world is classic (worldgen.js: g.hints) as soft nudges, warped-falloff bumps of temperature, moisture or
    elevation, never stamps. Each hint: id; kind:

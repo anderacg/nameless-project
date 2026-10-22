@@ -5,7 +5,7 @@
 // with the League's ports on one sea, frost north and desert south-east, Karn Hold below the peaks, Willowmere an island village
 // joined by bridges, Stonebridge at a bridge over the great river, which runs from the northern peaks to the south coast past it,
 // Mirefen and Tidewatch in fen, soft nudges and not stamps (§14.2's climate disc), the rest generated round them. It makes its own
-// world, so it runs with the flag off or on; with the flag on also the world in use (TOWNS, and the League's docks on one sea).
+// world, and checks the world in use too (TOWNS, and the League's docks on one sea).
 // INFO: each holding's distance from its anchor.
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.push('INFO '+m),t=T,J=JSON.stringify;
 try{
@@ -95,7 +95,7 @@ try{
    ok(inside(w.ty*W+w.tx)&&X.length>0,'made-up land: Willowmere on its isle, joined by '+X.length+' bridges ('+X.map(c=>c.tiles.length+' tiles').join(', ')+')')}
   {const Rd=t.placeReach(m,Hm[0].ty*W+Hm[0].tx,false),cut=Hm.filter(h=>!Rd[h.ty*W+h.tx]);ok(!cut.length&&!g.work.roadFail.length,'made-up land: every holding reachable by its roads'+(cut.length?': not '+cut.map(h=>h.name).join(', '):''))}}
  // ---- the world in use, when it is the generated classic world
- if(t.WM.gen==='ashmark-1'&&t.WM.classic){t.act('begin','soldier');
+ if(t.WM.classic){t.act('begin','soldier');
   ok(t.TOWNS.length===37&&t.TOWNS.every((z,k)=>z.name===P[k].name&&z.tx===Hd[k].tx&&z.ty===Hd[k].ty),'the world in use: TOWNS the 37 in their order, on these tiles');
   const ports=t.TOWNS.filter(z=>P.some(p=>p.name===z.name&&p.realm==='salt'&&p.style==='port')),id=t.waterIds(),dk=ports.map(z=>t.dockOf(z)),w=dk.map(d=>d?id[d.ty*t.MW+d.tx]:-1);
   ok(ports.length===5&&w.every(v=>v>=0&&v===w[0]),'the world in use: the League’s ports’ docks on one sea, for its ships ('+ports.map((z,k)=>z.name+' '+(w[k]>=0?'#'+w[k]:'no dock')).join(', ')+')')}

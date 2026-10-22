@@ -27,7 +27,7 @@
 // part=1 (the first, 2026-10-22): roads into a holding's gate (Millbrook's, and one coming from behind its centre), roads onto a
 // stone and a wooden bridge's deck, a ford, a frost edge (grass to snow), the swamp's trees and a fork; the frost edge and the swamp
 // again as the whole view.
-// Run by name (the generated world, the default; &gen=0 today's map): Ashmark.html?test=visual/worldart (&part=1), then screenshot it (part 2: a window 1200 x
+// Run by name: Ashmark.html?test=visual/worldart (&part=1), then screenshot it (part 2: a window 1200 x
 // 4660; part 3: 950 x 2100; part 1: 1200 x 2340; part 4: 1200 x 2000; part 5: 1200 x 3500). The "before" pictures are this scene run on the commit before the fix.
 window.RUN=()=>{const t=T,o=[],G=t.G,P=t.P,W=t.W,TILE=t.TILE,Z=3,part=+(new URLSearchParams(location.search).get('part')||2);
  try{
@@ -124,7 +124,7 @@ window.RUN=()=>{const t=T,o=[],G=t.G,P=t.P,W=t.W,TILE=t.TILE,Z=3,part=+(new URLS
   const diag=(x,y)=>kind(x,y)===t.T_ROAD&&(kind(x-1,y-1)===t.T_ROAD&&kind(x+1,y+1)===t.T_ROAD||kind(x+1,y-1)===t.T_ROAD&&kind(x-1,y+1)===t.T_ROAD),hn=[];
   const hillSlant=n=>()=>{let b=null;for(let k=0;k<=n;k++){b=best((x,y)=>!diag(x,y)||hn.some(([a,c])=>Math.abs(a-x)+Math.abs(c-y)<10)?-1e9:count(x,y,2,(a,c)=>kind(a,c)===t.T_HILL));if(b)hn.push(b)}hn.length=0;return b};
   const PIECES=part===7?[
-   ["a forested mountain (the owner's spot)",()=>t.WM.gen==='ashmark-1'?[425,219]:null],["a forested mountain (the owner's spot), the whole view",()=>t.WM.gen==='ashmark-1'?[425,219]:null,1],
+   ["a forested mountain (the owner's spot)",()=>[425,219]],["a forested mountain (the owner's spot), the whole view",()=>[425,219],1],
    ["mountains: forested, a big range (put in: the granite's, the grass's pool forested alone)",kindOf('granite'),0,asKind('grass','forested')],["mountains: forested across a climate's edge",across('forested')],
    ["mountains: the original look, on the grass",kindOf('classic','grass')],["mountains: the original look, in the frost",kindOf('classic','frost')],
    ["mountains: the original look, in the desert",kindOf('classic','desert')],["mountains: the original look, in the swamp (put in: 4 x 2 tiles)",...swampAs('classic')],

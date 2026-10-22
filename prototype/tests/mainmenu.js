@@ -1,13 +1,13 @@
 'use strict';
 // The main menu (ui/mainmenu.js) on the game's own page, loaded in a frame as a player opens it (no ?test=, so no world made at
 // load): no map, holdings or camps until a campaign starts or a save loads; the menu alone, its four buttons, Continue dimmed with
-// no save; the arrows move between the buttons and Esc does nothing there; New Campaign opens the New game page (with WORLD.gen a
+// no save; the arrows move between the buttons and Esc does nothing there; New Campaign opens the New game page (a
 // past then the New world screen, whose Back comes back); it fits a phone on its side (844 x 390) and a desktop (1600 x 900); its
 // scene is seeded (drawn twice, the same pixels); a campaign started makes the world, and the Esc menu's Main menu lets it go again.
 window.RUN=()=>{
   const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);let done=false;
   window.requestAnimationFrame=()=>0;Kit.fresh();
-  const gen0=/[?&]gen=0/.test(location.search),frame=document.createElement('iframe');frame.width=844;frame.height=390;frame.style.cssText='position:absolute;left:-12000px;top:0;border:0';
+  const frame=document.createElement('iframe');frame.width=844;frame.height=390;frame.style.cssText='position:absolute;left:-12000px;top:0;border:0';
   const finish=()=>{if(done)return;done=true;clearTimeout(timer);frame.remove();const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d)};
   const timer=setTimeout(()=>{ok(false,'the page and its checks finish within 60 seconds');finish()},60000);
   const later=(ms,fn)=>setTimeout(()=>{try{fn()}catch(e){o.push('EXC '+e.message+' '+e.stack);finish()}},ms);
@@ -35,10 +35,10 @@ window.RUN=()=>{
     const key=k=>w.dispatchEvent(new w.KeyboardEvent('keydown',{key:k,code:k,bubbles:true}));
     q('[data-mm="new"]').focus();key('ArrowDown');const a1=d.activeElement.textContent;key('ArrowUp');key('ArrowUp');const a2=d.activeElement.textContent;key('Escape');
     ok(a1==='Settings'&&a2==='Quit'&&ev('G.menu')==='main'&&ev('G.mode')==='title','the arrows move between the open buttons (down: '+a1+', up twice: '+a2+'); Esc does nothing on the main menu');
-    // ---- New Campaign: the New game page over the scene; with WORLD.gen a past opens the New world screen, Back comes back
+    // ---- New Campaign: the New game page over the scene; a past opens the New world screen, Back comes back
     q('[data-mm="new"]').click();
     ok(ev('G.menu')==='new'&&mm.dataset.page==='new'&&w.getComputedStyle(q('.mm-banner')).display==='none'&&!d.getElementById('ov').hidden,'New Campaign: the New game page, the scene behind it, the banner put away');
-    if(!gen0){d.querySelector('#panel [data-act="begin"][data-arg="world:soldier"]').click();ok(ev('G.menu')==='world'&&/New world/.test(d.getElementById('panel').textContent)&&ev('WM')===null,'a past: the New world screen, still no world made');
+    {d.querySelector('#panel [data-act="begin"][data-arg="world:soldier"]').click();ok(ev('G.menu')==='world'&&/New world/.test(d.getElementById('panel').textContent)&&ev('WM')===null,'a past: the New world screen, still no world made');
       d.querySelector('#panel [data-act="ws-back"]').click();ok(ev('G.menu')==='new','its Back: the New game page')}
     d.querySelector('#panel .nav [data-nav="back"]').click();ok(ev('G.menu')==='main'&&!mm.hidden&&mm.dataset.page==='main'&&d.getElementById('ov').hidden,'Back: the main menu again');
     // ---- the desktop
@@ -50,5 +50,5 @@ window.RUN=()=>{
       ev("showEsc();escAct('esc-main')");ev('MainMenu.frame(performance.now())');
       ok(ev('WM')===null&&ev('TOWNS.length')===0&&ev('G.mode')==='title'&&!mm.hidden&&mm.dataset.page==='main','the Esc menu’s Main menu: back on the main menu, the world let go');
       ok(!errs.length,'no errors on the page'+(errs.length?': '+errs.join('; '):''));finish()})});
-  frame.src='Ashmark.html'+(gen0?'?gen=0':'');document.body.appendChild(frame);
+  frame.src='Ashmark.html';document.body.appendChild(frame);
 };

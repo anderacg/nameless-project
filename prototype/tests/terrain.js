@@ -192,7 +192,7 @@ try{
   // ---- the world: water beside the tile runs a river; a road bridge near gives a bridge; frost freezes it; deserts and monsters none
   {const near=(i,f,N=1)=>{const tx=i%t.MW,ty=Math.floor(i/t.MW);for(let dy=-N;dy<=N;dy++)for(let dx=-N;dx<=N;dx++)if((dx||dy)&&f(tx+dx,ty+dy))return true;return false},water=(a,b)=>t.tAt(a,b)===t.T_WATER,
     decks=new Set(t.WM.crossings.filter(c=>c.kind==='bridge').flatMap(c=>c.tiles)),// (the generated world's bridges are its crossings: a road between two waters may be a causeway)
-    rb=(a,b)=>t.WM.gen==='classic-0'?t.tAt(a,b)===t.T_ROAD&&(water(a-1,b)&&water(a+1,b)||water(a,b-1)&&water(a,b+1)):decks.has(b*t.MW+a),spot=i=>({x:(i%t.MW+.5)*t.TILE,y:(Math.floor(i/t.MW)+.5)*t.TILE});
+    rb=(a,b)=>decks.has(b*t.MW+a),spot=i=>({x:(i%t.MW+.5)*t.TILE,y:(Math.floor(i/t.MW)+.5)*t.TILE});
    // (a brook by the tile (World Phase 2b, the generated world's: BattleSite's brook) runs a stream of its own: tests/battleworld.js)
    const brook=i=>!!t.WM.battleSite(i%t.MW,Math.floor(i/t.MW)).brook;
    let wet=-1,dry=-1,br=-1,frost=-1,desert=-1;for(let i=0;i<t.MW*t.MH;i++){if(t.tiles[i]!==t.T_OPEN)continue;const cl=t.CLIMS[t.climate[i]],w=near(i,water);

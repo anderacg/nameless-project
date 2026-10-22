@@ -67,7 +67,7 @@ try{
   t.bandits.length=0;W.fights=[];c.guards=2;t.bandits.push(t.asParty({x:c.x+4,y:c.y,n:14,kind:'bandits',list:Array(14).fill('orc_grunt'),t:0,a:0,idle:true,cool:0}));t.updateCaravans(.01);
   for(let i=0;i<4000&&W.fights.length;i++)t.updateFights(.05);ok(!W.caravans.includes(c),'a big band plunders it');t.bandits.length=0;W.fights=[]}
  // ---- on the road (the owner's play-test 2: "only off the road when they run away from something"): a caravan between two holdings
- // a road joins (the farthest four: on the generated world, of WM.roads; today's map: two of a realm's, 25-80 tiles apart) walks most of its way on
+ // a road joins (the farthest four of WM.roads) walks most of its way on
  // the road (its tile a road or a ford, frame by frame), 85% or more; a walker going there by the cheapest way, for comparison
  {world();P.x=-9000;P.y=-9000;t.bandits.length=0;W.lords=[];W.fights=[];const MW=t.MW,K=t.tiles,gen=!!t.WM.graph,road=(x,y)=>{const k=K[Math.floor(y/16)*MW+Math.floor(x/16)];return k===t.T_ROAD||k===t.T_FORD};
   const d=(a,b)=>Math.hypot(a.tx-b.tx,a.ty-b.ty),pairs=[];

@@ -31,11 +31,11 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),out=()=>{cons
   const w=t.whiteOf(s0),wd=w.getContext('2d').getImageData(0,0,w.width,w.height).data;let white=0,any=0;for(let i=0;i<wd.length;i+=4)if(wd[i+3]){any++;if(wd[i]===255&&wd[i+1]===255)white++}ok(any&&white===any,'a struck fighter flashes white');
   const m=t.worldCv().getContext('2d').getImageData(t.townBy('Ashford').x-200,t.townBy('Ashford').y-200,400,400).data,cols=new Set();for(let i=0;i<m.length;i+=16)cols.add(m[i]>>3<<10|m[i+1]>>3<<5|m[i+2]>>3);
   ok(cols.size>40,'the world map is painted in '+cols.size+' shades around Ashford');
-  t.worldCv();let roads=0,clearRoads=0;for(let i=0;i<t.tiles.length;i++)if(t.tiles[i]===t.T_ROAD){roads++;if(t.isClear((i%t.MW+.5)*16,(Math.floor(i/t.MW)+.5)*16))clearRoads++}
-  // (today's map: every road tile; a generated one paints its roads along their softened lines, not by tile (gfx/worldart.js
-  // artGenPlan), so its clear band is checked along the painted segments: a raw line's corner may lie beside the road)
-  const segs=t.WM.gen!=='classic-0'&&t.WorldArt.ensure().segs;let pts=0,clearPts=0;if(segs)for(let k=0;k<segs.length;k+=5)for(const f of [0,.25,.5,.75,1]){pts++;if(t.isClear(segs[k]+(segs[k+2]-segs[k])*f,segs[k+1]+(segs[k+3]-segs[k+1])*f))clearPts++}
-  ok((segs?pts&&clearPts===pts:roads&&clearRoads===roads)&&t.TOWNS.every(x=>t.isClear(x.x,x.y)),'roads and each holding’s own tile (its centre) (and the gate before it) are kept clear of trees, hills and peaks'+(segs?' (along the '+pts+' points of the painted roads)':''));
+  t.worldCv();
+  // (the roads painted along their softened lines, not by tile (gfx/worldart.js artGenPlan), so their clear band is checked along
+  // the painted segments: a raw line's corner may lie beside the road)
+  const segs=t.WorldArt.ensure().segs;let pts=0,clearPts=0;for(let k=0;k<segs.length;k+=5)for(const f of [0,.25,.5,.75,1]){pts++;if(t.isClear(segs[k]+(segs[k+2]-segs[k])*f,segs[k+1]+(segs[k+3]-segs[k+1])*f))clearPts++}
+  ok(pts&&clearPts===pts&&t.TOWNS.every(x=>t.isClear(x.x,x.y)),'roads and each holding’s own tile (its centre) (and the gate before it) are kept clear of trees, hills and peaks'+' (along the '+pts+' points of the painted roads)');
   ok(t.TOWNS.every(x=>Object.entries(t.bldSpots(x)).every(([k,p])=>{const l=t.lotOf(p.tx,p.ty);return l&&l.k===k&&l.town===x.name})),'every estate stands on a building of its own holding (its yard drawn over whatever the map painted there)');
   // the estates' worked ground by the land it lies on (gfx/structures.js estateGround, the second play-test): a pasture's pen the
   // land's own ground, grazed and trodden in patches (no square of green: most of its pixels left clear, its marks in its climate's

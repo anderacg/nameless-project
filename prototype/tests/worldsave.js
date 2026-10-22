@@ -3,7 +3,7 @@
 // sum), never the map: a load in another world makes that world again first, and a checksum that differs refuses it ("another
 // world version"); v2 saves are refused, never migrated (D7). The fog is saved as run lengths. Slots are gzipped where the browser
 // can (a plain header beside the body, so the list reads at once), plain under LOADING.sync. A new game with settings makes that
-// world (or uses the one in again, when its settings are the same); without, the world in (with WORLD.gen the New game screen's
+// world (or uses the one in again, when its settings are the same); without, the world in (the New game screen's
 // choice, at first the classic seed); its monsters and bandits scale the bands and beasts at the start. Sizes of a save, plain and gzipped, at
 // Normal, Large and Huge are reported (INFO).
 window.RUN=async()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.push('INFO '+m),t=T,G=t.G,P=t.P,W=t.W,LD=t.LOADING,r0=Math.random,t0=performance.now();
@@ -45,25 +45,25 @@ try{
   fresh(S);ok(t.WM===m,'a new game with the same settings uses it again (as it first stood)');
   play(200);save('1');t.loadGame('1');const g0=save('1'),sum=t.WM.sum;
   const L1=t.saveLine(t.readSlot('1')),L0=t.saveLine(JSON.parse(s0));
-  ok(/^Redwater · Normal · seed redwater · Day \d+ · /.test(L1)&&(t.WORLD.gen?/^Ashmark · Classic · Day/:/^Day/).test(L0),'the save line names the world, its preset and seed (Phase 2b): "'+L1.split(' · ').slice(0,4).join(' · ')+'"; the default world: "'+L0.split(' · ').slice(0,t.WORLD.gen?3:1).join(' · ')+'"');
-  // a new game without settings: with WORLD.gen the New game screen's choice (Classic at first), else the world in
-  fresh();ok(t.WORLD.gen?t.worldKey(t.WM)===home:t.WM===m,'a new game without settings: '+(t.WORLD.gen?'the New game screen\'s choice, the classic seed':'the world in')+' ('+t.WM.gen+')');
-  // the default world back by a load (made again first, flag off); a game in it starts as one in the page's own does (the
+  ok(/^Redwater · Normal · seed redwater · Day \d+ · /.test(L1)&&/^Ashmark · Classic · Day/.test(L0),'the save line names the world, its preset and seed (Phase 2b): "'+L1.split(' · ').slice(0,4).join(' · ')+'"; the default world: "'+L0.split(' · ').slice(0,3).join(' · ')+'"');
+  // a new game without settings: the New game screen's choice (Classic at first)
+  fresh();ok(t.worldKey(t.WM)===home,'a new game without settings: the New game screen\'s choice, the classic seed ('+t.WM.gen+')');
+  // the default world back by a load (made again first); a game in it starts as one in the page's own does (the
   // second new game uses the world the first found: its randoms from the seed, not after the laying out's)
   t.loadGame('quick');ok(t.worldKey(t.WM)===home&&strip(save('quick'))===strip(s1),'a save of the default world loaded in another puts that world and its game back');
   fresh();fresh();ok(strip(save('5'))===b0,'and a game in the world made again starts as one in the page\'s own does'+diff(save('5'),b0));
   t.loadGame('1');ok(t.WM!==m&&t.WM.gen==='ashmark-1'&&t.WM.sum===sum&&strip(save('1'))===strip(g0),'a load in another world makes its world again first (the same checksum) and puts the game back as saved'+diff(save('1'),g0));
-  // (the other kind of world: today's map, saved in it (flag off) or claimed by a save of the classic seed (flag on))
-  const other=t.WORLD.gen?(()=>{const d=JSON.parse(s0);d.world.map={gen:'classic-0',settings:null,sum:t.classicWorld().map.sum};return J(d)})():s1;
-  localStorage.setItem(t.slotKey('2'),other);t.loadGame('2');const back=save('2');
-  ok(t.WM.gen==='classic-0'&&t.MW===224&&JSON.parse(back).world.map.sum===JSON.parse(other).world.map.sum,'a save of today\'s map loaded in a generated world makes today\'s map again ('+t.WM.gen+', sum '+t.WM.sum+')');
-  if(!t.WORLD.gen)ok(strip(back)===strip(s1),'and puts that game back as it was saved'+diff(back,s1))}
+  // (a save of the old hand-made map (gen classic-0, no settings: doc/WORLD_DESIGN.md D49): another world version, refused,
+  // the game untouched)
+  {const d=JSON.parse(s0);d.world.map={gen:'classic-0',settings:null,sum:1};localStorage.setItem(t.slotKey('2'),J(d));
+   const snap=()=>J([t.worldKey(t.WM),t.TOWNS.map(z=>z.saveRec()),P.gold,G.day]),before=snap(),e=refused(()=>t.loadGame('2'));
+   ok(e&&e.message===t.OTHER_WORLD&&snap()===before&&!!t.readSlot('2'),'a save of the old hand-made map is refused ("'+(e&&e.message)+'"), the game untouched')}}
  // ---- monsters and bandits: the start's bands and beasts
  {const n={b:0,m:0},sb=window.spawnBandit,sm=window.spawnMonster;window.spawnBandit=(...a)=>{n.b++;return sb(...a)};window.spawnMonster=(...a)=>{n.m++;return sm(...a)};
-  // (each world's own: its density, data/world.js; today's on today's map)
+  // (each world's own: its density, data/world.js)
   const count=S=>{n.b=n.m=0;fresh(S);const D=t.density(t.WM);return{got:n.b+'/'+n.m,B:D.bandits,M:D.monsterStart}},c=[count(),count({preset:'normal',seed:'redwater'}),count({preset:'normal',seed:'redwater',bandits:'many',monsters:'calm'}),count({preset:'normal',seed:'redwater',bandits:'few',monsters:'deadly'})];
   window.spawnBandit=sb;window.spawnMonster=sm;const r=Math.round,as=(x,b,m)=>x.got===r(x.B*b)+'/'+r(x.M*m);
-  ok(as(c[0],1,1)&&(t.WORLD.gen||c[0].got===t.BANDITS+'/'+t.MONSTER_START)&&as(c[1],1,1)&&c[1].M>t.MONSTER_START&&as(c[2],1.5,.6)&&as(c[3],.6,1.5),'bands and beasts at the start: the world\'s (today\'s on today\'s map, more on a bigger one), then x1.5 and x0.6 by the world\'s settings (bands/beasts '+c.map(x=>x.got).join(', ')+')')}
+  ok(as(c[0],1,1)&&as(c[1],1,1)&&c[1].M>t.MONSTER_START&&as(c[2],1.5,.6)&&as(c[3],.6,1.5),'bands and beasts at the start: the world\'s (more on a bigger one), then x1.5 and x0.6 by the world\'s settings (bands/beasts '+c.map(x=>x.got).join(', ')+')')}
  // ---- gzipped, a plain header beside it; read back, waiting
  fresh();play(200);save('2');t.loadGame('2');let plain='';
  LD.sync=false;try{

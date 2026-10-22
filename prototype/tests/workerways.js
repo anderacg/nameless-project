@@ -1,6 +1,6 @@
 'use strict';
 // The workers' way to work and back, the owner's KPI after play-test 3 ("make sure that you have bridges near holdings to connect to
-// any estates that may spawn across lands"): on the world in use (today's map, or the classic seed with -Gen), the classic seed, Normal
+// any estates that may spawn across lands"): on the world in use (the classic seed), Normal
 // s1-s4 and the owner's saltwell world, each holding's day run near it (folk.js updateFolk, the clock on by each step, 2 days), every
 // estate's workers out of their estate with the day's load at their hour (afternoon to dusk), to the holding's gate and back in.
 // Each trip: none stranded (a worker who finds no way is put in at the gate or the door: never), back in by WAYS_BY of the day (before it
@@ -25,7 +25,7 @@ Kit.suite(({ok,info})=>{
     const c=d+(a&&b?1.414:1);if(c<D[L(nx,ny)]){D[L(nx,ny)]=c;q.push([c,nx,ny])}}
    // (and over a ferry, sailed straight: its tiles)
    const f=fx.get(y*MW+x);if(f!=null){const nx=f%MW,ny=(f-nx)/MW,c=d+Math.hypot(nx-x,ny-y);if(Math.abs(nx-ax)<=R&&Math.abs(ny-ay)<=R&&c<D[L(nx,ny)]){D[L(nx,ny)]=c;q.push([c,nx,ny])}}}return Infinity};
- const worlds=[['the world in use',null],...(t.WORLD.gen?[]:[['classic seed',t.classicSettings()]]),...[1,2,3,4].map(k=>['Normal s'+k,{preset:'normal',seed:'s'+k}]),['saltwell',t.parseWorldCode('ASH1-X-2V40O9HH-saltwell')]];
+ const worlds=[['the world in use',null],...[1,2,3,4].map(k=>['Normal s'+k,{preset:'normal',seed:'s'+k}]),['saltwell',t.parseWorldCode('ASH1-X-2V40O9HH-saltwell')]];
  // (what each holding wants of its estates: Buildings init with no cap, then as it is)
  const B=(0,eval)('Buildings'),init0=B.prototype.init;B.prototype.init=function(){this.cap=()=>this.t.T.estMax;init0.call(this);const want={...this.t.bld};delete this.cap;init0.call(this);this.t._want=want};
  try{for(const [name,S] of worlds){
@@ -52,7 +52,7 @@ Kit.suite(({ok,info})=>{
       s.x=f.x;s.y=f.y}}
     for(const f of W.folk)if(f.home===tw.name&&(f.st!=='in'||f.done!==day)){late++;lateOf.add(tw.name);if(bad.length<4)bad.push(tw.name+' '+f.k+' '+f.st)}}}
   const ms=performance.now()-a0;
-  if(t.WM.gen!=='classic-0'){const [R0,S0]=t.LOT_FAR,miss=[],none=[];let n=0;
+  {const [R0,S0]=t.LOT_FAR,miss=[],none=[];let n=0;
    for(const z of t.TOWNS){if(!(z._want&&z._want.lumber))continue;n++;if(t.bldLv(z,'lumber')&&t.lotAt(z,'lumber'))continue;
     const w=t.lotWalk(z).all,k=t.lotSize(t.ESTATE_LOT.lumber),wb=t.wallBox(z);let spot=null,wood=false;
     for(let y=z.ty-1-R0;y<=z.ty-1+R0&&!spot;y++)for(let x=z.tx-R0;x<=z.tx+R0&&!spot;x++){const d=Math.hypot(x+k/2-.5-z.tx,y+k/2-.5-(z.ty-1));if(d<3||d>R0)continue;
@@ -62,14 +62,11 @@ Kit.suite(({ok,info})=>{
    if(none.length)info(name+': lumber camps wanted with woods near but no spot for one (the woods in the town’s yard, on another’s land, too few trees together, far round or past '+S0+' steps, by bandits): '+none.join(', '));
    ok(!miss.length,name+': every holding that wants a lumber camp ('+n+') and has a spot for one has one'+(miss.length?': not '+miss.join(', '):''))}
   const est=t.WM.roads.filter(r=>r.est);
-  if(t.WM.gen!=='classic-0')ok(allW&&onW/allW>=.6,name+': the workers of the estates with their own track keep to the roads and tracks: '+Math.round(100*onW/Math.max(1,allW))+'% of their steps out and back (60% or more)');
+  ok(allW&&onW/allW>=.6,name+': the workers of the estates with their own track keep to the roads and tracks: '+Math.round(100*onW/Math.max(1,allW))+'% of their steps out and back (60% or more)');
   info(name+': '+est.length+' estate tracks ('+est.reduce((a,r)=>a+r.path.length-1,0)+' tiles); '+trips+' trips in '+(ms/1000).toFixed(1)+' s; the longest '+(worst?(worst.time*24).toFixed(1)+' hours ('+worst.who+', '+(worst.walk/TL).toFixed(0)+' tiles each way, '+(worst.straight/TL).toFixed(0)+' straight)':'none')+'; the farthest round '+(round?round.r.toFixed(2)+' x ('+round.who+', '+(round.walk/TL).toFixed(0)+' tiles for '+(round.straight/TL).toFixed(0)+')':'none')+'; the last back in at '+(lateAt*24).toFixed(1)+' h');
   ok(trips>30&&!stuck.length,name+': every worker finds his way from his estate to the holding\'s gate and back ('+trips+' trips)'+(stuck.length?': not '+stuck.slice(0,4).join(', '):''));
   const lm=name+': all back in with the day\'s load delivered by '+(WAYS_BY*24).toFixed(1)+' h'+(late?' ('+late+' not: '+bad.join(', ')+')':'');
-  // (today's map: Fernhollow's farm and pasture lie across its lake, as they always have: no spot near holds them, and taking one
-  // away (or moving its harbours) changes what begin draws, so the battle fingerprints would move: left as it was, INFO, the owner's
-  // call; the generated worlds bridge such water: worldplace.js placeHoldXing)
-  const mine=t.WM.gen==='classic-0'&&!S,msg=name+': the land’s way from each gate to each door at most '+WAYS_ROUND+' times the straight way (and 3 tiles)'+(far.length?': '+[...new Set(far)].slice(0,4).join(', '):'');
-  if(mine&&[...lateOf].every(x=>x==='Fernhollow'))info(lm+(late?' (today’s map: Fernhollow as it always was)':''));else ok(!late,lm);
-  if(mine&&far.every(x=>/^Fernhollow /.test(x)))info(msg+(far.length?' (today’s map: Fernhollow as it always was)':''));else ok(!far.length,msg)}}finally{B.prototype.init=init0}
+  const msg=name+': the land’s way from each gate to each door at most '+WAYS_ROUND+' times the straight way (and 3 tiles)'+(far.length?': '+[...new Set(far)].slice(0,4).join(', '):'');
+  ok(!late,lm);
+  ok(!far.length,msg)}}finally{B.prototype.init=init0}
 });

@@ -2,7 +2,7 @@
 // World settings, Phase 2b (doc/WORLD_DESIGN.md §4, §15 2b): the holdings' defaults and density (worldsettings.js: 27 / 40 / 66,
 // the owner's fewer of 2026-10-22; Fewer, Normal, More), the world code (worldCode, parseWorldCode: every setting and the seed,
 // read back clamped), the quick sketch (worldgen.js genSketch: fast at every size, the same twice, its coast the real one's),
-// the New world screen (worldsetup.js: after a past with WORLD.gen, the presets, Classic's locks, size, holdings and their notes,
+// the New world screen (worldsetup.js: after a past, the presets, Classic's locks, size, holdings and their notes,
 // a seed or a world code typed, the preview, Esc and Back, Forge the world; the full preview reused by the forge), a seeded start
 // (a generated world's first sites, herds, bands and beasts from its seed; the classic world's as ever), the Esc menu's World
 // page and the save list's line. Flag off and -Gen. INFO: the sketch's time and agreement at each size.
@@ -36,9 +36,9 @@ window.RUN=async()=>{const r=Kit.report(),{ok,info}=r;try{
   const times=[];for(const p of ['normal','large','huge']){t.genSketch({preset:p,seed:'warm'});let best=1e9;for(let k=0;k<2;k++){const s=t.genSketch({preset:p,seed:'s'+k});best=Math.min(best,s.ms)}times.push(p+' '+best.toFixed(0)+' ms')}
   info('the sketch\'s time (the best of two; the target 150 ms): '+times.join(', '));
   ok(times.every(s=>parseFloat(s.split(' ')[1])<400),'the sketch is quick at every size: '+times.join(', ')+' (under 400 ms in the test browser)')}
- // ---- the New game page: with WORLD.gen a past leads to the world's settings
+ // ---- the New game page: a past leads to the world's settings
  t.act('menu','new');const cards=[...document.querySelectorAll('#panel [data-act="begin"]')].map(b=>b.dataset.arg);
- ok(cards.length===7&&cards.every(a=>t.WORLD.gen?/^world:/.test(a):!/^world:/.test(a)),'New game: seven pasts; '+(t.WORLD.gen?'each opens the world\'s settings first (D30)':'each starts at once (the flag off: today\'s map)'));
+ ok(cards.length===7&&cards.every(a=>/^world:/.test(a)),'New game: seven pasts; each opens the world\'s settings first (D30)');
  // ---- the screen
  t.act('race','dwarf');t.act('begin','world:hedge');
  {const nb=[...document.querySelectorAll('#panel .nav [data-nav]')].map(b=>b.dataset.nav+':'+b.textContent);

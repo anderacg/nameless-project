@@ -18,9 +18,9 @@ try{
  const counted=f=>{const r=Math.random;let n=0;Math.random=()=>{n++;return r()};try{f()}finally{Math.random=r}return n};
  ev('TERRAIN.on=true');
  // ---- the places: a road bridge (not in the frost: ice), a forest far from any bridge, open ground with no cover
- // (on the generated world a bridge is one of its crossings (WM.crossings): a road between two waters there may be a causeway by
- // a delta or a pond, no bridge; on today's map, a road tile with water both sides)
- let bridge=null,forest=null,bare=null;const decks=new Set(t.WM.crossings.filter(c=>c.kind==='bridge').flatMap(c=>c.tiles)),deck=(tx,ty)=>t.WM.gen==='classic-0'?t.roadBridge(tx,ty):decks.has(ty*MW+tx);
+ // (a bridge is one of the world's crossings (WM.crossings): a road between two waters may be a causeway by a delta or a pond,
+ // no bridge)
+ let bridge=null,forest=null,bare=null;const decks=new Set(t.WM.crossings.filter(c=>c.kind==='bridge').flatMap(c=>c.tiles)),deck=(tx,ty)=>decks.has(ty*MW+tx);
  for(let ty=2;ty<MH-2;ty++)for(let tx=2;tx<MW-2;tx++){const x=(tx+.5)*TILE,y=(ty+.5)*TILE,c=t.climAt(x,y);
   if(!bridge&&deck(tx,ty)&&c!=='frost'&&c!=='desert')bridge={tx,ty};
   if(!forest&&t.tAt(tx,ty)===t.T_FOREST&&c==='grass'&&!t.bridgeNear(tx,ty)&&!t.nearWater(x,y,2))forest={tx,ty}}

@@ -7,7 +7,7 @@
    where two realms meet, the dark over land you have never seen), and over it, as marks, the holdings and crossings on land you
    have seen and you.
    Its scale: FULLMAP.zooms, CSS px a tile. It opens at the largest that fits, never under 1 px a tile (under FULLMAP.wide tiles
-   across) or 1 px per 2 tiles (wider: Huge): today's map about ×3, Normal 1 px a tile, Large 1 px a tile and scrolls, Huge 1 px
+   across) or 1 px per 2 tiles (wider: Huge): Normal 1 px a tile, Large 1 px a tile and scrolls, Huge 1 px
    per 2 tiles. − and + (the buttons, the keys) step it; a click or a tap on the map zooms in there (at Huge: 1:1 by region); a
    drag pans (a finger scrolls). Under 1 px a tile the picture is made at 1 px per 2 tiles, a block's widest river kept ---------- */
 const FULLMAP={zooms:[.5,1,2,3,4,6],wide:640,open:4,ppt:1,pics:{},drag:null,ms:0,

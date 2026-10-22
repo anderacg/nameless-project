@@ -21,16 +21,11 @@ function resetSession(savedPlayer){
 
 /* the world a new game or a load wants, made as steps into a world of its own (doc/WORLD_DESIGN.md §5.2, §15.2.1), done(r) given
    the result; forgeInstall puts it in. gen 'ashmark-1': the generator (worldgen.js genWorldSteps: its stages, each its own step);
-   'classic-0': today's map (classicWorld, at once); any other: another world version, refused */
+   any other (the old hand-made map's 'classic-0' among them): another world version, refused */
 function forgeSteps(gen,settings,done){
-  if(gen==='classic-0')return [{id:'land',label:'Raising the land',w:80,run:()=>{done(classicWorld())}}];
   if(gen!=='ashmark-1')return [{id:'land',label:'Raising the land',w:80,run:()=>{throw new Error(OTHER_WORLD)}}];
   return genWorldSteps(settings).map((st,i,a)=>i<a.length-1?st:{...st,run:function*(){const r=yield* st.run();done(r);return r}});
 }
-// today's map as a world of its own, as installClassic makes it but not put in: its holdings, its camps (copies: genClassic
-// moves them onto clear ground), the map
-function classicWorld(){const camps=CLASSIC_CAMPS.map(c=>({tx:c.tx,ty:c.ty})),m=new WorldMap(224,160,0);m.classic=true;
-  genClassic(m,CLASSIC_PLACES,camps);m.sum=m.checksum();return {map:m,holdings:CLASSIC_PLACES,camps,lords:null}}
 // a made world put in (worldmap.js installWorld) and laid out as a fresh page lays out its own (main.js), from a fresh session
 // (what the last game left never reaches it), then kept as it first stands: every new game in it starts there
 function forgeInstall(r){resetSession();installWorld(r);worldFirst()}
@@ -46,10 +41,10 @@ const worldName=m=>!m.settings||m.settings.preset==='classic'||!m.settings.seed?
 // (the World settings' monsters and bandits: how many there are at the start; normal or no settings, as many as ever)
 const SPAWN_MUL={calm:.6,few:.6,normal:1,deadly:1.5,many:1.5},spawnMul=k=>WM.settings&&SPAWN_MUL[WM.settings[k]]||1;
 
-/* a new game, as steps behind "Forging the world…" (loading.js runSteps). settings: its world's (worldsettings.js); left out, with
-   WORLD.gen the New world screen's choice (worldsetup.js newWorldSettings), else the world in (today's map, or the one a load made
-   again), or today's map made now when none is in (the game's page opens on the main menu with no world: ui/mainmenu.js).
-   k: your past; 'world:<past>' (a past's card on the New game page, with WORLD.gen) opens the New world screen first
+/* a new game, as steps behind "Forging the world…" (loading.js runSteps). settings: its world's (worldsettings.js); left out, the
+   New world screen's choice (worldsetup.js newWorldSettings); null, the world in (or the classic seed made now when none is in: the
+   game's page opens on the main menu with no world, ui/mainmenu.js).
+   k: your past; 'world:<past>' (a past's card on the New game page) opens the New world screen first
    (worldsetup.js worldSetup, D30), whose Forge the world comes back here with its settings.
    A world other than the one in is made first (forgeSteps: the generator's stages; none when the New world screen's full preview
    made it: worldPreviewTake), then put in ("Drawing borders": forgeInstall); the one in is used again as it first stood
@@ -58,8 +53,8 @@ const SPAWN_MUL={calm:.6,few:.6,normal:1,deadly:1.5,many:1.5},spawnMul=k=>WM.set
    it was */
 function begin(k,settings){
   if(typeof k==='string'&&k.startsWith('world:'))return worldSetup(k.slice(6));
-  const b=BGS[k];if(!b)return false;if(settings===undefined&&WORLD.gen)settings=newWorldSettings();
-  const want=settings?{gen:'ashmark-1',settings:normSettings(settings)}:WM?null:{gen:'classic-0',settings:null},
+  const b=BGS[k];if(!b)return false;if(settings===undefined)settings=newWorldSettings();
+  const want=settings||!WM?{gen:'ashmark-1',settings:normSettings(settings||classicSettings())}:null,
     made=want&&worldKey(want)!==worldKey(WM)?{r:want.settings&&worldPreviewTake(want.settings)}:null,t0=performance.now();
   runSteps('Forging the world…',[...(made?[...(made.r?[]:forgeSteps(want.gen,want.settings,r=>{made.r=r;if(want.settings)forgeTimed(want.settings,performance.now()-t0)})),{id:'install',label:'Drawing borders',w:150,run:()=>forgeInstall(made.r)}]:[]),
     {id:'world',label:'Peopling the land',w:made?150:4,run:()=>startGame(k,b)},{id:'paint',label:'Painting the first lands',w:made?150:3,run:paintView}],
@@ -68,8 +63,8 @@ function begin(k,settings){
 /* (a generated world but the classic one starts as its seed says (doc/WORLD_DESIGN.md §4.4, D30): its first sites, herds, bands and
    beasts drawn with the game's number 0 (core/rng.js: the streams from the world's seed alone) and Math.random the 'start'
    stream's, so one world code starts one world; then the game's number drawn, and what happens in play stays random. The classic
-   world and today's map as ever: from the game's number) */
-const seededStart=()=>WM.gen==='ashmark-1'&&!WM.classic,startDraws=(own,fn)=>own?Rng.use('start',fn):fn();
+   world as ever: from the game's number) */
+const seededStart=()=>!WM.classic,startDraws=(own,fn)=>own?Rng.use('start',fn):fn();
 function startGame(k,b){
   resetSession();P.bg=k;P.gold=b.gold;P.troops={...b.troops};P.bonus=b.bonus;
   const rc=RACES[P.race=G.race||'human'];

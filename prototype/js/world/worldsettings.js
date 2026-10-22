@@ -27,7 +27,7 @@ const WORLD_LIMITS={w:[320,1024],h:[224,768],step:32,aspect:[1.2,1.6],tiles:7864
 // the holdings' density (the New game screen's Fewer, Normal, More): the area's default holdings times this, clamped
 const HOLDING_DENSITY={fewer:.8,normal:1,more:1.37};
 /* the presets (§4.2): each fills every setting; touching one afterwards makes it custom (the screen's). Classic: seed CLASSIC at
-   Normal, today's holdings as anchors (§8.15), every map setting locked to its default: only monsters, bandits and start free.
+   Normal, the classic holdings as anchors (§8.15), every map setting locked to its default: only monsters, bandits and start free.
    Wild Frontier 0.7 x Large's holdings, Crowded Realms 1.5 x Normal's (D27) */
 const WORLD_PRESETS={
   classic:{w:448,h:320,seed:'CLASSIC',holdings:37},

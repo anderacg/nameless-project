@@ -1,11 +1,10 @@
 'use strict';
 // Your hero on the map (the owner's play-test of the generated world, 2026-10-22). Where you come out: a new game puts you on open
 // land in front of your home holding's gate (world.js gateSpot): never water, a ford or the peaks, never on a building's lot, on
-// the holding's own land; on today's map, on the generated classic world (its every holding) and on seeds s1-s8 (2 tiles under a
+// the holding's own land; on the classic world (its every holding) and on seeds s1-s8 (2 tiles under a
 // holding was often water or a house there). How you walk (world.js heroStep): straight on while the way is open, else by the
 // router (world/router.js) over a ford, a bridge and a ferry and round a river to a holding beyond it; a click on water you cannot
-// reach stops you at the shore, never sliding back and forth along it. The way drawn ahead of you (gfx/worldui.js) is that way. The generated worlds are made here, so the suite runs with
-// the flag off and with -Gen.
+// reach stops you at the shore, never sliding back and forth along it. The way drawn ahead of you (gfx/worldui.js) is that way.
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.push('INFO '+m);
 try{
  const t=T,G=t.G,P=t.P,TILE=t.TILE;
@@ -16,8 +15,8 @@ try{
  const march=(n,until)=>Kit.frames(n,.05,dt=>{t.marchStep(dt*t.WORLD_PACE);t.arriveStep()},until);
  const go=(x,y,n)=>{P.tx=x;P.ty=y;P.stuck=0;G.chase=null;return march(n||1500,()=>P.tx==null||G.mode!=='world')};
  const start=()=>{Kit.clear();Kit.world({encCool:99});G.quietEvents=true;t.setSpeed(1);P.troops={hum_levy:4};P.bsta=100};
- // ---- where a new game puts you: the world under test (today's map, or the generated classic world with -Gen)
- Kit.begin('soldier',4242);{const h=G.lastTown,why=bad(h,P.x,P.y);ok(!why&&P.y>h.y,(t.WORLD.gen?'the generated classic world':'today\'s map')+': a new game puts you on open land in front of '+h.name+'\'s gate'+(why?' (not: '+why+')':''))}
+ // ---- where a new game puts you: the world under test (the classic world)
+ Kit.begin('soldier',4242);{const h=G.lastTown,why=bad(h,P.x,P.y);ok(!why&&P.y>h.y,'the classic world: a new game puts you on open land in front of '+h.name+'\'s gate'+(why?' (not: '+why+')':''))}
  // ---- every holding of the generated classic world, and seeds s1-s8
  Math.random=t.seeded(5);t.begin('soldier',t.classicSettings());{const no=t.TOWNS.map(h=>{const s=t.gateSpot(h),w=bad(h,s.x,s.y);return w?h.name+': '+w:''}).filter(Boolean);
   ok(!no.length,'the generated classic world: in front of every one of its '+t.TOWNS.length+' holdings\' gates, open land'+(no.length?' (not: '+no.join(', ')+')':''))}

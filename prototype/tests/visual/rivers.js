@@ -32,7 +32,7 @@ window.RUN=()=>{const t=T,o=[],q=new URLSearchParams(location.search),Z=+(q.get(
   const worlds=[['classic',()=>t.classicSettings()],...['1','2','3','4','5','6'].map(s=>['normal '+s,()=>({preset:'normal',seed:s})])];
   const found=new Map();
   for(const [wn,ws] of worlds){if(found.size===PIECES.length)break;
-   if(!(wn==='classic'&&t.WM.gen!=='classic-0'&&t.WM.classic))t.installWorld(t.genWorld(ws()));
+   if(!(wn==='classic'&&t.WM.classic))t.installWorld(t.genWorld(ws()));
    const m=t.WM,need=PIECES.filter(p=>!found.has(p[0]));if(!need.length)break;
    for(const [pn,f] of need){const i=f(m);if(i<0)continue;const x=i%m.w,y=(i-x)/m.w,X=Math.max(0,Math.min(m.w-CW,x-(CW>>1)))*TILE,Y=Math.max(0,Math.min(m.h-CH,y-(CH>>1)))*TILE;
     const cv=t.mkcv(CW*TILE,CH*TILE);t.runGen(t.paintSteps(t.WorldArt.ensure(),X,Y,CW*TILE,CH*TILE,cv.getContext('2d'),0,0,{}));found.set(pn,{cv,at:wn+' ('+x+', '+y+')'})}

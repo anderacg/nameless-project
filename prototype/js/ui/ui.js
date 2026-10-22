@@ -96,7 +96,7 @@ function battleSpeedUI(){if(typeof document==='undefined')return;const sp=B?B.sp
 // the controls in brief (Settings); every key is in Help (H)
 const CONTROLS='World map: click to travel, hover for details, Space to pause, 1 2 3 for the speed (1×, 2×, 4×), 4 to travel fast (8×), R to hurry (your band marches faster), hold for the action ring, C your hero and party, K skills, I your bag, P people, L the message log, M the full map (or click the minimap), H help, + − or the wheel to zoom, G the tile grid, F6 to save, Esc the menu. Battle: click or drag to select, right-click to move or attack, right-drag to lay out a line, 1–9/0 to select the ten army cards, Ctrl+number to store a custom selection, Home to reset the camera, H hold, C run, V walk (the pace; a double right-click on an enemy charges), W withdraw, R walk or run, F hold ground, Q cease fire, E skirmish, X melee mode (shooters), B L T formations, A the AI in command, K auto skills, Space to pause, [ ] the speed, the wheel to zoom. Anywhere: Shift+M turns the sound off and on. Every key: Help (H).';
 // (the world a save was made in, for its line: its name, its preset and its seed, "Redwater · Large · seed redwater"; the classic
-// world "Ashmark · Classic"; today's map: nothing)
+// world "Ashmark · Classic"; an old save with no settings: nothing)
 const WORLD_N={classic:'Classic',normal:'Normal',large:'Large',huge:'Huge',frontier:'Frontier',crowded:'Crowded'};
 const worldKind=s=>WORLD_N[s.preset]||'Custom '+s.w+' × '+s.h;
 const worldLine=s=>!s?'':worldName({settings:s})+' · '+worldKind(s)+(s.preset==='classic'?'':' · seed '+s.seed)+' · ';
@@ -116,7 +116,7 @@ function showTitle(screen){
   // (the main menu leaves the game behind: no Resume here; the pause menu (Esc) is where you resume)
   G.resume=null;G.mode='title';G.menu=screen||'main';G.race=G.race||'human';const sv=readSave(),back=nav(['menu','main','Back']);MainMenu.show();
   if(G.menu==='new')return showPanel('<div class="top"><h2>New game</h2></div><div class="lab">Choose your race</div><div class="tabs" role="group" aria-label="Race">'+Object.keys(RACES).map(r=>'<button class="btn sm'+(G.race===r?' on':'')+'" type="button" data-act="race" data-arg="'+r+'" aria-pressed="'+(G.race===r)+'">'+RACES[r].n+'</button>').join('')+'</div><p class="muted">'+RACES[G.race].d+' Troops of your own race cost 15% less to hire.</p>'+
-    '<div class="lab">Choose your past · it decides your weapon'+(WORLD.gen?' · then your world':'')+'</div><div class="cards origin-cards">'+Object.keys(BGS).map(k=>{const B0=BGS[k],w=BASES[B0.weapon];return '<button class="card origin-card" type="button" data-act="begin" data-arg="'+(WORLD.gen?'world:':'')+k+'">'+originArt(k)+'<strong>'+B0.n+'</strong><span class="gold">'+w.n+' · '+(w.kind==='ranged'?'Ranged':w.kind==='magic'?'Magic':'Melee')+'</span><span>'+B0.d+'</span></button>'}).join('')+'</div>'+ 
+    '<div class="lab">Choose your past · it decides your weapon · then your world</div><div class="cards origin-cards">'+Object.keys(BGS).map(k=>{const B0=BGS[k],w=BASES[B0.weapon];return '<button class="card origin-card" type="button" data-act="begin" data-arg="world:'+k+'">'+originArt(k)+'<strong>'+B0.n+'</strong><span class="gold">'+w.n+' · '+(w.kind==='ranged'?'Ranged':w.kind==='magic'?'Magic':'Melee')+'</span><span>'+B0.d+'</span></button>'}).join('')+'</div>'+ 
     (sv?'<p class="bad" style="font-size:13px">Starting a new game will replace your saved game when it next saves.</p>':'')+back);
   if(G.menu==='load')return showPanel('<div class="top"><h2>Load game</h2></div><div class="slots">'+slotRows('title')+'</div>'+(SAVE_SLOTS.some(oldSlot)?'<p class="muted">Saves made by an older version cannot be loaded (the world is made differently now): start a new game.</p>':'')+(sv?'':'<p class="muted">No saved game yet. The game saves itself each day and when you leave a town (Autosave); F6 saves at any time (Quick save); the menu (Esc) saves to a slot of your own.</p>')+back);
   if(G.menu==='settings')return showPanel('<div class="top"><h2>Settings</h2></div>'+
@@ -170,11 +170,10 @@ function showEsc(msg){
     (msg?'<p class="gold">'+msg+'</p>':'')+'<p class="muted" style="font-size:13px">Esc resumes.</p>'+nav(null,['esc-resume',null,'Resume']));
 }
 // the world you play in (the Esc menu): its name, its kind and its seed, with a Copy button (the generated world's settings: the
-// owner, 2026-10-22), and World: its page (worldsetup.js worldPage: every setting, the world code); today's map: Ashmark, Classic,
-// no seed
-function escWorld(){const s=WM&&WM.settings;
-  return '<div class="esc-world"><span>'+(s?htmlText(worldName(WM))+' · '+htmlText(worldKind(s))+(s.seed?' · seed <b>'+htmlText(s.seed)+'</b>':''):'Ashmark · Classic')+'</span>'+
-    (s&&s.seed?'<button class="btn sm" type="button" data-act="esc-seed">Copy seed</button>':'')+'<button class="btn sm" type="button" data-act="esc-wpage">World</button></div>'}
+// owner, 2026-10-22), and World: its page (worldsetup.js worldPage: every setting, the world code)
+function escWorld(){const s=WM.settings;
+  return '<div class="esc-world"><span>'+htmlText(worldName(WM))+' · '+htmlText(worldKind(s))+(s.seed?' · seed <b>'+htmlText(s.seed)+'</b>':'')+'</span>'+
+    (s.seed?'<button class="btn sm" type="button" data-act="esc-seed">Copy seed</button>':'')+'<button class="btn sm" type="button" data-act="esc-wpage">World</button></div>'}
 // (the World page: Back to the menu, Resume)
 const escWorldPage=msg=>showPanel('<div class="top"><h2>World</h2><span class="muted">Day '+G.day+'</span></div>'+worldPage()+(msg?'<p class="gold">'+msg+'</p>':'')+nav(['esc-back',null,'Back'],['esc-resume',null,'Resume']));
 // text onto the clipboard: true once it is there (the browser's clipboard, else the old copy command); false if neither would
@@ -206,7 +205,7 @@ function menuAct(a,arg){
   if(a==='wipe-ask'){G.wipeArmed=arg||latestSlot();showTitle('load');return true}
   if(a!=='menu')return false;
   G.wipeArmed=false;
-  if(arg==='wiki'){try{window.open('wiki.html'+(WORLD.gen?'':'?gen=0'),'_blank')}catch(e){}return true}
+  if(arg==='wiki'){try{window.open('wiki.html','_blank')}catch(e){}return true}
   if(arg==='exit'){try{window.close()}catch(e){}showTitle('exit');return true}
   if(arg==='new')worldSetupFresh();// (each visit a fresh seed: worldsetup.js)
   showTitle(arg);const b=panel.querySelector('.card,button');if(b)b.focus({preventScroll:true});return true;

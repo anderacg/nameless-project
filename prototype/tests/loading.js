@@ -54,10 +54,10 @@ try{
    const x=fnv().n(P.x).n(P.y),lists={lords:W.lords,bands:t.bandits,patrols:W.patrols,comps:t.cparties(),caravans:W.caravans,monsters:W.monsters,critters:W.critters,refugees:W.refugees,folk:W.folk,ships:W.ships,fights:W.fights};
    for(const k in lists){const L=lists[k]||[];x.s(k).n(L.length);for(const q of L)x.n(q.x).n(q.y)}h.W8=x.x}
   {seed(9007);P.x=-999;P.y=-999;P.tx=P.ty=null;G.chase=null;t.setSpeed(3);for(let f=0;f<4000&&G.day<d0+3;f++)t.updateWorld(.05);G.mode='world';h.W7=fnv().s(saveStr()).x}
-  // (the generated world, the default since the flip: worldprint's G1-G8, GEXPECT; today's map, -Classic: W1-W8, EXPECT)
-  const ids=['W1','W2','W3','W4','W5','W6','W7','W8'],GEN=t.WM.gen!=='classic-0',nm=id=>GEN?'G'+id.slice(1):id;
-  try{const x=new XMLHttpRequest();x.open('GET','tests/worldprint.js',false);x.send();const m=new RegExp('const '+(GEN?'GEXPECT':'EXPECT')+'=(\\{[^}]*\\})').exec(x.responseText),E=m&&Function('return '+m[1])(),diff=E?ids.filter(id=>E[id]!==h[id]):ids;
-   ok(E&&!diff.length,'a new game in steps makes the world of worldprint\'s baseline, made at once ('+nm('W1')+'-'+nm('W8')+(diff.length?'; differ: '+diff.map(id=>nm(id)+' '+h[id]+(E?' baseline '+E[id]:'')).join(', '):'')+')')}
+  // (worldprint's W1-W8, EXPECT)
+  const ids=['W1','W2','W3','W4','W5','W6','W7','W8'];
+  try{const x=new XMLHttpRequest();x.open('GET','tests/worldprint.js',false);x.send();const m=/const EXPECT=(\{[^}]*\})/.exec(x.responseText),E=m&&Function('return '+m[1])(),diff=E?ids.filter(id=>E[id]!==h[id]):ids;
+   ok(E&&!diff.length,'a new game in steps makes the world of worldprint\'s baseline, made at once (W1-W8'+(diff.length?'; differ: '+diff.map(id=>id+' '+h[id]+(E?' baseline '+E[id]:'')).join(', '):'')+')')}
   catch(e){ok(false,'worldprint\'s baseline read ('+e.message+')')}
   ok(!stray,'no random is drawn between its slices ('+stray+' of the '+draws+' since it began)');
   // the load: the save just made, at once, in steps, at once again

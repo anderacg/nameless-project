@@ -1,10 +1,10 @@
 'use strict';
-// The world generator's contracts (doc/WORLD_DESIGN.md §15.2.1, Phase 2 wave 0), with the flag off (today's map in) and with -Gen
-// (WORLD.gen: the generated classic world in): the settings (worldsettings.js: every key's clamp, normSettings idempotent,
+// The world generator's contracts (doc/WORLD_DESIGN.md §15.2.1, Phase 2 wave 0), with the generated classic
+// world in: the settings (worldsettings.js: every key's clamp, normSettings idempotent,
 // Classic's locks, the presets, settingsKey, seedNum); genWorld (worldgen.js) and its steps (the result's shape, every layer at
 // w x h, the stages in order, bars that never go back, the same sum twice in a page, other seeds other worlds, no Math.random);
-// the classic anchors and hints; T_FORD in every table indexed by kind; the world in use (gen, sum, its BattleSite's new fields
-// null with the flag off) and the three Router calls answering on it; installWorld, then a new game on the generated world.
+// the classic anchors and hints; T_FORD in every table indexed by kind; the world in use (gen, sum, its BattleSite's new fields)
+// and the three Router calls answering on it; installWorld, then a new game on the generated world.
 // Phase 2 wave 1 (the terrain, stages 1-6): Normal within 4 s, Large twice one world, 8 seeds' land, climates and D41 shares, the
 // map settings' effects (tests/rivers.js: the rivers); big climates (stage 3's tidying: no small piece, strip or neck).
 // INFO lines: time per stage, the shares (land, climates, D41's high ground), rivers, crossings and camps.
@@ -141,13 +141,12 @@ try{
     say.push(n+': '+sz.length+' pieces ('+isle+' an isle\u2019s under '+min+'), '+strip+' strip tiles, '+t.CLIMS.map((c,k)=>c[0]+(sh[k]*100/ln).toFixed(0)).join(' '))}}
   finally{row.run=run}
   ok(!bad.length,'big climates: no piece under minArea (scaled) with another climate beside it, hardly a strip, the frost the coldest land, each climate 6% or more ('+say.join('; ')+')'+(bad.length?': '+bad.join('; '):''))}
- // ---- the world in use, flag off or on
+ // ---- the world in use
  {const m=t.WM,S=m.battleSite(Math.floor(m.w/2),Math.floor(m.h/2)),fresh=['river','crossing','season','region','deep','elev','terrace','rough','high','cliff'];
-  if(!t.WORLD.gen)ok(m.gen==='classic-0'&&m.w===224&&m.h===160&&m.settings===null&&m.seedNum===0&&m.graph===null&&layersOk(m)&&m.sum>0&&t.MAP_LAYERS.slice(2).every(k=>m[k].every(v=>!v)),'flag off: today\'s map (classic-0, 224 x 160, no settings), its new layers there and all 0, its sum over gen, kind and clim ('+m.sum.toString(16)+')');
-  else ok(m.gen==='ashmark-1'&&m.classic&&m.w===448&&m.h===320&&m.sum===R1.map.sum&&t.TOWNS.length>=37&&t.CLASSIC_PLACES.every((p,k)=>t.TOWNS[k].name===p.name),'flag on: the generated classic world is in (ashmark-1, 448 x 320, the sum genWorld makes: '+m.sum.toString(16)+'), its holdings the classic ones in TOWNS order');
+  ok(m.gen==='ashmark-1'&&m.classic&&m.w===448&&m.h===320&&m.sum===R1.map.sum&&t.TOWNS.length>=37&&t.CLASSIC_PLACES.every((p,k)=>t.TOWNS[k].name===p.name),'the generated classic world is in (ashmark-1, 448 x 320, the sum genWorld makes: '+m.sum.toString(16)+'), its holdings the classic ones in TOWNS order');
   // (a generated world fills river, crossing, elev, terrace, rough and high from its layers: tests/battlesite.js checks them; the
   // rest wait for Phases 4 and 5)
-  {const empty=t.WORLD.gen?['season','region','deep','cliff']:fresh;ok(fresh.every(k=>k in S)&&empty.every(k=>S[k]===null),'its BattleSite has the new fields'+(t.WORLD.gen?', the world’s filled, '+empty.join(', ')+' empty for now':', all empty on today’s map')+' ('+fresh.join(', ')+')')}}
+  {const empty=['season','region','deep','cliff'];ok(fresh.every(k=>k in S)&&empty.every(k=>S[k]===null),'its BattleSite has the new fields, the world’s filled, '+empty.join(', ')+' empty for now ('+fresh.join(', ')+')')}}
  // ---- installWorld, then a new game on it; the three Router calls answer
  {Math.random=t.seeded(9001);const R=t.genWorld(t.classicSettings()),m=t.installWorld(R);
   ok(t.WM===m&&t.MW===448&&t.MH===320&&t.tiles===m.kind&&t.TOWNS.length===37&&t.CAMP_SPOTS.length===R.camps.length&&t.DEPOSITS.length>0,'installWorld puts it in: the map in use, its 37 holdings, '+R.camps.length+' camps and '+t.DEPOSITS.length+' deposits');

@@ -9,9 +9,9 @@ try{
  const panel=()=>document.getElementById('panel').innerHTML;
  t.act('begin','soldier');
  const S=W.sites,of=ty=>S.filter(s=>s.type===ty),want=Object.keys(t.SITE_TYPES);
- // (as many as the world holds, data/world.js density: today's map's all of them; a generated world's at least 9 in 10, the travellers wanting a roadside)
- ok(want.every(ty=>{const n=of(ty).length,w=t.SITE_TYPES[ty].spots?t.CAMP_SPOTS.length:t.density(t.WM).sites[ty];return t.WM.gen==='classic-0'?n===w:n<=w&&n>=w*.9}),'every kind placed: '+want.map(ty=>of(ty).length+' '+ty).join(', '));
- const f=t.flowTo(t.TOWNS[0]);const at=s=>s.type==='cave'?s.ty+1:s.ty;ok(S.every(s=>t.passable(t.tAt(s.tx,at(s)))&&isFinite(f[at(s)*MW+s.tx])),'all '+S.length+' sites stand on ground you can reach (a cave: the ground at its mouth)');
+ // (as many as the world holds, data/world.js density: at least 9 in 10, the travellers wanting a roadside)
+ ok(want.every(ty=>{const n=of(ty).length,w=t.SITE_TYPES[ty].spots?t.CAMP_SPOTS.length:t.density(t.WM).sites[ty];return n<=w&&n>=w*.9}),'every kind placed: '+want.map(ty=>of(ty).length+' '+ty).join(', '));
+ const at=s=>s.type==='cave'?s.ty+1:s.ty;ok(S.every(s=>t.passable(t.tAt(s.tx,at(s)))&&t.Router.reach(t.TOWNS[0],{x:(s.tx+.5)*t.TILE,y:(at(s)+.5)*t.TILE})),'all '+S.length+' sites stand on ground you can reach (a cave: the ground at its mouth)');
  const quad=[0,1,2,3].map(q=>S.filter(s=>(s.tx<MW/2?0:1)+(s.ty<MH/2?0:2)===q).length);ok(quad.every(n=>n>=4),'spread over the whole map (per quarter: '+quad.join(', ')+')');
  ok(S.every(s=>t.TOWNS.every(w=>Math.hypot(w.tx-s.tx,w.ty-s.ty)>=6)),'none sit on top of a holding');
  ok(of('cave').every(s=>t.MONSTERS[s.id]),'every cave has a lair beast ('+[...new Set(of('cave').map(s=>s.id))].join(', ')+')');

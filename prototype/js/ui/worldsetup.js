@@ -1,5 +1,5 @@
 'use strict';
-/* ---------- the New world screen (doc/WORLD_DESIGN.md §4, D4, D26-D30): with WORLD.gen, after your race and your past (ui.js New
+/* ---------- the New world screen (doc/WORLD_DESIGN.md §4, D4, D26-D30): after your race and your past (ui.js New
    game: a past's card names 'world:<past>', session.js begin), the world's settings, then "Forging the world…". A window in the
    frame rule:
      header: New world, your race and past;
@@ -88,7 +88,7 @@ function wsRender(focus){const S=WSETUP,s=S.s,cl=s.preset==='classic',D=s.w*s.h,
 const wsMapKey=s=>settingsKey({...s,...Object.fromEntries(CLASSIC_FREE.map(k=>[k,SETTING_DEFAULT[k]]))});
 // the real world with the map of these settings, when one is made: the full preview, else the world in ({map, holdings})
 function wsReal(s){const S=WSETUP,k=wsMapKey(s);if(S.full&&wsMapKey(S.full.r.map.settings)===k)return S.full.r;
-  return WM&&WM.gen==='ashmark-1'&&wsMapKey(WM.settings)===k?{map:WM,holdings:WM.first?WM.first.towns.map(t=>JSON.parse(t)):TOWNS}:null}
+  return WM&&wsMapKey(WM.settings)===k?{map:WM,holdings:WM.first?WM.first.towns.map(t=>JSON.parse(t)):TOWNS}:null}
 // the full preview's world, for begin: once (it becomes the world in)
 function worldPreviewTake(s){const S=WSETUP,r=S.full&&S.full.key===settingsKey(s)?S.full.r:null;if(r)S.full=null;return r}
 // the preview: a picture of the real world or the sketch, the holdings over it, your start city ringed; the caption, the counts
@@ -107,7 +107,7 @@ function wsDraw(cv,p,s){const S=WSETUP;
   const q=s=>panel.querySelector(s);
   const cap=q('.ws-cap');cap.textContent=cap.title=(p.real?'The world itself':'Sketch: mountains, rivers and holdings approximate')+' · your start ringed';
   q('.ws-counts').textContent=(p.real?'':'About ')+p.holdings.length+' holdings · '+p.rivers+' rivers · '+Math.round(p.land*100)+'% land';
-  q('.ws-time').textContent=WM&&WM.gen==='ashmark-1'&&settingsKey(WM.settings)===settingsKey(s)?'Ready: it is the world in now.':S.full&&S.full.key===settingsKey(s)?'Ready: Forge the world uses this one.':'Forging it takes about '+wsTime(s)+' s here.'}
+  q('.ws-time').textContent=WM&&settingsKey(WM.settings)===settingsKey(s)?'Ready: it is the world in now.':S.full&&S.full.key===settingsKey(s)?'Ready: Forge the world uses this one.':'Forging it takes about '+wsTime(s)+' s here.'}
 // (a made world's picture: worldgen's map at 1 px per k tiles (map.js fullMapPic, all of it seen, no realms' tint), its holdings)
 function wsPic(m,hs,k,real){const N=m.w*m.h,seen=new Uint8Array(N).fill(1),land=new Int8Array(N).fill(-1),pic=fullMapPic(m,k,seen,land,[]);let L=0;for(let i=0;i<N;i++)if(m.kind[i]!==T_WATER)L++;
   return{pic,real,map:m,holdings:hs.map(h=>({x:(h.tx+.5)/k,y:(h.ty+.5)/k,realm:h.realm||h.owner,kind:h.kind})),rivers:real?wsRivers(m):0,land:L/N}}
@@ -143,9 +143,8 @@ onAct('ws-',(a,arg)=>{const S=WSETUP;if(G.menu!=='world'||!S.s)return;const s=S.
 panel.addEventListener('input',e=>{if(e.target&&e.target.id==='wsSeed')wsTyped(e.target.value)});
 panel.addEventListener('keydown',e=>{if(!e.target||e.target.id!=='wsSeed')return;if(e.key==='Enter'){e.preventDefault();act('ws-regen')}else if(e.key==='Escape')e.target.blur()});
 /* the World page (the Esc menu's: ui.js): the world in use, its name, preset, seed and world code (Copy), every setting, and
-   what it holds now. Today's map (WORLD.gen off): Ashmark, Classic, its size and holdings */
-function worldPage(){const m=WM,s=m&&m.settings,n=m&&m.first?m.first.towns.length:TOWNS.length,row=(k,v)=>'<div class="ws-row"><span class="ws-k">'+k+'</span><span>'+v+'</span></div>';
-  if(!s)return '<div class="ws-page">'+row('World','Ashmark · Classic · today\'s map')+row('Size',m.w+' × '+m.h+' tiles')+row('Holdings',n)+'</div>';
+   what it holds now */
+function worldPage(){const m=WM,s=m.settings,n=m.first?m.first.towns.length:TOWNS.length,row=(k,v)=>'<div class="ws-row"><span class="ws-k">'+k+'</span><span>'+v+'</span></div>';
   let L=0;for(let i=0;i<m.kind.length;i++)if(m.kind[i]!==T_WATER)L++;
   return '<div class="ws-page">'+row('World',htmlText(worldName(m))+' · '+WS_PRESET[s.preset][0])+row('Seed','<b>'+htmlText(s.seed)+'</b>')+
     '<div class="ws-row"><span class="ws-k">World code</span><span class="ws-line"><b>'+htmlText(worldCode(s))+'</b><button class="btn sm" type="button" data-act="esc-code">Copy</button></span></div>'+

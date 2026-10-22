@@ -50,8 +50,8 @@ function occRebuild(){roadsToGates();tracksUp(WM);ROAD_PAINT=null;OCC.fill(0);fo
     LOT[l.id]=l;l.town=t.name;occMark(l,l.id);lotN=Math.max(lotN,l.id+1)}occReserve();for(const t of TOWNS)if(t.lots)Layout.of(t).tracks(true);tracksDone()}
 const lotOf=(x,y)=>{const id=occAt(x,y);return id>0?LOT[id]:null};
 /* the roads as painted (the owner's play-test 2: "some buildings still on the road"): the tiles within LOT_ROAD px of a road's
-   middle as the art draws it, a byte a tile. On the generated world a road follows its smoothed line, not its tiles (worldart.js
-   artGenPlan: the points its bands are kept clear round); on today's map its tiles, led half a tile aside at a gate (roadStamps).
+   middle as the art draws it, a byte a tile. A road follows its smoothed line, not its tiles (worldart.js artGenPlan: the points
+   its bands are kept clear round).
    No lot or field stands on one. Made when first asked (the roads led to the gates by then), again for a new world */
 const LOT_ROAD=2;
 let ROAD_PAINT=null;onWorld(()=>{ROAD_PAINT=null});
@@ -59,9 +59,7 @@ function roadPaint(){
   if(ROAD_PAINT)return ROAD_PAINT;const B=ROAD_PAINT=new Uint8Array(MW*MH),r=LOT_ROAD;
   // (a point of the road's middle: the middle of a square the art keeps clear round it)
   const at=(x,y,w,h)=>{const cx=x+(w>>1),cy=y+(h>>1);for(let ty=Math.max(0,Math.floor((cy-r)/TILE));ty<=Math.min(MH-1,Math.floor((cy+r)/TILE));ty++)for(let tx=Math.max(0,Math.floor((cx-r)/TILE));tx<=Math.min(MW-1,Math.floor((cx+r)/TILE));tx++)B[ty*MW+tx]=1};
-  if(WM.gen!=='classic-0'&&typeof artRoadMarks==='function')artRoadMarks(at);
-  else if(typeof roadStamps==='function'){const P={towns:new Set(TOWNS.map(t=>t.ty*MW+t.tx)),shift:new Set(TOWNS.flatMap(t=>[t.ty*MW+t.tx,(t.ty+1)*MW+t.tx]))};
-    for(let ty=0;ty<MH;ty++)for(let tx=0;tx<MW;tx++)roadStamps(P,tx,ty,0,(x,y,w)=>at(x,y,w,w))}
+  if(typeof artRoadMarks==='function')artRoadMarks(at);
   for(let i=0;i<MW*MH;i++)if(tiles[i]===T_ROAD)B[i]=1;
   return B}
 
@@ -108,8 +106,8 @@ function lotWalk(t){
   WALKS.set(t,w={all:placeWalk(WM,s,LOT_WALK),own:placeWalk(WM,s,LOT_WALK,true)});return w}
 const walkTo=(t,x,y)=>placeWalkAt(lotWalk(t).all,x,y)&&!xEnds().has(y*MW+x);
 const ownBank=(t,x,y)=>placeWalkAt(lotWalk(t).own,x,y);
-function lotWalks(t,x,y,n,far){
-  for(let j=0;j<n;j++)for(let i=0;i<n;i++)if(!walkTo(t,x+i,y+j))return false;if(far)return true;
+function lotWalks(t,x,y,n){
+  for(let j=0;j<n;j++)for(let i=0;i<n;i++)if(!walkTo(t,x+i,y+j))return false;
   const w=lotWalk(t).all,dx=x+(n>>1)-w.x0-LOT_WALK,dy=y+n-1-w.y0-LOT_WALK;
   const d=placeWalkSteps(w,x+(n>>1),y+n-1);return d<=PLACE_HOLD.round[0]*(Math.abs(dx)+Math.abs(dy))+PLACE_HOLD.round[1]&&d<=2*Math.hypot(dx,dy)+2}
 // may an n x n lot stand at (x, y) for holding t? gap: keep a free tile between it and other buildings
@@ -126,8 +124,8 @@ function lotFits(t,x,y,n,rule,gap){
   return true;
 }
 // the best free place for an n x n lot between rmin and rmax tiles of the holding's centre: near, by a little chance, and
-// (if box is given) outside it (outer works keep clear of the walls) or inside it. On the generated world an outer work (an estate
-// from 3 tiles out) with no place within rmax looks on out to LOT_FAR[0] tiles, its door at most LOT_FAR[1] steps from the gate
+// (if box is given) outside it (outer works keep clear of the walls) or inside it. An outer work (an estate from 3 tiles
+// out) with no place within rmax looks on out to LOT_FAR[0] tiles, its door at most LOT_FAR[1] steps from the gate
 // (4 ways: its workers home on time; the owner's play-test 4: Redspire's lumber camp, its woods past 12 tiles along its own bank)
 const LOT_FAR=[18,22];
 function lotSpot(t,n,rule,rmin,rmax,R,o){
@@ -137,11 +135,11 @@ function lotSpot(t,n,rule,rmin,rmax,R,o){
     if(!lotFits(t,x,y,n,rule,o.gap===undefined?true:o.gap))continue;
     if(o.estate&&nearBandits(x+n/2-.5,y+n/2-.5,BANDIT_GAP+n/2+(o.fields?3:0)))continue;// (its fields reach 3 tiles out)
     // (its chance drawn before the walk is asked of it: a layout with every spot walked to stays as it was)
-    let s=d+R()*(o.jit||1.6);if(!lotWalks(t,x,y,n,o.far)||o.steps&&placeWalkSteps(lotWalk(t).all,x+(n>>1),y+n-1)>o.steps)continue;if(!ownBank(t,x+(n>>1),y+(n>>1)))s+=LOT_BANK;if(o.sea&&!seaShore(x,y,n))s+=LOT_SEA;
+    let s=d+R()*(o.jit||1.6);if(!lotWalks(t,x,y,n)||o.steps&&placeWalkSteps(lotWalk(t).all,x+(n>>1),y+n-1)>o.steps)continue;if(!ownBank(t,x+(n>>1),y+(n>>1)))s+=LOT_BANK;if(o.sea&&!seaShore(x,y,n))s+=LOT_SEA;
     // o.fields: an estate that works fields: only where its first level's fields fit, and the more room the better
     if(o.fields){const m=fieldsFor(t,{x,y,n},o.fields).length;if(m<PLOTS_AT[o.fields](1))continue;s+=(PLOTS[o.fields]-m)*1.2}
     if(s<bs){bs=s;best=[x,y]}}
-  if(!best&&o.estate&&rmin>=3&&rmax<LOT_FAR[0]&&WM.gen!=='classic-0')return lotSpot(t,n,rule,rmin,LOT_FAR[0],R,{...o,steps:LOT_FAR[1]});
+  if(!best&&o.estate&&rmin>=3&&rmax<LOT_FAR[0])return lotSpot(t,n,rule,rmin,LOT_FAR[0],R,{...o,steps:LOT_FAR[1]});
   return best;
 }
 const lotAt=(t,k)=>Layout.of(t).at(k);
@@ -194,9 +192,8 @@ class Layout{
     const R=seeded(t.seed*977+13),n0=lotSize(typeFor(t,'centre',R)),cx=t.tx-(n0>>1),cy=t.ty-n0+1;
     // the centre stands on the holding's own tile, its gate on its front row where the roads end: parties arrive there and set out
     this.add({k:'centre',type:typeFor(t,'centre',R),x:cx,y:cy,n:n0,lv:1,seed:t.seed*31+7,st:'built'});
-    // a port town's harbour before its houses on the generated world (they would take the shore its people walk to: a League port's
-    // docks on its own sea; today's map keeps its order, its harbours on the sea)
-    if(WM.gen!=='classic-0'&&t.style==='port'&&bldLv(t,'port')&&!this.estateLot('port'))t.bld.port=0;
+    // a port town's harbour before its houses (they would take the shore its people walk to: a League port's docks on its own sea)
+    if(t.style==='port'&&bldLv(t,'port')&&!this.estateLot('port'))t.bld.port=0;
     // houses round it: enough for its people (the centre houses some), a few to spare; then, one still short of room for them clears
     // plots in the woods (a village deep in them, its clearing crossed by its roads)
     const pop=t.pop||t.T.pop0;let room=this.housing(),tries=0;
@@ -207,11 +204,11 @@ class Layout{
     for(const k of Object.keys(ESTATES))if(!INNER.includes(k)&&bldLv(t,k)&&!this.estateLot(k,R))t.bld[k]=0;
     // and the tracks to them
     this.laying=false;this.tracks();t._spots=null}
-  // the tracks to its outer estates no way comes near, the nearest its gate first (the generated world's: estTrack); the last
+  // the tracks to its outer estates no way comes near, the nearest its gate first (estTrack); the last
   // holding's done (a new world's holdings are laid out in TOWNS' order), the graph and the land reckoned with them (tracksDone).
   // more: others are to come (a save's lots put back: occRebuild)
   tracks(more){
-    if(WM.gen==='classic-0')return;const t=this.t,d=l=>Math.abs(l.x-t.tx)+Math.abs(l.y-t.ty);
+    const t=this.t,d=l=>Math.abs(l.x-t.tx)+Math.abs(l.y-t.ty);
     for(const l of this.list.filter(l=>ESTATES[l.k]&&!INNER.includes(l.k)).sort((a,b)=>d(a)-d(b)||a.id-b.id))estTrack(t,l);
     if(!more&&t===TOWNS[TOWNS.length-1])tracksDone()}
   // the box round its inner lots: the town, which fields and outer works keep clear of
@@ -229,14 +226,13 @@ class Layout{
     const t=this.t;
     R=R||seeded(t.seed*131+k.length);if(this.at(k))return this.at(k);const type=typeFor(t,k,R),n=lotSize(type),inner=INNER.includes(k),wb=this.wallBox();
     // (an estate with fields stands only where they have room, lotSpot o.fields)
-    // (an outer one not far round; on today's map, where none is, one its people still walk to (no estate lost there: its layout
-    // and what a new game draws as they were); the generated world's water is bridged by its holdings instead)
-    const ow=o=>lotSpot(t,n,groundOf(k),3,k==='port'&&t.style==='port'?20:12,R,{estate:true,outside:wb&&{x0:wb.x0-1,y0:wb.y0-1,x1:wb.x1+1,y1:wb.y1+1},fields:PLOTS[k]?k:null,sea:k==='port'&&t.style==='port',far:o});
-    const p=at?at:inner?(lotSpot(t,n,'open',1,6,R,{estate:true})||lotSpot(t,n,'open',1,9,R,{estate:true})):ow(false)||WM.gen==='classic-0'&&ow(true);
+    // (an outer one not far round; the world's water is bridged by its holdings)
+    const p=at?at:inner?(lotSpot(t,n,'open',1,6,R,{estate:true})||lotSpot(t,n,'open',1,9,R,{estate:true})):
+      lotSpot(t,n,groundOf(k),3,k==='port'&&t.style==='port'?20:12,R,{estate:true,outside:wb&&{x0:wb.x0-1,y0:wb.y0-1,x1:wb.x1+1,y1:wb.y1+1},fields:PLOTS[k]?k:null,sea:k==='port'&&t.style==='port'});
     if(!p)return null;const l=this.add({k,type,x:p[0],y:p[1],n,lv:bldLv(t,k)||1,seed:Math.floor(R()*1e6),st:st||'built'});
     if(PLOTS[k]){l.plots=fieldsFor(t,l,k);occMark(l,l.id)}
     // (one built while the world runs: its track now; the layout's own once it is laid out, tracks)
-    if(!inner&&!this.laying&&WM.gen!=='classic-0'&&estTrack(t,l))tracksDone();
+    if(!inner&&!this.laying&&estTrack(t,l))tracksDone();
     t._spots=null;return l}
   // keep the lots in step with what the holding has: build what it has gained, ruin what war has cost it (its centre's
   // fortification is its walls, wallOf, drawn as they stand: structures.js lotSprite)
@@ -257,7 +253,7 @@ function fieldsFor(t,l,k){
   return out.map(c=>[c[0],c[1]]);
 }
 /* the estates' tracks (the owner's play-test 4: "can we have a country road or non-main road to cross between forest as well when
-   there is an estate near by"): on the generated world, to the door of each of a holding's outer estates no way comes near (no road
+   there is an estate near by"): to the door of each of a holding's outer estates no way comes near (no road
    or track its people walk to within LOT_TRACK.near tiles of the tile before its door), a track (a road of no width, as the
    bridges' tracks: worldplace.js genRoads) from a way: the least-cost way, 8 ways (no corner cut past a lot, water or a peak), over
    free ground its people walk to (lotWalk: never on a lot, a field, a crossing or by its end), open ground 1, hills LOT_TRACK.hill,
@@ -275,7 +271,7 @@ function tracksUp(m){const L=EST_TRACKS.get(m);if(!L)return;
   for(let k=L.length-1;k>=0;k--){const r=L[k];r.laid.forEach((i,j)=>{m.kind[i]=r.was[j];m.feat[i]=r.fe[j]})}m.roads=m.roads.filter(r=>!r.est);EST_TRACKS.delete(m);if(m===WM)wayRechart()}
 // (the tracks laid: the way graph charted again with them (router.js wayRechart) and the land reckoned again over them (territory.js
 // computeLand: a holding's claim reckoned again later, at a capture, would run along them while the rest did not))
-function tracksDone(){if(WM.gen==='classic-0')return;wayRechart();computeLand()}
+function tracksDone(){wayRechart();computeLand()}
 // (the tiles under a line through points pts (tiles), 8-connected and thin: as worldplace.js genRoads lays its roads)
 function lineTiles(pts){const T=[];
   for(let k=1;k<pts.length;k++){const [ax,ay]=pts[k-1],[bx,by]=pts[k],st=Math.max(1,Math.ceil(Math.hypot(bx-ax,by-ay)*4));

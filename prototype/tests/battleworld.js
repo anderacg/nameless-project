@@ -4,7 +4,7 @@
 // world round its tile. A fight at a climates' edge mixes its field's ground (B.terrain.clim), the other climate's share the
 // world's, both armies' halves alike (mirrored across the middle line: TERRAIN_MIX.mirror; off, more of it toward the side it
 // lies on, as first built); the ground's own rules (snow, mud, the grass's gallop) follow each soldier's cell, the weather the tile's;
-// a fight of one climate (and every fight on today's map) is as it was. A fight beside a holding has its buildings (solid, hiding
+// a fight of one climate is as it was. A fight beside a holding has its buildings (solid, hiding
 // what lies behind them, standing twice the world's model size), crop rows and fences on the side they lie, both deployment zones
 // and a building's width in front of them clear and the field fair; by a brook a
 // stream crossed anywhere; by a pond its pool and marsh, no river from its water; on a lane (a road through a wood) trees close
@@ -13,7 +13,7 @@ window.RUN=()=>{const t=T,o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o
 const keep=ev('[TERRAIN.on,FIELD_SIZES.on,BW,BH]'),on0=t.TERRAIN_WORLD.on,mr0=t.TERRAIN_MIX.mirror;
 try{
  ev('TERRAIN.on=true;FIELD_SIZES.on=true');t.fieldSet('big');
- const WM=t.WM,MW=WM.w,MH=WM.h,GEN=WM.gen!=='classic-0',K=t.TKIND,CL=t.CLIMS,{T_OPEN,T_FOREST,T_HILL,T_WATER,T_MOUNT}=t;
+ const WM=t.WM,MW=WM.w,MH=WM.h,K=t.TKIND,CL=t.CLIMS,{T_OPEN,T_FOREST,T_HILL,T_WATER,T_MOUNT}=t;
  const BW=t.BW,BH=t.BH,top=24,bot=BH-8;
  // (a tile's site, its env, its spec and its field (the big size), with the world's say on or off)
  const at=(x,y,world=true,mirror=mr0)=>{t.TERRAIN_WORLD.on=world;t.TERRAIN_MIX.mirror=mirror;const S=WM.battleSite(x,y),env=t.battleEnv(false,S),g=t.terrainOf(S,env),T0=t.buildTerrain({...g,W:BW,H:BH,top,bot});t.TERRAIN_WORLD.on=on0;t.TERRAIN_MIX.mirror=mr0;return{S,env,g,T:T0}};
@@ -23,15 +23,13 @@ try{
  const zones=[t.fieldZone(0),t.fieldZone(1)],inZone=x=>zones.some(z=>x>=z.x0&&x<z.x1);
  const cellsOf=(T0,f)=>{const out=[];for(let i=0;i<T0.C*T0.R;i++)if(f(i))out.push({i,x:(i%T0.C+.5)*T0.cs,y:(Math.floor(i/T0.C)+.5)*T0.cs});return out};
 
- // ======== today's map, and a field of one climate: as it was
- if(!GEN){let bad=0,n=0;for(let i=0;i<MW*MH;i+=7){const x=i%MW,y=Math.floor(i/MW);if(!land(x,y))continue;const S=WM.battleSite(x,y);n++;if(['temp','moist','mix','pond','brook','lane','lots'].some(k=>S[k]!==null))bad++}
-  ok(!bad,'today\'s map: no site reads the world round its tile ('+n+' sites, every 7th tile: temp, moist, mix, pond, brook, lane and lots all empty)')}
- {const pure=scan(S=>!S.mix&&!S.pond&&!S.brook&&!S.lane&&!S.lots,GEN?37:13,60);let same=0,fs=0,nf=0;
+ // ======== a field of one climate: as it was
+ {const pure=scan(S=>!S.mix&&!S.pond&&!S.brook&&!S.lane&&!S.lots,37,60);let same=0,fs=0,nf=0;
   for(const [x,y] of pure){const a=at(x,y,true),b=at(x,y,false);if(J(a.g)===J(b.g))same++;if(nf<12){nf++;const A=a.T,B=b.T;if(J(Array.from(A.kind))===J(Array.from(B.kind))&&J(Array.from(A.lvl))===J(Array.from(B.lvl))&&!A.clim&&!A.built&&J(A.recipe)===J(B.recipe))fs++}}
   ok(pure.length>=20&&same===pure.length&&fs===nf,'a fight of one climate with nothing by it: its ground spec ('+same+' of '+pure.length+' tiles) and its field ('+fs+' of '+nf+': cells, levels, recipe and words) the same as before (TERRAIN_WORLD off)');
   if(pure.length){const [x,y]=pure[0],a=at(x,y,true),b=at(x,y,false),pa=t.PX.battleGround({...a.T,climate:a.env.c}),pb=t.PX.battleGround({...b.T,climate:b.env.c}),d1=pa.getContext('2d').getImageData(0,0,BW,BH).data,d2=pb.getContext('2d').getImageData(0,0,BW,BH).data;
    let diff=0;for(let i=0;i<d1.length;i++)if(d1[i]!==d2[i])diff++;ok(!diff&&pa.props.length===pb.props.length,'and painted pixel for pixel the same ('+x+','+y+': '+diff+' bytes differ, '+pa.props.length+' props)')}}
- if(!GEN)info('the rest reads the generated world (its default; -Classic runs today\'s map)');else{
+ {
 
  // ======== a climates' edge: the ground mixed, more of the other's toward its side
  {const mixed=scan(S=>S.mix&&S.mix.share>.22&&S.mix.share<.6&&Math.max(Math.abs(S.mix.dir[0]),Math.abs(S.mix.dir[1]))>.85,11,24);let right=0,cl=0,words=0;const by={};

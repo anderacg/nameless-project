@@ -321,8 +321,8 @@ class BattleTerrain{
     const river=BattleTerrain.riverOf(S,env,recipe,code,w-(S.pond?S.pond.n:0)),L=S.lane;
     return{recipe,seed:Math.floor(hash(tx,ty,code+S.salt)*4294967296)>>>0,tx,ty,oasis:recipe==='desert'&&(w>0||K[4]===T_WATER),river,frost:env.c==='frost',
       edges:BattleTerrain.edgesOf(S,recipe,env.c),road:S.road?{ew:true,ns:S.road.ns,...(L&&L.wood>=SITE_NEAR.wood?{lane:true}:{}),...(L&&L.track?{track:true}:{})}:null,elven:recipe==='forest'&&S.elven,forest:env.t===T_FOREST||n>=3,...BattleTerrain.worldOf(S,river,recipe,env)}}
-  /* (World Phase 2: what BattleSite's new fields add to a ground spec, and nothing when they are empty, as with WORLD.gen off and in
-     the lab unless it asks: wr, the world river's water ({w: its width 1-3, stone: its bridge's make, delta, flood: a delta's or a
+  /* (World Phase 2: what BattleSite's new fields add to a ground spec, and nothing when they are empty, as in the lab unless it
+     asks: wr, the world river's water ({w: its width 1-3, stone: its bridge's make, delta, flood: a delta's or a
      floodplain's wet ground}, with a river down the field: build lays it over the river spec, so a held bridge's keeps it too);
      high, the tile's high ground ({kind: rise, steep or cliffed, up, scree, mixed, shoulder}: FieldPlan#planFeatures)) */
   // (World Phase 2b, each only where the site has it: mix ({c0, c, t, w}), pond ({kind, dx, dy, size}: not in a desert, whose water

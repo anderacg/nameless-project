@@ -195,7 +195,7 @@ function updateFolk(d){
     if(f.st==='town'){f.wait-=d;if(f.wait<=0){const g=folkHome(t),door=folkDoor(t,f.k);f.x=g.x;f.y=g.y;f.tx=door.x;f.ty=door.y;f.st='back'}continue}
     const dx=f.tx-f.x,dy=f.ty-f.y,dd=Math.hypot(dx,dy);
     // (laden on the way to the holding: slower; on the roads and the estates' tracks where they go, a little off his way for them:
-    // router.js WAY.folk, lots.js estTrack; today's map walks as it did)
+    // router.js WAY.folk, lots.js estTrack)
     if(dd>1.5){f.dir=dx>=0?1:-1;f.moving=true;if(Router.travel(f,{x:f.tx,y:f.ty,road:WAY.folk},moveStep(threat?FIELD.hurry:FIELD.speed*(f.st==='out'?FIELD.carry:1),d)))continue}
     // (there, or no way there: in at the gate, or in at the estate's door; a new hour for tomorrow's load)
     f.moving=false;

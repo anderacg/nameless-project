@@ -2,8 +2,8 @@
 // Level of detail (doc/WORLD_DESIGN.md §2.2 R12; §3.5): every mover thinks by its tier, near (every frame), mid (every 4th
 // frame, 4x d) or far (its kind's farStep). Unbounded radii, as now: everything is near, and through 300 frames of the world
 // every mover thinks every frame with the frame's own d, as before the tiers (worldprint W8 holds the places). Bounded: the
-// tiers follow the distance, mid ones think a quarter as often with the same time in all, far ones take farStep. Then the hooks that change nothing yet: the router's three calls over today's ways
-// (R11: reach equals today's travel-cost field on every tile, travel steps as travelTo and routeTo did, days), the walked
+// tiers follow the distance, mid ones think a quarter as often with the same time in all, far ones take farStep. Then the hooks that change nothing yet: the router's calls
+// (R11: reach equals a flood over the land on every tile, days), the walked
 // distance and frameOf (R13), and that neither tier nor walked distance is ever saved.
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t.P,W=t.W,r0=Math.random,pn=performance.now;
 try{
@@ -33,17 +33,14 @@ try{
    const cf=calls.get(f);ok(cf.think===4&&cf.far===4,'far takes its kind\'s farStep, or thinks as near when it has none');
    ok(f.tier===undefined&&t.asMonster(f).tier==='far','a world object tells its tier (WorldObject tier)');
   }finally{Object.assign(L,keep);W.monsters=mons;t.lodTick(1)}}
- // ---- the router over today's ways (R11)
+ // ---- the router's calls (R11)
  {Math.random=t.seeded(77);t.act('begin','soldier');G.quietEvents=true;
   const MW=t.MW,MH=t.MH,TILE=t.TILE,R=t.Router;let bad=0,checked=0;
-  for(const h of [t.startHolding(),...t.TOWNS.filter((x,i)=>i%7===3)]){const f=t.flowTo(h);
-   for(let i=0;i<MW*MH;i++){if(!t.passable(t.tiles[i]))continue;checked++;if(R.reach(h,{x:(i%MW+.5)*TILE,y:(((i/MW)|0)+.5)*TILE})!==isFinite(f[i]))bad++}}
-  ok(checked>0&&!bad,'reach equals today\'s travel-cost field on every open tile, from 6 holdings ('+checked+' tiles, '+bad+' differ)');
+  const flood=h=>{const f=new Uint8Array(MW*MH),q=[h.ty*MW+h.tx];f[q[0]]=1;while(q.length){const i=q.pop(),x=i%MW,y=(i-x)/MW;for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const nx=x+dx,ny=y+dy,j=ny*MW+nx;if(!dx&&!dy||nx<0||ny<0||nx>=MW||ny>=MH||f[j]||!t.passable(t.tiles[j])||dx&&dy&&(!t.passable(t.tiles[y*MW+nx])||!t.passable(t.tiles[ny*MW+x])))continue;f[j]=1;q.push(j)}}return f};
+  for(const h of [t.startHolding(),...t.TOWNS.filter((x,i)=>i%7===3)]){const f=flood(h);
+   for(let i=0;i<MW*MH;i++){if(!t.passable(t.tiles[i]))continue;checked++;if(R.reach(h,{x:(i%MW+.5)*TILE,y:(((i/MW)|0)+.5)*TILE})!==!!f[i])bad++}}
+  ok(checked>0&&!bad,'reach equals a flood over the land on every open tile, from 6 holdings ('+checked+' tiles, '+bad+' differ)');
   const h=t.startHolding(),far=t.TOWNS.slice().sort((p,q)=>Math.hypot(q.x-h.x,q.y-h.y)-Math.hypot(p.x-h.x,p.y-h.y))[0];
-  {const a={x:h.x+40,y:h.y+30},b={...a};for(let i=0;i<400;i++){t.travelTo(a,far,far.x,far.y+12,1.5);R.travel(b,t.gateGoal(far),1.5)}
-   if(!t.WORLD.gen)ok(a.x===b.x&&a.y===b.y&&Math.hypot(a.x-h.x,a.y-h.y)>100,'travel to a holding steps as travelTo did ('+Math.round(Math.hypot(a.x-h.x,a.y-h.y))+' px on)')}
-  {const a={x:h.x+40,y:h.y+30},b={...a},gx=h.x-300,gy=h.y+200;let ra,rb;for(let i=0;i<300;i++){ra=t.routeTo(a,gx,gy,1.5);rb=R.travel(b,{x:gx,y:gy},1.5)}
-   ok(a.x===b.x&&a.y===b.y&&ra===rb,'travel to a point steps as routeTo did, and says the same of the way ('+ra+')')}
   const sea=(()=>{for(let i=0;i<MW*MH;i++)if(t.tiles[i]===t.T_WATER)return{x:(i%MW+.5)*TILE,y:(((i/MW)|0)+.5)*TILE}})();
   const d1=R.days(h,far),d2=R.days(h,far,t.MAP_BASE*2),dw=R.days(sea,h);
   ok(R.days(h,h)===0&&d1>0&&isFinite(d1)&&Math.abs(d2-d1/2)<1e-9&&dw===Infinity,'days: none to where you are, '+d1.toFixed(1)+' to '+far.name+' (half at twice the pace), no way to the sea');
