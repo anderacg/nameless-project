@@ -81,7 +81,7 @@ function drawWorld(){
   ctx=low.getContext('2d');ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,low.width,low.height);if(hi){VW++;VH++}// (its transform reset each frame: nothing drawn into it can leave a shift that piles up)
   try{
   WorldArt.draw(ctx,cam);// (the painted map by chunks, those in view: worldart.js)
-  drawEnv(cam,V,0);drawLand(cam);drawEstates(cam,V);
+  drawEnv(cam,V,0);drawLand(cam,'tint');drawEstates(cam,V);
   // each thing on the map draws itself onto the frame's list (WorldObject draw), in the order they always went (two as deep stay
   // in it): the sites, the parties, the beasts, the herds, you, then the workers, caravans, ships, refugees, the encounters on
   // the road (road.js) and fights
@@ -105,6 +105,7 @@ function drawWorld(){
   // quest marks, your goal and the pointer's brackets (worldui.js), and the minimap
   TXTQ=[];TXTQ.ctx=scr;TXTQ.lo=ctx;LIGHTQ=[];BANNERQ=[];WDEPTH.pics.length=0;const bents=[];estateEnts(bents,cam,V);for(const e of ents.filter(e=>e.st))bents.push(e);
   drawShadows(bents);bents.sort((a,b)=>a.y-b.y).forEach(e=>e.f());// (their shadows first, in one pass: structures.js)
+  drawLand(cam,'line');// (the borders over all that stands and the water's glints, under everyone who moves: territory.js)
   nPlace=TXTQ.length}finally{ctx=scr;if(hi){VW--;VH--}}
   // onto the screen, shifted by the camera's fraction, as is everything over it up to the minimap
   ctx.drawImage(low,-fx,-fy);ctx.save();ctx.translate(-fx,-fy);const px0=P.x-cam.x,py0=P.y-cam.y;

@@ -105,15 +105,17 @@ function landWatch(){
   else log(o==='player'?'You enter your own lands ('+t.name+').':'You cross into the lands of the '+FACS[o].n+' ('+t.name+')'+(hostileTo(o)?': hostile ground.':'.'),hostileTo(o)?'bad':'');
 }
 
-/* its art: a faint tint over each realm, a strong line where realms meet, a faint one between holdings of one realm (LAND_EDGE) */
+/* its art: a faint tint over each realm, a strong line where realms meet, a faint one between holdings of one realm (LAND_EDGE).
+   part: 'tint' (with the ground, under all that stands), 'line' (the borders, over the ground, the water's glints, the buildings
+   and estates, under everyone who moves, you, the fog and the night: the owner, 2026-10-22), or both (none given) */
 const landCol=o=>o?FACS[o].col:'#98a0ba';
-function drawLand(cam){
+function drawLand(cam,part){
   landFresh();const x0=Math.max(0,Math.floor(cam.x/TILE)),y0=Math.max(0,Math.floor(cam.y/TILE)),x1=Math.min(MW-1,x0+Math.ceil(VW/TILE)+1),y1=Math.min(MH-1,y0+Math.ceil(VH/TILE)+1);
   ctx.save();
   for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){
     const k=y*MW+x,i=LAND[k];if(i<0)continue;const sx=x*TILE-cam.x,sy=y*TILE-cam.y,e=LAND_EDGE[k];
-    ctx.fillStyle=landCol(TOWNS[i].owner);ctx.globalAlpha=.08;ctx.fillRect(sx,sy,TILE,TILE);
-    for(let d=0;e&&d<4;d++){const b=e>>2*d&3;if(!b)continue;const [dx,dy]=NB4[d];// (b: the line's width too)
+    ctx.fillStyle=landCol(TOWNS[i].owner);if(part!=='line'){ctx.globalAlpha=.08;ctx.fillRect(sx,sy,TILE,TILE)}
+    for(let d=0;e&&part!=='tint'&&d<4;d++){const b=e>>2*d&3;if(!b)continue;const [dx,dy]=NB4[d];// (b: the line's width too)
       ctx.globalAlpha=b===2?.7:.22;ctx.fillRect(dx>0?sx+TILE-b:sx,dy>0?sy+TILE-b:sy,dx?b:TILE,dy?b:TILE)}
   }
   ctx.restore();
