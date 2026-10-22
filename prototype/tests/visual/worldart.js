@@ -10,11 +10,16 @@
 // part=4 (the third play-test, 2026-10-22): fords in each climate (a dirt track down each bank, the shallows sandy or gravelly with
 // ripples, rocks scattered: grass, desert, swamp, frost), the grass meeting the swamp and the desert (the covers: wet and dry), a
 // wood's edge on the grass; each border again as the whole view.
+// part=5 (the fourth play-test, 2026-10-22; Normal seed 1 first): the hills by a road (what read as swamp: a hill's shade; the hill
+// now runs on under the road), a brook crossing a road (a splash ford over a track, planks over a great road), a road across the
+// grass's edge with the desert, the frost and the swamp (its colour blended by the covers), woods across each edge (the species
+// by the world's own temperature, moisture and height: an ecotone) and hills across the frost's edge (by the snow's cover); a
+// bridge\'s foot (stone, wood; the frost, the desert, the swamp): the shore curved up to the deck, a stone abutment no wider than it.
 // part=1 (the first, 2026-10-22): roads into a holding's gate (Millbrook's, and one coming from behind its centre), roads onto a
 // stone and a wooden bridge's deck, a ford, a frost edge (grass to snow), the swamp's trees and a fork; the frost edge and the swamp
 // again as the whole view.
 // Run by name with the flag on: Ashmark.html?test=visual/worldart&gen=1 (&part=1), then screenshot it (part 2: a window 1200 x
-// 4660; part 3: 950 x 2100; part 1: 1200 x 2340; part 4: 1200 x 2000). The "before" pictures are this scene run on the commit before the fix.
+// 4660; part 3: 950 x 2100; part 1: 1200 x 2340; part 4: 1200 x 2000; part 5: 1200 x 3500). The "before" pictures are this scene run on the commit before the fix.
 window.RUN=()=>{const t=T,o=[],G=t.G,P=t.P,W=t.W,TILE=t.TILE,Z=3,part=+(new URLSearchParams(location.search).get('part')||2);
  try{
   if(part===3){const CL=['grass','frost','desert','swamp'],BG={grass:'#54803a',frost:'#d6dee8',desert:'#d6b668',swamp:'#48583a'},Z=6,rows=[];for(const c of CL)for(const sp of PX.WORLD_SPECIES[c])rows.push([c,sp]);
@@ -47,7 +52,26 @@ window.RUN=()=>{const t=T,o=[],G=t.G,P=t.P,W=t.W,TILE=t.TILE,Z=3,part=+(new URLS
   const open=(a,b)=>kind(a,b)===t.T_OPEN||kind(a,b)===t.T_HILL;
   const border=c=>()=>best((x,y)=>cl(x,y)!==c&&cl(x,y)!=='grass'||!open(x,y)?-1e9:Math.min(count(x,y,4,(a,b)=>cl(a,b)===c&&open(a,b)),count(x,y,4,(a,b)=>cl(a,b)==='grass'&&open(a,b)))-.5*count(x,y,4,(a,b)=>kind(a,b)===t.T_WATER));
   const edge=()=>best((x,y)=>cl(x,y)!=='grass'||kind(x,y)!==t.T_FOREST?-1e9:Math.min(count(x,y,3,(a,b)=>kind(a,b)===t.T_FOREST),count(x,y,3,(a,b)=>cl(a,b)==='grass'&&open(a,b)))-count(x,y,3,(a,b)=>kind(a,b)===t.T_ROAD||kind(a,b)===t.T_WATER)-count(x,y,5,(a,b)=>cl(a,b)!=='grass'));
-  const PIECES=part===4?[
+  // (part 5's: a hill among roads on the grass; a brook crossing a road (n: the n-th best, kept 12 tiles from those before); a road
+  //  across the grass's edge with climate c; woods of the grass and climate c meeting; hills of the grass and the frost meeting)
+  const brook=(x,y)=>{const i=y*t.MW+x;return kind(x,y)!==t.T_WATER&&!(t.WM.river[i]&3)&&(t.WM.flow[i]&31)>=6},near=[];
+  const hillRoad=()=>best((x,y)=>kind(x,y)!==t.T_ROAD||cl(x,y)!=='grass'?-1e9:count(x,y,2,(a,b)=>kind(a,b)===t.T_HILL)-.5*count(x,y,3,(a,b)=>kind(a,b)===t.T_WATER||kind(a,b)===t.T_FOREST));
+  const brookRoad=n=>()=>{let b=null;for(let k=0;k<=n;k++){b=best((x,y)=>kind(x,y)!==t.T_ROAD||!brook(x,y)||near.some(([a,c])=>Math.abs(a-x)+Math.abs(c-y)<12)?-1e9:count(x,y,2,brook)-count(x,y,2,(a,c)=>kind(a,c)===t.T_FOREST));if(b)near.push(b)}return b};
+  const roadEdge=c=>()=>best((x,y)=>kind(x,y)!==t.T_ROAD?-1e9:Math.min(count(x,y,3,(a,b)=>cl(a,b)===c),count(x,y,3,(a,b)=>cl(a,b)==='grass'))+.5*count(x,y,3,(a,b)=>kind(a,b)===t.T_ROAD)-.5*count(x,y,3,(a,b)=>kind(a,b)===t.T_FOREST));
+  const woods=c=>()=>best((x,y)=>kind(x,y)!==t.T_FOREST?-1e9:Math.min(count(x,y,4,(a,b)=>kind(a,b)===t.T_FOREST&&cl(a,b)===c),count(x,y,4,(a,b)=>kind(a,b)===t.T_FOREST&&cl(a,b)==='grass')));
+  const frostHills=()=>best((x,y)=>kind(x,y)!==t.T_HILL?-1e9:Math.min(count(x,y,3,(a,b)=>kind(a,b)===t.T_HILL&&cl(a,b)==='frost'),count(x,y,3,(a,b)=>kind(a,b)===t.T_HILL&&cl(a,b)!=='frost')));
+  // (a bridge\'s foot (stone or not, in climate c): the end tile with the most water round it, of the bridges with that)
+  const foot=(stone,c)=>()=>{let b=null,bn=-1;for(const x of t.WM.crossings){if(x.kind!=='bridge'||!x.stone!==!stone)continue;for(const q of [x.i,x.j]){const fx=q%t.MW,fy=(q-fx)/t.MW;if(c&&cl(fx,fy)!==c)continue;
+    const n=count(fx,fy,1,(a,y)=>kind(a,y)===t.T_WATER);if(n>bn){bn=n;b=[fx,fy]}}}return b};
+  const PIECES=part===5?[
+   ['hills by a road on the grass (the dark patches)',hillRoad],['hills by a road, the whole view',hillRoad,1],
+   ['a brook crossing a road',brookRoad(0)],['a brook crossing a road (another)',brookRoad(1)],
+   ['a road from the grass into the desert',roadEdge('desert')],['a road from the grass into the frost',roadEdge('frost')],
+   ['a road from the grass into the swamp',roadEdge('swamp')],['woods of the grass and the frost meeting',woods('frost')],
+   ['woods of the grass and the swamp meeting',woods('swamp')],['woods of the grass and the desert meeting',woods('desert')],
+   ['hills of the grass and the frost meeting',frostHills],['woods of the grass and the frost meeting, the whole view',woods('frost'),1],
+   ['a stone bridge\'s foot on the grass',foot(true,'grass')],['a wooden bridge\'s foot',foot(false)],
+   ['a bridge\'s foot in the frost',foot(true,'frost')],['a bridge\'s foot in the desert',foot(true,'desert')],['a bridge\'s foot in the swamp',foot(true,'swamp')]]:part===4?[
    ['a ford on the grass',()=>fordIn('grass')],['a ford in the desert',()=>fordIn('desert')],
    ['a ford in the swamp',()=>fordIn('swamp')],['a ford in the frost',()=>fordIn('frost')],
    ['the grass meeting the swamp',border('swamp')],['the grass meeting the desert',border('desert')],
@@ -84,7 +108,7 @@ window.RUN=()=>{const t=T,o=[],G=t.G,P=t.P,W=t.W,TILE=t.TILE,Z=3,part=+(new URLS
   const quiet=()=>{W.folk=[];W.caravans=[];W.critters=[];W.monsters=[]};quiet();const stay=P.stay,keep=[window.txt,window.drawParties,window.drawBanners];window.txt=window.drawParties=window.drawBanners=()=>{};
   const left=new Set(PIECES.map((p,k)=>k));
   try{
-   for(let s=0;s<=6&&left.size;s++){
+   for(let s=part===5?1:0;s<=6&&left.size;s++){
     if(s){window.txt=keep[0];t.forgeInstall(t.genWorld({preset:'normal',seed:String(s)}));G.quietEvents=true;G.mode='world';G.modal=false;t.hidePanel();quiet();window.txt=()=>{}}
     for(const k of [...left]){const [pn,f,wide]=PIECES[k],at=f();if(!at)continue;left.delete(k);const c=k%per,r=(k/per)|0,X=8+c*(cw*Z+8),Y=8+r*(ch*Z+lab+8);g.fillStyle='#e8e0c8';g.font='13px Arial';
      const fx=(at[0]+.5)*TILE,fy=(at[1]+.5)*TILE;P.x=fx;P.y=fy;P.stay=1;G.clock=t.DAY*.3;t.drawWorld();t.drawWorld();

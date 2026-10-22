@@ -58,10 +58,13 @@ try{
  ok(N&&N.decor>200&&N.flat>500,'small things on the open ground: '+(N&&N.decor)+' standing (bushes, stones, cacti, stumps), '+(N&&N.flat)+' lying (tufts, flowers, drifts, ripples, reeds, moss, pools, pads, floes)');
  {let onClear=0,onWater=0,offWater=0,lots=0,roads=0,n=0;
   const water=(x,y)=>t.tAt(x>>4,y>>4)===t.T_WATER;
-  for(let y=0;y<Hp;y++)for(let x=0;x<Wp;x++){const i=y*Wp+x,v=TO[i];if(!v)continue;n++;if(CLR.at(x,y))onClear++;if(v===1&&water(x,y))onWater++;if(v===2&&!water(x,y))offWater++}
-  for(const tw of t.TOWNS)for(const l of tw.lots||[]){for(let j=0;j<l.n*TILE;j++)for(let i=0;i<l.n*TILE;i++)if(TO[(l.y*TILE+j)*Wp+l.x*TILE+i])lots++;for(const [px2,py2] of l.plots||[])for(let j=0;j<TILE;j++)for(let i=0;i<TILE;i++)if(TO[(py2*TILE+j)*Wp+px2*TILE+i])lots++}
-  for(let ty=0;ty<MH;ty++)for(let tx=0;tx<MW;tx++)if(t.tiles[ty*MW+tx]===t.T_ROAD)for(let j=6;j<10;j++)for(let i=6;i<10;i++)if(TO[(ty*TILE+j)*Wp+tx*TILE+i]&&CLR.at(tx*TILE+i,ty*TILE+j))roads++;
-  ok(n>1e6&&!onClear&&!lots&&!roads,'nature painted '+n+' pixels, none on a road, a holding’s yard or building, an estate’s plot or a field ('+onClear+' on clear ground, '+lots+' on a lot, '+roads+' on a road)');
+  // (3: a ground's tone on kept-clear ground, a hill's shading running on under a road or a yard and a brook crossing a road (the
+  //  owner's fourth play-test): never off it, and nothing else on it)
+  let toned=0,tonedOff=0;
+  for(let y=0;y<Hp;y++)for(let x=0;x<Wp;x++){const i=y*Wp+x,v=TO[i];if(!v)continue;if(v===3){toned++;if(!CLR.at(x,y)||water(x,y))tonedOff++;continue}n++;if(CLR.at(x,y))onClear++;if(v===1&&water(x,y))onWater++;if(v===2&&!water(x,y))offWater++}
+  for(const tw of t.TOWNS)for(const l of tw.lots||[]){for(let j=0;j<l.n*TILE;j++)for(let i=0;i<l.n*TILE;i++){const v=TO[(l.y*TILE+j)*Wp+l.x*TILE+i];if(v&&v!==3)lots++}for(const [px2,py2] of l.plots||[])for(let j=0;j<TILE;j++)for(let i=0;i<TILE;i++){const v=TO[(py2*TILE+j)*Wp+px2*TILE+i];if(v&&v!==3)lots++}}
+  for(let ty=0;ty<MH;ty++)for(let tx=0;tx<MW;tx++)if(t.tiles[ty*MW+tx]===t.T_ROAD)for(let j=6;j<10;j++)for(let i=6;i<10;i++){const v=TO[(ty*TILE+j)*Wp+tx*TILE+i];if(v&&v!==3&&CLR.at(tx*TILE+i,ty*TILE+j))roads++}
+  ok(n>1e6&&!onClear&&!lots&&!roads&&!tonedOff,'nature painted '+n+' pixels, none on a road, a holding’s yard or building, an estate’s plot or a field ('+onClear+' on clear ground, '+lots+' on a lot, '+roads+' on a road); '+toned+' of clear ground toned (a hill’s shading under a road, a brook crossing it), '+tonedOff+' of them off it');
   ok(!onWater&&!offWater,'nothing on the water but its lily pads and floes, and those only on water ('+onWater+', '+offWater+')')}
  // ---- the fen's own trees: mangroves on its open ground, sparse (some .6 a tile, about a third of a wood's cover)
  {let nS=0;for(let i=0;i<MW*MH;i++)if(t.tiles[i]===t.T_OPEN&&t.CLIMS[t.climate[i]]==='swamp')nS++;const f=N.fen/Math.max(1,nS),wd=(N.trees-N.fen)/Math.max(1,nF);
@@ -72,7 +75,8 @@ try{
  {const BARE=new Set(['bare','bbirch','snag','dead']),sh=[],bad=[];
   for(const c of CL){const L=PX.WORLD_TREES[c].wood;let n=0,b=0,eb=0;for(let i=0;i<41;i++)for(let j=0;j<40;j++){const g=i/40,r=(j+.5)/40;n++;if(BARE.has(PX.pickWorldTree(L,g,r,false)))b++;if(BARE.has(PX.pickWorldTree(L,g,r,true)))eb++}
    sh.push(c+' '+Math.round(b/n*100)+'% ('+Math.round(eb/n*100)+'% at the edge)');if(!(b/n>=.04&&b/n<=.2&&eb/n>b/n))bad.push(c)}
-  const own=CL.filter(c=>drawn[c]&&Object.keys(drawn[c]).some(sp=>!PX.WORLD_SPECIES[c].includes(sp)));
+  // (drawn in the frost: its own species, or another's in the snow, frosted: PX.WN_ECO.freeze)
+  const own=[];for(const c of CL)for(const sp in drawn[c]||{})if(!PX.WORLD_SPECIES[c].includes(sp)&&!(c==='frost'&&Object.values(PX.WN_ECO.freeze).includes(sp)))own.push(c+' '+sp+' '+drawn[c][sp]);
   ok(!bad.length&&!own.length&&CL.every(c=>PX.WORLD_SPECIES[c].length>=3),'each climate’s woods grow its own trees ('+CL.map(c=>c+': '+PX.WORLD_SPECIES[c].join('/')).join('; ')+'), a few of them leafless or dead: '+sh.join(', ')+(bad.length||own.length?' — not: '+bad.concat(own).join(', '):''));
   let nB=0;for(let i=0;i<MW*MH;i++)if(t.tiles[i]===t.T_FOREST&&t.CLIMS[t.climate[i]]==='swamp')nB++;const sw=drawn.swamp||{},bogs=(sw.mangrove||0)+(sw.bogwillow||0);
   const d=cv.getContext('2d').getImageData(0,0,Wp,Hp).data;let pools=0,seen=0;for(let i=0;i<MW*MH&&seen<400;i++){if(t.tiles[i]!==t.T_FOREST||t.CLIMS[t.climate[i]]!=='swamp')continue;seen++;const X=i%MW*TILE,Y=Math.floor(i/MW)*TILE;

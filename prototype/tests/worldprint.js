@@ -88,7 +88,22 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 //  65f440b9, G6 57cf6053, G7 9d580ef9, G8 0f487dba, GB2 dc1b8829)
 // (G3, G5-G8 and GB2 measured together 2026-10-22 at the merge of agents L (the art, above) and M (the crossings and lots, above):
 //  each moved them alone, and together they give these; G1, G2, G4 are M's alone, the sums M's alone)
-const GEXPECT={W1:'02a441ce',W2:'500a5428',W3:'5cee7bef',W4:'f81e1c01',W5:'ea9098d7',W6:'92c96e76',W7:'7270d6c2',W8:'8186ed74',B2:'7149936a'};
+// (G3, G5-G8 and GB2 measured together 2026-10-22 at the merge of agent N (the fourth play-test's art, below) with L and M, and
+//  N's follow-up there, M's tracks from a bridge's end (worldplace.js) met by the art: a line's end at a bridge's end no longer
+//  carried onto another line nearby (joinEnds), a line turning back off a bridge led GENART.back 1.6 tiles out first (straightOn,
+//  clear of the ramp), reeds kept off the water (a reed's head too). The first two move the painted
+//  roads lots.js reads (artRoadMarks), so G3 and with it G7, G8 and GB2; checked: with those two as before (no bridge-end rule,
+//  back .9) G3 5cee7bef, G7 7270d6c2, G8 8186ed74 and GB2 7149936a are as before, and with all three as before G5 ea4cd87b and
+//  G6 08e9011b, the merge's own. Were G3 5cee7bef, G5 ea9098d7, G6 92c96e76, G7 7270d6c2, G8 8186ed74, GB2 7149936a; G1, G2, G4
+//  and the sums unchanged)
+const GEXPECT={W1:'02a441ce',W2:'500a5428',W3:'d07ea9fc',W4:'f81e1c01',W5:'656f8bc9',W6:'5794be9d',W7:'c57a6cd8',W8:'c613950a',B2:'c1a02414'};
+// (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
+//  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
+//  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended
+//  across it (roadPal), brooks crossing roads (PX.WN_XING), a bridge's abutments no wider than its deck, the shore's sand or mud by
+//  the nearest water that is no bridge's, worn ground, bank stones and trees never on the water as drawn. G6 moved at all three
+//  spots by day and night (to 5b3cd6fd 7a7efab9 a746a887 77d5c809 1c7f7e1b ccf23d61). Checked: with those two files as at f97112f
+//  G5 and G6 are as before. Was G5 00f1be5d, G6 7c2e1e64; G1-G4, G7, G8, GB2 and the sums unchanged)
 // (the random presets' sums re-recorded 2026-10-22, on purpose, Phase 2b: the owner's "the holdings seem a bit too much": Normal
 //  27 holdings by default (was 37), Large 40 (was 55), so their settings (in the sum) and placement change; with them two clamps
 //  of stage 7 the fewer holdings needed (worldplace.js): a port only on the open sea (placeOpen: a strait a road bridged had left
@@ -126,7 +141,16 @@ const SUMS={classic:'2eb1e165','Normal s1':'d934ba19','Normal s2':'bd7c17d3','No
 //  W3 dc546553, W5 9f99c580, W7 2b496c30, W8 742df600, B2 290c6cb7; W1, W2, W4 and W6 unchanged)
 // (W5 measured together 2026-10-22 at the merge of agents L and M: L's blend and M's moved smithy at Elderglen; W6 L's alone;
 //  W3, W7, W8, B2 M's alone)
-const EXPECT={W1:'65e24662',W2:'2b49a168',W3:'019fff95',W4:'46450e62',W5:'5cc77936',W6:'7c1b6803',W7:'8ed0cfbc',W8:'b11c0021',B2:'c15ba2dd'};// (at 0a42712; B2 at R3; W6-W8 at Phase 1; W6 at depth, smooth walking and pasture herds and label layout; W7, B2 at save v3)
+// (W5, W6 measured together 2026-10-22 at the merge of agent N with L and M: N's art (below) over M's moved smithy at Elderglen
+//  (W5); W6 N's alone, as N measured it. N's follow-up at the merge (the generated world's bridges) moves neither. Were W5
+//  5cc77936, W6 7c1b6803)
+const EXPECT={W1:'65e24662',W2:'2b49a168',W3:'019fff95',W4:'46450e62',W5:'9f19b586',W6:'225d2557',W7:'8ed0cfbc',W8:'b11c0021',B2:'c15ba2dd'};// (at 0a42712; B2 at R3; W6-W8 at Phase 1; W6 at depth, smooth walking and pasture herds and label layout; W7, B2 at save v3)
+// (W5, W6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N), what of it today's map shares (its roads are
+//  painted over nature by tile, it has no brooks, fields or eco): the grass's hills shaded lighter, a hill's shading under its
+//  roads' kept-clear band, the hills' palette and a wood's floor by the climates' covers (PX.WN_BLEND), the trees across a climate's
+//  edge mixed by the covers (PX.worldTreeClimate). W6 moved at the first two spots by day and night (fbf2307d 8f6a8e60 402e3ff4
+//  29e66196 to dfff339a 4292cabd 372f0180 bfdb4572); the third's are as before. Checked: with gfx/worldart.js and engine/
+//  worldnature.js as at f97112f W5 and W6 are as before. Was W5 0c9b579e, W6 7c1b6803; W1-W4, W7, W8 and B2 unchanged)
 // (W5, W6 re-recorded 2026-10-22, on purpose, the owner's play-test (the same climates on today's map): the frost's snow blended
 //  into the grass (gfx/worldart.js snowCover, landRGB: its cover rising over the frost's edge and with height, thinning out in
 //  patches over the grass beside it) and the fen's sparse mangroves (engine/worldnature.js FEN). W6 moved at the first and third

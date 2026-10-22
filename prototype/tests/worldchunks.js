@@ -34,8 +34,11 @@ try{
  ok(!WA.full&&!WA.chunks.size&&t.CLEAR===P.clear&&t.isClear(T0.x,T0.y)&&t.isClear((T0.tx+.5)*TILE,(T0.ty+.5)*TILE)&&!t.isClear(-5,10)&&!t.isClear(W+3,10),
    'the plan comes first, painting nothing: isClear reads its clear ground (a holding and its gate clear, off the map not) ('+planMs.toFixed(0)+' ms)');
  // ---- one window: the whole map, no seam anywhere (today's one canvas)
+ // (re-recorded 2026-10-22, the owner's fourth play-test (agent N), with W5: the hills, a wood's floor and the trees by the climates'
+ //  covers; with gfx/worldart.js and engine/worldnature.js as at f97112f it is as before. Was a96d5d35)
+ // (measured together 2026-10-22 at the merge of agent N with L and M, with W5: N's art over M's moved smithy. Was 2963d713)
  const r1={},one=paint(0,0,W,H,r1),ref=img(one,0,0,W,H),h1=fnv(ref);
- if(t.WORLD.gen)info('the generated classic seed painted as one window: '+h1+' ('+r1.wall.toFixed(0)+' ms)');else ok(h1==='2963d713','the map painted as one window (no seam anywhere: today\'s one canvas) is the baseline picture ('+h1+', W5 at b94cbe2: tests/worldprint.js; '+r1.wall.toFixed(0)+' ms)');
+ if(t.WORLD.gen)info('the generated classic seed painted as one window: '+h1+' ('+r1.wall.toFixed(0)+' ms)');else ok(h1==='ae05e1de','the map painted as one window (no seam anywhere: today\'s one canvas) is the baseline picture ('+h1+', W5 at b94cbe2: tests/worldprint.js; '+r1.wall.toFixed(0)+' ms)');
  // ---- stitched: every chunk into the whole picture, and no seam round any border
  q=performance.now();const whole=WA.whole(),wMs=performance.now()-q,nd=diff(img(whole,0,0,W,H),ref);
  ok(nd===0&&whole.width===W&&whole.height===H,cols*rows+' chunks of '+CS+' px ('+cols+' x '+rows+') stitched (worldCv) are that picture pixel for pixel ('+nd+' differ; '+wMs.toFixed(0)+' ms)');
@@ -146,7 +149,30 @@ try{
   {const MW=t.MW,MH=t.MH,WL=t.CLIMS.map(c=>t.WATER_RGB[c]);let edges=0,jump=0;
    for(let ty=2;ty<MH-2&&edges<2000;ty++)for(let tx=2;tx<MW-3;tx++){const i=ty*MW+tx;if(t.tiles[i]!==t.T_WATER||t.tiles[i+1]!==t.T_WATER||t.climate[i]===t.climate[i+1])continue;edges++;
     const CM=new t.ClimMix(tx-1,ty,tx+2,ty,5);let prev=null;for(let x=(tx-1)*16;x<(tx+3)*16;x++){const c=t.palAt(CM,WL,(x>>4)-tx+1,(x&15)/16,.5)[1];if(prev)jump=Math.max(jump,...[0,1,2].map(n=>Math.abs(c[n]-prev[n])));prev=c}}
-   ok(edges>20&&jump<=6,'the water shades across a climate’s edge: '+edges+' edges, the most a tone steps from a pixel to the next '+jump.toFixed(1)+' (6 at most)')}}
+   ok(edges>20&&jump<=6,'the water shades across a climate’s edge: '+edges+' edges, the most a tone steps from a pixel to the next '+jump.toFixed(1)+' (6 at most)')}
+  // (the fourth play-test: a road's colour across a climate's edge (roadPal): the grass's where no other climate's cover lies, that
+  //  climate's where it lies whole, between the two where it is a half)
+  {const o4=[[0,0,0],[0,0,0],[0,0,0],[0,0,0]],RG=t.ROAD_RGB,bad=[],tone=[];
+   t.COVERS.forEach((L,k)=>{const at=v=>{const cv=[0,0,0];cv[k]=v;return t.roadPal(cv,o4)[1].slice()},a=at(0),m=at(.5),b=at(1);tone.push(L.c+' '+m.map(Math.round).join(','));
+    if([0,1,2].some(n=>Math.abs(a[n]-RG.grass[1][n])>.01||Math.abs(b[n]-RG[L.c][1][n])>.01||(m[n]-a[n])*(m[n]-b[n])>.001||Math.abs(m[n]-(a[n]+b[n])/2)>Math.abs(a[n]-b[n])*.25+.01))bad.push(L.c)});
+   ok(!bad.length,'a road’s colour blends across a climate’s edge: the grass’s with no cover, the climate’s under a whole one, between the two at a half ('+tone.join('; ')+(bad.length?' — not: '+bad.join(', '):'')+')')}
+  // (a brook crossing a road (worldnature.js PX.WN_XING): onto a road tile from off it, or off one: the stream's water shown on the
+  //  road's band there (kept clear: before, the stream stopped short of it either side))
+  {const F=t.WM.flow,Rv=t.WM.river,lvl=i=>t.tiles[i]===t.T_WATER||t.tiles[i]===t.T_MOUNT||Rv[i]&3?0:F[i]&31,DX=[1,1,0,-1,-1,-1,0,1],DY=[0,1,1,1,0,-1,-1,-1],rd=(x,y)=>x>=0&&y>=0&&x<MW&&y<MH&&t.tiles[y*MW+x]===t.T_ROAD;
+   let n=0,shown=0;for(let ty=1;ty<MH-1;ty++)for(let tx=1;tx<MW-1;tx++){const i=ty*MW+tx;if(!rd(tx,ty)||lvl(i)<6)continue;const d=F[i]>>5,nx=tx+DX[d],ny=ty+DY[d];let ux=-1,uy=-1,ub=0;
+     for(let k=0;k<8;k++){const x=tx-DX[k],y=ty-DY[k],j=y*MW+x;if(lvl(j)>=6&&F[j]>>5===k&&lvl(j)>ub){ub=lvl(j);ux=x;uy=y}}
+     if(rd(nx,ny)&&ux>=0&&rd(ux,uy))continue;n++;let wp=0;
+     for(let y=0;y<16;y++)for(let x=0;x<16;x++){const X=tx*16+x,Y=ty*16+y;if(!P.clear.at(X,Y)||t.wpx(P.wk,X,Y))continue;const o=(Y*W+X)*4;if(ref[o+2]>ref[o]+40&&ref[o+2]>ref[o+1])wp++}if(wp>=4)shown++}
+   ok(n>5&&shown>=n*.8,n+' brooks crossing a road: the stream’s water shown across the road’s band at '+shown)}
+  // (every bridge's foot (the owner's fourth play-test): what it draws off its deck (its abutments) as wide as the deck and on
+  //  land only; and the water beside its deck painted as water: no bank, worn ground or stone on it (but another bridge's deck, or
+  //  a ford's shallows and rocks: a ford beside a bridge's end, worldplace.js)
+  {const K=P.wk,BR=t.WM.crossings.filter(c=>c.kind==='bridge').map(c=>{const ax=c.i%MW,ay=(c.i-ax)/MW,bx=c.j%MW,by=(c.j-bx)/MW,hor=ay===by,lo=hor?Math.min(ax,bx):Math.min(ay,by),hi=hor?Math.max(ax,bx):Math.max(ay,by);
+     return{c,hor,mid:(hor?ay:ax)*TILE+8,u0:lo*TILE+TILE-4,u1:hi*TILE+4,hw:G.deck[c.stone?1:0]}}),deck=(x,y)=>BR.some(b=>{const u=b.hor?x:y,v=b.hor?y:x;return u>=b.u0-2&&u<b.u1+2&&v>=b.mid-b.hw-2&&v<b.mid+b.hw+3}),ford=(x,y)=>{const f=P.fd[(y>>4)*MW+(x>>4)];return f>0&&t.fordAt(P,f,x,y)>0};let n=0,wide=0,wet=0;
+   for(const {c,hor,mid,u0,u1,hw} of BR){n++;const R=[];t.artGenXing(P,(col,x,y,w,h)=>R.push([x,y,w||1,h||1]),c);
+    for(const [x,y,w,h] of R)for(let yy=y;yy<y+h;yy++)for(let xx=x;xx<x+w;xx++){const u=hor?xx:yy,v=hor?yy:xx;if(u>=u0&&u<u1)continue;if(v<mid-hw||v>=mid+hw||t.wpx(K,xx,yy))wide++}
+    for(let u=u0;u<u1;u++)for(let v=mid-hw-14;v<mid+hw+14;v++){if(v>=mid-hw-2&&v<mid+hw+3)continue;const x=hor?u:v,y=hor?v:u;if(x<0||y<0||x>=W||y>=H||!t.wpx(K,x,y)||deck(x,y)||ford(x,y))continue;const o=(y*W+x)*4;if(ref[o]>ref[o+1]&&ref[o]>ref[o+2])wet++}}
+   ok(n&&!wide&&!wet,n+' bridges: each one’s abutments as wide as its deck and on land ('+wide+' px off it), the water beside each deck painted as water ('+wet+' px of bank, worn ground or stone on it)')}}
  // ---- the prefetch at Large and Huge (with -Gen): the camera walks across the middle of each world at 8x's pace, the painter
  //      given 4 ms a frame; the chunks that come into view were painted before they did, the LRU held at its cap
  if(t.WORLD.gen){const W0=t.WM;
