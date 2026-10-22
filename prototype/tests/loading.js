@@ -5,7 +5,8 @@
 // The overlay and its driver (loading.js runSteps), run for real (LOADING.sync off; the harness turns it on for every other suite):
 // it shows only past 300 ms and then stays 400; its bar never goes back; an error shows itself and its way back, and a save that
 // does not fit leaves the game untouched; a stall offers Keep waiting; it fits a phone on its side (844 x 390); and a new game and
-// a load give the same world fingerprints (W1-W8 of tests/worldprint.js, by its own recipe) and the same randoms either way.
+// a load give the same world fingerprints (W1-W8 of tests/worldprint.js, by its own recipe; G1-G8 on the generated world, the
+// default) and the same randoms either way.
 // (Between slices main.js runs no simulation and render.js frame() draws nothing but the overlay's frame (loadingFrame); where it
 // does not yet, this suite stands in for it.)
 window.RUN=async()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.push('INFO '+m),t=T,G=t.G,P=t.P,W=t.W,LD=t.LOADING;
@@ -53,11 +54,10 @@ try{
    const x=fnv().n(P.x).n(P.y),lists={lords:W.lords,bands:t.bandits,patrols:W.patrols,comps:t.cparties(),caravans:W.caravans,monsters:W.monsters,critters:W.critters,refugees:W.refugees,folk:W.folk,ships:W.ships,fights:W.fights};
    for(const k in lists){const L=lists[k]||[];x.s(k).n(L.length);for(const q of L)x.n(q.x).n(q.y)}h.W8=x.x}
   {seed(9007);P.x=-999;P.y=-999;P.tx=P.ty=null;G.chase=null;t.setSpeed(3);for(let f=0;f<4000&&G.day<d0+3;f++)t.updateWorld(.05);G.mode='world';h.W7=fnv().s(saveStr()).x}
-  const ids=['W1','W2','W3','W4','W5','W6','W7','W8'];
-  try{const x=new XMLHttpRequest();x.open('GET','tests/worldprint.js',false);x.send();const m=/const EXPECT=(\{[^}]*\})/.exec(x.responseText),E=m&&Function('return '+m[1])(),diff=E?ids.filter(id=>E[id]!==h[id]):ids;
-   // (the generated world, -Gen: its own hashes until G1-G8 are recorded, doc/WORLD_DESIGN.md §15.2 wave 3)
-   if(t.WORLD.gen)info('the generated world, a new game in steps: '+ids.map(id=>id+' '+h[id]).join(', '));else
-   ok(E&&!diff.length,'a new game in steps makes the world of worldprint\'s baseline, made at once (W1-W8'+(diff.length?'; differ: '+diff.map(id=>id+' '+h[id]+(E?' baseline '+E[id]:'')).join(', '):'')+')')}
+  // (the generated world, the default since the flip: worldprint's G1-G8, GEXPECT; today's map, -Classic: W1-W8, EXPECT)
+  const ids=['W1','W2','W3','W4','W5','W6','W7','W8'],GEN=t.WM.gen!=='classic-0',nm=id=>GEN?'G'+id.slice(1):id;
+  try{const x=new XMLHttpRequest();x.open('GET','tests/worldprint.js',false);x.send();const m=new RegExp('const '+(GEN?'GEXPECT':'EXPECT')+'=(\\{[^}]*\\})').exec(x.responseText),E=m&&Function('return '+m[1])(),diff=E?ids.filter(id=>E[id]!==h[id]):ids;
+   ok(E&&!diff.length,'a new game in steps makes the world of worldprint\'s baseline, made at once ('+nm('W1')+'-'+nm('W8')+(diff.length?'; differ: '+diff.map(id=>nm(id)+' '+h[id]+(E?' baseline '+E[id]:'')).join(', '):'')+')')}
   catch(e){ok(false,'worldprint\'s baseline read ('+e.message+')')}
   ok(!stray,'no random is drawn between its slices ('+stray+' of the '+draws+' since it began)');
   // the load: the save just made, at once, in steps, at once again

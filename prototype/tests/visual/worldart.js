@@ -27,7 +27,7 @@
 // part=1 (the first, 2026-10-22): roads into a holding's gate (Millbrook's, and one coming from behind its centre), roads onto a
 // stone and a wooden bridge's deck, a ford, a frost edge (grass to snow), the swamp's trees and a fork; the frost edge and the swamp
 // again as the whole view.
-// Run by name with the flag on: Ashmark.html?test=visual/worldart&gen=1 (&part=1), then screenshot it (part 2: a window 1200 x
+// Run by name (the generated world, the default; &gen=0 today's map): Ashmark.html?test=visual/worldart (&part=1), then screenshot it (part 2: a window 1200 x
 // 4660; part 3: 950 x 2100; part 1: 1200 x 2340; part 4: 1200 x 2000; part 5: 1200 x 3500). The "before" pictures are this scene run on the commit before the fix.
 window.RUN=()=>{const t=T,o=[],G=t.G,P=t.P,W=t.W,TILE=t.TILE,Z=3,part=+(new URLSearchParams(location.search).get('part')||2);
  try{

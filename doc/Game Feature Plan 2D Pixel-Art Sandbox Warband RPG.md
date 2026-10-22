@@ -138,7 +138,7 @@ Battles are real-time and top-down, in Total War style.
 - **[Changed]** Data lives in `js/data/` tables, not JSON. Browsers block reading JSON files from disk, so moving to JSON is deferred until there's a way to load it.
 - **[Built]** Save slots, quick save (F6) and autosave.
 - **[Built]** About 170 automated browser test suites (and some 40 report-only `tests/visual/` suites) cover every system.
-- **[Partly]** The world simulation runs every frame on a daily tick. The world it runs on can now be generated from a seed (behind `WORLD.gen`); play itself is not deterministic.
+- **[Partly]** The world simulation runs every frame on a daily tick. The world it runs on is generated from a seed by default (today's hand-made map behind `?gen=0`); play itself is not deterministic.
 
 ## Status
 

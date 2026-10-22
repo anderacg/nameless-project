@@ -1,7 +1,7 @@
 'use strict';
 // Not a test: swamp water in a few palettes, side by side, for the owner to pick (2026-10-22). The classic seed's great river,
 // delta and a river through fen, painted with each palette (gfx/worldart.js WATER_RGB.swamp, SHORE.swamp), at x2.
-// Run by name with the flag on: Ashmark.html?test=visual/swampwater&gen=1, then screenshot it.
+// Run by name (the generated world, the default): Ashmark.html?test=visual/swampwater, then screenshot it.
 window.RUN=()=>{const t=T,o=[],Z=2,CW=15,CH=9,TILE=t.TILE;
  try{
   window.requestAnimationFrame=()=>0;

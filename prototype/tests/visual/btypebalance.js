@@ -5,7 +5,7 @@
 // an ambush with the left side caught on the road and with the right. Per set: wins of the side set upon (holders, the ambushed)
 // and of the other, unfinished (300 s), battle length (mean, median); then the bridge's two sets together. Then the world's share
 // (doc/WORLD_DESIGN.md §14.3: Hold the bridge at most 25% of the world's battles): the type a bandit band's fight and a lord's take
-// on 200 road tiles and 200 other walkable tiles spread over the world in use (the generated one with -Gen), on 4 days each (left
+// on 200 road tiles and 200 other walkable tiles spread over the world in use (the generated one by default, today's map with -Classic), on 4 days each (left
 // out with -Seed). Never fails.
 window.RUN=()=>{const t=T,L=t.BattleLab,o=[],ev=s=>(0,eval)(s);
  const SEEDS=[1,2,3,4,5,6,7,8,9,10],CAP=300,arm=[{type:'hum_foot',count:20},{type:'hum_bow',count:12},{type:'hum_knight',count:6,form:'wedge'}];

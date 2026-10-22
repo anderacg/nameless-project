@@ -27,12 +27,15 @@
 // G.quietEvents is on, and the view is the tests' fixed 576 x 360. Hash: FNV-1a 32-bit over bytes, char codes or 32-bit words;
 // W8's places at 1e-6 px.
 // G1-G8 (doc/WORLD_DESIGN.md §15.2, "Which hashes may change, and when"): the same eight measures, and B2, on the generated classic
-// world (WORLD.gen on: the runner's -Gen), checked against GEXPECT in its place. And the sums the generator makes (WM.sum: the
-// classic world, seeds s1-s3 at Normal and s1 at Large), against SUMS, with the flag on or off (genWorld makes them either way).
+// world (WORLD.gen on), checked against GEXPECT in its place. And the sums the generator makes (WM.sum: the classic world, seeds
+// s1-s3 at Normal and s1 at Large), against SUMS, with the flag on or off (genWorld makes them either way).
+// The flip (wave 4, 2026-10-22): the generated world is the default, so a plain run checks G1-G8 (the world's fingerprints are now
+// GEXPECT's values: W1-W8 take G1-G8's, one cause, the new world); -Classic (gen=0) checks today's map against EXPECT, kept as it is
+// until the owner confirms the generated map and today's map goes (D49), EXPECT with it.
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.push('INFO '+m),t=T,G=t.G,P=t.P,W=t.W;
 // (G1-G8, GB2 and the sums recorded 2026-10-22 in wave 3's last merge (E), on 70970ed: A's classic terrain (the hints of §8.15) and
 //  B's classic anchors (today's 37 holdings at their places), the first generated classic world the plan holds still. From here
-//  they hold, re-recorded only with a reason; at the flip (wave 4) W1-W8 take their values. With the flag on, W6's spots are the
+//  they hold, re-recorded only with a reason; at the flip (wave 4) W1-W8 took their values. With the flag on, W6's spots are the
 //  same map pixels (where begin puts you, the classic world's Ashford; (1792, 1280); (2688, 768)), on that world)
 // (G6, G7, G8 and GB2 re-recorded 2026-10-22, on purpose, the spawn fix (world.js gateSpot, tests/herowalk.js): a new game put you
 //  2 tiles under your home's tile, which on the generated classic world is Ashford's house lot (83, 87): you began standing on a

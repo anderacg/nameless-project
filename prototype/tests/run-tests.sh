@@ -1,18 +1,19 @@
 #!/usr/bin/env bash
 # Runs the headless test suites in Chrome or Edge and prints each suite's results.
-# Usage: tests/run-tests.sh [-j N] [-s SEED] [-g] [-r N [-S]] [suite ...]   (default: every suite in tests/ except the harness and the kit)
+# Usage: tests/run-tests.sh [-j N] [-s SEED] [-c] [-r N [-S]] [suite ...]   (default: every suite in tests/ except the harness and the kit)
 #   -j N     run N suites at once (a browser and profile each)      -s SEED  seed Math.random (?seed=SEED)
-#   -g       the generated world (?gen=1: data/world.js WORLD.gen)
+#   -c       today's hand-made map (?gen=0); the generated world is the default (data/world.js WORLD.gen, since the flip)
+#   -g       the default now; kept so old commands still work (adds nothing)
 #   -r N     the flake finder: each suite N times unseeded (-S: once with each seed 1..N); checks that fail in some runs, not all
 #            (the native Windows runner only: run-tests.ps1 -Repeat N [-Sweep])
 # After each suite: "# N pass, N fail, N.N s"; at the end "# summary: ...". Exits non-zero if any line reads FAIL, EXC or ERR.
 cd "$(dirname "$0")/.." || exit 1
-jobs=1 seed="" gen="" rep="" sweep=""
-while getopts "j:s:gr:S" opt; do case $opt in j) jobs=$OPTARG;; s) seed=$OPTARG;; g) gen=1;; r) rep=$OPTARG;; S) sweep=1;; *) exit 2;; esac; done; shift $((OPTIND-1))
+jobs=1 seed="" classic="" rep="" sweep=""
+while getopts "j:s:gcr:S" opt; do case $opt in j) jobs=$OPTARG;; s) seed=$OPTARG;; g) ;; c) classic=1;; r) rep=$OPTARG;; S) sweep=1;; *) exit 2;; esac; done; shift $((OPTIND-1))
 # On Windows (Git Bash) hand over to the native runner: one DevTools-driven browser per worker with a reused profile, much
 # faster than a fresh --dump-dom browser per suite. Same output and exit code. (ASHMARK_DUMP_DOM=1 keeps the path below.)
 if [ -z "$ASHMARK_DUMP_DOM" ] && command -v powershell.exe >/dev/null && command -v cygpath >/dev/null; then
-  args=(-Parallel "$jobs"); [ -n "$seed" ] && args+=(-Seed "$seed"); [ -n "$gen" ] && args+=(-Gen); [ -n "$rep" ] && args+=(-Repeat "$rep"); [ -n "$sweep" ] && args+=(-Sweep); [ $# -gt 0 ] && args+=(-Suites "$(IFS=,; echo "$*")")
+  args=(-Parallel "$jobs"); [ -n "$seed" ] && args+=(-Seed "$seed"); [ -n "$classic" ] && args+=(-Classic); [ -n "$rep" ] && args+=(-Repeat "$rep"); [ -n "$sweep" ] && args+=(-Sweep); [ $# -gt 0 ] && args+=(-Suites "$(IFS=,; echo "$*")")
   exec powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "& '$(cygpath -w "$(pwd)/tests/run-tests.ps1")' ${args[*]}"
 fi
 [ -n "$rep" ] && { echo "-r (the flake finder) needs the native Windows runner (run-tests.ps1 -Repeat)."; exit 2; }
@@ -25,7 +26,7 @@ done
 page="$(pwd)/Ashmark.html"; command -v cygpath >/dev/null && page="$(cygpath -m "$page")"
 work="$(mktemp -d)"; trap 'rm -rf "$work"' EXIT
 suites=("$@"); [ ${#suites[@]} -eq 0 ] && for f in tests/*.js; do n=$(basename "$f" .js); [ "$n" != harness ] && [ "$n" != kit ] && suites+=("$n"); done
-query=""; [ -n "$seed" ] && query="&seed=$seed"; [ -n "$gen" ] && query="$query&gen=1"
+query=""; [ -n "$seed" ] && query="&seed=$seed"; [ -n "$classic" ] && query="$query&gen=0"
 now() { date +%s%3N; }
 run_one() { # index suite slot: writes $work/<index>.out, then <index>.ms (a profile per slot, reused: a new one is slow to start)
   local i=$1 s=$2 t0 out; t0=$(now)

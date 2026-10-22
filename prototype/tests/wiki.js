@@ -16,5 +16,5 @@ window.RUN=()=>{
     const search=d.getElementById('q');ok(!!search,'the wiki search control exists');
     if(search){search.value='dragon';search.dispatchEvent(new w.Event('input',{bubbles:true}));const shown=[...d.querySelectorAll('main section:not([hidden])')];ok(shown.length>0&&shown.length<sections.length&&/match/.test(d.getElementById('qinfo').textContent)&&shown.some(s=>s.textContent.toLowerCase().includes('dragon')),'wiki search filters reference entries and reports matches')}
   }catch(e){o.push('EXC '+e.message+' '+e.stack)}finish()};
-  frame.src='wiki.html';document.body.appendChild(frame);
+  frame.src='wiki.html'+(T.WORLD.gen?'':'?gen=0');document.body.appendChild(frame);// (the page's world: today's map with -Classic)
 };

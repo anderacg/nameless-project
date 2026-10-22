@@ -43,6 +43,8 @@ window.RUN=async()=>{const r=Kit.report(),{ok,info}=r;try{
  t.act('race','dwarf');t.act('begin','world:hedge');
  {const nb=[...document.querySelectorAll('#panel .nav [data-nav]')].map(b=>b.dataset.nav+':'+b.textContent);
   ok(G.mode==='title'&&G.menu==='world'&&/New world/.test(txt())&&/Dwarf · Hedge mage/.test(txt())&&J(nb)===J(['back:Back','close:Forge the world'])&&q('.ws-cv')&&q('.ws-cv').width>2,'the New world screen: its header, the preview drawn, Back on the left and Forge the world on the right ('+nb.join(', ')+')')}
+ {const ps=[...document.querySelectorAll('#panel [data-act="ws-preset"]')];
+  ok(ps[0]&&ps[0].dataset.arg==='classic'&&ps[0].classList.contains('on')&&S.s.preset==='classic','the classic world offered first, and the choice at first (WORLD_DESIGN.md wave 4): '+ps.map(b=>b.textContent+(b.classList.contains('on')?' (chosen)':'')).join(', '))}
  t.act('ws-preset','classic');
  {const s=S.s,dis=n=>q('[data-act="'+n.split(' ')[0]+'"]'+(n.split(' ')[1]?'[data-arg="'+n.split(' ')[1]+'"]':'')).disabled;
   ok(s.preset==='classic'&&s.seed==='CLASSIC'&&q('#wsSeed').disabled&&dis('ws-size large')&&dis('ws-dens more')&&dis('ws-random')&&!dis('ws-forge'),'Classic: its seed, size and holdings locked (greyed)');

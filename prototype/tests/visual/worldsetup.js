@@ -1,5 +1,5 @@
 'use strict';
-// Not a test: the New world screen (ui/worldsetup.js) for a screenshot. Ashmark.html?gen=1&test=visual/worldsetup and
+// Not a test: the New world screen (ui/worldsetup.js) for a screenshot. Ashmark.html?test=visual/worldsetup and
 // &preset=classic|normal|large|huge|frontier|crowded, &seed=<a seed or a world code>, &adv=1 (the Advanced fold-out open),
 // &scroll=<px> (the settings scrolled), &full=1 (the full preview made), &race=, &past=; &page=world: that world forged and
 // the Esc menu's World page open

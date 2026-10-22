@@ -5,18 +5,23 @@ param(
   [ValidateRange(1,600)][int]$TimeoutSeconds = 90,
   [ValidateRange(1,16)][int]$Parallel = 1,
   [switch]$Gen,
+  [switch]$Classic,
   [ValidateRange(0,1000)][int]$Repeat = 0,
   [switch]$Sweep
 )
 # Native Windows runner: isolated headless browsers (one per -Parallel worker), a fresh tab per suite, no npm dependencies.
-# Usage from PowerShell: .\tests\run-tests.ps1 -Suites parties,troopxp [-Seed 1,2] [-Parallel 4] [-Gen]
-# -Gen: the generated world (the page's address gets gen=1: data/world.js WORLD.gen, doc/WORLD_DESIGN.md, 15.2).
+# Usage from PowerShell: .\tests\run-tests.ps1 -Suites parties,troopxp [-Seed 1,2] [-Parallel 4] [-Classic]
+# The world: the generated one by default (data/world.js WORLD.gen, on since the flip: doc/WORLD_DESIGN.md, 15.2 wave 4).
+# -Classic: today's hand-made map (the page's address gets gen=0), kept until the owner confirms the generated map (D49).
+# -Gen: the default now; kept so old commands still work (it adds nothing).
 # Output: "== suite" (and "# seed=N"), the suite's lines (PASS/FAIL/EXC/ERR/INFO...), then "# N pass, N fail, N.N s".
 # The last lines ("# summary: ...") total every suite; the exit code is 1 if any line of any suite reads FAIL, EXC or ERR.
 # The flake finder: -Repeat N runs each suite N times unseeded (-Repeat N -Sweep: once with each seed 1..N instead; -Seed is
 # then ignored). Each run prints one line ("== suite #k", its seed, counts, and its failing lines), then "# flaky:" lists every
 # check (numbers in its text read as #) that failed in some runs but not all, with its counts, and "# always fails:" the rest.
 $ErrorActionPreference = 'Stop'
+if ($Gen -and $Classic) { throw '-Gen and -Classic are two worlds: give one.' }
+$worldQuery = $(if ($Classic) { '&gen=0' } else { '' })
 if (!$Browser) {
   $Browser = @('C:\Program Files\Google\Chrome\Application\chrome.exe', 'C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe') |
     Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
@@ -38,7 +43,7 @@ foreach ($run in $runs) { $queue.Enqueue($run) }
 
 # One worker: its own browser and profile, taking suites off the shared queue until it is empty; emits one result per run.
 $worker = {
-  param($Queue, [string]$Browser, [string]$ProjectRoot, [int]$TimeoutSeconds, [bool]$Gen)
+  param($Queue, [string]$Browser, [string]$ProjectRoot, [int]$TimeoutSeconds, [string]$WorldQuery)
   $ErrorActionPreference = 'Stop'
   $state = @{ id = 0 }
   function Invoke-Cdp($Socket, [string]$Method, $Params = @{}) {
@@ -106,7 +111,7 @@ $worker = {
         if (!$cleared) { Invoke-Cdp $socket 'Storage.clearDataForOrigin' @{origin='file://'; storageTypes='local_storage,indexeddb'} | Out-Null; $cleared = $true }
         $pageUrl = ([Uri](Join-Path $ProjectRoot 'Ashmark.html')).AbsoluteUri + '?test=' + $run.Suite
         if ($null -ne $run.Seed) { $pageUrl += '&seed=' + $run.Seed }
-        if ($Gen) { $pageUrl += '&gen=1' }
+        $pageUrl += $WorldQuery
         Invoke-Cdp $socket 'Page.navigate' @{url=$pageUrl} | Out-Null
         $out = ''
         do {
@@ -195,12 +200,12 @@ $wall = [Diagnostics.Stopwatch]::StartNew()
 $printed = @{}
 $workers = [Math]::Min($Parallel, [Math]::Max(1, $runs.Count))
 if ($workers -eq 1) {
-  & $worker $queue $Browser $projectRoot $TimeoutSeconds $Gen.IsPresent | ForEach-Object { Write-Result $_; $printed[$_.Index] = $true }
+  & $worker $queue $Browser $projectRoot $TimeoutSeconds $worldQuery | ForEach-Object { Write-Result $_; $printed[$_.Index] = $true }
 } else {
   $pool = [runspacefactory]::CreateRunspacePool(1, $workers); $pool.Open()
   $jobs = @(foreach ($i in 1..$workers) {
     $ps = [powershell]::Create(); $ps.RunspacePool = $pool
-    [void]$ps.AddScript($worker).AddArgument($queue).AddArgument($Browser).AddArgument($projectRoot).AddArgument($TimeoutSeconds).AddArgument($Gen.IsPresent)
+    [void]$ps.AddScript($worker).AddArgument($queue).AddArgument($Browser).AddArgument($projectRoot).AddArgument($TimeoutSeconds).AddArgument($worldQuery)
     $in = New-Object 'Management.Automation.PSDataCollection[psobject]'; $in.Complete()
     $out = New-Object 'Management.Automation.PSDataCollection[psobject]'
     [pscustomobject]@{PS=$ps; Out=$out; Handle=$ps.BeginInvoke($in, $out); Read=0}
@@ -222,7 +227,7 @@ if ($workers -eq 1) {
 }
 # a run no worker reached (its browser failed) still counts as a failure
 foreach ($run in $runs) { if (!$printed.ContainsKey($run.Index)) { Write-Result ([pscustomobject]@{Index=$run.Index; Suite=$run.Suite; Seed=$run.Seed; Out='ERR runner: not run (no test browser)'; Ms=0}) } }
-Write-Output ('# summary: {0} runs, {1} pass, {2} fail, suites {3:N1} s, wall {4:N1} s, {5} browser(s){6}' -f $runs.Count, $totals.pass, $totals.fail, ($totals.ms / 1000), $wall.Elapsed.TotalSeconds, $workers, $(if ($Gen) { ', gen=1' } else { '' }))
+Write-Output ('# summary: {0} runs, {1} pass, {2} fail, suites {3:N1} s, wall {4:N1} s, {5} browser(s){6}' -f $runs.Count, $totals.pass, $totals.fail, ($totals.ms / 1000), $wall.Elapsed.TotalSeconds, $workers, $(if ($Classic) { ', gen=0 (today''s map)' } else { '' }))
 if ($totals.failing.Count -and !$Repeat) { Write-Output ('# failing: ' + ($totals.failing -join ', ')) }
 if ($Repeat) {
   # a check that failed in some runs is flaky; a check that failed every time it ran (or that only shows when it fails) is

@@ -210,7 +210,7 @@ function menuAct(a,arg){
   if(a==='wipe-ask'){G.wipeArmed=arg||latestSlot();showTitle('load');return true}
   if(a!=='menu')return false;
   G.wipeArmed=false;
-  if(arg==='wiki'){try{window.open('wiki.html','_blank')}catch(e){}return true}
+  if(arg==='wiki'){try{window.open('wiki.html'+(WORLD.gen?'':'?gen=0'),'_blank')}catch(e){}return true}
   if(arg==='exit'){try{window.close()}catch(e){}showTitle('exit');return true}
   if(arg==='new')worldSetupFresh();// (each visit a fresh seed: worldsetup.js)
   showTitle(arg);const b=panel.querySelector('.card,button');if(b)b.focus({preventScroll:true});return true;
