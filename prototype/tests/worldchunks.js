@@ -228,6 +228,25 @@ try{
      let tr=0,up=0,rock=0;for(const e of WA.standing(fm.c0*TILE-16,fm.r0*TILE-64,(fm.c1+1)*TILE+16,(fm.r1+1)*TILE+16)){if(!e.s){rock++;continue}const tx=e.x>>4,ty=e.y>>4;if(!TS.has(e.s)||N.lab[ty*MW+tx]!==fm.id)continue;tr++;if(e.dy+e.s.ay<e.y-2)up++}
      ok(tr>=fm.n*2&&up>=tr*.7&&rock>20,'a forested range ('+fm.n+' tiles at '+fm.c0+', '+fm.r0+') stands with '+tr+' of the world’s trees on its tiles, '+up+' of them lifted up its slopes, '+rock+' runs of its rock between')}
    else info('no forested range on this world')}
+  // (every pond's and oasis's bank (land within 1-3 px of its water as drawn, its nearest water tile a pond's or an oasis's: wk 5)
+  //  along each tile's edge line round it: a run of one colour 6 px long at most (the ground's grain and the ring's mottling on it,
+  //  GENART.pgrain, PX.WN_RING.soft); a sprite's outline (26,28,38, as the mountains' check reads it) is no bank colour. The world's
+  //  own (WM.ponds, WM.oases), then each kind put into each climate at an open spot)
+  {const T0=t.tiles.slice(),P0=t.WM.ponds,O0=t.WM.oases,cl=(x,y)=>t.CLIMS[t.climate[y*MW+x]],KS=['hollow','pool','tarn','oxbow','spring','oasis'];
+   const runs=q=>{const P=WA.ensure(),L=(q.tiles||[]).concat([q.i]),xs=L.map(i=>i%MW),ys=L.map(i=>(i/MW)|0),x0=Math.max(0,Math.min(...xs)-2),y0=Math.max(0,Math.min(...ys)-2),x1=Math.min(MW-1,Math.max(...xs)+2),y1=Math.min(MH-1,Math.max(...ys)+2);
+     const X=x0*TILE,Y=y0*TILE,w=(x1-x0+1)*TILE,h=(y1-y0+1)*TILE,A=paintN(X,Y,w,h),wet=(x,y)=>t.wpx(P.wk,x,y)===1;
+     const bank=(x,y)=>{if(wet(x,y))return false;const j=t.wnear(P.wk,x>>4,y>>4,4);if(j<0||P.wk[j]!==5)return false;for(let b=-3;b<=3;b++)for(let a=-3;a<=3;a++)if(wet(x+a,y+b))return true;return false};let best=0;
+     for(const hz of [0,1])for(let e=hz?Y:X;e<(hz?Y+h:X+w);e+=TILE){let r=0,prev=null;for(let s=0;s<(hz?w:h);s++){const x=hz?X+s:e,y=hz?e:Y+s,o=((y-Y)*w+x-X)*4;if(!bank(x,y)||A[o]===26&&A[o+1]===28&&A[o+2]===38){r=0;prev=null;continue}
+       const c=A[o]+','+A[o+1]+','+A[o+2];r=c===prev?r+1:1;prev=c;best=Math.max(best,r)}}
+     return best};
+   const own=(P0||[]).map(q=>[q,q.kind]).concat((O0||[]).map(q=>[q,'oasis'])),by={};let ow=0;for(const [q,k] of own){const r=runs(q),c=k+' in the '+cl(q.i%MW,(q.i/MW)|0);by[c]=Math.max(by[c]||0,r);ow=Math.max(ow,r)}
+   const P=WA.ensure(),open=(x,y)=>{for(let b=-4;b<=4;b++)for(let a=-4;a<=4;a++)if(t.tAt(x+a,y+b)!==t.T_OPEN||P.clear.at((x+a)*TILE+8,(y+b)*TILE+8))return false;return true},spot={};
+   for(let y=8;y<MH-8&&Object.keys(spot).length<4;y+=3)for(let x=8;x<MW-8;x+=3){const c=cl(x,y);if(!spot[c]&&open(x,y))spot[c]=[x,y]}
+   const iw={};try{for(const c in spot)for(const k of KS){const [x,y]=spot[c];t.tiles.set(T0);const tl=[[0,0],[1,0]].concat(k==='oxbow'?[[2,0],[2,1]]:k==='pool'?[[0,1]]:[]).map(([a,b])=>{t.tiles[(y+b)*MW+x+a]=t.T_WATER;return(y+b)*MW+x+a});
+      const q={i:y*MW+x,r:3,kind:k,big:true,tiles:tl};t.WM.ponds=k==='oasis'?[]:[q];t.WM.oases=k==='oasis'?[q]:[];WA.invalidate();iw[k+' in the '+c]=runs(q)}}
+   finally{t.tiles.set(T0);t.WM.ponds=P0;t.WM.oases=O0;WA.invalidate()}
+   const iv=Object.values(iw),im=Math.max(0,...iv),fmt=o=>Object.entries(o).map(([k,v])=>k+' '+v).join(', ');
+   ok(own.length>=20&&ow<=6&&iv.length>=16&&im<=6,'every pond’s and oasis’s bank: no straight run of one colour along a tile’s edge longer than 6 px; the world’s '+own.length+' (longest '+ow+' px; '+fmt(by)+'), and each kind put into each climate (longest '+im+' px; '+fmt(iw)+')')}
   // (an oasis and ponds put into the world (the generator's lists): an oasis's palms and green; a pond's water a curve, no straight
   //  run of one bank colour along a tile's edge, its bank between the water's edge and the land's own ground)
   {const W0=t.WM,T0=t.tiles.slice(),best=f=>{let b=null,bs=-1e9;for(let y=8;y<MH-8;y++)for(let x=8;x<MW-8;x++){const v=f(x,y);if(v>bs){bs=v;b=[x,y]}}return bs>-1e8?b:null},cl=(x,y)=>t.CLIMS[t.climate[y*MW+x]];

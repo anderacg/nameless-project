@@ -230,9 +230,10 @@ function farmPlot(t,tx,ty,c,fr,ed,px){const h=(x,y,s)=>hash(x,y,t.seed*7+s),cu=c
    their scales, px, then how far each moves it). wood: a road through a wood (a lane: a road's tile with n of its 8 neighbours wood;
    the land's nature makes it a wood's, PX.WN_LANE): its path narrower (narrow, a share), wandering wander px either way over sc px.
    farm: an oasis by a holding (tiles from its water to the holding's centre) has gardens. pond: a pond's shore wobbles pond[0] px
-   (WM.ponds; a lake's wob) over a noise of pond[1] px */
+   (WM.ponds; a lake's wob) over a noise of pond[1] px. pgrain: a pond's and an oasis's bank (its mud, gravel, sand) lit with the
+   ground's light and grain (times pgrain[0]) and dappled a pixel at a time (pgrain[1] either way): no flat run of one colour */
 const GENART={wob:1.6,halo:11,sand:2.6,bank:2.4,road:[2.3,3.6],verge:2.8,rblend:[.2,.8],margin:14,yard:.5,gate:.4,notch:[5,8],join:2,worn:[10,4,.32],lead:.9,back:1.6,ramp:9,deck:[5,6],
-  wood:{n:4,narrow:.15,wander:1.3,sc:13},farm:4,pond:[3.5,9],
+  wood:{n:4,narrow:.15,wander:1.3,sc:13},farm:4,pond:[3.5,9],pgrain:[.2,.06],
   ford:{w:7,width:.4,soft:7,bend:3,bend2:3,rag:[5,2.5,4,2],tint:.7,bed:[.3,.62],peb:.12,ripple:.18,ice:[.7,.6],tw:2.4,run:14,
     bed0:{grass:[188,178,142],frost:[204,214,226],desert:[236,216,164],swamp:[126,116,80]},bed1:{grass:[140,130,104],frost:[158,172,190],desert:[204,178,122],swamp:[90,82,56]},
     rip:{grass:[226,240,248],frost:[250,252,255],desert:[244,242,226],swamp:[150,168,132]},
@@ -421,8 +422,8 @@ function* artGenGround(P,D,x0,y0,w,h,I){
         if(tk<4)c=litSpk(PK[tk],v,hs(x,y,9),C3);else{cv[0]=bil(CVG[0],q,LW,fx,fy);cv[1]=bil(CVG[1],q,LW,fx,fy);cv[2]=bil(CVG[2],q,LW,fx,fy);c=landRGB(v,cv,x,y)}
         if(dd<7&&(f||dd<4.5)){const k=CM.at(q,fx,fy);
           if(dd<4.5){const j=wnear(K,tx,ty,4);if(j>=0){const kj=K[j];
-            if(P.pk[j]&&P.pk[j]<3){if(dd<G.bank+1)c=mixc(c,P.pk[j]===2?PEB:CM.tone(MD,k),.6*Math.min(1,(G.bank+1-dd)/2));if(P.pk[j]===2&&dd<G.bank+1&&hs(x,y,14)<.3)c=mixc(c,[96,94,90],.6)}
-            else if(kj===1||kj===5){const s0=CM.tone(SH0,k),s1=CM.tone(SH1,k);if(dd<G.sand)c=dd<1.3?mixc(s0,s1,.5):hs(x,y,13)<.15?s1:s0;else if(dd<G.sand+1.5)c=mixc(c,s0,.45*(1-(dd-G.sand)/1.5))}
+            if(P.pk[j]&&P.pk[j]<3){if(dd<G.bank+1)c=mixc(c,pgr(P.pk[j]===2?PEB:CM.tone(MD,k),v,x,y),.6*Math.min(1,(G.bank+1-dd)/2));if(P.pk[j]===2&&dd<G.bank+1&&hs(x,y,14)<.3)c=mixc(c,pgr([96,94,90],v,x,y),.6)}
+            else if(kj===1||kj===5){let s0=CM.tone(SH0,k),s1=CM.tone(SH1,k);if(kj===5){s0=pgr(s0,v,x,y);s1=pgr(s1,v,x,y)}if(dd<G.sand)c=dd<1.3?mixc(s0,s1,.5):hs(x,y,13)<.15?s1:s0;else if(dd<G.sand+1.5)c=mixc(c,s0,.45*(1-(dd-G.sand)/1.5))}
             else if(Rv[j]&8){if(dd<2.8)c=mixc(c,[190,182,162],.6);if(dd>=1.8&&dd<2.9&&(x+y)%3===0)c=mixc(c,[104,98,86],.7)}
             else if(dd<G.bank+1)c=mixc(c,CM.tone(MD,k),.55*Math.min(1,(G.bank+1-dd)/2))}}
           // (where a ford's shallows meet the land, its bank: the bed's gravel (sand, mud, slush), dappled)
@@ -432,6 +433,8 @@ function* artGenGround(P,D,x0,y0,w,h,I){
       D[o]=c[0];D[o+1]=c[1];D[o+2]=c[2];D[o+3]=255}
     if(!((y-y0+1)&3))yield}
 }
+// (a pond's or an oasis's bank tone c lit v (the ground's light and grain there) and dappled at pixel (x, y): GENART.pgrain)
+const pgr=(c,v,x,y)=>{const s=1+(v-.5)*GENART.pgrain[0]+(hs(x,y,15)-.5)*2*GENART.pgrain[1];return[c[0]*s,c[1]*s,c[2]*s]};
 // (how shallow a ford f's water is at pixel (x, y), 0-1: within GENART.ford.w of its line bank to bank (a bar wandering off it in
 //  an S), more or less along it, its edge ragged and soft over ford.soft px; round at each end, over the bank)
 const fordAt=(P,f,x,y)=>{const [ax,ay,bx,by]=P.fords[f-1],vx=bx-ax,vy=by-ay,L=vx*vx+vy*vy,ex=x+.5-ax,ey=y+.5-ay,t=Math.max(0,Math.min(1,(ex*vx+ey*vy)/L)),dx=ex-vx*t,dy=ey-vy*t,F=GENART.ford;

@@ -181,7 +181,11 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 //  Were W1 5ae838ac, W2 2fb848a2, W3 19419885, W4 9996d93d, W5 3d1b7695, W6 8c6b32ad, W7 62657eba, W8 e85c68b0, B2 7aad116d)
 // (W5 and W6 measured together 2026-10-23 at the merge of GP's generator and placement with AR's hills, woods and crops; the
 //  others are GP's alone)
-const EXPECT={W1:'92f3e9c6',W2:'9d9df44b',W3:'d123d890',W4:'9c23c683',W5:'f6daaf45',W6:'89ee63a7',W7:'bc579d54',W8:'4fa9c9cb',B2:'d90ef30c'};
+// (W5 and W6 re-recorded 2026-10-23, on purpose (agent PB): a pond's and an oasis's bank lit with the ground's grain and dappled a
+//  pixel at a time (worldart.js pgr, GENART.pgrain), and a pond's ring mottled at its water too (engine/worldnature.js
+//  PX.WN_RING.soft): no straight run of one bank colour along a tile's edge. Only the painted world moves; checked: with the old
+//  code back both are as before. Were W5 f6daaf45, W6 89ee63a7)
+const EXPECT={W1:'92f3e9c6',W2:'9d9df44b',W3:'d123d890',W4:'9c23c683',W5:'a0dec8bd',W6:'a9bc319e',W7:'bc579d54',W8:'4fa9c9cb',B2:'d90ef30c'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended

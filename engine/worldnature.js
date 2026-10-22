@@ -665,8 +665,9 @@
   // big: x of them), tall grass (tuft), shrubs (shrub) and, by a holding, gardens (garden); a hollow's, an oxbow's or a spring's
   // reeds, bushes and flowers; a tarn's stones and scree, its water iced in the frost (ice: how much, past the noise's ice[1]); a
   // swamp pool's reeds and moss; lily pads (pads) on the water of a hollow, an oxbow and a pool. A frost tarn frozen over: ice (ice[0]
-  // its strength), cracked where a noise crosses ice[1])
-  PX.WN_RING={n:7,
+  // its strength), cracked where a noise crosses ice[1]. Past k the lean only soft (soft of what is over), so the noise still
+  // mottles it at the water: no flat band)
+  PX.WN_RING={n:7,soft:.4,
     oasis:{reach:3.2,green:[112,150,62],k:.62,palm:.85,big:1.5,tuft:.9,shrub:.35,garden:.5},
     hollow:{reach:1.6,green:[74,126,50],k:.4,reeds:.9,bush:.3,flowers:.35,pads:.45},
     oxbow:{reach:1.6,green:[74,126,50],k:.35,reeds:.9,bush:.25,flowers:.2,pads:.35},
@@ -822,7 +823,7 @@
         for(let Y=Math.max(wy0,Math.floor(cy-e));Y<Math.min(wy1,Math.ceil(cy+e));Y++)for(let X=Math.max(wx0,Math.floor(cx-e));X<Math.min(wx1,Math.ceil(cx+e));X++){const d=Math.hypot(X+.5-cx,Y+.5-cy)/ts-q.r;if(d>q.reach)continue;const i=at(X,Y);
           // (frozen: ice over all of the water as drawn, a few cracks in it, open water left in thin leads)
           if(wetP(X,Y)){if(ice&&!CLR.at(X,Y)){const m=GN(X+57,Y+23),cr=Math.abs(m-Rn.ice[1]);if(cr>.02){mixD(i,cr<.05?[150,176,204]:[226,236,246],Rn.ice[0]);touch(i,2)}}continue}
-          if(CLR.at(X,Y))continue;const k=Rn.k*Math.min(1,(1-d/q.reach)*1.6)-(GN(X,Y)-.5)*.5;if(k<=0)continue;mixD(i,G,Math.min(Rn.k,k));touch(i,1)}}}
+          if(CLR.at(X,Y))continue;const k=Rn.k*Math.min(1,(1-d/q.reach)*1.6)-(GN(X,Y)-.5)*.5;if(k<=0)continue;mixD(i,G,Math.min(k,Rn.k+(k-Rn.k)*RN.soft));touch(i,1)}}}
     lap('floor');yield;
     // (2) hills: each group of hill tiles one rise (the owner, 2026-10-22: "one large hill sprite", not a bump a tile): its tiles
     //     (P.HT: a hill's, or a road's over the hills) a footprint, its edge read through a wobble (PX.WN_HILL.wob px), blurred into a
