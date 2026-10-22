@@ -1,6 +1,7 @@
 'use strict';
 // The action ring (doc/SUPPLY_DESIGN.md §7a, ui/ring.js): the left button held still on the map opens a ring of the actions that
-// apply there; a short click still travels; a move before it opens calls it off; let go over a button picks it, or let go first
+// apply there; a press does nothing yet: let go before it opens, it travels (the owner, 2026-10-22: click or hold); a move
+// before it opens calls the ring off, and letting go still travels; let go over a button picks it, or let go first
 // and tap one; Esc, a right-click or a tap outside closes it, travelling nowhere. Only what applies: Make camp or Break camp,
 // Travel here and Hurry here on the ground (Stop hurrying while you hurry), Fill waterskins by water, Drink liquor with liquor, Look on something. A finger's long press
 // opens it too, and its Look shows the card.
@@ -21,15 +22,21 @@ try{
  const ring=()=>t.ActionRing.now,labels=()=>ring()?ring().items.map(i=>i.label):[];
  const btn=l=>{const b=[...document.querySelectorAll('.aring .ar-btn')].find(x=>x.textContent===l);if(!b)return null;const r=b.getBoundingClientRect();return{el:b,clientX:r.left+r.width/2,clientY:r.top+r.height/2}};
  const held=async()=>wait(R.hold+80);
- // ---- a short click travels, as ever; no ring
- reset();{const p=cl(P.x+60,P.y+20);down(p);up(p);await held();ok(P.tx!=null&&!ring(),'a short click travels, and no ring opens')}
+ // ---- a short click travels when it is let go; no ring
+ reset();{const wx=P.x+60,p=cl(wx,P.y+20);down(p);const none=P.tx==null&&!G.chase;await wait(R.hold/3);const still=P.tx==null;up(p);const went=P.tx!=null&&Math.abs(P.tx-wx)<2;await held();
+  ok(none&&still,'a press travels nowhere yet');ok(went&&!ring(),'let go before '+R.hold+' ms: you travel there, and no ring opens')}
  // ---- held still: the ring, the travel put back
- reset();{const wx=P.x+60,p=cl(wx,P.y+20);down(p);ok(P.tx!=null,'(the press travels at once, as a click)');await held();
-  ok(!!ring()&&P.tx==null&&document.querySelector('.aring'),'held still '+R.hold+' ms: the ring opens, and the travel is put back');
+ reset();{const wx=P.x+60,p=cl(wx,P.y+20);down(p);await held();
+  ok(!!ring()&&P.tx==null&&document.querySelector('.aring'),'held still '+R.hold+' ms: the ring opens, travelling nowhere');
   ok(labels().join()==='Make camp,Travel here,Hurry here','on bare ground: '+labels().join(', '));
   const b=btn('Travel here');up(b);ok(!ring()&&P.tx!=null&&Math.abs(P.tx-wx)<2,'let go over Travel here: you travel there, the ring closed ('+(b&&b.el.textContent)+', '+P.tx+' for '+wx+')')}
  // ---- a move before it opens: no ring
- reset();{const p=cl(P.x+60,P.y+20);down(p);move({clientX:p.clientX+30,clientY:p.clientY});await held();ok(!ring(),'a move before it opens calls it off');up(p)}
+ reset();{const wx=P.x+60,p=cl(wx,P.y+20);down(p);move({clientX:p.clientX+30,clientY:p.clientY});await held();ok(!ring()&&P.tx==null,'a move before it opens calls it off, travelling nowhere yet');up(p);ok(P.tx!=null&&Math.abs(P.tx-wx)<2,'and letting go travels to where it was pressed')}
+ // ---- a right-click on the map travels at once, as ever (it has no hold)
+ reset();{const wx=P.x+60,p=cl(wx,P.y+20);down(p,{button:2});ok(P.tx!=null&&Math.abs(P.tx-wx)<2,'a right-click travels at once');up(p,{button:2});await held();ok(!ring(),'and opens no ring')}
+ // ---- a short click on a holding beside you meets it as it is let go
+ reset();{const h=t.TOWNS.slice().sort((a,b)=>Math.hypot(a.x-P.x,a.y-P.y)-Math.hypot(b.x-P.x,b.y-P.y))[0];Kit.goTo(h.x,h.y+12);G.lastTown=h;t.drawWorld();const p=cl(h.x,h.y);down(p);const m0=G.mode;up(p);
+  ok(m0==='world'&&G.mode!=='world','a click on a holding beside you: nothing on the press, its window as it is let go ('+m0+' then '+G.mode+')');if(G.mode==='town')t.act('leave');else t.hidePanel();G.mode='world';G.modal=false;G.lastTown=null}
  // ---- let go first, then tap one
  reset();{const p=cl(P.x+60,P.y+20);down(p);await held();up(p);ok(!!ring(),'let go on the spot: the ring stays');btn('Make camp').el.click();ok(!ring()&&!!P.camp,'then tap Make camp: your band makes camp')}
  // ---- in camp: Break camp; with liquor: Drink liquor; by water: Fill waterskins

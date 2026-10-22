@@ -94,7 +94,7 @@ js/world/             the campaign map and everything on it
   stay.js               staying in a holding (your band), and the shelter rules for you and your companions
   supply.js             your band's supplies (doc/SUPPLY_DESIGN.md): SUPPLY (every number), stamina, food and drink by the hour,
                         furs and the desert's water, its health, hunger and thirst on your hero and her death, the camp (Z) on
-                        clear ground, Hurry (4), the card's numbers and the action ring's map actions
+                        clear ground, Hurry (R), the card's numbers and the action ring's map actions
   economy.js            a holding's Economy (stock, production, prices, people; its day) and the treasuries
   buildings.js          what a holding has built: its Buildings (estates' levels, walls, projects; its day)
   estates.js            each Estate (fields, guards, sabotage, its day's work) and the spoils of raiding one; its window is ui/estate.js
@@ -117,7 +117,7 @@ js/world/             the campaign map and everything on it
   quests.js             the jobs: one Quest subclass per kind (bounty, beast, clear, supply, hunt, courier, troops, lordkill, raid)
   news.js               news and rumours: records the world's events heard on the bus, told by the sources
   monsters.js critters.js reputation.js
-  world.js              travel (your step: straight while the way is open, else by the router: heroStep; where you come out
+  world.js              travel (your step: straight while the way is open, else by the router: heroStep, heroWay; where you come out
                         by a holding: gateSpot, open land in front of its gate), the daily tick, the world update
 js/battle/            engage.js (going into a fight: power and stance, allies joining, the battle type, flight, auto-resolve, outcomes by kind: ON_WIN), parley.js (cornered parties), setup.js (BattleSetup, field
                       and unit construction), resolution.js (BattleResolution, field results and campaign settlement),
@@ -137,7 +137,7 @@ js/gfx/               worldart.js (the painted map), sprites.js (generated sprit
                       encounterscene.js (the road encounters' figures and props: EncounterScene, ENC_SCENE),
                       structures.js (placed buildings, estates' ground, camps, sites, flags), render.js (world and battle drawing, HUD),
                       depth.js (what stands in front of a figure on the map, and its fade), vfx.js (battle effects), worldui.js (the map's
-                      pointer marks, route trail and encounter highlights), mist.js (mist in the fog), weapons.js (battle weapons),
+                      pointer marks, route trail (the way your hero walks: heroWay, the router's round water) and encounter highlights), mist.js (mist in the fog), weapons.js (battle weapons),
                       scenedraw.js (painting and drawing the walkable scenes: scene/)
 js/ui/                ui.js (panels, title, Esc menu with the world's name and seed and its World page, the game-over window), loading.js (the loading overlay; runSteps runs long work in steps), worldsetup.js (the New world screen: a world's settings before you forge it), character, talents, inventory, town (a holding's
                       places: Place, definePlace, PLACES; class wave D),
@@ -239,9 +239,9 @@ hero's: it is kept in her `P.sp`, on her scale (`maxSP`; when that grows, by a l
   At 0 health off the battlefield (`heroHurt`, `heroDies`) **the game is over**: `ui.js showDeath` (what killed her and the day; Load
   last save, greyed with none, and Back to the title; Esc follows the bar); nothing runs on behind it (`G.dead`). A lost battle is not
   death. Tests: `tests/gameover.js`.
-- **Hurry** (key 4, the top bar's Hurry where 8× was, the ring's Hurry here): the band marches ×2 (`hurryPace`), its stamina on the
+- **Hurry** (key R, the ring's Hurry here; off the top bar since the second play-test): the band marches ×2 (`hurryPace`), its stamina on the
   march draining ×2.5 (`SUPPLY.forcedMarch`); it cannot start Exhausted and ends once Exhausted, in camp or a holding, or when an
-  event or a window opens (`world.js fastWatch`). The time's 1×, 2×, 4× are as they were; `setSpeed(8)` stays for the tests. Not the
+  event or a window opens (`world.js fastWatch`). The time's 1×, 2×, 4× and Travel fast's 8× (key 4, the bar's last button, a toggle) are on the top bar. Not the
   Forced March perk. Tests: `tests/timecontrols.js`.
 The band's own record (its camp and the hour's counters) is `BAND`, beside `P` (every battle snapshot holds `P` whole), saved as
 the world piece `band` once it is not fresh. The band's own numbers are `PlayerParty`'s: `staminaState`, `staminaPace`,
@@ -256,8 +256,9 @@ the world piece `band` once it is not fresh. The band's own numbers are `PlayerP
   nothing standing there (`WorldArt.standing`); where you stand if it is, else the band walks to the nearest within 4 tiles and
   pitches there (`G.pitch`, `campArrive`); none near: "No clear ground to camp here". The tents (`bandCampEnt`) are drawn by their
   feet among the trees, those in front drawn whole over them.
-- **The action ring** (`ui/ring.js`): hold the left button or a finger still on the map 0.35 s. A short click still travels (the
-  travel a press began is put back when it turns into a hold); a move calls it off. Its buttons, only those that apply
+- **The action ring** (`ui/ring.js`): hold the left button or a finger still on the map 0.35 s. A press does nothing yet (the owner,
+  2026-10-22, mouse and touch alike): let go sooner and it is a click, travelling there or meeting what was clicked; a move first calls
+  the ring off and the release still travels; a right-click travels at once. Its buttons, only those that apply
   (`mapRingItems`): Make camp or Break camp, Travel here, Hurry here (Stop hurrying), Fill waterskins, Drink liquor, Look (a card, for touch).
   Let go over one, or let go and tap one; Esc, a right-click or a tap outside closes it.
 - **The card** (`render.js updateHUD`, `supplyNow`): the band's stamina bar (green, amber Tired, red Exhausted, ▼ ▲, its rate and
@@ -609,7 +610,7 @@ The commander's **Scout** (O, the enemy seen through the fog for the first 10 s)
 For a phone on its side. Touch reads Pointer Events with `pointerType 'touch'` (`TOUCH` in `ui/input.js`: `hold` 450 ms, `slop` 10 CSS px, `ring` 34 CSS px); mouse, pen and keys are unchanged.
 - **Battle:** tap a group to select it, tap again to send it there or onto the enemy tapped (a tap acts when the finger lifts). Hold still for about half a second (a gold ring fills; red over an enemy) to move the selection there or attack the enemy held; hold, then drag, to lay out the line as a right-drag does. Drag without holding to box groups. Two fingers: pinch to zoom about them (`camPinch`), move both to pan; a second finger cancels what the first was doing (a held line's ghost simply goes, nothing sent, the selection kept) and the two then pinch, so a pinch never selects or orders.
 - **Calling a drag off (mouse and keys):** a left-click during a right-drag, or Esc, drops the line ghost: no order, the selection kept, and letting go of the right button does nothing (`dragCancel`, input.js; a left press with the right held comes as a `pointermove`, so both are read). Esc also calls off a box or a finger's press; a drag takes Esc before the window chain, so it opens no menu. Tests: `tests/dragcancel.js`.
-- **Map:** tap to travel. Hold on a holding, party or site to see its card (its tooltip, "Tap:" for "Click:"); the next tap puts it away without travelling.
+- **Map:** tap to travel (as the finger lifts). Hold still for the action ring; its Look shows the card of what is there (its tooltip, "Tap:" for "Click:"); the next tap puts it away without travelling. On a phone (the window's shorter side 540 CSS px or less: `MAPZOOM.SMALL`) the map is drawn at twice the window's scale by default (`MAPZOOM.auto`, within its range; Auto in Settings), the HUD, the minimap and the ring at the window's.
 - **Notch and safe areas:** `viewport-fit=cover`; HUD frames, buttons, messages, banners and windows sit inside the `--e-*` edges (`--edge` plus `env(safe-area-inset-*)`); the hold card is clamped with `safeInsets()` (input.js), read from `.hudlayer`'s padding.
 - **No page zoom:** the HUD is `touch-action:none` (unit cards `pan-x`, selected unit `pan-y`); windows are `pan-x pan-y`, so they scroll but never zoom; pull-to-refresh is off; on iOS `gesturestart`/`gesturechange` are cancelled.
 - **Line preview on phones:** on a coarse or small screen (`GHOST` in formations.js) the dragged line is drawn in screen pixels: a 3 px gold line, 5 px slot dots and an arrowhead over a dark edge. Desktop unchanged.
@@ -658,6 +659,8 @@ Campaign cheats affect live state and can persist in normal saves. Keep a separa
 | `get unit.1` / `set unit.1.s.spd 80` | Inspect a live fighter or override its stats; use IDs from `roster`. |
 | `battle hum_bow 5 hum_foot 5` | Start a paused isolated matchup; `battle` alone opens the selection form. |
 | `pause`, `step 60`, `restart`, `exit` | Control a battle test. Step advances 1–600 frames at 1/60 second per frame and pauses afterward. |
+| `speed 3` or `speed(3)` | Your band's map speed × 3 (`CHEAT.speed`, `bandPace`); `speed 1` resets. Testing only: never saved. |
+| `noNeeds true` / `noNeeds(false)` | No hunger, thirst or stamina drain, nor their tolls on your hero (`CHEAT.noNeeds`, `supplyHour`, `supplyStage`). Testing only: never saved. |
 | `help`, `clear` | Show command examples or clear console output. |
 
 Player edits do not rebuild an already-spawned hero's battlefield stats; edit `unit.<id>.s` to change live stats. Writes cannot replace objects, create arbitrary fields, traverse prototypes, change unit identity/group links, or edit linked shared Unit/campaign objects. Stat edits copy the live stats first so they do not alter the shared unit definitions. Extreme but finite developer values can still invalidate gameplay assumptions; these are debugging tools, not validated progression commands.

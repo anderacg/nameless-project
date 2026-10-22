@@ -23,6 +23,17 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,D=t.DevCo
   D.execute('tp tile '+where.tileX+' '+where.tileY);ok(Math.floor(P.x/t.TILE)===where.tileX&&Math.floor(P.y/t.TILE)===where.tileY,'tile coordinates teleport to the tile centre');
   rejects(()=>D.execute('tp -1 999'),'out-of-bounds teleport is rejected');let water=null;for(let y=0;y<t.MH&&!water;y++)for(let x=0;x<t.MW;x++)if(!t.passable(t.tAt(x,y))){water=[(x+.5)*t.TILE,(y+.5)*t.TILE];break}
   rejects(()=>D.teleport(...water),'teleport cannot strand the player on blocked terrain');ok(D.execute('units bow').includes('hum_bow'),'unit discovery lists matching IDs');
+  // the console's cheats (the owner, 2026-10-22): speed n and noNeeds true/false, named in help, off by default, runtime only
+  {const C=t.CHEAT;try{ok(C.speed===1&&C.noNeeds===false&&/speed 3/.test(D.help)&&/noNeeds/.test(D.help),'speed and noNeeds: off by default, named in help');
+   const p0=t.bandPace();D.execute('speed(3)');const p3=t.bandPace();D.execute('speed 1');ok(C.speed===1&&Math.abs(p3/p0-3)<1e-9&&t.bandPace()===p0,'speed(3) makes your band 3× as fast on the map ('+p0.toFixed(2)+' → '+p3.toFixed(2)+'), speed 1 resets it');
+   rejects(()=>D.execute('speed 0'),'speed 0 is rejected');rejects(()=>D.execute('noNeeds maybe'),'noNeeds wants true or false');
+   for(const k of ['water','ale','liquor'])t.goodTake(k,1e9);t.foodTake(t.foodN());P.stay=null;P.camp=null;P.bsta=80;const hp=P.hp,B0=t.BAND;B0.hungry=0;B0.dry=0;
+   const sl=window.supplyLand,march=n=>{window.supplyLand=()=>({...sl(),well:false,water:false});try{for(let i=0;i<n;i++){t.WALKED.set(P,(t.WALKED.get(P)||0)+50);t.supplyHour()}}finally{window.supplyLand=sl}};// (away from water and wells)
+   D.execute('noNeeds(true)');march(30);const st=t.supplyStage(),rg=t.heroRegen();
+   ok(C.noNeeds&&t.BAND.hungry===0&&t.BAND.dry===0&&P.bsta>=80&&P.hp===hp&&!st.hungry&&!st.parched&&rg.hp&&rg.mp,'noNeeds(true): 30 hours marching with no food or drink, never hungry or thirsty, no stamina drain ('+P.bsta+'), your hero untouched');
+   D.execute('noNeeds false');march(1);ok(!C.noNeeds&&t.BAND.hungry===1&&t.BAND.dry===1&&P.bsta<80,'noNeeds false: hunger, thirst and the drain are back (hungry '+t.BAND.hungry+', thirsty '+t.BAND.dry+', stamina '+P.bsta+')');
+   D.execute('speed 2');D.execute('noNeeds on');ok(!/noNeeds|CHEAT/.test(JSON.stringify(t.worldSave())),'neither is in the save')}
+  finally{C.speed=1;C.noNeeds=false}}
   D.show();const clock=G.clock;t.loop(t.last+16);ok(G.clock===clock,'main loop freezes world simulation while the console is open');D.close();
   const playerRef=P,gameRef=G,originalTroops=P.troops,originalAttr=P.attr,originalMsgs=G.msgs,playerJSON=JSON.stringify(P),gameJSON=JSON.stringify(G),worldJSON=JSON.stringify(t.W),rng=Math.random;
   const save0=localStorage.getItem(t.slotKey('quick'));L.start({left:'hum_bow',leftCount:3,right:'hum_foot',rightCount:2,ai:false,paused:true,seed:7,morale:false});

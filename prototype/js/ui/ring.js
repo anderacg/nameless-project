@@ -2,7 +2,8 @@
 /* ---------- the action ring (doc/SUPPLY_DESIGN.md §7a): hold the left button, or a finger, still on the map for RING.hold ms and
    a ring of round buttons opens round the point, each an icon with its name under it, only the actions that apply (the map's:
    world/supply.js mapRingItems), in the battle's order buttons' style, with a short grow and a soft click. Pick one by letting go
-   over it, or let go first and tap one; Esc, a right-click or a tap outside closes it. A short click still travels, as ever.
+   over it, or let go first and tap one; Esc, a right-click or a tap outside closes it. A press does nothing until it is let go or
+   held: a short click travels (or meets what was clicked) as it is let go (the owner, 2026-10-22, mouse and touch alike).
    ActionRing takes a point (client px) and a list of {icon, label, run()}: the map hands it its own; the battle can hand it
    another later. The one open is ActionRing.now ---------- */
 // hold: ms a press must stay still; slop: client px it may wander meanwhile; r: the ring's radius (CSS px); press: the press under way
@@ -27,19 +28,19 @@ class ActionRing{
   static close(){if(!ActionRing.now)return false;ActionRing.now.close();return true}
 }
 ActionRing.now=null;
-/* the map's press (ui/input.js): the mouse's left button, after its click has done what a click does (before: how you were
-   travelling, put back if it turns out a hold); held still RING.hold ms, the ring opens there with the map's actions; a move
-   beyond RING.slop or letting go first calls it off. A finger's long press opens it the same way (input.js touchTick) */
-function ringPress(e,wx,wy,before){ringDrop();if(G.mode!=='world'||G.modal)return;
-  RING.press={id:e.pointerId,cx:e.clientX,cy:e.clientY,wx,wy,before,timer:setTimeout(ringHeld,RING.hold)}}
+/* the map's press (ui/input.js): the mouse's left button; nothing happens yet. Let go before RING.hold ms, it was a click: you
+   travel there or meet what is there (input.js worldGo, at the point pressed); held still RING.hold ms, the ring opens there with
+   the map's actions and waits for a choice. A move beyond RING.slop first (off) means no ring, and letting go still travels. A
+   finger's press goes the same way (input.js touchDown, touchTick, touchUp) */
+function ringPress(e,wx,wy){ringDrop();if(G.mode!=='world'||G.modal)return;
+  RING.press={id:e.pointerId,cx:e.clientX,cy:e.clientY,wx,wy,off:false,timer:setTimeout(ringHeld,RING.hold)}}
 function ringDrop(){const p=RING.press;if(p)clearTimeout(p.timer);RING.press=null}
-function ringHeld(){const p=RING.press;RING.press=null;if(!p||G.mode!=='world'||G.modal)return false;
-  if(p.before){P.tx=p.before.tx;P.ty=p.before.ty;G.chase=p.before.chase}
-  return ringOpen(p.cx,p.cy,p.wx,p.wy)}
+// (held: the ring opens and the press is spent; nothing to do there, or the map not yours now, the press waits to be let go)
+function ringHeld(){const p=RING.press;if(!p||p.off)return false;p.off=true;if(G.mode!=='world'||G.modal||!ringOpen(p.cx,p.cy,p.wx,p.wy))return false;RING.press=null;return true}
 // the ring at a point (client px) over the map point (wx, wy), with what applies there (on whatever is there, or the ground)
 function ringOpen(cx,cy,wx,wy){const items=mapRingItems(wx,wy,pickAt(wx,wy),cx,cy);if(!items.length)return false;new ActionRing(cx,cy,items).open();return true}
-function ringMove(e){const p=RING.press;if(p&&e.pointerId===p.id&&Math.hypot(e.clientX-p.cx,e.clientY-p.cy)>RING.slop)ringDrop()}
-// let go: over a button of the open ring, it is picked (true); a press still waiting was only a click
-function ringUp(e){ringDrop();const R=ActionRing.now;if(!R)return false;const i=R.at(e.clientX,e.clientY);if(i<0)return false;R.pick(i);return true}
+function ringMove(e){const p=RING.press;if(p&&!p.off&&e.pointerId===p.id&&Math.hypot(e.clientX-p.cx,e.clientY-p.cy)>RING.slop){p.off=true;clearTimeout(p.timer)}}
+// let go: a press still waiting was a click, and you travel (true); else over a button of the open ring, it is picked (true)
+function ringUp(e){const p=RING.press;ringDrop();if(p){if(G.mode==='world'&&!G.modal)worldGo(p.wx,p.wy);return true}const R=ActionRing.now;if(!R)return false;const i=R.at(e.clientX,e.clientY);if(i<0)return false;R.pick(i);return true}
 // a press on the canvas with the ring open (a tap outside it, a right-click) closes it, and does nothing else (true)
 function ringTapOut(){return ActionRing.close()}

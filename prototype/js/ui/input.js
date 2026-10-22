@@ -36,8 +36,7 @@ panel.addEventListener('change',updateRecruitDraft);
 panel.addEventListener('input',updateCompTransferDraft);
 panel.addEventListener('change',updateCompTransferDraft);
 document.addEventListener('click',e=>{
-  const s=e.target.closest('[data-speed]');if(s)setSpeed(+s.dataset.speed);
-  if(e.target.closest('[data-hurry]'))toggleHurry();// (Hurry: the band marches faster, world/supply.js)
+  const s=e.target.closest('[data-speed]');if(s){const n=+s.dataset.speed;setSpeed(n===TRAVEL_FAST&&G.speed===n?1:n)}// (Travel fast toggles)
   const o=e.target.closest('[data-order]');if(o)setOrder(o.dataset.order);
   const g=e.target.closest('[data-grp]');if(g)selectGroup(g.dataset.grp,e.shiftKey);
 });
@@ -50,8 +49,6 @@ $('#bPause').addEventListener('click',()=>battlePause());
 {const b=document.getElementById('bSkills');if(b)b.addEventListener('click',()=>setAutoSkills(!AUTOSK.on))}
 $('#hpBtn').addEventListener('click',()=>setHpBars(!HPBARS.on));setHpBars(HPBARS.on);
 $('#pause').addEventListener('click',togglePause);pauseUI();
-// the top bar's last button: Hurry (key 4), where Travel fast's 8× was (its title from SUPPLY.forcedMarch)
-{const b=$('#wtop [data-hurry]');if(b)b.title='Hurry (4): your band marches '+SUPPLY.forcedMarch.pace+'× as fast, its stamina draining '+SUPPLY.forcedMarch.drain+'× as fast, until you stop it or it is Exhausted';hurryUI()}
 // the dock's tiles: an icon over the name, the key in the corner
 document.querySelectorAll('.dbtn[data-ico]').forEach(b=>{b.innerHTML=icon(b.dataset.ico,18)+'<span class="dl">'+b.textContent+'</span>'+(b.dataset.key?'<kbd>'+b.dataset.key+'</kbd>':'')});
 $('#saveBtn').addEventListener('click',()=>saveGame(false,'quick'));
@@ -65,7 +62,7 @@ $('#journalBtn').addEventListener('click',()=>{if(G.mode==='journal')closeOver()
 $('#fsBtn').addEventListener('click',toggleFull);
 // the map's zoom buttons (shown on the map only: style.css), each dimmed at its end of the range (core.js mapZoom)
 $('#zoomIn').addEventListener('click',()=>{if(G.mode==='world'&&!G.modal)mapZoom(1)});$('#zoomOut').addEventListener('click',()=>{if(G.mode==='world'&&!G.modal)mapZoom(-1)});
-function zoomUI(){const i=$('#zoomIn'),o=$('#zoomOut'),Z=MAPZOOM,s=Z.map?VS:Z.s0;if(i)i.disabled=s>=Z.hi;if(o)o.disabled=s<=Z.lo}
+function zoomUI(){const i=$('#zoomIn'),o=$('#zoomOut'),Z=MAPZOOM,s=Z.map?VS:Z.auto;if(i)i.disabled=s>=Z.hi;if(o)o.disabled=s<=Z.lo}
 zoomUI();
 document.addEventListener('fullscreenchange',fitScreen);
 $('#skillBtn').addEventListener('click',()=>{if(G.mode==='skills')act('sk-close');else openSkills()});
@@ -97,7 +94,7 @@ cv.addEventListener('pointerdown',e=>{
   if(G.mode==='world'&&!G.place&&e.button===0&&fullMapHit(p)){fullMapOpen();return}// (a click or a tap on the minimap: the full map, map.js)
   if(e.pointerType==='touch'&&touchDown(e,p))return;// (a finger in battle or on the map: below; it acts when it lifts)
   if(G.mode==='world'){const wx=G.cam.x+p.x,wy=G.cam.y+p.y;if(G.place){if(e.button===2){G.place=null;log('You stop placing.')}else placeClick(wx,wy);return}if(P.stay)return stayClick(wx,wy);
-    const before={tx:P.tx,ty:P.ty,chase:G.chase};worldGo(wx,wy);if(e.button===0)ringPress(e,wx,wy,before)}// (held still: the action ring, ring.js)
+    if(e.button===0)ringPress(e,wx,wy);else worldGo(wx,wy)}// (the left button: nothing yet; let go, you travel; held still, the action ring: ring.js)
   else if(G.mode==='scene')sceneClick(p.x,p.y);
   // battle: RTS command (commands.js): left-click or drag to select, right-click to move or attack (a touch: select, then a
   // second touch sends them)
@@ -134,7 +131,8 @@ function worldGo(wx,wy){G.pitch=null;if(!(clickAt(wx,wy)||G.chase)){P.tx=clamp(w
    within TOUCH.slop CSS px) sends the selection there, or onto the enemy under it; a long press then a drag lays the line, as a
    right-drag does (where, how wide, facing); a drag before it boxes groups. Two fingers: pinch to zoom about their middle, move
    both to pan; a second finger calls off whatever the first was doing, and a pinch never selects or orders.
-   Map: a tap travels; a long press on something shows its card (the tooltip), which the next tap puts away, travelling nowhere ---------- */
+   Map: a tap travels when the finger lifts (as a click does when the button is let go: ring.js); a long press opens the action ring
+   (its Look shows the card of what is there, which the next tap puts away, travelling nowhere) ---------- */
 // hold: ms to a long press; slop: CSS px a finger may wander in it; ring: the filling ring's radius (CSS px, round the finger)
 const TOUCH={hold:450,slop:10,ring:34,pts:new Map(),lp:null,pinch:null,spent:new Set()};
 const touchSpan=()=>{const [a,b]=[...TOUCH.pts.values()];return Math.max(1,Math.hypot(a.cx-b.cx,a.cy-b.cy))};// (two fingers apart, CSS px: the map's pinch)
@@ -258,7 +256,8 @@ window.addEventListener('keydown',e=>{
     G.keys[k]=true;if(e.shiftKey)G.keys.shift=true;
   }else if(G.mode==='world'&&!G.modal){
     if(e.code==='Space'){e.preventDefault();if(!e.repeat)togglePause()}
-    if(k>='1'&&k<='3')setSpeed(SPEEDS[k-1]);if(k==='4'&&!e.repeat)toggleHurry();// (4: Hurry, world/supply.js)
+    if(k>='1'&&k<='3')setSpeed(SPEEDS[k-1]);if(k==='4'&&!e.repeat)setSpeed(G.speed===TRAVEL_FAST?1:TRAVEL_FAST);// (4: Travel fast, 8×, or back to 1×)
+    if(k==='r'&&!e.repeat)toggleHurry();// R: Hurry, or stop hurrying (world/supply.js; the action ring's Hurry here too)
     if(k==='c')openChar();if(k==='i')openInv();if(k==='k')openSkills();if(k==='h')openHelp();if(k==='l')openJournal();
     if(!e.repeat&&(k==='='||k==='+'||k==='-')){mapZoom(k==='-'?-1:1);return}// + and −: the map's zoom (core.js)
     if(k==='g'&&!e.repeat){setGrid(!GRID.on);log(GRID.on?'Tile grid on (G to hide).':'Tile grid off.')}

@@ -55,7 +55,7 @@ try{
   {world();clear();P.x=Math.floor(P.x)+.4;const m={id:'boar',x:P.x+12.3,y:P.y+.4,hx:P.x,hy:P.y,lv:1,n:2,t:0,a:0,cool:5};W.monsters=[m];G.encCool=0;frame();
    const r=t.cv.getBoundingClientRect(),x=r.left+(m.x-G.cam.x)*r.width/t.VW,y=r.top+(m.y-4-G.cam.y)*r.height/t.VH,p=t.toCanvas({clientX:x,clientY:y});
    ok(!isInt(G.cam.x)&&Math.abs(G.cam.x+p.x-m.x)<1e-6&&Math.abs(G.cam.y+p.y-(m.y-4))<1e-6,'the pointer reads as the map\'s point under it with the camera at '+G.cam.x.toFixed(3)+' (toCanvas in game pixels)');
-   t.cv.dispatchEvent(new PointerEvent('pointerdown',{clientX:x,clientY:y,pointerType:'mouse',bubbles:true}));ok(G.enc&&G.enc.kind==='monster','a click on the beast beside you meets it');if(G.enc)t.act('flee');world();W.monsters=[];G.encCool=1e9}
+   t.cv.dispatchEvent(new PointerEvent('pointerdown',{clientX:x,clientY:y,pointerType:'mouse',bubbles:true}));t.cv.dispatchEvent(new PointerEvent('pointerup',{clientX:x,clientY:y,pointerType:'mouse',bubbles:true}));ok(G.enc&&G.enc.kind==='monster','a click on the beast beside you meets it');if(G.enc)t.act('flee');world();W.monsters=[];G.encCool=1e9}
   {L.x=P.x+20.37;L.y=P.y+6.2;frame();ok(t.pickAt(L.x+.3,L.y-6)===L,'a party is picked at its place as drawn')}
  }finally{c.drawImage=di0}
  // ---- the walk cycles: WALK.n frames (6 to 8), 0 standing

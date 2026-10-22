@@ -86,7 +86,7 @@ try{
  // ---- met on the map: a click on a field worker beside you opens his talk; robbing him, a little of his product and a few coins
  {F.out=1;G.day=8;near(ash,.2);t.updateFolk(.05);const f=W.folk.find(x=>x.home==='Ashford'&&x.st==='field');P.x=f.x+6;P.y=f.y+2;f.wait=1e9;f.turn=0;
   ok(t.pickAt(f.x,f.y-4)===f,'a field worker is picked where he stands');
-  t.drawWorld();const cv=q('canvas'),r=cv.getBoundingClientRect();cv.dispatchEvent(new PointerEvent('pointerdown',{clientX:r.left+(f.x-G.cam.x)*r.width/t.VW,clientY:r.top+(f.y-4-G.cam.y)*r.height/t.VH,pointerType:'mouse',bubbles:true}));
+  t.drawWorld();const cv=q('canvas'),r=cv.getBoundingClientRect();{const e={clientX:r.left+(f.x-G.cam.x)*r.width/t.VW,clientY:r.top+(f.y-4-G.cam.y)*r.height/t.VH,pointerType:'mouse',bubbles:true};cv.dispatchEvent(new PointerEvent('pointerdown',e));cv.dispatchEvent(new PointerEvent('pointerup',e))}
   ok(G.mode==='dialog'&&G.wk===f&&q('.rkact[data-act="wk-hire"]')&&q('.rkact[data-act="wk-ask"][data-arg="rob"]')&&q('.rkact[data-act="wk-ask"][data-arg="press"]')&&document.getElementById('panel').textContent.includes(t.cap1(t.an(f.job))+' of Ashford'),
     'clicking him opens his talk: Hire, Rob, Press-gang ('+f.name+', '+f.job+')');
   const st=f.st;f.st='in';const inn=t.robCarries(ash,f);f.st=st;ok(t.robLoot(f)===t.ROB.loot.in&&t.robCarries(ash,f)===inn,'robbing him: what one at work carries ('+inn+')');world();F.out=.6}

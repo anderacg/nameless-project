@@ -337,7 +337,7 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 /* what shows where: a battle shows its own HUD; a walk through a town has no time controls */
 .screen[data-mode="battle"] .pcard,.screen[data-mode="battle"] .hint,.screen[data-mode="battle"] .wtop,.screen[data-mode="battle"] .dock{display:none}
 .screen[data-mode="battle"] .toasts{bottom:auto;top:var(--e-t);width:min(28%,340px)}
-.screen[data-mode="scene"] .wtop [data-speed],.screen[data-mode="scene"] .wtop [data-hurry]{display:none}
+.screen[data-mode="scene"] .wtop [data-speed]{display:none}
 
 /* ---------- 6b. people ---------- */
 /* a tab on the right edge, under the minimap (peopledrawer.js peoplePlace sets its top): the people icon and your companions'

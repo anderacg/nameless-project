@@ -111,7 +111,7 @@ function bandPace(){
   let p=paceRatio(sp)*sizeMul(n)*(1+gm('travel')-(m&&m.m.travel||0))*(m?1+.02*skill('ride'):1+.015*skill('athl'));
   p*=1-.5*w/Math.max(1,n+w);if(hpf<.5)p*=1-.4*(.5-hpf);
   const g=roleOf('guide');if(g&&compInBand(g))p*=1.03+.01*compSkill(g,'scout');if(has('forced'))p*=1.15;
-  return Math.min(1.8,p)*P.staminaPace()*bagPace();// (an overfilled bag: core/inventory.js)
+  return Math.min(1.8,p)*P.staminaPace()*bagPace()*CHEAT.speed;// (an overfilled bag: core/inventory.js; the console's speed: core.js CHEAT)
 }
 // (Woodcraft: in a wood, its slowing cut by WOODCRAFT.per a level, up to cap)
 const WOODCRAFT={per:.06,cap:.6,xp:.1};
@@ -213,9 +213,13 @@ function marchStep(d){
    or, with no way it knows (the goal off your land: water, a peak), nearer the goal than you have yet been on the way to it
    (HERO_WAY: a walk sliding back and forth along a shore gets nowhere, and stops) */
 const HERO_WAY={x:NaN,y:NaN,d:Infinity};
+// (a step of walker o toward (tx, ty) by that rule: 1 moved straight, 2 moved by the router, 0 not moved, -1 the router knows no
+// way. Your hero's own (heroStep), and the ghost the drawn way follows ahead of you: gfx/worldui.js wuiWay)
+function heroWay(o,tx,ty,step){
+  if(passable(terrAt(o.x,o.y))&&clearLine(o.x,o.y,tx,ty))return walk(o,tx-o.x,ty-o.y,step)?1:0;// (not while on a ferry's water: its leg goes on by the router)
+  const x0=o.x,y0=o.y;if(!Router.travel(o,{x:tx,y:ty},step))return -1;return o.x!==x0||o.y!==y0?2:0}
 function heroStep(dx,dy,dist,step){
-  if(passable(terrAt(P.x,P.y))&&clearLine(P.x,P.y,P.tx,P.ty))return walk(P,dx,dy,step);// (not while on a ferry's water: its leg goes on by the router)
-  const x0=P.x,y0=P.y;if(Router.travel(P,{x:P.tx,y:P.ty},step)){if(P.x!==x0)P.dir=P.x>x0?1:-1;return P.x!==x0||P.y!==y0}
+  const x0=P.x,r=heroWay(P,P.tx,P.ty,step);if(r===2&&P.x!==x0)P.dir=P.x>x0?1:-1;if(r>=0)return r>0;
   const W=HERO_WAY;if(W.x!==P.tx||W.y!==P.ty){W.x=P.tx;W.y=P.ty;W.d=dist}
   if(!walk(P,dx,dy,step))return false;const nd=Math.hypot(P.tx-P.x,P.ty-P.y);if(nd>=W.d-step*.25)return false;W.d=nd;return true}
 // a holding you reach opens (true), unless you only pass it

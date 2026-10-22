@@ -5,8 +5,9 @@
    never saved and draws no random number.
    - A click or tap that sends you somewhere: a ring ripples out from the point; a gold arrow drops onto the goal, lands with a
      squash and bobs there while you go; you arrive: a small ring puffs and it is gone (another goal, or none: gone at once).
-   - The way there: dots marching toward the goal along the way you will walk (world.js walk, followed ahead once a goal:
-     wuiWay), cut as you walk it, faint by your band, none on land you have never seen.
+   - The way there: dots marching toward the goal along the way you will walk (world.js heroWay, the router's way round water
+     when the line is blocked, followed ahead once a goal: wuiWay; laid again when the ways change or you leave it), cut as you
+     walk it, faint by your band, none on land you have never seen.
    - The pointer (a mouse only): corner brackets round the tile under it, or round a party's figure, a holding's lots, a site,
      easing from one to the next and breathing, a faint glow inside, in the colour of what it is (wuiKind: an enemy red, a friend
      or ally green, a neutral or a caravan white, your companions' and the holdings gold, open ground a soft white). The
@@ -18,7 +19,7 @@
    In whole game pixels on the camera's grid (what moves or eases, to 1/VS px as a mover is: render.js snapV), outlined dark as
    the arrows and chevrons of the battle are (ui/orderpaths.js). Real time. Under reducedMotion all holds still: no ripple or
    puff, the arrow and brackets standing, the dots not marching ---------- */
-const WUI_K={ripple:.42,drop:.3,land:.13,bob:1.3,poof:.42,ping:1.2,breathe:1.4,gap:6,march:10,draw:.35,ease:20,repick:120,steps:8000,off:8,rebuild:250,
+const WUI_K={ripple:.42,drop:.3,land:.13,bob:1.3,poof:.42,ping:1.2,breathe:1.4,gap:6,march:10,draw:.35,ease:20,repick:120,steps:8000,stride:2,off:8,rebuild:250,
   col:{foe:'#ff5a48',friend:'#76d86a',neutral:'#ece6d4',comp:'#e8b94a',hold:'#e8b94a',ground:'#f2ecd8',gold:'#e8b94a',enc:'#4aa0f0'},dark:'#140e08'};
 // (its state: the effects playing (ripples, puffs), the goal you walk to and when it was set, what you chase, the way there,
 // the brackets (b: where they stand now, world px; to: where they go) and what the pointer was last picked on)
@@ -50,19 +51,19 @@ const wuiPut=(c,x,y,px,py)=>ctx.drawImage(c,x-px,y-py);
 function wuiClick(wx,wy){if(G.mode!=='world')return;const now=performance.now(),o=G.chase&&objKind(G.chase)?G.chase:null;if(!o&&P.tx==null)return;
   if(o&&WUI.tgt&&WUI.tgt.o===o)WUI.tgt.t=now;else if(!o&&WUI.dest)WUI.dest.t=now;WUI.way=null;
   if(!reducedMotion()){WUI.fx.push({k:'ripple',x:Math.round(wx),y:Math.round(wy),t:now,col:WUI_K.col[o?wuiKind(o):'gold']});if(WUI.fx.length>12)WUI.fx.shift()}}
-/* ---- the way you will walk: world.js walk's steps followed ahead from (x0, y0) toward (x1, y1) a pixel at a time (the same
-   tries round what blocks it, the same keeping to a bridge's deck), a point every 3 px; it stops where the walk would stall.
-   {X, Y, S (the way's length to each point), n, i (the point you are at), gx, gy, ok (it gets there), t} ---- */
-const WUI_TRY=[0,.6,-.6,1.2,-1.2,1.9,-1.9];
-function wuiWay(x0,y0,x1,y1,now){const X=[x0],Y=[y0];let x=x0,y=y0,best=1e9,bn=0,ok=false;
-  for(let n=0;n<WUI_K.steps;n++){const dx=x1-x,dy=y1-y,d=Math.hypot(dx,dy);if(d<2){ok=true;break}if(d<best-.25){best=d;bn=n}else if(n-bn>60)break;
-    const st=Math.min(d,1),a0=Math.atan2(dy,dx);let moved=false;
-    for(const off of WUI_TRY){const a=a0+off;let nx=x+Math.cos(a)*st,ny=y+Math.sin(a)*st;if(!passable(terrAt(nx,ny)))continue;
-      const tx=Math.floor(nx/TILE),ty=Math.floor(ny/TILE),b=bridgeAt(tx,ty);if(b===1)nx+=clamp((tx+.5)*TILE-nx,-1,1);else if(b===2)ny+=clamp((ty+.5)*TILE-ny,-1,1);x=nx;y=ny;moved=true;break}
-    if(!moved)break;const l=X.length-1;if(Math.hypot(x-X[l],y-Y[l])>=3){X.push(x);Y.push(y)}}
-  if(ok){X.push(x1);Y.push(y1)}else if(X[X.length-1]!==x){X.push(x);Y.push(y)}
+/* ---- the way you will walk: your hero's own steps (world.js heroWay: straight on while the line is open ground, else by the
+   router, round water and the peaks, over a ford, a bridge or a ferry; with no way it knows, straight on while that gets nearer)
+   followed ahead from (x0, y0) toward (x1, y1) by a ghost, WUI_K.stride px a step, a point every 3 px; it stops where the walk
+   would stall. {X, Y, S (the way's length to each point), n, i (the point you are at), gx, gy, ok (it gets there), v (the router's
+   ways it was laid on: WAYV, world/router.js), t} ---- */
+function wuiWay(x0,y0,x1,y1,now){const X=[x0],Y=[y0],o={x:x0,y:y0,dir:1},st=WUI_K.stride;let ok=false;
+  for(let n=0;n<WUI_K.steps;n++){const d=Math.hypot(x1-o.x,y1-o.y);if(d<2){ok=true;break}
+    const r=heroWay(o,x1,y1,Math.min(d,st));if(!r)break;
+    if(r<0&&(!walk(o,x1-o.x,y1-o.y,Math.min(d,st))||Math.hypot(x1-o.x,y1-o.y)>=d-st*.25))break;
+    const l=X.length-1;if(Math.hypot(o.x-X[l],o.y-Y[l])>=3){X.push(o.x);Y.push(o.y)}}
+  if(ok){X.push(x1);Y.push(y1)}else if(X[X.length-1]!==o.x){X.push(o.x);Y.push(o.y)}
   const S=[0];for(let i=1;i<X.length;i++)S.push(S[i-1]+Math.hypot(X[i]-X[i-1],Y[i]-Y[i-1]));
-  return{X,Y,S,n:X.length,i:0,gx:x1,gy:y1,ok,t:now}}
+  return{X,Y,S,n:X.length,i:0,gx:x1,gy:y1,ok,v:WAYV,t:now}}
 // (where you are along it: the nearest of its next points (a rebuild if you are off it), then onto the leg after it; s: px)
 function wuiAlong(w){let j=w.i,bd=1e9;for(let k=w.i,e=Math.min(w.n-1,w.i+80);k<=e;k++){const d=(w.X[k]-P.x)**2+(w.Y[k]-P.y)**2;if(d<bd){bd=d;j=k}}
   if(bd>WUI_K.off*WUI_K.off)return -1;w.i=j;let s=w.S[j];
@@ -74,9 +75,10 @@ function wuiSync(now){WUI.now=now;WUI.fx=WUI.fx.filter(f=>(now-f.t)/1000<(f.k===
   else{WUI.tgt=null;if(P.tx!=null&&!P.stay){const d=WUI.dest;if(!d||Math.abs(d.x-P.tx)>.5||Math.abs(d.y-P.ty)>.5){WUI.dest={x:P.tx,y:P.ty,t:now};WUI.way=null}}
     else{const d=WUI.dest;if(d&&Math.hypot(P.x-d.x,P.y-d.y)<6&&!reducedMotion())WUI.fx.push({k:'poof',x:Math.round(d.x),y:Math.round(d.y),t:now,col:WUI_K.col.gold});WUI.dest=null}}
   if(!WUI.dest&&!WUI.tgt)WUI.way=null;
-  // (the way: laid again for a new goal, a chased party gone on (at most every WUI_K.rebuild ms), or you off it)
+  // (the way: laid again for a new goal, a chased party gone on (at most every WUI_K.rebuild ms), the router's ways changed, or you
+  // off it)
   const g=WUI.tgt?WUI.tgt.o:WUI.dest;if(!g)return;let w=WUI.way;
-  if(w&&(Math.hypot(w.gx-g.x,w.gy-g.y)>(WUI.tgt?4:.5)&&now-w.t>(WUI.tgt?WUI_K.rebuild:0)))w=null;
+  if(w&&(w.v!==WAYV||Math.hypot(w.gx-g.x,w.gy-g.y)>(WUI.tgt?4:.5)&&now-w.t>(WUI.tgt?WUI_K.rebuild:0)))w=null;
   if(!w||wuiAlong(w)<0){const t0=WUI.way?WUI.way.t0:now;w=WUI.way=wuiWay(P.x,P.y,g.x,g.y,now);w.t0=t0}
   WUI.s=Math.max(0,wuiAlong(w))}
 /* ---- what the pointer is on: its box, world px [x0, y0, x1, y1) (a party's leader and host where they are drawn, to 1/VS px;

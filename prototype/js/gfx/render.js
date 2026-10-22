@@ -336,7 +336,7 @@ function frame(){
   const bat=B&&(G.mode==='battle'||G.mode==='esc'&&G.esc&&G.esc.mode==='battle'),scn=!bat&&G.scene&&(G.mode==='scene'||G.mode==='town'&&G.town&&G.town.inScene||G.mode==='esc'&&G.esc&&(G.esc.mode==='scene'||G.esc.mode==='town'&&G.town&&G.town.inScene)),map=!bat&&!scn;
   // (a battle: the field's height, the screen's shape; the world map: the screen's own pixels, VS a game pixel: core.js; the map's
   // zoom only on the map: core.js MAPZOOM)
-  if(map!==MAPZOOM.map){MAPZOOM.map=map;if(MAPZOOM.z)fitScreen()}
+  if(map!==MAPZOOM.map){MAPZOOM.map=map;if(MAPZOOM.z||MAPZOOM.auto!==MAPZOOM.s0)fitScreen()}
   setRes(bat?BVW:map?VW*VS:VW,bat?BVH:map?VH*VS:VH,map?VS:1);
   ctx.save();if(map&&VS>1)ctx.scale(VS,VS);
   {const s=shakeView(bat);if(s)ctx.translate(s.x,s.y)}// (a blow's shake, a charge's jolt: drawn only, vfx.js)

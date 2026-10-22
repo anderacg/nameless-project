@@ -2,7 +2,7 @@
 /* Developer tools deliberately use explicit commands, never eval. They are not saved. */
 const DevConsole={
   opened:false,root:null,history:[],historyAt:0,previousFocus:null,
-  help:'help | money 1000 | where | tp 1200 800 | goto Ashford | get player | get player.attr | set player.attr.agi 12 | roster | get unit.0 | set unit.0.s.spd 80 | units bow | battle hum_bow 5 hum_foot 5 | pause | step 60 | restart | exit\nCoordinates are world pixels. tp tile 50 60 uses tile coordinates. roster lists live unit IDs. Numeric edits require finite values. String edits use JSON quotes. Cheats affect the current campaign and can be saved; battle tests use private copies.',
+  help:'help | money 1000 | where | tp 1200 800 | goto Ashford | get player | get player.attr | set player.attr.agi 12 | roster | get unit.0 | set unit.0.s.spd 80 | units bow | battle hum_bow 5 hum_foot 5 | pause | step 60 | restart | exit | speed 3 | noNeeds true\nspeed n (or speed(n)): your band’s map speed × n, 1 resets. noNeeds true/false (or noNeeds(true)): no hunger, thirst or stamina drain, nor their tolls on your hero. Both for testing: never saved, gone on reload.\nCoordinates are world pixels. tp tile 50 60 uses tile coordinates. roster lists live unit IDs. Numeric edits require finite values. String edits use JSON quotes. Cheats affect the current campaign and can be saved; battle tests use private copies.',
   text(value){const seen=new WeakSet();return typeof value==='string'?value:JSON.stringify(value,(k,v)=>{if(v&&typeof v==='object'){if(seen.has(v))return '[reference]';seen.add(v)}return v},2)},
   write(value,error=false){if(!this.root)return;const out=this.root.querySelector('[data-dev-output]'),line=document.createElement('div');line.className=error?'dev-error':'';line.textContent=String(this.text(value)).slice(0,10000);out.append(line);while(out.children.length>100)out.firstChild.remove();out.scrollTop=out.scrollHeight},
   number(value){if(value==null||String(value).trim()===''||!Number.isFinite(Number(value)))throw Error('Expected a finite number.');return Number(value)},
@@ -38,8 +38,9 @@ const DevConsole={
     x=this.number(x);y=this.number(y);if(x<0||y<0||x>=MW*TILE||y>=MH*TILE||!passable(terrAt(x,y)))throw Error('Destination must be walkable land inside the map.');
     P.stay=null;P.x=x;P.y=y;P.tx=P.ty=null;P.stuck=0;G.chase=null;G.encCool=3;G.lastTown=null;reveal();updateHUD(true);return 'Teleported to '+x.toFixed(1)+', '+y.toFixed(1)+' world pixels.';
   },
+  // (a command and its words; name(args), as speed(3), reads as name args)
   execute(line){
-    const match=String(line).trim().match(/^(\S+)(?:\s+([\s\S]*))?$/);if(!match)return '';const cmd=match[1].toLowerCase(),arg=match[2]||'',args=arg.split(/\s+/).filter(Boolean);
+    const match=String(line).trim().replace(/^(\w+)\(([^)]*)\)$/,'$1 $2').match(/^(\S+)(?:\s+([\s\S]*))?$/);if(!match)return '';const cmd=match[1].toLowerCase(),arg=match[2]||'',args=arg.split(/\s+/).filter(Boolean);
     if(cmd==='help')return this.help;
     if(cmd==='money'){if(args.length!==1)throw Error('Usage: money 1000 (adds gold; negatives subtract).');const n=this.number(arg),next=P.gold+n;if(!Number.isSafeInteger(n)||!Number.isSafeInteger(next)||next<0)throw Error('Gold must remain a nonnegative safe integer.');P.gold=next;updateHUD(true);return 'Gold: '+P.gold}
     if(cmd==='where')return {x:P.x,y:P.y,tileX:Math.floor(P.x/TILE),tileY:Math.floor(P.y/TILE),mode:G.mode};
@@ -58,6 +59,8 @@ const DevConsole={
     if(cmd==='step')return BattleLab.step(arg?this.number(arg):1);
     if(cmd==='restart')return BattleLab.restart();
     if(cmd==='exit')return BattleLab.exit();
+    if(cmd==='speed'){if(args.length!==1)throw Error('Usage: speed 3 (your band\'s map speed × 3; speed 1 resets).');const n=this.number(arg);if(n<=0||n>50)throw Error('Speed must be above 0 and at most 50.');CHEAT.speed=n;updateHUD(true);return n===1?'Band speed back to normal.':'Band speed × '+n+' (testing only, not saved).'}
+    if(cmd==='noneeds'){const v={true:true,on:true,1:true,false:false,off:false,0:false}[String(arg).trim().toLowerCase()];if(v===undefined)throw Error('Usage: noNeeds true or noNeeds false.');CHEAT.noNeeds=v;updateHUD(true);return v?'No hunger, thirst or stamina drain (testing only, not saved).':'Hunger, thirst and stamina drain are back.'}
     if(cmd==='clear'){if(this.root)this.root.querySelector('[data-dev-output]').replaceChildren();return ''}
     throw Error('Unknown command. Type help.');
   },

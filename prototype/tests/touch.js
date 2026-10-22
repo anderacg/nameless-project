@@ -88,7 +88,7 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t
       cv.dispatchEvent(new PointerEvent('pointerleave',{pointerType:'touch',pointerId:1}));t.frame();
       ok(!tip.hidden&&P.tx==null&&!G.chase&&G.mode==='world','let go: the card stays, and you do not travel');
       const away=fromW(P.x+30,P.y+30);tap(away);ok(tip.hidden&&!tip.classList.contains('hold')&&P.tx==null&&!G.chase,'the next tap puts the card away and travels nowhere');
-      tap(wc);ok(G.chase===far||P.tx!=null,'a quick tap still travels');P.tx=null;G.chase=null;
+      fire('pointerdown',wc);const none=P.tx==null&&!G.chase;fire('pointerup',wc);ok(none&&(G.chase===far||P.tx!=null),'a quick tap travels as the finger lifts, not before (as a click does: ring.js)');P.tx=null;G.chase=null;
       fire('pointerdown',fromW(P.x+40,P.y+10),1);fire('pointerdown',fromW(P.x+60,P.y+10),2);fire('pointerup',fromW(P.x+40,P.y+10),1);fire('pointerup',fromW(P.x+60,P.y+10),2);ok(P.tx==null&&!G.chase&&!TO.pts.size,'two fingers on the map travel nowhere')}
   }catch(e){o.push('EXC '+e.message+' '+e.stack)}finally{
     Math.random=random0;for(const m in orig)t.BattleControl.prototype[m]=orig[m];if(window.__touchMeasure){(0,eval)('measureField=window.__touchMeasure');delete window.__touchMeasure}

@@ -2,7 +2,7 @@
 // The world map's zoom (core.js MAPZOOM, mapZoom): the map drawn at a whole number of device pixels to a game pixel still, one
 // step at a time by the wheel, + and −, the buttons by Save (dimmed at the ends) and a two-finger pinch (never a tap), within its
 // range; clicks and picking read through it, the minimap keeps its size on the screen, the step is remembered (PREFS mapzoom,
-// Settings → Map zoom); the default is the window's own scale; battles keep their own zoom and the window's scale. The screen
+// Settings → Map zoom); the default is the window's own scale, twice it on a phone; battles keep their own zoom and the window's scale. The screen
 // here a 3x one (devicePixelRatio 3: the fixed view's 576 x 360 game px at 3x or more).
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);
 const t=T,G=t.G,P=t.P,W=t.W,Z=t.MAPZOOM,ev=s=>(0,eval)(s),pn=performance.now,r0=Math.random,cv=document.querySelector('canvas');
@@ -66,7 +66,7 @@ try{
     let blocks=0,badB=0;for(let by=offy+S;by<60*S;by+=S)for(let bx=off+S;bx<200*S;bx+=S){const p0=px(bx,by);let same=true;for(let j=0;j<S&&same;j++)for(let i=0;i<S;i++)if(px(bx+i,by+j)!==p0){same=false;break}blocks++;if(!same)badB++}
     const bad=calls.filter(([img,a,m])=>{const sz=a.length===2||(a.length===8&&a[2]===a[6]&&a[3]===a[7]);return !sz||Math.abs(Math.abs(m.a)-S)>EPS||Math.abs(m.d-S)>EPS||m.b||m.c||!isInt(m.e+m.a*(a.length===8?a[4]:a[0]))||!isInt(m.f+m.d*(a.length===8?a[5]:a[1]))});
     ok(S===s&&view()&&blocks>1000&&!badB&&calls.length>8&&!bad.length,'at '+S+' ('+t.VW+' x '+t.VH+' game px) the map lies in whole '+S+' x '+S+' blocks ('+blocks+(badB?', '+badB+' not':'')+') and no picture of '+calls.length+' is resampled'+(bad.length?': '+bad.slice(0,2).map(([img,a,m])=>img.width+'x'+img.height+' @'+[m.a,m.e].map(v=>+v.toFixed(3))).join('; '):''))}
-   {const wx=P.x+37.3,wy=P.y-21.6,e=cl(wx,wy),p=t.toCanvas(e);t.cv.dispatchEvent(new PointerEvent('pointerdown',{...e,pointerType:'mouse',button:0,bubbles:true}));
+   {const wx=P.x+37.3,wy=P.y-21.6,e=cl(wx,wy),p=t.toCanvas(e);t.cv.dispatchEvent(new PointerEvent('pointerdown',{...e,pointerType:'mouse',button:0,bubbles:true}));t.cv.dispatchEvent(new PointerEvent('pointerup',{...e,pointerType:'mouse',button:0,bubbles:true}));
     ok(Math.abs(G.cam.x+p.x-wx)<1e-6&&Math.abs(P.tx-wx)<1e-6&&Math.abs(P.ty-wy)<1e-6,'at '+S+' a click travels to the map\'s point under it ('+P.tx.toFixed(2)+', '+P.ty.toFixed(2)+')');P.tx=null}
    {const L=W.lords.find(l=>!l.dead);Object.assign(L,{x:P.x+40.37,y:P.y+12.2,inside:null,fight:null,dir:1});frame();const p=t.toCanvas(cl(L.x+.3,L.y-6));
     ok(t.pickAt(G.cam.x+p.x,G.cam.y+p.y)===L,'at '+S+' the party under the pointer is picked');L.x=-9999;L.y=-9999}}
@@ -93,6 +93,18 @@ try{
   t.act('mapzoom','0');world();t.frame();const plain=fight();
   ok(zoomed===plain,'a battle started from the zoomed map is the same as from the unzoomed one: its field, obstacles and drawing ('+plain.split('|').slice(0,8).join(',')+')'+(zoomed===plain?'':': '+zoomed.split('|').map((v,i)=>v===plain.split('|')[i]?'=':v.slice(0,80)+' vs '+plain.split('|')[i].slice(0,80)).join(' ')));
   ev('B=null');world();t.frame()}
+ // ---- a phone (the window's shorter side MAPZOOM.SMALL CSS px or less; the fixed view here, so phone() is told so): the map
+ // drawn PHONE times the window's scale by default (the owner, 2026-10-22), within the range; still Auto; the HUD and the minimap
+ // at the window's scale; a step from there stored, a step back Auto again; off the map the window's own scale
+ {const ph=Z.phone;try{Z.phone=()=>true;t.act('mapzoom','0');world();t.fitScreen();t.frame();const A=Math.min(Z.hi,s0*Z.PHONE);
+   ok(Z.auto===A&&A>s0&&t.VS===A&&Z.z===0&&t.HUD_PX===3/s0&&Math.abs(Z.k()-s0/t.VS)<1e-9&&view(),'on a phone the map is drawn at '+A+' by default, not the window\'s '+s0+' ('+t.VW+' x '+t.VH+' game px); the HUD at the window\'s scale');
+   const m=t.worldMiniRect();ok(Math.abs(m.w*t.VS-112*s0)<=t.VS*2,'the minimap keeps its size on the screen ('+m.w*t.VS+' device px across)');
+   const a1=t.mapZoom(-1);t.frame();const v1=t.VS,st=localStorage.getItem('ashmark.mapzoom');const a2=t.mapZoom(1);t.frame();
+   ok(a1&&a2&&v1===A-1&&st===String(A-1)&&t.VS===A&&Z.z===0&&localStorage.getItem('ashmark.mapzoom')==='0','a step out from it is stored ('+st+'), a step back is Auto again');
+   ok(document.getElementById('zoomIn').disabled===(A>=Z.hi)&&!document.getElementById('zoomOut').disabled,'the zoom buttons dimmed from the phone\'s default ('+A+', in to '+Z.hi+')');
+   Z.map=false;t.fitScreen();const off=t.VS;Z.map=true;t.fitScreen();ok(off===s0&&t.VS===A,'off the map (a battle, a scene) the window\'s own scale, '+off)}
+  finally{Z.phone=ph;t.act('mapzoom','0');world();t.fitScreen();t.frame()}
+  t.fitScreen();ok(Z.auto===s0&&t.VS===s0,'a desktop window: the default is the window\'s own scale, as ever')}
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}
 finally{performance.now=pn;Math.random=r0;try{if(dprD)Object.defineProperty(window,'devicePixelRatio',dprD);else delete window.devicePixelRatio}catch(e){}try{localStorage.removeItem('ashmark.mapzoom');t.MAPZOOM.z=0;t.fitScreen()}catch(e){}}
 const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d)};

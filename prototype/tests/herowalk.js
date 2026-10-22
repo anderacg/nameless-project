@@ -4,7 +4,7 @@
 // the holding's own land; on today's map, on the generated classic world (its every holding) and on seeds s1-s8 (2 tiles under a
 // holding was often water or a house there). How you walk (world.js heroStep): straight on while the way is open, else by the
 // router (world/router.js) over a ford, a bridge and a ferry and round a river to a holding beyond it; a click on water you cannot
-// reach stops you at the shore, never sliding back and forth along it. The generated worlds are made here, so the suite runs with
+// reach stops you at the shore, never sliding back and forth along it. The way drawn ahead of you (gfx/worldui.js) is that way. The generated worlds are made here, so the suite runs with
 // the flag off and with -Gen.
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.push('INFO '+m);
 try{
@@ -34,6 +34,21 @@ try{
   return{n,got,miss}};
  t.useWorld(classic);start();
  for(const kind of ['ford','bridge']){const r=trips(kind,6);ok(r.n>=2&&r.got===r.n,'the generated classic world: your band walks over a '+kind+' from up or down the bank to the far side ('+r.got+' of '+r.n+' trips)'+(r.miss.length?': '+r.miss.join('; '):''))}
+ // ---- the way drawn (gfx/worldui.js wuiWay; the owner's second play-test: the dots went straight over a lake): with the line
+ // blocked, the router's way your band will walk, over the crossing, never over water; your band keeps to it all the way; when
+ // the ways change (a crossing shut: WAYV) it is laid again, round the other way
+ {let done=false;for(const [xi,c] of t.WM.crossings.entries()){if(done||c.kind!=='bridge'&&c.kind!=='ford')continue;
+   for(const off of [-5,5]){if(done)break;const [a,b]=across(c,off,5);if(!t.passable(t.terrAt(a[0],a[1]))||!t.passable(t.terrAt(b[0],b[1]))||!t.Router.reach({x:a[0],y:a[1]},{x:b[0],y:b[1]})||t.clearLine(a[0],a[1],b[0],b[1]))continue;
+    start();Kit.goTo(a[0],a[1]);const w=t.wuiWay(P.x,P.y,b[0],b[1],0),wet=w.X.filter((x,i)=>!t.passable(t.terrAt(x,w.Y[i]))).length,on=w.X.some((x,i)=>c.tiles.includes(Math.floor(w.Y[i]/TILE)*t.MW+Math.floor(x/TILE)));
+    if(!on)continue;done=true;
+    ok(w.ok&&!wet&&w.S[w.n-1]>Math.hypot(b[0]-a[0],b[1]-a[1])+TILE,'the way drawn to the far bank goes over the '+c.kind+' ('+Math.round(w.S[w.n-1])+' px, the straight line '+Math.round(Math.hypot(b[0]-a[0],b[1]-a[1]))+'), no point of '+w.n+' on water');
+    let dev=0,f=0;P.tx=b[0];P.ty=b[1];P.stuck=0;for(;f<3000&&P.tx!=null;f++){t.marchStep(.05*t.WORLD_PACE);let m=1e9;for(let i=0;i<w.n;i++)m=Math.min(m,Math.hypot(w.X[i]-P.x,w.Y[i]-P.y));dev=Math.max(dev,m)}
+    ok(P.tx==null&&Math.hypot(P.x-b[0],P.y-b[1])<3&&dev<t.WUI_K.off,'your band walks the way drawn, never more than '+dev.toFixed(1)+' px off it ('+f+' frames)');
+    Kit.goTo(a[0],a[1]);P.tx=b[0];P.ty=b[1];G.chase=null;t.WUI.way=null;t.wuiSync(performance.now());const w0=t.WUI.way,v0=t.WAYV;t.Router.close(xi,true);
+    try{t.wuiSync(performance.now());const w1=t.WUI.way,over=w1.X.some((x,i)=>c.tiles.includes(Math.floor(w1.Y[i]/TILE)*t.MW+Math.floor(x/TILE)));
+     ok(w0&&w1!==w0&&w1.v===t.WAYV&&t.WAYV!==v0&&!over,'the '+c.kind+' shut: the way is laid again at once, not over it ('+Math.round(w1.S[w1.n-1])+' px'+(w1.ok?'':', no way there')+')')}
+    finally{t.Router.close(xi,false);P.tx=null;t.WUI.way=null}}}
+  if(!done)info('no crossing with its way blocked to draw')}
  // ---- to a holding across a river (a click on it: the chase), the way round by a crossing
  {let tried=0,met=0;const miss=[];for(const h of t.TOWNS){if(tried>=3)break;let a=null;
    for(let r=10;r<=24&&!a;r+=2)for(let k=0;k<16&&!a;k++){const x=h.x+Math.cos(k*Math.PI/8)*r*TILE,y=h.y+Math.sin(k*Math.PI/8)*r*TILE,[tx,ty]=tileOf(x,y);

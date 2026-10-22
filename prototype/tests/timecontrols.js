@@ -1,9 +1,9 @@
 'use strict';
-// Time controls (doc/WORLD_DESIGN.md D23): 1x, 2x and 4x (keys 1-3 and the top bar's buttons); the speed you set holds till you
-// change it: no drop on danger, on events or windows, or on arriving (setSpeed(TRAVEL_FAST), 8x, is still there for the tests that
-// run the world fast, with no button). Hurry (the owner, 2026-10-22, in place of Travel fast's 8x: world/supply.js): key 4 or the top
-// bar's last button, a toggle; the band marches twice as fast, its stamina on the march draining 2.5x; it cannot start Exhausted and
-// ends on its own once the band is Exhausted, stops, or anything calls for you (an event, a window: fastWatch, every frame).
+// Time controls (doc/WORLD_DESIGN.md D23): 1x, 2x and 4x (keys 1-3 and the top bar's buttons) and Travel fast, 8x (key 4 and the
+// bar's last button, back on it after the second play-test: each toggles 8x and 1x); the speed you set holds till you change it: no
+// drop on danger, on events or windows, or on arriving. Hurry (world/supply.js): off the bar, on the action ring and key R, a
+// toggle; the band marches twice as fast, its stamina on the march draining 2.5x; it cannot start Exhausted and ends on its own
+// once the band is Exhausted, stops, or anything calls for you (an event, a window: fastWatch, every frame).
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);
 try{
  const t=T,G=t.G,P=t.P,W=t.W,S=t.SUPPLY;t.act('begin','soldier');G.quietEvents=true;
@@ -14,17 +14,20 @@ try{
  calm();
  // ---- the controls: the buttons, lit as the speed is set; the keys
  {const bs=[...document.querySelectorAll('#wtop [data-speed]')],hb=document.querySelector('#wtop [data-hurry]');
-  ok(JSON.stringify(bs.map(b=>+b.dataset.speed))==='[1,2,4]'&&JSON.stringify(t.SPEEDS)==='[1,2,4]'&&!!hb&&hb.textContent==='Hurry'&&bs[2].nextElementSibling===hb,'the top bar has 1×, 2×, 4× and Hurry where 8× was: '+bs.map(b=>b.textContent).join(', ')+', '+(hb&&hb.textContent));
+  ok(JSON.stringify(bs.map(b=>+b.dataset.speed))==='[1,2,4,8]'&&JSON.stringify(t.SPEEDS)==='[1,2,4]'&&t.TRAVEL_FAST===8&&bs[3].textContent==='8×'&&!hb&&!document.querySelector('[data-hurry]'),'the top bar has 1×, 2×, 4× and 8× again, and no Hurry: '+bs.map(b=>b.textContent).join(', '));
   const lit=()=>bs.filter(b=>b.classList.contains('on')&&b.getAttribute('aria-pressed')==='true').map(b=>+b.dataset.speed).join(),seen=[];
   for(const [c,k] of [['Digit2','2'],['Digit3','3'],['Digit1','1']]){key(c,k);seen.push(G.speed+':'+lit())}
   ok(seen.join(' ')==='2:2 4:4 1:1','keys 1-3 set 1×, 2×, 4×; the button lit is the speed ('+seen.join(' ')+')');
-  key('Digit4','4');const on=!!G.hurry&&hb.classList.contains('on')&&hb.getAttribute('aria-pressed')==='true'&&G.speed===1;key('Digit4','4');
-  ok(on&&!G.hurry&&!hb.classList.contains('on'),'4 turns Hurry on and off again, its button lit while on; the speed stays 1×');
-  hb.click();const c1=!!G.hurry;hb.click();bs[2].click();ok(c1&&!G.hurry&&G.speed===4,'its button toggles it too (touch); 4× by its button');
-  ok(hb.title.includes('(4)')&&/stamina/.test(hb.title),'its button says what it does and its key');
-  t.setSpeed(t.TRAVEL_FAST);ok(G.speed===8,'setSpeed(8) still runs the world at 8× (the tests)');calm()}
+  key('Digit4','4');const k1=G.speed+':'+lit();key('Digit4','4');const k2=G.speed+':'+lit();
+  ok(k1==='8:8'&&k2==='1:1'&&!G.hurry,'4 runs the world at 8×, its button lit, and again back to 1× ('+k1+' '+k2+'); Hurry untouched');
+  bs[3].click();const c1=G.speed;bs[3].click();const c2=G.speed;bs[2].click();ok(c1===8&&c2===1&&G.speed===4,'its button toggles 8× and 1× too (touch); 4× by its button');
+  ok(bs[3].title.includes('(4')&&/8×/.test(bs[3].title),'its button says what it does and its key ('+bs[3].title+')');
+  key('KeyR','r');const on=!!G.hurry&&G.speed===4;key('KeyR','r');ok(on&&!G.hurry,'R turns Hurry on and off again; the speed stays as it was');
+  {const help=t.KEYS[0][1].map(([k,v])=>k+': '+v).join(' | ');ok(help.includes('4: travel fast (8×)')&&help.includes('R: hurry')&&t.CONTROLS.includes('R to hurry')&&t.CONTROLS.includes('4 to travel fast'),'Help and the controls line name 4 for Travel fast and R for Hurry')}
+  calm()}
  // ---- the speed you set holds (the owner, 2026-10-19): danger in sight, an event or a window, arriving: none of them change it
  {const V=t.vis(),near={x:P.x+V*.6,y:P.y};
+  calm();t.setSpeed(t.TRAVEL_FAST);t.spawnBandit(true);Object.assign(t.bandits[0],near);t.updateWorld(.05);ok(G.speed===8,'bandits in sight: 8× goes on');
   fast();t.spawnBandit(true);Object.assign(t.bandits[0],near);t.updateWorld(.05);ok(G.speed===4,'bandits in sight: 4× goes on');
   const L=W.lords.find(l=>!l.dead);fast();Object.assign(L,near,{inside:null,fight:null});P.hostile={[L.fac]:G.day+9};t.updateWorld(.05);ok(G.speed===4,'an enemy army in sight: still 4×');L.x=-9999;
   fast();G.mode='event';t.fastWatch();ok(G.speed===4,'an event or a window opening leaves the speed as it was');G.mode='world';

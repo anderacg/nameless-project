@@ -26,12 +26,14 @@ function setRes(w,h,k=1){CVS=k;if(cv.width===w&&cv.height===h)return;cv.width=w;
 // (the test suites keep the old fixed view, 576 x 360, so their clicks and sums stay put; ?v= is a look at the real thing)
 const FIXED_VIEW=/[?&]test=/.test(location.search)&&!/[?&]v=/.test(location.search);
 /* the world map's zoom: its scale a whole number of device pixels to a game pixel still, so the art stays crisp. z: the scale
-   asked for (0 auto: the window's own, s0, as ever; Settings → Map zoom, the wheel, + and −, the buttons, a pinch: mapZoom),
+   asked for (0 auto: the map's default, auto below; Settings → Map zoom, the wheel, + and −, the buttons, a pinch: mapZoom),
    kept within lo (out: at most OUT game px in view, and no more than the map; a phone's farthest is then 2, as at 1 a frame
    costs 4x: tests/visual/smoothperf.js) and hi (in: at least IN px across, IN_H down).
    Only while the map is drawn (map: render.js frame); battles, scenes and the HUD keep s0 (vw x vh, the view at it). k(): the
-   HUD's share of a game pixel on the zoomed map (the minimap keeps its size on the screen) */
-const MAPZOOM={z:0,map:false,on:false,s0:1,lo:1,hi:1,vw:576,vh:360,IN:320,IN_H:180,OUT:1.7e6,PINCH:1.25,WHEEL:140,wt:0,k(){return this.on?this.s0/VS:1}};
+   HUD's share of a game pixel on the zoomed map (the minimap keeps its size on the screen). auto: the map's own default, s0;
+   on a small screen (a phone: its shorter side SMALL CSS px or less) PHONE times it, within hi (the owner, 2026-10-22: the map
+   was drawn too small there; phone(w, h): is a window w x h CSS px one, never the tests' fixed view) */
+const MAPZOOM={z:0,map:false,on:false,s0:1,auto:1,lo:1,hi:1,vw:576,vh:360,IN:320,IN_H:180,OUT:1.7e6,PINCH:1.25,WHEEL:140,SMALL:540,PHONE:2,wt:0,k(){return this.on?this.s0/VS:1},phone(w,h){return !FIXED_VIEW&&Math.min(w,h)<=this.SMALL}};
 // the screen is the window; the canvas fills it at a whole-number scale (a game pixel's last part may run past the edge)
 function fitScreen(){
   const scr=cv.parentElement,dpr=window.devicePixelRatio||1,aw=innerWidth,ah=innerHeight,Z=MAPZOOM;
@@ -39,16 +41,17 @@ function fitScreen(){
   // (the screen in device pixels: the window, or the tests' fixed view at its scale; the view at a scale s: dw/s x dh/s)
   const dw=FIXED_VIEW?576*s0:aw*dpr,dh=FIXED_VIEW?360*s0:ah*dpr,fit=s=>Math.ceil(dw/s)*Math.ceil(dh/s)<=Z.OUT&&Math.ceil(dw/s)<=MW*TILE&&Math.ceil(dh/s)<=MH*TILE;
   Z.s0=s0;Z.vw=Math.ceil(dw/s0);Z.vh=Math.ceil(dh/s0);Z.hi=Math.max(s0,Math.floor(Math.min(dw/Z.IN,dh/Z.IN_H)));Z.lo=s0;while(Z.lo>1&&fit(Z.lo-1))Z.lo--;
-  const s=Z.map&&Z.z?Math.max(Z.lo,Math.min(Z.hi,Z.z)):s0;Z.on=s!==s0;
+  Z.auto=Z.phone(aw,ah)?Math.min(Z.hi,s0*Z.PHONE):s0;
+  const s=Z.map?Math.max(Z.lo,Math.min(Z.hi,Z.z||Z.auto)):s0;Z.on=s!==s0;
   VW=Math.ceil(dw/s);VH=Math.ceil(dh/s);BVH=FIELD_H;BVW=Math.round(FIELD_H*Z.vw/Z.vh);
   const w=VW*s/dpr,h=VH*s/dpr;HUD_PX=dpr/s0;VS=s;cv.style.width=w+'px';cv.style.height=h+'px';
   if(FIXED_VIEW){scr.style.width=w+'px';scr.style.height=h+'px'}else{scr.style.width=aw+'px';scr.style.height=ah+'px'}
   if(typeof B!=='undefined'&&B&&B.cam&&typeof camClamp==='function')camClamp();
   if(typeof zoomUI==='function')zoomUI();
 }
-// a step of the map's zoom (d: 1 in, -1 out) within its range, remembered (ui.js PREFS mapzoom); back at s0 it is auto again.
+// a step of the map's zoom (d: 1 in, -1 out) within its range, remembered (ui.js PREFS mapzoom); back at auto it is auto again.
 // False at the end of the range
-function mapZoom(d){const Z=MAPZOOM,cur=Z.map?VS:Z.s0,s=Math.max(Z.lo,Math.min(Z.hi,cur+d));if(s===cur)return false;prefSet('mapzoom',s===Z.s0?0:s);return true}
+function mapZoom(d){const Z=MAPZOOM,cur=Z.map?VS:Z.auto,s=Math.max(Z.lo,Math.min(Z.hi,cur+d));if(s===cur)return false;prefSet('mapzoom',s===Z.auto?0:s);return true}
 addEventListener('resize',fitScreen);fitScreen();
 const ov=$('#ov'),panel=$('#panel'),bbar=$('#bbar');
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
@@ -65,9 +68,12 @@ const angGap=(a,b)=>Math.abs(Math.atan2(Math.sin(a-b),Math.cos(a-b)));
 // the same share of a day; what moves goes slower on screen (data/world.js WORLD_SCALE.move)
 const DAY_SECONDS=180,NIGHT_AT=.5;
 const WORLD_PACE=.4,BATTLE_PACE=.6,HERO_PACE=.85;
-// the world's time controls (D23): 1x, 2x and 4x (keys 1-3); key 4 is Hurry, the band's own pace (world/supply.js). TRAVEL_FAST: 8x, no
-// button now (the owner, 2026-10-22), kept for the tests that run the world fast (setSpeed)
+// the world's time controls (D23): 1x, 2x and 4x (keys 1-3), and Travel fast (key 4, the top bar's 8×), 8x till you change the
+// speed (the owner, 2026-10-22: back on the bar; Hurry, the band's own pace, is on the action ring and key R: world/supply.js)
 const SPEEDS=[1,2,4],TRAVEL_FAST=8;
+// the developer console's cheats (ui/developer.js): your band's map speed × speed (world.js bandPace); noNeeds: no hunger, thirst
+// or stamina drain, nor their tolls on your hero (world/supply.js). Runtime only, never saved; off unless a test sets them
+const CHEAT={speed:1,noNeeds:false};
 // actions: every button names one (data-act="prefix-name"); each system claims its prefix once with onAct, so two systems can
 // never answer the same button. Actions without a registered prefix fall through to act() in input.js (menu, encounters), and
 // a town's own (tab, hire, buy …) on to townAct in ui/town.js.
