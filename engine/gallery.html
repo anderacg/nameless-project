@@ -205,7 +205,7 @@ function renderModel(){
 // over it. &part=types|objects|peoples|clusters|scenes|old|bench, &z=, &seed=, &only=cottage,keep
 function renderCatalog(){
   const q=new URLSearchParams(location.search),Z=+(q.get('z')||3),sd=+(q.get('seed')||1),part=q.get('part'),only=q.get('only'),out=document.getElementById('out');out.innerHTML='';
-  document.querySelector('h1').textContent='PX building models: the owner’s scale (stage 3 catalogue)';
+  document.querySelector('h1').textContent='PX building models: the owner’s scale (stage 3 catalogue, W4 polish)';
   document.querySelector('p').textContent='The world tile 16 px, a figure a tile tall: objects 16, the smallest building 32, big buildings, groups and centres 64, a capital and a town quarter 128. Every type in its 4 facings (one model, turned); desert, swamp, frost at snow 0, ⅓, ⅔, 1. Then the objects, the peoples’ roofs, the clusters and camps, scenes at 1× with a ×3 crop, and the old sprites beside the new.';
   // the climates' ground, dithered so a square backdrop would show
   const GR={grass:['#6e9a48','#628c40','#7aa652'],desert:['#dcc28c','#cfb37c','#e6ce9c'],swamp:['#566a42','#4c5e3a','#62764c'],frost:['#e8eef4','#d6e0ea','#f4f8fb']};
@@ -214,13 +214,16 @@ function renderCatalog(){
   const man=(()=>{const T=['................','......112.......','.....12232......','.....2s3s3......','.....1sexe......','.....1ttxt......','.....12uu2......','....a2pqq2d.....','...abpqqrcd.....','...bcpnnrcd.....','...bspnnrsd.....','...bcqoorcd.....','...bckllkcd.....','.....LL.LM......','.....F...F......','................'];
     const C={1:'#5a3a26',2:'#7a5230',3:'#96683c',s:'#f0c09a',x:'#d89c78',t:'#e8b08c',u:'#c88a6a',e:'#2a2030',a:'#3a5a9a',b:'#4a6cb0',c:'#3a5a9a',d:'#2c4478',p:'#c84040',q:'#e05a4a',r:'#a83434',n:'#d8c8a0',o:'#b8a880',k:'#5a3a22',l:'#6e4a2c',L:'#4a3a30',M:'#3a2e26',F:'#2a2220'};
     return PX.canvas(16,16,g=>{const on=(x,y)=>x>=0&&y>=0&&x<16&&y<16&&T[y][x]!=='.';for(let y=0;y<16;y++)for(let x=0;x<16;x++){if(on(x,y)){g.fillStyle=C[T[y][x]];g.fillRect(x,y,1,1)}else if(on(x-1,y)||on(x+1,y)||on(x,y-1)||on(x,y+1)){g.fillStyle='#1a1c26';g.fillRect(x,y,1,1)}}})})();
+  // the stand-in for the game's flag on m.flag (W4: a 2 px pole and a banner, outlined, never a 1 px line): its pole's foot at (2, 11)
+  const FLAG=(()=>{const T=['..rrrrr.','.trRRRr.','.trRRrr.','.trrrr..','.tt.....','.tt.....','.tt.....','.tt.....','.tt.....','.tt.....','.tt.....','.tt.....'],C={t:'#6e4c32',r:'#c84040',R:'#e0605a'};
+    return PX.canvas(8,13,g=>{const on=(x,y)=>x>=0&&y>=0&&x<8&&y<12&&T[y][x]!=='.';for(let y=0;y<13;y++)for(let x=0;x<8;x++){if(on(x,y)){g.fillStyle=C[T[y][x]];g.fillRect(x,y,1,1)}else if(on(x-1,y)||on(x+1,y)||on(x,y-1)||on(x,y+1)){g.fillStyle='#1a1c26';g.fillRect(x,y,1,1)}}})})();
   // the game's layers: ground (and the snow on it), the shadow mask shaded once, the picture, the snow on it
   const layers=(g,b,x,y)=>{if(b.ground)g.drawImage(b.ground,x,y);if(b.snow)g.drawImage(b.snow.ground,x,y);if(b.shadow){if(b.shade){const m=PX.canvas(b.w,b.h,c=>{c.drawImage(b.shadow,0,0);c.globalCompositeOperation='source-in';c.fillStyle='rgb(20,24,12)';c.fillRect(0,0,b.w,b.h)});g.globalAlpha=b.shade;g.drawImage(m,x,y);g.globalAlpha=1}else g.drawImage(b.shadow,x,y)}
     g.drawImage(b.img,x,y);if(b.snow)g.drawImage(b.snow.img,x,y)};
   const cell=(row,b,lab,env,noMan)=>{const M=4,n=b.w,w=n+2*M+(noMan?0:16),h=Math.max(n,16)+2*M,c=document.createElement('canvas');c.width=w*Z;c.height=h*Z;c.title=lab;const g=c.getContext('2d');g.imageSmoothingEnabled=false;g.scale(Z,Z);
     g.drawImage(groundTile(env||'grass',w,h,n),0,0);g.fillStyle='rgba(0,0,0,.1)';for(let k=0;k<=n/16;k++){g.fillRect(M+k*16,M-2,1,1);g.fillRect(M+k*16,M+n+1,1,1)}
     layers(g,b,M,M+h-2*M-n);if(b.marks&&b.marks.fire){const fl=PX.flame(1);g.drawImage(fl.img,M+b.marks.fire[0]-fl.ax,M+h-2*M-n+b.marks.fire[1]-fl.ay)}
-    if(b.flag){g.fillStyle='#4a3020';g.fillRect(M+b.flag[0],M+h-2*M-n+b.flag[1]-9,1,9);g.fillStyle='#c84040';g.fillRect(M+b.flag[0]+1,M+h-2*M-n+b.flag[1]-9,4,3)}
+    if(b.flag)g.drawImage(FLAG,M+b.flag[0]-2,M+h-2*M-n+b.flag[1]-11);
     if(!noMan)g.drawImage(man,M+n,h-M-16);if(b.clipped){g.fillStyle='#e0605a';g.fillRect(0,0,2,2)}
     const wrap=document.createElement('div');wrap.className='cc';wrap.appendChild(c);const t=document.createElement('div');t.className='cl';t.textContent=lab;wrap.appendChild(t);row.appendChild(wrap)};
   const lab=t=>Object.assign(document.createElement('span'),{className:'lab',textContent:t});

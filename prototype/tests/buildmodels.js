@@ -4,26 +4,29 @@
 // (4; the castle centres straight on), the climates; each at its size from the one table (PX.MODEL_SIZES: objects 16, every building
 // at least 32), nothing cut off, true pixels, the navy outline round the silhouette only; one model a building, simply turned (its
 // four facings from the same plan: the same parts, sizes and features, at the same scale); the front view shows a door, its walls at
-// least about a third of the building's height; never a square backdrop (the picture never fills a whole edge of its cell; its ground
+// least about a third of the building's height; (W4) its side views at least three quarters of its front's width (the long and thin
+// aside), never a 1 px stick above a roof, never a sprite of one material; never a square backdrop (the picture never fills a whole edge of its cell; its ground
 // and shadow reach the edge only thinly); the households each building holds; the snow overlay by thirds, cached, inside the body
 // and the ground, more with more snow, solid shapes rather than a speckle; the peoples' roofs; the clusters' buildings and roles; the
 // same spec the same pixels (a hash a type, to see when the look changes); and the cost of a big holding's first view.
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.push('INFO '+m);
-// (recorded for the owner's scale, stage 3's models (2026-10-22: the gentler camera, every type redrawn at its new size, one model
-// turned): a type's and a cluster's every picture, ground, shadow and snow, hashed)
+// (recorded for W4's polish of the owner's scale (2026-10-22: plans about square so the sides show as wide as the front, storeys of
+// 12 px and 9 px doors, finials and crosses 2 px, a cone's tip never a stick, the crane, the cave, the mine head and the windmill
+// redone, rough rock and crowns, the fit judged on every facing's pixels: every picture changed): a type's and a cluster's every
+// picture, ground, shadow and snow, hashed)
 const EXPECT={
- cottage:'9a69b2ba',townhouse:'9486ed79',fisherhut:'4192c731',chapel:'be9795e7',stall:'4ba88882',tower:'d024000d',yurt:'8b28e8a0',
- longhouse:'d6c7f332',tavern:'0f3dc6eb',smithy:'96b97920',church:'46765b6f',barn:'7d74d737',granary:'1906de53',
- windmill:'99ad964f',watermill:'28996351',warehouse:'0301a3fa',gatehouse:'27a301fb',hidehall:'0ca45384',watchtower:'d45e7a55',
- treehouse:'3763cd68',elfhall:'fae96b88',spire:'a592bd68',stonehall:'637afac1',forge:'ccf1d04e',keep:'3badf2d8',
- citadel:'897b5953',well:'057aa991',tent:'4569443b',wagon:'d140df8c',minehead:'38a4616a',lumbershed:'e318622d',crane:'d3a95420',
- village:'c01d1937',signpost:'fd808ea1',cart:'8aa37f61',haystack:'ea40a382',woodpile:'92a6cc47',fence:'4ccfec38',
- crates:'06e49070',barrels:'3013f7a9',ruins:'5d408579',shrine:'64783cdc',cave:'b4e6b75a','cluster:row':'8c24ded9',
- 'cluster:yard':'49547920','cluster:farmstead':'dfe3e940','cluster:smithy':'bc27a2b1','cluster:inn':'e29bcbeb',
- 'cluster:chapel':'90562acd','cluster:market':'46a027e6','cluster:mill':'87f150a6','cluster:lumber':'1ce0a714',
- 'cluster:mine':'5a80461c','cluster:quarry':'9b14844c','cluster:fishery':'161630ad','cluster:pasture':'82f38384',
- 'cluster:brewery':'72fb477a','cluster:granary':'84033469','cluster:workshop':'b8f66b85','cluster:quarter':'05095416',
- 'cluster:camp':'3958e5a6','cluster:hideout':'203819db','cluster:travelers':'37015955'};
+ cottage:'b0d3f47d',townhouse:'60847ac0',fisherhut:'5961a169',chapel:'ce169f7a',stall:'4ba88882',tower:'37ad4348',yurt:'028ddae9',
+ longhouse:'710715a0',tavern:'6bbf2a06',smithy:'14fb0ee3',church:'f864b8b5',barn:'eafd7df3',granary:'e4b0070d',
+ windmill:'c79de711',watermill:'b160667a',warehouse:'60361e14',gatehouse:'9dfa7b6f',hidehall:'4976f722',watchtower:'3fef7a8a',
+ treehouse:'15ba0e8a',elfhall:'0f8a8267',spire:'d80189ae',stonehall:'8b5bf7da',forge:'6c89bf57',keep:'8d6ea42b',
+ citadel:'404c8ee0',well:'f8918598',tent:'2e5caf05',wagon:'f6a2f31c',minehead:'f28d9a07',lumbershed:'2d7d3cff',crane:'41513de8',
+ village:'07813338',signpost:'8ec83101',cart:'b85da340',haystack:'fe798ba8',woodpile:'4e63e063',fence:'4ccfec38',
+ crates:'3bcf5dac',barrels:'3013f7a9',ruins:'b5f1bee4',shrine:'d8e7e23c',cave:'21dca353','cluster:row':'0632e784',
+ 'cluster:yard':'e2acf979','cluster:farmstead':'91dd2d3b','cluster:smithy':'0b8561ee','cluster:inn':'6edb779b',
+ 'cluster:chapel':'352270d7','cluster:market':'78030d10','cluster:mill':'0a9ffa5f','cluster:lumber':'467a82cc',
+ 'cluster:mine':'d79ea221','cluster:quarry':'fddd64be','cluster:fishery':'f7bc3237','cluster:pasture':'66d394a6',
+ 'cluster:brewery':'ffde357d','cluster:granary':'dc1bfa5a','cluster:workshop':'ef3f5ba5','cluster:quarter':'0eb6fef3',
+ 'cluster:camp':'fac137cd','cluster:hideout':'9c7e04c9','cluster:travelers':'eaa68ba2'};
 try{
  const px=c=>c.getContext('2d').getImageData(0,0,c.width,c.height).data,P=['human','dwarf','elf','orc'],FRONT=PX.MODEL_FRONT,SZ=PX.MODEL_SIZES.types,OBJ=PX.MODEL_OBJECTS;
  const fnv=()=>{let h=2166136261;const H={b(a){for(let i=0;i<a.length;i++)h=Math.imul(h^a[i],16777619)>>>0;return H},s(x){x=String(x);for(let i=0;i<x.length;i++)h=Math.imul(h^x.charCodeAt(i),16777619)>>>0;return H},get x(){return h.toString(16).padStart(8,'0')}};return H};
@@ -49,12 +52,13 @@ try{
  for(const type of all){const N=SZ[type].cell,isB=N>=32&&!sites.includes(type);
    for(const people of P)for(const seed of [1,2]){const seen=new Set(),sc=new Set();for(const yaw of yaws(type)){const id=type+'/'+people+'/'+seed+'/'+yaw,b=PX.buildingModel({type,people,seed,yaw,fort:2});n++;
      const h=look(b,id,N);if(seen.has(h))bad.turn.push(id);seen.add(h);sc.add([b.scale.u,b.scale.v,b.scale.z,b.scale.o].join());
-     // the front view: a door seen, the walls in the door's column at least about a third of the building's height
+     // the front view: a door seen, the walls in the door's column at least about a third of the building's height (but a windmill's, its
+     // sails before its tower, and a watchtower's, its hut up on posts)
      // (the building whose door it is: its own pixels, the rows they span, the wall pixels in the door's column)
      if(isB&&yaw===0){const F=b.px.F,I=b.px,k=b.buildings.findIndex(d=>d.door===b.door),fo=i=>I.fi[i]>=0&&b.mask[i]===1&&F[I.fi[i]].dw===k?F[I.fi[i]]:null;let y0=N,y1=-1;
        for(let y=0;y<N;y++)for(let x=0;x<N;x++)if(fo(y*N+x)){y0=Math.min(y0,y);y1=Math.max(y1,y)}
        if(!b.door||!b.door.seen)front.push(id+' no door');else{let w=0;for(let y=0;y<N;y++){const f=fo(y*N+b.door.x);if(f&&f.cls==='wall'&&!f.cap)w++}
-         const s=w/(y1-y0+1);if(FRONT.includes(type))continue;share.push(s);if(s<.3)front.push(id+' walls '+(100*s).toFixed(0)+'%')}}}
+         const s=w/(y1-y0+1);if(FRONT.includes(type)||type==='windmill'||type==='watchtower')continue;share.push(s);if(s<.3)front.push(id+' walls '+(100*s).toFixed(0)+'%')}}}
      // one model, simply turned: every facing from the same plan (the same parts, sizes, materials and features), at the same scale
      if(!FRONT.includes(type)){const S=PX.MODEL_YAWS.map(yaw=>{const s=PX.buildingModelSpec({type,people,seed,yaw,fort:2});return JSON.stringify(Object.assign({},s,{yaw:0}))});if(S.some(s=>s!==S[0]))plan.push(type+'/'+people+'/'+seed)}
      if(sc.size>1)scl.push(type+'/'+people+'/'+seed+' '+[...sc].join(' | '))}
@@ -66,6 +70,19 @@ try{
  ok(!plan.length,'one model a building, simply turned: its four facings from the same plan (the same parts, sizes, materials and features)'+(plan.length?': '+plan.slice(0,6).join(', '):''));
  ok(!scl.length,'and at the same scale in every facing (never drawn smaller turned)'+(scl.length?': '+scl.slice(0,4).join(', '):''));
  ok(!front.length,'every building\'s front view shows its door (a castle centre\'s its gate), its walls at least about a third of its height (least '+(100*Math.min(...share)).toFixed(0)+'%, middle '+(100*share.slice().sort((a,b)=>a-b)[share.length>>1]).toFixed(0)+'%)'+(front.length?': '+front.slice(0,8).join(', '):''));
+ // (W4) the side views as wide as the front (within a quarter; PX.MODEL_LONG's long and thin aside); never a 1 px stick above a roof
+ // (a column's topmost pixels a pixel wide for 2 or more, standing on what is below: a finial, a cone's tip, a pole); and no sprite of
+ // one material (a building 3 or more, an object 2 or more, each at least 3% of its pixels)
+ {const thin=[],lines=[],mono=[],LONG=PX.MODEL_LONG||{},MAT=PX.MODEL_MAT;let least=9,lt='';
+  const width=b=>{const N=b.cell;let x0=N,x1=-1;for(let y=0;y<N;y++)for(let x=0;x<N;x++)if(b.mask[y*N+x]===1){if(x<x0)x0=x;if(x>x1)x1=x}return x1-x0+1};
+  const stick=b=>{const N=b.cell,B=(x,y)=>x>=0&&y>=0&&x<N&&y<N&&b.mask[y*N+x]===1,one=(x,y)=>B(x,y)&&!B(x-1,y)&&!B(x+1,y);
+    for(let x=0;x<N;x++){let y=0;while(y<N&&!B(x,y))y++;let k=0;while(one(x,y+k))k++;if(k>=2&&B(x,y+k))return x+','+y}return null};
+  for(const type of all)for(const people of P)for(const seed of [1,2]){const ws=[];for(const yaw of yaws(type)){const b=PX.buildingModel({type,people,seed,yaw,fort:2}),s=stick(b);if(s)lines.push(type+'/'+people+'/'+seed+'/'+yaw+' at '+s);ws.push(width(b));
+      if(yaw===0&&people==='human'){const n={},N=b.cell;let t=0;for(let i=0;i<N*N;i++)if(b.mask[i]===1){t++;const m=MAT[b.px.m[i]];n[m]=(n[m]||0)+1}if(t&&Object.values(n).filter(c=>c>=t*.03).length<(N>=32?3:2))mono.push(type+'/'+seed+' '+Object.keys(n).join('/'))}}
+    if(ws.length===4&&SZ[type].cell>=32&&!LONG[type]){const r=Math.min(ws[1],ws[3])/ws[0];if(r<least){least=r;lt=type+'/'+people+'/'+seed}if(r<.75)thin.push(type+'/'+people+'/'+seed+' '+ws.join('/'))}}
+  ok(!thin.length,'every building\'s side views at least three quarters as wide as its front (least '+(100*least).toFixed(0)+'%, '+lt+'; the long and thin aside: '+Object.keys(LONG).join(', ')+')'+(thin.length?': '+thin.slice(0,8).join(', '):''));
+  ok(!lines.length,'never a 1 px stick above a roof (a finial, a cone\'s tip, a pole: 2 px or more)'+(lines.length?': '+lines.slice(0,8).join(', '):''));
+  ok(!mono.length,'no sprite of one material: a building shows 3 or more, an object 2 or more'+(mono.length?': '+mono.slice(0,8).join(', '):''))}
  L('edge','never a square backdrop: the picture never fills an edge of its cell, its ground and shadow reach the edge only thinly');
  // the castle centres straight on, their gate on the middle column; the capital at 128
  {const g=['keep','citadel','gatehouse','village'].filter(t=>{const b=PX.buildingModel({type:t,people:'human',seed:1,fort:2,yaw:4});return b.yaw!==0||b.gateX!==b.cell/2||!b.marks.gate||Math.abs(b.marks.gate[0]-b.cell/2)>1||!b.flag});

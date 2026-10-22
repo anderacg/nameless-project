@@ -17,7 +17,9 @@
 //   west, 4 north, 6 east), so all four come from the same parts, sizes, materials and features; a cluster turns whole. The castle
 //   centres (keep, citadel, gatehouse, village: PX.MODEL_FRONT) stand straight on, their gate on the cell's middle column (gateX).
 // Proportions (PX.MODEL_RULE): a storey's walls, a roof's rise by its span; with the camera's pitch (model.js PX.MODEL_CAMERA) the
-//   walls fill about 40% of a building's front view; doors and windows at the figures' scale (model.js's capitalised decals).
+//   walls fill about 40% of a building's front view; doors and windows at the figures' scale (model.js's capitalised decals). W4:
+//   plans about square, so a building's sides show about as wide as its front (PX.MODEL_LONG: the long and thin, whose side is
+//   their gable); nothing a 1 px stick (finials, crosses, poles 2 px); every sprite of several materials.
 // Peoples (LOOK): the roof the same whoever holds the place (humans orange-red tile, thatch in the country; dwarves slate navy;
 //   elves green-teal leaf; orcs hide brown), over light walls; the shapes shared by all. Climates (env): the desert's walls sun-baked
 //   adobe, sand under it; the frost's snow the overlay (spec.snow, 0-1; true or the frost: 1); the swamp's mud, and stilts
@@ -47,8 +49,12 @@
     clusters:{row:64,yard:64,farmstead:64,smithy:64,inn:64,chapel:64,market:64,mill:64,lumber:64,mine:64,quarry:64,fishery:64,pasture:64,brewery:64,granary:64,workshop:64,
       quarter:128,camp:32,travelers:32,hideout:64}};
   PX.MODEL_SIZES={types:Object.fromEntries(Object.entries(SIZE.types).map(([k,[cell,dwellings]])=>[k,{cell,dwellings}])),clusters:SIZE.clusters};
-  /* the shared proportions: a storey's walls (px: the door's 8 and a little, then 6 a storey up), a roof's rise by its span */
-  const RULE={storey:[0,10,16,22],rise:span=>Math.max(4,Math.round(span*.55))};PX.MODEL_RULE=RULE;
+  /* the shared proportions (W4): a storey's walls (px: the door's 9 and its lintel's 3, then 7 a storey up), a roof's rise by its
+     span (about 45°: never taller than the walls but on a church or in the frost); plans about square, their depth at least three
+     quarters of their width (the side views as wide as the front), but for the long and thin (PX.MODEL_LONG: the side its gable) */
+  const RULE={storey:[0,12,19,26],rise:span=>Math.max(4,Math.round(span*.5))};PX.MODEL_RULE=RULE;
+  PX.MODEL_LONG={longhouse:'a hall long and low, its gable the side',church:'the nave long, the tower and gable the side',windmill:'its sails face the wind: edge-on from the side',
+    wagon:'a wagon is long',cart:'a cart is long',fence:'a fence is a line',signpost:'its boards point along it',stall:'a counter is long',woodpile:'a stack is long'};
 
   /* a plan being built: its parts, decals and buildings, in the type's own ground plan (px, the cell's middle at 0; v toward its
      front). lift raises what it builds (stilts) */
@@ -65,13 +71,20 @@
     fence(pts,gates,h,mat){this.parts.push({k:'fence',name:'f'+this.parts.length,pts,gates,h:h||4,mat});return this}
     bed(u,v,mat){this.parts.push({k:'bed',name:'b'+this.parts.length,u,v,topMat:mat});return this}
     home(kind,role,storeys,dwellings){this.dwellings.push({kind,role:role||'home',storeys:storeys||1,dwellings});return this.dwellings.length-1}
-    // a cut-out standing in the plane v..v+1 (a wheel, sails, a sign, braces): rows top to bottom, a material a letter, each run of a
-    // row one thin box (u0 its left, z0 its foot)
-    cut(name,u0,v,z0,rows,mats){rows.forEach((r,i)=>{const z=z0+rows.length-1-i;for(let c=0;c<r.length;){const ch=r[c];if(!mats[ch]){c++;continue}let e=c;while(e<r.length&&r[e]===ch)e++;
-      this.box(name+i+'_'+c,[u0+c,u0+e],[v,v+1],[z,z+1],mats[ch],{thin:true,fine:true,top:true});c=e}});return this}
-    // a wheel standing in the plane v..v+1 round (u, z): its rim, spokes and hub
-    wheel(name,u,v,z,r,mat){const n=Math.ceil(r),rows=[];for(let j=n;j>=-n;j--){let s='';for(let i=-n;i<=n;i++){const d=Math.hypot(i,j);s+=d<.8?'i':Math.abs(d-r)<.75||(d<r&&(i===0||j===0||(r>=5&&Math.abs(Math.abs(i)-Math.abs(j))<.5)))?'w':'.'}rows.push(s)}
-      return this.cut(name,u-n-.5,v,z-n,rows,{w:mat||'timber',i:'iron'})}
+    // a cut-out standing in the plane v..v+dv (a wheel, sails, a sign, a ladder; dv 1 unless said): rows top to bottom, a material a
+    // letter, each run of a row one thin box (u0 its left, z0 its foot); x.alongV stands it in the plane u..u+dv instead, its rows along v;
+    // x.top false leaves the runs' tops off (a wheel: its spokes' tops would fill its gaps from above)
+    cut(name,u0,v,z0,rows,mats,x){const dv=x&&x.dv||1,av=x&&x.alongV,top=!(x&&x.top===false);rows.forEach((r,i)=>{const z=z0+rows.length-1-i;for(let c=0;c<r.length;){const ch=r[c];if(!mats[ch]){c++;continue}let e=c;while(e<r.length&&r[e]===ch)e++;
+      this.box(name+i+'_'+c,av?[v,v+dv]:[u0+c,u0+e],av?[u0+c,u0+e]:[v,v+dv],[z,z+1],mats[ch],{thin:true,fine:true,top});c=e}});return this}
+    // a beam from a to b ([u, v, z] each), t px square (2 unless said): a box a step along it (a vertical or level run one box), so it
+    // reads from every side (a headframe's legs, a crane's jib, braces)
+    beam(name,a,b,mat,t){t=t||2;const h=t/2,d=[0,1,2].map(k=>b[k]-a[k]),n=Math.max(1,Math.ceil(Math.max(...d.map(Math.abs)))),pt=i=>[0,1,2].map(k=>Math.round(a[k]+d[k]*i/n)),bx=(p,q)=>
+        this.box(name+'_'+this.parts.length,[Math.min(p[0],q[0])-h,Math.max(p[0],q[0])+h],[Math.min(p[1],q[1])-h,Math.max(p[1],q[1])+h],[Math.min(p[2],q[2]),Math.max(p[2],q[2])+t],mat,{top:true,fine:true});
+      if(d.filter(x=>Math.abs(x)>.01).length<=1)return bx(pt(0),pt(n));
+      let s=pt(0),l=s;for(let i=1;i<=n;i++){const p=pt(i);if(p[0]===s[0]&&p[1]===s[1]){l=p;continue}bx(s,l);s=l=p}bx(s,l);return this}
+    // a wheel standing in the plane v..v+dv round (u, z): its rim (mat), dark spokes and an iron hub
+    wheel(name,u,v,z,r,mat,dv){const n=Math.ceil(r),rows=[];for(let j=n;j>=-n;j--){let s='';for(let i=-n;i<=n;i++){const d=Math.hypot(i,j);s+=d<.8?'i':Math.abs(d-r)<(r>=4?.6:.75)?'w':d<r&&(i===0||j===0||(r>=6&&Math.abs(Math.abs(i)-Math.abs(j))<.5))?'s':'.'}rows.push(s)}
+      return this.cut(name,u-n-.5,v,z-n,rows,{w:mat||'timber',s:'timber',i:'iron'},{dv:dv||1,top:dv>1?false:true})}
     // rails on timber sleepers, flat on the ground, from a to b along u (or v), centred on c across
     rails(n,a,b,c,au){for(let k=a;k<b;k+=3)this.box(n+'s'+k,au?[k,k+1]:[c-3,c+3],au?[c-3,c+3]:[k,k+1],[0,1],'timber',{thin:true,flat:true,top:true});
       for(const s of [-2,2])this.box(n+'r'+s,au?[a,b]:[c+s-.5,c+s+.5],au?[c+s-.5,c+s+.5]:[a,b],[0,1],'iron',{thin:true,flat:true,top:true});return this}
@@ -88,14 +101,15 @@
     const frame=s.frame!==undefined?s.frame:(wall==='daub'||wall==='whitewash')?o.look.frame:null;
     Q.box(n,u,v,[0,z],wall,{dw:s.dw,frame,foot:wall==='stone'||wall==='adobe'||s.foot===false?null:'stone',rail:st>=2});
     Q.roof(n,form==='front'?'gable':form,form==='front'||(form==='hip'&&d>w)?'v':'u',rise,roof,{lip:s.lip||(roof==='thatch'||roof==='hide'?2:1),finial:s.finial,fmat:s.fmat,o:s.o,ov:s.ov!=null?s.ov:1,hi:s.hi});
-    if(s.chim!==false&&(s.chim||o.d.chance(.6))){const at=Array.isArray(s.chim)?s.chim:form==='front'?[cu+w/2-3,cv-d/2+3]:[cu+w/2-4,cv-1];Q.chim(at,z-1,z+rise+3,3)}
+    if(s.chim!==false&&(s.chim||o.d.chance(.6))){const at=Array.isArray(s.chim)?s.chim:form==='front'?[cu+w/2-3,cv-d/2+3]:[cu+w/2-4,cv-1];Q.chim(at,z-1,z+rise+2,3)}
     // the front: the door, windows either side clear of it, a row more a storey up; the back a door or a window; the ends a window a storey
     const at=s.door==null?.5:s.door,dk=s.doorKind||'Door',nw=s.wins!=null?s.wins:w>=40?4:w>=24?3:2,xs=[[],[at<.5?.78:.22],[.2,.8],[.15,.5,.85],[.12,.36,.64,.88]][nw];
     const clear=x=>Math.abs(x-at)*w>=(kit().DECAL[dk][0].length+6)/2+1,pick=()=>s.pick?o.d.pick(s.pick):'Win';
     Q.dec(n+'.S',dk,at);for(const x of xs)if(clear(x))Q.dec(n+'.S',pick(),x,3);
     for(let k=2;k<=st;k++)for(const x of nw===1?[.3,.7]:xs)Q.dec(n+'.S',o.d.pick(['WinS','Win']),x,RULE.storey[k-1]+1);
     if(s.back==='door'){Q.dec(n+'.N','Door',.3);Q.dec(n+'.N','Win',.75,3)}else if(nw)Q.dec(n+'.N','Win',.5,3);
-    for(const k of ['E','W'])for(let i=1;i<=st&&nw;i++)Q.dec(n+'.'+k,'Win',.5,i===1?3:RULE.storey[i-1]+1);
+    // (an end wall as deep as the front is wide: two windows, else one)
+    for(const k of ['E','W'])for(let i=1;i<=st&&nw;i++)for(const x of d>=14?[.3,.7]:[.5])Q.dec(n+'.'+k,'Win',x,i===1?3:RULE.storey[i-1]+1);
     return{u,v,z,rise}}
   // a dormer on a house's front slope (its ridge along u): a little gabled window standing out of the roof
   const dormer=(Q,n,u,v,z,c)=>{Q.box(n,[c-3,c+3],[(v[0]+v[1])/2,v[1]-1],[z-1,z+6],Q.o.wall,{frame:null});Q.roof(n,'gable','v',3,Q.o.roofMat,{o:0,ov:0});Q.dec(n+'.S','Win',.5,1)};
@@ -105,17 +119,17 @@
   function stilts(Q,u,v){const h=Q.lift;if(!h)return;const [u0,u1]=u,[v0,v1]=v;
     for(const [a,b] of [[u0,v0],[u1-2,v0],[u0,v1-2],[u1-2,v1-2]])Q.parts.push({k:'box',name:'post'+a+b,u:[a,a+2],v:[b,b+2],z:[0,h],wall:'log',top:true});
     Q.parts.push({k:'box',name:'deck',u:[u0-1,u1+1],v:[v0,v1+2],z:[h-1,h],wall:'plank',top:true,thin:true})}
-  // a tree among buildings: its trunk and a round crown (green, evergreen or autumn)
-  const tree=(Q,n,c,h,r,crown)=>{Q.round(n+'t',c,1.5,[0,h],'log',null);Q.round(n+'c',c,r,[h-2,h+1],crown,{form:'cone',rise:Math.round(r*.9),mat:crown,o:0})};
-  // the holy symbol: a gold cross standing on a roof's peak
-  const cross=(Q,n,u,v,z)=>Q.cut(n,u-1.5,v,z,['.y.','yyy','.y.','.y.'],{y:'gold'});
-  // braces: an X of beams between two posts (w wide, h tall, in the plane v)
-  const braces=(Q,n,u0,v,z0,w,h)=>{const rows=[];for(let j=h-1;j>=0;j--){let s='';for(let i=0;i<w;i++){const a=j*(w-1)/(h-1);s+=Math.abs(i-a)<.6||Math.abs(w-1-i-a)<.6?'t':'.'}rows.push(s)}Q.cut(n,u0,v,z0,rows,{t:'timber'})};
-  // a windmill's four sails: an X of spars, a lattice of cloth to one side of each, in the plane v round the hub (u, z)
+  // a tree among buildings: its trunk and a lumpy crown (green, evergreen or autumn), never a smooth cone
+  const tree=(Q,n,c,h,r,crown)=>{Q.round(n+'t',c,1.5,[0,h],'log',null);Q.round(n+'c',c,r,[h-3,h],crown,{form:'cone',rise:Math.round(r*.9),mat:crown,o:0,lip:0},{rough:.6,rs:c[0]*7+c[1]})};
+  // the holy symbol: a gold cross standing on a roof's peak, 2 px thick, its arms both ways, so it reads as a cross from every side
+  const cross=(Q,n,u,v,z)=>{Q.box(n+'p',[u-1,u+1],[v-1,v+1],[z,z+6],'gold',{top:true,fine:true});for(const [a,b] of [[3,1],[1,3]])Q.box(n+a,[u-a,u+a],[v-b,v+b],[z+3,z+4],'gold',{top:true,fine:true,thin:true})};
+  // a windmill's four sails: an X of spars round the hub (u, z), a cloth to one side of each in a lattice, 3 px deep in the plane v
   function sails(Q,u,v,z,L){const rows=[];for(let j=L;j>=-L;j--){let s='';for(let i=-L;i<=L;i++){let ch='.';
       for(let k=0;k<4;k++){const a=Math.PI/4+k*Math.PI/2,al=i*Math.cos(a)+j*Math.sin(a),ac=-i*Math.sin(a)+j*Math.cos(a);if(al<1.5||al>L+.5)continue;
-        if(Math.abs(ac)<.55){ch='w';break}if(ac>0&&ac<3.2&&al>3)ch=Math.round(al)%3===0?'w':'c'}s+=ch}rows.push(s)}
-    Q.cut('sl',u-L-.5,v,z-L,rows,{w:'timber',c:'canvas'})}
+        if(Math.abs(ac)<.7){ch='w';break}if(ac>0&&ac<4.6&&al>3.5)ch=ac>3.7||Math.round(al)%3===0?'b':'c'}s+=ch}rows.push(s)}
+    Q.cut('sl',u-L-.5,v,z-L,rows,{w:'timber',b:'plank',c:'canvas'},{dv:3,top:false})}
+  // a crag: lumps of rough rock (rough cones, never a dome), their crowns grassed but in the desert; scree at their foot
+  const crag=(Q,n,c,r,z,rise,rk,moss,rs)=>Q.round(n,c,r,[0,z],rk,{form:'cone',rise,mat:rk,o:0,lip:0,moss},{rough:.7,rs});
   // castle walls round the plan u0..u1, v0..v1 at fort 1 (a palisade of stakes, log towers at the corners), 2 (stone walls, round
   // towers) or 3 (taller, a tower halfway along each side); the gate on the middle of the front, its gatehouse; towers' roofs cones of
   // the people's roof or flat; k the scale (2 a capital's)
@@ -137,172 +151,160 @@
   const shed=(Q,n,c,w,d,z,mat,dw)=>{Q.box(n,[c[0]-w/2,c[0]+w/2],[c[1]-d/2,c[1]+d/2],[0,z],'plank',{foot:'stone',keep:1,dw});Q.roof(n,'shed','u',3,mat,{o:1,ov:0});Q.dec(n+'.S','Door',.35)};
 
   /* the types: each fills its plan Q from its options o: {type, people, look, wall, roofMat, env, seed, d (its dice), lv, fort, stilts,
-     glow, capital}; never from its facing */
+     glow, capital}; never from its facing. W4: each plan about square (its sides as wide as its front, PX.MODEL_LONG aside), its
+     storeys, doors, windows and roof by PX.MODEL_RULE, every face it shows with its door or windows, two materials or more */
   const T={
     // --- the 16 px objects ---
-    // a well: a ring of stones round dark water, two posts and a little roof of the people's over its windlass
+    // a well: a ring of stones round dark water, two posts and a little roof of the people's over its windlass, a bucket on the rim
     well(Q,o){Q.round('w',[0,1],4.5,[0,4],o.look.stone==='whitewash'?'stone':o.look.stone,{form:'water'});
-      for(const s of [-1,1])Q.box('wp'+s,[s*4.5-.5,s*4.5+.5],[.5,1.5],[0,6],'timber',{top:true});
-      Q.box('wr',[-5.5,5.5],[-1,3],[6,7],'timber',{thin:true});Q.roof('wr','gable','u',2,o.roofMat,{o:0,ov:0});Q.box('wx',[-3.5,3.5],[.5,1.5],[4,5],'log',{top:true})},
+      for(const s of [-1,1])Q.box('wp'+s,[s*4.5-1,s*4.5+1],[0,2],[0,7],'timber',{top:true});
+      Q.box('wr',[-5.5,5.5],[-1.5,3.5],[7,8],'timber',{thin:true});Q.roof('wr','gable','u',2,o.roofMat,{o:0,ov:0});Q.box('wx',[-3.5,3.5],[.5,1.5],[5,6],'log',{top:true});Q.box('bk',[2,4],[3.5,5.5],[3,5],'iron',{top:true,topMat:'water'})},
     // a signpost: its post, two boards pointing ways, stones at its foot
-    signpost(Q,o){Q.box('p',[-.5,.5],[-.5,.5],[0,11],'timber',{top:true});Q.cut('a',-5.5,.5,5,['.bbbbbb....','bbbbbbb....','...........','....bbbbbb.','....bbbbbbb'],{b:'plank'});Q.prop('boulder',[1.5,1.5],0,1)},
+    signpost(Q,o){Q.box('p',[-1,1],[-1,1],[0,11],'timber',{top:true});Q.cut('a',-5.5,1,5,['.bbbbbb....','bbbbbbb....','...........','....bbbbbb.','....bbbbbbb'],{b:'plank'},{dv:2});Q.prop('boulder',[2,2],0,1)},
     // a shrine (a site's marker): standing stones round a glowing altar, or an obelisk
     shrine(Q,o){const d=o.d,st=o.look.stone==='whitewash'?'stone':o.look.stone;Q.role='shrine';
-      if(d.chance(.5)){for(const [a,b,h] of [[-5,-2,8],[5,-2,7],[-3,-5,9],[3,-5,8],[-5,3,6],[5,3,7]])Q.box('s'+a+b,[a-1,a+1],[b-1,b+1],[0,h],st,{top:true});Q.box('al',[-2,2],[-1,2],[0,3],st,{top:true,topMat:o.glow})}
-      else{Q.square('ob',[0,0],4,[0,9],st,{form:'pyramid',rise:2,mat:o.glow,o:0});Q.box('al',[-4,4],[-4,4],[0,1],st,{top:true})}},
-    // a tent: a ridge tent of cloth (plain, red or blue), its gable and flap to the front
+      if(d.chance(.5)){for(const [a,b,h] of [[-5,-2,8],[5,-2,7],[-3,-5,9],[3,-5,8],[-5,3,6],[5,3,7]])Q.box('s'+a+b,[a-1,a+1],[b-1,b+1],[0,h],st,{top:true,topMat:'moss'});Q.box('al',[-2,2],[-1,2],[0,3],st,{top:true,topMat:o.glow})}
+      else{Q.square('ob',[0,0],4,[0,9],st,{form:'pyramid',rise:2,mat:o.glow,o:0});Q.box('al',[-4,4],[-4,4],[0,1],st,{top:true,topMat:'moss'})}},
+    // a tent: a ridge tent of cloth (plain, red or blue), its gable and flap to the front, its poles' heads
     tent(Q,o){const d=o.d,c=d.pick(['canvas','canvas','canvasR','canvasB']),dw=Q.home('tent','home');
-      Q.box('t',[-5.5,5.5],[-4,4],[0,2],c,{dw,keep:1});Q.roof('t','gable','v',7,c,{o:0,ov:0,lip:1,finial:1});Q.dec('t.S','Flap',.5,2,true)},
+      Q.box('t',[-5.5,5.5],[-4.5,4.5],[0,2],c,{dw,keep:1});Q.roof('t','gable','v',7,c,{o:0,ov:0,lip:1,finial:1});Q.dec('t.S','Flap',.5,2,true);Q.prop('crate',[5.5,4.5],0,1)},
     // a covered wagon on its wheels, its shaft out in front
     wagon(Q,o){const d=o.d,c=d.pick(['canvas','canvas','linen']),dw=Q.home('wagon','store');
       Q.box('b',[-5,4],[-2.5,2.5],[2,5],'plank',{dw,top:true});Q.box('cv',[-4.5,3.5],[-2.5,2.5],[5,6],c,{keep:1,thin:true});Q.roof('cv','vault','u',4,c,{o:0,ov:0,lip:1});
       Q.wheel('wf',-3,2.5,2.5,2.5);Q.wheel('wr',2,2.5,2.5,2.5);Q.box('sh',[4,7],[-.5,.5],[2,3],'timber',{top:true});Q.dec('b.W','hatch',.5,0)},
     // a cart: an open bed on one wheel, its shafts, a load (sacks, crates, hay or logs)
     cart(Q,o){const d=o.d;Q.box('b',[-4,3],[-2.5,2.5],[2,4],'plank',{top:true});Q.wheel('w',-.5,2.5,2,2.5);Q.box('sh',[3,7],[-.5,.5],[2,3],'timber',{top:true});
-      const g=d.pick(['sacks','crate','hay','logs']);Q.prop(g,[-.5,-.5],0,g==='logs'?.8:1,4)},
+      const g=d.pick(['sacks','crate','hay','logs']);Q.prop(g,[-.5,-.5],0,g==='logs'?1:1.5,4)},
     // a market stall: a counter of goods under a striped awning on posts, crates or sacks behind
     stall(Q,o){const d=o.d,aw=d.pick(['awning','awningB','awningG']),dw=Q.home('stall','trade');Q.ground='cobble';
       Q.box('ct',[-5,5],[0,3],[0,3],'plank',{dw,top:true,topMat:d.pick(['crop','linen','gold']),keep:1});
       for(const [a,b] of [[-6,-3],[5,-3],[-6,3],[5,3]])Q.box('po'+a+b,[a,a+1],[b,b+1],[0,6],'timber',{top:true});
       Q.box('aw',[-6,6],[-3.5,4],[6,7],aw,{thin:true,keep:1});Q.roof('aw',d.chance(.5)?'gable':'shed','u',2,aw,{o:1,ov:0,hi:'b0'});Q.dec('ct.S','Goods',.5,0);
       Q.prop(d.pick(['crate','sacks','barrel']),[-3,-1],0,1)},
-    // a haystack, round under its own cone
-    haystack(Q,o){Q.round('h',[0,0],5,[0,4],'thatch',{form:'cone',rise:6,mat:'thatch',o:0});Q.prop('hay',[4.5,3],0,1)},
-    // a woodpile: split logs stacked, their ends to the front, a chopping block
-    woodpile(Q,o){Q.box('w',[-5,5],[-2.5,2.5],[0,5],'log',{top:true,topMat:'logend'});Q.dec('w.S','Logs',.5,0);Q.prop('stump',[3,4.5],0,1)},
+    // a haystack, round under its own cone on a base of logs, a little stook beside it
+    haystack(Q,o){Q.round('h',[0,0],5,[0,4],'thatch',{form:'cone',rise:6,mat:'thatch',o:0});Q.round('hb',[0,0],5.3,[0,1],'log',{form:'lid',mat:'log'});Q.prop('hay',[4.5,3],0,1)},
+    // a woodpile: split logs stacked, their ends to the front, a chopping block with its axe
+    woodpile(Q,o){Q.box('w',[-5,5],[-2.5,2.5],[0,5],'log',{top:true,topMat:'logend'});Q.dec('w.S','Logs',.5,0);Q.prop('stump',[3,4.5],0,1);Q.box('ax',[2.5,4.5],[4,6],[2,3],'iron',{top:true})},
     // a fence piece: posts and rails, straight, a corner or with a gate
     fence(Q,o){const k=o.d.int(0,2);Q.fence(k===1?[[-7,-4],[6,-4],[6,5]]:[[-7,1],[7,1]],k===2?[[-2,2,0]]:null,5,'plank')},
-    // crates stacked
-    crates(Q,o){Q.box('c0',[-5,-1],[-2,2],[0,4],'plank',{top:true});Q.box('c1',[0,4],[-1,3],[0,4],'plank',{top:true});Q.box('c2',[-3,1],[-2,1],[4,8],'plank',{top:true});for(const n of ['c0','c1','c2'])Q.dec(n+'.S','Crate',.5,0)},
-    // barrels, hooped
+    // crates stacked, a sack on them
+    crates(Q,o){Q.box('c0',[-5,-1],[-2,2],[0,4],'plank',{top:true});Q.box('c1',[0,4],[-1,3],[0,4],'plank',{top:true});Q.box('c2',[-3,1],[-2,1],[4,8],'plank',{top:true});for(const n of ['c0','c1','c2'])Q.dec(n+'.S','Crate',.5,0);Q.prop('sacks',[1.5,1],0,1,4)},
+    // barrels, hooped in iron
     barrels(Q,o){for(const [n,c] of [['b0',[-2.5,-1.5]],['b1',[2.5,-1.5]],['b2',[0,2]]]){Q.round(n,c,2.4,[0,6],'plank',{form:'lid',mat:'plank'});Q.dec(n+'.S','Hoop',.5,1);Q.dec(n+'.S','Hoop',.5,4)}},
 
     // --- 32 px: the smallest buildings ---
     // a cottage: a side gable, a gable to the front or a hip; a chimney; a barrel, a woodpile or a crate by it; better levels a
-    // chimney and flower boxes, then a second storey and a dormer
-    cottage(Q,o){const d=o.d,lv=o.lv,st=lv>=3?2:1,w=d.pick([18,20]),dd=14,form=d.pick(['gable','gable','front','hip']),dw=Q.home('cottage','home',st);
-      Q.lift=o.stilts?5:0;const h=house(Q,{w,d:dd,st,form,rise:form==='front'?9:undefined,dw,door:d.pick([.3,.5,.7]),chim:lv>=2?true:undefined,pick:lv>=2?['WinF','WinS']:['Win','WinS']});
-      if(lv>=3&&form==='gable')dormer(Q,'dm',h.u,h.v,h.z,d.pick([-4,4]));stilts(Q,h.u,h.v);
-      const p=d.pick(['barrel','woodpile','crate','barrel','']);if(p)Q.prop(p,[w/2-2,dd/2+2]);Q.lift=0},
-    // a townhouse: two storeys to the street, the upper jettied out over the lower (a timber frame), its gable to the street or along it
-    townhouse(Q,o){const d=o.d,w=18,dd=10,dw=Q.home('townhouse','home',2),wall=o.people==='human'?'daub':o.wall,front=d.chance(.6),lo=o.people==='dwarf'||wall==='daub'?'stone':wall;
-      Q.box('lo',[-w/2,w/2],[-dd/2,dd/2],[0,9],lo,{dw});Q.box('h',[-w/2,w/2],[-dd/2,dd/2+1],[9,15],wall,{dw,frame:o.look.frame});
-      Q.roof('h','gable',front?'v':'u',front?7:6,o.roofMat,{lip:1,finial:front,ov:1});Q.chim([w/2-3,-dd/2+2],13,front?22:20,3);
-      const da=d.pick([.25,.75]);Q.dec('lo.S','Door',da);Q.dec('lo.S',d.pick(['Win','WinF']),1-da,2);Q.dec('h.S','WinS',.25,1);Q.dec('h.S','WinS',.75,1);
-      Q.dec('lo.N','Door',.5);Q.dec('h.N','Win',.5,1);for(const k of ['E','W']){Q.dec('h.'+k,'Win',.5,1);Q.dec('lo.'+k,'Win',.5,2)}},
-    // a fisher's hut: planks under a low gable, its net on a rack and a barrel; on stilts over a bog
-    fisherhut(Q,o){const w=18,dd=12,dw=Q.home('fisherhut');Q.lift=o.stilts?5:0;
-      const h=house(Q,{w,d:dd,z:9,wall:'plank',rise:6,dw,door:.3,chim:false,wins:1});stilts(Q,h.u,h.v);Q.prop('nets',[w/2-4,dd/2+3]);Q.prop('barrel',[-w/2+1,-1]);Q.lift=0},
-    // a chapel: its nave's gable and door to the front, a bellcote over it with its bell, the cross on top, lancets
+    // chimney and flower boxes, then an attic (a dormer, or a window in the gable)
+    cottage(Q,o){const d=o.d,lv=o.lv,w=d.pick([18,20]),dd=16,form=d.pick(['gable','gable','front','hip']),dw=Q.home('cottage','home',lv>=3?2:1);
+      Q.lift=o.stilts?4:0;const door=d.pick([.3,.5,.7]),h=house(Q,{w,d:dd,form,dw,door,chim:lv>=2?true:undefined,pick:lv>=2?['WinF','WinS']:['Win','WinS']});
+      if(lv>=3){if(form==='gable')dormer(Q,'dm',h.u,h.v,h.z,d.pick([-4,4]));else if(form==='front')Q.dec('h.S','Win',.5,h.z+2,true)}stilts(Q,h.u,h.v);
+      const p=d.pick(['barrel','woodpile','crate','barrel','']),at=door;if(p)Q.prop(p,[(at>.5?-1:1)*(w/2-2.5),dd/2+2.5],p==='woodpile'?0:1);Q.lift=0},
+    // a townhouse: two storeys, the upper jettied out over the lower (a timber frame), its gable to the street or along it; deep
+    townhouse(Q,o){const d=o.d,w=16,dd=14,dw=Q.home('townhouse','home',2),wall=o.people==='human'?'daub':o.wall,front=d.chance(.6),lo=o.people==='dwarf'||wall==='daub'?'stone':wall;
+      Q.box('lo',[-w/2,w/2],[-dd/2,dd/2],[0,11],lo,{dw});Q.box('h',[-w/2,w/2],[-dd/2,dd/2+1],[11,17],wall,{dw,frame:o.look.frame});
+      Q.roof('h','gable',front?'v':'u',front?7:6,o.roofMat,{lip:1,ov:1});Q.chim([w/2-3,-dd/2+3],15,front?24:23,3);
+      const da=d.pick([.28,.72]);Q.dec('lo.S','Door',da);Q.dec('lo.S',d.pick(['Win','WinF']),1-da,2);Q.dec('h.S','WinS',.25,1);Q.dec('h.S','WinS',.75,1);if(front)Q.dec('h.S','Win',.5,8,true);
+      Q.dec('lo.N','Door',.5);Q.dec('h.N','Win',.5,1);for(const k of ['E','W'])for(const a of [.3,.7]){Q.dec('h.'+k,'Win',a,1);Q.dec('lo.'+k,'Win',a,3)}},
+    // a fisher's hut: planks under a low gable, its net hung on a rack at its side, a barrel; on stilts over a bog
+    fisherhut(Q,o){const w=14,dd=16,dw=Q.home('fisherhut');Q.lift=o.stilts?4:0;
+      const h=house(Q,{w,d:dd,z:10,wall:'plank',rise:6,dw,door:.3,chim:false,wins:1});stilts(Q,h.u,h.v);Q.lift=0;
+      for(const b of [-4,4])Q.beam('np'+b,[w/2+3,b,0],[w/2+3,b,8],'timber');Q.cut('nt',-3,w/2+2.5,1,['nnnnnnn','n.n.n.n','nnnnnnn','n.n.n.n','nnnnnnn','n.n.n.n','.nnnnn.'],{n:'net'},{alongV:true});Q.prop('barrel',[-w/2+2,dd/2+2.5],1)},
+    // a chapel: its nave's gable and door to the front, a bellcote over it with its bell, the cross on top, lancets, small headstones
     chapel(Q,o){const st=o.look.stone,dw=Q.home('chapel','worship');
-      Q.box('n',[-7,7],[-9,6],[0,10],st,{dw});Q.roof('n','gable','v',6,o.roofMat,{ov:1});
-      Q.box('bc',[-2.5,2.5],[3,6],[12,17],st,{dw});Q.roof('bc','gable','v',2,o.roofMat,{o:0,ov:0});Q.dec('bc.S','Bell',.5,0);cross(Q,'x',0,4.5,19);
-      Q.dec('n.S','Door2',.5);Q.dec('n.S','Lancet',.14,3);Q.dec('n.S','Lancet',.86,3);Q.dec('n.N','Lancet',.5,3);for(const k of ['E','W'])for(const a of [.25,.5,.75])Q.dec('n.'+k,'Lancet',a,3);
-      Q.prop('headstone',[-10,7])},
+      Q.box('n',[-7,7],[-8,8],[0,11],st,{dw});Q.roof('n','gable','v',7,o.roofMat,{ov:1});
+      Q.box('bc',[-2.5,2.5],[2,5],[13,18],st,{dw});Q.roof('bc','gable','v',2,o.roofMat,{o:0,ov:0});Q.dec('bc.S','Bell',.5,0);cross(Q,'x',0,3.5,19);
+      Q.dec('n.S','Door2',.5);Q.dec('n.S','Lancet',.15,3);Q.dec('n.S','Lancet',.85,3);Q.dec('n.N','Lancet',.5,3);for(const k of ['E','W'])for(const a of [.22,.5,.78])Q.dec('n.'+k,'Lancet',a,3);
+      },
     // a tower: round, a lookout gallery wider than its body under a cone of the people's roof; or square with battlements
     tower(Q,o){const d=o.d,st=o.people==='orc'?'log':o.look.stone,dw=Q.home('tower','defence');Q.flag=true;
       if(d.chance(.6)){Q.round('tw',[0,0],6,[0,15],st,null,{dw});Q.round('hd',[0,0],7.5,[15,19],o.people==='orc'?'log':'plank',{form:'cone',rise:8,mat:o.roofMat,o:1},{dw});
-        Q.dec('hd.S','Slit',.5,0);Q.dec('hd.E','Slit',.5,0);Q.dec('hd.W','Slit',.5,0);Q.dec('tw.S','Door',.5);Q.dec('tw.S','Slit',.5,10);Q.dec('tw.N','Slit',.5,10)}
+        Q.dec('hd.S','Slit',.5,0);Q.dec('hd.E','Slit',.5,0);Q.dec('hd.W','Slit',.5,0);Q.dec('tw.S','Door',.5);Q.dec('tw.S','Slit',.5,11);Q.dec('tw.N','Slit',.5,10);Q.dec('tw.E','Slit',.5,7);Q.dec('tw.W','Slit',.5,7)}
       else{Q.square('tw',[0,0],12,[0,20],st,{form:'battlements'},{dw});Q.dec('tw.S','Door',.5);Q.dec('tw.S','Slit',.3,12);Q.dec('tw.S','Slit',.7,12);for(const k of ['E','W','N'])Q.dec('tw.'+k,'Slit',.5,12)}},
-    // a yurt: a round wall of felt under a low cone, its crown ring, its door, tusks either side of it
+    // a yurt: a round wall of felt under a low cone, its crown ring, its door, a band round it, tusks either side of the door
     yurt(Q,o){const d=o.d,dw=Q.home('yurt'),felt=o.people==='orc'||o.people==='human'?'canvas':o.look.walls[0];
-      Q.round('y',[0,0],11,[0,9],felt,{form:'cone',rise:6,mat:o.roofMat,o:1},{dw});Q.round('yb',[0,0],11.3,[6,7],'timber',null);Q.round('cw',[0,0],2,[14,15],'timber',{form:'lid',mat:'timber'});
-      Q.dec('y.S','Door',.5);if(d.chance(.6)||o.lv>=2){Q.prop('tusk',[-5,12]);Q.prop('tusk',[5,12])}else Q.prop('woodpile',[8,10])},
-    // a hide hall: a long round hall, its walls low and its roof of hides vaulted over the middle and coned over its rounded ends,
-    // bone horns at its ridge's ends, a totem by its door
-    hidehall(Q,o){const dw=Q.home('hidehall','home'),wall=o.people==='orc'?'log':o.wall;house(Q,{w:14,d:14,z:10,form:'vault',rise:7,wall,dw,door:.5,wins:0,chim:false,o:1});
-      for(const s of [-1,1]){Q.round('e'+s,[s*7,0],7,[0,10],wall,{form:'cone',rise:7,mat:o.roofMat,o:1},{dw});Q.dec('e'+s+'.S','Win',s<0?.3:.7,3);Q.cut('hn'+s,s*7-1.5,-.5,16,['b.b','b.b','.b.'],{b:'bone'})}
-      Q.prop('totem',[6,10]);Q.prop('tusk',[-5,9])},
+      Q.round('y',[0,0],11,[0,11],felt,{form:'cone',rise:6,mat:o.roofMat,o:1},{dw});Q.round('yb',[0,0],11.3,[9,10],'timber',null);Q.round('cw',[0,0],2,[15,16],'timber',{form:'lid',mat:'timber'});
+      Q.dec('y.S','Door',.5);Q.dec('y.E','Win',.5,3);Q.dec('y.W','Win',.5,3);if(d.chance(.6)||o.lv>=2){Q.prop('tusk',[-5,12]);Q.prop('tusk',[5,12])}else Q.prop('woodpile',[8,10])},
+    // a hide hall: a long round hall of felt, its roof of hides vaulted over the middle and coned over its rounded ends, bone horns at
+    // its ridge's ends, a totem by its door
+    hidehall(Q,o){const dw=Q.home('hidehall','home'),wall=o.people==='orc'?'canvas':o.wall;house(Q,{w:6,d:18,z:10,form:'vault',rise:8,wall,dw,door:.5,wins:0,chim:false,o:1});
+      for(const s of [-1,1]){Q.round('e'+s,[s*3,0],9,[0,10],wall,{form:'cone',rise:8,mat:o.roofMat,o:1},{dw});Q.dec('e'+s+'.S','Win',s<0?.3:.7,3);Q.dec('e'+s+'.'+(s<0?'W':'E'),'Win',.5,3);Q.cut('hn'+s,s*3-1.5,-1,17,['b.b','b.b','.b.'],{b:'bone'},{dv:2})}
+      Q.prop('totem',[6,11]);Q.prop('tusk',[-5,10])},
     // a smithy: its forge open to the street under a lean-to on posts, the hearth glowing inside, the anvil, a great stone chimney
     smithy(Q,o){const st=o.people==='orc'?'log':o.look.stone,dw=Q.home('smithy','work');
-      Q.box('f',[-12,4],[-7,3],[0,13],st,{dw});Q.roof('f','gable','u',5,o.roofMat,{ov:1});Q.dec('f.S','Forge',.45);Q.dec('f.N','Door',.5);Q.dec('f.W','Win',.5,4);
-      Q.chim([8,-3],0,20,6);Q.box('aw',[-12,4],[3,8],[11,12],'timber',{thin:true});Q.roof('aw','shed','u',1,o.roofMat,{o:1,ov:0,hi:'b0'});
-      for(const a of [-12,3])Q.box('po'+a,[a,a+1],[7,8],[0,11],'timber',{top:true});Q.prop('anvil',[-10,6]);Q.prop('barrel',[1,6]);Q.prop('coal',[8,6])},
+      Q.box('f',[-11,4],[-8,4],[0,11],st,{dw});Q.roof('f','gable','u',6,o.roofMat,{ov:1});Q.dec('f.S','Forge',.45);Q.dec('f.N','Door',.5);Q.dec('f.W','Win',.3,3);Q.dec('f.W','Win',.7,3);
+      Q.chim([6.5,-2],0,20,5);Q.box('aw',[-11,4],[4,9],[10,11],'timber',{thin:true});Q.roof('aw','shed','u',1,o.roofMat,{o:1,ov:0,hi:'b0'});
+      for(const a of [-11,3])Q.box('po'+a,[a,a+1.5],[7.5,9],[0,10],'timber',{top:true});Q.prop('anvil',[-8,6.5]);Q.prop('barrel',[1,6.5]);Q.prop('coal',[7,7])},
     // a dwarves' forge: stone under a hip, a heavy stone arch round its glow, a hearth before it, two chimneys, anvil and coal
-    forge(Q,o){const dw=Q.home('forge','work');Q.box('f',[-12,12],[-7,4],[0,12],'stone',{dw});Q.roof('f','hip','u',5,o.roofMat,{o:1});
-      Q.chim([-8,-3],10,21,4);Q.chim([8,-3],10,21,4);Q.dec('f.S','ForgeS',.5);Q.dec('f.W','Win',.5,4);Q.dec('f.E','Win',.5,4);Q.dec('f.N','Door',.5);
-      Q.box('hb',[-3,3],[4,6],[0,2],'stone',{top:true,topMat:'ember'});Q.prop('anvil',[-7,7]);Q.prop('coal',[7,7])},
-    // a barn: planks, its great braced doors under a big gable to the front, hay by it
-    barn(Q,o){const dw=Q.home('barn','store');Q.box('b',[-10,10],[-8,6],[0,12],'plank',{dw,foot:'stone'});Q.roof('b','gable','v',8,o.roofMat,{lip:2,finial:1,ov:1});
-      Q.dec('b.S','Barn',.5);Q.dec('b.N','Door',.5);for(const k of ['E','W']){Q.dec('b.'+k,'Hatch',.3,6);Q.dec('b.'+k,'Hatch',.7,6)}Q.prop('hay',[10,7],0,1.5)},
+    forge(Q,o){const dw=Q.home('forge','work');Q.box('f',[-10,10],[-8,6],[0,11],'stone',{dw});Q.roof('f','hip','u',6,o.roofMat,{o:1});
+      Q.chim([-7,-3],10,19,4);Q.chim([7,-3],10,19,4);Q.dec('f.S','ForgeS',.5);for(const k of ['W','E'])for(const a of [.3,.7])Q.dec('f.'+k,'Win',a,3);Q.dec('f.N','Door',.5);
+      Q.box('hb',[-3,3],[6,8],[0,2],'stone',{top:true,topMat:'ember'});Q.prop('anvil',[-7,9]);Q.prop('coal',[7,9])},
+    // a barn: planks on a stone footing, its great braced doors under a big gable to the front, a loft hatch above them, hay by it
+    barn(Q,o){const dw=Q.home('barn','store');Q.box('b',[-9,9],[-8,8],[0,11],'plank',{dw,foot:'stone'});Q.roof('b','gable','v',8,o.roofMat,{lip:2,ov:1});
+      Q.dec('b.S','Barn',.5);Q.dec('b.S','Hatch',.5,12,true);Q.dec('b.N','Door',.5);for(const k of ['E','W']){Q.dec('b.'+k,'Hatch',.3,4);Q.dec('b.'+k,'Win',.7,4)}Q.prop('hay',[-8.5,10],0,1.2)},
     // a granary: a timber store raised on staddle stones, steps to its door; or a round store under a cone
     granary(Q,o){const d=o.d,dw=Q.home('granary','store');
-      if(d.chance(.5)){for(const [a,b] of [[-7,-5],[7,-5],[-7,4],[7,4]]){Q.round('ss'+a+b,[a,b],1,[0,3],'stone',{form:'lid',mat:'stone'});Q.round('sc'+a+b,[a,b],2.2,[3,4],'stone',{form:'lid',mat:'stone'})}
-        Q.lift=4;house(Q,{n:'g',w:18,d:12,z:10,wall:'plank',dw,door:.5,chim:false,wins:0,rise:6,lip:1});Q.lift=0;Q.box('stp',[-2,2],[6,9],[0,3],'plank',{top:true});Q.prop('sacks',[7,8])}
-      else{const st=o.people==='orc'?'log':o.look.stone==='whitewash'?'plank':'stone';Q.round('g',[0,-1],7,[0,12],st,{form:'cone',rise:9,mat:o.roofMat,o:1},{dw});Q.round('gb',[0,-1],7.4,[0,1],'stone',null);
+      if(d.chance(.5)){for(const [a,b] of [[-6,-5],[6,-5],[-6,5],[6,5]]){Q.round('ss'+a+b,[a,b],1,[0,3],'stone',{form:'lid',mat:'stone'});Q.round('sc'+a+b,[a,b],2.2,[3,4],'stone',{form:'lid',mat:'stone'})}
+        Q.lift=4;house(Q,{n:'g',w:16,d:14,z:9,wall:'plank',dw,door:.5,chim:false,wins:0,rise:6,lip:1});Q.dec('g.E','Hatch',.5,3);Q.dec('g.W','Hatch',.5,3);Q.dec('g.N','Hatch',.5,3);Q.lift=0;
+        Q.box('stp',[-2,2],[7,10],[0,3],'plank',{top:true});Q.prop('sacks',[7,9])}
+      else{const st=o.people==='orc'?'log':o.look.stone==='whitewash'?'plank':'stone';Q.round('g',[0,-1],7.5,[0,11],st,{form:'cone',rise:9,mat:o.roofMat,o:1},{dw});Q.round('gb',[0,-1],7.9,[0,1],'stone',null);
         Q.dec('g.S','Door',.5);Q.dec('g.E','Win',.5,5);Q.dec('g.W','Win',.5,5);Q.dec('g.N','Win',.5,5);Q.prop('sacks',[8,6])}},
-    // a windmill: its round tower under a cap, the door at its foot, its four sails on the front round the hub
+    // a windmill: its round tower under a cap, the door at its foot, its four great sails on the front round the hub, cloth on a lattice
     windmill(Q,o){const d=o.d,dw=Q.home('windmill','work'),wall=d.pick(['stone','whitewash','plank']);
-      Q.round('m',[0,0],5.5,[0,16],wall,{form:'cone',rise:5,mat:o.roofMat,o:1},{dw});Q.dec('m.S','Door',.5);Q.dec('m.S','Win',.5,10);Q.dec('m.N','Win',.5,10);
-      Q.box('hub',[-1,1],[5,7.5],[12,14],'timber',{top:true});sails(Q,0,7.5,13,10)},
-    // a watermill: stone under the people's roof, its wheel turning in the race before it
-    watermill(Q,o){const dw=Q.home('watermill','work');house(Q,{w:20,d:12,c:[-3,-2],z:10,rise:6,wall:'stone',dw,door:.22,wins:1,chim:[-9,-3]});
-      Q.bed([-14,14],[5,11],'water');Q.wheel('wh',5,4,5,5.5)},
-    // a watchtower: a hut of logs on four tall posts braced, its roof, a ladder up the front, a trap door
+      Q.round('m',[0,0],5.5,[0,14],wall,{form:'cone',rise:6,mat:o.roofMat,o:1},{dw});Q.dec('m.S','Door',.5);Q.dec('m.N','Win',.5,8);Q.dec('m.E','Win',.5,8);Q.dec('m.W','Win',.5,8);
+      Q.box('hub',[-1,1],[4.5,7.5],[11,13],'timber',{top:true});sails(Q,0,6,12,12);Q.prop('sacks',[-7,1])},
+    // a watermill: stone under the people's roof, its paddle wheel turning in the race before it
+    watermill(Q,o){const dw=Q.home('watermill','work');house(Q,{w:14,d:18,c:[-4,-2],z:11,rise:6,wall:'stone',dw,door:.25,wins:1,chim:[-8,-6]});
+      Q.bed([-15,15],[8,13],'water');Q.wheel('wh',8,7,5,5,'plank',2)},
+    // a warehouse: long planks on a stone footing, its great doors, a loft over them with its hatch and a hoist, a crate on the rope
+    warehouse(Q,o){const dw=Q.home('warehouse','store');Q.box('w',[-11,11],[-8,8],[0,12],'plank',{dw,foot:'stone'});Q.roof('w','gable','u',7,o.roofMat,{ov:1});
+      Q.dec('w.S','Door2',.3);Q.dec('w.S','Win',.88,3);Q.dec('w.N','Door',.5);for(const k of ['E','W'])for(const a of [.3,.7])Q.dec('w.'+k,a<.5?'Hatch':'Win',a,4);
+      Q.box('lf',[2,8],[1,8],[11,17],'plank',{});Q.roof('lf','gable','v',3,o.roofMat,{o:0,ov:1});Q.dec('lf.S','Hatch',.5,1);
+      Q.box('ho',[4,6],[7,11],[16,18],'timber',{top:true});Q.box('rp',[4.5,5.5],[9.5,10.5],[10,16],'rope',{thin:true});Q.box('hc',[3.5,6.5],[8.5,11.5],[7,10],'plank',{top:true});
+      Q.prop('crate',[-9,10]);Q.prop('barrel',[10,10])},
+    // a watchtower: a hut of planks on four tall posts braced, its roof, a ladder up the front, its hatch
     watchtower(Q,o){const dw=Q.home('watchtower','defence'),H=11;Q.flag=true;
-      for(const [a,b] of [[-6,-4],[5,-4],[-6,3],[5,3]])Q.box('p'+a+b,[a,a+1],[b,b+1],[0,H],'log',{top:true});braces(Q,'x',-5,3.5,1,10,H-2);
-      Q.box('dk',[-7,7],[-5,5],[H,H+1],'plank',{top:true,thin:true});Q.box('h',[-5,5],[-4,4],[H+1,H+7],'log',{dw});Q.roof('h','gable','v',4,o.roofMat,{lip:2,finial:1,fmat:'bone'});
-      Q.dec('h.S','Hatch',.5,1);Q.dec('h.E','Slit',.5,2);Q.dec('h.W','Slit',.5,2);Q.cut('ld',-1.5,4.5,0,Array.from({length:H},(_,i)=>i%2?'t.t':'ttt'),{t:'timber'})},
-    // a warehouse: long, planks, great doors under a loft's hatch and a hoist, crates
-    warehouse(Q,o){const dw=Q.home('warehouse','store');Q.box('w',[-12,12],[-7,4],[0,12],'plank',{dw,foot:'stone'});Q.roof('w','gable','u',6,o.roofMat,{ov:1});
-      Q.dec('w.S','Door2',.5);Q.dec('w.S','Win',.15,4);Q.dec('w.S','Win',.85,4);Q.dec('w.N','Door',.5);for(const k of ['E','W'])Q.dec('w.'+k,'Hatch',.5,6);
-      Q.box('ho',[-.5,.5],[4,7],[12,13],'timber',{top:true});Q.box('rp',[-.5,.5],[6,7],[9,12],'linen',{thin:true});Q.prop('crate',[-9,7]);Q.prop('crate',[9,7])},
-    // a lumber shed: an open shed on posts under a single slope, logs stacked inside, its door at the back, a stump and a pile
-    lumbershed(Q,o){const dw=Q.home('lumbershed','work');Q.box('bk',[-12,12],[-7,-5],[0,10],'log',{dw});Q.dec('bk.S','Door',.82);
-      for(const a of [-12,-.5,11])Q.box('po'+a,[a,a+1],[4,5],[0,9],'log',{top:true});Q.box('rf',[-12,12],[-7,5],[9,10],'log',{thin:true});Q.roof('rf','shed','u',3,o.roofMat,{o:1,hi:'b0'});
-      Q.prop('logs',[-7,-1]);Q.prop('logs',[1,-1]);Q.prop('logs',[-3,-1],0,2,6);Q.prop('stump',[-7,8]);Q.prop('logs',[6,9],0,1)},
-    // a mine head: a timber headframe with its winch wheel over the shaft and its winch house; or a rock-cut adit braced with timber;
-    // rails out of it with a cart of ore on them, a spoil heap
-    minehead(Q,o){const d=o.d,rk=o.env==='desert'?'sandrock':'rock',dw=Q.home('minehead','work');
-      // (the headframe an A of timber legs leaning in over the shaft's collar, braced, its wheel standing on its top)
-      if(d.chance(.5)){Q.box('col',[-5,5],[-4,3],[0,2],'stone',{top:true,topMat:'iron',dw});const A=Array.from({length:14},(_,i)=>{const z=13-i,e=Math.round(6-z*4.5/13);let s='';for(let u=-6;u<=6;u++)s+=Math.abs(Math.abs(u)-e)<.6||(z===6&&Math.abs(u)<e)?'t':'.';return s});
-        Q.cut('af',-6.5,2,0,A,{t:'timber'});Q.cut('ab',-6.5,-4,0,A,{t:'timber'});Q.box('ax',[-.5,.5],[-4,3],[14,15],'iron',{thin:true,top:true});Q.wheel('ww',0,-.5,15,4.5,'plank');Q.box('rope',[-.5,.5],[-.5,.5],[2,11],'linen',{thin:true});
-        shed(Q,'wh',[10,-2],7,8,9,o.roofMat);Q.dec('wh.S','Win',.75,3)}
-      else{Q.round('m',[0,-8],12,[0,8],rk,{form:'cone',rise:8,mat:rk,o:0});Q.box('a',[-6,6],[0,5],[0,11],rk,{dw,top:true});Q.dec('a.S','Adit',.5,0);Q.box('lt',[-6,6],[4,5],[11,12],'timber',{thin:true,top:true})}
-      Q.rails('r',4,12,0,false);Q.prop('minecart',[0,9],0,2);Q.prop('spoil',[-9,6]);Q.prop('boulder',[9,7],0,1.5)},
-    // a crane: a treadwheel by its mast, the jib out over the stones it lifts
-    // (its winch house behind, its door)
-    crane(Q,o){const d=o.d,dw=Q.home('crane','work');Q.wheel('tw',-6,0,6,5.5);shed(Q,'hs',[7,-7],9,6,8,o.roofMat,dw);Q.box('ax',[-7,-5],[-2,0],[5,8],'timber',{top:true,dw});
-      Q.box('ms',[1,3],[-1,1],[0,19],'timber',{top:true,dw});Q.box('jb',[0,12],[-.5,.5],[18,19],'timber',{top:true});braces(Q,'jx',3,-.5,12,6,6);
-      Q.box('rp',[10.5,11],[-.5,.5],[8,18],'linen',{thin:true});Q.prop('block',[11,4]);Q.prop('block',[-6,8],1);if(d.chance(.5))Q.prop('block',[5,8])},
-    // a treehouse: a house on a deck round a great trunk under its crown, a vaulted roof, a ladder
+      for(const [a,b] of [[-5,-5],[5,-5],[-5,5],[5,5]])Q.box('p'+a+b,[a-1,a+1],[b-1,b+1],[0,H],'log',{top:true,dw});
+      Q.beam('xs',[-4,5,1],[4,5,H-2],'timber');Q.beam('xn',[4,-5,1],[-4,-5,H-2],'timber');Q.beam('xe',[5,4,1],[5,-4,H-2],'timber');Q.beam('xw',[-5,-4,1],[-5,4,H-2],'timber');
+      Q.box('dk',[-7,7],[-7,7],[H,H+1],'plank',{top:true,thin:true});Q.box('h',[-5,5],[-5,5],[H+1,H+7],'plank',{dw});Q.roof('h','gable','v',4,o.roofMat,{lip:2,finial:1,fmat:'bone'});
+      Q.dec('h.S','Hatch',.5,1);for(const k of ['E','W','N'])Q.dec('h.'+k,'Slit',.5,2);Q.cut('ld',-1.5,6,0,Array.from({length:H},(_,i)=>i%2?'t.t':'ttt'),{t:'timber'},{dv:2})},
+    // a treehouse: a house on a deck round a great trunk under its lumpy crown, a vaulted roof, a ladder
     treehouse(Q,o){const d=o.d,dw=Q.home('treehouse','home'),crown=d.pick(['canopy','canopy','autumn']),H=6;
-      Q.round('tr',[0,-6],3,[0,15],'log',null);Q.round('cr',[0,-6],10,[13,17],crown,{form:'cone',rise:5,mat:crown,o:0});
-      Q.box('dk',[-10,10],[-3,9],[H-1,H],'plank',{top:true,thin:true});for(const [a,b] of [[-10,8],[9,8]])Q.box('p'+a,[a,a+1],[b,b+1],[0,H],'log',{top:true});
-      Q.box('h',[-6,6],[-2,7],[H,H+10],o.wall==='stone'?'whitewash':o.wall,{dw});Q.roof('h','vault','u',5,o.roofMat,{lip:1});Q.dec('h.S','Door',.3);Q.dec('h.S','Lancet',.75,3);Q.dec('h.E','Lancet',.5,3);Q.dec('h.W','Lancet',.5,3);
-      Q.cut('ld',6,9,0,Array.from({length:H},(_,i)=>i%2?'t.t':'ttt'),{t:'timber'})},
+      Q.round('tr',[0,-6],3,[0,15],'log',null);Q.round('cr',[0,-6],10,[13,17],crown,{form:'cone',rise:5,mat:crown,o:0,lip:0},{rough:.5,rs:o.seed});
+      Q.box('dk',[-10,10],[-3,9],[H-1,H],'plank',{top:true,thin:true});for(const [a,b] of [[-10,8],[9,8]])Q.box('p'+a,[a,a+1.5],[b,b+1.5],[0,H],'log',{top:true});
+      Q.box('h',[-6,6],[-2,8],[H,H+10],o.wall==='stone'?'whitewash':o.wall,{dw});Q.roof('h','vault','u',5,o.roofMat,{lip:1});Q.dec('h.S','Door',.3);Q.dec('h.S','Lancet',.75,3);Q.dec('h.E','Lancet',.5,3);Q.dec('h.W','Lancet',.5,3);
+      Q.cut('ld',6,9,0,Array.from({length:H},(_,i)=>i%2?'t.t':'ttt'),{t:'timber'},{dv:2})},
     // an elves' hall: light walls under a vaulted roof of leaf, tall lancets, its double door, among trees
     elfhall(Q,o){const d=o.d,dw=Q.home('elfhall','home');
-      house(Q,{w:20,d:12,c:[0,1],z:11,form:'vault',rise:8,wall:o.people==='elf'?'whitewash':o.wall,dw,door:.5,doorKind:'Door2',wins:2,chim:false,pick:['Lancet2']});
-      tree(Q,'ta',[-10,-6],10,4.5,'canopy');tree(Q,'tb',[10,-5],10,4.5,d.pick(['canopy','autumn']))},
-    // a spire: a tall round tower of white stone, a balcony ring, a tall cone, lancets round it
-    spire(Q,o){const dw=Q.home('spire','worship'),z=19;Q.flag=true;Q.round('s',[0,0],4.5,[0,z],'whitewash',{form:'cone',rise:8,mat:o.roofMat},{dw});
-      Q.round('bal',[0,0],6,[11,12],'plank',{form:'lid',mat:'plank'});Q.dec('s.S','Door',.5);Q.dec('s.S','Lancet',.5,13);for(const k of ['E','W','N'])Q.dec('s.'+k,'Lancet',.5,4)},
+      house(Q,{w:18,d:15,c:[0,1],z:12,form:'vault',rise:8,wall:o.people==='elf'?'whitewash':o.wall,dw,door:.5,doorKind:'Door2',wins:2,chim:false,pick:['Lancet2']});
+      tree(Q,'ta',[-9,-7],11,4.5,'canopy');tree(Q,'tb',[9,-6],10,4.5,d.pick(['canopy','autumn']))},
+    // a spire: a tall round tower of white stone, a balcony ring, a tall cone with a gold knob, lancets round it
+    spire(Q,o){const dw=Q.home('spire','worship'),z=17,R=9;Q.round('s',[0,0],4.5,[0,z],'whitewash',{form:'cone',rise:R,mat:o.roofMat},{dw});
+      Q.box('fn',[-1,1],[-1,1],[z+R-2,z+R+1],'gold',{top:true});Q.round('bal',[0,0],6,[10,11],'plank',{form:'lid',mat:'plank'});Q.dec('s.S','Door',.5);Q.dec('s.S','Lancet',.5,12);for(const k of ['E','W','N'])Q.dec('s.'+k,'Lancet',.5,3)},
     // a dwarves' stone hall: squat and broad, a low hip, buttresses at its corners, its rune door, a massive chimney
-    stonehall(Q,o){const dw=Q.home('stonehall','home');house(Q,{w:22,d:14,z:10,wall:'stone',form:'hip',rise:5,dw,door:.5,doorKind:'Rune',wins:2,pick:['Win'],chim:[6,-2]});
-      for(const a of [-11,11])for(const b of [-7,7])Q.square('bt'+a+b,[a,b],4,[0,8],'stone',{form:'battlements'});Q.prop('barrel',[-7,10])},
+    stonehall(Q,o){const dw=Q.home('stonehall','home');house(Q,{w:20,d:16,z:11,wall:'stone',form:'hip',rise:6,dw,door:.5,doorKind:'Rune',wins:2,pick:['Win'],chim:[5,-3]});
+      for(const a of [-10,10])for(const b of [-8,8])Q.square('bt'+a+b,[a,b],4,[0,8],'stone',{form:'pyramid',rise:2,mat:'stone',o:0});Q.prop('barrel',[-7,10])},
 
     // --- 64 px: the big buildings and the centres ---
     // a church: its west tower and steeple at the front over the door, the cross on top, a belfry; the long nave behind, lancets down
     // its sides, a chancel at the east end; headstones
     church(Q,o){const st=o.look.stone,dw=Q.home('church','worship');
-      Q.box('n',[-9,16],[-7,7],[0,14],st,{dw});Q.roof('n','gable','u',8,o.roofMat,{ov:0,finial:1,fmat:'gold'});Q.round('ap',[16,0],5.5,[0,11],st,{form:'cone',rise:6,mat:o.roofMat,o:1},{dw});
-      Q.square('tw',[-15,0],12,[0,22],st,{form:'battlements'},{dw});Q.round('sp',[-15,0],4,[22,24],st,{form:'cone',rise:12,mat:o.roofMat,o:1},{dw});cross(Q,'x',-15,0,36);
-      Q.dec('tw.S','Door2',.5);Q.dec('tw.S','Rose',.5,11);for(const k of ['S','E','W','N'])Q.dec('tw.'+k,'Bell',.5,16);Q.dec('tw.W','Lancet',.5,9);
-      for(const k of ['S','N'])for(const a of [.14,.38,.62,.86])Q.dec('n.'+k,'Lancet2',a,4);Q.dec('n.E','Rose',.5,6);Q.dec('ap.S','Lancet',.5,3);
-      Q.prop('headstone',[-4,12]);Q.prop('headstone',[4,13]);Q.prop('headstone',[12,12]);Q.prop('headstone',[20,10])},
+      Q.box('n',[-9,14],[-9,9],[0,14],st,{dw});Q.roof('n','gable','u',9,o.roofMat,{ov:0});Q.round('ap',[14,0],6.5,[0,11],st,{form:'cone',rise:6,mat:o.roofMat,o:1},{dw});
+      Q.square('tw',[-16,0],14,[0,22],st,{form:'battlements'},{dw});Q.round('sp',[-16,0],4.5,[22,24],st,{form:'cone',rise:11,mat:o.roofMat,o:1},{dw});cross(Q,'x',-16,0,33);
+      Q.dec('tw.S','Door2',.5);Q.dec('tw.S','Rose',.5,12);for(const k of ['S','E','W','N'])Q.dec('tw.'+k,'Bell',.5,16);Q.dec('tw.W','Lancet',.5,9);Q.dec('tw.N','Lancet',.5,9);
+      for(const k of ['S','N'])for(const a of [.12,.36,.64,.88])Q.dec('n.'+k,'Lancet2',a,4);Q.dec('n.E','Rose',.5,6);Q.dec('ap.S','Lancet',.5,3);Q.dec('ap.E','Lancet',.5,3);
+      for(const [u,v] of [[-4,13],[3,14],[10,13],[20,10],[-24,10]])Q.prop('headstone',[u,v],0,1.5)},
     // a tavern: two storeys, a gable or a hip with dormers, two chimneys, its sign hanging by the door and a lantern; a back wing; a
     // yard beside it in a fence (benches and barrels, a cart) with a shed at its back
     tavern(Q,o){const d=o.d,dw=Q.home('tavern','inn',2),hip=d.chance(.5);
-      const h=house(Q,{w:34,d:16,c:[-11,10],st:2,form:hip?'hip':'gable',rise:9,dw,door:.5,doorKind:'Door2',wins:4,chim:[-24,9],pick:['WinF','WinS']});Q.chim([1,9],15,29,3);
-      Q.dec('h.S','Sign',.62,10);Q.dec('h.S','Lamp',.38,7);if(!hip){dormer(Q,'d1',h.u,h.v,h.z,-18);dormer(Q,'d2',h.u,h.v,h.z,-4)}
-      house(Q,{n:'bw',w:14,d:14,c:[-20,-6],z:10,dw,door:.5,wins:1,chim:false});
-      Q.fence([[8,18],[28,18],[28,-12]],[[14,20,0]],3);shed(Q,'sh',[18,-18],16,8,9,o.roofMat);
-      Q.prop('bench',[14,6]);Q.prop('bench',[21,11]);Q.prop('trough',[22,-2]);Q.prop('barrel',[25,4]);Q.prop('barrel',[11,-6])},
+      const h=house(Q,{w:32,d:18,c:[-12,9],st:2,form:hip?'hip':'gable',rise:9,dw,door:.5,doorKind:'Door2',wins:4,chim:[-24,8],pick:['WinF','WinS']});Q.chim([0,8],18,30,3);
+      Q.dec('h.S','Sign',.62,11);Q.dec('h.S','Lamp',.38,8);if(!hip){dormer(Q,'d1',h.u,h.v,h.z,-19);dormer(Q,'d2',h.u,h.v,h.z,-5)}
+      house(Q,{n:'bw',w:16,d:14,c:[-20,-8],z:12,dw,door:.5,wins:1,chim:false});
+      Q.fence([[8,18],[28,18],[28,-14]],[[14,20,0]],3);shed(Q,'sh',[18,-19],16,10,9,o.roofMat);
+      Q.prop('bench',[14,6]);Q.prop('bench',[21,11]);Q.prop('trough',[22,-3]);Q.prop('barrel',[25,4]);Q.prop('barrel',[11,-6])},
     // a longhouse: long and low under a steep roof (the country's), its door in the middle, finials; an annex, a shed behind,
     // woodpile and hay
-    longhouse(Q,o){const d=o.d,dw=Q.home('longhouse','home');house(Q,{w:44,d:16,c:[-2,8],z:12,rise:9,dw,finial:1,fmat:o.people==='orc'?'bone':'timber',door:.5,doorKind:'Door2',wins:4,chim:[-2,6],back:'door'});
-      lean(Q,'an',[20,27],[2,14],8,o.roofMat);shed(Q,'sh',[-14,-18],14,8,9,o.roofMat);Q.prop('woodpile',[12,-16],0);Q.prop('hay',[24,-14]);Q.prop('cart',[-24,22],1)},
+    longhouse(Q,o){const d=o.d,dw=Q.home('longhouse','home');house(Q,{w:44,d:18,c:[-2,7],z:12,rise:9,dw,finial:1,fmat:o.people==='orc'?'bone':'timber',door:.5,doorKind:'Door2',wins:4,chim:[-2,5],back:'door'});
+      lean(Q,'an',[20,27],[1,15],9,o.roofMat);shed(Q,'sh',[-14,-19],14,9,9,o.roofMat);Q.prop('woodpile',[12,-17],0);Q.prop('hay',[24,-14]);Q.prop('cart',[-24,22],1)},
     // a keep (straight on): a square donjon crenellated, turrets at its corners, its hall beside it, a well in the yard; walls by its
     // fortification
     keep(Q,o){const d=o.d,st=o.people==='orc'?'log':o.look.stone,cone=o.people!=='dwarf'&&d.chance(.7),f=o.fort|0,dw=Q.home('keep','hall',3),L=d.chance(.5)?-1:1;Q.flag=true;Q.ground='cobble';
@@ -318,9 +320,9 @@
     // a village's centre (straight on): its people's hall at the back, the green with the well and the village's goods; fortified, a
     // palisade of stakes round it all, its gate at the front
     village(Q,o){const d=o.d,f=(o.fort|0)>0,pp=o.people,dw=Q.home('village','hall',1);Q.flag=true;
-      house(Q,{n:'hl',w:32,d:16,c:[0,-14],z:11,rise:pp==='dwarf'?6:10,form:{dwarf:'hip',orc:'vault',elf:'vault'}[pp]||'gable',dw,finial:1,fmat:pp==='orc'?'bone':pp==='elf'?'gold':'timber',door:.5,
+      house(Q,{n:'hl',w:32,d:16,c:[0,-14],z:12,rise:pp==='dwarf'?6:10,form:{dwarf:'hip',orc:'vault',elf:'vault'}[pp]||'gable',dw,finial:1,fmat:pp==='orc'?'bone':pp==='elf'?'gold':'timber',door:.5,
         doorKind:pp==='dwarf'?'Rune':'Door2',wins:4,wall:{dwarf:'stone',orc:'log'}[pp]||o.wall,chim:pp==='orc'||pp==='elf'?false:[8,-16]});
-      Q.round('wl',[-10,8],4.5,[0,4],'stone',{form:'water'});for(const s of [-1,1])Q.box('wp'+s,[-10+s*4.5-.5,-10+s*4.5+.5],[7.5,8.5],[0,8],'timber',{top:true});Q.box('wr',[-15.5,-4.5],[6,10],[8,9],'timber',{thin:true});Q.roof('wr','gable','u',2,o.roofMat,{o:0,ov:0});
+      Q.round('wl',[-10,8],4.5,[0,4],'stone',{form:'water'});for(const s of [-1,1])Q.box('wp'+s,[-10+s*4.5-1,-10+s*4.5+1],[7,9],[0,8],'timber',{top:true});Q.box('wr',[-15.5,-4.5],[6,10],[8,9],'timber',{thin:true});Q.roof('wr','gable','u',2,o.roofMat,{o:0,ov:0});
       const g={human:['hay','barrel'],dwarf:['barrel','crate'],elf:['sacks','crate'],orc:['woodpile','hay']}[pp]||['hay','barrel'];Q.prop(g[0],[12,8]);Q.prop(g[1],[16,14]);
       if(f){const e=29,b=27;for(const [n,u,v] of [['pN',[-e,e],[-b-3,-b-1]],['pW',[-e,-e+2],[-b-3,b]],['pE',[e-2,e],[-b-3,b]],['pS0',[-e,-5],[b-2,b]],['pS1',[5,e],[b-2,b]]])Q.box(n,u,v,[0,8],'stakes',{top:true,topMat:'log'});
         for(const s of [-1,1])Q.box('gp'+s,s<0?[-7,-5]:[5,7],[b-3,b],[0,11],'log',{top:true});Q.marks.gate=[0,b,0]}else Q.marks.gate=[0,28,0]},
@@ -334,15 +336,47 @@
       Q.round('ft',[0,6*k],3.5*k,[0,2],'stone',{form:'water'});Q.round('fp',[0,6*k],1.2,[0,6],'stone',{form:'lid',mat:'stone'});
       if(f||o.capital)curtain(Q,-27*k,27*k,(o.capital?-56:-30),27*k,f||3,cone,k);else{Q.prop('cart',[-16,16],1);Q.prop('crate',[16,14])}},
 
+    // --- 32 px: work places ---
+    // a mine head: a tall timber headframe (two A-frames of 2 px legs, braced) with its winch wheel on top over the shaft's collar and
+    // its winch house; or a timbered adit (posts, a lintel and a little roof) into a rocky hill; rails out of it with a cart of ore, a
+    // spoil heap, a lantern
+    minehead(Q,o){const d=o.d,rk={desert:'sandrock',swamp:'darkrock'}[o.env]||'rock',moss=o.env==='desert'?0:.35,dw=Q.home('minehead','work');
+      if(d.chance(.5)){Q.box('col',[-4,4],[-3,3],[0,2],'stone',{top:true,topMat:'iron',dw});
+        for(const s of [-1,1]){for(const b of [-2,2])Q.beam('p'+s+b,[s*5,b,0],[s*5,b,11],'timber');Q.beam('k'+s,[s*5,-2,10],[s*5,-8,0],'timber');Q.beam('x'+s,[s*5,-2,5],[s*5,2,5],'timber')}
+        Q.box('ax',[-6,6],[-2,2],[12,13],'timber',{top:true});Q.wheel('ww',0,-1.5,17,5,'iron',3);Q.box('rope',[-.5,.5],[-.5,.5],[2,12],'rope',{thin:true});Q.box('bk',[-1,1],[-1,1],[4,6],'iron',{top:true});
+        shed(Q,'wh',[10,-3],8,9,9,o.roofMat,dw);Q.dec('wh.S','Win',.8,3);Q.beam('rw',[4,0,17],[8,-3,10],'rope',1);Q.rails('r',4,11,0,false);Q.prop('minecart',[0,8.5],0,2)}
+      else{crag(Q,'h',[0,-6],10,4,9,rk,moss,o.seed);crag(Q,'h2',[-9,-2],6,3,6,rk,moss,o.seed+1);Q.box('a',[-5,5],[-2,4],[0,12],rk,{dw,top:true});crag(Q,'h3',[0,0],6,11,4,rk,moss,o.seed+2);Q.dec('a.S','Adit',.5,0);
+        for(const s of [-1,1])Q.beam('po'+s,[s*4.5,5,0],[s*4.5,5,10],'timber');Q.box('lt',[-6.5,6.5],[3.5,6.5],[11,13],'timber',{top:true});Q.box('pr',[-6.5,6.5],[2,7],[13,14],'plank',{thin:true});Q.roof('pr','gable','u',3,o.roofMat,{o:0,ov:0,lip:1});
+        Q.rails('r',6,13,0,false);Q.prop('minecart',[0,12],0,1.5);Q.prop('lantern',[7,7],0,1.5)}
+      Q.prop('spoil',[-10,8],0,2);Q.prop('boulder',[9,10],0,1.5)},
+    // a lumber shed: an open shed on posts under a single slope, logs stacked inside, its door at the back, a stump with its axe, a pile
+    lumbershed(Q,o){const dw=Q.home('lumbershed','work');Q.box('bk',[-10,10],[-8,-6],[0,11],'plank',{dw,foot:'stone'});Q.dec('bk.S','Door',.85);Q.dec('bk.N','Door',.5);
+      for(const a of [-10,-1,8.5])Q.box('po'+a,[a,a+1.5],[6,7.5],[0,10],'timber',{top:true});for(const s of [-1,1])Q.box('sw'+s,s<0?[-10,-8.5]:[8.5,10],[-6,6],[0,6],'plank',{top:true});
+      Q.box('rf',[-10,10],[-8,7.5],[10,11],'log',{thin:true});Q.roof('rf','shed','u',4,o.roofMat,{o:1,hi:'b0'});
+      Q.prop('logs',[-5,-3],0,1.5);Q.prop('logs',[1,-3],0,1.5);Q.prop('logs',[-2,-3],0,1.5,4.5);Q.prop('stump',[-7,11]);Q.box('ax',[-6,-4],[10,12],[4,5],'iron',{top:true});Q.prop('logs',[6,11],0,1)},
+    // a crane: a stone plinth, an upright mast of dark timber braced, its jib of lighter timber angled up and out (slewed half round, so
+    // it reaches out in every view), a rope of light fibre to an iron block and hook, a cut stone hanging; its winch hut, blocks below
+    crane(Q,o){const d=o.d,dw=Q.home('crane','work');shed(Q,'hs',[-6,-3],8,10,8,o.roofMat,dw);Q.dec('hs.E','Win',.5,3);
+      Q.box('pl',[0,4],[-2,2],[0,3],'stone',{top:true});Q.box('ms',[1,3],[-1,1],[3,18],'timber',{top:true});
+      Q.beam('b0',[-.5,0,3],[1,0,10],'timber');Q.beam('b1',[4.5,0,3],[3,0,10],'timber');Q.beam('b2',[2,-2.5,3],[2,-1,10],'timber');Q.beam('b3',[2,2.5,3],[2,1,10],'timber');
+      Q.beam('jb',[3,1,14],[8,7,20],'plank');Q.beam('st',[3,1,8],[5.5,4,16],'plank');Q.box('rp',[7.5,8.5],[6.5,7.5],[12,20],'rope',{thin:true});
+      Q.box('hk',[7,9],[6,8],[10,12],'iron',{top:true});Q.box('ld',[5.5,10.5],[4.5,9.5],[5,9],'stone',{top:true});
+      Q.prop('block',[0,7],1,2);Q.prop('block',[-3.5,9.5],0,1.5);if(d.chance(.5))Q.prop('block',[4,11.5],0,1.2);Q.box('wn',[-1,3],[3,5],[0,3],'plank',{top:true});Q.box('wh',[0,2],[5,6],[1,4],'iron',{top:true})},
+
     // --- sites ---
-    // ruins: broken walls of stone, an arch standing, ivy, fallen blocks
+    // ruins: broken walls of stone round an old room, an arch standing in the tallest, their tops broken in steps, ivy, moss, blocks
     ruins(Q,o){const d=o.d,st=o.look.stone==='whitewash'?'stone':o.look.stone;Q.role='ruins';
-      Q.box('a',[-12,2],[-6,-4],[0,d.int(14,17)],st);Q.box('b',[2,12],[-6,-4],[0,d.int(6,9)],st);Q.box('c',[-12,-10],[-4,6],[0,d.int(5,8)],st);Q.box('e',[7,12],[3,5],[0,4],st);
-      Q.dec('a.S','Arch',.4,0);if(d.chance(.6))Q.dec('a.S','Ivy',.85,3);Q.prop('block',[2,6]);Q.prop('block',[-4,9],1);Q.prop('boulder',[9,9],0,1.5)},
-    // a cave: a mound of natural rock (sandstone in the desert, dark in the swamp), its dark mouth, boulders before it
-    cave(Q,o){const rk={desert:'sandrock',swamp:'darkrock'}[o.env]||'rock';Q.role='cave';
-      Q.round('m2',[-8.5,-7],5.5,[0,5],rk,{form:'cone',rise:6,mat:rk,o:0});Q.round('m3',[8.5,-6],6,[0,6],rk,{form:'cone',rise:7,mat:rk,o:0});Q.round('m',[0,-2],11,[0,9],rk,{form:'cone',rise:9,mat:rk,o:0});
-      Q.dec('m.S','Cave',.5,0);Q.prop('boulder',[-9,7]);Q.prop('boulder',[10,6],0,1.5);if(o.env==='swamp')Q.bed([-6,6],[9,13],'water')}
+      const wall=(n,u,v,hs)=>{const L=u[1]-u[0]>v[1]-v[0],a0=L?u[0]:v[0],a1=L?u[1]:v[1],k=hs.length;hs.forEach((h,i)=>{const s=[a0+(a1-a0)*i/k,a0+(a1-a0)*(i+1)/k];Q.box(n+i,L?s:u,L?v:s,[0,h],st,{top:true,topMat:i%2?'moss':st})})};
+      Q.box('a',[-10,2],[-8,-6],[0,d.int(14,16)],st,{top:true,topMat:'moss'});Q.dec('a.S','Arch',.45,0);Q.dec('a.N','Arch',.55,0);if(d.chance(.6))Q.dec('a.S','Ivy',.9,3);
+      wall('b',[2,10],[-8,-6],[d.int(8,10),d.int(5,7),4]);wall('c',[-10,-8],[-6,8],[d.int(8,10),d.int(5,7),d.int(3,4)]);wall('e',[8,10],[-6,6],[d.int(5,7),3]);Q.box('f',[-8,-1],[6,8],[0,3],st,{top:true,topMat:'moss'});
+      Q.prop('block',[3,4]);Q.prop('block',[-3,10],1,1.5);Q.prop('boulder',[10,9],0,1.5)},
+    // a cave: a natural outcrop, rough lumps of rock (never a dome, an arch or symmetry), its uneven dark mouth in a jagged face, grass
+    // and moss on its crown, scree at its foot; sandstone in the desert, dark rock in the swamp, grey granite (the frost's snow on it)
+    cave(Q,o){const d=o.d,rk={desert:'sandrock',swamp:'darkrock'}[o.env]||'rock',moss=o.env==='desert'?0:o.env==='swamp'?.5:.35,s=o.seed,L=d.chance(.5)?-1:1;Q.role='cave';
+      crag(Q,'m',[L*2,-6],10,7,10,rk,moss,s);crag(Q,'m2',[-L*8,-7],6,5,6,rk,moss,s+1);crag(Q,'m3',[L*9,-2],5.5,3,5,rk,moss,s+2);
+      Q.box('f0',[-6,6],[3,7],[0,9],rk,{top:true});Q.box('c0',[-6,-2.5],[3,6.5],[9,11],rk,{top:true,topMat:moss?'moss':rk});Q.box('c1',[-1,4],[2.5,6],[9,12],rk,{top:true});Q.box('f1',[6,8],[2,6],[0,8],rk,{top:true});Q.box('f2',[-8,-6],[2,6],[0,6],rk,{top:true});
+      Q.dec('f0.S',d.pick(['Cave','Cave2']),.5,0);Q.dec('f0.N','Cave2',.5,0);
+      for(const [a,b,k] of [[-9,7,1.2],[7,8,1.5],[-4,9,.8],[10,4,.9],[3,10,.7]])Q.prop('boulder',[a*L,b],0,k);if(o.env==='swamp')Q.bed([-6,6],[10,14],'water')}
   };
   // the centres stand straight on; the rest have 4 facings
   const FRONT=['keep','citadel','gatehouse','village'];PX.MODEL_FRONT=FRONT;
@@ -378,7 +412,7 @@
   function made(C,at,face,f,x){const P=new Plan(Object.assign({},C.o,x||{}),C.Q.cell);f(P);kit().place(C.Q,{parts:P.parts,decals:P.decals,dwellings:P.dwellings},at,face|0,'m'+(C.n++)+'.')}
   const P=(C,type,at,face,s)=>C.Q.parts.push({k:'prop',name:'x'+C.Q.parts.length,type,at,face:face|0,s:s||2});
   // a row of houses wall to wall along the street (+v) from u0 to u1, their fronts at v1: their own widths, storeys and roofs
-  function row(C,u0,u1,v1,face){const R=C.d;let u=u0;while(u1-u>=14){const w=u1-u<34?u1-u:R.pick([16,18,20]),st=R.pick([1,2,2]),d=R.pick([12,14]),front=R.chance(.5),wall=C.o.env==='desert'?C.o.wall:C.o.look.walls[R.int(0,C.o.look.walls.length-1)];
+  function row(C,u0,u1,v1,face){const R=C.d;let u=u0;while(u1-u>=14){const w=u1-u<34?u1-u:R.pick([16,18,20]),st=R.pick([1,2,2]),d=R.pick([14,16]),front=R.chance(.5),wall=C.o.env==='desert'?C.o.wall:C.o.look.walls[R.int(0,C.o.look.walls.length-1)];
       made(C,[u+w/2,v1-d/2],face,Q=>{const dw=Q.home(st>=2?'townhouse':'house','home',st,st>=2?3:2);house(Q,{w,d,st,form:front?'front':'gable',rise:front?Math.min(9,RULE.rise(w)):6,dw,door:R.pick([.3,.5,.7]),wins:w>=18?2:1,ov:front?1:0,chim:R.chance(.5),pick:['Win','WinS','WinF']})},{wall});u+=w}}
   // a stable: planks under a single slope, three stalls open to the yard, a trough
   const stable=(C,at,face)=>made(C,at,face,Q=>{const dw=Q.home('stable','stable');Q.box('s',[-12,12],[-5,5],[0,10],'plank',{dw,foot:'stone',keep:1});Q.roof('s','shed','u',4,C.o.roofMat,{o:1,ov:0});
@@ -413,7 +447,7 @@
     // a mine: the mine head, the miners' hut, spoil, barrels
     mine:{role:'mine',make:C=>{piece(C,'minehead',[-6,8],0);piece(C,'cottage',[16,-18],0,{lv:1,cut:['prop']});P(C,'spoil',[22,14]);piece(C,'barrels',[-24,-20],0)}},
     // a quarry: the crane over cut blocks before a face of rock, a hut, a cart of stone
-    quarry:{role:'quarry',make:C=>{C.Q.parts.push({k:'tower',name:'rk',round:true,c:[-12,-20],r:12,z:[0,10],wall:'rock',roof:{form:'cone',rise:8,mat:'rock',o:0}});piece(C,'crane',[-4,8],0);
+    quarry:{role:'quarry',make:C=>{C.Q.parts.push({k:'tower',name:'rk',round:true,c:[-12,-20],r:12,z:[0,10],wall:'rock',roof:{form:'cone',rise:8,mat:'rock',o:0,lip:0,moss:C.o.env==='desert'?0:.3},rough:.6,rs:C.spec.seed|0});piece(C,'crane',[-4,8],0);
       piece(C,'cottage',[18,-16],0,{lv:1,cut:['prop']});P(C,'block',[-22,18]);P(C,'block',[-16,24],1);piece(C,'cart',[18,18],0)}},
     // a fishery: two fishers' huts, nets on their racks, barrels
     fishery:{role:'port',make:C=>{piece(C,'fisherhut',[-14,-14],0,{cut:['prop']});piece(C,'fisherhut',[12,12],0,{cut:['prop']});P(C,'nets',[-14,10]);P(C,'nets',[16,-16],1);piece(C,'barrels',[-22,24],0)}},
@@ -439,6 +473,6 @@
   PX.clusterModelSpec=spec=>{const L=CL[spec.kind];if(!L)throw new Error('no cluster '+spec.kind);const yaw=((spec.yaw|0)%8+8)%8&6,o=opts(spec,RURAL_CL.includes(spec.kind)?'cottage':'townhouse',97+PX.CLUSTER_MODELS.indexOf(spec.kind));
     const Q={cell:SIZE.clusters[spec.kind],role:L.role,ground:L.ground||null,parts:[],decals:[],dwellings:[],marks:{},flag:!!L.flag,env:o.env,seed:o.seed,yaw,fitYaws:[0,2,4,6]},C={Q,o,d:o.d,n:0,spec};
     L.make(C);for(const w of Q.dwellings)w.dwellings=w.dwellings|0;Q.snow=SNOW(spec);return Q};
-  PX.modelCacheClear=()=>CACHE.clear();
+  PX.modelCacheClear=()=>{CACHE.clear();if(PX.modelFitClear)PX.modelFitClear()};
   PX.clusterModel=spec=>cached('c',spec,()=>{const s=PX.clusterModelSpec(Object.assign({},spec,{snow:0})),m=PX.model(s);return Object.assign(m,{kind:spec.kind,people:opts(spec,'cottage',0).people,facing:FACING[s.yaw/2]})});
 })(window.PX=window.PX||{});

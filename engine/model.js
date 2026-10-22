@@ -64,6 +64,8 @@
 //   facings (a building turned is the same building); thin parts keep their gaps (a wheel's spokes, sails, braces); each face its
 //   building (f.dw); the result's buildings each with its dwellings (the households it holds, spec.dwellings[i].dwellings) and
 //   households, their sum; the door the first one seen.
+// W4: rough round parts (p.rough: crags, crowns), a cone's crown grassed (roof.moss), a cone's tip never a 1 px line, finials 2 px,
+//   each pixel's material (px.m), the fit's facings judged on their pixels together and the scale kept for the plan.
 (function(PX){
   const NAVY='#1a1c26',R2=Math.SQRT2;
   const hx=c=>[parseInt(c.slice(1,3),16),parseInt(c.slice(3,5),16),parseInt(c.slice(5,7),16)];
@@ -80,9 +82,11 @@
     rock:['#c4beb0','#9c968a','#77726a','#524f4c'],sandrock:['#ecc890','#c89c66','#9a7048','#664a36'],bone:['#f6eed8','#d8ccae','#a89c82','#6e6658'],
     canopy:['#9ccc5a','#62a046','#3c7838','#26502e'],autumn:['#f6c45a','#dc8a34','#a85a2a','#6a3a26'],canvas:['#f2e8cc','#d4c4a0','#a8987a','#6e6656'],
     canvasR:['#ec8e72','#c4523e','#8e3634','#5a2630'],canvasB:['#92b4dc','#5a7cb0','#3e5682','#283656'],awningB:['#92c4ee','#4a86c8','#345e98','#243e66'],
-    awningG:['#acd68a','#62a056','#3e7442','#284c34'],ice:['#ffffff','#d8ecfa','#a8c8e8','#7898c0'],darkrock:['#9c9c86','#76765e','#58584a','#3a3a32'],glow:['#f0feff','#9ae6f4','#4aaccc','#2a6a8a'],net:['#d2c6a6','#a0947a','#706656','#4a4236']};
+    awningG:['#acd68a','#62a056','#3e7442','#284c34'],ice:['#ffffff','#d8ecfa','#a8c8e8','#7898c0'],darkrock:['#9c9c86','#76765e','#58584a','#3a3a32'],glow:['#f0feff','#9ae6f4','#4aaccc','#2a6a8a'],net:['#d2c6a6','#a0947a','#706656','#4a4236'],
+    // (W4: a rope's light fibre, and the dark of a cave's mouth)
+    rope:['#f4e4b4','#dcc488','#b09660','#76623e'],dark:['#3a3430','#2a2624','#1e1c1c','#141416']};
   let RAMP=null;const ramps=()=>RAMP||(RAMP=Object.assign({},...Object.keys(BASE).map(k=>({[k]:PX.ramp(BASE[k]).map(hx)})),...Object.keys(FIXED).map(k=>({[k]:FIXED[k].map(hx)}))));
-  PX.MODEL_MAT=Object.keys(BASE).concat(Object.keys(FIXED));
+  PX.MODEL_MAT=Object.keys(BASE).concat(Object.keys(FIXED));const MATI=Object.fromEntries(PX.MODEL_MAT.map((k,i)=>[k,i]));
   // the light: from the upper left of the screen (west, a little north, high). Walls and roofs read it on their own scales: a wall
   // lit (west), in the half light (south), in shade (east); a roof slope lit (north, west), mid (south), shade (east)
   const L=(v=>{const l=Math.hypot(...v);return v.map(a=>a/l)})([-.6,-.35,.72]);
@@ -155,8 +159,8 @@
     slope([f0,f1,r1,r0],up(0,1),f0,f1);slope([k0,k1,r0,r1],up(0,-1),k0,k1);lip(f0,f1,D(0,1));lip(k0,k1,D(0,-1));
     if(hip){slope([k1,f0,r0],up(-1,0),k1,f0);slope([f1,k0,r1],up(1,0),f1,k0);lip(k1,f0,D(-1,0));lip(f1,k0,D(1,0))}
     else{gableEnd(A0,'a0');gableEnd(A1,'a1');
-      // a finial at each end of the ridge
-      if(r.finial)for(const a of [A0-ov,A1+ov-1]){const bm=Math.floor(Bm),q=au?{U0:a,U1:a+1,V0:bm,V1:bm+1}:{U0:bm,U1:bm+1,V0:a,V1:a+1};box(F,G,{name:bp.name+'.fin',wall:r.fmat||'timber',top:true},Object.assign(q,{Z0:zt+R-1,Z1:zt+R+2}))}
+      // a finial at each end of the ridge (2 px square: a carved post's head, never a 1 px stick)
+      if(r.finial)for(const a of [A0-ov,A1+ov-2]){const bm=Math.round(Bm)-1,q=au?{U0:a,U1:a+2,V0:bm,V1:bm+2}:{U0:bm,U1:bm+2,V0:a,V1:a+2};box(F,G,{name:bp.name+'.fin',wall:r.fmat||'timber',top:true},Object.assign(q,{Z0:zt+R-1,Z1:zt+R+2}))}
       // the verges: the roof's edge along each gable, a board as thick as its lip
       if(e)for(const [a,s] of [[A0-ov,-1],[A1+ov,1]])for(const bb of [B1+o,B0-o]){const lo=P(a,bb,zt),hi=P(a,Bm,zt+R);
         face(F,[sub(lo,[0,0,e]),sub(hi,[0,0,e]),hi,lo],Object.assign({cls:'lip',out:D(s,0),O:lo,eu:nrm(sub(hi,lo)),su:1,ev:[0,0,1],prio:3},sd))}}
@@ -165,14 +169,16 @@
   function tower(F,G,p){const [cu,cv]=p.c,Z0=G.Z(p.z[0]),Z1=G.Z(p.z[1]),rf=p.roof||{},R=G.Z(rf.rise||0);
     if(!p.round){const h=p.w/2,B={U0:G.U(cu-h),U1:G.U(cu+h),V0:G.V(cv-h),V1:G.V(cv+h),Z0,Z1};box(F,G,Object.assign({},p,{top:rf.form==='battlements'}),B);
       if(rf.form==='battlements')roof(F,G,{form:'flat',parapet:2,merlons:true,mat:p.wall},B,p);else roof(F,G,{form:'hip',rise:rf.rise,mat:rf.mat,o:rf.o==null?1:rf.o,lip:1},B,p);return}
-    // (its ring in depth by the camera; a big one more facets)
-    const c=G.W(G.U(cu),G.V(cv),0),cx=c[0],cy=c[1],r=p.r*Math.min(G.sc.u,G.sc.v),n=p.r>5?24:16,ring=(rr,z)=>Array.from({length:n},(_,i)=>{const a=i/n*Math.PI*2;return[cx+Math.cos(a)*rr,cy+Math.sin(a)*rr*G.K,z]});
+    // (its ring in depth by the camera; a big one more facets; p.rough (0-1, W4): a crag or a crown, its ring's radius and its apex
+    // knocked about by the part's name and p.rs, so a rock is lumpy and faceted, never a smooth dome)
+    const c=G.W(G.U(cu),G.V(cv),0),cx=c[0],cy=c[1],r=p.r*Math.min(G.sc.u,G.sc.v),n=p.rough?(p.r>6?14:10):p.r>5?24:16,hn=[...p.name].reduce((a,ch)=>a*31+ch.charCodeAt(0)|0,p.rs|0),
+      jr=i=>p.rough?1+p.rough*(H(i%n,hn,7)-.5)*.9:1,ring=(rr,z)=>Array.from({length:n},(_,i)=>{const a=i/n*Math.PI*2+(p.rough?(H(i,hn,8)-.5)*.5:0),k=jr(i);return[cx+Math.cos(a)*rr*k,cy+Math.sin(a)*rr*k*G.K,z]});
     const lo=ring(r,Z0),hi=ring(r,Z1),ch=2*Math.PI*r/n;
     for(let i=0;i<n;i++){const j=(i+1)%n,a=lo[i],b=lo[j],m=nrm([(a[0]+b[0])/2-cx,(a[1]+b[1])/2-cy,0]);face(F,[a,b,hi[j],hi[i]],{cls:'wall',mat:p.wall,name:p.name+'.'+i,out:m,O:a,eu:nrm(sub(b,a)),su:1,ev:[0,0,1],fw:ch,fh:Z1-Z0,uo:i*ch,hz:Z1-Z0,part:p.name,round:true})}
     if(rf.form==='water'||rf.form==='lid')face(F,hi.slice().reverse(),{cls:'top',mat:rf.form==='water'?'water':rf.mat,out:[0,0,1],O:hi[0],eu:[1,0,0],su:1,ev:[0,-1,0],part:p.name});// (a well: dark water in its ring; a barrel's lid)
-    if(rf.form==='cone'){const rr=r+(rf.o==null?1:rf.o)*G.sc.o,base=ring(rr,Z1),ap=[cx,cy,Z1+R];
+    if(rf.form==='cone'){const rr=r+(rf.o==null?1:rf.o)*G.sc.o,base=ring(rr,Z1),ap=p.rough?[cx+(H(1,hn,9)-.5)*r*.5,cy+(H(2,hn,9)-.5)*r*.4*G.K,Z1+R*(.85+.3*H(3,hn,9))]:[cx,cy,Z1+R];
       for(let i=0;i<n;i++){const j=(i+1)%n,a=base[i],b=base[j],m=nrm([(a[0]+b[0])/2-cx,(a[1]+b[1])/2-cy,rr/Math.max(1,R)]);
-        face(F,[a,b,ap],{cls:'roof',mat:rf.mat,out:m,O:a,eu:nrm(sub(b,a)),su:1,ev:null,prio:2,rf,part:p.name});face(F,[sub(a,[0,0,1]),sub(b,[0,0,1]),b,a],{cls:'lip',mat:rf.mat,out:[m[0],m[1],0],O:a,eu:nrm(sub(b,a)),su:1,ev:[0,0,1],prio:3,rf,part:p.name})}}
+        face(F,[a,b,ap],{cls:'roof',mat:rf.mat,out:m,O:a,eu:nrm(sub(b,a)),su:1,ev:null,prio:2,rf,part:p.name});if(rf.lip!==0)face(F,[sub(a,[0,0,1]),sub(b,[0,0,1]),b,a],{cls:'lip',mat:rf.mat,out:[m[0],m[1],0],O:a,eu:nrm(sub(b,a)),su:1,ev:[0,0,1],prio:3,rf,part:p.name})}}
   }
 
   /* textures: the material and tone (0 lit .. 3 deep) a face shows at (u, v), from its tone by the light b. Every surface has its
@@ -184,8 +190,9 @@
     if(f.cls==='roof'){const top=f.fh-v;// (v up the slope from the eave; top: how far below the ridge)
       if(top<1&&f.rf.form!=='shed'&&f.rf.form!=='cone'&&f.rf.form!=='vault')return m==='thatch'?[m,cl(b+1-(iu%4===0?1:0))]:[m,b?(iu%2?0:1):2];// the ridge's cap (a bound ridge on thatch)
       if(m==='thatch'&&top<2&&f.rf.form!=='cone'&&f.rf.form!=='vault')return[m,cl(b+(iu%4===0?0:1))];
-      if(H(iu>>1,iv>>1,sd+31)<(m==='thatch'||m==='shingle'?.03:.012)&&v<f.fh*.6&&m!=='awning')return['moss',cl(b+(h<.5?0:1))];// moss and worn patches, low on the slope
-      if(H(iu,iv,sd+41)<.012)return[m,3];// a tile slipped
+      if(f.rf.moss&&top+(H(iu,0,sd+17)-.5)*2.5<f.fh*f.rf.moss)return['moss',cl(b+(h<.3?1:0)-(h>.9&&b>0?1:0))];// (a crag's grassy crown, its edge ragged)
+      if(H(iu>>1,iv>>1,sd+31+f.sd)<(m==='thatch'||m==='shingle'?.03:.012)&&v<f.fh*.6&&m!=='awning'&&m!=='sandrock')return['moss',cl(b+(h<.5?0:1))];// moss and worn patches, low on the slope
+      if(H(iu,iv,sd+41+f.sd)<.012)return[m,3];// a tile slipped (each face its own: a cone's facets never all at once)
       switch(m){
         case 'tile':{const c=Math.floor(v/2);return iv%2===0?[m,cl(b+1+(((iu>>1)+c)%2&&iu%2?1:0))]:[m,cl(b+sp)]}// courses: their lower edges scalloped
         case 'thatch':{const st=H(iu,Math.floor(v/5),sd)<.2?1:0;return[m,cl(b+st+(iv%3===0&&H(iu,iv>>1,sd+2)<.5?1:0)-(h>.92?1:0))]}// strands
@@ -195,7 +202,7 @@
         case 'hide':{return[m,cl(b+((iu%5===0&&iv%2)||iv%4===0&&iu%2?1:0)+(H(iu>>1,iv>>1,sd+9)<.15?1:0))]}// stitched hides
         case 'awning':case 'awningB':case 'awningG':return[(iu>>1)%2?'linen':m,cl(b+(iv%2===0?1:0))];// striped cloth
         case 'canopy':case 'autumn':{const k=H(iu>>1,iv>>1,sd+13);return[m,cl(b+(k<.3?1:0)-(k>.88&&b>0?1:0)+(iv%3===0&&iu%2?1:0))]}// leafy clumps
-        case 'rock':case 'sandrock':{const c=H(iu>>1,iv>>1,sd),k=H(iu>>2,(iv+1)>>2,sd+1);return[m,cl(b+(c<.2?1:0)+(k>.84?1:0)-(c>.93&&b>0?1:0))]}// a rock's blocks and cracks
+        case 'rock':case 'sandrock':case 'darkrock':{const c=H(iu>>1,iv>>1,sd),k=H(iu>>2,(iv+1)>>2,sd+1);return[m,cl(b+(c<.2?1:0)+(k>.84?1:0)-(c>.93&&b>0?1:0))]}// a rock's blocks and cracks
         case 'canvas':case 'canvasR':case 'canvasB':return[m,cl(b+(iu%5===0?1:0)+sp)];// a tent's seams
         default:return[m,cl(b+sp)]}}
     if(f.cls==='floor')return[m,cl(b+sp+(H(iu>>1,iv>>1,sd+4)<.1?1:0))];
@@ -209,7 +216,7 @@
     const wx=v<2&&H(iu,iv,sd+6)<.22?1:0;// (weathering at the foot)
     if(f.frame&&!f.gable){const w=f.fw,P=w>=9&&f.hz>=7?Math.max(4,Math.round(w/Math.round(w/5))):99,rail=f.hz>=8?Math.floor(f.hz/2):-1,pu=u-Math.floor(u/P)*P;
       if(u<1||u>=w-1||(P<99&&pu<1&&u<w-2)||iv===rail)return[f.frame,b];// posts and the cross-beam
-      if(rail>0&&f.hz>=10&&iv<rail&&P<99&&(u<P&&Math.floor(u)===iv+1||u>w-P&&Math.floor(w-1-u)===iv+1))return[f.frame,cl(b+1)]}// braces
+      if(rail>0&&f.hz>=14&&iv<rail&&P<99&&(u<P&&Math.floor(u)===iv+1||u>w-P&&Math.floor(w-1-u)===iv+1))return[f.frame,cl(b+1)]}// braces
     if(f.frame&&f.gable&&Math.abs(u-f.fw/2)<.5)return[f.frame,b];
     switch(m){
       case 'stone':{const row=Math.floor(v/3),mort=iv%3===2,j=(iu+(row%2)*2)%5===4,q=u<2||u>=f.fw-2;
@@ -217,7 +224,7 @@
       case 'plank':return[m,cl(b+(iu%3===2?1:0)+(h<.05?1:0)+wx)];
       case 'log':return[m,cl(b+(iv%2===1?1:0)-((u<1||u>=f.fw-1)&&iv%2===0?1:0))];
       case 'adobe':return[m,cl(b+(v<1?1:0)+sp+wx)];
-      case 'rock':case 'sandrock':{const c=H(iu>>1,iv>>1,sd);return[m,cl(b+(c<.2?1:0)+(H(iu>>2,iv>>2,sd+1)>.85?1:0))]}
+      case 'rock':case 'sandrock':case 'darkrock':{const c=H(iu>>1,iv>>1,sd);return[m,cl(b+(c<.2?1:0)+(H(iu>>2,iv>>2,sd+1)>.85?1:0))]}
       case 'bone':return[m,cl(b+(iv%3===0?1:0))];
       case 'net':return[m,cl(b+((iu+iv)%2?2:0))];
       case 'stakes':return['log',cl(b+(iu%2?1:0)-(v>=f.hz-1&&iu%2===0?1:0))];// a palisade's stakes, their points lit
@@ -237,7 +244,7 @@
     adit:['tttttt','th##ht','t####t','t####t'],rune:['tttt','tyyt','tdet','tdkt','pppp'],arch:['.ll.','l##l','l##l','l##l'],
     ivy:['v.v','vvv','.vv','v.v','.v.'],ladder:['t.t','ttt','t.t','ttt','t.t','ttt','t.t'],wheel5:['.www.','w.w.w','wwwww','w.w.w','.www.'],hatch:['ttt','tbt','ttt']};
   const DCOL={t:['timber',2],l:['stone',0],p:['stone',1],d:['door',1],e:['door',2],k:['gold',0],g:['glass',3],G:['glass',2],s:['door',1],b:['plank',1],y:['gold',1],
-    r:['flower',1],c:['crop',1],o:['flame',1],O:['flame',0],'#':['iron',3],w:['timber',1],h:['iron',3],i:['iron',1],v:['canopy',2],n:['canvas',2],L:['log',0],M:['log',2]};
+    r:['flower',1],c:['crop',1],o:['flame',1],O:['flame',0],'#':['iron',3],w:['timber',1],h:['iron',3],i:['iron',1],v:['canopy',2],n:['canvas',2],L:['log',0],M:['log',2],D:['dark',2],X:['dark',0]};
   /* stage 3's decals, at the owner's scale (a figure a tile tall, the smallest building 32 px; capitalised): a door 5 x 8 on its step,
      a double door, windows 4 x 5 under a lintel (shutters, a flower box), lancets, a rose, a hanging sign and a lantern, a holy cross,
      a belfry's bell, a rune door, a slit, a hatch, beam ends, a barn's braced doors, a castle's gate and an open arch, ivy, log ends,
@@ -246,14 +253,16 @@
   const barnDoors=(w,h)=>gen(w,h,(c,r)=>{const m=w>>1,y=h-2-r;if(r===h-1)return'p';if(r===0||c===0||c===w-1||c===m||r===h>>1)return't';const lc=c<m?c-1:w-2-c;return lc===Math.round(y*(m-2)/(h-3))?'t':lc%2?'e':'d'});
   const archOf=(w,h,bars)=>{const cx=(w-1)/2,R=w/2-.5;return gen(w,h,(c,r)=>{const d=Math.hypot(c-cx,r<R?R-r:0);if(d>R+.01)return'.';if(d>R-1.01||c===0||c===w-1)return'l';return bars&&(c%3===1||r%3===1)?'i':'#'})};
   const FORGE=['tttttttttttt','t##########t','t##o#######t','t#oOo######t','t#OOO##iii#t','t#lll###i##t','t#lll##iii#t','t#lll######t','pppppppppppp'];
-  Object.assign(DECAL,{Door:['.ttt.','tdedt','tdedt','tdedt','tdekt','tdedt','tdedt','ppppp'],Door2:['.ttttt.','tdetedt','tdetedt','tdetedt','tdktkdt','tdetedt','tdetedt','tdetedt','ppppppp'],
+  Object.assign(DECAL,{Door:['.ttt.','tdedt','tdedt','tdedt','tdedt','tdekt','tdedt','tdedt','ppppp'],Door2:['.ttttt.','tdetedt','tdetedt','tdetedt','tdetedt','tdktkdt','tdetedt','tdetedt','tdetedt','ppppppp'],
     Win:['llll','tGgt','tggt','tggt','tttt'],WinS:['.llll.','stGgts','stggts','stggts','.tttt.'],WinF:['.llll.','.tGgt.','.tggt.','.tggt.','rcrrcr','.bbbb.'],
     Lancet:['.l.','lGl','lgl','lgl','lgl','lll'],Lancet2:['.lll.','lGlgl','lglgl','lglgl','lglgl','lllll'],Rose:['.lll.','lgGgl','lGyGl','lgGgl','.lll.'],
     Sign:['tttt..','...t..','.bbbbb','.byrrb','.bbbbb'],Lamp:['tt','.y','.y'],Cross:['.y.','yyy','.y.','.y.'],Bell:['.lll.','l###l','l#y#l','lyyyl','lllll'],
-    Rune:['.llll.','lddddl','ldyydl','ldeedl','ldyedl','ldekdl','ldeedl','ldeedl','pppppp'],Slit:['h','h','h','h'],Hatch:['ttttt','tbebt','tbebt','tbebt','ttttt'],Beams:['t...t...t...t...t...t'],
+    Rune:['.llll.','lddddl','ldyydl','ldeedl','ldyedl','ldeedl','ldekdl','ldeedl','ldeedl','pppppp'],Slit:['h','h','h','h'],Hatch:['ttttt','tbebt','tbebt','tbebt','ttttt'],Beams:['t...t...t...t...t...t'],
     Barn:barnDoors(11,11),Gate:archOf(12,16,true),Arch:archOf(7,10,false),Ivy:['v.v.v','vvv.v','.vvvv','v.vv.','vv.vv','.v.v.','v..v.','..v..'],
-    Logs:gen(10,5,(c,r)=>(c+r)%2?'M':'L'),Goods:['rycrycry','bbbbbbbb','bbbbbbbb'],Crate:['tttt','t.tt','tt.t','tttt'],Hoop:['iiiiii'],Flap:['..n..','.n#n.','n###n','n###n','n###n'],
-    Cave:['...###...','..#####..','.#######.','.#######.','#########','#########','#########','#########'],Adit:['ttttttttt','tt#####tt','t#######t','t#######t','t#######t','t#######t','t#######t','t#i###i#t'],
+    Logs:gen(10,5,(c,r)=>(c+r)%2?'M':'L'),Goods:['rycrycry','bbbbbbbb','bbbbbbbb'],Crate:['tttt','t..t','t..t','tttt'],Hoop:['iiiiii'],Flap:['..n..','.n#n.','n###n','n###n','n###n'],
+    Cave:['...XXX.....','..XDDDXX...','.XDDDDDDX..','XDDDDDDDDX.','XDDDDDDDDDX','XDDDDDDDDDX','.XDDDDDDDDX','XDDDDDDDDDX','XDDDDDDDDDX'],
+    Cave2:['.....XX....','...XXDDX...','..XDDDDDXX.','.XDDDDDDDDX','XDDDDDDDDDX','XDDDDDDDDX.','XDDDDDDDDX.','XDDDDDDDDDX'],
+    Adit:['.XDDDX.','XDDDDDX','XDDDDDX','XDDDDDX','XDDDDDX','XDDDDDX','XDDDDDX','XiDDDiX'],
     Forge:FORGE,ForgeS:FORGE.map(r=>r.replace(/t/g,'l'))});
   // (what counts as a door: a way in, for the game's doors and paths)
   const DOORISH=/^(door|barn|stall|forge|goods|rune|gate|adit|arch|hatch|flap)|^wheel$/i;
@@ -304,9 +313,11 @@
   function extent(F){let x0=1e9,x1=-1e9,y0=1e9,y1=-1e9;for(const f of F)for(const p of f.P){const y=p[1]-p[2];if(p[0]<x0)x0=p[0];if(p[0]>x1)x1=p[0];if(y<y0)y0=y;if(y>y1)y1=y}return[x1-x0,y1-y0]}
   // the fit's choices, the least change first: width, depth and height each its own way (a long house turned end-on grows less
   // deep, not smaller all over), the eaves pulled in last
-  const SCALES=(()=>{const st=[1,.9,.8,.7,.6,.5],zs=[1,.9,.8,.7,.6,.5],out=[];const lg=Math.log;
+  const SCALES=(()=>{const st=[1,.9,.8,.7,.6,.5],zs=[1,.95,.9,.85,.8,.7,.6,.5],out=[];const lg=Math.log;
     for(const u of st)for(const v of st)for(const z of zs)for(const o of [1,0])out.push({u,v,z,o,s:lg(u)+lg(v)+.8*lg(z)-.45*Math.abs(lg(u/v))-.3*Math.abs(lg(z/Math.sqrt(u*v)))-(o?0:.35)});
     return out.sort((a,b)=>b.s-a.s)})();
+  // (the scale found for a plan turned to its fitYaws, kept: PX.modelFitClear() forgets them)
+  const FITS=new Map();PX.modelFitClear=()=>FITS.clear();
 
   /* the model to pixels: each face's pixels (their centres inside it) on its plane, the nearest kept, then shaded */
   function render(spec,sc){
@@ -330,22 +341,25 @@
         if(dd>depth[q]+1e-6){depth[q]=dd;fid[q]=fi;PT[q*3]=wx;PT[q*3+1]=wy+t;PT[q*3+2]=t}}}
     // shade every pixel a face won; note the walls' feet on the ground (for tufts) and the doors' steps (for a worn apron)
     // (and what each pixel is, for the season's overlays: its face, its (u, v) on it, its height, its tone by the light, its decal's letter)
-    const RP=ramps(),col=new Uint8Array(B*3),A=new Uint8Array(B),DEC=new Int16Array(B),FL=new Uint8Array(B),GZ=new Uint8Array(B),SU=new Float32Array(B),SV=new Float32Array(B),SZ=new Float32Array(B),SB=new Uint8Array(B),SC=new Uint8Array(B);
+    const RP=ramps(),col=new Uint8Array(B*3),A=new Uint8Array(B),DEC=new Int16Array(B),FL=new Uint8Array(B),GZ=new Uint8Array(B),SU=new Float32Array(B),SV=new Float32Array(B),SZ=new Float32Array(B),SB=new Uint8Array(B),SC=new Uint8Array(B),SM=new Uint8Array(B);
     for(let q=0;q<B;q++){const fi=fid[q];if(fi<0)continue;const f=F[fi],d=sub([PT[q*3],PT[q*3+1],PT[q*3+2]],f.O),u=dot(d,f.eu)*f.su+(f.uo||0),v=dot(d,f.ev),s=dot(f.ln||(f.ln=litN(f)),L);
       const b=toneOf(f.cls==='lip'?'roof':f.cls,s);let mat,t,dk=0,step=false;
       for(const dc of f.dec){const du=Math.floor(u)-dc.u0,dv=Math.floor(v)-dc.v0;if(du>=0&&du<dc.w&&dv>=0&&dv<dc.h){const ch=dc.rows[dc.h-1-dv][du];if(ch!=='.'){[mat,t]=DCOL[ch];if('gGde'.includes(ch))t=Math.min(3,t+(b>1?1:0));dk=dc.id;step=ch==='p'&&dv===0;SC[q]=ch.charCodeAt(0);break}}}
       SU[q]=u;SV[q]=v;SZ[q]=PT[q*3+2];SB[q]=b;
       if(!dk)[mat,t]=texel(f,u,v,b,sd);
-      const c=RP[mat][Math.max(0,Math.min(3,t))];col[q*3]=c[0];col[q*3+1]=c[1];col[q*3+2]=c[2];A[q]=1;DEC[q]=dk;FL[q]=f.flat?1:f.fine?2:0;
+      SM[q]=MATI[mat];const c=RP[mat][Math.max(0,Math.min(3,t))];col[q*3]=c[0];col[q*3+1]=c[1];col[q*3+2]=c[2];A[q]=1;DEC[q]=dk;FL[q]=f.flat?1:f.fine?2:0;
       if(f.cls==='wall'&&!f.flat&&PT[q*3+2]<1)GZ[q]=step?2:1}
-    return{F,G,M,ox,oy,col,A,DEC,FL,GZ,yaw,N,base,beds,fid,SU,SV,SZ,SB,SC}
+    return{F,G,M,ox,oy,col,A,DEC,FL,GZ,yaw,N,base,beds,fid,SU,SV,SZ,SB,SC,SM}
   }
   // a pixel's colour and what it is, taken from another's
-  const like=(R,q,j)=>{R.col.copyWithin(q*3,j*3,j*3+3);R.fid[q]=R.fid[j];R.SU[q]=R.SU[j];R.SV[q]=R.SV[j];R.SZ[q]=R.SZ[j];R.SB[q]=R.SB[j];R.SC[q]=R.SC[j]};
+  const like=(R,q,j)=>{R.col.copyWithin(q*3,j*3,j*3+3);R.fid[q]=R.fid[j];R.SU[q]=R.SU[j];R.SV[q]=R.SV[j];R.SZ[q]=R.SZ[j];R.SB[q]=R.SB[j];R.SC[q]=R.SC[j];R.SM[q]=R.SM[j];R.FL[q]=R.FL[j]};
   // the silhouette's spurs off and notches in, orphan pixels into their surroundings (decals kept)
   // (each pass judged on the silhouette as it was before it, so a fill never runs on through an open frame: a headframe, a wheel)
   function clean(R){const {M,A,col,DEC}=R;let S=A;const at=(x,y)=>x>=0&&y>=0&&x<M&&y<M?S[y*M+x]:0,nb=(x,y)=>at(x-1,y)+at(x+1,y)+at(x,y-1)+at(x,y+1);
     for(let pass=0;pass<2;pass++){S=A.slice();for(let y=0;y<M;y++)for(let x=0;x<M;x++){const q=y*M+x;if(A[q]&&!DEC[q]&&!R.FL[q]&&nb(x,y)<=1)A[q]=0;else if(!A[q]&&nb(x,y)>=3){const j=[[0,1],[-1,0],[1,0],[0,-1]].map(([dx,dy])=>(y+dy)*M+x+dx).find(j=>A[j]);A[q]=1;like(R,q,j)}}}
+    // (W4: a roof's tip drawn out into a 1 px line (a cone's apex) cut back to its last pixel: never a stick above a roof)
+    for(let k=0;k<8;k++){let cut=0;for(let y=1;y<M-1;y++)for(let x=1;x<M-1;x++){const q=y*M+x,f=R.F[R.fid[q]];if(!A[q]||A[q-M]||A[q-1]||A[q+1]||!f||(f.cls!=='roof'&&f.cls!=='lip'))continue;
+      if(A[q+M]&&!A[q+M-1]&&!A[q+M+1]){A[q]=0;cut++}}if(!cut)break}
     const k=c=>col[c*3]<<16|col[c*3+1]<<8|col[c*3+2];
     for(let y=1;y<M-1;y++)for(let x=1;x<M-1;x++){const q=y*M+x;if(!A[q]||DEC[q])continue;const ns=[q-1,q+1,q-M,q+M];if(!ns.every(j=>A[j]&&!DEC[j]))continue;
       const c0=k(ns[0]);if(c0!==k(q)&&ns.every(j=>k(j)===c0))col.copyWithin(q*3,ns[0]*3,ns[0]*3+3)}}
@@ -393,14 +407,20 @@
   PX.model=spec=>{const t0=performance.now(),N=spec.cell||16,fit=N-2,sd=spec.seed|0;
     // the scale: the first of the fit's choices whose points fit the cell (in every facing of spec.fitYaws, so a building turned is
     // the same building at the same scale); then drawn, and smaller again if its pixels do not
-    const yaws=spec.fitYaws||[spec.yaw|0];
-    let sc=SCALES.find(c=>yaws.every(y=>{const B=build(y===(spec.yaw|0)?spec:Object.assign({},spec,{yaw:y}),c),[w,h]=extent(B.F),k=B.G.d?1:0;return w<=fit-k&&h<=fit-k}))||SCALES[SCALES.length-1],R,bx;
-    for(let k=0;k<12;k++){R=render(spec,sc);clean(R);bx=bnd(R);if((bx.x1-bx.x0+1<=fit&&bx.y1-bx.y0+1<=fit)||sc.u<.2)break;sc={u:sc.u*.92,v:sc.v*.92,z:sc.z*.92,o:0}}
+    // (W4: several facings are judged on their pixels together, and the scale kept for the plan, so a facing whose pixels run a pixel
+    // over never draws the building smaller than its other facings)
+    const yaws=spec.fitYaws||[spec.yaw|0],at=y=>y===(spec.yaw|0)?spec:Object.assign({},spec,{yaw:y}),fits=R=>{clean(R);const b=bnd(R);return b.x1-b.x0+1<=fit&&b.y1-b.y0+1<=fit},key=yaws.length>1?JSON.stringify(Object.assign({},spec,{yaw:0,snow:0})):null;
+    let sc=key&&FITS.get(key),R,bx;
+    // (the fit's next choice when the pixels run over its points, up to three; then smaller all over)
+    if(!sc){let i=-1;const next=()=>{for(i++;i<SCALES.length;i++)if(yaws.every(y=>{const B=build(at(y),SCALES[i]),[w,h]=extent(B.F),k=B.G.d?1:0;return w<=fit-k&&h<=fit-k}))return SCALES[i];return null};
+      sc=next()||SCALES[SCALES.length-1];
+      for(let k=0;k<12;k++){if(yaws.every(y=>fits(render(at(y),sc)))||sc.u<.2)break;sc=(k<3&&next())||{u:sc.u*.92,v:sc.v*.92,z:sc.z*.92,o:0}}if(key){if(FITS.size>2000)FITS.clear();FITS.set(key,sc)}}
+    R=render(spec,sc);clean(R);bx=bnd(R);
     const {M,A,col,DEC,FL,GZ,F}=R,cw=bx.x1-bx.x0+1,dx=bx.x0-1-Math.floor((fit-cw)/2),dy=bx.y1-(N-2);
     // the picture: the body and its navy outline round it (not round what lies low and flat: fences, beds), cropped to the cell
     const img=PX.canvas(N,N),g=img.getContext('2d'),im=g.createImageData(N,N),D=im.data,body=new Uint8Array(N*N),fine=new Uint8Array(N*N),gap=new Uint8Array(N*N),gz=new Uint8Array(N*N),nv=hx(NAVY);
-    const I={F,fi:new Int16Array(N*N).fill(-1),u:new Float32Array(N*N),v:new Float32Array(N*N),z:new Float32Array(N*N),b:new Uint8Array(N*N),ch:new Uint8Array(N*N)},
-      take=(c,q)=>{I.fi[c]=R.fid[q];I.u[c]=R.SU[q];I.v[c]=R.SV[q];I.z[c]=R.SZ[q];I.b[c]=R.SB[q];I.ch[c]=R.SC[q]};
+    const I={F,fi:new Int16Array(N*N).fill(-1),u:new Float32Array(N*N),v:new Float32Array(N*N),z:new Float32Array(N*N),b:new Uint8Array(N*N),ch:new Uint8Array(N*N),m:new Uint8Array(N*N)},
+      take=(c,q)=>{I.fi[c]=R.fid[q];I.u[c]=R.SU[q];I.v[c]=R.SV[q];I.z[c]=R.SZ[q];I.b[c]=R.SB[q];I.ch[c]=R.SC[q];I.m[c]=R.SM[q]};
     for(let y=0;y<N;y++)for(let x=0;x<N;x++){const X=x+dx,Y=y+dy;if(X<0||Y<0||X>=M||Y>=M)continue;const q=Y*M+X;if(A[q]){body[y*N+x]=FL[q]===1?2:1;fine[y*N+x]=FL[q]===2;gz[y*N+x]=GZ[q];const i=(y*N+x)*4;D[i]=col[q*3];D[i+1]=col[q*3+1];D[i+2]=col[q*3+2];D[i+3]=255;take(y*N+x,q)}}
     for(let y=0;y<N;y++)for(let x=0;x<N;x++){if(body[y*N+x])continue;if((x>0&&body[y*N+x-1]===1)||(x<N-1&&body[y*N+x+1]===1)||(y>0&&body[(y-1)*N+x]===1)||(y<N-1&&body[(y+1)*N+x]===1)){const i=(y*N+x)*4;D[i]=nv[0];D[i+1]=nv[1];D[i+2]=nv[2];D[i+3]=255}}
     // (an outline pixel shut in by the body and the outline, touching nothing empty, is part of the body: the outline lies round the
@@ -408,7 +428,7 @@
     const emp=(x,y)=>x<0||y<0||x>=N||y>=N||!D[(y*N+x)*4+3];
     for(let y=0;y<N;y++)for(let x=0;x<N;x++){const i=(y*N+x)*4;if(body[y*N+x]||!D[i+3]||emp(x-1,y)||emp(x+1,y)||emp(x,y-1)||emp(x,y+1))continue;
       const j=[[x,y+1],[x-1,y],[x+1,y],[x,y-1]].find(([u,v])=>body[v*N+u]);if(!j)continue;if([[x,y+1],[x-1,y],[x+1,y],[x,y-1]].some(([u,v])=>fine[v*N+u])){gap[y*N+x]=1;continue}const c=j[1]*N+j[0],k=c*4;D[i]=D[k];D[i+1]=D[k+1];D[i+2]=D[k+2];body[y*N+x]=1;
-      for(const a of ['fi','u','v','z','b','ch'])I[a][y*N+x]=I[a][c]}
+      for(const a of ['fi','u','v','z','b','ch','m'])I[a][y*N+x]=I[a][c]}
     g.putImageData(im,0,0);
     // (what each pixel is, for the tests: 0 empty, 1 the body, 2 low and flat (fences), 3 the outline, 4 the navy gap in an open frame)
     const mask=new Uint8Array(N*N);for(let i=0;i<N*N;i++)mask[i]=body[i]?body[i]:gap[i]?4:D[i*4+3]?3:0;
@@ -459,7 +479,8 @@
     const fc=i=>I.fi[i]>=0&&mk[i]===1?I.F[I.fi[i]]:null,code=s=>new Set([...s].map(c=>c.charCodeAt(0))),DOOR=code('dekp'),WIN=code('gGs');
     for(let y=0;y<N;y++)for(let x=0;x<N;x++){const i=y*N+x,f=fc(i);if(!f)continue;const u=I.u[i],v=I.v[i],iu=Math.floor(u),b=I.b[i];
       if(f.cls==='roof'){const fh=f.fh||1,pf=Math.max(0,Math.min(1,(f.tn[2]-.45)/.4)),cover=a*(.6+.55*pf)*(f.rf&&f.rf.form==='cone'?.8:1),w=(H(iu>>1,0,sd)-.5)*.22,top=1-v/fh;
-        let s=(fh-v<1&&f.rf&&f.rf.form!=='shed'||top+w<cover)&&(v>=1||fh<3);// (the eave's row keeps its roof: the people's colour under the snow)if(s&&a>.4&&a<.9&&fh-v>=1&&H(iu>>1,Math.floor(v)>>1,sd+3)<.16)s=false;// (bare patches when patchy)
+        let s=(fh-v<1&&f.rf&&f.rf.form!=='shed'||top+w<cover)&&(v>=1||fh<3);// (the eave's row keeps its roof: the people's colour under the snow)
+        if(s&&a>.4&&a<.9&&fh-v>=1&&H(iu>>1,Math.floor(v)>>1,sd+3)<.16)s=false;// (bare patches when patchy)
         if(s)on[i]=fh-v<1?0:Math.min(3,Math.min(2,b)+(Math.floor(v)%3===2&&H(iu>>1,Math.floor(v/3),sd+4)<.6?1:0))}
       else if(f.cls==='top'||f.cls==='floor'){if(f.mat==='water'||f.mat==='iron'||f.mat==='ember'||a<.5)continue;if(a>.9||H(x>>1,y>>1,sd+5)<(a-.3)*1.5)on[i]=Math.min(1,b)}
       else if(f.cls==='wall'&&!I.ch[i]){
