@@ -80,8 +80,8 @@ function startGame(k,b){
   startDraws(own,()=>{W.sites=genSites()});fogReset();if(!own)Rng.newGame();startDraws(own,initCritters);
   const home=capitalOf(P.race);if(b.rep)P.rep[home.name]=b.rep;
   heroAtGate(home);G.mode='world';G.lastTown=home;// (in front of its gate, on land: world.js gateSpot)
-  startDraws(own,()=>{for(let i=0,n=Math.round(BANDITS*spawnMul('bandits'));i<n;i++)spawnBandit(true);
-    for(let i=0,n=Math.round(MONSTER_START*spawnMul('monsters'));i<n;i++)spawnMonster(true)});
+  startDraws(own,()=>{for(let i=0,n=Math.round(density(WM).bandits*spawnMul('bandits'));i<n;i++)spawnBandit(true);
+    for(let i=0,n=Math.round(density(WM).monsterStart*spawnMul('monsters'));i<n;i++)spawnMonster(true)});
   if(own)Rng.newGame();
   hidePanel();G.msgs=[];log('You ride out of '+home.name+' alone, as '+(rc.n==='Elf'||rc.n==='Orc'?'an ':'a ')+rc.n.toLowerCase()+' '+b.n.toLowerCase()+'. Win fame around here and the locals will follow you.');updateHint();updateHUD(true);
 }

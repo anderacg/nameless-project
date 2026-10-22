@@ -29,11 +29,23 @@ class WorldObject{
 }
 // plain data made one of a class in place (new, from a save or a test): the same object, its fields as they were
 const asClass=C=>o=>o&&!(o instanceof C)?Object.setPrototypeOf(o,C.prototype):o;
+/* a record packed for a save (a generated world's beasts and herds, many on a big world: doc/WORLD_DESIGN.md §3.8): the values
+   of keys in order (a number to its tenth, none null), then the record's other keys as one object, if it has any, but those
+   in skip (kept for itself, made again); unpackRec gives the record back. Today's map keeps its records whole (packs: false) */
+const packs=()=>!!WM&&WM.gen!=='classic-0';
+// (a record's numbers to a tenth, the rest as they are: a band's, which keeps its keys)
+const tenths=o=>{const r={};for(const k in o){const v=o[k];r[k]=typeof v==='number'?Math.round(v*10)/10:v}return r};
+function packRec(o,keys,skip){const a=keys.map(k=>{const v=o[k];return typeof v==='number'?Math.round(v*10)/10:v===undefined?null:v}),rest={};let n=0;
+  for(const k in o)if(!keys.includes(k)&&!skip.includes(k)){rest[k]=o[k];n++}if(n)a.push(rest);return a}
+function unpackRec(a,keys,o={}){keys.forEach((k,i)=>{if(a[i]!==null)o[k]=a[i]});return a.length>keys.length?Object.assign(o,a[keys.length]):o}
 /* level of detail (doc/WORLD_DESIGN.md §3.5): how often each thing on the map thinks, by its tier, how far it is from you (set
    every .every s of real time by lodTick, plain data too). Near: every frame. Mid: every 4th frame, with 4x d. Far: its kind's
-   farStep if it has one (later: on along its route by time), else as near. near, mid: the tiers' reach (px); unbounded for now,
-   so everything is near and thinks every frame, as it always did. (n: frames so far; t: till the next sorting) */
-const WORLD_LOD={near:Infinity,mid:Infinity,every:.5,t:0,n:0},TIERS=new WeakMap();
+   farStep if it has one (later: on along its route by time), else as near. near, mid: the tiers' reach (px), set as a world goes
+   in by reach: a map of more than over tiles (bigger than Normal: Large, Huge) has near within near x its longer side and
+   everything further mid; today's map and Normal stay unbounded, everything near and thinking every frame, as it always did.
+   (n: frames so far; t: till the next sorting, 0 with a new world: sorted again in its first frame) */
+const WORLD_LOD={near:Infinity,mid:Infinity,every:.5,t:0,n:0,reach:{over:143360,near:.25}},TIERS=new WeakMap();
+onWorld(m=>{const L=WORLD_LOD,R=L.reach;L.near=m.w*m.h>R.over?Math.max(m.w,m.h)*TILE*R.near:Infinity;L.mid=Infinity;L.t=0});
 const tierOf=o=>TIERS.get(o)||'near';
 function lodTick(dt){const L=WORLD_LOD;L.n++;if((L.t-=dt)>0)return;L.t=L.every;
   for(const os of [W.parties,W.caravans,W.monsters,W.critters,W.ships,W.refugees,W.folk])for(const o of os||[]){const r=Math.hypot(o.x-P.x,o.y-P.y);TIERS.set(o,r<=L.near?'near':r<=L.mid?'mid':'far')}}

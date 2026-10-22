@@ -7,6 +7,8 @@
 // Nothing is bought from a herd: the pasture's meat, milk, cheese and wool go to its holding (economy.js)
 class Herd extends WorldObject{
   get mapKind(){return 'critter'}
+  // its record in a save (HERD_KEYS, below)
+  toJSON(){return packs()?packRec(this,HERD_KEYS,['crit','t','a']):this}
   here(){return W.critters.includes(this)}
   get meetsAnyTime(){return true}
   get wild(){return !CRITTERS[this.id].live}
@@ -26,6 +28,10 @@ class Herd extends WorldObject{
   tip(){const D=CRITTERS[this.id];return this.wild?'<b>'+D.n+(this.n>1?' ×'+this.n:'')+'</b><small>Wild game</small><span class="act">Click: hunt</span>':''}// (livestock: never hovered)
 }
 const asHerd=asClass(Herd);
+// (its record in a save: packed on a generated world, worldobject.js packRec, its grazing drawn again on its next moment (t, a:
+// 0); herdRec reads it back, either way)
+const HERD_KEYS=['id','x','y','hx','hy','n','dir','tire','cool','idle'];
+const herdRec=o=>Array.isArray(o)?asHerd(unpackRec(o,HERD_KEYS,{crit:true,t:0,a:0})):o;
 // the wild herds on the map (render.js drawWorld); livestock is drawn with its pasture (penEnts)
 function drawHerds(ents,cam,V){for(const c of W.critters.map(asHerd))if(c.wild)c.draw(ents,cam,V)}
 // a pasture's herd, drawn with its estate (structures.js holdingEnts, while its pasture is in sight): its animals inside the
@@ -87,11 +93,12 @@ function spawnHerd(t){
 const herdOf=t=>W.critters.find(c=>c.home===t.name);
 // (a pasture herd from before: moved to the middle of its fields, to be seen only)
 function herdToFields(c){const t=c.home&&townBy(c.home),F=t&&bldLv(t,'pasture')&&fieldsOf(t,'pasture');if(!c.pen||!t)return;c.decor=true;if(F&&!c.pen.town){c.pen={town:t.name,k:'pasture'};c.x=c.hx=F.x;c.y=c.hy=F.y}}
-function initCritters(){TOWNS.filter(t=>t.T.herds).forEach(spawnHerd);for(let i=0;i<CRITTER_START;i++)spawnCritter(true)}
+// (the wild game: as much as the world's density, data/world.js)
+function initCritters(){TOWNS.filter(t=>t.T.herds).forEach(spawnHerd);for(let i=0,n=density(WM).critterStart;i<n;i++)spawnCritter(true)}
 // each day: game returns, herds regrow and empty pastures restock
 function critterDay(){
-  const R=critRng();
-  for(let k=0;k<3;k++)if(W.critters.filter(c=>!c.home).length<CRITTER_CAP&&R.chance(.7))spawnCritter(false);
+  const R=critRng(),D=density(WM);
+  for(let k=0;k<D.daily.critters;k++)if(W.critters.filter(c=>!c.home).length<D.critterCap&&R.chance(.7))spawnCritter(false);
   for(const c of W.critters){const D=CRITTERS[c.id];if(c.n<D.herd[1]&&R.chance(c.home?.35:.15))c.n++}
   TOWNS.filter(t=>t.T.herds&&!herdOf(t)&&R.chance(.25)).forEach(spawnHerd);
 }

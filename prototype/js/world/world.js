@@ -164,7 +164,7 @@ function bandDay(){
   // (your band's morale drifts toward its troops' Morale, by their numbers: veterans keep their spirits, levies sag)
   {const st=bandNerve();if(st!=null)P.morale+=(st-P.morale)*PARTY_MOR.drift}
   P.morale=clamp(P.morale,Math.min(30,skill('lead')*3)+tm('morale'),100);
-  if(bandits.length<BANDITS&&Math.random()<.6)spawnBandit(false);
+  {const D=density(WM);for(let k=0;k<D.daily.bandits;k++)if(bandits.length<D.bandits&&Math.random()<.6)spawnBandit(false)}// (the world's: data/world.js)
   if(P.renown>=250&&!G.rankSeen){G.rankSeen=1;log('Your name carries across Ashmark. A throne is within reach.','gold')}
   if(P.fac){P.gold+=troopCount();addHonor(P.fac,1,true)}
 }

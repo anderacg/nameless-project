@@ -6,7 +6,7 @@ Kit.suite(({ok})=>{
  const done=()=>Kit.done();
  const reset=()=>Kit.world();
  t.act('begin','soldier');W.critters=[];W.sites=[];W.lords.forEach(l=>{l.x=-999;l.y=-999});// nothing else in the way of the chases
- ok(W.monsters.length===t.MONSTER_START,t.MONSTER_START+' monsters roam a new world');
+ ok(W.monsters.length===t.density(t.WM).monsterStart,t.density(t.WM).monsterStart+' monsters roam a new world (its density: data/world.js; a bigger one: tests/wilddensity.js)');
  for(let d=0;d<40;d++){G.day++;t.monsterDay()}
  ok(W.monsters.filter(m=>!MONSTERS[m.id].mythic).every(m=>MONSTERS[m.id].where.some(w=>t.habitatAt(m.hx,m.hy).includes(w))),'every monster spawned in its habitat ('+W.monsters.length+' now)');
  ok(new Set(W.monsters.map(m=>m.id)).size>=5,'variety: '+[...new Set(W.monsters.map(m=>m.id))].join(', '));

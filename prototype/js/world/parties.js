@@ -112,6 +112,8 @@ class BandParty extends Party{
   banner(){return{k:'rag',col:BAND_FLAG[this.kind]||BAND_FLAG.bandits,dev:'skull'}}// (a tattered rag: red, a desert raider's ochre, a bog raider's green)
   look(){const c=this.ld;return{col:'#8a4a3a',bandit:true,dir:faceDir(this),moving:!this.idle,seed:Math.round(this.x)%97,label:(c?c.name.split(' ')[0]+' Lv'+c.lv+' · ':'')+this.n,labelCol:STANCE_COL[stance(this.power())]}}
   changed(){super.changed();if(this.tc)this.n=this.size;this.pw=0}
+  // its record in a save: on a generated world its numbers to a tenth, its strength made again (worldobject.js packs)
+  toJSON(){if(!packs())return this;const {pw,...o}=this;return tenths(o)}
 }
 // your own band: its counts are P.troops, as they always were (read everywhere as counts), and it changes the way every party
 // does (P.add, P.remove, P.size...). Its own troops shadow the list view; its list is built on asking. You are its brain.

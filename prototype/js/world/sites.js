@@ -529,9 +529,9 @@ function makeSite(type,tx,ty,sites){
   const C=SITE_CLASS[type],[x,y]=C.point(tx,ty),s=Object.assign(Object.create(C.prototype),{i:sites.length,type,tx,ty,x,y,seed:rint(1,99999),seen:false,cleared:false,back:0});
   s.setup(sites,climAt(x,y));return s;
 }
-// a world's sites: a camp on each of its camp spots, then of each other kind as many as its size of map holds (data/world.js)
+// a world's sites: a camp on each of its camp spots, then of each other kind as many as the world holds (density(WM), data/world.js)
 function genSites(){
-  const sites=[],N=density().sites;for(const c of CAMP_SPOTS)sites.push(makeSite('camp',c.tx,c.ty,sites));
+  const sites=[],N=density(WM).sites;for(const c of CAMP_SPOTS)sites.push(makeSite('camp',c.tx,c.ty,sites));
   for(const type of Object.keys(SITE_TYPES))if(!SITE_TYPES[type].spots)for(let n=0;n<(N[type]||0);n++){const p=siteSpot(type,sites,9);if(p)sites.push(makeSite(type,p[0],p[1],sites))}
   return sites;
 }

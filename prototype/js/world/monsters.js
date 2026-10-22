@@ -6,6 +6,8 @@ function habitatAt(x,y){const t=terrAt(x,y),c=t===T_FOREST&&climAt(x,y);return t
 /* a beast on the map (W.monsters: plain data, saved as it is; made a Monster in place: asMonster): a world object (parties.js) */
 class Monster extends WorldObject{
   get mapKind(){return 'monster'}
+  // its record in a save (MON_KEYS, below)
+  toJSON(){return packs()?packRec(this,MON_KEYS,['pw','t','a']):this}
   here(){return W.monsters.includes(this)}
   meet(){startMonster(this)}
   // in sight: a mythic one from afar (it flies over everything), the rest as anyone, nearer in woods and hills
@@ -34,7 +36,10 @@ class Monster extends WorldObject{
   // the pack fell it, so a troll takes the blows of many militia
   takeLoss(blow){const one=this.fightPower()/Math.max(1,this.n);this.hurt=(this.hurt||0)+blow;while(this.n>0&&this.hurt>=one){this.hurt-=one;this.removeAny(1)}}
 }
-const asMonster=asClass(Monster);
+// (its record in a save: packed on a generated world, worldobject.js packRec, its strength made again and its wandering drawn
+// again on its next moment (t, a: 0); read back either way)
+const MON_KEYS=['id','x','y','hx','hy','lv','n','cool'];
+const asMonster=o=>asClass(Monster)(Array.isArray(o)?unpackRec(o,MON_KEYS,{t:0,a:0}):o);
 // (the beasts' own dice: the stream 'monsters', core/rng.js, so a kind added or a weight changed never moves the world's Math.random)
 const monRng=()=>rngOf('monsters');
 // (monLevel0: without the chance of one more; r: the stream it rolls on, Math.random by default: the sites')
@@ -56,31 +61,36 @@ function spawnMonster(initial){
 // where a beast may make its lair (the owner, 2026-10-19): in the wilds, on no holding's land; or, when rim (its kind's ground
 // not found in the wilds this time), within WORLD_SCALE.spawn.rim tiles of a land's edge, away from every holding and estate
 const lairLand=(x,y,rim)=>!landHold(x,y)||!!rim&&landRim(x,y,WORLD_SCALE.spawn.rim)&&farFromHomes(x,y,WORLD_SCALE.spawn.away);
-function monsterDay(){for(let k=0;k<3;k++)if(W.monsters.length<MONSTER_CAP&&monRng().chance(.6))spawnMonster(false);mythicDay()}
+// (as many tries a day as the world's density: data/world.js)
+function monsterDay(){const D=density(WM);for(let k=0;k<D.daily.monsters;k++)if(W.monsters.length<D.monsterCap&&monRng().chance(.6))spawnMonster(false);mythicDay()}
 // a beast's moment (parties.js lodThink; hide: how well you are hidden from it): a mythic one roams; the rest hunt you, keep
 // off, or wander near the lair. True when it falls on you
 const BEAST_MIND={think(m,d,hide){
     if(inFight(m))return false;// (fighting on the map: fights.js)
     if(MONSTERS[m.id].mythic)return roamMythic(m,d);
     const A=WORLD_SCALE.ai,M=MONSTERS[m.id],dx=P.x-m.x,dy=P.y-m.y,dist=Math.hypot(dx,dy);m.cool=Math.max(0,m.cool-d);
-    const st=stance(monPower(m)),hunt=M.aggro&&Math.hypot(P.x-m.hx,P.y-m.hy)<A.lairHunt;
-    if(m.cool>0||!stanceMove(m,st,dist,dx,dy,WORLD_SCALE.sight.monster*hide,moveStep(26*Math.min(1,speedAt(m.x,m.y)||1),d),hunt)){m.t-=d;if(m.t<=0){const R=monRng();m.t=2+R.next()*4;m.a=R.next()*6.283}
+    // (how it means to fight you weighed only while you are in its sight: out of it, it wanders whatever it thinks of you)
+    const see=WORLD_SCALE.sight.monster*hide,pw=monPower(m),st=dist<see?stance(pw):null,hunt=M.aggro&&Math.hypot(P.x-m.hx,P.y-m.hy)<A.lairHunt;
+    if(m.cool>0||!stanceMove(m,st,dist,dx,dy,see,moveStep(26*Math.min(1,speedAt(m.x,m.y)||1),d),hunt)){m.t-=d;if(m.t<=0){const R=monRng();m.t=2+R.next()*4;m.a=R.next()*6.283}
       // wander, but stay near the lair
       const hx=m.hx-m.x,hy=m.hy-m.y;if(Math.hypot(hx,hy)>A.lairLeash)m.a=Math.atan2(hy,hx);walk(m,Math.cos(m.a),Math.sin(m.a),moveStep(10,d))}
     // a band it meets: it falls on them, and they fight back (a fight on the map)
     {const b=beastMeets(m);if(b){startFight([asMonster(m)],[b]);return false}}
-    if(M.aggro&&stance(monPower(m))==='attack'&&dist<10&&m.cool<=0&&G.encCool<=0&&!G.modal){startMonster(m);return true}
+    if(M.aggro&&dist<10&&stance(monPower(m))==='attack'&&m.cool<=0&&G.encCool<=0&&!G.modal){startMonster(m);return true}
     return false}};
 // the band a beast falls on: one it meets, out of any fight; neither of them set out by a quest, nor a mythic beast (it ravages
 // armies its own way: roamMythic)
 const fightsOnMap=m=>!m.qid&&!MONSTERS[m.id].mythic;
-const beastMeets=m=>m.cool<=0&&fightsOnMap(m)&&bandits.find(b=>!b.qid&&!b.fight&&!b.gone&&Math.hypot(b.x-m.x,b.y-m.y)<DEFEND.meet)||null;
+// (the first such in the bands' order; while the beasts move, from a grid of where the bands stand, which answers as the
+// scan of them all does: Spatial.index. A band set in a fight meanwhile is out of the reckoning wherever it stands)
+let BAND_GRID=null;
+const beastMeets=m=>m.cool<=0&&fightsOnMap(m)&&(BAND_GRID?BAND_GRID.within(m.x,m.y,DEFEND.meet):bandits).find(b=>!b.qid&&!b.fight&&!b.gone&&Math.hypot(b.x-m.x,b.y-m.y)<DEFEND.meet)||null;
 // beaten in a fight on the map: cut down as it flees (DEFEND.rout of the pack, rounded up: a lone beast dies), and those left
 // break off, wounded, and slink back to its lair
 function beastRouted(m){m.fight=null;m.n=Math.max(0,m.n-Math.ceil(m.n*DEFEND.rout));m.pw=0;const near=Math.hypot(m.x-P.x,m.y-P.y)<vis()*1.5,nm=MONSTERS[m.id].n.toLowerCase(),many=/s$/.test(nm);
   if(m.n<=0){W.monsters=W.monsters.filter(x=>x!==m);if(near)log('The '+nm+(many?' are':' is')+' slain near '+Spatial.nearestHolding(m.x,m.y).name+'.');return}
   m.cool=6;m.a=Math.atan2(m.hy-m.y,m.hx-m.x);m.t=3;if(near)log('The '+nm+(many?' break off and slink':' breaks off and slinks')+' away.')}
-function updateMonsters(d){return lodEach(W.monsters,BEAST_MIND,d,hiddenAt(P.x,P.y)?.55:1)}
+function updateMonsters(d){BAND_GRID=Spatial.index(bandits,64);try{return lodEach(W.monsters,BEAST_MIND,d,hiddenAt(P.x,P.y)?.55:1)}finally{BAND_GRID=null}}
 function startMonster(m){const M=MONSTERS[m.id];startEncounter({kind:'monster',ref:m,lv:m.lv,list:Array(m.n).fill(M.unit)})}
 // roll trophies and gear for a won monster fight, into the bag (the victory panel lists them with the rest of the spoils)
 function monsterLoot(m,slain){

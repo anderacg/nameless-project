@@ -116,7 +116,16 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 //  (over clear ground, into and out of the water as drawn, beside a road they run along), nothing toned on water as drawn, and the
 //  fog's edges a pale haze (G6 only). The painted world is all that moves: G1-G4, G7, G8 and GB2 as before. Checked: on the art
 //  files as at f538fa7 both as before. Were G5 6d0f211d, G6 a8996932)
-const GEXPECT={W1:'67bc5b4e',W2:'1d53b207',W3:'1efc5bb1',W4:'1fb76c87',W5:'cdc20759',W6:'1e0eb0a7',W7:'6f3a5d30',W8:'5d18c925',B2:'0f363bb3'};
+// (G6, G7, G8 and GB2 re-recorded 2026-10-22, on purpose (agent U, play-test 5: wild things grow with the world, data/world.js
+//  DENSITY.grow): the generated classic seed, 3.19 times today's map's land, now holds its land's bands, beasts, game and sites
+//  (76 bands, 153 / 191 beasts, 306 / 382 game) where it held today's map's, so more of them are drawn in the views (G6), they and
+//  the draws spawning them move what moves (G8), and the saves hold them (G7, GB2); and a generated world packs its beasts', game's
+//  and bands' records in a save (worldobject.js packRec: G7, GB2). Checked: with the classic seed at today's counts all but G7 and
+//  GB2 are as before; with the packing off too, all nine are. W1-W8 and the sums unchanged. Were G6 a8996932, G7 6f3a5d30, G8
+//  5d18c925, GB2 0f363bb3)
+// (G6 measured together 2026-10-22 at the merge of agent T's art and agent U's wild things (both above): each moved it alone;
+//  G7, G8 and GB2 are U's alone)
+const GEXPECT={W1:'67bc5b4e',W2:'1d53b207',W3:'1efc5bb1',W4:'1fb76c87',W5:'cdc20759',W6:'1d85b875',W7:'8c4e15fe',W8:'9fbeb7dc',B2:'2403d7f0'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended

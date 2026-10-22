@@ -5,7 +5,7 @@
 // Realms ship their holdings' surplus to friendly holdings short of it; the goods move from one stock to the other, and the
 // receiving owner takes a toll. Bandits (unless the guards hold) and enemy lords take them. You can trade with them, demand a
 // toll, attack them for their cargo, or (with a fief) seize them.
-const CARAVAN_CAP=density().caravans,CARAVAN_SPD=17;
+const CARAVAN_CAP=density().caravans,CARAVAN_SPD=17;// (CARAVAN_CAP: today's; a world's own: density(WM), data/world.js)
 
 /* realm caravans */
 // a holding's surplus: goods it holds well beyond its own ten days, which a caravan can take away
@@ -25,9 +25,10 @@ function sendCaravan(t){
   return null;
 }
 function caravanDay(){
-  // (each holding may send one, until the roads hold CARAVAN_CAP; then your idle caravans try to load again: sliced on a big
+  // (each holding may send one, until the roads hold the world's cap; then your idle caravans try to load again: sliced on a big
   // world, core/systems.js)
-  Systems.sliced(TOWNS,t=>{if(W.caravans.length>=CARAVAN_CAP||!t.bld||t.owner==='player'||besieged(t)||ruined(t))return;
+  const cap=density(WM).caravans;
+  Systems.sliced(TOWNS,t=>{if(W.caravans.length>=cap||!t.bld||t.owner==='player'||besieged(t)||ruined(t))return;
     const out=W.caravans.filter(c=>c.from===t.name&&!c.mine).length;if(out<2&&Math.random()<.25+.1*bldLv(t,'market'))sendCaravan(t)},
     ()=>{for(const c of myCaravans())if(c.idle){const at=townBy(c.home);if(at){c.idle=false;c.endLeg(at)}}});
 }

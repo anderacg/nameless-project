@@ -60,9 +60,10 @@ try{
   if(!t.WORLD.gen)ok(strip(back)===strip(s1),'and puts that game back as it was saved'+diff(back,s1))}
  // ---- monsters and bandits: the start's bands and beasts
  {const n={b:0,m:0},sb=window.spawnBandit,sm=window.spawnMonster;window.spawnBandit=(...a)=>{n.b++;return sb(...a)};window.spawnMonster=(...a)=>{n.m++;return sm(...a)};
-  const count=S=>{n.b=n.m=0;fresh(S);return n.b+'/'+n.m},c=[count(),count({preset:'normal',seed:'redwater'}),count({preset:'normal',seed:'redwater',bandits:'many',monsters:'calm'}),count({preset:'normal',seed:'redwater',bandits:'few',monsters:'deadly'})];
-  window.spawnBandit=sb;window.spawnMonster=sm;const B=t.BANDITS,M=t.MONSTER_START,r=Math.round;
-  ok(c[0]===B+'/'+M&&c[1]===B+'/'+M&&c[2]===r(B*1.5)+'/'+r(M*.6)&&c[3]===r(B*.6)+'/'+r(M*1.5),'bands and beasts at the start: as ever, then x1.5 and x0.6 by the world\'s settings (bands/beasts '+c.join(', ')+')')}
+  // (each world's own: its density, data/world.js; today's on today's map)
+  const count=S=>{n.b=n.m=0;fresh(S);const D=t.density(t.WM);return{got:n.b+'/'+n.m,B:D.bandits,M:D.monsterStart}},c=[count(),count({preset:'normal',seed:'redwater'}),count({preset:'normal',seed:'redwater',bandits:'many',monsters:'calm'}),count({preset:'normal',seed:'redwater',bandits:'few',monsters:'deadly'})];
+  window.spawnBandit=sb;window.spawnMonster=sm;const r=Math.round,as=(x,b,m)=>x.got===r(x.B*b)+'/'+r(x.M*m);
+  ok(as(c[0],1,1)&&(t.WORLD.gen||c[0].got===t.BANDITS+'/'+t.MONSTER_START)&&as(c[1],1,1)&&c[1].M>t.MONSTER_START&&as(c[2],1.5,.6)&&as(c[3],.6,1.5),'bands and beasts at the start: the world\'s (today\'s on today\'s map, more on a bigger one), then x1.5 and x0.6 by the world\'s settings (bands/beasts '+c.map(x=>x.got).join(', ')+')')}
  // ---- gzipped, a plain header beside it; read back, waiting
  fresh();play(200);save('2');t.loadGame('2');let plain='';
  LD.sync=false;try{

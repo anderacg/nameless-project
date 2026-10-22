@@ -17,6 +17,8 @@ const LandDefence={
   // the map's time to the next look over the land (from 0 again in a new game or a load, as the watches' timer: never the last
   // game's)
   check:0,
+  // the threats as they stand this moment, filed by place (look; null: none filed, prey scans them all)
+  grid:null,
   // a threat: a band or a beast, out of any fight, not one a quest set out, nor a mythic beast (it ravages armies its own way)
   isThreat(o){
     return !!o&&!o.qid&&!o.fight&&!o.gone&&(o.mapKind!=='monster'||fightsOnMap(o));
@@ -39,10 +41,12 @@ const LandDefence={
   huntable(p,o){
     return this.isThreat(o)&&o.here()&&patrolLand(p,o.x,o.y)&&this.canBeat(p.power(),o);
   },
-  // what a watch runs down (PatrolBrain): the threat its holding set it on, else one on its land in its own sight
+  // what a watch runs down (PatrolBrain): the threat its holding set it on, else one on its land in its own sight (the first in
+  // the threats' order: from the grid look filed them in this moment, which answers as the scan of them all does; one that
+  // has since gone into a fight or away fails huntable, wherever it stands)
   prey(p){
     const h=p.hunt&&partyBy(p.hunt);if(h&&this.huntable(p,h))return h;p.hunt=null;
-    return this.threats().find(o=>Math.hypot(o.x-p.x,o.y-p.y)<PATROL.see&&this.huntable(p,o))||null;
+    return (this.grid?this.grid.within(p.x,p.y,PATROL.see):this.threats()).find(o=>Math.hypot(o.x-p.x,o.y-p.y)<PATROL.see&&this.huntable(p,o))||null;
   },
   // a threat on a holding's land (hd: how near its homes): seen by its watch or from its homes, and one the watch can beat, it
   // sends the watch on duty out (if it can go) and sets it on the threat, unless it already hunts another
@@ -80,7 +84,9 @@ const LandDefence={
 
   /* every DEFEND.look of the map's time: each threat on a holding's land, its watch; and, near one of its homes, the first lord
      of its realm at home within reach who can beat it */
+  // (each moment, first: the threats filed in a grid for the watches' moments after it, brains.js movePatrols: Spatial.index)
   look(d){
+    this.grid=Spatial.index(this.threats(),64);
     if((this.check-=d)>0)return;this.check=DEFEND.look;
     const lords=W.lords.filter(l=>this.lordAtHome(l));
     for(const o of this.threats()){const t=landHold(o.x,o.y);if(!t||!t.owner||ruined(t)||besieged(t))continue;const hd=this.homeDist(t,o.x,o.y);
@@ -88,7 +94,7 @@ const LandDefence={
       if(hd<DEFEND.near){const l=lords.find(l=>!l.defend&&l.fac===t.owner&&Math.hypot(l.x-o.x,l.y-o.y)<DEFEND.ride&&this.canBeat(l.power(),o));if(l)this.lordRides(l,o,t)}}
   }
 };
-onWorld(()=>{LandDefence.check=0});
+onWorld(()=>{LandDefence.check=0;LandDefence.grid=null});
 // the old names
 const isThreat=o=>LandDefence.isThreat(o);
 const threats=()=>LandDefence.threats();

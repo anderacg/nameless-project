@@ -21,7 +21,7 @@ class Ship extends WorldObject{
       if(s.k==='trade'&&s.fromYou()<110)txt('Trade ship',sx,sy-b.ay+opaqueBox(b)[1]-2,hostileTo(s.fac)?'#ff9a90':'#e8d8a0','center')}})}
 }
 const asShip=asClass(Ship);
-const SHIP_SPD=26,BOAT_SPD=13,SHIP_CAP=density().ships;// (SHIP_CAP: trade ships at sea at once)
+const SHIP_SPD=26,BOAT_SPD=13,SHIP_CAP=density().ships;// (SHIP_CAP: trade ships at sea at once, today's; a world's own: density(WM), data/world.js)
 // open water a boat can sail: not the frozen lakes of the frost (their ports fish through the ice). The sea round the edge
 // of the world is the coastal route that joins the ports of different shores. Of the generated world's rivers (WM.river) only
 // the navigable reaches, under their bridges and over their fords too (doc/WORLD_DESIGN.md §6.6.3): a river joins the sea or a
@@ -88,7 +88,8 @@ function sendShip(t){
   return null;
 }
 function shipDay(){
-  for(const t of TOWNS){if(W.ships.filter(s=>s.k==='trade').length>=SHIP_CAP)break;if(!bldLv(t,'port')||!t.bld||t.owner==='player'||besieged(t)||ruined(t))continue;
+  const cap=density(WM).ships;
+  for(const t of TOWNS){if(W.ships.filter(s=>s.k==='trade').length>=cap)break;if(!bldLv(t,'port')||!t.bld||t.owner==='player'||besieged(t)||ruined(t))continue;
     if(!shipsOf(t,'trade').length&&Math.random()<.3+.1*bldLv(t,'market'))sendShip(t)}
 }
 

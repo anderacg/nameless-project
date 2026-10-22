@@ -30,4 +30,5 @@ const GRAZE={cow:{on:['open'],clim:['grass','swamp','frost']},sheep:{on:['open',
   goat:{on:['open','hills'],clim:null},hen:{on:['open'],clim:null}};
 // which animals each people keeps
 const LIVESTOCK={human:['cow','sheep','pig','hen'],dwarf:['goat','pig','sheep'],elf:['sheep','hen','goat'],orc:['pig','goat','cow']};
+// today's wild game at most and at the start (a world's own: density(), data/world.js)
 const CRITTER_CAP=density().critterCap,CRITTER_START=density().critterStart;

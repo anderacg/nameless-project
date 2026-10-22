@@ -19,7 +19,7 @@ class Refugees extends WorldObject{
   tip(){return '<b>Refugees</b><small>From '+this.from+' to '+this.to+'</small><span class="act">Click: meet</span>'}
 }
 const asRefugees=asClass(Refugees);
-const REFUGEE_CAP=density().refugees,REFUGEE_SPD=11;
+const REFUGEE_CAP=density().refugees,REFUGEE_SPD=11;// (REFUGEE_CAP: today's; a world's own: density(WM), data/world.js)
 // why people would leave a holding, or '' if they stay; where they go (holding.js Holding fleeReason, refuge)
 const fleeReason=t=>t.fleeReason();
 const refuge=t=>t.refuge();
@@ -32,7 +32,8 @@ function sendRefugees(t,to,why){
   return r;
 }
 function refugeeDay(){
-  for(const t of TOWNS){if(W.refugees.length>=REFUGEE_CAP)break;const why=t.fleeReason();if(!why||t.pop<=30||Math.random()>(why==='hardship'||why==='conquest'||why==='crowded'?.12:.3))continue;
+  const cap=density(WM).refugees;
+  for(const t of TOWNS){if(W.refugees.length>=cap)break;const why=t.fleeReason();if(!why||t.pop<=30||Math.random()>(why==='hardship'||why==='conquest'||why==='crowded'?.12:.3))continue;
     if(W.refugees.some(r=>r.from===t.name))continue;const to=t.refuge();if(to)sendRefugees(t,to,why)}
 }
 function refugeesArrive(r,to){

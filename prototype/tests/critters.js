@@ -26,7 +26,7 @@ try{
  const fishy=t.TOWNS.find(x=>x.style==='port');ok(fishy.mod.fish<.9,fishy.name+' sells fish cheap');
  // wild game
  const wild=W.critters.filter(c=>!c.home),herds=W.critters.filter(c=>c.home);
- ok(wild.length>=t.CRITTER_START&&wild.length<=t.CRITTER_CAP,'wild herds roam ('+wild.length+'): '+[...new Set(wild.map(c=>c.id))].join(', '));
+ ok(wild.length>=t.density(t.WM).critterStart&&wild.length<=t.density(t.WM).critterCap,'wild herds roam ('+wild.length+'): '+[...new Set(wild.map(c=>c.id))].join(', '));
  ok(wild.every(c=>t.CRITTERS[c.id].where.some(w=>t.habitatAt(c.hx,c.hy).includes(w))),'each in its own biome');
  const kinds=new Set();for(let i=0;i<300;i++){W.critters=[];t.spawnCritter(true);if(W.critters[0])kinds.add(W.critters[0].id)}
  ok(['rabbit','deer','stag','ibex','reindeer','hare','gazelle','fowl'].every(k=>kinds.has(k)),'every wild kind turns up somewhere');

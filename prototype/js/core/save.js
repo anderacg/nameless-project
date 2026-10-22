@@ -70,7 +70,7 @@ Saves.add({key:'lrel',     order:170, save:()=>W.lrel||{},     load:v=>{W.lrel=v
 Saves.add({key:'uidN',     order:180, save:()=>W.uidN||0,      load:v=>{W.uidN=v}});
 Saves.add({key:'fightN',   order:190, save:()=>W.fightN||0,    load:v=>{W.fightN=v}});
 Saves.add({key:'treas',    order:200, save:()=>W.treas,        load:v=>{W.treas=v}});
-Saves.add({key:'critters', order:210, save:()=>W.critters,     load:v=>{W.critters=v},settle:v=>{v.forEach(herdToFields)}});
+Saves.add({key:'critters', order:210, save:()=>W.critters,     load:v=>{W.critters=v.map(herdRec)},settle:()=>{W.critters.forEach(herdToFields)}});
 Saves.add({key:'shops',    order:220, save:()=>W.shops||{},    load:v=>{W.shops=v}});
 // does the world part fit this world (made: the holdings it made, by default the world's in): a record for each holding the world
 // made, the rest founded ones of a kind there is (read before anything is put back, so a save that doesn't fit leaves the game as

@@ -35,7 +35,11 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t
   // (expectedGen re-recorded 2026-10-22: each case's battle is fought where the test's band stands on the generated world, and the
   //  ground there moved with K's roads and lots (1f40a5a: the first to fail; cbc36ad and 82a3aa7 pass), M's crossings and O's
   //  climates; today's map's expected held through all of them, so the battle code is unchanged)
-  const expectedGen={field_win:'0fefb0ff',field_loss:'56b1108c',retreat_away:'f8f6004f',retreat_caught:'630f1c46',carried_retreat:'accd790c',tournament_win:'8932be2e',tournament_loss:'cde78eef',siege_win:'edd807d9',siege_loss:'36304164',lord_win:'2e03cb6d',lord_loss:'58646d0e',monster_win:'9d5eedba',auto_win:'24e7d393',auto_loss:'b0ae7cc2',auto_resolve:'95b686b5'},REC=t.WM.gen==='classic-0'?expected:expectedGen;
+  // (expectedGen's field_win, lord_win, auto_win and auto_resolve re-recorded 2026-10-22 (agent U): the generated classic seed now
+  //  starts with its land's bands and beasts (data/world.js DENSITY.grow), so begin draws more before these battles; with it held
+  //  at today's counts all four are as before; today's map's expected held. Were field_win 0fefb0ff, lord_win 2e03cb6d, auto_win
+  //  24e7d393, auto_resolve 95b686b5)
+  const expectedGen={field_win:'05ff26eb',field_loss:'56b1108c',retreat_away:'f8f6004f',retreat_caught:'630f1c46',carried_retreat:'accd790c',tournament_win:'8932be2e',tournament_loss:'cde78eef',siege_win:'edd807d9',siege_loss:'36304164',lord_win:'48bdf29d',lord_loss:'58646d0e',monster_win:'9d5eedba',auto_win:'c7c4f547',auto_loss:'b0ae7cc2',auto_resolve:'a331c982'},REC=t.WM.gen==='classic-0'?expected:expectedGen;
   const stable=x=>Array.isArray(x)?x.map(stable):x&&typeof x==='object'?Object.fromEntries(Object.keys(x).sort().map(k=>[k,stable(x[k])])):x;
   const hash=x=>{let h=2166136261;for(const c of JSON.stringify(stable(x)))h=Math.imul(h^c.charCodeAt(0),16777619)>>>0;return h.toString(16).padStart(8,'0')};
   const cases=['field_win','field_loss','retreat_away','retreat_caught','carried_retreat','tournament_win','tournament_loss','siege_win','siege_loss','lord_win','lord_loss','monster_win','auto_win','auto_loss','auto_resolve'];
