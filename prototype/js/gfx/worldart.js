@@ -162,6 +162,40 @@ const palAt=(CM,WL,q,fx,fy)=>{const k=CM.at(q,fx,fy);return k>=0?WL[k]:CM.pal(WL
 function trample(P,D,x0,y0,w,h,[cx,cy,rx,ry,amt]){for(let yy=-ry;yy<=ry;yy++)for(let xx=-rx;xx<=rx;xx++){const x=cx+xx,y=cy+yy;if(x<x0||y<y0||x>=x0+w||y>=y0+h)continue;
   const d=(xx*xx)/(rx*rx)+(yy*yy)/(ry*ry),edge=1-hs(x,y,17)*.35;if(d>edge||tiles[(y>>4)*MW+(x>>4)]===T_WATER||wpx(P.wk,x,y))continue;const o=((y-y0)*w+x-x0)*4,dc=DIRT[CLIMS[climate[(y>>4)*MW+(x>>4)]]],k=amt*(d>edge-.25?.5:1)*(.75+hs(x,y,18)*.25);
   D[o]+=(dc[0]-D[o])*k;D[o+1]+=(dc[1]-D[o+1])*k;D[o+2]+=(dc[2]-D[o+2])*k}}
+/* ---------- fields: a farm's plots, their crops (gfx/structures.js estateGround draws each plot through farmPlot) ---------- */
+// FARM: the crops each climate's fields grow (PX.WORLD_CROPS, by weight; a plot in the snow by the frost's), then each people's
+// (by the holding's realm, HOME, else its first race's) weights times those, and its own crops (own) added in every climate: the Vale
+// wheat and hay, the Salt League vines, the Sylvan Court an orchard's and a forest garden's rows and herbs, the Karn terraced rye
+// and potatoes, the Ashgor Horde herd ground and few crops; terrace: whose crops' rows step down hillsides (a stone lip every 5); things:
+// what stands on a plot by its crop (stooks along an open edge, each a chance, a haystack, fruit trees on a 2 x 2 grid, a date palm
+// by the channel); ripe: how ripe the crops stand (1: as now; the seasons' hook, not built). A crop a plot (seeded by its tile)
+const FARM={ripe:1,
+  crops:{grass:[['wheat',4],['barley',2],['veg',2],['orchard',1],['vines',1],['flax',1],['hay',1.5]],frost:[['rye',4],['turnips',2],['fallow',2.5]],
+    desert:[['irrigated',5],['barley',1],['veg',1]],swamp:[['veg',2],['hay',2],['flax',1],['turnips',1.5]]},
+  people:{vale:{wheat:2.5,hay:1.5},salt:{vines:3,wheat:1.5},sylvan:{orchard:3,veg:1.5,wheat:.3,barley:.3},karn:{rye:3,wheat:.3,vines:.2,orchard:.3},
+    horde:{hay:2,barley:1.5,wheat:.3,veg:.3,vines:0,orchard:0,flax:.3,irrigated:.4}},
+  own:{sylvan:{herbs:3},karn:{potato:4,rye:2},horde:{grazed:7}},
+  terrace:{karn:['wheat','barley','rye','veg','turnips','potato']},race:{human:'vale',dwarf:'karn',elf:'sylvan',orc:'horde'},
+  things:{stook:.4,haystack:.6,fruit:.9,palm:.55}};
+const cultureOf=t=>HOME[t.name]||FARM.race[(t.races||[])[0]]||'vale';
+function fieldCrop(t,tx,ty,c){const cu=cultureOf(t),M=FARM.people[cu]||{},A=FARM.own[cu]||{},L=(FARM.crops[c]||FARM.crops.grass).map(([k,w])=>[k,w*(M[k]==null?1:M[k])]);
+  for(const k in A){const e=L.find(e=>e[0]===k);if(e)e[1]+=A[k];else L.push([k,A[k]])}let n=0;for(const e of L)n+=e[1];let r=hash(tx,ty,t.seed*7+21)*n;for(const e of L){r-=e[1];if(r<0)return e[0]}return L[0][0]}
+// a farm's plot at tile (tx, ty) of holding t in climate c (fr: how far into the frost, by the snow's cover; ed(x, y): px from an edge
+// with no plot beyond): its crop's rows (PX.worldCrop: the frost's snow in the troughs, the swamp's water), ragged into the ground
+// round it at an open edge, and what stands on it with its shadow, each pixel by px(rgb, x, y) (tile px)
+function farmPlot(t,tx,ty,c,fr,ed,px){const h=(x,y,s)=>hash(x,y,t.seed*7+s),cu=cultureOf(t),k=fieldCrop(t,tx,ty,fr>.5?'frost':c),v=Math.floor(h(tx,ty,22)*4),FT=FARM.things;
+  const sp=PX.worldCrop(k,c,v,{ripe:FARM.ripe,snow:c==='grass'||c==='frost'?fr:0,wet:c==='swamp'?1:0,terrace:(FARM.terrace[cu]||[]).includes(k)}),T=new Uint8Array(256),Q=new Float32Array(768);
+  for(let i=0;i<256;i++){const x=i&15,y=i>>4,e=ed(x,y);if(e<2&&h(tx*16+x,ty*16+y,3)<(e?.25:.55))continue;T[i]=1;Q[i*3]=sp.rgb[i*3];Q[i*3+1]=sp.rgb[i*3+1];Q[i*3+2]=sp.rgb[i*3+2]}
+  // (what stands: its shadow on the plot, then its pixels (navy round it) where they fall in the tile)
+  const stand=(s,fx,fy)=>{for(let j=0;j<s.sh.length;j+=2){const x=fx+s.sh[j],y=fy+s.sh[j+1];if(x<0||y<0||x>15||y>15||!T[y*16+x])continue;const i=(y*16+x)*3;for(let n=0;n<3;n++)Q[i+n]+=([18,26,42][n]-Q[i+n])*.3}
+    const N=s.width;for(let j=0;j<N;j++)for(let i=0;i<N;i++){const a=s.a[j*N+i];if(!a)continue;const x=fx-s.ax+i,y=fy-s.ay+j;if(x<0||y<0||x>15||y>15)continue;const q=y*16+x;T[q]=1;
+      if(a===2){Q[q*3]=26;Q[q*3+1]=28;Q[q*3+2]=38}else{Q[q*3]=s.rgb[(j*N+i)*3];Q[q*3+1]=s.rgb[(j*N+i)*3+1];Q[q*3+2]=s.rgb[(j*N+i)*3+2]}}};
+  if(k==='wheat'||k==='barley'||k==='rye'){let m=0;for(const [sx,sy,ex,ey] of [[8,0,0,1],[8,15,0,-1],[0,8,1,0],[15,8,-1,0]]){if(ed(sx,sy))continue;for(let n=0;n<2;n++){if(h(tx*4+m,ty,30+n)>=FT.stook)continue;m++;
+      const along=4+n*7+Math.floor(h(tx,ty*4+m,32)*3),fx=ey?along:ex>0?4:11,fy=ey?(ey>0?7:15):along+3;stand(PX.worldCropThing('stook',m),Math.min(12,fx),Math.min(15,fy))}}}
+  else if(k==='hay'&&h(tx,ty,33)<FT.haystack)stand(PX.worldCropThing('haystack',0),4+Math.floor(h(tx,ty,34)*8),8+Math.floor(h(tx,ty,35)*7));
+  else if(k==='orchard')for(const [fx,fy] of [[4,7],[12,7],[4,15],[12,15]]){if(h(tx*2+fx,ty*2+fy,36)<FT.fruit)stand(PX.worldCropThing('fruit',(cu==='sylvan'?2:0)+Math.floor(h(tx,ty,37)*2)),fx+(fy>8?-1:0),fy)}
+  else if(k==='irrigated'&&sp.ch>=0&&h(tx,ty,38)<FT.palm){const p=PX.worldTree('desert','palm',Math.floor(h(tx,ty,39)*4),0);stand(p,5+Math.floor(h(tx,ty,40)*6),sp.ch-1)}
+  for(let i=0;i<256;i++)if(T[i])px([Q[i*3],Q[i*3+1],Q[i*3+2]],i&15,i>>4)}
 /* ---------- the world's water and roads (doc/WORLD_DESIGN.md §12.1). The water by the pixel (wpx): the water tiles (sea and lake, river, a ford's shallows, under a bridge:
    the plan's wk) read as a smooth field, its shore a curve (lakes rounded, rivers bending, a staircase of tiles a slope), wobbling
    a pixel or two. Over the window painted and a margin,

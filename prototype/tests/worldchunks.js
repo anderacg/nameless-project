@@ -184,13 +184,14 @@ try{
   {const hs=[1,2,4,8].map(d=>{let s=0;for(let k=1;k<=7;k++){const a=d*0.1*(1/(PX.WN_HILL.soft[0]+PX.WN_HILL.soft[1]*k));s=Math.max(s,Math.min(1,a))}return s});
    ok(hs[0]<hs[1]&&hs[1]<hs[2]&&hs[0]>0&&hs[0]<.5,'a rise’s shadow is soft: as a rise stands over the light’s line by .1 to .8 px, its shadow '+hs.map(v=>v.toFixed(2)).join(' → '))}
   // (a road through a wood (a lane, P.lane): its tile a wood's: the floor right up to the path, trees and undergrowth within a few px
-  //  of its band, some crowns over its edge; off the path no bright ground left (the floor's tone where the art drew none before))
+  //  of its band, some crowns over its edge; off the path no bright ground left (the floor's tone where the art drew none before:
+  //  against the window painted with no lanes, nor a wood's crowns over a way's verge, PX.WN_WOOD.verge))
   {let lanes=0,near=0,over=0,fl=0,fn=0;const LT=P.lane,idx=[];for(let i=0;i<MW*MH;i++)if(LT[i])idx.push(i);
    for(const i of idx.filter((v,k)=>k%Math.max(1,Math.floor(idx.length/80))===0)){const tx=i%MW,ty=(i-tx)/MW,X=tx*TILE,Y=ty*TILE;lanes++;let hit=false;
     WA.standing(X-8,Y-8,X+TILE+8,Y+TILE+8).forEach(e=>{if(!e.s||!e.s.a)return;const sp=e.s,M=sp.width;for(let j=0;j<M&&!hit;j++)for(let q=0;q<M;q++){if(sp.a[j*M+q]!==1)continue;const x=e.dx+q,y=e.dy+j;if(x<X||y<Y||x>=X+TILE||y>=Y+TILE)continue;const v=t.roadAt(P,x,y);if(v>-4){hit=true;if(v>0)over++;break}}});
     if(hit)near++}
    const pick=idx.filter((v,k)=>k%Math.max(1,Math.floor(idx.length/12))===0);
-   for(const i of pick){const tx=i%MW,ty=(i-tx)/MW,X=tx*TILE-8,Y=ty*TILE-8,A=paintN(X,Y,32,32);const N2=WA.ensure().nature,L0=N2.LT;N2.LT=null;let Bn;try{Bn=paintN(X,Y,32,32)}finally{N2.LT=L0}
+   for(const i of pick){const tx=i%MW,ty=(i-tx)/MW,X=tx*TILE-8,Y=ty*TILE-8,A=paintN(X,Y,32,32);const N2=WA.ensure().nature,L0=N2.LT;N2.LT=null;const V0=PX.WN_WOOD.verge;PX.WN_WOOD.verge=0;let Bn;try{Bn=paintN(X,Y,32,32)}finally{N2.LT=L0;PX.WN_WOOD.verge=V0}
     for(let y=8;y<24;y++)for(let x=8;x<24;x++){const v=t.roadAt(P,X+x,Y+y);if(v>-1.5||v<-6||!t.CLEAR.at(X+x,Y+y))continue;fn++;const o=(y*32+x)*4;if(lum(A,o)<lum(Bn,o)-4)fl++}}
    ok(lanes>10&&near>=lanes*.8&&over>0&&fl>=fn*.8,'a road through a wood (the fifth play-test): of '+lanes+' lanes, '+near+' with trees or undergrowth within 4 px of the path ('+over+' crowns over its edge); the forest floor up to the path on '+fl+' of '+fn+' px of its kept band')}
   // (a ford's track through a wood: the floor up to it too, its kept band darker than the track)

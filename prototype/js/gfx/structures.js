@@ -90,8 +90,6 @@ function pierOf(t){
     return{dir,x:p.tx*TILE+8+a*8,y:p.ty*TILE+8+b*8};
   return null;
 }
-const CROPS={grass:[['#c8a848','#a88a38'],['#86a440','#68862e'],['#c8a848','#a88a38'],['#9a7a4a','#7a5c36']],frost:[['#b8b090','#9a9274'],['#8a9a6a','#6e7e54']],
-  desert:[['#c8a050','#a8843e'],['#8aa048','#6a8436']],swamp:[['#8a9a48','#6e7e3a'],['#6a9a5a','#4e7a46']]};
 const SOIL={grass:'#6e5434',frost:'#8a8070',desert:'#a07a48',swamp:'#4e4430'};
 // the worked ground by its land (estateGround): what lies in a field's furrows (FURROW: the frost's snow, the swamp's standing water,
 // each with a chance) and a pasture's marks over the ground itself (PEN: a, the grass grazed short, or showing through the frost's
@@ -115,11 +113,7 @@ function estateGround(t,k,lv){
     for(const [tx,ty] of plots){const X=tx*TILE,Y=ty*TILE,edge=(a,b)=>!has(tx+a,ty+b)&&!(tx+a===p.tx&&ty+b===p.ty);
       // (how far a pixel of the plot lies from an edge with no plot beyond, px)
       const eN=edge(0,-1),eS=edge(0,1),eW=edge(-1,0),eE=edge(1,0),ed=(x,y)=>Math.min(eW?x:9,eE?15-x:9,eN?y:9,eS?15-y:9),fr=frOf(tx,ty),px=(col,x,y)=>r(hex(col),X+x,Y+y);
-      if(k==='farm'){// a field: furrows of one crop, running one way or the other, the furrows' troughs bare (snow in them in the
-        // frost, water now and then in the swamp), frost on the crop in the snow; its edge ragged into the ground round it
-        const C=CROPS[c],[c0,c1]=C[Math.floor(h(tx,ty,1)*C.length)],across=h(tx,ty,2)<.5,Q=[rgbOf(c0),rgbOf(c1),rgbOf(SOIL[c])],fu=FURROW[c==='grass'?'frost':c];
-        for(let y=0;y<16;y++)for(let x=0;x<16;x++){const e=ed(x,y),n=h(tx*16+x,ty*16+y,3);if(e<2&&n<(e?.25:.55))continue;const m=(across?y:x)%3;let col=Q[m===0?0:m===1?1:2];
-          if(m===2&&fu&&h(tx*16+x,ty*16+y,8)<fu[1]*(c==='grass'||c==='frost'?fr:1))col=fu[0];else if(m<2&&fr&&h(tx*16+x,ty*16+y,4)<fr*.22)col=FURROW.frost[0];else if(m<2&&h(tx*16+x,ty*16+y,5)<.02)col=Q[1];px(col,x,y)}}
+      if(k==='farm')farmPlot(t,tx,ty,c,fr,ed,px);// a field: its crop in rows of plants, what stands on it (gfx/worldart.js farmPlot)
       else if(k==='pasture'){// grazing ground behind a rail fence (its herd walks on it: critters): the land's own ground, grazed,
         // trodden and fouled in patches (PEN), fewer toward an open edge
         const pn=penOf(fr);for(let y=0;y<16;y++)for(let x=0;x<16;x++){const X1=X+x,Y1=Y+y,n=wnoise2(X1/5,Y1/5,(t.seed%997)+61),q=h(X1,Y1,6),soft=Math.min(1,(ed(x,y)+1)/EDGE_SOFT);

@@ -158,7 +158,16 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 //  Was G5 cdc20759)
 // (G5 measured together 2026-10-22 at the merge of agent Y's mountains (real trees on forested ranges, a variety pool keeping the
 //  original look, blends across climate borders: engine/worldnature.js) with eb6d89c; with main's worldnature.js G5 is as before)
-const EXPECT={W1:'5ae838ac',W2:'2fb848a2',W3:'19419885',W4:'9996d93d',W5:'3d1b7695',W6:'8c6b32ad',W7:'62657eba',W8:'e85c68b0',B2:'7aad116d'};
+// (W5, W6 re-recorded 2026-10-22, on purpose, the owner's art notes (agent AR, engine/worldnature.js): a group of hill tiles one
+//  broad rise, not a small bump a tile (PX.WN_HILL: the pale blobs of his shot 68), and every wood tile a full stand at its edge, in
+//  a small wood, by a road or a shore (PX.WN_WOOD; a leafy tree in the snow on a wood's tile a conifer, PX.WN_ECO.wood). Only the
+//  painted world moves: W5, and W6 at all three spots by day and night (d6412570 c5a348cd 24520d5c b7e62338 1876cadd 34c366f6 to
+//  c29e3aa3 5cf3c4df df275481 d22adbbe 294ecfac 50d051a5). Checked: with engine/worldnature.js as at 20882af W5 and W6 are as
+//  before (gfx/worldart.js's farmPlot draws nothing until gfx/structures.js estateGround calls it: with that line W6 would be
+//  acf0a308, the farms at the first two spots). Were W5 3d1b7695, W6 8c6b32ad; W1-W4, W7, W8 and B2 unchanged)
+// (W6 re-recorded 2026-10-23 at AR's merge: with gfx/structures.js estateGround drawing farm plots by farmPlot (crops in rows) the
+//  first two spots' farms show their crops; with the old furrows put back W6 is 494e07e1, AR's own value)
+const EXPECT={W1:'5ae838ac',W2:'2fb848a2',W3:'19419885',W4:'9996d93d',W5:'890dc324',W6:'acf0a308',W7:'62657eba',W8:'e85c68b0',B2:'7aad116d'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended

@@ -24,6 +24,12 @@
 // the owner's spot (classic, 425, 219) and its whole view, each kind of mountain (PX.WN_MOUNT.pool: the original look in each
 // climate, then PX.WORLD_MOUNTS), a range across a climate's edge (the most of each of two climates) and a forested one across an
 // edge. 1200 x 4300.
+// part=8 (the owner's art notes, 2026-10-22: agent AR): a wood's edge, a small wood and a wood by a road (a full stand on every
+// wood tile), hilly grassland as in his shot 68 and its whole view (one broad rise a group of hill tiles, not a bump a tile), hills
+// across the frost's edge and by a road, and farmland with its crops (gfx/worldart.js farmPlot) by people (Vale, Sylvan, Karn,
+// Ashgor) and climate (desert, frost, swamp). 1200 x 5600.
+// part=9 (agent AR): each crop (engine/worldnature.js PX.WORLD_CROPS) in each climate at x6 (its four variants as a plot of 2 x 2;
+// the frost's in the snow, the swamp's wet; rye and potatoes terraced, the Karn's), then the stooks, haystacks and fruit trees.
 // part=1 (the first, 2026-10-22): roads into a holding's gate (Millbrook's, and one coming from behind its centre), roads onto a
 // stone and a wooden bridge's deck, a ford, a frost edge (grass to snow), the swamp's trees and a fork; the frost edge and the swamp
 // again as the whole view.
@@ -37,6 +43,14 @@ window.RUN=()=>{const t=T,o=[],G=t.G,P=t.P,W=t.W,TILE=t.TILE,Z=3,part=+(new URLS
    rows.forEach(([c,sp],r)=>{g.fillStyle='#e8e0c8';g.font='13px Arial';g.fillText(c+' · '+sp,4,r*(16*Z+6)+50);
     for(let k=0;k<8;k++){const s=PX.worldTree(c,sp,k&3,k>>2),X=120+k*(16*Z+6),Y=r*(16*Z+6)+4;g.fillStyle=BG[c];g.fillRect(X,Y,16*Z,16*Z);g.drawImage(s,X,Y,16*Z,16*Z)}});
    o.push('INFO page '+pg.width+' x '+pg.height,'PASS drawn ('+rows.length+' species)');throw 0}
+  // (part 9: each crop (PX.WORLD_CROPS) in each climate at x6, a plot of 2 x 2 tiles, then what stands on a plot)
+  if(part===9){const CL=['grass','frost','desert','swamp'],K=Object.keys(PX.WORLD_CROPS),Z=6,S=32*Z+8,pg=document.createElement('canvas');pg.width=110+CL.length*S;pg.height=K.length*S+16*Z+30;
+   pg.style.cssText='position:absolute;left:0;top:0;z-index:9999';document.body.appendChild(pg);const g=pg.getContext('2d');g.imageSmoothingEnabled=false;g.fillStyle='#1a1c26';g.fillRect(0,0,pg.width,pg.height);
+   const BG={grass:'#54803a',frost:'#d6dee8',desert:'#d6b668',swamp:'#48583a'};
+   K.forEach((k,r)=>{g.fillStyle='#e8e0c8';g.font='13px Arial';g.fillText(k,4,r*S+40);CL.forEach((c,j)=>{const X=110+j*S,Y=r*S+4;g.fillStyle=BG[c];g.fillRect(X,Y,32*Z,32*Z);
+    for(let q=0;q<4;q++){const s=PX.worldCrop(k,c,q,{snow:c==='frost'?1:0,wet:c==='swamp'?1:0,terrace:k==='rye'||k==='potato'});g.drawImage(s,X+(q&1)*16*Z,Y+(q>>1)*16*Z,16*Z,16*Z)}})});
+   ['stook','haystack','fruit'].forEach((k,j)=>{for(let v=0;v<4;v++){const s=PX.worldCropThing(k,v),X=110+(j*4+v)*(8*Z+8),Y=K.length*S+10;g.fillStyle=BG.grass;g.fillRect(X,Y,8*Z,8*Z);g.drawImage(s,X,Y,8*Z,8*Z)}});
+   o.push('INFO page '+pg.width+' x '+pg.height,'PASS drawn ('+K.length+' crops)');throw 0}
   window.requestAnimationFrame=()=>0;Math.random=t.seeded(4242);t.act('begin','soldier');G.quietEvents=true;G.mode='world';G.modal=false;t.hidePanel();
   window.__fog0=window.drawWorldFog;(0,eval)('drawWorldFog=function(){}');
   // (&at=k:s:x:y,...: piece k at tile (x, y) of world s (0 the page's, n Normal seed n), as an earlier run printed: the same spots
@@ -123,7 +137,23 @@ window.RUN=()=>{const t=T,o=[],G=t.G,P=t.P,W=t.W,TILE=t.TILE,Z=3,part=+(new URLS
   //  10 tiles from those before)
   const diag=(x,y)=>kind(x,y)===t.T_ROAD&&(kind(x-1,y-1)===t.T_ROAD&&kind(x+1,y+1)===t.T_ROAD||kind(x+1,y-1)===t.T_ROAD&&kind(x-1,y+1)===t.T_ROAD),hn=[];
   const hillSlant=n=>()=>{let b=null;for(let k=0;k<=n;k++){b=best((x,y)=>!diag(x,y)||hn.some(([a,c])=>Math.abs(a-x)+Math.abs(c-y)<10)?-1e9:count(x,y,2,(a,c)=>kind(a,c)===t.T_HILL));if(b)hn.push(b)}hn.length=0;return b};
-  const PIECES=part===7?[
+  // (part 8's: a small wood on the grass (a wood of 3-10 tiles, open ground round it); a wood's tile by a road (no lane); hilly
+  //  grassland (the most hill tiles on the grass round it, few roads or water); a holding's farm by its people (Vale, Sylvan, Karn,
+  //  Ashgor) or climate)
+  const woodSize=(x,y)=>{const seen=new Set([y*t.MW+x]),st=[[x,y]];while(st.length&&seen.size<=12){const [a,b]=st.pop();for(const [p,q] of [[1,0],[-1,0],[0,1],[0,-1]]){const u=a+p,v=b+q;if(kind(u,v)===t.T_FOREST&&!seen.has(v*t.MW+u)){seen.add(v*t.MW+u);st.push([u,v])}}}return seen.size};
+  const smallWood=()=>best((x,y)=>cl(x,y)!=='grass'||kind(x,y)!==t.T_FOREST?-1e9:(n=>n<3||n>10?-1e9:count(x,y,3,open)-Math.abs(n-6))(woodSize(x,y)));
+  const woodRoad8=()=>best((x,y)=>kind(x,y)!==t.T_FOREST||cl(x,y)!=='grass'||!count(x,y,1,(a,b)=>kind(a,b)===t.T_ROAD&&!lane(a,b))?-1e9:count(x,y,2,(a,b)=>kind(a,b)===t.T_FOREST));
+  const hillsGrass=()=>best((x,y)=>cl(x,y)!=='grass'||!open(x,y)?-1e9:count(x,y,5,(a,b)=>kind(a,b)===t.T_HILL&&cl(a,b)==='grass')-2*count(x,y,4,(a,b)=>kind(a,b)===t.T_WATER||kind(a,b)===t.T_ROAD||kind(a,b)===t.T_FOREST));
+  const farm=(f,c)=>()=>{for(const h of t.TOWNS){if(f&&(t.HOME[h.name]||'')!==f)continue;for(const l of h.lots||[])if(l.k==='farm'&&l.st==='built'&&(l.plots||[]).length>=3&&(!c||t.climAt((l.x+.5)*TILE,(l.y+.5)*TILE)===c)&&(c||t.climAt((l.x+.5)*TILE,(l.y+.5)*TILE)==='grass')){const q=[[l.x,l.y],...l.plots];return[Math.round(q.reduce((s,p)=>s+p[0],0)/q.length),Math.round(q.reduce((s,p)=>s+p[1],0)/q.length)]}}return null};
+  const PIECES=part===8?[
+   ['a wood\'s edge on the grass',edge],['a small wood on the grass',smallWood],
+   ['a wood by a road',woodRoad8],['a small wood, the whole view',smallWood,1],
+   ['hilly grassland (the owner\'s shot 68)',hillsGrass],['hilly grassland, the whole view',hillsGrass,1],
+   ['hills across the frost\'s edge',frostHills],['hills by a road on the grass',hillRoad],
+   ['farmland of the Vale',farm('vale')],['farmland of the Sylvan Court',farm('sylvan')],
+   ['farmland of the Karn',farm('karn')],['farmland of the Ashgor Horde',farm('horde')],
+   ['farmland in the desert',farm(null,'desert')],['farmland in the frost',farm(null,'frost')],
+   ['farmland in the swamp',farm(null,'swamp')],['a holding\'s farmland, the whole view',farm('vale'),1]]:part===7?[
    ["a forested mountain (the owner's spot)",()=>[425,219]],["a forested mountain (the owner's spot), the whole view",()=>[425,219],1],
    ["mountains: forested, a big range (put in: the granite's, the grass's pool forested alone)",kindOf('granite'),0,asKind('grass','forested')],["mountains: forested across a climate's edge",across('forested')],
    ["mountains: the original look, on the grass",kindOf('classic','grass')],["mountains: the original look, in the frost",kindOf('classic','frost')],
@@ -188,6 +218,13 @@ window.RUN=()=>{const t=T,o=[],G=t.G,P=t.P,W=t.W,TILE=t.TILE,Z=3,part=+(new URLS
   o.push('INFO page '+pg.width+' x '+pg.height);
   // (the ground and what is built only: no folk, caravans, beasts, parties, banners or labels over it)
   const quiet=()=>{W.folk=[];W.caravans=[];W.critters=[];W.monsters=[]};quiet();const stay=P.stay,keep=[window.txt,window.drawParties,window.drawBanners];window.txt=window.drawParties=window.drawBanners=()=>{};
+  // (part 8: a farm's plots drawn through gfx/worldart.js farmPlot even before gfx/structures.js estateGround calls it (agent AR's
+  //  line request there): the plots of the picture it keeps drawn again, as it would draw them)
+  const eg0=t.estateGround;if(part===8&&typeof window.farmPlot==='function'&&!/farmPlot/.test(String(eg0)))window.estateGround=(tw,k,lv)=>{const cv=eg0(tw,k,lv);if(!cv||k!=='farm'||cv._crop)return cv;cv._crop=1;
+   const p=t.bldSpots(tw).farm,c=t.climAt(p.x,p.y),pl=t.plotsAt(tw,'farm',lv),has=(x,y)=>pl.some(q=>q[0]===x&&q[1]===y),SC=t.WorldArt.ensure().snow,g2=cv.getContext('2d');
+   for(const [tx,ty] of pl){const X=tx*TILE-cv.x,Y=ty*TILE-cv.y,edge=(a,b)=>!has(tx+a,ty+b)&&!(tx+a===p.tx&&ty+b===p.ty),eN=edge(0,-1),eS=edge(0,1),eW=edge(-1,0),eE=edge(1,0);
+    const ed=(x,y)=>Math.min(eW?x:9,eE?15-x:9,eN?y:9,eS?15-y:9),fr=c==='grass'||c==='frost'?Math.max(0,Math.min(1,(SC[ty*t.MW+tx]-.3)/.4)):0;
+    g2.clearRect(X,Y,TILE,TILE);t.farmPlot(tw,tx,ty,c,fr,ed,(col,x,y)=>{g2.fillStyle=t.hex(col);g2.fillRect(X+x,Y+y,1,1)})}return cv};
   // (&only=k,...: those pieces alone)
   const only=(new URLSearchParams(location.search).get('only')||'').split(',').filter(Boolean).map(Number),left=new Set(PIECES.map((p,k)=>k).filter(k=>!only.length||only.includes(k)));
   try{
@@ -204,6 +241,6 @@ window.RUN=()=>{const t=T,o=[],G=t.G,P=t.P,W=t.W,TILE=t.TILE,Z=3,part=+(new URLS
      const sx=Math.max(0,Math.min(t.cv.width-cw,Math.round(fx-G.cam.x-cw/2))),sy=Math.max(0,Math.min(t.cv.height-ch,Math.round(fy-G.cam.y-ch/2)));
      g.fillText(pn+' · '+(s?'normal '+s:t.WM.gen)+' ('+at[0]+', '+at[1]+')',X,Y+13);if(wide)g.drawImage(t.cv,0,0,t.VW,t.VH,X,Y+lab,cw*Z,ch*Z);else g.drawImage(t.cv,sx,sy,cw,ch,X,Y+lab,cw*Z,ch*Z);if(undo)undo();o.push('INFO '+pn+': '+(s?'normal '+s:t.WM.gen)+' '+at.join(', ')+' (at='+k+':'+s+':'+at.join(':')+')')}}
    for(const k of left){const c=k%per,r=(k/per)|0;g.fillStyle='#e8e0c8';g.font='13px Arial';g.fillText(PIECES[k][0]+' · none found',8+c*(cw*Z+8),8+r*(ch*Z+lab+8)+13);o.push('INFO '+PIECES[k][0]+': none found')}}
-  finally{P.stay=stay;[window.txt,window.drawParties,window.drawBanners]=keep}o.push('PASS drawn ('+t.WM.gen+')');
+  finally{P.stay=stay;[window.txt,window.drawParties,window.drawBanners]=keep;window.estateGround=eg0}o.push('PASS drawn ('+t.WM.gen+')');
  }catch(e){if(e!==0)o.push('EXC '+e.message+' '+e.stack)}
  const d=document.createElement('pre');d.id='OUT';d.style.display='none';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d)};

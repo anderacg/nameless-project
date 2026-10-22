@@ -756,6 +756,8 @@ After the fourth and fifth play-tests, the layout (2026-10-22): a track runs thr
 
 After the fifth play-test, the generator's water (2026-10-22): stage 4 keeps rivers out of the desert (no rain there, the drainage rising into it, terminal lakes: `GEN_RIVER.desert`); stage 5b `genPonds` lays springs at brook heads, ponds (hollows, pools, tarns, oxbows: `GEN_POND`) and desert oases (`GEN_OASIS`), listed in `WM.ponds` and `WM.oases` ({i, r, kind or big, tiles}) for the art.
 
+After the owner's art notes (2026-10-22, agent AR; `tests/visual/worldart.js` `&part=8`, the crops `&part=9`): a group of hill tiles is one broad rise, not a small bump a tile (the pale blobs on open land were those bumps: each hill tile's spot on a 22 x 18 px lattice drew its own 32-px rise, its lit side the grass hill's pale tone); every wood tile is a full stand, at its edge, in a small wood, by a road or a shore too (`PX.WN_WOOD`); a farm's plots grow real crops in rows (`worldart.js` `FARM`, `fieldCrop`, `farmPlot`; `PX.worldCrop`, `PX.worldCropThing`): wheat, barley and rye with stooks, vegetables, potatoes, vines on stakes, orchards, flax, hay, herbs, the desert's irrigated plots with their channel and date palms, the frost's rye, turnips and fallow under snow, by the climate and the holding's people (the Vale's wheat, the Sylvan Court's herbs and orchards, the Karn's terraced rye and potatoes, the Ashgor's herd ground), `FARM.ripe` the seasons' hook. A farm's plot is drawn through `farmPlot` once `structures.js` `estateGround` calls it (a one-line hook; until then the old furrows show).
+
 To look at the result, take a screenshot of a prepared scene (`scene` is `world` or `battle`; `town`, `mount` and `zoom` are optional):
 
 ```

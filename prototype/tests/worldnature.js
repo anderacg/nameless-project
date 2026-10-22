@@ -14,7 +14,9 @@ try{
  const all=()=>{const L=[];for(const c of CL){for(const sp of PX.WORLD_SPECIES[c])for(let v=0;v<4;v++)for(const dim of [0,1])L.push(['tree '+c+' '+sp+' '+v+(dim?' dim':''),PX.worldTree(c,sp,v,dim)]);
    for(const k of PX.WORLD_DECOR[c].concat(PX.WORLD_DECOR.water))for(let v=0;v<4;v++)L.push(['decor '+c+' '+k+' '+v,PX.worldDecor(c,k,v)]);
    for(let v=0;v<6;v++){L.push(['hill '+c+' '+v,PX.worldHill(c,v)]);for(const n of [16,32,64])L.push(['peak '+c+' '+n+' '+v,PX.worldPeak(c,v,n)])}}
-   for(const k of Object.keys(PX.WORLD_MOUNTS))for(let v=0;v<6;v++)for(const n of [32,64])L.push(['peak '+k+' '+n+' '+v,PX.worldPeak('grass',v,n,k)]);return L};
+   for(const k of Object.keys(PX.WORLD_MOUNTS))for(let v=0;v<6;v++)for(const n of [32,64])L.push(['peak '+k+' '+n+' '+v,PX.worldPeak('grass',v,n,k)]);
+   for(const k of Object.keys(PX.WORLD_CROPS))for(const c of CL)for(let v=0;v<4;v++)L.push(['crop '+k+' '+c+' '+v,PX.worldCrop(k,c,v,{snow:c==='frost'?1:0,wet:c==='swamp'?1:0})]);
+   for(const k of ['stook','haystack','fruit'])for(let v=0;v<4;v++)L.push(['thing '+k+' '+v,PX.worldCropThing(k,v)]);return L};
  const list=all(),px=s=>s.getContext('2d').getImageData(0,0,s.width,s.height).data,by={};
  const pow=[],soft=[],out=[],flat=[];
  for(const [n,s] of list){const N=s.width;(by[N]=by[N]||new Set()).add(n.split(' ')[0]);
@@ -31,8 +33,8 @@ try{
    if(bad)(s.flat?flat:out).push(n+' ('+bad+')')}
  ok(!pow.length,list.length+' nature sprites, each in a power-of-two box with its foot on a whole pixel: '+Object.keys(by).map(k=>k+'x'+k+' '+[...by[k]].join('/')).join(', ')+(pow.length?' — not: '+pow.slice(0,6).join(', '):''));
  ok(!soft.length,'every pixel of every nature sprite fully drawn or not at all'+(soft.length?': '+soft.slice(0,6).join(', '):''));
- ok(!out.length,'the standing ones (trees, bushes, stones, cacti, peaks) wear the navy outline round their silhouette only: all round the body, never inside it'+(out.length?': '+out.slice(0,6).join(', '):''));
- ok(!flat.length,'what lies on the ground (tufts, flowers, drifts, ripples, reeds, moss, pools, pads, floes, hills) has no outline'+(flat.length?': '+flat.slice(0,6).join(', '):''));
+ ok(!out.length,'the standing ones (trees, bushes, stones, cacti, peaks, stooks, haystacks, fruit trees) wear the navy outline round their silhouette only: all round the body, never inside it'+(out.length?': '+out.slice(0,6).join(', '):''));
+ ok(!flat.length,'what lies on the ground (tufts, flowers, drifts, ripples, reeds, moss, pools, pads, floes, hills, a field’s crops) has no outline'+(flat.length?': '+flat.slice(0,6).join(', '):''));
  // ---- seeded: drawn afresh, every one the same; the variants of a kind told apart by their shapes
  {const keep=list.map(([n,s])=>[n,px(s).join()]);PX.worldNatureReset();const again=all(),diff=keep.filter(([n,h],i)=>again[i][0]!==n||px(again[i][1]).join()!==h).map(([n])=>n);
   ok(!diff.length&&again[0][1]!==list[0][1],list.length+' sprites drawn afresh come out pixel for pixel the same (seeded, no Math.random)'+(diff.length?': '+diff.slice(0,6).join(', '):''));
@@ -54,7 +56,7 @@ try{
  const share=k=>{let n=0,m=0;for(let ty=0;ty<MH;ty++)for(let tx=0;tx<MW;tx++){if(t.tiles[ty*MW+tx]!==k)continue;for(let y=1;y<TILE;y+=3)for(let x=1;x<TILE;x+=3){const i=(ty*TILE+y)*Wp+tx*TILE+x;if(CLR.at(tx*TILE+x,ty*TILE+y))continue;m++;if(TO[i])n++}}return m?n/m:0};
  const sF=share(t.T_FOREST),sH=share(t.T_HILL),sM=share(t.T_MOUNT);
  ok(N&&N.trees>=nF*3.5&&sF>.9,nF+' wood tiles stand thick with trees ('+(N&&N.trees)+' trees, '+(N&&(N.trees/nF).toFixed(1))+' a tile), '+Math.round(sF*100)+'% of their ground painted');
- ok(N&&N.hills>=nH*.3&&sH>.5,nH+' hill tiles rise ('+(N&&N.hills)+' rises), '+Math.round(sH*100)+'% of their ground shaded');
+ ok(N&&N.hills>=nH*.9&&sH>.8,nH+' hill tiles rise ('+(N&&N.hills)+' of them in a rise), '+Math.round(sH*100)+'% of their ground shaded');
  ok(N&&N.peaks>=1&&N.rock>=nM*120&&sM>.7,nM+' mountain tiles stand as '+(N&&N.peaks)+' ranges ('+(N&&N.rock)+' px of rock), '+Math.round(sM*100)+'% of their ground painted');
  ok(N&&N.decor>200&&N.flat>500,'small things on the open ground: '+(N&&N.decor)+' standing (bushes, stones, cacti, stumps), '+(N&&N.flat)+' lying (tufts, flowers, drifts, ripples, reeds, moss, pools, pads, floes)');
  {let onClear=0,onWater=0,offWater=0,lots=0,roads=0,n=0;
@@ -63,12 +65,34 @@ try{
   const WK=t.WorldArt.ensure().wk,water=(x,y)=>WK?t.wpx(WK,x,y)===1:t.tAt(x>>4,y>>4)===t.T_WATER;
   // (3: a ground's tone on kept-clear ground, a hill's shading running on under a road or a yard and a brook crossing a road (the
   //  owner's fourth play-test): never off it, and nothing else on it)
-  let toned=0,tonedOff=0;
-  for(let y=0;y<Hp;y++)for(let x=0;x<Wp;x++){const i=y*Wp+x,v=TO[i];if(!v)continue;if(v===3){toned++;if(!CLR.at(x,y)||water(x,y))tonedOff++;continue}n++;if(CLR.at(x,y))onClear++;if(v===1&&water(x,y))onWater++;if(v===2&&!water(x,y))offWater++}
+  // (4: a wood's tree's crown leaning over the shore (PX.WN_WOOD.shore): its beach and a curved shore's water on a land tile, never
+  //  a road, a yard or a water tile)
+  let toned=0,tonedOff=0,crowns=0,crownsOff=0;
+  for(let y=0;y<Hp;y++)for(let x=0;x<Wp;x++){const i=y*Wp+x,v=TO[i];if(!v)continue;if(v===3){toned++;if(!CLR.at(x,y)||water(x,y))tonedOff++;continue}if(v===4){crowns++;const k=t.tAt(x>>4,y>>4);if(CLR.at(x,y)||k===t.T_WATER||k===t.T_FORD||k===t.T_ROAD)crownsOff++;continue}n++;if(CLR.at(x,y))onClear++;if(v===1&&water(x,y))onWater++;if(v===2&&!water(x,y))offWater++}
   for(const tw of t.TOWNS)for(const l of tw.lots||[]){for(let j=0;j<l.n*TILE;j++)for(let i=0;i<l.n*TILE;i++){const v=TO[(l.y*TILE+j)*Wp+l.x*TILE+i];if(v&&v!==3)lots++}for(const [px2,py2] of l.plots||[])for(let j=0;j<TILE;j++)for(let i=0;i<TILE;i++){const v=TO[(py2*TILE+j)*Wp+px2*TILE+i];if(v&&v!==3)lots++}}
   for(let ty=0;ty<MH;ty++)for(let tx=0;tx<MW;tx++)if(t.tiles[ty*MW+tx]===t.T_ROAD)for(let j=6;j<10;j++)for(let i=6;i<10;i++){const v=TO[(ty*TILE+j)*Wp+tx*TILE+i];if(v&&v!==3&&CLR.at(tx*TILE+i,ty*TILE+j))roads++}
-  ok(n>1e6&&!onClear&&!lots&&!roads&&!tonedOff,'nature painted '+n+' pixels, none on a road, a holding’s yard or building, an estate’s plot or a field ('+onClear+' on clear ground, '+lots+' on a lot, '+roads+' on a road); '+toned+' of clear ground toned (a hill’s shading under a road, a brook crossing it), '+tonedOff+' of them off it');
+  for(const tw of t.TOWNS)for(const l of tw.lots||[])for(let j=0;j<l.n*TILE;j++)for(let i=0;i<l.n*TILE;i++)if(TO[(l.y*TILE+j)*Wp+l.x*TILE+i]===4)lots++;
+  ok(n>1e6&&!onClear&&!lots&&!roads&&!tonedOff&&!crownsOff,'nature painted '+n+' pixels, none on a road, a holding’s yard or building, an estate’s plot or a field ('+onClear+' on clear ground, '+lots+' on a lot, '+roads+' on a road); '+toned+' of clear ground toned (a hill’s shading under a road, a brook crossing it), '+tonedOff+' of them off it; '+crowns+' of a wood’s crowns leaning over the shore, '+crownsOff+' over a road, a yard or a water tile');
   ok(!onWater&&!offWater,'nothing on the water but its lily pads and floes, and those only on water ('+onWater+', '+offWater+')')}
+ // ---- a wood's tile a full stand (PX.WN_WOOD; the owner 2026-10-22: "a 1-tile forest with 1 tree"): the trees whose feet stand on
+ //      each wood tile (the chunks' standing indexes), on every tile with most of its ground free (no road's band, yard, shore or water), at
+ //      a wood's edge, in a small wood (6 tiles or fewer) and by a road too: 4 at least (the swamp's bog forest 2), or (squeezed by
+ //      a road, a yard or a shore above it: a crown leans over a verge or a beach, never a way's surface, a yard or a water tile) its
+ //      ground 75% under the crowns of its trees and those beside it (COV: what the trees drew); a few stay thinner
+ {const TS=new Set(),SP=[...new Set(Object.values(PX.WORLD_SPECIES).flat().concat(Object.values(PX.WN_ECO.freeze),Object.values(PX.WN_ECO.wood)))];
+  for(const c of CL)for(const sp of SP)for(let v=0;v<4;v++)for(const d of [0,1])TS.add(PX.worldTree(c,sp,v,d));
+  const n=new Uint8Array(MW*MH),KP=t.WorldArt.ensure().nature.keep,COV=new Uint8Array(Wp*Hp);for(const c of t.WorldArt.cnt.values()){const S=c.n.stand,E=S.E;for(let k=0;k<S.n;k++){const o=k*4,ref=E[o+2];if(ref<0)continue;const sp=PX.WN_SPR[ref];if(!TS.has(sp))continue;
+    const x=S.X+E[o]+sp.ax,y=S.Y+E[o+3];if(x<S.X||y<S.Y||x>=S.X+S.w||y>=S.Y+S.h)continue;n[(y>>4)*MW+(x>>4)]++;const N=sp.width,X0=S.X+E[o],Y0=S.Y+E[o+1];
+    for(let j=0;j<N;j++)for(let i=0;i<N;i++)if(sp.a[j*N+i]){const X=X0+i,Y=Y0+j;if(X>=0&&Y>=0&&X<Wp&&Y<Hp)COV[Y*Wp+X]=1}}}
+  const isF=(x,y)=>x>=0&&y>=0&&x<MW&&y<MH&&t.tiles[y*MW+x]===t.T_FOREST,size=new Int32Array(MW*MH);
+  for(let i=0;i<MW*MH;i++){if(!isF(i%MW,(i/MW)|0)||size[i])continue;const L=[i],st=[i];size[i]=-1;while(st.length){const q=st.pop(),x=q%MW,y=(q-x)/MW;for(const [a,b] of [[1,0],[-1,0],[0,1],[0,-1]])if(isF(x+a,y+b)&&!size[q+b*MW+a]){size[q+b*MW+a]=-1;st.push(q+b*MW+a);L.push(q+b*MW+a)}}for(const q of L)size[q]=L.length}
+  const B={all:[0,0],edge:[0,0],small:[0,0],road:[0,0]},bad=[];let lo=99,few=0;
+  // (a brook's mouth: a tile a brook runs from into the water, a crown never over its way there; left out)
+  const Fl=t.WM.flow,Rv=t.WM.river,DX=[1,1,0,-1,-1,-1,0,1],DY=[0,1,1,1,0,-1,-1,-1],mouth=i=>!(Rv[i]&3)&&(Fl[i]&31)>=6&&t.tAt(i%MW+DX[Fl[i]>>5],((i/MW)|0)+DY[Fl[i]>>5])===t.T_WATER;let mouths=0;
+  for(let ty=0;ty<MH;ty++)for(let tx=0;tx<MW;tx++){if(!isF(tx,ty))continue;if(mouth(ty*MW+tx)){mouths++;continue}let free=0,cov=0;for(let y=1;y<TILE;y+=2)for(let x=1;x<TILE;x+=2){const X=tx*TILE+x,Y=ty*TILE+y;if(!KP.at(X,Y)){free++;if(COV[Y*Wp+X])cov++}}if(free<48)continue;
+   const sw=t.CLIMS[t.climate[ty*MW+tx]]==='swamp',m=n[ty*MW+tx],ok2=m>=(sw?PX.WN_WOOD.min[1]:PX.WN_WOOD.min[0])||cov>=free*.75,edge=[[1,0],[-1,0],[0,1],[0,-1]].some(([a,b])=>!isF(tx+a,ty+b)),road=[[1,0],[-1,0],[0,1],[0,-1]].some(([a,b])=>t.tAt(tx+a,ty+b)===t.T_ROAD);
+   for(const [k,on] of [['all',1],['edge',edge],['small',size[ty*MW+tx]<=6],['road',road]])if(on){B[k][0]++;if(ok2)B[k][1]++}if(!ok2&&bad.length<6)bad.push(tx+','+ty+' ('+m+', '+Math.round(cov/free*100)+'%)');if(!sw&&m<lo)lo=m;if(m<(sw?PX.WN_WOOD.min[1]:PX.WN_WOOD.min[0]))few++}
+  ok(B.all[0]>1000&&B.edge[0]>200&&B.small[0]>20&&B.all[1]>=B.all[0]*.997&&B.edge[1]>=B.edge[0]*.99&&B.small[1]>=B.small[0]*.95,'every wood tile a full stand: '+Object.keys(B).map(k=>B[k][1]+' of '+B[k][0]+' '+(k==='all'?'wood tiles':k==='edge'?'at a wood\u2019s edge':k==='small'?'in a small wood':'by a road')).join(', ')+' with '+PX.WN_WOOD.min[0]+' trees or more (the swamp\u2019s '+PX.WN_WOOD.min[1]+', or 75% under crowns: '+few+' with fewer; fewest '+lo+'; '+mouths+' a brook runs from into the water left out)'+(bad.length?' \u2014 not: '+bad.join(', '):''))}
  // ---- the fen's own trees: mangroves on its open ground, sparse (some .6 a tile, about a third of a wood's cover)
  {let nS=0;for(let i=0;i<MW*MH;i++)if(t.tiles[i]===t.T_OPEN&&t.CLIMS[t.climate[i]]==='swamp')nS++;const f=N.fen/Math.max(1,nS),wd=(N.trees-N.fen)/Math.max(1,nF);
   ok(nS&&f>.3&&f<1&&f<wd/3,'the swamp’s open ground ('+nS+' tiles) stands with sparse mangroves: '+N.fen+' ('+f.toFixed(2)+' a tile, against a wood’s '+wd.toFixed(1)+')')}
@@ -176,6 +200,41 @@ try{
      PX.worldNaturePaint(P,{x:x0,y:y0,w,h,inner:{x:X,y:Y,w:Math.min(96,Wm-X),h:Math.min(96,Hm-Y)}},Dw,null);
      for(let j=Y;j<Math.min(Hm,Y+96);j++)for(let i=X;i<Math.min(Wm,X+96);i++){const o=(j*Wm+i)*4,q=((j-y0)*w+i-x0)*4;if(A[o]!==Dw[q]||A[o+1]!==Dw[q+1]||A[o+2]!==Dw[q+2])bad++}}
    ok(!bad,'painted 96 px at a time, a forested range across an edge is the one picture ('+bad+' pixels differ)')}}
+ // ---- the hills (the owner 2026-10-22: "can we just have one large hill sprite?"; his shot 68: open land spotted with small pale
+ //      bumps, a bump a hill tile's spot of a lattice): a small map of its own, a group of 10 x 5 hill tiles and one of 4 x 3 on the
+ //      grass, painted with and without hills (the difference: the hills' shading). Each group one shape: its lit side and its shade
+ //      a few big patches (the lit upper left, the shaded lower right, a knoll or two: 3 each at most), not a pair a tile (a 10 x 5
+ //      group drew some 25 small rises before);
+ //      and no seam along its tiles' edges (the shading across a tile's edge inside the group no more than across its middle)
+ {const C=28,R=18,ts=16,Wm=C*ts,Hm=R*ts,N=C*R,kind=new Uint8Array(N),G0=[88,128,58];for(let y=6;y<11;y++)for(let x=5;x<15;x++)kind[y*C+x]=PX.WN_KIND.hill;for(let y=5;y<8;y++)for(let x=19;x<23;x++)kind[y*C+x]=PX.WN_KIND.hill;
+  const P=PX.worldNaturePlan({W:Wm,H:Hm,C,R,ts,kind,clim:new Uint8Array(N),clear:new Uint8Array(Wm*Hm),seed:5}),paint=()=>{const D=new Uint8ClampedArray(Wm*Hm*4);for(let i=0;i<Wm*Hm;i++){D[i*4]=G0[0];D[i*4+1]=G0[1];D[i*4+2]=G0[2];D[i*4+3]=255}PX.worldNaturePaint(P,{x:0,y:0,w:Wm,h:Hm},D,null);return D};
+  const A=paint();P.hill=false;let Bn;try{Bn=paint()}finally{P.hill=true}
+  const dl=new Float32Array(Wm*Hm);for(let i=0;i<Wm*Hm;i++){const o=i*4;dl[i]=(A[o]-Bn[o])*.3+(A[o+1]-Bn[o+1])*.59+(A[o+2]-Bn[o+2])*.11}
+  // (connected regions of pixels f, those of min px or more, within the box x0..x1, y0..y1 (px))
+  const blobs=(f,min,x0,y0,x1,y1)=>{const seen=new Uint8Array(Wm*Hm),out=[];for(let y=y0;y<y1;y++)for(let x=x0;x<x1;x++){const i=y*Wm+x;if(seen[i]||!f(dl[i]))continue;let n=0;const st=[i];seen[i]=1;
+    while(st.length){const q=st.pop(),qx=q%Wm,qy=(q-qx)/Wm;n++;for(const [a,b] of [[1,0],[-1,0],[0,1],[0,-1]]){const u=qx+a,v=qy+b,j=v*Wm+u;if(u>=x0&&v>=y0&&u<x1&&v<y1&&!seen[j]&&f(dl[j])){seen[j]=1;st.push(j)}}}if(n>=min)out.push(n)}return out};
+  const G=[[5*ts-24,6*ts-24,15*ts+24,11*ts+24,'10 x 5'],[19*ts-24,5*ts-24,23*ts+24,8*ts+24,'4 x 3']],res=[];let good=true;
+  for(const [x0,y0,x1,y1,nm] of G){const lit=blobs(v=>v>3,10,x0,y0,x1,y1),sh=blobs(v=>v<-3,10,x0,y0,x1,y1);res.push(nm+': '+lit.length+' lit and '+sh.length+' shaded patches ('+lit.join('/')+', '+sh.join('/')+' px)');if(lit.length>3||sh.length>3||!lit.length||!sh.length)good=false}
+  // (seams: the mean change of shading across the tiles' edges inside the big group against across their middles)
+  let se=0,sm=0,ns=0;for(let y=7*ts;y<10*ts;y++)for(let tx=6;tx<14;tx++){const e=tx*ts,m=tx*ts+8;se+=Math.abs(dl[y*Wm+e]-dl[y*Wm+e-1]);sm+=Math.abs(dl[y*Wm+m]-dl[y*Wm+m-1]);ns++}
+  for(let x=6*ts;x<14*ts;x++)for(let ty=7;ty<10;ty++){const e=ty*ts,m=ty*ts+8;se+=Math.abs(dl[e*Wm+x]-dl[(e-1)*Wm+x]);sm+=Math.abs(dl[m*Wm+x]-dl[(m-1)*Wm+x]);ns++}
+  ok(good&&se<=sm*1.25+.2,'a group of hill tiles is one rise: '+res.join('; ')+'; no seam along its tiles\u2019 edges (shading changes '+(se/ns).toFixed(2)+' across them, '+(sm/ns).toFixed(2)+' across their middles)')}
+ // ---- a farm's plots (gfx/worldart.js farmPlot, PX.worldCrop; the owner 2026-10-22: "can farmland have actual sprites, like crops
+ //      and vegetables?"): a holding's plots of each people and climate drawn through it: its crop by the climate and the people (the
+ //      Vale's wheat, the Sylvan Court's herbs and orchards, the Karn's rye and potatoes, terraced, the Ashgor's herd ground; the
+ //      desert's irrigated plots with their channel, the frost's rye, turnips and fallow under snow), in rows of plants (the crop's
+ //      own tones, soil between), what stands on them (stooks, haystacks, fruit trees, date palms: their navy outline)
+ {const people=['vale','sylvan','karn','horde'],cl=['grass','desert','frost','swamp'],tally={},cols={},snowy=[0,0],water=[0,0],stand=[0,0],bad=[];
+  const pal=k=>new Set(PX.WORLD_CROPS[k].c1.map(c=>parseInt(c.slice(1,3),16)+','+parseInt(c.slice(3,5),16)+','+parseInt(c.slice(5,7),16)));
+  for(const p of people)for(const c of cl){const tw={name:'(a test '+p+')',seed:7,races:[{vale:'human',sylvan:'elf',karn:'dwarf',horde:'orc'}[p]]};t.HOME[tw.name]=p;
+   try{for(let k=0;k<60;k++){const tx=10+k%10,ty=10+((k/10)|0),Q=new Map(),kd=t.fieldCrop(tw,tx,ty,c);t.farmPlot(tw,tx,ty,c,c==='frost'?1:0,(x,y)=>y,(col,x,y)=>Q.set(y*16+x,col.map(Math.round).join()));
+     const key=p+' '+c;(tally[key]=tally[key]||{})[kd]=(tally[key][kd]||0)+1;const own=pal(kd),vals=[...Q.values()],hit=vals.filter(v=>own.has(v)).length,nv=new Set(vals).size;
+     if(Q.size<200||nv<5||(!['orchard','hay','fallow','grazed'].includes(kd)&&hit<12))bad.push(key+' '+kd+' ('+hit+' crop px, '+nv+' colours)');
+     if(c==='frost'){snowy[1]++;if(vals.includes('228,234,242'))snowy[0]++}if(kd==='irrigated'){water[1]++;if(vals.includes('120,180,226'))water[0]++}
+     if(['wheat','barley','rye','hay','orchard','irrigated'].includes(kd)){stand[1]++;if(vals.includes('26,28,38'))stand[0]++}}}finally{delete t.HOME[tw.name]}}
+  const top=key=>Object.entries(tally[key]).sort((a,b)=>b[1]-a[1]).map(e=>e[0]+' '+e[1]).slice(0,3).join(', '),mx=(key,k)=>(tally[key][k]||0);
+  const culture=mx('vale grass','wheat')>mx('vale grass','herbs')+mx('vale grass','potato')&&mx('sylvan grass','herbs')+mx('sylvan grass','orchard')>mx('sylvan grass','wheat')&&mx('karn grass','rye')+mx('karn grass','potato')>20&&mx('horde grass','grazed')>20&&mx('vale desert','irrigated')>20&&mx('vale frost','rye')+mx('vale frost','turnips')+mx('vale frost','fallow')===60;
+  ok(!bad.length&&culture&&snowy[0]>=snowy[1]*.8&&water[0]===water[1]&&stand[0]>=stand[1]*.5,'a farm\u2019s plots show their crops in rows, by climate and people ('+['vale grass','sylvan grass','karn grass','horde grass','vale desert','vale frost','vale swamp'].map(k=>k+': '+top(k)).join('; ')+'); the frost\u2019s snow in the troughs on '+snowy[0]+' of '+snowy[1]+', the desert\u2019s channel on '+water[0]+' of '+water[1]+', stooks, haystacks, fruit trees or palms standing on '+stand[0]+' of '+stand[1]+(bad.length?' \u2014 not: '+bad.slice(0,5).join('; '):''))}
  // ---- the same map, the same picture; and the time it takes
  {const h=c=>{const d=c.getContext('2d').getImageData(0,0,Wp,Hp).data;let s=0;for(let i=0;i<d.length;i+=28)s=(s*31+d[i])|0;return s},a=h(cv),ms=[];let b=0;
   for(let k=0;k<3;k++){const q=performance.now(),c=t.paintWorld();ms.push(performance.now()-q);if(k===2)b=h(c)}
