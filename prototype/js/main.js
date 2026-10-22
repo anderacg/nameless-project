@@ -14,13 +14,13 @@ function loop(now){
   // cards, details and top bar every other one (setOrderUI redraws the abilities too: battlehud.js bhudTop))
   G.hudT+=dt;if(G.hudT>.25&&WM){G.hudT=0;updateHUD();if(G.mode==='battle'){updateSkillBar();if(B&&(hudCards=!hudCards))setOrderUI();else bhudAbilities()}}
   audioWatch();// (the music follows the scene; a town, a meeting, a new day, a battle's start are heard: music.js)
-  frame();requestAnimationFrame(loop);
+  // (the main menu draws its own scene, never the world: ui/mainmenu.js; anything else, the game's frame)
+  MainMenu.frame(now);if(G.mode!=='title')frame();requestAnimationFrame(loop);
 }
-// the world as it first stands (session.js worldFirst: every new game's start), laid out once it is in: at once, or with WORLD.gen
-// on the game's own page forged first behind the overlay (worldmap.js leaves it to here; the tests and the wiki make it at once)
-if(WM){worldFirst();showTitle();updateHUD(true)}
-else{const made={};runSteps('Forging the world…',[...forgeSteps('ashmark-1',classicSettings(),r=>made.r=r),{id:'install',label:'Drawing borders',w:150,run:()=>{installWorld(made.r);worldFirst()}}],
-  {back:['Try again',()=>location.reload()]}).then(()=>{showTitle();updateHUD(true)},()=>{})}
+// the page opens on the main menu (ui/mainmenu.js) with no world: a new campaign or a load makes one (session.js begin, save.js
+// loadGame). The tests and the wiki make today's world at load (worldmap.js): laid out here as it first stands (session.js worldFirst)
+MainMenu.init();
+if(WM)worldFirst();showTitle();if(WM)updateHUD(true);
 requestAnimationFrame(loop);
 DevConsole.init();
 

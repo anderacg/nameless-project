@@ -9,7 +9,7 @@
        Classic locks all but monsters, bandits and your start (greyed). Every change clamped at once (normSettings), a note where
        a limit moved a value or why it stops there;
      right: the preview: the quick sketch (worldgen.js genSketch), redrawn WSETUP.wait ms after a change, or the real map when it
-       is made (the classic world the page forged, the world in); your start city ringed; the counts, the time it takes to forge
+       is made (the world in); your start city ringed; the counts, the time it takes to forge
        here. (No buttons there, the owner 2026-10-22: Random is the seed's own; Enter in the seed redraws the sketch.)
      bottom bar: Back (the New game page) on the left, Forge the world on the right. Esc: Back.
    WSETUP keeps the choice while the page is open (a fresh seed each New game); begin reads it (newWorldSettings) */
@@ -39,7 +39,7 @@ const SEED_A=['red','ash','iron','oak','frost','stone','wolf','raven','amber','t
 const freshSeed=()=>{const r=crypto.getRandomValues(new Uint32Array(1))[0];return SEED_A[r&31]+SEED_B[r>>>5&31]};
 // (a phone: a coarse pointer, the short side of the screen under 900 px: Huge is slow to forge there, D44)
 const phoneSlow=()=>matchMedia('(pointer: coarse)').matches&&Math.min(screen.width,screen.height)<900;
-// the settings the screen holds, clamped (Classic by default, the world the page forged); a world with no seed gets a fresh one
+// the settings the screen holds, clamped (Classic by default); a world with no seed gets a fresh one
 function newWorldSettings(){const S=WSETUP;if(!S.s)S.s=classicSettings();if(!S.s.seed)S.s=normSettings({...S.s,seed:freshSeed()});
   if(!SAVE_ZIP&&S.s.w*S.s.h>S.zipless)S.s=classicSettings();return S.s}
 // (a new visit to New game: the same choice, a fresh seed for a world of its own)

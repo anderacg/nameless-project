@@ -110,11 +110,11 @@ function slotRows(mode){return SAVE_SLOTS.filter(s=>mode==='save'?s!=='auto':tru
 // Small, code-drawn origin illustrations keep the new-game cards vivid without loading extra sprite sheets.
 const ORIGIN_ART={soldier:['#273747','#c1844d','#d7b974','M0 82h320v30H0z M28 55h38v27H28z M36 40h22v15H36z M234 48h54v34h-54z M246 30h28v18h-28z','sword'],guard:['#314641','#b68449','#d6c48b','M0 82h320v30H0z M20 55h42v27H20z M28 40h26v15H28z M250 50h40v32h-40z','spear'],woodcutter:['#233b32','#8f6844','#b9a168','M0 76h320v36H0z M15 0h24v75H15z M54 0h17v74H54z M258 12h14v60h-14z M284 0h23v77h-23z','axe'],exile:['#29384a','#bb7658','#b8c0a0','M0 82h320v30H0z M20 38h30v44H20z M36 18h30v30H36z M256 28h18v54h-18z M270 12h34v35h-34z','bow'],merchant:['#4a3b38','#be8650','#dfc377','M0 82h320v30H0z M16 52h50v30H16z M25 36h34v16H25z M254 53h40v29h-40z','crossbow'],hedge:['#34354e','#9077a8','#c2acd0','M0 82h320v30H0z M18 56h42v26H18z M29 39h23v17H29z M245 52h48v30h-48z M263 32h15v20h-15z','staff'],apprentice:['#37414b','#7393a0','#d1b678','M0 82h320v30H0z M20 59h40v23H20z M30 43h21v16H30z M250 58h45v24h-45z M266 40h14v18h-14z','wand']};
 function originArt(key){const [sky,coat,glow,land,weapon]=ORIGIN_ART[key]||ORIGIN_ART.soldier;const stars=key==='hedge'||key==='apprentice'?'<path d="M36 18v8m-4-4h8M260 18v7m-3-3h6M111 34v5m-2-2h4" stroke="#e8d58c" stroke-width="2"/>':'';const arms=weapon==='bow'?'<path d="M210 38q-22 26 0 52M210 39q18 25 0 51M210 40v50" fill="none" stroke="#c79655" stroke-width="3"/><path d="M209 64h-21" stroke="#e5d6b5" stroke-width="2"/>':weapon==='spear'?'<path d="M211 27v72" stroke="#9f7048" stroke-width="4"/><path d="M211 24l-5 12h10z" fill="#c7c8bb"/>':weapon==='axe'?'<path d="M210 49v48" stroke="#9a6942" stroke-width="5"/><path d="M207 49q19-12 22 3l-13 8-9-3z" fill="#bfc2b6"/>':weapon==='crossbow'?'<path d="M195 61h33m-16-13v27m-15-23q15 19 30 0" fill="none" stroke="#bd9259" stroke-width="4"/>':weapon==='staff'?'<path d="M211 34v64" stroke="#94744e" stroke-width="4"/><path d="M211 27l5 6-5 6-5-6z" fill="#c2a9da"/>':weapon==='wand'?'<path d="M209 49l7 46" stroke="#ab8150" stroke-width="4"/><path d="M207 44l3-7 5 6-4 7z" fill="#b9dcdf"/>':'<path d="M210 40v57" stroke="#927047" stroke-width="4"/><path d="M205 33h10v30h-10z" fill="#b8c6cc"/><path d="M205 34h10" stroke="#ead9ac" stroke-width="2"/>';return '<svg class="origin-art" viewBox="0 0 320 112" aria-hidden="true" focusable="false" shape-rendering="crispEdges"><rect width="320" height="112" fill="'+sky+'"/><circle cx="268" cy="24" r="12" fill="'+glow+'" opacity=".9"/><path d="M0 69l42-28 41 28 48-38 55 40 48-31 86 39v22H0z" fill="#17242b" opacity=".8"/>'+stars+'<path d="'+land+'" fill="#3a493f"/><ellipse cx="164" cy="96" rx="34" ry="6" fill="#172127" opacity=".7"/><path d="M151 48h27v12h8v25h-7v12h-28V85h-7V60h7z" fill="'+coat+'"/><rect x="155" y="34" width="20" height="19" fill="#c89a70"/><path d="M152 38h25v5h-25z" fill="#382b2a"/><path d="M151 60l-12 20 5 3 16-14m18-9 13 16-4 4-17-13" fill="none" stroke="'+coat+'" stroke-width="7"/><path d="M152 94v13m20-13v13" stroke="#222a31" stroke-width="7"/>'+arms+'<path d="M0 108h320" stroke="'+glow+'" stroke-width="4" opacity=".7"/></svg>'}
-/* the main menu: Continue, New game, Load game, Settings (settingAct), Wiki, Exit */
+/* the title: the main menu (ui/mainmenu.js: New Campaign, Continue, Settings, Quit, and Load game, Wiki), and its pages as windows
+   over its scene: New game, Load game, Settings (settingAct), the farewell (exit) */
 function showTitle(screen){
   // (the main menu leaves the game behind: no Resume here; the pause menu (Esc) is where you resume)
-  G.resume=null;G.mode='title';G.menu=screen||'main';G.race=G.race||'human';const sv=readSave(),back=nav(['menu','main','Back']);
-  const card=(act,arg,title,sub,dis,ic)=>'<button class="card menu" type="button" data-act="'+act+'"'+(arg?' data-arg="'+arg+'"':'')+(dis?' disabled':'')+'>'+(ic?'<span class="mi">'+icon(ic,28)+'</span>':'')+'<span class="mt"><strong>'+title+'</strong><span>'+sub+'</span></span></button>';
+  G.resume=null;G.mode='title';G.menu=screen||'main';G.race=G.race||'human';const sv=readSave(),back=nav(['menu','main','Back']);MainMenu.show();
   if(G.menu==='new')return showPanel('<div class="top"><h2>New game</h2></div><div class="lab">Choose your race</div><div class="tabs" role="group" aria-label="Race">'+Object.keys(RACES).map(r=>'<button class="btn sm'+(G.race===r?' on':'')+'" type="button" data-act="race" data-arg="'+r+'" aria-pressed="'+(G.race===r)+'">'+RACES[r].n+'</button>').join('')+'</div><p class="muted">'+RACES[G.race].d+' Troops of your own race cost 15% less to hire.</p>'+
     '<div class="lab">Choose your past · it decides your weapon'+(WORLD.gen?' · then your world':'')+'</div><div class="cards origin-cards">'+Object.keys(BGS).map(k=>{const B0=BGS[k],w=BASES[B0.weapon];return '<button class="card origin-card" type="button" data-act="begin" data-arg="'+(WORLD.gen?'world:':'')+k+'">'+originArt(k)+'<strong>'+B0.n+'</strong><span class="gold">'+w.n+' · '+(w.kind==='ranged'?'Ranged':w.kind==='magic'?'Magic':'Melee')+'</span><span>'+B0.d+'</span></button>'}).join('')+'</div>'+ 
     (sv?'<p class="bad" style="font-size:13px">Starting a new game will replace your saved game when it next saves.</p>':'')+back);
@@ -137,14 +137,10 @@ function showTitle(screen){
     '<div class="lab">Controls</div><p class="muted">'+CONTROLS+'</p>'+
     '<div class="lab">Developer tools</div><div class="btns"><button class="btn" type="button" data-act="dev-open">Open developer tools</button></div><p class="muted">The console and the battle test bench (also ` or F2).</p>'+back);
   if(G.menu==='exit')return showPanel('<h2 class="big">Ashmark</h2><p>Thanks for playing. You can close this tab now.</p>'+nav(['menu','main','Back to the menu']));
-  showPanel('<div class="title"><h2 class="big">Ashmark</h2><p>Rise from a nobody to a ruler. Recruit a warband, trade between towns, and fight in real time.</p></div><div class="menulist">'+
-    (sv?card('load',null,'Continue',saveLine(sv),false,'resume'):'')+
-    card('menu','new','New game','Choose your race and your past',false,'sword')+
-    card('menu','load','Load game',sv?'Your saved game':'No saved game yet',false,'load')+
-    card('menu','settings','Settings','Art, battle and controls',false,'settings')+
-    card('menu','wiki','Wiki','How everything works: the world, realms, economy, battle, gear, your hero and more (opens a new tab)',false,'book')+
-    card('menu','exit','Exit','Leave Ashmark',false,'exit')+'</div>');
+  hidePanel();G.modal=true;MainMenu.main(sv);// (the menu itself: no window, the game's input held)
 }
+// back to the main menu from a game (the Esc menu, the game over): the world let go (session.js dropWorld), the menu alone again
+function toTitle(screen){dropWorld();showTitle(screen)}
 /* Esc: close what can be closed; otherwise open the Esc menu, which pauses everything and remembers the screen under it */
 // screens Esc closes, and the action that closes each
 // where you may save (the Esc menu and saveGame agree): anywhere calm, never mid-fight or mid-choice
@@ -201,8 +197,8 @@ function escAct(a,arg){
     G.overArmed=null;G.mode=E.mode;const p=saveGame(true,s);G.mode='esc';const done=ok=>{if(G.mode!=='esc'||G.esc!==E)return;const m=ok?'Game saved'+(arg?' ('+slotName(s)+')':'')+'.':'Could not save: your browser would not store it (private window, or storage full or blocked).';if(arg)slots('save',m);else showEsc(m)};
     if(p&&p.then)p.then(done);else done(p);return true}
   if(a==='esc-load'){if(!readSave(arg))return true;G.esc=null;if(B){B=null;fieldDone();bbar.hidden=true}loadGame(arg);return true}
-  if(a==='esc-main'){G.mode=E.mode;G.esc=null;if(E.html==null)hidePanel();showTitle();return true}
-  if(a==='esc-exit'){G.esc=null;if(B){B=null;fieldDone();bbar.hidden=true}G.mode='title';G.resume=null;try{window.close()}catch(e){}showTitle('exit');return true}
+  if(a==='esc-main'){G.mode=E.mode;G.esc=null;if(E.html==null)hidePanel();toTitle();return true}
+  if(a==='esc-exit'){G.esc=null;if(B){B=null;fieldDone();bbar.hidden=true}G.mode='title';G.resume=null;try{window.close()}catch(e){}toTitle('exit');return true}
   return true;
 }
 function menuAct(a,arg){
@@ -223,7 +219,7 @@ function showDeath(){const d=G.dead||{},sv=readSave(),why=WHY_SICK[d.why]||d.why
   showPanel('<div class="top"><h2>You have died</h2><span class="muted">Day '+d.day+'</span></div><div class="death"><p class="bad">You died of '+why+' on day '+d.day+'.</p>'+
     '<p class="muted">'+(sv?'Your last save: '+saveLine(sv)+'.':'There is no saved game to go back to.')+'</p></div>'+
     nav(['dead-load',null,'Load last save',sv?'':'No saved game'],['dead-title',null,'Back to the title']))}
-onAct('dead-',a=>{if(a==='dead-load'){if(readSave())loadGame()}else if(a==='dead-title')showTitle()});
+onAct('dead-',a=>{if(a==='dead-load'){if(readSave())loadGame()}else if(a==='dead-title')toTitle()});
 /* ---------- the buttons' sounds (audio.js): one listener hears every button, nav() bars and windows alike; what the press did
    picks the sound: gold changed hands, the coin; a refusal (a new message in red), the refusal; else a bottom bar's Back or way
    out, back; a primary button, confirm; any other, a click. (Before the first press there is no sound: nothing to work out) ---------- */

@@ -36,6 +36,9 @@ function classicWorld(){const camps=CLASSIC_CAMPS.map(c=>({tx:c.tx,ty:c.ty})),m=
 function forgeInstall(r){resetSession();installWorld(r);worldFirst()}
 // (the world in laid out as it first stands, from where you would start: initWorld, then kept: worldKeep)
 function worldFirst(){heroAtGate(startHolding());initWorld();worldKeep()}
+// the world let go (the main menu from the Esc menu or the game over: ui.js toTitle): a fresh session, no holdings, camps or map
+// in and the map's art dropped, as the game's page opens; the next new game or load makes its world again
+function dropWorld(){resetSession();setHoldings([]);setCamps([]);WM=null;tiles=null;climate=null;if(typeof WorldArt!=='undefined')WorldArt.invalidate()}
 // (a world's key: equal for the same world, made by the same gen from the same settings (worldsettings.js settingsKey))
 const worldKey=m=>m?m.gen+' '+settingsKey(m.settings):'';
 // (its name: Ashmark for the classic one, else its seed)
@@ -45,7 +48,8 @@ const SPAWN_MUL={calm:.6,few:.6,normal:1,deadly:1.5,many:1.5},spawnMul=k=>WM.set
 
 /* a new game, as steps behind "Forging the world…" (loading.js runSteps). settings: its world's (worldsettings.js); left out, with
    WORLD.gen the New world screen's choice (worldsetup.js newWorldSettings), else the world in (today's map, or the one a load made
-   again). k: your past; 'world:<past>' (a past's card on the New game page, with WORLD.gen) opens the New world screen first
+   again), or today's map made now when none is in (the game's page opens on the main menu with no world: ui/mainmenu.js).
+   k: your past; 'world:<past>' (a past's card on the New game page, with WORLD.gen) opens the New world screen first
    (worldsetup.js worldSetup, D30), whose Forge the world comes back here with its settings.
    A world other than the one in is made first (forgeSteps: the generator's stages; none when the New world screen's full preview
    made it: worldPreviewTake), then put in ("Drawing borders": forgeInstall); the one in is used again as it first stood
@@ -55,8 +59,9 @@ const SPAWN_MUL={calm:.6,few:.6,normal:1,deadly:1.5,many:1.5},spawnMul=k=>WM.set
 function begin(k,settings){
   if(typeof k==='string'&&k.startsWith('world:'))return worldSetup(k.slice(6));
   const b=BGS[k];if(!b)return false;if(settings===undefined&&WORLD.gen)settings=newWorldSettings();
-  const want=settings&&{gen:'ashmark-1',settings:normSettings(settings)},made=want&&worldKey(want)!==worldKey(WM)?{r:worldPreviewTake(want.settings)}:null,t0=performance.now();
-  runSteps('Forging the world…',[...(made?[...(made.r?[]:forgeSteps(want.gen,want.settings,r=>{made.r=r;forgeTimed(want.settings,performance.now()-t0)})),{id:'install',label:'Drawing borders',w:150,run:()=>forgeInstall(made.r)}]:[]),
+  const want=settings?{gen:'ashmark-1',settings:normSettings(settings)}:WM?null:{gen:'classic-0',settings:null},
+    made=want&&worldKey(want)!==worldKey(WM)?{r:want.settings&&worldPreviewTake(want.settings)}:null,t0=performance.now();
+  runSteps('Forging the world…',[...(made?[...(made.r?[]:forgeSteps(want.gen,want.settings,r=>{made.r=r;if(want.settings)forgeTimed(want.settings,performance.now()-t0)})),{id:'install',label:'Drawing borders',w:150,run:()=>forgeInstall(made.r)}]:[]),
     {id:'world',label:'Peopling the land',w:made?150:4,run:()=>startGame(k,b)},{id:'paint',label:'Painting the first lands',w:made?150:3,run:paintView}],
     {back:['Back to the title',()=>showTitle()]}).catch(()=>{});// (a failure shows itself: its error view)
 }

@@ -16,6 +16,25 @@
 <div class="stage" id="stage">
 <div class="screen" id="screen" data-mode="title">
   <canvas id="game" role="img" aria-label="Ashmark game screen: a top-down pixel-art map and battles"></canvas>
+  <!-- the main menu (ui/mainmenu.js), the page's first screen, no world made behind it: a scene at dusk drawn in code (gfx/menuart.js),
+       the banner down the left (its emblem, the title, the four buttons), a line of lore at the bottom right -->
+  <div class="mainmenu" id="mainmenu" data-page="main" hidden>
+    <canvas class="mm-art" aria-hidden="true"></canvas>
+    <nav class="mm-banner" aria-label="Main menu">
+      <canvas class="mm-cloth" aria-hidden="true"></canvas>
+      <div class="mm-emblem"><canvas aria-hidden="true"></canvas></div>
+      <h1 class="mm-title"><canvas role="img" aria-label="Ashmark"></canvas></h1>
+      <div class="mm-orn" aria-hidden="true"></div>
+      <div class="mm-btns">
+        <button class="mm-btn" type="button" data-mm="new">New Campaign</button>
+        <button class="mm-btn" type="button" data-mm="continue" disabled>Continue</button>
+        <button class="mm-btn" type="button" data-mm="settings">Settings</button>
+        <button class="mm-btn" type="button" data-mm="quit">Quit</button>
+      </div>
+      <p class="mm-more"><button type="button" data-mm="load">Load game</button><button type="button" data-mm="wiki">Wiki</button></p>
+    </nav>
+    <div class="mm-lore" role="note"><p></p></div>
+  </div>
   <!-- everything you need sits on the one screen: your party at the top left, the map's minimap at the top right (drawn on the
        canvas), messages at the bottom left, your windows and speed at the bottom right, battle orders at the bottom middle -->
   <div class="hudlayer">
@@ -281,6 +300,8 @@
 <script src="js/ui/peopledrawer.js"></script>
 <script src="js/ui/developer.js"></script>
 <script src="js/ui/ring.js"></script>
+<script src="js/gfx/menuart.js"></script>
+<script src="js/ui/mainmenu.js"></script>
 <script src="js/ui/input.js"></script>
 <script src="js/main.js"></script>
 </body></html>

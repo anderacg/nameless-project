@@ -7,7 +7,8 @@
      3. primitives     buttons, cards, tabs, labels, bars, chips, rows
      4. windows        the overlay and the panel: one size, a fixed title row and action row, the content scrolls
      4b. loading       the loading overlay over everything (loading.js): a title and its flag, a pixel bar, the step, a tip
-     5. menus          the title screen, the pause menu, save slots
+     5. menus          the title's windows, the pause menu, save slots
+     5a. main menu     the first screen: the scene drawn in code, the banner with its buttons, the lore (ui/mainmenu.js)
      5b. new world     the world's settings beside its preview (worldsetup.js), the Esc menu's World page
      6. world HUD      party card (top left), day bar (top middle), dock (bottom right), messages (bottom left), tooltip
      6b. people        the tab on the right edge and its drawer: companions, lords, those you know, realms (peopledrawer.js)
@@ -197,20 +198,11 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 .esc-world b{color:var(--accent);user-select:text}
 /* the game over (ui.js showDeath): what killed you and when */
 .death{text-align:center}.death p{max-width:none}
-/* the title screen: the menu down the left over the world, as in most games; its other pages are ordinary windows */
-.screen[data-mode="title"] .overlay:has(.title){justify-content:flex-start;background:linear-gradient(90deg,rgba(5,7,12,.96) 0,rgba(5,7,12,.88) 34%,rgba(5,7,12,.35) 70%,rgba(5,7,12,.15))}
-.panel:has(> .title){width:min(440px,100%);height:auto;max-height:100%;background:none;border:0;box-shadow:none;border-radius:0;padding:24px 8px 24px calc(4vw + 8px);gap:20px;animation:none}
-.title{text-align:left}
-.title .big{margin-bottom:10px;background:linear-gradient(#ffe39a,#d9a535 60%,#a8741f);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 3px 0 #000)}
-.title p{color:var(--fg-2);max-width:34ch}
 .menulist{display:flex;flex-direction:column;gap:8px;width:100%;max-width:440px;margin:0 auto}
-.panel:has(> .title) .menulist{margin:0}
 .card.menu{flex-direction:row;align-items:center;gap:12px;text-align:left}
 .card.menu .mi{flex:none;width:40px;height:40px;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.3);border:1px solid var(--line);border-radius:var(--r-sm)}
 .card.menu .mt{display:flex;flex-direction:column;gap:2px;min-width:0}
 .card.menu .mt span{font-size:var(--fs-md);color:var(--muted)}
-.panel:has(> .title) .card.menu{background:rgba(22,26,40,.72);border-color:rgba(68,77,114,.6);backdrop-filter:blur(4px)}
-.panel:has(> .title) .card.menu:hover:not(:disabled),.panel:has(> .title) .card.menu:focus-visible{background:linear-gradient(90deg,rgba(232,185,74,.18),rgba(22,26,40,.8));border-color:var(--accent);transform:translateX(3px)}
 .card.menu{transition:transform .12s,background .12s}
 /* new game: the origins */
 .origin-cards{grid-template-columns:repeat(auto-fit,minmax(190px,1fr));align-items:stretch}
@@ -228,6 +220,44 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 .slotrow .card.slot .mt span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .slotrow>.btn{align-self:center;min-width:72px}
 .cvform small{display:block;margin-top:3px}
+
+/* ---------- 5a. main menu ---------- */
+/* the first screen (ui/mainmenu.js): the scene fills it (its canvases sized in whole device pixels by the script), the banner down
+   the left over it, the lore at the bottom right; on the title's other pages only the scene shows, dimmed under their windows */
+.mainmenu{position:absolute;inset:0;z-index:15;overflow:hidden;background:var(--void);user-select:none;-webkit-user-select:none}
+.mainmenu canvas{cursor:default;touch-action:manipulation}
+.mainmenu .mm-art{position:absolute;left:0;top:0}
+.mainmenu:not([data-page="main"]) .mm-banner,.mainmenu:not([data-page="main"]) .mm-lore{display:none}
+.mm-banner{position:absolute;left:0;top:0;bottom:0;z-index:1;isolation:isolate;overflow:hidden;width:clamp(230px,27vw,430px);display:flex;flex-direction:column;align-items:center;gap:10px;
+  padding:calc(18px + var(--sa-t)) 26px calc(34px + var(--sa-b)) calc(26px + var(--sa-l))}
+.mm-banner .mm-cloth{position:absolute;left:0;top:0;z-index:-1}
+.mm-emblem{position:relative;flex:1 1 0;min-height:48px;width:100%;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.mm-emblem canvas{flex:none}
+.mm-title{margin:2px 0 0;line-height:0;width:100%;display:flex;justify-content:center}
+.mm-title canvas{flex:none}
+/* (the ornament under the title: a gold rule fading at its ends, a diamond at its middle) */
+.mm-orn{position:relative;flex:none;width:72%;height:9px;background:linear-gradient(90deg,transparent,#7d6532 18%,#c9a24e 50%,#7d6532 82%,transparent) center/100% 1px no-repeat}
+.mm-orn::after,.mm-btn::before,.mm-btn::after,.mm-lore::before,.mm-lore::after{content:"";position:absolute;top:50%;width:8px;height:8px;margin-top:-4px;transform:rotate(45deg);border:1px solid #c9a24e;background:#15110c;box-shadow:0 0 0 1px #000}
+.mm-orn::after{left:50%;margin-left:-4px}
+/* (the buttons: a dark plate in a thin gold frame, a diamond at each end) */
+.mm-btns{flex:none;display:flex;flex-direction:column;gap:12px;width:100%;padding:6px 12px 0}
+.mm-btn{position:relative;min-height:46px;padding:8px 18px;border:1px solid #9a7a3e;border-radius:2px;background:linear-gradient(#27211a,#120f0b);color:#efe5cc;
+  font:400 19px/1.2 var(--font);letter-spacing:.02em;text-shadow:0 1px 0 #000;box-shadow:inset 0 0 0 1px #000,inset 0 0 0 3px #2b241a,0 2px 0 #000;cursor:pointer;transition:background .12s,color .12s}
+.mm-btn::before{left:-5px}.mm-btn::after{right:-5px}
+.mm-btn:hover:not(:disabled),.mm-btn:focus-visible{border-color:#e2bd68;background:linear-gradient(#3b3124,#1b1610);color:#fff7df}
+.mm-btn:hover:not(:disabled)::before,.mm-btn:hover:not(:disabled)::after,.mm-btn:focus-visible::before,.mm-btn:focus-visible::after{background:#c9a24e}
+.mm-btn:focus-visible{outline:none;box-shadow:inset 0 0 0 1px #000,inset 0 0 0 3px #4a3c22,0 0 0 2px var(--accent)}
+.mm-btn:disabled{opacity:.4;cursor:default}
+.mm-more{flex:none;margin:0;display:flex;gap:18px;justify-content:center}
+.mm-more button{min-height:28px;padding:2px 4px;border:0;background:none;color:#a3987f;font-size:var(--fs-md);text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.mm-more button:hover,.mm-more button:focus-visible{color:#efe5cc}
+/* (the lore: a framed line, a diamond at each end; each new line fades in) */
+.mm-lore{position:absolute;right:calc(18px + var(--sa-r));bottom:calc(18px + var(--sa-b));max-width:min(460px,46%);padding:9px 24px;border:1px solid #9a7a3e;border-radius:2px;
+  background:rgba(14,11,9,.86);box-shadow:inset 0 0 0 1px #000,inset 0 0 0 3px #2b241a,0 2px 0 #000;color:#efe5cc;font-size:var(--fs-lg);text-shadow:0 1px 0 #000}
+.mm-lore::before{left:-5px}.mm-lore::after{right:-5px}
+.mm-lore p{margin:0}
+.mm-lore p.in{animation:mmfade .9s ease-out}
+@keyframes mmfade{from{opacity:0}}
 
 /* ---------- 5b. new world ---------- */
 /* worldsetup.js: the settings down the left (they scroll), the preview beside them (it stays), the bottom bar under both; on a
@@ -955,6 +985,15 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
   .inv{grid-template-columns:minmax(0,1fr)}
   .slotgrid{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
+/* the main menu on a small screen (a phone on its side): a narrower banner, everything closer, the lore smaller */
+@media (max-height:520px),(max-width:820px){
+  .mm-banner{width:clamp(200px,33vw,300px);gap:6px;padding:calc(10px + var(--sa-t)) 18px calc(16px + var(--sa-b)) calc(18px + var(--sa-l))}
+  .mm-btns{gap:8px;padding:2px 8px 0}
+  .mm-btn{min-height:40px;padding:6px 12px;font-size:var(--fs-lg)}
+  .mm-more button{min-height:24px;font-size:var(--fs-sm)}
+  .mm-lore{max-width:min(340px,42%);padding:5px 16px;font-size:var(--fs-sm)}
+}
+@media (pointer:coarse){.mm-btn{min-height:var(--tap)}}
 /* a phone held upright: the game wants it on its side, but every window still works */
 @media (max-width:520px) and (orientation:portrait){
   .wtop{top:auto;bottom:calc(var(--e-b) + 104px)}

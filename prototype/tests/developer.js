@@ -65,7 +65,9 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,D=t.DevCo
   L.start({left:'hum_champ',right:'militia',distance:40,ai:true,paused:true,morale:false});for(let i=0;i<12&&!L.session.result;i++)L.step(600);
   ok(!!L.session.result&&t.B.paused&&t.B.over,'a real simulated unit-vs-unit battle completes without campaign settlement');L.exit();
   ok(JSON.stringify(P)===playerJSON&&JSON.stringify(t.W)===worldJSON,'naturally completed battle also restores campaign and world state');
-  G.mode='title';G.modal=true;t.showTitle();const title=panel.innerHTML;L.start({left:'dragon',right:'hum_foot',paused:true});t.frame();L.exit();ok(G.mode==='title'&&panel.innerHTML===title&&!ov.hidden,'sandbox can also be launched from and returned to the title screen');
+  G.mode='title';G.modal=true;t.showTitle();const title=panel.innerHTML,ov0=ov.hidden;L.start({left:'dragon',right:'hum_foot',paused:true});t.frame();L.exit();ok(G.mode==='title'&&panel.innerHTML===title&&ov.hidden===ov0,'sandbox can also be launched from and returned to the title screen');
+  {window.__W0=(0,eval)('WM');(0,eval)('WM=null');let msg='';try{D.labStart({left:'hum_foot',right:'militia'})}catch(e){msg=e.message}finally{(0,eval)('WM=window.__W0');delete window.__W0}
+   ok(!L.active&&/needs a world/.test(msg),'from the main menu with no world in, the test bench says it needs one: '+msg)}
  }catch(e){o.push('EXC '+e.message+' '+e.stack)}finally{if(L.active)L.exit();D.close()}
  const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d);
 };

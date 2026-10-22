@@ -144,6 +144,6 @@ function installClassic(){if(WORLD.gen)return installWorld(genWorld(classicSetti
 function worldKeep(){WM.first={towns:TOWNS.map(t=>JSON.stringify(t,(k,v)=>k[0]==='_'?undefined:v)),occ:OCC.slice(),lotN,land:LAND.slice(),landSig,landTiles:landTiles.slice()}}
 // (each holding as it first stood: what play added to it gone, what it changed put back, its kind's class too)
 onWorld(m=>{const F=m.first;if(F)TOWNS.forEach((t,i)=>{for(const k of Object.keys(t))delete t[k];holdingOf(Object.assign(t,JSON.parse(F.towns[i])))})});
-// (with WORLD.gen the game's own page forges it behind the overlay instead, once every script is in: main.js; the tests and the
-// wiki make it here, at once)
-if(!(WORLD.gen&&!/[?&]test=/.test(location.search)&&!/wiki\.html$/i.test(location.pathname)))installClassic();
+// (the tests and the wiki make it here, at once; the game's own page makes none at load, either world: it opens on the main menu
+// and a world is made when a campaign starts or a save is loaded: ui/mainmenu.js, session.js begin, save.js loadGame)
+if(/[?&]test=/.test(location.search)||/wiki\.html$/i.test(location.pathname))installClassic();

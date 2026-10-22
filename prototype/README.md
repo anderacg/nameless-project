@@ -2,8 +2,8 @@
 
 Open `Ashmark.html` in a browser. There is no build step and nothing to install.
 
-**Which world.** The generated world is the default (doc/WORLD_DESIGN.md §15.2 wave 4, D42): `Ashmark.html` forges the classic
-seed (Normal, seed `CLASSIC`) behind the loading overlay, and New game offers the New world screen (Classic first). Today's
+**Which world.** The generated world is the default (doc/WORLD_DESIGN.md §15.2 wave 4, D42): `Ashmark.html` opens on the main
+menu with no world made (see "The main menu" below), and New Campaign offers the New world screen (Classic first). Today's
 hand-made 224 × 160 map is still there behind `Ashmark.html?gen=0` (`data/world.js` `WORLD.gen` off) until the owner confirms
 the generated map (D49); nothing new is built for it. A save holds the world it was made in, so either page loads either
 world's save: a load makes that world again first (`core/save.js` `loadGame`).
@@ -153,8 +153,9 @@ js/gfx/               worldart.js (the painted map), sprites.js (generated sprit
                       structures.js (placed buildings, estates' ground, camps, sites, flags), render.js (world and battle drawing, HUD),
                       depth.js (what stands in front of a figure on the map, and its fade), vfx.js (battle effects), worldui.js (the map's
                       pointer marks, route trail (the way your hero walks: heroWay, the router's round water) and encounter highlights), mist.js (mist in the fog), weapons.js (battle weapons),
-                      scenedraw.js (painting and drawing the walkable scenes: scene/)
-js/ui/                ui.js (panels, title, Esc menu with the world's name and seed and its World page, the game-over window), loading.js (the loading overlay; runSteps runs long work in steps), worldsetup.js (the New world screen: a world's settings before you forge it), character, talents, inventory, town (a holding's
+                      scenedraw.js (painting and drawing the walkable scenes: scene/), menuart.js (the main menu's scene, banner, emblem
+                      and title, drawn in code: MenuScene, MENU_ART)
+js/ui/                mainmenu.js (the main menu: the page's first screen, no world behind it), ui.js (panels, title, Esc menu with the world's name and seed and its World page, the game-over window), loading.js (the loading overlay; runSteps runs long work in steps), worldsetup.js (the New world screen: a world's settings before you forge it), character, talents, inventory, town (a holding's
                       places: Place, definePlace, PLACES; class wave D),
                       window.js (rail windows: a rail of places beside the chosen one's window), townui.js (a town's places, its overview, your
                       holding's buildings), estate.js (an estate's window on the map, and the Fief's Estates section), peopledrawer.js (the people drawer, P), input.js (actions, mouse, keys), map.js (the full map:
@@ -771,6 +772,28 @@ full screen, menu), battle orders bottom middle in a battle. Hold the mouse or a
 Hover anything on the map for what it is, its strength against you and what a click does. Fog of war (js/world/fog.js) keeps
 what you have explored.
 
+**The main menu** (`ui/mainmenu.js` `MainMenu`, its art `gfx/menuart.js`; the owner, 2026-10-22, from the concept picture
+doc/assets/ashmark-main-menu-pixel-art-reference.png, which the game never loads). The page opens on it with no world made, forged,
+installed or drawn: `worldmap.js` installs today's world at load only for the tests (`?test=`) and the wiki, on either world;
+the loop draws the menu instead of the game while it shows (`main.js`). A world is made when a campaign starts (`session.js`
+`begin`: with `?gen=0` today's map then, `classicWorld`) or a save loads (`save.js` `loadGame`), and let go again when the Esc
+menu's Main menu or Exit game, or the game over's Back to the title, takes you back (`ui.js` `toTitle`, `session.js` `dropWorld`).
+Down the left a banner (iron posts and rod, dark cloth ragged at its foot) with the emblem (a pale tree whose roots run down
+into three peaks), ASHMARK in pixel capitals and four framed buttons: **New Campaign** (the New game page, then with the
+generated world the New world screen, then forging: the same flow as before), **Continue** (the latest save; dimmed with none),
+**Settings** (the Settings window), **Quit** (the tab closes where the browser lets a page close itself, else a page says to
+close it); under them Load game and Wiki. Arrows move between the buttons, Enter presses one, Esc does nothing there. At the
+bottom right a framed line of lore (`MAINMENU.lore`) changes every 9 s. Behind it all the land at dusk (`MenuScene`): sky,
+clouds, stars, ranges, sea, ships, a smoking volcano, a dragon far off, a castle on its hill with houses, fields and a windmill,
+a river under a bridge between towers, pine woods, a column marching under banners, your camp by its fire; the engine's own
+trees, building models and people figures graded to dusk. Seeded (`MENU_ART.seed`), baked once a size (about 40 ms on a
+desktop) and only the moving bits drawn after, 12 frames a second (still with reduced motion). Its pixels are whole device
+pixels: the scene about 420 game px high (2× at 1600 × 900, 1× on a phone on its side). The title's other pages are windows
+over the scene, the banner put away. The page reaches a working menu in about 0.4 s here (it was about 2.0 s on the generated
+world, 0.9 s on today's map, when it forged or installed the world first). Tests: `tests/mainmenu.js` (the real page in a
+frame: no world at load, the buttons, Continue dimmed, the keys, New Campaign, 844 × 390 and 1600 × 900, the scene seeded, a
+campaign and back), `tests/menu.js`.
+
 **The full map** (`ui/map.js`; doc/WORLD_DESIGN.md §3.4, §12.4): **M**, a click or a tap on the minimap, or the dock's Map beside Camp (a phone's way in), opens the whole world
 in a window (header with the world's name, size, how much you have explored and − + for the zoom; the map beside its legend;
 Close). M again or Esc closes it; the world waits meanwhile. The picture is made from the tile data (`fullMapPic`: the minimap's
@@ -790,8 +813,7 @@ size (or Custom: width and height with − and +), the holdings (Fewer, Normal, 
 those later phases read marked later). Classic locks everything that changes the map; monsters, bandits and your start stay open.
 Every change is clamped at once, with a note when a limit moved a value. Right: the preview, your start city ringed: the quick
 sketch (`worldgen.js` `genSketch`: the real land field and climate noise at 256 points across, mountains, rivers and holdings
-approximate; about 70 ms at any size), redrawn 200 ms after a change, or the real map when it is made (the classic world the
-page forged); no buttons there (the owner, 2026-10-22: Random is the seed's own, Enter in the seed redraws); the counts and the time it takes to forge here (measured once, kept in `localStorage`). A generated world but
+approximate; about 70 ms at any size), redrawn 200 ms after a change, or the real map when it is made (the world in); no buttons there (the owner, 2026-10-22: Random is the seed's own, Enter in the seed redraws); the counts and the time it takes to forge here (measured once, kept in `localStorage`). A generated world but
 Classic starts as its seed says (`session.js` `seededStart`: its first sites, herds, bands and beasts with the game's number 0
 and Math.random the 'start' stream's), so one code starts one world; what happens in play stays random. The Esc menu's World
 button opens the World page (every setting, the world code with Copy, what it holds); a save's line reads "Redwater · Large ·

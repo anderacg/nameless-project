@@ -1,5 +1,6 @@
 'use strict';
-// Main menu: Continue, New game, Load game, Settings, Wiki and Exit; the HUD Menu button with Resume; deleting the save asks twice.
+// Main menu (ui/mainmenu.js): New Campaign, Continue, Settings, Quit, then Load game and Wiki; the HUD Menu button with Resume; the
+// Esc menu's Main menu lets the world go; deleting the save asks twice.
 // Pasts decide the starting weapon and a lean purse; early loot is lean too.
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),close0=window.close;let closeCalls=0;
 // CDP-created test tabs may actually close themselves. Check the request without destroying the reporting page.
@@ -7,7 +8,10 @@ window.close=()=>{closeCalls++};
 try{
  const t=T,G=t.G,P=t.P;try{localStorage.clear()}catch(e){}
  const panel=()=>document.getElementById('panel').innerHTML,cards=()=>[...document.querySelectorAll('#panel .card strong')].map(e=>e.textContent);
- t.showTitle();ok(G.mode==='title'&&['New game','Load game','Settings','Wiki','Exit'].every(n=>cards().includes(n))&&!cards().includes('Continue'),'the main menu: '+cards().join(', '));
+ const mm=document.getElementById('mainmenu'),btns=()=>[...mm.querySelectorAll('.mm-btn')].map(b=>b.textContent+(b.disabled?' (off)':'')),cont=()=>mm.querySelector('[data-mm="continue"]');
+ t.showTitle();ok(G.mode==='title'&&!mm.hidden&&document.getElementById('ov').hidden&&btns().join()==='New Campaign,Continue (off),Settings,Quit','the main menu, no window over it: '+btns().join(', '));
+ ok([...mm.querySelectorAll('.mm-more button')].map(b=>b.textContent).join()==='Load game,Wiki'&&/Ashmark/.test(mm.querySelector('.mm-title canvas').getAttribute('aria-label')),'under the buttons Load game and Wiki; the title drawn, named for readers');
+ mm.querySelector('[data-mm="new"]').click();ok(G.menu==='new'&&mm.dataset.page==='new','New Campaign opens the New game page over the scene');t.act('menu','main');
  // new game
  t.act('menu','new');ok(G.menu==='new'&&document.querySelectorAll('[data-act="begin"]').length===7&&document.querySelectorAll('[data-act="race"]').length===4,'New game: four races and seven pasts');
  t.act('race','dwarf');ok(G.menu==='new'&&document.querySelector('[data-act="race"].on').dataset.arg==='dwarf','picking a race stays on the New game screen');
@@ -15,7 +19,8 @@ try{
  ok(Object.values(t.BGS).every(b=>b.gold<=110),'every past starts poor: '+Object.values(t.BGS).map(b=>b.n+' '+b.gold+'g').join(', '));
  // the HUD Menu button: resume where you were
  G.mode='world';G.modal=false;t.hidePanel();document.getElementById('menuBtn').click();ok(G.mode==='esc'&&/Paused/.test(panel()),'the HUD Menu button opens the Esc menu');
- t.act('esc-main');ok(G.mode==='title'&&!cards().includes('Resume'),'the main menu offers no Resume: '+cards().join(', '));
+ t.act('esc-main');ok(G.mode==='title'&&!mm.hidden&&!btns().includes('Resume'),'the main menu offers no Resume: '+btns().join(', '));
+ ok(!t.WM&&!t.TOWNS.length&&!t.CAMP_SPOTS.length,'and the world is let go: no map, holdings or camps in');t.act('begin','hedge');G.quietEvents=true;ok(!!t.WM&&t.TOWNS.length>0&&G.mode==='world','a new game makes it again');
  G.mode='world';G.modal=false;t.hidePanel();
  // Esc: close what is open, else pause with the Esc menu
  const esc=()=>window.dispatchEvent(new KeyboardEvent('keydown',{code:'Escape',key:'Escape'}));
@@ -50,12 +55,12 @@ try{
  // in the menus Esc goes back
  t.act('menu','main');t.act('menu','settings');esc();ok(G.menu==='main','Esc in a menu page goes back to the main menu');
  // continue and load
- t.saveGame();t.showTitle();ok(cards().includes('Continue')&&/hedge mage/i.test(panel()),'with a save, Continue shows it');const g0=P.gold;P.gold=999;t.act('load');ok(G.mode==='world'&&P.gold===g0,'Continue loads it');
+ t.saveGame();t.showTitle();ok(!cont().disabled&&/hedge mage/i.test(cont().title),'with a save, Continue is open, the save named on it: '+cont().title);const g0=t.readSave().P.gold;P.gold=999;t.act('load');ok(G.mode==='world'&&P.gold===g0,'Continue loads it');
  t.showTitle('load');ok(/Autosave/.test(panel())&&/Quick save/.test(panel())&&/Slot 5/.test(panel())&&/Day \d+/.test(panel()),'Load game lists the save slots, the saved game in its own');
  t.act('wipe-ask','auto');ok(t.readSave()&&/Delete\?/.test(panel()),'deleting asks for a second click');t.act('wipe','auto');ok(!t.readSlot('auto')&&G.mode==='title','and then deletes that save (the others stay)');
  // settings, wiki, exit
  t.act('menu','settings');ok(/Realm economy/.test(panel())&&!/Pack sprites/.test(panel())&&/Controls/.test(panel())&&/Back/.test(panel()),'Settings: realm economy and controls, no art switch');
- let opened=null;const wo=window.open;window.open=(u)=>{opened=u;return null};t.act('menu','wiki');window.open=wo;ok(opened==='wiki.html','Wiki opens the wiki in a new tab');
+ let opened=null;const wo=window.open;window.open=(u)=>{opened=u;return null};t.act('menu','wiki');window.open=wo;ok(opened==='wiki.html'+(t.WORLD.gen?'':'?gen=0'),'Wiki opens the wiki in a new tab');
  t.act('menu','exit');ok(/Thanks for playing/.test(panel())&&closeCalls===2,'Exit requests tab closure and says goodbye');t.act('menu','main');ok(G.menu==='main','and Back returns to the menu');
  // lean loot: a band of 8 gives far less than it used to
  t.act('menu','new');t.act('begin','soldier');P.troops={hum_knight:20};let gold=0;for(let k=0;k<6;k++){G.mode='world';G.modal=false;t.hidePanel();const g1=P.gold;t.startEncounter({kind:'party',ref:t.asParty({x:P.x,y:P.y,cool:0,troops:Array(8).fill('militia')}),n:8,list:Array(8).fill('militia')});t.autoResolve();gold+=P.gold-g1;t.act('cont');while(G.mode==='perk')t.act('perk',G.perkOffer[0])}
