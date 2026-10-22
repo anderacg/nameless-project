@@ -14,7 +14,7 @@ try{
    // ground, no body pixel beside an empty one)
    let soft=false,rim=false;const K=(x,y)=>x<0||y<0||x>=N||y>=N?0:b.mask[y*N+x],nb=(x,y)=>[K(x-1,y),K(x+1,y),K(x,y-1),K(x,y+1)];
    for(let y=0;y<N;y++)for(let x=0;x<N;x++){const al=a[(y*N+x)*4+3];if(al&&al!==255)soft=true;const k=K(x,y),i=(y*N+x)*4;
-     if(k===3&&(!(a[i]===0x1a&&a[i+1]===0x1c&&a[i+2]===0x26)||!nb(x,y).some(q=>q===0||q===2)))rim=true;if(k===1&&nb(x,y).includes(0))rim=true}
+     if(k===3&&(!(a[i]===0x1a&&a[i+1]===0x1c&&a[i+2]===0x26)||!nb(x,y).some(q=>q===0||q===2)))rim=true;if(k===4&&!(a[i]===0x1a&&a[i+1]===0x1c&&a[i+2]===0x26))rim=true;if(k===1&&nb(x,y).includes(0))rim=true}
    if(soft)bad.soft.push(id);if(rim)bad.rim.push(id);
    const h=a.join(),b2=PX.model(sp);if(px(b2.img).join()!==h)bad.same.push(id);if(seen.has(h))bad.turn.push(id);seen.add(h);
    const s=px(b.shadow),gr=px(b.ground);for(let i=0;i<N*N;i++)if(s[i*4+3]&&a[i*4+3]||gr[i*4+3]&&gr[i*4+3]!==255){bad.shadow.push(id);break}
