@@ -134,6 +134,48 @@ try{
   for(let ty=1;ty<MH-1;ty++)for(let tx=1;tx<MW-1;tx++){if(t.CLIMS[t.climate[ty*MW+tx]]!=='desert'||t.tiles[ty*MW+tx]!==t.T_OPEN)continue;let hit=0;for(let j=0;j<TILE&&!hit;j+=2)for(let i=0;i<TILE;i+=2){const o4=((ty*TILE+j)*Wp+tx*TILE+i)*4;if(P2.has(d[o4]+','+d[o4+1]+','+d[o4+2])){hit=1;break}}
     if(!hit)continue;let wet=false;for(let b=-3;b<=3;b++)for(let a=-3;a<=3;a++)if(t.tAt(tx+a,ty+b)===t.T_WATER)wet=true;if(wet)near++;else far++}
   ok(far<=near*.1+2,'the desert’s palms stand by water (tiles showing palms: '+near+' by water, '+far+' not)')}
+ // ---- the mountains' kinds (the owner's notes on the fifth play-test, engine only: a small map of its own, a range of 14 x 8 tiles,
+ //      its left half grass and its right desert, the desert's cover ramping across the middle as the map's does). A forested range
+ //      wooded with the world's own trees standing on its slopes (lifted up the screen by their ground's height), bare rock on its
+ //      steepest faces and its summit; across a climate's edge its look, its trees and its foot leaning to each side's; painted a
+ //      window at a time, the same picture
+ {const C=24,R=16,ts=16,Wm=C*ts,Hm=R*ts,N=C*R,kind=new Uint8Array(N),clim=new Uint8Array(N),cov=new Float32Array(N),f=v=>new Uint8Array(N).fill(v),G0=[88,128,58],GD=[214,182,108];
+  for(let y=4;y<12;y++)for(let x=5;x<19;x++)kind[y*C+x]=PX.WN_KIND.mount;
+  for(let y=0;y<R;y++)for(let x=0;x<C;x++){clim[y*C+x]=x<12?0:2;cov[y*C+x]=Math.max(0,Math.min(1,(x-9)/6))}
+  const ground=D=>{for(let i=0;i<Wm*Hm;i++){const c=clim[((i/Wm/ts)|0)*C+((i%Wm)/ts|0)]?GD:G0;D[i*4]=c[0];D[i*4+1]=c[1];D[i*4+2]=c[2];D[i*4+3]=255}return D};
+  const plan=(pool,cover)=>{const P0=PX.WN_MOUNT.pool;PX.WN_MOUNT.pool=pool;try{return PX.worldNaturePlan({W:Wm,H:Hm,C,R,ts,kind,clim,clear:new Uint8Array(Wm*Hm),seed:3,snow:new Float32Array(N),
+    cover:{desert:cover,swamp:new Float32Array(N)},mount:{elev:f(200),temp:f(120),moist:f(80),rough:f(80)}})}finally{PX.WN_MOUNT.pool=P0}};
+  const paint=(P,w)=>{const D=ground(new Uint8ClampedArray(Wm*Hm*4)),o=PX.worldNaturePaint(P,w||{x:0,y:0,w:Wm,h:Hm},D,null);return{D,o,md:P.md[0]}};
+  const zA=(md,x,y)=>x<md.x0||y<md.y0||x>=md.x1||y>=md.y1?0:md.ZR[(y-md.y0)*md.bw+x-md.x0],nzA=(md,x,y)=>1/Math.hypot((zA(md,x+1,y)-zA(md,x-1,y))/2,(zA(md,x,y+1)-zA(md,x,y-1))/2,1);
+  const px=(D,x,y)=>D[(y*Wm+x)*4]+','+D[(y*Wm+x)*4+1]+','+D[(y*Wm+x)*4+2],hex=c=>parseInt(c.slice(1,3),16)+','+parseInt(c.slice(3,5),16)+','+parseInt(c.slice(5,7),16);
+  // (forested, no edge: trees on it, none on a steep face or near its summit; the steep faces' and the summit's top pixels bare rock,
+  //  where they show (a tree before one hides it), far more than where a tree stands)
+  {const FO=[['forested',1]],P=plan({grass:FO,frost:FO,desert:FO,swamp:FO},new Float32Array(N)),{D,o,md}=paint(P),T=PX.WN_MOUNT.trees,ROCK=new Set(PX.WORLD_MOUNTS.forested.rock.c.map(hex));
+   const TS=new Set();for(const c of CL)for(const sp of PX.WORLD_SPECIES[c])for(let v=0;v<4;v++)for(const d of [0,1])TS.add(PX.worldTree(c,sp,v,d));
+   const tr=md&&md.trees||[],lifted=tr.filter(q=>q.z>=3).length,steepT=tr.filter(q=>nzA(md,q.x,q.y)<T.steep).length,highT=tr.filter(q=>q.z>md.zmax*(PX.WORLD_MOUNTS.forested.wood+T.line)).length;
+   let st=0,sr=0,top=null;for(let y=md.y0;y<md.y1;y++)for(let x=md.x0;x<md.x1;x++){const z=zA(md,x,y);if(z<6)continue;if(!top||z>top[2])top=[x,y,z];if(nzA(md,x,y)<T.steep){st++;if(ROCK.has(px(D,x,Math.round(y-z))))sr++}}
+   const wr=tr.filter(q=>ROCK.has(px(D,q.x,q.y-q.z))).length;let sumR=0,sumN=0;for(let y=top[1]-2;y<=top[1]+2;y++)for(let x=top[0]-2;x<=top[0]+2;x++){const z=zA(md,x,y);if(z<top[2]-3)continue;sumN++;if(ROCK.has(px(D,x,Math.round(y-z))))sumR++}
+   ok(tr.length>150&&o.mtrees>150&&tr.every(q=>TS.has(q.sp))&&lifted>tr.length*.8&&!steepT&&!highT&&st>200&&sr>st*.3&&sr/st>4*wr/tr.length&&sumN&&sumR>=sumN*.5,'a forested range ('+md.zmax.toFixed(0)+' px high) stands with '+tr.length+' of the world’s trees ('+o.mtrees+' painted, '+lifted+' lifted up its slopes), none on a steep face ('+steepT+') or above its tree line ('+highT+'); its steep faces bare rock at '+sr+' of '+st+' points (where a tree stands '+wr+' of '+tr.length+'), its summit at '+sumR+' of '+sumN)}
+  // (across an edge: the grass's granite and the desert's sandstone; its look mixed by the covers (CT), warmer toward the desert; the
+  //  forested's trees thinning out toward the desert; its foot leaning to the ground under it)
+  {const P=plan({grass:[['granite',1]],frost:[['granite',1]],desert:[['sandstone',1]],swamp:[['granite',1]]},cov),{D,md}=paint(P),warm=[0,0,0],n=[0,0,0];let mixed=0,pts=0;
+   for(let y=md.y0;y<md.y1;y++)for(let x=md.x0;x<md.x1;x++){const k=(y-md.y0)*md.bw+x-md.x0;if(!md.ZR[k])continue;pts++;if(md.CT[k]&&md.CL[k]!==md.CL2[k])mixed++;
+     const b=x<9*ts?0:x<15*ts?1:2,o=(Math.round(y-md.ZR[k])*Wm+x)*4;warm[b]+=D[o]-D[o+2];n[b]++}
+   const w=warm.map((s,i)=>s/Math.max(1,n[i]));
+   const FO=[['forested',1]],P2=plan({grass:FO,frost:FO,desert:[['classic',1]],swamp:FO},cov),md2=paint(P2).md,d=[0,0,0];for(const q of md2.trees||[])d[q.x<9*ts?0:q.x<15*ts?1:2]++;
+   // (the foot: the rock's lowest px nearer the ground's colour under them than with PX.WN_MOUNT.foot off, on each side of the edge)
+   const GR={grass:[['granite',1]],frost:[['granite',1]],desert:[['granite',1]],swamp:[['granite',1]]},r3=paint(plan(GR,cov)),F0=PX.WN_MOUNT.foot,fd=[0,0],fn=[0,0];
+   PX.WN_MOUNT.foot=[0,0];let r4;try{r4=paint(plan(GR,cov))}finally{PX.WN_MOUNT.foot=F0}
+   const gd=(D,o,g)=>Math.abs(D[o]-g[0])+Math.abs(D[o+1]-g[1])+Math.abs(D[o+2]-g[2]);
+   for(let i=0;i<Wm*Hm;i++){const o=i*4;if(r3.D[o]===r4.D[o]&&r3.D[o+1]===r4.D[o+1]&&r3.D[o+2]===r4.D[o+2])continue;const sd=clim[((i/Wm/ts)|0)*C+((i%Wm)/ts|0)]?1:0;fn[sd]++;if(gd(r3.D,o,sd?GD:G0)<gd(r4.D,o,sd?GD:G0))fd[sd]++}
+   ok(mixed>pts*.1&&w[2]>w[1]+8&&w[1]>w[0]+8&&d[0]>d[1]&&d[1]>d[2]&&d[2]<d[0]*.15&&fn[0]>40&&fn[1]>40&&fd[0]>=fn[0]*.95&&fd[1]>=fn[1]*.95,'a range across a climate’s edge blends with both: its look mixed at '+mixed+' of '+pts+' points, warmer toward the desert (red over blue '+w.map(v=>v.toFixed(0)).join(' / ')+' grass, edge, desert), a forested look’s trees thinning out toward it ('+d.join(' / ')+'), its foot leaning to each side’s ground (nearer it at '+fd.join(' / ')+' of '+fn.join(' / ')+' foot pixels, grass / desert)')}
+  // (painted a window at a time, the one picture: the trees standing across a window's edge too)
+  {const FO=[['forested',1]],P=plan({grass:FO,frost:FO,desert:[['sandstone',1]],swamp:FO},cov),A=paint(P).D,B=ground(new Uint8ClampedArray(Wm*Hm*4)),AP=PX.WN_APRON;let bad=0;
+   for(let Y=0;Y<Hm;Y+=96)for(let X=0;X<Wm;X+=96){const x0=Math.max(0,X-AP),y0=Math.max(0,Y-AP),w=Math.min(Wm,X+96+AP)-x0,h=Math.min(Hm,Y+96+AP)-y0,Dw=new Uint8ClampedArray(w*h*4);
+     for(let j=0;j<h;j++)for(let i=0;i<w;i++){const o=((y0+j)*Wm+x0+i)*4,q=(j*w+i)*4;Dw[q]=B[o];Dw[q+1]=B[o+1];Dw[q+2]=B[o+2];Dw[q+3]=255}
+     PX.worldNaturePaint(P,{x:x0,y:y0,w,h,inner:{x:X,y:Y,w:Math.min(96,Wm-X),h:Math.min(96,Hm-Y)}},Dw,null);
+     for(let j=Y;j<Math.min(Hm,Y+96);j++)for(let i=X;i<Math.min(Wm,X+96);i++){const o=(j*Wm+i)*4,q=((j-y0)*w+i-x0)*4;if(A[o]!==Dw[q]||A[o+1]!==Dw[q+1]||A[o+2]!==Dw[q+2])bad++}}
+   ok(!bad,'painted 96 px at a time, a forested range across an edge is the one picture ('+bad+' pixels differ)')}}
  // ---- the same map, the same picture; and the time it takes
  {const h=c=>{const d=c.getContext('2d').getImageData(0,0,Wp,Hp).data;let s=0;for(let i=0;i<d.length;i+=28)s=(s*31+d[i])|0;return s},a=h(cv),ms=[];let b=0;
   for(let k=0;k<3;k++){const q=performance.now(),c=t.paintWorld();ms.push(performance.now()-q);if(k===2)b=h(c)}

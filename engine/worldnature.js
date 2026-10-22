@@ -8,7 +8,7 @@
 //   willow, mangrove, mossy oak, dead tree; palm, acacia; willow), v 0-3 its shape, dim 1 one deep in a wood (darker and cooler).
 //   Which grow where: PX.WORLD_TREES (each climate's woods and the fen's, by weight), PX.WORLD_SPECIES (each climate's species).
 // PX.worldPeak(clim,v,n,kind): a mountain alone in an n box (16 a crag or spire, 32 and 64 a massif), v 0-5: drawn as the ranges
-//   are (kind: one of PX.WORLD_MOUNTS, else its climate's look).
+//   are (kind: one of PX.WORLD_MOUNTS, else its climate's look; a forested one its wood's floor, no trees: a tree is 16 px).
 // PX.worldRange(o): mountain ranges as the battle's (ground.js rockMasses): each mass of rock tiles a height field (fluted cones on
 //   some of its tiles, as high as the tile lies deep in the range, over a lower body, steep at its edge; sandstone buttes in the
 //   desert; a spire if it is one or two tiles), drawn front to back a column at a time, each ground point (x, y) at height z at
@@ -16,8 +16,10 @@
 //   own shadow and one cast on the ground to the lower right; granite with tufts and lichen, snow above a ragged line (the frost,
 //   and the high peaks elsewhere), strata of ochre and red (desert), moss (swamp); a navy outline round the silhouette and a deep
 //   contour along each crest standing before the rock behind. Never over kept-clear ground: a peak is lowered rather than rise
-//   over a road or water behind it. On the generated world each range is of a kind (PX.WORLD_MOUNTS: sandstone buttes, granite,
-//   basalt, alpine peaks, forested low mountains, the swamp's knolls; PX.worldMountKind), its look blended across a climate's edge.
+//   over a road or water behind it. On the generated world each range is of a kind drawn from its climates' pools (PX.WN_MOUNT.pool:
+//   the original look, the climate's own rock as today's map, and PX.WORLD_MOUNTS: sandstone buttes, granite, basalt, alpine peaks,
+//   forested low mountains, the swamp's knolls; PX.worldMountKind), its look, trees, snow and foot blended across a climate's edge by
+//   the climates' covers; a forested range wooded with the world's own trees standing on its slopes (PX.WN_MOUNT.trees).
 // PX.worldHill(clim,v,opts): a rise, a height bump in a 32 box: hills add their bumps up (two near merge into a ridge) and are shaded as one ground (soft edges,
 //   lit upper-left slopes, cool shade, a soft shadow to the lower right), tufts, strata, snow or moss by climate. opts.edge is kept
 //   for cliffs (a later feature: the sides a face would drop on, E 1, S 2, W 4, N 8, as ground.js's wall); today nothing reads it.
@@ -37,7 +39,7 @@
 //   tile's corner between two waters kept clear too); the generated world's (optional): flow, river and water (its brooks), lane (a
 //   byte a tile: the roads through woods, PX.WN_LANE), road ((x, y) => how far inside a way's band, PX.WN_LANE), oases and ponds
 //   ({x, y, r, ring, kind, big, farm, tiles} each: PX.WN_RING), mount ({elev, temp, moist, rough} a byte a tile: the ranges'
-//   kinds)}. Woods darken their floor and stand as
+//   kinds; with it the ranges blend by the covers)}. Woods darken their floor and stand as
 //   one mass (outlined round its edge only, deeper trees dimmer; the swamp's forest a bog: fewer trees over peat pools), its floor's
 //   shade and a fringe of undergrowth and trees thinning out over the open ground round it (PX.WN_FRINGE); hills shade
 //   the ground; ranges rise; small things lie and stand on the open; palms by
@@ -261,24 +263,46 @@
      share of its height), scree (a butte's talus fan: [px high at most, a share of its height]), tone (its shading swung by a broad
      noise either way), wob (its foot's wobble, times the range's: round, not its tiles' box). sandstone: flat-topped buttes and
      mesas, banded red and ochre, sheer, scree fans at their feet; granite: craggy, bare, pale grey, cracked; basalt: dark, jagged,
-     columns down its faces, rust; alpine: tall, snow-capped; forested: low and round, wooded up its flanks, rock at its crest; knoll:
-     low, round, mossy, dark */
+     columns down its faces, rust; alpine: tall, snow-capped; forested: low and round, the world's trees standing up its flanks over
+     a wood's floor (f, lit to deep; PX.WN_MOUNT.trees), bare rock on its steepest faces, crags and crest; knoll: low, round, mossy,
+     dark. The original look (classic, PX.WN_MOUNT.pool) is none of these: each climate's own rock, as on today's map */
   PX.WORLD_MOUNTS={
     sandstone:{rock:{c:['#f2cc92','#d8a066','#b4744a','#86523a','#5a362c'],b:['#c8644a','#f6dcaa','#9a5838']},h:1,scree:[6,.32],tone:.08},
     granite:{rock:{c:['#e2e0d8','#bcbab2','#94938e','#6c6c70','#46464e'],g:['#8a9a5a','#6a7a44','#4e5c36']},h:1,ps:1.15,ridges:[4,5],crag:1.7,edge:1.1,tone:.06},
     basalt:{rock:{c:['#7a7682','#58546a','#403d4c','#2c2a36','#1a1822'],r:['#a0503a','#6a3a2e']},h:.95,ps:1.4,ridges:[5,5],crag:2.4,edge:1.4,tone:.05},
     alpine:{rock:{c:['#d8dee8','#a8b0c2','#7c849a','#586078','#3a4056'],s:['#fafcff','#dce6f2','#b2c2da']},h:1.15,ps:1.25,ridges:[3,5],crag:1.2,edge:1.1,snow:.34,tone:.05},
-    forested:{rock:{c:['#b4b29e','#8e8e7c','#6c6e60','#4e5248','#32362e'],f:['#7a9a52','#58783e','#3e5c32','#28402a']},h:.75,ps:.7,ridges:[3,4],crag:.6,edge:.8,wood:.72,tone:.06,wob:1.6},
+    forested:{rock:{c:['#b4b29e','#8e8e7c','#6c6e60','#4e5248','#32362e'],f:['#5e7440','#485c34','#36482a','#263420']},h:.85,ps:.7,ridges:[3,4],crag:.6,edge:.8,wood:.74,tone:.06,wob:1.6},
     knoll:{rock:{c:['#8a8c7c','#686c60','#4e5448','#383e34','#22281f'],m:['#66763a','#4a5a2c','#34421f']},h:.7,ps:.9,ridges:[3,4],crag:1,edge:.9,tone:.04,wob:1.5}};
   const KINDS=Object.keys(PX.WORLD_MOUNTS),PNAMES=CLIMS.concat(KINDS);
-  // (a range's kind in climate c, by the world's fields there (f: the means over its tiles of that climate of elev, temp, moist,
-  //  rough, 0-255) and a noise of its own (n, 0-1; PX.WN_MOUNT): basalt where n is under basalt (on the grass or the desert); the
-  //  desert's sandstone; the frost's alpine peaks; the swamp's knolls, forested where it stands higher than wood.elev; on the grass
-  //  alpine where colder than cold.temp or higher than cold.elev, forested where wetter than wood.moist and lower than wood.elev,
-  //  else granite)
-  PX.WN_MOUNT={basalt:.1,n:24,jit:28,cold:{temp:58,elev:240},wood:{moist:35,elev:228}};
-  PX.worldMountKind=(c,f,n)=>{const Q=PX.WN_MOUNT;if((c==='grass'||c==='desert')&&n<Q.basalt)return'basalt';if(c==='desert')return'sandstone';if(c==='frost')return'alpine';
-    if(c==='swamp')return f.elev>Q.wood.elev?'forested':'knoll';if(f.temp<Q.cold.temp||f.elev>Q.cold.elev)return'alpine';return f.moist>Q.wood.moist&&f.elev<Q.wood.elev?'forested':'granite'};
+  /* the generated world's ranges (spec.mount; the owner's fifth play-test notes: some kinds liked as they were, some as new, so the
+     original look kept as a kind of its own and all of them a pool). pool: each climate's kinds, [kind, weight, gate], classic the
+     original look (the climate's own rock) in every climate's; a kind with a gate only where the range's fields there allow it
+     (cold: colder than cold.temp or higher than cold.elev; wet: wetter than wood.moist and lower than wood.elev; low: lower than
+     wood.elev; high: higher than it). jit: the climates' covers read this many px off a point, by a noise (a ragged blend); blend:
+     a cover's weight from 0 at blend[0] to 1 at [1] (as PX.WN_BLEND, but a mountain's tiles lie in one climate: its edge's covers
+     reach some .45 into the next, and the rock leans that far toward its look). foot: the
+     rock's lowest [px] leaning toward the ground under it (a share at most), so it meets each climate's ground as painted. trees: a
+     forested range's (PX.WORLD_MOUNTS.forested) on a lattice of step px (jit either way, gap the chance a spot is empty, fewer by the
+     forested look's share across an edge), on slopes gentler than steep (the normal's z), under its tree line (the kind's wood, a
+     share of its height, ragged by line either way), on no crest (a point higher than the mean of the points crest[0] px round it by
+     crest[1] px); each a
+     conifer (up, by the climate whose tree it is) with a chance from none at conifer[0] of the height to all at [1], else one of
+     that climate's woods' (sub: none of the lowland's palms or mangroves); lit with the slope (light: lit, the slope's light where
+     its colours are as drawn; below it darker toward dark, by k, dim under dim; above it toward light) */
+  PX.WN_MOUNT={jit:28,blend:[.12,.62],cold:{temp:58,elev:240},wood:{moist:35,elev:228},
+    pool:{grass:[['classic',4],['granite',3],['forested',3,'wet'],['alpine',2,'cold'],['basalt',.35]],
+      frost:[['classic',4],['alpine',4],['granite',1],['forested',1.5,'low']],
+      desert:[['classic',4],['sandstone',4],['basalt',.35]],
+      swamp:[['classic',4],['knoll',4],['forested',2,'high']]},
+    foot:[5,.55],
+    trees:{step:[6,5],jit:2,gap:.3,steep:.5,line:.1,crest:[4,.9],conifer:[.45,.9],up:{grass:'pine',frost:'fir',swamp:'pine',desert:'pine'},sub:{palm:'acacia',mangrove:'bogwillow'},
+      light:{lit:.62,k:2,dim:.52,max:.7,dark:[20,30,46],light:[220,226,150],up:.12}}};
+  const MGATE={cold:f=>f.temp<PX.WN_MOUNT.cold.temp||f.elev>PX.WN_MOUNT.cold.elev,wet:f=>f.moist>PX.WN_MOUNT.wood.moist&&f.elev<PX.WN_MOUNT.wood.elev,
+    low:f=>f.elev<PX.WN_MOUNT.wood.elev,high:f=>f.elev>PX.WN_MOUNT.wood.elev};
+  // PX.worldMountPool(c, f): the kinds a range may be in climate c, by the world's fields there (f: the means over its tiles of that
+  // climate of elev, temp, moist, rough, 0-255); PX.worldMountKind(c, f, r): the one a draw r (0-1) falls on, by their weights
+  PX.worldMountPool=(c,f)=>(PX.WN_MOUNT.pool[c]||PX.WN_MOUNT.pool.grass).filter(e=>!e[2]||MGATE[e[2]](f));
+  PX.worldMountKind=(c,f,r)=>{const L=PX.worldMountPool(c,f);let n=0;for(const e of L)n+=e[1];r*=n;for(const e of L){r-=e[1];if(r<0)return e[0]}return L[L.length-1][0]};
   // (a climate's or a kind's rock: its tones and details, for massPaint)
   const rpal=c=>PALR[c]||(PALR[c]=(()=>{const KD=PX.WORLD_MOUNTS[c]||null,RK=KD?KD.rock:RP(c).rock,X=a=>a?a.map(hx):null;
     return{RC:RK.c.map(hx),SN:RK.s?RK.s.map(hx):c==='desert'||KD&&!KD.crag||c==='knoll'||c==='forested'?null:SNOW.map(hx),own:!!RK.s,MS:X(RK.m),RB:X(RK.b),GT:X(RK.g),FO:X(RK.f),RU:X(RK.r),desert:c==='desert'||c==='sandstone',K:KD}})());
@@ -289,20 +313,43 @@
       while(st.length){const q=st.pop(),i=q%C,j=(q-i)/C;m.n++;if(i<m.c0)m.c0=i;if(i>m.c1)m.c1=i;if(j<m.r0)m.r0=j;if(j>m.r1)m.r1=j;
         for(const [a,c] of [[1,0],[-1,0],[0,1],[0,-1]]){const x=i+a,y=j+c,n=y*C+x;if(x>=0&&y>=0&&x<C&&y<R&&lab[n]<0&&h(x,y)){lab[n]=id;st.push(n)}}}M.push(m)}
     return{lab,M}};
-  // (a mass's kind (m.kind, or o.kind for a peak alone; none: its climate's look, today's map) sets its shape; each point's look the
-  //  kind of the climate there (m.kinds), the climate read a little off the point (PX.WN_MOUNT.jit px, by the wobble's noise), so a
-  //  range's look blends across a climate's edge in patches, as the trees do)
-  function* massSteps(o,lab,m){const W=o.W,H=o.H,C=o.C,R=o.R,ts=o.ts,ox=o.ox||0,oy=o.oy||0,seed=o.seed|0,kept=o.kept,id=m.id,{NX,NY,NR1,NR2}=massNoise(o);
-    const kind=m.kind||o.kind||null,KD=kind?PX.WORLD_MOUNTS[kind]:null,wob=(KD&&KD.wob||1)*(o.wob||5),MK=m.kinds||null,ki=kind?PNAMES.indexOf(kind):-1,JT=PX.WN_MOUNT.jit;
+  // (a mass's height at a point (0 off it); whether a point at height z0 lies in its own shadow (tested every st px toward the light);
+  //  whether a forested look's wood grows on a point at height z, its slope's normal nz (PX.WN_MOUNT.trees: not steep, under the tree
+  //  line, on no crest): the trees and the floor under them alike)
+  const mzAt=(md,x,y)=>x<md.x0||y<md.y0||x>=md.x1||y>=md.y1?0:md.ZR[(y-md.y0)*md.bw+x-md.x0];
+  const mShade=(md,x,y,z0,st)=>{for(let k=2;k<=md.K;k+=st){const qx=Math.round(x+LSX*k),qy=Math.round(y+LSY*k);if(qx<md.x0||qy<md.y0)return false;if(mzAt(md,qx,qy)>z0+k*SK)return true}return false};
+  const woodAt=(md,x,y,z,nz,NT)=>{const T=PX.WN_MOUNT.trees;if(nz<T.steep||z>md.zmax*(PX.WORLD_MOUNTS.forested.wood+(NT(x+90,y)-.5)*2*T.line))return false;
+    const c=T.crest[0];return z-(mzAt(md,x-c,y)+mzAt(md,x+c,y)+mzAt(md,x,y-c)+mzAt(md,x,y+c))/4<T.crest[1]};
+  // (a mass's kind (m.kind, or o.kind for a peak alone; none or classic: its climate's look, today's map) sets its shape. Each
+  //  point's look: on today's map its tile's climate's; on the generated world (m.kinds) each climate's kind there (classic: the
+  //  climate's own look) by the climates' weights at the point (their covers, o.cv, read a little off it: PX.WN_MOUNT.jit px by the
+  //  wobble's noise), the two most weighed kept (CL, CL2) and the second's share (CT, 0-255), so a range blends across a climate's
+  //  edge as the ground does. A forested look's trees (o.tree: a sprite for a point, its height's share and light) stand on it)
+  function* massSteps(o,lab,m){const W=o.W,H=o.H,C=o.C,R=o.R,ts=o.ts,ox=o.ox||0,oy=o.oy||0,seed=o.seed|0,kept=o.kept,id=m.id,{NX,NY,NR1,NR2,NT}=massNoise(o);
+    const kind=PX.WORLD_MOUNTS[m.kind]?m.kind:o.kind||null,KD=kind?PX.WORLD_MOUNTS[kind]:null,wob=(KD&&KD.wob||1)*(o.wob||5),MK=m.kinds||null,ki=kind?PNAMES.indexOf(kind):-1,JT=PX.WN_MOUNT.jit;
     const x0=Math.max(0,ox+m.c0*ts-6),x1=Math.min(W,ox+(m.c1+1)*ts+6),y0=Math.max(0,oy+m.r0*ts-6),y1=Math.min(H,oy+(m.r1+1)*ts+6),bw=x1-x0,bh=y1-y0;if(bw<=0||bh<=0)return null;
     const small=m.n<=2,A=new Uint16Array(bw*bh),HV=new Float32Array(bw*bh),ZR=new Float32Array(bw*bh),CL=new Uint8Array(bw*bh),gi0=m.c0-1,gj0=m.r0-1,gw=m.c1-m.c0+3,gh=m.r1-m.r0+3,GI=new Float32Array(gw*gh),GH=new Float32Array(gw*gh);
     for(let j=0;j<gh;j++)for(let i=0;i<gw;i++){const ci=gi0+i,cj=gj0+j;if(ci>=0&&cj>=0&&ci<C&&cj<R&&lab[cj*C+ci]===id){GI[j*gw+i]=1;GH[j*gw+i]=o.h(ci,cj)}}
+    // (the generated world's: each climate's look (LK), the covers at the tile corners over its box (CG: each the mean of the 4 tiles
+    //  round it, as the painter's), a point's climates' weights (wq: PX.WN_MOUNT.blend; without covers its tile's climate's) and looks'
+    //  (LW))
+    let CL2=null,CT=null,LK=null,CG=null;const WQ=new Float32Array(4),LW=new Float32Array(PNAMES.length),BL=PX.WN_MOUNT.blend,cw1=gw+1;
+    if(MK){CL2=new Uint8Array(bw*bh);CT=new Uint8Array(bw*bh);LK=CLIMS.map(c=>PNAMES.indexOf(!MK[c]||MK[c]==='classic'?c:MK[c]));
+      if(o.cv)CG=o.cv.map(S=>{if(!S)return null;const G=new Float32Array(cw1*(gh+1));for(let j=0;j<=gh;j++)for(let i=0;i<=gw;i++){let s=0,n=0;
+        for(const [a,b] of [[0,0],[-1,0],[0,-1],[-1,-1]]){const u=gi0+i+a,v=gj0+j+b;if(u<0||v<0||u>=C||v>=R)continue;s+=S[v*C+u];n++}G[j*cw1+i]=n?s/n:0}return G})}
+    const wq=(X,Y)=>{const u=(X-ox)/ts-gi0,v=(Y-oy)/ts-gj0,i=Math.max(0,Math.min(gw-1,Math.floor(u))),j=Math.max(0,Math.min(gh-1,Math.floor(v))),fx=Math.min(1,Math.max(0,u-i)),fy=Math.min(1,Math.max(0,v-j)),q=j*cw1+i;
+      const tc=CLIMS.indexOf(o.clim(Math.floor((X-ox)/ts),Math.floor((Y-oy)/ts)));let s=0;
+      for(let k=1;k<4;k++){const G=CG&&CG[k];let w;if(G){const a=G[q],b=G[q+1],c=G[q+cw1],d=G[q+cw1+1];w=Math.max(0,Math.min(1,(a+(b-a)*fx+(c-a)*fy+(a-b-c+d)*fx*fy-BL[0])/(BL[1]-BL[0])))}else w=tc===k?1:0;WQ[k]=w;s+=w}
+      if(s>1){for(let k=1;k<4;k++)WQ[k]/=s;s=1}WQ[0]=1-s};
     // (1) its footprint: its tiles read through a wobble, kept-clear pixels left out; the distance in from its edge (chamfer 3-4);
-    //     each point's tile height (bilinear) and climate
+    //     each point's tile height (bilinear) and look
     for(let y=y0;y<y1;y++){for(let x=x0;x<x1;x++){if(kept(x,y))continue;const u=(x-ox+.5+(NX(x,y)-.5)*wob)/ts-.5-gi0,v=(y-oy+.5+(NY(x,y)-.5)*wob)/ts-.5-gj0,iu=Math.floor(u),iv=Math.floor(v);if(iu<0||iv<0||iu>=gw-1||iv>=gh-1)continue;
         const fu=u-iu,fv=v-iv,q=iv*gw+iu,a=GI[q],b=GI[q+1],c=GI[q+gw],d=GI[q+gw+1],w=a+(b-a)*fu+(c-a)*fv+(a-b-c+d)*fu*fv;
         if(w>.42){const e=GH[q],f=GH[q+1],g=GH[q+gw],h=GH[q+gw+1],k=(y-y0)*bw+x-x0;A[k]=999;HV[k]=(KD?kind==='sandstone':m.c==='desert')?(fu<.5?(fv<.5?e:g):(fv<.5?f:h))||Math.max(e,f,g,h):(e+(f-e)*fu+(g-e)*fv+(e-f-g+h)*fu*fv)/w;
-          CL[k]=MK?PNAMES.indexOf(MK[o.clim(Math.floor((x-ox+(NX(x+211,y+97)-.5)*JT)/ts),Math.floor((y-oy+(NY(x+97,y+211)-.5)*JT)/ts))]||kind):ki>=0?ki:CLIMS.indexOf(o.clim(Math.floor((x-ox)/ts),Math.floor((y-oy)/ts)))}}
+          if(MK){wq(x+(NX(x+211,y+97)-.5)*JT,y+(NY(x+97,y+211)-.5)*JT);LW.fill(0);for(let c2=0;c2<4;c2++)LW[LK[c2]]+=WQ[c2];let la=-1,lb=-1;
+            for(let c2=0;c2<4;c2++){const l=LK[c2];if(l===la||l===lb||!(LW[l]>0))continue;if(la<0||LW[l]>LW[la]){lb=la;la=l}else if(lb<0||LW[l]>LW[lb])lb=l}
+            if(la<0)la=LK[0];CL[k]=la;CL2[k]=lb<0?la:lb;CT[k]=lb<0?0:Math.round(255*LW[lb]/(LW[la]+LW[lb]))}
+          else CL[k]=ki>=0?ki:CLIMS.indexOf(o.clim(Math.floor((x-ox)/ts),Math.floor((y-oy)/ts)))}}
       if(!((y-y0+1)&31))yield}
     for(let y=0;y<bh;y++)for(let x=0;x<bw;x++){const k=y*bw+x;if(!A[k])continue;A[k]=Math.min(A[k],x?A[k-1]+3:3,y?A[k-bw]+3:3,x&&y?A[k-bw-1]+4:4,y&&x<bw-1?A[k-bw+1]+4:4)}
     for(let y=bh-1;y>=0;y--)for(let x=bw-1;x>=0;x--){const k=y*bw+x;if(!A[k])continue;A[k]=Math.min(A[k],x<bw-1?A[k+1]+3:3,y<bh-1?A[k+bw]+3:3,x<bw-1&&y<bh-1?A[k+bw+1]+4:4,y<bh-1&&x?A[k+bw-1]+4:4)}
@@ -337,11 +384,41 @@
       if(!((y-y0+1)&31))yield}
     // (what it paints: the rock up to zmax over its box, its outline round it, its shadow K to the right and below)
     const K=Math.ceil(zmax/SK)+1,X1=Math.min(W,x1+K+2),Y1=Math.min(H,y1+Math.ceil(K*.45)+2);
-    return{x0,x1,y0,y1,bw,bh,ZR,CL,zmax,K,c:m.c,pk:kind||m.c,X1,Y1,ex0:Math.max(0,x0-1),ey0:Math.max(0,y0-Math.ceil(zmax)-2),ex1:Math.max(o.shade?X1:0,Math.min(W,x1+1)),ey1:o.shade?Math.max(Y1,y1):y1,bytes:bw*bh*5}}
-  function* massPaint(o,md,w){const W=o.W,H=o.H,seed=o.seed|0,NT=massNoise(o).NT,x0=md.x0,x1=md.x1,y0=md.y0,y1=md.y1,bw=md.bw,ZR=md.ZR,CL=md.CL,K=md.K;
+    const md={x0,x1,y0,y1,bw,bh,ZR,CL,CL2,CT,zmax,K,c:m.c,pk:kind||m.c,X1,Y1,ex0:Math.max(0,x0-1),ey0:Math.max(0,y0-Math.ceil(zmax)-2),ex1:Math.max(o.shade?X1:0,Math.min(W,x1+1)),ey1:o.shade?Math.max(Y1,y1):y1,bytes:bw*bh*(MK?7:5)};
+    // (3b) a forested look's trees (PX.WN_MOUNT.trees): on a lattice of ground points, each jittered, where its wood grows (woodAt) and
+    //      by the forested look's share there; its sprite by its height's share and the slope's light (as massPaint lights the rock);
+    //      {x, y (its foot on the ground), z (its lift), sp, t (its tint: + darker, - lighter)}, the box widened to their crowns
+    const FOI=PNAMES.indexOf('forested');
+    if(o.tree&&LK&&LK.includes(FOI)){const T=PX.WN_MOUNT.trees,TL=T.light,[sx,sy]=T.step,TR=md.trees=[];
+      for(let gy=Math.ceil(y0/sy)*sy;gy<y1;gy+=sy){for(let gx=Math.ceil(x0/sx)*sx;gx<x1;gx+=sx){const hs=n=>PX.hash(gx,gy,seed*31+n),x=gx+Math.round((hs(1)-.5)*2*T.jit),y=gy+Math.round((hs(2)-.5)*2*T.jit);
+          if(x<x0||y<y0||x>=x1||y>=y1)continue;const k=(y-y0)*bw+x-x0,z=ZR[k];if(!z)continue;
+          const fw=CL[k]===FOI?(CL2[k]===FOI?1:1-CT[k]/255):CL2[k]===FOI?CT[k]/255:0;if(hs(3)>=fw*(1-T.gap))continue;
+          const gx2=(mzAt(md,x+1,y)-mzAt(md,x-1,y))/2,gy2=(mzAt(md,x,y+1)-mzAt(md,x,y-1))/2,nl=Math.hypot(gx2,gy2,1);if(!woodAt(md,x,y,z,1/nl,NT))continue;
+          const v=.5+.45*(-gx2*LX-gy2*LY+LZ)/nl/LN_-(mShade(md,x,y,z,1)?.22:0),t=Math.max(-TL.up,Math.min(TL.max,(TL.lit-v)*TL.k)),sp=o.tree(x,y,z/zmax,v<TL.dim?1:0,hs(4));
+          TR.push({x,y,z:Math.round(z),sp,t});const b=sp.box,top=y-Math.round(z)-sp.ay+b[1];if(top<md.ey0)md.ey0=Math.max(0,top);if(x-sp.ax+b[0]<md.ex0)md.ex0=Math.max(0,x-sp.ax+b[0]);if(x-sp.ax+b[2]+1>md.ex1)md.ex1=Math.min(W,x-sp.ax+b[2]+1)}
+        if(!(((gy/sy)|0)&7))yield}
+      md.bytes+=TR.length*24}
+    return md}
+  // (a rock pixel's colour in look P (rpal): v its light, at column x, screen row r, hg px up the face of ground point (x, y) whose
+  //  top shows at row sy, nz its slope's normal, wd: a forested look's wood grows on that point (its floor))
+  function rockPx(P,v,x,r,y,sy,hg,nz,md,seed,NT,wd){const KD=P.K;if(KD)v+=(NT(x*.2+300,r*.2+300)-.5)*2*KD.tone;
+    let kk=v>.82?0:v>.66?1:v>.48?2:v>.32?3:4;if(nz<.5&&PX.hash(x,(r+(x&3))>>2,seed+86)<.07)kk=Math.min(4,kk+1);if(P.RB&&nz>.8)kk=Math.max(1,kk);
+    let c=P.RC[kk];
+    if(P.RB){if(nz<.8||r>sy){const u=(hg+NT(x,7)*4)/3.5,bd=Math.floor(u)&3;if(bd===1)c=mixA(c,P.RB[0],.32);else if(bd===3)c=mixA(c,P.RB[1],.3);if(u%1<.29&&nz<.6)c=mixA(c,P.RB[2],.4)}else if(PX.hash(x,r,seed+88)<.06)c=mixA(c,P.RB[2],.3)}
+    else if(P.own){if(nz>.5&&hg>md.zmax*(KD&&KD.snow||.46)+(NT(x,r)-.5)*10||nz>.82&&hg>8)c=P.SN[v>.66?0:v>.42?1:2]}
+    else if(P.SN&&!P.MS&&md.zmax>32&&nz>.45&&hg>Math.max(30,md.zmax*.72)+(NT(x,r)-.5)*8)c=P.SN[v>.66?0:v>.42?1:2];// (the high peaks: snow)
+    else if(P.MS){if(nz>.55&&NT(x+70,y)>.5||hg<3&&PX.hash(x,r,seed+87)<.35)c=P.MS[kk<2?0:kk<4?1:2]}
+    else if(P.GT){if(nz>.72&&hg<md.zmax*.6&&NT(x+40,y)>.6)c=P.GT[kk<2?0:kk<4?1:2];else if(PX.hash(x,r,seed+87)<.005)c=[180,180,140]}
+    // (a kind's own: a wood's floor under its trees (lit with the slope, dappled), basalt's columns and rust, granite's cracks, a
+    //  butte's scree)
+    if(KD){if(P.FO){if(wd)c=P.FO[Math.min(3,Math.max(0,Math.round(kk*.75)+(PX.hash(x,r,seed+89)<.14?1:0)))]}
+      else if(P.RU){if(nz<.75&&(x+((PX.hash(x>>2,r>>3,seed+90)*3)|0))%3===0)c=P.RC[Math.min(4,kk+1)];if(PX.hash(x,r,seed+91)<.006)c=P.RU[kk<2?0:1]}
+      else if(P.GT){if(nz<.7&&PX.hash(x,r>>2,seed+92)<.05)c=P.RC[Math.min(4,kk+2)]}
+      else if(P.desert&&KD.scree&&nz>.5&&hg<KD.scree[0]){const n=PX.hash(x,r,seed+93);c=n<.3?P.RC[3]:n<.65?P.RC[2]:mixA(P.RC[2],P.RC[1],.5)}}
+    return c}
+  function* massPaint(o,md,w){const W=o.W,H=o.H,seed=o.seed|0,NT=massNoise(o).NT,x0=md.x0,x1=md.x1,y0=md.y0,y1=md.y1,bw=md.bw,ZR=md.ZR,CL=md.CL,CL2=md.CL2,CT=md.CT,FT=o.blend?PX.WN_MOUNT.foot:null;
     const wx0=w.x,wy0=w.y,ww=w.w,wx1=wx0+ww,wy1=wy0+w.h,D=w.D,S=w.S,ZO=w.ZO,TO=w.TO||null,I=w.I||w,at=(x,y)=>(y-wy0)*ww+x-wx0;let px=0;
-    const zAt=(x,y)=>x<x0||y<y0||x>=x1||y>=y1?0:ZR[(y-y0)*bw+x-x0];
-    const shadowed=(x,y,z0,st)=>{for(let k=2;k<=K;k+=st){const qx=Math.round(x+LSX*k),qy=Math.round(y+LSY*k);if(qx<x0||qy<y0)return false;if(zAt(qx,qy)>z0+k*SK)return true}return false};
+    const zAt=(x,y)=>mzAt(md,x,y),shadowed=(x,y,z0,st)=>mShade(md,x,y,z0,st);
     const put=(q,c)=>{const p=q*4;D[p]=c[0];D[p+1]=c[1];D[p+2]=c[2];if(TO)TO[q]=1},mix=(q,c,t)=>{const p=q*4;D[p]+=(c[0]-D[p])*t;D[p+1]+=(c[1]-D[p+1])*t;D[p+2]+=(c[2]-D[p+2])*t;if(TO)TO[q]=1};
     // (4) its shadow on the ground to the lower right (tested on a 2-px lattice: each point's once, SV, for the 2 x 2 px round it)
     if(o.shade){const sx0=Math.max(x0,wx0)&~1,SV=new Int8Array(((Math.min(md.X1,wx1)-sx0)>>1)+2);let sy=-1;
@@ -349,30 +426,19 @@
           const k=((x&~1)-sx0)>>1;if(SV[k]<0)SV[k]=shadowed(x&~1,sy,0,2)?1:0;if(SV[k]){S[q]|=64;mix(q,SHC,.3)}}
         if(!((y+1)&15))yield}}
     // (5) the rock, front to back a column at a time: a point at height z shows at (x, y-z), above the rock drawn before it in the
-    //     column (hz); a nearer mass already there stays. (Each column reckoned whole, its pixels painted in the window only)
+    //     column (hz); a nearer mass already there stays. (Each column reckoned whole, its pixels painted in the window only.) Its look
+    //     the point's, mixed with its second's by its share (CL2, CT); on the generated world its foot leaning toward the ground under
+    //     it (PX.WN_MOUNT.foot: each climate's as painted)
     for(let x=Math.max(x0,wx0);x<Math.min(x1,wx1);x++){let hz=1e9,prev=false;
       for(let y=y1-1;y>=y0;y--){const k=(y-y0)*bw+x-x0;if(!ZR[k]){prev=false;continue}if(!prev)hz=Math.min(hz,y+1);prev=true;
         const z=ZR[k],sy=Math.round(y-z);if(sy>=hz)continue;const ra=Math.max(0,sy,wy0),rb=Math.min(hz,H,wy1);
-        if(ra<rb){const P=rpal(PNAMES[CL[k]]),KD=P.K;
+        if(ra<rb){const P=rpal(PNAMES[CL[k]]),t2=CT?CT[k]/255:0,P2=t2?rpal(PNAMES[CL2[k]]):null;
           const gx=(zAt(x+1,y)-zAt(x-1,y))/2,gy=(zAt(x,y+1)-zAt(x,y-1))/2,nl=Math.hypot(gx,gy,1),nz=1/nl,lam=(-gx*LX-gy*LY+LZ)/nl/LN_;
-          const v0=.5+.45*lam-(shadowed(x,y,z,1)?.22:0);
+          const v0=.5+.45*lam-(shadowed(x,y,z,1)?.22:0),wd=P.FO||P2&&P2.FO?woodAt(md,x,y,z,nz,NT):false;
           for(let r=ra;r<rb;r++){const q=at(x,r),hg=y-r;if(ZO[q]&&r+ZO[q]-1>y)continue;
-            let v=v0-.16*Math.max(0,1-hg/10)+(NT(x,r)-.5)*.1+(PX.hash(x,r,seed+85)-.5)*.07;if(KD)v+=(NT(x*.2+300,r*.2+300)-.5)*2*KD.tone;
-            let kk=v>.82?0:v>.66?1:v>.48?2:v>.32?3:4;if(nz<.5&&PX.hash(x,(r+(x&3))>>2,seed+86)<.07)kk=Math.min(4,kk+1);if(P.RB&&nz>.8)kk=Math.max(1,kk);
-            let c=P.RC[kk];
-            if(P.RB){if(nz<.8||r>sy){const u=(hg+NT(x,7)*4)/3.5,bd=Math.floor(u)&3;if(bd===1)c=mixA(c,P.RB[0],.32);else if(bd===3)c=mixA(c,P.RB[1],.3);if(u%1<.29&&nz<.6)c=mixA(c,P.RB[2],.4)}else if(PX.hash(x,r,seed+88)<.06)c=mixA(c,P.RB[2],.3)}
-            else if(P.own){if(nz>.5&&hg>md.zmax*(KD&&KD.snow||.46)+(NT(x,r)-.5)*10||nz>.82&&hg>8)c=P.SN[v>.66?0:v>.42?1:2]}
-            else if(P.SN&&!P.MS&&md.zmax>32&&nz>.45&&hg>Math.max(30,md.zmax*.72)+(NT(x,r)-.5)*8)c=P.SN[v>.66?0:v>.42?1:2];// (the high peaks: snow)
-            else if(P.MS){if(nz>.55&&NT(x+70,y)>.5||hg<3&&PX.hash(x,r,seed+87)<.35)c=P.MS[kk<2?0:kk<4?1:2]}
-            else if(P.GT){if(nz>.72&&hg<md.zmax*.6&&NT(x+40,y)>.6)c=P.GT[kk<2?0:kk<4?1:2];else if(PX.hash(x,r,seed+87)<.005)c=[180,180,140]}
-            // (a kind's own: a wood's crowns up its flanks, basalt's columns and rust, granite's cracks, a butte's scree)
-            // (a wood's crowns: a crown a cell of 4 px, its middle moved by a hash, lit from its upper left over the slope's light,
-            //  darker in the gaps between)
-            if(KD){if(P.FO){if(nz>.3&&hg<md.zmax*KD.wood+(NT(x+90,r)-.5)*10){const cx=x>>2,cy=(r+((cx&1)<<1))>>2,dx=x-cx*4-1.5-(PX.hash(cx,cy,seed+89)-.5)*1.6,dy=r+((cx&1)<<1)-cy*4-1.5-(PX.hash(cx,cy,seed+94)-.5)*1.6,e=dx*dx+dy*dy;
-                c=P.FO[Math.min(3,Math.max(0,Math.round(kk*.7)+(e>4.2?1:0)+(dx+dy>1.1?1:dx+dy<-1.1?-1:0)))]}}
-              else if(P.RU){if(nz<.75&&(x+((PX.hash(x>>2,r>>3,seed+90)*3)|0))%3===0)c=P.RC[Math.min(4,kk+1)];if(PX.hash(x,r,seed+91)<.006)c=P.RU[kk<2?0:1]}
-              else if(P.GT){if(nz<.7&&PX.hash(x,r>>2,seed+92)<.05)c=P.RC[Math.min(4,kk+2)]}
-              else if(P.desert&&KD.scree&&nz>.5&&hg<KD.scree[0]){const n=PX.hash(x,r,seed+93);c=n<.3?P.RC[3]:n<.65?P.RC[2]:mixA(P.RC[2],P.RC[1],.5)}}
+            const v=v0-.16*Math.max(0,1-hg/10)+(NT(x,r)-.5)*.1+(PX.hash(x,r,seed+85)-.5)*.07;let c=rockPx(P,v,x,r,y,sy,hg,nz,md,seed,NT,wd);
+            if(P2)c=mixA(c,rockPx(P2,v,x,r,y,sy,hg,nz,md,seed,NT,wd),t2);
+            if(FT&&hg<FT[0]){const p=q*4;c=mixA(c,[D[p],D[p+1],D[p+2]],FT[1]*(1-hg/FT[0]))}
             put(q,c);S[q]=(S[q]&~7)|2;ZO[q]=Math.min(255,hg+1);if(x>=I.x&&x<I.x+I.w&&r>=I.y&&r<I.y+I.h)px++}}
         hz=sy}
       if(!((x+1)&15))yield}
@@ -561,33 +627,46 @@
     const inner=(x,y)=>{if(kAt(x,y)!==KIND.mount)return false;let n=0;for(let b=-1;b<=1;b++)for(let a=-1;a<=1;a++)if((a||b)&&kAt(x+a,y+b)===KIND.mount)n++;return n>=5};
     const great=(tx,ty)=>{if(!inner(tx,ty))return false;const v=h(tx,ty,61);if(v<.35)return false;for(const [a,b] of [[-1,0],[1,0],[-1,-1],[0,-1],[1,-1],[0,-2]])if(kAt(tx+a,ty+b)!==KIND.mount)return false;
       for(let b=-1;b<=1;b++)for(let a=-1;a<=1;a++)if((a||b)&&inner(tx+a,ty+b)&&h(tx+a,ty+b,61)>v)return false;return true};
-    // (the generated world's (spec.mount: its elev, temp, moist and rough a tile): each range's kind by climate (m.kinds: PX.
-    //  worldMountKind on the means over its tiles of each climate, its noise the plan's over PX.WN_MOUNT.n tiles at its middle), its
-    //  shape its most common climate's (m.kind): a butte's heights for sandstone, else a peak's times the kind's h)
-    const MF=spec.mount&&spec.mount.elev?spec.mount:null,RH=new Float32Array(C*R),{lab,M}=massLabel(C,R,(i,j)=>K[j*C+i]===KIND.mount,cAt);
-    if(MF){const SM=M.map(()=>CLIMS.map(()=>({n:0,elev:0,temp:0,moist:0,rough:0})));for(let i=0;i<C*R;i++){if(lab[i]<0)continue;const q=SM[lab[i]][CI[i]]||SM[lab[i]][0];q.n++;for(const f of ['elev','temp','moist','rough'])q[f]+=MF[f]?MF[f][i]:0}
-      M.forEach((m,k)=>{const nz=tileNoise(h,(m.c0+m.c1)/2/PX.WN_MOUNT.n,(m.r0+m.r1)/2/PX.WN_MOUNT.n,66);let best=-1;m.kinds={};
-        SM[k].forEach((q,c)=>{if(!q.n)return;for(const f of ['elev','temp','moist','rough'])q[f]/=q.n;m.kinds[CLIMS[c]]=PX.worldMountKind(CLIMS[c],q,nz);if(q.n>best){best=q.n;m.kind=m.kinds[CLIMS[c]]}});
-        // (a butte's look on a butte only: a part of another climate takes the range's own kind where its kind's shape is the other)
-        for(const c in m.kinds)if((m.kinds[c]==='sandstone')!==(m.kind==='sandstone'))m.kinds[c]=m.kind})}
-    for(let ty=0;ty<R;ty++)for(let tx=0;tx<C;tx++){if(K[ty*C+tx]!==KIND.mount)continue;let d=0;for(let b=-2;b<=2;b++)for(let a=-2;a<=2;a++)if(kAt(tx+a,ty+b)===KIND.mount)d++;const kd=MF?M[lab[ty*C+tx]].kind:null;
-      RH[ty*C+tx]=(kd?kd==='sandstone':cAt(tx,ty)==='desert')?8*Math.max(1,Math.round((1.2+3.2*Math.min(1,(d-1)/18))*(.55+.6*h(tx,ty,63)))):(14+24*Math.min(1,(d-1)/20))*(great(tx,ty)?1.4:1)*(.9+.2*h(tx,ty,62))*(kd?PX.WORLD_MOUNTS[kd].h:1)}
-    const ro={W,H,C,R,ts,h:(i,j)=>RH[j*C+i],clim:cAt,seed:seed+5,shade:true,kept:pwn?(x,y)=>keep.at(x,y)||PN[((y/ts)|0)*C+((x/ts)|0)]===1&&spec.wet(x,y):(x,y)=>keep.at(x,y)};
+    // (the generated world's (spec.mount: its elev, temp, moist and rough a tile): each range draws one number (a hash of its first
+    //  tile) and each climate takes the kind it falls on in that climate's pool (m.kinds: PX.worldMountKind on the means over its
+    //  tiles of that climate, a climate it has no tile of on its means over all: so it has a look where that climate's cover reaches
+    //  it); its shape its most common climate's kind's (m.kind): a butte's heights for sandstone, a peak's times the kind's h, the
+    //  original's (classic) as on today's map)
+    const MF=spec.mount&&spec.mount.elev?spec.mount:null,RH=new Float32Array(C*R),{lab,M}=massLabel(C,R,(i,j)=>K[j*C+i]===KIND.mount,cAt),FL=['elev','temp','moist','rough'];
+    if(MF){const SM=M.map(()=>CLIMS.concat(['all']).map(()=>({n:0,elev:0,temp:0,moist:0,rough:0})));for(let i=0;i<C*R;i++){if(lab[i]<0)continue;for(const q of [SM[lab[i]][CI[i]]||SM[lab[i]][0],SM[lab[i]][4]]){q.n++;for(const f of FL)q[f]+=MF[f]?MF[f][i]:0}}
+      M.forEach((m,k)=>{const r=h(m.q0%C,(m.q0/C)|0,66),all=SM[k][4];let best=-1;m.kinds={};for(const f of FL)all[f]/=all.n;
+        SM[k].slice(0,4).forEach((q,c)=>{if(q.n)for(const f of FL)q[f]/=q.n;m.kinds[CLIMS[c]]=PX.worldMountKind(CLIMS[c],q.n?q:all,r);if(q.n>best){best=q.n;m.kind=m.kinds[CLIMS[c]]}})})}
+    for(let ty=0;ty<R;ty++)for(let tx=0;tx<C;tx++){if(K[ty*C+tx]!==KIND.mount)continue;let d=0;for(let b=-2;b<=2;b++)for(let a=-2;a<=2;a++)if(kAt(tx+a,ty+b)===KIND.mount)d++;const KD=MF?PX.WORLD_MOUNTS[M[lab[ty*C+tx]].kind]:null;
+      RH[ty*C+tx]=(KD?KD===PX.WORLD_MOUNTS.sandstone:cAt(tx,ty)==='desert')?8*Math.max(1,Math.round((1.2+3.2*Math.min(1,(d-1)/18))*(.55+.6*h(tx,ty,63)))):(14+24*Math.min(1,(d-1)/20))*(great(tx,ty)?1.4:1)*(.9+.2*h(tx,ty,62))*(KD?KD.h:1)}
+    // (ro: the ranges' painting; on the generated world the climates' covers (cv: [none, the snow's, the desert's, the swamp's]), the
+    //  foot's blend, and the forested looks' trees (tree, below))
+    const ro={W,H,C,R,ts,h:(i,j)=>RH[j*C+i],clim:cAt,seed:seed+5,shade:true,kept:pwn?(x,y)=>keep.at(x,y)||PN[((y/ts)|0)*C+((x/ts)|0)]===1&&spec.wet(x,y):(x,y)=>keep.at(x,y),
+      ...MF?{cv:[null,spec.snow||null,spec.cover&&spec.cover.desert||null,spec.cover&&spec.cover.swamp||null],blend:true}:{}};
     // (the rings round the oases and ponds (PX.WN_RING): RL each {x, y (its middle, tiles), r, kind, big, farm}, RG a tile: 1 + the
     //  nearest's index whose reach it lies in)
     const RL=[],RG=new Int16Array(C*R),RD=new Float32Array(C*R).fill(1e9);
     for(const q0 of (spec.oases||[]).map(q=>Object.assign({kind:'oasis'},q)).concat(spec.ponds||[])){const Rn=PX.WN_RING[q0.kind];if(!Rn)continue;const q=Object.assign({},q0,{reach:Math.max(Rn.reach,q0.ring||0)}),n=RL.push(q),e=q.r+q.reach;
       for(let y=Math.max(0,Math.floor(q.y-e));y<=Math.min(R-1,Math.ceil(q.y+e));y++)for(let x=Math.max(0,Math.floor(q.x-e));x<=Math.min(C-1,Math.ceil(q.x+e));x++){const d=Math.hypot(x+.5-q.x,y+.5-q.y)-q.r;if(d<=q.reach&&d<RD[y*C+x]){RD[y*C+x]=d;RG[y*C+x]=n}}}
-    return{W,H,C,R,ts,K,seed,kAt,cAt,h,clear,keep,WS,NW,RH,ro,lab,M,md:[],mdQ:[],mdBytes:0,mdCap:32<<20,hill:K.some(k=>k===KIND.hill),CI,SN:spec.snow||null,CV:spec.cover||null,EC:spec.eco||null,wet:spec.wet||null,F:spec.flow||null,RV:spec.river||null,WR:spec.water||null,
+    const P={W,H,C,R,ts,K,seed,kAt,cAt,h,clear,keep,WS,NW,RH,ro,lab,M,md:[],mdQ:[],mdBytes:0,mdCap:32<<20,hill:K.some(k=>k===KIND.hill),CI,SN:spec.snow||null,CV:spec.cover||null,EC:spec.eco||null,wet:spec.wet||null,F:spec.flow||null,RV:spec.river||null,WR:spec.water||null,
       LT:spec.lane||null,RS:spec.road||null,RL,RG:RL.length?RG:null,PW:pwn?PW:null,PN:pwn?PN:null,
-      get bytes(){return keep.bytes+(clear===spec.clear?0:clear.bytes)+WS.byteLength+NW.byteLength+RH.byteLength+lab.byteLength+this.mdBytes}}};
+      get bytes(){return keep.bytes+(clear===spec.clear?0:clear.bytes)+WS.byteLength+NW.byteLength+RH.byteLength+lab.byteLength+this.mdBytes}};
+    // (a forested range's tree at (x, y), a share s of its mass's height up, dim, r its draw (PX.WN_MOUNT.trees): whose climate's by the
+    //  ecotone (PX.worldTreeClimate), a conifer (up) the likelier the higher, else one of that climate's woods' (its grove noise, the
+    //  pines thickening toward the cold, as a wood's; sub), then by the snow where it stands (PX.WN_ECO freeze, thaw), as a wood's)
+    if(MF){const T=PX.WN_MOUNT.trees,E=PX.WN_ECO,TREES=PX.WORLD_TREES;
+      ro.tree=(x,y,s,dim,r)=>{const tx=(x/ts)|0,ty=(y/ts)|0,i=ty*C+tx,c=cAt(tx,ty),q=PX.worldTreeClimate(P,c,tx,ty,(x+y*3)&7),a=T.conifer;let sp,cl=q;
+        if(r<Math.max(0,Math.min(1,(s-a[0])/(a[1]-a[0]))))sp=T.up[q]||'pine';
+        else{let g=tileNoise(h,tx/5,ty/5,71);if(q==='grass'&&P.EC&&P.EC.frost)g=Math.min(1,g+E.pine*Math.max(0,P.EC.frost[i]-E.pineAt));sp=PX.pickWorldTree((TREES[q]||TREES.grass).wood,g,h(x,y,183),false);sp=T.sub[sp]||sp}
+        if(P.SN||q==='frost'){const sw=P.SN?Math.max(0,Math.min(1,(P.SN[i]-PX.WN_BLEND.lo)/(PX.WN_BLEND.hi-PX.WN_BLEND.lo))):1;if(sw+E.snow*2*(h(x,y,170)-.5)>.5){sp=E.freeze[sp]||sp;cl='frost'}else{sp=E.thaw[sp]||sp;if(cl==='frost')cl='grass'}}
+        return PX.worldTree(cl,sp,Math.floor(h(x,y,184)*4),dim)}}
+    return P};
   // a mass's height field: kept (the oldest let go past mdCap bytes, never the one asked for)
   // (two windows may reckon one at once: the first to finish keeps it)
   function* massOf(P,m){if(P.md[m.id]!==undefined)return P.md[m.id];const md=yield* massSteps(P.ro,P.lab,m);if(P.md[m.id]!==undefined)return P.md[m.id];P.md[m.id]=md;if(!md)return md;P.mdBytes+=md.bytes;P.mdQ.push(m.id);
     while(P.mdBytes>P.mdCap&&P.mdQ.length>1){const id=P.mdQ.shift(),d=P.md[id];delete P.md[id];if(d)P.mdBytes-=d.bytes}return md}
   const MASS_REACH=128;// (px round a mass's tiles its rock, outline and shadow may reach: generous)
   PX.worldNatureSteps=function*(P,win,D,TO){
-    const t0=performance.now(),W=P.W,H=P.H,C=P.C,R=P.R,ts=P.ts,K=P.K,kAt=P.kAt,cAt=P.cAt,h=P.h,TM=P.keep,CLR=P.clear,I=win.inner||win,out={trees:0,fen:0,hills:0,peaks:0,decor:0,flat:0,rock:0,cross:{things:0,rises:0,masses:0},tm:{}};
+    const t0=performance.now(),W=P.W,H=P.H,C=P.C,R=P.R,ts=P.ts,K=P.K,kAt=P.kAt,cAt=P.cAt,h=P.h,TM=P.keep,CLR=P.clear,I=win.inner||win,out={trees:0,mtrees:0,fen:0,hills:0,peaks:0,decor:0,flat:0,rock:0,cross:{things:0,rises:0,masses:0},tm:{}};
     const wx0=win.x,wy0=win.y,ww=win.w,wh=win.h,wx1=wx0+ww,wy1=wy0+wh,at=(x,y)=>(y-wy0)*ww+x-wx0;let tl=t0;const lap=n=>{const t=performance.now();out.tm[n]=t-tl;tl=t};
     const ownT=(tx,ty)=>tx*ts>=I.x&&tx*ts<I.x+I.w&&ty*ts>=I.y&&ty*ts<I.y+I.h?1:0,ownP=(x,y)=>x>=I.x&&x<I.x+I.w&&y>=I.y&&y<I.y+I.h,inI=(x0,y0,x1,y1)=>x0<I.x+I.w&&x1>I.x&&y0<I.y+I.h&&y1>I.y;
     // S: a byte a pixel: what stands there (low 3 bits: 0 ground, 2 rock, 3 wood, 4 a small thing; 8 a range's outline), 64 shaded,
@@ -797,18 +876,25 @@
       if(m.c0*ts-MASS_REACH>=wx1||(m.c1+1)*ts+MASS_REACH<=wx0||m.r0*ts-MASS_REACH>=wy1||(m.r1+1)*ts+MASS_REACH<=wy0)continue;
       const md=yield* massOf(P,m);if(!md||md.ex0>=wx1||md.ex1<=wx0||md.ey0>=wy1||md.ey1<=wy0)continue;
       if(!ownT(m.q0%C,(m.q0/C)|0)&&inI(md.ex0,md.ey0,md.ex1,md.ey1))out.cross.masses++;
-      out.rock+=yield* massPaint(P.ro,md,{x:wx0,y:wy0,w:ww,h:wh,D,S,ZO,TO,I})}
+      out.rock+=yield* massPaint(P.ro,md,{x:wx0,y:wy0,w:ww,h:wh,D,S,ZO,TO,I});
+      // (a forested range's trees reaching the window stand with the rest, lifted by their ground's height (their foot's depth its
+      //  ground's) and tinted by the slope's light; each counted where its foot is, whether it reaches that window or not)
+      if(md.trees)for(const tr of md.trees){const sp=tr.sp,b=sp.box,X0=tr.x-sp.ax,Y0=tr.y-tr.z-sp.ay;own=ownP(tr.x,tr.y)?1:0;out.trees+=own;out.mtrees+=own;
+        if(X0+b[2]>=wx0&&X0+b[0]<wx1&&Y0+b[3]>=wy0&&Y0+b[1]<wy1)items.push([tr.y,tr.x,sp,3,own,tr.z,tr.t])}}
     lap('ranges');
-    // (5) what stands, sorted by its feet: every shadow first (on the ground, once each), then each back to front. An outline goes
-    //     down only on what is not its own kind (a wood's mass is outlined once, round its edge); nothing is drawn where the rock
-    //     stands before it (its ground nearer than the thing's foot)
-    items.sort((p,q)=>p[0]-q[0]||p[1]-q[1]);
-    for(const [y,x,sp] of items){const o=sp.sh;for(let k=0;k<o.length;k+=2){const X=x+o[k],Y=y+o[k+1];if(X<wx0||Y<wy0||X>=wx1||Y>=wy1)continue;const q=at(X,Y);if(S[q]&(64|7)||S[q]&128&&!laneOK(X,Y,false)||nearWet(X,Y))continue;S[q]|=64;mixD(q,SHC,.3);touch(q,S[q]&128?3:1)}
+    // (5) what stands, sorted by its feet: every shadow first (on the ground, once each; a forested range's tree's on its rock, near
+    //     its foot's depth), then each back to front. An outline goes down only on what is not its own kind (a wood's mass is
+    //     outlined once, round its edge); nothing is drawn where the rock stands before it (its ground nearer than the thing's foot).
+    //     A thing lifted (lz: a forested range's tree) stands lz px up the screen, its colours leaning by its tint (tn: + toward the
+    //     dark, - toward the light, PX.WN_MOUNT.trees.light)
+    items.sort((p,q)=>p[0]-q[0]||p[1]-q[1]);const TLc=PX.WN_MOUNT.trees.light;
+    for(const [y,x,sp,,,lz] of items){const o=sp.sh;for(let k=0;k<o.length;k+=2){const X=x+o[k],Y=y+o[k+1]-(lz|0);if(X<wx0||Y<wy0||X>=wx1||Y>=wy1)continue;const q=at(X,Y);
+        if(lz){if((S[q]&7)!==2||S[q]&(64|8)||Math.abs(Y+ZO[q]-1-y)>4)continue}else if(S[q]&(64|7)||S[q]&128&&!laneOK(X,Y,false)||nearWet(X,Y))continue;S[q]|=64;mixD(q,SHC,.3);touch(q,S[q]&128?3:1)}
       if(!(++n&511))yield}
     yield;
-    for(const [y,x,sp,cls,mine] of items){const N=sp.width,X0=x-sp.ax,Y0=y-sp.ay,[i0,i1,j0,j1]=clip(N,X0,Y0);if(!mine&&inI(X0,Y0,X0+N,Y0+N))out.cross.things++;for(let j=j0;j<j1;j++)for(let i=i0;i<i1;i++){const a=j*N+i,t=sp.a[a];if(!t)continue;const q=at(X0+i,Y0+j),o=q*4,low=S[q]&7;
+    for(const [y,x,sp,cls,mine,lz,tn] of items){const N=sp.width,X0=x-sp.ax,Y0=y-(lz|0)-sp.ay,[i0,i1,j0,j1]=clip(N,X0,Y0),TC=tn>0?TLc.dark:TLc.light,ta=Math.abs(tn||0);if(!mine&&inI(X0,Y0,X0+N,Y0+N))out.cross.things++;for(let j=j0;j<j1;j++)for(let i=i0;i<i1;i++){const a=j*N+i,t=sp.a[a];if(!t)continue;const q=at(X0+i,Y0+j),o=q*4,low=S[q]&7;
         if(ZO[q]&&Y0+j+ZO[q]-1>y)continue;
-        if(t===2){if(low===cls)continue;D[o]=NV[0];D[o+1]=NV[1];D[o+2]=NV[2]}else{D[o]=sp.rgb[a*3];D[o+1]=sp.rgb[a*3+1];D[o+2]=sp.rgb[a*3+2]}S[q]=(S[q]&~15)|cls;ZO[q]=0;touch(q,S[q]&128?3:1)}
+        if(t===2){if(low===cls)continue;D[o]=NV[0];D[o+1]=NV[1];D[o+2]=NV[2]}else{D[o]=sp.rgb[a*3];D[o+1]=sp.rgb[a*3+1];D[o+2]=sp.rgb[a*3+2];if(ta){D[o]+=(TC[0]-D[o])*ta;D[o+1]+=(TC[1]-D[o+1])*ta;D[o+2]+=(TC[2]-D[o+2])*ta}}S[q]=(S[q]&~15)|cls;ZO[q]=0;touch(q,S[q]&128?3:1)}
       if(!(++n&127))yield}
     lap('stand');out.stand=standIndex(items,I,ZO,wx0,wy0,ww,wh);out.ms=performance.now()-t0;return out};
   /* the standing index of a window's inner rect I (what PX.worldNatureSteps hands back as stand, for the game's depth order:
@@ -821,7 +907,7 @@
   PX.WN_SPR=[];const STAND_CELL=32;
   const sprNo=sp=>sp._wn!=null?sp._wn:(sp._wn=PX.WN_SPR.push(sp)-1);
   function standIndex(items,I,ZO,wx0,wy0,ww,wh){const X=I.x,Y=I.y,w=I.w,h=I.h,ex1=X+w,ey1=Y+h,A=[];
-    for(const [y,x,sp] of items){const ox=x-sp.ax,oy=y-sp.ay,b=sp.box;if(ox+b[2]<X||ox+b[0]>=ex1||oy+b[3]<Y||oy+b[1]>=ey1)continue;A.push([y,ox,oy,sprNo(sp)])}
+    for(const [y,x,sp,,,lz] of items){const ox=x-sp.ax,oy=y-(lz|0)-sp.ay,b=sp.box;if(ox+b[2]<X||ox+b[0]>=ex1||oy+b[3]<Y||oy+b[1]>=ey1)continue;A.push([y,ox,oy,sprNo(sp)])}
     for(let x=X;x<ex1;x++){const c=x-wx0;for(let r=0;r<wh;r++){if(!ZO[r*ww+c])continue;let r1=r,f=0;while(r1<wh&&ZO[r1*ww+c]){const g=wy0+r1+ZO[r1*ww+c]-1;if(g>f)f=g;r1++}
       const a=Math.max(wy0+r,Y),b=Math.min(wy0+r1,ey1);if(a<b)A.push([f,x,a,a-b]);r=r1}}
     A.sort((p,q)=>p[0]-q[0]||p[1]-q[1]||p[2]-q[2]);

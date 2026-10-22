@@ -216,14 +216,30 @@ try{
      for(let y=Math.min(ty,ny)*16;y<(Math.max(ty,ny)+1)*16&&!ok2;y++)for(let x=Math.min(tx,nx)*16;x<(Math.max(tx,nx)+1)*16;x++){if(t.wpx(P.wk,x,y)||!blue(x,y))continue;if(t.wpx(P.wk,x+1,y)||t.wpx(P.wk,x-1,y)||t.wpx(P.wk,x,y+1)||t.wpx(P.wk,x,y-1)){ok2=true;break}}
      if(ok2)met++;else if(miss.length<6)miss.push(tx+','+ty)}
    ok(n>10&&met>=n*.95,n+' brooks running into water: the line meets the water as drawn at '+met+(miss.length?' (not: '+miss.join(' ')+')':''))}
-  // (the mountains' kinds (PX.WORLD_MOUNTS) by climate and the world's fields: each range one kind (its shape), its look by the
-  //  climate where it stands; the kinds told apart by their colours)
-  {const f=(e,tm,mo)=>({elev:e,temp:tm,moist:mo,rough:80}),K=PX.worldMountKind,rule=[K('desert',f(220,180,10),.5)==='sandstone',K('frost',f(230,0,30),.5)==='alpine',K('swamp',f(180,120,90),.5)==='knoll',
-     K('grass',f(230,40,20),.5)==='alpine',K('grass',f(215,120,50),.5)==='forested',K('grass',f(225,100,10),.5)==='granite',K('grass',f(225,100,10),.05)==='basalt',K('frost',f(230,0,30),.05)==='alpine',K('swamp',f(180,120,90),.05)==='knoll'];
-   const big=N.M.filter(m=>m.n>=3),kinds=new Set(big.map(m=>m.kind)),bad=big.filter(m=>!m.kind||!m.kinds||!PX.WORLD_MOUNTS[m.kind]).length;
+  // (the mountains' kinds: a pool a climate (PX.WN_MOUNT.pool, the owner's notes on the fifth play-test), the original look (classic)
+  //  in every one, every kind of PX.WORLD_MOUNTS in its climates' (sandstone the desert's, alpine the frost's and the cold grass's,
+  //  forested the wet grass's, the low frost's and the high swamp's, knolls the swamp's, granite and basalt), drawn by their weights
+  //  (basalt rare) where the world's fields allow; each range one kind (its shape) and a kind for every climate (its look where that
+  //  climate's cover reaches it); the kinds told apart by colour; a forested range wooded with the world's trees, lifted up its slopes,
+  //  its rock showing between)
+  {const CL=['grass','frost','desert','swamp'],f=(e,tm,mo)=>({elev:e,temp:tm,moist:mo,rough:80}),PL=PX.WN_MOUNT.pool,names=c=>PL[c].map(e=>e[0]),has=(c,F,k)=>PX.worldMountPool(c,F).some(e=>e[0]===k);
+   const where={sandstone:['desert'],alpine:['frost','grass'],forested:['grass','frost','swamp'],knoll:['swamp'],granite:['grass','frost'],basalt:['grass','desert']};
+   const classic=CL.every(c=>names(c)[0]==='classic'),inPool=Object.keys(PX.WORLD_MOUNTS).every(k=>where[k]&&where[k].every(c=>names(c).includes(k)));
+   const gates=[has('grass',f(200,40,60),'forested'),has('grass',f(200,40,60),'alpine'),!has('grass',f(230,120,10),'forested'),!has('grass',f(200,120,60),'alpine'),has('frost',f(200,0,30),'forested'),!has('frost',f(240,0,30),'forested'),
+     has('swamp',f(240,120,90),'forested'),!has('swamp',f(200,120,90),'forested'),CL.every(c=>has(c,f(240,120,0),'classic')&&has(c,f(100,200,200),'classic'))];
+   // (the draws: 4000 evenly over 0-1, each climate's fields letting its every gate pass: the share of each kind its weight's)
+   const FF={grass:f(200,40,60),frost:f(200,0,30),desert:f(200,200,10),swamp:f(240,120,90)};let off=0,bas=0;const sh=[];
+   for(const c of CL){const L=PX.worldMountPool(c,FF[c]),tot=L.reduce((s,e)=>s+e[1],0),n={};for(let i=0;i<4000;i++){const k=PX.worldMountKind(c,FF[c],(i+.5)/4000);n[k]=(n[k]||0)+1}
+     for(const [k,w] of L){const s=(n[k]||0)/4000;off=Math.max(off,Math.abs(s-w/tot));if(k==='basalt')bas=Math.max(bas,s)}sh.push(c+' '+L.map(([k])=>k+' '+Math.round((n[k]||0)/40)+'%').join(', '))}
+   const big=N.M.filter(m=>m.n>=3),kinds=new Set(big.map(m=>m.kind)),bad=big.filter(m=>!m.kind||!m.kinds||!CL.every(c=>m.kinds[c]&&names(c).includes(m.kinds[c]))||m.kinds[CL[t.climate[m.q0]]]==null).length;
    const mean=k=>{const s=PX.worldPeak('grass',2,64,k),d=s.getContext('2d').getImageData(0,0,64,64).data,c=[0,0,0];let n=0;for(let i=0;i<d.length;i+=4)if(d[i+3]&&!(d[i]===26&&d[i+1]===28)){c[0]+=d[i];c[1]+=d[i+1];c[2]+=d[i+2];n++}return c.map(v=>v/n)};
    const KS=Object.keys(PX.WORLD_MOUNTS),M=KS.map(mean);let close=0;for(let a=0;a<M.length;a++)for(let b=a+1;b<M.length;b++)if(M[a].reduce((s,v,i)=>s+Math.abs(v-M[b][i]),0)<24)close++;
-   ok(rule.every(Boolean)&&!bad&&kinds.size>=2&&!close,'the mountains’ kinds: by climate and the world’s fields ('+rule.filter(Boolean).length+' of '+rule.length+' rules), '+big.length+' ranges each of one kind ('+[...kinds].join(', ')+'), '+KS.length+' kinds told apart by colour ('+close+' pairs alike)')}
+   ok(classic&&inPool&&gates.every(Boolean)&&off<.01&&bas<.06&&!bad&&kinds.size>=2&&!close,'the mountains’ kinds a pool a climate, the original look first in each ('+classic+'), every kind in its climates’ ('+inPool+'), gated by the world’s fields ('+gates.filter(Boolean).length+' of '+gates.length+' rules), drawn by their weights (at most '+(off*100).toFixed(1)+'% off; basalt '+Math.round(bas*100)+'% at most: '+sh.join('; ')+'), '+big.length+' ranges each of one kind ('+[...kinds].join(', ')+'), '+KS.length+' kinds told apart by colour ('+close+' pairs alike)');
+   // (a forested range on the map: the world's trees standing on its tiles, most lifted up its slopes, its rock's runs between)
+   const fm=big.find(m=>m.kind==='forested');if(fm){const TS=new Set();for(const c of CL)for(const sp of PX.WORLD_SPECIES[c])for(let v=0;v<4;v++)for(const d of [0,1])TS.add(PX.worldTree(c,sp,v,d));
+     let tr=0,up=0,rock=0;for(const e of WA.standing(fm.c0*TILE-16,fm.r0*TILE-64,(fm.c1+1)*TILE+16,(fm.r1+1)*TILE+16)){if(!e.s){rock++;continue}const tx=e.x>>4,ty=e.y>>4;if(!TS.has(e.s)||N.lab[ty*MW+tx]!==fm.id)continue;tr++;if(e.dy+e.s.ay<e.y-2)up++}
+     ok(tr>=fm.n*2&&up>=tr*.7&&rock>20,'a forested range ('+fm.n+' tiles at '+fm.c0+', '+fm.r0+') stands with '+tr+' of the world’s trees on its tiles, '+up+' of them lifted up its slopes, '+rock+' runs of its rock between')}
+   else info('no forested range on this world')}
   // (an oasis and ponds put into the world (the generator's lists): an oasis's palms and green; a pond's water a curve, no straight
   //  run of one bank colour along a tile's edge, its bank between the water's edge and the land's own ground)
   {const W0=t.WM,T0=t.tiles.slice(),best=f=>{let b=null,bs=-1e9;for(let y=8;y<MH-8;y++)for(let x=8;x<MW-8;x++){const v=f(x,y);if(v>bs){bs=v;b=[x,y]}}return bs>-1e8?b:null},cl=(x,y)=>t.CLIMS[t.climate[y*MW+x]];

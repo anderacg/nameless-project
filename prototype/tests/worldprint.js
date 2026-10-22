@@ -150,7 +150,15 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 //  estTrack) was laid over an ore vein (Scorchwell's silver at 418,175 became a track tile); it keeps off the veins and fishing
 //  grounds now (DEP_AT), so that track takes another line: the tiles (G1), the land claimed (G4), the painted world (G5) and the
 //  save (G7). Checked: with that one condition out all nine are as before. Were G1 a1703670, G4 dd05f02b, G5 212e5174, G7 f39c5b43)
-const GEXPECT={W1:'5ae838ac',W2:'2fb848a2',W3:'19419885',W4:'9996d93d',W5:'ca7d7496',W6:'8c6b32ad',W7:'62657eba',W8:'e85c68b0',B2:'7aad116d'};
+// (G5 re-recorded 2026-10-22, on purpose, the owner's notes on the fifth play-test's mountains (agent Y, engine/worldnature.js): each
+//  range's kind drawn from its climates' pools (PX.WN_MOUNT.pool: the original look, the climate's own rock, kept as a kind of its own
+//  beside the new ones), a forested range wooded with the world's trees standing on its slopes over a wood's floor (PX.WN_MOUNT.trees),
+//  a range's look, trees and foot blended across a climate's edge by the covers (PX.WN_MOUNT.blend, foot). Only the ranges move: G6's
+//  spots show none, so G6 and every other hash are as before. Checked: with engine/worldnature.js as at 880b6e7 G5 is as before.
+//  Was G5 cdc20759)
+// (G5 measured together 2026-10-22 at the merge of agent Y's mountains (real trees on forested ranges, a variety pool keeping the
+//  original look, blends across climate borders: engine/worldnature.js) with eb6d89c; with main's worldnature.js G5 is as before)
+const GEXPECT={W1:'5ae838ac',W2:'2fb848a2',W3:'19419885',W4:'9996d93d',W5:'3d1b7695',W6:'8c6b32ad',W7:'62657eba',W8:'e85c68b0',B2:'7aad116d'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended

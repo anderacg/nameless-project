@@ -20,6 +20,10 @@
 // put into the world (WM.oases, WM.ponds: the generator's lists; a knoll's mountain tiles too), brooks into water and along a road,
 // and the fog's edge (drawn, held still). &at=k:s:x:y,... puts piece k at a spot an earlier run printed (the same spots before and
 // after a fix). 1200 x 5450.
+// part=7 (the owner's notes on the fifth play-test's mountains, 2026-10-22; the generated classic seed first): a forested mountain at
+// the owner's spot (classic, 425, 219) and its whole view, each kind of mountain (PX.WN_MOUNT.pool: the original look in each
+// climate, then PX.WORLD_MOUNTS), a range across a climate's edge (the most of each of two climates) and a forested one across an
+// edge. 1200 x 4300.
 // part=1 (the first, 2026-10-22): roads into a holding's gate (Millbrook's, and one coming from behind its centre), roads onto a
 // stone and a wooden bridge's deck, a ford, a frost edge (grass to snow), the swamp's trees and a fork; the frost edge and the swamp
 // again as the whole view.
@@ -79,6 +83,18 @@ window.RUN=()=>{const t=T,o=[],G=t.G,P=t.P,W=t.W,TILE=t.TILE,Z=3,part=+(new URLS
   const woodRoad=()=>best((x,y)=>!lane(x,y)?-1e9:count(x,y,3,lane)*2+count(x,y,2,(a,b)=>kind(a,b)===t.T_FOREST)-3*count(x,y,3,(a,b)=>kind(a,b)===t.T_WATER));
   const MK={sandstone:'desert',alpine:'frost',knoll:'swamp',granite:'grass',forested:'grass',basalt:null};
   const mount=k=>()=>{const NP=t.WorldArt.ensure().nature;let b=null,bs=-1;for(const m of NP.M){const ok=m.kind!=null?m.kind===k:MK[k]===m.c&&(k!=='forested'||m.n<40);if(!ok||m.c0<12||m.r0<10||m.c1>t.MW-12||m.r1>t.MH-10)continue;const s=Math.min(m.n,60);if(s>bs){bs=s;b=[(m.c0+m.c1+1)>>1,(m.r0+m.r1+1)>>1]}}return b};
+  // (part 7's: a range of kind k (classic: the original look; before the pool, the climate's look: no kind) whose most tiles are
+  //  climate c (any if none), the biggest up to 60 tiles; a range across an edge (its tiles' second climate the most, f: of kind k)
+  //  at its mount tile with the most of each climate round it)
+  const masses=()=>{const NP=t.WorldArt.ensure().nature;return NP.M.map(m=>{const n={};for(let j=m.r0;j<=m.r1;j++)for(let i=m.c0;i<=m.c1;i++)if(NP.lab[j*t.MW+i]===m.id){const c=cl(i,j);n[c]=(n[c]||0)+1}
+    const cs=Object.keys(n).sort((a,b)=>n[b]-n[a]);return{m,n,c:cs[0],c2:cs[1]||null,k:m.kind||'classic'}}).filter(q=>q.m.c0>=12&&q.m.r0>=10&&q.m.c1<=t.MW-12&&q.m.r1<=t.MH-10)};
+  const kindOf=(k,c)=>()=>{let b=null,bs=-1;for(const q of masses()){if(q.k!==k||c&&q.c!==c)continue;const s=Math.min(q.m.n,60);if(s>bs){bs=s;b=[(q.m.c0+q.m.c1+1)>>1,(q.m.r0+q.m.r1+1)>>1]}}return b};
+  const across=k=>()=>{let b=null,bs=0;const NP=t.WorldArt.ensure().nature;for(const q of masses()){
+    for(let j=q.m.r0;j<=q.m.r1;j++)for(let i=q.m.c0;i<=q.m.c1;i++){if(NP.lab[j*t.MW+i]!==q.m.id||k&&(q.m.kinds||{})[cl(i,j)]!==k)continue;const c=cl(i,j),v=Math.min(count(i,j,3,(a,e)=>NP.lab[e*t.MW+a]===q.m.id&&cl(a,e)===c),count(i,j,3,(a,e)=>cl(a,e)!==c));if(v>bs){bs=v;b=[i,j]}}}return b};
+  // (climate c's pool kind k alone while a piece is drawn; the swamp's: the knoll put in (4 x 2 tiles of mountain on its open ground)
+  //  of kind k)
+  const asKind=(c,k)=>()=>{const L=PX.WN_MOUNT.pool[c];PX.WN_MOUNT.pool[c]=[[k,1]];t.WorldArt.invalidate();return()=>{PX.WN_MOUNT.pool[c]=L;t.WorldArt.invalidate()}};
+  const swampAs=k=>[()=>{inject();return window.__knoll||null},0,asKind('swamp',k)];
   const isOpen=(x,y)=>kind(x,y)===t.T_OPEN;
   const spot=(f,r)=>best((x,y)=>!f(x,y)||count(x,y,r+1,(a,b)=>!isOpen(a,b)||t.WorldArt.ensure().clear.at(a*TILE+8,b*TILE+8))?-1e9:-Math.abs(x-t.MW/2)*.01);
   const inject=()=>{if(window.__inj===t.WM)return;window.__inj=t.WM;const O=t.WM.oases=t.WM.oases||[],PD=t.WM.ponds=t.WM.ponds||[],put=(x,y)=>{t.tiles[y*t.MW+x]=t.T_WATER};
@@ -107,7 +123,15 @@ window.RUN=()=>{const t=T,o=[],G=t.G,P=t.P,W=t.W,TILE=t.TILE,Z=3,part=+(new URLS
   //  10 tiles from those before)
   const diag=(x,y)=>kind(x,y)===t.T_ROAD&&(kind(x-1,y-1)===t.T_ROAD&&kind(x+1,y+1)===t.T_ROAD||kind(x+1,y-1)===t.T_ROAD&&kind(x-1,y+1)===t.T_ROAD),hn=[];
   const hillSlant=n=>()=>{let b=null;for(let k=0;k<=n;k++){b=best((x,y)=>!diag(x,y)||hn.some(([a,c])=>Math.abs(a-x)+Math.abs(c-y)<10)?-1e9:count(x,y,2,(a,c)=>kind(a,c)===t.T_HILL));if(b)hn.push(b)}hn.length=0;return b};
-  const PIECES=part===6?[
+  const PIECES=part===7?[
+   ["a forested mountain (the owner's spot)",()=>t.WM.gen==='ashmark-1'?[425,219]:null],["a forested mountain (the owner's spot), the whole view",()=>t.WM.gen==='ashmark-1'?[425,219]:null,1],
+   ["mountains: forested, a big range (put in: the granite's, the grass's pool forested alone)",kindOf('granite'),0,asKind('grass','forested')],["mountains: forested across a climate's edge",across('forested')],
+   ["mountains: the original look, on the grass",kindOf('classic','grass')],["mountains: the original look, in the frost",kindOf('classic','frost')],
+   ["mountains: the original look, in the desert",kindOf('classic','desert')],["mountains: the original look, in the swamp (put in: 4 x 2 tiles)",...swampAs('classic')],
+   ["mountains: grey granite",kindOf('granite')],["mountains: dark basalt",kindOf('basalt')],
+   ["mountains: snow-capped alpine",kindOf('alpine')],["mountains: desert sandstone",kindOf('sandstone')],
+   ["mountains: the swamp's knolls (put in: 4 x 2 tiles)",...swampAs('knoll')],["a range across a climate's edge",across()],
+   ["a range across a climate's edge, the whole view",across(),1],["mountains: forested in the swamp (put in: 4 x 2 tiles)",...swampAs('forested')]]:part===6?[
    ['a hill crossed by a road on a slant',hillSlant(0)],['a hill crossed by a road on a slant (another)',hillSlant(1)],
    ['a track through a wood to a ford',fordWood],['a track through a wood to a ford, the whole view',fordWood,1],
    ['a road through a wood',woodRoad],['a road through a wood, the whole view',woodRoad,1],
@@ -164,19 +188,21 @@ window.RUN=()=>{const t=T,o=[],G=t.G,P=t.P,W=t.W,TILE=t.TILE,Z=3,part=+(new URLS
   o.push('INFO page '+pg.width+' x '+pg.height);
   // (the ground and what is built only: no folk, caravans, beasts, parties, banners or labels over it)
   const quiet=()=>{W.folk=[];W.caravans=[];W.critters=[];W.monsters=[]};quiet();const stay=P.stay,keep=[window.txt,window.drawParties,window.drawBanners];window.txt=window.drawParties=window.drawBanners=()=>{};
-  const left=new Set(PIECES.map((p,k)=>k));
+  // (&only=k,...: those pieces alone)
+  const only=(new URLSearchParams(location.search).get('only')||'').split(',').filter(Boolean).map(Number),left=new Set(PIECES.map((p,k)=>k).filter(k=>!only.length||only.includes(k)));
   try{
    for(let s=part===5?1:0;s<=6&&left.size;s++){
     if(s){window.txt=keep[0];t.forgeInstall(t.genWorld({preset:'normal',seed:String(s)}));G.quietEvents=true;G.mode='world';G.modal=false;t.hidePanel();quiet();window.txt=()=>{}}
-    if(part===6)inject();
-    for(const k of [...left]){const [pn,f,wide]=PIECES[k],at=AT[k]?(AT[k][0]===s?AT[k].slice(1):null):f();if(!at)continue;left.delete(k);const c=k%per,r=(k/per)|0,X=8+c*(cw*Z+8),Y=8+r*(ch*Z+lab+8);g.fillStyle='#e8e0c8';g.font='13px Arial';
+    if(part===6||part===7)inject();
+    for(const k of [...left]){const [pn,f,wide,setup]=PIECES[k],at=AT[k]?(AT[k][0]===s?AT[k].slice(1):null):f();if(!at)continue;left.delete(k);const c=k%per,r=(k/per)|0,X=8+c*(cw*Z+8),Y=8+r*(ch*Z+lab+8);g.fillStyle='#e8e0c8';g.font='13px Arial';
      const fx=(at[0]+.5)*TILE,fy=(at[1]+.5)*TILE;P.x=fx;P.y=fy;P.stay=1;G.clock=t.DAY*.3;
      // (the fog's piece: the fog drawn, held still; you in the middle of land you remember, some 14 tiles round, the rest never seen)
      if(wide===2){const S=t.seenArr();S.fill(0);for(let y=-12;y<=12;y++)for(let x=-16;x<=16;x++){const u=at[0]+x,v=at[1]+y;if(u>=0&&v>=0&&u<t.MW&&v<t.MH&&x*x/256+y*y/144<=1+.15*Math.sin(x*.7+y))S[v*t.MW+u]=1}
       window.__rmV=t.reducedMotion;(0,eval)('drawWorldFog=__fog0;reducedMotion=()=>true;WFOGV=null')}
+     const undo=setup&&PX.WN_MOUNT&&PX.WN_MOUNT.pool?setup():null;// (part 7: a kind put in for this piece alone)
      try{t.drawWorld();t.drawWorld()}finally{if(wide===2)(0,eval)('drawWorldFog=function(){};reducedMotion=__rmV')}
      const sx=Math.max(0,Math.min(t.cv.width-cw,Math.round(fx-G.cam.x-cw/2))),sy=Math.max(0,Math.min(t.cv.height-ch,Math.round(fy-G.cam.y-ch/2)));
-     g.fillText(pn+' · '+(s?'normal '+s:t.WM.gen)+' ('+at[0]+', '+at[1]+')',X,Y+13);if(wide)g.drawImage(t.cv,0,0,t.VW,t.VH,X,Y+lab,cw*Z,ch*Z);else g.drawImage(t.cv,sx,sy,cw,ch,X,Y+lab,cw*Z,ch*Z);o.push('INFO '+pn+': '+(s?'normal '+s:t.WM.gen)+' '+at.join(', ')+' (at='+k+':'+s+':'+at.join(':')+')')}}
+     g.fillText(pn+' · '+(s?'normal '+s:t.WM.gen)+' ('+at[0]+', '+at[1]+')',X,Y+13);if(wide)g.drawImage(t.cv,0,0,t.VW,t.VH,X,Y+lab,cw*Z,ch*Z);else g.drawImage(t.cv,sx,sy,cw,ch,X,Y+lab,cw*Z,ch*Z);if(undo)undo();o.push('INFO '+pn+': '+(s?'normal '+s:t.WM.gen)+' '+at.join(', ')+' (at='+k+':'+s+':'+at.join(':')+')')}}
    for(const k of left){const c=k%per,r=(k/per)|0;g.fillStyle='#e8e0c8';g.font='13px Arial';g.fillText(PIECES[k][0]+' · none found',8+c*(cw*Z+8),8+r*(ch*Z+lab+8)+13);o.push('INFO '+PIECES[k][0]+': none found')}}
   finally{P.stay=stay;[window.txt,window.drawParties,window.drawBanners]=keep}o.push('PASS drawn ('+t.WM.gen+')');
  }catch(e){if(e!==0)o.push('EXC '+e.message+' '+e.stack)}
