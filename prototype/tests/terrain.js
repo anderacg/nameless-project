@@ -191,7 +191,8 @@ try{
    ok(!bad,'a short field (270-310 px, a phone’s): the river is kept, its crossings closer together ('+[...gaps].sort((a,b)=>a-b).join(', ')+' px apart at least)'+(bad?'; '+bad+'/60 lost it':''))}
   // ---- the world: water beside the tile runs a river; a road bridge near gives a bridge; frost freezes it; deserts and monsters none
   {const near=(i,f,N=1)=>{const tx=i%t.MW,ty=Math.floor(i/t.MW);for(let dy=-N;dy<=N;dy++)for(let dx=-N;dx<=N;dx++)if((dx||dy)&&f(tx+dx,ty+dy))return true;return false},water=(a,b)=>t.tAt(a,b)===t.T_WATER,
-    rb=(a,b)=>t.tAt(a,b)===t.T_ROAD&&(water(a-1,b)&&water(a+1,b)||water(a,b-1)&&water(a,b+1)),spot=i=>({x:(i%t.MW+.5)*t.TILE,y:(Math.floor(i/t.MW)+.5)*t.TILE});
+    decks=new Set(t.WM.crossings.filter(c=>c.kind==='bridge').flatMap(c=>c.tiles)),// (the generated world's bridges are its crossings: a road between two waters may be a causeway)
+    rb=(a,b)=>t.WM.gen==='classic-0'?t.tAt(a,b)===t.T_ROAD&&(water(a-1,b)&&water(a+1,b)||water(a,b-1)&&water(a,b+1)):decks.has(b*t.MW+a),spot=i=>({x:(i%t.MW+.5)*t.TILE,y:(Math.floor(i/t.MW)+.5)*t.TILE});
    let wet=-1,dry=-1,br=-1,frost=-1,desert=-1;for(let i=0;i<t.MW*t.MH;i++){if(t.tiles[i]!==t.T_OPEN)continue;const cl=t.CLIMS[t.climate[i]],w=near(i,water);
     if(cl==='grass'&&w&&wet<0)wet=i;if(cl==='grass'&&!w&&dry<0)dry=i;if(cl!=='desert'&&cl!=='frost'&&w&&br<0&&near(i,rb,2))br=i;if(cl==='frost'&&w&&frost<0)frost=i;if(cl==='desert'&&w&&desert<0)desert=i}
    const at2=(i,c)=>{const p=spot(i);return t.terrainAt(p.x,p.y,{c,t:t.T_OPEN})};

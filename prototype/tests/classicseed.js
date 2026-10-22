@@ -71,7 +71,7 @@ try{
  {const bad=[];for(const h of Hd){const c=m.clim[ti(h)],s=[[9,11],[11,13],[13,15]].map(([a,b])=>round(h,a,b,i=>m.clim[i]===c));if(s[0]-s[1]>.35||s[1]-s[2]>.35)bad.push(h.name+' '+s.map(pc).join('/'))}
   ok(!bad.length,'no climate discs: round each holding, its own climate’s share falls by 35 points at most ring to ring (9-11, 11-13, 13-15 tiles)'+(bad.length?': '+bad.join(', '):''))}
  // ---- generated round them
- ok(m.rivers.length>=10&&m.roads.length>=36&&m.crossings.length>0&&r.camps.length===t.density().camps,'generated round them: '+m.rivers.length+' rivers, '+m.roads.length+' roads, '+m.crossings.length+' crossings, '+r.camps.length+' camps');
+ ok(m.rivers.length>=10&&m.roads.length>=36&&m.crossings.length>0&&r.camps.length===t.density(m).camps,'generated round them: '+m.rivers.length+' rivers, '+m.roads.length+' roads, '+m.crossings.length+' crossings, '+r.camps.length+' camps');
  // ---- placement alone, on a made-up classic land (448 x 320 of open grass, each holding's own climate round its anchor): the sea
  // along the south edge, a canal 2 tiles wide from it to 3 tiles beside each League port; a great river 5 tiles wide from the north
  // edge to the sea 6 tiles east of Stonebridge's anchor, 3 wide for 7 tiles there; a lake 2 tiles wide ringing Willowmere's anchor

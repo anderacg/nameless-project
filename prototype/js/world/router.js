@@ -3,7 +3,8 @@
    change behind them (the way graph, later) and no walker notices:
      Router.travel(o, goal, step): one step of o toward goal, a point {x, y}; with tw (a holding) the way leads to that holding
        by its roads and the last stretch goes straight to the point; with road, it keeps to the roads where they go (off them a
-       tile costs WAY.keep times as much: a caravan's way, the owner's play-test 2: "only off the road when they run away"). True while on its way, false when goal cannot be reached
+       tile costs WAY.keep times as much: a caravan's way, the owner's play-test 2: "only off the road when they run away"; a number, that
+       many times: a worker's, WAY.folk). True while on its way, false when goal cannot be reached
        from where o stands (the walker should pick another)
      Router.reach(a, b): can one walk from a to b (a holding from its own tile, anything else from its point)
      Router.days(a, b, pace): how many days' march from a to b at pace (px a world second, unscaled: MAP_BASE if left out);
@@ -133,10 +134,13 @@ const Router={
    LRU of WAY.pairs), then walked leg by leg: each leg's tiles found when it is reached (a road's own tiles, a crossing's, a
    search between two nodes of a chunk) and the last stretch to the goal. Reach is the land's pieces, as on today's map */
 // its numbers: a border's open run cut into portals of this many tiles at most; trips this short (tiles, the larger of dx, dy)
-// searched on the tiles alone; the pair cache and the chunk tables kept; keep: a road keeper's cost off the roads, x; a ferry's crossing (days: §6.6.2); barges' tiles a day
+// searched on the tiles alone; the pair cache and the chunk tables kept; keep: a road keeper's cost off the roads, x (folk: a worker's,
+// to his estate and back on its track and the roads where they go, lots.js estTrack, never straight through the woods past them); a ferry's crossing (days: §6.6.2); barges' tiles a day
 // down and up a river (§6.6.3); a chunk's tiles a side (WorldArt's CHUNK / TILE); pace, MAP_BASE (world.js, which loads after the
 // generator first runs at load: tests/router.js checks they agree)
-const WAY={run:10,near:40,pairs:1024,chunks:512,ferry:.05,barge:[260,90],cs:32,pace:34,keep:4};
+const WAY={run:10,near:40,pairs:1024,chunks:512,ferry:.05,barge:[260,90],cs:32,pace:34,keep:4,folk:1.05};
+// (a goal's cost off the roads: road true a road keeper's, WAY.keep; a number, its own; none 1)
+const wayKeep=goal=>goal.road===true?WAY.keep:goal.road||1;
 // (the cost of stepping onto a tile of kind t, climate c: findPath's, in tiles at open-ground pace; the days one of those takes)
 const wayStep=(t,c)=>t===T_ROAD?1/1.3:1/Math.max(.35,SPEEDMUL[t]*CLIMMUL[CLIMS[c]]);
 const wayDay=()=>TILE/moveStep(WAY.pace,DAY_SECONDS*WORLD_PACE);
@@ -157,6 +161,8 @@ function buildWayGraph(g){
   for(const c of g.camps)node(c.ty*W+c.tx,4);
   const cnt=new Uint8Array(N);for(const r of m.roads){const seen=new Set();for(const i of r.path)if(!seen.has(i)){seen.add(i);if(cnt[i]<255)cnt[i]++}}
   for(const r of m.roads){const p=r.path,L=p.length;for(let k=0;k<L;k++){const i=p[k];if(cnt[i]>1&&K[i]!==T_WATER&&X[i]<0&&(k>0&&cnt[p[k-1]]<cnt[i]||k<L-1&&cnt[p[k+1]]<cnt[i]))node(i,1)}}
+  // (and every road's two ends: the generator's are gates and crossings' ends already; an estate's track's door, lots.js estTrack)
+  for(const r of m.roads)for(const i of [r.path[0],r.path[r.path.length-1]])node(i,1);
   // road and track edges: each road's run between two nodes on it, its own tiles' costs each way (a run over a crossing's tiles is
   // the crossing's edge)
   m.roads.forEach((r,ri)=>{const p=r.path,ek=r.kind==='road'?0:1;let ka=-1;
@@ -193,6 +199,8 @@ function buildWayGraph(g){
   return{n,tile:Int32Array.from(tile),nk:Uint8Array.from(nk),off,to,cost:co,ek,xing:xg,chunk:new Map(),closed:new Uint8Array(m.crossings.length),w:W,h:H,cs:CS,cols,coff,cnode,leg};
 }
 
+// the way graph charted again for the world in use (lots.js: its estates' tracks laid or taken up), its crossings shut as they were
+function wayRechart(){const G=WM.graph;if(!G)return;WM.graph=buildWayGraph({map:WM,holdings:TOWNS,camps:CAMP_SPOTS});if(WM.graph.closed.length===G.closed.length)WM.graph.closed.set(G.closed);WAYN=null;PAIRS.clear();WAYV++}
 // ---- the router on the graph (the world in use: WM.graph)
 // what it keeps: the tiles shut (a byte a tile: Router.close; null while none is), the graph's nodes by tile (WAYN), the pair
 // cache (PAIRS), its counts (WAYS, Router.stats) and the ways' version (WAYV: a walker's way found under another is found again)
@@ -252,8 +260,8 @@ function wayGraph(G,A,B,gt,rm){rm=rm||1;const n=G.n,S=WAYA&&WAYA.g.length>=n?WAY
 // two single nodes (a road keeper's, rm, apart); counted in Router.stats)
 function wayRoute(G,s,g,gn,rm){const t0=performance.now(),A=wayEnds(G,s,false),B=new Map(gn!=null?[[gn,0]]:wayEnds(G,g,true)),t1=performance.now();WAYS.localMs+=t1-t0;WAYS.queries++;
   if(!A.length||!B.size)return null;let r=null;
-  if(A.length===1&&B.size===1){const [a,ca]=A[0],[b,cb]=[...B][0],k=(a*G.n+b)*2+(rm>1?1:0),c=PAIRS.get(k);if(c){WAYS.hits++;PAIRS.delete(k);PAIRS.set(k,c);r={cost:ca+c.g+cb,nodes:c.nodes,via:c.via}}}
-  if(!r&&(r=wayGraph(G,A,B,g,rm))){const a=r.nodes[0],b=r.nodes[r.nodes.length-1];PAIRS.set((a*G.n+b)*2+(rm>1?1:0),{g:r.cost-A.find(q=>q[0]===a)[1]-B.get(b),nodes:r.nodes,via:r.via});if(PAIRS.size>WAY.pairs)PAIRS.delete(PAIRS.keys().next().value)}
+  if(A.length===1&&B.size===1){const [a,ca]=A[0],[b,cb]=[...B][0],k=(a*G.n+b)*3+(rm===WAY.keep?1:rm>1?2:0),c=PAIRS.get(k);if(c){WAYS.hits++;PAIRS.delete(k);PAIRS.set(k,c);r={cost:ca+c.g+cb,nodes:c.nodes,via:c.via}}}
+  if(!r&&(r=wayGraph(G,A,B,g,rm))){const a=r.nodes[0],b=r.nodes[r.nodes.length-1];PAIRS.set((a*G.n+b)*3+(rm===WAY.keep?1:rm>1?2:0),{g:r.cost-A.find(q=>q[0]===a)[1]-B.get(b),nodes:r.nodes,via:r.via});if(PAIRS.size>WAY.pairs)PAIRS.delete(PAIRS.keys().next().value)}
   WAYS.graphMs+=performance.now()-t1;return r}
 // (the tiles from one point to another, searched in a box round both (findPath), then in a wider one; rm: a road keeper's; timed
 // into Router.stats)
@@ -264,8 +272,8 @@ const wayCentre=k=>[(k%MW+.5)*TILE,((k/MW|0)+.5)*TILE];
 // (searched to tile b from wherever the walker stands), 'road' or 'xing' (edge e's own tiles: a road's, a bridge's or a ford's; a
 // ferry's crossing, sailed straight over), 'step' (over a portal's border to tile b), 'end' (the last stretch to the goal),
 // 'path' (all its tiles, p: a trip searched on the whole map)}), or legs null when there is none
-// (a road keeper's (goal.road) the same, its ways off the roads x WAY.keep, never straight over open ground)
-function wayTrip(o,goal){const G=WM.graph,s=Math.floor(o.y/TILE)*MW+Math.floor(o.x/TILE),g=Math.floor(goal.y/TILE)*MW+Math.floor(goal.x/TILE),sx=s%MW,gx=g%MW,rm=goal.road?WAY.keep:1;
+// (a road keeper's (goal.road) the same, its ways off the roads x WAY.keep (a worker's x WAY.folk: wayKeep), never straight over open ground)
+function wayTrip(o,goal){const G=WM.graph,s=Math.floor(o.y/TILE)*MW+Math.floor(o.x/TILE),g=Math.floor(goal.y/TILE)*MW+Math.floor(goal.x/TILE),sx=s%MW,gx=g%MW,rm=wayKeep(goal);
   if(Math.max(Math.abs(sx-gx),Math.abs((s-sx)/MW-(g-gx)/MW))<=WAY.near){const t0=performance.now(),p=rm===1&&wayLine(o.x,o.y,goal.x,goal.y)?[]:findPath(o.x,o.y,goal.x,goal.y,0,rm);WAYS.localMs+=performance.now()-t0;if(p)return{legs:[{k:'path',p}]}}
   const gn=goal.tw?wayNodes().get(goal.tw.ty*MW+goal.tw.tx):null,r=s>=0&&g>=0&&s<MW*MH&&g<MW*MH?wayRoute(G,s,g,gn,rm):null;
   if(!r){if(!Router.reach(o,goal))return{legs:null};const t0=performance.now(),p=findPath(o.x,o.y,goal.x,goal.y,Math.max(MW,MH),rm);WAYS.localMs+=performance.now()-t0;return{legs:p?[{k:'path',p}]:null}}
@@ -273,7 +281,7 @@ function wayTrip(o,goal){const G=WM.graph,s=Math.floor(o.y/TILE)*MW+Math.floor(o
   for(let i=1;i<r.nodes.length;i++){const e=r.via[i],b=G.tile[r.nodes[i]];L.push(e<0?{k:'tiles',b}:G.ek[e]===2?{k:'xing',e,b}:G.ek[e]===5?{k:'step',b}:{k:'road',e})}
   L.push({k:'end'});return{legs:L}}
 // (a leg's tiles, from where walker o stands: a list of tile indices; a ferry's {ferry: its far landing}; null if none is found)
-function wayLeg(L,o,goal){const G=WM.graph,rm=goal.road?WAY.keep:1;
+function wayLeg(L,o,goal){const G=WM.graph,rm=wayKeep(goal);
   if(L.k==='path')return L.p;if(L.k==='step')return[L.b];
   if(L.k==='tiles'){const [x,y]=wayCentre(L.b);return Math.floor(o.x/TILE)+Math.floor(o.y/TILE)*MW===L.b?[]:wayFind(o.x,o.y,x,y,rm)}
   if(L.k==='end')return wayLine(o.x,o.y,goal.x,goal.y)?[]:wayFind(o.x,o.y,goal.x,goal.y,rm);

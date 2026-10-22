@@ -19,7 +19,7 @@
       most 60 tiles apart wherever a crossing can be made; each holding's rivers crossed near it (placeHoldXing: both banks
       within its reach on foot); and a town by a bridge its realm's bridge town. Classic: Stonebridge's bridge over the great
       river laid first.
-   9. camps: density()'s camps, Poisson-disc in the fringe: 6-16 tiles from the roads, 14 from the holdings, reachable.
+   9. camps: density(map)'s camps (grown with the land), Poisson-disc in the fringe: 6-16 tiles from the roads, 14 from the holdings, reachable.
    Crossings: i, j the land tiles at each end, tiles the water between (a ferry's stays water). Roads: path the tiles a to b,
    line its own stretches as polylines [[x, y, x, y...]...] in tiles (a tile's centre at +.5; a holding's end at its gate,
    (tx, ty + 1)); a stretch it shares with an earlier road is that road's, and where it leaves or joins one it ends on its line */
@@ -61,9 +61,9 @@ const placeGap=(a,b)=>PLACE_GAP[a]&&PLACE_GAP[a][b]||PLACE_GAP[b]&&PLACE_GAP[b][
    whatever the gap, which bunched them); space, the spacing (tiles) reach is made for, 37 holdings at Normal: where the land a
    holding has is wider (sqrt(land / holdings)), reach and room grow with it (Normal's 27 x1.18, Huge's 66 x1.75); room, a new
    holding's liking for room, up to room[0] for room[1] tiles (x that growth) clear past its spacing; pull, its pull toward its
-   capital, a share a hundred tiles */
+   capital, a share a hundred tiles; regrow, the realms grown from their capitals at most this many times a try (placeEven) */
 const PLACE={reach:40,cap:.3,skew:.25,suit:.6,day:60,land:2000,landR:90,lords:[[37,4],[55,6],[90,9],[200,18]],bridge:3,ford:3,ferry:12,gap:60,apart:3,spread:.3,even:.24,
-  capMin:.6,space:54,room:[.3,30],pull:.05};
+  capMin:.6,space:54,room:[.3,30],pull:.05,regrow:3};
 // the land a realm's holdings will claim, reckoned as territory.js does at the start (placeRealmLand): its travel cost by tile kind
 // (its LAND_COST, which loads after the generator runs; 0 closed) and a holding's first growth past its kind's reach (its GROW0)
 const PLACE_CLAIM={cost:[1,1.7,1.5,0,.8,4,1.5],grow:4};
@@ -88,7 +88,9 @@ const PLACE_WORD={human:'human',dwarf:'dwarven',elf:'elven',orc:'orc',league:'Le
    (dR), navigable rivers (dN), peaks (dM) and forest (dF); each river tile's river (rv, -1 elsewhere) and its place along that
    river's path (rp); bodies of water (wl, 4 ways; sea: the largest at the map's rim); the open sea (open: water joined to the rim
    by water no road can bridge, or by rivers, whose bridges keep them: placeOpen); the land a road can join (conn: walkable land,
-   rivers, and water a bridge spans; main its largest piece) */
+   rivers, and water a bridge spans, never a pond's or an oasis's; main its largest piece); the big oases' shores (oa: within
+   PLACE_OASIS.near of one's pool); the ponds' and oases' water (pond: worldgen.js m.ponds, m.oases [{i, r, tiles}...]: never
+   bridged nor crossed, the roads go round) */
 function* placeFields(g){
   const m=g.map,W=m.w,H=m.h,N=W*H,K=m.kind,Rv=m.river,F={};
   F.dW=yield* genFar(g,i=>K[i]===T_WATER&&!(Rv[i]&3));F.dR=yield* genFar(g,i=>(Rv[i]&3)>0);F.dN=yield* genFar(g,i=>(Rv[i]&4)>0);
@@ -98,16 +100,27 @@ function* placeFields(g){
   for(let a=0;a<q.length;a++){const i=q[a],x=i%W,y=(i-x)/W;for(const [dx,dy] of DIR8){const nx=x+dx,ny=y+dy,j=ny*W+nx;if(m.has(nx,ny)&&rv[j]<0&&(Rv[j]&3)){rv[j]=rv[i];rp[j]=rp[i];q.push(j)}}}
   F.wl=new Int32Array(N);const ws=yield* genPieces(g,F.wl,i=>K[i]===T_WATER);F.sea=-1;
   for(let i=0;i<N;i++){const x=i%W,y=(i-x)/W;if((x===0||y===0||x===W-1||y===H-1)&&F.wl[i]>=0&&(F.sea<0||ws[F.wl[i]]>ws[F.sea]))F.sea=F.wl[i]}
-  const run=F.run=placeRuns(m);F.open=placeOpen(m,run);F.conn=new Int32Array(N);
-  const cs=yield* genPieces(g,F.conn,i=>K[i]!==T_MOUNT&&(K[i]!==T_WATER||(Rv[i]&3)>0||run[i]<=PLACE.bridge));
-  F.main=cs.indexOf(Math.max(...cs));return F}
+  const run=F.run=placeRuns(m),pond=F.pond=new Uint8Array(N);F.open=placeOpen(m,run);F.conn=new Int32Array(N);
+  for(const o of [...m.ponds||[],...m.oases||[]])for(const i of o.tiles||[o.i])pond[i]=1;
+  const cs=yield* genPieces(g,F.conn,i=>K[i]!==T_MOUNT&&(K[i]!==T_WATER||(Rv[i]&3)>0||run[i]<=PLACE.bridge&&!pond[i]));
+  F.main=cs.indexOf(Math.max(...cs));F.oa=placeOases(m);return F}
+/* the big oases (the desert's spring pools, worldgen.js: m.oases [{i, its centre tile, r, its radius in tiles, big}]): a desert
+   people likes the land round one (the owner's: "desert and swamp near water"), the orcs most (placeSuit: PLACE_OASIS by people),
+   so a big oasis may draw a holding beside it; near: tiles past its radius. A byte a tile (1 near one) */
+const PLACE_OASIS={near:4,orc:.35,league:.2};
+function placeOases(m){const W=m.w,O=new Uint8Array(W*m.h);
+  for(const o of m.oases||[]){if(!o.big)continue;const ox=o.i%W,oy=(o.i-ox)/W,e=o.r+PLACE_OASIS.near;
+    for(let y=oy-e;y<=oy+e;y++)for(let x=ox-e;x<=ox+e;x++)if(m.has(x,y)&&(x-ox)*(x-ox)+(y-oy)*(y-oy)<=e*e)O[y*W+x]=1}
+  return O}
 // (each water tile's span: the shorter of its straight runs of water, across and down, to 255)
 function placeRuns(m){const W=m.w,H=m.h,K=m.kind,S=new Uint8Array(W*H).fill(255);
   for(let y=0;y<H;y++)for(let x=0;x<W;){if(K[y*W+x]!==T_WATER){x++;continue}let e=x;while(e<W&&K[y*W+e]===T_WATER)e++;for(let k=x;k<e;k++)S[y*W+k]=Math.min(255,e-x);x=e}
   for(let x=0;x<W;x++)for(let y=0;y<H;){if(K[y*W+x]!==T_WATER){y++;continue}let e=y;while(e<H&&K[e*W+x]===T_WATER)e++;for(let k=y;k<e;k++)S[k*W+x]=Math.min(S[k*W+x],e-y);y=e}
   return S}
-// how much a people likes tile i (about 0-1; §8.8's likes and avoids); the League by coasts, lake shores and navigable rivers
-function placeSuit(m,F,p,i){
+// how much a people likes tile i (about 0-1; §8.8's likes and avoids); the League by coasts, lake shores and navigable rivers; and
+// by a big oasis (PLACE_OASIS)
+function placeSuit(m,F,p,i){return placeLike(m,F,p,i)+(F.oa&&F.oa[i]?PLACE_OASIS[p]||0:0)}
+function placeLike(m,F,p,i){
   const c=m.clim[i],k=m.kind[i],f=m.feat[i],GR=CLIM.grass,FR=CLIM.frost,DE=CLIM.desert,SW=CLIM.swamp,dR=F.dR[i],dW=F.dW[i],dM=F.dM[i],dF=F.dF[i];
   if(p==='human')return(c===GR?.45:c===FR?.1:c===SW?.05:0)+(k===T_OPEN?.2:k===T_HILL?.05:0)+(dR<=3?.25:dR<=8?.1:0)+(f&1?.1:0)-(f&8?.3:0)-(dM<6?.3:0);
   if(p==='dwarf')return(dM<=4?.4:dM<=10?.2:0)+(k===T_HILL?.2:0)+(c===FR?.25:c===GR?(m.temp[i]<110?.2:.05):-.4)+(dR<=3&&dM<=10?.1:0);
@@ -195,8 +208,11 @@ function* genHoldings(g){
     // the realms grow in turn, a holding each, its kind by the realm's mix: the best of 40 candidates (then 80 more) within reach
     // of its own, clear of every holding by the spacing table and nearer its own than any other realm's (the first three within a
     // day of the capital); the best liked, for its kind, near its capital and with room round it (rc: the reach, grown where the
-    // holdings are sparser than space)
-    const left={},rc=Math.round(PLACE.reach*Math.max(1,Math.sqrt((g.work.land||W*H)/N)/PLACE.space)),rk=rc/PLACE.reach;for(const f of PLACE_REALMS)left[f]=placeKinds(f,quota[f]);
+    // holdings are sparser than space). Grown again from the capitals, up to PLACE.regrow times in all, while too few fit or the
+    // realms' land is unbalanced as the check will find it (placeEven): the stage's checks failed on it in most of its tries
+    // (Normal s4 took 7, s7 and s9 8), each try drawing the capitals again
+    const rc=Math.round(PLACE.reach*Math.max(1,Math.sqrt((g.work.land||W*H)/N)/PLACE.space)),rk=rc/PLACE.reach,nc=P.length;
+    for(let pass=0;;pass++){const left={};for(const f of PLACE_REALMS)left[f]=placeKinds(f,quota[f]);P.length=nc;
     for(let more=true;more;){more=false;
       for(const f of PLACE_REALMS){if(!left[f].length)continue;more=true;const kind=left[f].shift(),own=P.filter(h=>h.f===f);if(!own.length)continue;
         const p=PLACE_PEOPLE[f],cap=own[0].i;let top=null;
@@ -208,6 +224,7 @@ function* genHoldings(g){
           const v=placeSuit(m,F,p,i)+placeKindScore(m,F,kind,i,Math.sqrt(rival),own.length)-PLACE.pull*Math.sqrt(d2(cap,i))/100+PLACE.room[0]*Math.min(1,(Math.sqrt(nd)-placeGap(near.kind,kind))/(PLACE.room[1]*rk))+R()*.15;if(!top||v>top.v)top={v,i}}
         if(top)P.push({f,kind,i:top.i})}
       if(g.tick())yield .5+.4*P.length/N}
+    if(pass>=PLACE.regrow-1||placeEven(m,F,P.map(h=>({tx:h.i%W,ty:(h.i-h.i%W)/W,kind:h.kind,realm:h.f})),N))break}
     // their data: realm, races, style, name, prices and note
     const used=new Set(),ports={};
     for(const h of P){const [tx,ty]=xy(h.i),pp=PLACE_PEOPLE[h.f],c=CLIMS[m.clim[h.i]],water=placePort(m,F,h.i)>=0&&(F.dW[h.i]<=2||F.dN[h.i]<=2);
@@ -218,9 +235,32 @@ function* genHoldings(g){
       if(h.kind!=='castle')d.mod=placeMod(m,F,d,h.i,R);d.note=placeNote(m,F,d,h.i);
       out.push(Object.assign({name:d.name,realm:d.realm},d.style?{style:d.style}:{},d))}
     g.lords=placeLords(R,Math.round(areaTable(PLACE.lords,N)))}
-  // the ground under each holding opened (forest and hills within 2 tiles)
-  for(const h of out)for(let b=-2;b<=2;b++)for(let a=-2;a<=2;a++){const tx=h.tx+a,ty=h.ty+b,i=ty*W+tx;if(a*a+b*b<=6&&m.has(tx,ty)&&(K[i]===T_FOREST||K[i]===T_HILL||!a&&!b)){K[i]=T_OPEN;m.high[i]=0}}
+  // each capital's liking as it was chosen (its own tile a hill, say: the checks', placeCheck), then the ground under each holding
+  // opened (forest and hills within 2 tiles: placeOpenUnder)
+  g.work.like={};for(const h of out)if(h.kind==='city')g.work.like[h.name]=placeSuit(m,F,PLACE_PEOPLE[h.realm],h.ty*W+h.tx);
+  for(const h of out)placeOpenUnder(m,K,h);
   yield 1}
+// (the ground under holding h opened in kinds K: forest and hills within 2 tiles, and its own tile, to open ground, no high ground)
+function placeOpenUnder(m,K,h){const W=m.w;for(let b=-2;b<=2;b++)for(let a=-2;a<=2;a++){const tx=h.tx+a,ty=h.ty+b,i=ty*W+tx;if(a*a+b*b<=6&&m.has(tx,ty)&&(K[i]===T_FOREST||K[i]===T_HILL||!a&&!b)){K[i]=T_OPEN;if(K===m.kind)m.high[i]=0}}}
+// (stage 7's holdings Hd ({tx, ty, kind, realm}) as its checks will find them: N of them, each realm's land within PLACE.even of
+// their mean, reckoned on the ground opened under them, as placeCheck does)
+function placeEven(m,F,Hd,N){if(Hd.length<N)return false;const K=m.kind.slice(),o=Object.create(m);o.kind=K;for(const h of Hd)placeOpenUnder(m,K,h);
+  const L=placeRealmLand(o,Hd,placeHoldBridged(o,F,Hd)),mean=L.reduce((a,b)=>a+b,0)/L.length;return Math.max(...L.map(v=>Math.abs(v-mean)/mean))<=PLACE.even}
+/* a holding's clearing (the owner's play-test 4: a village deep in a forest had no open ground for its houses and fields, and a
+   town's houses scattered through the trees left its estates no room past them): where fewer than PLACE_CLEAR[kind] tiles of open
+   ground and hills lie within its ring (HOLDING_TYPES' ring, tiles from its centre), the woods nearest it opened (forest to open
+   ground, its deep and sparse marks gone), nearest first, until that many lie in the clearing; each tile's distance x (1 +- rough)
+   by a noise of scale tiles (fbm), so the clearing's edge is ragged and round, never a square; within its ring and spill more.
+   Cleared as stage 8 begins (genRoads: the roads run through it), once stage 7's checks have chosen the holdings, which it would
+   move; its noise salted from the roads' first stream, so every try clears alike. The art blends the forest's floor into it
+   (gfx/worldart.js). PLACE_STATS.clear: the holdings cleared */
+const PLACE_CLEAR={village:80,castle:90,town:170,city:240,rough:.35,scale:4,spill:3};
+function placeClear(m,h,salt){
+  const W=m.w,K=m.kind,C=PLACE_CLEAR,ring=HOLDING_TYPES[h.kind].ring,r=ring+C.spill,need=C[h.kind],L=[];let have=0;
+  for(let y=h.ty-r;y<=h.ty+r;y++)for(let x=h.tx-r;x<=h.tx+r;x++){if(!m.has(x,y))continue;const i=y*W+x,k=K[i],d=Math.sqrt((x-h.tx)*(x-h.tx)+(y-h.ty+1)*(y-h.ty+1));
+    if(k!==T_OPEN&&k!==T_HILL&&k!==T_FOREST||d>r)continue;if(k!==T_FOREST&&d<=ring)have++;L.push([d*(1+C.rough*2*(fbm(x/C.scale,y/C.scale,salt)-.5)),i])}
+  if(have>=need)return;L.sort((a,b)=>a[0]-b[0]||a[1]-b[1]);PLACE_STATS.clear.push(h.name);
+  for(let n=0;n<need&&n<L.length;n++){const i=L[n][1];if(K[i]===T_FOREST){K[i]=T_OPEN;m.feat[i]&=~(8|16)}}}
 // (holdings per realm for N in all: PLACE_SHARE's ratio, the remainders largest first)
 function placeQuota(N){const T=PLACE_REALMS.reduce((a,f)=>a+PLACE_SHARE[f],0),o={},rem=[];let n=0;
   for(const f of PLACE_REALMS){o[f]=Math.floor(N*PLACE_SHARE[f]/T);n+=o[f];rem.push([N*PLACE_SHARE[f]/T-o[f],f])}
@@ -306,10 +346,12 @@ const placeBox=h=>{const n=h.kind==='village'?2:4;return{x:h.tx-(n>>1),y:h.ty-n+
 // left their box for the whole map, the stretches of river where no crossing can be made: bare, and the holdings' own crossings:
 // holdXing laid, holdBare the rivers by a holding none could be made over, 'holding river'; the bridges' ends no road reaches:
 // stubs, 'x,y', and the bridges taken up for it: dropped, and droppedAt {river, at: its place along it})
-const PLACE_STATS={roads:0,ms:0,max:0,search:0,whole:0,bare:[],holdXing:0,holdBare:[],stubs:[],dropped:[],droppedAt:[]};
+const PLACE_STATS={roads:0,ms:0,max:0,search:0,whole:0,bare:[],holdXing:0,holdBare:[],stubs:[],dropped:[],droppedAt:[],clear:[]};
 function* genRoads(g){
   const m=g.map,W=m.w,H=m.h,N=W*H,K=m.kind,Fe=m.feat,Rv=m.river,E=m.edge,Hd=g.holdings,n=Hd.length,F=g.work.place,R=g.rng('roads',g.attempt),salt=genSalt(R);
-  m.roads=[];m.crossings=[];g.work.roadFail=[];PLACE_STATS.roads=PLACE_STATS.ms=PLACE_STATS.max=PLACE_STATS.search=PLACE_STATS.whole=PLACE_STATS.holdXing=0;PLACE_STATS.bare=[];PLACE_STATS.holdBare=[];PLACE_STATS.stubs=[];PLACE_STATS.dropped=[];PLACE_STATS.droppedAt=[];
+  m.roads=[];m.crossings=[];g.work.roadFail=[];PLACE_STATS.roads=PLACE_STATS.ms=PLACE_STATS.max=PLACE_STATS.search=PLACE_STATS.whole=PLACE_STATS.holdXing=0;PLACE_STATS.bare=[];PLACE_STATS.holdBare=[];PLACE_STATS.stubs=[];PLACE_STATS.dropped=[];PLACE_STATS.droppedAt=[];PLACE_STATS.clear=[];
+  // the holdings in the woods their clearings first (placeClear)
+  {const salt=genSalt(g.rng('roads',0));for(const h of Hd)placeClear(m,h,salt)}
   const X=new Int32Array(N).fill(-1),LI=new Int32Array(N).fill(-1),lines=[],jit=new Float32Array(N),ter=new Uint8Array(N),ferry=new Uint8Array(N),nearH=new Uint8Array(N);
   for(let i=0;i<N;i++){const x=i%W,y=(i-x)/W;jit[i]=.8+.45*fbm(x/9,y/9,salt);ter[i]=clamp((m.elev[i]-64)>>5,0,3)}
   // ferries land within 8 tiles of a town, a city or a port; nearH: within 6 tiles of a holding (the larger of dx, dy)
@@ -324,9 +366,9 @@ function* genRoads(g){
   for(let i=0;i<N;i++)price(i);
   const shut=i=>K[i]===T_WATER||K[i]===T_MOUNT,cut=(i,dx,dy)=>dx>0&&E[i]&1||dx<0&&E[i]&4||dy>0&&E[i]&2||dy<0&&E[i]&8,DX=DIR8.map(d=>d[0]),DY=DIR8.map(d=>d[1]);
   // (the crossing a straight run of k water tiles from land tile i (step s) would be: [kind, its cost]; kind 0 none, and none new
-  // with an end by another crossing's: placeApart)
+  // with an end by another crossing's: placeApart; none over a pond or an oasis: F.pond)
   const xing=(i,s,k,great)=>{let old=-2,riv=true,w=0,flood=false;
-    for(let t=1;t<=k;t++){const j=i+s*t;old=old===-2?X[j]:old===X[j]?old:-3;if(!(Rv[j]&3))riv=false;w=Math.max(w,Rv[j]&3);if(Rv[j]&32)flood=true}
+    for(let t=1;t<=k;t++){const j=i+s*t;if(F.pond[j])return[0,0];old=old===-2?X[j]:old===X[j]?old:-3;if(!(Rv[j]&3))riv=false;w=Math.max(w,Rv[j]&3);if(Rv[j]&32)flood=true}
     const C=PLACE_ROAD.xing;if(old>=0)return m.crossings[old].kind==='ford'&&great?[0,0]:[4,(k+1)*C.reuse];if(old!==-1||!placeApart(m,i)||!placeApart(m,i+s*(k+1)))return[0,0];
     if(!great&&riv&&w<=2&&k<=PLACE.ford&&!flood)return[1,(k+1)*C.ford[0]+C.ford[1]];
     if(k<=PLACE.bridge)return[2,(k+1)*C.bridge[0]+C.bridge[great?1:2]];
@@ -402,9 +444,10 @@ function* genRoads(g){
       const l=[];for(const p of pts){const x=Math.round(p[0]*100)/100,y=Math.round(p[1]*100)/100;if(l.length<2||l[l.length-2]!==x||l[l.length-1]!==y)l.push(x,y)}lines.push(l);line.push(l);k=t+1;
       for(const i of tiles)if(LI[i]<0)LI[i]=lines.length-1}
     if(ha)out.unshift(ha.ty*W+ha.tx);if(hb)out.push(hb.ty*W+hb.tx);
-    // within 6 tiles of a holding a diagonal step takes a corner too (4 ways there, so lots.js leads it round the holding's centre)
+    // within 6 tiles of a holding a diagonal step takes a corner too (4 ways there, so lots.js leads it round the holding's centre),
+    // never one in a holding's centre or the ring beside and behind it (boxed)
     for(let k=1;k<out.length;k++){const a=out[k-1],b=out[k],ax=a%W,bx=b%W,dx=bx-ax,dy=(b-bx)/W-(a-ax)/W;
-      if(dx&&dy&&(nearH[a]||nearH[b])){const c1=a+dx,c2=a+dy*W,c=free(c1)&&(!free(c2)||cost[c1]<=cost[c2])?c1:free(c2)?c2:-1;if(c>=0)out.splice(k++,0,c)}}
+      if(dx&&dy&&(nearH[a]||nearH[b])){const c1=a+dx,c2=a+dy*W,fc=i=>free(i)&&!boxed[i],c=fc(c1)&&(!fc(c2)||cost[c1]<=cost[c2])?c1:fc(c2)?c2:-1;if(c>=0)out.splice(k++,0,c)}}
     // the tiles laid: roads (great over track), and each new run of water a crossing
     for(let k=0;k<out.length;k++){const i=out[k];
       if(K[i]===T_WATER&&X[i]<0){let e=k;while(K[out[e]]===T_WATER&&X[out[e]]<0)e++;placeCross(m,F,X,out[k-1],out[e],out.slice(k,e),xing(out[k-1],out[k]-out[k-1],e-k,great)[0]||2,great,Hd);k=e-1;continue}
@@ -520,7 +563,7 @@ function placeSpot(m,F,X,r,on,lo,hi,ferry,boxed){
   for(let p=Math.max(1,lo-12);p<=Math.min(hi+12,r.path.length-2);p++){const t=r.path[p];if(K[t]!==T_WATER||X[t]>=0)continue;const x=t%W,y=(t-x)/W;
     for(const [dx,dy] of [[1,0],[0,1]]){let a=0,b=0;while(a<=PLACE.ferry&&m.has(x-dx*(a+1),y-dy*(a+1))&&K[t-(dx+dy*W)*(a+1)]===T_WATER)a++;while(b<=PLACE.ferry&&m.has(x+dx*(b+1),y+dy*(b+1))&&K[t+(dx+dy*W)*(b+1)]===T_WATER)b++;
       const s=dx+dy*W,i=t-s*(a+1),j=t+s*(b+1),k=a+b+1;if(!m.has(x-dx*(a+1),y-dy*(a+1))||!m.has(x+dx*(b+1),y+dy*(b+1))||!ok(i)||!ok(j)||placeNotch(m,i,s)||placeNotch(m,j,s))continue;
-      const tiles=[];for(let q=1;q<=k;q++)tiles.push(i+s*q);if(tiles.some(q=>X[q]>=0))continue;const w=Math.max(...tiles.map(q=>m.river[q]&3));
+      const tiles=[];for(let q=1;q<=k;q++)tiles.push(i+s*q);if(tiles.some(q=>X[q]>=0||F.pond[q]))continue;const w=Math.max(...tiles.map(q=>m.river[q]&3));
       const kind=w<3&&k<=PLACE.ford?1:w===3&&k<=PLACE.bridge?2:w===3&&k<=PLACE.ferry&&(ferry[i]||ferry[j])?3:0;
       const q=kind?placeAlong(m,on,tiles):-1,v=q>=lo&&q<=hi?k*4+hi-q:Infinity;if(v<Infinity&&(!best||v<best.v))best={v,i,j,tiles,kind}}}
   return best}
@@ -535,24 +578,27 @@ function placeSpot(m,F,X,r,on,lo,hi,ferry,boxed){
    (boxed) and the ground in front of its gate (a tile each side of it and below), no notch, none by another crossing's end
    (placeApart), none of it a crossing yet; a bridge (PLACE.bridge tiles at most), else on a river boats sail a ferry
    (PLACE.ferry); a bridge first, then the nearest (both ends), then the narrowest. One a river; where none can be made the
-   river is left (PLACE_STATS.holdBare: a pocket of land in a bend, say). spur, lead, loop: the bridges' tracks' (genRoads: how far
+   river is left (PLACE_STATS.holdBare: a pocket of land in a bend, say). Land not walked to in a piece of fewer than
+   PLACE_HOLD.pocket tiles (4 ways: a lone tile of land in the river) is no bank to cross to. spur, lead, loop: the bridges' tracks' (genRoads: how far
    one is sought, its straight lead off the bridge, how much longer than the way over the bridge it may be) */
-const PLACE_HOLD={river:8,bank:10,box:16,end:10,round:[1.4,4],spur:60,lead:2,loop:3};
+const PLACE_HOLD={river:8,bank:10,box:16,end:10,round:[1.4,4],spur:60,lead:2,loop:3,pocket:4};
 function placeHoldXing(m,F,X,h,gate,boxed,Hd,shut){
   const W=m.w,N=W*m.h,K=m.kind,Rv=m.river,P=PLACE_HOLD,gx=gate%W,gy=(gate-gx)/W,far=i=>{const x=i%W,y=(i-x)/W;return Math.max(Math.abs(x-h.tx),Math.abs(y-h.ty))},
     land=i=>passable(K[i])&&K[i]!==T_FORD,left=new Set(),wk=i=>F.rv[i]>=0?F.rv[i]:-2-F.wl[i];
   for(let n=0;n<8;n++){const w=placeWalk(m,gate,P.box,false,shut),near=new Set();let r=null;
     // (walked to, and not far round)
     const ok=i=>{const x=i%W,y=(i-x)/W,d=placeWalkSteps(w,x,y);return d>=0&&d<=P.round[0]*(Math.abs(x-gx)+Math.abs(y-gy))+P.round[1]};
+    // (land not walked to in a piece too small to cross to)
+    const pocket=i=>{const q=[i],seen=new Set(q);for(let a=0;a<q.length&&q.length<P.pocket;a++){const c=q[a],x=c%W;for(const j of [x>0?c-1:-1,x<W-1?c+1:-1,c-W,c+W])if(j>=0&&j<N&&!seen.has(j)&&passable(K[j])&&!ok(j)){seen.add(j);q.push(j)}}return q.length<P.pocket};
     for(let y=h.ty-P.river;y<=h.ty+P.river;y++)for(let x=h.tx-P.river;x<=h.tx+P.river;x++){const i=y*W+x;if(m.has(x,y)&&K[i]===T_WATER&&!left.has(wk(i)))near.add(wk(i))}
     // (the first such land, row by row, beside one of them)
-    for(let y=h.ty-P.bank;y<=h.ty+P.bank&&r===null;y++)for(let x=h.tx-P.bank;x<=h.tx+P.bank&&r===null;x++){const i=y*W+x;if(!near.size||!m.has(x,y)||!passable(K[i])||ok(i))continue;
+    for(let y=h.ty-P.bank;y<=h.ty+P.bank&&r===null;y++)for(let x=h.tx-P.bank;x<=h.tx+P.bank&&r===null;x++){const i=y*W+x;if(!near.size||!m.has(x,y)||!passable(K[i])||ok(i)||pocket(i))continue;
       for(const j of [x>0?i-1:-1,x<W-1?i+1:-1,i-W,i+W])if(j>=0&&j<N&&K[j]===T_WATER&&near.has(wk(j))){r=wk(j);break}}
     if(r===null)return;let best=null;
     for(let y=h.ty-P.end;y<=h.ty+P.end;y++)for(let x=h.tx-P.end;x<=h.tx+P.end;x++){const t=y*W+x;if(!m.has(x,y)||K[t]!==T_WATER||wk(t)!==r||X[t]>=0)continue;
       for(const [dx,dy] of [[1,0],[0,1]]){const s=dx+dy*W;let a=0,b=0;while(a<=PLACE.ferry&&m.has(x-dx*(a+1),y-dy*(a+1))&&K[t-s*(a+1)]===T_WATER)a++;while(b<=PLACE.ferry&&m.has(x+dx*(b+1),y+dy*(b+1))&&K[t+s*(b+1)]===T_WATER)b++;
-        const i=t-s*(a+1),j=t+s*(b+1),k=a+b+1;if(!m.has(x-dx*(a+1),y-dy*(a+1))||!m.has(x+dx*(b+1),y+dy*(b+1))||!land(i)||!land(j)||boxed[i]||boxed[j]||!placeApart(m,i)||!placeApart(m,j)||far(i)>P.end||far(j)>P.end||ok(i)===ok(j)||placeNotch(m,i,s)||placeNotch(m,j,s))continue;
-        const tiles=[];for(let q=1;q<=k;q++)tiles.push(i+s*q);if(tiles.some(q=>X[q]>=0))continue;const boat=tiles.some(q=>Rv[q]&4);
+        const i=t-s*(a+1),j=t+s*(b+1),k=a+b+1;if(!m.has(x-dx*(a+1),y-dy*(a+1))||!m.has(x+dx*(b+1),y+dy*(b+1))||!land(i)||!land(j)||boxed[i]||boxed[j]||!placeApart(m,i)||!placeApart(m,j)||far(i)>P.end||far(j)>P.end||ok(i)===ok(j)||pocket(ok(i)?j:i)||placeNotch(m,i,s)||placeNotch(m,j,s))continue;
+        const tiles=[];for(let q=1;q<=k;q++)tiles.push(i+s*q);if(tiles.some(q=>X[q]>=0||F.pond[q]))continue;const boat=tiles.some(q=>Rv[q]&4);
         const kind=k<=PLACE.bridge?2:r>=0&&boat&&k<=PLACE.ferry?3:0,v=(kind===3?100:0)+far(i)+far(j)+k*.5;
         if(kind&&(!best||v<best.v))best=ok(i)?{v,i,j,tiles,kind}:{v,i:j,j:i,tiles:tiles.reverse(),kind}}}
     if(!best){left.add(r);PLACE_STATS.holdBare.push(h.name+' '+(r>=0?m.rivers[r].name:'water'));continue}
@@ -573,11 +619,11 @@ function placeWalk(m,s,r,bank,shut){
 const placeWalkSteps=(w,x,y)=>x>=w.x0&&y>=w.y0&&x<w.x0+w.n&&y<w.y0+w.n?w.R[(y-w.y0)*w.n+x-w.x0]-1:-1;
 const placeWalkAt=(w,x,y)=>placeWalkSteps(w,x,y)>=0;
 
-/* 9. camps: density()'s, in the fringe (6-16 tiles from a road, 14 from a holding, outside wild regions), reachable from the
+/* 9. camps: density(map)'s (grown with the land), in the fringe (6-16 tiles from a road, 14 from a holding, outside wild regions), reachable from the
    first capital with the flooding fords shut; in a random order, the farthest apart first (28 tiles, down to 8 when short); each
    on its 2 x 2 tiles and a ring round them clear of roads, water, fords and peaks, its tiles opened */
 function* genCamps(g){
-  const m=g.map,W=m.w,H=m.h,K=m.kind,Hd=g.holdings,R=g.rng('sites',g.attempt),C=g.camps=[],want=density().camps;
+  const m=g.map,W=m.w,H=m.h,K=m.kind,Hd=g.holdings,R=g.rng('sites',g.attempt),C=g.camps=[],want=density(m).camps;
   if(g.work.high9)m.high.set(g.work.high9);else g.work.high9=m.high.slice();
   const dRd=yield* genFar(g,i=>K[i]===T_ROAD||K[i]===T_FORD,64),reach=placeReach(m,Hd[0].ty*W+Hd[0].tx,true);yield .5;
   const ok=(cx,cy)=>{for(let y=cy-2;y<=cy+1;y++)for(let x=cx-1;x<=cx+2;x++){if(x<1||y<1||x>=W-1||y>=H-1)return false;const t=K[y*W+x];if(t===T_ROAD||t===T_WATER||t===T_MOUNT||t===T_FORD)return false}return true};
@@ -596,7 +642,7 @@ function* genCamps(g){
    order (hamlets, sacred places and the wild
    share come with Phase 4): one holding fewer a realm, twice at most, where too few fit or a capital has no fair start. roads: every pair joined; every holding reachable from the first capital, also with every ford on a
    flooding river shut (a river's crossings within PLACE.gap need no retry: the pass makes them wherever a crossing can be made,
-   and a retry's other roads cannot make a bare stretch crossable). camps: as many as density() asks */
+   and a retry's other roads cannot make a bare stretch crossable). camps: as many as density(map) asks */
 function placeCheck(id){return g=>{
   const m=g.map,W=m.w,Hd=g.holdings;
   if(id==='holdings'){if(m.classic)return null;const F=g.work.place,N=g.s.holdings-(g.work.fewer|0)*PLACE_REALMS.length,q=placeQuota(N);
@@ -605,7 +651,7 @@ function placeCheck(id){return g=>{
     for(const a of caps)for(const b of caps)if(a!==b&&d2(ti(a),ti(b))<gap*gap)return 'capitals '+a.name+' and '+b.name+' too near';
     const sk=placeSkew(caps.map(ti),d2);if(sk>PLACE.skew)return 'capitals unbalanced ('+(sk*100).toFixed(0)+'%)';
     const need=placeNeed(m);
-    for(const c of caps){const p=PLACE_PEOPLE[c.realm],v=placeSuit(m,F,p,ti(c)),n=placeLand(m,F,p,c.tx,c.ty);if(v<PLACE.suit)return c.name+' liked '+v.toFixed(2);
+    for(const c of caps){const p=PLACE_PEOPLE[c.realm],v=g.work.like&&c.name in g.work.like?g.work.like[c.name]:placeSuit(m,F,p,ti(c)),n=placeLand(m,F,p,c.tx,c.ty);if(v<PLACE.suit)return c.name+' liked '+v.toFixed(2);
       if(n<need)return c.name+' has '+n+' suitable tiles';
       if(Hd.filter(h=>h!==c&&(h.tx-c.tx)*(h.tx-c.tx)+(h.ty-c.ty)*(h.ty-c.ty)<=PLACE.day*PLACE.day).length<3)return c.name+' has no fair start'}
     const L=placeRealmLand(m,Hd,placeHoldBridged(m,F,Hd)),mean=L.reduce((a,b)=>a+b,0)/L.length,far=Math.max(...L.map(v=>Math.abs(v-mean)/mean));
@@ -615,6 +661,6 @@ function placeCheck(id){return g=>{
   if(id==='roads'){if(g.work.roadFail.length)return 'no road '+g.work.roadFail[0];
     for(const shut of [false,true]){const Rd=placeReach(m,Hd[0].ty*W+Hd[0].tx,shut),h=Hd.find(h=>!Rd[h.ty*W+h.tx]);if(h)return h.name+' unreachable'+(shut?' with the flooding fords shut':'')}
     return null}
-  return g.camps.length<density().camps?g.camps.length+' camps of '+density().camps:null}}
+  const want=density(m).camps;return g.camps.length<want?g.camps.length+' camps of '+want:null}}
 for(const id of ['holdings','roads','sites'])Object.assign(GEN_STAGES.find(s=>s.id===id),{check:placeCheck(id)},
   id==='holdings'?{relax:g=>{if((g.work.fewer|0)>=2||g.map.classic||!/holdings of|fair start/.test(placeCheck(id)(g)))return null;g.work.fewer=(g.work.fewer|0)+1;return 'holdings: one fewer a realm'}}:{});

@@ -4,7 +4,7 @@
    Reachable: every holding and bandit camp by land (and ferry) from every realm's capital. Seasonal: the same with every seasonal
    crossing shut (the fords on rivers that flood). Suitable land: each capital liked at PLACE.suit or more by its people, with
    PLACE.land suitable tiles within PLACE.landR (x1.5 at Large; worldplace.js placeSuit and placeLand, on the fields and the ground
-   its stage 7 read). Balanced: each capital's nearest rival within 25% of their mean distance, each realm's land within 30% of
+   its stage 7 read; a capital's liking as stage 7 chose it, before the ground under it was opened: g.work.like). Balanced: each capital's nearest rival within 25% of their mean distance, each realm's land within 30% of
    theirs. A fair start: each race's start city with 3 holdings within a day's travel (Router.days) and no wild land within 25
    tiles. Ports: each on water joined to the sea or to another port. Rivers: never uphill, each ending in water, no great river
    freezing, crossings at most 60 tiles apart wherever one can be made (else a bare stretch, INFO). Rivers by holdings: the land
@@ -20,7 +20,7 @@ Kit.suite(({ok,info})=>{
  // (what stage 7 read: its fields, from the last stage's context, and the ground before the roads were laid on it)
  const gs=t.GEN_STAGES.find(s=>s.id==='graph'),rs=t.GEN_STAGES.find(s=>s.id==='roads'),g0=gs.run,r0=rs.run;let cap=null,kind7=null;
  rs.run=g=>{kind7=g.map.kind.slice();return r0(g)};
- gs.run=g=>{cap={F:g.work.place,tries:{...g.tries},relaxed:g.relaxed.slice()};return g0(g)};
+ gs.run=g=>{cap={F:g.work.place,like:g.work.like||{},tries:{...g.tries},relaxed:g.relaxed.slice()};return g0(g)};
  try{for(const S of worlds){
   cap=null;const a=performance.now();t.begin('soldier',S);G.quietEvents=true;const ms=performance.now()-a,m=t.WM;
   const name=S.preset[0].toUpperCase()+S.preset.slice(1)+' '+S.seed;
@@ -39,7 +39,7 @@ Kit.suite(({ok,info})=>{
     else pass('Seasonal',!miss.length,name+': seasonal: the same with the '+nShut+' seasonal crossings shut (fords on flooding rivers): every holding and camp still reachable'+(miss.length?': not '+miss.slice(0,4).join(', '):''))}}
   // ---- suitable land: the generator's liking and land count, on stage 7's fields and ground
   {const F=cap.F,m7=Object.assign(Object.create(m),{kind:kind7}),need=t.placeNeed(m),bad=[];
-   const L=caps.map(c=>{const p=t.PLACE_PEOPLE[c.f],v=t.placeSuit(m7,F,p,at(c.h)),n=t.placeLand(m7,F,p,c.h.tx,c.h.ty);if(v<t.PLACE.suit||n<need)bad.push(c.h.name);return c.h.name+' '+v.toFixed(2)+'/'+n});
+   const L=caps.map(c=>{const p=t.PLACE_PEOPLE[c.f],v=c.h.name in cap.like?cap.like[c.h.name]:t.placeSuit(m7,F,p,at(c.h)),n=t.placeLand(m7,F,p,c.h.tx,c.h.ty);if(v<t.PLACE.suit||n<need)bad.push(c.h.name);return c.h.name+' '+v.toFixed(2)+'/'+n});
    pass('Suitable land',!bad.length,name+': suitable land: each capital liked '+t.PLACE.suit+' or more, with '+need+' suitable tiles within '+t.PLACE.landR+': '+L.join(', ')+(bad.length?' (not: '+bad.join(', ')+')':''))}
   // ---- balanced: each capital's nearest rival, and each realm's land, against their means
   {const near=caps.map(a=>Math.sqrt(Math.min(...caps.filter(b=>b!==a).map(b=>d2(a.h,b.h))))),mn=near.reduce((a,b)=>a+b,0)/near.length,sk=Math.max(...near.map(d=>Math.abs(d-mn)/mn));
@@ -91,9 +91,11 @@ Kit.suite(({ok,info})=>{
    {const q=[];for(const r of m.rivers)for(const i of r.path)if(rv[i]<0){rv[i]=r.id;q.push(i)}
     for(let a=0;a<q.length;a++){const i=q[a],x=i%Wd,y=(i-x)/Wd;for(const [dx,dy] of t.DIR8){const j=i+dx+dy*Wd;if(m.has(x+dx,y+dy)&&rv[j]<0&&(m.river[j]&3)){rv[j]=rv[i];q.push(j)}}}}
    const xed=(h,rr)=>m.crossings.some(c=>(c.river===rr||c.tiles.some(i=>rv[i]===rr))&&[c.i,c.j].some(i=>Math.max(Math.abs(i%Wd-h.tx),Math.abs(Math.floor(i/Wd)-h.ty))<=HP.end));
+   // (land not walked to in a piece of fewer than PLACE_HOLD.pocket tiles, 4 ways: a lone tile in the river, no bank to cross to)
+   const pocket=(w,h,i)=>{const q=[i],sn=new Set(q);for(let a=0;a<q.length&&q.length<HP.pocket;a++){const c=q[a],x=c%Wd;for(const j of [x>0?c-1:-1,x<Wd-1?c+1:-1,c-Wd,c+Wd])if(j>=0&&j<NN&&!sn.has(j)&&walk(K[j])&&!near1(w,h,j%Wd,(j-j%Wd)/Wd)){sn.add(j);q.push(j)}}return q.length<HP.pocket};
    for(const h of TW){const w=t.placeWalk(m,at(h)+Wd,HP.box),near=new Set(),seen=new Set();
     for(let y=h.ty-HP.river;y<=h.ty+HP.river;y++)for(let x=h.tx-HP.river;x<=h.tx+HP.river;x++)if(m.has(x,y)&&K[y*Wd+x]===t.T_WATER&&rv[y*Wd+x]>=0)near.add(rv[y*Wd+x]);
-    for(let y=h.ty-HP.bank;y<=h.ty+HP.bank;y++)for(let x=h.tx-HP.bank;x<=h.tx+HP.bank;x++){const i=y*Wd+x;if(!m.has(x,y)||!walk(K[i])||near1(w,h,x,y))continue;
+    for(let y=h.ty-HP.bank;y<=h.ty+HP.bank;y++)for(let x=h.tx-HP.bank;x<=h.tx+HP.bank;x++){const i=y*Wd+x;if(!m.has(x,y)||!walk(K[i])||near1(w,h,x,y)||pocket(w,h,i))continue;
      for(const j of [i-1,i+1,i-Wd,i+Wd]){if(j<0||j>=NN||K[j]!==t.T_WATER||!near.has(rv[j]))continue;const k=h.name+' '+m.rivers[rv[j]].name;if(!seen.has(k)){seen.add(k);if(!xed(h,rv[j]))(bare.includes(k)?far:miss).push(k+' at '+x+','+y)}}}}
    pass('Rivers by holdings',!miss.length,name+': rivers by holdings: the land beside every river within '+HP.river+' tiles of a holding walked to from its gate, not far round, else a crossing of it within '+HP.end+' tiles'+(miss.length?': not '+miss.slice(0,4).join(', '):'')+' ('+t.PLACE_STATS.holdXing+' crossings laid for it)');
    if(far.length)info(name+': rivers by a holding no crossing can be made over: '+far.join(', '));

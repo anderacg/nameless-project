@@ -1,5 +1,5 @@
 'use strict';
-/* ---------- the world generator (doc/WORLD_DESIGN.md §8, §15.2.1): a world from its clamped settings (worldsettings.js), in ten
+/* ---------- the world generator (doc/WORLD_DESIGN.md §8, §15.2.1): a world from its clamped settings (worldsettings.js), in eleven
    stages (GEN_STAGES), each a function* over the stage context g that yields its share done (0-1):
      genWorldSteps(settings): the stages as steps for runSteps (loading.js), behind "Forging the world…"; the last one's value is
        the result
@@ -14,13 +14,13 @@
    any: a name for relaxed, and 8 tries more), else keeps the last; each stage's runs are counted in tries.
    Rules (§8.1): seeded streams only, never Math.random, rnd, rint or pick; integer hashing, + - × ÷ and Math.sqrt only (never
    Math.hypot, sin, cos, exp, pow, log or atan2), so the same settings make the same world in every browser (tests/structure.js
-   reads this file's text). Stages 1-6 here (terrain: land, mountains, climates, rivers, forests; wild regions a stub until
-   Phase 4), 7-9 in worldplace.js (placement), 10 the way graph (router.js buildWayGraph) and WM.sum. No shape is stamped: every
-   boundary comes from domain-warped noise, every bump has a ragged, warped falloff (genReach) ---------- */
+   reads this file's text). Stages 1-6 here (terrain: land, mountains, climates, rivers, forests, 5b springs, ponds and oases;
+   wild regions a stub until Phase 4), 7-9 in worldplace.js (placement), 10 the way graph (router.js buildWayGraph) and WM.sum.
+   No shape is stamped: every boundary comes from domain-warped noise, every bump has a ragged, warped falloff (genReach) ---------- */
 // (an integer hash of two 32-bit numbers: the stages' streams)
 function genHash(a,b){let h=Math.imul((a>>>0)^0x9e3779b9,0x85ebca6b)^(b>>>0);h=Math.imul(h^h>>>16,0x7feb352d);h=Math.imul(h^h>>>15,0x846ca68b);return(h^h>>>16)>>>0}
 // each stage's stream: its own, isolated (a stage's retry, attempt + 1, draws another)
-const STAGE_SALT={land:1,elev:2,climate:3,rivers:4,forest:5,regions:6,holdings:7,roads:8,sites:9,graph:10};
+const STAGE_SALT={land:1,elev:2,climate:3,rivers:4,forest:5,regions:6,holdings:7,roads:8,sites:9,graph:10,ponds:11};
 const genRng=(n,stage,attempt)=>seeded(genHash(n,STAGE_SALT[stage]*64+(attempt|0)));
 // (a noise salt drawn from a stream: map.js noise and fbm take it)
 const genSalt=R=>Math.floor(R()*0x3fffffff);
@@ -73,9 +73,14 @@ const GEN_CLIMATE={frost:{at:.17,lo:.08,hi:.26},desert:{at:.56,dry:.9,lo:.08,hi:
    the flow in units where a stream starts at 256 (log2 8): brooks, painted only, are log2 6-7 (and the streams shorter than min).
    brook: the flow the art draws a brook from (engine/worldnature.js BROOK[0]), on land but peaks with no river on it; the check
    holds each one running on into another or into water (the owner's fourth play-test: "streams end should flow into lakes or
-   ponds"). Flow only grows downstream, so a brook's way runs on to the water it drains to */
+   ponds"). Flow only grows downstream, so a brook's way runs on to the water it drains to.
+   desert (the owner's fifth play-test: "I don't want many rivers in the desert"): no rain on its land, and what runs onto it
+   sinks into the sand but a stream, so no stream rises there and none but a river from outside runs on it (an exotic river, from
+   wetter or higher land); the drainage surface rises rise a tile into it (up to cap tiles in), so rivers mostly go round it; a
+   river that still runs in ends, by the chance lake, in a terminal lake (an endorheic basin: water flows in, none out) some run
+   tiles in, of radius r; no brook on its land, nor one running onto it (cut back from there) */
 const GEN_RIVER={share:.026,systems:[8,14],great:[[1,2],[2,3],[3,5]],river:6,min:8,meander:5,lake:{depth:12,area:40,share:.012},rapid:{fall:16,run:6},
-  delta:{flat:12,run:[8,16],ch:[1,3],fan:[8,16]},flood:{r:2,above:6},grass:.3,brook:6};
+  delta:{flat:12,run:[8,16],ch:[1,3],fan:[8,16]},flood:{r:2,above:6},grass:.3,brook:6,desert:{rise:2.5,cap:40,lake:.75,run:[6,14],r:[2.2,3.6]}};
 // 5. forests (§8.6): base density by climate (CLIMS' order: grass, frost, desert, swamp), times moisture and patches; forest over
 // wood, deep (pieces of deepN tiles and more) over deep, a sparse edge over sparse; banks more wooded (bank: x1.15 plus)
 const GEN_FOREST={base:[.45,.35,0,.5],wood:.55,deep:.75,deepN:300,sparse:.4,bank:.06,k:3.6};
@@ -87,6 +92,7 @@ const GEN_STAGES=[
     const low=n.findIndex(c=>c<L*.06);return low>=0?CLIMS[low]+' '+(n[low]*100/L).toFixed(1)+'%':null}},
   {id:'rivers',label:'Carving rivers',w:250,run:g=>genRivers(g),check:g=>genRiverCheck(g.map)},
   {id:'forest',label:'Forests',w:80,run:g=>genForest(g)},
+  {id:'ponds',label:'Springs and oases',w:40,run:g=>genPonds(g),check:g=>genRiverCheck(g.map,true)},
   {id:'regions',label:'Wild lands',w:1,run:g=>genRegions(g)},
   {id:'holdings',label:'Founding holdings',w:250,run:g=>genHoldings(g)},
   {id:'roads',label:'Laying roads',w:500,run:g=>genRoads(g)},
@@ -95,7 +101,7 @@ const GEN_STAGES=[
 ];
 function genWorldSteps(settings){
   const s=normSettings(settings),n=seedNum(s.seed),m=new WorldMap(s.w,s.h,s.seed);
-  m.gen='ashmark-1';m.seedNum=n;m.settings=s;m.classic=s.preset==='classic';m.salt=m.classic?0:n;
+  m.gen='ashmark-1';m.seedNum=n;m.settings=s;m.classic=s.preset==='classic';m.salt=m.classic?0:n;m.ponds=[];m.oases=[];
   let t0=performance.now();
   const g={s,map:m,rng:(stage,attempt)=>genRng(n,stage,attempt),work:{},hints:m.classic?CLASSIC_HINTS:null,attempt:0,
     holdings:[],camps:[],lords:null,tries:{},relaxed:[],tick(){const t=performance.now();if(t-t0<10)return false;t0=t;return true}};
@@ -463,10 +469,13 @@ function* genRivers(g){
   const m=g.map,W=m.w,H=m.h,N=W*H,K=m.kind,Fe=m.feat,E=m.elev,s=g.s,T=GEN_RIVER,R=g.rng('rivers',g.attempt),A=N/143360,Ef=g.work.ef,ap=Math.sqrt(A)*Math.sqrt(Math.sqrt(Math.sqrt(A))),Rv=m.river;
   E.set(g.work.elev0);Rv.fill(0);m.flow.fill(0);m.basin.fill(0);
   const sea=i=>K[i]===T_WATER&&!(Fe[i]&2)&&!(Rv[i]&3),lake=i=>K[i]===T_WATER&&(Fe[i]&2);
-  // the pits filled (a priority flood from the sea over the elevation and the meander noise)
-  const Z=new Float64Array(N),Z0=new Float32Array(N),sm=genSalt(R),sf=genSalt(R);
-  for(let y=0;y<H;y++)for(let x=0;x<W;x++){const i=y*W+x;if(!sea(i))Z0[i]=Z[i]=Ef[i]+(gfbm(x/9,y/9,sm,2)-.5)*T.meander*2*(1-sstep((Ef[i]-100)/60))}
+  // the pits filled (a priority flood from the sea over the elevation, the meander noise and the desert's rise)
+  const Z=new Float64Array(N),Z0=new Float32Array(N),sm=genSalt(R),sf=genSalt(R),TD=T.desert,dz=i=>K[i]!==T_WATER&&m.clim[i]===CLIM.desert,Dd=new Uint16Array(N);
+  yield* genBfs(g,Dd,i=>!dz(i));
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){const i=y*W+x;if(!sea(i))Z0[i]=Z[i]=Ef[i]+(gfbm(x/9,y/9,sm,2)-.5)*T.meander*2*(1-sstep((Ef[i]-100)/60))+TD.rise*Math.min(Dd[i],TD.cap)}
   yield* genFlood(g,Z,sea,0,.1);
+  // (the pits' depth, filled over the land as it was: stage 5b's ponds lie in them)
+  {const P=g.work.pit=new Float32Array(N);for(let i=0;i<N;i++)P[i]=Z[i]-Z0[i]}
   // lakes: the pits filled lake.depth and more over lake.area tiles and more
   {const L=new Int32Array(N),size=yield* genPieces(g,L,i=>!sea(i)&&Z[i]-Z0[i]>=1),deep=size.map(()=>0),lk=s.land==='lakes'?2:1,ok=new Uint8Array(size.length);let land=0;
     for(let i=0;i<N;i++){if(K[i]!==T_WATER)land++;if(L[i]>=0&&Z[i]-Z0[i]>deep[L[i]])deep[L[i]]=Z[i]-Z0[i]}
@@ -480,8 +489,12 @@ function* genRivers(g){
   const dn=new Int32Array(N).fill(-1),Fa=new Float32Array(N),up=new Int32Array(N).fill(-1);
   for(let i=0;i<N;i++){if(sea(i))continue;const x=i%W,y=(i-x)/W;let b=-1,bk=0,bs=0;
     for(let k=0;k<8;k++){const nx=x+DIR8[k][0],ny=y+DIR8[k][1];if(nx<0||ny<0||nx>=W||ny>=H)continue;const j=ny*W+nx,v=(Z[i]-Z[j])/DIRLEN[k];if(v>bs){bs=v;b=j;bk=k}}
-    dn[i]=b;m.flow[i]=bk<<5;Fa[i]=.3+m.moist[i]/255}
-  for(let k=no-1;k>=0;k--){const i=ord[k],d=dn[i];if(d<0||sea(d))continue;Fa[d]+=Fa[i];if(up[d]<0||Fa[i]>Fa[up[d]])up[d]=i}
+    dn[i]=b;m.flow[i]=bk<<5}
+  // (the flow gathered downstream: no rain on the desert's land, and with fs, the stream's flow, what runs onto it sinks into the
+  // sand there but a stream's (its main inflow at fs or more); none out of a terminal lake (sink))
+  const sink=new Uint8Array(N),gather=fs=>{up.fill(-1);for(let i=0;i<N;i++)Fa[i]=sea(i)||dz(i)?0:.3+m.moist[i]/255;
+    for(let k=no-1;k>=0;k--){const i=ord[k],d=dn[i];if(fs&&dz(i)&&!(up[i]>=0&&Fa[up[i]]>=fs))Fa[i]=0;if(d<0||sea(d)||sink[i])continue;Fa[d]+=Fa[i];if(up[d]<0||Fa[i]>Fa[up[d]])up[d]=i}};
+  gather(0);
   yield .35;
   // the stream's flow: streams on share of the land, then held so the river systems (30 tiles or more into the sea or a lake) are
   // within systems (more on larger maps; x0.6, x1.5 by the rivers setting)
@@ -492,6 +505,20 @@ function* genRivers(g){
   let L0=0;for(let i=0;i<N;i++)if(land(i))L0++;let Fs=find(tiles,L0*T.share*mul);const n0=systems(Fs);
   if(n0>sys[1])Fs=Math.min(Fs*1.6,find(systems,sys[1]));else if(n0<sys[0])Fs=Math.max(Fs/1.6,find(systems,sys[0]-1)*.999);
   const Fr=Fs*T.river,Fb=Fs/8;
+  gather(Fs);
+  // a stream running into the desert (its main inflow from outside it) ends there, by the chance desert.lake, in a terminal lake
+  // desert.run tiles down (or fewer, short of where it leaves the desert again), ragged, of radius desert.r, on the desert's land
+  // only and touching no other water (else none); the flow gathered again
+  {const ld=[];for(let k=no-1;k>=0;k--){const i=ord[k],u=up[i];if(dz(i)&&Fa[i]>=Fs&&u>=0&&!dz(u))ld.push(i)}
+    if(ld.length){const sl=genSalt(R);let any=false;
+      for(const e of ld){if(sink[e]||genHash(sl,e)/4294967296>=TD.lake)continue;const want=TD.run[0]+genHash(sl+1,e)%(TD.run[1]-TD.run[0]+1);let c=e,n=0;
+        while(n<want){const d=dn[c];if(d<0||!dz(d))break;c=d;n++}
+        if(n<TD.run[0]>>1)continue;const cx=c%W,cy=(c-cx)/W,r=TD.r[0]+(genHash(sl+2,e)%1000)/1000*(TD.r[1]-TD.r[0]),e2=Math.ceil(r*1.7),pts=[];let ok=true;
+        for(let y=Math.max(1,cy-e2);y<=Math.min(H-2,cy+e2)&&ok;y++)for(let x=Math.max(1,cx-e2);x<=Math.min(W-2,cx+e2);x++){const i=y*W+x;if(i!==c&&(genReach(x,y,cx,cy,r,sl+3)>=1||!dz(i)||K[i]===T_MOUNT))continue;
+          for(const j of [i-1,i+1,i-W,i+W,i-W-1,i-W+1,i+W-1,i+W+1])if(K[j]===T_WATER&&!sink[j]){ok=false;break}if(!ok)break;pts.push(i)}
+        if(!ok)continue;let lo=255;for(const i of pts){K[i]=T_WATER;Fe[i]=(Fe[i]&~4)|2;sink[i]=1}any=true;
+        for(const i of pts)for(const j of [i-1,i+1,i-W,i+W])if(!sink[j]&&E[j]<lo)lo=E[j];for(const i of pts)E[i]=Math.max(65,lo-2)}
+      if(any)gather(Fs)}}
   for(let i=0;i<N;i++)if(!sea(i)){let l=0,t=2;const v=Fa[i]*256/Fs;while(l<31&&v>=t){l++;t*=2}m.flow[i]|=l}
   // Strahler order over the rills (an eighth of a stream's flow) and up
   const so=new Uint8Array(N),mo=new Uint8Array(N),mc=new Uint8Array(N);
@@ -570,17 +597,19 @@ function* genRivers(g){
   for(let t=0;t<4;t++){for(const r of RL){let e=255;for(const i of r.path){e=Math.min(e,E[i]);E[i]=e}}let n=0;
     for(const r of by){const e=E[r.mouth];for(const i of r.path)if(E[i]<e){E[i]=e;n++}}if(!n)break}
   for(const r of RL)for(const i of r.path)brush(i,Rv[i]&3,j=>{if(id[j]<0&&Rv[j]&3)E[j]=E[i]});
-  // basins: one to each outlet on the sea (lake water 0); a basin's river: the longest reaching the sea there
+  // basins: one to each outlet on the sea or a terminal lake (lake water 0); a basin's river: the longest reaching the sea (or that
+  // lake) there
   {const bi=new Int32Array(N).fill(-1),bs=m.basins=[];
-    for(let k=0;k<no;k++){const i=ord[k];if(sea(i))continue;const d=dn[i];if(d<0)continue;if(sea(d)){if(bs.length<65535)bs.push({id:bs.length,outlet:i,area:0,river:null});bi[i]=bs.length-1}else bi[i]=bi[d]}
+    for(let k=0;k<no;k++){const i=ord[k];if(sea(i))continue;const d=dn[i];if(d<0)continue;if(sea(d)||sink[d]){if(bs.length<65535)bs.push({id:bs.length,outlet:i,area:0,river:null});bi[i]=bs.length-1}else bi[i]=bi[d]}
     for(let i=0;i<N;i++)if(bi[i]>=0&&!lake(i)){m.basin[i]=bi[i]+1;if(K[i]!==T_WATER)bs[bi[i]].area++}
-    for(const r of RL){const b=bi[r.path[r.path.length-1]];r.basin=Math.max(0,b);if(b>=0&&sea(r.mouth)&&(bs[b].river===null||RL[bs[b].river].path.length<r.path.length))bs[b].river=r.id}}
-  // navigable: rivers 2 wide and more, but for their rapids (a fall of rapid.fall and a terrace level over rapid.run tiles)
+    for(const r of RL){const b=bi[r.path[r.path.length-1]];r.basin=Math.max(0,b);if(b>=0&&(sea(r.mouth)||sink[r.mouth])&&(bs[b].river===null||RL[bs[b].river].path.length<r.path.length))bs[b].river=r.id}}
+  // navigable: rivers 2 wide and more, but for their rapids (a fall of rapid.fall and a terrace level over rapid.run tiles); a river
+  // sets its own tiles' and narrower ones', never a wider river's it runs into
   for(const r of RL){if(r.width<2)continue;const p=r.path,ra=[];r.nav=true;
     for(let k=0;k<p.length;k++){const j=Math.min(p.length-1,k+T.rapid.run);if(E[p[k]]-E[p[j]]>=T.rapid.fall&&(E[p[k]]-64>>5)>(E[p[j]]-64>>5)){const l=ra[ra.length-1];if(l&&l[1]>=k-1)l[1]=j;else ra.push([k,j])}}
     r.rapids=ra;const rp=new Uint8Array(p.length);for(const [a,b] of ra)for(let k=a;k<=b;k++)rp[k]=1;
-    for(let k=0;k<p.length;k++)if((Rv[p[k]]&3)>=2)brush(p[k],Rv[p[k]]&3,j=>{if((Rv[j]&3)>=2)Rv[j]=rp[k]?Rv[j]&~4:Rv[j]|4})}
-  for(const r of RL)for(const [a,b] of r.rapids)for(let k=a;k<=b;k++)brush(r.path[k],Rv[r.path[k]]&3,j=>{Rv[j]&=~4});
+    for(let k=0;k<p.length;k++)if((Rv[p[k]]&3)>=2)brush(p[k],Rv[p[k]]&3,j=>{if((Rv[j]&3)>=2&&(Rv[j]&3)<=r.width)Rv[j]=rp[k]?Rv[j]&~4:Rv[j]|4})}
+  for(const r of RL)for(const [a,b] of r.rapids)for(let k=a;k<=b;k++)brush(r.path[k],Rv[r.path[k]]&3,j=>{if((Rv[j]&3)<=r.width)Rv[j]&=~4});
   yield .7;
   // floodplain: low land within flood.r of a river 2 wide or more, or of a swamp's stream, or in a delta
   for(let i=0;i<N;i++){const w=Rv[i]&3;if(!w||w<2&&m.clim[i]!==CLIM.swamp&&!(Rv[i]&128))continue;const x=i%W,y=(i-x)/W,r=Rv[i]&128?3:T.flood.r;
@@ -604,15 +633,22 @@ function* genRivers(g){
     for(const r of RL){const f=r.seasonal;if(!f)continue;const bits=8|(f.freeze?16:0)|(f.flood?32:0)|(f.dry?64:0);for(const i of r.path)brush(i,Math.min(Rv[i]&3,r.width),j=>{if((Rv[j]&3)<=r.width)Rv[j]|=bits})}}
   // the flow's way on each river tile: to the next along its river (the wider river's where two share a tile)
   for(const r of RL.slice().sort((a,b)=>a.width-b.width||a.id-b.id)){const p=r.path;for(let k=0;k<p.length;k++){const a=p[k],b=k+1<p.length?p[k+1]:r.mouth,dx=b%W-a%W,dy=Math.round((b-a-dx)/W),d=DIR8.findIndex(([u,v])=>u===Math.sign(dx)&&v===Math.sign(dy));if(d>=0)m.flow[a]=(m.flow[a]&31)|d<<5}}
+  // no brook on the desert's land (its flow under brook), nor one running onto it: cut back from there (ord: downstream first)
+  {const B=T.brook,cut=new Uint8Array(N),bk=i=>K[i]!==T_WATER&&!(Rv[i]&3)&&(m.flow[i]&31)>=B;
+    for(let k=0;k<no;k++){const i=ord[k];if(!bk(i))continue;const d=dn[i];if(dz(i)||d>=0&&K[d]!==T_WATER&&(dz(d)||cut[d]))cut[i]=1}
+    for(let i=0;i<N;i++)if(cut[i])m.flow[i]=(m.flow[i]&~31)|(B-1)}
+  g.work.ord=ord;g.work.dn=dn;
 }
 // (stage 4's check, the rivers' rules (§8.14): each never rising downstream, ends in water, water all along, its widths as made;
-// and every brook (GEN_RIVER.brook) runs on into another brook or into water, never ending dry)
-function genRiverCheck(m){for(const r of m.rivers){const p=r.path;if(!p.length)return r.name+' is empty';if(m.kind[r.mouth]!==T_WATER)return r.name+' ends on land';
+// and every brook (GEN_RIVER.brook) runs on into another brook or into water, never ending dry; with src (stage 5b's, once the
+// woods and springs are laid), every brook's head has a source (genSourced)
+function genRiverCheck(m,src){for(const r of m.rivers){const p=r.path;if(!p.length)return r.name+' is empty';if(m.kind[r.mouth]!==T_WATER)return r.name+' ends on land';
   for(let k=0;k<p.length;k++){if(m.kind[p[k]]!==T_WATER||!(m.river[p[k]]&3))return r.name+' has a dry tile';if(k&&m.elev[p[k]]>m.elev[p[k-1]])return r.name+' runs uphill'}
   if(m.elev[r.mouth]>m.elev[p[p.length-1]])return r.name+' runs uphill into its mouth'}
   const W=m.w,H=m.h,K=m.kind,F=m.flow,bk=i=>K[i]!==T_WATER&&K[i]!==T_MOUNT&&!(m.river[i]&3)&&(F[i]&31)>=GEN_RIVER.brook;
   for(let i=0;i<W*H;i++){if(!bk(i))continue;const x=i%W,y=(i-x)/W,[dx,dy]=DIR8[F[i]>>5],u=x+dx,v=y+dy;
     if(u<0||v<0||u>=W||v>=H||K[v*W+u]!==T_WATER&&!bk(v*W+u))return 'a brook ends dry at ('+x+', '+y+')'}
+  if(src)for(let i=0;i<W*H;i++)if(bk(i)&&!genFed(m,i)&&!genSourced(m,i))return 'a brook rises on open land at ('+i%W+', '+(i-i%W)/W+')';
   return null}
 
 /* 5. forests (§8.6): density by climate (GEN_FOREST.base) x moisture x warped patches, thinning up high; banks more wooded (gallery
@@ -630,10 +666,111 @@ function* genForest(g){
   const L=new Int32Array(N),size=yield* genPieces(g,L,i=>K[i]===T_FOREST);
   for(let i=0;i<N;i++)if(L[i]>=0&&size[L[i]]>=T.deepN&&Dn[i]>T.deep)F[i]|=8;
 }
+/* 5b. springs, ponds and oases (the owner's fifth play-test): small water of its own, lake water (feat lake, basin 0), never in a
+   river's way, each listed with its middle tile i, its radius r (tiles: its water and a ring of one tile round it, the art's reeds,
+   palms and green ground) and its water tiles: m.ponds [{i, r, kind, tiles}], m.oases [{i, r, big, tiles}]. None within held
+   tiles of a classic holding's anchor.
+   ponds (kind): hollow (grass and woods), pool (swamp), tarn (the frost, and among hills and peaks: meltwater), each in a pit
+   the rivers' filling left (no lake: stage 4's pits, deep and more), at its deepest, by its kind's chance p (x 0.5 + the
+   moisture), of 1 to n tiles of the pit, apart tiles (4 ways) from other water and space from another pond, the pits in an
+   order by hash; oxbow: on a river's floodplain (a river 2 wide and more within 2 tiles), 2 tiles from its water and never
+   beside it (8 ways), in a bend (bend river tiles in the 5 x 5 round it), by the chance p, 2 to n tiles 2-3 from it. None in the
+   desert: its water is the oases'.
+   spring: every brook's head (no brook running into it: GEN_RIVER.brook) has a source (genSourced: in a wood or the hills, by
+   a hill, a peak or lake water, or water running into it; the owner: "small streams ending ... should go into a lake or pond");
+   one on open flat land is carried up its main feeder, reach tiles at most, to one that has (their flow raised to the brook's),
+   else a spring pond of one tile at its head, or (by other water or a classic anchor) the brook cut back to where another joins
+   it or away */
+const GEN_POND={deep:1.5,apart:4,space:12,held:8,hollow:{p:.2,n:3},pool:{p:.5,n:4},tarn:{p:.45,n:3},oxbow:{p:.35,n:4,bend:9},spring:{reach:20}};
+/* oases (the owner's fifth play-test: "add oases in the desert"): no desert land farther than reach tiles (4 ways; a day's march
+   there is some 88) from water (or a classic holding's anchor): while some is, an oasis near the farthest (within near tiles of
+   it, apart tiles from other water), and while the desert has fewer than one an every tiles of its land, one at its farthest
+   from water all the same; each where springs would rise: low ground (against its mean within 8 tiles) and old dry
+   riverbeds (the flow all its rain would gather), scored low + bed x √that flow; its water 1-2 tiles (n), or by the chance big a
+   large one's 3 (nBig), compact; r: its water and ring tiles round it (ring: small, big) */
+const GEN_OASIS={reach:40,every:4000,near:24,apart:10,bed:.3,n:[1,2],big:.25,nBig:[3,3],ring:[2,4],max:64};
+// (a brook (GEN_RIVER.brook): what the art draws, land but peaks with no river on it, its flow a brook's)
+const genBrook=(m,i)=>{const t=m.kind[i];return t!==T_WATER&&t!==T_MOUNT&&!(m.river[i]&3)&&(m.flow[i]&31)>=GEN_RIVER.brook};
+// (the tile next to i the way k (DIR8), or -1 off the map)
+const genStep=(m,i,k)=>{const W=m.w,x=i%W+DIR8[k][0],y=(i-i%W)/W+DIR8[k][1];return x<0||y<0||x>=W||y>=m.h?-1:y*W+x};
+// (a brook runs into tile i: a neighbour whose way down is i)
+function genFed(m,i){for(let k=0;k<8;k++){const j=genStep(m,i,k);if(j>=0&&genBrook(m,j)&&(m.flow[j]>>5)===(k+4)%8)return true}return false}
+// (tile i has a source for a brook rising there: a wood or a hill, beside (8 ways) a hill, a peak or lake water, or water runs into it)
+function genSourced(m,i){const K=m.kind;if(K[i]===T_FOREST||K[i]===T_HILL)return true;
+  for(let k=0;k<8;k++){const j=genStep(m,i,k);if(j<0)continue;const t=K[j];if(t===T_HILL||t===T_MOUNT||t===T_WATER&&(m.feat[j]&2||(m.flow[j]>>5)===(k+4)%8))return true}
+  return false}
+// (the brook rising at i cut back, down to where another joins it or away: its flow under the brook's)
+function genCutBrook(m,i){const F=m.flow;for(let c=i;c>=0&&genBrook(m,c)&&(c===i||!genFed(m,c));c=genStep(m,c,F[c]>>5))F[c]=F[c]&~31|(GEN_RIVER.brook-1)}
+function* genPonds(g){
+  const m=g.map,W=m.w,H=m.h,N=W*H,K=m.kind,Fe=m.feat,E=m.elev,F=m.flow,Rv=m.river,Cl=m.clim,T=GEN_POND,O=GEN_OASIS,wk=g.work,R=g.rng('ponds',g.attempt);
+  // (a retry starts from the land as stage 5 left it)
+  if(!wk.keep6)wk.keep6={flow:F.slice(),elev:E.slice(),high:m.high.slice(),basin:m.basin.slice(),area:m.basins.map(b=>b.area)};
+  else{const k=wk.keep6;F.set(k.flow);E.set(k.elev);m.high.set(k.high);m.basin.set(k.basin);m.basins.forEach((b,j)=>{b.area=k.area[j]})}
+  m.ponds=[];m.oases=[];
+  const AN=g.hints?classicAnchors():[],held=(i,r)=>{const x=i%W,y=(i-x)/W;return AN.some(a=>(a.tx-x)*(a.tx-x)+(a.ty-y)*(a.ty-y)<r*r)};
+  const des=i=>Cl[i]===CLIM.desert,n4=i=>{const x=i%W;return[x>0?i-1:-1,x<W-1?i+1:-1,i>=W?i-W:-1,i+W<N?i+W:-1]};
+  const wet8=i=>{for(let k=0;k<8;k++){const j=genStep(m,i,k);if(j>=0&&K[j]===T_WATER)return true}return false};
+  const spaced=(i,r)=>{const x=i%W,y=(i-x)/W;for(const l of [m.ponds,m.oases])for(const p of l){const u=p.i%W,v=(p.i-u)/W;if((u-x)*(u-x)+(v-y)*(v-y)<r*r)return false}return true};
+  // (n tiles grown from c over tiles where ok holds, 4 ways, compact: the one most of whose 8 neighbours it holds first (never a
+  // hook where a cluster fits), then the lowest key; a line of 3 or more cut to 2)
+  const grow=(c,n,ok,key)=>{const ts=[c],S=new Set(ts),near=j=>{let v=0;for(let k=0;k<8;k++)if(S.has(genStep(m,j,k)))v++;return v};
+    while(ts.length<n){let b=-1,bv=0;for(const i of ts)for(const j of n4(i)){if(j<0||S.has(j)||!ok(j))continue;const v=near(j);if(b<0||v>bv||v===bv&&(key(j)<key(b)||key(j)===key(b)&&j<b)){b=j;bv=v}}
+      if(b<0)break;ts.push(b);S.add(b)}
+    if(ts.length>2){const xs=ts.map(i=>i%W),ys=ts.map(i=>(i-i%W)/W);if(Math.max(...xs)-Math.min(...xs)+1>=ts.length||Math.max(...ys)-Math.min(...ys)+1>=ts.length)ts.length=2}
+    return ts};
+  // (water laid on tiles ts: lake water just under its lowest shore, no wood, out of its basin; listed in l with its ring)
+  const lay=(l,o,ts,ring)=>{const S=new Set(ts),cx=o.i%W,cy=(o.i-cx)/W;let lo=255,r=0;
+    for(const i of ts){for(const j of n4(i))if(j>=0&&!S.has(j)&&K[j]!==T_WATER&&E[j]<lo)lo=E[j];const dx=i%W-cx,dy=(i-i%W)/W-cy;r=Math.max(r,Math.sqrt(dx*dx+dy*dy))}
+    for(const i of ts){K[i]=T_WATER;Fe[i]=Fe[i]&~(4|8|16)|2;E[i]=Math.max(65,lo-2);m.high[i]=0;const b=m.basin[i];if(b){m.basins[b-1].area--;m.basin[i]=0}}
+    l.push({...o,r:Math.ceil(r)+ring,tiles:ts})};
+  const Dw=new Uint16Array(N);yield* genDist(g,Dw);
+  // the ponds in the pits, at each one's deepest
+  {const P=wk.pit,L=new Int32Array(N),size=yield* genPieces(g,L,i=>K[i]!==T_WATER&&!des(i)&&!(Rv[i]&3)&&P[i]>=T.deep),deep=new Int32Array(size.length).fill(-1),sp=genSalt(R);
+    for(let i=0;i<N;i++){const p=L[i];if(p>=0&&(deep[p]<0||P[i]>P[deep[p]]))deep[p]=i}
+    const order=[...deep.keys()].sort((a,b)=>genHash(sp,deep[a])-genHash(sp,deep[b])||a-b);
+    for(const p of order){const c=deep[p],kind=Cl[c]===CLIM.frost||K[c]===T_HILL||K[c]===T_MOUNT?'tarn':Cl[c]===CLIM.swamp?'pool':'hollow',k=T[kind];
+      if(genHash(sp+1,c)/4294967296>=k.p*(.5+m.moist[c]/255)||Dw[c]<T.apart||held(c,T.held)||!spaced(c,T.space))continue;
+      lay(m.ponds,{i:c,kind},grow(c,1+genHash(sp+2,c)%k.n,j=>L[j]===p&&Dw[j]>=T.apart,j=>-P[j]),1)}}
+  if(g.tick())yield .5;
+  // the oxbows: in a big river's bends, on its floodplain
+  {const sp=genSalt(R),k=T.oxbow,box=(i,f)=>{const x=i%W,y=(i-x)/W;let n=0;for(let b=-2;b<=2;b++)for(let a=-2;a<=2;a++){const u=x+a,v=y+b;if(u>=0&&v>=0&&u<W&&v<H&&f(v*W+u))n++}return n};
+    const on=i=>K[i]!==T_WATER&&K[i]!==T_MOUNT&&!des(i)&&Fe[i]&1&&Dw[i]>=2&&Dw[i]<=3&&!wet8(i)&&box(i,j=>(Rv[j]&3)>=2)>0,cs=[];
+    for(let i=0;i<N;i++)if(on(i)&&Dw[i]===2&&box(i,j=>Rv[j]&3)>=k.bend)cs.push(i);
+    cs.sort((a,b)=>genHash(sp,a)-genHash(sp,b)||a-b);
+    for(const c of cs){if(genHash(sp+1,c)/4294967296>=k.p||held(c,T.held)||!spaced(c,T.space)||!on(c))continue;
+      lay(m.ponds,{i:c,kind:'oxbow'},grow(c,2+genHash(sp+2,c)%(k.n-1),on,j=>genHash(sp+3,j)),1)}}
+  // the springs: each brook's head given a source (ponds first: one rising by a pond has it)
+  {const B=GEN_RIVER.brook,feeder=c=>{let b=-1;for(let k=0;k<8;k++){const j=genStep(m,c,k);
+      if(j>=0&&K[j]!==T_WATER&&K[j]!==T_MOUNT&&!(Rv[j]&3)&&!des(j)&&(F[j]>>5)===(k+4)%8&&(b<0||(F[j]&31)>(F[b]&31)||(F[j]&31)===(F[b]&31)&&j<b))b=j}return b};
+    for(let i=0;i<N;i++){if(!genBrook(m,i)||genFed(m,i)||genSourced(m,i))continue;
+      const ch=[];let c=i,ok=false;for(let s=0;s<T.spring.reach&&!ok;s++){c=feeder(c);if(c<0)break;ch.push(c);ok=genSourced(m,c)}
+      if(ok){for(const j of ch)F[j]=F[j]&~31|B;continue}
+      if(Dw[i]>=2&&!wet8(i)&&!held(i,T.held)){lay(m.ponds,{i,kind:'spring'},[i],1);continue}
+      genCutBrook(m,i)}}
+  if(g.tick())yield .7;
+  // the oases: while desert land lies farther than reach from water, one near the farthest
+  {const D=new Uint16Array(N),dl=i=>des(i)&&K[i]!==T_WATER&&K[i]!==T_MOUNT,ord=wk.ord,dn=wk.dn,Fo=new Float32Array(N),Mn=new Float32Array(N),so=genSalt(R);
+    const A0=new Set(AN.map(a=>a.ty*W+a.tx));yield* genBfs(g,D,i=>K[i]===T_WATER||A0.has(i));
+    for(let k=ord.length-1;k>=0;k--){const i=ord[k],d=dn[i];Fo[i]+=K[i]===T_WATER?0:.3+m.moist[i]/255;if(d>=0)Fo[d]+=Fo[i]}
+    for(let i=0;i<N;i++)Mn[i]=E[i];genBlur(Mn,W,H,8);
+    const sc=i=>Mn[i]-E[i]+O.bed*Math.sqrt(Fo[i]);
+    const DL=[];for(let i=0;i<N;i++)if(dl(i))DL.push(i);const want=Math.floor(DL.length/O.every);
+    for(let t=0;t<O.max;t++){let f=-1;for(const i of DL)if(K[i]!==T_WATER&&D[i]>O.apart*2&&(f<0||D[i]>D[f]))f=i;if(f<0||D[f]<=O.reach&&t>=want)break;
+      const fx=f%W,fy=(f-fx)/W;let c=-1;
+      for(let y=Math.max(1,fy-O.near);y<=Math.min(H-2,fy+O.near);y++)for(let x=Math.max(1,fx-O.near);x<=Math.min(W-2,fx+O.near);x++){const i=y*W+x;
+        if((x-fx)*(x-fx)+(y-fy)*(y-fy)>O.near*O.near||!dl(i)||D[i]<O.apart||held(i,T.held))continue;if(c<0||sc(i)>sc(c))c=i}
+      if(c<0)c=f;
+      const big=genHash(so,c)/4294967296<O.big,nr=big?O.nBig:O.n,ts=grow(c,nr[0]+genHash(so+1,c)%(nr[1]-nr[0]+1),j=>dl(j)&&D[j]>=2,j=>E[j]);
+      lay(m.oases,{i:c,big},ts,O.ring[big?1:0]);
+      // (the distances again from its water)
+      const q=ts.slice();for(const i of ts)D[i]=0;for(let a=0;a<q.length;a++){const i=q[a];for(const j of n4(i))if(j>=0&&D[j]>D[i]+1){D[j]=D[i]+1;q.push(j)}}
+      if(g.tick())yield .8}}
+}
 // 6. wild regions: Phase 4's; none yet
 function* genRegions(g){g.map.region.fill(0);g.map.regions=[];yield 1}
-// 10. the way graph (router.js buildWayGraph: Phase 2 wave 2's), then the checksum; the result
-function* genGraph(g){const m=g.map;m.graph=buildWayGraph(g);yield .5;m.sum=m.checksum(g.holdings);g.work=null;
+// 10. a brook whose head lost its source to stages 7-9 (a road or a holding's ground over its wood) cut back (genCutBrook); the way
+// graph (router.js buildWayGraph: Phase 2 wave 2's), then the checksum; the result
+function* genGraph(g){const m=g.map;for(let i=0;i<m.w*m.h;i++)if(genBrook(m,i)&&!genFed(m,i)&&!genSourced(m,i))genCutBrook(m,i);m.graph=buildWayGraph(g);yield .5;m.sum=m.checksum(g.holdings);g.work=null;
   return{map:m,holdings:g.holdings,camps:g.camps,lords:g.lords,hamlets:[],sacred:[],lair:null,regions:m.regions,rivers:m.rivers,crossings:m.crossings,graph:m.graph,tries:g.tries,relaxed:g.relaxed}}
 
 /* ---------- the quick sketch (§4.3, D28): the world these settings make, roughly, for the New game screen's preview, in tens of

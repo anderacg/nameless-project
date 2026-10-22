@@ -12,7 +12,7 @@ try{
  ok(CP.length===37&&CP.every(d=>Object.getPrototypeOf(d)===Object.prototype&&t.FACS[d.realm]&&d.x==null&&!(d.mod&&d.mod.meat!=null)),'the 37 classic places are plain data, each with its realm (no class, point or prices made onto them)');
  // (the places the world in use was made from: today's map, the classic places; the generated classic world, the same at the
  // tiles its generator found for them)
- const SRC=t.WM.gen==='classic-0'?CP:t.genWorld(t.classicSettings()).holdings,made=SRC.map(d=>t.makeHolding(d));
+ const GW=t.WM.gen==='classic-0'?null:t.genWorld(t.classicSettings()),SRC=GW?GW.holdings:CP,made=SRC.map(d=>t.makeHolding(d));
  // (the page's holdings have been through main.js's initWorld since: compare what makeHolding makes)
  const keysOf=h=>Object.keys(h).concat(...Object.values(h).filter(v=>v&&typeof v==='object'&&!Array.isArray(v)).map(Object.keys));
  ok(made.every((h,i)=>JSON.stringify(h,keysOf(h))===JSON.stringify(TOWNS[i],keysOf(h))&&Object.getPrototypeOf(h)===Object.getPrototypeOf(TOWNS[i])&&h!==TOWNS[i]),'makeHolding makes each the very holding the page loaded: its kind, its prices, its point');
@@ -21,7 +21,9 @@ try{
  {const a=t.townBy('Ashford'),k=t.townBy('Karn Hold'),e=t.townBy('Elderglen');
   const A=SRC.find(d=>d.name==='Ashford');
   ok(a.x===A.tx*TILE&&a.y===(A.ty+1)*TILE+2&&k.mod.bolts===.7&&e.mod.arrows===.7&&a.mod.arrows===1.1&&typeof a.mod.cheese==='number','points at the gate, arrows cheap among elves, bolts among dwarves, food by who lives there')}
- ok(t.CAMP_SPOTS.length===CC.length&&t.CAMP_SPOTS.every((c,i)=>c!==CC[i]&&c.x===(c.tx+.5)*TILE&&c.y===(c.ty+.5)*TILE)&&J(CC)===cc0,'the bandit camps are copies of the classic spots (the map moves the copies, never the data)');
+ // (the generated classic world's camps are its generator's, as many as its land holds: data/world.js density)
+ {const CS=GW?GW.camps:CC;
+  ok(t.CAMP_SPOTS.length===CS.length&&t.CAMP_SPOTS.every((c,i)=>c!==CS[i]&&c.x===(c.tx+.5)*TILE&&c.y===(c.ty+.5)*TILE&&(!GW||c.tx===CS[i].tx&&c.ty===CS[i].ty))&&J(CC)===cc0,'the bandit camps are copies of the '+(GW?'generator\'s '+CS.length:'classic')+' spots (the map moves the copies, never the data)')}
  ok([...TOWNS,...t.CAMP_SPOTS].every(z=>t.passable(t.tAt(z.tx,z.ty))),'every holding and camp stands on ground the map cleared (genClassic reads its own lists)');
  // tiers
  {const HT=t.HOLDING_TYPES,K=Object.keys(HT);

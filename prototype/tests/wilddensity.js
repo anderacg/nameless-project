@@ -18,14 +18,16 @@ try{
   'a Large world: '+L+' tiles of land, '+f.toFixed(2)+' times today\'s map\'s: '+N.bandits+' bands, '+N.monsterStart+' / '+N.monsterCap+' beasts, '+N.critterStart+' / '+N.critterCap+' herds of game, '+N.sites.cave+' caves');
  ok(N.caravans===Math.round(C.caravans*m.settings.holdings/g.holdings)&&N.ships===Math.round(C.ships*t.worldPorts(t.WM)/g.ports),'caravans and refugees by its '+m.settings.holdings+' holdings ('+N.caravans+', '+N.refugees+'), trade ships by its ports ('+N.ships+')');
  ok(W.monsters.length===N.monsterStart&&wild.length>=N.critterStart*.97&&bands.length===N.bandits,'a new game there starts with them: '+W.monsters.length+' beasts, '+wild.length+' herds of game, '+bands.length+' bands');
- {const st={};for(const s of W.sites)st[s.type]=(st[s.type]||0)+1;const short=Object.keys(N.sites).filter(k=>(st[k]||0)<N.sites[k]*.9);
-  ok(!short.length,'and its sites, each kind at least 9 in 10 of its count (by its ground: travellers by the roads): '+Object.keys(N.sites).map(k=>(st[k]||0)+' of '+N.sites[k]+' '+k).join(', '))}
+ {const st={};for(const s of W.sites)st[s.type]=(st[s.type]||0)+1;const short=Object.keys(N.sites).filter(k=>(st[k]||0)<N.sites[k]*(k==='travelers'?.85:.9));
+  ok(!short.length,'and its sites, each kind at least 9 in 10 of its count (by its ground; the travellers, by the roads 9 tiles apart, at least 85 in 100): '+Object.keys(N.sites).map(k=>(st[k]||0)+' of '+N.sites[k]+' '+k).join(', '))}
  {const per=n=>(n*1000/L).toFixed(2),was=n=>(n*1000/g.land).toFixed(2);
   info('per 1,000 tiles of land (today\'s map in brackets): bands '+per(bands.length)+' ('+was(C.bandits)+'), beasts '+per(W.monsters.length)+' ('+was(C.monsterStart)+'), game '+per(wild.length)+' ('+was(C.critterStart)+'), sites '+per(W.sites.length)+' ('+was(Object.values(C.sites).reduce((a,b)=>a+b,C.camps))+')')}
  // ---- spread over the whole world, each in its own ground
  {const q=list=>{const n=[0,0,0,0];for(const x of list)n[(x.x>=m.w*8?1:0)+(x.y>=m.h*8?2:0)]++;return n},qm=q(W.monsters),qc=q(wild),qb=q(bands),fair=(n,all)=>n.every(k=>k>=all*.12);
   ok(fair(qm,W.monsters.length)&&fair(qc,wild.length)&&fair(qb,bands.length),'spread over the whole map, every quarter its share: beasts '+qm.join('/')+', game '+qc.join('/')+', bands '+qb.join('/'));
-  const far=W.monsters.filter(x=>Math.hypot(x.x-P.x,x.y-P.y)>m.w*8).length;ok(far>=W.monsters.length*.25,far+' beasts more than half the map\'s width from where you start')}
+  // (far: half the map's width from where you start; as many beasts there, for their share, as there is land, at least 3 in 4 of it)
+  const R=m.w*8,far=W.monsters.filter(x=>Math.hypot(x.x-P.x,x.y-P.y)>R).length;let land=0,lf=0;for(let y=0;y<m.h;y++)for(let x=0;x<m.w;x++){const k=m.kind[y*m.w+x];if(k===t.T_WATER||k===t.T_FORD)continue;land++;if(Math.hypot((x+.5)*16-P.x,(y+.5)*16-P.y)>R)lf++}
+  ok(far/W.monsters.length>=lf/land*.75,far+' beasts more than half the map\'s width from where you start: '+(far/W.monsters.length*100).toFixed(1)+'% of them, beside '+(lf/land*100).toFixed(1)+'% of the land')}
  ok(W.monsters.filter(x=>!t.MONSTERS[x.id].mythic).every(x=>t.MONSTERS[x.id].where.some(w=>t.habitatAt(x.hx,x.hy).includes(w)))&&wild.every(c=>t.CRITTERS[c.id].where.some(w=>t.habitatAt(c.hx,c.hy).includes(w))),'every beast\'s lair and every herd of game in its own ground');
  // ---- the tries a day to bring beasts back: the world's (spawnMonster called by its global name)
  {const keep=window.spawnMonster,ms=W.monsters;let n=0;window.spawnMonster=()=>{n++};

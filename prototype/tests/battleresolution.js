@@ -39,7 +39,17 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t
   //  starts with its land's bands and beasts (data/world.js DENSITY.grow), so begin draws more before these battles; with it held
   //  at today's counts all four are as before; today's map's expected held. Were field_win 0fefb0ff, lord_win 2e03cb6d, auto_win
   //  24e7d393, auto_resolve 95b686b5)
-  const expectedGen={field_win:'05ff26eb',field_loss:'56b1108c',retreat_away:'f8f6004f',retreat_caught:'630f1c46',carried_retreat:'accd790c',tournament_win:'8932be2e',tournament_loss:'cde78eef',siege_win:'edd807d9',siege_loss:'36304164',lord_win:'48bdf29d',lord_loss:'58646d0e',monster_win:'9d5eedba',auto_win:'c7c4f547',auto_loss:'b0ae7cc2',auto_resolve:'a331c982'},REC=t.WM.gen==='classic-0'?expected:expectedGen;
+  // (field_win, lord_win, monster_win, auto_win and auto_resolve re-recorded 2026-10-22: agent S's clearings, estate tracks and
+  //  farther estates move the generated world round the test's band (worldprint's G1-G8); with those rules off all fifteen as
+  //  before, and today's map's held. Were field_win 0fefb0ff, lord_win 2e03cb6d, monster_win 9d5eedba, auto_win 24e7d393,
+  //  auto_resolve 95b686b5)
+  // (field_win, lord_win, auto_win and auto_resolve re-recorded 2026-10-22, the owner's fifth play-test (agent R: the desert's
+  //  water, springs, ponds and oases, worldgen.js): the generated world moves, and with it begin's draws and the ground of those
+  //  battles; with those rules off all four as before (were 0fefb0ff, 2e03cb6d, 24e7d393, 95b686b5); today's map's held)
+  // (expectedGen measured together 2026-10-22 at the merge of agents S and R (each proved its own rules off above): field_win,
+  //  lord_win, monster_win and auto_resolve moved; today's map's held)
+  // (field_win, lord_win, auto_resolve measured together 2026-10-22 at the merge of agents R (the generator's water: no desert rain, terminal lakes, springs, ponds and oases), S (estate tracks, forest clearings, estates farther out, oases drawing holdings, stage 7 regrown, roads round ponds) and U (the camps grown with the land, port piers preferring the sea) on main 880b6e7; each agent proved its own rules off give the values before)
+  const expectedGen={field_win:'cc925db3',field_loss:'56b1108c',retreat_away:'f8f6004f',retreat_caught:'630f1c46',carried_retreat:'accd790c',tournament_win:'8932be2e',tournament_loss:'cde78eef',siege_win:'edd807d9',siege_loss:'36304164',lord_win:'4e076fb6',lord_loss:'58646d0e',monster_win:'9d5eedba',auto_win:'c7c4f547',auto_loss:'b0ae7cc2',auto_resolve:'3c3fb1e1'},REC=t.WM.gen==='classic-0'?expected:expectedGen;
   const stable=x=>Array.isArray(x)?x.map(stable):x&&typeof x==='object'?Object.fromEntries(Object.keys(x).sort().map(k=>[k,stable(x[k])])):x;
   const hash=x=>{let h=2166136261;for(const c of JSON.stringify(stable(x)))h=Math.imul(h^c.charCodeAt(0),16777619)>>>0;return h.toString(16).padStart(8,'0')};
   const cases=['field_win','field_loss','retreat_away','retreat_caught','carried_retreat','tournament_win','tournament_loss','siege_win','siege_loss','lord_win','lord_loss','monster_win','auto_win','auto_loss','auto_resolve'];

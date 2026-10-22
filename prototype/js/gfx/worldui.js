@@ -133,7 +133,7 @@ function wuiBrackets(x0,y0,x1,y1,col,a,p,g){const w=x1-x0,h=y1-y0;
 function wuiTrail(cam,now,rm){const w=WUI.way;WUI.dots.length=0;if(!w||w.n<2)return;const s0=WUI.s,end=w.S[w.n-1]-(WUI.tgt?10:6),gp=WUI_K.gap,ph=rm?0:(now/1000*WUI_K.march)%gp,col=WUI.tgt?WUI_K.col[wuiKind(WUI.tgt.o)]:WUI_K.col.gold;
   const reach=rm?1e9:s0+(now-w.t0)/1000/WUI_K.draw*(end-s0+20);let j=w.i,n=0;const D=WUI.dots;
   for(let s=Math.ceil((s0+3-ph)/gp)*gp+ph;s<end&&s<reach&&n<400;s+=gp){while(j<w.n-2&&w.S[j+1]<s)j++;const L=w.S[j+1]-w.S[j],q=L>0?(s-w.S[j])/L:0,x=w.X[j]+(w.X[j+1]-w.X[j])*q,y=w.Y[j]+(w.Y[j+1]-w.Y[j])*q;
-    if(!seenAt(x,y))continue;const sx=Math.round(x)-cam.x,sy=Math.round(y)-cam.y;if(sx<-2||sy<-2||sx>VW+2||sy>VH+2)continue;
+    const rx=Math.round(x),ry=Math.round(y);if(!seenAt(rx,ry))continue;const sx=rx-cam.x,sy=ry-cam.y;// (seen where it is drawn: a point rounded over a tile's edge into the dark is not)if(sx<-2||sy<-2||sx>VW+2||sy>VH+2)continue;
     D.push(sx,sy,Math.min(1,(s-s0-3)/14,(end+6-s)/8));n++}
   ctx.fillStyle=WUI_K.dark;for(let i=0;i<D.length;i+=3){ctx.globalAlpha=D[i+2]*.5;ctx.fillRect(D[i]-1,D[i+1]-1,4,4)}
   ctx.fillStyle=col;for(let i=0;i<D.length;i+=3){ctx.globalAlpha=D[i+2];ctx.fillRect(D[i],D[i+1],2,2)}

@@ -125,7 +125,32 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 //  5d18c925, GB2 0f363bb3)
 // (G6 measured together 2026-10-22 at the merge of agent T's art and agent U's wild things (both above): each moved it alone;
 //  G7, G8 and GB2 are U's alone)
-const GEXPECT={W1:'67bc5b4e',W2:'1d53b207',W3:'1efc5bb1',W4:'1fb76c87',W5:'cdc20759',W6:'1d85b875',W7:'8c4e15fe',W8:'9fbeb7dc',B2:'2403d7f0'};
+// (all nine re-recorded 2026-10-22, on purpose, the layout batch of play-tests 4 and 5 (agent S): a holding in the woods gets a
+//  clearing as stage 8 begins (worldplace.js placeClear: forest to open ground, so G1's tiles, G2's deposits on them, G4's land
+//  and everything after move); each outer estate no way comes near gets a track through the woods (lots.js estTrack: road tiles,
+//  G1; the painted world, G5, G6; the land reckoned over them, G4); an outer estate with no room near looks out farther (LOT_FAR:
+//  G3's lots); the workers keep to the roads and tracks (router.js WAY.folk: G7, G8, GB2). Checked: with placeClear, estTrack,
+//  LOT_FAR's farther look, PLACE.regrow (1) and the workers' way off, the rest of the work in (the way graph charted again with
+//  every road's ends, the land reckoned again, the capitals' liking as chosen, ponds and oases), all nine and the five sums are
+//  as before; with placeClear alone off the sums and G2 are. Were G1 67bc5b4e, G2 1d53b207, G3 1efc5bb1, G4 1fb76c87, G5 6d0f211d,
+//  G6 a8996932, G7 6f3a5d30, G8 5d18c925, GB2 0f363bb3)
+// (all nine re-recorded 2026-10-22, on purpose, the owner's fifth play-test (agent R: the desert's water, springs, ponds and oases,
+//  worldgen.js GEN_RIVER.desert, the new stage 5b genPonds, GEN_POND, GEN_OASIS): no rain on the desert's land and the drainage
+//  rising into it move every river and brook of the classic world (G1), then the springs, ponds and oases laid as lake water, and
+//  with them what reads the land: the deposits (G2), the holdings' lots (G3), the land claimed (G4), the painted world (G5), the
+//  third view by day and night (G6: 61733260 4c2dfbbf 44b42095 5a88bca7 6f4fc957 ec38b3f9 to 906f71f7 621ba274 08e865a5 98f9c6ca
+//  5658f362 798547ee), the three days (G7), the 600 frames (G8) and the save after begin (GB2). Checked: with those rules off (the
+//  desert's rain counted, no rise, no terminal lake, no desert brook cut, stage 5b laying nothing, stage 10 cutting nothing) all
+//  nine are as before; the navigable fix that came with it (a narrower river's rapids never clear a wider river's tiles) moves none
+//  of them. Were G1 67bc5b4e, G2 1d53b207, G3 1efc5bb1, G4 1fb76c87, G5 6d0f211d, G6 a8996932, G7 6f3a5d30, G8 5d18c925, GB2 0f363bb3)
+// (all nine measured together 2026-10-22 at the merge of agents S and R (each proved its own rules off above), with S's merge
+//  fixes: no road's corner tile in a holding's ring, no crossing to a lone tile of land in a river (worldplace.js PLACE_HOLD.pocket))
+// (all nine measured together 2026-10-22 at the merge of agents R (the generator's water: no desert rain, terminal lakes, springs, ponds and oases), S (estate tracks, forest clearings, estates farther out, oases drawing holdings, stage 7 regrown, roads round ponds) and U (the camps grown with the land, port piers preferring the sea) on main 880b6e7; each agent proved its own rules off give the values before)
+// (G1, G4, G5 and G7 re-recorded 2026-10-22, on purpose (agent U, the -Gen sweep's resources check): an estate's track (lots.js
+//  estTrack) was laid over an ore vein (Scorchwell's silver at 418,175 became a track tile); it keeps off the veins and fishing
+//  grounds now (DEP_AT), so that track takes another line: the tiles (G1), the land claimed (G4), the painted world (G5) and the
+//  save (G7). Checked: with that one condition out all nine are as before. Were G1 a1703670, G4 dd05f02b, G5 212e5174, G7 f39c5b43)
+const GEXPECT={W1:'5ae838ac',W2:'2fb848a2',W3:'19419885',W4:'9996d93d',W5:'ca7d7496',W6:'8c6b32ad',W7:'62657eba',W8:'e85c68b0',B2:'7aad116d'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended
@@ -175,7 +200,16 @@ const GEXPECT={W1:'67bc5b4e',W2:'1d53b207',W3:'1efc5bb1',W4:'1fb76c87',W5:'cdc20
 //  edfd56e4, s2 fdb0fae4, s3 28976823, Large s1 7df7120f)
 // (all five measured together 2026-10-22 at the merge of agents O and M (G1 above). Were classic 2eb1e165, Normal s1 d934ba19, s2
 //  bd7c17d3, s3 746d0808, Large s1 0f0a9fa1)
-const SUMS={classic:'e9407a0b','Normal s1':'d3fe6e28','Normal s2':'db154067','Normal s3':'5d075e09','Large s1':'631760e5'};
+// (all five re-recorded 2026-10-22, on purpose, the clearings of agent S (worldplace.js placeClear: a holding in the woods, forest
+//  opened round it as stage 8 begins, so the kind layer moves). Checked: with placeClear off all five as before. Were classic
+//  e9407a0b, Normal s1 d3fe6e28, s2 db154067, s3 5d075e09, Large s1 631760e5)
+// (all five re-recorded 2026-10-22, on purpose, the owner's fifth play-test (agent R: G1 above): every generated world's rivers,
+//  brooks, terminal lakes, springs, ponds and oases, and what placement makes of them. Checked the same way: with those rules off
+//  all five as before, the navigable fix moving none. Were classic e9407a0b, Normal s1 d3fe6e28, s2 db154067, s3 5d075e09, Large
+//  s1 631760e5)
+// (all five measured together 2026-10-22 at the merge of agents S and R, as G1-G8 above)
+// (all five measured together 2026-10-22 at the merge of agents R (the generator's water: no desert rain, terminal lakes, springs, ponds and oases), S (estate tracks, forest clearings, estates farther out, oases drawing holdings, stage 7 regrown, roads round ponds) and U (the camps grown with the land, port piers preferring the sea) on main 880b6e7; each agent proved its own rules off give the values before)
+const SUMS={classic:'f9503f0b','Normal s1':'1909f780','Normal s2':'f9df3b16','Normal s3':'0eb8d0bf','Large s1':'4e80c5cb'};
 // (W3, W5, W7, W8 and B2 re-recorded 2026-10-22, on purpose, the owner's play-test 3 (agent M): every lot on ground its holding's
 //  people walk to from its gate (lots.js lotWalk): Elderglen's smithy stood on a one-tile islet in its lake, no way to it; now on its
 //  shore, which moves TOWNS (W3), the painted world (W5), the three days (W7), the 600 frames (W8) and the save after begin (B2).

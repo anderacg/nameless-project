@@ -22,7 +22,7 @@ try{
  // ---- every cap reads the table; the site kinds scattered at random are the table's, and none keeps a count of its own
  const C=D.classic,K=Object.keys(t.SITE_TYPES);
  ok(t.CARAVAN_CAP===C.caravans&&t.REFUGEE_CAP===C.refugees&&t.CRITTER_CAP===C.critterCap&&t.CRITTER_START===C.critterStart,'caravan, refugee and critter caps read the table');
- ok(C.bandits===t.BANDITS&&C.monsterCap===t.MONSTER_CAP&&C.monsterStart===t.MONSTER_START&&C.ships===t.SHIP_CAP&&C.camps===t.CAMP_SPOTS.length,'bandits, monsters and ships read the table, and its camps are the map\'s spots');
+ ok(C.bandits===t.BANDITS&&C.monsterCap===t.MONSTER_CAP&&C.monsterStart===t.MONSTER_START&&C.ships===t.SHIP_CAP&&t.density(t.WM).camps===t.CAMP_SPOTS.length,'bandits, monsters and ships read the table, and the world\'s camps are the map\'s spots ('+t.CAMP_SPOTS.length+')');
  // ---- a bigger world (DENSITY.grow): today's numbers x (its land / today's map's)^pow, caravans and refugees by its holdings,
  // ships by its ports; the bands at a pow of .8; today's map today's numbers, the classic seed grown as any world; the land
  // counted once, off every list

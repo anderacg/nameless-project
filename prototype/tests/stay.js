@@ -58,7 +58,8 @@ try{
   t.act('sy-defend','0');ok(!P.stay&&G.enc&&G.enc.kind==='lord'&&G.enc.ref===L&&G.enc.allies.some(f=>f.kind==='garrison')&&t.hostileTo(L.fac),'defend the walls: you ride out against the besieger with the garrison beside you');t.act('flee');world();P.hostile={}}
  // slip out
  {L.troops=Array(12).fill('hum_levy');world();L.state='rest';t.startStay(town2);L.state='siege';t.stayTick(.01);const e={kind:'lord',ref:L,foes:[]};const ch=t.fleeOdds(e).ch;
-  if(ch>0){const r=Math.random;Math.random=()=>0;t.act('sy-slip');Math.random=r;ok(!P.stay&&G.mode==='world'&&Math.hypot(P.x-town2.x,P.y-town2.y)>30,'slip out: past the besiegers and away ('+Math.round(ch*100)+'%)')}
+  // (away from the besieger you run from: where the gate stands beside its holding, as on a generated world, the run may cross the holding)
+  if(ch>0){const r=Math.random;Math.random=()=>0;t.act('sy-slip');Math.random=r;ok(!P.stay&&G.mode==='world'&&Math.hypot(P.x-L.x,P.y-L.y)>40,'slip out: past the besiegers and away ('+Math.round(ch*100)+'%; '+Math.round(Math.hypot(P.x-L.x,P.y-L.y))+' px from the besieger, a run of 56 from the gate)')}
   else ok(true,'(slipping out impossible here: '+t.fleeOdds(e).why+')');world();L.state='rest'}
  // your companions' parties shelter too
  {P.comps={brann:{ap:5,role:''}};const c=t.compInit('brann');c.lv=3;P.troops={hum_levy:10};t.cpGive('brann','hum_levy',4);const p=c.party;setSt(town2,10);

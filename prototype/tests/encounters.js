@@ -25,12 +25,18 @@ try{
  // (the dice fixed while fn runs: the road's and the letter's streams (core/rng.js, S4) and Math.random for the rest, all
  // drawing from v, as Math.random alone did before the streams)
  const stub=(v,fn)=>Kit.stub(v,()=>Kit.stubStream('road',v,()=>Kit.stubStream('letters',v,fn)));
- // a place: open, walkable ground all round (12 tiles), a road through it, far from holdings and sites
- const far=(tx,ty)=>t.TOWNS.every(z=>Math.hypot(z.tx-tx,z.ty-ty)>10)&&W.sites.every(s=>Math.hypot(s.tx-tx,s.ty-ty)>4);
+ // a place: open, walkable ground all round (12 tiles; a pond or an oasis, 1-4 tiles of water, is no barrier: worldgen.js
+ // m.ponds, m.oases), a road through it, far from holdings and sites; no wood east of it as far as your sight and a third
+ // more (the checks below set things there, P.x + 1.05 x your sight, and woods hide them: Encounter inView, spotted)
+ const far=(tx,ty)=>t.TOWNS.every(z=>Math.hypot(z.tx-tx,z.ty-ty)>10);
  // (the test spot has a holding near enough for the kinds that want one, the lost child's home: within the law's reach less 2 tiles)
  const nearOne=(tx,ty)=>t.TOWNS.some(z=>Math.hypot(z.tx-tx,z.ty-ty)<t.WORLD_SCALE.law.eventNear-2);
  const around=(tx,ty,r,f)=>{for(let j=-r;j<=r;j++)for(let i=-r;i<=r;i++)if(!f(t.tAt(tx+i,ty+j)))return false;return true};
- let home=null;for(let ty=16;ty<t.MH-16&&!home;ty++)for(let tx=16;tx<t.MW-16&&!home;tx++)if(t.tAt(tx,ty)===t.T_ROAD&&far(tx,ty)&&nearOne(tx,ty)&&around(tx,ty,4,x=>x===t.T_OPEN||x===t.T_ROAD)&&around(tx,ty,11,x=>t.passable(x))&&t.climAt((tx+.5)*TILE,(ty+.5)*TILE)==='grass')home={tx,ty,x:(tx+.5)*TILE,y:(ty+.5)*TILE};
+ const pond=new Set([...(t.WM.ponds||[]),...(t.WM.oases||[])].flatMap(o=>o.tiles||[o.i])),around2=(tx,ty,r)=>{for(let j=-r;j<=r;j++)for(let i=-r;i<=r;i++)if(!t.passable(t.tAt(tx+i,ty+j))&&!pond.has((ty+j)*t.MW+tx+i))return false;return true};
+ const Vt=Math.ceil(t.vis()/t.visMulAt(t.P.x,t.P.y)*1.35/TILE),bare=(tx,ty)=>{for(let j=-1;j<=1;j++)for(let i=0;i<=Vt;i++)if(t.tAt(tx+i,ty+j)===t.T_FOREST)return false;return true};
+ let home=null;for(let ty=16;ty<t.MH-16&&!home;ty++)for(let tx=16;tx<t.MW-16&&!home;tx++)if(t.tAt(tx,ty)===t.T_ROAD&&far(tx,ty)&&nearOne(tx,ty)&&around(tx,ty,4,x=>x===t.T_OPEN||x===t.T_ROAD)&&around2(tx,ty,11)&&bare(tx,ty)&&t.climAt((tx+.5)*TILE,(ty+.5)*TILE)==='grass')home={tx,ty,x:(tx+.5)*TILE,y:(ty+.5)*TILE};
+ // (the sites near it taken away: they grow with the world's land (data/world.js DENSITY.grow), and where they fall changes each run)
+ if(home)W.sites=W.sites.filter(s=>Math.hypot(s.tx-home.tx,s.ty-home.ty)>4);
  ok(!!home,'a test spot: a road over open grassland ('+(home&&home.tx+','+home.ty)+')');
  const at=(x,y)=>{world();clear();P.x=x;P.y=y;P.stay=null;t.reveal()};const goHome=()=>at(home.x,home.y);
  G.clock=t.DAY*.3;P.troops={hum_levy:6};P.gold=500;P.sk.scout.lv=0;goHome();const V=t.vis();

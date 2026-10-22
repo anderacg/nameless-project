@@ -37,6 +37,12 @@ function waterIds(){
     while(q.length){const j=q.pop(),x=j%MW,y=(j/MW)|0;for(const [a,b] of [[1,0],[-1,0],[0,1],[0,-1]]){const k=(y+b)*MW+x+a;if(isWater(x+a,y+b)&&id[k]<0){id[k]=n;q.push(k)}}}n++}
   return WATER_ID=id;
 }
+// the sea: the bodies of water that reach the world's edge (waterIds'), a set of their labels, made with them
+let SEA_IDS=null;
+onWorld(()=>{SEA_IDS=null});
+function seaIds(){const id=waterIds();if(SEA_IDS&&SEA_IDS.of===id)return SEA_IDS;const S=new Set();
+  for(let x=0;x<MW;x++)for(const y of [0,MH-1])if(id[y*MW+x]>=0)S.add(id[y*MW+x]);for(let y=0;y<MH;y++)for(const x of [0,MW-1])if(id[y*MW+x]>=0)S.add(id[y*MW+x]);
+  S.of=id;return SEA_IDS=S}
 // a port's dock: the water tile just off the end of its pier (or the nearest water to it)
 function dockOf(t){
   if(!bldLv(t,'port'))return null;const pr=pierOf(t);if(!pr)return null;const len=10+bldLv(t,'port')*6+8,v={n:[0,-1],s:[0,1],e:[1,0],w:[-1,0]}[pr.dir];

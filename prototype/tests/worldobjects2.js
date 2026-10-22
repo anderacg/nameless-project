@@ -312,7 +312,12 @@ try{
   const lists=d=>JSON.stringify(['monsters','critters','refugees','sites','caravans','patrols','lords'].map(k=>d.world[k]))+JSON.stringify(d.world.own);
   sites.forEach(s=>s.placed());if(!W.refugees.length)W.refugees.push({...rf2,gone:false});// (refugees the world sent on their way meanwhile)
   const s1=save();ok(!!s1&&!/mapKind|"here"|"meet"|"pick"|"draw"|"mapDot"|"est":|"meetsAnyTime"|"chaseable"/.test(s1),'a save holds no world-object fields, and no estates');
-  ok(['monsters','critters','refugees','sites'].every(k=>JSON.stringify(W[k])===JSON.stringify(W[k].map(q=>({...q})))),'each thing saves as its plain fields');
+  // (on a generated world the beasts and herds save packed, worldobject.js packRec: read back, their plain fields, but those made
+  //  again (strength, wandering) and the numbers to a tenth)
+  {const pk=t.packs(),J=x=>JSON.stringify(x===undefined?null:x),back=(k,rd,made)=>{const r=JSON.parse(JSON.stringify(W[k])).map(rd);
+    return r.length===W[k].length&&W[k].every((o,i)=>Object.keys(o).every(f=>made.includes(f)||(typeof o[f]==='number'?Math.abs(r[i][f]-o[f])<=.05:J(r[i][f])===J(o[f]))))};
+   ok((pk?['refugees','sites']:['monsters','critters','refugees','sites']).every(k=>JSON.stringify(W[k])===JSON.stringify(W[k].map(q=>({...q}))))&&(!pk||back('monsters',t.asMonster,['pw','t','a'])&&back('critters',t.herdRec,['t','a'])),
+    'each thing saves as its plain fields'+(pk?' (the beasts and herds packed, read back to them)':''))}
   t.loadGame();ok(W.monsters.length&&W.critters.length&&W.refugees.length&&W.sites.every(s=>s instanceof t.Site)&&t.objKind(W.monsters[0])==='monster'&&t.objKind(W.refugees[0])==='refugee'&&t.TOWNS.every(x=>x instanceof t.HoldingObject),'loaded, each is what it is again (a beast, refugees: asked; sites, holdings): '+[W.monsters.length,W.critters.length,W.refugees.length].join('/'));
   t.worldObjects();ok(W.monsters.every(q=>q instanceof t.Monster)&&W.critters.every(q=>q instanceof t.Herd)&&W.refugees.every(q=>q instanceof t.Refugees),'and made its kind once the map asks');
   const s2=save();t.loadGame();const s3=save();ok(lists(JSON.parse(s1))===lists(JSON.parse(s2)),'loaded and saved again, every holding, beast, herd, refugee band, site, caravan, patrol and lord saves as it did');

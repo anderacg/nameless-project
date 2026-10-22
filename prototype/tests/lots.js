@@ -2,7 +2,7 @@
 // Placed buildings (lots.js): every holding is laid out from its centre, its own way; its walls are the centre's fortification;
 // you place what you build, it takes time (less with more people), upgrades need what they need; houses hold the people, and
 // a full holding grows no more and sends people away; the realms build houses as they fill; saves keep every building.
-window.RUN=()=>{window.__ls=window.__ls||T.lotSpot;const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);
+window.RUN=()=>{window.__ls=window.__ls||T.lotSpot;const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.push('INFO '+m);
 try{
  const t=T,G=t.G,P=t.P,W=t.W,TILE=t.TILE;try{localStorage.clear()}catch(e){}
  t.act('begin','soldier');G.quietEvents=true;const TW=t.TOWNS;
@@ -20,6 +20,29 @@ try{
   const bad=new Set();for(const [i,w] of own)if(t.tiles[i]===t.T_ROAD)bad.add(w+' (a road tile)');
   for(const [x,y] of pts){const i=Math.floor(y/TILE)*MW+Math.floor(x/TILE),fx=x%TILE,fy=y%TILE;if(own.has(i)&&Math.min(fx,fy,TILE-fx,TILE-fy)>=2)bad.add(own.get(i)+' at '+Math.floor(x/TILE)+','+Math.floor(y/TILE))}
   ok(!bad.size,'no building nor field stands on a road, its tiles or where it is painted ('+(gen?'along its lines':'by its tiles')+'; '+own.size+' tiles built on)'+(bad.size?': '+[...bad].slice(0,6).join('; '):''))}
+ // ---- the estates' tracks (the owner's play-test 4: "can we have a country road or non-main road to cross between forest as well
+ // when there is an estate near by"; lots.js estTrack): on the generated world every outer estate's door has a way (a road or a
+ // track) within LOT_TRACK.near tiles of the tile before it, and every track joins the roads (8 ways) to a holding's gate; a save
+ // and load lays them again alike (occRebuild); today's map has none. INFO: the tracks, their tiles, those through the woods
+ const trackSig=()=>JSON.stringify(t.WM.roads.filter(r=>r.est).map(r=>r.path));const sig0=trackSig();
+ {const MW=t.MW,MH=t.MH,K=t.tiles,gen=t.WM.gen!=='classic-0',E=t.WM.roads.filter(r=>r.est),N=t.LOT_TRACK.near,way=i=>K[i]===t.T_ROAD||K[i]===t.T_FORD,miss=[],cut=[];
+  const seen=new Uint8Array(MW*MH),q=[];for(const z of TW){const i=(z.ty+1)*MW+z.tx;if(way(i)&&!seen[i]){seen[i]=1;q.push(i)}}
+  for(let a=0;a<q.length;a++){const i=q[a],x=i%MW;for(let b=-1;b<=1;b++)for(let c=-1;c<=1;c++){const j=i+c+b*MW;if(x+c>=0&&x+c<MW&&j>=0&&j<MW*MH&&!seen[j]&&way(j)){seen[j]=1;q.push(j)}}}
+  if(gen)for(const z of TW)for(const l of z.lots||[]){if(!t.ESTATES[l.k]||t.INNER.includes(l.k))continue;const fx=l.x+(l.n>>1),fy=l.y+l.n;let hit=false;
+   for(let y=fy-N;y<=fy+N&&!hit;y++)for(let x=fx-N;x<=fx+N&&!hit;x++)if(x>=0&&y>=0&&x<MW&&y<MH&&K[y*MW+x]===t.T_ROAD)hit=true;
+   if(!hit&&!E.some(r=>{const e=r.path[r.path.length-1],ex=e%MW,ey=(e-ex)/MW;return r.est===z.name&&[[l.x,l.y],...(l.plots||[])].some(([px,py],k)=>{const n=k?1:l.n;return ex>=px-1&&ex<=px+n&&ey>=py-1&&ey<=py+n})}))miss.push(z.name+' '+l.k)}
+  // (a miss whose fields and building no free ground its people walk to joins to a road: hemmed in by its holding's buildings, the
+  // water and the peaks, no track can be laid: INFO)
+  const hemmed=s=>{const [zn,k]=s.split(' '),z=t.townBy(zn),l=t.lotAt(z,k),own=[];t.lotTiles(l,(x,y)=>own.push(y*MW+x));for(const [x,y] of l.plots||[])own.push(y*MW+x);
+   const free=i=>{const x=i%MW,y=(i-x)/MW;return t.passable(K[i])&&!way(i)&&!t.occAt(x,y)&&t.walkTo(z,x,y)},seen2=new Set(),q2=[];for(const o of own)for(const s2 of [1,-1,MW,-MW])if(free(o+s2)&&!seen2.has(o+s2)){seen2.add(o+s2);q2.push(o+s2)}
+   for(let a=0;a<q2.length;a++){const i=q2[a];for(let b=-1;b<=1;b++)for(let c=-1;c<=1;c++){const j=i+c+b*MW;if((b||c)&&!seen2.has(j)&&(!b||!c||t.passable(K[i+c])&&t.occAt((i+c)%MW,(i+c-(i+c)%MW)/MW)<=0&&t.passable(K[i+b*MW])&&t.occAt((i+b*MW)%MW,(i+b*MW-(i+b*MW)%MW)/MW)<=0)){if(way(j)&&K[j]===t.T_ROAD)return false;if(free(j)){seen2.add(j);q2.push(j)}}}}return true};
+  const left=miss.filter(hemmed);miss.splice(0,miss.length,...miss.filter(s=>!left.includes(s)));if(left.length)info('estates no track can reach, hemmed in by their holding’s buildings and the water: '+left.join(', '));
+  for(const r of E)if(!seen[r.path[0]])cut.push(r.est);
+  const wood=E.filter(r=>r.path.some(i=>[1,-1,MW,-MW].filter(s=>K[i+s]===t.T_FOREST).length>=2)).length;
+  if(gen){ok(E.length&&!miss.length,'every outer estate’s door has a way within '+N+' tiles of it, a road or its own track (to it or its fields) ('+E.length+' tracks, '+E.reduce((a,r)=>a+r.path.length-1,0)+' tiles, '+wood+' through the woods)'+(miss.length?': not '+miss.slice(0,6).join(', '):''));
+   ok(!cut.length,'every estate’s track joins the roads to the holdings'+(cut.length?': not '+cut.slice(0,6).join(', '):''));
+   t.saveGame(true);t.loadGame();ok(trackSig()===sig0,'a save and load lays the same tracks again')}
+  else ok(!E.length,'today’s map: no estate tracks')}
  // ---- walls are the centre's fortification: no wall pieces on the map, nothing blocks travel
  ok(TW.every(z=>{const c=t.lotCentre(z);t.lotSprite(z,c);return !z.lots.some(l=>l.k==='wall')&&c._fort===t.wallOf(z)}),'every holding’s walls are its centre’s fortification (no wall pieces stand on the map)');
  {const z=TW.find(q=>t.wallOf(q)>=2),c=t.lotCentre(z),s0=t.lotSprite(z,c);t.breach(z);const s1=t.lotSprite(z,c);ok(c._fort===t.wallOf(z)&&s1!==s0,'a breach lowers it, and the centre is drawn with its lower walls ('+t.WALL_N[t.wallOf(z)]+')')}
@@ -58,5 +81,7 @@ try{
   ok(!(q.work&&q.work.k==='house')&&JSON.stringify(Object.keys(mats).map(g=>q.stock[g]))===st0&&W.treas[q.owner]===tr0,'a realm with no free plot for a house spends neither gold nor materials');
   q.work=null;P.gold=1e4;const pg=P.gold,st1=JSON.stringify(Object.keys(mats).map(g=>q.stock[g]));
   try{(0,eval)('lotSpot=()=>null');ok(!t.buildHouse(q)&&P.gold===pg&&JSON.stringify(Object.keys(mats).map(g=>q.stock[g]))===st1,'your house order with no free plot costs you nothing')}finally{(0,eval)('lotSpot=window.__ls')}}
+  // (a second new game lays the same tracks: taken up as the world goes in again, onWorld)
+ {t.act('begin','soldier');G.quietEvents=true;ok(trackSig()===sig0,'a new game lays the same estate tracks again ('+t.WM.roads.filter(r=>r.est).length+')')}
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}
 const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d)};

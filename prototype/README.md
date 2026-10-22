@@ -71,13 +71,15 @@ js/world/             the campaign map and everything on it
                         the world generator (doc/WORLD_DESIGN.md, behind WORLD.gen): the clamped settings (their presets, the
                         holdings' density, the world code), the terrain stages 1-6 and the New world screen's quick sketch,
                         the placement stages 7-9 (holdings, roads and crossings, each holding's rivers crossed near it:
-                        placeHoldXing; every bridge on the roads; camps; the classic seed's anchors and hints:
-                        tests/classicseed.js); seeded, never Math.random; placeWalk, the ground walked to from a tile (a
-                        holding's gate) within a box, and how far
+                        placeHoldXing; every bridge on the roads; a clearing round a holding in the woods: placeClear;
+                        big oases liked by desert peoples: PLACE_OASIS; ponds and oases never bridged; camps; the classic
+                        seed's anchors and hints: tests/classicseed.js); seeded, never Math.random; placeWalk, the ground
+                        walked to from a tile (a holding's gate) within a box, and how far
   router.js             every way over the land behind three calls: Router.travel (a step toward a point, or a holding's gate:
-                        gateGoal; with road, keeping to the roads: caravans, WAY.keep), Router.reach, Router.days (and
-                        Router.close, Router.stats); today's flow fields and searches underneath; on the generated world the
-                        way graph (buildWayGraph) and the two-level router
+                        gateGoal; with road, keeping to the roads: caravans, WAY.keep; workers WAY.folk), Router.reach,
+                        Router.days (and Router.close, Router.stats); today's flow fields and searches underneath; on the
+                        generated world the way graph (buildWayGraph, charted again with the estates' tracks: wayRechart)
+                        and the two-level router
   realms.js siege.js    the realms (Realm: wars and peace, honour and hostility, holdings and lords) and their lords; sieges,
                         raids, captures and fiefs
   leaders.js            the Lord and Chieftain roles (characters who choose for themselves); the bandit chieftains
@@ -104,7 +106,8 @@ js/world/             the campaign map and everything on it
   estates.js            each Estate (fields, guards, sabotage, its day's work) and the spoils of raiding one; its window is ui/estate.js
   lots.js               placed buildings on the grid: a holding's Layout (its lots), the grid's searches, placing by hand;
                         nothing built where a road is painted (roadPaint); every lot and field on ground walked to from
-                        its holding's gate, not far round, its own bank first (lotWalk, lotWalks)
+                        its holding's gate, not far round, its own bank first (lotWalk, lotWalks); an outer estate farther
+                        out where none fits near (LOT_FAR); the estates' tracks on the generated world (estTrack)
   folk.js caravans.js   workers at the estates (inside, out on their fields in the morning (a herder round his pens, never in
                         them: penWay when they hem his door in), carrying loads to the holding);
                         caravans (realms' and yours)
@@ -726,6 +729,10 @@ After the fourth play-test (2026-10-22): what read as swamp on the grass was a h
 After the fourth play-test, the generator (2026-10-22): climates are smoothed and tidied into big pieces (`worldgen.js` `genClimTidy`, `GEN_CLIMATE.blur`, `strip`, `minArea`), every brook ends in water (`GEN_RIVER.brook`, checked by `genRiverCheck`), and holdings spread over the land (`worldplace.js` `PLACE.capMin`, `space`, `room`, `pull`).
 
 After the fifth play-test (2026-10-22, agent T; `tests/visual/worldart.js` `&part=6`): a road or a ford's track through a wood is a forest track, not a tile of bright grass: a road's tile with 4 or more of its 8 neighbours wood is a lane (`worldart.js` `P.lane`, `GENART.wood`: its path narrower and wandering, `laneW`, `segBand`), the land's nature makes it a wood's tile (`PX.WN_LANE`): the forest floor up to the path's edge over the kept-clear band, ragged, trees and undergrowth beside the path and some crowns over its edge, their shadows on it, by the ways' band read anywhere (`roadAt`: the roads' and a ford's track's, `fordBand`). A ford's shallows are a ragged bar bending as an S across the river (`GENART.ford` `bend2`, `rag`), not a box. A road over the hills rises with them (`PX.WN_HILL.road`) and a rise's cast shadow is soft (`PX.WN_HILL.soft`): no straight cut along a road or the light. Mountains come in kinds (`PX.WORLD_MOUNTS`, `PX.worldMountKind`, `PX.WN_MOUNT`: desert sandstone buttes with scree fans, pale cracked granite, rare dark basalt with columns, snow-capped alpine peaks, low forested mountains on wet grass, the swamp's mossy knolls), by climate and the generator's elev, temp, moist and rough, a range one kind's shape, its look blended across a climate's edge; peaks vary in slope, ridges and stretch. The generator's oases and ponds (`WM.oases`, `WM.ponds`, `ringOf`) get rings (`PX.WN_RING`): an oasis's date palms, tall grass, shrubs and, by a holding, gardens, its ground greening into the sand; a hollow's, an oxbow's or a spring's reeds, bushes and flowers; a tarn's stones and scree, frozen in the frost; a swamp pool's reeds, moss and pads; their water a soft blob (`GENART.pond`), kept a pixel at a time, not by tile (no square round it), a pond's bank wet earth (a tarn's gravel). Brooks are no longer cut short by the art: over clear ground, into and out of water as drawn, beside a road they run along. The fog of war's edges are a cool, pale haze before the dark (`WFOG.haze`, `ringHaze`; `mist.js` a level's `haze`), not a darkening of the ground.
+
+After the fourth and fifth play-tests, the layout (2026-10-22): a track runs through the woods to each outer estate no way comes near (`lots.js` `estTrack`, `LOT_TRACK`: laid as a holding is laid out, taken up when the world goes in again and laid again from a save's lots; the way graph charted again with them, `router.js` `wayRechart`, and the land reckoned over them), and the workers keep to the roads and tracks where they go (`WAY.folk`). A holding in the woods gets a ragged clearing for its houses and fields (`worldplace.js` `placeClear`, `PLACE_CLEAR`, as stage 8 begins). An outer estate with no room within 12 tiles looks out to 18, its door at most 22 steps from the gate (`LOT_FAR`: Redspire's lumber camp). Big oases draw desert peoples (`PLACE_OASIS`); ponds and oases are never bridged. Stage 7 regrows its realms from their capitals while too few fit or their land is unbalanced (`PLACE.regrow`, `placeEven`), and a capital's liking is the one it was chosen by (`g.work.like`: the ground opened under a dwarf capital on a hill had failed it).
+
+After the fifth play-test, the generator's water (2026-10-22): stage 4 keeps rivers out of the desert (no rain there, the drainage rising into it, terminal lakes: `GEN_RIVER.desert`); stage 5b `genPonds` lays springs at brook heads, ponds (hollows, pools, tarns, oxbows: `GEN_POND`) and desert oases (`GEN_OASIS`), listed in `WM.ponds` and `WM.oases` ({i, r, kind or big, tiles}) for the art.
 
 To look at the result, take a screenshot of a prepared scene (`scene` is `world` or `battle`; `town`, `mount` and `zoom` are optional):
 
