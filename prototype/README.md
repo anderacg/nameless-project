@@ -34,7 +34,7 @@ Focused regression suites: `armygroups`, `armyedges`, `groups`, `battlesetup`, `
 ## Layout
 
 ```
-Ashmark.html          page markup; loads style.css, the PX engine (../engine: pixel, buildkit, buildings, pieces, ground, worldnature, beasts,
+Ashmark.html          page markup; loads style.css, the PX engine (../engine: pixel, buildkit, buildings, buildmodels (every building type as a model: stage 2 of the redesign, not yet drawn by the game), pieces, ground, worldnature, beasts,
                       model), then the scripts below (the full order is the <script> list in Ashmark.html)
 style.css
 js/core/              core.js (DOM, canvas, constants, helpers, the action registry), state.js (state factories, G, P; your numbers' older names),

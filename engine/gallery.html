@@ -20,6 +20,7 @@
 <script src="ground-fixture.js"></script>
 <script src="worldnature.js"></script>
 <script src="beasts.js"></script>
+<script src="buildmodels.js"></script>
 <script src="model.js"></script>
 <script>
 // which types each people builds (the same list the game's settlements use)
@@ -35,6 +36,7 @@ function render(){
   if(q0.get('view')==='depth')return renderDepth();
   if(q0.get('view')==='bench')return renderBench();
   if(q0.get('view')==='nature')return renderNature();
+  if(q0.get('view')==='catalog')try{return renderCatalog()}catch(e){document.getElementById('out').textContent=e.stack;return}
   if(q0.get('view')==='model')try{return renderModel()}catch(e){document.getElementById('out').textContent=e.stack;return}
   if(new URLSearchParams(location.search).get('view')==='castles'){const out=document.getElementById('out');out.innerHTML='';for(const type of ['keep','citadel','village','longhouse','stonehall','elfhall','hidehall'])for(const style of ['human','dwarf','elf','orc']){if(['stonehall','elfhall','hidehall','longhouse'].includes(type)&&style!==({longhouse:'human',stonehall:'dwarf',elfhall:'elf',hidehall:'orc'})[type])continue;const row=document.createElement('div');row.className='row';row.innerHTML='<span class="lab">'+style+' · '+type+'</span>';for(let s=1;s<=6;s++){const hall=!['keep','citadel'].includes(type),b=PX.building({type,style,seed:s*37+type.length,view:'top',fort:hall?(s>3?1:0):[0,1,2,3,1,2][s-1],banner:'#c84040'}),Z=+(q0.get('z')||3),c=document.createElement('canvas'),M=4,w=b.w+2*M;c.width=w*Z;c.height=w*Z;const g=c.getContext('2d');g.imageSmoothingEnabled=false;g.scale(Z,Z);g.fillStyle='#5a8a3a';g.fillRect(0,0,w,w);g.fillStyle='rgba(0,0,0,.18)';for(let k=0;k<=b.tiles[0];k++){g.fillRect(M+k*16,0,1,w);g.fillRect(0,M+k*16,w,1)}g.fillStyle='rgba(255,230,120,.5)';g.fillRect(M+b.w/2,M+b.h,1,M);g.fillRect(M+b.w/2-1,M+b.h,1,M);g.drawImage(b.img,M,M);if(b.flag){const fx=M+b.flag[0],fy=M+b.flag[1],fc=['#c84040','#4a72b0','#3a8a4a','#d8a030'][s%4];g.fillStyle='#4a3020';g.fillRect(fx,fy-9,1,9);g.fillStyle=fc;g.fillRect(fx+1,fy-9,4,3)}row.appendChild(c)}out.appendChild(row)}return}
   const q=new URLSearchParams(location.search),Z=+(document.getElementById('z').value||q.get('z')||3),N=+(document.getElementById('n').value||q.get('n')||8),only=(document.getElementById('only').value||q.get('only')||'').trim();
@@ -193,6 +195,69 @@ function renderModel(){
     line('45°',['cottage','house','inn','row_a'].flatMap(n=>[1,3].map(yaw=>[PX.model(PX.modelSample(n,{yaw,seed:sd})),n+' yaw '+yaw])))}
   const t0=performance.now();let k=0;for(let r=0;r<4;r++)for(const name of PX.MODEL_SAMPLES)for(const yaw of PX.MODEL_YAWS){PX.model(PX.modelSample(name,{yaw,seed:sd+r}));k++}
   const ms=(performance.now()-t0)/k;out.insertAdjacentHTML('beforeend','<p id="bench">'+k+' models: '+ms.toFixed(2)+' ms each</p>');
+}
+// ?view=catalog: the building redesign's stage 2 (buildmodels.js), for the owner's approval: every type, today's beside the model in
+// its 4 facings, then on sand (the desert), mud (the swamp, on stilts where houses stand so) and in the frost at snow 0, 1/3, 2/3
+// and 1; the peoples' roofs; every cluster by its street's side; then a few together on grass, sand and snow at the world's 1x scale
+// and a x3 crop of each. Each cell on its climate's own ground (a few px of it round the cell, never a square), the game's layer
+// order: the flat ground, the shadow mask shaded once, what stands, the snow over it. &part=types|peoples|clusters|scenes, &z=,
+// &seed=, &only=cottage,keep
+function renderCatalog(){
+  const q=new URLSearchParams(location.search),Z=+(q.get('z')||3),sd=+(q.get('seed')||1),part=q.get('part'),only=q.get('only'),out=document.getElementById('out');out.innerHTML='';
+  document.querySelector('h1').textContent='PX building models: stage 2 catalogue';
+  document.querySelector('p').textContent='Every type: today’s (left) beside its model in 4 facings (front, left side, back, right side); desert, swamp, and frost at snow 0, ⅓, ⅔, 1. Then the peoples’ roofs, the clusters by their street’s side, and scenes at 1× with a ×3 crop.';
+  // the climates' ground, dithered so a square backdrop would show
+  const GR={grass:['#6e9a48','#628c40','#7aa652'],desert:['#dcc28c','#cfb37c','#e6ce9c'],swamp:['#566a42','#4c5e3a','#62764c'],frost:['#e8eef4','#d6e0ea','#f4f8fb']};
+  const groundTile=(env,w,h,s)=>PX.canvas(w,h,g=>{const C=GR[env]||GR.grass;for(let y=0;y<h;y++)for(let x=0;x<w;x++){const k=PX.hash(x,y,s||9);g.fillStyle=C[k<.12?1:k>.9?2:0];g.fillRect(x,y,1,1)}});
+  const man=PX.canvas(6,10,g=>{g.fillStyle='#1a1c26';g.fillRect(1,0,4,10);g.fillRect(0,3,6,5);g.fillStyle='#e0b090';g.fillRect(2,1,2,2);g.fillStyle='#3d74d6';g.fillRect(1,3,4,4);g.fillStyle='#5a4a3a';g.fillRect(2,7,1,2);g.fillRect(3,7,1,2)});
+  // the game's layers: ground (and the snow on it), the shadow mask shaded once, the picture, the snow on it
+  const layers=(g,b,x,y)=>{if(b.ground)g.drawImage(b.ground,x,y);if(b.snow)g.drawImage(b.snow.ground,x,y);if(b.shadow){if(b.shade){const m=PX.canvas(b.w,b.h,c=>{c.drawImage(b.shadow,0,0);c.globalCompositeOperation='source-in';c.fillStyle='rgb(20,24,12)';c.fillRect(0,0,b.w,b.h)});g.globalAlpha=b.shade;g.drawImage(m,x,y);g.globalAlpha=1}else g.drawImage(b.shadow,x,y)}
+    g.drawImage(b.img,x,y);if(b.snow)g.drawImage(b.snow.img,x,y)};
+  const cell=(row,b,lab,env,noMan)=>{const M=4,n=b.w,w=n+2*M+(noMan?0:8),h=n+2*M,c=document.createElement('canvas');c.width=w*Z;c.height=h*Z;c.title=lab;const g=c.getContext('2d');g.imageSmoothingEnabled=false;g.scale(Z,Z);
+    g.drawImage(groundTile(env||'grass',w,h,n),0,0);g.fillStyle='rgba(0,0,0,.08)';for(let k=0;k<=n/16;k++){g.fillRect(M+k*16,M-2,1,1);g.fillRect(M+k*16,M+n,1,1)}
+    layers(g,b,M,M);if(b.marks&&b.marks.fire){const fl=PX.flame(1);g.drawImage(fl.img,M+b.marks.fire[0]-fl.ax,M+b.marks.fire[1]-fl.ay)}if(!noMan)g.drawImage(man,M+n+1,M+n-10);if(b.clipped){g.fillStyle='#e0605a';g.fillRect(0,0,2,2)}
+    const wrap=document.createElement('div');wrap.className='cc';wrap.appendChild(c);const t=document.createElement('div');t.className='cl';t.textContent=lab;wrap.appendChild(t);row.appendChild(wrap)};
+  const lab=t=>Object.assign(document.createElement('span'),{className:'lab',textContent:t});
+  const newRow=t=>{const row=document.createElement('div');row.className='row';row.appendChild(lab(t));out.appendChild(row);return row};
+  const head=t=>out.insertAdjacentHTML('beforeend','<h2 style="font-size:15px;margin:16px 0 6px">'+t+'</h2>');
+  const FRONT=PX.MODEL_FRONT,TYPES=PX.MODEL_TYPES.concat(PX.MODEL_SITES),want=t=>!only||only.split(',').includes(t);
+  const st=document.createElement('style');st.textContent='.cc{display:inline-flex;flex-direction:column;align-items:center}.cl{font-size:10px;color:#9a958a;max-width:140px;text-align:center}';document.head.appendChild(st);
+  if(!part||part==='types'){head('Every type: today’s, the model in 4 facings, desert, swamp, frost by snow');
+    for(const type of TYPES){if(!want(type))continue;const row=newRow(type+({elfhall:' (elf)',treehouse:' (elf)',spire:' (elf)',hidehall:' (orc)',yurt:' (orc)',watchtower:' (orc)',stonehall:' (dwarf)',forge:' (dwarf)'}[type]||'')),f=FRONT.includes(type),site=PX.MODEL_SITES.includes(type),pp={elfhall:'elf',treehouse:'elf',spire:'elf',hidehall:'orc',yurt:'orc',watchtower:'orc',stonehall:'dwarf',forge:'dwarf'}[type]||'human',base={type,people:pp,style:pp,seed:sd};
+      try{const old=(site?PX.site:PX.building)(Object.assign({},base,f?{view:'top',fort:2}:{facing:'right'}));cell(row,old,'today','grass',true);
+        for(const yaw of f?[0]:PX.MODEL_YAWS){const b=PX.buildingModel(Object.assign({},base,{yaw,fort:2}));cell(row,b,['front','left','back','right'][yaw/2]+' '+(b.ms|0)+'ms'+(b.scale.u<1||b.scale.v<1||b.scale.z<1?' s'+[b.scale.u,b.scale.v,b.scale.z].join('/'):''),'grass')}
+        cell(row,PX.buildingModel(Object.assign({},base,{env:'desert',fort:2})),'desert','desert');cell(row,PX.buildingModel(Object.assign({},base,{env:'swamp',stilts:true,fort:2})),'swamp','swamp');
+        for(const a of [0,1/3,2/3,1])cell(row,PX.buildingModel(Object.assign({},base,{env:'frost',snow:a,fort:2})),'snow '+['0','⅓','⅔','1'][Math.round(a*3)],'frost')}
+      catch(e){row.appendChild(lab(e.message))}}
+    // the keep and citadel by fortification
+    for(const type of ['keep','citadel','village']){if(!want(type))continue;const row=newRow(type+' by fort');for(let f=0;f<=(type==='village'?1:3);f++)cell(row,PX.buildingModel({type,people:'human',seed:sd,fort:f}),'fort '+f,'grass',true)}}
+  if(!part||part==='peoples'){head('Each people’s roof (humans tile, thatch in the country; dwarves slate; elves leaf; orcs hide), light walls');
+    for(const pp of PX.MODEL_PEOPLES){const row=newRow(pp);for(const type of ['cottage','townhouse','longhouse','tavern','church','tower','granary',PX.MODEL_LOOK[pp].hall,'village','keep'])if(want(type))cell(row,PX.buildingModel({type,people:pp,seed:sd,fort:1}),type,'grass',true)}}
+  if(!part||part==='clusters'){head('Clusters: several small buildings to a cell, by the side their street is on (south, west, north, east)');
+    for(const kind of PX.CLUSTER_MODELS){if(!want(kind))continue;const row=newRow(kind);
+      try{for(const yaw of PX.MODEL_YAWS){const b=PX.clusterModel({kind,people:'human',seed:sd,yaw});cell(row,b,'street '+['S','W','N','E'][yaw/2]+' '+(b.ms|0)+'ms'+(b.scale.u<1||b.scale.v<1||b.scale.z<1?' s'+[b.scale.u,b.scale.v,b.scale.z].join('/'):''),'grass')}
+        if(kind!=='quarter'){cell(row,PX.clusterModel({kind,people:'dwarf',seed:sd}),'dwarf','grass');cell(row,PX.clusterModel({kind,people:'orc',seed:sd,env:'desert'}),'orc desert','desert');cell(row,PX.clusterModel({kind,people:'elf',seed:sd,env:'frost'}),'elf frost','frost')}}
+      catch(e){row.appendChild(lab(e.message))}}}
+  if(!part||part==='scenes'){head('Together at the world’s 1× (grass, sand, snow), then a ×3 crop of each');
+    // a little holding on a 16 px grid, a road along row 5 to the centre's gate: [model, tileX, the tile row of its foot]
+    const scene=(env,pp)=>{const W=12*16,H=10*16,snow=env==='frost'?1:0,B=(type,yaw,s)=>PX.buildingModel({type,people:pp,seed:sd+(s|0),yaw,env,snow,fort:1}),K=(kind,yaw,s)=>PX.clusterModel({kind,people:pp,seed:sd+(s|0),yaw,env,snow});
+      const L=[[B('village',0),5,4],[K('row',0),1,4],[K('row',0,1),3,4],[K('row',0,2),7,4],[K('smithy',0),9,4],[B('tower',0),11,4],
+        [K('row',4,3),1,7],[K('inn',4),3,7],[K('market',4),5,7],[K('chapel',4),7,7],[K('row',4,4),9,7],[B('well',0),11,6],
+        [K('farmstead',0),1,9],[K('yard',0,5),3,9],[B('cottage',0,6),5,9],[B('cottage',2,7),6,9],[B('granary',0),7,9],[K('mill',0),8,9],[B('cottage',6,8),10,8],[B('barn',4),11,9],[B('cottage',0,9),10,9]];
+      return PX.canvas(W,H,g=>{g.drawImage(groundTile(env,W,H,3),0,0);const rd={grass:['#a08a5e','#8c7850'],desert:['#c8aa74','#b89a64'],frost:['#c8d0da','#b4bec8']}[env];
+        for(let x=0;x<W;x++)for(let y=80;y<96;y++){const e=Math.min(y-80,95-y),h=PX.hash(x,y,5);if(e<2&&h<.5-e*.2)continue;g.fillStyle=rd[h<.2?1:0];g.fillRect(x,y,1,1)}
+        const at=([b,tx,ty])=>[tx*16,(ty+1)*16-b.h];for(const e of L){const [x,y]=at(e);if(e[0].ground)g.drawImage(e[0].ground,x,y);if(e[0].snow)g.drawImage(e[0].snow.ground,x,y)}
+        const sm=PX.canvas(W,H,c=>{for(const e of L){const [x,y]=at(e);c.drawImage(e[0].shadow,x,y)}c.globalCompositeOperation='source-in';c.fillStyle='rgb(20,24,12)';c.fillRect(0,0,W,H)});g.globalAlpha=PX.MODEL_SHADE;g.drawImage(sm,0,0);g.globalAlpha=1;
+        for(const e of L.slice().sort((a,b)=>a[2]-b[2])){const [x,y]=at(e);g.drawImage(e[0].img,x,y);if(e[0].snow)g.drawImage(e[0].snow.img,x,y)}g.drawImage(man,100,84);g.drawImage(man,60,86);g.drawImage(man,140,85)})};
+    const row=newRow('1×'),zrow=newRow('×3');
+    for(const [env,pp] of [['grass','human'],['desert','orc'],['frost','dwarf'],['grass','elf']]){const s=scene(env,pp);s.title=env+' '+pp;
+      const w=document.createElement('div');w.className='cc';w.appendChild(s);w.insertAdjacentHTML('beforeend','<div class="cl">'+env+' · '+pp+' (1×)</div>');row.appendChild(w);
+      const z=document.createElement('canvas');z.width=112*3;z.height=96*3;const zg=z.getContext('2d');zg.imageSmoothingEnabled=false;zg.drawImage(s,16,24,112,96,0,0,112*3,96*3);const w2=document.createElement('div');w2.className='cc';w2.appendChild(z);w2.insertAdjacentHTML('beforeend','<div class="cl">'+env+' ×3</div>');zrow.appendChild(w2)}}
+  // the cost: every type in its facings and every cluster in its 4, fresh (no cache): the first view of a big holding
+  if(!part||part==='bench'){PX.modelCacheClear();const t0=performance.now();let k=0;for(const type of TYPES)for(const yaw of FRONT.includes(type)?[0]:PX.MODEL_YAWS){PX.buildingModel({type,people:'human',seed:sd+5,yaw,fort:2});k++}
+    const t1=performance.now();let kc=0;for(const kind of PX.CLUSTER_MODELS)for(const yaw of PX.MODEL_YAWS){PX.clusterModel({kind,people:'human',seed:sd+5,yaw});kc++}const t2=performance.now();
+    let ks=0;for(const type of TYPES)for(const a of [1/3,2/3,1]){PX.modelSeason(PX.buildingModel({type,people:'human',seed:sd+5,yaw:0,fort:2}),'snow',a);ks++}const t3=performance.now();
+    out.insertAdjacentHTML('beforeend','<p id="bench">'+k+' building models: '+(t1-t0).toFixed(0)+' ms ('+((t1-t0)/k).toFixed(1)+' each); '+kc+' clusters: '+(t2-t1).toFixed(0)+' ms ('+((t2-t1)/kc).toFixed(1)+' each); '+ks+' snow overlays: '+(t3-t2).toFixed(0)+' ms</p>')}
 }
 function renderProps(){
   const q=new URLSearchParams(location.search),Z=+(q.get('z')||3),out=document.getElementById('out');out.innerHTML='';
