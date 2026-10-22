@@ -12,11 +12,14 @@
 const WAYS_BY=.95,WAYS_ROUND=2;
 Kit.suite(({ok,info})=>{
  const t=T,G=t.G,P=t.P,W=t.W,TL=t.TILE,step=.1,U=t.DAY/t.DAY_SECONDS;try{localStorage.clear()}catch(e){}
- // (the shortest way over walkable ground from tile a to tile b, 8 ways, no corner cut past water or a peak, within 40 tiles: tiles)
- const landWay=(ax,ay,bx,by)=>{const MW=t.MW,R=40,n=2*R+1,D=new Float64Array(n*n).fill(Infinity),L=(x,y)=>(y-ay+R)*n+x-ax+R,q=[[0,ax,ay]];D[L(ax,ay)]=0;
+ // (the shortest way over walkable ground from tile a to tile b, 8 ways, no corner cut past water or a peak, and over ferries, within
+ // 40 tiles: tiles)
+ const landWay=(ax,ay,bx,by)=>{const MW=t.MW,fx=new Map();for(const c of t.WM.crossings)if(c.kind==='ferry'){fx.set(c.i,c.j);fx.set(c.j,c.i)}const R=40,n=2*R+1,D=new Float64Array(n*n).fill(Infinity),L=(x,y)=>(y-ay+R)*n+x-ax+R,q=[[0,ax,ay]];D[L(ax,ay)]=0;
   while(q.length){let k=0;for(let j=1;j<q.length;j++)if(q[j][0]<q[k][0])k=j;const [d,x,y]=q.splice(k,1)[0];if(x===bx&&y===by)return d;if(d>D[L(x,y)])continue;
    for(let b=-1;b<=1;b++)for(let a=-1;a<=1;a++){const nx=x+a,ny=y+b;if(!(a||b)||Math.abs(nx-ax)>R||Math.abs(ny-ay)>R||!t.passable(t.tAt(nx,ny))||a&&b&&(!t.passable(t.tAt(nx,y))||!t.passable(t.tAt(x,ny))))continue;
-    const c=d+(a&&b?1.414:1);if(c<D[L(nx,ny)]){D[L(nx,ny)]=c;q.push([c,nx,ny])}}}return Infinity};
+    const c=d+(a&&b?1.414:1);if(c<D[L(nx,ny)]){D[L(nx,ny)]=c;q.push([c,nx,ny])}}
+   // (and over a ferry, sailed straight: its tiles)
+   const f=fx.get(y*MW+x);if(f!=null){const nx=f%MW,ny=(f-nx)/MW,c=d+Math.hypot(nx-x,ny-y);if(Math.abs(nx-ax)<=R&&Math.abs(ny-ay)<=R&&c<D[L(nx,ny)]){D[L(nx,ny)]=c;q.push([c,nx,ny])}}}return Infinity};
  const worlds=[['the world in use',null],...(t.WORLD.gen?[]:[['classic seed',t.classicSettings()]]),...[1,2,3,4].map(k=>['Normal s'+k,{preset:'normal',seed:'s'+k}]),['saltwell',t.parseWorldCode('ASH1-X-2V40O9HH-saltwell')]];
  for(const [name,S] of worlds){
   const a0=performance.now();t.begin('soldier',S||undefined);G.quietEvents=true;P.fac=null;P.hostile={};

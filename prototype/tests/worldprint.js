@@ -96,7 +96,20 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 //  back .9) G3 5cee7bef, G7 7270d6c2, G8 8186ed74 and GB2 7149936a are as before, and with all three as before G5 ea4cd87b and
 //  G6 08e9011b, the merge's own. Were G3 5cee7bef, G5 ea9098d7, G6 92c96e76, G7 7270d6c2, G8 8186ed74, GB2 7149936a; G1, G2, G4
 //  and the sums unchanged)
-const GEXPECT={W1:'02a441ce',W2:'500a5428',W3:'d07ea9fc',W4:'f81e1c01',W5:'656f8bc9',W6:'5794be9d',W7:'c57a6cd8',W8:'c613950a',B2:'c1a02414'};
+// (all nine measured together 2026-10-22 at the merge of agent O (big climates: genClimTidy, the brooks' check; the holdings' spread:
+//  PLACE.capMin, space, room, pull, a port at least) with agent M's follow-up on O's worlds (a holding's ferry only on a navigable
+//  river, a track starting at a bridge's end where no lead fits, crossings re-priced and kept apart (PLACE.apart), no looping track,
+//  the realms' land estimated with their bridges (placeHoldBridged), no far-round estate on a generated world) and N's art; O and M
+//  each showed their rules off give the values before. Were G1 02a441ce, G2 500a5428, G3 d07ea9fc, G4 f81e1c01, G5 656f8bc9, G6
+//  5794be9d, G7 c57a6cd8, G8 c613950a, GB2 c1a02414)
+// (G3, G5, G7, G8 and GB2 re-recorded 2026-10-22, on purpose (agent Q, the merge's sweep: sprites -Gen, roads not kept clear): on O's
+//  and M's world 14 tracks (worldplace.js) end on a bridge's deck with the middle of the bridge's end tile the point before, so
+//  offDeck left a leg of no length there and straightOn made NaN of it: some 11 of each one's segments by the bridge were neither painted
+//  nor kept clear, so lots.js (artRoadMarks) built on the road's way (Deepdelve's farm, market, mine and smithy; Redspire's lumber
+//  camp, which finds no other spot now: 502 lots, was 503). offDeck drops that point (gfx/worldart.js). Checked: with that one line
+//  out all nine are as before, the faster painting in (G5, G6 the same pixels). Were G3 6459947c, G5 b2110840, G7 c36d41d1, G8
+//  aa0f12ac, GB2 bac70e4f; G1, G2, G4, G6 and the sums unchanged)
+const GEXPECT={W1:'67bc5b4e',W2:'1d53b207',W3:'1efc5bb1',W4:'1fb76c87',W5:'6d0f211d',W6:'a8996932',W7:'6f3a5d30',W8:'5d18c925',B2:'0f363bb3'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended
@@ -104,6 +117,15 @@ const GEXPECT={W1:'02a441ce',W2:'500a5428',W3:'d07ea9fc',W4:'f81e1c01',W5:'656f8
 //  the nearest water that is no bridge's, worn ground, bank stones and trees never on the water as drawn. G6 moved at all three
 //  spots by day and night (to 5b3cd6fd 7a7efab9 a746a887 77d5c809 1c7f7e1b ccf23d61). Checked: with those two files as at f97112f
 //  G5 and G6 are as before. Was G5 00f1be5d, G6 7c2e1e64; G1-G4, G7, G8, GB2 and the sums unchanged)
+// (all nine re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent O: "ensure that the biomes are big enough"):
+//  stage 3 smooths the temperature and the low ground before its cuts and then tidies the climates (worldgen.js GEN_CLIMATE blur,
+//  strip, minArea; genClimTidy: no strip, no 1-tile neck, no piece under 400 tiles but an isle's or a classic holding's home), so
+//  the classic world's climates move (G1), and with them what reads them: the deposits (G2), the forests, the holdings' notes,
+//  prices and lots (G3), the land claimed (G4), the painted world (G5), the third view by day and night (G6: 68c9f1ec b80d326c to
+//  3d988fcc 1e801a73; the first two as before), the three days (G7), the 600 frames (G8) and the save after begin (GB2).
+//  Checked: with the tidying off (GEN_CLIMATE blur n 0 and low [2, 0], strip 0, minArea 0) all nine are as before; the rivers'
+//  new rule (every brook ends in water: genRiverCheck) moves nothing, no world needing a retry for it. Were G1 81ce84b1, G2
+//  5df96192, G3 ca3464b3, G4 3ffcfb90, G5 00f1be5d, G6 7c2e1e64, G7 e73ec214, G8 7afe2f79, GB2 65d5ff21)
 // (the random presets' sums re-recorded 2026-10-22, on purpose, Phase 2b: the owner's "the holdings seem a bit too much": Normal
 //  27 holdings by default (was 37), Large 40 (was 55), so their settings (in the sum) and placement change; with them two clamps
 //  of stage 7 the fewer holdings needed (worldplace.js): a port only on the open sea (placeOpen: a strait a road bridged had left
@@ -124,6 +146,9 @@ const GEXPECT={W1:'02a441ce',W2:'500a5428',W3:'d07ea9fc',W4:'f81e1c01',W5:'656f8
 //  road: off them a tile costs WAY.keep, 4, times as much), so the caravans of the three days go otherwise. Checked: with WAY.keep 1 W7
 //  is as before; the lots' road rule (lots.js roadPaint) and the woods' second pass for houses leave today's lots as they were (W3).
 //  Was W7 055dd3a6; W1-W6, W8 and B2 unchanged)
+// (all five re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent O): the climates tidied (GEN_CLIMATE: G1-G8
+//  above), the climate layer of every generated world, and what follows it. Checked the same way: with the tidying off all five
+//  as before. Were classic e9ff637f, Normal s1 edfd56e4, s2 fdb0fae4, s3 28976823, Large s1 7df7120f)
 // (W5, W6 re-recorded 2026-10-22, on purpose, the owner's third play-test (agent L), what of it today's map shares (no fords): the
 //  climates' edges blended as the frost's (gfx/worldart.js coverOf, landRGB: the swamp's and the desert's ground over the grass in
 //  patches thinning out, no 3-px blocks), their small things mixed across the edge and a wood's fringe (engine/worldnature.js
@@ -132,7 +157,9 @@ const GEXPECT={W1:'02a441ce',W2:'500a5428',W3:'d07ea9fc',W4:'f81e1c01',W5:'656f8
 // (all five re-recorded 2026-10-22, on purpose, the owner's play-test 3 (agent M): the holdings' crossings and the bridges' tracks
 //  (G1 above). Checked: with both off and router.js's river legs as they were all five as before. Were classic e9ff637f, Normal s1
 //  edfd56e4, s2 fdb0fae4, s3 28976823, Large s1 7df7120f)
-const SUMS={classic:'2eb1e165','Normal s1':'d934ba19','Normal s2':'bd7c17d3','Normal s3':'746d0808','Large s1':'0f0a9fa1'};
+// (all five measured together 2026-10-22 at the merge of agents O and M (G1 above). Were classic 2eb1e165, Normal s1 d934ba19, s2
+//  bd7c17d3, s3 746d0808, Large s1 0f0a9fa1)
+const SUMS={classic:'e9407a0b','Normal s1':'d3fe6e28','Normal s2':'db154067','Normal s3':'5d075e09','Large s1':'631760e5'};
 // (W3, W5, W7, W8 and B2 re-recorded 2026-10-22, on purpose, the owner's play-test 3 (agent M): every lot on ground its holding's
 //  people walk to from its gate (lots.js lotWalk): Elderglen's smithy stood on a one-tile islet in its lake, no way to it; now on its
 //  shore, which moves TOWNS (W3), the painted world (W5), the three days (W7), the 600 frames (W8) and the save after begin (B2).

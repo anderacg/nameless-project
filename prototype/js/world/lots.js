@@ -213,9 +213,10 @@ class Layout{
     const t=this.t;
     R=R||seeded(t.seed*131+k.length);if(this.at(k))return this.at(k);const type=typeFor(t,k,R),n=lotSize(type),inner=INNER.includes(k),wb=this.wallBox();
     // (an estate with fields stands only where they have room, lotSpot o.fields)
-    // (an outer one not far round first; where none is, one its people still walk to: no estate lost for it)
+    // (an outer one not far round; on today's map, where none is, one its people still walk to (no estate lost there: its layout
+    // and what a new game draws as they were); the generated world's water is bridged by its holdings instead)
     const ow=o=>lotSpot(t,n,groundOf(k),3,k==='port'&&t.style==='port'?20:12,R,{estate:true,outside:wb&&{x0:wb.x0-1,y0:wb.y0-1,x1:wb.x1+1,y1:wb.y1+1},fields:PLOTS[k]?k:null,far:o});
-    const p=at?at:inner?(lotSpot(t,n,'open',1,6,R,{estate:true})||lotSpot(t,n,'open',1,9,R,{estate:true})):ow(false)||ow(true);
+    const p=at?at:inner?(lotSpot(t,n,'open',1,6,R,{estate:true})||lotSpot(t,n,'open',1,9,R,{estate:true})):ow(false)||WM.gen==='classic-0'&&ow(true);
     if(!p)return null;const l=this.add({k,type,x:p[0],y:p[1],n,lv:bldLv(t,k)||1,seed:Math.floor(R()*1e6),st:st||'built'});
     if(PLOTS[k]){l.plots=fieldsFor(t,l,k);occMark(l,l.id)}
     t._spots=null;return l}

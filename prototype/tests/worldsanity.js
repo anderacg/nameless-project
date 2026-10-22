@@ -62,13 +62,14 @@ Kit.suite(({ok,info})=>{
   // freezing; crossings at most 60 tiles apart along each (its source counts as one, its mouth as an end: places along it as the
   // generator reads them, worldplace.js placeAlong) wherever one can be made: a straight run of water, across or down, of 3 tiles
   // at most (12 on a great river by a town or port, a ferry), from land a road can take (walkable, no ford, the land stage 7 found
-  // joined, no notch with water on both sides) to such land, none of it a crossing yet; else, or where a bridge was taken up for no
+  // joined, no notch with water on both sides, none in a holding's centre nor the ring beside and behind it, nor by another crossing's end) to such land, none of it a crossing yet; else, or where a bridge was taken up for no
   // road reaching it (PLACE_STATS droppedAt), a bare stretch (INFO)
   {const up=[],dry=[],ice=[];for(const r of m.rivers){const p=r.path;let u=false;for(let k=1;k<p.length;k++)if(m.elev[p[k]]>m.elev[p[k-1]])u=true;if(p.length&&m.elev[r.mouth]>m.elev[p[p.length-1]])u=true;if(u)up.push(r.name);
     if(!p.length||K[r.mouth]!==t.T_WATER&&K[r.mouth]!==t.T_FORD&&!(m.river[r.mouth]&3)&&!(m.feat[r.mouth]&32))dry.push(r.name+' ('+K[r.mouth]+')');if(r.width>=3&&(r.seasonal&&r.seasonal.freeze||p.some(i=>(m.river[i]&3)===3&&(m.river[i]&16))))ice.push(r.name)}
    const F=cap.F,Xt=new Set(m.crossings.flatMap(c=>c.tiles)),town=new Uint8Array(NN);
    for(const h of TW)if(h.kind==='town'||h.kind==='city'||h.style==='port')for(let b=-8;b<=8;b++)for(let a=-8;a<=8;a++)if(a*a+b*b<=64&&m.has(h.tx+a,h.ty+b))town[(h.ty+b)*Wd+h.tx+a]=1;
-   const end=(i,s)=>walk(K[i])&&K[i]!==t.T_FORD&&F.conn[i]===F.main&&!t.placeNotch(m,i,s);
+   const bx=new Set();for(const h of TW){const b=t.placeBox(h);for(let y=b.y-1;y<=h.ty;y++)for(let x=b.x-1;x<=b.x+b.n;x++)if(m.has(x,y)&&!(x===h.tx&&y===h.ty+1))bx.add(y*Wd+x)}
+   const end=(i,s)=>walk(K[i])&&K[i]!==t.T_FORD&&F.conn[i]===F.main&&!bx.has(i)&&t.placeApart(m,i)&&!t.placeNotch(m,i,s);
    const can=i=>{if(K[i]!==t.T_WATER||Xt.has(i))return false;const x=i%Wd,y=(i-x)/Wd;for(const [dx,dy] of [[1,0],[0,1]]){const s=dx+dy*Wd;let a=0,b=0;
      while(a<=12&&m.has(x-dx*(a+1),y-dy*(a+1))&&K[i-s*(a+1)]===t.T_WATER)a++;while(b<=12&&m.has(x+dx*(b+1),y+dy*(b+1))&&K[i+s*(b+1)]===t.T_WATER)b++;
      if(!m.has(x-dx*(a+1),y-dy*(a+1))||!m.has(x+dx*(b+1),y+dy*(b+1)))continue;const p=i-s*(a+1),q=i+s*(b+1),k=a+b+1,T2=[];for(let n=1;n<=k;n++)T2.push(p+s*n);

@@ -47,10 +47,12 @@ try{
  // chase
  const stag={crit:true,id:'stag',x:P.x+40,y:P.y,hx:P.x+40,hy:P.y,n:1,t:0,a:0,dir:1,tire:0,cool:0};W.critters=[stag];G.chase=stag;t.updateWorld(.05);ok(P.tx===stag.x||G.chase===stag,'clicking a critter chases it');G.chase=null;P.tx=null;
  // livestock
- W.critters=[];t.initCritters();empty();P.gold=500;const ash=t.townBy('Ashford'),cow=t.herdOf(ash);cow.id='cow';cow.n=4;cow.x=P.x=ash.x+60;cow.y=P.y=ash.y+40;cow.cool=0;G.mode='world';G.modal=false;G.encCool=0;t.hidePanel();
- // (a pasture's herd is only to be seen: walking into it opens nothing, a click on its fields picks the pasture, whose herders trade)
+ // (a holding with a pasture and its herd: Ashford, else the first that has them (a generated world lays its estates its own way))
+ W.critters=[];t.initCritters();empty();P.gold=500;const ash=[t.townBy('Ashford'),...t.TOWNS].find(x=>x&&t.fieldsOf(x,'pasture')&&t.herdOf(x)),cow=t.herdOf(ash);cow.id='cow';cow.n=4;cow.x=P.x=ash.x+60;cow.y=P.y=ash.y+40;cow.cool=0;G.mode='world';G.modal=false;G.encCool=0;t.hidePanel();
+ // (a pasture's herd is only to be seen: walking into it opens nothing, a click on its fields picks the pasture, whose herders trade;
+ // clicked from beside the fields: a pasture may lie farther from its holding than you see)
  t.updateCritters(.01);ok(G.mode==='world'&&cow.decor,'walking into a pasture\'s herd opens nothing (it is only to be seen)');
- {const F=t.fieldsOf(ash,'pasture');if(F){const at=t.fieldSpot(F),o=t.pickAt(at.x,at.y);ok(o&&o.est&&o.k==='pasture','a click on its fields picks the pasture: '+(o&&(o.k||o.name||o.id)))}}
+ {const F=t.fieldsOf(ash,'pasture'),at=t.fieldSpot(F);P.x=at.x+20;P.y=at.y;const o=t.pickAt(at.x,at.y);ok(o&&o.est&&o.k==='pasture','a click on '+ash.name+'\'s pasture fields picks the pasture: '+(o&&(o.k||o.name||o.id)))}
  // (no livestock is sold: not at the pasture, not from a herd; the Pens tell of it)
  t.estateMeet(t.estatePick(ash,'pasture'));ok(/data-act="es-tab" data-arg="herd"/.test(panel())&&!/herd-buy|herd-milk|herd-steal|es-herd/.test(panel()),'the pasture shows its Pens, and nothing to buy');t.act('es-tab','herd');
  ok(G.mode==='dialog'&&/Cattle/.test(panel())&&/Not for sale/.test(panel())&&!/data-act="(herd-|es-herd)/.test(panel())&&!document.querySelector('.rwbody button'),'the Pens: the herd and what it makes, information only');

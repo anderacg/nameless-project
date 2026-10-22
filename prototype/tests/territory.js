@@ -26,7 +26,9 @@ try{
  const lone=TW.find(x=>x.kind==='town'),cap0=t.growCap(lone),own=lone.owner;TW.forEach(x=>{if(x!==lone&&Math.hypot(x.tx-lone.tx,x.ty-lone.ty)<35)x.owner=own});
  ok(t.growCap(lone)>=cap0,'friendly holdings nearby raise the cap ('+cap0+' → '+t.growCap(lone)+')');
  // clearing a camp settles land
- const camp=t.CAMP_SPOTS[0],h=t.pacify(camp.x,camp.y);ok(h&&h.grow>0,'clearing a camp pushes out the nearest holding ('+(h&&h.name)+')');
+ // (the first camp on a holding's land or within WORLD_SCALE.land.pacify of one: where a world's roads lead them, the first may lie
+ // farther out)
+ const camp=t.CAMP_SPOTS.find(c=>t.landHold(c.x,c.y)||t.TOWNS.some(o=>Math.hypot(o.x-c.x,o.y-c.y)<t.WORLD_SCALE.land.pacify*t.TILE))||t.CAMP_SPOTS[0],h=t.pacify(camp.x,camp.y);ok(h&&h.grow>0,'clearing a camp pushes out the nearest holding ('+(h&&h.name)+')');
  // fiefs pay for land
  v.owner='player';v.lastOwner='player';v.sacked=v.raided=v.turmoil=0;ok(t.fiefIncome(v)===t.taxOf(v)&&t.fiefIncome(v)>0,'a fief pays its taxes: '+t.fiefIncome(v)+' gold a day');
  G.mode='world';G.modal=false;t.hidePanel();G.lastTown=null;t.enterTown(v);t.act('tab','fief');ok(/rules \d+ tiles of land/.test(document.getElementById('panel').innerHTML),'the Fief tab shows its land');t.act('leave');

@@ -113,15 +113,31 @@ function ecoLean(){const N=MW*MH,Tm=WM.temp,Mo=WM.moist,El=WM.elev,GC=typeof GEN
 // cover grows (FROST.tundra the snow's), and its climate's own ground laid over it where the cover beats the pixel's own noise (two
 // smooth octaves and a grain): whole near 1, in patches thinning out below a half, a shade at each patch's rim. Clear of them all,
 // the grass as ever; deep in a climate, its own ground as ever
-const lit=(P3,v)=>v<.5?mixc(P3[0],P3[1],v*2):mixc(P3[1],P3[2],(v-.5)*2);
-const COVERS=['desert','swamp','frost'].map(c=>({c,P3:GROUND_RGB[c],...c==='frost'?{dull:FROST.dull,edge:FROST.edge,sc:[6,2.3],seed:31,under:FROST.tundra,rim:FROST.rim}:COVER[c]}));
-function landRGB(v,cv,x,y){const ph=hs(x,y,9),spk=(c,Q)=>ph<.035?mixc(c,Q[2],.6):ph>.965?mixc(c,Q[0],.7):c,G=GROUND_RGB.grass;
-  if(!(cv[0]>0||cv[1]>0||cv[2]>0))return spk(lit(G,v),G);
-  let Q=G;for(let k=0;k<3;k++){const s=cv[k];if(!(s>0))continue;const u=Math.min(1,s*COVERS[k].dull),U=COVERS[k].under;Q=[mixc(Q[0],U[0],u),mixc(Q[1],U[1],u),mixc(Q[2],U[2],u)]}
-  let c=spk(lit(Q,v),Q);
+// (written without arrays a pixel: a palette flat, its three tones' 9 numbers (flat3); the colour into LC, landRGB's own, read at
+//  once by its caller)
+const flat3=P3=>Float64Array.from(P3.flat()),GRASS_F=flat3(GROUND_RGB.grass),LQ=new Float64Array(9),LC=[0,0,0];
+const COVERS=['desert','swamp','frost'].map(c=>({c,P3:GROUND_RGB[c],F:flat3(GROUND_RGB[c]),...c==='frost'?{dull:FROST.dull,edge:FROST.edge,sc:[6,2.3],seed:31,under:FROST.tundra,rim:FROST.rim}:COVER[c]}));
+function landRGB(v,cv,x,y){const ph=hs(x,y,9);
+  if(!(cv[0]>0||cv[1]>0||cv[2]>0))return litSpk(GRASS_F,v,ph,LC);
+  LQ.set(GRASS_F);for(let k=0;k<3;k++){const s=cv[k];if(!(s>0))continue;const u=Math.min(1,s*COVERS[k].dull),U=COVERS[k].under;for(let n=0;n<9;n++){const a=LQ[n];LQ[n]=a+(U[n/3|0][n%3]-a)*u}}
+  let c=litSpk(LQ,v,ph,LC);
   for(let k=0;k<3;k++){const s=cv[k];if(!(s>0))continue;const L=COVERS[k],a=s>=.98?1:(.25+.5*s+Math.max(0,s-.9)*4-(.55*wnoise2(x/L.sc[0],y/L.sc[0],L.seed)+.3*wnoise2(x/L.sc[1],y/L.sc[1],L.seed+1)+.15*hs(x,y,L.seed+2)))/L.edge+.5;
-    if(a>=1)c=spk(lit(L.P3,v),L.P3);else if(a>0)c=mixc(c,L.rim,Math.min(1,a*1.6))}
+    if(a>=1)c=litSpk(L.F,v,ph,LC);else if(a>0){const t=Math.min(1,a*1.6),R=L.rim;c[0]=c[0]+(R[0]-c[0])*t;c[1]=c[1]+(R[1]-c[1])*t;c[2]=c[2]+(R[2]-c[2])*t}}
   return c}
+// (a palette Q (flat) lit v (between its first two tones below a half, its last two above) with its speckle (ph: hs(x, y, 9): its
+//  darkest tone now and then, its lightest), into o)
+function litSpk(Q,v,ph,o){const lo=v<.5,i=lo?0:3,t=lo?v*2:(v-.5)*2;let r=Q[i]+(Q[i+3]-Q[i])*t,g=Q[i+1]+(Q[i+4]-Q[i+1])*t,b=Q[i+2]+(Q[i+5]-Q[i+2])*t;
+  if(ph<.035){r=r+(Q[6]-r)*.6;g=g+(Q[7]-g)*.6;b=b+(Q[8]-b)*.6}else if(ph>.965){r=r+(Q[0]-r)*.7;g=g+(Q[1]-g)*.7;b=b+(Q[2]-b)*.7}
+  o[0]=r;o[1]=g;o[2]=b;return o}
+// (each tile of a window's cover grids CVG (coverGrids, LW wide) by its covers at its four corners: 0 none (the grass's ground), k
+//  1-3 deep in COVERS[k-1] (.981 or more at every corner: landRGB lays its ground whole) and clear of those after it (its ground),
+//  4 else (landRGB a pixel at a time))
+function coverTiles(CVG,LW,nr){const TK=new Uint8Array(LW*nr);
+  for(let j=0;j<nr;j++)for(let i=0;i<LW-1;i++){const q=j*LW+i;let k=0;for(let n=0;n<3;n++){const A=CVG[n],a=A[q],b=A[q+1],c=A[q+LW],d=A[q+LW+1];
+    if(Math.min(a,b,c,d)>=.981)k=n+1;else if(Math.max(a,b,c,d)>0)k=4}TK[q]=k}
+  return TK}
+// (a value grid A (LW wide) read between the corners of its tile q at fx, fy (0-1))
+const bil=(A,q,LW,fx,fy)=>{const a=A[q],b=A[q+1],c=A[q+LW],d=A[q+LW+1];return a+(b-a)*fx+(c-a)*fy+(a-b-c+d)*fx*fy};
 // a cover S (a value a tile) at the tile corners of a window's tiles tx0..tx1+1, ty0..ty1+1 (LW wide): each the mean of the tiles
 // round it; coverGrids: the climates' covers' in COVERS' order
 const coverGrids=(P,tx0,ty0,tx1,ty1,LW)=>COVERS.map(L=>coverGrid(P.cover[L.c],tx0,ty0,tx1,ty1,LW));
@@ -144,9 +160,10 @@ class ClimMix{
   pal(A){const W=this.W,o=[[0,0,0],[0,0,0],[0,0,0]];for(let i=0;i<this.NC;i++){const w=W[i];if(w>0)for(let n=0;n<3;n++){const c=A[i][n],t=o[n];t[0]+=c[0]*w;t[1]+=c[1]*w;t[2]+=c[2]*w}}return o}
   share(i){return this.k>=0?(this.k===i?1:0):this.W[i]}}
 // the ground of the window x0, y0, w×h (px) into D, its RGBA: a smooth light field (one value per tile corner), the water's depth and
-// the snow's cover read between the corners; a row of pixels a step
-function* groundSteps(P,D,x0,y0,w,h){
-  if(P.gen)return yield* artGenGround(P,D,x0,y0,w,h);
+// the snow's cover read between the corners; a row of pixels a step (I: the rect kept of it, paintSteps' chunk: on the generated
+// world only its pixels are painted, what lies round them read alike; nothing over the ground reads another pixel's)
+function* groundSteps(P,D,x0,y0,w,h,I){
+  if(P.gen)return yield* artGenGround(P,D,x0,y0,w,h,I||{x:x0,y:y0,w,h});
   const tx0=x0>>4,ty0=y0>>4,tx1=(x0+w-1)>>4,ty1=(y0+h-1)>>4,LW=tx1-tx0+2,LG=new Float32Array(LW*(ty1-ty0+2)),DG=new Float32Array(LW*(ty1-ty0+2)),dep=P.dep;
   for(let y=ty0;y<=ty1+1;y++)for(let x=tx0;x<=tx1+1;x++){const k=(y-ty0)*LW+x-tx0;LG[k]=(fbm(x/4.5,y/4.5,77)-.5)*2;
     let s=0,n=0;for(const [a,b] of [[0,0],[-1,0],[0,-1],[-1,-1]]){const tx=x+a,ty=y+b;if(tx<0||ty<0||tx>=MW||ty>=MH)continue;s+=Math.min(4,dep[ty*MW+tx]===9?4:dep[ty*MW+tx]);n++}DG[k]=n?s/n:4}
@@ -294,12 +311,14 @@ function joinEnds(LS,at){const J=GENART.join,bb=LS.map(([l])=>{let a=1e9,b=1e9,c
         if(d<best){best=d;bx=x;by=y;hit=true}}});
     if(hit&&best>1e-4){if(e)l.push(bx,by);else l.unshift(bx,by)}}})}
 // (a line's end on a crossing's water (a stretch laid from the middle of its deck) moved back to the middle of the crossing's end
-//  tile on the line's side, the points it passes over on the way dropped; but a road leaving a ford sideways, off its middle onto
+//  tile on the line's side, the points it passes over on the way dropped (that tile's own too: no leg of no length, which
+//  straightOn cannot turn onto the axis); but a road leaving a ford sideways, off its middle onto
 //  the bank, starts where it is, in the shallows)
 function offDeck(l,XE){const at=(x,y)=>Math.floor(y)*MW+Math.floor(x),cen=t=>[t%MW+.5,(t-t%MW)/MW+.5];
   const fix=l=>{const n=l.length,e=n>=4&&XE.get(at(l[0],l[1]));if(!e||e[1]>=0)return l;const c=e[0],[ix,iy]=cen(c.i),[jx,jy]=cen(c.j),A=(x,y)=>(x-ix)*(jx-ix)+(y-iy)*(jy-iy),a0=A(l[0],l[1]);
     if(c.kind==='ford'&&Math.abs(A(l[2],l[3])-a0)<.7071*Math.hypot(l[2]-l[0],l[3]-l[1])*Math.hypot(jx-ix,jy-iy))return l;
     const [ex,ey]=A(l[2],l[3])<a0?[ix,iy]:[jx,jy],ae=A(ex,ey);let q=2;while(q<n-2&&(A(l[q],l[q+1])-a0)*(ae-a0)>0&&Math.abs(A(l[q],l[q+1])-a0)<Math.abs(ae-a0))q+=2;
+    if(q<n&&Math.abs(l[q]-ex)<.02&&Math.abs(l[q+1]-ey)<.02)q+=2;
     return[ex,ey,...l.slice(q)]};
   return revLine(fix(revLine(fix(l))))}
 // (a line's crossings met straight: where the line comes to the middle of a crossing's end tile from the land, on its way onto
@@ -325,29 +344,39 @@ function straightOn(l,XE,k,ramped,seg){const G=GENART,o=[],n=l.length,mid=v=>Mat
 // tiles reads as a slope, a corner as an arc), or bilinearly where that is more (a lone water tile or a thread of them keeps its
 // size), its edge moved by a smooth noise (GENART.wob px either way): rounded lakes and smooth bends, each shore within some 6 px of
 // its tiles' edge (passing stays by tile; the land's nature keeps clear of the water: worldnature.js spec.wet and round)
-function wpx(K,x,y){const tx=x>>4,ty=y>>4,u=((x&15)+.5)/16-.5,v=((y&15)+.5)/16-.5,at=(a,b)=>{const p=tx+a,q=ty+b;return p<0||q<0||p>=MW||q>=MH||K[q*MW+p]>0?1:0};
-  const qa=(.5-u)*(.5-u)/2,qb=.75-u*u,qc=(.5+u)*(.5+u)/2,m01=at(-1,0),m11=at(0,0),m21=at(1,0),r0=qa*at(-1,-1)+qb*at(0,-1)+qc*at(1,-1),r1=qa*m01+qb*m11+qc*m21,r2=qa*at(-1,1)+qb*at(0,1)+qc*at(1,1);
+function wpx(K,x,y){const n=wnb(K,x>>4,y>>4,WN9);for(let k=1;k<9;k++)if(n[k]!==n[0])return wpxN(n,x,y);return n[0]}
+// (the 3 x 3 tiles round tile (tx, ty) as wpx reads them, into n: 1 water or off the map, 0 land, row by row; wpxN: wpx with them
+//  read, a tile's pixels with one wnb. The noise moves the field a tenth at most (GENART.wob/16 either way): where the field lies
+//  farther from a half than that (everywhere, when all nine are alike) the pixel is what the field says, the noise not read)
+const WN9=new Uint8Array(9);
+function wnb(K,tx,ty,n){for(let b=-1;b<=1;b++)for(let a=-1;a<=1;a++){const p=tx+a,q=ty+b;n[(b+1)*3+a+1]=p<0||q<0||p>=MW||q>=MH||K[q*MW+p]>0?1:0}return n}
+function wpxN(n,x,y){const u=((x&15)+.5)/16-.5,v=((y&15)+.5)/16-.5;
+  const qa=(.5-u)*(.5-u)/2,qb=.75-u*u,qc=(.5+u)*(.5+u)/2,m01=n[3],m11=n[4],m21=n[5],r0=qa*n[0]+qb*n[1]+qc*n[2],r1=qa*m01+qb*m11+qc*m21,r2=qa*n[6]+qb*n[7]+qc*n[8];
   const fq=(.5-v)*(.5-v)/2*r0+(.75-v*v)*r1+(.5+v)*(.5+v)/2*r2,ix=u<0?-1:1,iy=v<0?-1:1,au=u<0?-u:u,av=v<0?-v:v;
-  const fl=(1-av)*((1-au)*m11+au*(ix<0?m01:m21))+av*((1-au)*at(0,iy)+au*at(ix,iy));
-  return(fq>fl?fq:fl)+(wnoise2(x/6,y/6,27)-.5)*GENART.wob/8>.5?1:0}
-// (each pixel's distance to the edge between water and land, W x H of mask M: 1 px steps, 1.414 diagonal; at most 16)
-function* wdist(M,W,H){const D=new Float32Array(W*H).fill(16);
-  for(let y=0;y<H;y++)for(let x=0;x<W;x++){const i=y*W+x,m=M[i];if(x>0&&M[i-1]!==m||x<W-1&&M[i+1]!==m||y>0&&M[i-W]!==m||y<H-1&&M[i+W]!==m)D[i]=.5}
-  yield;for(let y=0;y<H;y++){if(!(y&63))yield;for(let x=0;x<W;x++){const i=y*W+x;let d=D[i];if(x>0)d=Math.min(d,D[i-1]+1);if(y>0){d=Math.min(d,D[i-W]+1);if(x>0)d=Math.min(d,D[i-W-1]+1.414);if(x<W-1)d=Math.min(d,D[i-W+1]+1.414)}D[i]=d}}
-  for(let y=H-1;y>=0;y--){if(!(y&63))yield;for(let x=W-1;x>=0;x--){const i=y*W+x;let d=D[i];if(x<W-1)d=Math.min(d,D[i+1]+1);if(y<H-1){d=Math.min(d,D[i+W]+1);if(x<W-1)d=Math.min(d,D[i+W+1]+1.414);if(x>0)d=Math.min(d,D[i+W-1]+1.414)}D[i]=d}}
+  const fl=(1-av)*((1-au)*m11+au*(ix<0?m01:m21))+av*((1-au)*n[(iy+1)*3+1]+au*n[(iy+1)*3+ix+1]);
+  const f=fq>fl?fq:fl,nr=GENART.wob/16+1e-9;return f>.5+nr?1:f<.5-nr?0:f+(wnoise2(x/6,y/6,27)-.5)*GENART.wob/8>.5?1:0}
+// (each pixel's distance to the edge between water and land, W x H of mask M: 1 px steps, 1.414 diagonal; at most 16. The passes
+//  kept to the 16-px blocks by an edge's (R: those with one in them or in a block beside them); a pixel of any other is 17 px or
+//  more from the edge and stays 16)
+function* wdist(M,W,H){const D=new Float32Array(W*H).fill(16),BW=(W+15)>>4,BH=(H+15)>>4,R=new Uint8Array(BW*BH);let any=false;
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){const i=y*W+x,m=M[i];if(x>0&&M[i-1]!==m||x<W-1&&M[i+1]!==m||y>0&&M[i-W]!==m||y<H-1&&M[i+W]!==m){D[i]=.5;any=true;
+    const bx=x>>4,by=y>>4;for(let b=Math.max(0,by-1);b<=Math.min(BH-1,by+1);b++)for(let a=Math.max(0,bx-1);a<=Math.min(BW-1,bx+1);a++)R[b*BW+a]=1}}
+  if(!any)return D;
+  yield;for(let y=0;y<H;y++){if(!(y&63))yield;const rb=(y>>4)*BW;for(let x=0;x<W;x++){if(!R[rb+(x>>4)]){x|=15;continue}const i=y*W+x;let d=D[i];if(x>0)d=Math.min(d,D[i-1]+1);if(y>0){d=Math.min(d,D[i-W]+1);if(x>0)d=Math.min(d,D[i-W-1]+1.414);if(x<W-1)d=Math.min(d,D[i-W+1]+1.414)}D[i]=d}}
+  for(let y=H-1;y>=0;y--){if(!(y&63))yield;const rb=(y>>4)*BW;for(let x=W-1;x>=0;x--){if(!R[rb+(x>>4)]){x&=~15;continue}const i=y*W+x;let d=D[i];if(x<W-1)d=Math.min(d,D[i+1]+1);if(y<H-1){d=Math.min(d,D[i+W]+1);if(x<W-1)d=Math.min(d,D[i+W+1]+1.414);if(x>0)d=Math.min(d,D[i+W-1]+1.414)}D[i]=d}}
   return D}
 // (the water tile a pixel of tile (tx, ty) belongs to: its own, else the nearest round it, one of kind no (a bridge's water) only if
 //  there is no other; -1 none)
 const WNEAR=[[0,0],[0,-1],[0,1],[-1,0],[1,0],[-1,-1],[1,-1],[-1,1],[1,1]];
 function wnear(K,tx,ty,no){for(const [a,b] of WNEAR){const u=tx+a,v=ty+b;if(u>=0&&v>=0&&u<MW&&v<MH&&K[v*MW+u]&&K[v*MW+u]!==no)return v*MW+u}return no?wnear(K,tx,ty):-1}
-// the generated world's ground of the window x0, y0, w×h into D (groundSteps' part)
-function* artGenGround(P,D,x0,y0,w,h){
-  const MG=GENART.margin,X0=x0-MG,Y0=y0-MG,RW=w+2*MG,RH=h+2*MG,M=new Uint8Array(RW*RH),K=P.wk,Rv=WM.river,G=GENART;
+// the generated world's ground of the window x0, y0, w×h into D, its pixels in I (groundSteps' part)
+function* artGenGround(P,D,x0,y0,w,h,I){
+  const MG=GENART.margin,X0=x0-MG,Y0=y0-MG,RW=w+2*MG,RH=h+2*MG,M=new Uint8Array(RW*RH),N9=new Uint8Array(9),K=P.wk,Rv=WM.river,G=GENART;
   // (a tile whose 8 neighbours are all its kind is that kind to its every pixel: only the tiles at an edge are worked a pixel at a time)
   const kd=(u,v)=>u<0||v<0||u>=MW||v>=MH||K[v*MW+u]>0?1:0;
   for(let ty=Y0>>4;ty<=(Y0+RH-1)>>4;ty++){for(let tx=X0>>4;tx<=(X0+RW-1)>>4;tx++){const k=kd(tx,ty);let same=true;for(let b=-1;b<=1&&same;b++)for(let a=-1;a<=1;a++)if(kd(tx+a,ty+b)!==k){same=false;break}
       const ya=Math.max(Y0,ty*16),yb=Math.min(Y0+RH,ty*16+16),xa=Math.max(X0,tx*16),xb=Math.min(X0+RW,tx*16+16);
-      for(let y=ya;y<yb;y++){const o=(y-Y0)*RW-X0;if(same)M.fill(k,o+xa,o+xb);else for(let x=xa;x<xb;x++)M[o+x]=wpx(K,x,y)}}
+      if(!same)wnb(K,tx,ty,N9);for(let y=ya;y<yb;y++){const o=(y-Y0)*RW-X0;if(same)M.fill(k,o+xa,o+xb);else for(let x=xa;x<xb;x++)M[o+x]=wpxN(N9,x,y)}}
     yield}
   const DT=yield* wdist(M,RW,RH);yield;
   const tx0=x0>>4,ty0=y0>>4,tx1=(x0+w-1)>>4,ty1=(y0+h-1)>>4,LW=tx1-tx0+2,LG=new Float32Array(LW*(ty1-ty0+2)),DG=new Float32Array(LW*(ty1-ty0+2)),dep=P.dep;
@@ -360,14 +389,15 @@ function* artGenGround(P,D,x0,y0,w,h){
   for(let y=ty0;y<=ty1+1;y++)for(let x=tx0;x<=tx1+1;x++){const o=[0,1],q=(y-ty0)*LW+x-tx0;if(!rs(x,y,1,o))rs(x,y,2,o);RG[q]=o[0];WG[q]=o[1]}
   const WL=CLIMS.map(c=>WATER_RGB[c]),CVG=coverGrids(P,tx0,ty0,tx1,ty1,LW),cv=[0,0,0],FD=P.fd,FG=G.ford,CM=new ClimMix(tx0,ty0,tx1,ty1,LW),SW=CLIMS.indexOf('swamp'),FRI=CLIMS.indexOf('frost');
   const T=(o)=>CLIMS.map(c=>o[c]),FOAM=T(SEA_FOAM),SH0=CLIMS.map(c=>SHORE_RGB[c][0]),SH1=CLIMS.map(c=>SHORE_RGB[c][1]),MD=T(MUD),B0=T(FG.bed0),B1=T(FG.bed1),RP=T(FG.rip),T0=T(FG.track0),T1=T(FG.track1);
-  for(let y=y0;y<y0+h;y++){const ty=y>>4,fy=(y&15)/16;
-    for(let x=x0;x<x0+w;x++){const tx=x>>4,fx=(x&15)/16,o=((y-y0)*w+x-x0)*4,r=(y-Y0)*RW+x-X0,dd=DT[r],f=FD[ty*MW+tx];
-      const q=(ty-ty0)*LW+tx-tx0,bl=A=>{const a=A[q],b=A[q+1],cc=A[q+LW],d=A[q+LW+1];return a+(b-a)*fx+(cc-a)*fy+(a-b-cc+d)*fx*fy};let c;
-      if(M[r]){const P3=palAt(CM,WL,q,fx,fy),k=CM.k,rw=bl(RG);let cl=null;
+  const TK=coverTiles(CVG,LW,ty1-ty0+1),PK=[GRASS_F,...COVERS.map(L=>L.F)],C3=[0,0,0];
+  for(let y=I.y;y<I.y+I.h;y++){const ty=y>>4,fy=(y&15)/16;let b4x=-1,b4=0;// (b4: the light's grain, a value each 4 x 4 px)
+    for(let x=I.x;x<I.x+I.w;x++){const tx=x>>4,fx=(x&15)/16,o=((y-y0)*w+x-x0)*4,r=(y-Y0)*RW+x-X0,dd=DT[r],f=FD[ty*MW+tx];
+      const q=(ty-ty0)*LW+tx-tx0;let c;
+      if(M[r]){const P3=palAt(CM,WL,q,fx,fy),k=CM.k,rw=bil(RG,q,LW,fx,fy);let cl=null;
         // (a lake's or the sea's tones by depth, with the pale halo along its shore; a river's by width, lighter at its banks)
-        if(rw<1){const d=bl(DG);cl=d<1.5?mixc(P3[0],P3[1],Math.max(0,d-.5)):mixc(P3[1],P3[2],Math.min(1,(d-1.5)/2.5));
+        if(rw<1){const d=bil(DG,q,LW,fx,fy);cl=d<1.5?mixc(P3[0],P3[1],Math.max(0,d-.5)):mixc(P3[1],P3[2],Math.min(1,(d-1.5)/2.5));
           if(dd<G.halo){const hk=Math.min(1,(1-dd/G.halo)*(.35+.9*wnoise2(x/9,y/9,23)));cl=mixc(cl,mixc(P3[0],[232,242,238],.45),hk*.8)}}
-        if(rw>0){const wr=bl(WG),t1=Math.min(1,dd/(2+wr*2));c=mixc(P3[0],P3[1],.2+.6*t1);if(wr>2)c=mixc(c,P3[2],Math.max(0,Math.min(1,(dd-5)/8))*.6*(wr-2));
+        if(rw>0){const wr=bil(WG,q,LW,fx,fy),t1=Math.min(1,dd/(2+wr*2));c=mixc(P3[0],P3[1],.2+.6*t1);if(wr>2)c=mixc(c,P3[2],Math.max(0,Math.min(1,(dd-5)/8))*.6*(wr-2));
           const sw=CM.share(SW);if(sw>0)c=mixc(c,[56,92,100],.35*sw);if(dd<1.2)c=mixc(c,[200,190,150],.2);if(cl)c=mixc(cl,c,rw)}else c=cl;
         if(rw<.5){if(dd<1.3&&hs(x,y,4)>.3)c=CM.tone(FOAM,k);
           else if(dd>3.5&&dd<G.halo-1){const sy=y>>2,sx=x+(sy&1)*4;if(hs(sx>>3,sy,29)<.08&&(sx&7)<4&&(y&3)===1)c=mixc(c,[255,255,255],.4)}}
@@ -381,7 +411,8 @@ function* artGenGround(P,D,x0,y0,w,h){
           const hz=P.fords[f-1][4],u=hz?x:y,v=hz?y:x;if(e>.3&&!(v&1)&&hs((u+Math.floor(hs(v,f,72)*5))/5|0,v,f+70)<FG.ripple*e)c=mixc(c,CM.tone(RP,k),.55);
           const fs=CM.share(FRI);if(fs>.5&&sh<FG.ice[1]){const m=wnoise2(x/3,y/3,f+80);if(m>FG.ice[0])c=m>FG.ice[0]+.04?mixc(c,[238,245,251],.9*fs):mixc(c,[168,194,218],.7*fs)}}}
         if(hs(x>>1,y,8)<.02)c=mixc(c,[255,255,255],.25)}
-      else{const L=bl(LG),b4=hs(x>>2,y>>2,3);let v=.5+.38*L+.22*(b4-.5);v=Math.max(0,Math.min(1,v));cv[0]=bl(CVG[0]);cv[1]=bl(CVG[1]);cv[2]=bl(CVG[2]);c=landRGB(v,cv,x,y);
+      else{const L=bil(LG,q,LW,fx,fy);if(x>>2!==b4x){b4x=x>>2;b4=hs(b4x,y>>2,3)}let v=.5+.38*L+.22*(b4-.5);v=Math.max(0,Math.min(1,v));const tk=TK[q];
+        if(tk<4)c=litSpk(PK[tk],v,hs(x,y,9),C3);else{cv[0]=bil(CVG[0],q,LW,fx,fy);cv[1]=bil(CVG[1],q,LW,fx,fy);cv[2]=bil(CVG[2],q,LW,fx,fy);c=landRGB(v,cv,x,y)}
         if(dd<7&&(f||dd<4.5)){const k=CM.at(q,fx,fy);
           if(dd<4.5){const j=wnear(K,tx,ty,4);if(j>=0){const kj=K[j];
             if(kj===1){const s0=CM.tone(SH0,k),s1=CM.tone(SH1,k);if(dd<G.sand)c=dd<1.3?mixc(s0,s1,.5):hs(x,y,13)<.15?s1:s0;else if(dd<G.sand+1.5)c=mixc(c,s0,.45*(1-(dd-G.sand)/1.5))}
@@ -488,7 +519,7 @@ const OVER_GEN=[
 // counts of what it painted (and how long it took) into rec
 function* paintSteps(P,X,Y,w,h,g,ox,oy,rec){
   const t0=performance.now(),Wp=MW*TILE,Hp=MH*TILE,AP=PX.WN_APRON,x0=Math.max(0,X-AP),y0=Math.max(0,Y-AP),ww=Math.min(Wp,X+w+AP)-x0,wh=Math.min(Hp,Y+h+AP)-y0,img=new ImageData(ww,wh),D=img.data,NT=NATURE_TOUCH;
-  yield* groundSteps(P,D,x0,y0,ww,wh);
+  yield* groundSteps(P,D,x0,y0,ww,wh,{x:X,y:Y,w,h});
   for(const t of P.tramples)trample(P,D,x0,y0,ww,wh,t);
   const road=P.gen?yield* artGenRoads(P,D,x0,y0,ww,wh):null;
   const TO=NT?new Uint8Array(ww*wh):null;

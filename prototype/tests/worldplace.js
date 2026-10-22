@@ -82,10 +82,12 @@ try{
     if(left.length)info(name+': rivers by a holding no crossing can be made over (a pocket of land in a bend, its ends notches): '+left.join(', '))}
    // (along a river, where no crossing is: a stretch over 60 tiles only where none can be made in its first 60 (a ford or bridge
    // over 3 tiles of water at most, a ferry over 12 by a town or port; across or down the river, from walkable land joined to the
-   // main land to such land, no end a notch with water on both sides across the way): the bare stretches, as INFO)
+   // main land to such land, no end a notch with water on both sides across the way nor in a holding's centre or the ring beside
+   // and behind it, nor by another crossing's end): the bare stretches, as INFO)
    const main=new Int32Array(W*H).fill(-1),sz=[];for(let s=0;s<W*H;s++){if(main[s]>=0||K[s]===t.T_MOUNT||K[s]===t.T_WATER&&!(m.river[s]&3))continue;const st=[s];main[s]=sz.length;let n=0;
     while(st.length){const i=st.pop(),x=i%W;n++;for(const j of [x>0?i-1:-1,x<W-1?i+1:-1,i-W,i+W])if(j>=0&&j<W*H&&main[j]<0&&K[j]!==t.T_MOUNT&&(K[j]!==t.T_WATER||m.river[j]&3)){main[j]=main[s];st.push(j)}}sz.push(n)}
-   const big=sz.indexOf(Math.max(...sz)),Xt=new Set(m.crossings.flatMap(c=>c.tiles)),end=(i,s)=>{const x=i%W,y=(i-x)/W,v=s===1||s===-1;return t.passable(K[i])&&K[i]!==t.T_FORD&&main[i]===big&&!(v?K[i-W]===t.T_WATER&&K[i+W]===t.T_WATER:K[i-1]===t.T_WATER&&K[i+1]===t.T_WATER)};
+   const big=sz.indexOf(Math.max(...sz)),Xt=new Set(m.crossings.flatMap(c=>c.tiles)),bx=new Set();for(const h of Hd){const b=t.placeBox(h);for(let y=b.y-1;y<=h.ty;y++)for(let x=b.x-1;x<=b.x+b.n;x++)if(m.has(x,y)&&!(x===h.tx&&y===h.ty+1))bx.add(y*W+x)}
+   const end=(i,s)=>{const x=i%W,y=(i-x)/W,v=s===1||s===-1;return t.passable(K[i])&&K[i]!==t.T_FORD&&main[i]===big&&!bx.has(i)&&t.placeApart(m,i)&&!(v?K[i-W]===t.T_WATER&&K[i+W]===t.T_WATER:K[i-1]===t.T_WATER&&K[i+1]===t.T_WATER)};
    const can=i=>{if(K[i]!==t.T_WATER||Xt.has(i))return false;const x=i%W,y=(i-x)/W;for(const [dx,dy] of [[1,0],[0,1]]){const s=dx+dy*W;let a=0,b=0;
      while(a<=12&&m.has(x-dx*(a+1),y-dy*(a+1))&&K[i-s*(a+1)]===t.T_WATER)a++;while(b<=12&&m.has(x+dx*(b+1),y+dy*(b+1))&&K[i+s*(b+1)]===t.T_WATER)b++;
      const p=i-s*(a+1),q=i+s*(b+1),k=a+b+1;if(!m.has(x-dx*(a+1),y-dy*(a+1))||!m.has(x+dx*(b+1),y+dy*(b+1))||!end(p,s)||!end(q,s))continue;const T=[];for(let n=1;n<=k;n++)T.push(p+s*n);

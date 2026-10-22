@@ -6,7 +6,7 @@
 // the classic anchors and hints; T_FORD in every table indexed by kind; the world in use (gen, sum, its BattleSite's new fields
 // null with the flag off) and the three Router calls answering on it; installWorld, then a new game on the generated world.
 // Phase 2 wave 1 (the terrain, stages 1-6): Normal within 4 s, Large twice one world, 8 seeds' land, climates and D41 shares, the
-// map settings' effects (tests/rivers.js: the rivers).
+// map settings' effects (tests/rivers.js: the rivers); big climates (stage 3's tidying: no small piece, strip or neck).
 // INFO lines: time per stage, the shares (land, climates, D41's high ground), rivers, crossings and camps.
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.push('INFO '+m),t=T,G=t.G,P=t.P,W=t.W,r0=Math.random;
 try{
@@ -120,6 +120,26 @@ try{
   const set=o=>sh(t.genWorld({preset:'custom',seed:'s1',...o}).map),cold=set({climate:'cold'}),warm=set({climate:'warm'}),dry=set({rivers:'dry'}),wet=set({rivers:'wet'}),flat=set({mountains:'flat'}),rug=set({mountains:'rugged'}),sea=set({land:'sea'}),con=set({land:'continent'});
   ok(cold.cl[1]>warm.cl[1]&&cold.cl[2]<warm.cl[2]&&dry.riv<wet.riv&&dry.forest<wet.forest&&flat.mount<rug.mount&&sea.land<con.land&&[cold,warm,dry,wet,flat,rug,sea,con].every(v=>v.cl.every(c=>c>=.06)),
    'the map settings: cold has more frost and less desert than warm (frost '+pc(cold.cl[1])+'/'+pc(warm.cl[1])+'%, desert '+pc(cold.cl[2])+'/'+pc(warm.cl[2])+'%), wet more rivers and forest than dry (rivers '+(dry.riv*100).toFixed(1)+'/'+(wet.riv*100).toFixed(1)+'%, forest '+pc(dry.forest)+'/'+pc(wet.forest)+'%), rugged more peaks than flat ('+(flat.mount*100).toFixed(1)+'/'+(rug.mount*100).toFixed(1)+'%), More sea less land than Continent ('+pc(sea.land)+'/'+pc(con.land)+'%); each climate 6% or more on all')}
+ // ---- big climates (the owner's fourth play-test; GEN_CLIMATE blur, strip, minArea), as stage 3 leaves them on Normal s1-s4 and
+ // Large s1: every climate's piece (4 ways, on land) minArea x the square root of the map's area over Normal's or more, but an isle's
+ // own (no other climate beside it); hardly a tile (under 0.05% of the land) with under strip of the land in its 5 x 5 its own
+ // climate's; no frost tile warmer than any other land (WM.temp: a tile moved takes its new climate's); each climate 6% or more
+ {const row=t.GEN_STAGES.find(s=>s.id==='climate'),run=row.run,C=t.GEN_CLIMATE,bad=[],say=[];let cap=null;
+  try{row.run=function*(g){const v=yield* run(g);cap=g.map;return v};
+   for(const [n,s] of [['Normal s1',{preset:'normal',seed:'s1'}],['Normal s2',{preset:'normal',seed:'s2'}],['Normal s3',{preset:'normal',seed:'s3'}],['Normal s4',{preset:'normal',seed:'s4'}],['Large s1',{preset:'large',seed:'s1'}]]){
+    for(const st of t.genWorldSteps(s).slice(0,3)){const it=st.run();while(!it.next().done);}
+    const m=cap,W=m.w,H=m.h,N=W*H,K=m.kind,Cl=m.clim,land=i=>K[i]!==t.T_WATER,min=Math.round(C.minArea*Math.sqrt(N/143360)),L=new Int32Array(N).fill(-1),q=new Int32Array(N),sz=[],sh=[0,0,0,0];let ln=0;
+    for(let s0=0;s0<N;s0++){if(!land(s0))continue;ln++;sh[Cl[s0]]++;if(L[s0]>=0)continue;const id=sz.length;let a=0,b=0;L[s0]=id;q[b++]=s0;
+     while(a<b){const i=q[a++],x=i%W;for(const j of [x>0?i-1:-1,x<W-1?i+1:-1,i>=W?i-W:-1,i+W<N?i+W:-1])if(j>=0&&L[j]<0&&land(j)&&Cl[j]===Cl[i]){L[j]=id;q[b++]=j}}sz.push(b)}
+    let small=0,isle=0,strip=0,fr=-1,ot=256;
+    const beside=new Uint8Array(sz.length);for(let i=0;i<N;i++){const p=L[i];if(p<0)continue;const x=i%W;for(const j of [x>0?i-1:-1,x<W-1?i+1:-1,i>=W?i-W:-1,i+W<N?i+W:-1])if(j>=0&&L[j]>=0&&L[j]!==p)beside[p]=1}
+    sz.forEach((v,p)=>{if(v<min){if(beside[p])small++;else isle++}});
+    for(let i=0;i<N;i++){if(!land(i))continue;if(Cl[i]===t.CLIM.frost)fr=Math.max(fr,m.temp[i]);else ot=Math.min(ot,m.temp[i]);const x=i%W,y=(i-x)/W;let o=0,l=0;
+     for(let b=Math.max(0,y-2);b<=Math.min(H-1,y+2);b++)for(let a=Math.max(0,x-2);a<=Math.min(W-1,x+2);a++){const j=b*W+a;if(land(j)){l++;if(Cl[j]===Cl[i])o++}}if(o<C.strip*l)strip++}
+    if(small)bad.push(n+' '+small+' pieces under '+min);if(strip>ln*.0005)bad.push(n+' '+strip+' tiles in strips');if(fr>ot)bad.push(n+' frost at '+fr+' over other land at '+ot);if(sh.some(v=>v<ln*.06))bad.push(n+' a climate under 6%');
+    say.push(n+': '+sz.length+' pieces ('+isle+' an isle\u2019s under '+min+'), '+strip+' strip tiles, '+t.CLIMS.map((c,k)=>c[0]+(sh[k]*100/ln).toFixed(0)).join(' '))}}
+  finally{row.run=run}
+  ok(!bad.length,'big climates: no piece under minArea (scaled) with another climate beside it, hardly a strip, the frost the coldest land, each climate 6% or more ('+say.join('; ')+')'+(bad.length?': '+bad.join('; '):''))}
  // ---- the world in use, flag off or on
  {const m=t.WM,S=m.battleSite(Math.floor(m.w/2),Math.floor(m.h/2)),fresh=['river','crossing','season','region','deep','elev','terrace','rough','high','cliff'];
   if(!t.WORLD.gen)ok(m.gen==='classic-0'&&m.w===224&&m.h===160&&m.settings===null&&m.seedNum===0&&m.graph===null&&layersOk(m)&&m.sum>0&&t.MAP_LAYERS.slice(2).every(k=>m[k].every(v=>!v)),'flag off: today\'s map (classic-0, 224 x 160, no settings), its new layers there and all 0, its sum over gen, kind and clim ('+m.sum.toString(16)+')');

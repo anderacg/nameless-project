@@ -52,8 +52,15 @@ const GEN_HIGH={steep:{plateau:.6,elev:190,rough:76},cliff:{step:10,run:4},scree
    (dry: the weight of moisture in it), swamp above a wet-and-low score (low: the weight of low ground; warm: the temperature it
    needs over the frost line); each share of the land held within its range (lo-hi), so every climate keeps 6% of the land
    (the check), whatever the settings (cold, warm: the temperature x0.08); home: a classic hint's climate scores in more at its
-   heart and out less away from its reach (desert in the south-east, the fens) */
-const GEN_CLIMATE={frost:{at:.17,lo:.08,hi:.26},desert:{at:.56,dry:.9,lo:.08,hi:.24},swamp:{at:.5,low:.35,warm:.06,lo:.08,hi:.18},home:{in:.4,out:.2}};
+   heart and out less away from its reach (desert in the south-east, the fens). Big climates, never a patch (the owner's fourth
+   play-test: "ensure that the biomes are big enough"): blur, the temperature smoothed before the cut (a box of r tiles each way,
+   n times), so a hill's height makes no frost of its own, and the low ground less (low: [r, n]; more turns the classic hints'
+   green hollows to fen); strip, a tile with under this share of the land in its 5 x 5 its own climate's takes the most common
+   one there (twice: no thin strip or 1-tile neck); minArea, a climate's piece (4 ways) smaller than this (at Normal's area, x the
+   square root of the map's area over it) taken by the larger climate bordering it most (the swamp, the most broken, loses about
+   a point of the land to it, so may end under its lo) */
+const GEN_CLIMATE={frost:{at:.17,lo:.08,hi:.26},desert:{at:.56,dry:.9,lo:.08,hi:.24},swamp:{at:.5,low:.35,warm:.06,lo:.08,hi:.18},home:{in:.4,out:.2},
+  blur:{r:4,n:2,low:[2,1]},strip:.3,minArea:400};
 /* 4. drainage and rivers (§8.5): share: streams (and up) on this share of the land; systems: within this many rivers of 30 tiles
    or more reaching the sea or a lake at Normal (more on larger maps; both x0.6 / x1.5 by the rivers setting); great: how many
    great rivers (lower reaches 3 wide) at Normal, Large, Huge; river: a river (2 wide) carries this many times a stream's flow;
@@ -63,9 +70,12 @@ const GEN_CLIMATE={frost:{at:.17,lo:.08,hi:.26},desert:{at:.56,dry:.9,lo:.08,hi:
    navigable river; delta: a great river whose last run tiles have banks within flat of the sea splits into ch more channels
    fanning over fan tiles (where there is room); flood: floodplain within r tiles of a river (2 wide or more, or a swamp's
    stream), up to above over its water; grass: the share of grassland streams made seasonal. Flow (WM.flow bits 0-4) is log2 of
-   the flow in units where a stream starts at 256 (log2 8): brooks, painted only, are log2 6-7 */
+   the flow in units where a stream starts at 256 (log2 8): brooks, painted only, are log2 6-7 (and the streams shorter than min).
+   brook: the flow the art draws a brook from (engine/worldnature.js BROOK[0]), on land but peaks with no river on it; the check
+   holds each one running on into another or into water (the owner's fourth play-test: "streams end should flow into lakes or
+   ponds"). Flow only grows downstream, so a brook's way runs on to the water it drains to */
 const GEN_RIVER={share:.026,systems:[8,14],great:[[1,2],[2,3],[3,5]],river:6,min:8,meander:5,lake:{depth:12,area:40,share:.012},rapid:{fall:16,run:6},
-  delta:{flat:12,run:[8,16],ch:[1,3],fan:[8,16]},flood:{r:2,above:6},grass:.3};
+  delta:{flat:12,run:[8,16],ch:[1,3],fan:[8,16]},flood:{r:2,above:6},grass:.3,brook:6};
 // 5. forests (§8.6): base density by climate (CLIMS' order: grass, frost, desert, swamp), times moisture and patches; forest over
 // wood, deep (pieces of deepN tiles and more) over deep, a sparse edge over sparse; banks more wooded (bank: x1.15 plus)
 const GEN_FOREST={base:[.45,.35,0,.5],wood:.55,deep:.75,deepN:300,sparse:.4,bank:.06,k:3.6};
@@ -115,15 +125,20 @@ function* genBfs(g,D,src){
 }
 // (tiles by their distance from water, 4 ways, into D (Uint16Array): 0 on water, 1 on the shore...)
 function* genDist(g,D){yield* genBfs(g,D,i=>g.map.kind[i]===T_WATER)}
-// (each piece of tiles where is(i) holds, 4 ways: its label in L (Int32Array, -1 elsewhere); returns the pieces' sizes)
-function* genPieces(g,L,is){
+// (each piece of tiles where is(i) holds, 4 ways (and, with join, only between tiles i, j where join(i, j) holds): its label in L
+// (Int32Array, -1 elsewhere); returns the pieces' sizes)
+function* genPieces(g,L,is,join){
   const m=g.map,W=m.w,H=m.h,q=new Int32Array(W*H),size=[];L.fill(-1);
   for(let s=0;s<W*H;s++){if(L[s]>=0||!is(s))continue;const id=size.length;let a=0,b=0;L[s]=id;q[b++]=s;
     while(a<b){const i=q[a++],x=i%W,y=(i-x)/W;
-      for(const j of [x>0?i-1:-1,x<W-1?i+1:-1,y>0?i-W:-1,y<H-1?i+W:-1])if(j>=0&&L[j]<0&&is(j)){L[j]=id;q[b++]=j}}
+      for(const j of [x>0?i-1:-1,x<W-1?i+1:-1,y>0?i-W:-1,y<H-1?i+W:-1])if(j>=0&&L[j]<0&&is(j)&&(!join||join(i,j))){L[j]=id;q[b++]=j}}
     size.push(b);if(g.tick())yield s/(W*H)}
   return size;
 }
+// (A, a W x H typed array, blurred in place: a box r tiles each way along the rows, then down the columns, the edges' the mean of
+// what lies within)
+function genBlur(A,W,H,r){for(const [n,a,b] of [[W,1,W],[H,W,1]])for(let o=0;o<(a===1?H:W);o++){let sum=0;const row=new Float32Array(n);for(let t=0;t<n;t++)row[t]=A[o*b+t*a];
+  for(let t=-r;t<n;t++){if(t+r<n)sum+=row[t+r];if(t-r-1>=0)sum-=row[t-r-1];if(t>=0)A[o*b+t*a]=sum/(Math.min(n-1,t+r)-Math.max(0,t-r)+1)}}}
 // (smoothstep, 0 below 0, 1 above 1)
 const sstep=t=>t<=0?0:t>=1?1:t*t*(3-2*t);
 // (value noise in n octaves, about 0.5 ± 0.2: map.js noise, each octave its own salt)
@@ -365,7 +380,8 @@ function genPassCheck(g){const m=g.map;for(const q of g.work.spines){const p=q.p
 /* 3. climate (§8.4): temperature by latitude (the north cold), less with height (x0.35), warped noise ±0.12 and the climate
    setting; moisture blown from the west (gained over water, lost over land and faster up slopes: rain shadows east of the
    ranges), plus the coast's, blurred into broad fields, warped noise ±0.15 and the rivers setting; the climate a lookup on the
-   two (GEN_CLIMATE), its cuts held so each keeps its share of the land. Classic: the cold north and marches (frostNorth,
+   two (GEN_CLIMATE, the temperature and low ground smoothed first), its cuts held so each keeps its share of the land; then
+   tidied, no strip and no piece under minArea (genClimTidy). Classic: the cold north and marches (frostNorth,
    frostMarches), the hot dry south-east, the desert's home (desertSouthEast), the green west (greenWest), the fens, the swamp's
    home (fens) */
 function* genClimate(g){
@@ -374,8 +390,7 @@ function* genClimate(g){
   // moisture: a wind from the west along each row, then blurred (a box of 6, rows and columns, twice)
   for(let y=0;y<H;y++){let h=1;for(let x=0;x<W;x++){const i=y*W+x;if(K[i]===T_WATER){h+=(1-h)*.12;Mf[i]=h*.55;continue}
     const up=x?Math.max(0,E[i]-E[i-1]):0;Mf[i]=h*(.5+up*.05);h=Math.max(0,h-h*(.0045+up*.012))}}
-  for(let r=0;r<2;r++){for(const [n,a,b] of [[W,1,W],[H,W,1]])for(let o=0;o<(a===1?H:W);o++){let sum=0;const row=new Float32Array(n);for(let t=0;t<n;t++)row[t]=Mf[o*b+t*a];
-    for(let t=-6;t<n;t++){if(t+6<n)sum+=row[t+6];if(t-7>=0)sum-=row[t-7];if(t>=0)Mf[o*b+t*a]=sum/(Math.min(n-1,t+6)-Math.max(0,t-6)+1)}}if(g.tick())yield .1+r*.1}
+  for(let r=0;r<2;r++){genBlur(Mf,W,H,6);if(g.tick())yield .1+r*.1}
   for(let y=0;y<H;y++){for(let x=0;x<W;x++){const i=y*W+x,wx=x+(gfbm(x/S,y/S,sw,2)-.5)*4*AW,wy=y+(gfbm(x/S,y/S,sx,2)-.5)*4*AW,el=Math.max(0,E[i]-64)/191;
       Tf[i]=.06+.88*wy/(H-1)+(gfbm(wx/S,wy/S,st,3)-.5)*.48-.35*el+dt;
       Mf[i]=Mf[i]+.22*(1-Math.min(D[i],18)/18)+(gfbm(wx/S,wy/S,sm,3)-.5)*.6+dm}
@@ -390,16 +405,51 @@ function* genClimate(g){
       if(h.side){const d=h.side==='n'?y:h.side==='s'?H-1-y:h.side==='w'?x:W-1-x;b=sstep(1-(d+(gfbm(x/30,y/30,sb,3)-.5)*h.r*.8)/h.r)}else b=B[i];
       if(b){Tf[i]+=.45*h.d*b;if(h.dry)Mf[i]-=.35*h.dry*b}if(h.clim)home(h.clim,i,b)}}
   for(const h of genHints(g,'moist')){const B=bump(h.pts,h.r,genSalt(R));for(let i=0;i<N;i++){const b=B[i];if(b)Mf[i]+=.3*h.d*b;if(h.clim)home(h.clim,i,b)}}
+  // the temperature and the low ground smoothed (blur)
+  const Lw=new Float64Array(N);for(let i=0;i<N;i++)Lw[i]=1-Math.min(1,Math.max(0,E[i]-64)/50);
+  for(let r=0;r<C.blur.n;r++)genBlur(Tf,W,H,C.blur.r);for(let r=0;r<C.blur.low[1];r++)genBlur(Lw,W,H,C.blur.low[0]);if(g.tick())yield .65;
   // the climates: frost below a cut, then desert above a heat-less-wet cut, then swamp above a wet-and-low cut; each cut held so
-  // its climate keeps lo-hi of the land
+  // its climate keeps lo-hi of the land; then tidied (genClimTidy)
   let L=0;for(let i=0;i<N;i++)if(K[i]!==T_WATER)L++;
   const pass=(want,lo,hi,score,ok)=>{const a=new Float32Array(L);let n=0;for(let i=0;i<N;i++)if(K[i]!==T_WATER&&ok(i))a[n++]=score(i);return genCut(a.subarray(0,n),L,want,lo,hi)};
-  const low=i=>1-Math.min(1,Math.max(0,E[i]-64)/50),fs=i=>-Tf[i],ds=i=>Tf[i]-C.desert.dry*Mf[i]+Dw[i],ss=i=>Mf[i]*(1-C.swamp.low)+low(i)*C.swamp.low+Sw[i];
+  const fs=i=>-Tf[i],ds=i=>Tf[i]-C.desert.dry*Mf[i]+Dw[i],ss=i=>Mf[i]*(1-C.swamp.low)+Lw[i]*C.swamp.low+Sw[i];
   const cf=pass(-C.frost.at,C.frost.lo,C.frost.hi,fs,()=>true),cd=pass(C.desert.at,C.desert.lo,C.desert.hi,ds,i=>fs(i)<=cf);
   const tw=-cf+C.swamp.warm,cs=pass(C.swamp.at,C.swamp.lo,C.swamp.hi,ss,i=>fs(i)<=cf&&ds(i)<=cd&&Tf[i]>tw);
-  yield .8;
-  for(let i=0;i<N;i++){m.temp[i]=Math.max(0,Math.min(255,Math.round(Tf[i]*255)));m.moist[i]=Math.max(0,Math.min(255,Math.round(Mf[i]*255)));
-    m.clim[i]=fs(i)>cf?CLIM.frost:ds(i)>cd?CLIM.desert:Tf[i]>tw&&ss(i)>cs?CLIM.swamp:CLIM.grass}
+  yield .75;
+  for(let i=0;i<N;i++)m.clim[i]=fs(i)>cf?CLIM.frost:ds(i)>cd?CLIM.desert:Tf[i]>tw&&ss(i)>cs?CLIM.swamp:CLIM.grass;
+  yield* genClimTidy(g,Tf,Mf);
+  for(let i=0;i<N;i++){m.temp[i]=Math.max(0,Math.min(255,Math.round(Tf[i]*255)));m.moist[i]=Math.max(0,Math.min(255,Math.round(Mf[i]*255)))}
+}
+/* (stage 3's tidying (GEN_CLIMATE strip, minArea): the strips, then the small pieces, each given to the larger piece bordering it
+   most (pieces smaller than it, or as large and later, never: no two swap), until none is left that can be; a piece with no larger
+   one beside it (an isle's) stays, and so does a classic holding's home: the piece its anchor stands on, in its own climate (the
+   hints' green hollow of Mossdell in the fens). Each tile moved takes the mean temperature and moisture of its new climate's
+   tiles round it, ring by ring inward, so WM.temp and moist still match its climate (the frost: every frost tile colder than
+   every other)) */
+function* genClimTidy(g,Tf,Mf){
+  const m=g.map,W=m.w,H=m.h,N=W*H,K=m.kind,Cl=m.clim,C=GEN_CLIMATE,land=i=>K[i]!==T_WATER,moved=new Uint8Array(N),min=Math.round(C.minArea*Math.sqrt(N/143360));
+  // (a tile ringed by land of its own climate keeps it: 9 of its 5 x 5 at least, over strip while strip is 9/25 or less)
+  const R8=[-W-1,-W,-W+1,-1,1,W-1,W,W+1],inner=(i,x,y)=>{if(!x||!y||x===W-1||y===H-1)return false;for(const o of R8)if(!land(i+o)||Cl[i+o]!==Cl[i])return false;return true};
+  for(let r=0;r<2;r++){const nc=Cl.slice();
+    for(let y=0;y<H;y++)for(let x=0;x<W;x++){const i=y*W+x;if(!land(i)||inner(i,x,y))continue;const n=[0,0,0,0];let l=0;
+      for(let b=Math.max(0,y-2);b<=Math.min(H-1,y+2);b++)for(let a=Math.max(0,x-2);a<=Math.min(W-1,x+2);a++){const j=b*W+a;if(land(j)){n[Cl[j]]++;l++}}
+      if(n[Cl[i]]>=C.strip*l)continue;let c=0;for(let k=1;k<4;k++)if(n[k]>n[c])c=k;if(c!==Cl[i]){nc[i]=c;moved[i]=1}}
+    Cl.set(nc);if(g.tick())yield .8+r*.05}
+  const L=new Int32Array(N),home=g.hints?classicAnchors().map((a,k)=>[a.ty*W+a.tx,CLIM[CLASSIC_PLACES[k].clim]]):[];
+  for(let r=0;r<16;r++){const size=yield* genPieces(g,L,land,(i,j)=>Cl[i]===Cl[j]),n=size.length,bd=new Int32Array(n*4),to=new Int8Array(n).fill(-1);let any=false;
+    for(let i=0;i<N;i++){const p=L[i];if(p<0||size[p]>=min)continue;const x=i%W;
+      for(const j of [x>0?i-1:-1,x<W-1?i+1:-1,i>=W?i-W:-1,i+W<N?i+W:-1]){const q=j<0?-1:L[j];if(q>=0&&q!==p&&(size[q]>size[p]||size[q]===size[p]&&q>p))bd[p*4+Cl[j]]++}}
+    for(const [i,c] of home)if(L[i]>=0&&Cl[i]===c)size[L[i]]=min;
+    for(let p=0;p<n;p++){if(size[p]>=min)continue;let c=-1;for(let k=0;k<4;k++)if(bd[p*4+k]&&(c<0||bd[p*4+k]>bd[p*4+c]))c=k;if(c>=0){to[p]=c;any=true}}
+    if(!any)break;
+    for(let i=0;i<N;i++){const p=L[i];if(p>=0&&to[p]>=0){Cl[i]=to[p];moved[i]=1}}}
+  yield .9;
+  let left=[];for(let i=0;i<N;i++)if(moved[i])left.push(i);
+  while(left.length){const set=[],next=[];
+    for(const i of left){const x=i%W,y=(i-x)/W;let t=0,w=0,n=0;
+      for(const [a,b] of DIR8){const u=x+a,v=y+b,j=v*W+u;if(u>=0&&v>=0&&u<W&&v<H&&!moved[j]&&land(j)&&Cl[j]===Cl[i]){t+=Tf[j];w+=Mf[j];n++}}
+      if(n)set.push(i,t/n,w/n);else next.push(i)}
+    if(!set.length)break;for(let k=0;k<set.length;k+=3){const i=set[k];Tf[i]=set[k+1];Mf[i]=set[k+2];moved[i]=0}left=next}
 }
 
 /* 4. drainage and rivers (§8.5, §6.6): the pits filled by a priority flood from the sea (over the elevation and a little warped
@@ -555,10 +605,15 @@ function* genRivers(g){
   // the flow's way on each river tile: to the next along its river (the wider river's where two share a tile)
   for(const r of RL.slice().sort((a,b)=>a.width-b.width||a.id-b.id)){const p=r.path;for(let k=0;k<p.length;k++){const a=p[k],b=k+1<p.length?p[k+1]:r.mouth,dx=b%W-a%W,dy=Math.round((b-a-dx)/W),d=DIR8.findIndex(([u,v])=>u===Math.sign(dx)&&v===Math.sign(dy));if(d>=0)m.flow[a]=(m.flow[a]&31)|d<<5}}
 }
-// (stage 4's check, the rivers' rules (§8.14): each never rising downstream, ends in water, water all along, its widths as made)
+// (stage 4's check, the rivers' rules (§8.14): each never rising downstream, ends in water, water all along, its widths as made;
+// and every brook (GEN_RIVER.brook) runs on into another brook or into water, never ending dry)
 function genRiverCheck(m){for(const r of m.rivers){const p=r.path;if(!p.length)return r.name+' is empty';if(m.kind[r.mouth]!==T_WATER)return r.name+' ends on land';
   for(let k=0;k<p.length;k++){if(m.kind[p[k]]!==T_WATER||!(m.river[p[k]]&3))return r.name+' has a dry tile';if(k&&m.elev[p[k]]>m.elev[p[k-1]])return r.name+' runs uphill'}
-  if(m.elev[r.mouth]>m.elev[p[p.length-1]])return r.name+' runs uphill into its mouth'}return null}
+  if(m.elev[r.mouth]>m.elev[p[p.length-1]])return r.name+' runs uphill into its mouth'}
+  const W=m.w,H=m.h,K=m.kind,F=m.flow,bk=i=>K[i]!==T_WATER&&K[i]!==T_MOUNT&&!(m.river[i]&3)&&(F[i]&31)>=GEN_RIVER.brook;
+  for(let i=0;i<W*H;i++){if(!bk(i))continue;const x=i%W,y=(i-x)/W,[dx,dy]=DIR8[F[i]>>5],u=x+dx,v=y+dy;
+    if(u<0||v<0||u>=W||v>=H||K[v*W+u]!==T_WATER&&!bk(v*W+u))return 'a brook ends dry at ('+x+', '+y+')'}
+  return null}
 
 /* 5. forests (§8.6): density by climate (GEN_FOREST.base) x moisture x warped patches, thinning up high; banks more wooded (gallery
    forests, palms by desert rivers); open land over wood is forest; deep wood in pieces of deepN tiles and more where denser than
@@ -639,12 +694,13 @@ function genSketch(settings){
   const dt={cold:-.08,temperate:0,warm:.08}[s.climate],dm={dry:-.08,normal:0,wet:.08}[s.rivers],S=W*.15,AW=W*.04,br=Math.max(1,Math.round(6/k));
   for(let y=0;y<ch;y++){let h=1;for(let x=0;x<cw;x++){const i=y*cw+x;if(K[i]===T_WATER){h+=(1-h)*Math.min(1,.12*k);Mf[i]=h*.55;continue}
     const up=x?Math.max(0,E[i]-E[i-1]):0;Mf[i]=h*(.5+up/k*.05);h=Math.max(0,h-h*Math.min(1,.0045*k+up*.012))}}
-  for(let r=0;r<2;r++)for(const [len,a,b] of [[cw,1,cw],[ch,cw,1]])for(let o=0;o<(a===1?ch:cw);o++){const row=new Float32Array(len);for(let t=0;t<len;t++)row[t]=Mf[o*b+t*a];let sum=0;
-    for(let t=-br;t<len;t++){if(t+br<len)sum+=row[t+br];if(t-br-1>=0)sum-=row[t-br-1];if(t>=0)Mf[o*b+t*a]=sum/(Math.min(len-1,t+br)-Math.max(0,t-br)+1)}}
+  for(let r=0;r<2;r++)genBlur(Mf,cw,ch,br);
   for(let i=0;i<N;i++){const x=X(i),y=Y(i),wx=x+(gfbm(x/S,y/S,sw,2)-.5)*4*AW,wy=y+(gfbm(x/S,y/S,sx,2)-.5)*4*AW,el=Math.max(0,E[i]-64)/191;
     Tf[i]=.06+.88*wy/(H-1)+(gfbm(wx/S,wy/S,st,3)-.5)*.48-.35*el+dt;Mf[i]+=.22*(1-Math.min(D[i],18)/18)+(gfbm(wx/S,wy/S,sm,3)-.5)*.6+dm}
   {const pass=(want,lo,hi,score,ok)=>{const a=new Float32Array(land);let c=0;for(let i=0;i<N;i++)if(K[i]!==T_WATER&&ok(i))a[c++]=score(i);return genCut(a.subarray(0,c),land,want,lo,hi)};
-    const low=i=>1-Math.min(1,Math.max(0,E[i]-64)/50),fs=i=>-Tf[i],ds=i=>Tf[i]-C.desert.dry*Mf[i],ss=i=>Mf[i]*(1-C.swamp.low)+low(i)*C.swamp.low;
+    const Lw=new Float64Array(N),cell=r=>Math.max(1,Math.round(r/k));for(let i=0;i<N;i++)Lw[i]=1-Math.min(1,Math.max(0,E[i]-64)/50);
+    for(let r=0;r<C.blur.n;r++)genBlur(Tf,cw,ch,cell(C.blur.r));for(let r=0;r<C.blur.low[1];r++)genBlur(Lw,cw,ch,cell(C.blur.low[0]));
+    const fs=i=>-Tf[i],ds=i=>Tf[i]-C.desert.dry*Mf[i],ss=i=>Mf[i]*(1-C.swamp.low)+Lw[i]*C.swamp.low;
     const cf=pass(-C.frost.at,C.frost.lo,C.frost.hi,fs,()=>true),cd=pass(C.desert.at,C.desert.lo,C.desert.hi,ds,i=>fs(i)<=cf),tw=-cf+C.swamp.warm,cs=pass(C.swamp.at,C.swamp.lo,C.swamp.hi,ss,i=>fs(i)<=cf&&ds(i)<=cd&&Tf[i]>tw);
     for(let i=0;i<N;i++){m.temp[i]=Math.max(0,Math.min(255,Math.round(Tf[i]*255)));m.moist[i]=Math.max(0,Math.min(255,Math.round(Mf[i]*255)));
       m.clim[i]=fs(i)>cf?CLIM.frost:ds(i)>cd?CLIM.desert:Tf[i]>tw&&ss(i)>cs?CLIM.swamp:CLIM.grass}}
@@ -664,24 +720,26 @@ function genSketch(settings){
     for(let i=0;i<N;i++){if(K[i]!==T_OPEN||m.river[i])continue;const x=X(i),y=Y(i),wx=x+(gfbm(x/S5,y/S5,sw5,2)-.5)*4*AW5,wy=y+(gfbm(x/S5,y/S5,sw5+5,2)-.5)*4*AW5;
       const d=TF.base[m.clim[i]]*TF.k*(.25+.75*m.moist[i]/255)*1.2*sstep((gfbm(wx/S5,wy/S5,sa,4)-.3)*3)*(1-sstep((E[i]-140)/60));if(d>TF.wood)K[i]=T_FOREST}}
   // the holdings: each people's liking (placeSuit, on distances in tiles); the capitals the best of 200 draws apart and balanced,
-  // then the realms in turn, a holding each within reach of its own, spaced as stage 7 spaces them
+  // (nearer while none are, as stage 7), then the realms in turn, a holding each within reach (rc) of its own, spaced and liking
+  // room as stage 7 does
   const F={dW:far(i=>K[i]===T_WATER),dR:far(i=>m.river[i]>0),dN:far(i=>m.river[i]>1),dM:far(i=>K[i]===T_MOUNT),dF:far(i=>K[i]===T_FOREST)};
-  const RH=genRng(n,'holdings',0),d2=(i,j)=>(X(i)-X(j))*(X(i)-X(j))+(Y(i)-Y(j))*(Y(i)-Y(j)),gap=PLACE.cap*Math.sqrt(W*W+H*H),P=[];
+  const RH=genRng(n,'holdings',0),d2=(i,j)=>(X(i)-X(j))*(X(i)-X(j))+(Y(i)-Y(j))*(Y(i)-Y(j)),gap0=PLACE.cap*Math.sqrt(W*W+H*H),P=[];
   const site=i=>{const x=i%cw,y=(i-x)/cw;return x>=2&&y>=2&&x<cw-2&&y<ch-2&&K[i]!==T_WATER&&K[i]!==T_MOUNT},cand={};
   for(const f of PLACE_REALMS){const p=PLACE_PEOPLE[f],L=[];for(let i=0;i<N;i++)if(!(i%2)&&!(((i-i%cw)/cw)%2)&&site(i))L.push([placeSuit(m,F,p,i),i]);L.sort((a,b)=>b[0]-a[0]||a[1]-b[1]);
     const top=cand[f]=[];for(const c of L){if(top.length>=48)break;if(top.every(o=>d2(o[1],c[1])>=576))top.push(c)}}
   const worth=pk=>PLACE_REALMS.reduce((a,f)=>a+pk[f][0],0)-3*Math.max(0,placeSkew(PLACE_REALMS.map(f=>pk[f][1]),d2)-PLACE.skew*.8);
-  let best=null;
-  for(let t=0;t<200;t++){const ord=PLACE_REALMS.slice(),pick={};let ok=true;for(let q=ord.length-1;q>0;q--){const j=Math.floor(RH()*(q+1));[ord[q],ord[j]]=[ord[j],ord[q]]}
+  let best=null,gap=gap0;
+  for(;;){for(let t=0;t<200;t++){const ord=PLACE_REALMS.slice(),pick={};let ok=true;for(let q=ord.length-1;q>0;q--){const j=Math.floor(RH()*(q+1));[ord[q],ord[j]]=[ord[j],ord[q]]}
     for(const f of ord){const L=cand[f];let got=null;for(let u=0;u<16&&!got&&L.length;u++){const c=L[Math.floor(RH()*RH()*L.length)];if(Object.values(pick).every(o=>d2(o[1],c[1])>=gap*gap))got=c}if(!got){ok=false;break}pick[f]=got}
     if(ok){const v=worth(pick);if(!best||v>best.v)best={v,pick}}}
+    if(best||gap*.9<gap0*PLACE.capMin)break;gap*=.9}
   for(const f of PLACE_REALMS){const c=best?best.pick[f]:cand[f][0];if(c)P.push({f,kind:'city',i:c[1]})}
-  const quota=placeQuota(s.holdings),left={};for(const f of PLACE_REALMS)left[f]=placeKinds(f,quota[f]);
+  const quota=placeQuota(s.holdings),left={},rc=PLACE.reach*Math.max(1,Math.sqrt(land*k*k/s.holdings)/PLACE.space),rk=rc/PLACE.reach;for(const f of PLACE_REALMS)left[f]=placeKinds(f,quota[f]);
   for(let more=true;more;){more=false;
     for(const f of PLACE_REALMS){if(!left[f].length)continue;more=true;const kind=left[f].shift(),own=P.filter(h=>h.f===f);if(!own.length)continue;const p=PLACE_PEOPLE[f];let top=null;
-      for(let u=0;u<60;u++){const b=own[Math.floor(RH()*own.length)].i,dx=RH()*81-40,dy=RH()*81-40,dd=dx*dx+dy*dy;if(dd>PLACE.reach*PLACE.reach||dd<144)continue;
-        const x=X(b)+dx,y=Y(b)+dy;if(x<0||y<0||x>=W||y>=H)continue;const i=at(x,y);if(!site(i))continue;let nd=Infinity,mine=false,bad=false;
-        for(const h of P){const e=d2(h.i,i),gp=h.kind==='city'&&kind==='city'?gap:placeGap(h.kind,kind);if(e<gp*gp){bad=true;break}if(e<nd){nd=e;mine=h.f===f}}
-        if(bad||!mine)continue;const v=placeSuit(m,F,p,i)-.2*Math.sqrt(d2(own[0].i,i))/100+RH()*.15;if(!top||v>top.v)top={v,i}}
+      for(let u=0;u<60;u++){const b=own[Math.floor(RH()*own.length)].i,dx=RH()*(2*rc+1)-rc,dy=RH()*(2*rc+1)-rc,dd=dx*dx+dy*dy;if(dd>rc*rc||dd<144)continue;
+        const x=X(b)+dx,y=Y(b)+dy;if(x<0||y<0||x>=W||y>=H)continue;const i=at(x,y);if(!site(i))continue;let nd=Infinity,nk=null,mine=false,bad=false;
+        for(const h of P){const e=d2(h.i,i),gp=h.kind==='city'&&kind==='city'?gap:placeGap(h.kind,kind);if(e<gp*gp){bad=true;break}if(e<nd){nd=e;nk=h.kind;mine=h.f===f}}
+        if(bad||!mine)continue;const v=placeSuit(m,F,p,i)-PLACE.pull*Math.sqrt(d2(own[0].i,i))/100+PLACE.room[0]*Math.min(1,(Math.sqrt(nd)-placeGap(nk,kind))/(PLACE.room[1]*rk))+RH()*.15;if(!top||v>top.v)top={v,i}}
       if(top)P.push({f,kind,i:top.i})}}
   return{map:m,k,holdings:P.map(h=>({tx:h.i%cw,ty:(h.i-h.i%cw)/cw,realm:h.f,kind:h.kind})),rivers,land:land/N,ms:performance.now()-t0}}

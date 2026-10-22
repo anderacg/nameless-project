@@ -3,7 +3,7 @@
 // and Large (worldgen.js genWorld): water all along, 4 ways joined (no gap to slip through), never uphill, each ending in water;
 // the flow's way down each; width following flow (never narrowing downstream but in a delta, rivers carrying a river's flow, great
 // rivers of Strahler order 4 and up); deltas fanning over 8-16 tiles; navigable runs unbroken but at rapids; floodplain beside
-// rivers; lakes and basins; seasonal flags by climate (frost all but great rivers, desert wadis, swamp streams and deltas, about
+// rivers; lakes and basins; every brook running on into water (the owner's fourth play-test: no stream ending dry); seasonal flags by climate (frost all but great rivers, desert wadis, swamp streams and deltas, about
 // 30% of grass streams), none with the seasonal setting off. Phase 5's rows (riverState, crossings by season, tolls, passage,
 // barges) come with their phases. The classic seed's great river (§8.15, CLASSIC_HINTS stonebridge): past Stonebridge's anchor, fed
 // from the northern peaks, out to the southern sea.
@@ -11,7 +11,7 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 try{
  const worlds=[['classic',t.classicSettings()],...['1','2','3','4','5'].map(s=>['normal '+s,{preset:'normal',seed:s}]),['large 1',{preset:'large',seed:'1'}]].map(([n,s])=>[n,t.genWorld(s).map]);
  const W8=[[1,0],[1,1],[0,1],[-1,1],[-1,0],[-1,-1],[0,-1],[1,-1]],step=(m,a,b)=>{const ax=a%m.w,bx=b%m.w;return[bx-ax,(b-bx-(a-ax))/m.w]};
- const bad={water:[],gap:[],up:[],mouth:[],dir:[],narrow:[],flow:[],great:[],nav:[],flood:[],lake:[],basin:[]};let rivers=0,deltas=[],nav=0,rap=0,fp=0;
+ const bad={water:[],gap:[],up:[],mouth:[],dir:[],narrow:[],flow:[],great:[],nav:[],flood:[],lake:[],basin:[],brook:[]};let rivers=0,deltas=[],nav=0,rap=0,fp=0;
  for(const [n,m] of worlds){const K=m.kind,Rv=m.river,E=m.elev,F=m.feat,W=m.w,tag=s=>n+': '+s;
   const wet=i=>K[i]===t.T_WATER||K[i]===t.T_ROAD||K[i]===t.T_FORD,uses=new Uint8Array(W*m.h);for(const r of m.rivers)for(const i of r.path)uses[i]++;
   for(const r of m.rivers){rivers++;const p=r.path,delta=Rv[p[0]]&128;
@@ -32,6 +32,11 @@ try{
   // deltas: the main channel and its side channels (the same name), their mouths fanning over 8-16 tiles
   for(const r of m.rivers.filter(r=>r.width===3&&Rv[r.path[r.path.length-1]]&128)){const ch=m.rivers.filter(c=>c!==r&&c.name===r.name&&Rv[c.path[0]]&128),ms=[r.mouth,...ch.map(c=>c.mouth)];
    let s=0;for(const a of ms)for(const b of ms)s=Math.max(s,Math.abs(a%W-b%W),Math.abs(((a/W)|0)-((b/W)|0)));if(ch.length)deltas.push([tag(r.name),ch.length,s])}
+  // brooks (what the art draws: land but peaks, no river on it, flow GEN_RIVER.brook and up): each runs on into another or into
+  // water (or a road or ford laid on water since: no flow there, or a river's)
+  {const F=m.flow,bk=i=>K[i]!==t.T_WATER&&K[i]!==t.T_MOUNT&&!(Rv[i]&3)&&(F[i]&31)>=t.GEN_RIVER.brook;
+   for(let i=0;i<W*m.h&&bad.brook.length<5;i++){if(!bk(i))continue;const x=i%W,y=(i-x)/W,[dx,dy]=W8[F[i]>>5],u=x+dx,v=y+dy,j=v*W+u;
+    if(!m.has(u,v)||!bk(j)&&K[j]!==t.T_WATER&&!((K[j]===t.T_ROAD||K[j]===t.T_FORD)&&(Rv[j]&3||(F[j]&31)<t.GEN_RIVER.brook)))bad.brook.push(tag(x+','+y))}}
   // floodplain: land within 3 of a river; lakes: water with feat lake, basin 0; basins: every land tile in one
   for(let i=0;i<W*m.h;i++){if(F[i]&1&&K[i]!==t.T_WATER){fp++;const x=i%W,y=(i-x)/W;let near=false;for(let b=-3;b<=3&&!near;b++)for(let a=-3;a<=3;a++)if(m.has(x+a,y+b)&&Rv[(y+b)*W+x+a]&3){near=true;break}if(!near&&bad.flood.length<5)bad.flood.push(tag(x+','+y))}
    const crossing=K[i]===t.T_ROAD||K[i]===t.T_FORD,land=K[i]!==t.T_WATER&&!crossing;
@@ -45,6 +50,13 @@ try{
  say('flow','a stream carries a stream\'s flow (log2 8 and up), a river 2 wide a river\'s (10 and up)');say('great','great rivers are of Strahler order 4 and up');
  say('nav',nav+' navigable rivers ('+rap+' rapids): navigable from where they are 2 wide to their end, but at their rapids; streams never');
  ok(deltas.length&&deltas.every(d=>d[2]>=8&&d[2]<=16),deltas.length+' deltas, their mouths fanning over 8-16 tiles ('+deltas.map(d=>d[0]+' '+(d[1]+1)+' channels over '+d[2]).join('; ')+')');
+ say('brook','every brook ends in water: it runs on into another brook or into water (a stream, river, lake or the sea)');
+ // the rivers' check (genRiverCheck) as stage 4 leaves Normal 1: nothing wrong, then a brook made to end dry on open land found
+ {const row=t.GEN_STAGES.find(s=>s.id==='rivers'),run=row.run;let m=null;
+  try{row.run=function*(g){const v=yield* run(g);m=g.map;return v};for(const st of t.genWorldSteps({preset:'normal',seed:'1'}).slice(0,4)){const it=st.run();while(!it.next().done);}}finally{row.run=run}
+  const W=m.w,K=m.kind,F=m.flow,i=[...K.keys()].find(i=>{const x=i%W,y=(i-x)/W,[dx,dy]=W8[F[i]>>5],j=(y+dy)*W+x+dx;return x>1&&y>1&&x<W-2&&y<m.h-2&&K[i]===t.T_OPEN&&!(m.river[i]&3)&&(F[i]&31)<t.GEN_RIVER.brook&&K[j]===t.T_OPEN&&(F[j]&31)<t.GEN_RIVER.brook}),was=F[i],why=t.genRiverCheck(m);
+  let dry;try{F[i]=(was&~31)|t.GEN_RIVER.brook;dry=t.genRiverCheck(m)}finally{F[i]=was}
+  ok(why===null&&dry==='a brook ends dry at ('+(i%W)+', '+((i-i%W)/W)+')','the rivers’ check (genRiverCheck) as stage 4 leaves Normal 1: '+why+'; with a brook made to end dry on open land: '+dry)}
  say('flood',fp+' floodplain tiles, each within 3 of a river');say('lake','lakes are water (or a crossing on it) with no basin');say('basin','every land tile lies in a basin');
  // the classic great river: a river of width 3 within 3-8 tiles east of Stonebridge's anchor (none of it west of it within 5); of the rivers
  // that feed it above there (into it, into those, through lakes), one rising in the northern 30% within 20 tiles of a peak or high

@@ -296,10 +296,11 @@
     const zAt=(x,y)=>x<x0||y<y0||x>=x1||y>=y1?0:ZR[(y-y0)*bw+x-x0];
     const shadowed=(x,y,z0,st)=>{for(let k=2;k<=K;k+=st){const qx=Math.round(x+LSX*k),qy=Math.round(y+LSY*k);if(qx<x0||qy<y0)return false;if(zAt(qx,qy)>z0+k*SK)return true}return false};
     const put=(q,c)=>{const p=q*4;D[p]=c[0];D[p+1]=c[1];D[p+2]=c[2];if(TO)TO[q]=1},mix=(q,c,t)=>{const p=q*4;D[p]+=(c[0]-D[p])*t;D[p+1]+=(c[1]-D[p+1])*t;D[p+2]+=(c[2]-D[p+2])*t;if(TO)TO[q]=1};
-    // (4) its shadow on the ground to the lower right (tested on a 2-px lattice)
-    if(o.shade)for(let y=Math.max(y0,wy0);y<Math.min(md.Y1,wy1);y++){for(let x=Math.max(x0,wx0);x<Math.min(md.X1,wx1);x++){const q=at(x,y);if(S[q]&(128|64)||ZO[q]||(x<x1&&y<y1&&ZR[(y-y0)*bw+x-x0]))continue;
-        if(shadowed(x&~1,y&~1,0,2)){S[q]|=64;mix(q,SHC,.3)}}
-      if(!((y+1)&15))yield}
+    // (4) its shadow on the ground to the lower right (tested on a 2-px lattice: each point's once, SV, for the 2 x 2 px round it)
+    if(o.shade){const sx0=Math.max(x0,wx0)&~1,SV=new Int8Array(((Math.min(md.X1,wx1)-sx0)>>1)+2);let sy=-1;
+      for(let y=Math.max(y0,wy0);y<Math.min(md.Y1,wy1);y++){if((y&~1)!==sy){sy=y&~1;SV.fill(-1)}for(let x=Math.max(x0,wx0);x<Math.min(md.X1,wx1);x++){const q=at(x,y);if(S[q]&(128|64)||ZO[q]||(x<x1&&y<y1&&ZR[(y-y0)*bw+x-x0]))continue;
+          const k=((x&~1)-sx0)>>1;if(SV[k]<0)SV[k]=shadowed(x&~1,sy,0,2)?1:0;if(SV[k]){S[q]|=64;mix(q,SHC,.3)}}
+        if(!((y+1)&15))yield}}
     // (5) the rock, front to back a column at a time: a point at height z shows at (x, y-z), above the rock drawn before it in the
     //     column (hz); a nearer mass already there stays. (Each column reckoned whole, its pixels painted in the window only)
     for(let x=Math.max(x0,wx0);x<Math.min(x1,wx1);x++){let hz=1e9,prev=false;
@@ -544,10 +545,10 @@
       const HP=CLIMS.map(c=>hc(PX.WORLD_NATURE[c])),Hb={lit:[0,0,0],shade:[0,0,0],k:[0,0],lo:-3,sh:1.2},HL4=HP.map(q=>q.lit),HS4=HP.map(q=>q.shade);
       const hpal=(X,Y)=>{const p=pure(X,Y);if(p>=0)return HP[p];cw(X,Y);for(let k=0;k<4;k++)if(CW[k]>=.999)return HP[k];Hb.lit=mixW(HL4);Hb.shade=mixW(HS4);Hb.k[0]=Hb.k[1]=0;Hb.lo=Hb.sh=0;
         for(let k=0;k<4;k++){const w=CW[k],q=HP[k];Hb.k[0]+=q.k[0]*w;Hb.k[1]+=q.k[1]*w;Hb.lo+=q.lo*w;Hb.sh+=q.sh*w}Hb.lo=Math.round(Hb.lo);return Hb};
-      const MO=[1,2,3,4,5,6,7].map(k=>[Math.round(-k*1.6),Math.round(-k*.7),k*.75+.3]).map(([dx,dy,u])=>[dy*ZW+dx,u]);
+      const HD=[0,0,0],MO=[1,2,3,4,5,6,7].map(k=>[Math.round(-k*1.6),Math.round(-k*.7),k*.75+.3]),MD=MO.map(([dx,dy])=>dy*ZW+dx),MU=MO.map(m=>m[2]);
       for(let Y=wy0;Y<wy1;Y++){const ty=(Y/ts)|0,br=((Y>>3)-by0)*bxn-bx0,row=(Y-zy0)*ZW-zx0;for(let X=wx0;X<wx1;X++){if(!BK[br+(X>>3)]){X|=7;continue}const i=at(X,Y),kc=S[i]&128;if(kc&&(!CLR.at(X,Y)||wetP(X,Y)))continue;const zi=row+X,zh=ZH[zi];
-          let sh=0;if(X>=12){for(const [d,u] of MO)if(ZH[zi+d]>zh+u){sh=1;break}}else sh=hillShade(zat,X,Y,zh);if(zh<=.05&&!sh)continue;
-          const Hp=hpal(X,Y),o=i*4,c=hillPx(Hp,kc?null:cwPick(X,Y,P.seed+93),[D[o],D[o+1],D[o+2]],zat(X+1,Y)-zat(X-1,Y),zat(X,Y+1)-zat(X,Y-1),zh,X,Y,7,sh);D[o]=c[0];D[o+1]=c[1];D[o+2]=c[2];touch(i,kc?3:1)}
+          let sh=0;if(X>=12){for(let k=0;k<7;k++)if(ZH[zi+MD[k]]>zh+MU[k]){sh=1;break}}else sh=hillShade(zat,X,Y,zh);if(zh<=.05&&!sh)continue;
+          const pc=pure(X,Y),Hp=pc>=0?HP[pc]:hpal(X,Y),o=i*4;HD[0]=D[o];HD[1]=D[o+1];HD[2]=D[o+2];const c=hillPx(Hp,kc?null:pc>=0?CLIMS[pc]:cwPick(X,Y,P.seed+93),HD,zat(X+1,Y)-zat(X-1,Y),zat(X,Y+1)-zat(X,Y-1),zh,X,Y,7,sh);D[o]=c[0];D[o+1]=c[1];D[o+2]=c[2];touch(i,kc?3:1)}
         if(!((Y-wy0+1)&7))yield}}
     lap('hills');yield;
     // (2b) brooks (the generated world's, spec.flow and river): each land tile whose flow is a brook's (bits 0-4 at least BROOK[0]) and
@@ -581,7 +582,12 @@
     // (3) the small things lying on the ground, and what stands: gathered by tile, from 3 tiles round the window (the farthest a
     //     thing or its shadow reaches from its tile)
     const items=[],flats=[];let own=0;
-    const fits=(sp,x,y,water)=>{const N=sp.width,X0=x-sp.ax,Y0=y-sp.ay;for(let j=0;j<N;j++)for(let i=0;i<N;i++){if(!sp.a[j*N+i])continue;const X=X0+i,Y=Y0+j;if(X<0||Y<0||X>=W||Y>=H)return false;
+    // (a thing on land whose box lies on the map, on tiles with nothing kept clear and no water by them (the most), fits: no pixel of
+    //  it to look at)
+    const TF=TM.f,fits=(sp,x,y,water)=>{const N=sp.width,X0=x-sp.ax,Y0=y-sp.ay;
+      if(!water){const b=sp.box,x0=X0+b[0],y0=Y0+b[1],x1=X0+b[2],y1=Y0+b[3];if(x0>=0&&y0>=0&&x1<W&&y1<H){let ok=true;
+        for(let ty=(y0/ts)|0;ty<=((y1/ts)|0)&&ok;ty++)for(let tx=(x0/ts)|0;tx<=((x1/ts)|0);tx++){const t=ty*C+tx;if(TF[t]||P.wet&&P.NW[t]){ok=false;break}}if(ok)return true}}
+      for(let j=0;j<N;j++)for(let i=0;i<N;i++){if(!sp.a[j*N+i])continue;const X=X0+i,Y=Y0+j;if(X<0||Y<0||X>=W||Y>=H)return false;
       if(water?CLR.at(X,Y)||kAt((X/ts)|0,(Y/ts)|0)!==KIND.water||P.wet&&!P.wet(X,Y):TM.at(X,Y)||P.wet&&P.NW[((Y/ts)|0)*C+((X/ts)|0)]&&P.wet(X,Y))return false}return true};
     const stand=(sp,x,y,cls)=>{if(!fits(sp,x,y))return false;items.push([y,x,sp,cls,own]);return true};
     const lie=(sp,x,y,water)=>{if(!fits(sp,x,y,water))return false;flats.push([x,y,sp,water,own]);return true};
