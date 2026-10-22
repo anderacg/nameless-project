@@ -3,7 +3,8 @@
 // sprite sits in a power-of-two box at whole pixels, its navy outline round its silhouette only; the looks are seeded (the same
 // again, and told apart by their shapes, not their colours alone); the map's woods, hills and ranges are painted with them; nothing
 // is painted on a road, a holding, an estate or water (but lily pads and floes); painting reads no Math.random and changes no map
-// data; the fen's sparse mangroves and the frost's snow blended into the grass (the owner's play-test, 2026-10-22); and how long
+// data; the fen's sparse mangroves and the frost's snow blended into the grass (the owner's play-test, 2026-10-22); each climate's
+// own trees, a few of them leafless or dead, and the swamp's forest of bog trees over its pools (the second play-test); and how long
 // the world takes to paint.
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);
 try{
@@ -43,7 +44,8 @@ try{
  ok(['paintTree','paintHill','drawPeak','paintDecor','paintMountain','bigPeakAt','paintBigPeak','peakFits','ROCK_RGB','anyClear'].every(n=>(0,eval)('typeof '+n)==='undefined')&&/PX\.worldNatureSteps/.test(t.paintSteps.toString()),'the old trees, hills, peaks and small things are gone: the world is painted by PX.worldNature (a chunk at a time: tests/worldchunks.js)');
  const sum=a=>{let h=0;for(let i=0;i<a.length;i++)h=(h*31+a[i])|0;return h},tiles0=sum(t.tiles),clim0=sum(t.climate);
  const TO=new Uint8Array(Wp*Hp);window.__TO=TO;(0,eval)('NATURE_TOUCH=window.__TO');
- let rnd=0;const r0=Math.random;Math.random=function(){rnd++;return r0.apply(this,arguments)};let cv;try{cv=t.paintWorld()}finally{Math.random=r0;(0,eval)('NATURE_TOUCH=null')}
+ let rnd=0;const r0=Math.random,wt=PX.worldTree,drawn={};Math.random=function(){rnd++;return r0.apply(this,arguments)};PX.worldTree=(c,sp,v,d)=>{(drawn[c]=drawn[c]||{})[sp]=(drawn[c][sp]||0)+1;return wt(c,sp,v,d)};
+ let cv;try{cv=t.paintWorld()}finally{Math.random=r0;PX.worldTree=wt;(0,eval)('NATURE_TOUCH=null')}
  const N=t.NATURE,CLR=t.CLEAR,cnt=k=>{let n=0;for(let i=0;i<MW*MH;i++)if(t.tiles[i]===k)n++;return n},nF=cnt(t.T_FOREST),nH=cnt(t.T_HILL),nM=cnt(t.T_MOUNT);
  ok(rnd===0&&sum(t.tiles)===tiles0&&sum(t.climate)===clim0,'painting the world reads no Math.random ('+rnd+') and leaves the map’s tiles and climates as they were');
  ok(cv.getContext('2d').imageSmoothingEnabled===false,'the world canvas is painted without smoothing');
@@ -63,6 +65,18 @@ try{
  // ---- the fen's own trees: mangroves on its open ground, sparse (some .6 a tile, about a third of a wood's cover)
  {let nS=0;for(let i=0;i<MW*MH;i++)if(t.tiles[i]===t.T_OPEN&&t.CLIMS[t.climate[i]]==='swamp')nS++;const f=N.fen/Math.max(1,nS),wd=(N.trees-N.fen)/Math.max(1,nF);
   ok(nS&&f>.3&&f<1&&f<wd/3,'the swamp’s open ground ('+nS+' tiles) stands with sparse mangroves: '+N.fen+' ('+f.toFixed(2)+' a tile, against a wood’s '+wd.toFixed(1)+')')}
+ // ---- the trees by climate (PX.WORLD_TREES): each climate's woods its own species, a few leafless or dead (bare trees, bare
+ //      birches, snags, dead trees: 4-20%), more at a wood's edge; the swamp's forest of bog trees (mangroves, bog willows, snags),
+ //      looser than a wood elsewhere, its bog's pools showing between them (peat water on its floor)
+ {const BARE=new Set(['bare','bbirch','snag','dead']),sh=[],bad=[];
+  for(const c of CL){const L=PX.WORLD_TREES[c].wood;let n=0,b=0,eb=0;for(let i=0;i<41;i++)for(let j=0;j<40;j++){const g=i/40,r=(j+.5)/40;n++;if(BARE.has(PX.pickWorldTree(L,g,r,false)))b++;if(BARE.has(PX.pickWorldTree(L,g,r,true)))eb++}
+   sh.push(c+' '+Math.round(b/n*100)+'% ('+Math.round(eb/n*100)+'% at the edge)');if(!(b/n>=.04&&b/n<=.2&&eb/n>b/n))bad.push(c)}
+  const own=CL.filter(c=>drawn[c]&&Object.keys(drawn[c]).some(sp=>!PX.WORLD_SPECIES[c].includes(sp)));
+  ok(!bad.length&&!own.length&&CL.every(c=>PX.WORLD_SPECIES[c].length>=3),'each climate’s woods grow its own trees ('+CL.map(c=>c+': '+PX.WORLD_SPECIES[c].join('/')).join('; ')+'), a few of them leafless or dead: '+sh.join(', ')+(bad.length||own.length?' — not: '+bad.concat(own).join(', '):''));
+  let nB=0;for(let i=0;i<MW*MH;i++)if(t.tiles[i]===t.T_FOREST&&t.CLIMS[t.climate[i]]==='swamp')nB++;const sw=drawn.swamp||{},bogs=(sw.mangrove||0)+(sw.bogwillow||0);
+  const d=cv.getContext('2d').getImageData(0,0,Wp,Hp).data;let pools=0,seen=0;for(let i=0;i<MW*MH&&seen<400;i++){if(t.tiles[i]!==t.T_FOREST||t.CLIMS[t.climate[i]]!=='swamp')continue;seen++;const X=i%MW*TILE,Y=Math.floor(i/MW)*TILE;
+   for(let y=0;y<TILE;y++)for(let x=0;x<TILE;x++){const o=((Y+y)*Wp+X+x)*4;if(d[o]===50&&d[o+1]===70&&d[o+2]===72){pools++;y=TILE;break}}}
+  ok(!nB||bogs>nB&&!sw.willow&&pools>seen*.2,(nB?nB+' tiles of the swamp’s forest stand with bog trees ('+(sw.mangrove||0)+' mangroves, '+(sw.bogwillow||0)+' bog willows, '+((sw.snag||0)+(sw.dead||0))+' snags and dead trees with the fen’s), its pools showing on '+pools+' of '+seen+' tiles':'no swamp forest on this map'))}
  // ---- the frost blended: the snow's cover (gfx/worldart.js snowCover) thins out over the grass beside the frost in patches, rises
  //      over the frost's edge and lies whole deep in it; no grass far from it is touched (snow: a pale blue-white pixel)
  {const S=t.WorldArt.ensure().snow,d=cv.getContext('2d').getImageData(0,0,Wp,Hp).data,F=t.CLIMS.indexOf('frost'),G=t.CLIMS.indexOf('grass');

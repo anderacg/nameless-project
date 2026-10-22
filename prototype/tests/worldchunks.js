@@ -9,8 +9,11 @@
 // (the one-window picture re-recorded 2026-10-22 with W5, on purpose: swamp water a lighter peat blue, the owner's pick; was aceeae00.
 //  Again 2026-10-22 with W5, on purpose, the owner's play-test: the frost's snow blended into the grass and the fen's sparse
 //  mangroves (gfx/worldart.js snowCover, engine/worldnature.js FEN); was 963ff854)
+//  Again 2026-10-22 with W5, on purpose, the owner's second play-test: the water's tones across a climate's edge, the estates'
+//  ground on its land, the trees by climate and the swamp's bog forest; was d68036d6)
 // With -Gen also the generated world's roads, crossings and fords as the owner's play-test asked (2026-10-22): every road's end at
-// a holding led into its gate, a bridge's deck met on its axis by a ramp, a fork's end on the way it joins, a ford's shallows soft.
+// a holding led into its gate, a bridge's deck met on its axis by a ramp, a fork's end on the way it joins, a ford's shallows soft;
+// and as the second play-test asked, the shores curves within a few px of their tiles, the water's tones shading across a climate's edge.
 // On the map the scripts leave at load (no begin), as W5's picture. With -Gen (the generated classic seed, its water and roads
 // painted by the generated world's art) the same checks, its picture's hash an INFO line; then the prefetch at Large and Huge:
 // walking across each at Travel fast's pace (8x: a chunk in some 420 frames), 4 ms of painting a frame, the ring ahead is ready.
@@ -28,7 +31,7 @@ try{
    'the plan comes first, painting nothing: isClear reads its clear ground (a holding and its gate clear, off the map not) ('+planMs.toFixed(0)+' ms)');
  // ---- one window: the whole map, no seam anywhere (today's one canvas)
  const r1={},one=paint(0,0,W,H,r1),ref=img(one,0,0,W,H),h1=fnv(ref);
- if(t.WORLD.gen)info('the generated classic seed painted as one window: '+h1+' ('+r1.wall.toFixed(0)+' ms)');else ok(h1==='d68036d6','the map painted as one window (no seam anywhere: today\'s one canvas) is the baseline picture ('+h1+', W5 at b94cbe2: tests/worldprint.js; '+r1.wall.toFixed(0)+' ms)');
+ if(t.WORLD.gen)info('the generated classic seed painted as one window: '+h1+' ('+r1.wall.toFixed(0)+' ms)');else ok(h1==='2f990c2d','the map painted as one window (no seam anywhere: today\'s one canvas) is the baseline picture ('+h1+', W5 at b94cbe2: tests/worldprint.js; '+r1.wall.toFixed(0)+' ms)');
  // ---- stitched: every chunk into the whole picture, and no seam round any border
  q=performance.now();const whole=WA.whole(),wMs=performance.now()-q,nd=diff(img(whole,0,0,W,H),ref);
  ok(nd===0&&whole.width===W&&whole.height===H,cols*rows+' chunks of '+CS+' px ('+cols+' x '+rows+') stitched (worldCv) are that picture pixel for pixel ('+nd+' differ; '+wMs.toFixed(0)+' ms)');
@@ -117,7 +120,19 @@ try{
   // (every ford: shallow on its line, fading out across it (soft, no square edge), the river beyond)
   let fd=0,soft=0;for(const [ax,ay,bx,by] of P.fords){fd++;const f=fd,mx=(ax+bx)/2,my=(ay+by)/2,hor=Math.abs(ay-by)<1,s=[0,2,4,6,8,10,12,14,16,18,20].map(d=>t.fordAt(P,f,Math.floor(hor?mx:mx+d),Math.floor(hor?my+d:my)));
     if(s[0]>.4&&s[0]>s[6]&&!s[10]&&s.filter(v=>v>0&&v<1).length>=2)soft++}
-  ok(fd===t.WM.crossings.filter(c=>c.kind==='ford').length&&soft===fd,fd+' fords: shallow on their line, fading out over some '+G.ford.soft+' px across it ('+soft+' soft)')}
+  ok(fd===t.WM.crossings.filter(c=>c.kind==='ford').length&&soft===fd,fd+' fords: shallow on their line, fading out over some '+G.ford.soft+' px across it ('+soft+' soft)');
+  // (the shores are curves (wpx, the second play-test): water and land drawn by the water's field, not the tiles' squares, yet
+  //  never deep in a tile of the other kind (passing stays by tile): a staircase of tiles reads as a slope, a lake's corner an arc)
+  {const K=P.wk,MW=t.MW,MH=t.MH,lim=Math.ceil(5+G.wob);let edgeT=0,off=0,deep=0;
+   for(let ty=1;ty<MH-1;ty++)for(let tx=1;tx<MW-1;tx++){if((tx*7+ty*13)%5)continue;const w=K[ty*MW+tx]>0;let mix=false;for(let b=-1;b<=1&&!mix;b++)for(let a=-1;a<=1;a++)if((K[(ty+b)*MW+tx+a]>0)!==w){mix=true;break}if(!mix)continue;edgeT++;
+    for(let y=0;y<16;y++)for(let x=0;x<16;x++){if((t.wpx(K,tx*16+x,ty*16+y)===1)===w)continue;off++;if(Math.min(x,15-x,y,15-y)>=lim)deep++}}
+   ok(edgeT>100&&off>edgeT*4&&!deep,'the shores are curves: of '+edgeT+' tiles at a shore (a fifth of them), '+off+' pixels are drawn as the other kind (corners rounded, steps a slope), none '+lim+' px or more into its tile ('+deep+')')}
+  // (the water's tones by the climates' share round each tile corner (ClimMix): across a climate's edge, from one pixel to the
+  //  next, a step of a few levels at most: no blocks of one climate's water in another's, the noise by Thornbrook)
+  {const MW=t.MW,MH=t.MH,WL=t.CLIMS.map(c=>t.WATER_RGB[c]);let edges=0,jump=0;
+   for(let ty=2;ty<MH-2&&edges<2000;ty++)for(let tx=2;tx<MW-3;tx++){const i=ty*MW+tx;if(t.tiles[i]!==t.T_WATER||t.tiles[i+1]!==t.T_WATER||t.climate[i]===t.climate[i+1])continue;edges++;
+    const CM=new t.ClimMix(tx-1,ty,tx+2,ty,5);let prev=null;for(let x=(tx-1)*16;x<(tx+3)*16;x++){const c=t.palAt(CM,WL,(x>>4)-tx+1,(x&15)/16,.5)[1];if(prev)jump=Math.max(jump,...[0,1,2].map(n=>Math.abs(c[n]-prev[n])));prev=c}}
+   ok(edges>20&&jump<=6,'the water shades across a climate’s edge: '+edges+' edges, the most a tone steps from a pixel to the next '+jump.toFixed(1)+' (6 at most)')}}
  // ---- the prefetch at Large and Huge (with -Gen): the camera walks across the middle of each world at 8x's pace, the painter
  //      given 4 ms a frame; the chunks that come into view were painted before they did, the LRU held at its cap
  if(t.WORLD.gen){const W0=t.WM;

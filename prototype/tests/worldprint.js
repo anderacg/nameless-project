@@ -48,7 +48,14 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 // (G6 with both: the spawn's first spot and the art's two spots: measured on the two together at the merge: fb7895ea)
 // (G7 and GB2 re-recorded 2026-10-22, on purpose, for item categories, as W7 and B2 below, for the same reasons and checked the same
 //  way: both back as they were. Was G7 8a722172, GB2 b4f0d917; G1-G6 and G8 unchanged)
-const GEXPECT={W1:'94e87250',W2:'6bc88128',W3:'0240c3fb',W4:'ceb55e1f',W5:'4ea4e263',W6:'fb7895ea',W7:'9517c6f9',W8:'f540d98e',B2:'f56d6d82'};
+// (G5, G6 re-recorded 2026-10-22, on purpose, the owner's second play-test of the generated world (gfx/worldart.js, gfx/
+//  structures.js, engine/worldnature.js): the shores curves (wpx), the water's tones shading across a climate's edge (ClimMix: the
+//  blocks of the frost's water in the grass's gone) and a river's into a lake's, fords by climate (and a road's tile on a river drawn
+//  as the ford it is), the estates' ground on its land (pastures fenced on their own ground, fields by climate, ragged), the trees by
+//  climate (PX.WORLD_TREES: a few bare and dead), the swamp's forest a bog, the mangrove redrawn. G6 moved at all three spots by
+//  day and night (5fe0477c e5ff4475 fe0c0ce6 a0764108 5a4a17b0 7a468163 to d7cc4319 7378982a 3e74611b c618bbd4 2682905c 85e4496b:
+//  water, woods or estates in view at each). Was G5 4ea4e263, G6 fb7895ea; G1-G4, G7, G8 and GB2 unchanged)
+const GEXPECT={W1:'94e87250',W2:'6bc88128',W3:'0240c3fb',W4:'ceb55e1f',W5:'930a07e7',W6:'15b00503',W7:'9517c6f9',W8:'f540d98e',B2:'f56d6d82'};
 // (the random presets' sums re-recorded 2026-10-22, on purpose, Phase 2b: the owner's "the holdings seem a bit too much": Normal
 //  27 holdings by default (was 37), Large 40 (was 55), so their settings (in the sum) and placement change; with them two clamps
 //  of stage 7 the fewer holdings needed (worldplace.js): a port only on the open sea (placeOpen: a strait a road bridged had left
@@ -56,7 +63,14 @@ const GEXPECT={W1:'94e87250',W2:'6bc88128',W3:'0240c3fb',W4:'ceb55e1f',W5:'4ea4e
 //  redwater's to 38%). Checked by putting back 37 / 55 holdings, the old port rule and 30% at stage 7: all four as before, and the
 //  classic world unchanged throughout. Were Normal s1 128cfb7e, s2 2b581da4, s3 c38ac906, Large s1 5af09941)
 const SUMS={classic:'7333836c','Normal s1':'103bc267','Normal s2':'bf4d8d77','Normal s3':'23d160c1','Large s1':'ab0227f1'};
-const EXPECT={W1:'65e24662',W2:'2b49a168',W3:'dc546553',W4:'46450e62',W5:'c3d24a9e',W6:'481b04b2',W7:'055dd3a6',W8:'742df600',B2:'290c6cb7'};// (at 0a42712; B2 at R3; W6-W8 at Phase 1; W6 at depth, smooth walking and pasture herds and label layout; W7, B2 at save v3)
+const EXPECT={W1:'65e24662',W2:'2b49a168',W3:'dc546553',W4:'46450e62',W5:'9f99c580',W6:'9e08cef8',W7:'055dd3a6',W8:'742df600',B2:'290c6cb7'};// (at 0a42712; B2 at R3; W6-W8 at Phase 1; W6 at depth, smooth walking and pasture herds and label layout; W7, B2 at save v3)
+// (W5, W6 re-recorded 2026-10-22, on purpose, the owner's second play-test, what of it today's map shares (its shores stay
+//  square): the water's tones shading across a climate's edge (gfx/worldart.js ClimMix, no blocks of the frost's water in the
+//  grass's), the estates' ground on its land (gfx/structures.js estateGround: pastures fenced on their own ground, fields by climate,
+//  ragged), the trees by climate (engine/worldnature.js PX.WORLD_TREES: a few bare and dead), the swamp's forest a bog and the
+//  mangrove redrawn. W6 moved at all three spots by day and night (ab2f2712 f43b5c0a 06897de7 4b880f03 22ae8270 75c2f1c9 to
+//  958eacf8 6d74b55d f2b10c40 ec778995 9e82f728 1158f5b7: woods, water or estates in view at each). Was W5 c3d24a9e, W6 481b04b2; W1-W4, W7,
+//  W8 and B2 unchanged)
 // (W5, W6 re-recorded 2026-10-22, on purpose, the owner's play-test (the same climates on today's map): the frost's snow blended
 //  into the grass (gfx/worldart.js snowCover, landRGB: its cover rising over the frost's edge and with height, thinning out in
 //  patches over the grass beside it) and the fen's sparse mangroves (engine/worldnature.js FEN). W6 moved at the first and third

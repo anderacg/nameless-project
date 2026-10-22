@@ -93,6 +93,14 @@ function pierOf(t){
 const CROPS={grass:[['#c8a848','#a88a38'],['#86a440','#68862e'],['#c8a848','#a88a38'],['#9a7a4a','#7a5c36']],frost:[['#b8b090','#9a9274'],['#8a9a6a','#6e7e54']],
   desert:[['#c8a050','#a8843e'],['#8aa048','#6a8436']],swamp:[['#8a9a48','#6e7e3a'],['#6a9a5a','#4e7a46']]};
 const SOIL={grass:'#6e5434',frost:'#8a8070',desert:'#a07a48',swamp:'#4e4430'};
+// the worked ground by its land (estateGround): what lies in a field's furrows (FURROW: the frost's snow, the swamp's standing water,
+// each with a chance) and a pasture's marks over the ground itself (PEN: a, the grass grazed short, or showing through the frost's
+// trampled snow, the desert's dry tufts, the swamp's rushes; b, the ground trodden bare: dirt, trampled snow, sand, mud and puddles),
+// so a pen is the land it stands on, fenced. Between the grass and the frost by the snow's cover there (gfx/worldart.js snowCover).
+// Both fade out toward an edge with no plot beyond (soft: px)
+const FURROW={frost:[[228,234,242],.85],swamp:[[70,92,96],.3]},EDGE_SOFT=4;
+const PEN={grass:{a:[[132,152,72],[150,164,84]],b:[[118,100,62],[100,86,54]]},frost:{a:[[112,124,92],[94,108,78]],b:[[190,198,212],[166,176,194]]},
+  desert:{a:[[170,160,84],[142,134,66]],b:[[188,154,96],[168,136,84]]},swamp:{a:[[86,112,56],[70,94,46]],b:[[70,60,40],[84,106,108]]}};
 // the flat part of an estate at its level, as one picture placed at (cv.x, cv.y) on the map; kept on its lot (l._eg) until its level
 // changes: an estate pulled down and placed again elsewhere, or another world's holding of the same name, draws its own
 function estateGround(t,k,lv){
@@ -100,33 +108,41 @@ function estateGround(t,k,lv){
   const c=climAt(p.x,p.y),plots=plotsAt(t,k,lv),pier=k==='port'?pierOf(t):null,plen=pier?10+lv*6:0,tiles=[[p.tx,p.ty],...plots];
   let x0=Math.min(...tiles.map(q=>q[0]))*TILE-2,y0=Math.min(...tiles.map(q=>q[1]))*TILE-2,x1=(Math.max(...tiles.map(q=>q[0]))+1)*TILE+2,y1=(Math.max(...tiles.map(q=>q[1]))+1)*TILE+2;
   if(pier){x0=Math.min(x0,pier.x-plen-6);x1=Math.max(x1,pier.x+plen+6);y0=Math.min(y0,pier.y-plen-6);y1=Math.max(y1,pier.y+plen+6)}
-  const has=(x,y)=>plots.some(q=>q[0]===x&&q[1]===y),h=(x,y,s)=>hash(x,y,t.seed*7+s);
+  const has=(x,y)=>plots.some(q=>q[0]===x&&q[1]===y),h=(x,y,s)=>hash(x,y,t.seed*7+s),SC=WorldArt.ensure().snow;
+  // (a plot's land: how far into the frost by the snow's cover (0 the grass, 1 the frost), and its pen's colours there)
+  const frOf=(tx,ty)=>c==='grass'||c==='frost'?Math.max(0,Math.min(1,(SC[ty*MW+tx]-.3)/.4)):0,penOf=fr=>{const A=PEN[c==='frost'?'grass':c],B=PEN.frost;return{a:A.a.map((q,i)=>mixc(q,B.a[i],fr)),b:A.b.map((q,i)=>mixc(q,B.b[i],fr))}};
   const cv=mkc(x1-x0,y1-y0,g=>{const r=(col,x,y,w,hh)=>rect(g,col,Math.round(x-x0),Math.round(y-y0),w||1,hh||1);
     for(const [tx,ty] of plots){const X=tx*TILE,Y=ty*TILE,edge=(a,b)=>!has(tx+a,ty+b)&&!(tx+a===p.tx&&ty+b===p.ty);
-      if(k==='farm'){// a field: furrows of one crop, running one way or the other, a worn edge where the field ends
-        const C=CROPS[c],[c0,c1]=C[Math.floor(h(tx,ty,1)*C.length)],across=h(tx,ty,2)<.5;r(SOIL[c],X,Y,16,16);
-        for(let i=0;i<16;i+=3){if(across){r(c0,X,Y+i,16,2);r(c1,X,Y+i+1,16,1)}else{r(c0,X+i,Y,2,16);r(c1,X+i+1,Y,1,16)}}
-        for(let i=0;i<5;i++)r(c1,X+Math.floor(h(tx*5+i,ty,3)*15),Y+Math.floor(h(tx,ty*5+i,4)*15),1,1);
-        if(edge(0,-1))r('#5a7a34',X,Y,16,1);if(edge(0,1))r('#4a6a2c',X,Y+15,16,1);if(edge(-1,0))r('#5a7a34',X,Y,1,16);if(edge(1,0))r('#4a6a2c',X+15,Y,1,16)}
-      else if(k==='pasture'){// grazing ground behind a rail fence (its herd walks on it: critters)
-        r('#5e9440',X,Y,16,16);for(let i=0;i<10;i++)r(i%2?'#72a84c':'#4e8436',X+Math.floor(h(tx*9+i,ty,5)*15),Y+Math.floor(h(tx,ty*9+i,6)*15),1,1);
+      // (how far a pixel of the plot lies from an edge with no plot beyond, px)
+      const eN=edge(0,-1),eS=edge(0,1),eW=edge(-1,0),eE=edge(1,0),ed=(x,y)=>Math.min(eW?x:9,eE?15-x:9,eN?y:9,eS?15-y:9),fr=frOf(tx,ty),px=(col,x,y)=>r(hex(col),X+x,Y+y);
+      if(k==='farm'){// a field: furrows of one crop, running one way or the other, the furrows' troughs bare (snow in them in the
+        // frost, water now and then in the swamp), frost on the crop in the snow; its edge ragged into the ground round it
+        const C=CROPS[c],[c0,c1]=C[Math.floor(h(tx,ty,1)*C.length)],across=h(tx,ty,2)<.5,Q=[rgbOf(c0),rgbOf(c1),rgbOf(SOIL[c])],fu=FURROW[c==='grass'?'frost':c];
+        for(let y=0;y<16;y++)for(let x=0;x<16;x++){const e=ed(x,y),n=h(tx*16+x,ty*16+y,3);if(e<2&&n<(e?.25:.55))continue;const m=(across?y:x)%3;let col=Q[m===0?0:m===1?1:2];
+          if(m===2&&fu&&h(tx*16+x,ty*16+y,8)<fu[1]*(c==='grass'||c==='frost'?fr:1))col=fu[0];else if(m<2&&fr&&h(tx*16+x,ty*16+y,4)<fr*.22)col=FURROW.frost[0];else if(m<2&&h(tx*16+x,ty*16+y,5)<.02)col=Q[1];px(col,x,y)}}
+      else if(k==='pasture'){// grazing ground behind a rail fence (its herd walks on it: critters): the land's own ground, grazed,
+        // trodden and fouled in patches (PEN), fewer toward an open edge
+        const pn=penOf(fr);for(let y=0;y<16;y++)for(let x=0;x<16;x++){const X1=X+x,Y1=Y+y,n=wnoise2(X1/5,Y1/5,(t.seed%997)+61),q=h(X1,Y1,6),soft=Math.min(1,(ed(x,y)+1)/EDGE_SOFT);
+          if(n>.58&&q<.8*soft)px(pn.a[q<.4*soft?0:1],x,y);else if(n<.34&&q<.6*soft)px(pn.b[h(X1>>1,Y1,7)<.3?1:0],x,y);else if(q<.07*soft)px(pn.a[1],x,y)}
         const fence=(fx,fy,w,hh)=>{r('#8a6a42',fx,fy,w,hh);for(let i=0;i<Math.max(w,hh);i+=4)r('#5a3e24',fx+(w>1?i:0),fy+(hh>1?i:0)-1,1,2)};
-        if(edge(0,-1))fence(X,Y+1,16,1);if(edge(0,1))fence(X,Y+15,16,1);if(edge(-1,0))fence(X,Y+1,1,15);if(edge(1,0))fence(X+15,Y+1,1,15);
+        if(eN)fence(X,Y+1,16,1);if(eS)fence(X,Y+15,16,1);if(eW)fence(X,Y+1,1,15);if(eE)fence(X+15,Y+1,1,15);
 }
       else if(k==='quarry'){// an open pit cut into the ground: its corners rounded and its rim ragged so the ground shows round it,
         // pale spoil thrown up about the rim, the back wall cut in strata, terraces stepping down to a dark floor, the left wall
         // lit and the right in shadow, cut blocks waiting. Plots side by side make one pit (edges only where it ends)
-        const st=PX.MAT[ROCK_MAT[c]],eN=edge(0,-1),eS=edge(0,1),eW=edge(-1,0),eE=edge(1,0),x0=eW?2:0,x1=eE?13:15,y0=eN?2:0,y1=eS?13:15,hh=(x,y,s)=>h(tx*16+x,ty*16+y,s);
+        // (in the frost, snow on its spoil and its rim, more the deeper in it)
+        const st=PX.MAT[ROCK_MAT[c]],x0=eW?2:0,x1=eE?13:15,y0=eN?2:0,y1=eS?13:15,hh=(x,y,s)=>h(tx*16+x,ty*16+y,s);
         const rim=(x,y)=>x===x0&&eW||x===x1&&eE||y===y0&&eN||y===y1&&eS;
         const inside=(x,y)=>x>=x0&&x<=x1&&y>=y0&&y<=y1&&!((x===x0&&eW||x===x1&&eE)&&(y===y0&&eN||y===y1&&eS))&&!((x===x0+1&&eW||x===x1-1&&eE)&&(y===y0&&eN||y===y1&&eS)&&hh(x,y,2)<.5)&&!(rim(x,y)&&hh(x,y,3)<.18);
         for(let y=0;y<16;y++)for(let x=0;x<16;x++){
           if(!inside(x,y)){// spoil: gravel about the rim
-            if((eN&&y<y0||eW&&x<x0||eE&&x>x1||eS&&y>y1)&&hh(x,y,4)<.22)r(hh(x,y,5)<.5?st[0]:st[1],X+x,Y+y);continue}
+            if((eN&&y<y0||eW&&x<x0||eE&&x>x1||eS&&y>y1)&&hh(x,y,4)<.22){const sn=fr&&hh(x,y,12)<fr*.7;if(sn)px(FURROW.frost[0],x,y);else r(hh(x,y,5)<.5?st[0]:st[1],X+x,Y+y)}continue}
           const d=eN?y-y0:9+y;let col;// d: how far below the back rim
           if(d===0)col=st[0];else if(d<4)col=(d+(hh(x,0,6)<.3?1:0))%2?st[1]:st[2];else if(d===4)col=st[0];else if(d<7)col=st[2];else if(d===7)col=st[1];
           // the floor: worked rock, mottled, with rubble and a further terrace every few rows down a long pit
           else if(d>8&&(d-8)%6===0)col=st[1];else if(d>8&&(d-8)%6===1)col=st[0];else{const n=hh(x,y,9);col=n<.12?st[1]:n<.55?st[2]:st[3]}
           if(x===x0&&eW&&d>0)col=st[1];if(x===x1&&eE&&d>0)col=st[3];if(y===y1&&eS)col=st[2];
+          if(d===0&&fr&&hh(x,y,13)<fr*.75||d===4&&fr&&hh(x,y,14)<fr*.35)col=hex(FURROW.frost[0]);
           r(col,X+x,Y+y)}
         // a cut block or two on the floor
         for(let i=0;i<1+(hh(0,0,7)<.5?1:0);i++){const bx=X+x0+2+Math.floor(hh(i,1,8)*Math.max(1,x1-x0-6)),by=Y+Math.max(y0+9,Math.min(y1-3,y0+9+Math.floor(hh(i,2,8)*3)));r(st[0],bx,by,3,1);r(st[1],bx,by+1,3,1);r(st[3],bx,by+2,3,1)}}}
