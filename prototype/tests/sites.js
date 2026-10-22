@@ -1,7 +1,8 @@
 'use strict';
 // Sites: caves, traveller camps, bandit hideouts, ruins and shrines are spread over the map, reachable, hidden until seen;
 // each one plays out (fights, chests, trade, sellswords, rest, news, prayer), refills or moves on, saves, and is drawn. A bandit
-// camp or hideout, and a cave, open a page when you walk up: scouting, attacking (it asks first), a camp's parley, Leave.
+// camp or hideout, and a cave, open a page when you click them (tests/siteopen.js: only then): scouting, attacking (it asks
+// first), a camp's parley, Leave.
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);
 try{
  const t=T,G=t.G,P=t.P,W=t.W,MW=t.MW,MH=t.MH,TILE=t.TILE;try{localStorage.clear()}catch(e){}
@@ -18,7 +19,8 @@ try{
  // hidden until seen
  ok(S.filter(s=>s.known()&&s.type!=='camp').length===0,'sites start hidden');
  {const k=of('camp').filter(s=>s.known());ok(k.length<of('camp').length&&of('camp').every(c=>c.known()===t.seenAt(c.x,c.y)),'bandit camps stand in plain sight: on the map (and the minimap) once you have seen their ground, not before ('+k.length+' of '+of('camp').length+' known at the start)')}
- const go=s=>{P.x=s.x;P.y=s.y;P.tx=null;G.mode='world';G.modal=false;t.hidePanel();G.encCool=0;G.lastSite=null;return t.updateSites()};
+ // (reached and clicked: your scouts see it as you come, and the click beside it opens it: world.js clickAt, interact)
+ const go=s=>{P.x=s.x;P.y=s.y;P.tx=null;G.mode='world';G.modal=false;t.hidePanel();G.encCool=0;G.lastSite=null;t.updateSites();return t.interact(s)};
  const strong=()=>{P.troops={hum_knight:25,hum_long:15};P.hp=null;t.vitals()};
  // cave
  const cave=of('cave')[0];go(cave);ok(cave.seen&&G.mode==='site'&&new RegExp(cave.name).test(panel())&&document.querySelector('.pg-banner')&&/tracks/.test(panel()),'reaching a cave spots it and opens its page');
@@ -71,18 +73,18 @@ try{
  // the bandit camps are sites too: on their fixed spots, in plain sight, a chieftain and the bands sheltering there
  {const c=t.camps()[0];ok(t.camps().length===t.CAMP_SPOTS.length&&t.camps().every(x=>t.CAMP_SPOTS.some(p=>p.tx===x.tx&&p.ty===x.ty))&&t.objKind(c)==='site'&&/Bandit camp/.test(t.tipFor(c)),'the '+t.CAMP_SPOTS.length+' bandit camps are sites on their spots, with their own tooltip');
   G.mode='world';G.modal=false;t.hidePanel();G.encCool=0;G.enc=null;c.cleared=false;c.bands=[t.asParty({x:c.x,y:c.y,n:3,kind:'bandits',list:['militia','militia','militia'],t:0,a:0,cool:0})];t.enterSite(c);
-  ok(G.mode==='site'&&!G.enc,'walking up to one opens its page');t.act('site-attack');
+  ok(G.mode==='site'&&!G.enc,'clicked, one opens its page');t.act('site-attack');
   ok(G.enc&&G.enc.kind==='camp'&&G.enc.ref===c&&G.enc.list.includes('chief')&&G.enc.list.length>=10,'Attack means fighting its chieftain, its raiders and the band sheltering there ('+(G.enc&&G.enc.list.length)+')');t.act('flee');
   t.clearPlace(c,10);ok(c.cleared&&t.pickAt(c.x,c.y-12)!==c,'cleared, it lies empty ('+c.cleared+')');G.day=c.back;t.siteDay();ok(!c.cleared,'and its raiders are back after 10 days ('+c.cleared+' day '+G.day+' back '+c.back+')')}
- // ---- walking up to a bandit camp or hideout opens its page (sites.js Lair, window.js PageScreen): what you can see from
+ // ---- a bandit camp or hideout clicked opens its page (sites.js Lair, window.js PageScreen): what you can see from
  // outside, vague; Scout (once a visit) for the truth; Attack (it asks first: the fight as walking in made it); Parley (pay them
  // off, or make them yield if they fear you); Leave. Cleared, it lies empty. Bands that catch you on the road fight as before
  {const q=s=>document.querySelector(s),qa=s=>[...document.querySelectorAll(s)],world=()=>{G.mode='world';G.modal=false;t.hidePanel();G.encCool=0;G.enc=null;G.site=null;G.siteSpy=null;G.par=null;G.lastSite=null;P.tx=null;G.chase=null};
   const lucky=(a,arg,r)=>{const r0=Math.random;let f=true;const s=t.seeded(91);Math.random=()=>f?(f=false,r):s();try{t.act(a,arg)}finally{Math.random=r0}};
   const c=t.camps()[1],acts=()=>qa('.rwbody .rkact').map(b=>b.dataset.act+':'+b.dataset.rk).join();P.troops={hum_knight:4,hum_long:4};P.gold=2000;P.sk.scout.lv=3;// (a rough read before scouting: window.js insight; tests/conduct.js reads every level)
-  world();c.cleared=false;c.bands=[];P.x=c.x;P.y=c.y+6;t.updateSites();
+  world();c.cleared=false;c.bands=[];P.x=c.x;P.y=c.y+6;t.updateSites();ok(G.mode==='world'&&!G.site,'walking up to it, unclicked, opens nothing');t.interact(c);
   ok(G.mode==='site'&&G.site===c&&!G.enc&&q('#panel.paged')&&!q('.rail')&&q('.rwin h2').textContent===c.name&&acts()==='site-scout:q,site-ask:w,site-tab:e'&&/Fewer than|handful|dozen|score|fifteen|dozens/.test(q('.pg-facts').textContent)&&q('.rwbody>.pg-banner')&&!q('.pg-banner').textContent.trim(),
-    'walking up to a bandit camp opens its page: no fight, its picture (a banner, no words), what you can see ('+q('.pg-facts').textContent+'), Scout, Attack and Parley (Q W E)');
+    'a bandit camp clicked opens its page: no fight, its picture (a banner, no words), what you can see ('+q('.pg-facts').textContent+'), Scout, Attack and Parley (Q W E)');
   {const g=c.guess(),txt=q('.rwbody').textContent;ok(new RegExp(t.roughly(g.n),'i').test(txt)&&/they look/i.test(txt)&&/Talk of plunder/.test(txt)&&c.ld&&txt.includes(c.ld.name)&&!/Power \d/.test(txt)&&!/Tier \d/.test(txt)&&!/×\d/.test(txt),'before scouting all of it vague: '+t.roughly(g.n)+', how strong they look, a rumour of loot, their chief by name; no counts, kinds or power')}
   // Scout: unseen, the exact numbers, kinds and loot, and the fight is the one they saw
   {const sk0=P.sk.scout.xp+P.sk.scout.lv*1e4;lucky('site-scout',null,0);const y=c.spied(),txt=q('.rwbody').textContent,all=c.all(y.list);

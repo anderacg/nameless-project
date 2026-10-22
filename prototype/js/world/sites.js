@@ -57,7 +57,7 @@ class Site extends WorldObject{
   here(){return W.sites.includes(this)}
   get meetsAnyTime(){return true}
   chaseable(){return super.chaseable()&&this.pickable()}
-  // met: walked into (a fight, or its window), the one you last left (G.lastSite: not opened again as you stand by it)
+  // met: clicked beside it, or reached after a click on it (its window, or a fight); the one you last left (G.lastSite)
   meet(){G.lastSite=this;this.enter()}
   get T(){return SITE_TYPES[this.type]}
   get label(){return this.name+' ('+this.T.n.toLowerCase()+')'}
@@ -81,7 +81,7 @@ class Site extends WorldObject{
   // does clearing it leave it empty for a while; is its page shown then (lies empty), or nothing opens
   get empties(){return true}
   get emptyPage(){return false}
-  // walking in: a fight, or its window; false if nothing opened. A visit: what your scouts saw (G.siteSpy) is this visit's
+  // met (clicked: meet): a fight, or its window; false if nothing opened. A visit: what your scouts saw (G.siteSpy) is this visit's
   enter(){
     if(this.cleared&&this.empties&&!this.emptyPage){log('The '+this.name+' lies empty. Come back in '+Math.max(1,this.back-G.day)+' days.');return false}
     G.site=this;G.siteMsg='';G.siteTab=null;G.siteSpy=null;G.mode='site';showSite();return true}
@@ -361,7 +361,7 @@ class Shrine extends Site{
     if(offer&&P.gold<25)return true;const m=SHRINE_CHOICES[offer?1:0].perform(this);this.back=G.day+7;done(m);return true}
 }
 
-/* a bandit lair, a hideout or a camp: a chieftain and his raiders. Walking up opens its page: what you can see from outside
+/* a bandit lair, a hideout or a camp: a chieftain and his raiders. Clicked, it opens its page: what you can see from outside
    (guess: about how many, how strong they look, the talk of their loot; its chieftain is known by name), Scout for the truth
    (the fight's foes rolled then: the fight is the one they saw), Attack (it asks first: the fight as walking in always made it),
    Parley (pay them to break camp, or make them yield if they fear you: parley.js lairPay, lairYield, lairFate), Leave. Cleared,
@@ -537,14 +537,16 @@ function genSites(){
 }
 
 /* on the map */
-// spot sites in view, and step into one you reach. Returns true if a panel or a fight opened.
+// spot sites in view, and forget the one you last left once you are well away from it (G.lastSite). A site opens only when you
+// clicked or tapped it (the owner, 2026-10-22): a click beside it opens it at once, one further off walks you there and opens it
+// on arrival (world.js clickAt, the chase: marchStep meets it); walking past one, or stopping by one you did not click, opens
+// nothing. Never opens anything itself (false)
 function updateSites(){
   const V=vis();
   for(const s of W.sites){
     const dd=Math.hypot(P.x-s.x,P.y-s.y);
     if(!s.seen&&s.scoutable&&dd<V*.9){s.seen=true;train('scout',4);log('Your scouts spot '+s.scoutLine()+'.')}
-    if(G.lastSite===s){if(dd>28)G.lastSite=null;continue}
-    if(dd<12&&!G.modal&&G.encCool<=0){G.lastSite=s;P.tx=null;return enterSite(s)}
+    if(G.lastSite===s&&dd>28)G.lastSite=null;
   }
   return false;
 }
