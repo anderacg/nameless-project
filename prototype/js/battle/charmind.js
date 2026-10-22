@@ -54,8 +54,9 @@ class CharacterMind{
   constructor(u){this.u=u}
   static of(u){let m=CHAR_MINDS.get(u);if(!m)CHAR_MINDS.set(u,m=u.hero?new HeroMind(u):new ChampionMind(u));return m}
   // one moment of a character: their timers, a move under way, a moment's move or skill if one fits, else as their group goes
-  auto(dt){const u=this.u;if(u.hp<=0)return;this.timers(dt);
-    if(!this.own(dt)){const S=this.state;if(S.fallBack&&!withdrawing(u))this.fallStep(S,dt);else aiUnit(u,dt,charStrike)}}
+  // (knocked down: they lie as a soldier does, nothing else, their timers aside; a wind-up holds them to their step: actors.js)
+  auto(dt){const u=this.u;if(u.hp<=0)return;this.timers(dt);if(PHYSICS.on&&u.down>0){physDown(u,dt);return}
+    if(!this.own(dt)){const S=this.state;if(S.fallBack&&!withdrawing(u)&&!u.wind)this.fallStep(S,dt);else aiUnit(u,dt,charStrike)}}
   // (after a move under way: withdrawing, no skills, just away (morale.js); a skill or a move just used on his commander's call or
   // your Auto skills (command) owns this moment)
   called(){const u=this.u;if(withdrawing(u)||u.stun>0)return false;if(u.castNow){u.castNow=false;return true}return false}
@@ -65,6 +66,8 @@ class CharacterMind{
     this.aimAt(t);
     // (a bow: drawn already, by the shot cycle every shooter has (actors.js shotStep); loosed now, at full draw)
     if(this.drawsBow()){this.loose(t,1);return}
+    // (a heavy weapon's hard attack ready: wound up first, then their finisher: hard, movesets.js)
+    {const H=Moveset.hardNow(u,t);if(H)return Actor.of(u).windUp(t,H)}
     return this.blow(t);
   }
   /* the special moves, for every character: a Shield Bash (with a shield) when it matters: a heavy hitter, a big beast or another
@@ -115,7 +118,7 @@ class CharacterMind{
     const mark=this.fallMark(g),ok=!fallMates(u).length||B.t-F.at>=X.max||!mark||staOf(u)>=FATIGUE.tired&&this.fallSafe(mark);
     if(!ok)return;S.fallBack=null;if(mark&&mark.e&&!(g&&g.hasTarget)){u.tgt=mark.e;u.rt=1.5;S.backIn=B.t}}// (its own pick: no duel draws it off him for CHAR_FALL.keep s)
   static command(dt){
-    for(const u of B.units){if(u.hp<=0||!isChar(u)||u.stun>0||withdrawing(u)||u.hero&&MANUAL_HERO)continue;CharacterMind.of(u).command(dt)}}
+    for(const u of B.units){if(u.hp<=0||!isChar(u)||u.stun>0||u.down>0||u.wind||withdrawing(u)||u.hero&&MANUAL_HERO)continue;CharacterMind.of(u).command(dt)}}
     // (one character's calls, each moment)
     command(dt){const u=this.u;
       const ai=aiCommands(u),S=this.state;
@@ -146,6 +149,8 @@ class HeroMind extends CharacterMind{
       if(u.atkAt!==at){u.cd+=CHAR_AI.pause;if(X.step===CB.length-1)u.cd+=breath()}return}
     swing()}
   shove(t,M){shove()}
+  // (a hard attack wound up: the finisher of your weapon's combo, struck now; its blows may throw down: combat.js hitFoe)
+  hard(t,H){const X=heroState(),CB=heroCombo();X.step=CB.length-2;X.win=1;X.hard=H;try{this.blow(t)}finally{X.hard=null}}
   dodgeCost(){return dodgeCost()}
   dodge(dx,dy,cost){dodge(dx,dy)}
   heal(){castSkill('heal')}
@@ -181,16 +186,19 @@ class ChampionMind extends CharacterMind{
     fireBolt(u,Math.atan2(t.y-u.y,t.x-u.x)+spreadOf(E),u.s.dmg*(.55+.6*p)*(.9+Math.random()*.2)*(u.buffT>0?1.3:1)*tiredMul(u).dmg,u.s,Math.min(Math.hypot(t.x-u.x,t.y-u.y),aimReach(p)),{speed:ARC_SPEED*(.8+Math.min(Math.hypot(t.x-u.x,t.y-u.y),aimReach(p))/250)*(.6+.4*p),sc:E.d});
     if(u.ammo==null)u.ammo=quiverOf(u.s);if(--u.ammo<=0)outOfAmmo(u)}
   // a champion's blow: the next step of their combo (a troop's shot for one with a crossbow, a sling or magic). It costs what a soldier's blow does; tired, softer
-  blow(t){const u=this.u;
+  // (H: a hard attack, its finisher's blows may throw down: hard)
+  blow(t,H){const u=this.u;
     if(u.s.range)return attack(u,t);
     const C=this.state,CB=ChampionMind.comboOf(u),step=C.win>0?(C.step+1)%CB.length:0,tired=tiredMul(u).dmg;
     staSpend(u,blowSta(step,CB));C.spT=0;C.step=step;const c=CB[step],a=Math.atan2(t.y-u.y,t.x-u.x);
     u.cd=c.cd*((u.s.cd||.8)/.45)*.9+CHAR_AI.pause;C.win=u.cd+COMBO_WINDOW;u.atkAt=B.t;u.atkStyle=STYLE[c.shape];u.face=Math.cos(a)>=0?1:-1;
     const R=(u.s.reach||12)+c.reach,life=c.shape==='slam'||c.shape==='spin'?.32:.2;
     B.slashes.push({kind:c.shape,x:u.x,y:u.y-6,a,life,max:life,arc:c.arc,r:R,col:u.team?'255,170,150':c.col,w:c.w,dir:c.dir,area:c.area,wid:c.wid});
-    let n=0;for(const e of champFoes(u)){if(!inShape(u.x,u.y,a,R,c,e))continue;hit(u,e,u.s.dmg*tired*c.mult*(.85+Math.random()*.3)*(c.shape==='thrust'?Math.max(.5,1-.2*n):1),shapeDt(c.shape,dtOf(u.s)));knock(e,u.x,u.y,c.kb||0);if(c.stun)stun(e,c.stun);n++}
+    let n=0;for(const e of champFoes(u)){if(!inShape(u.x,u.y,a,R,c,e))continue;hit(u,e,u.s.dmg*tired*c.mult*(.85+Math.random()*.3)*(c.shape==='thrust'?Math.max(.5,1-.2*n):1),shapeDt(c.shape,dtOf(u.s)));knock(e,u.x,u.y,c.kb||0);if(c.stun)stun(e,c.stun);if(H&&PHYSICS.on)physBlow(u,e,H);n++}
     if(step===CB.length-1){u.cd+=breath();if(n)B.floats.push({x:u.x,y:u.y-26,t:c.n,life:.5,c:sideCol(u,'say')})}
   }
+  // (a hard attack wound up: their combo's finisher, struck now)
+  hard(t,H){const C=this.state,CB=ChampionMind.comboOf(this.u);C.step=CB.length-2;C.win=1;this.blow(t,H)}
   // a champion's own: the shove or bash (those in front knocked back and staggered), the roll (away, unhurt while it lasts)
   shove(t,M){const u=this.u;
     const C=this.state,a=Math.atan2(t.y-u.y,t.x-u.x);C.sp-=M.sp;u.atkAt=B.t;u.face=Math.cos(a)>=0?1:-1;

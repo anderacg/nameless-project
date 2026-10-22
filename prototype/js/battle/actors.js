@@ -139,6 +139,7 @@ class Actor extends Fighter{
     const u=this.u;
     if(PHYSICS.on&&physDown(u,dt))return;// (knocked down: he lies a moment, physics.js)
     if(u.stun>0){u.stun-=dt;u.spdNow=0;u.shot=null;return}
+    if(u.wind&&this.winding(dt))return;// (a hard attack wound up: he stands till it lands, attacks.js)
     if(u.rout){u.shot=null;return routStep(u,dt)}// (broken: it runs for its edge, morale.js)
     if(withdrawing(u)){u.shot=null;return withdrawStep(u,dt)}// (withdrawn: it leaves the field, morale.js)
     u.inSlot=false;
@@ -242,6 +243,8 @@ class CharActor extends Actor{
   fell(){const t=this.u;if(t.comp){const c=compInit(t.type);if(c)c.hurt=Math.max(c.hurt||0,G.day+2);log(COMPS[t.type].n+' is wounded and drops out of the fight: out for 2 days.','bad')}else super.fell()}// (never killed)
   steady(){return Math.max(AIM.floor,1-AIM.skill*this.shotSkill())*Math.max(AIM.floor,1-AIM.gear*this.weaponTier())}
   earnXp(t,was){}
+  // (a hard attack: their combo's finisher, charmind.js)
+  hardBlow(t,H){CharacterMind.of(this.u).hard(t,H)}
 }
 // your hero: shooting with your weapon (heroShot), an attack order turns their own arc, no press, their roll and talents
 // against wounds, your block (combat.js HeroHands), their fall, your race, skill and weapon in their aim, your bag for ammunition

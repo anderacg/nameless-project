@@ -71,7 +71,7 @@ const costText=S=>[S.mp?S.mp+' MP':'',S.sp?S.sp+' SP':''].filter(Boolean).join('
 const blockMul=()=>Math.max(.05,(has('shieldwall')?.1:.2)-gm('block')-.01*skill('block'));
 function knock(u,ox,oy,f){if(!f||u.hp<=0)return;const a=Math.atan2(u.y-oy,u.x-ox),k=PHYSICS.on?1/physMass(u):u.s.big?.2:1;// (physics: by his mass)
   u.kx=(u.kx||0)+Math.cos(a)*f*6*k;u.ky=(u.ky||0)+Math.sin(a)*f*6*k}
-function stun(u,t){u.stun=Math.max(u.stun||0,u.s.big?t*.4:t)}
+function stun(u,t){u.stun=Math.max(u.stun||0,u.s.big?t*.4:t);if(u.wind)u.wind=null}// (a hard attack's wind-up spoilt: movesets.js)
 // with a bow or a staff the attack shoots instead: arrows cost stamina, bolts cost mana and splash
 const SHOT={ranged:{sp:7,mp:0,cd:.62,mult:.95},magic:{sp:0,mp:7,cd:.78,mult:1.15}};
 // The bow: hold to draw, let go to shoot. Power builds over DRAW_TIME and makes the arrow faster, farther and harder;
@@ -131,7 +131,7 @@ class HeroHands{
     const h=B.hero,X=this,dt=o.dt||shapeDt(o.shape,h.s.dt),mu=matchup(h.s,e.s,dt);let dm=h.s.dmg*(.85+Math.random()*.3)*mu*mult*(h.buffT>0?1.3:1)*(MANUAL_HERO?1:tiredMul(h).dmg);
     if(!o.noCrit&&Math.random()<(has('bloodlust')?.2:.1)+gm('crit')){dm*=1.8;B.floats.push({x:e.x,y:e.y-22,t:'Crit',life:.6,c:'#ffd24a'})}
     Actor.of(e).wound(dm*formTaken(e,h),mu,dt,h,false);vfxHit(h,e,dm,{crit:dm>h.s.dmg*1.7});train(meleeSk(),2);
-    knock(e,h.x,h.y,o.kb||0);if(o.stun)stun(e,o.stun);
+    knock(e,h.x,h.y,o.kb||0);if(o.stun)stun(e,o.stun);if(X.hard&&PHYSICS.on)physBlow(h,e,X.hard);// (your hero's hard attack: charmind.js)
     X.combo++;X.comboT=2.2;B.bestCombo=Math.max(B.bestCombo||0,X.combo);// (the longest chain: told in the log when the battle ends)
   }
   drawStart(){const h=B.hero;if(!h||h.hp<=0||B.blocking||this.busy()||h.cd>0||!haveShots())return;B.draw={t:0}}

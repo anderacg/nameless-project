@@ -7,7 +7,8 @@
    A charge lands with its momentum (morale.js chargeMul): its damage bonus is the old one, CHARGE's, by momentum (the run that
    built it, never more than the speed it still has at the blow: momentum), and its push is this impact in place of chargePush and
    chargeJolt: the two bodies go on together (a hit that does not bounce), the one struck thrown back by what that leaves him (u.kx,
-   u.ky, the slide every knock already uses: battle.js) and down a moment if thrown hard; heavy men, men backed by their ranks and a
+   u.ky, the slide every knock already uses: battle.js) and down a moment if thrown hard (only by a true charge or a hard
+   attack: movesets.js); heavy men, men backed by their ranks and a
    shield wall weigh more and give less; braced spears (morale.js spearBraced) stop the charge dead and hurt the riders; a wedge
    rider hits with its weight behind him. The jostle between soldiers shares the overlap by mass (battle.js jostle), so the heavy
    shove the light; routers stumble and wander (PHYSICS.rout, the battle's own seeded stream: physRng). All its numbers are here
@@ -78,8 +79,9 @@ function physAct(u,g,t,dt,mv,mx,my,spd,arr,o){
   if(mv)u.run=o.chase&&!o.back&&!o.wk&&!o.routed?(u.run||0)+sp*o.tm.run*groundRun(u,c,Math.sin(u.hd),sp):o.spurred?u.run:0;
   else{if(t&&!u.inSlot)u.dir=u.hd;if(!o.spurred)u.run=Math.max(0,(u.run||0)-CHARGE.run*dt)}
   physFeel(u,dt)}
-// knocked down: he lies till he gets up (no blow, no move but his slide); true while he is down (actors.js aiUnit)
-function physDown(u,dt){if(!(u.down>0))return false;u.down-=dt;u.shot=null;u.vel=0;u.acl=0;u.pstep=0;u.pf=B.t;u.spdNow=0;return true}
+// knocked down: he lies till he gets up (no blow, no move but his slide; up again, upAt: movesets.js grace); true while he is down
+// (actors.js aiUnit)
+function physDown(u,dt){if(!(u.down>0))return false;u.down-=dt;if(!(u.down>0))u.upAt=B.t;u.shot=null;u.vel=0;u.acl=0;u.pstep=0;u.pf=B.t;u.spdNow=0;return true}
 // a router's wandering, stumbling way (morale.js routStep, physics on): (mx, my) his way off, top his speed
 function physRout(u,dt,mx,my,top){
   const R=PHYSICS.rout,r=physRng();u.wob=clamp(((u.wob||0)+(r()-.5)*2*R.jit*dt)*(1-R.back*dt),-R.wob,R.wob);if(r()<R.trip*dt)u.vel=(u.vel||0)*R.tripK;
@@ -92,24 +94,39 @@ function physBacked(t,a){
   for(const o of spatialOn()?SG.near(t.x,t.y,H.supR+1,t.team,false):B.units){if(n>=H.supN)break;if(o===t||o.team!==t.team||o.hp<=0||o.rout||o.down>0)continue;
     const dx=o.x-t.x,dy=o.y-t.y,al=dx*c+dy*s;if(al>2&&al<H.supR&&Math.abs(dx*s-dy*c)<8){m+=H.support*physMass(o);n++}}
   return m*(shieldWallActive(t)?H.wall:1)}
-// thrown back by dv px/s along a; down a moment if hard enough for his weight (heavy men stand firmer; riders and big ones never)
-function physThrow(t,a,dv,canDown){
-  const H=PHYSICS.hit;if(!(dv>0)||t.hp<=0)return;t.kx=(t.kx||0)+Math.cos(a)*dv;t.ky=(t.ky||0)+Math.sin(a)*dv;
-  if(canDown&&dv>H.down*physMass(t)&&!t.s.big&&!t.s.mounted&&!(t.down>0)){t.down=t.downFor=clamp(H.downT*dv/(H.down*physMass(t)),H.downMin,H.downMax);t.shot=null;t.vel=0;if(!steady(t))shake(t,H.downShock)}}
+/* thrown back by dv px/s along a; down a moment if it may (down: false never; true, or the footing it must beat: a number, ×
+   what fells him) and it is hard enough (physFells) */
+function physThrow(t,a,dv,down){
+  if(!(dv>0)||t.hp<=0)return;t.kx=(t.kx||0)+Math.cos(a)*dv;t.ky=(t.ky||0)+Math.sin(a)*dv;
+  if(down&&physFells(t,dv,down===true?1:down))physFall(t,dv)}
+/* the one rule for going down: thrown hard enough for his weight (dv over PHYSICS.hit.down × his mass, × res: his footing; heavy
+   men stand firmer), never a rider or a big one, nor one down already; with movesets (movesets.js; not MOVESETS.old) nor one
+   rolling clear, nor one up again within MOVESETS.grace s */
+function physFells(t,dv,res){if(!(dv>PHYSICS.hit.down*physMass(t)*res)||t.s.big||t.s.mounted||t.down>0)return false;
+  return MOVESETS.old||!(B.t-(t.upAt??-Infinity)<MOVESETS.grace)&&!Actor.of(t).dodging()}
+// down: downT × how hard (the throw over what fells him), downMin to downMax s; his shot and a wind-up spoiled, his unit shaken
+function physFall(t,dv){const H=PHYSICS.hit;t.down=t.downFor=clamp(H.downT*dv/(H.down*physMass(t)),H.downMin,H.downMax);t.shot=null;t.vel=0;t.wind=null;if(!steady(t))shake(t,H.downShock)}
 /* a charge lands (morale.js chargeMul, physics on, in place of chargePush and chargeJolt): the rider (or runner) u and t go on
-   together at the speed their masses leave; t is thrown by that and those beside him by splash of it; u keeps only it */
+   together at the speed their masses leave; t is thrown by that (× a kind's rush: movesets.js) and those beside him by splash of
+   it; u keeps only it. Down only from a charge his moveset lets fell, at speed (Moveset.fells: m, the momentum); those beside
+   him only by a wedge */
 function physImpact(u,t,m){
   const H=PHYSICS.hit,a=Math.atan2(t.y-u.y,t.x-u.x),va=Math.max(0,(u.vel||0)*Math.cos(a-(u.hd??a)));if(!(va>0))return;
-  const W=u.s.charge&&u.grp?wedgeMembers(u.grp):[],wb=W.includes(u)?wedgeBonus(W.length):0,ma=physMass(u)*(1+H.wedge*wb),mt=physBacked(t,a),vc=va*ma/(ma+mt),dv=vc*H.kb;
-  physThrow(t,a,dv,true);
-  for(const o of spatialOn()?SG.near(t.x,t.y,H.splashR+1,t.team,false):B.units)if(o!==t&&o.team===t.team&&o.hp>0&&!o.s.big&&Math.hypot(o.x-t.x,o.y-t.y)<H.splashR)physThrow(o,a,dv*H.splash*physMass(t)/physMass(o),wb>0);
+  const W=u.s.charge&&u.grp?wedgeMembers(u.grp):[],wb=W.includes(u)?wedgeBonus(W.length):0,ma=physMass(u)*(1+H.wedge*wb),mt=physBacked(t,a),vc=va*ma/(ma+mt),dv=vc*H.kb*Moveset.rush(u),fell=Moveset.fells(u,m);
+  physThrow(t,a,dv,fell);
+  for(const o of spatialOn()?SG.near(t.x,t.y,H.splashR+1,t.team,false):B.units)if(o!==t&&o.team===t.team&&o.hp>0&&!o.s.big&&Math.hypot(o.x-t.x,o.y-t.y)<H.splashR)physThrow(o,a,dv*H.splash*physMass(t)/physMass(o),wb>0&&fell);
   u.vel=Math.min(u.vel,vc);if((u.s.charge||u.s.big)&&m>SHAKE.charge)jolt(SHAKE.amp*clamp(ma*va/H.shake,0,1.25))}
 // braced spears take a charge (morale.js chargeMul, physics on): the rider stopped dead, thrown back, staggered, shaken and hurt
 function physBraced(u,t,m){
   const H=PHYSICS.hit,a=Math.atan2(u.y-t.y,u.x-t.x),v=u.vel||0;u.vel=0;u.kx=(u.kx||0)+Math.cos(a)*v*H.braceBack;u.ky=(u.ky||0)+Math.sin(a)*v*H.braceBack;stun(u,H.braceStun);if(!steady(u))shake(u,H.braceShock*m);
   hit(t,u,meleeDmgOf(t.s)*H.braceHurt*m);fx(t.x,t.y-6,'#cfe0ff',4)}
-// a heavy beast's blow (attacks.js attack, physics on): the one it hits thrown by its weight, and down if hard enough
-function physBlow(u,t){const H=PHYSICS.hit,ma=physMass(u);if(ma<H.blowMass||t.hp<=0)return;const mt=physMass(t);physThrow(t,Math.atan2(t.y-u.y,t.x-u.x),H.blow*ma/(ma+mt),true)}
+/* a blow's throw (attacks.js, physics on). A normal one, from one as heavy as blowMass (a big beast, a rider): the one it hits
+   thrown by push of its weight's share (MOVESETS.push), never down (old movesets: in full, and down if hard enough). A hard
+   attack (Hd: movesets.js) from anyone: by its kb, against his ranks and shield wall behind him (physBacked), and down if that
+   beats his footing (Moveset.footing) and then its chance (the battle's own stream: physRng) */
+function physBlow(u,t,Hd){const H=PHYSICS.hit,M=MOVESETS,ma=physMass(u);if(t.hp<=0||!Hd&&ma<H.blowMass)return;const a=Math.atan2(t.y-u.y,t.x-u.x);
+  if(!Hd){physThrow(t,a,H.blow*(M.old?1:M.push)*ma/(ma+physMass(t)),M.old);return}
+  physThrow(t,a,H.blow*Hd.kb*ma/(ma+physBacked(t,a)),physRng()()<Hd.down&&Moveset.footing(u,t))}
 /* the jostle's share of the overlap a gives (b the rest: battle.js jostle; dx, dy from a to b), the lighter more; one pressing
    into a foe (heading at him: dt the frame) is slowed by him, the lighter more (PHYSICS.press: a rider ploughing into a crowd is
    soon held in it, a troll barely; one breaking away is not held) */

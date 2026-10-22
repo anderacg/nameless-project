@@ -86,12 +86,28 @@ class Fighter{
   // a shot from his quiver (s: his stats as he loosed)
   useAmmo(s){const u=this.u;if(u.ammo==null)u.ammo=quiverOf(s);if(--u.ammo<=0)this.outOfAmmo()}
   attack(t){
-    const u=this.u,s=u.s;u.cd=s.cd*(.9+Math.random()*.2);u.atkAt=B.t;if(B.sight)sightStruck(u,t);// (a blow or a shot loosed gives him away: terrain.js)
+    const u=this.u,s=u.s;if(!s.range){const H=Moveset.hardNow(u,t);if(H)return this.windUp(t,H)}// (a hard attack ready: wound up first, movesets.js)
+    u.cd=s.cd*(.9+Math.random()*.2);u.atkAt=B.t;if(B.sight)sightStruck(u,t);// (a blow or a shot loosed gives him away: terrain.js)
     if(s.range){const flat=s.magic||s.flat,E=this.aimErr();Missile.fire(u,Math.atan2(t.y-(flat?u.y-6:u.y),t.x-u.x)+spreadOf(E),s.dmg*(.85+Math.random()*.3)*(u.buffT>0?1.3:1)*arrowMul(u),arrowSrc(u,s),Math.hypot(t.x-u.x,t.y-u.y),{sc:E.d});if(!s.magic&&sfxOn()&&sndTurn('loose'))sfxAt('loose',u.x,u.y)}// (fire arrows: unitabilities.js)
     else{let dm=s.dmg*(.8+Math.random()*.4)*chargeMul(u,t)*tiredMul(u).dmg;fatigueBlow(u);// (a charge: by how far it ran, braced spears blunt it, morale.js; tired, softer: fatigue.js)
-      this.hit(t,dm);if(PHYSICS.on)physBlow(u,t);this.follow(t,dm)}// (a heavy beast's blow throws men: physics.js)
+      this.hit(t,dm);if(PHYSICS.on)physBlow(u,t);this.follow(t,dm)}// (a heavy one's blow pushes men: physics.js)
     if(s.range)this.useAmmo(s);
   }
+  /* ---- a hard attack (H: movesets.js MOVESETS.hard): wound up at t (u.wind {t: s left, e: t, H}), he stands (winding, from his
+     step: actors.js) till it lands on t still in his reach (hardBlow), or is spoilt (he runs, is stunned or thrown down, is sent elsewhere, t falls).
+     Its telegraph: a ring at his feet and its name over him. Its cooldown runs from the wind-up */
+  windUp(t,H){const u=this.u;u.wind={t:H.wind,e:t,H};u.hardAt=B.t+H.wind+H.cd;u.run=0;u.shot=null;u.face=t.x>=u.x?1:-1;if(B.sight)sightStruck(u,t);
+    B.rings.push({x:u.x,y:u.y-4,r:u.s.big?26:14,life:H.wind,max:H.wind,col:'255,150,60'});B.floats.push({x:u.x,y:u.y-(u.s.big?34:24),t:H.n,life:H.wind+.3,c:'#ffb070'})}
+  // (each moment wound up: true while it holds him, and the moment it lands; false, spoilt: he goes on as ever)
+  winding(dt){const u=this.u,W=u.wind;if(u.rout||withdrawing(u)||W.e.hp<=0||relocating(u,u.grp&&B.groups[u.grp])){u.wind=null;return false}
+    u.spdNow=0;u.shot=null;if((W.t-=dt)>0)return true;u.wind=null;const e=W.e,d=Math.hypot(e.x-u.x,e.y-u.y)-(e.s.big?12:0);
+    if(d<=(u.s.reach||11)+2+MOVESETS.slack)this.hardBlow(e,W.H);else B.floats.push({x:u.x,y:u.y-20,t:'Miss',life:.5,c:'#9aa3ad'});return true}
+  // a troop's or a beast's hard blow: his blow × H.dmg, its throw (physics on: may throw down), a stomp's on all round t too
+  hardBlow(t,H){
+    const u=this.u,s=u.s,a=Math.atan2(t.y-u.y,t.x-u.x),dm=s.dmg*H.dmg*(.8+Math.random()*.4)*tiredMul(u).dmg;u.cd=s.cd*(.9+Math.random()*.2);u.atkAt=B.t;u.atkStyle='overhead';u.face=Math.cos(a)>=0?1:-1;fatigueBlow(u);
+    this.hit(t,dm);if(PHYSICS.on)physBlow(u,t,H);
+    if(H.area)for(const o of spatialOn()?SG.near(t.x,t.y,H.area+13,t.team,false):B.units)if(o!==t&&o.hp>0&&o.team===t.team&&Math.hypot(o.x-t.x,o.y-t.y)-(o.s.big?12:0)<=H.area){this.hit(o,dm*.5);if(PHYSICS.on)physBlow(u,o,H)}
+    B.slashes.push({kind:'slam',x:u.x,y:u.y-6,a,life:.22,max:.22,arc:.8,r:(s.reach||11)+2,w:2,dir:1,area:H.area||9,col:'255,190,90'});fx(t.x,t.y,'#a89a78',8);shakeIt(2)}
   // a troop's melee blow: the look of its weapon, and what it does beyond the one it hits
   follow(t,dm){
     const u=this.u,s=u.s,a=Math.atan2(t.y-u.y,t.x-u.x),R=(s.reach||11)+2;u.face=Math.cos(a)>=0?1:-1;u.atkN=(u.atkN||0)+1;
