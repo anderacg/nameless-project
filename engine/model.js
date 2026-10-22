@@ -92,6 +92,10 @@
     rope:['#f4e4b4','#dcc488','#b09660','#76623e'],dark:['#3a3430','#2a2624','#1e1c1c','#141416'],
     // (W5: the elves' moon lavender, their pale living wood and its bark)
     moon:['#f0e6ff','#c6aaf2','#9070d0','#5c4498'],elfwood:['#f6f1e2','#ddd5be','#b3ab96','#7f7c74'],bark:['#a48e70','#7c6852','#5a4a3c','#3a3029']};
+  // (the cultures' own materials, decal letters and decals: given to PX.registerBuildStyle (buildmodels.js PX.MODEL_EXTRA) before this
+  // file loads, added after the built-in ones; a name already taken is an error)
+  const extra=(k,into,...taken)=>{for(const [n,v] of Object.entries((PX.MODEL_EXTRA||{})[k]||{})){if([into,...taken].some(t=>t[n]))throw new Error('the '+k+' '+n+' is taken');into[n]=v}};
+  extra('materials',FIXED,BASE);
   let RAMP=null;const ramps=()=>RAMP||(RAMP=Object.assign({},...Object.keys(BASE).map(k=>({[k]:PX.ramp(BASE[k]).map(hx)})),...Object.keys(FIXED).map(k=>({[k]:FIXED[k].map(hx)}))));
   PX.MODEL_MAT=Object.keys(BASE).concat(Object.keys(FIXED));const MATI=Object.fromEntries(PX.MODEL_MAT.map((k,i)=>[k,i]));
   // the light: from the upper left of the screen (west, a little north, high). Walls and roofs read it on their own scales: a wall
@@ -321,6 +325,7 @@
   // round one of moon glass with a warm glint; a hanging lantern of moonlight; a banner of moon lavender, its gold leaf)
   Object.assign(DECAL,{DoorLeaf:['...u...','..umu..','.umjmu.','.uuuuu.','udeaedu','udeaedu','udeaedu','udkaedu','udeaedu','udeaedu'],
     WinLeaf:['.uu.','ujmu','umju','ujmu','umau','uuuu'],WinRound:['.uuu.','ujmmu','umjau','ummmu','.uuu.'],LampLeaf:['uu.','.u.','yjy','.j.','.y.'],Banner:['uuu','mjm','mym','mmm','mqm','mmm','m.m']});
+  extra('letters',DCOL);extra('decals',DECAL);
   // (what counts as a door: a way in, for the game's doors and paths)
   const DOORISH=/^(door|barn|stall|forge|goods|rune|gate|adit|arch|hatch|flap)|^wheel$/i;
 

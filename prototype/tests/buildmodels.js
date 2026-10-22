@@ -28,6 +28,70 @@ const EXPECT={
  'cluster:mine':'d79ea221','cluster:quarry':'fddd64be','cluster:fishery':'f7bc3237','cluster:pasture':'66d394a6',
  'cluster:brewery':'ffde357d','cluster:granary':'dc1bfa5a','cluster:workshop':'ef3f5ba5','cluster:quarter':'0eb6fef3',
  'cluster:camp':'fac137cd','cluster:hideout':'9c7e04c9','cluster:travelers':'eaa68ba2'};
+// (K0, 2026-10-22: recorded at the split into the cultures' files, every culture on the generic plans with its own style table)
+// each culture's own block, which only its own file changes: re-record only that block (its INFO line 'culture <name>: ...')
+const EXPECT_CULTURE={
+ // vale (build-vale.js)
+ vale:{cottage:'b1c9461d',townhouse:'c29dffd7',fisherhut:'1f0cce5d',chapel:'5ed1c26d',stall:'d1cd1f6e',tower:'5dfba24d',
+  longhouse:'a5bf211e',tavern:'90550c0f',smithy:'cc620965',church:'09079f2e',barn:'cbe9fa04',granary:'21a9bab6',
+  windmill:'ee16e87d',watermill:'d4074e4a',warehouse:'1a70fef6',gatehouse:'7f326322',keep:'092c8873',citadel:'c60ff7a4',
+  well:'cdf23812',tent:'ef7a0923',wagon:'7be171eb',minehead:'447ae4f6',lumbershed:'2d8e95ba',crane:'58dd680f',
+  village:'f72670cb',signpost:'0c50c7de',cart:'7e0c0104',haystack:'0141126c',woodpile:'91289e33',fence:'f1fa5cce',
+  crates:'9dc99dc3',barrels:'52cd4caf',ruins:'804efa00',shrine:'ba32e4b3',cave:'e6f63f86','cluster:row':'8e353c22',
+  'cluster:yard':'d4e7bebc','cluster:farmstead':'f7c2cc07','cluster:smithy':'eaac942f','cluster:inn':'33905c3d',
+  'cluster:chapel':'360e5923','cluster:market':'f7fc8876','cluster:mill':'fba1e04d','cluster:lumber':'856bf9cd',
+  'cluster:mine':'27b66f16','cluster:quarry':'802656b0','cluster:fishery':'07863414','cluster:pasture':'48965266',
+  'cluster:brewery':'99e833ea','cluster:granary':'afcbf29e','cluster:workshop':'55dc278b','cluster:quarter':'f1da8dbf',
+  'cluster:camp':'f328b92e','cluster:hideout':'5bc351f9','cluster:travelers':'f3676546'},
+ // league (build-vale.js)
+ league:{cottage:'b1c9461d',townhouse:'c29dffd7',fisherhut:'1f0cce5d',chapel:'5ed1c26d',stall:'d1cd1f6e',tower:'5dfba24d',
+  longhouse:'a5bf211e',tavern:'90550c0f',smithy:'cc620965',church:'09079f2e',barn:'cbe9fa04',granary:'21a9bab6',
+  windmill:'ee16e87d',watermill:'d4074e4a',warehouse:'1a70fef6',gatehouse:'7f326322',keep:'092c8873',citadel:'c60ff7a4',
+  well:'cdf23812',tent:'ef7a0923',wagon:'7be171eb',minehead:'447ae4f6',lumbershed:'2d8e95ba',crane:'58dd680f',
+  village:'f72670cb',signpost:'0c50c7de',cart:'7e0c0104',haystack:'0141126c',woodpile:'91289e33',fence:'f1fa5cce',
+  crates:'9dc99dc3',barrels:'52cd4caf',ruins:'804efa00',shrine:'ba32e4b3',cave:'e6f63f86','cluster:row':'8e353c22',
+  'cluster:yard':'d4e7bebc','cluster:farmstead':'f7c2cc07','cluster:smithy':'eaac942f','cluster:inn':'33905c3d',
+  'cluster:chapel':'360e5923','cluster:market':'f7fc8876','cluster:mill':'fba1e04d','cluster:lumber':'856bf9cd',
+  'cluster:mine':'27b66f16','cluster:quarry':'802656b0','cluster:fishery':'07863414','cluster:pasture':'48965266',
+  'cluster:brewery':'99e833ea','cluster:granary':'afcbf29e','cluster:workshop':'55dc278b','cluster:quarter':'f1da8dbf',
+  'cluster:camp':'f328b92e','cluster:hideout':'5bc351f9','cluster:travelers':'f3676546'},
+ // karn (build-karn.js)
+ karn:{cottage:'e07ee2dc',townhouse:'7ccdcdab',fisherhut:'dc62e9b1',chapel:'25f36b36',stall:'d1cd1f6e',tower:'c3da43b9',
+  longhouse:'abbfd413',tavern:'bfe2dd4d',smithy:'4a927c51',church:'4139007f',barn:'459640ff',granary:'ceb5155d',
+  windmill:'22aaae0e',watermill:'40b637d8',warehouse:'d955d959',gatehouse:'41c2c44f',stonehall:'f6594731',forge:'1670346d',
+  keep:'a34f096a',citadel:'55ad3cf6',well:'9cef1b0d',tent:'ef7a0923',wagon:'7be171eb',minehead:'bf2d5163',lumbershed:'1dbd6ba3',
+  crane:'19af040b',village:'1797d73b',signpost:'0c50c7de',cart:'7e0c0104',haystack:'0141126c',woodpile:'91289e33',
+  fence:'f1fa5cce',crates:'9dc99dc3',barrels:'52cd4caf',ruins:'804efa00',shrine:'ba32e4b3',cave:'e6f63f86',
+  'cluster:row':'b510f001','cluster:yard':'884dd71d','cluster:farmstead':'27ba969b','cluster:smithy':'3b94c958',
+  'cluster:inn':'ff7ab54d','cluster:chapel':'91880e61','cluster:market':'05df7613','cluster:mill':'0af85eec',
+  'cluster:lumber':'ac7905e0','cluster:mine':'746d47e9','cluster:quarry':'2b907c28','cluster:fishery':'44b2c460',
+  'cluster:pasture':'1c2f89f3','cluster:brewery':'691b93ea','cluster:granary':'6d4ff8c5','cluster:workshop':'f2463708',
+  'cluster:quarter':'8ad221ba','cluster:camp':'f328b92e','cluster:hideout':'5bc351f9','cluster:travelers':'f3676546'},
+ // ashgor (build-ashgor.js)
+ ashgor:{cottage:'535ed47c',townhouse:'b291a0b6',fisherhut:'fe179cc5',chapel:'dede7a25',stall:'d1cd1f6e',tower:'14f70142',
+  yurt:'8eb1f995',longhouse:'185ae82a',tavern:'368c3fd1',smithy:'82245a1a',church:'e7f97164',barn:'b2400b82',granary:'1edf0295',
+  windmill:'ed373659',watermill:'72f69f98',warehouse:'1db024ea',gatehouse:'f84cc2fc',hidehall:'02dc3591',watchtower:'40d7e36f',
+  keep:'afab5f49',citadel:'8f362045',well:'3e239c74',tent:'ef7a0923',wagon:'7be171eb',minehead:'422a0526',lumbershed:'821c1be4',
+  crane:'a8dd6931',village:'b631fba7',signpost:'0c50c7de',cart:'7e0c0104',haystack:'0141126c',woodpile:'91289e33',
+  fence:'f1fa5cce',crates:'9dc99dc3',barrels:'52cd4caf',ruins:'804efa00',shrine:'ba32e4b3',cave:'e6f63f86',
+  'cluster:row':'f0386403','cluster:yard':'d35875cf','cluster:farmstead':'3e14ff8e','cluster:smithy':'39830318',
+  'cluster:inn':'a3dcbf06','cluster:chapel':'92a3c336','cluster:market':'f02db576','cluster:mill':'76d48cbb',
+  'cluster:lumber':'33be7304','cluster:mine':'7ab2868e','cluster:quarry':'5a65fbe2','cluster:fishery':'b3ec64b2',
+  'cluster:pasture':'59743044','cluster:brewery':'d4772842','cluster:granary':'93575272','cluster:workshop':'e6731191',
+  'cluster:quarter':'3bc16460','cluster:camp':'f328b92e','cluster:hideout':'5bc351f9','cluster:travelers':'f3676546'},
+ // sylvan (build-sylvan.js)
+ sylvan:{cottage:'c4d71806',townhouse:'7d88adb8',fisherhut:'628b9cec',chapel:'b6a107e1',stall:'d1cd1f6e',tower:'1a440b9a',
+  longhouse:'46928d13',tavern:'beb7a187',smithy:'23c39adb',church:'d7aeccf7',barn:'e72a83ae',granary:'d4d22bca',
+  windmill:'c515f53d',watermill:'66e4fa67',warehouse:'5ad485ac',gatehouse:'b5be17ab',treehouse:'89cc47d1',elfhall:'1f87af60',
+  spire:'d56cae27',keep:'6f41e31a',citadel:'903496f4',well:'b598f356',tent:'ef7a0923',wagon:'7be171eb',minehead:'dff692ec',
+  lumbershed:'fae7b12c',crane:'0f860e61',village:'1b5f0522',signpost:'0c50c7de',cart:'7e0c0104',haystack:'0141126c',
+  woodpile:'91289e33',fence:'f1fa5cce',crates:'9dc99dc3',barrels:'52cd4caf',ruins:'804efa00',shrine:'ba32e4b3',cave:'e6f63f86',
+  'cluster:row':'1421771b','cluster:yard':'b9cb282d','cluster:farmstead':'15fe9f9c','cluster:smithy':'145d3702',
+  'cluster:inn':'4d5962b8','cluster:chapel':'69d342d8','cluster:market':'9e4e9946','cluster:mill':'219bd806',
+  'cluster:lumber':'3f9c3d63','cluster:mine':'9cc6f0ea','cluster:quarry':'212e0cbc','cluster:fishery':'b2890451',
+  'cluster:pasture':'caeb5b30','cluster:brewery':'bd12afdc','cluster:granary':'0fcd8c57','cluster:workshop':'f9249924',
+  'cluster:quarter':'8f90f1ed','cluster:camp':'f328b92e','cluster:hideout':'5bc351f9','cluster:travelers':'f3676546'}
+};
 try{
  const px=c=>c.getContext('2d').getImageData(0,0,c.width,c.height).data,P=['human','dwarf','elf','orc'],FRONT=PX.MODEL_FRONT,SZ=PX.MODEL_SIZES.types,OBJ=PX.MODEL_OBJECTS;
  const fnv=()=>{let h=2166136261;const H={b(a){for(let i=0;i<a.length;i++)h=Math.imul(h^a[i],16777619)>>>0;return H},s(x){x=String(x);for(let i=0;i<x.length;i++)h=Math.imul(h^x.charCodeAt(i),16777619)>>>0;return H},get x(){return h.toString(16).padStart(8,'0')}};return H};
@@ -134,10 +198,52 @@ try{
   const again=PX.buildingModel({type:'tavern',people:'elf',seed:5,yaw:2,fort:2});PX.modelCacheClear();const fresh=PX.buildingModel({type:'tavern',people:'elf',seed:5,yaw:2,fort:2});
   ok(px(again.img).join()===px(fresh.img).join()&&px(again.ground).join()===px(fresh.ground).join(),'the same spec draws the same pixels, cached or made afresh');
   const keys=Object.keys(got),diff=keys.filter(k=>EXPECT[k]&&EXPECT[k]!==got[k]),none=keys.filter(k=>!EXPECT[k]);
-  info(keys.map(k=>k+':'+got[k]).join(' '));ok(!diff.length&&!none.length,'every type and cluster looks as recorded'+(diff.length?': changed '+diff.join(', '):'')+(none.length?': none recorded for '+none.length:''))}
+  info(keys.map(k=>k+':'+got[k]).join(' '));ok(!diff.length&&!none.length,'every type and cluster looks as recorded'+(diff.length?': changed '+diff.join(', '):'')+(none.length?': none recorded for '+none.length:''))
+  // (K0) the same a culture: each shared type and its own (its facings, the frost, the desert, the swamp) and each cluster (its
+  // facings, the desert) as the culture builds it, checked against its own block of EXPECT_CULTURE, which only its own file changes
+  // (re-record only that block: copy its INFO line). Another culture's own types it builds: in EXPECT above
+  const OWN=PX.MODEL_OWN||{},byC={};for(const c of Object.keys(EXPECT_CULTURE)){const g={},mine=OWN[c]||[],foreign=Object.values(OWN).flat().filter(t=>!mine.includes(t));
+   for(const type of all.filter(t=>!foreign.includes(t))){const H=fnv();for(const yaw of yaws(type))add(H,PX.buildingModel({type,culture:c,seed:5,yaw,fort:2}));
+    for(const [env,seed] of [['frost',6],['desert',7],['swamp',8]])add(H,PX.buildingModel({type,culture:c,seed,env,stilts:env==='swamp',fort:1}));g[type]=H.x}
+   for(const kind of PX.CLUSTER_MODELS){const H=fnv();for(const yaw of PX.MODEL_YAWS)add(H,PX.clusterModel({kind,culture:c,seed:5,yaw}));add(H,PX.clusterModel({kind,culture:c,seed:7,env:'desert'}));g['cluster:'+kind]=H.x}
+   byC[c]=g;info('culture '+c+': '+Object.keys(g).map(k=>k+':'+g[k]).join(' '))}
+  const cd=[];for(const c in byC){for(const k in byC[c])if(EXPECT_CULTURE[c][k]!==byC[c][k])cd.push(c+' '+k);for(const k in EXPECT_CULTURE[c])if(!byC[c][k])cd.push(c+' '+k+' (gone)')}
+  ok(!cd.length,'each culture\'s types and clusters look as recorded in its own block ('+Object.keys(byC).join(', ')+')'+(cd.length?': changed or new '+cd.slice(0,12).join(', ')+(cd.length>12?' …':''):''))}
  // the cost: a big holding's first view (every type in its facings and every cluster in its 4, made afresh)
  {PX.modelCacheClear();const t1=performance.now();let k=0;for(const type of all)for(const yaw of yaws(type)){PX.buildingModel({type,people:'human',seed:9,yaw,fort:2});k++}
   for(const kind of PX.CLUSTER_MODELS)for(const yaw of PX.MODEL_YAWS){PX.clusterModel({kind,people:'human',seed:9,yaw});k++}const t=performance.now()-t1;
   info('first view: '+k+' models in '+t.toFixed(0)+' ms ('+(t/k).toFixed(1)+' ms each); the sweep above '+n+' in '+ms.toFixed(0)+' ms');ok(t/k<25,'quick enough for a big holding\'s first view: '+(t/k).toFixed(1)+' ms a model')}
+ // the cultures (K0, the owner's doc: the culture chooses the architecture, the owner the banners): each its own file, its style
+ // table of the one shape with its climates' slots; a spec's culture from its people unless given, the same pixels either way; the
+ // Salt League on the Vale's style whoever its people; a holding's centre by tier; each culture's own types
+ {const C=PX.MODEL_CULTURES||[],L=PX.MODEL_LOOK||{},want=['vale','league','karn','ashgor','sylvan'],keys=['people','roof','walls','frame','stone','fort','fieldstone','wood','silo','trim','accent','ground','forms','cones','hall','door','win','finial','townhouse','village','swap','desert','swamp','frost'];
+  const bad=want.filter(c=>!C.includes(c)||keys.some(k=>!(k in L[c]))||['desert','swamp','frost'].some(k=>typeof L[c][k]!=='object'));
+  ok(!bad.length&&want.every(c=>C.includes(c)),'the cultures each register their style (build-vale.js with the League, build-karn.js, build-ashgor.js, build-sylvan.js), a style table of the one shape with desert, swamp and frost slots: '+C.join(', ')+(bad.length?': '+bad.join(', '):''));
+  const own={sylvan:['treehouse','elfhall','spire'],karn:['stonehall','forge'],ashgor:['yurt','hidehall','watchtower']},miss=Object.entries(own).flatMap(([c,ts])=>ts.filter(t=>!all.includes(t)).map(t=>c+' '+t));
+  ok(!miss.length,'each culture\'s own types are built (any culture may build them): '+Object.entries(own).map(([c,ts])=>c+' '+ts.join('/')).join('; ')+(miss.length?': missing '+miss.join(', '):''));
+  const same=(a,b)=>px(a.img).join()===px(b.img).join()&&px(a.ground).join()===px(b.ground).join(),cb=[];
+  for(const [pp,c] of Object.entries(PX.CULTURE_OF))for(const type of ['cottage','village','keep','spire']){const a=PX.buildingModel({type,people:pp,seed:3,fort:1}),b=PX.buildingModel({type,culture:c,seed:3,fort:1});
+   if(a.culture!==c||b.people!==pp||!same(a,b))cb.push(pp+'/'+type)}
+  for(const kind of ['smithy','row'])for(const [pp,c] of Object.entries(PX.CULTURE_OF)){if(!same(PX.clusterModel({kind,people:pp,seed:3}),PX.clusterModel({kind,culture:c,seed:3})))cb.push(pp+' cluster '+kind)}
+  ok(!cb.length,'a spec\'s culture is its people\'s own unless given (human vale, dwarf karn, elf sylvan, orc ashgor), the same pixels named either way'+(cb.length?': '+cb.join(', '):''));
+  const lg=['cottage','tavern','village','citadel'].filter(type=>{const v=PX.buildingModel({type,people:'human',seed:4,fort:2});return['human','elf','orc'].some(pp=>{const m=PX.buildingModel({type,culture:'league',people:pp,seed:4,fort:2});return m.culture!=='league'||m.people!==pp||!same(m,v)})});
+  ok(!lg.length,'the culture, not the people, chooses the building: a Salt League holding builds on the Vale\'s style whether its people are human, elf or orc'+(lg.length?': '+lg.join(', '):''));
+  const fs=PX.clusterModel({kind:'smithy',culture:'karn',seed:2}).buildings.map(d=>d.kind),hs=PX.clusterModel({kind:'smithy',culture:'vale',seed:2}).buildings.map(d=>d.kind);
+  ok(fs.includes('forge')&&!hs.includes('forge'),'a culture builds its own in place of another in its clusters (look.swap): the Clans\' smithy yard has the forge ('+fs.join(', ')+'), the Vale\'s its smithy');
+  const T0={camp:['kind','camp'],hamlet:['kind','yard'],village:['type','village'],town:['type','citadel'],city:['type','citadel'],castle:['type','keep']},cz=[];
+  for(const [tier,[k,v]] of Object.entries(T0)){const m=PX.centreModel({tier,people:'dwarf',seed:2,fort:2});if(m[k]!==v||m.culture!=='karn')cz.push(tier)}
+  const cap=PX.centreModel({tier:'city',culture:'vale',seed:2});
+  ok(!cz.length&&cap.cell===128,'a holding\'s centre by its tier (PX.centreModel): a camp and a hamlet\'s yard, a village, a town\'s citadel, a city\'s at 128, a castle\'s keep'+(cz.length?': '+cz.join(', '):''));
+  // (last: a culture registered here, built on the Clans: its own type, its plans wrapping the generic, its cluster, its centre)
+  const reg=PX.registerBuildStyle('k0test',{from:'karn',look:{roof:'thatch',village:{goods:['crate','crate']}},
+    own:{types:{k0hut:{cell:32,dwellings:2,look:{wall:null},plan(Q,o){const dw=Q.home('k0hut');PX.planKit.house(Q,{w:16,d:14,dw,wall:o.look.k0hut.wall||o.wall})}}}},
+    types:{cottage(Q,o,base){base(Q,o);Q.prop('barrel',[0,10])}},clusters:{yard(C,base){base(C);PX.planKit.prop(C,'trough',[0,0])}},centres:{town:{type:'keep'}}});
+  const sp=PX.buildingModelSpec({type:'cottage',culture:'k0test',seed:2}),k0=PX.buildingModelSpec({type:'cottage',culture:'karn',seed:2}),hut=PX.buildingModel({type:'k0hut',people:'orc',seed:1}),lk=PX.MODEL_LOOK.k0test;
+  ok(reg&&lk.roof==='thatch'&&lk.cones===false&&lk.village.goods[0]==='crate'&&lk.village.door==='Rune'&&sp.parts.length===k0.parts.length+1&&sp.parts.some(p=>p.k==='roof'&&p.mat==='thatch')
+   &&PX.clusterModelSpec({kind:'yard',culture:'k0test',seed:2}).parts.some(p=>p.type==='trough')&&PX.centreModel({tier:'town',culture:'k0test',seed:2}).type==='keep'
+   &&PX.MODEL_TYPES.includes('k0hut')&&PX.MODEL_SIZES.types.k0hut.cell===32&&hut.households===2&&hut.cell===32,
+   'PX.registerBuildStyle: a culture built on another (from) takes its look and plans where it gives none, its plans wrap the generic (base), its own cluster layout and centre; its own type joins the lists, at its size, built by any culture');
+  let late='';try{PX.registerBuildStyle('k0late',{materials:{k0mat:['#ffffff','#cccccc','#888888','#444444']}})}catch(e){late=e.message}
+  ok(PX.MODEL_EXTRA&&/before model\.js/.test(late)&&!PX.MODEL_CULTURES.includes('k0late'),'a culture\'s own materials, decal letters and decals go to model.js through PX.MODEL_EXTRA, given before model.js loads (after: refused, '+late+')')}
 }catch(e){o.push('EXC '+e.message+'\n'+e.stack)}
 const d=document.createElement('pre');d.id='OUT';d.textContent=o.join('\n');document.body.appendChild(d)};

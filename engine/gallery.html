@@ -21,6 +21,10 @@
 <script src="worldnature.js"></script>
 <script src="beasts.js"></script>
 <script src="buildmodels.js"></script>
+<script src="build-vale.js"></script>
+<script src="build-karn.js"></script>
+<script src="build-ashgor.js"></script>
+<script src="build-sylvan.js"></script>
 <script src="model.js"></script>
 <script>
 // which types each people builds (the same list the game's settlements use)
@@ -36,6 +40,7 @@ function render(){
   if(q0.get('view')==='depth')return renderDepth();
   if(q0.get('view')==='bench')return renderBench();
   if(q0.get('view')==='nature')return renderNature();
+  if(q0.get('view')==='peoples')try{return renderPeoples()}catch(e){document.getElementById('out').textContent=e.stack;return}
   if(q0.get('view')==='catalog')try{return renderCatalog()}catch(e){document.getElementById('out').textContent=e.stack;return}
   if(q0.get('view')==='model')try{return renderModel()}catch(e){document.getElementById('out').textContent=e.stack;return}
   if(new URLSearchParams(location.search).get('view')==='castles'){const out=document.getElementById('out');out.innerHTML='';for(const type of ['keep','citadel','village','longhouse','stonehall','elfhall','hidehall'])for(const style of ['human','dwarf','elf','orc']){if(['stonehall','elfhall','hidehall','longhouse'].includes(type)&&style!==({longhouse:'human',stonehall:'dwarf',elfhall:'elf',hidehall:'orc'})[type])continue;const row=document.createElement('div');row.className='row';row.innerHTML='<span class="lab">'+style+' · '+type+'</span>';for(let s=1;s<=6;s++){const hall=!['keep','citadel'].includes(type),b=PX.building({type,style,seed:s*37+type.length,view:'top',fort:hall?(s>3?1:0):[0,1,2,3,1,2][s-1],banner:'#c84040'}),Z=+(q0.get('z')||3),c=document.createElement('canvas'),M=4,w=b.w+2*M;c.width=w*Z;c.height=w*Z;const g=c.getContext('2d');g.imageSmoothingEnabled=false;g.scale(Z,Z);g.fillStyle='#5a8a3a';g.fillRect(0,0,w,w);g.fillStyle='rgba(0,0,0,.18)';for(let k=0;k<=b.tiles[0];k++){g.fillRect(M+k*16,0,1,w);g.fillRect(0,M+k*16,w,1)}g.fillStyle='rgba(255,230,120,.5)';g.fillRect(M+b.w/2,M+b.h,1,M);g.fillRect(M+b.w/2-1,M+b.h,1,M);g.drawImage(b.img,M,M);if(b.flag){const fx=M+b.flag[0],fy=M+b.flag[1],fc=['#c84040','#4a72b0','#3a8a4a','#d8a030'][s%4];g.fillStyle='#4a3020';g.fillRect(fx,fy-9,1,9);g.fillStyle=fc;g.fillRect(fx+1,fy-9,4,3)}row.appendChild(c)}out.appendChild(row)}return}
@@ -244,7 +249,7 @@ function renderCatalog(){
     if(want('citadel')){const row=newRow('capital · 128');for(const pp of ['human','dwarf'])cell(row,PX.buildingModel({type:'citadel',people:pp,seed:sd,fort:3,capital:true}),pp+' capital','grass')}}
   if(!part||part==='objects'){head('Objects at 16 px (not buildings): alone, or a cluster’s dressing; 4 facings, desert, swamp, frost');for(const type of OBJ.concat(['shrine']))if(want(type))typeRow(type)}
   if(!part||part==='peoples'){head('Each people’s roof (humans tile, thatch in the country; dwarves slate; elves leaf; orcs hide), light walls; the shapes shared');
-    for(const pp of PX.MODEL_PEOPLES){const row=newRow(pp);for(const type of ['cottage','townhouse','tavern','church','tower','granary','windmill',PX.MODEL_LOOK[pp].hall,'village','keep'])if(want(type))cell(row,PX.buildingModel({type,people:pp,seed:sd,fort:1}),type,'grass',true)}
+    for(const pp of PX.MODEL_PEOPLES){const row=newRow(pp);for(const type of ['cottage','townhouse','tavern','church','tower','granary','windmill',PX.MODEL_LOOK[PX.CULTURE_OF[pp]].hall,'village','keep'])if(want(type))cell(row,PX.buildingModel({type,people:pp,seed:sd,fort:1}),type,'grass',true)}
     // (W5: the elves' own types in their language (a leaf roof, pale living wood, moon lavender, no trees) beside the humans')
     const row=newRow('elves · humans');for(const [type,pp] of [['elfhall','elf'],['spire','elf'],['treehouse','elf'],['cottage','human'],['chapel','human'],['townhouse','human']])if(want(type))cell(row,PX.buildingModel({type,people:pp,seed:sd,fort:1}),pp+' '+type,'grass')}
   if(!part||part==='clusters'){head('Clusters and camps: buildings and objects to a cell, turned whole (street south, west, north, east)');
@@ -279,6 +284,34 @@ function renderCatalog(){
     const t1=performance.now();let kc=0;for(const kind of PX.CLUSTER_MODELS)for(const yaw of PX.MODEL_YAWS){PX.clusterModel({kind,people:'human',seed:sd+5,yaw});kc++}const t2=performance.now();
     let ks=0;for(const type of all)for(const a of [1/3,2/3,1]){PX.modelSeason(PX.buildingModel({type,people:'human',seed:sd+5,yaw:0,fort:2}),'snow',a);ks++}const t3=performance.now();
     out.insertAdjacentHTML('beforeend','<p id="bench">'+k+' building models: '+(t1-t0).toFixed(0)+' ms ('+((t1-t0)/k).toFixed(1)+' each); '+kc+' clusters: '+(t2-t1).toFixed(0)+' ms ('+((t2-t1)/kc).toFixed(1)+' each); '+ks+' snow overlays: '+(t3-t2).toFixed(0)+' ms</p>')}
+}
+// ?view=peoples: each culture's kit side by side (buildmodels.js and the cultures' style files, build-*.js), one column a culture:
+// the holdings' centres by tier (PX.centreModel), every type, every cluster and camp, then all of it again in the desert; the
+// preview for each culture's buildings. &cultures=vale,karn (which, in order), &part=centres|types|clusters|desert, &only=cottage,row
+// (types, kinds or tiers), &env= (the climate of the first parts), &yaw=, &seed=, &z=
+function renderPeoples(){
+  const q=new URLSearchParams(location.search),Z=+(q.get('z')||2),sd=+(q.get('seed')||1),yaw=+(q.get('yaw')||0),part=q.get('part'),only=q.get('only'),env0=q.get('env')||'grass',out=document.getElementById('out');out.innerHTML='';
+  const CU=(q.get('cultures')||PX.MODEL_CULTURES.join(',')).split(',').filter(c=>PX.MODEL_CULTURES.includes(c)),want=t=>!only||only.split(',').includes(t);
+  document.querySelector('h1').textContent='PX building models: each culture’s kit';
+  document.querySelector('p').textContent='One column a culture ('+CU.join(', ')+'; the culture chooses the architecture, spec.culture): the holdings’ centres by tier, every type, every cluster and camp, then the same in the desert. &cultures=, &part=centres|types|clusters|desert, &only=, &env=, &yaw=, &seed=, &z=.';
+  const GR={grass:'#6e9a48',desert:'#dcc28c',swamp:'#566a42',frost:'#e8eef4'};
+  // (a model on its climate's ground, the game's layers: the ground, the shadow mask shaded once, the picture, the snow)
+  const cell=(m,env,lab)=>{const M=3,n=m.w,W=n+2*M,c=document.createElement('canvas');c.width=W*Z;c.height=W*Z;c.title=lab;const g=c.getContext('2d');g.imageSmoothingEnabled=false;g.scale(Z,Z);
+    g.fillStyle=GR[env]||GR.grass;g.fillRect(0,0,W,W);if(m.ground)g.drawImage(m.ground,M,M);if(m.snow)g.drawImage(m.snow.ground,M,M);
+    if(m.shadow){const s=PX.canvas(n,n,x=>{x.drawImage(m.shadow,0,0);x.globalCompositeOperation='source-in';x.fillStyle='rgb(20,24,12)';x.fillRect(0,0,n,n)});g.globalAlpha=m.shade||PX.MODEL_SHADE;g.drawImage(s,M,M);g.globalAlpha=1}
+    g.drawImage(m.img,M,M);if(m.snow)g.drawImage(m.snow.img,M,M);if(m.clipped){g.fillStyle='#e0605a';g.fillRect(0,0,2,2)}return c};
+  const st=document.createElement('style');st.textContent='.pk{border-collapse:collapse}.pk td,.pk th{padding:2px 6px;vertical-align:bottom;text-align:center}.pk th{font-weight:normal;color:#9a958a;font-size:12px}.pk td.l{text-align:right;color:#9a958a;font-size:12px;vertical-align:middle}';document.head.appendChild(st);
+  const section=(title,rows,env)=>{out.insertAdjacentHTML('beforeend','<h2 style="font-size:15px;margin:16px 0 6px">'+title+'</h2>');const t=document.createElement('table');t.className='pk';
+    t.insertAdjacentHTML('beforeend','<tr><th></th>'+CU.map(c=>'<th>'+c+' ('+PX.MODEL_LOOK[c].people+')</th>').join('')+'</tr>');
+    for(const [lab,make] of rows){const tr=document.createElement('tr');tr.insertAdjacentHTML('beforeend','<td class="l">'+lab+'</td>');
+      for(const c of CU){const td=document.createElement('td');try{td.appendChild(cell(make(c,env),env,c+' '+lab))}catch(e){td.textContent=e.message}tr.appendChild(td)}t.appendChild(tr)}out.appendChild(t)};
+  const TYPES=PX.MODEL_TYPES.concat(PX.MODEL_SITES),rows={
+    centres:()=>Object.keys(PX.MODEL_CENTRES).filter(want).map(tier=>[tier,(c,e)=>PX.centreModel({tier,culture:c,seed:sd,yaw,env:e,fort:2})]),
+    types:()=>TYPES.filter(want).map(type=>[type+' · '+PX.MODEL_SIZES.types[type].cell,(c,e)=>PX.buildingModel({type,culture:c,seed:sd,yaw,env:e,fort:2,stilts:e==='swamp'})]),
+    clusters:()=>PX.CLUSTER_MODELS.filter(want).map(kind=>[kind+' · '+PX.MODEL_SIZES.clusters[kind],(c,e)=>PX.clusterModel({kind,culture:c,seed:sd,yaw,env:e})])},
+    TITLE={centres:'Holdings’ centres by tier',types:'Every type',clusters:'Clusters and camps'};
+  for(const k in rows)if(!part||part===k)section(TITLE[k]+' ('+env0+')',rows[k](),env0);
+  if(!part||part==='desert')for(const k in rows)section(TITLE[k]+' in the desert',rows[k](),'desert');
 }
 function renderProps(){
   const q=new URLSearchParams(location.search),Z=+(q.get('z')||3),out=document.getElementById('out');out.innerHTML='';

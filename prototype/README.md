@@ -40,7 +40,7 @@ Focused regression suites: `armygroups`, `armyedges`, `groups`, `battlesetup`, `
 ## Layout
 
 ```
-Ashmark.html          page markup; loads style.css, the PX engine (../engine: pixel, buildkit, buildings, buildmodels (every building as a model at the owner's scale: objects 16 px, buildings 32, big ones and centres 64, a capital 128; not yet drawn by the game), pieces, ground, worldnature, beasts,
+Ashmark.html          page markup; loads style.css, the PX engine (../engine: pixel, buildkit, buildings, buildmodels (every building as a model at the owner's scale: objects 16 px, buildings 32, big ones and centres 64, a capital 128; not yet drawn by the game), build-vale, build-karn, build-ashgor, build-sylvan (each culture's building style: Vale with the Salt League, the Clans, the Horde, the Court), pieces, ground, worldnature, beasts,
                       model), then the scripts below (the full order is the <script> list in Ashmark.html)
 style.css
 js/core/              core.js (DOM, canvas, constants, helpers, the action registry), state.js (state factories, G, P; your numbers' older names),
