@@ -49,7 +49,10 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t
   // (REC measured together 2026-10-22 at the merge of agents S and R (each proved its own rules off above): field_win,
   //  lord_win, monster_win and auto_resolve moved; the old map's set held)
   // (field_win, lord_win, auto_resolve measured together 2026-10-22 at the merge of agents R (the generator's water: no desert rain, terminal lakes, springs, ponds and oases), S (estate tracks, forest clearings, estates farther out, oases drawing holdings, stage 7 regrown, roads round ponds) and U (the camps grown with the land, port piers preferring the sea) on main 880b6e7; each agent proved its own rules off give the values before)
-  const REC={field_win:'cc925db3',field_loss:'56b1108c',retreat_away:'f8f6004f',retreat_caught:'630f1c46',carried_retreat:'accd790c',tournament_win:'8932be2e',tournament_loss:'cde78eef',siege_win:'edd807d9',siege_loss:'36304164',lord_win:'4e076fb6',lord_loss:'58646d0e',monster_win:'9d5eedba',auto_win:'c7c4f547',auto_loss:'b0ae7cc2',auto_resolve:'3c3fb1e1'};
+  // (field_win, lord_win and auto_resolve re-recorded 2026-10-23, on purpose, the owner's play-test of 2026-10-22 (agent GP:
+  //  tests/worldprint.js W1-W8): the generated world moves round the test's band, and begin's draws with its sites; with those
+  //  rules off all fifteen as before. Were field_win cc925db3, lord_win 4e076fb6, auto_resolve 3c3fb1e1)
+  const REC={field_win:'0fefb0ff',field_loss:'56b1108c',retreat_away:'f8f6004f',retreat_caught:'630f1c46',carried_retreat:'accd790c',tournament_win:'8932be2e',tournament_loss:'cde78eef',siege_win:'edd807d9',siege_loss:'36304164',lord_win:'a1085682',lord_loss:'58646d0e',monster_win:'9d5eedba',auto_win:'c7c4f547',auto_loss:'b0ae7cc2',auto_resolve:'d71be2ba'};
   const stable=x=>Array.isArray(x)?x.map(stable):x&&typeof x==='object'?Object.fromEntries(Object.keys(x).sort().map(k=>[k,stable(x[k])])):x;
   const hash=x=>{let h=2166136261;for(const c of JSON.stringify(stable(x)))h=Math.imul(h^c.charCodeAt(0),16777619)>>>0;return h.toString(16).padStart(8,'0')};
   const cases=['field_win','field_loss','retreat_away','retreat_caught','carried_retreat','tournament_win','tournament_loss','siege_win','siege_loss','lord_win','lord_loss','monster_win','auto_win','auto_loss','auto_resolve'];

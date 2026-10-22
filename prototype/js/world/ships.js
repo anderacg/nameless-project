@@ -43,11 +43,12 @@ onWorld(()=>{SEA_IDS=null});
 function seaIds(){const id=waterIds();if(SEA_IDS&&SEA_IDS.of===id)return SEA_IDS;const S=new Set();
   for(let x=0;x<MW;x++)for(const y of [0,MH-1])if(id[y*MW+x]>=0)S.add(id[y*MW+x]);for(let y=0;y<MH;y++)for(const x of [0,MW-1])if(id[y*MW+x]>=0)S.add(id[y*MW+x]);
   S.of=id;return SEA_IDS=S}
-// a port's dock: the water tile just off the end of its pier (or the nearest water to it)
+// a port's dock: the water tile just off the end of its pier (or the nearest water to it), on the water its pier runs out over
+// (never a pond's that happens to lie as near: the owner's play-test, 2026-10-22)
 function dockOf(t){
   if(!bldLv(t,'port'))return null;const pr=pierOf(t);if(!pr)return null;const len=10+bldLv(t,'port')*6+8,v={n:[0,-1],s:[0,1],e:[1,0],w:[-1,0]}[pr.dir];
-  const cx=Math.floor((pr.x+v[0]*len)/TILE),cy=Math.floor((pr.y+v[1]*len)/TILE);
-  for(let r=0;r<=3;r++)for(let j=-r;j<=r;j++)for(let i=-r;i<=r;i++)if(Math.max(Math.abs(i),Math.abs(j))===r&&isWater(cx+i,cy+j))return{tx:cx+i,ty:cy+j};
+  const cx=Math.floor((pr.x+v[0]*len)/TILE),cy=Math.floor((pr.y+v[1]*len)/TILE),px=Math.floor((pr.x+v[0]*8)/TILE),py=Math.floor((pr.y+v[1]*8)/TILE),id=waterIds(),own=isWater(px,py)?id[py*MW+px]:-1;
+  for(let r=0;r<=3;r++)for(let j=-r;j<=r;j++)for(let i=-r;i<=r;i++)if(Math.max(Math.abs(i),Math.abs(j))===r&&isWater(cx+i,cy+j)&&(own<0||id[(cy+j)*MW+cx+i]===own))return{tx:cx+i,ty:cy+j};
   return null;
 }
 // the way over water from one tile to another (8 ways, never cutting a corner of land): the tiles in order, or null

@@ -39,7 +39,9 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
   // (the generated world's 1f049224 measured together 2026-10-22 at the merge of agents S and R (each proved its own rules off
   //  above); the old map's b739f365 held)
   // (the generated world's 05ee3f4a measured together 2026-10-22 at the merge of agents R (the generator's water: no desert rain, terminal lakes, springs, ponds and oases), S (estate tracks, forest clearings, estates farther out, oases drawing holdings, stage 7 regrown, roads round ponds) and U (the camps grown with the land, port piers preferring the sea) on main 880b6e7; each agent proved its own rules off give the values before)
-  {const B=battle(4242);B.noMorale=true;B.sel=null;key('a');const a=B.auto&&t.aiAll();run(B,60);const fp=print(B),REC='05ee3f4a';
+  // (the generated world's 18d74563 re-recorded 2026-10-23, on purpose, the owner's play-test of 2026-10-22 (agent GP: tests/
+  //  worldprint.js W1-W8): the ground of the battle moves with the world; with those rules off 05ee3f4a as before)
+  {const B=battle(4242);B.noMorale=true;B.sel=null;key('a');const a=B.auto&&t.aiAll();run(B,60);const fp=print(B),REC='18d74563';
    ok(a&&fp===REC,'A with nothing selected, your army and an ally’s against the enemy (seed 4242, no morale): the whole-army AI plays the very battle it did before ('+fp+', recorded '+REC+', '+B.t.toFixed(1)+' s)')}
   {const L=t.BattleLab,Gp=(type,count)=>({type,count}),lab=mor=>{if(L.active)L.exit();G.mode='world';G.modal=false;L.start({leftGroups:[Gp('hum_spear',16),Gp('hum_bow',12),Gp('hum_knight',6)],rightGroups:[Gp('hum_levy',20),Gp('hum_bow',12),Gp('hum_spear',10)],deploy:false,ai:false,paused:false,morale:mor,seed:42});return t.B};
    Math.random=t.seeded(1);t.act('begin','soldier');G.quietEvents=true;t.GUIDE.on=false;const REC={false:'596d6d9c',true:'17c1387b'};run(lab(false),60);// (to warm up)

@@ -47,7 +47,7 @@ try{
   const H=t.CLASSIC_HINTS,named=H.flatMap(h=>[].concat(h.at,h.ports||[]).filter(x=>typeof x==='string'));
   ok(H.length>=7&&new Set(H.map(h=>h.id)).size===H.length&&named.every(n=>names.has(n))&&['southSea','frostNorth','desertSouthEast','karnPeaks','willowIsle','stonebridge','fens'].every(id=>H.some(h=>h.id===id)),'CLASSIC_HINTS: '+H.map(h=>h.id).join(', ')+'; every place named is a classic holding')}
  // ---- genWorld and its steps
- const shape='map holdings camps lords hamlets sacred lair regions rivers crossings graph tries relaxed'.split(' ');
+ const shape='map holdings camps lords hamlets sacred lair regions rivers crossings graph tries relaxed tidied'.split(' ');
  const layersOk=m=>t.MAP_LAYERS.every(k=>m[k]&&m[k].length===m.w*m.h&&(k==='basin'?m[k] instanceof Uint16Array:m[k] instanceof Uint8Array));
  let calls=0;Math.random=()=>{calls++;return r0()};
  const steps=t.genWorldSteps(t.classicSettings()),times=[],fr=[];let res,back=0;
@@ -141,6 +141,28 @@ try{
     say.push(n+': '+sz.length+' pieces ('+isle+' an isle\u2019s under '+min+'), '+strip+' strip tiles, '+t.CLIMS.map((c,k)=>c[0]+(sh[k]*100/ln).toFixed(0)).join(' '))}}
   finally{row.run=run}
   ok(!bad.length,'big climates: no piece under minArea (scaled) with another climate beside it, hardly a strip, the frost the coldest land, each climate 6% or more ('+say.join('; ')+')'+(bad.length?': '+bad.join('; '):''))}
+ // ---- small patches (the owner's play-test, 2026-10-22: "there shouldn't be a 1-tile spawn of forest or any terrain"; worldgen.js
+ // genPatchTidy, GEN_PATCH): on Normal s1-s3 and Large s1, as stage 5b leaves the land, no piece (4 ways) of open ground, wood,
+ // hills or peaks under GEN_PATCH.min tiles beside open ground, wood or hills it could join; at the generator's end none of wood,
+ // hills or peaks beside those or a road or ford, nor of open ground beside wood or hills and no road or ford (by one: its verge);
+ // the isles, and pockets among peaks and water, stay (INFO). With the tidying off (GEN_PATCH.min 0) Normal s1 has them by the
+ // hundred (INFO)
+ {const row=t.GEN_STAGES.find(s=>s.id==='ponds'),run=row.run,GP=t.GEN_PATCH,min=GP.min,say=[],bad=[];let K5=null;
+  const small=(m,K,end)=>{const W=m.w,N=W*m.h,L=new Int32Array(N).fill(-1),q=new Int32Array(N),land=k=>k===t.T_OPEN||k===t.T_FOREST||k===t.T_HILL||k===t.T_MOUNT,
+    join=k=>k===t.T_OPEN||k===t.T_FOREST||k===t.T_HILL,way=k=>k===t.T_ROAD||k===t.T_FORD;let n=0,left=0;
+   for(let s=0;s<N;s++){if(L[s]>=0||!land(K[s]))continue;let a=0,b=0;L[s]=s;q[b++]=s;
+    while(a<b){const i=q[a++],x=i%W;for(const j of [x>0?i-1:-1,x<W-1?i+1:-1,i>=W?i-W:-1,i+W<N?i+W:-1])if(j>=0&&L[j]<0&&K[j]===K[s]){L[j]=s;q[b++]=j}}
+    if(b>=min)continue;let jn=false,wy=false;
+    for(let k=0;k<b;k++){const i=q[k],x=i%W;for(const j of [x>0?i-1:-1,x<W-1?i+1:-1,i>=W?i-W:-1,i+W<N?i+W:-1])if(j>=0&&L[j]!==s){if(join(K[j]))jn=true;if(way(K[j]))wy=true}}
+    if(end?(K[s]===t.T_OPEN?jn&&!wy:jn||wy):jn)n++;else left++}
+   return[n,left]};
+  try{row.run=function*(g){const v=yield* run(g);K5=g.map.kind.slice();return v};
+   for(const [n,s] of [['Normal s1',{preset:'normal',seed:'s1'}],['Normal s2',{preset:'normal',seed:'s2'}],['Normal s3',{preset:'normal',seed:'s3'}],['Large s1',{preset:'large',seed:'s1'}]]){
+    const r=t.genWorld(s),a=small(r.map,K5,false),b=small(r.map,r.map.kind,true);if(a[0]||b[0])bad.push(n+' '+a[0]+' after 5b, '+b[0]+' at the end');
+    say.push(n+': '+r.tidied.ponds+' tiles moved at 5b, '+r.tidied.graph+' at the end; '+(a[1]+b[1])+' isles, pockets among peaks and road verges left')}
+   GP.min=0;const r0=t.genWorld({preset:'normal',seed:'s1'});info('small patches with the tidying off, Normal s1: '+small(r0.map,K5,false)[0]+' after 5b, '+small(r0.map,r0.map.kind,true)[0]+' at the end')}
+  finally{row.run=run;GP.min=min}
+  ok(!bad.length,'no patch of open ground, wood, hills or peaks under '+min+' tiles beside land it could join, after 5b and at the end ('+say.join('; ')+')'+(bad.length?': '+bad.join('; '):''))}
  // ---- the world in use
  {const m=t.WM,S=m.battleSite(Math.floor(m.w/2),Math.floor(m.h/2)),fresh=['river','crossing','season','region','deep','elev','terrace','rough','high','cliff'];
   ok(m.gen==='ashmark-1'&&m.classic&&m.w===448&&m.h===320&&m.sum===R1.map.sum&&t.TOWNS.length>=37&&t.CLASSIC_PLACES.every((p,k)=>t.TOWNS[k].name===p.name),'the generated classic world is in (ashmark-1, 448 x 320, the sum genWorld makes: '+m.sum.toString(16)+'), its holdings the classic ones in TOWNS order');

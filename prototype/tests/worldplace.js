@@ -34,11 +34,22 @@ try{
     for(let y=h.ty-rr;y<=h.ty+rr;y++)for(let x=h.tx-rr;x<=h.tx+rr;x++){if(!m.has(x,y)||(x-h.tx)*(x-h.tx)+(y-h.ty+1)*(y-h.ty+1)>rr*rr)continue;const k=K[y*W+x];if(k===t.T_FOREST)f++;else if(k===t.T_OPEN||k===t.T_HILL||k===t.T_ROAD)n++}
     if(n<C[h.kind])bad.push(h.name+' '+n+' of '+C[h.kind]+' ('+f+' wood)')}
    ok(!bad.length,name+': every holding has open ground round it for its houses and fields, a clearing in the woods ('+r.stats.clear.length+' cleared'+(r.stats.clear.length?': '+r.stats.clear.slice(0,8).join(', '):'')+')'+(bad.length?': not '+bad.slice(0,4).join(', '):''))}
-  // ports: water within 2 tiles, joined (4 ways over water) to the map's rim or a navigable river
-  {const L=new Int32Array(W*H).fill(-1),good=new Set();let n=0;for(let s=0;s<W*H;s++){if(L[s]>=0||K[s]!==t.T_WATER)continue;const st=[s];L[s]=n;let open=false;
-    while(st.length){const i=st.pop(),x=i%W,y=(i-x)/W;if(!x||!y||x===W-1||y===H-1||(m.river[i]&4))open=true;for(const j of [x>0?i-1:-1,x<W-1?i+1:-1,i-W,i+W])if(j>=0&&j<W*H&&L[j]<0&&K[j]===t.T_WATER){L[j]=n;st.push(j)}}if(open)good.add(n);n++}
-   const P=Hd.filter(h=>h.style==='port'),bad=P.filter(h=>{for(let b=-2;b<=2;b++)for(let a=-2;a<=2;a++){const x=h.tx+a,y=h.ty+b;if(m.has(x,y)&&good.has(L[y*W+x]))return false}return true});
-   (cl?m=>info(m+' (the classic hints: tests/classicseed.js)'):m=>ok(!bad.length,m))(name+': '+P.length+' ports, each on water joined to the sea or a navigable river; styles '+['port','bridge','stilt'].map(s=>Hd.filter(h=>h.style===s).length+' '+s).join(', ')+(bad.length?': not '+bad.map(h=>h.name).join(', '):''))}
+  // ports (the owner's play-test, 2026-10-22: "port should spawn only at a huge river; cannot spawn by a small pond, small lake or
+  // oasis"): harbour water within 2 tiles: standing water in a body (4 ways, a river's tiles not counted) of PLACE_PORT.min tiles or
+  // more, or a navigable or great river; never a pond's or an oasis's water, a small lake or a stream
+  {const N=W*H,L=new Int32Array(N).fill(-1),sz=[],pond=new Set(),sea=i=>K[i]===t.T_WATER&&!(m.river[i]&3);for(const o of [...m.ponds,...m.oases])for(const i of o.tiles)pond.add(i);
+   for(let s=0;s<N;s++){if(L[s]>=0||!sea(s))continue;const st=[s];L[s]=sz.length;let n=0;while(st.length){const i=st.pop(),x=i%W;n++;for(const j of [x>0?i-1:-1,x<W-1?i+1:-1,i-W,i+W])if(j>=0&&j<N&&L[j]<0&&sea(j)){L[j]=sz.length;st.push(j)}}sz.push(n)}
+   const harbour=i=>K[i]===t.T_WATER&&!pond.has(i)&&(sea(i)?sz[L[i]]>=t.PLACE_PORT.min:!!(m.river[i]&4)||(m.river[i]&3)===3);
+   const P=Hd.filter(h=>h.style==='port'),bad=P.filter(h=>{for(let b=-2;b<=2;b++)for(let a=-2;a<=2;a++){const x=h.tx+a,y=h.ty+b;if(m.has(x,y)&&harbour(y*W+x))return false}return true});
+   ok(P.length&&!bad.length,name+': '+P.length+' ports, each on harbour water (the sea, an inland sea or a lake of '+t.PLACE_PORT.min+' tiles or more, a navigable or great river; never a pond, an oasis, a small lake or a stream); styles '+['port','bridge','stilt'].map(s=>Hd.filter(h=>h.style===s).length+' '+s).join(', ')+(bad.length?': not '+bad.map(h=>h.name).join(', '):''))}
+  // ---- brooks (the owner's play-test, 2026-10-22: "small streams should not cross a holding or an estate"): none within a holding's
+  // ring and GEN_HOLD_BROOK.margin more (worldgen.js genHoldBrooks), every brook still running on into a brook or water; a generated
+  // world's centres on dry ground (worldplace.js placeDry: no water in the centre's box, no brook nor stream by it)
+  {const ring=[],wet=[],dry=[],B=i=>t.genBrook(m,i);
+   for(const h of Hd){const r=t.HOLDING_TYPES[h.kind].ring+t.GEN_HOLD_BROOK.margin;let n=0;for(let y=h.ty-1-r;y<=h.ty-1+r;y++)for(let x=h.tx-r;x<=h.tx+r;x++)if(m.has(x,y)&&(x-h.tx)*(x-h.tx)+(y-h.ty+1)*(y-h.ty+1)<=r*r&&B(y*W+x))n++;
+    if(n)ring.push(h.name+' '+n);if(!cl&&!t.placeDry(m,ti(h)))wet.push(h.name)}
+   for(let i=0;i<W*H;i++){if(!B(i))continue;const x=i%W,y=(i-x)/W,[dx,dy]=t.DIR8[m.flow[i]>>5],j=(y+dy)*W+x+dx;if(!m.has(x+dx,y+dy)||!(K[j]===t.T_WATER||K[j]===t.T_FORD||m.river[j]&3||B(j))){dry.push(x+','+y);break}}
+   ok(!ring.length&&!wet.length&&!dry.length,name+': no brook through a holding (none within its ring and '+t.GEN_HOLD_BROOK.margin+' more: '+r.tidied.brooks+' brook tiles cut back to their springs), '+(cl?'':'each centre on dry ground, ')+'every brook still running into a brook or water'+(ring.length?': brooks by '+ring.slice(0,4).join(', '):'')+(wet.length?': wet centres '+wet.slice(0,4).join(', '):'')+(dry.length?': a brook ends dry at '+dry[0]:''))}
   // ---- reach: every holding and camp from every capital, also with every ford on a flooding river shut
   {const miss=[];for(const c of caps)for(const shut of [false,true]){const Rd=t.placeReach(m,ti(c),shut);for(const p of [...Hd,...r.camps])if(!Rd[p.ty*W+p.tx])miss.push(c.name+'>'+(p.name||p.tx+','+p.ty)+(shut?' shut':''))}
    ok(!miss.length,name+': every holding and camp reachable from every capital, also with the flooding fords shut'+(miss.length?': '+miss.slice(0,4).join(', '):''))}
@@ -172,17 +183,19 @@ try{
   ok(a.wet>0&&b.road&&!b.wet&&!b.over&&b.road.path.length>a.road.path.length,'made-up map: a pond is never bridged: the road between Weston and Easton bridges the same water when it is no pond ('+a.wet+' crossings), and goes round the pond’s end when it is one ('+b.road.path.length+' tiles against '+a.road.path.length+', '+b.wet+' crossings on it)')}
  // ---- a big oasis draws a desert people's holding (worldplace.js PLACE_OASIS, placeSuit): on Normal redwater, a pool of radius 2
  // laid on the open desert 18-34 tiles from an orc holding, as stage 7 begins (m.oases, as worldgen.js makes them): the orcs like
- // the land round it more, and a holding stands within its radius and PLACE_OASIS.near of it; with none, none there
- {const base=R['Normal redwater'],m0=base.map,W=m0.w,H0=base.holdings,orc=H0.filter(h=>h.realm==='horde'),O=t.PLACE_OASIS,e=2+O.near;let spot=null;
-  for(let y=10;y<m0.h-10&&!spot;y+=2)for(let x=10;x<W-10&&!spot;x+=2){const i=y*W+x;if(m0.clim[i]!==t.CLIM.desert)continue;let ok2=true;
+ // the land round it more, and a holding stands within its radius and PLACE_OASIS.near of it; with none, none there. The first
+ // of the first 3 such spots (8 tiles apart) where it does (where the realms grow is drawn: one spot may miss by chance)
+ {const base=R['Normal redwater'],m0=base.map,W=m0.w,H0=base.holdings,orc=H0.filter(h=>h.realm==='horde'),O=t.PLACE_OASIS,e=2+O.near,spots=[];
+  for(let y=10;y<m0.h-10&&spots.length<3;y+=2)for(let x=10;x<W-10&&spots.length<3;x+=2){const i=y*W+x;if(m0.clim[i]!==t.CLIM.desert||spots.some(([u,v])=>Math.hypot(u-x,v-y)<8))continue;let ok2=true;
    for(let b=-e-1;b<=e+1&&ok2;b++)for(let a=-e-1;a<=e+1&&ok2;a++){const j=(y+b)*W+x+a;if(m0.kind[j]===t.T_WATER||m0.kind[j]===t.T_MOUNT||m0.kind[j]===t.T_ROAD||m0.kind[j]===t.T_FORD||m0.clim[j]!==t.CLIM.desert)ok2=false}
-   const d=Math.min(...H0.map(h=>Math.hypot(h.tx-x,h.ty-y))),dorc=Math.min(...orc.map(h=>Math.hypot(h.tx-x,h.ty-y)));if(ok2&&d>e+6&&dorc>=18&&dorc<=34)spot=[x,y]}
-  if(!spot)info('a big oasis: no open desert on Normal redwater to lay one on');
-  else{const gh=window.genHoldings,[ox,oy]=spot,c=oy*W+ox;let r=null;
+   const d=Math.min(...H0.map(h=>Math.hypot(h.tx-x,h.ty-y))),dorc=Math.min(...orc.map(h=>Math.hypot(h.tx-x,h.ty-y)));if(ok2&&d>e+6&&dorc>=18&&dorc<=34)spots.push([x,y])}
+  if(!spots.length)info('a big oasis: no open desert on Normal redwater to lay one on');
+  for(const [k,spot] of spots.entries()){const gh=window.genHoldings,[ox,oy]=spot,c=oy*W+ox;let r=null;
    window.genHoldings=function*(g){const m=g.map,T=[];for(let b=-2;b<=2;b++)for(let a=-2;a<=2;a++)if(a*a+b*b<=5){const i=c+a+b*W;m.kind[i]=t.T_WATER;m.feat[i]|=2;T.push(i)}m.oases=[{i:c,r:2,big:true,tiles:T}];return yield* gh(g)};
    try{r=gen({preset:'normal',seed:'redwater'})}finally{window.genHoldings=gh}
-   const near=Hs=>Hs.filter(h=>Math.hypot(h.tx-ox,h.ty-oy)<=e+1);
-   ok(near(r.holdings).length>0&&!near(H0).length&&!r.relaxed.some(x=>/^holdings/.test(x)),'a big oasis on the desert at '+ox+','+oy+' draws a holding beside it: '+near(r.holdings).map(h=>h.name+' ('+h.realm+' '+h.kind+')').join(', ')+' (none there without it); the stage’s checks passed ('+r.tries.holdings+' tries)')}}
+   const near=Hs=>Hs.filter(h=>Math.hypot(h.tx-ox,h.ty-oy)<=e+1),drew=near(r.holdings).length>0&&!near(H0).length&&!r.relaxed.some(x=>/^holdings/.test(x));
+   if(!drew&&k<spots.length-1){info('a big oasis at '+ox+','+oy+' drew no holding this time: the next spot');continue}
+   ok(drew,'a big oasis on the desert at '+ox+','+oy+' draws a holding beside it: '+near(r.holdings).map(h=>h.name+' ('+h.realm+' '+h.kind+')').join(', ')+' (none there without it); the stage’s checks passed ('+r.tries.holdings+' tries)');break}}
  // ---- deposits and first stocks by the economy setting; lords from WM.lords
  {const m=R['Normal redwater'].map,n=e=>{m.settings={...m.settings,economy:e};t.genDeposits(m,t.TOWNS);return m.deposits.length},c=[n('poor'),n('normal'),n('rich')];m.settings={...m.settings,economy:'normal'};t.genDeposits(m,t.TOWNS);
   const fish=m.deposits.filter(d=>d.kind==='fish'),inl=fish.filter(d=>(m.river[d.ty*m.w+d.tx]&3)||(m.feat[d.ty*m.w+d.tx]&2));

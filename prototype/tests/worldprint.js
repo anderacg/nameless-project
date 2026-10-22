@@ -167,7 +167,21 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 //  acf0a308, the farms at the first two spots). Were W5 3d1b7695, W6 8c6b32ad; W1-W4, W7, W8 and B2 unchanged)
 // (W6 re-recorded 2026-10-23 at AR's merge: with gfx/structures.js estateGround drawing farm plots by farmPlot (crops in rows) the
 //  first two spots' farms show their crops; with the old furrows put back W6 is 494e07e1, AR's own value)
-const EXPECT={W1:'5ae838ac',W2:'2fb848a2',W3:'19419885',W4:'9996d93d',W5:'890dc324',W6:'acf0a308',W7:'62657eba',W8:'e85c68b0',B2:'7aad116d'};
+// (all nine re-recorded 2026-10-23, on purpose, the owner's play-test of 2026-10-22 (agent GP): the land's small patches tidied (worldgen.js genPatchTidy, GEN_PATCH),
+//  the brooks through the holdings cut back (genHoldBrooks), the centres on dry ground (worldplace.js placeDry), ports only on harbour
+//  water and the League liking it (portWater, PLACE_PORT; PLACE.regrow 5), piers and lots kept off ponds and brooks and the estate
+//  tracks' painted lines off the fields (lots.js pierOk, brookAt, softClear), the sites' counts (data/world.js DENSITY.grow: caves,
+//  ruins and shrines ^.35, hideouts ^.8, the travellers by the road) and the travellers' spacing and roadside draw (sites.js SITE_GAP,
+//  TravellersCamp.pick), a dock on its pier's own water (ships.js dockOf): the classic world's kinds
+//  (W1: tiles tidied, holdings and roads with them), the deposits on them (W2), the holdings' lots and estates (W3), the land claimed
+//  (W4), the painted world (W5, W6), the sites and what follows (W7, W8: fewer travellers' camps, caves, ruins and shrines; the ships
+//  from their docks) and the save after begin (B2). Checked: with every one of those rules off (GEN_PATCH.min 0, no brook cut,
+//  placeDry, the old port rule (the open sea or a navigable river, the League by any lake), PLACE.regrow 3, no pier or brook rule,
+//  no softClear, DENSITY's sites by the land at 1, no SITE_GAP, the travellers drawn anywhere, the old dockOf) all nine are as before.
+//  Were W1 5ae838ac, W2 2fb848a2, W3 19419885, W4 9996d93d, W5 3d1b7695, W6 8c6b32ad, W7 62657eba, W8 e85c68b0, B2 7aad116d)
+// (W5 and W6 measured together 2026-10-23 at the merge of GP's generator and placement with AR's hills, woods and crops; the
+//  others are GP's alone)
+const EXPECT={W1:'92f3e9c6',W2:'9d9df44b',W3:'d123d890',W4:'9c23c683',W5:'f6daaf45',W6:'89ee63a7',W7:'bc579d54',W8:'4fa9c9cb',B2:'d90ef30c'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended
@@ -210,7 +224,11 @@ const EXPECT={W1:'5ae838ac',W2:'2fb848a2',W3:'19419885',W4:'9996d93d',W5:'890dc3
 //  s1 631760e5)
 // (all five measured together 2026-10-22 at the merge of agents S and R, as G1-G8 above)
 // (all five measured together 2026-10-22 at the merge of agents R (the generator's water: no desert rain, terminal lakes, springs, ponds and oases), S (estate tracks, forest clearings, estates farther out, oases drawing holdings, stage 7 regrown, roads round ponds) and U (the camps grown with the land, port piers preferring the sea) on main 880b6e7; each agent proved its own rules off give the values before)
-const SUMS={classic:'f9503f0b','Normal s1':'1909f780','Normal s2':'f9df3b16','Normal s3':'0eb8d0bf','Large s1':'4e80c5cb'};
+// (all five re-recorded 2026-10-23, on purpose, the owner's play-test of 2026-10-22 (agent GP, W1-W8 above): every generated
+//  world's kinds tidied, its brooks cut back from the holdings, its centres on dry ground and its ports on harbour water. Checked the
+//  same way: with those rules off all five as before. Were classic f9503f0b, Normal s1 1909f780, s2 f9df3b16, s3 0eb8d0bf, Large s1
+//  4e80c5cb)
+const SUMS={classic:'efa9e400','Normal s1':'f9e8cbcf','Normal s2':'be89157c','Normal s3':'5d829885','Large s1':'c0456394'};
 const r0=Math.random,pn=performance.now,t0=pn.call(performance);
 try{
  try{localStorage.clear()}catch(e){}

@@ -12,6 +12,11 @@ try{
  const S=W.sites,of=ty=>S.filter(s=>s.type===ty),want=Object.keys(t.SITE_TYPES);
  // (as many as the world holds, data/world.js density: at least 9 in 10, the travellers wanting a roadside)
  ok(want.every(ty=>{const n=of(ty).length,w=t.SITE_TYPES[ty].spots?t.CAMP_SPOTS.length:t.density(t.WM).sites[ty];return n<=w&&n>=w*.9}),'every kind placed: '+want.map(ty=>of(ty).length+' '+ty).join(', '));
+ // (the travellers' camps (the owner's play-test, 2026-10-22: "too many pilgrim and wanderer camps"): as many as the world's road
+ // holds (data/world.js DENSITY.grow roads), each by a road, SITE_GAP's tiles from another and from the outlaws' camps and hideouts)
+ {const tv=of('travelers'),G2=t.SITE_GAP.travelers,near=(a,L)=>Math.min(...L.filter(b=>b!==a).map(b=>Math.hypot(a.tx-b.tx,a.ty-b.ty))),bc=[...of('camp'),...of('hideout')];
+  const d1=Math.min(...tv.map(a=>near(a,tv))),d2=Math.min(...tv.map(a=>near(a,bc)));
+  ok(tv.length===t.density(t.WM).sites.travelers&&tv.every(s=>t.TravellersCamp.ground(s.tx,s.ty))&&d1>=G2.travelers&&d2>=Math.min(G2.camp,G2.hideout),'the travellers\u2019 camps: '+tv.length+' by '+t.worldRoads(t.WM)+' tiles of road (a track\u2019s a half), each by a road, '+d1.toFixed(1)+' tiles apart at the least ('+G2.travelers+'), '+d2.toFixed(1)+' from the outlaws\u2019 camps and hideouts ('+G2.camp+')')}
  const at=s=>s.type==='cave'?s.ty+1:s.ty;ok(S.every(s=>t.passable(t.tAt(s.tx,at(s)))&&t.Router.reach(t.TOWNS[0],{x:(s.tx+.5)*t.TILE,y:(at(s)+.5)*t.TILE})),'all '+S.length+' sites stand on ground you can reach (a cave: the ground at its mouth)');
  const quad=[0,1,2,3].map(q=>S.filter(s=>(s.tx<MW/2?0:1)+(s.ty<MH/2?0:2)===q).length);ok(quad.every(n=>n>=4),'spread over the whole map (per quarter: '+quad.join(', ')+')');
  ok(S.every(s=>t.TOWNS.every(w=>Math.hypot(w.tx-s.tx,w.ty-s.ty)>=6)),'none sit on top of a holding');

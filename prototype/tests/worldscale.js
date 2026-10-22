@@ -24,16 +24,24 @@ try{
  ok(t.CARAVAN_CAP===C.caravans&&t.REFUGEE_CAP===C.refugees&&t.CRITTER_CAP===C.critterCap&&t.CRITTER_START===C.critterStart,'caravan, refugee and critter caps read the table');
  ok(C.bandits===t.BANDITS&&C.monsterCap===t.MONSTER_CAP&&C.monsterStart===t.MONSTER_START&&C.ships===t.SHIP_CAP&&t.density(t.WM).camps===t.CAMP_SPOTS.length,'bandits, monsters and ships read the table, and the world\'s camps are the map\'s spots ('+t.CAMP_SPOTS.length+')');
  // ---- a bigger world (DENSITY.grow): the base numbers x (its land / the base's)^pow, caravans and refugees by its holdings,
- // ships by its ports; the bands at a pow of .8; the classic seed grown as any world; the land
- // counted once, off every list
- {const g=D.grow,by=JSON.stringify(g.by),fake=(land,hold,cl)=>{const k=new Uint8Array(land+900).fill(t.T_OPEN);k.fill(t.T_WATER,land,land+600);k.fill(t.T_FORD,land+600);return{kind:k,settings:{holdings:hold},classic:!!cl}};
-  const J=JSON.stringify,today=fake(g.land,g.holdings),big=fake(g.land*4,g.holdings*2),d4=t.density(big);
+ // ships by its ports; the bands at a pow of .8, the hideouts too; caves, ruins and shrines at .35 (the owner's "ok 1.5" on the
+ // classic seed); the travellers by the road (a great road's tile 1, a track's grow.track, an estate's track none: road and
+ // track, a and b tiles); the classic seed grown as any world; the land and the road counted once, off every list
+ {const g=D.grow,by=JSON.stringify(g.by),seq=(a,n)=>Array.from({length:n},(_,k)=>a+k),fake=(land,hold,cl,a,b)=>{const k=new Uint8Array(land+900).fill(t.T_OPEN);k.fill(t.T_WATER,land,land+600);k.fill(t.T_FORD,land+600);
+    return{kind:k,settings:{holdings:hold},classic:!!cl,roads:[{kind:'road',path:seq(0,a|0)},{kind:'track',path:seq(0,(a|0)+(b|0))},{kind:'track',est:'x',path:seq(1e6,500)}]}};
+  const J=JSON.stringify,today=fake(g.land,g.holdings,false,g.roads/2,g.roads),big=fake(g.land*4,g.holdings*2,false,g.roads,g.roads*2),d4=t.density(big);
   {const L=t.worldLand(t.WM),N=t.density(t.WM);
    ok(N.monsterStart===Math.round(C.monsterStart*L/g.land)&&N.monsterStart>C.monsterStart,
-    'the classic seed grows as any world: '+L+' tiles of land, '+(L/g.land).toFixed(2)+' times the base: '+N.bandits+' bands, '+N.monsterStart+' / '+N.monsterCap+' beasts, '+N.critterStart+' / '+N.critterCap+' game')}
-  ok(J(t.density(today))===J(C)&&t.worldLand(today)===g.land&&!Object.keys(today).includes('_land')&&!J(today).includes('_dens'),'a world with today\'s land and holdings holds today\'s numbers (water and fords not land; the count kept off its keys)');
-  ok(d4.bandits===Math.round(30*Math.pow(4,.8))&&d4.daily.bandits===Math.round(Math.pow(4,.8))&&d4.camps===48&&d4.monsterStart===192&&d4.monsterCap===240&&d4.critterStart===384&&d4.critterCap===480&&d4.sites.cave===120&&d4.sites.shrine===72&&d4.daily.monsters===12&&d4.daily.critters===12,
-   'four times the land: four times the camps, beasts, game, sites and the tries a day to bring them back; the bands and their tries 4^.8 times ('+d4.monsterStart+' / '+d4.monsterCap+' beasts, '+d4.critterStart+' / '+d4.critterCap+' game, '+d4.bandits+' bands)');
+    'the classic seed grows as any world: '+L+' tiles of land, '+(L/g.land).toFixed(2)+' times the base: '+N.bandits+' bands, '+N.monsterStart+' / '+N.monsterCap+' beasts, '+N.critterStart+' / '+N.critterCap+' game')
+   // (the owner's play-test, 2026-10-22: caves, ruins and shrines "ok 1.5" on the classic seed; the travellers' camps a third of the
+   // 67 the land gave it or fewer)
+   const x=k=>N.sites[k]/C.sites[k],ks=['cave','ruins','shrine'];
+   ok(ks.every(k=>x(k)>=1.4&&x(k)<=1.6)&&N.sites.travelers<=Math.round(C.sites.travelers*L/g.land/3)+1,'on the classic seed caves, ruins and shrines about 1.5 times the base ('+ks.map(k=>N.sites[k]+' '+k+', '+x(k).toFixed(2)).join('; ')+'), the travellers\' camps by its road a third of the land\'s or fewer ('+N.sites.travelers+' of '+Math.round(C.sites.travelers*L/g.land)+')')}
+  ok(J(t.density(today))===J(C)&&t.worldLand(today)===g.land&&t.worldRoads(today)===g.roads&&!Object.keys(today).includes('_land')&&!J(today).includes('_dens')&&!J(today).includes('_roads'),'a world with today\'s land, holdings and road holds today\'s numbers (water and fords not land; the counts kept off its keys)');
+  {const z=t.density(fake(g.land,g.holdings,false,0,0));
+   ok(t.worldRoads(fake(10,1,false,100,40))===100+40*g.track&&z.sites.travelers===0&&z.sites.cave===C.sites.cave,'the road: a great road\'s tiles 1 each, a track\'s '+g.track+', a tile on both once (the greater), an estate\'s track none; no road, no travellers\' camps ('+z.sites.travelers+'), the rest as the land')}
+  ok(d4.bandits===Math.round(30*Math.pow(4,.8))&&d4.daily.bandits===Math.round(Math.pow(4,.8))&&d4.camps===48&&d4.monsterStart===192&&d4.monsterCap===240&&d4.critterStart===384&&d4.critterCap===480&&d4.sites.cave===Math.round(30*Math.pow(4,.35))&&d4.sites.shrine===Math.round(18*Math.pow(4,.35))&&d4.sites.hideout===Math.round(24*Math.pow(4,.8))&&d4.sites.travelers===42&&d4.daily.monsters===12&&d4.daily.critters===12,
+   'four times the land: four times the camps, beasts, game and the tries a day to bring them back; the bands, their tries and the hideouts 4^.8 times; caves, ruins and shrines 4^.35; twice the road, twice the travellers\' camps ('+d4.monsterStart+' / '+d4.monsterCap+' beasts, '+d4.critterStart+' / '+d4.critterCap+' game, '+d4.bandits+' bands, '+d4.sites.hideout+' hideouts, '+d4.sites.cave+' caves, '+d4.sites.travelers+' travellers\' camps)');
   ok(d4.caravans===144&&d4.refugees===84&&d4.ships===30&&t.density(big)===d4,'twice the holdings: twice the caravans and refugees; the ships by the ports of the world in (another\'s: today\'s); kept on the map');
   try{g.by.monsterCap=['land',1.1];const a=t.density(fake(g.land,g.holdings)).monsterCap,b=t.density(fake(g.land*4,g.holdings)).monsterCap;
    ok(a===60&&b===Math.round(60*Math.pow(4,1.1)),'a pow above 1 makes a bigger world busier (cap '+b+' at four times the land, not 240), the base as ever ('+a+')');

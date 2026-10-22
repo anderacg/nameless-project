@@ -68,6 +68,8 @@ class Site extends WorldObject{
   // its point (where parties reach it, where it is drawn from), and the tile row parties reach it on
   static point(tx,ty){return[(tx+.5)*TILE,(ty+.5)*TILE]}
   static reachRow(ty){return ty}
+  // a tile to try for one (siteSpot): anywhere on the map
+  static pick(){return[rint(3,MW-4),rint(3,MH-4)]}
   // filled in when made (sites: the others made so far)
   setup(sites,clim){}
   // put its point back from its tile (after a load)
@@ -450,6 +452,8 @@ const mercCost=(k,u)=>Math.round((hireCost(u||k)+(u&&u!==k?trainCost(k):0))*1.3)
 const SWORD_BYNAMES=['the Tall','Redhand','Ashfoot','the Quiet','Longstride','of the Marches','Two-Blades','the Grey','Stonefist','the Lucky','Crowfeather','Half-Ear'];
 class TravellersCamp extends Site{
   static ground(tx,ty){return tAt(tx,ty)!==T_ROAD&&nearTile(tx,ty,T_ROAD,1)}
+  // (by a road: a tile beside one of the world's road tiles, drawn among them; ROAD_TILES, kept for the world)
+  static pick(){const R=ROAD_TILES||(ROAD_TILES=tiles.reduce((a,k,i)=>(k===T_ROAD&&a.push(i),a),[]));if(!R.length)return super.pick();const i=R[rint(0,R.length-1)];return[i%MW+rint(-1,1),(i-i%MW)/MW+rint(-1,1)]}
   static clear(tx,ty){return campClear('travelers',tx,ty)}
   get TR(){return TRAVELERS[this.kind]||TRAVELERS[0]}
   setup(){this.kind=rint(0,TRAVELERS.length-1);this.stockUp()}
@@ -509,13 +513,21 @@ const siteOf=s=>{if(s instanceof Site)return s;Object.setPrototypeOf(s,SITE_CLAS
 const camps=()=>W.sites.filter(s=>s instanceof BanditCamp);
 
 /* placement */
-// a free tile for a site of this kind: reachable from the roads, on its ground, clear of holdings and other sites (the camps among them)
+// the least distance (tiles) between two kinds of site, past siteSpot's gap, never relaxed (the owner's play-test, 2026-10-22:
+// "too many pilgrim and wanderer camps"): a travellers' camp far from another, and from the outlaws' camps and hideouts (no
+// traders' fire beside a bandits' den; a bandit camp stands on its spot first, a hideout keeps the gap to the travellers before it)
+const SITE_GAP={travelers:{travelers:30,camp:16,hideout:16},hideout:{travelers:16}};
+const siteGap=(a,b)=>SITE_GAP[a]&&SITE_GAP[a][b]||0;
+// a free tile for a site of this kind: reachable from the roads, on its ground, clear of holdings and other sites (the camps among
+// them; SITE_GAP's kinds farther); each try a tile its kind picks (Site pick)
+let ROAD_TILES=null;onWorld(()=>{ROAD_TILES=null});
 function siteSpot(type,sites,gap){
   const C=SITE_CLASS[type],from=startHolding();
   for(let k=0;k<5000;k++){
-    const g=k<2500?gap:gap*.6,tx=rint(3,MW-4),ty=rint(3,MH-4),fy=C.reachRow(ty);// where parties reach it
+    const g=k<2500?gap:gap*.6,[tx,ty]=C.pick(),fy=C.reachRow(ty);// where parties reach it
+    if(tx<3||ty<3||tx>MW-4||ty>MH-4)continue;
     if(!passable(tAt(tx,fy))||!Router.reach(from,{x:(tx+.5)*TILE,y:(fy+.5)*TILE})||!C.ground(tx,ty)||!C.clear(tx,ty)||!C.fits(tx,ty))continue;
-    if(TOWNS.some(t=>Math.hypot(t.tx-tx,t.ty-ty)<6)||sites.some(s=>Math.hypot(s.tx-tx,s.ty-ty)<g))continue;
+    if(TOWNS.some(t=>Math.hypot(t.tx-tx,t.ty-ty)<6)||sites.some(s=>Math.hypot(s.tx-tx,s.ty-ty)<Math.max(g,siteGap(type,s.type))))continue;
     return[tx,ty];
   }
   return null;

@@ -7,7 +7,8 @@
       apart (less, a tenth at a time, where no draw keeps them so) with their nearest rivals at like distances; each realm grown
       from its capital by Poisson-disc candidates within 40 tiles of its own (more where the holdings are sparser), liking room,
       kinds by rules (castles high and facing rivals, towns on rivers and coasts, villages on fertile land),
-      the spacing table (PLACE_GAP); ports on water joined to the sea, stilt villages in the swamp; names from syllables, prices
+      the spacing table (PLACE_GAP); ports on harbour water (portWater: the sea, an inland sea or a big lake, a navigable or great
+      river), stilt villages in the swamp, each centre on dry ground (placeDry); names from syllables, prices
       and notes from the land; lords past each realm's four (D10: WM.lords). Classic: the 37 holdings whole, at their anchors
       snapped to a suitable tile within 4, one that keeps its hint (CLASSIC_HINTS: placeHint) and its own climate first.
    8. roads: a spanning tree and each holding's two nearest, great roads (between cities, towns and castles) before tracks, each
@@ -61,9 +62,10 @@ const placeGap=(a,b)=>PLACE_GAP[a]&&PLACE_GAP[a][b]||PLACE_GAP[b]&&PLACE_GAP[b][
    whatever the gap, which bunched them); space, the spacing (tiles) reach is made for, 37 holdings at Normal: where the land a
    holding has is wider (sqrt(land / holdings)), reach and room grow with it (Normal's 27 x1.18, Huge's 66 x1.75); room, a new
    holding's liking for room, up to room[0] for room[1] tiles (x that growth) clear past its spacing; pull, its pull toward its
-   capital, a share a hundred tiles; regrow, the realms grown from their capitals at most this many times a try (placeEven) */
+   capital, a share a hundred tiles; regrow, the realms grown from their capitals at most this many times a try (placeEven; 5 since
+   the centres keep to dry ground, placeDry, 2026-10-22: Large s2 balanced at its fourth) */
 const PLACE={reach:40,cap:.3,skew:.25,suit:.6,day:60,land:2000,landR:90,lords:[[37,4],[55,6],[90,9],[200,18]],bridge:3,ford:3,ferry:12,gap:60,apart:3,spread:.3,even:.24,
-  capMin:.6,space:54,room:[.3,30],pull:.05,regrow:3};
+  capMin:.6,space:54,room:[.3,30],pull:.05,regrow:5};
 // the land a realm's holdings will claim, reckoned as territory.js does at the start (placeRealmLand): its travel cost by tile kind
 // (its LAND_COST, which loads after the generator runs; 0 closed) and a holding's first growth past its kind's reach (its GROW0)
 const PLACE_CLAIM={cost:[1,1.7,1.5,0,.8,4,1.5],grow:4};
@@ -86,8 +88,8 @@ const PLACE_WORD={human:'human',dwarf:'dwarven',elf:'elven',orc:'orc',league:'Le
 
 /* the fields stages 7-9 read (once a world; g.work.place): distances (tiles, 4 ways, to 255) to sea or lake water (dW), rivers
    (dR), navigable rivers (dN), peaks (dM) and forest (dF); each river tile's river (rv, -1 elsewhere) and its place along that
-   river's path (rp); bodies of water (wl, 4 ways; sea: the largest at the map's rim); the open sea (open: water joined to the rim
-   by water no road can bridge, or by rivers, whose bridges keep them: placeOpen); the land a road can join (conn: walkable land,
+   river's path (rp); bodies of water (wl, 4 ways; sea: the largest at the map's rim); harbour water (pw: portWater) and the distance
+   to its standing water (dH: the sea, an inland sea, a big lake); the land a road can join (conn: walkable land,
    rivers, and water a bridge spans, never a pond's or an oasis's; main its largest piece); the big oases' shores (oa: within
    PLACE_OASIS.near of one's pool); the ponds' and oases' water (pond: worldgen.js m.ponds, m.oases [{i, r, tiles}...]: never
    bridged nor crossed, the roads go round) */
@@ -100,10 +102,10 @@ function* placeFields(g){
   for(let a=0;a<q.length;a++){const i=q[a],x=i%W,y=(i-x)/W;for(const [dx,dy] of DIR8){const nx=x+dx,ny=y+dy,j=ny*W+nx;if(m.has(nx,ny)&&rv[j]<0&&(Rv[j]&3)){rv[j]=rv[i];rp[j]=rp[i];q.push(j)}}}
   F.wl=new Int32Array(N);const ws=yield* genPieces(g,F.wl,i=>K[i]===T_WATER);F.sea=-1;
   for(let i=0;i<N;i++){const x=i%W,y=(i-x)/W;if((x===0||y===0||x===W-1||y===H-1)&&F.wl[i]>=0&&(F.sea<0||ws[F.wl[i]]>ws[F.sea]))F.sea=F.wl[i]}
-  const run=F.run=placeRuns(m),pond=F.pond=new Uint8Array(N);F.open=placeOpen(m,run);F.conn=new Int32Array(N);
+  const run=F.run=placeRuns(m),pond=F.pond=new Uint8Array(N);F.conn=new Int32Array(N);
   for(const o of [...m.ponds||[],...m.oases||[]])for(const i of o.tiles||[o.i])pond[i]=1;
   const cs=yield* genPieces(g,F.conn,i=>K[i]!==T_MOUNT&&(K[i]!==T_WATER||(Rv[i]&3)>0||run[i]<=PLACE.bridge&&!pond[i]));
-  F.main=cs.indexOf(Math.max(...cs));F.oa=placeOases(m);return F}
+  F.main=cs.indexOf(Math.max(...cs));F.oa=placeOases(m);F.pw=portWater(m);F.dH=yield* genFar(g,i=>F.pw[i]===2&&!(Rv[i]&3));return F}
 /* the big oases (the desert's spring pools, worldgen.js: m.oases [{i, its centre tile, r, its radius in tiles, big}]): a desert
    people likes the land round one (the owner's: "desert and swamp near water"), the orcs most (placeSuit: PLACE_OASIS by people),
    so a big oasis may draw a holding beside it; near: tiles past its radius. A byte a tile (1 near one) */
@@ -117,8 +119,8 @@ function placeRuns(m){const W=m.w,H=m.h,K=m.kind,S=new Uint8Array(W*H).fill(255)
   for(let y=0;y<H;y++)for(let x=0;x<W;){if(K[y*W+x]!==T_WATER){x++;continue}let e=x;while(e<W&&K[y*W+e]===T_WATER)e++;for(let k=x;k<e;k++)S[y*W+k]=Math.min(255,e-x);x=e}
   for(let x=0;x<W;x++)for(let y=0;y<H;){if(K[y*W+x]!==T_WATER){y++;continue}let e=y;while(e<H&&K[e*W+x]===T_WATER)e++;for(let k=y;k<e;k++)S[k*W+x]=Math.min(S[k*W+x],e-y);y=e}
   return S}
-// how much a people likes tile i (about 0-1; §8.8's likes and avoids); the League by coasts, lake shores and navigable rivers; and
-// by a big oasis (PLACE_OASIS)
+// how much a people likes tile i (about 0-1; §8.8's likes and avoids); the League by harbour water (dH: the sea, an inland sea or
+// a big lake, never a pond or a small lake since 2026-10-22) and navigable rivers; and by a big oasis (PLACE_OASIS)
 function placeSuit(m,F,p,i){return placeLike(m,F,p,i)+(F.oa&&F.oa[i]?PLACE_OASIS[p]||0:0)}
 function placeLike(m,F,p,i){
   const c=m.clim[i],k=m.kind[i],f=m.feat[i],GR=CLIM.grass,FR=CLIM.frost,DE=CLIM.desert,SW=CLIM.swamp,dR=F.dR[i],dW=F.dW[i],dM=F.dM[i],dF=F.dF[i];
@@ -126,16 +128,26 @@ function placeLike(m,F,p,i){
   if(p==='dwarf')return(dM<=4?.4:dM<=10?.2:0)+(k===T_HILL?.2:0)+(c===FR?.25:c===GR?(m.temp[i]<110?.2:.05):-.4)+(dR<=3&&dM<=10?.1:0);
   if(p==='elf')return(dF<=2&&!(f&8)?.35:dF<=5?.15:0)+(c===GR?.3:c===SW?.05:-.5)+(dR<=3&&dF<=4?.15:0)+(k===T_OPEN?.1:0);
   if(p==='orc')return(c===DE?.45:c===SW?.3:c===GR&&m.temp[i]>150?.15:c===FR?-.6:0)+(dW<=6||dR<=4?.3:0)+(k===T_OPEN?.1:0);
-  return(dW<=2?.5:0)+(F.dN[i]<=2?.4:0)+(dR<=3&&dW<=4?.2:0)-(dW>6&&F.dN[i]>4?.4:0)+(c===GR||c===SW?.1:0)}
-// (the body of water a port at tile i sails from: water within 2 on the open sea (a strait a road may bridge later leaves a port
-// on a lake: fewer holdings, 2026-10-22, met it), or a navigable river; else -1)
+  const dH=F.dH[i];return(dH<=2?.5:0)+(F.dN[i]<=2?.4:0)+(dR<=3&&dH<=4?.2:0)-(dH>6&&F.dN[i]>4?.4:0)+(c===GR||c===SW?.1:0)}
+// (the body of water a port at tile i sails from: water within 2 that is harbour water (portWater: the owner's play-test of
+// 2026-10-22; it was the open sea's or a navigable river's, which let a small lake on a river in); else -1)
 function placePort(m,F,i){const W=m.w,x=i%W,y=(i-x)/W;let r=-1;
-  for(let b=-2;b<=2;b++)for(let a=-2;a<=2;a++){const j=(y+b)*W+x+a;if(m.has(x+a,y+b)&&m.kind[j]===T_WATER&&(F.open[j]||(m.river[j]&4))&&r<0)r=F.wl[j]}return r}
-// (the open sea: water joined 4 ways to the map's rim through water wider than a bridge spans (PLACE.bridge) or rivers, a byte a tile)
-function placeOpen(m,S){const W=m.w,H=m.h,N=W*H,K=m.kind,O=new Uint8Array(N),q=new Int32Array(N),ok=i=>K[i]===T_WATER&&(S[i]>PLACE.bridge||(m.river[i]&3)>0);let a=0,b=0;
-  for(let i=0;i<N;i++){const x=i%W,y=(i-x)/W;if((!x||!y||x===W-1||y===H-1)&&ok(i)){O[i]=1;q[b++]=i}}
-  while(a<b){const i=q[a++],x=i%W;for(const j of [x>0?i-1:-1,x<W-1?i+1:-1,i-W,i+W])if(j>=0&&j<N&&!O[j]&&ok(j)){O[j]=1;q[b++]=j}}
-  return O}
+  for(let b=-2;b<=2;b++)for(let a=-2;a<=2;a++){const j=(y+b)*W+x+a;if(m.has(x+a,y+b)&&F.pw[j]===2&&r<0)r=F.wl[j]}return r}
+/* (the water a port may sail from (the owner's play-test, 2026-10-22: "port should spawn only at a huge river; cannot spawn by a
+   small pond, small lake or oasis"), a byte a tile: 2 harbour water, a port town's (its style, its harbour, ships and docks):
+   standing water (no river's) in a body (4 ways) of PLACE_PORT.min tiles or more (the sea, an inland sea, a big lake), or a
+   navigable or great river; 1 a fishing pier's, any holding's port estate (lots.js): a smaller lake, or a river PLACE_PORT.pier
+   wide or more; 0 none: land, a pond's or an oasis's water (worldgen.js m.ponds, m.oases), a stream. Made once a world, as its
+   water first stands (stage 7: before a road's fords and bridges), kept on the map) */
+const PLACE_PORT={min:400,pier:2};
+function portWater(m){if(m._portw)return m._portw;
+  const W=m.w,N=W*m.h,K=m.kind,Rv=m.river,P=new Uint8Array(N),L=new Int32Array(N).fill(-1),q=new Int32Array(N),sea=i=>K[i]===T_WATER&&!(Rv[i]&3);
+  for(let s=0;s<N;s++){if(L[s]>=0||!sea(s))continue;let a=0,b=0;L[s]=s;q[b++]=s;
+    while(a<b){const i=q[a++],x=i%W;for(const j of [x>0?i-1:-1,x<W-1?i+1:-1,i-W,i+W])if(j>=0&&j<N&&L[j]<0&&sea(j)){L[j]=s;q[b++]=j}}
+    for(let k=0;k<b;k++)P[q[k]]=b>=PLACE_PORT.min?2:1}
+  for(let i=0;i<N;i++){const r=Rv[i];if(K[i]===T_WATER&&r&3)P[i]=r&4||(r&3)===3?2:(r&3)>=PLACE_PORT.pier?1:0}
+  for(const o of [...m.ponds||[],...m.oases||[]])for(const i of o.tiles||[o.i])P[i]=0;
+  Object.defineProperty(m,'_portw',{value:P,configurable:true});return P}
 // (the tiles reached from tile s over walkable ground, 4 ways, and over ferries; shut: fords on flooding rivers closed)
 function placeReach(m,s,shut){
   const W=m.w,H=m.h,N=W*H,K=m.kind,Rd=new Uint8Array(N),q=new Int32Array(N),fx=new Map();let a=0,b=0;
@@ -172,11 +184,12 @@ function* genHoldings(g){
   const F=g.work.place||(g.work.place=yield* placeFields(g));yield .3;
   const xy=i=>[i%W,(i-i%W)/W],d2=(i,j)=>{const [a,b]=xy(i),[c,d]=xy(j);return(a-c)*(a-c)+(b-d)*(b-d)};
   const site=i=>{const [x,y]=xy(i);if(x<4||y<4||x>=W-5||y>=H-5||F.conn[i]!==F.main)return false;
-    for(let b=-1;b<=1;b++)for(let a=-1;a<=1;a++){const k=K[i+a+b*W];if(k===T_WATER||k===T_MOUNT||k===T_FORD)return false}return true};
+    for(let b=-1;b<=1;b++)for(let a=-1;a<=1;a++){const k=K[i+a+b*W];if(k===T_WATER||k===T_MOUNT||k===T_FORD)return false}return m.classic||placeDry(m,i)};
   const P=[];
   if(m.classic){
     // classic: the 37 whole, each on a free tile within 4 of its anchor (else the nearest within 40), 4 tiles from the others; of
-    // those within 4, one that keeps its hint (placeHint) first, then one in its own climate, then the nearest
+    // those within 4, one that keeps its hint (placeHint) first, then one in its own climate, then the nearest (never placeDry's
+    // dry ground: the anchors and hints as they were; the brooks through its ring are cut at stage 10, genHoldBrooks)
     const A=classicAnchors(),sx=W/448,sy=H/320,free=(tx,ty)=>site(ty*W+tx)&&out.every(h=>(h.tx-tx)*(h.tx-tx)+(h.ty-ty)*(h.ty-ty)>=16),hint=yield* placeHint(g,F);
     CLASSIC_PLACES.forEach((p,k)=>{const x=Math.round(A[k].tx*sx),y=Math.round(A[k].ty*sy),want=hint[p.name],top=want?3:1,d=JSON.parse(JSON.stringify(p));let at=null,v=-1;
       genNear(m,x,y,4,(tx,ty)=>{if(!free(tx,ty))return false;const i=ty*W+tx,s=(want&&want(i)?2:0)+(CLIMS[m.clim[i]]===p.clim?1:0);if(s>v){v=s;at=[tx,ty]}return s===top});
@@ -227,10 +240,10 @@ function* genHoldings(g){
     if(pass>=PLACE.regrow-1||placeEven(m,F,P.map(h=>({tx:h.i%W,ty:(h.i-h.i%W)/W,kind:h.kind,realm:h.f})),N))break}
     // their data: realm, races, style, name, prices and note
     const used=new Set(),ports={};
-    for(const h of P){const [tx,ty]=xy(h.i),pp=PLACE_PEOPLE[h.f],c=CLIMS[m.clim[h.i]],water=placePort(m,F,h.i)>=0&&(F.dW[h.i]<=2||F.dN[h.i]<=2);
+    for(const h of P){const [tx,ty]=xy(h.i),pp=PLACE_PEOPLE[h.f],c=CLIMS[m.clim[h.i]],water=placePort(m,F,h.i)>=0;
       const races=pp!=='league'?[pp]:F.dF[h.i]<=3?['elf','human']:c==='swamp'||c==='desert'?['human','orc']:F.dM[h.i]<=8?['human','dwarf']:R()<.5?['human','elf']:['elf','orc'];
       const d={name:placeName(R,races[0],used),realm:h.f,races,kind:h.kind,clim:c,tx,ty,seed:out.length+1};
-      if(water&&(pp==='league'||h.kind!=='castle'&&h.kind!=='city'&&!ports[h.f]&&F.dW[h.i]<=2)){d.style='port';ports[h.f]=1}
+      if(water&&(pp==='league'||h.kind!=='castle'&&h.kind!=='city'&&!ports[h.f]&&F.dH[h.i]<=2)){d.style='port';ports[h.f]=1}
       else if(h.kind==='village'&&c==='swamp')d.style='stilt';
       if(h.kind!=='castle')d.mod=placeMod(m,F,d,h.i,R);d.note=placeNote(m,F,d,h.i);
       out.push(Object.assign({name:d.name,realm:d.realm},d.style?{style:d.style}:{},d))}
@@ -240,6 +253,13 @@ function* genHoldings(g){
   g.work.like={};for(const h of out)if(h.kind==='city')g.work.like[h.name]=placeSuit(m,F,PLACE_PEOPLE[h.realm],h.ty*W+h.tx);
   for(const h of out)placeOpenUnder(m,K,h);
   yield 1}
+/* (a holding's centre on dry ground (the owner's play-test, 2026-10-22: a brook ran through a town past its castle and between its
+   houses): no water (a river of any width, a stream) and no brook (worldgen.js genBrook) in its centre's box (placeBox: a town's
+   4 x 4, its bottom row on tile i); a river may pass by it, and a brook by it is cut back at stage 10 (genHoldBrooks). The classic
+   seed's holdings keep their anchors) */
+function placeDry(m,i){const W=m.w;
+  for(let b=-3;b<=0;b++)for(let a=-2;a<=1;a++){const j=i+a+b*W,k=m.kind[j];if(k===T_WATER||k===T_FORD||genBrook(m,j))return false}
+  return true}
 // (the ground under holding h opened in kinds K: forest and hills within 2 tiles, and its own tile, to open ground, no high ground)
 function placeOpenUnder(m,K,h){const W=m.w;for(let b=-2;b<=2;b++)for(let a=-2;a<=2;a++){const tx=h.tx+a,ty=h.ty+b,i=ty*W+tx;if(a*a+b*b<=6&&m.has(tx,ty)&&(K[i]===T_FOREST||K[i]===T_HILL||!a&&!b)){K[i]=T_OPEN;if(K===m.kind)m.high[i]=0}}}
 // (stage 7's holdings Hd ({tx, ty, kind, realm}) as its checks will find them: N of them, each realm's land within PLACE.even of
@@ -637,8 +657,8 @@ function* genCamps(g){
    holdings: as many as asked, by realm (PLACE_SHARE); capitals 0.3 x the diagonal apart (or as near as stage 7 let them:
    g.work.capGap), each liked at PLACE.suit or more, their nearest rivals within PLACE.skew of the mean, each with PLACE.land suitable tiles round it; a fair start (3 holdings within a
    day's travel of each capital); each realm's land within PLACE.even of their mean (placeRealmLand, the holdings' own bridges
-   of stage 8 guessed: placeHoldBridged); every port on water
-   joined to the sea or a navigable river, and a port at least (tests/worldsanity.js). Its relaxation, the last rung of §4.5's
+   of stage 8 guessed: placeHoldBridged); every port on harbour
+   water (portWater), and a port at least (tests/worldsanity.js). Its relaxation, the last rung of §4.5's
    order (hamlets, sacred places and the wild
    share come with Phase 4): one holding fewer a realm, twice at most, where too few fit or a capital has no fair start. roads: every pair joined; every holding reachable from the first capital, also with every ford on a
    flooding river shut (a river's crossings within PLACE.gap need no retry: the pass makes them wherever a crossing can be made,

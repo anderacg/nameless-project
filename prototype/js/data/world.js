@@ -47,17 +47,22 @@ const moveStep=(px,d)=>px*d*WORLD_SCALE.move;
    hand-made map's, the measure every world grows from); sites by kind (sites.js SITE_TYPES), camps by the map's spots; daily: the
    tries a day to bring bands, beasts and game back.
    grow: how each count follows a bigger world: the base number x (the world's measure / the base's)^pow, rounded, by its key
-   in by ([measure, pow]; sites, all its kinds by the one rule); daily: each kind's tries grow as the count named. The measures:
+   in by ([measure, pow]; sites, a rule for each kind); daily: each kind's tries grow as the count named. The measures:
    land (tiles not water, a ford water: the base 32,042), holdings (the realm holdings the world was made with: the base 37),
-   ports (the world in's holdings with a port as it first stood: the base 9). pow 1 keeps the base number per tile of land, per holding or per port; above
-   1 a bigger world is busier, below 1 emptier (the bands .8: fewer to a holding than the land alone would give). The generated
-   classic seed grows as any world */
+   ports (the world in's holdings with a port as it first stood: the base 9), roads (the road's tiles between the holdings, a
+   great road's 1, a track's track, never an estate's track: the base 1,680, so the travellers' 21 make one camp to every 80 tiles
+   of road, their rate). pow 1 keeps the base number per tile of land, per holding, per port or per tile of road; above 1 a
+   bigger world is busier, below 1 emptier (the bands .8: fewer to a holding than the land alone would give). The owner's
+   play-test of 2026-10-22: the travellers' camps by the roads, not the land ("too many pilgrim and wanderer camps": 67 on the
+   classic seed, now 21); caves, ruins and shrines about 1.5 x the base on the classic seed ("ok 1.5": its land 3.19 x the
+   base's, ^.35), growing gently past it; the hideouts, the bands' own, as the bands. The generated classic seed grows as any world */
 const DENSITY={
   classic:{bandits:30,camps:12,monsterStart:48,monsterCap:60,critterStart:96,critterCap:120,caravans:72,refugees:42,ships:30,
     sites:{cave:30,travelers:21,hideout:24,ruins:21,shrine:18},daily:{bandits:1,monsters:3,critters:3}},
-  grow:{land:32042,holdings:37,ports:9,
+  grow:{land:32042,holdings:37,ports:9,roads:1680,track:.5,
     by:{bandits:['land',.8],camps:['land',1],monsterStart:['land',1],monsterCap:['land',1],critterStart:['land',1],critterCap:['land',1],
-      caravans:['holdings',1],refugees:['holdings',1],ships:['ports',1],sites:['land',1]},
+      caravans:['holdings',1],refugees:['holdings',1],ships:['ports',1],
+      sites:{cave:['land',.35],travelers:['roads',1],hideout:['land',.8],ruins:['land',.35],shrine:['land',.35]}},
     daily:{bandits:'bandits',monsters:'monsterCap',critters:'critterCap'}}
 };
 // a world's land: its tiles not water (a ford is water), counted once (kept off every list and hash, as WorldMap's _site)
@@ -65,15 +70,20 @@ function worldLand(m){if(m._land==null)Object.defineProperty(m,'_land',{value:m.
 // a world's ports: its holdings with a port, counted once the world is in (as it first stands: a new game counts first; a port
 // built or lost in play moves nothing), kept as the land is; a world not in: the base
 function worldPorts(m){if(m._ports==null){if(m!==WM)return DENSITY.grow.ports;Object.defineProperty(m,'_ports',{value:TOWNS.filter(t=>bldLv(t,'port')).length,configurable:true})}return m._ports}
-// a world's measures against the base's (DENSITY.grow): its land, its holdings, its ports
-function worldMeasures(m){const g=DENSITY.grow;return{land:worldLand(m)/g.land,holdings:(m.settings?m.settings.holdings:g.holdings)/g.holdings,ports:worldPorts(m)/g.ports}}
+// a world's road (DENSITY.grow roads): the tiles of the roads between its holdings, each once, a great road's 1, a track's
+// grow.track, never an estate's (lots.js estTrack: laid later, a worker's way); counted again as its roads change (none: 0)
+function worldRoads(m){const R=m.roads||[],n=R.filter(r=>!r.est).length;if(m._roads&&m._roads.n===n)return m._roads.v;const w=new Map();
+  for(const r of R)if(!r.est){const v=r.kind==='road'?1:DENSITY.grow.track;for(const i of r.path)if(!(w.get(i)>=v))w.set(i,v)}
+  let v=0;for(const x of w.values())v+=x;Object.defineProperty(m,'_roads',{value:{n,v},configurable:true,writable:true});return v}
+// a world's measures against the base's (DENSITY.grow): its land, its holdings, its ports, its road
+function worldMeasures(m){const g=DENSITY.grow;return{land:worldLand(m)/g.land,holdings:(m.settings?m.settings.holdings:g.holdings)/g.holdings,ports:worldPorts(m)/g.ports,roads:worldRoads(m)/g.roads}}
 /* the counts for world m (density(WM): the world in's; a world being made: its own map). No world (none in yet, or none given):
    the base, so nothing reads the last world's by chance (the generator's camps: one world code, one world). Else each grown by
    its rule, kept on the map till a measure changes (a measure of 1, or pow 1, multiplies alone: the same in every browser) */
 function density(m){const D=DENSITY,g=D.grow;if(!m)return D.classic;
-  const f=worldMeasures(m),key=f.land+' '+f.holdings+' '+f.ports;if(m._dens&&m._dens.key===key)return m._dens.t;
+  const f=worldMeasures(m),key=f.land+' '+f.holdings+' '+f.ports+' '+f.roads;if(m._dens&&m._dens.key===key)return m._dens.t;
   const one=(v,[by,pow])=>Math.round(v*(pow===1||f[by]===1?f[by]:Math.pow(f[by],pow))),t={};
-  for(const k in D.classic){const v=D.classic[k];t[k]=k==='daily'?Object.fromEntries(Object.keys(v).map(s=>[s,one(v[s],g.by[g.daily[s]])])):typeof v==='object'?Object.fromEntries(Object.keys(v).map(s=>[s,one(v[s],g.by[k])])):one(v,g.by[k])}
+  for(const k in D.classic){const v=D.classic[k];t[k]=k==='daily'?Object.fromEntries(Object.keys(v).map(s=>[s,one(v[s],g.by[g.daily[s]])])):typeof v==='object'?Object.fromEntries(Object.keys(v).map(s=>[s,one(v[s],Array.isArray(g.by[k])?g.by[k]:g.by[k][s])])):one(v,g.by[k])}
   Object.defineProperty(m,'_dens',{value:{key,t},configurable:true,writable:true});return t}
 // the base: roving bands at most, and beasts at the start and at most (a world's own: density(WM); tests, the wiki)
 const BANDITS=density().bandits,MONSTER_START=density().monsterStart,MONSTER_CAP=density().monsterCap;

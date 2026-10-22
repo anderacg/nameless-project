@@ -680,7 +680,9 @@ function* genForest(g){
    a hill, a peak or lake water, or water running into it; the owner: "small streams ending ... should go into a lake or pond");
    one on open flat land is carried up its main feeder, reach tiles at most, to one that has (their flow raised to the brook's),
    else a spring pond of one tile at its head, or (by other water or a classic anchor) the brook cut back to where another joins
-   it or away */
+   it or away.
+   The land's small patches tidied (genPatchTidy) once the ponds and oxbows are laid, before the springs (they see the tidied
+   woods and hills), and again after the oases */
 const GEN_POND={deep:1.5,apart:4,space:12,held:8,hollow:{p:.2,n:3},pool:{p:.5,n:4},tarn:{p:.45,n:3},oxbow:{p:.35,n:4,bend:9},spring:{reach:20}};
 /* oases (the owner's fifth play-test: "add oases in the desert"): no desert land farther than reach tiles (4 ways; a day's march
    there is some 88) from water (or a classic holding's anchor): while some is, an oasis near the farthest (within near tiles of
@@ -701,6 +703,31 @@ function genSourced(m,i){const K=m.kind;if(K[i]===T_FOREST||K[i]===T_HILL)return
   return false}
 // (the brook rising at i cut back, down to where another joins it or away: its flow under the brook's)
 function genCutBrook(m,i){const F=m.flow;for(let c=i;c>=0&&genBrook(m,c)&&(c===i||!genFed(m,c));c=genStep(m,c,F[c]>>5))F[c]=F[c]&~31|(GEN_RIVER.brook-1)}
+/* (the land's patches tidied (the owner's play-test, 2026-10-22: "there shouldn't be a 1-tile spawn of forest or any terrain"): each
+   piece (4 ways) of a kind in from (open ground, wood, hills, peaks) under GEN_PATCH.min tiles taken by the kind of into bordering it
+   most (into's order on a tie; a road or a ford beside it counts for open ground), from larger pieces only (or as large and later:
+   no two swap), until none is left that can be, as genClimTidy gives a climate's small piece away. Never to peaks (a pass stays
+   open), but with peaks a piece ringed by peaks alone (no way through it) a peak; never to water (a pond keeps its 1-4 tiles). One bordered
+   by none of them (an isle) stays, and so does open ground by a road or a ford (its verge). Its marks follow: a wood's deep and
+   sparse marks (feat 8, 16) off; a new hill's high ground (D41) a rise, steep where it was a peak, up to its highest neighbour,
+   an old one's gone; a peak's flow under a brook's (none ran into a peak, so none ends on it). Returns the tiles moved */
+const GEN_PATCH={min:4};
+function* genPatchTidy(g,from,into,peaks){
+  const m=g.map,W=m.w,N=W*m.h,K=m.kind,Fe=m.feat,E=m.elev,L=new Int32Array(N),o=into.indexOf(T_OPEN),ok=k=>from.includes(k)||into.includes(k)||k===T_MOUNT;let moved=0;
+  for(let r=0;r<8;r++){const size=yield* genPieces(g,L,i=>ok(K[i]),(i,j)=>K[i]===K[j]),bd=new Map(),to=new Map();
+    for(let i=0;i<N;i++){const p=L[i];if(p<0||size[p]>=GEN_PATCH.min||!from.includes(K[i]))continue;const x=i%W;let c=bd.get(p);if(!c)bd.set(p,c={v:into.map(()=>0),peak:0,other:0,stay:false});
+      for(const j of [x>0?i-1:-1,x<W-1?i+1:-1,i>=W?i-W:-1,i+W<N?i+W:-1]){const q=j<0?-1:L[j],t=j<0?-1:K[j];if(q===p&&q>=0)continue;
+        if(t===T_MOUNT){c.peak++;continue}c.other++;
+        if(t===T_ROAD||t===T_FORD){if(K[i]===T_OPEN)c.stay=true;else if(o>=0)c.v[o]++;continue}
+        const k=q<0?-1:into.indexOf(t);if(k>=0&&(size[q]>size[p]||size[q]===size[p]&&q>p))c.v[k]++}}
+    for(const [p,c] of bd){if(c.stay)continue;let k=-1;c.v.forEach((v,j)=>{if(v&&(k<0||v>c.v[k]))k=j});if(k>=0)to.set(p,into[k]);else if(peaks&&c.peak&&!c.other)to.set(p,T_MOUNT)}
+    for(let i=0;i<N;i++){const p=L[i];if(p<0||!to.has(p)||to.get(p)===K[i])continue;const was=K[i],k=K[i]=to.get(p);moved++;
+      if(was===T_FOREST)Fe[i]&=~8;if(k===T_FOREST)Fe[i]&=~16;
+      if(was===T_MOUNT&&(m.flow[i]&31)>=GEN_RIVER.brook)m.flow[i]=m.flow[i]&~31|(GEN_RIVER.brook-1);
+      if(k!==T_HILL){m.high[i]=0;continue}
+      let up=0,top=-1;for(let d=0;d<8;d++){const j=genStep(m,i,d);if(j>=0&&E[j]>top){top=E[j];up=d}}m.high[i]=(was===T_MOUNT?2:1)|up<<2}
+    if(!to.size)break}
+  return moved}
 function* genPonds(g){
   const m=g.map,W=m.w,H=m.h,N=W*H,K=m.kind,Fe=m.feat,E=m.elev,F=m.flow,Rv=m.river,Cl=m.clim,T=GEN_POND,O=GEN_OASIS,wk=g.work,R=g.rng('ponds',g.attempt);
   // (a retry starts from the land as stage 5 left it)
@@ -739,6 +766,8 @@ function* genPonds(g){
     cs.sort((a,b)=>genHash(sp,a)-genHash(sp,b)||a-b);
     for(const c of cs){if(genHash(sp+1,c)/4294967296>=k.p||held(c,T.held)||!spaced(c,T.space)||!on(c))continue;
       lay(m.ponds,{i:c,kind:'oxbow'},grow(c,2+genHash(sp+2,c)%(k.n-1),on,j=>genHash(sp+3,j)),1)}}
+  // the land's small patches tidied (genPatchTidy), so the springs, roads and holdings see them
+  const LK=[T_OPEN,T_FOREST,T_HILL,T_MOUNT],LI=[T_OPEN,T_FOREST,T_HILL];g.tidied={ponds:yield* genPatchTidy(g,LK,LI,true),graph:0,brooks:0};
   // the springs: each brook's head given a source (ponds first: one rising by a pond has it)
   {const B=GEN_RIVER.brook,feeder=c=>{let b=-1;for(let k=0;k<8;k++){const j=genStep(m,c,k);
       if(j>=0&&K[j]!==T_WATER&&K[j]!==T_MOUNT&&!(Rv[j]&3)&&!des(j)&&(F[j]>>5)===(k+4)%8&&(b<0||(F[j]&31)>(F[b]&31)||(F[j]&31)===(F[b]&31)&&j<b))b=j}return b};
@@ -765,13 +794,31 @@ function* genPonds(g){
       // (the distances again from its water)
       const q=ts.slice();for(const i of ts)D[i]=0;for(let a=0;a<q.length;a++){const i=q[a];for(const j of n4(i))if(j>=0&&D[j]>D[i]+1){D[j]=D[i]+1;q.push(j)}}
       if(g.tick())yield .8}}
+  // (and those the oases' water split; a brook's head that lost its source with them cut back)
+  {const n=yield* genPatchTidy(g,LK,LI,true);g.tidied.ponds+=n;if(n)for(let i=0;i<N;i++)if(genBrook(m,i)&&!genFed(m,i)&&!genSourced(m,i))genCutBrook(m,i)}
 }
 // 6. wild regions: Phase 4's; none yet
 function* genRegions(g){g.map.region.fill(0);g.map.regions=[];yield 1}
-// 10. a brook whose head lost its source to stages 7-9 (a road or a holding's ground over its wood) cut back (genCutBrook); the way
-// graph (router.js buildWayGraph: Phase 2 wave 2's), then the checksum; the result
-function* genGraph(g){const m=g.map;for(let i=0;i<m.w*m.h;i++)if(genBrook(m,i)&&!genFed(m,i)&&!genSourced(m,i))genCutBrook(m,i);m.graph=buildWayGraph(g);yield .5;m.sum=m.checksum(g.holdings);g.work=null;
-  return{map:m,holdings:g.holdings,camps:g.camps,lords:g.lords,hamlets:[],sacred:[],lair:null,regions:m.regions,rivers:m.rivers,crossings:m.crossings,graph:m.graph,tries:g.tries,relaxed:g.relaxed}}
+// 10. the land stages 7-9 cut small (a clearing's ragged edge, a road, a camp) tidied again (genPatchTidy: open ground by a road
+// stays, its verge); the brooks through the holdings cut back (genHoldBrooks); a brook whose head lost its
+// source to stages 7-9 (a road or a holding's ground over its wood) cut back (genCutBrook); the way graph (router.js buildWayGraph:
+// Phase 2 wave 2's), then the checksum; the result (tidied: the tiles each tidying moved, the brooks' tiles cut by the holdings)
+function* genGraph(g){const m=g.map;g.tidied=g.tidied||{ponds:0,graph:0,brooks:0};g.tidied.graph=yield* genPatchTidy(g,[T_OPEN,T_FOREST,T_HILL,T_MOUNT],[T_OPEN,T_FOREST,T_HILL]);
+  g.tidied.brooks=genHoldBrooks(m,g.holdings);
+  for(let i=0;i<m.w*m.h;i++)if(genBrook(m,i)&&!genFed(m,i)&&!genSourced(m,i))genCutBrook(m,i);m.graph=buildWayGraph(g);yield .5;m.sum=m.checksum(g.holdings);g.work=null;
+  return{map:m,holdings:g.holdings,camps:g.camps,lords:g.lords,hamlets:[],sacred:[],lair:null,regions:m.regions,rivers:m.rivers,crossings:m.crossings,graph:m.graph,tries:g.tries,relaxed:g.relaxed,tidied:g.tidied}}
+/* (the brooks through the holdings (the owner's play-test, 2026-10-22: "small streams should not cross a holding or an estate"):
+   each brook tile within a holding's ring and GEN_HOLD_BROOK.margin more (HOLDING_TYPES' ring, from the middle of its centre's
+   front, as lots.js lays its houses) cut, and with it every brook upstream of it, back to their springs outside: its line ends
+   before the town; what ran on below it rises again past the town only where it has a source, else is cut back to where another
+   brook joins it (genGraph's pass after). Rivers (water) are left: a town stands on its river. Returns the tiles cut) */
+const GEN_HOLD_BROOK={margin:1};
+function genHoldBrooks(m,Hd){const W=m.w,F=m.flow,cut=new Uint8Array(W*m.h),q=[];
+  for(const h of Hd){const r=HOLDING_TYPES[h.kind].ring+GEN_HOLD_BROOK.margin;
+    for(let y=h.ty-1-r;y<=h.ty-1+r;y++)for(let x=h.tx-r;x<=h.tx+r;x++){const i=y*W+x;if(m.has(x,y)&&(x-h.tx)*(x-h.tx)+(y-h.ty+1)*(y-h.ty+1)<=r*r&&!cut[i]&&genBrook(m,i)){cut[i]=1;q.push(i)}}}
+  for(let a=0;a<q.length;a++){const i=q[a];for(let k=0;k<8;k++){const j=genStep(m,i,k);if(j>=0&&!cut[j]&&genBrook(m,j)&&(F[j]>>5)===(k+4)%8){cut[j]=1;q.push(j)}}}
+  for(const i of q)F[i]=F[i]&~31|(GEN_RIVER.brook-1);
+  return q.length}
 
 /* ---------- the quick sketch (§4.3, D28): the world these settings make, roughly, for the New game screen's preview, in tens of
    ms at any size: a WorldMap of GEN_SKETCH.n cells across (k tiles a cell), each cell taken at its middle tile point.
@@ -859,7 +906,7 @@ function genSketch(settings){
   // the holdings: each people's liking (placeSuit, on distances in tiles); the capitals the best of 200 draws apart and balanced,
   // (nearer while none are, as stage 7), then the realms in turn, a holding each within reach (rc) of its own, spaced and liking
   // room as stage 7 does
-  const F={dW:far(i=>K[i]===T_WATER),dR:far(i=>m.river[i]>0),dN:far(i=>m.river[i]>1),dM:far(i=>K[i]===T_MOUNT),dF:far(i=>K[i]===T_FOREST)};
+  const F={dW:far(i=>K[i]===T_WATER),dR:far(i=>m.river[i]>0),dN:far(i=>m.river[i]>1),dM:far(i=>K[i]===T_MOUNT),dF:far(i=>K[i]===T_FOREST)};F.dH=F.dW;// (the coarse water all a harbour's)
   const RH=genRng(n,'holdings',0),d2=(i,j)=>(X(i)-X(j))*(X(i)-X(j))+(Y(i)-Y(j))*(Y(i)-Y(j)),gap0=PLACE.cap*Math.sqrt(W*W+H*H),P=[];
   const site=i=>{const x=i%cw,y=(i-x)/cw;return x>=2&&y>=2&&x<cw-2&&y<ch-2&&K[i]!==T_WATER&&K[i]!==T_MOUNT},cand={};
   for(const f of PLACE_REALMS){const p=PLACE_PEOPLE[f],L=[];for(let i=0;i<N;i++)if(!(i%2)&&!(((i-i%cw)/cw)%2)&&site(i))L.push([placeSuit(m,F,p,i),i]);L.sort((a,b)=>b[0]-a[0]||a[1]-b[1]);

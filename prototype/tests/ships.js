@@ -5,12 +5,13 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);
 try{
  const t=T,G=t.G,P=t.P,W=t.W,TILE=t.TILE,MW=t.MW;t.act('begin','soldier');G.quietEvents=true;
  const ports=t.TOWNS.filter(z=>t.dockOf(z));ok(ports.length>=2,ports.length+' ports have a dock on the water: '+ports.map(z=>z.name).join(', '));
- const wet=s=>t.tAt(Math.floor(s.x/TILE),Math.floor(s.y/TILE))===t.T_WATER&&t.climAt(s.x,s.y)!=='frost';
+ // (water a boat sails: open water, or a navigable river, under its bridges and over its fords too: ships.js isWater)
+ const wet=s=>t.isWater(Math.floor(s.x/TILE),Math.floor(s.y/TILE));
  ok(!ports.some(z=>t.climAt(z.x,z.y)==='frost'&&t.dockOf(z)&&t.climAt((t.dockOf(z).tx+.5)*TILE,(t.dockOf(z).ty+.5)*TILE)==='frost'),'no boat puts out on the frozen lakes of the frost');
  // ---- fishing boats
  W.ships=[];G.clock=t.DAY*.3;for(let i=0;i<400&&!W.ships.length;i++)t.updateShips(.05);
  const b=W.ships.find(s=>s.k==='fish');ok(!!b,'in the morning a port sends out a fishing boat ('+(b&&b.home)+')');
- if(b){ok(b.path.every(j=>t.tiles[j]===t.T_WATER&&t.climate[j]!==t.CLIM.frost),'its course lies over open water only (never the ice)');let dry=0;
+ if(b){ok(b.path.every(j=>t.isWater(j%t.MW,(j-j%t.MW)/t.MW)&&t.climate[j]!==t.CLIM.frost),'its course lies over open water only (never the ice; a navigable river under its bridges too)');let dry=0;
   for(let i=0;i<3000&&b.state==='out';i++){G.clock=t.DAY*.3;t.updateShips(.05);if(!wet(b))dry++}ok(b.state==='fish'&&!dry,'it sails out over the water and fishes');
   const dp=t.DEPOSITS.find(d=>d.kind==='fish'&&d.tx===Math.floor(b.x/TILE)&&d.ty===Math.floor(b.y/TILE));o.push('INFO fishing at '+(dp?'its '+dp.g+' grounds':'open water'));
   G.clock=t.DAY*.7;for(let i=0;i<4000&&W.ships.includes(b);i++)t.updateShips(.05);ok(!W.ships.includes(b),'and in the evening it sails home')}

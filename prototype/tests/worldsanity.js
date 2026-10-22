@@ -6,7 +6,9 @@
    PLACE.land suitable tiles within PLACE.landR (x1.5 at Large; worldplace.js placeSuit and placeLand, on the fields and the ground
    its stage 7 read; a capital's liking as stage 7 chose it, before the ground under it was opened: g.work.like). Balanced: each capital's nearest rival within 25% of their mean distance, each realm's land within 30% of
    theirs. A fair start: each race's start city with 3 holdings within a day's travel (Router.days) and no wild land within 25
-   tiles. Ports: each on water joined to the sea or to another port. Rivers: never uphill, each ending in water, no great river
+   tiles. Ports: each on harbour water (worldplace.js portWater: the sea, an inland sea or a big lake, a navigable or great river;
+   the owner's play-test of 2026-10-22), a port at least, and every port estate's pier on a lake or a river 2 wide or more (never a
+   pond, an oasis or a stream), a port town's on harbour water; INFO: a port on water joined to neither the sea nor another port. Rivers: never uphill, each ending in water, no great river
    freezing, crossings at most 60 tiles apart wherever one can be made (else a bare stretch, INFO). Rivers by holdings: the land
    beside each river near a holding walked to from its gate. Estates on foot: every house, estate and field too. Climates: each 6% of the land or
    more. As INFO, the rows of later phases: no emptiness (the 95th percentile of the walk to the nearest place, 25 tiles at most:
@@ -50,14 +52,17 @@ Kit.suite(({ok,info})=>{
      for(let y=c.ty-25;y<=c.ty+25;y++)for(let x=c.tx-25;x<=c.tx+25;x++)if(m.has(x,y)&&(x-c.tx)*(x-c.tx)+(y-c.ty)*(y-c.ty)<=625&&m.region[y*Wd+x])wild++;
      if(n<3||wild)bad.push(r);return r+' '+c.name+' '+n+(wild?' (wild '+wild+')':'')});
    pass('A fair start',!bad.length,name+': a fair start: holdings within a day\'s travel of each race\'s start city: '+L.join(', ')+(bad.length?' (short: '+bad.join(', ')+')':''))}
-  // ---- ports: water within 2 tiles, joined (4 ways over water, rivers under their fords and bridges too) to the map's rim or to
-  // another port's
+  // ---- ports: harbour water within 2 tiles (worldplace.js portWater), a port at least; each port estate's pier on a fishing pier's
+  // water, a port town's on harbour water (lots.js pierWater, as structures.js pierOf lays it); INFO: a port whose water (4 ways,
+  // rivers under their fords and bridges too) reaches neither the map's rim nor another port's
   {const L=new Int32Array(NN).fill(-1),rim=[],wet=i=>K[i]===t.T_WATER||(m.river[i]&3)>0;let n=0;
    for(let s=0;s<NN;s++){if(L[s]>=0||!wet(s))continue;const st=[s];L[s]=n;let open=false;
     while(st.length){const i=st.pop(),x=i%Wd,y=(i-x)/Wd;if(!x||!y||x===Wd-1||y===H-1)open=true;for(const j of [x>0?i-1:-1,x<Wd-1?i+1:-1,y>0?i-Wd:-1,y<H-1?i+Wd:-1])if(j>=0&&L[j]<0&&wet(j)){L[j]=n;st.push(j)}}rim.push(open);n++}
    const P=TW.filter(h=>h.style==='port'||h.style==='riverport'),body=h=>{const B=new Set();for(let b=-2;b<=2;b++)for(let a=-2;a<=2;a++)if(m.has(h.tx+a,h.ty+b)&&L[(h.ty+b)*Wd+h.tx+a]>=0)B.add(L[(h.ty+b)*Wd+h.tx+a]);return B};
-   const bad=P.filter(h=>![...body(h)].some(k=>rim[k]||P.some(o=>o!==h&&body(o).has(k))));
-   pass('Ports',P.length&&!bad.length,name+': ports: '+P.length+', each on water joined to the sea or another port'+(bad.length?': not '+bad.map(h=>h.name).join(', '):''))}
+   const lone=P.filter(h=>![...body(h)].some(k=>rim[k]||P.some(o=>o!==h&&body(o).has(k)))),PW=t.portWater(m),hb=h=>{for(let b=-2;b<=2;b++)for(let a=-2;a<=2;a++)if(m.has(h.tx+a,h.ty+b)&&PW[(h.ty+b)*Wd+h.tx+a]===2)return true;return false};
+   const bad=P.filter(h=>!hb(h)),piers=TW.filter(h=>t.bldLv(h,'port')&&t.pierOf(h)),pb=piers.filter(h=>{const p=t.lotMid(t.lotAt(h,'port')),w=t.pierWater(p.tx,p.ty);return w<0||PW[w]<(h.style==='port'?2:1)});
+   pass('Ports',P.length&&!bad.length&&!pb.length,name+': ports: '+P.length+', each on harbour water'+(bad.length?': not '+bad.map(h=>h.name).join(', '):'')+'; '+piers.length+' port estates, each pier on a lake or a river 2 wide or more (a port town’s on harbour water)'+(pb.length?': not '+pb.map(h=>h.name).join(', '):''));
+   if(lone.length)info(name+': a port on water joined to neither the sea nor another port (an inland sea, a big lake or a river’s): '+lone.map(h=>h.name).join(', '))}
   // ---- rivers: never uphill, each ending in water (a tile of water, or water under a ford or bridge since), no great river
   // freezing; crossings at most 60 tiles apart along each (its source counts as one, its mouth as an end: places along it as the
   // generator reads them, worldplace.js placeAlong) wherever one can be made: a straight run of water, across or down, of 3 tiles

@@ -86,6 +86,17 @@ const lotGround={
   rock:(x,y)=>{const g=tAt(x,y);return g===T_HILL||g===T_OPEN},
   shore:(x,y)=>tAt(x,y)===T_OPEN||tAt(x,y)===T_FOREST
 };
+/* the water a port estate's pier runs out over (the owner's play-test, 2026-10-22: "port should spawn only at a huge river; cannot
+   spawn by a small pond, small lake or oasis"): from its building's front tile, the first water beside it as structures.js pierOf
+   looks (south, east, west, north), the tile, or -1; it must be a fishing pier's water (worldplace.js portWater: a lake, a river 2
+   wide or more; never a pond, an oasis or a stream), and a port town's harbour water (the sea, an inland sea or a big lake, a
+   navigable or great river) */
+const pierWater=(x,y)=>{for(const [a,b] of [[0,1],[1,0],[-1,0],[0,-1]])if(tAt(x+a,y+b)===T_WATER)return(y+b)*MW+x+a;return -1};
+function pierOk(t,x,y){const w=pierWater(x,y);return w>=0&&portWater(WM)[w]>=(t.style==='port'?2:1)}
+/* no lot stands on a brook (worldgen.js genBrook) nor LOT_BROOK tiles from one, no field on one (the owner's play-test, 2026-10-22:
+   "small streams should not cross a holding or an estate"; the generator cut those through a holding's ring: genHoldBrooks) */
+const LOT_BROOK=1;
+function brookAt(x,y){return x>=0&&y>=0&&x<MW&&y<MH&&genBrook(WM,y*MW+x)}
 const nearT=(x,y,type,r)=>{for(let j=-r;j<=r;j++)for(let i=-r;i<=r;i++)if(tAt(x+i,y+j)===type)return true;return false};
 const groundOf=k=>k==='lumber'?'forest':k==='mine'||k==='quarry'?'rock':k==='port'?'shore':'open';
 /* where a holding's people walk (the owner's play-test 3: "estates spawn on the opposite side of the holdings, separated by a
@@ -120,7 +131,8 @@ function lotFits(t,x,y,n,rule,gap){
   // what each place of work needs nearby: woods, rock, water
   if(rule==='forest'){let f=0;for(let j=-1;j<=n;j++)for(let i=-1;i<=n;i++)if(tAt(x+i,y+j)===T_FOREST)f++;if(f<2)return false}
   if(rule==='rock'){let ok=false;for(let j=0;j<n&&!ok;j++)for(let i=0;i<n&&!ok;i++)ok=tAt(x+i,y+j)===T_HILL||nearT(x+i,y+j,T_MOUNT,1);if(!ok)return false}
-  if(rule==='shore'){let ok=false;for(let j=0;j<n&&!ok;j++)for(let i=0;i<n&&!ok;i++)ok=[[1,0],[-1,0],[0,1],[0,-1]].some(([a,b])=>tAt(x+i+a,y+j+b)===T_WATER);if(!ok)return false}
+  if(rule==='shore'&&!pierOk(t,x+(n>>1),y+n-1))return false;
+  for(let j=-LOT_BROOK;j<n+LOT_BROOK;j++)for(let i=-LOT_BROOK;i<n+LOT_BROOK;i++)if(brookAt(x+i,y+j))return false;
   return true;
 }
 // the best free place for an n x n lot between rmin and rmax tiles of the holding's centre: near, by a little chance, and
@@ -246,7 +258,7 @@ class Layout{
 function fieldsFor(t,l,k){
   const g=k==='quarry'?(x,y)=>tAt(x,y)===T_HILL||tAt(x,y)===T_OPEN:(x,y)=>tAt(x,y)===T_OPEN,out=[],cand=[],ti=TOWNS.indexOf(t);
   const wb=wallBox(t),inRing=(x,y)=>wb&&x>=wb.x0-1&&x<=wb.x1+1&&y>=wb.y0-1&&y<=wb.y1+1,RB=roadPaint();// fields stay clear of the town, and off the roads
-  for(let y=l.y-3;y<=l.y+l.n+2;y++)for(let x=l.x-3;x<=l.x+l.n+2;x++){if(x>=l.x&&x<l.x+l.n&&y>=l.y&&y<l.y+l.n||OCC[y*MW+x]||RB[y*MW+x]||!g(x,y)||x<1||y<1||x>=MW-1||y>=MH-1||inRing(x,y)||!walkTo(t,x,y))continue;const L=LAND[y*MW+x];if(L>=0&&L!==ti)continue;
+  for(let y=l.y-3;y<=l.y+l.n+2;y++)for(let x=l.x-3;x<=l.x+l.n+2;x++){if(x>=l.x&&x<l.x+l.n&&y>=l.y&&y<l.y+l.n||OCC[y*MW+x]||RB[y*MW+x]||!g(x,y)||brookAt(x,y)||x<1||y<1||x>=MW-1||y>=MH-1||inRing(x,y)||!walkTo(t,x,y))continue;const L=LAND[y*MW+x];if(L>=0&&L!==ti)continue;
     const d=Math.hypot(x-(l.x+l.n/2-.5),y-(l.y+l.n/2-.5));cand.push([x,y,d+hash(x,y,t.seed)*.6])}
   cand.sort((a,c)=>a[2]-c[2]);const touch=[];lotTiles(l,(x,y)=>touch.push([x,y]));
   while(out.length<PLOTS[k]){const c=cand.find(c=>!out.includes(c)&&touch.some(q=>Math.abs(q[0]-c[0])+Math.abs(q[1]-c[1])===1));if(!c)break;out.push(c);touch.push(c)}
@@ -278,6 +290,14 @@ function lineTiles(pts){const T=[];
     for(let s=k>1?1:0;s<=st;s++){const x=Math.floor(ax+(bx-ax)*s/st),y=Math.floor(ay+(by-ay)*s/st),i=y*MW+x;if(i===T[T.length-1])continue;
       if(T.length>=2){const p=T[T.length-2];if(Math.abs(p%MW-x)<=1&&Math.abs((p-p%MW)/MW-y)<=1)T.pop()}T.push(i)}}
   return T}
+// (the line from a to b (tiles) as painted off every lot and field: no point of it LOT_ROAD px or more inside a tile one keeps)
+function lotClear([ax,ay],[bx,by]){const n=Math.max(1,Math.ceil(Math.hypot(bx-ax,by-ay)*TILE/2)),e=LOT_ROAD/TILE;
+  for(let s=0;s<=n;s++){const x=ax+(bx-ax)*s/n,y=ay+(by-ay)*s/n,tx=Math.floor(x),ty=Math.floor(y),fx=x-tx,fy=y-ty;if(Math.min(fx,fy,1-fx,1-fy)>=e&&occAt(tx,ty)>0)return false}
+  return true}
+// (a line [x, y, x, y...] (tiles) with its corners cut twice, Chaikin's way, as gfx/worldart.js artGenPlan paints a road: every leg
+// lotClear)
+function softClear(l){for(let t=0;t<2;t++){const o=[l[0],l[1]];for(let j=2;j<l.length;j+=2){const a=l[j-2],b=l[j-1],c=l[j],d=l[j+1];o.push(a*.75+c*.25,b*.75+d*.25,a*.25+c*.75,b*.25+d*.75)}o.push(l[l.length-2],l[l.length-1]);l=o}
+  for(let j=2;j<l.length;j+=2)if(!lotClear([l[j-2],l[j-1]],[l[j],l[j+1]]))return false;return true}
 function estTrack(t,l){
   const K=tiles,Fe=WM.feat,C=LOT_TRACK,n=l.n,fx=l.x+(n>>1),fy=l.y+n,xy=i=>[i%MW,(i-i%MW)/MW],cen=i=>[i%MW+.5,(i-i%MW)/MW+.5];
   const way=i=>{const [x,y]=xy(i);return K[i]===T_ROAD&&!(Fe[i]&32)&&walkTo(t,x,y)},free=i=>{const [x,y]=xy(i),k=K[i];return x>0&&y>0&&x<MW-1&&y<MH-1&&passable(k)&&k!==T_ROAD&&k!==T_FORD&&!OCC[i]&&DEP_AT[i]<0&&walkTo(t,x,y)};// (never over a vein or a fishing ground: resources.js)
@@ -295,11 +315,12 @@ function estTrack(t,l){
   while(H.n&&H.top<best){const d=H.top,i=H.pop(),q=L(i);if(d>D[q])continue;if(way(i)){const v=d+Math.min(G[q],C.cut);if(v<best){best=v;to=i}continue}
     for(const [dx,dy] of DIR8){const j=i+dx+dy*MW,r=L(j);if(r<0||!(free(j)||way(j))||!step(i,j))continue;const k=K[j],c=d+(k===T_FOREST?C.wood:k===T_HILL?C.hill:1)*(dx&&dy?1.4142:1);if(c<D[r]){D[r]=c;fr[r]=i;H.push(c,j)}}}
   if(to<0)return null;const P=[];for(let i=to;i>=0;i=fr[L(i)])P.push(i);
-  // straightened: each leg as far on as a straight line keeps to free ground (the way's own tile at its start)
+  // straightened: each leg as far on as a straight line keeps to free ground (the way's own tile at its start), and its painted
+  // line off every lot and field (lotClear: a corner the thin line steps past; and the line as the art rounds its corners, softClear)
   const ok=(T,a)=>T.every((i,k)=>(k||!a?free(i):i===P[0])&&(!k||step(T[k-1],i))),V=[0];
-  for(let a=0;a<P.length-1;){let b=a+1;for(let e=a+2;e<P.length&&e<=a+C.pull;e++)if(ok(lineTiles([cen(P[a]),cen(P[e])]),!a))b=e;V.push(b);a=b}
-  const S=lineTiles(V.map(k=>cen(P[k]))),T=S[0]===P[0]&&S[S.length-1]===P[P.length-1]&&ok(S,true)?S:P,
-    e=T[T.length-1],[ex,ey]=xy(e),o=[MW,-1,1,-MW].map(s=>e+s).find(i=>mine.has(i)),door=[ex===fx&&ey===fy?[l.x+n/2,l.y+n]:[ex+.5+(o%MW-ex)/2,ey+.5+((o-o%MW)/MW-ey)/2]],
+  for(let a=0;a<P.length-1;){let b=a+1;for(let e=a+2;e<P.length&&e<=a+C.pull;e++)if(ok(lineTiles([cen(P[a]),cen(P[e])]),!a)&&lotClear(cen(P[a]),cen(P[e])))b=e;V.push(b);a=b}
+  const S=lineTiles(V.map(k=>cen(P[k]))),e=P[P.length-1],[ex,ey]=xy(e),o=[MW,-1,1,-MW].map(s=>e+s).find(i=>mine.has(i)),door=[ex===fx&&ey===fy?[l.x+n/2,l.y+n]:[ex+.5+(o%MW-ex)/2,ey+.5+((o-o%MW)/MW-ey)/2]],
+    T=S[0]===P[0]&&S[S.length-1]===e&&ok(S,true)&&softClear([...V.map(k=>cen(P[k])),...door].flat())?S:P,
     line=[...(T===S?V.map(k=>cen(P[k])):P.map(cen)),...door].flat();
   // laid, kept, marked on the painted roads
   const r={laid:T.slice(1),was:[],fe:[]};for(const i of r.laid){r.was.push(K[i]);r.fe.push(Fe[i]);K[i]=T_ROAD;Fe[i]=Fe[i]&~64|128}

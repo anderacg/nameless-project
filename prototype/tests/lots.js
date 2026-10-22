@@ -19,6 +19,12 @@ try{
   const bad=new Set();for(const [i,w] of own)if(t.tiles[i]===t.T_ROAD)bad.add(w+' (a road tile)');
   for(const [x,y] of pts){const i=Math.floor(y/TILE)*MW+Math.floor(x/TILE),fx=x%TILE,fy=y%TILE;if(own.has(i)&&Math.min(fx,fy,TILE-fx,TILE-fy)>=2)bad.add(own.get(i)+' at '+Math.floor(x/TILE)+','+Math.floor(y/TILE))}
   ok(!bad.size,'no building nor field stands on a road, its tiles or where it is painted (along its lines; '+own.size+' tiles built on)'+(bad.size?': '+[...bad].slice(0,6).join('; '):''))}
+ // ---- no brook through a holding or an estate (the owner's play-test, 2026-10-22: "small streams should not cross a holding or an
+ // estate"): no building (the centre too) on a brook (worldgen.js genBrook) nor LOT_BROOK tiles from one, no field on one
+ {const MW=t.MW,B=(x,y)=>x>=0&&y>=0&&x<MW&&y<t.MH&&t.genBrook(t.WM,y*MW+x),bad=[];let n=0;
+  for(const z of TW)for(const l of z.lots||[]){n++;for(let y=l.y-t.LOT_BROOK;y<l.y+l.n+t.LOT_BROOK;y++)for(let x=l.x-t.LOT_BROOK;x<l.x+l.n+t.LOT_BROOK;x++)if(B(x,y))bad.push(z.name+' '+l.k+' by '+x+','+y);
+   for(const [x,y] of l.plots||[])if(B(x,y))bad.push(z.name+' '+l.k+' field on '+x+','+y)}
+  ok(!bad.length,'no brook through a holding or an estate: none under or beside its '+n+' buildings nor under a field'+(bad.length?': '+bad.slice(0,5).join('; '):''))}
  // ---- the estates' tracks (the owner's play-test 4: "can we have a country road or non-main road to cross between forest as well
  // when there is an estate near by"; lots.js estTrack): every outer estate's door has a way (a road or a
  // track) within LOT_TRACK.near tiles of the tile before it, and every track joins the roads (8 ways) to a holding's gate; a save
