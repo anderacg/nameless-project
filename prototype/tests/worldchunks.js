@@ -37,8 +37,10 @@ try{
  // (re-recorded 2026-10-22, the owner's fourth play-test (agent N), with W5: the hills, a wood's floor and the trees by the climates'
  //  covers; with gfx/worldart.js and engine/worldnature.js as at f97112f it is as before. Was a96d5d35)
  // (measured together 2026-10-22 at the merge of agent N with L and M, with W5: N's art over M's moved smithy. Was 2963d713)
+ // (re-recorded 2026-10-22 with W5, the owner's fifth play-test (agent T): a rise's cast shadow soft, a road over the hills rising
+ //  with them (engine/worldnature.js PX.WN_HILL); with PX.WN_HILL {soft: [0, 0], road: 9} it is as before. Was ae05e1de)
  const r1={},one=paint(0,0,W,H,r1),ref=img(one,0,0,W,H),h1=fnv(ref);
- if(t.WORLD.gen)info('the generated classic seed painted as one window: '+h1+' ('+r1.wall.toFixed(0)+' ms)');else ok(h1==='ae05e1de','the map painted as one window (no seam anywhere: today\'s one canvas) is the baseline picture ('+h1+', W5 at b94cbe2: tests/worldprint.js; '+r1.wall.toFixed(0)+' ms)');
+ if(t.WORLD.gen)info('the generated classic seed painted as one window: '+h1+' ('+r1.wall.toFixed(0)+' ms)');else ok(h1==='c439323a','the map painted as one window (no seam anywhere: today\'s one canvas) is the baseline picture ('+h1+', W5 at b94cbe2: tests/worldprint.js; '+r1.wall.toFixed(0)+' ms)');
  // ---- stitched: every chunk into the whole picture, and no seam round any border
  q=performance.now();const whole=WA.whole(),wMs=performance.now()-q,nd=diff(img(whole,0,0,W,H),ref);
  ok(nd===0&&whole.width===W&&whole.height===H,cols*rows+' chunks of '+CS+' px ('+cols+' x '+rows+') stitched (worldCv) are that picture pixel for pixel ('+nd+' differ; '+wMs.toFixed(0)+' ms)');
@@ -173,6 +175,77 @@ try{
     for(const [x,y,w,h] of R)for(let yy=y;yy<y+h;yy++)for(let xx=x;xx<x+w;xx++){const u=hor?xx:yy,v=hor?yy:xx;if(u>=u0&&u<u1)continue;if(v<mid-hw||v>=mid+hw||t.wpx(K,xx,yy))wide++}
     for(let u=u0;u<u1;u++)for(let v=mid-hw-14;v<mid+hw+14;v++){if(v>=mid-hw-2&&v<mid+hw+3)continue;const x=hor?u:v,y=hor?v:u;if(x<0||y<0||x>=W||y>=H||!t.wpx(K,x,y)||deck(x,y)||ford(x,y))continue;const o=(y*W+x)*4;if(ref[o]>ref[o+1]&&ref[o]>ref[o+2])wet++}}
    ok(n&&!wide&&!wet,n+' bridges: each one’s abutments as wide as its deck and on land ('+wide+' px off it), the water beside each deck painted as water ('+wet+' px of bank, worn ground or stone on it)')}}
+ // ---- the owner's fifth play-test (agent T, with -Gen): hills under roads at every angle, a road through a wood, brooks never cut
+ //      short, the mountains' kinds, an oasis's and ponds' rings (put into the world here: the generator's lists, WM.oases/ponds)
+ if(t.WORLD.gen){const P=WA.ensure(),N=P.nature,S=P.segs,V=t.GENART.verge,lum=(d,o)=>d[o]*.3+d[o+1]*.59+d[o+2]*.11;
+  const paintN=(X,Y,w,h)=>img(paint(X,Y,w,h),0,0,w,h);
+  // (a hill crossed by a road: along road segments through hills (a point each 8 px), across the road, where the hill's shading (the
+  //  picture less the same window painted with no hills) lies on both sides of the band, it lies under it too: no straight cut along
+  //  the road; by the road's angle; on the generated classic seed (the owner's) and Normal s1)
+  {const B=[0,0,0,0,0,0],cut=[0,0,0,0,0,0],W0=t.WM;let n=0;const where=[];
+   const run=name=>{const P=WA.ensure(),N=P.nature,S=P.segs,seen=new Set();let m=0;
+    for(let k=0;k<S.length&&m<70;k+=5){const a=S[k],b=S[k+1],vx=S[k+2]-a,vy=S[k+3]-b,L=Math.hypot(vx,vy);if(S[k+4]>1||L<4)continue;const bk=Math.floor(((Math.atan2(vy,vx)+Math.PI)%Math.PI)/Math.PI*6)%6;
+     for(let u=L/2%8;u<L&&m<70;u+=8){const mx=a+vx*u/L,my=b+vy*u/L,tx=mx>>4,ty=my>>4,key=(tx>>1)+','+(ty>>1);if(B[bk]>=24||seen.has(key))continue;let hl=0;for(let j=-1;j<=1;j++)for(let i=-1;i<=1;i++)if(t.tAt(tx+i,ty+j)===t.T_HILL)hl++;if(hl<2)continue;
+      seen.add(key);const X=Math.round(mx)-20,Y=Math.round(my)-20,A=paintN(X,Y,40,40);N.hill=false;let Bn;try{Bn=paintN(X,Y,40,40)}finally{N.hill=true}
+      const E=(x,y)=>{const o=((y-Y)*40+x-X)*4;return Math.abs(A[o]-Bn[o])+Math.abs(A[o+1]-Bn[o+1])+Math.abs(A[o+2]-Bn[o+2])},nx=-vy/L,ny=vx/L,hw=t.GENART.road[S[k+4]]*1.1+V;
+      const side=s=>{let e=0;for(let d=hw+1;d<=hw+4;d++)e+=E(Math.round(mx+nx*d*s),Math.round(my+ny*d*s));return e/4},mid=(()=>{let e=0,c=0;for(let d=-hw;d<=hw;d++){e+=E(Math.round(mx+nx*d),Math.round(my+ny*d));c++}return e/c})();
+      if(side(-1)<8||side(1)<8)continue;B[bk]++;n++;m++;if(mid<2){cut[bk]++;where.push(name+' '+tx+','+ty)}}}};
+   try{run('classic');t.useWorld(t.genWorld({preset:'normal',seed:'1'}).map);WA.invalidate();run('Normal s1')}finally{if(t.WM!==W0){t.useWorld(W0);WA.invalidate()}}
+   const nc=cut.reduce((s,v)=>s+v,0),nb=B.filter(v=>v).length;
+   ok(n>=20&&nb>=4&&nc<=Math.max(1,n*.05),'a hill crossed by a road runs on under it at every angle (the fifth play-test; the generated classic seed and Normal s1): '+n+' crossings by 30� of the road�s way ('+B.join('/')+'), the hill�s shading under the band at all but '+nc+(where.length?' ('+where.slice(0,5).join('; ')+')':''))}
+  // (a rise's shadow soft: across its edge in steps, no straight hard line along the light)
+  {const hs=[1,2,4,8].map(d=>{let s=0;for(let k=1;k<=7;k++){const a=d*0.1*(1/(PX.WN_HILL.soft[0]+PX.WN_HILL.soft[1]*k));s=Math.max(s,Math.min(1,a))}return s});
+   ok(hs[0]<hs[1]&&hs[1]<hs[2]&&hs[0]>0&&hs[0]<.5,'a rise’s shadow is soft: as a rise stands over the light’s line by .1 to .8 px, its shadow '+hs.map(v=>v.toFixed(2)).join(' → '))}
+  // (a road through a wood (a lane, P.lane): its tile a wood's: the floor right up to the path, trees and undergrowth within a few px
+  //  of its band, some crowns over its edge; off the path no bright ground left (the floor's tone where the art drew none before))
+  {let lanes=0,near=0,over=0,fl=0,fn=0;const LT=P.lane,idx=[];for(let i=0;i<MW*MH;i++)if(LT[i])idx.push(i);
+   for(const i of idx.filter((v,k)=>k%Math.max(1,Math.floor(idx.length/80))===0)){const tx=i%MW,ty=(i-tx)/MW,X=tx*TILE,Y=ty*TILE;lanes++;let hit=false;
+    WA.standing(X-8,Y-8,X+TILE+8,Y+TILE+8).forEach(e=>{if(!e.s||!e.s.a)return;const sp=e.s,M=sp.width;for(let j=0;j<M&&!hit;j++)for(let q=0;q<M;q++){if(sp.a[j*M+q]!==1)continue;const x=e.dx+q,y=e.dy+j;if(x<X||y<Y||x>=X+TILE||y>=Y+TILE)continue;const v=t.roadAt(P,x,y);if(v>-4){hit=true;if(v>0)over++;break}}});
+    if(hit)near++}
+   const pick=idx.filter((v,k)=>k%Math.max(1,Math.floor(idx.length/12))===0);
+   for(const i of pick){const tx=i%MW,ty=(i-tx)/MW,X=tx*TILE-8,Y=ty*TILE-8,A=paintN(X,Y,32,32);const N2=WA.ensure().nature,L0=N2.LT;N2.LT=null;let Bn;try{Bn=paintN(X,Y,32,32)}finally{N2.LT=L0}
+    for(let y=8;y<24;y++)for(let x=8;x<24;x++){const v=t.roadAt(P,X+x,Y+y);if(v>-1.5||v<-6||!t.CLEAR.at(X+x,Y+y))continue;fn++;const o=(y*32+x)*4;if(lum(A,o)<lum(Bn,o)-4)fl++}}
+   ok(lanes>10&&near>=lanes*.8&&over>0&&fl>=fn*.8,'a road through a wood (the fifth play-test): of '+lanes+' lanes, '+near+' with trees or undergrowth within 4 px of the path ('+over+' crowns over its edge); the forest floor up to the path on '+fl+' of '+fn+' px of its kept band')}
+  // (a ford's track through a wood: the floor up to it too, its kept band darker than the track)
+  {let n=0,dk=0;for(const [ax,ay,bx,by] of P.fords){for(const [ex,ey,sx,sy] of [[ax,ay,ax-bx,ay-by],[bx,by,bx-ax,by-ay]]){const L=Math.hypot(sx,sy),x=Math.round(ex+sx/L*12),y=Math.round(ey+sy/L*12);if(t.tAt(x>>4,y>>4)!==t.T_FOREST)continue;n++;
+     const o=(y*W+x)*4,ux=-sy/L,uy=sx/L;let s=0,m=0;for(const d of [4,5,-4,-5]){const q=(Math.round(y+uy*d)*W+Math.round(x+ux*d))*4;s+=lum(ref,q);m++}if(s/m<lum(ref,o)-6)dk++}}
+   ok(!n||dk>=n*.75,'a ford’s track through a wood: the floor dark beside the track at '+dk+' of '+n+' ends in a wood')}
+  // (brooks never cut short by the art: into water their line meets the water as drawn; out of a pond or a lake it starts in it)
+  {const F=t.WM.flow,Rv=t.WM.river,lvl=i=>t.tiles[i]===t.T_WATER||t.tiles[i]===t.T_MOUNT||Rv[i]&3?0:F[i]&31,DX=[1,1,0,-1,-1,-1,0,1],DY=[0,1,1,1,0,-1,-1,-1],blue=(x,y)=>{const o=(y*W+x)*4;return ref[o+2]>ref[o]+30&&ref[o+2]>=ref[o+1]};
+   let n=0,met=0;const miss=[];for(let ty=1;ty<MH-1;ty++)for(let tx=1;tx<MW-1;tx++){const i=ty*MW+tx;if(lvl(i)<6)continue;const d=F[i]>>5,nx=tx+DX[d],ny=ty+DY[d];if(t.tiles[ny*MW+nx]!==t.T_WATER)continue;n++;let ok2=false;
+     for(let y=Math.min(ty,ny)*16;y<(Math.max(ty,ny)+1)*16&&!ok2;y++)for(let x=Math.min(tx,nx)*16;x<(Math.max(tx,nx)+1)*16;x++){if(t.wpx(P.wk,x,y)||!blue(x,y))continue;if(t.wpx(P.wk,x+1,y)||t.wpx(P.wk,x-1,y)||t.wpx(P.wk,x,y+1)||t.wpx(P.wk,x,y-1)){ok2=true;break}}
+     if(ok2)met++;else if(miss.length<6)miss.push(tx+','+ty)}
+   ok(n>10&&met>=n*.95,n+' brooks running into water: the line meets the water as drawn at '+met+(miss.length?' (not: '+miss.join(' ')+')':''))}
+  // (the mountains' kinds (PX.WORLD_MOUNTS) by climate and the world's fields: each range one kind (its shape), its look by the
+  //  climate where it stands; the kinds told apart by their colours)
+  {const f=(e,tm,mo)=>({elev:e,temp:tm,moist:mo,rough:80}),K=PX.worldMountKind,rule=[K('desert',f(220,180,10),.5)==='sandstone',K('frost',f(230,0,30),.5)==='alpine',K('swamp',f(180,120,90),.5)==='knoll',
+     K('grass',f(230,40,20),.5)==='alpine',K('grass',f(215,120,50),.5)==='forested',K('grass',f(225,100,10),.5)==='granite',K('grass',f(225,100,10),.05)==='basalt',K('frost',f(230,0,30),.05)==='alpine',K('swamp',f(180,120,90),.05)==='knoll'];
+   const big=N.M.filter(m=>m.n>=3),kinds=new Set(big.map(m=>m.kind)),bad=big.filter(m=>!m.kind||!m.kinds||!PX.WORLD_MOUNTS[m.kind]).length;
+   const mean=k=>{const s=PX.worldPeak('grass',2,64,k),d=s.getContext('2d').getImageData(0,0,64,64).data,c=[0,0,0];let n=0;for(let i=0;i<d.length;i+=4)if(d[i+3]&&!(d[i]===26&&d[i+1]===28)){c[0]+=d[i];c[1]+=d[i+1];c[2]+=d[i+2];n++}return c.map(v=>v/n)};
+   const KS=Object.keys(PX.WORLD_MOUNTS),M=KS.map(mean);let close=0;for(let a=0;a<M.length;a++)for(let b=a+1;b<M.length;b++)if(M[a].reduce((s,v,i)=>s+Math.abs(v-M[b][i]),0)<24)close++;
+   ok(rule.every(Boolean)&&!bad&&kinds.size>=2&&!close,'the mountains’ kinds: by climate and the world’s fields ('+rule.filter(Boolean).length+' of '+rule.length+' rules), '+big.length+' ranges each of one kind ('+[...kinds].join(', ')+'), '+KS.length+' kinds told apart by colour ('+close+' pairs alike)')}
+  // (an oasis and ponds put into the world (the generator's lists): an oasis's palms and green; a pond's water a curve, no straight
+  //  run of one bank colour along a tile's edge, its bank between the water's edge and the land's own ground)
+  {const W0=t.WM,T0=t.tiles.slice(),best=f=>{let b=null,bs=-1e9;for(let y=8;y<MH-8;y++)for(let x=8;x<MW-8;x++){const v=f(x,y);if(v>bs){bs=v;b=[x,y]}}return bs>-1e8?b:null},cl=(x,y)=>t.CLIMS[t.climate[y*MW+x]];
+   const open=(x,y,r)=>{for(let b=-r;b<=r;b++)for(let a=-r;a<=r;a++)if(t.tAt(x+a,y+b)!==t.T_OPEN||P.clear.at((x+a)*TILE+8,(y+b)*TILE+8))return false;return true};
+   const oa=best((x,y)=>cl(x,y)!=='desert'||!open(x,y,4)?-1e9:-Math.abs(x-MW/2)),pd=best((x,y)=>cl(x,y)!=='grass'||!open(x,y,4)?-1e9:-Math.abs(y-MH/2));
+   try{if(!oa||!pd)throw new Error('no spot for an oasis or a pond');const put=([x,y])=>{t.tiles[y*MW+x]=t.T_WATER;t.tiles[y*MW+x+1]=t.T_WATER;return[y*MW+x,y*MW+x+1]};
+    t.WM.oases=[{i:oa[1]*MW+oa[0],r:3,big:true,tiles:put(oa)}];t.WM.ponds=[{i:pd[1]*MW+pd[0],r:3,kind:'hollow',tiles:put(pd)}];WA.invalidate();const P2=WA.ensure();
+    const palm=new Set([0,1,2,3].map(v=>PX.worldTree('desert','palm',v,0)));let palms=0;for(const e of WA.standing((oa[0]-3)*TILE,(oa[1]-3)*TILE,(oa[0]+5)*TILE,(oa[1]+4)*TILE))if(palm.has(e.s))palms++;
+    const X=(oa[0]-3)*TILE,Y=(oa[1]-3)*TILE,A=paintN(X,Y,6*TILE,6*TILE),g=(x,y)=>{const o=((y-Y)*6*TILE+x-X)*4;return A[o+1]-A[o]};let gn=0,gf=0,nn=0,nf=0;
+    for(let y=Y;y<Y+6*TILE;y+=2)for(let x=X;x<X+6*TILE;x+=2){if(t.wpx(P2.wk,x,y))continue;const d=Math.hypot(x-(oa[0]+1)*TILE,y-(oa[1]+.5)*TILE)/TILE;if(d<2.2){gn+=g(x,y);nn++}else if(d>2.9){gf+=g(x,y);nf++}}
+    // (the pond: its bank (land within 1-3 px of its water as drawn) along each tile's edge line, a run of one colour 6 px long at most;
+    //  its mean colour within the box of the water's edge colour and the land's (some way off), 30 a channel round it)
+    const PX0=(pd[0]-2)*TILE,PY0=(pd[1]-2)*TILE,Bw=5*TILE,Bp=paintN(PX0,PY0,Bw,Bw),at=(x,y)=>((y-PY0)*Bw+x-PX0)*4,wet=(x,y)=>t.wpx(P2.wk,x,y)===1;
+    const bank=(x,y)=>{if(wet(x,y))return false;for(let b=-3;b<=3;b++)for(let a=-3;a<=3;a++)if(wet(x+a,y+b))return true;return false};let run=0,longest=0,curved=0,edges=0;
+    for(let k=0;k<=5;k++){const e=PX0+k*TILE;for(const hz of [0,1]){let r=0,prev=null;for(let s=PY0;s<PY0+Bw;s++){const x=hz?s-PY0+PX0:e,y=hz?PY0+k*TILE:s;if(!bank(x,y)){r=0;prev=null;continue}const o=at(x,y),c=Bp[o]+','+Bp[o+1]+','+Bp[o+2];r=c===prev?r+1:1;prev=c;longest=Math.max(longest,r)}}}
+    for(const [tx,ty] of [pd,[pd[0]+1,pd[1]]]){let w=0;for(let y=0;y<16;y++)for(let x=0;x<16;x++)if(wet(tx*16+x,ty*16+y))w++;edges++;if(w>40&&w<240)curved++}
+    const mc=f=>{const c=[0,0,0];let n=0;for(let y=PY0;y<PY0+Bw;y++)for(let x=PX0;x<PX0+Bw;x++)if(f(x,y)){const o=at(x,y);c[0]+=Bp[o];c[1]+=Bp[o+1];c[2]+=Bp[o+2];n++}return c.map(v=>v/Math.max(1,n))};
+    const cw=mc((x,y)=>wet(x,y)&&!(wet(x+2,y)&&wet(x-2,y)&&wet(x,y+2)&&wet(x,y-2))),cb=mc((x,y)=>bank(x,y)),cg=mc((x,y)=>Math.hypot(x-(pd[0]+1)*TILE,y-(pd[1]+.5)*TILE)>2*TILE&&!wet(x,y));
+    const between=cb.every((v,i)=>v>=Math.min(cw[i],cg[i])-30&&v<=Math.max(cw[i],cg[i])+30);
+    ok(palms>=4&&nn&&nf&&gn/nn>gf/nf+4,'an oasis put in the desert: '+palms+' date palms round it, its ground greener near the water ('+(gn/nn).toFixed(0)+' green over red, '+(gf/nf).toFixed(0)+' farther out)');
+    ok(longest<=6&&curved===edges&&between,'a pond put on the grass: its water a curve ('+curved+' of its '+edges+' tiles drawn part water, part land: no square), no straight run of one bank colour along a tile’s edge (longest '+longest+' px), its bank '+cb.map(Math.round).join(',')+' between the water’s edge '+cw.map(Math.round).join(',')+' and the land '+cg.map(Math.round).join(','))}
+   finally{t.tiles.set(T0);delete t.WM.oases;delete t.WM.ponds;if(t.WM!==W0)t.useWorld(W0);WA.invalidate()}}}
  // ---- the prefetch at Large and Huge (with -Gen): the camera walks across the middle of each world at 8x's pace, the painter
  //      given 4 ms a frame; the chunks that come into view were painted before they did, the LRU held at its cap
  if(t.WORLD.gen){const W0=t.WM;

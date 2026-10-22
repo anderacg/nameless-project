@@ -2,8 +2,8 @@
 // Fog of war: you start knowing only what you can see; travel reveals the land. Land you have seen but are not looking at is
 // remembered (its ground and buildings, as you last saw them) and nothing that moves shows on it; land you have never seen
 // is dark. The save keeps what you have explored. Drawn as the battle's fog is (fog.js drawWorldFog): your sight clear, its
-// edge a soft ring, the land you remember under the battle's soft dim, the land you never saw a deep dark misting in at its edge;
-// mist drifting in both (gfx/mist.js).
+// edge a soft ring, the land you remember under the battle's soft dim, the land you never saw a deep dark misting in at its edge
+// through a cool, pale haze (the owner's fifth play-test: it read as dark ground); mist drifting in both (gfx/mist.js).
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);
 try{
  const t=T,G=t.G,P=t.P,W=t.W,TILE=t.TILE,MW=t.MW,MH=t.MH;try{localStorage.clear()}catch(e){}
@@ -61,6 +61,13 @@ try{
    {let worst=0;const fy=P.y+56;for(let y=fy-12;y<=fy+12;y++)for(let x=ex-12;x<=ex+12;x++){const a=A(x,y);worst=Math.max(worst,Math.abs(a-(A(x-1,y)+A(x+1,y))/2),Math.abs(a-(A(x,y-1)+A(x,y+1))/2))}
     const gone=['fogEdge','drawDark','FOG_COL'].every(n=>(0,eval)('typeof '+n)==='undefined');
     ok(worst<.05&&gone,'no checkerboard at the edge of the dark (worst pixel off its neighbours by '+worst.toFixed(3)+'; the checker code gone: '+gone+')')}
+   // the frontier reads as fog, not dark ground (the owner's fifth play-test): over a ground-like grey, from the land you remember
+   // into the land you never saw, the edge passes through a cool haze lighter than the remembered dim (WFOG.haze) before the dark
+   {const rgb=(dt)=>{now+=dt||0;c.save();c.setTransform(1,0,0,1,0,0);c.fillStyle='rgb(84,110,70)';c.fillRect(0,0,cw,ch);c.restore();t.drawWorldFog(G.cam,t.vis());const d=c.getImageData(0,0,cw,ch).data;
+     return (x,y)=>{const X=Math.round(x-G.cam.x),Y=Math.round(y-G.cam.y),o=(Y*cw+X)*4;return[d[o],d[o+1],d[o+2]]}};
+    const R=rgb(0),L=v=>v[0]*.3+v[1]*.59+v[2]*.11,pr=[];for(let y=P.y+20;y<=P.y+130;y++)pr.push(R(ex,y));const rem=R(ex,P.y),lr=L(rem);
+    const hz=pr.filter(v=>L(v)>lr+6&&v[2]>v[0]+6).length,deep=pr.filter(v=>L(v)<lr-12).length;
+    ok(hz>=4&&deep>=4,'the frontier reads as fog: from the land you remember ('+rem.join(',')+') into the land you never saw, '+hz+' px of cool haze lighter than it, then the dark ('+deep+' px)')}
    // the minimap: soft-edged too, dark over the unknown, dim over the known
    {(0,eval)('fogDirty=true;fogMiniT=-1e9');const m=t.fogMiniCv(),d=m.getContext('2d').getImageData(0,0,MW,MH).data,al=(x,y)=>d[(y*MW+x)*4+3];
     let far=null;for(let y=0;y<MH&&far==null;y+=8)for(let x=0;x<MW&&far==null;x+=8){let none=true;for(let j=-4;j<=4&&none;j++)for(let i=-4;i<=4&&none;i++)if(t.seenTile(x+i,y+j))none=false;if(none)far=[x,y]}

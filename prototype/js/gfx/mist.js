@@ -40,7 +40,8 @@ const mistSm=(a,b,x)=>{const f=x<=a?0:x>=b?1:(x-a)/(b-a);return f*f*(3-2*f)};
    (a pixel k ground px, its corner at ground E.gx, E.gy; its part used E.cw × E.ch) for the caller to draw up in one step.
    cs: px a cell; levels, under to over: {s(x, y, X, Y): the fog's smooth strength 0..1 at (x, y) (the cell's middle X, Y,
    pushed about), flat(X, Y): 0 or 1 when it is that all round within MIST.warp px of X, Y, else -1 (those cells skip the
-   noise: most of them), a: its darkness, col: its colour, m: the wisps' strength in it}. E keeps the pictures between frames */
+   noise: most of them), a: its darkness, col: its colour, m: the wisps' strength in it; optional haze, hz: its thin edge in the
+   colour haze, turning to col from strength hz[0] to hz[1]}. E keeps the pictures between frames */
 function mistFog(E,x,y,w,h,cs,k,levels){
   const M=mistV(),gx=Math.floor(x/cs)*cs-cs,gy=Math.floor(y/cs)*cs-cs,cols=Math.ceil((x+w-gx)/cs)+1,rows=Math.ceil((y+h-gy)/cs)+1,f=cs/k;
   if(E.cols!==cols||E.rows!==rows){E.cols=cols;E.rows=rows;E.cv=mkc(cols,rows,()=>{});E.mk=mkc(cols,rows,()=>{});E.img=E.cv.getContext('2d').createImageData(cols,rows);E.mimg=E.mk.getContext('2d').createImageData(cols,rows);E.comp=mkc(cols*f,rows*f,()=>{})}
@@ -53,7 +54,10 @@ function mistFog(E,x,y,w,h,cs,k,levels){
       // (the point it reads, pushed about by the slow field; the fine field fraying the threshold most where the fog is half)
       const px=X+(mistN(1,X,Y,ws,t)-.5)*2*W,py=Y+(mistN(1,X+977,Y+613,ws,t)-.5)*2*W,fn=mistN(0,X,Y,fs,t)-.5;
       for(let i=0;i<nl;i++){const L=levels[i],s=fl[i]>=0?fl[i]:L.s(px,py,X,Y),g=s+fr*fn*4*s*(1-s),dn=.42*mistSm(.1,.48,g)+.58*mistSm(.38,.8,g),a=dn*L.a;
-        cr+=(L.col[0]-cr)*a;cg+=(L.col[1]-cg)*a;cb+=(L.col[2]-cb)*a;A+=a*(1-A);thin=thin*(1-dn)+4*dn*(1-dn);wm=Math.max(wm,mistSm(0,MIST.ahead,g)*L.m)}}
+        // (a level with a haze: its thin edge that colour (pale: fog, not a shadow), its own colour from hz[0] to hz[1] of its
+        // strength)
+        if(L.haze){const u=mistSm(L.hz[0],L.hz[1],g),H=L.haze;cr+=(H[0]+(L.col[0]-H[0])*u-cr)*a;cg+=(H[1]+(L.col[1]-H[1])*u-cg)*a;cb+=(H[2]+(L.col[2]-H[2])*u-cb)*a}else{
+        cr+=(L.col[0]-cr)*a;cg+=(L.col[1]-cg)*a;cb+=(L.col[2]-cb)*a}A+=a*(1-A);thin=thin*(1-dn)+4*dn*(1-dn);wm=Math.max(wm,mistSm(0,MIST.ahead,g)*L.m)}}
     // (the thin fringe paled toward the mist's colour: lighter where it is thin)
     const o=(r*cols+c)*4,p=Math.min(1,thin*MIST.pale),q=A>0?1/A:0;
     d[o]=Math.round(cr*q*(1-p)+pr*p);d[o+1]=Math.round(cg*q*(1-p)+pg*p);d[o+2]=Math.round(cb*q*(1-p)+pb*p);d[o+3]=Math.round(A*255);m[o+3]=Math.round(wm*255)}

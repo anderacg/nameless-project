@@ -28,18 +28,20 @@ function seenLoad(str){fogReset();if(!str)return;try{const s=atob(str),S=W.seen;
 // (what you have seen, in the world part of a save: the save registry, core/saves.js)
 Saves.add({key:'seen',order:40,save:seenSave,load:seenLoad});
 
-/* drawing: the battle fog's, over the ground and under the HUD (drawWorldFog, from render.js drawWorld): your sight clear;
-   beyond it, from WFOG.ring of vis() out, the battle's dim (FOG.col, FOG.dark) over all the land you remember; over land you
-   have never seen a deeper dark. Their edges are mist (gfx/mist.js mistFog: billowing, frayed, a thin pale fringe, wisps
-   drifting ahead), from smooth strengths: your sight's by the distance from you, the unknown's from the whole map in one
-   small grid (WFOGV.b: a cell WFOG.cell px, 1 unknown, blurred), a cell coming to light fading WFOG.fade s (at once with
-   reducedMotion). Only what changes is redone: tiles in view are watched against W.seen each frame (so whatever marks it
-   shows), and the cells round them eased and blurred again.
-   cell: px a cell; deep: the unknown's darkness (0-1) over the dim; col: its colour; soft: blurs of its edge (each a cell's
-   width); fade: s a cell takes to clear; ring: where your sight begins to dim (a share of vis()); feather: px inside your
-   sight's edge over which movers fade into the land as you remember it; mini, miniDeep: the minimap's dark over land you know
-   and land you do not; miniSoft: blurs of its edge (each a tile) */
-const WFOG={cell:8,deep:.97,col:[5,7,12],soft:3,fade:.3,ring:.62,feather:10,mini:.2,miniDeep:1,miniSoft:3};
+/* drawing: the battle fog's, over the ground and under the HUD (drawWorldFog, from render.js drawWorld): your sight clear; beyond it,
+   from WFOG.ring of vis() out, the battle's dim (FOG.col, FOG.dark) over all the land you remember; over land you have never seen a
+   deeper dark, each edge a haze before its dark: pale and cool where it is thin, so it reads as fog. Their edges are mist
+   (gfx/mist.js mistFog: billowing, frayed, a thin pale fringe, wisps drifting ahead), from smooth strengths: your sight's by the
+   distance from you, the unknown's from the whole map in one small grid (WFOGV.b: a cell WFOG.cell px, 1 unknown, blurred), a cell
+   coming to light fading WFOG.fade s (at once with reducedMotion). Only what changes is redone: tiles in view are watched against
+   W.seen each frame (so whatever marks it shows), and the cells round them eased and blurred again. cell: px a cell; deep: the
+   unknown's darkness (0-1) over the dim; col: its colour; soft: blurs of its edge (each a cell's width); fade: s a cell takes to
+   clear; ring: where your sight begins to dim (a share of vis()); feather: px inside your sight's edge over which movers fade into
+   the land as you remember it; mini, miniDeep: the minimap's dark over land you know and land you do not; miniSoft: blurs of its edge
+   (each a tile). haze: the unknown's edge a cool, pale haze (the owner's fifth play-test: its soft edge read as dark ground), its
+   dark from hz[0] to hz[1] of its strength; your sight's edge a fainter haze (ringHaze, ringHz) into the dim of the land you
+   remember */
+const WFOG={cell:8,deep:.97,col:[5,7,12],soft:3,fade:.3,ring:.62,feather:10,mini:.2,miniDeep:1,miniSoft:3,haze:[132,144,166],hz:[.3,.85],ringHaze:[64,74,92],ringHz:[0,.5]};
 let WFOGV=null;
 // (alphas a, a C-wide grid, blurred [1 2 1] across and down n times within the box x0..x1, y0..y1 (its edge held) into a (t: scratch))
 function fogBlur(a,t,C,x0,y0,x1,y1,n){
@@ -76,9 +78,9 @@ function wfogAt(O,x,y){const cs=WFOG.cell,C=O.C,R=O.R;let u=x/cs-.5,v=y/cs-.5;u=
 function drawWorldFog(cam,V){
   const O=wfogStep(cam,V),v=O.v,r0=v*WFOG.ring,rw=v-r0,px=P.x,py=P.y,W=MIST.warp,flat=mistFlat(O.fl||(O.fl={}),O.b,O.C,O.R,WFOG.cell,cam.x,cam.y,cam.x+VW,cam.y+VH);
   const E=mistFog(O.edge,cam.x,cam.y,VW,VH,WFOG.cell,4,[
-    {s:(x,y)=>{const d=Math.hypot(x-px,y-py);return d<=r0?0:d>=v?1:(d-r0)/rw},flat:(X,Y)=>{const d=Math.hypot(X-px,Y-py);return d+W<=r0?0:d-W>=v?1:-1},a:FOG.dark,col:FOG.col,m:FOG.dark},
+    {s:(x,y)=>{const d=Math.hypot(x-px,y-py);return d<=r0?0:d>=v?1:(d-r0)/rw},flat:(X,Y)=>{const d=Math.hypot(X-px,Y-py);return d+W<=r0?0:d-W>=v?1:-1},a:FOG.dark,col:FOG.col,m:FOG.dark,haze:WFOG.ringHaze,hz:WFOG.ringHz},
     // (the unknown's dark kept out of your sight but for its last tenth, so its puffs never hide what you see)
-    {s:(x,y,X,Y)=>{const d=Math.hypot(X-px,Y-py),u=wfogAt(O,x,y);return d<=v*.9?0:d>=v?u:Math.min(u,(d-v*.9)/(v*.1))},flat:(X,Y)=>{const d=Math.hypot(X-px,Y-py);if(d<=v*.9)return 0;const f=flat(X,Y);return f===0||d>=v?f:-1},a:WFOG.deep,col:WFOG.col,m:FOG.dark}]);
+    {s:(x,y,X,Y)=>{const d=Math.hypot(X-px,Y-py),u=wfogAt(O,x,y);return d<=v*.9?0:d>=v?u:Math.min(u,(d-v*.9)/(v*.1))},flat:(X,Y)=>{const d=Math.hypot(X-px,Y-py);if(d<=v*.9)return 0;const f=flat(X,Y);return f===0||d>=v?f:-1},a:WFOG.deep,col:WFOG.col,m:FOG.dark,haze:WFOG.haze,hz:WFOG.hz}]);
   // (bilinear: as soft, a quarter of the cost of the smoothest)
   ctx.save();ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='low';ctx.drawImage(E.comp,0,0,E.cw,E.ch,E.gx-cam.x,E.gy-cam.y,E.cw*E.k,E.ch*E.k);ctx.restore()}
 // the remembered scene (render.js memCv: the structures before anyone was drawn) put back over all but your sight, its edge

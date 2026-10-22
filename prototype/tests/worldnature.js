@@ -13,7 +13,8 @@ try{
  // ---- every generator's sprites
  const all=()=>{const L=[];for(const c of CL){for(const sp of PX.WORLD_SPECIES[c])for(let v=0;v<4;v++)for(const dim of [0,1])L.push(['tree '+c+' '+sp+' '+v+(dim?' dim':''),PX.worldTree(c,sp,v,dim)]);
    for(const k of PX.WORLD_DECOR[c].concat(PX.WORLD_DECOR.water))for(let v=0;v<4;v++)L.push(['decor '+c+' '+k+' '+v,PX.worldDecor(c,k,v)]);
-   for(let v=0;v<6;v++){L.push(['hill '+c+' '+v,PX.worldHill(c,v)]);for(const n of [16,32,64])L.push(['peak '+c+' '+n+' '+v,PX.worldPeak(c,v,n)])}}return L};
+   for(let v=0;v<6;v++){L.push(['hill '+c+' '+v,PX.worldHill(c,v)]);for(const n of [16,32,64])L.push(['peak '+c+' '+n+' '+v,PX.worldPeak(c,v,n)])}}
+   for(const k of Object.keys(PX.WORLD_MOUNTS))for(let v=0;v<6;v++)for(const n of [32,64])L.push(['peak '+k+' '+n+' '+v,PX.worldPeak('grass',v,n,k)]);return L};
  const list=all(),px=s=>s.getContext('2d').getImageData(0,0,s.width,s.height).data,by={};
  const pow=[],soft=[],out=[],flat=[];
  for(const [n,s] of list){const N=s.width;(by[N]=by[N]||new Set()).add(n.split(' ')[0]);
@@ -57,7 +58,9 @@ try{
  ok(N&&N.peaks>=1&&N.rock>=nM*120&&sM>.7,nM+' mountain tiles stand as '+(N&&N.peaks)+' ranges ('+(N&&N.rock)+' px of rock), '+Math.round(sM*100)+'% of their ground painted');
  ok(N&&N.decor>200&&N.flat>500,'small things on the open ground: '+(N&&N.decor)+' standing (bushes, stones, cacti, stumps), '+(N&&N.flat)+' lying (tufts, flowers, drifts, ripples, reeds, moss, pools, pads, floes)');
  {let onClear=0,onWater=0,offWater=0,lots=0,roads=0,n=0;
-  const water=(x,y)=>t.tAt(x>>4,y>>4)===t.T_WATER;
+  // (water: a water tile's pixel; on the generated world the water as drawn (gfx/worldart.js wpx: its shores curves, a brook running
+  //  on into it over a water tile's land, the owner's fifth play-test))
+  const WK=t.WorldArt.ensure().wk,water=(x,y)=>WK?t.wpx(WK,x,y)===1:t.tAt(x>>4,y>>4)===t.T_WATER;
   // (3: a ground's tone on kept-clear ground, a hill's shading running on under a road or a yard and a brook crossing a road (the
   //  owner's fourth play-test): never off it, and nothing else on it)
   let toned=0,tonedOff=0;
@@ -129,7 +132,7 @@ try{
  {let near=0,far=0;const P2=new Set();for(let v=0;v<4;v++){const s=PX.worldTree('desert','palm',v,0);for(let i=0;i<s.a.length;i++)if(s.a[i]===1)P2.add(s.rgb[i*3]+','+s.rgb[i*3+1]+','+s.rgb[i*3+2])}
   const d=cv.getContext('2d').getImageData(0,0,Wp,Hp).data;
   for(let ty=1;ty<MH-1;ty++)for(let tx=1;tx<MW-1;tx++){if(t.CLIMS[t.climate[ty*MW+tx]]!=='desert'||t.tiles[ty*MW+tx]!==t.T_OPEN)continue;let hit=0;for(let j=0;j<TILE&&!hit;j+=2)for(let i=0;i<TILE;i+=2){const o4=((ty*TILE+j)*Wp+tx*TILE+i)*4;if(P2.has(d[o4]+','+d[o4+1]+','+d[o4+2])){hit=1;break}}
-    if(!hit)continue;let wet=false;for(let b=-2;b<=2;b++)for(let a=-2;a<=2;a++)if(t.tAt(tx+a,ty+b)===t.T_WATER)wet=true;if(wet)near++;else far++}
+    if(!hit)continue;let wet=false;for(let b=-3;b<=3;b++)for(let a=-3;a<=3;a++)if(t.tAt(tx+a,ty+b)===t.T_WATER)wet=true;if(wet)near++;else far++}
   ok(far<=near*.1+2,'the desert’s palms stand by water (tiles showing palms: '+near+' by water, '+far+' not)')}
  // ---- the same map, the same picture; and the time it takes
  {const h=c=>{const d=c.getContext('2d').getImageData(0,0,Wp,Hp).data;let s=0;for(let i=0;i<d.length;i+=28)s=(s*31+d[i])|0;return s},a=h(cv),ms=[];let b=0;

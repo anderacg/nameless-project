@@ -109,7 +109,14 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 //  camp, which finds no other spot now: 502 lots, was 503). offDeck drops that point (gfx/worldart.js). Checked: with that one line
 //  out all nine are as before, the faster painting in (G5, G6 the same pixels). Were G3 6459947c, G5 b2110840, G7 c36d41d1, G8
 //  aa0f12ac, GB2 bac70e4f; G1, G2, G4, G6 and the sums unchanged)
-const GEXPECT={W1:'67bc5b4e',W2:'1d53b207',W3:'1efc5bb1',W4:'1fb76c87',W5:'6d0f211d',W6:'a8996932',W7:'6f3a5d30',W8:'5d18c925',B2:'0f363bb3'};
+// (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fifth play-test (agent T: gfx/worldart.js, engine/worldnature.js, world/
+//  fog.js, gfx/mist.js): a road or a ford's track through a wood a wood's tile (the floor up to the path, trees beside it, PX.WN_LANE;
+//  the path narrower and wandering, GENART.wood), the ford's shallows an S-bent ragged bar (GENART.ford), a road over the hills rising
+//  with them and a rise's cast shadow soft (PX.WN_HILL), the mountains in kinds (PX.WORLD_MOUNTS), brooks not cut short by the art
+//  (over clear ground, into and out of the water as drawn, beside a road they run along), nothing toned on water as drawn, and the
+//  fog's edges a pale haze (G6 only). The painted world is all that moves: G1-G4, G7, G8 and GB2 as before. Checked: on the art
+//  files as at f538fa7 both as before. Were G5 6d0f211d, G6 a8996932)
+const GEXPECT={W1:'67bc5b4e',W2:'1d53b207',W3:'1efc5bb1',W4:'1fb76c87',W5:'cdc20759',W6:'1e0eb0a7',W7:'6f3a5d30',W8:'5d18c925',B2:'0f363bb3'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended
@@ -171,7 +178,12 @@ const SUMS={classic:'e9407a0b','Normal s1':'d3fe6e28','Normal s2':'db154067','No
 // (W5, W6 measured together 2026-10-22 at the merge of agent N with L and M: N's art (below) over M's moved smithy at Elderglen
 //  (W5); W6 N's alone, as N measured it. N's follow-up at the merge (the generated world's bridges) moves neither. Were W5
 //  5cc77936, W6 7c1b6803)
-const EXPECT={W1:'65e24662',W2:'2b49a168',W3:'019fff95',W4:'46450e62',W5:'9f19b586',W6:'225d2557',W7:'8ed0cfbc',W8:'b11c0021',B2:'c15ba2dd'};// (at 0a42712; B2 at R3; W6-W8 at Phase 1; W6 at depth, smooth walking and pasture herds and label layout; W7, B2 at save v3)
+// (W5, W6 re-recorded 2026-10-22, on purpose, the owner's fifth play-test (agent T), what of it today's map shares: a rise's cast
+//  shadow soft and a road over the hills rising with them (engine/worldnature.js PX.WN_HILL; W5, W6), the fog of war's edges a pale
+//  haze (world/fog.js WFOG.haze, ringHaze; W6 only, its second spot by day and night). Checked: with PX.WN_HILL {soft: [0, 0], road:
+//  9} (the hard shadow, no road rising) W5 is as before, and with the haze off too W6. Were W5 9f19b586, W6 225d2557; W1-W4, W7, W8
+//  and B2 unchanged)
+const EXPECT={W1:'65e24662',W2:'2b49a168',W3:'019fff95',W4:'46450e62',W5:'b45070d6',W6:'cbf0fc46',W7:'8ed0cfbc',W8:'b11c0021',B2:'c15ba2dd'};// (at 0a42712; B2 at R3; W6-W8 at Phase 1; W6 at depth, smooth walking and pasture herds and label layout; W7, B2 at save v3)
 // (W5, W6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N), what of it today's map shares (its roads are
 //  painted over nature by tile, it has no brooks, fields or eco): the grass's hills shaded lighter, a hill's shading under its
 //  roads' kept-clear band, the hills' palette and a wood's floor by the climates' covers (PX.WN_BLEND), the trees across a climate's
