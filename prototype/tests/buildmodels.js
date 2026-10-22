@@ -13,14 +13,15 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 // (recorded for W4's polish of the owner's scale (2026-10-22: plans about square so the sides show as wide as the front, storeys of
 // 12 px and 9 px doors, finials and crosses 2 px, a cone's tip never a stick, the crane, the cave, the mine head and the windmill
 // redone, rough rock and crowns, the fit judged on every facing's pixels: every picture changed): a type's and a cluster's every
-// picture, ground, shadow and snow, hashed)
+// picture, ground, shadow and snow, hashed; W5 (2026-10-22), the elves' hall made elven without trees, the spire and an elves'
+// village hall in the same language (a leaf roof, pale living wood, moon lavender, arched doors and windows): those three re-recorded)
 const EXPECT={
  cottage:'b0d3f47d',townhouse:'60847ac0',fisherhut:'5961a169',chapel:'ce169f7a',stall:'4ba88882',tower:'37ad4348',yurt:'028ddae9',
  longhouse:'710715a0',tavern:'6bbf2a06',smithy:'14fb0ee3',church:'f864b8b5',barn:'eafd7df3',granary:'e4b0070d',
  windmill:'c79de711',watermill:'b160667a',warehouse:'60361e14',gatehouse:'9dfa7b6f',hidehall:'4976f722',watchtower:'3fef7a8a',
- treehouse:'15ba0e8a',elfhall:'0f8a8267',spire:'d80189ae',stonehall:'8b5bf7da',forge:'6c89bf57',keep:'8d6ea42b',
+ treehouse:'15ba0e8a',elfhall:'14bdf25c',spire:'95a93ca1',stonehall:'8b5bf7da',forge:'6c89bf57',keep:'8d6ea42b',
  citadel:'404c8ee0',well:'f8918598',tent:'2e5caf05',wagon:'f6a2f31c',minehead:'f28d9a07',lumbershed:'2d7d3cff',crane:'41513de8',
- village:'07813338',signpost:'8ec83101',cart:'b85da340',haystack:'fe798ba8',woodpile:'4e63e063',fence:'4ccfec38',
+ village:'bf60e75b',signpost:'8ec83101',cart:'b85da340',haystack:'fe798ba8',woodpile:'4e63e063',fence:'4ccfec38',
  crates:'3bcf5dac',barrels:'3013f7a9',ruins:'b5f1bee4',shrine:'d8e7e23c',cave:'21dca353','cluster:row':'0632e784',
  'cluster:yard':'e2acf979','cluster:farmstead':'91dd2d3b','cluster:smithy':'0b8561ee','cluster:inn':'6edb779b',
  'cluster:chapel':'352270d7','cluster:market':'78030d10','cluster:mill':'0a9ffa5f','cluster:lumber':'467a82cc',
@@ -99,6 +100,14 @@ try{
    const mats=s.parts.filter(p=>p.k==='roof'&&!p.keep&&!/canvas|awning|linen/.test(p.mat)&&p.form!=='flat').map(p=>p.mat).concat(s.parts.filter(p=>p.k==='tower'&&p.roof&&p.roof.form==='cone').map(p=>p.roof.mat));
    if(!mats.length||mats.some(m=>!R[people].includes(m)))b.push(people+' '+type+' '+mats.join('/'))}
   ok(!b.length,'each people its own roof: humans tile (thatch in the country), dwarves slate, elves leaf, orcs hide'+(b.length?': '+b.slice(0,6).join(', '):''))}
+ // (W5) the elves' hall without trees, in their own language: no tree's parts (a crown of leaves, a trunk) in its plan or its picture,
+ // whoever holds it; the elves' a leaf roof, pale living wood and moon lavender in every facing, an arched door
+ {const b=[],MAT=PX.MODEL_MAT;for(const people of P)for(const seed of [1,2]){const s=PX.buildingModelSpec({type:'elfhall',people,seed}),mats=s.parts.flatMap(p=>[p.wall,p.topMat,p.roof&&p.roof.mat]);
+   if(s.parts.some(p=>p.rough||p.wall==='log')||mats.some(m=>m==='canopy'||m==='autumn'))b.push(people+'/'+seed+' plan');
+   if(people==='elf'&&(!s.parts.some(p=>p.k==='roof'&&p.form==='leaf')||!s.decals.some(d=>d.kind==='DoorLeaf')))b.push('elf/'+seed+' its roof and door');
+   for(const yaw of PX.MODEL_YAWS){const m=PX.buildingModel({type:'elfhall',people,seed,yaw}),N=m.cell,seen=new Set();for(let i=0;i<N*N;i++)if(m.mask[i]===1)seen.add(MAT[m.px.m[i]]);
+     if(seen.has('canopy')||seen.has('autumn'))b.push(people+'/'+seed+'/'+yaw+' a crown');if(people==='elf'&&!['leaf','elfwood','moon'].every(k=>seen.has(k)))b.push('elf/'+seed+'/'+yaw+' '+[...seen].join('/'))}}
+  ok(!b.length,'the elves\' hall stands without trees (no crown or trunk in its plan or picture), in the elves\' language: a leaf roof, pale living wood and moon lavender in every facing, an arched door'+(b.length?': '+b.slice(0,6).join(', '):''))}
  // clusters and camps: turned whole, at near full scale and the same in every facing, their buildings each a kind, a role, a door
  {bad.edge=[];bad.rim=[];bad.cell=[];const bc=[],sc=[],tu=[];let nc=0;for(const kind of PX.CLUSTER_MODELS)for(const people of ['human','orc']){const ss=new Set();for(const yaw of PX.MODEL_YAWS){const b=PX.clusterModel({kind,people,seed:2,yaw}),B=b.buildings||[],id=kind+'/'+yaw+'/'+people;nc++;
     look(b,id,PX.MODEL_SIZES.clusters[kind]);if(!b.role||!B.length||B.some(d=>!d.kind||!d.role||!(d.area>0)||!d.door))bc.push(id+' ('+B.length+')');if(Math.min(b.scale.u,b.scale.v)<.85||b.scale.z<.8)sc.push(id+' '+[b.scale.u,b.scale.v,b.scale.z].join('/'));ss.add([b.scale.u,b.scale.v,b.scale.z].join())}

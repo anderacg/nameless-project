@@ -24,6 +24,9 @@
 //   elves green-teal leaf; orcs hide brown), over light walls; the shapes shared by all. Climates (env): the desert's walls sun-baked
 //   adobe, sand under it; the frost's snow the overlay (spec.snow, 0-1; true or the frost: 1); the swamp's mud, and stilts
 //   (spec.stilts) under houses. Seeded, never Math.random: the same spec, the same pixels.
+// W5 (the owner's Sylvan Court): the elves' own types in their own language and no trees: leaf roofs (model.js), pale living wood,
+//   bark, moss and moon lavender, arched doors, windows of moon glass, lanterns and banners (the elf hall, the spire, a village's
+//   hall when the elves hold it); the treehouse keeps its tree.
 (function(PX){
   const kit=()=>PX.modelKit;
   /* the peoples' looks: their roof (the country's for humans), their walls (light), framing; the climates' walls */
@@ -95,21 +98,22 @@
   /* the common pieces */
   // a house: its walls, roof, chimney, a door and windows on every wall (a row a storey), on a stone footing unless of stone or
   // adobe. s: {n, c, w, d, st (storeys) or z, form ('gable' along its front, 'front' its gable to the front, 'hip', 'shed', 'vault'),
-  // rise, wall, roof, frame, dw, door (at), doorKind, chim (true, false or [u, v]), lip, finial, fmat, back ('door'), wins, pick}
+  // rise, wall, roof, frame, dw, door (at), doorKind, chim (true, false or [u, v]), lip, finial, fmat, back ('door'), wins, pick, win
+  // (the ends' and the back's window, 'Win' unless said), vmat (a leaf roof's verges)}
   function house(Q,s){const o=Q.o,n=s.n||'h',[cu,cv]=s.c||[0,0],w=s.w,d=s.d,st=s.st||1,z=s.z||RULE.storey[st],wall=s.wall||o.wall,roof=s.roof||o.roofMat,form=s.form||'gable',
       rise=s.rise||RULE.rise(form==='front'?w:d),u=[cu-w/2,cu+w/2],v=[cv-d/2,cv+d/2];
     const frame=s.frame!==undefined?s.frame:(wall==='daub'||wall==='whitewash')?o.look.frame:null;
     Q.box(n,u,v,[0,z],wall,{dw:s.dw,frame,foot:wall==='stone'||wall==='adobe'||s.foot===false?null:'stone',rail:st>=2});
-    Q.roof(n,form==='front'?'gable':form,form==='front'||(form==='hip'&&d>w)?'v':'u',rise,roof,{lip:s.lip||(roof==='thatch'||roof==='hide'?2:1),finial:s.finial,fmat:s.fmat,o:s.o,ov:s.ov!=null?s.ov:1,hi:s.hi});
+    Q.roof(n,form==='front'?'gable':form,form==='front'||(form==='hip'&&d>w)?'v':'u',rise,roof,Object.assign({lip:s.lip||(roof==='thatch'||roof==='hide'?2:1),finial:s.finial,fmat:s.fmat,o:s.o,ov:s.ov!=null?s.ov:1,hi:s.hi},s.vmat?{vmat:s.vmat}:null));
     if(s.chim!==false&&(s.chim||o.d.chance(.6))){const at=Array.isArray(s.chim)?s.chim:form==='front'?[cu+w/2-3,cv-d/2+3]:[cu+w/2-4,cv-1];Q.chim(at,z-1,z+rise+2,3)}
     // the front: the door, windows either side clear of it, a row more a storey up; the back a door or a window; the ends a window a storey
     const at=s.door==null?.5:s.door,dk=s.doorKind||'Door',nw=s.wins!=null?s.wins:w>=40?4:w>=24?3:2,xs=[[],[at<.5?.78:.22],[.2,.8],[.15,.5,.85],[.12,.36,.64,.88]][nw];
     const clear=x=>Math.abs(x-at)*w>=(kit().DECAL[dk][0].length+6)/2+1,pick=()=>s.pick?o.d.pick(s.pick):'Win';
     Q.dec(n+'.S',dk,at);for(const x of xs)if(clear(x))Q.dec(n+'.S',pick(),x,3);
     for(let k=2;k<=st;k++)for(const x of nw===1?[.3,.7]:xs)Q.dec(n+'.S',o.d.pick(['WinS','Win']),x,RULE.storey[k-1]+1);
-    if(s.back==='door'){Q.dec(n+'.N','Door',.3);Q.dec(n+'.N','Win',.75,3)}else if(nw)Q.dec(n+'.N','Win',.5,3);
+    const wk=s.win||'Win';if(s.back==='door'){Q.dec(n+'.N','Door',.3);Q.dec(n+'.N',wk,.75,3)}else if(nw)Q.dec(n+'.N',wk,.5,3);
     // (an end wall as deep as the front is wide: two windows, else one)
-    for(const k of ['E','W'])for(let i=1;i<=st&&nw;i++)for(const x of d>=14?[.3,.7]:[.5])Q.dec(n+'.'+k,'Win',x,i===1?3:RULE.storey[i-1]+1);
+    for(const k of ['E','W'])for(let i=1;i<=st&&nw;i++)for(const x of d>=14?[.3,.7]:[.5])Q.dec(n+'.'+k,wk,x,i===1?3:RULE.storey[i-1]+1);
     return{u,v,z,rise}}
   // a dormer on a house's front slope (its ridge along u): a little gabled window standing out of the roof
   const dormer=(Q,n,u,v,z,c)=>{Q.box(n,[c-3,c+3],[(v[0]+v[1])/2,v[1]-1],[z-1,z+6],Q.o.wall,{frame:null});Q.roof(n,'gable','v',3,Q.o.roofMat,{o:0,ov:0});Q.dec(n+'.S','Win',.5,1)};
@@ -119,8 +123,8 @@
   function stilts(Q,u,v){const h=Q.lift;if(!h)return;const [u0,u1]=u,[v0,v1]=v;
     for(const [a,b] of [[u0,v0],[u1-2,v0],[u0,v1-2],[u1-2,v1-2]])Q.parts.push({k:'box',name:'post'+a+b,u:[a,a+2],v:[b,b+2],z:[0,h],wall:'log',top:true});
     Q.parts.push({k:'box',name:'deck',u:[u0-1,u1+1],v:[v0,v1+2],z:[h-1,h],wall:'plank',top:true,thin:true})}
-  // a tree among buildings: its trunk and a lumpy crown (green, evergreen or autumn), never a smooth cone
-  const tree=(Q,n,c,h,r,crown)=>{Q.round(n+'t',c,1.5,[0,h],'log',null);Q.round(n+'c',c,r,[h-3,h],crown,{form:'cone',rise:Math.round(r*.9),mat:crown,o:0,lip:0},{rough:.6,rs:c[0]*7+c[1]})};
+  // (W5) a curled leaf standing on a leaf roof's peak (u, v, z), 2 px thick both ways, curling to side s (1 right, -1 left)
+  const curl=(Q,n,u,v,z,s,mat)=>Q.cut(n,u-1.5,v-1,z,s>0?['.ll','ll.','ll.']:['ll.','.ll','.ll'],{l:mat},{dv:2});
   // the holy symbol: a gold cross standing on a roof's peak, 2 px thick, its arms both ways, so it reads as a cross from every side
   const cross=(Q,n,u,v,z)=>{Q.box(n+'p',[u-1,u+1],[v-1,v+1],[z,z+6],'gold',{top:true,fine:true});for(const [a,b] of [[3,1],[1,3]])Q.box(n+a,[u-a,u+a],[v-b,v+b],[z+3,z+4],'gold',{top:true,fine:true,thin:true})};
   // a windmill's four sails: an X of spars round the hub (u, z), a cloth to one side of each in a lattice, 3 px deep in the plane v
@@ -273,13 +277,26 @@
       Q.box('dk',[-10,10],[-3,9],[H-1,H],'plank',{top:true,thin:true});for(const [a,b] of [[-10,8],[9,8]])Q.box('p'+a,[a,a+1.5],[b,b+1.5],[0,H],'log',{top:true});
       Q.box('h',[-6,6],[-2,8],[H,H+10],o.wall==='stone'?'whitewash':o.wall,{dw});Q.roof('h','vault','u',5,o.roofMat,{lip:1});Q.dec('h.S','Door',.3);Q.dec('h.S','Lancet',.75,3);Q.dec('h.E','Lancet',.5,3);Q.dec('h.W','Lancet',.5,3);
       Q.cut('ld',6,9,0,Array.from({length:H},(_,i)=>i%2?'t.t':'ttt'),{t:'timber'},{dv:2})},
-    // an elves' hall: light walls under a vaulted roof of leaf, tall lancets, its double door, among trees
-    elfhall(Q,o){const d=o.d,dw=Q.home('elfhall','home');
-      house(Q,{w:18,d:15,c:[0,1],z:12,form:'vault',rise:8,wall:o.people==='elf'?'whitewash':o.wall,dw,door:.5,doorKind:'Door2',wins:2,chim:false,pick:['Lancet2']});
-      tree(Q,'ta',[-9,-7],11,4.5,'canopy');tree(Q,'tb',[9,-6],10,4.5,d.pick(['canopy','autumn']))},
-    // a spire: a tall round tower of white stone, a balcony ring, a tall cone with a gold knob, lancets round it
-    spire(Q,o){const dw=Q.home('spire','worship'),z=17,R=9;Q.round('s',[0,0],4.5,[0,z],'whitewash',{form:'cone',rise:R,mat:o.roofMat},{dw});
-      Q.box('fn',[-1,1],[-1,1],[z+R-2,z+R+1],'gold',{top:true});Q.round('bal',[0,0],6,[10,11],'plank',{form:'lid',mat:'plank'});Q.dec('s.S','Door',.5);Q.dec('s.S','Lancet',.5,12);for(const k of ['E','W','N'])Q.dec('s.'+k,'Lancet',.5,3)},
+    // an elves' hall (W5, the owner's Sylvan Court; no trees): a slender house of pale living wood raised on a root plinth, its gable
+    // to the front under a leaf roof (a pointed arch, its ridge swept up to its ends, the eaves flared and their tips curled, each
+    // slope a great leaf's veins, a moon-lavender verge), a curled leaf on its front peak; bark posts at its corners, a root stair up
+    // to its arched door, a lantern of moonlight by it, arched windows of moon glass and a round one in each gable, a banner of moon
+    // lavender on each side; moss on the stair and the roots
+    elfhall(Q,o){const dw=Q.home('elfhall','home'),elf=o.people==='elf',wall=elf?'elfwood':o.wall,w=12,dd=14,z=11,H=2,R=11,S=2,v1=dd/2;
+      Q.box('pl',[-w/2-1,w/2+1],[-v1-1,v1+1],[0,H],'bark',{top:true});Q.lift=H;
+      Q.box('h',[-w/2,w/2],[-v1,v1],[0,z],wall,{dw});Q.roof('h','leaf','v',R,o.roofMat,{o:2,ov:1,lip:1,sweep:S,curl:1,vmat:elf?'moon':null});
+      for(const a of [-1,1])for(const b of [-1,1])Q.round('cp'+a+b,[a*w/2,b*v1],1.4,[0,z],'bark',null);
+      curl(Q,'fn',0,v1+1,z+R+S-1,1,elf?'leaf':'timber');Q.lift=0;
+      Q.dec('h.S','DoorLeaf',.5);Q.dec('h.S','LampLeaf',.86,5);Q.dec('h.S','WinRound',.5,z+2,true);Q.dec('h.N','WinRound',.5,z+2,true);Q.dec('h.N','WinLeaf',.5,2);
+      for(const k of ['E','W']){Q.dec('h.'+k,'WinLeaf',.22,2);Q.dec('h.'+k,'WinLeaf',.78,2);Q.dec('h.'+k,'Banner',.5,1)}
+      // (the root stair: two steps up to the plinth, a root curling down either side)
+      Q.box('s0',[-3,3],[v1+1,v1+3],[0,1],'bark',{top:true,topMat:'moss'});Q.box('s1',[-3,3],[v1+1,v1+2],[1,2],'bark',{top:true});
+      for(const s of [-1,1])Q.round('rt'+s,[s*4,v1+2],1.2,[0,2],'bark',{form:'cone',rise:1,mat:'moss',o:0,lip:0})},
+    // a spire (the elves', W5): a tall round tower of pale living wood on a mossed root flare, a balcony ring, a leaf cone (a pointed
+    // arch, its eave's tips curled) with a gold curled leaf on top, its arched door, windows of moon glass round it
+    spire(Q,o){const dw=Q.home('spire','worship'),z=17,R=9;Q.round('rf',[0,0],5.8,[0,2],'bark',{form:'cone',rise:1,mat:'moss',o:0,lip:0});
+      Q.round('s',[0,0],4.5,[0,z],'elfwood',{form:'cone',leaf:true,rise:R,mat:o.roofMat},{dw});curl(Q,'fn',0,0,z+R-1,1,'gold');
+      Q.round('bal',[0,0],6,[10,11],'bark',{form:'lid',mat:'bark'});Q.dec('s.S','DoorLeaf',.5);Q.dec('s.S','WinLeaf',.5,12);for(const k of ['E','W','N'])Q.dec('s.'+k,'WinLeaf',.5,3)},
     // a dwarves' stone hall: squat and broad, a low hip, buttresses at its corners, its rune door, a massive chimney
     stonehall(Q,o){const dw=Q.home('stonehall','home');house(Q,{w:20,d:16,z:11,wall:'stone',form:'hip',rise:6,dw,door:.5,doorKind:'Rune',wins:2,pick:['Win'],chim:[5,-3]});
       for(const a of [-10,10])for(const b of [-8,8])Q.square('bt'+a+b,[a,b],4,[0,8],'stone',{form:'pyramid',rise:2,mat:'stone',o:0});Q.prop('barrel',[-7,10])},
@@ -320,8 +337,9 @@
     // a village's centre (straight on): its people's hall at the back, the green with the well and the village's goods; fortified, a
     // palisade of stakes round it all, its gate at the front
     village(Q,o){const d=o.d,f=(o.fort|0)>0,pp=o.people,dw=Q.home('village','hall',1);Q.flag=true;
-      house(Q,{n:'hl',w:32,d:16,c:[0,-14],z:12,rise:pp==='dwarf'?6:10,form:{dwarf:'hip',orc:'vault',elf:'vault'}[pp]||'gable',dw,finial:1,fmat:pp==='orc'?'bone':pp==='elf'?'gold':'timber',door:.5,
-        doorKind:pp==='dwarf'?'Rune':'Door2',wins:4,wall:{dwarf:'stone',orc:'log'}[pp]||o.wall,chim:pp==='orc'||pp==='elf'?false:[8,-16]});
+      const elf=pp==='elf';house(Q,{n:'hl',w:32,d:16,c:[0,-14],z:12,rise:pp==='dwarf'?6:10,form:{dwarf:'hip',orc:'vault',elf:'leaf'}[pp]||'gable',dw,finial:1,fmat:pp==='orc'?'bone':pp==='elf'?'gold':'timber',door:.5,
+        doorKind:pp==='dwarf'?'Rune':elf?'DoorLeaf':'Door2',wins:4,wall:{dwarf:'stone',orc:'log',elf:'elfwood'}[pp]||o.wall,chim:pp==='orc'||elf?false:[8,-16],foot:elf?false:undefined,pick:elf?['WinLeaf']:undefined,win:elf?'WinLeaf':undefined,vmat:elf?'moon':undefined});
+      if(elf)Q.dec('hl.S','LampLeaf',.6,5);// (the elves' (W5): a lantern by the door)
       Q.round('wl',[-10,8],4.5,[0,4],'stone',{form:'water'});for(const s of [-1,1])Q.box('wp'+s,[-10+s*4.5-1,-10+s*4.5+1],[7,9],[0,8],'timber',{top:true});Q.box('wr',[-15.5,-4.5],[6,10],[8,9],'timber',{thin:true});Q.roof('wr','gable','u',2,o.roofMat,{o:0,ov:0});
       const g={human:['hay','barrel'],dwarf:['barrel','crate'],elf:['sacks','crate'],orc:['woodpile','hay']}[pp]||['hay','barrel'];Q.prop(g[0],[12,8]);Q.prop(g[1],[16,14]);
       if(f){const e=29,b=27;for(const [n,u,v] of [['pN',[-e,e],[-b-3,-b-1]],['pW',[-e,-e+2],[-b-3,b]],['pE',[e-2,e],[-b-3,b]],['pS0',[-e,-5],[b-2,b]],['pS1',[5,e],[b-2,b]]])Q.box(n,u,v,[0,8],'stakes',{top:true,topMat:'log'});

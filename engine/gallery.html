@@ -244,7 +244,9 @@ function renderCatalog(){
     if(want('citadel')){const row=newRow('capital · 128');for(const pp of ['human','dwarf'])cell(row,PX.buildingModel({type:'citadel',people:pp,seed:sd,fort:3,capital:true}),pp+' capital','grass')}}
   if(!part||part==='objects'){head('Objects at 16 px (not buildings): alone, or a cluster’s dressing; 4 facings, desert, swamp, frost');for(const type of OBJ.concat(['shrine']))if(want(type))typeRow(type)}
   if(!part||part==='peoples'){head('Each people’s roof (humans tile, thatch in the country; dwarves slate; elves leaf; orcs hide), light walls; the shapes shared');
-    for(const pp of PX.MODEL_PEOPLES){const row=newRow(pp);for(const type of ['cottage','townhouse','tavern','church','tower','granary','windmill',PX.MODEL_LOOK[pp].hall,'village','keep'])if(want(type))cell(row,PX.buildingModel({type,people:pp,seed:sd,fort:1}),type,'grass',true)}}
+    for(const pp of PX.MODEL_PEOPLES){const row=newRow(pp);for(const type of ['cottage','townhouse','tavern','church','tower','granary','windmill',PX.MODEL_LOOK[pp].hall,'village','keep'])if(want(type))cell(row,PX.buildingModel({type,people:pp,seed:sd,fort:1}),type,'grass',true)}
+    // (W5: the elves' own types in their language (a leaf roof, pale living wood, moon lavender, no trees) beside the humans')
+    const row=newRow('elves · humans');for(const [type,pp] of [['elfhall','elf'],['spire','elf'],['treehouse','elf'],['cottage','human'],['chapel','human'],['townhouse','human']])if(want(type))cell(row,PX.buildingModel({type,people:pp,seed:sd,fort:1}),pp+' '+type,'grass')}
   if(!part||part==='clusters'){head('Clusters and camps: buildings and objects to a cell, turned whole (street south, west, north, east)');
     for(const kind of PX.CLUSTER_MODELS){if(!want(kind))continue;const row=newRow(kind+' · '+PX.MODEL_SIZES.clusters[kind]);
       try{for(const yaw of PX.MODEL_YAWS){const b=PX.clusterModel({kind,people:'human',seed:sd,yaw});cell(row,b,'street '+['S','W','N','E'][yaw/2]+' '+(b.ms|0)+'ms'+sc(b)+' · '+b.households+' homes','grass')}

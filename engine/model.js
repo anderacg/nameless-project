@@ -38,8 +38,9 @@
 //   storeys), windows and door; dwellings: those whose role is home.
 //   parts (local px, the cell's middle at u = v = 0; a part's dw is its building, an index into spec.dwellings):
 //     {k:'box', name, u:[u0,u1], v:[v0,v1], z:[z0,z1], wall, frame, foot, rail}: walls 'name.S' (the front, +v), N, E (+u), W
-//     {k:'roof', on:boxName, form:'gable'|'hip'|'shed'|'flat', axis:'u'|'v' (the ridge), rise, mat, o, ov (overhang at the eaves
-//       and at the verges, steps), lip (px), finial, hi ('b1': a shed high at the front), parapet, merlons (flat)}
+//     {k:'roof', on:boxName, form:'gable'|'hip'|'shed'|'flat'|'vault'|'leaf', axis:'u'|'v' (the ridge), rise, mat, o, ov (overhang
+//       at the eaves and at the verges, steps), lip (px), finial, hi ('b1': a shed high at the front), parapet, merlons (flat), sweep,
+//       curl, vmat (leaf)}
 //     {k:'tower', name, c:[u,v], r (round) or w (square), z:[z0,z1], wall, roof:{form:'cone'|'pyramid'|'battlements'|'water'|'lid',
 //       rise, mat}} (a round one with water is a well); {k:'chimney', at:[u,v], w, d, z:[z0,z1], mat}
 //     {k:'fence', pts:[[u,v],...], gates:[[from,to,segment]], h, mat}: posts and rails, unoutlined; {k:'bed', u, v, topMat ('crop'
@@ -66,6 +67,10 @@
 //   households, their sum; the door the first one seen.
 // W4: rough round parts (p.rough: crags, crowns), a cone's crown grassed (roof.moss), a cone's tip never a 1 px line, finials 2 px,
 //   each pixel's material (px.m), the fit's facings judged on their pixels together and the scale kept for the plan.
+// W5 (the elves, the owner's Sylvan Court): a roof form 'leaf' (a pointed arch over the walls, flared over the overhang to curled
+//   eave tips, its ridge swept up to its ends, its verges of r.vmat, each slope a great leaf's veins) and a tower's leaf cone
+//   (roof.leaf: the same arch round, its leaves in rows); materials moon (lavender), elfwood (pale living wood) and bark; decals
+//   DoorLeaf (a pointed arch door), WinLeaf, WinRound (moon glass, a warm glint), LampLeaf (a lantern), Banner.
 (function(PX){
   const NAVY='#1a1c26',R2=Math.SQRT2;
   const hx=c=>[parseInt(c.slice(1,3),16),parseInt(c.slice(3,5),16),parseInt(c.slice(5,7),16)];
@@ -84,7 +89,9 @@
     canvasR:['#ec8e72','#c4523e','#8e3634','#5a2630'],canvasB:['#92b4dc','#5a7cb0','#3e5682','#283656'],awningB:['#92c4ee','#4a86c8','#345e98','#243e66'],
     awningG:['#acd68a','#62a056','#3e7442','#284c34'],ice:['#ffffff','#d8ecfa','#a8c8e8','#7898c0'],darkrock:['#9c9c86','#76765e','#58584a','#3a3a32'],glow:['#f0feff','#9ae6f4','#4aaccc','#2a6a8a'],net:['#d2c6a6','#a0947a','#706656','#4a4236'],
     // (W4: a rope's light fibre, and the dark of a cave's mouth)
-    rope:['#f4e4b4','#dcc488','#b09660','#76623e'],dark:['#3a3430','#2a2624','#1e1c1c','#141416']};
+    rope:['#f4e4b4','#dcc488','#b09660','#76623e'],dark:['#3a3430','#2a2624','#1e1c1c','#141416'],
+    // (W5: the elves' moon lavender, their pale living wood and its bark)
+    moon:['#f0e6ff','#c6aaf2','#9070d0','#5c4498'],elfwood:['#f6f1e2','#ddd5be','#b3ab96','#7f7c74'],bark:['#a48e70','#7c6852','#5a4a3c','#3a3029']};
   let RAMP=null;const ramps=()=>RAMP||(RAMP=Object.assign({},...Object.keys(BASE).map(k=>({[k]:PX.ramp(BASE[k]).map(hx)})),...Object.keys(FIXED).map(k=>({[k]:FIXED[k].map(hx)}))));
   PX.MODEL_MAT=Object.keys(BASE).concat(Object.keys(FIXED));const MATI=Object.fromEntries(PX.MODEL_MAT.map((k,i)=>[k,i]));
   // the light: from the upper left of the screen (west, a little north, high). Walls and roofs read it on their own scales: a wall
@@ -129,7 +136,7 @@
     const gableEnd=(a,side)=>face(F,[P(a,B0,zt),P(a,B1,zt),P(a,Bm,zt+R)],Object.assign({},wallOf(side),{out:D(side==='a0'?-1:1,0),gable:true}));
     const up=(da,db)=>{const h=D(da,db);return[h[0],h[1],1]};
     // (its walls darker in a band under the eaves, where the lip shades them)
-    if(r.form!=='flat')for(const f of F)if(f.part===bp.name&&f.cls==='wall'&&!f.gable)f.ae=f.hz-Math.max(1,Math.min(3,o+e));
+    if(r.form!=='flat')for(const f of F)if(f.part===bp.name&&f.cls==='wall'&&!f.gable&&!(r.form==='leaf'&&(f.name===name('a0')||f.name===name('a1'))))f.ae=f.hz-Math.max(1,Math.min(3,o+e));
     if(r.form==='flat'){const t=Math.min(A1-A0,B1-B0)<6?0:r.parapet||0;// (too small for a parapet to leave a roof inside it: none)
       face(F,[P(A0,B0,zt),P(A1,B0,zt),P(A1,B1,zt),P(A0,B1,zt)],Object.assign({},sd,{cls:'floor',out:[0,0,1],O:P(A0,B1,zt),eu:D(1,0),su:1/G.step,ev:D(0,-1),fw:A1-A0,fh:B1-B0,mat:r.mat||bp.wall}));
       if(t){const pz=G.Z(t)||1,pm=r.pmat||bp.wall,q=(a0,a1,b0,b1)=>au?{U0:a0,U1:a1,V0:b0,V1:b1}:{U0:b0,U1:b1,V0:a0,V1:a1};
@@ -153,6 +160,29 @@
       lip(P(A0-ov,B1+o,zt),P(A1+ov,B1+o,zt),D(0,1));
       for(const [a,s] of [[A0,'a0'],[A1,'a1']]){const w=(B1-B0)/2,hh=R*w/W;face(F,Array.from({length:n+1},(_,i)=>arc(i,a,w,hh)),Object.assign({},wallOf(s),{out:D(s==='a0'?-1:1,0),gable:true}))}
       return}
+    if(r.form==='leaf'){// (W5: the elves' leaf roof) across, a pointed arch over the walls, flaring flatter over the overhang to the
+      // eaves, their tips curled out and up (r.curl; an edge, cls lip); along, its ridge swept up toward its ends (r.sweep px; less down
+      // its slopes, the eaves level: each facet two triangles); its gable walls up to the arch, its long walls closed up to it, a verge
+      // along the arch at each end (r.vmat: a board of that). Its facets keep their texture in step (uo along and ul its length, vo up
+      // from the eave; arc the eave to the ridge)
+      const m=6,hw=(B1-B0)/2,S=G.Z(r.sweep==null?2:r.sweep),Am=(A0+A1)/2,La=(A1-A0)/2+ov,sw=a=>S*((a-Am)/La)*((a-Am)/La),pt=(a,[b,h])=>P(a,Bm+b,zt+h+sw(a)*h/R);
+      const half=leafArch(R,hw,hw+o,r.curl==null?1:r.curl),pr=half.slice(1).reverse().map(([b,h])=>[-b,h]).concat(half),r0=half.length-1,N=pr.length-1,h1=half[LEAF_N][1];
+      const as=Array.from({length:m+1},(_,k)=>A0-ov+(A1-A0+2*ov)*k/m),dst=(p,q)=>Math.hypot(...sub(p,q)),L=pr.map((q,j)=>j?dst(pt(Am,q),pt(Am,pr[j-1])):0),sum=(i,j)=>L.slice(i,j).reduce((x,y)=>x+y,0);
+      const arc=sum(2,r0+1),up=j=>j<r0?sum(2,j+1):sum(j+2,N);
+      for(let j=0;j<N;j++){let uo=0;const lo=j<r0?pr[j]:pr[j+1],ul=as.slice(1).reduce((x,a,k)=>x+dst(pt(a,lo),pt(as[k],lo)),0)/G.step;for(let k=0;k<m;k++){const O=pt(as[k],lo),E=pt(as[k+1],lo),pts=[pt(as[k],pr[j]),pt(as[k+1],pr[j]),pt(as[k+1],pr[j+1]),pt(as[k],pr[j+1])];
+        const fo=j===0||j===N-1?Object.assign({cls:'lip',out:[0,0,1],O,eu:nrm(sub(E,O)),su:1/G.step,ev:[0,0,1],prio:3},sd):Object.assign({cls:'roof',out:[0,0,1],O,eu:nrm(sub(E,O)),su:1/G.step,ev:null,prio:2,uo,ul,vo:up(j),arc,ridge:j===r0-1||j===r0},sd);
+        face(F,[pts[0],pts[1],pts[2]],fo);face(F,[pts[0],pts[2],pts[3]],fo);uo+=dst(E,O)/G.step}}
+      for(let k=0;k<m;k++){lip(pt(as[k],pr[0]),pt(as[k+1],pr[0]),D(0,-1));lip(pt(as[k],pr[N]),pt(as[k+1],pr[N]),D(0,1))}
+      // (the verges: the roof's own edge, or a board of r.vmat along the arch: the elves' moon lavender)
+      for(const [a,s] of [[as[0],-1],[as[m],1]])for(let j=0;j<N;j++){const lo=pt(a,pr[j]),hi=pt(a,pr[j+1]);
+        face(F,[sub(lo,[0,0,e||1]),sub(hi,[0,0,e||1]),hi,lo],Object.assign({cls:'lip',out:D(s,0),O:lo,eu:nrm(sub(hi,lo)),su:1,ev:[0,0,1],prio:3},sd,r.vmat?{cls:'wall',mat:r.vmat,fine:true,fw:1,fh:1}:{}))}
+      // (the gable walls up to the arch; the long walls closed up to the roof over the overhang)
+      for(const [a,s] of [[A0,'a0'],[A1,'a1']]){const g=[P(a,B0,zt),P(a,B1,zt),...pr.filter(q=>Math.abs(q[0])<=hw+.01).reverse().map(q=>pt(a,q))];
+        face(F,g.filter((q,i)=>!i||dst(q,g[i-1])>.01),Object.assign({},wallOf(s),{out:D(s==='a0'?-1:1,0),gable:true}))}
+      const aw=[A0,...as.filter(a=>a>A0+.01&&a<A1-.01),A1];
+      for(const [b,s] of [[-hw,'b0'],[hw,'b1']])for(let k=0;k+1<aw.length;k++)face(F,[P(aw[k],Bm+b,zt),P(aw[k+1],Bm+b,zt),pt(aw[k+1],[b,h1]),pt(aw[k],[b,h1])],
+        Object.assign({},wallOf(s),{out:D(0,s==='b0'?-1:1),gable:true}));
+      return}
     const hip=r.form==='hip',ins=hip?Math.min((B1-B0)/2+o,(A1-A0)/2+o):0;
     // the two long slopes (b1 toward the front, b0 away), the ends (gable walls or hips), the lips along every edge
     const f0=P(A0-ov,B1+o,zt),f1=P(A1+ov,B1+o,zt),k0=P(A1+ov,B0-o,zt),k1=P(A0-ov,B0-o,zt),r0=P(A0-ov+ins,Bm,zt+R),r1=P(A1+ov-ins,Bm,zt+R);
@@ -165,6 +195,11 @@
       if(e)for(const [a,s] of [[A0-ov,-1],[A1+ov,1]])for(const bb of [B1+o,B0-o]){const lo=P(a,bb,zt),hi=P(a,Bm,zt+R);
         face(F,[sub(lo,[0,0,e]),sub(hi,[0,0,e]),hi,lo],Object.assign({cls:'lip',out:D(s,0),O:lo,eu:nrm(sub(hi,lo)),su:1,ev:[0,0,1],prio:3},sd))}}
   }
+  // (W5) the leaf roof's profile (a ridge's or a cone's), from its ridge (b 0, height R) out: a pointed arch over the walls (to hw; a
+  // little full), then flatter over the overhang to the eave (W, height 0), its tip curled out and up by cu: [[b, h], ...]; LEAF_N
+  // facets over the walls
+  const LEAF_N=3,leafArch=(R,hw,W,cu)=>{const h1=W>hw+.01?Math.min(R*.25,(W-hw)*.7):0,out=[];
+    for(let i=0;i<=LEAF_N;i++){const t=i/LEAF_N;out.push([hw*t,h1+(R-h1)*(.85*(1-t)+.15*(1-t*t))])}if(h1)out.push([W,0]);out.push([W+cu,cu]);return out};
   // a round tower (facets) or a square one, and its roof: a cone, a pyramid or battlements
   function tower(F,G,p){const [cu,cv]=p.c,Z0=G.Z(p.z[0]),Z1=G.Z(p.z[1]),rf=p.roof||{},R=G.Z(rf.rise||0);
     if(!p.round){const h=p.w/2,B={U0:G.U(cu-h),U1:G.U(cu+h),V0:G.V(cv-h),V1:G.V(cv+h),Z0,Z1};box(F,G,Object.assign({},p,{top:rf.form==='battlements'}),B);
@@ -176,7 +211,15 @@
     const lo=ring(r,Z0),hi=ring(r,Z1),ch=2*Math.PI*r/n;
     for(let i=0;i<n;i++){const j=(i+1)%n,a=lo[i],b=lo[j],m=nrm([(a[0]+b[0])/2-cx,(a[1]+b[1])/2-cy,0]);face(F,[a,b,hi[j],hi[i]],{cls:'wall',mat:p.wall,name:p.name+'.'+i,out:m,O:a,eu:nrm(sub(b,a)),su:1,ev:[0,0,1],fw:ch,fh:Z1-Z0,uo:i*ch,hz:Z1-Z0,part:p.name,round:true})}
     if(rf.form==='water'||rf.form==='lid')face(F,hi.slice().reverse(),{cls:'top',mat:rf.form==='water'?'water':rf.mat,out:[0,0,1],O:hi[0],eu:[1,0,0],su:1,ev:[0,-1,0],part:p.name});// (a well: dark water in its ring; a barrel's lid)
-    if(rf.form==='cone'){const rr=r+(rf.o==null?1:rf.o)*G.sc.o,base=ring(rr,Z1),ap=p.rough?[cx+(H(1,hn,9)-.5)*r*.5,cy+(H(2,hn,9)-.5)*r*.4*G.K,Z1+R*(.85+.3*H(3,hn,9))]:[cx,cy,Z1+R];
+    if(rf.form==='cone'&&rf.leaf){// (W5: an elves' leaf cone) rings up the leaf roof's arch to its tip, the eave's tips curled out and up
+      // (a lip), its shingles in step from ring to ring (uo, vo, arc as the leaf roof's)
+      const rg=leafArch(R,r,r+(rf.o==null?1:rf.o)*G.sc.o,rf.curl==null?1:rf.curl).reverse(),k=rg.length-1,at=([d,h],i)=>{const a=i/n*Math.PI*2;return[cx+Math.cos(a)*d,cy+Math.sin(a)*d*G.K,Z1+h]};
+      const L=rg.map((q,j)=>j?Math.hypot(q[0]-rg[j-1][0],q[1]-rg[j-1][1]):0),arc=L.slice(2).reduce((x,y)=>x+y,0);
+      for(let j=0;j<k;j++){const vo=L.slice(2,j+1).reduce((x,y)=>x+y,0),ch=2*Math.PI*rg[j][0]/n;
+        for(let i=0;i<n;i++){const a=at(rg[j],i),b=at(rg[j],i+1),pts=j===k-1?[a,b,at(rg[k],0)]:[a,b,at(rg[j+1],i+1),at(rg[j+1],i)];
+          if(!j){face(F,pts,{cls:'lip',mat:rf.mat,out:[0,0,1],O:a,eu:nrm(sub(b,a)),su:1,ev:[0,0,1],prio:3,rf,part:p.name});if(rf.lip!==0)face(F,[sub(a,[0,0,1]),sub(b,[0,0,1]),b,a],{cls:'lip',mat:rf.mat,out:nrm([(a[0]+b[0])/2-cx,(a[1]+b[1])/2-cy,0]),O:a,eu:nrm(sub(b,a)),su:1,ev:[0,0,1],prio:3,rf,part:p.name})}
+          else face(F,pts,{cls:'roof',mat:rf.mat,out:[0,0,1],O:a,eu:nrm(sub(b,a)),su:1,ev:null,prio:2,rf,part:p.name,uo:i*ch,vo,arc,ridge:j===k-1})}}}
+    else if(rf.form==='cone'){const rr=r+(rf.o==null?1:rf.o)*G.sc.o,base=ring(rr,Z1),ap=p.rough?[cx+(H(1,hn,9)-.5)*r*.5,cy+(H(2,hn,9)-.5)*r*.4*G.K,Z1+R*(.85+.3*H(3,hn,9))]:[cx,cy,Z1+R];
       for(let i=0;i<n;i++){const j=(i+1)%n,a=base[i],b=base[j],m=nrm([(a[0]+b[0])/2-cx,(a[1]+b[1])/2-cy,rr/Math.max(1,R)]);
         face(F,[a,b,ap],{cls:'roof',mat:rf.mat,out:m,O:a,eu:nrm(sub(b,a)),su:1,ev:null,prio:2,rf,part:p.name});if(rf.lip!==0)face(F,[sub(a,[0,0,1]),sub(b,[0,0,1]),b,a],{cls:'lip',mat:rf.mat,out:[m[0],m[1],0],O:a,eu:nrm(sub(b,a)),su:1,ev:[0,0,1],prio:3,rf,part:p.name})}}
   }
@@ -188,8 +231,14 @@
     if(f.cls==='lip'){const lit=f.n[0]<-.3?-1:0;// (the sun side's edge caught by the light)
       return m==='thatch'?[m,cl(b+1+lit+(iu%3===0&&iv<1?1:0))]:m==='shingle'?['timber',cl(b+1+lit)]:[m,cl(3+lit)]}
     if(f.cls==='roof'){const top=f.fh-v;// (v up the slope from the eave; top: how far below the ridge)
-      if(top<1&&f.rf.form!=='shed'&&f.rf.form!=='cone'&&f.rf.form!=='vault')return m==='thatch'?[m,cl(b+1-(iu%4===0?1:0))]:[m,b?(iu%2?0:1):2];// the ridge's cap (a bound ridge on thatch)
-      if(m==='thatch'&&top<2&&f.rf.form!=='cone'&&f.rf.form!=='vault')return[m,cl(b+(iu%4===0?0:1))];
+      // (W5: a leaf roof, from its eave up: each slope one great leaf, its midrib down its middle and its veins in chevrons from it, light
+      // on the blade (a ridge's facets, f.ul their length along it); a cone's leaves laid in staggered rows, each 4 x 3, dark between
+      // their tips, lit at their middles; moss low down here and there)
+      if(f.vo!=null&&m==='leaf'){if(v<f.arc*.45&&H(iu>>1,iv>>1,sd+29+f.sd)<.05)return['moss',cl(b+(h<.5?0:1))];
+        if(f.ul){const du=Math.abs(u-f.ul/2);return[m,du<.5||Math.floor(v+du*.6)%4===0?Math.max(0,b-1):cl(b+(b?0:1)+(h<.08?1:0))]}
+        const r=Math.floor(v/3),x=((iu+(r%2)*2)%4+4)%4,y=iv-r*3;return[m,cl(b+(y===0&&(x===0||x===3)?1:0)-(y===1&&(x===1||x===2)&&b>0?1:0))]}
+      if(top<1&&f.rf.form!=='shed'&&f.rf.form!=='cone'&&f.rf.form!=='vault'&&f.rf.form!=='leaf')return m==='thatch'?[m,cl(b+1-(iu%4===0?1:0))]:[m,b?(iu%2?0:1):2];// the ridge's cap (a bound ridge on thatch)
+      if(m==='thatch'&&top<2&&f.rf.form!=='cone'&&f.rf.form!=='vault'&&f.rf.form!=='leaf')return[m,cl(b+(iu%4===0?0:1))];
       if(f.rf.moss&&top+(H(iu,0,sd+17)-.5)*2.5<f.fh*f.rf.moss)return['moss',cl(b+(h<.3?1:0)-(h>.9&&b>0?1:0))];// (a crag's grassy crown, its edge ragged)
       if(H(iu>>1,iv>>1,sd+31+f.sd)<(m==='thatch'||m==='shingle'?.03:.012)&&v<f.fh*.6&&m!=='awning'&&m!=='sandrock')return['moss',cl(b+(h<.5?0:1))];// moss and worn patches, low on the slope
       if(H(iu,iv,sd+41+f.sd)<.012)return[m,3];// a tile slipped (each face its own: a cone's facets never all at once)
@@ -227,6 +276,8 @@
       case 'rock':case 'sandrock':case 'darkrock':{const c=H(iu>>1,iv>>1,sd);return[m,cl(b+(c<.2?1:0)+(H(iu>>2,iv>>2,sd+1)>.85?1:0))]}
       case 'bone':return[m,cl(b+(iv%3===0?1:0))];
       case 'net':return[m,cl(b+((iu+iv)%2?2:0))];
+      case 'elfwood':return[m,cl(b+(iu%3===1&&H(iu,iv>>2,sd+8)<.75?1:0)+(h<.03?1:0)+wx)];// (W5: living wood, its grain running up it)
+      case 'bark':return[m,cl(b+(iu%2&&H(iu,iv>>1,sd+8)<.7?1:0)-(h>.94&&b>0?1:0))];
       case 'stakes':return['log',cl(b+(iu%2?1:0)-(v>=f.hz-1&&iu%2===0?1:0))];// a palisade's stakes, their points lit
       default:return[m,cl(b+sp+wx)]}
   }
@@ -244,7 +295,9 @@
     adit:['tttttt','th##ht','t####t','t####t'],rune:['tttt','tyyt','tdet','tdkt','pppp'],arch:['.ll.','l##l','l##l','l##l'],
     ivy:['v.v','vvv','.vv','v.v','.v.'],ladder:['t.t','ttt','t.t','ttt','t.t','ttt','t.t'],wheel5:['.www.','w.w.w','wwwww','w.w.w','.www.'],hatch:['ttt','tbt','ttt']};
   const DCOL={t:['timber',2],l:['stone',0],p:['stone',1],d:['door',1],e:['door',2],k:['gold',0],g:['glass',3],G:['glass',2],s:['door',1],b:['plank',1],y:['gold',1],
-    r:['flower',1],c:['crop',1],o:['flame',1],O:['flame',0],'#':['iron',3],w:['timber',1],h:['iron',3],i:['iron',1],v:['canopy',2],n:['canvas',2],L:['log',0],M:['log',2],D:['dark',2],X:['dark',0]};
+    r:['flower',1],c:['crop',1],o:['flame',1],O:['flame',0],'#':['iron',3],w:['timber',1],h:['iron',3],i:['iron',1],v:['canopy',2],n:['canvas',2],L:['log',0],M:['log',2],D:['dark',2],X:['dark',0],
+    // (W5: moon glass and its light, a warm glow, the elves' bark frames)
+    m:['moon',2],j:['moon',0],q:['moon',3],a:['glass',1],u:['bark',2]};
   /* stage 3's decals, at the owner's scale (a figure a tile tall, the smallest building 32 px; capitalised): a door 5 x 8 on its step,
      a double door, windows 4 x 5 under a lintel (shutters, a flower box), lancets, a rose, a hanging sign and a lantern, a holy cross,
      a belfry's bell, a rune door, a slit, a hatch, beam ends, a barn's braced doors, a castle's gate and an open arch, ivy, log ends,
@@ -264,6 +317,10 @@
     Cave2:['.....XX....','...XXDDX...','..XDDDDDXX.','.XDDDDDDDDX','XDDDDDDDDDX','XDDDDDDDDX.','XDDDDDDDDX.','XDDDDDDDDDX'],
     Adit:['.XDDDX.','XDDDDDX','XDDDDDX','XDDDDDX','XDDDDDX','XDDDDDX','XDDDDDX','XiDDDiX'],
     Forge:FORGE,ForgeS:FORGE.map(r=>r.replace(/t/g,'l'))});
+  // (W5: the elves' openings: a pointed arch door, its fanlight of moon glass, a warm light between its leaves; an arched window and a
+  // round one of moon glass with a warm glint; a hanging lantern of moonlight; a banner of moon lavender, its gold leaf)
+  Object.assign(DECAL,{DoorLeaf:['...u...','..umu..','.umjmu.','.uuuuu.','udeaedu','udeaedu','udeaedu','udkaedu','udeaedu','udeaedu'],
+    WinLeaf:['.uu.','ujmu','umju','ujmu','umau','uuuu'],WinRound:['.uuu.','ujmmu','umjau','ummmu','.uuu.'],LampLeaf:['uu.','.u.','yjy','.j.','.y.'],Banner:['uuu','mjm','mym','mmm','mqm','mmm','m.m']});
   // (what counts as a door: a way in, for the game's doors and paths)
   const DOORISH=/^(door|barn|stall|forge|goods|rune|gate|adit|arch|hatch|flap)|^wheel$/i;
 
@@ -346,7 +403,7 @@
       const b=toneOf(f.cls==='lip'?'roof':f.cls,s);let mat,t,dk=0,step=false;
       for(const dc of f.dec){const du=Math.floor(u)-dc.u0,dv=Math.floor(v)-dc.v0;if(du>=0&&du<dc.w&&dv>=0&&dv<dc.h){const ch=dc.rows[dc.h-1-dv][du];if(ch!=='.'){[mat,t]=DCOL[ch];if('gGde'.includes(ch))t=Math.min(3,t+(b>1?1:0));dk=dc.id;step=ch==='p'&&dv===0;SC[q]=ch.charCodeAt(0);break}}}
       SU[q]=u;SV[q]=v;SZ[q]=PT[q*3+2];SB[q]=b;
-      if(!dk)[mat,t]=texel(f,u,v,b,sd);
+      if(!dk)[mat,t]=texel(f,u,f.vo?v+f.vo:v,b,sd);
       SM[q]=MATI[mat];const c=RP[mat][Math.max(0,Math.min(3,t))];col[q*3]=c[0];col[q*3+1]=c[1];col[q*3+2]=c[2];A[q]=1;DEC[q]=dk;FL[q]=f.flat?1:f.fine?2:0;
       if(f.cls==='wall'&&!f.flat&&PT[q*3+2]<1)GZ[q]=step?2:1}
     return{F,G,M,ox,oy,col,A,DEC,FL,GZ,yaw,N,base,beds,fid,SU,SV,SZ,SB,SC,SM}
@@ -478,10 +535,11 @@
   function snowOf(m,a){const N=m.cell,I=m.px,sd=m.seed+701,RP=ramps(),S=RP.snow,ICE=RP.ice,mk=m.mask,on=new Int8Array(N*N).fill(-1),ice=new Int8Array(N*N).fill(-1);
     const fc=i=>I.fi[i]>=0&&mk[i]===1?I.F[I.fi[i]]:null,code=s=>new Set([...s].map(c=>c.charCodeAt(0))),DOOR=code('dekp'),WIN=code('gGs');
     for(let y=0;y<N;y++)for(let x=0;x<N;x++){const i=y*N+x,f=fc(i);if(!f)continue;const u=I.u[i],v=I.v[i],iu=Math.floor(u),b=I.b[i];
-      if(f.cls==='roof'){const fh=f.fh||1,pf=Math.max(0,Math.min(1,(f.tn[2]-.45)/.4)),cover=a*(.6+.55*pf)*(f.rf&&f.rf.form==='cone'?.8:1),w=(H(iu>>1,0,sd)-.5)*.22,top=1-v/fh;
-        let s=(fh-v<1&&f.rf&&f.rf.form!=='shed'||top+w<cover)&&(v>=1||fh<3);// (the eave's row keeps its roof: the people's colour under the snow)
+      if(f.cls==='roof'){const lf=f.vo!=null,fh=f.fh||1,pf=Math.max(0,Math.min(1,(f.tn[2]-.45)/.4)),cover=a*(.6+.55*pf)*(f.rf&&f.rf.form==='cone'?.8:1),w=(H(iu>>1,0,sd)-.5)*.22,top=lf?1-(v+f.vo)/f.arc:1-v/fh;
+        // (the eave's row keeps its roof: the people's colour under the snow; a leaf roof's facets by the whole arc, its ridge its top's)
+        let s=(fh-v<1&&f.rf&&f.rf.form!=='shed'&&(!lf||f.ridge)||top+w<cover)&&(lf?v+f.vo>=1:v>=1||fh<3);
         if(s&&a>.4&&a<.9&&fh-v>=1&&H(iu>>1,Math.floor(v)>>1,sd+3)<.16)s=false;// (bare patches when patchy)
-        if(s)on[i]=fh-v<1?0:Math.min(3,Math.min(2,b)+(Math.floor(v)%3===2&&H(iu>>1,Math.floor(v/3),sd+4)<.6?1:0))}
+        if(s)on[i]=fh-v<1&&(!lf||f.ridge)?0:Math.min(3,Math.min(2,b)+(Math.floor(v)%3===2&&H(iu>>1,Math.floor(v/3),sd+4)<.6?1:0))}
       else if(f.cls==='top'||f.cls==='floor'){if(f.mat==='water'||f.mat==='iron'||f.mat==='ember'||a<.5)continue;if(a>.9||H(x>>1,y>>1,sd+5)<(a-.3)*1.5)on[i]=Math.min(1,b)}
       else if(f.cls==='wall'&&!I.ch[i]){
         if(a>.6&&y>0&&WIN.has(I.ch[i-N]))on[i]=1;// a sill
