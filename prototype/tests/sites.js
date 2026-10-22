@@ -65,7 +65,8 @@ try{
  {let worst=1e9,who='';for(const b of [...t.camps(),...of('hideout')])for(const q of t.TOWNS)for(const l of q.lots||[]){if(!t.ESTATES[l.k])continue;const ts=[];t.lotTiles(l,(x,y)=>ts.push([x,y]));(l.plots||[]).forEach(p=>ts.push(p));
    for(const [x,y] of ts){const d=Math.hypot(x-b.tx,y-b.ty);if(d<worst){worst=d;who=b.type+' by '+q.name+'’s '+l.k}}}
   ok(worst>=t.BANDIT_GAP,'no bandit camp or hideout within '+t.BANDIT_GAP+' tiles of an estate or its fields (nearest: '+worst.toFixed(1)+', a '+who+')');
-  const c=t.camps()[0];ok(t.nearBandits(c.tx+3,c.ty,t.BANDIT_GAP)&&!t.nearBandits(c.tx+t.BANDIT_GAP+1,c.ty,t.BANDIT_GAP),'the same rule stops you building an estate beside one')}
+  // (a camp with no other camp or hideout near the spot just past its gap to the east: on some worlds a second one stands there)
+  const G=t.BANDIT_GAP,c=t.camps().find(c=>!t.nearBandits(c.tx+G+1,c.ty,G))||t.camps()[0];ok(t.nearBandits(c.tx+3,c.ty,G)&&!t.nearBandits(c.tx+G+1,c.ty,G),'the same rule stops you building an estate beside one')}
  // the bandit camps are sites too: on their fixed spots, in plain sight, a chieftain and the bands sheltering there
  {const c=t.camps()[0];ok(t.camps().length===t.CAMP_SPOTS.length&&t.camps().every(x=>t.CAMP_SPOTS.some(p=>p.tx===x.tx&&p.ty===x.ty))&&t.objKind(c)==='site'&&/Bandit camp/.test(t.tipFor(c)),'the '+t.CAMP_SPOTS.length+' bandit camps are sites on their spots, with their own tooltip');
   G.mode='world';G.modal=false;t.hidePanel();G.encCool=0;G.enc=null;c.cleared=false;c.bands=[t.asParty({x:c.x,y:c.y,n:3,kind:'bandits',list:['militia','militia','militia'],t:0,a:0,cool:0})];t.enterSite(c);
