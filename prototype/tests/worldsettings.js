@@ -53,8 +53,8 @@ window.RUN=async()=>{const r=Kit.report(),{ok,info}=r;try{
   t.act('ws-set','monsters:normal')}
  t.act('ws-preset','normal');
  {const s=S.s;ok(s.preset==='normal'&&s.seed&&s.seed!=='CLASSIC'&&s.holdings===27&&s.w===448&&!q('#wsSeed').disabled&&q('#wsSeed').value===s.seed,'Normal: a fresh seed ('+s.seed+'), 448 x 320, 27 holdings')}
- {t.act('ws-reroll');const k1=t.wsMapKey(S.s),before=S.pics[k1];await new Promise(r=>setTimeout(r,S.wait+100));
-  ok(!before&&S.pics[k1]&&S.last===S.pics[k1]&&S.s.seed,'Reroll: a new seed ('+S.s.seed+'), the preview redrawn '+S.wait+' ms after the change, the last picture shown meanwhile')}
+ {t.act('ws-random');const k1=t.wsMapKey(S.s),before=S.pics[k1];await new Promise(r=>setTimeout(r,S.wait+100));
+  ok(!before&&S.pics[k1]&&S.last===S.pics[k1]&&S.s.seed,'Random: a new seed ('+S.s.seed+'), the preview redrawn '+S.wait+' ms after the change, the last picture shown meanwhile')}
  t.act('ws-size','large');ok(S.s.w===640&&S.s.h===448&&S.s.holdings===40&&S.s.preset==='large','a Large size at the normal density is the Large preset (40 holdings)');
  t.act('ws-dens','more');ok(S.s.holdings===55&&S.s.preset==='custom'&&q('[data-act="ws-dens"][data-arg="more"]').classList.contains('on'),'More: 55 holdings; touching a setting makes it Custom');
  t.act('ws-dens','fewer');t.act('ws-hold','1');ok(S.s.holdings===33&&!q('[data-act="ws-dens"].on'),'Fewer (32), then + one: 33, a number of its own');
@@ -71,14 +71,12 @@ window.RUN=async()=>{const r=Kit.report(),{ok,info}=r;try{
  // Esc follows the bar: Back to the New game page; the choice kept
  window.dispatchEvent(new KeyboardEvent('keydown',{code:'Escape',key:'Escape'}));
  ok(G.menu==='new'&&S.s.preset==='frontier','Esc: Back to the New game page, the world\'s choice kept');
- // ---- the full preview, reused by the forge; a seeded start
+ // ---- forging the seed typed; a seeded start
  t.act('begin','world:soldier');t.act('ws-preset','normal');{const i=q('#wsSeed');i.value='s2';i.dispatchEvent(new Event('input',{bubbles:true}))}
- t.act('ws-full');await t.LOADING.task;const fr=S.full&&S.full.r;
- ok(fr&&fr.map.settings.seed==='s2'&&q('.ws-cap').textContent.startsWith('The world itself')&&q('[data-act="ws-full"]').disabled,'Full preview: the real world made ('+(fr?fr.holdings.length+' holdings':'none')+'), the preview its map');
- {const g0=window.genWorldSteps;let calls=0;window.genWorldSteps=s=>{calls++;return g0(s)};
-  try{Math.random=t.seeded(1);t.act('ws-forge')}finally{window.genWorldSteps=g0;Math.random=r0}
+ ok(!q('[data-act="ws-full"]')&&!q('[data-act="ws-reroll"]')&&!q('[data-act="ws-regen"]'),'no Reroll, Regenerate nor Full preview (the owner: Random is the seed’s own)');
+ {try{Math.random=t.seeded(1);t.act('ws-forge')}finally{Math.random=r0}
   G.quietEvents=true;G.mode='world';G.modal=false;t.hidePanel();
-  ok(t.WM===(fr&&fr.map)&&!calls&&t.WM.settings.seed==='s2'&&!S.full,'Forge the world uses the full preview\'s world, not made again')}
+  ok(t.WM.settings&&t.WM.settings.seed==='s2','Forge the world makes the seed typed')}
  const snap=()=>J({sites:W.sites.map(s=>[s.type,s.tx,s.ty,s.seed]),bands:t.bandits.map(b=>[b.kind,b.n,Math.round(b.x),Math.round(b.y)]),beasts:W.monsters.map(m=>[m.id,m.lv,m.n,Math.round(m.x),Math.round(m.y)]),herds:W.critters.map(c=>[c.id,c.n,Math.round(c.x),Math.round(c.y)])});
  const begin=(st,seed)=>{Math.random=t.seeded(seed);try{t.begin('soldier',st)}finally{Math.random=r0}G.quietEvents=true;G.mode='world';G.modal=false;t.hidePanel();return {s:snap(),game:t.Rng.game}};
  {const st=N({preset:'normal',seed:'s2'}),a=begin(st,11),b=begin(st,12),c=begin(t.classicSettings(),11),d=begin(t.classicSettings(),12);

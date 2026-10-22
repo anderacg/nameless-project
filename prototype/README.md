@@ -749,8 +749,7 @@ those later phases read marked later). Classic locks everything that changes the
 Every change is clamped at once, with a note when a limit moved a value. Right: the preview, your start city ringed: the quick
 sketch (`worldgen.js` `genSketch`: the real land field and climate noise at 256 points across, mountains, rivers and holdings
 approximate; about 70 ms at any size), redrawn 200 ms after a change, or the real map when it is made (the classic world the
-page forged, a Full preview: the real generator behind the loading overlay, which Forge the world then uses); Reroll,
-Regenerate, the counts and the time it takes to forge here (measured once, kept in `localStorage`). A generated world but
+page forged); no buttons there (the owner, 2026-10-22: Random is the seed's own, Enter in the seed redraws); the counts and the time it takes to forge here (measured once, kept in `localStorage`). A generated world but
 Classic starts as its seed says (`session.js` `seededStart`: its first sites, herds, bands and beasts with the game's number 0
 and Math.random the 'start' stream's), so one code starts one world; what happens in play stays random. The Esc menu's World
 button opens the World page (every setting, the world code with Copy, what it holds); a save's line reads "Redwater · Large ·

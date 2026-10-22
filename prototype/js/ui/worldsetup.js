@@ -9,9 +9,8 @@
        Classic locks all but monsters, bandits and your start (greyed). Every change clamped at once (normSettings), a note where
        a limit moved a value or why it stops there;
      right: the preview: the quick sketch (worldgen.js genSketch), redrawn WSETUP.wait ms after a change, or the real map when it
-       is made (the classic world the page forged, the world in, a full preview); your start city ringed. Reroll (a new seed),
-       Regenerate (the seed typed), the counts, the time it takes to forge here, Full preview (the real generator behind the
-       loading overlay; Forge the world then uses it, begin: worldPreviewTake);
+       is made (the classic world the page forged, the world in); your start city ringed; the counts, the time it takes to forge
+       here. (No buttons there, the owner 2026-10-22: Random is the seed's own; Enter in the seed redraws the sketch.)
      bottom bar: Back (the New game page) on the left, Forge the world on the right. Esc: Back.
    WSETUP keeps the choice while the page is open (a fresh seed each New game); begin reads it (newWorldSettings) */
 const WSETUP={past:null,s:null,typed:null,adv:false,custom:false,full:null,note:'',timer:0,wait:200,pics:{},last:null,
@@ -79,8 +78,7 @@ function wsRender(focus){const S=WSETUP,s=S.s,cl=s.preset==='classic',D=s.w*s.h,
     '<button class="btn sm ws-adv" type="button" data-act="ws-adv" aria-expanded="'+S.adv+'">Advanced '+(S.adv?'▾':'▸')+'</button>'+
     (S.adv?'<div class="ws-advs">'+adv+'<p class="muted">Settings marked later come with later phases: they are kept in the world code now.</p></div>':'')+'</div>'+
     '<div class="ws-view"><canvas class="ws-cv" width="2" height="2" aria-label="The world, seen from above"></canvas><p class="muted ws-cap"></p>'+
-      '<div class="btns"><button class="btn sm" type="button" data-act="ws-reroll"'+(cl?' disabled':'')+'>Reroll</button><button class="btn sm" type="button" data-act="ws-regen"'+(cl?' disabled':'')+'>Regenerate</button>'+
-      '<button class="btn sm" type="button" data-act="ws-full"'+(wsReal(s)?' disabled':'')+'>Full preview</button></div><p class="ws-counts"></p><p class="muted ws-time"></p></div></div>'+
+      '<p class="ws-counts"></p><p class="muted ws-time"></p></div></div>'+
     nav(['ws-back',null,'Back'],['ws-forge',null,'Forge the world']));
   panel.classList.add('wide','wsp');const sc2=panel.querySelector('.ws-set');if(sc2)sc2.scrollTop=top;
   if(focus){const b=panel.querySelector(focus);if(b&&!b.disabled)b.focus({preventScroll:true})}
@@ -129,13 +127,11 @@ onAct('ws-',(a,arg)=>{const S=WSETUP;if(G.menu!=='world'||!S.s)return;const s=S.
   if(a==='ws-back'){clearTimeout(S.timer);return showTitle('new')}
   if(a==='ws-forge'){clearTimeout(S.timer);wsSeedNow();return begin(S.past,S.s)}
   if(a==='ws-copy'){const c=worldCode(s);copyText(c).then(ok=>{if(G.menu!=='world')return;S.note=ok?'World code '+c+' copied.':'Could not copy it: the code is '+c+'.';wsRender(f)});return}
-  if(a==='ws-full'){wsSeedNow();const s1=S.s,t0=performance.now();clearTimeout(S.timer);
-    return runSteps('Previewing the world…',genWorldSteps(s1),{back:['Back to the world settings',()=>{G.mode='title';G.menu='world';wsRender()}]}).then(r=>{forgeTimed(s1,performance.now()-t0);S.full={key:settingsKey(s1),r};S.pics={};if(G.menu==='world'){wsRender();wsPreview(true)}},()=>{})}
   if(a==='ws-adv'){S.adv=!S.adv;return wsRender(f)}
   if(a==='ws-preset'&&WS_PRESET[arg]&&arg!=='custom'){S.custom=false;S.typed=null;S.note='';S.s=arg==='classic'?classicSettings():normSettings({...defaultSettings(arg),seed:cl||!s.seed?freshSeed():s.seed});S.full=null;return wsRender(f)}
   if(a==='ws-set'){const [k,v0]=String(arg).split(':'),v=k==='seasonal'?v0==='true':v0;if(!SETTING_CHOICES[k]||cl&&!CLASSIC_FREE.includes(k))return;wsChange({[k]:v});return wsRender(f)}
   if(cl)return;// (the rest change the map: Classic keeps them)
-  if(a==='ws-random'||a==='ws-reroll'){S.typed=null;wsChange({seed:freshSeed()});return wsRender(f)}
+  if(a==='ws-random'){S.typed=null;wsChange({seed:freshSeed()});return wsRender(f)}
   if(a==='ws-regen'){wsSeedNow();S.pics={};wsRender(f);return wsPreview(true)}
   if(a==='ws-size'){const z=WS_SIZE[arg],d=densityOf(s)||'normal';S.custom=arg==='custom';if(!z)return wsRender(f);const o={w:z[0],h:z[1]};o.holdings=densityHoldings({...s,...o},d);wsChange(o);return wsRender(f)}
   if(a==='ws-w'||a==='ws-h'){const k=a==='ws-w'?'w':'h',d=densityOf(s),o={[k]:s[k]+(+arg)*WORLD_LIMITS.step};

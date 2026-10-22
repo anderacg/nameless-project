@@ -384,7 +384,7 @@ The preview is a low-resolution map beside the settings, so you see the world be
 - **A quick sketch, ≤ 150 ms at any size**, redrawn 200 ms after any change.
   - **How:** the generator's own noise fields (land, elevation, temperature, moisture, warps) are **sampled at a coarse grid** of 256 points across. They are the same continuous functions of world position, so coast, mountains and climates in the sketch are the real ones at those points.
   - **What is approximate:** rivers, wild regions and holdings come from a cheap pass on that coarse grid (drainage on coarse elevation; capitals and holdings by coarse suitability). They are marked "sketch: rivers and holdings approximate".
-- **Buttons:** **Reroll seed** (a new random seed) and **Regenerate** (redraw after typing a seed).
+- **Buttons:** ~~Reroll seed, Regenerate, Full preview~~: **removed (owner, 2026-10-22)**: Random beside the seed does what Reroll did; the sketch redraws by itself after every change (Enter in the seed redraws at once); the full preview drew behind the window, where it could not be seen.
 - **Line:** expected counts ("37 holdings · 24 hamlets · 11 rivers · 74% land") and the generation time for this size on this device ("about 2 s"; measured once and remembered in `localStorage` as a convenience).
 - **Full preview (optional):** a button runs the real generator with progress (2 / 4.5 / 12 s by size) and replaces the sketch with the real map at 1 px per 2–4 tiles. **Start reuses that world** instead of generating again.
 - **On Start without a full preview:** the "Forging the world…" screen (§3.7) runs the real generator and shows the real map when it is done.
