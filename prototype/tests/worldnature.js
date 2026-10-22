@@ -4,8 +4,9 @@
 // again, and told apart by their shapes, not their colours alone); the map's woods, hills and ranges are painted with them; nothing
 // is painted on a road, a holding, an estate or water (but lily pads and floes); painting reads no Math.random and changes no map
 // data; the fen's sparse mangroves and the frost's snow blended into the grass (the owner's play-test, 2026-10-22); each climate's
-// own trees, a few of them leafless or dead, and the swamp's forest of bog trees over its pools (the second play-test); and how long
-// the world takes to paint.
+// own trees, a few of them leafless or dead, and the swamp's forest of bog trees over its pools (the second play-test); the swamp's
+// and the desert's edges blended as the frost's, their small things mixed across them, and a wood's fringe of undergrowth and trees
+// thinning out (the third); and how long the world takes to paint.
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);
 try{
  const t=T,TILE=t.TILE,MW=t.MW,MH=t.MH,Wp=MW*TILE,Hp=MH*TILE,CL=['grass','frost','desert','swamp'];t.act('begin','soldier');t.G.quietEvents=true;
@@ -91,6 +92,35 @@ try{
   ok(B[-1].length>20&&B[1].length>20&&B[4].length>20&&M[0]<.01&&M[-1]>.03&&M[-1]<.45&&M[1]>M[-1]+.15&&M[1]<.95&&M[4]>.93,'the frost’s snow blends into the grass: snow on '+(M[0]*100).toFixed(1)+'% of the grass far from it, '+(M[-1]*100).toFixed(0)+'% of the grass beside it ('+B[-1].length+' tiles: patches), '+(M[1]*100).toFixed(0)+'% of the frost at its edge ('+B[1].length+'), '+(M[4]*100).toFixed(0)+'% 4 tiles in ('+B[4].length+')');
   let lo=0,hi=0;for(let i=0;i<MW*MH;i++){if(t.climate[i]===F&&S[i]<.55)lo++;if(t.climate[i]!==F&&S[i]>.45)hi++}
   ok(!lo&&!hi,'the snow’s cover a tile: every frost tile’s at least .55, every other’s at most .45 ('+lo+', '+hi+' off)')}
+ // ---- the swamp's and the desert's edges blended as the frost's (gfx/worldart.js coverOf, landRGB; the owner's third play-test: no
+ //      blocks between climates): each climate's own ground (the swamp's peat green, the desert's sand) in patches over the grass beside
+ //      it, more over its own edge, whole deep in it, none on grass far from it; their covers a tile as the snow's (own .55 or more)
+ {const d=cv.getContext('2d').getImageData(0,0,Wp,Hp).data,G=t.CLIMS.indexOf('grass'),PL=t.WorldArt.ensure(),res=[];
+  const IS={desert:(r,g,b)=>r>185&&g>150&&b<150&&r-b>60,swamp:(r,g,b)=>g-r<22&&g<112&&b<70};
+  const near=(tx,ty,r,c)=>{for(let b=-r;b<=r;b++)for(let a=-r;a<=r;a++){const x=tx+a,y=ty+b;if(x>=0&&y>=0&&x<MW&&y<MH&&t.climate[y*MW+x]===c)return true}return false};
+  for(const cn of ['desert','swamp']){const C=t.CLIMS.indexOf(cn),S=PL.cover[cn],is=IS[cn],B={'-1':[],1:[],4:[],0:[]};
+   const share=(tx,ty)=>{let n=0,m=0;for(let y=1;y<TILE;y+=2)for(let x=1;x<TILE;x+=2){const o=((ty*TILE+y)*Wp+tx*TILE+x)*4;m++;if(is(d[o],d[o+1],d[o+2]))n++}return n/m};
+   for(let ty=6;ty<MH-6;ty++)for(let tx=6;tx<MW-6;tx++){let open=true;for(let b=-1;b<=1&&open;b++)for(let a=-1;a<=1;a++)if(t.tiles[(ty+b)*MW+tx+a]!==t.T_OPEN){open=false;break}if(!open)continue;
+    const c=t.climate[ty*MW+tx];if(c===G&&near(tx,ty,1,C)&&!near(tx,ty,4,t.CLIMS.indexOf('frost')))B[-1].push(share(tx,ty));else if(c===C&&near(tx,ty,1,G))B[1].push(share(tx,ty));else if(c===C&&!near(tx,ty,4,G))B[4].push(share(tx,ty));else if(c===G&&!near(tx,ty,6,C)&&B[0].length<4000)B[0].push(share(tx,ty))}
+   const mean=a=>a.reduce((q,v)=>q+v,0)/Math.max(1,a.length),M={};for(const k in B)M[k]=mean(B[k]);let lo=0,hi=0;for(let i=0;i<MW*MH;i++){if(t.climate[i]===C&&S[i]<.55)lo++;if(t.climate[i]!==C&&S[i]>.45)hi++}
+   const good=B[-1].length>10&&B[1].length>10&&M[0]<.01&&M[-1]>.03&&M[-1]<.45&&M[1]>M[-1]+.15&&(!B[4].length||M[4]>M[1])&&!lo&&!hi;
+   res.push([good,cn+': '+(M[0]*100).toFixed(1)+'% of the grass far from it, '+(M[-1]*100).toFixed(0)+'% beside it ('+B[-1].length+' tiles), '+(M[1]*100).toFixed(0)+'% of its edge ('+B[1].length+'), '+(M[4]*100).toFixed(0)+'% 4 tiles in ('+B[4].length+'); covers off '+lo+', '+hi])}
+  ok(res.every(r=>r[0]),'the swamp’s and the desert’s ground blend into the grass in patches, as the frost’s: '+res.map(r=>r[1]).join('; '))}
+ // ---- their small things mixed across the edge (PX.worldNatureMix, PX.WN_MIX): a grass tile beside the swamp or the desert has
+ //      theirs now and then (pools, reeds, moss; ripples, cacti, scrub), fewer farther out, none far off; theirs the grass's at their edge
+ {const PN=t.WorldArt.ensure().nature,R={};
+  for(const cn of ['swamp','desert']){const C=t.CLIMS.indexOf(cn),G=t.CLIMS.indexOf('grass'),dist=(tx,ty,c)=>{for(let r=1;r<=6;r++)for(let b=-r;b<=r;b++)for(let a=-r;a<=r;a++){const x=tx+a,y=ty+b;if(x>=0&&y>=0&&x<MW&&y<MH&&t.climate[y*MW+x]===c)return r}return 9};
+   const n=[[0,0],[0,0],[0,0],[0,0]];for(let ty=0;ty<MH;ty++)for(let tx=0;tx<MW;tx++){const c=t.climate[ty*MW+tx];if(t.tiles[ty*MW+tx]!==t.T_OPEN)continue;
+    if(c===G){const r=dist(tx,ty,C),k=r===1?0:r===3?1:r>6?2:-1;if(k<0)continue;n[k][0]++;if(PX.worldNatureMix(PN,'grass',tx,ty)===cn)n[k][1]++}
+    else if(c===C&&dist(tx,ty,G)===1){n[3][0]++;if(PX.worldNatureMix(PN,cn,tx,ty)==='grass')n[3][1]++}}
+   R[cn]=n.map(([a,b])=>a?b/a:0)}
+  ok(['swamp','desert'].every(c=>R[c][0]>.15&&R[c][0]<.6&&R[c][1]<R[c][0]&&R[c][2]===0&&R[c][3]>.1&&R[c][3]<.6),'the swamp’s and the desert’s small things mixed across their edge: '+['swamp','desert'].map(c=>c+' '+R[c].slice(0,3).map(v=>Math.round(v*100)+'%').join(' / ')+' of the grass 1, 3 and 7+ tiles off, the grass’s on '+Math.round(R[c][3]*100)+'% of its edge').join('; '))}
+ // ---- a wood's fringe (PX.WN_FRINGE): open tiles round a wood stand with undergrowth and trees, thinning out (what stands, from the
+ //      chunks' standing indexes: things a tile, beside a wood, two tiles off it, far from any)
+ {const n=[[0,0],[0,0],[0,0]],at=new Float32Array(MW*MH),F=(tx,ty,r)=>{for(let b=-r;b<=r;b++)for(let a=-r;a<=r;a++){const x=tx+a,y=ty+b;if(x>=0&&y>=0&&x<MW&&y<MH&&t.tiles[y*MW+x]===t.T_FOREST)return true}return false};
+  for(const c of t.WorldArt.cnt.values()){const S=c.n.stand,E=S.E;for(let k=0;k<S.n;k++){const o=k*4,ref=E[o+2];if(ref<0)continue;const sp=PX.WN_SPR[ref],x=S.X+E[o]+sp.ax,y=S.Y+E[o+3];if(x<S.X||y<S.Y||x>=S.X+S.w||y>=S.Y+S.h)continue;at[(y>>4)*MW+(x>>4)]++}}
+  for(let ty=0;ty<MH;ty++)for(let tx=0;tx<MW;tx++){const i=ty*MW+tx;if(t.tiles[i]!==t.T_OPEN||t.CLIMS[t.climate[i]]!=='grass'||t.CLEAR.at(tx*TILE+8,ty*TILE+8))continue;const k=F(tx,ty,1)?0:F(tx,ty,2)?1:F(tx,ty,5)?-1:2;if(k<0)continue;n[k][0]++;n[k][1]+=at[i]}
+  const m=n.map(([a,b])=>a?b/a:0);ok(n[0][0]>50&&n[1][0]>50&&m[0]>m[1]&&m[1]>2.5*m[2],'a wood’s fringe: open grass beside a wood stands with '+m[0].toFixed(2)+' things a tile (undergrowth and trees), two tiles off '+m[1].toFixed(2)+', far from any wood '+m[2].toFixed(2))}
  // ---- the oasis: palms only by a small water in the desert
  {let near=0,far=0;const P2=new Set();for(let v=0;v<4;v++){const s=PX.worldTree('desert','palm',v,0);for(let i=0;i<s.a.length;i++)if(s.a[i]===1)P2.add(s.rgb[i*3]+','+s.rgb[i*3+1]+','+s.rgb[i*3+2])}
   const d=cv.getContext('2d').getImageData(0,0,Wp,Hp).data;

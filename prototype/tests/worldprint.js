@@ -66,7 +66,18 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 //  nine are as before. Were G1 94e87250, G2 6bc88128, G3 0240c3fb, G4 ceb55e1f, G5 4ea4e263, G6 fb7895ea, G7 9517c6f9, G8 f540d98e,
 //  GB2 f56d6d82)
 // (G5 and G6 with both the second play-test's art (J) and its roads and lots (K): measured together at the merge: 65f440b9, 57cf6053)
-const GEXPECT={W1:'81ce84b1',W2:'5df96192',W3:'a3673959',W4:'3ffcfb90',W5:'65f440b9',W6:'57cf6053',W7:'9d580ef9',W8:'0f487dba',B2:'dc1b8829'};
+// (G3, G5-G8 and GB2 re-recorded 2026-10-22, on purpose, the owner's third play-test (agent L: gfx/worldart.js, engine/worldnature.js).
+//  G5, G6: the climates' edges blended as the frost's (coverOf, landRGB: the swamp's wet and the desert's dry ground laid over the
+//  grass in patches thinning out, the 3-px jittered blocks between climates gone), their small things mixed across the edge
+//  (PX.worldNatureMix), a wood's fringe of undergrowth and trees (PX.WN_FRINGE), fords as real ones (the bed showing through the
+//  shallows, ripples, rocks scattered, a track up each bank, reeds and ice by climate); G6 moved at all three spots by day and night
+//  (to abd942ff 657754a3 a16ddcae a37cb05d 68c9f1ec b80d326c). G3 and with it G7, G8 and GB2: the roads' art meeting agent K's
+//  roads, which lots.js roadPaint reads (artRoadMarks): a fork's end carried up to GENART.join 2 tiles (was .75) onto the way it
+//  joins, a road turning back off a bridge running the whole lead out first, a road leaving a ford sideways starting in its
+//  shallows (offDeck), so a few lots and fields stand otherwise. Checked: with those three as before (join .75, no turn-back lead,
+//  offDeck as before) G3, G7, G8 and GB2 are as before (G5 294ab9d0, G6 7c2e1e64: the art). Was G3 a3673959, G5 65f440b9, G6
+//  57cf6053, G7 9d580ef9, G8 0f487dba, GB2 dc1b8829; G1, G2, G4 and the sums unchanged)
+const GEXPECT={W1:'81ce84b1',W2:'5df96192',W3:'ca3464b3',W4:'3ffcfb90',W5:'00f1be5d',W6:'7c2e1e64',W7:'e73ec214',W8:'7afe2f79',B2:'65d5ff21'};
 // (the random presets' sums re-recorded 2026-10-22, on purpose, Phase 2b: the owner's "the holdings seem a bit too much": Normal
 //  27 holdings by default (was 37), Large 40 (was 55), so their settings (in the sum) and placement change; with them two clamps
 //  of stage 7 the fewer holdings needed (worldplace.js): a port only on the open sea (placeOpen: a strait a road bridged had left
@@ -88,7 +99,12 @@ const GEXPECT={W1:'81ce84b1',W2:'5df96192',W3:'a3673959',W4:'3ffcfb90',W5:'65f44
 //  is as before; the lots' road rule (lots.js roadPaint) and the woods' second pass for houses leave today's lots as they were (W3).
 //  Was W7 055dd3a6; W1-W6, W8 and B2 unchanged)
 const SUMS={classic:'e9ff637f','Normal s1':'edfd56e4','Normal s2':'fdb0fae4','Normal s3':'28976823','Large s1':'7df7120f'};
-const EXPECT={W1:'65e24662',W2:'2b49a168',W3:'dc546553',W4:'46450e62',W5:'9f99c580',W6:'9e08cef8',W7:'2b496c30',W8:'742df600',B2:'290c6cb7'};// (at 0a42712; B2 at R3; W6-W8 at Phase 1; W6 at depth, smooth walking and pasture herds and label layout; W7, B2 at save v3)
+// (W5, W6 re-recorded 2026-10-22, on purpose, the owner's third play-test (agent L), what of it today's map shares (no fords): the
+//  climates' edges blended as the frost's (gfx/worldart.js coverOf, landRGB: the swamp's and the desert's ground over the grass in
+//  patches thinning out, no 3-px blocks), their small things mixed across the edge and a wood's fringe (engine/worldnature.js
+//  PX.worldNatureMix, PX.WN_FRINGE). W6 moved at all three spots by day and night (958eacf8 6d74b55d f2b10c40 ec778995 9e82f728
+//  1158f5b7 to fbf2307d 8f6a8e60 402e3ff4 29e66196 a1ba5ffb 732c8bcf). Was W5 9f99c580, W6 9e08cef8; W1-W4, W7, W8 and B2 unchanged)
+const EXPECT={W1:'65e24662',W2:'2b49a168',W3:'dc546553',W4:'46450e62',W5:'0c9b579e',W6:'7c1b6803',W7:'2b496c30',W8:'742df600',B2:'290c6cb7'};// (at 0a42712; B2 at R3; W6-W8 at Phase 1; W6 at depth, smooth walking and pasture herds and label layout; W7, B2 at save v3)
 // (W5, W6 re-recorded 2026-10-22, on purpose, the owner's play-test (the same climates on today's map): the frost's snow blended
 //  into the grass (gfx/worldart.js snowCover, landRGB: its cover rising over the frost's edge and with height, thinning out in
 //  patches over the grass beside it) and the fen's sparse mangroves (engine/worldnature.js FEN). W6 moved at the first and third

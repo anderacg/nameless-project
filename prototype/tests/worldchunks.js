@@ -11,9 +11,13 @@
 //  mangroves (gfx/worldart.js snowCover, engine/worldnature.js FEN); was 963ff854)
 //  Again 2026-10-22 with W5, on purpose, the owner's second play-test: the water's tones across a climate's edge, the estates'
 //  ground on its land, the trees by climate and the swamp's bog forest; was d68036d6)
+//  Again 2026-10-22 with W5, on purpose, the owner's third play-test: the climates' edges blended as the frost's (the swamp's and
+//  the desert's ground over the grass in patches thinning out, their small things mixed across), a wood's fringe; was 2f990c2d)
 // With -Gen also the generated world's roads, crossings and fords as the owner's play-test asked (2026-10-22): every road's end at
 // a holding led into its gate, a bridge's deck met on its axis by a ramp, a fork's end on the way it joins, a ford's shallows soft;
-// and as the second play-test asked, the shores curves within a few px of their tiles, the water's tones shading across a climate's edge.
+// and as the second play-test asked, the shores curves within a few px of their tiles, the water's tones shading across a climate's edge;
+// and as the third asked, the roads' art meeting the new roads (forks and bridges), each ford a real one (its bed showing through
+// the shallows, a track up each bank).
 // On the map the scripts leave at load (no begin), as W5's picture. With -Gen (the generated classic seed, its water and roads
 // painted by the generated world's art) the same checks, its picture's hash an INFO line; then the prefetch at Large and Huge:
 // walking across each at Travel fast's pace (8x: a chunk in some 420 frames), 4 ms of painting a frame, the ring ahead is ready.
@@ -31,7 +35,7 @@ try{
    'the plan comes first, painting nothing: isClear reads its clear ground (a holding and its gate clear, off the map not) ('+planMs.toFixed(0)+' ms)');
  // ---- one window: the whole map, no seam anywhere (today's one canvas)
  const r1={},one=paint(0,0,W,H,r1),ref=img(one,0,0,W,H),h1=fnv(ref);
- if(t.WORLD.gen)info('the generated classic seed painted as one window: '+h1+' ('+r1.wall.toFixed(0)+' ms)');else ok(h1==='2f990c2d','the map painted as one window (no seam anywhere: today\'s one canvas) is the baseline picture ('+h1+', W5 at b94cbe2: tests/worldprint.js; '+r1.wall.toFixed(0)+' ms)');
+ if(t.WORLD.gen)info('the generated classic seed painted as one window: '+h1+' ('+r1.wall.toFixed(0)+' ms)');else ok(h1==='a96d5d35','the map painted as one window (no seam anywhere: today\'s one canvas) is the baseline picture ('+h1+', W5 at b94cbe2: tests/worldprint.js; '+r1.wall.toFixed(0)+' ms)');
  // ---- stitched: every chunk into the whole picture, and no seam round any border
  q=performance.now();const whole=WA.whole(),wMs=performance.now()-q,nd=diff(img(whole,0,0,W,H),ref);
  ok(nd===0&&whole.width===W&&whole.height===H,cols*rows+' chunks of '+CS+' px ('+cols+' x '+rows+') stitched (worldCv) are that picture pixel for pixel ('+nd+' differ; '+wMs.toFixed(0)+' ms)');
@@ -117,10 +121,20 @@ try{
     for(let k=0;k<S.length;k+=5){const a=S[k],b=S[k+1],vx=S[k+2]-a,vy=S[k+3]-b,L=vx*vx+vy*vy;if(Math.hypot(a-x,b-y)<.01||Math.hypot(S[k+2]-x,S[k+3]-y)<.01)continue;const tt=L?Math.max(0,Math.min(1,((x-a)*vx+(y-b)*vy)/L)):0;best=Math.min(best,Math.hypot(a+vx*tt-x,b+vy*tt-y))}
     if(best>1.5)loose++}
   ok(all&&!loose,'forks and junctions join: '+all+' road ends that meet another road, each on its way ('+loose+' short of it)');
-  // (every ford: shallow on its line, fading out across it (soft, no square edge), the river beyond)
-  let fd=0,soft=0;for(const [ax,ay,bx,by] of P.fords){fd++;const f=fd,mx=(ax+bx)/2,my=(ay+by)/2,hor=Math.abs(ay-by)<1,s=[0,2,4,6,8,10,12,14,16,18,20].map(d=>t.fordAt(P,f,Math.floor(hor?mx:mx+d),Math.floor(hor?my+d:my)));
-    if(s[0]>.4&&s[0]>s[6]&&!s[10]&&s.filter(v=>v>0&&v<1).length>=2)soft++}
-  ok(fd===t.WM.crossings.filter(c=>c.kind==='ford').length&&soft===fd,fd+' fords: shallow on their line, fading out over some '+G.ford.soft+' px across it ('+soft+' soft)');
+  // (every ford: shallow on its line (its bar wandering a few px off it, GENART.ford.bend), fading out across it either side (soft,
+  //  no square edge), the river beyond)
+  let fd=0,soft=0;for(const [ax,ay,bx,by] of P.fords){fd++;const f=fd,mx=(ax+bx)/2,my=(ay+by)/2,hor=Math.abs(ay-by)<1,s=[];for(let d=-26;d<=26;d+=2)s.push(t.fordAt(P,f,Math.floor(hor?mx:mx+d),Math.floor(hor?my+d:my)));
+    const n=s.length,c=n>>1,top=Math.max(...s.slice(c-2,c+3));if(top>.4&&top>s[c-6]&&top>s[c+6]&&!s[0]&&!s[n-1]&&s.filter(v=>v>0&&v<1).length>=4)soft++}
+  ok(fd===t.WM.crossings.filter(c=>c.kind==='ford').length&&soft===fd,fd+' fords: shallow on their line, fading out over some '+G.ford.soft+' px either side of it ('+soft+' soft)');
+  // (every ford as a real one (the owner's third play-test): its shallows told from the river beside them (the bed showing through:
+  //  their mean colour some way off the river's), a worn track on its line up each bank, past the end tile's middle, kept clear)
+  {let bed=0,trk=0,n=0;const px=(x,y)=>{const o=(y*W+x)*4;return[ref[o],ref[o+1],ref[o+2]]};
+   for(const [ax,ay,bx,by] of P.fords){const f=++n,L=Math.hypot(bx-ax,by-ay),ux=(bx-ax)/L,uy=(by-ay)/L,a=[0,0,0],b=[0,0,0];let na=0,nb=0;
+    for(let s2=8;s2<=L-8;s2+=2)for(let d=-40;d<=40;d++){const x=Math.floor(ax+ux*s2-uy*d),y=Math.floor(ay+uy*s2+ux*d);if(!t.wpx(P.wk,x,y))continue;const v=t.fordAt(P,f,x,y),c=px(x,y);
+     if(v>.8){for(let k=0;k<3;k++)a[k]+=c[k];na++}else if(!v&&Math.abs(d)>20){for(let k=0;k<3;k++)b[k]+=c[k];nb++}}
+    if(na&&(!nb||[0,1,2].reduce((q,k)=>q+Math.abs(a[k]/na-b[k]/nb),0)>30))bed++;
+    for(const e of [-1,1]){const x=Math.floor((e<0?ax:bx)+e*ux*6),y=Math.floor((e<0?ay:by)+e*uy*6);if(Math.max(...[-1,0,1].map(d=>t.fordTrack(P,f,x-uy*d,y+ux*d)))>.5&&P.clear.at(x,y))trk++}}
+   ok(n&&bed===n&&trk===2*n,n+' fords: the shallows told from the river beside them (the bed showing through) on '+bed+', a worn track up each bank, kept clear, at '+trk+' of '+2*n+' ends')}
   // (the shores are curves (wpx, the second play-test): water and land drawn by the water's field, not the tiles' squares, yet
   //  never deep in a tile of the other kind (passing stays by tile): a staircase of tiles reads as a slope, a lake's corner an arc)
   {const K=P.wk,MW=t.MW,MH=t.MH,lim=Math.ceil(5+G.wob);let edgeT=0,off=0,deep=0;

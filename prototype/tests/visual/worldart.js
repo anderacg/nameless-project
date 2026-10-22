@@ -7,11 +7,14 @@
 // (the water across a climate's edge), the swamp's open ground and its forest, each climate's wood, a lake, a river's bend.
 // part=3: each climate's trees (engine/worldnature.js PX.WORLD_TREES), each species' four on its climate's ground at x6, then deep
 // in a wood (dimmer).
+// part=4 (the third play-test, 2026-10-22): fords in each climate (a dirt track down each bank, the shallows sandy or gravelly with
+// ripples, rocks scattered: grass, desert, swamp, frost), the grass meeting the swamp and the desert (the covers: wet and dry), a
+// wood's edge on the grass; each border again as the whole view.
 // part=1 (the first, 2026-10-22): roads into a holding's gate (Millbrook's, and one coming from behind its centre), roads onto a
 // stone and a wooden bridge's deck, a ford, a frost edge (grass to snow), the swamp's trees and a fork; the frost edge and the swamp
 // again as the whole view.
 // Run by name with the flag on: Ashmark.html?test=visual/worldart&gen=1 (&part=1), then screenshot it (part 2: a window 1200 x
-// 4660; part 3: 950 x 2100; part 1: 1200 x 2340). The "before" pictures are this scene run on the commit before the fix.
+// 4660; part 3: 950 x 2100; part 1: 1200 x 2340; part 4: 1200 x 2000). The "before" pictures are this scene run on the commit before the fix.
 window.RUN=()=>{const t=T,o=[],G=t.G,P=t.P,W=t.W,TILE=t.TILE,Z=3,part=+(new URLSearchParams(location.search).get('part')||2);
  try{
   if(part===3){const CL=['grass','frost','desert','swamp'],BG={grass:'#54803a',frost:'#d6dee8',desert:'#d6b668',swamp:'#48583a'},Z=6,rows=[];for(const c of CL)for(const sp of PX.WORLD_SPECIES[c])rows.push([c,sp]);
@@ -39,7 +42,17 @@ window.RUN=()=>{const t=T,o=[],G=t.G,P=t.P,W=t.W,TILE=t.TILE,Z=3,part=+(new URLS
   const noise=()=>best((x,y)=>kind(x,y)!==t.T_WATER?-1e9:Math.min(count(x,y,3,(a,b)=>cl(a,b)==='frost'),count(x,y,3,(a,b)=>cl(a,b)!=='frost'))+.4*count(x,y,3,(a,b)=>kind(a,b)===t.T_WATER));
   // (a ford in climate c; in the frost, where it has the most frost round it, 6 of its 7 x 7 tiles at least: few lie in it)
   const fordIn=c=>{if(c!=='frost')return xing(x=>x.kind==='ford'&&cl(...mid(x))===c);let b=null,bn=5;for(const x of t.WM.crossings){if(x.kind!=='ford')continue;const m=mid(x),n=count(m[0],m[1],3,(a,y)=>cl(a,y)==='frost');if(n>bn){bn=n;b=m}}return b};
-  const PIECES=part===1?(()=>{const mb=t.townBy('Millbrook'),
+  // (a border between the grass and climate c on open ground: as much of each within 4 tiles, little water or wood; a wood's edge on
+  //  the grass: as much wood as open ground round it)
+  const open=(a,b)=>kind(a,b)===t.T_OPEN||kind(a,b)===t.T_HILL;
+  const border=c=>()=>best((x,y)=>cl(x,y)!==c&&cl(x,y)!=='grass'||!open(x,y)?-1e9:Math.min(count(x,y,4,(a,b)=>cl(a,b)===c&&open(a,b)),count(x,y,4,(a,b)=>cl(a,b)==='grass'&&open(a,b)))-.5*count(x,y,4,(a,b)=>kind(a,b)===t.T_WATER));
+  const edge=()=>best((x,y)=>cl(x,y)!=='grass'||kind(x,y)!==t.T_FOREST?-1e9:Math.min(count(x,y,3,(a,b)=>kind(a,b)===t.T_FOREST),count(x,y,3,(a,b)=>cl(a,b)==='grass'&&open(a,b)))-count(x,y,3,(a,b)=>kind(a,b)===t.T_ROAD||kind(a,b)===t.T_WATER)-count(x,y,5,(a,b)=>cl(a,b)!=='grass'));
+  const PIECES=part===4?[
+   ['a ford on the grass',()=>fordIn('grass')],['a ford in the desert',()=>fordIn('desert')],
+   ['a ford in the swamp',()=>fordIn('swamp')],['a ford in the frost',()=>fordIn('frost')],
+   ['the grass meeting the swamp',border('swamp')],['the grass meeting the desert',border('desert')],
+   ['a wood\'s edge on the grass',edge],['the grass meeting the swamp, the whole view',border('swamp'),1],
+   ['the grass meeting the desert, the whole view',border('desert'),1],['a wood\'s edge, the whole view',edge,1]]:part===1?(()=>{const mb=t.townBy('Millbrook'),
     behind=()=>{for(const h of t.TOWNS)for(const r of t.WM.roads||[])for(const l of r.line||[])for(const [e,n] of [[0,2],[l.length-2,l.length-4]]){if(n<0||n>=l.length)continue;
       if(Math.abs(l[e]-h.tx)<.01&&Math.abs(l[e+1]-(h.ty+1))<.01&&l[n+1]<h.ty)return h}return t.TOWNS.find(h=>h.kind==='town')},bh=behind();
     const L=[

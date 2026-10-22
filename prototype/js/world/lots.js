@@ -58,7 +58,7 @@ function roadPaint(){
   if(ROAD_PAINT)return ROAD_PAINT;const B=ROAD_PAINT=new Uint8Array(MW*MH),r=LOT_ROAD;
   // (a point of the road's middle: the middle of a square the art keeps clear round it)
   const at=(x,y,w,h)=>{const cx=x+(w>>1),cy=y+(h>>1);for(let ty=Math.max(0,Math.floor((cy-r)/TILE));ty<=Math.min(MH-1,Math.floor((cy+r)/TILE));ty++)for(let tx=Math.max(0,Math.floor((cx-r)/TILE));tx<=Math.min(MW-1,Math.floor((cx+r)/TILE));tx++)B[ty*MW+tx]=1};
-  if(WM.gen!=='classic-0'&&typeof artGenPlan==='function')artGenPlan({tramples:[]},at);
+  if(WM.gen!=='classic-0'&&typeof artRoadMarks==='function')artRoadMarks(at);
   else if(typeof roadStamps==='function'){const P={towns:new Set(TOWNS.map(t=>t.ty*MW+t.tx)),shift:new Set(TOWNS.flatMap(t=>[t.ty*MW+t.tx,(t.ty+1)*MW+t.tx]))};
     for(let ty=0;ty<MH;ty++)for(let tx=0;tx<MW;tx++)roadStamps(P,tx,ty,0,(x,y,w)=>at(x,y,w,w))}
   for(let i=0;i<MW*MH;i++)if(tiles[i]===T_ROAD)B[i]=1;
