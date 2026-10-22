@@ -151,7 +151,7 @@ class Stray extends Encounter{
   }
 }
 defineKinds('encounter',{trigger:'travelHour'},{
-  traveller:{n:'Wounded traveller',ico:'wounded',w:2,ok:()=>true,on:'road',beh:'stay',ends:'die',call:'Help! Over here!',hear:'Someone calls out from the road to the {d}.',trace:'body',tip:'Lying by the road',
+  traveller:{n:'Wounded traveller',ico:'wounded',w:2,ok:()=>true,on:'byroad',beh:'stay',ends:'die',call:'Help! Over here!',hear:'Someone calls out from the road to the {d}.',trace:'body',tip:'Lying by the road',
     scene:e=>e.healed?[['walk','healed',0,0]]:[['down','traveller',0,0,{blood:1}]],// (tended: up on his feet, bandaged, and on his way)
     text:()=>'A wounded traveller lies by the road, robbed and left for dead. He clutches a purse the bandits missed.',
     facts:e=>[insight(['badly hurt','he will not last the day without help','he has about '+Math.max(1,Math.round(e.end-roadNow()))+' hours left'],'know how long he has'),'a purse: about 20 gold'],
@@ -212,7 +212,7 @@ defineKinds('encounter',{trigger:'travelHour'},{
         out:e=>({gold:-15,troops:{[e.unit]:2},say:'Two new '+ST[e.unit].n.toLowerCase()+'s fall in line.'})},
       {icon:'prisoners',label:'Turn them in',need:e=>!e.fac&&'They serve no realm.',ask:e=>'Hand them to the '+FACS[e.fac].n+'’s men? Deserters hang.',
         out:e=>({honor:[e.fac,3],gold:10,say:()=>'You hand them over to the '+FACS[e.fac].n+'. The bounty is 10 gold.'})}]},
-  gamblers:{n:'Gamblers',ico:'mug',w:1.2,ok:(c=storyCtx())=>c.gold>=20,on:'road',beh:'stay',hear:'Laughter and the rattle of dice to the {d}.',tip:'Soldiers at dice',
+  gamblers:{n:'Gamblers',ico:'mug',w:1.2,ok:(c=storyCtx())=>c.gold>=20,on:'byroad',beh:'stay',hear:'Laughter and the rattle of dice to the {d}.',tip:'Soldiers at dice',
     setup:e=>{const t=Spatial.nearestHolding(P.x,P.y);e.race=t.races[0];e.fac=t.owner&&FACS[t.owner]?t.owner:null},
     scene:e=>[['cloth','',0,1],['soldier','',-6,0,{col:roadCol(e),v:0}],['soldier','',6,0,{col:roadCol(e),v:2,face:-1}],['soldier','',1,-4,{col:roadCol(e),v:5}],['fire','',-13,-2]],
     text:()=>'Off-duty soldiers wave you over to a game of bones. Pick your stake.',

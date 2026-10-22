@@ -92,7 +92,13 @@ try{
  {const S=t.ENC_SPAWN,check=(on,m)=>{const ps=[],sd=t.seeded(500);for(let i=0;i<30;i++){const p=stub(sd,()=>t.roadSpot(on));if(p)ps.push(p)}
     const bad=ps.filter(([x,y])=>{const d=Math.hypot(x-P.x,y-P.y),tx=Math.floor(x/TILE),ty=Math.floor(y/TILE);return d<t.vis()+S.near[0]-1e-6||d>t.vis()+S.near[1]+1e-6||!t.passable(t.tAt(tx,ty))||!t.ENC_ON[on](tx,ty)||t.occAt(tx,ty)||t.TOWNS.some(z=>Math.hypot(z.tx-tx,z.ty-ty)<S.hold)});
     ok(ps.length>0&&!bad.length,m+': '+ps.length+' of 30 placed, all '+S.near[0]+'–'+S.near[1]+' px past your sight on '+on+' ground'+(bad.length?' (bad: '+bad.length+')':''));return ps};
-  goHome();check('road','by a road');P.tx=P.x+500;P.ty=P.y;const ps=check('wild','off the road');ok(ps.filter(([x])=>x>P.x).length>=ps.length*.7,'mostly ahead of the way you go ('+ps.filter(([x])=>x>P.x).length+' of '+ps.length+' east)');P.tx=null;
+  goHome();check('road','by a road');
+  // (a camp or a scene beside the road, never on it (the owner's play-test 2: the gamblers played on the road): off the road, no road
+  // tile within 1, one within ENC_BY; the gamblers and the wounded traveller there, the walkers (the peddler, the messenger) on it)
+  {const ps=check('byroad','beside a road'),nr=(x,y,r)=>t.nearTile(Math.floor(x/TILE),Math.floor(y/TILE),t.T_ROAD,r);
+   ok(ps.every(([x,y])=>!nr(x,y,1)&&nr(x,y,t.ENC_BY)&&t.tAt(Math.floor(x/TILE),Math.floor(y/TILE))!==t.T_ROAD),'each 2-'+t.ENC_BY+' tiles off the road: none on it, none on a tile by it');
+   ok(['gamblers','traveller'].every(k=>D(k).on==='byroad')&&['merchant','messenger','bard','beggar'].every(k=>D(k).on==='road'),'the gamblers and the wounded traveller beside the road; the peddler, the messenger, the bard and the beggar walk it')}
+  P.tx=P.x+500;P.ty=P.y;const ps=check('wild','off the road');ok(ps.filter(([x])=>x>P.x).length>=ps.length*.7,'mostly ahead of the way you go ('+ps.filter(([x])=>x>P.x).length+' of '+ps.length+' east)');P.tx=null;
   const findT=f=>{for(let ty=12;ty<t.MH-12;ty++)for(let tx=12;tx<t.MW-12;tx++)if(f(tx,ty))return[(tx+.5)*TILE,(ty+.5)*TILE];return null};
   // (a spot whose ring, 40-120 px past your sight, is a twentieth or more ground of that kind you can walk to: the first spot that
   // fits otherwise moves with the world's sites (far), and a small hill or wood can leave its ring bare of that ground)
@@ -390,7 +396,7 @@ try{
   P.troops={hum_levy:2};ok(!D('lure').ok(),'not with fewer than 3 soldiers');P.troops={hum_levy:6};ok(D('lure').ok(),'with a band, anywhere');
   {const lw=findT2((tx,ty)=>t.ENC_ON.lure(tx,ty)&&t.TOWNS.every(z=>Math.hypot(z.tx-tx,z.ty-ty)>14));let ps=[];if(lw)for(let a=0;a<8&&!ps.length;a++){const V0=t.vis(),x=lw.x+Math.cos(a*.785)*(V0+80),y=lw.y+Math.sin(a*.785)*(V0+80);if(!t.passable(t.tAt(Math.floor(x/TILE),Math.floor(y/TILE))))continue;
     at(x,y);const sd=t.seeded(77);for(let i=0;i<40;i++){const p=stub(sd,()=>t.roadSpot('lure'));if(p)ps.push(p)}}
-   ok(ps.length>0&&ps.every(([x,y])=>t.ENC_ON.lure(Math.floor(x/TILE),Math.floor(y/TILE))&&t.nearTile(Math.floor(x/TILE),Math.floor(y/TILE),t.T_ROAD,1)),'placed by a road with woods or hills beside it ('+ps.length+' of 40)')}
+   ok(ps.length>0&&ps.every(([x,y])=>t.ENC_ON.lure(Math.floor(x/TILE),Math.floor(y/TILE))&&!t.nearTile(Math.floor(x/TILE),Math.floor(y/TILE),t.T_ROAD,1)&&t.nearTile(Math.floor(x/TILE),Math.floor(y/TILE),t.T_ROAD,t.ENC_BY)),'placed beside a road, as the wounded traveller lies, with woods or hills by it ('+ps.length+' of 40)')}
   // to the eye, the wounded traveller: its name, call, sound, tooltip, highlight, picture
   goHome();R().on=[];const tr=t.roadSpawn('traveller',P.x+30,P.y),lu=t.roadSpawn('lure',P.x+30,P.y+20);lu.end=tr.end;lu.dir=tr.dir;lu.race=tr.race;// (the same people, facing the same way: each draws its own where it lies)
   const pt=t.ENC_SCENE.pics(tr),pl=t.ENC_SCENE.pics(lu);

@@ -66,6 +66,18 @@ try{
   ok(W.caravans.includes(c)&&!c.fight&&c.guards>=1&&c.guards===c.size&&c.troops.length===c.guards,'it wins; its guards are its survivors ('+c.guards+')');
   t.bandits.length=0;W.fights=[];c.guards=2;t.bandits.push(t.asParty({x:c.x+4,y:c.y,n:14,kind:'bandits',list:Array(14).fill('orc_grunt'),t:0,a:0,idle:true,cool:0}));t.updateCaravans(.01);
   for(let i=0;i<4000&&W.fights.length;i++)t.updateFights(.05);ok(!W.caravans.includes(c),'a big band plunders it');t.bandits.length=0;W.fights=[]}
+ // ---- on the road (the owner's play-test 2: "only off the road when they run away from something"): a caravan between two holdings
+ // a road joins (the farthest four: on the generated world, of WM.roads; today's map: two of a realm's, 25-80 tiles apart) walks most of its way on
+ // the road (its tile a road or a ford, frame by frame), 85% or more; a walker going there by the cheapest way, for comparison
+ {world();P.x=-9000;P.y=-9000;t.bandits.length=0;W.lords=[];W.fights=[];const MW=t.MW,K=t.tiles,gen=!!t.WM.graph,road=(x,y)=>{const k=K[Math.floor(y/16)*MW+Math.floor(x/16)];return k===t.T_ROAD||k===t.T_FORD};
+  const d=(a,b)=>Math.hypot(a.tx-b.tx,a.ty-b.ty),pairs=[];
+  if(gen)for(const r of t.WM.roads){const a=t.townBy(r.a),b=t.townBy(r.b);if(a&&b&&a.owner&&a.owner===b.owner&&d(a,b)>=25&&d(a,b)<=80)pairs.push([a,b])}
+  else for(const a of TW)for(const b of TW)if(a!==b&&a.owner&&a.owner===b.owner&&d(a,b)>=25&&d(a,b)<=80)pairs.push([a,b]);
+  const trip=(a,b,keep)=>{const c=t.asParty({cv:true,fac:a.owner,from:a.name,to:b.name,x:a.x,y:a.y+14,goods:{grain:5},guards:4,cool:0,dir:1});W.caravans=[c];let on=0,n=0;
+    for(;n<30000&&!c.gone;n++){if(keep)t.BRAINS.caravan.think(c,.05);else{t.Router.travel(c,t.gateGoal(b),t.moveStep(t.CARAVAN_SPD,.05));if(Math.hypot(b.x-c.x,b.y+12-c.y)<8)c.gone=true}if(road(c.x,c.y))on++}
+    W.caravans=[];return{on:on/Math.max(1,n),n,ok:c.gone}};
+  pairs.sort((p,q)=>d(q[0],q[1])-d(p[0],p[1]));const ts=pairs.slice(0,4).map(([a,b])=>[a,b,trip(a,b,true),trip(a,b,false)]);
+  ok(ts.length&&ts.every(([,,k])=>k.ok&&k.on>=.85),'a caravan keeps to the road between two holdings it joins: '+ts.map(([a,b,k,f])=>a.name+'-'+b.name+' '+Math.round(k.on*100)+'% of '+k.n+' frames on it'+(k.ok?'':' (not there)')+' (a walker by the cheapest way '+Math.round(f.on*100)+'%)').join('; '))}
  // ---- a battle you join: its force is written back to it
  {c=send();W.caravans=[c];c.guards=5;c.fight='fx';const f=t.forceOf(c);ok(f.kind==='caravan'&&f.src===c&&f.troops.length===5&&f.army,'in a battle you join its guards fight as a force');
   f.troops=f.troops.slice(0,2);t.syncForces([f]);ok(c.guards===2&&c.troops.length===2,'and what is left of them is written back');

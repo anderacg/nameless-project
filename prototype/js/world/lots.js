@@ -48,6 +48,21 @@ function occRebuild(){roadsToGates();OCC.fill(0);for(const k in LOT)delete LOT[k
   for(const t of TOWNS)for(const l of t.lots||[]){if(l.st==='ruin')l.st='ruined';// (older saves)
     LOT[l.id]=l;l.town=t.name;occMark(l,l.id);lotN=Math.max(lotN,l.id+1)}occReserve()}
 const lotOf=(x,y)=>{const id=occAt(x,y);return id>0?LOT[id]:null};
+/* the roads as painted (the owner's play-test 2: "some buildings still on the road"): the tiles within LOT_ROAD px of a road's
+   middle as the art draws it, a byte a tile. On the generated world a road follows its smoothed line, not its tiles (worldart.js
+   artGenPlan: the points its bands are kept clear round); on today's map its tiles, led half a tile aside at a gate (roadStamps).
+   No lot or field stands on one. Made when first asked (the roads led to the gates by then), again for a new world */
+const LOT_ROAD=2;
+let ROAD_PAINT=null;onWorld(()=>{ROAD_PAINT=null});
+function roadPaint(){
+  if(ROAD_PAINT)return ROAD_PAINT;const B=ROAD_PAINT=new Uint8Array(MW*MH),r=LOT_ROAD;
+  // (a point of the road's middle: the middle of a square the art keeps clear round it)
+  const at=(x,y,w,h)=>{const cx=x+(w>>1),cy=y+(h>>1);for(let ty=Math.max(0,Math.floor((cy-r)/TILE));ty<=Math.min(MH-1,Math.floor((cy+r)/TILE));ty++)for(let tx=Math.max(0,Math.floor((cx-r)/TILE));tx<=Math.min(MW-1,Math.floor((cx+r)/TILE));tx++)B[ty*MW+tx]=1};
+  if(WM.gen!=='classic-0'&&typeof artGenPlan==='function')artGenPlan({tramples:[]},at);
+  else if(typeof roadStamps==='function'){const P={towns:new Set(TOWNS.map(t=>t.ty*MW+t.tx)),shift:new Set(TOWNS.flatMap(t=>[t.ty*MW+t.tx,(t.ty+1)*MW+t.tx]))};
+    for(let ty=0;ty<MH;ty++)for(let tx=0;tx<MW;tx++)roadStamps(P,tx,ty,0,(x,y,w)=>at(x,y,w,w))}
+  for(let i=0;i<MW*MH;i++)if(tiles[i]===T_ROAD)B[i]=1;
+  return B}
 
 /* what stands for each part of a holding, by its people */
 const HOUSES={human:['cottage','cottage','townhouse'],dwarf:['cottage','townhouse','cottage'],elf:['cottage','treehouse','cottage'],orc:['yurt','yurt','cottage']};
@@ -76,8 +91,8 @@ const nearT=(x,y,type,r)=>{for(let j=-r;j<=r;j++)for(let i=-r;i<=r;i++)if(tAt(x+
 const groundOf=k=>k==='lumber'?'forest':k==='mine'||k==='quarry'?'rock':k==='port'?'shore':'open';
 // may an n x n lot stand at (x, y) for holding t? gap: keep a free tile between it and other buildings
 function lotFits(t,x,y,n,rule,gap){
-  const ti=TOWNS.indexOf(t),okg=lotGround[rule]||lotGround.open;
-  for(let j=0;j<n;j++)for(let i=0;i<n;i++){const X=x+i,Y=y+j;if(X<1||Y<1||X>=MW-1||Y>=MH-1||OCC[Y*MW+X]||!okg(X,Y))return false;
+  const ti=TOWNS.indexOf(t),okg=lotGround[rule]||lotGround.open,RB=roadPaint();
+  for(let j=0;j<n;j++)for(let i=0;i<n;i++){const X=x+i,Y=y+j;if(X<1||Y<1||X>=MW-1||Y>=MH-1||OCC[Y*MW+X]||RB[Y*MW+X]||!okg(X,Y))return false;
     const L=LAND[Y*MW+X];if(L>=0&&L!==ti)return false}
   // a free tile between it and any bigger building or place of work (houses may stand side by side in rows)
   if(gap)for(let j=-1;j<=n;j++)for(let i=-1;i<=n;i++){if(i>=0&&i<n&&j>=0&&j<n)continue;const id=occAt(x+i,y+j),o=id>0&&LOT[id];if(o&&!(gap==='row'&&o.k==='house'&&n===1&&o.n===1)&&!(o.plots||[]).some(p=>p[0]===x+i&&p[1]===y+j))return false}
@@ -151,9 +166,10 @@ class Layout{
     const R=seeded(t.seed*977+13),n0=lotSize(typeFor(t,'centre',R)),cx=t.tx-(n0>>1),cy=t.ty-n0+1;
     // the centre stands on the holding's own tile, its gate on its front row where the roads end: parties arrive there and set out
     this.add({k:'centre',type:typeFor(t,'centre',R),x:cx,y:cy,n:n0,lv:1,seed:t.seed*31+7,st:'built'});
-    // houses round it: enough for its people (the centre houses some), a few to spare
+    // houses round it: enough for its people (the centre houses some), a few to spare; then, one still short of room for them clears
+    // plots in the woods (a village deep in them, its clearing crossed by its roads)
     const pop=t.pop||t.T.pop0;let room=this.housing(),tries=0;
-    while(room<pop*1.1&&tries++<t.T.tries){const type=typeFor(t,'house',R),n=lotSize(type),p=lotSpot(t,n,'open',1,t.T.ring,R,{gap:'row',jit:.8});if(!p)continue;this.add({k:'house',type,x:p[0],y:p[1],n,lv:1,seed:Math.floor(R()*1e6),st:'built'});room=this.housing()}
+    for(const [g,want] of [['open',pop*1.1],['forest',pop]])for(tries=0;room<want&&tries++<t.T.tries;){const type=typeFor(t,'house',R),n=lotSize(type),p=lotSpot(t,n,g,1,t.T.ring,R,{gap:'row',jit:.8});if(!p)continue;this.add({k:'house',type,x:p[0],y:p[1],n,lv:1,seed:Math.floor(R()*1e6),st:'built'});room=this.housing()}
     // the buildings of its inner estates
     for(const k of INNER)if(bldLv(t,k)&&!this.estateLot(k,R))t.bld[k]=0;// no room: the holding has no such estate
     // then the works outside
@@ -189,8 +205,8 @@ class Layout{
 // the field tiles a farm, pasture or quarry may grow over (all it will ever need, kept now): one connected patch beside it
 function fieldsFor(t,l,k){
   const g=k==='quarry'?(x,y)=>tAt(x,y)===T_HILL||tAt(x,y)===T_OPEN:(x,y)=>tAt(x,y)===T_OPEN,out=[],cand=[],ti=TOWNS.indexOf(t);
-  const wb=wallBox(t),inRing=(x,y)=>wb&&x>=wb.x0-1&&x<=wb.x1+1&&y>=wb.y0-1&&y<=wb.y1+1;// fields stay clear of the town
-  for(let y=l.y-3;y<=l.y+l.n+2;y++)for(let x=l.x-3;x<=l.x+l.n+2;x++){if(x>=l.x&&x<l.x+l.n&&y>=l.y&&y<l.y+l.n||OCC[y*MW+x]||!g(x,y)||x<1||y<1||x>=MW-1||y>=MH-1||inRing(x,y))continue;const L=LAND[y*MW+x];if(L>=0&&L!==ti)continue;
+  const wb=wallBox(t),inRing=(x,y)=>wb&&x>=wb.x0-1&&x<=wb.x1+1&&y>=wb.y0-1&&y<=wb.y1+1,RB=roadPaint();// fields stay clear of the town, and off the roads
+  for(let y=l.y-3;y<=l.y+l.n+2;y++)for(let x=l.x-3;x<=l.x+l.n+2;x++){if(x>=l.x&&x<l.x+l.n&&y>=l.y&&y<l.y+l.n||OCC[y*MW+x]||RB[y*MW+x]||!g(x,y)||x<1||y<1||x>=MW-1||y>=MH-1||inRing(x,y))continue;const L=LAND[y*MW+x];if(L>=0&&L!==ti)continue;
     const d=Math.hypot(x-(l.x+l.n/2-.5),y-(l.y+l.n/2-.5));cand.push([x,y,d+hash(x,y,t.seed)*.6])}
   cand.sort((a,c)=>a[2]-c[2]);const touch=[];lotTiles(l,(x,y)=>touch.push([x,y]));
   while(out.length<PLOTS[k]){const c=cand.find(c=>!out.includes(c)&&touch.some(q=>Math.abs(q[0]-c[0])+Math.abs(q[1]-c[1])===1));if(!c)break;out.push(c);touch.push(c)}

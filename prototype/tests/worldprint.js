@@ -55,15 +55,24 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 //  climate (PX.WORLD_TREES: a few bare and dead), the swamp's forest a bog, the mangrove redrawn. G6 moved at all three spots by
 //  day and night (5fe0477c e5ff4475 fe0c0ce6 a0764108 5a4a17b0 7a468163 to d7cc4319 7378982a 3e74611b c618bbd4 2682905c 85e4496b:
 //  water, woods or estates in view at each). Was G5 4ea4e263, G6 fb7895ea; G1-G4, G7, G8 and GB2 unchanged)
-const GEXPECT={W1:'94e87250',W2:'6bc88128',W3:'0240c3fb',W4:'ceb55e1f',W5:'930a07e7',W6:'15b00503',W7:'9517c6f9',W8:'f540d98e',B2:'f56d6d82'};
+// (all nine re-recorded 2026-10-22, on purpose, the owner's play-test 2 (agent K): roads come to a holding at its gate, from in front,
+//  its centre and the ring beside and behind it shut to the road search, and a line's first and last legs as drawn kept off water
+//  (worldplace.js placeBox, dry: a road from behind had been led round Thornbrook's centre over the river), which moves the roads'
+//  tiles (G1), the deposits laid round them (G2) and the land claimed (G4); no building nor field on a road as painted (lots.js
+//  roadPaint: houses had stood on the generated roads' bands), and a village short of room clearing plots in the woods after its
+//  open ground, which moves the lots (G3), the painted world (G5) and the views (G6); caravans keep to the roads (Router.travel's
+//  road, WAY.keep), which with the rest moves the three days (G7), the 600 frames (G8) and the save after begin (GB2). Checked: with
+//  the old road builder (worldplace.js at cbc36ad) G1, G2, G4 and the sums are as before; with it, roadPaint empty and WAY.keep 1, all
+//  nine are as before. Were G1 94e87250, G2 6bc88128, G3 0240c3fb, G4 ceb55e1f, G5 4ea4e263, G6 fb7895ea, G7 9517c6f9, G8 f540d98e,
+//  GB2 f56d6d82)
+// (G5 and G6 with both the second play-test's art (J) and its roads and lots (K): measured together at the merge: 65f440b9, 57cf6053)
+const GEXPECT={W1:'81ce84b1',W2:'5df96192',W3:'a3673959',W4:'3ffcfb90',W5:'65f440b9',W6:'57cf6053',W7:'9d580ef9',W8:'0f487dba',B2:'dc1b8829'};
 // (the random presets' sums re-recorded 2026-10-22, on purpose, Phase 2b: the owner's "the holdings seem a bit too much": Normal
 //  27 holdings by default (was 37), Large 40 (was 55), so their settings (in the sum) and placement change; with them two clamps
 //  of stage 7 the fewer holdings needed (worldplace.js): a port only on the open sea (placeOpen: a strait a road bridged had left
 //  Normal s1's Fernmere on a lake) and each realm's land within 24% of the mean as placed (PLACE.even; the roads moved Normal
 //  redwater's to 38%). Checked by putting back 37 / 55 holdings, the old port rule and 30% at stage 7: all four as before, and the
 //  classic world unchanged throughout. Were Normal s1 128cfb7e, s2 2b581da4, s3 c38ac906, Large s1 5af09941)
-const SUMS={classic:'7333836c','Normal s1':'103bc267','Normal s2':'bf4d8d77','Normal s3':'23d160c1','Large s1':'ab0227f1'};
-const EXPECT={W1:'65e24662',W2:'2b49a168',W3:'dc546553',W4:'46450e62',W5:'9f99c580',W6:'9e08cef8',W7:'055dd3a6',W8:'742df600',B2:'290c6cb7'};// (at 0a42712; B2 at R3; W6-W8 at Phase 1; W6 at depth, smooth walking and pasture herds and label layout; W7, B2 at save v3)
 // (W5, W6 re-recorded 2026-10-22, on purpose, the owner's second play-test, what of it today's map shares (its shores stay
 //  square): the water's tones shading across a climate's edge (gfx/worldart.js ClimMix, no blocks of the frost's water in the
 //  grass's), the estates' ground on its land (gfx/structures.js estateGround: pastures fenced on their own ground, fields by climate,
@@ -71,6 +80,15 @@ const EXPECT={W1:'65e24662',W2:'2b49a168',W3:'dc546553',W4:'46450e62',W5:'9f99c5
 //  mangrove redrawn. W6 moved at all three spots by day and night (ab2f2712 f43b5c0a 06897de7 4b880f03 22ae8270 75c2f1c9 to
 //  958eacf8 6d74b55d f2b10c40 ec778995 9e82f728 1158f5b7: woods, water or estates in view at each). Was W5 c3d24a9e, W6 481b04b2; W1-W4, W7,
 //  W8 and B2 unchanged)
+// (all five re-recorded 2026-10-22, on purpose, the owner's play-test 2 (agent K): the road builder's new rule (roads in at the gate,
+//  from in front; lines' end legs kept off water: G1 above). Checked: with worldplace.js as at cbc36ad all five as before. Were
+//  classic 7333836c, Normal s1 103bc267, s2 bf4d8d77, s3 23d160c1, Large s1 ab0227f1)
+// (W7 re-recorded 2026-10-22, on purpose, the owner's play-test 2 (agent K): caravans keep to the roads (router.js Router.travel's
+//  road: off them a tile costs WAY.keep, 4, times as much), so the caravans of the three days go otherwise. Checked: with WAY.keep 1 W7
+//  is as before; the lots' road rule (lots.js roadPaint) and the woods' second pass for houses leave today's lots as they were (W3).
+//  Was W7 055dd3a6; W1-W6, W8 and B2 unchanged)
+const SUMS={classic:'e9ff637f','Normal s1':'edfd56e4','Normal s2':'fdb0fae4','Normal s3':'28976823','Large s1':'7df7120f'};
+const EXPECT={W1:'65e24662',W2:'2b49a168',W3:'dc546553',W4:'46450e62',W5:'9f99c580',W6:'9e08cef8',W7:'2b496c30',W8:'742df600',B2:'290c6cb7'};// (at 0a42712; B2 at R3; W6-W8 at Phase 1; W6 at depth, smooth walking and pasture herds and label layout; W7, B2 at save v3)
 // (W5, W6 re-recorded 2026-10-22, on purpose, the owner's play-test (the same climates on today's map): the frost's snow blended
 //  into the grass (gfx/worldart.js snowCover, landRGB: its cover rising over the frost's edge and with height, thinning out in
 //  patches over the grass beside it) and the fen's sparse mangroves (engine/worldnature.js FEN). W6 moved at the first and third

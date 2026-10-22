@@ -40,19 +40,22 @@ const roadList=()=>W.road?W.road.on:[];
 // the land under a point, for the chance: a road (on one or a tile by), a holding's land, the wild (its story place's: the chance
 // reads your story context's, story/context.js)
 const roadLand=(x,y)=>new StoryPlace(x,y).landKind;
-// each kind's ground (a tile): on or by a road; open land off it; anywhere off a road; a wood's edge (open land with the trees
-// behind or beside it, none in front, so its camp shows; open land in the frost); hills (or by the mountains); a bog; cover beside a road (engage.js coverAt);
-// a lure: by a road with woods or hills beside it for the bandits to lie in;
+// each kind's ground (a tile): on or by a road (those walking it); beside a road, a camp or a scene (byroad: off it, 2-3 tiles
+// from it, ENC_BY: the owner's play-test 2, the gamblers played on the road; a scene spans a tile and more either way, so never
+// by its edge); open land off it; anywhere off a road and not by one; a wood's edge (open land with the trees behind or beside it,
+// none in front, so its camp shows; open land in the frost; not by a road); hills (or by the mountains); a bog; cover beside a road (engage.js coverAt);
+// a lure: beside a road as the wounded traveller lies, with woods or hills by it for the bandits to lie in;
 // mud: by a road where it runs by water or a ford, or through a bog; a lord's wood: a wood's edge (no frost) on a holding's land
 // that has a lord (a realm's, or yours)
 // (each reads the tile's story place: story/storyplace.js StoryPlace, via story/context.js Story.at, its terrain, climate, land and cover at the tile's middle)
 const roadOwned=(x,y)=>{const t=landHold(x,y);return t&&t.owner?t:null};
-const ENC_ON={road:(tx,ty)=>Story.at(tx,ty).byRoad,open:(tx,ty)=>{const p=Story.at(tx,ty);return p.terrain===T_OPEN&&!p.byRoad},wild:(tx,ty)=>Story.at(tx,ty).terrain!==T_ROAD,
-  wood:(tx,ty)=>{const p=Story.at(tx,ty);return p.woodsEdge||p.terrain===T_OPEN&&p.climate==='frost'},hill:(tx,ty)=>{const p=Story.at(tx,ty);return p.terrain===T_HILL||p.by(T_MOUNT,1)},
+const roadBeside=(tx,ty)=>{const p=Story.at(tx,ty);return p.terrain!==T_ROAD&&p.terrain!==T_FORD&&!p.byRoad&&p.by(T_ROAD,ENC_BY)&&!roadPaint()[ty*MW+tx]};
+const ENC_ON={road:(tx,ty)=>Story.at(tx,ty).byRoad,byroad:roadBeside,open:(tx,ty)=>{const p=Story.at(tx,ty);return p.terrain===T_OPEN&&!p.byRoad},wild:(tx,ty)=>{const p=Story.at(tx,ty);return p.terrain!==T_ROAD&&!p.byRoad},
+  wood:(tx,ty)=>{const p=Story.at(tx,ty);return(p.woodsEdge||p.terrain===T_OPEN&&p.climate==='frost')&&!p.byRoad},hill:(tx,ty)=>{const p=Story.at(tx,ty);return p.terrain===T_HILL||p.by(T_MOUNT,1)},
   bog:(tx,ty)=>{const p=Story.at(tx,ty);return p.terrain!==T_ROAD&&p.climate==='swamp'},cover:(tx,ty)=>{const p=Story.at(tx,ty);return p.by(T_ROAD,2)&&!!p.cover},
   mud:(tx,ty)=>{const p=Story.at(tx,ty);return p.byRoad&&(p.by(T_WATER,1)||p.by(T_FORD,2)||p.climate==='swamp')},
   lordwood:(tx,ty)=>{const p=Story.at(tx,ty);return p.woodsEdge&&p.climate!=='frost'&&!!p.owned},
-  lure:(tx,ty)=>{const p=Story.at(tx,ty);return p.byRoad&&(p.by(T_FOREST,2)||p.by(T_HILL,1))}};
+  lure:(tx,ty)=>{const p=Story.at(tx,ty);return roadBeside(tx,ty)&&(p.by(T_FOREST,2)||p.by(T_HILL,1))}};
 
 /* ---------- how one ends: nothing ends while you can see it (owner, 2026-10-19). Its time up out of your sight, it ends there
    (its trace, if any); in your sight, it ends its kind's way (its ends, else its behaviour's: story/happening.js Encounter ends),

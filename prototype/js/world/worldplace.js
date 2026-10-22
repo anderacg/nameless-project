@@ -10,6 +10,7 @@
       and notes from the land; lords past each realm's four (D10: WM.lords). Classic: the 37 holdings whole, at their anchors
       snapped to a suitable tile within 4, one that keeps its hint (CLASSIC_HINTS: placeHint) and its own climate first.
    8. roads: a spanning tree and each holding's two nearest, great roads (between cities, towns and castles) before tracks, each
+      from gate to gate (the holdings' centres and the ring beside and behind each shut: placeBox, so it comes in from in front)
       by a least-cost search in 8 ways (diagonals x1.4142, no corner cut past water or a peak) over the ground's costs, crossing
       water only straight across: a bridge (3 tiles of water at most), a ford (tracks, streams and rivers short of great, never
       a flooding one) or a ferry (great rivers, at towns and ports). Each road's new stretches are string-pulled and their
@@ -279,6 +280,9 @@ function placeLords(R,n){if(n<=4)return null;const used=new Set(PLACE_REALMS.fla
    x4 in a wild region, x0.8-1.25 by a noise (so a road wanders as the land leads it), +1.5 a terrace climbed or
    descended; peaks, water (but straight across, below) and cliff edges closed */
 const PLACE_ROAD={hm:1,pull:40,slack:1.04,round:[6,3,1.5,.75],xing:{bridge:[2,8,12],ford:[1.5,4],ferry:[2,16],reuse:.5}};
+// (a holding's centre as lots.js lays it (centreBox): a village's hall 2 x 2, any other's 4 x 4, its bottom row on the holding's
+// tile, its gate the tile below: {x, y, n})
+const placeBox=h=>{const n=h.kind==='village'?2:4;return{x:h.tx-(n>>1),y:h.ty-n+1,n}};
 // (the last roads stage's numbers, for the tests: roads searched, ms in all and the most for one, tiles searched, searches that
 // left their box for the whole map, and the stretches of river where no crossing can be made: bare)
 const PLACE_STATS={roads:0,ms:0,max:0,search:0,whole:0,bare:[]};
@@ -291,7 +295,11 @@ function* genRoads(g){
   for(const h of Hd)for(let b=-6;b<=6;b++)for(let a=-6;a<=6;a++)if(m.has(h.tx+a,h.ty+b))nearH[(h.ty+b)*W+h.tx+a]=1;
   for(const h of Hd)if(h.kind==='town'||h.kind==='city'||h.style==='port')for(let b=-8;b<=8;b++)for(let a=-8;a<=8;a++)if(a*a+b*b<=64&&m.has(h.tx+a,h.ty+b))ferry[(h.ty+b)*W+h.tx+a]=1;
   const xy=i=>[i%W,(i-i%W)/W],cen=i=>[i%W+.5,(i-i%W)/W+.5];
-  const tc=(i,great)=>great&&K[i]===T_FORD?Infinity:cost[i],cost=new Float32Array(N),price=i=>{const k=K[i];cost[i]=(k===T_ROAD||k===T_FORD?.5:k===T_OPEN?jit[i]:k===T_FOREST?1.8*jit[i]:k===T_HILL?2.2*jit[i]:Infinity)*(m.region[i]?4:1)};
+  // the holdings' centres (placeBox) and the ring beside and behind each shut: a road comes to a holding at its gate, from in front,
+  // so nothing leads it round the centre (once a road from behind was led round it over the river beside it)
+  const boxed=new Uint8Array(N);for(const h of Hd){const b=placeBox(h);for(let y=b.y-1;y<=h.ty;y++)for(let x=b.x-1;x<=b.x+b.n;x++)if(m.has(x,y))boxed[y*W+x]=1}
+  for(const h of Hd)boxed[(h.ty+1)*W+h.tx]=0;
+  const tc=(i,great)=>great&&K[i]===T_FORD?Infinity:cost[i],cost=new Float32Array(N),price=i=>{const k=K[i];cost[i]=boxed[i]?Infinity:(k===T_ROAD||k===T_FORD?.5:k===T_OPEN?jit[i]:k===T_FOREST?1.8*jit[i]:k===T_HILL?2.2*jit[i]:Infinity)*(m.region[i]?4:1)};
   for(let i=0;i<N;i++)price(i);
   const shut=i=>K[i]===T_WATER||K[i]===T_MOUNT,cut=(i,dx,dy)=>dx>0&&E[i]&1||dx<0&&E[i]&4||dy>0&&E[i]&2||dy<0&&E[i]&8,DX=DIR8.map(d=>d[0]),DY=DIR8.map(d=>d[1]);
   // (the crossing a straight run of k water tiles from land tile i (step s) would be: [kind, its cost]; kind 0 none)
@@ -331,6 +339,10 @@ function* genRoads(g){
     for(let k=0;k<T.length;k++){const t=T[k];if(!free(t))return null;if(k){const [px,py]=xy(T[k-1]),[x,y]=xy(t),dx=x-px,dy=y-py;
       if(Math.abs(dx)>1||Math.abs(dy)>1||cut(T[k-1],dx,dy))return null;if(dx&&dy&&(shut(T[k-1]+dx)||shut(T[k-1]+dy*W)))return null;c+=tc(t,great)*(dx&&dy?1.4142:1)}}
     T.cost=c;return c<=most?T:null};
+  // (a line's first and last legs as drawn, from its real ends (a gate's corner, a point on the road it joins), clear of water (but a
+  // crossing's) and peaks: under() reads them from its end tiles' middles, and a leg from a gate's corner once ran over the shore)
+  const dry=p=>{for(const [a,b] of [[p[0],p[1]],[p[p.length-2],p[p.length-1]]]){const st=Math.max(1,Math.ceil(Math.sqrt((b[0]-a[0])*(b[0]-a[0])+(b[1]-a[1])*(b[1]-a[1]))*4));
+    for(let s=0;s<=st;s++){const t=Math.floor(a[1]+(b[1]-a[1])*s/st)*W+Math.floor(a[0]+(b[0]-a[0])*s/st);if(shut(t)&&X[t]<0)return false}}return true};
   // (a stretch of land tiles Q, a to b: string-pulled (each leg as far as a straight line stays as cheap), its corners rounded;
   // {tiles, pts}, its ends at pa and pb)
   const smooth=(Q,pa,pb,great)=>{
@@ -346,12 +358,13 @@ function* genRoads(g){
         ix=(p[0]-v[0])/lp+(q[0]-v[0])/lq,iy=(p[1]-v[1])/lp+(q[1]-v[1])/lq,il=Math.sqrt(ix*ix+iy*iy)||1;
       found:for(const r of PLACE_ROAD.round)for(const d of [0,.7,1.4]){const w=[v[0]-ix/il*d,v[1]-iy/il*d];
         if(under(placeRound([p,w,q],[0,r,0]),great,base.cost*PLACE_ROAD.slack+.5)){rs[k]=r;pv[k]=w;break found}}}
-    {const pts=placeRound(pv,rs),T=under(ends(pts),great,most);if(T)return{tiles:T,pts}}
-    const T=under(ends(pl),great,most);if(T)return{tiles:T,pts:pl};return{tiles:Q,pts:[pa,...Q.slice(1,-1).map(cen),pb]}};
+    {const pts=placeRound(pv,rs),T=under(ends(pts),great,most);if(T&&dry(pts))return{tiles:T,pts}}
+    const T=under(ends(pl),great,most);if(T&&dry(pl))return{tiles:T,pts:pl};return{tiles:Q,pts:[pa,...Q.slice(1,-1).map(cen),pb]}};
   // (the point on line l nearest p)
   const snap=(l,p)=>{let best=p,bd=Infinity;for(let k=2;k<l.length;k+=2){const ax=l[k-2],ay=l[k-1],dx=l[k]-ax,dy=l[k+1]-ay,L=dx*dx+dy*dy,t=L?clamp(((p[0]-ax)*dx+(p[1]-ay)*dy)/L,0,1):0,x=ax+dx*t,y=ay+dy*t,d=(x-p[0])*(x-p[0])+(y-p[1])*(y-p[1]);if(d<bd){bd=d;best=[x,y]}}return best};
-  const gate=h=>[h.tx,h.ty+1];
-  // a road found: its new stretches smoothed and laid (roads, crossings, feat), its line kept
+  const gate=h=>[h.tx,h.ty+1],gt=h=>(h.ty+1)*W+h.tx;
+  // a road found (P: its tiles from gate to gate): its new stretches smoothed and laid (roads, crossings, feat), its line kept; its
+  // path from holding to holding (each one's own tile before its gate, where the way graph's node is)
   const lay=(P,ha,hb,great)=>{
     const old=i=>K[i]===T_ROAD||K[i]===T_FORD||X[i]>=0,out=[],line=[];let k=0;
     while(k<P.length){if(old(P[k])){out.push(P[k++]);continue}
@@ -365,6 +378,7 @@ function* genRoads(g){
       if(out.length&&out[out.length-1]===tiles[0])out.pop();out.push(...tiles);
       const l=[];for(const p of pts){const x=Math.round(p[0]*100)/100,y=Math.round(p[1]*100)/100;if(l.length<2||l[l.length-2]!==x||l[l.length-1]!==y)l.push(x,y)}lines.push(l);line.push(l);k=t+1;
       for(const i of tiles)if(LI[i]<0)LI[i]=lines.length-1}
+    out.unshift(ha.ty*W+ha.tx);out.push(hb.ty*W+hb.tx);
     // within 6 tiles of a holding a diagonal step takes a corner too (4 ways there, so lots.js leads it round the holding's centre)
     for(let k=1;k<out.length;k++){const a=out[k-1],b=out[k],ax=a%W,bx=b%W,dx=bx-ax,dy=(b-bx)/W-(a-ax)/W;
       if(dx&&dy&&(nearH[a]||nearH[b])){const c1=a+dx,c2=a+dy*W,c=free(c1)&&(!free(c2)||cost[c1]<=cost[c2])?c1:free(c2)?c2:-1;if(c>=0)out.splice(k++,0,c)}}
@@ -387,10 +401,10 @@ function* genRoads(g){
   for(const ht of g.hints||[])if(ht.kind==='river'&&ht.bridge){const k=Hd.findIndex(h=>h.name===ht.at),h=Hd[k],s=h&&placeNarrows(m,F,h.tx,h.ty,4);if(!s)continue;
     const [ix,iy]=xy(s.i),[jx,jy]=xy(s.j),dd=(o,x,y)=>(o.tx-x)*(o.tx-x)+(o.ty-y)*(o.ty-y);let b=-1;
     Hd.forEach((o,q)=>{if(q!==k&&dd(o,jx,jy)<dd(o,ix,iy)&&(b<0||dd(o,jx,jy)<dd(Hd[b],jx,jy)))b=q});
-    const great=b>=0&&big(h)&&big(Hd[b]),P=b>=0&&find(h.ty*W+h.tx,s.i,great),Q=P&&find(s.j,Hd[b].ty*W+Hd[b].tx,great);if(!Q)continue;
+    const great=b>=0&&big(h)&&big(Hd[b]),P=b>=0&&find(gt(h),s.i,great),Q=P&&find(s.j,gt(Hd[b]),great);if(!Q)continue;
     placeCross(m,F,X,s.i,s.j,s.tiles,2,great,Hd);for(const i of s.tiles)price(i);lay([...P,...s.tiles,...Q],h,Hd[b],great);forced.add(key(k,b))}
   for(let e=0;e<list.length;e++){const {a,b,great}=list[e],A=Hd[a],B=Hd[b],t0=performance.now();if(forced.has(key(a,b)))continue;
-    const P=find(A.ty*W+A.tx,B.ty*W+B.tx,great);
+    const P=find(gt(A),gt(B),great);
     if(P)lay(P,A,B,great);else g.work.roadFail.push(A.name+' to '+B.name);
     const dt=performance.now()-t0;PLACE_STATS.roads++;PLACE_STATS.ms+=dt;PLACE_STATS.max=Math.max(PLACE_STATS.max,dt);if(g.tick())yield .9*e/list.length}
   // a river's crossings at most PLACE.gap apart along its path (its source counts as one, its mouth not; a crossing's place on it:

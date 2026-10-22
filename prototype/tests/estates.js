@@ -40,7 +40,7 @@ try{
   const own0=tgt.owner;for(let i=0;i<4;i++)t.worldDay();ok(tgt.owner===own0,'great walls hold for more than 4 days');t.worldDay();
   ok(tgt.owner===att&&tgt.wall===2,'after 5 days it falls, and the breach costs a wall level');W.lords=[]}
  // war burns estates
- {const v=t.townBy('Brookhollow');const b0=t.bldTotal(v);const out=t.burnEstates(v,2);ok(t.bldTotal(v)===b0-out.length&&out.length===2,'a sack burns two estates ('+out.join(', ')+')')}
+ {const v=t.townBy('Brookhollow')&&t.bldTotal(t.townBy('Brookhollow'))>=2?t.townBy('Brookhollow'):t.TOWNS.find(z=>t.bldTotal(z)>=2);const b0=t.bldTotal(v);const out=t.burnEstates(v,2);ok(t.bldTotal(v)===b0-out.length&&out.length===2,'a sack burns two estates ('+out.join(', ')+')')}
  // AI builds over time
  {const f=TW.filter(x=>x.owner!=='player'),b0=f.reduce((a,x)=>a+t.bldTotal(x)+t.wallOf(x),0);for(let i=0;i<40;i++){G.day++;t.estateDay()}const b1=f.reduce((a,x)=>a+t.bldTotal(x)+t.wallOf(x),0);ok(b1>b0,'realms build and fortify over time ('+b0+' → '+b1+')')}
  // folk: every estate's workers work inside it (in the morning and at midday some out on its ground: tests/fieldwork.js), and

@@ -2,7 +2,8 @@
 /* ---------- the router: every way over the land, behind three calls (doc/WORLD_DESIGN.md §3.6), so how ways are found can
    change behind them (the way graph, later) and no walker notices:
      Router.travel(o, goal, step): one step of o toward goal, a point {x, y}; with tw (a holding) the way leads to that holding
-       by its roads and the last stretch goes straight to the point. True while on its way, false when goal cannot be reached
+       by its roads and the last stretch goes straight to the point; with road, it keeps to the roads where they go (off them a
+       tile costs WAY.keep times as much: a caravan's way, the owner's play-test 2: "only off the road when they run away"). True while on its way, false when goal cannot be reached
        from where o stands (the walker should pick another)
      Router.reach(a, b): can one walk from a to b (a holding from its own tile, anything else from its point)
      Router.days(a, b, pace): how many days' march from a to b at pace (px a world second, unscaled: MAP_BASE if left out);
@@ -12,10 +13,11 @@
    On today's map, the ways underneath as they always were: a holding's travel-cost field (flowTo), a search in a box (findPath)
    behind a straight look (clearLine); reach reads a label per tile, the piece of land it lies on (one flood fill a world).
    On the generated world (WM.graph, below), two levels: the way graph for long trips, those searches for each leg of them. ---------- */
-/* a holding's travel-cost field: the cost of the cheapest way from every tile to it, built on first use */
+/* a holding's travel-cost field: the cost of the cheapest way from every tile to it, built on first use; rm: off the roads x rm
+   (a road keeper's: a caravan's, WAY.keep), its own field */
 const FLOW={};
-function flowTo(tw){
-  if(FLOW[tw.name])return FLOW[tw.name];
+function flowTo(tw,rm){
+  const key=tw.name+(rm>1?'|road':'');if(FLOW[key])return FLOW[key];
   const dist=new Float64Array(MW*MH).fill(Infinity),heap=[];
   const push=(i,d)=>{heap.push([d,i]);let k=heap.length-1;while(k>0){const p=(k-1)>>1;if(heap[p][0]<=heap[k][0])break;[heap[p],heap[k]]=[heap[k],heap[p]];k=p}};
   const pop=()=>{const top=heap[0],last=heap.pop();if(heap.length){heap[0]=last;let k=0;for(;;){const l=2*k+1,r=l+1;let m=k;if(l<heap.length&&heap[l][0]<heap[m][0])m=l;if(r<heap.length&&heap[r][0]<heap[m][0])m=r;if(m===k)break;[heap[m],heap[k]]=[heap[k],heap[m]];k=m}}return top};
@@ -26,11 +28,11 @@ function flowTo(tw){
       if(!dx&&!dy)continue;const nx=x+dx,ny=y+dy;if(nx<0||ny<0||nx>=MW||ny>=MH)continue;
       const t=tiles[ny*MW+nx];if(!passable(t))continue;
       if(dx&&dy&&(!passable(tiles[y*MW+nx])||!passable(tiles[ny*MW+x])))continue;
-      const sp=t===T_ROAD?1.3:Math.max(.35,SPEEDMUL[t]*CLIMMUL[CLIMS[climate[ny*MW+nx]]]),nd=d+(dx&&dy?1.414:1)/sp,j=ny*MW+nx;
+      const sp=t===T_ROAD?1.3:Math.max(.35,SPEEDMUL[t]*CLIMMUL[CLIMS[climate[ny*MW+nx]]]),nd=d+(dx&&dy?1.414:1)/sp*(rm>1&&t!==T_ROAD&&t!==T_FORD?rm:1),j=ny*MW+nx;
       if(nd<dist[j]){dist[j]=nd;push(j,nd)}
     }
   }
-  return FLOW[tw.name]=dist;
+  return FLOW[key]=dist;
 }
 /* walking to a point (a patrol's beat, a worker's field, a band's camp): straight if nothing is in the way, else by the cheapest
    way over land and bridges, found once for each target and kept aside (never saved). True while on its way; false when the
@@ -40,8 +42,9 @@ let ROUTES=new WeakMap();
 onWorld(()=>{for(const k in FLOW)delete FLOW[k];ROUTES=new WeakMap()});
 // is the straight line from (x0,y0) to (x1,y1) open ground all the way
 function clearLine(x0,y0,x1,y1){const d=Math.hypot(x1-x0,y1-y0),n=Math.ceil(d/4);for(let i=1;i<=n;i++){const k=i/n;if(!passable(terrAt(x0+(x1-x0)*k,y0+(y1-y0)*k)))return false}return true}
-// the tiles to pass from one point to another by the cheapest way, searched within a box round both (pad tiles); null if none
-function findPath(x0,y0,x1,y1,pad){
+// the tiles to pass from one point to another by the cheapest way, searched within a box round both (pad tiles); null if none;
+// rm: off the roads x rm (a road keeper's)
+function findPath(x0,y0,x1,y1,pad,rm){
   pad=pad||16;const sx=Math.floor(x0/TILE),sy=Math.floor(y0/TILE),gx=Math.floor(x1/TILE),gy=Math.floor(y1/TILE);if(sx===gx&&sy===gy)return[];
   if(!passable(tAt(gx,gy)))return null;
   const bx=Math.max(0,Math.min(sx,gx)-pad),by=Math.max(0,Math.min(sy,gy)-pad),bw=Math.min(MW,Math.max(sx,gx)+pad+1)-bx,bh=Math.min(MH,Math.max(sy,gy)+pad+1)-by;
@@ -52,7 +55,7 @@ function findPath(x0,y0,x1,y1,pad){
   while(heap.length){const [,i]=pop();if(i===goal)break;const x=bx+i%bw,y=by+((i/bw)|0);
     for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){if(!dx&&!dy)continue;const nx=x+dx,ny=y+dy;if(nx<bx||ny<by||nx>=bx+bw||ny>=by+bh)continue;
       const t=tiles[ny*MW+nx];if(!passable(t)||SHUT&&SHUT[ny*MW+nx])continue;if(dx&&dy&&(!passable(tiles[y*MW+nx])||!passable(tiles[ny*MW+x])))continue;
-      const sp=t===T_ROAD?1.3:Math.max(.35,SPEEDMUL[t]*CLIMMUL[CLIMS[climate[ny*MW+nx]]]),j=L(nx,ny),nd=g[i]+(dx&&dy?1.414:1)/sp;
+      const sp=t===T_ROAD?1.3:Math.max(.35,SPEEDMUL[t]*CLIMMUL[CLIMS[climate[ny*MW+nx]]]),j=L(nx,ny),nd=g[i]+(dx&&dy?1.414:1)/sp*(rm>1&&t!==T_ROAD&&t!==T_FORD?rm:1);
       if(nd<g[j]){g[j]=nd;from[j]=i;push(j,nd+h(nx,ny))}}}
   if(!isFinite(g[goal]))return null;
   const out=[];for(let i=goal;i!==s0;i=from[i])out.push((by+((i/bw)|0))*MW+bx+i%bw);return out.reverse();
@@ -68,12 +71,12 @@ function routeTo(o,x,y,step){
     if(d<3){r.i++;continue}walk(o,cx-o.x,cy-o.y,Math.min(d,step));return true}
   walk(o,x-o.x,y-o.y,Math.min(dd,step));return true;
 }
-// step toward a holding along the cheapest route; the last stretch goes straight to (tx,ty)
-function travelTo(o,tw,tx,ty,step){
+// step toward a holding along the cheapest route (rm: off the roads x rm); the last stretch goes straight to (tx,ty)
+function travelTo(o,tw,tx,ty,step,rm){
   const dd=Math.hypot(tx-o.x,ty-o.y);if(dd<=1)return;
   const ox=Math.floor(o.x/TILE),oy=Math.floor(o.y/TILE);
   if(dd<TILE*1.6||(ox===tw.tx&&oy===tw.ty)){walk(o,tx-o.x,ty-o.y,Math.min(dd,step));return}
-  const f=flowTo(tw);let best=-1,bv=f[oy*MW+ox];
+  const f=flowTo(tw,rm);let best=-1,bv=f[oy*MW+ox];
   for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const nx=ox+dx,ny=oy+dy;if(nx<0||ny<0||nx>=MW||ny>=MH)continue;const v=f[ny*MW+nx];if(v<bv){bv=v;best=ny*MW+nx}}
   if(best<0){walk(o,tx-o.x,ty-o.y,Math.min(dd,step));return}
   const cx=(best%MW+.5)*TILE,cy=(Math.floor(best/MW)+.5)*TILE;walk(o,cx-o.x,cy-o.y,step);
@@ -97,7 +100,7 @@ const wayTile=p=>{const h=p instanceof Holding,tx=h?p.tx:Math.floor(p.x/TILE),ty
 // the way to a holding, a goal for Router.travel: the spot in front of its gate (dx along it), by the holding's roads
 const gateGoal=(t,dx)=>({x:t.x+(dx||0),y:t.y+12,tw:t});
 const Router={
-  travel(o,goal,step){if(WM.graph)return wayTravel(o,goal,step);if(goal.tw){travelTo(o,goal.tw,goal.x,goal.y,step);return true}return routeTo(o,goal.x,goal.y,step)},
+  travel(o,goal,step){if(WM.graph)return wayTravel(o,goal,step);if(goal.tw){travelTo(o,goal.tw,goal.x,goal.y,step,goal.road?WAY.keep:1);return true}return routeTo(o,goal.x,goal.y,step)},
   reach(a,b){const L=landPieces(),i=wayTile(a),j=wayTile(b);return i>=0&&j>=0&&L[i]>=0&&L[i]===L[j]},
   // (a holding's field costs tiles at open-ground pace; between two other places, the straight line if they share their land.
   // A day's march: pace x a day's world seconds, by the movement lever. The generated world: the graph's days at WAY.pace)
@@ -130,10 +133,10 @@ const Router={
    LRU of WAY.pairs), then walked leg by leg: each leg's tiles found when it is reached (a road's own tiles, a crossing's, a
    search between two nodes of a chunk) and the last stretch to the goal. Reach is the land's pieces, as on today's map */
 // its numbers: a border's open run cut into portals of this many tiles at most; trips this short (tiles, the larger of dx, dy)
-// searched on the tiles alone; the pair cache and the chunk tables kept; a ferry's crossing (days: §6.6.2); barges' tiles a day
+// searched on the tiles alone; the pair cache and the chunk tables kept; keep: a road keeper's cost off the roads, x; a ferry's crossing (days: §6.6.2); barges' tiles a day
 // down and up a river (§6.6.3); a chunk's tiles a side (WorldArt's CHUNK / TILE); pace, MAP_BASE (world.js, which loads after the
 // generator first runs at load: tests/router.js checks they agree)
-const WAY={run:10,near:40,pairs:1024,chunks:512,ferry:.05,barge:[260,90],cs:32,pace:34};
+const WAY={run:10,near:40,pairs:1024,chunks:512,ferry:.05,barge:[260,90],cs:32,pace:34,keep:4};
 // (the cost of stepping onto a tile of kind t, climate c: findPath's, in tiles at open-ground pace; the days one of those takes)
 const wayStep=(t,c)=>t===T_ROAD?1/1.3:1/Math.max(.35,SPEEDMUL[t]*CLIMMUL[CLIMS[c]]);
 const wayDay=()=>TILE/moveStep(WAY.pace,DAY_SECONDS*WORLD_PACE);
@@ -230,46 +233,49 @@ function wayEnds(G,t,rev){const NO=wayNodes(),x=t%MW,y=(t-x)/MW;if(NO.has(t))ret
   return out}
 // (the cheapest way over the graph from any start node of A ([node, days to it]...) to any goal node of B (a Map: node to the days
 // from it to the goal tile gt): A*, the straight way to gt at road pace still to go; land ways only (no river legs, no closed
-// crossing). {cost (days, A's and B's in), nodes, via (the edge taken into each node: its index; -1 a chunk's; -2 the start)}, or null)
+// crossing); rm: a road keeper's, the chunks' ways and the portals' steps (off the roads) x rm. {cost (days, A's and B's in), nodes,
+// via (the edge taken into each node: its index; -1 a chunk's; -2 the start)}, or null)
 let WAYA=null;
-function wayGraph(G,A,B,gt){const n=G.n,S=WAYA&&WAYA.g.length>=n?WAYA:(WAYA={g:new Float64Array(n),from:new Int32Array(n),via:new Int32Array(n),mark:new Uint32Array(n),done:new Uint32Array(n),st:0}),st=++S.st,H=WAYG;
+function wayGraph(G,A,B,gt,rm){rm=rm||1;const n=G.n,S=WAYA&&WAYA.g.length>=n?WAYA:(WAYA={g:new Float64Array(n),from:new Int32Array(n),via:new Int32Array(n),mark:new Uint32Array(n),done:new Uint32Array(n),st:0}),st=++S.st,H=WAYG;
   const gx=gt%MW,gy=(gt-gx)/MW,hm=wayDay()/1.3,h=v=>{const t=G.tile[v],dx=Math.abs(t%MW-gx),dy=Math.abs((t/MW|0)-gy);return(dx>dy?dx+.414*dy:dy+.414*dx)*hm};
   const relax=(u,v,c,e)=>{if(S.mark[v]!==st||c<S.g[v]){S.mark[v]=st;S.g[v]=c;S.from[v]=u;S.via[v]=e;H.push(c+h(v),v)}};
   H.n=0;for(const [v,c] of A)relax(-1,v,c,-2);let best=Infinity,bv=-1;
   while(H.n){if(H.top>=best)break;const u=H.pop();if(S.done[u]===st)continue;S.done[u]=st;const gu=S.g[u];
     if(B.has(u)&&gu+B.get(u)<best){best=gu+B.get(u);bv=u}
-    for(let e=G.off[u];e<G.off[u+1];e++){const k=G.ek[e];if(k===3||k===4||G.xing[e]>=0&&G.closed[G.xing[e]])continue;relax(u,G.to[e],gu+G.cost[e],e)}
+    for(let e=G.off[u];e<G.off[u+1];e++){const k=G.ek[e];if(k===3||k===4||G.xing[e]>=0&&G.closed[G.xing[e]])continue;relax(u,G.to[e],gu+G.cost[e]*(k===5?rm:1),e)}
     const T=wayChunk(G,wayChunkOf(G,G.tile[u])),ids=T.ids,k=ids.length,a=ids.indexOf(u);
-    for(let b=0;b<k;b++){const c=T.d[a*k+b];if(b!==a&&c<Infinity)relax(u,ids[b],gu+c,-1)}}
+    for(let b=0;b<k;b++){const c=T.d[a*k+b];if(b!==a&&c<Infinity)relax(u,ids[b],gu+c*rm,-1)}}
   if(bv<0)return null;const nodes=[],via=[];for(let v=bv;v>=0;v=S.from[v]){nodes.push(v);via.push(S.via[v])}
   return{cost:best,nodes:nodes.reverse(),via:via.reverse()}}
 // (the graph's way from tile s to tile g (gn: g's node, when it must end there: a holding's gate), the pair cache first between
-// two single nodes; counted in Router.stats)
-function wayRoute(G,s,g,gn){const t0=performance.now(),A=wayEnds(G,s,false),B=new Map(gn!=null?[[gn,0]]:wayEnds(G,g,true)),t1=performance.now();WAYS.localMs+=t1-t0;WAYS.queries++;
+// two single nodes (a road keeper's, rm, apart); counted in Router.stats)
+function wayRoute(G,s,g,gn,rm){const t0=performance.now(),A=wayEnds(G,s,false),B=new Map(gn!=null?[[gn,0]]:wayEnds(G,g,true)),t1=performance.now();WAYS.localMs+=t1-t0;WAYS.queries++;
   if(!A.length||!B.size)return null;let r=null;
-  if(A.length===1&&B.size===1){const [a,ca]=A[0],[b,cb]=[...B][0],k=a*G.n+b,c=PAIRS.get(k);if(c){WAYS.hits++;PAIRS.delete(k);PAIRS.set(k,c);r={cost:ca+c.g+cb,nodes:c.nodes,via:c.via}}}
-  if(!r&&(r=wayGraph(G,A,B,g))){const a=r.nodes[0],b=r.nodes[r.nodes.length-1];PAIRS.set(a*G.n+b,{g:r.cost-A.find(q=>q[0]===a)[1]-B.get(b),nodes:r.nodes,via:r.via});if(PAIRS.size>WAY.pairs)PAIRS.delete(PAIRS.keys().next().value)}
+  if(A.length===1&&B.size===1){const [a,ca]=A[0],[b,cb]=[...B][0],k=(a*G.n+b)*2+(rm>1?1:0),c=PAIRS.get(k);if(c){WAYS.hits++;PAIRS.delete(k);PAIRS.set(k,c);r={cost:ca+c.g+cb,nodes:c.nodes,via:c.via}}}
+  if(!r&&(r=wayGraph(G,A,B,g,rm))){const a=r.nodes[0],b=r.nodes[r.nodes.length-1];PAIRS.set((a*G.n+b)*2+(rm>1?1:0),{g:r.cost-A.find(q=>q[0]===a)[1]-B.get(b),nodes:r.nodes,via:r.via});if(PAIRS.size>WAY.pairs)PAIRS.delete(PAIRS.keys().next().value)}
   WAYS.graphMs+=performance.now()-t1;return r}
-// (the tiles from one point to another, searched in a box round both (findPath), then in a wider one; timed into Router.stats)
-const wayFind=(x0,y0,x1,y1)=>{const t0=performance.now(),p=findPath(x0,y0,x1,y1,8)||findPath(x0,y0,x1,y1,24);WAYS.localMs+=performance.now()-t0;return p};
+// (the tiles from one point to another, searched in a box round both (findPath), then in a wider one; rm: a road keeper's; timed
+// into Router.stats)
+const wayFind=(x0,y0,x1,y1,rm)=>{const t0=performance.now(),p=findPath(x0,y0,x1,y1,8,rm)||findPath(x0,y0,x1,y1,24,rm);WAYS.localMs+=performance.now()-t0;return p};
 const wayLine=(x0,y0,x1,y1)=>{if(!clearLine(x0,y0,x1,y1))return false;if(!SHUT)return true;const n=Math.ceil(Math.hypot(x1-x0,y1-y0)/4);for(let i=1;i<=n;i++){const x=x0+(x1-x0)*i/n,y=y0+(y1-y0)*i/n;if(SHUT[Math.floor(y/TILE)*MW+Math.floor(x/TILE)])return false}return true};
 const wayCentre=k=>[(k%MW+.5)*TILE,((k/MW|0)+.5)*TILE];
 // a walker's way to goal (a point; with tw, a holding reached by its gate's node): its legs, each walked in turn ({k: 'tiles'
 // (searched to tile b from wherever the walker stands), 'road' or 'xing' (edge e's own tiles: a road's, a bridge's or a ford's; a
 // ferry's crossing, sailed straight over), 'step' (over a portal's border to tile b), 'end' (the last stretch to the goal),
 // 'path' (all its tiles, p: a trip searched on the whole map)}), or legs null when there is none
-function wayTrip(o,goal){const G=WM.graph,s=Math.floor(o.y/TILE)*MW+Math.floor(o.x/TILE),g=Math.floor(goal.y/TILE)*MW+Math.floor(goal.x/TILE),sx=s%MW,gx=g%MW;
-  if(Math.max(Math.abs(sx-gx),Math.abs((s-sx)/MW-(g-gx)/MW))<=WAY.near){const t0=performance.now(),p=wayLine(o.x,o.y,goal.x,goal.y)?[]:findPath(o.x,o.y,goal.x,goal.y);WAYS.localMs+=performance.now()-t0;if(p)return{legs:[{k:'path',p}]}}
-  const gn=goal.tw?wayNodes().get(goal.tw.ty*MW+goal.tw.tx):null,r=s>=0&&g>=0&&s<MW*MH&&g<MW*MH?wayRoute(G,s,g,gn):null;
-  if(!r){if(!Router.reach(o,goal))return{legs:null};const t0=performance.now(),p=findPath(o.x,o.y,goal.x,goal.y,Math.max(MW,MH));WAYS.localMs+=performance.now()-t0;return{legs:p?[{k:'path',p}]:null}}
+// (a road keeper's (goal.road) the same, its ways off the roads x WAY.keep, never straight over open ground)
+function wayTrip(o,goal){const G=WM.graph,s=Math.floor(o.y/TILE)*MW+Math.floor(o.x/TILE),g=Math.floor(goal.y/TILE)*MW+Math.floor(goal.x/TILE),sx=s%MW,gx=g%MW,rm=goal.road?WAY.keep:1;
+  if(Math.max(Math.abs(sx-gx),Math.abs((s-sx)/MW-(g-gx)/MW))<=WAY.near){const t0=performance.now(),p=rm===1&&wayLine(o.x,o.y,goal.x,goal.y)?[]:findPath(o.x,o.y,goal.x,goal.y,0,rm);WAYS.localMs+=performance.now()-t0;if(p)return{legs:[{k:'path',p}]}}
+  const gn=goal.tw?wayNodes().get(goal.tw.ty*MW+goal.tw.tx):null,r=s>=0&&g>=0&&s<MW*MH&&g<MW*MH?wayRoute(G,s,g,gn,rm):null;
+  if(!r){if(!Router.reach(o,goal))return{legs:null};const t0=performance.now(),p=findPath(o.x,o.y,goal.x,goal.y,Math.max(MW,MH),rm);WAYS.localMs+=performance.now()-t0;return{legs:p?[{k:'path',p}]:null}}
   const L=[{k:'tiles',b:G.tile[r.nodes[0]]}];
   for(let i=1;i<r.nodes.length;i++){const e=r.via[i],b=G.tile[r.nodes[i]];L.push(e<0?{k:'tiles',b}:G.ek[e]===2?{k:'xing',e,b}:G.ek[e]===5?{k:'step',b}:{k:'road',e})}
   L.push({k:'end'});return{legs:L}}
 // (a leg's tiles, from where walker o stands: a list of tile indices; a ferry's {ferry: its far landing}; null if none is found)
-function wayLeg(L,o,goal){const G=WM.graph;
+function wayLeg(L,o,goal){const G=WM.graph,rm=goal.road?WAY.keep:1;
   if(L.k==='path')return L.p;if(L.k==='step')return[L.b];
-  if(L.k==='tiles'){const [x,y]=wayCentre(L.b);return Math.floor(o.x/TILE)+Math.floor(o.y/TILE)*MW===L.b?[]:wayFind(o.x,o.y,x,y)}
-  if(L.k==='end')return wayLine(o.x,o.y,goal.x,goal.y)?[]:wayFind(o.x,o.y,goal.x,goal.y);
+  if(L.k==='tiles'){const [x,y]=wayCentre(L.b);return Math.floor(o.x/TILE)+Math.floor(o.y/TILE)*MW===L.b?[]:wayFind(o.x,o.y,x,y,rm)}
+  if(L.k==='end')return wayLine(o.x,o.y,goal.x,goal.y)?[]:wayFind(o.x,o.y,goal.x,goal.y,rm);
   if(L.k==='road'){const p=WM.roads[G.leg[L.e*3]].path,a=G.leg[L.e*3+1],b=G.leg[L.e*3+2];return a<b?p.slice(a+1,b+1):p.slice(b,a).reverse()}
   const c=WM.crossings[G.xing[L.e]];if(c.kind==='ferry')return{ferry:L.b};return L.b===c.j?[...c.tiles,c.j]:[...c.tiles].reverse().concat(c.i)}
 // one step along the way to goal (Router.travel on the generated world): its legs found when the goal's tile changes (or the ways

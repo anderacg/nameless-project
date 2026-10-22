@@ -72,3 +72,5 @@ const ROAD_FLOCK=[[-8,1],[-13,-2],[-6,-3],[8,2],[12,-1],[-10,4]];
 /* the way one walking off takes (world/road.js roadOffGoal): near tiles to its road, steps along it, far × your sight away,
    offs: its ways (rad from straight away) */
 const ENC_OFF={near:1,steps:40,far:1.6,offs:[0,.5,-.5,1,-1,1.5,-1.5,2,-2,2.6,-2.6]};
+// (a camp or a scene beside the road (world/road.js ENC_ON byroad): a road tile within this many tiles, none within 1)
+const ENC_BY=3;

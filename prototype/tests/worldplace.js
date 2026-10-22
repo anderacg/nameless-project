@@ -2,7 +2,8 @@
 // The generator's placement (doc/WORLD_DESIGN.md §8.8, §8.11, §8.12, §15.2.3 B): on the classic seed, two Normal seeds and a
 // Large one, the holdings (counts by realm in PLACE_SHARE's ratio, a city each, the spacing table, unique names, capitals 0.3 x the
 // diagonal apart, a fair start, ports on water joined to the sea), the roads (every holding and camp reachable from every capital,
-// also with the flooding fords shut; road tiles 8-connected, never on a peak, no right-angle stairs; each road's line), the
+// also with the flooding fords shut; road tiles 8-connected, never on a peak, no right-angle stairs; each road's line; each from a
+// holding's gate, from in front, its line into water only at a crossing, the owner's play-test 2 world saltwell too), the
 // crossings (bridges over 3 tiles of water at most, no ford on a great river, ferries only on great rivers by towns and ports,
 // at most 60 tiles apart along a river wherever one can be made, else a bare stretch as INFO), the camps (density()'s, in the fringe), realm land within 30% of the mean, D10's lords, the same world twice; a made-up
 // map for the crossings' kinds; deposits and first stocks by the economy setting; lords from WM.lords. Works with the flag
@@ -10,9 +11,10 @@
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.push('INFO '+m),t=T,J=JSON.stringify;
 try{
  const pn=()=>performance.now(),gen=s=>{const S=t.genWorldSteps(s),ms={};let r;for(const st of S){const a=pn(),it=st.run();let v;while(!(v=it.next()).done);r=v.value;ms[st.id]=pn()-a}r.ms=ms;r.stats={...t.PLACE_STATS};return r};
- const worlds=[['classic',t.classicSettings()],['Normal redwater',{preset:'normal',seed:'redwater'}],['Normal bluewater',{preset:'normal',seed:'bluewater'}],['Large redwater',{preset:'large',seed:'redwater',holdings:55}]];// (Large at More, 55 holdings: a world with lords of its own, D10)
+ const worlds=[['classic',t.classicSettings()],['Normal redwater',{preset:'normal',seed:'redwater'}],['Normal bluewater',{preset:'normal',seed:'bluewater'}],['Large redwater',{preset:'large',seed:'redwater',holdings:55}],
+  ['saltwell',t.parseWorldCode('ASH1-X-2V40O9HH-saltwell')]];// (Large at More, 55 holdings: a world with lords of its own, D10; saltwell: the owner's play-test 2 world, Huge, whose roads ran into the river)
  const R={};for(const [k,s] of worlds)R[k]=gen(s);
- for(const [name] of worlds){const r=R[name],m=r.map,W=m.w,H=m.h,K=m.kind,Hd=r.holdings,ti=h=>h.ty*W+h.tx,d2=(a,b)=>(a.tx-b.tx)*(a.tx-b.tx)+(a.ty-b.ty)*(a.ty-b.ty),cl=m.classic;
+ for(const [name] of worlds){const r=R[name],m=r.map,W=m.w,H=m.h,K=m.kind,Hd=r.holdings,ti=h=>h.ty*W+h.tx,d2=(a,b)=>(a.tx-b.tx)*(a.tx-b.tx)+(a.ty-b.ty)*(a.ty-b.ty),cl=m.classic,sw=name==='saltwell';
   info(name+': '+Object.keys(r.ms).map(k=>k+' '+r.ms[k].toFixed(0)).join(', ')+' ms; '+r.stats.roads+' roads, '+(r.stats.ms/Math.max(1,r.stats.roads)).toFixed(1)+' ms a road (most '+r.stats.max.toFixed(1)+'); tries '+t.GEN_STAGES.slice(6,9).map(s=>s.id+' '+r.tries[s.id]).join(', ')+'; relaxed: '+(r.relaxed.join('; ')||'nothing'));
   // ---- the holdings
   const fewer=r.relaxed.filter(x=>/one fewer/.test(x)).length,N=m.settings.holdings-fewer*5,q=t.placeQuota(N),by=f=>Hd.filter(h=>h.realm===f),caps=t.PLACE_REALMS.map(f=>by(f).find(h=>h.kind==='city'));
@@ -20,7 +22,7 @@ try{
   else ok(Hd.length===N&&t.PLACE_REALMS.every(f=>by(f).length===q[f]&&by(f).filter(h=>h.kind==='city').length===1),name+': '+Hd.length+' holdings ('+m.settings.holdings+' asked'+(fewer?', '+fewer+' fewer a realm':'')+'), by realm '+t.PLACE_REALMS.map(f=>by(f).length).join('/')+', a city each; kinds '+['city','town','castle','village'].map(k=>Hd.filter(h=>h.kind===k).length+' '+k).join(', '));
   if(cl){const A=t.classicAnchors(),far=Hd.filter((h,k)=>Math.max(Math.abs(h.tx-A[k].tx),Math.abs(h.ty-A[k].ty))>4);info(name+': '+(37-far.length)+' of 37 within 4 tiles of their anchors'+(far.length?' (not: '+far.map(h=>h.name).join(', ')+')':''))}
   else{const near=[];for(let a=0;a<Hd.length;a++)for(let b=a+1;b<Hd.length;b++){const A=Hd[a],B=Hd[b],g=A.kind==='city'&&B.kind==='city'?.3*Math.sqrt(W*W+H*H):t.placeGap(A.kind,B.kind);if(d2(A,B)<g*g)near.push(A.name+'-'+B.name)}
-   ok(!near.length,name+': the spacing table holds between every two holdings, capitals '+(.3*Math.sqrt(W*W+H*H)).toFixed(0)+' tiles apart (0.3 x the diagonal)'+(near.length?': '+near.slice(0,4).join(', '):''))}
+   (sw?m=>info(m+' (its generator gave up on the capitals: kept, the play-test’s world as it was)'):m=>ok(!near.length,m))(name+': the spacing table holds between every two holdings, capitals '+(.3*Math.sqrt(W*W+H*H)).toFixed(0)+' tiles apart (0.3 x the diagonal)'+(near.length?': '+near.slice(0,4).join(', '):''))}
   ok(new Set(Hd.map(h=>h.name)).size===Hd.length&&Hd.every(h=>h.name&&h.note&&h.races.length&&(h.kind==='castle'||h.mod&&Object.keys(h.mod).length===6)),name+': unique names, each with its races, note and (but castles) prices: '+Hd.slice(0,3).map(h=>h.name+' ('+h.note+')').join(' '));
   {const bad=caps.filter(c=>Hd.filter(h=>h!==c&&d2(h,c)<=t.PLACE.day*t.PLACE.day).length<3);(cl?m=>info(m):m=>ok(!bad.length,m))(name+': a fair start: each capital has 3 holdings within '+t.PLACE.day+' tiles'+(bad.length?' (not: '+bad.map(c=>c.name).join(', ')+')':''))}
   // realm land (§8.14 Balanced: each realm's within 30% of their mean), as territory.js claims it at the start (placeRealmLand)
@@ -42,6 +44,19 @@ try{
    ok(!bad.length&&m.roads.every(rd=>['road','track'].includes(rd.kind)&&Hd.some(h=>h.name===rd.a)&&Hd.some(h=>h.name===rd.b)),name+': '+m.roads.length+' roads ('+m.roads.filter(rd=>rd.kind==='road').length+' great), '+tiles+' tiles, each 8-connected, never on a peak, on water only at a crossing; their lines '+pts+' points'+(bad.length?': '+bad.slice(0,4).join(', '):''));
    ok(stairs<=tiles*.01,name+': no right-angle stairs (corner tiles where the next touches the one before, but within 6 tiles of a holding, where roads go 4 ways: '+stairs+' of '+tiles+')');
    const on=new Set(m.roads.flatMap(rd=>rd.path).filter(i=>K[i]===t.T_ROAD&&!(m.feat[i]&32))),ft=[...on].filter(i=>m.feat[i]&64).length,tr=[...on].filter(i=>m.feat[i]&128).length;ok(ft>0&&ft+tr===on.size,name+': road tiles marked great road ('+ft+') or track ('+tr+') of '+on.size)}
+  // ---- no road runs into water but by a crossing (the owner's play-test 2: a road went straight into the river): each road from
+  // a holding's tile out through its gate below it and in through the other's, never through a holding's centre (placeBox) nor the
+  // ring beside and behind it; its line over water only where a crossing spans it (16 points a tile; a graze of a water tile's
+  // corner under 0.15 tile, 2.4 px, let pass: the art's road is wider)
+  {const X=new Set(m.crossings.flatMap(c=>[...c.tiles])),hold=new Map(Hd.map(h=>[ti(h),h])),ring=new Map(),bad=[],wet=[];
+   for(const h of Hd){const b=t.placeBox(h);for(let y=b.y-1;y<=h.ty;y++)for(let x=b.x-1;x<=b.x+b.n;x++)if(m.has(x,y))ring.set(y*W+x,h)}
+   for(const rd of m.roads){const P=rd.path,a=hold.get(P[0]),b=hold.get(P[P.length-1]),g=h=>(h.ty+1)*W+h.tx;
+    if(!a||!b||P[1]!==g(a)||P[P.length-2]!==g(b))bad.push(rd.a+'-'+rd.b+' ends');
+    for(let k=1;k<P.length-1;k++)if(ring.has(P[k])){bad.push(rd.a+'-'+rd.b+' by '+ring.get(P[k]).name);break}
+    for(const l of rd.line)for(let k=2;k<l.length;k+=2){const ax=l[k-2],ay=l[k-1],n=Math.ceil(Math.hypot(l[k]-ax,l[k+1]-ay)*16);
+     for(let s=0;s<=n;s++){const x=ax+(l[k]-ax)*s/n,y=ay+(l[k+1]-ay)*s/n,i=Math.floor(y)*W+Math.floor(x),fx=x%1,fy=y%1;if(K[i]===t.T_WATER&&!X.has(i)&&Math.min(fx,fy,1-fx,1-fy)>=.15){wet.push(rd.a+'-'+rd.b+' '+x.toFixed(1)+','+y.toFixed(1));break}}}}
+   ok(!bad.length,name+': every road runs from a holding out through its gate, in front of its centre, to another’s; none past a centre’s sides or back'+(bad.length?': '+bad.slice(0,4).join(', '):''));
+   ok(!wet.length,name+': no road’s line runs into water but where a crossing spans it'+(wet.length?': '+wet.slice(0,4).join(', '):''))}
   // ---- crossings
   {const bad=[],w=c=>Math.max(...c.tiles.map(i=>m.river[i]&3)),town=new Uint8Array(W*H);
    for(const h of Hd)if(h.kind==='town'||h.kind==='city'||h.style==='port')for(let b=-8;b<=8;b++)for(let a=-8;a<=8;a++)if(a*a+b*b<=64&&m.has(h.tx+a,h.ty+b))town[(h.ty+b)*W+h.tx+a]=1;
@@ -76,7 +91,12 @@ try{
  // ---- the world in use, when generated: every holding's gate (lots.js leads the roads round its centre to it) on the roads, joined 8 ways
  if(t.WM.gen==='ashmark-1'){t.act('begin','soldier');const MW=t.MW,MH=t.MH,road=i=>t.tiles[i]===t.T_ROAD||t.tiles[i]===t.T_FORD,gate=z=>{const c=t.lotCentre(z);return(c.y+c.n)*MW+z.tx},seen=new Uint8Array(MW*MH),q=[gate(t.TOWNS[0])];seen[q[0]]=1;
   for(let a=0;a<q.length;a++){const i=q[a],x=i%MW;for(let b=-1;b<=1;b++)for(let c=-1;c<=1;c++){const j=i+c+b*MW;if(x+c>=0&&x+c<MW&&j>=0&&j<MW*MH&&!seen[j]&&road(j)){seen[j]=1;q.push(j)}}}
-  const cut=t.TOWNS.filter(z=>!road(gate(z))||!seen[gate(z)]);ok(!cut.length,'the world in use: every holding’s gate on the roads, the roads joining them all (8 ways)'+(cut.length?': not '+cut.map(z=>z.name).join(', '):''))}
+  const cut=t.TOWNS.filter(z=>!road(gate(z))||!seen[gate(z)]);ok(!cut.length,'the world in use: every holding’s gate on the roads, the roads joining them all (8 ways)'+(cut.length?': not '+cut.map(z=>z.name).join(', '):''));
+  // (and no road stops at the water: a road tile with one road beside it (8 ways), the water beside it (4 ways), is a crossing's)
+  const X=new Set(t.WM.crossings.flatMap(c=>[c.i,c.j,...c.tiles])),dead=[];
+  for(let i=0;i<MW*MH;i++){if(!road(i)||X.has(i))continue;const x=i%MW;let n=0;for(let b=-1;b<=1;b++)for(let c=-1;c<=1;c++){const j=i+c+b*MW;if((b||c)&&x+c>=0&&x+c<MW&&j>=0&&j<MW*MH&&road(j))n++}
+   if(n<=1&&[1,-1,MW,-MW].some(s=>t.tiles[i+s]===t.T_WATER))dead.push(x+','+((i-x)/MW))}
+  ok(!dead.length,'the world in use: no road stops at the water but at a crossing'+(dead.length?': '+dead.slice(0,6).join(' '):''))}
  // ---- the same world twice; another seed another
  {const a=gen({preset:'normal',seed:'redwater'}),b=R['Normal redwater'];ok(a.map.sum===b.map.sum&&J(a.map.roads)===J(b.map.roads)&&J(a.map.crossings)===J(b.map.crossings)&&J(a.camps)===J(b.camps)&&J(a.holdings)===J(b.holdings),'the same settings make the same holdings, roads (and lines), crossings and camps ('+a.map.sum.toString(16)+')');
   ok(J(R['Normal bluewater'].holdings)!==J(b.holdings),'another seed places other holdings')}

@@ -10,6 +10,16 @@ try{
  const sig=TW.filter(z=>z.kind==='town').map(z=>z.lots.filter(l=>l.k==='house').map(l=>(l.x-z.tx)+','+(l.y-z.ty)+l.type).join(';'));
  ok(new Set(sig).size===sig.length,'every town is laid out its own way ('+sig.length+' towns, '+new Set(sig).size+' layouts)');
  ok(TW.every(z=>t.housing(z)>=z.pop),'every holding starts with room for its people (houses and centre)');
+ // ---- nothing built on a road (the owner's play-test 2): no building (but the centre, whose gate the road leads into) and no
+ // field on a road tile, nor where the road is painted: the middle of the road as the art draws it (the generated world: along its
+ // smoothed lines, worldart.js artGenPlan's segments; today's map: roadStamps' middle) 2 px or more inside one of its tiles
+ {const MW=t.MW,gen=t.WM.gen!=='classic-0',pts=[],own=new Map();
+  if(gen){const P={tramples:[]};t.artGenPlan(P,()=>{});const S=P.segs;for(let k=0;k<S.length;k+=5){const a=S[k],b=S[k+1],c=S[k+2],d=S[k+3],n=Math.max(1,Math.ceil(Math.hypot(c-a,d-b)));for(let s=0;s<=n;s++)pts.push([a+(c-a)*s/n,b+(d-b)*s/n])}}
+  else{const P={towns:new Set(TW.map(z=>z.ty*MW+z.tx)),shift:new Set(TW.flatMap(z=>[z.ty*MW+z.tx,(z.ty+1)*MW+z.tx]))};for(let ty=0;ty<t.MH;ty++)for(let tx=0;tx<MW;tx++)t.roadStamps(P,tx,ty,2,(x,y,w)=>pts.push([x+w/2,y+w/2]))}
+  for(const z of TW)for(const l of z.lots||[])if(l.k!=='centre'){t.lotTiles(l,(x,y)=>own.set(y*MW+x,z.name+' '+l.k));for(const [x,y] of l.plots||[])own.set(y*MW+x,z.name+' '+l.k+' field')}
+  const bad=new Set();for(const [i,w] of own)if(t.tiles[i]===t.T_ROAD)bad.add(w+' (a road tile)');
+  for(const [x,y] of pts){const i=Math.floor(y/TILE)*MW+Math.floor(x/TILE),fx=x%TILE,fy=y%TILE;if(own.has(i)&&Math.min(fx,fy,TILE-fx,TILE-fy)>=2)bad.add(own.get(i)+' at '+Math.floor(x/TILE)+','+Math.floor(y/TILE))}
+  ok(!bad.size,'no building nor field stands on a road, its tiles or where it is painted ('+(gen?'along its lines':'by its tiles')+'; '+own.size+' tiles built on)'+(bad.size?': '+[...bad].slice(0,6).join('; '):''))}
  // ---- walls are the centre's fortification: no wall pieces on the map, nothing blocks travel
  ok(TW.every(z=>{const c=t.lotCentre(z);t.lotSprite(z,c);return !z.lots.some(l=>l.k==='wall')&&c._fort===t.wallOf(z)}),'every holding’s walls are its centre’s fortification (no wall pieces stand on the map)');
  {const z=TW.find(q=>t.wallOf(q)>=2),c=t.lotCentre(z),s0=t.lotSprite(z,c);t.breach(z);const s1=t.lotSprite(z,c);ok(c._fort===t.wallOf(z)&&s1!==s0,'a breach lowers it, and the centre is drawn with its lower walls ('+t.WALL_N[t.wallOf(z)]+')')}

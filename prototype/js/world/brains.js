@@ -110,15 +110,15 @@ class PatrolBrain extends Brain{
   }
 }
 
-// a caravan (CaravanParty, caravans.js): on the road to its market, away from you if you are its enemy; bandits and enemy lords
-// near it fall on it
+// a caravan (CaravanParty, caravans.js): on the road to its market (keeping to the roads where they go: Router.travel's road),
+// off it only away from you if you are its enemy; bandits and enemy lords near it fall on it
 class CaravanBrain extends Brain{
   think(c,d){
     if(c.idle||inFight(c))return false;
     this.cool(c,d);const to=townBy(c.to);if(!to||!c.mine&&atWar(to.owner,c.fac)){c.gone=true;return false}
     const v=this.look(c),pd=v.d,scared=!c.mine&&hostileTo(c.fac)&&pd<this.sight(WORLD_SCALE.sight.caravan);
     if(scared){walk(c,-v.dx,-v.dy,moveStep(CARAVAN_SPD*.9,d));c.dir=v.dx>0?-1:1}
-    else{const ox=c.x;Router.travel(c,gateGoal(to),moveStep(CARAVAN_SPD*Math.max(.5,speedAt(c.x,c.y)||1),d));c.dir=c.x>=ox?1:-1}
+    else{const ox=c.x;Router.travel(c,{...gateGoal(to),road:true},moveStep(CARAVAN_SPD*Math.max(.5,speedAt(c.x,c.y)||1),d));c.dir=c.x>=ox?1:-1}
     if(Math.hypot(to.x-c.x,to.y+12-c.y)<8){if(c.arrive(to))c.gone=true;return false}
     // preyed on: bandits close by, or a lord at war with its owner; the guards fight it out (fights.js)
     const b=bandits.find(o=>Math.hypot(o.x-c.x,o.y-c.y)<12&&!o.cvT);
