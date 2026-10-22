@@ -14,7 +14,11 @@ try{
  // (the generated world: a world bridge within N tiles, from its crossings; a spec less what the world now gives)
  const BT=new Set();if(GEN)for(const c of t.WM.crossings)if(c.kind==='bridge')for(const j of [c.i,c.j,...c.tiles])BT.add(j);
  const genBridge=(tx,ty,N)=>{for(let dy=-N;dy<=N;dy++)for(let dx=-N;dx<=N;dx++){const x=tx+dx,y=ty+dy;if(x>=0&&y>=0&&x<MW&&y<MH&&BT.has(y*MW+x))return true}return false};
- const strip=(s,S)=>{if(!GEN||s[0]!=='{')return s;const g=JSON.parse(s);delete g.wr;delete g.high;if(S&&S.river)delete g.river;else if(g.river&&'bridge' in g.river)g.river.bridge=0;return JSON.stringify(g)};
+ // (battle follows the world (World Phase 2b, tests/battleworld.js): the mix, a pond, what stands by the fight and a lane or a track
+ // are the world's too; by a brook or a pond the river is theirs (a brook's stream; a pond's water no river), and by a pond the
+ // edges (its water no edge's: the pond is its own feature)
+ const strip=(s,S)=>{if(!GEN||s[0]!=='{')return s;const g=JSON.parse(s);delete g.wr;delete g.high;delete g.mix;delete g.pond;delete g.built;if(g.road){delete g.road.lane;delete g.road.track}if(S&&S.pond)delete g.edges;
+  if(S&&(S.river||S.brook||S.pond))delete g.river;else if(g.river&&'bridge' in g.river)g.river.bridge=0;return JSON.stringify(g)};
  // ---- today's direct reads (as setup.js, terrain.js and engage.js read the world before R17)
  const oldEnv=()=>{const r=t.regionAt(P.x,P.y),tt=r.t===T_MOUNT||r.t===T_WATER?T_HILL:r.t,c=r.c;
   const text=tt===T_FOREST?'Trees block movement and stop some arrows. Elves shoot through them.':tt===T_HILL?'High ground: archers reach 15% farther.'
@@ -52,7 +56,7 @@ try{
  // bridge's make, wet ground; high: as the site's); a river where the world has one by the tile, never in the desert)
  const sameGen=(a,b,S)=>{const A=JSON.parse(a),Bq=JSON.parse(b);if(strip(a,S)!==strip(b,S))return false;const X=S.crossing;
   if(S.river&&Bq.recipe!=='desert')return !!Bq.river&&Bq.river.bridge===(!!X&&X.kind==='bridge')&&!!Bq.river.ferry===(!!X&&X.kind==='ferry')&&!!Bq.wr&&Bq.wr.w===S.river.w&&J(Bq.high||null)===J(S.high);
-  if(Bq.wr)return false;if(A.river&&'bridge' in A.river&&Bq.river.bridge!==(S.bridge!==null&&S.bridge<=t.TERRAIN_RIVER.near))return false;return J(Bq.high||null)===J(S.high)};
+  if(Bq.wr)return false;if(S.brook||S.pond)return J(Bq.high||null)===J(S.high);if(A.river&&'bridge' in A.river&&Bq.river.bridge!==(S.bridge!==null&&S.bridge<=t.TERRAIN_RIVER.near))return false;return J(Bq.high||null)===J(S.high)};
  const genType=(e,S)=>{const env=t.battleEnv(false,S),g=t.terrainOf(S,env);if(g.river&&!g.river.frozen&&!g.river.stream&&genBridge(g.tx,g.ty,t.BTYPE_WORLD.near))return{kind:'bridge',def:e.mine?1:0,ford:t.hash(g.tx,g.ty,4447)<t.BTYPE.ford};return null};
  const mix=(h,s)=>{for(let i=0;i<s.length;i++)h=Math.imul(h^s.charCodeAt(i),16777619)>>>0;return h};
  for(let ty=0;ty<MH;ty++)for(let tx=0;tx<MW;tx++){const x=(tx+.5)*TILE,y=(ty+.5)*TILE,at=tx+','+ty;P.x=x;P.y=y;
@@ -85,9 +89,9 @@ try{
   ok(gs.held<=.25*gs.road,'Hold the bridge on the generated world\'s roads: '+(100*gs.held/Math.max(1,gs.road)).toFixed(1)+'% of their tiles, at most 25%')}
  P.x=px;P.y=py;G.enc=enc;t.TERRAIN.on=on;
  // ---- the site's shape: today's values, the slots empty, the classic world's salt 0 and in the seed
- {const S=t.WM.battleSite(10,10),keys='tx ty t c name kinds clims road bridge elven salt river crossing season region deep elev terrace rough high cliff'.split(' ');
+ {const S=t.WM.battleSite(10,10),keys='tx ty t c name kinds clims road bridge elven salt river crossing season region deep elev terrace rough high cliff temp moist mix pond brook lane lots'.split(' ');
   ok(keys.every(k=>k in S)&&Object.keys(S).length===keys.length&&S.kinds.length===9&&S.clims.length===9,'a BattleSite: '+Object.keys(S).join(', '));
-  if(!GEN)ok(['river','crossing','season','region','deep','elev','terrace','rough','high','cliff'].every(k=>S[k]===null)&&t.WM.salt===0&&S.salt===0,'its later slots (river, crossing, season, region, deep forest, elevation, terrace, roughness, high ground, cliff) are empty, and the classic world\'s salt is 0');
+  if(!GEN)ok(['river','crossing','season','region','deep','elev','terrace','rough','high','cliff','temp','moist','mix','pond','brook','lane','lots'].every(k=>S[k]===null)&&t.WM.salt===0&&S.salt===0,'its later slots (river, crossing, season, region, deep forest, elevation, terrace, roughness, high ground, cliff; the world round it: temp, moist, mix, pond, brook, lane, lots) are empty, and the classic world\'s salt is 0');
   else{const m=t.WM,bad2=[];let nr=0,nx=0,nh=0;for(let i=0;i<N;i+=7){const tx=i%MW,ty=Math.floor(i/MW),q=m.battleSite(tx,ty),h=m.high[i]&3;let w=0;for(let b=-1;b<=1;b++)for(let a=-1;a<=1;a++)if(m.has(tx+a,ty+b))w=Math.max(w,m.river[(ty+b)*MW+tx+a]&3);
     if(q.river)nr++;if(q.crossing)nx++;if(q.high)nh++;
     const hb=h?!q.high||q.high.kind!==['','rise','steep','cliffed'][h]||q.high.scree!==!!(m.high[i]&32)||q.high.mixed!==!!(m.high[i]&64)||q.high.mixed!==(q.high.shoulder!=null):q.high!==null;

@@ -49,13 +49,19 @@ function battleEnv(tourney,S){
     :c==='frost'?'Snow slows everyone but dwarves and wolves.':c==='desert'?'The heat slows melee attacks, except for orcs and scorpions.':c==='swamp'?'Mud slows everyone and stalls cavalry charges. Orcs wade through.':'Open ground: cavalry rides 15% faster.';
   return{c,t,name:r.name,text};
 }
+/* the climate's ground (envStats, the field's; on a field at a climates' edge each soldier's where he stands: terrain.js speedFor):
+   speed on foot and mounted (×1 at home there, when home), and the HUD's words for a group standing on it (terrain.js label). The
+   desert's heat (melee ×1.1 slower but for shooters and those at home there) is the air's, so the field's alone. None on a forest's or
+   a hill's tile (their ground is the terrain's) */
+const CLIM_GROUND={frost:{foot:.85,mounted:.85,home:true,n:'In the snow (slowed)'},swamp:{foot:.8,mounted:.65,home:true,n:'In the mud (slowed)'},
+  grass:{foot:1,mounted:1.15,n:'On the grass (riders faster)'},desert:{foot:1,mounted:1,n:'On the sand'}};
+// (its speed × on climate c's ground, on world tile kind t: s his stats, home his homes)
+const climSpd=(s,home,c,t)=>{const G=t===T_FOREST||t===T_HILL?null:CLIM_GROUND[c];return !G||G.home&&home.includes(c)?1:s.mounted?G.mounted:G.foot};
 function envStats(s,race,env){
   if(s.big)return s;const o={...s},home=race?RACES[race].home:s.home||[],c=env.c,t=env.t;
   if(t===T_FOREST||t===T_HILL){if(t===T_HILL&&s.range&&!env.terrain)o.range*=1.15}// (with terrain the hills earn it where they stand, D2: terrain.js)
-  else if(c==='frost'&&!home.includes('frost'))o.spd*=.85;
-  else if(c==='desert'&&!s.range&&!home.includes('desert'))o.cd*=1.1;
-  else if(c==='swamp'&&!home.includes('swamp'))o.spd*=s.mounted?.65:.8;
-  else if(c==='grass'&&s.mounted)o.spd*=1.15;
+  else if(c==='desert'){if(!s.range&&!home.includes('desert'))o.cd*=1.1}
+  else{const k=climSpd(s,home,c,t);if(k!==1)o.spd*=k}
   return o;
 }
 function placeObstacles(env,y0,y1){y0=y0==null?FIELD_EDGE.top:y0;y1=y1==null?BH-FIELD_EDGE.bot:y1;

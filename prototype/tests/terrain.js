@@ -193,14 +193,16 @@ try{
   {const near=(i,f,N=1)=>{const tx=i%t.MW,ty=Math.floor(i/t.MW);for(let dy=-N;dy<=N;dy++)for(let dx=-N;dx<=N;dx++)if((dx||dy)&&f(tx+dx,ty+dy))return true;return false},water=(a,b)=>t.tAt(a,b)===t.T_WATER,
     decks=new Set(t.WM.crossings.filter(c=>c.kind==='bridge').flatMap(c=>c.tiles)),// (the generated world's bridges are its crossings: a road between two waters may be a causeway)
     rb=(a,b)=>t.WM.gen==='classic-0'?t.tAt(a,b)===t.T_ROAD&&(water(a-1,b)&&water(a+1,b)||water(a,b-1)&&water(a,b+1)):decks.has(b*t.MW+a),spot=i=>({x:(i%t.MW+.5)*t.TILE,y:(Math.floor(i/t.MW)+.5)*t.TILE});
+   // (a brook by the tile (World Phase 2b, the generated world's: BattleSite's brook) runs a stream of its own: tests/battleworld.js)
+   const brook=i=>!!t.WM.battleSite(i%t.MW,Math.floor(i/t.MW)).brook;
    let wet=-1,dry=-1,br=-1,frost=-1,desert=-1;for(let i=0;i<t.MW*t.MH;i++){if(t.tiles[i]!==t.T_OPEN)continue;const cl=t.CLIMS[t.climate[i]],w=near(i,water);
-    if(cl==='grass'&&w&&wet<0)wet=i;if(cl==='grass'&&!w&&dry<0)dry=i;if(cl!=='desert'&&cl!=='frost'&&w&&br<0&&near(i,rb,2))br=i;if(cl==='frost'&&w&&frost<0)frost=i;if(cl==='desert'&&w&&desert<0)desert=i}
+    if(cl==='grass'&&w&&wet<0)wet=i;if(cl==='grass'&&!w&&dry<0&&!brook(i))dry=i;if(cl!=='desert'&&cl!=='frost'&&w&&br<0&&near(i,rb,2))br=i;if(cl==='frost'&&w&&frost<0)frost=i;if(cl==='desert'&&w&&desert<0)desert=i}
    const at2=(i,c)=>{const p=spot(i);return t.terrainAt(p.x,p.y,{c,t:t.T_OPEN})};
    ok(wet>=0&&at2(wet,'grass').river&&!at2(dry,'grass').river,'a battle beside water has a river ('+JSON.stringify(at2(wet,'grass').river)+'), one away from it none');
    ok(br<0||at2(br,'grass').river.bridge,'a road bridge within '+V.near+' tiles gives the field a bridge'+(br<0?' (no such tile on this map)':''));
    ok(frost<0||at2(frost,'frost').river.frozen,'in the frost the river is frozen'+(frost<0?' (no such tile)':''));
    ok(desert<0||!at2(desert,'desert').river&&at2(desert,'desert').oasis,'a desert by water has an oasis, never a river'+(desert<0?' (no such tile)':''));
-   {let st=0,n=0;for(let i=0;i<t.MW*t.MH&&n<200;i++){if(t.tiles[i]!==t.T_OPEN||t.CLIMS[t.climate[i]]!=='swamp'||near(i,water))continue;n++;const r=at2(i,'swamp').river;if(r&&r.stream)st++}
+   {let st=0,n=0;for(let i=0;i<t.MW*t.MH&&n<200;i++){if(t.tiles[i]!==t.T_OPEN||t.CLIMS[t.climate[i]]!=='swamp'||near(i,water)||brook(i))continue;n++;const r=at2(i,'swamp').river;if(r&&r.stream)st++}
     ok(!n||st>n*.3&&st<n*.7,'a swamp away from water: a ford-only stream about half the time ('+st+'/'+n+')')}
    const p=spot(wet),envW={c:'grass',t:t.T_OPEN};P.x=p.x;P.y=p.y;const sp=k=>{G.enc={kind:k};return t.groundSpecFor({},envW)};
    ok(sp('party').river&&sp('lord').river&&sp('monster').river===null&&sp('cave').river===null&&sp('siege')===null,'river fields for lords and parties; none against a monster or in a cave (hills and woods only), no terrain in a siege');

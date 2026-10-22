@@ -58,11 +58,53 @@ class WorldMap{
       if(xk>=0){const c=this.crossings[xk];o.crossing={kind:c.kind,d:xd,stone:!!c.stone,toll:c.toll||null}}
       if(on){const e=this.elev[i],h=this.high[i];o.elev=e;o.terrace=Math.max(0,Math.min(3,(e-64)>>5));o.rough=this.rough[i];
         if(h&3){let sh=null;if(h&64){let lo=256;for(let k=0;k<8;k++){const x=tx+DIR8[k][0],y=ty+DIR8[k][1];if(!this.has(x,y))continue;const r=this.rough[y*W+x];if(r<lo){lo=r;sh=k}}}
-          o.high={kind:['','rise','steep','cliffed'][h&3],up:(h>>2)&7,scree:!!(h&32),mixed:!!(h&64),shoulder:sh}}}}
+          o.high={kind:['','rise','steep','cliffed'][h&3],up:(h>>2)&7,scree:!!(h&32),mixed:!!(h&64),shoulder:sh}}
+        Object.assign(o,this.siteNear(tx,ty))}}
     else for(let dy=-R.bridge;dy<=R.bridge;dy++)for(let dx=-R.bridge;dx<=R.bridge;dx++){const d=Math.max(Math.abs(dx),Math.abs(dy));if((bridge===null||d<bridge)&&this.roadBridge(tx+dx,ty+dy))bridge=d}
     const t=kinds[4],c=clims[4],elven=TOWNS.some(o=>o.races&&o.races.length===1&&o.races[0]==='elf'&&Math.hypot(o.tx-tx,o.ty-ty)<=R.elfR);
     return battleSiteOf({tx,ty,t,c,name:REGION_NAMES[c][t],kinds,clims,road:t===T_ROAD?{ns:kinds[1]===T_ROAD||kinds[7]===T_ROAD}:null,bridge,elven,salt:this.salt,...o})}
+  /* (the world round a generated world's fight, beside its tile (doc/TERRAIN_DESIGN.md §8, "Battle follows the world as built"),
+     each only where there is any: temp, moist (the tile's); mix, its climates mixed (the map's own covers, worldart.js coverOf, read
+     at the 9 tiles as weights: each other climate's cover, the grass the rest): {c, the other climate most there; share, its mean
+     weight; dir, [x, y] toward it (east, south); w, its weight at each tile, row by row; shares, every climate's}, none where every
+     tile is the fight's own climate past SITE_NEAR.pure; pond, the water of a pond or an oasis among the 9 tiles (WM.ponds, WM.oases:
+     {kind (an oasis 'oasis'), dx, dy (its middle off the tile), size (its tiles), n (how many of the 8 neighbours it holds), at (which
+     of the 9, kinds' order)}); brook, a brook on the tile or beside it (WM.flow at GEN_RIVER.brook, no river's tile: worldgen.js
+     genBrook; {on: the tile's own}); lane, the tile a road through a wood or a track ({track: a track (feat 128), wood: its wood
+     neighbours}); lots, the holdings' buildings and fields within SITE_NEAR.lots tiles (lots.js lotOf; {k, type, people, seed, dx,
+     dy, n, plots: [[dx, dy]...]}, off the tile)) */
+  siteNear(tx,ty){
+    const W=this.w,i=ty*W+tx,o={temp:this.temp[i],moist:this.moist[i]},N=SITE_NEAR,c0=this.clim[i];
+    const cv=this.covers();if(cv){const w9=[],sum=CLIMS.map(()=>0);let hi=0;
+      for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const x=Math.max(0,Math.min(W-1,tx+dx)),y=Math.max(0,Math.min(this.h-1,ty+dy)),j=y*W+x,d=cv.desert[j],s=cv.swamp[j],f=cv.frost[j],g=Math.max(0,1-d-s-f),n=g+d+s+f||1,q=[g/n,f/n,d/n,s/n];
+        w9.push(q);q.forEach((v,k)=>{sum[k]+=v;if(k!==c0&&v>hi)hi=v})}
+      let k1=-1;for(let k=0;k<CLIMS.length;k++)if(k!==c0&&(k1<0||sum[k]>sum[k1]))k1=k;
+      if(hi>=N.pure){const w=w9.map(q=>q[k1]),gx=w[2]+w[5]+w[8]-w[0]-w[3]-w[6],gy=w[6]+w[7]+w[8]-w[0]-w[1]-w[2],l=Math.hypot(gx,gy);
+        o.mix={c:CLIMS[k1],share:sum[k1]/9,dir:l>1e-6?[gx/l,gy/l]:[0,0],w,shares:Object.fromEntries(CLIMS.map((n,k)=>[n,sum[k]/9]))}}}
+    const P=this.pondsAt();for(let dy=-1;dy<=1&&!o.pond;dy++)for(let dx=-1;dx<=1;dx++){if(!this.has(tx+dx,ty+dy))continue;const p=P.get((ty+dy)*W+tx+dx);if(!p)continue;
+      const cx=p.i%W,cy=(p.i-cx)/W,at=[];for(let b=-1;b<=1;b++)for(let a=-1;a<=1;a++)if(this.has(tx+a,ty+b)&&P.get((ty+b)*W+tx+a)===p)at.push((b+1)*3+a+1);
+      o.pond={kind:p.kind||'oasis',dx:cx-tx,dy:cy-ty,size:p.tiles.length,n:at.filter(k=>k!==4).length,at};break}
+    const BK=typeof GEN_RIVER==='object'?GEN_RIVER.brook:99;
+    for(let dy=-1;dy<=1&&!o.brook;dy++)for(let dx=-1;dx<=1;dx++){if(!this.has(tx+dx,ty+dy))continue;const j=(ty+dy)*W+tx+dx,k=this.kind[j];
+      if(k!==T_WATER&&k!==T_MOUNT&&!(this.river[j]&3)&&(this.flow[j]&31)>=BK){o.brook={on:!dx&&!dy||(this.flow[i]&31)>=BK&&!(this.river[i]&3)};break}}
+    if(this.kind[i]===T_ROAD){let n=0;for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++)if((dx||dy)&&this.kindAt(tx+dx,ty+dy)===T_FOREST)n++;const tr=!!(this.feat[i]&128);if(tr||n>=N.wood)o.lane={track:tr,wood:n}}
+    if(typeof lotOf==='function'&&this===WM){const seen=new Set(),L=[],r=N.lots;
+      for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++){const l=lotOf(tx+dx,ty+dy);if(!l||seen.has(l)||l.st==='ruined')continue;seen.add(l);const t=TOWNS.find(q=>q.lots&&q.lots.includes(l));
+        L.push({k:l.k,type:l.type,people:t?lotPeople(t,l):'human',seed:l.seed|0,dx:l.x-tx,dy:l.y-ty,n:l.n,plots:(l.plots||[]).map(([x,y])=>[x-tx,y-ty]).filter(([a,b])=>Math.abs(a)<=r+1&&Math.abs(b)<=r+1)})}
+      if(L.length)o.lots=L}
+    return o}
+  // (the climates' covers as the art paints them (worldart.js coverOf: the desert's, the swamp's, the frost's snow), made once a map,
+  //  kept off every list and hash; none but on the map in use, or with no art)
+  covers(){if(this!==WM||typeof coverOf!=='function')return null;let c=this._cover;
+    if(!c)Object.defineProperty(this,'_cover',{value:c={desert:coverOf('desert',true),swamp:coverOf('swamp',true),frost:coverOf('frost',true)},configurable:true,writable:true});return c}
+  // (each pond's and oasis's water tiles: its record, by tile; made once a list, kept as _site is)
+  pondsAt(){const L=[...(this.ponds||[]),...(this.oases||[])];let m=this._ponds;
+    if(!m||m.n!==L.length){m=new Map();for(const p of L)for(const j of p.tiles)m.set(j,p);m.n=L.length;Object.defineProperty(this,'_ponds',{value:m,configurable:true,writable:true})}return m}
 }
+/* what a generated world's battle reads beside its tile (WorldMap#siteNear): pure, the least weight another climate must have at one of
+   the 9 tiles for the field to mix (the covers fade to 0 some 4 tiles off a border); wood, a road's wood neighbours for a lane (as the
+   art's, worldart.js GENART.wood); lots, the tiles each way it looks for buildings and fields */
+const SITE_NEAR={pure:.03,wood:4,lots:2};
 /* a BattleSite (doc/WORLD_DESIGN.md R17, §13): one plain object, the hand-off from the world to a battle. The battle reads nothing
    else of the world (setup.js battleEnv, fieldSize; terrain.js terrainOf, terrainEdges; engage.js bridgeNear, coverAt).
    tx, ty: the tile; t, c, name: its kind, climate and name (as map.js regionAt); kinds, clims: the 3 x 3 tiles round it, row by
@@ -75,9 +117,12 @@ class WorldMap{
    0-255) and high ({kind: rise, steep or cliffed, up, scree, mixed, shoulder}: the kind of high ground, D41, phase 2), cliff
    (escarpment and mesa edges: D14, D40; phase 7). Phase 2's (river, crossing, elev, terrace, rough, high) are filled in a
    generated world (WorldMap#battleSite), and read by terrain.js (riverOf, worldOf). The lab makes its own (lab.js labSite):
-   kinds and clims all its own, and its config.site's river, crossing and high */
+   kinds and clims all its own, and its config.site's river, crossing and high. Battle follows the world (a generated world's only,
+   WorldMap#siteNear; null on today's map and in the lab): temp, moist, mix (the climates' edge), pond, brook, lane and lots, read by
+   terrain.js ofSite, edgesOf, riverOf and worldOf (TERRAIN_WORLD) */
 function battleSiteOf(o){const S={tx:0,ty:0,t:T_OPEN,c:'grass',name:'',kinds:null,clims:null,road:null,bridge:null,elven:false,salt:0,
-  river:null,crossing:null,season:null,region:null,deep:null,elev:null,terrace:null,rough:null,high:null,cliff:null,...o};S.kinds=S.kinds||Array(9).fill(S.t);S.clims=S.clims||Array(9).fill(S.c);return S}
+  river:null,crossing:null,season:null,region:null,deep:null,elev:null,terrace:null,rough:null,high:null,cliff:null,
+  temp:null,moist:null,mix:null,pond:null,brook:null,lane:null,lots:null,...o};S.kinds=S.kinds||Array(9).fill(S.t);S.clims=S.clims||Array(9).fill(S.c);return S}
 // (the battle at world point (x,y), px)
 const battleSiteAt=(x,y)=>WM.battleSite(Math.floor(x/TILE),Math.floor(y/TILE));
 // (a road bridge on the map in use: tests/battletypes.js)

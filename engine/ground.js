@@ -38,6 +38,10 @@
 // stones; a ford shallow and light over gravel bars, a line of stepping stones across, foam where it drops into the deep; a bridge
 // (wood, or stone in the frost and the hills) across its cells, railed or walled, piles or arches in the water, its shadow on it.
 // Frost: a ford is ice (cracked, snow on its edges), deep water runs dark between ice shelves, floes on it. Swamp: murky, weed.
+// Battle follows the world (terrain.js TERRAIN_WORLD, a generated world's fight): spec.mix {c0, c, w} and spec.clim (a cell's
+// climate) a climates' edge, the other's ground laid over its cells (0b), its small things, trees by the ecotone and, the desert's,
+// its life; spec.built (1 a building, 2 crop rows, 3 a fence) with spec.recipe.built {houses, fields} a holding's buildings (props,
+// dk 5: PX.buildingModel), crop rows and fences; spec.recipe.ponds a pond's pool in its marsh. Without them, as before.
 // Readable on a phone (a cell ~10 CSS px). Nothing here collides.
 (function(PX){
   /* palettes by climate: base (the arena's 3 tones, for the plain ground), hi/lift (warm light the terraces rise toward, a share a
@@ -70,6 +74,14 @@
       riv:{w:['#5a7260','#405848','#2e4238','#20302a'],bed:'#5e5a3a',foam:'#a4b496',earth:['#6a6440','#4e4a30','#363422','#24241a'],stone:['#9a9a80','#76786a','#54584c','#383c34'],wood:['#8e7a56','#6c5a3c','#4c3e2a','#302820'],bridge:'wood',reeds:.22},
       rock:{c:['#8e9080','#6c7064','#50564a','#3a4036','#22281f'],m:['#66763a','#4a5a2c','#34421f']}}
   };
+  /* battle follows the world (terrain.js TERRAIN_MIX, TERRAIN_BUILT): a mixed field's ground (lean: the field's own leaning toward the
+     other's [by its weight ×, at most]; rim: the other's ground's edge [below this, shaded so much toward its deepest tone]; wob: its
+     edge's wobble, px either way ×2); crop rows
+     by climate (c: the crop, light and deep; soil: a furrow; every px a row, furrow px of it); a fence's wood, a field wall's stone
+     (light, deep; post: px between posts) */
+  PX.GROUND_MIX={lean:[.22,.3],rim:[.6,.35],wob:20};
+  PX.GROUND_BUILT={crop:{grass:{c:['#c4b25a','#9c8c40'],soil:'#6e5636'},frost:{c:['#cdcab0','#a6a088'],soil:'#7c746a'},desert:{c:['#c6ac60','#a08844'],soil:'#a47e4e'},swamp:{c:['#86a446','#647e36'],soil:'#4c4228'}},
+    row:6,furrow:2,wood:['#9a7650','#5e4630'],stone:['#b0aa9c','#6e6a60'],post:6,pad:.4,shade:.3};
   const hx=c=>[parseInt(c.slice(1,3),16),parseInt(c.slice(3,5),16),parseInt(c.slice(5,7),16)];
   // a smooth value noise in [0,1) over a W×H field: lattice step px, seed s (the lattice hashed once, then read). WR, a window
   // [x0,y0,x1,y1] (a tile's, R16): only the lattice over it (and NOISE_M px round) hashed ahead, any other point read as the
@@ -327,6 +339,17 @@
     if(s===1&&v%3===0){Pg.rect(P.head,sx,y-hgt-1,1,2);Pg.px(P.reed[1],sx,y-hgt-2)}
     if(P.ice&&s===0)Pg.px(P.snow?P.snow[0]:'#fff',sx+lean,y-hgt+1)}}
 
+  /* a building standing by a fight (battle follows the world: terrain.js TERRAIN_BUILT; h {w, h, k, type, people, seed}, c its
+     climate): the world's own model (engine/buildmodels.js PX.buildingModel: its type, or by its estate's kind (HOUSE_K), no larger
+     than its footprint, one of 4 looks by its seed: few to make; its snow in the frost); a plain block with a pitched roof where there is
+     no model. Kept a spec */
+  const HOUSE_K={centre:'village',house:'cottage',farm:'barn',pasture:'barn',lumber:'lumbershed',mine:'minehead',quarry:'crane',port:'fisherhut',smithy:'smithy',granary:'granary',brewery:'barn',market:'stall',workshop:'warehouse'},HSPR={};
+  function houseSprite(h,c){const key=[h.type,h.k,h.people,(h.seed|0)%4,h.w,c].join();if(HSPR[key])return HSPR[key];const S=PX.MODEL_SIZES&&PX.MODEL_SIZES.types,fit=t=>S&&S[t]&&S[t].cell<=h.w?t:null;
+    try{const type=fit(h.type)||fit(HOUSE_K[h.k])||fit('cottage');if(type&&PX.buildingModel){const m=PX.buildingModel({type,people:h.people||'human',seed:(h.seed|0)%4,env:c,snow:c==='frost'}),N=m.img.width;
+      return HSPR[key]=PX.canvas(N,N,g=>{if(m.shadow&&m.shadow.width)g.drawImage(m.shadow,0,0);g.drawImage(m.img,0,0);if(m.snow&&m.snow.img)g.drawImage(m.snow.img,0,0)})}}catch(e){}
+    const w=h.w,ht=Math.round(h.w*.9),wall=c==='desert'?['#e0c48e','#b89a6a']:['#d8ccb0','#a89c84'],roof=c==='frost'?['#eef3f8','#b8c4d2']:['#b0563c','#7a3a2a'];
+    return HSPR[key]=PX.canvas(w,ht,g=>{const r=Math.round(ht*.45);g.fillStyle=wall[1];g.fillRect(2,r,w-4,ht-r-1);g.fillStyle=wall[0];g.fillRect(2,r,w-6,ht-r-3);g.fillStyle='#4a3a2e';g.fillRect((w>>1)-2,ht-8,4,7);
+      g.fillStyle=roof[1];g.fillRect(0,2,w,r);g.fillStyle=roof[0];g.fillRect(1,2,w-2,r-3);g.fillStyle='#1c2430';g.fillRect(0,r+1,w,1)})}
   /* the plain field's small things (the game's arena: a battle's ground without terrain, and the base a terrain is painted over):
      the climate's open-ground details (P.detail, as battleGround paints them) on each 16-px cell from row 16 down, and in the swamp
      still pools, a mud rim, the far bank's shade, a glint, reeds at an end now and then; seeded by the cell, never Math.random.
@@ -365,12 +388,39 @@
     const own=!base||P.plain,bh=own?Math.max(0,Math.min(15,WY1)-WY0):SH,cv=out||PX.canvas(w,h),bc=full?cv:base?PX.canvas(SW,SH):null,g0=bc&&bc.getContext('2d');
     if(base&&bh){if(base.getContext)g0.drawImage(base,-WX0,-WY0);else yield* base.paintSteps(g0,WX0,WY0,SW,bh,full?PX.GROUND_BAND:PX.GROUND_BAND>>3)}
     const img=own?new ImageData(SW,SH):g0.getImageData(0,0,SW,SH),D=img.data;if(own){yield* plainGround(D,W,H,P,seed,base?15:0,WR);if(base&&bh)D.set(g0.getImageData(0,0,SW,bh).data)}
+    // (0b, battle follows the world) a mixed field's other climate (spec.mix {c0, c, w}, spec.clim: terrain.js mixGround): its ground
+    // laid whole over the cells that are its (read between the cells' middles through a wobble and a pixel's jitter: ragged as a wood's
+    // edge), a shade at its rim; the field's own leaning toward it as its weight there grows (GROUND_MIX). Its details, its trees by
+    // the ecotone (PX.WN_ECO) and, the desert's, its life: (4), (4b), (5)
+    const MX=spec.mix&&PX.GROUND_PAL[spec.mix.c]&&spec.mix.c!==clim?spec.mix:null,c2=MX?MX.c:null,P2=MX?PX.GROUND_PAL[c2]:null,MC=MX&&spec.clim?(()=>{const b=['grass','frost','desert','swamp'].indexOf(c2),A=new Float32Array(C*R);for(let q=0;q<C*R;q++)A[q]=spec.clim[q]===b?1:0;return A})():null;
+    // (ME: a cell with the other kind of ground within 2 cells, where the edge's wobble can reach; elsewhere a pixel is its cell's)
+    const ME=MC?(()=>{const E=new Uint8Array(C*R);for(let j=0;j<R;j++)for(let i=0;i<C;i++){const v=MC[j*C+i];for(let b=-2;b<=2;b++)for(let a=-2;a<=2;a++){const x=i+a,y=j+b;if(x>=0&&y>=0&&x<C&&y<R&&MC[y*C+x]!==v)E[j*C+i]=1}}return E})():null;
+    const mixW=(x,y)=>{const w=MX.w,u=Math.max(0,Math.min(2,x/W*3-.5)),v=Math.max(0,Math.min(2,y/H*3-.5)),i=Math.min(1,Math.floor(u)),j=Math.min(1,Math.floor(v)),fx=u-i,fy=v-j,o=j*3+i,a=w[o],b=w[o+1],c=w[o+3],d=w[o+4];return a+(b-a)*fx+(c-a)*fy+(a-b-c+d)*fx*fy};
+    const NMX=MC?noise(W,H,12,seed+120,WR):null,NMY=MC?noise(W,H,12,seed+121,WR):null,mixAt=(x,y)=>{if(!MC)return 0;{const q=Math.min(R-1,Math.max(0,Math.floor(y/cs)))*C+Math.min(C-1,Math.max(0,Math.floor(x/cs)));if(!ME[q])return MC[q]}const u=(x+.5+(NMX(x,y)-.5)*PX.GROUND_MIX.wob+(PX.hash(x,y,seed+122)-.5)*3)/cs-.5,v=(y+.5+(NMY(x,y)-.5)*PX.GROUND_MIX.wob+(PX.hash(x,y,seed+123)-.5)*3)/cs-.5,iu=Math.floor(u),iv=Math.floor(v),fu=u-iu,fv=v-iv;
+      const g=(i,j)=>MC[(j<0?0:j>=R?R-1:j)*C+(i<0?0:i>=C?C-1:i)],a=g(iu,iv),b=g(iu+1,iv),c=g(iu,iv+1),d=g(iu+1,iv+1);return a+(b-a)*fu+(c-a)*fv+(a-b-c+d)*fu*fv};
+    if(MX){const GM=PX.GROUND_MIX,LB=hx(P2.base[1]),RB=hx(P2.base[0]),B1=P.base.map(hx),B2=P2.base.map(hx),lu=c=>c[0]*.3+c[1]*.59+c[2]*.11,l0=lu(B1[0]),lk=1/Math.max(1,lu(B1[2])-l0);
+      // (the other's ground: the field's own pixel's light (its noise, speckle and details) read on the other's three tones, its rim a
+      // shade toward the deepest)
+      const other=(o,rim)=>{let v=(D[o]*.3+D[o+1]*.59+D[o+2]*.11-l0)*lk;v=v<0?0:v>1?1:v;const lo=v<.5,a=lo?B2[0]:B2[1],b=lo?B2[1]:B2[2],t=lo?v*2:(v-.5)*2;
+        let r=a[0]+(b[0]-a[0])*t,g=a[1]+(b[1]-a[1])*t,bl=a[2]+(b[2]-a[2])*t;if(rim){r+=(RB[0]-r)*GM.rim[1];g+=(RB[1]-g)*GM.rim[1];bl+=(RB[2]-bl)*GM.rim[1]}D[o]=r;D[o+1]=g;D[o+2]=bl};
+      // (a cell at a time: wholly the other's, wholly its own (leaning, its weight read between the cell's corners), or by an edge
+      // (each pixel read through the wobble))
+      const L0=GM.lean[0],L1=GM.lean[1];
+      for(let j=Math.floor(WY0/cs);j*cs<WY1;j++){const y0=Math.max(WY0,j*cs),y1=Math.min(WY1,(j+1)*cs);if(!(j&7))yield;
+        for(let i=Math.floor(WX0/cs);i*cs<WX1;i++){const x0=Math.max(WX0,i*cs),x1=Math.min(WX1,(i+1)*cs),q=Math.min(R-1,j)*C+Math.min(C-1,i),edge=ME&&ME[q],whole=!edge&&MC&&MC[q];
+          const a=mixW(i*cs,j*cs),b=mixW((i+1)*cs,j*cs),c=mixW(i*cs,(j+1)*cs),d=mixW((i+1)*cs,(j+1)*cs);
+          for(let y=y0;y<y1;y++){const fy=(y-j*cs)/cs;for(let x=x0;x<x1;x++){const o=((y-WY0)*SW+x-WX0)*4,m=whole?1:edge?mixAt(x,y):0;
+            if(m>.5){other(o,m<GM.rim[0]);continue}
+            const fx=(x-i*cs)/cs,w=a+(b-a)*fx+(c-a)*fy+(a-b-c+d)*fx*fy,t=Math.min(L1,(w+m)*L0);D[o]+=(LB[0]-D[o])*t;D[o+1]+=(LB[1]-D[o+1])*t;D[o+2]+=(LB[2]-D[o+2])*t}}}}}
+    // (what stands by the fight (spec.built, terrain.js TERRAIN_BUILT: 1 a building, 2 crop rows, 3 a fence; spec.recipe.built its
+    // houses and fields): Bat, the cell's at a pixel)
+    const BT=spec.built||null,BF=BT&&spec.recipe&&spec.recipe.built||null,Bat=(x,y)=>{if(!BT)return 0;const i=Math.floor(x/cs),j=Math.floor(y/cs);return BT[(j<0?0:j>=R?R-1:j)*C+(i<0?0:i>=C?C-1:i)]};
     // (how far through: stage s of GS, f through it; band: a stage's band of cell rows, run over its cells (each) a band at a time)
     const GS=9,at=(s,f)=>(s+(f||0))/GS;yield at(1);
     const cell=(a,i,j)=>a[(j<0?0:j>=R?R-1:j)*C+(i<0?0:i>=C?C-1:i)];
     // the cells worth painting: any with a level or a kind, and their neighbours (the slope and the ragged edge reach into them)
-    const act=new Uint8Array(C*R);for(let j=0;j<R;j++)for(let i=0;i<C;i++)if(lvl[j*C+i]||kind[j*C+i])for(let b=-1;b<=1;b++)for(let a=-1;a<=1;a++){const x=i+a,y=j+b;if(x>=0&&y>=0&&x<C&&y<R)act[y*C+x]=1};
-    const T=new Uint8Array(SW*SH),K=new Uint8Array(SW*SH),WT=new Uint8Array(SW*SH),F=new Uint8Array(SW*SH),Q=oasis?new Float32Array(SW*SH):null;
+    const act=new Uint8Array(C*R);for(let j=0;j<R;j++)for(let i=0;i<C;i++)if(lvl[j*C+i]||kind[j*C+i]||BT&&BT[j*C+i])for(let b=-1;b<=1;b++)for(let a=-1;a<=1;a++){const x=i+a,y=j+b;if(x>=0&&y>=0&&x<C&&y<R)act[y*C+x]=1};
+    const T=new Uint8Array(SW*SH),K=new Uint8Array(SW*SH),WT=new Uint8Array(SW*SH),F=new Uint8Array(SW*SH),Q=oasis||c2==='desert'?new Float32Array(SW*SH):null;
     const ci0=Math.floor(WX0/cs),ci1=Math.min(C,Math.ceil(WX1/cs)),cj0=Math.floor(WY0/cs),cj1=Math.min(R,Math.ceil(WY1/cs));
     const each=(f,j0=cj0,j1=cj1)=>{for(let j=j0;j<j1;j++)for(let i=ci0;i<ci1;i++){if(!act[j*C+i])continue;const y1=Math.min(WY1,(j+1)*cs),x1=Math.min(WX1,(i+1)*cs);for(let y=j*cs;y<y1;y++)for(let x=i*cs;x<x1;x++)f(x,y,(y-WY0)*SW+x-WX0)}};
     const BR0=Math.max(1,Math.floor(bandRows(SW,!full)/cs)),band=function*(s,f){for(let j=cj0;j<cj1;j+=BR0){each(f,j,Math.min(cj1,j+BR0));yield at(s,Math.min(1,(j-cj0+BR0)/(cj1-cj0)))}};
@@ -391,7 +441,9 @@
       const s1=(k0===1?w0:0)+(k1===1?w1:0)+(k2===1?w2:0)+(k3===1?w3:0);if(s1>.5){K[o]=1;return}const s2=(k0===2?w0:0)+(k1===2?w1:0)+(k2===2?w2:0)+(k3===2?w3:0);if(Q)Q[o]=s2+(NP(x,y)-.5)*.14;if(s2>.5)K[o]=2});
     // (2) marsh pools: a blotchy noise over the marsh, kept a few pixels inside it; an oasis: one pool in its heart
     const Kat=(x,y)=>inW(x,y)?K[IX(x,y)]:0;
-    yield* band(2,(x,y,o)=>{if(oasis){const q=Q[o];if(q>.88)WT[o]=q>.95?2:1;return}if(K[o]!==2)return;const n=NP(x,y)*.8+NQ(x,y)*.2;if(n>.6&&Kat(x,y-4)===2&&Kat(x,y+4)===2&&Kat(x-5,y)===2&&Kat(x+5,y)===2)WT[o]=n>.68?2:1});
+    // (a pond by the fight (spec.recipe.ponds, battle follows the world): open water in its marsh's middle, over a wobbling edge)
+    const PD=spec.recipe&&spec.recipe.ponds||null,pondQ=(x,y)=>{let q=-1;for(const p of PD)q=Math.max(q,1-Math.hypot(x-p.x,(y-p.y)*1.15)/(p.r*.6));return q+(NP(x,y)-.5)*.3};
+    yield* band(2,(x,y,o)=>{if(oasis){const q=Q[o];if(q>.88)WT[o]=q>.95?2:1;return}if(K[o]!==2)return;if(PD){const q=pondQ(x,y);if(q>0){WT[o]=q>.35?2:1;return}}const n=NP(x,y)*.8+NQ(x,y)*.2;if(n>.6&&Kat(x,y-4)===2&&Kat(x,y+4)===2&&Kat(x-5,y)===2&&Kat(x+5,y)===2)WT[o]=n>.68?2:1});
     // (1c) the river's reach: each water pixel's distance to land (DW) and each land pixel's to water (DL), chamfer 3-4 (3 a px),
     //      in its cells' box; which way it flows (down the field, or across: flowV) and its middle's slope a row (the current's lean)
     let DW=null,DL=null,flowV=true,bx0=0,by0=0,bx1=0,by1=0;const SLP=new Float32Array(Math.max(C,R));
@@ -680,6 +732,19 @@
       for(let d=1;d<=5;d++){const u=Tat(x,y-d);if(u>t){if(!WL||edgeK(2,x,y-d+1)===0)mix(o,LO,SLF[d-1]*(u-t>1?1.4:1));return}}
       for(let d=1;d<=3;d++)if(Tat(x-d,y)>t){if(!WL||edgeK(1,x-d+1,y)===0)mix(o,LO,.09-.025*d);return}
       for(let d=1;d<=2;d++)if(Tat(x,y+d)>t){if(!WL||edgeK(8,x,y+d-1)===0)mix(o,LN,d===1?.1:.05);return}};
+    /* (what stands by the fight, a pixel o at (x, y): a building's trodden yard (its picture a prop: (5)) and its soft shadow to the
+       lower right; crop rows across or down its field (a furrow every GROUND_BUILT.row px), by the climate where it lies; a fence along
+       its field's side (rails, posts, its shadow), a farm's a low stone wall. True when painted (nothing more there)) */
+    const GB=PX.GROUND_BUILT,WPT=(WAYPAL[clim]||WAYPAL.grass).c.map(hx),FW=GB.wood.map(hx),FS=GB.stone.map(hx);
+    const fieldOf=(x,y)=>{for(const p of BF?BF.fields:[])if(x>=p.x&&x<p.x+p.w&&y>=p.y&&y<p.y+p.h)return p;return null};
+    const builtPx=(o,x,y)=>{const b=Bat(x,y);
+      if(!b){if(Bat(x-3,y-4)===1)mix(o,LO,GB.shade);return false}
+      if(b===1){mix(o,WPT[1],GB.pad);if(PX.hash(x,y,seed+130)<.08)mix(o,WPT[2],.4);return true}
+      const p=fieldOf(x,y);if(!p)return false;const cc=MC&&mixAt(x,y)>.5?c2:clim,CR=GB.crop[cc]||GB.crop.grass;
+      if(b===2){const a=p.rows?x-p.x:y-p.y,ph=((a%GB.row)+GB.row)%GB.row,h=PX.hash(x,y,seed+131);mix(o,hx(ph<GB.furrow?CR.soil:CR.c[h<.3?1:0]),ph<GB.furrow?.7:.62);return true}
+      const lx=x-p.x,ly=y-p.y,ns=ly<cs||ly>=p.h-cs,M=p.pen?FW:FS,u=ns?((ly<cs?ly:ly-(p.h-cs))):(lx<cs?lx:lx-(p.w-cs)),along=ns?lx:ly;
+      if(u===7||u===8){put(o,M[u===7?0:1]);if(along%GB.post===0)put(o,M[1]);return true}if(u===9||u===10){mix(o,LO,u===9?.35:.18);return true}
+      if(along%GB.post===0&&u>=4&&u<=8){put(o,M[1]);return true}return false};
     // (3) colour, pixel by pixel
     yield* band(3,(x,y,i)=>{const o=i*4,t=T[i];
       if(hasW){const w=WV[i];if(w){water(o,x,y,i,w);return}const dl=DL[i]/3;if(dl<=3.2&&bank(o,x,y,dl))return;
@@ -696,6 +761,7 @@
         if(w){put(o,WA[w]);if(!Wat(x,y-1))mix(o,BK,.45);else if(w===1&&PX.hash(x,y,seed+9)>.93)put(o,WA[0])}// (the water; the bank's shadow on it)
         else if(Wat(x,y+1))put(o,BK);// (the far bank, its face toward us)
         else{mix(o,MU,.42);if(PX.hash(x,y,seed+10)>.94)mix(o,BK,.5)}}
+      if(BT&&builtPx(o,x,y))return;
       // a raised plateau seen from the south: with walls its cliffs and ramps (wlTop, wlLow); every climbable edge a smooth rise
       if(WL){if(t){let d1=0,st=0;for(let d=1;d<=2*FHS+2;d++){const u=Tat(x,y+d);if(u<t){d1=d;st=t-u;break}}if(wlTop(o,x,y,i,t,d1,st))return;if(sv){slopePx(o,x,y,i,t,sv);return}}wlLow(o,x,y,t,i);return}
       if(sv){slopePx(o,x,y,i,t,sv);return}slopeLow(o,x,y,t)});
@@ -733,7 +799,7 @@
     //      on a face or a rise, a way or an oasis); noise only, no stream
     if(clim==='desert'){const NA=noise(W,H,80,seed+101,WR),NW=noise(W,H,16,seed+102,WR),RD=hx('#ae8a4e'),RL=hx('#f8e6b0'),A4=new Float32Array((W>>2)+1),y0=base?16:0,BRY=bandRows(SW,!full),W2=new Float32Array((W>>1)+1),WY=new Int32Array((W>>1)+1).fill(-1),ys=Math.max(y0,WY0);
       for(let y=ys;y<WY1;y++){if(y>ys&&!(y%BRY))yield at(4,.5+.5*y/H);if(!(y&3)||y===ys)for(let x=WX0;x<WX1;x+=4)A4[x>>2]=NA(x,y);
-        for(let x=WX0;x<WX1;x++){const i=IX(x,y),t=T[i],a=t?.5+.5*A4[x>>2]:(A4[x>>2]-.6)*2.5;if(a<=.04||F[i]||Q[i]>.2||DR&&DR[i]<255)continue;
+        for(let x=WX0;x<WX1;x++){const i=IX(x,y),t=T[i],a=t?.5+.5*A4[x>>2]:(A4[x>>2]-.6)*2.5;if(a<=.04||F[i]||Q[i]>.2||DR&&DR[i]<255||MX&&mixAt(x,y)>.5)continue;
           const h=x>>1;if(WY[h]!==y>>1){WY[h]=y>>1;W2[h]=NW(x&~1,y&~1)}// (the ripples' wander, on a 2-px lattice, as needed)
           const ph=(y+x*.4+W2[h]*12)/5.5,f=ph-Math.floor(ph),s=Math.min(1,a)*(t?1:.6);if(f<.18)mix(i*4,RD,.2*s);else if(f<.34)mix(i*4,RL,.18*s)}}}
     yield at(5);
@@ -778,7 +844,7 @@
       for(const x of [X0,X1-2]){Pg.rect(M[2],x,Y0,2,Y1-Y0);Pg.rect(M[0],x,Y0,1,Y1-Y0)}};
     let L,BRs,PANs,DECs;
     const DRAW=[
-      (x,y,d,v)=>DETAIL[d](Pg,x,y,v,P,g,clim),// 0 a small detail (PX.battleDetails' kinds)
+      (x,y,d,v,p)=>p?DETAIL[d](Pg,x,y,v,P2,g,c2):DETAIL[d](Pg,x,y,v,P,g,clim),// 0 a small detail (PX.battleDetails' kinds; p: a mixed field's other climate's)
       (x,y,v)=>DETAIL.tuft(Pg,x,y,v,{tuft:OASG}),// 1 an oasis's green tuft
       (x,y,c)=>Pg.px(c,x,y),// 2 a pixel (current, a fleck)
       (x,y,a,b,c)=>Pg.rect(c,x,y,a,b),// 3 a rect (a glint, weed, a lily pad)
@@ -823,27 +889,33 @@
     const clear=(x,y)=>!Fat(x,y)&&!Fat(x,y-6)&&!Fat(x,y-12)&&!Fat(x-5,y-7)&&!Fat(x+5,y-7)&&!Wat(x,y)&&(!hasW||Dl(x,y)>9&&!keep(x,y)),SPN=noise(W,H,56,seed+20),DN=noise(W,H,40,seed+21);
     // (a standing tree, 32 px: its foot and crown kept off the cliffs (a crown never hides one), the pools and the river's banks)
     const clearT=(x,y)=>clear(x,y)&&!Fat(x-4,y)&&!Fat(x+4,y)&&!Fat(x,y-18)&&!Fat(x,y-26)&&!Fat(x-11,y-12)&&!Fat(x+11,y-12)&&!Fat(x-8,y-22)&&!Fat(x+8,y-22)&&!Fat(x-12,y-4)&&!Fat(x+12,y-4)&&(!hasW||Dl(x,y)>14&&!keep(x,y-12));
-    const species=(x,y)=>{let r=SPN(x,y)*.7+PX.hash(x,y,seed+22)*.3,a=0;for(const [n,s] of P.species){a+=s;if(r<a)return n}return P.species[P.species.length-1][0]};
+    const species=(x,y,Q2=P)=>{let r=SPN(x,y)*.7+PX.hash(x,y,seed+22)*.3,a=0;for(const [n,s] of Q2.species){a+=s;if(r<a)return n}return Q2.species[Q2.species.length-1][0]};
+    /* (a mixed field's tree: the other climate's (its species, its look: t.c) with the chance of its weight there, half the field's
+       share and half the ground under it, swung by a smooth noise most where that is a half (PX.WN_ECO's amp, the map's ecotone); the
+       desert's none (its trees are its oases' palms)) */
+    const EC=PX.WN_ECO||{mix:1,amp:.15},NE=MX&&P2.species.length?noise(W,H,48,seed+125,WR):null;
+    const treeAt=(x,y,v)=>{if(!NE)return{sp:species(x,y),v};const m=.5*mixW(x,y)+.5*mixAt(x,y),p=m*EC.mix+(1-Math.abs(2*m-1))*EC.amp*2*(NE(x,y)-.5);
+      return PX.hash(x,y,seed+124)<p?{sp:species(x,y,P2),v,c:c2}:{sp:species(x,y),v}};
     // woods: thick on their edges (the patch reads), clearings and thickets inside, bushes in the gaps. The trees stand (TREES: the
     // game draws them sorted with the soldiers); their shadows, roots and the bushes are painted
     TREES=[];const crownWay=(x,y)=>!!DR&&(onWay(x,y-6)||onWay(x,y-14)||onWay(x,y-22)||onWay(x-9,y-14)||onWay(x+9,y-14));// (a way's line under its crown)
     if(!bare)for(let y=6,row=0;y<H+8;y+=12,row++)for(let x=(row&1)*7;x<W;x+=14){const tx=x+R2.int(-3,3),ty=y+R2.int(-3,3);
       if(Kat(tx,ty)!==1||Kat(tx-6,ty)!==1||Kat(tx+6,ty)!==1||Kat(tx,ty-10)!==1)continue;
       if(!clearT(tx,ty)){if(clear(tx,ty)&&R2.chance(.4))things.push({y:ty,k:'bush',x:tx,v:R2.int(0,2)});continue}const e=edgeCell(Math.floor(tx/cs),Math.floor(ty/cs));
-      if(R2.chance(e?.85:.15+.5*DN(tx,ty))){const t={y:ty,x:tx,sp:species(tx,ty),v:R2.int(0,2)};if(!crownWay(tx,ty))TREES.push(t)}else if(R2.chance(.5))things.push({y:ty,k:'bush',x:tx,v:R2.int(0,2)})}
+      if(R2.chance(e?.85:.15+.5*DN(tx,ty))){const t={y:ty,x:tx,...treeAt(tx,ty,R2.int(0,2))};if(!crownWay(tx,ty))TREES.push(t)}else if(R2.chance(.5))things.push({y:ty,k:'bush',x:tx,v:R2.int(0,2)})}
     // lone trees and copses in the open (nothing collides)
-    if(!bare){const spot=()=>{for(let k=0;k<30;k++){const x=R2.int(40,W-40),y=R2.int(56,H-30);if(!Kat(x,y)&&!Kat(x,y-14)&&clearT(x,y)&&!onWay(x,y)&&!crownWay(x,y))return[x,y]}return null};
-      for(let n=R2.int(3,6);n>0;n--){const s=spot();if(s)TREES.push({y:s[1],x:s[0],sp:species(s[0],s[1]),v:R2.int(0,2)})}
-      for(let n=R2.int(1,2);n>0;n--){const s=spot();if(!s)continue;const sp=species(s[0],s[1]);for(let m=R2.int(3,5);m>0;m--){const x=s[0]+R2.int(-20,20),y=s[1]+R2.int(-10,10);if(!Kat(x,y)&&clearT(x,y)&&!onWay(x,y)&&!crownWay(x,y))TREES.push({y,x,sp,v:R2.int(0,2)})}}}
+    if(!bare){const spot=()=>{for(let k=0;k<30;k++){const x=R2.int(40,W-40),y=R2.int(56,H-30);if(!Kat(x,y)&&!Kat(x,y-14)&&clearT(x,y)&&!onWay(x,y)&&!crownWay(x,y)&&!Bat(x,y)&&!Bat(x,y-14))return[x,y]}return null};
+      for(let n=R2.int(3,6);n>0;n--){const s=spot();if(s)TREES.push({y:s[1],x:s[0],...treeAt(s[0],s[1],R2.int(0,2))})}
+      for(let n=R2.int(1,2);n>0;n--){const s=spot();if(!s)continue;const t0=treeAt(s[0],s[1],0);for(let m=R2.int(3,5);m>0;m--){const x=s[0]+R2.int(-20,20),y=s[1]+R2.int(-10,10);if(!Kat(x,y)&&clearT(x,y)&&!onWay(x,y)&&!crownWay(x,y)&&!Bat(x,y))TREES.push({y,x,...t0,v:R2.int(0,2)})}}}
     // an oasis: palms round the pool, reeds at its edge
     if(oasis)for(let y=8,row=0;y<H;y+=11,row++)for(let x=(row&1)*8;x<W;x+=16){const tx=x+R2.int(-2,2),ty=y+R2.int(-2,2);if(tx<0||ty<0||tx>=W||ty>=H)continue;const q=Q[ty*W+tx];
       if(q>.4&&q<.8&&!Wat(tx,ty)&&clearT(tx,ty)&&R2.chance(.6))TREES.push({y:ty,x:tx,sp:'palm',v:R2.int(0,2)});else if(q>.8&&q<.88&&R2.chance(.5))things.push({y:ty,k:'reed',x:tx,v:R2.int(0,99)})}
     if(!oasis)for(let j=0;j<R;j++)for(let i=0;i<C;i++){if(kind[j*C+i]!==2)continue;for(let n=0;n<3;n++){const tx=i*cs+R2.int(1,14),ty=j*cs+R2.int(2,15);
-      if(Kat(tx,ty)!==2||Wat(tx,ty)||Wat(tx,ty+1)||Fat(tx,ty))continue;const shore=Wat(tx,ty+2)||Wat(tx+3,ty)||Wat(tx-3,ty)||Wat(tx,ty-3);if(shore||R2.chance(.5))things.push({y:ty,k:'reed',x:tx,v:R2.int(0,99)})}}
+      if(Kat(tx,ty)!==2||Wat(tx,ty)||Wat(tx,ty+1)||Fat(tx,ty))continue;const shore=Wat(tx,ty+2)||Wat(tx+3,ty)||Wat(tx-3,ty)||Wat(tx,ty-3);if(shore||R2.chance(.5)){if(PD&&PD.some(p=>p.kind==='tarn'&&Math.hypot(tx-p.x,ty-p.y)<p.r*1.3))L.push(5,tx-2,ty-1,R2.int(0,99),0,0);else things.push({y:ty,k:'reed',x:tx,v:R2.int(0,99)})}}}// (a tarn's: stones, no reeds)
     yield at(6,.6);
     // the small details, first (flat on the ground): by climate, in the open and in woods; never on a cliff, a pool or an oasis
-    for(let j=1;j<R;j++){if(!(j%BR0))yield at(6,.6+.4*j/R);for(let i=0;i<C;i++){const k=kind[j*C+i];if(k===2)continue;for(const [d,ch] of P.detail[k===1?1:0]){if(!R2.chance(ch))continue;const x=i*cs+R2.int(2,13),y=j*cs+R2.int(3,15);
-      if(y<16||Fat(x,y)||Fat(x+3,y)||Fat(x-3,y)||Kat(x,y)!==k||onWay(x,y)||onWay(x,y-3)||oasis&&Q[y*W+x]>.25||hasW&&(Dl(x,y)<15||Dl(x-4,y)<15||Dl(x+4,y)<15||keep(x,y)))continue;L.push(0,x,y,d,R2.int(0,999),0)}}}
+    for(let j=1;j<R;j++){if(!(j%BR0))yield at(6,.6+.4*j/R);for(let i=0;i<C;i++){const k=kind[j*C+i],oc=MC&&MC[j*C+i]>0?1:0;if(k===2)continue;for(const [d,ch] of (oc?P2:P).detail[k===1?1:0]){if(!R2.chance(ch))continue;const x=i*cs+R2.int(2,13),y=j*cs+R2.int(3,15);
+      if(y<16||Fat(x,y)||Fat(x+3,y)||Fat(x-3,y)||Kat(x,y)!==k||onWay(x,y)||onWay(x,y-3)||oasis&&Q[y*W+x]>.25||hasW&&(Dl(x,y)<15||Dl(x-4,y)<15||Dl(x+4,y)<15||keep(x,y))||BT&&Bat(x,y))continue;L.push(0,x,y,d,R2.int(0,999),oc)}}}
     yield at(7);
     // the river's flat details: current lines and glints on the deep (floes on a cold one, weed on a swamp's), stepping stones across
     // a ford (cracks in a frozen one), stones at the water's edge, reeds on its banks (palms by a desert's); then its bridges
@@ -893,10 +965,12 @@
        open lane; more rocks and dry shrubs on a rocky field (erg, spires) and by rock; an oasis's green fringe thick with tall grass
        and green shrubs. Its own stream (R5): nothing else changes */
     yield at(8);DEC=[];PANs=[];
-    if(clim==='desert'){const R5=PX.dice(PX.rng(seed*89+29)),rc=spec.recipe&&typeof spec.recipe==='object'?spec.recipe:{},Zn=spec.zone,zo=Zn?Zn[1]:.3*W,ln=rc.lane,A=W*H,rocky=/erg|spires/.test(rc.layout||'');
+    // (a mixed field: only on the desert's ground (dz), whichever is the field's own; nothing on what stands by the fight)
+    const dz=(x,y)=>!MX||(clim==='desert'?mixAt(x,y)<=.5:mixAt(x,y)>.5);
+    if(clim==='desert'||c2==='desert'){const R5=PX.dice(PX.rng(seed*89+29)),rc=spec.recipe&&typeof spec.recipe==='object'?spec.recipe:{},Zn=spec.zone,zo=Zn?Zn[1]:.3*W,ln=rc.lane,A=W*H,rocky=/erg|spires/.test(rc.layout||'');
       const rockN=(x,y)=>{const i=Math.floor(x/cs),j=Math.floor(y/cs);for(let b=-2;b<=2;b++)for(let a=-2;a<=2;a++)if(cell(kind,i+a,j+b)===6)return true;return false};
       const wt=(x,y)=>(x<zo||x>W-zo?.35:1)*(ln&&y>ln.y0&&y<ln.y1?.45:1)*(Tat(x,y)?.45:1);
-      const ok=(x,y,q=.3)=>x>=6&&y>=24&&x<W-6&&y<H-3&&!Fat(x,y)&&!Fat(x-5,y)&&!Fat(x+5,y)&&!Fat(x,y-10)&&!Fat(x,y+3)&&!Fat(x+7,y+2)&&!Fat(x-3,y+3)&&!Wat(x,y)&&!Wat(x,y+3)&&!onWay(x,y)&&!onWay(x,y-5)&&Q[y*W+x]<=q&&(!hasW||Dl(x,y)>12&&!keep(x,y));
+      const ok=(x,y,q=.3)=>x>=6&&y>=24&&x<W-6&&y<H-3&&!Fat(x,y)&&!Fat(x-5,y)&&!Fat(x+5,y)&&!Fat(x,y-10)&&!Fat(x,y+3)&&!Fat(x+7,y+2)&&!Fat(x-3,y+3)&&!Wat(x,y)&&!Wat(x,y+3)&&!onWay(x,y)&&!onWay(x,y-5)&&Q[y*W+x]<=q&&(!hasW||Dl(x,y)>12&&!keep(x,y))&&dz(x,y)&&!Bat(x,y);
       const near=(x,y,dx,dy)=>DEC.some(d=>Math.abs(d.x-x)<dx&&Math.abs(d.y-y)<dy)||TREES.some(t=>Math.abs(t.x-x)<7&&Math.abs(t.y-y)<5);
       const pickK=L=>{let r=R5.R()*L.reduce((a,b)=>a+b[1],0);for(const [k,w] of L){r-=w;if(r<0)return k}return L[0][0]};
       const KW=[['saguaro',3],['young',1.2],['barrel',2],['pear',2],['dead',1.4],['dry',2.2],['rocks',1.8],['bones',.3]],KR=[['saguaro',1.6],['young',.7],['barrel',1.3],['pear',1],['dead',2],['dry',3.4],['rocks',4.6],['bones',.35]];
@@ -906,7 +980,7 @@
         const pn=[cx,cy,rw,rh,S];pn.reach=[cx-rw-1,cy-rh-1,cx+rw+1,cy+rh+1];PANs.push(pn);L.push(11,cx,cy,PANs.length-1,0,0);break}
       for(let n=Math.round(A/7000*(rocky?1.6:1));n>0;n--){const x=R5.int(8,W-8),y=R5.int(24,H-4),m=R5.int(3,6);if(Tat(x,y)&&R5.chance(.6)||!ok(x,y,.2))continue;
         for(let k=0;k<m;k++){const px=x+R5.int(-6,6),py=y+R5.int(-3,3);if(Fat(px,py)||onWay(px,py))continue;L.push(12,px,py,k,0,0)}}
-      for(let n=Math.round(A/3000);n>0;n--){const x=R5.int(4,W-4),y=R5.int(20,H-2);if(!Fat(x,y)&&!onWay(x,y)&&!Wat(x,y)&&Q[y*W+x]<.2)L.push(2,x,y,'#7e6046',0,0)}
+      for(let n=Math.round(A/3000);n>0;n--){const x=R5.int(4,W-4),y=R5.int(20,H-2);if(!Fat(x,y)&&!onWay(x,y)&&!Wat(x,y)&&Q[y*W+x]<.2&&dz(x,y))L.push(2,x,y,'#7e6046',0,0)}
       yield at(8,.1);
       // (standing: the clusters, spaced 64 px apart at least, each round a main kind; then a few alone)
       const CL=[];for(let c=Math.round(A/34000);c>0;c--)for(let tr=0;tr<10;tr++){const x=R5.int(12,W-12),y=R5.int(28,H-6);if(!ok(x,y)||!R5.chance(wt(x,y))||CL.some(p=>(p[0]-x)**2+(p[1]-y)**2<4096)||near(x,y,8,5))continue;
@@ -918,7 +992,7 @@
       yield at(8,.2);
       // (an oasis's fringe, past its palms: tall grass and green shrubs, green tufts painted between (1); then round it out to twice its
       //  radius, thinning: grass and green shrubs near, sage, prickly pear and young cacti farther)
-      if(kind.includes(2)){for(let y=10,row=0;y<H;y+=7,row++)for(let x=(row&1)*5;x<W;x+=10){const tx=x+R5.int(-2,2),ty=y+R5.int(-2,2),v=R5.int(0,999);if(tx<0||ty<0||tx>=W||ty>=H)continue;const q=Q[ty*W+tx];if(q<.1||q>.62)continue;
+      if(oasis&&kind.includes(2)){for(let y=10,row=0;y<H;y+=7,row++)for(let x=(row&1)*5;x<W;x+=10){const tx=x+R5.int(-2,2),ty=y+R5.int(-2,2),v=R5.int(0,999);if(tx<0||ty<0||tx>=W||ty>=H)continue;const q=Q[ty*W+tx];if(q<.1||q>.62)continue;
           if(q<.55&&R5.chance(.4)&&!Fat(tx,ty)&&!onWay(tx,ty)){const ux=tx+R5.int(-3,3),uy=ty+R5.int(-2,2);L.push(1,ux,uy,v,0,0)}
           if(R5.chance(q>.25?.5:.22)&&ok(tx,ty,.62)&&!near(tx,ty,7,4))DEC.push({x:tx,y:ty,k:R5.chance(.6)?'grass':q>.25||R5.chance(.5)?'green':'dry',v:v%6})}
         for(const o of rc.marsh||[])for(let y=Math.round(o.y-2*o.r),row=0;y<o.y+2*o.r;y+=6,row++)for(let x=Math.round(o.x-2*o.r)+(row&1)*5;x<o.x+2*o.r;x+=10){const tx=x+R5.int(-2,2),ty=y+R5.int(-2,2),d=Math.hypot(tx-o.x,(ty-o.y)*1.2)/o.r,v=R5.int(0,999);
@@ -937,7 +1011,7 @@
        faces' pixels cut into sections a column run each, up to 16 px wide, whose columns' foot rows lie within 2 px (its foot: the highest of them), each its own small
        picture (one big shared one is slow to draw from among many others); a soldier whose feet are higher on the screen than a
        section's foot is behind it (on the rim above the climb) */
-    yield at(8,.5);const props=[];for(const t of TREES){const s=treeSprite32(clim,t.sp,t.v),b=s.box;props.push({dk:1,x:t.x,y:t.y,s,dx:t.x-16,dy:t.y-31,box:[t.x-16+b[0],t.y-31+b[1],t.x-16+b[2],t.y-31+b[3]]})}
+    yield at(8,.5);const props=[];for(const t of TREES){const s=treeSprite32(t.c||clim,t.sp,t.v),b=s.box;props.push({dk:1,x:t.x,y:t.y,s,dx:t.x-16,dy:t.y-31,box:[t.x-16+b[0],t.y-31+b[1],t.x-16+b[2],t.y-31+b[3]]})}
     // (the mountains' too {dk:3, ...as a face's}: their pixels' column runs, each run one mass's, cut the same way)
     const cutF=F.includes(1);
     if(cutF||RS){const src=g.getImageData(0,0,W,H).data,fc=PX.canvas(W,H),fg=fc.getContext('2d'),fi=fg.createImageData(W,H),fd=fi.data;
@@ -950,6 +1024,8 @@
       fg.putImageData(fi,0,0);for(const p of props)if(p.dk>=2){p.x=p.sx+(p.w>>1);p.box=[p.sx,p.sy,p.sx+p.w-1,p.sy+p.h-1];p.dx=p.sx;p.dy=p.sy;p.s=PX.canvas(p.w,p.h,q=>q.drawImage(fc,p.sx,p.sy,p.w,p.h,0,0,p.w,p.h));delete p.lt;delete p.lb;delete p.yb;delete p.id}}
     // (the desert's life {dk:4, ...as a tree's, dc: its kind}: decoration, faded over your men as a tree is; cv.decor how many)
     for(const d of DEC){const S=PX.desertSprite(d.k,d.v),b=S.box,dx=d.x-S.ax,dy=d.y-S.ay;props.push({dk:4,x:d.x,y:d.y,s:S.s,dx,dy,box:[dx+b[0],dy+b[1],dx+b[2],dy+b[3]],dc:d.k})}
+    // (what stands by the fight: each building {dk:5, ...as a tree's}, its picture (houseSprite) standing on its footprint's foot)
+    if(BF)for(const h of BF.houses){const s=houseSprite(h,MC&&mixAt(h.x+h.w/2,h.y+h.h/2)>.5?c2:clim),dx=Math.round(h.x+h.w/2-s.width/2),dy=h.y+h.h-s.height;props.push({dk:5,x:h.x+(h.w>>1),y:h.y+h.h,s,dx,dy,box:[dx,dy,dx+s.width-1,dy+s.height-1]})}
     props.sort((a,b)=>a.y-b.y||a.x-b.x);cv.props=props;cv.trees=TREES.length;cv.decor=DEC.length;cv.plan=PLn;
     return cv}
   // the standing props of a ground (trees and cliff faces, PX.battleGround's cv.props) drawn in their order over it: the gallery's

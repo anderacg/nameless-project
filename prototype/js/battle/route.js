@@ -27,6 +27,8 @@ function routeGrid(C,R,cs){const N=C*R;return{C,R,cs,cost:new Uint8Array(N).fill
 function routeGridOf(T,o={}){
   const g=routeGrid(T.C,T.R,T.cs),deep=o.deep??ROUTE.deep,w=o.who||'foot',K=T.kind,U=ROUTE.unit;
   for(let i=0;i<K.length;i++){const k=K[i],Gd=TGROUND[k];g.cost[i]=k>=TGROUND.length||Gd&&Gd.solid||k===TKIND.deep&&deep?0:Gd?Math.min(255,Math.max(1,Math.round(U/(Gd.spd[w]||Gd.spd.foot)))):U}
+  // (World Phase 2b: what stands by the fight: a building closed, crop rows and a fence by their speed (TERRAIN_BUILT))
+  if(T.built){const Bt=T.built;for(let i=0;i<Bt.length;i++){const b=TBUILT[Bt[i]];if(!b||!g.cost[i])continue;g.cost[i]=b.solid?0:Math.min(255,Math.max(g.cost[i],Math.round(U/(b.spd[w]||b.spd.foot))))}}
   if(T.steep){const S=T.steep,c=Math.min(255,Math.round(U*STEEP.route[w]));for(let i=0;i<S.length;i++)if(S[i]&2&&g.cost[i])g.cost[i]=Math.max(g.cost[i],c);g.wcap=Math.round(U*Math.min(...Object.values(STEEP.route)))-1}
   if(T.wall)g.wall.set(T.wall);return g}
 // (cell c,r's cost: 0 impassable)
