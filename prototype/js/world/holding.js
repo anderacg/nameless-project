@@ -108,7 +108,7 @@ class Holding extends HoldingObject{
      that is no longer the kind it was made (kind), so a load puts the change back (holdingOf). (A save of the world as made is
      today's, byte for byte; v3 (doc/WORLD_DESIGN.md §9.3) will keep every holding's kind) */
   saveRec(){const t=this,d=MADE_HOLDINGS[TOWNS.indexOf(t)],x={s:t.sacked||0,r:t.raided||0,u:t.turmoil||0,g:t.grow,b:t.bld,w:t.wall,k:t.work,f:t.fear||0,cr:t.crime||null,wa:t.watches||null,
-      l:(t.lots||[]).map(l=>({id:l.id,k:l.k,type:l.type,x:l.x,y:l.y,n:l.n,lv:l.lv,seed:l.seed,st:l.st,plots:l.plots})),e:t.stock?{st:t.stock,pop:t.pop,pros:t.pros,tax:t.tax,vol:t.vol,pf:t.popF}:null};
+      l:(t.lots||[]).map(l=>({id:l.id,k:l.k,type:l.type,x:l.x,y:l.y,n:l.n,lv:l.lv,seed:l.seed,st:l.st,plots:l.plots,yaw:l.yaw})),e:t.stock?{st:t.stock,pop:t.pop,pros:t.pros,tax:t.tax,vol:t.vol,pf:t.popF}:null};
     {const m=Object.entries(t.mem||{}).filter(([k,d])=>d>G.day);if(m.length)x.m=Object.fromEntries(m)}
     {const g=Object.entries(t.gd||{}).map(([k,L])=>[k,L.filter(d=>d>G.day)]).filter(([k,L])=>L.length);if(g.length)x.gd=Object.fromEntries(g)}// (its estates' fallen guards, estates.js guardsBeaten: only while a post is empty)// (its people's memory of you, folk.js remembers: only while someone remembers)
     if(!d){x.base={realm:HOME[t.name]};for(const k of HOLDING_DATA)if(t[k]!==undefined)x.base[k]=t[k]}else if(t.kind!==d.kind)x.kind=t.kind;

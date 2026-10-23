@@ -72,7 +72,9 @@ try{
  {const shore=find((x,y)=>tAt(x,y)!==t.T_WATER&&tAt(x,y)!==t.T_MOUNT&&cl(x,y)==='grass'&&tAt(x+2,y)===t.T_WATER&&tAt(x+3,y)===t.T_WATER&&tAt(x+4,y)===t.T_WATER,0);
   if(!shore)ok(true,'(no shore on this map)');else{const [x,y]=mid(shore);day();at(x,y);const by=births(250),bad=__amb.filter(b=>(b[0]==='gull'||b[0]==='fish')&&b[5]!==t.T_WATER);
    ok(by.gull>0&&by.fish>0&&!bad.length,'by the shore: gulls and fish jumping, all over the water ('+show(by)+')')}
-  const [x,y]=mid(field);at(x,y);const by=births(200);ok(!by.gull&&!by.fish,'inland in the fields: no gulls, no fish ('+show(by)+')')}
+  // (fields with no water within sight: since stage 3's bigger lots the nearest fields to Ashford's gate lie by its river)
+  const dry=(x,y)=>{for(let b=-9;b<=9;b++)for(let a=-9;a<=9;a++)if(tAt(x+a,y+b)===t.T_WATER)return false;return true},inl=find((x,y)=>tAt(x,y)===t.T_OPEN&&cl(x,y)==='grass'&&!t.ambLot(x,y)&&dry(x,y),0,[hx,hy])||field;
+  const [x,y]=mid(inl);at(x,y);const by=births(200);ok(!by.gull&&!by.fish,'inland in the fields: no gulls, no fish ('+show(by)+')')}
  // ---- crows: by ruins, a trace on the road, a fight; none without
  {const R=W.sites.find(s=>s.type==='ruins');
   if(!R)ok(true,'(no ruins on this map)');else{R.seen=true;day();at(R.x+20,R.y+20);const by=births(120),cr=AV.list.filter(e=>e.k==='crow');

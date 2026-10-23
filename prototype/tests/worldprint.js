@@ -185,7 +185,17 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 //  pixel at a time (worldart.js pgr, GENART.pgrain), and a pond's ring mottled at its water too (engine/worldnature.js
 //  PX.WN_RING.soft): no straight run of one bank colour along a tile's edge. Only the painted world moves; checked: with the old
 //  code back both are as before. Were W5 f6daaf45, W6 89ee63a7)
-const EXPECT={W1:'92f3e9c6',W2:'9d9df44b',W3:'d123d890',W4:'9c23c683',W5:'a0dec8bd',W6:'a9bc319e',W7:'bc579d54',W8:'4fa9c9cb',B2:'d90ef30c'};
+// (W1-W8 and B2 re-recorded 2026-10-23, on purpose, the building redesign's stage 3 (agent S3: lots.js, structures.js, worldart.js):
+//  every building a model at the owner's scale, the towns laid out again with them. A village clears 110 tiles of woods (worldplace.js
+//  PLACE_CLEAR, was 80) and its kinds and deposits with it (W1, W2); the centres 64 and 128 px, the roads led round them to their
+//  gates, the houses 32 px, the estates 32 or 64, laid by the centre's middle, and their tracks (W1, W3, W4); the yards painted into
+//  the land, the roads cut round the bigger centres (worldart.js cutThrough, gateLead's corners) (W5); the models drawn (W6); the
+//  sites placed round the new lots (ruins kept off roads: sites.js Ruins.clear) and begin's draws with them, so what follows (W7, W8,
+//  B2). Checked: with PLACE_CLEAR's village back at 80 and the centres at their old sizes, W2 and the five sums are as before; the
+//  rest is the new layout and art throughout. Were W1 92f3e9c6, W2 9d9df44b, W3 d123d890, W4 9c23c683, W5 f6daaf45, W6 89ee63a7,
+//  W7 bc579d54, W8 4fa9c9cb, B2 d90ef30c)
+// (W5 and W6 measured together 2026-10-23 at the merge of stage 3 (S3: the towns' models and yards) with PB's pond banks)
+const EXPECT={W1:'47419c85',W2:'975f62a1',W3:'154e87e1',W4:'8e6f8677',W5:'b11af87c',W6:'3c66cfdf',W7:'7521bda3',W8:'32682fb8',B2:'af5eb3da'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended
@@ -232,7 +242,10 @@ const EXPECT={W1:'92f3e9c6',W2:'9d9df44b',W3:'d123d890',W4:'9c23c683',W5:'a0dec8
 //  world's kinds tidied, its brooks cut back from the holdings, its centres on dry ground and its ports on harbour water. Checked the
 //  same way: with those rules off all five as before. Were classic f9503f0b, Normal s1 1909f780, s2 f9df3b16, s3 0eb8d0bf, Large s1
 //  4e80c5cb)
-const SUMS={classic:'efa9e400','Normal s1':'f9e8cbcf','Normal s2':'be89157c','Normal s3':'5d829885','Large s1':'c0456394'};
+// (classic and Normal s1-s3 re-recorded 2026-10-23, on purpose, stage 3 of the building redesign (W1-W8 above): a village's clearing
+//  of 110 tiles (PLACE_CLEAR, was 80) for its 64 px centre. Checked: with it back at 80 all five as before (Large s1 never moved).
+//  Were classic efa9e400, Normal s1 f9e8cbcf, s2 be89157c, s3 5d829885)
+const SUMS={classic:'91df174b','Normal s1':'ce4bf2b8','Normal s2':'f73a2073','Normal s3':'3c444fc8','Large s1':'c0456394'};
 const r0=Math.random,pn=performance.now,t0=pn.call(performance);
 try{
  try{localStorage.clear()}catch(e){}

@@ -54,19 +54,21 @@ try{
   ok(woods>0&&logs>0,'woodcutters go to a tree in the woods near by ('+woods+') and carry the log back to the yard ('+logs+')');
   ok(rock>0&&pierEnd>0,'miners and quarrymen to the rock or hill near by ('+rock+'), fishers out along the pier ('+pierEnd+')');
   ok(moved>200&&['farm','pasture','lumber'].every(k=>kinds[k]),'and they move about their work ('+moved+' steps that moved)')}
- // pens that hem the door in (one on each side of the building, at level 3; a generated world laid two below and beside the door,
+ // pens that hem the door in (one on each side of the building, at level 3: four pens round a building of one tile, its lot stood in
+ // for one so (since stage 3 a building is 32 px or more, whose door four pens of a tile cannot hem in); a generated world laid two
+ // below and beside the door,
  // his round on their far sides): the herder goes out and in round their fences (folk.js penWay), never in among the animals
  {const fits=x=>{const l=x.bld&&!t.ruined(x)&&t.bldLv(x,'pasture')&&t.lotAt(x,'pasture');if(!l)return false;for(let j=l.y-2;j<=l.y+l.n+1;j++)for(let i=l.x-2;i<=l.x+l.n+1;i++)if(!t.passable(t.tAt(i,j)))return false;return true};
   const tw=t.TOWNS.find(fits);
   if(!tw)ok(false,'(fixture: a pasture with open ground round it)');
-  else{const l=t.lotAt(tw,'pasture'),p0=l.plots,lv0=tw.bld.pasture;l.plots=[[l.x,l.y+l.n],[l.x+l.n,l.y],[l.x-1,l.y],[l.x,l.y-1]];tw.bld.pasture=3;F.out=1;const pens=[],S=new Map();let steps=0,stops=0,way=0;
+  else{const l=t.lotAt(tw,'pasture'),p0=l.plots,lv0=tw.bld.pasture,n0=l.n;l.n=1;tw._spots=null;l.plots=[[l.x,l.y+l.n],[l.x+l.n,l.y],[l.x-1,l.y],[l.x,l.y-1]];tw.bld.pasture=3;F.out=1;const pens=[],S=new Map();let steps=0,stops=0,way=0;
    try{G.day=4;near(tw,.06);const fs=t.plotsAt(tw,'pasture',t.bldLv(tw,'pasture'));
     for(let i=0;i<1500;i++){G.clock=t.DAY*Math.min(.5,.06+i*.0003);t.updateFolk(.05);
      for(const f of W.folk){if(f.home!==tw.name||f.k!=='pasture'||f.st!=='field')continue;steps++;const s=S.get(f)||{};S.set(f,s);if(f.si>=0&&!s.at){s.at=1;stops++}if(f.plan.out&&f.plan.out.length&&!s.w){s.w=1;way++}
       if(fs.some(c=>f.x>c[0]*TL+1&&f.x<c[0]*TL+TL-1&&f.y>c[1]*TL+1&&f.y<c[1]*TL+TL-1)&&pens.length<4)pens.push(f.x.toFixed(1)+','+f.y.toFixed(1))}}
     const hs=W.folk.filter(f=>f.home===tw.name&&f.k==='pasture');
     ok(steps>100&&way>0&&stops===S.size&&!pens.length&&hs.length&&hs.every(f=>f.st!=='field'),'pens hemming the door in ('+tw.name+', '+fs.length+' of them): each herder goes round them to his round and back in by the fence, never in among the animals ('+steps+' steps, '+way+' by a way round, '+stops+' of '+S.size+' at their round'+(pens.length?'; in a pen: '+pens.join('; '):'')+')')}
-   finally{l.plots=p0;tw.bld.pasture=lv0;F.out=.6}}}
+   finally{l.plots=p0;l.n=n0;tw._spots=null;tw.bld.pasture=lv0;F.out=.6}}}
  // ---- the delivery after the field hours, as before
  {F.out=1;G.day=6;near(ash,.3);let field=0,out=0,town=0;for(let i=0;i<5000;i++){G.clock=t.DAY*Math.min(.69,.3+i*.0001);t.updateFolk(.05);const a=W.folk.filter(f=>f.home==='Ashford');
    if(G.clock<t.DAY*F.to)field=Math.max(field,a.filter(f=>f.st==='field').length);out+=a.filter(f=>f.st==='out').length;town+=a.filter(f=>f.st==='town').length}

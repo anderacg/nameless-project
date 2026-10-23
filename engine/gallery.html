@@ -14,7 +14,6 @@
 <div id="out"></div>
 <script src="pixel.js"></script>
 <script src="buildkit.js"></script>
-<script src="buildings.js"></script>
 <script src="pieces.js"></script>
 <script src="ground.js"></script>
 <script src="ground-fixture.js"></script>
@@ -43,18 +42,18 @@ function render(){
   if(q0.get('view')==='peoples')try{return renderPeoples()}catch(e){document.getElementById('out').textContent=e.stack;return}
   if(q0.get('view')==='catalog')try{return renderCatalog()}catch(e){document.getElementById('out').textContent=e.stack;return}
   if(q0.get('view')==='model')try{return renderModel()}catch(e){document.getElementById('out').textContent=e.stack;return}
-  if(new URLSearchParams(location.search).get('view')==='castles'){const out=document.getElementById('out');out.innerHTML='';for(const type of ['keep','citadel','village','longhouse','stonehall','elfhall','hidehall'])for(const style of ['human','dwarf','elf','orc']){if(['stonehall','elfhall','hidehall','longhouse'].includes(type)&&style!==({longhouse:'human',stonehall:'dwarf',elfhall:'elf',hidehall:'orc'})[type])continue;const row=document.createElement('div');row.className='row';row.innerHTML='<span class="lab">'+style+' · '+type+'</span>';for(let s=1;s<=6;s++){const hall=!['keep','citadel'].includes(type),b=PX.building({type,style,seed:s*37+type.length,view:'top',fort:hall?(s>3?1:0):[0,1,2,3,1,2][s-1],banner:'#c84040'}),Z=+(q0.get('z')||3),c=document.createElement('canvas'),M=4,w=b.w+2*M;c.width=w*Z;c.height=w*Z;const g=c.getContext('2d');g.imageSmoothingEnabled=false;g.scale(Z,Z);g.fillStyle='#5a8a3a';g.fillRect(0,0,w,w);g.fillStyle='rgba(0,0,0,.18)';for(let k=0;k<=b.tiles[0];k++){g.fillRect(M+k*16,0,1,w);g.fillRect(0,M+k*16,w,1)}g.fillStyle='rgba(255,230,120,.5)';g.fillRect(M+b.w/2,M+b.h,1,M);g.fillRect(M+b.w/2-1,M+b.h,1,M);g.drawImage(b.img,M,M);if(b.flag){const fx=M+b.flag[0],fy=M+b.flag[1],fc=['#c84040','#4a72b0','#3a8a4a','#d8a030'][s%4];g.fillStyle='#4a3020';g.fillRect(fx,fy-9,1,9);g.fillStyle=fc;g.fillRect(fx+1,fy-9,4,3)}row.appendChild(c)}out.appendChild(row)}return}
+  if(new URLSearchParams(location.search).get('view')==='castles'){const out=document.getElementById('out');out.innerHTML='';for(const type of ['keep','citadel','village','longhouse','stonehall','elfhall','hidehall'])for(const style of ['human','dwarf','elf','orc']){if(['stonehall','elfhall','hidehall','longhouse'].includes(type)&&style!==({longhouse:'human',stonehall:'dwarf',elfhall:'elf',hidehall:'orc'})[type])continue;const row=document.createElement('div');row.className='row';row.innerHTML='<span class="lab">'+style+' · '+type+'</span>';for(let s=1;s<=6;s++){const hall=!['keep','citadel'].includes(type),b=PX.buildingModel({type,people:style,seed:s*37+type.length,fort:hall?(s>3?1:0):[0,1,2,3,1,2][s-1]}),Z=+(q0.get('z')||3),c=document.createElement('canvas'),M=4,w=b.w+2*M;c.width=w*Z;c.height=w*Z;const g=c.getContext('2d');g.imageSmoothingEnabled=false;g.scale(Z,Z);g.fillStyle='#5a8a3a';g.fillRect(0,0,w,w);g.fillStyle='rgba(0,0,0,.18)';for(let k=0;k<=b.tiles[0];k++){g.fillRect(M+k*16,0,1,w);g.fillRect(0,M+k*16,w,1)}g.fillStyle='rgba(255,230,120,.5)';g.fillRect(M+b.w/2,M+b.h,1,M);g.fillRect(M+b.w/2-1,M+b.h,1,M);g.drawImage(b.ground,M,M);g.globalAlpha=b.shade;g.drawImage(b.shadow,M,M);g.globalAlpha=1;g.drawImage(b.img,M,M);if(b.flag){const fx=M+b.flag[0],fy=M+b.flag[1],fc=['#c84040','#4a72b0','#3a8a4a','#d8a030'][s%4];g.fillStyle='#4a3020';g.fillRect(fx,fy-9,1,9);g.fillStyle=fc;g.fillRect(fx+1,fy-9,4,3)}row.appendChild(c)}out.appendChild(row)}return}
   const q=new URLSearchParams(location.search),Z=+(document.getElementById('z').value||q.get('z')||3),N=+(document.getElementById('n').value||q.get('n')||8),only=(document.getElementById('only').value||q.get('only')||'').trim();
   const out=document.getElementById('out');out.innerHTML='';
   for(const style in PEOPLE)for(const type of PEOPLE[style]){if(only&&only!==type&&only!==style)continue;
     const row=document.createElement('div');row.className='row';row.innerHTML='<span class="lab">'+style+' · '+type+'</span>';
-    for(let s=1;s<=N;s++){const vw=q.get('view'),b=(PX.SITE_TYPES.includes(type)?PX.site:PX.building)({type,style,seed:s*37+type.length,env:['grass','frost','desert','swamp'][s%4],banner:['#c84040','#4a72b0','#3a8a4a','#d8a030'][s%4],view:vw==='top'||vw==='angled'?vw:undefined});
+    for(let s=1;s<=N;s++){const b=PX.buildingModel({type,people:style,seed:s*37+type.length,env:['grass','frost','desert','swamp'][s%4],yaw:(s%4)*2,fort:2});
       // the building in its square cell, on the tile grid (a faint line every 16 px, a stronger one round the cell)
       const c=document.createElement('canvas'),M=4,tw=b.w+2*M,th=b.h+2*M;c.width=tw*Z;c.height=th*Z;const g=c.getContext('2d');g.imageSmoothingEnabled=false;g.scale(Z,Z);
       g.fillStyle='#5a8a3a';g.fillRect(0,0,tw,th);g.fillStyle='rgba(0,0,0,.18)';for(let k=0;k<=b.tiles[0];k++){g.fillRect(M+k*16,0,1,th);g.fillRect(0,M+k*16,tw,1)}
       g.fillStyle='rgba(255,240,200,.35)';g.fillRect(M,M,b.w,1);g.fillRect(M,M+b.h-1,b.w,1);g.fillRect(M,M,1,b.h);g.fillRect(M+b.w-1,M,1,b.h);
-      g.drawImage(b.shadow,M,M);g.drawImage(b.img,M,M);if(b.clipped){g.fillStyle='#e0605a';g.fillRect(0,0,3,3)}row.appendChild(c)}
-    row.querySelector('.lab').textContent+=' · '+((PX.SITE_TYPES.includes(type)?PX.site:PX.building)({type,style,seed:1}).w)+'px';
+      g.drawImage(b.ground,M,M);g.globalAlpha=b.shade;g.drawImage(b.shadow,M,M);g.globalAlpha=1;g.drawImage(b.img,M,M);if(b.snow)g.drawImage(b.snow.img,M,M);if(b.clipped){g.fillStyle='#e0605a';g.fillRect(0,0,3,3)}row.appendChild(c)}
+    row.querySelector('.lab').textContent+=' · '+PX.buildingModel({type,people:style,seed:1}).w+'px';
     out.appendChild(row)}
 }
 // battlefield ground (engine/ground.js) on stand-in terrain (ground-fixture.js): each recipe in each climate, a field 960×600 at
@@ -173,7 +172,7 @@ function renderBeasts(){
     for(let f=0;f<(k==='dragon'?2:PX.MAP_STEPS);f++)show(row,PX.beastMap(k,f),'map '+f)}catch(e){row.insertAdjacentHTML('beforeend','<span class="lab" style="width:auto;color:#f88">'+e.message+' '+(e.stack||'').split(String.fromCharCode(10))[1]+'</span>')}out.appendChild(row)}
 }
 // ?view=model: the buildings made as 3D models (model.js), each sample in its 4 facings (yaw 0, 2, 4, 6) on the grass, its cell's
-// tiles marked, a stand-in person of the map's size (6 x 10) beside it, and today's nearest building (buildings.js) first; then each
+// tiles marked, a stand-in person of the map's size (6 x 10) beside it, after the old type it stands for (the old art retired); then each
 // people's roofs, and a strip of 45° turns, for why they are not used (&z= zoom, &only=, &seed=, &marks=1 windows and door)
 function renderModel(){
   const q=new URLSearchParams(location.search),Z=+(q.get('z')||4),out=document.getElementById('out'),only=q.get('only'),sd=+(q.get('seed')||1);out.innerHTML='';
@@ -189,7 +188,7 @@ function renderModel(){
   const lab=t=>Object.assign(document.createElement('span'),{className:'lab',textContent:t});
   const line=(t,list)=>{const row=document.createElement('div');row.className='row';row.appendChild(lab(t));for(const [b,l,sh] of list)cell(row,b,l,sh);out.appendChild(row)};
   for(const name of PX.MODEL_SAMPLES){if(only&&!only.split(',').includes(name))continue;const row=document.createElement('div');row.className='row';row.appendChild(lab(name));
-    if(OLD[name])cell(row,PX.building(Object.assign({style:'human',seed:sd,facing:'right'},OLD[name])),'today');else row.appendChild(lab('(new)'));
+    if(OLD[name])row.appendChild(lab('(was '+OLD[name].type+')'));else row.appendChild(lab('(new)'));
     for(const yaw of PX.MODEL_YAWS){const b=PX.model(PX.modelSample(name,{yaw,seed:sd}));cell(row,b,name+' yaw '+yaw+' ('+b.ms.toFixed(1)+' ms, scale '+[b.scale.u,b.scale.v,b.scale.z,b.scale.o].join('/')+')',q.get('marks'))}
     out.appendChild(row)}
   if(!only){// each people's roofs on the same buildings, at yaw 0
@@ -207,7 +206,7 @@ function renderModel(){
 // and camp turned; scenes on grass, sand and snow at the world's 1x with figures for scale and a x3 crop; the old sprites beside the
 // new for comparison. A 16 px stand-in figure (the game's template) beside each. Each cell on its climate's own ground (a few px of
 // it round the cell, never a square), the game's layer order: the flat ground, the shadow mask shaded once, what stands, the snow
-// over it. &part=types|objects|peoples|clusters|scenes|old|bench, &z=, &seed=, &only=cottage,keep
+// over it. &part=types|objects|peoples|clusters|scenes|bench, &z=, &seed=, &only=cottage,keep
 function renderCatalog(){
   const q=new URLSearchParams(location.search),Z=+(q.get('z')||3),sd=+(q.get('seed')||1),part=q.get('part'),only=q.get('only'),out=document.getElementById('out');out.innerHTML='';
   document.querySelector('h1').textContent='PX building models: the owner’s scale (stage 3 catalogue, W4 polish)';
@@ -273,12 +272,7 @@ function renderCatalog(){
       const w=document.createElement('div');w.className='cc';w.appendChild(s);w.insertAdjacentHTML('beforeend','<div class="cl">'+env+' · '+pp+' (1×)</div>');row.appendChild(w);
       const z=document.createElement('canvas');z.width=128*3;z.height=112*3;const zg=z.getContext('2d');zg.imageSmoothingEnabled=false;zg.drawImage(s,96,16,128,112,0,0,128*3,112*3);const w2=document.createElement('div');w2.className='cc';w2.appendChild(z);w2.insertAdjacentHTML('beforeend','<div class="cl">'+env+' ×3</div>');zrow.appendChild(w2)}}
   // the old hand-drawn sprites (buildings.js, pieces.js: what the game draws today; stage 3 retires them) beside the new models, for comparison only
-  if(part==='old'){head('The old sprites (left, today’s game) beside the new models (right), for comparison only');
-    const OLD={cave:o=>PX.site(o),ruins:o=>PX.site(o),shrine:o=>PX.site(o)};
-    for(const type of PX.MODEL_TYPES.concat(PX.MODEL_SITES)){if(!want(type)||!(PX.BUILDING_TYPES.includes(type)||OLD[type]))continue;const pp=PP[type]||'human',row=newRow(type),f=FRONT.includes(type),o={type,style:pp,people:pp,seed:sd};
-      try{cell(row,(OLD[type]||PX.building)(Object.assign({},o,f?{view:'top',fort:2}:{facing:'right'})),'old','grass');cell(row,PX.buildingModel(Object.assign({},o,{fort:2})),'new','grass')}catch(e){row.appendChild(lab(e.message))}}
-    const row=newRow('camps');for(const kind of ['bandit','hideout','travelers']){const c=kind==='bandit'?PX.camp({kind,seed:sd}):PX.site({type:kind,seed:sd});cell(row,Object.assign({},c,{w:Math.max(c.w,c.h)}),'old '+kind,'grass')}
-    for(const kind of ['camp','hideout','travelers'])cell(row,PX.clusterModel({kind,seed:sd}),'new '+kind,'grass')}
+  // (the old hand-drawn sprites the models replaced were retired at stage 3: buildings.js is gone, &part=old with it)
   // the cost: every type in its facings and every cluster in its 4, fresh (no cache): the first view of a big holding
   if(!part||part==='bench'){PX.modelCacheClear();const all=PX.MODEL_TYPES.concat(PX.MODEL_SITES),t0=performance.now();let k=0;for(const type of all)for(const yaw of FRONT.includes(type)?[0]:PX.MODEL_YAWS){PX.buildingModel({type,people:'human',seed:sd+5,yaw,fort:2});k++}
     const t1=performance.now();let kc=0;for(const kind of PX.CLUSTER_MODELS)for(const yaw of PX.MODEL_YAWS){PX.clusterModel({kind,people:'human',seed:sd+5,yaw});kc++}const t2=performance.now();
@@ -315,12 +309,14 @@ function renderPeoples(){
 }
 function renderProps(){
   const q=new URLSearchParams(location.search),Z=+(q.get('z')||3),out=document.getElementById('out');out.innerHTML='';
-  const row=document.createElement('div');row.className='row';row.innerHTML='<span class="lab">props · 8px</span>';
-  for(const type of PX.PROP_TYPES){const c=document.createElement('canvas'),w=16;c.width=w*Z*2;c.height=w*Z*2;const g=c.getContext('2d');g.imageSmoothingEnabled=false;g.scale(Z*2,Z*2);g.fillStyle='#5a8a3a';g.fillRect(0,0,w,w);
-    g.fillStyle='rgba(0,0,0,.18)';g.fillRect(0,8,w,1);g.fillRect(8,0,1,w);const p=PX.prop({type});g.drawImage(p.img,4,4);row.appendChild(c)}
+  const row=document.createElement('div');row.className='row';row.innerHTML='<span class="lab">objects · 16px</span>';
+  const show=(r,b,w)=>{const c=document.createElement('canvas');c.width=w*Z;c.height=w*Z;const g=c.getContext('2d');g.imageSmoothingEnabled=false;g.scale(Z,Z);g.fillStyle='#5a8a3a';g.fillRect(0,0,w,w);
+    g.drawImage(b.ground,0,0);g.globalAlpha=b.shade;g.drawImage(b.shadow,0,0);g.globalAlpha=1;g.drawImage(b.img,0,0);if(b.marks&&b.marks.fire){const fl=PX.flame(0);g.drawImage(fl.img,b.marks.fire[0]-fl.ax,b.marks.fire[1]-fl.ay)}
+    if(b.flag){g.fillStyle='#4a3020';g.fillRect(b.flag[0],b.flag[1]-9,1,9);g.fillStyle='#c84040';g.fillRect(b.flag[0]+1,b.flag[1]-9,4,3)}r.appendChild(c)};
+  for(const type of PX.MODEL_OBJECTS)show(row,PX.objectModel({type,seed:4}),16);
   out.appendChild(row);
   const r2=document.createElement('div');r2.className='row';r2.innerHTML='<span class="lab">camps</span>';
-  for(const kind of ['bandit','hideout','travelers']){const c=kind==='bandit'?PX.camp({kind,seed:4}):PX.site({type:kind,seed:4}),cv=document.createElement('canvas');cv.width=c.w*Z;cv.height=c.h*Z;const g=cv.getContext('2d');g.imageSmoothingEnabled=false;g.scale(Z,Z);g.fillStyle='#5a8a3a';g.fillRect(0,0,c.w,c.h);g.drawImage(c.img,0,0);const fl=PX.flame(0);g.drawImage(fl.img,c.fire[0]-fl.ax,c.fire[1]-fl.ay);g.fillStyle='#4a3020';g.fillRect(c.flag[0],c.flag[1]-9,1,9);g.fillStyle='#c84040';g.fillRect(c.flag[0]+1,c.flag[1]-9,4,3);r2.appendChild(cv)}
+  for(const kind of ['camp','hideout','travelers']){const b=PX.clusterModel({kind,seed:4});show(r2,b,b.cell)}
   out.appendChild(r2);
 }
 const q=new URLSearchParams(location.search);if(q.get('z'))document.getElementById('z').value=q.get('z');if(q.get('n'))document.getElementById('n').value=q.get('n');if(q.get('only'))document.getElementById('only').value=q.get('only');

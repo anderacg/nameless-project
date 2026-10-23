@@ -38,7 +38,7 @@ try{
   ok(!bad.length,'the generator ('+gen.map(f=>f.split('/').pop()).join(', ')+') never calls Math.random, rnd, rint or pick, nor Math.hypot, sin, cos, exp, pow, log or atan2'+(bad.length?': '+bad.join('; '):''))}
  // the engine (engine/README.md "Loading"): the same scripts in the same order in both, its kit before the buildings, the models last
  {const eng=[...document.querySelectorAll('script[src^="../engine/"]')].map(s=>s.getAttribute('src').replace('../engine/','')),ew=[...get('wiki.html').matchAll(/<script src="\.\.\/engine\/([^"]+)"/g)].map(m=>m[1]);
-  ok(eng.join()===ew.join()&&eng.indexOf('pixel.js')===0&&eng.indexOf('buildkit.js')===1&&eng.indexOf('buildings.js')===2&&eng[eng.length-1]==='model.js','the engine loads in its order, the same in the wiki: '+eng.join(', '));
+  ok(eng.join()===ew.join()&&eng.indexOf('pixel.js')===0&&eng.indexOf('buildkit.js')===1&&!eng.includes('buildings.js')&&eng[eng.length-1]==='model.js','the engine loads in its order, the same in the wiki (the old hand-drawn buildings.js retired): '+eng.join(', '));
   // (the cultures' building styles register into buildmodels.js: right after it, before model.js)
   const bm=eng.indexOf('buildmodels.js'),sty=eng.filter(f=>/^build-\w+\.js$/.test(f));
   ok(bm>=0&&sty.length>=4&&sty.every((f,i)=>eng.indexOf(f)===bm+1+i),'the cultures\' building styles load right after buildmodels.js: '+sty.join(', '))}

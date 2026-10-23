@@ -27,11 +27,12 @@ const roadMud=()=>spr.rpMud||(spr.rpMud=mkc(16,4,g=>{rect(g,'#3e2e20',2,0,12,4);
 function roadDown(key,race,v,blood){const k='rpd'+key+race+v+(blood?'b':'');if(spr[k])return spr[k];if(blood){const b=roadDown(key,race,v);return spr[k]=mkc(16,16,g=>{rect(g,'#5a1414',3,13,10,1);rect(g,'#6e1a18',1,14,14,1);rect(g,'#8a2a22',5,14,5,1);rect(g,'#5a1414',3,15,10,1);g.drawImage(b,0,-1)})}
   const L=pturn(mapGrid(ENC_LOOK[key](race,v),0));let h=L.h;
   while(h>1&&!L.p.slice((h-1)*L.w,h*L.w).some(Boolean))h--;L.h=h+1;L.p.length=L.w*L.h;L.p.fill(null,h*L.w);poutline(L);return spr[k]=cellOf(pcanvas(L))}
+// (a building or an object: its model (engine/buildmodels.js) in the climate there, its shadow under it, the frost's snow on it)
 function roadBld(type,e){const c=climAt(e.x,e.y),sd=e.seed%4,k='rb'+type+sd+c;if(spr[k])return spr[k];
-  const b=type==='shrine'?PX.site({type,style:'human',seed:sd,env:c,mat:ROCK_MAT[c],snow:c==='frost',glow:'#7fd8e8'}):PX.building({type,style:'human',seed:sd,snow:c==='frost'});
-  return spr[k]=mkc(b.w,b.h,g=>{g.globalAlpha=SHADOW.a;g.drawImage(b.shadow,0,0);g.globalAlpha=1;g.drawImage(b.img,0,0)})}
-const roadProp=t=>spr['rpp'+t]||(spr['rpp'+t]=PX.prop({type:t}).img);
-const roadFire=()=>spr.rpFire||(spr.rpFire=PX.outline(PX.canvas(8,3,g=>{const P=PX.paint(g),q=PX.part.tone;P.rect(q('stone',1),0,1,8,2);P.rect(q('stone',0),0,1,8,1);P.rect(q('log',1),2,0,4,2);P.px(q('log',0),2,0)})));
+  const b=PX.buildingModel({type,seed:sd,env:c,snow:c==='frost'?1:0,glow:'#7fd8e8'});
+  return spr[k]=mkc(b.w,b.h,g=>{g.globalAlpha=SHADOW.a;g.drawImage(b.shadow,0,0);g.globalAlpha=1;g.drawImage(b.img,0,0);if(b.snow)g.drawImage(b.snow.img,0,0)})}
+const roadProp=t=>spr['rpp'+t]||(spr['rpp'+t]=PX.objectModel({type:t}).img);
+const roadFire=()=>spr.rpFire||(spr.rpFire=PX.outline(PX.canvas(8,3,g=>{const P=PX.paint(g),q=PX.kit.tone;P.rect(q('stone',1),0,1,8,2);P.rect(q('stone',0),0,1,8,1);P.rect(q('log',1),2,0,4,2);P.px(q('log',0),2,0)})));
 const roadCloth=()=>spr.rpCloth||(spr.rpCloth=mkc(7,4,g=>{rect(g,'#1a1c26',0,0,7,4);rect(g,'#8a3a2a',1,1,5,2);rect(g,'#a8483a',1,1,5,1);rect(g,'#f4f0e0',2,1);rect(g,'#f4f0e0',4,2)}));
 // (the caravan's cart without its ox and drover: left behind, or, burnt, the burnt wagon: charred)
 const roadCart=burnt=>{const k=burnt?'rpWreck':'rpCart';return spr[k]||(spr[k]=cellOf(mkc(14,12,g=>{g.drawImage(caravanSprite('#6a5a48',0),0,20,14,12,0,0,14,12);if(burnt){g.globalCompositeOperation='source-atop';g.fillStyle='rgba(28,20,16,.62)';g.fillRect(0,0,14,12)}})))};

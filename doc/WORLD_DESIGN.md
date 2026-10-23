@@ -869,7 +869,7 @@ Every number below sits in `FOUNDING` (`data/world.js`) for Phase 6's retune.
 | AI tier changes, tension | `world/realms.js`; `world/brains.js` (raids, burning) |
 | Adding a holding at runtime | `addHolding` (R4), incremental territory (R7) |
 | Fief tab: "Upgrade to {tier}" with a checklist (✓/✗, like `needsText`) | `world/siege.js` `fiefBody`, `ui/town.js` |
-| Tier art for each people | `engine/pieces.js` (settler camp, stake), `engine/buildings.js` (hamlet centre, the city's grander citadel), `gallery.html?view=tiers` |
+| Tier art for each people | the models (`engine/buildmodels.js` `PX.centreModel` by tier: a camp, a hamlet's yard, the village, the town's citadel, the city's at 128, the keep; each culture's in its style file), `gallery.html?view=peoples` |
 | Settings and the settler start | `world/worldsettings.js`, `core/session.js` |
 
 ---
@@ -1403,6 +1403,16 @@ All new places are `PX` generators, previewed in `gallery.html`, and approved by
 - **Overdraw what stands in front:** for each figure in view, the sprites in front of it (their box overlaps the figure, their foot is lower on screen) are drawn again over it: in full over others, at 0.4 alpha over your own party (`PROPFADE`, as in battle). That is about 2–6 sprites per figure. **Changed 2026-10-19:** trees and buildings in front of **any** figure in your sight fade (1f4f2dd), to `WDEPTH.fade` 0.3 (`gfx/depth.js`; the owner set 0.3 in 5fa658b). Battle keeps 0.4 over yours only until IMPLEMENTATION_PLAN §3.5.
 - **What the world art must provide:** an index per chunk of its standing sprites (`{x, y, s, box}`, from the nature plan and the lots), sorted by foot y. Ranges keep column-cut faces.
 - **Later:** toll houses, mills, ferry landings and Phase 7 cliff faces join the index.
+
+### 12.6 Buildings at the owner's scale (the building redesign's stage 3, built 2026-10-23)
+
+**Status: built.** The world map draws every building, site and camp as a model (`engine/buildmodels.js`, the owner's scale: 16 px objects, 32 the smallest building, 64 the big ones, groups and centres, 128 a city's citadel); the old hand-drawn `engine/buildings.js` is retired (no `PX.building`, `PX.site`, `PX.camp` or `PX.prop`; `pieces.js` keeps the pier and the flame).
+- **Layout** (`world/lots.js`): a lot is its model's cell; the centre by tier (`PX.centreModel`: village, town and castle 64, a city 128); houses of 32 px, fewer and bigger, each holding 2-4 households of 10 people, so a holding's room counts as before (`HOUSING`, `lotHouseholds`; at the classic seed 140 houses of 380 households for 299 houses before, 5,300 people's room for 5,000); estates as their 32 or 64 px building or cluster (`ESTATE_LOT`). The inner estates are laid by the centre first, then the houses round them, side by side with each other and the workshops (`gap:'row'`), ringed round the centre's middle; the outer works from the gate as before. Every rule holds: the roads and their painted lines kept clear, the estates' tracks (none from beside or behind a centre), no lot by a brook, every lot walked to from the gate, ports on harbour water (a pier from any tile of its building beside it), the clearings (a village's 110 tiles, was 80). Towns are about a third wider than before; a village with its 64 px centre about half again.
+- **Culture:** the realm a holding was founded under (`HOME`; vale, karn, sylvan, the Horde's ashgor, the Salt League's league), kept when it is captured; the owner flies the banners (the owner's colour on banners and accents is not in the models yet). The Vale's landscapes by the holding's surroundings (`holdingEnv`: coast, highland, forest).
+- **Facing:** each lot to its nearest road or track (S, W, N, E), an outer estate to the track laid to it, the centre straight on.
+- **Drawing:** the models' ragged yards painted into the land under them, the land showing through by material (`gfx/worldart.js` `townGround`), so no square patch; the shadows in the one pass at `PX.MODEL_SHADE`; snow in the frost (by its cover toward it, the seasons' hook). Battles pass the holding's culture to `engine/ground.js` `houseOf` once the battle site carries it (a line in `world/worldmap.js` and `battle/terrain.js`, not yet).
+- **Tests:** `tests/townmodels.js`; pictures: `tests/visual/townshots.js`.
+
 
 ---
 

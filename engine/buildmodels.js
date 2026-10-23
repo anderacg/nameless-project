@@ -35,6 +35,10 @@
 //     the culture's (its centres table) or the generic one (PX.MODEL_CENTRES).
 //   PX.planKit: what a style file builds with (Plan, house, the common pieces, the generic plans, the cluster helpers).
 (function(PX){
+  // (the building types the old hand-drawn PX.building drew, in its order, which PX.MODEL_TYPES keeps: buildings.js was retired at
+  // stage 3, 2026-10-23)
+  if(!PX.BUILDING_TYPES)PX.BUILDING_TYPES=['cottage','townhouse','fisherhut','chapel','stall','tower','yurt','longhouse','tavern','smithy','church','barn','granary','windmill','watermill','warehouse',
+    'gatehouse','hidehall','watchtower','treehouse','elfhall','spire','stonehall','forge','keep','citadel','well','tent','wagon','minehead','lumbershed','crane','village'];
   const kit=()=>PX.modelKit;
   /* the cultures: a people's own, when a spec names none */
   const CULTURE_OF={human:'vale',dwarf:'karn',elf:'sylvan',orc:'ashgor'};PX.CULTURE_OF=CULTURE_OF;

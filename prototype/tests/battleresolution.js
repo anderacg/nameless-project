@@ -52,7 +52,11 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t
   // (field_win, lord_win and auto_resolve re-recorded 2026-10-23, on purpose, the owner's play-test of 2026-10-22 (agent GP:
   //  tests/worldprint.js W1-W8): the generated world moves round the test's band, and begin's draws with its sites; with those
   //  rules off all fifteen as before. Were field_win cc925db3, lord_win 4e076fb6, auto_resolve 3c3fb1e1)
-  const REC={field_win:'0fefb0ff',field_loss:'56b1108c',retreat_away:'f8f6004f',retreat_caught:'630f1c46',carried_retreat:'accd790c',tournament_win:'8932be2e',tournament_loss:'cde78eef',siege_win:'edd807d9',siege_loss:'36304164',lord_win:'a1085682',lord_loss:'58646d0e',monster_win:'9d5eedba',auto_win:'c7c4f547',auto_loss:'b0ae7cc2',auto_resolve:'d71be2ba'};
+  // (field_win, lord_win, auto_win and auto_resolve re-recorded 2026-10-23, on purpose, the building redesign's stage 3 (agent S3:
+  //  tests/worldprint.js W1-W8): the towns laid out again with the models at the owner's scale, the sites placed round them, so
+  //  begin's draws and the ground round the test's band move. Were field_win 0fefb0ff, lord_win a1085682, auto_win c7c4f547,
+  //  auto_resolve d71be2ba)
+  const REC={field_win:'05ff26eb',field_loss:'56b1108c',retreat_away:'f8f6004f',retreat_caught:'630f1c46',carried_retreat:'accd790c',tournament_win:'8932be2e',tournament_loss:'cde78eef',siege_win:'edd807d9',siege_loss:'36304164',lord_win:'4e076fb6',lord_loss:'58646d0e',monster_win:'9d5eedba',auto_win:'4664c7e8',auto_loss:'b0ae7cc2',auto_resolve:'f0b30b40'};
   const stable=x=>Array.isArray(x)?x.map(stable):x&&typeof x==='object'?Object.fromEntries(Object.keys(x).sort().map(k=>[k,stable(x[k])])):x;
   const hash=x=>{let h=2166136261;for(const c of JSON.stringify(stable(x)))h=Math.imul(h^c.charCodeAt(0),16777619)>>>0;return h.toString(16).padStart(8,'0')};
   const cases=['field_win','field_loss','retreat_away','retreat_caught','carried_retreat','tournament_win','tournament_loss','siege_win','siege_loss','lord_win','lord_loss','monster_win','auto_win','auto_loss','auto_resolve'];

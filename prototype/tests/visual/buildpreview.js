@@ -1,7 +1,7 @@
 'use strict';
 // Not a test: the world-map building redesign's checkpoint (engine/model.js), seen in the real game. On the classic world it stands
 // the model samples (PX.MODEL_SAMPLES) in their 4 facings (front, left side, back, right side: PX.MODEL_YAWS) among the real map art
-// at real places: open grass by a road (with today's buildings in the same spots, for an old-and-new pair), beside Ashford, a frost
+// at real places: open grass by a road, beside Ashford, a frost
 // spot, a desert spot, a forest's edge; and towns laid out as towns are, natural through layout rather than turning: a straight
 // street of house plots (compact rows wall to wall, a hamlet's loose yards, a lone cottage), a diagonal street (its plots stepping a
 // tile at a time down the 45° road, each at its nearest straight facing, sheds and gardens in the triangles between), a street
@@ -63,7 +63,6 @@ try{
  (0,eval)('lotEnts=window.__lotEnts');
  let msSum=0,msN=0;
  const model=(name,yaw,seed,env,people)=>{const sp=PX.modelSample(name,{yaw,seed,people});if(env==='frost')sp.snow=true;const b=PX.model(sp);msSum+=b.ms;msN++;return b};
- const old=(name,yaw,seed,env,n)=>PX.building({type:OLD[name],style:'human',seed,env,snow:env==='frost',big:n>1?2:undefined,...(yaw%4===0?{view:'top'}:{facing:yaw<4?'left':'right'})});
  // the figures: you at the middle, a lord and his banner, a caravan, townsfolk round you (everyone within your sight), each on an
  // open tile no building stands on (out of the woods: a party there hides)
  const spotNear=(tx,ty,dx,dy,used)=>{for(let r=0;r<6;r++)for(let y=ty+dy-r;y<=ty+dy+r;y++)for(let x=tx+dx-r;x<=tx+dx+r;x++){const k=x+','+y;if(!taken.has(k)&&!used.has(k)&&(kind(x,y)===t.T_OPEN||isRoad(x,y))){
@@ -85,10 +84,9 @@ try{
    const list=[];for(const [s,yaws] of items)for(const y of yaws)list.push([s,y]);list.sort((a,b)=>PX.modelSample(b[0]).cell-PX.modelSample(a[0]).cell);
    for(const [s,yaw] of list){const n=PX.modelSample(s).cell/TL,at=near(ax,ay,n,18);if(at)lay.push({s0:s,yaw,x:at[0],y:at[1],n,seed:sd++})}
    const env=climOf(ax,ay),[cx,cy]=mid(lay);cast(Math.floor(cx/TL),Math.floor(cy/TL));show(name,lay,env,cx,cy);
-   if(pair){BLD=lay.map(b=>Object.assign({},b,{s:old(b.s0,b.yaw,b.seed,env,b.n)}));snap(name+'_old',cx,cy);BLD=[]}
    o.push('INFO '+name+': '+lay.length+' buildings round tile '+ax+','+ay+' ('+env+')')};
  const want=k=>!only.length||only.includes(k);
- for(const k of ['grass','ashford','frost','desert','forest']){if(!want(k))continue;const a=spots[k]();if(!a){o.push('INFO no place found for '+k);continue}scene(k,a,PLAN[k],k==='grass')}
+ for(const k of ['grass','ashford','frost','desert','forest']){if(!want(k))continue;const a=spots[k]();if(!a){o.push('INFO no place found for '+k);continue}scene(k,a,PLAN[k])}// (no old-and-new pair: the old art retired at stage 3)
  /* a street's frontage: along a road (its tiles in order) house plots (2 x 2 tiles) touching it and each other, each facing the
     road at its nearest straight facing (the plot's side with the most road along it: south yaw 0, west yaw 2, north yaw 4, east
     yaw 6); then the gaps a plot leaves by the road (the triangles of a diagonal street, a bend's corner) filled with sheds,

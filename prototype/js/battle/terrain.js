@@ -1041,7 +1041,7 @@ class FieldPlan{
     const at=(dx,dy)=>[mx+clamp(dx*kx,-(mx-bx0),bx1-mx),my+clamp(dy*ky,-(my-by0),by1-my)],dist=l=>Math.hypot(l.dx+l.n/2-.5,l.dy+l.n/2-.5),out={houses:[],fields:[]};
     for(const l of lots.slice().sort((a,b)=>dist(a)-dist(b))){
       if(out.houses.length<B.most.house){const n=B.cell[l.n>1?1:0]*B.scale,[x,y]=at(l.dx+l.n/2-.5,l.dy+l.n/2-.5),j=rnd(),s=spot(x+(j-.5)*12,y,n*cs,n*cs,B.gap*B.scale,Math.max(0,B.front-B.pad));
-        if(s)out.houses.push({x:s[0],y:s[1],w:n*cs,h:n*cs,s:B.scale,k:l.k,type:l.type,people:l.people,seed:l.seed})}
+        if(s)out.houses.push({x:s[0],y:s[1],w:n*cs,h:n*cs,s:B.scale,k:l.k,type:l.type,people:l.people,culture:l.culture,seed:l.seed})}
       if(l.plots.length&&B.fields[l.k]&&out.fields.length<B.most.field){const X=l.plots.map(p=>p[0]),Y=l.plots.map(p=>p[1]),a=Math.min(...X),b=Math.max(...X),c=Math.min(...Y),d=Math.max(...Y);
         let w=clamp(Math.round((b-a+1)*kx/cs)*cs,B.plotMin,B.plot[0]),h=clamp(Math.round((d-c+1)*ky/cs)*cs,B.plotMin,B.plot[1]),s=null;const [x,y]=at((a+b)/2,(c+d)/2),rows=rnd()<.5?0:1;
         for(;!(s=spot(x,y,w,h))&&(w>B.plotMin||h>B.plotMin);){w=Math.max(B.plotMin,Math.round(w*B.shrink/cs)*cs);h=Math.max(B.plotMin,Math.round(h*B.shrink/cs)*cs)}if(!s)continue;

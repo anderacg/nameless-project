@@ -131,7 +131,7 @@ try{
   const near=(tx,ty,r,c)=>{for(let b=-r;b<=r;b++)for(let a=-r;a<=r;a++){const x=tx+a,y=ty+b;if(x>=0&&y>=0&&x<MW&&y<MH&&t.climate[y*MW+x]===c)return true}return false};
   for(const cn of ['desert','swamp']){const C=t.CLIMS.indexOf(cn),S=PL.cover[cn],is=IS[cn],B={'-1':[],1:[],4:[],0:[]};
    const share=(tx,ty)=>{let n=0,m=0;for(let y=1;y<TILE;y+=2)for(let x=1;x<TILE;x+=2){const o=((ty*TILE+y)*Wp+tx*TILE+x)*4;m++;if(is(d[o],d[o+1],d[o+2]))n++}return n/m};
-   for(let ty=6;ty<MH-6;ty++)for(let tx=6;tx<MW-6;tx++){let open=true;for(let b=-1;b<=1&&open;b++)for(let a=-1;a<=1;a++)if(t.tiles[(ty+b)*MW+tx+a]!==t.T_OPEN){open=false;break}if(!open)continue;
+   for(let ty=6;ty<MH-6;ty++)for(let tx=6;tx<MW-6;tx++){let open=true;for(let b=-1;b<=1&&open;b++)for(let a=-1;a<=1;a++)if(t.tiles[(ty+b)*MW+tx+a]!==t.T_OPEN||t.occAt(tx+a,ty+b)>0){open=false;break}if(!open)continue;// (open ground, no holding's yard on it: the yards are painted in, gfx/worldart.js townGround)
     const c=t.climate[ty*MW+tx];if(c===G&&near(tx,ty,1,C)&&!near(tx,ty,4,t.CLIMS.indexOf('frost')))B[-1].push(share(tx,ty));else if(c===C&&near(tx,ty,1,G))B[1].push(share(tx,ty));else if(c===C&&!near(tx,ty,4,G))B[4].push(share(tx,ty));else if(c===G&&!near(tx,ty,6,C)&&B[0].length<4000)B[0].push(share(tx,ty))}
    const mean=a=>a.reduce((q,v)=>q+v,0)/Math.max(1,a.length),M={};for(const k in B)M[k]=mean(B[k]);let lo=0,hi=0;for(let i=0;i<MW*MH;i++){if(t.climate[i]===C&&S[i]<.55)lo++;if(t.climate[i]!==C&&S[i]>.45)hi++}
    const good=B[-1].length>10&&B[1].length>10&&M[0]<.01&&M[-1]>.03&&M[-1]<.45&&M[1]>M[-1]+.15&&(!B[4].length||M[4]>M[1])&&!lo&&!hi;

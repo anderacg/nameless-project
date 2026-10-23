@@ -260,7 +260,7 @@ function artGenPlan(P,mark){const N=MW*MH,K=P.wk=new Uint8Array(N),Rv=WM.river,F
   // (the holdings' centres, each with its gate's x; the crossings by their two ends)
   const boxes=typeof centreBox==='function'?TOWNS.map(t=>Object.assign(centreBox(t),{gx:t.tx})):[],XE=new Map(),ramped=new Set();
   for(const c of WM.crossings){XE.set(c.i,[c,c.j]);XE.set(c.j,[c,c.i]);for(const q of c.tiles)XE.set(q,[c,-1])}
-  const LS=[];for(const r of WM.roads){const k=r.kind==='road'?1:0;for(const l0 of r.line){const l=gateLead(l0,boxes);if(l.length>=4)LS.push([soft(straightOn(offDeck(l,XE),XE,k,ramped,seg)),k])}}
+  const LS=[];for(const r of WM.roads){const k=r.kind==='road'?1:0;for(const l1 of r.line)for(const l0 of cutThrough(l1,boxes)){const l=gateLead(l0,boxes);if(l.length>=4)LS.push([soft(straightOn(offDeck(l,XE),XE,k,ramped,seg)),k])}}
   // (an end at a gate or at a bridge's end (a track from a bridge end, worldplace.js: met by the ramp) stays where it is)
   const mt=v=>Math.abs(v-Math.floor(v)-.5)<.02,brEnd=(x,y)=>{const e=mt(x)&&mt(y)&&XE.get(Math.floor(y)*MW+Math.floor(x));return!!e&&e[1]>=0&&e[0].kind==='bridge'};
   joinEnds(LS,(x,y)=>brEnd(x,y)||boxes.some(b=>x>=b.x-G.yard&&x<=b.x+b.n+G.yard&&y>=b.y-G.yard&&y<=b.y+b.n+G.yard));for(const [l,k] of LS)for(let j=2;j<l.length;j+=2)seg(l[j-2]*TILE,l[j-1]*TILE,l[j]*TILE,l[j+1]*TILE,k);
@@ -301,10 +301,24 @@ function gateLead(l,boxes){const m=GENART.yard,rev=revLine;
       for(const [p,q] of [[-dx,ax-x0],[dx,x1-ax],[-dy,ay-y0],[dy,y1-ay]]){if(!p){if(q<0)ok=false;continue}const r=q/p;if(p<0)t0=Math.max(t0,r);else t1=Math.min(t1,r)}
       if(!ok||t0>t1)continue;if(t0<=0)return l[0]>=x0&&l[0]<=x1&&l[1]>=y0&&l[1]<=y1?[]:l;
       const cx=ax+dx*t0,cy=ay+dy*t0,o=l.slice(0,j),e=1e-6,add=(x,y)=>{if(Math.abs(o[o.length-2]-x)>.05||Math.abs(o[o.length-1]-y)>.05)o.push(x,y)};add(cx,cy);
-      if(Math.abs(cy-y1)>e){const sx=Math.abs(cx-x0)<e?x0:Math.abs(cx-x1)<e?x1:cx<gx?x0:x1;add(sx,Math.abs(cy-y0)<e?y0:cy);add(sx,y1)}
+      // (each corner of the yard closely met, half a tile either side of it: the softening rounds it there, never into the centre)
+      if(Math.abs(cy-y1)>e){const sx=Math.abs(cx-x0)<e?x0:Math.abs(cx-x1)<e?x1:cx<gx?x0:x1,sy=Math.abs(cy-y0)<e?y0:cy;if(Math.abs(sx-cx)>.6)add(sx+(cx>sx?.5:-.5),sy);add(sx,sy);if(y1-sy>1)add(sx,sy+.5);if(y1-sy>.6)add(sx,y1-.5);add(sx,y1);add(sx+(gx>sx?.5:-.5),y1)}
       add(gx,y1);add(gx,b.y+b.n-GENART.gate);return o}
     return l};
   const a=lead(l);return a.length?rev(lead(rev(a))):a}
+// (a line passing through a holding's centre and its yard, both its ends outside it (a road laid past a centre of 64 or 128 px,
+//  larger than the tile it was laid to), cut there: each side then ends in the yard and is led to the gate as an end is (gateLead),
+//  as lots.js roadsToGates leads its tiles; never a road through a centre)
+function cutThrough(l,boxes){const m=GENART.yard,E=1e-6,inB=(b,x,y)=>x>=b.x-m-E&&x<=b.x+b.n+m+E&&y>=b.y-m-E&&y<=b.y+b.n+m+E,n=l.length;
+  for(const b of boxes){if(inB(b,l[0],l[1])||inB(b,l[n-2],l[n-1]))continue;const x0=b.x-m,y0=b.y-m,x1=b.x+b.n+m,y1=b.y+b.n+m;
+    for(let j=2;j<n;j+=2){const ax=l[j-2],ay=l[j-1],dx=l[j]-ax,dy=l[j+1]-ay;let t0=0,t1=1,ok=true;
+      for(const [p,q] of [[-dx,ax-x0],[dx,x1-ax],[-dy,ay-y0],[dy,y1-ay]]){if(!p){if(q<0)ok=false;continue}const r=q/p;if(p<0)t0=Math.max(t0,r);else t1=Math.min(t1,r)}
+      if(!ok||t0>t1||t0<=0)continue;
+      // (it comes in on this leg: on along it to where it goes out (this leg or a later one), and the two sides cut there)
+      let k=j,u1=t1;while(k<n&&inB(b,l[k],l[k+1])){k+=2;const bx=l[k-2],by=l[k-1],ex=l[k]-bx,ey=l[k+1]-by;let s1=1;for(const [p,q] of [[ex,x1-bx],[-ex,bx-x0],[ey,y1-by],[-ey,by-y0]])if(p>0)s1=Math.min(s1,q/p);u1=s1}
+      const A=l.slice(0,j).concat([ax+dx*t0,ay+dy*t0]),bx=l[k-2],by=l[k-1],B=[bx+(l[k]-bx)*u1,by+(l[k+1]-by)*u1].concat(l.slice(k));
+      return cutThrough(A,boxes).concat(cutThrough(B,boxes))}}
+  return[l]}
 // (each end of a softened line that stops on another's way (a fork, a junction) carried on to the nearest point of that line as
 //  softened, within GENART.join tiles: the softening moves a line off the point its end was snapped to); not an end at a gate or a
 //  bridge's end (at(x, y))
@@ -532,6 +546,21 @@ function artGenXing(P,r,c){const ax=c.i%MW,ay=(c.i-ax)/MW,bx=c.j%MW,by=(c.j-bx)/
       R('#2a1a10',d>0?u1-1:u0,d>0?u1:u0+1,mid-4,mid-3);R('#2a1a10',d>0?u1-1:u0,d>0?u1:u0+1,mid+3,mid+5);tip.push(d>0?u1:u0)}
     const [p,q]=tip[0]<tip[1]?tip:[tip[1],tip[0]];for(let u=p+1;u<q;u+=2)R('#d8c890',u,u+1,mid-5,mid-4);
     const rf=dir>0?tip[0]+1:tip[0]-12;R('#3e2818',rf,rf+11,mid-1,mid+6);R('#9a6e42',rf+1,rf+10,mid,mid+5);for(let u=rf+2;u<rf+10;u+=3)R('#6a4628',u,u+1,mid,mid+5);R('#2a1a10',rf+5,rf+6,mid-4,mid)}}
+/* the holdings' yards (the world-map building redesign, stage 3): each lot's model's ground layer, its snow's over it (structures.js
+   lotYard: worn earth, cobbles, sand, mud, trodden snow; the model's own ragged edge, dithered out over its cell's last pixels),
+   laid into the land under it before the roads and the land's nature, the land showing through by its material (TOWN_GROUND: a
+   share; edge, more at its rim), so a yard takes the land's colour there, the climates' covers with it, and fades into it: never a
+   patch of its own, never a square. Never over water (a shore's curve: wpx). A lot placed, taken away or changed is painted
+   again (WorldArt relot) */
+const TOWN_GROUND={earth:.2,cobble:.12,sand:.25,mud:.22,snow:.15,edge:.3};
+function* townGround(P,D,x0,y0,w,h){const K=P.wk;
+  for(const t of TOWNS)for(const l of t.lots||[]){const N=l.n*TILE,X=l.x*TILE,Y=l.y*TILE;if(!l.type||X>=x0+w||Y>=y0+h||X+N<=x0||Y+N<=y0)continue;
+    const g=lotYard(t,l),G=g.d,M=g.N,k0=TOWN_GROUND[g.key]||TOWN_GROUND.earth,E=TOWN_GROUND.edge;let wet=false;
+    for(let ty=l.y-1;ty<=l.y+l.n&&!wet;ty++)for(let tx=l.x-1;tx<=l.x+l.n;tx++)if(K[Math.max(0,Math.min(MH-1,ty))*MW+Math.max(0,Math.min(MW-1,tx))]){wet=true;break}
+    for(let y=Math.max(Y,y0);y<Math.min(Y+M,y0+h);y++)for(let x=Math.max(X,x0);x<Math.min(X+M,x0+w);x++){const u=x-X,v=y-Y,s=(v*M+u)*4;if(!G[s+3]||wet&&wpx(K,x,y))continue;
+      const rim=u===0||v===0||u===M-1||v===M-1||!G[s-1]||!G[s+7]||!G[s-M*4+3]||!G[s+M*4+3],f=1-k0-(rim?E:0),o=((y-y0)*w+x-x0)*4;
+      D[o]+=(G[s]-D[o])*f;D[o+1]+=(G[s+1]-D[o+1])*f;D[o+2]+=(G[s+2]-D[o+2])*f}
+    yield}}
 // over the land's nature, drawn on a canvas g in map pixels, each pass over the tiles tx0..tx1, ty0..ty1 in the map's order (a
 // chunk's and a tile round it: whatever reaches into it)
 const REED={grass:['#4e7a34','#8aac52'],frost:['#9a9478','#c8c0a0'],desert:['#7a8040','#b0aa62'],swamp:['#4a5a2c','#7e8a42']};
@@ -561,6 +590,7 @@ function* paintSteps(P,X,Y,w,h,g,ox,oy,rec){
   const t0=performance.now(),Wp=MW*TILE,Hp=MH*TILE,AP=PX.WN_APRON,x0=Math.max(0,X-AP),y0=Math.max(0,Y-AP),ww=Math.min(Wp,X+w+AP)-x0,wh=Math.min(Hp,Y+h+AP)-y0,img=new ImageData(ww,wh),D=img.data,NT=NATURE_TOUCH;
   yield* artGenGround(P,D,x0,y0,ww,wh,{x:X,y:Y,w,h});
   for(const t of P.tramples)trample(P,D,x0,y0,ww,wh,t);
+  yield* townGround(P,D,x0,y0,ww,wh);
   const road=yield* artGenRoads(P,D,x0,y0,ww,wh);
   const TO=NT?new Uint8Array(ww*wh):null;
   rec.n=yield* PX.worldNatureSteps(P.nature,{x:x0,y:y0,w:ww,h:wh,inner:{x:X,y:Y,w,h},road},D,TO);
@@ -621,9 +651,15 @@ const WorldArt={
       while(performance.now()-t0<ms)if(j.gen.next().done){this.done(j);this.queue.shift();break}}},
   invalidate(r){this.plan=null;CLEAR=null;this.minis={};this.queue=[];for(const j of this.jobs.values())this.recycle(j.rec.cv);this.jobs.clear();
     if(!r){for(const c of this.chunks.values())this.recycle(c.cv);this.chunks.clear();this.full=null;this.dirty.clear();this.cnt.clear();return}
-    const m=this.REACH*TILE,x0=r.x*TILE-m,y0=r.y*TILE-m,x1=(r.x+r.w)*TILE+m,y1=(r.y+r.h)*TILE+m;
+    this.forget(r.x*TILE-this.REACH*TILE,r.y*TILE-this.REACH*TILE,(r.x+r.w+this.REACH)*TILE,(r.y+r.h+this.REACH)*TILE)},
+  // a lot placed, taken away or its model changed (lots.js relot): the plan kept (its ground kept clear of the land's nature) and only
+  // the chunks its yard reaches painted again (a chunk's window reaches PX.WN_APRON past it)
+  relot(l){if(this.plan)this.plan.clear.fill(l.x*TILE-2,l.y*TILE-2,l.n*TILE+4,l.n*TILE+4);if(!this.chunks.size&&!this.jobs.size&&!this.full)return;
+    const a=PX.WN_APRON+1;this.forget(l.x*TILE-a,l.y*TILE-a,(l.x+l.n)*TILE+a,(l.y+l.n)*TILE+a)},
+  // (the chunks meeting the rect x0..x1, y0..y1 (px) let go, any being painted too, and marked to paint again in the whole picture)
+  forget(x0,y0,x1,y1){
     for(let cy=Math.max(0,Math.floor(y0/CHUNK));cy<=Math.min(this.rows-1,Math.floor((y1-1)/CHUNK));cy++)for(let cx=Math.max(0,Math.floor(x0/CHUNK));cx<=Math.min(this.cols-1,Math.floor((x1-1)/CHUNK));cx++){
-      const k=cy*this.cols+cx,c=this.chunks.get(k);if(c){this.chunks.delete(k);this.recycle(c.cv)}if(this.full)this.dirty.add(k)}},
+      const k=cy*this.cols+cx,c=this.chunks.get(k),j=this.jobs.get(k);if(c){this.chunks.delete(k);this.recycle(c.cv)}if(j){this.jobs.delete(k);this.recycle(j.rec.cv)}if(this.full)this.dirty.add(k)}},
   whole(){const W=MW*TILE,H=MH*TILE;if(this.full&&(this.full.width!==W||this.full.height!==H))this.full=null;
     if(!this.full){this.full=mkcv(W,H);this.dirty=new Set();this.cnt.clear();for(let k=0;k<this.cols*this.rows;k++)this.dirty.add(k)}
     if(this.dirty.size){const g=this.full.getContext('2d');
@@ -723,10 +759,6 @@ function drawEnv(cam,V,layer){
   ctx.restore();
 }
 
-// worn ground under a site: sites move from game to game, so their clearing is drawn under them rather than painted in
-function groundPatch(c){const k='gp'+c;if(spr[k])return spr[k];const P3=GROUND_RGB[c],dirt={grass:[124,108,70],frost:[176,170,158],desert:[196,166,110],swamp:[84,76,52]}[c];
-  return spr[k]=mkc(30,12,g=>{for(let y=0;y<12;y++)for(let x=0;x<30;x++){const d=((x-14.5)/15)**2+((y-5.5)/6)**2,e=1-hs(x,y,27)*.4;if(d>e)continue;
-    const col=mixc(P3[1],dirt,d>e-.3?.35:.6+hs(x,y,28)*.2);g.fillStyle=hex(col);g.fillRect(x,y,1,1)}})}
 /* sprite helpers: a dark 1-pixel outline around any sprite, and a white silhouette for the flash when struck */
 function outlined(src,col){
   const c=document.createElement('canvas');c.width=src.width+2;c.height=src.height+2;const g=c.getContext('2d');g.imageSmoothingEnabled=false;

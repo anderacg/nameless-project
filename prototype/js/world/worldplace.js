@@ -274,7 +274,7 @@ function placeEven(m,F,Hd,N){if(Hd.length<N)return false;const K=m.kind.slice(),
    Cleared as stage 8 begins (genRoads: the roads run through it), once stage 7's checks have chosen the holdings, which it would
    move; its noise salted from the roads' first stream, so every try clears alike. The art blends the forest's floor into it
    (gfx/worldart.js). PLACE_STATS.clear: the holdings cleared */
-const PLACE_CLEAR={village:80,castle:90,town:170,city:240,rough:.35,scale:4,spill:3};
+const PLACE_CLEAR={village:110,castle:90,town:170,city:240,rough:.35,scale:4,spill:3};// (village 110, was 80: stage 3 of the building redesign, room for its 64 px centre and 32 px houses; more clearing took the woods its lumber camp works too far off)
 function placeClear(m,h,salt){
   const W=m.w,K=m.kind,C=PLACE_CLEAR,ring=HOLDING_TYPES[h.kind].ring,r=ring+C.spill,need=C[h.kind],L=[];let have=0;
   for(let y=h.ty-r;y<=h.ty+r;y++)for(let x=h.tx-r;x<=h.tx+r;x++){if(!m.has(x,y))continue;const i=y*W+x,k=K[i],d=Math.sqrt((x-h.tx)*(x-h.tx)+(y-h.ty+1)*(y-h.ty+1));

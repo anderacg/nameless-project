@@ -341,20 +341,21 @@
     if(s===1&&v%3===0){Pg.rect(P.head,sx,y-hgt-1,1,2);Pg.px(P.reed[1],sx,y-hgt-2)}
     if(P.ice&&s===0)Pg.px(P.snow?P.snow[0]:'#fff',sx+lean,y-hgt+1)}}
 
-  /* a building standing by a fight (battle follows the world: terrain.js TERRAIN_BUILT; h {w, h, s, k, type, people, seed}, c the
+  /* a building standing by a fight (battle follows the world: terrain.js TERRAIN_BUILT; h {w, h, s, k, type, people, culture, seed}, c the
      climate of the ground under it, yaw its facing (PX.MODEL_YAWS)): the world's own model (engine/buildmodels.js PX.buildingModel:
-     its type, or by its estate's kind (HOUSE_K), no larger than its footprint at its scale s, one of 4 looks by its seed, its
+     its type, or by its estate's kind (HOUSE_K), no larger than its footprint at its scale s, its holding's culture (else its
+     people's: PX.CULTURE_OF; the culture chooses the architecture), one of 4 looks by its seed, its
      climate's make, its snow in the frost) at whole scale s (2: each pixel a crisp 2 x 2 block): {s, its standing picture (and its
      snow); g, its own ragged yard (the model's ground layer and its snow's, RGBA, n x n px) or null; sh, its shadow (the model's
      mask, softened GROUND_BUILT.soft px and faded out over fade px of its edges: 0..1 a px); n}, all on the footprint's box. A plain
      block with a pitched roof where there is no model (a soft round shadow, no yard). Kept a spec */
   const HOUSE_K={centre:'village',house:'cottage',farm:'barn',pasture:'barn',lumber:'lumbershed',mine:'minehead',quarry:'crane',port:'fisherhut',smithy:'smithy',granary:'granary',brewery:'barn',market:'stall',workshop:'warehouse'},HSPR={};
-  function houseOf(h,c,yaw){const k=Math.max(1,Math.round(h.s||1)),key=[h.type,h.k,h.people,(h.seed|0)%4,h.w,k,c,yaw].join();if(HSPR[key])return HSPR[key];
+  function houseOf(h,c,yaw){const k=Math.max(1,Math.round(h.s||1)),key=[h.type,h.k,h.people,h.culture||'',(h.seed|0)%4,h.w,k,c,yaw].join();if(HSPR[key])return HSPR[key];
     const S=PX.MODEL_SIZES&&PX.MODEL_SIZES.types,fit=t=>S&&S[t]&&S[t].cell*k<=h.w?t:null,GB=PX.GROUND_BUILT;
     // (a mask's softening: a box blur soft px round, faded out over its last fade px so no edge of the picture cuts it)
     const soft=(A,n)=>{const r=GB.soft,B=new Float32Array(n*n);for(let y=0;y<n;y++)for(let x=0;x<n;x++){let s=0,t=0;for(let b=-r;b<=r;b++)for(let a=-r;a<=r;a++){const X=x+a,Y=y+b;t++;if(X>=0&&Y>=0&&X<n&&Y<n)s+=A[Y*n+X]}
       B[y*n+x]=s/t*Math.min(1,Math.min(x,y,n-1-x,n-1-y)/GB.fade)}return B};
-    try{const type=fit(h.type)||fit(HOUSE_K[h.k])||fit('cottage');if(type&&PX.buildingModel){const m=PX.buildingModel({type,people:h.people||'human',seed:(h.seed|0)%4,yaw,env:c,snow:c==='frost'}),n=m.img.width*k;
+    try{const type=fit(h.type)||fit(HOUSE_K[h.k])||fit('cottage');if(type&&PX.buildingModel){const m=PX.buildingModel({type,people:h.people||'human',culture:h.culture,seed:(h.seed|0)%4,yaw,env:c,snow:c==='frost'}),n=m.img.width*k;
       const up=L=>PX.canvas(n,n,g=>{g.imageSmoothingEnabled=false;for(const q of L)if(q&&q.width)g.drawImage(q,0,0,n,n)}),dat=cv=>cv.getContext('2d').getImageData(0,0,n,n).data;
       const s=up([m.img,m.snow&&m.snow.img]),g=m.ground&&m.ground.width?dat(up([m.ground,m.snow&&m.snow.ground])):null,sd=dat(up([m.shadow])),A=new Float32Array(n*n);for(let i=0;i<n*n;i++)A[i]=sd[i*4+3]/255;
       return HSPR[key]={s,g,sh:soft(A,n),n}}}catch(e){}

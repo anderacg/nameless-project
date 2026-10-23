@@ -1,23 +1,24 @@
 'use strict';
-// Pixels: what the map shows is true to the pixel and nothing clips. Every building the PX engine draws fits its own tiles
-// exactly and is never cut off at its canvas's edge (sites too); every pixel of it is fully there or not at all; estates, piers, boats and sites keep off holdings, each other and the trees painted on the map;
+// Pixels: what the map shows is true to the pixel and nothing clips. Every building the PX engine draws (its models,
+// engine/buildmodels.js, the owner's scale) fits its own cell exactly and is never cut off at its canvas's edge (sites too); every
+// pixel of it is fully there or not at all; estates, piers, boats and sites keep off holdings, each other and the trees painted on the map;
 // the world is drawn without scaling, at whole pixels; and the screen shows each game pixel as whole device pixels.
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);
 try{
  const t=T,G=t.G,P=t.P,W=t.W,TILE=t.TILE;t.act('begin','soldier');G.quietEvents=true;
  const solid=c=>{const a=c.getContext('2d').getImageData(0,0,c.width,c.height).data;for(let i=3;i<a.length;i+=4)if(a[i]!==0&&a[i]!==255)return false;return true};
- // ---- every building type, for every people, both ways round, end-on where it can be, across seeds
- const DEEP=['longhouse','barn','warehouse','hidehall','elfhall','stonehall'];let n=0;const clip=[],wide=[],soft=[];
- for(const type of PX.BUILDING_TYPES.concat(PX.SITE_TYPES.filter(k=>!PX.site({type:k,seed:1}).camp)))for(const style of ['human','dwarf','elf','orc'])for(let s=1;s<=4;s++)for(const facing of ['left','right'])for(const deep of DEEP.includes(type)?[false,true]:[false]){
-   const b=(PX.SITE_TYPES.includes(type)?PX.site:PX.building)({type,style,seed:s*37+1,facing,deep,banner:'#c84040'}),id=type+'/'+style+'/'+s+'/'+facing+(deep?'/deep':'');n++;
-   if(b.clipped)clip.push(id);if(b.img.width!==b.tiles[0]*TILE||b.ax!==0||!Number.isInteger(b.ay))wide.push(id+' '+b.img.width+'px');if(!solid(b.img))soft.push(id)}
- ok(!clip.length,n+' buildings: none is cut off or spills past its tiles'+(clip.length?': '+clip.slice(0,8).join(', '):''));
- ok(!wide.length,'each is exactly as wide as its tiles (16 px a tile), standing on its footprint\'s left edge'+(wide.length?': '+wide.slice(0,8).join(', '):''));
+ // ---- every building type and site and cluster, for every culture, two facings (their sizes: PX.MODEL_SIZES)
+ let n=0;const clip=[],wide=[],soft=[],SZ=PX.MODEL_SIZES;
+ for(const culture of PX.MODEL_CULTURES)for(const type of PX.MODEL_TYPES.concat(PX.MODEL_SITES,PX.CLUSTER_MODELS))for(const yaw of [0,2]){
+   const b=SZ.types[type]?PX.buildingModel({type,culture,seed:7,yaw}):PX.clusterModel({kind:type,culture,seed:7,yaw}),N=SZ.types[type]?SZ.types[type].cell:SZ.clusters[type],id=culture+'/'+type+'/'+yaw;n++;
+   if(b.clipped)clip.push(id);if(b.img.width!==N||b.img.height!==N||b.ax!==0||b.ay!==N)wide.push(id+' '+b.img.width+'px');if(!solid(b.img))soft.push(id)}
+ ok(!clip.length,n+' buildings, sites and clusters: none is cut off or spills past its cell'+(clip.length?': '+clip.slice(0,8).join(', '):''));
+ ok(!wide.length,'each exactly its cell at the owner\'s scale (16, 32, 64 or 128 px: PX.MODEL_SIZES), standing on its footprint'+(wide.length?': '+wide.slice(0,8).join(', '):''));
  ok(!soft.length,'every pixel of every building is fully drawn or not at all (no blending, no half-transparent outline)'+(soft.length?': '+soft.slice(0,8).join(', '):''));
  // ---- placed buildings: each its own cell, none sharing a tile with another, on its holding's land, the grid true to them
  const bad=[],seenT=new Map();
- for(const tw of t.TOWNS)for(const l of tw.lots){const b=PX.building({type:l.type,style:t.lotPeople(tw,l),seed:l.seed,env:'grass'});
-   if(b&&(b.clipped||b.tiles[0]!==l.n||b.img.width!==l.n*TILE))bad.push(tw.name+': '+l.type+' is not its '+l.n+'x'+l.n+' cell');
+ for(const tw of t.TOWNS)for(const l of tw.lots){const b=t.lotModel(tw,l),s=t.lotSprite(tw,l);
+   if(b.clipped||b.cell!==l.n*TILE||s.width!==l.n*TILE||s.height!==l.n*TILE)bad.push(tw.name+': '+l.type+' is not its '+l.n+'x'+l.n+' cell');
    const tiles=[];for(let j=0;j<l.n;j++)for(let i=0;i<l.n;i++)tiles.push([l.x+i,l.y+j]);for(const [x,y] of tiles.concat(l.plots||[])){const k=x+','+y;if(seenT.has(k))bad.push(tw.name+' '+l.type+' shares '+k+' with '+seenT.get(k));seenT.set(k,tw.name+' '+l.type);if(t.occAt(x,y)!==l.id)bad.push(tw.name+' '+l.type+': the grid says '+t.occAt(x,y)+' at '+k)}}
  ok(!bad.length,t.TOWNS.reduce((a,z)=>a+z.lots.length,0)+' placed buildings: each exactly its cell, none sharing a tile (fields included), and the grid agrees'+(bad.length?': '+bad.slice(0,6).join('; '):''));
  const cen=t.TOWNS.filter(z=>{const c=t.lotCentre(z);return!c||c.y+c.n!==z.ty+1||z.tx<c.x||z.tx>=c.x+c.n});ok(!cen.length,'every holding has one centre, standing on its own tile (where its roads end and parties arrive)'+(cen.length?': '+cen.map(z=>z.name).join(', '):''));
@@ -36,9 +37,9 @@ try{
   ok(!on.length,t.camps().length+' bandit camps (2 x 2 tiles), hideouts and travellers\u2019 camps: on their own tiles, none over a road'+(on.length?': '+on.slice(0,6).join('; '):''))}
  {const cs=W.sites.filter(s=>s.type==='cave'),off=cs.filter(s=>![t.T_HILL,t.T_MOUNT].includes(t.tAt(s.tx,s.ty))||!t.passable(t.tAt(s.tx,s.ty+1)));
   ok(cs.length&&!off.length,cs.length+' caves, each cut into a hill or mountain, its mouth on ground parties can reach'+(off.length?': '+off.map(s=>s.tx+','+s.ty).join(' '):''));
-  const c=cs[0],sp=t.siteSprite(c),x0=c.x-sp.ax,y0=c.y+8-sp.ay;c.seen=true;P.x=c.x;P.y=c.y+30;
-  ok(y0+sp.height===(c.ty+1)*TILE&&sp.width===TILE&&x0===c.tx*TILE,'a cave is drawn exactly on its rock tile');
-  ok(t.pickAt(x0+2,y0+2)===c&&t.pickAt(x0+13,y0+13)===c&&t.pickAt(x0-6,y0+8)!==c&&t.pickAt(x0+8,y0-6)!==c&&t.pickAt(x0+22,y0+8)!==c,'a click picks a cave on its picture, and not beside it')}
+  const c=cs[0],sp=t.siteSprite(c),x0=c.x-sp.ax,y0=c.y+8-sp.ay,rx=c.tx*TILE,ry=c.ty*TILE;c.seen=true;P.x=c.x;P.y=c.y+30;
+  ok(y0+sp.height===(c.ty+1)*TILE&&sp.width===2*TILE&&[rx-TILE/2,rx,rx-TILE].includes(x0),'a cave (its outcrop, 32 px) stands on its rock tile, its foot on the tile’s, its middle over it (or on whole tiles beside a road)');
+  ok(t.pickAt(rx+2,ry+2)===c&&t.pickAt(rx+13,ry+13)===c&&t.pickAt(rx-14,ry+8)!==c&&t.pickAt(rx+8,ry-14)!==c&&t.pickAt(rx+30,ry+8)!==c,'a click picks a cave on its rock tile, and not beside it')}
  // ---- the world drawn at whole pixels and its own size, with everything in view
  const tw=t.townBy('Ashford');P.x=tw.x+40;P.y=tw.y+30;G.mode='world';G.modal=false;t.hidePanel();W.sites.forEach(s=>s.seen=true);
  if(W.monsters[0]){W.monsters[0].x=P.x+60;W.monsters[0].y=P.y}const dm=t.mythicOf('dragon')||t.spawnMythic('dragon');if(dm){dm.x=P.x-60;dm.y=P.y-20}

@@ -60,7 +60,7 @@ Kit.suite(({ok,info})=>{
     while(st.length){const i=st.pop(),x=i%Wd,y=(i-x)/Wd;if(!x||!y||x===Wd-1||y===H-1)open=true;for(const j of [x>0?i-1:-1,x<Wd-1?i+1:-1,y>0?i-Wd:-1,y<H-1?i+Wd:-1])if(j>=0&&L[j]<0&&wet(j)){L[j]=n;st.push(j)}}rim.push(open);n++}
    const P=TW.filter(h=>h.style==='port'||h.style==='riverport'),body=h=>{const B=new Set();for(let b=-2;b<=2;b++)for(let a=-2;a<=2;a++)if(m.has(h.tx+a,h.ty+b)&&L[(h.ty+b)*Wd+h.tx+a]>=0)B.add(L[(h.ty+b)*Wd+h.tx+a]);return B};
    const lone=P.filter(h=>![...body(h)].some(k=>rim[k]||P.some(o=>o!==h&&body(o).has(k)))),PW=t.portWater(m),hb=h=>{for(let b=-2;b<=2;b++)for(let a=-2;a<=2;a++)if(m.has(h.tx+a,h.ty+b)&&PW[(h.ty+b)*Wd+h.tx+a]===2)return true;return false};
-   const bad=P.filter(h=>!hb(h)),piers=TW.filter(h=>t.bldLv(h,'port')&&t.pierOf(h)),pb=piers.filter(h=>{const p=t.lotMid(t.lotAt(h,'port')),w=t.pierWater(p.tx,p.ty);return w<0||PW[w]<(h.style==='port'?2:1)});
+   const bad=P.filter(h=>!hb(h)),piers=TW.filter(h=>t.bldLv(h,'port')&&t.pierOf(h)),pb=piers.filter(h=>{const l=t.lotAt(h,'port'),w=t.pierWater(l.x,l.y,l.n);return w<0||PW[w]<(h.style==='port'?2:1)});
    pass('Ports',P.length&&!bad.length&&!pb.length,name+': ports: '+P.length+', each on harbour water'+(bad.length?': not '+bad.map(h=>h.name).join(', '):'')+'; '+piers.length+' port estates, each pier on a lake or a river 2 wide or more (a port town’s on harbour water)'+(pb.length?': not '+pb.map(h=>h.name).join(', '):''));
    if(lone.length)info(name+': a port on water joined to neither the sea nor another port (an inland sea, a big lake or a river’s): '+lone.map(h=>h.name).join(', '))}
   // ---- rivers: never uphill, each ending in water (a tile of water, or water under a ford or bridge since), no great river

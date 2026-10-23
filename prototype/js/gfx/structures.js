@@ -1,22 +1,40 @@
 'use strict';
 /* ---------- structures on the world map: placed buildings, the ground of estates, camps and sites ---------- */
-// Every building comes from the PX engine (../engine) and stands on its own tiles of the grid (lots.js): its picture is
-// exactly its cell (16, 32 or 64 pixels a side), drawn among the parties by its front edge. A yard of worn ground lies under
-// each; fields, pastures, pits and piers lie flat on the tiles their estate keeps. Flags are their own sprite, waving.
+// Every building is a model of the PX engine (../engine/buildmodels.js, the owner's scale: 32 px the smallest building, 64 the big
+// ones, the clusters and the centres, 128 a city's citadel; 16 px objects) and stands on its own tiles of the grid (lots.js): its
+// picture is exactly its cell, drawn among the parties by its front edge. Its yard, the model's ragged ground layer, is painted
+// into the land under it (gfx/worldart.js townGround: no patch of its own); its shadow joins every other in one pass; fields,
+// pastures, pits and piers lie flat on the tiles their estate keeps. Flags are their own sprite, waving.
 
 /* placed buildings */
-// a building's picture: from the engine by its type, its people, its seed and the climate it stands in; a ruined one is its building
-// burnt (charred, with ash); cached on the lot until it changes. The centre stands with its holding's walls (wallOf: read from the
-// holding each time, never kept on the lot, so a loaded game draws them as the game it was saved from did). Its ground shadow is a
-// picture of its own (sh, and the lot's _sh), laid in the shadow pass under every building (drawShadows), never baked under its walls
+// a lot's model as it stands (lots.js lotSpec: its culture, people, seed, facing, land, level, the centre's walls) with its snow
+function lotModel(t,l){const s=lotSpec(t,l);s.snow=lotSnow(l);return s.tier?PX.centreModel(s):s.kind?PX.clusterModel(s):PX.buildingModel(s)}
+// the snow on a lot: the frost's whole, and toward it the frost's cover there (worldart.js snowCover; the model keeps it to thirds).
+// (The seasons' hook: a season's snow would scale it, and the overlays change without the models being built again)
+function lotSnow(l){const x=(l.x+l.n/2)*TILE,y=(l.y+l.n/2)*TILE;return climAt(x,y)==='frost'?1:WorldArt.ensure().snow[Math.floor(y/TILE)*MW+Math.floor(x/TILE)]}
+// a building's picture: its model's standing picture with its snow over it; a ruined one is its building burnt (charred, with ash);
+// cached on the lot until it changes (its state, level, facing, the centre's walls). The centre stands with its holding's walls
+// (wallOf: read from the holding each time, never kept on the lot, so a loaded game draws them as the game it was saved from did).
+// Its ground shadow is the model's (sh, and the lot's _sh), laid in the shadow pass under every building (drawShadows), never
+// baked under its walls. A yard painted from another model than this one is painted again (relot)
 function lotSprite(t,l){
   const F=l.k==='centre'?wallOf(t):null;
-  if(l._s&&l._st===l.st&&l._lv===l.lv&&l._fort===F)return l._s;const c=climAt((l.x+l.n/2)*TILE,(l.y+l.n/2)*TILE);
-  const b=PX.building({type:l.type,style:lotPeople(t,l),seed:l.seed,env:c,snow:c==='frost',lv:l.k==='house'||l.k==='centre'?1:l.lv,...(l.k==='centre'?{view:'top',fort:F}:{})});
-  let cv=mkc(b.w,b.h,g=>g.drawImage(b.img,0,0));
+  if(l._s&&l._st===l.st&&l._lv===l.lv&&l._fort===F&&l._yw===l.yaw)return l._s;
+  const m=lotModel(t,l),N=m.cell;let cv=mkc(N,N,g=>{g.drawImage(m.img,0,0);if(m.snow)g.drawImage(m.snow.img,0,0)});
   if(l.st==='ruined')cv=charred(cv,l.seed);
-  cv.flag=b.flag;cv.sh=l._sh=solidShadow(b.shadow);l._st=l.st;l._lv=l.lv;l._fort=F;return l._s=cv;
+  if(l._gimg&&l._gimg!==m.img)relot(l);
+  cv.flag=m.flag;cv.sh=l._sh=m.shadow;l._st=l.st;l._lv=l.lv;l._fort=F;l._yw=l.yaw;return l._s=cv;
 }
+// a lot's yard for the painted world (worldart.js townGround): its model's ground layer with its snow's over it, {d: RGBA, N, key:
+// its material (groundKey)}, kept with the model; the lot remembers which model it was painted from (_gimg)
+function lotYard(t,l){const m=lotModel(t,l),N=m.cell,h=m.snow||m.ground;l._gimg=m.img;
+  if(!h._gd)h._gd={N,key:m.groundKey,d:mkc(N,N,g=>{g.drawImage(m.ground,0,0);if(m.snow)g.drawImage(m.snow.ground,0,0)}).getContext('2d').getImageData(0,0,N,N).data};
+  return h._gd}
+// the models of the lots near you made ahead, a few ms a frame (LOT_AHEAD: how far past the view, how long), the nearest holdings
+// first, so a town comes into view already built (its chunks are painted ahead with its yards: worldart.js)
+const LOT_AHEAD={r:600,ms:3};
+function lotsAhead(V){const t0=performance.now();for(const t of TOWNS.filter(q=>q.lots&&Math.hypot(q.x-P.x,q.y-P.y)<V+LOT_AHEAD.r).sort((a,b)=>Math.hypot(a.x-P.x,a.y-P.y)-Math.hypot(b.x-P.x,b.y-P.y)))
+  for(const l of t.lots){if(l._s&&l._gimg)continue;lotSprite(t,l);lotYard(t,l);if(performance.now()-t0>LOT_AHEAD.ms)return}}
 // burnt: every pixel darkened toward soot, a scatter of ash and the last embers (still whole pixels, never half-see-through)
 function charred(src,seed){return mkc(src.width,src.height,g=>{g.drawImage(src,0,0);const d=g.getImageData(0,0,src.width,src.height),a=d.data;
   for(let i=0;i<a.length;i+=4){if(a[i+3]<255)continue;const k=(i>>2),h=hash(k%src.width,k/src.width|0,seed);const f=h<.08?.25:.45;a[i]=a[i]*f+30*(1-f)|0;a[i+1]=a[i+1]*f+24*(1-f)|0;a[i+2]=a[i+2]*f+20*(1-f)|0;if(h>.995){a[i]=232;a[i+1]=106;a[i+2]=42}}
@@ -27,8 +45,9 @@ function flagSprite(col,f){const k='fl'+col+f;if(spr[k])return spr[k];return spr
 const drawFlag=(col,x,y,seed)=>{const f=Math.floor(performance.now()/220+(seed||0))%3,s=flagSprite(col,f);ctx.drawImage(s,Math.round(x)-1,Math.round(y)-12)};
 // a camp's fire: its flame flickers through the engine's four frames, its foot at (x, y)
 const drawFire=(x,y,seed)=>{const f=Math.floor(performance.now()/110+(seed||0))%4,s=spr['flm'+f]||(spr['flm'+f]=PX.flame(f));ctx.drawImage(s.img,Math.round(x)-s.ax,Math.round(y)-s.ay)};
-// the lots of every holding near the view: their yards and fields flat on the ground, under everyone
+// the lots of every holding near the view: their fields flat on the ground, under everyone (their yards are painted in: townGround)
 function drawLotGround(cam,V){
+  lotsAhead(V);
   for(const t of TOWNS){if(!t.lots||Math.hypot(t.x-P.x,t.y-P.y)>V+340)continue;
     for(const k in bldSpots(t)){const lv=bldLv(t,k);if(!lv)continue;const s=estateGround(t,k,lv);if(!s)continue;const sx=Math.round(s.x-cam.x),sy=Math.round(s.y-cam.y);
       if(sx>VW||sy>VH||sx+s.width<0||sy+s.height<0)continue;ctx.drawImage(s,sx,sy)}}
@@ -67,7 +86,7 @@ function drawSite(s,X,Y,N,p,full,seed){
 // placing a building by hand: its ghost under the pointer, its tiles green where it may stand and red where not
 function drawPlace(cam){
   const pl=G.place,t=townBy(pl.town);if(!t||!G.mouse.in)return;const n=pl.n,N=n*TILE,{x,y}=placeAt(G.cam.x+G.mouse.x,G.cam.y+G.mouse.y,n),ok=placeOk(t,pl.k,x,y,n),X=x*TILE-cam.x,Y=y*TILE-cam.y;
-  if(!pl._s){const b=PX.building({type:pl.type,style:t.races[0],seed:pl.seed,env:climAt(t.x,t.y)});pl._s=b.img}
+  if(!pl._s){const s={culture:holdingCulture(t),people:t.races[0],seed:pl.seed,env:climAt(t.x,t.y)},b=PX.MODEL_SIZES.types[pl.type]?PX.buildingModel({...s,type:pl.type}):PX.clusterModel({...s,kind:pl.type});pl._s=b.img}
   ctx.fillStyle=ok?'rgba(120,220,110,.28)':'rgba(230,90,80,.32)';ctx.fillRect(X,Y,N,N);ctx.globalAlpha=.75;ctx.drawImage(pl._s,X,Y);ctx.globalAlpha=1;
   ctx.strokeStyle=ok?'#78dc6e':'#e65a50';ctx.lineWidth=1;ctx.strokeRect(X+.5,Y+.5,N-1,N-1);
   txt('Place the '+(pl.k==='house'?'house':ESTATES[pl.k].n.toLowerCase())+' of '+t.name+' · click to build · Esc to stop',VW/2,VH-8,'#e8b94a','center');
@@ -84,13 +103,12 @@ function holdingLabel(t,cam,X,Y,N){
 
 /* estates: fields, pastures, pits and piers lie flat on the tiles they keep; their buildings are lots like any other */
 const ROCK_MAT={grass:'stone',frost:'stone',desert:'sandstone',swamp:'stone'};
-// which way the water lies from a port's shore tile, and where its pier starts (the shore's edge)
+// which way the water lies from a port's shore tile (its building's tile beside the water: lots.js pierSpot, its front middle
+// first), and where its pier starts (the shore's edge)
 function pierOf(t){
-  const p=bldSpots(t).port;if(!p)return null;for(const [a,b,dir] of [[0,1,'s'],[1,0,'e'],[-1,0,'w'],[0,-1,'n']])if(tAt(p.tx+a,p.ty+b)===T_WATER)
-    return{dir,x:p.tx*TILE+8+a*8,y:p.ty*TILE+8+b*8};
-  return null;
+  const l=lotAt(t,'port');if(!l)return null;const s=pierSpot(l.x,l.y,l.n);if(!s)return null;const [a,b]={s:[0,1],e:[1,0],w:[-1,0],n:[0,-1]}[s.dir];
+  return{dir:s.dir,x:s.tx*TILE+8+a*8,y:s.ty*TILE+8+b*8};
 }
-const SOIL={grass:'#6e5434',frost:'#8a8070',desert:'#a07a48',swamp:'#4e4430'};
 // the worked ground by its land (estateGround): what lies in a field's furrows (FURROW: the frost's snow, the swamp's standing water,
 // each with a chance) and a pasture's marks over the ground itself (PEN: a, the grass grazed short, or showing through the frost's
 // trampled snow, the desert's dry tufts, the swamp's rushes; b, the ground trodden bare: dirt, trampled snow, sand, mud and puddles),
@@ -103,14 +121,14 @@ const PEN={grass:{a:[[132,152,72],[150,164,84]],b:[[118,100,62],[100,86,54]]},fr
 // changes: an estate pulled down and placed again elsewhere, or another world's holding of the same name, draws its own
 function estateGround(t,k,lv){
   const l=lotAt(t,k),p=bldSpots(t)[k];if(!l||!p)return null;if(l._eg!==undefined&&l._egLv===lv)return l._eg;l._egLv=lv;
-  const c=climAt(p.x,p.y),plots=plotsAt(t,k,lv),pier=k==='port'?pierOf(t):null,plen=pier?10+lv*6:0,tiles=[[p.tx,p.ty],...plots];
+  const c=climAt(p.x,p.y),plots=plotsAt(t,k,lv),pier=k==='port'?pierOf(t):null,plen=pier?10+lv*6:0,tiles=[[l.x,l.y],[l.x+l.n-1,l.y+l.n-1],...plots];
   let x0=Math.min(...tiles.map(q=>q[0]))*TILE-2,y0=Math.min(...tiles.map(q=>q[1]))*TILE-2,x1=(Math.max(...tiles.map(q=>q[0]))+1)*TILE+2,y1=(Math.max(...tiles.map(q=>q[1]))+1)*TILE+2;
   if(pier){x0=Math.min(x0,pier.x-plen-6);x1=Math.max(x1,pier.x+plen+6);y0=Math.min(y0,pier.y-plen-6);y1=Math.max(y1,pier.y+plen+6)}
   const has=(x,y)=>plots.some(q=>q[0]===x&&q[1]===y),h=(x,y,s)=>hash(x,y,t.seed*7+s),SC=WorldArt.ensure().snow;
   // (a plot's land: how far into the frost by the snow's cover (0 the grass, 1 the frost), and its pen's colours there)
   const frOf=(tx,ty)=>c==='grass'||c==='frost'?Math.max(0,Math.min(1,(SC[ty*MW+tx]-.3)/.4)):0,penOf=fr=>{const A=PEN[c==='frost'?'grass':c],B=PEN.frost;return{a:A.a.map((q,i)=>mixc(q,B.a[i],fr)),b:A.b.map((q,i)=>mixc(q,B.b[i],fr))}};
   const cv=mkc(x1-x0,y1-y0,g=>{const r=(col,x,y,w,hh)=>rect(g,col,Math.round(x-x0),Math.round(y-y0),w||1,hh||1);
-    for(const [tx,ty] of plots){const X=tx*TILE,Y=ty*TILE,edge=(a,b)=>!has(tx+a,ty+b)&&!(tx+a===p.tx&&ty+b===p.ty);
+    for(const [tx,ty] of plots){const X=tx*TILE,Y=ty*TILE,edge=(a,b)=>!has(tx+a,ty+b);// (against its building too: ragged into its yard)
       // (how far a pixel of the plot lies from an edge with no plot beyond, px)
       const eN=edge(0,-1),eS=edge(0,1),eW=edge(-1,0),eE=edge(1,0),ed=(x,y)=>Math.min(eW?x:9,eE?15-x:9,eN?y:9,eS?15-y:9),fr=frOf(tx,ty),px=(col,x,y)=>r(hex(col),X+x,Y+y);
       if(k==='farm')farmPlot(t,tx,ty,c,fr,ed,px);// a field: its crop in rows of plants, what stands on it (gfx/worldart.js farmPlot)
@@ -140,11 +158,7 @@ function estateGround(t,k,lv){
           r(col,X+x,Y+y)}
         // a cut block or two on the floor
         for(let i=0;i<1+(hh(0,0,7)<.5?1:0);i++){const bx=X+x0+2+Math.floor(hh(i,1,8)*Math.max(1,x1-x0-6)),by=Y+Math.max(y0+9,Math.min(y1-3,y0+9+Math.floor(hh(i,2,8)*3)));r(st[0],bx,by,3,1);r(st[1],bx,by+1,3,1);r(st[3],bx,by+2,3,1)}}}
-    // what lies about the estate's own tile
-    const X=p.tx*TILE,Y=p.ty*TILE;
-    if(k==='farm'){r(SOIL[c],X+2,Y+11,13,4);r('#d8b04a',X+12,Y+9,3,3);r('#b8903a',X+12,Y+11,3,1)}
-    if(k==='lumber')for(let i=0;i<5;i++){const sx=X+Math.floor(h(i,1,11)*14)-2,sy=Y+Math.floor(h(i,2,11)*12)+2;r('#5a3a20',sx,sy+1,3,1);r('#c8a060',sx,sy,3,1)}
-    if(k==='mine'){for(let i=0;i<14;i++)r(i%3?'#5a5650':'#7a766e',X+10+Math.floor(h(i,1,12)*7),Y+11+Math.floor(h(i,2,12)*4),1,1);r('#6a6a6a',X+4,Y+15,8,1)}
+    // (what lies about its building is the model's: its yard, its dressing)
     if(pier){const pi=PX.pier({dir:pier.dir,len:plen,seed:t.seed});g.drawImage(pi.img,Math.round(pier.x-pi.ox-x0),Math.round(pier.y-pi.oy-y0))}
   });
   cv.x=x0;cv.y=y0;return l._eg=cv;
@@ -196,35 +210,37 @@ function drawMoored(o,cam){
 
 /* shadows: each standing structure's ground shadow is a picture of its own (sh: solid, the shadow's colour where it falls), and the
    shadow pass (drawShadows, render.js drawWorld: over the flat ground, under everything standing) lays them all as one mask at
-   SHADOW.a, once: two shadows never darken each other, and none is drawn over a neighbour in the depth order. A camp's tents
-   come from the engine with their shadows baked in: split from them (splitShadow: the half-clear pixels are shadow) */
-const SHADOW={a:.28,col:[20,24,12]};let SHM=null;
-function solidShadow(src){return mkc(src.width,src.height,g=>{g.drawImage(src,0,0);const d=g.getImageData(0,0,src.width,src.height),a=d.data;
-  for(let i=0;i<a.length;i+=4)if(a[i+3]){a[i]=SHADOW.col[0];a[i+1]=SHADOW.col[1];a[i+2]=SHADOW.col[2];a[i+3]=255}g.putImageData(d,0,0)})}
-function splitShadow(src){const w=src.width,h=src.height,d=src.getContext('2d').getImageData(0,0,w,h).data,B=new ImageData(w,h),S=new ImageData(w,h);
-  for(let i=0;i<d.length;i+=4){if(!d[i+3])continue;if(d[i+3]===255)B.data.set(d.subarray(i,i+4),i);else S.data.set([SHADOW.col[0],SHADOW.col[1],SHADOW.col[2],255],i)}
-  const cv=mkc(w,h,g=>g.putImageData(B,0,0));cv.sh=mkc(w,h,g=>g.putImageData(S,0,0));return cv}
+   SHADOW.a (the models' own shade, PX.MODEL_SHADE), once: two shadows never darken each other, and none is drawn over a neighbour
+   in the depth order. The models' shadows come solid, in the shadow's colour */
+const SHADOW={a:PX.MODEL_SHADE,col:[20,24,12]};let SHM=null;
 // the shadow pass: the entries' sh ([picture, x, y] on the screen) as one mask, laid once
 function drawShadows(list){let any=false;for(const e of list)if(e.sh){any=true;break}if(!any)return;const W=ctx.canvas.width,H=ctx.canvas.height;
   if(!SHM||SHM.width!==W||SHM.height!==H)SHM=mkc(W,H,()=>{});const g=SHM.getContext('2d');g.clearRect(0,0,W,H);for(const e of list)if(e.sh)g.drawImage(e.sh[0],e.sh[1],e.sh[2]);
   ctx.globalAlpha=SHADOW.a;ctx.drawImage(SHM,0,0);ctx.globalAlpha=1}
 
-/* camps (PX.camp): a bandit camp is one or two tents and a fire on 2 x 2 tiles; its fire's flame (drawFire) and any flag are
-   drawn over it */
-function campSprite(i,kind,banner){
-  const k='camp'+i+(kind||'');if(spr[k])return spr[k];
-  const c=PX.camp({kind:kind||'bandit',seed:i*131+7,banner}),cv=splitShadow(c.img);cv.ax=c.ax;cv.ay=c.ay;cv.flag=c.flag;cv.fire=c.fire;return spr[k]=cv;
-}
-
-/* sites (sites.js), each drawn by PX.site: a cave in its climate's rock, ruins, a shrine (each on its own tile), a hideout or a
-   travellers' camp */
+/* camps and sites (sites.js), each its model (engine/buildmodels.js) in its climate's make, the frost's snow on it: a bandits' camp
+   (PX.clusterModel camp, 32: one or two tents round a fire), a hideout (64: three tents in a ring of stakes) and travellers (32: a
+   tent, their wagon, the fire), each on its tiles, its front left tile its own; a cave (32: an outcrop round its uneven mouth), ruins
+   (32) and a shrine (16: standing stones or an obelisk, glowing; gold in the desert), on their own tile. Each a canvas: {ax, ay
+   (where it stands from its point: drawn at x - ax, y + 8 - ay), sh (its shadow), gr (its yard, its own shadow shaded into it, laid
+   under it: sites move from game to game, so their yards are drawn, not painted in), fire (its flame's foot: marks.fire; drawFire),
+   flag (its flag's foot: the model's, else a pole by its fire)} */
+const SITE_KIND={bandit:'camp',camp:'camp',hideout:'hideout',travelers:'travelers'};
+function siteCanvas(m,ax,ay){const N=m.cell,cv=mkc(N,N,g=>{g.drawImage(m.img,0,0);if(m.snow)g.drawImage(m.snow.img,0,0)});cv.ax=ax;cv.ay=ay;cv.sh=m.shadow;
+  cv.gr=mkc(N,N,g=>{g.drawImage(m.ground,0,0);if(m.snow)g.drawImage(m.snow.ground,0,0);g.globalCompositeOperation='source-atop';g.globalAlpha=SHADOW.a;g.drawImage(m.shadow,0,0)});
+  cv.fire=m.marks&&m.marks.fire||null;cv.flag=m.flag||(cv.fire&&[cv.fire[0]+7,cv.fire[1]+1]);return cv}
+// a camp of kind (bandit, hideout, travelers) and seed i, in climate c (the grass unless said)
+function campSprite(i,kind,c){c=c||'grass';const k='camp'+i+(kind||'')+c;if(spr[k])return spr[k];
+  const m=PX.clusterModel({kind:SITE_KIND[kind||'bandit'],seed:i*131+7,env:c,snow:c==='frost'?1:0}),n=m.cell/TILE;return spr[k]=siteCanvas(m,TILE/2+TILE*((n>>1)-1),m.cell)}
 function siteSprite(s){s=siteOf(s);// (plain data too)
-  if(s instanceof BanditCamp)return campSprite(s.seed,'bandit');// a bandit camp: the big camp, as the siege camp is drawn
-  const c=climAt(s.x,s.y),k='site'+s.type+s.seed+c+(s.kind!=null?s.kind:'');if(spr[k])return spr[k];let cv;
-  const b=PX.site({type:s.type,style:'human',seed:s.seed,env:c,mat:ROCK_MAT[c],snow:c==='frost',glow:c==='desert'?'#e8c040':'#7fd8e8',banner:s.banner()});
-  if(b.camp){cv=splitShadow(b.img);cv.ax=b.ax;cv.ay=b.ay;cv.flag=b.flag;cv.fire=b.fire}
-  // the rest stand on their own tile, drawn 8 below the site's point (the tile's middle); a cave's point is its mouth, in front
-  // of its tile (CAVE_MOUTH below the tile's bottom edge)
-  else{cv=mkc(b.w,b.h,g=>g.drawImage(b.img,0,0));cv.sh=solidShadow(b.shadow);cv.ax=b.w/2;cv.ay=b.h+(s.mouth?8+CAVE_MOUTH:0)}
-  return spr[k]=cv;
-}
+  const c=climAt(s.x,s.y);if(s instanceof BanditCamp)return campSprite(s.seed,'bandit',c);// a bandit camp: the big camp, as the siege camp is drawn
+  if(SITE_KIND[s.type])return campSprite(s.seed,s.type,c);
+  // (its foot on its tile's bottom edge, 8 below the site's point (the tile's middle); a cave's point is its mouth, in front of its
+  // tile (CAVE_MOUTH below the tile's bottom edge). A site of 32 px (a cave, ruins) its middle over its tile's, half a tile over each
+  // side; where a road or a building is there, on whole tiles instead: its own and the one beside it with fewer (the right first),
+  // the row behind them too)
+  const big=s.type==='ruins'||s.type==='cave',bad=(x,y)=>tAt(x,y)===T_ROAD||occAt(x,y)>0?1:0,B=big?bad(s.tx,s.ty-1):0,
+    R=big?bad(s.tx+1,s.ty)+bad(s.tx+1,s.ty-1)+B:0,L=big?bad(s.tx-1,s.ty)+bad(s.tx-1,s.ty-1)+B:0,side=!big||!(R+L-B)?0:L<R?-1:1;
+  const k='site'+s.type+s.seed+c+side;if(spr[k])return spr[k];
+  const m=PX.buildingModel({type:s.type,seed:s.seed,env:c,snow:c==='frost'?1:0,glow:c==='desert'?'#e8c040':'#7fd8e8'});
+  return spr[k]=siteCanvas(m,side>0?TILE/2:side<0?m.cell-TILE/2:m.cell/2,m.cell+(s.mouth?8+CAVE_MOUTH:0))}

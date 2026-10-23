@@ -186,6 +186,8 @@ try{
   return s.replace(m[0],'drawEnv(cam,V,1);\n').replace('  // minimap','  drawBanners(cam);'+m[1]+'drawQuestMarks(cam);'+m[2]+'\n  // minimap')
    .replace('ents.push({st:true,y:s.y,f:','ents.push({st:true,y:s.y,sh:(q=>q.sh?[q.sh,Math.round(s.x-cam.x)-q.ax,Math.round(s.y-cam.y)+8-q.ay]:null)(siteSprite(s)),f:')
    .replace('ctx.drawImage(sp,sx-sp.ax,sy+8-sp.ay);','ctx.drawImage(sp,sx-sp.ax,sy+8-sp.ay);if(!s.cleared)depthPic(sp,sx-sp.ax,sy+8-sp.ay);')
+   // (stage 3 of the building redesign: a site's yard is its model's, laid under it, in place of the patch of worn ground)
+   .replace("if(s.patch)ctx.drawImage(groundPatch(climAt(s.x,s.y)),sx-15,sy-4);if(s.cleared)ctx.globalAlpha=.5;const sp=siteSprite(s);","const sp=siteSprite(s);if(sp.gr)ctx.drawImage(sp.gr,sx-sp.ax,sy+8-sp.ay);if(s.cleared)ctx.globalAlpha=.5;")
    .replace('bents.sort((a,b)=>a.y-b.y).forEach(e=>e.f());','WDEPTH.pics.length=0;drawShadows(bents);bents.sort((a,b)=>a.y-b.y).forEach(e=>e.f());')
    .replace('ents.filter(e=>!e.st).sort((a,b)=>a.y-b.y).forEach(e=>e.f());','worldOverdraw(ents.filter(e=>!e.st).sort((a,b)=>a.y-b.y),cam);')};
  ev('window.__oldLotEnts=('+depthLots(OLD_LOTS)+');window.__oldDrawFolk=('+OLD_FOLK+');window.__oldDrawShips=('+OLD_SHIPS+');window.__oldDrawRefugees=('+OLD_REF+')');
@@ -311,6 +313,7 @@ try{
  {world();const save=()=>{G.mode='world';t.saveGame(true);return localStorage.getItem(t.slotKey('auto'))},strip=s=>s.replace(/"at":\d+,/,'').replace(/"pw":\d+/g,'"pw"');
   const lists=d=>JSON.stringify(['monsters','critters','refugees','sites','caravans','patrols','lords'].map(k=>d.world[k]))+JSON.stringify(d.world.own);
   sites.forEach(s=>s.placed());if(!W.refugees.length)W.refugees.push({...rf2,gone:false});// (refugees the world sent on their way meanwhile)
+  if(t.lotOf(Math.floor(P.x/TILE),Math.floor(P.y/TILE)))t.heroAtGate(t.Spatial.nearestHolding(P.x,P.y));// (you off the buildings: a load puts one standing on a lot at its gate, save.js; the lots are bigger since stage 3)
   const s1=save();ok(!!s1&&!/mapKind|"here"|"meet"|"pick"|"draw"|"mapDot"|"est":|"meetsAnyTime"|"chaseable"/.test(s1),'a save holds no world-object fields, and no estates');
   // (on a generated world the beasts and herds save packed, worldobject.js packRec: read back, their plain fields, but those made
   //  again (strength, wandering) and the numbers to a tenth)

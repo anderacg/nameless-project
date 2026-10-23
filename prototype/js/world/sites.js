@@ -39,7 +39,7 @@ const nearTile=(tx,ty,type,r)=>{for(let j=-r;j<=r;j++)for(let i=-r;i<=r;i++)if(t
 const CAVE_MOUTH=2;
 // a camp's tiles, from its picture: [left, top] from its own tile, then [across, deep]
 const CAMP_FOOT={};
-const campFoot=type=>CAMP_FOOT[type]||(CAMP_FOOT[type]=(c=>[(8-c.ax)/TILE,1-c.ay/TILE,c.w/TILE,c.h/TILE])(PX.site({type,seed:1})));
+const campFoot=type=>CAMP_FOOT[type]||(CAMP_FOOT[type]=(c=>[(8-c.ax)/TILE,1-c.ay/TILE,c.width/TILE,c.height/TILE])(campSprite(1,type)));
 // open ground round a camp: its own tiles open ground, the ring round them open or road, nothing built on any
 function campClear(type,tx,ty){const [x0,y0,w,h]=campFoot(type);
   for(let j=y0-1;j<=y0+h;j++)for(let i=x0-1;i<=x0+w;i++){const t=tAt(tx+i,ty+j),own=i>=x0&&i<x0+w&&j>=y0&&j<y0+h;if(occAt(tx+i,ty+j)||t!==T_OPEN&&(own||t!==T_ROAD))return false}return true}
@@ -100,7 +100,7 @@ class Site extends WorldObject{
   // its banner on its page (window.js PageScreen banner): it as it stands on the map, its trampled ground, shadow, sprite, fire and
   // flag (render.js drawWorld's way), faded while it lies empty
   view(){const s=this,sp=siteSprite(s),X=s.x-sp.ax,Y=s.y+8-sp.ay,on=!s.cleared,fl=sp.fire&&on&&(spr.flm0||(spr.flm0=PX.flame(0))),fg=sp.flag&&on&&flagSprite(s.flagCol(),0);
-    return{key:'site:'+s.type+':'+s.seed+':'+(s.kind??'')+':'+(on?1:0),x:s.x,y:s.y+8,alt:s.name,ps:[s.patch&&[groundPatch(climAt(s.x,s.y)),s.x-15,s.y-4],sp.sh&&[sp.sh,X,Y,SHADOW.a],[sp,X,Y,on?1:.5],
+    return{key:'site:'+s.type+':'+s.seed+':'+(s.kind??'')+':'+(on?1:0),x:s.x,y:s.y+8,alt:s.name,ps:[sp.gr&&[sp.gr,X,Y],sp.sh&&[sp.sh,X,Y,SHADOW.a],[sp,X,Y,on?1:.5],
       fl&&[fl.img,X+sp.fire[0]-fl.ax,Y+sp.fire[1]-fl.ay],fg&&[fg,X+sp.flag[0]-1,Y+sp.flag[1]-12]].filter(Boolean)}}
   panel(r){return ''}
   act(a,arg,done){if(a==='site-scout'&&this.scouts&&!this.cleared){this.scout(done);return true}return false}
@@ -126,8 +126,7 @@ class Site extends WorldObject{
   // its beasts beaten (engage.js ON_WIN.cave): its chest, and it lies empty; withdrawn from or beaten by them: nothing kept
   lairWon(){const x=siteChest(this);clearPlace(this,this.T.respawn);return x}
   lairLost(e){}
-  // on the map: a patch of ground under it, its banner's colour, a banner of its own (travellers), clicked where
-  get patch(){return true}
+  // on the map: its banner's colour, a banner of its own (travellers), clicked where (its yard under it: structures.js siteSprite gr)
   flagCol(){return '#2a1e14'}
   banner(){return null}
   pickable(){return this.known()}
@@ -137,7 +136,7 @@ class Site extends WorldObject{
   // on the minimap in its kind's colour (grey, cleared)
   inView(V){return this.known()}
   draw(ents,cam,V){if(!this.inView(V))return;const s=this;
-    const sp0=siteSprite(s);ents.push({st:true,y:s.y,sh:sp0.sh?[sp0.sh,Math.round(s.x-cam.x)-sp0.ax,Math.round(s.y-cam.y)+8-sp0.ay]:null,f:()=>{const sx=Math.round(s.x-cam.x),sy=Math.round(s.y-cam.y);if(s.patch)ctx.drawImage(groundPatch(climAt(s.x,s.y)),sx-15,sy-4);if(s.cleared)ctx.globalAlpha=.5;const sp=siteSprite(s);ctx.drawImage(sp,sx-sp.ax,sy+8-sp.ay);if(!s.cleared)depthPic(sp,sx-sp.ax,sy+8-sp.ay);if(sp.fire&&!s.cleared)drawFire(sx-sp.ax+sp.fire[0],sy+8-sp.ay+sp.fire[1],s.seed);if(sp.flag&&!s.cleared)drawFlag(s.flagCol(),sx-sp.ax+sp.flag[0],sy+8-sp.ay+sp.flag[1],s.seed);ctx.globalAlpha=1;
+    const sp0=siteSprite(s);ents.push({st:true,y:s.y,sh:sp0.sh?[sp0.sh,Math.round(s.x-cam.x)-sp0.ax,Math.round(s.y-cam.y)+8-sp0.ay]:null,f:()=>{const sx=Math.round(s.x-cam.x),sy=Math.round(s.y-cam.y),sp=siteSprite(s);if(sp.gr)ctx.drawImage(sp.gr,sx-sp.ax,sy+8-sp.ay);if(s.cleared)ctx.globalAlpha=.5;ctx.drawImage(sp,sx-sp.ax,sy+8-sp.ay);if(!s.cleared)depthPic(sp,sx-sp.ax,sy+8-sp.ay);if(sp.fire&&!s.cleared)drawFire(sx-sp.ax+sp.fire[0],sy+8-sp.ay+sp.fire[1],s.seed);if(sp.flag&&!s.cleared)drawFlag(s.flagCol(),sx-sp.ax+sp.flag[0],sy+8-sp.ay+sp.flag[1],s.seed);ctx.globalAlpha=1;
       if(s.fromYou()<70)txt(s.name,sx,sy+12,s.cleared?'#9a958a':'#e4e0cf','center')}})}
   mapDot(V){return this.known()?[this.cleared?'#555':this.T.col,2]:null}
   tip(){return '<b>'+this.name+'</b>'+(this.cleared?'':chiefTip(this))+'<small>'+this.T.n+(this.cleared?' · empty for now':'')+'</small><span class="act">Click: go there</span>'}
@@ -156,7 +155,6 @@ class Cave extends Site{
   static reachRow(ty){return ty+1}
   setup(sites){this.name=unusedName(CAVE_NAMES,sites);this.id=caveMonster(this.x,this.y)}
   returned(){this.id=caveMonster(this.x,this.y)}// (something new moves in)
-  get patch(){return false}
   get mouth(){return true}
   get scouts(){return true}
   box(box){box(this,this.x-8,this.y-16-CAVE_MOUTH,this.x+8,this.y+2)}
@@ -274,6 +272,8 @@ function ruinOccupant(s){const R=seeded((s.seed*7919+(s.cyc||0)*104729)>>>0),c=c
 // occupants that are a site of their own: one of its kind on the ruin's point, of the ruin (within: its name), made as genSites makes one
 function occupantSite(s,type){const o=Object.assign(Object.create(SITE_CLASS[type].prototype),{i:s.i,type,tx:s.tx,ty:s.ty,x:s.x,y:s.y,seed:s.seed,seen:true,cleared:false,back:0});o.setup(W.sites,climAt(s.x,s.y));o.within=s.name;return o}
 class Ruins extends Site{
+  // (its picture two tiles wide and deep since stage 3, structures.js siteSprite: no road on the tiles round it it may stand on)
+  static clear(tx,ty){if(!super.clear(tx,ty))return false;for(let j=-1;j<=0;j++)for(let i=-1;i<=1;i++)if(tAt(tx+i,ty+j)===T_ROAD)return false;return true}
   get screen(){const s=this.occSite;return s?s.screen:PAGE_SCREEN}
   setup(sites){this.name=unusedName(RUIN_NAMES,sites)}
   restore(){if(this.occ&&this.occ.s)siteOf(this.occ.s)}

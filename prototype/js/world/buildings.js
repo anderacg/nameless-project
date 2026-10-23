@@ -29,8 +29,8 @@ class Buildings{
   canHave(k){
     const t=this.t;
     if(lotAt(t,k))return true;t._can=t._can||{};if(t._can[k]!=null)return t._can[k];
-    const type=ESTATE_LOT[k],n=lotSize(type),inner=INNER.includes(k),wb=t.layout.wallBox(),R=()=>.5;
-    return t._can[k]=!!(inner?lotSpot(t,n,'open',1,9,R,{estate:true}):lotSpot(t,n,groundOf(k),3,k==='port'&&t.style==='port'?20:12,R,{estate:true,outside:wb&&{x0:wb.x0-1,y0:wb.y0-1,x1:wb.x1+1,y1:wb.y1+1},fields:PLOTS[k]?k:null,sea:k==='port'&&t.style==='port'}))}
+    const inner=INNER.includes(k),wb=t.layout.wallBox(),R=()=>.5;
+    return t._can[k]=estateTypes(t,k).some(type=>{const n=lotSize(type);return !!(inner?lotSpot(t,n,'open',1,Math.max(9,t.T.ring),R,{estate:true,gap:'row'}):lotSpot(t,n,groundOf(k),3,k==='port'&&t.style==='port'?20:12,R,{estate:true,gate:true,outside:wb&&{x0:wb.x0-1,y0:wb.y0-1,x1:wb.x1+1,y1:wb.y1+1},fields:PLOTS[k]?k:null,sea:k==='port'&&t.style==='port'}))})}
   // the highest level it may raise an estate to (0: no room for one)
   cap(k){return this.canHave(k)?this.t.T.estMax:0}
   // what it starts with: what its land and trade suggest

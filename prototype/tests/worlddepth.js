@@ -68,7 +68,7 @@ try{
    D.al.clear();D.cov.clear();D.t=0;t.drawWorld();now+=50;t.drawWorld();const a1=[...D.cov].map(k=>D.al.get(k));now+=50;t.drawWorld();const a2=[...D.cov].map(k=>D.al.get(k));
    ok(a1.length&&a1.every(a=>Math.abs(a-.8)<1e-9)&&a2.every(a=>Math.abs(a-.6)<1e-9),'smoothly, as in battle: '+t.PROPFADE.rate+' a second (a frame of 50 ms: 1 to '+a1[0].toFixed(1)+', then '+a2[0].toFixed(1)+')')}}
  // ---- your band behind a house in Ashford: the house fades the same way
- {park();const tw=t.townBy('Ashford'),l=tw.lots.find(l=>l.k==='house'&&l.st==='built'&&l.n===1);P.x=(l.x+.5)*TILE;P.y=l.y*TILE+9;const fy=P.y;
+ {park();const tw=t.townBy('Ashford'),l=tw.lots.find(l=>l.k==='house'&&l.st==='built');P.x=(l.x+l.n/2)*TILE;P.y=l.y*TILE+9+(l.n-1)*8;const fy=P.y;// (its middle: a house of 32 px)
   const L=look(P,fy,()=>{P.stay={}},()=>{P.stay=null});
   if(!L)ok(false,'your band in Ashford is drawn');else{let ch=0,good=0;for(const p of L.px){const i=p*4;if(same(L.on,L.off,i))continue;ch++;if(near(L.on,L.off,L.z,i))good++}
    ok(ch>10&&good===ch,'your band behind a house in Ashford: the house shows over it at '+F+' ('+ch+' px, '+good+' as '+F+' house + '+(1-F)+' band)')}}
