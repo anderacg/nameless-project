@@ -8,8 +8,8 @@
   "display": "fullscreen",
   "display_override": ["fullscreen", "standalone"],
   "orientation": "landscape",
-  "theme_color": "#07090e",
-  "background_color": "#07090e",
+  "theme_color": "#09080a",
+  "background_color": "#09080a",
   "lang": "en",
   "categories": ["games"],
   "icons": [

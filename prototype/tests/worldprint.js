@@ -272,9 +272,9 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 // W7 re-recorded 2026-10-24 for the requested persistent Journal discoveries: the optional known save piece stores
 // learned realms, holdings and dated lord reports. Omitting only that piece restores d2479c86 (a temporary fixture,
 // 16 checks passed). W1-W6, W8, B2 and every generator sum held; no simulation or art change.
-// (W7 TO RE-MEASURE at the next sweep, 2026-10-24: both the waterskins (29dbbd3a) and the Journal's known piece (Codex 9a7c43d8)
-//  move the 3-day save; merged without a test run on the owner's word, so this W7 is the waterskins' alone until measured)
-const EXPECT={W1:'2ba57e1b',W2:'975f62a1',W3:'224e40e8',W4:'29fda26b',W5:'f284901d',W6:'6b64690d',W7:'29dbbd3a',W8:'a465c56e',B2:'8712b6a2'};
+// (W7 measured 2026-10-24 at the full sweep of f689b02: the waterskins (alone 29dbbd3a) and the Journal's known piece (Codex alone
+//  9a7c43d8) together, f79b1a9c)
+const EXPECT={W1:'2ba57e1b',W2:'975f62a1',W3:'224e40e8',W4:'29fda26b',W5:'f284901d',W6:'6b64690d',W7:'f79b1a9c',W8:'a465c56e',B2:'8712b6a2'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended

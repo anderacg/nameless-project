@@ -13,11 +13,12 @@ try{
  ok(t.FOODS.length===8&&t.FOODS.every(g=>t.GOODS[g].food)&&t.FOODS[0]==='milk'&&['grain','cheese'].includes(t.FOODS[7]),'eight foods (salmon and eel only where they are caught), most perishable eaten first: '+t.FOODS.join(', '));
  empty();t.invAdd('good','grain',10);t.invAdd('good','milk',3);t.invAdd('good','meat',4);
  ok(t.foodN()===17&&t.foodKinds()===3,'food counts every kind');t.foodTake(5);ok(t.goodN('milk')===0&&t.goodN('meat')===2&&t.goodN('grain')===10,'milk goes first, then meat, grain last');
- // (it eats by the hour: world/supply.js)
+ // (it eats by the hour: world/supply.js; it drinks too: water given with the food, since the skins fill only by the frame, timed,
+ // and only empty ones: SKINS)
  const day=()=>{t.supplyMoved();for(let h=0;h<24;h++)t.supplyHour()};
- empty();t.invAdd('good','meat',8);P.troops={militia:7};P.morale=60;const eat=t.eatPerDay();day();
+ empty();t.invAdd('good','meat',8);t.invAdd('good','water',10);P.troops={militia:7};P.morale=60;const eat=t.eatPerDay();day();
  ok(t.goodN('meat')<=8-eat&&P.morale>=52,'a band with only meat eats it, no hunger ('+t.goodN('meat')+' left)');
- empty();P.morale=60;day();ok(P.morale<=52,'no food of any kind: the band goes hungry');
+ empty();t.invAdd('good','water',10);P.morale=60;day();ok(P.morale<=52,'no food of any kind: the band goes hungry');
  empty();t.invAdd('good','milk',20);t.invAdd('good','cheese',20);P.troops={};let m0=t.goodN('milk');for(let i=0;i<5;i++)t.dayTick();
  ok(t.goodN('milk')<m0-6&&t.goodN('cheese')===20,'milk spoils, cheese keeps ('+m0+' → '+t.goodN('milk')+' milk)');
  empty();['grain','cheese','fruit','meat'].forEach(g=>t.invAdd('good',g,20));P.morale=50;t.dayTick();ok(P.morale>=52,'four kinds of food lift morale (+'+(P.morale-50)+')');

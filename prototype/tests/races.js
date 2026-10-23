@@ -18,6 +18,6 @@ try{const t=T,G=t.G,P=t.P,W=t.W;try{localStorage.clear()}catch(e){}
  ok(!t.B,'dragon battle ends ('+i+' steps, '+breaths+' breaths), result: '+(t.mythicOf('dragon')?'dragon won':'dragon slain'));
  t.act('cont');while(G.mode==='perk')t.act('perk',G.perkOffer[0]);
  G.mode='world';G.modal=false;t.saveGame();t.act('load');ok(P.race==='orc','race survives a reload');
- G.mode='world';t.openChar();ok(/Orc · level/.test(document.getElementById('panel').innerHTML),'race in char panel');t.act('char-close');t.openJournal('realms');t.act('journal-close');t.frame();
+ G.mode='world';t.openChar();t.act('party-select','hero');ok(/>Orc · /.test(document.getElementById('panel').innerHTML)&&/Level \d+ · /.test(document.getElementById('panel').innerHTML),'race in char panel (the hero’s sheet in the Army window)');t.act('char-close');t.openJournal('realms');t.act('journal-close');t.frame();
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}
 const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d)};

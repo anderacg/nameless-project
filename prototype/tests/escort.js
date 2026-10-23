@@ -23,7 +23,7 @@ Kit.suite(({ok,info})=>{
   t.openChar();t.act('char-tab','passengers');ok(/Escorted \(1 \/ 3\)/.test(Kit.panel())&&/The refugee family/.test(Kit.panel())&&/does not fight/.test(Kit.panel()),'in the Army window’s Passengers: who, where, the days, what they eat');Kit.world();
   ok(t.partySize()===size&&P.room()===room&&t.playerList().length===list&&t.worldObjects().length===objs,'no troop slot, no headcount, no fighter in battle, no figure on the map of its own');
   ok(Math.abs(t.bandFoodHour(true)-eat0-q.eat/24*t.SUPPLY.eat.march)<1e-9&&Math.abs(t.bandFoodHour(false)-P.foodHour(false)-q.eat/24*t.SUPPLY.eat.rest)<1e-9,'it eats: '+q.eat+' food a day with your band, on the march and at rest');
-  {const eatFor=h=>{t.BAND.eat=0;const f0=t.foodN();for(let i=0;i<h;i++)t.supplyHour();return f0-t.foodN()},keep=P.quests;t.CHEAT.noNeeds=false;const a=eatFor(96);P.quests=[];const b=eatFor(96);P.quests=keep;
+  {const eatFor=h=>{t.BAND.eat=0;t.BAND.dry=0;t.invAdd('good','water',20);const f0=t.foodN();for(let i=0;i<h;i++)t.supplyHour();return f0-t.foodN()},keep=P.quests;t.CHEAT.noNeeds=false;const a=eatFor(96);P.quests=[];const b=eatFor(96);P.quests=keep;
    ok(a-b>=Math.floor(4*q.eat*t.SUPPLY.eat.rest)-1&&a-b<=Math.ceil(4*q.eat*t.SUPPLY.eat.march)+1,'four days of the band\'s hours: '+a+' food eaten with them, '+b+' without')}
   ok(t.questGoal(q).x===q.to.x&&t.questGoal(q).y===q.to.y,'its goal (the minimap\'s dot) is its place');
   {let err='';try{t.wuiEscorts({x:q.to.x-200,y:q.to.y-100},performance.now(),false);t.drawQuestMarks({x:0,y:0})}catch(x){err=x.message}ok(!err,'its place marked on the map (a house, gfx/worldui.js), the quests\' marks pass it by'+(err?' EXC '+err:''))}

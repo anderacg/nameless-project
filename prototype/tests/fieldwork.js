@@ -27,8 +27,9 @@ try{
   ok(day.length&&day.every(f=>f.st==='in'||f.st==='field')&&day.every(f=>(f.st==='field')===t.fieldOut(f)),'in the morning each is out on his estate\'s ground or inside, as his day says ('+day.map(f=>f.k+' '+f.st).join(', ')+')');
   for(const c of [.8,.95,.03]){G.clock=t.DAY*c;for(let i=0;i<400;i++)t.updateFolk(.05);const a=W.folk.filter(f=>f.home==='Ashford');
    ok(a.length&&a.every(f=>f.st==='in'),'at '+t.timeOfDay().toLowerCase()+' ('+c+') all are inside ('+a.length+')')}}
- // about FIELD.out of them out by day, seeded by worker and day
- {let out=0,all=0;for(let day=1;day<=60;day++){G.day=day;near(ash,.25);for(const f of W.folk){all++;if(f.st==='field')out++}}
+ // about FIELD.out of them out by day, seeded by worker and day (the beasts off the map meanwhile: one placed at random by an estate
+ // keeps its workers in all the 60 days)
+ {let out=0,all=0;const ms=W.monsters.splice(0);for(let day=1;day<=60;day++){G.day=day;near(ash,.25);for(const f of W.folk){all++;if(f.st==='field')out++}}W.monsters.push(...ms);
   const r=out/all;ok(F.out===.6&&all>300&&Math.abs(r-F.out)<.08,'by day '+Math.round(r*100)+'% of '+all+' workers are out (60 days near Ashford; FIELD.out '+F.out+')');
   const f={id:'Ashford|farm|1'};G.day=9;const a=t.fieldOut(f);G.day=9;ok(t.fieldOut(f)===a,'his day out or in is seeded: the same each time it is asked');
   let s=0;for(let i=0;i<4000;i++){G.day=i%97;if(t.fieldOut({id:'X|farm|'+i}))s++}ok(Math.abs(s/4000-F.out)<.03,'over many workers and days, '+(s/40).toFixed(1)+'% out')}

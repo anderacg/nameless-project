@@ -200,7 +200,7 @@ function bandDay(){
   const cnt=troopCount()+woundedN()+cparties().reduce((a,p)=>a+p.troops.length,0);
   bandWages(cnt);bandLarder();
   for(const id in P.comps){const r=COMPS[id].rival;if(r&&P.comps[r]&&Math.random()<.12){P.comps[id].ap--;P.comps[r].ap--;log(COMPS[id].short+' and '+COMPS[r].short+' quarrel by the fire. Both are unhappy.','bad','band')}}
-  if(P.morale<25&&cnt>0&&Math.random()<.5){const ks=Object.keys(P.troops).filter(k=>P.troops[k]>0);const k=ks[rint(0,ks.length-1)];P.remove(k);log(cap1(an(ST[k].n.toLowerCase()))+' deserts in the night.','bad','band')}
+  if(P.morale<25&&cnt>0&&Math.random()<.5){const ks=Object.keys(P.troops).filter(k=>P.troops[k]>0);if(ks.length){const k=ks[rint(0,ks.length-1)];P.remove(k);log(cap1(an(ST[k].n.toLowerCase()))+' deserts in the night.','bad','band')}}// (only a fit soldier: the wounded and companions' parties count in cnt)
   survive();
   // (your band's morale drifts toward its troops' Morale, by their numbers: veterans keep their spirits, levies sag)
   {const st=bandNerve();if(st!=null)P.morale+=(st-P.morale)*PARTY_MOR.drift}
