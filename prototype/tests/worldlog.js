@@ -2,8 +2,8 @@
 // The world's log works like rumours (world/worldlog.js worldEvent, the owner 2026-10-23): a world event far away is not logged
 // but becomes news; one in your sight is logged at once ("You see…"); one you took part in is logged at once; your realm's comes
 // by rider after a delay by distance, saying who sent him and when it happened; the new news kinds' sentences (war, peace, an
-// alliance, a realm fallen, a lord's new army, a garrison starving), the realms' affairs told far from where they happened; Buy
-// news at a tavern (gold by tier, 2 more, once a day); the Chronicle's "happened day N"; the full map's "?" marks; saved and
+// alliance, a realm fallen, a lord's new army, a garrison starving), the realms' affairs reaching far holdings days later; Buy
+// information at a tavern (not rumours: tests/proclaim.js); the Chronicle's "happened day N"; the full map's "?" marks; saved and
 // loaded with a rider on the way; and with the gateway off, every line logged where it was before.
 Kit.suite(({ok,info})=>{
  const t=T,G=t.G,P=t.P,W=t.W,L=t.WORLD_LOG,q=Kit.q;
@@ -71,22 +71,16 @@ Kit.suite(({ok,info})=>{
   const at=t.realmsMeet(a,b),it=t.newsRecord('war',at,{a,b}),far=live.slice().sort((p,q)=>d(q,at)-d(p,at))[0];
   ok(it&&d(far,at)>t.NEWS.radius,'a war recorded where the realms meet (by '+it.near+')');
   const tv=t.rumourFrom(t.rumourSource('tavern',far.name,far)),es=t.rumourCands(t.rumourSource('estate',far.name+':farm',far));
-  ok(tv.fresh.includes(it)&&!es.includes(it),'the tavern of '+far.name+', far from it, tells of the war (wide); an estate worker there does not');
+  ok(!tv.fresh.includes(it)&&!tv.proc.includes(it)&&!es.includes(it)&&W.news.heard[it.id]==null,'the tavern of '+far.name+', far from it: no rumour of the war (a proclamation, free), and it has not reached there yet');
+  {const d0=G.day,n=Math.ceil(t.proclaimDays(it,far))+1;G.day+=n;const tv2=t.rumourFrom(t.rumourSource('tavern',far.name,far));G.day=d0;
+   ok(tv2.proc.includes(it)&&W.news.heard[it.id]!=null,n+' days on it has reached '+far.name+' ('+t.proclaimDays(it,far).toFixed(1)+' days): told there free')}
   const it2=t.newsRecord('war',at,{a,b:t.FIDS[2]});ok(it2!==it&&items().filter(x=>x.k==='war').length===2,'two wars by the same holding the same day: two items (apart)')}
 
- // ---- Buy news at a tavern: its price by tier, 2 more, once a day
- {fresh();Kit.goTo(A.x,A.y+20);['siege','beast','caravan','trace','band','raid'].forEach((k,i)=>t.newsRecord(k,{x:A.x+10+i*30,y:A.y+12},{town:A.name,fac:A.owner,lord:'Lord X',id:'wolf',n:4,from:A.name,t:'wreck',label:'Bandits'}));
-  P.gold=1000;Kit.world();t.enterTown(A);t.act('tab','tavern');const price=L.buy.base+L.buy.tier*A.T.tier,btn=()=>q('#panel [data-act="buy-news"]');
-  ok(t.newsPrice(A)===price&&btn()&&!btn().disabled&&btn().textContent==='Buy · '+price+'g'&&Object.keys(W.news.heard).length===2,'the tavern of '+A.name+' (tier '+A.T.tier+'): 2 free, and Buy news for '+price+'g');
-  btn().click();const heard=Object.keys(W.news.heard).length,lines=[...document.querySelectorAll('#panel .rum-new')].length;
-  ok(P.gold===1000-price&&heard===4&&/Bought news/.test(Kit.panel())&&!btn()&&said(/^Rumour \(the innkeeper of /).length===2,'bought: '+price+' gold, 2 more rumours heard and shown ('+heard+' heard, '+lines+' new lines), the offer gone');
-  t.act('buy-news');ok(P.gold===1000-price&&Object.keys(W.news.heard).length===4,'once a day: again, nothing more and no gold taken');
-  t.act('leave');Kit.world();G.day++;t.enterTown(A);t.act('tab','tavern');
-  ok(btn()&&btn().disabled&&/know nothing more/.test(btn().title),'the next day: offered again, but they know nothing more ('+(btn()&&btn().title)+')');
-  t.newsRecord('fell',{x:A.x+40,y:A.y-20},{town:A.name,fac:A.owner,lord:'Lord Y'});t.newsRecord('fight',{x:A.x-40,y:A.y-20},{win:'a',lose:'b'});t.newsRecord('lord',{x:A.x-60,y:A.y+20},{lord:'Lord Z',fac:A.owner});
-  t.newsRecord('tracks',{x:A.x-30,y:A.y+40},{who:'riders'});G.town.news=null;t.act('tab','home');t.act('tab','tavern');P.gold=price-1;t.renderTown();
-  ok(btn()&&btn().disabled&&btn().title==='Not enough gold','without the gold: "Not enough gold"');P.gold=1000;t.renderTown();btn().click();
-  ok(P.gold===1000-price&&/Bought news/.test(Kit.panel()),'with it, bought again the next day');G.day--;t.act('leave');Kit.world()}
+ // ---- a tavern sells information, not rumours (tests/proclaim.js): its 2 free rumours, then Buy information
+ {fresh();Kit.goTo(A.x,A.y+20);['siege','beast','caravan','trace'].forEach((k,i)=>t.newsRecord(k,{x:A.x+10+i*30,y:A.y+12},{town:A.name,fac:A.owner,lord:'Lord X',id:'wolf',n:4,from:A.name,t:'wreck'}));
+  Kit.world();t.enterTown(A);t.act('tab','tavern');
+  ok(Object.keys(W.news.heard).length===2&&q('#panel [data-act="intel-pick"]')&&!q('#panel [data-act="buy-news"]')&&/Buy information/.test(Kit.panel()),'the tavern of '+A.name+': 2 free rumours, and Buy information (no Buy news)');
+  t.act('leave');Kit.world()}
 
  // ---- the full map's "?" marks
  {fresh();const it=t.newsRecord('beast',{x:A.x+40,y:A.y+30},{id:'wolf',n:5});t.rumourHear(it,t.rumourSource('tavern',A.name,A));const m=t.rumourMarks()[0];

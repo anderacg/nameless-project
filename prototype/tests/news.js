@@ -2,7 +2,8 @@
 // News and rumours (world/news.js): the world's real events recorded as news from their hooks (each kind once, merged, trimmed by
 // NEWS.keep and NEWS.days, never a Math.random draw), and heard through one service (rumourFrom) from many sources, each with its
 // own daily cap by its key: a tavern 2 a day (then "Nothing new today"), the others 1; only nearby, recent news, never one you
-// heard already; a "?" on the map near each that fades; and the news, what you heard and today's counts kept in the save.
+// heard already (a holding taken is a proclamation now, never a rumour: tests/proclaim.js); a "?" on the map near each that fades;
+// and the news, what you heard and today's counts kept in the save.
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);
 try{
  const t=T,G=t.G,P=t.P,W=t.W,N=t.NEWS;try{localStorage.clear()}catch(e){}
@@ -77,11 +78,11 @@ try{
   ok([...ra.fresh,...rb.fresh].every(it=>it.near===(ra.fresh.includes(it)?A.name:B.name)),'each tells only its own nearby news')}
  {fresh();t.newsRecord('siege',{x:A.x+N.radius+60,y:A.y},det.siege);t.newsRecord('beast',by(A),det.beast);const old=t.newsRecord('trace',by(A,60,10),det.trace);old.day=G.day-N.days;
   const r=t.rumourFrom(t.rumourSource('tavern',A.name,A));ok(r.fresh.length===1&&r.fresh[0].k==='beast','only news within NEWS.radius ('+N.radius+' px) and the last NEWS.days days is told')}
- {fresh();t.newsRecord('trace',by(A),det.trace);t.newsRecord('fell',by(A,40,0),det.fell);const r=t.rumourFrom(t.rumourSource('tavern',A.name,A));
-  ok(r.fresh.map(it=>it.k).join()==='fell,trace','the weightiest first (a holding fallen before a trace on the road)')}
+ {fresh();t.newsRecord('trace',by(A),det.trace);t.newsRecord('siege',by(A,40,0),det.siege);const r=t.rumourFrom(t.rumourSource('tavern',A.name,A));
+  ok(r.fresh.map(it=>it.k).join()==='siege,trace','the weightiest first (a siege before a trace on the road)')}
 
  // ---- the other sources: each its cap a day, independent between sources and between two of a kind; heard once is heard everywhere
- {fresh();const kinds2=['band','beast','trace','raid','caravan','siege','fell','fight'];
+ {fresh();const kinds2=['band','beast','trace','raid','caravan','siege','relieved','fight'];
   const d0=G.day;for(const dd of [2,0]){G.day=d0-dd;for(const h of [A,B])kinds2.forEach((k,i)=>t.newsRecord(k,by(h,8+i*12,8+dd*4),{...det[k],town:h.name,fac:h.owner}))}G.day=d0;
   const src={tavern:[A.name,A],estate:[A.name+':farm',by(A)],watch:[A.name,A],caravan:[A.name+'>'+B.name,[A,B]],lord:['l1',A,{fac:A.owner}],road:[7,by(A)],refugees:[8,by(A)],camp:['1,1',by(A)],hermit:['2,2',by(A)]};
   const caps=Object.keys(t.RUMOUR_SOURCES).map(k=>{const [key,at,x]=src[k],S=()=>t.rumourSource(k,key,at,x),a=t.rumourFrom(S()),b=t.rumourFrom(S());return [k,a.fresh.length,b.fresh.length,t.RUMOUR_SOURCES[k].cap]});
@@ -89,10 +90,10 @@ try{
   const heard=Object.keys(W.news.heard).map(Number);ok(new Set(heard).size===heard.length&&heard.length===caps.reduce((s,c)=>s+c[1],0),'no rumour told twice as new, by any source ('+heard.length+' heard)')}
  {fresh();for(const h of [A,B])['band','beast','trace'].forEach((k,i)=>t.newsRecord(k,by(h,8+i*20,8),det[k]));
   const e1=t.rumourFrom(t.rumourSource('estate',A.name+':farm',by(A))),e2=t.rumourFrom(t.rumourSource('estate',A.name+':pasture',by(A,30,8)));
-  const [l1,l2]=W.lords.filter(l=>!l.dead&&l.fac===A.owner);t.newsRecord('siege',by(A,0,30),{town:A.name,fac:B.owner,lord:'Lord Z'});t.newsRecord('fell',by(A,30,30),{town:A.name,fac:A.owner,lord:'Lord Q'});
+  const [l1,l2]=W.lords.filter(l=>!l.dead&&l.fac===A.owner);t.newsRecord('siege',by(A,0,30),{town:A.name,fac:B.owner,lord:'Lord Z'});t.newsRecord('relieved',by(A,30,30),{town:A.name,fac:A.owner,lord:'Lord Q'});
   const r1=t.rumourFrom(t.rumourSource('lord',l1.id,l1,{fac:l1.fac})),r2=l2?t.rumourFrom(t.rumourSource('lord',l2.id,l2,{fac:l2.fac})):{fresh:[1]};
   ok(e1.fresh.length===1&&e2.fresh.length===1&&e1.fresh[0]!==e2.fresh[0],'two estates of '+A.name+' each tell their own one a day');
-  ok(r1.fresh.length===1&&r2.fresh.length===1&&['siege','fell'].includes(r1.fresh[0].k),'two lords of the '+t.FACS[A.owner].n+' each tell their own one a day, of their realm’s wars ('+r1.fresh[0].k+')');
+  ok(r1.fresh.length===1&&r2.fresh.length===1&&['siege','relieved'].includes(r1.fresh[0].k),'two lords of the '+t.FACS[A.owner].n+' each tell their own one a day, of their realm’s wars ('+r1.fresh[0].k+')');
   const tv=t.rumourFrom(t.rumourSource('tavern',A.name,A));ok(tv.fresh.every(it=>![...e1.fresh,...e2.fresh,...r1.fresh,...(r2.fresh||[])].includes(it))&&tv.before.length>=3,'a rumour heard from one source is not told again as new by another (the tavern lists them as heard before)')}
  // the pages: a worker, the watch, a lord, the road's talkers say theirs
  {fresh();t.newsRecord('beast',by(A),det.beast);t.newsRecord('band',by(A,40,10),det.band);t.newsRecord('trace',by(A,60,0),det.trace);

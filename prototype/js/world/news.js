@@ -14,17 +14,38 @@
    know), never what you have heard already. What you hear goes into the log and puts a faint "?" on the map near the event
    (a little off its true spot, by its id), the rumour as its tooltip, fading after NEWS.markDays (drawRumourMarks; the minimap).
    W.news also keeps what you have heard (heard: id → the day), today's counts (told: source key → {day, ids}) and the marks;
-   saved once there is any (as W.road: a save before it has none) ---------- */
+   saved once there is any (as W.road: a save before it has none).
+   Three classes of news (the owner, 2026-10-23: news spreads as it did in medieval times):
+   1. proclamations, free (PROCLAIM.kinds: war, peace, alliances, a realm fallen, a holding taken): a wave from where it happened
+      (an item keeps its origin, x, y, and its hour, h; proclaimReached(it, p) is a formula, no day-by-day walk): a day per
+      PROCLAIM.tiles tiles between the holdings (the roads), PROCLAIM.wild off them, a village a little later (lag). Once it has
+      reached a holding, you hear it there for free (the crier: entering it, or each hour you are at or in it, proclaimAt), or from
+      anyone you meet whose place it has reached (rumourFrom: travellers, caravans, the watch, lords), never against a cap; then
+      it is heard (your realm's riders still bring their own: worldlog.js);
+   2. common talk, free, capped (everything else): the rumours above, vaguer the farther and older (NEWS_VAGUE: the level as
+      heard, kept in v: id → level; rougher places, swollen numbers);
+   3. intelligence, paid (worldlog.js INTEL: a lord's army, armies on the march, a siege's true state, a hideout, a caravan):
+      precise and current, bought at a tavern, never news ---------- */
 // keep, days: how many and how long; merge: days within which the same kind by the same holding is one; radius: a tavern's ears
 // (px); markDays: how long a "?" stays; off: how far it may lie from the true spot (px); at: nearer than this to a holding or
 // estate, it is "near" it, else to one side of it (px); band: the strength (rating) a band must have to be talked of; age: how
 // much a day's age weighs against a kind's weight (w) when choosing; prefer: the weight a source's own kinds gain
 const NEWS={keep:60,days:6,merge:1,radius:360,markDays:3,off:28,at:70,band:65,age:1.5,prefer:4};
+// proclamations: on (false: every kind a rumour, as before); kinds; tiles: the wave's tiles a day from where it happened to a
+// holding (the roads join them); wild: its tiles a day over the land (to anywhere off the holdings, from the nearest holding the
+// wave has, or straight from where it happened, the sooner); lag: the days more a holding of that kind waits (no crier of its
+// own); days: how long one is kept (NEWS.keep counts only the rest)
+const PROCLAIM={on:true,kinds:['war','peace','ally','realm','fell'],tiles:60,wild:15,lag:{village:1.5,castle:.5},days:20};
+// common talk's vagueness: on; a level (0 to max) as heard, a level for every tiles tiles from you and every days days of its
+// age; inflate: how much a level swells its numbers (× 1 + inflate × level)
+const NEWS_VAGUE={on:true,tiles:40,days:2,max:3,inflate:.5};
 const newsW=()=>W.news||(W.news={items:[],n:0,heard:{},told:{},marks:[]});
 const facN=f=>FACS[f]?FACS[f].n:'a realm';
 // (a beast's name in a sentence: "A wolf pack" has, "Dire boars" have)
 const beastN=d=>{const n=MONSTERS[d.id]?MONSTERS[d.id].n:'Beasts',pl=/s$/.test(n);return [pl?n:cap1(an(n.toLowerCase())),pl]};
-const newsMany=n=>n<9?'half a dozen':n<16?'a dozen':n<26?'a score':'scores';
+// (how many, in words, swollen by the talk's vagueness v)
+const NEWS_MANY=[[9,'half a dozen'],[16,'a dozen'],[26,'a score'],[70,'scores'],[Infinity,'hundreds']];
+const newsMany=(n,v)=>{const m=n*(1+NEWS_VAGUE.inflate*(v||0));return NEWS_MANY.find(x=>m<x[0])[1]};
 /* the kinds: w (how much it matters), say (its sentences, picked by the item's id; each (detail, s): s.where (place-based,
    rough), s.when, s.road (on the road …)), same(item, detail, x, y) (one that moves: the same one seen again, though by another
    holding now, or days on: one item, moved), apart (only same makes two one, never the holding and the day), wide (a realm's
@@ -42,7 +63,7 @@ const NEWS_KINDS={
   caravan:{w:6,say:[(d,s)=>'A caravan'+(d.from?' out of '+d.from:'')+' was '+(d.lord?'seized by '+d.lord+'’s men':d.band?'plundered by bandits':'robbed')+' '+s.road+', '+s.when+'.',
     (d,s)=>'Merchants are wary: a caravan was '+(d.band?'burnt':'taken')+' '+s.road+' '+s.when+'.']},
   beast:{w:5,same:(it,d,x,y)=>it.detail.id===d.id&&Math.hypot(it.x-x,it.y-y)<NEWS.radius,say:[(d,s)=>{const [n,pl]=beastN(d);return n+(pl?' have':' has')+' been seen '+s.where+'.'},(d,s)=>{const [n,pl]=beastN(d);return 'Keep off the fields '+s.where+': '+n.toLowerCase()+(pl?' prowl':' prowls')+' there.'}]},
-  band:{w:5,same:(it,d)=>!!d.chief&&it.detail.chief===d.chief,say:[(d,s)=>d.grew?(d.chief?d.chief+'’s band':'A band of cutthroats')+' grows bolder '+s.where+', fat on plunder.':'A big band of '+(d.label||'bandits').toLowerCase()+', '+newsMany(d.n||0)+' strong, was seen '+s.where+'.',
+  band:{w:5,same:(it,d)=>!!d.chief&&it.detail.chief===d.chief,say:[(d,s)=>d.grew?(d.chief?d.chief+'’s band':'A band of cutthroats')+' grows bolder '+s.where+', fat on plunder.':'A big band of '+(d.label||'bandits').toLowerCase()+', '+newsMany(d.n||0,s.v)+' strong, was seen '+s.where+'.',
     (d,s)=>'Travellers keep off the road '+s.where+': '+(d.chief?d.chief+'’s':'a big')+' band is out.']},
   fight:{w:4,say:[(d,s)=>'There was a battle '+s.where+' '+s.when+': '+d.win+' won.',(d,s)=>cap1(d.win)+' beat '+d.lose+' '+s.where+', '+s.when+'.']},
   // (the realms' affairs, worldlog.js: a war, a peace (an alliance ended: ended), an alliance, a realm fallen; a lord's new army;
@@ -54,7 +75,7 @@ const NEWS_KINDS={
   realm:{w:10,wide:true,apart:true,same:(it,d)=>it.detail.fac===d.fac,say:[(d,s)=>'The '+facN(d.fac)+' is no more: its last holding, '+d.town+', fell '+s.when+'.',
     (d,s)=>'They say the banners of the '+facN(d.fac)+' are gone from the land since '+d.town+' fell '+s.when+'.']},
   army:{w:6,apart:true,same:(it,d)=>it.detail.lord===d.lord,say:[(d,s)=>d.lord+' of the '+facN(d.fac)+' raised a new army at '+d.town+' '+s.when+'.',
-    (d,s)=>'They say '+d.lord+' is back in the field: '+newsMany(d.n||0)+' men, raised at '+d.town+' '+s.when+'.']},
+    (d,s)=>'They say '+d.lord+' is back in the field: '+newsMany(d.n||0,s.v)+' men, raised at '+d.town+' '+s.when+'.']},
   starving:{w:7,say:[(d,s)=>'The garrison of '+d.town+' is starving under siege: its stores ran dry '+s.when+'.',(d,s)=>'They say '+d.town+' ate its last grain '+s.when+': its defenders starve behind the walls.']},
   // (the road's small encounters, world/encounters.js: a campfire's tracks read, where they lead; a false toll-man handed in)
   tracks:{w:2,say:[(d,s)=>'Tracks of '+(d.who||'strangers')+' lead off '+s.where+'.',(d,s)=>'Someone saw '+(d.who||'strangers')+' '+s.where+', '+s.when+'.']},
@@ -72,17 +93,43 @@ const newsNear=at=>Spatial.nearestHolding(at.x,at.y,t=>!t.gone);
 // an event: k (NEWS_KINDS), at (where: {x, y}), detail (its own facts: names, never objects). The same kind by the same holding
 // within NEWS.merge days, or the same one that moves seen again (its kind's same: a beast, a chieftain's band, while the
 // news of it lasts), is brought up to date instead (place, holding, day, facts), keeping its id (heard stays heard); a kind kept
-// apart only by its same. Returns it
+// apart only by its same. A proclamation keeps its hour (h), its wave starting there; one brought up to date starts again, unheard.
+// Returns it
 function newsRecord(k,at,detail){
   const K=NEWS_KINDS[k];if(!K||!at||!isFinite(at.x)||!isFinite(at.y))return null;const t=newsNear(at);if(!t)return null;
   const N=newsW(),x=Math.round(at.x),y=Math.round(at.y),old=N.items.find(it=>it.k===k&&(!K.apart&&Clock.daysSince(it.day)<=NEWS.merge&&it.near===t.name||K.same&&K.same(it,detail,x,y)));
-  if(old){Object.assign(old,{x,y,near:t.name,day:G.day,detail:{...old.detail,...detail}});return old}
-  const it={id:++N.n,k,x,y,day:G.day,near:t.name,detail:{...detail}};N.items.push(it);newsTrim();return it;
+  if(old){Object.assign(old,{x,y,near:t.name,day:G.day,detail:{...old.detail,...detail}});if(newsProc(old)){old.h=Math.floor(Clock.hours());delete N.heard[old.id]}return old}
+  const it={id:++N.n,k,x,y,day:G.day,near:t.name,detail:{...detail}};if(newsProc(it))it.h=Math.floor(Clock.hours());N.items.push(it);newsTrim();return it;
 }
-// (gone: news older than NEWS.days, the oldest past NEWS.keep, heard ids of news gone, yesterday's counts, faded marks)
-function newsTrim(){const N=newsW();N.items=N.items.filter(it=>Clock.daysSince(it.day)<NEWS.days);if(N.items.length>NEWS.keep)N.items.splice(0,N.items.length-NEWS.keep);
+// (a proclamation, with proclamations on; how long an item is kept)
+const newsProc=it=>PROCLAIM.on&&PROCLAIM.kinds.includes(it.k);
+const newsLife=it=>newsProc(it)?PROCLAIM.days:NEWS.days;
+// (gone: news older than its life, the oldest common talk past NEWS.keep, heard ids and levels of news gone, yesterday's counts,
+// faded marks)
+function newsTrim(){const N=newsW();N.items=N.items.filter(it=>Clock.daysSince(it.day)<newsLife(it));
+  let over=N.items.filter(it=>!newsProc(it)).length-NEWS.keep;if(over>0)N.items=N.items.filter(it=>newsProc(it)||over--<=0);
   const ids=new Set(N.items.map(it=>it.id));for(const id in N.heard)if(!ids.has(+id))delete N.heard[id];
+  if(N.v){for(const id in N.v)if(!ids.has(+id))delete N.v[id];if(!Object.keys(N.v).length)delete N.v}
   for(const k in N.told)if(N.told[k].day!==G.day)delete N.told[k];N.marks=N.marks.filter(m=>Clock.daysSince(m.day)<NEWS.markDays)}
+
+/* ---- proclamations: the wave ---- */
+// the days one takes from where it happened to p: to a holding by the roads (its kind's lag more), to anywhere else by the
+// holding nearest it and on over the land; or straight over the land, if that is sooner
+function proclaimDays(it,p){const L=PROCLAIM,d=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y)/TILE,o={x:it.x,y:it.y},land=d(o,p)/L.wild;
+  const h=p instanceof Holding?p:newsNear(p);if(!h)return land;return Math.min(land,d(o,h)/L.tiles+(L.lag[h.kind]||0)+(h===p?0:d(h,p)/L.wild))}
+// has it reached p (a holding, or any place) by now
+const proclaimReached=(it,p)=>Clock.hours()-(it.h||0)>=proclaimDays(it,p)*24;
+// its words: its first sentence, saying exactly when
+function proclaimText(it){const s={where:newsWhere(it,false),road:newsWhere(it,true),when:wlWhen(it.day),v:0};return NEWS_KINDS[it.k].say[0](it.detail||{},s)}
+// heard free: each proclamation not heard yet that has reached any of ps (a holding, or a source's places), into your log, told by
+// from; those heard
+function proclaimHear(ps,from){const N=W.news;if(!N||!PROCLAIM.on)return [];const got=N.items.filter(it=>newsProc(it)&&N.heard[it.id]==null&&ps.some(p=>proclaimReached(it,p)));
+  for(const it of got){N.heard[it.id]=G.day;log('Proclamation ('+from+'): '+proclaimText(it),undefined,'war')}return got}
+// the crier of a holding you are at or in (town.js enterTown; each hour: worldlog.js)
+const proclaimAt=t=>t?proclaimHear([t],'the crier of '+t.name):[];
+// (the holding you are in, staying at, or at the gates of on the map; none: null)
+function proclaimWhere(){if(G.town&&G.town.ref)return G.town.ref;if(P.stay)return townBy(P.stay.town)||null;
+  const h=Spatial.nearestHolding(P.x,P.y,t=>!t.gone);return h&&Math.hypot(h.x-P.x,h.y-P.y)<NEWS.at?h:null}
 // who fought, in a sentence: a lord or your companion by name, the watch, a band by its chieftain, a beast, a caravan
 function newsWho(o){const k=o.mapKind,n=o.label();if(k==='patrol')return 'the '+n[0].toLowerCase()+n.slice(1);if(k==='band')return o.ld?o.ld.name+'’s band':'a band of '+n.toLowerCase();
   if(k==='monster'){const [b,pl]=beastN(o);return pl?b.toLowerCase():b[0].toLowerCase()+b.slice(1)}return k==='caravan'?'a caravan of '+o.from:n}
@@ -117,14 +164,22 @@ const NEWS_HEARS={
 for(const [type,fn] of Object.entries(NEWS_HEARS))worldOn(type,fn);
 
 /* ---- the words (when you hear it) ---- */
-const newsWhen=it=>{const a=Clock.daysSince(it.day);return a<=0?'today':a===1?'yesterday':a<=3?['two','three'][a-2]+' days back':'some days back'};
-// where, roughly: by an estate of its holding, by the holding, or to one side of it ("east of Millbrook")
-function newsWhere(it,road){const t=townBy(it.near);if(!t)return road?'on the road':'in the wilds';const d=Math.hypot(it.x-t.x,it.y-t.y);
-  if(!road){let e=null,ed=NEWS.at;for(const [k,p] of Object.entries(bldSpots(t)))if(bldLv(t,k)>0){const q=Math.hypot(it.x-p.x,it.y-p.y);if(q<ed){ed=q;e=k}}
+// when, roughly (v: its vagueness: at 2, anything past yesterday is "some days back")
+const newsWhen=(it,v)=>{const a=Clock.daysSince(it.day);return a<=0?'today':a===1?'yesterday':a<=3&&(v||0)<2?['two','three'][a-2]+' days back':'some days back'};
+// where, roughly: by an estate of its holding, by the holding, or to one side of it ("east of Millbrook"); vaguer (v): 1 never by
+// an estate, 2 "somewhere about Millbrook", 3 only its realm's lands
+function newsWhere(it,road,v){const t=townBy(it.near);if(!t)return road?'on the road':'in the wilds';const d=Math.hypot(it.x-t.x,it.y-t.y);v=v||0;
+  if(v>=3)return t.owner&&FACS[t.owner]?(road?'on some road ':'somewhere ')+'in the lands of the '+facN(t.owner):road?'on some road in the wilds':'somewhere off in the wilds';
+  if(v>=2)return (road?'on a road ':'')+'somewhere about '+t.name;
+  if(!road&&!v){let e=null,ed=NEWS.at;for(const [k,p] of Object.entries(bldSpots(t)))if(bldLv(t,k)>0){const q=Math.hypot(it.x-p.x,it.y-p.y);if(q<ed){ed=q;e=k}}
     if(e&&ed<d)return 'near '+t.name+'’s '+ESTATES[e].n.toLowerCase()}
   return (road?'on the road ':'')+(d<NEWS.at?'near ':compass(it.x-t.x,it.y-t.y)+' of ')+t.name}
-// the rumour itself, its sentence picked by its id
-function rumourText(it){const K=NEWS_KINDS[it.k];if(!K)return '';const s={where:newsWhere(it,false),road:newsWhere(it,true),when:newsWhen(it)};
+// how vague common talk is as you hear it now: a level for every NEWS_VAGUE.tiles tiles from you, and every NEWS_VAGUE.days days
+// of its age (0 to max; off: 0)
+function newsVague(it){const V=NEWS_VAGUE;if(!V.on)return 0;return Math.min(V.max,Math.floor(Math.hypot(it.x-P.x,it.y-P.y)/(V.tiles*TILE)+Clock.daysSince(it.day)/V.days))}
+// the rumour itself, its sentence picked by its id, as vague as when you heard it (v: else the level kept; none 0)
+function rumourText(it,v){const K=NEWS_KINDS[it.k];if(!K)return '';if(v==null)v=W.news&&W.news.v&&W.news.v[it.id]||0;
+  const s={where:newsWhere(it,false,v),road:newsWhere(it,true,v),when:newsWhen(it,v),v};
   return K.say[it.id%K.say.length](it.detail||{},s)}
 
 /* ---- hearing: the sources and the service ---- */
@@ -153,22 +208,27 @@ function newsKnows(src,it){
   if(src.realm){const d=it.detail||{},own=n=>{const t=n&&townBy(n);return !!t&&t.owner===src.fac};return d.fac===src.fac||own(it.near)||own(d.town)}
   if(src.land&&src.at[0]&&landHold(it.x,it.y)===src.at[0])return true;
   return src.at.some(p=>Math.hypot(p.x-it.x,p.y-it.y)<=src.r)}
-// what it could tell you new now: recent, known to it, not heard; weightiest and newest first, its own kinds first
+// what it could tell you new now: recent common talk (never a proclamation: those are free), known to it, not heard; weightiest
+// and newest first, its own kinds first
 function rumourCands(src){const N=newsW(),score=it=>NEWS_KINDS[it.k].w+(src.prefer&&src.prefer.includes(it.k)?NEWS.prefer:0)-NEWS.age*Clock.daysSince(it.day);
-  return N.items.filter(it=>N.heard[it.id]==null&&Clock.daysSince(it.day)<NEWS.days&&newsKnows(src,it)).sort((a,b)=>score(b)-score(a)||b.id-a.id)}
-// heard: kept as heard (no source tells it as new again), its "?" on the map near it, and the log (its ref: the Chronicle's Show on map)
-function rumourHear(it,src){const N=newsW(),t=rumourText(it),j=k=>(hash(it.id,k,7919)-.5)*2*NEWS.off;N.heard[it.id]=G.day;
+  return N.items.filter(it=>N.heard[it.id]==null&&!newsProc(it)&&Clock.daysSince(it.day)<NEWS.days&&newsKnows(src,it)).sort((a,b)=>score(b)-score(a)||b.id-a.id)}
+// heard: kept as heard (no source tells it as new again) with how vague it was (v, when vague at all), its "?" on the map near it,
+// and the log (its ref: the Chronicle's Show on map)
+function rumourHear(it,src){const N=newsW(),v=newsVague(it),t=rumourText(it,v),j=k=>(hash(it.id,k,7919)-.5)*2*NEWS.off;N.heard[it.id]=G.day;
+  if(v)(N.v||(N.v={}))[it.id]=v;else if(N.v)delete N.v[it.id];
   N.marks=N.marks.filter(m=>m.id!==it.id);N.marks.push({id:it.id,x:Math.round(it.x+j(1)),y:Math.round(it.y+j(2)),day:G.day,t});
   if(!src.quiet)log('Rumour ('+src.from+'): '+t,undefined,'rumour','n'+it.id)}
-/* the service: what a source tells you now. It tells up to its cap of new rumours today (each heard: rumourHear), never again
-   that day; fresh (told just now), today (all it told you today, fresh ones too: a page that asks again shows the same),
-   before (rumours you heard already of news it knows, not today's from it), capped (its cap is spent) */
-function rumourFrom(src){if(src.kind==='tavern')Wanderer.news();newsTrim();const N=newsW(),day=G.day,told=N.told[src.key]||(N.told[src.key]={day,ids:[]}),fresh=[];
+/* the service: what a source tells you now. First, free and past its cap, the proclamations that have reached its places
+   (proclaimHear: proc); then up to its cap of new rumours today (each heard: rumourHear), never again that day; fresh (told
+   just now), today (all it told you today, fresh ones too: a page that asks again shows the same), before (rumours you heard
+   already of news it knows, not today's from it), capped (its cap is spent) */
+function rumourFrom(src){if(src.kind==='tavern')Wanderer.news();newsTrim();const proc=proclaimHear(src.at,src.from),N=newsW(),day=G.day,told=N.told[src.key]||(N.told[src.key]={day,ids:[]}),fresh=[];
   for(const it of rumourCands(src)){if(told.ids.length>=src.cap)break;rumourHear(it,src);told.ids.push(it.id);fresh.push(it)}
   const today=told.ids.map(newsById).filter(Boolean);
-  return {fresh,today,before:N.items.filter(it=>N.heard[it.id]!=null&&!today.includes(it)&&newsKnows(src,it)).sort((a,b)=>b.day-a.day||b.id-a.id),capped:told.ids.length>=src.cap}}
-// (one line a talker says today, or none: what a worker, a captain, a caravan master or a lord says beside his own words)
-const rumourSay=src=>{const it=rumourFrom(src).today[0];return it?rumourText(it):''};
+  return {proc,fresh,today,before:N.items.filter(it=>N.heard[it.id]!=null&&!newsProc(it)&&!today.includes(it)&&newsKnows(src,it)).sort((a,b)=>b.day-a.day||b.id-a.id),capped:told.ids.length>=src.cap}}
+// (one line a talker says today, or none: what a worker, a captain, a caravan master or a lord says beside his own words; a
+// proclamation he brings first)
+const rumourSay=src=>{const r=rumourFrom(src),it=r.today[0];return r.proc.length?proclaimText(r.proc[0]):it?rumourText(it):''};
 // the tavern's Rumours: what you heard on coming in (fresh: new), else that there is nothing new today; then what you heard
 // before (today's here too, once they are not fresh)
 function rumourHtml(r){
@@ -176,15 +236,16 @@ function rumourHtml(r){
   return (r.fresh.length?r.fresh.map(it=>line(it,'rum-new')).join(''):'<p class="muted">'+(r.capped?'Nothing new today; come back tomorrow.':'No fresh news of late.')+'</p>')+
     (old.length?'<div class="lab">Heard before</div>'+old.slice(0,6).map(it=>line(it,'muted')).join(''):'')}
 
-/* ---- the marks on the map: a faint "?" by each rumour you heard (over the labels: render.js), fading over its last day ---- */
+/* ---- the marks on the map: a faint "?" by each rumour you heard (over the labels: render.js), fading over its last day; gold on
+   its very spot for intelligence you bought (i: worldlog.js intelLearn) ---- */
 const rumourMarks=()=>newsW().marks.filter(m=>Clock.daysSince(m.day)<NEWS.markDays);
 const rumourFade=m=>clamp(m.day+NEWS.markDays-G.day-Clock.frac,0,1);
 const RUMOUR_COL='#cdb8ff';
-function drawRumourMarks(cam){const c=wuiArrow('ask',RUMOUR_COL);for(const m of rumourMarks()){const a=rumourFade(m),sx=Math.round(m.x-cam.x),sy=Math.round(m.y-cam.y);
+function drawRumourMarks(cam){const r=wuiArrow('ask',RUMOUR_COL),g=wuiArrow('ask',INTEL.col);for(const m of rumourMarks()){const a=rumourFade(m),sx=Math.round(m.x-cam.x),sy=Math.round(m.y-cam.y),c=m.i?g:r;
   if(a<=0||sx<-10||sy<-10||sx>VW+10||sy>VH+16)continue;ctx.save();ctx.globalAlpha=.8*a;wuiPut(c,sx,sy-2,c.cx,c.tip);ctx.restore()}}
 // (the tooltip over one, where nothing else is under the pointer: input.js)
 function rumourTip(wx,wy){const m=rumourMarks().filter(m=>rumourFade(m)>0&&Math.abs(m.x-wx)<=6&&wy>=m.y-16&&wy<=m.y-2)[0];
-  return m?'<b>A rumour</b><small>'+m.t+'</small><small class="muted">Heard on day '+m.day+'</small>':''}
+  return m?'<b>'+(m.i?'Information':'A rumour')+'</b><small>'+m.t+'</small><small class="muted">'+(m.i?'Bought':'Heard')+' on day '+m.day+'</small>':''}
 
 /* ---- the save: W.news once there is any (none: as every save before it; the save registry, core/saves.js), with the riders on
    their way (post: worldlog.js, there once one has set out) ---- */

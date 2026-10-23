@@ -17,8 +17,9 @@ function chronEntry(ref,byK){
   return byK.get('a'+ref)||null;
 }
 const chronItems=()=>new Map(qwItems().map(x=>[x.k,x]));
-// (a rumour's mark (its ref 'n' and its news id: news.js rumourHear), while it lasts on the map; none: null)
-const chronMark=ref=>{const id=+String(ref).slice(1);return rumourMarks().find(m=>m.id===id&&rumourFade(m)>0)||null};
+// (a rumour's mark (its ref 'n' and its news id: news.js rumourHear; or 'ni…', information bought: worldlog.js intelLearn), while
+// it lasts on the map; none: null)
+const chronMark=ref=>{const id=String(ref).slice(1);return rumourMarks().find(m=>String(m.id)===id&&rumourFade(m)>0)||null};
 // (a message's link: Show on map for a rumour, Open in its tab for a quest or story; none)
 function chronLink(r,byK){
   if(!r.ref)return '';
