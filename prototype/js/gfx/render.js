@@ -352,7 +352,8 @@ function frame(){
    bars, each in %: Fitness (world/supply.js bandFitness: the fit and your hero's health over the whole band; red under half; on
    hover the fit, the wounded, your hero's health and what hurt them lately), Morale (P.morale; red under 30; on hover the
    troops' nerve it drifts toward) and Stamina (green, amber Tired, red Exhausted, the state's word by its %, an arrow for which
-   way it goes: ▼ draining, ▲ coming back; on hover its rate an hour and why); the tags that apply (Tired, Exhausted, Thirsty,
+   way it goes: ▼ draining, ▲ coming back; on hover its rate an hour and why); while the waterskins fill, a thin bar under them
+   (Filling waterskins, in %: world/supply.js SKINS); the tags that apply (Tired, Exhausted, Thirsty,
    Hungry, Cold, In camp: on hover, why); gold, food and drink in days at the current rate, furs in or near the frost or when
    carried, troops, power and pace as icon chips (what runs short is red); where you are and whom you serve. Your hero's health
    and mana are in the Hero window (C) and the battle. The top bar: the day and the time */
@@ -374,6 +375,7 @@ function updateHUD(force){
       (P.tp?'<span class="pc-pts" title="Talent points to spend (K)">+'+P.tp+'</span>':'')+'</div>'+
     '<div class="bars">'+bar(fp,'fit'+(fp<50?' low':''),'Fitness<b>'+fp+'%</b>',fitTip)+bar(mo,'mor'+(mo<30?' low':''),'Morale<b>'+mo+'%</b>',moTip)+
       bar(P.bsta,'sta '+S.st,'Stamina'+arrow+'<b>'+(word?word+' · ':'')+Math.round(P.bsta)+'%</b>',staTip)+'</div>'+
+    (S.fill!=null?'<div class="pc-fill" title="Filling your waterskins: '+S.fill+'%. Any order or Hurry stops it; you keep what is in."><i style="width:'+S.fill+'%"></i><em>Filling waterskins<b>'+S.fill+'%</b></em></div>':'')+
     (tags.length?'<div class="pc-tags">'+tags.map(([t,c,w])=>'<span class="tag '+c+'" title="'+w+'">'+t+'</span>').join('')+'</div>':'')+
     '<div class="pc-res">'+chip('gold',P.gold,'Gold',false,'gold')+chip('food',days(S.foodDays),foodTip,S.foodDays<1)+chip('mug',days(S.drinkDays),drinkTip,S.drinkDays<1)+
       (S.furs.show?chip('furs',S.furs.have+'<small>/'+S.furs.need+'</small>','Furs: '+S.furs.need+' needed in the frost (1 for every '+SUPPLY.furPer+' people)',S.L.frost&&S.furs.have<S.furs.need):'')+

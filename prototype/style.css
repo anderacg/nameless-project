@@ -426,6 +426,11 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 .pcard .bar.mor i{background:#9a7ad0}.pcard .bar.mor.low i{background:#e08a3a}
 .pcard .bar em b{float:right;padding-right:6px}
 .pcard .bar.sta.tired em b{color:#ffe0a0}.pcard .bar.sta.exhausted em b{color:#ffc0b0;animation:blink 1s steps(2) infinite}
+/* (while the waterskins fill: a thin water-blue bar under the three, Filling waterskins and its %: world/supply.js SKINS) */
+.pc-fill{position:relative;height:11px;margin:-4px 0 7px;background:rgba(0,0,0,.55);border:1px solid #000;border-radius:var(--r-sm);overflow:hidden}
+.pc-fill i{display:block;height:100%;background:#4a88c0}
+.pc-fill em{position:absolute;inset:0;font-style:normal;font-size:9px;font-weight:700;line-height:9px;padding:0 6px;color:#e8f4ff;text-shadow:0 1px 1px #000}
+.pc-fill em b{float:right}
 .pc-tags{display:flex;flex-wrap:wrap;gap:4px;margin:-3px 0 7px}
 .pc-tags .tag{font-size:var(--fs-xs);font-weight:700;line-height:1;padding:3px 7px;border:1px solid;border-radius:9px;cursor:default}
 .pc-tags .tag.warn{color:#ffe0a0;border-color:#a8782a;background:rgba(160,110,30,.28)}
@@ -998,6 +1003,7 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
   .pc-head{margin-bottom:5px}.pc-pic{width:30px;height:30px}
   .pc-band{font-size:var(--fs-base)}
   .pcard .bars{gap:2px;margin-bottom:5px}.pcard .bar{height:11px}.pcard .bar em{font-size:9px;line-height:9px}
+  .pc-fill{height:9px;margin:-3px 0 5px}.pc-fill em{font-size:8px;line-height:7px}
   .pc-res{gap:3px;margin-bottom:0}.chip{font-size:var(--fs-sm);padding:1px 4px}
   .pc-line{display:none}
   .wtop{padding:3px 3px 3px 9px;gap:6px}.wday,.wday:has(.wroad){width:auto;font-size:var(--fs-base)}

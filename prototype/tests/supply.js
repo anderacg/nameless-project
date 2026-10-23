@@ -3,7 +3,8 @@
 // ground, at night, with nothing to drink, in the desert with no water, short of furs in the frost; slower mostly mounted, with
 // Athletics) and comes back stopped, faster in camp or staying in a holding (not with no food, nor in the desert with
 // no water); Tired under 20 and Exhausted under 5 slow you, and cost morale and men. Food and drink by the hour, more on the march;
-// waterskins fill free by water or at a holding's well; the desert's thirst and the frost's frostbite take men; liquor at the
+// waterskins fill free at the water's edge or at a holding's well, over game time (a bar on the card, a drop over your band; moving
+// stops it, keeping what is in; by itself there too), and a new game sets out with them full; the desert's thirst and the frost's frostbite take men; liquor at the
 // tavern; the band goes into a battle at its stamina (never under 25) and comes out at its side's; the card; saves.
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.push('INFO '+m);
 try{
@@ -20,7 +21,7 @@ try{
  const at=k=>Kit.goTo(spot[k][0],spot[k][1]);
  const bag=g=>{for(const k of ['water','ale','liquor','furs',...t.FOODS])t.goodTake(k,1e9);for(const k in g||{})t.playerInventory.add('good',k,g[k])};
  const reset=()=>{P.troops={hum_levy:5};P.comps={};P.wounded={};P.woundedGroups=[];P.perks=[];P.gear.mount=null;P.sk.athl.lv=0;P.sk.ride.lv=0;P.sk.surv.lv=0;P.race='human';
-  P.morale=60;P.bsta=100;P.stay=null;ev('BAND=freshBand()');G.clock=t.DAY*.3;G.speed=1;P.tx=null;G.chase=null;Kit.world()};
+  P.morale=60;P.bsta=100;P.stay=null;G.dead=null;ev('BAND=freshBand()');G.clock=t.DAY*.3;G.speed=1;P.tx=null;G.chase=null;Kit.world()};
  const rate=moving=>{const L=t.supplyLand();return t.staminaRate(moving,t.drinkNext(L),L).n};
  const near=(a,b)=>Math.abs(a-b)<1e-9;
  // (an hour: on the march when walked, else stopped)
@@ -65,6 +66,7 @@ try{
   ok(Math.abs(ate-e*S.eat.march)<=1,'on the march, ×'+S.eat.march+' ('+ate+', about '+e*S.eat.march+')')}
  // ---- hunger by its stages (stopped by a river: never short of water): Hungry, Starving, men desert, fall sick, at last die
  {const H=S.hunger,msgs=()=>G.msgs.map(x=>x.m).join(),lost=w=>t.BAND.lost.filter(x=>x.why===w).length,tag=()=>t.supplyNow().tags.map(x=>x[0]).join();
+  const hour=()=>{t.fillNow(true);t.supplyHour()},hours=n=>{for(let i=0;i<n;i++)hour()};// (kept in water: the skins topped up before each hour)
   reset();P.troops={hum_levy:30};at('river');bag({});const m0=P.morale;hour(false);const m1=P.morale;hour(false);
   ok(t.BAND.hungry===2&&m1===m0&&P.morale===m0-H.morale&&/goes hungry/.test(msgs())&&/Hungry/.test(tag()),'no food: Hungry, morale −'+H.morale+' every '+H.every+' hours');
   hours(H.starving-2,false);ok(t.BAND.hungry===H.starving&&/starving/.test(msgs())&&/Starving/.test(tag())&&t.staminaRate(true,'water',t.supplyLand()).why.includes('starving ×'+H.starveDrain),'after '+H.starving+' hours Starving: the march drains ×'+H.starveDrain);
@@ -72,10 +74,47 @@ try{
   hours(H.sick-H.desert,false);ok(t.woundedN()===1&&t.BAND.sick.hum_levy.hunger===1,'after '+H.sick+' hours one falls sick as well (of hunger)');
   hours(H.die-H.sick,false);ok(lost('hunger')===1&&/dies of hunger/.test(msgs()),'after '+H.die+' hours a sick man dies of hunger');
   ok(/Wounded and sick/.test(t.woundedPanel())&&/sick \(hunger\)/.test(t.woundedPanel())&&/Died of hunger: Levy ×1/i.test(t.woundedPanel())&&/Deserted/.test(t.woundedPanel()),'the troops tab lists the sick and why, and the men lost on the road')}
- // ---- water by water, and at a holding's well
- reset();at('river');bag({grain:60});hour(false);{const want=Math.ceil(P.drinkHour(true)*24*S.fill.days);ok(t.goodN('water')===want-Math.floor(P.drinkHour(false)),'stopped by a river, the waterskins fill free ('+t.goodN('water')+')')}
- reset();at('open');bag({grain:60});hour(false);ok(t.goodN('water')===0,'out on dry ground they do not');
- reset();Kit.goHome();bag({grain:60});hour(true);ok(t.goodN('water')>0,'a holding’s well fills them, marching by or not');
+ // ---- water at the water's edge and at a holding's well (the owner, 2026-10-23): much nearer than before, and over game time
+ {const F=S.fill,K=t.WorldArt.ensure().wk;
+  // (a shore: a land tile with water to its north and land two tiles south, far from the holdings; down from the tile's top the
+  // last point at the edge, and a tile farther on)
+  let shore=null;for(let ty=8;ty<t.MH-8&&!shore;ty++)for(let tx=8;tx<t.MW-8;tx++){if(t.tAt(tx,ty)!==t.T_OPEN||t.tAt(tx,ty-1)!==t.T_WATER||t.tAt(tx,ty+1)!==t.T_OPEN||t.tAt(tx,ty+2)!==t.T_OPEN||K[(ty+1)*t.MW+tx]||K[(ty+2)*t.MW+tx]||K[ty*t.MW+tx-1]||K[ty*t.MW+tx+1]||K[(ty+1)*t.MW+tx-1]||K[(ty+1)*t.MW+tx+1]||t.climAt((tx+.5)*16,(ty+.5)*16)!=='grass'||t.TOWNS.some(h=>Math.hypot(h.x-(tx+.5)*16,h.y-(ty+.5)*16)<120))continue;
+   const x=(tx+.5)*16;let y=ty*16;while(y<(ty+2)*16&&t.waterEdge(x,y+1,F.near*16))y++;if(y>ty*16&&y<(ty+1)*16+4){shore={tx,ty,at:[x,y],off:[x,y+16]};break}}
+  ok(!!shore,'a shore found (land with water to its north)'+(shore?' at '+shore.tx+','+shore.ty:''));
+  if(shore){reset();Kit.goTo(...shore.at);bag({grain:60});const L=t.supplyLand();const r1=t.mapRingItems(P.x+20,P.y+20,null,0,0).map(i=>i.label);
+   Kit.goTo(...shore.off);const L2=t.supplyLand(),r2=t.mapRingItems(P.x+20,P.y+20,null,0,0).map(i=>i.label);
+   ok(L.water&&!L2.water&&t.nearWater(...shore.off,3),'the water’s edge: within '+F.near+' tile of the water as drawn yes, a tile farther no (within the old 3 tiles: '+t.nearWater(...shore.off,3)+')');
+   ok(r1.includes('Fill waterskins')&&!r2.includes('Fill waterskins'),'the action ring offers Fill waterskins only at the edge ('+r1.join(', ')+' | '+r2.join(', ')+')')}
+  {const h=t.TOWNS.find(z=>t.wellGate(z).y>z.y+16)||t.TOWNS[0],g=t.wellGate(h),r=F.well*16,away=[h.x,h.y-3*16];
+   ok(t.wellNear(h.x,h.y+r-1)&&t.wellNear(g.x+r-1,g.y)&&!t.wellNear(...away)&&Math.hypot(away[0]-g.x,away[1]-g.y)>=3*16,'a holding’s well: within '+F.well+' tiles of where you arrive ('+h.name+') or of the spot before its gate yes, 3 tiles off no');
+   reset();Kit.goTo(...away);bag({grain:60});ok(!t.supplyLand().well&&!t.mapRingItems(P.x+20,P.y,null,0,0).some(i=>i.label==='Fill waterskins'),'and 3 tiles off the ring has no Fill waterskins')}
+  // the time it takes, by the game clock, the water coming in as it runs
+  const pass=min=>{const n=Math.round(min*2);for(let i=0;i<n;i++){t.Clock.advance(t.DAY/24/60/2);t.SKINS.frame(0)}};// (min game minutes, by half minutes: the hour's work as it comes)
+  reset();Kit.goHome();bag({grain:60});P.troops={};t.SKINS.reset(false);{const full=t.skinsFull();t.fillSkins();const f=t.SKINS.on,h1=f&&f.h;
+   ok(f&&t.goodN('water')===0&&Math.abs(h1*60-F.minPerDay*full/(24/S.drink.per))<1e-9,'Fill waterskins alone: '+full+' water over '+Math.round(h1*60)+' game minutes ('+F.minPerDay+' a man’s day of drink), none yet');
+   pass(h1*60/2);const half=t.goodN('water');ok(t.SKINS.on&&half>0&&half<full&&Math.abs(half-full/2)<=1,'halfway, half the water is in ('+half+' of '+full+')');
+   t.updateHUD(true);{const b=document.querySelector('#stats .pc-fill');ok(b&&/^Filling waterskins\d+%$/.test(b.textContent)&&Math.abs(parseInt(b.textContent.replace(/\D/g,''))-50)<=2&&b.querySelector('i').style.width===b.textContent.replace(/\D/g,'')+'%','the band card shows it: '+(b&&b.textContent)+', its bar as full');
+    ok(document.querySelectorAll('#stats .bars .bar').length===3,'under the three bars, not one of them')}
+   pass(h1*60/2+1);ok(!t.SKINS.on&&t.goodN('water')===full&&/You fill your waterskins: \d+ water/.test(G.msgs[G.msgs.length-1].m),'at its end they are full ('+t.goodN('water')+')');
+   t.updateHUD(true);ok(!document.querySelector('#stats .pc-fill'),'and the bar is gone')}
+  {reset();Kit.goHome();bag({grain:60});t.SKINS.reset(false);P.troops={};t.fillSkins();const h1=t.SKINS.on.h;t.SKINS.reset(false);P.troops={hum_levy:2};t.fillSkins();const h3=t.SKINS.on.h;t.SKINS.reset(false);P.troops={hum_levy:40};t.fillSkins();const h41=t.SKINS.on.h;t.SKINS.reset(false);
+   ok(Math.abs(h3-3*h1)<1e-9&&h41*60===F.max,'a bigger band takes longer: alone '+h1*60+' min, three '+h3*60+', forty-one '+h41*60+' (the most, '+F.max+')')}
+  // moving stops it, keeping what is in; so do Hurry, a battle and a page off the map
+  const part=go=>{reset();Kit.goHome();bag({grain:60});P.troops={};t.SKINS.reset(false);t.fillSkins();const f=t.SKINS.on;pass(f.h*60/2);const w=t.goodN('water');go();t.SKINS.frame(0);const left=!t.SKINS.on,w2=t.goodN('water');
+   G.hurry=false;Kit.world();P.tx=null;G.chase=null;return[left&&w2>0&&w2<f.n&&w2>=w,w2+' of '+f.n]};
+  {const [a,m]=part(()=>{P.tx=P.x+100;P.ty=P.y});ok(a,'an order to travel stops it; the water in stays ('+m+')')}
+  {const [a,m]=part(()=>{G.hurry=true});ok(a,'Hurry stops it ('+m+')')}
+  {const [a,m]=part(()=>t.worldEmit('battle:ended',{enc:null,how:'won'}));ok(a,'a battle stops it ('+m+')')}
+  {const [a,m]=part(()=>{G.mode='dialog';t.supplyNow();G.mode='world'});ok(a,'an encounter (anything off the map: the card asks every quarter second) stops it ('+m+')')}
+  // it follows the game clock: paused, nothing; faster at a higher speed
+  {reset();G.lastTown=Kit.goHome();bag({grain:60});P.troops={};t.SKINS.reset(false);t.fillSkins();G.paused=true;Kit.frames(40,.05);const s0=t.SKINS.share;G.paused=false;Kit.frames(4,.05);const s1=t.SKINS.share;G.speed=4;Kit.frames(4,.05);const s2=t.SKINS.share-s1;G.speed=1;
+   ok(s0===0&&s1>0&&Math.abs(s2/s1-4)<.01,'by the game clock: paused it stands still ('+s0+'), at 4× it runs 4× as fast ('+(s2/s1).toFixed(2)+')');t.SKINS.reset(false)}
+  // by itself, timed: at a well (or stopped at the water's edge) it starts, never at once
+  {reset();Kit.goHome();bag({grain:60});P.troops={};t.SKINS.reset(false);t.SKINS.frame(1);const on=!!t.SKINS.on,w0=t.goodN('water');pass(t.SKINS.on?t.SKINS.on.h*60+1:0);
+   ok(on&&w0===0&&t.goodN('water')===t.skinsFull(),'at a holding’s well it starts by itself, timed: none at once, full at its end');
+   if(shore){reset();Kit.goTo(...shore.at);bag({grain:60});t.SKINS.reset(false);P.tx=P.x+50;P.ty=P.y;t.SKINS.frame(1);const moving=!t.SKINS.on;P.tx=null;t.SKINS.frame(1);ok(moving&&!!t.SKINS.on&&t.goodN('water')===0,'at the water’s edge: not while you march by; stopped, it starts');t.SKINS.reset(false)}}
+  reset();at('open');bag({grain:60});t.SKINS.reset(false);t.SKINS.frame(1);hour(false);ok(!t.SKINS.on&&t.goodN('water')===0,'out on dry ground they do not fill');
+  reset();Kit.goHome();bag({grain:60});t.SKINS.reset(false);hour(false);ok(t.goodN('water')===0,'nor on the hour any more (by the frame, timed)')}
  // ---- the desert's thirst and the frost's frostbite
  // ---- thirst by its stages, sooner in the desert: Thirsty, Parched (slower), men fall sick, then the sick die
  {const T=S.thirst,tag=()=>t.supplyNow().tags.map(x=>x[0]).join(),lost=()=>t.BAND.lost.filter(x=>x.why==='thirst').length;
@@ -119,9 +158,10 @@ try{
  P.wounded={hum_levy:2};t.BAND.sick={hum_levy:{thirst:1}};t.BAND.lost=[{k:'hum_levy',why:'thirst',day:G.day}];G.mode='world';t.saveGame(true,'quick');ev('BAND=freshBand()');t.loadGame('quick');
  ok(t.BAND.sick.hum_levy&&t.BAND.sick.hum_levy.thirst===1&&t.BAND.lost.length===1&&t.BAND.lost[0].why==='thirst','and the sick and the men lost lately (written only when there are any)');
  Kit.begin('soldier',4242);ok(P.bsta===100&&!t.BAND.liquor&&!t.BAND.hint,'a new game starts fresh');
- // a new game never begins thirsty: by your home's well the card counts the well's water, and the skins fill the moment you stand
- // there (supplyFrame, every half a second), not on the hour
- {G.mode='world';G.modal=false;t.hidePanel();const w0=t.goodN('water'),c0=t.supplyNow();t.SUPPLY_FILL.t=0;t.Systems.frame(.01,.01);const w1=t.goodN('water');
-  ok(w0===0&&!c0.tags.some(x=>x[0]==='Thirsty')&&w1>0,'a new game: not thirsty by your home’s well, and the skins fill at once ('+w0+' water, then '+w1+')')}
+ // a new game never begins thirsty: its band sets out with full skins (the owner, 2026-10-23), on its first moment on the map
+ {G.mode='world';G.modal=false;t.hidePanel();const w0=t.goodN('water'),c0=t.supplyNow();t.SKINS.t=0;t.Systems.frame(.01,.01);const w1=t.goodN('water');
+  ok(w0===0&&!c0.tags.some(x=>x[0]==='Thirsty')&&w1===t.skinsFull()&&!t.SKINS.on,'a new game: not thirsty, and it sets out with its skins full on its first moment ('+w0+' water, then '+w1+')')}
+ // (a loaded game keeps what it saved: no free fill)
+ {G.mode='world';t.goodTake('water',1e9);t.saveGame(true,'quick');t.loadGame('quick');G.mode='world';G.modal=false;t.hidePanel();Kit.goTo(-999,-999);t.Systems.frame(.01,.01);ok(t.goodN('water')===0,'a loaded game keeps what it saved: no free fill')}
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}
 const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d)};

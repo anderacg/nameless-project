@@ -4,7 +4,7 @@ Status: **built 2026-10-21**, all four phases (`world/supply.js` with every numb
 
 **Next, designed only (owner, 2026-10-21):** food and water become supply pools with a carrying capacity, a pack train (mules, camels, carts, wagons: bought, looted, found), rations and resupply policies, foraging and a march preview: [LOGISTICS_DESIGN.md](LOGISTICS_DESIGN.md).
 - **The hero's stamina** is kept where it was, in `P.sp` (her scale), and the band's 0-100 (`P.bsta`) reads and sets it: every battle snapshot holds `P` whole, so a new field there would move them all. When her maximum grows (a level, Agility, Athletics) her stamina stays as it was, so the band's share of it dips a little. The band's camp and the hour's counters are `BAND`, beside `P`, saved as the world piece `band`.
-- **Water and liquor** are goods in the bag (`data/places.js` `DRINK_GOODS`) but no market trades them (kept out of `GOODS`'s keys: a new traded good would change every holding's stock and the world's draws). Water fills **free** from a river, lake or oasis (stopped) or at **any holding's well**; the tavern's tapster sells liquor (5 for 70g). No starting water: the first hour at your home holding's well fills the skins.
+- **Water and liquor** are goods in the bag (`data/places.js` `DRINK_GOODS`) but no market trades them (kept out of `GOODS`'s keys: a new traded good would change every holding's stock and the world's draws). Water fills **free** at the water's edge (a river, lake, pond or oasis) or at **any holding's well**, over game time (below); the tavern's tapster sells liquor (5 for 70g) and fills the skins at once. A new game's band sets out with full skins.
 - **Frostbite** and the toll of hunger and thirst are counted, not rolled (nothing in the hour draws Math.random): frostbite after 6 hours' worth of fur shortage; hunger after a day, every 12 hours a man deserts or falls sick by turns; thirst after 12 hours, every 6 hours. A sick man is the kind you have most of, wounded.
 - **A tournament** leaves your hero's (and so the band's) stamina as she fought it; the lab is untouched.
 - **The owner's play-test, 2026-10-22 (built):** hunger and thirst hit your hero (Parched or Hungry: her mana stops coming back; Dying of thirst: every thirst toll −10% health and mana; Starving: −5% of each every 6 hours; Starving or Dying of thirst: her health stops coming back; `SUPPLY.thirst.hero`, `SUPPLY.hunger.hero`, `heroRegen`); at 0 health off the battlefield she dies and the game is over (`heroDies`, `ui.js showDeath`: Load last save or Back to the title; `tests/gameover.js`). Make camp pitches only on clear ground (`campSpot`, `campGround`: no water, ford, wood, swamp, lot or anything standing; the band walks to the nearest within `SUPPLY.camp.r` 4 tiles, else "No clear ground to camp here"), the tents drawn by their feet among the trees. **Hurry** (key 4, the top bar, the ring's Hurry here) replaced Travel fast's 8×: the band marches ×2, its march drain ×2.5 (`SUPPLY.forcedMarch`), off once Exhausted, stopped, or when an event or a window opens; named Hurry, apart from the Forced March perk.
@@ -81,7 +81,17 @@ Owner (2026-10-19): ale and liquor slow the drain and lift morale; water does ne
 | **Dying of thirst** | 24 h (12 h) | every 6 h (3 h) a man falls sick (thirst) |
 | Deaths | 48 h (24 h) | every 6 h (3 h) a sick man (else a fit one) dies of thirst |
 
-- **Water fills at once** (owner, 2026-10-21): standing at a holding's well, or stopped beside water, the skins fill within half a second (`supplyFrame`), not on the hour; a new game starts by your home's well, never thirsty. Water and liquor are not market goods (the well is free; the tapster sells liquor).
+- ~~Water fills at once~~ (owner, 2026-10-21; replaced 2026-10-23 below). Water and liquor are not market goods (the well is free; the tapster sells liquor).
+- **Filling takes time** (owner, 2026-10-23, built: `SkinFill`, the one `SKINS`, in `world/supply.js`; every number in `SUPPLY.fill`):
+  - **How long:** 15 game minutes (`minPerDay`) for each man's day of drink filled (4 rations: 24 ÷ `drink.per`), never under 5 (`min`) nor over 180 (`max`). Alone, the full 2 days (8 water) take 30 minutes; a band of three, 90; six or more people, 3 hours. Topping up half-full skins takes half as long.
+  - **By the game clock** (`Clock.hours()`): it stands still while paused and runs faster at 2× and 4×. The water comes in as the share rises, not at the end.
+  - **Moving stops it,** keeping what is in: any order (travel, a chase, following), Hurry, a step off the spot (a camp's hop), a battle (`battle:ended`), an encounter or any page off the map (`G.mode` not the world; the card's `supplyNow`, read every quarter second in any mode, asks `SKINS.watch`).
+  - **The auto-fill uses it:** every half a second (real time), standing at a holding's well or stopped at the water's edge with the skins not full, it starts by itself (quietly). The ring's Fill waterskins starts it with a line in the log; the ring offers it only where it can fill, lit while it fills (pressed then, its end is said in the log).
+  - **Shown:** a thin water-blue bar under the band card's three bars, "Filling waterskins 60%" (`render.js updateHUD`, `style.css .pc-fill`), and a small drop beside your band's head on the map, filling from the bottom (`gfx/worldui.js wuiFilling`).
+  - **A new game** sets out with full skins (`SKINS.first`, due from `onWorld`, cleared by the band's save piece on a load: no free fill for a loaded game). The tavern's tapster fills them at once (`fillNow`: the town's time stands still).
+  - **Nearer** (the owner: "much shorter"): the water's edge is a water pixel as the world art draws it (`gfx/worldart.js wpx`: the shore's curve, a ford's shallows, a bridge's water, a pond's) within half a tile (`near: .5`, `waterEdge`; was 3 tiles round by the tile); a holding's well within 1.5 tiles (`well`, `wellNear`; was 40 px of its middle) of where you arrive at it (its x, y) or of the spot before its gate where you set out (`world.js gateSpot`, kept a holding: `wellGate`).
+  - **Off** (`SUPPLY.fill.timed false`): they fill at once as before (the frame and the hour).
+  - **Not yet** (the owner, for later): ordering workers, passengers or troops to fetch water with the camp system.
 
 ## 5. Furs (the frost)
 
@@ -123,7 +133,7 @@ A ring of actions for mouse and touch, so nothing needs a key:
 | **Break camp** | in camp | leaves camp |
 | **Travel here** | held on the ground | the same as a click (for touch) |
 | **Travel here fast** | held on the ground, nothing hostile in sight | travel at 8× until anything calls for you |
-| **Fill waterskins** | beside a river, lake, oasis or well | fills water to the bag's room, free |
+| **Fill waterskins** | at the water's edge or a holding's well (lit while filling) | fills water to the bag's room, free, over game time (§4) |
 | **Drink liquor** | carrying liquor | switches rations to liquor first (a hard march) |
 | **Look** | held on a party, holding or site | its tooltip as a card (for touch, where there is no hover) |
 

@@ -17,6 +17,8 @@
      you meet it or go elsewhere; going to attack it (a foe: wuiKind), crossed swords in the arrow's place (the owner, 2026-10-23;
      wuiSwords: the action ring's Attack icon, icons.js ICONS.attack), never smaller on the screen than WUI_K.swords CSS px.
      Following a party (world.js G.follow): its ring, no arrow, the footprints to it.
+   - Your waterskins filling (world/supply.js SKINS): a small drop beside your band's head, filling from the bottom as they do
+     (wuiFilling).
    - An encounter on the road you know of and have not met (world/road.js): sound waves rippling out from it, a pulsing "!" over it, its
      call-out the first time it is on the screen, and its waves rolling in at the screen's edge while it is off it (wuiRoadUnder, wuiRoadOver).
    In whole game pixels on the camera's grid (what moves or eases, to 1/VS px as a mover is: render.js snapV), outlined dark as
@@ -197,7 +199,7 @@ function wuiUnder(cam){const now=performance.now(),dt=Math.min(.1,Math.max(0,(no
 function wuiOver(cam){if(G.mode==='title')return;const now=WUI.now||performance.now(),rm=reducedMotion();
   if(WUI.dest){const d=WUI.dest;wuiDrop(Math.round(d.x)-cam.x,Math.round(d.y)-cam.y,d.t,WUI_K.col.gold,now,rm,true)}
   if(WUI.tgt&&!WUI.tgt.f&&WUI.tgt.o.inView(vis())){const o=WUI.tgt.o,T=wuiTargetAt(o,cam),k=wuiKind(o);wuiDrop(T.x,T.top,WUI.tgt.t,WUI_K.col[k],now,rm,false,k==='foe'?wuiDrawSwords:null)}// (one you follow: no arrow)
-  wuiRoadOver(cam,now,rm);wuiEscorts(cam,now,rm);
+  wuiRoadOver(cam,now,rm);wuiEscorts(cam,now,rm);wuiFilling(cam);
   const h=WUI.hov;if(h){const b=h.b,col=WUI_K.col[h.kind],x0=wuiX(b[0],cam),y0=wuiY(b[1],cam),x1=wuiX(b[2],cam),y1=wuiY(b[3],cam),br=rm?0:(1+Math.sin(now/1000/WUI_K.breathe*6.2832))/2;
     wuiBrackets(x0,y0,x1,y1,col,h.kind==='ground'?.75:1,rm?0:Math.round(br),h.kind==='ground'?.5+.5*br:1+br)}}
 /* ---- the encounters on the road (world/road.js), each you know of and have not met (marked). Under the banners: sound
@@ -238,3 +240,13 @@ function wuiRoadOver(cam,now,rm){const V=vis(),col=WUI_K.col.enc,bang=wuiArrow('
 WUI_ARROW.home=['...#...','..###..','.#####.','#######','.#####.','.##.##.','.##.##.'];
 function wuiEscorts(cam,now,rm){const c=wuiArrow('home',WUI_K.col.friend),bob=rm?0:Math.round((1+Math.sin(now/1000*3))/2*2);
   for(const q of P.quests){const h=Quest.as(q).homeMark();if(!h)continue;const x=Math.round(h.x-cam.x),y=Math.round(h.y-cam.y);if(x<-10||y<-10||x>VW+10||y>VH+10)continue;wuiPut(c,x,y-12-bob,c.cx,c.tip)}}
+/* ---- your waterskins filling (world/supply.js SKINS, the owner, 2026-10-23): a small water drop beside your figure's head, right of
+   your banner (WUI_DROP dx, dy: px from your feet; over your camp's tents while you camp), its rows filled from the bottom by the share in, outlined dark as the arrows are; while it
+   runs. It never moves: the same under reducedMotion ---- */
+const WUI_DROP={px:['..#..','.###.','.###.','#####','#####','#####','.###.'],dx:13,dy:12,col:['#9cd0f4','#5a9ad4','#3a6c9c'],empty:'#28323c'};
+// (its picture with k of its rows filled, made once each: cx its middle, tip its bottom row)
+function wuiDropPic(k){const key='w'+k;let c=WUIP.get(key);if(c)return c;const D=WUI_DROP,M=D.px,h=M.length,w=M[0].length,at=(x,y)=>y>=0&&y<h&&x>=0&&x<w&&M[y][x]==='#';
+  c=mkc(w+2,h+2,g=>{for(let y=-1;y<=h;y++)for(let x=-1;x<=w;x++)if(!at(x,y)&&(at(x-1,y)||at(x+1,y)||at(x,y-1)||at(x,y+1)))rect(g,WUI_K.dark,x+1,y+1);
+    for(let y=0;y<h;y++)for(let x=0;x<w;x++)if(at(x,y))rect(g,y<h-k?D.empty:!at(x-1,y)||!at(x,y-1)?D.col[0]:!at(x+1,y)||!at(x,y+1)?D.col[2]:D.col[1],x+1,y+1)});
+  c.cx=(w+2)>>1;c.tip=h;WUIP.set(key,c);return c}
+function wuiFilling(cam){if(!SKINS.on)return;const D=WUI_DROP,c=wuiDropPic(Math.round(SKINS.share*D.px.length));wuiPut(c,Math.round(wuiX(P.x,cam))+D.dx,Math.round(wuiY(P.y,cam))-D.dy,c.cx,c.tip)}

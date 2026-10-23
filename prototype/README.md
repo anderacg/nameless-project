@@ -303,8 +303,12 @@ hero's: it is kept in her `P.sp`, on her scale (`maxSP`; when that grows, by a l
   2 morale an hour, and after a day men desert or fall sick by turns;
 - **drinks** `(people + 1) / 6` rations on the march, half that stopped: water, then ale, then liquor (liquor first if you choose
   it), all of the category Water. Water and liquor are goods in the bag (`data/places.js` `DRINK_GOODS`) that no market trades: kept out of `GOODS`'s keys,
-  so no holding stocks them. Waterskins fill free beside a river, lake or oasis (stopped) or at a holding's well; the tavern's
-  tapster sells liquor (`tapsterCard`);
+  so no holding stocks them. Waterskins fill free at the water's edge (a drawn water pixel within half a tile: `waterEdge`) or at a
+  holding's well (1.5 tiles of where you arrive or set out: `wellNear`), over game time (the owner, 2026-10-23: `SKINS`, a
+  `SkinFill`; 15 game minutes a man's day of drink, 5 to 180 minutes, `SUPPLY.fill`), by the game clock (paused, it waits; faster
+  at 2× and 4×), the water coming in as it runs; any order, Hurry, a battle or an encounter stops it and keeps what is in. It starts
+  by itself at a well or stopped at the edge; a bar on the card and a drop over your band show it. A new game sets out with full
+  skins; the tavern's tapster fills them at once and sells liquor (`tapsterCard`);
 - **tires or rests**: −3 an hour on the march (×1.5 rough ground, ×1.3 at night, ×1.5 Forced March, ×1.5 with nothing to drink,
   ×2 in the desert with no water, up to ×1.5 short of furs in the frost; ×0.7 mostly mounted, −3% a level of Athletics or Riding,
   ×0.9 a Guide; every drink alike); +2 stopped, +8 in camp, +10 staying in a holding (half with nothing to drink; none with no
@@ -377,7 +381,8 @@ the world piece `band` once it is not fresh. The band's own numbers are `PlayerP
   Let go over one, or let go and tap one; Esc, a right-click or a tap outside closes it.
 - **The card** (`render.js updateHUD`, `supplyNow`): the band's stamina bar (green, amber Tired, red Exhausted, ▼ ▲, its rate and
   why on hover) and health (fit of the whole band, red under half, what hurt it lately on hover), the tags (Tired, Exhausted,
-  Thirsty, Hungry, Cold, Hurrying, In camp), food and drink in days at the current rate, furs in or near the frost. Your hero's health and
+  Thirsty, Hungry, Cold, Hurrying, In camp), a thin Filling waterskins bar in % while they fill, food and drink in days at the
+  current rate, furs in or near the frost. Your hero's health and
   mana are in the Hero window (C). Tests: `tests/supply.js`, `tests/camp.js`, `tests/ring.js`.
 
 ## Recruitment and talents
