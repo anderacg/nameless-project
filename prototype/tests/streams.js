@@ -5,7 +5,10 @@
 // world's simulation and the battles keep the shared Math.random.
 //  (i)   content independence: a test-only encounter kind registered and one kind's weight changed (only in this page): the
 //        world after some days of play, the shared Math.random's place and a battle fought then are the same; only the road's
-//        stream (and the letters', which the road's messenger draws) went another way;
+//        stream (and the letters', which the road's messenger draws) went another way. A stream's state is its count of draws
+//        (mulberry32: its seed plus a constant a draw), so two plays that drew alike in the end read the same: each stream's way
+//        is its state after every roll, all along the play (two roads that pick otherwise may still meet again at the same count,
+//        and then go on alike: from 53735b6's world on, A's and B's roads end at the same count);
 //  (ii)  the same game gives the same encounters and the same job offers;
 //  (iii) a save and a load keep the game's number and continue every stream exactly;
 //  (iv)  a new game starts every stream afresh: the same begin (Math.random seeded alike) the same streams, the wild game and the
@@ -13,7 +16,9 @@
 //        beasts;
 //  (v)   the estates' building choice draws its random keys before sorting: the same draws, and the same choices, whatever
 //        order the sort compares in;
-//  (vi)  your order for a new house says "Builders start on a new house" and answers true.
+//  (vi)  your order for a new house says "Builders start on a new house" and answers true;
+//  (vii) nothing starts a stream again in play: some days on the map, the road rolled and a new town's job offers each day: no
+//        world reset (Rng.reset, restore or newGame), the same stream objects, and every stream at a place it never was each day.
 Kit.suite(({ok,info})=>{
  const t=T,G=t.G,P=t.P;
  const fnv=s=>{let h=2166136261;for(let i=0;i<s.length;i++)h=Math.imul(h^s.charCodeAt(i),16777619)>>>0;return h.toString(16).padStart(8,'0')};
@@ -34,18 +39,19 @@ Kit.suite(({ok,info})=>{
   return fnv(JSON.stringify(B.units.map(u=>[u.type,Math.round(u.x*100),Math.round(u.y*100),Math.round(u.hp*100)])))};
  /* a game played for DAYS days, you parked off the map (as tests/worldprint.js's W7: nothing meets you), and every 25 frames the
     road's hour rolled at the test spot (the pity timer full, the day's count and the last one cleared: as often as it comes),
-    you put back after it: what came is kept, the world's own state is left as it was */
+    you put back after it: what came is kept, the world's own state is left as it was. Water enough given: parked far from any
+    well, your hero would die of thirst on the third day, and the world's time stop there */
  const DAYS=4;
- const play=()=>{Kit.begin('soldier',4242);Kit.world();t.setSpeed(3);P.x=-999;P.y=-999;P.tx=P.ty=null;
-  const picks=[],d0=G.day;
+ const play=()=>{Kit.begin('soldier',4242);Kit.world();t.setSpeed(3);P.x=-999;P.y=-999;P.tx=P.ty=null;t.invAdd('good','water',100);
+  const picks=[],d0=G.day,way={};
   for(let f=0;f<20000&&G.day<d0+DAYS;f++){
    t.updateWorld(.05);if(G.mode!=='world')Kit.world();
    if(f%25)continue;
    const at=[P.x,P.y],R=t.roadSt();P.x=spot.x;P.y=spot.y;R.c=1e6;R.n=0;R.on=[];
    const e=t.roadRoll();if(e)picks.push(e.k);
-   R.on=[];P.x=at[0];P.y=at[1]}
+   R.on=[];P.x=at[0];P.y=at[1];const st=t.Rng.states();for(const n of NAMES)(way[n]=way[n]||[]).push(st[n])}
   const world=fnv(saveJson()),rnd=Math.random(),states=t.Rng.states(),fight=battle();
-  return {world,rnd,states,picks:picks.join(),battle:fight}};
+  return {days:G.day-d0,dead:!!G.dead,world,rnd,states,ways:Object.fromEntries(NAMES.map(n=>[n,fnv(JSON.stringify(way[n]))])),picks:picks.join(),battle:fight}};
  // ---- (i) content independence
  // (a battle fought first and thrown away: the page's first battle goes another way than the ones after it, whatever came before)
  battle();
@@ -57,14 +63,14 @@ Kit.suite(({ok,info})=>{
  t.ROAD_ENC.merchant.w=w0;
  info('the road without the test kind: '+A.picks);
  info('the road with it (and the merchant weighing 5): '+B.picks);
- const moved=NAMES.filter(n=>A.states[n]!==B.states[n]);
+ const moved=NAMES.filter(n=>A.ways[n]!==B.ways[n]);
  ok(A.picks!==B.picks&&B.picks.split(',').includes('test_trader'),'a kind added and a weight changed: the road went another way ('+A.picks.split(',').length+' and '+B.picks.split(',').length+' came)');
- ok(moved.includes('road')&&moved.every(n=>n==='road'||n==='letters'),'only the road\'s stream moved (and the letters\', the messenger\'s): '+moved.join(', '));
- ok(A.world===B.world,'the world after '+DAYS+' days is the same ('+A.world+(A.world===B.world?'':' and '+B.world)+')');
+ ok(moved.includes('road')&&moved.every(n=>n==='road'||n==='letters'),'only the road\'s stream moved (and the letters\', the messenger\'s), roll by roll: '+moved.join(', ')+(A.states.road===B.states.road?' (both at the same place in the end)':''));
+ ok(A.days===DAYS&&!A.dead&&A.world===B.world,'the world after '+A.days+' days (your hero alive: water enough) is the same ('+A.world+(A.world===B.world?'':' and '+B.world)+')');
  ok(A.rnd===B.rnd,'the shared Math.random is at the same place');
  ok(A.battle!=='none'&&A.battle===B.battle,'and a battle fought then goes the same ('+A.battle+(A.battle===B.battle?'':' and '+B.battle)+')');
  // ---- (ii) the same game, the same sequences (C: played again, as B)
- ok(C.picks===B.picks&&JSON.stringify(C.states)===JSON.stringify(B.states)&&C.world===B.world,'the same game again: the same encounters, in the same order ('+C.picks.split(',').length+')');
+ ok(C.picks===B.picks&&JSON.stringify(C.states)===JSON.stringify(B.states)&&JSON.stringify(C.ways)===JSON.stringify(B.ways)&&C.world===B.world,'the same game again: the same encounters, in the same order ('+C.picks.split(',').length+')');
  const offers=()=>{Kit.begin('soldier',77);return JSON.stringify(t.TOWNS.slice(0,6).map(z=>t.jobsAt(z).map(q=>[q.type,q.n,q.good,q.mon,q.to,q.band])))};
  const o1=offers(),o2=offers();
  ok(o1===o2&&o1.length>20,'the same game again: the same job offers ('+o1.length+' chars)');
@@ -101,4 +107,18 @@ Kit.suite(({ok,info})=>{
    if(t.Buildings.of(h).house()===true){z=h;r=true;break}}
   const last=G.msgs[G.msgs.length-1];
   ok(r&&z.work&&z.work.k==='house'&&last&&last.m==='Builders start on a new house in '+z.name+'.','a new house ordered: "'+(last&&last.m)+'", and it answers true')}
+ // ---- (vii) nothing starts a stream again in play
+ {const R0=t.Rng,hooks=['reset','restore','newGame'],was=hooks.map(k=>R0[k]),KEEP=['road','incidents','quests','critters','monsters'];let again=0;
+  Kit.begin('soldier',4242);Kit.world();t.setSpeed(3);P.x=-999;P.y=-999;P.tx=P.ty=null;t.invAdd('good','water',100);
+  hooks.forEach((k,i)=>{R0[k]=function(...a){again++;return was[i].apply(this,a)}});
+  try{t.jobsAt(t.TOWNS[0]);const objs=KEEP.map(n=>t.rngOf(n)),seen=KEEP.map(n=>new Set([t.Rng.seedOf(n),t.rngOf(n).state])),fresh=KEEP.map(()=>0);
+   const d0=G.day;let d=d0;
+   for(let f=0;f<20000&&G.day<d0+3;f++){
+    t.updateWorld(.05);if(G.mode!=='world')Kit.world();
+    if(G.day!==d){d=G.day;t.jobsAt(t.TOWNS[d%t.TOWNS.length]);KEEP.forEach((n,i)=>{const s=t.rngOf(n).state;if(!seen[i].has(s))fresh[i]++;seen[i].add(s)})}
+    if(f%25)continue;
+    const at=[P.x,P.y],R=t.roadSt();P.x=spot.x;P.y=spot.y;R.c=1e6;R.n=0;R.on=[];t.roadRoll();R.on=[];P.x=at[0];P.y=at[1]}
+   const days=G.day-d0,remade=KEEP.filter((n,i)=>t.rngOf(n)!==objs[i]);
+   ok(days===3&&!G.dead&&!again&&!remade.length&&KEEP.every((n,i)=>fresh[i]===days),'in play no stream starts again: '+days+' days, '+again+' world resets, '+(remade.length?'made anew: '+remade.join(', '):'the same streams')+', and each day every one at a place it never was ('+KEEP.map((n,i)=>n+' '+fresh[i]).join(', ')+')')}
+  finally{hooks.forEach((k,i)=>{R0[k]=was[i]})}}
 });
