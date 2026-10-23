@@ -32,7 +32,7 @@ function renderChar(){
           ((fr.length||rv.length)?'<small>'+(fr.length?'Friends: '+fr.map(o=>o.name).join(', ')+'. ':'')+(rv.length?'Rivals: '+rv.map(o=>o.name).join(', ')+'.':'')+'</small>':'')+'</div><span class="own">'+relTag(relWith(l))+'</span></div>'}).join('');
   }else{
     const tr=Object.keys(P.troops).filter(k=>P.troops[k]>0);
-    const total=partyPower(),parts=[['You','Level '+P.level+' hero',rating(['hero'])],...Object.keys(P.comps).map(id=>[COMPS[id].n,'Companion',rating([id])]),
+    const total=partyPower(),parts=[[P.name?htmlText(P.name):'You','Level '+P.level+' hero',rating(['hero'])],...Object.keys(P.comps).map(id=>[COMPS[id].n,'Companion',rating([id])]),
       ...tr.map(k=>[ST[k].n,P.troops[k]+' × '+rating([k]),rating(Array(P.troops[k]).fill(k))])].sort((a,b)=>b[2]-a[2]);
     body=armyGroupsHtml()+'<div class="top"><span class="lab">Party power</span><span class="gold" style="font-size:22px">'+total+'</span></div>'+parts.map(([n,sub,v])=>'<div class="row"><div class="info"><strong>'+n+'</strong><small>'+sub+'</small><div class="bar" aria-hidden="true"><i style="width:'+Math.round(v/Math.max(1,total)*100)+'%"></i></div></div><span class="own">'+v+'</span></div>').join('')+
       '<p class="muted">Each fighter counts as the square root of health × damage per second, added up across your band. Compare it with the number shown before each fight.'+(skill('tact')?' Tactics also adds '+5*skill('tact')+'% when you auto-resolve.':'')+'</p>'+
@@ -49,7 +49,7 @@ function renderChar(){
         '<button class="btn sm" type="button" data-act="p-recruit" data-arg="'+k+'"'+(!quote.ok?' disabled title="'+recruitmentWhy(quote)+'"':'')+'>Recruit '+quote.cost+'g</button>'+
         '<button class="btn sm" type="button" data-act="p-release" data-arg="'+k+'">Release</button></div></div>'}).join(''):'<p class="muted">None. Win battles to take some.</p>')+captivesHtml();
   }
-  showPanel('<div class="top"><h2>'+(tab==='hero'?'Your hero':tab==='realms'?'Realms of Ashmark':tab==='lords'?'Lords':tab==='quests'?'Quests':'Your party')+'</h2><span class="muted">'+RACES[P.race].n+' · level '+P.level+' · '+rankName()+'</span></div><div class="tabs">'+
+  showPanel('<div class="top"><h2>'+(tab==='hero'?'Your hero':tab==='realms'?'Realms of Ashmark':tab==='lords'?'Lords':tab==='quests'?'Quests':P.band?htmlText(P.band):'Your party')+'</h2><span class="muted">'+RACES[P.race].n+' · level '+P.level+' · '+rankName()+'</span></div><div class="tabs">'+
     [['hero','Hero'],['party','Party'],['quests','Quests'],['lords','Lords'],['realms','Realms']].map(x=>'<button class="btn sm'+(x[0]===tab?' on':'')+'" type="button" data-act="char-tab" data-arg="'+x[0]+'">'+x[1]+'</button>').join('')+
     '</div><div>'+body+'</div>'+nav(tab==='quests'?questWindowBack():null,['char-close',null,'Back to map']));
 }

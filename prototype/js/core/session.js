@@ -66,7 +66,7 @@ function begin(k,settings){
    world as ever: from the game's number) */
 const seededStart=()=>!WM.classic,startDraws=(own,fn)=>own?Rng.use('start',fn):fn();
 function startGame(k,b){
-  resetSession();P.bg=k;P.gold=b.gold;P.troops={...b.troops};P.bonus=b.bonus;
+  resetSession();nameStart();P.bg=k;P.gold=b.gold;P.troops={...b.troops};P.bonus=b.bonus;// (the names typed on the New game page, if any: ui/names.js)
   const rc=RACES[P.race=G.race||'human'];
   for(const a in b.attr)P.attr[a]+=b.attr[a];for(const a in rc.attr)P.attr[a]=Math.max(1,P.attr[a]+rc.attr[a]);
   // every discipline starts at 0; your race and past give a knack: 25% faster learning per point (P.apt)
@@ -83,7 +83,9 @@ function startGame(k,b){
   startDraws(own,()=>{for(let i=0,n=Math.round(density(WM).bandits*spawnMul('bandits'));i<n;i++)spawnBandit(true);
     for(let i=0,n=Math.round(density(WM).monsterStart*spawnMul('monsters'));i<n;i++)spawnMonster(true)});
   if(own)Rng.newGame();
-  hidePanel();G.msgs=[];log('You ride out of '+home.name+' alone, as '+(rc.n==='Elf'||rc.n==='Orc'?'an ':'a ')+rc.n.toLowerCase()+' '+b.n.toLowerCase()+'. Win fame around here and the locals will follow you.');updateHint();updateHUD(true);
+  // (named: the hero and the band in the first line; the band's name only once you gave it one)
+  hidePanel();G.msgs=[];log('You ride out of '+home.name+' alone, as '+(P.name?htmlText(P.name)+', ':'')+(rc.n==='Elf'||rc.n==='Orc'?'an ':'a ')+rc.n.toLowerCase()+' '+b.n.toLowerCase()+'. '+
+    (P.band?htmlText(P.band)+' is you alone for now: win fame around here and the locals will follow you.':'Win fame around here and the locals will follow you.'));updateHint();updateHUD(true);
 }
 // the land you are about to see, painted now, inside the loading steps, not in the first frame: the chunks under the view the
 // camera will take round you (render.js drawWorld; worldart.js WorldArt keeps them)

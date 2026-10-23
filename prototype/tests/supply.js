@@ -93,11 +93,11 @@ try{
  // ---- the card
  reset();at('open');bag({water:400,grain:60});P.tx=P.x+200;P.ty=P.y;P.bsta=15;t.updateHUD(true);{const el=document.getElementById('stats'),h=el.innerHTML,bar=el.querySelector('.bar.sta');
   ok(bar&&bar.classList.contains('tired')&&/▼/.test(bar.textContent)&&/Tired/.test(bar.textContent)&&bar.title.includes('marching −'+t.SUPPLY.march),'the card: stamina amber with ▼ and "Tired" marching ('+bar.textContent+'; '+bar.title+')');
-  ok(el.querySelector('.bar.hp')&&/Health 6\/6/.test(el.querySelector('.bar.hp').textContent),'its health bar: fit of the whole band (hero and 5)');
+  ok(el.querySelector('.bar.fit')&&el.querySelector('.bar.fit').textContent==='Fitness'+Math.round(t.bandFitness().pct)+'%'&&/5 fit, 0 wounded/.test(el.querySelector('.bar.fit').title),'its fitness bar: the 5 fit and your hero’s health over the whole band, in % ('+el.querySelector('.bar.fit').textContent+'; '+el.querySelector('.bar.fit').title+')');
   ok([...el.querySelectorAll('.pc-tags .tag')].map(x=>x.textContent).join()==='Tired','its tags: Tired');
   ok(el.querySelectorAll('.chip').length>=6&&/d</.test(h)&&!/Mana/.test(h),'food and drink chips in days; your hero’s mana is not on it')}
  P.tx=null;P.bsta=3;bag({grain:60});P.troops={hum_levy:2};P.wounded={hum_levy:4};t.updateHUD(true);{const el=document.getElementById('stats'),tags=[...el.querySelectorAll('.pc-tags .tag')].map(x=>x.textContent).join();
-  ok(el.querySelector('.bar.sta.exhausted')&&/Exhausted/.test(tags)&&/Thirsty/.test(tags)&&el.querySelector('.bar.hp.low'),'Exhausted, Thirsty, and health red under half ('+tags+'; '+el.querySelector('.bar.hp').textContent+')')}
+  ok(el.querySelector('.bar.sta.exhausted')&&/Exhausted/.test(tags)&&/Thirsty/.test(tags)&&el.querySelector('.bar.fit.low'),'Exhausted, Thirsty, and fitness red under half ('+tags+'; '+el.querySelector('.bar.fit').textContent+')')}
  reset();at('frost');bag({water:400,grain:60});t.updateHUD(true);ok(/Cold/.test(document.querySelector('#stats .pc-tags').textContent)&&[...document.querySelectorAll('#stats .chip.warn')].some(c=>/^Furs/.test(c.title)),'in the frost short of furs: Cold, and the furs chip red');
  // ---- the tavern sells liquor
  reset();{const h=Kit.goHome();bag({});P.gold=500;Kit.world();t.enterTown(h);t.act('tab','tavern');const p=t.GOODS.liquor.base*t.LIQUOR_LOT;

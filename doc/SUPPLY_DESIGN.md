@@ -163,6 +163,10 @@ The hero's Health and Mana bars leave the party card for the Hero window (C), an
 - **Status tags** appear under the bars only when they apply: **Tired**, **Exhausted**, **Thirsty**, **Hungry**, **Cold**, **In camp**. Each is a small coloured pill with its reason in a tooltip.
 - **A first-run hint**, once: "Marching tires your band. Stop, or Make camp (Z), to rest."
 - On a phone, the card folds to the two bars and the chips; the tags fold into the bars' colours.
+- **Built since (the owner, 2026-10-23):** the card is the band's: its name (the player's, or The Free Company; a button that opens
+  the Names window) over the hero's name, level and rank; three bars in %: **Fitness** (replaces Health: `(fit + hero's health share)
+  / (all troops + 1)`, `world/supply.js` `fitnessOf`, `bandFitness`), **Morale** (moved from its chip) and **Stamina**. Names:
+  `ui/names.js`, `data/names.js`.
 
 ## 9. Build notes
 

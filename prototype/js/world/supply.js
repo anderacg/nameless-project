@@ -344,6 +344,11 @@ function supplyNow(){
   if(P.camp)tags.push(['In camp','good','Resting: stamina +'+S.rest.camp+' an hour, the wounded mend faster. Any travel order breaks camp.']);
   {const pas=Escort.tag();if(pas)tags.push(pas)}// (your passengers, who eat with you: world/escort.js)
   return{L,go,dr,r,st,foodDays,drinkDays,furs,fit:P.fitness(),tags}}
+/* your band's fitness, 0-100 (the card's Fitness bar; the owner, 2026-10-23): the fit troops (companions with them) and your
+   hero's share of her health, over all of them and her: (fit + hp) / (fit + wounded + 1) × 100. A wounded man counts 0, your hero
+   P.hp ÷ her most. 10 troops, 2 of them wounded, your hero at half: (8 + 0.5) / 11 = 77. bandFitness: yours, with its parts */
+const fitnessOf=(fit,wounded,hp)=>(fit+hp)/(fit+wounded+1)*100;
+function bandFitness(){const F=P.fitness(),fit=F.fit-1,hp=P.hp==null?1:clamp(P.hp/Math.max(1,P.heroStats().hp),0,1);return{fit,wounded:F.wounded,hp,pct:fitnessOf(fit,F.wounded,hp)}}
 
 /* ---------- the action ring's map actions (ui/ring.js ActionRing; §7a): those that apply where you held (wx, wy: on o, a thing on
    the map, or the ground), in the ring's order; active: a mode that is on now (camped, by road, hurrying, liquor first), the ring

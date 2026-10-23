@@ -296,13 +296,15 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 /* HUD frames: dark glass, a hairline, a gold top edge */
 .pcard,.wtop,.btop,.binfo{background:var(--glass);border:1px solid var(--line-2);border-top:2px solid var(--trim);border-radius:var(--r-md);box-shadow:var(--float);backdrop-filter:blur(6px)}
 
-/* your party (top left): who you are, health, stamina and mana, what you have, where you are */
+/* your band (top left): its name (a button: the Names window), your hero, fitness, morale and stamina, what you have, where you are */
 .pcard{position:absolute;left:var(--e-l);top:var(--e-t);width:272px;padding:8px 10px 9px;display:block}
 .pc-head{display:flex;gap:9px;align-items:center;margin-bottom:7px}
 .pc-pic{width:38px;height:38px;flex:none;image-rendering:pixelated;object-fit:contain;background:rgba(0,0,0,.35);border:1px solid var(--line);border-radius:var(--r-sm)}
 .pc-who{flex:1;min-width:0}
-.pc-who b{display:block;font-size:var(--fs-lg);line-height:1.15;color:var(--accent);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.pc-who small{display:block;font-size:var(--fs-sm);color:var(--muted)}
+.pc-band{display:block;max-width:100%;padding:0;font:inherit;font-size:var(--fs-lg);font-weight:700;line-height:1.15;text-align:left;color:var(--accent);background:none;border:0;cursor:pointer;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pc-band:hover,.pc-band:focus-visible{color:#fff;text-decoration:underline;text-decoration-color:var(--trim);outline:none}
+.pc-who small{display:block;font-size:var(--fs-sm);color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pc-pts{font-size:var(--fs-xs);font-weight:700;color:var(--accent-ink);background:var(--accent);padding:2px 6px;border-radius:var(--r-sm)}
 .pcard .bars{display:grid;gap:3px;margin:0 0 7px}
 .pcard .bar{position:relative;width:100%;max-width:none;height:14px;margin:0;background:rgba(0,0,0,.55);border:1px solid #000;border-radius:var(--r-sm)}
@@ -415,10 +417,12 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 @keyframes pping{0%{transform:scale(.6);opacity:1}100%{transform:scale(1.5);opacity:.2}}
 
 /* ---------- 6c. supplies ---------- */
-/* the band card's bars (render.js updateHUD): stamina green, amber Tired, red Exhausted, the state's word at its end; health
-   steel blue, red under half; the tags under them (Tired, Exhausted, Thirsty, Hungry, Cold, In camp), small coloured pills */
+/* the band card's bars (render.js updateHUD), each its % at its end: fitness steel blue, red under half; morale violet, orange
+   under 30 (the battle cards' low morale); stamina green, amber Tired, red Exhausted, the state's word by its %; the tags under
+   them (Tired, Exhausted, Thirsty, Hungry, Cold, In camp), small coloured pills */
 .pcard .bar.sta i{background:#78c474}.pcard .bar.sta.tired i{background:#e0a040}.pcard .bar.sta.exhausted i{background:#d04a3a}
-.pcard .bar.hp i{background:#6a9ad0}.pcard .bar.hp.low i{background:#c8503a}
+.pcard .bar.fit i{background:#6a9ad0}.pcard .bar.fit.low i{background:#c8503a}
+.pcard .bar.mor i{background:#9a7ad0}.pcard .bar.mor.low i{background:#e08a3a}
 .pcard .bar em b{float:right;padding-right:6px}
 .pcard .bar.sta.tired em b{color:#ffe0a0}.pcard .bar.sta.exhausted em b{color:#ffc0b0;animation:blink 1s steps(2) infinite}
 .pc-tags{display:flex;flex-wrap:wrap;gap:4px;margin:-3px 0 7px}
@@ -426,6 +430,13 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 .pc-tags .tag.warn{color:#ffe0a0;border-color:#a8782a;background:rgba(160,110,30,.28)}
 .pc-tags .tag.bad{color:#ffc0b0;border-color:#a0402e;background:rgba(160,50,40,.28)}
 .pc-tags .tag.good{color:#c4ecb0;border-color:#4e8a3a;background:rgba(70,130,50,.28)}
+/* the names (ui/names.js): the New game page's two fields and the Names window's (the band card's band name), each with Random */
+.nm-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:6px 14px;max-width:640px;margin-bottom:6px}
+.nm-field{display:grid;gap:3px;font-size:var(--fs-sm);color:var(--muted)}
+.nm-line{display:flex;align-items:center;gap:6px}
+.nm-line input{flex:1;min-width:0;min-height:var(--tap);padding:4px 10px;font:inherit;font-size:var(--fs-md);color:var(--fg);background:var(--shade);border:1px solid var(--line-2);border-radius:var(--r-sm)}
+.nm-line input:focus{border-color:var(--accent);outline:none}
+.nm-win{display:grid;gap:10px}.nm-win .nm-fields{grid-template-columns:minmax(0,1fr);max-width:520px;margin:0}
 /* the Hero window's own bars (character.js): your hero's health, stamina (the band's) and mana */
 .hvit{display:grid;gap:3px;margin-bottom:4px;max-width:420px}
 .hv-bar{position:relative;height:16px;background:rgba(0,0,0,.55);border:1px solid #000;border-radius:var(--r-sm);overflow:hidden}
@@ -974,7 +985,7 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
   :root{--edge:6px;--fs-hero:38px}
   .pcard{width:226px;padding:6px 8px 7px}
   .pc-head{margin-bottom:5px}.pc-pic{width:30px;height:30px}
-  .pc-who b{font-size:var(--fs-base)}
+  .pc-band{font-size:var(--fs-base)}
   .pcard .bars{gap:2px;margin-bottom:5px}.pcard .bar{height:11px}.pcard .bar em{font-size:9px;line-height:9px}
   .pc-res{gap:3px;margin-bottom:0}.chip{font-size:var(--fs-sm);padding:1px 4px}
   .pc-line{display:none}

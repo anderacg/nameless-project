@@ -347,32 +347,37 @@ function frame(){
   else drawWorld();
   ctx.restore();
 }
-/* the party card (top left), your band's (doc/SUPPLY_DESIGN.md §8; its numbers: world/supply.js supplyNow): your hero (portrait,
-   name, level, points to spend); the band's stamina (green, amber Tired, red Exhausted, the state's word at its end, an arrow for
-   which way it goes: ▼ draining, ▲ coming back; on hover its rate an hour and why) and its health (fit of the whole band, red
-   under half; on hover the fit, the wounded and what hurt them lately); the tags that apply (Tired, Exhausted, Thirsty, Hungry,
-   Cold, In camp: on hover, why); gold, food and drink in days at the current rate, furs in or near the frost or when carried,
-   troops, power, morale and pace as icon chips (what runs short is red); where you are and whom you serve. Your hero's health
+/* the band card (top left; doc/SUPPLY_DESIGN.md §8; the owner, 2026-10-23): your band's name, big (a button: the Names window,
+   ui/names.js), under it your hero's name (else your race and past), level and rank, her portrait and the points to spend; three
+   bars, each in %: Fitness (world/supply.js bandFitness: the fit and your hero's health over the whole band; red under half; on
+   hover the fit, the wounded, your hero's health and what hurt them lately), Morale (P.morale; red under 30; on hover the
+   troops' nerve it drifts toward) and Stamina (green, amber Tired, red Exhausted, the state's word by its %, an arrow for which
+   way it goes: ▼ draining, ▲ coming back; on hover its rate an hour and why); the tags that apply (Tired, Exhausted, Thirsty,
+   Hungry, Cold, In camp: on hover, why); gold, food and drink in days at the current rate, furs in or near the frost or when
+   carried, troops, power and pace as icon chips (what runs short is red); where you are and whom you serve. Your hero's health
    and mana are in the Hero window (C) and the battle. The top bar: the day and the time */
 function updateHUD(force){
-  stayBanner();hurryUI();const el=$('#stats');if(!el)return;const cnt=partySize(),cap=partyCap(),S=supplyNow(),F=S.fit,lh=landHold(P.x,P.y),sp=bandPace()*hurryPace();// (Hurry lit, and in the pace: supply.js)
-  const bar=(v,mx,cls,txt,title)=>'<div class="bar '+cls+'" title="'+title+'"><i style="width:'+Math.max(0,Math.min(100,Math.round(v/Math.max(1,mx)*100)))+'%"></i><em>'+txt+'</em></div>';
+  stayBanner();hurryUI();const el=$('#stats');if(!el)return;const cnt=partySize(),cap=partyCap(),S=supplyNow(),F=bandFitness(),fp=Math.round(F.pct),mo=Math.round(P.morale),lh=landHold(P.x,P.y),sp=bandPace()*hurryPace();// (Hurry lit, and in the pace: supply.js)
+  const bar=(v,cls,txt,title)=>'<div class="bar '+cls+'" title="'+title+'"><i style="width:'+Math.max(0,Math.min(100,Math.round(v)))+'%"></i><em>'+txt+'</em></div>';
   const chip=(ic,val,title,warn,cls)=>'<span class="chip'+(warn?' warn':'')+'" title="'+title+'">'+icon(ic,14)+'<span'+(cls?' class="'+cls+'"':'')+'>'+val+'</span></span>';
   const days=d=>(d>=10?Math.floor(d):Math.floor(d*10)/10)+'d',rate=S.r.n,go=S.go?'on the march':'at rest';
   const arrow=rate<0?' ▼':rate>0&&P.bsta<100?' ▲':'',word={tired:'Tired',exhausted:'Exhausted'}[S.st],hurt=BAND.hurt.map(h=>h.why).join(', ');
-  const staTip='Your band’s stamina '+Math.round(P.bsta)+' / 100'+(rate?': '+(rate>0?'+':'')+Math.round(rate*10)/10+' an hour ('+S.r.why.join(', ')+')':'')+'. Tired under '+SUPPLY.tired+', Exhausted under '+SUPPLY.exhausted+'.';
-  const hpTip='Your band’s health: '+F.fit+' fit, '+F.wounded+' wounded'+(hurt?'. Lately: '+hurt:'')+'. '+healthLines();
+  const staTip='Your band’s stamina '+Math.round(P.bsta)+'%'+(rate?': '+(rate>0?'+':'')+Math.round(rate*10)/10+' an hour ('+S.r.why.join(', ')+')':'')+'. Tired under '+SUPPLY.tired+'%, Exhausted under '+SUPPLY.exhausted+'%.';
+  const fit0='Your band’s fitness '+fp+'%: '+F.fit+' fit, '+F.wounded+' wounded, your hero at '+Math.round(F.hp*100)+'% health'+(hurt?'. Lately: '+hurt:'')+'.',hl=healthLines(),fitTip=fit0+(hl?' '+hl:'');
+  const moTip='Your band’s morale '+mo+'%'+(bandNerve()!=null?': your troops’ nerve is '+Math.round(bandNerve())+', and it drifts toward it':'')+'.';
   const foodTip='Food: '+(FOODS.filter(g=>goodN(g)).map(g=>GOODS[g].n+' '+goodN(g)).join(', ')||'none')+' · about '+days(S.foodDays)+' '+go;
   const tags=[...S.tags,burdenTag()].filter(Boolean);// (an overfilled bag: Burdened, core/inventory.js)
   const drinkTip='Drink: '+(drinkOrder(S.L).filter(g=>goodN(g)).map(g=>GOODS[g].n+' '+goodN(g)).join(', ')||'none')+' · about '+days(S.drinkDays)+' '+go+(S.L.desert?' (in the desert, water only)':'')+(BAND.liquor?' · liquor first':'');
-  el.innerHTML='<div class="pc-head"><img class="pc-pic" src="'+portrait('hero',true)+'" alt=""><div class="pc-who"><b>'+RACES[P.race].n+' '+(BGS[P.bg]?BGS[P.bg].n:'')+'</b><small>Level '+P.level+' · '+rankName()+'</small></div>'+
+  const who=RACES[P.race].n+' '+(BGS[P.bg]?BGS[P.bg].n:'');
+  el.innerHTML='<div class="pc-head"><img class="pc-pic" src="'+portrait('hero',true)+'" alt=""><div class="pc-who"><button class="pc-band" type="button" data-act="nm-open" title="'+htmlText(bandName())+': rename your band and your hero">'+htmlText(bandName())+'</button>'+
+      '<small title="'+htmlText((heroName()?heroName()+', ':'')+who)+' · Level '+P.level+' · '+rankName()+'">'+htmlText(heroName()||who)+' · Lv '+P.level+' · '+rankName()+'</small></div>'+
       (P.tp?'<span class="pc-pts" title="Talent points to spend (K)">+'+P.tp+'</span>':'')+'</div>'+
-    '<div class="bars">'+bar(P.bsta,100,'sta '+S.st,'Stamina'+arrow+' '+Math.round(P.bsta)+(word?'<b>'+word+'</b>':''),staTip)+
-      bar(F.fit,F.fit+F.wounded,'hp'+(F.share<.5?' low':''),'Health '+F.fit+'/'+(F.fit+F.wounded),hpTip)+'</div>'+
+    '<div class="bars">'+bar(fp,'fit'+(fp<50?' low':''),'Fitness<b>'+fp+'%</b>',fitTip)+bar(mo,'mor'+(mo<30?' low':''),'Morale<b>'+mo+'%</b>',moTip)+
+      bar(P.bsta,'sta '+S.st,'Stamina'+arrow+'<b>'+(word?word+' · ':'')+Math.round(P.bsta)+'%</b>',staTip)+'</div>'+
     (tags.length?'<div class="pc-tags">'+tags.map(([t,c,w])=>'<span class="tag '+c+'" title="'+w+'">'+t+'</span>').join('')+'</div>':'')+
     '<div class="pc-res">'+chip('gold',P.gold,'Gold',false,'gold')+chip('food',days(S.foodDays),foodTip,S.foodDays<1)+chip('mug',days(S.drinkDays),drinkTip,S.drinkDays<1)+
       (S.furs.show?chip('furs',S.furs.have+'<small>/'+S.furs.need+'</small>','Furs: '+S.furs.need+' needed in the frost (1 for every '+SUPPLY.furPer+' people)',S.L.frost&&S.furs.have<S.furs.need):'')+
-      chip('troops',cnt+'<small>/'+cap+'</small>','Troops: '+cnt+' of '+cap)+chip('power',partyPower(),'Party power','', 'gold')+chip('morale',Math.round(P.morale),'Morale'+(bandNerve()!=null?' (your troops’ nerve: '+Math.round(bandNerve())+', it drifts toward it)':''),P.morale<30)+
+      chip('troops',cnt+'<small>/'+cap+'</small>','Troops: '+cnt+' of '+cap)+chip('power',partyPower(),'Party power','', 'gold')+
       chip('speed',sp.toFixed(1)+'×','Your band’s pace before the ground: the slowest of you, its size, the wounded, mounts, Athletics or Riding, a Guide, Forced March, tiredness, Hurry, an overfilled bag',sp<.8)+
       (prisonerCount()?chip('prisoners',prisonerCount(),'Prisoners'):'')+'</div>'+
     '<div class="pc-line" title="Where you are">'+icon('region',12)+'<span>'+regionAt(P.x,P.y).name+' · <span style="color:'+(lh?landCol(lh.owner):'#9a958a')+'">'+landName(P.x,P.y)+'</span></span></div>'+

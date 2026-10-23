@@ -60,7 +60,8 @@ js/data/              tables only, no game logic: races, factions, units, monste
                       economy (estates, walls, production, needs, taxes, caravans), conduct (what deeds cost),
                       scenes (who you meet inside a place, buildings, building styles), world (the world's scale: its distances,
                       the movement lever, and the wild things each world holds, DENSITY), chains (the story chains' numbers,
-                      HIDDEN_RATE, the steps' STEP; the rescue's and Ander's wandering numbers; Ander The Fallen as a companion)
+                      HIDDEN_RATE, the steps' STEP; the rescue's and Ander's wandering numbers; Ander The Fallen as a companion),
+                      names (NAMING: a name's length and your band's default; the word tables of a random band name)
 js/story/             the story system's shared parts (doc/STORY_DESIGN.md, S0–S3, S5, ST2): context.js (storyCtx: where, when, who, the
                       weather, once a frame), outcome.js (Outcome: what a choice does, declared, and its words), choice.js (Choice,
                       and ChoicePage: the one page for any happening's, thing's or place's choices), kinds.js (the kinds registry:
@@ -167,7 +168,7 @@ js/gfx/               worldart.js (the painted map), sprites.js (generated sprit
                       pointer marks, route trail (the way your hero walks: heroWay, the router's round water) and encounter highlights), mist.js (mist in the fog), weapons.js (battle weapons),
                       scenedraw.js (painting and drawing the walkable scenes: scene/), menuart.js (the main menu's scene, banner, emblem
                       and title, drawn in code: MenuScene, MENU_ART)
-js/ui/                mainmenu.js (the main menu: the page's first screen, no world behind it), ui.js (panels, title, Esc menu with the world's name and seed and its World page, the game-over window), loading.js (the loading overlay; runSteps runs long work in steps), worldsetup.js (the New world screen: a world's settings before you forge it), character, questwindow.js (your Quests: the list and the one chosen in full, Track, Show on map), talents, inventory, town (a holding's
+js/ui/                mainmenu.js (the main menu: the page's first screen, no world behind it), ui.js (panels, title, Esc menu with the world's name and seed and its World page, the game-over window), loading.js (the loading overlay; runSteps runs long work in steps), worldsetup.js (the New world screen: a world's settings before you forge it), names.js (your hero's and your band's names: the New game page's fields, the Names window from the band card, random names), character, questwindow.js (your Quests: the list and the one chosen in full, Track, Show on map), talents, inventory, town (a holding's
                       places: Place, definePlace, PLACES; class wave D),
                       window.js (rail windows: a rail of places beside the chosen one's window), townui.js (a town's places, its overview, your
                       holding's buildings), estate.js (an estate's window on the map, and the Fief's Estates section), peopledrawer.js (the people drawer, P), input.js (actions, mouse, keys), map.js (the full map:
@@ -245,6 +246,16 @@ Things in the world are plain data (so a save is plain JSON) read through a clas
 Inventory and equipment rules live outside the screens. What each bag record is comes from its item kind (`core/items.js`, above). `Inventory` operates on a record's current bag, with capacity and stacking supplied to it. Nothing is refused up to its limit (doc/ITEMS_DESIGN.md §4a): what does not fit goes into overflow slots past its `size`, up to `BAG.maxOver` (15), each costing `BAG.per` (4%) of your pace, down to `BAG.floor` (×0.4): `burden()`, read by `bandPace` (`bagPace`); past that `BAG_FULL` ("You cannot carry any more"), a quest item excepted (`add(k, id, n, force)`). `over`, `spare`, `settle()` (the overflow moved into slots freed since), `put(rec, force)`; the card's Burdened tag (`burdenTag`, `render.js updateHUD`); the bag window shows the overflow slots in red. It carries only what its category routes to the bag; `gained` tells an item's kind that it came in. `EquipmentService` operates on a wearer's gear and an `Inventory`, returning `{ok, reason, moved}` without touching the DOM or logging. Hero and companion commands use the same service; companion slot limits remain explicit. A failed transfer restores both records, including when removing a pack or mount would shrink a full bag. Equipment transfers always return existing items to the bag; only rewards use the loot pile.
 
 `GameSession` resets the live `G`, `P`, and `W` records in place from factories. New game and load share this reset, so missing save fields use defaults and transient input, loot and battle state cannot carry over. Record identity and the player's `Party` prototype survive; saves still contain plain JSON. `session.js` loads after `world/realms.js`, which creates `W`; its commands run after boot has loaded every system. A new game (`begin`) and a load (`loadGame`) run as steps (`runSteps`, `ui/loading.js`): the overlay shows only past `LOADING.delay` (300 ms), `G.mode` is `'loading'` meanwhile (no simulation), and `LOADING.sync` (the tests) runs them at once. The world's part of a save is gathered by `worldSave`/`worldLoad` (`core/save.js`), each holding writing its own record (`saveRec`, read back by `loadRec`; the same tuple as before); a holding founded while the world ran also keeps its plain data, so a load makes it again (`Holding.fromRec`).
+
+## The band card and the names
+
+The card at the top left (`gfx/render.js` `updateHUD`; the owner, 2026-10-23) is the band's: its name, big (a button: the
+Names window), your hero's name (else your race and past), level and rank, then three bars in %: **Fitness**
+(`world/supply.js` `fitnessOf(fit, wounded, hp)` = (fit + hp) / (fit + wounded + 1) × 100, a wounded man 0, your hero her share of
+her health; `bandFitness()` yours, with its parts; red under 50%), **Morale** (`P.morale`; it left the chips) and **Stamina**
+(`P.bsta`). Names (`ui/names.js`, `data/names.js`): typed on the New game page (each with Random: a folk name of your race with a
+byname; a band name from `BAND_FORMS` and `BAND_WORDS`), at most `NAMING.max` (24) characters, trimmed; renamed from the card. Kept
+as `P.name` and `P.band` only once chosen (none stored otherwise, so the W7 save is unchanged); put into HTML through `htmlText`.
 
 ## Supplies
 
