@@ -529,9 +529,9 @@ Targeted suites only; the coordinator runs the sweep after each merge.
 
 ---
 
-## 11. Open questions for the owner (new in revision 2)
+## 11. Questions of revision 2: answered
 
-Each with the default the phases will build unless you say otherwise.
+**The owner, 2026-10-23: "default".** Every default below is decided; the phases build them. Building waits for the owner's go.
 
 1. **Night halts slow war and trade:** a holding for the night stops a lord or caravan as a camp does, so their daily distance about halves (§0). *Default:* accept it; 2c measures march days and deliveries a day, and if trade falls by more than a quarter, caravans move faster by day.
 2. **The readiness number:** −10% of starting morale for everyone caught (D4). *Default:* 10%.
