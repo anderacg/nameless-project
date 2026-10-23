@@ -31,7 +31,7 @@ try{
  const kinds=new Set();for(let i=0;i<300;i++){W.critters=[];t.spawnCritter(true);if(W.critters[0])kinds.add(W.critters[0].id)}
  ok(['rabbit','deer','stag','ibex','reindeer','hare','gazelle','fowl'].every(k=>kinds.has(k)),'every wild kind turns up somewhere');
  W.critters=[];t.initCritters();
- ok(herds.length===t.TOWNS.filter(x=>x.kind!=='castle').length&&herds.every(c=>t.LIVESTOCK[t.townBy(c.home).races[0]].includes(c.id)),'every village and town has a herd of its people\'s livestock');
+ ok(herds.length===t.TOWNS.filter(x=>x.kind!=='castle').length&&herds.every(c=>{const z=t.townBy(c.home);return c.pen?t.PASTURE_HERD[t.pastureLand(z)].includes(c.id):t.LIVESTOCK[z.races[0]].includes(c.id)}),'every village and town has a herd: a pasture’s of its land’s animals (workplaces), else of its people’s livestock');
  // fleeing and tiring
  const deer={crit:true,id:'deer',x:0,y:0,hx:0,hy:0,n:3,t:0,a:0,dir:1,tire:0,cool:0};const spot=W.critters.find(c=>!c.home);deer.x=deer.hx=spot.x;deer.y=deer.hy=spot.y;
  W.critters=[deer];P.x=deer.x-30;P.y=deer.y;G.mode='world';G.modal=false;G.encCool=0;t.hidePanel();
@@ -65,7 +65,7 @@ try{
   const sp=t.penSpots(ash,0);ok(t.fieldsOf(ash,'pasture')&&sp.length===Math.min(cow.n,t.fieldsOf(ash,'pasture').tiles.length)&&sp.every(q=>t.fieldsOf(ash,'pasture').tiles.some(([x,y])=>x===q.tx&&y===q.ty)),'it is drawn in its pasture instead: '+sp.length+' cattle on its fenced tiles');
   const ents=[];t.penEnts(ash,ents,{x:0,y:0});ok(ents.length===sp.length&&ents.every(e=>e.y>0&&typeof e.f==='function'),'its animals are drawn among the rest by depth, with the estate (one entry each)')}
  // the pasture animals stay inside their fence over time, every kind of livestock, two of a small kind to a tile
- {const bad=[];let n=0;for(const id of ['cow','sheep','pig','goat','hen']){cow.id=id;cow.n=9;for(let k=0;k<240;k++){const now=k*137.3;for(const q of t.penSpots(ash,now)){n++;const x0=q.tx*16,y0=q.ty*16,w=q.a.cw||q.a.width,h=q.a.ch||q.a.height;
+ {const bad=[];let n=0;for(const id of ['cow','sheep','pig','goat','hen','camel','buffalo','tamereindeer']){cow.id=id;cow.n=9;for(let k=0;k<240;k++){const now=k*137.3;for(const q of t.penSpots(ash,now)){n++;const x0=q.tx*16,y0=q.ty*16,w=q.a.cw||q.a.width,h=q.a.ch||q.a.height;
      if(q.x-w/2<x0+1||q.x+w/2>x0+15||q.y>y0+14||q.y-h<y0)bad.push(id+'@'+now+' '+q.x.toFixed(1)+','+q.y)}}}
   ok(n>1000&&!bad.length,'pasture animals stay inside their fenced tiles at every moment ('+n+' places, cattle one a tile, the small kinds two)'+(bad.length?': '+bad.slice(0,4).join('; '):''));
   cow.id='sheep';ok(t.penSpots(ash,0).length===Math.min(9,2*t.fieldsOf(ash,'pasture').tiles.length),'two sheep to a fenced tile');cow.id='cow';cow.n=4}

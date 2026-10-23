@@ -11,7 +11,7 @@
 // (lots.js estTrack: the workers' way through the woods, router.js WAY.folk). The bandits, beasts, lords and fears sent away.
 // Today's map's Fernhollow, across its lake, INFO (below). And on the generated worlds every holding that wants a lumber camp
 // (Buildings init, its cap left out) and has a spot for one has one: a spot by the woods as lots.js asks (lotFits: free, on its own
-// land, two trees by it at least; clear of the town's yard and the bandits; its door walked to, not far round, lotWalks) within 12
+// land, its woods round it, data/economy.js ESTATE_LAND; clear of the town's yard and the bandits; its door walked to, not far round, lotWalks) within 12
 // tiles, or out to LOT_FAR[0] with its door at most LOT_FAR[1] steps from the gate (play-test 4: Redspire's, on Normal s1, its woods
 // past 12 tiles on its own bank); those with woods near but no such spot, INFO.
 const WAYS_BY=.95,WAYS_ROUND=2;
@@ -57,7 +57,7 @@ Kit.suite(({ok,info})=>{
     const w=t.lotWalk(z).all,k=t.lotSize(t.ESTATE_LOT.lumber),wb=t.wallBox(z);let spot=null,wood=false;
     for(let y=z.ty-1-R0;y<=z.ty-1+R0&&!spot;y++)for(let x=z.tx-R0;x<=z.tx+R0&&!spot;x++){const d=Math.hypot(x+k/2-.5-z.tx,y+k/2-.5-(z.ty-1));if(d<3||d>R0)continue;
      if(t.tAt(x,y)===t.T_FOREST&&t.walkTo(z,x,y))wood=true;
-     if(wb&&x+k>wb.x0-1&&x<=wb.x1+1&&y+k>wb.y0-1&&y<=wb.y1+1||!t.lotFits(z,x,y,k,'forest',true)||t.nearBandits(x+k/2-.5,y+k/2-.5,t.BANDIT_GAP+k/2)||!t.lotWalks(z,x,y,k)||d>12&&t.placeWalkSteps(w,x+(k>>1),y+k-1)>S0)continue;spot=[x,y]}
+     if(wb&&x+k>wb.x0-1&&x<=wb.x1+1&&y+k>wb.y0-1&&y<=wb.y1+1||!t.lotFits(z,x,y,k,'lumber',true)||t.nearBandits(x+k/2-.5,y+k/2-.5,t.BANDIT_GAP+k/2)||!t.lotWalks(z,x,y,k)||d>12&&t.placeWalkSteps(w,x+(k>>1),y+k-1)>S0)continue;spot=[x,y]}
     if(spot)miss.push(z.name+' (a spot at '+spot.join(',')+')');else if(wood)none.push(z.name)}
    if(none.length)info(name+': lumber camps wanted with woods near but no spot for one (the woods in the town’s yard, on another’s land, too few trees together, far round or past '+S0+' steps, by bandits): '+none.join(', '));
    ok(!miss.length,name+': every holding that wants a lumber camp ('+n+') and has a spot for one has one'+(miss.length?': not '+miss.join(', '):''))}

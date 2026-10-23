@@ -74,13 +74,28 @@ const habitatOk=(id,x,y)=>{const tags=habitatAt(x,y);return CRITTERS[id].where.s
 // is not a function of its draws: once the browser optimizes its caller it compares in another order and draws fewer, so a
 // new game's later draws hung on how warm the page was)
 function drawShuffle(a){const R=critRng();a=a.slice();for(let s=1;s<a.length;s++){const p=a[s];let l=0,r=s;while(l<r){const m=(l+r)>>1;if(R.next()-.5<0)r=m;else l=m+1}a.splice(s,1);a.splice(l,0,p)}return a}
+/* a pasture's herd: one of its land's animals (PASTURE_HERD), its people's taste tipping the choice, the same for a holding every
+   game (its own hash). Its land: the climate where its barn stands; on the grass, hills or the forest's edge round it
+   (PASTURE_LAND; the land as it lay before the estates' tracks, lots.js kindWas), else grass. What the pasture makes of it: its
+   kind's own make, else MAKE.pasture's (estates.js Estate makes) */
+function pastureLand(t){
+  const l=lotAt(t,'pasture'),x0=l?l.x+(l.n>>1):t.tx,y0=l?l.y+(l.n>>1):t.ty,c=climAt((x0+.5)*TILE,(y0+.5)*TILE),L=PASTURE_LAND;if(c!=='grass')return c;
+  const was=trackWas();let n=0,hill=0,wood=0;for(let y=y0-L.r;y<=y0+L.r;y++)for(let x=x0-L.r;x<=x0+L.r;x++){const g=kindWas(was,x,y);n++;if(g===T_HILL||g===T_MOUNT)hill++;else if(g===T_FOREST)wood++}
+  return hill>=n*L.hill?'hills':wood>=n*L.wood?'forest':'grass'}
+function pastureHerd(t){
+  const ks=PASTURE_HERD[pastureLand(t)],like=LIVESTOCK[t.races[0]]||LIVESTOCK.human,w=ks.map(k=>like.includes(k)?PASTURE_LAND.taste:1);
+  let r=hash(t.tx,t.ty,93)*w.reduce((a,b)=>a+b,0);for(let i=0;i<ks.length;i++){r-=w[i];if(r<0)return ks[i]}return ks[ks.length-1]}
+const herdMake=t=>CRITTERS[pastureHerd(t)].make||MAKE.pasture.out;
+// (a herd of a holding with a pasture: of the kind its pasture keeps (one that grazed by the holding before its pasture was built)
+function herdKind(c){const t=c.home&&townBy(c.home);if(!t||!bldLv(t,'pasture'))return;const id=pastureHerd(t);if(c.id!==id){c.id=id;c.n=Math.min(c.n,CRITTERS[id].herd[1])}}
 // one herd grazing beside a holding, of an animal its people keep and its land can feed: inside the pasture fence if it has one
+// (of its pasture's kind: pastureHerd)
 function spawnHerd(t){
   const kinds=drawShuffle(LIVESTOCK[t.races[0]]||LIVESTOCK.human),sp=typeof bldSpots==='function'&&bldLv(t,'pasture')?bldSpots(t).pasture:null;
   // (a pasture's herd grazes the middle of its fields (or round the barn, if it has none), a sight to see: its herders are met at
   // the pasture itself (estates.js estateMeet))
   if(sp){const F=fieldsOf(t,'pasture'),lv=bldLv(t,'pasture'),w=16+6*lv,h=12+3*lv,pen=F?{town:t.name,k:'pasture'}:{x:sp.x-w/2+3,y:sp.y-h/2+3,w:w-6,h:h-6},at=F||sp,
-      grazers=kinds.filter(id=>id!=='hen'),id=(grazers.length?grazers:kinds)[0],D=CRITTERS[id];
+      id=pastureHerd(t),D=CRITTERS[id];
     W.critters.push(asHerd({crit:true,decor:true,id,x:at.x,y:at.y,hx:at.x,hy:at.y,pen,n:critRng().int(D.herd[0],D.herd[1]),home:t.name,t:0,a:0,dir:1,tire:0,cool:0,milked:0}));return true}
   for(const id of kinds){const D=CRITTERS[id],near=id==='hen';
     for(let k=0;k<160;k++){const R=critRng(),a=R.next()*6.283,d=(near?22:30)+R.next()*(near?10:18)+k*.5,// wider out if it finds no room close by
@@ -92,14 +107,14 @@ function spawnHerd(t){
 }
 const herdOf=t=>W.critters.find(c=>c.home===t.name);
 // (a pasture herd from before: moved to the middle of its fields, to be seen only)
-function herdToFields(c){const t=c.home&&townBy(c.home),F=t&&bldLv(t,'pasture')&&fieldsOf(t,'pasture');if(!c.pen||!t)return;c.decor=true;if(F&&!c.pen.town){c.pen={town:t.name,k:'pasture'};c.x=c.hx=F.x;c.y=c.hy=F.y}}
+function herdToFields(c){herdKind(c);const t=c.home&&townBy(c.home),F=t&&bldLv(t,'pasture')&&fieldsOf(t,'pasture');if(!c.pen||!t)return;c.decor=true;if(F&&!c.pen.town){c.pen={town:t.name,k:'pasture'};c.x=c.hx=F.x;c.y=c.hy=F.y}}
 // (the wild game: as much as the world's density, data/world.js)
 function initCritters(){TOWNS.filter(t=>t.T.herds).forEach(spawnHerd);for(let i=0,n=density(WM).critterStart;i<n;i++)spawnCritter(true)}
 // each day: game returns, herds regrow and empty pastures restock
 function critterDay(){
   const R=critRng(),D=density(WM);
   for(let k=0;k<D.daily.critters;k++)if(W.critters.filter(c=>!c.home).length<D.critterCap&&R.chance(.7))spawnCritter(false);
-  for(const c of W.critters){const D=CRITTERS[c.id];if(c.n<D.herd[1]&&R.chance(c.home?.35:.15))c.n++}
+  for(const c of W.critters){herdKind(c);const D=CRITTERS[c.id];if(c.n<D.herd[1]&&R.chance(c.home?.35:.15))c.n++}
   TOWNS.filter(t=>t.T.herds&&!herdOf(t)&&R.chance(.25)).forEach(spawnHerd);
 }
 // move every herd: wild game bolts when you come close and tires as it runs; livestock just grazes
@@ -129,8 +144,9 @@ function hunt(c){
   updateHUD(true);
 }
 /* sprites: the animals on the world map's scale (doc/WORLD_DESIGN.md §10.1: a person stands 10 high there, a house 16): a cow 9 × 5
-   inside its outline, a deer 7 × 6 (a stag or a reindeer with its antlers over that), a sheep, a pig or a goat 4 × 3, a hen, a
-   rabbit, a hare or a fowl 4 × 3; drawn pixel by pixel, side-on facing right, in its colour's hue-shifted ramp (engine PX.ramp:
+   inside its outline (a water buffalo the same, its horns swept back), a camel 10 × 7 (its hump and neck), a deer 7 × 6 (a stag or
+   a reindeer with its antlers over that), a sheep, a pig or a goat 4 × 3, a hen, a rabbit, a hare or a fowl 4 × 3; drawn pixel by
+   pixel, side-on facing right, in its colour's hue-shifted ramp (engine PX.ramp:
    h its light, H the coat, d its shade, k darker; w white, e eye, n nose, b beak, y legs, r comb, a antler, o horn, s spots, f a
    face), with the people's outline (people.js), each in the smallest power-of-two cell it fits (8, 16: sprites.js cellOf). rows:
    the body over the legs; legs: two steps (under it, then apart), walked in PX.MAP_STEPS frames (engine/beasts.js PX.mapLegs; f 0
@@ -148,10 +164,12 @@ const CRITTER_MAP={
   rabbit:{rows:['..h.','whHe'],legs:[['.dd.'],['d..d']]},
   hare:{rows:['..hd','whHe'],legs:[['.dd.'],['d..d']]},
   hen:{rows:['d.r.','dhHb'],legs:[['.y.y'],['y.y.']]},
+  camel:{rows:['....h...he','...hHh..Hn','.hhHHHh.H.','dHHHHHHHH.','.dHHHHHd..'],legs:[['..kH..kH..','..kH..kH..'],['..kH..kH..','.k.H.k..H.']]},
+  buffalo:{x:{n:'#2a2628'},rows:['.....ooo.','.hhhhhhHe','dHHHHHHHn','.dHHHHHd.'],legs:[['.kH..kH..'],['k.H.k..H.']]},
   fowl:{rows:['..hH','dhHb'],legs:[['.y.y'],['y.y.']]}
 };
 function critterSprite(id,f){f=(f||0)%PX.MAP_STEPS;const k='cr'+id+f;if(spr[k])return spr[k];
-  const D=CRITTERS[id],T=CRITTER_MAP[id],R=PX.ramp(D.col),rows=T.rows.concat(PX.mapLegs(T.legs[0],T.legs[1],f)),g=pgrid(Math.max(...rows.map(r=>r.length))+2,rows.length+2),
+  const D=CRITTERS[id],T=CRITTER_MAP[D.look||id],R=PX.ramp(D.col),rows=T.rows.concat(PX.mapLegs(T.legs[0],T.legs[1],f)),g=pgrid(Math.max(...rows.map(r=>r.length))+2,rows.length+2),
     col={h:R[0],H:R[1],d:R[2],k:R[3],w:'#f4f0e8',e:'#1a1410',n:'#e8a0a0',b:'#e8b94a',y:'#d8963a',r:'#d83a2a',a:'#d8c8a0',o:'#a89a7a',s:D.spots||R[3],...(T.x||{})};
   rows.forEach((r,y)=>[...r].forEach((c,x)=>{if(col[c])pset(g,x+1,y+1,col[c])}));poutline(g);return spr[k]=cellOf(pcanvas(g))}
 // its work in the world's day and frame (core/systems.js)

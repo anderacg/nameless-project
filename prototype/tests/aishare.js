@@ -47,7 +47,10 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
   // (the generated world's 28831f27 re-recorded 2026-10-23, on purpose, the owner's hideouts deep in the wilds (agent HO: tests/
   //  worldprint.js W6-W8, B2): 30 hideouts on the wild land (was 61), so begin's draws move; with every hideout rule off, and with
   //  only their placement and count off, 1e654a07 as before)
-  {const B=battle(4242);B.noMorale=true;B.sel=null;key('a');const a=B.auto&&t.aiAll();run(B,60);const fp=print(B),REC='28831f27';
+  // (the generated world's f8ef51d3 re-recorded 2026-10-23, on purpose, workplaces where they make sense (agent EW: tests/
+  //  worldprint.js W1, W3-W8, B2): estates where their land suits them, so begin's draws and the battle's ground move; with the new
+  //  rules off 28831f27 as before)
+  {const B=battle(4242);B.noMorale=true;B.sel=null;key('a');const a=B.auto&&t.aiAll();run(B,60);const fp=print(B),REC='f8ef51d3';
    ok(a&&fp===REC,'A with nothing selected, your army and an ally’s against the enemy (seed 4242, no morale): the whole-army AI plays the very battle it did before ('+fp+', recorded '+REC+', '+B.t.toFixed(1)+' s)')}
   {const L=t.BattleLab,Gp=(type,count)=>({type,count}),lab=mor=>{if(L.active)L.exit();G.mode='world';G.modal=false;L.start({leftGroups:[Gp('hum_spear',16),Gp('hum_bow',12),Gp('hum_knight',6)],rightGroups:[Gp('hum_levy',20),Gp('hum_bow',12),Gp('hum_spear',10)],deploy:false,ai:false,paused:false,morale:mor,seed:42});return t.B};
    Math.random=t.seeded(1);t.act('begin','soldier');G.quietEvents=true;t.GUIDE.on=false;const REC={false:'596d6d9c',true:'17c1387b'};run(lab(false),60);// (to warm up)

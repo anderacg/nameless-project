@@ -214,7 +214,17 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 //  round an oasis or a pond (engine/worldnature.js PX.WN_RING) now runs on under clear ground, toned, so a holding's yard over it
 //  takes its colour; its palms and tufts still keep off. Only the painted world moves; W1-W4, W7, W8 and B2 unchanged. Were W5
 //  b11af87c, W6 8157cbb7)
-const EXPECT={W1:'47419c85',W2:'975f62a1',W3:'154e87e1',W4:'8e6f8677',W5:'9dbdfd42',W6:'1c8e6188',W7:'83187faa',W8:'cb53c8cb',B2:'06f1b51d'};
+// (W1, W3-W8 and B2 re-recorded 2026-10-23, on purpose, workplaces where they make sense (agent EW: data/economy.js ESTATE_LAND,
+//  lots.js landFits and rockYaw, resources.js resOut, data/critters.js PASTURE_HERD; tests/workplaces.js): a mine only at the rock
+//  by its land's ore (15 on the classic world, now 6), a quarry at the rock, a lumber camp in real woods, a farm on fertile ground,
+//  a mine's and a quarry's back to the rock, so the holdings' estates and lots (W3), the estates' tracks laid on the tiles (W1) and
+//  the land reckoned along them (W4), the painted world (W5) and its views (W6, all six parts: aea09d60 323c4da9 4c7d8e02 5a7027b0
+//  b0cc9ffe fc5b002c), the workers and the pastures' herds of their land's animals (W8), and the saves (W7, B2) move; W2, the
+//  deposits, holds. Checked: with the new rules off (ESTATE_LAND as the old rules: a lumber camp 2 wooded tiles, a mine or quarry 1
+//  tile at the rock, no ore near, no fertile ground, no facing; resOut's iron and copper from nothing; the pasture's herd its people's
+//  first grazer) all nine are as before. Were W1 47419c85, W3 154e87e1, W4 8e6f8677, W5 9dbdfd42, W6 1c8e6188, W7 83187faa,
+//  W8 cb53c8cb, B2 06f1b51d)
+const EXPECT={W1:'2ba57e1b',W2:'975f62a1',W3:'224e40e8',W4:'29fda26b',W5:'f284901d',W6:'b5185fc6',W7:'343f89d9',W8:'f10260e8',B2:'c1a2ab6a'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended

@@ -43,11 +43,11 @@ function genDeposits(map,holdings){
 // what a holding's land holds: {good: richness} over its home deposit and the others within RES_RANGE (kept till a new world)
 function resOf(t){if(t._res)return t._res;const o={};for(const d of DEPOSITS)if(d.home===t.name||Math.hypot(d.tx-t.tx,d.ty-t.ty)<=RES_RANGE)o[d.g]=(o[d.g]||0)+d.rich;return t._res=o}
 const resHas=(t,kind)=>Object.keys(resOf(t)).filter(g=>(ORE_W[g]?'ore':'fish')===kind);
-// a day's yield per level of its mine (the ores of its veins, or poor seams of iron and copper where it has none) or its port
+// a day's yield per level of its mine (the ores of its veins: a holding with none has no mine, lots.js landFits) or its port
 // (fish, ships' spice, and the catch of its fishing grounds)
 function resOut(t,k){
   const o={},R=resOf(t);
-  if(k==='mine'){for(const g of resHas(t,'ore'))o[g]=RES_RATE[g]*Math.min(2,R[g]);if(!Object.keys(o).length){o.iron=1.5;o.copper=1}}
+  if(k==='mine'){for(const g of resHas(t,'ore'))o[g]=RES_RATE[g]*Math.min(2,R[g])}
   else if(k==='port'){Object.assign(o,MAKE.port.out);for(const g of resHas(t,'fish'))o[g]=RES_RATE[g]*Math.min(2,R[g])}
   return o;
 }

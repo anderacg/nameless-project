@@ -80,6 +80,12 @@ class Estate extends WorldObject{
     for(let i=0;i<L.length;i++)if(L[i]<=G.day){if((t.pop||0)>GUARDS.minPop){t.pop--;L.splice(i--,1)}else L[i]=G.day+1}
     if(!L.length)delete t.gd[this.k]}
 
+  // what it makes a level a day: a mine's or a port's what its land holds (resources.js resOut), a pasture's what its herd gives
+  // (critters.js herdMake), else its kind's (MAKE)
+  makes(){
+    const t=this.#t,k=this.k;
+    return k==='mine'||k==='port'?resOut(t,k):k==='pasture'?herdMake(t):MAKE[k].out}
+
   /* its day's work (economy.js Economy produce): ws, how much of the work its holding's people staff; clim, the climate; add(g, n)
      into the holding's stock. Workshops first take their inputs: as many batches as the stock allows; farms, pastures and
      quarries make what their fields allow; a sabotaged one or one short of hands makes nothing or less */
@@ -88,7 +94,7 @@ class Estate extends WorldObject{
     if(!lv||!M.out||this.sabotaged())return;
     let f=lv*ws*this.fieldShare()*handsLeft(t,k);if(M.in)for(const g in M.in)f=Math.min(f,(st[g]||0)/M.in[g]);if(f<=0)return;
     if(M.in)for(const g in M.in)st[g]-=Math.round(M.in[g]*f);
-    const O=k==='mine'||k==='port'?resOut(t,k):M.out;// mines and ports bring up what their land holds (resources.js)
+    const O=this.makes();
     for(const g in O)add(g,O[g]*f*(k==='farm'?FARM_CLIM[clim]:1));
     if(k==='workshop'&&clim==='frost')add('furs',f)}
 }

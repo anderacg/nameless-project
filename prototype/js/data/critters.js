@@ -23,12 +23,24 @@ const CRITTERS={
   sheep:{n:'Sheep',one:'sheep',live:true,herd:[3,6],meat:4,spd:12,size:2,col:'#eeeae0',wool:true},
   pig:{n:'Pigs',one:'pig',live:true,herd:[2,4],meat:5,spd:12,size:2,col:'#e0a0a0'},
   goat:{n:'Goats',one:'goat',live:true,herd:[2,4],meat:3,spd:14,size:2,col:'#a89880',horns:true},
-  hen:{n:'Hens',one:'hen',live:true,herd:[3,6],meat:1,spd:12,size:1,col:'#c87a3a',bird:true}
+  hen:{n:'Hens',one:'hen',live:true,herd:[3,6],meat:1,spd:12,size:1,col:'#c87a3a',bird:true},
+  // (the land's own, kept only in its pastures (PASTURE_HERD): make, what their pasture makes a level a day in place of MAKE.pasture's;
+  // a camel's and a reindeer's hides are furs. look: drawn as another kind, critters.js CRITTER_MAP; a kept reindeer one to a fenced
+  // tile as a cow, size 3, its antlers high)
+  camel:{n:'Camels',one:'camel',live:true,herd:[2,4],meat:6,spd:14,size:3,col:'#c8a070',make:{milk:3,cheese:.6,meat:1,furs:.75}},
+  buffalo:{n:'Water buffalo',one:'water buffalo',live:true,herd:[2,4],meat:8,spd:12,size:3,col:'#55525a',horns:true,make:{meat:2.5,milk:3,cheese:.8}},
+  tamereindeer:{n:'Reindeer',one:'reindeer',live:true,herd:[3,5],meat:5,spd:12,size:3,col:'#8c7a66',antlers:true,look:'reindeer',make:{meat:2,milk:1.5,cheese:.5,furs:.6}}
 };
 // where each kind of livestock can graze: ground (open, hills, forest) and climates (null: any)
 const GRAZE={cow:{on:['open'],clim:['grass','swamp','frost']},sheep:{on:['open','hills'],clim:['grass','frost']},pig:{on:['open','forest'],clim:['grass','swamp','desert']},
-  goat:{on:['open','hills'],clim:null},hen:{on:['open'],clim:null}};
-// which animals each people keeps
+  goat:{on:['open','hills'],clim:null},hen:{on:['open'],clim:null},camel:{on:['open','hills'],clim:['desert']},buffalo:{on:['open'],clim:['swamp','grass']},
+  tamereindeer:{on:['open','hills'],clim:['frost']}};
+// which animals each people keeps (a holding's herd with no pasture; a pasture's taste)
 const LIVESTOCK={human:['cow','sheep','pig','hen'],dwarf:['goat','pig','sheep'],elf:['sheep','hen','goat'],orc:['pig','goat','cow']};
+/* a pasture's herd (critters.js pastureHerd; the owner, 2026-10-23): its land chooses the animals: the climate where its barn
+   stands, and on the grass the ground round it (PASTURE_LAND: hills, or the forest's edge, this share of the tiles within r tiles
+   of it); its people's taste only tips the choice between them (taste: an animal they keep, LIVESTOCK, weighs this much more) */
+const PASTURE_HERD={grass:['cow','sheep'],hills:['sheep','goat'],forest:['pig','goat'],frost:['tamereindeer','sheep'],desert:['goat','camel'],swamp:['pig','buffalo']};
+const PASTURE_LAND={r:4,hill:.3,wood:.3,taste:1.5};
 // today's wild game at most and at the start (a world's own: density(), data/world.js)
 const CRITTER_CAP=density().critterCap,CRITTER_START=density().critterStart;

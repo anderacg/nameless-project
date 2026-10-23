@@ -29,11 +29,15 @@ class Buildings{
   canHave(k){
     const t=this.t;
     if(lotAt(t,k))return true;t._can=t._can||{};if(t._can[k]!=null)return t._can[k];
-    const inner=INNER.includes(k),wb=t.layout.wallBox(),R=()=>.5;
-    return t._can[k]=estateTypes(t,k).some(type=>{const n=lotSize(type);return !!(inner?lotSpot(t,n,'open',1,Math.max(9,t.T.ring),R,{estate:true,gap:'row'}):lotSpot(t,n,groundOf(k),3,k==='port'&&t.style==='port'?20:12,R,{estate:true,gate:true,outside:wb&&{x0:wb.x0-1,y0:wb.y0-1,x1:wb.x1+1,y1:wb.y1+1},fields:PLOTS[k]?k:null,sea:k==='port'&&t.style==='port'}))})}
+    const R=()=>.5;
+    return t._can[k]=estateTypes(t,k).some(type=>!!t.layout.estateSpot(k,lotSize(type),R))}
   // the highest level it may raise an estate to (0: no room for one)
   cap(k){return this.canHave(k)?this.t.T.estMax:0}
-  // what it starts with: what its land and trade suggest
+  // why it can have none: what its land lacks (ESTATE_LAND why; ore in the land but no room at the rock by it), else no room
+  whyNot(k){
+    const L=ESTATE_LAND[k];
+    return !L?'No room in '+this.t.name:L.ore&&resHas(this.t,'ore').length?'No room at the rock by its ore':L.why}
+  // what it starts with: what its land and trade suggest (none where its land has no spot for one: cap)
   init(){
     const t=this.t,R=seeded(t.seed*131+7),m=t.mod||{},b={},v=!!t.T.rural,c=!!t.T.fort;
     const set=(k,lv)=>{b[k]=Math.min(this.cap(k),Math.max(0,lv))};

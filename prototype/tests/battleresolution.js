@@ -60,7 +60,11 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t
   //  tests/worldprint.js W6-W8, B2): 30 hideouts on the wild land (was 61 by the land), so begin's draws for its sites move, and
   //  with them what follows before these battles; with every hideout rule off, and with only their placement and count off, all
   //  fifteen as before. Were field_win 05ff26eb, auto_win 4664c7e8, auto_resolve f0b30b40)
-  const REC={field_win:'0fefb0ff',field_loss:'56b1108c',retreat_away:'f8f6004f',retreat_caught:'630f1c46',carried_retreat:'accd790c',tournament_win:'8932be2e',tournament_loss:'cde78eef',siege_win:'edd807d9',siege_loss:'36304164',lord_win:'4e076fb6',lord_loss:'58646d0e',monster_win:'9d5eedba',auto_win:'24e7d393',auto_loss:'b0ae7cc2',auto_resolve:'8f1a81fe'};
+  // (field_win, lord_win and auto_win re-recorded 2026-10-23, on purpose, workplaces where they make sense (agent EW: tests/
+  //  worldprint.js W1, W3-W8, B2): the holdings' mines, quarries, lumber camps and farms where their land suits them, and the
+  //  pastures' herds by their land, so begin's draws and the ground round the test's band move; with the new rules off all fifteen
+  //  as before. Were field_win 0fefb0ff, lord_win 4e076fb6, auto_win 24e7d393)
+  const REC={field_win:'05ff26eb',field_loss:'56b1108c',retreat_away:'f8f6004f',retreat_caught:'630f1c46',carried_retreat:'accd790c',tournament_win:'8932be2e',tournament_loss:'cde78eef',siege_win:'edd807d9',siege_loss:'36304164',lord_win:'7cac52e8',lord_loss:'58646d0e',monster_win:'9d5eedba',auto_win:'72a77fe4',auto_loss:'b0ae7cc2',auto_resolve:'8f1a81fe'};
   const stable=x=>Array.isArray(x)?x.map(stable):x&&typeof x==='object'?Object.fromEntries(Object.keys(x).sort().map(k=>[k,stable(x[k])])):x;
   const hash=x=>{let h=2166136261;for(const c of JSON.stringify(stable(x)))h=Math.imul(h^c.charCodeAt(0),16777619)>>>0;return h.toString(16).padStart(8,'0')};
   const cases=['field_win','field_loss','retreat_away','retreat_caught','carried_retreat','tournament_win','tournament_loss','siege_win','siege_loss','lord_win','lord_loss','monster_win','auto_win','auto_loss','auto_resolve'];

@@ -109,26 +109,39 @@ function lotHouseholds(t,l){if(l._hh!=null)return l._hh;const s=lotSpec(t,l),q=s
    past high (WM.elev), highland; woods a wood share, forest; else the grass. The land as it lay before the estates' tracks (their
    tiles as they were: EST_TRACKS), so a loaded game, its tracks laid again, reads the same. Kept on the holding (t._env) */
 const LAND_ENV={r:6,shore:2,hill:.22,high:170,wood:.3};
-function holdingEnv(t){if(t._env)return t._env;const E=LAND_ENV,r=E.r,was=new Map();let n=0,hill=0,wood=0,sea=false;
-  for(const q of EST_TRACKS.get(WM)||[])q.laid.forEach((i,j)=>{if(!was.has(i))was.set(i,q.was[j])});
+// (the tiles the estates' tracks were laid over, and what each was (EST_TRACKS): i -> its kind before; and a tile's kind as it was:
+// what a lot's land, its facing and a pasture's herd are reckoned by, the same whatever was laid after)
+const trackWas=()=>{const was=new Map();for(const q of EST_TRACKS.get(WM)||[])q.laid.forEach((i,j)=>{if(!was.has(i))was.set(i,q.was[j])});return was};
+const kindWas=(was,x,y)=>x>=0&&x<MW&&was.has(y*MW+x)?was.get(y*MW+x):tAt(x,y);
+function holdingEnv(t){if(t._env)return t._env;const E=LAND_ENV,r=E.r,was=trackWas();let n=0,hill=0,wood=0,sea=false;
   for(let y=t.ty-r;y<=t.ty+r;y++)for(let x=t.tx-r;x<=t.tx+r;x++){if(x<0||y<0||x>=MW||y>=MH)continue;const k=was.has(y*MW+x)?was.get(y*MW+x):tiles[y*MW+x];n++;if(k===T_HILL||k===T_MOUNT)hill++;else if(k===T_FOREST)wood++;
     else if(k===T_WATER&&!(WM.river[y*MW+x]&3)&&Math.abs(x-t.tx)<=E.shore+1&&Math.abs(y-t.ty)<=E.shore+1)sea=true}
   return t._env=sea||t.style==='port'?'coast':hill>=n*E.hill||WM.elev[t.ty*MW+t.tx]>=E.high?'highland':wood>=n*E.wood?'forest':'grass'}
 const lotEnv=(t,l)=>{const c=climAt((l.x+l.n/2)*TILE,(l.y+l.n/2)*TILE);return c==='grass'?holdingEnv(t):c};
 /* which way a lot faces (the owner's: each to its street; PX.MODEL_YAWS: S 0, W 2, N 4, E 6): its nearest road or track (a road
    tile) within LOT_FACE tiles of it, else its holding's gate; a port its pier's water; the centre straight on. An outer estate
-   turns to the track laid to it (estTrack). Kept on the lot (l.yaw: saved) */
-const LOT_FACE=6;
+   turns to the track laid to it (estTrack). A mine or a quarry turns its back to the rock instead (rockYaw). Kept on the lot
+   (l.yaw: saved) */
+const LOT_FACE=6,LOT_ROCK={r:3,pull:3};
 const faceTo=(l,px,py)=>{const dx=px-(l.x+l.n/2),dy=py-(l.y+l.n/2);return Math.abs(dx)>Math.abs(dy)?(dx>0?6:2):dy<0?4:0};
+// (a mine's or a quarry's back to the rock (ESTATE_LAND face): its way away from the hills and peaks within LOT_ROCK.r tiles of it,
+// their pull summed (tiles), as the land lay before the estates' tracks; null: not such a work, or no side pulls LOT_ROCK.pull (rock
+// all round, or none): it faces its way as the others do)
+function rockYaw(l){
+  if(!(ESTATE_LAND[l.k]&&ESTATE_LAND[l.k].face))return null;const n=l.n,cx=l.x+n/2,cy=l.y+n/2,r=LOT_ROCK.r,was=trackWas();let ax=0,ay=0;
+  for(let y=l.y-r;y<l.y+n+r;y++)for(let x=l.x-r;x<l.x+n+r;x++){const g=kindWas(was,x,y);if(g===T_HILL||g===T_MOUNT){ax+=x+.5-cx;ay+=y+.5-cy}}
+  return Math.hypot(ax,ay)>=LOT_ROCK.pull?faceTo(l,cx-ax,cy-ay):null}
 function lotYaw(t,l){if(l.k==='centre')return 0;const n=l.n,cx=l.x+n/2,cy=l.y+n/2;
   if(l.k==='port'){const w=pierWater(l.x,l.y,n);if(w>=0)return faceTo(l,w%MW+.5,(w-w%MW)/MW+.5)}
+  const ry=rockYaw(l);if(ry!=null)return ry;
   let best=null,bd=1e9;for(let y=l.y-LOT_FACE;y<l.y+n+LOT_FACE;y++)for(let x=l.x-LOT_FACE;x<l.x+n+LOT_FACE;x++){if(tAt(x,y)!==T_ROAD)continue;const d=Math.hypot(x+.5-cx,y+.5-cy);if(d<bd){bd=d;best=[x+.5,y+.5]}}
   return best?faceTo(l,best[0],best[1]):faceTo(l,t.tx+.5,t.ty+1.5)}
 
 /* where a lot may stand */
-// the ground each kind needs under it: open ground (or hills) for most; forest for the woodcutter; rock for mines and quarries (a
-// hill, or a mountain beside, under one of its tiles: lotFits; the rest open, hill or wooded, a mine head of 32 px on the hill's
-// woody flank); the shore for a port. Never water, mountains or roads, never on another lot, never beyond its holding's land.
+// the ground each kind needs under it: open ground (or hills) for most; forest for the woodcutter; rock for mines and quarries (most
+// of its tiles on a hill or beside a mountain, data/economy.js ESTATE_LAND: landFits; the rest open or wooded); the shore for a
+// port. Never water, mountains or roads, never on another lot, never beyond its holding's land. What its land must hold round it:
+// landFits
 const lotGround={
   open:(x,y)=>{const g=tAt(x,y);return g===T_OPEN||g===T_HILL},
   forest:(x,y)=>{const g=tAt(x,y);return g===T_FOREST||g===T_OPEN},
@@ -151,7 +164,23 @@ function pierOk(t,x,y,n){const w=pierWater(x,y,n);return w>=0&&portWater(WM)[w]>
 const LOT_BROOK=1;
 function brookAt(x,y){return x>=0&&y>=0&&x<MW&&y<MH&&genBrook(WM,y*MW+x)}
 const nearT=(x,y,type,r)=>{for(let j=-r;j<=r;j++)for(let i=-r;i<=r;i++)if(tAt(x+i,y+j)===type)return true;return false};
-const groundOf=k=>k==='lumber'?'forest':k==='mine'||k==='quarry'?'rock':k==='port'?'shore':'open';
+const groundOf=k=>ESTATES[k].ground||'open';
+// (the wooded tiles in and round an n x n lot at (x, y); is a tile at the rock: a hill, or beside a mountain)
+const woods=(x,y,n)=>{let f=0;for(let j=-1;j<=n;j++)for(let i=-1;i<=n;i++)if(tAt(x+i,y+j)===T_FOREST)f++;return f};
+const atRock=(x,y)=>tAt(x,y)===T_HILL||nearT(x,y,T_MOUNT,1);
+// (fertile ground, FERTILE: anywhere but the desert's dry sand; there, moist enough, or by water: an oasis, a river)
+const fertileAt=(x,y)=>{const i=y*MW+x;return CLIMS[climate[i]]!=='desert'||WM.moist[i]>=FERTILE.moist||nearT(x,y,T_WATER,FERTILE.water)};
+// (an ore vein of holding t's land (resources.js resOf: its own, or within RES_RANGE of it) within r tiles of an n x n lot at (x, y))
+function oreNear(t,x,y,n,r){
+  for(let j=y-r;j<y+n+r;j++)for(let i=x-r;i<x+n+r;i++){const d=i>=0&&j>=0&&i<MW&&j<MH&&DEP_AT[j*MW+i]>=0&&DEPOSITS[DEP_AT[j*MW+i]];
+    if(d&&d.kind==='ore'&&(d.home===t.name||Math.hypot(d.tx-t.tx,d.ty-t.ty)<=RES_RANGE))return true}
+  return false}
+/* what a place of work needs of its land, its building of n x n tiles at (x, y) (data/economy.js ESTATE_LAND): fertile tiles, woods
+   in and round it, its tiles at the rock, its holding's ore near, water for a pier */
+function landFits(t,x,y,n,k){
+  const L=ESTATE_LAND[k];if(!L)return true;let rock=0;
+  for(let j=0;j<n;j++)for(let i=0;i<n;i++){if(L.fertile&&!fertileAt(x+i,y+j))return false;if(atRock(x+i,y+j))rock++}
+  return !(L.rock&&rock<L.rock*n*n||L.wood&&woods(x,y,n)<L.wood*(n+2)*(n+2)||L.ore&&!oreNear(t,x,y,n,L.ore)||L.pier&&!pierOk(t,x,y,n))}
 /* where a holding's people walk (the owner's play-test 3: "estates spawn on the opposite side of the holdings, separated by a
    river; workers cannot cross"): the ground walked to from its gate within LOT_WALK tiles (worldplace.js placeWalk: 4 ways over
    walkable ground, fords and bridges, and ferries), and of it its own bank (no crossing taken). Every lot and field of it stands on
@@ -174,18 +203,17 @@ function lotWalks(t,x,y,n){
   for(let j=0;j<n;j++)for(let i=0;i<n;i++)if(!walkTo(t,x+i,y+j))return false;
   const w=lotWalk(t).all,dx=x+(n>>1)-w.x0-LOT_WALK,dy=y+n-1-w.y0-LOT_WALK;
   const d=placeWalkSteps(w,x+(n>>1),y+n-1);return d<=PLACE_HOLD.round[0]*(Math.abs(dx)+Math.abs(dy))+PLACE_HOLD.round[1]&&d<=2*Math.hypot(dx,dy)+2}
-// may an n x n lot stand at (x, y) for holding t? gap: keep a free tile between it and other buildings
+// may an n x n lot stand at (x, y) for holding t? rule: the ground under it (lotGround), or a place of work's key (its ground, and
+// what its land holds: landFits); gap: keep a free tile between it and other buildings
 function lotFits(t,x,y,n,rule,gap){
-  const ti=TOWNS.indexOf(t),okg=lotGround[rule]||lotGround.open,RB=roadPaint();
+  const E=ESTATES[rule],ti=TOWNS.indexOf(t),okg=lotGround[E?groundOf(rule):rule]||lotGround.open,RB=roadPaint();
   for(let j=0;j<n;j++)for(let i=0;i<n;i++){const X=x+i,Y=y+j;if(X<1||Y<1||X>=MW-1||Y>=MH-1||OCC[Y*MW+X]||RB[Y*MW+X]||!okg(X,Y))return false;
     const L=LAND[Y*MW+X];if(L>=0&&L!==ti)return false}
   // a free tile between it and any other building or place of work (the town's own, gap 'row', its houses and the workshops,
   // smithies, breweries, granaries and markets among them, may stand side by side in its streets; never against the centre)
   if(gap)for(let j=-1;j<=n;j++)for(let i=-1;i<=n;i++){if(i>=0&&i<n&&j>=0&&j<n)continue;const id=occAt(x+i,y+j),o=id>0&&LOT[id];if(o&&!(gap==='row'&&(o.k==='house'||INNER.includes(o.k)))&&!(o.plots||[]).some(p=>p[0]===x+i&&p[1]===y+j))return false}
-  // what each place of work needs nearby: woods, rock, water
-  if(rule==='forest'){let f=0;for(let j=-1;j<=n;j++)for(let i=-1;i<=n;i++)if(tAt(x+i,y+j)===T_FOREST)f++;if(f<2)return false}
-  if(rule==='rock'){let ok=false;for(let j=0;j<n&&!ok;j++)for(let i=0;i<n&&!ok;i++)ok=tAt(x+i,y+j)===T_HILL||nearT(x+i,y+j,T_MOUNT,1);if(!ok)return false}
-  if(rule==='shore'&&!pierOk(t,x,y,n))return false;
+  // a house cleared in the woods: two wooded tiles in and round it; a place of work: what its land holds (landFits)
+  if(rule==='forest'&&woods(x,y,n)<2||E&&!landFits(t,x,y,n,rule))return false;
   for(let j=-LOT_BROOK;j<n+LOT_BROOK;j++)for(let i=-LOT_BROOK;i<n+LOT_BROOK;i++)if(brookAt(x+i,y+j))return false;
   return true;
 }
@@ -291,17 +319,22 @@ class Layout{
   wallBox(){
     const b=this.innerBox();
     return b&&{x0:b.x0-2,y0:b.y0-2,x1:b.x1+2,y1:b.y1+2}}
+  // the best free spot for an estate's building of n x n tiles (lotSpot): an inner one by the centre (near: within 6 tiles first),
+  // an outer one beyond the walls on land that suits it (lotFits by its key: landFits), not far round, where its fields have room,
+  // a port town's harbour on its own sea
+  estateSpot(k,n,R,near){
+    const t=this.t,wb=this.wallBox();
+    if(INNER.includes(k))return near&&lotSpot(t,n,'open',1,6,R,{estate:true,gap:'row'})||lotSpot(t,n,'open',1,Math.max(9,t.T.ring),R,{estate:true,gap:'row'});
+    return lotSpot(t,n,k,3,k==='port'&&t.style==='port'?20:12,R,{estate:true,gate:true,outside:wb&&{x0:wb.x0-1,y0:wb.y0-1,x1:wb.x1+1,y1:wb.y1+1},fields:PLOTS[k]?k:null,sea:k==='port'&&t.style==='port'})}
   // place an estate's building (and keep its fields): inner ones near the centre, outer ones on their ground beyond the walls;
   // at: the tile chosen for it (when you place it yourself); st: 'built' or 'building'
   estateLot(k,R,at,st){
     const t=this.t;
-    R=R||seeded(t.seed*131+k.length);if(this.at(k))return this.at(k);const inner=INNER.includes(k),wb=this.wallBox();
+    R=R||seeded(t.seed*131+k.length);if(this.at(k))return this.at(k);const inner=INNER.includes(k);
     // (an estate with fields stands only where they have room, lotSpot o.fields)
     // (an outer one not far round; the world's water is bridged by its holdings)
     // (its building: the first of its kinds that finds room (estateTypes); placed by hand, the first)
-    let type=null,n=0,p=null;for(const ty of at?[typeFor(t,k)]:estateTypes(t,k)){type=ty;n=lotSize(ty);
-      p=at?at:inner?(lotSpot(t,n,'open',1,6,R,{estate:true,gap:'row'})||lotSpot(t,n,'open',1,Math.max(9,t.T.ring),R,{estate:true,gap:'row'})):
-        lotSpot(t,n,groundOf(k),3,k==='port'&&t.style==='port'?20:12,R,{estate:true,gate:true,outside:wb&&{x0:wb.x0-1,y0:wb.y0-1,x1:wb.x1+1,y1:wb.y1+1},fields:PLOTS[k]?k:null,sea:k==='port'&&t.style==='port'});if(p)break}
+    let type=null,n=0,p=null;for(const ty of at?[typeFor(t,k)]:estateTypes(t,k)){type=ty;n=lotSize(ty);p=at||this.estateSpot(k,n,R,true);if(p)break}
     if(!p)return null;const l=this.add({k,type,x:p[0],y:p[1],n,lv:bldLv(t,k)||1,seed:Math.floor(R()*1e6),st:st||'built'});
     if(PLOTS[k]){l.plots=fieldsFor(t,l,k);occMark(l,l.id)}
     // (one built while the world runs: its track now; the layout's own once it is laid out, tracks)
@@ -315,9 +348,10 @@ class Layout{
     for(const k of Object.keys(ESTATES)){const lv=bldLv(t,k),l=this.at(k),w=t.work&&t.work.k===k;if(lv&&!l&&!this.estateLot(k))t.bld[k]=0;else if(l){l.lv=Math.max(1,lv);const st=lv?'built':w?'building':'ruined';if(l.st!==st){l.st=st;l._s=null}}}
     t._spots=null}
 }
-// the field tiles a farm, pasture or quarry may grow over (all it will ever need, kept now): one connected patch beside it
+// the field tiles a farm, pasture or quarry may grow over (all it will ever need, kept now): one connected patch beside it (a
+// farm's fertile: ESTATE_LAND)
 function fieldsFor(t,l,k){
-  const g=k==='quarry'?(x,y)=>tAt(x,y)===T_HILL||tAt(x,y)===T_OPEN:(x,y)=>tAt(x,y)===T_OPEN,out=[],cand=[],ti=TOWNS.indexOf(t);
+  const fert=ESTATE_LAND[k].fertile,g=k==='quarry'?(x,y)=>tAt(x,y)===T_HILL||tAt(x,y)===T_OPEN:(x,y)=>tAt(x,y)===T_OPEN&&(!fert||fertileAt(x,y)),out=[],cand=[],ti=TOWNS.indexOf(t);
   const wb=wallBox(t),inRing=(x,y)=>wb&&x>=wb.x0-1&&x<=wb.x1+1&&y>=wb.y0-1&&y<=wb.y1+1,RB=roadPaint();// fields stay clear of the town, and off the roads
   // (and within its workers' reach of its door: every corner of a plot within folk.js FIELD.reach of the estate's spot, lotMid; a
   // farmstead of 64 px reaches less far past its back)
@@ -391,8 +425,8 @@ function estTrack(t,l){
     line=[...(T===S?V.map(k=>cen(P[k])):P.map(cen)),...door].flat();
   // laid, kept, marked on the painted roads
   const r={laid:T.slice(1),was:[],fe:[]};for(const i of r.laid){r.was.push(K[i]);r.fe.push(Fe[i]);K[i]=T_ROAD;Fe[i]=Fe[i]&~64|128}
-  // (the building turned to its track, where the track comes to it and not to its fields)
-  if(o!=null&&o%MW>=l.x&&o%MW<l.x+n&&(o-o%MW)/MW>=l.y&&(o-o%MW)/MW<l.y+n){const y=faceTo(l,ex+.5,ey+.5);if(y!==l.yaw){l.yaw=y;relot(l)}}
+  // (the building turned to its track, where the track comes to it and not to its fields; a mine or a quarry keeps its back to the rock)
+  if(o!=null&&rockYaw(l)==null&&o%MW>=l.x&&o%MW<l.x+n&&(o-o%MW)/MW>=l.y&&(o-o%MW)/MW<l.y+n){const y=faceTo(l,ex+.5,ey+.5);if(y!==l.yaw){l.yaw=y;relot(l)}}
   const L2=EST_TRACKS.get(WM)||[];L2.push(r);EST_TRACKS.set(WM,L2);WM.roads.push({a:'',b:'',kind:'track',est:t.name,path:T,line:[line]});
   if(ROAD_PAINT){const B=ROAD_PAINT,mk=(px,py)=>{for(let ty=Math.floor((py-LOT_ROAD)/TILE);ty<=Math.floor((py+LOT_ROAD)/TILE);ty++)for(let tx=Math.floor((px-LOT_ROAD)/TILE);tx<=Math.floor((px+LOT_ROAD)/TILE);tx++)if(tx>=0&&ty>=0&&tx<MW&&ty<MH)B[ty*MW+tx]=1};
     for(let k=2;k<line.length;k+=2){const ax=line[k-2]*TILE,ay=line[k-1]*TILE,bx=line[k]*TILE,by=line[k+1]*TILE,s=Math.max(1,Math.ceil(Math.hypot(bx-ax,by-ay)/2));for(let q=0;q<=s;q++)mk(ax+(bx-ax)*q/s,ay+(by-ay)*q/s)}}
@@ -420,7 +454,7 @@ const HOUSE_DAYS=1;
 const housingFull=t=>Layout.of(t).full();
 
 /* placing a building by hand: a ghost follows the pointer, snapped to the grid, green where it may stand, red where not */
-function placeRule(k){return k==='house'||INNER.includes(k)?{g:'open',inner:true,gap:'row'}:{g:groundOf(k),inner:false,gap:true}}
+function placeRule(k){return k==='house'||INNER.includes(k)?{g:'open',inner:true,gap:'row'}:{g:k,inner:false,gap:true}}
 function placeOk(t,k,x,y,n){
   const r=placeRule(k),ti=TOWNS.indexOf(t);for(let j=0;j<n;j++)for(let i=0;i<n;i++)if(LAND[(y+j)*MW+x+i]!==ti)return false;
   if(!lotFits(t,x,y,n,r.g,r.gap)||!lotWalks(t,x,y,n))return false;if(PLOTS[k]&&fieldsFor(t,{x,y,n},k).length<PLOTS_AT[k](1))return false;// room for its fields

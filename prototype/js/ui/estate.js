@@ -16,11 +16,11 @@ const WORKS_ICO={farm:'crate',pasture:'barrel'};
 // its areas that apply: [key, name, icon, a few words on what is there (its overview's list)]
 function estateMenus(o){
   const t=townBy(o.town),ms=[];if(!t)return ms;const k=o.k,E=ESTATES[k],A=ESTATE_AREAS[k]||{},lv=bldLv(t,k),own=t.owner==='player';
-  const hands=W.folk.filter(f=>f.home===t.name&&f.k===k).length,herd=k==='pasture'&&lv&&herdOf(t),L=(t.last||{}).out||{},M=MAKE[k]||{};
+  const hands=W.folk.filter(f=>f.home===t.name&&f.k===k).length,herd=k==='pasture'&&lv&&herdOf(t),L=(t.last||{}).out||{},M=MAKE[k]||{},O=M.out?estateOf(t,k).makes():{};
   if(lv&&E.work&&A.folk)ms.push(['folk',A.folk,'house',hands?hands+' '+E.work+(hands>1?'s':'')+' about':'nobody about']);
   if(herd&&A.herd)ms.push(['herd',A.herd,'sheep',herd.n+' '+CRITTERS[herd.id].n.toLowerCase()+' grazing']);
   if(lv&&PLOTS[k]&&A.fields)ms.push(['fields',A.fields,HOLD_ICO[k],plotsAt(t,k,lv).length+' of '+PLOTS_AT[k](lv)+' worked']);
-  if(lv&&A.works&&(M.out||E.goods.length))ms.push(['works',A.works,WORKS_ICO[k]||HOLD_ICO[k],Object.keys(M.out||{}).some(g=>L[g])?'made '+Object.keys(M.out).filter(g=>L[g]).map(g=>L[g]+' '+GOODS[g].n.toLowerCase()).join(', ')+' yesterday':'nothing made yesterday']);
+  if(lv&&A.works&&(M.out||E.goods.length))ms.push(['works',A.works,WORKS_ICO[k]||HOLD_ICO[k],Object.keys(O).some(g=>L[g])?'made '+Object.keys(O).filter(g=>L[g]).map(g=>L[g]+' '+GOODS[g].n.toLowerCase()).join(', ')+' yesterday':'nothing made yesterday']);
   return ms;
 }
 // (a slim rail: the last word of a long name)
@@ -46,7 +46,7 @@ function showEstate(){
       (field?'<p class="muted">'+field+(inn.length?' more':'')+' at work outside on the '+E.n.toLowerCase()+': meet '+(field>1?'them':'him')+' there.</p>':'')+
       (away?'<p class="muted">'+away+' more out on the road to '+t.name+' with the day’s load: meet them there.</p>':'')+(lostHands(t,k)?'<p class="bad">'+lostHands(t,k)+' pair'+(lostHands(t,k)>1?'s':'')+' of hands short: it makes '+Math.round(handsLeft(t,k)*100)+'% until someone new moves in.</p>':'')+
       '<p class="muted" style="font-size:13px">A worker you recruit becomes a '+ST[recruitKind(t,{k,job:E.work})].n.toLowerCase()+' (tier 0, trains into '+ST[UP[recruitKind(t,{k,job:E.work})][0]].n+'s). The estate is a pair of hands short for '+REFILL_DAYS+' days'+(t.owner==='player'?'':'; '+t.name+' minds it a little (reputation −2)')+'.</p>'}
-  else if(tab==='herd'){const c=herdOf(t),D=CRITTERS[c.id],out=(MAKE[k]||{}).out||{},f=plotsAt(t,k,lv).length;
+  else if(tab==='herd'){const c=herdOf(t),D=CRITTERS[c.id],out=estateOf(t,k).makes(),f=plotsAt(t,k,lv).length;
     body='<p>The '+D.n.toLowerCase()+' graze behind the fence while the herders watch over them. The herd is the '+E.n.toLowerCase()+'’s own: what it gives goes to '+t.name+'.</p>'+
       railCards([{pic:critterPic(c.id),name:D.n,role:'The herd of the '+E.n.toLowerCase(),n:c.n,facts:[f+' of '+PLOTS_AT[k](lv)+' fields fenced',['Not for sale','muted']],
         note:'Each day at level '+lv+' it makes about '+Object.keys(out).map(g=>Math.round(out[g]*lv*10)/10+' '+GOODS[g].n.toLowerCase()).join(', ')+' for '+t.name+'’s stores.'}])}
@@ -133,8 +133,9 @@ function estateRow(t,k){
     return row('Houses '+hs.length,'Room for '+housing(t)+' people; '+Math.round(t.pop||0)+' live here.'+(housingFull(t)?' <span class="bad">Full: no one more can settle, and some will leave.</span>':'')+' A new house needs '+matsText(hc.mats)+'.',
       '<button class="btn sm" type="button" data-act="fief-house"'+(why?' disabled title="'+why+'"':'')+'>Place a house '+hc.gold+'g · '+workDays(t,HOUSE_DAYS)+' days</button>'+(hs.length?'<button class="btn sm" type="button" data-act="fief-demolish" data-arg="house">Pull one down</button>':''))}
   const lv=bldLv(t,k),cap=bldCap(t,k),c=bldCost(k,lv+1);
-  return row(ESTATES[k].n+' '+lv+' / '+(cap||'–'),(cap?(lv<cap?mt(ESTATE_MAT(k,lv+1)).trim():''):'No suitable land near '+t.name+'.'),
-    (lv?'<button class="btn sm" type="button" data-act="fief-demolish" data-arg="'+k+'">Pull down</button>':'')+
+  // (the land has no spot for it: greyed, with the reason)
+  return row(ESTATES[k].n+' '+lv+' / '+(cap||'–'),(cap?(lv<cap?mt(ESTATE_MAT(k,lv+1)).trim():''):'<span class="bad">'+Buildings.of(t).whyNot(k)+'.</span>'),
+    (lv?'<button class="btn sm" type="button" data-act="fief-demolish" data-arg="'+k+'">Pull down</button>':'')+(!cap&&!lv?b(k,'Place',Buildings.of(t).whyNot(k)):'')+
     (cap&&lv<cap?b(k,(lv?'Upgrade ':'Place ')+c+'g · '+workDays(t,lv+1)+' days',busy?'Already building':!lv&&!needsMet(t,k)?'Needs '+needsText(k):P.gold<c?'Not enough gold':matsLacking(t,ESTATE_MAT(k,lv+1)).length?'Not enough materials in stock':''):''));
 }
 onAct('es-',estateAct);

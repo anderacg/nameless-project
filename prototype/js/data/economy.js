@@ -18,6 +18,21 @@ const ESTATES={
 // some estates need others first: a brewery needs the grain of level-2 farmland, weavers and tanners a pasture's wool and hides,
 // a market a granary to store what it trades
 const ESTATE_NEEDS={brewery:{farm:2},workshop:{pasture:1},market:{granary:1}};
+/* what each place of work needs of its land (the owner's play-test, 2026-10-23: "I don't want mine or any other buildings to spawn
+   or build in the area that is not relevant to them"), besides its ground (ESTATES ground; lots.js lotGround, landFits): fertile:
+   its building and its fields on fertile ground (FERTILE); wood: this share of the tiles in and round its building wooded; rock:
+   this share of its building's tiles at the rock (a hill, or beside a mountain); ore: an ore vein of its holding's land within this
+   many tiles of its building; face: its back to the rock; pier: water for a pier (lots.js pierOk). A holding with no such spot in
+   its land has no such estate, and is never offered one (buildings.js canHave): why, the Fief's reason */
+const ESTATE_LAND={
+  farm:{fertile:true,why:'No fertile open ground'},
+  pasture:{why:'No open grazing ground'},
+  lumber:{wood:.4,why:'No forest near'},
+  mine:{rock:.75,ore:3,face:true,why:'No ore in this land'},
+  quarry:{rock:.75,face:true,why:'No hills or rock near'},
+  port:{pier:true,why:'No water for a pier'}};
+// fertile ground: all but the desert's dry sand; there, ground at least this moist (WM.moist, 0-255), or water within this many tiles
+const FERTILE={moist:20,water:3};
 const WALL_N=['No walls','Palisade','Stone walls','Great walls'],WALL_COST=[0,100,300,650];
 
 /* what each estate makes per level per day, from what (inputs come out of the holding's stock), and what people need (economy.js) */

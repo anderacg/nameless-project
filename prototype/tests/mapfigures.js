@@ -69,10 +69,10 @@ try{
   info('beasts: '+rows.join(', ')+'; the dragon in a 32 cell');
   ok(!bad.length&&rows.length>=10,'every beast on the map has its own small figure in a 16 cell (a slime in 8) at its size (the dragon its drake, 32: it should look huge)'+(bad.length?': '+bad.join('; '):''));
   ok(t.monsterMapSprite('wolf',0)!==t.unitSprite('wolf',1,false,0,2)&&t.monsterMapSprite('wolf',0)!==t.monsterMapSprite('wolf',1),'not the battle\'s figures, two steps each');
-  const csz={cow:[11,7,16],sheep:[6,5,8],pig:[6,5,8],goat:[6,5,8],deer:[9,8,16],stag:[9,9,16],reindeer:[9,9,16],ibex:[9,8,16],gazelle:[9,8,16],hen:[6,5,8],rabbit:[6,5,8],hare:[6,5,8],fowl:[6,5,8]},cr=[],cb=[];
+  const csz={cow:[11,7,16],sheep:[6,5,8],pig:[6,5,8],goat:[6,5,8],deer:[9,8,16],stag:[9,9,16],reindeer:[9,9,16],ibex:[9,8,16],gazelle:[9,8,16],hen:[6,5,8],rabbit:[6,5,8],hare:[6,5,8],fowl:[6,5,8],camel:[12,9,16],buffalo:[11,7,16],tamereindeer:[9,9,16]},cr=[],cb=[];
   for(const id of Object.keys(t.CRITTERS))for(const f of [0,1]){const s=t.critterSprite(id,f),q=look(s),z=csz[id];if(!z||s.width!==z[2]||Math.abs(q.w-z[0])>1||Math.abs(q.h-z[1])>1||q.inner||q.open)cb.push(id+' '+q.w+'x'+q.h+' in '+s.width);if(!f)cr.push(id+' '+q.w+'x'+q.h)}
   info('herds: '+cr.join(', '));
-  ok(!cb.length,'every animal of the herds at its size: a cow 11 x 7 in 16, a sheep, pig or goat 6 x 5 in 8, deer and their kin some 9 x 8 in 16, a hen or a rabbit in 8'+(cb.length?': '+cb.join('; '):''));
+  ok(!cb.length,'every animal of the herds at its size: a cow or a water buffalo 11 x 7 in 16, a camel 12 x 9, a sheep, pig or goat 6 x 5 in 8, deer and their kin some 9 x 8 in 16, a hen or a rabbit in 8'+(cb.length?': '+cb.join('; '):''));
   const cv=[0,1,2,3].map(f=>look(t.caravanSprite('#c74453',f)));ok(cv.every(q=>q.cell===32&&q.w>=28&&q.w<=31&&q.h<=13),'a caravan (ox, cart, drover) some 30 x 12 in a 32 cell ('+cv[0].w+' x '+cv[0].h+')');
   const cog=look(t.shipSprite({seed:1,big:true,col:'#c74453'})),boat=look(t.shipSprite({seed:1,big:false})),mc=t.shipSprite({seed:1,big:true,moored:true}),mb=t.shipSprite({seed:1,big:false,moored:true});
   ok(cog.cell===32&&Math.abs(cog.w-26)<=2&&Math.abs(cog.h-20)<=2&&boat.cell===16&&Math.abs(boat.w-14)<=2&&boat.h<=9,'a cog some 26 x 20 in a 32 cell ('+cog.w+' x '+cog.h+'), a rowing boat some 12 x 8 in 16 ('+boat.w+' x '+boat.h+')');

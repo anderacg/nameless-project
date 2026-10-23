@@ -25,9 +25,11 @@ Kit.suite(({ok,info})=>{
    if(s!==t.housing(z))bad.push(z.name+' counts '+t.housing(z)+' for '+s);if(t.housing(z)<z.pop)room.push(z.name)}
   ok(!bad.length&&!room.length,'the houses count households (2-4 a house, '+H.household+' people each; '+nh+' houses, '+hh+' households), the centres their own room, and every holding starts with room for its people'+(bad.length?': '+bad.slice(0,6).join('; '):'')+(room.length?'; short: '+room.join(', '):''))}
  // ---- facing the street
- {let n=0,good=0,est=0,eg=0;const off=[];
+ {let n=0,good=0,est=0,eg=0,rk=0,rg=0;const off=[];
   for(const z of TW)for(const l of z.lots){if(l.k==='centre'){if(l.yaw)off.push(z.name+' centre');continue}
    if(![0,2,4,6].includes(l.yaw)){off.push(z.name+' '+l.k+' yaw '+l.yaw);continue}
+   // (a mine or a quarry with rock to one side: its back to it, lots.js rockYaw; workplaces)
+   {const ry=t.rockYaw(l);if(ry!=null){rk++;if(ry===l.yaw)rg++;continue}}
    // (an outer estate's own track, come to its building (the first of its tiles and fields beside the track's end, south, west,
    // east, north, one of the building's; not to its fields): lots.js estTrack)
    const own=(x,y)=>x>=l.x&&x<l.x+l.n&&y>=l.y&&y<l.y+l.n,mine=(x,y)=>own(x,y)||(l.plots||[]).some(p=>p[0]===x&&p[1]===y),
@@ -37,7 +39,7 @@ Kit.suite(({ok,info})=>{
    // (its nearest road tile now, as lotYaw looks; a track laid after it was built may have come nearer)
    let best=null,bd=1e9;for(let y=l.y-t.LOT_FACE;y<l.y+l.n+t.LOT_FACE;y++)for(let x=l.x-t.LOT_FACE;x<l.x+l.n+t.LOT_FACE;x++){if(t.tAt(x,y)!==t.T_ROAD)continue;const d=Math.hypot(x+.5-l.x-l.n/2,y+.5-l.y-l.n/2);if(d<bd){bd=d;best=[x+.5,y+.5]}}
    if((best?t.faceTo(l,best[0],best[1]):t.faceTo(l,z.tx+.5,z.ty+1.5))===l.yaw)good++}
-  ok(!off.length&&good>=n*.85&&eg>=est*.9,'each building faces its street (S 0, W 2, N 4, E 6; the centres straight on): '+good+' of '+n+' to their nearest road or track (the rest built before a track came nearer), '+eg+' of '+est+' outer estates to the track laid to them (a track ending by two counted for both)'+(off.length?': '+off.slice(0,5).join(', '):''))}
+  ok(!off.length&&good>=n*.85&&eg>=est*.9&&rg===rk,'each building faces its street (S 0, W 2, N 4, E 6; the centres straight on): '+good+' of '+n+' to their nearest road or track (the rest built before a track came nearer), '+eg+' of '+est+' outer estates to the track laid to them (a track ending by two counted for both), '+rg+' of '+rk+' mines and quarries their backs to the rock'+(off.length?': '+off.slice(0,5).join(', '):''))}
  // ---- the yards painted into the land: no square patch round any building
  {const pick=['city','town','village','castle'].map(k=>TW.find(z=>z.kind===k)),L=(a,o)=>a[o]*.3+a[o+1]*.59+a[o+2]*.11,keep=window.townGround,runs=[],ring=[];let cells=0,yard=0;
   for(const z of pick){const b={x0:Math.min(...z.lots.map(l=>l.x)),y0:Math.min(...z.lots.map(l=>l.y)),x1:Math.max(...z.lots.map(l=>l.x+l.n-1)),y1:Math.max(...z.lots.map(l=>l.y+l.n-1))},X=(b.x0-3)*TL,Y=(b.y0-3)*TL,w=(b.x1-b.x0+7)*TL,h=(b.y1-b.y0+7)*TL,paint=()=>{const c=document.createElement('canvas');c.width=w;c.height=h;t.runGen(t.paintSteps(t.WorldArt.ensure(),X,Y,w,h,c.getContext('2d'),0,0,{}));return c.getContext('2d').getImageData(0,0,w,h).data};
