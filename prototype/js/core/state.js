@@ -2,7 +2,7 @@
 /* ---------- state ---------- */
 const mkSkills=()=>Object.fromEntries(Object.keys(SKILLS).map(k=>[k,{lv:0,xp:0}]));
 const makeRuntimeState=()=>({mode:'title',modal:true,paused:false,speed:1,day:1,clock:0,cam:{x:0,y:0},mouse:{x:VW/2,y:VH/2,in:false,type:'mouse'},keys:{},encCool:0,lastTown:null,town:null,enc:null,scene:null,msgs:[],rankSeen:0,hudT:0,shake:0});
-const makePlayerState=()=>({x:0,y:0,tx:null,ty:null,gold:0,troops:{},army:{nextId:1,groups:[]},morale:80,renown:0,level:1,xp:0,bonus:0,stuck:0,dir:1,bg:'',
+const makePlayerState=()=>({x:0,y:0,tx:null,ty:null,gold:0,troops:{},army:{nextId:1,groups:[]},morale:100,renown:0,level:1,xp:0,bonus:0,stuck:0,dir:1,bg:'',
   attr:{str:2,agi:2,int:2,cha:2},pts:0,sk:mkSkills(),apt:{},perks:[],perkPend:0,prisoners:{},comps:{},fac:null,hostile:{},race:'human',hp:null,sp:null,mp:null,tree:['start'],origin:null,tp:0,slots:Array(10).fill(null),quests:[],jobs:{},qid:0,rep:{},honor:{},gear:emptyGear(),inv:Array(INV_SIZE).fill(null),stay:null,txp:{},fin:null,captives:[],wounded:{},woundedGroups:[],siege:null,raid:null,fiefWeek:0,recruits:{},recN:0});
 const G=makeRuntimeState(),P=makePlayerState();
 let bandits=[],B=null;

@@ -245,7 +245,10 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 //  Nothing else reads them: W1-W6, W8 and B2 hold (W6's views draw no prints: none walked yet). The prints drawn from the kept points
 //  only (gfx/tracks.js, the turning prints' fix) move no fingerprint. Checked: with TRACKS.road.ground 0 (no prints on roads) all
 //  nine are as before. Was W7 5cf2a467)
-const EXPECT={W1:'2ba57e1b',W2:'975f62a1',W3:'224e40e8',W4:'29fda26b',W5:'f284901d',W6:'b5185fc6',W7:'4b9a64dd',W8:'a465c56e',B2:'c1a2ab6a'};
+// (W7, B2 re-recorded 2026-10-23, on purpose, the owner: a new band sets out in high spirits, morale 100 (core/state.js; was 80),
+//  then drifts toward its troops' own as before. Only the saves move (P.morale); W1-W6, W8 and the battle suites hold. Were W7
+//  4b9a64dd, B2 c1a2ab6a)
+const EXPECT={W1:'2ba57e1b',W2:'975f62a1',W3:'224e40e8',W4:'29fda26b',W5:'f284901d',W6:'b5185fc6',W7:'5f125352',W8:'a465c56e',B2:'3b5d8035'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended
