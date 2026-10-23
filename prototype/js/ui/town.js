@@ -120,19 +120,22 @@ function definePlace(id,spec){
 const placeActing=a=>Object.values(PLACES).find(p=>p.handles(a))||null;
 
 /* the market square: its goods by category (bought and sold one unit at a time, each moving the price; a holding's old arrows are
-   none), its quivers, and what you carry to sell, by category (what its category lets you sell: a quest item never) */
+   none), empty waterskins at their base price among the Water (world/supply.js skinsBuy; no market stocks them), its quivers, and
+   what you carry to sell, by category (what its category lets you sell: a quest item never) */
 // (a market's goods, and your things, grouped: each category's rows under its name, in ITEM_CATS's order)
 const byCategory=(list,catOf,row)=>Object.keys(ITEM_CATS).map(c=>{const xs=list.filter(x=>catOf(x)===c);return xs.length?'<div class="lab lab-cat">'+ITEM_CATS[c].n+'</div>'+xs.map(row).join(''):''}).join('');
 class Market extends Place{
   constructor(id){
-    super(id,{n:'Market square',short:'Market',ico:'stall',verbs:{buy:'buy',sell:'sell','sell-loot':'sellOwn','sell-item':'sellOwn','sell-own':'sellOwn','market-quiver':'buyQuiver'}});
+    super(id,{n:'Market square',short:'Market',ico:'stall',verbs:{buy:'buy',sell:'sell','sell-loot':'sellOwn','sell-item':'sellOwn','sell-own':'sellOwn','market-quiver':'buyQuiver','skin-buy':'buySkins'}});
   }
   body(t){
     const goodCat=k=>ITEM_KINDS.good.catId({id:k});
-    ensureEcon(t);const q=G.town.qty||1,goods=Object.keys(GOODS).filter(k=>goodCat(k)&&((t.stock[k]||0)>0||goodN(k)>0||needOf(t,k)>.05));
+    ensureEcon(t);const q=G.town.qty||1,goods=[...Object.keys(GOODS).filter(k=>goodCat(k)&&((t.stock[k]||0)>0||goodN(k)>0||needOf(t,k)>.05)),SKIN.empty];
     const scarce=goods.filter(g=>marketState(t,g)==='shortage'),I=playerInventory;
     let body=railCards([{pic:personPic('merchant',t.races[0]),name:'The merchants',role:'Stalls of '+t.name,facts:[scarce.length>1?[scarce.length+' goods scarce','bad']:scarce.length?['Short of '+GOODS[scarce[0]].n.toLowerCase(),'bad']:'Prices fair','Your bag '+I.used+' / '+I.size+' slots',I.over?[I.over+' over: burdened','bad']:''],
-      note:'Every unit you buy or sell moves the price.'}])+'<div class="lab lab-qty"><span>Goods</span>'+railQty(q,'qty')+'</div>'+byCategory(goods,goodCat,k=>{const p=buyP(t,k),s=sellP(t,k),room=goodRoom(k),n=goodN(k),st=t.stock[k]||0,ms=marketState(t,k);
+      note:'Every unit you buy or sell moves the price.'}])+'<div class="lab lab-qty"><span>Goods</span>'+railQty(q,'qty')+'</div>'+byCategory(goods,goodCat,k=>{
+      if(k===SKIN.empty){const p=GOODS[k].base;return railRow(GOODS[k].n,p+'g each · holds one person’s day of water, filled free at a well or the water’s edge',railBtn('skin-buy',q,'Buy',P.gold<p*q?'Not enough gold':goodRoom(k)<q?BAG_FULL:''),'×'+goodN(k))}
+      const p=buyP(t,k),s=sellP(t,k),room=goodRoom(k),n=goodN(k),st=t.stock[k]||0,ms=marketState(t,k);
       return railRow(GOODS[k].n+(ms?' <span class="'+(ms==='shortage'?'bad':'good')+'" style="font-size:12px">'+cap1(ms)+'</span>':''),'Buy '+p+'g · Sell '+s+'g · '+st+' in the market · '+GOODS[k].stack+' per slot',
         railBtn('buy',k+':'+q,'Buy',P.gold<p*q?'Not enough gold':room<q?BAG_FULL:st<q?'The market has '+st:'')+railBtn('sell',k+':'+q,'Sell',n<q?'You have '+n:''),'×'+n)});
     body+=quiverRows(t,'trade','market-quiver');
@@ -157,6 +160,8 @@ class Market extends Place{
     const x=P.inv[+arg],v=x&&itemKind(x).verb('sell');if(v&&v.shown(+arg))v.perform(+arg);
   }
   buyQuiver(arg,t){quiverBuy(arg,t,this.id)}
+  // empty waterskins (n), at their base price
+  buySkins(arg){skinsBuy(+arg)}
 }
 definePlace('trade',Market);
 

@@ -218,12 +218,13 @@ class PlayerParty extends Party{
     const m=this.vitals();
     this.hp=m[0];this.sp=m[1];this.mp=m[2]}
   /* your band's supplies (world/supply.js SUPPLY): its stamina's state ('fresh', 'tired' under SUPPLY.tired, 'exhausted' under
-     SUPPLY.exhausted) and its pace by it; food and drink rations an hour (moving: on the march); the furs it needs in the frost;
+     SUPPLY.exhausted) and its pace by it; food rations and drink an hour (moving: on the march; drink, SUPPLY.drink.perDay a person
+     a day: one water a day); the furs it needs in the frost;
      and its health: the hero (as one), the fit and the hurt companions with your soldiers, fit of the whole */
   staminaState(){return this.bsta<SUPPLY.exhausted?'exhausted':this.bsta<SUPPLY.tired?'tired':'fresh'}
   staminaPace(){const st=this.staminaState();return (st==='fresh'?1:SUPPLY.pace[st])*(BAND.dry>=SUPPLY.thirst.parched?SUPPLY.thirst.pace:1)}// (Parched: supply.js)
   foodHour(moving){return this.eatPerDay()/24*(moving?SUPPLY.eat.march:SUPPLY.eat.rest)}
-  drinkHour(moving){return (this.headcount()+1)/SUPPLY.drink.per*(moving?1:SUPPLY.drink.rest)}
+  drinkHour(moving){return (this.headcount()+1)*SUPPLY.drink.perDay/24*(moving?1:SUPPLY.drink.rest)}
   furNeed(){return Math.ceil((this.headcount()+1)/SUPPLY.furPer)}
   fitness(){
     const hurt=Object.keys(this.comps).filter(id=>!this.comps[id].party&&this.comps[id].hurt>G.day).length,fit=1+this.troopCount()+compsInBand().length,wounded=this.woundedCount()+hurt;

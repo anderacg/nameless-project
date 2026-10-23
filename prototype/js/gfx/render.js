@@ -372,7 +372,7 @@ function updateHUD(force){
   const moTip='Your band’s morale '+mo+'%'+(bandNerve()!=null?': your troops’ nerve is '+Math.round(bandNerve())+', and it drifts toward it':'')+'.';
   const foodTip='Food: '+(FOODS.filter(g=>goodN(g)).map(g=>GOODS[g].n+' '+goodN(g)).join(', ')||'none')+' · about '+days(S.foodDays)+' '+go;
   const tags=[...S.tags,burdenTag()].filter(Boolean);// (an overfilled bag: Burdened, core/inventory.js)
-  const drinkTip='Drink: '+(drinkOrder(S.L).filter(g=>goodN(g)).map(g=>GOODS[g].n+' '+goodN(g)).join(', ')||'none')+' · about '+days(S.drinkDays)+' '+go+(S.L.desert?' (in the desert, water only)':'')+(BAND.liquor?' · liquor first':'');
+  const drinkTip='Drink: '+(drinkOrder(S.L).filter(g=>goodN(g)).map(g=>GOODS[g].n+' '+goodN(g)).join(', ')||'none')+' · about '+days(S.drinkDays)+' '+go+(S.L.desert?' (in the desert, water only)':'')+(BAND.liquor?' · liquor first':'')+' · '+skinsTip();
   const who=RACES[P.race].n+' '+(BGS[P.bg]?BGS[P.bg].n:'');
   el.innerHTML='<div class="pc-head"><img class="pc-pic" src="'+portrait('hero',true)+'" alt=""><div class="pc-who"><button class="pc-band" type="button" data-act="nm-open" title="'+htmlText(bandName())+': rename your band and your hero">'+htmlText(bandName())+'</button>'+
       '<small title="'+htmlText((heroName()?heroName()+', ':'')+who)+' · Level '+P.level+' · '+rankName()+'">'+htmlText(heroName()||who)+' · Lv '+P.level+' · '+rankName()+'</small></div>'+

@@ -23,17 +23,21 @@
    thirst toll; Starving or Dying of thirst, her health stops coming back. At 0 health off the battlefield she dies: the game is over.
    forcedMarch: Hurry (key R, the action ring) marches the band × pace, its stamina draining × drain; it ends once
    the band is Exhausted (world.js fastWatch). Not the Forced March perk (forced, above).
-   drink: rations an hour (people + 1) ÷ per on the march, × rest stopped; order: what is drunk first (cheapest; liquor first when
-   you choose: BAND.liquor); each drink's morale, a ration, once, as it comes into your stores (drinkIn; the owner, 2026-10-22:
-   doc/ITEMS_DESIGN.md §2a, in place of the slower drain while you drank ale or liquor).
+   drink (the owner, 2026-10-24: one of a drink is one person's day of it): perDay of a drink a person a day on the march, so
+   (people + 1) × perDay ÷ 24 an hour, × rest stopped; order: what is drunk first (cheapest; liquor first when you choose:
+   BAND.liquor); each drink's morale, one of it, once, as it comes into your stores (drinkIn; the owner, 2026-10-22:
+   doc/ITEMS_DESIGN.md §2a, in place of the slower drain while you drank ale or liquor; a day's drinking lifts it as much as it did
+   while 4 of a drink were a day).
+   skins: water is carried in waterskins (data/places.js CONTAINERS): a new hero sets out with start full ones, each soldier
+   recruited brings recruit empty ones (core/recruitment.js), the tapster sells lot empty ones at a time.
    thirst (the owner: water before food; it kills, after the sickness): nothing to drink, the hours counted × desert in the desert
    with no water: Thirsty at once (the drain above), Parched from parched hours (pace × pace, −morale an hour), Dying of thirst
    from dying hours (a man falls sick every toll hours), and from death hours a sick man (else a fit one) dies every toll hours.
    lost: the men lost for good (died, deserted) shown for days on the card and in the troops tab.
    fill: waterskins fill to days of drink on the march, free, at the water's edge (a water pixel as drawn within near tiles) or a
    holding's well (within well tiles of where you arrive at it or set out from it); timed (the owner, 2026-10-23: filling takes
-   time): minPerDay game minutes for each man's day of drink filled (24 ÷ drink.per rations), never under min nor over max; off,
-   they fill at once as before; furPer: 1 fur for every so many people in the frost; frost: frostbite after every so many hours' worth of shortage (a
+   time): minPerDay game minutes for each man's day of drink filled (drink.perDay water), never under min nor over max; off,
+   they fill at once as before; only as many as you have empty waterskins; furPer: 1 fur for every so many people in the frost; frost: frostbite after every so many hours' worth of shortage (a
    man wounded), and −morale a night short of furs (survive, world.js).
    fever: swamp fever (world.js survive, a fever night): a man falls sick (sick), and one already sick of it may die (die, less med
    a level of Medicine, never under dieMin).
@@ -48,7 +52,7 @@ const SUPPLY={march:2,rough:1.5,night:1.3,forced:1.5,dry:1.5,desertDry:2,cold:.5
   rest:{stop:2,camp:8,stay:10},dryRest:.5,
   tired:20,exhausted:5,pace:{tired:.85,exhausted:.6},tiredMorale:{every:3,n:1},worn:{every:8},
   eat:{rest:1,march:1.5},frostEat:.5,hunger:{morale:1,every:2,rest:.5,starving:72,starveDrain:1.25,starveMorale:1,desert:96,sick:168,die:240,toll:12,hero:{every:6,hp:.05,mp:.05}},
-  drink:{per:6,rest:.5,order:['water','ale','liquor'],water:{morale:0},ale:{morale:.5},liquor:{morale:1.5}},
+  drink:{perDay:1,rest:.5,order:['water','ale','liquor'],water:{morale:0},ale:{morale:2},liquor:{morale:6}},skins:{start:4,recruit:1,lot:5},
   thirst:{desert:2,parched:12,pace:.85,morale:1,dying:24,death:48,toll:6,hero:{hp:.1,mp:.1}},lost:{days:7,keep:20},
   fill:{days:2,near:.5,well:1.5,timed:true,minPerDay:15,min:5,max:180},furPer:5,frost:{every:6,morale:1},forcedMarch:{pace:2,drain:2.5},
   battleMin:25,camp:{heal:1.5,caught:8,r:6,step:8,hop:2,across:4,m:2,road:4,lot:0,ring:1,site:4,pole:[20,1]},hint:60,hurt:3,fever:{sick:.5,die:.2,dieMin:.05,med:.02}};
@@ -103,15 +107,37 @@ const drinkStock=L=>drinkOrder(L).reduce((a,k)=>a+goodN(k),0);
 const drinkNext=L=>drinkOrder(L).find(k=>goodN(k)>0)||null;
 // n of a drink come into your stores (the bag: core/items.js Good gained): its morale, once (SUPPLY.drink: ale and liquor lift it)
 function drinkIn(id,n){const m=SUPPLY.drink[id]?SUPPLY.drink[id].morale*n:0;if(m)P.morale=clamp(P.morale+m,0,100)}
-// n rations drunk, in order: the drink it was on (the first that gave any), or null with none to drink
-function drinkTake(n,L){let left=n,first=null;for(const k of drinkOrder(L)){if(!left)break;const m=goodTake(k,left);if(m&&!first)first=k;left-=m}return first}
-// (the water your skins hold full: SUPPLY.fill.days of drink on the march; and what is still wanted: that, less what you carry)
-const skinsFull=()=>Math.ceil(P.drinkHour(true)*24*SUPPLY.fill.days),skinsWant=()=>skinsFull()-goodN('water');
-// waterskins filled at once to SUPPLY.fill.days of drink on the march, as the bag's room allows, free: how many (quiet: no line).
-// A new game's band sets out so, and the tavern's tapster fills them so (the town's time stands still); else timed: fillSkins
+// n drunk, in order: the drink it was on (the first that gave any), or null with none to drink. Each water drunk leaves its
+// waterskin empty in the bag (never lost: past the bag's limit too)
+function drinkTake(n,L){let left=n,first=null;
+  for(const k of drinkOrder(L)){if(!left)break;const m=goodTake(k,left);if(m){if(!first)first=k;if(k===SKIN.full)playerInventory.add('good',SKIN.empty,m,true)}left-=m}
+  return first}
+/* ---------- the waterskins (the owner, 2026-10-24: data/places.js CONTAINERS, today one kind, the waterskin: full, one person's
+   day of drink, the good water; empty, skin_empty). A new hero sets out with SUPPLY.skins.start full ones (skinsStart); each
+   soldier recruited brings SUPPLY.skins.recruit empty ones (skinsJoin: core/recruitment.js), and losing men never takes them;
+   markets and taverns sell empty ones (skinsBuy). Drinking empties them (drinkTake); filling (fillNow, SKINS) fills empty ones,
+   never more than you have ---------- */
+const SKIN=CONTAINERS.skin,skinsEmpty=()=>goodN(SKIN.empty);
+// (the water your skins hold full: SUPPLY.fill.days of drink on the march; what is still wanted: that, less what you carry; and
+// what can be filled now: that, as far as your empty skins go)
+const skinsFull=()=>Math.ceil(P.drinkHour(true)*24*SUPPLY.fill.days),skinsWant=()=>skinsFull()-goodN(SKIN.full),skinsFillable=()=>Math.min(Math.max(0,skinsWant()),skinsEmpty());
+// n empty ones filled, full now (never lost: past the bag's limit too): how many
+function skinsFill(n){n=Math.min(n,skinsEmpty());if(n>0){goodTake(SKIN.empty,n);playerInventory.add('good',SKIN.full,n,true)}return Math.max(0,n)}
+// why nothing fills ('' if some can): full, or no empty waterskins (the ring, the tapster's button and the log say so)
+const SKINS_NONE='No empty waterskins';
+const skinsWhy=()=>skinsWant()<=0?'Your waterskins are full.':!skinsEmpty()?SKINS_NONE+': buy them at a market or a tavern.':'';
+// the skins you carry, for the card's drink chip (render.js updateHUD): full and empty, and none to fill
+const skinsTip=()=>'Waterskins: '+goodN(SKIN.full)+' full, '+skinsEmpty()+' empty'+(skinsWant()>0&&!skinsEmpty()?' · '+SKINS_NONE:'');
+// a new hero's full skins; a recruit's empty ones (n soldiers: how many came in); n empty ones bought at their base price (how many)
+const skinsStart=()=>playerInventory.add('good',SKIN.full,SUPPLY.skins.start);
+const skinsJoin=n=>playerInventory.add('good',SKIN.empty,n*SUPPLY.skins.recruit);
+function skinsBuy(n){const p=GOODS[SKIN.empty].base*n;if(!(n>0)||P.gold<p||goodRoom(SKIN.empty)<n)return 0;
+  P.gold-=p;playerInventory.add('good',SKIN.empty,n);log('You buy '+n+' empty waterskin'+(n>1?'s':'')+' for '+p+' gold.','gold');return n}
+// your empty waterskins filled at once, up to SUPPLY.fill.days of drink on the march, free: how many (quiet: no line). The tavern's
+// tapster fills them so (the town's time stands still); else timed: fillSkins
 function fillNow(quiet){
-  const want=skinsWant(),n=Math.min(Math.max(0,want),goodRoom('water')),got=n?playerInventory.add('good','water',n):0;
-  if(!quiet)log(got?'You fill your waterskins: '+got+' water.':want>0?'There is no room in your bag for more water.':'Your waterskins are full.',got?'good':'','band');
+  const got=skinsFill(skinsFillable());
+  if(!quiet)log(got?'You fill your waterskins: '+got+' water'+(skinsWant()>0?', all your empty ones':'')+'.':skinsWhy(),got?'good':'','band');
   return got}
 // fill them (the action ring's Fill waterskins): timed (SKINS.start: true when it began), or at once with SUPPLY.fill.timed off
 const fillSkins=quiet=>SUPPLY.fill.timed?SKINS.start(quiet):fillNow(quiet);
@@ -120,43 +146,45 @@ const canFill=L=>(L=L||supplyLand()).water||L.well;
 const fillMoving=()=>!P.stay&&(P.tx!=null||!!G.chase)||!!G.hurry;
 /* ---------- the waterskins filling (the owner, 2026-10-23: it takes time, a bar on the band card and a mark over your band:
    render.js updateHUD, gfx/worldui.js wuiFilling). SKINS.on, while it fills: {at: the game hour it began, h: the hours it takes
-   (fillHours), n: the water it adds, got: added so far, x, y: where you stood, quiet: begun by itself}. By the game clock, so it
+   (fillHours), n: the empty skins it fills (as many as you have, up to the wanted), got: filled so far, x, y: where you stood,
+   quiet: begun by itself}. By the game clock, so it
    stands still while the game is paused and runs faster at a higher speed; the water comes in as its share rises, not at the
    end. Any order, Hurry, a step off the spot (a camp's hop), a battle, an encounter or any page off the map (G.mode not the
    world: supplyNow, read every quarter second in any mode, and a battle's end) stops it, and you keep what is in. It starts by
    itself (auto) every half a second (real time) while you stand at a holding's well or stopped at the water's edge with the skins
-   not full: SKINS.t. A new game's band sets out with them full (first: due from onWorld, not for a loaded game). Never saved ---------- */
-const fillHours=n=>{const F=SUPPLY.fill;return clamp(F.minPerDay*n/(24/SUPPLY.drink.per),F.min,F.max)/60};
+   not full and empty ones to fill: SKINS.t. A new game's band sets out with SUPPLY.skins.start full ones (first: due from onWorld,
+   not for a loaded game). Never saved ---------- */
+const fillHours=n=>{const F=SUPPLY.fill;return clamp(F.minPerDay*n/SUPPLY.drink.perDay,F.min,F.max)/60};
 class SkinFill{
   constructor(){this.on=null;this.t=0;this.every=.5;this.first=false}
   reset(first){this.on=null;this.t=0;this.first=!!first}
   // the share filled, 0-1 (0 with none filling)
   get share(){const f=this.on;return f?clamp((Clock.hours()-f.at)/f.h,0,1):0}
-  // begin (quiet: by itself, no line; one filling already, yours now: its end said): true when it began; full, or no room in
-  // the bag: said so, false
+  // begin (quiet: by itself, no line; one filling already, yours now: its end said): true when it began; full, or no empty
+  // waterskins: said so, false
   start(quiet){
-    if(this.on){if(!quiet)this.on.quiet=false;return true}const want=skinsWant(),n=Math.min(Math.max(0,want),goodRoom('water'));
-    if(!n){if(!quiet)log(want>0?'There is no room in your bag for more water.':'Your waterskins are full.','','band');return false}
+    if(this.on){if(!quiet)this.on.quiet=false;return true}const n=skinsFillable();
+    if(!n){if(!quiet)log(skinsWhy(),'','band');return false}
     this.on={at:Clock.hours(),h:fillHours(n),n,got:0,x:P.x,y:P.y,quiet:!!quiet};
     if(!quiet)log('Your band fills its waterskins: '+n+' water, about '+Math.round(this.on.h*60)+' minutes. Moving stops it.','','band');
     return true}
-  // the water due by now added (as the bag's room allows); done at its end
+  // the skins due by now filled (as far as the empty ones go); done at its end
   step(){const f=this.on;if(!f)return;const k=Math.floor(this.share*f.n+1e-9)-f.got;
-    if(k>0){const m=Math.min(k,goodRoom('water'));if(m)playerInventory.add('good','water',m);f.got+=k}
+    if(k>0){skinsFill(k);f.got+=k}
     if(f.got>=f.n){this.on=null;if(!f.quiet)log('You fill your waterskins: '+f.n+' water.','good','band')}}
   // stopped before its end (moved): what is in stays
   stop(){const f=this.on;if(!f)return;this.step();if(!this.on)return;this.on=null;if(!f.quiet)log('You stop filling your waterskins: '+f.got+' of '+f.n+' water in.','','band')}
   // off the map (a battle, an encounter, a page, a holding's window) or dead: it stops
   watch(){if(this.on&&(G.mode!=='world'||G.dead))this.stop()}
-  // each moment on the map: a new game's skins filled; moving stops it, else it fills on; now and then it starts by itself
+  // each moment on the map: a new game's full skins given; moving stops it, else it fills on; now and then it starts by itself
   frame(dt){
-    if(this.first){this.first=false;fillNow(true)}
+    if(this.first){this.first=false;skinsStart()}
     const f=this.on;if(f){if(fillMoving()||Math.hypot(P.x-f.x,P.y-f.y)>2)this.stop();else this.step()}
     if((this.t-=dt||0)>0)return;this.t=this.every;
-    if(this.on||fillMoving()||skinsWant()<=0)return;const L=supplyLand();if(L.well||L.water)this.start(true)}
+    if(this.on||fillMoving()||skinsFillable()<=0)return;const L=supplyLand();if(L.well||L.water)this.start(true)}
 }
 const SKINS=new SkinFill();
-// (a new game's band sets out with full waterskins; a loaded one keeps what it saved: the band's piece, above)
+// (a new game's band sets out with its full waterskins; a loaded one keeps what it saved: the band's piece, above)
 onWorld(()=>SKINS.reset(true));
 worldOn('battle:ended',()=>SKINS.stop());
 // the skins fill as soon as you stand at a holding's well, or stopped beside water (the owner: on the hour was too slow, a new
@@ -166,7 +194,7 @@ function supplyFrame(d,dt){
   if(SUPPLY.fill.timed){SKINS.frame(dt);return false}
   if((SKINS.t-=dt||0)>0)return false;
   SKINS.t=SKINS.every;
-  if(goodN('water')>=skinsFull())return false;
+  if(skinsFillable()<=0)return false;
   const L=supplyLand(),moving=!P.stay&&(P.tx!=null||!!G.chase);
   if(L.well||L.water&&!moving)fillNow(true);
   return false;
@@ -432,7 +460,7 @@ function mapRingItems(wx,wy,o,cx,cy){
     (ground||P.byRoad)&&{icon:'map',label:'By road',run:()=>roadGo(wx,wy),active:!!P.byRoad},
     ground&&!G.hurry&&P.staminaState()!=='exhausted'&&{icon:'speed',label:'Hurry here',run:()=>{worldMove(wx,wy);setHurry(true)}},
     G.hurry&&{icon:'speed',label:'Stop hurrying',run:()=>setHurry(false),active:true},
-    canFill(L)&&{icon:'mug',label:'Fill waterskins',active:!!SKINS.on,run:()=>fillSkins()},
+    canFill(L)&&{icon:'mug',label:SKINS.on||skinsWant()<=0||skinsEmpty()?'Fill waterskins':SKINS_NONE,active:!!SKINS.on,run:()=>fillSkins()},// (none to fill: said so)
     goodN('liquor')>0&&{icon:'barrel',label:BAND.liquor?'Water first':'Drink liquor',active:!!BAND.liquor,run:()=>{BAND.liquor=!BAND.liquor;log(BAND.liquor?'Your band drinks its liquor first: a hard march.':'Your band drinks water first again.');updateHUD(true)}},
     look&&{icon:'eye',label:'Look',run:()=>holdCard(look,cx,cy)}].filter(Boolean)}
 
@@ -441,15 +469,18 @@ function mapRingItems(wx,wy,o,cx,cy){
 function partyRingItems(o,cx,cy){const foe=wuiKind(o)==='foe';
   return[{icon:foe?'attack':'people',label:foe?'Attack':'Meet',run:()=>worldApproach(o)},followItem(o),...mapRingItems(o.x,o.y,o,cx,cy).filter(it=>it.icon==='eye')].filter(Boolean)}
 
-/* ---------- the tavern's tapster (ui/town.js Tavern): liquor for the road, at its base price, and the well's water, free ---------- */
-const LIQUOR_LOT=5;
+/* ---------- the tavern's tapster (ui/town.js Tavern): liquor for the road and empty waterskins, at their base prices, and the
+   well's water into your empty skins, free ---------- */
+const LIQUOR_LOT=2;
 function tapsterCard(t,race){
   const p=GOODS.liquor.base*LIQUOR_LOT,why=P.gold<p?'Not enough gold':goodRoom('liquor')<LIQUOR_LOT?BAG_FULL:'';
-  return{pic:personPic('innkeeper',race,2),name:'The tapster',role:'Drink for the road',facts:['Water '+goodN('water'),'Liquor '+goodN('liquor'),goodN('ale')?'Ale '+goodN('ale'):''],
-    note:'Something to drink keeps your band’s stamina draining at its rate; ale and liquor lift its spirits as they come into your stores.',
-    acts:[['sup-fill',t.name,'Fill waterskins'],['sup-liquor',t.name,'Buy '+LIQUOR_LOT+' liquor · '+p+'g',why]]}}
+  const k=SUPPLY.skins.lot,ps=GOODS[SKIN.empty].base*k,whyS=P.gold<ps?'Not enough gold':goodRoom(SKIN.empty)<k?BAG_FULL:'';
+  return{pic:personPic('innkeeper',race,2),name:'The tapster',role:'Drink for the road',facts:['Waterskins '+goodN(SKIN.full)+' full, '+skinsEmpty()+' empty','Liquor '+goodN('liquor'),goodN('ale')?'Ale '+goodN('ale'):''],
+    note:'One of any drink is one person’s day of it. Something to drink keeps your band’s stamina draining at its rate; ale and liquor lift its spirits as they come into your stores. The tapster fills your empty waterskins from the well.',
+    acts:[['sup-fill',t.name,'Fill waterskins',skinsFillable()?'':skinsWhy()],['sup-skins',t.name,'Buy '+k+' empty waterskins · '+ps+'g',whyS],['sup-liquor',t.name,'Buy '+LIQUOR_LOT+' liquor · '+p+'g',why]]}}
 function supplyAct(a,arg){
   if(a==='sup-fill')fillNow();
+  else if(a==='sup-skins')skinsBuy(SUPPLY.skins.lot);
   else if(a==='sup-liquor'){const p=GOODS.liquor.base*LIQUOR_LOT;if(P.gold<p||goodRoom('liquor')<LIQUOR_LOT)return;P.gold-=p;playerInventory.add('good','liquor',LIQUOR_LOT);log('You buy '+LIQUOR_LOT+' liquor for '+p+' gold.','gold')}
   else if(a==='sup-camp')toggleCamp();
   updateHUD(true);if(G.mode==='town'&&G.town)renderTown()}

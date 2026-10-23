@@ -20,7 +20,7 @@ const GOODS={grain:{n:'Grain',base:8,stack:30,icon:'sack',col:'#d8b860',food:tru
   stone:{cat:'resource',n:'Stone',base:6,stack:25,icon:'stone',col:'#a7a49a',d:'Cut blocks from the quarries. Walls and halls are built of it.'},
   wool:{cat:'resource',n:'Wool',base:9,stack:25,icon:'wool',col:'#eeeae0',d:'Shorn from the herds. Weavers turn it into cloth.'},
   tools:{n:'Tools',base:30,stack:10,icon:'tools',col:'#9aa3ad',d:'Saws, picks and hammers from the smithies. Every building project and estate wears them out.'},
-  ale:{cat:'water',n:'Ale',base:12,stack:15,icon:'barrel',col:'#c88a3a',d:'Brewed from grain. Towns drink it; content people work harder. On the road it counts as a drink, and it lifts your band\u2019s spirits as it comes into your stores.'},
+  ale:{cat:'water',n:'Ale',base:12,stack:15,icon:'barrel',col:'#c88a3a',d:'Brewed from grain. Towns drink it; content people work harder. On the road one is a person’s day of drink, and it lifts your band\u2019s spirits as it comes into your stores.'},
   spice:{n:'Spice',base:34,stack:25,icon:'jar',col:'#d87a30',d:'Light and precious. Worth the most per bag slot.'},
   // regional goods (res): only mines and ports whose land holds them bring them up (resources.js), so they are cheap at the source
   // and dear everywhere else
@@ -36,11 +36,18 @@ const GOODS={grain:{n:'Grain',base:8,stack:30,icon:'sack',col:'#d8b860',food:tru
   pearls:{cat:'valuable',n:'Pearls',base:150,stack:25,icon:'pearl',col:'#f0ece0',res:'fish',d:'Dived for in warm southern waters. A fortune in a pouch.'}};
 // the road's drinks (world/supply.js SUPPLY.drink; ale, a trade good above, counts as one too; all three of the category Water): goods in the bag like any other
 // (GOODS[id]), but no market trades them. They are kept out of GOODS's keys (not enumerable), so no holding stocks or prices them
-// and the world's draws stay as they were. Water fills free from a river, a lake, an oasis or a holding's well; liquor is sold in
-// taverns, at its base price
-const DRINK_GOODS={water:{n:'Water',base:1,stack:50,icon:'jug',col:'#6aa8d8',drink:true,d:'Waterskins. Your band drinks on the march: with something to drink, stamina drains at its normal rate. Refill free beside a river, a lake, an oasis or a well.'},
-  liquor:{n:'Liquor',base:14,stack:20,icon:'vial',col:'#d89a3a',drink:true,d:'Spirits from the taverns. It lifts your band’s spirits more than ale as it comes into your stores, and counts as a drink on the road.'}};
+// and the world's draws stay as they were. One of each is one person's day of drink (the owner, 2026-10-24). Water is carried in
+// waterskins (CONTAINERS): a full one is the good water, an empty one skin_empty (of the category Water too, but no drink), filled
+// free from a river, a lake, an oasis or a holding's well; markets and taverns sell empty ones at its base price; liquor is sold
+// in taverns, at its base price
+const DRINK_GOODS={water:{n:'Waterskin',base:2,stack:50,icon:'skin',col:'#6aa8d8',drink:true,d:'A full waterskin: one person’s day of drink. Your band drinks on the march: with something to drink, stamina drains at its normal rate. Drunk, it is an empty waterskin; refill it free beside a river, a lake, an oasis or a well.'},
+  skin_empty:{cat:'water',n:'Empty waterskin',base:2,stack:50,icon:'skinflat',col:'#a8845a',d:'An empty waterskin. Fill it free beside a river, a lake, an oasis or a well: it holds one person’s day of drink. Markets and taverns sell them.'},
+  liquor:{n:'Liquor',base:56,stack:20,icon:'vial',col:'#d89a3a',drink:true,d:'Spirits from the taverns, one person’s day of drink. It lifts your band’s spirits more than ale as it comes into your stores, and counts as a drink on the road.'}};
 for(const k in DRINK_GOODS)Object.defineProperty(GOODS,k,{value:DRINK_GOODS[k],enumerable:false});
+/* what water is carried in (world/supply.js): each container's goods, full (a drink) and empty. Drunk, a full one turns empty;
+   filled, an empty one full; with no empty ones nothing fills. One today, the waterskin (one person's day); bigger skins and
+   barrels to come (the owner, 2026-10-24) */
+const CONTAINERS={skin:{full:'water',empty:'skin_empty'}};
 // the classic holdings: plain data, each made one of its kind, with its prices and its point, by makeHolding (holdings.js);
 // realm: the realm it starts under; tx, ty: where it stood on the old hand-made map (224 x 160), which the classic seed's anchors
 // are drawn from (worldplace.js classicAnchors)

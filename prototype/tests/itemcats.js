@@ -12,16 +12,16 @@ try{
  // ---- the table: one category an item, its rules
  const rules=['n','tab','icon','col','bag','route','sell','drop'],tabs=t.BAG_TABS.map(([k])=>k);
  ok(Object.values(C).every(c=>rules.every(r=>r in c)&&tabs.includes(c.tab)),'every category has its rules ('+rules.join(', ')+') and a bag tab: '+Object.values(C).map(c=>c.n).join(', '));
- const all=[...Object.keys(t.ITEMS).map(id=>['gear',id]),...Object.keys(t.GOODS).concat(['water','liquor']).map(id=>['good',id]),...Object.keys(t.MATS).map(id=>['mat',id]),
+ const all=[...Object.keys(t.ITEMS).map(id=>['gear',id]),...Object.keys(t.GOODS).concat(['water','skin_empty','liquor']).map(id=>['good',id]),...Object.keys(t.MATS).map(id=>['mat',id]),
    ...Object.keys(t.VALUABLES).map(id=>['val',id]),...Object.keys(t.QUEST_ITEMS).map(id=>['quest',id])];
  const none=all.filter(([k,id])=>!C[cat(k,id)]).map(([k,id])=>id);
  ok(none.join()==='arrows,bolts','every item ('+all.length+') has a category; a holding\'s old arrows and bolts none (no item now)');
  const want={'gear:g_sword_1':'weapon','gear:g_bow_0':'weapon','gear:g_torch_2':'weapon','gear:g_shield_1':'armour','gear:g_helm_3':'armour','gear:g_ring_0':'armour','gear:bearcoat':'armour',
-   'gear:m_horse':'mount','gear:g_barding_1':'mount','gear:q_hunter':'quiver','gear:q_boltCase':'quiver','good:grain':'food','good:salmon':'food','good:water':'water','good:ale':'water','good:liquor':'water',
+   'gear:m_horse':'mount','gear:g_barding_1':'mount','gear:q_hunter':'quiver','gear:q_boltCase':'quiver','good:grain':'food','good:salmon':'food','good:water':'water','good:skin_empty':'water','good:ale':'water','good:liquor':'water',
    'good:iron':'resource','good:copper':'resource','good:timber':'resource','good:furs':'resource','good:cloth':'trade','good:tools':'trade','good:spice':'trade','good:gems':'valuable','good:pearls':'valuable',
    'mat:pelt':'trophy','val:ring':'valuable','val:relic':'valuable','quest:heirloom':'quest','letter:L1':'quest'};
  const bad=Object.entries(want).filter(([s,c])=>{const [k,id]=s.split(':');return cat(k,id)!==c});
- ok(!bad.length,'each in its own: weapons, armour (a shield, a ring), mounts and their gear, quivers, food, water (ale and liquor too), resources, trade goods, valuables (gems, pearls), trophies, quest items (the sealed letter)'+(bad.length?': not '+bad.map(([s])=>s+' '+cat(...s.split(':'))).join(', '):''));
+ ok(!bad.length,'each in its own: weapons, armour (a shield, a ring), mounts and their gear, quivers, food, water (full and empty waterskins, ale and liquor too), resources, trade goods, valuables (gems, pearls), trophies, quest items (the sealed letter)'+(bad.length?': not '+bad.map(([s])=>s+' '+cat(...s.split(':'))).join(', '):''));
  ok(C.quest.sell===false&&C.quest.drop===false&&Object.entries(C).every(([k,c])=>k==='quest'||c.sell&&c.drop)&&Object.values(C).every(c=>c.bag&&c.route==='bag'),'only a quest item is bound (neither sold nor dropped); for now everything goes to the bag (the pools and the pack train: logistics)');
  // ---- not an item: never carried
  empty();ok(t.invAdd('good','arrows',30)===0&&t.goodRoom('arrows')===0&&!P.inv.some(Boolean)&&t.playerInventory.add('good','bolts',10)===0,'arrows and bolts are no item: never carried');
@@ -53,8 +53,8 @@ try{
  {const g0=P.gold,i=at('val','chalice'),p=t.ITEM_KINDS.val.fetches(P.inv[i],ash);t.act('sell-own',String(i));ok(P.gold===g0+p&&at('val','chalice')<0,'Sell: a valuable sold for its price there (+'+p+')')}
  t.act('leave');Kit.done({world:true});
  // ---- ale and liquor: their morale once, into your stores; water none; no slower drain
- empty();P.morale=50;t.invAdd('good','water',20);const m1=P.morale;t.invAdd('good','ale',10);const m2=P.morale;t.invAdd('good','liquor',4);const m3=P.morale;
- ok(m1===50&&Math.abs(m2-(50+10*t.SUPPLY.drink.ale.morale))<1e-9&&Math.abs(m3-(m2+4*t.SUPPLY.drink.liquor.morale))<1e-9,'water lifts nothing; 10 ale +'+(m2-m1)+' morale, 4 liquor +'+(m3-m2)+', once, as they come in');
+ empty();P.morale=50;t.invAdd('good','water',20);t.invAdd('good','skin_empty',20);const m1=P.morale;t.invAdd('good','ale',10);const m2=P.morale;t.invAdd('good','liquor',4);const m3=P.morale;
+ ok(m1===50&&Math.abs(m2-(50+10*t.SUPPLY.drink.ale.morale))<1e-9&&Math.abs(m3-(m2+4*t.SUPPLY.drink.liquor.morale))<1e-9,'water (full waterskins or empty) lifts nothing; 10 ale +'+(m2-m1)+' morale, 4 liquor +'+(m3-m2)+', once, as they come in');
  P.morale=99.5;t.invAdd('good','liquor',5);ok(P.morale===100,'never over 100');
  {const L=t.supplyLand(),r=d=>t.staminaRate(true,d,L).n;ok(r('water')===r('ale')&&r('ale')===r('liquor'),'on the march every drink keeps the drain at its rate ('+r('water')+')')}
  {const hour=g=>{empty();t.invAdd('good',g,10);(0,eval)('BAND=freshBand()');P.morale=50;P.bsta=100;t.supplyHour();return P.morale};const a=hour('ale'),w=hour('water');ok(a===w,'drinking ale by the hour lifts no morale now (ale '+a+', water '+w+')')}

@@ -92,7 +92,7 @@ const recruitment=new RecruitmentService(P,{troops:ST,upgrades:UP,companions:COM
   lead:()=>skill('lead'),size:partySize,capacity:partyCap,canHire:(t,k)=>canHire(t,k),day:()=>G.day,
   roster:()=>partyRoster(P),target:k=>recruitTarget(k)||partyRoster(P).groups.find(g=>g.type===k)?.id||'new',
   canGroup:(k,target)=>partyRoster(P).canAdd(k,target===undefined?recruitTarget(k):target),freeGroup:()=>partyRoster(P).slots<ARMY_LIMIT,
-  add:(k,n=1,target=recruitTarget(k))=>{const r=partyRoster(P),added=r.add(k,n,target);if(added&&target==='new')G.recruitTarget=r.groups[r.groups.length-1].id;return added},
+  add:(k,n=1,target=recruitTarget(k))=>{const r=partyRoster(P),added=r.add(k,n,target);if(added&&target==='new')G.recruitTarget=r.groups[r.groups.length-1].id;if(added)skinsJoin(added);return added},// (each recruit brings an empty waterskin: world/supply.js)
   canTrainGroup:(from,to)=>partyRoster(P).canAdd(to)||partyRoster(P).groups.find(g=>g.type===from)?.count===1});
 const hireCost=k=>recruitment.hireCost(k),trainCost=k=>recruitment.trainCost(k);
 const txpNeed=k=>recruitment.xpNeed(k),txpOf=k=>recruitment.xpOf(k),txpReady=k=>recruitment.ready(k);

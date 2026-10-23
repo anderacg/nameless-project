@@ -13,7 +13,7 @@ window.RUN=()=>{
  if(shot==='fill'||shot==='ring'){const K=t.WorldArt.ensure().wk,r=t.SUPPLY.fill.near*16;let at=null;
   for(let ty=8;ty<t.MH-8&&!at;ty++)for(let tx=8;tx<t.MW-8;tx++){if(t.tAt(tx,ty)!==t.T_OPEN||t.tAt(tx,ty-1)!==t.T_WATER||t.tAt(tx,ty+1)!==t.T_OPEN||K[(ty+1)*t.MW+tx]||t.climAt(tx*16,ty*16)!=='grass'||t.TOWNS.some(h=>Math.hypot(h.x-tx*16,h.y-ty*16)<160))continue;
    const x=(tx+.5)*16;let y=ty*16;while(y<(ty+2)*16&&t.waterEdge(x,y+1,r))y++;if(y>ty*16){at=[x,y];break}}
-  P.x=at[0];P.y=at[1];P.tx=null;G.chase=null;G.clock=t.DAY*.3;t.reveal();t.goodTake('water',1e9);t.SKINS.reset(false);
+  P.x=at[0];P.y=at[1];P.tx=null;G.chase=null;G.clock=t.DAY*.3;t.reveal();t.goodTake('water',1e9);t.goodTake('skin_empty',1e9);t.playerInventory.add('good','skin_empty',99);t.SKINS.reset(false);
   if(shot==='fill'){t.fillSkins();t.SKINS.on.at-=t.SKINS.on.h*.6;t.SKINS.step()}else t.SKINS.t=1e9}// (the ring's: not yet begun by itself)
  t.updateHUD(true);t.frame();t.MainMenu.frame(performance.now());if(shot==='names')t.openNames();
  if(shot==='ring'){t.fitScreen();t.frame();const c=t.cv.getBoundingClientRect();t.ringOpen(c.left+c.width/2+30,c.top+c.height/2,P.x+16,P.y)}// (laid out at the window's size first; the camera on you: you at the middle)

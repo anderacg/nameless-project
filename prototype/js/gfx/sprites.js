@@ -222,6 +222,9 @@ function itemIcon(def){const k='ic'+def.icon+def.col;return spr[k]||(spr[k]=mkc(
     case 'jar':r(c,4,5,8,9);r(c,5,3,6,2);r('#6a4a2a',5,2,6,1);r(lt,5,6,2,5);r(dk,4,13,8,1);r('#e8c040',6,9,4,2);break;
     case 'meat':r(c,3,3,8,7);r(c,2,5,10,4);r(lt,4,4,3,2);r(dk,3,9,8,1);r('#e8e4d0',10,9,2,2);r('#e8e4d0',11,11,3,2);r('#e8e4d0',13,10,2,1);break;
     case 'fish':r(c,3,6,9,4);r(c,4,5,7,1);r(c,4,10,7,1);r(dk,12,5,3,6);r(lt,4,6,4,1);r('#1a1410',5,7,1,1);r(dk,3,9,8,1);break;
+    // (a waterskin: full, a plump leather bag with its cork, the water's drop by it in the item's colour; empty, flat and creased)
+    case 'skin':{const L='#a8845a',Ld=shade(L,.65),Ll=shade(L,1.25);r('#6a4a2a',7,1,2,2);r(Ll,6,3,4,2);r(L,4,5,8,8);r(L,3,6,10,6);r(L,5,13,6,1);r(Ll,5,6,2,4);r(Ld,4,12,8,1);r(Ld,11,7,1,4);r('#5a3a1a',10,3,2,1);r('#5a3a1a',12,4,1,3);r(c,12,0,1,1);r(c,11,1,3,2);r(lt,11,1,1,1);break}
+    case 'skinflat':r('#6a4a2a',5,5,2,2);r(lt,6,7,3,2);r(c,4,9,8,1);r(c,2,10,12,3);r(c,3,13,10,1);r(lt,4,10,3,1);r(dk,6,10,1,3);r(dk,9,11,1,2);r(dk,2,12,12,1);r(dk,3,13,10,1);break;
     case 'jug':r('#8a6a4a',5,1,6,2);r('#c8b8a0',4,3,8,10);r(c,5,4,6,4);r(lt,5,4,2,8);r('#c8b8a0',12,5,2,5);r(shade('#c8b8a0',.7),4,12,8,1);break;
     case 'cheese':r(c,2,6,12,7);r(c,4,4,8,2);r(c,7,3,4,1);r(lt,3,6,10,1);r(dk,2,12,12,1);r(dk,5,8,2,2);r(dk,10,9,2,2);r(dk,8,11,1,1);break;
     case 'fruit':r(c,2,6,6,6);r(c,8,7,6,6);r(lt,3,7,2,2);r(lt,9,8,2,2);r(dk,2,11,6,1);r(dk,8,12,6,1);r('#5a3a20',5,4,1,2);r('#3f8a3e',6,3,2,1);r('#5a3a20',11,5,1,2);break;

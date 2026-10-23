@@ -263,7 +263,13 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 // W6 re-recorded 2026-10-23 for the requested brown HUD: the minimap has a gold outer frame and brown inner rim.
 // Only those frame pixels move (parts 5bbf9f8b 2eecd9ea eaa57e59 ad7efa58 4403a5ea 8319b986); with the original
 // gfx/render.js restored W6 is b5185fc6 again. W1-W5, W7, W8, B2 and every generator sum held.
-const EXPECT={W1:'2ba57e1b',W2:'975f62a1',W3:'224e40e8',W4:'29fda26b',W5:'f284901d',W6:'6b64690d',W7:'d2479c86',W8:'a465c56e',B2:'8712b6a2'};
+// (W7 re-recorded 2026-10-24, on purpose, the owner's water (agent WK: world/supply.js, data/places.js CONTAINERS): one water is
+//  one person's day of drink (SUPPLY.drink.perDay 1, was a quarter: (people + 1) ÷ 6 an hour), a new hero sets out with 4 full
+//  waterskins (was the 2 days' 8 water) and each water drunk leaves an empty waterskin in the bag, so the bag in the three days'
+//  save moves. W8 (places only) and B2 (saved before the first frame gives the skins) hold, as do W1-W6 and the generator's sums.
+//  Checked: with perDay 4 (the old unit) and the skins off (no empty skins from drinking, filling as before, the start filled to
+//  2 days, no recruit's skin) W7 is d2479c86 again. Was W7 d2479c86)
+const EXPECT={W1:'2ba57e1b',W2:'975f62a1',W3:'224e40e8',W4:'29fda26b',W5:'f284901d',W6:'6b64690d',W7:'29dbbd3a',W8:'a465c56e',B2:'8712b6a2'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended

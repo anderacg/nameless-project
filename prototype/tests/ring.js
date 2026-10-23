@@ -5,7 +5,7 @@
 // and tap one; Esc, a right-click or a tap outside closes it, travelling nowhere. A short click on another party opens its own
 // ring at it (ui/input.js partyRing: Attack or Meet, Follow, Look), chasing nothing yet; held on it, the map's with Follow. Only what applies: Make camp or Break camp,
 // Travel here, By road (world.js roadGo: by-road mode on, and you go there; on, it turns it off) and Hurry here on the ground (Stop
-// hurrying while you hurry), Fill waterskins at the water's edge or a holding's well (lit while they fill), Drink liquor with liquor, Look on something. A mode that is on (camped, by
+// hurrying while you hurry), Fill waterskins at the water's edge or a holding's well (lit while they fill; "No empty waterskins" with none to fill), Drink liquor with liquor, Look on something. A mode that is on (camped, by
 // road, hurrying) is lit: the button's class on, a gold glow; the rest are not. A finger's long press opens it too, and its Look
 // shows the card. At a phone's 844 x 390 every button, lit or not, is on the screen.
 window.RUN=async()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);
@@ -15,7 +15,7 @@ try{
  Kit.begin('soldier',4242);Kit.clear();Kit.world();W0();
  function W0(){t.W.folk=[];t.W.patrols=[];t.W.caravans=[];t.W.refugees=[];t.W.critters=[]}
  const spot=(()=>{for(let ty=8;ty<t.MH-8;ty++)for(let tx=8;tx<t.MW-8;tx++){const x=(tx+.5)*16,y=(ty+.5)*16;if(t.tAt(tx,ty)===t.T_OPEN&&t.climAt(x,y)==='grass'&&!t.TOWNS.some(h=>Math.hypot(h.x-x,h.y-y)<200)&&!t.nearWater(x,y,5)&&t.campGround(x,y))return [x,y]}})();// (clear ground: Make camp pitches there at once)
- const bag=g=>{for(const k of ['water','ale','liquor'])t.goodTake(k,1e9);for(const k in g)t.playerInventory.add('good',k,g[k])};
+ const bag=g=>{for(const k of ['water','skin_empty','ale','liquor'])t.goodTake(k,1e9);for(const k in g)t.playerInventory.add('good',k,g[k])};
  const reset=()=>{t.ActionRing.close();t.hideTip();Kit.world();Kit.goTo(spot[0],spot[1]);ev('BAND=freshBand()');G.encCool=99;G.speed=1;G.chase=null;P.tx=null;t.bandits.length=0;W0();t.drawWorld()};
  // (client points of a world point; a pointer event on the canvas, or at a point of the window)
  const cl=(wx,wy)=>{const r=cv.getBoundingClientRect();return{clientX:r.left+(wx-G.cam.x)*r.width/t.VW,clientY:r.top+(wy-G.cam.y)*r.height/t.VH}};
@@ -66,11 +66,12 @@ try{
   t.ActionRing.close();P.camp=null;up(p)}
  reset();bag({liquor:5});{const p=cl(P.x+60,P.y+20);down(p);await held();up(p);ok(labels().includes('Drink liquor')&&!labels().includes('Fill waterskins'),'carrying liquor: Drink liquor; far from water, no Fill waterskins');
   btn('Drink liquor').el.click();ok(t.BAND.liquor===true,'Drink liquor: your band drinks its liquor first');down(p);await held();up(p);ok(lit().join()==='Water first','and the ring lights Water first while it does ('+lit().join()+')');t.ActionRing.close();t.BAND.liquor=false}
- {const h=t.TOWNS[0];Kit.goTo(h.x,h.y+20);G.lastTown=h;t.drawWorld();const p=cl(P.x+30,P.y+10);down(p);await held();up(p);ok(labels().includes('Fill waterskins'),'by a holding’s well (within '+t.SUPPLY.fill.well+' tiles): Fill waterskins');
-  bag({});t.SKINS.reset(false);btn('Fill waterskins').el.click();const on=!!t.SKINS.on,w0=t.goodN('water');t.Clock.advance(t.SKINS.on?t.SKINS.on.h*1.01*t.DAY/24:0);t.SKINS.frame(0);
+ {const h=t.TOWNS[0];Kit.goTo(h.x,h.y+20);G.lastTown=h;t.drawWorld();const p=cl(P.x+30,P.y+10);down(p);await held();up(p);const none=labels().includes('No empty waterskins')&&!labels().includes('Fill waterskins');t.ActionRing.close();
+  bag({skin_empty:20});down(p);await held();up(p);ok(none&&labels().includes('Fill waterskins'),'by a holding’s well (within '+t.SUPPLY.fill.well+' tiles): Fill waterskins; with no empty waterskins it says so ("No empty waterskins")');
+  bag({skin_empty:20});t.SKINS.reset(false);btn('Fill waterskins').el.click();const on=!!t.SKINS.on,w0=t.goodN('water');t.Clock.advance(t.SKINS.on?t.SKINS.on.h*1.01*t.DAY/24:0);t.SKINS.frame(0);
   ok(on&&w0===0&&t.goodN('water')>0,'and it fills them over game time ('+w0+' water at once, '+t.goodN('water')+' once its time has passed)');
-  bag({});t.SKINS.reset(false);t.fillSkins();down(p);await held();up(p);ok(labels().includes('Fill waterskins')&&lit().includes('Fill waterskins'),'while they fill, it is lit ('+lit().join(', ')+')');t.ActionRing.close();t.SKINS.reset(false);G.lastTown=null;
-  Kit.goTo(h.x,h.y-3*16);t.drawWorld();const q=cl(P.x+30,P.y+10);down(q);await held();up(q);ok(!labels().includes('Fill waterskins'),'3 tiles off the holding: no Fill waterskins');t.ActionRing.close()}
+  bag({skin_empty:20});t.SKINS.reset(false);t.fillSkins();down(p);await held();up(p);ok(labels().includes('Fill waterskins')&&lit().includes('Fill waterskins'),'while they fill, it is lit ('+lit().join(', ')+')');t.ActionRing.close();t.SKINS.reset(false);G.lastTown=null;
+  Kit.goTo(h.x,h.y-3*16);t.drawWorld();const q=cl(P.x+30,P.y+10);down(q);await held();up(q);ok(!labels().some(l=>/waterskins/.test(l)),'3 tiles off the holding: no Fill waterskins');t.ActionRing.close()}
  // ---- closing it: Esc, a right-click, a tap outside, travelling nowhere
  reset();{const p=cl(P.x+60,P.y+20);down(p);await held();up(p);Kit.key('Escape','Escape');ok(!ring()&&P.tx==null&&G.mode==='world','Esc closes it');
   down(p);await held();up(p);const q=cl(P.x-80,P.y-30);down(q,{button:2});up(q,{button:2});ok(!ring()&&P.tx==null,'a right-click closes it and travels nowhere');
