@@ -235,7 +235,11 @@ try{
  // hunters
  {P.gold=100;const f0=t.goodN('furs');meet('hunters');pickA(0);ok(t.goodN('furs')===f0+3&&P.gold===85,'Buy 3 furs for 15 gold');world();const m0=t.goodN('meat');meet('hunters');pickA(1);ok(t.goodN('meat')===m0+3,'Join the hunt: meat, XP and Scouting');world()}
  // the lost child (near a holding)
- {const A=t.townBy('Ashford');at(A.x+60,A.y+60);const e=t.roadSpawn('child',P.x+10,P.y),r1=t.repAt(e.to);P.morale=50;t.roadMeet(e);pickA(0);ok(t.repAt(e.to)>r1&&P.morale===55&&new RegExp(e.to).test(panel()),'Take her home: her family in '+e.to+' remembers (reputation, morale +5)');world()}
+ // (an escort now, world/escort.js: she rides with you to her family's house, and they thank you there)
+ {const A=t.townBy('Ashford');at(A.x+60,A.y+60);P.quests=[];const e=t.roadSpawn('child',P.x+10,P.y),r1=t.repAt(e.to);P.morale=50;t.roadMeet(e);pickA(0);const q=P.quests[0];
+  ok(q&&q.type==='escort'&&q.who==='child'&&q.to.town===e.to&&q.to.k==='house'&&t.repAt(e.to)===r1&&P.morale===50&&e.gone&&e.fin==='done'&&new RegExp(e.to).test(panel()),'Take her home: she rides with you, bound for '+(q&&q.to.name)+'; nothing paid yet, the child gone from the road');
+  world();if(q){P.x=q.to.x;P.y=q.to.y}t.updateRoad(.05);
+  ok(q&&!P.quests.length&&q.fate==='arrived'&&t.repAt(e.to)===r1+6&&P.morale===55&&G.mode==='story'&&/Escort: The lost child/.test(panel()),'at her family’s door: reputation in '+e.to+' +6, morale +5, and her page');t.act('pas-close');ok(G.mode==='world'&&t.ov.hidden,'Ride on: back to the map');world()}
  // the bard
  {P.gold=100;const r1=P.renown;meet('bard');pickA(0);ok(P.gold===90&&P.renown===r1+2,'Hear his song: 10 gold, renown +2');world()}
  // the wisps
@@ -243,7 +247,9 @@ try{
  // a caravan under attack
  {P.troops={hum_levy:6};const e=meet('caravan');pickA(0);ok(G.mode==='dialog'&&G.enc&&G.enc.kind==='party'&&G.enc.ref instanceof t.BandParty&&G.enc.list.length===e.n&&e.gone,'Join the fight: the raiders, a band of their own, '+e.n+' of them');t.act('flee');world()}
  // refugees
- {const g0=t.goodN('grain'),r1=P.renown;meet('refugees');pickA(0);ok(t.goodN('grain')===g0+4&&P.renown===r1+1,'Escort them: they leave you 4 grain, renown +1');world();
+ {const g0=t.goodN('grain'),r1=P.renown;P.quests=[];const e=meet('refugees');pickA(0);const q=P.quests[0],to=q&&t.townBy(q.to.town);
+  ok(q&&q.who==='refugees'&&q.to.k==='holding'&&!!to&&!t.hostileTo(to.owner)&&t.goodN('grain')===g0&&P.renown===r1&&e.gone,'Escort them: the family rides with you to '+(q&&q.to.name)+', '+(q&&Math.round(Math.hypot(q.to.x-e.x,q.to.y-e.y)/TILE))+' tiles off; nothing paid yet');
+  world();if(to)t.enterTown(to);ok(q&&!P.quests.length&&q.fate==='arrived'&&t.goodN('grain')===g0+4&&P.renown===r1+1,'entering '+(q&&q.to.name)+': they leave you 4 grain, renown +1');G.town=null;world();
   const f0=t.foodN();meet('refugees');pickA(1);ok(t.foodN()===f0-3,'Give food: −3 food');world()}
  // the shepherd
  {const b0=t.bandits.length,s0=P.sk.scout.xp+P.sk.scout.lv*1e4;meet('warning');pickA(0);ok(t.bandits.length===b0+1&&P.sk.scout.xp+P.sk.scout.lv*1e4>s0&&/raiders on the move to the/.test(panel()),'Listen: he tells of a band and which way it is');world()}

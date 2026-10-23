@@ -4,7 +4,8 @@
    kinds (defineKind('thread', id, {n, steps, first})) are data; the game has none yet (the chain quests and Ander The Fallen
    will be the first: doc/IMPLEMENTATION_PLAN.md §10.7–10.8). Each step: {id, start, until, how, remember, then}:
    - start: what the step begins (Thread.starters), its fields plain or functions of the thread (th=>th.memory.town):
-       {quest: kind, town, lord}: a job offered at the town (none: the memory's town), by the lord if named, and taken;
+       {quest: kind, town, lord, spec}: a job offered at the town (none: the memory's town), by the lord if named, and taken;
+         spec: what a kind made by another is given (an escort: {quest: 'escort', spec: {who, to, …}}, world/escort.js);
        {encounter: kind, x, y}: one on the road there (none: a spot of its own ground ahead of you);
        {incident: kind}: it befalls you, over at once;
        {page: {ico, title, text, choices}}: a page of choices (Choice specs, each its how), shown when you are free on the map;
@@ -150,7 +151,7 @@ Thread.starters={
   quest:{
     until:'quest:ended',
     start(v,th){
-      const t=townBy(v.town||th.memory.town),lord=v.lord?W.lords.find(l=>l.name===v.lord):null,q=t&&Quest.make(v.quest,t,lord);
+      const t=townBy(v.town||th.memory.town),lord=v.lord?W.lords.find(l=>l.name===v.lord):null,q=t&&Quest.make(v.quest,t,lord,v.spec);
       return q&&q.accept()?{shape:'quest',id:q.id}:null;
     },
   },

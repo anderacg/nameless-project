@@ -11,7 +11,7 @@
    - Outcome.facts(o) and describeOutcome(o): its text from the same object ('+20 gold · honour with the Vale −5 · morale −3'),
      so what a button says and what it does cannot drift apart. Silent effects (a companion's mood, a log line, the end) say
      nothing.
-   A new effect (a title, a trophy, a passenger) is one more handler here, with its text (a quest item: item). */
+   A new effect (a title, a trophy) is one more handler here, with its text (a quest item: item; a passenger: passenger). */
 const Outcome={
   // (a number with its sign: +3, −3)
   signed(n){
@@ -188,7 +188,8 @@ const Outcome={
       },
       text:()=>'word gets round',
     },
-    // fight: {amb, edge} (encounters.js roadFight: an ambush's band, you in their trap), true: the plain one
+    // fight: {amb, edge} (encounters.js roadFight: an ambush's band, you in their trap), true: the plain one (the encounter's story
+    // ends with the battle: story/encounter.js fought)
     fight:{
       apply(v,ctx){
         if(v===true)roadFight(ctx.e);
@@ -223,6 +224,14 @@ const Outcome={
         res.started=v.thread?Thread.start(v.thread,v.memory):roadSpawn(v.k,v.x,v.y);
       },
       text:v=>'then: '+(v.thread?kindOf('thread',v.thread):kindOf('encounter',v.k)).n.toLowerCase(),
+    },
+    // passenger: a spec ({who, to, prize, forfeit, days, at}: world/escort.js), one who rides in your band to be seen safe to its
+    // place, an escort begun (res.escort: the quest, or null); its prize comes on arrival
+    passenger:{
+      apply(v,ctx,res){
+        res.escort=Escort.start(v);
+      },
+      text:v=>Escort.facts(v),
     },
     // band: a band of raiders set on the map (world.js spawnBandit; res.band, it)
     band:{

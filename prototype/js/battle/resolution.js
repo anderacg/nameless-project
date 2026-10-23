@@ -122,6 +122,9 @@ class BattleResolution{
       else for(const k in txp||{})txpGain(k,txp[k]);txpClamp();const ready=Object.keys(P.troops).reduce((a,k)=>a+txpReady(k),0);
       if(ready>before)html+='<p class="gold">Your troops learn from the fight: '+ready+' soldier'+(ready>1?'s are':' is')+' ready to train at a barracks.</p>'}
     if(!win)encLost(e);// (withdrawn or beaten: what that costs or leaves behind, engage.js ON_WIN lost)
+    // (how it went, on the world's bus: an encounter fought on the road ends with it, passengers are lost with a defeat; run down,
+    // it is to be faced again: story/encounter.js, world/escort.js)
+    worldEmit('battle:ended',{enc:e,how:win?'won':!retreat?'lost':G.encAgain===e?'rundown':'withdrawn'});
     G.encCool=retreat?4:3;G.enc=null;G.mode='dialog';
     const report=groupLosses?{groups:groupLosses.slice().sort((a,b)=>a.slot-b.slot).map(row=>({id:row.id,type:row.type,name:row.name,start:row.start,
       fit:row.start-row.count-row.rearguard,wounded:row.wounded,killed:row.count-row.wounded+row.rearguard,saved:row.saved,rearguard:row.rearguard})),characters:this.characterReport||[],...(this.unitOfBattle?{best:this.unitOfBattle}:{})}:null;

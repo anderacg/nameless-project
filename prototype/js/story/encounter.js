@@ -115,6 +115,7 @@ const Behaviours={
         e.done=1;
         if(G.chase===e)G.chase=null;
         e.say(e.D.lost||'It gets away.','bad');
+        e.finish('escaped');
         e.over();
         return false;
       }
@@ -126,7 +127,7 @@ const Behaviours={
 
 /* ---------- an encounter on the map (world/encounters.js: its kinds; data/encounters.js: their numbers; its figures, its page). Its record: {rd, i, k, x,
    y, dir, beh, race, t0, end (hours), d0 (how far it first stood), seed, seen (heard or seen: highlighted from then), met, done,
-   ...its kind's}; a trace: {rd, i, k, trace, from, end}. A kind's hooks (setup, ending, meet) are called through it, so a kind
+   fin (how its story ended: finish), ...its kind's}; a trace: {rd, i, k, trace, from, end}. A kind's hooks (setup, ending, meet) are called through it, so a kind
    of its own class overrides them as methods ---------- */
 class Encounter extends Happening{
   get shape(){
@@ -300,6 +301,17 @@ class Encounter extends Happening{
     const D=this.D;
     return D.ends&&this.beh===D.beh?D.ends:this.behaviour.ends||'unseen';
   }
+  /* its story over: the one way every ending goes, once (fin: how it ended, kept on its record), told on the bus as
+     encounter:ended {e, how}. how: 'done' (dealt with: a choice, or its own story's end: the flock home), 'left' (met and left
+     be, or passed by, or ridden away from), 'timeout' (its time ran out unresolved: it ended by itself), 'caught' (a horse
+     caught, a stray sent home), 'escaped' (one you chased, or tried to catch, got away), and a fight's: 'won', 'lost' or
+     'fled' (begun with encounter:fought: fought; settled with the battle, Encounter.battled, or left before the first blow,
+     Encounter.unfought). A trace never ends this way (it only fades) */
+  finish(how){
+    if(this.fin)return;
+    this.fin=how;
+    this.announceEnd(how);
+  }
   /* it leaves the map. Passed by (you knew of it, never met it): the timer falls by a quarter to a half. Unresolved, its story
      ends by itself: its trace, from when its time would have been up */
   over(){
@@ -312,7 +324,31 @@ class Encounter extends Happening{
       if(D.after&&!this.done)this.say(D.after(this));
     }
     if(D.trace&&!this.done)this.drop(Math.max(roadNow(),this.end));
-    this.announceEnd(this.done?'done':'left');
+    this.finish(this.done?'done':this.met||roadNow()<this.end?'left':'timeout');
+  }
+  /* ---- a fight on the road begins (world/encounters.js roadFight): off the map at once, encounter:fought {e} on the bus; how it
+     ends is the battle's: the fight (Encounter.fight: {e, w (the world it began in)}) is settled by battle:ended (resolution.js),
+     or, left before the first blow, once you are back on the map with no battle to face (updateRoad) */
+  fought(){
+    this.done=1;
+    this.gone=1;
+    Encounter.fight={e:this,w:W};
+    worldEmit('encounter:fought',{e:this});
+  }
+  // (battle:ended {enc, how}: won, lost, withdrawn (got away: fled); run down, it is to be faced again)
+  static battled(d){
+    const f=Encounter.fight;
+    if(!f||!d||!d.enc||d.enc.road!==f.e||d.how==='rundown')return;
+    Encounter.fight=null;
+    f.e.finish(d.how==='withdrawn'?'fled':d.how);
+  }
+  static unfought(){
+    const f=Encounter.fight;
+    if(!f)return;
+    const e=f.e,on=x=>!!x&&x.road===e;
+    if(f.w===W&&!e.fin&&(on(G.enc)||on(G.encAgain)||B))return;
+    Encounter.fight=null;
+    if(f.w===W)e.finish('fled');
   }
   // its trace where it is, from the hour at
   drop(at){
@@ -328,7 +364,8 @@ class Encounter extends Happening{
     if(how==='leave'&&this.beh!=='leave'&&!(this.fled&&!this.calm))this.goOff();
     return this.beh==='leave'&&now>=this.end+L.linger&&dist>V*.8;
   }
-  // packs up and walks off: its people only; its trace (the cart, the burnt wagon) left now in its place, and it done with
+  // packs up and walks off: its people only; its trace (the cart, the burnt wagon) left now in its place, and it done with (its
+  // time ran out: its story ends so)
   goOff(){
     this.beh='leave';
     this.left=1;
@@ -336,6 +373,7 @@ class Encounter extends Happening{
     if(this.D.trace&&!this.done){
       this.drop(roadNow());
       this.done=1;
+      this.finish('timeout');
     }
   }
   // a procession at its goal (there) in your sight: it stays a while (praying, at the shrine); with no way on, it walks off
@@ -382,6 +420,8 @@ class Encounter extends Happening{
     if(Math.abs(this.x-ox)>.01)this.dir=this.x>ox?1:-1;
   }
 }
+Encounter.fight=null;
+worldOn('battle:ended',d=>Encounter.battled(d));
 // (today's names: the road's encounter, and making a record one)
 const RoadEncounter=Encounter;
 const asEncounter=rec=>Encounter.as(rec);

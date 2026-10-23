@@ -44,6 +44,7 @@ function renderChar(){
           Object.keys(ROLES).map(r=>'<button class="btn sm'+(c.role===r?' on':'')+'" type="button" data-act="role" data-arg="'+id+':'+r+'" aria-pressed="'+(c.role===r)+'">'+ROLES[r]+'</button>').join('')+
           '<button class="btn sm" type="button" data-act="dismiss" data-arg="'+id+'">Dismiss</button></div></div>'}).join('')+
         '<p class="muted">Scout: +2 Scouting and more as they learn it. Surgeon: the same for Medicine. Quartermaster: band eats 25% less. Manage: their gear, level, perks and a party to lead.</p>':'<p class="muted">None yet. Look for them in town taverns.</p>')+
+      Escort.html()+// (those you escort, riding with you: world/escort.js)
       '<div class="lab" style="margin-top:6px">Prisoners ('+prisonerCount()+' / '+prisonCap()+')</div>'+(prisonerCount()?Object.keys(P.prisoners).filter(k=>P.prisoners[k]>0).map(k=>{const quote=recruitment.quotePrisoner(k);return '<div class="row"><div class="info"><strong>'+ST[k].n+'</strong><small>Ransom '+RANSOM[ST[k].tier]+'g in a town tavern</small></div><span class="own">×'+P.prisoners[k]+'</span><div class="acts">'+
         '<button class="btn sm" type="button" data-act="p-recruit" data-arg="'+k+'"'+(!quote.ok?' disabled title="'+recruitmentWhy(quote)+'"':'')+'>Recruit '+quote.cost+'g</button>'+
         '<button class="btn sm" type="button" data-act="p-release" data-arg="'+k+'">Release</button></div></div>'}).join(''):'<p class="muted">None. Win battles to take some.</p>')+captivesHtml();

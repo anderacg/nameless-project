@@ -127,7 +127,7 @@ Kit.suite(({ok,info})=>{
   ok(nDid>=all.length*2&&!bad.length,'every incident comes somewhere, and befalls you as its outcome says, its line and tone logged, over at once ('+nDid+' runs, every race, both ways of a roll)'+(bad.length?': '+bad.slice(0,8).join('; '):''))}
  // ================= the Quest kinds (story/quest.js; the jobs, world/quests.js), every one
  {const SH='quest',Q=t.Quest,all=K.all(SH),ids=all.map(k=>k.id),bad=[];Kit.world();Kit.clear();
-  ok(ids.join()==='bounty,beast,clear,supply,hunt,courier,troops,lordkill,raid'&&all.every(k=>k.cls&&k.cls.prototype instanceof Q&&t.kindOf(SH,k.id)===k),'the job kinds: registered once each, each a subclass of Quest ('+all.map(k=>k.cls.name).join(', ')+')');
+  ok(ids.join()==='bounty,beast,clear,supply,hunt,courier,troops,lordkill,raid,escort'&&all.every(k=>k.cls&&k.cls.prototype instanceof Q&&t.kindOf(SH,k.id)===k),'the job kinds: registered once each, each a subclass of Quest ('+all.map(k=>k.cls.name).join(', ')+')');
   // (every realm at war with every other, so a lord has war work; a lord's kinds are made by a lord)
   const facs=Object.keys(t.FACS).filter(f=>f!=='player');for(const a of facs)for(const b of facs)if(a<b)W.rel[t.rk(a,b)]={s:'war',since:G.day};W.lords.forEach(l=>{l.dead=false});
   // (the deed's own event, for one taken: what it waits for, found on the map)

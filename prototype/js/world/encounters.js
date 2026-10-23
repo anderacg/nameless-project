@@ -42,8 +42,9 @@ const roadCol=e=>e.fac&&FACS[e.fac]?FACS[e.fac].col:'#8a7458',roadPrice=e=>Math.
 // trap, the ambush's battle; false: you came ready for them
 const roadBand=(x,y)=>{const c=climAt(x,y);return c==='desert'?'raiders':c==='swamp'?'bog':'bandits'};
 const roadBandN=()=>roadRng().int(5,7)+Math.floor(G.day/15);
-function roadFight(e,amb,edge=amb){e.done=1;e.gone=1;G.road=null;const k=amb?e.band||roadBand(P.x,P.y):'bandits',n=e.foes?e.foes.length:amb?roadBandN():e.n,b=asParty({x:P.x,y:P.y,cool:0,n,kind:k,...(e.foes?{troops:e.foes.slice()}:{})});
-  startEncounter({kind:'party',ref:b,n,list:b.troops.slice(),band:k,...(edge?{btype:{kind:'ambush',hid:1}}:{})})}
+// (the encounter fought: off the map, encounter:fought; the battle carries it (road), so its end is the battle's: story/encounter.js)
+function roadFight(e,amb,edge=amb){asEncounter(e).fought();G.road=null;const k=amb?e.band||roadBand(P.x,P.y):'bandits',n=e.foes?e.foes.length:amb?roadBandN():e.n,b=asParty({x:P.x,y:P.y,cool:0,n,kind:k,...(e.foes?{troops:e.foes.slice()}:{})});
+  startEncounter({kind:'party',ref:b,n,list:b.troops.slice(),band:k,road:e,...(edge?{btype:{kind:'ambush',hid:1}}:{})})}
 /* the kinds: Encounter kinds (story/kinds.js defineKinds; their trigger 'travelHour', the pity timer's: ROAD_ENC is their view;
    a kind of its own class, cls: the shepherd). n, ico (its page's icon), w (weight; wf: × by your band), ok() (can it come here and now: today's event's rule), on
    (its ground: ENC_ON), beh, call (its call-out), hear (the log line when it is first heard: {d} its way; none: seen only), tip,
@@ -105,12 +106,14 @@ class Shepherd extends Encounter{
     train('athl',2);
     this.say('You drive a stray back to the shepherd ('+this.got+' of '+this.n+').');
     sfx('notify');
+    o.finish('caught');
     o.over();
   }
   // every stray back or gone: he is done, and on his way with his flock
   check(){
     if(!this.help||this.ended||this.strays().length)return;
     this.done=1;
+    this.finish('done');
     this.goOff();
   }
   // his thanks, once, for what came back (he ends, or walks off): reputation and his wool or cheese a sheep, more for all
@@ -244,7 +247,8 @@ defineKinds('encounter',{trigger:'travelHour'},{
     scene:()=>[['walk','child',0,0]],
     text:e=>'A lost child sits crying by the road. She says she lives in '+e.to+'.',
     left:()=>'She trudges off toward home.',
-    acts:[{icon:'house',label:'Take her home',out:e=>{const t=townBy(e.to);return{rep:[t&&t.name,6],morale:5,say:'Her family in '+e.to+' will not forget you.'}}}]},
+    acts:[{icon:'house',label:'Take her home',need:()=>Escort.why(),tip:'She rides with you to her family’s door; they thank you when she is home.',
+      out:e=>({passenger:roadEscort(e,'child'),gone:true,say:r=>r.escort?'She takes your hand. Home is '+r.escort.to.name+', '+Escort.way(r.escort)+'.':'She will not come with you.'})}]},
   bard:{n:'Wandering bard',ico:'renown',w:1.2,wf:()=>1+Math.min(1,P.renown/60),ok:()=>true,on:'road',beh:'approach',call:'A song for a hero?',hear:'A lute plays on the road to the {d}.',tip:'A bard with a lute',
     scene:()=>[['walk','bard',0,0]],
     text:()=>'A wandering bard offers to make a song of your deeds.',
@@ -272,7 +276,8 @@ defineKinds('encounter',{trigger:'travelHour'},{
     scene:()=>[['cart','',0,0,{col:'#9a8a6a'}],['refugee','',-19,1,{v:0}],['refugee','',-24,-2,{v:1}],['walk','child',-14,3,{v:2}]],
     text:()=>'Refugee farmers on the road with all they own on a cart, a child at their heels.',
     left:()=>'They trudge on.',
-    acts:[{icon:'troops',label:'Escort them',also:()=>['safe passage'],out:()=>({goods:{grain:4},renown:1,say:r=>'Refugee farmers thank you for safe passage and leave you '+r.goods.grain+' grain.'})},
+    acts:[{icon:'troops',label:'Escort them',need:()=>Escort.why(),also:()=>['safe passage'],tip:'They ride with you to a holding that will take them in; they thank you there.',
+        out:e=>({passenger:roadEscort(e,'refugees'),gone:true,say:r=>r.escort?'The family falls in behind your band, bound for '+r.escort.to.name+', '+Escort.way(r.escort)+'.':'They will not come with you.'})},
       {icon:'food',label:'Give food',need:()=>foodN()<3&&'You have no food to spare.',out:()=>({food:-3,renown:1,morale:3,mood:'kind',say:'They eat their first warm meal in days and bless your name.'})},ROAD_FLED]},
   warning:{n:'Shepherd’s warning',ico:'sheep',w:1,ok:()=>true,on:'open',beh:'approach',call:'Raiders about!',hear:'A shepherd waves to you from the {d}.',tip:'A shepherd and his flock',
     scene:()=>[['worker','herder',0,0],['beast','sheep',-8,1,{v:0}],['beast','sheep',-13,-2,{v:3}],['beast','sheep',-6,-3,{v:5}]],
@@ -444,9 +449,16 @@ function roadChaseRead(e){const h=catchHours(e.fromYou()),H=ENC_CATCH.hours;
 function roadChase(e){e.chase=roadNow()+ENC_CATCH.hours;e.hx=e.hy=null;G.road=null;G.mode='world';hidePanel();G.chase=e;P.tx=e.x;P.ty=e.y;P.stuck=0;const m='You run after the thief!';log(m);return m}
 // Catch it: a Riding check (and Agility); caught, the mount is yours (its worth in gold if you have one); missed, it bolts
 function roadCatchHorse(e){const id='m_'+e.mk;train('ride',4);
-  if(roadRng().chance(catchOdds())){e.gone=1;if(!P.gear.mount){P.gear.mount=id;fitInv();return'You take the reins and swing into the saddle: the '+ITEMS[id].n+' is yours.'}
+  if(roadRng().chance(catchOdds())){e.gone=1;e.finish('caught');if(!P.gear.mount){P.gear.mount=id;fitInv();return'You take the reins and swing into the saddle: the '+ITEMS[id].n+' is yours.'}
     const g=itemPrice(id);P.gold+=g;return'You take the reins, and sell the '+ITEMS[id].n+' on for '+g+' gold.'}
-  e.beh='bolt';return'It shies, rears and bolts. Gone.'}
+  e.beh='bolt';e.finish('escaped');return'It shies, rears and bolts. Gone.'}
+/* the escorts (world/escort.js): the lost child to her family's house in her holding (one of its houses, by her seed: no draw),
+   the refugees to the nearest holding at least ENC_TUNE.refugees.min tiles off that is not hostile to you (else the nearest);
+   their thanks on arrival (ENC_TUNE child, refugees: prize) */
+function roadEscort(e,who){const x=ENC_TUNE[who==='child'?'child':'refugees'],at={x:e.x,y:e.y};
+  if(who==='child')return{who,to:{town:e.to,lot:'house',i:e.seed},prize:{rep:[e.to,x.rep],morale:x.morale},forfeit:{rep:[e.to,-x.late]},at};
+  const ok=t=>!hostileTo(t.owner),far=t=>Math.hypot(t.x-e.x,t.y-e.y)>=x.min*TILE,t=Spatial.nearestHolding(e.x,e.y,t=>ok(t)&&far(t))||Spatial.nearestHolding(e.x,e.y,ok)||Spatial.nearestHolding(e.x,e.y);
+  return{who,to:{town:t.name},prize:{goods:{grain:x.grain},renown:x.renown},forfeit:{renown:-x.late},at}}
 /* the parts of another (pk: its i), never coming on their own (no trigger): a stray sheep of the shepherd's (its class, Stray:
    it grazes, and trots off from you within ENC_SHEEP.shy; once you help him, ride into it, within catchReach, and it is back
    with the flock) */

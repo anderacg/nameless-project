@@ -40,9 +40,9 @@ class BountyQuest extends Quest{
     this.x=p.x;
     this.y=p.y;
   }
-  // (on the map, or gone to ground in a camp)
+  // (on the map, or gone to ground in a camp: its quarry, story/quest.js)
   seek(){
-    const b=bandits.find(x=>x.qid===this.id)||camps().flatMap(c=>c.bands||[]).find(x=>x.qid===this.id);
+    const b=bandits.find(x=>x.qid===this.id)||Quest.quarry(this.id)[0];
     return b?{x:b.x,y:b.y,name:(b.ld?b.ld.name+' and ':'')+'the '+this.band}:null;
   }
   get deed(){
@@ -352,27 +352,30 @@ function questArrive(t){
 /* panels */
 const rewardText=r=>'<span class="gold">'+r.gold+' gold</span>'+(r.rep?' · +'+r.rep+' reputation':'')+(r.honor?' · +'+r.honor+' honor':'')+(r.xp?' · '+r.xp+' XP':'');
 function jobsBody(t){
-  const here=P.quests.filter(q=>canReportAt(q,t)),offers=jobsAt(t),full=P.quests.length>=QUEST_MAX,st=standingAt(t);
+  const here=P.quests.filter(q=>canReportAt(q,t)),offers=jobsAt(t),full=Quest.jobs()>=QUEST_MAX,st=standingAt(t);
   const row=(title,sub,acts)=>'<div class="row"><div class="info"><strong>'+title+'</strong><small>'+sub+'</small></div><div class="acts">'+acts+'</div></div>';
   return '<div class="lab">Your quests here</div>'+(here.length?here.map(q=>row(q.title,questProgress(q)+' · '+rewardText(q.reward),'<button class="btn sm" type="button" data-act="q-turnin" data-arg="'+q.id+'"'+(questReady(q)?'':' disabled')+'>'+(Quest.as(q).handsOver?'Hand over':'Report')+'</button>')).join(''):'<p class="muted">None.</p>')+
-    '<div class="lab" style="margin-top:6px">Work offered · '+P.quests.length+' / '+QUEST_MAX+' quests taken</div>'+
+    '<div class="lab" style="margin-top:6px">Work offered · '+Quest.jobs()+' / '+QUEST_MAX+' quests taken</div>'+
     (st<-10?'<p class="muted">Nobody here trusts you with work. Raise your standing first.</p>':offers.length?offers.map((q,i)=>row(q.title,q.text+' '+q.days+' days. Reward: '+rewardText(q.reward),'<button class="btn sm" type="button" data-act="q-accept" data-arg="'+i+'"'+(full?' disabled title="You have too many quests"':'')+'>Accept</button>')).join(''):'<p class="muted">No more work this week.</p>');
 }
 function questsBody(){
   if(!P.quests.length)return '<p class="muted">No quests. Look for work in the Jobs tab of any holding, or ask a friendly lord.</p>';
   return P.quests.map(q=>{const g=questGoal(q),d=g?Math.round(qTiles(g,P)):0;return '<div class="row"><div class="info"><strong>'+q.title+'</strong><small>'+q.text+'</small><small class="'+(q.done||questReady(q)?'good':'')+'">'+questProgress(q)+'</small>'+
-    '<small>'+(g?'Go '+(d<2?'here':d+' tiles '+compass(g.x-P.x,g.y-P.y))+(g.name?' to '+g.name:'')+'. ':'')+(q.due-G.day)+' days left · '+rewardText(q.reward)+'</small></div><div class="acts"><button class="btn sm" type="button" data-act="q-abandon" data-arg="'+q.id+'">Abandon</button></div></div>'}).join('');
+    '<small>'+(g?'Go '+(d<2?'here':d+' tiles '+compass(g.x-P.x,g.y-P.y))+(g.name?' to '+g.name:'')+'. ':'')+(q.due-G.day)+' days left · '+Quest.as(q).rewardLine()+'</small></div><div class="acts"><button class="btn sm" type="button" data-act="q-abandon" data-arg="'+q.id+'">Abandon</button></div></div>'}).join('');
 }
 // town actions (from the town screen) and log actions (from the character screen)
 function questAct(a,arg,t){
   if(!a.startsWith('q-'))return false;
   if(a==='q-accept'&&t){const list=jobsAt(t),q=list[+arg];if(q&&standingAt(t)>=-10&&acceptQuest(q))list.splice(+arg,1)}
   else if(a==='q-turnin'&&t){const q=questBy(+arg);if(q&&canReportAt(q,t)){if(q.done&&!Quest.as(q).handsOver)payQuest(q,t.name);else turnIn(q,t)}}
-  else if(a==='q-abandon'){const q=questBy(+arg);if(q)failQuest(q,'You gave it up.')}
+  else if(a==='q-abandon'){const q=questBy(+arg);if(q)Quest.as(q).abandon()}
   else if(a==='q-lord'&&G.enc&&G.enc.kind==='lord'){const l=G.enc.ref;if(G.lordJob&&acceptQuest(G.lordJob)){G.lordJob=null;l.asked=G.day}lordMeet(l);return true}
-  else if(a==='q-lord-report'&&G.enc&&G.enc.kind==='lord'){const l=G.enc.ref;P.quests.filter(q=>q.lord&&q.giver===l.name&&q.done).forEach(q=>payQuest(q,Spatial.nearest(fiefsOf(l.fac),l.x,l.y).name));lordMeet(l);return true}
+  else if(a==='q-lord-report'&&G.enc&&G.enc.kind==='lord'){const l=G.enc.ref,t=lordPayAt(l);P.quests.filter(q=>q.lord&&q.giver===l.name&&q.done).forEach(q=>payQuest(q,t&&t.name));lordMeet(l);return true}
   return 'refresh';
 }
+// where a lord's report is paid (the reputation's holding): his realm's holding nearest him; his realm holding none, the nearest
+// holding not hostile to you; none at all: null, paid by the lord himself (no holding's reputation, the rest of the reward as ever)
+const lordPayAt=l=>Spatial.nearest(fiefsOf(l.fac),l.x,l.y)||Spatial.nearestHolding(l.x,l.y,t=>!hostileTo(t.owner));
 // the lord dialog's job section
 function lordJobHtml(l){
   if(hostileTo(l.fac))return '';
@@ -383,12 +386,12 @@ function lordJobHtml(l){
   if(honorWith(l.fac)<0)return '<p class="muted">'+l.name+' has no work for someone the '+FACS[l.fac].n+' distrusts.</p>';
   if(l.asked===G.day)return '';
   if(!G.lordJob||G.lordJob.giver!==l.name)G.lordJob=lordJob(l);const q=G.lordJob;
-  return q?'<div class="row"><div class="info"><strong>'+q.title+'</strong><small>'+q.text+' '+q.days+' days. Reward: '+rewardText(q.reward)+'</small></div><div class="acts"><button class="btn sm" type="button" data-act="q-lord"'+(P.quests.length>=QUEST_MAX?' disabled':'')+'>Accept</button></div></div>':'<p class="muted">'+l.name+' has no work for you.</p>';
+  return q?'<div class="row"><div class="info"><strong>'+q.title+'</strong><small>'+q.text+' '+q.days+' days. Reward: '+rewardText(q.reward)+'</small></div><div class="acts"><button class="btn sm" type="button" data-act="q-lord"'+(Quest.jobs()>=QUEST_MAX?' disabled':'')+'>Accept</button></div></div>':'<p class="muted">'+l.name+' has no work for you.</p>';
 }
-/* the map: a marker over each quest's goal */
+/* the map: a marker over each quest's goal (an escort's place has its own: gfx/worldui.js wuiEscorts) */
 function drawQuestMarks(cam){
   const t=performance.now()/300;
-  for(const q of P.quests){const g=questGoal(q);if(!g)continue;const sx=Math.round(g.x-cam.x),sy=Math.round(g.y-cam.y);
+  for(const q of P.quests){if(q.to)continue;const g=questGoal(q);if(!g)continue;const sx=Math.round(g.x-cam.x),sy=Math.round(g.y-cam.y);
     if(sx<-10||sy<-10||sx>VW+10||sy>VH+10)continue;txt(q.done||questReady(q)?'?':'!',sx,sy-24+Math.round(Math.sin(t)*2),'#ffe040','center')}
 }
 // its work in the world's day and frame (core/systems.js)

@@ -45,16 +45,32 @@ const ENC_WALK={min:64,wind:.75,far:400};
    holding is within holdR px, × (1 − scout × Scouting), × night by night, between lo and hi; reveal: tiles round a place its news
    uncovers on your map); and the old ones: traveller (Tend his wounds: food; rep and renown × (1 + your care: ENC_STAT.care);
    gift: × your care, the chance he gives you gold [from, to] from his purse), hunters (Join the hunt: xp; meat × (1 + your
-   ENC_STAT.hunt); furs × it) */
+   ENC_STAT.hunt); furs × it), the escorts (world/escort.js): child (Take her home, to her family's house: rep and morale on
+   arrival; late: rep lost there), refugees (Escort them, to a holding at least min tiles off: grain and renown on arrival;
+   late: renown lost) */
 /* strayed sheep: n strays (from, to), r: px from the shepherd they wander (from, to), shy: px you come before one trots off,
    hours: how long he waits once you help, rep and good (wool or cheese) a sheep brought back, all: more when every one is */
 const ENC_SHEEP={n:[3,4],r:[40,80],shy:26,hours:3,rep:1,good:1,all:{rep:2,morale:3}};
 const ENC_TUNE={traveller:{food:3,rep:4,renown:1,gift:.6,gold:[5,10]},hunters:{xp:15,meat:3,furs:2},mud:{sp:20,hours:1,rep:3,give:[2,4],goods:[3,5],coins:[3,8]},thief:{purse:[20,40],reward:10,rep:4,honor:3},poacher:{see:1.15,scout:.1,rep:3,bounty:10,meat:4,price:8},
   funeral:{n:[3,5],honor:2,morale:4},wedding:{morale:10,hours:2,gift:25,rep:5},beggar:{gold:[5,10,20],honor:[1,2,3]},messenger:{purse:[8,16]},
+  child:{rep:6,morale:5,late:3},refugees:{grain:4,renown:1,min:8,late:1},
   pilgrims:{n:[2,4],morale:8,rep:3,walk:1,alms:20,almsMorale:12,xp:25,coins:12,coinsMorale:8},
   lure:{w:.5,night:1.6,wild:1.4,bandit:.3,bands:3,near:400,cap:1.6,warn:3,count:5,scare:{max:6,base:.2,lead:.06,cha:.05,lo:.05,hi:.85}},
   letter:{stale:[5,10],worth:[30,45],kind:{army:1.4,attack:1.3,deal:1.1,news:.6},w:{army:1,attack:1,deal:.7,news:.8},sell:1.2,deliver:.8,opened:.5,old:.15,
     rep:{sell:4,deliver:5,seen:6},witness:{r:120,base:.08,per:.12,hold:.25,holdR:160,scout:.07,night:.5,lo:.02,hi:.9},reveal:5}};
+/* escorts, shared (world/escort.js): max passengers at once; the days given: the way's tiles ÷ pace, and slack more; reach: px
+   from its place that is there (a holding's middle, a lot's door); who: each kind of passenger (n: its name, ico, eat: food a
+   day, say: its own lines, else ESCORT.say's: {N} its name, capitalised, {n}, {to} its place, {town} the holding); say: the
+   lines (arrive, and each fate: late (its due day passed: it goes on alone), captured (a battle lost: carried off by the
+   victors), left (abandoned: set down)); offer: a traveller's escort offered at a holding (a job of its own, or a thread's
+   step): his place min–max tiles off, gold + per a tile, rep in the giver's holding; forfeit: reputation lost at its place
+   when one fails, unless its spec says */
+const ESCORT={max:3,pace:8,slack:2,reach:{holding:36,lot:24},forfeit:4,
+  who:{child:{n:'the lost child',ico:'people',eat:.25,say:{arrive:'You bring her to her family’s door in {town}. Her mother weeps for joy.',late:'She slips away to find her own way home to {town}.'}},
+    refugees:{n:'the refugee family',ico:'people',eat:.75,say:{arrive:'The refugee family is safe in {town}. They press the last of their grain on you.',late:'Tired of waiting, the refugees leave your band to find {town} alone.'}},
+    traveller:{n:'a traveller',ico:'people',eat:.25}},
+  say:{arrive:'{N} is safe at {to}.',late:'{N} could wait no longer and sets off alone.',captured:'In the rout, your foes carry off {n}.',left:'You set {n} down by the road.'},
+  offer:{min:12,max:50,gold:25,per:1.5,rep:4}};
 const ENC_DICE=.48;// (a hand of bones won)
 // (the gamblers play at most hands hands with you, and quit early once they are quit gold down to you: no endless purse)
 const ENC_GAMBLE={hands:5,quit:100};

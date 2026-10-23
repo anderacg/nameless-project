@@ -26,7 +26,9 @@
    | fight:ended      | {fight, won, lost}      | a battle on the map: world/fights.js endFight           | news (fight, band)|
    | trace:left       | {e, trace}              | an encounter's trace: story/happening.js drop           | news (trace)      |
    | land:threat      | {town, foe}             | a beast or band on its land: world/defence.js           | news (beast, band)|
-   | encounter:ended  | {e, how: done or left}  | story/happening.js (Happening.announceEnd)              | threads' steps    |
+   | encounter:ended  | {e, how}                | story/encounter.js (Encounter#finish): done, left, timeout, caught, escaped, won, lost, fled| threads' steps    |
+   | encounter:fought | {e}                     | story/encounter.js (Encounter#fought)                    | (none yet)        |
+   | battle:ended     | {enc, how}              | battle/resolution.js: won, lost, withdrawn, rundown      | encounters, escorts |
    | incident:ended   | {e}                     | story/incident.js                                       | (none yet)        |
    | quest:ended      | {e, how: paid or failed}| story/quest.js (paid or failed)                         | threads' steps    |
    | page:chosen      | {e, how}                | story/thread.js (a thread's page: the choice's how)     | threads' steps    |

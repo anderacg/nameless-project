@@ -12,9 +12,11 @@
    - deed and hits(d): the world event it waits for (core/bus.js) and whether this one is its own; heard, it is done (finish);
    - ready(), progress(), todo(): can it be handed in, how far along it is, what is left;
    - handsOver (goods or troops handed over, not a deed reported) and handOver(t); arrive(t) (at a holding: a courier paid).
-   The rest is the same for every kind: accept(), pay(where), turnIn(t), fail(why), lapse() (its due day passed), and the
+   The rest is the same for every kind: accept(), pay(where), turnIn(t), fail(why), lapse() (its due day passed), abandon(),
+   its quarry (Quest.quarry: whatever it marked, roving or sheltering; unmarked once it is done or failed), and the
    bus's 'quest:ended' once it is paid or failed ({e, how: 'paid' or 'failed'}). Never ticked per frame: its progress comes from the bus (Quest.listen), its
-   due day from the day's tick (world/quests.js). */
+   due day from the day's tick (world/quests.js). A kind made by another (an escort: world/escort.js) is given its spec
+   (make's, setup's), and one that is not a job (counted false) does not count against QUEST_MAX. */
 class Quest extends Happening{
   get shape(){
     return 'quest';
@@ -22,11 +24,12 @@ class Quest extends Happening{
   static kindId(rec){
     return rec.type;
   }
-  // ---- the offer: its record made one of its kind's class, then its kind's setup (null: none here)
-  static make(type,t,lord){
+  // ---- the offer: its record made one of its kind's class, then its kind's setup (null: none here); spec: what a kind made by
+  // another is given (an escort's passenger and place: world/escort.js)
+  static make(type,t,lord,spec){
     if(!kindOf('quest',type))return null;
     const q=this.as({type,giver:lord?lord.name:t.name,lord:!!lord,fac:lord?lord.fac:t.owner,home:t.name});
-    return q.setup(t,lord)===false?null:q;
+    return q.setup(t,lord,spec)===false?null:q;
   }
   setup(){
     return false;
@@ -35,9 +38,23 @@ class Quest extends Happening{
   pays(gold,rep,honor,xp){
     this.reward={gold:Math.round(gold*qScale()*.7),rep,honor,xp};
   }
-  // ---- taking it (at most QUEST_MAX; its number is spent even when it cannot be taken)
+  // (its reward in words, for the panels)
+  rewardLine(){
+    return rewardText(this.reward);
+  }
+  // ---- taking it (at most QUEST_MAX jobs; its number is spent even when it cannot be taken)
+  // (counted against QUEST_MAX: a job; an escort is not: its own limit, world/escort.js)
+  get counted(){
+    return true;
+  }
+  full(){
+    return Quest.jobs()>=QUEST_MAX;
+  }
+  static jobs(){
+    return P.quests.filter(q=>Quest.as(q).counted).length;
+  }
   accept(){
-    if(P.quests.length>=QUEST_MAX)return false;
+    if(this.full())return false;
     this.id=P.qid=(P.qid||0)+1;
     this.due=G.day+this.days;
     this.done=false;
@@ -89,7 +106,16 @@ class Quest extends Happening{
   }
   finish(){
     this.done=true;
+    Quest.unmark(this.id);
     log('Quest done: '+this.title+'. Report back to '+this.reportTo+'.','gold');
+  }
+  // ---- its quarry: every party or beast it marked (qid), wherever it is: roving, gone to ground in a camp or hideout (a site's
+  // bands), a beast; unmarked once the quest is done or failed, so it is left to roam on its own
+  static quarry(id){
+    return [...new Set([...W.parties,...W.sites.flatMap(s=>s.bands||[]),...W.monsters])].filter(o=>o.qid===id);
+  }
+  static unmark(id){
+    for(const o of Quest.quarry(id))delete o.qid;
   }
   // (an event heard: every quest of yours not done yet that waits for it, in order, decides whether it is its own)
   static heard(type,d){
@@ -118,7 +144,9 @@ class Quest extends Happening{
     }
     gainXp(r.xp);
     P.renown+=this.lord?4:2;
-    if(r.rep)addRep(this.lord?where:this.home,r.rep,true);
+    // (a lord's: where you were paid; none, his realm holding nothing: no holding's reputation)
+    const at=this.lord?where:this.home;
+    if(r.rep&&at)addRep(at,r.rep,true);
     if(r.honor)addHonor(this.fac,r.honor,true);
     P.quests=P.quests.filter(x=>x!==this);
     log('Quest complete: '+this.title+'. +'+r.gold+' gold'+(r.rep?', +'+r.rep+' reputation':'')+(r.honor?', +'+r.honor+' honor':'')+'.','good');
@@ -133,13 +161,12 @@ class Quest extends Happening{
   }
   handOver(){}
   arrive(){}
-  // ---- failing: given up, or its due day passed; its quarry is left to roam on its own
+  // ---- failing: given up, or its due day passed; its quarry is left to roam on its own, wherever it is
   fail(why){
     P.quests=P.quests.filter(x=>x!==this);
     if(this.lord)addHonor(this.fac,-5,true);
     else addRep(this.home,-6,true);
-    bandits.forEach(b=>{if(b.qid===this.id)delete b.qid});
-    W.monsters.forEach(m=>{if(m.qid===this.id)delete m.qid});
+    Quest.unmark(this.id);
     log('Quest failed: '+this.title+'. '+why,'bad');
     const giver=this.lord&&W.lords.find(l=>l.name===this.giver);
     if(giver)changeRel(giver,RELATION.jobFailed,'you failed their work');
@@ -147,6 +174,10 @@ class Quest extends Happening{
   }
   lapse(){
     if(G.day>this.due&&!this.done)this.fail(this.reportTo+' is disappointed.');
+  }
+  // given up (Abandon, in your quests)
+  abandon(){
+    this.fail('You gave it up.');
   }
 }
 // (a quest's number, id, is its record's own field, set when it is taken, not a happening's getter (its i); so is a troops

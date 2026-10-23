@@ -43,8 +43,8 @@ class Happening extends WorldObject{
   get endEvent(){
     return this.shape+':ended';
   }
-  // over: {e} on the bus, and how it ended when its shape says (a quest 'paid' or 'failed'; an encounter 'done' or 'left'), the
-  // key a thread's step branches by (story/thread.js)
+  // over: {e} on the bus, and how it ended when its shape says (a quest 'paid' or 'failed'; an encounter its finish's: 'done',
+  // 'left', 'timeout', 'caught', 'escaped', 'won', 'lost', 'fled'), the key a thread's step branches by (story/thread.js)
   announceEnd(how){
     worldEmit(this.endEvent,how===undefined?{e:this}:{e:this,how});
   }

@@ -182,6 +182,8 @@ function hungerTag(){const H=SUPPLY.hunger,h=BAND.hungry,next=h<H.starving?['sta
   const now=h>=H.die?'Men die of hunger, one every '+H.toll+' hours. ':h>=H.desert?'Men desert'+(h>=H.sick?' and fall sick':'')+', one every '+H.toll+' hours. ':'';
   const you=h>=H.starving?'You lose '+pctOf(H.hero.hp)+' of your health and '+pctOf(H.hero.mp)+' of your mana every '+H.hero.every+' hours; neither comes back. ':'Your mana does not come back. ';
   return[h>=H.starving?'Starving':'Hungry','bad',(h>=H.starving?'No food for days: the march drains more and morale falls every hour. ':'No food: rest comes back at half speed and morale slips. ')+you+now+(next?'In '+inHours(next[1]-h,1)+': '+next[0]+'.':'')]}
+// (food an hour: your band's, and your passengers' who ride with you: world/escort.js)
+const bandFoodHour=moving=>P.foodHour(moving)+Escort.foodHour(moving);
 /* the band's hour (Systems.hour): waterskins fill beside water (stopped) or at a holding's well; it eats and drinks (more on the
    march); its stamina drains or comes back; and what it lacks takes its toll: tiredness and hunger in morale, exhaustion, hunger,
    thirst and the cold in men. The console's noNeeds (core.js CHEAT): nothing eaten or drunk, never hungry or thirsty, no drain */
@@ -189,7 +191,7 @@ function supplyHour(){
   const S=SUPPLY,u=BAND,L=supplyLand(),moving=!P.stay&&supplyMoved(),free=CHEAT.noNeeds;
   if(L.well||L.water&&!moving)fillSkins(true);
   // food, eaten as it comes due (the frost eats more): hungry when it could not eat what was due, or has none left
-  if(!free)u.eat+=P.foodHour(moving)*(L.frost?1+S.frostEat*survivalShare():1);const due=Math.floor(u.eat);u.eat-=due;
+  if(!free)u.eat+=bandFoodHour(moving)*(L.frost?1+S.frostEat*survivalShare():1);const due=Math.floor(u.eat);u.eat-=due;
   const hungry=!free&&((due?foodTake(due)<due:false)||!foodN());
   // drink: rations as they come due, else on what it carries
   if(!free)u.drink+=P.drinkHour(moving);const owe=Math.floor(u.drink);u.drink-=owe;const dr=free?'water':owe?drinkTake(owe,L):drinkNext(L);
@@ -331,7 +333,7 @@ const campPole=c=>{const f=c.s.fire,d=SUPPLY.camp.pole;return{x:c.X+f[0]+d[0]+2,
 // days at the current rate; furs (have, need, shown in or near the frost or when carried); the band's health; the tags that apply
 function supplyNow(){
   const S=SUPPLY,L=supplyLand(),go=!P.stay&&(P.tx!=null||!!G.chase),dr=drinkNext(L)||(canFill(L)?'water':null),r=staminaRate(go,dr,L),st=P.staminaState(),tags=[];// (where the skins fill, never thirsty)
-  const foodDays=foodN()/Math.max(.01,P.foodHour(go)*(L.frost?1+S.frostEat*survivalShare():1)*24),drinkDays=drinkStock(L)/Math.max(.01,P.drinkHour(go)*24);
+  const foodDays=foodN()/Math.max(.01,bandFoodHour(go)*(L.frost?1+S.frostEat*survivalShare():1)*24),drinkDays=drinkStock(L)/Math.max(.01,P.drinkHour(go)*24);
   const furs={have:goodN('furs'),need:P.furNeed(),show:L.frost||goodN('furs')>0||nearFrost()};
   if(st==='tired')tags.push(['Tired','warn','Stamina under '+S.tired+': your pace is '+Math.round((1-S.pace.tired)*100)+'% slower and morale slips. Stop or make camp to rest.']);
   if(st==='exhausted')tags.push(['Exhausted','bad','Stamina under '+S.exhausted+': your pace is '+Math.round((1-S.pace.exhausted)*100)+'% slower, you cannot outrun anyone, and men fall sick.']);
@@ -340,6 +342,7 @@ function supplyNow(){
   if(L.frost&&coldShare())tags.push(['Cold','bad','Short of furs in the frost ('+furs.have+' of '+furs.need+'): stamina drains faster, and frostbite takes men.']);
   if(G.hurry)tags.push(['Hurrying','warn','Marching at '+S.forcedMarch.pace+'× the pace, stamina draining '+S.forcedMarch.drain+'× as fast. It ends once your band is Exhausted (R or the action ring’s Stop hurrying to stop).']);
   if(P.camp)tags.push(['In camp','good','Resting: stamina +'+S.rest.camp+' an hour, the wounded mend faster. Any travel order breaks camp.']);
+  {const pas=Escort.tag();if(pas)tags.push(pas)}// (your passengers, who eat with you: world/escort.js)
   return{L,go,dr,r,st,foodDays,drinkDays,furs,fit:P.fitness(),tags}}
 
 /* ---------- the action ring's map actions (ui/ring.js ActionRing; §7a): those that apply where you held (wx, wy: on o, a thing on

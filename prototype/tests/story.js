@@ -56,6 +56,7 @@ Kit.suite(({ok,info})=>{
   e={x:P.x+30,y:P.y};run({chase:true},{e},(r,f)=>G.chase===e&&/run after/.test(r.say)&&f.join()==='a chase on the map','a chase (its own line)');G.chase=null;P.tx=null;Kit.world();
   e={};run({end:true,gone:true},{e},(r,f)=>e.done===1&&e.gone===1&&!f.length,'end and gone (silent)');
   fresh();run({start:{k:'merchant',x:P.x+40,y:P.y}},null,(r,f)=>r.started&&r.started.k==='merchant'&&t.roadList().includes(r.started)&&f.join()==='then: wandering merchant','another happening started');W.road=null;
+  fresh();P.quests=[];run({passenger:{who:'child',to:{town:'Ashford',lot:'house',i:1},prize:{morale:5}}},null,(r,f)=>!!r.escort&&P.quests[0]===r.escort&&r.escort.type==='escort'&&/^escort the lost child to (a house in )?Ashford within \d+ days,there: morale \+5$/.test(f.join()),'a passenger: an escort begun (world/escort.js), its place, days and prize');P.quests=[];
   run({band:true},null,(r,f)=>(r.band===false||t.bandits.includes(r.band))&&f.join()==='word of a band','a band set on the map ('+(t.bandits.length?'there':'no room')+')');Kit.clear();
   {let got=null;run({call:(c,r)=>{got=c;return 9},say:r=>'said '+r.call},{e:7},(r,f)=>got&&got.e===7&&r.call===9&&r.say==='said 9'&&!f.length,'a hook\'s own step, and the line from what came of it')}
   ok(keys.every(k=>seen.has(k)),'every handler tried: '+keys.join(', ')+(keys.some(k=>!seen.has(k))?' (not: '+keys.filter(k=>!seen.has(k)).join(', ')+')':''));

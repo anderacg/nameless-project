@@ -161,7 +161,7 @@ function wuiUnder(cam){const now=performance.now(),dt=Math.min(.1,Math.max(0,(no
 function wuiOver(cam){if(G.mode==='title')return;const now=WUI.now||performance.now(),rm=reducedMotion();
   if(WUI.dest){const d=WUI.dest;wuiDrop(Math.round(d.x)-cam.x,Math.round(d.y)-cam.y,d.t,WUI_K.col.gold,now,rm,true)}
   if(WUI.tgt&&WUI.tgt.o.inView(vis())){const o=WUI.tgt.o,T=wuiTargetAt(o,cam);wuiDrop(T.x,T.top,WUI.tgt.t,WUI_K.col[wuiKind(o)],now,rm,false)}
-  wuiRoadOver(cam,now,rm);
+  wuiRoadOver(cam,now,rm);wuiEscorts(cam,now,rm);
   const h=WUI.hov;if(h){const b=h.b,col=WUI_K.col[h.kind],x0=wuiX(b[0],cam),y0=wuiY(b[1],cam),x1=wuiX(b[2],cam),y1=wuiY(b[3],cam),br=rm?0:(1+Math.sin(now/1000/WUI_K.breathe*6.2832))/2;
     wuiBrackets(x0,y0,x1,y1,col,h.kind==='ground'?.75:1,rm?0:Math.round(br),h.kind==='ground'?.5+.5*br:1+br)}}
 /* ---- the encounters on the road (world/road.js), each you know of and have not met (marked). Under the banners: sound
@@ -196,3 +196,9 @@ function wuiRoadOver(cam,now,rm){const V=vis(),col=WUI_K.col.enc,bang=wuiArrow('
     const d=(Math.round((a+Math.PI)/(Math.PI/8))%16+16)%16,sx=Math.round(ax+ux*WAVE.src),sy=Math.round(ay+uy*WAVE.src),nA=rm?2:WAVE.arcs;
     for(let i=0;i<nA;i++){const q=rm?(i+1)/(nA+1):((now/1000/WAVE.t+i/nA+(e.seed||0)*.37)%1),c=wuiArc(4+Math.round(q*WAVE.edge),d,col);ctx.globalAlpha=WAVE.a*Math.min(1,q*5)*(1-q*q);wuiPut(c,sx,sy,c.cx,c.cy)}
     ctx.globalAlpha=.8+.2*p;const in_=WAVE.edge-WAVE.src+12;wuiPut(bang,Math.round(ax-ux*in_),Math.round(ay-uy*in_)+4,bang.cx,bang.tip);ctx.globalAlpha=1}}
+/* ---- an escort's place (world/escort.js): a small house, in the friends' green, bobbing over the door it is bound for (a holding's
+   middle, a house's or an estate's door), while it is on the screen; its dot on the minimap is the quests' (render.js). Still,
+   under reducedMotion ---- */
+WUI_ARROW.home=['...#...','..###..','.#####.','#######','.#####.','.##.##.','.##.##.'];
+function wuiEscorts(cam,now,rm){const c=wuiArrow('home',WUI_K.col.friend),bob=rm?0:Math.round((1+Math.sin(now/1000*3))/2*2);
+  for(const q of P.quests){if(!q.to)continue;const x=Math.round(q.to.x-cam.x),y=Math.round(q.to.y-cam.y);if(x<-10||y<-10||x>VW+10||y>VH+10)continue;wuiPut(c,x,y-12-bob,c.cx,c.tip)}}
