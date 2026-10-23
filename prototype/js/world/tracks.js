@@ -1,15 +1,25 @@
 'use strict';
 /* ---------- tracks: every band that moves on the map leaves a trail of prints (doc/WORLD_DESIGN.md §12.7, the owner's 2026-10-23;
    the numbers: data/tracks.js TRACKS). Your band, the lords' armies, bandit bands, patrols, your companions' parties, caravans,
-   refugees, beasts and the wild game; never the workers about their estates (they keep to the roads and tracks, where nothing
-   shows anyway), the ships, livestock or a mythic beast in flight. Kept in W.tracks (saved, capped: the oldest points dropped
-   first); drawn by gfx/tracks.js; read by hovering one, or Look on the action ring (trackTip): the more Scouting, the more it
-   says. The way to find a roving band or its hideout: walk along its tracks. ---------- */
-// (where a print shows, and how clearly: 0 on roads and tracks as drawn, water, fords and the peaks; else its climate's, by its cover)
-function trackGround(x,y){const t=terrAt(x,y);if(t===T_WATER||t===T_FORD||t===T_MOUNT||t===T_ROAD||RoadBand.on(x,y))return 0;
-  return TRACKS.ground[climAt(x,y)]*(t===T_HILL?TRACKS.cover.hill:t===T_FOREST?TRACKS.cover.forest:TRACKS.cover.open)}
-// (the hours a print there lasts: its climate's life, cut by its weather)
-const trackLife=(x,y)=>TRACKS.life[climAt(x,y)]/TRACKS.weather[ambWeather(x,y)];
+   refugees, beasts and the wild game; never the workers about their estates (to and fro on the same roads and tracks all day,
+   they would only bury every other trail there), the ships, livestock or a mythic beast in flight. Kept in W.tracks (saved,
+   capped: the oldest points dropped first); drawn by gfx/tracks.js; read by hovering one, or Look on the action ring (trackTip):
+   the more Scouting, the more it says. The way to find a roving band or its hideout: walk along its tracks. ---------- */
+// (the road at (x, y), t its terrain, as its prints read it: '' none, 'deck' a bridge's, 'great' a great road (its tile's, or a
+// tile's next to the band there), 'dirt' a track between places or an estate's track)
+function trackRoad(x,y,t){const on=RoadBand.on(x,y);if(!on)return '';if(on===2)return 'dirt';const tx=Math.floor(x/TILE),ty=Math.floor(y/TILE),F=WM.feat;
+  if(t===T_ROAD){const f=F[ty*MW+tx];if(f&32)return 'deck';if(f&64)return 'great';if(f&128)return 'dirt'}
+  for(let v=Math.max(0,ty-1);v<=Math.min(MH-1,ty+1);v++)for(let u=Math.max(0,tx-1);u<=Math.min(MW-1,tx+1);u++)if(WM.kind[v*MW+u]===T_ROAD&&F[v*MW+u]&64)return 'great';
+  return 'dirt'}
+/* (a print's spot (x, y), in one record kept for it (no new object): g how clear the ground keeps it (0 none: water, fords, the
+   peaks, a bridge's deck; a road's, data/tracks.js road; else its climate's, by its cover), life the hours it lasts there (its
+   climate's, or its road's where that keeps them; cut by its weather), road its road ('' none) and c its climate) */
+const TRACK_SPOT={g:0,life:0,road:'',c:''};
+function trackSpot(x,y){const t=terrAt(x,y),c=climAt(x,y),o=TRACK_SPOT,R=TRACKS.road,bad=t===T_WATER||t===T_FORD||t===T_MOUNT,r=bad?'':trackRoad(x,y,t);o.c=c;o.road=r;
+  o.g=bad?0:r?R.ground[r]||0:TRACKS.ground[c]*(t===T_HILL?TRACKS.cover.hill:t===T_FOREST?TRACKS.cover.forest:TRACKS.cover.open);
+  o.life=(r&&o.g?R.life[r]:TRACKS.life[c])/TRACKS.weather[ambWeather(x,y)];return o}
+const trackGround=(x,y)=>trackSpot(x,y).g;
+const trackLife=(x,y)=>trackSpot(x,y).life;
 // (the world's time in tenths of an hour: a print's time)
 const trackNow=()=>Math.round(Clock.hours()*10);
 // (a party's size class, 0-3: data/tracks.js size)
@@ -75,7 +85,7 @@ const Tracks={
     else{const tc=o.tc||{};n=0;let r=0;for(const u in tc){n+=tc[u];if(ST[u]&&ST[u].mounted)r+=tc[u]}m=r*2>=n?1:0;n=k==='band'||k.startsWith('band:')?o.n||n:n+1;
       nm=k==='lord'?o.name+'’s army':k==='patrol'?watchName(o):k==='cparty'?o.label():o.name?'The '+o.name:o.ld?o.ld.name+'’s band':trackWho({k});q=o.qid||0}
     const tr=new Track(k,n,m,nm,q);tr.by=o;W.tracks.push(tr);return tr},
-  // the walker of a trail still being walked (its last point on to where it is now: gfx/tracks.js), else null
+  // the walker of a trail still being walked (its last point fresh while it is: Track#age), else null
   live(tr){const o=tr.by,s=o&&this.OPEN.get(o);return s&&s.tr===tr?o:null},
   // one band's moment (k its kind; off: not walking on the map now, its trail ended)
   step(o,k,off,now){const O=this.OPEN;let s=O.get(o);
@@ -115,10 +125,12 @@ const Tracks={
      (r2, px squared) trails seen, your sight (v2) and where you stand */
   view(){const V=this.V,s=vis(),lv=skill('scout'),S=TRACKS.see;V.now=trackNow();V.lv=lv;V.age=S.age[0]+S.age[1]*lv;
     const r=s*Math.min(1,S.range[0]+S.range[1]*lv);V.r2=r*r;V.v2=s*s;V.x=P.x;V.y=P.y;return V},
+  // how old trail tr's stretch from point i is if you see it (in your sight; others' by your Scouting), else null (V: view)
+  sight(tr,i,V){const p=tr.p,dx=p[3*i]-V.x,dy=p[3*i+1]-V.y,age=tr.age(i,V.now,this.live(tr));return dx*dx+dy*dy>(tr.own?V.v2:V.r2)||!tr.own&&age>V.age?null:age},
+  // (how clear a print of age hours is at (x, y): its ground's, faded over its life there; 0 gone; its spot left in TRACK_SPOT)
+  clear(x,y,age){const o=trackSpot(x,y),f=o.life?1-age/o.life:0;return f>0?TRACKS.alpha*o.g*f:0},
   // how clearly you see trail tr's point i (its stretch to the next): 0 not at all, else its alpha (V: view)
-  seen(tr,i,V){const p=tr.p,x=p[3*i],y=p[3*i+1],age=tr.age(i,V.now,this.live(tr)),dx=x-V.x,dy=y-V.y,d2=dx*dx+dy*dy;
-    if(d2>(tr.own?V.v2:V.r2)||!tr.own&&age>V.age)return 0;
-    const f=1-age/trackLife(x,y);return f>0?TRACKS.alpha*trackGround(x,y)*f:0},
+  seen(tr,i,V){const age=this.sight(tr,i,V);return age===null?0:this.clear(tr.p[3*i],tr.p[3*i+1],age)},
   // the trail you see under a point (wx, wy), within r px of its line: {tr, i}, or null (the nearest)
   at(wx,wy,r=5){if(!TRACKS.on||!W.tracks)return null;const V=this.view();let best=null,bd=r*r;
     for(const tr of W.tracks){const b=tr.box,p=tr.p;if(wx<b[0]-r||wx>b[2]+r||wy<b[1]-r||wy>b[3]+r)continue;

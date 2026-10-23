@@ -5,7 +5,10 @@
 // --window-size=1400,880 --screenshot=… "…/Ashmark.html?test=visual/tracks&scene=…"):
 //   sand, snow: your band's prints across the desert's sand or the frost's snow, the middle of the view at 4x;
 //   band&lv=n: a band of raiders' trail over the sand, from 8 hours old to fresh, seen at Scouting n (4x);
-//   card&lv=n: the same, with its card held up as Look shows it.
+//   card&lv=n: the same, with its card held up as Look shows it;
+//   road&kind=track|road: a band of raiders' trail along a dirt road (a track between places) or a great road, 4½ hours old to
+//   fresh, at Scouting 10 (4x), the dust prints fainter there than on the land;
+//   turn&at=0|1: a band walking east (at=0), then turned south (north if the land there is not grass) and walked on (at=1): its earlier prints as they were (4x).
 window.RUN=()=>{const o=[],info=m=>o.push('INFO '+m),t=T,G=t.G,P=t.P,W=t.W,TR=t.TRACKS,K=t.Tracks,q=new URLSearchParams(location.search),scene=q.get('scene');
 try{
  Kit.begin('soldier',7);if(scene)Kit.clear();Kit.world({encCool:1e9});G.clock=t.DAY*.3;
@@ -18,6 +21,18 @@ try{
    g.drawImage(src,sx-175*k,sy-110*k,350*k,220*k,0,0,1400,880);c.style.cssText='position:fixed;left:0;top:0;z-index:99';document.body.appendChild(c)};
  if(scene==='sand'||scene==='snow'){const s=run(scene==='sand'?'desert':'frost',14);Kit.goTo(s.x,s.y);t.updateWorld(.05);Kit.travel(s.x+12*16,s.y,4000);G.clock=t.DAY*.3;
   window.requestAnimationFrame=()=>0;t.drawWorld();zoom(s.x+8*16,s.y);info(scene+': '+W.tracks.map(x=>x.k+' '+x.size).join(', ')+'; '+K.n+' points')}
+ else if(scene==='road'){const kind=q.get('kind')||'track',F=t.WM.feat,tc=i=>({x:(i%t.MW+.5)*16,y:((i/t.MW|0)+.5)*16}),away=i=>{const c=tc(i);return t.climAt(c.x,c.y)==='grass'&&!t.TOWNS.some(h=>Math.hypot(h.x-c.x,h.y-c.y)<120)};
+  // (the first 16 tiles of a road of that kind on grass, clear of the holdings and the bridges)
+  let path=null;for(const z of t.WM.roads){if(z.kind!==kind||z.est)continue;for(let j=0;j+16<=z.path.length&&!path;j++){const w=z.path.slice(j,j+16);if(w.every(i=>t.WM.kind[i]===t.T_ROAD&&!(F[i]&32)&&away(i)))path=w}if(path)break}
+  const now=t.trackNow();lvTo(10);
+  const b=t.asParty({x:0,y:0,n:12,kind:'raiders',name:'Red Vipers',list:t.makeEnemies(12,false,'raiders'),t:0,a:0,idle:true,cool:0,ld:t.newChief('raiders',2)});t.bandits.push(b);
+  for(let j=0;j<16;j++){const c=tc(path[j]);b.x=c.x;b.y=c.y;K.step(b,'band:raiders',false,now-(15-j)*3)}
+  const m=tc(path[7]);Kit.goTo(m.x+4,m.y-30);window.requestAnimationFrame=()=>0;t.drawWorld();zoom(m.x,m.y);info('road ('+kind+'): '+W.tracks.map(x=>x.k+' '+x.size).join(', ')+'; on the road: '+W.tracks[0].p.filter((v,i)=>i%3===0&&t.trackRoad(v,W.tracks[0].p[i+1],t.terrAt(v,W.tracks[0].p[i+1]))).length)}
+ else if(scene==='turn'){const s=run('grass',14),now=t.trackNow(),S=TR.sample;lvTo(10);
+  const b=t.asParty({x:s.x,y:s.y,n:8,kind:'bandits',list:t.makeEnemies(8,false,'bandits'),t:0,a:0,idle:true,cool:0,ld:t.newChief('bandits',1)});t.bandits.push(b);
+  K.step(b,'band:bandits',false,now);for(let k=1;k<=6;k++){b.x=s.x+k*S;K.step(b,'band:bandits',false,now)}b.x+=10;K.step(b,'band:bandits',false,now);
+  if(q.get('at')==='1'){const up=[1,-1].find(d=>[S,2*S+10].every(h=>t.climAt(b.x,s.y+d*h)==='grass'&&t.trackGround(b.x,s.y+d*h)>0))||1;for(let k=1;k<=2;k++){b.y=s.y+up*k*S;K.step(b,'band:bandits',false,now)}b.y+=up*10;K.step(b,'band:bandits',false,now)}
+  Kit.goTo(s.x+3*S,s.y+40);window.requestAnimationFrame=()=>0;t.drawWorld();zoom(s.x+4*S,s.y);info('turn at='+(q.get('at')||0)+': '+W.tracks[0].size+' points, the band at '+Math.round(b.x)+','+Math.round(b.y))}
  else if(scene==='band'||scene==='card'){const s=run('desert',16),now=t.trackNow();lvTo(+(q.get('lv')||0));
   const b=t.asParty({x:s.x,y:s.y+20,n:8,kind:'raiders',name:'Red Vipers',list:t.makeEnemies(8,false,'raiders'),t:0,a:0,idle:true,cool:0,ld:t.newChief('raiders',2)});t.bandits.push(b);
   for(let k=0;k<=15;k++){b.x=s.x+k*16;b.y=s.y+20-Math.round(6*Math.sin(k/3));K.step(b,'band:raiders',false,now-(15-k)*5)}

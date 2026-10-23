@@ -1,8 +1,9 @@
 'use strict';
 /* ---------- data: tracks on the map (world/tracks.js keeps them, gfx/tracks.js draws them; doc/WORLD_DESIGN.md §12.7, the owner's
    2026-10-23). Every band that moves on the map leaves a trail: a point every sample px it walks, its prints drawn every step px
-   between them. How clear a print is: its ground (by climate, times its cover's); none on roads, tracks, water and fords. How long
-   it lasts: its climate's life in hours, cut by the weather there (the frost's snow fills them fastest, the desert's wind too).
+   between them. How clear a print is: its ground (by climate, times its cover's; a road's own, faint); none on water, fords and a
+   bridge's deck. How long it lasts: its climate's life in hours (a road's, short), cut by the weather there (the frost's snow
+   fills them fastest, the desert's wind too).
    Who sees them: your own always while they last; others' by Scouting. Units: px, game hours, Scouting levels (0-10). ---------- */
 const TRACKS={on:true,
   // a trail's point every sample px walked; a jump of more than gap samples (into a holding, out of one, a ferry) starts a new trail
@@ -16,6 +17,9 @@ const TRACKS={on:true,
   life:{grass:36,frost:30,desert:14,swamp:30},
   // … and how many times faster the weather fills them (the frost's snow the fastest)
   weather:{clear:1,rain:2,storm:2.5,snow:3},
+  // on a road (the owner, 2026-10-23): dust prints on a dirt road (a track between places, an estate's track), faint on a great
+  // road's paving; how clear (0-1) and the hours they last, short (the traffic and the carts tread them out; the weather cuts them too)
+  road:{ground:{dirt:.5,great:.3},life:{dirt:10,great:5}},
   // others' tracks, by your Scouting (lv): none older than age[0] + age[1] x lv hours, nor farther than your sight x
   // (range[0] + range[1] x lv) (at most your sight); your own: always while they last, in your sight
   see:{age:[3,3],range:[.25,.075]},
@@ -26,8 +30,8 @@ const TRACKS={on:true,
   step:{foot:6,hoof:7,paw:5,rut:3,drag:3},max:700,alpha:.8,
   // the size classes: up to size[0] people class 0 (a pair of prints), up to size[1] class 1, up to size[2] class 2, more class 3
   size:[2,9,29],
-  // their colour on each ground; a bounty's band's once you have read one of its trails (a faint gold)
-  col:{grass:'#24301a',frost:'#6f82a0',desert:'#6a4c2a',swamp:'#1c180f',known:'#e8c860'},
+  // their colour on each ground; a bounty's band's once you have read one of its trails (a faint gold); on a road (dust)
+  col:{grass:'#24301a',frost:'#6f82a0',desert:'#6a4c2a',swamp:'#1c180f',known:'#e8c860',road:'#2a1c0e'},
   // how a kind of beast walks (monsters by their kind; game: a size 1 animal paws, a bigger one hooves); the rest on foot
   beast:{wolf:'paw',boar:'hoof',tiger:'paw',bear:'paw',spider:'paw',troll:'foot',scorpion:'paw',wyrm:'drag',slime:'drag',griffin:'paw'},
   // what the card calls each style (mounted people: mounted)

@@ -1,7 +1,7 @@
 'use strict';
 // Tracks (world/tracks.js, gfx/tracks.js, data/tracks.js TRACKS; doc/WORLD_DESIGN.md §12.7): every band that moves leaves a trail
-// of prints, a point every TRACKS.sample px; none on roads, tracks or water; they fade with age, faster in the desert's wind and
-// the frost's snow; the oldest dropped first past the cap; your own always seen while they last, others' by Scouting (older and
+// of prints, a point every TRACKS.sample px; on roads too (fainter, shorter-lived), none on water, fords or a bridge's deck; a print
+// laid never moves or turns; they fade with age, faster in the desert's wind and the frost's snow; the oldest dropped first past the cap; your own always seen while they last, others' by Scouting (older and
 // farther with each level), only in your sight; a trail's card says more as Scouting rises; hovering one or Look on the action
 // ring reads it (training Scouting once); saved and loaded, a save without them loads; with TRACKS.on off nothing is kept or saved.
 Kit.suite(({ok,info})=>{
@@ -25,14 +25,50 @@ Kit.suite(({ok,info})=>{
   const tr=W.tracks.find(x=>x.k==='band:bandits');
   ok(!!tr&&tr.n===8&&!tr.m&&tr.style==='foot'&&tr.size>=7&&tr.nm===b.ld.name+'’s band','a bandit band moving 12 tiles leaves its trail: '+(tr?tr.k+', '+tr.n+' on foot, '+tr.size+' points, "'+tr.nm+'"':'none'));
   t.bandits.length=0}
- // ---- none on roads or water: a trail ends where the ground keeps nothing, a new one past it
- {let road=null,water=null;for(let ty=6;ty<t.MH-6&&!(road&&water);ty++)for(let tx=6;tx<t.MW-6;tx++){const x=(tx+.5)*16,y=(ty+.5)*16;if(!road&&t.tAt(tx,ty)===t.T_ROAD&&t.RoadBand.on(x,y))road={x,y};if(!water&&t.tAt(tx,ty)===t.T_WATER)water={x,y}}
-  ok(road&&t.trackGround(road.x,road.y)===0&&water&&t.trackGround(water.x,water.y)===0,'the ground keeps no prints on a road ('+t.regionAt(road.x,road.y).name+') nor on water');
-  quiet();K.reset();const o={x:road.x-3*TR.sample,y:road.y,n:4,id:'boar',dead:false};t.W.monsters=[o];P.x=-999;P.y=-999;K.frame();
-  const at=[];for(let k=1;k<=6;k++){o.x=road.x+(k-3)*TR.sample;K.frame();at.push(t.trackGround(o.x,o.y)>0)}
+ // ---- on roads: dust prints on a dirt road, faint on a great road's paving, short-lived (the owner, 2026-10-23); none on water,
+ // fords or a bridge's deck
+ {const F=t.WM.feat,KD=t.WM.kind,away=(x,y)=>t.climAt(x,y)==='grass'&&!t.TOWNS.some(h=>Math.hypot(h.x-x,h.y-y)<160);let dirt=null,great=null,deck=null,water=null,ford=null;
+  for(let ty=6;ty<t.MH-6;ty++)for(let tx=6;tx<t.MW-6;tx++){const i=ty*t.MW+tx,x=(tx+.5)*16,y=(ty+.5)*16,k=KD[i];
+   if(k===t.T_ROAD){if(F[i]&32)deck=deck||{x,y};else if(!great&&F[i]&64&&away(x,y))great={x,y};else if(!dirt&&F[i]&128&&away(x,y))dirt={x,y}}
+   else if(k===t.T_WATER)water=water||{x,y};else if(k===t.T_FORD)ford=ford||{x,y}}
+  const g=o=>o?t.trackGround(o.x,o.y):null,gg=t.trackGround(grass.x,grass.y);
+  ok(dirt&&great&&t.trackRoad(dirt.x,dirt.y,t.T_ROAD)==='dirt'&&t.trackRoad(great.x,great.y,t.T_ROAD)==='great'&&g(dirt)===TR.road.ground.dirt&&g(great)===TR.road.ground.great&&g(great)<g(dirt)&&g(dirt)<gg,
+   'prints on a road: a dirt road ('+(dirt&&t.regionAt(dirt.x,dirt.y).name)+') keeps them at '+g(dirt)+', a great road ('+(great&&t.regionAt(great.x,great.y).name)+') fainter at '+g(great)+' (open grass '+gg+')');
+  const lr=o=>t.trackLife(o.x,o.y),wf=o=>TR.weather[t.ambWeather(o.x,o.y)],lg=t.trackLife(grass.x,grass.y);
+  ok(lr(dirt)===TR.road.life.dirt/wf(dirt)&&lr(great)===TR.road.life.great/wf(great)&&lr(great)<lr(dirt)&&lr(dirt)<lg,'and short-lived: '+lr(dirt).toFixed(1)+' h on the dirt road, '+lr(great).toFixed(1)+' h on the great road (the traffic treads them out; '+lg+' h on grass)');
+  {let est=null;for(let ty=6;ty<t.MH-6&&!est;ty++)for(let tx=6;tx<t.MW-6;tx++){const x=(tx+.5)*16,y=(ty+.5)*16;if(t.RoadBand.on(x,y)===2){est={x,y};break}}
+   ok(!est||t.trackRoad(est.x,est.y,t.terrAt(est.x,est.y))==='dirt'&&g(est)===TR.road.ground.dirt,est?'an estate\'s track reads as a dirt road ('+g(est)+')':'no estate\'s track on this world')}
+  ok(water&&g(water)===0&&(!ford||g(ford)===0)&&(!deck||g(deck)===0),'none on water, a ford'+(ford?'':' (none here)')+' or a bridge\'s deck'+(deck?'':' (none here)'));
+  {const cl=(o,h)=>K.clear(o.x,o.y,h),ld=lr(dirt),c1=cl(dirt,1),road1=t.TRACK_SPOT.road;
+   ok(c1>0&&road1==='dirt'&&c1<cl(grass,1)&&cl(dirt,ld-.2)>0&&cl(dirt,ld+.2)===0&&cl(grass,ld+.2)>0,'an hour-old print on the dirt road shows at '+c1.toFixed(2)+' (on grass '+cl(grass,1).toFixed(2)+'), gone past '+ld+' h (on grass still '+cl(grass,ld+.2).toFixed(2)+')')}
+  // (a boar crossing the dirt road: its trail goes on over it, a point on the road)
+  quiet();K.reset();const road=dirt,o={x:road.x-3*TR.sample,y:road.y,n:4,id:'boar',dead:false};t.W.monsters=[o];P.x=-999;P.y=-999;K.frame();
+  const at=[];for(let k=1;k<=6;k++){o.x=road.x+(k-3)*TR.sample;K.frame();at.push(t.trackRoad(o.x,o.y,t.terrAt(o.x,o.y))||(t.trackGround(o.x,o.y)>0?'kept':'none'))}
   const pts=W.tracks.flatMap(tr=>{const r=[];for(let i=0;i<tr.p.length;i+=3)r.push([tr.p[i],tr.p[i+1]]);return r});
-  ok(pts.every(([x,y])=>t.trackGround(x,y)>0)&&!pts.some(([x,y])=>Math.abs(x-road.x)<2&&Math.abs(y-road.y)<2),'a boar crossing the road: no point on it ('+pts.length+' points kept, the ground under each step '+at.map(v=>v?'kept':'none').join(' ')+')');
-  W.monsters=[]}
+  ok(pts.every(([x,y])=>t.trackGround(x,y)>0)&&pts.some(([x,y])=>Math.abs(x-road.x)<2&&Math.abs(y-road.y)<2),'a boar crossing the dirt road: a point on it ('+W.tracks.length+' trail(s), '+pts.length+' points; the ground under each step: '+at.join(' ')+')');
+  W.monsters=[];
+  // (a band walking along a track between places: its prints drawn there, in the road's dust)
+  const tc=i=>({x:(i%t.MW+.5)*16,y:((i/t.MW|0)+.5)*16}),r=t.WM.roads.find(q=>q.kind==='track'&&!q.est&&q.path.length>=12&&q.path.slice(3,10).every(i=>KD[i]===t.T_ROAD&&!(F[i]&32)&&away(tc(i).x,tc(i).y)));
+  if(r){K.reset();quiet();const b={x:0,y:0,n:12,tc:{}},now=t.trackNow();
+   for(let j=3;j<=9;j++){const q=tc(r.path[j]);b.x=q.x;b.y=q.y;K.step(b,'band:bandits',false,now-(9-j)*2)}
+   const tr=W.tracks[0],mid=tc(r.path[6]);Kit.goTo(mid.x,mid.y-20);G.mode='world';G.modal=false;lvTo(10);G.clock=t.DAY*.3;
+   const pn=performance.now,grab=()=>{performance.now=()=>1e7;try{t.drawWorld();return t.ctx.getImageData(0,0,t.VW,t.VH).data}finally{performance.now=pn}};
+   const on=grab();TR.on=false;const off=grab();TR.on=true;let diff=0;for(let i=0;i<on.length;i+=4)if(on[i]!==off[i]||on[i+1]!==off[i+1]||on[i+2]!==off[i+2])diff++;
+   const onRoad=!!tr&&tr.p.every((v,i)=>i%3||!!t.trackRoad(v,tr.p[i+1],t.terrAt(v,tr.p[i+1])));
+   ok(tr&&onRoad&&diff>10,'a band of 12 walking a track between places: '+(tr?tr.size:0)+' points, all on the road, its prints drawn ('+diff+' pixels differ from the frame without tracks)')}
+  else info('no straight enough track between places for the drawn check')}
+ // ---- a print laid stays where it lies, turned as it was: the walker turning, or walking on, never moves or turns an older one
+ // (the owner's bug, 2026-10-23: the prints already laid turned as the band changed its way)
+ {K.reset();quiet();G.mode='world';G.modal=false;lvTo(10);G.clock=t.DAY*.3;const o={x:grass.x,y:grass.y,n:8,tc:{}},now=t.trackNow(),S=TR.sample;
+  const up=[-1,1].find(d=>[10,S+6].every(h=>t.trackGround(grass.x+5*S,grass.y+d*h)>0))||-1;
+  Kit.goTo(grass.x+3*S,grass.y+up*20);K.step(o,'band:bandits',false,now);for(let k=1;k<=5;k++){o.x=grass.x+k*S;K.step(o,'band:bandits',false,now)}
+  const pn=performance.now,grab=()=>{performance.now=()=>1e7;try{t.drawWorld();return t.ctx.getImageData(0,0,t.VW,t.VH).data}finally{performance.now=pn}};
+  const same=(A,B,keep)=>{let n=0;const cx=Math.floor(G.cam.x),cy=Math.floor(G.cam.y);for(let i=0;i<A.length;i+=4)if(A[i]!==B[i]||A[i+1]!==B[i+1]||A[i+2]!==B[i+2]){const j=i/4;if(!keep||keep(j%t.VW+cx,(j/t.VW|0)+cy))n++}return n};
+  const tr=W.tracks[0],a0=grab();TR.on=false;const bare=grab();TR.on=true;const laid=same(a0,bare);
+  o.y=grass.y+up*10;K.step(o,'band:bandits',false,now);const a1=grab();
+  ok(tr&&tr.size===6&&laid>20&&same(a0,a1)===0,'the walker turns '+(up<0?'north':'south')+' 10 px (no new point yet): every print as it was ('+laid+' pixels of prints, '+same(a0,a1)+' changed)');
+  o.y=grass.y+up*(S+6);K.step(o,'band:bandits',false,now);const a2=grab(),bx=grass.x+5*S,away=(x,y)=>!(x>bx-9&&x<bx+9&&(y-grass.y)*up>-9&&(y-grass.y)*up<S+15);
+  ok(tr.size===7&&same(a1,a2)>0&&same(a1,a2,away)===0,'it walks on that way past a sample: a point kept and its prints laid ('+same(a1,a2)+' pixels), the older prints untouched ('+same(a1,a2,away)+' changed away from the new stretch)')}
  // ---- fading: by age, and faster in the desert's wind and the frost's snow
  {const now=t.trackNow(),lifeOf=c=>{const s=run(c,2);return s?t.trackLife(s.x,s.y):null},lg=lifeOf('grass'),ld=lifeOf('desert'),lf=lifeOf('frost');
   ok(lg===TR.life.grass&&ld===TR.life.desert&&lf===TR.life.frost/TR.weather.snow&&lf<lg&&ld<lg,'a print lasts '+lg+' h on grass, '+ld+' h in the desert (the wind), '+(lf&&lf.toFixed(1))+' h in the frost (snow fills it, x'+TR.weather.snow+')');
