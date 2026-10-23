@@ -45,6 +45,7 @@ Project: Ashmark, a medieval Mount & Blade-like game in plain JS/canvas (no bund
   - a bottom bar built with `nav()`, Back on the left and the way out on the right;
   - Esc follows the bottom bar.
 - Arial UI font; the target is a phone in landscape (844×390) as well as desktop; organized `style.css` sections.
+- Additional suggestions can be provided if need a diffrent UI structure.
 
 ## The shared parts (use them, don't re-invent)
 - **Systems registry** (`core/systems.js` `Systems.add({name, order:{day|hour|frame}, ...})`): frame, hour and day work. `tests/structure.js` pins the order; add your system's name there if you own that file, else report it.
