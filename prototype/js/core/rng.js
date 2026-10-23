@@ -117,7 +117,7 @@ const rngOf=name=>Rng.of(name);
 onWorld(()=>Rng.reset());
 // (saved last: the game's number and each stream's state, by name. Loaded: the streams as they were; one not in the save starts
 // from its seed)
-Saves.add({key:'rng',order:270,defaults:null,
+Saves.add({key:'rng',order:900,defaults:null,
   save:()=>{
     const st=Rng.states();
     return {game:Rng.game,on:Object.fromEntries(Object.keys(st).sort().map(n=>[n,st[n]]))};

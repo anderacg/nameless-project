@@ -93,7 +93,7 @@ try{
  ok(W.mythic.dragon.back===G.day+t.MONSTERS.dragon.mythic.back,'and the next one comes '+t.MONSTERS.dragon.mythic.back+' days later');t.act('cont');
  t.saveGame(true);W.mythic={};t.loadGame();ok(W.mythic.dragon&&W.mythic.dragon.back===G.day+30,'the wait is saved');
  {const keys=Object.keys(t.worldSave()).join(),want='v,map,edits,seen,own,rel,dead,lords,exiles,mythic,monsters,sites,caravans,refugees,patrols,fights,lrel,uidN,fightN,treas,critters,shops';
-  ok(keys===want||keys.startsWith(want+',')&&/^(,road)?(,news)?(,threads)?(,gatherings)?(,rng)?(,band)?(,tracks)?(,chronicle)?$/.test(keys.slice(want.length)),'the world part of a save keeps its keys in their order: '+keys)}
+  ok(keys===want||keys.startsWith(want+',')&&/^(,road)?(,news)?(,threads)?(,gatherings)?(,band)?(,tracks)?(,chronicle)?(,rng)?$/.test(keys.slice(want.length)),'the world part of a save keeps its keys in their order: '+keys)}
  // ---- the old collision: two handlers answered 'fief-take'
  const tw=t.townBy('Ashford');tw.owner='player';tw.gar=6;t.ensureEcon(tw);tw.stock.grain=50;G.mode='world';G.modal=false;t.hidePanel();G.lastTown=null;t.enterTown(tw);t.act('tab','fief');
  const gar=tw.gar,grain=t.goodN('grain');t.act('fief-take','grain:10');

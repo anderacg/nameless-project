@@ -5,7 +5,8 @@
    legend beside it. Its bottom bar: Close.
    The map: the land from the tile data (fullMapPic: the minimap's colours, rivers by width, each realm's tint and a stronger line
    where two realms meet, the dark over land you have never seen), and over it, as marks, the holdings and crossings on land you
-   have seen, your quests' goals (the one you track the strongest: world/quests.js questMapMarks) and you.
+   have seen, your quests' goals (the one you track the strongest: world/quests.js questMapMarks), the rumours' "?" (world/news.js
+   rumourMarks: the Chronicle's Show on map centres on one) and you.
    Its scale: FULLMAP.zooms, CSS px a tile. It opens at the largest that fits, never under 1 px a tile (under FULLMAP.wide tiles
    across) or 1 px per 2 tiles (wider: Huge): Normal 1 px a tile, Large 1 px a tile and scrolls, Huge 1 px
    per 2 tiles. − and + (the buttons, the keys) step it; a click or a tap on the map zooms in there (at Huge: 1:1 by region); a
@@ -17,7 +18,8 @@ const FULLMAP={zooms:[.5,1,2,3,4,6],wide:640,open:4,ppt:1,pics:{},drag:null,ms:0
   river:['','#8cc0ec','#4f8fd6','#2a5fae'],riverN:['','Brook','River','Great river'],tint:.38,edge:.8,unknown:'#0e1119',road:'#b89b62',
   // (the holdings' marks by kind; another kind is marked as a village; names shown at FULLMAP.names px a tile, or from tier 3)
   kinds:{city:'City',town:'Town',castle:'Castle',village:'Village'},names:2};
-const FM_RGB={},fmRgb=c=>FM_RGB[c]||(FM_RGB[c]=[parseInt(c.slice(1,3),16),parseInt(c.slice(3,5),16),parseInt(c.slice(5,7),16)]);
+// (a rumour's "?": its look, inline)
+const fmRumour=()=>'color:'+RUMOUR_COL+';font:700 12px/1 Arial,sans-serif;text-shadow:0 0 2px #000,0 1px 1px #000',FM_RGB={},fmRgb=c=>FM_RGB[c]||(FM_RGB[c]=[parseInt(c.slice(1,3),16),parseInt(c.slice(3,5),16),parseInt(c.slice(5,7),16)]);
 /* the picture: map m at 1 px per k tiles, from its tile data, what you have seen (seen: a byte a tile) and the land (land: an index
    into towns a tile, -1 wild); a canvas. Its time in FULLMAP.ms */
 function fullMapPic(m,k,seen,land,towns){
@@ -38,20 +40,21 @@ function fullMapPic(m,k,seen,land,towns){
     d[p]+=(c[0]-d[p])*a;d[p+1]+=(c[1]-d[p+1])*a;d[p+2]+=(c[2]-d[p+2])*a}
   const cv=mkc(w,h,g=>g.putImageData(img,0,0));F.ms=performance.now()-t0;return cv}
 // the marks over it at ppt px a tile: the crossings and holdings on land you have seen (each its name and kind on hover), your
-// quests' goals (the tracked one the strongest), and you
+// quests' goals (the tracked one the strongest), the rumours' "?" (the rumour on hover), and you
 function fullMapMarks(ppt){const F=FULLMAP,at=(x,y)=>'left:'+(x*ppt).toFixed(1)+'px;top:'+(y*ppt).toFixed(1)+'px';let h='';
   for(const x of WM.crossings||[]){const tx=x.i%MW,ty=Math.floor(x.i/MW);if(seenTile(tx,ty))h+='<i class="fm-x '+x.kind+'" style="'+at(tx+.5,ty+.5)+'" title="'+cap1(x.kind)+'"></i>'}
   for(const t of TOWNS){if(!seenTile(t.tx,t.ty))continue;const k=F.kinds[t.kind]?t.kind:'village',T=HOLDING_TYPES[t.kind];
     h+='<span class="fm-h" style="'+at(t.tx+.5,t.ty+.5)+'" title="'+htmlText(t.name+', '+t.label+(t.owner?' of the '+FACS[t.owner].n:''))+'"><i class="fm-k '+k+'" style="--c:'+(t._memCol||facCol(t))+'"></i>'+
       (ppt>=F.names||T&&T.tier>=3?'<b>'+htmlText(t.name)+'</b>':'')+'</span>'}
   for(const m of questMapMarks())h+='<i class="fm-q'+(m.on?' on':'')+'" style="'+at(m.x/TILE,m.y/TILE)+'" title="'+htmlText(m.title)+(m.on?' (tracked)':'')+'"></i>';
+  for(const m of rumourMarks())if(rumourFade(m)>0)h+='<b class="fm-r" style="'+at(m.x/TILE,m.y/TILE)+';'+fmRumour()+'" title="'+htmlText('A rumour (day '+m.day+'): '+m.t)+'">?</b>';
   return h+'<span class="fm-you" style="'+at(P.x/TILE,P.y/TILE)+'" title="You"></span>'}
 // the legend: the realms that hold land, the kinds of holding, rivers and crossings this world has, then you, roads, the unknown
 function fullMapLegend(){const F=FULLMAP,cr=WM.crossings||[],it=(i,n)=>'<li>'+i+'<span>'+n+'</span></li>',sec=(n,l)=>l.length?'<div class="lab">'+n+'</div><ul>'+l.join('')+'</ul>':'',sw=c=>'<i class="fm-sw" style="background:'+c+'"></i>';
   const fs=Object.keys(FACS).filter(f=>TOWNS.some(t=>t.owner===f)).map(f=>it(sw(landCol(f)),FACS[f].n)).concat(TOWNS.some(t=>!t.owner)?[it(sw(landCol(null)),'No realm')]:[]);
   return '<aside class="fm-leg" aria-label="Legend">'+sec('Realms',fs)+sec('Holdings',Object.keys(F.kinds).filter(k=>TOWNS.some(t=>(F.kinds[t.kind]?t.kind:'village')===k)).map(k=>it('<i class="fm-k '+k+'" style="--c:#d8d0b8"></i>',F.kinds[k])))+
     sec('Rivers',WM.rivers&&WM.rivers.length?[1,2,3].map(w=>it(sw(F.river[w]),F.riverN[w])):[])+sec('Crossings',['bridge','ford','ferry'].filter(k=>cr.some(x=>x.kind===k)).map(k=>it('<i class="fm-x '+k+'"></i>',cap1(k))))+
-    sec('Map',[it('<i class="fm-you"></i>','You'),...(P.quests.length?[it('<i class="fm-q"></i>','Quest')]:[]),...(P.track?[it('<i class="fm-q on"></i>','Tracked quest')]:[]),it(sw(F.road),'Road'),it(sw(F.unknown),'Unexplored')])+'</aside>'}
+    sec('Map',[it('<i class="fm-you"></i>','You'),...(P.quests.length?[it('<i class="fm-q"></i>','Quest')]:[]),...(P.track?[it('<i class="fm-q on"></i>','Tracked quest')]:[]),...(rumourMarks().some(m=>rumourFade(m)>0)?[it('<b class="fm-r" style="'+fmRumour()+'">?</b>','Rumour')]:[]),it(sw(F.road),'Road'),it(sw(F.unknown),'Unexplored')])+'</aside>'}
 // the scale it opens at in a view of the room the window gives it (fullMapFit), and the zoom one step in or out (dir), about
 // tile point at (else the view's middle)
 function fullMapFit(v){const F=FULLMAP,fit=Math.min(v.clientWidth/MW,v.clientHeight/MH);return Math.max(MW>F.wide?.5:1,...F.zooms.filter(z=>z<=fit&&z<=F.open))}

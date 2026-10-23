@@ -31,14 +31,16 @@ class Realm{
     return g==='player'?this.hostile():this.relWith(g).s==='war';
   }
   enemies(){return FIDS.filter(g=>this.atWar(g))}
-  // a new standing with g, told in the log (in colour when your employer is one of them); a war drags in the allies of each
+  // a new standing with g, told (worldlog.js: by rider when your employer is one of them, in colour; else as news); a war drags in the allies of each
   // that were at peace with the other (once: chain); the lords of both who are not besieging think again
   setRel(g,s,chain){
     const a=this.id,b=g,prev=this.relWith(b).s;
     W.rel[rk(a,b)]={s,since:G.day};
     const A='the '+FACS[a].n,Bn='the '+FACS[b].n,mine=P.fac===a||P.fac===b;
     const m=s==='war'?'War! '+A[0].toUpperCase()+A.slice(1)+' and '+Bn+' are at war.':s==='ally'?A[0].toUpperCase()+A.slice(1)+' and '+Bn+' form an alliance.':prev==='ally'?'The alliance between '+A+' and '+Bn+' ends.':A[0].toUpperCase()+A.slice(1)+' and '+Bn+' agree to a truce.';
-    log(m,mine?(s==='war'?'bad':'good'):'gold','war');
+    const [pa,pb]=[a,b].sort();
+    worldEvent({text:m,cls:mine?(s==='war'?'bad':'good'):'gold',fac:[a,b],news:[s==='war'?'war':s==='ally'?'ally':'peace',realmsMeet(a,b),{a:pa,b:pb,...(s==='peace'&&prev==='ally'?{ended:1}:{})}],
+      past:s==='war'?A+' and '+Bn+' went to war':s==='ally'?A+' and '+Bn+' formed an alliance':prev==='ally'?'the alliance between '+A+' and '+Bn+' ended':A+' and '+Bn+' agreed to a truce'});
     if(s==='war'&&!chain)FIDS.forEach(c=>{
       if(c===a||c===b||W.dead[c])return;
       const C=realmOf(c);
@@ -57,13 +59,15 @@ class Realm{
     else if(r.s==='peace'&&FIDS.some(c=>c!==a&&c!==b&&atWar(a,c)&&atWar(b,c))&&Math.random()<.3)this.setRel(b,'ally');
     else if(r.s==='ally'&&!FIDS.some(c=>c!==a&&c!==b&&atWar(a,c)&&atWar(b,c))&&Math.random()<.2)this.setRel(b,'peace');
   }
-  // its last holding lost: its lords gone for good, its standings dropped, your contract with it ended
-  fall(){
+  // its last holding lost (at: that holding; involved: you took it): its lords gone for good, its standings dropped, your
+  // contract with it ended (your employer's fall you learn at once)
+  fall(at,involved){
     const f=this.id;
     W.dead[f]=true;
     W.lords.forEach(l=>{if(l.fac===f){l.dead=true;l.gone=true}});
     FIDS.forEach(g=>{if(g!==f)delete W.rel[rk(f,g)]});
-    log('The '+this.name+' has fallen. Its last holding is lost.','bad','war');
+    worldEvent({text:'The '+this.name+' has fallen. Its last holding is lost.',cls:'bad',fac:[f],involved:involved||P.fac===f,x:at&&at.x,y:at&&at.y,
+      news:at?['realm',at,{fac:f,town:at.name}]:null,past:'the '+this.name+' fell with the loss of its last holding'});
     if(P.fac===f){P.fac=null;log('Your contract ends with the fall of your employer.','bad','war')}
   }
   // ---- how it sees you: your honour with it (-100..100), and whether it is your foe: at war with your employer, or hostile
@@ -224,19 +228,22 @@ function lordWon(l,res){
   return txt;
 }
 function defeatLord(l){l.inside=null;l.dead=true;l.troops=[];l.back=G.day+4;l.state='rest'}
-function fallFaction(f){realmOf(f).fall()}
+function fallFaction(f,at,involved){realmOf(f).fall(at,involved)}
 function resolveSiege(l,t){
   const mine=t.owner==='player',pa=power(l.troops)*lordTac([l])*(.8+Math.random()*.4),pd=power(garList(t).concat(insideTroops(t)))*(mine?2.2:1.8+.8*Math.max(0,FIEF0-fiefsOf(t.owner).length))*(1+.15*(wallOf(t)-t.T.wall0))*(t.stock&&foodDays(t)<2?.6:1)*(.8+Math.random()*.4);
   if(pa>pd){
-    const prev=t.owner;cull(l,clamp(.1+.5*(pd/pa)**2,.05,.6));lordWins(l,t.gar||6);lordsInside(t).forEach(o=>{defeatLord(o);log(o.name+' is taken inside the walls of '+t.name+'.',o.fac===P.fac?'bad':'','war')});t.owner=l.fac;t.gar=4;l.state='rest';
+    const prev=t.owner;cull(l,clamp(.1+.5*(pd/pa)**2,.05,.6));lordWins(l,t.gar||6);lordsInside(t).forEach(o=>{defeatLord(o);worldEvent({text:o.name+' is taken inside the walls of '+t.name+'.',cls:o.fac===P.fac?'bad':'',x:t.x,y:t.y,fac:[o.fac],towns:[t],past:o.name+' was taken inside the walls of '+t.name})});t.owner=l.fac;t.gar=4;l.state='rest';
     // conquest leaves its mark: turmoil for a while, and sometimes the victors sack the place
     Timed.of(t).set('turmoil',8);breach(t);const sacked=Math.random()<.35;if(sacked){Timed.of(t).set('sacked',15);burnEstates(t,2);sackStock(t,.5,.25)}
     worldEmit('holding:taken',{town:t,lord:l,sacked});
-    log(t.name+' falls to '+l.name+' of the '+FACS[l.fac].n+(sacked?', who sacks it':'')+'.'+(mine?' You have lost your fief.':''),l.fac===P.fac?'good':prev===P.fac||mine?'bad':'gold','war');
+    {const F=FACS[l.fac].n,lost=mine?' You have lost your fief.':'';
+     worldEvent({text:t.name+' falls to '+l.name+' of the '+F+(sacked?', who sacks it':'')+'.'+lost,cls:l.fac===P.fac?'good':prev===P.fac||mine?'bad':'gold',x:t.x,y:t.y,fac:[l.fac,prev],towns:[t],heard:['fell',t],
+       seen:'You see the banners of the '+F+' go up over '+t.name+': it falls to '+l.name+(sacked?', who sacks it':'')+'.'+lost,past:t.name+' fell to '+l.name+' of the '+F,also:(sacked?' He sacked it.':'')+lost})}
     W.lords.forEach(o=>{if(!o.dead&&o!==l&&o.tgt===t.name)lordThink(o)});
     stayFall(t);
-    if(!mine&&!fiefsOf(prev).length)fallFaction(prev);
-  }else{cull(l,.55);lordXp(l,6);lordTrain(l,'tact',2);t.gar=Math.max(2,Math.round(t.gar*.6));worldEmit('siege:broken',{town:t,lord:l});log('The siege of '+t.name+' fails. '+l.name+' falls back.',undefined,'war');lordThink(l)}
+    if(!mine&&!fiefsOf(prev).length)fallFaction(prev,t);
+  }else{cull(l,.55);lordXp(l,6);lordTrain(l,'tact',2);t.gar=Math.max(2,Math.round(t.gar*.6));worldEmit('siege:broken',{town:t,lord:l});
+    worldEvent({text:'The siege of '+t.name+' fails. '+l.name+' falls back.',x:t.x,y:t.y,fac:[t.owner,l.fac],towns:[t],heard:['relieved',t],seen:'You see the siege of '+t.name+' fail. '+l.name+' falls back.',past:'the siege of '+t.name+' failed and '+l.name+' fell back'});lordThink(l)}
 }
 function worldDay(){
   Realm.day();// (wars and peace)
@@ -249,14 +256,16 @@ function worldDay(){
       const h=own.slice().sort((a,b)=>(b.vol||0)-(a.vol||0))[0];ensureEcon(h);const can=Math.min(9,Math.floor(h.vol||0),Math.floor((h.pop||0)-GUARD_FLOOR));if(can<3||!payRealm(l.fac,90,h,9))continue;
       const raised=[];for(let i=draftLocals(h,can);i>0;i--){const c=RACES[h.races[rint(0,h.races.length-1)]];raised.push(Math.random()<.6?c.melee:c.ranged)}
       Object.assign(l,{dead:false,x:h.x,y:h.y+14,troops:raised,state:'rest',tgt:h.name,cool:3});if(!l.shelterWhy(h))l.enter(h);
-      log(l.name+' raises a new army at '+h.name+'.',undefined,'war');continue;
+      worldEvent({text:l.name+' raises a new army at '+h.name+'.',x:h.x,y:h.y,fac:[l.fac],towns:[h],news:['army',h,{lord:l.name,fac:l.fac,town:h.name,n:raised.length}],past:l.name+' raised a new army at '+h.name});continue;
     }
     const t=townBy(l.tgt);
     if(l.state==='siege'){if(!t||!atWar(l.fac,t.owner)){lordThink(l);continue}if(inFight(l))continue;
+      if(t.stock&&foodStock(t)<=0)worldNews('starving',t,{town:t.name,fac:t.owner});// (its stores run dry: news only, worldlog.js)
       // the lords inside sally out when they are a match for the besiegers
       const sal=lordsInside(t).filter(o=>!o.fight&&atWar(o.fac,l.fac)),them=siegeLordsAt(t).filter(o=>!o.fight);
       if(sal.length&&power(sal.flatMap(o=>o.troops))>=.9*power(them.flatMap(o=>o.troops))){sal.forEach(o=>{o.inside=null;o.x=t.x;o.y=t.y+12;o.state='rest';o.tgt=t.name});startFight(sal,them);
-        if(Math.hypot(t.x-P.x,t.y-P.y)<vis()*1.5||t.owner===P.fac||t.owner==='player')log(sal.map(o=>o.name).join(' and ')+' ride'+(sal.length>1?'':'s')+' out of '+t.name+' to break the siege.',undefined,'war');continue}
+        {const who=sal.map(o=>o.name).join(' and ');worldEvent({text:who+' ride'+(sal.length>1?'':'s')+' out of '+t.name+' to break the siege.',x:t.x,y:t.y,fac:[t.owner,...sal.map(o=>o.fac)],towns:[t],
+          was:Math.hypot(t.x-P.x,t.y-P.y)<vis()*1.5||t.owner===P.fac||t.owner==='player',past:who+' rode out of '+t.name+' to break the siege'})}continue}
       if(++l.sd>=2+wallOf(t))resolveSiege(l,t);continue}
     if(l.state==='rest'&&t&&t.owner===l.fac){
       // he hires as you do: the holding's own volunteers, at the price you pay, from his realm's treasury

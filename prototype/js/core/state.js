@@ -60,11 +60,12 @@ const apName=a=>a>=5?'Loyal':a>=0?'Content':a>-3?'Uneasy':'Angry';
 /* the chronicle (G.msgs): every message of the game, kept for good (the owner, 2026-10-23) and saved with it (core/save.js); the
    Journal's Chronicle shows it (L: ui/chronicle.js). Each a small record: m (its text, the game's own HTML), day, and only
    when given cls (its tone), kind (one of kinds, for the Chronicle's filters; none: under All only) and ref (what it links to: a
-   quest's or story's journal key, 'q12', 't3'; a rumour's news id, 'n40'). page: the messages one Chronicle page shows; budget:
+   quest's or story's journal key, 'q12', 't3'; a rumour's news id, 'n40') and at (the day it happened, when you heard of it
+   later: a rider's news, world/worldlog.js). page: the messages one Chronicle page shows; budget:
    the most its save part may be (JSON characters), past which the oldest of the spare kinds (your band's, and of no kind) go */
 const CHRONICLE={kinds:['war','rumour','band','story'],page:100,budget:1.5e6,spare:['band','']};
-// a message: into the chronicle and onto the screen (toast)
-function log(m,cls,kind,ref){const r={m,day:G.day};if(cls)r.cls=cls;if(kind)r.kind=kind;if(ref!=null)r.ref=ref;G.msgs.push(r);toast(m,cls)}
+// a message: into the chronicle and onto the screen (toast); at: the day it happened, if not today
+function log(m,cls,kind,ref,at){const r={m,day:G.day};if(cls)r.cls=cls;if(kind)r.kind=kind;if(ref!=null)r.ref=ref;if(at!=null&&at!==G.day)r.at=at;G.msgs.push(r);toast(m,cls)}
 // a line onto the screen only, where it fades after a few seconds (the chronicle keeps what happened; "Welcome back" is no event)
 function toast(m,cls){const el=$('#log');if(!el)return;
   const d=document.createElement('div');if(cls)d.className=cls;d.innerHTML=m;el.appendChild(d);while(el.children.length>5)el.firstChild.remove();

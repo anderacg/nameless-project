@@ -104,7 +104,7 @@ function siegeDay(){
   s.days++;train('eng',4);if(Math.random()<.1*skill('eng')){s.days++;log('Your engineers work fast at '+t.name+'.','good','war')}
   if(s.days===LADDER_DAYS)log('Ladders are ready at '+t.name+'. You can assault the walls.','gold','war');
   if(s.days===RAM_DAYS)log('Your ram is built. The walls of '+t.name+' will not hold as well.','gold','war');
-  if(foodStock(t)<=0&&t.gar>1){t.gar--;log('The garrison of '+t.name+' starves. '+t.gar+' defenders left.',undefined,'war')}
+  if(foodStock(t)<=0&&t.gar>1){t.gar--;worldEvent({text:'The garrison of '+t.name+' starves. '+t.gar+' defenders left.',involved:true,news:['starving',t,{town:t.name,fac:t.owner}]})}// (your siege: at once, and news for the rest: worldlog.js)
   if(t.gar<=1&&!siegeDefenders(t).lords.length){log(t.name+' surrenders!','good','war');P.renown+=5;G.capture=t;t.gar=0}
 }
 // won the assault or raid (from concludeEncounter); returns a line for the victory panel
@@ -167,7 +167,7 @@ function captureAct(a){
     else lines.push(t.name+' is your fief now. Garrison it from the Fief tab when you enter.');
     t.owner=to;t.gar=to==='player'?2:4;Timed.of(t).set('turmoil',10);
     W.lords.forEach(o=>{if(!o.dead&&o.tgt===t.name)lordThink(o)});
-    if(prev!=='player'&&!fiefsOf(prev).length)fallFaction(prev);
+    if(prev!=='player'&&!fiefsOf(prev).length)fallFaction(prev,t,true);
   }
   G.capWith=null;
   lines.forEach(l=>log(l,'gold'));

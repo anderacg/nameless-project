@@ -5,7 +5,8 @@
    time (CHRONICLE.page messages: Newest, Newer, Older, Oldest), so tens of thousands open at once: only that page is drawn. A
    quest's or story's message opens its entry in your Quests (questwindow.js: Open in Main, Side, Jobs or Archive; chronEntry;
    its bar's Back returning here) while it can be found; a rumour's shows its "?" on the full map (Show on map) while its mark
-   lasts, from the map only (journal.js journalAwayWhy). Its state (G.chron: the filter, the page) is runtime only ---------- */
+   lasts, from the map only (journal.js journalAwayWhy). One you heard of later (a rider's news: world/worldlog.js) says when it
+   happened (chronWhen). Its state (G.chron: the filter, the page) is runtime only ---------- */
 const CHRON={filters:[['all','All'],['war','War & battles'],['rumour','Rumours'],['band','Your band'],['story','Story & quests']]};
 const chronState=()=>G.chron||(G.chron={f:'all',page:0});
 // (the entry a message links to, among the journal's (keyed: questwindow.js qwItems): its own; a story's stage's quest, its story;
@@ -25,6 +26,8 @@ function chronLink(r,byK){
   const it=chronEntry(r.ref,byK);
   return it?qwBtn('ch-open',it.k,'Open in '+qwTabName(it.tab),'','ch-link'):'';
 }
+// (heard later than it happened: "happened day 12 (2 days before you heard)"; else nothing)
+const chronWhen=r=>r.at&&r.at<r.day?' <small class="muted ch-when">happened day '+r.at+' ('+(r.day-r.at)+(r.day-r.at===1?' day':' days')+' before you heard)</small>':'';
 // the section: its filters, the page (its days' headers, a row each: the message and its link), its pages
 function chronicleWindow(){
   const C=chronState(),M=G.msgs,n={all:M.length};
@@ -35,7 +38,7 @@ function chronicleWindow(){
   const hi=list.length-C.page*N,lo=Math.max(0,hi-N),byK=chronItems();
   let h='',day=null;
   for(let i=hi-1;i>=lo;i--){const r=list[i];if(r.day!==day){day=r.day;h+='<h4 class="ch-day">Day '+day+'</h4>'}
-    h+='<div class="ch-msg'+(r.cls?' '+r.cls:'')+'"><span>'+r.m+'</span>'+chronLink(r,byK)+'</div>'}
+    h+='<div class="ch-msg'+(r.cls?' '+r.cls:'')+'"><span>'+r.m+chronWhen(r)+'</span>'+chronLink(r,byK)+'</div>'}
   const filters=fbTabs(CHRON.filters.map(([f,l])=>[f,l+' · '+(n[f]||0)]),C.f,'ch-filter','Chronicle filters');
   const first=pages>1&&list[hi-1].day,last=pages>1&&list[lo].day,at=C.page===0,end=C.page===pages-1;
   const pager=pages>1?'<div class="ch-pager" role="group" aria-label="Pages">'+qwBtn('ch-page',0,'Newest',at?'This is the newest page':'')+qwBtn('ch-page',C.page-1,'Newer',at?'This is the newest page':'')+

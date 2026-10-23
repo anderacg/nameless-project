@@ -2,7 +2,8 @@
 /* ---------- news and rumours: talk that points at real things (the owner, 2026-10-19). W.news keeps what really happened on
    the map, as it happens (items: {id, k (its kind: NEWS_KINDS), x, y, day, near (the nearest holding's name), detail}): it
    listens to the world's events on the bus (core/bus.js: emitted in fights.js, realms.js, brains.js, siege.js, estates.js,
-   caravans.js, defence.js, story/happening.js; NEWS_HEARS below) and records each (newsRecord). Recording draws no random
+   caravans.js, defence.js, story/happening.js; NEWS_HEARS below) and records each (newsRecord), as the world's log does (worldlog.js
+   worldEvent: a world event you neither took part in, nor saw, nor hear of by your realm's rider is news only). Recording draws no random
    number and changes nothing else, so the world runs as it did; the words are picked
    when you hear it, from the item's id. Kept bounded: NEWS.keep items, each NEWS.days days, and the same kind near the same
    holding within NEWS.merge days is one item, brought up to date.
@@ -26,7 +27,11 @@ const beastN=d=>{const n=MONSTERS[d.id]?MONSTERS[d.id].n:'Beasts',pl=/s$/.test(n
 const newsMany=n=>n<9?'half a dozen':n<16?'a dozen':n<26?'a score':'scores';
 /* the kinds: w (how much it matters), say (its sentences, picked by the item's id; each (detail, s): s.where (place-based,
    rough), s.when, s.road (on the road …)), same(item, detail, x, y) (one that moves: the same one seen again, though by another
-   holding now, or days on: one item, moved) */
+   holding now, or days on: one item, moved), apart (only same makes two one, never the holding and the day), wide (a realm's
+   affairs: every source that hears the realms' talk knows it, RUMOUR_SOURCES wide, wherever it happened) */
+// (two realms in a sentence: "the Vale and the Karn")
+const facPair=d=>'the '+facN(d.a)+' and the '+facN(d.b);
+const samePair=(it,d)=>it.detail.a===d.a&&it.detail.b===d.b;
 const NEWS_KINDS={
   fell:{w:10,say:[(d,s)=>d.town+' has fallen to the '+facN(d.fac)+(d.sacked?', and was sacked':'')+', '+s.when+'.',
     (d,s)=>'They say the '+facN(d.fac)+' took '+d.town+' '+s.when+(d.sacked?' and put it to the torch':'')+'.']},
@@ -40,6 +45,17 @@ const NEWS_KINDS={
   band:{w:5,same:(it,d)=>!!d.chief&&it.detail.chief===d.chief,say:[(d,s)=>d.grew?(d.chief?d.chief+'’s band':'A band of cutthroats')+' grows bolder '+s.where+', fat on plunder.':'A big band of '+(d.label||'bandits').toLowerCase()+', '+newsMany(d.n||0)+' strong, was seen '+s.where+'.',
     (d,s)=>'Travellers keep off the road '+s.where+': '+(d.chief?d.chief+'’s':'a big')+' band is out.']},
   fight:{w:4,say:[(d,s)=>'There was a battle '+s.where+' '+s.when+': '+d.win+' won.',(d,s)=>cap1(d.win)+' beat '+d.lose+' '+s.where+', '+s.when+'.']},
+  // (the realms' affairs, worldlog.js: a war, a peace (an alliance ended: ended), an alliance, a realm fallen; a lord's new army;
+  // a garrison starving under siege)
+  war:{w:9,wide:true,apart:true,same:samePair,say:[(d,s)=>'War! '+cap1(facPair(d))+' went to war '+s.when+'.',(d,s)=>'Word is '+facPair(d)+' are at war: it began '+s.when+'.']},
+  peace:{w:7,wide:true,apart:true,same:samePair,say:[(d,s)=>d.ended?'The alliance between '+facPair(d)+' ended '+s.when+'.':cap1(facPair(d))+' made peace '+s.when+'.',
+    (d,s)=>d.ended?'They say '+facPair(d)+' no longer ride together: their alliance ended '+s.when+'.':'They say the war between '+facPair(d)+' is over: a truce, '+s.when+'.']},
+  ally:{w:7,wide:true,apart:true,same:samePair,say:[(d,s)=>cap1(facPair(d))+' swore an alliance '+s.when+'.',(d,s)=>'They say '+facPair(d)+' ride together now: an alliance, made '+s.when+'.']},
+  realm:{w:10,wide:true,apart:true,same:(it,d)=>it.detail.fac===d.fac,say:[(d,s)=>'The '+facN(d.fac)+' is no more: its last holding, '+d.town+', fell '+s.when+'.',
+    (d,s)=>'They say the banners of the '+facN(d.fac)+' are gone from the land since '+d.town+' fell '+s.when+'.']},
+  army:{w:6,apart:true,same:(it,d)=>it.detail.lord===d.lord,say:[(d,s)=>d.lord+' of the '+facN(d.fac)+' raised a new army at '+d.town+' '+s.when+'.',
+    (d,s)=>'They say '+d.lord+' is back in the field: '+newsMany(d.n||0)+' men, raised at '+d.town+' '+s.when+'.']},
+  starving:{w:7,say:[(d,s)=>'The garrison of '+d.town+' is starving under siege: its stores ran dry '+s.when+'.',(d,s)=>'They say '+d.town+' ate its last grain '+s.when+': its defenders starve behind the walls.']},
   // (the road's small encounters, world/encounters.js: a campfire's tracks read, where they lead; a false toll-man handed in)
   tracks:{w:2,say:[(d,s)=>'Tracks of '+(d.who||'strangers')+' lead off '+s.where+'.',(d,s)=>'Someone saw '+(d.who||'strangers')+' '+s.where+', '+s.when+'.']},
   toll:{w:3,say:[(d,s)=>'Men in the '+facN(d.fac)+'’s colours were taking a false toll '+s.road+'. Their ringleader hangs in '+(d.town||'the town')+'.',
@@ -55,10 +71,11 @@ const NEWS_KINDS={
 const newsNear=at=>Spatial.nearestHolding(at.x,at.y,t=>!t.gone);
 // an event: k (NEWS_KINDS), at (where: {x, y}), detail (its own facts: names, never objects). The same kind by the same holding
 // within NEWS.merge days, or the same one that moves seen again (its kind's same: a beast, a chieftain's band, while the
-// news of it lasts), is brought up to date instead (place, holding, day, facts), keeping its id (heard stays heard). Returns it
+// news of it lasts), is brought up to date instead (place, holding, day, facts), keeping its id (heard stays heard); a kind kept
+// apart only by its same. Returns it
 function newsRecord(k,at,detail){
   const K=NEWS_KINDS[k];if(!K||!at||!isFinite(at.x)||!isFinite(at.y))return null;const t=newsNear(at);if(!t)return null;
-  const N=newsW(),x=Math.round(at.x),y=Math.round(at.y),old=N.items.find(it=>it.k===k&&(Clock.daysSince(it.day)<=NEWS.merge&&it.near===t.name||K.same&&K.same(it,detail,x,y)));
+  const N=newsW(),x=Math.round(at.x),y=Math.round(at.y),old=N.items.find(it=>it.k===k&&(!K.apart&&Clock.daysSince(it.day)<=NEWS.merge&&it.near===t.name||K.same&&K.same(it,detail,x,y)));
   if(old){Object.assign(old,{x,y,near:t.name,day:G.day,detail:{...old.detail,...detail}});return old}
   const it={id:++N.n,k,x,y,day:G.day,near:t.name,detail:{...detail}};N.items.push(it);newsTrim();return it;
 }
@@ -112,24 +129,26 @@ function rumourText(it){const K=NEWS_KINDS[it.k];if(!K)return '';const s={where:
 
 /* ---- hearing: the sources and the service ---- */
 /* who tells it: cap (new rumours a day, per source: its key), r (how near, px: to its place, or any of its places), land (news
-   on its holding's land instead), realm (news of a lord's realm, its lands and wars), prefer (the kinds it leans to), from (the
-   log's word), quiet (its page logs what is said: the road's talkers, the sites) */
+   on its holding's land instead), realm (news of a lord's realm, its lands and wars), wide (it hears the realms' affairs, the
+   wide kinds, from anywhere), prefer (the kinds it leans to), from (the log's word), quiet (its page logs what is said: the road's
+   talkers, the sites) */
 const RUMOUR_SOURCES={
-  tavern:{cap:2,r:NEWS.radius,from:'tavern talk'},
+  tavern:{cap:2,r:NEWS.radius,wide:true,from:'tavern talk'},
   estate:{cap:1,r:220,prefer:['beast','band','trace','raid'],from:'a worker'},
   watch:{cap:1,land:true,r:160,prefer:['band','beast','trace','raid','caravan'],from:'the watch'},
-  caravan:{cap:1,r:240,prefer:['caravan','trace','band','beast'],from:'a caravan master'},
-  lord:{cap:1,realm:true,prefer:['siege','fell','relieved','lord','fight'],from:'a lord'},
-  road:{cap:1,r:320,quiet:true,from:'the road'},
+  caravan:{cap:1,r:240,wide:true,prefer:['caravan','trace','band','beast'],from:'a caravan master'},
+  lord:{cap:1,realm:true,wide:true,prefer:['siege','fell','relieved','lord','fight','army','starving'],from:'a lord'},
+  road:{cap:1,r:320,wide:true,quiet:true,from:'the road'},
   refugees:{cap:1,r:320,prefer:['raid','siege','fell'],quiet:true,from:'refugees'},
-  camp:{cap:1,r:420,quiet:true,from:'the travellers'},
+  camp:{cap:1,r:420,wide:true,quiet:true,from:'the travellers'},
   hermit:{cap:1,r:420,prefer:['beast','trace','band'],quiet:true,from:'the hermit'}
 };
 // a source: its kind's rules, its key (one cap each), where it is (a place, or several: a caravan's road), and any of its own
 const rumourSource=(kind,key,at,o)=>({kind,key:kind+':'+key,at:[].concat(at).filter(Boolean),...RUMOUR_SOURCES[kind],...o});
 const newsById=id=>newsW().items.find(it=>it.id===id)||null;
-// is it news this source would know: on its land, of its realm, or near it
+// is it news this source would know: a realm's affairs (it hears them), on its land, of its realm, or near it
 function newsKnows(src,it){
+  if(NEWS_KINDS[it.k].wide&&src.wide)return true;
   if(NEWS_KINDS[it.k].far)return src.kind==='tavern'&&!src.at.some(p=>p.name===(it.detail||{}).town);
   if(src.realm){const d=it.detail||{},own=n=>{const t=n&&townBy(n);return !!t&&t.owner===src.fac};return d.fac===src.fac||own(it.near)||own(d.town)}
   if(src.land&&src.at[0]&&landHold(it.x,it.y)===src.at[0])return true;
@@ -167,7 +186,8 @@ function drawRumourMarks(cam){const c=wuiArrow('ask',RUMOUR_COL);for(const m of 
 function rumourTip(wx,wy){const m=rumourMarks().filter(m=>rumourFade(m)>0&&Math.abs(m.x-wx)<=6&&wy>=m.y-16&&wy<=m.y-2)[0];
   return m?'<b>A rumour</b><small>'+m.t+'</small><small class="muted">Heard on day '+m.day+'</small>':''}
 
-/* ---- the save: W.news once there is any (none: as every save before it; the save registry, core/saves.js) ---- */
+/* ---- the save: W.news once there is any (none: as every save before it; the save registry, core/saves.js), with the riders on
+   their way (post: worldlog.js, there once one has set out) ---- */
 Saves.add({key:'news',order:240,defaults:{items:[],n:0,heard:{},told:{},marks:[]},
-  save:()=>{const N=W.news;return N&&(N.items.length||N.marks.length||Object.keys(N.heard).length||Object.keys(N.told).length)?N:undefined},load:n=>{W.news=n}});
+  save:()=>{const N=W.news;return N&&(N.items.length||N.marks.length||Object.keys(N.heard).length||Object.keys(N.told).length||N.post&&N.post.length)?N:undefined},load:n=>{W.news=n}});
 const newsLoad=n=>Saves.loadOf('news',n);

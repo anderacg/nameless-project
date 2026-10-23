@@ -161,10 +161,11 @@ class Market extends Place{
 definePlace('trade',Market);
 
 /* the tavern: the innkeeper (lodgings), the ransom broker, the companions waiting for work, Ander The Fallen where he wanders
-   (story/wounded.js Wanderer: his own card, never the hiring list); the rumours and the talk of the realm */
+   (story/wounded.js Wanderer: his own card, never the hiring list); the rumours (and more for gold, once a day: world/worldlog.js
+   newsBuy) and the talk of the realm */
 class Tavern extends Place{
   constructor(id){
-    super(id,{n:'Tavern',ico:'mug',verbs:{'ransom-pick':'ransomPick',ransom:'ransom','hire-comp':'hireComp','ander-job':'anderJob','ander-pay':'anderPay'}});
+    super(id,{n:'Tavern',ico:'mug',verbs:{'ransom-pick':'ransomPick',ransom:'ransom','hire-comp':'hireComp','ander-job':'anderJob','ander-pay':'anderPay','buy-news':'buyNews'}});
   }
   body(t){
     const f=FACS[t.owner],here=P.stay&&P.stay.town===t.name,why=stayWhy(t),race=t.races[0];
@@ -178,7 +179,7 @@ class Tavern extends Place{
       Wanderer.card(t)].filter(Boolean))+
       // (the rumours: real news near here, two new a day (news.js), heard as you come in and kept while you stay: G.town.news;
       // then the standing talk of the realm: its wars, the camps, the most wanted, a mythic beast abroad)
-      '<div class="lab">Rumours</div>'+rumourHtml(G.town.news||(G.town.news=rumourFrom(rumourSource('tavern',t.name,t,{from:'the tavern of '+t.name}))))+
+      '<div class="lab">Rumours</div>'+rumourHtml(G.town.news||(G.town.news=rumourFrom(rumourSource('tavern',t.name,t,{from:'the tavern of '+t.name}))))+newsBuyHtml(t)+
       '<div class="lab">Talk of the realm</div><p class="muted">'+(enemiesOf(t.owner).length?'The '+f.n+' is at war with the '+enemiesOf(t.owner).map(g=>FACS[g].n).join(' and the ')+'.':'The '+f.n+' is at peace.')+'</p>'+'<p class="muted">Bandit camps sit near '+[...new Set(camps().filter(c=>!c.cleared).map(c=>Spatial.nearestHolding(c.x,c.y).name))].join(', ')+'.'+(mostWanted(1).map(w=>' The most wanted is '+chiefLabel(w.c)+(w.near?', last seen near '+w.near.name:'')+': '+bountyOf(w.c)+' gold on his head.').join(''))+(mythicNews('was seen')?' '+mythicNews('was seen'):'')+'</p>';
   }
   // the ransom broker: which prisoners, in a picker first (window.js); then all of them, or kind:n,… from it
@@ -193,6 +194,10 @@ class Tavern extends Place{
   }
   hireComp(arg,t){
     recruitmentFeedback(recruitment.hireCompanion(t,arg),t);
+  }
+  // Buy news: more rumours for gold, once a day
+  buyNews(arg,t){
+    newsBuy(t);
   }
   // Ander: finish the job, or pay his price
   anderJob(arg,t){

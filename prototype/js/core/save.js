@@ -72,11 +72,11 @@ Saves.add({key:'fightN',   order:190, save:()=>W.fightN||0,    load:v=>{W.fightN
 Saves.add({key:'treas',    order:200, save:()=>W.treas,        load:v=>{W.treas=v}});
 Saves.add({key:'critters', order:210, save:()=>W.critters,     load:v=>{W.critters=v.map(herdRec)},settle:()=>{W.critters.forEach(herdToFields)}});
 Saves.add({key:'shops',    order:220, save:()=>W.shops||{},    load:v=>{W.shops=v}});
-/* the chronicle (G.msgs: core/state.js CHRONICLE), every message, each saved as [day, m, cls, kind, ref] (an empty one 0, the
+/* the chronicle (G.msgs: core/state.js CHRONICLE), every message, each saved as [day, m, cls, kind, ref, at] (an empty one 0, the
    empty ones at its end left off); none: left out, and a save without it loads with an empty chronicle. Past its budget, the
    oldest of the spare kinds go first, from the game too (said in the browser's console only); war, rumours and stories never */
-const chronTuple=r=>{const t=[r.day,r.m,r.cls||0,r.kind||0,r.ref==null?0:r.ref];while(t.length>2&&!t[t.length-1])t.pop();return t};
-const chronRec=([day,m,cls,kind,ref])=>{const r={m,day};if(cls)r.cls=cls;if(kind)r.kind=kind;if(ref)r.ref=ref;return r};
+const chronTuple=r=>{const t=[r.day,r.m,r.cls||0,r.kind||0,r.ref==null?0:r.ref,r.at||0];while(t.length>2&&!t[t.length-1])t.pop();return t};
+const chronRec=([day,m,cls,kind,ref,at])=>{const r={m,day};if(cls)r.cls=cls;if(kind)r.kind=kind;if(ref)r.ref=ref;if(at)r.at=at;return r};
 function chronicleSave(){
   const M=G.msgs;if(!M.length)return;
   let ts=M.map(chronTuple),n=JSON.stringify(ts).length;if(n<=CHRONICLE.budget)return ts;
