@@ -12,10 +12,11 @@ Project: Ashmark, a medieval Mount & Blade-like game in plain JS/canvas (no bund
 - **Never commit `doc/references/` or `doc/assets/`** (the owner's own references; gitignored), nor any file the owner has staged.
 
 ### For agents outside Claude Code's worktrees (Codex and others)
-- Start from the latest `battle-rts-and-world`, in your own worktree or a branch named `codex/<task>` (or `<agent>/<task>`).
-- You may commit on your own branch. Never push to `battle-rts-and-world`, never rebase or force-push it.
+- **Codex works only in `F:/Game Project/Nameless-codex`** (a git worktree on the branch `codex`), never in `F:/Game Project/Nameless`: that folder is the coordinator's.
+- At the start of every task, bring the branch up to date: `git merge battle-rts-and-world` (its work so far is already merged, so this is clean). Stop and tell the owner if it is not.
+- You may commit on `codex`. Never push, never switch the worktree to another branch, never commit to, rebase or force-push `battle-rts-and-world`.
 - Before starting, check which files other agents are working on (ask the owner or the coordinator), and keep to your brief's files.
-- Hand back the branch name (or a patch made as above) with the report below; the coordinator merges it, re-measures fingerprints if main moved, and runs the full sweep.
+- When done, commit everything on `codex` and hand back the report below; the coordinator takes `battle-rts-and-world...codex` as one patch, merges it, re-measures fingerprints if main moved, and runs the full sweep.
 
 ## Files
 - Edit only your brief's "may edit" list. If you truly need a line in a file you don't own, don't edit it: say so in your report.
