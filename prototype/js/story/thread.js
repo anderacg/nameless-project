@@ -38,6 +38,12 @@ class Thread extends Happening{
   get shape(){
     return 'thread';
   }
+  get logKind(){
+    return 'story';
+  }
+  get journalKey(){
+    return 't'+this.i;
+  }
   step(id){
     return this.kind.steps.find(s=>s.id===id)||null;
   }
@@ -100,7 +106,7 @@ class Thread extends Happening{
   // (a main story's stage failed: what happened, then back to its last checkpoint (none passed: its first stage), never over)
   setback(s){
     const K=this.kind,to=this.cp||K.first||K.steps[0].id;
-    log(this.param(s.setback)||'You failed: '+this.stageName(s)+'. Back to '+this.stageName(this.step(to))+'.','bad');
+    log(this.param(s.setback)||'You failed: '+this.stageName(s)+'. Back to '+this.stageName(this.step(to))+'.','bad','story',this.journalKey);
     this.begin(to);
   }
   end(how){
@@ -276,7 +282,7 @@ function threadAct(a,arg){
   const i=parseInt(arg);
   if(c.asks(th)&&!String(arg).endsWith('!'))return CHOICE_PAGE.confirm(c,th,{sub:th.kind.n,act:'thr-do',i,back:['thr-back',null,'Back']});
   const m=c.perform(th);
-  if(m)log(m);
+  if(m)log(m,undefined,'story',th.journalKey);
   G.thread=null;
   // (closed, unless what it did opened something else: a fight)
   if(G.mode==='story'){

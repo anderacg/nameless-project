@@ -46,5 +46,5 @@ Kit.suite(({ok})=>{
  t.P.lrel[b.id]=50;t.relDay();ok(t.relWith(b)<50&&t.relWith(b)>45,'feelings soften a little each day');
  // saved, and listed
  t.P.lrel[b.id]=33;W.lrel={'x|y':7};t.saveGame(true);t.P.lrel={};W.lrel={};t.loadGame();ok(t.relWith(W.lords.find(l=>l.id===b.id))===33&&W.lrel['x|y']===7,'relations are saved');
- world();t.openChar();t.act('char-tab','lords');ok(/Lords/.test(panel())&&new RegExp(b.name).test(panel())&&/Friend|Warm/.test(panel()),'the character screen lists every lord and how they feel');t.act('char-close');
+ world();t.openJournal('lords');ok(/Lords/.test(panel())&&new RegExp(b.name).test(panel())&&/Friend|Warm/.test(panel()),'the Journal’s Lords lists every lord and how they feel');t.act('journal-close');
 });

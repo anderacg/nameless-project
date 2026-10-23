@@ -14,7 +14,7 @@ window.RUN=()=>{
  else if(scene==='skills'){t.openSkills('talents');t.act('tree-sel','might0');t.act('tree-focus')}
  else if(scene==='journal'){
   const town=t.townBy('Ashford'),q=t.makeQuest('supply',town);t.acceptQuest(q);t.invAdd('good',q.good,Math.floor(q.n/2));
-  t.openChar();t.act('char-tab','quests');t.act('qw-tab','job');t.act('qw-sel','q'+q.id);
+  t.openQuests();t.act('qw-tab','job');t.act('qw-sel','q'+q.id);
  }else{G.char='party';t.openChar();if(scene==='condition')t.act('party-status')}
  t.panel.style.animation='none';t.updateHUD(true);t.frame();
  const d=document.createElement('pre');d.id='OUT';d.hidden=true;d.textContent='PASS real field-book '+scene;document.body.appendChild(d);

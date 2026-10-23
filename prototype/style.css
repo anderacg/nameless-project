@@ -757,8 +757,6 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 .keys{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:5px 18px}
 .keys div{display:flex;gap:8px;align-items:baseline}
 .keys kbd{flex:none;min-width:58px;text-align:center;font-size:var(--fs-2xs);font-weight:700;color:var(--fg);background:var(--panel-2);border:1px solid var(--line-2);border-radius:var(--r-sm);padding:2px 5px}
-.journal div{padding:3px 0;border-bottom:1px solid rgba(58,66,99,.4);color:var(--muted)}
-.journal .good{color:var(--good)}.journal .bad{color:var(--danger)}.journal .gold{color:var(--accent)}
 
 /* ---------- 8b. rail windows ---------- */
 /* window.js, the one base of every rail screen (a town, your holding, an estate on the map, a site): the rail down the left

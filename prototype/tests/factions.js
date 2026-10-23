@@ -26,7 +26,7 @@ try{
  t.act('cont');done();
  const sl=W.lords.find(l=>l.fac==='salt'&&!l.dead);sl.inside=null;G.encCool=0;t.lordMeet(sl);/* met on the road (in a hall there is no attacking) */ok(/Attack/.test(document.getElementById('panel').innerHTML),'neutral lord dialog');
  t.act('lord-attack');ok(G.enc.kind==='lord'&&t.hostileTo('salt'),'attacking makes salt hostile');t.act('auto');t.act('cont');done();
- G.mode='world';t.openChar();t.act('char-tab','realms');ok(/Relations/.test(document.getElementById('panel').innerHTML),'realms tab');t.act('char-close');
+ G.mode='world';t.openJournal('realms');ok(/Relations/.test(document.getElementById('panel').innerHTML),'realms tab');t.act('journal-close');
  for(let k=0;k<3;k++)t.dayTick();
  t.TOWNS[2].owner='karn';t.saveGame();t.TOWNS[2].owner='vale';W.lords[0].troops=[];
  t.act('load');ok(t.TOWNS[2].owner==='karn'&&W.lords.length===20&&P.fac==='vale','save/load keeps world');

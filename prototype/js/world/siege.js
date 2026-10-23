@@ -86,13 +86,13 @@ function siegeAct(a,arg){
   if(a==='sg-relieve'){const l=siegeLordsAt(t)[+arg];if(l){if(!hostileTo(l.fac)){Timed.of(P,'hostile').extend(l.fac,20);addHonor(l.fac,-15,true)}startEncounter({kind:'lord',ref:l,list:l.troops.slice()})}return true}
   if(a==='sg-stopraid'&&myRaid(t)){finishRaid(t,myRaid(t).t/RAID_TIME);G.mode='world';hidePanel();return true}
   if((a==='sg-join'||a==='sg-join-auto')&&joinFacs(t).includes(arg)&&troopCount()>=3){
-    if(!hostileTo(t.owner)){Timed.of(P,'hostile').extend(t.owner,60);addHonor(t.owner,-20,true);log('You join the '+FACS[arg].n+' against '+t.name+'. The '+FACS[t.owner].n+' is now hostile.','bad')}
+    if(!hostileTo(t.owner)){Timed.of(P,'hostile').extend(t.owner,60);addHonor(t.owner,-20,true);log('You join the '+FACS[arg].n+' against '+t.name+'. The '+FACS[t.owner].n+' is now hostile.','bad','war')}
     startAssault(t,'siege',a==='sg-join-auto',arg);return true}
-  if(a==='sg-declare'&&P.fac!==t.owner){Timed.of(P,'hostile').extend(t.owner,60);addHonor(t.owner,-20);log('You turn your band against '+t.name+'. The '+FACS[t.owner].n+' is now hostile.','bad');showSiege();return true}
+  if(a==='sg-declare'&&P.fac!==t.owner){Timed.of(P,'hostile').extend(t.owner,60);addHonor(t.owner,-20);log('You turn your band against '+t.name+'. The '+FACS[t.owner].n+' is now hostile.','bad','war');showSiege();return true}
   if(!hostileTo(t.owner))return true;
-  if(a==='sg-camp'&&walled(t)&&troopCount()>=5){P.siege={town:t.name,days:0};log('You make camp outside '+t.name+'. The siege begins.','gold');
+  if(a==='sg-camp'&&walled(t)&&troopCount()>=5){P.siege={town:t.name,days:0};log('You make camp outside '+t.name+'. The siege begins.','gold','war');
     W.lords.forEach(l=>{if(!l.dead&&l.fac===t.owner&&l.state!=='siege')lordThink(l)});showSiege();return true}
-  if(a==='sg-lift'){P.siege=null;log('You lift the siege of '+t.name+'.');G.mode='world';hidePanel();return true}
+  if(a==='sg-lift'){P.siege=null;log('You lift the siege of '+t.name+'.',undefined,'war');G.mode='world';hidePanel();return true}
   if((a==='sg-assault'||a==='sg-auto')&&(!walled(t)?troopCount()>=3:(mySiege(t)||{days:0}).days>=LADDER_DAYS)){startAssault(t,'siege',a==='sg-auto');return true}
   if((a==='sg-raid'||a==='sg-raid-auto')&&!walled(t)&&troopCount()>=3){startAssault(t,'raid',a==='sg-raid-auto');return true}
   return true;
@@ -100,16 +100,16 @@ function siegeAct(a,arg){
 // the day in camp: build, starve them out, and accept a surrender
 function siegeDay(){
   const s=P.siege;if(!s)return;const t=townBy(s.town);
-  if(!t||!hostileTo(t.owner)){P.siege=null;log('The siege ends: '+(t?t.name+' is no longer held by your enemies.':''));return}
-  s.days++;train('eng',4);if(Math.random()<.1*skill('eng')){s.days++;log('Your engineers work fast at '+t.name+'.','good')}
-  if(s.days===LADDER_DAYS)log('Ladders are ready at '+t.name+'. You can assault the walls.','gold');
-  if(s.days===RAM_DAYS)log('Your ram is built. The walls of '+t.name+' will not hold as well.','gold');
-  if(foodStock(t)<=0&&t.gar>1){t.gar--;log('The garrison of '+t.name+' starves. '+t.gar+' defenders left.')}
-  if(t.gar<=1&&!siegeDefenders(t).lords.length){log(t.name+' surrenders!','good');P.renown+=5;G.capture=t;t.gar=0}
+  if(!t||!hostileTo(t.owner)){P.siege=null;log('The siege ends: '+(t?t.name+' is no longer held by your enemies.':''),undefined,'war');return}
+  s.days++;train('eng',4);if(Math.random()<.1*skill('eng')){s.days++;log('Your engineers work fast at '+t.name+'.','good','war')}
+  if(s.days===LADDER_DAYS)log('Ladders are ready at '+t.name+'. You can assault the walls.','gold','war');
+  if(s.days===RAM_DAYS)log('Your ram is built. The walls of '+t.name+' will not hold as well.','gold','war');
+  if(foodStock(t)<=0&&t.gar>1){t.gar--;log('The garrison of '+t.name+' starves. '+t.gar+' defenders left.',undefined,'war')}
+  if(t.gar<=1&&!siegeDefenders(t).lords.length){log(t.name+' surrenders!','good','war');P.renown+=5;G.capture=t;t.gar=0}
 }
 // won the assault or raid (from concludeEncounter); returns a line for the victory panel
 function siegeWon(e){
-  const t=e.ref;(e.lords||[]).forEach(l=>{if(!l.dead){defeatLord(l);log(l.name+' is beaten inside the walls of '+t.name+'.','good')}});
+  const t=e.ref;(e.lords||[]).forEach(l=>{if(!l.dead){defeatLord(l);log(l.name+' is beaten inside the walls of '+t.name+'.','good','war')}});
   if(e.kind==='raid')return startRaid(t);
   t.gar=0;G.capture=t;return ' The gates of '+t.name+' are open. Decide its fate.';
 }
@@ -133,8 +133,8 @@ function finishRaid(t,f){
   t.pop=Math.max(10,Math.round(t.pop*(1-.1*f)));for(const g of FOODS)t.stock[g]=Math.round((t.stock[g]||0)*(1-.4*f));P.gold+=gold;P.morale=clamp(P.morale+5*f,0,100);
   if(f>=.5)W.critters=W.critters.filter(c=>c.home!==t.name);
   Timed.of(t).set('raided',12);const burnt=f>=1?burnEstates(t,1):[];worldEmit('holding:raided',{town:t});// (the bus: news.js)
-  if(f>=1){log('You raid '+t.name+' to the ground: '+food+' food and '+gold+' gold'+(burnt.length?', and burn its '+burnt.join(' and '):'')+'. Its people will not forget.','bad');worldEmit('holding:razed',{town:t})}
-  else log('You break off the raid of '+t.name+' with '+food+' food and '+gold+' gold.','bad');
+  if(f>=1){log('You raid '+t.name+' to the ground: '+food+' food and '+gold+' gold'+(burnt.length?', and burn its '+burnt.join(' and '):'')+'. Its people will not forget.','bad','war');worldEmit('holding:razed',{town:t})}
+  else log('You break off the raid of '+t.name+' with '+food+' food and '+gold+' gold.','bad','war');
 }
 
 /* the fate of a captured holding */

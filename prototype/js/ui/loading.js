@@ -27,7 +27,7 @@
 const LOADING={sync:false,delay:300,hold:400,stall:20000,slice:12,tip:4000,
   on:false,task:null,title:'',steps:[],cur:null,frac:0,at:0,last:0,shownAt:0,view:null,back:null,keep:null,run:null,stop:null,err:null,el:null,timer:null,tipAt:0,tipI:0};
 const TIPS=['Hover anything on the map to see what it is and how strong it is against you.','Space pauses; 1, 2 and 3 set the speed of the game. 4 travels fast until anything hostile comes into sight.',
-  'F6 saves at any time. The game also saves itself each day and when you leave a town.','L opens the message log; H shows every control.',
+  'F6 saves at any time. The game also saves itself each day and when you leave a town.','Tab opens the Menu, every window. L the Journal’s chronicle, every message; H every control.',
   'In the frost, carry one bundle of furs for every five people.','Elves make the best arrows, dwarves the best bolts.',
   'Grain and cheese never spoil. Milk turns within days.','Fish is cheap by the water, and spoils quickly.','Spice is worth the most for each bag slot.',
   'Every building project and estate wears out tools.','Towns drink ale, and content people work harder.','Bronze wants copper and tin alike.',

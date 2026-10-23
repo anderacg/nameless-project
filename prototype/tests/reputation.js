@@ -35,6 +35,6 @@ Kit.suite(({ok})=>{
  // tournament
  town('Ashford');const tw0=t.repAt('Ashford');t.startBattle({enemies:['chief'],tournament:true});t.B.win=true;t.B.over=true;t.B.endT=0;t.updateBattle(.01);ok(t.repAt('Ashford')===tw0+8,'winning a tournament is worth 8');t.act('back-town');t.act('leave');done();
  // realms tab and save
- G.mode='world';G.modal=false;t.openChar();t.act('char-tab','realms');ok(/Your reputation/.test(panel())&&/Your honor/.test(panel()),'realms tab lists reputation and honor');t.act('char-close');
+ G.mode='world';G.modal=false;t.openJournal('realms');ok(/Your reputation/.test(panel())&&/Your honor/.test(panel()),'realms tab lists reputation and honor');t.act('journal-close');
  const rep=JSON.stringify(P.rep),hon=JSON.stringify(P.honor);t.saveGame();P.rep={};P.honor={};t.act('load');ok(JSON.stringify(P.rep)===rep&&JSON.stringify(P.honor)===hon,'save/load keeps reputation and honor');
 });

@@ -6,7 +6,7 @@ function heal(lost,groups){
   let saved=0,total=0,hurt=0;const ch=.07*skill('med'),wc=Math.min(.7,.25+.04*skill('med'));P.wounded=P.wounded||{};
   const rows=groups||Object.keys(lost).map(type=>({type,count:lost[type]}));
   for(const row of rows){const k=row.type,n=row.count;total+=n;for(let i=n;i>0;i--){if(Math.random()<ch){lost[k]--;row.count--;saved++;row.saved=(row.saved||0)+1}else if(ST[k]&&!ST[k].beast&&Math.random()<wc){P.wounded[k]=(P.wounded[k]||0)+1;hurt++;row.wounded=(row.wounded||0)+1;if(row.id){const wg=P.woundedGroups||(P.woundedGroups=[]),g=wg.find(g=>g.id===row.id&&g.type===k);if(g)g.count++;else wg.push({id:row.id,type:k,count:1})}}}}
-  train('med',total*2);if(hurt)log(hurt+' of your fallen live, wounded: they ride with the band until they heal.','gold');return saved;
+  train('med',total*2);if(hurt)log(hurt+' of your fallen live, wounded: they ride with the band until they heal.','gold','war');return saved;
 }
 function takePrisoners(slain){
   let n=0;const pool=slain.filter(k=>ST[k].tier<4&&!ST[k].beast),want=Math.round(pool.length*.35);
@@ -44,9 +44,9 @@ class BattleResolution{
     if(!b.opts.tournament)for(const u of b.units)if(u.team===0&&!u.hero&&!u.comp&&!u.lord&&!u.leader&&(u.hp>0||u.left))(b.txp=b.txp||{})[u.type]=(b.txp[u.type]||0)+(u.xp||0)+TROOP_XP.fight+(b.win?TROOP_XP.win:0);
     const txp=b.txp||{},o=b.opts,win=b.win,retreat=!!b.retreat,caught=b.caught||0,got=b.withdrawn||0,standing=b.units.filter(u=>u.team===1&&u.hp>0).length,fallen=Object.values(b.lost).reduce((a,n)=>a+n,0);bbar.hidden=true;G.mode='dialog';lootStart();
     const lost=o.tournament?{}:b.lost,kills=b.kills,slain=b.slain,h=b.hero,X=b.hx;
-    if(b.bestCombo>=3)log('Your longest chain of blows: '+b.bestCombo+' hits.');
+    if(b.bestCombo>=3)log('Your longest chain of blows: '+b.bestCombo+' hits.',undefined,'war');
     // carry the hero's condition out of the fight; a knocked-out hero comes to at 10% health
-    if(h.hp>0||h.left)P.hp=h.left?h.hpLeft:h.hp;else{P.hp=Math.max(1,Math.round(h.max*.1));log('You come to after the fight, badly wounded.','bad')}
+    if(h.hp>0||h.left)P.hp=h.left?h.hpLeft:h.hp;else{P.hp=Math.max(1,Math.round(h.max*.1));log('You come to after the fight, badly wounded.','bad','war')}
     if(X){P.sp=X.sp;P.mp=X.mp}
     {const m=b.units.filter(u=>u.team===0&&!u.hero&&!u.lord&&!u.leader&&!u.comp&&u.mor0);
       BATTLE_MOOD=o.tournament||!m.length?null:{share:fallen/m.length,shaken:m.filter(u=>u.hp>0||u.left).reduce((a,u)=>a+clamp((u.rout?0:u.mor)/u.mor0,0,1),0)/Math.max(1,m.filter(u=>u.hp>0||u.left).length),broke:b.routed===1}}
@@ -83,7 +83,7 @@ class BattleResolution{
       P.gold+=res.gold;
       const fame=res.fame==null?Math.max(2,Math.round(kills/2)):res.fame;if(fame)repNear(P.x,P.y,fame);
       html='<h2>Victory</h2><p>You defeated '+(e.kind==='monster'?(kills>1?kills+' ':'the ')+MONSTERS[e.ref.id].n.toLowerCase():kills+' '+(e.kind==='lord'?'soldiers':'foes'))+(taken?' and took '+taken+' prisoner'+(taken>1?'s':''):'')+'.'+bounty+'</p>'+moodLine;
-      log('Victory. +'+res.gold+' gold, renown now '+P.renown+'.','good');mood('win');
+      log('Victory. +'+res.gold+' gold, renown now '+P.renown+'.','good','war');mood('win');
     }else if(retreat){
       // as fleeing on the map (fleeOdds): a fight you started you simply leave; else a race. Got away, they lose your trail for a
       // while; run down, your rearguard pays and you must face them again. The foes you slew stay dead either way.
@@ -105,7 +105,7 @@ class BattleResolution{
         '<div class="lab">The battle</div><div class="loot-stats">'+[['Enemies slain',kills,'good'],['Your fallen',retreat.fallen||0,retreat.fallen?'bad':''],['Got away',retreat.got||0,''],['Enemies still standing',retreat.standing||0,'']].map(([k,v,c])=>'<span><b>'+k+'</b><span class="'+c+'">'+v+'</span></span>').join('')+'</div>'+moodLine+'<p class="bad">Renown −'+MOOD.renown+' for the retreat.</p>';
     }else{
       const lose=Math.floor(P.gold*.25);P.gold-=lose;const moodLine=battleMood(-15,'defeat');if(auto){vitals();P.hp=Math.max(1,Math.round(P.hp*.5))}
-      if(prisonerCount()){P.prisoners={};log('Your prisoners escape in the chaos.','bad')}
+      if(prisonerCount()){P.prisoners={};log('Your prisoners escape in the chaos.','bad','war')}
       captivesEscape();
       if(e.kind==='siege'||e.kind==='raid'){P.siege=null;G.capWith=null;e.ref.gar=Math.max(1,Math.round(e.ref.gar*.75))}
       if(e.kind==='patrol'){const h=townBy(e.ref.home);if(h)h.crime=null}
@@ -114,7 +114,7 @@ class BattleResolution{
       heroAtGate(near);G.lastTown=near;if(e.kind!=='camp')e.ref.cool=8;
       if(e.kind==='lord'){const l=e.ref;if(auto)cull(l,.3);else if(!this.primaryLossesApplied)for(const k of slain)l.remove(k,1);lordWins(l,partySize())}
       html='<h2>Defeat</h2><p>Your band was routed. You lost '+lose+' gold and woke up near '+near.name+'.</p>'+moodLine;
-      log('Defeat. You wake near '+near.name+'.','bad');
+      log('Defeat. You wake near '+near.name+'.','bad','war');
     }
     // your troops' experience (core/recruitment.js): what each kind earned, after the shared roster has applied the losses
     {const before=Object.keys(P.troops).reduce((a,k)=>a+txpReady(k),0);

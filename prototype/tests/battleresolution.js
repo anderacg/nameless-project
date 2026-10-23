@@ -106,8 +106,9 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t
       // tests/battlereport.js verifies report ownership, outcomes, persistence and rendering separately.
       const callsBefore=G.msgs.length,reportHtml=document.querySelector('.battle-report')?.outerHTML,
         html=document.getElementById('panel').innerHTML.replace(reportHtml||'<!-- no group report -->',''),view={...G.lootView};delete view.report;
+      // (the messages without the chronicle's kind and ref, 2026-10-23: as they were recorded before them)
       const snapshot={P,mode:G.mode,enc:G.enc,again:G.encAgain,encCool:G.encCool,lastTown:G.lastTown&&G.lastTown.name,capture:G.capture&&G.capture.name,capWith:G.capWith,
-        loot:G.loot,view,messages:G.msgs,html,B:t.B,mood:t.BATTLE_MOOD,
+        loot:G.loot,view,messages:G.msgs.map(({kind,ref,...r})=>r),html,B:t.B,mood:t.BATTLE_MOOD,
         towns:t.TOWNS.map(h=>({name:h.name,owner:h.owner,gar:h.gar,rep:P.rep[h.name],crime:h.crime})),
         world:{lords:W.lords,exiles:W.exiles,monsters:W.monsters,treas:W.treas,rel:W.rel,lrel:W.lrel},bands:t.bandits,
         randomCalls:calls,random:[Math.random(),Math.random(),Math.random()]};

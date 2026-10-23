@@ -33,6 +33,14 @@ class Quest extends Happening{
   get shape(){
     return 'quest';
   }
+  // (its lines are a story's: its own key in the Journal, or its story's while it is a story's stage)
+  get logKind(){
+    return 'story';
+  }
+  get journalKey(){
+    const th=this.story;
+    return th?'t'+th.i:'q'+this.id;
+  }
   static kindId(rec){
     return rec.type;
   }
@@ -96,7 +104,7 @@ class Quest extends Happening{
     this.done=false;
     if(this.begin(townBy(this.home))===false)return false;
     P.quests.push(this);
-    log('New quest: '+this.title+'. '+this.takenLine()+'Track it with C → Quests.','gold');
+    log('New quest: '+this.title+'. '+this.takenLine()+'Track it in your Quests (Q).','gold','story',this.journalKey);
     return true;
   }
   // (taken: its due day; its words for it in the line)
@@ -187,7 +195,7 @@ class Quest extends Happening{
   finish(){
     this.done=true;
     Quest.unmark(this.id);
-    log('Quest done: '+this.title+'. Report back to '+this.reportTo+'.','gold');
+    log('Quest done: '+this.title+'. Report back to '+this.reportTo+'.','gold','story',this.journalKey);
   }
   // ---- its quarry: every party or beast it marked (qid), wherever it is: roving, gone to ground in a camp or hideout (a site's
   // bands), a beast; unmarked once the quest is done or failed, so it is left to roam on its own
@@ -218,7 +226,7 @@ class Quest extends Happening{
       const bonus=Math.round(gold*Math.max(0,relWith(giver))/200);
       if(bonus){
         P.gold+=bonus;
-        log(giver.name+' adds '+bonus+' gold for a friend.','gold');
+        log(giver.name+' adds '+bonus+' gold for a friend.','gold','story',this.journalKey);
       }
       changeRel(giver,RELATION.jobDone,'you did their work');
     }
@@ -229,7 +237,7 @@ class Quest extends Happening{
     if(r.rep&&at)addRep(at,r.rep,true);
     if(r.honor)addHonor(this.fac,r.honor,true);
     P.quests=P.quests.filter(x=>x!==this);
-    log('Quest complete: '+this.title+'. +'+gold+' gold'+(r.rep?', +'+r.rep+' reputation':'')+(r.honor?', +'+r.honor+' honor':'')+'.','good');
+    log('Quest complete: '+this.title+'. +'+gold+' gold'+(r.rep?', +'+r.rep+' reputation':'')+(r.honor?', +'+r.honor+' honor':'')+'.','good','story',this.journalKey);
     this.announceEnd('paid');
   }
   // (the gold it pays now: its reward's; a late job's less, world/quests.js)
@@ -251,7 +259,7 @@ class Quest extends Happening{
     P.quests=P.quests.filter(x=>x!==this);
     Outcome.apply(this.penalty(this.fate),{e:this});
     Quest.unmark(this.id);
-    log((this.fate==='left'?'Quest abandoned: ':'Quest failed: ')+this.title+'. '+why,'bad');
+    log((this.fate==='left'?'Quest abandoned: ':'Quest failed: ')+this.title+'. '+why,'bad','story',this.journalKey);
     const giver=this.lord&&W.lords.find(l=>l.name===this.giver);
     if(giver)changeRel(giver,RELATION.jobFailed,'you failed their work');
     this.announceEnd('failed');

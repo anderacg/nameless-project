@@ -58,7 +58,7 @@ Kit.suite(({ok,info})=>{
     'Take him home: the chain begins with what it knows ('+m.name+', home '+JSON.stringify(m.home)+', the '+m.gang+')');
    const d=Math.hypot(t.townBy(m.town).x-e.x,t.townBy(m.town).y-e.y)/t.TILE;ok(d<=WD.home.max+1||t.TOWNS.every(z=>Math.hypot(z.x-e.x,z.y-e.y)/t.TILE<WD.home.min||Math.hypot(z.x-e.x,z.y-e.y)/t.TILE>WD.home.max),'his home within a sensible way ('+Math.round(d)+' tiles)');
    ok(q&&q.type==='escort'&&q.quiet&&q.pn===m.name&&['house','estate','holding'].includes(q.to.k)&&q.homeMark()===q.to&&t.Escort.list().includes(q),'the escort: '+q.title+', a passenger, its place a home (a house on the map)');
-   t.openChar();t.act('char-tab','quests');ok(pageHas('The Wounded Traveller: '+m.name,'Side quest','Bring '+m.name+' home')&&!Kit.qa('.qw-row').some(r=>r.textContent.includes('Escort '+m.name)),'your Quests: the story, once (its escort is its objective, not a row of its own), with what to do now');Kit.world();
+   t.openQuests();ok(pageHas('The Wounded Traveller: '+m.name,'Side quest','Bring '+m.name+' home')&&!Kit.qa('.qw-row').some(r=>r.textContent.includes('Escort '+m.name)),'your Quests: the story, once (its escort is its objective, not a row of its own), with what to do now');Kit.world();
    {let err='';try{t.wuiEscorts({x:q.to.x-200,y:q.to.y-100},performance.now(),false);t.drawQuestMarks({x:0,y:0})}catch(x){err=x.message}ok(!err,'its place marked on the map'+(err?' EXC '+err:''))}
    ok(save(),'saved and loaded on the escort step');C={...C,th:live(),q:step()}}
   // ---- 3/4. arrival: no page of the escort's own; his family's page
@@ -69,7 +69,7 @@ Kit.suite(({ok,info})=>{
    C.th=live();t.act('thr-do','0');ok(C.th.at==='tracks'&&G.mode==='world','promised: the next step, back to where you found him')}
   // ---- 5. the investigation: to where you found him; the trail binds the chain to a hideout and marks it
   {const {th}=C,q=step();ok(q&&q.type==='visit'&&q.to.k==='spot'&&q.to.x===th.memory.at.x&&!q.homeMark()&&t.questGoal(q).x===q.to.x,'a visit: to where you found him (the quests’ "!" there, the minimap’s dot)');
-   t.openChar();t.act('char-tab','quests');ok(pageHas('Find the trail where you found','Go to where you found')&&!/0 days left/.test(Kit.text()),'in your Quests: where to go, no due day');Kit.world();
+   t.openQuests();ok(pageHas('Find the trail where you found','Go to where you found')&&!/0 days left/.test(Kit.text()),'in your Quests: where to go, no due day');Kit.world();
    ok(save(),'saved and loaded on the way');C.th=live();const q2=step();there(q2);const m=C.th.memory,s=m.site!=null&&W.sites.find(x=>x.i===m.site);
    ok(q2.fate==='arrived'&&C.th.at==='trail'&&s&&s instanceof t.Hideout&&!s.cleared&&s.seen&&m.lair===s.name&&G.thread===C.th&&pageHas('Ride for their hideout',s.name),'there: the trail leads to the '+s.name+' ('+s.band+'; his attackers were '+m.band+'), marked on your map; its page');
    const near=t.LairQuest.near(m.at,m.band);ok(near===s,'the nearest hideout of their band');
@@ -144,7 +144,7 @@ Kit.suite(({ok,info})=>{
   {C=home();const b=band();lose(vsBand(b));const th=C.th,q=step();
    ok(C.q.fate==='captured'&&th.at==='held'&&q&&q.type==='held'&&q.held.k==='band'&&t.carries(b,q.held.cap)&&th.memory.held.k==='band'&&!q.days&&t.bandits.includes(b),'captured by bandits: held by the band that beat you (it carries him); his rescue in your Quests, no due day');
    const g=t.questGoal(q);ok(g&&g.x===b.x&&g.y===b.y&&/hold .* captive/.test(b.tip())&&!q.homeMark(),'the band marked on your map where it is, its tip says whom it holds');
-   t.openChar();t.act('char-tab','quests');ok(pageHas('Free '+th.memory.name,'before they take him to their hideout'),'your Stories: what to do now');Kit.world();
+   t.openQuests();ok(pageHas('Free '+th.memory.name,'before they take him to their hideout'),'your Stories: what to do now');Kit.world();
    ok(saved(),'saved and loaded while the band holds him');const b2=t.bandCarrying(step().held.cap);ok(!!b2&&b2.carry[0].n===th.memory.name,'the band still carries him after the load');
    win(vsBand(b2));const z=live(),e2=step();
    ok(W.story.threads.ended.some(x=>x.i===th.i&&x.how==='freed')&&z.i!==th.i&&z.at==='escort'&&e2&&e2.type==='escort'&&z.memory.freed&&!z.memory.held&&z.memory.name===th.memory.name&&e2.days>0&&e2.due>G.day&&!t.bandCarrying(q.held.cap),
@@ -152,7 +152,7 @@ Kit.suite(({ok,info})=>{
   {C=home();const b=band();lose(vsBand(b));const q=step(),cap=q.held.cap;G.day=q.goes-1;t.questDay();ok(live().at==='held'&&step()===q&&q.held.k==='band','the band carries him '+WD.rescue.home+' days');
    const m0=G.msgs.length;G.day=q.goes;t.questDay();const s=q.lair();
    ok(P.quests.includes(q)&&q.held.k==='lair'&&s&&s.seen&&t.questGoal(q).x===s.x&&!t.bandCarrying(cap)&&G.msgs.slice(m0).some(m=>/has taken .* to the/.test(m.m)),'then it takes him home to the '+(s&&s.name)+' (marked on your map), and lets go of him');
-   t.openChar();t.act('char-tab','quests');ok(pageHas('from the '+s.name),'your Stories: free him from the '+s.name);Kit.world();
+   t.openQuests();ok(pageHas('from the '+s.name),'your Stories: free him from the '+s.name);Kit.world();
    G.day+=120;t.questDay();ok(live().at==='held'&&P.quests.includes(q),'no deadline: 120 days on, he is still there to be freed');
    ok(saved(),'saved and loaded with him in the hideout');const d2=step(),s2=d2.lair();
    try{win({kind:'camp',ref:s2,n:4,band:s2.band});ok(d2.fate==='freed'&&live().at==='escort'&&live().memory.freed,'its hideout cleared: freed, the escort again')}finally{s2.cleared=false}drop()}

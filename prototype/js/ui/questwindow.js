@@ -1,5 +1,5 @@
 'use strict';
-/* ---------- your Quests: the Character window's Quests tab (C), the journal: its tabs, a list and the one chosen in full ----------
+/* ---------- your Quests: a window of its own (Q; the Menu's Quests), over the map or the streets: its tabs, a list and the one chosen in full ----------
    The quest model (story/quest.js; the owner, 2026-10-23): every quest and story reads its category (cat) and its state the same
    way. The tabs (QW.tabs): Main, Side and Jobs (QUEST_CATS), and the Archive (QuestArchive: those done, failed or abandoned,
    newest first). A story is one quest: listed once (its stages' quests are its objective, never rows of their own). Each is
@@ -14,15 +14,17 @@
      on: how far along, where), its stages done so far;
    - an offer: its facts and what it requires (taken at its board, or from its lord); an archive entry: how it ended, the day,
      what it paid or cost;
-   and its buttons: Show on map (the full map centred on its goal, its bar's Back returning here: ui/map.js), Track (a quest or
+   and its buttons: Show on map (from the map only) (the full map centred on its goal, its bar's Back returning here: ui/map.js), Track (a quest or
    story under way; one at a time: world/quests.js QuestTrack) and, for a job only, Abandon (it asks first, its real cost:
    what giving it up costs; Give it up is q-abandon). Main and side quests show no Abandon.
    A wide window shows the two side by side; a small one (a phone on its side: QW.compact, the overlay's size, as style.css
    8d's container query) the tabs and the list, then the chosen one alone (G.qw.open), its bar's Back returning to the list.
+   One opened from the Journal's Chronicle (ui/chronicle.js chronOpen) has Back to Chronicle on its bar instead (G.qw.from).
    Esc follows the bar. ---------- */
 const QW={compact:{w:760,h:520},tabs:['main','side','job','past']};
-// (its state: the tab, the one chosen, whether it is open on a small window, the one asking to be given up)
-const qwState=()=>G.qw||(G.qw={tab:null,sel:null,open:false,ask:null});
+// (its state: the tab, the one chosen, whether it is open on a small window, the one asking to be given up; the one the
+// Chronicle opened, while it is the one chosen)
+const qwState=()=>G.qw||(G.qw={tab:null,sel:null,open:false,ask:null,from:null});
 // is the window small (the overlay's content box: as the container query in style.css 8d measures it)
 function qwCompact(){
   const r=$('#screen').getBoundingClientRect(),s=getComputedStyle(ov),C=QW.compact;
@@ -112,7 +114,7 @@ function qwGoal(it){
 function qwButtons(it,goal){
   const on=P.track===it.k,live=it.q||it.th;
   if(!live&&!it.o)return '';
-  return '<div class="btns qw-acts">'+qwBtn('qw-map',it.k,'Show on map',goal?'':'It points nowhere on the map now')+
+  return '<div class="btns qw-acts">'+qwBtn('qw-map',it.k,'Show on map',goal?qwMapWhy():'It points nowhere on the map now')+
     (live?'<button class="btn sm'+(on?' on':'')+'" type="button" data-act="qw-track" data-arg="'+it.k+'" aria-pressed="'+on+'">'+(on?'Tracked':'Track')+'</button>':'')+
     (it.q&&it.q.abandonable?qwBtn('qw-abandon',it.k,'Abandon'):'')+'</div>';
 }
@@ -146,7 +148,8 @@ function qwPast(it){
   if(e.got)f.push([story?'Last stage':e.state==='done'?'Reward':'Cost',e.got]);
   return qwHead(it,e.title)+qwFacts(f);
 }
-/* the tab: its content (character.js renderChar), and its bar's Back (on a small window, the chosen one open: back to the list) */
+/* the window's content (renderQuests), and its bar's Back (asking to give one up: Keep it; opened from the Chronicle: back to it; on a
+   small window, the chosen one open: back to the list) */
 function questWindow(){
   const all=qwItems(),tab=qwTab(all),items=all.filter(x=>x.tab===tab),it=qwChosen(items),S=qwState();
   S.compact=qwCompact();
@@ -156,21 +159,35 @@ function questWindow(){
   if(S.ask===it.k&&it.q?.abandonable)return '<div class="qw confirm open"><section class="qw-detail"><div class="fb-qscroll"><div class="qw-ask" role="alertdialog" aria-label="Give it up?"><h3>Give up this job?</h3><p>Give up '+it.q.title+'? It counts as abandoned: '+it.q.abandonCost()+'.</p><div class="btns">'+qwBtn('qw-keep',it.k,'Keep it','','primary')+qwBtn('q-abandon',it.q.id,'Give it up','','bad')+'</div></div></div></section></div>';
   return '<div class="qw'+(S.open?' open':'')+'">'+tabs+qwList(items,tab,it.k)+'<section class="qw-detail" aria-label="'+htmlText(it.e?it.e.title:it.th?it.th.title:qwTitle(it))+'"><div class="fb-qscroll" data-fb-scroll="journal:'+htmlText(it.k)+'">'+body+'</div>'+qwButtons(it,qwGoal(it))+'</section></div>';
 }
-const questWindowBack=()=>{const S=qwState();return S.ask?['qw-keep',S.sel,'Back']:S.compact&&S.open&&S.sel?['qw-list',null,'Back']:null};
-// Show on map: the full map over the world, centred on its goal; its Back (qw-back) returns to your Quests
+const questWindowBack=()=>{const S=qwState();return S.ask?['qw-keep',S.sel,'Back']:S.from&&S.from===S.sel?['ch-back',null,'Back to Chronicle']:S.compact&&S.open&&S.sel?['qw-list',null,'Back']:null};
+// the window (Q, the Menu's Quests; opened over the map or the streets, closing back there: ui.js openOver), drawn again; Q or its
+// way out closes it
+function renderQuests(){
+  const n=qwItems().filter(x=>x.q||x.th).length;
+  fbShow('Quests',n?n+' under way':'Nothing under way','',questWindow(),questWindowBack(),['quests-close',null,G.overBack==='scene'?'Back to the streets':'Back to map'],'fb-quests');
+}
+function openQuests(){
+  if(G.mode!=='quests'&&!openOver('quests',''))return false;
+  renderQuests();
+  return true;
+}
+const questsKey=()=>G.mode==='quests'?act('quests-close'):openQuests();
+onAct('quests-',()=>{if(G.mode==='quests'){qwState().from=null;closeOver()}});
+// Show on map (from the map only: the streets have no full map): the full map over the world, centred on its goal; its Back
+// (qw-back) returns to your Quests
+const qwMapWhy=()=>G.overBack==='world'?'':'Leave the streets first';
 function qwShowOnMap(k){
   const it=qwItems().find(x=>x.k===k),g=it&&qwGoal(it);
-  if(!g)return;
-  G.mode='world';
-  hidePanel();
-  if(!fullMapOpen({x:g.x/TILE,y:g.y/TILE},['qw-back',null,'Back to Quests'])){G.mode='char';renderChar()}
+  if(!g||qwMapWhy())return;
+  closeOver();
+  if(!fullMapOpen({x:g.x/TILE,y:g.y/TILE},['qw-back',null,'Back to Quests']))openQuests();
 }
 onAct('qw-',(a,arg)=>{
   const S=qwState();fbRemember();
-  if(a==='qw-back'){if(G.mode==='fullmap'){closeOver();G.char='quests';openChar()}return}
-  if(G.mode!=='char')return;
-  if(a==='qw-tab'){S.tab=arg;S.sel=null;S.open=false;S.ask=null}
-  else if(a==='qw-sel'){S.sel=arg;S.open=true;S.ask=null}
+  if(a==='qw-back'){if(G.mode==='fullmap'){closeOver();openQuests()}return}
+  if(G.mode!=='quests')return;
+  if(a==='qw-tab'){S.tab=arg;S.sel=null;S.open=false;S.ask=null;S.from=null}
+  else if(a==='qw-sel'){S.sel=arg;S.open=true;S.ask=null;if(S.from!==arg)S.from=null}
   else if(a==='qw-list'){S.open=false;S.ask=null}
   else if(a==='qw-track')QuestTrack.set(P.track===arg?null:arg);
   else if(a==='qw-abandon')S.ask=arg;
@@ -178,9 +195,9 @@ onAct('qw-',(a,arg)=>{
   else if(a==='qw-map')return qwShowOnMap(arg);
   else return;
   updateHUD(true);
-  renderChar();
+  renderQuests();
   const b=a==='qw-sel'?panel.querySelector('.qw-detail .btn:not([disabled])'):a==='qw-abandon'?panel.querySelector('.qw-ask .btn'):panel.querySelector('[data-act="'+a+'"][data-arg="'+CSS.escape(arg)+'"]')||panel.querySelector('[data-act="qw-sel"].on');
   if(b){b.focus({preventScroll:true});if(a==='qw-abandon')b.scrollIntoView({block:'nearest'})}
 });
 // (a window turned or resized across the small window's size: drawn again, its bar with it)
-addEventListener('resize',()=>{if(G.mode==='char'&&G.char==='quests'&&qwState().compact!==qwCompact())renderChar()});
+addEventListener('resize',()=>{if(G.mode==='quests'&&qwState().compact!==qwCompact())renderQuests()});

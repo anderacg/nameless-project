@@ -40,7 +40,7 @@ Kit.suite(({ok})=>{
   const targets=rings.map(e=>e.getBoundingClientRect()),overlap=targets.some((a,i)=>targets.slice(i+1).some(b=>a.left<b.right&&a.right>b.left&&a.top<b.bottom&&a.bottom>b.top));
   ok(rings.length===10&&(w>760&&h>520||w<651||G.invView==='equipment')&&!overlap&&targets.every(r=>r.width>=44&&r.height>=44),'ten ring targets are separate and at least 44px at '+w+' × '+h);
   world();t.openSkills('talents');fit('Skills');ok(qa('.fb-node-actions .btn').every(inside),'Learn or Unlearn stays on screen at '+w+' × '+h);
-  world();const town=t.townBy('Ashford'),job=t.makeQuest('supply',town);t.acceptQuest(job);t.openChar();t.act('char-tab','quests');t.act('qw-tab','job');t.act('qw-sel','q'+job.id);fit('Journal');ok(qa('.qw-acts .btn').every(inside),'journal commands stay pinned at '+w+' × '+h);
+  world();const town=t.townBy('Ashford'),job=t.makeQuest('supply',town);t.acceptQuest(job);t.openQuests();t.act('qw-tab','job');t.act('qw-sel','q'+job.id);fit('Journal');ok(qa('.qw-acts .btn').every(inside),'journal commands stay pinned at '+w+' × '+h);
   t.act('qw-abandon','q'+job.id);ok(inside(q('.qw-ask'))&&qa('.qw-ask .btn').every(inside),'abandonment shows its actual cost and both choices at '+w+' × '+h);t.act('qw-keep','q'+job.id);
  }
  scr.style.cssText=original;world();

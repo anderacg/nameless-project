@@ -174,11 +174,12 @@ const Outcome={
         return [c.rep&&'reputation in '+t.name+' −'+c.rep,c.morale&&'morale −'+c.morale,own&&c.honor&&'honour with the '+FACS[t.owner].n+' −'+c.honor].filter(Boolean);
       },
     },
-    // log: a line (or [line, its class])
+    // log: a line (or [line, its class]), of its happening's kind (a quest's, a story's: Happening logKind)
     log:{
-      apply(v){
-        if(typeof v==='string')log(v);
-        else log(v[0],v[1]);
+      apply(v,ctx){
+        const e=ctx&&ctx.e;
+        if(typeof v==='string')log(v,undefined,e&&e.logKind,e&&e.journalKey);
+        else log(v[0],v[1],e&&e.logKind,e&&e.journalKey);
       },
       text:()=>'',
     },

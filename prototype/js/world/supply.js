@@ -91,7 +91,7 @@ function drinkTake(n,L){let left=n,first=null;for(const k of drinkOrder(L)){if(!
 // waterskins filled to SUPPLY.fill.days of drink on the march, as the bag's room allows, free: how many (quiet: no line)
 function fillSkins(quiet){
   const want=Math.ceil(P.drinkHour(true)*24*SUPPLY.fill.days)-goodN('water'),n=Math.min(Math.max(0,want),goodRoom('water')),got=n?playerInventory.add('good','water',n):0;
-  if(!quiet)log(got?'You fill your waterskins: '+got+' water.':want>0?'There is no room in your bag for more water.':'Your waterskins are full.',got?'good':'');
+  if(!quiet)log(got?'You fill your waterskins: '+got+' water.':want>0?'There is no room in your bag for more water.':'Your waterskins are full.',got?'good':'','band');
   return got}
 const canFill=L=>(L=L||supplyLand()).water||L.well;
 // the skins fill as soon as you stand at a holding's well, or stopped beside water (the owner: on the hour was too slow, a new
@@ -137,8 +137,8 @@ function supplyMoved(){const w=WALKED.get(P)||0,m=w-SUPPLY_WALK.at>=1;SUPPLY_WAL
 function supplyHurt(why,desert){
   const ks=Object.keys(P.troops).filter(k=>P.troops[k]>0).sort((a,b)=>P.troops[b]-P.troops[a]),k=ks[0],u=BAND;
   if(k){P.remove(k);if(desert)supplyLost(k,'deserted');else{P.wounded[k]=(P.wounded[k]||0)+1;const s=u.sick[k]||(u.sick[k]={});s[why]=(s[why]||0)+1}
-    log(desert?cap1(an(ST[k].n.toLowerCase()))+' deserts, hungry.':cap1(why)+': '+an(ST[k].n.toLowerCase())+' falls sick.','bad')}
-  else if(!desert){log(cap1(why)+' wears you down.','bad');heroHurt(.1,0,why)}
+    log(desert?cap1(an(ST[k].n.toLowerCase()))+' deserts, hungry.':cap1(why)+': '+an(ST[k].n.toLowerCase())+' falls sick.','bad','band')}
+  else if(!desert){log(cap1(why)+' wears you down.','bad','band');heroHurt(.1,0,why)}
   u.hurt=[{why,day:G.day},...u.hurt.filter(h=>h.why!==why)].slice(0,SUPPLY.hurt)}
 // a man dies of it (why: thirst or hunger): a sick one first (sick of it, else of anything), else the fit kind you have most of; with
 // none, your hero's health. Gone for good: kept for the card (supplyLost)
@@ -147,14 +147,14 @@ function supplyDie(why){
   let k=sick.filter(q=>u.sick[q][why]>0).sort((a,b)=>u.sick[b][why]-u.sick[a][why])[0]||sick[0];
   if(k){const s=u.sick[k],c=s[why]>0?why:Object.keys(s).find(w=>s[w]>0);if(!--s[c])delete s[c];if(!sum(s))delete u.sick[k];if(!--W[k])delete W[k];woundedTrim(k)}
   else{k=Object.keys(P.troops).filter(q=>P.troops[q]>0).sort((a,b)=>P.troops[b]-P.troops[a])[0];if(k)P.remove(k)}
-  if(k){supplyLost(k,why);log(cap1(an(ST[k].n.toLowerCase()))+' dies of '+why+'.','bad')}
-  else{log(cap1(why)+' wears you down.','bad');heroHurt(.1,0,why)}
+  if(k){supplyLost(k,why);log(cap1(an(ST[k].n.toLowerCase()))+' dies of '+why+'.','bad','band')}
+  else{log(cap1(why)+' wears you down.','bad','band');heroHurt(.1,0,why)}
   u.hurt=[{why,day:G.day},...u.hurt.filter(h=>h.why!==why)].slice(0,SUPPLY.hurt)}
 /* your hero's own toll (hp, mp: the shares of her health and mana lost; why: what did it). Her health reaching 0 here, off the
    battlefield (thirst, hunger, fever, frostbite), she dies and the game is over (G.dead; ui.js showDeath). Battles keep their own
    rules: a lost battle is not death */
 function heroHurt(hp,mp,why){const m=vitals();P.hp=Math.max(0,P.hp-m[0]*hp);P.mp=Math.max(0,P.mp-m[2]*mp);if(P.hp<=0)heroDies(why)}
-function heroDies(why){if(G.dead)return;G.dead={why,day:G.day};P.tx=P.ty=null;G.chase=null;G.pitch=null;if(G.hurry)setHurry(false);log('You die of '+(WHY_SICK[why]||why)+'.','bad');showDeath()}
+function heroDies(why){if(G.dead)return;G.dead={why,day:G.day};P.tx=P.ty=null;G.chase=null;G.pitch=null;if(G.hurry)setHurry(false);log('You die of '+(WHY_SICK[why]||why)+'.','bad','band');showDeath()}
 // where your band's hunger and thirst stand (the stages of hungerTag and thirstTag), and what they leave your hero: her mana comes
 // back unless Parched or Hungry (or worse), her health unless Dying of thirst or Starving (parties.js regenVitals)
 function supplyStage(){const T=SUPPLY.thirst,H=SUPPLY.hunger,h=BAND.hungry;if(CHEAT.noNeeds)return{parched:false,dying:false,hungry:false,starving:false};return{parched:BAND.dry>=T.parched,dying:BAND.dry>=T.dying,hungry:h>0||!foodN(),starving:h>=H.starving}}
@@ -200,24 +200,24 @@ function supplyHour(){
   if(st!=='fresh'){if(++u.tired%S.tiredMorale.every===0)P.morale-=S.tiredMorale.n}else u.tired=0;
   if(st==='exhausted'){if(++u.worn%S.worn.every===0)supplyHurt('exhaustion')}else u.worn=0;
   // hunger, by its stages (SUPPLY.hunger): morale, then Starving, then men desert, fall sick and at last die
-  if(hungry){const H=S.hunger,h=++u.hungry;if(h===1){log('Your band goes hungry. Buy food in a town, or hunt.','bad');mood('hungry')}
-    if(h>=H.starving){P.morale-=H.starveMorale;if(h===H.starving)log('Your band is starving: the march drains it more, and soon men will leave.','bad')}else if(h%H.every===0)P.morale-=H.morale;
+  if(hungry){const H=S.hunger,h=++u.hungry;if(h===1){log('Your band goes hungry. Buy food in a town, or hunt.','bad','band');mood('hungry')}
+    if(h>=H.starving){P.morale-=H.starveMorale;if(h===H.starving)log('Your band is starving: the march drains it more, and soon men will leave.','bad','band')}else if(h%H.every===0)P.morale-=H.morale;
     if(passed(h-1,h,H.desert,H.toll))supplyHurt('hunger',true);
     if(passed(h-1,h,H.sick,H.toll))supplyHurt('hunger');
     if(passed(h-1,h,H.die,H.toll))supplyDie('hunger');
-    if(passed(h-1,h,H.starving,H.hero.every)){log('Hunger gnaws at you.','bad');heroHurt(H.hero.hp,H.hero.mp,'hunger')}}else u.hungry=0;
+    if(passed(h-1,h,H.starving,H.hero.every)){log('Hunger gnaws at you.','bad','band');heroHurt(H.hero.hp,H.hero.mp,'hunger')}}else u.hungry=0;
   // thirst, by its stages (SUPPLY.thirst; the desert's hours count double): Parched, then men fall sick, then they die
   if(!dr){const T=S.thirst,a=u.dry,h=u.dry+=L.desert?T.desert:1;
-    if(!a)log(L.desert?'No water in the desert: your band thirsts. Find an oasis, a river or a holding.':'Nothing to drink: your band thirsts. Find a river, a lake or a holding’s well.','bad');
-    if(h>=T.parched){P.morale-=T.morale;if(a<T.parched)log('Your band is parched: it slows, and soon men will fall sick.','bad')}
-    if(a<T.death&&h>=T.death)log('Your men begin to die of thirst.','bad');
-    for(let i=passed(a,h,T.dying,T.toll);i>0;i--){supplyHurt('thirst');log('Thirst saps your strength.','bad');heroHurt(T.hero.hp,T.hero.mp,'thirst')}
+    if(!a)log(L.desert?'No water in the desert: your band thirsts. Find an oasis, a river or a holding.':'Nothing to drink: your band thirsts. Find a river, a lake or a holding’s well.','bad','band');
+    if(h>=T.parched){P.morale-=T.morale;if(a<T.parched)log('Your band is parched: it slows, and soon men will fall sick.','bad','band')}
+    if(a<T.death&&h>=T.death)log('Your men begin to die of thirst.','bad','band');
+    for(let i=passed(a,h,T.dying,T.toll);i>0;i--){supplyHurt('thirst');log('Thirst saps your strength.','bad','band');heroHurt(T.hero.hp,T.hero.mp,'thirst')}
     for(let i=passed(a,h,T.death,T.toll);i>0;i--)supplyDie('thirst')}else u.dry=0;
   sickTrim();
   // (frostbite: the hours short of furs, weighted by how short, until a man is bitten)
   const cold=L.frost?coldShare():0;if(cold){u.cold+=cold;if(u.cold>=S.frost.every){u.cold-=S.frost.every;supplyHurt('frostbite')}}else u.cold=0;
   P.morale=clamp(P.morale,0,100);
-  if(!u.hint&&P.bsta<S.hint){u.hint=true;log('Marching tires your band. Stop, or Make camp (Z), to rest.','gold')}
+  if(!u.hint&&P.bsta<S.hint){u.hint=true;log('Marching tires your band. Stop, or Make camp (Z), to rest.','gold','band')}
 }
 Systems.add({name:'supply',order:{hour:10,frame:55},hour:supplyHour,frame:supplyFrame});
 
@@ -288,20 +288,20 @@ function campSpot(){if(campGround(P.x,P.y))return{x:P.x,y:P.y,across:false};cons
    you stand or within SUPPLY.camp.hop tiles (nothing between), your band steps there and pitches at once; farther, it walks there
    (G.pitch) and pitches on arrival (campArrive); none in reach: no camp */
 function makeCamp(){if(P.camp||campWhy())return false;const s=campSpot();G.chase=null;
-  if(!s){log('No clear ground to camp here.','bad');return false}
+  if(!s){log('No clear ground to camp here.','bad','band');return false}
   if(!s.across&&Math.hypot(s.x-P.x,s.y-P.y)<=SUPPLY.camp.hop*TILE){P.x=s.x;P.y=s.y;P.stuck=0;return pitchCamp()}
-  P.tx=s.x;P.ty=s.y;P.stuck=0;G.pitch={x:s.x,y:s.y};log('Your band makes for clear ground to camp.');return true}
+  P.tx=s.x;P.ty=s.y;P.stuck=0;G.pitch={x:s.x,y:s.y};log('Your band makes for clear ground to camp.',undefined,'band');return true}
 function pitchCamp(){G.pitch=null;P.camp={at:Clock.hours()};P.tx=P.ty=null;G.chase=null;
-  log('Your band makes camp. Stamina comes back faster, and the wounded mend.','good');updateHUD(true);return true}
+  log('Your band makes camp. Stamina comes back faster, and the wounded mend.','good','band');updateHUD(true);return true}
 // your march ends (world.js marchStep): at the clear ground you made for, the band pitches; anywhere else the plan is dropped
 function campArrive(){const p=G.pitch;if(!p)return;G.pitch=null;if(Math.hypot(p.x-P.x,p.y-P.y)<3&&!campWhy()){P.x=p.x;P.y=p.y;pitchCamp()}}
-function breakCamp(why){if(!P.camp)return false;P.camp=null;log(why||'Your band breaks camp.');updateHUD(true);return true}
+function breakCamp(why){if(!P.camp)return false;P.camp=null;log(why||'Your band breaks camp.',undefined,'band');updateHUD(true);return true}
 function toggleCamp(){return P.camp?breakCamp():makeCamp()}
 // each moment in camp (world.js marchStep): a travel order breaks it (true: the march goes on), but not a press on the map that may
 // yet open the action ring (ui/ring.js RING.press); going faster than 1x, anything hostile in sight brings it back to 1x
 function campStep(){
   if((P.tx!=null||G.chase||P.stay)&&!RING.press){breakCamp();return true}
-  if(G.speed>1){const d=dangerInSight();if(d){log('Your camp stirs: '+d+'.','bad');setSpeed(1)}}
+  if(G.speed>1){const d=dangerInSight();if(d){log('Your camp stirs: '+d+'.','bad','band');setSpeed(1)}}
   return false}
 /* ---------- Hurry (the owner, 2026-10-22: the band marches faster; off the top bar since the second play-test, the 8× time
    button back there): key R, the action ring. The band walks × SUPPLY.forcedMarch.pace, its stamina on the march draining × drain
@@ -310,14 +310,14 @@ function campStep(){
 const hurryPace=()=>G.hurry?SUPPLY.forcedMarch.pace:1;
 // on or off (why: it ended on its own, said in the log); false if it cannot start
 function setHurry(on,why){on=!!on;
-  if(on&&(G.mode!=='world'||P.stay||P.staminaState()==='exhausted')){if(P.staminaState()==='exhausted')log('Your band is too exhausted to hurry.','bad');on=false}
-  if(!!G.hurry!==on){G.hurry=on;if(on&&P.camp)breakCamp();log(on?'Your band hurries: '+SUPPLY.forcedMarch.pace+'× the pace, its stamina draining '+SUPPLY.forcedMarch.drain+'× as fast.':'Your band slows to its marching pace'+(why?': '+why:'')+'.',why?'bad':'')}
+  if(on&&(G.mode!=='world'||P.stay||P.staminaState()==='exhausted')){if(P.staminaState()==='exhausted')log('Your band is too exhausted to hurry.','bad','band');on=false}
+  if(!!G.hurry!==on){G.hurry=on;if(on&&P.camp)breakCamp();log(on?'Your band hurries: '+SUPPLY.forcedMarch.pace+'× the pace, its stamina draining '+SUPPLY.forcedMarch.drain+'× as fast.':'Your band slows to its marching pace'+(why?': '+why:'')+'.',why?'bad':'','band')}
   hurryUI();return on}
 const toggleHurry=()=>setHurry(!G.hurry);
 // a Hurry button lit while on (none on the top bar now)
 function hurryUI(){if(typeof document==='undefined')return;document.querySelectorAll('[data-hurry]').forEach(b=>{b.classList.toggle('on',!!G.hurry);b.setAttribute('aria-pressed',String(!!G.hurry))})}
 // a battle that finds you in camp (battle/setup.js, before morale): caught unready, morale lower; the camp is struck either way
-function campCaught(opts){if(!P.camp||opts.tournament||opts.sandbox)return;P.camp=null;P.morale=Math.max(0,P.morale-SUPPLY.camp.caught);log('They catch your band in camp, unready.','bad')}
+function campCaught(opts){if(!P.camp||opts.tournament||opts.sandbox)return;P.camp=null;P.morale=Math.max(0,P.morale-SUPPLY.camp.caught);log('They catch your band in camp, unready.','bad','band')}
 /* your camp in your place: two tents and the fire, with your band's banner planted beside them; your figure and host are not
    drawn while you camp (the owner, 2026-10-23: render.js drawWorld pushes this instead), and stand there again when it breaks. In
    the depth order by its feet as everyone is (depth.js worldOverdraw: the trees in front of it drawn over it, whole: nf, none

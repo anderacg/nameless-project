@@ -137,10 +137,10 @@ function newsKnows(src,it){
 // what it could tell you new now: recent, known to it, not heard; weightiest and newest first, its own kinds first
 function rumourCands(src){const N=newsW(),score=it=>NEWS_KINDS[it.k].w+(src.prefer&&src.prefer.includes(it.k)?NEWS.prefer:0)-NEWS.age*Clock.daysSince(it.day);
   return N.items.filter(it=>N.heard[it.id]==null&&Clock.daysSince(it.day)<NEWS.days&&newsKnows(src,it)).sort((a,b)=>score(b)-score(a)||b.id-a.id)}
-// heard: kept as heard (no source tells it as new again), its "?" on the map near it, and the log
+// heard: kept as heard (no source tells it as new again), its "?" on the map near it, and the log (its ref: the Chronicle's Show on map)
 function rumourHear(it,src){const N=newsW(),t=rumourText(it),j=k=>(hash(it.id,k,7919)-.5)*2*NEWS.off;N.heard[it.id]=G.day;
   N.marks=N.marks.filter(m=>m.id!==it.id);N.marks.push({id:it.id,x:Math.round(it.x+j(1)),y:Math.round(it.y+j(2)),day:G.day,t});
-  if(!src.quiet)log('Rumour ('+src.from+'): '+t)}
+  if(!src.quiet)log('Rumour ('+src.from+'): '+t,undefined,'rumour','n'+it.id)}
 /* the service: what a source tells you now. It tells up to its cap of new rumours today (each heard: rumourHear), never again
    that day; fresh (told just now), today (all it told you today, fresh ones too: a page that asks again shows the same),
    before (rumours you heard already of news it knows, not today's from it), capped (its cap is spent) */

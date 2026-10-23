@@ -167,13 +167,13 @@ function survive(){
   const sv=survivalShare();
   if(clim==='frost'&&!home.includes('frost')){
     const need=P.furNeed();
-    if(goodN('furs')<need){P.morale-=Math.ceil(SUPPLY.frost.morale*sv);log('Your band shivers through the night. Carry 1 fur for every '+SUPPLY.furPer+' people in the frost ('+need+' needed).','bad')}
+    if(goodN('furs')<need){P.morale-=Math.ceil(SUPPLY.frost.morale*sv);log('Your band shivers through the night. Carry 1 fur for every '+SUPPLY.furPer+' people in the frost ('+need+' needed).','bad','band')}
   }else if(clim==='swamp'&&!home.includes('swamp')&&Math.random()<Math.max(.05,.25-.02*skill('surv'))){
     // (the owner, 2026-10-21: as thirst and hunger, a sickness first: a man falls sick with fever, and one already sick may die of it,
     // a sick one first: world/supply.js; SUPPLY.fever)
     const F=SUPPLY.fever;P.morale-=Math.ceil(5*sv);
     if(Object.keys(BAND.sick).some(k=>BAND.sick[k].fever>0)&&Math.random()<Math.max(F.dieMin,F.die-F.med*skill('med')))supplyDie('fever');
-    if(Object.keys(P.troops).some(k=>P.troops[k]>0)&&Math.random()<F.sick)supplyHurt('fever');else log('Swamp fever spreads through the camp. Morale drops.','bad');
+    if(Object.keys(P.troops).some(k=>P.troops[k]>0)&&Math.random()<F.sick)supplyHurt('fever');else log('Swamp fever spreads through the camp. Morale drops.','bad','band');
   }
 }
 // your troops' average Morale (matchups.js unitMoraleOf), by their numbers; null with none
@@ -188,10 +188,10 @@ function dayTick(){
 // your band's wages for the day (cnt: everyone paid), and its larder: fresh food spoils; a varied larder (3 or more kinds) lifts
 // spirits. (It eats by the hour: world/supply.js)
 function bandWages(cnt){const wage=Math.ceil(cnt*.5+mountedN()*.5)+2*compCount();
-  if(wage>0){if(P.gold>=wage)P.gold-=wage;else{P.gold=0;P.morale-=6;log('You cannot pay your troops. Morale falls.','bad');mood('unpaid')}}}
+  if(wage>0){if(P.gold>=wage)P.gold-=wage;else{P.gold=0;P.morale-=6;log('You cannot pay your troops. Morale falls.','bad','band');mood('unpaid')}}}
 function bandLarder(){
   let rot=0;for(const g of FOODS){const r=GOODS[g].spoil,n=goodN(g);if(r&&n)rot+=goodTake(g,Math.min(n,Math.floor(n*r+Math.random())))}
-  if(rot>2)log(rot+' food spoils in the packs. Fresh food is eaten first; grain and cheese keep.','bad');
+  if(rot>2)log(rot+' food spoils in the packs. Fresh food is eaten first; grain and cheese keep.','bad','band');
   const kinds=foodKinds();if(kinds>=3)P.morale+=kinds-2;
 }
 // your band's day: wages and its larder (spoiling, a varied larder), quarrels, desertion, the land's price, morale; a new band on the
@@ -199,8 +199,8 @@ function bandLarder(){
 function bandDay(){
   const cnt=troopCount()+woundedN()+cparties().reduce((a,p)=>a+p.troops.length,0);
   bandWages(cnt);bandLarder();
-  for(const id in P.comps){const r=COMPS[id].rival;if(r&&P.comps[r]&&Math.random()<.12){P.comps[id].ap--;P.comps[r].ap--;log(COMPS[id].short+' and '+COMPS[r].short+' quarrel by the fire. Both are unhappy.','bad')}}
-  if(P.morale<25&&cnt>0&&Math.random()<.5){const ks=Object.keys(P.troops).filter(k=>P.troops[k]>0);const k=ks[rint(0,ks.length-1)];P.remove(k);log(cap1(an(ST[k].n.toLowerCase()))+' deserts in the night.','bad')}
+  for(const id in P.comps){const r=COMPS[id].rival;if(r&&P.comps[r]&&Math.random()<.12){P.comps[id].ap--;P.comps[r].ap--;log(COMPS[id].short+' and '+COMPS[r].short+' quarrel by the fire. Both are unhappy.','bad','band')}}
+  if(P.morale<25&&cnt>0&&Math.random()<.5){const ks=Object.keys(P.troops).filter(k=>P.troops[k]>0);const k=ks[rint(0,ks.length-1)];P.remove(k);log(cap1(an(ST[k].n.toLowerCase()))+' deserts in the night.','bad','band')}
   survive();
   // (your band's morale drifts toward its troops' Morale, by their numbers: veterans keep their spirits, levies sag)
   {const st=bandNerve();if(st!=null)P.morale+=(st-P.morale)*PARTY_MOR.drift}
@@ -236,7 +236,7 @@ function updateWorld(dt){
 // reached what you chased and met it; following, at your goal you wait there)
 function marchStep(d){
   if(P.camp&&!campStep())return false;
-  if(P.siege){const st=townBy(P.siege.town);if(!st||Math.hypot(P.x-st.x,P.y-st.y)>WORLD_SCALE.war.siegeLeash){P.siege=null;log('You march away and the siege'+(st?' of '+st.name:'')+' is lifted.','bad')}}
+  if(P.siege){const st=townBy(P.siege.town);if(!st||Math.hypot(P.x-st.x,P.y-st.y)>WORLD_SCALE.war.siegeLeash){P.siege=null;log('You march away and the siege'+(st?' of '+st.name:'')+' is lifted.','bad','war')}}
   // (a chase ends when what you chase is gone or not worth it: WorldObject here, chaseable; reached, it is met, unless you just
   // fought and it would fight you: meetsAnyTime)
   if(G.follow)followStep();
@@ -316,7 +316,7 @@ function woundedDay(){const W0=P.wounded||{},r=healShare().share;let back=0;
   for(const k in W0){const n=W0[k];if(!n)continue;back+=woundedBack(k,Math.min(n,Math.floor(n*r+Math.random())))}
   P.woundedGroups=(P.woundedGroups||[]).filter(g=>g.count>0);
   sickTrim();// (the sick never more than the wounded left: supply.js)
-  if(back)log(back+' of your wounded '+(back>1?'are':'is')+' fit to fight again.','good')}
+  if(back)log(back+' of your wounded '+(back>1?'are':'is')+' fit to fight again.','good','band')}
 
 // this file's work in the world's day and frame (core/systems.js)
 Systems.add({name:'band',order:{day:20},day:bandDay});

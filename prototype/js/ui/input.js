@@ -18,7 +18,7 @@ function act(a,arg){
   if(a==='lord-leave'&&G.scene&&G.mode==='scene'){G.enc=null;return backToScene()}
   if(a==='lord-leave'){const l=G.enc&&G.enc.ref;if(l)l.cool=3;G.enc=null;G.encCool=2;G.mode='world';hidePanel();return}
   if(a==='lord-attack'){const l=G.enc.ref;Timed.of(P,'hostile').set(l.fac,20);addHonor(l.fac,-15,true);log('You attack '+l.name+'. The '+FACS[l.fac].n+' is now hostile to you.','bad');return startEncounter({kind:'lord',ref:l,list:l.troops.slice(),mine:true})}
-  if(a.startsWith('q-')){const tq=G.town&&G.town.ref;questAct(a,arg,G.mode==='town'?tq:null);if(a.startsWith('q-lord'))return;updateHUD(true);if(G.mode==='char')return renderChar();if(G.mode==='town')renderTown();return}
+  if(a.startsWith('q-')){const tq=G.town&&G.town.ref;questAct(a,arg,G.mode==='town'?tq:null);if(a.startsWith('q-lord'))return;updateHUD(true);if(G.mode==='char')return renderChar();if(G.mode==='quests')return renderQuests();if(G.mode==='town')renderTown();return}
   if(charAct(a,arg))return;
   if(G.est&&G.mode==='dialog'&&estateFief(a,arg))return;// (your own estate's window on the map: its building buttons, estates.js)
   const t=G.town&&G.town.ref;if(t)return townAct(a,arg,t);// (the rest: a town's window and its tabs, town.js)
@@ -59,7 +59,8 @@ $('#charBtn').addEventListener('click',()=>{if(G.mode==='char')act('char-close')
 $('#campBtn').addEventListener('click',()=>toggleCamp());// (make camp or break it: world/supply.js)
 $('#mapBtn').addEventListener('click',()=>fullMapKey());// (the full map opened, or closed: map.js)
 $('#helpBtn').addEventListener('click',()=>{if(G.mode==='help')closeOver();else openHelp()});
-$('#journalBtn').addEventListener('click',()=>{if(G.mode==='journal')closeOver();else openJournal()});
+$('#journalBtn').addEventListener('click',()=>journalKey());// (the Journal opened, or closed: journal.js)
+$('#hubBtn').addEventListener('click',()=>{if(G.mode==='hub')act('hub-close');else openHub()});// (the Menu: hub.js)
 $('#fsBtn').addEventListener('click',toggleFull);
 // the map's zoom buttons (shown on the map only: style.css), each dimmed at its end of the range (core.js mapZoom)
 $('#zoomIn').addEventListener('click',()=>{if(G.mode==='world'&&!G.modal)mapZoom(1)});$('#zoomOut').addEventListener('click',()=>{if(G.mode==='world'&&!G.modal)mapZoom(-1)});
@@ -232,6 +233,7 @@ window.addEventListener('keydown',e=>{
   if(e.target&&/INPUT|TEXTAREA|SELECT/.test(e.target.tagName))return;
   const k=keyOf(e);
   if(e.key==='F6'){e.preventDefault();saveGame(false,'quick');return}
+  if(k==='tab'&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&!e.shiftKey&&!G.modal&&(G.mode==='world'||G.mode==='scene')){e.preventDefault();if(!e.repeat)openHub();return}// Tab: the Menu (hub.js; in a window Tab moves between its buttons)
   if(k==='escape'){e.preventDefault();if(ActionRing.close()||dragCancel())uiSfx('back');else if(G.mode==='battle'&&B&&B.amArm){armAttackMove(false);uiSfx('back')}else onEscape();return}// (a drag first, then an armed attack-move: Esc calls it off and nothing else)
   if(k==='m'&&!e.ctrlKey&&!e.metaKey&&!e.altKey){if(!e.repeat){if(e.shiftKey)toggleMute();else fullMapKey()}return}// M: the full map (map.js); Shift+M: the sound off or on, anywhere (ui.js)
   if(k==='p'&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&!e.repeat&&peopleKey())return;// P: the people drawer, on the map and in towns (peopledrawer.js)
@@ -269,7 +271,7 @@ window.addEventListener('keydown',e=>{
     G.keys[k]=true;if(e.shiftKey)G.keys.shift=true; */
   }else if(G.mode==='scene'&&!G.modal){
     if(k==='e'||e.code==='Space'||e.code==='Enter'){e.preventDefault();if(!e.repeat)sceneUse();return}
-    if(k==='h'&&!e.repeat)return openHelp();if(k==='l'&&!e.repeat)return openJournal();
+    if(k==='h'&&!e.repeat)return openHelp();if(k==='l'&&!e.repeat)return chronicleKey();if(k==='j'&&!e.repeat)return journalKey();if(k==='q'&&!e.repeat)return questsKey();
     if(['arrowup','arrowdown','arrowleft','arrowright'].includes(k))e.preventDefault();
     G.keys[k]=true;if(e.shiftKey)G.keys.shift=true;
   }else if(G.mode==='world'&&!G.modal){
@@ -277,11 +279,13 @@ window.addEventListener('keydown',e=>{
     if(k>='1'&&k<='3')setSpeed(SPEEDS[k-1]);if(k==='4'&&!e.repeat)setSpeed(G.speed===TRAVEL_FAST?1:TRAVEL_FAST);// (4: Travel fast, 8×, or back to 1×)
     if(k==='r'&&!e.repeat)toggleHurry();// R: Hurry, or stop hurrying (world/supply.js; the action ring's Hurry here too)
     if(k==='b'&&!e.repeat)toggleByRoad();// B: by-road mode on or off, every trip keeping to the roads while it is on (world.js; the action ring's By road too)
-    if(k==='c')openChar();if(k==='i')openInv();if(k==='k')openSkills();if(k==='h')openHelp();if(k==='l')openJournal();
+    if(k==='c')openChar();if(k==='i')openInv();if(k==='k')openSkills();if(k==='h')openHelp();if(!e.repeat){if(k==='q')questsKey();if(k==='j')journalKey();if(k==='l')chronicleKey()}// (Q: your Quests; J: the Journal, L: on its Chronicle)
     if(!e.repeat&&(k==='='||k==='+'||k==='-')){mapZoom(k==='-'?-1:1);return}// + and −: the map's zoom (core.js)
     if(k==='g'&&!e.repeat){setGrid(!GRID.on);log(GRID.on?'Tile grid on (G to hide).':'Tile grid off.')}
     if(k==='z'&&!e.repeat)toggleCamp();// Z: make camp or break it (world/supply.js)
-  }else if(G.mode==='help'&&k==='h'||G.mode==='journal'&&k==='l')closeOver();
+  }else if(G.mode==='help'&&k==='h')closeOver();
+  else if(G.mode==='journal'&&!e.repeat&&(k==='j'||k==='l')){if(k==='j')journalKey();else chronicleKey()}
+  else if(G.mode==='quests'&&k==='q'&&!e.repeat)questsKey();
   else if(G.mode==='char'&&k==='c')act('char-close');
   else if(G.mode==='skills'&&k==='k')act('sk-close');
   else if(G.mode==='inv'&&k==='i')act('inv-close');

@@ -121,7 +121,7 @@ Kit.suite(({ok,info})=>{
     const got=[];for(const key of Object.keys(o)){if(key==='gold')got.push(O.signed(P.gold-a.g)+' gold');else if(key==='food')got.push(O.signed(t.foodN()-a.f)+' food');else if(key==='morale')got.push('morale '+O.signed(P.morale-a.m));else if(key!=='log')got.push('?'+key)}
     const last=G.msgs[G.msgs.length-1],line=[].concat(o.log);nDid++;
     if(got.join(' · ')!==t.describeOutcome(o))bad.push(D.id+' '+race+': did ['+got.join(' · ')+'], says ['+t.describeOutcome(o)+']');
-    if(G.msgs.length!==Math.min(150,n0+1)||last.m!==line[0]||last.cls!==line[1])bad.push(D.id+' (its line)');
+    if(G.msgs.length!==n0+1||last.m!==line[0]||last.cls!==line[1])bad.push(D.id+' (its line)');
     if(!(e instanceof I)||e.kind!==D||said.length!==1||said[0]!==e)bad.push(D.id+' (its record, or its end)')}}
   ok(I.load({k:'nope'})===null&&I.load({k:ids[0]}) instanceof I,'an incident\'s record loads as one of its class; one whose kind is gone, as nothing');
   ok(nDid>=all.length*2&&!bad.length,'every incident comes somewhere, and befalls you as its outcome says, its line and tone logged, over at once ('+nDid+' runs, every race, both ways of a roll)'+(bad.length?': '+bad.slice(0,8).join('; '):''))}
@@ -149,7 +149,7 @@ Kit.suite(({ok,info})=>{
    if(q.deed){const d=own[q.deed]&&own[q.deed](q),m0=G.msgs.length;
     if(!d||!Object.values(d)[0]){bad.push(k+' (its deed: '+q.deed+', nothing of it found)');P.quests=[];continue}
     t.worldEmit(q.deed,{band:{qid:-1},monster:{qid:-1},site:{i:-1},lord:{name:'nobody'},town:{name:'nowhere'}});if(q.done)bad.push(k+' (done by another\'s deed)');
-    t.worldEmit(q.deed,d);t.worldEmit(q.deed,d);if(!q.done||!q.ready()||G.msgs.length!==Math.min(150,m0+1)||!/^Quest done/.test(G.msgs[G.msgs.length-1].m))bad.push(k+' (its deed heard: '+q.deed+')');
+    t.worldEmit(q.deed,d);t.worldEmit(q.deed,d);if(!q.done||!q.ready()||G.msgs.length!==m0+1||!/^Quest done/.test(G.msgs[G.msgs.length-1].m))bad.push(k+' (its deed heard: '+q.deed+')');
     // (reported where it may be: paid, off your list, ended once)
     const at=t.TOWNS.find(h=>q.reportableAt(h)),g0=P.gold;if(!at||!q.turnIn(at)||P.quests.length||P.gold<g0+q.reward.gold||ended.filter(z=>z===q).length!==1)bad.push(k+' (reported)')}
    else if(q.handsOver){const at=t.TOWNS.find(h=>q.reportableAt(h));P.inv=P.inv.map(()=>null);P.troops={};if(q.ready()||q.turnIn(at)||!P.quests.includes(q))bad.push(k+' (handed in with nothing)')}

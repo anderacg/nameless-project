@@ -72,6 +72,21 @@ Saves.add({key:'fightN',   order:190, save:()=>W.fightN||0,    load:v=>{W.fightN
 Saves.add({key:'treas',    order:200, save:()=>W.treas,        load:v=>{W.treas=v}});
 Saves.add({key:'critters', order:210, save:()=>W.critters,     load:v=>{W.critters=v.map(herdRec)},settle:()=>{W.critters.forEach(herdToFields)}});
 Saves.add({key:'shops',    order:220, save:()=>W.shops||{},    load:v=>{W.shops=v}});
+/* the chronicle (G.msgs: core/state.js CHRONICLE), every message, each saved as [day, m, cls, kind, ref] (an empty one 0, the
+   empty ones at its end left off); none: left out, and a save without it loads with an empty chronicle. Past its budget, the
+   oldest of the spare kinds go first, from the game too (said in the browser's console only); war, rumours and stories never */
+const chronTuple=r=>{const t=[r.day,r.m,r.cls||0,r.kind||0,r.ref==null?0:r.ref];while(t.length>2&&!t[t.length-1])t.pop();return t};
+const chronRec=([day,m,cls,kind,ref])=>{const r={m,day};if(cls)r.cls=cls;if(kind)r.kind=kind;if(ref)r.ref=ref;return r};
+function chronicleSave(){
+  const M=G.msgs;if(!M.length)return;
+  let ts=M.map(chronTuple),n=JSON.stringify(ts).length;if(n<=CHRONICLE.budget)return ts;
+  const spare=r=>CHRONICLE.spare.includes(r.kind||''),keep=[];let cut=0;
+  M.forEach((r,i)=>{if(n>CHRONICLE.budget&&spare(r)){n-=JSON.stringify(ts[i]).length+1;cut++}else keep.push(i)});
+  if(!cut)return ts;
+  G.msgs=keep.map(i=>M[i]);ts=keep.map(i=>ts[i]);
+  console.info('Chronicle: '+cut+' of the oldest band and plain messages trimmed to keep its save within '+CHRONICLE.budget+' characters ('+n+').');
+  return ts}
+Saves.add({key:'chronicle',order:300,defaults:[],save:chronicleSave,load:v=>{G.msgs=v.map(chronRec)}});
 // does the world part fit this world (made: the holdings it made, by default the world's in): a record for each holding the world
 // made, the rest founded ones of a kind there is (read before anything is put back, so a save that doesn't fit leaves the game as
 // it was)
@@ -110,7 +125,7 @@ function applySave(d){
   worldLoad(w);G.lastTown=townBy(d.last)||null;G.perkOffer=d.perkOffer;
   unstick(P);{const tx=Math.floor(P.x/TILE),ty=Math.floor(P.y/TILE),q=tAt(tx,ty);if(q===T_WATER||q===T_FORD||lotOf(tx,ty))heroAtGate(Spatial.nearestHolding(P.x,P.y))}// (never on water or a lot: world.js gateSpot)
   W.lords.forEach(unstick);bandits.forEach(unstick);W.monsters.forEach(unstick);txpClamp();
-  G.mode='world';hidePanel();G.msgs=[];log('Welcome back. It is day '+G.day+'.');updateHint();updateHUD(true);
+  G.mode='world';hidePanel();toast('Welcome back. It is day '+G.day+'.');updateHint();updateHUD(true);
 }
 // delete a slot's save (the latest, if none is named)
 function wipeSave(slot){const s=slot||latestSlot();try{if(s)localStorage.removeItem(slotKey(s))}catch(e){}G.wipeArmed=false;G.resume=null;showTitle('load')}

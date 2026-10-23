@@ -248,7 +248,11 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 // (W7, B2 re-recorded 2026-10-23, on purpose, the owner: a new band sets out in high spirits, morale 100 (core/state.js; was 80),
 //  then drifts toward its troops' own as before. Only the saves move (P.morale); W1-W6, W8 and the battle suites hold. Were W7
 //  4b9a64dd, B2 c1a2ab6a)
-const EXPECT={W1:'2ba57e1b',W2:'975f62a1',W3:'224e40e8',W4:'29fda26b',W5:'f284901d',W6:'b5185fc6',W7:'5f125352',W8:'a465c56e',B2:'3b5d8035'};
+// (W7, B2 re-recorded 2026-10-23, on purpose, the owner's chronicle (agent CH: core/save.js, the save piece 'chronicle'): every
+//  message is kept and saved with the game, as [day, m, cls, kind, ref], so both saves hold the messages logged so far (W7: the
+//  three days', B2: the welcome after begin). Nothing else moves: W1-W6, W8 and the battle suites hold. Checked: with the piece's
+//  save off (save:()=>undefined) all nine are as before. Were W7 5f125352, B2 3b5d8035)
+const EXPECT={W1:'2ba57e1b',W2:'975f62a1',W3:'224e40e8',W4:'29fda26b',W5:'f284901d',W6:'b5185fc6',W7:'a5c23047',W8:'a465c56e',B2:'8b5de408'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended

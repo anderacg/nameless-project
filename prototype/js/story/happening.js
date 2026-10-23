@@ -32,8 +32,16 @@ class Happening extends WorldObject{
   page(){
     return null;
   }
+  // its lines (the chronicle: core/state.js log): their kind, for the Chronicle's filters, and what they link to in the Journal
+  // (its key there); none: null (a quest's and a story's: story/quest.js, thread.js; an incident's: your band's)
+  get logKind(){
+    return null;
+  }
+  get journalKey(){
+    return null;
+  }
   say(line,cls){
-    log(line,cls);
+    log(line,cls,this.logKind,this.journalKey);
   }
   // ---- lifetime
   get ends(){

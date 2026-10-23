@@ -78,8 +78,8 @@ class StepQuest extends Quest{
     this.fate=fate||'arrived';
     P.quests=P.quests.filter(x=>x!==this);
     const r=Outcome.apply(this.prize,{e:this}),line=this.say(k||'arrive');
-    if(line)log(line,'good');
-    log('Quest complete: '+this.title+'.'+(r.say?' '+r.say:''),'good');
+    if(line)log(line,'good','story',this.journalKey);
+    log('Quest complete: '+this.title+'.'+(r.say?' '+r.say:''),'good','story',this.journalKey);
     updateHUD(true);
     this.shown(line);
     this.announceEnd('paid');
@@ -90,7 +90,7 @@ class StepQuest extends Quest{
     this.fate=fate||'late';
     P.quests=P.quests.filter(x=>x!==this);
     Outcome.apply(this.penalty(this.fate),{e:this});
-    log('Quest failed: '+this.title+'. '+(why||this.say(this.fate)),'bad');
+    log('Quest failed: '+this.title+'. '+(why||this.say(this.fate)),'bad','story',this.journalKey);
     this.announceEnd('failed');
   }
   // (its forfeit by fate, else its forfeit; what it paid, its prize)
@@ -108,7 +108,7 @@ class StepQuest extends Quest{
     this.fate=fate;
     P.quests=P.quests.filter(x=>x!==this);
     const line=this.say(k||fate);
-    if(line)log(line,'gold');
+    if(line)log(line,'gold','story',this.journalKey);
     this.announceEnd('paid');
   }
   // (given up: fate left, its line. Never by your Abandon: a side quest is not abandonable (the owner, 2026-10-23); kept as the
@@ -245,7 +245,7 @@ class LairQuest extends StepQuest{
     const was=this.to.name;
     this.bind(n);
     n.seen=true;
-    log('Word comes that '+was+' stands empty: its survivors have fled to '+this.to.name+', to the '+compass(n.x-P.x,n.y-P.y)+'.','gold');
+    log('Word comes that '+was+' stands empty: its survivors have fled to '+this.to.name+', to the '+compass(n.x-P.x,n.y-P.y)+'.','gold','story',this.journalKey);
   }
 }
 /* free a captive of yours (the owner, 2026-10-23: no deadline; spec: {held (who holds him: world/captives.js carryOff's record;
@@ -364,7 +364,7 @@ class HeldQuest extends StepQuest{
       uncarry(b,h.cap);
       this.held={k:'lair',site:s.i,sseed:s.seed,lair:s.name,kind:h.kind};
       this.bind();
-      return log(this.say('home'),'gold');
+      return log(this.say('home'),'gold','story',this.journalKey);
     }
     if(h.k==='lair'){
       const s=this.lair();
@@ -373,7 +373,7 @@ class HeldQuest extends StepQuest{
       if(!n)return this.over('gone','gone');
       this.held={...h,site:n.i,sseed:n.seed,lair:n.name};
       this.bind();
-      return log(this.say('moved'),'gold');
+      return log(this.say('moved'),'gold','story',this.journalKey);
     }
     const t=townBy(h.town);
     if(t&&!t.gone&&t.owner===h.fac)return;

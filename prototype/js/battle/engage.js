@@ -49,10 +49,10 @@ function reinfHtml(e){
 function reinfAfter(e,win){
   syncForces(e.foes);syncForces(e.allies);
   for(const l of e.foes||[]){if(l.dead||l.kind==='garrison')continue;if(win){if(!l.src)rippleRel(l,RELATION.beatThem,'you beat them in battle');const t=routForce(l,true);if(t)e.spoils=(e.spoils||'')+t;log(l.name+' is routed with the rest.','good')}else (l.src||l).cool=4}
-  for(const l of e.allies||[]){if(l.dead||l.kind==='garrison')continue;if(l.troops.length<(l.src?1:3)){routForce(l,false);log(l.name+' has too few soldiers left and goes home.','bad')}else{(l.src||l).cool=4;if(win&&l.fac&&l.fac!=='player')addHonor(l.fac,3,true)}}
+  for(const l of e.allies||[]){if(l.dead||l.kind==='garrison')continue;if(l.troops.length<(l.src?1:3)){routForce(l,false);log(l.name+' has too few soldiers left and goes home.','bad','war')}else{(l.src||l).cool=4;if(win&&l.fac&&l.fac!=='player')addHonor(l.fac,3,true)}}
   if(win){const ls=(e.allies||[]).filter(l=>!l.src&&!l.dead);ls.forEach(l=>changeRel(l,RELATION.fightBeside,'you fought beside them'));ls.forEach((a,i)=>ls.slice(i+1).forEach(b=>changeLordRel(a,b,RELATION.together)))}
   const facs=[...new Set((e.allies||[]).filter(l=>l.fac&&l.fac!=='player').map(l=>FACS[l.fac].n))];
-  if(win&&(e.allies||[]).length)log('You fought beside '+e.allies.map(l=>l.name).join(' and ')+'.'+(facs.length?' The '+facs.join(' and ')+' will remember it.':''),'good');
+  if(win&&(e.allies||[]).length)log('You fought beside '+e.allies.map(l=>l.name).join(' and ')+'.'+(facs.length?' The '+facs.join(' and ')+' will remember it.':''),'good','war');
 }
 /* ---------- battle types from the world (setup.js BTYPE), only with terrain (TERRAIN.on) ----------
    Hold the bridge: a fight with a lord, a band, a patrol or a caravan on a road bridge or next to one (a road tile with water on
@@ -131,10 +131,10 @@ function flee(){
   const e=G.enc;if(!e||e.sealed)return;const o=e.ref,od=fleeOdds(e);if(!od.leave&&od.ch<=0)return;
   if(!od.leave&&Math.random()>=od.ch){// they run you down: the rearguard pays, and you must fight
     const n=P.size?Math.max(1,Math.round(P.size*.1*(has('rearguard')?.5:1))):0,lost=countsOf(P.removeAny(n));e.noFlee=true;
-    log('They run you down'+(n?': your rearguard loses '+lossText(lost):'')+'. You must fight.','bad');mood('flee');return startEncounter(e)}
+    log('They run you down'+(n?': your rearguard loses '+lossText(lost):'')+'. You must fight.','bad','war');mood('flee');return startEncounter(e)}
   let dx=P.x-o.x,dy=P.y-o.y;const l=Math.hypot(dx,dy)||1;
   walk(P,dx/l,dy/l,od.leave?40:56);if(e.kind!=='camp')o.cool=od.leave?6:12;G.encCool=od.leave?4:3;// got away: they lose your trail for a while
-  if(!od.leave)P.morale=clamp(P.morale-2,0,100);G.enc=null;G.mode='world';hidePanel();log(od.leave?'You leave them be.':'You get away.');if(!od.leave)mood('flee');encLost(e);
+  if(!od.leave)P.morale=clamp(P.morale-2,0,100);G.enc=null;G.mode='world';hidePanel();log(od.leave?'You leave them be.':'You get away.',undefined,'war');if(!od.leave)mood('flee');encLost(e);
 }
 // experience: yours (leaders.js), and your companions share what you learn
 function gainXp(n){leaderOf(P).gainXp(n);for(const id of compsInBand())compXp(id,n)}

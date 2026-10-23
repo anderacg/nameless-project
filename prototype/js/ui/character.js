@@ -1,38 +1,17 @@
 'use strict';
 /* ---------- character, party, perks ---------- */
-function openChar(){if(G.mode!=='world'||G.modal)return;G.mode='char';if(!G.char||G.char==='gear')G.char='hero';renderChar()}
+function openChar(){if(G.mode!=='world'||G.modal)return;G.mode='char';if(!CHAR_TABS.some(([t])=>t===G.char))G.char='hero';renderChar()}
+// its tabs (Army to come: the next step of the menus)
+const CHAR_TABS=[['hero','Hero'],['party','Party']];
 function heroPage(){
  const m=vitals(),s=heroStats(),low=(v,mx)=>v<mx*.3?'bad':'';
  return '<div class="fb-character-sheet fb-hero-sheet"><div class="fb-character-stage"><strong>'+htmlText(P.name||'Your hero')+'</strong><img src="'+portrait('hero',true)+'" alt="'+htmlText(P.name||'Your hero')+'"><span>'+RACES[P.race].n+' · '+rankName()+'</span></div><div class="fb-character-stats">'+fbMeter('wounded','Health',P.hp,m[0],low(P.hp,m[0]))+fbMeter('speed','Stamina (your band’s)',P.sp,m[1],low(P.sp,m[1]))+fbMeter('skills','Mana',P.mp,m[2],low(P.mp,m[2]))+'<div class="fb-stat-grid">'+fbStat('sword','Attack',Math.round(s.dmg))+fbStat('renown','Level',P.level)+'</div><div class="fb-skills-summary">'+fbStat('skills','Skill points',P.tp)+fbBtn('open-skills',null,fbIcon('skills')+' Open Skills (K)','','primary')+'</div><small>'+htmlText((P.tree.length-1)+' skills learned. One skill point each level.')+'</small></div></div><div class="lab">Attributes · raised on the skill tree (K)</div><div class="fb-attributes">'+Object.keys(ATTRS).map((k,i)=>'<div>'+fbStat(['power','speed','book','banner'][i],ATTRS[k][0],P.attr[k])+fbDetails('Effects','<p>'+ATTRS[k][1]+'</p>')+'</div>').join('')+'</div>'+(P.perks.length?'<div class="lab">Perks from before</div><div class="fb-attributes">'+P.perks.map(p=>'<div class="fb-note"><strong>'+PERKS[p].n+'</strong><p>'+PERKS[p].d+'</p></div>').join('')+'</div>':'');
 }
+// the window: Hero and Party (your quests are a window of their own: ui/questwindow.js; the lords and realms the Journal's: ui/lordsrealms.js)
 function renderChar(){
-  const tab=G.char;let body='';
-  if(tab==='hero'){
-    body=heroPage();
-  }else if(tab==='quests'){
-    body=questWindow();// (the list and the one chosen: ui/questwindow.js)
-  }else if(tab==='realms'){
-    const sw=f=>'<span style="color:'+FACS[f].col+'">'+FACS[f].n+'</span>';
-    body='<div class="lab">Your standing</div><p>'+(P.fac?'You serve the '+sw(P.fac)+' as a mercenary, for '+troopCount()+' gold a day.':'You are independent. Sign a mercenary contract in a town tavern.')+
-      FIDS.filter(f=>!P.fac&&Timed.of(P,'hostile').has(f)).map(f=>' The '+sw(f)+' is hostile to you until day '+Timed.of(P,'hostile').end(f)+'.').join('')+'</p>'+
-      (playerFiefs().length?'<div class="lab" style="margin-top:6px">Your fiefs</div>'+playerFiefs().map(t=>'<div class="row"><div class="info"><strong>'+t.name+'</strong><small>'+t.label+' · garrison '+t.gar+' · '+fiefIncome(t)+' gold a day'+(besieged(t)?' · <span class="bad">under siege</span>':'')+'</small></div></div>').join(''):'')+
-      (P.siege?'<p class="gold">You are besieging '+P.siege.town+' (day '+P.siege.days+').</p>':'')+
-      '<div class="lab" style="margin-top:6px">Your reputation</div><p class="muted" style="font-size:13px">Standing at a holding = local reputation + half your honor with its owner + '+RACE_TRUST+' where your race lives. Tier 1 recruits need '+REP_NEED[1]+', tier 2 need '+REP_NEED[2]+'.</p>'+
-      TOWNS.slice().sort((a,b)=>standingAt(b)-standingAt(a)).map(t=>'<div class="row"><div class="info"><strong>'+t.name+'</strong><small>'+t.label+' · '+sw(t.owner)+' · local '+Math.round(repAt(t.name))+'</small></div><span class="own'+(standingAt(t)>=REP_NEED[1]?' gold':'')+'">'+standingAt(t)+'</span></div>').join('')+
-      (mythicNews('roams')?'<p class="bad">'+mythicNews('roams')+'</p>':'')+'<div class="lab" style="margin-top:6px">Factions</div>'+FIDS.map(f=>{const own=fiefsOf(f),ls=W.lords.filter(l=>l.fac===f&&!l.dead);
-        return '<div class="row"><div class="info"><strong>'+sw(f)+(W.dead[f]?' <span class="bad">· fallen</span>':'')+'</strong><small>'+FACS[f].d+'</small><small>Your honor: '+honorWith(f)+'</small><small>Lands: '+landsOf(f)+' tiles · treasury '+Math.round(treas(f))+' gold'+(econWeary(f)?' · <span class="bad">weary of war</span>':'')+'</small><small>Holds: '+(own.map(t=>t.name+(besieged(t)?' (under siege)':'')).join(', ')||'nothing')+'</small><small>Lords in the field: '+(ls.map(l=>l.name+' ('+l.troops.length+' troops, power '+l.power()+')').join(', ')||'none')+'</small></div></div>'}).join('')+
-      '<div class="lab" style="margin-top:6px">Relations</div>'+FIDS.flatMap((a,i)=>FIDS.slice(i+1).map(b=>[a,b])).filter(([a,b])=>!W.dead[a]&&!W.dead[b]).map(([a,b])=>{const r=relOf(a,b);
-        return '<div class="row"><div class="info"><strong>'+sw(a)+' · '+sw(b)+'</strong><small>'+(r.s==='war'?'<span class="bad">At war</span>':r.s==='ally'?'<span class="good">Allied</span>':'At peace')+(r.since?' since day '+r.since:'')+'</small></div></div>'}).join('');
-  }else if(tab==='lords'){
-    const ls=W.lords.filter(l=>!l.gone).sort((a,b)=>relWith(b)-relWith(a)),sw=f=>'<span style="color:'+FACS[f].col+'">'+FACS[f].n+'</span>';
-    body='<p class="muted">How each lord feels about you. Fight beside them, do their work, spare them or give gifts to win them; beating, ransoming or failing them, or wronging their people, sours them, and their friends and rivals feel some of it. Friends (+'+RELATION.helpAt+') ride to help you, sworn friends (+'+RELATION.spareAt+') won\'t attack you, and those at +'+RELATION.troopsAt+' lend you soldiers.</p>'+
-      ls.map(l=>{const why=(P.lrelWhy||{})[l.id]||[],fr=lordFriends(l).filter(o=>!o.dead).slice(0,2),rv=lordRivals(l).filter(o=>!o.dead).slice(0,2);
-        return '<div class="row"><div class="info"><strong>'+l.name+' · '+sw(l.fac)+'</strong><small>'+(l.dead?'Beaten, raising a new army':l.inside?'In '+l.inside:l.fight?'In battle':l.state==='siege'?'Besieging '+l.tgt:'In the field')+' · '+l.troops.length+' soldiers'+(why.length?' · '+why[why.length-1].why:'')+'</small>'+
-          ((fr.length||rv.length)?'<small>'+(fr.length?'Friends: '+fr.map(o=>o.name).join(', ')+'. ':'')+(rv.length?'Rivals: '+rv.map(o=>o.name).join(', ')+'.':'')+'</small>':'')+'</div><span class="own">'+relTag(relWith(l))+'</span></div>'}).join('');
-  }else{body=partyPage()}
-  const title=tab==='hero'?'Your hero':tab==='realms'?'Realms of Ashmark':tab==='lords'?'Lords':tab==='quests'?'Quests':htmlText(bandName());
-  const tabs=fbTabs([['hero','Hero'],['party','Party'],['quests','Quests'],['lords','Lords'],['realms','Realms']],tab,'char-tab','Character sections');
-  fbShow(title,RACES[P.race].n+' · level '+P.level+' · '+rankName(),tabs,tab==='party'||tab==='quests'?body:'<div class="fb-scroll" data-fb-scroll="char:'+tab+'">'+body+'</div>',tab==='quests'?questWindowBack():tab==='party'?partyBack():null,['char-close',null,'Back to map'],'fb-char fb-'+tab);
+  const tab=G.char,body=tab==='hero'?heroPage():partyPage();
+  const tabs=fbTabs(CHAR_TABS,tab,'char-tab','Character sections');
+  fbShow(tab==='hero'?'Your hero':htmlText(bandName()),RACES[P.race].n+' · level '+P.level+' · '+rankName(),tabs,tab==='party'?body:'<div class="fb-scroll" data-fb-scroll="char:'+tab+'">'+body+'</div>',tab==='party'?partyBack():null,['char-close',null,'Back to map'],'fb-char fb-'+tab);
 }
 /* your troops as cards, as in Total War: each kind its picture, numbers, its state (fit and wounded), its morale now against its
    best (where it would start a battle now, by your band's morale: morale.js, against its own Morale: matchups.js unitMoraleOf),
@@ -72,7 +51,7 @@ function charAct(a,arg){
   }
   if(G.mode!=='char')return false;
   const keep=panel.scrollTop;
-  if(a==='char-tab'){G.char=arg;if(G.qw){G.qw.open=false;G.qw.ask=null}}
+  if(a==='char-tab'){if(CHAR_TABS.some(([t])=>t===arg))G.char=arg}
   else if(a==='army-edit'){G.armyEdit=arg;G.armyNotice=''}
   else if(a==='army-edit-close')G.armyEdit=null;
   else if(a==='army-name-save'){const value=panel.querySelector('[data-army-name]')?.value;G.armyNotice=partyRoster(P).rename(arg,value)?'Group name saved.':'Use up to 32 characters, without control characters.'}

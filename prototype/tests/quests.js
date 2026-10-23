@@ -89,8 +89,8 @@ Kit.suite(({ok})=>{
   ok(!P.quests.includes(qc2)&&P.gold===g3+Math.round(qc2.reward.gold*t.QUEST_CLOSED.gold)&&t.repAt('Ashford')===r3&&ends.join()==='closed'&&G.msgs.some(m=>/^Quest over: .*Someone else broke the /.test(m.m)),'broken by another: closed with '+(P.gold-g3)+' gold once, its line, no reputation lost')}
  finally{t.worldOff('quest:ended',fn)}
  // the Quests tab, abandoning
- world();P.quests=[];t.acceptQuest(t.makeQuest('supply',ash));t.openChar();t.act('char-tab','quests');ok(/Abandon/.test(panel())&&/days left/.test(panel())&&/Given by/.test(panel()),'the Quests tab lists them with time left and who gave them');
- const qid=P.quests[0].id;t.act('q-abandon',String(qid));ok(!P.quests.length,'abandoning removes it');t.act('char-close');
+ world();P.quests=[];t.acceptQuest(t.makeQuest('supply',ash));t.openQuests();ok(/Abandon/.test(panel())&&/days left/.test(panel())&&/Given by/.test(panel()),'the Quests tab lists them with time left and who gave them');
+ const qid=P.quests[0].id;t.act('q-abandon',String(qid));ok(!P.quests.length,'abandoning removes it');t.act('quests-close');
  // save and the map: tracked and not (none tracked: no field)
  world();const qq=t.makeQuest('bounty',ash);t.acceptQuest(qq);t.QuestTrack.set('q'+qq.id);t.saveGame();P.quests=[];delete P.track;t.act('load');
  ok(P.quests.length===1&&P.quests[0].id===qq.id&&t.bandits.some(b=>b.qid===qq.id)&&P.track==='q'+qq.id,'quests, their targets and the one tracked survive a reload');
@@ -128,9 +128,9 @@ Kit.suite(({ok})=>{
   t.act('leave');done()}
  // ---- abandoning a holding's job: its cost by its size, and no work from it for three days (the board says so), saved
  {world();P.quests=[];const q=t.makeQuest('bounty',ash);t.acceptQuest(q);const K=t.QUEST_ABANDON,n=Math.min(K.max,Math.max(K.min,Math.round(K.rep*q.reward.rep+q.reward.gold/K.gold))),r0=t.repAt('Ashford');
-  t.openChar();t.act('char-tab','quests');t.act('qw-sel','q'+q.id);t.act('qw-abandon','q'+q.id);
+  t.openQuests();t.act('qw-sel','q'+q.id);t.act('qw-abandon','q'+q.id);
   ok(new RegExp('It counts as abandoned: reputation in Ashford −'+n+'; no work from Ashford for 3 days').test(Kit.q('.qw-ask').textContent),'the Abandon box shows its real cost: '+Kit.q('.qw-ask p').textContent);
-  Kit.q('.qw-ask [data-act="q-abandon"]').click();t.act('char-close');
+  Kit.q('.qw-ask [data-act="q-abandon"]').click();t.act('quests-close');
   ok(!P.quests.length&&t.repAt('Ashford')===r0-n&&P.shut.Ashford.until===G.day+K.shut&&P.shut.Ashford.what===q.title&&lastArch().state==='abandoned'&&lastArch().got==='reputation in Ashford −'+n,'given up: −'+n+' reputation at Ashford (its reward '+q.reward.gold+' gold, +'+q.reward.rep+'), no work there till day '+P.shut.Ashford.until+', archived abandoned');
   near(ash);t.updateWorld(.01);t.act('tab','jobs');
   ok(new RegExp('No work for you here until day '+(G.day+3)+' \\(you gave up their '+q.title+'\\)').test(Kit.text())&&Kit.qa('.row.locked').length===t.jobsAt(ash).length&&Kit.qa('[data-act="q-accept"]').every(b=>b.disabled),'the board: "No work for you here until day '+(G.day+3)+' (you gave up their …)", its offers greyed');
@@ -151,7 +151,7 @@ Kit.suite(({ok})=>{
   lord.x=P.x+3;lord.y=P.y;world();t.lordMeet(lord);t.act('q-lord');ok(!P.quests.length,'and none taken from him');t.act('lord-leave');world();delete P.shut}
  // ---- main and side quests are never yours to abandon; a side quest still fails by the world's hand
  {world();P.quests=[];const qe=child(2);t.act('q-abandon',String(qe.id));ok(P.quests.includes(qe)&&!qe.fate,'q-abandon refuses a side quest (the lost child still rides with you)');
-  t.openChar();t.act('char-tab','quests');t.act('qw-tab','side');t.act('qw-sel','q'+qe.id);ok(Kit.q('.qw-detail h3').textContent===qe.title&&!Kit.q('[data-act="qw-abandon"]')&&/Side quest/.test(Kit.q('.qw-meta').textContent),'its detail: a side quest, no Abandon');t.act('char-close');
+  t.openQuests();t.act('qw-tab','side');t.act('qw-sel','q'+qe.id);ok(Kit.q('.qw-detail h3').textContent===qe.title&&!Kit.q('[data-act="qw-abandon"]')&&/Side quest/.test(Kit.q('.qw-meta').textContent),'its detail: a side quest, no Abandon');t.act('char-close');
   G.day=qe.due+1;t.questDay();G.day=qe.due-2;ok(!P.quests.length&&qe.fate==='late'&&lastArch().k==='q'+qe.id&&lastArch().cat==='side'&&lastArch().state==='failed','but it still fails by the world: late, archived failed ('+lastArch().got+')')}
  // ---- the main story (a test-only kind): stages with checkpoints; a failed stage falls back to the last checkpoint, never ends it
  {world();P.quests=[];const page=(title,cs)=>({page:{title,text:title+'.',choices:cs.map(([label,how])=>({label,how,out:()=>({})}))}});

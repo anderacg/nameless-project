@@ -11,6 +11,9 @@ class Incident extends Happening{
   get shape(){
     return 'incident';
   }
+  get logKind(){
+    return 'band';
+  }
   // it befalls you: its kind's run done (its outcome applied, or its line logged), and it is over
   befall(c){
     const r=this.kind.run(c);

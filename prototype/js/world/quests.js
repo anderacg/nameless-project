@@ -125,7 +125,7 @@ class JobQuest extends Quest{
     P.gold+=g;
     P.quests=P.quests.filter(x=>x!==this);
     Quest.unmark(this.id);
-    log('Quest over: '+this.title+'. '+this.goneWhy()+' You are paid '+g+' gold for your trouble.','gold');
+    log('Quest over: '+this.title+'. '+this.goneWhy()+' You are paid '+g+' gold for your trouble.','gold','story',this.journalKey);
     this.announceEnd('closed');
   }
 }

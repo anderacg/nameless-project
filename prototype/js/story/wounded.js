@@ -269,7 +269,7 @@ const Wanderer={
     const m={...memory},L=Thread.store();
     for(const k of ['held','freed','alone'])delete m[k];
     (L.aside||(L.aside={})).ander={since:G.day,memory:m,done:done?1:0};
-    log('Ander goes his own way. Word of him may reach the taverns.','gold');
+    log('Ander goes his own way. Word of him may reach the taverns.','gold','story');
   },
   stop(){
     const L=Thread.store();
@@ -313,7 +313,7 @@ const Wanderer={
     for(const k of ['site','lair','lx','ly'])delete m[k];
     this.stop();
     Thread.start('wounded',m,'tracks');
-    log('“Then we finish it,” Ander says. “Their trail starts where you found me. I will wait at my sister’s.”','gold');
+    log('“Then we finish it,” Ander says. “Their trail starts where you found me. I will wait at my sister’s.”','gold','story');
   },
   pay(t){
     const p=WOUNDED.wander.price;
@@ -322,7 +322,7 @@ const Wanderer={
     this.join();
   },
   join(){
-    if(partyRoom()<1)return log('“Come back when you have room in your band,” Ander says.','bad');
+    if(partyRoom()<1)return log('“Come back when you have room in your band,” Ander says.','bad','story');
     const A=WOUNDED.ander;
     this.stop();
     compJoin('ander',{lv:A.lv,ap:A.ap,attr:A.attr});

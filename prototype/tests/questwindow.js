@@ -1,5 +1,5 @@
 'use strict';
-// Your Quests (ui/questwindow.js), the journal: the Character window's Quests tab, its tabs (Main, Side, Jobs, the Archive) over
+// Your Quests (ui/questwindow.js): a window of its own (Q; the Menu's Quests), its tabs (Main, Side, Jobs, the Archive) over
 // two panes, the list (the tracked one first, each row its state: Active, "Return to X for your reward", Locked greyed with what
 // it requires) and the one chosen in full: its category and state; a job's giver, the day taken, its timing (a courier's best-by
 // day), where it is turned in, its steps and its reward; a story (one quest: its stage's quest its objective, never a row of its
@@ -31,8 +31,8 @@ Kit.suite(({ok,info})=>{
  const esc=()=>Kit.key('Escape','Escape'),facts=()=>Object.fromEntries(qa('.qw-detail .qfacts dt').map(dt=>[dt.textContent,dt.nextElementSibling.textContent]));
  const rowOf=k=>q('.qw-row[data-arg="'+k+'"]'),tabBtn=k=>q('.qw-tabs [data-arg="'+k+'"]');
  // ---- the tabs; a story listed once, in Side, with its objective
- t.openChar();t.act('char-tab','quests');
- ok(G.mode==='char'&&qa('.qw-tabs [data-act="qw-tab"]').map(b=>b.textContent).join('|')==='Main|Side · 1|Jobs · 3|Archive'&&tabBtn('side').classList.contains('on'),'the tabs: '+qa('.qw-tabs .btn').map(b=>b.textContent).join(', ')+'; it opens on Side, the first with anything under way');
+ t.openQuests();
+ ok(G.mode==='quests'&&qa('.qw-tabs [data-act="qw-tab"]').map(b=>b.textContent).join('|')==='Main|Side · 1|Jobs · 3|Archive'&&tabBtn('side').classList.contains('on'),'the tabs: '+qa('.qw-tabs .btn').map(b=>b.textContent).join(', ')+'; it opens on Side, the first with anything under way');
  const rows=qa('.qw-row');
  ok(q('.qw .qw-list')&&q('.qw .qw-detail')&&rows.length===1&&rows[0].dataset.arg==='t'+th.i&&rows[0].textContent.includes(th.kind.n)&&rows[0].textContent.includes(th.note)&&/Active/.test(rows[0].textContent)&&!rowOf('q'+stepQ.id),
    'the story, once (its escort is no row of its own): '+rows[0].textContent);
@@ -72,7 +72,7 @@ Kit.suite(({ok,info})=>{
   const back=q('#panel > .nav [data-nav="back"]');
   ok(G.mode==='fullmap'&&(Math.hypot(cx-g.x/t.TILE,cy-g.y/t.TILE)<3||edge)&&qa('.fm-pic .fm-q').length===t.questMapMarks().length&&back&&back.textContent==='Back to Quests',
    'Show on map: the full map centred on the goal ('+Math.round(cx)+','+Math.round(cy)+' vs '+Math.round(g.x/t.TILE)+','+Math.round(g.y/t.TILE)+'), each quest marked, Back to Quests on its bar')}
- esc();ok(G.mode==='char'&&G.char==='quests'&&G.qw.tab==='job'&&G.qw.sel==='q'+qb.id,'Esc follows its bar: back to your Quests, Jobs, the bounty still chosen');
+ esc();ok(G.mode==='quests'&&G.qw.tab==='job'&&G.qw.sel==='q'+qb.id,'Esc follows its bar: back to your Quests, Jobs, the bounty still chosen');
  // ---- Track: one at a time, saved as P.track; first in its tab; the strongest marks; untracked: no field
  ok(!('track' in P),'nothing tracked: no field');
  t.act('qw-track','q'+qc.id);
@@ -82,7 +82,7 @@ Kit.suite(({ok,info})=>{
  {let err='';try{t.drawQuestMarks({x:qc.x-100,y:qc.y-100});t.drawQuestMarks({x:qc.x+5000,y:qc.y+5000})}catch(x){err=x.message}ok(!err,'on the map: brackets round it, or an arrow at the edge when it is off the screen'+(err?' EXC '+err:''))}
  t.act('qw-tab','side');t.act('qw-track','t'+th.i);
  {const sq=t.QuestTrack.quest('t'+th.i);ok(P.track==='t'+th.i&&t.QuestTrack.on(sq)&&!t.QuestTrack.on(qc)&&q('.qw-list .qw-row').dataset.arg==='t'+th.i&&q('.qw-list .lab').textContent==='Tracked','tracking the story instead (Track works in every tab): one at a time; its stage’s quest’s goal marked, the story first')}
- t.act('char-close');t.openChar();t.act('char-tab','quests');ok(G.qw.tab==='side','opened again: on the tracked one’s tab');
+ t.act('quests-close');t.openQuests();ok(G.qw.tab==='side','opened again: on the tracked one’s tab');
  t.act('qw-track','t'+th.i);ok(!('track' in P)&&q('.qw-list .lab').textContent!=='Tracked','tracked again: untracked, the field gone');
  t.act('qw-tab','job');t.act('qw-track','q'+qc.id);
  // ---- Abandon asks first, its real cost; Keep it; Give it up: off the list, into the Archive
@@ -90,14 +90,14 @@ Kit.suite(({ok,info})=>{
  ok(q('.qw-ask')&&/Give up .+\? It counts as abandoned: reputation in Ashford −\d+; no work from Ashford for 3 days/.test(q('.qw-ask').textContent)&&P.quests.includes(qb),'Abandon asks first: '+(q('.qw-ask')&&q('.qw-ask p').textContent));
  t.act('qw-keep','q'+qb.id);ok(!q('.qw-ask')&&P.quests.includes(qb),'Keep it: still yours');
  t.act('qw-abandon','q'+qb.id);q('.qw-ask [data-act="q-abandon"]').click();
- ok(!P.quests.includes(qb)&&G.mode==='char'&&q('.qw-row.on')&&G.qw.sel!=='q'+qb.id&&tabBtn('past').textContent==='Archive · 1','Give it up: gone, another chosen; the Archive holds it');
+ ok(!P.quests.includes(qb)&&G.mode==='quests'&&q('.qw-row.on')&&G.qw.sel!=='q'+qb.id&&tabBtn('past').textContent==='Archive · 1','Give it up: gone, another chosen; the Archive holds it');
  t.act('qw-tab','past');
  {const r=rowOf('aq'+qb.id),f=facts();ok(r&&/Abandoned/.test(r.textContent)&&/reputation in Ashford −\d+/.test(r.textContent)&&q('.qw-detail h3').textContent===qb.title&&f['Given by']==='Ashford'&&f.Ended==='Day '+G.day&&/reputation in Ashford −\d+/.test(f.Cost)&&!q('.qw-detail .btn'),
    'the Archive: '+r.textContent+' · its detail: given by '+f['Given by']+', ended '+f.Ended+', cost '+f.Cost)}
- t.act('qw-tab','job');t.act('qw-abandon','q'+qc.id);esc();ok(G.mode==='char'&&!q('.qw-ask')&&P.quests.includes(qc)&&P.track==='q'+qc.id,'Esc cancels abandonment without changing the quest');esc();
+ t.act('qw-tab','job');t.act('qw-abandon','q'+qc.id);esc();ok(G.mode==='quests'&&!q('.qw-ask')&&P.quests.includes(qc)&&P.track==='q'+qc.id,'Esc cancels abandonment without changing the quest');esc();
  // ---- a phone on its side: the tabs and the list, then the chosen one alone; Back to the list; all on the screen
  {const css0=scr.style.cssText;scr.style.cssText+=';width:844px;height:390px';
-  try{t.openChar();t.act('char-tab','quests');q('#panel').style.animation='none';
+  try{t.openQuests();q('#panel').style.animation='none';
    const vis=el=>!!el&&el.getBoundingClientRect().width>0,s=scr.getBoundingClientRect();
    const inside=el=>{const r=el.getBoundingClientRect();return r.left>=s.left-.5&&r.right<=s.right+.5&&r.top>=s.top-.5&&r.bottom<=s.bottom+.5};
    ok(vis(q('.qw-tabs'))&&qa('.qw-tabs .btn').every(inside)&&vis(q('.qw-list'))&&!vis(q('.qw-detail'))&&!q('#panel > .nav [data-nav="back"]'),'at 844 x 390: the tabs and the list alone, no Back');
@@ -107,7 +107,7 @@ Kit.suite(({ok,info})=>{
    ok(inside(p)&&inside(nv)&&bs.length===3&&bs.every(inside)&&p.scrollWidth<=p.clientWidth+1&&q('.qw-detail').scrollWidth<=q('.qw-detail').clientWidth+1,
      'everything on the screen: the window ('+Math.round(p.getBoundingClientRect().width)+' x '+Math.round(p.getBoundingClientRect().height)+'), its bar, its buttons; nothing scrolls sideways');
    ok(bs.every(b=>b.getBoundingClientRect().height>=39),'its buttons big enough to tap ('+bs.map(b=>Math.round(b.getBoundingClientRect().height)).join(', ')+' px)');
-   esc();ok(G.mode==='char'&&vis(q('.qw-list'))&&vis(q('.qw-tabs'))&&!vis(q('.qw-detail'))&&!q('#panel > .nav [data-nav="back"]'),'Esc follows the bar: Back to the tabs and the list');
+   esc();ok(G.mode==='quests'&&vis(q('.qw-list'))&&vis(q('.qw-tabs'))&&!vis(q('.qw-detail'))&&!q('#panel > .nav [data-nav="back"]'),'Esc follows the bar: Back to the tabs and the list');
    t.act('qw-tab','side');t.act('qw-sel','t'+th.i);q('#panel').style.animation='none';
    ok(vis(q('.qw-detail'))&&inside(q('#panel'))&&q('.qw-detail').scrollWidth<=q('.qw-detail').clientWidth+1&&/Stages/.test(q('.qw-detail').textContent),'a story on the phone: its detail alone, its stages, nothing sideways');
    esc();esc();ok(G.mode==='world','Esc again: out to the map')}

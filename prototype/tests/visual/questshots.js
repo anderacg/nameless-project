@@ -10,7 +10,7 @@ window.RUN=()=>{
  Kit.begin('soldier',23);Kit.clear();Kit.world();
  // (the screen's size, kept after any resize the window makes: fitScreen sets the tests' fixed view)
  const size=()=>{if(u.get('w')){const e=document.getElementById('screen').style;e.width=u.get('w')+'px';e.height=u.get('h')+'px'}};
- size();addEventListener('resize',()=>{size();if(G.mode==='char')t.renderChar()});
+ size();addEventListener('resize',()=>{size();if(G.mode==='quests')t.renderQuests()});
  P.name='Bran Redhand';P.band='The Grey Company';P.renown=30;P.level=2;P.gold=420;
  const ash=t.townBy('Ashford');
  // ---- a wounded traveller taken home, his family heard: the trail under way
@@ -20,7 +20,7 @@ window.RUN=()=>{
    Kit.world();t.Quest.as(P.quests.find(x=>x.id===th.wait.id)).reached();t.act('thr-do','0');Kit.world();return th}};
  const jobs=()=>{Kit.goHome(ash);P.troops={hum_spear:8,hum_bow:6};const qb=t.makeQuest('bounty',ash);t.acceptQuest(qb);let qc=null;for(let k=0;k<10&&!qc;k++)qc=t.makeQuest('courier',ash);t.acceptQuest(qc);
   const qs=t.makeQuest('supply',ash);t.acceptQuest(qs);t.invAdd('good',qs.good,qs.n);P.jobs={Ashford:{day:G.day,list:[t.makeQuest('bounty',ash),t.makeQuest('troops',ash)]}};return {qb,qc,qs}};
- const open=(tab,k)=>{Kit.world();t.openChar();t.act('char-tab','quests');t.act('qw-tab',tab);if(k)t.act('qw-sel',k);if(!u.get('open'))G.qw.open=false,t.renderChar();q0()};
+ const open=(tab,k)=>{Kit.world();t.openQuests();t.act('qw-tab',tab);if(k)t.act('qw-sel',k);if(!u.get('open'))G.qw.open=false,t.renderQuests();q0()};
  const q0=()=>{const p=document.getElementById('panel');if(p)p.style.animation='none'};
  if(shot==='side'){const th=story();jobs();t.QuestTrack.set('t'+th.i);open('side','t'+th.i);return}
  if(shot==='main'){

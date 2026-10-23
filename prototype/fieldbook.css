@@ -34,3 +34,38 @@
 
 .fb-stat>span{min-width:0;overflow-wrap:anywhere;line-height:1.25}.fb-comp-detail .ucard-x{max-width:100%;min-width:0}.fb-comp-detail .uc-stat{grid-template-columns:minmax(62px,96px) minmax(0,1fr) minmax(45px,68px)}
 @container ovl (min-width:651px) and (max-height:520px){.fb-inspector .fb-figure{float:left;width:52px;height:50px;margin:0 8px 6px 0;background:none;border:0}.fb-inspector .fb-figure>img{width:50px;height:50px}.fb-inspector .fb-title{min-height:50px;padding-top:3px}.fb-inspector .fb-title small{font-size:9px}.fb-inspector .fb-title h3{font-size:17px;margin:4px 0}.fb-inspector .fb-stat-grid{clear:both}}
+/* The Journal (journal.js): its sections as tabs (Chronicle, Lords, Realms); the Chronicle (chronicle.js): filter tabs, a dark ledger of
+   messages under sticky day headers, link buttons, the pager. */
+.fb-journal>.fb-tabs .btn{display:flex;align-items:center;justify-content:center;gap:6px}.fb-journal>.fb-tabs .gico{flex:none}
+.chron{flex:1;min-width:0;min-height:0;display:flex;flex-direction:column;margin:10px 12px;border:4px solid #89704a;border-radius:5px;box-shadow:0 5px 14px #0006,inset 0 0 0 2px #3a2f22;background:linear-gradient(#1f1b1d,#18151a);color:#e7d7b3}
+.chron>.fb-tabs{padding:6px;border-bottom:2px solid #6b5533;flex-wrap:wrap}.chron>.fb-tabs>.btn{flex:1 1 0;white-space:normal}
+.ch-scroll{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;padding:0 10px 10px;scrollbar-width:thin;scrollbar-color:#8b7048 transparent}
+.ch-day{position:sticky;top:0;z-index:1;margin:0 -10px;padding:8px 12px 5px;font:700 12px/1.2 Arial,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#d7b36b;background:#1d191c;border-bottom:1px solid #6b5533}
+.ch-msg{display:flex;align-items:center;gap:10px;min-height:34px;padding:6px 2px;border-bottom:1px solid #4a3d2b;font-size:13px;line-height:1.4;color:#d9cba9}
+.ch-msg>span{flex:1;min-width:0;overflow-wrap:anywhere}.ch-msg.good{color:#b1ce92}.ch-msg.bad{color:#e2a094}.ch-msg.gold{color:#dcbc72}
+.fb-shell .ch-link{flex:none;font-size:12px;padding:6px 10px}
+.ch-scroll>.muted{padding:14px 4px}
+.ch-pager{flex:none;display:flex;align-items:center;gap:6px;padding:6px;border-top:2px solid #6b5533;background:#211a15}.ch-pager>span{flex:1;min-width:0;text-align:center;font-size:12px;color:#c9b995}
+.ch-pager>.btn{flex:none;font-size:12px}
+@container ovl (max-width:760px) or (max-height:520px){
+ .chron{margin:4px 8px 8px;border-width:3px}.chron>.fb-tabs{padding:4px;gap:3px}.chron>.fb-tabs>.btn{font-size:11px;padding:4px 3px}
+ .ch-msg{font-size:12px;padding:5px 2px}.fb-shell .ch-link{font-size:11px;padding:5px 8px}
+ .ch-pager{padding:4px;gap:4px}.ch-pager>.btn{font-size:11px;padding:5px 8px}
+}
+@container ovl (min-width:651px) and (max-height:520px){
+ .fb-journal{position:relative;padding-top:50px}.fb-journal>.fb-head{position:absolute;top:0;left:0;width:160px;height:50px;min-height:0;padding:7px 10px}.fb-journal>.fb-head>.muted{display:none}.fb-journal>.fb-head h2{font-size:17px}
+ .fb-journal>.fb-tabs{position:absolute;top:0;right:0;left:160px;height:50px;padding:3px 8px 3px 0}.fb-journal .chron{margin-top:0}
+}
+@container ovl (max-width:650px){
+ .chron>.fb-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}
+ .ch-msg{flex-wrap:wrap;gap:4px 8px}.fb-shell .ch-link{margin-left:auto}
+ .ch-pager{flex-wrap:wrap}.ch-pager>span{order:-1;flex-basis:100%}.ch-pager>.btn{flex:1 1 0;padding:5px 2px}
+}
+/* The Menu (hub.js): a tile per window, its icon, name and key; greyed with its reason where it cannot open. */
+.fb-hub{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;padding:6px 2px}
+.fb-hub-tile{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:124px;padding:14px 8px;border:1px solid #8b7048;border-radius:3px;background:radial-gradient(ellipse at 50% 30%,#4a392333,transparent 70%),linear-gradient(#30261d,#161216);color:#e7d7b3;font:inherit;cursor:pointer;box-shadow:inset 0 1px #b7a06a33,inset 0 -2px #0008}
+.fb-hub-tile:hover:not(:disabled),.fb-hub-tile:focus-visible{border-color:#d7b36b;color:#fff0c7}.fb-hub-tile:disabled{opacity:.5;cursor:default}
+.fb-hub-tile .gico{width:32px;height:32px}.fb-hub-tile strong{font:700 16px/1.1 Arial,sans-serif}.fb-hub-tile small{font-size:11px;color:#b5a88e}
+.fb-hub-tile kbd{position:absolute;top:6px;right:8px;padding:1px 5px;font:700 11px Arial,sans-serif;color:#c9a24e;background:none;border:1px solid #6b5533;border-radius:2px}
+@container ovl (max-width:760px) or (max-height:520px){.fb-hub{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.fb-hub-tile{min-height:92px;padding:8px 4px;gap:5px}.fb-hub-tile strong{font-size:14px}}
+@container ovl (max-width:520px){.fb-hub{grid-template-columns:repeat(2,minmax(0,1fr))}.fb-hub-tile{min-height:110px}}
