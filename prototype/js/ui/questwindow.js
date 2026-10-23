@@ -1,31 +1,73 @@
 'use strict';
-/* ---------- your Quests: the Character window's Quests tab (C), a list and the one chosen in full ----------
-   The list: the one you track first (under its own label), then your quests, then the Stories (the chains under way:
-   story/thread.js), one row each (its title, and a line: how far along, or what to do now). Each is keyed as P.track keeps
-   it: 'q' and a quest's id, 't' and a story's number. The one chosen (G.qw.sel; none: the tracked one, else the first):
-   - a quest: its text, then its facts (given by, taken, timing, turn in: world/quests.js questFacts), its steps, its reward;
-   - a story: who it is about, the day it began, what to do now (its step's note), where (its step quest's goal);
-   and its buttons: Show on map (the full map centred on its goal, its bar's Back returning here: ui/map.js), Track (one at a
-   time: world/quests.js QuestTrack) and, for a quest, Abandon (it asks first: what giving it up costs; Give it up is q-abandon).
+/* ---------- your Quests: the Character window's Quests tab (C), the journal: its tabs, a list and the one chosen in full ----------
+   The quest model (story/quest.js; the owner, 2026-10-23): every quest and story reads its category (cat) and its state the same
+   way. The tabs (QW.tabs): Main, Side and Jobs (QUEST_CATS), and the Archive (QuestArchive: those done, failed or abandoned,
+   newest first). A story is one quest: listed once (its stages' quests are its objective, never rows of their own). Each is
+   keyed as P.track keeps it: 'q' and a quest's id, 't' and a story's number; an offer you know of (the boards seen this week,
+   the last lord's: greyed while locked, with what it requires) 'o' and where it is; an archive entry 'a' and its own key.
+   A tab's list: the one you track first (under its own label), then the rest, a row each (its title, its state and a line:
+   how far along, "Return to X for your reward", what it requires, what it came to). The one chosen (G.qw.sel; none: the
+   tracked one, else the first):
+   - a quest: its category and state, its text, its facts (given by, taken, timing, turn in: world/quests.js questFacts), its
+     steps, its reward;
+   - a story: its category and state, who it is about, the day it began, its objective (its stage's note; the quest it waits
+     on: how far along, where), its stages done so far;
+   - an offer: its facts and what it requires (taken at its board, or from its lord); an archive entry: how it ended, the day,
+     what it paid or cost;
+   and its buttons: Show on map (the full map centred on its goal, its bar's Back returning here: ui/map.js), Track (a quest or
+   story under way; one at a time: world/quests.js QuestTrack) and, for a job only, Abandon (it asks first, its real cost:
+   what giving it up costs; Give it up is q-abandon). Main and side quests show no Abandon.
    A wide window shows the two side by side; a small one (a phone on its side: QW.compact, the overlay's size, as style.css
-   8d's container query) the list, then the chosen one alone (G.qw.open), its bar's Back returning to the list. Esc follows the
-   bar. ---------- */
-const QW={compact:{w:760,h:520}};
-// (its state: the one chosen, whether it is open on a small window, the one asking to be given up)
-const qwState=()=>G.qw||(G.qw={sel:null,open:false,ask:null});
+   8d's container query) the tabs and the list, then the chosen one alone (G.qw.open), its bar's Back returning to the list.
+   Esc follows the bar. ---------- */
+const QW={compact:{w:760,h:520},tabs:['main','side','job','past']};
+// (its state: the tab, the one chosen, whether it is open on a small window, the one asking to be given up)
+const qwState=()=>G.qw||(G.qw={tab:null,sel:null,open:false,ask:null});
 // is the window small (the overlay's content box: as the container query in style.css 8d measures it)
 function qwCompact(){
   const r=$('#screen').getBoundingClientRect(),s=getComputedStyle(ov),C=QW.compact;
   const w=r.width-parseFloat(s.paddingLeft)-parseFloat(s.paddingRight),h=r.height-parseFloat(s.paddingTop)-parseFloat(s.paddingBottom);
   return w<=C.w||h<=C.h;
 }
-// everything in the list, keyed: your quests, then the stories under way
+// everything the journal lists, keyed, each with its tab and state: your quests that are no story's stage, the stories under way,
+// the offers you know of, the archive (newest first)
 function qwItems(){
-  return [...P.quests.map(q=>({k:'q'+q.id,q:Quest.as(q)})),...Thread.list().on.map(th=>({k:'t'+th.i,th}))];
+  const qs=P.quests.map(q=>Quest.as(q)).filter(q=>!q.story).map(q=>({k:'q'+q.id,q,tab:q.cat,state:q.state}));
+  const ths=Thread.list().on.map(th=>({k:'t'+th.i,th,tab:th.cat,state:th.state}));
+  const past=QuestArchive.list().slice().reverse().map(e=>({k:'a'+e.k,e,tab:'past',state:e.state}));
+  return [...qs,...ths,...qwOffers(),...past];
 }
-// (a story's name and who it is about)
-const qwStoryName=th=>{const K=th.kind,who=K.who?th.param(K.who):'';return K.n+(who?': '+who:'')};
-// the one chosen, still there (else the tracked one, else the first; none: null)
+// (the offers you know of: each board you have seen whose offers still stand, and the last lord's)
+function qwOffers(){
+  const out=[];
+  for(const [name,j] of Object.entries(P.jobs||{}))if(Clock.daysSince(j.day)<JOB_REFRESH)j.list.forEach((q,i)=>{q=Quest.as(q);out.push({k:'o'+name+':'+i,o:q,tab:'job',state:q.state})});
+  if(G.lordJob){const q=Quest.as(G.lordJob);out.push({k:'o:lord',o:q,tab:'job',state:q.state})}
+  return out;
+}
+// (a tab's name; the tab to open on: the tracked one's, else the first with anything under way, else Jobs)
+const qwTabName=t=>t==='past'?'Archive':QUEST_CATS[t].tab;
+function qwTab(items){
+  const S=qwState(),tk=items.find(x=>x.k===P.track),live=t=>items.some(x=>x.tab===t&&(x.q||x.th));
+  if(!QW.tabs.includes(S.tab))S.tab=tk?tk.tab:['main','side','job'].find(live)||'job';
+  return S.tab;
+}
+// (its title; a story's name and who it is about)
+const qwStoryName=th=>th.title+(th.who?': '+th.who:'');
+const qwTitle=it=>it.q?it.q.title:it.th?qwStoryName(it.th):it.o?it.o.title:it.e.title;
+// (its state as a tag)
+const qwStateTag=st=>'<span class="qw-st '+st+'">'+QUEST_STATES[st]+'</span>';
+// (where a quest is reported, for "Return to X for your reward")
+const qwReturnTo=q=>q.lord?q.giver+' or any '+FACS[q.fac].n+' holding':q.home;
+// (an offer's unmet needs, its giver's trust among them)
+const qwLacks=q=>q.needs().filter(n=>!n.met).map(n=>n.what);
+// (its line under the title)
+function qwSub(it){
+  if(it.q)return it.state==='completed'?'Return to '+qwReturnTo(it.q)+' for your reward':it.q.progress();
+  if(it.th)return it.th.note||'Under way.';
+  if(it.o)return it.state==='locked'?'Requires '+qwLacks(it.o).join(' · '):'Offered by '+(it.o.lord?it.o.giver:it.o.home);
+  return 'Day '+it.e.day+(it.e.got?' · '+it.e.got:'');
+}
+// the one chosen, still there in its tab (else the tracked one, else the first; none: null)
 function qwChosen(items){
   const S=qwState(),by=k=>items.find(x=>x.k===k);
   const it=by(S.sel)||by(P.track)||items[0]||null;
@@ -35,53 +77,91 @@ function qwChosen(items){
   if(S.ask!==S.sel)S.ask=null;
   return it;
 }
+// ---- the tabs, each with its count (the archive's: all it keeps)
+function qwTabs(all,tab){
+  return '<div class="qw-tabs" role="tablist" aria-label="Quests">'+QW.tabs.map(t=>{const n=all.filter(x=>x.tab===t&&!x.o).length;
+    return '<button class="btn sm'+(t===tab?' on':'')+'" type="button" role="tab" data-act="qw-tab" data-arg="'+t+'" aria-selected="'+(t===tab)+'">'+qwTabName(t)+(n?' · '+n:'')+'</button>'}).join('')+'</div>';
+}
 // ---- the list: a row each (a button: choosing it opens it)
 function qwRow(it,sel){
-  const on=P.track===it.k,q=it.q,th=it.th;
-  const title=q?q.title:qwStoryName(th),sub=q?q.progress():th.note||'Under way.',ready=q&&(q.done||q.ready());
-  return '<button class="qw-row'+(it.k===sel?' on':'')+'" type="button" data-act="qw-sel" data-arg="'+it.k+'" aria-pressed="'+(it.k===sel)+'">'+
-    '<strong>'+title+(on?' <span class="qw-tag">Tracked</span>':'')+'</strong><small'+(ready?' class="good"':'')+'>'+sub+'</small></button>';
+  const on=P.track===it.k,st=it.state,good=st==='completed'||st==='done';
+  return '<button class="qw-row'+(it.k===sel?' on':'')+(st==='locked'?' locked':'')+'" type="button" data-act="qw-sel" data-arg="'+htmlText(it.k)+'" aria-pressed="'+(it.k===sel)+'">'+
+    '<strong>'+qwTitle(it)+(on?' <span class="qw-tag">Tracked</span>':'')+'</strong><small'+(good?' class="good"':'')+'>'+qwStateTag(st)+' '+qwSub(it)+'</small></button>';
 }
-function qwList(items,sel){
-  const tk=items.find(x=>x.k===P.track),rest=items.filter(x=>x!==tk),qs=rest.filter(x=>x.q),ths=rest.filter(x=>x.th),n=P.quests.length;
-  return '<div class="qw-list" role="group" aria-label="Your quests and stories">'+
+function qwList(items,tab,sel){
+  const tk=items.find(x=>x.k===P.track),rest=items.filter(x=>x!==tk),mine=rest.filter(x=>!x.o),offers=rest.filter(x=>x.o);
+  const none={main:'No main story yet.',side:'No side quests. Help those you meet on the road, and more may come of it.',
+    job:'No jobs. Look for work on the notice board of any holding, or ask a friendly lord.',past:'Nothing done, failed or given up yet.'}[tab];
+  const lab={main:'Main story',side:'Side quests',job:'Your jobs',past:'Archive · the last '+QUEST_ARCHIVE.keep}[tab];
+  return '<div class="qw-list" role="group" aria-label="'+qwTabName(tab)+'">'+
     (tk?'<div class="lab">Tracked</div>'+qwRow(tk,sel):'')+
-    '<div class="lab">Quests · '+n+'</div>'+(qs.length?qs.map(x=>qwRow(x,sel)).join(''):n?'':'<p class="muted">No quests. Look for work on the notice board of any holding, or ask a friendly lord.</p>')+
-    (ths.length?'<div class="lab">Stories</div>'+ths.map(x=>qwRow(x,sel)).join(''):'')+'</div>';
+    (mine.length?'<div class="lab">'+lab+(tab==='past'?'':' · '+(mine.length+(tk?1:0)))+'</div>'+mine.map(x=>qwRow(x,sel)).join(''):tk?'':'<div class="lab">'+lab+'</div><p class="muted">'+none+'</p>')+
+    (offers.length?'<div class="lab">Offered where you have been</div>'+offers.map(x=>qwRow(x,sel)).join(''):'')+'</div>';
 }
 // ---- the one chosen in full
-const qwBtn=(act,arg,label,why,cls)=>'<button class="btn sm'+(cls?' '+cls:'')+'" type="button" data-act="'+act+'" data-arg="'+arg+'"'+(why?' disabled title="'+why+'"':'')+'>'+label+'</button>';
+const qwBtn=(act,arg,label,why,cls)=>'<button class="btn sm'+(cls?' '+cls:'')+'" type="button" data-act="'+act+'" data-arg="'+htmlText(arg)+'"'+(why?' disabled title="'+why+'"':'')+'>'+label+'</button>';
+const qwFacts=f=>'<dl class="qfacts">'+f.map(([k,v])=>'<dt>'+k+'</dt><dd>'+v+'</dd>').join('')+'</dl>';
+// (its title, and beside it its category and state)
+const qwHead=(it,title)=>'<div class="qw-head"><h3>'+title+'</h3><span class="qw-meta"><span class="qw-cat">'+QUEST_CATS[it.e?it.e.cat:it.tab].n+'</span>'+qwStateTag(it.state)+'</span></div>';
+// (where it points on the map: a quest's goal, a story's stage's, an offer's giver; none: null)
+function qwGoal(it){
+  if(it.q)return it.q.goal();
+  if(it.th)return QuestTrack.goal(it.k);
+  if(it.o){const l=it.o.giverLord(),p=l&&!l.dead&&!l.gone?l:townBy(it.o.home);return p?{x:p.x,y:p.y,name:p.name}:null}
+  return null;
+}
 function qwButtons(it,goal){
-  const on=P.track===it.k;
+  const on=P.track===it.k,live=it.q||it.th;
+  if(!live&&!it.o)return '';
   return '<div class="btns qw-acts">'+qwBtn('qw-map',it.k,'Show on map',goal?'':'It points nowhere on the map now')+
-    '<button class="btn sm'+(on?' on':'')+'" type="button" data-act="qw-track" data-arg="'+it.k+'" aria-pressed="'+on+'">'+(on?'Tracked':'Track')+'</button>'+
-    (it.q?qwBtn('qw-abandon',it.k,'Abandon'):'')+'</div>';
+    (live?'<button class="btn sm'+(on?' on':'')+'" type="button" data-act="qw-track" data-arg="'+it.k+'" aria-pressed="'+on+'">'+(on?'Tracked':'Track')+'</button>':'')+
+    (it.q&&it.q.abandonable?qwBtn('qw-abandon',it.k,'Abandon'):'')+'</div>';
 }
 function qwQuest(it){
   const q=it.q,S=qwState(),g=q.goal(),f=questFacts(q),at=f.findIndex(([k])=>k==='Reward');
   const steps='<ol class="qw-steps">'+q.steps().map(([s,done])=>'<li'+(done?' class="good"':'')+'>'+s+'</li>').join('')+'</ol>';
   f.splice(at<0?f.length:at,0,['Steps',steps]);
-  const ask=S.ask===it.k?'<div class="qw-ask" role="alertdialog" aria-label="Give it up?"><p>Give up '+q.title+'? It counts as failed'+(q.abandonCost()?': '+q.abandonCost():'')+'.</p>'+
+  const ask=S.ask===it.k&&q.abandonable?'<div class="qw-ask" role="alertdialog" aria-label="Give it up?"><p>Give up '+q.title+'? It counts as abandoned: '+q.abandonCost()+'.</p>'+
     '<div class="btns">'+qwBtn('q-abandon',q.id,'Give it up','','bad')+qwBtn('qw-keep',it.k,'Keep it')+'</div></div>':'';
-  return '<h3>'+q.title+'</h3><p class="qw-text">'+q.text+'</p><dl class="qfacts">'+f.map(([k,v])=>'<dt>'+k+'</dt><dd>'+v+'</dd>').join('')+'</dl>'+qwButtons(it,g)+ask;
+  return qwHead(it,q.title)+'<p class="qw-text">'+q.text+'</p>'+qwFacts(f)+qwButtons(it,g)+ask;
 }
+// (a story: its objective, the quest its stage waits on (how far along, where), then its stages: those done, and the one now)
 function qwStory(it){
-  const th=it.th,K=th.kind,who=K.who?th.param(K.who):'',q=QuestTrack.quest(it.k),g=q&&q.goal();
-  const f=[['Who',who||'—'],['Begun','Day '+th.day],['Now',th.note||'Under way.'],['Where',g?(g.name?g.name+', ':'')+questWay(g):'Nowhere on the map yet']];
-  if(q)f.push(['Its step',q.title]);
-  return '<h3>'+K.n+'</h3><dl class="qfacts">'+f.map(([k,v])=>'<dt>'+k+'</dt><dd>'+v+'</dd>').join('')+'</dl>'+qwButtons(it,g);
+  const th=it.th,q=QuestTrack.quest(it.k),g=q&&q.goal(),now=th.current;
+  const f=[['Who',th.who||'—'],['Begun','Day '+th.day],['Objective',th.note||'Under way.']];
+  if(q)f.push(['Progress',q.progress()]);
+  f.push(['Where',g?(g.name?g.name+', ':'')+questWay(g):'Nowhere on the map yet']);
+  const done=th.stages().map(([n,how,bad])=>'<li class="'+(bad?'bad':'good')+'">'+n+(bad?' (failed)':'')+'</li>').join('');
+  f.push(['Stages','<ol class="qw-steps">'+done+(now?'<li class="now">'+th.stageName(now)+'</li>':'')+'</ol>']);
+  return qwHead(it,th.title)+qwFacts(f)+qwButtons(it,g);
+}
+// (an offer you know of: taken at its board or from its lord; locked, what it requires, its giver's trust among them)
+function qwOffer(it){
+  const q=it.o,s=QuestShut.of(q);
+  const where=q.lord?'Ask '+q.giver+' for it.':'Take it at the notice board of '+q.home+'.';
+  return qwHead(it,q.title)+'<p class="qw-text">'+q.text+'</p>'+(s?'<p class="bad">'+QuestShut.line(q,s)+'.</p>':'')+qwFacts(questFacts(q))+
+    '<p class="muted">'+where+'</p>'+qwButtons(it,qwGoal(it));
+}
+// (an archive entry: who, how it ended, the day, what it paid or cost; a story's, its last stage)
+function qwPast(it){
+  const e=it.e,story=e.k[0]==='t';
+  const f=[[story?'Who':'Given by',e.giver||'—'],['Ended','Day '+e.day]];
+  if(e.got)f.push([story?'Last stage':e.state==='done'?'Reward':'Cost',e.got]);
+  return qwHead(it,e.title)+qwFacts(f);
 }
 /* the tab: its content (character.js renderChar), and its bar's Back (on a small window, the chosen one open: back to the list) */
 function questWindow(){
-  const items=qwItems(),it=qwChosen(items),S=qwState();
+  const all=qwItems(),tab=qwTab(all),items=all.filter(x=>x.tab===tab),it=qwChosen(items),S=qwState();
   S.compact=qwCompact();
-  if(!it)return '<div class="qw">'+qwList(items,null)+'</div>';
-  return '<div class="qw'+(S.open?' open':'')+'">'+qwList(items,it.k)+'<section class="qw-detail" aria-label="'+htmlText(it.q?it.q.title:it.th.kind.n)+'">'+(it.q?qwQuest(it):qwStory(it))+'</section></div>';
+  const tabs=qwTabs(all,tab);
+  if(!it)return '<div class="qw">'+tabs+qwList(items,tab,null)+'</div>';
+  const body=it.q?qwQuest(it):it.th?qwStory(it):it.o?qwOffer(it):qwPast(it);
+  return '<div class="qw'+(S.open?' open':'')+'">'+tabs+qwList(items,tab,it.k)+'<section class="qw-detail" aria-label="'+htmlText(it.e?it.e.title:it.th?it.th.title:qwTitle(it))+'">'+body+'</section></div>';
 }
 const questWindowBack=()=>{const S=qwState();return S.compact&&S.open&&S.sel?['qw-list',null,'Back']:null};
 // Show on map: the full map over the world, centred on its goal; its Back (qw-back) returns to your Quests
 function qwShowOnMap(k){
-  const g=QuestTrack.goal(k);
+  const it=qwItems().find(x=>x.k===k),g=it&&qwGoal(it);
   if(!g)return;
   G.mode='world';
   hidePanel();
@@ -91,7 +171,8 @@ onAct('qw-',(a,arg)=>{
   const S=qwState();
   if(a==='qw-back'){if(G.mode==='fullmap'){closeOver();G.char='quests';openChar()}return}
   if(G.mode!=='char')return;
-  if(a==='qw-sel'){S.sel=arg;S.open=true;S.ask=null}
+  if(a==='qw-tab'){S.tab=arg;S.sel=null;S.open=false;S.ask=null}
+  else if(a==='qw-sel'){S.sel=arg;S.open=true;S.ask=null}
   else if(a==='qw-list'){S.open=false;S.ask=null}
   else if(a==='qw-track')QuestTrack.set(P.track===arg?null:arg);
   else if(a==='qw-abandon')S.ask=arg;
@@ -100,7 +181,7 @@ onAct('qw-',(a,arg)=>{
   else return;
   updateHUD(true);
   renderChar();
-  const b=a==='qw-sel'?panel.querySelector('.qw-detail .btn:not([disabled])'):a==='qw-abandon'?panel.querySelector('.qw-ask .btn'):panel.querySelector('[data-act="'+a+'"][data-arg="'+arg+'"]')||panel.querySelector('[data-act="qw-sel"].on');
+  const b=a==='qw-sel'?panel.querySelector('.qw-detail .btn:not([disabled])'):a==='qw-abandon'?panel.querySelector('.qw-ask .btn'):panel.querySelector('[data-act="'+a+'"][data-arg="'+CSS.escape(arg)+'"]')||panel.querySelector('[data-act="qw-sel"].on');
   if(b){b.focus({preventScroll:true});if(a==='qw-abandon')b.scrollIntoView({block:'nearest'})}
 });
 // (a window turned or resized across the small window's size: drawn again, its bar with it)

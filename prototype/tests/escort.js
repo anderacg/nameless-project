@@ -2,7 +2,8 @@
 // Escorts (world/escort.js; doc/IMPLEMENTATION_PLAN.md §10.7): a passenger rides inside your band, begun by an outcome
 // ({passenger}), a thread's step or a job offered at a holding. It is on the party card and in the Party window, eats with you,
 // takes no troop slot and is no target of its own; it ends on arrival (paid, its page), on its due day (late), with a battle
-// lost (captured) or abandoned (left), each its line, quest:ended once; saved and loaded at every stage. Its place is marked on
+// lost (captured) or given up (left: never by your Abandon, a side quest is not abandonable), each its line, quest:ended once;
+// saved and loaded at every stage. Its place is marked on
 // the map. The developer commands for the story (ui/developer.js). Written on the test kit (tests/kit.js).
 Kit.suite(({ok,info})=>{
  const t=T,G=t.G,P=t.P,W=t.W,E=t.Escort;Kit.begin('soldier',52);Kit.clear();Kit.world();
@@ -50,7 +51,7 @@ Kit.suite(({ok,info})=>{
    band();Kit.seeded(4,()=>t.concludeEncounter(false,{},0,true,[]));Kit.done({cont:true,world:true});
    ok(!P.quests.length&&q5.fate==='captured'&&ends(q5).join()==='failed'&&G.msgs.some(m=>/your foes carry off the refugee family/.test(m.m)),'a battle lost: failed, carried off by the victors (fate captured), its line');Kit.clear()}
   // ---- abandoned: set down
-  {fresh();const q6=E.start(spec());t.act('q-abandon',String(q6.id));ok(!P.quests.length&&q6.fate==='left'&&G.msgs.some(m=>/You set the refugee family down/.test(m.m)),'abandoned: set down by the road (fate left)')}
+  {fresh();const q6=E.start(spec());t.Quest.as(q6).abandon();ok(!P.quests.length&&q6.fate==='left'&&G.msgs.some(m=>/You set the refugee family down/.test(m.m)),'abandoned: set down by the road (fate left)')}
   // ---- the limits: three at once, beside four jobs
   {fresh();const qs=[0,1,2].map(()=>E.start(spec()));ok(qs.every(Boolean)&&!!E.why()&&!E.start(spec())&&E.list().length===3,'three passengers at once; a fourth refused ('+E.why()+')');
    P.quests=[];for(const k of ['supply','hunt','troops','courier'])Kit.seeded(9,()=>t.acceptQuest(t.makeQuest(k,ash)));const jobs=P.quests.length;

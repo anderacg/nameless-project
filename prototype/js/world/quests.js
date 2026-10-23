@@ -6,11 +6,8 @@
    kind's class put on it (each kind below: its offer, its target, its deed, what it takes).
    Kill, clear and raid quests are done when the deed is (heard on the world's bus, core/bus.js); you then report back.
    Deliveries are handed in where they were asked for. A courier pays on arrival. Lord quests can be reported to the lord or at
-   any holding of his faction. No job fails for time (JobQuest). P.track: the one you track (ui/questwindow.js). */
-const JOB_OFFERS=2,JOB_REFRESH=7;
-// a timed job paid late: perDay less a day past its best-by day, never under floor; a job the world closed: gold, its share of
-// the reward's
-const QUEST_LATE={perDay:.1,floor:.5},QUEST_CLOSED={gold:.25};
+   any holding of his faction. No job fails for time (JobQuest). P.track: the one you track (ui/questwindow.js). Their numbers:
+   data/quests.js (JOB_OFFERS, JOB_REFRESH, QUEST_LATE, QUEST_CLOSED, QUEST_ABANDON, JOB_NEEDS). */
 const BAND_NAMES=['Red Vipers','Ash Crows','Black Hounds','Grey Wolves','Bone Saws','Mud Rats','Iron Jaws','Night Owls','Rusty Knives','Hollow Men','Crooked Spears','Burnt Hands'];
 // (the jobs' own dice: the stream 'quests', core/rng.js, so a job kind added or changed never moves the world's Math.random)
 const questRng=()=>rngOf('quests');
@@ -30,8 +27,39 @@ function spotNear(t,lo,hi,ok){
    at all: it stays till it is done or given up. One where it does (timed: courier, supply) has a best-by day, its days from the
    day it was taken (due): paid in full by then, less each day after (QUEST_LATE). Each one records the day it was taken.
    The day's check (lapse) closes one the world has ended (gone(): its target broken, slain or cleared by another, or no more;
-   its giver's holding gone): a share of its gold (QUEST_CLOSED) and a line, not a failure (quest:ended, how 'closed'). */
+   its giver's holding gone): a share of its gold (QUEST_CLOSED) and a line, not a failure (quest:ended, how 'closed').
+   Its category is the Quest shape's own, 'job' (story/quest.js): what it asks of you before it is given (needs: JOB_NEEDS,
+   and its giver's trust: QuestShut), unmet, it is locked; given up (abandon), it costs by its size (penalty: QUEST_ABANDON) and
+   its giver gives you no work for a while. */
 class JobQuest extends Quest{
+  // (the lord who gave it, if one did)
+  giverLord(){
+    return this.lord&&W.lords.find(l=>l.name===this.giver)||null;
+  }
+  // ---- what it asks of you before it is given: its giver's needs, then its kind's (JOB_NEEDS, measured by JOB_NEED), {k, what,
+  // met} each; and, while its giver gives you no work (QuestShut), their trust
+  needs(){
+    const N=JOB_NEEDS,o={...(this.lord?N.lord:N.holding),...N.kinds[this.type]},out=[];
+    for(const [k,n] of Object.entries(o)){
+      const R=JOB_NEED[k],have=R.have(this);
+      if(have!=null)out.push({k,what:R.what(this,n)+' (yours: '+signedNum(have)+')',met:have>=n});
+    }
+    const s=QuestShut.of(this);
+    if(s)out.push({k:'shut',what:QuestShut.line(this,s),met:false});
+    return out;
+  }
+  // ---- failed (given up, or in a story's step): its cost grows with its size; given up, its giver shut to you too
+  penalty(){
+    const K=QUEST_ABANDON,r=this.reward,n=clamp(Math.round((this.lord?K.honor*(r.honor||0):K.rep*(r.rep||0))+r.gold/K.gold),K.min,K.max);
+    return this.lord?{honor:[this.fac,-n]}:{rep:[this.home,-n]};
+  }
+  abandonCost(){
+    return super.abandonCost()+(this.lord?', and '+this.giver+' thinks less of you':'')+'; no work from '+(this.lord?'him':this.home)+' for '+QUEST_ABANDON.shut+' days';
+  }
+  abandon(){
+    QuestShut.set(this);
+    super.abandon();
+  }
   get timed(){
     return false;
   }
@@ -485,6 +513,37 @@ defineKinds('quest',{},{
 });
 // their deeds heard on the bus (core/bus.js): a band beaten, a beast slain, a site cleared, a lord beaten, a holding razed
 Quest.listen();
+/* what a job's needs measure (JOB_NEEDS, data/quests.js): yours now (null: nothing to measure), and its words */
+const signedNum=n=>(n<0?'−':'')+Math.abs(Math.round(n));
+const JOB_NEED={
+  standing:{have:q=>{const t=townBy(q.home);return t?standingAt(t):null},what:(q,n)=>'standing '+signedNum(n)+' at '+q.home},
+  rel:{have:q=>{const l=q.giverLord();return l?Math.round(relWith(l)):null},what:(q,n)=>q.giver+'’s regard '+signedNum(n)},
+  honor:{have:q=>Math.round(honorWith(q.fac)),what:(q,n)=>'honor '+signedNum(n)+' with the '+FACS[q.fac].n},
+  renown:{have:()=>P.renown,what:(q,n)=>'renown '+n},
+  level:{have:()=>P.level,what:(q,n)=>'level '+n},
+};
+/* the givers who give you no work for a while (you gave up one of their jobs: QUEST_ABANDON.shut days): P.shut by key (a
+   holding's name; a lord's, 'lord:' and his name), {until (the day work comes again), what (the job given up)}; none: no field,
+   so a save without one is as it was. The day's check drops those over */
+const QuestShut={
+  key:q=>q.lord?'lord:'+q.giver:q.home,
+  set(q){
+    (P.shut||(P.shut={}))[this.key(q)]={until:G.day+QUEST_ABANDON.shut,what:q.title};
+  },
+  // (q: a job or offer, or {home} a holding's, {lord, giver} a lord's)
+  of(q){
+    const s=P.shut&&P.shut[this.key(q)];
+    return s&&G.day<s.until?s:null;
+  },
+  line(q,s){
+    return (q.lord?q.giver+' has no work for you':'No work for you here')+' until day '+s.until+' (you gave up '+(q.lord?'his':'their')+' '+s.what+')';
+  },
+  day(){
+    if(!P.shut)return;
+    for(const k of Object.keys(P.shut))if(G.day>=P.shut[k].until)delete P.shut[k];
+    if(!Object.keys(P.shut).length)delete P.shut;
+  },
+};
 /* making offers */
 const makeQuest=(type,t,lord)=>Quest.make(type,t,lord);
 function jobsAt(t){
@@ -513,6 +572,7 @@ const failQuest=(q,why)=>Quest.as(q).fail(why);
 // each day: each quest's check (a step's or an escort's due day; a job's target gone: JobQuest)
 function questDay(){
   for(const q of P.quests.slice())Quest.as(q).lapse();
+  QuestShut.day();
 }
 // arriving at a holding: couriers deliver
 function questArrive(t){
@@ -552,10 +612,13 @@ worldOn('thread:ended',d=>{if(d&&d.e&&P.track==='t'+d.e.i)QuestTrack.set(null)})
 /* panels */
 const rewardText=r=>'<span class="gold">'+r.gold+' gold</span>'+(r.rep?' · +'+r.rep+' reputation':'')+(r.honor?' · +'+r.honor+' honor':'')+(r.xp?' · '+r.xp+' XP':'');
 // a quest's facts, [label, html] each: who gave it, the day taken, its timing, where it is turned in, its reward (a late one's
-// pay now); an offer's the same before you take it
+// pay now); an offer's the same before you take it, and what it requires that you lack (its giver's trust aside: QuestShut's
+// line, said once where its offers are)
 function questFacts(q){
   q=Quest.as(q);
   const f=[['Given by',q.givenBy()]],tm=q.timing(),r=q.reportLine(),late=q.earned()<q.reward.gold;
+  const need=q.id==null?q.needs().filter(n=>!n.met&&n.k!=='shut'):[];
+  if(need.length)f.push(['Requires','<span class="bad">'+need.map(n=>n.what).join(' · ')+'</span>']);
   if(q.taken!=null)f.push(['Taken','Day '+q.taken]);
   if(tm)f.push(['Timing',late?'<span class="bad">'+tm+'</span>':tm]);
   if(r)f.push(['Turn in',r]);
@@ -563,37 +626,51 @@ function questFacts(q){
   return f;
 }
 const questFactsHtml=q=>'<dl class="qfacts">'+questFacts(q).map(([k,v])=>'<dt>'+k+'</dt><dd>'+v+'</dd>').join('')+'</dl>';
+// an offer (a board's, a lord's): its text and facts, and Accept (act, arg); locked, greyed, its Accept off, what it requires in
+// its facts
+function offerRow(q,act,arg){
+  q=Quest.as(q);
+  const lock=q.state==='locked';
+  return '<div class="row'+(lock?' locked':'')+'"><div class="info"><strong>'+q.title+(lock?' <span class="qw-st locked">'+QUEST_STATES.locked+'</span>':'')+'</strong><small>'+q.text+'</small>'+questFactsHtml(q)+'</div>'+
+    '<div class="acts"><button class="btn sm" type="button" data-act="'+act+'" data-arg="'+arg+'"'+(lock?' disabled title="'+htmlText(q.needs().filter(n=>!n.met).map(n=>n.what).join('; '))+'"':'')+'>Accept</button></div></div>';
+}
+// the notice board: your quests to report here, then the work offered (none for you a while after you gave up one of theirs)
 function jobsBody(t){
-  const here=P.quests.filter(q=>canReportAt(q,t)),offers=jobsAt(t),st=standingAt(t),n=Quest.jobs();
+  const here=P.quests.filter(q=>canReportAt(q,t)),offers=jobsAt(t),n=Quest.jobs(),shut=QuestShut.of({home:t.name});
   const row=(title,sub,acts)=>'<div class="row"><div class="info"><strong>'+title+'</strong>'+sub+'</div><div class="acts">'+acts+'</div></div>';
   return '<div class="lab">Your quests here</div>'+(here.length?here.map(q=>row(q.title,'<small>'+questProgress(q)+' · '+Quest.as(q).rewardLine()+'</small>','<button class="btn sm" type="button" data-act="q-turnin" data-arg="'+q.id+'"'+(questReady(q)?'':' disabled')+'>'+(Quest.as(q).handsOver?'Hand over':'Report')+'</button>')).join(''):'<p class="muted">None.</p>')+
     '<div class="lab" style="margin-top:6px">Work offered · you hold '+n+' job'+(n===1?'':'s')+'</div>'+
-    (st<-10?'<p class="muted">Nobody here trusts you with work. Raise your standing first.</p>':offers.length?offers.map((q,i)=>row(q.title,'<small>'+q.text+'</small>'+questFactsHtml(q),'<button class="btn sm" type="button" data-act="q-accept" data-arg="'+i+'">Accept</button>')).join(''):'<p class="muted">No more work this week.</p>');
+    (shut?'<p class="bad">'+QuestShut.line({home:t.name},shut)+'.</p>':'')+
+    (offers.length?offers.map((q,i)=>offerRow(q,'q-accept',i)).join(''):'<p class="muted">No more work this week.</p>');
 }
 // town actions (from the town screen) and log actions (from the character screen)
 function questAct(a,arg,t){
   if(!a.startsWith('q-'))return false;
-  if(a==='q-accept'&&t){const list=jobsAt(t),q=list[+arg];if(q&&standingAt(t)>=-10&&acceptQuest(q))list.splice(+arg,1)}
+  if(a==='q-accept'&&t){const list=jobsAt(t),q=list[+arg];if(q&&Quest.as(q).state==='available'&&acceptQuest(q))list.splice(+arg,1)}
   else if(a==='q-turnin'&&t){const q=questBy(+arg);if(q&&canReportAt(q,t)){if(q.done&&!Quest.as(q).handsOver)payQuest(q,t.name);else turnIn(q,t)}}
-  else if(a==='q-abandon'){const q=questBy(+arg);if(q)Quest.as(q).abandon()}
-  else if(a==='q-lord'&&G.enc&&G.enc.kind==='lord'){const l=G.enc.ref;if(G.lordJob&&acceptQuest(G.lordJob)){G.lordJob=null;l.asked=G.day}lordMeet(l);return true}
+  // (only a job may be given up: never a main or side quest, nor a story's stage)
+  else if(a==='q-abandon'){const q=questBy(+arg);if(q&&Quest.as(q).abandonable)Quest.as(q).abandon()}
+  else if(a==='q-lord'&&G.enc&&G.enc.kind==='lord'){const l=G.enc.ref;if(G.lordJob&&Quest.as(G.lordJob).state==='available'&&acceptQuest(G.lordJob)){G.lordJob=null;l.asked=G.day}lordMeet(l);return true}
   else if(a==='q-lord-report'&&G.enc&&G.enc.kind==='lord'){const l=G.enc.ref,t=lordPayAt(l);P.quests.filter(q=>q.lord&&q.giver===l.name&&q.done).forEach(q=>payQuest(q,t&&t.name));lordMeet(l);return true}
   return 'refresh';
 }
 // where a lord's report is paid (the reputation's holding): his realm's holding nearest him; his realm holding none, the nearest
 // holding not hostile to you; none at all: null, paid by the lord himself (no holding's reputation, the rest of the reward as ever)
 const lordPayAt=l=>Spatial.nearest(fiefsOf(l.fac),l.x,l.y)||Spatial.nearestHolding(l.x,l.y,t=>!hostileTo(t.owner));
-// the lord dialog's job section
+// the lord dialog's job section: your report; the one you work on for him; else his offer (locked: greyed, with what it requires,
+// his regard and your honour among them, JOB_NEEDS; none for you a while after you gave up one of his: QuestShut)
 function lordJobHtml(l){
   if(hostileTo(l.fac))return '';
-  if(relWith(l)<RELATION.jobsAt)return '<p class="muted">'+l.name+' has no work for you.</p>';
   const done=P.quests.filter(q=>q.lord&&q.giver===l.name&&q.done),mine=P.quests.find(q=>q.lord&&q.giver===l.name);
   if(done.length)return '<p class="gold">'+l.name+' hears your report.</p><div class="btns"><button class="btn primary" type="button" data-act="q-lord-report">Report: '+done.map(q=>q.title).join(', ')+'</button></div>';
   if(mine)return '<p class="muted">You are working for '+l.name+': '+mine.title+'.</p>';
-  if(honorWith(l.fac)<0)return '<p class="muted">'+l.name+' has no work for someone the '+FACS[l.fac].n+' distrusts.</p>';
   if(l.asked===G.day)return '';
-  if(!G.lordJob||G.lordJob.giver!==l.name)G.lordJob=lordJob(l);const q=G.lordJob;
-  return q?'<div class="row"><div class="info"><strong>'+q.title+'</strong><small>'+q.text+'</small>'+questFactsHtml(q)+'</div><div class="acts"><button class="btn sm" type="button" data-act="q-lord">Accept</button></div></div>':'<p class="muted">'+l.name+' has no work for you.</p>';
+  if(!G.lordJob||G.lordJob.giver!==l.name)G.lordJob=lordJob(l);
+  const q=G.lordJob&&Quest.as(G.lordJob);
+  if(!q)return '<p class="muted">'+l.name+' has no work for you.</p>';
+  if(q.state==='available')return offerRow(q,'q-lord','');
+  const s=QuestShut.of(q);
+  return '<p class="muted">'+(s?QuestShut.line(q,s):l.name+' has no work for you yet')+'.</p>'+offerRow(q,'q-lord','');
 }
 /* the map: a marker over each quest's goal (a home a step is bound for, an escort's, has its own house: gfx/worldui.js
    wuiEscorts); the tracked one's the strongest: brackets round its goal, its mark brighter, an arrow at the screen's edge

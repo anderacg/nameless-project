@@ -6,7 +6,8 @@
    another, ESCORT.offer). Its numbers and lines: data/encounters.js ESCORT.
    - The passenger rides inside your band: listed on the party card (world/supply.js supplyNow's tag) and in the Party window
      (Escort.html), eating with you (Escort.foodHour, world/supply.js), never fighting, taking no troop slot, no target of its
-     own (no figure on the map, none in battle). At most ESCORT.max at once; escorts are not jobs (Quest.jobs does not count them).
+     own (no figure on the map, none in battle). At most ESCORT.max at once; escorts are not jobs (Quest.jobs does not count them):
+     a side quest (story/quest.js, the quest model), never yours to abandon, still failing by the world (late, captured).
    - spec: {who (ESCORT.who: child, refugees, traveller), n (its name: the kind's), eat (food a day: the kind's), to {town, lot
      (none: the holding; 'house' or an estate's key: one of its lots, i choosing which, no draw)}, days (none: the way's tiles ÷
      ESCORT.pace + slack), prize (the outcome on arrival), forfeit (on failing: reputation at its place), at {x, y} (where it
@@ -22,7 +23,7 @@
      deadline: its due day passed (the quests' day: lapse): failed, fate 'late' (it goes on alone);
      a battle lost while it rides with you (battle:ended, lost: battle/resolution.js): failed, fate 'captured' (carried off by the
        victors; a rescue's holder kept on its record, by: his chain rescues him, story/wounded.js);
-     abandoned (your quests' Abandon): failed, fate 'left' (set down by the road).
+     given up (abandon: a story dropping its stage; never your Quests' Abandon): failed, fate 'left' (set down by the road).
      A failure applies its forfeit. Then the bus's quest:ended {e, how: 'paid' or 'failed'}, and e.fate says which way: what a
      thread's step branches by (how: d=>d.e.fate). ---------- */
 class EscortQuest extends StepQuest{

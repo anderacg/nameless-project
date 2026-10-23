@@ -20,7 +20,15 @@
    bus (Quest.listen), its day's check from the day's tick (world/quests.js). Its words for your Quests (ui/questwindow.js) and
    the boards: givenBy(), timing(), reportLine(), steps(), abandonCost(). A kind made by another (an escort: world/escort.js)
    is given its spec (make's, setup's). There is no cap on the jobs you hold (the boards limit the work); one that is not a
-   job is counted false (Quest.jobs: the plain count), and a kind may have its own limit (full: an escort's). */
+   job is counted false (Quest.jobs: the plain count), and a kind may have its own limit (full: an escort's).
+   The quest model (the owner, 2026-10-23; doc/STORY_DESIGN.md QM), read the same way by every quest and story (story/thread.js):
+   - cat, its category (QUEST_CATS, data/quests.js): 'job' (the boards' and lords', JobQuest), 'side' (a step kind: an escort
+     from the road, StepQuest), 'main' (a story kind marked main: Thread). Only a job can be given up (abandonable), at a cost
+     (penalty(fate): what failing it costs, as an outcome; a job's grows with its size) and never while it is a story's stage;
+   - state (QUEST_STATES): an offer 'locked' (needs(): what it asks of you, unmet) or 'available'; taken, 'active', or
+     'completed' (ready: report it); over, its archive entry's: 'done', 'failed' or 'abandoned' (endState);
+   - story: the story it is a stage of (a live thread waiting on it), or null: listed and archived as its story, not alone;
+   - over (announceEnd): kept in the archive (QuestArchive, below: P.archive), unless it is a story's stage. */
 class Quest extends Happening{
   get shape(){
     return 'quest';
@@ -55,7 +63,25 @@ class Quest extends Happening{
   // cannot be taken
   // (a job, counted in Quest.jobs; an escort or a chain's step is not)
   get counted(){
-    return true;
+    return this.cat==='job';
+  }
+  // ---- its category (the shape's: a job; a step kind's, side: story/steps.js), state and story (the quest model, above)
+  get cat(){
+    return 'job';
+  }
+  get story(){
+    return Thread.list().on.find(th=>th.waits({e:this}))||null;
+  }
+  get abandonable(){
+    return this.cat==='job'&&!this.story;
+  }
+  get state(){
+    if(this.id==null)return this.needs().some(n=>!n.met)?'locked':'available';
+    return this.ready()?'completed':'active';
+  }
+  // (what it asks of you before it is given: {k, what, met} each; a job's: world/quests.js)
+  needs(){
+    return [];
   }
   full(){
     return false;
@@ -144,9 +170,12 @@ class Quest extends Happening{
     return [[this.progress()+(d?' ('+d+(g.name?', '+g.name:'')+')':''),this.ready()]];
   }
   abandonCost(){
-    const f=this.forfeits&&this.forfeits.left||this.forfeit;
-    if(f)return Outcome.describe(f)||'';
-    return this.lord?'−5 honor with the '+FACS[this.fac].n+', and '+this.giver+' thinks less of you':'−6 reputation at '+this.home;
+    return Outcome.describe(this.penalty('left'));
+  }
+  // what failing it costs (fate: how; 'left', given up), as an outcome: its giver's, flat (a job's grows with its size:
+  // world/quests.js JobQuest; a step's its forfeit: story/steps.js)
+  penalty(){
+    return this.lord?{honor:[this.fac,-5]}:{rep:[this.home,-6]};
   }
   // ---- the deed: the world event it waits for, heard on the bus
   get deed(){
@@ -216,13 +245,13 @@ class Quest extends Happening{
   }
   handOver(){}
   arrive(){}
-  // ---- failing: given up, or its due day passed (a job never: world/quests.js); its quarry is left to roam on its own, wherever it is
+  // ---- failing: given up, or its due day passed (a job never: world/quests.js); its penalty; its quarry is left to roam on its
+  // own, wherever it is
   fail(why){
     P.quests=P.quests.filter(x=>x!==this);
-    if(this.lord)addHonor(this.fac,-5,true);
-    else addRep(this.home,-6,true);
+    Outcome.apply(this.penalty(this.fate),{e:this});
     Quest.unmark(this.id);
-    log('Quest failed: '+this.title+'. '+why,'bad');
+    log((this.fate==='left'?'Quest abandoned: ':'Quest failed: ')+this.title+'. '+why,'bad');
     const giver=this.lord&&W.lords.find(l=>l.name===this.giver);
     if(giver)changeRel(giver,RELATION.jobFailed,'you failed their work');
     this.announceEnd('failed');
@@ -230,11 +259,43 @@ class Quest extends Happening{
   lapse(){
     if(G.day>this.due&&!this.done)this.fail(this.reportTo+' is disappointed.');
   }
-  // given up (Abandon, in your quests)
+  // given up (Abandon, in your quests: only one that is abandonable; fate 'left')
   abandon(){
+    this.fate='left';
     this.fail('You gave it up.');
   }
+  // ---- over: kept in the archive (none for a story's stage: its story is), then told on the bus
+  announceEnd(how){
+    if(!this.story)QuestArchive.add(this.entry(how));
+    super.announceEnd(how);
+  }
+  // (how it ended, as a state: paid, done; given up, abandoned; else failed (the world closing a job among them))
+  endState(how){
+    return how==='paid'?'done':this.fate==='left'?'abandoned':'failed';
+  }
+  // (its archive entry: small, plain; got: what it paid, or what it cost)
+  entry(how){
+    const state=this.endState(how);
+    return {k:'q'+this.id,cat:this.cat,title:this.title,giver:this.giver,state,day:G.day,got:this.gotLine(state,how)};
+  }
+  gotLine(state,how){
+    const r=this.reward||{};
+    if(how==='closed')return '+'+Math.round(r.gold*QUEST_CLOSED.gold)+' gold for your trouble';
+    if(state!=='done')return Outcome.describe(this.penalty(this.fate));
+    return ['+'+this.earned()+' gold',r.rep&&'+'+r.rep+' reputation',r.honor&&'+'+r.honor+' honor',r.xp&&r.xp+' XP'].filter(Boolean).join(' · ');
+  }
 }
+/* ---------- the archive: every quest and story over (done, failed, abandoned), the last QUEST_ARCHIVE.keep, oldest first; each a
+   small record {k ('q' and a quest's id, 't' and a story's number), cat, title, giver, state, day, got (a quest's: what it
+   paid or cost; a story's: its last stage)}. Kept in P.archive, saved with you (none yet: no field, so a save is as it was) ---------- */
+const QuestArchive={
+  list(){
+    return P.archive||[];
+  },
+  add(e){
+    P.archive=this.list().concat([e]).slice(-QUEST_ARCHIVE.keep);
+  },
+};
 // (a quest's number, id, is its record's own field, set when it is taken, not a happening's getter (its i); so is a troops
 // job's tier, which things on the map read as their level of detail (parties.js WorldObject): plain fields of the record)
 for(const f of ['id','tier'])Object.defineProperty(Quest.prototype,f,{value:undefined,writable:true,configurable:true});

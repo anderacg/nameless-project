@@ -5,7 +5,7 @@
    (quest:ended {e, how: 'paid' | 'failed'}; e.fate says which way, what a step branches by). A thread's step begins one with
    {step: kind, town, spec} (or {quest: 'escort', …}: the escort is a job kind too); its kinds are of the shape 'step' (not jobs:
    the boards never offer them and Quest.jobs never counts them; Quest.make and Quest.as find them).
-   - StepQuest, the base (on the Quest shape, story/quest.js): not a job (counted false), never reported (it ends where it
+   - StepQuest, the base (on the Quest shape, story/quest.js): a side quest, not a job (counted false), never reported (it ends where it
      ends), no due day unless its spec gives days. Done: pay(fate, k): its prize applied, its line, 'Quest complete'. Failed:
      fail(why, fate): late (its due day passed), left (abandoned), or its kind's (an escort's captured); its forfeit applied
      (forfeits: one by fate, else forfeit), its line. Its lines: its spec's say ({arrive, late, left, cleared, gone …}: {N} and
@@ -24,8 +24,9 @@
    Steps.frame, each moment on the map (world/road.js updateRoad): a thread's page that waits is shown once you are
    free, else the first step at its place is reached; true when something opened. ---------- */
 class StepQuest extends Quest{
-  get counted(){
-    return false;
+  // (a side quest: not a job, never given up by you; a story's stage is its story's)
+  get cat(){
+    return 'side';
   }
   get kind(){
     return kindOf('step',this.type)||kindOf('quest',this.type);
@@ -88,9 +89,16 @@ class StepQuest extends Quest{
   fail(why,fate){
     this.fate=fate||'late';
     P.quests=P.quests.filter(x=>x!==this);
-    Outcome.apply(this.forfeits&&this.forfeits[this.fate]||this.forfeit,{e:this});
+    Outcome.apply(this.penalty(this.fate),{e:this});
     log('Quest failed: '+this.title+'. '+(why||this.say(this.fate)),'bad');
     this.announceEnd('failed');
+  }
+  // (its forfeit by fate, else its forfeit; what it paid, its prize)
+  penalty(fate){
+    return this.forfeits&&this.forfeits[fate]||this.forfeit||{};
+  }
+  gotLine(state){
+    return state==='done'?Outcome.describe(this.prize||{}):Outcome.describe(this.penalty(this.fate));
   }
   lapse(){
     if(this.days&&G.day>this.due)this.fail(null,'late');
@@ -103,6 +111,8 @@ class StepQuest extends Quest{
     if(line)log(line,'gold');
     this.announceEnd('paid');
   }
+  // (given up: fate left, its line. Never by your Abandon: a side quest is not abandonable (the owner, 2026-10-23); kept as the
+  // way a story's stage is dropped, its 'left' end)
   abandon(){
     this.fail(null,'left');
   }

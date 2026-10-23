@@ -49,7 +49,7 @@ function peopleBody(){
         COMPS[id].d+'<br>'+apName(c.ap)+' · '+st.dmg+' damage'+(c.perks.length?' · '+c.perks.map(p=>COMP_PERKS[p].n).join(', '):'')+(c.party?'<br>Leading '+c.party.troops.length+' soldiers':''))}).join('')
     :'<p class="muted">No companions yet. Look for them in town taverns.</p>'}
   if(tab==='lords')return FIDS.filter(f=>!W.dead[f]).map(f=>{const ls=lords.filter(l=>l.fac===f);return ls.length?'<div class="lab pp-grp">'+ppFac(f)+' · '+ls.length+' lords</div>'+ls.map(l=>ppLord(l)).join(''):''}).join('');
-  if(tab==='known'){const qs=P.quests.map(q=>{const l=q.lord&&lords.find(x=>x.name===q.giver);if(l)return ppLord(l,'gave you '+q.title);const t=townBy(q.home),here=G.mode==='town'&&G.town&&G.town.ref===t;
+  if(tab==='known'){const qs=P.quests.filter(q=>{const Q=Quest.as(q);return Q.cat==='job'&&!Q.story}).map(q=>{const l=q.lord&&lords.find(x=>x.name===q.giver);if(l)return ppLord(l,'gave you '+q.title);const t=townBy(q.home),here=G.mode==='town'&&G.town&&G.town.ref===t;
       return ppEntry('q:'+q.id,ppEmblem(t&&t.owner),'The steward of '+q.home,['In '+q.home+(here?' (here)':''),'Gave you: '+q.title],[ppBtn('look','t:'+q.home,'Show on map'),here?ppBtn('talk','q:'+q.home,'Talk'):''],null)});
     const met=lords.filter(l=>((P.lrelWhy||{})[l.id]||[]).length&&!P.quests.some(q=>q.lord&&q.giver===l.name)).map(l=>ppLord(l));
     return qs.length||met.length?(qs.length?'<div class="lab pp-grp">Quest givers</div>'+qs.join(''):'')+(met.length?'<div class="lab pp-grp">Lords you have dealt with</div>'+met.join(''):''):'<p class="muted">No one yet. Take work from a town’s notices or a lord, and they will be here.</p>'}
