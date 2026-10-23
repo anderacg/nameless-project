@@ -5,12 +5,12 @@ function heroPage(){
  const m=vitals(),s=heroStats(),low=(v,mx)=>v<mx*.3?'bad':'';
  return '<div class="fb-character-sheet fb-hero-sheet"><div class="fb-character-stage"><strong>'+htmlText(P.name||'Your hero')+'</strong><img src="'+portrait('hero',true)+'" alt="'+htmlText(P.name||'Your hero')+'"><span>'+RACES[P.race].n+' · '+rankName()+'</span></div><div class="fb-character-stats">'+fbMeter('wounded','Health',P.hp,m[0],low(P.hp,m[0]))+fbMeter('speed','Stamina (your band’s)',P.sp,m[1],low(P.sp,m[1]))+fbMeter('skills','Mana',P.mp,m[2],low(P.mp,m[2]))+'<div class="fb-stat-grid">'+fbStat('sword','Attack',Math.round(s.dmg))+fbStat('renown','Level',P.level)+'</div><div class="fb-skills-summary">'+fbStat('skills','Skill points',P.tp)+fbBtn('open-skills',null,fbIcon('skills')+' Open Skills (K)','','primary')+'</div><small>'+htmlText((P.tree.length-1)+' skills learned. One skill point each level.')+'</small></div></div><div class="lab">Attributes · raised on the skill tree (K)</div><div class="fb-attributes">'+Object.keys(ATTRS).map((k,i)=>'<div>'+fbStat(['power','speed','book','banner'][i],ATTRS[k][0],P.attr[k])+fbDetails('Effects','<p>'+ATTRS[k][1]+'</p>')+'</div>').join('')+'</div>'+(P.perks.length?'<div class="lab">Perks from before</div><div class="fb-attributes">'+P.perks.map(p=>'<div class="fb-note"><strong>'+PERKS[p].n+'</strong><p>'+PERKS[p].d+'</p></div>').join('')+'</div>':'');
 }
-// the window, titled with your band's name: Roster, Army skills, Condition, Passengers (your quests are a window of their own:
-// ui/questwindow.js; the lords and realms the Journal's: ui/lordsrealms.js)
+// the window, its header the company muster (partypage.js partyHead): Roster, Army skills, Condition, Passengers (your quests are a
+// window of their own: ui/questwindow.js; the lords and realms the Journal's: ui/lordsrealms.js)
 function renderChar(){
   vitals();if(!ARMY_TABS.some(([t])=>t===G.char))G.char='roster';
   const tab=G.char,body=tab==='skills'?armySkillsPage():tab==='condition'?partyCondition():tab==='passengers'?partyPassengers():partyRosterPage();
-  fbShow(htmlText(bandName()),RACES[P.race].n+' · level '+P.level+' · '+rankName(),fbTabs(ARMY_TABS,tab,'char-tab','Army sections'),'<div class="fb-party">'+body+'</div>',partyBack(),['char-close',null,'Back to map'],'fb-char fb-army fb-'+tab,'Army');fillIcons();
+  fbShow(htmlText(bandName()),'',fbTabs(ARMY_TABS,tab,'char-tab','Army sections'),'<div class="fb-party">'+body+'</div>',fbMenu(partyBack()),['char-close',null,'Back to map'],'fb-char fb-army fb-army-tab-'+tab,'Army',partyHead());fillIcons();
 }
 function showPerk(from){
   const left=Object.keys(PERKS).filter(p=>!has(p));if(!left.length){P.perkPend=0;return false}

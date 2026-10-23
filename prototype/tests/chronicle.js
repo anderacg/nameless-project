@@ -26,9 +26,9 @@ Kit.suite(({ok,info})=>{
  ok(days().join('|')==='Day '+(d0+2)+'|Day '+(d0+1)+'|Day '+d0&&rows()[0].textContent==='The latest line.'&&rows()[rows().length-1].textContent==='A battle line.'&&rows()[rows().length-2].textContent==='A plain line.',
   'newest first under day headers: '+days().join(', ')+'; first "'+rows()[0].textContent+'"');
  ok(rows().length===G.msgs.length&&rows()[0].classList.contains('good'),'every message a row, its tone kept ('+rows().length+')');
- {const nv=q('#panel > .nav');ok(!nv.querySelector('[data-nav="back"]')&&nv.querySelector('[data-nav="close"]').textContent==='Back to map','the frame rule: its bottom bar, the way out on the right')}
+ {const nv=q('#panel > .nav');ok((nv.querySelector('[data-nav="back"]')||{}).dataset.act==='fb-menu'&&nv.querySelector('[data-nav="back"]').textContent==='Back'&&nv.querySelector('[data-nav="close"]').textContent==='Back to map','the frame rule: its bottom bar, Back to the Game Menu on the left, the way out on the right')}
  Kit.key('KeyL','l');ok(G.mode==='world','L again: closed');
- t.chronicleKey();esc();ok(G.mode==='world','Esc follows the bar: out to the map');
+ t.chronicleKey();esc();ok(G.mode==='esc'&&G.esc.html==null,'Esc follows the bar: its Back, the Game Menu');esc();ok(G.mode==='world','one more Esc resumes');
  ok(typeof window.openJournal==='function'&&!/Message log/.test(window.openJournal.toString())&&!/Message log/.test(t.KEYS.flat(3).join(' ')),'the old window is gone; Help names L the Chronicle');
  // ---- the filters: each its kind
  t.chronicleKey();

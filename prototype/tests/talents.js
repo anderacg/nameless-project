@@ -49,8 +49,8 @@ try{
  t.act('sk-tab','abilities');{const un=Object.keys(t.HSKILLS).filter(k=>!t.knows(k));ok(!/Not learned/.test(panel())&&un.length&&un.every(k=>!panel().includes('<strong>'+t.HSKILLS[k].n+'</strong>')),'the Skill bar lists only the active skills you have learned ('+un.length+' not learned, not shown)')}
  t.act('sk-tab','disciplines');ok(/One-Handed/.test(panel())&&/Scouting/.test(panel()),'Disciplines lists the skills you train by use');
  window.dispatchEvent(new KeyboardEvent('keydown',{code:'Escape',key:'Escape'}));ok(G.mode==='char'&&t.partyView().sel==='hero','Escape follows its Back: the Army window, on your hero');
- if(document.querySelector('#panel .nav [data-nav="back"]'))window.dispatchEvent(new KeyboardEvent('keydown',{code:'Escape',key:'Escape'}));// (a small screen: its card's page, then the cards)
- window.dispatchEvent(new KeyboardEvent('keydown',{code:'Escape',key:'Escape'}));ok(G.mode==='world','and again closes it');
+ if(document.querySelector('#panel .nav [data-nav="back"]:not([data-act="fb-menu"])'))window.dispatchEvent(new KeyboardEvent('keydown',{code:'Escape',key:'Escape'}));// (a small screen: its card's page, then the cards)
+ window.dispatchEvent(new KeyboardEvent('keydown',{code:'Escape',key:'Escape'}));ok(G.mode==='esc','and again: the Army window’s Back, the Game Menu');window.dispatchEvent(new KeyboardEvent('keydown',{code:'Escape',key:'Escape'}));ok(G.mode==='world','then resumed');
  t.openChar();ok(/Open Skills/.test(panel())&&!/improve through use/.test(panel()),'your hero’s card points to the Skills page');t.act('char-close');
  // saves
  t.saveGame();const tree=P.tree.slice();P.tree=['start'];t.act('load');ok(JSON.stringify(P.tree)===JSON.stringify(tree),'talents survive a reload');

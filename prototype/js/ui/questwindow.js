@@ -111,6 +111,7 @@ function qwGoal(it){
   if(it.o){const l=it.o.giverLord(),p=l&&!l.dead&&!l.gone?l:townBy(it.o.home);return p?{x:p.x,y:p.y,name:p.name}:null}
   return null;
 }
+// (its buttons, in its page under the objective: the window's bar is its only bottom bar)
 function qwButtons(it,goal){
   const on=P.track===it.k,live=it.q||it.th;
   if(!live&&!it.o)return '';
@@ -124,7 +125,7 @@ function qwProgress(q){
 }
 function qwQuest(it){
  const q=it.q,f=questFacts(q),at=f.findIndex(([k])=>k==='Reward'),steps='<ol class="qw-steps">'+q.steps().map(([s,done])=>'<li'+(done?' class="good"':'')+'>'+s+'</li>').join('')+'</ol>';f.splice(at<0?f.length:at,0,['Steps',steps]);
- return qwHead(it,q.title)+'<div class="fb-qobjective">'+fbIcon(it.state==='completed'?'truce':'region',24)+'<span>'+htmlText(it.state==='completed'?'Return to '+qwReturnTo(q)+' for your reward':q.handsOver?q.aim():q.todo())+'</span></div>'+qwProgress(q)+'<div class="fb-qfacts"><span>'+fbIcon('sun')+htmlText(q.timing())+'</span><span>'+fbIcon('region')+htmlText(q.reportLine())+'</span></div><ol class="fb-qsteps">'+q.steps().map(([v,done])=>'<li class="'+(done?'good':'')+'">'+v+'</li>').join('')+'</ol>'+fbRewards(q.reward,q.earned())+fbDetails('Details & terms','<p class="qw-text">'+q.text+'</p>'+qwFacts(f));
+ return qwHead(it,q.title)+'<div class="fb-qobjective">'+fbIcon(it.state==='completed'?'truce':'region',24)+'<span>'+htmlText(it.state==='completed'?'Return to '+qwReturnTo(q)+' for your reward':q.handsOver?q.aim():q.todo())+'</span></div>'+qwProgress(q)+qwButtons(it,qwGoal(it))+'<div class="fb-qfacts"><span>'+fbIcon('sun')+htmlText(q.timing())+'</span><span>'+fbIcon('region')+htmlText(q.reportLine())+'</span></div><ol class="fb-qsteps">'+q.steps().map(([v,done])=>'<li class="'+(done?'good':'')+'">'+v+'</li>').join('')+'</ol>'+fbRewards(q.reward,q.earned())+fbDetails('Details & terms','<p class="qw-text">'+q.text+'</p>'+qwFacts(f));
 }
 // (a story: its objective, the quest its stage waits on (how far along, where), then its stages: those done, and the one now)
 function qwStory(it){
@@ -134,12 +135,12 @@ function qwStory(it){
   f.push(['Where',g?(g.name?g.name+', ':'')+questWay(g):'Nowhere on the map yet']);
   const done=th.stages().map(([n,how,bad])=>'<li class="'+(bad?'bad':'good')+'">'+n+(bad?' (failed)':'')+'</li>').join('');
   f.push(['Stages','<ol class="qw-steps">'+done+(now?'<li class="now">'+th.stageName(now)+'</li>':'')+'</ol>']);
-  return qwHead(it,th.title)+'<div class="fb-qobjective">'+fbIcon('region',24)+'<span>'+htmlText(th.note||'Under way.')+'</span></div><div class="fb-qfacts">'+(q?'<span>'+fbIcon('banner')+htmlText(q.progress())+'</span>':'')+'<span>'+fbIcon('region')+(g?htmlText((g.name?g.name+', ':'')+questWay(g)):'No destination yet')+'</span></div><ol class="fb-qsteps">'+done+(now?'<li class="now">'+th.stageName(now)+'</li>':'')+'</ol>'+fbDetails('Story & details',qwFacts(f));
+  return qwHead(it,th.title)+'<div class="fb-qobjective">'+fbIcon('region',24)+'<span>'+htmlText(th.note||'Under way.')+'</span></div>'+qwButtons(it,qwGoal(it))+'<div class="fb-qfacts">'+(q?'<span>'+fbIcon('banner')+htmlText(q.progress())+'</span>':'')+'<span>'+fbIcon('region')+(g?htmlText((g.name?g.name+', ':'')+questWay(g)):'No destination yet')+'</span></div><ol class="fb-qsteps">'+done+(now?'<li class="now">'+th.stageName(now)+'</li>':'')+'</ol>'+fbDetails('Story & details',qwFacts(f));
 }
 // (an offer you know of: taken at its board or from its lord; locked, what it requires, its giver's trust among them)
 function qwOffer(it){
  const q=it.o,s=QuestShut.of(q),where=q.lord?'Ask '+q.giver+' for it.':'Take it at the notice board of '+q.home+'.',needs=q.needs();
- return qwHead(it,q.title)+'<div class="fb-qobjective">'+fbIcon(it.state==='locked'?'prisoners':'region',24)+'<span>'+htmlText(it.state==='locked'?'Requires '+qwLacks(q).join(' · '):where)+'</span></div>'+needs.map(n=>'<p class="'+(n.met?'good':'')+'">'+(n.met?'✓ ':'○ ')+htmlText(n.what)+'</p>').join('')+'<p>'+htmlText(where)+'</p>'+(s?'<p class="bad">'+QuestShut.line(q,s)+'.</p>':'')+fbRewards(q.reward)+fbDetails('Offer details','<p class="qw-text">'+q.text+'</p>'+qwFacts(questFacts(q)));
+ return qwHead(it,q.title)+'<div class="fb-qobjective">'+fbIcon(it.state==='locked'?'prisoners':'region',24)+'<span>'+htmlText(it.state==='locked'?'Requires '+qwLacks(q).join(' · '):where)+'</span></div>'+qwButtons(it,qwGoal(it))+needs.map(n=>'<p class="'+(n.met?'good':'')+'">'+(n.met?'✓ ':'○ ')+htmlText(n.what)+'</p>').join('')+'<p>'+htmlText(where)+'</p>'+(s?'<p class="bad">'+QuestShut.line(q,s)+'.</p>':'')+fbRewards(q.reward)+fbDetails('Offer details','<p class="qw-text">'+q.text+'</p>'+qwFacts(questFacts(q)));
 }
 // (an archive entry: who, how it ended, the day, what it paid or cost; a story's, its last stage)
 function qwPast(it){
@@ -157,14 +158,14 @@ function questWindow(){
   if(!it)return '<div class="qw">'+tabs+qwList(items,tab,null)+'</div>';
   const body=it.q?qwQuest(it):it.th?qwStory(it):it.o?qwOffer(it):qwPast(it);
   if(S.ask===it.k&&it.q?.abandonable)return '<div class="qw confirm open"><section class="qw-detail"><div class="fb-qscroll"><div class="qw-ask" role="alertdialog" aria-label="Give it up?"><h3>Give up this job?</h3><p>Give up '+it.q.title+'? It counts as abandoned: '+it.q.abandonCost()+'.</p><div class="btns">'+qwBtn('qw-keep',it.k,'Keep it','','primary')+qwBtn('q-abandon',it.q.id,'Give it up','','bad')+'</div></div></div></section></div>';
-  return '<div class="qw'+(S.open?' open':'')+'">'+tabs+qwList(items,tab,it.k)+'<section class="qw-detail" aria-label="'+htmlText(it.e?it.e.title:it.th?it.th.title:qwTitle(it))+'"><div class="fb-qscroll" data-fb-scroll="journal:'+htmlText(it.k)+'">'+body+'</div>'+qwButtons(it,qwGoal(it))+'</section></div>';
+  return '<div class="qw'+(S.open?' open':'')+'">'+tabs+qwList(items,tab,it.k)+'<section class="qw-detail" aria-label="'+htmlText(it.e?it.e.title:it.th?it.th.title:qwTitle(it))+'"><div class="fb-qscroll" data-fb-scroll="journal:'+htmlText(it.k)+'">'+body+'</div></section></div>';
 }
 const questWindowBack=()=>{const S=qwState();return S.ask?['qw-keep',S.sel,'Back']:S.from&&S.from===S.sel?['ch-back',null,'Back to Chronicle']:S.compact&&S.open&&S.sel?['qw-list',null,'Back']:null};
 // the window (Q, the Menu's Quests; opened over the map or the streets, closing back there: ui.js openOver), drawn again; Q or its
 // way out closes it
 function renderQuests(){
   const n=qwItems().filter(x=>x.q||x.th).length;
-  fbShow('Quests',n?n+' under way':'Nothing under way','',questWindow(),questWindowBack(),['quests-close',null,G.overBack==='scene'?'Back to the streets':'Back to map'],'fb-quests');
+  fbShow('Quests',n?n+' under way':'Nothing under way','',questWindow(),fbMenu(questWindowBack()),['quests-close',null,G.overBack==='scene'?'Back to the streets':'Back to map'],'fb-quests');
 }
 function openQuests(){
   if(G.mode!=='quests'&&!openOver('quests',''))return false;

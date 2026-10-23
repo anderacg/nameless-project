@@ -10,6 +10,9 @@ function fbArt(){
   panel.style.setProperty('--fb-land','url("'+FIELDBOOK.art+'")');panel.style.setProperty('--fb-emblem','url("'+FIELDBOOK.emblem+'")');
 }
 const fbIcon=(k,s=18)=>icon(k,s);
+// a window's top level (the Game Menu's windows: Army's tabs, Inventory, Quests, the Journal, the full map), opened from the menu or
+// by its key: its bar's left button is Back to the Game Menu (ui/hub.js), as Esc on the map opens it; a sub-page keeps its own Back
+const fbMenu=back=>back||['fb-menu',null,'Back'];
 const fbBtn=(a,arg,label,why,cls='')=>'<button type="button" class="btn sm '+cls+'" data-act="'+a+'"'+(arg!=null?' data-arg="'+htmlText(arg)+'"':'')+(why?' disabled':'')+'>'+label+'</button>';
 function fbTabs(items,current,action,label){return '<div class="fb-tabs" role="tablist" aria-label="'+htmlText(label)+'">'+items.map(([id,n])=>'<button type="button" class="btn sm'+(id===current?' on':'')+'" role="tab" aria-selected="'+(id===current)+'" tabindex="'+(id===current?0:-1)+'" data-act="'+action+'" data-arg="'+id+'">'+n+'</button>').join('')+'</div>'}
 function fbStat(ico,label,value,tone=''){return '<div class="fb-stat '+tone+'">'+fbIcon(ico)+'<span>'+htmlText(label)+'</span><strong>'+value+'</strong></div>'}
@@ -19,9 +22,9 @@ function fbRewards(r,gold){if(!r)return '';return '<div class="fb-rewards" aria-
 function fbRemember(){panel.querySelectorAll('[data-fb-scroll]').forEach(e=>FIELDBOOK.scroll.set(e.dataset.fbScroll,e.scrollTop))}
 // (a short landscape screen: a phone on its side)
 function fbShort(){const r=$('#screen').getBoundingClientRect(),s=getComputedStyle(ov);return r.height-parseFloat(s.paddingTop)-parseFloat(s.paddingBottom)<=FIELDBOOK.compact.h}
-// over: the small line above the title (your band's name unless given)
-function fbShow(title,sub,tabs,body,back,close,cls='',over=htmlText(bandName())){
-  const active=panel.contains(document.activeElement)?document.activeElement.closest('[data-act]'):null,focus=active?{act:active.dataset.act,arg:active.dataset.arg}:null;fbRemember();showPanel('<section class="fb-shell '+cls+'"><header class="top fb-head"><div><small>'+over+'</small><h2>'+title+'</h2></div><span class="muted">'+sub+'</span></header>'+tabs+'<div class="fb-body">'+body+'</div></section>'+nav(back,close));
+// over: the small line above the title (your band's name unless given); head: the header's own content instead (the Army's muster)
+function fbShow(title,sub,tabs,body,back,close,cls='',over=htmlText(bandName()),head=null){
+  const active=panel.contains(document.activeElement)?document.activeElement.closest('[data-act]'):null,focus=active?{act:active.dataset.act,arg:active.dataset.arg}:null;fbRemember();showPanel('<section class="fb-shell '+cls+'"><header class="top fb-head">'+(head||'<div><small>'+over+'</small><h2>'+title+'</h2></div><span class="muted">'+sub+'</span>')+'</header>'+tabs+'<div class="fb-body">'+body+'</div></section>'+nav(back,close));
   panel.classList.add('wide');fbArt();panel.querySelectorAll('[data-fb-scroll]').forEach(e=>e.scrollTop=FIELDBOOK.scroll.get(e.dataset.fbScroll)||0);if(focus){const b=panel.querySelector('[data-act="'+CSS.escape(focus.act)+'"]'+(focus.arg!=null?'[data-arg="'+CSS.escape(focus.arg)+'"]':''));if(b&&!b.disabled&&b.getClientRects().length)b.focus({preventScroll:true})}
 }
 function fbQuantity(value,max,attrs,label='Fit soldiers',min=1){return '<label class="fb-quantity"><span>'+label+'</span><span class="fb-quantity-controls">'+fbBtn('fb-qty','-1','−',value<=min?'At the minimum':'','fb-square')+'<input type="number" inputmode="numeric" min="'+min+'" max="'+max+'" step="1" value="'+value+'" aria-label="'+label+'" '+attrs+'>'+fbBtn('fb-qty','1','+',value>=max?'At the maximum':'','fb-square')+fbBtn('fb-qty','max','Max',max<min?'None available':'')+'</span></label>'}
@@ -38,6 +41,8 @@ onAct('fb-',(a,arg)=>{
   if(a==='fb-choice'&&p&&G.mode===p.mode){const x=p.o.items.find(i=>String(i.id)===String(arg));if(x&&!x.why){p.value=x.id;fbChoiceShow()}return}
   if(a==='fb-cancel')return fbChoiceClose(false);
   if(a==='fb-apply')return fbChoiceClose(true);
+  // (Back to the Game Menu: the window closed by its way out, then the Game Menu over the map or the streets)
+  if(a==='fb-menu'){const c=panel.querySelector('.nav [data-nav="close"]:not([disabled])');if(c)act(c.dataset.act,c.dataset.arg);if(!G.modal&&['world','scene'].includes(G.mode))showEsc();return}
 });
 // Quantity controls keep each form's existing change handler and validation.
 panel.addEventListener('click',e=>{const b=e.target.closest('[data-act="fb-qty"]');if(!b||b.disabled)return;const box=b.closest('.fb-quantity'),input=box&&box.querySelector('input');if(!input)return;const min=+input.min,max=+input.max,old=Number(input.value)||min;input.value=b.dataset.arg==='max'?max:clamp(old+Number(b.dataset.arg),min,max);input.dispatchEvent(new Event('change',{bubbles:true}));box.querySelectorAll('[data-act="fb-qty"]').forEach(x=>x.disabled=x.dataset.arg==='-1'?+input.value<=min:x.dataset.arg==='1'?+input.value>=max:max<min)});

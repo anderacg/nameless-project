@@ -23,7 +23,7 @@ function journalSection(){
 function renderJournal(){
   const id=journalSection(),s=JOURNAL_SECTIONS[id];
   const tabs=fbTabs(Object.values(JOURNAL_SECTIONS).map(x=>[x.id,(x.icon?fbIcon(x.icon)+' ':'')+x.label]),id,'jn-sec','Journal sections');
-  fbShow('Journal',s.sub?s.sub():'',tabs,s.render(),s.back?s.back():null,['journal-close',null,G.overBack==='scene'?'Back to the streets':'Back to map'],'fb-journal fb-jn-'+id);
+  fbShow('Journal',s.sub?s.sub():'',tabs,s.render(),fbMenu(s.back&&s.back()),['journal-close',null,G.overBack==='scene'?'Back to the streets':'Back to map'],'fb-journal fb-jn-'+id);
 }
 // opened (on a section, if one is named; already open: turned to it), from the map or the streets; true once it is open
 function openJournal(sec){

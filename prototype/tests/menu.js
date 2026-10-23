@@ -54,7 +54,7 @@ try{
  esc();ok(G.mode==='esc'&&page()==='menu','Esc on the question: Cancel, back to the menu');P.gold-=5;ok(t.unsavedSince()===false,'(as saved again: nothing to lose)');esc();
  {const L=t.LOADING,sy=L.sync,si=Storage.prototype.setItem;L.sync=true;Storage.prototype.setItem=function(){throw new Error('QuotaExceededError')};
   try{esc();t.act('esc-save');ok(/Could not save/.test(panel())&&!/Game saved/.test(panel()),'a save the browser will not keep: the menu says it could not save, never "Game saved"')}finally{Storage.prototype.setItem=si;L.sync=sy}esc()}
- t.openInv();esc();ok(G.mode==='world','Esc closes the inventory');t.openChar();esc();ok(G.mode==='world','Esc closes the Army window');t.openSkills();esc();ok(G.mode==='char','Esc on the Skills view follows its Back: the Army window');t.act('char-close');
+ t.openInv();esc();ok(G.mode==='esc'&&page()==='menu','Esc on the inventory: its Back, the Game Menu');esc();t.openChar();esc();ok(G.mode==='esc'&&page()==='menu','Esc on the Army window: its Back, the Game Menu');esc();t.openSkills();esc();ok(G.mode==='char','Esc on the Skills view follows its Back: the Army window');t.act('char-close');
  t.enterTown(t.townBy('Ashford'));esc();ok(G.mode==='world','Esc leaves a town');while(G.mode==='perk')t.act('perk',G.perkOffer[0]);
  // in an encounter Esc pauses and Resume brings the same choice back
  G.mode='world';G.modal=false;t.hidePanel();t.startEncounter({kind:'party',ref:t.asParty({x:P.x,y:P.y,cool:0,troops:['militia','militia','militia']}),n:3,list:['militia','militia','militia']});const encHtml=panel();

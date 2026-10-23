@@ -1,12 +1,15 @@
 'use strict';
-// The Army window (the owner's design, 2026-10-23; ui/partypage.js): C and the Menu's Army, titled with your band's name. Roster: the
-// company muster (its bars; a click opens Condition), then one list of cards (your hero, companions, troop groups), each its kind's
-// icon (crown, star, shield) and experience bar, opening its detail and its Skills. Army skills: the band's values, who gives them,
-// the roles assigned. Condition. Passengers: escorts, prisoners and captives with their actions. K opens your hero's Skills inside
-// it. Esc follows the bar; the phone layouts (844 × 390, 390 × 844). Written on the test kit (tests/kit.js).
+// The Army window (the owner's design, 2026-10-23; ui/partypage.js): C and the Menu's Army, its header the company muster (the band's
+// name once, its bars, on every tab; to read, not a link); its four tabs its top level, each its bar's Back to the Game Menu. Roster: one list of cards (your hero, companions, troop groups), each
+// its kind's icon (crown, star, shield) and experience bar, opening its detail and its Skills. Army skills: the band's values, who
+// gives them, the roles assigned. Condition. Passengers: escorts, prisoners and captives with their actions. K opens
+// your hero's Skills inside it. Esc follows the bar; the phone layouts (844 × 390, 390 × 844); one bottom bar and one scrolling
+// area per page, its last control in reach. Written on the test kit (tests/kit.js).
 Kit.suite(({ok})=>{
  const t=T,P=t.P,G=t.G,W=t.W,p=t.panel,scr=document.getElementById('screen'),q=s=>p.querySelector(s),qa=s=>[...p.querySelectorAll(s)],esc=()=>Kit.key('Escape','Escape');
  const shown=e=>!!e&&e.getClientRects().length>0,navBack=()=>q('.nav [data-nav="back"]'),navClose=()=>q('.nav [data-nav="close"]');
+ // (a tab's Back goes to the Game Menu; a sub-page's to its parent)
+ const menuBack=()=>{const b=navBack();return !!b&&b.dataset.act==='fb-menu'&&b.textContent==='Back'},sub=()=>{const b=navBack();return !!b&&b.dataset.act!=='fb-menu'};
  Kit.begin('soldier',31);Kit.clear();Kit.world();
  P.band='Iron <Band>';P.xp=30;P.gold=2000;
  P.comps={brann:{ap:5,role:'scout'},elske:{ap:5,role:'surgeon'},tavi:{ap:5,role:''}};const brann=t.compInit('brann');brann.lv=4;brann.xp=50;t.compInit('elske');const tavi=t.compInit('tavi');tavi.lv=3;
@@ -19,14 +22,24 @@ Kit.suite(({ok})=>{
   // ---- the window: the band's name, its tabs
   open();ok(G.mode==='char'&&q('.fb-head h2').textContent==='Iron <Band>'&&!q('Band')&&q('.fb-head small').textContent==='Army','the Army window, titled with the band’s name (literal text)');
   ok(qa('[data-act="char-tab"]').map(b=>b.textContent).join('|')==='Roster|Army skills|Condition|Passengers'&&G.char==='roster','its tabs: Roster (first), Army skills, Condition, Passengers');
-  // ---- the company muster
-  const F=t.bandFitness(),m=q('.fb-muster');
-  ok(m&&m.textContent.includes('Iron <Band>')&&m.textContent.includes(r.slots+' / '+t.ARMY_LIMIT+' groups · '+F.fit+' fit + hero · '+F.wounded+' wounded'),'the muster: the band’s name, its groups, fit and wounded');
-  ok(['Fitness','Morale','Stamina'].every(n=>m.querySelector('.fb-meter[aria-label="'+n+'"]'))&&+m.querySelector('[aria-label="Morale"]').getAttribute('aria-valuenow')===55&&Math.abs(+m.querySelector('[aria-label="Stamina"]').getAttribute('aria-valuenow')-60)<1e-6&&/On the road|·/.test(m.textContent)&&/Details ›/.test(m.textContent),'its bars: Fitness, Morale and Stamina, with the road’s word and Details');
-  m.querySelector('.fb-company strong').click();ok(G.char==='condition'&&q('.fb-condition')&&q('[data-act="char-tab"][data-arg="condition"]').classList.contains('on'),'a click anywhere on the banner opens the Condition tab');
+  // ---- the company muster: the window's header, on every tab
+  const F=t.bandFitness(),h=q('.fb-head');
+  ok(h.textContent.includes('Iron <Band>')&&h.textContent.includes(r.slots+' / '+t.ARMY_LIMIT+' groups · '+F.fit+' fit + hero · '+F.wounded+' wounded')&&!q('.fb-head>.muted'),'the header is the muster: the band’s name, its groups, fit and wounded');
+  ok(['Fitness','Morale','Stamina'].every(n=>h.querySelector('.fb-meter[aria-label="'+n+'"]'))&&+h.querySelector('[aria-label="Morale"]').getAttribute('aria-valuenow')===55&&Math.abs(+h.querySelector('[aria-label="Stamina"]').getAttribute('aria-valuenow')-60)<1e-6&&/On the road|·/.test(h.textContent)&&!/Details/.test(h.textContent),'its bars: Fitness, Morale and Stamina, with the road’s word');
+  ok(p.textContent.split('Iron <Band>').length===2&&qa('.fb-meter[aria-label="Fitness"]').length===1&&!q('.fb-body .fb-muster-meters'),'the band’s name once and its bars once: no banner row in the Roster');
+  ok(!h.querySelector('button,a,[data-act],[role="button"]')&&!h.closest('[data-act]'),'the muster is to read: no link, button or action in the header');
+  {h.querySelector('h2').click();ok(G.char==='roster','a click on it does nothing (the Roster stays)')}
+  for(const [tab] of t.ARMY_TABS){t.act('char-tab',tab);ok(q('.fb-head .fb-meter[aria-label="Fitness"]')&&q('.fb-head h2').textContent==='Iron <Band>'&&G.char===tab,'the muster heads the '+tab+' tab too')}
+  t.act('char-tab','condition');ok(G.char==='condition'&&q('.fb-condition')&&q('[data-act="char-tab"][data-arg="condition"]').classList.contains('on'),'its tab opens Condition');
   // ---- Condition
   {const c=q('.fb-condition').textContent;ok(/Stamina [+-]?[\d.]+ \/ hour/.test(c)&&c.includes('Headcount')&&c.includes(t.partySize()+' / '+t.partyCap())&&c.includes('Food')&&c.includes('Drink')&&/Party power · \d+/.test(c)&&c.includes('Brann the Wolf')&&c.includes('Recruitment target'),'Condition: recovery and its reasons, supplies, capacity and the power breakdown');
-   ok(q('[data-act="party-supplies"]')&&!navBack(),'its Supplies, and no Back of its own (a tab)');t.act('char-tab','roster');ok(G.char==='roster'&&q('.fb-muster'),'Roster again')}
+   ok(q('.fb-condition .fb-scroll [data-act="party-supplies"]')&&menuBack()&&navClose().textContent==='Back to map'&&qa('.nav').length===1&&[...q('.fb-condition').querySelectorAll('button')].every(b=>b.closest('.fb-scroll')),'its Supplies in its content; its bar, the only bottom bar: Back (to the Game Menu), Back to map');
+   esc();ok(G.mode==='esc'&&G.esc.page==='menu'&&G.esc.html==null,'Esc follows the bar: from Condition, the Game Menu, the window closed under it');esc();ok(G.mode==='world','one more Esc resumes');open();ok(G.char==='roster','Roster again')}
+  // ---- every tab, the same bar: Back to the Game Menu (ui/hub.js), Back to map; however the window was opened
+  for(const [tab] of t.ARMY_TABS){t.act('char-tab',tab);ok(menuBack()&&navClose().textContent==='Back to map','the '+tab+' tab: Back (to the Game Menu) on the left, Back to map on the right')}
+  navBack().click();ok(G.mode==='esc'&&G.esc.mode==='world'&&G.esc.html==null&&q('.gm-tile[data-arg="army"]'),'Back: the Game Menu, as Esc on the map opens it');t.act('esc-resume');ok(G.mode==='world'&&t.ov.hidden,'Resume: the map');
+  for(const [tab] of t.ARMY_TABS){Kit.key('KeyC','c');t.act('char-tab',tab);esc();ok(G.mode==='esc'&&G.esc.page==='menu','opened by C, the '+tab+' tab: Esc, the Game Menu');esc();ok(G.mode==='world','then Esc resumes')}
+  open();
   // ---- the roster: one list of cards
   const cards=qa('.fb-unit-grid .fb-unit'),ids=cards.map(c=>c.dataset.armyGroup),kinds=cards.map(c=>c.dataset.kind);
   ok(ids.slice(0,r.order.length).join()===r.order.join()&&ids.includes('hero')&&ids.includes('comp_brann')&&ids.includes('comp_elske')&&ids.includes(foot.id)&&ids.includes(knight.id),'one list: your hero, your companions and your troop groups, in battle order ('+ids.join(', ')+')');
@@ -54,7 +67,7 @@ Kit.suite(({ok})=>{
   t.act('sk-close');ok(G.mode==='char'&&G.char==='roster'&&t.partyView().sel==='hero'&&q('.fb-hero-detail'),'and Back returns to the hero’s card');
   t.act('party-select','comp_brann');t.act('cm-tree');ok(G.mode==='skills'&&G.skWho==='brann'&&navBack().textContent==='Back to Brann','a companion’s Skills: its own tree');
   t.act('sk-close');ok(G.mode==='char'&&t.compShown()&&G.compSel==='brann','and Back returns to its card');
-  t.act('party-select',foot.id);t.act('party-path',foot.id);{const d=q('.fb-inspector').textContent;ok(t.partyView().path&&/Training path and abilities/.test(d)&&d.includes(t.ST.hum_sword.n)&&d.includes('Rally (Y)')&&/Traits/.test(d)&&navBack(),'a troop group’s Skills: its training path, its battle orders and traits')}
+  t.act('party-select',foot.id);t.act('party-path',foot.id);{const d=q('.fb-inspector').textContent;ok(t.partyView().path&&/Training path and abilities/.test(d)&&d.includes(t.ST.hum_sword.n)&&d.includes('Rally (Y)')&&/Traits/.test(d)&&sub(),'a troop group’s Skills: its training path, its battle orders and traits')}
   t.act('party-path',foot.id);t.act('party-select',knight.id);t.act('party-path',knight.id);{const d=q('.fb-inspector').textContent;ok(d.includes('Spur (U)')&&/trains no further/.test(d),'a rider’s: Spur, and the top of its path')}
   t.act('party-back');ok(!t.partyView().path&&q('.fb-inspector .fb-stat-grid'),'Back leaves the path');
   // ---- Army skills
@@ -82,8 +95,8 @@ Kit.suite(({ok})=>{
   // ---- K, C and the Menu
   world();Kit.key('KeyK','k');ok(G.mode==='skills'&&!G.skWho&&q('svg.tree')&&navBack().textContent==='Back to Army','K: the Army window, on your hero’s Skills');
   esc();ok(G.mode==='char'&&t.partyView().sel==='hero','Esc follows its Back: the Army window, on your hero');
-  if(navBack()){esc();ok(G.mode==='char'&&!t.partyView().open,'on a small screen (the tests’ own), Esc next goes back to the cards')}
-  esc();ok(G.mode==='world','and closes it');
+  if(sub()){esc();ok(G.mode==='char'&&!t.partyView().open,'on a small screen (the tests’ own), Esc next goes back to the cards')}
+  esc();ok(G.mode==='esc'&&G.esc.page==='menu','then its Back: the Game Menu');esc();ok(G.mode==='world','and one more Esc resumes');
   Kit.key('KeyK','k');Kit.key('KeyK','k');ok(G.mode==='world','K again closes it');
   Kit.key('KeyC','c');ok(G.mode==='char'&&G.char==='roster','C opens the Army window');Kit.key('KeyC','c');ok(G.mode==='world','C again closes it');
   document.getElementById('charBtn').click();ok(G.mode==='char','the bar’s button opens it');world();
@@ -94,17 +107,36 @@ Kit.suite(({ok})=>{
   const fits=label=>{p.style.animation='none';const bs=qa('button').filter(shown);ok(inside(p)&&p.scrollWidth<=p.clientWidth+1&&qa('.nav .btn').every(inside)&&!q('select'),label+': the frame and its bar fit, no dropdown');ok(bs.every(b=>b.getBoundingClientRect().height>=44-.5&&b.getBoundingClientRect().width>=44-.5),label+': every control at least 44 px ('+bs.filter(b=>b.getBoundingClientRect().height<43.5).map(b=>b.textContent.trim()).join(', ')+')')};
   try{
    scr.style.cssText=original+';width:1280px;height:800px';
-   open();fits('Roster 1280 × 800');t.act('party-select','hero');ok(!t.partyFull()&&shown(q('.fb-collection'))&&shown(q('.fb-hero-detail'))&&!navBack()&&navClose().textContent==='Back to map','desktop: a card’s detail beside the cards; the bar: no Back, the way out on the right');
-   t.act('party-select',foot.id);t.act('army-edit',foot.id);ok(navBack()&&navBack().textContent==='Back','Manage gives the bar a Back');esc();ok(G.mode==='char'&&!G.armyEdit,'Esc closes Manage first');esc();ok(G.mode==='world','then the window');
+   open();fits('Roster 1280 × 800');t.act('party-select','hero');ok(!t.partyFull()&&shown(q('.fb-collection'))&&shown(q('.fb-hero-detail'))&&menuBack()&&navClose().textContent==='Back to map','desktop: a card’s detail beside the cards; the bar: Menu, the way out on the right');
+   t.act('party-select',foot.id);t.act('army-edit',foot.id);ok(navBack()&&navBack().textContent==='Back','Manage gives the bar a Back');esc();ok(G.mode==='char'&&!G.armyEdit,'Esc closes Manage first');esc();ok(G.mode==='esc','then the Game Menu');esc();ok(G.mode==='world','then resumes');
    for(const [w,h] of [[844,390],[390,844]]){
     scr.style.cssText=original+';width:'+w+'px;height:'+h+'px';const at=w+' × '+h;
-    open();fits('Roster '+at);ok(shown(q('.fb-muster'))&&shown(q('.fb-unit'))&&!navBack(),'Roster '+at+': the muster and the cards first');
-    t.act('party-select','hero');ok(t.partyFull()&&shown(q('.fb-hero-detail'))&&!shown(q('.fb-collection'))&&navBack(),'Roster '+at+': the hero’s card opens as a page, with Back');fits('Hero '+at);
+    open();fits('Roster '+at);ok(shown(q('.fb-head .fb-muster-meters'))&&shown(q('.fb-unit'))&&menuBack(),'Roster '+at+': the muster (the header) and the cards first, Back to the Game Menu on the bar');
+    {const hh=q('.fb-head').getBoundingClientRect().height;ok(hh<=(w>650?52:120)&&shown(q('.fb-head h2'))&&['Fitness','Morale','Stamina'].every(n=>shown(q('.fb-head .fb-meter[aria-label="'+n+'"]'))),'Roster '+at+': the muster’s header, its name and its three bars, '+Math.round(hh)+' px high')}
+    t.act('party-select','hero');ok(t.partyFull()&&shown(q('.fb-hero-detail'))&&!shown(q('.fb-collection'))&&sub(),'Roster '+at+': the hero’s card opens as a page, with Back');fits('Hero '+at);
     esc();ok(G.mode==='char'&&!t.partyView().open&&shown(q('.fb-unit')),'Roster '+at+': Esc back to the cards');
     t.act('party-select','comp_brann');fits('Companion '+at);ok(shown(q('.fb-comp-detail [data-act="cm-tree"]')),'Companion '+at+': its Skills in reach');
-    t.act('party-select',foot.id);ok(w>650?shown(q('.fb-collection'))&&shown(q('.fb-inspector'))&&!navBack():!shown(q('.fb-collection'))&&shown(q('.fb-inspector'))&&navBack(),'Troops '+at+': '+(w>650?'the cards and the group side by side':'the group as a page'));fits('Troops '+at);
+    t.act('party-select',foot.id);ok(w>650?shown(q('.fb-collection'))&&shown(q('.fb-inspector'))&&menuBack():!shown(q('.fb-collection'))&&shown(q('.fb-inspector'))&&sub(),'Troops '+at+': '+(w>650?'the cards and the group side by side':'the group as a page'));fits('Troops '+at);
     for(const tab of ['skills','condition','passengers']){t.act('char-tab',tab);fits(tab+' '+at)}
     world();Kit.key('KeyK','k');ok(qa('.nav .btn').every(inside)&&shown(q('svg.tree')),'Skills '+at+': its tree and bar fit');world();
+   }
+   // ---- one bottom bar and one scrolling area a page, its last control in reach: Condition, the Roster, a troop group and its Training
+   const reach=(sc,el,label)=>{sc.scrollTop=sc.scrollHeight;const s=sc.getBoundingClientRect(),b=el.getBoundingClientRect();ok(b.height>0&&b.top>=s.top-1&&b.bottom<=s.bottom+1&&inside(el),label+': its last control scrolls fully into view')};
+   const area=(sc,label)=>{const k=sc.clientHeight/p.clientHeight;ok(k>=.6,label+': its content '+Math.round(k*100)+'% of the window’s height (at least 60%)')};
+   const oneBar=(pane,label)=>ok(qa('.nav').length===1&&!q('.fb-actions')&&[...pane.querySelectorAll('button')].every(b=>b.closest('.fb-scroll')),label+': one bottom bar (the window’s), no footer of its own');
+   for(const [w,h] of [[844,390],[390,844],[1280,800]]){
+    scr.style.cssText=original+';width:'+w+'px;height:'+h+'px';const at=w+' × '+h;
+    // (each tab's main panel the same box: the Roster's cards and detail, Army skills, Condition, Passengers, edge to edge alike)
+    open();{const box=()=>{const e=q('.fb-army-layout>.fb-split')||q('.fb-army-layout>.fb-pane');return e?[...['left','top','right','bottom'].map(k=>e.getBoundingClientRect()[k])]:[]},boxes=t.ARMY_TABS.map(([k])=>{t.act('char-tab',k);return [k,box()]}),b0=boxes[0][1];
+     ok(b0.length===4&&b0[2]-b0[0]>100&&boxes.every(([,b])=>b.length===4&&b.every((v,i)=>Math.abs(v-b0[i])<=1)),'Tabs '+at+': each tab’s main panel the same box ('+boxes.map(([k,b])=>k+' '+b.map(Math.round).join(',')).join(' · ')+')');world()}
+    open();t.act('char-tab','condition');{const c=q('.fb-condition'),sc=c.querySelector('.fb-scroll'),last=[...sc.querySelectorAll('.btns')].pop();
+     ok(last&&last.querySelector('[data-act="army-recruit"][data-arg="new"]'),'Condition '+at+': its last control is the recruitment target’s');reach(sc,last,'Condition '+at);area(sc,'Condition '+at);oneBar(c,'Condition '+at);
+     ok(menuBack()&&navClose().textContent==='Back to map','Condition '+at+': Back (to the Game Menu) on the left, Back to map on the right');
+     esc();ok(G.mode==='esc','Condition '+at+': Esc, the Game Menu');esc();ok(G.mode==='world','Condition '+at+': and resumed')}
+    open();{const c=q('.fb-collection'),sc=c.querySelector('.fb-scroll');reach(sc,q('.fb-recruit-options'),'Roster '+at);area(sc,'Roster '+at);oneBar(c,'Roster '+at)}
+    t.act('party-select',foot.id);{const c=q('.fb-inspector'),sc=c.querySelector('.fb-scroll');ok(sc.querySelector('.fb-inspector-acts [data-act="army-edit"]')&&sc.querySelector('.fb-inspector-acts [data-act="army-recruit"]')&&sc.querySelector('.fb-inspector-acts [data-act="party-path"]'),'Troops '+at+': Manage group, Reinforce and Training in its content');reach(sc,sc.lastElementChild,'Troops '+at);area(sc,'Troops '+at);oneBar(c,'Troops '+at)}
+    t.act('party-path',foot.id);{const c=q('.fb-inspector'),sc=c.querySelector('.fb-scroll');ok(sub()&&!/Back to group/.test(c.textContent),'Training '+at+': its Back is the bar’s');reach(sc,sc.lastElementChild,'Training '+at);area(sc,'Training '+at);oneBar(c,'Training '+at);esc();ok(!t.partyView().path&&q('.fb-inspector .fb-stat-grid'),'Training '+at+': Esc back to the group')}
+    world();
    }
   }finally{scr.style.cssText=original}
  }finally{world()}

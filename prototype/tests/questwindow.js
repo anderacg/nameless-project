@@ -40,7 +40,7 @@ Kit.suite(({ok,info})=>{
   ok(q('.qw-detail h3').textContent===th.kind.n&&/Side quest/.test(q('.qw-meta').textContent)&&/Active/.test(q('.qw-meta').textContent)&&f.Who===th.kind.who(th)&&f.Begun==='Day '+th.day&&f.Objective===th.note&&f.Progress===sq.progress()&&g&&f.Where.includes(t.questWay(g)),
    'its detail: a side quest, active · '+f.Who+' · '+f.Objective+' · '+f.Progress+' · '+f.Where);
   ok(/Bring .+ home/.test(f.Stages)&&q('.qw-detail .qw-steps li.now')&&q('.qw-detail [data-act="qw-map"]:not([disabled])')&&q('.qw-detail [data-act="qw-track"]')&&!q('.qw-detail [data-act="qw-abandon"]'),'its stages ('+f.Stages+'), Show on map, Track, no Abandon')}
- const nav0=q('#panel > .nav');ok(!nav0.querySelector('[data-nav="back"]')&&nav0.querySelector('[data-nav="close"]').textContent==='Back to map','the frame rule: its bottom bar, the way out on the right (no Back on a wide window)');
+ const nav0=q('#panel > .nav');ok((nav0.querySelector('[data-nav="back"]')||{}).dataset.act==='fb-menu'&&nav0.querySelector('[data-nav="back"]').textContent==='Back'&&nav0.querySelector('[data-nav="close"]').textContent==='Back to map','the frame rule: its bottom bar, Back to the Game Menu on the left (its top level), the way out on the right');
  // ---- Main: none yet
  t.act('qw-tab','main');ok(tabBtn('main').classList.contains('on')&&!qa('.qw-row').length&&/No main story yet/.test(q('.qw-list').textContent)&&!q('.qw-detail'),'Main: '+q('.qw-list p').textContent);
  // ---- Jobs: your jobs, each its state; the offers you know of, a locked one greyed with what it requires
@@ -94,22 +94,22 @@ Kit.suite(({ok,info})=>{
  t.act('qw-tab','past');
  {const r=rowOf('aq'+qb.id),f=facts();ok(r&&/Abandoned/.test(r.textContent)&&/reputation in Ashford −\d+/.test(r.textContent)&&q('.qw-detail h3').textContent===qb.title&&f['Given by']==='Ashford'&&f.Ended==='Day '+G.day&&/reputation in Ashford −\d+/.test(f.Cost)&&!q('.qw-detail .btn'),
    'the Archive: '+r.textContent+' · its detail: given by '+f['Given by']+', ended '+f.Ended+', cost '+f.Cost)}
- t.act('qw-tab','job');t.act('qw-abandon','q'+qc.id);esc();ok(G.mode==='quests'&&!q('.qw-ask')&&P.quests.includes(qc)&&P.track==='q'+qc.id,'Esc cancels abandonment without changing the quest');esc();
+ t.act('qw-tab','job');t.act('qw-abandon','q'+qc.id);esc();ok(G.mode==='quests'&&!q('.qw-ask')&&P.quests.includes(qc)&&P.track==='q'+qc.id,'Esc cancels abandonment without changing the quest');esc();ok(G.mode==='esc','Esc again, at its top level: the Game Menu');esc();
  // ---- a phone on its side: the tabs and the list, then the chosen one alone; Back to the list; all on the screen
  {const css0=scr.style.cssText;scr.style.cssText+=';width:844px;height:390px';
   try{t.openQuests();q('#panel').style.animation='none';
    const vis=el=>!!el&&el.getBoundingClientRect().width>0,s=scr.getBoundingClientRect();
    const inside=el=>{const r=el.getBoundingClientRect();return r.left>=s.left-.5&&r.right<=s.right+.5&&r.top>=s.top-.5&&r.bottom<=s.bottom+.5};
-   ok(vis(q('.qw-tabs'))&&qa('.qw-tabs .btn').every(inside)&&vis(q('.qw-list'))&&!vis(q('.qw-detail'))&&!q('#panel > .nav [data-nav="back"]'),'at 844 x 390: the tabs and the list alone, no Back');
+   ok(vis(q('.qw-tabs'))&&qa('.qw-tabs .btn').every(inside)&&vis(q('.qw-list'))&&!vis(q('.qw-detail'))&&q('#panel > .nav [data-nav="back"]').dataset.act==='fb-menu','at 844 x 390: the tabs and the list alone, Back to the Game Menu on the bar');
    t.act('qw-sel','q'+qc.id);q('#panel').style.animation='none';
    const p=q('#panel'),nv=q('#panel > .nav'),back=nv.querySelector('[data-nav="back"]'),bs=qa('.qw-detail .qw-acts .btn');
    ok(!vis(q('.qw-list'))&&vis(q('.qw-tabs'))&&vis(q('.qw-detail'))&&back&&back.textContent==='Back'&&nv.querySelector('[data-nav="close"]'),'chosen: the courier with bookmark tabs, Back on the left, the way out on the right');
    ok(inside(p)&&inside(nv)&&bs.length===3&&bs.every(inside)&&p.scrollWidth<=p.clientWidth+1&&q('.qw-detail').scrollWidth<=q('.qw-detail').clientWidth+1,
      'everything on the screen: the window ('+Math.round(p.getBoundingClientRect().width)+' x '+Math.round(p.getBoundingClientRect().height)+'), its bar, its buttons; nothing scrolls sideways');
    ok(bs.every(b=>b.getBoundingClientRect().height>=39),'its buttons big enough to tap ('+bs.map(b=>Math.round(b.getBoundingClientRect().height)).join(', ')+' px)');
-   esc();ok(G.mode==='quests'&&vis(q('.qw-list'))&&vis(q('.qw-tabs'))&&!vis(q('.qw-detail'))&&!q('#panel > .nav [data-nav="back"]'),'Esc follows the bar: Back to the tabs and the list');
+   esc();ok(G.mode==='quests'&&vis(q('.qw-list'))&&vis(q('.qw-tabs'))&&!vis(q('.qw-detail'))&&q('#panel > .nav [data-nav="back"]').dataset.act==='fb-menu','Esc follows the bar: Back to the tabs and the list (Back to the Game Menu again)');
    t.act('qw-tab','side');t.act('qw-sel','t'+th.i);q('#panel').style.animation='none';
    ok(vis(q('.qw-detail'))&&inside(q('#panel'))&&q('.qw-detail').scrollWidth<=q('.qw-detail').clientWidth+1&&/Stages/.test(q('.qw-detail').textContent),'a story on the phone: its detail alone, its stages, nothing sideways');
-   esc();esc();ok(G.mode==='world','Esc again: out to the map')}
+   esc();esc();ok(G.mode==='esc','Esc again: the list, then the Game Menu');esc();ok(G.mode==='world','one more Esc resumes')}
   finally{scr.style.cssText=css0;Kit.world()}}
 });

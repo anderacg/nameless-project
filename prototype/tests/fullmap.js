@@ -16,13 +16,13 @@ Kit.suite(({ok,info})=>{
   const mute0=t.prefGet('mute');press();
   ok(G.mode==='fullmap'&&!q('#ov').hidden&&q('#panel.fmap')&&t.prefGet('mute')===mute0,'M opens the full map (mode '+G.mode+'), and the sound stays as it was');
   const nav=q('#panel > .nav'),close=nav&&nav.querySelector('[data-nav="close"]');
-  ok(q('#panel > .top h2')&&/^Map of /.test(q('#panel h2').textContent)&&/tiles · [\d.]+% explored/.test(q('#panel .fm-head .muted').textContent)&&close&&close.textContent==='Close'&&!nav.querySelector('[data-nav="back"]'),
+  ok(q('#panel > .top h2')&&/^Map of /.test(q('#panel h2').textContent)&&/tiles · [\d.]+% explored/.test(q('#panel .fm-head .muted').textContent)&&close&&close.textContent==='Close'&&(nav.querySelector('[data-nav="back"]')||{}).dataset.act==='fb-menu',
     'the frame rule: its header ('+q('#panel h2').textContent+' · '+q('#panel .fm-head .muted').textContent+'), the map and legend, a bottom bar with Close on the right');
   ok(q('.fm-view .fm-cv')&&q('.fm-leg'),'the map and its legend side by side');
   press();ok(G.mode==='world'&&q('#ov').hidden&&!G.modal,'M again closes it');
   press({shiftKey:true,key:'M'});const m1=t.prefGet('mute');press({shiftKey:true,key:'M'});
   ok(m1===!mute0&&t.prefGet('mute')===mute0&&G.mode==='world','Shift+M mutes, and again brings the sound back, without opening the map');
-  press();Kit.key('Escape','Escape');ok(G.mode==='world'&&q('#ov').hidden,'Esc closes it (its bottom bar)');
+  press();Kit.key('Escape','Escape');ok(G.mode==='esc'&&G.esc.html==null,'Esc follows its bar: Back, the Game Menu (the map closed)');Kit.key('Escape','Escape');ok(G.mode==='world'&&q('#ov').hidden,'one more Esc resumes');
   t.openHelp();press();ok(G.mode==='help','M does nothing over another window');t.closeOver();
   ok(t.KEYS.some(([,ks])=>ks.some(([k,d])=>k==='Shift + M'&&/sound/.test(d)))&&t.KEYS[0][1].some(([k,d])=>k==='M'&&/full map/.test(d)),'Help lists M for the full map and Shift + M for the sound');
   // ---- the minimap: a click or a tap opens it ----
@@ -44,7 +44,7 @@ Kit.suite(({ok,info})=>{
     const close=q('#panel > .nav [data-nav="close"]');close.click();ok(G.mode==='world'&&q('#ov').hidden&&!G.modal,'its bottom bar’s '+close.textContent+' closes it');
     const tap=ty=>b.dispatchEvent(new PointerEvent(ty,{bubbles:true,button:0,pointerType:'touch',pointerId:9,isPrimary:true}));
     tap('pointerdown');tap('pointerup');b.click();ok(G.mode==='fullmap','a tap on it opens it');
-    Kit.key('Escape','Escape');ok(G.mode==='world'&&q('#ov').hidden,'Esc closes it (its bottom bar)');
+    Kit.key('Escape','Escape');ok(G.mode==='esc','Esc follows its bar: Back, the Game Menu');Kit.key('Escape','Escape');ok(G.mode==='world'&&q('#ov').hidden,'one more Esc resumes');
     b.click();b.click();ok(G.mode==='world','Map again closes it, as M does');
     scr.dataset.mode='town';ok(!seen(b)&&seen(camp),'off the map it is hidden (Camp stays)');scr.dataset.mode='world';t.frame()}
   // ---- the dock's Map on a phone on its side: 844 x 390, on the screen, clear of the minimap; a tap opens the map on it ----
@@ -58,7 +58,7 @@ Kit.suite(({ok,info})=>{
       const p=q('#panel').getBoundingClientRect(),n=q('#panel > .nav').getBoundingClientRect();
       ok(G.mode==='fullmap'&&p.left>=s.left-.5&&p.right<=s.right+.5&&p.top>=s.top-.5&&p.bottom<=s.bottom+.5&&n.bottom<=p.bottom+.5,
         'a tap opens the full map, fitting the screen ('+Math.round(p.width)+' x '+Math.round(p.height)+'), its bottom bar on it');
-      Kit.key('Escape','Escape');ok(G.mode==='world','and Esc closes it');q('#panel').style.animation=''}
+      Kit.key('Escape','Escape');ok(G.mode==='esc','and Esc follows its Back to the Game Menu');Kit.key('Escape','Escape');ok(G.mode==='world','then resumes');q('#panel').style.animation=''}
     finally{scr.style.cssText=css0;world()}}
   // ---- the scale ----
   world();press();const v=q('.fm-view'),F=t.FULLMAP,fit=Math.min(v.clientWidth/MW,v.clientHeight/MH),want=Math.max(MW>F.wide?.5:1,...F.zooms.filter(z=>z<=fit&&z<=F.open));
