@@ -346,18 +346,19 @@ function supplyNow(){
   return{L,go,dr,r,st,foodDays,drinkDays,furs,fit:P.fitness(),tags}}
 
 /* ---------- the action ring's map actions (ui/ring.js ActionRing; §7a): those that apply where you held (wx, wy: on o, a thing on
-   the map, or the ground), in the ring's order ---------- */
+   the map, or the ground), in the ring's order; active: a mode that is on now (camped, by road, hurrying, liquor first), the ring
+   lighting it (the owner, 2026-10-23) ---------- */
 function mapRingItems(wx,wy,o,cx,cy){
   const L=supplyLand(),ground=!o,look=o&&tipFor(o)||rumourTip(wx,wy);
   return[
     !P.camp&&!campWhy()&&{icon:'fire',label:'Make camp',run:makeCamp},
-    P.camp&&{icon:'exit',label:'Break camp',run:()=>breakCamp()},
+    P.camp&&{icon:'fire',label:'Break camp',run:()=>breakCamp(),active:true},
     ground&&{icon:'banner',label:'Travel here',run:()=>worldGo(wx,wy)},
-    ground&&{icon:'map',label:'By road',run:()=>roadGo(wx,wy)},
+    (ground||P.byRoad)&&{icon:'map',label:'By road',run:()=>roadGo(wx,wy),active:!!P.byRoad},
     ground&&!G.hurry&&P.staminaState()!=='exhausted'&&{icon:'speed',label:'Hurry here',run:()=>{worldGo(wx,wy);setHurry(true)}},
-    G.hurry&&{icon:'speed',label:'Stop hurrying',run:()=>setHurry(false)},
+    G.hurry&&{icon:'speed',label:'Stop hurrying',run:()=>setHurry(false),active:true},
     canFill(L)&&{icon:'mug',label:'Fill waterskins',run:()=>fillSkins()},
-    goodN('liquor')>0&&{icon:'barrel',label:BAND.liquor?'Water first':'Drink liquor',run:()=>{BAND.liquor=!BAND.liquor;log(BAND.liquor?'Your band drinks its liquor first: a hard march.':'Your band drinks water first again.');updateHUD(true)}},
+    goodN('liquor')>0&&{icon:'barrel',label:BAND.liquor?'Water first':'Drink liquor',active:!!BAND.liquor,run:()=>{BAND.liquor=!BAND.liquor;log(BAND.liquor?'Your band drinks its liquor first: a hard march.':'Your band drinks water first again.');updateHUD(true)}},
     look&&{icon:'eye',label:'Look',run:()=>holdCard(look,cx,cy)}].filter(Boolean)}
 
 /* ---------- the tavern's tapster (ui/town.js Tavern): liquor for the road, at its base price, and the well's water, free ---------- */

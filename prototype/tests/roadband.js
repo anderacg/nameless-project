@@ -3,9 +3,10 @@
 // reads it as swamp"): a road's speed follows the road as drawn (gfx/worldart.js artRoadSegs), not its tiles. On a diagonal stretch,
 // on the drawn line where the tile is the land's, road speed; over the shoulder, between the land's and the road's; far off,
 // the land's (the band's widths 0: the tile rule); water never passable; an estate's track a little slower (ROAD_BAND.trackSpeed);
-// regionAt names the road there. By road (world.js setByRoad, the action ring's By road, key B): the way drawn and walked keeps
-// to the roads between two holdings across a swamp, more of it on the road than the plain way; with no road near, the plain way
-// and the log says so.
+// regionAt names the road there. By road (world.js setByRoad: a mode, P.byRoad; the action ring's By road, key B): while it is
+// on, a plain click's way, drawn and walked, keeps to the roads between two holdings across a swamp, more of it on the road than
+// the plain way; it stays on for the next trip, and across a save and a load; the day bar shows it; with no road near, a trip
+// goes the plain way, quietly.
 Kit.suite(({ok,info})=>{
  const t=T,G=t.G,P=t.P,TL=t.TILE,RB=t.ROAD_BAND,RN=t.REGION_NAMES;
  Kit.begin('soldier',4242);Kit.clear();Kit.world({encCool:99});t.setSpeed(1);P.troops={hum_levy:4};P.bsta=100;
@@ -58,24 +59,34 @@ Kit.suite(({ok,info})=>{
  const onShare=w=>w.X.filter((x,i)=>t.regionAt(x,w.Y[i]).road).length/w.n;
  const march=n=>Kit.frames(n,.05,dt=>t.marchStep(dt*t.WORLD_PACE),()=>P.tx==null||G.mode!=='world');
  if(!pairs.length)info('no two holdings with a road between them across a swamp');
- for(const [h1,h2,sw] of pairs.slice(0,1)){const s1=t.gateSpot(h1),s2=t.gateSpot(h2),from=()=>{Kit.clear();Kit.world({encCool:99});Kit.goTo(s1.x,s1.y);G.lastTown=h1;P.bsta=100;P.stuck=0;G.chase=null};
-  from();t.worldGo(s2.x,s2.y);t.wuiSync(performance.now());const w0=t.WUI.way,p0=onShare(w0);
-  from();const said=G.msgs.length,yes=t.roadGo(s2.x,s2.y);t.wuiSync(performance.now());const w1=t.WUI.way,p1=onShare(w1);
-  ok(yes&&G.byRoad&&G.byRoad.x===P.tx&&w1!==w0&&w1.ok&&p1>p0&&p1>.9&&G.msgs.slice(said).some(m=>/keeps to the roads/.test(m.m)),h1.name+' to '+h2.name+' ('+Math.round(sw*100)+'% swamp on the straight line): By road\'s way drawn keeps to the roads, '+Math.round(p1*100)+'% of it on them (the plain way '+Math.round(p0*100)+'%), and the log says so');
+ const pill=()=>!!document.querySelector('#wday .wroad');
+ for(const [h1,h2,sw] of pairs.slice(0,1)){const s1=t.gateSpot(h1),s2=t.gateSpot(h2),from=on=>{Kit.clear();Kit.world({encCool:99});Kit.goTo(s1.x,s1.y);G.lastTown=h1;P.bsta=100;P.stuck=0;G.chase=null;t.setByRoad(on)};
+  from(false);t.worldGo(s2.x,s2.y);t.wuiSync(performance.now());const w0=t.WUI.way,p0=onShare(w0);
+  const said=G.msgs.length;from(true);t.worldGo(s2.x,s2.y);t.wuiSync(performance.now());const w1=t.WUI.way,p1=onShare(w1);
+  ok(P.byRoad===true&&G.byRoad&&G.byRoad.on&&w1!==w0&&w1.ok&&p1>p0&&p1>.9&&G.msgs.slice(said).some(m=>/keeps to the roads/.test(m.m)),h1.name+' to '+h2.name+' ('+Math.round(sw*100)+'% swamp on the straight line): by-road mode on, a plain click\'s way drawn keeps to the roads, '+Math.round(p1*100)+'% of it on them (the plain way '+Math.round(p0*100)+'%), and the log says it is on');
+  t.updateHUD(true);ok(pill(),'the day bar shows By road while it is on ('+(document.querySelector('#wday .wroad')||{}).textContent+')');
   let on=0;const f1=Kit.frames(20000,.05,dt=>{t.marchStep(dt*t.WORLD_PACE);if(t.regionAt(P.x,P.y).road)on++},()=>P.tx==null||G.mode!=='world'),end=Math.hypot(P.x-s2.x,P.y-s2.y);
-  from();t.worldGo(s2.x,s2.y);let on0=0;const f0=Kit.frames(20000,.05,dt=>{t.marchStep(dt*t.WORLD_PACE);if(t.regionAt(P.x,P.y).road)on0++},()=>P.tx==null||G.mode!=='world');
-  ok(end<3&&on/f1>on0/f0,'your band walks it there: '+Math.round(on/f1*100)+'% of its steps on the road (the plain way '+Math.round(on0/f0*100)+'%), '+t.Clock.hoursIn(f1*.05*t.WORLD_PACE).toFixed(1)+' h (the plain way '+t.Clock.hoursIn(f0*.05*t.WORLD_PACE).toFixed(1)+' h)')}
- // ---- key B: the way you go now by road, or the plain way again; a new order goes the plain way
- if(pairs.length){const [h1,h2]=pairs[0],s1=t.gateSpot(h1),s2=t.gateSpot(h2);Kit.clear();Kit.world({encCool:99});Kit.goTo(s1.x,s1.y);t.worldGo(s2.x,s2.y);
-  Kit.key('KeyB','b');const on=!!G.byRoad&&G.byRoad.x===P.tx;Kit.key('KeyB','b');const off=!G.byRoad;Kit.key('KeyB','b');t.worldGo(s2.x-20,s2.y);
-  ok(on&&off&&!G.byRoad&&P.tx!=null,'key B keeps the way you go to the roads, again goes the plain way; a new order goes the plain way');P.tx=null}
- // ---- no road near: the plain way, and the log says so
+  // (still on for the next trip: back the way you came, a plain click again)
+  const back=P.byRoad===true;G.lastTown=h2;t.worldGo(s1.x,s1.y);t.wuiSync(performance.now());const p2=onShare(t.WUI.way);
+  from(false);t.worldGo(s2.x,s2.y);let on0=0;const f0=Kit.frames(20000,.05,dt=>{t.marchStep(dt*t.WORLD_PACE);if(t.regionAt(P.x,P.y).road)on0++},()=>P.tx==null||G.mode!=='world');
+  ok(end<3&&on/f1>on0/f0,'your band walks it there: '+Math.round(on/f1*100)+'% of its steps on the road (the plain way '+Math.round(on0/f0*100)+'%), '+t.Clock.hoursIn(f1*.05*t.WORLD_PACE).toFixed(1)+' h (the plain way '+t.Clock.hoursIn(f0*.05*t.WORLD_PACE).toFixed(1)+' h)');
+  ok(back&&p2>.9,'arrived, it stays on: the next plain click (back again) keeps to the roads too ('+Math.round(p2*100)+'% on them)');
+  t.updateHUD(true);ok(!P.byRoad&&!('byRoad' in P)&&!pill(),'turned off: the plain way again, no By road on the day bar, nothing of it on you (a save as before)')}
+ // ---- key B: by-road mode on, then off, whatever you are doing
+ if(pairs.length){const [h1,h2]=pairs[0],s1=t.gateSpot(h1),s2=t.gateSpot(h2);Kit.clear();Kit.world({encCool:99});Kit.goTo(s1.x,s1.y);t.setByRoad(false);
+  Kit.key('KeyB','b');const on=P.byRoad===true;t.worldGo(s2.x,s2.y);const trip=t.byRoadTo(P.tx,P.ty);Kit.key('KeyB','b');const off=!P.byRoad&&!t.byRoadTo(P.tx,P.ty);P.tx=null;Kit.key('KeyB','b');const idle=P.byRoad===true;Kit.key('KeyB','b');
+  ok(on&&trip&&off&&idle&&!P.byRoad,'key B turns by-road mode on (the trip after it keeps to the roads), and off again (that trip the plain way); standing still too');P.tx=null}
+ // ---- no road near: the plain way, quietly
  {let a=null,b=null;for(let ty=12;ty<t.MH-12&&!b;ty+=3)for(let tx=12;tx<t.MW-12&&!b;tx+=3){if(t.tAt(tx,ty)!==t.T_OPEN||t.roadNear((tx+.5)*TL,(ty+.5)*TL,t.ROAD_GO.near+2))continue;
    if(!a)a=[(tx+.5)*TL,(ty+.5)*TL];else if(Math.hypot((tx+.5)*TL-a[0],(ty+.5)*TL-a[1])<10*TL&&t.Router.reach({x:a[0],y:a[1]},{x:(tx+.5)*TL,y:(ty+.5)*TL}))b=[(tx+.5)*TL,(ty+.5)*TL]}
   if(!b)info('no two spots far from every road');
-  else{Kit.clear();Kit.world({encCool:99});Kit.goTo(a[0],a[1]);const said=G.msgs.length,yes=t.roadGo(b[0],b[1]);const f=march(3000);
-   ok(!yes&&!G.byRoad&&G.msgs.slice(said).some(m=>/No road near/.test(m.m))&&Math.hypot(P.x-b[0],P.y-b[1])<3,'By road with no road within '+t.ROAD_GO.near+' tiles: the plain way there ('+f+' frames), the log says so')}}
+  else{Kit.clear();Kit.world({encCool:99});Kit.goTo(a[0],a[1]);t.setByRoad(true);const said=G.msgs.length;t.worldGo(b[0],b[1]);const plain=!t.byRoadTo(P.tx,P.ty),f=march(3000),said2=G.msgs.slice(said).filter(m=>/road/i.test(m.m));
+   ok(plain&&P.byRoad===true&&G.byRoad==null&&Math.hypot(P.x-b[0],P.y-b[1])<3&&!said2.length,'by-road mode on with no road within '+t.ROAD_GO.near+' tiles: the plain way there ('+f+' frames), still on, and nothing in the log'+(said2.length?': '+said2.map(m=>m.m).join(' | '):''));t.setByRoad(false)}}
  // ---- the band follows the ways: an estate's track taken up and laid again (lots.js tracksUp, occRebuild) makes it again
  {const x=T2[0],b0=t.RoadBand.bytes(),v0=t.WAYV;t.tracksUp(t.WM);const up=t.speedAt(x[0],x[1]),b1=t.RoadBand.bytes();for(const h of t.TOWNS)if(h.lots)t.Layout.of(h).tracks(true);t.tracksDone();
   ok(t.WAYV!==v0&&up<RB.trackSpeed&&b1<b0&&t.speedAt(x[0],x[1])===RB.trackSpeed&&t.RoadBand.bytes()===b0,'the estates\' tracks taken up (lots.js tracksUp): the band made again without them ('+up.toFixed(2)+' where one ran, '+b1+' bytes); laid again, with them ('+t.RoadBand.bytes()+' bytes)')}
+ // ---- by-road mode is yours: saved with you and back on a load; off, nothing of it in the save (a new hero's is off)
+ {Kit.clear();Kit.world({encCool:99});G.mode='world';t.setByRoad(true);t.saveGame(true,'quick');const sv=JSON.parse(localStorage.getItem(t.slotKey('quick')));t.setByRoad(false);t.loadGame('quick');const back=P.byRoad===true;t.updateHUD(true);const shown=pill();
+  t.setByRoad(false);G.mode='world';t.saveGame(true,'quick');const sv0=JSON.parse(localStorage.getItem(t.slotKey('quick')));t.setByRoad(true);t.loadGame('quick');
+  ok(sv.P.byRoad===true&&back&&shown&&!('byRoad' in sv0.P)&&!P.byRoad,'saved on, it is on after a load (the day bar shows it); saved off, the save has no byRoad and a load turns it off');t.setByRoad(false)}
 });

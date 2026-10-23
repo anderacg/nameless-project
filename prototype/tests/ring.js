@@ -3,8 +3,10 @@
 // apply there; a press does nothing yet: let go before it opens, it travels (the owner, 2026-10-22: click or hold); a move
 // before it opens calls the ring off, and letting go still travels; let go over a button picks it, or let go first
 // and tap one; Esc, a right-click or a tap outside closes it, travelling nowhere. Only what applies: Make camp or Break camp,
-// Travel here, By road (world.js roadGo: keeping to the roads) and Hurry here on the ground (Stop hurrying while you hurry), Fill waterskins by water, Drink liquor with liquor, Look on something. A finger's long press
-// opens it too, and its Look shows the card.
+// Travel here, By road (world.js roadGo: by-road mode on, and you go there; on, it turns it off) and Hurry here on the ground (Stop
+// hurrying while you hurry), Fill waterskins by water, Drink liquor with liquor, Look on something. A mode that is on (camped, by
+// road, hurrying) is lit: the button's class on, a gold glow; the rest are not. A finger's long press opens it too, and its Look
+// shows the card. At a phone's 844 x 390 every button, lit or not, is on the screen.
 window.RUN=async()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
 try{
@@ -30,10 +32,25 @@ try{
   ok(!!ring()&&P.tx==null&&document.querySelector('.aring'),'held still '+R.hold+' ms: the ring opens, travelling nowhere');
   ok(labels().join()==='Make camp,Travel here,By road,Hurry here','on bare ground: '+labels().join(', '));
   const b=btn('Travel here');up(b);ok(!ring()&&P.tx!=null&&Math.abs(P.tx-wx)<2,'let go over Travel here: you travel there, the ring closed ('+(b&&b.el.textContent)+', '+P.tx+' for '+wx+')')}
- // ---- By road: you travel there keeping to the roads, or with no road near the plain way, the log saying so
- reset();{const wx=P.x+60,p=cl(wx,P.y+20);down(p);await held();const said=G.msgs.length;up(btn('By road'));const m=G.msgs.slice(said).map(q=>q.m).join(' ');
-  ok(!ring()&&P.tx!=null&&Math.abs(P.tx-wx)<2&&(G.byRoad&&G.byRoad.x===P.tx?/keeps to the roads/.test(m):!G.byRoad&&/No road near/.test(m)),'let go over By road: you travel there '+(G.byRoad?'by road':'the plain way, no road near')+' ('+m+')');
-  t.worldGo(wx,P.y);ok(!G.byRoad,'and a plain click after it goes the plain way')}
+ // ---- By road: by-road mode on and you travel there; it stays on for a plain click after it, and the ring lights it; picked
+ // again, it is off
+ const lit=()=>[...document.querySelectorAll('.aring .ar-btn.on')].map(b=>b.textContent),glow=l=>{const b=btn(l);return b?getComputedStyle(b.el).boxShadow:''};
+ reset();t.setByRoad(false);{const wx=P.x+60,p=cl(wx,P.y+20);down(p);await held();const none=lit().length===0;const said=G.msgs.length;up(btn('By road'));const m=G.msgs.slice(said).map(q=>q.m).join(' ');
+  ok(none&&!ring()&&P.tx!=null&&Math.abs(P.tx-wx)<2&&P.byRoad===true&&/keeps to the roads/.test(m),'let go over By road (none lit before): by-road mode on, you travel there ('+m+')');
+  t.worldGo(wx,P.y);ok(P.byRoad===true,'and it stays on for a plain click after it');P.tx=null;
+  down(p);await held();up(p);const b=btn('By road');
+  ok(lit().join()==='By road'&&b.el.getAttribute('aria-checked')==='true'&&/\(on\)/.test(b.el.title)&&/rgba?\(232, 185, 74/.test(glow('By road'))&&!/rgba?\(232, 185, 74/.test(glow('Travel here')),'the ring lights By road while it is on (gold glow: '+glow('By road').slice(0,60)+'), and only it ('+lit().join()+')');
+  b.el.click();ok(!P.byRoad&&P.tx==null,'picked again: off, travelling nowhere');
+  down(p);await held();up(p);ok(lit().length===0&&labels().includes('By road'),'off: none lit');t.ActionRing.close()}
+ // ---- hurrying, camped: lit too
+ reset();{const p=cl(P.x+60,P.y+20);t.worldGo(P.x+200,P.y);t.setHurry(true);down(p);await held();up(p);ok(lit().join()==='Stop hurrying','hurrying: Stop hurrying is lit ('+lit().join()+')');t.ActionRing.close();t.setHurry(false);P.tx=null}
+ // ---- a phone on its side (844 x 390): every button on the screen, the lit one too
+ reset();t.setByRoad(true);{const scr=document.getElementById('screen'),css=scr.style.cssText;scr.style.cssText+=';width:844px;height:390px';
+  const bad=[];for(const [fx,fy] of [[.5,.5],[.04,.06],[.96,.94]]){const r=scr.getBoundingClientRect(),cx=r.left+r.width*fx,cy=r.top+r.height*fy;t.ringOpen(cx,cy,P.x+40,P.y+20);
+   for(const b of document.querySelectorAll('.aring .ar-btn')){const q=b.getBoundingClientRect(),l=b.querySelector('span').getBoundingClientRect();if(q.left<r.left-.5||q.right>r.right+.5||q.top<r.top-.5||l.bottom>r.bottom+.5)bad.push(b.textContent+'@'+fx)}
+   if(!document.querySelector('.aring .ar-btn.on'))bad.push('none lit @'+fx);t.ActionRing.close()}
+  scr.style.cssText=css;ok(!bad.length,'at 844 x 390 the ring, held in the middle or by a corner, keeps every button and its name on the screen, By road lit'+(bad.length?': '+bad.join(', '):''))}
+ t.setByRoad(false)
  // ---- a move before it opens: no ring
  reset();{const wx=P.x+60,p=cl(wx,P.y+20);down(p);move({clientX:p.clientX+30,clientY:p.clientY});await held();ok(!ring()&&P.tx==null,'a move before it opens calls it off, travelling nowhere yet');up(p);ok(P.tx!=null&&Math.abs(P.tx-wx)<2,'and letting go travels to where it was pressed')}
  // ---- a right-click on the map travels at once, as ever (it has no hold)
@@ -44,10 +61,10 @@ try{
  // ---- let go first, then tap one
  reset();{const p=cl(P.x+60,P.y+20);down(p);await held();up(p);ok(!!ring(),'let go on the spot: the ring stays');btn('Make camp').el.click();ok(!ring()&&!!P.camp,'then tap Make camp: your band makes camp')}
  // ---- in camp: Break camp; with liquor: Drink liquor; by water: Fill waterskins
- {const p=cl(P.x+60,P.y+20);down(p);await held();ok(labels()[0]==='Break camp'&&!labels().includes('Make camp'),'in camp it offers Break camp ('+labels().join(', ')+')');
+ {const p=cl(P.x+60,P.y+20);down(p);await held();ok(labels()[0]==='Break camp'&&!labels().includes('Make camp')&&lit().join()==='Break camp','in camp it offers Break camp, lit ('+labels().join(', ')+')');
   t.ActionRing.close();P.camp=null;up(p)}
  reset();bag({liquor:5});{const p=cl(P.x+60,P.y+20);down(p);await held();up(p);ok(labels().includes('Drink liquor')&&!labels().includes('Fill waterskins'),'carrying liquor: Drink liquor; far from water, no Fill waterskins');
-  btn('Drink liquor').el.click();ok(t.BAND.liquor===true,'Drink liquor: your band drinks its liquor first');t.BAND.liquor=false}
+  btn('Drink liquor').el.click();ok(t.BAND.liquor===true,'Drink liquor: your band drinks its liquor first');down(p);await held();up(p);ok(lit().join()==='Water first','and the ring lights Water first while it does ('+lit().join()+')');t.ActionRing.close();t.BAND.liquor=false}
  {const h=t.TOWNS[0];Kit.goTo(h.x,h.y+30);t.drawWorld();const p=cl(P.x+30,P.y+10);down(p);await held();up(p);ok(labels().includes('Fill waterskins'),'by a holding’s well: Fill waterskins');
   bag({});btn('Fill waterskins').el.click();ok(t.goodN('water')>0,'and it fills them ('+t.goodN('water')+' water)')}
  // ---- closing it: Esc, a right-click, a tap outside, travelling nowhere

@@ -223,25 +223,27 @@ function heroStep(dx,dy,dist,step){
   const x0=P.x,r=heroWay(P,P.tx,P.ty,step);if(r===2&&P.x!==x0)P.dir=P.x>x0?1:-1;if(r>=0)return r>0;
   const W=HERO_WAY;if(W.x!==P.tx||W.y!==P.ty){W.x=P.tx;W.y=P.ty;W.d=dist}
   if(!walk(P,dx,dy,step))return false;const nd=Math.hypot(P.tx-P.x,P.ty-P.y);if(nd>=W.d-step*.25)return false;W.d=nd;return true}
-/* by road (the owner, 2026-10-23: "a road snap in the action ring, to make the pathfinder prefer moving by road"): your way to the
-   point you go to keeps to the roads and tracks (the router's road keeping, goal.road: off them a tile costs WAY.keep times as
-   much), leaving them only to reach the spot; the dots ahead show it (gfx/worldui.js wuiWay walks heroWay). G.byRoad: the point
-   it is for (never saved), so any other order goes the plain way. With no road or track within ROAD_GO.near tiles of you or of
-   the point, you go the plain way and the log says so. The action ring's By road (supply.js mapRingItems); key B (ui/input.js)
-   turns it on or off for the way you go now */
+/* by road (the owner, 2026-10-23: "a road snap in the action ring, to make the pathfinder prefer moving by road"; then "By road
+   mode should be a toggle: the pathfinder always uses roads for travelling (if any are near)"): a mode, P.byRoad (true while on;
+   absent, off: saved with you, a new hero's off). While it is on, every way you go (a click, Travel here, a chase, Hurry here)
+   keeps to the roads and tracks (the router's road keeping, goal.road: off them a tile costs WAY.keep times as much), leaving
+   them only to reach the spot; the dots ahead show it (gfx/worldui.js wuiWay walks heroWay). With no road or track within
+   ROAD_GO.near tiles of you or of the point, that trip goes the plain way, quietly. G.byRoad: the trip's answer, {k: the goal's
+   tile, on} (never saved; a new order or arriving forgets it). Turned on or off by key B (ui/input.js) or the action ring's By
+   road (supply.js mapRingItems: lit while on); the day bar shows it (render.js updateHUD, byRoadPill) */
 const ROAD_GO={near:8};
-const byRoadTo=(x,y)=>!!G.byRoad&&G.byRoad.x===x&&G.byRoad.y===y;
+function byRoadTo(x,y){if(!P.byRoad)return false;const k=Math.floor(x/TILE)+','+Math.floor(y/TILE);
+  if(!G.byRoad||G.byRoad.k!==k)G.byRoad={k,on:roadNear(P.x,P.y,ROAD_GO.near)||roadNear(x,y,ROAD_GO.near)};return G.byRoad.on}
 // (a road's or a track's tile within n tiles of (x, y))
 function roadNear(x,y,n){const tx=Math.floor(x/TILE),ty=Math.floor(y/TILE);for(let j=-n;j<=n;j++)for(let i=-n;i<=n;i++)if(tAt(tx+i,ty+j)===T_ROAD)return true;return false}
-// the way to where you go now kept to the roads (on), or not; true if it is
-function setByRoad(on){G.byRoad=null;if(typeof WUI!=='undefined')WUI.way=null;if(!on||P.tx==null||G.chase)return false;
-  if(!roadNear(P.x,P.y,ROAD_GO.near)&&!roadNear(P.tx,P.ty,ROAD_GO.near)){log('No road near: your band goes the plain way.');return false}
-  G.byRoad={x:P.tx,y:P.ty};log('Your band keeps to the roads.');return true}
-// (to (wx, wy) by road: the action ring's By road)
-function roadGo(wx,wy){worldGo(wx,wy);return setByRoad(true)}
-// (key B: the way you go now by road, or the plain way again)
-function toggleByRoad(){if(P.tx==null||G.chase){log('Your band is going nowhere: hold on the map and pick By road.');return false}
-  if(byRoadTo(P.tx,P.ty)){setByRoad(false);log('Your band takes the plain way again.');return false}return setByRoad(true)}
+// by-road mode on or off (the way you go now taken again by it); its state
+function setByRoad(on){on=!!on;G.byRoad=null;if(typeof WUI!=='undefined')WUI.way=null;if(on===!!P.byRoad)return on;
+  if(on)P.byRoad=true;else delete P.byRoad;log(on?'By road: your band keeps to the roads wherever one is near.':'By road off: your band takes the plain way again.');updateHUD(true);return on}
+// (key B: on or off. The action ring's By road (roadGo): off, it turns on and you go to (wx, wy) by it; on, it turns off; the mode's state)
+const toggleByRoad=()=>setByRoad(!P.byRoad);
+function roadGo(wx,wy){if(P.byRoad)return setByRoad(false);setByRoad(true);worldGo(wx,wy);return true}
+// (the day bar's mark while it is on: render.js updateHUD)
+const byRoadPill=()=>P.byRoad?'<em class="wroad" title="By road: every way you go keeps to the roads and tracks when one is within '+ROAD_GO.near+' tiles (B or the action ring’s By road turns it off)">'+icon('map',12)+'<i>By road</i></em>':'';
 // a holding you reach opens (true), unless you only pass it
 function arriveStep(){
   for(const t of TOWNS){

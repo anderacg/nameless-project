@@ -267,10 +267,11 @@ hero's: it is kept in her `P.sp`, on her scale (`maxSP`; when that grows, by a l
   march draining ×2.5 (`SUPPLY.forcedMarch`); it cannot start Exhausted and ends once Exhausted, in camp or a holding, or when an
   event or a window opens (`world.js fastWatch`). The time's 1×, 2×, 4× and Travel fast's 8× (key 4, the bar's last button, a toggle) are on the top bar. Not the
   Forced March perk. Tests: `tests/timecontrols.js`.
-- **By road** (the ring's By road, key B on the way you go now; the owner, 2026-10-23): your band's way keeps to the roads and tracks
-  (`world.js setByRoad`, `roadGo`: the router's road keeping, `WAY.keep`), leaving them only to reach the spot; the dots ahead show
-  it. `G.byRoad` is the point it is for (never saved): a new order goes the plain way. No road or track within `ROAD_GO.near` (8)
-  tiles of you or the spot: the plain way, and the log says so. Hurry (R) goes on as it was. Tests: `tests/roadband.js`, `tests/ring.js`.
+- **By road** (key B, or the ring's By road; the owner, 2026-10-23: a toggle): a mode, `P.byRoad` (saved; absent = off). While on,
+  every trip keeps to the roads and tracks (`world.js byRoadTo`: the router's road keeping, `WAY.keep`) when one is within
+  `ROAD_GO.near` (8) tiles of you or the goal, decided once a trip (`G.byRoad`, never saved); otherwise it quietly goes the plain way.
+  The top bar shows a BY ROAD pill; the ring lights active modes (`active`: By road, Stop hurrying, Break camp, Water first).
+  Hurry (R) goes on as it was. Tests: `tests/roadband.js`, `tests/ring.js`.
 - **The road's band** (`world/roadband.js`; the owner, 2026-10-23: "my character stands on the road but the game still reads it as
   swamp"): a road's speed follows the road as drawn, not its tiles (a staircase on a diagonal). Within `ROAD_BAND.great[0]` (10) px
   of a great road's line (`track[0]` 8 of a track's) road speed 1.3 (humans ×1.1), blended to the land's over 6 px more, the land's

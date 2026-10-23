@@ -126,6 +126,7 @@ cv.addEventListener('pointermove',e=>{if(G.mode!=='battle'||!B)return;const p=to
 // the box or the finger's press gone, nothing sent, the selection kept; letting go after it does nothing. True if there was one
 function dragCancel(){if(G.mode!=='battle'||!B||!(B.rdrag||B.box||TOUCH.lp))return false;touchDrop();B.rdrag=null;B.box=null;return true}
 // the map: travel to a point, or meet what is there
+// (a new trip: by road, if that mode is on, asks again whether a road is near: world.js byRoadTo)
 function worldGo(wx,wy){G.pitch=null;G.byRoad=null;if(!(clickAt(wx,wy)||G.chase)){P.tx=clamp(wx,8,MW*TILE-8);P.ty=clamp(wy,8,MH*TILE-8);P.stuck=0}wuiClick(wx,wy)}// (the click's ripple: worldui.js)
 /* ---------- touch (a phone on its side): Pointer Events with pointerType 'touch' only; the mouse, pen and keys above are as they were.
    Battle: a tap selects and a tap again sends, as before (now when the finger lifts); a long press (TOUCH.hold ms, the finger
@@ -259,7 +260,7 @@ window.addEventListener('keydown',e=>{
     if(e.code==='Space'){e.preventDefault();if(!e.repeat)togglePause()}
     if(k>='1'&&k<='3')setSpeed(SPEEDS[k-1]);if(k==='4'&&!e.repeat)setSpeed(G.speed===TRAVEL_FAST?1:TRAVEL_FAST);// (4: Travel fast, 8×, or back to 1×)
     if(k==='r'&&!e.repeat)toggleHurry();// R: Hurry, or stop hurrying (world/supply.js; the action ring's Hurry here too)
-    if(k==='b'&&!e.repeat)toggleByRoad();// B: the way you go now by road, or the plain way (world.js; the action ring's By road too)
+    if(k==='b'&&!e.repeat)toggleByRoad();// B: by-road mode on or off, every trip keeping to the roads while it is on (world.js; the action ring's By road too)
     if(k==='c')openChar();if(k==='i')openInv();if(k==='k')openSkills();if(k==='h')openHelp();if(k==='l')openJournal();
     if(!e.repeat&&(k==='='||k==='+'||k==='-')){mapZoom(k==='-'?-1:1);return}// + and −: the map's zoom (core.js)
     if(k==='g'&&!e.repeat){setGrid(!GRID.on);log(GRID.on?'Tile grid on (G to hide).':'Tile grid off.')}

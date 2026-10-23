@@ -4,8 +4,9 @@
    world/supply.js mapRingItems), in the battle's order buttons' style, with a short grow and a soft click. Pick one by letting go
    over it, or let go first and tap one; Esc, a right-click or a tap outside closes it. A press does nothing until it is let go or
    held: a short click travels (or meets what was clicked) as it is let go (the owner, 2026-10-22, mouse and touch alike).
-   ActionRing takes a point (client px) and a list of {icon, label, run()}: the map hands it its own; the battle can hand it
-   another later. The one open is ActionRing.now ---------- */
+   ActionRing takes a point (client px) and a list of {icon, label, run(), active}: the map hands it its own; the battle can hand it
+   another later. active: a mode that is on now (camped, by road, hurrying), lit in the UI's gold with a soft glow (style.css
+   .ar-btn.on; the owner, 2026-10-23: "active and inactive actions should look different"). The one open is ActionRing.now ---------- */
 // hold: ms a press must stay still; slop: client px it may wander meanwhile; r: the ring's radius (CSS px); press: the press under way
 const RING={hold:350,slop:8,r:80,press:null};
 class ActionRing{
@@ -16,7 +17,7 @@ class ActionRing{
     el.className='aring';el.setAttribute('role','menu');
     el.style.left=clamp(this.cx-r.left,R+36,Math.max(R+36,r.width-R-36))+'px';el.style.top=clamp(this.cy-r.top,R+30,Math.max(R+30,r.height-R-40))+'px';
     el.innerHTML='<i class="ar-dot"></i>'+this.items.map((it,i)=>{const a=-Math.PI/2+i*2*Math.PI/n;
-      return '<button class="ar-btn" type="button" role="menuitem" data-ring="'+i+'" title="'+it.label+'" style="--x:'+Math.round(Math.cos(a)*R)+'px;--y:'+Math.round(Math.sin(a)*R)+'px">'+icon(it.icon,22)+'<span>'+it.label+'</span></button>'}).join('');
+      return '<button class="ar-btn'+(it.active?' on" role="menuitemcheckbox" aria-checked="true':'" role="menuitem')+'" type="button" data-ring="'+i+'" title="'+it.label+(it.active?' (on)':'')+'" style="--x:'+Math.round(Math.cos(a)*R)+'px;--y:'+Math.round(Math.sin(a)*R)+'px">'+icon(it.icon,22)+'<span>'+it.label+'</span></button>'}).join('');
     el.addEventListener('click',e=>{const b=e.target.closest('[data-ring]');if(b)this.pick(+b.dataset.ring)});
     scr.appendChild(el);this.el=el;ActionRing.now=this;uiSfx('click');return this}
   close(){if(this.el)this.el.remove();this.el=null;if(ActionRing.now===this)ActionRing.now=null}
