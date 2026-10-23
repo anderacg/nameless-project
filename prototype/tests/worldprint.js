@@ -201,7 +201,16 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 //  roughFor), so what moves in the 600 frames (W8) and the three days and their save (W7) move. The painted world (W5, W6) and the
 //  save after begin (B2) hold. Checked: with ROAD_BAND's widths 0 (no band: the tile rule, an estate's track's tile 1.3) all nine are
 //  as before. Were W7 7521bda3, W8 32682fb8)
-const EXPECT={W1:'47419c85',W2:'975f62a1',W3:'154e87e1',W4:'8e6f8677',W5:'b11af87c',W6:'3c66cfdf',W7:'3be1d2fa',W8:'9323078a',B2:'af5eb3da'};
+// (W6, W7, W8 and B2 re-recorded 2026-10-23, on purpose, the owner's hideouts deep in the wilds (agent HO: world/sites.js
+//  HIDEOUT_PLACE, HIDEOUT_BAND; data/world.js DENSITY.grow wild): 30 hideouts by the wild land (was 61 by the land), 22 tiles or
+//  more from every holding and 8 from every road, 20 apart, drawn from the wild land and its clearings, so begin's draws for its
+//  sites, and with them the bands and beasts placed after them, move: the third view by day and night (W6: e7c695bb b3a84845 to
+//  19091725 ba5f5d14, the first two as before), the 600 frames (W8), the three days and their save (W7) and the save after begin
+//  (B2); their bigger chieftains (levels 2-5, were 1-3) move the saves on their own (W7, B2). Checked: with every rule off (the old
+//  ground, Site pick, SITE_GAP's hideout {travelers: 16}, DENSITY's hideouts by the land at .8, the den's row as the ruin's) all
+//  nine are as before; with only the placement and the count off, W7 and B2 move (05614c15, 144fcc6d: the chieftains) and the
+//  rest hold. Were W6 3c66cfdf, W7 3be1d2fa, W8 9323078a, B2 af5eb3da)
+const EXPECT={W1:'47419c85',W2:'975f62a1',W3:'154e87e1',W4:'8e6f8677',W5:'b11af87c',W6:'8157cbb7',W7:'83187faa',W8:'cb53c8cb',B2:'06f1b51d'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended

@@ -269,8 +269,9 @@ function ruinOccupant(s){const R=seeded((s.seed*7919+(s.cyc||0)*104729)>>>0),c=c
     w=ks.map(k=>{const O=RUIN_OCC[k];return O.w*((O.clim||{})[c]??1)*((O.land||{})[land]??1)});
   let r=R()*w.reduce((a,b)=>a+b,0),k=ks[ks.length-1];for(let i=0;i<ks.length;i++){r-=w[i];if(r<0){k=ks[i];break}}
   const o={k};if(RUIN_OCC[k].make)RUIN_OCC[k].make(s,o,R);return o}
-// occupants that are a site of their own: one of its kind on the ruin's point, of the ruin (within: its name), made as genSites makes one
-function occupantSite(s,type){const o=Object.assign(Object.create(SITE_CLASS[type].prototype),{i:s.i,type,tx:s.tx,ty:s.ty,x:s.x,y:s.y,seed:s.seed,seen:true,cleared:false,back:0});o.setup(W.sites,climAt(s.x,s.y));o.within=s.name;return o}
+// occupants that are a site of their own: one of its kind on the ruin's point, of the ruin (within: its name, set before its setup
+// reads it: a hideout's band), made as genSites makes one
+function occupantSite(s,type){const o=Object.assign(Object.create(SITE_CLASS[type].prototype),{i:s.i,type,tx:s.tx,ty:s.ty,x:s.x,y:s.y,seed:s.seed,seen:true,cleared:false,back:0,within:s.name});o.setup(W.sites,climAt(s.x,s.y));return o}
 class Ruins extends Site{
   // (its picture two tiles wide and deep since stage 3, structures.js siteSprite: no road on the tiles round it it may stand on)
   static clear(tx,ty){if(!super.clear(tx,ty))return false;for(let j=-1;j<=0;j++)for(let i=-1;i<=1;i++)if(tAt(tx+i,ty+j)===T_ROAD)return false;return true}
@@ -373,7 +374,12 @@ class Lair extends Site{
   get scouts(){return true}
   get emptyPage(){return true}
   get bandKind(){return this.band||'bandits'}
-  returned(){this.ld=newChief(this.bandKind,rint(1,3)+Math.floor(G.day/30))}
+  returned(){this.ld=newChief(this.bandKind,this.newLv()+Math.floor(G.day/30))}
+  // a new chieftain's level (before the days add theirs); its plunder past every camp's (engage.js ON_WIN camp): none, a line
+  // for the victory panel; what your scouts say of its loot (n: how many they saw)
+  newLv(){return rint(1,3)}
+  plunder(res){return ''}
+  lootSay(n){return 'about '+(n*4+25)+' gold in their purses, likely a piece of gear (4 in 5)'}
   box(box,camp){camp(this,siteSprite(this))}
   // the bands sheltering here tonight, as one list (a camp's: BanditCamp)
   sheltering(){return (this.bands||[]).flatMap(b=>b.troops)}
@@ -401,9 +407,9 @@ class Lair extends Site{
         acts:[{icon:'gold',label:'Pay them to go',act:'site-pay',facts:[tb+'g','they break camp'],why:P.gold<tb?'Not enough gold':'',tip:'Buy them off: '+tb+' gold and they break camp and ride away, any bands sheltering with them. No fight, no loot, no bounty; the place lies empty for a while.'},
           {icon:'prisoners',label:'Demand surrender',act:'site-yield',facts:[afraid?insight(['they might yield, or not',oddsWord(ch/100)+' they yield',ch+'% they yield'],'know the odds'):'they do not fear you','else they fight'],why:afraid?'':'They do not fear you: it takes about twice their strength',tip:'Call on them to yield, as a cornered band would. If they do, you choose their fate: prisoners, recruits or let go. If not, they fight.'}],
         note:'They '+(afraid?'eye your band warily.':'laugh at your band.'),back:['site-tab','home','Back']}}
-    const all=y&&s.all(y.list),pw=all?s.power(all):g.pw,lk=looks(pw/Math.max(1,partyPower())),gold=all?all.length*4+25:0;
+    const all=y&&s.all(y.list),pw=all?s.power(all):g.pw,lk=looks(pw/Math.max(1,partyPower()));
     return{body:'<p class="muted">'+s.T.d+'</p>'+(y?'<div class="lab">What your scouts saw</div>'+railCards(Object.entries(countsOf(all)).map(([k,n])=>({pic:portrait(k),name:k==='chief'&&ld?chiefLabel(ld):ST[k].n,role:k==='chief'?'Their chieftain · bounty '+bountyOf(ld)+'g':'Tier '+ST[k].tier,n})))+
-        '<ul class="tnotes"><li>Power <b>'+pw+'</b> vs your '+partyPower()+'.</li><li>Loot: about '+gold+' gold in their purses, likely a piece of gear (4 in 5), and '+(ld?ld.name:'their chieftain')+' to take captive ('+bountyOf(ld)+'g bounty).</li></ul>':
+        '<ul class="tnotes"><li>Power <b>'+pw+'</b> vs your '+partyPower()+'.</li><li>Loot: '+s.lootSay(all.length)+', and '+(ld?ld.name:'their chieftain')+' to take captive ('+bountyOf(ld)+'g bounty).</li></ul>':
         pageFacts([insight([band+' in their tents',cap1(roughly(g.n))+' '+band.toLowerCase(),g.n+' '+band.toLowerCase()+' and their chieftain'],'know their numbers')+(s.sheltering().length?', bands among them sheltering for the night':''),
           insight(['you cannot tell how strong','<span class="'+lk[1]+'">'+lk[0].replace('They','they')+'</span>','power '+g.pw+' vs your '+partyPower()],'know their strength')])+
         '<ul class="tnotes"><li>Led by '+(ld?chiefLabel(ld)+', '+bountyOf(ld)+' gold on his head':'a chieftain')+'.</li><li>Talk of plunder piled in the tents.</li></ul>'),
@@ -418,16 +424,52 @@ class Lair extends Site{
     if(a==='site-fate'){const yl=G.siteSpy&&G.siteSpy.s===s&&G.siteSpy.yielded;if(yl){G.siteTab=null;done(lairFate(s,yl,arg))}return true}
     return false}
 }
-// a hideout: hidden off the roads, its raiders by the climate; it keeps clear of the estates (lots.js)
+/* where a hideout stands (the owner, 2026-10-23: "bandit and raider hideouts should spawn far away from holdings, mostly found in
+   wilderness areas"): on the wild land (wildLand), far tiles or more from every holding and road from every road, track and
+   ford (an estate's too); of draw tiles drawn from it, one on clear ground and wild (wildGround) first. Wild: woods, hills or
+   peaks rough of the tiles within near of it (a clearing in the wilds), or deep in the swamp or the desert (its climate deep
+   tiles out every way). Another hideout 20 tiles off at least (SITE_GAP). How many: by the wild land (data/world.js DENSITY) */
+const HIDEOUT_PLACE={far:22,road:8,draw:48,near:10,rough:.2,deep:6};
+// the wild land of the world in: at (a byte a tile: 1 on it), list (its tiles), n; kept on the map till its holdings or roads
+// change (an estate's track laid or lifted: as data/world.js worldRoads; never on its lists or hashes)
+function wildLand(){const m=WM,R=m.roads||[],key=TOWNS.length+' '+R.length+' '+R.reduce((n,r)=>n+r.path.length,0);if(m._wild&&m._wild.key===key)return m._wild;
+  const H=HIDEOUT_PLACE,at=new Uint8Array(MW*MH),stamp=(x,y,r)=>{for(let j=1-r;j<r;j++)for(let i=1-r;i<r;i++)if(i*i+j*j<r*r&&x+i>=0&&y+j>=0&&x+i<MW&&y+j<MH)at[(y+j)*MW+x+i]=2};
+  for(let i=0;i<at.length;i++)if(tiles[i]===T_ROAD||tiles[i]===T_FORD)stamp(i%MW,(i-i%MW)/MW,H.road);
+  for(const t of TOWNS)stamp(t.tx,t.ty,H.far);
+  const list=[];for(let i=0;i<at.length;i++){if(at[i]){at[i]=0;continue}const k=tiles[i];if(k===T_OPEN||k===T_FOREST||k===T_HILL){at[i]=1;list.push(i)}}
+  Object.defineProperty(m,'_wild',{value:{key,at,list,n:list.length},configurable:true,writable:true});return m._wild}
+// (a clearing in the wilds, or deep in the swamp or the desert: HIDEOUT_PLACE)
+function wildGround(tx,ty){const H=HIDEOUT_PLACE,c=climate[ty*MW+tx];let n=0,r=0;
+  for(let j=-H.near;j<=H.near;j++)for(let i=-H.near;i<=H.near;i++)if(i*i+j*j<=H.near*H.near){const k=tAt(tx+i,ty+j);n++;if(k===T_FOREST||k===T_HILL||k===T_MOUNT)r++}
+  if(r>=n*H.rough)return true;if(c!==CLIM.swamp&&c!==CLIM.desert)return false;
+  for(let a=0;a<8;a++){const x=tx+Math.round(Math.cos(a*Math.PI/4)*H.deep),y=ty+Math.round(Math.sin(a*Math.PI/4)*H.deep);if(x<0||y<0||x>=MW||y>=MH||climate[y*MW+x]!==c)return false}
+  return true}
+/* a hideout: deep in the wilds (HIDEOUT_PLACE), its raiders by the climate; it keeps clear of the estates (lots.js). Its band
+   (HIDEOUT_BAND, the owner, 2026-10-23: finding one is an expedition): den, a hideout of its own: a bigger garrison, a stronger
+   chieftain, richer plunder; ruin, bandits in searched ruins (within): as a hideout was. size0: how many its look counts on;
+   foes: [from, to] (+1 every 15 days); chief: its chieftain's level [from, to]; gold: its plunder's gold x; gear: the chance
+   of another piece of gear past a camp's (4 in 5; the den's 1.5 x: 1.2 a fight) */
+const HIDEOUT_BAND={den:{size0:8,foes:[7,9],chief:[2,5],gold:1.5,gear:.4},ruin:{size0:6,foes:[5,7],chief:[1,3],gold:1,gear:0}};
 class Hideout extends Lair{
-  static ground(tx,ty){return tAt(tx,ty)!==T_ROAD&&!nearTile(tx,ty,T_ROAD,3)}
+  static ground(tx,ty){return wildLand().at[ty*MW+tx]===1}
   static clear(tx,ty){return campClear('hideout',tx,ty)}
   static fits(tx,ty){return !estateNear(tx,ty,BANDIT_GAP)}
-  setup(sites,clim){this.band=clim==='desert'?'raiders':clim==='swamp'?'bog':'bandits';this.name=HIDEOUT_NAMES[this.band];this.ld=newChief(this.band,rint(1,3),sites)}
-  get size0(){return 6}
+  // (of HIDEOUT_PLACE draw tiles of the wild land: the first clear and wild, else the first clear, else the last)
+  static pick(){const L=wildLand().list;if(!L.length)return super.pick();let best=null,bs=-1;
+    for(let k=0;k<HIDEOUT_PLACE.draw&&bs<3;k++){const i=L[rint(0,L.length-1)],tx=i%MW,ty=(i-tx)/MW,c=this.clear(tx,ty),sc=c?wildGround(tx,ty)?3:2:1;if(sc>bs){bs=sc;best=[tx,ty]}}
+    return best}
+  get tune(){return HIDEOUT_BAND[this.within?'ruin':'den']}
+  setup(sites,clim){this.band=clim==='desert'?'raiders':clim==='swamp'?'bog':'bandits';this.name=HIDEOUT_NAMES[this.band];this.ld=newChief(this.band,this.newLv(),sites)}
+  newLv(){return rint(...this.tune.chief)}
+  get size0(){return this.tune.size0}
   // its raiders and chieftain (makeEnemies, as startEncounter makes them from n), and the fight with them
-  foes(){const n=rint(5,7)+Math.floor(G.day/15);return makeEnemies(n,true,this.band)}
-  attack(own){startEncounter(own?{kind:'camp',ref:this,n:own.length-1,list:own,band:this.band}:{kind:'camp',ref:this,n:rint(5,7)+Math.floor(G.day/15),band:this.band})}
+  foes(){return makeEnemies(this.garrison(),true,this.band)}
+  garrison(){return rint(...this.tune.foes)+Math.floor(G.day/15)}
+  attack(own){startEncounter(own?{kind:'camp',ref:this,n:own.length-1,list:own,band:this.band}:{kind:'camp',ref:this,n:this.garrison(),band:this.band})}
+  // (its plunder: the gold x tune's, and maybe another piece of gear)
+  plunder(res){const T=this.tune;res.gold=Math.round(res.gold*T.gold);if(!T.gear||Math.random()>=T.gear)return '';const id=randomGear(0,gearTop());
+    return invAdd('gear',id,1)?' Among their plunder: a <span style="color:'+RARITY[ITEMS[id].r]+'">'+ITEMS[id].n+'</span>.':' '+BAG_FULL+'. You leave a '+ITEMS[id].n+' behind.'}
+  lootSay(n){const T=this.tune;return T.gold===1&&!T.gear?super.lootSay(n):'about '+Math.round((n*4+25)*T.gold)+' gold in their plunder, likely a piece of gear (4 in 5) and maybe another'}
   get clearJob(){return true}
 }
 // a bandit camp: on its fixed spot, in plain sight once you have seen its ground; the roving bands shelter in it by night
@@ -515,8 +557,9 @@ const camps=()=>W.sites.filter(s=>s instanceof BanditCamp);
 /* placement */
 // the least distance (tiles) between two kinds of site, past siteSpot's gap, never relaxed (the owner's play-test, 2026-10-22:
 // "too many pilgrim and wanderer camps"): a travellers' camp far from another, and from the outlaws' camps and hideouts (no
-// traders' fire beside a bandits' den; a bandit camp stands on its spot first, a hideout keeps the gap to the travellers before it)
-const SITE_GAP={travelers:{travelers:30,camp:16,hideout:16},hideout:{travelers:16}};
+// traders' fire beside a bandits' den; a bandit camp stands on its spot first, a hideout keeps the gap to the travellers before it);
+// a hideout far from another and from the bandit camps (the owner, 2026-10-23: deep in the wilds, each its own stretch of them)
+const SITE_GAP={travelers:{travelers:30,camp:16,hideout:16},hideout:{travelers:16,camp:16,hideout:20}};
 const siteGap=(a,b)=>SITE_GAP[a]&&SITE_GAP[a][b]||0;
 // a free tile for a site of this kind: reachable from the roads, on its ground, clear of holdings and other sites (the camps among
 // them; SITE_GAP's kinds farther); each try a tile its kind picks (Site pick)
