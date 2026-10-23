@@ -1,11 +1,13 @@
 'use strict';
 /* ---------- the Thread shape (doc/STORY_DESIGN.md §2, §3.6, §3.10; the story wave, S5: the framework only) ----------
    A thread is a story tying several happenings into steps, sharing what it knows (its memory: who, where, what was found). Its
-   kinds (defineKind('thread', id, {n, steps, first})) are data; the game has none yet (the chain quests and Ander The Fallen
-   will be the first: doc/IMPLEMENTATION_PLAN.md §10.7–10.8). Each step: {id, start, until, how, remember, then}:
+   kinds (defineKind('thread', id, {n, steps, first})) are data: the chains (the first, The Wounded Traveller and Ander The
+   Fallen: story/wounded.js; doc/IMPLEMENTATION_PLAN.md §10.7–10.8). Each step: {id, start, until, how, remember, then, note}:
    - start: what the step begins (Thread.starters), its fields plain or functions of the thread (th=>th.memory.town):
        {quest: kind, town, lord, spec}: a job offered at the town (none: the memory's town), by the lord if named, and taken;
          spec: what a kind made by another is given (an escort: {quest: 'escort', spec: {who, to, …}}, world/escort.js);
+       {step: kind, town, spec}: a step of a chain begun the same way, a quest no board offers (visit, deliver, lair:
+         story/steps.js);
        {encounter: kind, x, y}: one on the road there (none: a spot of its own ground ahead of you);
        {incident: kind}: it befalls you, over at once;
        {page: {ico, title, text, choices}}: a page of choices (Choice specs, each its how), shown when you are free on the map;
@@ -15,11 +17,13 @@
    - how(d, th): the key it branches by (none: the event's own how: a quest 'paid' or 'failed', an encounter 'done' or 'left',
      a page's choice its how);
    - remember(d, th): what it learnt, put into the memory;
-   - then: the next step's id, or {how: id} a branch (a key not there, or null: the thread ends).
+   - then: the next step's id, or {how: id} a branch (a key not there, or null: the thread ends);
+   - note(th): what to do now, in a few words (your Quests: Thread.journal).
    Its record (W.story.threads.on): {k, i, day (begun), at (the step under way), wait ({shape, id}: what it waits for), memory,
    past ([step, how] each done)}. Thread.start(id, memory) begins one (or an outcome's start: {thread, memory}). Never ticked:
    it hears the bus (Thread.heard), only for the events its steps wait for; it ends when its last step ends ('thread:ended',
-   {e, how}). */
+   {e, how}), its end kept (W.story.threads.ended: {k, i, how, day, memory}, the last STEP.keep: who was carried off, for a
+   rescue later). W.story.threads.once: what may come once a game, and the day it came (Thread.once, Thread.mark: Ander). */
 class Thread extends Happening{
   get shape(){
     return 'thread';
@@ -67,7 +71,13 @@ class Thread extends Happening{
     this.how=how;
     const L=Thread.list();
     L.on=L.on.filter(x=>x!==this);
+    L.ended=(L.ended||[]).concat([{k:this.k,i:this.i,how,day:G.day,memory:this.memory}]).slice(-STEP.keep);
     this.announceEnd(how);
+  }
+  // (what to do now: its step's note)
+  get note(){
+    const s=this.current;
+    return s&&s.note?this.param(s.note):'';
   }
   // ---- its page (a page step's: story/choice.js ChoicePage); no way out till chosen
   get pageSpec(){
@@ -108,9 +118,29 @@ class Thread extends Happening{
     th.begin(K.first||K.steps[0].id);
     return th;
   }
-  // those with a page waiting to be shown
+  // those with a page waiting to be shown; the first shown, if you are free on the map (Steps.frame: true, it was)
   static paged(){
     return this.list().on.filter(th=>th.pageSpec);
+  }
+  static showWaiting(){
+    const th=this.paged()[0];
+    return !!th&&th.showPage();
+  }
+  // ---- once a game (Ander met): the day it came, or undefined; marked
+  static once(key){
+    const o=this.list().once;
+    return o?o[key]:undefined;
+  }
+  static mark(key){
+    const L=this.store();
+    (L.once||(L.once={}))[key]=G.day;
+  }
+  // ---- your Quests' stories: each under way, its name, what it is about and what to do now
+  static journal(){
+    const L=this.list().on;
+    if(!L.length)return '';
+    return '<div class="lab" style="margin-top:6px">Stories</div>'+L.map(th=>{const K=th.kind,who=K.who?th.param(K.who):'';
+      return '<div class="row"><div class="info"><strong>'+K.n+(who?': '+who:'')+'</strong><small>'+(th.note||'Under way.')+'</small></div></div>'}).join('');
   }
   // ---- a step's starter, the event it waits for, the next step by its key
   static starterOf(s){
@@ -178,6 +208,13 @@ Thread.starters={
       return th.wait;
     },
   },
+  // (a chain's step: a quest of the 'step' kinds, begun as a job is: story/steps.js)
+  step:{
+    until:'quest:ended',
+    start(v,th){
+      return Thread.starters.quest.start({...v,quest:v.step},th);
+    },
+  },
 };
 /* a page's choice (thr-do, its place in the list; '!' once its confirm is answered): done, the page closed, and the step told
    on the bus ('page:chosen', {e, how: the choice's how, else its place}) */
@@ -205,12 +242,17 @@ function threadAct(a,arg){
   worldEmit('page:chosen',{e:th,how:c.how!==undefined?c.how:String(i)});
 }
 onAct('thr-',threadAct);
-/* the save: W.story.threads once one has begun (none: as every save before it; the save registry, core/saves.js); each loaded
-   wrapped by its kind's class (one whose kind is gone dropped), and the events its steps wait for listened to again */
+/* the save: W.story.threads once one has begun or something has come once (none: as every save before it; the save registry,
+   core/saves.js), the ended and the once only when there are any; each loaded wrapped by its kind's class (one whose kind is
+   gone dropped), and the events its steps wait for listened to again */
 Saves.add({key:'threads',order:250,defaults:null,
   save:()=>{
     const L=W.story&&W.story.threads;
-    return L&&L.n?{n:L.n,on:L.on.map(th=>th.save())}:undefined;
+    if(!L||!L.n&&!L.once)return undefined;
+    const v={n:L.n,on:L.on.map(th=>th.save())};
+    if(L.ended)v.ended=L.ended;
+    if(L.once)v.once=L.once;
+    return v;
   },
   load:v=>{
     if(!v)return;

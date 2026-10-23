@@ -10,11 +10,13 @@
    - spec: {who (ESCORT.who: child, refugees, traveller), n (its name: the kind's), eat (food a day: the kind's), to {town, lot
      (none: the holding; 'house' or an estate's key: one of its lots, i choosing which, no draw)}, days (none: the way's tiles ÷
      ESCORT.pace + slack), prize (the outcome on arrival), forfeit (on failing: reputation at its place), at {x, y} (where it
-     begins: the way's length; none, you)}.
+     begins: the way's length; none, you); a chain's may add forfeits (by fate: captured …), say (its own lines, as a kind's)
+     and quiet (no page of its own on arrival: the chain's next page speaks)}.
+   - It is a chain's step kind (story/steps.js StepQuest: its place, arrival, prize, failing and lines are the steps' own).
    - Its record is the quest's, saved with P.quests as it is: {type: 'escort', who, pn (its name), eat, to {k (holding, house,
      estate), town, lot, x, y, name}, prize, forfeit, days, due, title, text, reward (for the panels), fate (once over)}.
    - It ends one of four ways, each with its line (its kind's, else ESCORT.say's):
-     arrival: within ESCORT.reach of its place on the map (Escort.frame, each moment: world/road.js updateRoad), or entering its
+     arrival: within ESCORT.reach of its place on the map (story/steps.js Steps.frame, each moment: world/road.js updateRoad), or entering its
        holding (arrive): its prize applied, its page shown (Ride on), paid: fate 'arrived';
      deadline: its due day passed (the quests' day: lapse): failed, fate 'late' (it goes on alone);
      a battle lost while it rides with you (battle:ended, lost: battle/resolution.js): failed, fate 'captured' (carried off by the
@@ -22,16 +24,13 @@
      abandoned (your quests' Abandon): failed, fate 'left' (set down by the road).
      A failure applies its forfeit. Then the bus's quest:ended {e, how: 'paid' or 'failed'}, and e.fate says which way: what a
      thread's step branches by (how: d=>d.e.fate). ---------- */
-class EscortQuest extends Quest{
+class EscortQuest extends StepQuest{
   // (not a job: its own limit, ESCORT.max)
-  get counted(){
-    return false;
-  }
   full(){
     return Escort.list().length>=ESCORT.max;
   }
   setup(t,lord,spec){
-    const s=spec||Escort.offer(t),to=s&&Escort.place(s.to);
+    const s=spec||Escort.offer(t),to=s&&StepQuest.place(s.to);
     if(!to)return false;
     const K=Escort.who(s.who),o=s.prize||{},g=o.gold||0;
     this.who=s.who||'traveller';
@@ -47,13 +46,13 @@ class EscortQuest extends Quest{
     this.title='Escort '+this.pn+' to '+to.name;
     this.text=cap1(this.pn)+' rides with you, to be seen safe to '+to.name+'.';
     this.reward={gold:Outcome.amount(g),rep:o.rep?o.rep[1]:0,honor:o.honor?o.honor[1]:0,xp:o.xp||0};
+    if(s.forfeits)this.forfeits=s.forfeits;
+    if(s.say)this.lines=s.say;
+    if(s.quiet)this.quiet=true;
   }
   begin(){
     this.x=this.to.x;
     this.y=this.to.y;
-  }
-  seek(){
-    return {x:this.to.x,y:this.to.y,name:this.to.name};
   }
   todo(){
     return 'Bring '+this.pn+' to '+this.to.name+'.';
@@ -61,40 +60,20 @@ class EscortQuest extends Quest{
   rewardLine(){
     return Outcome.describe(this.prize)||'their thanks';
   }
-  // (paid on arrival, never reported)
-  reportableAt(){
-    return false;
+  // ---- there (story/steps.js: near its place, or entering its holding): paid, its page (none when quiet); failing: late (its due
+  // day), captured (a battle lost), left (abandoned): the steps' own, its lines its kind's (Escort.say)
+  get reaches(){
+    return true;
   }
-  // ---- there: near its place on the map, or entering its holding
-  near(){
-    return Math.hypot(P.x-this.to.x,P.y-this.to.y)<=ESCORT.reach[this.to.k==='holding'?'holding':'lot'];
-  }
-  arrive(t){
-    if(t.name===this.to.town)this.pay();
-  }
-  pay(){
-    this.fate='arrived';
-    P.quests=P.quests.filter(x=>x!==this);
-    const r=Outcome.apply(this.prize,{e:this}),line=Escort.say(this,'arrive');
-    log(line,'good');
-    log('Quest complete: '+this.title+'.'+(r.say?' '+r.say:''),'good');
-    updateHUD(true);
-    Escort.show(this,line);
-    this.announceEnd('paid');
-  }
-  // ---- failing: late (its due day), captured (a battle lost), left (abandoned); its forfeit, its line
-  fail(why,fate){
-    this.fate=fate||'late';
-    P.quests=P.quests.filter(x=>x!==this);
-    Outcome.apply(this.forfeit,{e:this});
-    log('Quest failed: '+this.title+'. '+(why||Escort.say(this,this.fate)),'bad');
-    this.announceEnd('failed');
+  shown(line){
+    if(!this.quiet)Escort.show(this,line);
   }
   lapse(){
     if(G.day>this.due)this.fail(null,'late');
   }
-  abandon(){
-    this.fail(null,'left');
+  sayOf(k){
+    const K=Escort.who(this.who);
+    return (K.say&&K.say[k])||ESCORT.say[k]||'';
   }
 }
 defineKind('quest','escort',{cls:EscortQuest});
@@ -116,14 +95,10 @@ const Escort={
     const t=townBy(spec.to&&spec.to.town),q=t&&Quest.make('escort',t,null,spec);
     return q&&q.accept()?q:null;
   },
-  // its place: the holding, or one of its lots (a house, an estate: the i-th of them that stands, its door); null: none
+  // its place: the holding, or one of its lots (a house, an estate: the i-th of them that stands, its door); null: none (the
+  // steps': story/steps.js StepQuest.place)
   place(to){
-    const t=to&&townBy(to.town);
-    if(!t)return null;
-    const ls=to.lot?(t.lots||[]).filter(l=>l.k===to.lot&&l.st!=='ruined'):[];
-    if(!ls.length)return {k:'holding',town:t.name,x:t.x,y:t.y,name:t.name};
-    const l=ls[Math.abs(to.i|0)%ls.length],m=lotMid(l),house=to.lot==='house';
-    return {k:house?'house':'estate',town:t.name,lot:to.lot,x:Math.round(m.x),y:Math.round(m.y),name:house?'a house in '+t.name:ESTATES[to.lot].n+' of '+t.name};
+    return StepQuest.place(to);
   },
   // the days given: the spec's, else the way from where it begins (none: you) ÷ pace, and slack more
   days(s,to){
@@ -147,23 +122,14 @@ const Escort={
     const n=Escort.eatDay();
     return n?n/24*(moving?SUPPLY.eat.march:SUPPLY.eat.rest):0;
   },
-  // ---- each moment on the map: one at its place is there (one a moment; true: it was, the moment ends there)
-  frame(){
-    if(G.mode!=='world')return false;
-    for(const q of P.quests)if(q.type==='escort'&&Quest.as(q).near()){
-      q.pay();
-      return true;
-    }
-    return false;
-  },
   // a battle lost: each passenger carried off by the victors
   lost(){
     for(const q of Escort.list())q.fail(null,'captured');
   },
-  // ---- the words: its line ({N}, {n}, {to}, {town}); the way there from you; its facts (an outcome's: story/outcome.js)
+  // ---- the words: its line ({N}, {n}, {to}, {town}: its own, else its kind's, else ESCORT.say's); the way there from you; its
+  // facts (an outcome's: story/outcome.js)
   say(q,k){
-    const K=Escort.who(q.who),s=(K.say&&K.say[k])||ESCORT.say[k]||'';
-    return s.replace('{N}',cap1(q.pn)).replace('{n}',q.pn).replace('{to}',q.to.name).replace('{town}',q.to.town);
+    return Quest.as(q).say(k);
   },
   way(q){
     const d=Math.round(Math.hypot(q.to.x-P.x,q.to.y-P.y)/TILE);

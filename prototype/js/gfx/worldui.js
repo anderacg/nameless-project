@@ -196,9 +196,9 @@ function wuiRoadOver(cam,now,rm){const V=vis(),col=WUI_K.col.enc,bang=wuiArrow('
     const d=(Math.round((a+Math.PI)/(Math.PI/8))%16+16)%16,sx=Math.round(ax+ux*WAVE.src),sy=Math.round(ay+uy*WAVE.src),nA=rm?2:WAVE.arcs;
     for(let i=0;i<nA;i++){const q=rm?(i+1)/(nA+1):((now/1000/WAVE.t+i/nA+(e.seed||0)*.37)%1),c=wuiArc(4+Math.round(q*WAVE.edge),d,col);ctx.globalAlpha=WAVE.a*Math.min(1,q*5)*(1-q*q);wuiPut(c,sx,sy,c.cx,c.cy)}
     ctx.globalAlpha=.8+.2*p;const in_=WAVE.edge-WAVE.src+12;wuiPut(bang,Math.round(ax-ux*in_),Math.round(ay-uy*in_)+4,bang.cx,bang.tip);ctx.globalAlpha=1}}
-/* ---- an escort's place (world/escort.js): a small house, in the friends' green, bobbing over the door it is bound for (a holding's
-   middle, a house's or an estate's door), while it is on the screen; its dot on the minimap is the quests' (render.js). Still,
-   under reducedMotion ---- */
+/* ---- a home a step is bound for (story/steps.js homeMark: an escort's place, a chain's family's door): a small house, in the
+   friends' green, bobbing over it (a holding's middle, a house's or an estate's door), while it is on the screen; its dot on the
+   minimap is the quests' (render.js). Still, under reducedMotion ---- */
 WUI_ARROW.home=['...#...','..###..','.#####.','#######','.#####.','.##.##.','.##.##.'];
 function wuiEscorts(cam,now,rm){const c=wuiArrow('home',WUI_K.col.friend),bob=rm?0:Math.round((1+Math.sin(now/1000*3))/2*2);
-  for(const q of P.quests){if(!q.to)continue;const x=Math.round(q.to.x-cam.x),y=Math.round(q.to.y-cam.y);if(x<-10||y<-10||x>VW+10||y>VH+10)continue;wuiPut(c,x,y-12-bob,c.cx,c.tip)}}
+  for(const q of P.quests){const h=Quest.as(q).homeMark();if(!h)continue;const x=Math.round(h.x-cam.x),y=Math.round(h.y-cam.y);if(x<-10||y<-10||x>VW+10||y>VH+10)continue;wuiPut(c,x,y-12-bob,c.cx,c.tip)}}

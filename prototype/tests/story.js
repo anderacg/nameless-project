@@ -59,6 +59,8 @@ Kit.suite(({ok,info})=>{
   fresh();P.quests=[];run({passenger:{who:'child',to:{town:'Ashford',lot:'house',i:1},prize:{morale:5}}},null,(r,f)=>!!r.escort&&P.quests[0]===r.escort&&r.escort.type==='escort'&&/^escort the lost child to (a house in )?Ashford within \d+ days,there: morale \+5$/.test(f.join()),'a passenger: an escort begun (world/escort.js), its place, days and prize');P.quests=[];
   run({band:true},null,(r,f)=>(r.band===false||t.bandits.includes(r.band))&&f.join()==='word of a band','a band set on the map ('+(t.bandits.length?'there':'no room')+')');Kit.clear();
   {let got=null;run({call:(c,r)=>{got=c;return 9},say:r=>'said '+r.call},{e:7},(r,f)=>got&&got.e===7&&r.call===9&&r.say==='said 9'&&!f.length,'a hook\'s own step, and the line from what came of it')}
+  {delete P.comps.ander;run({companion:{id:'ander',lv:4,ap:3,attr:{str:4,agi:4,int:0,cha:1}}},null,(r,f)=>!!r.companion&&P.comps.ander===r.companion&&r.companion.lv===4&&r.companion.ap===3&&r.companion.attr.str===4&&t.compInBand('ander')&&f.join()==='Ander joins your band','a companion joins by a story (his level, attributes, trust)');
+   run({companion:{id:'ander'}},null,(r,f)=>r.companion===null&&P.comps.ander.lv===4,'one who rides with you already: no second');delete P.comps.ander}
   ok(keys.every(k=>seen.has(k)),'every handler tried: '+keys.join(', ')+(keys.some(k=>!seen.has(k))?' (not: '+keys.filter(k=>!seen.has(k)).join(', ')+')':''));
   let thr='';try{O.apply({nope:1})}catch(x){thr=x.message}ok(/nope/.test(thr),'an effect with no handler is refused');
   fresh();g0=P.gold;let at=[];O.apply({gold:5,call:()=>at.push(P.gold)});O.apply({call:()=>at.push(P.gold),gold:5});ok(at.join()===(g0+5)+','+(g0+5),'the keys are done in the order they are written');

@@ -23,6 +23,8 @@ const statParts=k=>ENC_STAT[k].parts.map(([s,p])=>'+'+Math.round(p*1000)/10+'% '
 function statRead(k,o){const p=statOdds(k);return insight([o.vague,o.rough?o.rough(p):oddsWord(p)+' '+o.what,o.exact?o.exact(p):Math.round(p*100)+'% '+o.what],o.more||'know your odds')}
 // the people in them (folk of the nearest holding's race, v a variant): today's map figures in small variants
 const ENC_LOOK={traveller:(r,v)=>({...folkLook('folk',r,v),robe:false,helm:'bare',outer:'blue',team:'linen'}),healed:(r,v)=>({...ENC_LOOK.traveller(r,v),helm:'bandage'}),
+  // (Ander The Fallen, the wounded traveller's rare variant: story/wounded.js; a veteran sellsword, a scar, a dark cloak)
+  ander:(r,v)=>({...folkLook('folk','human',v),robe:false,helm:'bare',hair:'black',beard:null,outer:'dark',team:'dark',cape:'dark',weapon:'sword',scar:true}),anderHealed:(r,v)=>({...ENC_LOOK.ander(r,v),helm:'bandage'}),
   peddler:(r,v)=>({...folkLook('merchant',r,v),load:'pack',weapon:'crook'}),pilgrim:(r,v)=>({...folkLook('priest',r,v),weapon:v%2?'crook':null}),
   hunter:(r,v)=>({...folkLook('folk',r,v),robe:false,helm:'hood',hood:'forest',outer:'leather',team:'forest',weapon:v%2?'bow':'spear'}),
   child:(r,v)=>({...folkLook('folk',r,v),robe:false,short:true,beard:null,helm:'bare',weapon:null}),
@@ -156,15 +158,21 @@ class Stray extends Encounter{
   }
 }
 defineKinds('encounter',{trigger:'travelHour'},{
+  /* the wounded traveller: the first step of a chain (story/wounded.js, The Wounded Traveller). Tended (Tend his wounds), he stands
+     bandaged and his page goes on to his offer (Wounded.offer: Join you, Take him home, Refuse; no way out till you answer), his
+     time lengthened; healed, he never dies by the road (ending: dealt with). Ander The Fallen is one of them, rarely (setup:
+     Wounded.met, no draw) */
   traveller:{n:'Wounded traveller',ico:'wounded',w:2,ok:()=>true,on:'byroad',beh:'stay',ends:'die',call:'Help! Over here!',hear:'Someone calls out from the road to the {d}.',trace:'body',tip:'Lying by the road',
-    scene:e=>e.healed?[['walk','healed',0,0]]:[['down','traveller',0,0,{blood:1}]],// (tended: up on his feet, bandaged, and on his way)
-    text:()=>'A wounded traveller lies by the road, robbed and left for dead. He clutches a purse the bandits missed.',
-    facts:e=>[insight(['badly hurt','he will not last the day without help','he has about '+Math.max(1,Math.round(e.end-roadNow()))+' hours left'],'know how long he has'),'a purse: about 20 gold'],
+    setup:e=>Wounded.met(e),ending:e=>{if(e.healed)e.done=1},forced:e=>!!e.healed,stage:e=>e.healed?1:0,
+    scene:e=>e.healed?[[e.done?'walk':'stand',e.ander?'anderHealed':'healed',0,0]]:[['down',e.ander?'ander':'traveller',0,0,{blood:1}]],// (tended: up on his feet, bandaged; then on his way)
+    text:e=>e.healed?Wounded.text(e):e.ander?Wounded.lying():'A wounded traveller lies by the road, robbed and left for dead. He clutches a purse the bandits missed.',
+    facts:e=>e.healed?Wounded.facts(e):[insight(['badly hurt','he will not last the day without help','he has about '+Math.max(1,Math.round(e.end-roadNow()))+' hours left'],'know how long he has'),'a purse: about 20 gold'],
     left:()=>'You leave him to his fate.',
-    acts:[{icon:'food',label:'Tend his wounds',facts:()=>roadTendFacts(),need:()=>foodN()<ENC_TUNE.traveller.food&&'You have no food to spare.',tip:ROAD_TEND_TIP,
+    acts:[{icon:'food',label:'Tend his wounds',when:e=>!e.healed,again:true,facts:()=>roadTendFacts(),need:()=>foodN()<ENC_TUNE.traveller.food&&'You have no food to spare.',tip:ROAD_TEND_TIP,
         run:e=>roadTend(e)},
-      {icon:'gold',label:'Take his purse',ask:()=>'Take the last coins of a dying man? Your band will see it, and word gets round.',
-        out:()=>{const t=nearHold(),f=t&&FACS[t.owner]&&t.owner;return{gold:20,honor:[f,-5],morale:-3,say:'You take 20 gold. Some of your band look away.'+(f?' Word reaches the '+FACS[f].n+'.':'')}}}]},
+      {icon:'gold',label:'Take his purse',when:e=>!e.healed,ask:()=>'Take the last coins of a dying man? Your band will see it, and word gets round.',
+        out:()=>{const t=nearHold(),f=t&&FACS[t.owner]&&t.owner;return{gold:20,honor:[f,-5],morale:-3,say:'You take 20 gold. Some of your band look away.'+(f?' Word reaches the '+FACS[f].n+'.':'')}}},
+      ...Wounded.offer]},
   /* the fake wounded (phase 4): the wounded traveller to the eye (his name, picture, call, page and choices), bandits lying in the
      woods by the road, a band the size of an ambush's (mustered when he comes: band, foes). Scouting warn sees the brush move,
      count how many and the odds; below it, his page is the real one's, and helping him (or robbing him) springs the ambush. Warned:
@@ -430,15 +438,16 @@ const roadPushSp=()=>Math.round(ENC_TUNE.mud.sp*(1-statOdds('push'))),roadPushH=
 const roadPush=()=>(P.sp||0)>=roadPushSp();
 /* Tend his wounds (the real wounded traveller, ENC_TUNE.traveller): he always mends; your Medicine and Intellect, how well
    (ENC_STAT.care, 0–1: kept on him as e.care, for what may follow), and the more he owes you: reputation and renown × (1 + it),
-   and a chance (gift × it) he presses a little gold from his purse on you. The lure shows the same (its tend springs the ambush) */
+   and a chance (gift × it) he presses a little gold from his purse on you. Then he stands and makes his offer (story/wounded.js
+   Wounded.healed: the page stays open). The lure shows the same (its tend springs the ambush) */
 const roadCareWord=c=>c<.25?'he will live':c<.5?'he will mend':c<.8?'he will recover well':'he will be on his feet in days';
 const roadTendFacts=()=>{const x=ENC_TUNE.traveller,c=statOdds('care');return['−'+x.food+' food','reputation +'+statMore('care',x.rep)+', renown +'+statMore('care',x.renown),'Medicine: '+roadCareWord(c),c>0&&'maybe a gift from his purse']};
 // (he is on his feet and his gift rolled first, then the outcome: the food, the word of you, the gold; nothing of yours is read
 // in between, and the one draw is the same)
 function roadTend(e){const x=ENC_TUNE.traveller,c=statOdds('care'),t=nearHold();
-  e.care=Math.round(c*100)/100;e.healed=1;e.done=1;e.goOff();const r=roadRng(),g=c>0&&r.chance(c*x.gift)?r.int(x.gold[0],x.gold[1]):0;
+  e.care=Math.round(c*100)/100;e.healed=1;Wounded.healed(e);const r=roadRng(),g=c>0&&r.chance(c*x.gift)?r.int(x.gold[0],x.gold[1]):0;
   return{food:-x.food,rep:[t&&t.name,statMore('care',x.rep)],renown:statMore('care',x.renown),gold:g,
-    say:'Bandaged and fed, he gets to his feet. He swears to tell '+(t?t.name:'everyone')+' of your kindness, and '+(c<.5?'limps':'walks')+' off down the road.'+(g?' He presses '+g+' gold from his purse into your hand.':'')}}
+    say:'Bandaged and fed, '+(e.ander?'the sellsword':'he')+' gets to his feet. He swears to tell '+(t?t.name:'everyone')+' of your kindness.'+(g?' He presses '+g+' gold from his purse into your hand.':'')}}
 // Join the hunt (ENC_TUNE.hunters): the haul, more by your Survival, Hunting and Archery (ENC_STAT.hunt): meat × (1 + it), furs × it
 const roadHaul=()=>{const x=ENC_TUNE.hunters,h=statOdds('hunt');return{meat:Math.round(x.meat*(1+h)),furs:Math.round(x.furs*h)}};
 // (a runaway's kind: the mount of the region, by its climate)

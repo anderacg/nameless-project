@@ -176,8 +176,9 @@ try{
  {const pics=ks.map(k=>t.ENC_SCENE.pics(spawnK(k)).length);ok(pics.every(n=>n>0),'every kind is drawn from its pieces ('+pics.join(' ')+')')}
  world();P.morale=50;
  // the wounded traveller
- {P.gold=100;t.invAdd('good','grain',10);const f0=t.foodN(),r0=P.renown;const h=meet('traveller');pickA(0);ok(t.foodN()===f0-3&&P.renown===r0+1&&/gets to his feet/.test(panel())&&!qa('.rwbody .rkact').length,'Tend his wounds: −3 food, +1 renown; then only Leave');world();
-  {const ps=t.roadPieces(h);ok(h.healed&&h.left&&h.beh==='leave'&&ps.length===1&&ps[0][0]==='walk'&&ps[0][1]==='healed'&&t.ENC_LOOK.healed('human',0).helm==='bandage'&&!W.road.on.some(o=>o.trace&&o.k==='body'),'tended: on his feet, bandaged (ENC_LOOK.healed), walking off along the road; no body left')}
+ {P.gold=100;t.invAdd('good','grain',10);const f0=t.foodN(),r0=P.renown;const h=meet('traveller');pickA(0);ok(t.foodN()===f0-3&&P.renown===r0+1&&/gets to his feet/.test(panel())&&acts().join('|')==='Join you|Take him home|Refuse'&&!q('.nav [data-nav="close"]'),'Tend his wounds: −3 food, +1 renown; then his offer (story/wounded.js), no Leave till answered');
+  {const ps=t.roadPieces(h);ok(h.healed&&!h.done&&ps.length===1&&ps[0][0]==='stand'&&ps[0][1]==='healed'&&t.ENC_LOOK.healed('human',0).helm==='bandage','tended: on his feet, bandaged (ENC_LOOK.healed), waiting for your answer')}
+  pickA(4);world();{const ps=t.roadPieces(h);ok(h.left&&h.beh==='leave'&&ps[0][0]==='walk'&&ps[0][1]==='healed'&&!W.road.on.some(o=>o.trace&&o.k==='body'),'refused: he walks off along the road; no body left')}
   meet('traveller');const g0=P.gold;pickA(1);ok(q('#panel.confirm')&&P.gold===g0,'Take his purse asks first');t.onEscape();ok(G.mode==='road'&&q('#panel.paged'),'Back: his page again');pickA(1);sure();ok(P.gold===g0+20&&/You take 20 gold/.test(panel()),'confirmed: +20 gold');world();
   const e=meet('traveller');t.act('enc-leave');ok(G.msgs[G.msgs.length-1].m==='You leave him to his fate.','Leave: you leave him to his fate')}
  // the peddler
@@ -609,10 +610,10 @@ try{
   // Tend his wounds: always heals, whatever your Medicine; the better, the more he owes you
   {const tend=(o,rnd)=>stats(o,()=>{t.invAdd('good','grain',10);const f0=t.foodN(),r0=P.renown,g0=P.gold,e=meet('traveller'),b=qa('.rkact')[0].textContent;stub(rnd,()=>pickA(0));const r={e,b,food:f0-t.foodN(),ren:P.renown-r0,gold:P.gold-g0,txt:panel()};world();return r});
    const rs=[0,1,2,3,4,5,6,8].map(m=>[m,tend({...Z,med:m},.999),tend({...Z,med:m},0)]);
-   ok(rs.every(([m,a,b])=>[a,b].every(r=>r.e.healed&&r.e.done&&r.food===3&&/gets to his feet/.test(r.txt))),'Tend his wounds always heals, at any Medicine (0–8), lucky or not');
+   ok(rs.every(([m,a,b])=>[a,b].every(r=>r.e.healed&&!r.e.done&&r.food===3&&/gets to his feet/.test(r.txt))),'Tend his wounds always heals, at any Medicine (0–8), lucky or not (then his offer)');
    const z0=rs[0][1],z1=rs[0][2];ok(z0.e.care===0&&z0.ren===1&&z0.gold===0&&z1.gold===0&&/Medicine: he will live/.test(z0.b)&&!/gift/.test(z0.b),'at 0: today’s (renown +1, no gift; care 0; "'+z0.b+'")');
    const cs=rs.map(([m,a])=>a.e.care);ok(cs.every((c,i)=>!i||c>cs[i-1]||c===1)&&cs[cs.length-1]===1,'its care (e.care) rises with Medicine ('+cs.join(', ')+')');
-   const top=rs[rs.length-1];ok(top[1].ren===2&&top[2].gold>=TU.traveller.gold[0]&&top[2].gold<=TU.traveller.gold[1]&&top[1].gold===0&&/on his feet in days/.test(top[1].b)&&/walks off/.test(top[1].txt),'at Medicine 8: renown +2, and maybe a gift from his purse ('+top[2].gold+' gold, lucky)');
+   const top=rs[rs.length-1];ok(top[1].ren===2&&top[2].gold>=TU.traveller.gold[0]&&top[2].gold<=TU.traveller.gold[1]&&top[1].gold===0&&/on his feet in days/.test(top[1].b),'at Medicine 8: renown +2, and maybe a gift from his purse ('+top[2].gold+' gold, lucky)');
    ok(/Medicine: he will recover well/.test(rs[4][1].b),'Medicine 4: “he will recover well” on the button');
    {const A=t.townBy('Ashford');at(A.x+60,A.y+60);const near=t.nearHold();R().on=[];const e=t.roadSpawn('traveller',P.x+10,P.y);t.invAdd('good','grain',10);if(near)P.rep[near.name]=0;const r0=near&&t.repAt(near.name);stats({...Z,med:4},()=>{t.roadMeet(e);pickA(0)});
     ok(!near||t.repAt(near.name)===r0+Math.round(TU.traveller.rep*1.6),'near '+(near&&near.name)+', reputation × (1 + care): +'+Math.round(TU.traveller.rep*1.6)+' at Medicine 4 ('+r0+' → '+(near&&t.repAt(near.name))+')');world()}

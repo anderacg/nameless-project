@@ -170,7 +170,7 @@ Kit.suite(({ok,info})=>{
     if(k==='page'&&!(s.start.page.choices||[]).length)bad.push(D.id+'.'+s.id+' (a page with no choices)');
     if(!Th.until(s)&&k!=='incident')bad.push(D.id+'.'+s.id+' (nothing to wait for)');
     for(const n of nexts(s))if(!ids.includes(n))bad.push(D.id+'.'+s.id+' (then '+n+': no such step)')}
-   {const seen=new Set([first]),q=[first];while(q.length){const s=D.steps.find(x=>x.id===q.shift());if(s)for(const n of nexts(s))if(!seen.has(n)){seen.add(n);q.push(n)}}
+   {const seen=new Set([first]),q=[first];while(q.length){const id=q.shift(),s=D.steps.find(x=>x.id===id);if(s)for(const n of nexts(s))if(!seen.has(n)){seen.add(n);q.push(n)}}
     if(seen.size!==ids.length)bad.push(D.id+' (steps never reached: '+ids.filter(i=>!seen.has(i)).join(', ')+')')}
    // (every way through it: the keys to answer each step by, in turn)
    const paths=[],walk=(id,path)=>{const s=D.steps.find(x=>x.id===id);for(const k of keys(s)){const p=path.concat([[id,k]]),n=Th.next(s,k);if(n&&p.length<12)walk(n,p);else paths.push(p)}};walk(first,[]);

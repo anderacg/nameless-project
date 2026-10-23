@@ -204,9 +204,10 @@ class Encounter extends Happening{
     const k=this.marked()&&this.inView(V)?this.marker():null;
     return k?[k.col,2]:null;
   }
+  // (its banner, kept by its key: where it is, done or not, and its kind's stage if it has one: the traveller healed)
   view(){
     const D=this.D;
-    return {key:'road:'+this.i+':'+this.k+':'+Math.round(this.x)+','+Math.round(this.y)+':'+(this.done?1:0),x:this.x,y:this.y+2,alt:D.n,ps:(D.under?D.under(this):[]).concat(ENC_SCENE.pics(this))};
+    return {key:'road:'+this.i+':'+this.k+':'+Math.round(this.x)+','+Math.round(this.y)+':'+(this.done?1:0)+(D.stage?':'+D.stage(this):''),x:this.x,y:this.y+2,alt:D.n,ps:(D.under?D.under(this):[]).concat(ENC_SCENE.pics(this))};
   }
   // its page (story/choice.js ChoicePage): its banner, what you see, its choices; forced: no way out till chosen
   page(){

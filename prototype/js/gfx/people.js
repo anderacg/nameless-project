@@ -27,7 +27,7 @@ const PEOPLE_T=[
   '................'];
 // a dwarf: the same, a row shorter in the body
 const PEOPLE_T_SHORT=PEOPLE_T.filter((r,i)=>i!==9);
-const PEOPLE_OUT='#1a1c26';
+const PEOPLE_OUT='#1a1c26',PEOPLE_SCAR='#c06a5a';
 // the pack's palette by material, light to dark
 const PPAL={
   skin:['#edd1d6','#f3bfad','#de9e8c','#c58faa'],skinTan:['#f0c8a0','#d9a07a','#b87a58','#8e5a4a'],skinDark:['#c8906a','#a06a4a','#7a4a32','#5a3424'],
@@ -62,7 +62,7 @@ const PEOPLE_LOOK={
   archer:{helm:'hood',hood:'olive',outer:'olive',weapon:'bow'},ranger:{helm:'hood',hood:'forest',outer:'forest',weapon:'longbow',cape:'forest'},
   horse:{helm:'kettle',outer:'steel',weapon:'lance',mount:'horse'},chief:{helm:'horned',outer:'fur',weapon:'bigaxe',race:'human'},
   brann:{helm:'bare',outer:'fur',weapon:'bigaxe',hair:'ginger',beard:'ginger'},elske:{helm:'bare',outer:'white',inner:'linen',weapon:'staff',robe:true,hair:'blond',hood:'white'},
-  tavi:{helm:'hood',hood:'forest',outer:'forest',weapon:'bow',hair:'brown'},
+  tavi:{helm:'hood',hood:'forest',outer:'forest',weapon:'bow',hair:'brown'},ander:{helm:'bare',outer:'dark',inner:'leather',weapon:'sword',cape:'dark',hair:'black',scar:true},
   hum_levy:{helm:'cap',outer:'leather',weapon:'spear',plain:true},hum_spear:{helm:'kettle',outer:'steel',weapon:'spear',shield:'wood'},
   hum_guard:{helm:'great',outer:'steel',weapon:'sword',shield:'steel'},hum_pike:{helm:'kettle',outer:'steel',weapon:'pike'},
   hum_bow:{helm:'hood',hood:'olive',outer:'leather',weapon:'bow',plain:true},hum_long:{helm:'hood',hood:'forest',outer:'forest',weapon:'longbow',cape:'forest'},
@@ -116,7 +116,7 @@ function lookOf(type,team,hero,v,cid,cg){
   const o={race,skin:R.skin[v%R.skin.length],hair:L.hair||R.hair[v%R.hair.length],eye:R.eye,ears:R.ears,tusk:R.tusk,short:R.short,
     beard:L.beard||(R.beard?(L.hair||R.hair[v%R.hair.length]):race==='human'&&!hero&&v%3===1&&!L.robe?R.hair[v%R.hair.length]:null),
     helm:L.helm,hood:L.hood,outer:L.outer==='skin'?R.skin[v%R.skin.length]:L.outer,inner:L.inner||'dark',team:team?'red':'blue',weapon:L.weapon,shield:L.shield,
-    robe:L.robe,cape:L.cape,mount:L.mount,barded:L.barded,shortHair:v%2===0};
+    robe:L.robe,cape:L.cape,mount:L.mount,barded:L.barded,shortHair:v%2===0,scar:L.scar};
   if(L.plain){o.helm=race==='orc'&&PLAIN_HELM[v]==='hood'?'bare':PLAIN_HELM[v];o.outer=PLAIN_CLOTH[v]}
   if(o.mount==='horse')o.mountC=L.barded?'horseW':['horse','chestnut','horseB','horse','horseG','chestnut'][v];
   // your hero: your race, your weapon, your armour and helm as you wear them
@@ -158,6 +158,7 @@ function drawFigure(g,o,ox,oy,walk,style,atk,cut){
   const B=o.beard&&pal(o.beard);
   if(B){set(6,5,B[1]);set(7,5,B[1]);set(8,5,B[0]);set(9,5,B[1]);set(6,6,B[2]);set(7,6,B[1]);set(8,6,B[1]);set(9,6,B[2]);if(o.short){set(7,7,B[2]);set(8,7,B[3])}}
   if(o.ears){set(4,3,Lc.s);set(4,4,Lc.t)}
+  if(o.scar){set(6,4,PEOPLE_SCAR);set(6,5,PEOPLE_SCAR)}// (a scar down the cheek: Ander)
   if(o.tusk){set(9,6,'#faf8db');set(7,6,'#faf8db')}
   const M=pal(o.helmC||(o.helm==='great'&&o.outer==='iron'?'iron':'steel')),h=o.helm;
   if(h==='cap'){set(6,1,M[0]);set(7,1,M[1]);set(8,1,M[2]);set(5,2,M[0]);set(6,2,M[1]);set(7,2,M[1]);set(8,2,M[2]);set(9,2,M[3])}
@@ -316,7 +317,7 @@ function drawMapFigure(g,o,ox,oy,walk,cut){
   if(o.cape){const C=pal(o.cape===true?o.team:o.cape);for(let y=3;y<ly&&(cut==null||y<=cut);y++)set(0,y,C[y===3?1:2])}
   if(o.shield&&(cut==null||cut>=5)){const C=pal(o.shield),Tm=pal(o.team);set(0,3,C[1]);set(0,4,Tm[1]);set(0,5,C[2])}
   const Bd=o.beard&&pal(o.beard);if(Bd){set(2,2,Bd[1]);set(3,2,Bd[2]);if(o.short)set(3,3,Bd[3])}
-  if(o.ears)set(0,1,Lc.s);if(o.tusk)set(3,2,'#faf8db');
+  if(o.ears)set(0,1,Lc.s);if(o.tusk)set(3,2,'#faf8db');if(o.scar)set(2,2,PEOPLE_SCAR);
   // the helm over the 3-px head: its top row (the face's row under a great helm, with its slit), a brim, horns, a plume
   const M=pal(o.helmC||(o.helm==='great'&&o.outer==='iron'?'iron':'steel')),h=o.helm,top=(a,b,c)=>{set(1,0,a);set(2,0,b);set(3,0,c)},Wt=PPAL.white;
   if(h==='cap'||h==='kettle'||h==='horned'||h==='great'||h==='plume')top(M[0],M[1],M[2]);

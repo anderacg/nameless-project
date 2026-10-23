@@ -24,10 +24,15 @@ class Quest extends Happening{
   static kindId(rec){
     return rec.type;
   }
+  // (its class: a job's kind's, or a chain's step's: story/steps.js, the shape 'step', quests no board offers)
+  static classFor(rec){
+    const K=kindOf('quest',rec.type)||kindOf('step',rec.type);
+    return K&&K.cls||this;
+  }
   // ---- the offer: its record made one of its kind's class, then its kind's setup (null: none here); spec: what a kind made by
-  // another is given (an escort's passenger and place: world/escort.js)
+  // another is given (an escort's passenger and place: world/escort.js; a chain's step: story/steps.js)
   static make(type,t,lord,spec){
-    if(!kindOf('quest',type))return null;
+    if(!kindOf('quest',type)&&!kindOf('step',type))return null;
     const q=this.as({type,giver:lord?lord.name:t.name,lord:!!lord,fac:lord?lord.fac:t.owner,home:t.name});
     return q.setup(t,lord,spec)===false?null:q;
   }
@@ -60,7 +65,7 @@ class Quest extends Happening{
     this.done=false;
     if(this.begin(townBy(this.home))===false)return false;
     P.quests.push(this);
-    log('New quest: '+this.title+'. '+this.days+' days. Track it with C → Quests.','gold');
+    log('New quest: '+this.title+'. '+(this.days?this.days+' days. ':'')+'Track it with C → Quests.','gold');
     return true;
   }
   begin(){}
@@ -75,6 +80,10 @@ class Quest extends Happening{
     return t?{x:t.x,y:t.y,name:t.name}:null;
   }
   seek(){
+    return null;
+  }
+  // (a home it is bound for, marked with a house on the map: a step's, story/steps.js; a job's none)
+  homeMark(){
     return null;
   }
   get handsOver(){
@@ -127,7 +136,7 @@ class Quest extends Happening{
   }
   // the kinds' deeds listened to, once each (world/quests.js, once its kinds are defined)
   static listen(){
-    const deeds=new Set(Kinds.all('quest').map(K=>K.cls.prototype.deed).filter(Boolean));
+    const deeds=new Set(Kinds.all('quest').concat(Kinds.all('step')).map(K=>K.cls.prototype.deed).filter(Boolean));
     for(const type of deeds)worldOn(type,d=>Quest.heard(type,d));
   }
   // ---- reporting: the reward (a friendly lord adds to it), and it is off your list

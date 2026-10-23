@@ -11,7 +11,8 @@
    - Outcome.facts(o) and describeOutcome(o): its text from the same object ('+20 gold · honour with the Vale −5 · morale −3'),
      so what a button says and what it does cannot drift apart. Silent effects (a companion's mood, a log line, the end) say
      nothing.
-   A new effect (a title, a trophy) is one more handler here, with its text (a quest item: item; a passenger: passenger). */
+   A new effect (a title, a trophy) is one more handler here, with its text (a quest item: item; a passenger: passenger; a
+   companion joining: companion). */
 const Outcome={
   // (a number with its sign: +3, −3)
   signed(n){
@@ -232,6 +233,14 @@ const Outcome={
         res.escort=Escort.start(v);
       },
       text:v=>Escort.facts(v),
+    },
+    // companion: {id, lv, attr, ap}, one joining your band by a story (world/companions.js compJoin; res.companion: his record,
+    // null if he rides with you already)
+    companion:{
+      apply(v,ctx,res){
+        res.companion=compJoin(v.id,v);
+      },
+      text:v=>COMPS[v.id].short+' joins your band',
     },
     // band: a band of raiders set on the map (world.js spawnBandit; res.band, it)
     band:{

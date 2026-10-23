@@ -361,7 +361,7 @@ function jobsBody(t){
 function questsBody(){
   if(!P.quests.length)return '<p class="muted">No quests. Look for work in the Jobs tab of any holding, or ask a friendly lord.</p>';
   return P.quests.map(q=>{const g=questGoal(q),d=g?Math.round(qTiles(g,P)):0;return '<div class="row"><div class="info"><strong>'+q.title+'</strong><small>'+q.text+'</small><small class="'+(q.done||questReady(q)?'good':'')+'">'+questProgress(q)+'</small>'+
-    '<small>'+(g?'Go '+(d<2?'here':d+' tiles '+compass(g.x-P.x,g.y-P.y))+(g.name?' to '+g.name:'')+'. ':'')+(q.due-G.day)+' days left · '+Quest.as(q).rewardLine()+'</small></div><div class="acts"><button class="btn sm" type="button" data-act="q-abandon" data-arg="'+q.id+'">Abandon</button></div></div>'}).join('');
+    '<small>'+(g?'Go '+(d<2?'here':d+' tiles '+compass(g.x-P.x,g.y-P.y))+(g.name?' to '+g.name:'')+'. ':'')+(q.days?(q.due-G.day)+' days left · ':'')+Quest.as(q).rewardLine()+'</small></div><div class="acts"><button class="btn sm" type="button" data-act="q-abandon" data-arg="'+q.id+'">Abandon</button></div></div>'}).join('');
 }
 // town actions (from the town screen) and log actions (from the character screen)
 function questAct(a,arg,t){
@@ -388,10 +388,10 @@ function lordJobHtml(l){
   if(!G.lordJob||G.lordJob.giver!==l.name)G.lordJob=lordJob(l);const q=G.lordJob;
   return q?'<div class="row"><div class="info"><strong>'+q.title+'</strong><small>'+q.text+' '+q.days+' days. Reward: '+rewardText(q.reward)+'</small></div><div class="acts"><button class="btn sm" type="button" data-act="q-lord"'+(Quest.jobs()>=QUEST_MAX?' disabled':'')+'>Accept</button></div></div>':'<p class="muted">'+l.name+' has no work for you.</p>';
 }
-/* the map: a marker over each quest's goal (an escort's place has its own: gfx/worldui.js wuiEscorts) */
+/* the map: a marker over each quest's goal (a home a step is bound for, an escort's, has its own house: gfx/worldui.js wuiEscorts) */
 function drawQuestMarks(cam){
   const t=performance.now()/300;
-  for(const q of P.quests){if(q.to)continue;const g=questGoal(q);if(!g)continue;const sx=Math.round(g.x-cam.x),sy=Math.round(g.y-cam.y);
+  for(const q of P.quests){if(Quest.as(q).homeMark())continue;const g=questGoal(q);if(!g)continue;const sx=Math.round(g.x-cam.x),sy=Math.round(g.y-cam.y);
     if(sx<-10||sy<-10||sx>VW+10||sy>VH+10)continue;txt(q.done||questReady(q)?'?':'!',sx,sy-24+Math.round(Math.sin(t)*2),'#ffe040','center')}
 }
 // its work in the world's day and frame (core/systems.js)

@@ -5,13 +5,14 @@
 // party: {cid, uid, x, y, troops:[type], order:'follow'|'patrol'|'return'|'stay', base (holding name), inside, wx, wy, cool, dir, fight}
 const COMP_SLOTS=['weapon','offhand','quiver','head','body','arms','legs','feet'];
 const COMP_SK={oneh:'One-Handed',twoh:'Two-Handed',archery:'Archery',med:'Medicine',scout:'Scouting',lead:'Leadership'};
-// what each brings when they join (they are no beginners); the rest start at 0
-const COMP_START={brann:{oneh:3,lead:2},elske:{med:3,oneh:1},tavi:{archery:3,scout:3}};
+// what each brings when they join (they are no beginners); the rest start at 0 (Ander: a veteran, good at leading men)
+const COMP_START={brann:{oneh:3,lead:2},elske:{med:3,oneh:1},tavi:{archery:3,scout:3},ander:{oneh:4,twoh:2,lead:3}};
 const COMP_PERKS={brute:{n:'Brute',d:'+12% damage'},stalwart:{n:'Stalwart',d:'+15% health'},swift:{n:'Swift',d:'+10% speed in battle'},
   guardian:{n:'Guardian',d:'Takes 10% less damage'},captain:{n:'Captain',d:'Leads 4 more soldiers in a party'}};
 const COMP_LEAD={lv:2,ap:2};// who may lead a party: level 2 and trusting you
-// the holding whose tavern they wait in: their own, or (in a world without it) their people's capital
-const compTown=id=>townBy(COMPS[id].town)||capitalOf(COMPS[id].race);
+// the holding whose tavern they wait in: their own, or (in a world without it) their people's capital; a story's (COMPS story:
+// Ander) none: met only in his story
+const compTown=id=>{const C=COMPS[id],t=townBy(C.town);return t||C.story?t:capitalOf(C.race)};
 // (a bowman comes with his worn quiver)
 function compInit(id){const c=P.comps[id];if(!c)return null;if(c.lv)return c;
   Object.assign(c,{lv:1,xp:0,gear:ST[id]&&ST[id].bow?{quiver:'q_worn'}:{},sk:{},perks:[],perkPend:0,party:null,hurt:0});for(const k in COMP_SK)c.sk[k]={lv:(COMP_START[id]||{})[k]||0,xp:0};return c}
@@ -44,6 +45,16 @@ class Companion extends Character{
 }
 // the companion of an id (its record made first: compInit), or null
 const compOf=id=>{const c=compInit(id);return c&&charOf(c,id)};
+/* one joins you by a story, not hired (the outcome companion: story/outcome.js; Ander, story/wounded.js): o {lv (his level as he
+   comes), attr (his attributes), ap (his trust)}; his record made, the rest as any companion's. Null: he rides with you already */
+function compJoin(id,o){
+  if(P.comps[id])return null;
+  P.comps[id]={ap:o&&o.ap||0,role:''};
+  const c=compInit(id);
+  if(o&&o.lv)c.lv=o.lv;
+  if(o&&o.attr)c.attr={...o.attr};
+  log(COMPS[id].n+' joins your band as a companion. Manage him in the Party tab.','gold');
+  return c}
 // (the older names: the companion's methods)
 const compSkill=(id,k)=>{const c=compOf(id);return c?c.trained(k):0};
 // (leaders.js: as every leader grows)

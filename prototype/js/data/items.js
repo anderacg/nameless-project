@@ -48,3 +48,8 @@ const QUEST_ITEMS={
   heirloom:{n:'Family heirloom',icon:'ring',col:'#e8b94a',d:'A ring a traveller begged you to carry home for him.'},
   map:{n:'Old map',icon:'letter',col:'#d8c8a0',d:'A torn map that marks a place in the wilds.'}
 };
+/* heirlooms (doc/STORY_DESIGN.md §9; the story batch, ST2): unique named gear a story gives, once a game (heirloom: true): worn
+   as any gear (ITEMS, its category by its slot: a ring, Armour), a modest but special effect. The Hearthward Ring: The Wounded
+   Traveller's family's thanks (story/wounded.js), a healer's ring: health, Medicine, and health back in battle */
+ITEMS.hearthring={n:'Hearthward Ring',slot:'ring',r:'rare',heirloom:true,d:'A family’s old ring, worn thin by hands that tended the sick. +6 health, +1 Medicine. Heal 0.3 health per second in battle.',
+  m:{hp:6,sk:{med:1},regen:.3},v:120,icon:'ring',col:'#e8b94a'};

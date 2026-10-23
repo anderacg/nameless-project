@@ -138,9 +138,9 @@ const ROAD_AT={x:NaN,y:NaN,m:0};
 function roadTravel(d){const m=Math.hypot(P.x-ROAD_AT.x,P.y-ROAD_AT.y);ROAD_AT.x=P.x;ROAD_AT.y=P.y;ROAD_AT.m=m<20?m:0;if(G.quietEvents||!(m>0&&m<20))return;
   const R=roadSt(),h=Clock.hoursIn(d);R.c+=h;R.h+=h;while(R.h>=1){R.h--;if(roadRoll())break}}
 // each moment on the map (world.js updateWorld): a fight on the road left before its first blow (Encounter.unfought), your
-// passengers at their place (world/escort.js Escort.frame), the travel, then each encounter; true when one opened its page. One
+// passengers at their place (story/steps.js Steps.frame), the travel, then each encounter; true when one opened its page. One
 // story context for the moment (story/context.js Story.frame: its rolls read it)
-function updateRoad(d){Encounter.unfought();if(Escort.frame())return true;return Story.frame(()=>{roadTravel(d);const R=W.road;if(!R)return false;R.on=R.on.filter(e=>!e.gone);const V=vis(),now=roadNow();
+function updateRoad(d){Encounter.unfought();if(Steps.frame())return true;return Story.frame(()=>{roadTravel(d);const R=W.road;if(!R)return false;R.on=R.on.filter(e=>!e.gone);const V=vis(),now=roadNow();
   for(const e of R.on)if(asRoadEnc(e).step(d,V,now))return true;return false})}
 
 /* ---------- meeting one: its page ---------- */

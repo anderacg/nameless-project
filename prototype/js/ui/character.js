@@ -11,7 +11,7 @@ function renderChar(){
       '<div class="lab" style="margin-top:6px">Skills</div><div class="row"><div class="info"><strong>'+(P.tp?'<span class="gold">'+P.tp+' skill point'+(P.tp>1?'s':'')+' to spend</span>':'Skill tree, skill bar and disciplines')+'</strong><small>'+(P.tree.length-1)+' skills learned. One skill point each level.</small></div><div class="acts"><button class="btn sm" type="button" data-act="open-skills">Open Skills (K)</button></div></div>'+
       (P.perks.length?'<div class="lab" style="margin-top:6px">Perks from before</div>'+P.perks.map(p=>'<div class="row"><div class="info"><strong>'+PERKS[p].n+'</strong><small>'+PERKS[p].d+'</small></div></div>').join(''):'');
   }else if(tab==='quests'){
-    body='<div class="lab">Quests · '+P.quests.length+' / '+QUEST_MAX+'</div>'+questsBody();
+    body='<div class="lab">Quests · '+P.quests.length+' / '+QUEST_MAX+'</div>'+questsBody()+Thread.journal();
   }else if(tab==='realms'){
     const sw=f=>'<span style="color:'+FACS[f].col+'">'+FACS[f].n+'</span>';
     body='<div class="lab">Your standing</div><p>'+(P.fac?'You serve the '+sw(P.fac)+' as a mercenary, for '+troopCount()+' gold a day.':'You are independent. Sign a mercenary contract in a town tavern.')+
@@ -103,7 +103,7 @@ function charAct(a,arg){
   else if(a==='army-merge'){const [from,to]=arg.split(':');partyRoster(P).merge(from,to)}
   else if(a==='army-recruit')G.recruitTarget=arg;
   else if(a==='role'){const [id,r]=arg.split(':');const c=P.comps[id];if(c){if(c.role===r)c.role='';else{const o=roleOf(r);if(o)P.comps[o].role='';c.role=r}}}
-  else if(a==='dismiss'){if(P.comps[arg]){delete P.comps[arg];log(COMPS[arg].n+' leaves your band. You may find them in '+compTown(arg).name+' again.')}}
+  else if(a==='dismiss'){if(P.comps[arg]){delete P.comps[arg];log(COMPS[arg].n+' leaves your band.'+(compTown(arg)?' You may find them in '+compTown(arg).name+' again.':''))}}
   else if(a==='p-recruit')recruitmentFeedback(recruitment.recruitPrisoner(arg));
   else if(a==='p-release'){if(P.prisoners[arg]>0){P.prisoners[arg]--;P.renown++;log('You let '+an(ST[arg].n.toLowerCase())+' go free. +1 renown.');mood('release')}}
   else return false;
