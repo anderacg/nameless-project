@@ -3,7 +3,8 @@
 // left and a right in turn, each on its side of the way and turned along it, a print each WUI_FOOT.gap px); the way
 // shortens as you walk it and arriving puffs and clears it; the brackets take the colour of what the pointer is on and ease
 // from tile to tile; under reducedMotion all stands still; a tap on a phone gives the same feedback and no brackets; a chased
-// band (a click opens its ring, a second click chases it) gets its ring and arrow, gone when you give up; nothing on land you have never seen; crisp at the screen's 3x; nothing
+// band (a click opens its ring, a second click chases it) gets its ring and the crossed swords over it (an attack: the ring's
+// Attack icon, outlined navy, never under WUI_K.swords CSS px), a friendly lord you make for the arrow as before, gone when you give up; nothing on land you have never seen; crisp at the screen's 3x; nothing
 // drawn (the frame as before) while there is no goal and no pointer; and none of it touches the game.
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);
 const t=T,G=t.G,P=t.P,W=t.W,WUI=t.WUI,pn=performance.now,r0=Math.random,rm0=t.reducedMotion,ev=s=>(0,eval)(s);let now=1e7;
@@ -22,6 +23,7 @@ try{
  const frame=ms=>{now+=ms||0;calls.length=0;rec=true;try{t.frame()}finally{rec=false}};
  const pics=()=>new Set(t.WUIP.values()),mine=()=>{const s=pics();return calls.filter(([img])=>s.has(img))};
  const arrows=()=>{const s=new Set([...t.WUIP.entries()].filter(([k])=>k[0]==='a').map(([,v])=>v));return calls.filter(([img])=>s.has(img))};
+ const swords=()=>calls.filter(([img])=>img===t.WUIP.get('x'));
  const rings=()=>{const s=new Set([...t.WUIP.entries()].filter(([k])=>k[0]==='r').map(([,v])=>v));return calls.filter(([img])=>s.has(img))};
  const hashView=()=>{const d=c.getImageData(0,0,t.cv.width,t.cv.height).data;let h=0;for(let i=0;i<d.length;i+=3)h=(h*31+d[i])|0;return h};
  const click=(wx,wy,kind='mouse')=>{const r=cv.getBoundingClientRect(),e={clientX:r.left+(wx-G.cam.x)*r.width/t.VW,clientY:r.top+(wy-G.cam.y)*r.height/t.VH,pointerType:kind,pointerId:kind==='touch'?7:1,isPrimary:true,button:0,bubbles:true,cancelable:true};
@@ -38,7 +40,7 @@ try{
   home();{const gx=P.x+60,gy=P.y+20;
    click(gx,gy);ok(P.tx===gx&&P.ty===gy&&WUI.fx.some(f=>f.k==='ripple'&&f.x===Math.round(gx)),'a click on open ground sends you there and starts a ripple from the point');
    frame(16);ok(WUI.dest&&WUI.dest.x===gx&&WUI.way&&WUI.way.ok&&WUI.way.n>5&&Math.abs(left()-Math.hypot(gx-P.x,gy-P.y))<3,'the goal is marked and its way laid, '+(left()||0).toFixed(1)+' px to walk');
-   ok(rings().length>=1&&arrows().length===1,'the frame draws the ripple ('+rings().length+' rings) and the arrow');
+   ok(rings().length>=1&&arrows().length===1&&!swords().length,'the frame draws the ripple ('+rings().length+' rings) and the gold arrow, no swords');
    const ys=[];for(const ms of [60,60,60,60,60,200,300,300,300]){frame(ms);const a=arrows()[0];ys.push(a?a[1][1]:null)}
    ok(ys.every(y=>y!=null)&&ys[0]<ys[4]&&new Set(ys.slice(5)).size>1,'the arrow drops onto the goal, then bobs ('+ys.map(y=>Math.round(y)).join(' ')+')');
    ok(!WUI.fx.length,'the ripple is gone after '+t.WUI_K.ripple+' s');
@@ -88,11 +90,24 @@ try{
   // ---- chasing a band: a ring round it, an arrow over it; giving up clears them
   home();{const b=t.asParty({x:P.x+60,y:P.y+10,n:6,cool:5,t:0,a:0,kind:'bandits',idle:true});b.troops=t.makeEnemies(6,false,'bandits');t.bandits.push(b);frame(16);
    click(b.x,b.y-4);const ring=t.ActionRing.now;click(b.x,b.y-4);frame(16);frame(400);ok(ring&&!t.ActionRing.now&&G.chase===b&&WUI.tgt&&WUI.tgt.o===b&&!WUI.dest,'a click on a band 60 px off opens its ring, a second chases it, and it is the UI\'s target');
-   const T=t.wuiTargetAt(b,{x:Math.floor(G.cam.x),y:Math.floor(G.cam.y)}),rs=rings(),as=arrows();
-   ok(rs.length>=1&&as.length===1&&as[0][1][1]<T.y-14,'a ring pulses round it ('+rs.length+' drawn) and an arrow stands over it');
+   const T=t.wuiTargetAt(b,{x:Math.floor(G.cam.x),y:Math.floor(G.cam.y)}),rs=rings(),sw=swords();
+   ok(rs.length>=1&&!arrows().length&&sw.length===1&&sw[0][1][1]<T.y-14,'a ring pulses round it ('+rs.length+' drawn) and crossed swords stand over it, no arrow: you go to attack it');
+   {const c=t.wuiSwords(),I=t.ICONS.attack,d=c.getContext('2d').getImageData(0,0,c.width,c.height).data,hx=v=>'#'+[0,1,2].map(k=>d[v+k].toString(16).padStart(2,'0')).join('');let red=0,navy=0,other=0;
+    for(let i=0;i<d.length;i+=4){if(!d[i+3])continue;const h=hx(i);if(h===t.PEOPLE_OUT)navy++;else if(Object.values(I.p).includes(h))red++;else other++}
+    const it=t.partyRingItems(b,0,0)[0],svg=t.icon('attack',22);
+    ok(red>=30&&navy>=30&&!other&&I.p.r===t.WUI_K.col.foe,'the swords: the attack icon, '+red+' px in the red of foes, outlined by '+navy+' px of the navy of the figures, drawn in code');
+    ok(it.label==='Attack'&&it.icon==='attack'&&/viewBox="0 0 11 11"/.test(svg)&&(svg.match(/<rect/g)||[]).length===red,'the Attack of the ring shows the same crossed swords ('+it.icon+', '+(svg.match(/<rect/g)||[]).length+' px)');
+    ok((t.icon('sword',16).match(/viewBox="0 0 9 9"/)||[]).length===1,'the 9 x 9 icons are drawn as before')}
+   // (zoomed far out on a phone, 2 device px a game px at a devicePixelRatio of 3: drawn twice the size, at least WUI_K.swords CSS px)
+   {const dp=Object.getOwnPropertyDescriptor(window,'devicePixelRatio');Object.defineProperty(window,'devicePixelRatio',{value:3,configurable:true});ev('VS=2');let a;try{frame(16);a=swords()[0]}finally{ev('VS=1');if(dp)Object.defineProperty(window,'devicePixelRatio',dp);else delete window.devicePixelRatio}
+    const c=t.wuiSwords();ok(a&&a[1].length===4&&a[1][2]===c.width*2&&a[1][3]===c.height*2&&c.height*2*2/3>=t.WUI_K.swords,'at the farthest zoom of a phone the swords are drawn at twice their pixels ('+(a?a[1].slice(2).join('x'):'none')+' game px: '+(c.height*2*2/3).toFixed(1)+' CSS px high)')}
    ok(WUI.way&&Math.hypot(WUI.way.gx-b.x,WUI.way.gy-b.y)<1&&WUI.dots.length>0,'the dots lead to it');
    b.x+=12;for(let i=0;i<20;i++)frame(30);ok(Math.hypot(WUI.way.gx-b.x,WUI.way.gy-b.y)<1,'it moves on: the way follows it');
    click(P.x-30,P.y+30);frame(16);ok(G.chase===null&&!WUI.tgt&&WUI.dest,'a click elsewhere: the chase and its ring are gone, a new goal marked');t.bandits.length=0;P.tx=null}
+  // ---- making for a friendly lord: his ring and the arrow, in green, as before; no swords
+  home();{const L=W.lords.find(l=>!l.dead),fac0=P.fac;P.fac=L.fac;Object.assign(L,{x:P.x+60,y:P.y+10,inside:null,fight:null,dead:false,dir:1,state:'march'});frame(16);t.approach(L);frame(16);frame(400);
+   const as=arrows(),k=[...t.WUIP.entries()].find(([,v])=>as[0]&&v===as[0][0]);ok(G.chase===L&&as.length===1&&!swords().length&&k&&k[0].endsWith(t.WUI_K.col.friend)&&t.partyRingItems(L,0,0)[0].icon==='people','making for a lord of your realm: the green arrow over him, no swords; Meet on his ring as before');
+   P.fac=fac0;L.x=-9999;G.chase=null;P.tx=null}
   // ---- a tap on a phone: the ripple, the arrow and the way; no brackets
   home();{click(P.x+50,P.y-20,'touch');frame(16);ok(P.tx!=null&&WUI.dest&&WUI.fx.some(f=>f.k==='ripple')&&arrows().length===1&&WUI.way,'a tap sends you, with the ripple, the arrow and the way');
    ok(G.mouse.type==='touch'&&!WUI.hov,'a finger shows no brackets');P.tx=null;G.mouse.type='mouse'}

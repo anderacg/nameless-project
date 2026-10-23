@@ -624,9 +624,12 @@ const runGen=gen=>{let r;while(!(r=gen.next()).done);return r.value};
 //     not painted yet is painted): fn(S, k) once for each entry k of a chunk's index S whose grid cells meet the rect (gfx/
 //     depth.js); without fn, a list of {x, y (its foot), s (its sprite; null, a run of rock), dx, dy (where s is drawn), box (its
 //     pixels in its chunk, [x0, y0, x1, y1])}, as the battle's props.
+//   deck(c): a bridge's picture (c, a crossing of WM.crossings), cut from the chunks' own drawing of it (artGenXing's rects, onto a
+//     canvas of its own: the same pixels), clear round it: {cv, x, y (its corner, map px), foot (its last row)}; kept until
+//     invalidate (world/ships.js: what sails under it).
 //   bytes(): what it holds.
 const WorldArt={
-  plan:null,chunks:new Map(),jobs:new Map(),queue:[],pool:[],view:new Set(),full:null,dirty:new Set(),cnt:new Map(),minis:{},last:null,slice:4,REACH:8,
+  plan:null,chunks:new Map(),jobs:new Map(),queue:[],pool:[],view:new Set(),full:null,dirty:new Set(),cnt:new Map(),minis:{},decks:new Map(),last:null,slice:4,REACH:8,
   cap:typeof matchMedia==='function'&&matchMedia('(pointer: coarse)').matches&&Math.min(screen.width,screen.height)<900?20:32,
   get cols(){return Math.ceil(MW*TILE/CHUNK)},get rows(){return Math.ceil(MH*TILE/CHUNK)},
   ensure(){return this.plan||(this.plan=worldArtPlan())},
@@ -653,7 +656,7 @@ const WorldArt={
     this.step(this.slice)},
   step(ms){const t0=performance.now();while(this.queue.length&&performance.now()-t0<ms){const [cx,cy]=this.queue[0];if(this.chunks.has(cy*this.cols+cx)){this.queue.shift();continue}const j=this.start(cx,cy);
       while(performance.now()-t0<ms)if(j.gen.next().done){this.done(j);this.queue.shift();break}}},
-  invalidate(r){this.plan=null;CLEAR=null;this.minis={};this.queue=[];for(const j of this.jobs.values())this.recycle(j.rec.cv);this.jobs.clear();
+  invalidate(r){this.plan=null;CLEAR=null;this.minis={};this.decks.clear();this.queue=[];for(const j of this.jobs.values())this.recycle(j.rec.cv);this.jobs.clear();
     if(!r){for(const c of this.chunks.values())this.recycle(c.cv);this.chunks.clear();this.full=null;this.dirty.clear();this.cnt.clear();return}
     this.forget(r.x*TILE-this.REACH*TILE,r.y*TILE-this.REACH*TILE,(r.x+r.w+this.REACH)*TILE,(r.y+r.h+this.REACH)*TILE)},
   // a lot placed, taken away or its model changed (lots.js relot): the plan kept (its ground kept clear of the land's nature) and only
@@ -680,6 +683,10 @@ const WorldArt={
       // whole on a small map: WM.river and feat's road bits)
       if(k>1){let rd=-1,rv=-1;for(let b=0;b<k&&y*k+b<MH;b++)for(let a=0;a<k&&x*k+a<MW;a++){const j=(y*k+b)*MW+x*k+a;if(Rv[j]&3&&tiles[j]===T_WATER)rv=j;else if(Fe[j]&192&&tiles[j]===T_ROAD)rd=j}if(rv>=0)i=rv;else if(rd>=0)i=rd}
       rect(g,PAL[CLIMS[climate[i]]].mini[tiles[i]],x,y,1,1)}}))},
+  deck(c){let d=this.decks.get(c);if(d)return d;const L=[];let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
+    artGenXing(this.ensure(),(col,x,y,w,h)=>{w=w||1;h=h||1;L.push(col,x,y,w,h);x0=Math.min(x0,x);y0=Math.min(y0,y);x1=Math.max(x1,x+w);y1=Math.max(y1,y+h)},c);
+    const cv=mkc(x1-x0,y1-y0,g=>{for(let i=0;i<L.length;i+=5){g.fillStyle=L[i];g.fillRect(L[i+1]-x0,L[i+2]-y0,L[i+3],L[i+4])}});
+    d={cv,x:x0,y:y0,foot:y1-1};this.decks.set(c,d);return d},
   standing(x0,y0,x1,y1,fn){const out=fn?null:[],seen=this.seen||(this.seen=new Set());x0=Math.max(0,Math.floor(x0));y0=Math.max(0,Math.floor(y0));x1=Math.min(MW*TILE-1,Math.floor(x1));y1=Math.min(MH*TILE-1,Math.floor(y1));
     for(let cy=Math.floor(y0/CHUNK);cy<=Math.floor(y1/CHUNK)&&x0<=x1;cy++)for(let cx=Math.floor(x0/CHUNK);cx<=Math.floor(x1/CHUNK);cx++){const k=cy*this.cols+cx;if(!this.chunks.has(k))this.chunk(cx,cy);const S=this.chunks.get(k).n.stand,cs=S.cell;seen.clear();
       for(let j=Math.max(0,Math.floor((y0-S.Y)/cs));j<=Math.min(S.R-1,Math.floor((y1-S.Y)/cs));j++)for(let i=Math.max(0,Math.floor((x0-S.X)/cs));i<=Math.min(S.C-1,Math.floor((x1-S.X)/cs));i++){const q=j*S.C+i;

@@ -367,10 +367,10 @@ function mapRingItems(wx,wy,o,cx,cy){
     goodN('liquor')>0&&{icon:'barrel',label:BAND.liquor?'Water first':'Drink liquor',active:!!BAND.liquor,run:()=>{BAND.liquor=!BAND.liquor;log(BAND.liquor?'Your band drinks its liquor first: a hard march.':'Your band drinks water first again.');updateHUD(true)}},
     look&&{icon:'eye',label:'Look',run:()=>holdCard(look,cx,cy)}].filter(Boolean)}
 
-// a click on another party (ui/input.js partyRing): Approach (today's chase: Attack one hostile, else Meet), Follow (or Stop
-// following, lit), and the map ring's Look on it
+// a click on another party (ui/input.js partyRing): Approach (today's chase: Attack one hostile, its crossed swords as the marker
+// over it while you go: icons.js ICONS.attack, else Meet), Follow (or Stop following, lit), and the map ring's Look on it
 function partyRingItems(o,cx,cy){const foe=wuiKind(o)==='foe';
-  return[{icon:foe?'sword':'people',label:foe?'Attack':'Meet',run:()=>worldApproach(o)},followItem(o),...mapRingItems(o.x,o.y,o,cx,cy).filter(it=>it.icon==='eye')].filter(Boolean)}
+  return[{icon:foe?'attack':'people',label:foe?'Attack':'Meet',run:()=>worldApproach(o)},followItem(o),...mapRingItems(o.x,o.y,o,cx,cy).filter(it=>it.icon==='eye')].filter(Boolean)}
 
 /* ---------- the tavern's tapster (ui/town.js Tavern): liquor for the road, at its base price, and the well's water, free ---------- */
 const LIQUOR_LOT=5;

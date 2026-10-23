@@ -14,13 +14,15 @@
      or ally green, a neutral or a caravan white, your companions' and the holdings gold, open ground a soft white). The
      tooltip is input.js's own (#tip).
    - Chasing a party or making for a holding: a ring pulsing round it and an arrow bobbing over it (while it is in sight), till
-     you meet it or go elsewhere. Following a party (world.js G.follow): its ring, no arrow, the footprints to it.
+     you meet it or go elsewhere; going to attack it (a foe: wuiKind), crossed swords in the arrow's place (the owner, 2026-10-23;
+     wuiSwords: the action ring's Attack icon, icons.js ICONS.attack), never smaller on the screen than WUI_K.swords CSS px.
+     Following a party (world.js G.follow): its ring, no arrow, the footprints to it.
    - An encounter on the road you know of and have not met (world/road.js): sound waves rippling out from it, a pulsing "!" over it, its
      call-out the first time it is on the screen, and its waves rolling in at the screen's edge while it is off it (wuiRoadUnder, wuiRoadOver).
    In whole game pixels on the camera's grid (what moves or eases, to 1/VS px as a mover is: render.js snapV), outlined dark as
    the arrows and chevrons of the battle are (ui/orderpaths.js). Real time. Under reducedMotion all holds still: no ripple or
    puff, the arrow and brackets standing, the dots not marching ---------- */
-const WUI_K={ripple:.42,drop:.3,land:.13,bob:1.3,poof:.42,ping:1.2,breathe:1.4,march:10,draw:.35,ease:20,repick:120,steps:8000,stride:2,off:8,rebuild:250,
+const WUI_K={swords:11,ripple:.42,drop:.3,land:.13,bob:1.3,poof:.42,ping:1.2,breathe:1.4,march:10,draw:.35,ease:20,repick:120,steps:8000,stride:2,off:8,rebuild:250,
   col:{foe:'#ff5a48',friend:'#76d86a',neutral:'#ece6d4',comp:'#e8b94a',hold:'#e8b94a',ground:'#f2ecd8',gold:'#e8b94a',enc:'#4aa0f0'},dark:'#140e08'};
 // (its state: the effects playing (ripples, puffs), the goal you walk to and when it was set, what you chase or follow (f), the
 // way there, its prints this frame (dots: screen x, y, alpha each; feet: the way each points (wuiFoot's d), 1 a left print), the
@@ -47,6 +49,12 @@ function wuiArrow(k,col){const key='a'+k+col;let c=WUIP.get(key);if(c)return c;c
   c=mkc(w+2,h+2,g=>{for(let y=-1;y<=h;y++)for(let x=-1;x<=w;x++)if(!at(x,y)&&(at(x-1,y)||at(x+1,y)||at(x,y-1)||at(x,y+1)||at(x-1,y-1)||at(x+1,y-1)))rect(g,WUI_K.dark,x+1,y+1);
     for(let y=0;y<h;y++)for(let x=0;x<w;x++)if(at(x,y))rect(g,!at(x,y-1)||!at(x-1,y)?lt:!at(x+1,y)||x>=w>>1&&!at(x,y+1)?dk:col,x+1,y+1)});
   c.cx=(w+2)>>1;c.tip=h;WUIP.set(key,c);return c}
+// the crossed swords (icons.js ICONS.attack, the ring's Attack), outlined in the figures' navy (people.js PEOPLE_OUT): the marker
+// over a party you go to attack. tip: the row of its pommels in the picture, cx its middle
+function wuiSwords(){let c=WUIP.get('x');if(c)return c;const I=ICONS.attack,M=I.px,h=M.length,w=M[0].length,at=(x,y)=>y>=0&&y<h&&x>=0&&x<w&&M[y][x]!=='.';
+  c=mkc(w+2,h+2,g=>{for(let y=-1;y<=h;y++)for(let x=-1;x<=w;x++)if(!at(x,y)&&(at(x-1,y)||at(x+1,y)||at(x,y-1)||at(x,y+1)))rect(g,PEOPLE_OUT,x+1,y+1);
+    for(let y=0;y<h;y++)for(let x=0;x<w;x++)if(at(x,y))rect(g,I.p[M[y][x]],x+1,y+1)});
+  c.cx=(w+2)>>1;c.tip=h;WUIP.set('x',c);return c}
 // (a picture with its point (px, py) at the screen's (x, y))
 const wuiPut=(c,x,y,px,py)=>ctx.drawImage(c,x-px,y-py);
 /* a footprint of the way (the owner, 2026-10-23: small footprints for its dots, in their gold, at their spacing), drawn by hand
@@ -136,11 +144,16 @@ function wuiHover(now,dt){const H=WUI.hp,M=G.mouse;
 const wuiX=(x,cam)=>snapV(x)-cam.x,wuiY=(y,cam)=>snapV(y)-cam.y;
 // the arrow at screen (x, y): its point there; k its shape
 function wuiDrawArrow(x,y,k,col){const c=wuiArrow(k,col);wuiPut(c,x,y,c.cx,c.tip)}
-// an arrow dropping onto (x, y) from t0: falls (drawn out), lands (squashed), then bobs; its shadow on the ground under it
-function wuiDrop(x,y,t0,col,now,rm,ground){const e=(now-t0)/1000,D=WUI_K.drop,Ld=WUI_K.land;let h=0,k='stand';
+// the crossed swords at screen (x, y): their pommels' row there; at least WUI_K.swords CSS px high (zoomed far out, a phone's
+// farthest: at a whole multiple of their pixels, still crisp)
+function wuiDrawSwords(x,y){const c=wuiSwords(),s=Math.max(1,Math.ceil(WUI_K.swords/(c.height*VS/(window.devicePixelRatio||1))));
+  if(s===1)wuiPut(c,x,y,c.cx,c.tip);else ctx.drawImage(c,x-c.cx*s,y-c.tip*s,c.width*s,c.height*s)}
+// an arrow dropping onto (x, y) from t0: falls (drawn out), lands (squashed), then bobs; its shadow on the ground under it. put:
+// another marker in its place, dropping and bobbing as it does (wuiDrawSwords)
+function wuiDrop(x,y,t0,col,now,rm,ground,put){const e=(now-t0)/1000,D=WUI_K.drop,Ld=WUI_K.land;let h=0,k='stand';
   if(!rm){if(e<D){const q=e/D;h=Math.round(22*(1-q*q));k='fall'}else if(e<D+Ld)k='squash';else h=Math.round((1-Math.cos((e-D-Ld)/WUI_K.bob*6.2832))*1.5)}
   if(ground){const sw=h>12?1:h>4?2:3;ctx.globalAlpha=.4;ctx.fillStyle=WUI_K.dark;ctx.fillRect(x-sw,y,2*sw+1,1);if(sw>1)ctx.fillRect(x-sw+1,y+1,2*sw-1,1);ctx.globalAlpha=1}
-  wuiDrawArrow(x,y-2-h,k,col)}
+  if(put)put(x,y-2-h);else wuiDrawArrow(x,y-2-h,k,col)}
 // the corner brackets round a box on the screen (x1, y1 past its last pixel), p px out from it, outlined dark, alpha a; a glow
 // inside of strength g
 function wuiBrackets(x0,y0,x1,y1,col,a,p,g){const w=x1-x0,h=y1-y0;
@@ -180,10 +193,10 @@ function wuiUnder(cam){const now=performance.now(),dt=Math.min(.1,Math.max(0,(no
       for(let k=0;k<6;k++){const a=k*1.0472+.5,d=3+e*10,sx=Math.round(x+Math.cos(a)*d),sy=Math.round(y-3+Math.sin(a)*d*.6-e*4);ctx.fillStyle=WUI_K.dark;ctx.globalAlpha=(1-q)*.5;ctx.fillRect(sx-1,sy-1,3,3);
         ctx.globalAlpha=1-q;ctx.fillStyle=f.col;if(q<.5){ctx.fillRect(sx-1,sy,3,1);ctx.fillRect(sx,sy-1,1,3)}ctx.fillStyle='#fff8e0';ctx.fillRect(sx,sy,1,1)}}}
   ctx.globalAlpha=1}
-// over the labels: the goal's arrow, the arrow over what you chase, the brackets
+// over the labels: the goal's arrow, the arrow over what you chase (the crossed swords over a foe), the brackets
 function wuiOver(cam){if(G.mode==='title')return;const now=WUI.now||performance.now(),rm=reducedMotion();
   if(WUI.dest){const d=WUI.dest;wuiDrop(Math.round(d.x)-cam.x,Math.round(d.y)-cam.y,d.t,WUI_K.col.gold,now,rm,true)}
-  if(WUI.tgt&&!WUI.tgt.f&&WUI.tgt.o.inView(vis())){const o=WUI.tgt.o,T=wuiTargetAt(o,cam);wuiDrop(T.x,T.top,WUI.tgt.t,WUI_K.col[wuiKind(o)],now,rm,false)}// (one you follow: no arrow)
+  if(WUI.tgt&&!WUI.tgt.f&&WUI.tgt.o.inView(vis())){const o=WUI.tgt.o,T=wuiTargetAt(o,cam),k=wuiKind(o);wuiDrop(T.x,T.top,WUI.tgt.t,WUI_K.col[k],now,rm,false,k==='foe'?wuiDrawSwords:null)}// (one you follow: no arrow)
   wuiRoadOver(cam,now,rm);wuiEscorts(cam,now,rm);
   const h=WUI.hov;if(h){const b=h.b,col=WUI_K.col[h.kind],x0=wuiX(b[0],cam),y0=wuiY(b[1],cam),x1=wuiX(b[2],cam),y1=wuiY(b[3],cam),br=rm?0:(1+Math.sin(now/1000/WUI_K.breathe*6.2832))/2;
     wuiBrackets(x0,y0,x1,y1,col,h.kind==='ground'?.75:1,rm?0:Math.round(br),h.kind==='ground'?.5+.5*br:1+br)}}

@@ -256,7 +256,7 @@ const RUIN_OCC={
 function ruinFoes(o,R){const F=RUIN_OCC[o.k].foes,n=RUIN.fight[0]+Math.floor(R()*(RUIN.fight[1]-RUIN.fight[0]+1));o.list=Array.from({length:n},(_,i)=>F[(i+Math.floor(R()*F.length))%F.length])}
 const ruinFoesPage=(s,o)=>{const O=RUIN_OCC[o.k],pw=rating(o.list),pp=partyPower(),lk=looks(pw/Math.max(1,pp)),cs=Object.entries(countsOf(o.list)).map(([k,n])=>n+' × '+ST[k].n.toLowerCase()).join(', ');
   return{body:pageFacts([insight([O.say[0],cap1(roughly(o.list.length))+' '+O.say[1]+', <span class="'+lk[1]+'">'+lk[0].replace('They','they')+'</span>',cs+', power '+pw+' vs your '+pp],'know their strength'),'a purse and maybe a find, if you drive them out']),
-    acts:[{icon:'sword',label:'Attack',act:'site-ask',facts:[insight(['what they are: unknown',lk[0].replace('They look ',''),'power '+pw+' vs '+pp],'know their strength')],tip:'Drive them out of the ruins. It asks you first.'}]}};
+    acts:[{icon:'attack',label:'Attack',act:'site-ask',facts:[insight(['what they are: unknown',lk[0].replace('They look ',''),'power '+pw+' vs '+pp],'know their strength')],tip:'Drive them out of the ruins. It asks you first.'}]}};
 for(const k of ['cultists','robbers'])Object.assign(RUIN_OCC[k],{page:ruinFoesPage,
   act:(s,o,a,arg,done)=>{const O=RUIN_OCC[o.k];
     if(a==='site-ask'){railConfirm({title:'Attack the '+O.say[1]+'?',sub:s.name,text:'You drive them out of the ruins: '+roughly(o.list.length)+' of them.',facts:[insightLv()===2?'Power '+rating(o.list)+' vs your '+partyPower():looks(rating(o.list)/Math.max(1,partyPower()))[0]],confirm:['site-attack',null,'Attack'],back:['site-tab','home','Back']});return true}
@@ -307,7 +307,7 @@ class Ruins extends Site{
   // guardians you met and left: Attack or Leave, as you found them
   guardPage(r){const g=this.guard,M=MONSTERS[g.id];
     return{body:this.about(r)+'<div class="lab">Guardians</div>'+this.guardCards(g,'Awake, guarding the treasure')+pageFacts(['Guardians: '+g.n+' × '+ST[M.unit].n+', level '+g.lv]),
-      acts:[{icon:'sword',label:'Attack',act:'site-ask',facts:['power '+this.guardPower(g)+' vs '+partyPower(),'the treasure beyond'],tip:'Fight the guardians you found here: beaten, their treasure is yours. It asks you first.'}]}}
+      acts:[{icon:'attack',label:'Attack',act:'site-ask',facts:['power '+this.guardPower(g)+' vs '+partyPower(),'the treasure beyond'],tip:'Fight the guardians you found here: beaten, their treasure is yours. It asks you first.'}]}}
   guardPower(g){return rating(Array(g.n).fill(MONSTERS[g.id].unit),g.lv)}
   guardCards(g,role){const M=MONSTERS[g.id];return railCards([{pic:portrait(M.unit),name:ST[M.unit].n,role,n:g.n,facts:['Level '+g.lv,'Power '+this.guardPower(g)+' vs your '+partyPower()]}])}
   // what the carvings told this visit (G.siteSpy: its rolls, kept for the fight); read them already
@@ -413,7 +413,7 @@ class Lair extends Site{
         pageFacts([insight([band+' in their tents',cap1(roughly(g.n))+' '+band.toLowerCase(),g.n+' '+band.toLowerCase()+' and their chieftain'],'know their numbers')+(s.sheltering().length?', bands among them sheltering for the night':''),
           insight(['you cannot tell how strong','<span class="'+lk[1]+'">'+lk[0].replace('They','they')+'</span>','power '+g.pw+' vs your '+partyPower()],'know their strength')])+
         '<ul class="tnotes"><li>Led by '+(ld?chiefLabel(ld)+', '+bountyOf(ld)+' gold on his head':'a chieftain')+'.</li><li>Talk of plunder piled in the tents.</li></ul>'),
-      acts:[s.scoutDeed(),{icon:'sword',label:'Attack',act:'site-ask',facts:[y?'power '+pw+' vs '+partyPower():insight(['what waits inside: unknown',lk[0].replace('They look ',''),'power about '+pw+' vs '+partyPower()],'know their strength')],tip:'Storm it: its fighters, its chieftain and any band sheltering there. It asks you first.'},
+      acts:[s.scoutDeed(),{icon:'attack',label:'Attack',act:'site-ask',facts:[y?'power '+pw+' vs '+partyPower():insight(['what waits inside: unknown',lk[0].replace('They look ',''),'power about '+pw+' vs '+partyPower()],'know their strength')],tip:'Storm it: its fighters, its chieftain and any band sheltering there. It asks you first.'},
         {icon:'truce',label:'Parley',act:'site-tab',arg:'parley',facts:['pay them off','or make them yield'],tip:'Talk: pay them to break camp, or, if they fear you, demand their surrender.'}]}}
   act(a,arg,done){if(super.act(a,arg,done))return true;if(this.cleared)return false;const s=this,y=s.spied();
     if(a==='site-ask'){const g=s.guess(),all=y&&s.all(y.list);railConfirm({title:'Attack the '+s.T.n.toLowerCase()+'?',sub:s.name,text:'You storm it: '+(all?all.length+' fighters':roughly(g.n)+' of them, as far as you can tell')+', their chieftain at their head.',

@@ -63,9 +63,13 @@ const ICONS={
   fire:{p:{r:'#e0605a',y:'#e8b94a',w:'#fff6c0',b:'#7a4a22'},px:['....r....','...rr....','...ryr.r.','..ryyrrr.','.rryywyr.','.ryywwyr.','..rywyr..','.b.bbb.b.','bbb...bbb']},
   cave:{p:{g:'#8a8478',d:'#5a5448',k:'#1a1410',s:'#6a5a3a'},px:['...ggg...','..ggggg..','.gggdggg.','.ggdkdgg.','ggdkkkdgg','gdkkkkkdg','gdkkkkkdg','gdkkkkkdg','sssssssss']},
   ruin:{p:{s:'#d8d0b8',d:'#8a8270'},px:['.........','.ss......','.sss..s..','.s.s.ss..','.s.s.s.s.','.s.s.s.s.','.s.s.s.s.','.d.d.d.d.','ddddddddd']},
-  altar:{p:{y:'#7fd8e8',s:'#b8c0cc',d:'#6a7488'},px:['....y....','...yyy...','....y....','..sssss..','...sds...','...sds...','...sds...','.sssssss.','ddddddddd']}
+  altar:{p:{y:'#7fd8e8',s:'#b8c0cc',d:'#6a7488'},px:['....y....','...yyy...','....y....','..sssss..','...sds...','...sds...','...sds...','.sssssss.','ddddddddd']},
+  // attack this (the owner, 2026-10-23): two swords crossed, tips up, in the foes' red (gfx/worldui.js WUI_K.col.foe), each blade
+  // lit on one edge, its guard, grip and pommel; 11 x 10 (its picture: an 11 x 11 grid). The action ring's Attack (world/supply.js
+  // partyRingItems) and, outlined in the figures' navy, the marker over a party you go to attack (gfx/worldui.js wuiSwords)
+  attack:{p:{r:'#ff5a48',l:'#ffb4a6',g:'#c8382c',h:'#7a2a24',p:'#ff8a78'},px:['rl.......lr','.rl.....lr.','..rl...lr..','...rl.lr...','....rlr....','..g.lrl.g..','...g...g...','...hg.gh...','..h.....h..','.p.......p.']}
 };
 // an icon as SVG: its pixels in its colours (crisp at any whole size)
-function icon(name,size,cls){const I=ICONS[name];if(!I)return '';size=size||16;let r='';
+function icon(name,size,cls){const I=ICONS[name];if(!I)return '';size=size||16;let r='';const N=Math.max(I.px.length,I.px[0].length);
   I.px.forEach((row,y)=>[...row].forEach((c,x)=>{if(c!=='.'&&I.p[c])r+='<rect x="'+x+'" y="'+y+'" width="1" height="1" fill="'+I.p[c]+'"/>'}));
-  return '<svg class="'+(cls||'gico')+'" viewBox="0 0 9 9" width="'+size+'" height="'+size+'" shape-rendering="crispEdges" aria-hidden="true">'+r+'</svg>'}
+  return '<svg class="'+(cls||'gico')+'" viewBox="0 0 '+N+' '+N+'" width="'+size+'" height="'+size+'" shape-rendering="crispEdges" aria-hidden="true">'+r+'</svg>'}

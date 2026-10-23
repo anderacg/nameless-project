@@ -11,16 +11,43 @@ class Ship extends WorldObject{
   get mapKind(){return 'ship'}
   here(){return W.ships.includes(this)}
   inView(V){return this.fromYou()<=V*1.2}
-  // rocking on the water, a wake behind it while it sails; a fishing boat at its ground casts its net; a trade ship's label near you
-  draw(ents,cam,V){if(!this.inView(V))return;const s=this,now=performance.now();
-    ents.push({y:s.y+4,f:()=>{subT(s);const b=shipSprite(s),sx=Math.round(s.x-cam.x),sy=Math.round(s.y+4-cam.y)+(Math.floor(now/450+s.seed)%2);
+  // rocking on the water, a wake behind it while it sails; a fishing boat at its ground casts its net; a trade ship's label near
+  // you. Under a bridge (decksOver): before whoever is on it, its deck put back over it (shipUnder), the label over all still
+  draw(ents,cam,V){if(!this.inView(V))return;const s=this,now=performance.now(),D=decksOver(s,shipSprite(s));
+    ents.push({y:D?Math.min(s.y+4,D.top-.5):s.y+4,f:()=>{subT(s);const b=shipSprite(s),sx=Math.round(s.x-cam.x),sy=Math.round(s.y+4-cam.y)+(Math.floor(now/450+s.seed)%2);
       const sailing=s.state!=='fish';
       if(sailing)for(let i=1;i<=3;i++){const ph=(now/300+i/3)%1;ctx.fillStyle=i===1?'#e8f4fa':'#bcd8e8';ctx.fillRect(sx-s.dir*(b.stern+i*2+Math.floor(ph*2)),sy-1+(i%2),2,1)}
       ctx.save();ctx.translate(sx,sy);if(s.dir<0)ctx.scale(-1,1);ctx.drawImage(b,-b.ax,-b.ay);ctx.restore();
       if(!sailing){const ph=(now/700+s.seed)%2;ctx.fillStyle='#d8c890';ctx.fillRect(sx+s.dir*b.net,sy-3,1,3);if(ph<1){ctx.fillStyle='#e8f4fa';ctx.fillRect(sx+s.dir*b.net-1,sy+1,3,1)}}
+      if(D)shipUnder(D.list,shipBox(b,sx,sy),cam);
       if(s.k==='trade'&&s.fromYou()<110)txt('Trade ship',sx,sy-b.ay+opaqueBox(b)[1]-2,hostileTo(s.fac)?'#ff9a90':'#e8d8a0','center')}})}
 }
 const asShip=asClass(Ship);
+/* under a bridge (the owner's play-test, 2026-10-23: boats sailed over the decks). A ship whose waterline lies above a bridge's
+   last row, its box meeting the bridge's picture (gfx/worldart.js WorldArt.deck), sorts before whoever is on the bridge and, once
+   drawn, has the deck put back over it: the kept scene's own pixels (render.js memCv: the deck as the map shows it, with whatever
+   lies on it) through the bridge's picture, within its box, on the scene's pixels (as gfx/depth.js puts back what stands in front
+   of a figure). Its wake and net go under with it; a trade ship's label stays over it, as every label. Bridges, stone and wood,
+   only: fords and ferries as ever. Only the bridges near a ship in sight are looked at */
+let BRIDGES=null;onWorld(()=>{BRIDGES=null});
+// (the bridges, each with the box of its tiles and one round them, map px: the ones that may meet a ship)
+const bridgeBoxes=()=>BRIDGES||(BRIDGES=WM.crossings.filter(c=>c.kind==='bridge').map(c=>{const T=[c.i,c.j,...c.tiles],X=T.map(t=>t%MW),Y=T.map(t=>(t/MW)|0);
+  return{c,x0:(Math.min(...X)-1)*TILE,y0:(Math.min(...Y)-1)*TILE,x1:(Math.max(...X)+2)*TILE,y1:(Math.max(...Y)+2)*TILE}}));
+// (the box a ship draws in, with its wake and net, its waterline at (x, y): [x0, y0, x1, y1), as Ship draw lays them; b its sprite)
+const shipBox=(b,x,y)=>[x-(b.cw>>1)-7,y-b.ay-1,x+(b.cw>>1)+7,y+3];
+// the bridges a ship lies under: {list (their pictures), top (the highest one's first row)}, or null
+function decksOver(s,b){const wl=s.y+4,[x0,y0,x1,y1]=shipBox(b,s.x,wl);let list=null,top=1e9;
+  for(const q of bridgeBoxes()){if(q.x1<=x0||q.x0>=x1||q.y1<=y0||q.y0>=y1+1)continue;const d=WorldArt.deck(q.c);
+    if(d.foot<=wl||d.x>=x1||d.x+d.cv.width<=x0||d.y>=y1+1||d.y+d.cv.height<=y0)continue;(list||(list=[])).push(d);top=Math.min(top,d.y)}
+  return list&&{list,top}}
+// (the decks put back over a ship just drawn, within its box B (the scene's pixels), its own shift to 1/VS px undone: render.js subT)
+let UNDER_CV=null;
+function shipUnder(L,B,cam){const mem=memCv();ctx.save();if(SUBD)ctx.translate(-SUBD[0],-SUBD[1]);
+  for(const d of L){const X=d.x-cam.x,Y=d.y-cam.y,x0=Math.max(B[0],X,0),y0=Math.max(B[1],Y,0),x1=Math.min(B[2],X+d.cv.width,mem.width),y1=Math.min(B[3],Y+d.cv.height,mem.height),w=x1-x0,h=y1-y0;if(w<=0||h<=0)continue;
+    if(!UNDER_CV||UNDER_CV.width<w||UNDER_CV.height<h)UNDER_CV=mkc(Math.max(w,64,UNDER_CV?UNDER_CV.width:0),Math.max(h,64,UNDER_CV?UNDER_CV.height:0),()=>{});const g=UNDER_CV.getContext('2d');
+    g.clearRect(0,0,w,h);g.drawImage(d.cv,x0-X,y0-Y,w,h,0,0,w,h);g.globalCompositeOperation='source-in';g.drawImage(mem,x0,y0,w,h,0,0,w,h);g.globalCompositeOperation='source-over';
+    ctx.drawImage(UNDER_CV,0,0,w,h,x0,y0,w,h)}
+  ctx.restore()}
 const SHIP_SPD=26,BOAT_SPD=13,SHIP_CAP=density().ships;// (SHIP_CAP: trade ships at sea at once, today's; a world's own: density(WM), data/world.js)
 // open water a boat can sail: not the frozen lakes of the frost (their ports fish through the ice). The sea round the edge
 // of the world is the coastal route that joins the ports of different shores. Of the generated world's rivers (WM.river) only
