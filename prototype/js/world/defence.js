@@ -64,7 +64,9 @@ const LandDefence={
   },
   lordRides(l,o,t){
     if(l.inside)l.leave();l.defend=uidOf(o);l.defX=l.x;l.defY=l.y;
-    if(l.fac===P.fac||t.owner==='player'||Math.hypot(l.x-P.x,l.y-P.y)<vis()*1.5)log(l.name+' rides out against the '+o.label().toLowerCase()+' near '+t.name+'.');
+    // (word of it: seen, or you are in t; no rider, no news: the fight it starts brings its own, fights.js)
+    worldEvent({text:l.name+' rides out against the '+o.label().toLowerCase()+' near '+t.name+'.',x:l.x,y:l.y,fac:[l.fac,t.owner],towns:[t],post:false,kind:'',
+      was:l.fac===P.fac||t.owner==='player'||Math.hypot(l.x-P.x,l.y-P.y)<vis()*1.5});
   },
   // done (the threat beaten, gone or out of reach): back to what he was doing, and no new sortie for DEFEND.cool
   lordDefended(l){

@@ -13,7 +13,9 @@
    4. anything else: news only (news.js): a proclamation spreading as a wave (heard free once it reaches you), or common talk,
       heard as a rumour.
    Its news: ev.news [kind, at, detail], recorded here, or ev.heard [kind, at], the item the bus (core/bus.js) recorded a moment
-   before. What you learn at once or by rider is heard already: no source tells it you again as new. ev.cls: the log's tone.
+   before. What you learn at once or by rider is heard already: no source tells it you again as new. ev.cls: the log's tone;
+   ev.kind: its Chronicle kind when logged at once (else 'war'; '' none, as the lines that had none before the gateway). No
+   ev.text: your own deed, its lines logged where you did it (siege.js captureAct, finishRaid): only its news, heard by you.
    The riders on their way: W.news.post [{due (Clock.hours), day (it happened), from (who sent him), p (its words), a (more), cls}],
    saved with the news (news.js). WORLD_LOG.on false: every event logged where it was before the gateway (ev.was false: it was
    not), nothing recorded (the fingerprints' check, tests/worldlog.js). The map's holding colours still change at once ---------- */
@@ -29,10 +31,9 @@ const wlYours=ev=>!!ev.mine||[].concat(ev.fac||[]).some(f=>f&&(f==='player'||f==
 const newsAt=(k,at)=>{const t=newsNear(at);return t&&newsW().items.filter(it=>it.k===k&&it.near===t.name&&it.day===G.day).pop()||null};
 // the gateway; the route it took ('part', 'seen', 'rider', 'news'; 'log' with the gateway off)
 function worldEvent(ev){
-  if(!WORLD_LOG.on){if(ev.was!==false)log(ev.text,ev.cls,'war');return 'log'}
+  const K=ev.kind??'war';if(!WORLD_LOG.on){if(ev.was!==false&&ev.text)log(ev.text,ev.cls,K);return 'log'}
   const it=ev.news?newsRecord(...ev.news):ev.heard?newsAt(...ev.heard):null,how=wlPart(ev)?'part':wlSees(ev)?'seen':wlYours(ev)&&ev.post!==false?'rider':'news';
-  if(how==='part'||how==='seen')log(how==='seen'&&ev.seen||ev.text,ev.cls,'war');
-  else if(how==='rider')wlSend(ev);
+  if(ev.text){if(how==='part'||how==='seen')log(how==='seen'&&ev.seen||ev.text,ev.cls,K);else if(how==='rider')wlSend(ev)}
   if(it&&how!=='news')newsW().heard[it.id]=G.day;
   return how}
 // (news only, with the gateway on: what was never logged, as a garrison starving under another's siege)

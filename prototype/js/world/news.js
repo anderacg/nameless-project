@@ -53,9 +53,11 @@ const newsMany=(n,v)=>{const m=n*(1+NEWS_VAGUE.inflate*(v||0));return NEWS_MANY.
 // (two realms in a sentence: "the Vale and the Karn")
 const facPair=d=>'the '+facN(d.a)+' and the '+facN(d.b);
 const samePair=(it,d)=>it.detail.a===d.a&&it.detail.b===d.b;
+// (who took a holding: a realm, or your band by name (by), for a realm or its own (fac 'player'))
+const fellBy=d=>!d.by?'the '+facN(d.fac):d.fac&&d.fac!=='player'?d.by+' in the name of the '+facN(d.fac):d.by;
 const NEWS_KINDS={
-  fell:{w:10,say:[(d,s)=>d.town+' has fallen to the '+facN(d.fac)+(d.sacked?', and was sacked':'')+', '+s.when+'.',
-    (d,s)=>'They say the '+facN(d.fac)+' took '+d.town+' '+s.when+(d.sacked?' and put it to the torch':'')+'.']},
+  fell:{w:10,say:[(d,s)=>d.town+' has fallen to '+fellBy(d)+(d.sacked?', and was sacked':'')+', '+s.when+'.',
+    (d,s)=>'They say '+fellBy(d)+' took '+d.town+' '+s.when+(d.sacked?' and put it to the torch':'')+'.']},
   siege:{w:9,say:[d=>'The '+facN(d.fac)+'’s men are besieging '+d.town+'.',(d,s)=>d.lord+' of the '+facN(d.fac)+' laid siege to '+d.town+' '+s.when+'.']},
   relieved:{w:8,say:[(d,s)=>'The siege of '+d.town+' is broken: '+d.lord+' fell back '+s.when+'.',(d,s)=>d.town+' held. '+d.lord+'’s men were driven off '+s.when+'.']},
   raid:{w:7,say:[(d,s)=>d.town+' was raided '+s.when+(d.estate&&ESTATES[d.estate]?'; its '+ESTATES[d.estate].n.toLowerCase()+' burnt':'')+'.',(d,s)=>'Smoke over '+d.town+' '+s.when+': raiders took what they could carry.']},
@@ -77,6 +79,9 @@ const NEWS_KINDS={
   army:{w:6,apart:true,same:(it,d)=>it.detail.lord===d.lord,say:[(d,s)=>d.lord+' of the '+facN(d.fac)+' raised a new army at '+d.town+' '+s.when+'.',
     (d,s)=>'They say '+d.lord+' is back in the field: '+newsMany(d.n||0,s.v)+' men, raised at '+d.town+' '+s.when+'.']},
   starving:{w:7,say:[(d,s)=>'The garrison of '+d.town+' is starving under siege: its stores ran dry '+s.when+'.',(d,s)=>'They say '+d.town+' ate its last grain '+s.when+': its defenders starve behind the walls.']},
+  // (a realm's new walls, world/buildings.js; people leaving a holding, world/refugees.js)
+  walls:{w:3,say:[d=>'The '+facN(d.fac)+' is raising '+d.wall+' around '+d.town+'.',(d,s)=>'Masons are busy at '+d.town+': the '+facN(d.fac)+' began '+d.wall+' there '+s.when+'.']},
+  exodus:{w:4,say:[d=>'Folk are leaving '+d.town+' for '+d.to+': '+(REFUGEE_WHY[d.why]||'hard times')+'.',(d,s)=>'They say '+newsMany(d.n||0,s.v)+' people left '+d.town+' for '+d.to+' '+s.when+'.']},
   // (the road's small encounters, world/encounters.js: a campfire's tracks read, where they lead; a false toll-man handed in)
   tracks:{w:2,say:[(d,s)=>'Tracks of '+(d.who||'strangers')+' lead off '+s.where+'.',(d,s)=>'Someone saw '+(d.who||'strangers')+' '+s.where+', '+s.when+'.']},
   toll:{w:3,say:[(d,s)=>'Men in the '+facN(d.fac)+'’s colours were taking a false toll '+s.road+'. Their ringleader hangs in '+(d.town||'the town')+'.',
@@ -194,7 +199,7 @@ const RUMOUR_SOURCES={
   caravan:{cap:1,r:240,wide:true,prefer:['caravan','trace','band','beast'],from:'a caravan master'},
   lord:{cap:1,realm:true,wide:true,prefer:['siege','fell','relieved','lord','fight','army','starving'],from:'a lord'},
   road:{cap:1,r:320,wide:true,quiet:true,from:'the road'},
-  refugees:{cap:1,r:320,prefer:['raid','siege','fell'],quiet:true,from:'refugees'},
+  refugees:{cap:1,r:320,prefer:['raid','siege','fell','exodus'],quiet:true,from:'refugees'},
   camp:{cap:1,r:420,wide:true,quiet:true,from:'the travellers'},
   hermit:{cap:1,r:420,prefer:['beast','trace','band'],quiet:true,from:'the hermit'}
 };

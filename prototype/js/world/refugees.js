@@ -28,7 +28,9 @@ function sendRefugees(t,to,why){
   const goods={};for(const g of ['grain','cheese','cloth']){const k=Math.min(t.stock[g]||0,rint(0,3));if(k){goods[g]=k;t.stock[g]-=k}}
   const r=asRefugees({rf:true,from:t.name,to:to.name,n,why,race:t.races[rint(0,t.races.length-1)],goods,purse:rint(5,12)+Math.round(n*1.5),x:t.x+rint(-6,6),y:t.y+14,dir:1,cool:0});
   W.refugees.push(r);
-  if(t.owner==='player'||Math.hypot(t.x-P.x,t.y-P.y)<vis()*1.5)log(n+' people leave '+t.name+' for '+to.name+': '+REFUGEE_WHY[why]+'.',t.owner==='player'?'bad':'');
+  // (word of it, worldlog.js: seen, or you are in t; your own fief's by rider; else talk of it, news.js exodus)
+  {const mine=t.owner==='player';worldEvent({text:n+' people leave '+t.name+' for '+to.name+': '+REFUGEE_WHY[why]+'.',cls:mine?'bad':'',kind:'',x:t.x,y:t.y,mine,towns:[t],news:['exodus',t,{town:t.name,to:to.name,n,why}],
+    was:mine||Math.hypot(t.x-P.x,t.y-P.y)<vis()*1.5,past:n+' people left '+t.name+' for '+to.name,also:' '+cap1(REFUGEE_WHY[why])+'.'})}
   return r;
 }
 function refugeeDay(){

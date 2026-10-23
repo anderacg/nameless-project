@@ -132,7 +132,7 @@ function finishRaid(t,f){
   const food=tk('grain',Math.round(rint(10,18)*f))+tk('meat',Math.round(rint(4,10)*f))+tk('cheese',Math.round(rint(0,6)*f)),gold=Math.round((rint(40,80)+G.day)*f);
   t.pop=Math.max(10,Math.round(t.pop*(1-.1*f)));for(const g of FOODS)t.stock[g]=Math.round((t.stock[g]||0)*(1-.4*f));P.gold+=gold;P.morale=clamp(P.morale+5*f,0,100);
   if(f>=.5)W.critters=W.critters.filter(c=>c.home!==t.name);
-  Timed.of(t).set('raided',12);const burnt=f>=1?burnEstates(t,1):[];worldEmit('holding:raided',{town:t});// (the bus: news.js)
+  Timed.of(t).set('raided',12);const burnt=f>=1?burnEstates(t,1):[];worldEmit('holding:raided',{town:t});worldEvent({involved:true,was:false,heard:['raid',t]});// (the bus: news.js; yours, heard already)
   if(f>=1){log('You raid '+t.name+' to the ground: '+food+' food and '+gold+' gold'+(burnt.length?', and burn its '+burnt.join(' and '):'')+'. Its people will not forget.','bad','war');worldEmit('holding:razed',{town:t})}
   else log('You break off the raid of '+t.name+' with '+food+' food and '+gold+' gold.','bad','war');
 }
@@ -158,7 +158,7 @@ function captureAct(a){
     addRep(t.name,-40,true);TOWNS.forEach(o=>{if(o!==t&&Math.hypot(o.x-t.x,o.y-t.y)<WORLD_SCALE.law.siegeOutrage*TILE)addRep(o.name,-10,true)});FIDS.forEach(g=>addHonor(g,-6,true));
     Timed.of(t).set('sacked',20);const burnt=burnEstates(t,2);lines.push('You sack '+t.name+': '+loot+' gold and '+got+(burnt.length?'. Your soldiers burn its '+burnt.join(' and '):'')+'. Word spreads of what you did.');mood('ransom')}
   else{addRep(t.name,-5,true);FIDS.forEach(g=>{if(g!==prev)addHonor(g,3,true)});lines.push('You spare '+t.name+'. Even your enemies speak of your restraint.')}
-  if(a==='cap-leave'){t.gar=1;lines.push('You leave the '+t.label+' to the '+FACS[prev].n+', empty and burning.')}
+  if(a==='cap-leave'){t.gar=1;lines.push('You leave the '+t.label+' to the '+FACS[prev].n+', empty and burning.');worldEvent({involved:true,was:false,news:['raid',t,{town:t.name}]})}// (sacked, not taken: talk of a raid, yours)
   else{
     const lead=P.fac||G.capWith;let to=lead&&a!=='cap-keep'?lead:'player';
     if(a==='cap-keep'&&!P.fac&&G.capWith){addHonor(G.capWith,-15,true);lines.push('You keep it for yourself. The '+FACS[G.capWith].n+', who led the siege, will not forget it.')}
@@ -166,6 +166,8 @@ function captureAct(a){
     if(to!=='player'){const pay=t.T.handover;P.gold+=pay;addHonor(to,15,true);lines.push('The '+FACS[to].n+' takes '+t.name+' and pays you '+pay+' gold.')}
     else lines.push(t.name+' is your fief now. Garrison it from the Fief tab when you enter.');
     t.owner=to;t.gar=to==='player'?2:4;Timed.of(t).set('turmoil',10);
+    // (your conquest proclaimed: your band named as the taker, in the name of the realm it goes to; yours, so heard already)
+    worldEvent({involved:true,was:false,news:['fell',t,{town:t.name,fac:to,by:bandName(),sacked:sack?1:0}]});
     W.lords.forEach(o=>{if(!o.dead&&o.tgt===t.name)lordThink(o)});
     if(prev!=='player'&&!fiefsOf(prev).length)fallFaction(prev,t,true);
   }

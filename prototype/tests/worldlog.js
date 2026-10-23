@@ -88,6 +88,70 @@ Kit.suite(({ok,info})=>{
   Kit.world();t.fullMapOpen({x:m.x/t.TILE,y:m.y/t.TILE});const b=q('.fm-r');
   ok(G.mode==='fullmap'&&b&&b.textContent==='?'&&b.title.includes(m.t)&&/Rumour/.test(q('.fm-leg').textContent),'open: the "?" on it, the rumour its title, Rumour in the legend');t.act('map-close');Kit.world()}
 
+ // ---- your own conquest (siege.js captureAct): proclaimed and spreading, your band named as the taker; yours: no rider, no news
+ // to you, the Chronicle logs it once, as you did it
+ const heard=it=>!!it&&W.news.heard[it.id]!=null,post=()=>W.news.post||[];
+ {const C=live.filter(h=>h!==A&&h!==B&&t.fiefsOf(h.owner).length>1)[0],prev=C.owner,g0=C.gar,b0=P.band,r0=P.renown,gold0=P.gold,E=t.FIDS.find(f=>f!==prev&&f!=='player'&&!W.dead[f]);
+  const back=()=>{C.owner=prev;C.gar=g0;P.fac=null;P.hostile={};G.capture=null;G.capWith=null};
+  const take=(a,fac)=>{back();fresh();P.fac=fac||null;G.capture=C;G.mode='capture';t.captureAct(a);Kit.world();return items().find(x=>x.k==='fell'&&x.detail.town===C.name)};
+  const far=live.filter(h=>h!==C).sort((p,q)=>d(q,C)-d(p,C))[0],src=t.rumourSource('tavern',C.name,C);
+  P.band='The Grey Company';let it=take('cap-peace');
+  ok(it&&t.newsProc(it)&&it.detail.by==='The Grey Company'&&it.detail.fac==='player'&&it.h===Math.floor(t.Clock.hours())&&t.proclaimText(it)===C.name+' has fallen to The Grey Company, earlier today.',
+   'you take '+C.name+' for yourself: proclaimed, your band the taker ("'+(it&&t.proclaimText(it))+'" / "'+(it&&t.NEWS_KINDS.fell.say[1](it.detail,{when:'yesterday'}))+'")');
+  {const dd=t.proclaimDays(it,far),n0=t.proclaimReached(it,far),d0=G.day;G.day+=Math.ceil(dd)+1;const n1=t.proclaimReached(it,far),cr=t.proclaimAt(far),tv=t.rumourFrom(src);G.day=d0;
+   ok(!n0&&n1&&!cr.includes(it)&&!tv.fresh.includes(it)&&!tv.proc.includes(it),'it spreads: '+far.name+' reached after '+dd.toFixed(1)+' days, but neither its crier nor a tavern tells it you (heard already)')}
+  ok(heard(it)&&!post().length&&said(/is your fief now/).length===1&&!said(/has fallen to|^Proclamation|^A rider/).length,'no rider, no news to you; the Chronicle logs it once, as you did it ("'+(said(/your fief now/)[0]||{}).m+'")');
+  it=take('cap-peace',E);
+  ok(it&&it.detail.fac===E&&t.proclaimText(it)===C.name+' has fallen to The Grey Company in the name of the '+t.FACS[E].n+', earlier today.'&&heard(it)&&!post().length&&said(new RegExp('The '+t.FACS[E].n+' takes '+C.name)).length===1,
+   'handed over to your employer: "'+(it&&t.proclaimText(it))+'"; your realm\'s, yet no rider for your own deed');
+  delete P.band;it=take('cap-sack');
+  ok(it&&it.detail.by===t.NAMING.band&&it.detail.sacked===1&&/, and was sacked, /.test(t.proclaimText(it))&&heard(it),'no band name given: by its name all the same ("'+(it&&t.proclaimText(it))+'")');
+  back();fresh();G.capture=C;G.mode='capture';t.captureAct('cap-leave');Kit.world();const rd=items().find(x=>x.k==='raid'&&x.detail.town===C.name);
+  ok(C.owner===prev&&rd&&heard(rd)&&!items().some(x=>x.k==='fell'),'sacked and left: no holding taken, talk of a raid, heard already');
+  fresh();t.ensureEcon(C);t.finishRaid(C,.5);const r2=items().find(x=>x.k==='raid');ok(r2&&heard(r2),'your raid: its news heard already (never told you as a rumour)');
+  back();if(b0)P.band=b0;else delete P.band;P.renown=r0;P.gold=gold0;Kit.world()}
+
+ // ---- the last direct lines, through the gateway: seen, logged at once; far, news (or nothing); your realm's, by rider (or not)
+ {const we0=t.worldEvent,got=[];window.worldEvent=ev=>{const r=we0(ev);got.push([r,ev]);return r};
+  const keep=W.lords.map(l=>[l,{...l}]),px=P.x,py=P.y,lr=l=>Object.assign(l,{dead:false,inside:null,fight:null,defend:null,cool:5});
+  try{W.lords.forEach(l=>{l.x=-9999;l.y=-9999});
+   const way=(re,mode)=>{const g=got.filter(([,ev])=>re.test(ev.text||'')).pop();return g?g[0]:'none'};
+   // each: name, its holding, the text, its news kind (none: no news), the realm whose it is (P.fac), whether its rider rides, fire()
+   const check=(name,h,re,k,fac,rides,fire)=>{for(const mode of ['seen','far','realm']){fresh();got.length=0;P.fac=mode==='realm'?fac:null;if(mode==='seen'){P.x=h.x;P.y=h.y+20}else{P.x=-900;P.y=-900}
+     fire();const r=way(re),it=k&&items().filter(x=>x.k===k).pop(),p=post().filter(x=>re.test(x.p+'.'));
+     if(mode==='seen')ok(r==='seen'&&said(re).length===1&&(!k||heard(it)),name+', in sight: logged at once ("'+(said(re)[0]||{}).m+'")'+(k?', its news heard':''));
+     else if(mode==='far')ok(r==='news'&&!said(re).length&&!post().length&&(k?it&&!heard(it):!items().length),name+', far off: not logged'+(k?', news ("'+(it&&t.rumourText(it))+'")':', no news either'));
+     else ok(rides?r==='rider'&&!said(re).length&&p.length===1:r==='news'&&!said(re).length&&!post().length,name+', your realm\'s ('+t.FACS[fac].n+'): '+(rides?'by rider ("'+(p[0]&&p[0].p)+'")':'no rider (route '+r+')'))}
+    P.fac=null;P.x=px;P.y=py};
+   // a lord's march ends at a holding at war with him: he lays siege (brains.js)
+   {let l=W.lords.find(o=>t.TOWNS.some(h=>!h.gone&&t.atWar(o.fac,h.owner)&&h.owner!=='player')),r0=null,hb=null;
+    if(!l){l=W.lords[0];hb=live.find(h=>h.owner!==l.fac);r0=t.relOf(l.fac,hb.owner).s;t.setRel(l.fac,hb.owner,'war')}
+    const h=hb||live.filter(z=>t.atWar(l.fac,z.owner)).sort((p,q)=>d(p,A)-d(q,A))[0];
+    check('a siege laid at '+h.name,h,/lays siege to |laid siege to /,'siege',l.fac,true,()=>{lr(l);Object.assign(l,{state:'march',tgt:h.name,x:h.x,y:h.y+12});t.BRAINS.lord.think(l,.05);l.state='rest';l.x=l.y=-9999});
+    if(r0)t.setRel(l.fac,hb.owner,r0)}
+   // a realm raises walls (buildings.js), and talk of them
+   {const h=live.find(z=>t.wallOf(z)<z.T.wallMax&&!t.besieged(z)&&!t.ruined(z));
+    check('walls raised at '+h.name,h,/starts raising |started raising /,'walls',h.owner,true,()=>{t.ensureEcon(h);h.work=null;const s0={...h.stock},p0=h.pop,tr=W.treas[h.owner];
+     for(const [g,n] of Object.entries(t.WALL_MAT[t.wallOf(h)+1]))h.stock[g]=Math.max(h.stock[g]||0,n);h.pop=0;W.treas[h.owner]=1e5;
+     Kit.stub(.01,()=>t.Buildings.of(h).day());h.work=null;for(const g in h.stock)h.stock[g]=s0[g]||0;h.pop=p0;W.treas[h.owner]=tr})}
+   // a lord rides out against a band by his holding (defence.js): seen or nothing (the fight it starts brings its own word)
+   {const h=live.find(z=>W.lords.some(o=>o.fac===z.owner)),l=W.lords.find(o=>o.fac===h.owner),o=t.asParty({x:h.x+40,y:h.y+30,n:5,kind:'bandits',cool:0});
+    check(l.name+' riding out from '+h.name,h,/rides out against /,null,h.owner,false,()=>{lr(l);Object.assign(l,{state:'rest',x:h.x+10,y:h.y+14});t.lordRides(l,o,h);l.defend=null;l.x=l.y=-9999})}
+   // a lord grows in skill (leaders.js): seen or nothing, never news, never a rider
+   {const h=live.find(z=>W.lords.some(o=>o.fac===z.owner)),l=W.lords.find(o=>o.fac===h.owner);
+    check(l.name+' growing in skill',h,/grows in skill/,null,l.fac,false,()=>{lr(l);Object.assign(l,{x:h.x+10,y:h.y+14});t.lordStats(l);l.xp=t.LV_XP(l.lv)-1;t.lordXp(l,5);l.x=l.y=-9999})}
+   // people leave a holding (refugees.js): talk of it; your employer's, news; your own fief's, by rider
+   {const h=live.filter(z=>z!==A&&z.pop>60)[0]||live[1],to=live.find(z=>z!==h),flee=()=>{const p0=h.pop,r=t.sendRefugees(h,to,'siege');if(r){W.refugees=W.refugees.filter(x=>x!==r)}h.pop=p0};
+    const p0=h.pop;h.pop=Math.max(h.pop,80);
+    check('people leaving '+h.name,h,/people leave |people left /,'exodus',h.owner,false,flee);
+    const o0=h.owner;h.owner='player';fresh();got.length=0;P.x=-900;P.y=-900;flee();const p=post()[0];
+    ok(way(/people leave /)==='rider'&&!said(/people leave /).length&&p&&/^\d+ people left .* for .*$/.test(p.p)&&p.a===' The siege.','your own fief\'s: by rider ("'+(p&&p.p+'…'+p.a)+'")');
+    h.owner=o0;h.pop=p0;P.x=px;P.y=py;
+    const e=t.NEWS_KINDS.exodus.say.map(f=>f({town:h.name,to:to.name,n:12,why:'sacked'},{when:'yesterday',v:0})),w=t.NEWS_KINDS.walls.say.map(f=>f({town:h.name,fac:h.owner,wall:'stone walls'},{when:'yesterday'}));
+    ok(e.concat(w).every(x=>x.includes(h.name)&&/[.]$/.test(x)),'the new kinds\' sentences: "'+e.concat(w).join('" / "')+'"')}}
+  finally{window.worldEvent=we0;keep.forEach(([l,o])=>{for(const k of Object.keys(l))if(!(k in o))delete l[k];Object.assign(l,o)});P.fac=null;P.x=px;P.y=py;W.refugees=[]}
+  Kit.world()}
+
  // ---- the gateway off: every line logged where it was before, nothing more recorded
  {fresh();L.on=false;try{const l=lordOf(B.owner,6);failSiege(B,l);ok(said(/^The siege of .* fails\. /).length===1,'off: the siege failing far away is logged as before');
    const [a,b]=t.FIDS.filter(f=>!W.dead[f]),r0=t.relOf(a,b).s;G.msgs=[];t.setRel(a,b,r0==='war'?'peace':'war');

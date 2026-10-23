@@ -71,7 +71,9 @@ class Buildings{
     const lv=k==='wall'?wallOf(t)+1:bldLv(t,k)+1,mats=k==='wall'?WALL_MAT[lv]:ESTATE_MAT(k,lv),gold=k==='wall'?WALL_COST[lv]:bldCost(k,lv);
     if(t.econ.lacking(mats).length||!payRealm(t.owner,gold))return;
     t.econ.take(mats);this.start(k,lv);
-    if(k==='wall'&&(t.owner===P.fac||Math.hypot(t.x-P.x,t.y-P.y)<vis()*1.5))log('The '+FACS[t.owner].n+' starts raising '+WALL_N[lv].toLowerCase()+' around '+t.name+'.')}
+    if(k==='wall'&&FACS[t.owner]){const F=FACS[t.owner].n,w=WALL_N[lv].toLowerCase();// (a realm's: word of it, worldlog.js; talk of it, news.js walls)
+      worldEvent({text:'The '+F+' starts raising '+w+' around '+t.name+'.',kind:'',x:t.x,y:t.y,fac:[t.owner],towns:[t],news:['walls',t,{town:t.name,fac:t.owner,wall:w}],
+        was:t.owner===P.fac||Math.hypot(t.x-P.x,t.y-P.y)<vis()*1.5,past:'the '+F+' started raising '+w+' around '+t.name})}}
   // its project is done: a house stands, the walls or an estate go up a level
   finish(){
     const t=this.t,w=t.work;t.work=null;

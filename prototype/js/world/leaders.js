@@ -12,10 +12,10 @@ class Lord extends Character{
   get key(){return lordUnit(this.o)}
   get race(){return ST[lordUnit(this.o)].race}
   get aiOwned(){return true}
-  // news of him when he is near or serves your realm
+  // word of him when you see him or fought him (worldlog.js): never news, nor worth a rider, even your realm's
   grew(up){
     const l=this.o;
-    if(Math.hypot(l.x-P.x,l.y-P.y)<vis()*1.5||l.fac===P.fac)log(l.name+' of the '+FACS[l.fac].n+' grows in skill: level '+l.lv+'.')}
+    worldEvent({text:l.name+' of the '+FACS[l.fac].n+' grows in skill: level '+l.lv+'.',x:l.x,y:l.y,fac:[l.fac],post:false,kind:'',was:Math.hypot(l.x-P.x,l.y-P.y)<vis()*1.5||l.fac===P.fac})}
   // a battle won: experience and renown, and his Leadership and Tactics rise
   won(foes){
     const l=this.o;
