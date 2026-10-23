@@ -106,8 +106,8 @@ function reinfAfter(e,win){
 // still standing, the gold: each his share by his men against everyone's at your side (yours at the start too), rounded
 const realmHelpers=e=>(e.allies||[]).filter(l=>!l.kind||l.kind==='patrol').map(l=>({l,n:(e.help&&e.help.get(l)||{}).n||l.troops.length}));
 const reinfRenown=e=>realmHelpers(e).length?REINF.renown:1;
-function reinfCut(e,res){const hs=realmHelpers(e);if(!hs.length)return '';const all=(e.men||playerList().length)+hs.reduce((a,h)=>a+h.n,0),g0=res.gold,cuts=[];
-  for(const h of hs){if(h.l.dead||h.l.src&&h.l.src.gone)continue;const g=Math.min(res.gold,Math.round(g0*h.n/all));if(g>0){res.gold-=g;cuts.push(h.l.name+' takes '+g+' gold for '+(h.l.kind?'its':'his')+' '+h.n+' men')}}
+function reinfCut(e,res){const hs=realmHelpers(e);if(!hs.length)return '';const all=(e.men||playerList().length)+hs.reduce((a,h)=>a+h.n,0),g0=res.gold-(res.own||0),cuts=[];
+  for(const h of hs){if(h.l.dead||h.l.src&&h.l.src.gone)continue;const g=Math.min(res.gold-(res.own||0),Math.round(g0*h.n/all));if(g>0){res.gold-=g;cuts.push(h.l.name+' takes '+g+' gold for '+(h.l.kind?'its':'his')+' '+h.n+' men')}}
   return ' '+(cuts.length?cuts.join(', ')+' as a share of the spoils. ':'')+'You share the renown with '+(hs.length>1?'them':hs[0].l.name)+'.'}
 /* ---------- battle types from the world (setup.js BTYPE), only with terrain (TERRAIN.on) ----------
    Hold the bridge: a fight with a lord, a band, a patrol or a caravan on a road bridge or next to one (a road tile with water on

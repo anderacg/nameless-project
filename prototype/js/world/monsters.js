@@ -139,11 +139,11 @@ function roamMythic(m,d){
   if(pd<12&&m.cool<=0&&G.encCool<=0&&!G.modal){startMonster(m);return true}
   return false;
 }
-// slain: its hoard, and the wait for the next one
+// slain: its hoard (all of its gold yours: res.own, never shared with those beside you, engage.js reinfCut), and the wait for the next one
 function mythicSlain(m,res){
   const M=MONSTERS[m.id],Y=M.mythic,H=Y.hoard||{};let txt='';
   W.mythic[m.id]={back:G.day+Y.back};res.fame=Y.fame;
-  if(H.gold)res.gold+=H.gold;if(H.renown)P.renown+=H.renown;if(H.text)txt+=' '+H.text;
+  if(H.gold){res.gold+=H.gold;res.own=(res.own||0)+H.gold}if(H.renown)P.renown+=H.renown;if(H.text)txt+=' '+H.text;
   if(H.gear){const g=Rng.use('monsters',()=>randomGear(H.gear[0],H.gear[1]));if(!invAdd('gear',g,1))log('Your bag is full. You leave a '+ITEMS[g].n+' behind.','bad')}
   if(H.egg&&monRng().chance(H.egg[1])&&invAdd('gear',H.egg[0],1))txt+=' Among the gold, an egg hatches: a <span style="color:'+RARITY[ITEMS[H.egg[0]].r]+'">'+ITEMS[H.egg[0]].n+'</span>.';
   log('The '+M.n.toLowerCase()+' is slain! Your name rings across Ashmark.','gold');
