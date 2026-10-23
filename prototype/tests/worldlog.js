@@ -109,6 +109,7 @@ Kit.suite(({ok,info})=>{
   back();fresh();G.capture=C;G.mode='capture';t.captureAct('cap-leave');Kit.world();const rd=items().find(x=>x.k==='raid'&&x.detail.town===C.name);
   ok(C.owner===prev&&rd&&heard(rd)&&!items().some(x=>x.k==='fell'),'sacked and left: no holding taken, talk of a raid, heard already');
   fresh();t.ensureEcon(C);t.finishRaid(C,.5);const r2=items().find(x=>x.k==='raid');ok(r2&&heard(r2),'your raid: its news heard already (never told you as a rumour)');
+  fresh();t.ensureEcon(C);{const ek=Object.keys(C.bld||{}).find(k=>t.bldLv(C,k)>0&&t.ESTATES[k]&&t.bldSpots(C)[k]);if(ek){t.estateWon({ref:{town:C.name,k:ek,burn:true}});const r3=items().find(x=>x.k==='raid'&&x.detail.estate===ek);ok(r3&&heard(r3),'an estate you burnt ('+ek+' of '+C.name+'): the world hears of it, you are never told it back as a rumour')}else info('no estate at '+C.name+' to burn')}
   back();if(b0)P.band=b0;else delete P.band;P.renown=r0;P.gold=gold0;Kit.world()}
 
  // ---- the last direct lines, through the gateway: seen, logged at once; far, news (or nothing); your realm's, by rider (or not)
