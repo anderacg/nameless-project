@@ -224,7 +224,12 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 //  tile at the rock, no ore near, no fertile ground, no facing; resOut's iron and copper from nothing; the pasture's herd its people's
 //  first grazer) all nine are as before. Were W1 47419c85, W3 154e87e1, W4 8e6f8677, W5 9dbdfd42, W6 1c8e6188, W7 83187faa,
 //  W8 cb53c8cb, B2 06f1b51d)
-const EXPECT={W1:'2ba57e1b',W2:'975f62a1',W3:'224e40e8',W4:'29fda26b',W5:'f284901d',W6:'b5185fc6',W7:'343f89d9',W8:'f10260e8',B2:'c1a2ab6a'};
+// (W7 re-recorded 2026-10-23, on purpose, the owner's tracks (agent TR: world/tracks.js, data/tracks.js TRACKS): every band that
+//  moves leaves a trail of points, saved under the world part's new key tracks (after band), so the save once 3 days have passed
+//  holds the three days' trails (222,145 chars to 286,137, near the cap of 4,000 points). Sampling draws no Math.random and moves
+//  nothing (W8 holds); begin leaves none (B2 holds); none are drawn in W6's views (none walked yet). Checked: with TRACKS.on false all
+//  nine are as before. Was W7 343f89d9)
+const EXPECT={W1:'2ba57e1b',W2:'975f62a1',W3:'224e40e8',W4:'29fda26b',W5:'f284901d',W6:'b5185fc6',W7:'91744a78',W8:'f10260e8',B2:'c1a2ab6a'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended

@@ -84,7 +84,7 @@ cv.addEventListener('pointermove',e=>{const p=toCanvas(e);G.mouse.x=p.x;G.mouse.
   // the tooltip: what is under the pointer on the map
   const tip=$('#tip');if(holdCardUp()&&e.pointerType==='touch')return;// (a long press's card stays until the next tap: below)
   if(G.mode!=='world'||G.modal||e.pointerType==='touch'){tip.hidden=true;return}
-  const o=pickAt(G.cam.x+p.x,G.cam.y+p.y),h=o&&tipFor(o)||rumourTip(G.cam.x+p.x,G.cam.y+p.y);if(!h){tip.hidden=true;return}// (nothing there: a rumour's "?", news.js)
+  const o=pickAt(G.cam.x+p.x,G.cam.y+p.y),h=o&&tipFor(o)||rumourTip(G.cam.x+p.x,G.cam.y+p.y)||trackTip(G.cam.x+p.x,G.cam.y+p.y);if(!h){tip.hidden=true;return}// (nothing there: a rumour's "?", news.js; else tracks you see, world/tracks.js)
   tip.innerHTML=h;tip.classList.remove('hold');tip.hidden=false;const r=cv.getBoundingClientRect(),x=e.clientX-r.left+16,y=e.clientY-r.top+14;
   tip.style.left=Math.min(x,r.width-tip.offsetWidth-6)+'px';tip.style.top=Math.min(y,r.height-tip.offsetHeight-6)+'px'});
 cv.addEventListener('pointerleave',()=>{G.mouse.in=false;if(!holdCardUp())hideTip();if(B)B.hov=null;cv.style.cursor=''});

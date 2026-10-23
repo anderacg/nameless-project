@@ -81,7 +81,7 @@ function drawWorld(){
   ctx=low.getContext('2d');ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,low.width,low.height);if(hi){VW++;VH++}// (its transform reset each frame: nothing drawn into it can leave a shift that piles up)
   try{
   WorldArt.draw(ctx,cam);// (the painted map by chunks, those in view: worldart.js)
-  drawEnv(cam,V,0);drawLand(cam,'tint');drawEstates(cam,V);
+  drawEnv(cam,V,0);drawLand(cam,'tint');drawTracks(cam);drawEstates(cam,V);// (the tracks on the ground, under all that stands: gfx/tracks.js)
   // each thing on the map draws itself onto the frame's list (WorldObject draw), in the order they always went (two as deep stay
   // in it): the sites, the parties, the beasts, the herds, you, then the workers, caravans, ships, refugees, the encounters on
   // the road (road.js) and fights

@@ -1415,6 +1415,19 @@ All new places are `PX` generators, previewed in `gallery.html`, and approved by
 - **Drawing:** the models' ragged yards painted into the land under them, the land showing through by material (`gfx/worldart.js` `townGround`), so no square patch; the shadows in the one pass at `PX.MODEL_SHADE`; snow in the frost (by its cover toward it, the seasons' hook). Battles pass the holding's culture to `engine/ground.js` `houseOf` once the battle site carries it (a line in `world/worldmap.js` and `battle/terrain.js`, not yet).
 - **Tests:** `tests/townmodels.js`; pictures: `tests/visual/townshots.js`.
 
+### 12.7 Tracks (the owner's decision of 2026-10-23, built 2026-10-23)
+
+**Status: built.** Every band that moves on the map leaves tracks, saved, and read by Scouting (`world/tracks.js` `Track`, `Tracks`; drawn by `gfx/tracks.js` `drawTracks`; every number in `data/tracks.js` `TRACKS`).
+- **Who leaves them:** your band, the lords' armies, bandit bands, patrols, your companions' parties, caravans (a wagon's ruts), refugees, beasts and the wild game. Not the workers about their estates (their ways are the roads and tracks, which keep nothing), ships, livestock in their pens or a mythic beast in flight.
+- **A trail:** a point every 24 px walked, its prints drawn every 3-7 px between them by style (foot, hoof, paw, rut, drag), turned 8 ways, a band's size class spreading them wider; ended where the ground keeps nothing (a road, a track, water, a ford) and begun again past it; a jump (into a holding) starts a new one. Its record: kind, how many, mounted, its name as it was, a bounty's quest, its points with their hours.
+- **The ground:** clear on sand and snow (1), mud (0.9), fainter on grass (0.55) and hills (× 0.6), very faint in woods (× 0.3). **Age:** a print lasts its climate's hours (grass 36, swamp and frost 30, desert 14: the wind), cut by the weather there (`ambWeather`'s: the frost's snow fills them 3 times as fast, rain and storms ready for when the map has them); a stretch is as old as its newer end, so a band that stood a day and walked on leaves fresh prints.
+- **Kept:** at most 4,000 points (the oldest dropped first, cut back once 400 over) and never past 48 hours or their ground's life; in a save under `tracks` (each trail's points as steps from the last), no key while there are none; no save before them needs anything (no migration, D7).
+- **Seen:** your own, always while they last, in your sight; others' by Scouting (`see`): no older than 3 + 3 × level hours, no farther than your sight × (0.25 + 0.075 × level), and only in your sight (0: 3 h within a quarter of it; 3: 12 h, about half; 6: 21 h, 70%; 10: 33 h, all of it).
+- **Read** (hover, or the action ring's Look): below Scouting 2 "Tracks"; from 2 how many, how and which way; from 5 who (bandits, an army, a wolf pack…) and roughly how old; from 8 their name, the exact number and the hour. Each trail read the first time trains Scouting (2); a bounty's band's trails, once one is read at Scouting 5 or more, show faintly gold.
+- **Following them:** no action; walk along them. This is how a roving band or its hideout is found.
+- **Cost:** sampling 0.05 ms a frame on the classic world (some 600 movers checked); drawing about 0.3 ms for 100-200 prints, at most 700 a frame (about 2.4 ms headless at the cap); the save about 15 chars a point (some 63 KB at the cap).
+- **Tests:** `tests/tracks.js`; pictures and the cost: `tests/visual/tracks.js`.
+
 
 ---
 

@@ -1,0 +1,103 @@
+'use strict';
+// Tracks (world/tracks.js, gfx/tracks.js, data/tracks.js TRACKS; doc/WORLD_DESIGN.md §12.7): every band that moves leaves a trail
+// of prints, a point every TRACKS.sample px; none on roads, tracks or water; they fade with age, faster in the desert's wind and
+// the frost's snow; the oldest dropped first past the cap; your own always seen while they last, others' by Scouting (older and
+// farther with each level), only in your sight; a trail's card says more as Scouting rises; hovering one or Look on the action
+// ring reads it (training Scouting once); saved and loaded, a save without them loads; with TRACKS.on off nothing is kept or saved.
+Kit.suite(({ok,info})=>{
+ const t=T,G=t.G,P=t.P,W=t.W,TR=t.TRACKS,K=t.Tracks;
+ Kit.begin('soldier',5151);Kit.clear();Kit.world({encCool:1e9});
+ const quiet=()=>{Kit.clear();G.encCool=1e9;W.road&&(W.road.on=[])};
+ // (a run of n open tiles of climate c going east, far from the holdings, none of them on a road: its first tile's middle)
+ const run=(c,n)=>{for(let ty=6;ty<t.MH-6;ty++)for(let tx=6;tx<t.MW-n-6;tx++){let good=true;
+   for(let k=0;k<n&&good;k++){const x=(tx+k+.5)*16,y=(ty+.5)*16;good=t.tAt(tx+k,ty)===t.T_OPEN&&t.climAt(x,y)===c&&t.trackGround(x,y)>0&&t.trackGround(x,y-8)>0&&t.trackGround(x,y+8)>0}
+   if(good&&!t.TOWNS.some(h=>Math.hypot(h.x-(tx+.5)*16,h.y-(ty+.5)*16)<160))return {x:(tx+.5)*16,y:(ty+.5)*16}}return null};
+ const lvTo=n=>{P.sk.scout.lv=0;P.sk.scout.lv=Math.max(0,n-t.skill('scout'))};
+ const mine=()=>W.tracks.filter(x=>x.own);
+ // ---- you leave prints as you walk; a band does too, its kind and size kept
+ const grass=run('grass',16);ok(!!grass,'a run of open grass to walk on ('+(grass&&grass.x+','+grass.y)+')');
+ quiet();K.reset();Kit.goTo(grass.x,grass.y);t.updateWorld(.05);Kit.travel(grass.x+14*16,grass.y,3000);
+ {const m=mine(),pts=m.reduce((a,x)=>a+x.size,0);
+  ok(m.length>=1&&pts>=8&&Math.abs(m[0].p[0]-grass.x)<=TR.sample+2,'walking 14 tiles over grass leaves your trail: '+m.length+' trail, '+pts+' points, one every '+TR.sample+' px or so');
+  const p=m[0].p,gaps=[];for(let i=3;i<p.length;i+=3)gaps.push(Math.round(Math.hypot(p[i]-p[i-3],p[i+1]-p[i-2])));ok(gaps.every(g=>g>=TR.sample&&g<TR.sample*2),'its points '+gaps.join(' ')+' px apart')}
+ {quiet();K.reset();const b=t.asParty({x:grass.x,y:grass.y-8,n:8,kind:'bandits',list:t.makeEnemies(8,false,'bandits'),t:0,a:0,idle:false,cool:0,ld:t.newChief('bandits',1)});t.bandits.push(b);
+  P.x=grass.x-400;P.y=grass.y-400;K.frame();for(let k=1;k<=12;k++){b.x=grass.x+k*16;K.frame()}
+  const tr=W.tracks.find(x=>x.k==='band:bandits');
+  ok(!!tr&&tr.n===8&&!tr.m&&tr.style==='foot'&&tr.size>=7&&tr.nm===b.ld.name+'’s band','a bandit band moving 12 tiles leaves its trail: '+(tr?tr.k+', '+tr.n+' on foot, '+tr.size+' points, "'+tr.nm+'"':'none'));
+  t.bandits.length=0}
+ // ---- none on roads or water: a trail ends where the ground keeps nothing, a new one past it
+ {let road=null,water=null;for(let ty=6;ty<t.MH-6&&!(road&&water);ty++)for(let tx=6;tx<t.MW-6;tx++){const x=(tx+.5)*16,y=(ty+.5)*16;if(!road&&t.tAt(tx,ty)===t.T_ROAD&&t.RoadBand.on(x,y))road={x,y};if(!water&&t.tAt(tx,ty)===t.T_WATER)water={x,y}}
+  ok(road&&t.trackGround(road.x,road.y)===0&&water&&t.trackGround(water.x,water.y)===0,'the ground keeps no prints on a road ('+t.regionAt(road.x,road.y).name+') nor on water');
+  quiet();K.reset();const o={x:road.x-3*TR.sample,y:road.y,n:4,id:'boar',dead:false};t.W.monsters=[o];P.x=-999;P.y=-999;K.frame();
+  const at=[];for(let k=1;k<=6;k++){o.x=road.x+(k-3)*TR.sample;K.frame();at.push(t.trackGround(o.x,o.y)>0)}
+  const pts=W.tracks.flatMap(tr=>{const r=[];for(let i=0;i<tr.p.length;i+=3)r.push([tr.p[i],tr.p[i+1]]);return r});
+  ok(pts.every(([x,y])=>t.trackGround(x,y)>0)&&!pts.some(([x,y])=>Math.abs(x-road.x)<2&&Math.abs(y-road.y)<2),'a boar crossing the road: no point on it ('+pts.length+' points kept, the ground under each step '+at.map(v=>v?'kept':'none').join(' ')+')');
+  W.monsters=[]}
+ // ---- fading: by age, and faster in the desert's wind and the frost's snow
+ {const now=t.trackNow(),lifeOf=c=>{const s=run(c,2);return s?t.trackLife(s.x,s.y):null},lg=lifeOf('grass'),ld=lifeOf('desert'),lf=lifeOf('frost');
+  ok(lg===TR.life.grass&&ld===TR.life.desert&&lf===TR.life.frost/TR.weather.snow&&lf<lg&&ld<lg,'a print lasts '+lg+' h on grass, '+ld+' h in the desert (the wind), '+(lf&&lf.toFixed(1))+' h in the frost (snow fills it, x'+TR.weather.snow+')');
+  K.reset();lvTo(10);Kit.goTo(grass.x,grass.y);const V=K.view(),age=h=>{const tr=new t.Track('band:bandits',6,0,'X',0);tr.add(grass.x+8,grass.y,now-h*10);tr.add(grass.x+32,grass.y,now-h*10+3);return K.seen(tr,0,V)};
+  const a=[0,6,12,24,lg+1].map(age);ok(a[0]>a[1]&&a[1]>a[2]&&a[2]>a[3]&&a[3]>0&&a[4]===0,'on grass, at Scouting 10, a print fades with its age: '+a.map(v=>v.toFixed(2)).join(' ')+' at 0, 6, 12, 24 and '+(lg+1)+' hours');
+  const s=run('swamp',2)||run('desert',2),cl=t.climAt(s.x,s.y);ok(t.trackGround(s.x,s.y)>t.trackGround(grass.x,grass.y),'clearer in the '+cl+' ('+t.trackGround(s.x,s.y)+') than on grass ('+t.trackGround(grass.x,grass.y)+')')}
+ // ---- the cap: the oldest dropped first
+ {const c0=TR.cap,s0=TR.slack;TR.cap=60;TR.slack=10;try{K.reset();const now=t.trackNow();
+   for(let j=0;j<10;j++){const tr=new t.Track('lord',12,1,'Lord '+j,0);W.tracks.push(tr);for(let i=0;i<10;i++){tr.add(grass.x+i*24,grass.y+j,now-(100-j*10-i));K.n++}}
+   const before=K.n;K.frame();const all=W.tracks.flatMap(tr=>tr.p.filter((v,i)=>i%3===2)),old=Math.min(...all);
+   ok(before===100&&K.n===60&&all.length===60&&old===now-60&&W.tracks.length===6,'past the cap ('+TR.cap+' + '+TR.slack+'): '+before+' points cut to '+K.n+', the oldest 40 gone ('+W.tracks.length+' trails left, the oldest point '+(now-old)/10+' h old)')}
+  finally{TR.cap=c0;TR.slack=s0}}
+ // ---- who sees what: your own always; others' by Scouting, older and farther with each level; only in your sight
+ {K.reset();Kit.goTo(grass.x,grass.y);const now=t.trackNow(),Vs=t.vis(),mk=(own,h,d)=>{const tr=new t.Track(own?'you':'band:bandits',6,0,'X',0);tr.add(grass.x+d,grass.y,now-h*10);tr.add(grass.x+d+24,grass.y,now-h*10+3);return tr};
+  const rows=[];for(const lv of [0,3,6,10]){lvTo(lv);const V=K.view(),R=Math.sqrt(V.r2),seeAge=TR.see.age[0]+TR.see.age[1]*lv,sees=(h,d)=>K.seen(mk(false,h,d),0,V)>0;
+   ok(sees(seeAge-.5,R*.5)&&!sees(seeAge+.5,R*.5)&&sees(1,R-2)&&!sees(1,R+2),'Scouting '+lv+': others\' tracks up to '+seeAge+' h old, within '+Math.round(R)+' px ('+Math.round(R/V.v2**.5*100)+'% of your sight)');
+   rows.push(lv+': '+seeAge+' h, '+Math.round(R)+' px');
+   ok(K.seen(mk(true,20,Math.sqrt(V.v2)-30),0,V)>0&&K.seen(mk(true,20,Math.sqrt(V.v2)+5),0,V)===0,'Scouting '+lv+': your own, 20 h old near the edge of your sight, seen; past it, not')}
+  info('others\' tracks by Scouting: '+rows.join('; '));
+  lvTo(10);const V=K.view();ok(Math.sqrt(V.r2)<=Math.sqrt(V.v2)+1e-6,'even at Scouting 10, never past your sight')}
+ // ---- the card: more with Scouting; your own; and a first reading trains Scouting
+ {K.reset();Kit.goTo(grass.x,grass.y);const now=t.trackNow(),tr=new t.Track('band:bandits',8,0,'The Red Vipers',0);W.tracks.push(tr);tr.add(grass.x+10,grass.y+6,now-50);tr.add(grass.x+23,grass.y-7,now-47);K.n=2;
+  const txt=lv=>{lvTo(lv);return tr.card(0,t.skill('scout')).replace(/<[^>]+>/g,'|')};const c=[0,3,6,10].map(txt);
+  ok(/^\|Tracks\|/.test(c[0])&&!/8/.test(c[0]),'Scouting 0: "'+c[0]+'"');
+  ok(/Tracks of about 8\|.*On foot, heading NE/.test(c[1]),'Scouting 3: "'+c[1]+'"');
+  lvTo(6);ok(t.trackTip(grass.x+17,grass.y).replace(/<[^>]+>/g,'|')===c[2],'the trail under a point reads the same (trackTip)');
+  ok(/Bandits, about 8\|.*On foot, a few hours old, heading NE/.test(c[2]),'Scouting 6: "'+c[2]+'"');
+  ok(/The Red Vipers, 8 men\|.*On foot, 5 hours ago, heading NE/.test(c[3]),'Scouting 10: "'+c[3]+'"');
+  const own=new t.Track('you',5,0,'Your band',0);W.tracks.push(own);own.add(grass.x+100,grass.y,now-10);own.add(grass.x+124,grass.y,now-7);lvTo(0);
+  ok(/Your band’s tracks/.test(t.trackTip(grass.x+112,grass.y)),'your own: "'+t.trackTip(grass.x+112,grass.y).replace(/<[^>]+>/g,'|')+'"');
+  ok(t.trackTip(grass.x+50,grass.y+40)==='','nothing under a point beside them');
+  const tr2=new t.Track('lord',20,1,'Sir Hal’s army',0);W.tracks.push(tr2);tr2.add(grass.x+40,grass.y,now-20);tr2.add(grass.x+64,grass.y,now-17);lvTo(3);
+  const x0=P.sk.scout.xp;t.trackTip(grass.x+52,grass.y);const x1=P.sk.scout.xp;t.trackTip(grass.x+52,grass.y);
+  ok(x1>x0&&P.sk.scout.xp===x1&&/Mounted/.test(t.trackTip(grass.x+52,grass.y)),'reading a trail trains Scouting once ('+x0.toFixed(1)+' to '+x1.toFixed(1)+' xp, not again); a mostly mounted army reads "mounted"')}
+ // ---- Look on the action ring, and the pointer's tip, find a trail
+ {K.reset();quiet();Kit.goTo(grass.x,grass.y);G.mode='world';G.modal=false;t.drawWorld();const now=t.trackNow(),tr=new t.Track('band:bandits',8,0,'The Red Vipers',0);W.tracks.push(tr);tr.add(grass.x+10,grass.y+6,now-50);tr.add(grass.x+23,grass.y-7,now-47);K.n=2;lvTo(6);
+  const items=t.mapRingItems(grass.x+17,grass.y,null,100,100),look=items.find(i=>i.label==='Look');
+  if(look)look.run();const tip=document.getElementById('tip');
+  ok(!!look&&/Bandits, about 8/.test(tip.textContent)&&!tip.hidden,'Look on the ring over the trail shows its card ('+(look?tip.textContent:'no Look: '+items.map(i=>i.label).join(', '))+')');
+  t.hideTip();const far=t.mapRingItems(grass.x+18,grass.y+60,null,100,100);ok(!far.some(i=>i.label==='Look'),'beside it, no Look ('+far.map(i=>i.label).join(', ')+')');
+  const cv=t.cv,r=cv.getBoundingClientRect(),wx=grass.x+17,wy=grass.y;cv.dispatchEvent(new PointerEvent('pointermove',{clientX:r.left+(wx-G.cam.x)*r.width/t.VW,clientY:r.top+(wy-G.cam.y)*r.height/t.VH,pointerType:'mouse',bubbles:true}));
+  ok(!tip.hidden&&/Bandits, about 8/.test(tip.textContent),'the pointer over it shows the same card ('+tip.textContent+')');t.hideTip()}
+ // ---- a bounty's band: once you read one of its trails, its tracks show faintly gold
+ {K.reset();Kit.goTo(grass.x,grass.y);const now=t.trackNow(),tr=new t.Track('band:bandits',8,0,'The Red Vipers',77);W.tracks.push(tr);tr.add(grass.x+10,grass.y+6,now-50);tr.add(grass.x+23,grass.y-7,now-47);K.n=2;lvTo(6);
+  ok(!K.known.has(77),'a bounty\'s trail not yet read: not marked');t.trackTip(grass.x+17,grass.y);ok(K.known.has(77),'read once: its band\'s tracks are known (drawn gold)')}
+ // ---- drawn: in view, over the land; none with TRACKS.on off
+ {K.reset();quiet();Kit.goTo(grass.x,grass.y);G.mode='world';G.modal=false;lvTo(10);G.clock=t.DAY*.3;const now=t.trackNow(),tr=new t.Track('band:bandits',30,0,'X',0);W.tracks.push(tr);
+  for(let i=0;i<5;i++)tr.add(grass.x+20+i*24,grass.y+4,now-10+i);K.n=5;
+  const pn=performance.now;performance.now=()=>1e7;const grab=()=>{try{t.drawWorld();return t.ctx.getImageData(0,0,t.VW,t.VH).data}finally{performance.now=pn}},hash=a=>{let h=0;for(let i=0;i<a.length;i+=4)h=(h*31+a[i]+a[i+1]*3+a[i+2]*7)|0;return h};
+  const on=grab();TR.on=false;performance.now=()=>1e7;const off=grab();performance.now=()=>1e7;const off2=grab();TR.on=true;let diff=0;for(let i=0;i<on.length;i+=4)if(on[i]!==off[i]||on[i+1]!==off[i+1]||on[i+2]!==off[i+2])diff++;
+  ok(hash(off)===hash(off2)&&diff>40&&hash(on)!==hash(off),'a band of 30\'s trail is drawn in view ('+diff+' pixels differ from the frame without tracks)')}
+ // ---- saved and loaded: the same prints; a save without them loads
+ {K.reset();quiet();Kit.goTo(grass.x,grass.y);G.mode='world';Kit.travel(grass.x+10*16,grass.y,3000);const now=t.trackNow(),tr=new t.Track('band:raiders',7,0,'The Red Vipers',12);W.tracks.push(tr);tr.add(grass.x,grass.y+40,now-30);tr.add(grass.x+24,grass.y+41,now-27);tr.add(grass.x+47,grass.y+52,now-24);K.n+=3;K.known.add(12);
+  const J=JSON.stringify(W.tracks),n=K.n;t.saveGame(true,'quick');const raw=JSON.parse(localStorage.getItem(t.SAVE+'.quick'));
+  ok(raw.world.tracks&&raw.world.tracks.l.length===W.tracks.length&&raw.world.tracks.kq[0]===12,'saved: '+raw.world.tracks.l.length+' trails ('+JSON.stringify(raw.world.tracks).length+' chars)');
+  K.reset();t.loadGame('quick');Kit.world({encCool:1e9});
+  ok(JSON.stringify(W.tracks)===J&&K.n===n&&K.known.has(12)&&W.tracks.every(x=>x instanceof t.Track),'loaded: the same trails and points ('+K.n+'), the bounty known');
+  ok(W.tracks.find(x=>x.k==='band:raiders').p.join()===[grass.x,grass.y+40,now-30,grass.x+24,grass.y+41,now-27,grass.x+47,grass.y+52,now-24].map(Math.round).join(),'the points exactly as they were');
+  delete raw.world.tracks;localStorage.setItem(t.SAVE+'.quick',JSON.stringify(raw));t.loadGame('quick');Kit.world({encCool:1e9});
+  ok(G.mode==='world'&&Array.isArray(W.tracks)&&!W.tracks.length&&K.n===0,'a save without tracks loads, with none');
+  t.saveGame(true,'quick');ok(!('tracks' in JSON.parse(localStorage.getItem(t.SAVE+'.quick')).world),'and saves none while there are none')}
+ // ---- off: nothing kept, nothing saved
+ {K.reset();quiet();TR.on=false;try{Kit.goTo(grass.x,grass.y);Kit.travel(grass.x+10*16,grass.y,3000);ok(!W.tracks.length&&K.n===0&&t.trackTip(grass.x+40,grass.y)==='','with TRACKS.on off you leave none, and there are none to read')}finally{TR.on=true}}
+ // ---- the save's size at the cap (a full world's worth, as kept)
+ {K.reset();const now=t.trackNow();let j=0;while(K.n<TR.cap){const tr=new t.Track(j%3?'band:bandits':'mon:wolf',8,0,'Gorm’s band',0);W.tracks.push(tr);let x=200+(j*37)%3000,y=200+(j*53)%2000,tt=now-400+j;
+   for(let i=0;i<20&&K.n<TR.cap;i++){x+=Math.round(16+8*Math.cos(i+j));y+=Math.round(8*Math.sin(i*1.7+j));tt+=3;tr.add(x,y,tt);K.n++}j++}
+  const s=JSON.stringify(t.Saves.saveOf('tracks'));info('the save\'s tracks at the cap: '+TR.cap+' points in '+W.tracks.length+' trails, '+s.length+' chars ('+(s.length/1024).toFixed(1)+' KB, '+(s.length/TR.cap).toFixed(1)+' a point)');K.reset()}
+});

@@ -354,7 +354,7 @@ function bandFitness(){const F=P.fitness(),fit=F.fit-1,hp=P.hp==null?1:clamp(P.h
    the map, or the ground), in the ring's order; active: a mode that is on now (camped, by road, hurrying, liquor first), the ring
    lighting it (the owner, 2026-10-23) ---------- */
 function mapRingItems(wx,wy,o,cx,cy){
-  const L=supplyLand(),ground=!o,look=o&&tipFor(o)||rumourTip(wx,wy);
+  const L=supplyLand(),ground=!o,look=o&&tipFor(o)||rumourTip(wx,wy)||trackTip(wx,wy);// (a rumour's "?", else tracks you see: world/tracks.js)
   return[
     !P.camp&&!campWhy()&&{icon:'fire',label:'Make camp',run:makeCamp},
     P.camp&&{icon:'fire',label:'Break camp',run:()=>breakCamp(),active:true},
