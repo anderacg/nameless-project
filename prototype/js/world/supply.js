@@ -36,8 +36,12 @@
    fever: swamp fever (world.js survive, a fever night): a man falls sick (sick), and one already sick of it may die (die, less med
    a level of Medicine, never under dieMin).
    battleMin: your side starts a battle at the band's stamina, never under this. camp: the wounded heal × heal; caught: −morale
-   when a hostile band finds you in camp; r: Make camp looks this many tiles round you for clear ground (campSpot). hint: the
-   first-run hint once stamina falls under this. hurt: causes kept for the card */
+   when a hostile band finds you in camp; r: Make camp looks this many tiles round you for allowed ground (campSpot), each step
+   px apart; hop: within so many tiles your band steps there at once, farther it walks; across: tiles added to a spot's distance
+   when water or a peak lies between it and you (never hopped to); m: px round the camp's picture kept off everything not
+   allowed (campGround); road: px past that no road or track tile's middle may lie; lot: tiles kept between it and any lot, field
+   or bandits' camp; ring: tiles round a holding's centre and houses; site: px round a site's picture; pole: your banner's pole's
+   foot, px from the camp's fire (bandCampEnt: planted beside the tents). hint: the first-run hint once stamina falls under this. hurt: causes kept for the card */
 const SUPPLY={march:2,rough:1.5,night:1.3,forced:1.5,dry:1.5,desertDry:2,cold:.5,mounted:.7,skill:.03,skillCap:.5,guide:.9,
   rest:{stop:2,camp:8,stay:10},dryRest:.5,
   tired:20,exhausted:5,pace:{tired:.85,exhausted:.6},tiredMorale:{every:3,n:1},worn:{every:8},
@@ -45,7 +49,7 @@ const SUPPLY={march:2,rough:1.5,night:1.3,forced:1.5,dry:1.5,desertDry:2,cold:.5
   drink:{per:6,rest:.5,order:['water','ale','liquor'],water:{morale:0},ale:{morale:.5},liquor:{morale:1.5}},
   thirst:{desert:2,parched:12,pace:.85,morale:1,dying:24,death:48,toll:6,hero:{hp:.1,mp:.1}},lost:{days:7,keep:20},
   fill:{days:2,near:3,well:40},furPer:5,frost:{every:6,morale:1},forcedMarch:{pace:2,drain:2.5},
-  battleMin:25,camp:{heal:1.5,caught:8,r:4},hint:60,hurt:3,fever:{sick:.5,die:.2,dieMin:.05,med:.02}};
+  battleMin:25,camp:{heal:1.5,caught:8,r:6,step:8,hop:2,across:4,m:2,road:4,lot:0,ring:1,site:4,pole:[20,1]},hint:60,hurt:3,fever:{sick:.5,die:.2,dieMin:.05,med:.02}};
 
 /* the band's own record, kept beside P (not on it: P is your hero's record too, which every battle's snapshot holds whole): its
    camp ({at: the hour it was made} or null) and the hour's counters: food and drink due (fractions of a ration), hours hungry,
@@ -234,23 +238,57 @@ function woundedPanel(){
 // why you cannot make camp here ('' if you can)
 const campWhy=()=>G.mode!=='world'||G.modal?'Not now':P.stay?'You are staying in a holding':P.siege?'You are besieging a holding':P.raid?'You are raiding':'';
 /* where the band pitches (the owner, 2026-10-22: on clear ground, never over trees): the camp's picture at a spot (x, y): its
-   sprite, its corner (X, Y) and its pixels' box on the map, its feet the box's bottom (bandCampEnt draws it there, behind you) */
+   sprite, its corner (X, Y) and its pixels' box on the map, its feet the box's bottom (bandCampEnt draws it there, in your place) */
 function campAt(x,y){const s=campSprite(5,'travelers'),b=opaqueBox(s),X=x-s.ax,Y=y-4-s.ay;return{s,X,Y,box:[X+b[0],Y+b[1],X+b[2],Y+b[3]]}}
-// is (x, y) clear ground for a camp: every tile under its picture walkable and not water, a ford, a wood or swamp, nor any
-// building's lot; nothing standing on it (a tree, a bush, a stone, rock: worldart.js WorldArt.standing)
-function campGround(x,y){const [x0,y0,x1,y1]=campAt(x,y).box;
-  for(let ty=Math.floor(y0/TILE);ty<=Math.floor(y1/TILE);ty++)for(let tx=Math.floor(x0/TILE);tx<=Math.floor(x1/TILE);tx++){const k=tAt(tx,ty);
-    if(k===T_WATER||k===T_MOUNT||k===T_FORD||k===T_FOREST||CLIMS[climate[ty*MW+tx]]==='swamp'||lotOf(tx,ty))return false}
+/* is (x, y) allowed ground for a camp (the owner, 2026-10-23: "it cannot collide with roads and any other non-allowed places"):
+   its picture's box and SUPPLY.camp.m px round it on no water (a pond's, an oasis's too), ford, peak, wood, swamp, crossing's
+   tile (WM.crossings) or brook (WM.flow at GEN_RIVER.brook), no road or track tile's middle within road px of it; on no ground the art keeps clear (worldart.js
+   plan.clear: the roads' and tracks' bands as painted and their margins, the fords' tracks, the holdings' gates, lots and fields,
+   the bandits' camps); no lot or field within SUPPLY.camp.lot tiles; outside every holding's ring (its centre's and houses' box
+   and ring tiles round it: campRing); clear of every site's picture by site px; nothing standing on it (a tree, a bush, a stone,
+   rock: WorldArt.standing) */
+function campGround(x,y){const C=SUPPLY.camp,b=campAt(x,y).box,x0=b[0]-C.m,y0=b[1]-C.m,x1=b[2]+C.m,y1=b[3]+C.m,
+    tx0=Math.floor(x0/TILE),ty0=Math.floor(y0/TILE),tx1=Math.floor(x1/TILE),ty1=Math.floor(y1/TILE),BK=typeof GEN_RIVER==='object'?GEN_RIVER.brook:99,X=campXings();
+  if(tx0<0||ty0<0||tx1>=MW||ty1>=MH)return false;
+  for(let ty=ty0;ty<=ty1;ty++)for(let tx=tx0;tx<=tx1;tx++){const i=ty*MW+tx,k=tAt(tx,ty);
+    if(k===T_WATER||k===T_MOUNT||k===T_FORD||k===T_FOREST||k===T_ROAD&&Math.abs((tx+.5)*TILE-(x0+x1)/2)<=(x1-x0)/2+C.road&&Math.abs((ty+.5)*TILE-(y0+y1)/2)<=(y1-y0)/2+C.road||CLIMS[climate[i]]==='swamp'||X.has(i)||WM.flow&&(WM.flow[i]&31)>=BK)return false}
+  for(let ty=ty0-C.lot;ty<=ty1+C.lot;ty++)for(let tx=tx0-C.lot;tx<=tx1+C.lot;tx++)if(occAt(tx,ty))return false;// (a lot, a field, a bandits' camp's ground, off the map)
+  for(const t of TOWNS){if(Math.abs(t.tx-tx0)>40||Math.abs(t.ty-ty0)>40)continue;const r=campRing(t);if(tx1>=r[0]&&tx0<=r[2]&&ty1>=r[1]&&ty0<=r[3])return false}
+  for(const s of W.sites){if(Math.abs(s.x-x)>160||Math.abs(s.y-y)>160)continue;const q=siteBox(s);if(x1>=q[0]-C.site&&x0<=q[2]+C.site&&y1>=q[1]-C.site&&y0<=q[3]+C.site)return false}
+  if(campKeptClear(x0,y0,x1,y1))return false;
   return !WorldArt.standing(x0,y0,x1,y1).some(e=>e.box[0]<=x1&&e.box[2]>=x0&&e.box[1]<=y1&&e.box[3]>=y0)}
-// the nearest clear ground to camp on: where you stand, else the middle of a tile within SUPPLY.camp.r tiles you can walk to; null if none
-function campSpot(){if(campGround(P.x,P.y))return{x:P.x,y:P.y};const R=SUPPLY.camp.r,tx=Math.floor(P.x/TILE),ty=Math.floor(P.y/TILE),c=[];
-  for(let j=-R;j<=R;j++)for(let i=-R;i<=R;i++){const x=(tx+i+.5)*TILE,y=(ty+j+.5)*TILE,d=Math.hypot(x-P.x,y-P.y);if(d<=R*TILE)c.push([d,x,y])}
-  c.sort((a,b)=>a[0]-b[0]);for(const [,x,y] of c)if(campGround(x,y)&&Router.reach(P,{x,y}))return{x,y};return null}
-// Make camp: on clear ground where you stand, at once; else your band walks to the nearest (G.pitch) and pitches there (campArrive)
+// (the crossings' tiles, both ends and between: a set of tile indices, made once a map)
+const CAMP_X=new WeakMap();
+function campXings(){const L=WM.crossings||[];let X=CAMP_X.get(L);if(!X){X=new Set();for(const c of L)for(const i of [c.i,c.j,...c.tiles])X.add(i);CAMP_X.set(L,X)}return X}
+// (a holding's ring: its centre's box and its houses' tiles, SUPPLY.camp.ring tiles round them: [tx0, ty0, tx1, ty1])
+function campRing(t){const b=centreBox(t),r=[b.x,b.y,b.x+b.n-1,b.y+b.n-1],g=SUPPLY.camp.ring;
+  for(const l of t.lots||[])if(l.k==='centre'||l.k==='house'){r[0]=Math.min(r[0],l.x);r[1]=Math.min(r[1],l.y);r[2]=Math.max(r[2],l.x+l.n-1);r[3]=Math.max(r[3],l.y+l.n-1)}
+  return[r[0]-g,r[1]-g,r[2]+g,r[3]+g]}
+// (a site's picture on the map, px: its sprite and yard where Site draw lays them, structures.js siteSprite)
+function siteBox(s){const sp=siteSprite(s),X=Math.round(s.x)-sp.ax,Y=Math.round(s.y)+8-sp.ay,a=opaqueBox(sp),g=sp.gr?opaqueBox(sp.gr):a;
+  return[X+Math.min(a[0],g[0]),Y+Math.min(a[1],g[1]),X+Math.max(a[2],g[2]),Y+Math.max(a[3],g[3])]}
+// (any pixel of the px box the art keeps clear: worldart.js plan.clear, a PX.TileMask)
+function campKeptClear(x0,y0,x1,y1){const M=WorldArt.ensure().clear,ts=M.ts;x0=Math.max(0,Math.floor(x0));y0=Math.max(0,Math.floor(y0));x1=Math.floor(x1);y1=Math.floor(y1);
+  for(let ty=Math.floor(y0/ts);ty<=Math.floor(y1/ts);ty++)for(let tx=Math.floor(x0/ts);tx<=Math.floor(x1/ts);tx++){const f=M.f[ty*M.C+tx];if(!f)continue;if(f===1)return true;
+    for(let y=Math.max(y0,ty*ts);y<=Math.min(y1,ty*ts+ts-1);y++)for(let x=Math.max(x0,tx*ts);x<=Math.min(x1,tx*ts+ts-1);x++)if(M.at(x,y))return true}
+  return false}
+// does water or a peak lie on the straight way from you to (x, y)
+function campAcross(x,y){const n=Math.ceil(Math.hypot(x-P.x,y-P.y)/4);for(let k=1;k<=n;k++){const q=terrAt(P.x+(x-P.x)*k/n,P.y+(y-P.y)*k/n);if(q===T_WATER||q===T_MOUNT)return true}return false}
+/* the nearest allowed ground to camp on (campGround): where you stand, else a point SUPPLY.camp.step px apart within r tiles you
+   can walk to, nearest first; one with water or a peak between it and you counted across tiles farther (open ground beside the
+   road before ground over a river). {x, y, across} or null if none */
+function campSpot(){if(campGround(P.x,P.y))return{x:P.x,y:P.y,across:false};const C=SUPPLY.camp,h=C.step,R=C.r*TILE,gx=Math.floor(P.x/h),gy=Math.floor(P.y/h),n=Math.ceil(R/h),c=[];
+  for(let j=-n;j<=n;j++)for(let i=-n;i<=n;i++){const x=(gx+i+.5)*h,y=(gy+j+.5)*h,d=Math.hypot(x-P.x,y-P.y);if(d<=R)c.push([d,x,y])}
+  c.sort((a,b)=>a[0]-b[0]);let best=null;
+  for(const [d,x,y] of c){if(best&&d>=best.k)break;if(!campGround(x,y)||!Router.reach(P,{x,y}))continue;const across=campAcross(x,y),k=d+(across?C.across*TILE:0);if(!best||k<best.k)best={x,y,across,k}}
+  return best&&{x:best.x,y:best.y,across:best.across}}
+/* Make camp (the owner, 2026-10-23: "it should spawn right at available spots"): at the nearest allowed ground (campSpot); where
+   you stand or within SUPPLY.camp.hop tiles (nothing between), your band steps there and pitches at once; farther, it walks there
+   (G.pitch) and pitches on arrival (campArrive); none in reach: no camp */
 function makeCamp(){if(P.camp||campWhy())return false;const s=campSpot();G.chase=null;
   if(!s){log('No clear ground to camp here.','bad');return false}
-  if(Math.hypot(s.x-P.x,s.y-P.y)<2)return pitchCamp();
-  P.tx=s.x;P.ty=s.y;P.stuck=0;G.pitch=s;log('Your band makes for clear ground to camp.');return true}
+  if(!s.across&&Math.hypot(s.x-P.x,s.y-P.y)<=SUPPLY.camp.hop*TILE){P.x=s.x;P.y=s.y;P.stuck=0;return pitchCamp()}
+  P.tx=s.x;P.ty=s.y;P.stuck=0;G.pitch={x:s.x,y:s.y};log('Your band makes for clear ground to camp.');return true}
 function pitchCamp(){G.pitch=null;P.camp={at:Clock.hours()};P.tx=P.ty=null;G.chase=null;
   log('Your band makes camp. Stamina comes back faster, and the wounded mend.','good');updateHUD(true);return true}
 // your march ends (world.js marchStep): at the clear ground you made for, the band pitches; anywhere else the plan is dropped
@@ -278,10 +316,15 @@ const toggleHurry=()=>setHurry(!G.hurry);
 function hurryUI(){if(typeof document==='undefined')return;document.querySelectorAll('[data-hurry]').forEach(b=>{b.classList.toggle('on',!!G.hurry);b.setAttribute('aria-pressed',String(!!G.hurry))})}
 // a battle that finds you in camp (battle/setup.js, before morale): caught unready, morale lower; the camp is struck either way
 function campCaught(opts){if(!P.camp||opts.tournament||opts.sandbox)return;P.camp=null;P.morale=Math.max(0,P.morale-SUPPLY.camp.caught);log('They catch your band in camp, unready.','bad')}
-// your camp at your figure: two tents and the fire, behind you (render.js drawWorld pushes it while you camp), in the depth order
-// by its feet as everyone is (depth.js worldOverdraw: the trees in front of it drawn over it, whole: nf, none faded for it)
+/* your camp in your place: two tents and the fire, with your band's banner planted beside them; your figure and host are not
+   drawn while you camp (the owner, 2026-10-23: render.js drawWorld pushes this instead), and stand there again when it breaks. In
+   the depth order by its feet as everyone is (depth.js worldOverdraw: the trees in front of it drawn over it, whole: nf, none
+   faded for it) */
 function bandCampEnt(cam){const c=campAt(P.x,P.y);return{y:c.box[3],nf:1,f:()=>{subT(P);const s=c.s,X=Math.round(c.X-cam.x),Y=Math.round(c.Y-cam.y);
-  ctx.globalAlpha=SHADOW.a;ctx.drawImage(s.sh,X,Y);ctx.globalAlpha=1;ctx.drawImage(s,X,Y);drawFire(X+s.fire[0],Y+s.fire[1],0)}}}
+  ctx.globalAlpha=SHADOW.a;ctx.drawImage(s.sh,X,Y);ctx.globalAlpha=1;ctx.drawImage(s,X,Y);drawFire(X+s.fire[0],Y+s.fire[1],0);BANNERQ.push({o:campPole(c)})}}}
+// (your banner's pole in the camp: its foot on the ground SUPPLY.camp.pole px from the fire, drawn as yours with the parties'
+// banners, render.js drawBanners: bannerAt lays the pole 2 px right of x - 4, its foot BANNER_GAP over headY)
+const campPole=c=>{const f=c.s.fire,d=SUPPLY.camp.pole;return{x:c.X+f[0]+d[0]+2,y:P.y,faction:'player',banner:()=>P.banner(),headY:()=>Math.round(c.Y+f[1]+d[1])+BANNER_GAP}}
 
 /* ---------- what the card shows (render.js updateHUD) ---------- */
 // moving now or not; where you stand; the drink you are on; the stamina's rate an hour and why; its state; food and drink in

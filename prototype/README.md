@@ -271,10 +271,13 @@ the world piece `band` once it is not fresh. The band's own numbers are `PlayerP
   standing ended with. Not in a tournament or the lab.
 - **Make camp** (Z, the dock's Camp, the action ring): stamina +8 an hour, the wounded mend ×1.5, food and drink at the rest rate;
   any travel order breaks it; faster than 1x, anything hostile in sight brings the speed back to 1x; a band that finds you in camp
-  catches you unready (morale −8). Only on clear ground (`campSpot`, `campGround`): no water, ford, wood, swamp or lot under the tents,
-  nothing standing there (`WorldArt.standing`); where you stand if it is, else the band walks to the nearest within 4 tiles and
-  pitches there (`G.pitch`, `campArrive`); none near: "No clear ground to camp here". The tents (`bandCampEnt`) are drawn by their
-  feet among the trees, those in front drawn whole over them.
+  catches you unready (morale −8). Only on allowed ground (`campSpot`, `campGround`, numbers in `SUPPLY.camp`): the tents and 2 px
+  round them on no water (ponds, oases), ford, peak, wood, swamp, road or track (its tiles and its band as painted: the art's kept-clear
+  mask), crossing, brook, lot or field, holding's ring (centre and houses, a tile round) or site, nothing standing there
+  (`WorldArt.standing`); where you stand if it is, else the nearest you can reach within 6 tiles (water between counts 4 tiles more):
+  within 2 tiles the band steps there and pitches at once, farther it walks there and pitches (`G.pitch`, `campArrive`); none near:
+  "No clear ground to camp here". The tents (`bandCampEnt`) are drawn by their feet among the trees, those in front drawn whole over
+  them, your banner planted beside them; your figure and host are hidden while you camp.
 - **The action ring** (`ui/ring.js`): hold the left button or a finger still on the map 0.35 s. A press does nothing yet (the owner,
   2026-10-22, mouse and touch alike): let go sooner and it is a click, travelling there or meeting what was clicked; a move first calls
   the ring off and the release still travels; a right-click travels at once. Its buttons, only those that apply
