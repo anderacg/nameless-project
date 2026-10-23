@@ -53,7 +53,7 @@ $('#pause').addEventListener('click',togglePause);pauseUI();
 document.querySelectorAll('.dbtn[data-ico]').forEach(b=>{b.innerHTML=icon(b.dataset.ico,18)+'<span class="dl">'+b.textContent+'</span>'+(b.dataset.key?'<kbd>'+b.dataset.key+'</kbd>':'')});
 $('#saveBtn').addEventListener('click',()=>saveGame(false,'quick'));
 // the Game Menu, opened or closed (hub.js; the dock is hidden in battle, where Esc and Tab open it)
-$('#menuBtn').addEventListener('click',menuKey);
+$('#menuBtn').addEventListener('click',menuKey);$('#bMenu').addEventListener('click',menuKey);// (the battle's own, for phones: the dock is hidden there)
 
 $('#charBtn').addEventListener('click',()=>{if(G.mode==='char')act('char-close');else if(G.mode==='skills')act('sk-map');else openChar()});// (the Army window, its Skills view too)
 $('#campBtn').addEventListener('click',()=>toggleCamp());// (make camp or break it: world/supply.js)
