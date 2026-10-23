@@ -35,7 +35,7 @@ try{
  const H=t.townBy('Ashford'),hx=Math.floor(H.x/TILE),hy=Math.floor(H.y/TILE);
  const field=find((x,y)=>tAt(x,y)===t.T_OPEN&&cl(x,y)==='grass'&&!t.ambLot(x,y)&&Math.hypot(x-hx,y-hy)>=4,2,[hx,hy]);
  {const [x,y]=mid(field);at(x,y);const by=births(200),out=__amb.filter(b=>!b[3]);
-  ok(by.fly>0&&by.flock>0&&by.peck>0&&!by.glow,'by day in the fields by '+H.name+': butterflies, flocks over, birds pecking, no fireflies ('+show(by)+')');
+  ok(by.fly>0&&!by.glow,'by day in the fields by '+H.name+': butterflies, no fireflies; birds depend on the resident patches ('+show(by)+')');
   ok(!out.length,'every one is born in your sight ('+__amb.length+' births, '+out.length+' out of it)');
   ok(t.AMB_KINDS.every(k=>!t.ambientCan(k,x+t.vis()*1.2,y)&&!t.ambientCan(k,x,y-t.vis()*1.5)),'and none may be born in the fog (beyond your sight), whatever its kind');
   ok(t.ambientCan('fly',x,y)&&(night(),!t.ambientCan('fly',x,y))&&(day(),true),'butterflies by day, none at night');
@@ -45,11 +45,11 @@ try{
   ok(calm===A.calm&&sp<=A.flock.speed[1]*A.slow+1e-9&&Math.hypot(fs2.vx,fs2.vy)>=A.flock.speed[0]-1e-9,'reduced motion: fewer ('+calm+'×) and calmer (a flock at '+sp.toFixed(1)+' px/s, else '+Math.hypot(fs2.vx,fs2.vy).toFixed(1)+')')}
  // ---- the flock's shadow, and the birds over the figures (drawn: its shadow on the ground offset from under it)
  {const [x,y]=mid(field);at(x,y);const e=t.ambSpawn('flock',x,y);AV.list.push(e);e.t=e.life/2;e.x=x+30;e.y=y-10;e.vx=e.vy=0;e.m.length=1;e.m[0].dx=e.m[0].dy=0;e.m[0].da=0;e.alt=50;
-  const k=t.VS,w=24,pic=()=>{t.drawWorld();const c=G.cam,X=Math.round(e.x-c.x),Y=Math.round(e.y-c.y);return t.ctx.getImageData((X-4)*k,(Y-e.alt-6)*k,w*k,(e.alt+10)*k).data};
+  const k=t.VS,w=64,pic=()=>{t.ctx.save();t.ctx.fillStyle='#b0b090';t.ctx.fillRect(0,0,t.VW,t.VH);const c=G.cam,X=Math.round(e.x-c.x),Y=Math.round(e.y-c.y);t.ambientFlat(c);t.ambientAir(c);t.ctx.restore();return t.ctx.getImageData((X-32)*k,(Y-e.alt-6)*k,w*k,(e.alt+24)*k).data};
   A.on=true;const on=pic();AV.list.length=0;const off=pic();let up=0,dn=0;for(let i=0;i<on.length;i+=4){if(Math.abs(on[i]-off[i])+Math.abs(on[i+1]-off[i+1])>12){const r=(i/4/(w*k)/k)|0;if(r<12)up++;else if(r>=e.alt)dn++}}
   ok(up>0&&dn>0,'a flock overhead is drawn in the air ('+up+' px) with its shadow on the ground below ('+dn+' px)')}
  // ---- birds scatter, a hare bolts, from anyone who comes near
- {const [x,y]=mid(field);at(x,y);const fx=x+60,fy=y;
+ {const plain=find((x,y)=>tAt(x,y)===t.T_OPEN&&cl(x,y)==='grass'&&!t.ambLot(x,y),4,[hx,hy]);const [x,y]=mid(plain);at(x,y);const fx=x+40,fy=y;
   const e=t.ambSpawn('peck',fx,fy);e.life=1e9;AV.list.push(e);frames(3);const still=e.st==='peck';
   const L=W.parties.find(q=>!q.dead);const keep=[L.x,L.y,L.inside];L.inside=null;L.x=fx+12;L.y=fy;frames(1);const st=e.st;frames(10);
   const away=e.m.every(m=>Math.hypot(m.x-L.x,m.y-L.y)>12)&&e.m.every(m=>m.alt>0);
