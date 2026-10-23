@@ -20,7 +20,7 @@ try{
  const strip=(s,S)=>{if(s[0]!=='{')return s;const g=JSON.parse(s);delete g.wr;delete g.high;delete g.mix;delete g.pond;delete g.built;if(g.road){delete g.road.lane;delete g.road.track}if(S&&S.pond)delete g.edges;
   if(S&&(S.river||S.brook||S.pond))delete g.river;else if(g.river&&'bridge' in g.river)g.river.bridge=0;return JSON.stringify(g)};
  // ---- today's direct reads (as setup.js, terrain.js and engage.js read the world before R17)
- const oldEnv=()=>{const r=t.regionAt(P.x,P.y),tt=r.t===T_MOUNT||r.t===T_WATER?T_HILL:r.t,c=r.c;
+ const oldEnv=()=>{const r=t.regionAt(P.x,P.y,true),tt=r.t===T_MOUNT||r.t===T_WATER?T_HILL:r.t,c=r.c;
   const text=tt===T_FOREST?'Trees block movement and stop some arrows. Elves shoot through them.':tt===T_HILL?'High ground: archers reach 15% farther.'
    :c==='frost'?'Snow slows everyone but dwarves and wolves.':c==='desert'?'The heat slows melee attacks, except for orcs and scorpions.':c==='swamp'?'Mud slows everyone and stalls cavalry charges. Orcs wade through.':'Open ground: cavalry rides 15% faster.';
   return{c,t:tt,name:r.name,text}};
@@ -62,7 +62,7 @@ try{
   const g0=J(oldAt(x,y,e0)),g1=J(t.terrainAt(x,y,e1)),g2=J(t.groundSpecFor({},e2,S));fp1=mix(fp1,strip(g0,S));fp2=mix(fp2,strip(g2,S));
   if(!sameGen(g0,g2,S)||g1!==g2)bad.spec.push(at);
   const E=ENVS[(tx+ty)%ENVS.length];if(!sameGen(J(oldAt(x,y,E)),J(t.terrainOf(S,E)),S))bad.other.push(at);// (a test's own ground on this tile)
-  const r=t.regionAt(x,y);if(r.t!==S.t||r.c!==S.c||r.name!==S.name)bad.region.push(at);
+  const r=t.regionAt(x,y,true);if(r.t!==S.t||r.c!==S.c||r.name!==S.name)bad.region.push(at);
   if(t.fieldSizeFor(200,r,null)!==t.fieldSizeFor(200,S,null)||t.fieldSizeFor(40,r,'ambush')!==t.fieldSizeFor(40,S,'ambush'))bad.field.push(at);
   const ob=genBridge(tx,ty,t.BTYPE_WORLD.near);if(ob!==t.bridgeNear(tx,ty)||ob!==t.bridgeNear(tx,ty,S))bad.bridge.push(at);
   {const e={kind:'party',band:'bandits',mine:true};if(J(genType(e,S))!==J(t.battleTypeFor(e)))bad.type.push(at)}

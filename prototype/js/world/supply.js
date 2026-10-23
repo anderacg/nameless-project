@@ -350,6 +350,7 @@ function mapRingItems(wx,wy,o,cx,cy){
     !P.camp&&!campWhy()&&{icon:'fire',label:'Make camp',run:makeCamp},
     P.camp&&{icon:'exit',label:'Break camp',run:()=>breakCamp()},
     ground&&{icon:'banner',label:'Travel here',run:()=>worldGo(wx,wy)},
+    ground&&{icon:'map',label:'By road',run:()=>roadGo(wx,wy)},
     ground&&!G.hurry&&P.staminaState()!=='exhausted'&&{icon:'speed',label:'Hurry here',run:()=>{worldGo(wx,wy);setHurry(true)}},
     G.hurry&&{icon:'speed',label:'Stop hurrying',run:()=>setHurry(false)},
     canFill(L)&&{icon:'mug',label:'Fill waterskins',run:()=>fillSkins()},

@@ -3,7 +3,7 @@
 // apply there; a press does nothing yet: let go before it opens, it travels (the owner, 2026-10-22: click or hold); a move
 // before it opens calls the ring off, and letting go still travels; let go over a button picks it, or let go first
 // and tap one; Esc, a right-click or a tap outside closes it, travelling nowhere. Only what applies: Make camp or Break camp,
-// Travel here and Hurry here on the ground (Stop hurrying while you hurry), Fill waterskins by water, Drink liquor with liquor, Look on something. A finger's long press
+// Travel here, By road (world.js roadGo: keeping to the roads) and Hurry here on the ground (Stop hurrying while you hurry), Fill waterskins by water, Drink liquor with liquor, Look on something. A finger's long press
 // opens it too, and its Look shows the card.
 window.RUN=async()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
@@ -28,8 +28,12 @@ try{
  // ---- held still: the ring, the travel put back
  reset();{const wx=P.x+60,p=cl(wx,P.y+20);down(p);await held();
   ok(!!ring()&&P.tx==null&&document.querySelector('.aring'),'held still '+R.hold+' ms: the ring opens, travelling nowhere');
-  ok(labels().join()==='Make camp,Travel here,Hurry here','on bare ground: '+labels().join(', '));
+  ok(labels().join()==='Make camp,Travel here,By road,Hurry here','on bare ground: '+labels().join(', '));
   const b=btn('Travel here');up(b);ok(!ring()&&P.tx!=null&&Math.abs(P.tx-wx)<2,'let go over Travel here: you travel there, the ring closed ('+(b&&b.el.textContent)+', '+P.tx+' for '+wx+')')}
+ // ---- By road: you travel there keeping to the roads, or with no road near the plain way, the log saying so
+ reset();{const wx=P.x+60,p=cl(wx,P.y+20);down(p);await held();const said=G.msgs.length;up(btn('By road'));const m=G.msgs.slice(said).map(q=>q.m).join(' ');
+  ok(!ring()&&P.tx!=null&&Math.abs(P.tx-wx)<2&&(G.byRoad&&G.byRoad.x===P.tx?/keeps to the roads/.test(m):!G.byRoad&&/No road near/.test(m)),'let go over By road: you travel there '+(G.byRoad?'by road':'the plain way, no road near')+' ('+m+')');
+  t.worldGo(wx,P.y);ok(!G.byRoad,'and a plain click after it goes the plain way')}
  // ---- a move before it opens: no ring
  reset();{const wx=P.x+60,p=cl(wx,P.y+20);down(p);move({clientX:p.clientX+30,clientY:p.clientY});await held();ok(!ring()&&P.tx==null,'a move before it opens calls it off, travelling nowhere yet');up(p);ok(P.tx!=null&&Math.abs(P.tx-wx)<2,'and letting go travels to where it was pressed')}
  // ---- a right-click on the map travels at once, as ever (it has no hold)

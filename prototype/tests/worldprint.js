@@ -195,7 +195,13 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 //  rest is the new layout and art throughout. Were W1 92f3e9c6, W2 9d9df44b, W3 d123d890, W4 9c23c683, W5 f6daaf45, W6 89ee63a7,
 //  W7 bc579d54, W8 4fa9c9cb, B2 d90ef30c)
 // (W5 and W6 measured together 2026-10-23 at the merge of stage 3 (S3: the towns' models and yards) with PB's pond banks)
-const EXPECT={W1:'47419c85',W2:'975f62a1',W3:'154e87e1',W4:'8e6f8677',W5:'b11af87c',W6:'3c66cfdf',W7:'7521bda3',W8:'32682fb8',B2:'af5eb3da'};
+// (W7 and W8 re-recorded 2026-10-23, on purpose, the owner's road notes (agent RB: world/roadband.js): a road's speed follows the road as
+//  drawn (within 10 px of a great road's line, 8 of a track's, blended to the land's over 6 px more; an estate's track 1.15, not 1.3),
+//  read by map.js speedAt for every party, caravan, refugee and beast, and a rider on the road's band not on rough ground (world.js
+//  roughFor), so what moves in the 600 frames (W8) and the three days and their save (W7) move. The painted world (W5, W6) and the
+//  save after begin (B2) hold. Checked: with ROAD_BAND's widths 0 (no band: the tile rule, an estate's track's tile 1.3) all nine are
+//  as before. Were W7 7521bda3, W8 32682fb8)
+const EXPECT={W1:'47419c85',W2:'975f62a1',W3:'154e87e1',W4:'8e6f8677',W5:'b11af87c',W6:'3c66cfdf',W7:'3be1d2fa',W8:'9323078a',B2:'af5eb3da'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended

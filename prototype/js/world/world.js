@@ -96,7 +96,7 @@ const PACE_REF=38,MAP_BASE=34;
 function paceRatio(sp){let n=0,sum=0,mn=1e9;for(const [s,c] of sp){if(!c)continue;n+=c;sum+=s*c;if(s<mn)mn=s}return n?Math.pow((.75*mn+.25*sum/n)/PACE_REF,.7):1}
 const sizeMul=n=>Math.max(.7,1-.006*Math.max(0,n-12));
 const mountedShare=sp=>{let n=0,m=0;for(const [s,c] of sp){n+=c;if(s>=60)m+=c}return n?m/n:0};
-const roughFor=(x,y,ign)=>{const t=terrAt(x,y);ign=ign||[];return t===T_FOREST&&!ign.includes('forest')||t===T_HILL&&!ign.includes('hills')||climAt(x,y)==='swamp'&&!ign.includes('swamp')};
+const roughFor=(x,y,ign)=>{const t=RoadBand.on(x,y)?T_ROAD:terrAt(x,y);ign=ign||[];return t===T_FOREST&&!ign.includes('forest')||t===T_HILL&&!ign.includes('hills')||climAt(x,y)==='swamp'&&!ign.includes('swamp')};
 function listSpeeds(list){const m={};for(const k of list){const s=(ST[k]&&ST[k].spd)||PACE_REF;m[s]=(m[s]||0)+1}return Object.entries(m).map(([s,c])=>[+s,c])}
 function partySpeed(o,list){const sp=listSpeeds(list);return MAP_BASE*paceRatio(sp)*sizeMul(list.length)*Math.max(.45,speedAt(o.x,o.y)||1)*(mountedShare(sp)>=.5&&roughFor(o.x,o.y)?.8:1)}
 // your hero's own pace: on foot a fit 40; mounted, by the mount
@@ -200,7 +200,7 @@ function marchStep(d){
     if(Math.hypot(o.x-P.x,o.y-P.y)<=REACH&&!G.modal&&(G.encCool<=0||o.meetsAnyTime)){interact(o);return true}}}
   if(P.tx!=null){
     const dx=P.tx-P.x,dy=P.ty-P.y,dist=Math.hypot(dx,dy);
-    if(dist<2){P.tx=null;campArrive()}// (the clear ground you walked to: your band pitches there, supply.js)
+    if(dist<2){P.tx=null;G.byRoad=null;campArrive()}// (the clear ground you walked to: your band pitches there, supply.js)
     else{
       const step=Math.min(dist,moveStep(MAP_BASE*travelMul(),d)*(P.morale<25?.8:1)*roadSprint()*hurryPace());// (roadSprint: after a thief on the road, encounters.js; Hurry: supply.js)
       P.dir=dx>=0?1:-1;
@@ -214,14 +214,34 @@ function marchStep(d){
    (HERO_WAY: a walk sliding back and forth along a shore gets nowhere, and stops) */
 const HERO_WAY={x:NaN,y:NaN,d:Infinity};
 // (a step of walker o toward (tx, ty) by that rule: 1 moved straight, 2 moved by the router, 0 not moved, -1 the router knows no
-// way. Your hero's own (heroStep), and the ghost the drawn way follows ahead of you: gfx/worldui.js wuiWay)
-function heroWay(o,tx,ty,step){
-  if(passable(terrAt(o.x,o.y))&&clearLine(o.x,o.y,tx,ty))return walk(o,tx-o.x,ty-o.y,step)?1:0;// (not while on a ferry's water: its leg goes on by the router)
-  const x0=o.x,y0=o.y;if(!Router.travel(o,{x:tx,y:ty},step))return -1;return o.x!==x0||o.y!==y0?2:0}
+// way. Your hero's own (heroStep), and the ghost the drawn way follows ahead of you: gfx/worldui.js wuiWay. By road (byRoadTo,
+// below): never straight, the router's way keeping to the roads)
+function heroWay(o,tx,ty,step){const rd=byRoadTo(tx,ty);
+  if(!rd&&passable(terrAt(o.x,o.y))&&clearLine(o.x,o.y,tx,ty))return walk(o,tx-o.x,ty-o.y,step)?1:0;// (not while on a ferry's water: its leg goes on by the router)
+  const x0=o.x,y0=o.y;if(!Router.travel(o,rd?{x:tx,y:ty,road:true}:{x:tx,y:ty},step))return -1;return o.x!==x0||o.y!==y0?2:0}
 function heroStep(dx,dy,dist,step){
   const x0=P.x,r=heroWay(P,P.tx,P.ty,step);if(r===2&&P.x!==x0)P.dir=P.x>x0?1:-1;if(r>=0)return r>0;
   const W=HERO_WAY;if(W.x!==P.tx||W.y!==P.ty){W.x=P.tx;W.y=P.ty;W.d=dist}
   if(!walk(P,dx,dy,step))return false;const nd=Math.hypot(P.tx-P.x,P.ty-P.y);if(nd>=W.d-step*.25)return false;W.d=nd;return true}
+/* by road (the owner, 2026-10-23: "a road snap in the action ring, to make the pathfinder prefer moving by road"): your way to the
+   point you go to keeps to the roads and tracks (the router's road keeping, goal.road: off them a tile costs WAY.keep times as
+   much), leaving them only to reach the spot; the dots ahead show it (gfx/worldui.js wuiWay walks heroWay). G.byRoad: the point
+   it is for (never saved), so any other order goes the plain way. With no road or track within ROAD_GO.near tiles of you or of
+   the point, you go the plain way and the log says so. The action ring's By road (supply.js mapRingItems); key B (ui/input.js)
+   turns it on or off for the way you go now */
+const ROAD_GO={near:8};
+const byRoadTo=(x,y)=>!!G.byRoad&&G.byRoad.x===x&&G.byRoad.y===y;
+// (a road's or a track's tile within n tiles of (x, y))
+function roadNear(x,y,n){const tx=Math.floor(x/TILE),ty=Math.floor(y/TILE);for(let j=-n;j<=n;j++)for(let i=-n;i<=n;i++)if(tAt(tx+i,ty+j)===T_ROAD)return true;return false}
+// the way to where you go now kept to the roads (on), or not; true if it is
+function setByRoad(on){G.byRoad=null;if(typeof WUI!=='undefined')WUI.way=null;if(!on||P.tx==null||G.chase)return false;
+  if(!roadNear(P.x,P.y,ROAD_GO.near)&&!roadNear(P.tx,P.ty,ROAD_GO.near)){log('No road near: your band goes the plain way.');return false}
+  G.byRoad={x:P.tx,y:P.ty};log('Your band keeps to the roads.');return true}
+// (to (wx, wy) by road: the action ring's By road)
+function roadGo(wx,wy){worldGo(wx,wy);return setByRoad(true)}
+// (key B: the way you go now by road, or the plain way again)
+function toggleByRoad(){if(P.tx==null||G.chase){log('Your band is going nowhere: hold on the map and pick By road.');return false}
+  if(byRoadTo(P.tx,P.ty)){setByRoad(false);log('Your band takes the plain way again.');return false}return setByRoad(true)}
 // a holding you reach opens (true), unless you only pass it
 function arriveStep(){
   for(const t of TOWNS){

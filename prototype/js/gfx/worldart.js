@@ -248,25 +248,26 @@ const wnoise=(t,s)=>{const i=Math.floor(t),f=t-i,u=f*f*(3-2*f);return hs(i,s,71)
 const wnoise2=(x,y,s)=>{const i=Math.floor(x),j=Math.floor(y),fx=x-i,fy=y-j,u=fx*fx*(3-2*fx),v=fy*fy*(3-2*fy),a=hs(i,j,s),b=hs(i+1,j,s),c=hs(i,j+1,s),d=hs(i+1,j+1,s);return a+(b-a)*u+(c-a)*v+(a-b-c+d)*u*v};
 // the plan's part: the water by tile (wk: 0 land, 1 sea or lake, 2 river, 3 ford (and a road's tile on a river that is no bridge:
 // a ford a road was laid over), 4 a bridge's water, 5 a pond's), the roads' segments (segs:
-// [x0, y0, x1, y1, k] px, from their lines (gateLead, straightOn); k 0 a track, 1 a great road, 2-5 a bridge's ramp: segW) and
+// [x0, y0, x1, y1, k] px, from their lines (gateLead, straightOn); k 0 a track, 1 a great road, 2-5 a bridge's ramp: segW; segEst:
+// 1 for each of an estate's track) and
 // their bands kept clear, the holdings' centres (box: 1 no road painted there; 2 and 3 the tiles left and right of the gate, a
 // road only in its notch) and the worn ground before their gates, the fords (fords: each its line bank to bank, px, and whether it
 // runs across (horizontal); fd: 1 + its index on the tiles round it; fordOf: each ford crossing's 1 + index)
 function artGenPlan(P,mark){const N=MW*MH,K=P.wk=new Uint8Array(N),Rv=WM.river,Fe=WM.feat,G=GENART;
   for(let i=0;i<N;i++){const t=tiles[i];K[i]=t===T_WATER?(Rv[i]&3?2:1):t===T_FORD||t===T_ROAD&&Rv[i]&3&&!(Fe[i]&32)?3:t===T_ROAD&&Fe[i]&32?4:0}
-  const S=[],seg=(...a)=>S.push(...a);
+  const S=[],E=[],seg=(...a)=>{S.push(...a);E.push(0)};
   // (each line cut at its corners twice, Chaikin's way, its ends kept: a stretch the generator left in steps reads as a gentle bend)
   const soft=l=>{for(let t=0;t<2;t++){const o=[l[0],l[1]];for(let j=2;j<l.length;j+=2){const a=l[j-2],b=l[j-1],c=l[j],d=l[j+1];o.push(a*.75+c*.25,b*.75+d*.25,a*.25+c*.75,b*.25+d*.75)}o.push(l[l.length-2],l[l.length-1]);l=o}return l};
   // (the holdings' centres, each with its gate's x; the crossings by their two ends)
   const boxes=typeof centreBox==='function'?TOWNS.map(t=>Object.assign(centreBox(t),{gx:t.tx})):[],XE=new Map(),ramped=new Set();
   for(const c of WM.crossings){XE.set(c.i,[c,c.j]);XE.set(c.j,[c,c.i]);for(const q of c.tiles)XE.set(q,[c,-1])}
-  const LS=[];for(const r of WM.roads){const k=r.kind==='road'?1:0;for(const l1 of r.line)for(const l0 of cutThrough(l1,boxes)){const l=gateLead(l0,boxes);if(l.length>=4)LS.push([soft(straightOn(offDeck(l,XE),XE,k,ramped,seg)),k])}}
+  const LS=[];for(const r of WM.roads){const k=r.kind==='road'?1:0;for(const l1 of r.line)for(const l0 of cutThrough(l1,boxes)){const l=gateLead(l0,boxes);if(l.length>=4)LS.push([soft(straightOn(offDeck(l,XE),XE,k,ramped,seg)),k,r.est?1:0])}}
   // (an end at a gate or at a bridge's end (a track from a bridge end, worldplace.js: met by the ramp) stays where it is)
   const mt=v=>Math.abs(v-Math.floor(v)-.5)<.02,brEnd=(x,y)=>{const e=mt(x)&&mt(y)&&XE.get(Math.floor(y)*MW+Math.floor(x));return!!e&&e[1]>=0&&e[0].kind==='bridge'};
-  joinEnds(LS,(x,y)=>brEnd(x,y)||boxes.some(b=>x>=b.x-G.yard&&x<=b.x+b.n+G.yard&&y>=b.y-G.yard&&y<=b.y+b.n+G.yard));for(const [l,k] of LS)for(let j=2;j<l.length;j+=2)seg(l[j-2]*TILE,l[j-1]*TILE,l[j]*TILE,l[j+1]*TILE,k);
+  joinEnds(LS,(x,y)=>brEnd(x,y)||boxes.some(b=>x>=b.x-G.yard&&x<=b.x+b.n+G.yard&&y>=b.y-G.yard&&y<=b.y+b.n+G.yard));for(const [l,k,e] of LS)for(let j=2;j<l.length;j+=2){seg(l[j-2]*TILE,l[j-1]*TILE,l[j]*TILE,l[j+1]*TILE,k);E[E.length-1]=e}
   for(let k=0;k<S.length;k+=5){const a=S[k],b=S[k+1],c=S[k+2],d=S[k+3],hw=Math.ceil(segW(S[k+4],0)*1.15)+2,n=Math.max(1,Math.ceil(Math.max(Math.abs(c-a),Math.abs(d-b))/3));
     for(let s=0;s<=n;s++)mark(Math.round(a+(c-a)*s/n)-hw,Math.round(b+(d-b)*s/n)-hw,2*hw+1,2*hw+1)}
-  P.segs=Float32Array.from(S);const B=P.box=new Uint8Array(N);
+  P.segs=Float32Array.from(S);P.segEst=Uint8Array.from(E);const B=P.box=new Uint8Array(N);
   // (the lanes: a road's tile in a wood (GENART.wood.n of its 8 neighbours wood, no water); each tile's segments whose band may
   //  reach it (ST: the start of each tile's in SI), for roadAt)
   const LN=P.lane=new Uint8Array(N);for(let y=1;y<MH-1;y++)for(let x=1;x<MW-1;x++){const i=y*MW+x;if(tiles[i]!==T_ROAD||K[i])continue;let n=0;for(let b=-1;b<=1;b++)for(let a=-1;a<=1;a++)if(tiles[i+b*MW+a]===T_FOREST)n++;if(n>=G.wood.n)LN[i]=1}
@@ -285,6 +286,9 @@ function artGenPlan(P,mark){const N=MW*MH,K=P.wk=new Uint8Array(N),Rv=WM.river,F
 // the generated world's roads as painted, for what must keep off them (lots.js roadPaint): mark(x, y, w, h) for each square kept
 // clear along their lines (artGenPlan's band and margin)
 function artRoadMarks(mark){artGenPlan({tramples:[]},mark)}
+// the generated world's roads as drawn, for their speed (world/roadband.js): {segs: artGenPlan's segments, est: 1 for each of an
+// estate's track (WM.roads' est), else 0}
+function artRoadSegs(){const P={tramples:[]};artGenPlan(P,()=>{});return{segs:P.segs,est:P.segEst}}
 // (a segment's half width (px) at t (0-1) along it, by its kind k: a track's or a great road's; a ramp's (k 2 + great + 2 if the
 //  bridge is stone) from as wide as the deck is inside at its start to its road's at its end)
 const segW=(k,t)=>{const G=GENART;if(k<2)return G.road[k];const w0=G.deck[(k-2)>>1]-1,w1=G.road[(k-2)&1];return w0+(w1-w0)*t};

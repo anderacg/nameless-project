@@ -17,15 +17,21 @@ const passable=t=>t!==T_WATER&&t!==T_MOUNT;
 /* regions: what a place is called and how it treats travelers */
 const REGION_NAMES={grass:['Grassland','Forest','Hills','Lake','Road','Mountains','Ford'],frost:['Tundra','Frost forest','Frozen hills','Ice lake','Frozen road','Frost peaks','Frozen ford'],
   desert:['Desert','Desert','Rocky badlands','Oasis','Desert road','Red peaks','Wadi ford'],swamp:['Swamp','Mangrove','Mire hills','Bog water','Causeway','Peaks','Bog ford']};
-function regionAt(x,y){const t=terrAt(x,y),c=climAt(x,y);return{t,c,name:REGION_NAMES[c][t]}}
-// base travel speed for anyone; race only matters for the player's own party
+// (an estate's track: lots.js estTrack)
+const TRACK_NAMES={grass:'Track',frost:'Frozen track',desert:'Desert track',swamp:'Swamp track'};
+// t and c the tile's; its name the road's where you stand on the road as drawn (world/roadband.js RoadBand on: road 1, an estate's
+// track 2, else 0), as the HUD shows it; tile: the tile's own (the battle's site reads its tile: worldmap.js battleSite)
+function regionAt(x,y,tile){const t=terrAt(x,y),c=climAt(x,y),road=tile?0:RoadBand.on(x,y);return{t,c,name:road===2?TRACK_NAMES[c]:road?REGION_NAMES[c][T_ROAD]:REGION_NAMES[c][t],road}}
+// base travel speed for anyone; race only matters for the player's own party. On a road's band (world/roadband.js) its road's
+// speed, blended to the land's over its shoulder; a road's own tile its road's; a ford, water and the peaks by their tiles
 function speedAt(x,y,race,extra){
   const t=terrAt(x,y),c=climAt(x,y);if(!passable(t))return 0;
-  if(t===T_ROAD)return 1.3*(race==='human'?1.1:1);
+  const b=t===T_FORD?0:RoadBand.at(x,y);if(t===T_ROAD)return RoadBand.speed(b,race);
   const home=(race?RACES[race].home:[]).concat(extra||[]);
   const tm=(t===T_FOREST&&home.includes('forest'))||(t===T_HILL&&home.includes('hills'))?1:SPEEDMUL[t];
   const cm=home.includes(c)?1:CLIMMUL[c];
-  return Math.max(.35,tm*cm)*(race==='human'&&c==='grass'&&t===T_OPEN?1.1:1);
+  const land=Math.max(.35,tm*cm)*(race==='human'&&c==='grass'&&t===T_OPEN?1.1:1);
+  return b?Math.max(land,land+(RoadBand.speed(b,race)-land)*RoadBand.share(b)):land;
 }
 function visMulAt(x,y){const t=terrAt(x,y),c=climAt(x,y);return t===T_HILL?1.3:t===T_FOREST?.7:c==='swamp'?.8:c==='desert'?1.2:1}
 const hiddenAt=(x,y)=>terrAt(x,y)===T_FOREST;

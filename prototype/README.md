@@ -84,6 +84,9 @@ js/world/             the campaign map and everything on it
                         gateGoal; with road, keeping to the roads: caravans, WAY.keep; workers WAY.folk), Router.reach,
                         Router.days (and Router.close, Router.stats): the way graph (buildWayGraph, charted again with the
                         estates' tracks: wayRechart) and the two-level router over it, searches in a box for each leg
+  roadband.js           the road's band: a road's speed follows the road as drawn (gfx/worldart.js artRoadSegs), not its tiles;
+                        blended to the land's over its shoulder; an estate's track a little slower (ROAD_BAND, RoadBand; read by
+                        map.js speedAt and regionAt; loads after gfx/worldart.js)
   realms.js siege.js    the realms (Realm: wars and peace, honour and hostility, holdings and lords) and their lords; sieges,
                         raids, captures and fiefs
   leaders.js            the Lord and Chieftain roles (characters who choose for themselves); the bandit chieftains
@@ -262,6 +265,18 @@ hero's: it is kept in her `P.sp`, on her scale (`maxSP`; when that grows, by a l
   march draining ×2.5 (`SUPPLY.forcedMarch`); it cannot start Exhausted and ends once Exhausted, in camp or a holding, or when an
   event or a window opens (`world.js fastWatch`). The time's 1×, 2×, 4× and Travel fast's 8× (key 4, the bar's last button, a toggle) are on the top bar. Not the
   Forced March perk. Tests: `tests/timecontrols.js`.
+- **By road** (the ring's By road, key B on the way you go now; the owner, 2026-10-23): your band's way keeps to the roads and tracks
+  (`world.js setByRoad`, `roadGo`: the router's road keeping, `WAY.keep`), leaving them only to reach the spot; the dots ahead show
+  it. `G.byRoad` is the point it is for (never saved): a new order goes the plain way. No road or track within `ROAD_GO.near` (8)
+  tiles of you or the spot: the plain way, and the log says so. Hurry (R) goes on as it was. Tests: `tests/roadband.js`, `tests/ring.js`.
+- **The road's band** (`world/roadband.js`; the owner, 2026-10-23: "my character stands on the road but the game still reads it as
+  swamp"): a road's speed follows the road as drawn, not its tiles (a staircase on a diagonal). Within `ROAD_BAND.great[0]` (10) px
+  of a great road's line (`track[0]` 8 of a track's) road speed 1.3 (humans ×1.1), blended to the land's over 6 px more, the land's
+  beyond; an estate's track 1.15 (`trackSpeed`). Water and peaks stay closed, a ford keeps its pace, a road's own tile its road's.
+  The same for everyone who moves by `speedAt` (you, lords, bands, patrols, caravans, refugees, beasts); not rough ground for riders
+  (`roughFor`); `regionAt` names the road (Road, Causeway…, Track) there, `regionAt(x, y, true)` the tile's own. A byte per 4 px
+  square, kept only for the tiles a band reaches (about 430 KB on the classic world), made again when the ways change (`WAYV`).
+  Tests: `tests/roadband.js`.
 The band's own record (its camp and the hour's counters) is `BAND`, beside `P` (every battle snapshot holds `P` whole), saved as
 the world piece `band` once it is not fresh. The band's own numbers are `PlayerParty`'s: `staminaState`, `staminaPace`,
 `foodHour`, `drinkHour`, `furNeed`, `fitness`.
@@ -281,7 +296,7 @@ the world piece `band` once it is not fresh. The band's own numbers are `PlayerP
 - **The action ring** (`ui/ring.js`): hold the left button or a finger still on the map 0.35 s. A press does nothing yet (the owner,
   2026-10-22, mouse and touch alike): let go sooner and it is a click, travelling there or meeting what was clicked; a move first calls
   the ring off and the release still travels; a right-click travels at once. Its buttons, only those that apply
-  (`mapRingItems`): Make camp or Break camp, Travel here, Hurry here (Stop hurrying), Fill waterskins, Drink liquor, Look (a card, for touch).
+  (`mapRingItems`): Make camp or Break camp, Travel here, By road, Hurry here (Stop hurrying), Fill waterskins, Drink liquor, Look (a card, for touch).
   Let go over one, or let go and tap one; Esc, a right-click or a tap outside closes it.
 - **The card** (`render.js updateHUD`, `supplyNow`): the band's stamina bar (green, amber Tired, red Exhausted, ▼ ▲, its rate and
   why on hover) and health (fit of the whole band, red under half, what hurt it lately on hover), the tags (Tired, Exhausted,

@@ -238,13 +238,13 @@ function wayLeg(L,o,goal){const G=WM.graph,rm=wayKeep(goal);
   if(L.k==='end')return wayLine(o.x,o.y,goal.x,goal.y)?[]:wayFind(o.x,o.y,goal.x,goal.y,rm);
   if(L.k==='road'){const p=WM.roads[G.leg[L.e*3]].path,a=G.leg[L.e*3+1],b=G.leg[L.e*3+2];return a<b?p.slice(a+1,b+1):p.slice(b,a).reverse()}
   const c=WM.crossings[G.xing[L.e]];if(c.kind==='ferry')return{ferry:L.b};return L.b===c.j?[...c.tiles,c.j]:[...c.tiles].reverse().concat(c.i)}
-// one step along the way to goal (Router.travel): its legs found when the goal's tile changes (or the ways
-// do: WAYV), each leg's tiles when it is reached; a holding with no way found is walked to straight
+// one step along the way to goal (Router.travel): its legs found when the goal's tile changes (or its road keeping, wayKeep;
+// or the ways do: WAYV), each leg's tiles when it is reached; a holding with no way found is walked to straight
 function wayTravel(o,goal,step){
   const dd=Math.hypot(goal.x-o.x,goal.y-o.y),straight=()=>{walk(o,goal.x-o.x,goal.y-o.y,Math.min(dd,step));return true};if(dd<=1)return true;
   if(goal.tw&&dd<TILE*1.6)return straight();
-  const gt=Math.floor(goal.y/TILE)*MW+Math.floor(goal.x/TILE);let r=ROUTES.get(o);
-  if(!r||r.goal!==gt||r.v!==WAYV){r=wayTrip(o,goal);r.goal=gt;r.v=WAYV;r.li=0;r.path=null;ROUTES.set(o,r)}
+  const gt=Math.floor(goal.y/TILE)*MW+Math.floor(goal.x/TILE),rm=wayKeep(goal);let r=ROUTES.get(o);
+  if(!r||r.goal!==gt||r.rm!==rm||r.v!==WAYV){r=wayTrip(o,goal);r.goal=gt;r.rm=rm;r.v=WAYV;r.li=0;r.path=null;ROUTES.set(o,r)}
   if(!r.legs)return goal.tw?straight():false;
   for(let n=0;n<64;n++){
     if(!r.path){if(r.li>=r.legs.length)return straight();r.path=wayLeg(r.legs[r.li++],o,goal);r.pi=0;if(!r.path){r.legs=null;return goal.tw?straight():false}}
