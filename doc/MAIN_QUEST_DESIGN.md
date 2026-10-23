@@ -61,6 +61,8 @@ The world is generated, so no person or place is hand-placed. Each role is chose
 | **The council place** | Neutral ground: the Grand Stadium (designed, not built); else a monastery (designed, not built); else the hall of a holding whose realm is at peace with every side | Q10 | Changed hands: the next candidate |
 | **The home realm** | See "Words used here" | The opening | It falls: the realm that conquered its last holding inherits the Company's grievance ("they took the land, they can take the debt") |
 
+**Names (the owner, 2026-10-23: "use the band name from user input"):** your band's name is always the one you chose (`P.band`, the band card; its random names and its default included). The story's own names give way to it, never the other way: if your band's name matches the Company's ("the Grey Company") or an ending's title ("The Free Company"), the story uses another for its side ("the Grey Banner", "the Unpaid"), chosen when the role is bound and kept in the thread's memory.
+
 ### 1.5 The three leads: one destination, three routes
 
 All three of the opening's leads lead into the main line. **The lead colours the route, not the destination.** Your patron reappears through the story, gives you an easier way through some stages, and colours your ending.
