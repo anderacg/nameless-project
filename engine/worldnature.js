@@ -816,14 +816,15 @@
             const o=i*4,c=BOG.water[Y+.5<cy-ry*.3?2:d>.55&&Y+.5>cy?1:0];D[o]=c[0];D[o+1]=c[1];D[o+2]=c[2];touch(i,kb?3:1)}}}
       if(!((ty-ty0+1)&1))yield}
     for(let i=0;i<ww*wh;i++)if(FK[i]>0){mixD(i,floorAt(wx0+i%ww,wy0+((i/ww)|0)),FK[i]);touch(i,1)}
-    // (the rings round the oases and ponds: the ground leaning green (a tarn's grey), ragged, to the water's edge but on no clear
-    //  ground; a frost tarn's water iced in plates)
+    // (the rings round the oases and ponds: the ground leaning green (a tarn's grey), ragged, to the water's edge, under clear ground
+    //  too, there only toned (a holding's yard over it takes its colour: no square of bare land where a lot stands, the owner,
+    //  2026-10-23); its things (palms, tufts) keep off clear ground; a frost tarn's water iced in plates)
     if(P.RG){const RN=PX.WN_RING,GN=noiseF(W,H,RN.n,P.seed*977+140);
       for(const q of P.RL){const Rn=RN[q.kind],e=(q.r+q.reach)*ts,cx=q.x*ts,cy=q.y*ts;if(cx+e<wx0||cx-e>=wx1||cy+e<wy0||cy-e>=wy1)continue;const G=Rn.green,ice=Rn.ice&&cAt(q.x|0,q.y|0)==='frost';
         for(let Y=Math.max(wy0,Math.floor(cy-e));Y<Math.min(wy1,Math.ceil(cy+e));Y++)for(let X=Math.max(wx0,Math.floor(cx-e));X<Math.min(wx1,Math.ceil(cx+e));X++){const d=Math.hypot(X+.5-cx,Y+.5-cy)/ts-q.r;if(d>q.reach)continue;const i=at(X,Y);
           // (frozen: ice over all of the water as drawn, a few cracks in it, open water left in thin leads)
           if(wetP(X,Y)){if(ice&&!CLR.at(X,Y)){const m=GN(X+57,Y+23),cr=Math.abs(m-Rn.ice[1]);if(cr>.02){mixD(i,cr<.05?[150,176,204]:[226,236,246],Rn.ice[0]);touch(i,2)}}continue}
-          if(CLR.at(X,Y))continue;const k=Rn.k*Math.min(1,(1-d/q.reach)*1.6)-(GN(X,Y)-.5)*.5;if(k<=0)continue;mixD(i,G,Math.min(k,Rn.k+(k-Rn.k)*RN.soft));touch(i,1)}}}
+          const k=Rn.k*Math.min(1,(1-d/q.reach)*1.6)-(GN(X,Y)-.5)*.5;if(k<=0)continue;mixD(i,G,Math.min(k,Rn.k+(k-Rn.k)*RN.soft));touch(i,CLR.at(X,Y)?3:1)}}}
     lap('floor');yield;
     // (2) hills: each group of hill tiles one rise (the owner, 2026-10-22: "one large hill sprite", not a bump a tile): its tiles
     //     (P.HT: a hill's, or a road's over the hills) a footprint, its edge read through a wobble (PX.WN_HILL.wob px), blurred into a

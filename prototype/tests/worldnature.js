@@ -64,7 +64,7 @@ try{
   //  on into it over a water tile's land, the owner's fifth play-test))
   const WK=t.WorldArt.ensure().wk,water=(x,y)=>WK?t.wpx(WK,x,y)===1:t.tAt(x>>4,y>>4)===t.T_WATER;
   // (3: a ground's tone on kept-clear ground, a hill's shading running on under a road or a yard and a brook crossing a road (the
-  //  owner's fourth play-test): never off it, and nothing else on it)
+  //  owner's fourth play-test), an oasis's or a pond's green under a yard (2026-10-23): never off it, and nothing else on it)
   // (4: a wood's tree's crown leaning over the shore (PX.WN_WOOD.shore): its beach and a curved shore's water on a land tile, never
   //  a road, a yard or a water tile)
   let toned=0,tonedOff=0,crowns=0,crownsOff=0;

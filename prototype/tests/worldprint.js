@@ -210,7 +210,11 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 //  ground, Site pick, SITE_GAP's hideout {travelers: 16}, DENSITY's hideouts by the land at .8, the den's row as the ruin's) all
 //  nine are as before; with only the placement and the count off, W7 and B2 move (05614c15, 144fcc6d: the chieftains) and the
 //  rest hold. Were W6 3c66cfdf, W7 3be1d2fa, W8 9323078a, B2 af5eb3da)
-const EXPECT={W1:'47419c85',W2:'975f62a1',W3:'154e87e1',W4:'8e6f8677',W5:'b11af87c',W6:'8157cbb7',W7:'83187faa',W8:'cb53c8cb',B2:'06f1b51d'};
+// (W5, W6 re-recorded 2026-10-23, on purpose, the owner's play-test (a square of bare sand round a hut by an oasis): the green
+//  round an oasis or a pond (engine/worldnature.js PX.WN_RING) now runs on under clear ground, toned, so a holding's yard over it
+//  takes its colour; its palms and tufts still keep off. Only the painted world moves; W1-W4, W7, W8 and B2 unchanged. Were W5
+//  b11af87c, W6 8157cbb7)
+const EXPECT={W1:'47419c85',W2:'975f62a1',W3:'154e87e1',W4:'8e6f8677',W5:'9dbdfd42',W6:'1c8e6188',W7:'83187faa',W8:'cb53c8cb',B2:'06f1b51d'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended
