@@ -29,8 +29,8 @@ Kit.suite(({ok,info})=>{
  const home=()=>{const e=heal(spawn());t.act('enc-do',pick('Take him home'));t.act('enc-leave');return {e,th:live(),q:step()}};
  try{
   // ---- what it is made of: the chain's steps, the step kinds, Ander's entries, the heirloom
-  {const K=t.kindOf('thread','wounded');ok(!!K&&K.steps.map(s=>s.id).join()==='escort,family,tracks,trail,clear,back,reward'&&['visit','deliver','lair'].every(k=>t.kindOf('step',k))&&!t.kindOf('quest','visit'),
-    'the chain: escort, family, tracks, trail, clear, back, reward; the step kinds visit, deliver, lair (no board offers them)');
+  {const K=t.kindOf('thread','wounded');ok(!!K&&K.steps.map(s=>s.id).join()==='escort,family,tracks,trail,clear,back,reward,held,call'&&['visit','deliver','lair','held'].every(k=>t.kindOf('step',k))&&!t.kindOf('quest','visit'),
+    'the chain: escort, family, tracks, trail, clear, back, reward, and its rescue (held, call); the step kinds visit, deliver, lair, held (no board offers them)');
    const I=t.ITEMS.hearthring;ok(I&&I.heirloom&&I.slot==='ring'&&t.ITEM_KINDS.gear.catId({id:'hearthring'})==='armour'&&I.m.sk.med===1&&I.m.regen>0,'the heirloom: the '+I.n+', a ring (Armour): '+I.d);
    ok(t.COMPS.ander.story&&!Object.keys(t.COMPS).includes('ander')&&t.ST.ander.tier===3&&t.compTown('ander')==null&&!t.TOWNS.some(z=>t.compsHere(z).includes('ander'))&&t.unitSprite('ander',0,false).width>0&&t.portrait('ander').length>0&&t.PEOPLE_LOOK.ander.scar&&t.PEOPLE_LOOK.ander.cape==='dark',
     'Ander The Fallen: a companion of the story, unlisted (no tavern offers him, the wiki keeps his secret), his kind, his sprite and portrait (a scar, a dark cloak)')}
@@ -91,11 +91,12 @@ Kit.suite(({ok,info})=>{
   // ---- the escort's failures: late, captured, left; each its line, consequences and end
   {C=home();const {th,q}=C,h=th.memory.town,r0=t.repAt(h),m0=G.msgs.length;G.day=q.due+1;t.questDay();
    ok(q.fate==='late'&&ends(th).join()==='late'&&t.repAt(h)===r0-WD.escort.late&&G.msgs.slice(m0).some(m=>/limps the rest of the way to/.test(m.m)),'late: he limps home alone; reputation in '+h+' −'+WD.escort.late+'; the chain ends (late)')}
-  {C=home();const {th,q}=C,mo=P.morale,r0=t.repAt(th.memory.town),m0=G.msgs.length;q.fail(null,'captured');
-   ok(ends(th).join()==='captured'&&P.morale===mo-WD.escort.morale&&t.repAt(th.memory.town)===r0&&G.msgs.slice(m0).some(m=>/drag .* off in chains/.test(m.m)),'captured: morale −'+WD.escort.morale+', not his home’s reputation; its line');
-   ok(W.story.threads.ended.some(x=>x.i===th.i&&x.how==='captured'&&x.memory.name===th.memory.name&&x.memory.home),'his fate kept for a rescue later (who, where he was bound)')}
+  {C=home();const {th,q}=C,mo=P.morale,r0=t.repAt(th.memory.town),m0=G.msgs.length;q.by={k:'holding',town:th.memory.town,fac:t.townBy(th.memory.town).owner};q.fail(null,'captured');
+   ok(!ends(th).length&&th.at==='held'&&step().held.k==='holding'&&P.morale===mo-WD.escort.morale&&t.repAt(th.memory.town)===r0&&G.msgs.slice(m0).some(m=>/drag .* off in chains/.test(m.m)),'captured: morale −'+WD.escort.morale+', not his home’s reputation; its line; the chain goes on to his rescue');
+   ok(th.memory.held&&th.memory.held.k==='holding'&&th.memory.held.town===th.memory.town,'who holds him kept in its memory');t.act('q-abandon',String(step().id));ok(ends(th).join()==='left','his rescue given up: an ordinary traveller’s chain is over (left)')}
   {C=home();const b=t.asParty({x:P.x+10,y:P.y,n:4,kind:'bandits',cool:0,t:0,a:0});t.bandits.push(b);Kit.meet({kind:'party',ref:b,n:4,list:b.troops.slice(),band:'bandits'});
-   Kit.seeded(4,()=>t.concludeEncounter(false,{},0,true,[]));Kit.done({cont:true,world:true});ok(C.q.fate==='captured'&&ends(C.th).join()==='captured','a battle lost with him aboard: captured, the chain ends');Kit.clear()}
+   Kit.seeded(4,()=>t.concludeEncounter(false,{},0,true,[]));Kit.done({cont:true,world:true});ok(C.q.fate==='captured'&&!ends(C.th).length&&C.th.at==='held'&&step().held.k==='band','a battle lost with him aboard: captured, held by the band');
+   t.act('q-abandon',String(step().id));ok(!t.carries(b,C.q.id)&&ends(C.th).join()==='left','given up: the band lets go of him, the chain is over');Kit.clear()}
   {C=home();t.act('q-abandon',String(C.q.id));ok(C.q.fate==='left'&&ends(C.th).join()==='left','abandoned: set down by the road, the chain ends (left)')}
   // ---- the other branches: the family's Ride on, the trail let lie, the trail gone cold
   const toFamily=()=>{const c=home();there(c.q);return c};
@@ -129,6 +130,93 @@ Kit.suite(({ok,info})=>{
    WD.ander.p=1;try{const e2=spawn();ok(e2&&!e2.ander,'with every traveller his chance, no second Ander comes');t.saveGame(true);t.loadGame();Kit.world();ok(Th.once('ander')>=1&&!t.Wounded.anderFree(),'his once kept through a save');
     delete t.Thread.store().once;const e3=spawn();ok(e3&&e3.ander,'(a game where he was never met: the chance makes one Ander)')}finally{WD.ander.p=0}
    delete P.comps.ander}
+  // ---- the rescue (the owner, 2026-10-23): carried off and held, no deadline; freed by you, the escort again
+  const lose=e=>{Kit.meet(e);Kit.seeded(4,()=>t.concludeEncounter(false,{},0,true,[]));Kit.done({cont:true,world:true})};
+  const win=e=>{Kit.meet(e);Kit.seeded(4,()=>t.concludeEncounter(true,{},0,true,[]));Kit.done({cont:true,world:true})};
+  const band=()=>{const b=t.asParty({x:P.x+10,y:P.y,n:4,kind:'bandits',cool:0,t:0,a:0});t.bandits.push(b);return b};
+  const vsBand=b=>({kind:'party',ref:b,n:b.troops.length,list:b.troops.slice(),band:b.kind});
+  const lordNear=()=>{const l=W.lords.find(x=>!x.dead&&!x.inside&&t.fiefsOf(x.fac).length);l.x=P.x+10;l.y=P.y;return l};
+  const vsLord=l=>({kind:'lord',ref:l,list:l.troops.slice()});
+  const drop=()=>{const q=step();if(q)t.act('q-abandon',String(q.id))};
+  // (saved and loaded: the quests, the threads and what is kept aside, Ander wandering, as they were)
+  const saved=()=>{const a=JSON.stringify(Th.store().aside||null);return save()&&JSON.stringify(Th.store().aside||null)===a};
+  {C=home();const b=band();lose(vsBand(b));const th=C.th,q=step();
+   ok(C.q.fate==='captured'&&th.at==='held'&&q&&q.type==='held'&&q.held.k==='band'&&t.carries(b,q.held.cap)&&th.memory.held.k==='band'&&!q.days&&t.bandits.includes(b),'captured by bandits: held by the band that beat you (it carries him); his rescue in your Quests, no due day');
+   const g=t.questGoal(q);ok(g&&g.x===b.x&&g.y===b.y&&/hold .* captive/.test(b.tip())&&!q.homeMark(),'the band marked on your map where it is, its tip says whom it holds');
+   t.openChar();t.act('char-tab','quests');ok(pageHas('Free '+th.memory.name,'before they take him to their hideout'),'your Stories: what to do now');Kit.world();
+   ok(saved(),'saved and loaded while the band holds him');const b2=t.bandCarrying(step().held.cap);ok(!!b2&&b2.carry[0].n===th.memory.name,'the band still carries him after the load');
+   win(vsBand(b2));const z=live(),e2=step();
+   ok(W.story.threads.ended.some(x=>x.i===th.i&&x.how==='freed')&&z.i!==th.i&&z.at==='escort'&&e2&&e2.type==='escort'&&z.memory.freed&&!z.memory.held&&z.memory.name===th.memory.name&&e2.days>0&&e2.due>G.day&&!t.bandCarrying(q.held.cap),
+    'the band beaten: freed; the chain picks itself up at the escort, from where you are (a fresh due day: '+(e2&&e2.days)+' days)');drop()}
+  {C=home();const b=band();lose(vsBand(b));const q=step(),cap=q.held.cap;G.day=q.goes-1;t.questDay();ok(live().at==='held'&&step()===q&&q.held.k==='band','the band carries him '+WD.rescue.home+' days');
+   const m0=G.msgs.length;G.day=q.goes;t.questDay();const s=q.lair();
+   ok(P.quests.includes(q)&&q.held.k==='lair'&&s&&s.seen&&t.questGoal(q).x===s.x&&!t.bandCarrying(cap)&&G.msgs.slice(m0).some(m=>/has taken .* to the/.test(m.m)),'then it takes him home to the '+(s&&s.name)+' (marked on your map), and lets go of him');
+   t.openChar();t.act('char-tab','quests');ok(pageHas('from the '+s.name),'your Stories: free him from the '+s.name);Kit.world();
+   G.day+=120;t.questDay();ok(live().at==='held'&&P.quests.includes(q),'no deadline: 120 days on, he is still there to be freed');
+   ok(saved(),'saved and loaded with him in the hideout');const d2=step(),s2=d2.lair();
+   try{win({kind:'camp',ref:s2,n:4,band:s2.band});ok(d2.fate==='freed'&&live().at==='escort'&&live().memory.freed,'its hideout cleared: freed, the escort again')}finally{s2.cleared=false}drop()}
+  {C=home();const l=lordNear();lose(vsLord(l));const th=live(),q=step(),h=q&&t.townBy(q.held.town);
+   ok(th.at==='held'&&q.held.k==='holding'&&h&&h.owner===l.fac&&th.memory.held.k==='holding'&&q.price===WD.rescue.ransom.traveller&&!q.days&&!q.homeMark(),'captured by '+l.name+'’s army: held in '+(h&&h.name)+', a holding of his realm, his ransom '+(q&&q.price)+' gold');
+   G.day+=120;t.questDay();ok(live().at==='held'&&P.quests.includes(q),'no deadline: 120 days on, still there to ransom');
+   ok(saved(),'saved and loaded with him in the gaol');const q2=step();P.gold=q2.price-1;there(q2);
+   ok(G.mode==='story'&&G.ransom===q2&&pageHas('The gaol of '+h.name,'Pay the ransom','Not now',q2.price+' gold'),'at its gates on the map: the gaoler’s page');
+   t.act('rs-do','0');ok(G.mode==='story'&&P.quests.includes(q2)&&P.gold===q2.price-1,'not enough gold: nothing paid');
+   t.act('rs-close');frame();ok(G.mode==='world'&&P.quests.includes(q2),'Not now: not asked again while you stay');
+   P.x+=600;frame();P.gold=q2.price+50;there(q2);ok(G.mode==='story'&&G.ransom===q2,'gone off and come back: asked again');
+   t.act('rs-do','0');ok(P.gold===50&&q2.fate==='freed'&&live().at==='escort'&&G.mode==='world','paid '+q2.price+' gold: freed, the escort again');drop()}
+  {C=home();lose(vsLord(lordNear()));const q=step(),h=t.townBy(q.held.town);t.worldEmit('battle:ended',{enc:{kind:'siege',ref:h},how:'won'});
+   ok(q.fate==='freed'&&live().at==='escort','you storm '+h.name+': he is freed from its gaol');drop()}
+  {C=home();lose(vsLord(lordNear()));const q=step(),h=t.townBy(q.held.town),o=h.owner;try{h.owner='player';t.questDay();ok(q.fate==='freed'&&live().at==='escort','it is yours now: freed')}finally{h.owner=o}drop()}
+  {C=home();const s=W.sites.find(x=>x instanceof t.Hideout&&!x.cleared);lose({kind:'camp',ref:s,n:4,band:s.band});const q=step();
+   ok(live().at==='held'&&q.held.k==='lair'&&q.lair()===s&&live().memory.held.k==='lair','beaten storming the '+s.name+': he is held there');drop()}
+  // ---- his holder destroyed by another, or no one took him: he makes his own way home, and the chain resumes at his family
+  {C=home();const b=band();lose(vsBand(b));const q=step(),m0=G.msgs.length;t.bandits.splice(t.bandits.indexOf(b),1);t.questDay();const th=live(),v=step();
+   ok(q.fate==='gone'&&th.at==='call'&&v.type==='visit'&&v.to.town===th.memory.town&&G.msgs.slice(m0).some(m=>/are scattered/.test(m.m)),'the band beaten by another: he got away and made his own way home');
+   ok(saved(),'saved and loaded on the way to his family');there(step());ok(live().at==='family'&&pageHas('made his own way back','Promise to find them'),'at his family’s: the chain resumes at their page');t.act('thr-do','1')}
+  {C=home();lose(vsLord(lordNear()));const q=step(),h=t.townBy(q.held.town),o=h.owner,f=t.FIDS.find(x=>x!==o);try{h.owner=f;t.questDay();ok(q.fate==='gone'&&live().at==='call','the holding changes hands to another: let out in the turmoil, home on his own')}finally{h.owner=o}drop()}
+  {C=home();const b=band();lose(vsBand(b));const q=step();G.day=q.goes;t.questDay();const s=q.lair(),hs=W.sites.filter(x=>x instanceof t.Hideout&&!x.cleared);
+   try{s.cleared=true;t.questDay();if(q.lair()!==s&&P.quests.includes(q))ok(q.held.k==='lair'&&q.lair().seen,'his hideout cleared by another: its survivors took him to the '+q.lair().name);
+    hs.forEach(x=>x.cleared=true);t.questDay();ok(q.fate==='gone'&&live().at==='call','none of his band left: home on his own')}finally{hs.forEach(x=>x.cleared=false)}drop()}
+  {C=home();const m0=G.msgs.length;t.Escort.lost({kind:'monster',ref:{x:P.x,y:P.y}});
+   ok(C.q.fate==='captured'&&live().at==='call'&&live().memory.held.k==='none'&&G.msgs.slice(m0).some(m=>/slips away into the dark/.test(m.m)),'lost to beasts: they take no captives; he slips away and makes his own way home');drop()}
+  // ---- Ander is never lost: every end but the reward (and dying unhealed) sends him wandering the taverns
+  const anderHealed=before=>{fresh();delete Th.store().once;delete Th.store().aside;W.news=null;if(before)before();t.DevConsole.execute('ander');const e=t.roadList().find(o=>o.k==='traveller'&&o.ander);t.roadMeet(e);t.act('enc-do','0');return e};
+  const anderHome=()=>{anderHealed();t.act('enc-do',pick('Take him home'));t.act('enc-leave');return {th:live(),q:step()}};
+  const wanders=()=>!!t.Wanderer.state&&!!t.Wanderer.at();
+  {const a=anderHome();ok(a.q.days===0&&/no hurry/.test(t.Escort.tag()[2]),'Ander’s escort has no due day');G.day+=60;t.questDay();ok(P.quests.includes(a.q)&&live()===a.th,'never late: 60 days on he still rides with you');
+   t.act('q-abandon',String(a.q.id));ok(ends(a.th).join()==='left'&&wanders(),'abandoned: he goes wandering')}
+  {anderHealed();t.act('enc-do',pick('Refuse'));t.act('enc-leave');ok(wanders()&&!live(),'refused: wandering')}
+  {anderHealed(()=>{for(let i=0;i<t.ESCORT.max;i++)t.Escort.start({who:'child',to:{town:'Ashford'}})});
+   ok(!!t.Escort.why()&&pageHas('Meet him later')&&!pageHas('Take him home'),'no room for a passenger: no forced refusal, he offers to meet you later');
+   t.act('enc-do',pick('Meet him later'));t.act('enc-leave');ok(wanders()&&!live(),'met later: wandering');P.quests=[]}
+  {const a=anderHome();there(a.q);t.act('thr-do','1');ok(ends(a.th).join()==='part'&&wanders(),'Ride on at his sister’s: wandering')}
+  {const a=anderHome();there(a.q);t.act('thr-do','0');there(step());t.act('thr-do','2');t.act('thr-do','2!');ok(ends(a.th).join()==='drop'&&wanders()&&!t.Wanderer.state.done,'Let it lie: wandering')}
+  {const a=anderHome();const b=band();lose(vsBand(b));ok(live().at==='held'&&step().held.k==='band','Ander carried off by a band');t.act('q-abandon',String(step().id));ok(ends(a.th).join()==='left'&&wanders(),'his rescue given up: wandering')}
+  {const a=anderHome();const b=band();lose(vsBand(b));t.bandits.splice(t.bandits.indexOf(b),1);t.questDay();ok(ends(a.th).join()==='loose'&&wanders(),'his band beaten by another: he slips away, wandering')}
+  {const a=anderHome();t.Escort.lost({kind:'monster',ref:{x:P.x,y:P.y}});ok(ends(a.th).join()==='loose'&&wanders(),'lost to beasts: wandering')}
+  {const a=anderHome();lose(vsLord(lordNear()));const q=step();ok(q.type==='held'&&q.held.k==='holding'&&q.price===WD.rescue.ransom.ander,'held by a lord: a sellsword of his name fetches '+q.price+' gold');
+   P.gold=q.price;there(q);t.act('rs-do','0');ok(ends(a.th).join()==='freed'&&live().memory.ander&&step().type==='escort'&&!step().days&&!t.Wanderer.state,'ransomed: his escort again, no due day');drop();ok(wanders(),'then abandoned: wandering')}
+  // ---- wandering: tavern to tavern, the rumour, winning him back
+  {const a=anderHome();there(a.q);t.act('thr-do','1');const s=t.Wanderer.state,w=t.Wanderer.at(),D=WD.wander.days,len=x=>x.to-x.from;
+   ok(s&&w&&t.Wanderer.taverns().some(z=>z.name===w.town)&&w.leg===0&&w.from===G.day&&len(w)>=D[0]&&len(w)<=D[1],'wandering: he drinks in the tavern of '+w.town+' for '+len(w)+' days');
+   const w2=t.Wanderer.at(w.to);ok(w2.leg===1&&w2.town!==w.town&&len(w2)>=D[0]&&len(w2)<=D[1]&&JSON.stringify(t.Wanderer.at(w.to))===JSON.stringify(w2),'then he moves on, to '+w2.town+' (the same however often asked: no draw)');
+   const seen=new Set();for(let d=G.day;d<G.day+60;d++)seen.add(t.Wanderer.at(d).town);ok(seen.size>=3,'over 60 days, '+seen.size+' taverns');
+   ok(saved()&&JSON.stringify(t.Wanderer.at())===JSON.stringify(w),'saved and loaded while he wanders: the same place');
+   const z=t.townBy(w.town),o=t.Wanderer.taverns().find(x=>x!==z&&!t.hostileTo(x.owner)&&!t.Place.closed(x));W.news=null;Kit.world();t.enterTown(o);t.act('tab','tavern');
+   ok(pageHas('Ander',w.town)&&!pageHas('Finish the job')&&W.news.items.some(it=>it.k==='ander'&&it.detail.town===w.town),'the tavern of '+o.name+': a rumour of where he was seen ('+w.town+'), not him');
+   t.act('leave');Kit.world();G.day=w.to;t.enterTown(o);t.act('tab','tavern');ok(W.news.items.filter(it=>it.k==='ander').map(it=>it.detail.town).join()===w2.town,'moved on: the rumour tells his new tavern');t.act('leave');Kit.world();G.day=w.from;
+   t.enterTown(z);ok(pageHas('a scarred sellsword in a dark cloak'),'his holding’s overview: a sellsword drinks in its tavern');t.act('tab','tavern');
+   ok(pageHas('Ander The Fallen','Finish the job','Pay '+WD.wander.price+'g')&&!t.compsHere(z).includes('ander')&&!Object.keys(t.COMPS).includes('ander'),'in his tavern: his own card, never the hiring list (still unlisted: the wiki keeps his secret)');
+   P.troops={[U]:P.cap()};P.gold=1000;t.act('ander-pay');ok(!P.comps.ander&&P.gold===1000&&!!t.Wanderer.state,'your band full: he will not join (come back with room)');
+   P.troops={[U]:2};t.act('ander-pay');ok(P.comps.ander&&P.gold===1000-WD.wander.price&&!t.Wanderer.state&&t.compInBand('ander')&&P.comps.ander.lv===WD.ander.lv,'his price paid, '+WD.wander.price+' gold: he joins you');
+   ok(!pageHas('Finish the job'),'and is gone from the tavern');t.act('leave');Kit.world();delete P.comps.ander}
+  {const a=anderHome();there(a.q);t.act('thr-do','1');const w=t.Wanderer.at();t.enterTown(t.townBy(w.town));t.act('tab','tavern');t.act('ander-job');t.act('leave');Kit.world();
+   const th=live();ok(th&&th!==a.th&&th.memory.ander&&th.at==='tracks'&&!t.Wanderer.state,'finish the job: his chain picked up at the trail (where you found him)');
+   there(step());t.act('thr-do','0');const s=step().lair();try{win({kind:'camp',ref:s,n:4,band:s.band})}finally{s.cleared=false}const back=step();t.act('q-abandon',String(back.id));
+   ok(ends(th).join()==='left'&&t.Wanderer.state&&t.Wanderer.state.done===1,'their hideout cleared, then left: wandering again, the job done');ok(saved(),'saved and loaded (the job done)');
+   const w2=t.Wanderer.at();t.enterTown(t.townBy(w2.town));t.act('tab','tavern');ok(pageHas('Ride with me','are done'),'his card: ride with me');t.act('ander-job');
+   ok(P.comps.ander&&!t.Wanderer.state&&!live(),'the job done already: he joins at once');t.act('leave');Kit.world();delete P.comps.ander}
+  {fresh();delete Th.store().aside;const z=t.Wanderer.taverns()[0];W.news=null;t.enterTown(z);t.act('tab','tavern');ok(!pageHas('Ander')&&!t.Wanderer.at(),'none wandering (a game where he was never met, or he rides with you): no sign of him in any tavern');t.act('leave');Kit.world()}
   // ---- the developer commands: chains, chain n go
   {C=home();const D=t.DevConsole,x=c=>{try{return D.execute(c)}catch(e){return 'ERR '+e.message}};
    ok(new RegExp(C.th.i+' · The Wounded Traveller \\(wounded\\) · step escort').test(x('chains')),'chains lists it');

@@ -15,9 +15,12 @@
      map (Steps.frame) or on entering its holding. A home (a holding, a house, an estate) is marked with a house on the map
      (gfx/worldui.js), the rest with the quests' "!" (world/quests.js drawQuestMarks).
    - The kinds: escort (world/escort.js EscortQuest: a passenger rides with you there); visit (VisitQuest: go there: arrived);
-     deliver (DeliverQuest: bring goods there, handed over on arrival: arrived); lair (LairQuest: clear a site, the hideout its
-     spec binds: cleared; cleared by another or gone from the map, the day's tick binds it to the nearest hideout of its band
-     within STEP.retarget tiles instead (the band's survivors fled there), and with none it is over: gone).
+     deliver (DeliverQuest: bring goods there, handed over on arrival: arrived); lair (LairQuest: clear a site, the hideout (or
+     camp) its spec binds: cleared; cleared by another or gone from the map, the day's tick binds it to the nearest hideout of
+     its band within STEP.retarget tiles instead (the band's survivors fled there), and with none it is over: gone); held
+     (HeldQuest, a rescue: free a captive of yours from the band that carries him, the hideout that keeps him or a holding's
+     gaol: freed; his holder destroyed by another: gone; no deadline). Over another way than done or failed (over(fate, k)):
+     its line, quest:ended (paid).
    Steps.frame, each moment on the map (world/road.js updateRoad): a thread's page that waits is shown once you are
    free, else the first step at its place is reached; true when something opened. ---------- */
 class StepQuest extends Quest{
@@ -94,6 +97,14 @@ class StepQuest extends Quest{
   }
   lapse(){
     if(this.days&&G.day>this.due)this.fail(null,'late');
+  }
+  // ---- over another way (neither done by you nor failed: its holder gone, a captive moved): its line, then quest:ended (paid)
+  over(fate,k){
+    this.fate=fate;
+    P.quests=P.quests.filter(x=>x!==this);
+    const line=this.say(k||fate);
+    if(line)log(line,'gold');
+    this.announceEnd('paid');
   }
   abandon(){
     this.fail(null,'left');
@@ -176,7 +187,7 @@ class DeliverQuest extends VisitQuest{
    day's tick: cleared by another or gone, the nearest of its band within STEP.retarget tiles instead, else over (gone) */
 class LairQuest extends StepQuest{
   setup(t,lord,s){
-    const own=s&&s.site!=null?W.sites.find(x=>x.i===s.site):null,lair=own&&own instanceof Hideout&&!own.cleared?own:s&&LairQuest.near(s.near||t,s.band);
+    const own=s&&s.site!=null?W.sites.find(x=>x.i===s.site):null,lair=own&&own instanceof Lair&&!own.cleared?own:s&&LairQuest.near(s.near||t,s.band);
     if(!lair)return false;
     this.band=s.band||lair.band;
     this.bind(lair);
@@ -230,10 +241,164 @@ class LairQuest extends StepQuest{
     log('Word comes that '+was+' stands empty: its survivors have fled to '+this.to.name+', to the '+compass(n.x-P.x,n.y-P.y)+'.','gold');
   }
 }
+/* free a captive of yours (the owner, 2026-10-23: no deadline; spec: {held (who holds him: world/captives.js carryOff's record;
+   none: the gaol of its holding), n (his name), home (days a band carries him), price (his ransom), title, text, say}). Where
+   he is, held.k (its record kept on the quest, as it changes):
+   - band: the band that carries him, found wherever it is (roving, or sheltering in a camp) and marked; beaten by you
+     (band:beaten): freed (say.band). The day's tick: gone from the map (beaten by another): over, gone; its home days up, it
+     takes him to the nearest hideout of its kind and lets go of him: lair (say.home, marked);
+   - lair: the hideout or camp that keeps him, marked; cleared by you (site:cleared): freed (say.lair). The day's tick: cleared
+     by another or gone, the nearest of its kind within STEP.retarget tiles (its survivors took him there: say.moved), else
+     over, gone;
+   - holding: its gaol; at its gates on the map (within ESCORT.reach, Steps.frame; hostile or not) the gaoler's page: pay his
+     price (freed: say.paid), or Not now (asked again once you have gone and come back); stormed by you (battle:ended, a siege
+     won there): freed (say.taken). The day's tick: it changed hands, to you or your realm, freed (say.taken); to another, over,
+     gone (let out in the turmoil).
+   Freed: done, its fate 'freed'. Its ears are its own (HeldQuest.heard: band:beaten, site:cleared, battle:ended), by where he is */
+class HeldQuest extends StepQuest{
+  setup(t,lord,s){
+    s=s||{};
+    this.held=s.held&&s.held.k&&s.held.k!=='none'?{...s.held}:{k:'holding',town:t.name,fac:t.owner};
+    this.pn=s.n||'the captive';
+    this.price=s.price||0;
+    this.goes=G.day+(s.home||0);
+    this.giver=t.name;
+    this.title=s.title||'Free '+this.pn;
+    this.text=s.text||'';
+    this.takes(s);
+    this.bind();
+  }
+  // (where it points: the band, wherever it is; the hideout; the holding)
+  bind(){
+    const h=this.held,s=h.k==='lair'&&this.lair(),t=h.k==='holding'&&townBy(h.town);
+    this.to=s?{k:'site',x:s.x,y:s.y,name:'the '+s.name}:t?StepQuest.place({town:t.name}):{k:'band',name:h.chief?h.chief+'’s band':'the '+(LAIR_SAY[h.kind]||'bandits').toLowerCase()};
+    if(s)s.seen=true;
+    if(this.to.x!=null){
+      this.x=this.to.x;
+      this.y=this.to.y;
+    }
+  }
+  begin(){
+    const b=this.party();
+    if(b){
+      this.x=b.x;
+      this.y=b.y;
+    }
+  }
+  // (who has him: the band that carries him; the hideout, by its place in W.sites and its seed; null: gone)
+  party(){
+    return this.held.k==='band'?bandCarrying(this.held.cap):null;
+  }
+  lair(){
+    const h=this.held;
+    return W.sites.find(x=>x.i===h.site&&x.seed===h.sseed)||null;
+  }
+  seek(){
+    const b=this.party();
+    return b?{x:b.x,y:b.y,name:this.to.name}:this.to.x!=null?{x:this.to.x,y:this.to.y,name:this.to.name}:null;
+  }
+  homeMark(){
+    return null;
+  }
+  todo(){
+    const h=this.held;
+    return h.k==='band'?'Beat '+this.to.name+'.':h.k==='lair'?'Clear '+this.to.name+'.':'Ransom '+this.pn+' at '+h.town+' ('+this.price+' gold), or take it.';
+  }
+  // ---- the gaol: its gates reached on the map, once each time you come (Not now waits till you have gone off and come back)
+  get reaches(){
+    return !!this.held&&this.held.k==='holding';
+  }
+  near(){
+    const n=super.near();
+    if(!n)this.off=0;
+    return n&&!this.off;
+  }
+  arrive(){}
+  reached(){
+    this.off=1;
+    if(G.mode!=='world'||G.modal)return;
+    G.ransom=this;
+    G.mode='story';
+    CHOICE_PAGE.show({ico:'gold',title:'The gaol of '+this.held.town,sub:this.title+' · day '+G.day,text:this.say('gaol')||this.todo(),facts:[this.price+' gold asked'],choices:RANSOM_CHOICES,subject:this,act:'rs-do',
+      close:['rs-close',null,'Not now']},'ransom:'+this.id);
+  }
+  ransom(){
+    if(P.gold<this.price||!this.reaches)return '';
+    P.gold-=this.price;
+    this.pay('freed','paid');
+    return '';
+  }
+  // ---- freed by your hand: its own event, by where he is
+  frees(type,d){
+    const h=this.held;
+    if(!d)return false;
+    if(h.k==='band')return type==='band:beaten'&&carries(d.band,h.cap);
+    if(h.k==='lair')return type==='site:cleared'&&!!d.site&&d.site.i===h.site&&d.site.seed===h.sseed;
+    return type==='battle:ended'&&d.how==='won'&&!!d.enc&&d.enc.kind==='siege'&&!!d.enc.ref&&d.enc.ref.name===h.town;
+  }
+  static heard(type,d){
+    for(const q of P.quests.slice()){
+      if(q.type!=='held')continue;
+      const Q=Quest.as(q);
+      if(Q.frees(type,d)){
+        uncarry(Q.party(),Q.held.cap);
+        Q.pay('freed',{band:'band',lair:'lair',holding:'taken'}[Q.held.k]);
+      }
+    }
+  }
+  // ---- the day: his holder gone (over), the band home, the hideout's survivors moved, the holding changed hands
+  lapse(){
+    const h=this.held;
+    if(h.k==='band'){
+      const b=this.party();
+      if(!b)return this.over('gone','gone');
+      const s=G.day>=this.goes&&LairQuest.near(b,h.kind);
+      if(!s)return;
+      uncarry(b,h.cap);
+      this.held={k:'lair',site:s.i,sseed:s.seed,lair:s.name,kind:h.kind};
+      this.bind();
+      return log(this.say('home'),'gold');
+    }
+    if(h.k==='lair'){
+      const s=this.lair();
+      if(s&&!s.cleared)return;
+      const n=LairQuest.near(this.to,h.kind,STEP.retarget);
+      if(!n)return this.over('gone','gone');
+      this.held={...h,site:n.i,sseed:n.seed,lair:n.name};
+      this.bind();
+      return log(this.say('moved'),'gold');
+    }
+    const t=townBy(h.town);
+    if(t&&!t.gone&&t.owner===h.fac)return;
+    if(t&&!t.gone&&(t.owner==='player'||P.fac&&t.owner===P.fac))return this.pay('freed','taken');
+    this.over('gone','gone');
+  }
+  // (given up: the band lets go of him, lost to you)
+  fail(why,fate){
+    uncarry(this.party(),this.held.cap);
+    super.fail(why,fate);
+  }
+}
+for(const type of ['band:beaten','site:cleared','battle:ended'])worldOn(type,d=>HeldQuest.heard(type,d));
+// the gaoler's page: pay (its way out: Not now)
+const RANSOM_CHOICES=Choice.list([{icon:'gold',label:'Pay the ransom',need:q=>P.gold<q.price&&'Not enough gold',facts:q=>['−'+q.price+' gold',cap1(q.pn)+' is free'],
+  tip:'Pay his gaolers, and he walks free.',run:q=>q.ransom()}]);
+onAct('rs-',(a,arg)=>{
+  const q=G.ransom;
+  if(G.mode!=='story'||!q)return;
+  const c=a==='rs-do'&&CHOICE_PAGE.choose(RANSOM_CHOICES,arg,q);
+  if(a!=='rs-close'&&!c)return;
+  G.ransom=null;
+  G.mode='world';
+  hidePanel();
+  if(c)c.perform(q);
+  updateHUD(true);
+});
 defineKinds('step',{},{
   visit:{cls:VisitQuest},
   deliver:{cls:DeliverQuest},
   lair:{cls:LairQuest},
+  held:{cls:HeldQuest},
 });
 /* each moment on the map: a thread's page that waits shown once you are free; else the first step at its place reached (one a
    moment); true: something opened (the moment ends there) */

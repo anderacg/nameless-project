@@ -10,8 +10,9 @@
    - spec: {who (ESCORT.who: child, refugees, traveller), n (its name: the kind's), eat (food a day: the kind's), to {town, lot
      (none: the holding; 'house' or an estate's key: one of its lots, i choosing which, no draw)}, days (none: the way's tiles ÷
      ESCORT.pace + slack), prize (the outcome on arrival), forfeit (on failing: reputation at its place), at {x, y} (where it
-     begins: the way's length; none, you); a chain's may add forfeits (by fate: captured …), say (its own lines, as a kind's)
-     and quiet (no page of its own on arrival: the chain's next page speaks)}.
+     begins: the way's length; none, you); a chain's may add forfeits (by fate: captured …), say (its own lines, as a kind's;
+     scattered: its captured line when no one took him), quiet (no page of its own on arrival: the chain's next page speaks),
+     open (no due day: Ander) and rescue (carried off, he is held: world/captives.js carryOff, his holder on its record, by)}.
    - It is a chain's step kind (story/steps.js StepQuest: its place, arrival, prize, failing and lines are the steps' own).
    - Its record is the quest's, saved with P.quests as it is: {type: 'escort', who, pn (its name), eat, to {k (holding, house,
      estate), town, lot, x, y, name}, prize, forfeit, days, due, title, text, reward (for the panels), fate (once over)}.
@@ -20,7 +21,7 @@
        holding (arrive): its prize applied, its page shown (Ride on), paid: fate 'arrived';
      deadline: its due day passed (the quests' day: lapse): failed, fate 'late' (it goes on alone);
      a battle lost while it rides with you (battle:ended, lost: battle/resolution.js): failed, fate 'captured' (carried off by the
-       victors; kept on the record for a rescue later);
+       victors; a rescue's holder kept on its record, by: his chain rescues him, story/wounded.js);
      abandoned (your quests' Abandon): failed, fate 'left' (set down by the road).
      A failure applies its forfeit. Then the bus's quest:ended {e, how: 'paid' or 'failed'}, and e.fate says which way: what a
      thread's step branches by (how: d=>d.e.fate). ---------- */
@@ -40,7 +41,7 @@ class EscortQuest extends StepQuest{
     this.giver=cap1(this.pn);
     this.home=to.town;
     this.fac=townBy(to.town).owner;
-    this.days=Escort.days(s,to);
+    this.days=s.open?0:Escort.days(s,to);
     this.prize=o;
     this.forfeit=s.forfeit||{rep:[to.town,-ESCORT.forfeit]};
     this.title='Escort '+this.pn+' to '+to.name;
@@ -49,6 +50,7 @@ class EscortQuest extends StepQuest{
     if(s.forfeits)this.forfeits=s.forfeits;
     if(s.say)this.lines=s.say;
     if(s.quiet)this.quiet=true;
+    if(s.rescue)this.rescue=true;
   }
   begin(){
     this.x=this.to.x;
@@ -69,7 +71,11 @@ class EscortQuest extends StepQuest{
     if(!this.quiet)Escort.show(this,line);
   }
   lapse(){
-    if(G.day>this.due)this.fail(null,'late');
+    if(this.days&&G.day>this.due)this.fail(null,'late');
+  }
+  // (carried off by no one, beasts: its scattered line, if it has one)
+  say(k){
+    return super.say(k==='captured'&&this.by&&this.by.k==='none'&&this.lines&&this.lines.scattered?'scattered':k);
   }
   sayOf(k){
     const K=Escort.who(this.who);
@@ -122,15 +128,19 @@ const Escort={
     const n=Escort.eatDay();
     return n?n/24*(moving?SUPPLY.eat.march:SUPPLY.eat.rest):0;
   },
-  // a battle lost: each passenger carried off by the victors
-  lost(){
-    for(const q of Escort.list())q.fail(null,'captured');
+  // a battle lost (e: its encounter): each passenger carried off by the victors; a rescue's held by them (by)
+  lost(e){
+    for(const q of Escort.list()){
+      if(q.rescue)q.by=carryOff(e,q.id,q.pn);
+      q.fail(null,'captured');
+    }
   },
   // ---- the words: its line ({N}, {n}, {to}, {town}: its own, else its kind's, else ESCORT.say's); the way there from you; its
   // facts (an outcome's: story/outcome.js)
   say(q,k){
     return Quest.as(q).say(k);
   },
+  left:q=>q.days?Math.max(0,q.due-G.day)+' days left':'no hurry',
   way(q){
     const d=Math.round(Math.hypot(q.to.x-P.x,q.to.y-P.y)/TILE);
     return d<2?'just here':d+' tiles to the '+compass(q.to.x-P.x,q.to.y-P.y);
@@ -139,18 +149,18 @@ const Escort={
     const to=Escort.place(s.to);
     if(!to)return [];
     const p=Outcome.describe(s.prize||{});
-    return ['escort '+(s.n||Escort.who(s.who).n)+' to '+to.name+' within '+Escort.days(s,to)+' days',p&&'there: '+p];
+    return ['escort '+(s.n||Escort.who(s.who).n)+' to '+to.name+(s.open?', in your own time':' within '+Escort.days(s,to)+' days'),p&&'there: '+p];
   },
   // ---- shown: the card's tag (world/supply.js), the Party window's rows (ui/character.js), its page on arrival
   tag(){
     const L=Escort.list();
     if(!L.length)return null;
-    return ['Escort'+(L.length>1?' ×'+L.length:''),'good',L.map(q=>cap1(q.pn)+' rides with you to '+q.to.name+' ('+Math.max(0,q.due-G.day)+' days left)').join('. ')+'. They eat '+Math.round(Escort.eatDay()*100)/100+' food a day, do not fight and take no place in your ranks.'];
+    return ['Escort'+(L.length>1?' ×'+L.length:''),'good',L.map(q=>cap1(q.pn)+' rides with you to '+q.to.name+' ('+Escort.left(q)+')').join('. ')+'. They eat '+Math.round(Escort.eatDay()*100)/100+' food a day, do not fight and take no place in your ranks.'];
   },
   html(){
     const L=Escort.list();
     if(!L.length)return '';
-    return '<div class="lab" style="margin-top:6px">Passengers ('+L.length+' / '+ESCORT.max+')</div>'+L.map(q=>'<div class="row"><div class="info"><strong>'+cap1(q.pn)+'</strong><small>To '+q.to.name+', '+Escort.way(q)+' · '+Math.max(0,q.due-G.day)+' days left · eats '+q.eat+' food a day · does not fight</small></div></div>').join('');
+    return '<div class="lab" style="margin-top:6px">Passengers ('+L.length+' / '+ESCORT.max+')</div>'+L.map(q=>'<div class="row"><div class="info"><strong>'+cap1(q.pn)+'</strong><small>To '+q.to.name+', '+Escort.way(q)+' · '+Escort.left(q)+' · eats '+q.eat+' food a day · does not fight</small></div></div>').join('');
   },
   show(q,line){
     if(G.mode!=='world'||G.modal)return;
@@ -168,5 +178,5 @@ onAct('pas-',a=>{
 });
 // a battle lost with passengers aboard (battle/resolution.js: battle:ended)
 worldOn('battle:ended',d=>{
-  if(d&&d.how==='lost')Escort.lost();
+  if(d&&d.how==='lost')Escort.lost(d.enc);
 });

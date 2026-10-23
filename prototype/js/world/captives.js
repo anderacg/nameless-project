@@ -47,6 +47,30 @@ function chiefDay(){
 // your band is routed: the captives slip away in the chaos
 function captivesEscape(){const cs=captives();if(!cs.length)return;cs.forEach(c=>freeCaptive(c,3));P.captives=[];log('Your captives slip away in the chaos.','bad')}
 
+/* the other way round: one of yours carried off when your band is routed (a story's passenger: world/escort.js Escort.lost; the
+   owner, 2026-10-23), and who holds him, as a record his story keeps (story/wounded.js; his rescue: story/steps.js HeldQuest):
+   {k: 'band', cap, kind, chief} the band that beat you carries him (its carry: [{cap, n}], saved with it; one of the road's put
+   on the map, roving); {k: 'lair', site, sseed, lair, kind} the hideout or camp you stormed keeps him; {k: 'holding', town, fac} a
+   realm's men (a lord, the watch, a caravan's guards, a holding's militia) take him to their realm's holding nearest (their
+   own); {k: 'none'} beasts and the like take no captives. cap: his mark (the quest he rode in), n: his name */
+function carryOff(e,cap,n){
+  const r=e&&e.ref;
+  if(!r)return {k:'none'};
+  if(e.kind==='party'&&r instanceof BandParty){
+    if(!bandits.includes(r)&&!W.sites.some(s=>(s.bands||[]).includes(r))){Object.assign(r,{t:0,a:0,idle:false,cool:Math.max(r.cool||0,8)});bandits.push(r)}
+    (r.carry=r.carry||[]).push({cap,n});
+    return {k:'band',cap,kind:r.kind||'bandits',chief:r.ld?r.ld.name:''};
+  }
+  if(e.kind==='camp'&&r instanceof Lair)return {k:'lair',site:r.i,sseed:r.seed,lair:r.name,kind:r.bandKind};
+  const own=e.kind==='siege'||e.kind==='raid'?r:e.kind==='patrol'?townBy(r.home):e.kind==='estate'||e.kind==='villagers'?townBy(r.town):null;
+  const fac=own&&own.owner||r.fac||((e.foes||[]).find(o=>o&&o.fac)||{}).fac,t=own&&!own.gone?own:FACS[fac]&&fac!=='player'?Spatial.nearest(fiefsOf(fac),r.x!=null?r.x:P.x,r.y!=null?r.y:P.y):null;
+  return t?{k:'holding',town:t.name,fac:t.owner}:{k:'none'};
+}
+// (does b carry the captive cap; the band that does, roving or sheltering in a camp, or null; letting him go)
+const carries=(b,cap)=>!!b&&!!b.carry&&b.carry.some(c=>c.cap===cap);
+const bandCarrying=cap=>bandits.concat(...W.sites.map(s=>s.bands||[])).find(b=>carries(b,cap))||null;
+function uncarry(b,cap){if(!b||!b.carry)return;b.carry=b.carry.filter(c=>c.cap!==cap);if(!b.carry.length)delete b.carry}
+
 /* recruiting: a captive may join your band as a companion, a character as he was (his level, his skill tree as he grew it,
    his skills and gear), yours to grow from then on. A bandit chieftain right away, if your honor allows (an outlaw in your
    band costs RECRUIT.honor with every realm, and a realm you serve will not stand for it if it takes your honor with it below

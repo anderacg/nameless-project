@@ -22,8 +22,9 @@
    Its record (W.story.threads.on): {k, i, day (begun), at (the step under way), wait ({shape, id}: what it waits for), memory,
    past ([step, how] each done)}. Thread.start(id, memory) begins one (or an outcome's start: {thread, memory}). Never ticked:
    it hears the bus (Thread.heard), only for the events its steps wait for; it ends when its last step ends ('thread:ended',
-   {e, how}), its end kept (W.story.threads.ended: {k, i, how, day, memory}, the last STEP.keep: who was carried off, for a
-   rescue later). W.story.threads.once: what may come once a game, and the day it came (Thread.once, Thread.mark: Ander). */
+   {e, how}), its end kept (W.story.threads.ended: {k, i, how, day, memory}, the last STEP.keep: how each went).
+   W.story.threads.once: what may come once a game, and the day it came (Thread.once, Thread.mark: Ander);
+   aside: what a chain keeps between its threads, by key (Ander wandering the taverns: story/wounded.js Wanderer). */
 class Thread extends Happening{
   get shape(){
     return 'thread';
@@ -110,12 +111,13 @@ class Thread extends Happening{
   static list(){
     return W.story&&W.story.threads||{n:0,on:[]};
   }
-  static start(id,memory){
+  // (at: the step it begins at, a chain picked up again where it was left: Ander's; none, its first)
+  static start(id,memory,at){
     const K=kindOf('thread',id);
     if(!K)return null;
     const L=this.store(),th=this.as({k:id,i:++L.n,day:G.day,at:null,wait:null,memory:{...(memory||{})},past:[]});
     L.on.push(th);
-    th.begin(K.first||K.steps[0].id);
+    th.begin(at||K.first||K.steps[0].id);
     return th;
   }
   // those with a page waiting to be shown; the first shown, if you are free on the map (Steps.frame: true, it was)
@@ -252,6 +254,7 @@ Saves.add({key:'threads',order:250,defaults:null,
     const v={n:L.n,on:L.on.map(th=>th.save())};
     if(L.ended)v.ended=L.ended;
     if(L.once)v.once=L.once;
+    if(L.aside)v.aside=L.aside;
     return v;
   },
   load:v=>{

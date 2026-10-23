@@ -160,10 +160,11 @@ class Market extends Place{
 }
 definePlace('trade',Market);
 
-/* the tavern: the innkeeper (lodgings), the ransom broker, the companions waiting for work; the rumours and the talk of the realm */
+/* the tavern: the innkeeper (lodgings), the ransom broker, the companions waiting for work, Ander The Fallen where he wanders
+   (story/wounded.js Wanderer: his own card, never the hiring list); the rumours and the talk of the realm */
 class Tavern extends Place{
   constructor(id){
-    super(id,{n:'Tavern',ico:'mug',verbs:{'ransom-pick':'ransomPick',ransom:'ransom','hire-comp':'hireComp'}});
+    super(id,{n:'Tavern',ico:'mug',verbs:{'ransom-pick':'ransomPick',ransom:'ransom','hire-comp':'hireComp','ander-job':'anderJob','ander-pay':'anderPay'}});
   }
   body(t){
     const f=FACS[t.owner],here=P.stay&&P.stay.town===t.name,why=stayWhy(t),race=t.races[0];
@@ -173,7 +174,8 @@ class Tavern extends Place{
         acts:[here?['sy-leave',null,'Leave']:['sy-stay',t.name,'Stay',why]]},
       tapsterCard(t,race),// (drink for the road: world/supply.js)
       t.T.broker&&{pic:personPic('merchant',race,1),name:'The ransom broker',role:'Buys prisoners you bring in',facts:[prisonerCount()?prisonerCount()+' prisoners with you':'No prisoners with you',prisonerCount()?['Worth '+ransomValue()+'g','gold']:''],acts:[['ransom-pick',null,'Ransom',prisonerCount()?'':'No prisoners']]},
-      ...compsHere(t).map(id=>{const c=COMPS[id],quote=recruitment.quoteCompanion(t,id);return {pic:portrait(id),name:c.n,role:'Companion, looking for work',note:c.d,acts:[['hire-comp',id,'Hire '+c.cost+'g',quote.ok?'':recruitmentWhy(quote)||'Not available']]}})])+
+      ...compsHere(t).map(id=>{const c=COMPS[id],quote=recruitment.quoteCompanion(t,id);return {pic:portrait(id),name:c.n,role:'Companion, looking for work',note:c.d,acts:[['hire-comp',id,'Hire '+c.cost+'g',quote.ok?'':recruitmentWhy(quote)||'Not available']]}}),
+      Wanderer.card(t)].filter(Boolean))+
       // (the rumours: real news near here, two new a day (news.js), heard as you come in and kept while you stay: G.town.news;
       // then the standing talk of the realm: its wars, the camps, the most wanted, a mythic beast abroad)
       '<div class="lab">Rumours</div>'+rumourHtml(G.town.news||(G.town.news=rumourFrom(rumourSource('tavern',t.name,t,{from:'the tavern of '+t.name}))))+
@@ -191,6 +193,13 @@ class Tavern extends Place{
   }
   hireComp(arg,t){
     recruitmentFeedback(recruitment.hireCompanion(t,arg),t);
+  }
+  // Ander: finish the job, or pay his price
+  anderJob(arg,t){
+    Wanderer.job(t);
+  }
+  anderPay(arg,t){
+    Wanderer.pay(t);
   }
 }
 definePlace('tavern',Tavern);

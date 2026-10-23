@@ -97,7 +97,8 @@ class PatrolParty extends Party{
     return{col,race:this.fac==='player'?P.race:FACS[this.fac].races[0],dir:this.dir||1,moving:true,seed:this.home.length*13,torch:watchOf(this)==='night',label:near?String(this.size):'',labelCol:hostileTo(this.fac)?STANCE_COL[stance(this.power())]:crimeAt(townBy(this.home))&&this.fac!=='player'?'#ff9a90':col}}
 }
 // a bandit band: n (how many it shows) follows its troops; its power is kept (pw) until they change or its chieftain grows
-// (its own kind field is which bandits it is: bandits, raiders, bog; mapKind is what it is on the map)
+// (its own kind field is which bandits it is: bandits, raiders, bog; mapKind is what it is on the map); carry: a captive of yours
+// it holds (world/captives.js carryOff: [{cap, n}]), told on its tip
 class BandParty extends Party{
   get mapKind(){return 'band'}
   here(){return bandits.includes(this)}
@@ -107,7 +108,7 @@ class BandParty extends Party{
   get faction(){return null}
   // (its chieftain hardens it: leaders.js chiefLv)
   power(){return this.pw||(this.pw=rating(this.troops,chiefLv(this)))}
-  tip(){return '<b>'+this.label()+'</b>'+chiefTip(this)+'<small>'+this.n+' fighters'+tipOdds(this.power())+paceVs(partySpeed(this,this.troops))+'</small><span class="act">Click: attack</span>'}
+  tip(){return '<b>'+this.label()+'</b>'+chiefTip(this)+'<small>'+this.n+' fighters'+tipOdds(this.power())+paceVs(partySpeed(this,this.troops))+'</small>'+(this.carry?'<small class="gold">They hold '+this.carry.map(c=>c.n).join(' and ')+' captive</small>':'')+'<span class="act">Click: attack</span>'}
   get brain(){return BRAINS.band}
   banner(){return{k:'rag',col:BAND_FLAG[this.kind]||BAND_FLAG.bandits,dev:'skull'}}// (a tattered rag: red, a desert raider's ochre, a bog raider's green)
   look(){const c=this.ld;return{col:'#8a4a3a',bandit:true,dir:faceDir(this),moving:!this.idle,seed:Math.round(this.x)%97,label:(c?c.name.split(' ')[0]+' Lv'+c.lv+' · ':'')+this.n,labelCol:STANCE_COL[stance(this.power())]}}

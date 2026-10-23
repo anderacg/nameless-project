@@ -28,6 +28,7 @@ function townOverview(t){
     P.stay&&P.stay.town===t.name&&['good','Your band is staying here.'],
     questHere(t)&&['gold','A quest of yours is ready to report at the Notice board.'],
     compsHere(t).length&&['gold','In the Tavern: '+compsHere(t).map(id=>COMPS[id].n).join(' and ')+' for hire.'],
+    Wanderer.here(t)&&['gold','In the Tavern: a scarred sellsword in a dark cloak drinks alone.'],
     !compsHere(t).length&&t.T.broker&&prisonerCount()&&['gold','In the Tavern: the ransom broker pays '+ransomValue()+'g for your prisoners.'],
     PLACES.tourney.at(t)&&['gold','The lists: a tournament today, 10 gold to enter.']].filter(Boolean);
   return '<p class="muted">'+cap1(an(t.label))+' of the '+(f?'<span style="color:'+f.col+'">'+f.n+'</span>':'free folk')+'. '+t.note+'</p>'+

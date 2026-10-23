@@ -44,7 +44,10 @@ const NEWS_KINDS={
   tracks:{w:2,say:[(d,s)=>'Tracks of '+(d.who||'strangers')+' lead off '+s.where+'.',(d,s)=>'Someone saw '+(d.who||'strangers')+' '+s.where+', '+s.when+'.']},
   toll:{w:3,say:[(d,s)=>'Men in the '+facN(d.fac)+'’s colours were taking a false toll '+s.road+'. Their ringleader hangs in '+(d.town||'the town')+'.',
     (d,s)=>'Beware “the lord’s men” at a barrier '+s.road+': false toll-men, they say, though one was caught '+s.when+'.']},
-  trace:{w:3,say:[(d,s)=>({body:'A traveller was found dead by the road '+s.where+', '+s.when+'.',wreck:'A burnt wagon lies '+s.road+'. Raiders, they say.',cart:'Someone left a cart stuck in the mud '+s.road+', '+s.when+'.'})[d.t]||'Something bad happened '+s.road+'.']}
+  trace:{w:3,say:[(d,s)=>({body:'A traveller was found dead by the road '+s.where+', '+s.when+'.',wreck:'A burnt wagon lies '+s.road+'. Raiders, they say.',cart:'Someone left a cart stuck in the mud '+s.road+', '+s.when+'.'})[d.t]||'Something bad happened '+s.road+'.']},
+  // (Ander The Fallen wandering the taverns, story/wounded.js Wanderer: far, every tavern but his tells it)
+  ander:{w:8,far:true,say:[(d,s)=>'A scarred sellsword in a dark cloak, Ander they call him, came to drink in the tavern of '+d.town+' '+s.when+'. He did not look like a man who wanted company.',
+    (d,s)=>'They say Ander the Fallen is in '+d.town+', sitting alone in its tavern with his back to the wall. He came '+s.when+'.']}
 };
 
 /* ---- recording ---- */
@@ -127,6 +130,7 @@ const rumourSource=(kind,key,at,o)=>({kind,key:kind+':'+key,at:[].concat(at).fil
 const newsById=id=>newsW().items.find(it=>it.id===id)||null;
 // is it news this source would know: on its land, of its realm, or near it
 function newsKnows(src,it){
+  if(NEWS_KINDS[it.k].far)return src.kind==='tavern'&&!src.at.some(p=>p.name===(it.detail||{}).town);
   if(src.realm){const d=it.detail||{},own=n=>{const t=n&&townBy(n);return !!t&&t.owner===src.fac};return d.fac===src.fac||own(it.near)||own(d.town)}
   if(src.land&&src.at[0]&&landHold(it.x,it.y)===src.at[0])return true;
   return src.at.some(p=>Math.hypot(p.x-it.x,p.y-it.y)<=src.r)}
@@ -140,7 +144,7 @@ function rumourHear(it,src){const N=newsW(),t=rumourText(it),j=k=>(hash(it.id,k,
 /* the service: what a source tells you now. It tells up to its cap of new rumours today (each heard: rumourHear), never again
    that day; fresh (told just now), today (all it told you today, fresh ones too: a page that asks again shows the same),
    before (rumours you heard already of news it knows, not today's from it), capped (its cap is spent) */
-function rumourFrom(src){newsTrim();const N=newsW(),day=G.day,told=N.told[src.key]||(N.told[src.key]={day,ids:[]}),fresh=[];
+function rumourFrom(src){if(src.kind==='tavern')Wanderer.news();newsTrim();const N=newsW(),day=G.day,told=N.told[src.key]||(N.told[src.key]={day,ids:[]}),fresh=[];
   for(const it of rumourCands(src)){if(told.ids.length>=src.cap)break;rumourHear(it,src);told.ids.push(it.id);fresh.push(it)}
   const today=told.ids.map(newsById).filter(Boolean);
   return {fresh,today,before:N.items.filter(it=>N.heard[it.id]!=null&&!today.includes(it)&&newsKnows(src,it)).sort((a,b)=>b.day-a.day||b.id-a.id),capped:told.ids.length>=src.cap}}
