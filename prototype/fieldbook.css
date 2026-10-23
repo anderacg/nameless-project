@@ -69,3 +69,22 @@
 .fb-hub-tile kbd{position:absolute;top:6px;right:8px;padding:1px 5px;font:700 11px Arial,sans-serif;color:#c9a24e;background:none;border:1px solid #6b5533;border-radius:2px}
 @container ovl (max-width:760px) or (max-height:520px){.fb-hub{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.fb-hub-tile{min-height:92px;padding:8px 4px;gap:5px}.fb-hub-tile strong{font-size:14px}}
 @container ovl (max-width:520px){.fb-hub{grid-template-columns:repeat(2,minmax(0,1fr))}.fb-hub-tile{min-height:110px}}
+/* The Army window (C; partypage.js): the Roster's kinds (crown, star, shield) and experience bars, a character's wide detail (a page of
+   its own on a phone or a short screen), a troop's training path, Army skills and Passengers. */
+.fb-unit-xp{display:block;width:100%;height:5px;overflow:hidden;background:#0b0a0e;border:1px solid #4f5f78}.fb-unit-xp>i{display:block;height:100%;background:linear-gradient(#bfe0f4,#4f86c6)}
+.fb-unit>small.fb-unit-xptxt{display:block;font-size:10px;color:#b8cbe0;white-space:nowrap}.fb-unit-kind .gico{flex:none}.fb-unit-grid{grid-auto-rows:max-content}
+.fb-unit.fb-hero{border-color:#b39553}.fb-unit.fb-comp{border-color:#6f8aa8}
+.fb-army-layout.wide .fb-split{grid-template-columns:minmax(230px,.8fr) minmax(0,1.45fr)}
+.fb-army-layout.nodetail .fb-split{grid-template-columns:minmax(0,1fr)}.fb-army-layout.nodetail .fb-split>.fb-inspector{display:none}
+.fb-army-layout.full>.fb-muster,.fb-army-layout.full .fb-collection{display:none}.fb-army-layout.full .fb-split{display:flex}.fb-army-layout.full .fb-split>.fb-inspector{display:flex;flex:1}
+.fb-person-detail>.fb-pane-head{flex-wrap:wrap;padding:6px 8px 6px 12px}.fb-person-detail>.fb-pane-head>span{flex:1;min-width:0;text-align:right}.fb-head-acts{display:flex;gap:6px;flex:none}.fb-head-acts>.btn{min-height:44px;font-size:12px}
+.fb-person-detail>.fb-tabs{padding:5px 8px;border-bottom:1px solid #635031}.fb-person-meters{display:grid;grid-template-columns:1fr 1fr;gap:4px 14px;margin-bottom:12px}.fb-person-detail .fb-person-meters .fb-meter{margin-top:0}
+.fb-person-detail .fb-hero-sheet{margin-bottom:8px}
+.fb-path{display:flex;flex-direction:column;gap:4px;margin-bottom:8px}.fb-path-step{padding:7px 9px;border:1px solid #6b5533;background:#211b1b}.fb-path-step.on{border-color:#d7b36b;background:#352a1c}
+.fb-path-step strong,.fb-path-step small{display:block}.fb-path-step small{font-size:11px;line-height:1.35;color:#c3b798;margin-top:2px}
+.fb-bskill{display:flex;align-items:center;gap:12px;min-height:44px;padding:8px 4px;border-bottom:1px solid #6b553366}.fb-bskill>.gico{flex:none}.fb-bskill>div{flex:1;min-width:0}
+.fb-bskill strong{font-size:14px;color:#efe5cc}.fb-bskill small{display:block;font-size:11px;color:#d7b36b;margin-top:2px}.fb-bskill p{margin:3px 0 0;font-size:11px;line-height:1.4;color:#c3b798}
+.fb-bskill-v{flex:none;min-width:44px;text-align:center;font:700 22px Arial,sans-serif;color:#fff0c7}.fb-brole .btn{flex:none}
+.fb-bskills>.lab,.fb-passengers>.lab{margin:14px 0 4px}.fb-passengers .row{min-height:44px}.fb-escort>.gico{flex:none;width:40px;height:40px}
+@container ovl (max-width:650px){.fb-person-detail>.fb-pane-head>span{display:none}.fb-person-detail>.fb-pane-head>h3{flex:1;font-size:15px}.fb-head-acts>.btn{font-size:11px;padding:6px 8px}.fb-person-meters{grid-template-columns:1fr}.fb-bskill{gap:8px}.fb-bskill-v{min-width:34px;font-size:18px}.fb-unit>small.fb-unit-xptxt{font-size:9px}.fb-person-detail .fb-attributes{grid-template-columns:1fr 1fr}}
+@container ovl (min-width:651px) and (max-height:520px){.fb-person-detail>.fb-pane-head{padding:3px 8px}.fb-person-detail>.fb-tabs{padding:3px 8px}.fb-unit>small.fb-unit-xptxt{font-size:9px}}

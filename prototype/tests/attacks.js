@@ -52,7 +52,7 @@ try{
  B.arrows=[{x:180,y:194,vx:125,vy:0,team:1,dmg:20,life:1,a:0,src:ST.hum_mage,magic:true,col:'#fff',tk:0}];B.units.forEach(u=>{if(!u.hero){u.x=500;u.cd=9}});
  for(let i=0;i<30&&B.arrows.length;i++){t.updateBattle(.01);B.blocking=true}ok(hb-hh.hp>=9,'a shield only halves a magic bolt ('+(hb-hh.hp)+' of 20)');B.over=true;B.endT=0;t.updateBattle(.01);t.act('cont');done();
  // abilities page
- G.mode='world';G.modal=false;t.hidePanel();P.gear.weapon='g_staff_1';t.openSkills('abilities');ok(/Cast \([a-z ]*staff\)/.test(document.getElementById('panel').innerHTML),'the Abilities tab explains your attack');t.act('sk-close');
+ G.mode='world';G.modal=false;t.hidePanel();P.gear.weapon='g_staff_1';t.openSkills('abilities');ok(/Cast \([a-z ]*staff\)/.test(document.getElementById('panel').innerHTML),'the Abilities tab explains your attack');t.act('sk-map');
  // bow arrows arc and fall; crossbow bolts and magic fly straight
  // (seeded, on open ground: the field's trees are random, and a tree by the bowman or the target catches a low arrow 35% of the
  // time, so it never comes down or sticks in the ground; and the bow's scatter is a random draw)

@@ -16,12 +16,14 @@ function skillStats(id){
     nova:x(.7)+' to everyone within '+Math.round(60*A.r)+', slowed '+(3+A.dur)+'s',heal:'Heals you '+Math.round(30*A.dmg*sm)+'% and troops within '+Math.round(90*A.r)+' '+Math.round(20*A.dmg*sm)+'%',
     cry:'Troops within '+Math.round(90*A.r)+' fight harder for '+(6+A.dur)+'s; enemies flinch '+(.8+A.stun).toFixed(1)+'s',banner:'Troops within '+Math.round(100*A.r)+' take 25% less damage for '+(8+A.dur)+'s'}[id]+' · '+costText(A)+' · cooldown '+A.cd+'s';
 }
-/* the page */
-// whose page it is: yours, or a companion's (who: its id; opened from its window, and back to it)
+/* the view: part of the Army window (ui/partypage.js), opened from a card's Skills (your hero's or a companion's) or by K (your
+   hero's); its Back returns to that card on the Roster */
+// whose it is: yours, or a companion's (who: its id)
 const skWho=()=>G.skWho&&P.comps[G.skWho]?G.skWho:null;
 const skSubj=()=>skWho()?compInit(skWho()):P;
 function openSkills(tab,who){
-  if(who){if(G.mode!=='comp'||!P.comps[who])return;charKit(charOf(compInit(who),who));G.skWho=who}else{if(G.mode!=='world'||G.modal)return;G.skWho=null}
+  if(who&&!P.comps[who])return;if(G.mode==='world'&&!G.modal)G.mode='char';if(G.mode!=='char')return;// (K from the map: the Army window, on your hero's)
+  if(who)charKit(charOf(compInit(who),who));G.skWho=who||null;
   G.mode='skills';G.skTab=tab||G.skTab||'talents';if(G.skWho&&['disciplines','basics'].includes(G.skTab))G.skTab='talents';const v=skPage();G.skSel=v.sel&&TREE[v.sel]?v.sel:treeRootOf(skSubj());G.tv=v.view||skFocusView(G.skSel);renderSkills()}// (each character keeps its own runtime selection and camera)
 const NODE_R={start:13,origin:15,s:9,n:13,k:16,a:12};
 const NODE_KIND=N=>({start:'Crossroads',origin:'Origin',s:'Passive',n:'Notable',k:'Keystone'}[N.t]||(N.m.unlock?'Active skill':'Skill upgrade'));
@@ -101,7 +103,7 @@ function renderSkills(){
  const S=skSubj(),who=skWho(),tab=G.skTab,pts=S.tp+' skill point'+(S.tp===1?'':'s');
  const tabs=fbTabs([['talents',fbIcon('skills')+' Tree'],['abilities',fbIcon('sword')+' Skill bar'],...(who?[]:[['disciplines',fbIcon('book')+' Disciplines'],['basics',fbIcon('shield')+' Basics']])],tab,'sk-tab','Skills sections');
  const body=tab==='talents'?skTreeBody():'<div class="fb-scroll" data-fb-scroll="skills:'+tab+'">'+(tab==='abilities'?skillBarBody():tab==='basics'?specialBody():disciplinesBody())+'</div>';
- fbShow(who?COMPS[who].short+'’s skills':'Skills','Level '+(who?S.lv:P.level)+' · '+pts,tabs,body,who?['sk-close',null,'Back to '+COMPS[who].short]:null,who?['sk-map',null,'Back to map']:['sk-close',null,'Back to map'],'fb-skills');
+ fbShow(who?COMPS[who].short+'’s skills':'Skills','Level '+(who?S.lv:P.level)+' · '+pts,tabs,body,['sk-close',null,'Back to '+(who?COMPS[who].short:'Army')],['sk-map',null,'Back to map'],'fb-skills','Army · '+htmlText(bandName()));
  const sv=panel.querySelector('svg.tree');if(sv){const b=sv.getBoundingClientRect(),a=Math.max(.3,b.width/Math.max(1,b.height));if(Math.abs(a-skAspect())>.02){const v=treeView(),cy=v.y+v.h/2;G.skAspect=a;G.tv={...v,y:cy-v.w/a/2,h:v.w/a};sv.setAttribute('viewBox',vbText(G.tv))}}
  skDrawView();skPage().sel=G.skSel;skPage().view=G.tv?{...G.tv}:null;
 }
@@ -113,7 +115,7 @@ function treeZoom(f,fx,fy){
 function skillsAct(a,arg){
   if(!a.startsWith('sk-')&&!a.startsWith('tree-')&&a!=='slot-set')return false;
   if(a==='sk-map'){G.skWho=null;G.mode='world';hidePanel();return true}
-  if(a==='sk-close'){const who=skWho();G.skWho=null;if(who){G.mode='comp';G.compSel=who;renderComp();return true}G.mode='world';hidePanel();return true}
+  if(a==='sk-close'){const who=skWho(),s=partyView();G.skWho=null;G.mode='char';G.char='roster';G.armyEdit=null;s.sel=who?'comp_'+who:'hero';s.open=true;s.path=false;if(who)compPick(who);renderChar();return true}// (back to its card)
   if(G.mode!=='skills')return true;
   if(a==='sk-tab'){if(['talents','abilities',...(skWho()?[]:['disciplines','basics'])].includes(arg))G.skTab=arg}
   else if(a==='tree-sel'&&TREE[arg])G.skSel=arg;

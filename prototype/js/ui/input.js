@@ -55,7 +55,7 @@ $('#saveBtn').addEventListener('click',()=>saveGame(false,'quick'));
 // the main menu, from anywhere outside a battle
 $('#menuBtn').addEventListener('click',()=>{if(BattleLab.active)return DevConsole.show('battle');if(G.mode==='title')return;if(G.mode==='esc')return escAct('esc-resume');showEsc()});
 
-$('#charBtn').addEventListener('click',()=>{if(G.mode==='char')act('char-close');else openChar()});
+$('#charBtn').addEventListener('click',()=>{if(G.mode==='char')act('char-close');else if(G.mode==='skills')act('sk-map');else openChar()});// (the Army window, its Skills view too)
 $('#campBtn').addEventListener('click',()=>toggleCamp());// (make camp or break it: world/supply.js)
 $('#mapBtn').addEventListener('click',()=>fullMapKey());// (the full map opened, or closed: map.js)
 $('#helpBtn').addEventListener('click',()=>{if(G.mode==='help')closeOver();else openHelp()});
@@ -67,7 +67,7 @@ $('#zoomIn').addEventListener('click',()=>{if(G.mode==='world'&&!G.modal)mapZoom
 function zoomUI(){const i=$('#zoomIn'),o=$('#zoomOut'),Z=MAPZOOM,s=Z.map?VS:Z.auto;if(i)i.disabled=s>=Z.hi;if(o)o.disabled=s<=Z.lo}
 zoomUI();
 document.addEventListener('fullscreenchange',fitScreen);
-$('#skillBtn').addEventListener('click',()=>{if(G.mode==='skills')act('sk-close');else openSkills()});
+$('#skillBtn').addEventListener('click',()=>{if(G.mode==='skills')act('sk-map');else openSkills()});// (your hero's Skills, in the Army window)
 $('#invBtn').addEventListener('click',()=>{if(G.mode==='inv')act('inv-close');else openInv()});
 /* the manual control's buttons (Attack, the skill slots, Dodge, Block), set aside for now with it (RTS command: battle.js)
 $('#swing').addEventListener('click',swing);
@@ -279,7 +279,8 @@ window.addEventListener('keydown',e=>{
     if(k>='1'&&k<='3')setSpeed(SPEEDS[k-1]);if(k==='4'&&!e.repeat)setSpeed(G.speed===TRAVEL_FAST?1:TRAVEL_FAST);// (4: Travel fast, 8×, or back to 1×)
     if(k==='r'&&!e.repeat)toggleHurry();// R: Hurry, or stop hurrying (world/supply.js; the action ring's Hurry here too)
     if(k==='b'&&!e.repeat)toggleByRoad();// B: by-road mode on or off, every trip keeping to the roads while it is on (world.js; the action ring's By road too)
-    if(k==='c')openChar();if(k==='i')openInv();if(k==='k')openSkills();if(k==='h')openHelp();if(!e.repeat){if(k==='q')questsKey();if(k==='j')journalKey();if(k==='l')chronicleKey()}// (Q: your Quests; J: the Journal, L: on its Chronicle)
+    if(k==='c')openChar();if(k==='i')openInv();if(k==='k')openSkills();if(k==='h')openHelp();// (C: the Army window; K: it, on your hero's Skills)
+    if(!e.repeat){if(k==='q')questsKey();if(k==='j')journalKey();if(k==='l')chronicleKey()}// (Q: your Quests; J: the Journal, L: on its Chronicle)
     if(!e.repeat&&(k==='='||k==='+'||k==='-')){mapZoom(k==='-'?-1:1);return}// + and −: the map's zoom (core.js)
     if(k==='g'&&!e.repeat){setGrid(!GRID.on);log(GRID.on?'Tile grid on (G to hide).':'Tile grid off.')}
     if(k==='z'&&!e.repeat)toggleCamp();// Z: make camp or break it (world/supply.js)
@@ -287,7 +288,7 @@ window.addEventListener('keydown',e=>{
   else if(G.mode==='journal'&&!e.repeat&&(k==='j'||k==='l')){if(k==='j')journalKey();else chronicleKey()}
   else if(G.mode==='quests'&&k==='q'&&!e.repeat)questsKey();
   else if(G.mode==='char'&&k==='c')act('char-close');
-  else if(G.mode==='skills'&&k==='k')act('sk-close');
+  else if(G.mode==='skills'&&(k==='k'||k==='c'))act('sk-map');
   else if(G.mode==='inv'&&k==='i')act('inv-close');
 });
 window.addEventListener('keyup',e=>{if(e.code==='Space'&&B&&B.draw)drawRelease();const k=keyOf(e);G.keys[k]=false;if(k==='shift'||!e.shiftKey)G.keys.shift=false});

@@ -67,7 +67,11 @@ const ICONS={
   // attack this (the owner, 2026-10-23): two swords crossed, tips up, in the foes' red (gfx/worldui.js WUI_K.col.foe), each blade
   // lit on one edge, its guard, grip and pommel; 11 x 10 (its picture: an 11 x 11 grid). The action ring's Attack (world/supply.js
   // partyRingItems) and, outlined in the figures' navy, the marker over a party you go to attack (gfx/worldui.js wuiSwords)
-  attack:{p:{r:'#ff5a48',l:'#ffb4a6',g:'#c8382c',h:'#7a2a24',p:'#ff8a78'},px:['rl.......lr','.rl.....lr.','..rl...lr..','...rl.lr...','....rlr....','..g.lrl.g..','...g...g...','...hg.gh...','..h.....h..','.p.......p.']}
+  attack:{p:{r:'#ff5a48',l:'#ffb4a6',g:'#c8382c',h:'#7a2a24',p:'#ff8a78'},px:['rl.......lr','.rl.....lr.','..rl...lr..','...rl.lr...','....rlr....','..g.lrl.g..','...g...g...','...hg.gh...','..h.....h..','.p.......p.']},
+  // the Army's roster cards (ui/partypage.js): what each is, your hero (a jewelled crown), a companion (a pale star), troops (a steel shield)
+  rosterhero:{p:{y:'#e8b94a',w:'#fff6c0',r:'#c0504a',b:'#6fa8e0',d:'#a8781e'},px:['.........','.........','y...w...y','yy.yyy.yy','yyyyyyyyy','yryybyyry','yyyyyyyyy','ddddddddd','.........']},
+  rostercomp:{p:{s:'#bfe0f4',w:'#ffffff',d:'#3d74d6'},px:['....d....','...dsd...','ddddsdddd','dssswsssd','.dsssssd.','..dsssd..','.dssdssd.','.dsd.dsd.','.dd...dd.']},
+  rostertroop:{p:{g:'#cfd6e0',b:'#3d74d6',w:'#f4efe0'},px:['ggggggggg','gbbbwbbbg','gbbbwbbbg','gwwwwwwwg','gbbbwbbbg','.gbbwbbg.','.gbbwbbg.','..gbwbg..','...ggg...']}
 };
 // an icon as SVG: its pixels in its colours (crisp at any whole size)
 function icon(name,size,cls){const I=ICONS[name];if(!I)return '';size=size||16;let r='';const N=Math.max(I.px.length,I.px[0].length);

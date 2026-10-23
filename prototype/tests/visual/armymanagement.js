@@ -7,6 +7,6 @@ window.RUN=()=>{try{
  while(r.order[0]!==bow.id)r.move(bow.id,-1);
  T.G.mode='world';T.G.modal=false;T.hidePanel();T.updateHUD(true);
  if(new URLSearchParams(location.search).get('battle')){T.BDEPLOY.on=true;T.startBattle({enemies:Array(8).fill('hum_foot'),deploy:true});T.selectGroup('p_'+foot.id);T.frame()}
- else{T.G.char='party';T.openChar();if(new URLSearchParams(location.search).get('edit'))T.act('army-edit',foot.id)}
+ else{T.G.char='roster';T.openChar();if(new URLSearchParams(location.search).get('edit'))T.act('army-edit',foot.id)}
  const d=document.createElement('pre');d.id='OUT';d.hidden=true;d.textContent='PASS army management visual fixture';document.body.appendChild(d);
 }catch(e){const d=document.createElement('pre');d.id='OUT';d.textContent='EXC '+e.stack;document.body.appendChild(d)}};

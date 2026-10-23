@@ -4,7 +4,7 @@
    ({passenger: spec}: story/outcome.js; the lost child, the refugees: world/encounters.js roadEscort), by a thread's step
    ({start: {quest: 'escort', spec}}: story/thread.js), or offered at a holding as a job (no spec: a traveller of the holding to
    another, ESCORT.offer). Its numbers and lines: data/encounters.js ESCORT.
-   - The passenger rides inside your band: listed on the party card (world/supply.js supplyNow's tag) and in the Party window
+   - The passenger rides inside your band: listed on the party card (world/supply.js supplyNow's tag) and in the Army window's Passengers
      (Escort.html), eating with you (Escort.foodHour, world/supply.js), never fighting, taking no troop slot, no target of its
      own (no figure on the map, none in battle). At most ESCORT.max at once; escorts are not jobs (Quest.jobs does not count them):
      a side quest (story/quest.js, the quest model), never yours to abandon, still failing by the world (late, captured).
@@ -85,7 +85,7 @@ class EscortQuest extends StepQuest{
 }
 defineKind('quest','escort',{cls:EscortQuest});
 /* the escorts in your band: who rides with you, starting one, its place and days, what it eats, the frame's arrival, a battle
-   lost, and their words (the card, the Party window, an outcome's facts, its page) */
+   lost, and their words (the card, the Army window's Passengers, an outcome's facts, its page) */
 const Escort={
   list(){
     return P.quests.filter(q=>q.type==='escort').map(q=>Quest.as(q));
@@ -152,7 +152,7 @@ const Escort={
     const p=Outcome.describe(s.prize||{});
     return ['escort '+(s.n||Escort.who(s.who).n)+' to '+to.name+(s.open?', in your own time':' within '+Escort.days(s,to)+' days'),p&&'there: '+p];
   },
-  // ---- shown: the card's tag (world/supply.js), the Party window's rows (ui/character.js), its page on arrival
+  // ---- shown: the card's tag (world/supply.js), the Army window's Passengers rows (ui/partypage.js), its page on arrival
   tag(){
     const L=Escort.list();
     if(!L.length)return null;

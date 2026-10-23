@@ -20,7 +20,7 @@ Kit.suite(({ok,info})=>{
   ok(q instanceof t.EscortQuest&&P.quests[0]===q&&q.to.town===far.name&&q.to.k==='holding'&&q.due===G.day+q.days&&q.days===Math.ceil(Math.hypot(far.x-P.x,far.y-P.y)/TILE/t.ESCORT.pace)+t.ESCORT.slack,'an outcome\'s passenger: an escort quest to '+far.name+', '+q.days+' days by the way\'s length');
   t.updateHUD(true);const card=document.getElementById('stats').innerHTML;
   ok(/>Escort</.test(card)&&/The refugee family rides with you to /.test(card),'on the party card: its tag, who rides with you and where');
-  t.openChar();t.act('char-tab','party');t.act('party-tab','passengers');ok(/Passengers \(1 \/ 3\)/.test(Kit.panel())&&/The refugee family/.test(Kit.panel())&&/does not fight/.test(Kit.panel()),'in the Party window: Passengers, who, where, the days, what they eat');Kit.world();
+  t.openChar();t.act('char-tab','passengers');ok(/Escorted \(1 \/ 3\)/.test(Kit.panel())&&/The refugee family/.test(Kit.panel())&&/does not fight/.test(Kit.panel()),'in the Army window’s Passengers: who, where, the days, what they eat');Kit.world();
   ok(t.partySize()===size&&P.room()===room&&t.playerList().length===list&&t.worldObjects().length===objs,'no troop slot, no headcount, no fighter in battle, no figure on the map of its own');
   ok(Math.abs(t.bandFoodHour(true)-eat0-q.eat/24*t.SUPPLY.eat.march)<1e-9&&Math.abs(t.bandFoodHour(false)-P.foodHour(false)-q.eat/24*t.SUPPLY.eat.rest)<1e-9,'it eats: '+q.eat+' food a day with your band, on the march and at rest');
   {const eatFor=h=>{t.BAND.eat=0;const f0=t.foodN();for(let i=0;i<h;i++)t.supplyHour();return f0-t.foodN()},keep=P.quests;t.CHEAT.noNeeds=false;const a=eatFor(96);P.quests=[];const b=eatFor(96);P.quests=keep;

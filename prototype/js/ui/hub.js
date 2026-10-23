@@ -29,7 +29,7 @@ onAct('hub-',(a,arg)=>{
   if(!e||e.why&&e.why())return;
   closeOver();e.open();
 });
-// the windows (the Army's to come: today the Character window)
+// the windows (Army: your band's roster, its skills, condition and passengers, ui/partypage.js)
 defineMenuEntry('army',{label:'Army',icon:'troops',key:'C',open:()=>openChar(),why:hubMapOnly});
 defineMenuEntry('inventory',{label:'Inventory',icon:'bag',key:'I',open:()=>openInv(),why:hubMapOnly});
 defineMenuEntry('quests',{label:'Quests',icon:'scroll',key:'Q',open:()=>openQuests()});

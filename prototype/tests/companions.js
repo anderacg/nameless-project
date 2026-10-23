@@ -12,7 +12,7 @@ try{
  // shared experience, levels and perks
  t.gainXp(500);ok(c.lv>=3&&c.perkPend>=1,'he shares the experience you gain and levels up (level '+c.lv+', a perk to choose)');
  const s1=t.compStats('brann');ok(s1.hp>s0.hp&&s1.dmg>s0.dmg,'each level makes him stronger ('+s0.hp+' → '+s1.hp+' health)');
- G.mode='world';G.modal=false;t.hidePanel();t.openComp('brann');ok(G.mode==='comp'&&/Choose|Stalwart/.test(document.getElementById('panel').innerHTML),'his window offers the perk');
+ G.mode='world';G.modal=false;t.hidePanel();t.openComp('brann');ok(G.mode==='char'&&t.compShown()&&/Choose|Stalwart/.test(document.getElementById('panel').innerHTML),'his card in the Army window offers the perk');
  t.act('cm-perk','stalwart');ok(c.perks.includes('stalwart')&&t.compStats('brann').hp>s1.hp,'Stalwart: more health');
  // gear
  const sw=t.gearId('greatsword',3);t.invAdd('gear',sw,1);const i=P.inv.findIndex(x=>x&&x.id===sw),spr0=t.unitSprite('brann',0,false,0,0);
@@ -23,7 +23,7 @@ try{
  // disciplines by fighting
  {const b0=c.sk.twoh.lv*1e4+c.sk.twoh.xp;t.compTrain('brann',t.compMeleeSk('brann'),5);ok(c.sk.twoh.lv*1e4+c.sk.twoh.xp>b0,'his blows train the discipline of his weapon (Two-Handed)')}
  // in battle with his own stats
- {t.act('cm-back');G.mode='world';G.modal=false;t.hidePanel();P.troops={hum_levy:3};G.enc={kind:'party',ref:{cool:0,x:P.x,y:P.y},list:['bandit']};
+ {t.act('char-close');G.mode='world';G.modal=false;t.hidePanel();P.troops={hum_levy:3};G.enc={kind:'party',ref:{cool:0,x:P.x,y:P.y},list:['bandit']};
   const ST=t.ST;if(!ST.bandit)G.enc.list=['militia'];t.startBattle({enemies:G.enc.list,tournament:false});const u=t.B.units.find(x=>x.comp&&x.type==='brann');
   ok(u&&u.max>=t.compStats('brann').hp*.8,'in battle he fights with his grown stats ('+(u&&u.max)+' health)');t.B.over=true;t.B.win=true;t.B.endT=0;t.updateBattle(.01);t.act('cont');while(G.mode==='perk')t.act('perk',G.perkOffer[0])}
  // a role uses his own discipline

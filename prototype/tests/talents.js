@@ -48,8 +48,10 @@ try{
  t.act('tree-take','arcana2');ok(t.treeHas('arcana2')&&/Unlearn/.test(panel()),'learning it from the page');
  t.act('sk-tab','abilities');{const un=Object.keys(t.HSKILLS).filter(k=>!t.knows(k));ok(!/Not learned/.test(panel())&&un.length&&un.every(k=>!panel().includes('<strong>'+t.HSKILLS[k].n+'</strong>')),'the Skill bar lists only the active skills you have learned ('+un.length+' not learned, not shown)')}
  t.act('sk-tab','disciplines');ok(/One-Handed/.test(panel())&&/Scouting/.test(panel()),'Disciplines lists the skills you train by use');
- window.dispatchEvent(new KeyboardEvent('keydown',{code:'Escape',key:'Escape'}));ok(G.mode==='world','Escape closes it');
- t.openChar();ok(/Open Skills/.test(panel())&&!/improve through use/.test(panel()),'the Hero tab points to the Skills page');t.act('char-close');
+ window.dispatchEvent(new KeyboardEvent('keydown',{code:'Escape',key:'Escape'}));ok(G.mode==='char'&&t.partyView().sel==='hero','Escape follows its Back: the Army window, on your hero');
+ if(document.querySelector('#panel .nav [data-nav="back"]'))window.dispatchEvent(new KeyboardEvent('keydown',{code:'Escape',key:'Escape'}));// (a small screen: its card's page, then the cards)
+ window.dispatchEvent(new KeyboardEvent('keydown',{code:'Escape',key:'Escape'}));ok(G.mode==='world','and again closes it');
+ t.openChar();ok(/Open Skills/.test(panel())&&!/improve through use/.test(panel()),'your hero’s card points to the Skills page');t.act('char-close');
  // saves
  t.saveGame();const tree=P.tree.slice();P.tree=['start'];t.act('load');ok(JSON.stringify(P.tree)===JSON.stringify(tree),'talents survive a reload');
  // active skills: every one on the tree, reachable without a keystone; slots fill themselves; keys 1 to 0 cast them
@@ -98,7 +100,7 @@ try{
  t.takeNode('arcana0');t.takeNode('start');ok(t.canTake('might0'),'through the Crossroads every path opens up');P.gold=9999;ok(!t.canRefund('o_hedge')&&!t.canRefund('arcana0')&&t.canRefund('start'),'your origin cannot be unlearned, nor anything that links it to the rest');
  t.act('begin','soldier');
  // attributes are read-only now
- G.mode='world';G.modal=false;t.hidePanel();t.openChar();ok(!document.querySelector('[data-act="spend"]')&&/raised on the skill tree/.test(panel()),'the Hero tab shows attributes without + buttons');t.act('char-close');
+ G.mode='world';G.modal=false;t.hidePanel();t.openChar();ok(!document.querySelector('[data-act="spend"]')&&/raised on the skill tree/.test(panel()),'your hero’s card shows attributes without + buttons');t.act('char-close');
  t.frame();
  // the special skills: under the tree, apart from its paths
  {G.mode='world';G.modal=false;t.hidePanel();P.fin=null;const sk=P.sk[t.meleeSk()];sk.lv=0;t.openSkills('basics');

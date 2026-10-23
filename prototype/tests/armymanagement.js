@@ -15,7 +15,7 @@ try{
  const order=r.order.slice(),size=P.troops.hum_foot;ok(r.move(bow.id,-1)&&r.order.indexOf(bow.id)===order.indexOf(bow.id)-1&&P.troops.hum_foot===size,'reorder changes slots, not identity or headcount');
  while(r.order[0]!==bow.id)r.move(bow.id,-1);ok(r.order[0]===bow.id&&r.order.indexOf('hero')>0,'a troop group can move ahead of the hero and companion');
  const moved=snap();ok(!r.move(bow.id,-1)&&!r.move('missing',1)&&!r.move(a.id,0)&&snap()===moved,'boundary/invalid reorder is non-mutating');
- G.mode='world';G.modal=false;t.hidePanel();G.char='party';t.openChar();
+ G.mode='world';G.modal=false;t.hidePanel();G.char='roster';t.openChar();
  const rows=()=>[...panel.querySelectorAll('[data-army-group]')].map(e=>e.dataset.armyGroup);
  ok(rows().join()===r.order.join(),'Party rows follow the entire persisted army order');
  ok(panel.querySelector('[data-army-group="'+a.id+'"]').textContent.includes('3 wounded'),'each live group shows its own wounded count');

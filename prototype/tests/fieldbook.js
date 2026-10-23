@@ -6,15 +6,15 @@ Kit.suite(({ok})=>{
  P.band='Grey <Company>';P.comps={brann:{ap:5,role:'scout'},elske:{ap:5,role:'surgeon'}};t.compInit('brann').lv=8;t.compInit('elske');
  const r=t.partyRoster(P);r.add('hum_foot',12);const a=r.groups[0],b=r.split(a.id,4);r.rename(a.id,'First <Guard>');P.wounded={hum_foot:3};P.woundedGroups=[{id:a.id,type:a.type,count:3}];
  t.vitals();P.morale=63;P.bsta=24;P.gold=1000;P.tp=3;
- const world=()=>{G.mode='world';t.hidePanel()},army=()=>{world();G.char='party';t.openChar();t.act('party-tab','army')};
+ const world=()=>{G.mode='world';t.hidePanel()},army=()=>{world();G.char='roster';t.openChar()};
  army();ok(+q('[aria-label="Morale"]').getAttribute('aria-valuenow')===63&&Math.abs(+q('[aria-label="Stamina"]').getAttribute('aria-valuenow')-24)<1e-9,'Army bars read actual morale and band stamina');
  ok(+q('[aria-label="Fitness"]').getAttribute('aria-valuenow')===t.bandFitness().pct,'Fitness is the game fitness calculation');
  P.morale=17;P.bsta=4;t.renderChar();ok(q('[aria-label="Morale"]').getAttribute('aria-valuenow')==='17'&&q('[aria-label="Stamina"]').getAttribute('aria-valuenow')==='4','condition changes reach both bars after a refresh');
  ok(q('[data-army-group="'+a.id+'"]').textContent.includes('3 wounded')&&q('[data-army-group="'+b.id+'"]').textContent.includes('0'),'duplicate troop cards keep wounded with their originating group');
- P.hp=Math.floor(t.heroStats().hp/2);t.renderChar();const health=qa('.fb-inspector .fb-stat').find(e=>e.querySelector('span')?.textContent==='Health');ok(health.textContent.includes(P.hp+' / '+t.heroStats().hp),'the character inspector shows current health against maximum');P.hp=t.heroStats().hp;t.renderChar();
+ P.hp=Math.floor(t.heroStats().hp/2);t.act('party-select','hero');const health=q('.fb-person-detail .fb-meter[aria-label="Health"]');ok(health&&health.textContent.includes(P.hp+' / '+t.heroStats().hp),'the hero’s card opens its sheet: current health against maximum');P.hp=t.heroStats().hp;t.renderChar();
  ok(p.textContent.includes('Grey <Company>')&&!q('Company')&&p.textContent.includes('First <Guard>')&&!q('Guard'),'player and group names stay literal text');
- t.act('party-status');ok(q('.fb-condition').textContent.includes('Stamina')&&q('.fb-condition').textContent.includes('Recruitment target'),'condition page exposes recovery, supply and recruitment settings');t.act('party-back');
- t.act('party-tab','prisoners');P.prisoners.hum_foot=1;P.gold=0;t.renderChar();ok(q('[data-act="p-recruit"]').disabled,'prisoner recruitment uses its current eligibility quote');P.gold=1000;
+ t.act('party-status');ok(G.char==='condition'&&q('.fb-condition').textContent.includes('Stamina')&&q('.fb-condition').textContent.includes('Recruitment target'),'condition page exposes recovery, supply and recruitment settings');t.act('char-tab','roster');
+ t.act('char-tab','passengers');P.prisoners.hum_foot=1;P.gold=0;t.renderChar();ok(q('[data-act="p-recruit"]').disabled,'prisoner recruitment uses its current eligibility quote');P.gold=1000;
  world();t.openComp('brann');const roles=JSON.stringify(P.comps);t.act('party-role');t.act('fb-choice','surgeon');ok(JSON.stringify(P.comps)===roles,'choosing an occupied role is only a draft');t.act('fb-cancel');ok(JSON.stringify(P.comps)===roles&&q('[data-act="party-role"]'),'Cancel returns to the character without assigning a role');
  t.act('party-role');t.act('fb-choice','surgeon');t.act('fb-apply');ok(P.comps.brann.role==='surgeon'&&!P.comps.elske.role,'Apply transfers the occupied company role once');
  const gear=JSON.stringify({inv:P.inv,gear:P.comps.brann.gear});t.act('party-comp-tab','gear');t.act('party-gear','weapon');t.act('fb-cancel');ok(JSON.stringify({inv:P.inv,gear:P.comps.brann.gear})===gear,'cancelling equipment choices preserves every item');
@@ -32,7 +32,7 @@ Kit.suite(({ok})=>{
  for(const [w,h] of [[1600,900],[844,390],[390,844],[320,568]]){
   scr.style.cssText=original+';width:'+w+'px;height:'+h+'px';
   const fit=label=>{p.style.animation='none';ok(inside(p)&&p.scrollWidth<=p.clientWidth+1&&qa('.nav .btn').every(inside),label+' frame and navigation fit '+w+' × '+h);ok(!q('select'),label+' has no dropdown at '+w+' × '+h)};
-  world();G.char='hero';t.openChar();fit('Hero');
+  world();t.openChar();t.act('party-select','hero');fit('Hero');
   army();fit('Army');const card=q('.fb-unit'),viewport=q('.fb-unit-grid'),cr=card.getBoundingClientRect(),vr=viewport.getBoundingClientRect();ok(vr.height>=80&&cr.width>=44,'Army cards have usable space at '+w+' × '+h);
   t.act('party-select',a.id);ok(qa('.fb-inspector .fb-actions .btn').every(inside),'Army actions remain on screen at '+w+' × '+h);
   world();t.openComp('brann');fit('Companion');

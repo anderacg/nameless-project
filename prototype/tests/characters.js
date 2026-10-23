@@ -61,12 +61,12 @@ try{
  // the window: a companion's card, its tree to grow (the Skills page, for it), its slots
  {P.comps={brann:{ap:0,role:''}};const cb=t.compInit('brann');cb.lv=3;cb.xp=0;G.mode='world';G.modal=false;t.hidePanel();t.openComp('brann');const pn=()=>document.getElementById('panel');
   ok((card=>card&&card.querySelectorAll('.uc-stat').length&&/Skills/.test(card.innerHTML)&&/Whirlwind/.test(card.innerHTML))(pn().querySelector('.fb-comp-detail .fb-details .ucard-x')),'a companion\u2019s window shows its card: its numbers, abilities and its skills');
-  const P0=P.tree.slice(),T0=P.tp;cb.tp=2;t.renderComp();t.act('party-comp-tab','skills');ok(/· 2 points/.test(pn().querySelector('.fb-head').textContent)&&/Skill points<\/span><strong>2<\/strong>/.test(pn().querySelector('.fb-skills-summary').innerHTML)&&pn().querySelector('.fb-skills-summary [data-act="cm-tree"]'),'its skill points, and its tree to open');
+  const P0=P.tree.slice(),T0=P.tp;cb.tp=2;t.renderComp();t.act('party-comp-tab','skills');ok(/· 2 points/.test(pn().querySelector('.fb-comp-detail>.fb-pane-head').textContent)&&/Skill points<\/span><strong>2<\/strong>/.test(pn().querySelector('.fb-skills-summary').innerHTML)&&pn().querySelector('.fb-skills-summary [data-act="cm-tree"]'),'its skill points, and its tree to open');
   t.act('cm-tree');ok(G.mode==='skills'&&G.skWho==='brann'&&/Brann’s skills/.test(pn().innerHTML)&&/Back to Brann/.test(pn().innerHTML)&&!/Special skills/.test(pn().innerHTML),'the Skills page opens on Brann\u2019s own tree');
   const nd=Object.keys(t.TREE).find(id=>t.canTakeOf(cb,id));t.act('tree-take',nd);ok(cb.tree.includes(nd)&&cb.tp===1&&P.tree.join()===P0.join()&&P.tp===T0,'learning there grows Brann\u2019s tree, not yours ('+nd+')');
   t.act('sk-tab','abilities');const PS=JSON.stringify(P.slots);t.act('slot-set','4:whirl');ok(cb.slots[4]==='whirl'&&JSON.stringify(P.slots)===PS,'its skill bar sets its own slots');
-  t.act('sk-close');ok(G.mode==='comp'&&/Brann the Wolf/.test(pn().innerHTML),'and Back returns to its window');
-  t.act('cm-back');t.hidePanel();G.mode='world';t.openSkills('talents');ok(!G.skWho&&/<h2>Skills<\/h2>/.test(pn().innerHTML),'your own Skills page is still yours');t.act('sk-close')}
+  t.act('sk-close');ok(G.mode==='char'&&t.compShown()&&/Brann the Wolf/.test(pn().innerHTML),'and Back returns to its card in the Army window');
+  t.act('char-close');t.openSkills('talents');ok(!G.skWho&&/<h2>Skills<\/h2>/.test(pn().innerHTML),'your own Skills page is still yours');t.act('sk-close')}
  // recruiting: a chieftain right away (if your honor allows); a lord when his realm has fallen or he is disgraced
  {G.mode='world';G.modal=false;t.hidePanel();P.comps={};P.troops={};P.captives=[];P.fac=null;P.gold=0;const ch2=t.newChief('bandits',5);t.captureChief(ch2);const C0=t.charOf(ch2);t.charKit(C0);
   const lv=ch2.lv,tree=ch2.tree.slice(),h0=t.charStats(C0).hp;

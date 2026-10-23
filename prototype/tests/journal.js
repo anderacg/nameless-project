@@ -19,7 +19,7 @@ Kit.suite(({ok,info})=>{
  esc();ok(G.mode==='world','Esc closes it');
  q('#hubBtn').click();ok(G.mode==='hub','the bar’s Menu opens it');q('#hubBtn').click();ok(G.mode==='world','and closes it');
  // ---- each tile opens its window
- const opens={army:()=>G.mode==='char'&&G.char==='hero',inventory:()=>G.mode==='inv',quests:()=>G.mode==='quests',journal:()=>G.mode==='journal',map:()=>G.mode==='fullmap'};
+ const opens={army:()=>G.mode==='char'&&G.char==='roster',inventory:()=>G.mode==='inv',quests:()=>G.mode==='quests',journal:()=>G.mode==='journal',map:()=>G.mode==='fullmap'};
  for(const [id,is] of Object.entries(opens)){Kit.world();t.openHub();tile(id).click();ok(is(),'the '+id+' tile opens its window ('+G.mode+')');Kit.world()}
  {Kit.world();const c0=!!P.camp;t.openHub();tile('camp').click();const m=G.msgs[G.msgs.length-1].m;ok(G.mode==='world'&&(!!P.camp!==c0||!!G.pitch||/camp here/.test(m)),'the camp tile makes camp, as Z does: '+m);if(P.camp)t.breakCamp();G.pitch=null;P.tx=P.ty=null}
  // ---- from the streets: what needs the map greyed, saying why; Quests and the Journal open, closing back to the streets
@@ -38,8 +38,8 @@ Kit.suite(({ok,info})=>{
  ok(G.mode==='quests'&&q('.fb-head h2').textContent==='Quests'&&qa('.qw-tabs [data-act="qw-tab"]').map(b=>b.textContent.split(' · ')[0]).join('|')==='Main|Side|Jobs|Archive','Q: the Quests window, its tabs Main, Side, Jobs, Archive');
  ok(!back()&&close().textContent==='Back to map','its bar: the way out');
  key('KeyQ','q');ok(G.mode==='world','Q again: closed');t.openQuests();esc();ok(G.mode==='world','Esc closes it');
- t.openChar();ok(G.mode==='char'&&tabs().join('|')==='Hero|Party'&&!q('[data-act="char-tab"][data-arg="quests"]'),'the Character window: Hero and Party only ('+tabs().join(', ')+')');
- t.act('char-tab','quests');ok(G.char==='hero','no Quests tab to turn to');Kit.world();
+ t.openChar();ok(G.mode==='char'&&tabs().join('|')==='Roster|Army skills|Condition|Passengers'&&!q('[data-act="char-tab"][data-arg="quests"]'),'the Army window: Roster, Army skills, Condition, Passengers ('+tabs().join(', ')+')');
+ t.act('char-tab','quests');ok(G.char==='roster','no Quests tab to turn to');Kit.world();
  // ---- the Journal: J on its last section; Chronicle, Lords, Realms; L on the Chronicle
  key('KeyJ','j');
  ok(G.mode==='journal'&&tabs().join('|')==='Chronicle|Lords|Realms','J: the Journal, its sections: '+tabs().join(', '));

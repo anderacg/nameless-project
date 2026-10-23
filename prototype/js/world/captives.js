@@ -99,9 +99,9 @@ function recruitCaptive(i){
   cs.splice(i,1);
   if(c.k==='lord'){const l=W.lords.find(x=>x.id===c.id);Object.assign(l,{gone:true,held:false,recruited:true,dead:true,back:1e9})}
   else for(const f of FIDS)if(!W.dead[f])addHonor(f,-RECRUIT.honor,true);
-  log(r.n+' joins your band as a companion'+(c.k==='chief'?' (the realms think less of you for it)':'')+'. Manage him in the Party tab.','gold');return true}
+  log(r.n+' joins your band as a companion'+(c.k==='chief'?' (the realms think less of you for it)':'')+'. Manage him in the Army window (C).','gold');return true}
 
-/* the Party tab: your captives, and what to do with them */
+/* the Army window's Passengers: your captives, and what to do with them */
 function captivesHtml(){
   const cs=captives(),b=(act,i,label,why)=>'<button class="btn sm" type="button" data-act="'+act+'" data-arg="'+i+'"'+(why?' disabled title="'+why+'"':'')+'>'+label+'</button>';
   return '<div class="lab" style="margin-top:6px">Captives ('+cs.length+')</div>'+(cs.length?cs.map((c,i)=>c.k==='lord'
