@@ -87,7 +87,7 @@ Kit.suite(({ok})=>{
   Kit.key('KeyK','k');Kit.key('KeyK','k');ok(G.mode==='world','K again closes it');
   Kit.key('KeyC','c');ok(G.mode==='char'&&G.char==='roster','C opens the Army window');Kit.key('KeyC','c');ok(G.mode==='world','C again closes it');
   document.getElementById('charBtn').click();ok(G.mode==='char','the bar’s button opens it');world();
-  t.openHub();const tile=q('.fb-hub-tile[data-arg="army"]');ok(tile&&tile.querySelector('strong').textContent==='Army'&&tile.querySelector('kbd').textContent==='C','the Menu’s Army tile (C)');tile.click();ok(G.mode==='char'&&G.char==='roster','opens the Army window');
+  t.showEsc();const tile=q('.gm-tile[data-arg="army"]');ok(tile&&tile.querySelector('strong').textContent==='Army'&&tile.querySelector('kbd').textContent==='C','the Game Menu’s Army tile (C)');tile.click();ok(G.mode==='char'&&G.char==='roster','opens the Army window');
   ok(t.KEYS[0][1].some(([k,d])=>k==='C'&&/Army/.test(d))&&t.KEYS[0][1].some(([k,d])=>k==='K'&&/Army window/.test(d))&&/C the Army/.test(t.CONTROLS),'the keys’ help names the Army window');
   // ---- Esc and the bar, on a desktop screen and the phones'
   const original=scr.style.cssText,inside=e=>{const b=e.getBoundingClientRect(),s=scr.getBoundingClientRect();return b.width>0&&b.height>0&&b.left>=s.left-1&&b.right<=s.right+1&&b.top>=s.top-1&&b.bottom<=s.bottom+1};

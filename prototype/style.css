@@ -195,8 +195,6 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 .panel:has(> .menulist){width:min(480px,100%);height:auto;max-height:100%}
 .panel:has(> .menulist) > p{text-align:center;max-width:none}
 /* the pause menu's world line (ui.js escWorld): the world's name, kind and seed, the seed's Copy button beside it */
-.esc-world{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;margin:0 0 10px;color:var(--fg-2)}
-.esc-world b{color:var(--accent);user-select:text}
 /* the game over (ui.js showDeath): what killed you and when */
 .death{text-align:center}.death p{max-width:none}
 .menulist{display:flex;flex-direction:column;gap:8px;width:100%;max-width:440px;margin:0 auto}

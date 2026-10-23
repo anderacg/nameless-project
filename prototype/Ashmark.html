@@ -54,7 +54,7 @@
     </div>
     <p class="hint" id="hint"></p>
     <div class="staybar" id="staybar" role="status" hidden></div>
-    <!-- your windows (bottom right): icon tiles, their keys in the corner; and the game's own (the Menu of every window, save, full screen, the main menu) -->
+    <!-- your windows (bottom right): icon tiles, their keys in the corner; and the game's own (the map's zoom, quick save, full screen, and the Game Menu: ui/hub.js) -->
     <nav class="dock" aria-label="Windows">
       <div class="dockrow">
         <button class="dbtn" id="campBtn" type="button" title="Make camp or break it (Z): your band rests, its stamina comes back faster and the wounded mend" data-ico="fire" data-key="Z" aria-pressed="false">Camp</button>
@@ -69,10 +69,9 @@
       <div class="dockrow sys">
         <button class="dbtn zoom" id="zoomOut" type="button" title="Zoom the map out (−, the wheel, a pinch)" aria-label="Zoom out" data-ico="zoomout" data-key="−">Out</button>
         <button class="dbtn zoom" id="zoomIn" type="button" title="Zoom the map in (+, the wheel, a pinch)" aria-label="Zoom in" data-ico="zoomin" data-key="+">In</button>
-        <button class="dbtn" id="hubBtn" type="button" title="Menu: every window (Tab)" data-ico="banner" data-key="Tab">Menu</button>
-        <button class="dbtn" id="saveBtn" type="button" title="Quick save (F6); save to a slot from the menu (Esc)" data-ico="save" data-key="F6">Save</button>
+        <button class="dbtn" id="saveBtn" type="button" title="Quick save (F6); save to a slot from the Menu (Esc)" data-ico="save" data-key="F6">Save</button>
         <button class="dbtn" id="fsBtn" type="button" title="Full screen (F11)" data-ico="full">Full</button>
-        <button class="dbtn" id="menuBtn" type="button" title="Main menu (Esc)" data-ico="menu" data-key="Esc">Menu</button>
+        <button class="dbtn" id="menuBtn" type="button" title="Menu: every window, save, load, settings, the main menu; the game paused (Esc, Tab)" data-ico="menu" data-key="Esc">Menu</button>
       </div>
     </nav>
     <div class="tip" id="tip" hidden></div>

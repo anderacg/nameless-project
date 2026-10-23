@@ -34,15 +34,23 @@ function saveGame(quiet,slot){
   if(typeof BattleLab!=='undefined'&&BattleLab.active){if(!quiet)log('Exit the battle test before saving.','bad');return}
   if(!ESC_SAVE.includes(G.mode)){if(!quiet)log('You can only save while traveling or in town.','bad');return}
   Systems.drain(true);// (a sliced day's work finished first: core/systems.js)
-  // (every band's groups made from its counts before it is written: they are saved with it, and the world fingerprint W7 counts on it)
-  partyRoster(P).groups;for(const o of allParties())partyRoster(o).groups;
-  slot=slot||'auto';const d={v:SAVE_V,at:Date.now(),mw:MW,P:{...P,tx:null,ty:null,stuck:0},day:G.day,clock:G.clock,speed:G.speed,last:G.lastTown&&G.lastTown.name,bandits,perkOffer:G.perkOffer||null,world:worldSave()},json=JSON.stringify(d);
+  slot=slot||'auto';const d=saveRecord(),json=JSON.stringify(d),sig=saveSig(d);
   // (true once it is stored; false when the browser would not keep it: the menu says which, never "saved" for a save that failed)
-  const put=s=>{try{localStorage.setItem(slotKey(slot),s);if(!quiet)log('Game saved'+(slot==='auto'?'':' ('+slotName(slot)+')')+'.','good');return true}
+  const put=s=>{try{localStorage.setItem(slotKey(slot),s);G.saved={day:d.day,sig};if(!quiet)log('Game saved'+(slot==='auto'?'':' ('+slotName(slot)+')')+'.','good');return true}
     catch(e){if(!quiet)log('Could not save. Browser storage is unavailable.','bad');return false}};
   if(LOADING.sync||!SAVE_ZIP)return put(json);
   const p=SAVING=(SAVING||Promise.resolve()).then(()=>gzip64(json)).then(z=>JSON.stringify({...saveHead(d),z}),()=>json).then(put).then(ok=>{if(SAVING===p)SAVING=null;return ok});return p;
 }
+// what a save keeps, the game as it stands
+function saveRecord(){
+  // (every band's groups made from its counts before it is written: they are saved with it, and the world fingerprint W7 counts on it)
+  partyRoster(P).groups;for(const o of allParties())partyRoster(o).groups;
+  return {v:SAVE_V,at:Date.now(),mw:MW,P:{...P,tx:null,ty:null,stuck:0},day:G.day,clock:G.clock,speed:G.speed,last:G.lastTown&&G.lastTown.name,bandits,perkOffer:G.perkOffer||null,world:worldSave()}}
+/* has play moved on since the last save (any slot, made or loaded in this game: G.saved, its day and its signature)? The same
+   record, but for when it was made and the messages (a "Game saved." alone is no progress), is nothing changed: false; else the
+   last save's day, 0 if this game was never saved (the Game Menu asks before leaving: ui/hub.js) */
+const saveSig=d=>JSON.stringify({...d,at:0,world:{...d.world,chronicle:0}});
+function unsavedSince(){const s=G.saved;return s&&s.sig===saveSig(saveRecord())?false:s?s.day:0}
 // the world part of a save (the save registry, core/saves.js: every piece in its order): the world it is (map: made again from it
 // on a load), the tiles play changed (edits: none yet), what you have seen (fog.js), every holding's own record (holdings.js
 // saveRec), then the world's lists, the road's encounters (road.js) and the news (news.js), each once there is any
@@ -113,7 +121,8 @@ function loadGame(slot){
     ...(made?forgeSteps(M.gen,M.settings,r=>made.r=r):[]),
     {id:'apply',label:'Restoring holdings and parties',w:160,run:()=>{const r=made&&made.r;
       if(d.world.map.sum!==(r?r.map.sum:WM.sum))throw new Error(OTHER_WORLD);worldFits(d.world,r&&r.holdings);if(r)forgeInstall(r);applySave(d)}},
-    {id:'paint',label:'Painting the land',w:120,run:paintView}],{back:['Back to your saves',()=>showTitle('load')]}).catch(()=>{});// (a failure shows itself)
+    {id:'paint',label:'Painting the land',w:120,run:()=>{paintView();G.saved={day:d.day,sig:saveSig(saveRecord())}}}],// (as loaded: nothing to lose yet)
+    {back:['Back to your saves',()=>showTitle('load')]}).catch(()=>{});// (a failure shows itself)
 }
 // Schema v3 only. No conversion, old gear/roster aliases or legacy-world migration.
 function applySave(d){

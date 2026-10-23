@@ -12,7 +12,7 @@ try{
   ok(t.P===P&&t.G===G&&t.W===W&&t.charOf(P)===hero&&P instanceof t.PlayerParty,'reset preserves records referenced by characters and party methods');
   ok(P.inv.some(x=>x&&x.id==='grain')&&!G.loot,'starting supplies enter the new inventory');
   G.mode='world';G.modal=false;t.startBattle({enemies:['militia'],tournament:false});
-  t.showEsc();t.escAct('esc-main');t.begin('soldier');
+  t.showEsc();t.escAct('esc-leave','main');t.begin('soldier');
   ok(!t.B&&document.getElementById('bbar').hidden,'starting from a battle discards the old battle and its HUD');
   t.saveGame(true,'1');const save=t.readSlot('1');
   delete save.P.stay;delete save.P.wounded;delete save.P.recruits;delete save.P.captives;

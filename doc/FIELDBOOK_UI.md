@@ -33,7 +33,17 @@ Targeted suites and required world/battle/RTS fingerprints are recorded in the h
 
 ## The menus, the Journal and the Chronicle (2026-10-23)
 
-Status: built (agent CH). The Menu (`ui/hub.js`: Tab, the bar's Menu) is a window of tiles, one per window, each its icon, name and key (Army C, Inventory I, Quests Q, Journal J, Map M, Camp Z); a tile that cannot open now is greyed with its reason (from the streets: On the map only). `defineMenuEntry(id, {label, icon, key, open, why})` adds one. The bar's own buttons stay as shortcuts; the Menu's button sits in the bar's lower row, since an upright phone's top row is full.
+Status: built (agent CH); the Menu became one with the Esc menu the same day (the Game Menu, below). `defineMenuEntry(id, {label, icon, key, open, why})` adds a window's tile. The bar's own buttons stay as shortcuts.
+
+### The Game Menu (2026-10-23)
+
+Status: built (agent GM), the owner's decision: one menu (`ui/hub.js`). Esc with no window open, Tab, and the bar's one Menu button (☰, the lower row; the old main-menu button merged into it) open it; Esc again or Resume goes back. The game is paused while it is open, in battle too. Inside a window Esc still steps back per the frame rule.
+- **Header:** Paused · Day N · the world's name and kind · its seed, with Copy seed and World (the World page).
+- **Tiles:** a tile per window from the `defineMenuEntry` registry (Army C, Inventory I, Quests Q, Journal J, Map M, Camp Z), each its icon and key. A tile opens its window, the menu closed first. Greyed with the reason: in battle every tile ("Not during a battle"); in the streets Army, Inventory, Map and Camp ("On the map only"), Quests and the Journal open; over a town "Leave the town first"; over any other window "Close the window in front first" (the bar's Menu can open the menu there).
+- **System row:** Save game (greyed in battle, "Not during a battle", or mid-choice, "Finish what is in front of you first"), Load game (greyed with no save), Settings (the title's own page, `ui.js settingsPage`, Back to the menu and Resume; a change is stored as on the title), Main menu, Exit game.
+- **Leaving:** Main menu and Exit ask first when play has moved on since the last save: "Unsaved progress since day N will be lost." (N: the day of this game's last save in any slot, made or loaded; "since you began" if never saved), with Save first (a quick save, then away), Leave anyway, and Cancel in the bar. Right after a save or a load, no question (`core/save.js unsavedSince`: the save record compared, its time and messages left out).
+- **Phone:** on 844×390 the tiles in one row of six, the system row one row of five; upright (390×844) tiles three by two, the system buttons full width one under another. All on screen, 44 px controls.
+- Its pages (save slots, Load, World, Settings, the question) step Back to the menu. The `esc-*` actions keep their behaviour; `esc-go` opens a tile, `esc-settings` Settings, `esc-leave` answers the question. Tests: `menu`, `journal`; screenshots: `tests/visual/gamemenu.js`.
 
 Quests is its own window (Q), its tabs Main, Side, Jobs and Archive as before. The Character window kept Hero and Party until the Army window replaced it (below). The Journal (`ui/journal.js`: J on its last section, L on the Chronicle, the bar's Journal) holds sections as field-book tabs: Chronicle, Lords and Realms (`ui/lordsrealms.js`, moved from the Character window). `defineJournalSection(id, {label, icon, render, back, sub})` adds one (a Bestiary later). The last section is runtime state only. Quests and the Journal open over the map or the streets; Show on map is the map's only.
 

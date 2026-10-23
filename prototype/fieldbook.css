@@ -61,14 +61,25 @@
  .ch-msg{flex-wrap:wrap;gap:4px 8px}.fb-shell .ch-link{margin-left:auto}
  .ch-pager{flex-wrap:wrap}.ch-pager>span{order:-1;flex-basis:100%}.ch-pager>.btn{flex:1 1 0;padding:5px 2px}
 }
-/* The Menu (hub.js): a tile per window, its icon, name and key; greyed with its reason where it cannot open. */
-.fb-hub{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;padding:6px 2px}
-.fb-hub-tile{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:124px;padding:14px 8px;border:1px solid #8b7048;border-radius:3px;background:radial-gradient(ellipse at 50% 30%,#4a392333,transparent 70%),linear-gradient(#30261d,#161216);color:#e7d7b3;font:inherit;cursor:pointer;box-shadow:inset 0 1px #b7a06a33,inset 0 -2px #0008}
-.fb-hub-tile:hover:not(:disabled),.fb-hub-tile:focus-visible{border-color:#d7b36b;color:#fff0c7}.fb-hub-tile:disabled{opacity:.5;cursor:default}
-.fb-hub-tile .gico{width:32px;height:32px}.fb-hub-tile strong{font:700 16px/1.1 Arial,sans-serif}.fb-hub-tile small{font-size:11px;color:#b5a88e}
-.fb-hub-tile kbd{position:absolute;top:6px;right:8px;padding:1px 5px;font:700 11px Arial,sans-serif;color:#c9a24e;background:none;border:1px solid #6b5533;border-radius:2px}
-@container ovl (max-width:760px) or (max-height:520px){.fb-hub{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.fb-hub-tile{min-height:92px;padding:8px 4px;gap:5px}.fb-hub-tile strong{font-size:14px}}
-@container ovl (max-width:520px){.fb-hub{grid-template-columns:repeat(2,minmax(0,1fr))}.fb-hub-tile{min-height:110px}}
+/* The Game Menu (hub.js): the day, the world and its seed in the header; a tile per window, greyed with its reason where it cannot
+   open; the game's own buttons under them (a row; upright on a phone, one under another); Resume in the bar. */
+.panel:has(.fb-gm){width:min(880px,100%);height:auto;max-height:100%}
+.fb-gm>.fb-head{flex-wrap:wrap;gap:6px 14px}.fb-gm>.fb-head>.muted{display:flex;flex:1 1 300px;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:6px 10px;font-size:13px;color:#d0c1a2}
+.gm-world b{color:#c9a24e;user-select:text}.gm-head-acts{display:flex;gap:6px}.gm-head-acts>.btn{font-size:12px}
+.gm-body{display:flex;flex-direction:column;gap:12px;padding:12px 14px}
+.gm-tiles{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}
+.gm-tile{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;min-width:0;min-height:112px;padding:12px 6px;border:1px solid #8b7048;border-radius:3px;background:radial-gradient(ellipse at 50% 30%,#4a392333,transparent 70%),linear-gradient(#30261d,#161216);color:#e7d7b3;font:inherit;cursor:pointer;box-shadow:inset 0 1px #b7a06a33,inset 0 -2px #0008}
+.gm-tile:hover:not(:disabled),.gm-tile:focus-visible{border-color:#d7b36b;color:#fff0c7}.gm-tile:disabled{opacity:.5;cursor:default}
+.gm-tile .gico{width:32px;height:32px}.gm-tile strong{font:700 16px/1.1 Arial,sans-serif}.gm-tile small{font-size:11px;line-height:1.2;color:#b5a88e;text-align:center}
+.gm-tile kbd{position:absolute;top:6px;right:8px;padding:1px 5px;font:700 11px Arial,sans-serif;color:#c9a24e;background:none;border:1px solid #6b5533;border-radius:2px}
+.gm-sys{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;padding-top:12px;border-top:1px solid #655133}
+.fb-shell .gm-sys-btn{display:flex;align-items:center;justify-content:center;gap:8px;min-width:0;padding:8px}.gm-sys-btn>span{display:flex;flex-direction:column;align-items:flex-start;min-width:0;text-align:left}
+.gm-sys-btn strong{font-size:14px;white-space:nowrap}.gm-sys-btn small{font-size:10px;line-height:1.2;color:#b5a88e;white-space:normal}.gm-msg{margin:0;text-align:center}
+.panel:has(> .menulist) .gm-lose{text-align:center;font-size:15px}
+@container ovl (max-width:760px) or (max-height:520px){.fb-gm>.fb-head{min-height:0;padding:5px 10px}.fb-gm>.fb-head>.muted{font-size:11px;max-width:none}.gm-head-acts>.btn{min-height:40px;padding:5px 10px}
+  .gm-body{gap:8px;padding:8px 10px}.gm-tiles{gap:6px}.gm-tile{min-height:66px;padding:6px 3px;gap:3px}.gm-tile .gico{width:24px;height:24px}.gm-tile strong{font-size:13px}.gm-tile small{font-size:9px}.gm-tile kbd{top:3px;right:4px;font-size:9px;padding:0 3px}
+  .gm-sys{gap:6px;padding-top:8px}.fb-shell .gm-sys-btn{padding:4px 6px;gap:5px}.gm-sys-btn strong{font-size:12px}.gm-sys-btn small{font-size:9px}}
+@container ovl (max-width:520px){.gm-tiles{grid-template-columns:repeat(3,minmax(0,1fr))}.gm-tile{min-height:80px}.gm-sys{grid-template-columns:1fr}.fb-shell .gm-sys-btn{justify-content:flex-start;padding:6px 14px}.gm-sys-btn>span{flex-direction:row;align-items:baseline;gap:8px}}
 /* The Army window (C; partypage.js): the Roster's kinds (crown, star, shield) and experience bars, a character's wide detail (a page of
    its own on a phone or a short screen), a troop's training path, Army skills and Passengers. */
 .fb-unit-xp{display:block;width:100%;height:5px;overflow:hidden;background:#0b0a0e;border:1px solid #4f5f78}.fb-unit-xp>i{display:block;height:100%;background:linear-gradient(#bfe0f4,#4f86c6)}

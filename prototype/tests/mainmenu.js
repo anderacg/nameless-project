@@ -47,8 +47,8 @@ window.RUN=()=>{
       // ---- a campaign makes the world; the Esc menu's Main menu lets it go, the menu alone again
       ev("LOADING.sync=true;G.quietEvents=true;act('begin','soldier')");ok(!!ev('WM')&&ev('TOWNS.length')>0&&ev('G.mode')==='world','a campaign started makes its world ('+ev('WM.gen')+', '+ev('TOWNS.length')+' holdings)');
       ev('MainMenu.frame(performance.now())');ok(mm.hidden,'and the menu steps aside');
-      ev("showEsc();escAct('esc-main')");ev('MainMenu.frame(performance.now())');
-      ok(ev('WM')===null&&ev('TOWNS.length')===0&&ev('G.mode')==='title'&&!mm.hidden&&mm.dataset.page==='main','the Esc menu’s Main menu: back on the main menu, the world let go');
+      ev("showEsc();escAct('esc-leave','main')");ev('MainMenu.frame(performance.now())');
+      ok(ev('WM')===null&&ev('TOWNS.length')===0&&ev('G.mode')==='title'&&!mm.hidden&&mm.dataset.page==='main','the Game Menu’s Main menu (Leave anyway): back on the main menu, the world let go');
       ok(!errs.length,'no errors on the page'+(errs.length?': '+errs.join('; '):''));finish()})});
   frame.src='Ashmark.html';document.body.appendChild(frame);
 };

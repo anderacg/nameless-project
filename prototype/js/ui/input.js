@@ -52,15 +52,14 @@ $('#pause').addEventListener('click',togglePause);pauseUI();
 // the dock's tiles: an icon over the name, the key in the corner
 document.querySelectorAll('.dbtn[data-ico]').forEach(b=>{b.innerHTML=icon(b.dataset.ico,18)+'<span class="dl">'+b.textContent+'</span>'+(b.dataset.key?'<kbd>'+b.dataset.key+'</kbd>':'')});
 $('#saveBtn').addEventListener('click',()=>saveGame(false,'quick'));
-// the main menu, from anywhere outside a battle
-$('#menuBtn').addEventListener('click',()=>{if(BattleLab.active)return DevConsole.show('battle');if(G.mode==='title')return;if(G.mode==='esc')return escAct('esc-resume');showEsc()});
+// the Game Menu, opened or closed (hub.js; the dock is hidden in battle, where Esc and Tab open it)
+$('#menuBtn').addEventListener('click',menuKey);
 
 $('#charBtn').addEventListener('click',()=>{if(G.mode==='char')act('char-close');else if(G.mode==='skills')act('sk-map');else openChar()});// (the Army window, its Skills view too)
 $('#campBtn').addEventListener('click',()=>toggleCamp());// (make camp or break it: world/supply.js)
 $('#mapBtn').addEventListener('click',()=>fullMapKey());// (the full map opened, or closed: map.js)
 $('#helpBtn').addEventListener('click',()=>{if(G.mode==='help')closeOver();else openHelp()});
 $('#journalBtn').addEventListener('click',()=>journalKey());// (the Journal opened, or closed: journal.js)
-$('#hubBtn').addEventListener('click',()=>{if(G.mode==='hub')act('hub-close');else openHub()});// (the Menu: hub.js)
 $('#fsBtn').addEventListener('click',toggleFull);
 // the map's zoom buttons (shown on the map only: style.css), each dimmed at its end of the range (core.js mapZoom)
 $('#zoomIn').addEventListener('click',()=>{if(G.mode==='world'&&!G.modal)mapZoom(1)});$('#zoomOut').addEventListener('click',()=>{if(G.mode==='world'&&!G.modal)mapZoom(-1)});
@@ -233,7 +232,7 @@ window.addEventListener('keydown',e=>{
   if(e.target&&/INPUT|TEXTAREA|SELECT/.test(e.target.tagName))return;
   const k=keyOf(e);
   if(e.key==='F6'){e.preventDefault();saveGame(false,'quick');return}
-  if(k==='tab'&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&!e.shiftKey&&!G.modal&&(G.mode==='world'||G.mode==='scene')){e.preventDefault();if(!e.repeat)openHub();return}// Tab: the Menu (hub.js; in a window Tab moves between its buttons)
+  if(k==='tab'&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&!e.shiftKey&&!G.modal&&['world','scene','battle'].includes(G.mode)){e.preventDefault();if(!e.repeat)menuKey();return}// Tab: the Game Menu (hub.js; in a window, the menu too, Tab moves between its buttons)
   if(k==='escape'){e.preventDefault();if(ActionRing.close()||dragCancel())uiSfx('back');else if(G.mode==='battle'&&B&&B.amArm){armAttackMove(false);uiSfx('back')}else onEscape();return}// (a drag first, then an armed attack-move: Esc calls it off and nothing else)
   if(k==='m'&&!e.ctrlKey&&!e.metaKey&&!e.altKey){if(!e.repeat){if(e.shiftKey)toggleMute();else fullMapKey()}return}// M: the full map (map.js); Shift+M: the sound off or on, anywhere (ui.js)
   if(k==='p'&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&!e.repeat&&peopleKey())return;// P: the people drawer, on the map and in towns (peopledrawer.js)

@@ -1,13 +1,15 @@
 'use strict';
-// Main menu (ui/mainmenu.js): New Campaign, Continue, Settings, Quit, then Load game and Wiki; the HUD Menu button with Resume; the
-// Esc menu's Main menu lets the world go; deleting the save asks twice.
+// Main menu (ui/mainmenu.js): New Campaign, Continue, Settings, Quit, then Load game and Wiki; the Game Menu (ui/hub.js: Esc, Tab, the
+// bar's Menu) with Resume, Save and Load, Settings (the title's page), and Main menu and Exit, which ask first when play has moved on
+// since the last save; its Main menu lets the world go; deleting the save asks twice.
 // Pasts decide the starting weapon and a lean purse; early loot is lean too.
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),close0=window.close;let closeCalls=0;
 // CDP-created test tabs may actually close themselves. Check the request without destroying the reporting page.
 window.close=()=>{closeCalls++};
 try{
  const t=T,G=t.G,P=t.P;try{localStorage.clear()}catch(e){}
- const panel=()=>document.getElementById('panel').innerHTML,cards=()=>[...document.querySelectorAll('#panel .card strong')].map(e=>e.textContent);
+ const panel=()=>document.getElementById('panel').innerHTML,cards=()=>[...document.querySelectorAll('#panel .card strong')].map(e=>e.textContent),sysb=()=>[...document.querySelectorAll('#panel .gm-sys-btn')].map(b=>b.querySelector('strong').textContent+(b.disabled?' (off)':'')),
+  navs=()=>[...document.querySelectorAll('#panel .nav [data-nav]')].map(b=>b.dataset.nav+':'+b.textContent).join(),page=()=>G.esc&&G.esc.page;
  const mm=document.getElementById('mainmenu'),btns=()=>[...mm.querySelectorAll('.mm-btn')].map(b=>b.textContent+(b.disabled?' (off)':'')),cont=()=>mm.querySelector('[data-mm="continue"]');
  t.showTitle();ok(G.mode==='title'&&!mm.hidden&&document.getElementById('ov').hidden&&btns().join()==='New Campaign,Continue (off),Settings,Quit','the main menu, no window over it: '+btns().join(', '));
  ok([...mm.querySelectorAll('.mm-more button')].map(b=>b.textContent).join()==='Load game,Wiki'&&/Ashmark/.test(mm.querySelector('.mm-title canvas').getAttribute('aria-label')),'under the buttons Load game and Wiki; the title drawn, named for readers');
@@ -17,19 +19,39 @@ try{
  t.act('race','dwarf');ok(G.menu==='new'&&document.querySelector('[data-act="race"].on').dataset.arg==='dwarf','picking a race stays on the New game screen');
  t.act('menu','main');t.act('menu','new');t.act('race','human');t.act('begin','hedge');ok(G.mode==='world'&&P.gear.weapon===t.gearId('staff',0)&&P.gold===40,'the Hedge mage starts with a wooden staff and 40 gold');
  ok(Object.values(t.BGS).every(b=>b.gold<=110),'every past starts poor: '+Object.values(t.BGS).map(b=>b.n+' '+b.gold+'g').join(', '));
- // the HUD Menu button: resume where you were
- G.mode='world';G.modal=false;t.hidePanel();document.getElementById('menuBtn').click();ok(G.mode==='esc'&&/Paused/.test(panel()),'the HUD Menu button opens the Esc menu');
- t.act('esc-main');ok(G.mode==='title'&&!mm.hidden&&!btns().includes('Resume'),'the main menu offers no Resume: '+btns().join(', '));
+ // the bar's Menu button: the Game Menu; Main menu in a game never saved asks first
+ G.mode='world';G.modal=false;t.hidePanel();document.getElementById('menuBtn').click();ok(G.mode==='esc'&&page()==='menu'&&/Paused/.test(panel()),'the bar’s Menu button opens the Game Menu');
+ t.act('esc-main');ok(G.mode==='esc'&&page()==='leave'&&/Unsaved progress since you began will be lost/.test(Kit.text())&&cards().join()==='Save first,Leave anyway'&&navs()==='back:Cancel','Main menu, never saved: it asks first ('+cards().join(', ')+'; '+navs()+')');
+ t.act('esc-back');ok(G.mode==='esc'&&page()==='menu','Cancel: back to the menu');
+ t.act('esc-main');t.act('esc-leave','main');ok(G.mode==='title'&&!mm.hidden&&!btns().includes('Resume'),'Leave anyway: the main menu, which offers no Resume: '+btns().join(', '));
  ok(!t.WM&&!t.TOWNS.length&&!t.CAMP_SPOTS.length,'and the world is let go: no map, holdings or camps in');t.act('begin','hedge');G.quietEvents=true;ok(!!t.WM&&t.TOWNS.length>0&&G.mode==='world','a new game makes it again');
  G.mode='world';G.modal=false;t.hidePanel();
  // Esc: close what is open, else pause with the Esc menu
  const esc=()=>window.dispatchEvent(new KeyboardEvent('keydown',{code:'Escape',key:'Escape'}));
- esc();ok(G.mode==='esc'&&['Save game','Load game','Main menu','Exit game'].every(n=>cards().includes(n))&&/Resume/.test(document.querySelector('.nav [data-nav="close"]').textContent),'Esc on the map opens the Esc menu, Resume in its bottom bar: '+cards().join(', '));
- {const w=document.querySelector('#panel .esc-world'),s=t.WM.settings,cp=w&&w.querySelector('[data-act="esc-seed"]');
-  ok(w&&/Classic/.test(w.textContent)&&(s?w.textContent.includes(s.seed)&&!!cp:!cp),'the Esc menu names the world and its seed, a Copy button by the seed ('+(w&&w.textContent)+')');
+ esc();ok(G.mode==='esc'&&sysb().map(n=>n.replace(' (off)','')).join()==='Save game,Load game,Settings,Main menu,Exit game'&&!sysb()[0].includes('(off)')&&navs()==='close:Resume','Esc on the map opens the Game Menu: '+sysb().join(', ')+'; its bar '+navs());
+ {const h=document.querySelector('#panel .fb-head'),s=t.WM.settings,cp=h&&h.querySelector('[data-act="esc-seed"]'),x=h?h.textContent:'';
+  ok(h&&/Paused/.test(x)&&x.includes('Day '+G.day)&&x.includes(t.worldName(t.WM))&&x.includes(t.worldKind(s))&&(s.seed?x.includes(s.seed)&&!!cp:!cp)&&!!h.querySelector('[data-act="esc-wpage"]'),'its header: Paused, the day, the world, its seed with Copy seed, and World ('+x+')');
   if(cp){cp.click();ok(G.mode==='esc','Copy seed keeps the menu open')}}
- const day=G.day,clk=G.clock;t.loop&&0;esc();ok(G.mode==='world'&&!G.modal,'Esc again resumes');
- esc();t.act('esc-save');ok(t.readSave()&&/Game saved/.test(panel())&&G.mode==='esc','Save game from the Esc menu');esc();
+ // the game paused while it is open: the loop runs no world (frames stepped by hand, none scheduled)
+ {const raf=window.requestAnimationFrame,p0=G.paused,step=n=>{for(let i=0;i<n;i++)t.loop(performance.now()+1000*(i+1))};window.requestAnimationFrame=()=>0;G.paused=false;
+  try{const c0=G.clock,d0=G.day;step(10);ok(G.mode==='esc'&&G.clock===c0&&G.day===d0,'the clock stands still while the menu is open');
+   esc();ok(G.mode==='world'&&!G.modal,'Esc again resumes');const c1=G.clock;step(4);ok(G.clock!==c1,'and the clock runs again ('+c1+' → '+G.clock+')')}
+  finally{window.requestAnimationFrame=raf;(0,eval)('last=performance.now()');G.paused=p0;G.mode='world';G.modal=false;G.enc=null;t.hidePanel()}}
+ // the pages step Back to the menu, Esc with them
+ esc();t.act('esc-wpage');ok(page()==='world'&&navs()==='back:Back,close:Resume','the World page: Back, Resume');esc();ok(G.mode==='esc'&&page()==='menu','Esc on it: back to the menu');
+ t.act('esc-saves');ok(page()==='save'&&/Slot 1/.test(panel()),'Save game: the slots');esc();ok(G.mode==='esc'&&page()==='menu','Esc on them: back to the menu');esc();ok(G.mode==='world','Esc on the menu: resumed');
+ // Settings: the title's own page, its Back to the menu; a change is kept as on the title
+ {const tmp=document.createElement('div');tmp.innerHTML=t.settingsPage();const labs=e=>[...e.querySelectorAll('.lab')].map(x=>x.textContent).join('|');
+  esc();t.act('esc-settings');const pn=document.getElementById('panel');
+  ok(G.mode==='esc'&&page()==='settings'&&labs(pn)===labs(tmp)&&/Realm economy/.test(labs(pn))&&/Sound/.test(labs(pn))&&/Developer tools/.test(labs(pn))&&navs()==='back:Back,close:Resume','Settings from the menu: the title’s page ('+labs(pn).split('|').length+' settings), Back and Resume');
+  const g0=t.prefGet('guide');t.act('guide',g0?'off':'on');const on=q=>document.querySelector('#panel [data-act="guide"][data-arg="'+q+'"]');
+  ok(page()==='settings'&&t.prefGet('guide')===!g0&&localStorage.getItem('ashmark.guide')===(g0?'0':'1')&&on(g0?'off':'on').classList.contains('on'),'a setting changed in game: the page redrawn, the setting stored (ashmark.guide '+localStorage.getItem('ashmark.guide')+')');
+  esc();ok(G.mode==='esc'&&page()==='menu','Esc: back to the menu');t.act('esc-settings');ok(on(g0?'off':'on').classList.contains('on'),'opened again: the change kept');t.act('guide',g0?'on':'off');t.act('esc-resume');ok(G.mode==='world','Resume from Settings: back to the map')}
+ esc();t.act('esc-save');ok(t.readSave()&&/Game saved/.test(panel())&&G.mode==='esc','Save game from the Game Menu');
+ // right after a save nothing is lost; once play moves on, Main menu and Exit ask, naming the day of the last save
+ ok(t.unsavedSince()===false,'right after a save: nothing unsaved');P.gold+=5;ok(t.unsavedSince()===G.day,'play moved on (gold): unsaved since day '+G.day);
+ t.act('esc-exit');ok(page()==='leave'&&Kit.text().includes('Unsaved progress since day '+G.day+' will be lost.')&&/Exit game/.test(Kit.text())&&closeCalls===0,'Exit game asks first: '+(document.querySelector('#panel .gm-lose')||{}).textContent);
+ esc();ok(G.mode==='esc'&&page()==='menu','Esc on the question: Cancel, back to the menu');P.gold-=5;ok(t.unsavedSince()===false,'(as saved again: nothing to lose)');esc();
  {const L=t.LOADING,sy=L.sync,si=Storage.prototype.setItem;L.sync=true;Storage.prototype.setItem=function(){throw new Error('QuotaExceededError')};
   try{esc();t.act('esc-save');ok(/Could not save/.test(panel())&&!/Game saved/.test(panel()),'a save the browser will not keep: the menu says it could not save, never "Game saved"')}finally{Storage.prototype.setItem=si;L.sync=sy}esc()}
  t.openInv();esc();ok(G.mode==='world','Esc closes the inventory');t.openChar();esc();ok(G.mode==='world','Esc closes the Army window');t.openSkills();esc();ok(G.mode==='char','Esc on the Skills view follows its Back: the Army window');t.act('char-close');
@@ -47,11 +69,13 @@ try{
   esc();ok(G.mode==='esc','with nothing left open, Esc pauses');esc();ok(G.mode==='world','and Esc resumes');
   world();G.enc=enc;t.startEncounter({kind:'party',ref:t.asParty({x:P.x,y:P.y,cool:0,troops:['militia','militia','militia']}),n:3,list:['militia','militia','militia']})}
  // in battle Esc pauses the fight
- t.act('fight');const B=t.B,bt=B.t;esc();ok(G.mode==='esc'&&/in battle/.test(panel())&&/Not during a battle/.test(panel()),'Esc in battle pauses it; no saving mid-fight');
- for(let i=0;i<5;i++){if(G.mode==='battle')t.updateBattle(.05)}ok(B.t===bt,'the battle does not move while paused');t.frame();esc();ok(G.mode==='battle'&&!G.modal,'Esc resumes the battle');
+ t.act('fight');const B=t.B,bt=B.t;esc();ok(G.mode==='esc'&&/in battle/.test(panel())&&sysb().includes('Save game (off)')&&/Not during a battle/.test(document.querySelector('#panel [data-act="esc-saves"]').textContent),'Esc in battle: the Game Menu, Save greyed (Not during a battle)');
+ {const ts=[...document.querySelectorAll('#panel .gm-tile')];ok(ts.length===6&&ts.every(b=>b.disabled&&/Not during a battle/.test(b.textContent)),'in battle every tile greyed: Not during a battle');t.act('esc-go','journal');ok(G.mode==='esc','(a greyed tile opens nothing)');
+  t.act('esc-settings');ok(page()==='settings'&&/Realm economy/.test(panel()),'Settings in battle');esc();ok(page()==='menu','and Back')}
+ for(let i=0;i<5;i++){if(G.mode==='battle')t.updateBattle(.05)}ok(B.t===bt,'the battle does not move while paused');t.frame();esc();ok(G.mode==='battle'&&!G.modal,'Esc resumes the battle');Kit.key('Tab','Tab');ok(G.mode==='esc'&&G.esc.mode==='battle','Tab in battle: the Game Menu too');esc();ok(G.mode==='battle','(resumed)');
  B.over=true;B.endT=0;t.updateBattle(.01);t.act('cont');while(G.mode==='perk')t.act('perk',G.perkOffer[0]);
  // Load and Exit from the Esc menu
- esc();const g2=P.gold;P.gold=1;t.act('esc-load');ok(G.mode==='world'&&P.gold!==1,'Load game from the Esc menu');esc();t.act('esc-exit');ok(G.mode==='title'&&/Thanks for playing/.test(panel())&&closeCalls===1,'Exit game from the Esc menu requests tab closure');
+ esc();const g2=P.gold;P.gold=1;t.act('esc-load');ok(G.mode==='world'&&P.gold!==1,'Load game from the Game Menu');esc();t.act('esc-exit');ok(G.mode==='title'&&/Thanks for playing/.test(panel())&&closeCalls===1,'Exit game right after a load: no question, the tab asked to close');
  // in the menus Esc goes back
  t.act('menu','main');t.act('menu','settings');esc();ok(G.menu==='main','Esc in a menu page goes back to the main menu');
  // continue and load
@@ -77,5 +101,8 @@ try{
   t.act('esc-back');t.act('esc-resume');P.gold=1;t.act('load','quick');ok(P.gold===111,'loading a slot loads that one');
   G.mode='world';t.saveGame(true,'4');P.gold=2;t.showTitle();t.act('load');ok(P.gold===111,'Continue loads the latest save of all (slot 4)');
   t.showTitle('load');ok(panel().match(/data-act="load"/g).length>=4,'Load game: every slot in use, ready to load')}
+ // Save first: a quick save, then away
+ {t.act('load','quick');G.quietEvents=true;P.gold=444;esc();t.act('esc-main');ok(page()==='leave'&&/since day/.test(Kit.text()),'Main menu after play moved on: asked');
+  t.act('esc-leave','main:save');ok(G.mode==='title'&&t.readSlot('quick').P.gold===444,'Save first: quick saved (444 gold), then the main menu')}
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}finally{window.close=close0}
 const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d)};
