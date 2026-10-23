@@ -427,7 +427,7 @@ The screen's estimate (`WSETUP.time`) gains Vast and Immense points and keeps me
 
 ### 4.4 Routing
 
-1. **Every chunk table made, never evicted** (`WAY.chunks` from a fixed 512 to the world's chunk count). This alone takes trips from 344–508 ms to 1.1–1.7 ms median at Vast and Immense (§0.2).
+1. **Every chunk table made, never evicted** (`WAY.chunks` from a fixed 512 to the world's chunk count). **Built 2026-10-23** (f8104a9, by Codex: no LRU, a graph keeps one table per chunk; `tests/routercache.js`). This alone takes trips from 344–508 ms to 1.1–1.7 ms median at Vast and Immense (§0.2).
 2. **When:** the tables of your landmass are made in a load step ("Charting the ways"), the rest in idle slices of ≤ 4 ms a frame (Immense: 3.7 s of work, about 15 s of play at 60 fps), and any table a search needs before then on demand (as today). On a phone *estimate* ×2.5: about 9 s spread over play.
 3. **Per landmass:** a search never leaves its landmass (the sea is a lane edge), so the A\* front stays on one landmass.
 4. **The pair cache** grows with the holdings: 1,024 at Huge, 4,096 at Immense.

@@ -75,7 +75,7 @@ const Router={
    tiles at most, along every chunk border, a node each side); edges by node (off: from off[v] to off[v+1]): to, cost (days at
    WAY.pace), ek (0 road, 1 track, 2 crossing, 3 river down, 4 river up: barges' legs between landings, Phase 5's (land ways never
    take them), 5 a portal's step over its border), xing (the crossing an edge takes, or -1); chunk: the costs between the nodes of
-   each chunk inside it (a search over its 32 x 32 tiles from each), made when first needed and kept (an LRU of WAY.chunks);
+   each chunk inside it (a search over its 32 x 32 tiles from each), made when first needed and kept for this graph;
    closed: a byte a crossing (Router.close)}; and the router's own: w, h, cs (a chunk's tiles a side, as WorldArt's), cols,
    coff and cnode (the nodes by chunk: those of chunk c from cnode[coff[c]] to cnode[coff[c+1]]), leg (a road edge's road in
    WM.roads and its path's places it runs from and to; 3 a road edge, -1 for the others).
@@ -85,11 +85,11 @@ const Router={
    LRU of WAY.pairs), then walked leg by leg: each leg's tiles found when it is reached (a road's own tiles, a crossing's, a
    search between two nodes of a chunk) and the last stretch to the goal. Reach is the land's pieces */
 // its numbers: a border's open run cut into portals of this many tiles at most; trips this short (tiles, the larger of dx, dy)
-// searched on the tiles alone; the pair cache and the chunk tables kept; keep: a road keeper's cost off the roads, x (folk: a worker's,
+// searched on the tiles alone; the pair cache kept; keep: a road keeper's cost off the roads, x (folk: a worker's,
 // to his estate and back on its track and the roads where they go, lots.js estTrack, never straight through the woods past them); a ferry's crossing (days: §6.6.2); barges' tiles a day
 // down and up a river (§6.6.3); a chunk's tiles a side (WorldArt's CHUNK / TILE); pace, MAP_BASE (world.js, which loads after the
 // generator first runs at load: tests/router.js checks they agree)
-const WAY={run:10,near:40,pairs:1024,chunks:512,ferry:.05,barge:[260,90],cs:32,pace:34,keep:4,folk:1.05};
+const WAY={run:10,near:40,pairs:1024,ferry:.05,barge:[260,90],cs:32,pace:34,keep:4,folk:1.05};
 // (a goal's cost off the roads: road true a road keeper's, WAY.keep; a number, its own; none 1)
 const wayKeep=goal=>goal.road===true?WAY.keep:goal.road||1;
 // (the cost of stepping onto a tile of kind t, climate c: findPath's, in tiles at open-ground pace; the days one of those takes)
@@ -179,11 +179,12 @@ function wayLocal(s,x0,y0,x1,y1,rev){const bw=x1-x0,D=new Float64Array(bw*(y1-y0
       if(!wayOpen(j)&&!NO.has(j)||dx&&dy&&(!passable(tiles[y*MW+nx])||!passable(tiles[ny*MW+x])))continue;
       const k=rev?i:j,c=d+(dx&&dy?1.414:1)*wayStep(tiles[k],climate[k]),r=(ny-y0)*bw+nx-x0;if(c<D[r]){D[r]=c;H.push(c,r)}}}
   return D}
-// (a chunk's table: its nodes (ids) and the days between each two inside it (d, k x k), made when first needed, kept in the LRU)
-function wayChunk(G,c){let T=G.chunk.get(c);if(T){G.chunk.delete(c);G.chunk.set(c,T);return T}
+// (a chunk's table: its nodes (ids) and the days between each two inside it (d, k x k), made on demand, kept for this graph's
+// lifetime: at most one per chunk. A fixed LRU thrashes when a large search visits more chunks than it holds.)
+function wayChunk(G,c){let T=G.chunk.get(c);if(T)return T;
   const ids=G.cnode.subarray(G.coff[c],G.coff[c+1]),k=ids.length,d=new Float32Array(k*k),cx=c%G.cols,cy=(c-cx)/G.cols,x0=cx*G.cs,y0=cy*G.cs,x1=Math.min(MW,x0+G.cs),y1=Math.min(MH,y0+G.cs),DPT=wayDay();
   for(let a=0;a<k;a++){const D=wayLocal(G.tile[ids[a]],x0,y0,x1,y1,false);for(let b=0;b<k;b++){const t=G.tile[ids[b]];d[a*k+b]=D[((t/MW|0)-y0)*(x1-x0)+t%MW-x0]*DPT}}
-  T={ids,d};G.chunk.set(c,T);if(G.chunk.size>WAY.chunks)G.chunk.delete(G.chunk.keys().next().value);return T}
+  T={ids,d};G.chunk.set(c,T);return T}
 // (the nodes a trip starts from at tile t (rev: those it ends at), with the days to (from) each: t's own node; else a gate beside
 // it (a party leaving or making for a holding, so the pair cache serves it); else every node of t's chunk it can reach in it)
 function wayEnds(G,t,rev){const NO=wayNodes(),x=t%MW,y=(t-x)/MW;if(NO.has(t))return[[NO.get(t),0]];
