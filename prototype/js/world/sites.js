@@ -34,8 +34,8 @@ const compass=(dx,dy)=>COMPASS[(Math.round(Math.atan2(dy,dx)/(Math.PI/4))+8)%8];
    kind adds what it does. ---------- */
 const nearTile=(tx,ty,type,r)=>{for(let j=-r;j<=r;j++)for(let i=-r;i<=r;i++)if(tAt(tx+i,ty+j)===type)return true;return false};
 // A cave is cut into the front of a hill or mountain: it stands on that rock tile, drawn over the hill or peak painted there,
-// and its mouth opens onto the ground in front (any you can walk), where parties reach it. Its point (x, y) is that mouth,
-// CAVE_MOUTH pixels into the tile in front.
+// and its mouth opens onto the ground in front (any you can walk but a road: its picture covers that tile too), where parties
+// reach it. Its point (x, y) is that mouth, CAVE_MOUTH pixels into the tile in front.
 const CAVE_MOUTH=2;
 // a camp's tiles, from its picture: [left, top] from its own tile, then [across, deep]
 const CAMP_FOOT={};
@@ -150,7 +150,7 @@ const beastSize=u=>ST[u].hp<40?'small':ST[u].hp<120?'big':'huge',fewSay=n=>n<=2?
 class Cave extends Site{
   get screen(){return PAGE_SCREEN}
   static ground(tx,ty){return tAt(tx,ty)===T_HILL||tAt(tx,ty)===T_MOUNT}
-  static clear(tx,ty){return!occAt(tx,ty)&&passable(tAt(tx,ty+1))&&!occAt(tx,ty+1)}
+  static clear(tx,ty){const m=tAt(tx,ty+1);return!occAt(tx,ty)&&passable(m)&&m!==T_ROAD&&!occAt(tx,ty+1)}
   static point(tx,ty){return[(tx+.5)*TILE,(ty+1)*TILE+CAVE_MOUTH]}
   static reachRow(ty){return ty+1}
   setup(sites){this.name=unusedName(CAVE_NAMES,sites);this.id=caveMonster(this.x,this.y)}

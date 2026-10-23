@@ -27,7 +27,7 @@ try{
  // past the bag's limit: left behind, said so
  empty();for(let i=0;i<t.invCap()+t.BAG.maxOver;i++)t.invAdd('mat','pelt',t.STACK);{const say=Kit.stubStream('valuables',0,()=>t.valuablesFound('lord'));ok(new RegExp(t.BAG_FULL).test(say)&&!vals(),'with no room at all: '+say.trim())}
  // a won fight: on the loot pile
- empty();P.troops={hum_knight:20};G.enc={kind:'camp',ref:{cleared:false,back:0,x:P.x,y:P.y,ld:t.newChief('bandits',2)},n:3};Kit.world({enc:G.enc});t.startEncounter(G.enc);
+ empty();P.troops={hum_knight:20};G.enc={kind:'camp',ref:{cleared:false,back:0,x:P.x,y:P.y,plunder:()=>'',ld:t.newChief('bandits',2)},n:3};Kit.world({enc:G.enc});t.startEncounter(G.enc);
  Kit.stubStream('valuables',0,()=>t.autoResolve());ok(G.loot&&G.loot.pile.some(s=>s.k==='val')&&/His purse holds/.test(Kit.panel())&&/Among their plunder/.test(Kit.panel()),'a bandit camp beaten: the valuables on the loot pile, and the victory says so');
  t.act('lt-all');ok(vals()>=1,'taken');t.act('cont');Kit.done({world:true});
  // sold at the market

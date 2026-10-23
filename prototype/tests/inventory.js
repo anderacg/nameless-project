@@ -55,7 +55,7 @@ try{
  t.enterTown(t.townBy('Ashford'));t.act('tab','smith');const st=t.smithStock(t.townBy('Ashford'));
  ok(st.length===6&&/Smith/.test(document.getElementById('panel').innerHTML),'the Ashford smith stocks 6 pieces');
  const first=st[0];t.act('buy-gear','0');ok(slotOf('gear',first)>=0&&st.length===5,'buying puts the piece in your bag');t.act('leave');while(G.mode==='perk')t.act('perk',G.perkOffer[0]);
- empty();P.troops={hum_knight:20};let got=0;for(let k=0;k<12;k++){G.mode='world';G.modal=false;t.startEncounter({kind:'camp',ref:{cleared:false,back:0,x:P.x,y:P.y},n:3});t.autoResolve();t.act('lt-all');t.act('cont');while(G.mode==='perk')t.act('perk',G.perkOffer[0])}
+ empty();P.troops={hum_knight:20};let got=0;for(let k=0;k<12;k++){G.mode='world';G.modal=false;t.startEncounter({kind:'camp',ref:{cleared:false,back:0,x:P.x,y:P.y,plunder:()=>''},n:3});t.autoResolve();t.act('lt-all');t.act('cont');while(G.mode==='perk')t.act('perk',G.perkOffer[0])}
  got=P.inv.filter(x=>x&&x.k==='gear').length;ok(got>=6,'bandit camps drop gear ('+got+' pieces from 12 camps)');
  // hands: shields and one-handed weapons in the off hand; two-handed weapons push the off hand into the bag
  empty();P.gear.weapon=gid('sword',1);t.invAdd('gear',gid('shield',1),1);t.invEquip(0);ok(P.gear.offhand===gid('shield',1)&&t.grip()==='shield','a shield goes in the off hand');
