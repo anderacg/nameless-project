@@ -82,7 +82,8 @@ try{
  {const foe=mk('Thane Against',K,8,10,'dw_clan'),nl=mk('Lord Bystander',A,40,10),p0=wt(T0,25);W.lords=[foe,nl];P.hostile={[K]:G.day+30};
   const vsLord=()=>{world();foe.dead=false;foe.cool=0;t.startEncounter({kind:'lord',ref:foe,list:foe.troops.slice()});return G.enc};
   W.rel[t.rk(A,K)]={s:'war',since:G.day};let e=vsLord();ok(helps(p0,e)&&/riding out against the [^.;]+ on its land/.test(panel()),'a watch whose realm is at war with them rides out on its own land');
-  ok(!helps(nl,e),'a neutral lord of that realm stays out of a war against a realm (only friends at war with it, as before)');
+  {const d0=G.day;let n=0,why=0;for(let k=0;k<30;k++){G.day=d0+k;P.hostile={[K]:G.day+30};const e2=vsLord();if(helps(nl,e2)){n++;if(/at war with the [^;.]+/.test(panel()))why++}}G.day=d0;P.hostile={[K]:G.day+30};
+   ok(n>0&&n<30&&why===n,'a neutral lord whose realm is at war with them rides in by chance (the owner, 2026-10-23: '+n+' of 30 days), "at war with the …"')}
   P.lrel[nl.id]=RL.helpAt;ok(helps(nl,vsLord()),'a friend at war with them rides in');P.lrel={};
   W.rel[t.rk(A,K)]={s:'peace',since:G.day};e=vsLord();ok(!helps(p0,e)&&!helps(nl,e),'at peace with them, neither does');
   W.patrols=[];const p1=wt(T1,25);W.rel[t.rk(Bf,K)]={s:'war',since:G.day};ok(!helps(p1,vsLord()),'a watch at war with them, off its own land, stays out');

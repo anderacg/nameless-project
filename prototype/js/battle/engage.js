@@ -63,10 +63,11 @@ const helpRoll=(e,k)=>{const R=e.rolls||(e.rolls={});return R[k]!=null?R[k]:R[k]
 const fairOdds=(e,o)=>o.power()+partyPower()>=REINF.fair*rating(e.list||[],e.lv);
 const neutralHelps=(e,o,k,v)=>helpRoll(e,k)<helpChance(v)&&fairOdds(e,o);
 const bountyWhy=e=>e.kind==='monster'||e.kind==='cave'?'to see the beast dead':'for the bounty';
-// why a lord rides to help you ('' if he won't)
+// why a lord rides to help you ('' if he won't): a friend; or a neutral lord by chance at fair odds, against a common enemy or
+// against a realm his own is at war with (the owner, 2026-10-23: "they fight each other, why not?")
 function lordWhy(e,l){const fr=foeRealm(e),st=siegeTown(e);if(fr&&(fr==='player'||!atWar(l.fac,fr)))return '';
   if(st&&l.tgt===st&&l.state==='siege')return 'besieging '+st;if(st&&l.inside===st)return 'holding the walls of '+st;
-  const fw=friendWhy(l);if(fw||fr||hostileTo(l.fac))return fw;return neutralHelps(e,l,l.id,relWith(l))?bountyWhy(e):''}
+  const fw=friendWhy(l);if(fw||hostileTo(l.fac))return fw;return neutralHelps(e,l,l.id,relWith(l))?(fr?'at war with the '+FACS[fr].n:bountyWhy(e)):''}
 // why a holding's watch rides to help you ('' if it won't): on its realm's land against a common enemy, or against a realm at
 // war with its own; off its land against a common enemy as a neutral lord would (or a friend)
 function watchWhy(e,p){if(hostileTo(p.fac))return '';const fr=foeRealm(e),land=patrolLand(p,P.x,P.y);
