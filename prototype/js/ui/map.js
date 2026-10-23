@@ -5,11 +5,13 @@
    legend beside it. Its bottom bar: Close.
    The map: the land from the tile data (fullMapPic: the minimap's colours, rivers by width, each realm's tint and a stronger line
    where two realms meet, the dark over land you have never seen), and over it, as marks, the holdings and crossings on land you
-   have seen and you.
+   have seen, your quests' goals (the one you track the strongest: world/quests.js questMapMarks) and you.
    Its scale: FULLMAP.zooms, CSS px a tile. It opens at the largest that fits, never under 1 px a tile (under FULLMAP.wide tiles
    across) or 1 px per 2 tiles (wider: Huge): Normal 1 px a tile, Large 1 px a tile and scrolls, Huge 1 px
    per 2 tiles. − and + (the buttons, the keys) step it; a click or a tap on the map zooms in there (at Huge: 1:1 by region); a
-   drag pans (a finger scrolls). Under 1 px a tile the picture is made at 1 px per 2 tiles, a block's widest river kept ---------- */
+   drag pans (a finger scrolls). Under 1 px a tile the picture is made at 1 px per 2 tiles, a block's widest river kept.
+   Opened from another window (Show on map, your Quests: ui/questwindow.js) it is centred where it is told, its bar's Back on the
+   left going back there ---------- */
 const FULLMAP={zooms:[.5,1,2,3,4,6],wide:640,open:4,ppt:1,pics:{},drag:null,ms:0,
   // (the rivers by width (1 a brook, 2 a river, 3 a great river), the realms' tint and border strength, the unexplored land)
   river:['','#8cc0ec','#4f8fd6','#2a5fae'],riverN:['','Brook','River','Great river'],tint:.38,edge:.8,unknown:'#0e1119',road:'#b89b62',
@@ -35,19 +37,21 @@ function fullMapPic(m,k,seen,land,towns){
     const l=x>0?own[o-1]:-1,r=x<w-1?own[o+1]:-1,u=y>0?own[o-w]:-1,b=y<h-1?own[o+w]:-1,a=l>=0&&l!==f||r>=0&&r!==f||u>=0&&u!==f||b>=0&&b!==f?F.edge:F.tint,c=facs[f];
     d[p]+=(c[0]-d[p])*a;d[p+1]+=(c[1]-d[p+1])*a;d[p+2]+=(c[2]-d[p+2])*a}
   const cv=mkc(w,h,g=>g.putImageData(img,0,0));F.ms=performance.now()-t0;return cv}
-// the marks over it at ppt px a tile: the crossings and holdings on land you have seen (each its name and kind on hover), and you
+// the marks over it at ppt px a tile: the crossings and holdings on land you have seen (each its name and kind on hover), your
+// quests' goals (the tracked one the strongest), and you
 function fullMapMarks(ppt){const F=FULLMAP,at=(x,y)=>'left:'+(x*ppt).toFixed(1)+'px;top:'+(y*ppt).toFixed(1)+'px';let h='';
   for(const x of WM.crossings||[]){const tx=x.i%MW,ty=Math.floor(x.i/MW);if(seenTile(tx,ty))h+='<i class="fm-x '+x.kind+'" style="'+at(tx+.5,ty+.5)+'" title="'+cap1(x.kind)+'"></i>'}
   for(const t of TOWNS){if(!seenTile(t.tx,t.ty))continue;const k=F.kinds[t.kind]?t.kind:'village',T=HOLDING_TYPES[t.kind];
     h+='<span class="fm-h" style="'+at(t.tx+.5,t.ty+.5)+'" title="'+htmlText(t.name+', '+t.label+(t.owner?' of the '+FACS[t.owner].n:''))+'"><i class="fm-k '+k+'" style="--c:'+(t._memCol||facCol(t))+'"></i>'+
       (ppt>=F.names||T&&T.tier>=3?'<b>'+htmlText(t.name)+'</b>':'')+'</span>'}
+  for(const m of questMapMarks())h+='<i class="fm-q'+(m.on?' on':'')+'" style="'+at(m.x/TILE,m.y/TILE)+'" title="'+htmlText(m.title)+(m.on?' (tracked)':'')+'"></i>';
   return h+'<span class="fm-you" style="'+at(P.x/TILE,P.y/TILE)+'" title="You"></span>'}
 // the legend: the realms that hold land, the kinds of holding, rivers and crossings this world has, then you, roads, the unknown
 function fullMapLegend(){const F=FULLMAP,cr=WM.crossings||[],it=(i,n)=>'<li>'+i+'<span>'+n+'</span></li>',sec=(n,l)=>l.length?'<div class="lab">'+n+'</div><ul>'+l.join('')+'</ul>':'',sw=c=>'<i class="fm-sw" style="background:'+c+'"></i>';
   const fs=Object.keys(FACS).filter(f=>TOWNS.some(t=>t.owner===f)).map(f=>it(sw(landCol(f)),FACS[f].n)).concat(TOWNS.some(t=>!t.owner)?[it(sw(landCol(null)),'No realm')]:[]);
   return '<aside class="fm-leg" aria-label="Legend">'+sec('Realms',fs)+sec('Holdings',Object.keys(F.kinds).filter(k=>TOWNS.some(t=>(F.kinds[t.kind]?t.kind:'village')===k)).map(k=>it('<i class="fm-k '+k+'" style="--c:#d8d0b8"></i>',F.kinds[k])))+
     sec('Rivers',WM.rivers&&WM.rivers.length?[1,2,3].map(w=>it(sw(F.river[w]),F.riverN[w])):[])+sec('Crossings',['bridge','ford','ferry'].filter(k=>cr.some(x=>x.kind===k)).map(k=>it('<i class="fm-x '+k+'"></i>',cap1(k))))+
-    sec('Map',[it('<i class="fm-you"></i>','You'),it(sw(F.road),'Road'),it(sw(F.unknown),'Unexplored')])+'</aside>'}
+    sec('Map',[it('<i class="fm-you"></i>','You'),...(P.quests.length?[it('<i class="fm-q"></i>','Quest')]:[]),...(P.track?[it('<i class="fm-q on"></i>','Tracked quest')]:[]),it(sw(F.road),'Road'),it(sw(F.unknown),'Unexplored')])+'</aside>'}
 // the scale it opens at in a view of the room the window gives it (fullMapFit), and the zoom one step in or out (dir), about
 // tile point at (else the view's middle)
 function fullMapFit(v){const F=FULLMAP,fit=Math.min(v.clientWidth/MW,v.clientHeight/MH);return Math.max(MW>F.wide?.5:1,...F.zooms.filter(z=>z<=fit&&z<=F.open))}
@@ -65,12 +69,13 @@ function fullMapPan(v){const F=FULLMAP;
   v.addEventListener('pointermove',e=>{const d=F.drag;if(!d)return;if(d.mouse&&!(e.buttons&1)){F.drag=null;return}const dx=e.clientX-d.x,dy=e.clientY-d.y;if(Math.hypot(dx,dy)>5)d.moved=true;if(d.mouse&&d.moved){v.scrollLeft=d.sl-dx;v.scrollTop=d.st-dy}});
   v.addEventListener('pointerup',e=>{const d=F.drag;F.drag=null;if(!d||d.moved)return;const r=v.querySelector('.fm-pic').getBoundingClientRect();fullMapZoom(1,{x:(e.clientX-r.left)/F.ppt,y:(e.clientY-r.top)/F.ppt})});
   v.addEventListener('pointercancel',()=>{F.drag=null})}
-// the window, from the map only (false when it cannot open: somewhere else, or another window open)
-function fullMapOpen(){if(G.mode!=='world'||G.modal)return false;const S=seenArr();let n=0;for(let i=0;i<S.length;i++)n+=S[i];const pc=n*100/S.length;FULLMAP.pics={};
+// the window, from the map only (false when it cannot open: somewhere else, or another window open); at: the tile point in its
+// middle, a step closer than it opens (none: you), back: its bar's Back ([act, arg, label]: opened from another window)
+function fullMapOpen(at,back){if(G.mode!=='world'||G.modal)return false;const S=seenArr();let n=0;for(let i=0;i<S.length;i++)n+=S[i];const pc=n*100/S.length;FULLMAP.pics={};
   if(!openOver('fullmap','<div class="top"><div class="fm-head"><h2>Map of '+htmlText(worldName(WM))+'</h2><span class="muted">'+MW+' × '+MH+' tiles · '+(!n?0:pc<10?pc.toFixed(1):Math.floor(pc))+'% explored</span></div>'+
     '<div class="fm-zoom" role="group" aria-label="Zoom"><button class="btn sm" type="button" data-act="map-zoom" data-arg="out" title="Zoom out (−)">−</button><button class="btn sm" type="button" data-act="map-zoom" data-arg="in" title="Zoom in (+, or click the map)">+</button></div></div>'+
-    '<div class="fm"><div class="fm-view" tabindex="0" aria-label="The map"><div class="fm-pic"></div></div>'+fullMapLegend()+'</div>'+nav(null,['map-close',null,'Close'])))return false;
-  panel.classList.add('fmap');const v=panel.querySelector('.fm-view');fullMapShow(fullMapFit(v),{x:P.x/TILE,y:P.y/TILE});fullMapPan(v);v.focus({preventScroll:true});return true}
+    '<div class="fm"><div class="fm-view" tabindex="0" aria-label="The map"><div class="fm-pic"></div></div>'+fullMapLegend()+'</div>'+nav(back||null,['map-close',null,'Close'])))return false;
+  panel.classList.add('fmap');const v=panel.querySelector('.fm-view');const z=fullMapFit(v),Z=FULLMAP.zooms;fullMapShow(at?Z[Math.min(Z.length-1,Z.indexOf(z)+1)]:z,at||{x:P.x/TILE,y:P.y/TILE});fullMapPan(v);v.focus({preventScroll:true});return true}
 // M: the map opened, or closed if open; true if it did either
 function fullMapKey(){if(G.mode==='fullmap'){closeOver();return true}return fullMapOpen()}
 onAct('map-',(a,arg)=>{if(a==='map-close'&&G.mode==='fullmap')closeOver();else if(a==='map-zoom')fullMapZoom(arg==='in'?1:-1)});

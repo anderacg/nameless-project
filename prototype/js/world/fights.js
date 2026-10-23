@@ -107,8 +107,10 @@ function forceOf(o){const k=o.mapKind;if(k==='lord')return o;partyRoster(o).grou
 function syncForces(list){for(const f of list||[]){if(!f.src)continue;const o=f.src;if(f.kind==='garrison')o.gar=f.troops.length;else o.troops=f.troops;if(f.army)o.army=structuredClone(f.army)}}
 // a holding's garrison as a battle force: it sallies beside whoever fights its besiegers, or beside the army come to relieve it
 const garrisonForce=t=>({kind:'garrison',src:t,name:'the garrison of '+t.name,fac:t.owner,troops:garList(t)});
-// a force you beat (or that fought beside you and was ground down)
-function routForce(f,mine){if(!f.src){defeatLord(f);return ''}if(f.kind==='garrison')return '';const o=f.src;if(f.kind==='caravan'&&mine){const t=o.loot();o.gone=true;return t}routParty(o,[]);return ''}
+// a force you beat (or that fought beside you and was ground down); one you beat is heard on the bus as yours (a bounty's band,
+// a lord to kill: quests)
+function routForce(f,mine){if(!f.src){if(mine)worldEmit('lord:beaten',{lord:f});defeatLord(f);return ''}if(f.kind==='garrison')return '';const o=f.src;if(f.kind==='caravan'&&mine){const t=o.loot();o.gone=true;return t}
+  if(mine&&f.kind==='band')worldEmit('band:beaten',{band:o});routParty(o,[]);return ''}
 function fightAct(a,arg){
   const f=G.fg;if(!f||!W.fights.includes(f)){closeDialog();return}
   if(a==='fg-join'){const s=+arg;if(joinWhy(f,s))return;

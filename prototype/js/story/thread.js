@@ -18,7 +18,7 @@
      a page's choice its how);
    - remember(d, th): what it learnt, put into the memory;
    - then: the next step's id, or {how: id} a branch (a key not there, or null: the thread ends);
-   - note(th): what to do now, in a few words (your Quests: Thread.journal).
+   - note(th): what to do now, in a few words (your Quests: ui/questwindow.js).
    Its record (W.story.threads.on): {k, i, day (begun), at (the step under way), wait ({shape, id}: what it waits for), memory,
    past ([step, how] each done)}. Thread.start(id, memory) begins one (or an outcome's start: {thread, memory}). Never ticked:
    it hears the bus (Thread.heard), only for the events its steps wait for; it ends when its last step ends ('thread:ended',
@@ -136,13 +136,6 @@ class Thread extends Happening{
   static mark(key){
     const L=this.store();
     (L.once||(L.once={}))[key]=G.day;
-  }
-  // ---- your Quests' stories: each under way, its name, what it is about and what to do now
-  static journal(){
-    const L=this.list().on;
-    if(!L.length)return '';
-    return '<div class="lab" style="margin-top:6px">Stories</div>'+L.map(th=>{const K=th.kind,who=K.who?th.param(K.who):'';
-      return '<div class="row"><div class="info"><strong>'+K.n+(who?': '+who:'')+'</strong><small>'+(th.note||'Under way.')+'</small></div></div>'}).join('');
   }
   // ---- a step's starter, the event it waits for, the next step by its key
   static starterOf(s){

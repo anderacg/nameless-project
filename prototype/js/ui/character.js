@@ -11,7 +11,7 @@ function renderChar(){
       '<div class="lab" style="margin-top:6px">Skills</div><div class="row"><div class="info"><strong>'+(P.tp?'<span class="gold">'+P.tp+' skill point'+(P.tp>1?'s':'')+' to spend</span>':'Skill tree, skill bar and disciplines')+'</strong><small>'+(P.tree.length-1)+' skills learned. One skill point each level.</small></div><div class="acts"><button class="btn sm" type="button" data-act="open-skills">Open Skills (K)</button></div></div>'+
       (P.perks.length?'<div class="lab" style="margin-top:6px">Perks from before</div>'+P.perks.map(p=>'<div class="row"><div class="info"><strong>'+PERKS[p].n+'</strong><small>'+PERKS[p].d+'</small></div></div>').join(''):'');
   }else if(tab==='quests'){
-    body='<div class="lab">Quests · '+P.quests.length+' / '+QUEST_MAX+'</div>'+questsBody()+Thread.journal();
+    body=questWindow();// (the list and the one chosen: ui/questwindow.js)
   }else if(tab==='realms'){
     const sw=f=>'<span style="color:'+FACS[f].col+'">'+FACS[f].n+'</span>';
     body='<div class="lab">Your standing</div><p>'+(P.fac?'You serve the '+sw(P.fac)+' as a mercenary, for '+troopCount()+' gold a day.':'You are independent. Sign a mercenary contract in a town tavern.')+
@@ -51,7 +51,7 @@ function renderChar(){
   }
   showPanel('<div class="top"><h2>'+(tab==='hero'?'Your hero':tab==='realms'?'Realms of Ashmark':tab==='lords'?'Lords':tab==='quests'?'Quests':'Your party')+'</h2><span class="muted">'+RACES[P.race].n+' · level '+P.level+' · '+rankName()+'</span></div><div class="tabs">'+
     [['hero','Hero'],['party','Party'],['quests','Quests'],['lords','Lords'],['realms','Realms']].map(x=>'<button class="btn sm'+(x[0]===tab?' on':'')+'" type="button" data-act="char-tab" data-arg="'+x[0]+'">'+x[1]+'</button>').join('')+
-    '</div><div>'+body+'</div>'+nav(null,['char-close',null,'Back to map']));
+    '</div><div>'+body+'</div>'+nav(tab==='quests'?questWindowBack():null,['char-close',null,'Back to map']));
 }
 /* your troops as cards, as in Total War: each kind its picture, numbers, its state (fit and wounded), its morale now against its
    best (where it would start a battle now, by your band's morale: morale.js, against its own Morale: matchups.js unitMoraleOf),
@@ -91,7 +91,7 @@ function charAct(a,arg){
   }
   if(G.mode!=='char')return false;
   const keep=panel.scrollTop;
-  if(a==='char-tab')G.char=arg;
+  if(a==='char-tab'){G.char=arg;if(G.qw){G.qw.open=false;G.qw.ask=null}}
   else if(a==='army-edit'){G.armyEdit=arg;G.armyNotice=''}
   else if(a==='army-edit-close')G.armyEdit=null;
   else if(a==='army-name-save'){const value=panel.querySelector('[data-army-name]')?.value;G.armyNotice=partyRoster(P).rename(arg,value)?'Group name saved.':'Use up to 32 characters, without control characters.'}

@@ -34,7 +34,7 @@ They differ only in **shape**, how they appear and how long they live. So the de
 |---|---|---|---|---|
 | **Encounter** | met on the map: figures, a behaviour, a page | hours | each frame, **only when near you** (the LOD tiers) | today's 24 road encounters; the small encounters; road bouts (tournaments §7); strays |
 | **Incident** | befalls you: no one to meet, applies at once (a log line, maybe a popup) | an instant | never | today's road events (storm, fever, blizzard, mirage, wagon) |
-| **Quest** | a task you carry: a goal, progress, a due day, a reward, where to report | days | **never per frame**: progress comes from world events (§3.6), the due day on the daily tick | today's 9 job kinds; the escort; the new jobs (named outlaw, guard the harvest, …) |
+| **Quest** | a task you carry: a goal, progress, its timing (a job's best-by day, if it has one; a step's or an escort's due day), a reward, where to report | days | **never per frame**: progress comes from world events (§3.6), the day's check on the daily tick | today's 9 job kinds; the escort; the new jobs (named outlaw, guard the harvest, …) |
 | **Gathering** | held at a place on set days, announced ahead, open to enter | days | the daily tick, from a calendar sorted by start day | tournaments (all four sizes); later fairs, festivals, market days |
 | **Thread** | a story tying several happenings into steps, sharing what it knows | days to weeks | never: it advances when one of its steps ends | chain quests ("The Wounded Traveller"); Ander The Fallen; later story arcs |
 
@@ -70,7 +70,7 @@ Every kind's conditions read it, instead of each calling `climAt`, `nearHold`, `
 | Trigger | For |
 |---|---|
 | `travelHour` | encounters (the pity timer, kept as built) |
-| `day` | incidents (the daily roll); gatherings (the calendar); quest due days and offer refresh |
+| `day` | incidents (the daily roll); gatherings (the calendar); quests' day check (a step's due day, a job its world closed) and offer refresh |
 | `enterHolding` | job offers; a gathering's welcome |
 | `talk` | rumours (the sources and caps, as built) |
 | a world event | a thread's next step; a quest's progress |
@@ -152,7 +152,7 @@ An **Outcome** is plain data, for example `{gold:+20, honor:[fac,-5], morale:-3,
 
 - **Ending by shape:**
   - encounters: today's end policies (leave, unseen, die; nothing ends in sight);
-  - quests: their due day;
+  - quests: done, given up, or (a step, an escort) their due day; a job never fails for time, and the world may close it;
   - gatherings: their last day;
   - threads: when their last step ends.
 - **When a happening ends, it emits `ended`.** That's how a thread knows to take its next step.
@@ -406,5 +406,12 @@ S goes first because nearly every queued feature (escort, chains, tournaments, j
 - **Freed: the chain resumes where it broke.** A thread never loops back on itself (`tests/kinds.js` walks every way through a chain), so a freed traveller's thread ends `freed` and a new one picks it up at the escort (`Thread.start(id, memory, at)`, `Wounded.resume`): from where you are, a fresh due day; with no passenger room, he goes home alone (`call`).
 - **Ander is never lost** (but dying unhealed): his escort has no due day (`open`); with no passenger room his offer is **Meet him later** (no forced refusal); every end of his chain but the reward (refused, met later, abandoned, Ride on, Let it lie, a rescue given up, slipped away, freed by others) sends him **wandering** (`Wanderer`, `W.story.threads.aside.ander`, saved with the threads): a holding with a tavern every `WOUNDED.wander.days` (3–5), by a hash of the world, the day he set off and his leg (no draw, no stream); the first his home's tavern or the nearest. Every other tavern's rumours tell where he was seen (`world/news.js`, the far kind `ander`); his holding's overview notes a sellsword drinking alone; his tavern shows his own card (never the hiring list: `COMPS.ander` stays unlisted, the wiki keeps his secret): **Finish the job** (his chain picked up at the tracks: trail, clear, back, reward, joins; his attackers dealt with already, **Ride with me** at once) or **Pay 300g** (`WOUNDED.wander.price`). Joining (`compJoin`) needs room in your band, as a tavern companion's does; full, he says to come back with room. Seen only in a game where he was met.
 - **Tests**: `tests/wounded.js` (144): capture by a band (held, marked, saved, beaten: freed and resumed), the band home (no deadline, the hideout cleared), a lord's (ransom at the gates, not enough gold, Not now, paid; stormed; seized), a hideout stormed; holders destroyed by others (the band, the holding, the hideouts) and beasts, home on his own and the family's page; every Ander end to wandering; the taverns, the rumour, joining by gold (refused when full) and by the job (and at once when done); saved and loaded in each state; the secrecy.
+
+
+**QU, your Quests and the jobs' rules (built 2026-10-23; the owner's decisions that day).** The world fingerprint (`worldprint -Seed 1`), the battle fingerprint suites, `aishare` and `rts -Seed 1,2,44` unchanged, no re-records.
+- **A quest detail view** (`js/ui/questwindow.js`, the Character window's Quests tab): two panes, the list (the tracked one first, your quests, the Stories) and the one chosen in full: given by, taken, timing, turn in (as `canReportAt`), its steps and progress, its reward; Show on map (the full map centred on its goal; Back returns), Track (one, `P.track`; no field when none), Abandon (asks first). A story: who, begun, what to do now, where its step points. A phone on its side: list, then the chosen one, Back to the list. The boards' offers and a lord's show the same facts before you accept. `Thread.journal` is no longer called (the list reads `Thread.list()`, a kind's `who`, a step's `note`).
+- **No fail deadlines for jobs** (`world/quests.js` `JobQuest`): bounty, beast, clear, hunt, troops, lordkill and raid have no timing; courier and supply a best-by day, paid less after it (`QUEST_LATE`: 10% a day, never under half). The world may close one (its target broken, slain or cleared by another, or gone): `QUEST_CLOSED`'s share of the gold, `quest:ended {how: 'closed'}`. Steps and escorts keep their own due days.
+- **No cap** on how many jobs you hold (`QUEST_MAX` gone); the boards' limits stay (`JOB_OFFERS`, `JOB_REFRESH`, a lord's one at a time).
+- **Tests**: `tests/quests.js` (no cap, no fail for time, best-by pay, the world's closing, `P.track` saved or absent), `tests/questwindow.js` (new), `tests/kinds.js` (a job never failed for time; an escort still is).
 
 **Left for after:** the other site pages (ruins, caves, camps, the hermit, the travellers) onto Choices; the optional friend in the healed traveller's holding; wandering Ander met on the road (a cloaked man walking it: a road kind would show in the wiki's table of road encounters, `wiki.html`, so it waits for a way to keep a kind secret there).

@@ -1,6 +1,7 @@
 'use strict';
 // Quests: holdings offer jobs that refresh weekly; bounties, beast hunts and clearances spawn or mark their targets and finish when
-// the deed is done; supplies, hunts and reinforcements are handed in; couriers pay on arrival; lords give war work; deadlines fail.
+// the deed is done; supplies, hunts and reinforcements are handed in; couriers pay on arrival; lords give war work. No cap on the
+// jobs you hold; none fails for time (a timed one pays less late); the world may close one (a consolation); the tracked one saved.
 Kit.suite(({ok})=>{
  const t=T,G=t.G,P=t.P,W=t.W;Kit.fresh();
  const done=()=>Kit.done();
@@ -56,12 +57,39 @@ Kit.suite(({ok})=>{
  world();const lr=t.makeQuest('raid',ash,lord);ok(lr&&t.atWar('vale',t.townBy(lr.village).owner),'vassals are asked to raid enemy villages ('+(lr&&lr.village)+')');t.acceptQuest(lr);
  const v=t.townBy(lr.village);P.x=v.x;P.y=v.y+5;world();G.lastTown=null;t.updateWorld(.01);t.act('sg-raid-auto');t.act('cont');done();for(let i=0;i<70&&P.raid;i++){G.mode='world';G.modal=false;t.updateWorld(.25)}ok(lr.done,'raiding it finishes the quest');
  world();near(t.TOWNS.find(x=>x.owner==='vale'&&x!==ash));t.updateWorld(.01);t.act('q-turnin',String(lr.id));ok(!P.quests.length,'reported at another Vale holding');t.act('leave');done();
- // limits, deadlines, abandoning
- world();for(let k=0;k<6;k++){const q=t.makeQuest('supply',ash);t.acceptQuest(q)}ok(P.quests.length===t.QUEST_MAX,'at most '+t.QUEST_MAX+' quests at a time');
- const late=P.quests[0],r1=t.repAt('Ashford');G.day=late.due+1;t.questDay();ok(!P.quests.length&&t.repAt('Ashford')<r1,'missed deadlines fail and cost reputation');
- t.acceptQuest(t.makeQuest('supply',ash));t.openChar();t.act('char-tab','quests');ok(/Abandon/.test(panel())&&/days left/.test(panel()),'the Quests tab lists them with time left');
+ // no cap: as many jobs as you like (the boards still limit the work: JOB_OFFERS a week), a plain count
+ world();P.quests=[];for(let k=0;k<6;k++){const q=t.makeQuest('supply',ash);t.acceptQuest(q)}
+ ok(P.quests.length===6&&t.Quest.jobs()===6&&(()=>{try{t.QUEST_MAX;return false}catch(e){return true}})(),'no cap: six jobs held at once (QUEST_MAX is gone)');
+ P.jobs={};near(ash);t.updateWorld(.01);t.act('tab','jobs');
+ ok(/you hold 6 jobs/.test(Kit.text())&&!/\d+ \/ 4/.test(Kit.text())&&Kit.qa('[data-act="q-accept"]').length===2&&Kit.qa('[data-act="q-accept"]').every(b=>!b.disabled),'the board: a plain count, two offers, none greyed');
+ ok(Kit.qa('.row .qfacts').length===2&&/Given by/.test(Kit.text())&&/Turn in/.test(Kit.text())&&/(No time limit|Best by day \d+ \(\d+ days? left\); later pays less)/.test(Kit.text()),'each offer shows who gives it, its timing and where it is turned in, before you accept');
+ t.act('leave');done();
+ // no fail by time: a bounty, a hunt and reinforcements have no timing; forty days on they are still yours
+ world();P.quests=[];const d0=G.day,untimed=['bounty','hunt','troops'].map(k=>{const q=t.makeQuest(k,ash);t.acceptQuest(q);return q});
+ ok(untimed.every(q=>q.days==null&&q.due==null&&q.taken===d0&&!q.timed&&q.timing()==='No time limit'),'untimed kinds: no days, no due day, only the day taken');
+ for(let k=0;k<40;k++){G.day++;t.questDay()}ok(untimed.every(q=>P.quests.includes(q)),'forty days on, still yours: no job fails for time');G.day=d0;
+ // best by: a courier paid in full on time, 10% less a day past it, never under half
+ P.quests=[];let qr2=null;for(let k=0;k<10&&!qr2;k++)qr2=t.makeQuest('courier',ash);
+ ok(t.questFacts(qr2).some(([k,v])=>k==='Timing'&&v==='Best by day '+(G.day+qr2.days)+' ('+qr2.days+' days left); later pays less'),'the offer says its best-by day: later pays less');
+ t.acceptQuest(qr2);const R=qr2.reward.gold,at=d=>{G.day=d;return qr2.earned()};
+ ok(qr2.timed&&qr2.due===d0+qr2.days&&qr2.taken===d0,'a courier taken: best by day '+qr2.due);
+ ok(at(qr2.due)===R&&at(qr2.due+1)===Math.round(R*.9)&&at(qr2.due+3)===Math.round(R*.7)&&at(qr2.due+5)===Math.round(R*.5)&&at(qr2.due+12)===Math.round(R*.5),'its pay: '+R+' on time, -10% a day past it, never under half ('+[0,1,3,5,12].map(d=>at(qr2.due+d)).join(', ')+')');
+ G.day=qr2.due+2;t.questDay();ok(P.quests.includes(qr2)&&/2 days past: it pays 80% now/.test(qr2.timing()),'two days past its best-by day: still yours, '+qr2.timing());
+ {const g=P.gold;t.questArrive(t.townBy(qr2.to));ok(!P.quests.includes(qr2)&&P.gold-g===Math.round(R*.8),'delivered two days late: paid '+(P.gold-g)+' of '+R)}
+ G.day=d0;
+ // the world closes one: the bounty band broken by others, a consolation once, not a failure
+ world();P.quests=[];const qc2=t.makeQuest('bounty',ash);t.acceptQuest(qc2);const b2=t.bandits.find(b=>b.qid===qc2.id),g3=P.gold,r3=t.repAt('Ashford'),ends=[],fn=e=>ends.push(e.how);t.worldOn('quest:ended',fn);
+ try{t.questDay();ok(P.quests.includes(qc2),'its band about: still open');
+  t.routParty(b2,[]);t.questDay();t.questDay();
+  ok(!P.quests.includes(qc2)&&P.gold===g3+Math.round(qc2.reward.gold*t.QUEST_CLOSED.gold)&&t.repAt('Ashford')===r3&&ends.join()==='closed'&&G.msgs.some(m=>/^Quest over: .*Someone else broke the /.test(m.m)),'broken by another: closed with '+(P.gold-g3)+' gold once, its line, no reputation lost')}
+ finally{t.worldOff('quest:ended',fn)}
+ // the Quests tab, abandoning
+ world();P.quests=[];t.acceptQuest(t.makeQuest('supply',ash));t.openChar();t.act('char-tab','quests');ok(/Abandon/.test(panel())&&/days left/.test(panel())&&/Given by/.test(panel()),'the Quests tab lists them with time left and who gave them');
  const qid=P.quests[0].id;t.act('q-abandon',String(qid));ok(!P.quests.length,'abandoning removes it');t.act('char-close');
- // save and the map
- world();const qq=t.makeQuest('bounty',ash);t.acceptQuest(qq);t.saveGame();P.quests=[];t.act('load');ok(P.quests.length===1&&P.quests[0].id===qq.id&&t.bandits.some(b=>b.qid===qq.id),'quests and their targets survive a reload');
- near(ash);P.y+=40;world();t.frame();ok(true,'the map draws quest markers');
+ // save and the map: tracked and not (none tracked: no field)
+ world();const qq=t.makeQuest('bounty',ash);t.acceptQuest(qq);t.QuestTrack.set('q'+qq.id);t.saveGame();P.quests=[];delete P.track;t.act('load');
+ ok(P.quests.length===1&&P.quests[0].id===qq.id&&t.bandits.some(b=>b.qid===qq.id)&&P.track==='q'+qq.id,'quests, their targets and the one tracked survive a reload');
+ t.QuestTrack.set(null);world();t.saveGame();{const raw=JSON.parse(localStorage.getItem(t.SAVE));ok(raw&&raw.P&&!('track' in raw.P),'none tracked: the save has no track field')}
+ t.act('load');ok(!('track' in P)&&P.quests.length===1,'and loads without one');
+ t.QuestTrack.set('q'+P.quests[0].id);near(ash);P.y+=40;world();t.frame();ok(true,'the map draws quest markers, the tracked one too');
 });

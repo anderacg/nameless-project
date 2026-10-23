@@ -136,10 +136,12 @@ Kit.suite(({ok,info})=>{
   try{for(const D of all){const k=D.id;let q=null,home=null;
    for(const h of t.TOWNS){for(const l of [null,...W.lords.filter(l=>!l.dead)]){try{q=Kit.seeded(11,()=>t.makeQuest(k,h,l))}catch(x){q=null}if(q){home=h;break}}if(q)break}
    if(!q){bad.push(k+' (no offer anywhere)');continue}
-   if(!(q instanceof D.cls)||q.kind!==D||q.type!==k||Object.keys(q.reward).join()!=='gold,rep,honor,xp'||!q.title||!q.text||!(q.days>0))bad.push(k+' (its offer)');
+   // (a job's timing its own: a timed kind's days, an untimed one's none; a kind not a job, an escort, its days as ever)
+   const job=q instanceof t.JobQuest,dated=!job||q.timed;
+   if(!(q instanceof D.cls)||q.kind!==D||q.type!==k||Object.keys(q.reward).join()!=='gold,rep,honor,xp'||!q.title||!q.text||(dated?!(q.days>0):q.days!=null))bad.push(k+' (its offer)');
    // (taken: on your list, numbered, its due day, where it points, how far along)
    P.quests=[];const n0=P.qid||0;if(!Kit.seeded(12,()=>q.accept())){bad.push(k+' (not taken)');continue}
-   if(P.quests[0]!==q||q.id!==n0+1||q.due!==G.day+q.days||q.done!==false||typeof q.progress()!=='string')bad.push(k+' (taken)');
+   if(P.quests[0]!==q||q.id!==n0+1||(dated?q.due!==G.day+q.days:q.due!=null)||job&&q.taken!==G.day||q.done!==false||typeof q.progress()!=='string')bad.push(k+' (taken)');
    if(!q.handsOver&&!q.goal())bad.push(k+' (no goal)');
    // (saved and loaded: the same record, made its class again when used)
    {const snap=JSON.stringify(P.quests);t.saveGame(true);P.quests=[];t.loadGame();const z=P.quests[0];if(JSON.stringify(P.quests)!==snap||!(Q.as(z) instanceof D.cls))bad.push(k+' (the save)');q=z}
@@ -151,10 +153,13 @@ Kit.suite(({ok,info})=>{
     // (reported where it may be: paid, off your list, ended once)
     const at=t.TOWNS.find(h=>q.reportableAt(h)),g0=P.gold;if(!at||!q.turnIn(at)||P.quests.length||P.gold<g0+q.reward.gold||ended.filter(z=>z===q).length!==1)bad.push(k+' (reported)')}
    else if(q.handsOver){const at=t.TOWNS.find(h=>q.reportableAt(h));P.inv=P.inv.map(()=>null);P.troops={};if(q.ready()||q.turnIn(at)||!P.quests.includes(q))bad.push(k+' (handed in with nothing)')}
-   // (another taken, and failed when its due day passes: off your list, ended once)
-   {P.quests=[];const q2=Kit.seeded(13,()=>t.makeQuest(k,home,q.lord?W.lords.find(l=>l.name===q.giver):null));if(q2&&Kit.seeded(14,()=>q2.accept())){const d0=G.day,m0=G.msgs[G.msgs.length-1];G.day=q2.due+1;t.questDay();G.day=d0;if(P.quests.length||ended.filter(z=>z===q2).length!==1||!G.msgs.slice(G.msgs.indexOf(m0)+1).some(m=>/^Quest failed/.test(m.m)))bad.push(k+' (failed)')}else bad.push(k+' (a second not taken)')}
+   // (another taken: a job never fails for time, still yours long past any best-by day; an escort fails when its due day
+   // passes: off your list, ended once)
+   {P.quests=[];const q2=Kit.seeded(13,()=>t.makeQuest(k,home,q.lord?W.lords.find(l=>l.name===q.giver):null));if(q2&&Kit.seeded(14,()=>q2.accept())){const d0=G.day,m0=G.msgs[G.msgs.length-1];
+    if(job){G.day=(q2.due||d0)+30;t.questDay();G.day=d0;if(!P.quests.includes(q2)||ended.includes(q2)||G.msgs.slice(G.msgs.indexOf(m0)+1).some(m=>/^Quest failed/.test(m.m)))bad.push(k+' (failed for time)')}
+    else{G.day=q2.due+1;t.questDay();G.day=d0;if(P.quests.length||ended.filter(z=>z===q2).length!==1||!G.msgs.slice(G.msgs.indexOf(m0)+1).some(m=>/^Quest failed/.test(m.m)))bad.push(k+' (failed)')}}else bad.push(k+' (a second not taken)')}
    P.quests=[];Kit.world()}}finally{t.worldOff('quest:ended',fn)}
-  ok(!bad.length,'every job kind is offered in a fitting place, taken, saved and loaded as it was, done by its own deed on the bus (and no other), reported and paid, or failed on its due day'+(bad.length?': '+bad.slice(0,8).join('; '):''))}
+  ok(!bad.length,'every job kind is offered in a fitting place, taken, saved and loaded as it was, done by its own deed on the bus (and no other), reported and paid; a job never failed for time, an escort failed on its due day'+(bad.length?': '+bad.slice(0,8).join('; '):''))}
  // ================= the Thread kinds (story/thread.js), every one (the game registers none yet: the test kind, tests/kit.js
  // Kit.storyKinds): its steps are data that hold together; every way through it (each branch) walked, each step answered by its
  // own event on the bus (another's ignored), its record saved and loaded at each step; it ends once, by its last step's key

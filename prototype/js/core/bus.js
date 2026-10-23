@@ -9,11 +9,13 @@
    | event            | data                    | emitted where                                           | heard by          |
    |------------------|-------------------------|---------------------------------------------------------|-------------------|
    | band:beaten      | {band}                  | you broke it: battle/engage.js (a band, a camp's),  | quests (bounty)   |
-   |                  |                         | battle/parley.js (bandGone, lairGone)                   |                   |
+   |                  |                         | battle/parley.js (bandGone, lairGone), world/fights.js  |                   |
+   |                  |                         | routForce (one beaten beside your foes)                 |                   |
    | monster:slain    | {monster}               | you slew it: battle/engage.js                       | quests (beast)    |
    | site:cleared     | {site}                  | you cleared it: battle/engage.js (camp, cave),      | quests (clear),   |
    |                  |                         | battle/parley.js (lairGone)                             | steps (lair)      |
    | lord:beaten      | {lord}                  | you beat him: world/realms.js lordWon, parley.js (yield)| quests (lordkill) |
+   |                  |                         | fights.js routForce (beside your foes)                  |                   |
    | holding:razed    | {town}                  | you raided it to the ground: world/siege.js finishRaid  | quests (raid)     |
    | holding:raided   | {town}                  | you raided it (any part): world/siege.js finishRaid     | news (raid)       |
    | estate:burnt     | {town, estate}          | you burnt it: world/estates.js estateWon                | news (raid)       |

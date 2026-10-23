@@ -4,7 +4,7 @@
    your Quests (C) with where to go, marked on the map, saved with P.quests as every quest is, and its end told on the bus
    (quest:ended {e, how: 'paid' | 'failed'}; e.fate says which way, what a step branches by). A thread's step begins one with
    {step: kind, town, spec} (or {quest: 'escort', …}: the escort is a job kind too); its kinds are of the shape 'step' (not jobs:
-   the boards and QUEST_MAX never see them; Quest.make and Quest.as find them).
+   the boards never offer them and Quest.jobs never counts them; Quest.make and Quest.as find them).
    - StepQuest, the base (on the Quest shape, story/quest.js): not a job (counted false), never reported (it ends where it
      ends), no due day unless its spec gives days. Done: pay(fate, k): its prize applied, its line, 'Quest complete'. Failed:
      fail(why, fate): late (its due day passed), left (abandoned), or its kind's (an escort's captured); its forfeit applied
@@ -25,9 +25,6 @@
    free, else the first step at its place is reached; true when something opened. ---------- */
 class StepQuest extends Quest{
   get counted(){
-    return false;
-  }
-  full(){
     return false;
   }
   get kind(){

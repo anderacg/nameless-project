@@ -6,7 +6,7 @@
    another, ESCORT.offer). Its numbers and lines: data/encounters.js ESCORT.
    - The passenger rides inside your band: listed on the party card (world/supply.js supplyNow's tag) and in the Party window
      (Escort.html), eating with you (Escort.foodHour, world/supply.js), never fighting, taking no troop slot, no target of its
-     own (no figure on the map, none in battle). At most ESCORT.max at once; escorts do not count against QUEST_MAX.
+     own (no figure on the map, none in battle). At most ESCORT.max at once; escorts are not jobs (Quest.jobs does not count them).
    - spec: {who (ESCORT.who: child, refugees, traveller), n (its name: the kind's), eat (food a day: the kind's), to {town, lot
      (none: the holding; 'house' or an estate's key: one of its lots, i choosing which, no draw)}, days (none: the way's tiles ÷
      ESCORT.pace + slack), prize (the outcome on arrival), forfeit (on failing: reputation at its place), at {x, y} (where it

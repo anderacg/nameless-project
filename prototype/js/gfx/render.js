@@ -143,7 +143,7 @@ function drawWorld(){
   // each its own dot (WorldObject mapDot), layer by layer (MAP_LAYER; in a layer, as worldObjects lists them): the holdings and
   // sites you know of, then the beasts, parties and caravans in sight over them
   for(const o of worldObjects().filter(o=>o.mapKind in MAP_LAYER).sort((a,b)=>MAP_LAYER[a.mapKind]-MAP_LAYER[b.mapKind])){const d=o.mapDot(V);if(d)dot(o.x,o.y,d[0],d[1])}
-  P.quests.forEach(q=>{const g=questGoal(q);if(g)dot(g.x,g.y,'#ffe040',2)});
+  drawQuestDots(dot);// (the quests' goals, the tracked one the strongest: world/quests.js)
   for(const m of rumourMarks())if(rumourFade(m)>0)dot(m.x,m.y,RUMOUR_COL,2);
   dot(P.x,P.y,'#fff',3);
 }

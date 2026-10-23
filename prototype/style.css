@@ -17,6 +17,7 @@
      8. screens        inventory, talents, recruiting and unit cards, companions, troop cards, help and log
      8b. rail windows  a town's places or a holding's buildings down the left, the chosen one's window beside it (window.js)
      8c. full map      the world's map in a window (M, or the minimap): the map, its marks, its legend (map.js)
+     8d. quests        your Quests (C): the list and the one chosen in full; the quests' facts, the boards' too (questwindow.js)
      9. responsive     compact screens (phones, small windows), touch pointers, phones held upright
    ===================================================================================================================== */
 
@@ -899,6 +900,9 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 .fm-x{display:block;width:5px;height:5px;border:1px solid #07090e}
 .fm-x.bridge{background:#b8b0a0}.fm-x.ford{background:#ecdcaa;border-radius:50%}.fm-x.ferry{background:#7a4e2a;border-radius:1px 1px 3px 3px}
 .fm-you{display:block;width:10px;height:10px;border:2px solid #fff;border-radius:50%;background:var(--accent);box-shadow:0 0 0 1px #000,0 0 6px rgba(255,255,255,.8);animation:blink 1.2s steps(2) infinite}
+/* a quest's goal (world/quests.js questMapMarks): a gold diamond; the tracked one bigger, ringed in white */
+.fm-q{display:block;width:7px;height:7px;rotate:45deg;background:#ffe040;border:1px solid #07090e}
+.fm-q.on{width:11px;height:11px;z-index:1;box-shadow:0 0 0 2px #fff,0 0 6px rgba(255,224,64,.9)}
 /* the legend: a swatch and a name a line, by group */
 .fm-leg{flex:none;width:190px;overflow:auto;overscroll-behavior:contain;display:flex;flex-direction:column;gap:4px;padding:12px 14px;border-left:1px solid var(--line);font-size:var(--fs-sm);scrollbar-width:thin}
 .fm-leg .lab{margin-top:4px}
@@ -912,6 +916,43 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 }
 @media (max-width:720px),(max-height:520px){.fm{margin:0 -14px}}
 @media (prefers-reduced-motion:reduce){.fm-you{animation:none}}
+
+/* ---------- 8d. quests ---------- */
+/* questwindow.js: the Character window's Quests tab, two panes, each scrolling on its own: the list (the tracked one first,
+   your quests, the Stories; a row a button, the chosen one gold-edged) and the one chosen in full (its facts as label and
+   text, its steps, its buttons; Abandon asks in a box of its own). The facts (.qfacts) are the boards' offers' too
+   (world/quests.js). On a small window (a phone on its side) the list alone, then the chosen one alone (.open) */
+.panel:has(.qw){overflow:hidden}
+.panel>div:has(>.qw){flex:1;min-height:0;display:flex;flex-direction:column}
+.qw{flex:1;min-height:0;display:grid;grid-template-columns:minmax(200px,280px) minmax(0,1fr);border-top:1px solid var(--line)}
+.qw-list{min-height:0;overflow:auto;overscroll-behavior:contain;display:flex;flex-direction:column;gap:3px;padding:8px 10px 8px 0;border-right:1px solid var(--line);scrollbar-width:thin}
+.qw-list>*,.qw-detail>*{flex:none}
+.qw-list .lab{margin:6px 0 1px}.qw-list .lab:first-child{margin-top:0}
+.qw-row{display:flex;flex-direction:column;gap:2px;width:100%;min-height:var(--tap);padding:6px 10px;text-align:left;font:inherit;color:var(--fg);
+  background:transparent;border:1px solid transparent;border-radius:var(--r-md);cursor:pointer}
+.qw-row:hover{border-color:var(--line-2)}
+.qw-row.on{background:linear-gradient(var(--panel-3),var(--panel-2));border-color:var(--accent)}
+.qw-row strong{font-size:var(--fs-base);line-height:1.25}
+.qw-row small{font-size:var(--fs-md);color:var(--muted)}.qw-row small.good{color:var(--good)}
+.qw-tag{display:inline-block;margin-left:4px;padding:1px 5px;font-size:var(--fs-2xs);font-weight:700;letter-spacing:.06em;text-transform:uppercase;vertical-align:2px;
+  color:var(--accent-ink);background:var(--accent);border-radius:var(--r-sm)}
+.qw-detail{min-height:0;overflow:auto;overscroll-behavior:contain;display:flex;flex-direction:column;gap:10px;padding:10px 2px 10px 16px;scrollbar-width:thin}
+.qw-detail h3{font-size:var(--fs-xl);line-height:1.2;color:var(--accent)}
+.qw-text{color:var(--fg-2)}
+.qfacts{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:5px 12px;margin:0;font-size:var(--fs-md);line-height:1.35}
+.qfacts dt{padding-top:1px;font-size:var(--fs-xs);font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.qfacts dd{margin:0;min-width:0;overflow-wrap:anywhere}
+.row .info .qfacts{margin-top:5px}
+.qw-steps{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:2px}
+.qw-ask{display:flex;flex-direction:column;gap:8px;padding:10px 12px;border:1px solid var(--danger);border-radius:var(--r-md);background:rgba(224,96,90,.08)}
+.btn.bad{border-color:var(--danger);color:var(--danger)}
+@container ovl (max-width:760px) or (max-height:520px){
+  .qw{grid-template-columns:minmax(0,1fr)}
+  .qw-list{padding-right:0;border-right:0}.qw-detail{padding-left:0}
+  .qw.open .qw-list,.qw:not(.open) .qw-detail{display:none}
+  .qw-acts .btn,.qw-ask .btn{flex:1 1 0;min-height:40px}
+}
+@container ovl (max-width:520px){.qfacts{grid-template-columns:minmax(0,1fr);gap:1px}.qfacts dd{margin-bottom:5px}}
 
 /* ---------- 9. responsive ---------- */
 /* a touch screen: everything you press at least 44 px, and nothing that only hovering shows */
