@@ -9,7 +9,7 @@ try{
  ok(r.slots===slots+1&&c.id!==a.id&&c.id!==b.id&&c.count===1,'new-group recruitment creates another group of the same type');
  t.recruitment.hire(town,type);ok(c.count===2&&r.slots===slots+1,'subsequent recruits reinforce the newly created group');
  G.mode='world';G.modal=false;G.char='party';t.openChar();
- ok(document.getElementById('panel').textContent.includes('Army groups')&&document.querySelector('[data-act=army-edit]'),'party screen exposes group management');
+ ok(document.querySelector('.fb-unit[data-army-group="'+a.id+'"]')&&document.querySelector('.fb-inspector [data-act=army-edit]'),'party screen exposes group cards and management');
  t.act('army-split',c.id);ok(r.groups.filter(g=>g.type===type).length===4,'actual split button creates an independent group');
  const d=r.groups[r.groups.length-1];t.act('army-merge',d.id+':'+c.id);ok(!r.groups.some(g=>g.id===d.id)&&c.count===2,'actual merge button removes only the source group');
  while(r.slots<10)r.add(type,1,'new');G.recruitTarget='new';

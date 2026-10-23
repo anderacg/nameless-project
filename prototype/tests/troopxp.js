@@ -29,8 +29,8 @@ try{
  {P.troops={hum_levy:6};P.txp={};G.mode='world';G.enc={kind:'party',ref:{cool:0,x:P.x,y:P.y},list:['militia'],mine:true};const r=Math.random;Math.random=()=>.99;t.autoResolve();Math.random=r;
   ok(t.txpOf('hum_levy')>0,'an auto-resolved win teaches them too, a little ('+Math.round(t.txpOf('hum_levy'))+')');t.act('cont')}
  // the party window shows it
- {P.troops={hum_levy:2};P.txp={hum_levy:t.txpNeed('hum_levy')};G.mode='world';G.modal=false;G.char='party';t.openChar();const pan=document.getElementById('panel').textContent;
-  ok(/Experience \d+ \/ \d+/.test(pan)&&/1 ready to train/.test(pan),'the party window shows each kind’s experience and who is ready');G.mode='world';t.hidePanel()}
+ {P.troops={hum_levy:2};P.txp={hum_levy:t.txpNeed('hum_levy')};G.mode='world';G.modal=false;G.char='party';t.openChar();t.act('party-select',t.partyRoster(P).groups.find(g=>g.type==='hum_levy').id);const pan=document.getElementById('panel').textContent;
+  ok(new RegExp('Training · all '+t.ST.hum_levy.n+'\\s*'+Math.floor(t.txpOf('hum_levy'))+' / '+2*t.txpNeed('hum_levy')).test(pan)&&/1 ready to train/.test(pan),'the party window shows each kind’s experience and who is ready');G.mode='world';t.hidePanel()}
  // saved
  {P.troops={hum_levy:2};P.txp={hum_levy:33};t.saveGame(true);P.txp={};t.loadGame&&t.loadGame();ok(!t.loadGame||P.txp.hum_levy===33,'and it is saved')}
 }catch(e){o.push('EXC '+e.message+'\n'+e.stack)}

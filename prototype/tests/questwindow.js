@@ -94,7 +94,7 @@ Kit.suite(({ok,info})=>{
  t.act('qw-tab','past');
  {const r=rowOf('aq'+qb.id),f=facts();ok(r&&/Abandoned/.test(r.textContent)&&/reputation in Ashford −\d+/.test(r.textContent)&&q('.qw-detail h3').textContent===qb.title&&f['Given by']==='Ashford'&&f.Ended==='Day '+G.day&&/reputation in Ashford −\d+/.test(f.Cost)&&!q('.qw-detail .btn'),
    'the Archive: '+r.textContent+' · its detail: given by '+f['Given by']+', ended '+f.Ended+', cost '+f.Cost)}
- t.act('qw-tab','job');t.act('qw-abandon','q'+qc.id);esc();ok(G.mode==='world'&&P.quests.includes(qc)&&P.track==='q'+qc.id,'Esc follows the bar on a wide window: out to the map, nothing given up');
+ t.act('qw-tab','job');t.act('qw-abandon','q'+qc.id);esc();ok(G.mode==='char'&&!q('.qw-ask')&&P.quests.includes(qc)&&P.track==='q'+qc.id,'Esc cancels abandonment without changing the quest');esc();
  // ---- a phone on its side: the tabs and the list, then the chosen one alone; Back to the list; all on the screen
  {const css0=scr.style.cssText;scr.style.cssText+=';width:844px;height:390px';
   try{t.openChar();t.act('char-tab','quests');q('#panel').style.animation='none';
@@ -103,7 +103,7 @@ Kit.suite(({ok,info})=>{
    ok(vis(q('.qw-tabs'))&&qa('.qw-tabs .btn').every(inside)&&vis(q('.qw-list'))&&!vis(q('.qw-detail'))&&!q('#panel > .nav [data-nav="back"]'),'at 844 x 390: the tabs and the list alone, no Back');
    t.act('qw-sel','q'+qc.id);q('#panel').style.animation='none';
    const p=q('#panel'),nv=q('#panel > .nav'),back=nv.querySelector('[data-nav="back"]'),bs=qa('.qw-detail .qw-acts .btn');
-   ok(!vis(q('.qw-list'))&&!vis(q('.qw-tabs'))&&vis(q('.qw-detail'))&&back&&back.textContent==='Back'&&nv.querySelector('[data-nav="close"]'),'chosen: the courier alone, its bar Back on the left, the way out on the right');
+   ok(!vis(q('.qw-list'))&&vis(q('.qw-tabs'))&&vis(q('.qw-detail'))&&back&&back.textContent==='Back'&&nv.querySelector('[data-nav="close"]'),'chosen: the courier with bookmark tabs, Back on the left, the way out on the right');
    ok(inside(p)&&inside(nv)&&bs.length===3&&bs.every(inside)&&p.scrollWidth<=p.clientWidth+1&&q('.qw-detail').scrollWidth<=q('.qw-detail').clientWidth+1,
      'everything on the screen: the window ('+Math.round(p.getBoundingClientRect().width)+' x '+Math.round(p.getBoundingClientRect().height)+'), its bar, its buttons; nothing scrolls sideways');
    ok(bs.every(b=>b.getBoundingClientRect().height>=39),'its buttons big enough to tap ('+bs.map(b=>Math.round(b.getBoundingClientRect().height)).join(', ')+' px)');

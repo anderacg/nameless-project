@@ -29,7 +29,8 @@ try{
   t.cpGive('brann','hum_levy',3);t.cpGive('brann','hum_bow',2);const party=c.party,snapshot=JSON.stringify(party.tc);
   G.mode='world';G.modal=false;t.hidePanel();t.openComp('brann');let text=document.getElementById('panel').textContent;
   const levy=t.ST.hum_levy.n,bow=t.ST.hum_bow.n;
-  const take=()=>document.querySelector('[data-cp-transfer="take"] [data-cp-field="source"]'),options=[...take().options].map(el=>el.textContent);
+  t.act('cm-army');t.act('party-transfer-dir','take');const take=()=>document.querySelector('[data-cp-transfer="take"] [data-act="party-transfer-pick"][data-arg="take:source"]');
+  t.act('party-transfer-pick','take:source');const options=[...document.querySelectorAll('#panel [data-act="fb-choice"]')].map(el=>el.textContent);t.act('fb-cancel');
   ok(options.some(s=>s.includes(levy)&&s.includes('3 fit'))&&options.some(s=>s.includes(bow)&&s.includes('2 fit')),'companion source choices show separate groups and fit counts');
   ok(options[0].includes(levy)&&options[1].includes(bow)&&JSON.stringify(party.tc)===snapshot,'group choices preserve formation order without changing party counts');
   t.cpDisband('brann',false);t.renderComp();ok(!take(),'a companion without a party has no stale take-back choices');

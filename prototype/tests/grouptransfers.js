@@ -58,8 +58,8 @@ try{
  f=fixture(true);peer=t.partyRoster(f.c.party);peer.add('hum_foot',2);peer.add('hum_foot',3,'new');const dest=peer.groups[1];
  G.mode='world';G.modal=false;t.hidePanel();t.openComp('brann');
  t.act('cm-army');ok(panel.scrollWidth<=panel.clientWidth+1,'companion transfer layout fits the available game-panel width without horizontal overflow');
- if(panel.clientWidth-40<=760){const side=panel.querySelector('.cmside'),main=panel.querySelector('.cmmain');ok(getComputedStyle(side).position==='static'&&main.getBoundingClientRect().top>=side.getBoundingClientRect().bottom-1,'narrow-panel stat card stacks above the controls instead of overlapping them')}
- const change=(direction,field,value,type='change')=>{const el=panel.querySelector('[data-cp-transfer="'+direction+'"] [data-cp-field="'+field+'"]');el.value=String(value);el.dispatchEvent(new Event(type,{bubbles:true}));return el};
+ ok(!panel.querySelector('select')&&panel.querySelector('.fb-comp-detail'),'transfers use touch choice pages inside the character sheet');
+ const change=(direction,field,value,type='change')=>{if(field!=='count'){t.act('party-transfer-pick',direction+':'+field);t.act('fb-choice',value);t.act('fb-apply');return}const el=panel.querySelector('[data-cp-transfer="'+direction+'"] [data-cp-field="'+field+'"]');el.value=String(value);el.dispatchEvent(new Event(type,{bubbles:true}));return el};
  before=state();change('give','source',f.b.id);change('give','target',dest.id);const input=change('give','count',2,'input');input.focus();change('give','count',3,'input');
  ok(state()===before&&panel.querySelector('[data-cp-transfer="give"] [data-cp-field="count"]')===input&&document.activeElement===input,'draft editing is read-only and quantity typing preserves input identity and focus');
  const button=panel.querySelector('[data-act="cm-transfer-review"][data-arg="give"]');change('give','count',3);ok(panel.querySelector('[data-act="cm-transfer-review"][data-arg="give"]')===button,'quantity blur does not replace the pending Review click target');
@@ -68,10 +68,10 @@ try{
  t.act('cm-transfer-review','give');t.act('cm-transfer-confirm','give');ok(f.b.count===4&&dest.count===5&&peer.groups[0].count===2,'actual confirm transfers to the selected duplicate');before=state();t.act('cm-transfer-confirm','give');ok(state()===before,'confirmation cannot be replayed');
  change('give','source',f.a.id);change('give','count',1);t.act('cm-transfer-review','give');f.r.remove('hum_foot',1,f.a.id);before=state();t.act('cm-transfer-confirm','give');ok(state()===before&&panel.textContent.includes('transfer changed'),'changed source strength requires a fresh review');
  change('give','source',f.a.id);t.act('cm-transfer-review','give');peer.add('hum_foot',1);before=state();t.act('cm-transfer-confirm','give');ok(state()===before&&!G.compTransfer.give.review,'changed destination capacity invalidates an old review');
- ok(panel.querySelector('[data-cp-transfer="give"] [data-cp-field="source"]').textContent.includes('First <Guard>')&&!panel.querySelector('Guard'),'custom group names are safe literal text in transfer controls');
+ ok(panel.querySelector('[data-cp-transfer="give"]').textContent.includes('First <Guard>')&&!panel.querySelector('Guard'),'custom group names are safe literal text in transfer controls');
  G.mode='world';G.modal=false;t.hidePanel();t.saveGame(true,'quick');const saved=JSON.stringify({army:P.army,peer:P.comps.brann.party.army});t.begin('hedge');t.loadGame('quick');
  ok(JSON.stringify({army:P.army,peer:P.comps.brann.party.army})===saved,'both armies retain transferred boundaries and metadata through current-schema save/load');
- G.mode='world';G.modal=false;t.hidePanel();t.openComp('brann');ok(panel.querySelector('[data-cp-transfer="take"] [data-cp-field="source"]')?.options.length===2,'loaded companion armies can be managed immediately, before a world tick');
+ G.mode='world';G.modal=false;t.hidePanel();t.openComp('brann');t.act('cm-army');t.act('party-transfer-dir','take');t.act('party-transfer-pick','take:source');ok(panel.querySelectorAll('[data-act="fb-choice"]').length===2,'loaded companion armies can be managed immediately, before a world tick');t.act('fb-cancel');
  const ally=t.asParty(P.comps.brann.party),arm=t.partyRoster(ally),allyIds=arm.groups.map(g=>g.id),foe=t.asParty({kind:'bandits',troops:['militia'],x:P.x+5,y:P.y});
  G.enc={kind:'party',ref:foe,list:['militia'],allies:[t.forceOf(ally)],foes:[]};t.startBattle({enemies:['militia'],deploy:false});
  const controls=Object.values(t.B.groups).filter(g=>g.ally&&g.sourceGroupId);

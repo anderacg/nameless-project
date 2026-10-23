@@ -21,7 +21,7 @@ try{
  t.updateHUD(true);ok(Kit.qa('#stats .pc-tags .tag').some(e=>e.textContent==='Burdened'&&/slower/.test(e.title)),'on the card');
  // the bag window: the overflow slots in red
  G.mode='world';G.modal=false;t.openInv();
- ok(Kit.qa('.invgrid .slot.over').length===5&&Kit.qa('.invgrid .slot').length===I.size+5&&/5 over: pace −20%/.test(Kit.q('.top').textContent)&&Kit.q('.invcap.over'),'the bag window: the 5 overflow slots in red after the bag\'s own, and the cost');
+ ok(Kit.qa('.invgrid .slot.over').length===5&&Kit.qa('.invgrid .slot').length===I.size+5&&/Pace −20%/.test(Kit.q('.fb-head').textContent)&&/5 overflow · pace −20%/.test(Kit.q('.fb-bag-footer').textContent)&&Kit.q('.invcap.over')&&getComputedStyle(Kit.q('.invgrid .slot.over')).borderTopColor===getComputedStyle(Kit.q('.invcap.over i')).backgroundColor,'the bag window: the 5 overflow slots in red after the bag\'s own, and the cost');
  // freeing a slot: the pace back, the overflow settled into it
  t.act('inv-drop','0');t.act('inv-drop','0');ok(I.over===4&&near(t.bagPace(),.84)&&Kit.qa('.invgrid .slot.over').length===4&&P.inv[0]&&P.inv.length===I.size+4,'dropping one gives 4% back at once; what lay past the bag moves into the freed slot');
  t.act('inv-close');

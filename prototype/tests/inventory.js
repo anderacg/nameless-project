@@ -41,11 +41,11 @@ try{
  t.invSort();const order=P.inv.filter(Boolean).map(x=>x.id+(x.k==='mat'?'×'+x.n:''));ok(order.join(',')==='wyrmspear,g_sword_1,g_helm_5,bearcoat,g_ring_2,scale×2,pelt×7','sort by slot, then best first, then trophies ('+order.join(', ')+')');
  // the screen
  G.mode='world';G.modal=false;t.hidePanel();window.dispatchEvent(new KeyboardEvent('keydown',{key:'i'}));ok(G.mode==='inv','I opens the inventory');
- ok(document.querySelectorAll('.doll .slot').length===27&&document.querySelectorAll('.doll .slot.ring').length===10&&document.querySelectorAll('.invgrid .slot').length===P.inv.length,'the body with 17 slots, 10 fingers, and the bag');
- ok(document.querySelector('.doll .slot[data-arg="eq:offhand"]')&&document.querySelector('.doll .slot[data-arg="eq:mhead"].off'),'off hand on the body; mount gear greyed with no mount');
- t.act('inv-sel','0');ok(/Wyrm Tooth Spear/.test(document.querySelector('.invR').innerHTML)&&/Compared with/.test(document.querySelector('.invR').innerHTML)&&/hybrid/.test(document.querySelector('.invR').innerHTML),'details pane shows the item, its grip and a comparison');
- ok(document.querySelector('.doll .slot[data-arg="eq:weapon"].fit')&&!document.querySelector('.doll .slot[data-arg="eq:offhand"].fit'),'the main hand glows for a hybrid spear; the off hand does not');
- t.act('inv-tab','trophies');ok(document.querySelectorAll('.invgrid .slot.dim').length===P.inv.filter(x=>x&&x.k!=='mat').length,'the Trophies & valuables tab dims everything else');t.act('inv-tab','all');
+ ok(document.querySelectorAll('.fb-equipment .slot').length===27&&document.querySelectorAll('.fb-equipment .slot.ring').length===10&&document.querySelectorAll('.invgrid .slot').length===P.inv.length,'equipment with 17 slots, 10 separate rings, and the bag');
+ ok(document.querySelector('.fb-equipment .slot[data-arg="eq:offhand"]')&&document.querySelector('.fb-equipment .slot[data-arg="eq:mhead"].off'),'off hand on the body; mount gear greyed with no mount');
+ t.act('inv-sel','0');ok(/Wyrm Tooth Spear/.test(document.querySelector('.fb-item-detail').innerHTML)&&/Compared with/.test(document.querySelector('.fb-item-detail').innerHTML)&&/hybrid/.test(document.querySelector('.fb-item-detail').innerHTML),'details pane shows the item, its grip and a comparison');
+ ok(document.querySelector('.fb-equipment .slot[data-arg="eq:weapon"].fit')&&!document.querySelector('.fb-equipment .slot[data-arg="eq:offhand"].fit'),'the main hand glows for a hybrid spear; the off hand does not');
+ t.act('inv-tab','trophies');ok(document.querySelectorAll('.invgrid .slot').length===P.inv.filter(x=>x&&(t.itemCat(x)||{}).tab==='trophies').length,'the Trophies & valuables tab filters to matching items');t.act('inv-tab','all');
  t.act('inv-drop','0');ok(P.inv[0],'first drop click asks to confirm');t.act('inv-drop','0');ok(!P.inv[0],'second click drops it');
  window.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape'}));ok(G.mode==='world','Escape closes the inventory');
  const blank=[...Object.values(t.ITEMS),...Object.values(t.MATS),...Object.values(t.GOODS)].filter(d=>{const c=t.itemIcon(d),px=c.getContext('2d').getImageData(0,0,16,16).data;let n=0;for(let i=3;i<px.length;i+=4)if(px[i])n++;return n<20});

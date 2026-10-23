@@ -55,7 +55,7 @@ try{
  const g0=P.gold,p=t.gearPrice('q_soldier');t.act('buy-quiver','q_soldier');const i=P.inv.findIndex(s=>s&&s.id==='q_soldier');
  ok(i>=0&&P.gold===g0-p,'bought: into your bag ('+p+'g), a bag slot while unworn');t.act('leave');Kit.done({world:true});
  ok(t.invEquip(i)&&P.gear.quiver==='q_soldier'&&!P.inv.some(s=>s&&s.id==='q_soldier'),'worn in its slot');
- G.mode='world';G.modal=false;t.openInv();ok(Kit.q('.doll .slot[data-arg="eq:quiver"]')&&Kit.qa('.doll .slot').length===t.EQUIP.length,'on the body: its slot ('+t.EQUIP.length+' in all)');t.act('inv-close');
+ G.mode='world';G.modal=false;t.openInv();ok(Kit.q('.fb-equipment .slot[data-arg="eq:quiver"]')&&Kit.qa('.fb-equipment .slot').length===t.EQUIP.length,'on the body: its slot ('+t.EQUIP.length+' in all)');t.act('inv-close');
  {const B=fight();ok(t.heroShotsLeft()===40,'and its 40 shots in the next battle');end()}
  // ---- loot and the market: no arrows
  Kit.world();G.lastTown=null;t.enterTown(ash);t.act('tab','trade');ok(!/>Arrows</.test(Kit.panel())&&!/>Bolts</.test(Kit.panel())&&/Hunter’s quiver/.test(Kit.panel()),'the market: quivers, never arrows nor bolts');t.act('leave');Kit.done({world:true});

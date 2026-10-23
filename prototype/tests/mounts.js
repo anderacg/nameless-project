@@ -29,8 +29,8 @@ try{
  P.troops={};
  // the inventory screen
  empty();t.invAdd('good','spice',4);G.mode='world';G.modal=false;t.hidePanel();t.openInv();t.act('inv-sel','0');
- ok(/Spice/.test(document.querySelector('.invR').innerHTML)&&/Trade good/.test(document.querySelector('.invR').innerHTML),'goods show in the bag with details');
- ok(document.querySelector('.doll .slot[data-arg="eq:mount"]'),'the paper doll has a Mount slot');t.act('inv-close');
+ ok(/Spice/.test(document.querySelector('.fb-item-detail').innerHTML)&&/Trade good/.test(document.querySelector('.fb-item-detail').innerHTML),'goods show in the bag with details');
+ ok(document.querySelector('.fb-equipment .slot[data-arg="eq:mount"]'),'the equipment has a Mount slot');t.act('inv-close');
  // stables
  G.lastTown=null;P.gold=5000;P.rep={};t.enterTown(ash);t.act('tab','stable');
  const st=t.stableStock(ash);ok(st.includes('m_mule')&&st.includes('m_horse')&&st.includes('m_courser')&&!st.includes('m_warg')&&!st.includes('m_griffin'),'Ashford stable: '+st.map(id=>t.ITEMS[id].n).join(', '));

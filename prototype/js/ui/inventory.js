@@ -33,7 +33,7 @@ function gearDiff(id,key){
   const sk=new Set([...Object.keys(a.sk||{}),...Object.keys(b.sk||{})]);for(const k of sk){const d=((a.sk||{})[k]||0)-((b.sk||{})[k]||0);if(d)out.push('<span class="'+(d>0?'good':'bad')+'">'+(d>0?'+':'')+d+' '+SKILLS[k].n+'</span>')}
   return out;
 }
-function openInv(){if(G.mode!=='world'||G.modal)return;G.mode='inv';G.invSel=null;G.invArm=null;G.invTab=G.invTab||'all';renderInv()}
+function openInv(){if(G.mode!=='world'||G.modal)return;G.mode='inv';G.invSel=null;G.invArm=null;G.invMore=false;G.invTab=G.invTab||'all';renderInv()}
 // the selected bag item, if it is gear
 const selGear=()=>{const k=G.invSel;if(k==null||String(k).startsWith('eq:'))return null;const s=P.inv[k];return s&&s.k==='gear'?s.id:null};
 // a slot: its record (s), its key (a bag slot's index, or eq:slot), its label when empty, its classes (a quest item's bound: marked)
@@ -48,7 +48,7 @@ const dropBtn=k=>'<button class="btn sm" type="button" data-act="inv-drop" data-
 // (Drop where its category allows it: a quest item is bound)
 const dropIf=(k,K)=>K.verb('drop')&&K.verb('drop').shown(k)?dropBtn(k):'';
 function detailHtml(){
-  const k=G.invSel;if(k==null)return '<p class="muted">Select an item to see what it does. Drag it onto the body to wear it, or double-click it.</p>';
+  const k=G.invSel;if(k==null)return '<p class="muted">Select an item to compare it, then choose an action below.</p>';
   const eq=String(k).startsWith('eq:'),key=eq?k.slice(3):null,s=eq?(P.gear[key]?{k:'gear',id:P.gear[key],n:1}:null):P.inv[k];
   if(!s)return '<p class="muted">'+(eq?(blockedWhy(key)||SLOTS[slotOfKey(key)]+' slot is empty. '+(MOUNT_KEYS.includes(key)?'Stables and smiths sell mount gear.':key==='offhand'?'Hold a shield, a tome, a torch, or a second one-handed weapon.':'Smiths sell gear, and monsters and enemies drop it.')):'Empty slot.')+'</p>';
   const K=itemKind(s),C=K.cat(s)||{n:'Not an item'},over=!eq&&k>=playerInventory.size?'<p class="bad">In an overflow slot: it weighs on your pace.</p>':'';
@@ -67,37 +67,30 @@ function detailHtml(){
     '<div class="btns"><button class="btn sm primary" type="button" data-act="inv-equip" data-arg="'+k+'"'+(why?' disabled':'')+'>'+(I.slot==='weapon'?(cur?'Swap main hand':'Main hand'):cur?'Swap':'Equip')+'</button>'+
     (off?'<button class="btn sm" type="button" data-act="inv-off" data-arg="'+k+'"'+(K.verb('off').why(k)?' disabled':'')+'>'+(P.gear.offhand?'Swap off hand':'Off hand')+'</button>':'')+dropIf(k,K)+'</div>'+over;
 }
-// where each slot sits on the 270 × 436 body, and five fingers by each hand (off hand first, main hand second)
-const DOLL={ear:[58,30,'Earring'],head:[115,14,'Head'],face:[172,30,'Face'],arms:[24,84,'Arms'],body:[115,90,'Body'],cape:[206,84,'Cape'],
-  offhand:[18,150,'Off hand'],weapon:[212,150,'Main hand'],belt:[115,162,'Belt'],bag:[50,262,'Bag'],quiver:[180,262,'Quiver'],legs:[115,218,'Legs'],feet:[115,276,'Feet'],
-  mount:[14,358,'Mount'],mhead:[84,358,'Barding head'],marmor:[136,358,'Barding'],macc:[188,358,'Accessory']};
-const FINGERS=[[4,198],[30,202],[56,206],[14,226],[40,230],[242,198],[216,202],[190,206],[232,226],[206,230]];
-const BODY_SVG='<svg class="body" viewBox="0 0 270 330" width="270" height="330" aria-hidden="true"><g fill="#e4e0cf"><circle cx="135" cy="50" r="24"/><rect x="102" y="80" width="66" height="100" rx="14"/>'+
-  '<rect x="74" y="84" width="24" height="92" rx="10"/><rect x="172" y="84" width="24" height="92" rx="10"/><rect x="106" y="182" width="26" height="128" rx="10"/><rect x="138" y="182" width="26" height="128" rx="10"/></g></svg>';
+// Equipment slots retain their identities; each has its own labelled touch target.
+const INV_SLOT_LABELS={ear:'Earring',head:'Head',face:'Face',arms:'Arms',body:'Body',cape:'Cape',offhand:'Off hand',weapon:'Main hand',belt:'Belt',bag:'Bag',quiver:'Quiver',legs:'Legs',feet:'Feet',mount:'Mount',mhead:'Barding head',marmor:'Barding',macc:'Accessory'};
 // (the tabs: data/items.js BAG_TABS, each category's tab; Supplies shows your food, drink and morale over its items, read only)
 function suppliesLine(){const S=supplyNow(),d=x=>(x>=10?Math.floor(x):Math.floor(x*10)/10)+' days';
   return '<p class="invsup muted">Food for about <b>'+d(S.foodDays)+'</b> · drink for about <b>'+d(S.drinkDays)+'</b> · morale <b>'+Math.round(P.morale)+'</b></p>'}
 const GRIP_N={one:'One hand',dual:'Dual wield',shield:'Sword & board',two:'Two hands'};
+function invItemPanel(){
+ const box=document.createElement('div');box.innerHTML=detailHtml();const acts=[...box.querySelectorAll('.btns')].map(e=>{const v=e.innerHTML;e.remove();return v}).join(''),k=G.invSel,eq=String(k).startsWith('eq:'),rec=eq?(P.gear[String(k).slice(3)]?{k:'gear',id:P.gear[String(k).slice(3)],n:1}:null):P.inv[k];
+ box.querySelectorAll('p').forEach(e=>{if(/Takes both hands|overflow slot|Bound to its quest|cannot|not enough/i.test(e.textContent))e.classList.add('fb-warning')});
+ const diff=box.querySelector('.diff');if(diff){const lab=diff.previousElementSibling;box.prepend(diff);if(lab)box.prepend(lab)}
+ const heading=box.querySelector('h3');if(heading){const wrap=document.createElement('div');wrap.className='fb-item-summary';wrap.innerHTML=(rec?'<span data-icon="'+rec.k+':'+rec.id+'"></span>':'')+heading.outerHTML;heading.remove();box.prepend(wrap)}
+ return '<section class="fb-pane fb-item-detail" aria-label="Selected item"><div class="fb-scroll" data-fb-scroll="item:'+htmlText(k)+':'+htmlText(rec?.id||'empty')+'">'+box.innerHTML+'</div><div class="fb-item-actions">'+acts+fbBtn('inv-more',null,G.invMore?'Less':'Details',null,'fb-item-more')+'</div></section>';
+}
 function renderInv(){
-  playerInventory.settle();// (the overflow tidied into any slot freed since: core/inventory.js)
-  const I=playerInventory,size=I.size,used=I.used,over=I.over,fit=selGear(),hs=heroStats(),tab=BAG_TABS.some(([k])=>k===G.invTab)?G.invTab:'all';
-  const dim=s=>s&&tab!=='all'&&(itemCat(s)||{}).tab!==tab;
-  const at=(x,y)=>'left:'+x+'px;top:'+y+'px';
-  const place=(key,x,y,label,cls)=>{let c=cls||'eq';const why=blockedWhy(key);if(why)c+=MOUNT_KEYS.includes(key)?' off':' lock';else if(fit&&accepts(key,fit))c+=' fit';
-    return eqHtml(key,why&&key==='offhand'?'Both hands':label,c).replace('<button ','<button style="'+at(x,y)+'" ')};
-  const doll=Object.entries(DOLL).map(([k,[x,y,l]])=>place(k,x,y,l)).join('')+EQUIP.filter(k=>k.startsWith('ring')).map((k,i)=>place(k,FINGERS[i][0],FINGERS[i][1],'R'+(i+1),'eq ring')).join('');
-  const lbl=(x,y,t)=>'<span class="lbl" style="'+at(x,y)+'">'+t+'</span>';
-  showPanel('<div class="top"><h2>Inventory</h2><span class="muted">'+used+' / '+size+' slots'+(over?' · <span class="bad">'+over+' over: pace −'+Math.round((1-I.burden())*100)+'%</span>':'')+' · <span class="gold">'+P.gold+' gold</span></span></div>'+
-    '<div class="inv"><div class="doll" aria-label="Equipment">'+BODY_SVG+lbl(8,6,'Equipment')+lbl(16,138,'Off hand')+lbl(206,138,'Main hand')+
-      '<div class="rule"></div>'+lbl(8,338,'Mount · '+(mountDef()?mountDef().n:'on foot'))+doll+
-      '<div class="dstats"><span>HP <b>'+hs.hp+'</b></span><span>DMG <b>'+Math.round(hs.dmg)+'</b></span><span>'+(hs.range?'Range <b>'+hs.range+'</b>':'Reach <b>'+Math.round(hs.reach)+'</b>')+'</span><span class="gold">'+GRIP_N[grip()]+'</span></div></div>'+
-    '<div class="invB"><div class="invtabs">'+BAG_TABS.map(([k,l])=>'<button class="btn sm'+(tab===k?' on':'')+'" type="button" data-act="inv-tab" data-arg="'+k+'" aria-pressed="'+(tab===k)+'">'+l+'</button>').join('')+
-      '<span class="grow"></span><button class="btn sm" type="button" data-act="inv-sort">Sort</button></div>'+
-      '<div class="invcap'+(over?' over':'')+'" title="'+used+' of '+size+' slots'+(over?', '+over+' past them (at most '+BAG.maxOver+')':'')+' · food for about '+Math.floor(foodN()/eatPerDay())+' days"><i style="width:'+Math.min(100,Math.round(100*used/size))+'%"></i></div>'+
-      (tab==='supplies'?suppliesLine():'')+
-      '<div class="invgrid">'+P.inv.map((s,i)=>slotHtml(s,i,i<size?'Empty slot':'Overflow slot',[dim(s)?'dim':'',i>=size?'over':''].filter(Boolean).join(' '))).join('')+'</div>'+
-      '<div class="invR" aria-live="polite">'+detailHtml()+'</div></div></div>'+nav(null,['inv-close',null,'Back to map']));
-  fillIcons();
+ playerInventory.settle();
+ const I=playerInventory,size=I.size,used=I.used,over=I.over,fit=selGear(),hs=heroStats(),tab=BAG_TABS.some(([k])=>k===G.invTab)?G.invTab:'all';
+ const place=key=>{const label=key.startsWith('ring')?'Ring '+(+key.slice(4)+1):INV_SLOT_LABELS[key]||SLOTS[slotOfKey(key)],why=blockedWhy(key),c='eq'+(key.startsWith('ring')?' ring':'')+(why?(MOUNT_KEYS.includes(key)?' off':' lock'):fit&&accepts(key,fit)?' fit':'');return eqHtml(key,label,c)};
+ const group=(title,keys)=>'<div class="fb-eq-group"><small>'+title+'</small><div class="fb-eq-grid">'+keys.map(place).join('')+'</div></div>';
+ const equipment='<section class="fb-pane fb-equipment" aria-label="Equipment"><div class="fb-pane-head"><h3>Equipment</h3>'+fbIcon('hero')+'</div><div class="fb-scroll" data-fb-scroll="equipment">'+group('WORN',EQUIP.filter(k=>!k.startsWith('ring')&&!MOUNT_KEYS.includes(k)))+group('RINGS · TEN SEPARATE SLOTS',EQUIP.filter(k=>k.startsWith('ring')))+group('MOUNT · '+(mountDef()?mountDef().n:'ON FOOT'),MOUNT_KEYS)+'<div class="fb-stat-grid">'+fbStat('wounded','Health',hs.hp)+fbStat('power','Damage',Math.round(hs.dmg))+'</div></div></section>';
+ const labels={all:['bag','All'],equip:['sword','Gear'],supplies:['food','Supply'],goods:['crate','Goods'],trophies:['gold','Loot'],quest:['scroll','Quest']};
+ const bag='<section class="fb-pane fb-bag" aria-label="Bag"><div class="fb-bag-categories" role="tablist" aria-label="Item categories">'+BAG_TABS.map(([k,l])=>'<button class="btn sm'+(tab===k?' on':'')+'" type="button" role="tab" aria-selected="'+(tab===k)+'" tabindex="'+(tab===k?0:-1)+'" aria-label="'+l+'" data-act="inv-tab" data-arg="'+k+'">'+fbIcon(labels[k][0])+labels[k][1]+'</button>').join('')+'</div><div class="invcap'+(over?' over':'')+'" title="'+used+' of '+size+' slots'+(over?', '+over+' past them (at most '+BAG.maxOver+')':'')+'" role="meter" aria-label="Bag slots used" aria-valuenow="'+used+'" aria-valuemin="0" aria-valuemax="'+Math.max(size,used)+'"><i style="width:'+Math.min(100,100*used/size)+'%"></i></div>'+(tab==='supplies'?suppliesLine():'')+'<div class="fb-scroll" data-fb-scroll="bag:'+tab+'"><div class="invgrid">'+P.inv.map((rec,i)=>tab!=='all'&&(!rec||(itemCat(rec)||{}).tab!==tab)?'':slotHtml(rec,i,i<size?'Empty slot':'Overflow slot',i>=size?'over':'')).join('')+'</div></div><div class="fb-bag-footer"><span>'+used+' / '+size+' slots'+(over?' · <b class="bad">'+over+' overflow · pace −'+Math.round((1-I.burden())*100)+'%</b>':'')+'</span>'+fbBtn('inv-sort',null,fbIcon('bag')+' Sort')+'</div></section>';
+ const views='<div class="fb-inv-views">'+fbTabs([['bag','Bag'],['equipment','Equipment']],G.invView||'bag','inv-view','Inventory pages')+'</div>';
+ const body='<div class="fb-inventory">'+views+'<div class="fb-inv-work '+(G.invView==='equipment'?'equipment ':'')+(G.invMore?'expanded':'')+'">'+equipment+bag+invItemPanel()+'</div></div>';
+ fbShow('Inventory',fbIcon('gold')+' '+P.gold+' gold'+(over?' · <span class="bad">Pace −'+Math.round((1-I.burden())*100)+'%</span>':''),'',body,G.invMore?['inv-back',null,'Back']:null,['inv-close',null,'Back to map'],'fb-inv');fillIcons();
 }
 function invAct(a,arg){
   if(!a.startsWith('inv-'))return false;
@@ -105,7 +98,10 @@ function invAct(a,arg){
   if(G.mode!=='inv')return true;
   const key=arg!=null&&!String(arg).startsWith('eq:')&&a!=='inv-unequip'&&a!=='inv-tab'?+arg:arg;
   if(a!=='inv-drop')G.invArm=null;
-  if(a==='inv-sel')G.invSel=String(G.invSel)===String(key)?null:key;
+  if(a==='inv-sel'){G.invSel=String(G.invSel)===String(key)?null:key;G.invMore=false}
+  else if(a==='inv-view'){G.invView=arg;G.invMore=false}
+  else if(a==='inv-more')G.invMore=!G.invMore;
+  else if(a==='inv-back')G.invMore=false;
   else if(a==='inv-tab')G.invTab=arg;
   // (a piece's verbs: its kind's Choices, core/items.js)
   else if(a==='inv-equip'){const s=P.inv[key];if(s&&s.k==='gear'){const tk=targetKey(s.id);if(itemKind(s).verb('equip').perform(key))G.invSel='eq:'+tk}}

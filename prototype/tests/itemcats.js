@@ -33,11 +33,11 @@ try{
  {const i=at('quest','heirloom');t.DROP_VERB.run(i);t.SELL_VERB.run(i);ok(P.inv[i]&&P.inv[i].id==='heirloom','and asked anyway, a quest item stays')}
  // ---- the bag: its tabs, its sort
  G.mode='world';G.modal=false;t.openInv();
- ok(Kit.qa('.invtabs [data-act="inv-tab"]').map(b=>b.textContent).join('|')==='All|Equipment|Supplies|Goods|Trophies & valuables|Quest','the bag\'s tabs: All, Equipment, Supplies, Goods, Trophies & valuables, Quest');
- const dimmed=tab=>{t.act('inv-tab',tab);return P.inv.map((s,i)=>[s,i]).filter(([s,i])=>s&&Kit.q('.invgrid .slot[data-arg="'+i+'"]').classList.contains('dim')).map(([s])=>s.id).sort().join()};
- ok(dimmed('equip')===['grain','heirloom','pelt','ring'].sort().join()&&dimmed('quest')===['grain','g_sword_1','pelt','ring'].sort().join()&&dimmed('trophies')===['grain','g_sword_1','heirloom'].sort().join(),'each tab dims what is not of its categories (Equipment, Quest, Trophies & valuables)');
+ {const tabs=Kit.qa('.fb-bag-categories [data-act="inv-tab"]');ok(tabs.map(b=>b.getAttribute('aria-label')).join('|')==='All|Equipment|Supplies|Goods|Trophies & valuables|Quest'&&tabs.every(b=>b.textContent.trim()),'the bag\'s tabs: All, Equipment, Supplies, Goods, Trophies & valuables, Quest ('+tabs.map(b=>b.textContent.trim()).join(', ')+')')}
+ const shown=tab=>{t.act('inv-tab',tab);return P.inv.map((s,i)=>[s,i]).filter(([s,i])=>s&&Kit.q('.invgrid .slot[data-arg="'+i+'"]')).map(([s])=>s.id).sort().join()};
+ ok(shown('equip')==='g_sword_1'&&shown('quest')==='heirloom'&&shown('trophies')===['pelt','ring'].sort().join(),'each tab shows only what is of its categories (Equipment, Quest, Trophies & valuables)');
  t.act('inv-tab','supplies');ok(/Food for about .* drink for about .* morale/.test(Kit.q('.invsup').textContent),'Supplies: your food, drink and morale, read only ('+Kit.q('.invsup').textContent+')');
- t.act('inv-sel',String(at('quest','heirloom')));ok(/Quest item/.test(Kit.q('.invR').textContent)&&!Kit.q('.invR [data-act="inv-drop"]')&&Kit.q('.invgrid .slot.bound'),'a quest item: its category, marked on its slot, and no Drop');
+ t.act('inv-tab','quest');t.act('inv-sel',String(at('quest','heirloom')));ok(/Quest item/.test(Kit.q('.fb-item-detail').textContent)&&!Kit.q('.fb-item-detail [data-act="inv-drop"]')&&Kit.q('.invgrid .slot.bound'),'a quest item: its category, marked on its slot, and no Drop');
  t.act('inv-tab','all');t.act('inv-close');
  empty();['val:relic','good:grain','quest:map','gear:'+t.gearId('helm',2),'mat:pelt','good:ale','gear:q_worn','gear:'+t.gearId('sword',0),'good:iron','gear:m_pony'].forEach(s=>{const [k,id]=s.split(':');if(k==='quest')t.ITEM_KINDS.quest.give(id,null);else t.invAdd(k,id,1)});
  t.invSort();const order=P.inv.filter(Boolean).map(s=>cat(s.k,s.id));
@@ -83,7 +83,7 @@ try{
  // ---- the sealed letter is a quest item
  {empty();const L={id:'L77',kind:'news',fac:'vale',from:'Ashford',to:'Ashford',toFac:'vale',day:G.day,stale:G.day+9,worth:40,seal:1,seen:0,site:null};P.inv[2]={k:'letter',id:L.id,n:1,L};
   const K=t.itemKind(P.inv[2]);ok(K===t.ITEM_KINDS.letter&&K instanceof t.ItemKind&&K.catId(P.inv[2])==='quest'&&!K.verb('drop')&&!K.verb('sell')&&K.pageVerbs===t.LETTER_VERBS&&K.def(P.inv[2]).n==='Sealed letter','the sealed letter: an item kind (Letter), a quest item, no Drop nor Sell (its own page: sell, deliver, burn)');
-  G.mode='world';G.modal=false;t.openInv();t.act('inv-sel','2');ok(/Quest item/.test(Kit.q('.invR').textContent)&&!Kit.q('.invR [data-act="inv-drop"]')&&Kit.q('.invR [data-act="ltr-open"]'),'its detail in the bag: Look it over, no Drop');t.act('inv-close');
+  G.mode='world';G.modal=false;t.openInv();t.act('inv-sel','2');ok(/Quest item/.test(Kit.q('.fb-item-detail').textContent)&&!Kit.q('.fb-item-detail [data-act="inv-drop"]')&&Kit.q('.fb-item-detail [data-act="ltr-open"]'),'its detail in the bag: Look it over, no Drop');t.act('inv-close');
   P.inv[2]=null;for(let i=0;i<t.invCap()+t.BAG.maxOver;i++)t.invAdd('mat','pelt',t.STACK);const e={i:5,letter:L};t.letterTake(e);ok(P.inv.some(s=>s&&s.k==='letter'),'robbed with the bag past its limit, the letter still comes (never left in the mud)')}
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}
 const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d)};
