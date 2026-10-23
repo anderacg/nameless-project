@@ -275,7 +275,7 @@ hero's: it is kept in her `P.sp`, on her scale (`maxSP`; when that grows, by a l
   event or a window opens (`world.js fastWatch`). The time's 1×, 2×, 4× and Travel fast's 8× (key 4, the bar's last button, a toggle) are on the top bar. Not the
   Forced March perk. Tests: `tests/timecontrols.js`.
 - **By road** (key B, or the ring's By road; the owner, 2026-10-23: a toggle): a mode, `P.byRoad` (saved; absent = off). While on,
-  every trip keeps to the roads and tracks (`world.js byRoadTo`: the router's road keeping, `WAY.keep`) when one is within
+  every trip keeps to the roads and tracks (`world.js byRoadTo`: the router's road keeping, mild for you, `ROAD_GO.keep` 1.15: the shortest way, preferring the road; a caravan's `WAY.keep` is strict) when one is within
   `ROAD_GO.near` (8) tiles of you or the goal, decided once a trip (`G.byRoad`, never saved); otherwise it quietly goes the plain way.
   The top bar shows a BY ROAD pill; the ring lights active modes (`active`: By road, Stop hurrying, Break camp, Water first).
   Hurry (R) goes on as it was. Tests: `tests/roadband.js`, `tests/ring.js`.

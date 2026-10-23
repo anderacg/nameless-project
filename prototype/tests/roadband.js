@@ -76,6 +76,18 @@ Kit.suite(({ok,info})=>{
  if(pairs.length){const [h1,h2]=pairs[0],s1=t.gateSpot(h1),s2=t.gateSpot(h2);Kit.clear();Kit.world({encCool:99});Kit.goTo(s1.x,s1.y);t.setByRoad(false);
   Kit.key('KeyB','b');const on=P.byRoad===true;t.worldGo(s2.x,s2.y);const trip=t.byRoadTo(P.tx,P.ty);Kit.key('KeyB','b');const off=!P.byRoad&&!t.byRoadTo(P.tx,P.ty);P.tx=null;Kit.key('KeyB','b');const idle=P.byRoad===true;Kit.key('KeyB','b');
   ok(on&&trip&&off&&idle&&!P.byRoad,'key B turns by-road mode on (the trip after it keeps to the roads), and off again (that trip the plain way); standing still too');P.tx=null}
+ // ---- by road near the road (the owner, 2026-10-23: from the road to a farm a few tiles off it, the way went on along the road
+ // and then across; "find the shortest path and prefer the road"): your band's own mild preference (ROAD_GO.keep), not a
+ // caravan's (WAY.keep): the way cuts across, about as short as the plain way, where the caravans' keeping would detour
+ {const len=w=>{let s=0;for(let i=1;i<w.n;i++)s+=Math.hypot(w.X[i]-w.X[i-1],w.Y[i]-w.Y[i-1]);return s};let tried=0,good=0,detour=0,worst=0;
+  const way=(on,keep,x,y)=>{t.setByRoad(on);t.ROAD_GO.keep=keep;t.worldGo(x,y);t.wuiSync(performance.now());const w=t.WUI.way;P.tx=null;return w&&w.ok?len(w):null},k0=t.ROAD_GO.keep;
+  for(let ty=20;ty<t.MH-20&&tried<12;ty+=7)for(let tx=20;tx<t.MW-20&&tried<12;tx+=7){if(t.tAt(tx,ty)!==t.T_ROAD)continue;
+   for(const [dx,dy] of [[-5,-5],[5,-5],[-5,5],[5,5]]){const gx=tx+dx,gy=ty+dy;if(t.tAt(gx,gy)!==t.T_OPEN||t.occAt(gx,gy)||t.roadNear((gx+.5)*TL,(gy+.5)*TL,2))continue;
+    Kit.clear();Kit.world({encCool:99});Kit.goTo((tx+.5)*TL,(ty+.5)*TL);G.chase=null;const X=(gx+.5)*TL,Y=(gy+.5)*TL;
+    const plain=way(false,k0,X,Y),mild=way(true,k0,X,Y),strict=way(true,t.WAY.keep,X,Y);t.ROAD_GO.keep=k0;if(!plain||!mild||!strict)continue;
+    tried++;if(mild<=plain*1.25)good++;if(strict>plain*1.25)detour++;worst=Math.max(worst,mild/plain);break}}
+  t.setByRoad(false);
+  ok(tried>=6&&good===tried,'by road from the road to a spot 5 tiles off it, diagonally: the way cuts across, at most a quarter longer than the plain way (where the road is as quick) ('+good+' of '+tried+'; the longest '+Math.round((worst-1)*100)+'% more; the caravans’ strict keeping would have detoured in '+detour+')')}
  // ---- no road near: the plain way, quietly
  {let a=null,b=null;for(let ty=12;ty<t.MH-12&&!b;ty+=3)for(let tx=12;tx<t.MW-12&&!b;tx+=3){if(t.tAt(tx,ty)!==t.T_OPEN||t.roadNear((tx+.5)*TL,(ty+.5)*TL,t.ROAD_GO.near+2))continue;
    if(!a)a=[(tx+.5)*TL,(ty+.5)*TL];else if(Math.hypot((tx+.5)*TL-a[0],(ty+.5)*TL-a[1])<10*TL&&t.Router.reach({x:a[0],y:a[1]},{x:(tx+.5)*TL,y:(ty+.5)*TL}))b=[(tx+.5)*TL,(ty+.5)*TL]}

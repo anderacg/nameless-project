@@ -218,7 +218,7 @@ const HERO_WAY={x:NaN,y:NaN,d:Infinity};
 // below): never straight, the router's way keeping to the roads)
 function heroWay(o,tx,ty,step){const rd=byRoadTo(tx,ty);
   if(!rd&&passable(terrAt(o.x,o.y))&&clearLine(o.x,o.y,tx,ty))return walk(o,tx-o.x,ty-o.y,step)?1:0;// (not while on a ferry's water: its leg goes on by the router)
-  const x0=o.x,y0=o.y;if(!Router.travel(o,rd?{x:tx,y:ty,road:true}:{x:tx,y:ty},step))return -1;return o.x!==x0||o.y!==y0?2:0}
+  const x0=o.x,y0=o.y;if(!Router.travel(o,rd?{x:tx,y:ty,road:ROAD_GO.keep}:{x:tx,y:ty},step))return -1;return o.x!==x0||o.y!==y0?2:0}
 function heroStep(dx,dy,dist,step){
   const x0=P.x,r=heroWay(P,P.tx,P.ty,step);if(r===2&&P.x!==x0)P.dir=P.x>x0?1:-1;if(r>=0)return r>0;
   const W=HERO_WAY;if(W.x!==P.tx||W.y!==P.ty){W.x=P.tx;W.y=P.ty;W.d=dist}
@@ -226,12 +226,14 @@ function heroStep(dx,dy,dist,step){
 /* by road (the owner, 2026-10-23: "a road snap in the action ring, to make the pathfinder prefer moving by road"; then "By road
    mode should be a toggle: the pathfinder always uses roads for travelling (if any are near)"): a mode, P.byRoad (true while on;
    absent, off: saved with you, a new hero's off). While it is on, every way you go (a click, Travel here, a chase, Hurry here)
-   keeps to the roads and tracks (the router's road keeping, goal.road: off them a tile costs WAY.keep times as much), leaving
-   them only to reach the spot; the dots ahead show it (gfx/worldui.js wuiWay walks heroWay). With no road or track within
+   keeps to the roads and tracks (the router's road keeping, goal.road: off them a tile costs ROAD_GO.keep times as much, a
+   mild preference: the shortest way, preferring the road (the owner, 2026-10-23: no going on along the road and back across to a
+   spot near it); a caravan's or a worker's keeping, WAY.keep, is strict), leaving them only to reach the spot;
+   the dots ahead show it (gfx/worldui.js wuiWay walks heroWay). With no road or track within
    ROAD_GO.near tiles of you or of the point, that trip goes the plain way, quietly. G.byRoad: the trip's answer, {k: the goal's
    tile, on} (never saved; a new order or arriving forgets it). Turned on or off by key B (ui/input.js) or the action ring's By
    road (supply.js mapRingItems: lit while on); the day bar shows it (render.js updateHUD, byRoadPill) */
-const ROAD_GO={near:8};
+const ROAD_GO={near:8,keep:1.15};
 function byRoadTo(x,y){if(!P.byRoad)return false;const k=Math.floor(x/TILE)+','+Math.floor(y/TILE);
   if(!G.byRoad||G.byRoad.k!==k)G.byRoad={k,on:roadNear(P.x,P.y,ROAD_GO.near)||roadNear(x,y,ROAD_GO.near)};return G.byRoad.on}
 // (a road's or a track's tile within n tiles of (x, y))
