@@ -50,7 +50,7 @@ Kit.suite(({ok,info})=>{
  // ---- the Journal: J on its last section; Chronicle, Lords, Realms; L on the Chronicle
  key('KeyJ','j');
  ok(G.mode==='journal'&&tabs().join('|')==='Chronicle|Lords|Realms','J: the Journal, its sections: '+tabs().join(', '));
- t.act('jn-sec','lords');ok(G.jsec==='lords'&&/How each lord feels about you/.test(Kit.text())&&W.lords.filter(l=>!l.gone).every(l=>Kit.text().includes(l.name)),'Lords, moved from the Character window: every lord');
+ t.act('jn-sec','lords');ok(G.jsec==='lords'&&/How each lord feels about you/.test(Kit.text())&&W.lords.filter(l=>!l.gone).every(l=>Kit.text().includes(l.name)===t.KNOWLEDGE.knowsLord(l)),'Lords: only the lords you know');
  t.act('jn-sec','realms');ok(G.jsec==='realms'&&/Your standing/.test(Kit.text())&&/Relations/.test(Kit.text()),'Realms, moved too: your standing, the realms, their relations');
  key('KeyJ','j');ok(G.mode==='world','J again: closed');
  q('#journalBtn').click();ok(G.mode==='journal'&&G.jsec==='realms','the bar’s Journal: opened on the last section (Realms)');

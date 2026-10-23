@@ -8,8 +8,8 @@
    camera: the map follows your band) ---------- */
 const PEOPLE={on:false,tab:'comps',card:null,look:null,memory:3,seen:new Map(),back:null,timer:0,el:null,html:''};
 onWorld(()=>PEOPLE.seen.clear());// (a new world, or a game loaded: what you remember goes with it)
-// (world.js updateWorld, every step): lords in your sight are remembered where you saw them; reads only
-function peopleWatch(){const V=vis();for(const l of W.lords)if(!l.dead&&!l.gone&&!l.inside&&spotted(l,V))PEOPLE.seen.set(l.id,{x:l.x,y:l.y,day:G.day,n:l.troops.length})}
+// (world.js updateWorld, every step): lords in your sight are remembered where you saw them, and in the saved Journal (knowledge.js)
+function peopleWatch(){KNOWLEDGE.watch();const V=vis();for(const l of W.lords)if(!l.dead&&!l.gone&&!l.inside&&spotted(l,V))PEOPLE.seen.set(l.id,{x:l.x,y:l.y,day:G.day,n:l.troops.length})}
 // what you know of a lord: {x, y, where, n (his soldiers, when you know), here (in this place with you)}; null: unknown
 function lordKnown(l){
   if(l.dead||l.gone)return null;const near=(x,y)=>{const t=Spatial.nearestHolding(x,y);return t?' near '+t.name:''};

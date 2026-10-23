@@ -16,7 +16,7 @@
    before. What you learn at once or by rider is heard already: no source tells it you again as new. ev.cls: the log's tone;
    ev.kind: its Chronicle kind when logged at once (else 'war'; '' none, as the lines that had none before the gateway). No
    ev.text: your own deed, its lines logged where you did it (siege.js captureAct, finishRaid): only its news, heard by you.
-   The riders on their way: W.news.post [{due (Clock.hours), day (it happened), from (who sent him), p (its words), a (more), cls}],
+   The riders on their way: W.news.post [{due (Clock.hours), day (it happened), from (who sent him), p (its words), a (more), cls, news (its event facts, if any)}],
    saved with the news (news.js). WORLD_LOG.on false: every event logged where it was before the gateway (ev.was false: it was
    not), nothing recorded (the fingerprints' check, tests/worldlog.js). The map's holding colours still change at once ---------- */
 // sight: × your sight; tiles: a rider's day; minHours: the least he takes
@@ -33,8 +33,9 @@ const newsAt=(k,at)=>{const t=newsNear(at);return t&&newsW().items.filter(it=>it
 function worldEvent(ev){
   const K=ev.kind??'war';if(!WORLD_LOG.on){if(ev.was!==false&&ev.text)log(ev.text,ev.cls,K);return 'log'}
   const it=ev.news?newsRecord(...ev.news):ev.heard?newsAt(...ev.heard):null,how=wlPart(ev)?'part':wlSees(ev)?'seen':wlYours(ev)&&ev.post!==false?'rider':'news';
-  if(ev.text){if(how==='part'||how==='seen')log(how==='seen'&&ev.seen||ev.text,ev.cls,K);else if(how==='rider')wlSend(ev)}
+  if(ev.text){if(how==='part'||how==='seen'){const text=how==='seen'&&ev.seen||ev.text;KNOWLEDGE.hear(text,true,G.day,true);log(text,ev.cls,K)}else if(how==='rider')wlSend(ev,it)}
   if(it&&how!=='news')newsW().heard[it.id]=G.day;
+  if(it&&(how==='part'||how==='seen'))KNOWLEDGE.news(it,how==='seen'&&ev.seen||ev.text||'');
   return how}
 // (news only, with the gateway on: what was never logged, as a garrison starving under another's siege)
 const worldNews=(k,at,detail)=>WORLD_LOG.on?newsRecord(k,at,detail):null;
@@ -45,17 +46,17 @@ function realmsMeet(a,b){const A=fiefsOf(a),B=fiefsOf(b);if(!A.length||!B.length
 /* ---- the riders ---- */
 // one sets out: from your realm's holding nearest where it happened (none: the holding nearest it), as long on the road as from
 // there (no place: from his holding) to you, in whole hours
-function wlSend(ev){
+function wlSend(ev,it){
   const at=ev.x!=null?{x:ev.x,y:ev.y}:null,q=at||P,own=TOWNS.filter(t=>!t.gone&&(t.owner==='player'||P.fac&&t.owner===P.fac));
   const h=Spatial.nearest(own,q.x,q.y)||Spatial.nearestHolding(q.x,q.y),o=at||h||P,L=WORLD_LOG;
   const r={due:Math.ceil(Clock.hours()+Math.max(L.minHours,Math.hypot(o.x-P.x,o.y-P.y)/(L.tiles*TILE)*24)),day:G.day,from:h?h.name:'',p:ev.past||ev.text.replace(/\.$/,'')};
-  if(ev.also)r.a=ev.also;if(ev.cls)r.cls=ev.cls;const N=newsW();(N.post||(N.post=[])).push(r);return r}
+  if(it)r.news={k:it.k,day:it.day,detail:{...it.detail}};if(ev.also)r.a=ev.also;if(ev.cls)r.cls=ev.cls;const N=newsW();(N.post||(N.post=[])).push(r);return r}
 const WL_N=['','one','two','three','four','five','six','seven','eight','nine','ten'];
 const wlWhen=d=>{const a=Clock.daysSince(d);return a<=0?'earlier today':a===1?'yesterday':(WL_N[a]||a)+' days ago'};
 // each hour: the riders due come in, each a line in your log ("A rider from Ashford: Thornford fell to … two days ago.")
 function wlArrive(){const N=W.news;if(!N||!N.post||!N.post.length)return;const now=Clock.hours(),come=N.post.filter(r=>r.due<=now);if(!come.length)return;
   N.post=N.post.filter(r=>r.due>now);if(!N.post.length)delete N.post;
-  for(const r of come)log((r.from?'A rider from '+r.from:'A rider')+': '+cap1(r.p)+' '+wlWhen(r.day)+'.'+(r.a||''),r.cls,'war',null,r.day)}
+  for(const r of come){const text=(r.from?'A rider from '+r.from:'A rider')+': '+cap1(r.p)+' '+wlWhen(r.day)+'.'+(r.a||'');if(r.news)KNOWLEDGE.news(r.news,text);else KNOWLEDGE.hear(text,true,r.day);log(text,r.cls,'war',null,r.day)}}
 // each hour: the riders, and the crier of the holding you are at or in (news.js proclaimAt)
 function wlHour(){wlArrive();proclaimAt(proclaimWhere())}
 Systems.add({name:'riders',order:{hour:30},hour:wlHour});
@@ -99,7 +100,7 @@ function intelGather(src){const out=[],known=intelKnown(),d=p=>Math.min(...src.a
   for(const [k,K] of Object.entries(INTEL_KINDS))for(const o of K.of()){const at=K.at?K.at(o):o,key=k+':'+K.key(o);if(at&&d(at)<=src.r&&!known.has(key))out.push({key,k,o,at,v:INTEL.v[k],name:K.name(o),sub:K.sub(o)})}
   return out.sort((a,b)=>b.v-a.v||d(a.at)-d(b.at)).slice(0,INTEL.list)}
 // one learnt: what it changes, its words in your log (the Chronicle's Show on map: its mark), its gold "?" on its spot; {key, t}
-function intelLearn(o,from){const K=INTEL_KINDS[o.k],t=K.say(o.o),N=newsW(),id='i'+o.key;if(K.learn)K.learn(o.o);
+function intelLearn(o,from){const K=INTEL_KINDS[o.k],t=K.say(o.o),N=newsW(),id='i'+o.key;if(K.learn)K.learn(o.o);KNOWLEDGE.hear(t,true,G.day,true);
   N.marks=N.marks.filter(m=>m.id!==id);N.marks.push({id,x:Math.round(o.at.x),y:Math.round(o.at.y),day:G.day,t,i:1});
   log('Information ('+from+'): '+t,undefined,'rumour','n'+id);return {key:o.key,t}}
 

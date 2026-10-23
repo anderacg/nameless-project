@@ -557,7 +557,7 @@ function townPlace(t,tab){
 }
 function renderTown(){
   const t=G.town.ref,p=townPlace(t,G.town.tab);
-  showTown(t,p?p.page(t):townOverview(t));G.town.greet=null;
+  KNOWLEDGE.watch();showTown(t,p?p.page(t):townOverview(t));KNOWLEDGE.hear(panel.innerHTML);G.town.greet=null;
 }
 // (a quest to report here: straight to the Notices, Back to the overview; else the overview; the crier's proclamations that
 // have reached it: news.js proclaimAt)

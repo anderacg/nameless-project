@@ -65,7 +65,7 @@ const apName=a=>a>=5?'Loyal':a>=0?'Content':a>-3?'Uneasy':'Angry';
    the most its save part may be (JSON characters), past which the oldest of the spare kinds (your band's, and of no kind) go */
 const CHRONICLE={kinds:['war','rumour','band','story'],page:100,budget:1.5e6,spare:['band','']};
 // a message: into the chronicle and onto the screen (toast); at: the day it happened, if not today
-function log(m,cls,kind,ref,at){const r={m,day:G.day};if(cls)r.cls=cls;if(kind)r.kind=kind;if(ref!=null)r.ref=ref;if(at!=null&&at!==G.day)r.at=at;G.msgs.push(r);toast(m,cls)}
+function log(m,cls,kind,ref,at){if(typeof KNOWLEDGE!=='undefined')KNOWLEDGE.hear(m);const r={m,day:G.day};if(cls)r.cls=cls;if(kind)r.kind=kind;if(ref!=null)r.ref=ref;if(at!=null&&at!==G.day)r.at=at;G.msgs.push(r);toast(m,cls)}
 // a line onto the screen only, where it fades after a few seconds (the chronicle keeps what happened; "Welcome back" is no event)
 function toast(m,cls){const el=$('#log');if(!el)return;
   const d=document.createElement('div');if(cls)d.className=cls;d.innerHTML=m;el.appendChild(d);while(el.children.length>5)el.firstChild.remove();

@@ -21,6 +21,7 @@ function journalSection(){
 }
 // the window drawn again, on the section open
 function renderJournal(){
+  KNOWLEDGE.watch();
   const id=journalSection(),s=JOURNAL_SECTIONS[id];
   const tabs=fbTabs(Object.values(JOURNAL_SECTIONS).map(x=>[x.id,(x.icon?fbIcon(x.icon)+' ':'')+x.label]),id,'jn-sec','Journal sections');
   fbShow('Journal',s.sub?s.sub():'',tabs,s.render(),fbMenu(s.back&&s.back()),['journal-close',null,G.overBack==='scene'?'Back to the streets':'Back to map'],'fb-journal fb-jn-'+id);

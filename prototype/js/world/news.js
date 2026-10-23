@@ -129,7 +129,7 @@ function proclaimText(it){const s={where:newsWhere(it,false),road:newsWhere(it,t
 // heard free: each proclamation not heard yet that has reached any of ps (a holding, or a source's places), into your log, told by
 // from; those heard
 function proclaimHear(ps,from){const N=W.news;if(!N||!PROCLAIM.on)return [];const got=N.items.filter(it=>newsProc(it)&&N.heard[it.id]==null&&ps.some(p=>proclaimReached(it,p)));
-  for(const it of got){N.heard[it.id]=G.day;log('Proclamation ('+from+'): '+proclaimText(it),undefined,'war')}return got}
+  for(const it of got){N.heard[it.id]=G.day;const text=proclaimText(it);KNOWLEDGE.news(it,text);log('Proclamation ('+from+'): '+text,undefined,'war')}return got}
 // the crier of a holding you are at or in (town.js enterTown; each hour: worldlog.js)
 const proclaimAt=t=>t?proclaimHear([t],'the crier of '+t.name):[];
 // (the holding you are in, staying at, or at the gates of on the map; none: null)
@@ -219,7 +219,7 @@ function rumourCands(src){const N=newsW(),score=it=>NEWS_KINDS[it.k].w+(src.pref
   return N.items.filter(it=>N.heard[it.id]==null&&!newsProc(it)&&Clock.daysSince(it.day)<NEWS.days&&newsKnows(src,it)).sort((a,b)=>score(b)-score(a)||b.id-a.id)}
 // heard: kept as heard (no source tells it as new again) with how vague it was (v, when vague at all), its "?" on the map near it,
 // and the log (its ref: the Chronicle's Show on map)
-function rumourHear(it,src){const N=newsW(),v=newsVague(it),t=rumourText(it,v),j=k=>(hash(it.id,k,7919)-.5)*2*NEWS.off;N.heard[it.id]=G.day;
+function rumourHear(it,src){const N=newsW(),v=newsVague(it),t=rumourText(it,v),j=k=>(hash(it.id,k,7919)-.5)*2*NEWS.off;N.heard[it.id]=G.day;KNOWLEDGE.news(it,t);
   if(v)(N.v||(N.v={}))[it.id]=v;else if(N.v)delete N.v[it.id];
   N.marks=N.marks.filter(m=>m.id!==it.id);N.marks.push({id:it.id,x:Math.round(it.x+j(1)),y:Math.round(it.y+j(2)),day:G.day,t});
   if(!src.quiet)log('Rumour ('+src.from+'): '+t,undefined,'rumour','n'+it.id)}
