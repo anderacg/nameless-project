@@ -91,7 +91,9 @@ js/world/             the campaign map and everything on it
   router.js             every way over the land behind three calls: Router.travel (a step toward a point, or a holding's gate:
                         gateGoal; with road, keeping to the roads: caravans, WAY.keep; workers WAY.folk), Router.reach,
                         Router.days (and Router.close, Router.stats): the way graph (buildWayGraph, charted again with the
-                        estates' tracks: wayRechart) and the two-level router over it, searches in a box for each leg
+                        estates' tracks: wayRechart) and the two-level router over it, searches in a box for each leg;
+                        each leg's tiles straightened (waySmooth, wayStraight: WAY_SMOOTH; no staircase, still round
+                        woods, water and off-road ground where that is cheaper; tests/straightways.js)
   roadband.js           the road's band: a road's speed follows the road as drawn (gfx/worldart.js artRoadSegs), not its tiles;
                         blended to the land's over its shoulder; an estate's track a little slower (ROAD_BAND, RoadBand; read by
                         map.js speedAt and regionAt; loads after gfx/worldart.js)
@@ -154,7 +156,8 @@ js/world/             the campaign map and everything on it
                         and at the cap, saved), who sees them (by Scouting) and their card (trackTip: hover, or Look on the ring)
   monsters.js critters.js reputation.js
   world.js              travel (your step: straight while the way is open, else by the router: heroStep, heroWay; where you come out
-                        by a holding: gateSpot, open land in front of its gate), the daily tick, the world update
+                        by a holding: gateSpot, open land in front of its gate), Follow (FOLLOW, followStart, followStep,
+                        followWatch: your band shadows a party), the daily tick, the world update
 js/battle/            engage.js (going into a fight: power and stance, allies joining, the battle type, flight, auto-resolve, outcomes by kind: ON_WIN), parley.js (cornered parties), setup.js (BattleSetup, field
                       and unit construction), resolution.js (BattleResolution, field results and campaign settlement),
                       battle.js (shared group defaults and frame orchestration), actors.js (each soldier's moment and his targeting: Actor, CharActor, HeroActor),
@@ -174,7 +177,7 @@ js/gfx/               worldart.js (the painted map), sprites.js (generated sprit
                       structures.js (placed buildings as models: lotModel, lotSprite, lotYard, lotsAhead; estates' ground, camps
                       and sites as models, flags), render.js (world and battle drawing, HUD),
                       depth.js (what stands in front of a figure on the map, and its fade), vfx.js (battle effects), worldui.js (the map's
-                      pointer marks, route trail (the way your hero walks: heroWay, the router's round water) and encounter highlights), mist.js (mist in the fog), weapons.js (battle weapons),
+                      pointer marks, route trail (the way your hero walks: heroWay, the router's round water, as footprints: wuiFoot) and encounter highlights), mist.js (mist in the fog), weapons.js (battle weapons),
                       tracks.js (the tracks' prints, turned the way each band went, on the ground under all that stands: drawTracks),
                       scenedraw.js (painting and drawing the walkable scenes: scene/), menuart.js (the main menu's scene, banner, emblem
                       and title, drawn in code: MenuScene, MENU_ART)
@@ -300,8 +303,25 @@ hero's: it is kept in her `P.sp`, on her scale (`maxSP`; when that grows, by a l
 - **By road** (key B, or the ring's By road; the owner, 2026-10-23: a toggle): a mode, `P.byRoad` (saved; absent = off). While on,
   every trip keeps to the roads and tracks (`world.js byRoadTo`: the router's road keeping, mild for you, `ROAD_GO.keep` 1.15: the shortest way, preferring the road; a caravan's `WAY.keep` is strict) when one is within
   `ROAD_GO.near` (8) tiles of you or the goal, decided once a trip (`G.byRoad`, never saved); otherwise it quietly goes the plain way.
-  The top bar shows a BY ROAD pill; the ring lights active modes (`active`: By road, Stop hurrying, Break camp, Water first).
-  Hurry (R) goes on as it was. Tests: `tests/roadband.js`, `tests/ring.js`.
+  The top bar shows a BY ROAD pill; the ring lights active modes (`active`: By road, Stop hurrying, Break camp, Water first,
+  Stop following). Hurry (R) goes on as it was. Tests: `tests/roadband.js`, `tests/ring.js`.
+- **Straight ways** (`world/router.js` `WAY_SMOOTH`; the owner, 2026-10-23: the way was a staircase): every walker that goes by the
+  router (you, lords, bands, patrols, caravans, workers, refugees, companions' parties) walks each leg pulled straight
+  (`waySmooth`): from where it is to the farthest tile of the leg the straight line reaches with every tile it crosses open and 2 px
+  clear of any closed one (no corner cut), and costing by the same tiles' costs (off the roads × a road keeper's) no more than the
+  stretch it skips (3% more at most); a road keeper (a caravan, a worker, By road) never skips a stretch of road by a line that
+  leaves it. A walker pushed off its way (a fight, a shove) finds it again from where it is when the line on is not clear.
+  Legs over the land, a road's and the last stretch run on together up to 96 tiles (`wayStraight`); a crossing or a ferry is kept as it is. A way that keeps to a road, or goes round a wood, still does; By road and
+  the caravans' strict keeping hold. About 0.1 ms a leg, never a frame. The drawn way shows it. `WAY_SMOOTH.on` false: every way as
+  it was. Tests: `tests/straightways.js` (classic and Normal s1-s4: turns 5490 → 1716 over 200 trips, never more than 2.3% dearer).
+- **Follow** (`world.js` `FOLLOW`; the owner, 2026-10-23): a click or a tap on another party (a lord, a band, a patrol, a caravan,
+  refugees, a companion's party) opens its ring at it (`ui/input.js partyRing`, `supply.js partyRingItems`): Attack (hostile) or
+  Meet (today's chase), Follow, Look; Esc or a press elsewhere closes it; a double click or a double tap approaches at once, as one
+  click did. The hold ring has Follow on a party too. Following, your band trails it 2.5 tiles behind on its way (`followStep`:
+  where it walked), standing when it comes within 1.5; never meeting it. It ends when the party leaves your sight, goes into a
+  holding or a camp, or is gone; on any other order, camp, a meeting or a battle; or Stop following (lit on the ring). The day bar
+  shows FOLLOWING and its name; the footprints lead to it. An order: never saved. Tests: `tests/follow.js`, `tests/ring.js`,
+  `tests/touch.js`, `tests/clicks.js`.
 - **The road's band** (`world/roadband.js`; the owner, 2026-10-23: "my character stands on the road but the game still reads it as
   swamp"): a road's speed follows the road as drawn, not its tiles (a staircase on a diagonal). Within `ROAD_BAND.great[0]` (10) px
   of a great road's line (`track[0]` 8 of a track's) road speed 1.3 (humans ×1.1), blended to the land's over 6 px more, the land's
@@ -327,9 +347,10 @@ the world piece `band` once it is not fresh. The band's own numbers are `PlayerP
   "No clear ground to camp here". The tents (`bandCampEnt`) are drawn by their feet among the trees, those in front drawn whole over
   them, your banner planted beside them; your figure and host are hidden while you camp.
 - **The action ring** (`ui/ring.js`): hold the left button or a finger still on the map 0.35 s. A press does nothing yet (the owner,
-  2026-10-22, mouse and touch alike): let go sooner and it is a click, travelling there or meeting what was clicked; a move first calls
-  the ring off and the release still travels; a right-click travels at once. Its buttons, only those that apply
-  (`mapRingItems`): Make camp or Break camp, Travel here, By road, Hurry here (Stop hurrying), Fill waterskins, Drink liquor, Look (a card, for touch).
+  2026-10-22, mouse and touch alike): let go sooner and it is a click, travelling there or meeting what was clicked (on another party,
+  its own ring: Follow above); a move first calls the ring off and the release still travels; a right-click travels (or chases) at
+  once. Its buttons, only those that apply (`mapRingItems`): Make camp or Break camp, Follow (Stop following), Travel here, By road,
+  Hurry here (Stop hurrying), Fill waterskins, Drink liquor, Look (a card, for touch).
   Let go over one, or let go and tap one; Esc, a right-click or a tap outside closes it.
 - **The card** (`render.js updateHUD`, `supplyNow`): the band's stamina bar (green, amber Tired, red Exhausted, ▼ ▲, its rate and
   why on hover) and health (fit of the whole band, red under half, what hurt it lately on hover), the tags (Tired, Exhausted,
@@ -694,7 +715,7 @@ The commander's **Scout** (O, the enemy seen through the fog for the first 10 s)
 For a phone on its side. Touch reads Pointer Events with `pointerType 'touch'` (`TOUCH` in `ui/input.js`: `hold` 450 ms, `slop` 10 CSS px, `ring` 34 CSS px); mouse, pen and keys are unchanged.
 - **Battle:** tap a group to select it, tap again to send it there or onto the enemy tapped (a tap acts when the finger lifts). Hold still for about half a second (a gold ring fills; red over an enemy) to move the selection there or attack the enemy held; hold, then drag, to lay out the line as a right-drag does. Drag without holding to box groups. Two fingers: pinch to zoom about them (`camPinch`), move both to pan; a second finger cancels what the first was doing (a held line's ghost simply goes, nothing sent, the selection kept) and the two then pinch, so a pinch never selects or orders.
 - **Calling a drag off (mouse and keys):** a left-click during a right-drag, or Esc, drops the line ghost: no order, the selection kept, and letting go of the right button does nothing (`dragCancel`, input.js; a left press with the right held comes as a `pointermove`, so both are read). Esc also calls off a box or a finger's press; a drag takes Esc before the window chain, so it opens no menu. Tests: `tests/dragcancel.js`.
-- **Map:** tap to travel (as the finger lifts). Hold still for the action ring; its Look shows the card of what is there (its tooltip, "Tap:" for "Click:"); the next tap puts it away without travelling. On a phone (the window's shorter side 540 CSS px or less: `MAPZOOM.SMALL`) the map is drawn at twice the window's scale by default (`MAPZOOM.auto`, within its range; Auto in Settings), the HUD, the minimap and the ring at the window's.
+- **Map:** tap to travel (as the finger lifts); a tap on another party opens its ring (Meet or Attack, Follow, Look), a double tap approaches it. Hold still for the action ring; its Look shows the card of what is there (its tooltip, "Tap:" for "Click:"); the next tap puts it away without travelling. On a phone (the window's shorter side 540 CSS px or less: `MAPZOOM.SMALL`) the map is drawn at twice the window's scale by default (`MAPZOOM.auto`, within its range; Auto in Settings), the HUD, the minimap and the ring at the window's.
 - **Notch and safe areas:** `viewport-fit=cover`; HUD frames, buttons, messages, banners and windows sit inside the `--e-*` edges (`--edge` plus `env(safe-area-inset-*)`); the hold card is clamped with `safeInsets()` (input.js), read from `.hudlayer`'s padding.
 - **No page zoom:** the HUD is `touch-action:none` (unit cards `pan-x`, selected unit `pan-y`); windows are `pan-x pan-y`, so they scroll but never zoom; pull-to-refresh is off; on iOS `gesturestart`/`gesturechange` are cancelled.
 - **Line preview on phones:** on a coarse or small screen (`GHOST` in formations.js) the dragged line is drawn in screen pixels: a 3 px gold line, 5 px slot dots and an arrowhead over a dark edge. Desktop unchanged.

@@ -328,6 +328,9 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 .wroad{display:inline-flex;align-items:center;gap:3px;flex:none;font-style:normal;font-size:var(--fs-2xs);font-weight:700;letter-spacing:.06em;line-height:1;text-transform:uppercase;
   color:var(--accent);border:1px solid var(--accent);border-radius:9px;padding:2px 6px 2px 4px;background:rgba(160,120,30,.22);box-shadow:0 0 6px rgba(232,185,74,.4)}
 .wroad i{font-style:normal}
+/* following a party (world.js followPill): the same pill, its name cut short; the bar as wide as it needs */
+.wday:has(.wfollow){width:auto;min-width:220px}
+.wfollow i{max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.wfollow small{font-size:inherit}
 .wtime{display:flex;gap:3px}
 .tbtn{display:inline-flex;align-items:center;justify-content:center;min-width:34px;height:28px;padding:0 7px;font-size:var(--fs-md);font-weight:700;color:var(--fg);
   background:linear-gradient(#2b3350,#1d2235);border:1px solid var(--line-2);border-radius:var(--r-sm);cursor:pointer}
@@ -1003,6 +1006,7 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
   .pc-line{display:none}
   .wtop{padding:3px 3px 3px 9px;gap:6px}.wday,.wday:has(.wroad){width:auto;font-size:var(--fs-base)}
   .wroad{padding:2px 3px}.wroad i{display:none}.wday:has(.wroad){gap:4px}
+  .wday:has(.wfollow){min-width:0}.wfollow i{display:inline;max-width:96px}.wfollow small{display:none}
   .hint{display:none}
   .staybar{top:calc(var(--e-t) + 40px)}
   .dock{gap:4px}.dockrow{gap:4px}

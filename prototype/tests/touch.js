@@ -2,7 +2,8 @@
 // Touch: a phone on its side. Real PointerEvents (pointerType 'touch', each finger its own pointerId) on the game canvas:
 // a pinch zooms about its middle and a two-finger drag pans, never ordering; a tap selects and a tap again sends, as before;
 // a long press sends the selection to the ground or onto an enemy, and dragged on lays the line; a second finger calls a press
-// off; on the map a long press opens the action ring (ui/ring.js), whose Look shows what is there in a card, travelling nowhere.
+// off; on the map a long press opens the action ring (ui/ring.js), whose Look shows what is there in a card, travelling nowhere;
+// a tap on a band opens its own ring (ui/input.js partyRing), a double tap approaches it.
 // The mouse's own clicks are as they were.
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t.P,random0=Math.random,measure0=t.measureField;
   window.requestAnimationFrame=()=>0;try{localStorage.clear()}catch(e){}
@@ -89,7 +90,10 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t
       ok(!tip.hidden&&P.tx==null&&!G.chase&&G.mode==='world','let go: the card stays, and you do not travel');
       const away=fromW(P.x+30,P.y+30);tap(away);ok(tip.hidden&&!tip.classList.contains('hold')&&P.tx==null&&!G.chase,'the next tap puts the card away and travels nowhere');
       fire('pointerdown',wc);const none=P.tx==null&&!G.chase;fire('pointerup',wc);ok(none&&(G.chase===far||P.tx!=null),'a quick tap travels as the finger lifts, not before (as a click does: ring.js)');P.tx=null;G.chase=null;
-      fire('pointerdown',fromW(P.x+40,P.y+10),1);fire('pointerdown',fromW(P.x+60,P.y+10),2);fire('pointerup',fromW(P.x+40,P.y+10),1);fire('pointerup',fromW(P.x+60,P.y+10),2);ok(P.tx==null&&!G.chase&&!TO.pts.size,'two fingers on the map travel nowhere')}
+      fire('pointerdown',fromW(P.x+40,P.y+10),1);fire('pointerdown',fromW(P.x+60,P.y+10),2);fire('pointerup',fromW(P.x+40,P.y+10),1);fire('pointerup',fromW(P.x+60,P.y+10),2);ok(P.tx==null&&!G.chase&&!TO.pts.size,'two fingers on the map travel nowhere');
+      {const b=t.asParty({x:P.x+50,y:P.y+12,n:4,cool:5,t:0,a:0,kind:'bandits',idle:true});b.troops=t.makeEnemies(4,false,'bandits');t.bandits.push(b);t.drawWorld();const bc=fromW(b.x,b.y-4);
+       fire('pointerdown',bc);fire('pointerup',bc);const lb=t.ActionRing.now?t.ActionRing.now.items.map(i=>i.label).join():'none',none=!G.chase&&P.tx==null;fire('pointerdown',bc);fire('pointerup',bc);
+       ok(lb==='Attack,Follow,Look'&&none&&!t.ActionRing.now&&G.chase===b,'a tap on a band opens its ring ('+lb+'), travelling nowhere; a double tap approaches it');G.chase=null;P.tx=null;t.bandits.splice(t.bandits.indexOf(b),1)}}
   }catch(e){o.push('EXC '+e.message+' '+e.stack)}finally{
     Math.random=random0;for(const m in orig)t.BattleControl.prototype[m]=orig[m];if(window.__touchMeasure){(0,eval)('measureField=window.__touchMeasure');delete window.__touchMeasure}
   }

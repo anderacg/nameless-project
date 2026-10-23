@@ -2,7 +2,8 @@
 // The action ring (doc/SUPPLY_DESIGN.md §7a, ui/ring.js): the left button held still on the map opens a ring of the actions that
 // apply there; a press does nothing yet: let go before it opens, it travels (the owner, 2026-10-22: click or hold); a move
 // before it opens calls the ring off, and letting go still travels; let go over a button picks it, or let go first
-// and tap one; Esc, a right-click or a tap outside closes it, travelling nowhere. Only what applies: Make camp or Break camp,
+// and tap one; Esc, a right-click or a tap outside closes it, travelling nowhere. A short click on another party opens its own
+// ring at it (ui/input.js partyRing: Attack or Meet, Follow, Look), chasing nothing yet; held on it, the map's with Follow. Only what applies: Make camp or Break camp,
 // Travel here, By road (world.js roadGo: by-road mode on, and you go there; on, it turns it off) and Hurry here on the ground (Stop
 // hurrying while you hurry), Fill waterskins by water, Drink liquor with liquor, Look on something. A mode that is on (camped, by
 // road, hurrying) is lit: the button's class on, a gold glow; the rest are not. A finger's long press opens it too, and its Look
@@ -75,6 +76,10 @@ try{
  reset();{const h=t.TOWNS.slice().sort((a,b)=>Math.hypot(a.x-P.x,a.y-P.y)-Math.hypot(b.x-P.x,b.y-P.y))[0];Kit.goTo(h.x-90,h.y);t.drawWorld();const p=cl(h.x,h.y);
   ok(t.pickAt(h.x,h.y)===h,'(a holding answers where it is pressed)');down(p);await held();up(p);ok(labels().includes('Look')&&!labels().includes('Travel here'),'held on a holding: Look, no Travel here ('+labels().join(', ')+')');
   btn('Look').el.click();const tip=document.getElementById('tip');ok(!tip.hidden&&tip.classList.contains('hold')&&tip.textContent.includes(h.name),'Look shows its card ('+tip.textContent.slice(0,40)+')');t.hideTip();P.tx=null;G.chase=null}
+ // ---- a short click on a band: its own ring (Attack, Follow, Look), no chase yet; held on it: the map's ring, with Follow
+ reset();{const b=t.asParty({x:P.x+60,y:P.y+10,n:4,cool:5,t:0,a:0,kind:'bandits',idle:true});b.troops=t.makeEnemies(4,false,'bandits');t.bandits.push(b);t.drawWorld();const p=cl(b.x,b.y-4);
+  down(p);up(p);ok(labels().join()==='Attack,Follow,Look'&&!G.chase&&P.tx==null,'a short click on a band: its ring at it ('+labels().join(', ')+'), no chase yet');t.ActionRing.close();
+  down(p);await held();up(p);ok(labels().includes('Follow')&&labels().includes('Look')&&!labels().includes('Attack'),'held on it: the map\'s ring, with Follow ('+labels().join(', ')+')');t.ActionRing.close();t.bandits.length=0}
  // ---- a finger: a long press opens it
  reset();{const p=cl(P.x+60,P.y+20),f=(type,q)=>(type==='pointerdown'?cv:window).dispatchEvent(new PointerEvent(type,{...q,pointerType:'touch',pointerId:7,isPrimary:true,bubbles:true}));
   f('pointerdown',p);ok(P.tx==null,'a finger down travels nowhere yet');t.touchTick(performance.now()+R.hold+20);ok(!!ring()&&labels().includes('Make camp'),'a long press opens the ring');

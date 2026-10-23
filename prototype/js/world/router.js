@@ -10,7 +10,8 @@
      Router.days(a, b, pace): how many days' march from a to b at pace (px a world second, unscaled: MAP_BASE if left out);
        Infinity when there is no way
      Router.close(xi, shut): shuts crossing xi (WM.crossings) or opens it again (Phase 5's seasons)
-     Router.stats(): {queries, hits, graphMs, localMs}: the graph's ways asked for, those the pair cache answered, ms spent
+     Router.stats(): {queries, hits, graphMs, localMs, smooths, smoothMs}: the graph's ways asked for, those the pair cache
+       answered, ms spent; the legs straightened (waySmooth) and ms spent on it
    Two levels (WM.graph, below): the way graph for long trips, and for each leg of them (and a short trip) a search in a box
    (findPath) behind a straight look (clearLine); reach reads a label per tile, the piece of land it lies on (one flood fill a
    world). ---------- */
@@ -155,7 +156,7 @@ function wayRechart(){const G=WM.graph;WM.graph=buildWayGraph({map:WM,holdings:T
 // ---- the router on the graph (the world in use: WM.graph)
 // what it keeps: the tiles shut (a byte a tile: Router.close; null while none is), the graph's nodes by tile (WAYN), the pair
 // cache (PAIRS), its counts (WAYS, Router.stats) and the ways' version (WAYV: a walker's way found under another is found again)
-let SHUT=null,WAYN=null,WAYV=0;const PAIRS=new Map(),WAYS={queries:0,hits:0,graphMs:0,localMs:0};
+let SHUT=null,WAYN=null,WAYV=0;const PAIRS=new Map(),WAYS={queries:0,hits:0,graphMs:0,localMs:0,smooths:0,smoothMs:0};
 onWorld(m=>{SHUT=null;WAYN=null;PAIRS.clear();WAYV++;if(m.graph){m.graph.chunk.clear();m.graph.closed.fill(0)}});
 const wayNodes=()=>WAYN||(WAYN=new Map(Array.from(WM.graph.tile,(t,v)=>[t,v])));
 const wayChunkOf=(G,i)=>((i/MW|0)/G.cs|0)*G.cols+((i%MW)/G.cs|0);
@@ -220,13 +221,16 @@ function wayRoute(G,s,g,gn,rm){const t0=performance.now(),A=wayEnds(G,s,false),B
 const wayFind=(x0,y0,x1,y1,rm)=>{const t0=performance.now(),p=findPath(x0,y0,x1,y1,8,rm)||findPath(x0,y0,x1,y1,24,rm);WAYS.localMs+=performance.now()-t0;return p};
 const wayLine=(x0,y0,x1,y1)=>{if(!clearLine(x0,y0,x1,y1))return false;if(!SHUT)return true;const n=Math.ceil(Math.hypot(x1-x0,y1-y0)/4);for(let i=1;i<=n;i++){const x=x0+(x1-x0)*i/n,y=y0+(y1-y0)*i/n;if(SHUT[Math.floor(y/TILE)*MW+Math.floor(x/TILE)])return false}return true};
 const wayCentre=k=>[(k%MW+.5)*TILE,((k/MW|0)+.5)*TILE];
+// (a trip's last stretch, or a short one, walked straight: the line open (straightened, wayClear: clear of every closed tile by
+// WAY_SMOOTH.w px; else wayLine))
+const wayGo=(x0,y0,x1,y1)=>WAY_SMOOTH.on?wayClear(x0,y0,x1,y1):wayLine(x0,y0,x1,y1);
 // a walker's way to goal (a point; with tw, a holding reached by its gate's node): its legs, each walked in turn ({k: 'tiles'
 // (searched to tile b from wherever the walker stands), 'road' or 'xing' (edge e's own tiles: a road's, a bridge's or a ford's; a
 // ferry's crossing, sailed straight over), 'step' (over a portal's border to tile b), 'end' (the last stretch to the goal),
 // 'path' (all its tiles, p: a trip searched on the whole map)}), or legs null when there is none
 // (a road keeper's (goal.road) the same, its ways off the roads x WAY.keep (a worker's x WAY.folk: wayKeep), never straight over open ground)
 function wayTrip(o,goal){const G=WM.graph,s=Math.floor(o.y/TILE)*MW+Math.floor(o.x/TILE),g=Math.floor(goal.y/TILE)*MW+Math.floor(goal.x/TILE),sx=s%MW,gx=g%MW,rm=wayKeep(goal);
-  if(Math.max(Math.abs(sx-gx),Math.abs((s-sx)/MW-(g-gx)/MW))<=WAY.near){const t0=performance.now(),p=rm===1&&wayLine(o.x,o.y,goal.x,goal.y)?[]:findPath(o.x,o.y,goal.x,goal.y,0,rm);WAYS.localMs+=performance.now()-t0;if(p)return{legs:[{k:'path',p}]}}
+  if(Math.max(Math.abs(sx-gx),Math.abs((s-sx)/MW-(g-gx)/MW))<=WAY.near){const t0=performance.now(),p=rm===1&&wayGo(o.x,o.y,goal.x,goal.y)?[]:findPath(o.x,o.y,goal.x,goal.y,0,rm);WAYS.localMs+=performance.now()-t0;if(p)return{legs:[{k:'path',p}]}}
   const gn=goal.tw?wayNodes().get(goal.tw.ty*MW+goal.tw.tx):null,r=s>=0&&g>=0&&s<MW*MH&&g<MW*MH?wayRoute(G,s,g,gn,rm):null;
   if(!r){if(!Router.reach(o,goal))return{legs:null};const t0=performance.now(),p=findPath(o.x,o.y,goal.x,goal.y,Math.max(MW,MH),rm);WAYS.localMs+=performance.now()-t0;return{legs:p?[{k:'path',p}]:null}}
   const L=[{k:'tiles',b:G.tile[r.nodes[0]]}];
@@ -236,11 +240,60 @@ function wayTrip(o,goal){const G=WM.graph,s=Math.floor(o.y/TILE)*MW+Math.floor(o
 function wayLeg(L,o,goal){const G=WM.graph,rm=wayKeep(goal);
   if(L.k==='path')return L.p;if(L.k==='step')return[L.b];
   if(L.k==='tiles'){const [x,y]=wayCentre(L.b);return Math.floor(o.x/TILE)+Math.floor(o.y/TILE)*MW===L.b?[]:wayFind(o.x,o.y,x,y,rm)}
-  if(L.k==='end')return wayLine(o.x,o.y,goal.x,goal.y)?[]:wayFind(o.x,o.y,goal.x,goal.y,rm);
+  if(L.k==='end')return wayGo(o.x,o.y,goal.x,goal.y)?[]:wayFind(o.x,o.y,goal.x,goal.y,rm);
   if(L.k==='road'){const p=WM.roads[G.leg[L.e*3]].path,a=G.leg[L.e*3+1],b=G.leg[L.e*3+2];return a<b?p.slice(a+1,b+1):p.slice(b,a).reverse()}
   const c=WM.crossings[G.xing[L.e]];if(c.kind==='ferry')return{ferry:L.b};return L.b===c.j?[...c.tiles,c.j]:[...c.tiles].reverse().concat(c.i)}
+/* ---------- the way straightened (the owner, 2026-10-23: the way planned and walked was a staircase, east, then diagonal,
+   then east again): on a grid many staircases cost as much as the straight line, and a walker going from tile middle to tile
+   middle walks one. Each leg's tiles once found (wayTravel; the legs over the land, a road's and the last stretch run on
+   together, WAY_SMOOTH.run tiles at most; a crossing's and a ferry's kept as they are) are pulled straight (waySmooth): from
+   where the walker is, on to the farthest of them the straight line reaches with every tile it crosses open (wayOpen: walkable,
+   not shut; WAY_SMOOTH.w px clear each side of it, so it cuts no corner past a closed tile) and costing, by the same tiles'
+   costs (wayStep; off the roads x a road keeper's rm, as findPath weighs them), no more than the stretch it skips (tol more at
+   most); a road keeper's (rm over 1: a caravan, a worker, By road) never skips a stretch of road by a line that leaves the road
+   (more than 1 px off it), so it keeps to the road as far as its tiles do and only its ways off the roads are pulled straight.
+   A way that keeps to a road, or goes round a wood or a swamp, still does; only the staircase goes. Its numbers: on
+   (false: every way as it was, tile to tile), tol, w (px), skip (tiles a line may skip at most), miss (lines in a row that may
+   fail before it looks no farther), run; at: px from a tile it makes for that count as there (tile to tile 3: a corner cut by as
+   much at every tile; along a long straight line that would hold it as far off the line all the way) ---------- */
+const WAY_SMOOTH={on:true,tol:.03,w:2,skip:48,miss:6,run:96,at:.5};
+// (the tiles a line from (x0, y0) to (x1, y1), px, crosses in turn: fn(tile, px of the line in it), -1 off the map; at a corner
+// it passes exactly, both tiles beside it with 0. False at fn's first false)
+function wayRay(x0,y0,x1,y1,fn){const dx=x1-x0,dy=y1-y0,L=Math.hypot(dx,dy),ax=Math.abs(dx),ay=Math.abs(dy),sx=dx>0?1:-1,sy=dy>0?1:-1,ex=Math.floor(x1/TILE),ey=Math.floor(y1/TILE),id=(x,y)=>x<0||y<0||x>=MW||y>=MH?-1:y*MW+x;
+  let tx=Math.floor(x0/TILE),ty=Math.floor(y0/TILE),mx=ax?(sx>0?(tx+1)*TILE-x0:x0-tx*TILE)/ax:Infinity,my=ay?(sy>0?(ty+1)*TILE-y0:y0-ty*TILE)/ay:Infinity,t=0;const kx=TILE/ax,ky=TILE/ay;
+  for(let n=0;n<4096;n++){const end=tx===ex&&ty===ey,nt=end?1:Math.min(mx,my,1);if(fn(id(tx,ty),(nt-t)*L)===false)return false;t=nt;if(end||nt>=1)return true;
+    if(mx<my){tx+=sx;mx+=kx}else if(my<mx){ty+=sy;my+=ky}else{if(fn(id(tx+sx,ty),0)===false||fn(id(tx,ty+sy),0)===false)return false;tx+=sx;ty+=sy;mx+=kx;my+=ky}}
+  return true}
+// (a tile's cost to cross, as findPath weighs it: rm, a road keeper's, off the roads)
+const wayCostAt=(i,rm)=>{const t=tiles[i];return wayStep(t,climate[i])*(rm>1&&t!==T_ROAD&&t!==T_FORD?rm:1)};
+// (the line from (x0, y0) to (x1, y1) open: every tile it crosses, and those of two lines WAY_SMOOTH.w px each side of it)
+function wayClear(x0,y0,x1,y1){const d=Math.hypot(x1-x0,y1-y0);if(!d)return true;const w=WAY_SMOOTH.w,nx=-(y1-y0)/d*w,ny=(x1-x0)/d*w,ok=i=>i>=0&&wayOpen(i);
+  return wayRay(x0,y0,x1,y1,ok)&&wayRay(x0+nx,y0+ny,x1+nx,y1+ny,ok)&&wayRay(x0-nx,y0-ny,x1-nx,y1-ny,ok)}
+// (the line's cost: px in each tile x its cost; WAYOFF: px of it off the roads and fords)
+let WAYOFF=0;
+function wayLineCost(x0,y0,x1,y1,rm){let c=0;WAYOFF=0;wayRay(x0,y0,x1,y1,(i,l)=>{if(!l)return;c+=l*wayCostAt(i,rm);if(tiles[i]!==T_ROAD&&tiles[i]!==T_FORD)WAYOFF+=l});return c}
+// the tiles p to walk from (x0, y0) straightened: those of them the walker makes for in turn, each the farthest the straight line
+// from the last reaches open and no dearer than the tiles it skips (a stretch's cost: from middle to middle, half of each step in
+// either tile); rm, a road keeper's. Counted and timed into Router.stats
+function waySmooth(x0,y0,p,rm){const S=WAY_SMOOTH,n=p.length;if(n<2)return p;const t0=performance.now(),out=[];
+  let ax=x0,ay=y0,at=Math.floor(y0/TILE)*MW+Math.floor(x0/TILE),i=-1;
+  while(i<n-1){let best=i+1,pc=0,px=ax,py=ay,pt=at,miss=0,rd=false;
+    for(let j=i+1;j<n&&j-i<=S.skip;j++){const [cx,cy]=wayCentre(p[j]);pc+=Math.hypot(cx-px,cy-py)*(wayCostAt(pt,rm)+wayCostAt(p[j],rm))/2;px=cx;py=cy;pt=p[j];if(j===i+1)continue;
+      if(tiles[p[j-1]]===T_ROAD)rd=true;// (a road skipped: a road keeper's line keeps to it)
+      if(wayClear(ax,ay,cx,cy)&&wayLineCost(ax,ay,cx,cy,rm)<=pc*(1+S.tol)&&!(rm>1&&rd&&WAYOFF>1)){best=j;miss=0}else if(++miss>S.miss)break}
+    out.push(p[best]);[ax,ay]=wayCentre(p[best]);at=p[best];i=best}
+  WAYS.smooths++;WAYS.smoothMs+=performance.now()-t0;return out}
+// (a leg's tiles just found for walker o, r's leg li - 1, run on with the legs after it (each found from the last one's end, as the
+// walker would) to WAY_SMOOTH.run tiles, up to a crossing or a ferry or a leg not found, then straightened; a crossing's and a
+// ferry's as they are)
+function wayStraight(r,o,goal){let p=r.path;if(p.ferry!=null||r.legs[r.li-1].k==='xing')return p;p=p.slice();const g={x:o.x,y:o.y};
+  while(r.li<r.legs.length&&p.length<WAY_SMOOTH.run){const L=r.legs[r.li];if(L.k==='xing')break;if(p.length)[g.x,g.y]=wayCentre(p[p.length-1]);const q=wayLeg(L,g,goal);if(!q)break;r.li++;for(const k of q)p.push(k)}
+  return waySmooth(o.x,o.y,p,wayKeep(goal))}
 // one step along the way to goal (Router.travel): its legs found when the goal's tile changes (or its road keeping, wayKeep;
-// or the ways do: WAYV), each leg's tiles when it is reached; a holding with no way found is walked to straight
+// or the ways do: WAYV), each leg's tiles when it is reached (straightened: wayStraight); a holding with no way found is walked
+// to straight. Straightened, a walker setting off for a tile more than 1.5 tiles off, or moved since its last step (pushed off
+// its way: a fight, a shove), with the line there not clear finds its way again from where it is, once (WAYRE: the walker doing so)
+let WAYRE=null;
 function wayTravel(o,goal,step){
   const dd=Math.hypot(goal.x-o.x,goal.y-o.y),straight=()=>{walk(o,goal.x-o.x,goal.y-o.y,Math.min(dd,step));return true};if(dd<=1)return true;
   if(goal.tw&&dd<TILE*1.6)return straight();
@@ -248,9 +301,11 @@ function wayTravel(o,goal,step){
   if(!r||r.goal!==gt||r.rm!==rm||r.v!==WAYV){r=wayTrip(o,goal);r.goal=gt;r.rm=rm;r.v=WAYV;r.li=0;r.path=null;ROUTES.set(o,r)}
   if(!r.legs)return goal.tw?straight():false;
   for(let n=0;n<64;n++){
-    if(!r.path){if(r.li>=r.legs.length)return straight();r.path=wayLeg(r.legs[r.li++],o,goal);r.pi=0;if(!r.path){r.legs=null;return goal.tw?straight():false}}
+    if(!r.path){if(r.li>=r.legs.length)return straight();r.path=wayLeg(r.legs[r.li++],o,goal);r.pi=0;r.pc=-1;if(!r.path){r.legs=null;return goal.tw?straight():false}if(WAY_SMOOTH.on)r.path=wayStraight(r,o,goal)}
     if(r.path.ferry!=null){const [x,y]=wayCentre(r.path.ferry),d=Math.hypot(x-o.x,y-o.y);if(d<3){r.path=null;continue}const s=Math.min(d,step);o.x+=(x-o.x)/d*s;o.y+=(y-o.y)/d*s;return true}
-    while(r.pi<r.path.length){const k=r.path[r.pi],[x,y]=wayCentre(k),d=Math.hypot(x-o.x,y-o.y);if(d<3||d<TILE*1.5&&!wayOpen(k)){r.pi++;continue}walk(o,x-o.x,y-o.y,Math.min(d,step));return true}
+    while(r.pi<r.path.length){const k=r.path[r.pi],[x,y]=wayCentre(k),d=Math.hypot(x-o.x,y-o.y);if(d<(WAY_SMOOTH.on?WAY_SMOOTH.at:3)||d<TILE*1.5&&!wayOpen(k)){r.pi++;continue}
+      if(WAY_SMOOTH.on&&(r.pc!==r.pi||o.x!==r.lx||o.y!==r.ly)){r.pc=r.pi;if(WAYRE!==o&&d>TILE*1.5&&wayOpen(Math.floor(o.y/TILE)*MW+Math.floor(o.x/TILE))&&!wayClear(o.x,o.y,x,y)){WAYRE=o;ROUTES.delete(o);try{return wayTravel(o,goal,step)}finally{WAYRE=null}}}
+      walk(o,x-o.x,y-o.y,Math.min(d,step));r.lx=o.x;r.ly=o.y;return true}
     r.path=null}
   return true}
 // (the days from a to b at WAY.pace, Router.days: within WAY.near tiles its tiles' costs, else the graph's;

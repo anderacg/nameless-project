@@ -76,9 +76,50 @@ function interact(o){
 // a click on the map: interact if you are touching it, else walk to it (and interact on arrival). Returns true if something opened.
 function clickAt(wx,wy){
   const o=pickAt(wx,wy);if(!o){G.chase=null;return false}
-  if(Math.hypot(o.x-P.x,o.y-P.y)<=REACH)return interact(o);
-  G.chase=o;P.tx=o.x;P.ty=o.y;P.stuck=0;return false;
+  return approach(o);
 }
+// (what you clicked on, or picked Approach for on its ring (ui/input.js worldApproach): met if you are touching it, else chased)
+function approach(o){if(Math.hypot(o.x-P.x,o.y-P.y)<=REACH)return interact(o);G.chase=o;P.tx=o.x;P.ty=o.y;P.stuck=0;return false}
+/* ---------- Follow (the owner, 2026-10-23: "add new Action called 'Follow' which can be used when you click at the other unit in
+   the world map"): your band shadows a party, keeping after it at a distance, never closing in to meet or fight it (a chase,
+   G.chase, does). G.follow: {o: the party, crumbs: where it has walked, a point each FOLLOW.crumb px, the oldest FOLLOW.trail tiles
+   back} (an order: never saved, as a chase; a new world forgets it). Each moment of your march (followStep) you make for the point
+   FOLLOW.trail tiles behind it along the way it came, so you trail it rather than step on it; with no way behind it yet (it has
+   not moved), that far from it on your side; within FOLLOW.near tiles of it you stand. It ends (followWatch, every frame): out of
+   your sight ("You lose sight of ..."), gone into a holding ("... rides into Ashford") or a camp, or gone (beaten, broken up),
+   your band stopping there; any other order (a click, Travel here, a chase, making camp: followStop, quietly), or a battle, a
+   meeting, an encounter (the map no longer yours: G.mode one of FOLLOW.ends). Hostile or not: what it does about you is its own
+   mind's. What can be followed: a party on the map that is not yours, moving (FOLLOW.kinds), in sight and in no fight. Its
+   ring's Follow and Stop following (supply.js mapRingItems, partyRingItems: followItem), the day bar's tag (followPill), the
+   footprints to it (gfx/worldui.js) ---------- */
+const FOLLOW={trail:2.5,near:1.5,crumb:4,kinds:['lord','cparty','patrol','band','caravan','refugee'],ends:['battle','besiege','capture','dialog','road','scene','site','story','town','dead','title','loading']};
+onWorld(()=>{if(typeof G!=='undefined')G.follow=null});
+const followable=o=>!!o&&FOLLOW.kinds.includes(objKind(o))&&!o.fight&&o.inView(vis());
+// (its name in a line: a lord's or your companion's party's own, the rest "the caravan of Ashford", "the bandits"...; cap: as a tag)
+function followName(o,cap){const k=o.mapKind,l=o.label?o.label():k==='refugee'?'Refugees':'';if(cap||k==='lord'||k==='cparty')return l;return 'the '+l.charAt(0).toLowerCase()+l.slice(1)}
+function followStart(o){if(!followable(o))return false;breakCamp();G.chase=null;G.pitch=null;G.byRoad=null;G.follow={o,crumbs:[[o.x,o.y]]};P.stuck=0;
+  log('You follow '+followName(o)+' at a distance.');followStep();updateHUD(true);return true}
+// it ends (why: said in the log; halt: your band stops where it is, else whatever was ordered stands)
+function followStop(why,halt){if(!G.follow)return false;G.follow=null;if(halt){P.tx=P.ty=null;P.stuck=0}if(why)log(why);if(typeof WUI!=='undefined')WUI.way=null;updateHUD(true);return true}
+// (every frame, whatever is shown: world.js fastWatch)
+function followWatch(){const F=G.follow;if(!F)return;const o=F.o;
+  if(FOLLOW.ends.includes(G.mode)||P.camp||G.pitch||P.stay||G.chase)return followStop();
+  const nm=followName(o),gone=!objKind(o)||o.dead||o.inside;
+  if(gone){const t=o.inside?townBy(o.inside):TOWNS.find(h=>Math.hypot(h.x-o.x,h.y-o.y)<30),c=!t&&camps().find(k=>Math.hypot(k.x-o.x,k.y-o.y)<30);
+    return followStop(t?cap1(nm)+' rides into '+t.name+'.':c?cap1(nm)+' slips into '+(c.name||'their camp')+'.':cap1(nm)+' is gone.',true)}
+  if(!o.inView(vis()))return followStop('You lose sight of '+nm+'.',true)}
+// (your goal this moment: the point FOLLOW.trail tiles behind it along its crumbs (those older dropped), else that far from it on
+// your side; within FOLLOW.near tiles of it, where you stand)
+function followStep(){const F=G.follow,o=F.o,c=F.crumbs,l=c[c.length-1],T=FOLLOW.trail*TILE;if(Math.hypot(o.x-l[0],o.y-l[1])>=FOLLOW.crumb)c.push([o.x,o.y]);
+  let s=0,px=o.x,py=o.y,tx=null,ty=null;for(let i=c.length-1;i>=0;i--){const [x,y]=c[i],d=Math.hypot(x-px,y-py);if(s+d>=T&&d>0){const q=(T-s)/d;tx=px+(x-px)*q;ty=py+(y-py)*q;c.splice(0,i);break}s+=d;px=x;py=y}
+  const d=Math.hypot(P.x-o.x,P.y-o.y);if(tx==null){tx=d>T?o.x+(P.x-o.x)/d*T:P.x;ty=d>T?o.y+(P.y-o.y)/d*T:P.y}
+  if(d<FOLLOW.near*TILE){tx=P.x;ty=P.y}P.tx=tx;P.ty=ty}
+// (the ring's item for o: Stop following (lit) while you follow it, or anything with o not one to follow; Follow for one to
+// follow; none else)
+const followItem=o=>G.follow&&(G.follow.o===o||!followable(o))?{icon:'shoe',label:'Stop following',active:true,run:()=>followStop('You stop following '+followName(G.follow.o)+'.',true)}
+  :followable(o)?{icon:'shoe',label:'Follow',run:()=>followStart(o)}:null;
+// (the day bar's tag while you follow: render.js updateHUD)
+const followPill=()=>G.follow?'<em class="wroad wfollow" title="Following '+followName(G.follow.o)+': your band keeps after it at a distance (any other order, or the action ring’s Stop following, ends it)">'+icon('shoe',12)+'<i><small>Following </small>'+followName(G.follow.o,true)+'</i></em>':'';
 // the camp a band heads for at night: the nearest that is not cleared, within reach
 const campNear=b=>{let best=null,bd=WORLD_SCALE.ai.bandCamp;for(const c of camps()){if(c.cleared)continue;const d=Math.hypot(c.x-b.x,c.y-b.y);if(d<bd){bd=d;best=c}}return best};
 // at dawn the bands in a camp ride out again
@@ -176,8 +217,9 @@ function dangerInSight(){const V=vis();
   for(const m of W.monsters){const M=MONSTERS[m.id];if((M.mythic||M.aggro||stance(monPower(m))==='attack')&&asMonster(m).inView(V))return (M.mythic?'the ':'')+(M.n||m.id).toLowerCase()+' in sight'}
   return ''}
 // Hurry (supply.js) holds only while nothing calls for you: an event, a meeting or any window opening (main.js calls this every
-// frame, whatever is shown), your band Exhausted, in camp or staying in a holding end it
-function fastWatch(){if(!G.hurry)return;const why=G.mode!=='world'||G.modal?'':P.staminaState()==='exhausted'?'your band is exhausted':P.camp||P.stay?'you stop':null;if(why!=null)setHurry(false,why)}
+// frame, whatever is shown), your band Exhausted, in camp or staying in a holding end it. Following a party is watched here too
+// (followWatch)
+function fastWatch(){followWatch();if(!G.hurry)return;const why=G.mode!=='world'||G.modal?'':P.staminaState()==='exhausted'?'your band is exhausted':P.camp||P.stay?'you stop':null;if(why!=null)setHurry(false,why)}
 function updateWorld(dt){
   if(G.paused||G.dead)return;
   fastWatch();peopleWatch();// (who you see: peopledrawer.js)
@@ -190,17 +232,19 @@ function updateWorld(dt){
   Systems.frame(d,dt);
 }
 // your march: in camp, the camp's moment (world/supply.js campStep: a travel order breaks it, and you march on); a siege you leave
-// behind is lifted; whatever you chase, then your step toward where you go (true: you reached what you chased and met it)
+// behind is lifted; whatever you follow (your goal behind it: followStep) or chase, then your step toward where you go (true: you
+// reached what you chased and met it; following, at your goal you wait there)
 function marchStep(d){
   if(P.camp&&!campStep())return false;
   if(P.siege){const st=townBy(P.siege.town);if(!st||Math.hypot(P.x-st.x,P.y-st.y)>WORLD_SCALE.war.siegeLeash){P.siege=null;log('You march away and the siege'+(st?' of '+st.name:'')+' is lifted.','bad')}}
   // (a chase ends when what you chase is gone or not worth it: WorldObject here, chaseable; reached, it is met, unless you just
   // fought and it would fight you: meetsAnyTime)
+  if(G.follow)followStep();
   if(G.chase){const o=G.chase;if(!objKind(o)||!o.chaseable())G.chase=null;else{P.tx=o.x;P.ty=o.y;
     if(Math.hypot(o.x-P.x,o.y-P.y)<=REACH&&!G.modal&&(G.encCool<=0||o.meetsAnyTime)){interact(o);return true}}}
   if(P.tx!=null){
     const dx=P.tx-P.x,dy=P.ty-P.y,dist=Math.hypot(dx,dy);
-    if(dist<2){P.tx=null;G.byRoad=null;campArrive()}// (the clear ground you walked to: your band pitches there, supply.js)
+    if(dist<2){if(!G.follow){P.tx=null;G.byRoad=null;campArrive()}}// (the clear ground you walked to: your band pitches there, supply.js)
     else{
       const step=Math.min(dist,moveStep(MAP_BASE*travelMul(),d)*(P.morale<25?.8:1)*roadSprint()*hurryPace());// (roadSprint: after a thief on the road, encounters.js; Hurry: supply.js)
       P.dir=dx>=0?1:-1;
@@ -243,7 +287,7 @@ function setByRoad(on){on=!!on;G.byRoad=null;if(typeof WUI!=='undefined')WUI.way
   if(on)P.byRoad=true;else delete P.byRoad;log(on?'By road: your band keeps to the roads wherever one is near.':'By road off: your band takes the plain way again.');updateHUD(true);return on}
 // (key B: on or off. The action ring's By road (roadGo): off, it turns on and you go to (wx, wy) by it; on, it turns off; the mode's state)
 const toggleByRoad=()=>setByRoad(!P.byRoad);
-function roadGo(wx,wy){if(P.byRoad)return setByRoad(false);setByRoad(true);worldGo(wx,wy);return true}
+function roadGo(wx,wy){if(P.byRoad)return setByRoad(false);setByRoad(true);worldMove(wx,wy);return true}
 // (the day bar's mark while it is on: render.js updateHUD)
 const byRoadPill=()=>P.byRoad?'<em class="wroad" title="By road: every way you go keeps to the roads and tracks when one is within '+ROAD_GO.near+' tiles (B or the action ring’s By road turns it off)">'+icon('map',12)+'<i>By road</i></em>':'';
 // a holding you reach opens (true), unless you only pass it

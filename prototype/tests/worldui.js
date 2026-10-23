@@ -1,8 +1,9 @@
 'use strict';
-// The world map's pointer UI (gfx/worldui.js): a click on the ground sets the arrow, its ripple and the way's dots; the way
+// The world map's pointer UI (gfx/worldui.js): a click on the ground sets the arrow, its ripple and the way's footprints (a
+// left and a right in turn, each on its side of the way and turned along it, a print each WUI_FOOT.gap px); the way
 // shortens as you walk it and arriving puffs and clears it; the brackets take the colour of what the pointer is on and ease
 // from tile to tile; under reducedMotion all stands still; a tap on a phone gives the same feedback and no brackets; a chased
-// band gets its ring and arrow, gone when you give up; nothing on land you have never seen; crisp at the screen's 3x; nothing
+// band (a click opens its ring, a second click chases it) gets its ring and arrow, gone when you give up; nothing on land you have never seen; crisp at the screen's 3x; nothing
 // drawn (the frame as before) while there is no goal and no pointer; and none of it touches the game.
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);
 const t=T,G=t.G,P=t.P,W=t.W,WUI=t.WUI,pn=performance.now,r0=Math.random,rm0=t.reducedMotion,ev=s=>(0,eval)(s);let now=1e7;
@@ -42,6 +43,15 @@ try{
    ok(ys.every(y=>y!=null)&&ys[0]<ys[4]&&new Set(ys.slice(5)).size>1,'the arrow drops onto the goal, then bobs ('+ys.map(y=>Math.round(y)).join(' ')+')');
    ok(!WUI.fx.length,'the ripple is gone after '+t.WUI_K.ripple+' s');
    const dots0=WUI.dots.length/3;ok(dots0>=6,'dots mark the way ('+dots0+')');
+   // (footprints: as many as the way has room for, a print each WUI_FOOT.gap px; each turned the way it goes, a left and a right
+   // in turn, each on its own side)
+   {const w=WUI.way,D=WUI.dots,FT=WUI.feet,F=t.WUI_FOOT,n=D.length/3,cam={x:Math.floor(G.cam.x),y:Math.floor(G.cam.y)},ux=(gx-w.X[0])/Math.hypot(gx-w.X[0],gy-w.Y[0]),uy=(gy-w.Y[0])/Math.hypot(gx-w.X[0],gy-w.Y[0]);
+    const want=((Math.round(Math.atan2(uy,ux)/6.2832*F.dirs))%F.dirs+F.dirs)%F.dirs,room=(w.S[w.n-1]-6-(WUI.s+3))/F.gap,bad=[];
+    for(let i=0;i<n;i++){const d=FT[2*i],l=FT[2*i+1],x=D[3*i]+cam.x,y=D[3*i+1]+cam.y,side=(x-w.X[0])*-uy+(y-w.Y[0])*ux;
+     if(Math.min((d-want+F.dirs)%F.dirs,(want-d+F.dirs)%F.dirs)>1)bad.push('turned '+d+' for '+want);if(i&&l===FT[2*i-1])bad.push('two '+(l?'lefts':'rights')+' in a row');if(l?side>-.2:side<.2)bad.push((l?'a left':'a right')+' on the wrong side ('+side.toFixed(2)+')')}
+    ok(FT.length===2*n&&Math.abs(n-room)<=1.5&&!bad.length,'footprints along it: '+n+' for '+room.toFixed(1)+' prints\' room, each turned the way it goes ('+want+' of '+F.dirs+'), a left then a right, each on its side'+(bad.length?': '+bad.slice(0,4).join('; '):''));
+    const pic=t.wuiFoot(want,1,t.WUI_K.col.gold),g=pic.getContext('2d').getImageData(0,0,pic.width,pic.height).data;let gold=0;for(let i=0;i<g.length;i+=4)if(g[i+3]===255)gold++;
+    ok(gold>=8&&gold<=26,'a print is a small shape in the way\'s gold ('+gold+' px), drawn in code')}
    // (they march: the same way a moment later has its dots elsewhere)
    const d0=WUI.dots.slice(0,6).join();frame(100);ok(WUI.dots.slice(0,6).join()!==d0,'the dots march along it');
    const l0=left();for(let i=0;i<30;i++)t.updateWorld(.05);frame(16);const l1=left();ok(l1<l0-5&&WUI.way.i>0,'walking it cuts the way short ('+l0.toFixed(1)+' to '+l1.toFixed(1)+' px)');
@@ -77,7 +87,7 @@ try{
     ok(n>3&&!bad&&WUI.way.S[WUI.way.n-1]>16*10,'a way into land never seen: dots only where you have seen ('+n+' drawn, '+bad+' in the dark)')}else o.push('INFO no unseen land in reach');P.tx=null}
   // ---- chasing a band: a ring round it, an arrow over it; giving up clears them
   home();{const b=t.asParty({x:P.x+60,y:P.y+10,n:6,cool:5,t:0,a:0,kind:'bandits',idle:true});b.troops=t.makeEnemies(6,false,'bandits');t.bandits.push(b);frame(16);
-   click(b.x,b.y-4);frame(16);frame(400);ok(G.chase===b&&WUI.tgt&&WUI.tgt.o===b&&!WUI.dest,'a click on a band 60 px off chases it, and it is the UI\'s target');
+   click(b.x,b.y-4);const ring=t.ActionRing.now;click(b.x,b.y-4);frame(16);frame(400);ok(ring&&!t.ActionRing.now&&G.chase===b&&WUI.tgt&&WUI.tgt.o===b&&!WUI.dest,'a click on a band 60 px off opens its ring, a second chases it, and it is the UI\'s target');
    const T=t.wuiTargetAt(b,{x:Math.floor(G.cam.x),y:Math.floor(G.cam.y)}),rs=rings(),as=arrows();
    ok(rs.length>=1&&as.length===1&&as[0][1][1]<T.y-14,'a ring pulses round it ('+rs.length+' drawn) and an arrow stands over it');
    ok(WUI.way&&Math.hypot(WUI.way.gx-b.x,WUI.way.gy-b.y)<1&&WUI.dots.length>0,'the dots lead to it');
@@ -96,7 +106,7 @@ try{
    P.tx=null;G.mouse.in=false;let n=0;frame(16);ok(!WUI.fx.length&&!WUI.dest,'and no puff')}finally{window.__rm0=rm0;ev('reducedMotion=window.__rm0')}
   // ---- crisp at the screen's 3x: every picture of it at its own size, on whole device pixels
   home();ev('VS=3');try{const b=t.asParty({x:P.x+60,y:P.y+10,n:6,cool:5,t:0,a:0,kind:'bandits',idle:true});b.troops=t.makeEnemies(6,false,'bandits');t.bandits.push(b);
-   P.x+=.37;frame(16);click(b.x,b.y-4);pointAt(P.x-30.3,P.y+20);const bad=[];let n=0,fills=0;const fr0=c.fillRect;c.fillRect=function(x,y,w,h){if(rec){const m=this.getTransform();fills++;const isI=v=>Math.abs(v-Math.round(v))<1e-3;if(!isI(m.e+m.a*x)||!isI(m.f+m.d*y)||!isI(m.a*w)||!isI(m.d*h))bad.push('rect '+[x,y,w,h].map(v=>+v.toFixed(3)).join(','))}return fr0.call(this,x,y,w,h)};
+   P.x+=.37;frame(16);click(b.x,b.y-4);click(b.x,b.y-4);pointAt(P.x-30.3,P.y+20);const bad=[];let n=0,fills=0;const fr0=c.fillRect;c.fillRect=function(x,y,w,h){if(rec){const m=this.getTransform();fills++;const isI=v=>Math.abs(v-Math.round(v))<1e-3;if(!isI(m.e+m.a*x)||!isI(m.f+m.d*y)||!isI(m.a*w)||!isI(m.d*h))bad.push('rect '+[x,y,w,h].map(v=>+v.toFixed(3)).join(','))}return fr0.call(this,x,y,w,h)};
    try{for(let i=0;i<12;i++){frame(37);for(const [img,a,m] of mine()){n++;const isI=v=>Math.abs(v-Math.round(v))<1e-3;if(a.length!==2||Math.abs(m.a-3)>1e-3||Math.abs(m.d-3)>1e-3||!isI(m.e+m.a*a[0])||!isI(m.f+m.d*a[1]))bad.push(img.width+'x'+img.height+' @'+a.map(v=>+(+v).toFixed(3)).join(','))}}}finally{c.fillRect=fr0}
    ok(n>12&&!bad.length,'at 3x its pictures ('+n+') and fills are on whole device pixels at their own size: crisp'+(bad.length?': '+bad.slice(0,4).join('; '):''));t.bandits.length=0;G.chase=null;P.tx=null;G.mouse.in=false}finally{ev('VS=1')}
  }finally{c.drawImage=di0}

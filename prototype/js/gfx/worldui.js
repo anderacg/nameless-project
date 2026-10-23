@@ -5,25 +5,27 @@
    never saved and draws no random number.
    - A click or tap that sends you somewhere: a ring ripples out from the point; a gold arrow drops onto the goal, lands with a
      squash and bobs there while you go; you arrive: a small ring puffs and it is gone (another goal, or none: gone at once).
-   - The way there: dots marching toward the goal along the way you will walk (world.js heroWay, the router's way round water
-     when the line is blocked, followed ahead once a goal: wuiWay; laid again when the ways change or you leave it), cut as you
-     walk it, faint by your band, none on land you have never seen.
+   - The way there: footprints marching toward the goal along the way you will walk (world.js heroWay, the router's way round
+     water when the line is blocked, straightened, followed ahead once a goal: wuiWay; laid again when the ways change or you
+     leave it), a left and a right print in turn, turned along it (wuiFoot), cut as you walk it, faint by your band, none on
+     land you have never seen.
    - The pointer (a mouse only): corner brackets round the tile under it, or round a party's figure, a holding's lots, a site,
      easing from one to the next and breathing, a faint glow inside, in the colour of what it is (wuiKind: an enemy red, a friend
      or ally green, a neutral or a caravan white, your companions' and the holdings gold, open ground a soft white). The
      tooltip is input.js's own (#tip).
    - Chasing a party or making for a holding: a ring pulsing round it and an arrow bobbing over it (while it is in sight), till
-     you meet it or go elsewhere.
+     you meet it or go elsewhere. Following a party (world.js G.follow): its ring, no arrow, the footprints to it.
    - An encounter on the road you know of and have not met (world/road.js): sound waves rippling out from it, a pulsing "!" over it, its
      call-out the first time it is on the screen, and its waves rolling in at the screen's edge while it is off it (wuiRoadUnder, wuiRoadOver).
    In whole game pixels on the camera's grid (what moves or eases, to 1/VS px as a mover is: render.js snapV), outlined dark as
    the arrows and chevrons of the battle are (ui/orderpaths.js). Real time. Under reducedMotion all holds still: no ripple or
    puff, the arrow and brackets standing, the dots not marching ---------- */
-const WUI_K={ripple:.42,drop:.3,land:.13,bob:1.3,poof:.42,ping:1.2,breathe:1.4,gap:6,march:10,draw:.35,ease:20,repick:120,steps:8000,stride:2,off:8,rebuild:250,
+const WUI_K={ripple:.42,drop:.3,land:.13,bob:1.3,poof:.42,ping:1.2,breathe:1.4,march:10,draw:.35,ease:20,repick:120,steps:8000,stride:2,off:8,rebuild:250,
   col:{foe:'#ff5a48',friend:'#76d86a',neutral:'#ece6d4',comp:'#e8b94a',hold:'#e8b94a',ground:'#f2ecd8',gold:'#e8b94a',enc:'#4aa0f0'},dark:'#140e08'};
-// (its state: the effects playing (ripples, puffs), the goal you walk to and when it was set, what you chase, the way there,
-// the brackets (b: where they stand now, world px; to: where they go) and what the pointer was last picked on)
-const WUI={fx:[],dest:null,tgt:null,way:null,s:0,dots:[],hov:null,hp:{t:-1e9,x:NaN,y:NaN,o:null},now:0};
+// (its state: the effects playing (ripples, puffs), the goal you walk to and when it was set, what you chase or follow (f), the
+// way there, its prints this frame (dots: screen x, y, alpha each; feet: the way each points (wuiFoot's d), 1 a left print), the
+// brackets (b: where they stand now, world px; to: where they go) and what the pointer was last picked on)
+const WUI={fx:[],dest:null,tgt:null,way:null,s:0,dots:[],feet:[],hov:null,hp:{t:-1e9,x:NaN,y:NaN,o:null},now:0};
 // what a thing on the map is to you, by its colour (WUI_K.col)
 function wuiKind(o){const k=objKind(o);if(!k)return 'ground';
   if(k==='band'||k==='monster'||k==='fight')return 'foe';if(k==='cparty')return 'comp';if(k==='town'||k==='estate')return 'hold';
@@ -47,6 +49,22 @@ function wuiArrow(k,col){const key='a'+k+col;let c=WUIP.get(key);if(c)return c;c
   c.cx=(w+2)>>1;c.tip=h;WUIP.set(key,c);return c}
 // (a picture with its point (px, py) at the screen's (x, y))
 const wuiPut=(c,x,y,px,py)=>ctx.drawImage(c,x-px,y-py);
+/* a footprint of the way (the owner, 2026-10-23: small footprints for its dots, in their gold, at their spacing), drawn by hand
+   as pixels: a right foot pointing north (N) and north-east (NE), its ball (the big toe on its inner side) and its heel apart; the
+   other ways turned from them by quarter turns, a left one mirrored along its length. d: one of WUI_FOOT.dirs (8) ways, 0 east,
+   on clockwise; a pixel edge round it in the dark at WUI_FOOT.edge, its toe's tip lit. gap: px from one print to the next along
+   the way (a left, then a right); side: px each sits off the way's middle; look: px before and after it the way's heading is read
+   over. Its middle at (cx, cy) in the picture */
+const WUI_FOOT={gap:8,side:2,look:4,dirs:8,edge:.55,N:['##.','###','###','...','.##','.##'],NE:['...##','..###','..##.','.....','##...']};
+function wuiFoot(d,left,col){const key='f'+d+(left?'l':'r')+col;let c=WUIP.get(key);if(c)return c;const F=WUI_FOOT,o=d%2,B=o?F.NE:F.N,bw=B[0].length,bh=B.length;let p=[];
+  B.forEach((r,y)=>{for(let x=0;x<bw;x++)if(r[x]==='#')p.push([x-(bw-1)/2,y-(bh-1)/2])});
+  if(left)p=p.map(([x,y])=>o?[-y,-x]:[-x,y]);for(let k=((d-6-o)/2%4+4)%4;k>0;k--)p=p.map(([x,y])=>[-y,x]);
+  const x0=Math.min(...p.map(q=>q[0])),y0=Math.min(...p.map(q=>q[1])),W=Math.round(Math.max(...p.map(q=>q[0]))-x0)+1,H=Math.round(Math.max(...p.map(q=>q[1]))-y0)+1,M=new Uint8Array(W*H),at=(x,y)=>x>=0&&y>=0&&x<W&&y<H&&M[y*W+x];
+  for(const [x,y] of p)M[Math.round(y-y0)*W+Math.round(x-x0)]=1;
+  const ux=Math.cos(d/F.dirs*6.2832),uy=Math.sin(d/F.dirs*6.2832);let tip=-1,tu=-1e9;for(let i=0;i<W*H;i++)if(M[i]){const u=(i%W)*ux+((i/W)|0)*uy;if(u>tu+1e-6){tu=u;tip=i}}
+  c=mkc(W+2,H+2,g=>{g.globalAlpha=F.edge;for(let y=-1;y<=H;y++)for(let x=-1;x<=W;x++)if(!at(x,y)&&(at(x-1,y)||at(x+1,y)||at(x,y-1)||at(x,y+1)))rect(g,WUI_K.dark,x+1,y+1);
+    g.globalAlpha=1;for(let i=0;i<W*H;i++)if(M[i])rect(g,i===tip?wuiMix(col,.6):col,i%W+1,((i/W)|0)+1)});
+  c.cx=Math.round(-x0)+1;c.cy=Math.round(-y0)+1;WUIP.set(key,c);return c}
 /* ---- a click: the ripple, the arrow's drop (input.js worldGo, after the click has done what it does) ---- */
 function wuiClick(wx,wy){if(G.mode!=='world')return;const now=performance.now(),o=G.chase&&objKind(G.chase)?G.chase:null;if(!o&&P.tx==null)return;
   if(o&&WUI.tgt&&WUI.tgt.o===o)WUI.tgt.t=now;else if(!o&&WUI.dest)WUI.dest.t=now;WUI.way=null;
@@ -64,14 +82,18 @@ function wuiWay(x0,y0,x1,y1,now){const X=[x0],Y=[y0],o={x:x0,y:y0,dir:1},st=WUI_
   if(ok){X.push(x1);Y.push(y1)}else if(X[X.length-1]!==o.x){X.push(o.x);Y.push(o.y)}
   const S=[0];for(let i=1;i<X.length;i++)S.push(S[i-1]+Math.hypot(X[i]-X[i-1],Y[i]-Y[i-1]));
   return{X,Y,S,n:X.length,i:0,gx:x1,gy:y1,ok,v:WAYV,t:now}}
+// (the point s px along it, world px)
+function wuiPt(w,s){s=Math.max(0,Math.min(w.S[w.n-1],s));let lo=0,hi=w.n-1;while(hi-lo>1){const m=(lo+hi)>>1;if(w.S[m]<=s)lo=m;else hi=m}
+  const L=w.S[hi]-w.S[lo],q=L>0?(s-w.S[lo])/L:0;return[w.X[lo]+(w.X[hi]-w.X[lo])*q,w.Y[lo]+(w.Y[hi]-w.Y[lo])*q]}
 // (where you are along it: the nearest of its next points (a rebuild if you are off it), then onto the leg after it; s: px)
 function wuiAlong(w){let j=w.i,bd=1e9;for(let k=w.i,e=Math.min(w.n-1,w.i+80);k<=e;k++){const d=(w.X[k]-P.x)**2+(w.Y[k]-P.y)**2;if(d<bd){bd=d;j=k}}
   if(bd>WUI_K.off*WUI_K.off)return -1;w.i=j;let s=w.S[j];
   if(j<w.n-1){const dx=w.X[j+1]-w.X[j],dy=w.Y[j+1]-w.Y[j],L=dx*dx+dy*dy;if(L>0)s+=Math.max(0,Math.min(1,((P.x-w.X[j])*dx+(P.y-w.Y[j])*dy)/L))*Math.sqrt(L)}
   return s}
 /* ---- once a frame, before anything is drawn: the goal and the chase as they are now; arrived, the puff ---- */
-function wuiSync(now){WUI.now=now;WUI.fx=WUI.fx.filter(f=>(now-f.t)/1000<(f.k==='ripple'?WUI_K.ripple:WUI_K.poof));const ch=G.chase&&objKind(G.chase)?G.chase:null;
-  if(ch){if(!WUI.tgt||WUI.tgt.o!==ch){WUI.tgt={o:ch,t:now};WUI.way=null}WUI.dest=null}
+function wuiSync(now){WUI.now=now;WUI.fx=WUI.fx.filter(f=>(now-f.t)/1000<(f.k==='ripple'?WUI_K.ripple:WUI_K.poof));
+  const fo=!G.chase&&G.follow&&objKind(G.follow.o)?G.follow.o:null,ch=G.chase&&objKind(G.chase)?G.chase:fo;
+  if(ch){if(!WUI.tgt||WUI.tgt.o!==ch||WUI.tgt.f!==!!fo){WUI.tgt={o:ch,t:now,f:!!fo};WUI.way=null}WUI.dest=null}
   else{WUI.tgt=null;if(P.tx!=null&&!P.stay){const d=WUI.dest;if(!d||Math.abs(d.x-P.tx)>.5||Math.abs(d.y-P.ty)>.5){WUI.dest={x:P.tx,y:P.ty,t:now};WUI.way=null}}
     else{const d=WUI.dest;if(d&&Math.hypot(P.x-d.x,P.y-d.y)<6&&!reducedMotion())WUI.fx.push({k:'poof',x:Math.round(d.x),y:Math.round(d.y),t:now,col:WUI_K.col.gold});WUI.dest=null}}
   if(!WUI.dest&&!WUI.tgt)WUI.way=null;
@@ -128,16 +150,17 @@ function wuiBrackets(x0,y0,x1,y1,col,a,p,g){const w=x1-x0,h=y1-y0;
   ctx.globalAlpha=a*.8;ctx.fillStyle=WUI_K.dark;for(const [x,y,aw,ah] of arms)ctx.fillRect(x-1,y-1,aw+2,ah+2);
   ctx.globalAlpha=a;ctx.fillStyle=col;for(const [x,y,aw,ah] of arms)ctx.fillRect(x,y,aw,ah);
   ctx.fillStyle=wuiMix(col,.5);ctx.fillRect(X0,Y0,1,1);ctx.fillRect(X1,Y0,1,1);ctx.fillRect(X0,Y1,1,1);ctx.fillRect(X1,Y1,1,1);ctx.globalAlpha=1}
-// the dots along the way, from just past you to just short of the goal, marching on toward it (a dot each WUI_K.gap px, its
-// phase by the clock); drawn out from you over WUI_K.draw s when it is new; faint the first px from you; none on land never seen
-function wuiTrail(cam,now,rm){const w=WUI.way;WUI.dots.length=0;if(!w||w.n<2)return;const s0=WUI.s,end=w.S[w.n-1]-(WUI.tgt?10:6),gp=WUI_K.gap,ph=rm?0:(now/1000*WUI_K.march)%gp,col=WUI.tgt?WUI_K.col[wuiKind(WUI.tgt.o)]:WUI_K.col.gold;
-  const reach=rm?1e9:s0+(now-w.t0)/1000/WUI_K.draw*(end-s0+20);let j=w.i,n=0;const D=WUI.dots;
-  for(let s=Math.ceil((s0+3-ph)/gp)*gp+ph;s<end&&s<reach&&n<400;s+=gp){while(j<w.n-2&&w.S[j+1]<s)j++;const L=w.S[j+1]-w.S[j],q=L>0?(s-w.S[j])/L:0,x=w.X[j]+(w.X[j+1]-w.X[j])*q,y=w.Y[j]+(w.Y[j+1]-w.Y[j])*q;
-    const rx=Math.round(x),ry=Math.round(y);if(!seenAt(rx,ry))continue;const sx=rx-cam.x,sy=ry-cam.y;// (seen where it is drawn: a point rounded over a tile's edge into the dark is not)if(sx<-2||sy<-2||sx>VW+2||sy>VH+2)continue;
-    D.push(sx,sy,Math.min(1,(s-s0-3)/14,(end+6-s)/8));n++}
-  ctx.fillStyle=WUI_K.dark;for(let i=0;i<D.length;i+=3){ctx.globalAlpha=D[i+2]*.5;ctx.fillRect(D[i]-1,D[i+1]-1,4,4)}
-  ctx.fillStyle=col;for(let i=0;i<D.length;i+=3){ctx.globalAlpha=D[i+2];ctx.fillRect(D[i],D[i+1],2,2)}
-  ctx.fillStyle=wuiMix(col,.6);for(let i=0;i<D.length;i+=3){ctx.globalAlpha=D[i+2];ctx.fillRect(D[i],D[i+1],1,1)}ctx.globalAlpha=1}
+// the footprints along the way, from just past you to just short of the goal, marching on toward it (a print each
+// WUI_FOOT.gap px, a left then a right, each WUI_FOOT.side px off the way's middle on its side and turned along it; their phase by
+// the clock, over a pair's stride, so a print keeps its side as they march); drawn out from you over WUI_K.draw s when it is
+// new; faint the first px from you; none on land never seen
+function wuiTrail(cam,now,rm){const w=WUI.way,D=WUI.dots,FT=WUI.feet;D.length=0;FT.length=0;if(!w||w.n<2)return;const F=WUI_FOOT,s0=WUI.s,end=w.S[w.n-1]-(WUI.tgt?10:6),gp=F.gap,ph=rm?0:(now/1000*WUI_K.march)%(2*gp),col=WUI.tgt?WUI_K.col[wuiKind(WUI.tgt.o)]:WUI_K.col.gold;
+  const reach=rm?1e9:s0+(now-w.t0)/1000/WUI_K.draw*(end-s0+20);let n=0;
+  for(let k=Math.ceil((s0+3-ph)/gp),s=k*gp+ph;s<end&&s<reach&&n<400;k++,s+=gp){const [x,y]=wuiPt(w,s),[ax,ay]=wuiPt(w,s-F.look),[bx,by]=wuiPt(w,s+F.look),l=Math.hypot(bx-ax,by-ay)||1,ux=(bx-ax)/l,uy=(by-ay)/l,left=!(k&1),sd=left?-F.side:F.side;
+    // (seen where it is drawn: a point rounded over a tile's edge into the dark is not)
+    const rx=Math.round(x-uy*sd),ry=Math.round(y+ux*sd);if(!seenAt(rx,ry))continue;const sx=rx-cam.x,sy=ry-cam.y;if(sx<-6||sy<-6||sx>VW+6||sy>VH+6)continue;
+    D.push(sx,sy,Math.min(1,(s-s0-3)/14,(end+6-s)/8));FT.push(((Math.round(Math.atan2(uy,ux)/6.2832*F.dirs))%F.dirs+F.dirs)%F.dirs,left?1:0);n++}
+  for(let i=0,f=0;i<D.length;i+=3,f+=2){const c=wuiFoot(FT[f],FT[f+1],col);ctx.globalAlpha=D[i+2];wuiPut(c,D[i],D[i+1],c.cx,c.cy)}ctx.globalAlpha=1}
 // (a chased thing's feet, the top of what is drawn of it (its banner and label too) and its ring's width, on the screen)
 function wuiTargetAt(o,cam){const b=wuiBox(o)||[o.x-6,o.y-12,o.x+6,o.y+2],B=o.banner&&bannerAt(o,0),top=B?Math.min(b[1],B.y+snapV(o.y)-Math.round(o.y)+opaqueBox(B.s)[1]-8):b[1];// (over its banner and the label on it)
   return{x:wuiX(o.x,cam),y:wuiY(o.y,cam)+1,top:Math.floor(top-cam.y),rx:Math.round(clamp((b[2]-b[0])/2+3,7,22))}}
@@ -160,7 +183,7 @@ function wuiUnder(cam){const now=performance.now(),dt=Math.min(.1,Math.max(0,(no
 // over the labels: the goal's arrow, the arrow over what you chase, the brackets
 function wuiOver(cam){if(G.mode==='title')return;const now=WUI.now||performance.now(),rm=reducedMotion();
   if(WUI.dest){const d=WUI.dest;wuiDrop(Math.round(d.x)-cam.x,Math.round(d.y)-cam.y,d.t,WUI_K.col.gold,now,rm,true)}
-  if(WUI.tgt&&WUI.tgt.o.inView(vis())){const o=WUI.tgt.o,T=wuiTargetAt(o,cam);wuiDrop(T.x,T.top,WUI.tgt.t,WUI_K.col[wuiKind(o)],now,rm,false)}
+  if(WUI.tgt&&!WUI.tgt.f&&WUI.tgt.o.inView(vis())){const o=WUI.tgt.o,T=wuiTargetAt(o,cam);wuiDrop(T.x,T.top,WUI.tgt.t,WUI_K.col[wuiKind(o)],now,rm,false)}// (one you follow: no arrow)
   wuiRoadOver(cam,now,rm);wuiEscorts(cam,now,rm);
   const h=WUI.hov;if(h){const b=h.b,col=WUI_K.col[h.kind],x0=wuiX(b[0],cam),y0=wuiY(b[1],cam),x1=wuiX(b[2],cam),y1=wuiY(b[3],cam),br=rm?0:(1+Math.sin(now/1000/WUI_K.breathe*6.2832))/2;
     wuiBrackets(x0,y0,x1,y1,col,h.kind==='ground'?.75:1,rm?0:Math.round(br),h.kind==='ground'?.5+.5*br:1+br)}}

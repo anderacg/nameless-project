@@ -90,12 +90,12 @@ cv.addEventListener('pointermove',e=>{const p=toCanvas(e);G.mouse.x=p.x;G.mouse.
 cv.addEventListener('pointerleave',()=>{G.mouse.in=false;if(!holdCardUp())hideTip();if(B)B.hov=null;cv.style.cursor=''});
 cv.addEventListener('pointerdown',e=>{
   const p=toCanvas(e);G.mouse.x=p.x;G.mouse.y=p.y;G.mouse.in=true;G.mouse.type=e.pointerType;
-  if(ringTapOut())return;// (the action ring open: a press outside it only closes it, ring.js)
+  if(ActionRing.now){const o=partyAgain(p);ringTapOut();if(o)worldApproach(o);return}// (the action ring open: a press outside it only closes it, ring.js; on the party whose ring a click just opened, it approaches it: partyAgain)
   if(G.modal)return;
   if(G.mode==='world'&&!G.place&&e.button===0&&fullMapHit(p)){fullMapOpen();return}// (a click or a tap on the minimap: the full map, map.js)
   if(e.pointerType==='touch'&&touchDown(e,p))return;// (a finger in battle or on the map: below; it acts when it lifts)
   if(G.mode==='world'){const wx=G.cam.x+p.x,wy=G.cam.y+p.y;if(G.place){if(e.button===2){G.place=null;log('You stop placing.')}else placeClick(wx,wy);return}if(P.stay)return stayClick(wx,wy);
-    if(e.button===0)ringPress(e,wx,wy);else worldGo(wx,wy)}// (the left button: nothing yet; let go, you travel; held still, the action ring: ring.js)
+    if(e.button===0)ringPress(e,wx,wy);else worldMove(wx,wy)}// (the left button: nothing yet; let go, you travel (on a party, its ring: worldGo); held still, the action ring: ring.js. The right one travels, or chases, at once)
   else if(G.mode==='scene')sceneClick(p.x,p.y);
   // battle: RTS command (commands.js): left-click or drag to select, right-click to move or attack (a touch: select, then a
   // second touch sends them)
@@ -125,9 +125,25 @@ cv.addEventListener('pointermove',e=>{if(G.mode!=='battle'||!B)return;const p=to
 // a drag under way in battle called off (Esc; a left-click during a right-drag; a second finger: touchDown): the line ghost,
 // the box or the finger's press gone, nothing sent, the selection kept; letting go after it does nothing. True if there was one
 function dragCancel(){if(G.mode!=='battle'||!B||!(B.rdrag||B.box||TOUCH.lp))return false;touchDrop();B.rdrag=null;B.box=null;return true}
-// the map: travel to a point, or meet what is there
+// the map's click or tap (ring.js ringUp, touchUp): on another party, its ring (partyRing); else worldMove
+function worldGo(wx,wy){if(partyRing(pickAt(wx,wy)))return;worldMove(wx,wy)}
+// travel to a point, or meet what is there (Follow ends: world.js followStop)
 // (a new trip: by road, if that mode is on, asks again whether a road is near: world.js byRoadTo)
-function worldGo(wx,wy){G.pitch=null;G.byRoad=null;if(!(clickAt(wx,wy)||G.chase)){P.tx=clamp(wx,8,MW*TILE-8);P.ty=clamp(wy,8,MH*TILE-8);P.stuck=0}wuiClick(wx,wy)}// (the click's ripple: worldui.js)
+function worldMove(wx,wy){followStop();G.pitch=null;G.byRoad=null;if(!(clickAt(wx,wy)||G.chase)){P.tx=clamp(wx,8,MW*TILE-8);P.ty=clamp(wy,8,MH*TILE-8);P.stuck=0}wuiClick(wx,wy)}// (the click's ripple: worldui.js)
+/* a click or a tap on another party (the owner, 2026-10-23: Follow "can be used when you click at the other unit in the world
+   map"): its ring at it (ActionRing; supply.js partyRingItems: Approach, today's chase, Follow, Look), nothing done yet; Esc or a
+   press elsewhere closes it (ring.js). A second press on it within PARTY_CLICK.dbl ms (a double click or tap) approaches it at
+   once, as one click did before. Which: world.js FOLLOW.kinds, not in a fight (a click on a fight meets it). last: the ring a
+   click opened, its party, when */
+const PARTY_CLICK={dbl:400,r:16,last:null};
+function partyRing(o){if(!o||!FOLLOW.kinds.includes(objKind(o))||o.fight||G.mode!=='world'||G.modal)return false;
+  const r=cv.getBoundingClientRect(),cx=r.left+(o.x-G.cam.x)*r.width/VW,cy=r.top+(o.y-6-G.cam.y)*r.height/VH,items=partyRingItems(o,cx,cy);if(!items.length)return false;
+  const R=new ActionRing(cx,cy,items).open();PARTY_CLICK.last={R,o,t:performance.now()};return true}
+// (a press at canvas point p with a ring open: the party it is on, if a click opened that ring on it within PARTY_CLICK.dbl ms)
+function partyAgain(p){const q=PARTY_CLICK.last;PARTY_CLICK.last=null;if(!q||ActionRing.now!==q.R||performance.now()-q.t>PARTY_CLICK.dbl||G.mode!=='world'||G.modal||!objKind(q.o))return null;
+  const wx=G.cam.x+p.x,wy=G.cam.y+p.y;return pickAt(wx,wy)===q.o||Math.hypot(wx-q.o.x,wy-q.o.y)<PARTY_CLICK.r?q.o:null}
+// its ring's Approach (or the double click): today's chase of o, or met at once beside it (world.js approach)
+function worldApproach(o){followStop();G.pitch=null;G.byRoad=null;approach(o);wuiClick(o.x,o.y)}
 /* ---------- touch (a phone on its side): Pointer Events with pointerType 'touch' only; the mouse, pen and keys above are as they were.
    Battle: a tap selects and a tap again sends, as before (now when the finger lifts); a long press (TOUCH.hold ms, the finger
    within TOUCH.slop CSS px) sends the selection there, or onto the enemy under it; a long press then a drag lays the line, as a

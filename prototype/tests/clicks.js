@@ -1,5 +1,6 @@
 'use strict';
-// Clicking a town, enemy, site or wild game you already stand beside opens it at once, without walking away and back.
+// Clicking a town, enemy, site or wild game you already stand beside opens it at once, without walking away and back (a party:
+// a click opens its ring, Approach, Follow, Look; a double click meets it at once, ui/input.js partyRing).
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);
 try{
  const t=T,G=t.G,P=t.P,W=t.W;try{localStorage.clear()}catch(e){}
@@ -19,7 +20,8 @@ try{
  reset();const far=t.TOWNS.find(x=>Math.hypot(x.x-P.x,x.y-P.y)>200);click(far.x,far.y);ok(G.mode==='world'&&P.tx!=null,'a far town is walked to, not opened');
  // bandits that you fled from
  reset();W.critters=[];W.monsters=[];G.encCool=4;const b={x:P.x+12,y:P.y,n:3,cool:6,t:0,a:0,kind:'bandits'};t.bandits.length=0;t.bandits.push(t.asParty(b));
- click(b.x,b.y-4);ok(G.mode==='dialog'&&(G.enc&&G.enc.ref===b||G.par&&G.par.o===b),'clicking bandits you just fled re-opens the encounter (or, cornered, their offer to talk) ('+G.mode+' '+(G.enc&&G.enc.kind)+' P.tx '+P.tx+' ptr '+JSON.stringify(G.mouse)+')');t.act('flee');
+ click(b.x,b.y-4);const rl=t.ActionRing.now?t.ActionRing.now.items.map(i=>i.label).join():'none',m1=G.mode;click(b.x,b.y-4);
+ ok(rl==='Attack,Follow,Look'&&m1==='world'&&!t.ActionRing.now&&G.mode==='dialog'&&(G.enc&&G.enc.ref===b||G.par&&G.par.o===b),'clicking bandits you just fled opens their ring ('+rl+'), a double click re-opens the encounter (or, cornered, their offer to talk) ('+G.mode+' '+(G.enc&&G.enc.kind)+' P.tx '+P.tx+' ptr '+JSON.stringify(G.mouse)+')');t.act('flee');
  // a monster
  reset();t.bandits.length=0;const m={id:'boar',x:P.x+12,y:P.y,hx:P.x,hy:P.y,lv:1,n:2,t:0,a:0,cool:5};W.monsters=[m];click(m.x,m.y-6);ok(G.enc&&G.enc.kind==='monster','clicking a monster beside you starts the fight');t.act('flee');
  // a site you are standing on

@@ -62,7 +62,7 @@ class CaravanParty extends Party{
   mapDot(V){return this.fromYou()<V?['#e8d8a0',1]:null}
   get meetsAnyTime(){return true}
   label(){return 'Caravan of '+this.from}
-  tip(){return '<b>Caravan</b><small>'+(this.from||'')+' → '+(this.to||'')+(this.fac?' · '+tipFac(this.fac):'')+'</small><span class="act">Click: meet</span>'}
+  tip(){return '<b>Caravan</b><small>'+(this.from||'')+' → '+(this.to||'')+(this.fac?' · '+tipFac(this.fac):'')+'</small><span class="act">Click: actions · double-click: meet</span>'}
   get brain(){return BRAINS.caravan}
   get tc(){let c=CV_TC.get(this);if(!c||sum(c)!==this.guards){c=countsOf(this.rollGuards());CV_TC.set(this,c);LISTS.delete(this)}return c}
   set tc(v){CV_TC.set(this,v||{})}

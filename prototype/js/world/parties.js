@@ -62,7 +62,7 @@ class LordParty extends Party{
   meet(){lordMeet(this)}
   mapDot(V){return !this.dead&&!this.inside&&this.fromYou()<V?[FACS[this.fac].col,1]:null}
   label(){return this.name}
-  tip(){return '<b>'+this.name+' <span class="muted">Lv '+lordStats(this).lv+'</span></b><small>'+tipFac(this.fac)+' · '+this.troops.length+' soldiers'+tipOdds(this.power())+paceVs(lordSpeed(this))+'</small><span class="act">Click: '+(hostileTo(this.fac)?'fight':'talk')+'</span>'}
+  tip(){return '<b>'+this.name+' <span class="muted">Lv '+lordStats(this).lv+'</span></b><small>'+tipFac(this.fac)+' · '+this.troops.length+' soldiers'+tipOdds(this.power())+paceVs(lordSpeed(this))+'</small><span class="act">Click: actions · double-click: '+(hostileTo(this.fac)?'fight':'talk')+'</span>'}
   get brain(){return BRAINS.lord}
   shelterWhy(t){return t&&t.owner!==this.fac?'Not a holding of his realm':super.shelterWhy(t)}
   banner(){return{k:'banner',col:FACS[this.fac].col,dev:this.fac}}
@@ -75,7 +75,7 @@ class CompanionParty extends Party{
   get faction(){return 'player'}
   // (its leader's Leadership makes it stronger)
   power(){return power(this.troops)*(1+.04*compSkill(this.cid,'lead'))}
-  tip(){return '<b>'+this.label()+'</b><small>Your companion · '+this.troops.length+' soldiers · '+({follow:'riding with you',patrol:'patrolling '+this.base,return:'coming back'})[this.order]+'</small><span class="act">Click: orders</span>'}
+  tip(){return '<b>'+this.label()+'</b><small>Your companion · '+this.troops.length+' soldiers · '+({follow:'riding with you',patrol:'patrolling '+this.base,return:'coming back'})[this.order]+'</small><span class="act">Click: actions · double-click: orders</span>'}
   get brain(){return BRAINS.cparty}
   shelterWhy(t){return !t?'Nowhere':yourShelterWhy(t)}
   enter(t){this.inside=t.name;this.x=t.x;this.y=t.y}
@@ -89,7 +89,7 @@ class PatrolParty extends Party{
   meet(){patrolMeet(this)}
   get meetsAnyTime(){return true}
   label(){return watchName(this)}
-  tip(){return '<b>'+watchName(this)+'</b><small>'+tipFac(this.fac)+' · '+this.troops.length+' soldiers'+(hostileTo(this.fac)?tipOdds(this.power()):'')+'</small><span class="act">Click: meet</span>'}
+  tip(){return '<b>'+watchName(this)+'</b><small>'+tipFac(this.fac)+' · '+this.troops.length+' soldiers'+(hostileTo(this.fac)?tipOdds(this.power()):'')+'</small><span class="act">Click: actions · double-click: meet</span>'}
   mapDot(V){return this.fromYou()<V?[this.fac==='player'?FACS.player.col:FACS[this.fac].col,1]:null}
   get brain(){return BRAINS.patrol}
   banner(){return watchOf(this)==='night'?{k:'pennant',col:WATCH.night.pennant,dev:'lantern'}:{k:'pennant',col:this.fac==='player'?FACS.player.col:FACS[this.fac].col,dev:this.fac}}// (the day watch: its holding's realm's pennant; the night watch: a dark one with a lantern)
@@ -108,7 +108,7 @@ class BandParty extends Party{
   get faction(){return null}
   // (its chieftain hardens it: leaders.js chiefLv)
   power(){return this.pw||(this.pw=rating(this.troops,chiefLv(this)))}
-  tip(){return '<b>'+this.label()+'</b>'+chiefTip(this)+'<small>'+this.n+' fighters'+tipOdds(this.power())+paceVs(partySpeed(this,this.troops))+'</small>'+(this.carry?'<small class="gold">They hold '+this.carry.map(c=>c.n).join(' and ')+' captive</small>':'')+'<span class="act">Click: attack</span>'}
+  tip(){return '<b>'+this.label()+'</b>'+chiefTip(this)+'<small>'+this.n+' fighters'+tipOdds(this.power())+paceVs(partySpeed(this,this.troops))+'</small>'+(this.carry?'<small class="gold">They hold '+this.carry.map(c=>c.n).join(' and ')+' captive</small>':'')+'<span class="act">Click: actions · double-click: attack</span>'}
   get brain(){return BRAINS.band}
   banner(){return{k:'rag',col:BAND_FLAG[this.kind]||BAND_FLAG.bandits,dev:'skull'}}// (a tattered rag: red, a desert raider's ochre, a bog raider's green)
   look(){const c=this.ld;return{col:'#8a4a3a',bandit:true,dir:faceDir(this),moving:!this.idle,seed:Math.round(this.x)%97,label:(c?c.name.split(' ')[0]+' Lv'+c.lv+' · ':'')+this.n,labelCol:STANCE_COL[stance(this.power())]}}
