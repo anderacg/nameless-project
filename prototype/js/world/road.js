@@ -123,7 +123,7 @@ function roadSpot(on,arc,near){const S=ENC_SPAWN,V=vis(),fit=ENC_ON[on],R=roadRn
 const roadW=k=>{const D=ROAD_ENC[k];return D.w*(D.wf?D.wf():1)};
 // which comes: of the kinds the pity timer can start (its bucket: story/kinds.js) that can come here and now (not too soon again),
 // by weight; tried at its own ground, else another
-function roadPick(){const R=roadSt(),c=storyCtx(),ks=Kinds.on('encounter','travelHour').map(K=>K.id).filter(k=>!(R.cd[k]!=null&&G.day-R.cd[k]<ENC_SPAWN.again)&&ROAD_ENC[k].ok(c));
+function roadPick(){const R=roadSt(),c=storyCtx(),ks=Kinds.on('encounter','travelHour').map(K=>K.id).filter(k=>!(R.cd[k]!=null&&G.day-R.cd[k]<(ROAD_ENC[k].again??ENC_SPAWN.again))&&ROAD_ENC[k].ok(c));
   while(ks.length){let r=roadRng().next()*ks.reduce((a,k)=>a+roadW(k),0),k=ks[0];for(const q of ks){r-=roadW(q);if(r<=0){k=q;break}}
     const D=ROAD_ENC[k],p=roadSpot(D.on,D.beh==='approach'?ENC_SPAWN.arcTo:0,D.near),e=p&&roadSpawn(k,p[0],p[1]);if(e)return e;ks.splice(ks.indexOf(k),1)}
   return null}

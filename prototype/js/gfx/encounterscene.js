@@ -6,7 +6,8 @@
    mirrored as it faces left: walk / stand (a person of ENC_LOOK, stepping as it moves), kneel (one kneeling), down (the fallen pose), soldier (a
    follower: a realm's colour, or a band's; down with blood: lying in a pool of it), refugee, worker, beast (a herd's animal), cart (the caravan's), bld (a tent, a
    shrine, a mine's head), prop, fire, cloth (dice on it), wreck; rider (a person of ENC_LOOK on a horse: o.coat, in o.col),
-   horse (saddled, no rider), carcass (a herd's beast lying dead), mud, oldcart (the caravan's cart left behind); wisp, dust,
+   horse (saddled, no rider), carcass (a herd's beast lying dead), mud, oldcart (the caravan's cart left behind), embers (a fire
+   burnt low, no flame), bedroll, basket (an herbalist's), barrier (a striped pole on trestles across a road); wisp, dust,
    smoke and notes (music) drawn live), each its feet at its point (o.at: at that point of the map, not with the encounter: one
    left behind as it runs), for the map (draw: each piece by its feet in the depth order, at the encounter's own place to the
    screen's pixel: subT) and for its page's banner (pics). The new kinds' pieces are stand-ins until the props of phase 3 */
@@ -33,6 +34,12 @@ function roadBld(type,e){const c=climAt(e.x,e.y),sd=e.seed%4,k='rb'+type+sd+c;if
   return spr[k]=mkc(b.w,b.h,g=>{g.globalAlpha=SHADOW.a;g.drawImage(b.shadow,0,0);g.globalAlpha=1;g.drawImage(b.img,0,0);if(b.snow)g.drawImage(b.snow.img,0,0)})}
 const roadProp=t=>spr['rpp'+t]||(spr['rpp'+t]=PX.objectModel({type:t}).img);
 const roadFire=()=>spr.rpFire||(spr.rpFire=PX.outline(PX.canvas(8,3,g=>{const P=PX.paint(g),q=PX.kit.tone;P.rect(q('stone',1),0,1,8,2);P.rect(q('stone',0),0,1,8,1);P.rect(q('log',1),2,0,4,2);P.px(q('log',0),2,0)})));
+// (a fire burnt down to its embers: the ring of stones, no flame; a bedroll left in the grass; an herbalist's basket of greens; a
+// toll's barrier, a striped pole on two trestles)
+const roadEmbers=()=>spr.rpEmbers||(spr.rpEmbers=PX.outline(PX.canvas(8,3,g=>{const P=PX.paint(g),q=PX.kit.tone;P.rect(q('stone',1),0,1,8,2);P.rect(q('stone',0),0,1,8,1);P.rect('#2e2420',2,1,4,1);P.px('#c84a20',3,1);P.px('#e8803a',4,1)})));
+const roadBedroll=()=>spr.rpBed||(spr.rpBed=mkc(9,3,g=>{rect(g,'#1a1c26',0,0,9,3);rect(g,'#6a5a3e',1,1,7,1);rect(g,'#8a7450',1,1,3,1);rect(g,'#4e4230',6,1,2,1)}));
+const roadBasket=()=>spr.rpBasket||(spr.rpBasket=mkc(6,5,g=>{rect(g,'#1a1c26',0,1,6,4);rect(g,'#1a1c26',1,0,4,1);rect(g,'#5a8a3a',1,1,4,1);rect(g,'#7aaa4a',2,1);rect(g,'#a07a48',1,2,4,2);rect(g,'#c09a60',1,2,4,1)}));
+const roadBarrier=()=>spr.rpBar||(spr.rpBar=mkc(16,7,g=>{rect(g,'#1a1c26',0,0,16,3);for(let i=0;i<14;i++)rect(g,i%4<2?'#b8403a':'#e8e2d2',1+i,1);rect(g,'#1a1c26',1,2,3,5);rect(g,'#1a1c26',12,2,3,5);rect(g,'#7a5a3a',2,2,1,4);rect(g,'#7a5a3a',13,2,1,4)}));
 const roadCloth=()=>spr.rpCloth||(spr.rpCloth=mkc(7,4,g=>{rect(g,'#1a1c26',0,0,7,4);rect(g,'#8a3a2a',1,1,5,2);rect(g,'#a8483a',1,1,5,1);rect(g,'#f4f0e0',2,1);rect(g,'#f4f0e0',4,2)}));
 // (the caravan's cart without its ox and drover: left behind, or, burnt, the burnt wagon: charred)
 const roadCart=burnt=>{const k=burnt?'rpWreck':'rpCart';return spr[k]||(spr[k]=cellOf(mkc(14,12,g=>{g.drawImage(caravanSprite('#6a5a48',0),0,20,14,12,0,0,14,12);if(burnt){g.globalCompositeOperation='source-atop';g.fillStyle='rgba(28,20,16,.62)';g.fillRect(0,0,14,12)}})))};
@@ -47,7 +54,7 @@ class EncounterScene{
   pic(k,w,e,o,f){const r=e.race||'human',v=o.v||0;
     return k==='walk'?roadPerson(w,r,v,f):k==='stand'?roadPerson(w,r,v,0):k==='kneel'?roadKneel(w,r,v):k==='down'?roadDown(w,r,v,o.blood):k==='soldier'?followerSprite(o.col||ENC_RAIDER,f,v,r,o.band):k==='refugee'?refugeeSprite(f,v):
       k==='worker'?workerSprite(w,f,r,v):k==='beast'?critterSprite(w,f):k==='cart'?caravanSprite(o.col||'#8a7a5a',f):k==='bld'?roadBld(w,e):k==='prop'?roadProp(w):k==='fire'?roadFire():k==='cloth'?roadCloth():k==='wreck'?roadCart(1):
-      k==='rider'?roadRider(w,r,v,f,o.col,o.coat):k==='horse'?roadHorse(o.coat||'horse',f):k==='carcass'?roadCarcass(w):k==='mud'?roadMud():k==='oldcart'?roadCart(0):null}
+      k==='rider'?roadRider(w,r,v,f,o.col,o.coat):k==='horse'?roadHorse(o.coat||'horse',f):k==='carcass'?roadCarcass(w):k==='mud'?roadMud():k==='oldcart'?roadCart(0):k==='embers'?roadEmbers():k==='bedroll'?roadBedroll():k==='basket'?roadBasket():k==='barrier'?roadBarrier():null}
   // the box it covers on the map [x0, y0, x1, y1] (a click anywhere on it, the highlights round it; not what it left behind)
   box(e){let b=null;for(const p of this.lay(e,true)){if(p.o.at)continue;const w=p.s?p.s.width:12,h=p.s?(p.s.ch||p.s.height):12,x0=Math.round(p.x)-(w>>1),y0=Math.round(p.y)+1-h;
     b=b?[Math.min(b[0],x0),Math.min(b[1],y0),Math.max(b[2],x0+w),Math.max(b[3],p.y+1)]:[x0,y0,x0+w,p.y+1]}

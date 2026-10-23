@@ -33,18 +33,19 @@ const ENC_LOOK={traveller:(r,v)=>({...folkLook('folk',r,v),robe:false,helm:'bare
   shroud:(r,v)=>({...folkLook('folk',r,v),robe:true,helm:'hood',hood:'linen',outer:'linen',team:'linen',inner:'linen',beard:null,weapon:null}),
   villager:(r,v)=>({...folkLook('folk',r,v),helm:'bare',weapon:null}),
   beggar:(r,v)=>({...folkLook('folk',r,v),robe:false,hair:'grey',beard:'grey',helm:'hood',hood:'leather',outer:'linen',team:'dark',cape:'leather',weapon:'crook'}),
-  messenger:(r,v)=>({...folkLook('folk',r,v),robe:false,helm:'cap',outer:'leather',team:'white',weapon:null})};
+  messenger:(r,v)=>({...folkLook('folk',r,v),robe:false,helm:'cap',outer:'leather',team:'white',weapon:null}),
+  herbalist:(r,v)=>({...folkLook('folk',r,v),robe:true,hair:'grey',beard:null,helm:'hood',hood:'forest',outer:'forest',team:'linen',weapon:'crook'})};
 // (Tend his wounds' tooltip, the real wounded traveller's and the lure's: roadTend)
 const ROAD_TEND_TIP='Bandage him and share your food. Medicine and Intellect: the better he mends, the more he owes you.';
 const roadCol=e=>e.fac&&FACS[e.fac]?FACS[e.fac].col:'#8a7458',roadPrice=e=>Math.round(ITEMS[e.item].v*.7);
 // a fight on the road, as today's events made them: the raiders on a caravan, or an ambush's band (amb: its own band by the land,
 // its fighters mustered here; or the lure's, mustered when it came: e.band, e.foes); edge (as amb unless given): you in their
-// trap, the ambush's battle; false: you came ready for them
+// trap, the ambush's battle; false: you came ready for them. A kind's vs(e): the fight's title and its word for them (the toll)
 const roadBand=(x,y)=>{const c=climAt(x,y);return c==='desert'?'raiders':c==='swamp'?'bog':'bandits'};
 const roadBandN=()=>roadRng().int(5,7)+Math.floor(G.day/15);
 // (the encounter fought: off the map, encounter:fought; the battle carries it (road), so its end is the battle's: story/encounter.js)
 function roadFight(e,amb,edge=amb){asEncounter(e).fought();G.road=null;const k=amb?e.band||roadBand(P.x,P.y):'bandits',n=e.foes?e.foes.length:amb?roadBandN():e.n,b=asParty({x:P.x,y:P.y,cool:0,n,kind:k,...(e.foes?{troops:e.foes.slice()}:{})});
-  startEncounter({kind:'party',ref:b,n,list:b.troops.slice(),band:k,road:e,...(edge?{btype:{kind:'ambush',hid:1}}:{})})}
+  startEncounter({kind:'party',ref:b,n,list:b.troops.slice(),band:k,road:e,...(e.D&&e.D.vs?e.D.vs(e):{}),...(edge?{btype:{kind:'ambush',hid:1}}:{})})}
 /* the kinds: Encounter kinds (story/kinds.js defineKinds; their trigger 'travelHour', the pity timer's: ROAD_ENC is their view;
    a kind of its own class, cls: the shepherd). n, ico (its page's icon), w (weight; wf: × by your band), ok() (can it come here and now: today's event's rule), on
    (its ground: ENC_ON), beh, call (its call-out), hear (the log line when it is first heard: {d} its way; none: seen only), tip,
@@ -57,8 +58,9 @@ function roadFight(e,amb,edge=amb){asEncounter(e).fought();G.road=null;const k=a
    (seen only by Scouting INSIGHT.rough+), spring (springs as
    you pass), forced (no Leave until chosen; or forced(e)), vanish (gone once dealt with), glow (lights: seen from farther), foe;
    wn (its name in the wiki, when its page's is another's: the lure), after(e) (the log line when it leaves, seen and unmet),
-   heard(e) (what follows when it is first heard or seen), under(e) (pictures under its own on its page's banner: a place it is at);
-   and leave (its Leave's word), life (its time by another behaviour's: ENC_LIFE), near (px past your sight it comes, if not ENC_SPAWN's), spd (ENC_SPD: how fast it comes), far (a
+   heard(e) (what follows when it is first heard or seen), under(e) (pictures under its own on its page's banner: a place it is at),
+   vs(e) (its fight's title and its word for the foes: roadFight);
+   and again (its own days before it comes again: read by the road once it reads them; today ENC_SPAWN.again for all), leave (its Leave's word), life (its time by another behaviour's: ENC_LIFE), near (px past your sight it comes, if not ENC_SPAWN's), spd (ENC_SPD: how fast it comes), far (a
    click on it opens its page at once: one you cannot walk up to), wary() (× your sight: he flees if he sees you there before you see him), stop (flees
    a little way, then stops), spook (× your sight: it runs as you come), lost (the log line when one you chase gets away), they (what it does, in the wiki's words);
    ends (how it ends when its time is up in your sight, if not its behaviour's: story/happening.js Behaviours), goes(piece) (which of its pieces go
@@ -364,7 +366,57 @@ defineKinds('encounter',{trigger:'travelHour'},{
     left:()=>'He spurs on.',
     acts:[{icon:'scroll',label:'Read the news',facts:()=>['a rumour: a place, a lord or a war'],run:e=>{const it=roadRumour(e);return 'He tells you the news: '+roadNews()+'.'+(it?' And from the road: “'+rumourText(it)+'”':'')}},
       {icon:'bag',label:'Rob',also:e=>['his sealed letter, to '+e.letter.to],ask:e=>'Rob a rider of the '+FACS[e.fac].n+'? His realm will hear of it.',
-        out:e=>({gold:e.purse,wrong:[townBy(e.home),CONDUCT.robMessenger],call:()=>letterTake(e),mood:'cruel',say:r=>'You take his purse ('+e.purse+' gold)'+r.call+'.'+(r.cost?' It costs you: '+r.cost+'.':'')})}]}
+        out:e=>({gold:e.purse,wrong:[townBy(e.home),CONDUCT.robMessenger],call:()=>letterTake(e),mood:'cruel',say:r=>'You take his purse ('+e.purse+' gold)'+r.call+'.'+(r.cost?' It costs you: '+r.cost+'.':'')})}]},
+  // ---- the small encounters (IMPLEMENTATION_PLAN §10.3; their numbers: ENC_TUNE, their checks: ENC_STAT; their helpers below)
+  campfire:{n:'Warm campfire',ico:'fire',w:ENC_TUNE.campfire.w,again:ENC_TUNE.campfire.again,wf:()=>darkness()>0?ENC_TUNE.campfire.night:1,ok:()=>true,on:'byroad',beh:'stay',ends:'unseen',
+    hear:'Smoke curls up from a fire off the road to the {d}.',tip:'An abandoned fire, still warm',they:'stay; whoever left it may come back',
+    setup:e=>campSetup(e),
+    scene:()=>[['embers','',0,1],['smoke','',0,-2],['bedroll','',-10,3],['bedroll','',9,4],['prop','woodpile',-16,-1]],
+    text:()=>'An abandoned fire off the road, its ashes still warm. Bedrolls lie flattened in the grass round it: whoever slept here left in a hurry, or means to come back.',
+    facts:e=>campFacts(e),
+    left:()=>'You leave the fire to burn down.',
+    acts:[{icon:'eye',label:'Read the tracks',again:true,odds:'tracks',when:e=>!e.read,facts:()=>['who was here, and where they went'],tip:'Read the ground round the fire. Scouting and Survival help.',run:(e,c)=>campTracks(e,c)},
+      {icon:'sword',label:'Lie in wait',when:e=>e.read>0&&e.who==='bandits',need:()=>troopCount()<ENC_TUNE.campfire.min&&'Too few men to take them.',facts:e=>campWaitFacts(e),
+        tip:'Hide your band round the fire and take them as they come back, a few at a time.',run:e=>campWait(e)},
+      {icon:'moon',label:'Rest a while',facts:e=>campRestFacts(e),tip:'Rest by the warm ashes. Scouting and Leadership keep a better watch.',run:e=>campRest(e)},
+      {icon:'sack',label:'Search the ashes',again:true,need:e=>e.searched&&'You have searched the ashes.',facts:e=>campAshFacts(e),tip:'Rake through the ashes and the bedrolls. Agility and Scouting spot a trap.',run:e=>campAshes(e)}]},
+  herbalist:{n:'Herbalist',ico:'wheat',w:ENC_TUNE.herbalist.w,again:ENC_TUNE.herbalist.again,wf:()=>woundedN()>0?ENC_TUNE.herbalist.hurt:1,ok:(c=storyCtx())=>c.isDay&&!['desert','frost'].includes(c.climate),on:'wood',beh:'stay',goes:()=>true,
+    tip:'An old woman gathering herbs',they:'stay, gathering; then walk off',
+    setup:e=>{const t=Spatial.nearestHolding(e.x,e.y),x=ENC_TUNE.herbalist.rob;e.home=t.name;e.race=t.races[0];e.fac=roadFac(t);e.coins=roadRng().int(x.gold[0],x.gold[1])},
+    scene:()=>[['kneel','herbalist',0,0],['basket','',7,1]],
+    text:e=>'An old herbalist kneels at the wood’s edge, cutting herbs into a basket'+(climAt(e.x,e.y)==='swamp'?' among the reeds':'')+'. She knows every root and leaf between here and '+e.home+'.',
+    facts:()=>{const w=woundedN(),f=herbFever();return[w?w+' of your men '+(w>1?'are':'is')+' wounded'+(f?', '+f+' of them with fever':''):'none of your men is wounded','her remedies: '+herbPrice()+' gold a man',statHelps('haggle')]},
+    left:()=>'You leave her to her herbs.',
+    acts:[{icon:'wounded',label:'Buy remedies',need:()=>!woundedN()?'None of your men needs her remedies.':!herbN(ENC_TUNE.herbalist.mend)&&'Not enough gold.',tip:'She salves and binds your wounded, the fevered first. Trade gets you a better price.',
+        also:()=>{const n=herbN(ENC_TUNE.herbalist.mend);return[n&&herbMendLine(n)]},out:()=>{const n=herbN(ENC_TUNE.herbalist.mend);return{gold:-n*herbPrice(),call:()=>herbMend(n),say:r=>'She salves and binds them: '+r.call+' of your wounded can fight again.'}}},
+      {icon:'hero',label:'Buy a tonic',need:()=>P.gold<herbTonic()&&'Not enough gold.',tip:'A bitter draught of her own brewing, for you.',out:()=>({gold:-herbTonic(),vitals:'rest',say:'A bitter draught. Warmth spreads through you.'})},
+      {icon:'wheat',label:'Help her gather',tip:'Spend a while gathering with her. Survival and Hunting make it quicker work; she pays you in remedies.',
+        also:()=>{const w=woundedN();return[w&&herbMendLine(Math.min(w,ENC_TUNE.herbalist.gather.free)),statHelps('forage')]},
+        out:e=>{const x=ENC_TUNE.herbalist.gather,w=woundedN();return{hours:herbGatherH(),rep:[e.home,x.rep],train:['surv',x.surv],...(w?{call:()=>herbMend(Math.min(w,x.free))}:{vitals:'rest'}),mood:'kind',
+          say:r=>'You fill her basket with her. She thanks you'+(r.call?' with her salves ('+r.call+' of your wounded can fight again)':' with a draught for the road')+', and will speak well of you in '+e.home+'.'}}},
+      {icon:'book',label:'Learn from her',again:true,odds:'herblore',need:e=>e.learned&&'She has taught you what she will.',tip:'Follow her a while and learn her craft. Medicine and Intellect help.',
+        facts:()=>[Outcome.handlers.hours.text(ENC_TUNE.herbalist.learn.hours),statRead('herblore',{vague:'she may take to you',what:'she takes to you'}),statHelps('herblore'),'Medicine'],run:(e,c)=>herbLearn(e,c)},
+      {icon:'bag',label:'Rob her',ask:e=>'Rob an old herbalist of '+e.home+'? Your band will see it, and '+e.home+' will hear of it.',also:()=>{const w=woundedN();return[w&&'her salves: '+herbMendLine(Math.min(w,ENC_TUNE.herbalist.rob.mend))]},
+        out:e=>{const x=ENC_TUNE.herbalist.rob,w=woundedN();return{gold:e.coins,...(w?{call:()=>herbMend(Math.min(w,x.mend))}:{}),honor:[e.fac,-x.honor],rep:[e.home,-x.rep],morale:-x.morale,mood:'cruel',
+          say:r=>'You take her purse ('+e.coins+' gold)'+(r.call?' and her salves for your wounded':'')+'. She curses you as you go.'}}}]},
+  toll:{n:'Toll on the road',ico:'banner',w:ENC_TUNE.toll.w,again:ENC_TUNE.toll.again,ok:(c=storyCtx())=>c.isDay&&!!roadFac(c.owned)&&!hostileTo(c.owned.owner),on:'road',beh:'stay',spring:true,leave:'Turn back',
+    call:'Halt! The lord’s toll!',hear:'Someone shouts for travellers to halt on the road to the {d}.',tip:'Men at a barrier, in a realm’s colours',they:'stay at their barrier; stop you as you pass',
+    setup:e=>tollSetup(e),vs:e=>({title:e.real?'The '+FACS[e.fac].n+'’s toll-men':'False toll-men',word:e.real?'soldiers':'false toll-men'}),
+    scene:e=>[['barrier','',0,0],['prop','barrels',-17,-2],['soldier','',-10,2,{col:roadCol(e),v:1}],['soldier','',10,3,{col:roadCol(e),v:3,face:-1}],['soldier','',15,-1,{col:roadCol(e),v:5,face:-1}]],
+    text:e=>'Men in the colours of the '+FACS[e.fac].n+' have dragged a barrier across the road. “The lord’s toll,” says their sergeant: '+tollPrice(e)+' gold to pass.',
+    facts:e=>tollFacts(e),
+    left:()=>'You turn back from their barrier and go round.',
+    acts:[{icon:'gold',label:'Pay the toll',need:e=>P.gold<tollPrice(e)&&'Not enough gold.',tip:'Pay and pass. Trade gets the toll down.',also:()=>[statHelps('haggle')],
+        out:e=>({gold:-tollPrice(e),say:tollKnown(e)&&!e.real?'You pay the false toll-men. They grin and drag the barrier aside.':'You pay. The sergeant counts the coins and waves you through.'})},
+      {icon:'scroll',label:'Ask for their writ',again:true,odds:'writ',when:e=>!tollKnown(e)&&!e.asked,facts:()=>['whether they are the lord’s men'],
+        tip:'Ask to see the lord’s writ and look them over. Scouting and Intellect help; at Scouting '+ENC_TUNE.toll.see+' you see through them at a glance.',run:(e,c)=>tollWrit(e,c)},
+      {icon:'people',label:'Talk your way through',again:true,odds:'talk',when:e=>!e.talked,facts:()=>[statRead('talk',{vague:'they may let you by',what:'to talk your way through'}),statHelps('talk'),'fail: the toll goes up'],
+        tip:'Bluff, flatter or argue the law. Persuasion and Charisma help.',run:(e,c)=>tollTalk(e,c)},
+      {icon:'shield',label:'Refuse',facts:e=>tollRefuseFacts(e),tip:'Tell them you will not pay. False toll-men may back off from a strong band; the lord’s own men will remember it.',run:e=>tollRefuse(e)},
+      {icon:'sword',label:'Fight them',ask:e=>tollKnown(e)&&!e.real?null:'Attack men in the '+FACS[e.fac].n+'’s colours? If they are the lord’s own, the '+FACS[e.fac].n+' will not forgive it.',facts:e=>tollFightFacts(e),run:e=>tollFight(e)},
+      {icon:'prisoners',label:'Report them',when:e=>tollKnown(e)&&!e.real,need:e=>Escort.why()||!tollStrong(e,ENC_TUNE.toll.seize)&&'They are too many to seize their ringleader.',
+        tip:'Seize their ringleader and hand him to the lord’s reeve: a bounty there, and the word goes round.',
+        out:e=>({passenger:tollReport(e),gone:true,say:r=>r.escort?'You seize their ringleader and bind him; the rest scatter. The reeve of '+r.escort.to.name+' will want him: '+Escort.way(r.escort)+'.':'He slips away.'})}]}
 });
 // (the road's kinds, by id: the pity timer's bucket, as the tests and the wiki read them)
 const ROAD_ENC=Kinds.view('encounter','travelHour');
@@ -469,3 +521,98 @@ const sheepGood=h=>h.good(),sheepStrays=h=>h.strays();
 // trigger: each an encounter kind, started only by another)
 const ROAD_TRACE=defineKinds('encounter',{},{body:{n:'A dead traveller',scene:()=>[['down','traveller',0,0,{blood:1}]]},wreck:{n:'A burnt wagon',scene:()=>[['wreck','',0,0],['smoke','',-1,-6]]},
   cart:{n:'An abandoned cart',scene:()=>[['mud','',0,0],['oldcart','',0,0]]}});
+/* ---------- the small encounters' helpers (IMPLEMENTATION_PLAN §10.3; numbers: ENC_TUNE campfire, herbalist, toll; checks: ENC_STAT) ----------
+   A warm campfire: who left it is set when it comes (by weight; a lord's patrol only on a realm's land), how many and the way
+   they went (wx, wy). Read the tracks (tracks: Scouting, Survival) tells you, and marks where they went (a rumour's "?":
+   news.js tracks); missed, the ground is too trampled (read −1). Bandits read: lie in wait (only the first of them, surprise,
+   come back to you). Rest a while: a rest, and whoever left may come back (back, × (1 − watch): Scouting, Leadership): bandits
+   catch you in their trap, beasts raid your packs, a patrol or the travellers share the fire. Search the ashes, once: a find
+   (gold, or a piece of gear), or a trap (× (1 − nimble): Agility, Scouting) that lames a man */
+const campWord=e=>e.who==='bandits'?{raiders:'desert raiders',bog:'bog raiders'}[e.band]||'bandits':e.who==='patrol'?'a patrol of the '+FACS[e.fac].n:e.who==='beasts'?campBeast(e):'travellers';
+const campBeast=e=>({desert:'jackals',swamp:'marsh hounds',frost:'white wolves'})[climAt(e.x,e.y)]||'wolves';
+const campWay=e=>compass(e.wx-e.x,e.wy-e.y);
+function campSetup(e){const x=ENC_TUNE.campfire,r=roadRng(),f=roadFac(roadOwned(e.x,e.y)),w={...x.who};if(!f)delete w.patrol;
+  e.who=r.weighted(w);const n=x.n[e.who],a=r.next()*6.2832,d=r.int(x.go[0],x.go[1]);e.n=r.int(n[0],n[1]);
+  e.wx=Math.round(clamp(e.x+Math.cos(a)*d,TILE,(MW-1)*TILE));e.wy=Math.round(clamp(e.y+Math.sin(a)*d,TILE,(MH-1)*TILE));
+  if(e.who==='patrol')e.fac=f;if(e.who==='bandits'){e.band=roadBand(e.x,e.y);e.foes=Rng.use('road',()=>makeEnemies(e.n,false,e.band))}}
+// (what the tracks told you: who, how many, which way, and what follows)
+function campRead(e){const w=campWord(e),d=campWay(e);
+  return[e.who==='bandits'?'<span class="bad">'+e.n+' '+w+': their packs are still here, they went '+d+' and will be back</span>':e.who==='beasts'?'<span class="bad">a pack of '+e.n+' '+w+' scattered whoever camped here; they went '+d+'</span>':
+    e.who==='patrol'?w+', '+e.n+' riders, rode on '+d:e.n+' '+w+' with a cart, gone on '+d,'where they went is on your map']}
+function campFacts(e){if(e.read>0)return campRead(e);return[e.read<0?'the ground is too trampled to read':statRead('tracks',{vague:'tracks all round it',what:'to read the tracks'}),!e.read&&statHelps('tracks')]}
+function campTracks(e,c){train('scout',ENC_TUNE.campfire.read);if(!c.roll()){e.read=-1;return'You walk round the fire twice, but the ground is too trampled to read.'}
+  e.read=1;campMark(e);return'You read the tracks: '+campRead(e)[0].replace(/<[^>]+>/g,'')+'.'}
+// (where they went, as news heard at once: its "?" on your map)
+function campMark(e){const it=newsRecord('tracks',{x:e.wx,y:e.wy},{who:campWord(e)});if(it)rumourHear(it,{quiet:true})}
+// Lie in wait: the first of them, the surprise share of the band (2 at least), come back to you
+const campFew=e=>e.foes.slice(0,Math.max(2,Math.round(e.foes.length*ENC_TUNE.campfire.surprise)));
+function campWaitFacts(e){const f=campFew(e),[w,c]=odds(rating(f));return[Outcome.handlers.hours.text(ENC_TUNE.campfire.wait),f.length+' of them, taken by surprise','<span class="'+c+'">'+w+'</span> odds']}
+function campWait(e){e.foes=campFew(e);return{hours:ENC_TUNE.campfire.wait,fight:{amb:true,edge:false},say:'You hide your band round the fire. Before dusk the first of them stroll back, and you fall on them.'}}
+const campBack=e=>ENC_TUNE.campfire.rest.back[e.who]*(1-statOdds('watch'));
+function campRestFacts(e){const x=ENC_TUNE.campfire.rest,p=campBack(e);
+  return[...Outcome.facts({hours:x.hours,vitals:'rest'}),e.read>0?insight(['they may come back',oddsWord(p)+' they come back while you rest',Math.round(p*100)+'% they come back while you rest'],'know the risk'):'whoever left may come back',statHelps('watch')]}
+// (the roll first, then what came of it)
+function campRest(e){const x=ENC_TUNE.campfire.rest,back=roadRng().chance(campBack(e)),h=x.hours;
+  if(!back)return{hours:h,vitals:'rest',morale:2,say:'You rest by the warm ashes, a watch posted. Nobody comes.'};
+  if(e.who==='bandits')return{hours:h,fight:{amb:true},say:'You doze by the fire, and wake to shouts: they are back, and they have you!'};
+  if(e.who==='beasts')return{hours:h,food:-x.food,morale:-x.morale,say:cap1(campBeast(e))+' circle back in the dusk and tear into your packs before you drive them off.'};
+  if(e.who==='patrol')return{hours:h,vitals:'rest',morale:x.kind,say:cap1(campWord(e))+' rides back in and shares the fire. They keep the watch for you.'};
+  const it=roadRumour(e);return{hours:h,vitals:'rest',morale:x.kind,say:'The travellers come back for a pot they forgot, and share the fire.'+(it?' Their news: “'+rumourText(it)+'”':'')}}
+const campTrap=e=>ENC_TUNE.campfire.ash.trap[e.who]*(1-statOdds('nimble'));
+function campAshFacts(e){const p=campTrap(e);return['a small find, or a trap',e.read>0&&insight(['it may hide a trap',oddsWord(p)+' of a trap',Math.round(p*100)+'% a trap'],'know the risk'),statHelps('nimble')]}
+// (the rolls first: a find, a piece of gear, a trap; then the haul)
+function campAshes(e){const x=ENC_TUNE.campfire.ash,r=roadRng(),find=r.chance(x.find[e.who]),gear=find&&r.chance(x.gear),trap=r.chance(campTrap(e)),o={};e.searched=1;
+  if(gear)o.gear=Rng.use('road',()=>randomGear(0,1));else if(find)o.gold=r.int(x.gold[0],x.gold[1]);
+  const k=Object.keys(P.troops).filter(q=>P.troops[q]>0).sort((a,b)=>P.troops[b]-P.troops[a])[0],id=o.gear,g=o.gold;if(trap)Object.assign(o,k?{wounded:{[k]:1}}:{sp:-x.sp});
+  const bit=e.who==='bandits'?'A caltrop hidden under the ashes':'An adder asleep in a bedroll';
+  o.say=res=>(id?res.gear?'Under a bedroll lies a '+ITEMS[id].n+'.':'A '+ITEMS[id].n+' lies under a bedroll, but your bag is full.':g?'In the ashes you find a dropped purse: '+g+' gold.':'Nothing but ashes and a broken pot.')+
+    (trap?' '+bit+(k?' lames '+an(ST[k].n.toLowerCase())+'.':' bites your hand.'):'');
+  return o}
+/* the herbalist: her remedies mend your wounded (at most mend men, the fevered first, back into their groups as world.js
+   woundedDay does) at price gold a man, less by your Trade (haggle); a tonic for you; help her gather (forage: Survival,
+   Hunting, off the time) for free remedies and her holding's good word; learn from her once (herblore: Medicine, Intellect):
+   Medicine, more if she takes to you; or rob her */
+const herbPrice=()=>Math.max(1,Math.round(ENC_TUNE.herbalist.price*(1-statOdds('haggle')))),herbTonic=()=>Math.max(1,Math.round(ENC_TUNE.herbalist.tonic*(1-statOdds('haggle'))));
+const herbN=m=>Math.min(m,woundedN(),Math.floor(P.gold/herbPrice()));
+const herbFever=()=>{sickTrim();return Object.values(BAND.sick).reduce((a,s)=>a+(s.fever||0),0)};
+const herbMendLine=n=>n+' of your wounded mended'+(herbFever()?', the fevered first':'');
+const herbGatherH=()=>Math.round(ENC_TUNE.herbalist.gather.hours*(1-statOdds('forage'))*100)/100;
+function herbMend(n){const W0=P.wounded||{},S=BAND.sick,fev=k=>(S[k]&&S[k].fever)||0,ks=Object.keys(W0).filter(k=>W0[k]>0).sort((a,b)=>fev(b)-fev(a)||W0[b]-W0[a]);let back=0;
+  for(const k of ks){if(back>=n)break;const got=woundedBack(k,n-back);back+=got;const c=Math.min(got,fev(k));if(c){S[k].fever-=c;if(!S[k].fever)delete S[k].fever;if(!sum(S[k]))delete S[k]}}
+  P.woundedGroups=(P.woundedGroups||[]).filter(g=>g.count>0);sickTrim();return back}
+function herbLearn(e,c){const x=ENC_TUNE.herbalist.learn,win=c.roll();e.learned=1;
+  return win?{hours:x.hours,train:['med',x.win],xp:x.xp,say:'She takes to you, and shows you how she binds a fever poultice. You will not forget it. (+'+x.xp+' XP)'}
+    :{hours:x.hours,train:['med',x.lose],say:'You follow her a while. Most of it goes over your head, but not all.'}}
+/* the toll (ENC_TUNE.toll): men in the colours of the realm whose land it is (none on yours, nor on a hostile realm's), the
+   lord's own (real, by chance) or impostors (false: a band of the land's); the toll by your band's size, less by your Trade.
+   Known (Ask for their writ: writ, Scouting and Intellect; at Scouting see, at a glance): the truth on the page. Talk your way
+   through (talk: Persuasion, Charisma; failed, the toll goes up). Refuse: the real let you by and remember it (honour,
+   reputation); false ones back off from a band back × their power, else fight. Fight them: the real, honour and reputation lost
+   too. Report false ones (seize × their power): their ringleader rides bound with you to the reeve of the holding (an escort,
+   world/escort.js: a bounty there, and the news) */
+const tollKnown=e=>!!e.known||skill('scout')>=ENC_TUNE.toll.see;
+const tollPrice=e=>Math.max(1,Math.round(e.fee*(1-statOdds('haggle'))));
+const tollStrong=(e,k)=>partyPower()>=rating(e.foes)*k;
+function tollSetup(e){const x=ENC_TUNE.toll,t=roadOwned(e.x,e.y),f=roadFac(t);if(!f||hostileTo(f))return false;const r=roadRng();
+  e.fac=f;e.home=t.name;e.race=t.races[0];e.real=r.chance(x.real)?1:0;e.n=r.int(x.n[0],x.n[1]);e.fee=Math.min(x.fee.max,x.fee.base+x.fee.per*partySize());
+  if(e.real){const R=RACES[e.race];e.foes=Array.from({length:e.n},(_,i)=>i%3===2?R.ranged:R.melee)}else{e.band=roadBand(e.x,e.y);e.foes=Rng.use('road',()=>makeEnemies(e.n,false,e.band))}}
+const tollTruth=e=>e.real?'<span class="good">the lord’s own men: their writ bears the '+FACS[e.fac].n+'’s seal</span>':'<span class="bad">no lord’s men: patched colours and a forged writ</span>';
+function tollFacts(e){return[insight(['men in the '+FACS[e.fac].n+'’s colours','about '+roughly(e.n)+' men',e.n+' men: '+roadLureOdds(e)],'know how many'),'the toll: '+tollPrice(e)+' gold',
+  tollKnown(e)?tollTruth(e):e.asked?'you could not make out their writ':statRead('writ',{vague:'are they the lord’s men?',what:'to see through them'}),!tollKnown(e)&&!e.asked&&statHelps('writ')]}
+function tollWrit(e,c){if(c.roll()){e.known=1;return'You read the writ and look them over: '+tollTruth(e).replace(/<[^>]+>/g,'')+'.'}e.asked=1;return'The sergeant waves a paper under your nose, too fast to read.'}
+function tollTalk(e,c){e.talked=1;if(c.roll())return{end:true,say:e.real?'You talk of the law and the lord’s peace until the sergeant lets you by with a grunt.':'They look at each other, unsure of you, and drag the barrier aside.'};
+  e.fee=Math.round(e.fee*ENC_TUNE.toll.talk);return'He hears you out, then spits: “'+tollPrice(e)+' gold now, for the trouble.”'}
+function tollRefuseFacts(e){const x=ENC_TUNE.toll,hurt='honour with the '+FACS[e.fac].n+' −'+x.refuse.honor+', reputation in '+e.home+' −'+x.refuse.rep;
+  if(!tollKnown(e))return['false: they back off, or fight','real: '+hurt];
+  return e.real?['you pass',hurt]:tollStrong(e,x.back)?['they back off: you are too strong for them']:['they fight: '+roadLureOdds(e)]}
+function tollRefuse(e){const x=ENC_TUNE.toll;
+  if(e.real)return{honor:[e.fac,-x.refuse.honor],rep:[e.home,-x.refuse.rep],say:'You ride through. “The lord will hear of this,” the sergeant calls after you.'};
+  if(tollStrong(e,x.back))return{morale:2,say:'They look at your band, and at each other, and drag the barrier aside.'};
+  return{fight:{amb:true,edge:false},say:'“Then we take it,” the sergeant growls. They draw steel: no lord’s men these.'}}
+function tollFightFacts(e){const x=ENC_TUNE.toll.fight,hurt='honour with the '+FACS[e.fac].n+' −'+x.honor+', reputation in '+e.home+' −'+x.rep;
+  return tollKnown(e)?[e.n+' '+(e.real?'soldiers':'false toll-men')+': '+roadLureOdds(e),e.real&&hurt]:['a fight: '+e.n+' men','if they are the lord’s own: '+hurt]}
+function tollFight(e){const x=ENC_TUNE.toll.fight;
+  return{...(e.real?{honor:[e.fac,-x.honor],rep:[e.home,-x.rep]}:{}),fight:{amb:true,edge:false},say:e.real?'You fall on the '+FACS[e.fac].n+'’s toll-men.':'You fall on them. They fight like the bandits they are.'}}
+// (Report them: the ringleader to the reeve of the holding whose lord they claimed; the bounty and the news there)
+function tollReport(e){const x=ENC_TUNE.toll.report,at={x:Math.round(e.x),y:Math.round(e.y)};
+  return{who:'impostor',to:{town:e.home},prize:{gold:x.gold,rep:[e.home,x.rep],honor:[e.fac,x.honor],news:['toll',at,{fac:e.fac,town:e.home}]},forfeit:{rep:[e.home,-x.late]},at}}

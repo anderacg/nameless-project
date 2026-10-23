@@ -168,8 +168,8 @@ try{
  // ---- each of the 14 kinds: its page (its picture, what you see, its choices as key actions, Leave) and today's outcomes
  const meet=(k,set)=>{const e=spawnK(k);if(set)set(e);t.roadMeet(e);return e};
  const acts=()=>qa('.rwbody .rkact').map(b=>b.querySelector('b').textContent),pickA=i=>t.act('enc-do',String(i)),sure=()=>q('.nav [data-nav="close"]').click();
- const ks=Object.keys(t.ROAD_ENC),NEW=['mud','thief','poacher','funeral','wedding','horse','beggar','messenger'];
- ok(ks.length===24&&['traveller','merchant','pilgrims','deserters','gamblers','mine','hunters','child','bard','wisps','caravan','ambush','refugees','warning'].concat(NEW,['lure','sheep']).every(k=>ks.includes(k)),'the 14 people events, now on the map, phase 2’s 8 new ones, phase 4’s lure and the strayed sheep: '+ks.join(', '));
+ const ks=Object.keys(t.ROAD_ENC),NEW=['mud','thief','poacher','funeral','wedding','horse','beggar','messenger'],SMALL=['campfire','herbalist','toll'];
+ ok(ks.length===27&&['traveller','merchant','pilgrims','deserters','gamblers','mine','hunters','child','bard','wisps','caravan','ambush','refugees','warning'].concat(NEW,['lure','sheep'],SMALL).every(k=>ks.includes(k)),'the 14 people events, now on the map, phase 2’s 8 new ones, phase 4’s lure, the strayed sheep and the small encounters (campfire, herbalist, toll: tests/newencounters.js): '+ks.join(', '));
  {const bad=[];ev('TERRAIN.on=true');for(const k of ks){const e=meet(k);const Dk=D(k),want=Dk.acts.filter(a=>!a.when||a.when(e)).map(a=>a.label).join('|'),got=acts().join('|'),leave=q('.nav [data-nav="close"]');
    if(!(q('#panel.paged')&&q('.pg-banner')&&q('.rwin h2').textContent===Dk.n&&got===want&&(t.roadForced(e)?!leave:leave&&leave.dataset.act==='enc-leave'&&leave.textContent===(Dk.leave||'Leave'))&&q('.rwbody>p').textContent.length>20))bad.push(k+' ['+got+']')}
   ev('TERRAIN.on=false');world();ok(!bad.length,'every kind has its page: its banner, its name, what you see, its choices as key actions and Leave (none for the ambush)'+(bad.length?': '+bad.join('; '):''))}
@@ -568,9 +568,9 @@ try{
  // ---- your stats on the road (owner, 2026-10-19: stats only add; ENC_STAT, statOdds): a stat of 0 is today's odds or outcome;
  // more raises it, up to its cap, never past it and never under today's; the horse's odds as they were; the Insight read (Scouting
  // 0, 3, 5); each check's outcome; Tend his wounds always heals, its care (e.care) rising with Medicine
- {const S=t.ENC_STAT,Z={str:0,agi:0,int:0,cha:0,med:0,surv:0,hunt:0,archery:0,athl:0,ride:0},HI={str:30,agi:30,int:30,cha:30,med:20,surv:20,hunt:20,archery:20,athl:20,ride:20};
+ {const S=t.ENC_STAT,Z={str:0,agi:0,int:0,cha:0,med:0,surv:0,hunt:0,archery:0,athl:0,ride:0,scout:0,lead:0,pers:0,trade:0},HI={str:30,agi:30,int:30,cha:30,med:20,surv:20,hunt:20,archery:20,athl:20,ride:20,scout:20,lead:20,pers:20,trade:20};
   const stats=(o,fn)=>{const a0={...P.attr},s0={};for(const k in o)if(k in P.attr)P.attr[k]=o[k];else{s0[k]=P.sk[k].lv;P.sk[k].lv=o[k]}try{return fn()}finally{Object.assign(P.attr,a0);for(const k in s0)P.sk[k].lv=s0[k]}};
-  const TODAY={horse:.25,dice:.48,mine:.6,mineGear:.4,wisps:.5,care:0,push:0,hunt:0,respect:0},ks=Object.keys(S),odds=o=>stats(o,()=>ks.map(k=>t.statOdds(k)));
+  const TODAY={horse:.25,dice:.48,mine:.6,mineGear:.4,wisps:.5,care:0,push:0,hunt:0,respect:0,tracks:.4,watch:0,nimble:0,forage:0,herblore:.3,writ:.3,talk:.25,haggle:0},ks=Object.keys(S),odds=o=>stats(o,()=>ks.map(k=>t.statOdds(k)));
   const z=odds(Z),hi=odds(HI);ok(ks.length===Object.keys(TODAY).length&&ks.every((k,i)=>z[i]===TODAY[k]),'every stat at 0: today’s odds or outcome ('+ks.map((k,i)=>k+' '+z[i]).join(', ')+')');
   ok(ks.every((k,i)=>hi[i]===S[k].cap&&S[k].cap>TODAY[k]),'high stats: up to each cap, never past it ('+ks.map((k,i)=>k+' '+hi[i]).join(', ')+')');
   {const bad=[];for(const k of ks)for(const [s] of S[k].parts)for(const one of [].concat(s)){let last=-1;for(let v=0;v<=40;v+=2){const p=stats({...Z,[one]:v},()=>t.statOdds(k));if(p<TODAY[k]||p>S[k].cap||p<last)bad.push(k+' '+one+' '+v+': '+p);last=p}

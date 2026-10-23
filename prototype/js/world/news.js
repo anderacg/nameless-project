@@ -40,6 +40,10 @@ const NEWS_KINDS={
   band:{w:5,same:(it,d)=>!!d.chief&&it.detail.chief===d.chief,say:[(d,s)=>d.grew?(d.chief?d.chief+'’s band':'A band of cutthroats')+' grows bolder '+s.where+', fat on plunder.':'A big band of '+(d.label||'bandits').toLowerCase()+', '+newsMany(d.n||0)+' strong, was seen '+s.where+'.',
     (d,s)=>'Travellers keep off the road '+s.where+': '+(d.chief?d.chief+'’s':'a big')+' band is out.']},
   fight:{w:4,say:[(d,s)=>'There was a battle '+s.where+' '+s.when+': '+d.win+' won.',(d,s)=>cap1(d.win)+' beat '+d.lose+' '+s.where+', '+s.when+'.']},
+  // (the road's small encounters, world/encounters.js: a campfire's tracks read, where they lead; a false toll-man handed in)
+  tracks:{w:2,say:[(d,s)=>'Tracks of '+(d.who||'strangers')+' lead off '+s.where+'.',(d,s)=>'Someone saw '+(d.who||'strangers')+' '+s.where+', '+s.when+'.']},
+  toll:{w:3,say:[(d,s)=>'Men in the '+facN(d.fac)+'’s colours were taking a false toll '+s.road+'. Their ringleader hangs in '+(d.town||'the town')+'.',
+    (d,s)=>'Beware “the lord’s men” at a barrier '+s.road+': false toll-men, they say, though one was caught '+s.when+'.']},
   trace:{w:3,say:[(d,s)=>({body:'A traveller was found dead by the road '+s.where+', '+s.when+'.',wreck:'A burnt wagon lies '+s.road+'. Raiders, they say.',cart:'Someone left a cart stuck in the mud '+s.road+', '+s.when+'.'})[d.t]||'Something bad happened '+s.road+'.']}
 };
 

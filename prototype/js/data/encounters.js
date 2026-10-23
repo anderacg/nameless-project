@@ -57,7 +57,25 @@ const ENC_TUNE={traveller:{food:3,rep:4,renown:1,gift:.6,gold:[5,10]},hunters:{x
   pilgrims:{n:[2,4],morale:8,rep:3,walk:1,alms:20,almsMorale:12,xp:25,coins:12,coinsMorale:8},
   lure:{w:.5,night:1.6,wild:1.4,bandit:.3,bands:3,near:400,cap:1.6,warn:3,count:5,scare:{max:6,base:.2,lead:.06,cha:.05,lo:.05,hi:.85}},
   letter:{stale:[5,10],worth:[30,45],kind:{army:1.4,attack:1.3,deal:1.1,news:.6},w:{army:1,attack:1,deal:.7,news:.8},sell:1.2,deliver:.8,opened:.5,old:.15,
-    rep:{sell:4,deliver:5,seen:6},witness:{r:120,base:.08,per:.12,hold:.25,holdR:160,scout:.07,night:.5,lo:.02,hi:.9},reveal:5}};
+    rep:{sell:4,deliver:5,seen:6},witness:{r:120,base:.08,per:.12,hold:.25,holdR:160,scout:.07,night:.5,lo:.02,hi:.9},reveal:5},
+  /* the small encounters (IMPLEMENTATION_PLAN §10.3; each kind's w its weight, again: the days before it comes again, once the
+     road reads it; until then ENC_SPAWN.again for all). campfire (× night by night; who left it, by weight (a patrol only on a
+     realm's land), n [from, to] of them, gone go px [from, to] away; read: Scouting trained reading the tracks; Lie in wait (min
+     men): wait hours, surprise: the share of the band that comes back first; rest: hours, back (the chance whoever left comes
+     back while you rest, by who), beasts at your packs (food, morale), kind (morale when friends come back); ash: find (by who),
+     gold [from, to] or gear (the chance of a piece), trap (by who; sp: stamina when it bites you and you have no men)),
+     herbalist (× hurt while you carry wounded; price: gold a man mended, at most mend men; tonic: gold; gather: hours, rep in
+     her holding, free men mended (none wounded: a rest), surv trained; learn: hours, win or lose Medicine trained, xp; rob: her
+     gold [from, to], mend men, honor and rep lost, morale), toll (real: the chance they are the lord's own; n [from, to] men; fee:
+     base + per a man of your band, at most max; see: the Scouting that sees through them; talk: × the toll when your talk fails;
+     back: false ones back off when your power is this × theirs; seize: × theirs to take their ringleader; refuse, fight: honor and
+     rep lost with the real ones' realm and holding; report: the ringleader handed to the reeve: gold, rep, honor; late: rep lost
+     when he gets away) */
+  campfire:{w:1.2,night:1.4,again:5,who:{bandits:.35,patrol:.25,travellers:.25,beasts:.15},n:{bandits:[4,7],patrol:[4,6],travellers:[2,4],beasts:[3,6]},go:[120,220],
+    read:6,min:3,wait:2,surprise:.6,rest:{hours:2,back:{bandits:.5,beasts:.35,patrol:.25,travellers:.25},food:3,morale:4,kind:3},
+    ash:{find:{bandits:.7,travellers:.6,patrol:.5,beasts:.4},gold:[5,15],gear:.12,trap:{bandits:.4,beasts:0,patrol:.1,travellers:.1},sp:15}},
+  herbalist:{w:1.2,hurt:1.5,again:5,price:8,mend:4,tonic:12,gather:{hours:2,rep:3,free:2,surv:4},learn:{hours:2,win:12,lose:4,xp:20},rob:{gold:[6,14],mend:2,honor:4,rep:6,morale:3}},
+  toll:{w:1.2,again:6,real:.3,n:[3,5],fee:{base:10,per:1,max:60},see:3,talk:1.5,back:1.5,seize:2,refuse:{honor:4,rep:4},fight:{honor:10,rep:8},report:{gold:25,rep:5,honor:3,late:2}}};
 /* escorts, shared (world/escort.js): max passengers at once; the days given: the way's tiles ÷ pace, and slack more; reach: px
    from its place that is there (a holding's middle, a lot's door); who: each kind of passenger (n: its name, ico, eat: food a
    day, say: its own lines, else ESCORT.say's: {N} its name, capitalised, {n}, {to} its place, {town} the holding); say: the
@@ -68,7 +86,8 @@ const ENC_TUNE={traveller:{food:3,rep:4,renown:1,gift:.6,gold:[5,10]},hunters:{x
 const ESCORT={max:3,pace:8,slack:2,reach:{holding:36,lot:24},forfeit:4,
   who:{child:{n:'the lost child',ico:'people',eat:.25,say:{arrive:'You bring her to her family’s door in {town}. Her mother weeps for joy.',late:'She slips away to find her own way home to {town}.'}},
     refugees:{n:'the refugee family',ico:'people',eat:.75,say:{arrive:'The refugee family is safe in {town}. They press the last of their grain on you.',late:'Tired of waiting, the refugees leave your band to find {town} alone.'}},
-    traveller:{n:'a traveller',ico:'people',eat:.25}},
+    traveller:{n:'a traveller',ico:'people',eat:.25},
+    impostor:{n:'the false toll-man',ico:'prisoners',eat:.25,say:{arrive:'You hand the false toll-man to the reeve of {town}. He will hang.',late:'The false toll-man slips his bonds in the night and is gone.'}}},
   say:{arrive:'{N} is safe at {to}.',late:'{N} could wait no longer and sets off alone.',captured:'In the rout, your foes carry off {n}.',left:'You set {n} down by the road.'},
   offer:{min:12,max:50,gold:25,per:1.5,rep:4}};
 const ENC_DICE=.48;// (a hand of bones won)
@@ -79,7 +98,13 @@ const ENC_GAMBLE={hands:5,quit:100};
 const ENC_STAT={horse:{base:.25,parts:[['ride',.08],['agi',.04]],cap:.9},dice:{base:ENC_DICE,parts:[[['int','cha'],.015]],cap:.65},
   mine:{base:.6,parts:[['surv',.04],['int',.01]],cap:.85},mineGear:{base:.4,parts:[['surv',.02],['int',.01]],cap:.55},wisps:{base:.5,parts:[['int',.025]],cap:.75},
   care:{base:0,parts:[['med',.15],['int',.03]],cap:1},push:{base:0,parts:[['str',.05],['athl',.05]],cap:.6},
-  hunt:{base:0,parts:[['surv',.1],['hunt',.05],['archery',.05]],cap:1},respect:{base:0,parts:[['cha',.08]],cap:1}};
+  hunt:{base:0,parts:[['surv',.1],['hunt',.05],['archery',.05]],cap:1},respect:{base:0,parts:[['cha',.08]],cap:1},
+  // (the small encounters': reading a campfire's tracks; a share off the risk that whoever left comes back while you rest (watch)
+  // and off a trap in the ashes (nimble); off the time you help the herbalist gather (forage); learning her craft; seeing
+  // through a toll's men; talking your way past them; off what you pay her or them (haggle))
+  tracks:{base:.4,parts:[['scout',.1],['surv',.04]],cap:.95},watch:{base:0,parts:[['scout',.08],['lead',.04]],cap:.7},nimble:{base:0,parts:[['agi',.04],['scout',.05]],cap:.8},
+  forage:{base:0,parts:[['surv',.08],['hunt',.04]],cap:.5},herblore:{base:.3,parts:[['med',.08],['int',.03]],cap:.85},
+  writ:{base:.3,parts:[['scout',.1],['int',.03]],cap:.9},talk:{base:.25,parts:[['pers',.08],['cha',.04]],cap:.85},haggle:{base:0,parts:[['trade',.05]],cap:.4}};
 const ENC_RAIDER='#4a2c26';// (raiders' rags: darker than any realm's colours, so a fight reads at a glance)
 // (pilgrims praying at a shrine: px under its point)
 const ENC_PRAY={dy:12};

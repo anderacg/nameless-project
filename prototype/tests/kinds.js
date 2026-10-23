@@ -19,7 +19,7 @@ Kit.suite(({ok,info})=>{
  // ---- the registry
  {const all=K.all(SHAPE),ids=all.map(k=>k.id),road=K.on(SHAPE,'travelHour');
   ok(all.length>=28&&new Set(ids).size===ids.length&&all.every(k=>t.kindOf(SHAPE,k.id)===k&&k.shape===SHAPE),'every kind registered once, found by its id ('+all.length+' encounter kinds)');
-  ok(road.length===24&&road.every(k=>k.trigger==='travelHour')&&Object.keys(t.ROAD_ENC).join()===road.map(k=>k.id).join()&&road.every(k=>t.ROAD_ENC[k.id]===k),'the pity timer\'s bucket: the road\'s 24, in their order; ROAD_ENC is its view');
+  ok(road.length===27&&road.every(k=>k.trigger==='travelHour')&&Object.keys(t.ROAD_ENC).join()===road.map(k=>k.id).join()&&road.every(k=>t.ROAD_ENC[k.id]===k),'the pity timer\'s bucket: the road\'s 27, in their order; ROAD_ENC is its view');
   ok(all.filter(k=>!k.trigger).map(k=>k.id).sort().join()==='body,cart,stray,wreck','the traces and the stray come from no trigger (only started by another)');
   const cls=all.filter(k=>k.cls).map(k=>k.id+':'+k.cls.name);ok(cls.join()==='sheep:Shepherd,stray:Stray'&&all.filter(k=>k.cls).every(k=>k.cls.prototype instanceof E),'a subclass only where a kind has behaviour of its own: '+cls.join(', '));
   let thr='';try{t.defineKind(SHAPE,'traveller',{})}catch(x){thr=x.message}ok(/twice/.test(thr),'a kind defined twice is refused');
