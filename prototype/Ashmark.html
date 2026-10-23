@@ -18,7 +18,7 @@
 <div class="screen" id="screen" data-mode="title">
   <canvas id="game" role="img" aria-label="Ashmark game screen: a top-down pixel-art map and battles"></canvas>
   <!-- the main menu (ui/mainmenu.js), the page's first screen, no world made behind it: a scene at dusk drawn in code (gfx/menuart.js),
-       the banner down the left (its emblem, the title, the four buttons), a line of lore at the bottom right -->
+       the banner down the left (its emblem, the title, the five buttons), a line of lore at the bottom right -->
   <div class="mainmenu" id="mainmenu" data-page="main" hidden>
     <canvas class="mm-art" aria-hidden="true"></canvas>
     <nav class="mm-banner" aria-label="Main menu">
@@ -29,10 +29,11 @@
       <div class="mm-btns">
         <button class="mm-btn" type="button" data-mm="new">New Campaign</button>
         <button class="mm-btn" type="button" data-mm="continue" disabled>Continue</button>
+        <button class="mm-btn" type="button" data-mm="load">Load game</button>
         <button class="mm-btn" type="button" data-mm="settings">Settings</button>
         <button class="mm-btn" type="button" data-mm="quit">Quit</button>
       </div>
-      <p class="mm-more"><button type="button" data-mm="load">Load game</button><button type="button" data-mm="wiki">Wiki</button></p>
+      <p class="mm-more"><button type="button" data-mm="wiki">Wiki</button></p>
     </nav>
     <div class="mm-lore" role="note"><p></p></div>
   </div>

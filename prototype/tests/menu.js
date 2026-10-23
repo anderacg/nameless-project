@@ -1,5 +1,5 @@
 'use strict';
-// Main menu (ui/mainmenu.js): New Campaign, Continue, Settings, Quit, then Load game and Wiki; the Game Menu (ui/hub.js: Esc, Tab, the
+// Main menu (ui/mainmenu.js): New Campaign, Continue, Load game, Settings, Quit, then Wiki; the Game Menu (ui/hub.js: Esc, Tab, the
 // bar's Menu) with Resume, Save and Load, Settings (the title's page), and Main menu and Exit, which ask first when play has moved on
 // since the last save; its Main menu lets the world go; deleting the save asks twice.
 // Pasts decide the starting weapon and a lean purse; early loot is lean too.
@@ -11,8 +11,8 @@ try{
  const panel=()=>document.getElementById('panel').innerHTML,cards=()=>[...document.querySelectorAll('#panel .card strong')].map(e=>e.textContent),sysb=()=>[...document.querySelectorAll('#panel .gm-sys-btn')].map(b=>b.querySelector('strong').textContent+(b.disabled?' (off)':'')),
   navs=()=>[...document.querySelectorAll('#panel .nav [data-nav]')].map(b=>b.dataset.nav+':'+b.textContent).join(),page=()=>G.esc&&G.esc.page;
  const mm=document.getElementById('mainmenu'),btns=()=>[...mm.querySelectorAll('.mm-btn')].map(b=>b.textContent+(b.disabled?' (off)':'')),cont=()=>mm.querySelector('[data-mm="continue"]');
- t.showTitle();ok(G.mode==='title'&&!mm.hidden&&document.getElementById('ov').hidden&&btns().join()==='New Campaign,Continue (off),Settings,Quit','the main menu, no window over it: '+btns().join(', '));
- ok([...mm.querySelectorAll('.mm-more button')].map(b=>b.textContent).join()==='Load game,Wiki'&&/Ashmark/.test(mm.querySelector('.mm-title canvas').getAttribute('aria-label')),'under the buttons Load game and Wiki; the title drawn, named for readers');
+ t.showTitle();ok(G.mode==='title'&&!mm.hidden&&document.getElementById('ov').hidden&&btns().join()==='New Campaign,Continue (off),Load game,Settings,Quit','the main menu, no window over it: '+btns().join(', '));
+ ok([...mm.querySelectorAll('.mm-more button')].map(b=>b.textContent).join()==='Wiki'&&/Ashmark/.test(mm.querySelector('.mm-title canvas').getAttribute('aria-label')),'under the buttons Wiki; the title drawn, named for readers');
  mm.querySelector('[data-mm="new"]').click();ok(G.menu==='new'&&mm.dataset.page==='new','New Campaign opens the New game page over the scene');t.act('menu','main');
  // new game
  t.act('menu','new');ok(G.menu==='new'&&document.querySelectorAll('[data-act="begin"]').length===7&&document.querySelectorAll('[data-act="race"]').length===4,'New game: four races and seven pasts');
@@ -104,5 +104,18 @@ try{
  // Save first: a quick save, then away
  {t.act('load','quick');G.quietEvents=true;P.gold=444;esc();t.act('esc-main');ok(page()==='leave'&&/since day/.test(Kit.text()),'Main menu after play moved on: asked');
   t.act('esc-leave','main:save');ok(G.mode==='title'&&t.readSlot('quick').P.gold===444,'Save first: quick saved (444 gold), then the main menu')}
+ // save rows keep their icon and full metadata inside the button, independent of inventory slots
+ {const key=t.slotKey('quick'),raw=localStorage.getItem(key),d=JSON.parse(raw);
+  try{d.world.map.settings={...d.world.map.settings,preset:'normal',seed:'north<em>and&stone</em>-a-very-long-world-name'};
+   localStorage.setItem(key,JSON.stringify(d));
+   const fits=()=>{const rows=[...document.querySelectorAll('#panel .save-slot')],inside=(r,b)=>r.left>=b.left-.5&&r.right<=b.right+.5&&r.top>=b.top-.5&&r.bottom<=b.bottom+.5;
+    return rows.length>0&&rows.every(e=>{const b=e.getBoundingClientRect(),mi=e.querySelector('.mi').getBoundingClientRect(),mt=e.querySelector('.mt').getBoundingClientRect();return !e.classList.contains('slot')&&inside(mi,b)&&inside(mt,b)&&mi.right<=mt.left+1&&e.scrollWidth<=e.clientWidth+1&&getComputedStyle(e.querySelector('.mt span')).display!=='none'})};
+   for(const mode of ['title','save','esc']){t.showPanel('<div class="top"><h2>Slots</h2></div><div class="slots">'+t.slotRows(mode)+'</div>'+t.nav(['menu','main','Back']));
+    ok(fits(),mode+': save rows contain their icon, label and wrapped metadata (no inventory-slot layout)');
+    const list=document.querySelector('#panel .slots');list.scrollTop=list.scrollHeight;
+    ok(list.lastElementChild.getBoundingClientRect().bottom<=list.getBoundingClientRect().bottom+1&&document.querySelector('#panel .nav').getBoundingClientRect().top>=list.getBoundingClientRect().bottom-1,mode+': the last row scrolls into view above the fixed navigation');
+    const line=document.querySelector('#panel .save-slot[data-arg="quick"] .mt>span');
+    ok(line&&line.textContent===t.saveLine(d)&&!line.querySelector('em'),mode+': a seed containing markup and ampersands remains literal text')}
+  }finally{localStorage.setItem(key,raw)}}
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}finally{window.close=close0}
 const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d)};

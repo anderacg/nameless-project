@@ -15,7 +15,7 @@
    left going back there ---------- */
 const FULLMAP={zooms:[.5,1,2,3,4,6],wide:640,open:4,ppt:1,pics:{},drag:null,ms:0,
   // (the rivers by width (1 a brook, 2 a river, 3 a great river), the realms' tint and border strength, the unexplored land)
-  river:['','#8cc0ec','#4f8fd6','#2a5fae'],riverN:['','Brook','River','Great river'],tint:.38,edge:.8,unknown:'#0e1119',road:'#b89b62',
+  river:['','#8cc0ec','#4f8fd6','#2a5fae'],riverN:['','Brook','River','Great river'],tint:.38,edge:.8,unknown:'#141116',road:'#b89b62',
   // (the holdings' marks by kind; another kind is marked as a village; names shown at FULLMAP.names px a tile, or from tier 3)
   kinds:{city:'City',town:'Town',castle:'Castle',village:'Village'},names:2};
 // (a rumour's "?": its look, inline)

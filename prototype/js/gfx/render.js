@@ -69,6 +69,10 @@ let OVR=null;const overCv=()=>OVR&&OVR.width===VW+1&&OVR.height===VH+1?OVR:(OVR=
 // the minimap's layers, bottom first, by what each thing is (mapKind): the holdings, then the sites, the beasts, the parties and
 // the caravans and the encounters on the road over them; a kind not here is not dotted
 const MAP_LAYER={town:0,site:1,monster:2,lord:3,band:3,patrol:3,cparty:3,caravan:4,road:4};
+// the two minimaps' frame: the management windows' brown and gold, outside their unchanged map and hit rectangles
+const MAP_FRAME={bg:'#141116',edge:'#967744',light:'#c9a24e',view:'#e7d7b3',muted:'#b5a88e'};
+function drawMapFrame(r){ctx.save();ctx.fillStyle=MAP_FRAME.edge;ctx.fillRect(r.x-2,r.y-2,r.w+4,r.h+4);
+  ctx.fillStyle=MAP_FRAME.light;ctx.fillRect(r.x-2,r.y-2,r.w+4,1);ctx.fillStyle=MAP_FRAME.bg;ctx.fillRect(r.x-1,r.y-1,r.w+2,r.h+2);ctx.restore()}
 // the minimap's rectangle on the screen, in game pixels: the top right corner, 112 wide at any map size, the same size on the
 // screen at any map zoom (zk, core.js MAPZOOM); s: its pixels a tile (drawWorld draws it here, the full map's tap reads it)
 function worldMiniRect(){const zk=MAPZOOM.k(),s=112*zk/MW,w=Math.round(MW*s),h=Math.round(MH*s);return{x:VW-w-Math.round(6*zk),y:Math.round(6*zk),w,h,s}}
@@ -139,7 +143,7 @@ function drawWorld(){
   // minimap (the land from the tile data, a pixel per k tiles: worldart.js WorldArt.mini, k = ceil(MW / 256); where it lies on the
   // screen: worldMiniRect)
   const zk=MAPZOOM.k(),{x:mx,y:my,w:mw,h:mh,s:MS}=worldMiniRect(),mk=Math.ceil(MW/256),dot=(x,y,col,s)=>{s=Math.max(1,Math.round(s*zk));rect(ctx,col,mx+Math.floor(x/TILE*MS)-(s>>1),my+Math.floor(y/TILE*MS)-(s>>1),s,s)};
-  ctx.fillStyle='#000';ctx.fillRect(mx-1,my-1,mw+2,mh+2);ctx.drawImage(atSize(WorldArt.mini(mk),mw,mh),mx,my);ctx.globalAlpha=.4;ctx.drawImage(atSize(landMiniCv(),mw,mh),mx,my);ctx.globalAlpha=1;ctx.drawImage(atSize(fogMiniCv(),mw,mh),mx,my);
+  drawMapFrame({x:mx,y:my,w:mw,h:mh});ctx.drawImage(atSize(WorldArt.mini(mk),mw,mh),mx,my);ctx.globalAlpha=.4;ctx.drawImage(atSize(landMiniCv(),mw,mh),mx,my);ctx.globalAlpha=1;ctx.drawImage(atSize(fogMiniCv(),mw,mh),mx,my);
   // each its own dot (WorldObject mapDot), layer by layer (MAP_LAYER; in a layer, as worldObjects lists them): the holdings and
   // sites you know of, then the beasts, parties and caravans in sight over them
   for(const o of worldObjects().filter(o=>o.mapKind in MAP_LAYER).sort((a,b)=>MAP_LAYER[a.mapKind]-MAP_LAYER[b.mapKind])){const d=o.mapDot(V);if(d)dot(o.x,o.y,d[0],d[1])}

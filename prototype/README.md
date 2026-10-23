@@ -918,20 +918,20 @@ the loop draws the menu instead of the game while it shows (`main.js`). A world 
 `begin`) or a save loads (`save.js` `loadGame`), and let go again when the Esc
 menu's Main menu or Exit game, or the game over's Back to the title, takes you back (`ui.js` `toTitle`, `session.js` `dropWorld`).
 Down the left a banner (iron posts and rod, dark cloth ragged at its foot) with the emblem (a pale tree whose roots run down
-into three peaks), ASHMARK in pixel capitals and four framed buttons: **New Campaign** (the New game page, then the New
-world screen, then forging: the same flow as before), **Continue** (the latest save; dimmed with none),
+into three peaks), ASHMARK in pixel capitals and five framed buttons: **New Campaign** (the New game page, then the New
+world screen, then forging: the same flow as before), **Continue** (the latest save; dimmed with none), **Load game** (all seven save slots),
 **Settings** (the Settings window), **Quit** (the tab closes where the browser lets a page close itself, else a page says to
-close it); under them Load game and Wiki. Arrows move between the buttons, Enter presses one, Esc does nothing there. At the
+close it); under them Wiki. Arrows move between the buttons, Enter presses one, Esc does nothing there. At the
 bottom right a framed line of lore (`MAINMENU.lore`) changes every 9 s. Behind it all the land at dusk (`MenuScene`): sky,
 clouds, stars, ranges, sea, ships, a smoking volcano, a dragon far off, a castle on its hill with houses, fields and a windmill,
 a river under a bridge between towers, pine woods, a column marching under banners, your camp by its fire; the engine's own
 trees, building models and people figures graded to dusk. Seeded (`MENU_ART.seed`), baked once a size (about 40 ms on a
 desktop) and only the moving bits drawn after, 12 frames a second (still with reduced motion). Its pixels are whole device
-pixels: the scene about 420 game px high (2× at 1600 × 900, 1× on a phone on its side). The title's other pages are windows
-over the scene, the banner put away. The page reaches a working menu in about 0.4 s here (it was about 2.0 s on the generated
+pixels: the scene about 420 game px high (2× at 1600 × 900; mobile skips the scene). The title's other pages are windows
+over the scene, the banner put away. On mobile, the menu fills the screen with its buttons centred; neither the background scene nor the banner cloth is allocated or drawn. Short landscape screens omit the emblem so all five buttons remain visible; portrait keeps it. Resizing back to desktop restores the illustrated scene. Save/load rows use their own `save-slot` class, with metadata escaped and wrapped inside each row, independent of inventory gear slots. The page reaches a working menu in about 0.4 s here (it was about 2.0 s on the generated
 world when it forged or installed the world first). Tests: `tests/mainmenu.js` (the real page in a
 frame: no world at load, the buttons, Continue dimmed, the keys, New Campaign, 844 × 390 and 1600 × 900, the scene seeded, a
-campaign and back), `tests/menu.js`.
+campaign and back), `tests/menu.js`. Visual fixtures: `tests/visual/menulayout.js` (title, load, save, esc-load; long metadata and scrolling).
 
 **The full map** (`ui/map.js`; doc/WORLD_DESIGN.md §3.4, §12.4): **M**, a click or a tap on the minimap, or the dock's Map beside Camp (a phone's way in), opens the whole world
 in a window (header with the world's name, size, how much you have explored and − + for the zoom; the map beside its legend;
@@ -941,6 +941,10 @@ holdings (by kind, named from town up, villages from 2 px a tile), the crossings
 It opens at the largest scale that fits, never under 1 px a tile (1 px per 2 tiles on a map wider than 640: Huge), so Normal
 shows at 1 px a tile, Large scrolls and Huge is 512 × 384; + − step it, a click zooms in where it lands (1:1 by region at
 Huge), a drag pans. On a phone on its side the legend slims to a column and the map scrolls. Tests: `tests/fullmap.js`.
+
+World and battle HUDs use the same brown frames and cream labels: the company card, day/speed controls, dock, order bar and selected unit cards. Both canvas minimaps share `gfx/render.js`'s `MAP_FRAME` and `drawMapFrame`; their map and click rectangles are unchanged. The full map has a brown legend and charcoal unexplored land. Fitness and morale meters match the Army's sage green; warning states, mana and faction colours remain distinct.
+
+The shared interface uses the management windows' brown surfaces, gold frames and cream text (`style.css` tokens). Buttons, cards, headers, input borders and HUD frames follow that palette; battle side colours and status colours keep their meaning. New world frames the scrolling settings and preview separately, with the same controls and navigation. In portrait they scroll as one column, with Advanced settings inside their frame and the preview below.
 
 **The New world screen** (`ui/worldsetup.js`; doc/WORLD_DESIGN.md §4, Phase 2b): after your race and past (a
 past's card names `world:<past>`, `session.js` `begin`), the world's settings, then "Forging the world…". Left (it scrolls):

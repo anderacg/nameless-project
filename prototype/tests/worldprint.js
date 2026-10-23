@@ -260,7 +260,10 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 // (W7, B2 re-recorded 2026-10-23, on purpose, at the world log's merge: the save's rng piece now truly last (core/rng.js order
 //  270 to 900, after band, tracks and chronicle: nothing loaded after it can move a restored stream; tests/streams.js wants it
 //  last). Only the saves' key order moves. Were W7 ae446562 (the world log's), B2 8b5de408)
-const EXPECT={W1:'2ba57e1b',W2:'975f62a1',W3:'224e40e8',W4:'29fda26b',W5:'f284901d',W6:'b5185fc6',W7:'d2479c86',W8:'a465c56e',B2:'8712b6a2'};
+// W6 re-recorded 2026-10-23 for the requested brown HUD: the minimap has a gold outer frame and brown inner rim.
+// Only those frame pixels move (parts 5bbf9f8b 2eecd9ea eaa57e59 ad7efa58 4403a5ea 8319b986); with the original
+// gfx/render.js restored W6 is b5185fc6 again. W1-W5, W7, W8, B2 and every generator sum held.
+const EXPECT={W1:'2ba57e1b',W2:'975f62a1',W3:'224e40e8',W4:'29fda26b',W5:'f284901d',W6:'6b64690d',W7:'d2479c86',W8:'a465c56e',B2:'8712b6a2'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended

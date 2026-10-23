@@ -27,8 +27,9 @@ Kit.suite(({ok,info})=>{
   ok(t.KEYS.some(([,ks])=>ks.some(([k,d])=>k==='Shift + M'&&/sound/.test(d)))&&t.KEYS[0][1].some(([k,d])=>k==='M'&&/full map/.test(d)),'Help lists M for the full map and Shift + M for the sound');
   // ---- the minimap: a click or a tap opens it ----
   world();const R=t.fullMapMiniRect(),r=cv.getBoundingClientRect(),k=cv.width/t.CVS/r.width,cl=(x,y)=>({clientX:r.left+x/k,clientY:r.top+y/k});
-  {const g=cv.getContext('2d'),s=cv.width/t.VW,px=g.getImageData(Math.floor((R.x-.5)*s),Math.floor((R.y+R.h/2)*s),1,1).data;
-    ok(px[0]<8&&px[1]<8&&px[2]<8,'the minimap is where map.js looks for it: its black frame at the left edge of '+JSON.stringify(R)+' (render.js drawWorld)')}
+  {const g=cv.getContext('2d'),s=cv.width/t.VW,pixel=x=>Array.from(g.getImageData(Math.floor(x*s),Math.floor((R.y+R.h/2)*s),1,1).data).slice(0,3).join();
+    ok(pixel(R.x-.5)===t.fmRgb(t.MAP_FRAME.bg).join()&&pixel(R.x-1.5)===t.fmRgb(t.MAP_FRAME.edge).join(),
+      'the minimap is where map.js looks for it: its gold and dark frame outside '+JSON.stringify(R)+' (render.js drawWorld)')}
   const down=(type,x,y)=>cv.dispatchEvent(new PointerEvent('pointerdown',Object.assign({bubbles:true,button:0,pointerType:type,pointerId:type==='touch'?7:1,isPrimary:true},cl(x,y))));
   const up=(type,x,y)=>window.dispatchEvent(new PointerEvent('pointerup',Object.assign({bubbles:true,button:0,pointerType:type,pointerId:type==='touch'?7:1,isPrimary:true},cl(x,y))));
   down('mouse',R.x+R.w/2,R.y+R.h/2);up('mouse',R.x+R.w/2,R.y+R.h/2);ok(G.mode==='fullmap','a click on the minimap opens it');t.act('map-close');
