@@ -73,13 +73,14 @@ class BattleResolution{
       const beasts=slain.filter(k=>ST[k].beast).length;for(let i=0;i<kills-beasts;i++)res.gold+=rint(2,6);
       const furs=invAdd('good','furs',Math.floor(slain.filter(k=>k==='wolf').length/2));if(furs>0)bounty+=' You skin '+furs+' furs from the wolves.';
       if(big)res.gold+=25;if(auto)res.gold=Math.floor(res.gold*.8);res.gold=Math.round(res.gold*(1+tm('loot')));
-      P.renown+=Math.ceil(kills*(big?1.5:1));const moodLine=battleMood(4,'victory');gainXp(kills*8+(big?30:0));
+      P.renown+=Math.ceil(kills*(big?1.5:1)*reinfRenown(e));const moodLine=battleMood(4,'victory');gainXp(kills*8+(big?30:0));
       if(troopCount()>0)train('lead',3+kills*.5);train('tact',auto?6:2);
       const taken=takePrisoners(slain),drop=O.drop&&O.drop();
       if(drop&&!invAdd('gear',drop,1))log(BAG_FULL+'. You leave a '+ITEMS[drop].n+' behind.','bad');
       bounty+=spoilsWon(e);// (valuables: a lord's or chieftain's purse, a camp's plunder: captives.js)
       {const c=(e.kind==='party'||e.kind==='camp')&&e.ref&&e.ref.ld;if(c){captureChief(c);e.ref.ld=null;bounty+=' You take '+chiefLabel(c)+' captive: hand him over for '+bountyOf(c)+' gold, or let him go (Hero, Party).'}}
       bounty=(O.won(e,slain,res)||'')+bounty;
+      bounty+=reinfCut(e,res);// (the lords and watches beside you take their share of the gold, and of the renown: engage.js)
       P.gold+=res.gold;
       const fame=res.fame==null?Math.max(2,Math.round(kills/2)):res.fame;if(fame)repNear(P.x,P.y,fame);
       html='<h2>Victory</h2><p>You defeated '+(e.kind==='monster'?(kills>1?kills+' ':'the ')+MONSTERS[e.ref.id].n.toLowerCase():kills+' '+(e.kind==='lord'?'soldiers':'foes'))+(taken?' and took '+taken+' prisoner'+(taken>1?'s':''):'')+'.'+bounty+'</p>'+moodLine;

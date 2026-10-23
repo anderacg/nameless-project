@@ -35,7 +35,7 @@ Kit.suite(({ok})=>{
  for(let i=0;i<10;i++)t.updateLords(.05);ok(G.mode==='world'&&!G.enc,'a sworn friend will not attack you, even when their realm is hostile');
  t.lordMeet(b);ok(/will not draw on a friend/.test(panel())&&G.mode==='dialog'&&!G.enc.list,'and meets you in peace');world();P.hostile={};
  const h=L.find(l=>!l.dead&&l.fac!==b.fac&&l!==foe);Object.assign(h,{inside:null,x:P.x+20,y:P.y,troops:Array(10).fill('hum_spear'),state:'rest'});P.honor[h.fac]=0;
- G.enc={kind:'party',ref:{x:P.x,y:P.y,cool:0},list:['militia']};t.P.lrel[h.id]=0;ok(!t.nearAllies(G.enc).includes(h),'a lord who is merely neutral leaves you to it');
+ G.enc={kind:'party',ref:{x:P.x,y:P.y,cool:0},list:['militia']};t.P.lrel[h.id]=-R.helpAt;ok(!t.nearAllies(G.enc).includes(h),'a lord who is cool toward you leaves you to it (a neutral one helps by chance: reinforce.js)');G.enc.rolls=null;
  t.P.lrel[h.id]=R.helpAt;ok(t.nearAllies(G.enc).includes(h),'a friend rides to help you');G.enc=null;
  // parley: a friend yields more readily
  t.P.lrel[h.id]=0;for(let n=1;n<60;n++){h.troops=Array(n).fill('hum_spear');const c=t.yieldChance(h,'lord');if(c<.6)break}// a lord who might go either way

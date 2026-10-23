@@ -25,7 +25,8 @@ Kit.suite(({ok})=>{
  ok(t.repAt('Ashford')>=c0+10,'clearing a camp is worth 10');
  town('Ashford');t.act('tab','trade');t.invAdd('good','iron',20);const tr0=t.repAt('Ashford');t.act('sell','iron:5');ok(t.repAt('Ashford')>tr0,'trading builds reputation');t.act('leave');done();
  // honor
- W.rel={};W.rel[t.rk('vale','karn')]={s:'war',since:1};const kl=W.lords.find(l=>l.fac==='karn');const hv=t.honorWith('vale'),hk=t.honorWith('karn');
+ W.rel={};W.rel[t.rk('vale','karn')]={s:'war',since:1};W.patrols=[];// (no watch at war with Karn rides in on its land: reinforce.js)
+ const kl=W.lords.find(l=>l.fac==='karn');const hv=t.honorWith('vale'),hk=t.honorWith('karn');
  G.mode='world';G.modal=false;t.startEncounter({kind:'lord',ref:kl,list:['dw_clan','dw_clan']});t.autoResolve();t.act('cont');done();
  ok(t.honorWith('vale')===hv+5&&t.honorWith('karn')===hk-10,'beating a Karn lord: Vale honor +5, Karn honor −10');
  const sl=W.lords.find(l=>l.fac==='salt'&&!l.dead);G.mode='world';G.modal=false;G.encCool=0;t.lordMeet(sl);const hs=t.honorWith('salt');t.act('lord-attack');ok(t.honorWith('salt')===hs-15,'attacking a lord costs 15 honor');t.act('flee');done();

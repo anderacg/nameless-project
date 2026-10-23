@@ -27,33 +27,87 @@ function makeEnemies(n,camp,band){
     else a.push(r<.42?'militia':r<.58?'orc_grunt':r<.8?'archer':'spearman')}
   if(camp)a.push('chief');return a;
 }
-/* reinforcements: lords near the fight join it. Your friends (your employer, its allies, or a faction that honors you, 25+)
-   help against bandits and beasts, and against an enemy their faction is at war with; an enemy lord's own faction and allies join him. */
-const REINF_R=110,REINF_MAX=2;
+/* reinforcements (the owner, 2026-10-23: armies on neutral or better terms help; the numbers: REINF, data/factions.js). Who
+   may help you depends on whom you fight:
+   - a common enemy (a band of bandits or raiders, a camp or hideout, a beast, a lair's or a ruin's guardians: no realm's men):
+     any army within REINF.r that is not hostile to you. Your friends always (your liege's men, its allies', a realm that
+     honours you (25+), a lord who likes you: RELATION.helpAt). A neutral lord by chance, from how he feels about you
+     (REINF.chance at 0, sure at helpAt, none at -helpAt; drawn once for the encounter from the day, where you stand and who he
+     is: e.rolls, never Math.random), and only if the odds look fair (his strength and yours at least REINF.fair x theirs).
+     A holding's watch always on its realm's land (it is their job), and off it as a neutral lord;
+   - a realm's men (a lord, a holding you storm, raid or rob, its caravan, its watch, its real toll-men on the road): only your
+     friends at war with that realm (as before), and the watches of a realm at war with it, on their own land;
+   - a siege: its besiegers and the lords holding its walls, as before.
+   At most REINF.max, the nearest first (and of those about as near, within REINF.band px, the strongest). Your companions'
+   parties come too, and on the road a caravan you ride to save fights with its own guards. Each helper's why (the pre-battle
+   page) and his men at the start (his share of the spoils) are kept on the encounter (e.help). An enemy lord's realm and
+   allies join him (nearFoes, at most REINF.foes). */
 const friendFac=f=>!hostileTo(f)&&(!!P.fac&&(f===P.fac||relOf(f,P.fac).s==='ally')||honorWith(f)>=25);
 const foeFac=e=>e.kind==='lord'||e.kind==='caravan'||e.kind==='estate'||e.kind==='patrol'?e.ref.fac:e.kind==='siege'||e.kind==='raid'?e.ref.owner:null;
+// the realm whose men you fight (foeFac's, or a realm's real toll-men on the road); none: a common enemy
+const foeRealm=e=>foeFac(e)||(e.road&&e.road.real&&e.road.fac)||null;
+const commonFoe=e=>e.kind==='field'?(e.foes||[]).every(f=>!f.fac):e.kind!=='tourney'&&!foeRealm(e);
 // the holding a fight is over: the one you storm or raid, or the one the lord you fight is besieging (or riding to relieve)
 const siegeTown=e=>e.kind==='siege'||e.kind==='raid'?e.ref.name:e.kind==='lord'&&(e.ref.state==='siege'||e.ref.state==='relieve')?e.ref.tgt:null;
+const nearYou=o=>Math.hypot(o.x-P.x,o.y-P.y);
 // lords near you who could take part: free lords, plus, in a fight over a siege, its besiegers and the lords holding its walls
-const nearLords=(e,ok)=>{const st=siegeTown(e);return W.lords.filter(l=>!l.dead&&(!l.inside||st&&l.inside===st&&e.kind==='lord')&&l!==e.ref&&!(e.lords||[]).includes(l)&&l.troops.length>=3&&(l.state!=='siege'||l.tgt===st)&&Math.hypot(l.x-P.x,l.y-P.y)<REINF_R&&ok(l)).sort((a,b)=>Math.hypot(a.x-P.x,a.y-P.y)-Math.hypot(b.x-P.x,b.y-P.y)).slice(0,REINF_MAX+(st?2:0))};
-function nearAllies(e){if(e.kind==='tourney')return[];const ff=foeFac(e),st=siegeTown(e);return nearLords(e,l=>(friendFac(l.fac)||lordHelps(l)||st&&(l.tgt===st&&l.state==='siege'||l.inside===st))&&(!ff||ff!=='player'&&atWar(l.fac,ff)))}
+const lordFree=(e,l,st)=>!l.dead&&(!l.inside||st&&l.inside===st&&e.kind==='lord')&&l!==e.ref&&!(e.lords||[]).includes(l)&&l.troops.length>=3&&(l.state!=='siege'||l.tgt===st)&&nearYou(l)<REINF.r;
+const nearLords=(e,ok)=>{const st=siegeTown(e);return W.lords.filter(l=>lordFree(e,l,st)&&ok(l)).sort((a,b)=>nearYou(a)-nearYou(b)).slice(0,REINF.foes+(st?2:0))};
+// a friend's why ('' for none, or when his realm is hostile to you): your own, your liege's, his ally's, a lord who likes you,
+// a realm that honours you
+function friendWhy(o){const f=o.fac;if(!f||hostileTo(f))return '';if(f==='player')return 'your own men';if(P.fac===f)return 'your liege’s man';
+  if(P.fac&&relOf(f,P.fac).s==='ally')return 'an ally of your liege';if(!o.pt&&lordHelps(o))return 'a friend';return honorWith(f)>=25?'the '+FACS[f].n+' honours you':''}
+// a neutral one: his chance by how he feels about you (v), his draw for this encounter (once), and whether the odds look fair
+const helpChance=v=>clamp(REINF.chance+(1-REINF.chance)*v/RELATION.helpAt,0,1);
+const helpRoll=(e,k)=>{const R=e.rolls||(e.rolls={});return R[k]!=null?R[k]:R[k]=hash(Math.floor(P.x),Math.floor(P.y),G.day*7919+folkHash(k))};
+const fairOdds=(e,o)=>o.power()+partyPower()>=REINF.fair*rating(e.list||[],e.lv);
+const neutralHelps=(e,o,k,v)=>helpRoll(e,k)<helpChance(v)&&fairOdds(e,o);
+const bountyWhy=e=>e.kind==='monster'||e.kind==='cave'?'to see the beast dead':'for the bounty';
+// why a lord rides to help you ('' if he won't)
+function lordWhy(e,l){const fr=foeRealm(e),st=siegeTown(e);if(fr&&(fr==='player'||!atWar(l.fac,fr)))return '';
+  if(st&&l.tgt===st&&l.state==='siege')return 'besieging '+st;if(st&&l.inside===st)return 'holding the walls of '+st;
+  const fw=friendWhy(l);if(fw||fr||hostileTo(l.fac))return fw;return neutralHelps(e,l,l.id,relWith(l))?bountyWhy(e):''}
+// why a holding's watch rides to help you ('' if it won't): on its realm's land against a common enemy, or against a realm at
+// war with its own; off its land against a common enemy as a neutral lord would (or a friend)
+function watchWhy(e,p){if(hostileTo(p.fac))return '';const fr=foeRealm(e),land=patrolLand(p,P.x,P.y);
+  if(fr)return land&&fr!=='player'&&fr!==p.fac&&atWar(p.fac,fr)?'riding out against the '+FACS[fr].n+' on its land':'';
+  if(land)return 'riding in to clear its '+(e.kind==='monster'||e.kind==='cave'?'land':'road');
+  return friendWhy(p)||(neutralHelps(e,p,'w:'+p.home+':'+watchOf(p),0)?bountyWhy(e):'')}
+function nearAllies(e){if(e.kind==='tourney')return[];const st=siegeTown(e),H=e.help||(e.help=new Map()),why=new Map();
+  for(const o of [...W.lords.filter(l=>lordFree(e,l,st)),...W.patrols.filter(p=>!p.gone&&!inFight(p)&&p!==e.ref&&p.troops.length&&nearYou(p)<REINF.r)]){const w=o.pt?watchWhy(e,o):lordWhy(e,o);if(w)why.set(o,w)}
+  const band=o=>Math.floor(nearYou(o)/REINF.band);
+  return [...why.keys()].sort((a,b)=>band(a)-band(b)||b.power()-a.power()).slice(0,REINF.max+(st?2:0)).map(o=>{const f=o.pt?forceOf(o):o;H.set(f,{why:why.get(o),n:f.troops.length});return f})}
 function nearFoes(e){const ff=foeFac(e),st=siegeTown(e);if(!ff||ff==='player')return[];return nearLords(e,l=>(l.fac===ff||relOf(l.fac,ff).s==='ally')&&(hostileTo(l.fac)||st&&l.tgt===st&&l.state==='siege'))}
+// the caravan you ride to save on the road (world/encounters.js caravan): its own guards, of the land's people
+const guardsForce=r=>{const t=Spatial.nearestHolding(P.x,P.y),u=RACES[t.races[0]].melee;return{kind:'guards',name:'the caravan’s guards',fac:r.fac,troops:Array(REINF.guards).fill(u)}};
 const lordTroops=ls=>ls.flatMap(l=>l.troops);
-const ofFac=l=>l.fac&&FACS[l.fac]?' of the '+FACS[l.fac].n:'';
-function reinfHtml(e){
-  return (e.allies.length?'<p class="good">At your side: '+e.allies.map(l=>l.name+ofFac(l)+' ('+l.troops.length+')').join(', ')+'.</p>':'')+
+const ofFac=l=>!l.kind&&l.fac&&FACS[l.fac]?' of the '+FACS[l.fac].n:'';
+// a helper's why on the pre-battle page: kept when he was asked (nearAllies), else by what he is
+const helpWhy=(e,l)=>(e.help&&e.help.get(l)||{}).why||(l.kind==='cparty'?'your companion':l.kind==='garrison'?'sallying from its walls':l.kind==='guards'?'defending their carts':e.kind==='field'?'already in the fight':'');
+function reinfHtml(e){const why=l=>{const w=helpWhy(e,l);return w?', '+w:''};
+  return (e.allies.length?'<p class="good">At your side: '+e.allies.map(l=>l.name+ofFac(l)+' ('+l.troops.length+')'+why(l)).join('; ')+'.</p>':'')+
     (e.foes.length?'<p class="bad">'+(e.kind==='field'?'Against you: ':'Riding to help them: ')+e.foes.map(l=>l.name+ofFac(l)+' ('+l.troops.length+')').join(', ')+'.</p>':'');
 }
 // after the fight: the enemy's helpers are routed if you win; your helpers thank you, and anyone left with too few troops
 // goes home. Forces other than lords (patrols, bands, caravans in a battle you joined) are written back to their parties.
+// Won: each realm's force beside you gives honour (REINF.honor.beside), its lords like you more (RELATION.fightBeside); a
+// common enemy cleared on a realm's land with its men beside you, that realm a little more (REINF.honor.land, once)
 function reinfAfter(e,win){
   syncForces(e.foes);syncForces(e.allies);
   for(const l of e.foes||[]){if(l.dead||l.kind==='garrison')continue;if(win){if(!l.src)rippleRel(l,RELATION.beatThem,'you beat them in battle');const t=routForce(l,true);if(t)e.spoils=(e.spoils||'')+t;log(l.name+' is routed with the rest.','good')}else (l.src||l).cool=4}
-  for(const l of e.allies||[]){if(l.dead||l.kind==='garrison')continue;if(l.troops.length<(l.src?1:3)){routForce(l,false);log(l.name+' has too few soldiers left and goes home.','bad','war')}else{(l.src||l).cool=4;if(win&&l.fac&&l.fac!=='player')addHonor(l.fac,3,true)}}
-  if(win){const ls=(e.allies||[]).filter(l=>!l.src&&!l.dead);ls.forEach(l=>changeRel(l,RELATION.fightBeside,'you fought beside them'));ls.forEach((a,i)=>ls.slice(i+1).forEach(b=>changeLordRel(a,b,RELATION.together)))}
+  for(const l of e.allies||[]){if(l.dead||l.kind==='garrison'||l.kind==='guards')continue;if(l.troops.length<(l.src?1:3)){routForce(l,false);log(l.name+' has too few soldiers left and goes home.','bad','war')}else{(l.src||l).cool=4;if(win&&l.fac&&l.fac!=='player')addHonor(l.fac,REINF.honor.beside,true)}}
+  if(win){const ls=(e.allies||[]).filter(l=>!l.src&&!l.kind&&!l.dead);ls.forEach(l=>changeRel(l,RELATION.fightBeside,'you fought beside them'));ls.forEach((a,i)=>ls.slice(i+1).forEach(b=>changeLordRel(a,b,RELATION.together)));
+    const h=commonFoe(e)&&landHold(P.x,P.y),lf=h&&h.owner;if(lf&&lf!=='player'&&realmHelpers(e).some(x=>x.l.fac===lf))addHonor(lf,REINF.honor.land,true)}
   const facs=[...new Set((e.allies||[]).filter(l=>l.fac&&l.fac!=='player').map(l=>FACS[l.fac].n))];
   if(win&&(e.allies||[]).length)log('You fought beside '+e.allies.map(l=>l.name).join(' and ')+'.'+(facs.length?' The '+facs.join(' and ')+' will remember it.':''),'good','war');
 }
+// the lords and watches beside you, each with his men at the start: they share the renown (yours x REINF.renown) and, those
+// still standing, the gold: each his share by his men against everyone's at your side (yours at the start too), rounded
+const realmHelpers=e=>(e.allies||[]).filter(l=>!l.kind||l.kind==='patrol').map(l=>({l,n:(e.help&&e.help.get(l)||{}).n||l.troops.length}));
+const reinfRenown=e=>realmHelpers(e).length?REINF.renown:1;
+function reinfCut(e,res){const hs=realmHelpers(e);if(!hs.length)return '';const all=(e.men||playerList().length)+hs.reduce((a,h)=>a+h.n,0),g0=res.gold,cuts=[];
+  for(const h of hs){if(h.l.dead||h.l.src&&h.l.src.gone)continue;const g=Math.min(res.gold,Math.round(g0*h.n/all));if(g>0){res.gold-=g;cuts.push(h.l.name+' takes '+g+' gold for '+(h.l.kind?'its':'his')+' '+h.n+' men')}}
+  return ' '+(cuts.length?cuts.join(', ')+' as a share of the spoils. ':'')+'You share the renown with '+(hs.length>1?'them':hs[0].l.name)+'.'}
 /* ---------- battle types from the world (setup.js BTYPE), only with terrain (TERRAIN.on) ----------
    Hold the bridge: a fight with a lord, a band, a patrol or a caravan on a road bridge or next to one (a road tile with water on
    both sides, within near tiles; not where the river is ice (frost) nor in the desert (no river)): the side set upon (you, unless
@@ -88,7 +142,9 @@ function startEncounter(e){
   if(e.btype==null){const bt=battleTypeFor(e);if(bt)e.btype=bt}// (a battle type: none with terrain off)
   e.list=e.list||makeEnemies(e.n,e.kind==='camp',e.band);const env=battleEnv(),ground='<p class="muted">Battleground: '+env.name+'. '+terrainEnvText(env,e.kind,e.btype)+'</p>',band=BANDS[e.band||'bandits'];G.enc=e;G.mode='dialog';P.tx=null;G.chase=null;
   const given=!!e.allies;e.allies=e.allies||nearAllies(e);e.foes=e.foes||nearFoes(e);
-  if(!given&&e.kind!=='tourney')for(const p of cparties())if(!p.fight&&!p.inside&&Math.hypot(p.x-P.x,p.y-P.y)<REINF_R)e.allies.push(forceOf(p));// your companions' parties
+  if(!given&&e.kind!=='tourney'){for(const p of cparties())if(!p.fight&&!p.inside&&nearYou(p)<REINF.r)e.allies.push(forceOf(p));// your companions' parties
+    if(e.road&&e.road.k==='caravan')e.allies.push(guardsForce(e.road))}// (the caravan you ride to save: its own guards)
+  if(e.men==null)e.men=playerList().length;// (your men at the start: the helpers' share of the spoils, reinfCut)
   // the garrison sallies: beside you when you fight a holding's besiegers, against you when an army comes to relieve your siege
   if(!given&&e.kind==='lord'){const t=townBy(e.ref.tgt);if(t&&t.gar>0){if(e.ref.state==='siege'&&!hostileTo(t.owner)&&t.owner!=='player')e.allies.push(garrisonForce(t));else if(e.ref.state==='relieve'&&mySiege(t))e.foes.push(garrisonForce(t))}}
   const ratio=(power(e.list)*lvPow(e.lv)+power(lordTroops(e.foes)))/(power(playerList())+power(lordTroops(e.allies))),threat=ratio<.6?'Easy':ratio<1?'Even':ratio<1.5?'Risky':'Deadly';

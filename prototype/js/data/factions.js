@@ -28,6 +28,14 @@ const WATCH={refill:1,
 // base + per x every fighter in it (world time), each side wearing the other down by their strength; a side whose strength
 // falls below rout x the other's breaks. join: how close a lord or patrol must be to ride in
 const FIGHT={base:3,per:.25,rout:.3,join:60};
+// reinforcements: armies near your fight that join it (battle/engage.js nearAllies; the owner, 2026-10-23). r: how near (px);
+// max: how many join you (the nearest first; of those within band px of each other, the strongest); foes: how many join your
+// enemy; guards: the guards a caravan you save on the road fights with. A neutral one (a lord neither friend nor hostile, a
+// watch off its land) helps against a common enemy by chance: chance at a relation of 0, rising to sure at RELATION.helpAt and
+// to none at -helpAt; and only if his strength and yours come to fair x theirs. Won: honor from each realm's force beside you
+// (beside) and, for a common enemy cleared on a realm's land with its men beside you, once more from that realm (land);
+// renown: yours x renown when a lord or a watch helped (they take their share of the gold by their men: reinfCut)
+const REINF={r:110,max:3,foes:2,band:30,guards:2,chance:.5,fair:.8,honor:{beside:3,land:2},renown:.8};
 // the land defended (world/defence.js; the owner, 2026-10-19). A threat: a bandit band or a beast (not a mythic one, nor one a
 // quest set out), out of any fight. A holding sends its watch at one on its land that the watch (PATROL.see) or the holding or
 // one of its estates (see, px) has in sight, if the watch is at least edge times as strong. A lord at or near home (resting,
