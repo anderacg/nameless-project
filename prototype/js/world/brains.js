@@ -13,7 +13,7 @@ class Brain{
   // how far it sees you: its eyes, less when you are hidden, nothing while you stay inside a holding
   sight(base){return P.stay?0:base*(hiddenAt(P.x,P.y)?.55:1)}
   // close enough to meet you, and free to (in the grace after a fight, G.encCool, nothing meets you: hunters keep GRACE_GAP off)
-  canMeet(o,dist){return dist<10&&o.cool<=0&&G.encCool<=0&&!G.modal}
+  canMeet(o,dist){return dist<(WORLD_BATTLE.on?worldBattleReach(o):10)&&o.cool<=0&&G.encCool<=0&&!G.modal}
   // which way it faces after moving from ox
   face(o,ox){if(Math.abs(o.x-ox)>.01)o.dir=o.x>ox?1:-1}
   think(o,d){return false}

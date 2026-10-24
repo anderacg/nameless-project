@@ -124,12 +124,12 @@ function coverAt(x,y){const S=battleSiteAt(x,y),env=battleEnv(false,S),g=terrain
   const T=buildTerrain({...g,W:clamp(BVW,FIELD_W.min,FIELD_W.max)});return T.has.wood||T.has.rock?'field':null}
 const COVER_SAY={forest:'the trees',hills:'the rocky rises',field:'the thickets'};
 function battleTypeFor(e){
-  if(!TERRAIN.on||!BTYPE_WORLD.kinds.includes(e.kind))return null;const S=battleSiteAt(P.x,P.y),env=battleEnv(false,S),g=terrainOf(S,env);
+  if(WORLD_BATTLE.on||!TERRAIN.on||!BTYPE_WORLD.kinds.includes(e.kind))return null;const S=battleSiteAt(P.x,P.y),env=battleEnv(false,S),g=terrainOf(S,env);
   if(g.river&&!g.river.frozen&&!g.river.stream&&bridgeNear(g.tx,g.ty,S))return{kind:'bridge',def:e.mine?1:0,ford:hash(g.tx,g.ty,4447)<BTYPE.ford};
   const by=e.mine?0:e.kind==='lord'?BTYPE_WORLD.by.lord:e.kind==='party'?BTYPE_WORLD.by[e.band||'bandits']||0:0,cv=by&&coverAt(P.x,P.y);
   return cv&&hash(g.tx,g.ty,G.day*13+7)<BTYPE_WORLD.cover[cv]*by?{kind:'ambush',hid:1}:null}
 // you may lie in wait for them: you rode at them, where there is cover, and it is no bridge's fight
-const canSpring=e=>TERRAIN.on&&!!e.mine&&BTYPE_WORLD.kinds.includes(e.kind)&&!e.btype&&!!coverAt(P.x,P.y);
+const canSpring=e=>!WORLD_BATTLE.on&&TERRAIN.on&&!!e.mine&&BTYPE_WORLD.kinds.includes(e.kind)&&!e.btype&&!!coverAt(P.x,P.y);
 // the pre-battle panel's word on the battle's type
 function typeHtml(e){const bt=e.btype;
   if(bt&&bt.kind==='bridge')return bt.def===0?'<p class="gold"><strong>Hold the bridge.</strong> You stand on your bank by it: they must come at you over the river, by the bridge'+(bt.ford?' or a ford far off it.':' or not at all.')+'</p>'

@@ -34,6 +34,8 @@ Start a **new campaign** for this version. Old saves are not loaded or migrated;
 
 Focused regression suites: `armygroups`, `armyedges`, `groups`, `battlesetup`, `battlecommands`, `rts`, plus the existing recruitment, roster, laboratory, combat and morale suites. Test-only `testGroup(role)` resolves role-based execution fixtures to real group IDs; it is not a gameplay or save-compatibility API.
 
+**World-map combat (first playable version):** Army → Roster → **March formation** sets group positions around your hero. Party interaction rings open the usual encounter; Fight on the road locks a circle on that actual world terrain. Use the normal battle commands inside it. Eligible armies physically approach and join; routed soldiers can escape, regroup and return with their health, ammunition and fatigue preserved. Formation footprints grow the army radius when needed. Tournaments and settlement assaults retain their existing fields. The campaign clock pauses during combat; arriving armies advance on battle time. Design, ownership and tuning: [`WORLD_BATTLE_DESIGN.md`](../doc/WORLD_BATTLE_DESIGN.md).
+
 `wiki.html` is the game reference: world map, biomes, races, realms, holdings, the economy, battle, troops, gear, monsters and life on the map. It loads the game's own data and sprite scripts, so it updates itself whenever the data changes.
 
 ## Layout
@@ -167,8 +169,9 @@ js/world/             the campaign map and everything on it
   world.js              travel (your step: straight while the way is open, else by the router: heroStep, heroWay; where you come out
                         by a holding: gateSpot, open land in front of its gate), Follow (FOLLOW, followStart, followStep,
                         followWatch: your band shadows a party), the daily tick, the world update
+js/ui/march.js         march formation editor: drag groups round the fixed hero, Apply or Back
 js/battle/            engage.js (going into a fight: power and stance, allies joining, the battle type, flight, auto-resolve, outcomes by kind: ON_WIN), parley.js (cornered parties), setup.js (BattleSetup, field
-                      and unit construction), resolution.js (BattleResolution, field results and campaign settlement),
+                      and unit construction), worldbattle.js (WorldBattleSetup, the fixed world area, march footprints and mock figures, arrivals and regrouping), resolution.js (BattleResolution, field results and campaign settlement),
                       battle.js (shared group defaults and frame orchestration), actors.js (each soldier's moment and his targeting: Actor, CharActor, HeroActor),
                       battlecontrol.js (group mechanics), commands.js (player selection and orders),
                       attacks.js (blows and wounds: Fighter, the base every Actor extends), projectiles.js (missiles: Missile, ArcMissile, Bolt, MagicBolt),

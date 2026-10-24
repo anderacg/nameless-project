@@ -59,13 +59,13 @@ class BattleControl{
   // stand where they are
   hold(){if(this.resolve?.routed)return;this.tgt=null;this.queue=[];this.run=false;this.regroup();this.order='hold'}
   // go to (x,y) and stand there facing the move (face: an explicit facing instead); run: at a run; a move under way
-  moveTo(x,y,o){if(this.resolve?.routed)return;o=o||{};this.tgt=null;this.queue=[];this.order='hold';this.run=!!o.run;moveOrder(this.id);
+  moveTo(x,y,o){if(this.resolve?.routed)return;if(B.world){const p=B.world.constrain({x,y},16);x=p.x;y=p.y}o=o||{};this.tgt=null;this.queue=[];this.order='hold';this.run=!!o.run;moveOrder(this.id);
     if(o.face!=null){this.face=o.face;if(o.files!==undefined)this.files=o.files;layForm(this.id)}else if(o.turn!==false)faceToward(this.id,x,y);
     if(o.run)breakWall(this.id);this.ax=clamp(x,8,BW-8);this.ay=clamp(y,fieldTop(),fieldBot())}
   // standing (its waypoints kept): from a charge or an advance, where they are
   toHold(){if(this.resolve?.routed)return;if(this.order!=='hold'){this.regroup();this.order='hold';this.tgt=null}}
   // a waypoint after its last (am: an attack-move to it)
-  queueTo(x,y,am){if(this.resolve?.routed)return;this.toHold();const w={x:clamp(x,8,BW-8),y:clamp(y,fieldTop(),fieldBot())};if(am)w.am=true;this.queue.push(w)}
+  queueTo(x,y,am){if(this.resolve?.routed)return;if(B.world){const p=B.world.constrain({x,y},16);x=p.x;y=p.y}this.toHold();const w={x:clamp(x,8,BW-8),y:clamp(y,fieldTop(),fieldBot())};if(am)w.am=true;this.queue.push(w)}
   // an attack-move to (x,y): a move (o as moveTo's) that fights what it meets on the way (AMOVE, amStep)
   attackMove(x,y,o){if(this.resolve?.routed)return;o=o||{};this.moveTo(x,y,o);this.amove={x:this.ax,y:this.ay,run:!!o.run,face:o.face,files:o.files}}
   // the attack-move called off (none: nothing)
@@ -88,11 +88,11 @@ class BattleControl{
     if(A.eng==='attack'&&this.targetMembers().some(f=>!f.rout&&m.some(u=>Math.hypot(f.x-u.x,f.y-u.y)<R)))return;
     this.attack(e,{run:this.role==='cav'||A.run});A.eng='attack'}
   // put at (x,y) at once (deploying: no march), standing
-  placeAt(x,y){if(this.resolve?.routed)return;this.ax=x;this.ay=y;this.order='hold';this.tgt=null;this.queue=[]}
+  placeAt(x,y){if(this.resolve?.routed)return;if(B.world){const p=B.world.constrain({x,y},16);x=p.x;y=p.y}this.ax=x;this.ay=y;this.order='hold';this.tgt=null;this.queue=[]}
   // handed to the AI: its notes and waypoints cleared, for a fresh start (none left from an earlier spell of the AI's)
   aiReset(){for(const k of AI_NOTES)delete this[k];this.phase=null;this.t=0;this.queue=[];this.amEnd()}
   // the AI's placing: stand at (x,y); a move (its men break off and go) only when that is well away from where it last stood
-  standAt(x,y){if(this.resolve?.routed)return;this.order='hold';this.tgt=null;this.ax=clamp(x,8,BW-8);this.ay=clamp(y,fieldTop(),fieldBot());
+  standAt(x,y){if(this.resolve?.routed)return;if(B.world){const p=B.world.constrain({x,y},16);x=p.x;y=p.y}this.order='hold';this.tgt=null;this.ax=clamp(x,8,BW-8);this.ay=clamp(y,fieldTop(),fieldBot());
     if(this.lax==null||Math.hypot(this.ax-this.lax,this.ay-this.lay)>CAPT.move){if(this.lax!=null)moveOrder(this.id);this.lax=this.ax;this.lay=this.ay}}
   // Set on an enemy formation, accepting its control or any member. Lone ungrouped foes remain valid targets.
   attack(e,o){if(this.resolve?.routed||!e||e.team===this.team)return;const prior=[this.targetGroupId,this.targetUnitId];this.tgt=e;if(!this.tgt){[this.targetGroupId,this.targetUnitId]=prior;return}o=o||{};breakWall(this.id);this.queue=[];this.order='charge';if(o.run!=null)this.run=!!o.run}

@@ -67,12 +67,12 @@ function jostle(dt){
 function keepOffObstacles(was){
   for(const u of B.units){if(u.hp<=0||u.s.big)continue;for(const o of B.obs)obstaclePush(u,o,was.get(u))}
   for(const u of B.units){u.x=clamp(u.x,8,BW-8);u.y=clamp(u.y,fieldTop(),fieldBot())}
-  if(B.terrain)terrainHold(was)}
+  if(B.terrain)terrainHold(was);if(B.world)B.world.clamp()}
 // the fight over? one side with no one left fighting (or you withdrew: morale.js retreatNow); a side running off told in the log
 function checkBattleOver(){
-  if(B.over)return;const ap=B.units.filter(u=>u.team===0&&fighting(u)).length,ae=B.units.filter(u=>u.team===1&&fighting(u)).length;
+  if(B.over)return;const ap=B.units.filter(u=>u.team===0&&fighting(u)).length,ae=B.units.filter(u=>u.team===1&&fighting(u)).length;if(B.world&&ap&&ae)B.world.clearAt=null;
   if(ae>0&&retreating())retreatNow();
-  else if(ae===0||ap===0){B.over=true;B.endT=END_WAIT;B.win=ae===0;const run=B.units.some(u=>u.hp>0&&u.rout&&u.team===(B.win?1:0))||(B.win?B.fledFoes:B.fledMine);
+  else if((ae===0||ap===0)&&(!B.world||B.world.ended(ap,ae))){B.over=true;B.endT=END_WAIT;B.win=ae===0;const run=B.units.some(u=>u.hp>0&&u.rout&&u.team===(B.win?1:0))||(B.win?B.fledFoes:B.fledMine);
     if(run){B.routed=B.win?1:0;log(B.win?'The enemy breaks and flees the field.':'Your men break and run.',B.win?'good':'bad')}}}
 /* battle events: the fight tells what just happened (battleEvent(type, d)) and whoever shows or records it listens (battleOn):
    the banners and cards (battlehud.js), the commander bar's cue (commandpowers.js), the lab's telemetry (lab.js). Listeners run
@@ -94,6 +94,7 @@ function updateBattle(rt){
   const frozen=B.hx&&B.hx.stop>0;if(frozen)B.hx.stop-=rt;
   // (the battle over: the field runs on, routers running, the dead falling, till the summary comes up: END_WAIT)
   if(!frozen){
+    if(B.world&&!B.over)B.world.step(dt);
     // (RTS command: your hero fights on their own, as every unit does; the manual control is set aside for now)
     const was=new Map(B.units.map(u=>[u,[u.x,u.y]]));// (where each stood as the frame began: its motion, for the way round a rock or tree)
     if(MANUAL_HERO)updateHero(rt*HERO_PACE);else if(B.hero)CharacterMind.of(B.hero).auto(rt*HERO_PACE);for(const id in B.groups)B.groups[id].step(dt);command(dt);CharacterMind.command(dt);// (every group minds itself, then the captains give their orders: battlecontrol.js, commander.js)// (your hero fights on their own, as every character does: charmind.js; the enemy's captain: commander.js)

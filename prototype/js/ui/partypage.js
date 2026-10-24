@@ -12,7 +12,7 @@ const ROSTER_KIND={hero:['rosterhero','Your hero'],comp:['rostercomp','Companion
 const partyFull=()=>{const s=partyView();return G.char==='roster'&&s.open&&fbNarrow()};
 // (the screen's shape the Roster was laid out for: a turned phone lays it out again)
 const partyShape=()=>[partyFull(),fbShort(),fbNarrow()].join();
-addEventListener('resize',()=>{if(G.mode==='char'&&G.char==='roster'&&!FIELDBOOK.pick&&partyView().shape!==partyShape())renderChar()});
+addEventListener('resize',()=>{if(G.mode==='char'&&G.char==='roster'&&!FIELDBOOK.pick&&partyView().shape!==partyShape()){if(G.march)renderMarch();else renderChar()}});
 const partyBack=()=>G.char==='roster'&&(G.armyEdit||partyView().path||partyFull())?['party-back',null,'Back']:null;
 function partyGroup(id,r=partyRoster(P)){const g=r.groups.find(g=>g.id===id),w=(P.woundedGroups||[]).find(g=>g.id===id),cid=id.startsWith('comp_')?id.slice(5):null,c=cid&&P.comps[cid],type=g?.type||w?.type,hurt=c&&c.hurt>G.day;
   return{id,g,cid,type,name:armyGroupLabel(id,r),fit:g?g.count:id==='hero'?1:c&&!hurt?1:0,wounded:type?r.wounded(id):hurt?1:0,pic:portrait(type||cid||'hero',id==='hero'),sub:type?ST[type].n:cid?'Companion':'Your hero',hurt};
@@ -103,7 +103,7 @@ function partyRosterPage(){
   const full=partyFull(),cls=(s.open?' open':'')+(full?' full':'');let key=0;s.shape=partyShape();
   return '<div class="fb-army-layout'+cls+'"><div class="fb-split"><section class="fb-pane fb-collection"><div class="fb-pane-head"><h3>Battle order</h3><span>'+r.slots+' / '+ARMY_LIMIT+'</span></div><div class="fb-scroll fb-unit-grid" data-fb-scroll="army-roster">'+r.order.map(id=>{const g=partyGroup(id,r);return partyCard(id,r,g.hurt?'—':++key%10)}).join('')+
     (recover.length?'<div class="fb-section">Recovering groups · no fit soldiers</div>'+recover.map(id=>partyCard(id,r,'—')).join(''):'')+(away.length?'<div class="fb-section">Away · leading their own party</div>'+away.map(id=>partyCard(id,r,'—')).join(''):'')+
-    '<div class="btns fb-recruit-options">'+fbBtn('army-recruit','new','New recruit group',r.slots>=ARMY_LIMIT?'No free group':'')+fbBtn('army-recruit','','Auto reinforce')+'</div></div></section>'+partyDetail(s.sel,r)+'</div></div>';
+    '<div class="btns fb-recruit-options">'+(WORLD_BATTLE.on?fbBtn('march-open',null,'March formation'):'')+fbBtn('army-recruit','new','New recruit group',r.slots>=ARMY_LIMIT?'No free group':'')+fbBtn('army-recruit','','Auto reinforce')+'</div></div></section>'+partyDetail(s.sel,r)+'</div></div>';
 }
 /* ---- Army skills: your band's skills are your hero's (parties.js Leader.skill): what you have trained, with what a companion in its
    role adds (a Scout to Scouting, a Surgeon to Medicine: 2 and a third of theirs, Leader.roleBonus), your gear and your skill tree.

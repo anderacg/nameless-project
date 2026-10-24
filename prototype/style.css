@@ -1103,3 +1103,7 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 @media(max-width:680px){.lab-armies{grid-template-columns:1fr}}
 #dev-lab-bar{position:fixed;z-index:10001;bottom:calc(8px + var(--sa-b));left:50%;transform:translateX(-50%);display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:center;max-width:95vw;width:max-content;padding:8px;background:#101922ef;color:#ffe0a0;border:1px solid #8e7955;font:12px monospace}
 @media(max-width:520px){.dev-grid{grid-template-columns:1fr}#dev-console [data-dev-form]{grid-template-columns:1fr auto}#dev-console [data-dev-form]>label{grid-column:1/-1}}
+
+/* March formation editor */
+.march-layout{display:grid;grid-template-columns:minmax(220px,1.4fr) minmax(150px,1fr);gap:16px;padding:12px}.march-layout canvas{display:block;width:min(100%,66vh,440px);height:auto;object-fit:fill;margin:auto;touch-action:none;border:1px solid #806b3f}.march-layout .btns{display:flex;flex-wrap:wrap;gap:6px}.march-layout .btn.on{border-color:#f0cd76;background:#514026}.march-layout p{color:#c6b691}.fb-march .fb-body{overflow:auto}
+@media(max-width:600px){.march-layout{gap:8px;padding:8px;grid-template-columns:minmax(180px,1.5fr) minmax(120px,1fr)}.march-layout .btn{font-size:11px;padding:6px}.march-layout canvas{width:min(100%,63.25vh,440px)}}

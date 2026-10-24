@@ -31,7 +31,7 @@ function battleMood(base,why){
 class BattleResolution{
   constructor(battle=null){this.battle=battle}
   finish(){
-    const b=this.battle;
+    const b=this.battle;if(b.world)b.world.finish(b);
     this.primaryLossesApplied=!!b.primaryLossesApplied;
     const groupLosses=[];
     // Preserve the original settlement/medicine traversal; sort only the finished report for presentation.

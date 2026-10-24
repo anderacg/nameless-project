@@ -8,13 +8,13 @@
 const BCAM={zooms:[.5,.75,1,1.25,1.5,2,2.5,3],pan:420,dbl:350,mini:{w:80,h:50,x:6,y:24},miniBelow:58};
 // (the whole field: the zoom that fits it in the view (BVW x BVH, the screen's shape): today's field 1 unless the screen is narrower
 // than it (the view FIELD_H high, as the field); a larger one under 1, a small one a little over)
-const camFit=()=>Math.min(BVW/BW,BVH/BH);
+const camFit=()=>B?.world?B.world.fit():Math.min(BVW/BW,BVH/BH);
 const camZooms=()=>{const f=camFit();return[f,...BCAM.zooms.filter(z=>z>f+.01)]};
 function camInit(){B.cam={z:camFit(),fit:true,x:0,y:0,keys:{},lt:0};camClamp()}
 const bcam=()=>B&&B.cam||{z:1,x:0,y:0,keys:{}};
 // keep the view on the field; a view wider (or higher) than the field has it in the middle. Seeing it whole (c.fit), a new
 // window shape (a phone turned) still sees it whole
-function camClamp(){const c=bcam();if(B&&B.cam&&(c.fit||c.z<camFit()))c.z=camFit();const w=BVW/c.z,h=BVH/c.z;c.x=w>=BW?(BW-w)/2:clamp(c.x,0,BW-w);c.y=h>=BH?(BH-h)/2:clamp(c.y,0,BH-h)}
+function camClamp(){const c=bcam();if(B?.world&&c.fit){const a=B.world,v=a.view();c.z=camFit();c.x=a.cx-BVW/(2*c.z);c.y=a.cy-(v.top+(BVH-v.bot-v.top)/2)/c.z;return}if(B&&B.cam&&(c.fit||c.z<camFit()))c.z=camFit();const w=BVW/c.z,h=BVH/c.z;c.x=w>=BW?(BW-w)/2:clamp(c.x,0,BW-w);c.y=h>=BH?(BH-h)/2:clamp(c.y,0,BH-h)}
 // a point on the canvas (0..BVW, 0..BVH) to the field, and back
 const toField=p=>{const c=bcam();return{x:c.x+p.x/c.z,y:c.y+p.y/c.z}};
 const fromField=p=>{const c=bcam();return{x:(p.x-c.x)*c.z,y:(p.y-c.y)*c.z}};
@@ -36,7 +36,7 @@ function camPan(dx,dy){if(!B||!B.cam)return;const c=B.cam;c.x+=dx/c.z;c.y+=dy/c.
 function camLookAt(gs){const m=gs.flatMap(grpUnits);if(!m.length)return;camCentre(m.reduce((a,u)=>a+u.x,0)/m.length,m.reduce((a,u)=>a+u.y,0)/m.length)}
 // each drawn frame: the arrow keys held pan the view (real time: it moves while paused too)
 function camTick(){
-  const c=B.cam,now=performance.now(),dt=c.lt?Math.min(.1,(now-c.lt)/1000):0;c.lt=now;const k=c.keys;
+  if(B.world&&B.cam.fit)camClamp();const c=B.cam,now=performance.now(),dt=c.lt?Math.min(.1,(now-c.lt)/1000):0;c.lt=now;const k=c.keys;
   const dx=(k.arrowright?1:0)-(k.arrowleft?1:0),dy=(k.arrowdown?1:0)-(k.arrowup?1:0);if(dx||dy)camPan(dx*BCAM.pan*dt,dy*BCAM.pan*dt);
 }
 // the small map, in HUD pixels (VW×VH), and on the canvas
@@ -49,7 +49,7 @@ function drawMiniField(){
   if(!B.cam)return;const r=miniRect(),c=B.cam,kx=r.w/BW,ky=r.h/BH;
   drawMapFrame(r);
   // (a field with terrain: its painted ground, a pixel a cell, terraces' edges dark (engine/ground.js), dimmed under the dots)
-  const gm=B.terrain&&B.ground&&(B.groundMini||(B.groundMini=PX.battleGroundMini({...B.terrain,climate:B.env.c},B.ground)));
+  const gm=B.world?B.world.picture:B.terrain&&B.ground&&(B.groundMini||(B.groundMini=PX.battleGroundMini({...B.terrain,climate:B.env.c},B.ground)));
   if(gm){ctx.globalAlpha=.8;ctx.drawImage(gm,r.x,r.y,r.w,r.h);ctx.globalAlpha=1}else{ctx.fillStyle='rgba(90,120,70,.55)';ctx.fillRect(r.x,r.y,r.w,r.h)}
   fogMiniField(r);// (the ground out of your side's sight shaded: battlefog.js)
   for(const u of B.units){if(u.hp<=0||!seenBy(0,u))continue;ctx.fillStyle=u.hero?'#e8b94a':sideCol(u,u.rout?'rout':'ui');ctx.fillRect(Math.round(r.x+u.x*kx),Math.round(r.y+u.y*ky),1,1)}
