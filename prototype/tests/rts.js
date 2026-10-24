@@ -76,7 +76,7 @@ try{
   t.rtsSelect(0,0,t.BW/2,t.BH);const plan=t.formPlan(200,100,200,400).filter(p=>!p.hero);ok(plan.length>=2&&plan.every((p,i)=>!i||p.ay>plan[i-1].ay),'dragged for several groups, the line is shared out along it ('+plan.map(p=>p.g).join(', ')+')');
   B.rdrag={x0:200,y0:100,x1:200,y1:400};t.frame();B.rdrag=null;ok(true,'the line\u2019s ghost draws while you drag');
   if(t.grpUnits(testGroup('cav')).length){t.selectGroup(testGroup('cav'));t.setForm('wedge');ok(t.formPlan(300,100,300,400)[0].files===null,'a wedge keeps its shape: the line sets only where and which way');t.setForm('wedge')}
-  {t.selectGroup('all');const pl=t.formPlan(300,100,300,400),h=pl.find(p=>p.hero);ok(h&&h.ax<300&&Math.abs(h.ay-250)<1,'with everyone, your hero stands just behind the line\u2019s middle')}
+  {t.selectGroup('all');const pl=t.formPlan(300,100,300,400),h=pl.find(p=>p.hero);ok(h&&h.ax===300&&h.ay>100&&h.ay<pl.find(p=>!p.hero).ay,'with everyone, your hero shares the dragged line as a one-person group')}
   t.selectGroup(testGroup('inf'));t.formDragTo(300,100,300,160);inf.forEach(u=>{u.x=B.groups[testGroup('inf')].ax+u.sx;u.y=B.groups[testGroup('inf')].ay+u.sy});const f0=B.groups[testGroup('inf')].face,w0=B.groups[testGroup('inf')].files;t.rtsOrder(B.groups[testGroup('inf')].ax,B.groups[testGroup('inf')].ay+150);
   ok(Math.abs(B.groups[testGroup('inf')].face-Math.PI/2)<.3&&B.groups[testGroup('inf')].face!==f0&&B.groups[testGroup('inf')].files===w0,'a plain right-click turns them toward where they march, keeping their width');
   // by mouse: right button down, drag, up
