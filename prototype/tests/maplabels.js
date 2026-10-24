@@ -3,7 +3,7 @@
 Kit.suite(({ok})=>{
  const t=T,c=t.ctx;window.requestAnimationFrame=()=>0;Kit.begin('soldier',23);Kit.clear();Kit.world();
  const old=c.drawImage,calls=[];c.drawImage=function(img,...a){calls.push({img,a,m:this.getTransform()});return old.call(this,img,...a)};
- const ink=img=>{const a=img.getContext('2d').getImageData(0,0,img.width,img.height).data;let n=0,edge=false;for(let y=0;y<img.height;y++)for(let x=0;x<img.width;x++){if(!a[(y*img.width+x)*4+3])continue;n++;if(x===0||y===0||x===img.width-1||y===img.height-1)edge=true}return {n,edge}};
+ const ink=img=>{const a=img.getContext('2d', { willReadFrequently: true }).getImageData(0,0,img.width,img.height).data;let n=0,edge=false;for(let y=0;y<img.height;y++)for(let x=0;x<img.width;x++){if(!a[(y*img.width+x)*4+3])continue;n++;if(x===0||y===0||x===img.width-1||y===img.height-1)edge=true}return {n,edge}};
  try{
   for(const [scale,dpr] of [[1,1],[2,1],[3,1],[4,1],[1,2],[3,1.25],[4,2]]){
    const p=t.mapTxtPic('Briarhurst · Pilgrims 18','#e4e0cf','center',scale,dpr),i=ink(p);

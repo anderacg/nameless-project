@@ -79,5 +79,5 @@ onAct('lt-',lootAct);
 // turn the panel's [data-icon] placeholders into item icons
 function fillIcons(root){
   (root||panel).querySelectorAll('[data-icon]').forEach(e=>{const [k,id]=e.dataset.icon.split(':'),src=itemIcon(itemDef({k,id})),c=document.createElement('canvas'),z=e.closest('.ring')?18:26;
-    c.width=z;c.height=z;const g=c.getContext('2d');g.imageSmoothingEnabled=false;g.drawImage(src,0,0,z,z);c.setAttribute('aria-hidden','true');e.replaceWith(c)});
+    c.width=z;c.height=z;const g=c.getContext('2d', { willReadFrequently: true });g.imageSmoothingEnabled=false;g.drawImage(src,0,0,z,z);c.setAttribute('aria-hidden','true');e.replaceWith(c)});
 }

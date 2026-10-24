@@ -634,7 +634,7 @@ try{
 
  // ---- drawn as a mover: nothing leaks a shift into the ground's scene (gfx/render.js memCv), at the screen's finer scale
  {ev('VS=3');goHome();const e=t.roadSpawn('merchant',P.x+60.37,P.y+.41),c=t.roadSpawn('caravan',P.x-40.2,P.y+20.6),h=t.roadSpawn('thief',P.x+20.3,P.y-30.7);e.seen=1;c.seen=1;h.seen=1;const pn=performance.now;let now=1e7;performance.now=()=>now;
-  let tf=0,leak=0;const C=t.ctx,m0=C.getTransform();for(let i=0;i<30;i++){now+=16.7;t.updateRoad(.05);t.frame();const T2=t.MEM.getContext('2d').getTransform();if(T2.e||T2.f)tf++;const M=C.getTransform();if(M.a!==m0.a||M.e!==m0.e||M.f!==m0.f)leak++}
+  let tf=0,leak=0;const C=t.ctx,m0=C.getTransform();for(let i=0;i<30;i++){now+=16.7;t.updateRoad(.05);t.frame();const T2=t.MEM.getContext('2d', { willReadFrequently: true }).getTransform();if(T2.e||T2.f)tf++;const M=C.getTransform();if(M.a!==m0.a||M.e!==m0.e||M.f!==m0.f)leak++}
   performance.now=pn;ev('VS=1');ok(tf===0&&leak===0,'30 frames with a moving peddler, a caravan fight and a thief running from his victim at scale 3: the ground’s scene unshifted, the screen’s transform as it was ('+tf+', '+leak+')')}
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}
 const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d)};

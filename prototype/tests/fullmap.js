@@ -27,7 +27,7 @@ Kit.suite(({ok,info})=>{
   ok(t.KEYS.some(([,ks])=>ks.some(([k,d])=>k==='Shift + M'&&/sound/.test(d)))&&t.KEYS[0][1].some(([k,d])=>k==='M'&&/full map/.test(d)),'Help lists M for the full map and Shift + M for the sound');
   // ---- the minimap: a click or a tap opens it ----
   world();const R=t.fullMapMiniRect(),r=cv.getBoundingClientRect(),k=cv.width/t.CVS/r.width,cl=(x,y)=>({clientX:r.left+x/k,clientY:r.top+y/k});
-  {const g=cv.getContext('2d'),s=cv.width/t.VW,pixel=x=>Array.from(g.getImageData(Math.floor(x*s),Math.floor((R.y+R.h/2)*s),1,1).data).slice(0,3).join();
+  {const g=cv.getContext('2d', { willReadFrequently: true }),s=cv.width/t.VW,pixel=x=>Array.from(g.getImageData(Math.floor(x*s),Math.floor((R.y+R.h/2)*s),1,1).data).slice(0,3).join();
     ok(pixel(R.x-.5)===t.fmRgb(t.MAP_FRAME.bg).join()&&pixel(R.x-1.5)===t.fmRgb(t.MAP_FRAME.edge).join(),
       'the minimap is where map.js looks for it: its gold and dark frame outside '+JSON.stringify(R)+' (render.js drawWorld)')}
   const down=(type,x,y)=>cv.dispatchEvent(new PointerEvent('pointerdown',Object.assign({bubbles:true,button:0,pointerType:type,pointerId:type==='touch'?7:1,isPrimary:true},cl(x,y))));
@@ -78,7 +78,7 @@ Kit.suite(({ok,info})=>{
   // ---- what it shows: holdings and crossings only where you have seen, the fog, realms and rivers in the legend ----
   const S=t.seenArr(),keep=S.slice();
   S.fill(0);world();press();ok(qa('.fm-pic .fm-h').length===0&&qa('.fm-pic .fm-x').length===0&&q('.fm-you')&&/ 0% explored/.test(q('.fm-head .muted').textContent),'nothing seen: no holdings or crossings marked, you are, 0% explored');
-  {const c=q('.fm-cv'),d=c.getContext('2d').getImageData(0,0,c.width,c.height).data,u=t.fmRgb(F.unknown);let dark=0;for(let i=0;i<d.length;i+=4)if(d[i]===u[0]&&d[i+1]===u[1]&&d[i+2]===u[2])dark++;
+  {const c=q('.fm-cv'),d=c.getContext('2d', { willReadFrequently: true }).getImageData(0,0,c.width,c.height).data,u=t.fmRgb(F.unknown);let dark=0;for(let i=0;i<d.length;i+=4)if(d[i]===u[0]&&d[i+1]===u[1]&&d[i+2]===u[2])dark++;
     ok(dark===c.width*c.height,'and the land all dark ('+dark+' of '+c.width*c.height+')')}
   t.act('map-close');S.fill(1);world();press();
   const xs=(WM.crossings||[]).length;
@@ -89,7 +89,7 @@ Kit.suite(({ok,info})=>{
     ok(/Great river/.test(leg)&&/Brook/.test(leg),'rivers by width in the legend');
     ok(!xs||['bridge','ford','ferry'].every(k=>!WM.crossings.some(x=>x.kind===k)||leg.includes(t.cap1(k))),'its crossings\' kinds in the legend'+(xs?'':' (none on this map)'))}
   // a realm's tint and a river's width in the picture
-  {const c=q('.fm-cv'),g=c.getContext('2d'),at=i=>{const x=i%MW,y=Math.floor(i/MW),k=MW/c.width;return [...g.getImageData(Math.floor(x/k),Math.floor(y/k),1,1).data.slice(0,3)]};
+  {const c=q('.fm-cv'),g=c.getContext('2d', { willReadFrequently: true }),at=i=>{const x=i%MW,y=Math.floor(i/MW),k=MW/c.width;return [...g.getImageData(Math.floor(x/k),Math.floor(y/k),1,1).data.slice(0,3)]};
     const ti=t.LAND.findIndex((v,i)=>v>=0&&WM.kind[i]!==t.T_WATER&&!(WM.river[i]&3)),base=t.fmRgb(t.PAL[t.CLIMS[WM.clim[ti]]].mini[WM.kind[ti]]),p=at(ti);
     ok(ti>=0&&p.join()!==base.join(),'a realm\'s land is tinted ('+base.join(',')+' → '+p.join(',')+')');
     {const wi=[1,2,3].map(w=>WM.river.findIndex(v=>(v&3)===w)),cs=wi.map(i=>i<0?null:at(i).join());ok(wi.every((i,j)=>i<0||cs[j]===t.fmRgb(F.river[j+1]).join()),'rivers coloured by width (brook, river, great river: '+cs.join(' / ')+')')}}

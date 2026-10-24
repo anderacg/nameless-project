@@ -15,11 +15,11 @@
 window.RUN=()=>{const t=T,o=[],ev=s=>(0,eval)(s),PX=t.PX,TL=PX.GROUND_TILE,MB=b=>(b/1048576).toFixed(1);
  try{window.requestAnimationFrame=()=>0;ev('TERRAIN.on=true');
   const med=a=>{a=a.slice().sort((x,y)=>x-y);return a[a.length>>1]};
-  const frame=(G,cv,view,z,lod)=>{const g=cv.getContext('2d'),L=G.props;g.imageSmoothingEnabled=false;const t0=performance.now();let n=0;g.setTransform(z,0,0,z,-view[0]*z,-view[1]*z);
+  const frame=(G,cv,view,z,lod)=>{const g=cv.getContext('2d', { willReadFrequently: true }),L=G.props;g.imageSmoothingEnabled=false;const t0=performance.now();let n=0;g.setTransform(z,0,0,z,-view[0]*z,-view[1]*z);
    if(lod)PX.battleCanopy(G).drawView(g,view[0],view[1],view[2],view[3]);
    for(const p of L){if(lod&&p.dk===1)continue;const b=p.box;if(b[2]<view[0]||b[0]>view[2]||b[3]<view[1]||b[1]>view[3])continue;g.drawImage(p.s,p.dx,p.dy);n++}g.setTransform(1,0,0,1,0,0);g.getImageData(0,0,1,1);return[performance.now()-t0,n]};
   // (the ground alone: its tiles in view (painted already), or the overview)
-  const ground=(G,cv,view,z)=>{const g=cv.getContext('2d');g.imageSmoothingEnabled=false;const t0=performance.now();g.setTransform(z,0,0,z,-view[0]*z,-view[1]*z);G.drawView(g,view[0],view[1],view[2],view[3],z);g.setTransform(1,0,0,1,0,0);g.getImageData(0,0,1,1);return performance.now()-t0};
+  const ground=(G,cv,view,z)=>{const g=cv.getContext('2d', { willReadFrequently: true });g.imageSmoothingEnabled=false;const t0=performance.now();g.setTransform(z,0,0,z,-view[0]*z,-view[1]*z);G.drawView(g,view[0],view[1],view[2],view[3],z);g.setTransform(1,0,0,1,0,0);g.getImageData(0,0,1,1);return performance.now()-t0};
   const SZ=[['today',1100,600],['big',1600,900],['large',2000,1200],['vlarge',2400,1344],['huge',3200,1800]],cv=t.PX.canvas(1280,720),VWr=1067,VHr=600;
   for(const [name,W,H] of SZ)for(const [rc,lay] of [['open','copses'],['forest','deepwood'],['forest','stands']]){const top=40,bot=H-40,gen=[],paint=[];let T0=null,G=null;ev('BW='+W+';BH='+H);
    for(let s=1;s<=3;s++){let a=performance.now();T0=t.buildTerrain({recipe:rc,seed:s*101,W,H,top,bot,layout:lay});gen.push(performance.now()-a);a=performance.now();const it=PX.battleGroundSteps({...T0,climate:'grass',base:t.paintArena('grass')});let n;while(!(n=it.next()).done);G=n.value;paint.push(performance.now()-a)}

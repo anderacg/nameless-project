@@ -629,13 +629,13 @@ document.getElementById('toc').innerHTML=sections.map(([id,t])=>'<a href="#'+id+
 /* sprites */
 document.querySelectorAll('[data-spr]').forEach(e=>{
   const s=unitSprite(e.dataset.spr,+e.dataset.team,false),k=+e.dataset.scale,c=document.createElement('canvas');
-  c.width=s.width*k;c.height=s.height*k;const g=c.getContext('2d');g.imageSmoothingEnabled=false;
+  c.width=s.width*k;c.height=s.height*k;const g=c.getContext('2d', { willReadFrequently: true });g.imageSmoothingEnabled=false;
   if(+e.dataset.team===1&&ST[e.dataset.spr]&&!ST[e.dataset.spr].beast){g.translate(c.width,0);g.scale(-1,1)}
   g.drawImage(s,0,0,c.width,c.height);c.className='spr';c.setAttribute('role','img');c.setAttribute('aria-label',(ST[e.dataset.spr]||{}).n||e.dataset.spr);e.replaceWith(c);
 });
 
 /* the map: painted terrain, each realm's land, and the holdings */
-const mc=document.getElementById('worldmap');mc.width=MW*TILE;mc.height=MH*TILE;const mg=mc.getContext('2d');mg.imageSmoothingEnabled=false;mg.drawImage(worldCv(),0,0);
+const mc=document.getElementById('worldmap');mc.width=MW*TILE;mc.height=MH*TILE;const mg=mc.getContext('2d', { willReadFrequently: true });mg.imageSmoothingEnabled=false;mg.drawImage(worldCv(),0,0);
 mg.globalAlpha=.28;landFresh();for(let k=0;k<LAND.length;k++){const i=LAND[k];if(i<0)continue;mg.fillStyle=FACS[TOWNS[i].owner].col;mg.fillRect((k%MW)*TILE,Math.floor(k/MW)*TILE,TILE,TILE)}mg.globalAlpha=1;
 mg.font='bold 26px "Atkinson Hyperlegible",sans-serif';mg.textAlign='center';
 for(const t of TOWNS){for(const l of t.lots||[]){const s=lotSprite(t,l);mg.globalAlpha=SHADOW.a;mg.drawImage(s.sh,l.x*TILE,l.y*TILE);mg.globalAlpha=1;mg.drawImage(s,l.x*TILE,l.y*TILE)}// (its placed buildings, as the game draws them)

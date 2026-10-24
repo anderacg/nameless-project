@@ -57,7 +57,7 @@ try{
  // reducedMotion(); drawn only
  // (no Math.random, the battle untouched); INFO the wisps' cost
  {park();foot.x=X0;foot.y=Y;t.sightStep(true);B.fogView=null;t.fogView();G.mode='battle';const pn=performance.now;let now=pn.call(performance);performance.now=()=>now;
-  const M=()=>t.MISTV,mist=()=>{t.fogDraw();const m=M(),k=t.mkc(m.w,m.h,g=>g.drawImage(m.cv,0,0)),d=k.getContext('2d').getImageData(0,0,m.w,m.h).data;return {d,at:(x,y)=>{const X=Math.floor((x-m.x)/t.MIST.res),Y=Math.floor((y-m.y)/t.MIST.res);return X<0||Y<0||X>=m.w||Y>=m.h?null:d[(Y*m.w+X)*4+3]}}};
+  const M=()=>t.MISTV,mist=()=>{t.fogDraw();const m=M(),k=t.mkc(m.w,m.h,g=>g.drawImage(m.cv,0,0)),d=k.getContext('2d', { willReadFrequently: true }).getImageData(0,0,m.w,m.h).data;return {d,at:(x,y)=>{const X=Math.floor((x-m.x)/t.MIST.res),Y=Math.floor((y-m.y)/t.MIST.res);return X<0||Y<0||X>=m.w||Y>=m.h?null:d[(Y*m.w+X)*4+3]}}};
   const state=()=>JSON.stringify([B.t,B.units.map(u=>[u.x,u.y,u.hp,u.hid,u.morale])]),st0=state(),r0=Math.random;let nr=0,m0,m1,still,ms=0,ms0=0;Math.random=()=>{nr++;return r0()};
   const edge=()=>Array.from(B.fogView.edge.img.data).join();let e0,e1,eStill,lo=1,hi=0;
   try{m0=mist();e0=edge();now+=1000;m1=mist();e1=edge();

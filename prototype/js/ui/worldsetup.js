@@ -99,7 +99,7 @@ function wsPreview(now){const S=WSETUP;clearTimeout(S.timer);const cv=panel.quer
   if(!p){const real=wsReal(s);p=real?wsPic(real.map,real.holdings,Math.max(2,Math.ceil(real.map.w/256)),true):wsPicSketch(genSketch(s));S.pics={[key]:p}}
   S.last=p;wsDraw(cv,p,s)}
 function wsDraw(cv,p,s){const S=WSETUP;
-  cv.width=p.pic.width*2;cv.height=p.pic.height*2;const g=cv.getContext('2d');g.imageSmoothingEnabled=false;g.drawImage(p.pic,0,0,cv.width,cv.height);
+  cv.width=p.pic.width*2;cv.height=p.pic.height*2;const g=cv.getContext('2d', { willReadFrequently: true });g.imageSmoothingEnabled=false;g.drawImage(p.pic,0,0,cv.width,cv.height);
   const race=G.race||'human',fs=Object.keys(FACS).filter(f=>FACS[f].races.includes(race)),home=fs.find(f=>FACS[f].races.length===1)||fs[0];
   for(const h of p.holdings){const x=Math.round(h.x*2),y=Math.round(h.y*2),r=h.kind==='city'?3:2;g.fillStyle='#07090e';g.fillRect(x-r-1,y-r-1,r*2+3,r*2+3);g.fillStyle=FACS[h.realm]?FACS[h.realm].col:'#ccc';g.fillRect(x-r,y-r,r*2+1,r*2+1)}
   const st=p.holdings.find(h=>h.kind==='city'&&h.realm===home);

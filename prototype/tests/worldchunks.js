@@ -17,9 +17,9 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 try{
  const TILE=t.TILE,MW=t.MW,MH=t.MH,W=MW*TILE,H=MH*TILE,CS=t.CHUNK,cols=WA.cols,rows=WA.rows,MB=b=>(b/1048576).toFixed(1)+' MB';
  const fnv=d=>{let h=2166136261;const u=new Uint32Array(d.buffer,d.byteOffset,d.byteLength>>2);for(let i=0;i<u.length;i++)h=Math.imul(h^u[i],16777619)>>>0;return h.toString(16).padStart(8,'0')};
- const img=(cv,x,y,w,h)=>cv.getContext('2d').getImageData(x,y,w,h).data;
+ const img=(cv,x,y,w,h)=>cv.getContext('2d', { willReadFrequently: true }).getImageData(x,y,w,h).data;
  const diff=(a,b)=>{let n=0;for(let i=0;i<a.length;i+=4)if(a[i]!==b[i]||a[i+1]!==b[i+1]||a[i+2]!==b[i+2]||a[i+3]!==b[i+3])n++;return n};
- const paint=(X,Y,w,h,rec={})=>{const cv=t.mkcv(w,h),q=performance.now();t.runGen(t.paintSteps(WA.ensure(),X,Y,w,h,cv.getContext('2d'),0,0,rec));rec.wall=performance.now()-q;return cv};
+ const paint=(X,Y,w,h,rec={})=>{const cv=t.mkcv(w,h),q=performance.now();t.runGen(t.paintSteps(WA.ensure(),X,Y,w,h,cv.getContext('2d', { willReadFrequently: true }),0,0,rec));rec.wall=performance.now()-q;return cv};
  const pct=(a,p)=>{const s=[...a].sort((x,y)=>x-y);return s[Math.min(s.length-1,Math.floor(s.length*p))]};
  // ---- the plan alone: what isClear reads, before anything is painted
  WA.invalidate();let q=performance.now();const P=WA.ensure(),planMs=performance.now()-q,T0=t.TOWNS[0];
@@ -179,7 +179,7 @@ try{
       if(side(-1)<8||side(1)<8)continue;B[bk]++;n++;m++;if(mid<2){cut[bk]++;where.push(name+' '+tx+','+ty)}}}};
    try{run('classic');t.useWorld(t.genWorld({preset:'normal',seed:'1'}).map);WA.invalidate();run('Normal s1')}finally{if(t.WM!==W0){t.useWorld(W0);WA.invalidate()}}
    const nc=cut.reduce((s,v)=>s+v,0),nb=B.filter(v=>v).length;
-   ok(n>=20&&nb>=4&&nc<=Math.max(1,n*.05),'a hill crossed by a road runs on under it at every angle (the fifth play-test; the generated classic seed and Normal s1): '+n+' crossings by 30� of the road�s way ('+B.join('/')+'), the hill�s shading under the band at all but '+nc+(where.length?' ('+where.slice(0,5).join('; ')+')':''))}
+   ok(n>=20&&nb>=4&&nc<=Math.max(1,n*.05),'a hill crossed by a road runs on under it at every angle (the fifth play-test; the generated classic seed and Normal s1): '+n+' crossings by 30� of the road�s way ('+B.join('/')+'), the hill�s shading under the band at all but '+nc+(where.length?' ('+where.slice(0,5).join('; ')+')':''))}
   // (a rise's shadow soft: across its edge in steps, no straight hard line along the light)
   {const hs=[1,2,4,8].map(d=>{let s=0;for(let k=1;k<=7;k++){const a=d*0.1*(1/(PX.WN_HILL.soft[0]+PX.WN_HILL.soft[1]*k));s=Math.max(s,Math.min(1,a))}return s});
    ok(hs[0]<hs[1]&&hs[1]<hs[2]&&hs[0]>0&&hs[0]<.5,'a rise’s shadow is soft: as a rise stands over the light’s line by .1 to .8 px, its shadow '+hs.map(v=>v.toFixed(2)).join(' → '))}
@@ -220,7 +220,7 @@ try{
    for(const c of CL){const L=PX.worldMountPool(c,FF[c]),tot=L.reduce((s,e)=>s+e[1],0),n={};for(let i=0;i<4000;i++){const k=PX.worldMountKind(c,FF[c],(i+.5)/4000);n[k]=(n[k]||0)+1}
      for(const [k,w] of L){const s=(n[k]||0)/4000;off=Math.max(off,Math.abs(s-w/tot));if(k==='basalt')bas=Math.max(bas,s)}sh.push(c+' '+L.map(([k])=>k+' '+Math.round((n[k]||0)/40)+'%').join(', '))}
    const big=N.M.filter(m=>m.n>=3),kinds=new Set(big.map(m=>m.kind)),bad=big.filter(m=>!m.kind||!m.kinds||!CL.every(c=>m.kinds[c]&&names(c).includes(m.kinds[c]))||m.kinds[CL[t.climate[m.q0]]]==null).length;
-   const mean=k=>{const s=PX.worldPeak('grass',2,64,k),d=s.getContext('2d').getImageData(0,0,64,64).data,c=[0,0,0];let n=0;for(let i=0;i<d.length;i+=4)if(d[i+3]&&!(d[i]===26&&d[i+1]===28)){c[0]+=d[i];c[1]+=d[i+1];c[2]+=d[i+2];n++}return c.map(v=>v/n)};
+   const mean=k=>{const s=PX.worldPeak('grass',2,64,k),d=s.getContext('2d', { willReadFrequently: true }).getImageData(0,0,64,64).data,c=[0,0,0];let n=0;for(let i=0;i<d.length;i+=4)if(d[i+3]&&!(d[i]===26&&d[i+1]===28)){c[0]+=d[i];c[1]+=d[i+1];c[2]+=d[i+2];n++}return c.map(v=>v/n)};
    const KS=Object.keys(PX.WORLD_MOUNTS),M=KS.map(mean);let close=0;for(let a=0;a<M.length;a++)for(let b=a+1;b<M.length;b++)if(M[a].reduce((s,v,i)=>s+Math.abs(v-M[b][i]),0)<24)close++;
    ok(classic&&inPool&&gates.every(Boolean)&&off<.01&&bas<.06&&!bad&&kinds.size>=2&&!close,'the mountains’ kinds a pool a climate, the original look first in each ('+classic+'), every kind in its climates’ ('+inPool+'), gated by the world’s fields ('+gates.filter(Boolean).length+' of '+gates.length+' rules), drawn by their weights (at most '+(off*100).toFixed(1)+'% off; basalt '+Math.round(bas*100)+'% at most: '+sh.join('; ')+'), '+big.length+' ranges each of one kind ('+[...kinds].join(', ')+'), '+KS.length+' kinds told apart by colour ('+close+' pairs alike)');
    // (a forested range on the map: the world's trees standing on its tiles, most lifted up its slopes, its rock's runs between)

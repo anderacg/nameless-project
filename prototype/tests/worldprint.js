@@ -354,7 +354,7 @@ try{
  // the save (the quick slot, its time stamp left out)
  const save=()=>{t.saveGame(true,'quick');const raw=localStorage.getItem(t.SAVE+'.quick'),sv=raw&&JSON.parse(raw);if(sv)delete sv.at;try{localStorage.removeItem(t.SAVE+'.quick')}catch(e){}return sv?JSON.stringify(sv):''};
  const w1=world();for(const id in w1)check(id,w1[id][0],w1[id][1]);
- const paint=()=>{const c=t.worldCv();return [fnv().b(words(c.getContext('2d').getImageData(0,0,c.width,c.height).data)).x,c.width+'x'+c.height]};
+ const paint=()=>{const c=t.worldCv();return [fnv().b(words(c.getContext('2d', { willReadFrequently: true }).getImageData(0,0,c.width,c.height).data)).x,c.width+'x'+c.height]};
  {const [h,wh]=paint();check('W5',h,'the painted world ('+wh+')')}
  // ---- W6: three spots, by day and by night
  {const spots=[[P.x,P.y],[1792,1280],[2688,768]],keep={x:P.x,y:P.y,clock:G.clock},parts=[],h=fnv();let k=0,now=1e7;

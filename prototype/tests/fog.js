@@ -69,7 +69,7 @@ try{
     const hz=pr.filter(v=>L(v)>lr+6&&v[2]>v[0]+6).length,deep=pr.filter(v=>L(v)<lr-12).length;
     ok(hz>=4&&deep>=4,'the frontier reads as fog: from the land you remember ('+rem.join(',')+') into the land you never saw, '+hz+' px of cool haze lighter than it, then the dark ('+deep+' px)')}
    // the minimap: soft-edged too, dark over the unknown, dim over the known
-   {(0,eval)('fogDirty=true;fogMiniT=-1e9');const m=t.fogMiniCv(),d=m.getContext('2d').getImageData(0,0,MW,MH).data,al=(x,y)=>d[(y*MW+x)*4+3];
+   {(0,eval)('fogDirty=true;fogMiniT=-1e9');const m=t.fogMiniCv(),d=m.getContext('2d', { willReadFrequently: true }).getImageData(0,0,MW,MH).data,al=(x,y)=>d[(y*MW+x)*4+3];
     let far=null;for(let y=0;y<MH&&far==null;y+=8)for(let x=0;x<MW&&far==null;x+=8){let none=true;for(let j=-4;j<=4&&none;j++)for(let i=-4;i<=4&&none;i++)if(t.seenTile(x+i,y+j))none=false;if(none)far=[x,y]}
     const col=[];for(let y=ty;y<=ty+9;y++)col.push(al(tx+10,y));const soft=col.filter(a=>a>60&&a<250).length;
     ok(al(tx+8,ty)<70&&al(tx+8,ty)>20&&far&&al(far[0],far[1])===255&&soft>=2,'the minimap: the land you know dimmed ('+al(tx+8,ty)+'/255), the unknown dark, their edge soft ('+col.join(' ')+')')}
@@ -89,7 +89,7 @@ try{
     ok(per<3&&build<60,'the fog costs '+per.toFixed(3)+' ms a frame as you travel; the whole map\'s dark built afresh '+build.toFixed(1)+' ms (a new game, a load)')}
    // mist drifting in the fog (gfx/mist.js): in the dim and the dark, none in your sight; moving with the clock, still with
    // reducedMotion; drawn only (no Math.random, nothing explored changes); its cost
-   {const M=()=>t.MISTV,mist=()=>{const m=M(),k=t.mkc(m.w,m.h,g=>g.drawImage(m.cv,0,0)),d=k.getContext('2d').getImageData(0,0,m.w,m.h).data;return {d,at:(x,y)=>{const X=Math.floor((x-m.x)/t.MIST.res),Y=Math.floor((y-m.y)/t.MIST.res);return X<0||Y<0||X>=m.w||Y>=m.h?null:d[(Y*m.w+X)*4+3]}}};
+   {const M=()=>t.MISTV,mist=()=>{const m=M(),k=t.mkc(m.w,m.h,g=>g.drawImage(m.cv,0,0)),d=k.getContext('2d', { willReadFrequently: true }).getImageData(0,0,m.w,m.h).data;return {d,at:(x,y)=>{const X=Math.floor((x-m.x)/t.MIST.res),Y=Math.floor((y-m.y)/t.MIST.res);return X<0||Y<0||X>=m.w||Y>=m.h?null:d[(Y*m.w+X)*4+3]}}};
     const r0=Math.random;let nr=0;Math.random=()=>{nr++;return r0()};const s0=t.seenSave();let m0,m1,sc0,sc1,still;
     const edge=()=>Array.from(t.WFOGV.edge.img.data).join();let e0,e1,eStill;
     try{sc0=fogShot(50);m0=mist();e0=edge();sc1=fogShot(1000);m1=mist();e1=edge();

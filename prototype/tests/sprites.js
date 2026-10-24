@@ -18,18 +18,18 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),out=()=>{cons
   ok(t.B.units.filter(u=>u.plx!=null).length>=10,'a battle draws its fighters');
   t.B.over=true;t.B.endT=0;t.updateBattle(.01);t.act('cont');while(G.mode==='perk')t.act('perk',G.perkOffer[0]);
   W.sites.forEach(s=>s.seen=true);P.gear.mount='m_horse';G.mode='world';t.drawWorld();ok(Object.keys(t.spr).some(k=>k.startsWith('p#e8b94a'+t.ITEMS.m_horse.col)),'the hero rides a horse on the map');P.gear.mount=null;
-  const px=c=>c.getContext('2d').getImageData(0,0,c.width,c.height).data.join(),looks=new Set([0,1,2,3,4,5].map(v=>px(t.unitSprite('hum_spear',0,false,v))));
+  const px=c=>c.getContext('2d', { willReadFrequently: true }).getImageData(0,0,c.width,c.height).data.join(),looks=new Set([0,1,2,3,4,5].map(v=>px(t.unitSprite('hum_spear',0,false,v))));
   ok(looks.size===6,'six different looks for one kind of soldier');
   ok(px(t.unitSprite('hero',0,true,3))===px(t.unitSprite('hero',0,true,0)),'your hero always looks the same');
   world2();t.startBattle({enemies:['militia','militia','militia'],tournament:false});ok(t.B.units.every(u=>u.v>=0&&u.v<6),'every soldier in a battle gets a look');t.drawBattle();t.B.over=true;t.B.endT=0;t.updateBattle(.01);t.act('cont');while(G.mode==='perk')t.act('perk',G.perkOffer[0]);
   t.showTitle('settings');ok(!/Procedural|Pack sprites/.test(document.getElementById('panel').innerHTML),'Settings no longer offers an art choice');
  // procedural detail and animation
- {const px=c=>{const d=c.getContext('2d').getImageData(0,0,c.width,c.height).data;let h=0;for(let i=0;i<d.length;i+=4)h=(h*31+d[i]+d[i+1]*3+d[i+2]*7+d[i+3])|0;return h};
+ {const px=c=>{const d=c.getContext('2d', { willReadFrequently: true }).getImageData(0,0,c.width,c.height).data;let h=0;for(let i=0;i<d.length;i+=4)h=(h*31+d[i]+d[i+1]*3+d[i+2]*7+d[i+3])|0;return h};
   const poses=[0,1,2,3,4,5,6,7,8].map(p=>px(t.unitSprite('spearman',0,false,1,p)));ok(new Set(poses).size>=7,'a soldier has '+new Set(poses).size+' distinct poses: breathing, striding and striking');
-  const s0=t.unitSprite('militia',1,false,2,0),d0=s0.getContext('2d').getImageData(0,0,s0.width,s0.height).data;let dark=0;for(let i=0;i<d0.length;i+=4)if(d0[i+3]>150&&d0[i]<40&&d0[i+1]<40&&d0[i+2]<50)dark++;
+  const s0=t.unitSprite('militia',1,false,2,0),d0=s0.getContext('2d', { willReadFrequently: true }).getImageData(0,0,s0.width,s0.height).data;let dark=0;for(let i=0;i<d0.length;i+=4)if(d0[i+3]>150&&d0[i]<40&&d0[i+1]<40&&d0[i+2]<50)dark++;
   ok(s0.width===32&&s0.cw===24&&s0.ch===16&&dark>20,'soldiers are the 16-pixel template figures with their dark navy outline (a 24-pixel canvas, room for a weapon, in its 32-pixel cell; '+s0.ch+' tall)');
-  const w=t.whiteOf(s0),wd=w.getContext('2d').getImageData(0,0,w.width,w.height).data;let white=0,any=0;for(let i=0;i<wd.length;i+=4)if(wd[i+3]){any++;if(wd[i]===255&&wd[i+1]===255)white++}ok(any&&white===any,'a struck fighter flashes white');
-  const m=t.worldCv().getContext('2d').getImageData(t.townBy('Ashford').x-200,t.townBy('Ashford').y-200,400,400).data,cols=new Set();for(let i=0;i<m.length;i+=16)cols.add(m[i]>>3<<10|m[i+1]>>3<<5|m[i+2]>>3);
+  const w=t.whiteOf(s0),wd=w.getContext('2d', { willReadFrequently: true }).getImageData(0,0,w.width,w.height).data;let white=0,any=0;for(let i=0;i<wd.length;i+=4)if(wd[i+3]){any++;if(wd[i]===255&&wd[i+1]===255)white++}ok(any&&white===any,'a struck fighter flashes white');
+  const m=t.worldCv().getContext('2d', { willReadFrequently: true }).getImageData(t.townBy('Ashford').x-200,t.townBy('Ashford').y-200,400,400).data,cols=new Set();for(let i=0;i<m.length;i+=16)cols.add(m[i]>>3<<10|m[i+1]>>3<<5|m[i+2]>>3);
   ok(cols.size>40,'the world map is painted in '+cols.size+' shades around Ashford');
   t.worldCv();
   // (the roads painted along their softened lines, not by tile (gfx/worldart.js artGenPlan), so their clear band is checked along
@@ -40,12 +40,12 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),out=()=>{cons
   // the estates' worked ground by the land it lies on (gfx/structures.js estateGround, the second play-test): a pasture's pen the
   // land's own ground, grazed and trodden in patches (no square of green: most of its pixels left clear, its marks in its climate's
   // colours); a field's soil and furrows its climate's (snow in its furrows in the frost), its edge ragged into the ground round it
-  {const pens=[],fields=[],cl=x=>t.climAt((x[1].x+.5)*16,(x[1].y+.5)*16),px=(g,x,y)=>{const d=g.getContext('2d').getImageData(x-g.x,y-g.y,1,1).data;return d[3]?[d[0],d[1],d[2]]:null};
+  {const pens=[],fields=[],cl=x=>t.climAt((x[1].x+.5)*16,(x[1].y+.5)*16),px=(g,x,y)=>{const d=g.getContext('2d', { willReadFrequently: true }).getImageData(x-g.x,y-g.y,1,1).data;return d[3]?[d[0],d[1],d[2]]:null};
    for(const x of t.TOWNS)for(const l of x.lots||[]){const lv=t.bldLv(x,l.k);if(!lv||l.st!=='built'||!(l.plots||[]).length)continue;if(l.k==='pasture')pens.push([x,l,lv]);if(l.k==='farm')fields.push([x,l,lv])}
    const clear=([x,l,lv])=>{const g=t.estateGround(x,l.k,lv);let n=0,m=0;for(const [tx,ty] of t.plotsAt(x,l.k,lv))for(let y=3;y<13;y++)for(let i=3;i<13;i++){m++;if(!px(g,tx*16+i,ty*16+y))n++}return n/m};
    const rag=([x,l,lv])=>{const g=t.estateGround(x,l.k,lv),P=t.plotsAt(x,l.k,lv),has=(a,b)=>P.some(q=>q[0]===a&&q[1]===b)||a===l.x&&b===l.y;let n=0,m=0;
      for(const [tx,ty] of P){if(!has(tx,ty-1))for(let i=0;i<16;i++){m++;if(!px(g,tx*16+i,ty*16))n++}if(!has(tx,ty+1))for(let i=0;i<16;i++){m++;if(!px(g,tx*16+i,ty*16+15))n++}}return m?n/m:.5};
-   const pc=pens.map(clear),fr=fields.map(rag),snowy=fields.filter(f=>cl(f)==='frost').some(([x,l,lv])=>{const g=t.estateGround(x,l.k,lv),d=g.getContext('2d').getImageData(0,0,g.width,g.height).data;for(let i=0;i<d.length;i+=4)if(d[i]===228&&d[i+1]===234&&d[i+2]===242)return true;return false});
+   const pc=pens.map(clear),fr=fields.map(rag),snowy=fields.filter(f=>cl(f)==='frost').some(([x,l,lv])=>{const g=t.estateGround(x,l.k,lv),d=g.getContext('2d', { willReadFrequently: true }).getImageData(0,0,g.width,g.height).data;for(let i=0;i<d.length;i+=4)if(d[i]===228&&d[i+1]===234&&d[i+2]===242)return true;return false});
    // (the pens together two fifths of their ground their own or more, each a fifth at least: a pen's patches follow a noise over 5
    //  px, so one of a plot or two may come out mostly marked; play-test 2's roads and lots (agent K) moved one to 26%, the generated
    //  world's pens to 50% together)
@@ -53,14 +53,14 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),out=()=>{cons
    ok(pens.length&&pm>.4&&Math.min(...pc)>.2&&fields.length&&Math.min(...fr)>.2&&(snowy||!fields.some(f=>cl(f)==='frost')),pens.length+' pastures lie on their land ('+Math.round(pm*100)+'% of the pens’ ground their own, each pen’s at least '+Math.round(Math.min(...pc)*100)+'%, the climates: '+[...new Set(pens.map(cl))].join(', ')+'); '+fields.length+' fields ragged at their edge (at least '+Math.round(Math.min(...fr)*100)+'% of its edge open)'+(snowy?', snow in the frost’s furrows':''))}
   ok(t.arenaFor('desert')!==t.arenaFor('frost')&&t.arenaFor('grass').width===t.BW&&t.arenaFor('grass').height===t.BH,'each climate has its own battle ground, as large as the battlefield');}
  // weapons held apart from the body: the battle sprite leaves the melee weapon off and knows where the hand is
- {const px=c=>{const d=c.getContext('2d').getImageData(0,0,c.width,c.height).data;let n=0;for(let k=3;k<d.length;k+=4)if(d[k])n++;return n};
+ {const px=c=>{const d=c.getContext('2d', { willReadFrequently: true }).getImageData(0,0,c.width,c.height).data;let n=0;for(let k=3;k<d.length;k+=4)if(d[k])n++;return n};
   const full=t.unitSprite('hum_spear',0,false,0,0),bare=t.unitSprite('hum_spear',0,false,0,0,true);ok(bare.hand&&px(bare)<px(full)-8,'a battle sprite is the body alone, its hand marked ('+bare.hand+')');
   const L=t.lookOf('hum_spear',0,false,0,'',null);ok(t.heldWeapon(L)==='spear'&&!t.heldWeapon(t.lookOf('hum_bow',0,false,0,'',null)),'melee weapons are held apart; bows stay with the body');
   const w0=t.weaponSprite('spear','blue','#f3bfad',0),w8=t.weaponSprite('spear','blue','#f3bfad',8);ok(w0!==w8&&w0===t.weaponSprite('spear','blue','#f3bfad',0)&&w0.R>0,'each weapon is drawn once at each angle, and kept');
   // (a weapon at any angle is one solid line: its pixels in each row (or column) one unbroken run, never two side by side
   // with the outline between them, and all of them joined edge to edge)
   {const hex=c=>{const n=parseInt(c.slice(1),16);return[n>>16,(n>>8)&255,n&255]};let bad='',n=0;
-   for(const [k,col] of [['spear',t.PPAL.wood[1]],['pike',t.PPAL.wood[1]],['lance',t.PPAL.wood[1]],['sword',t.PPAL.steel[0]],['great',t.PPAL.steel[0]]])for(let i=0;i<t.WEAPON_STEPS;i++){const c=t.weaponSprite(k,'blue','#f3bfad',i),d=c.getContext('2d').getImageData(0,0,c.width,c.height).data,cc=hex(col),W=c.width,H=c.height;n++;
+   for(const [k,col] of [['spear',t.PPAL.wood[1]],['pike',t.PPAL.wood[1]],['lance',t.PPAL.wood[1]],['sword',t.PPAL.steel[0]],['great',t.PPAL.steel[0]]])for(let i=0;i<t.WEAPON_STEPS;i++){const c=t.weaponSprite(k,'blue','#f3bfad',i),d=c.getContext('2d', { willReadFrequently: true }).getImageData(0,0,c.width,c.height).data,cc=hex(col),W=c.width,H=c.height;n++;
      const on=(x,y)=>{if(x<0||y<0||x>=W||y>=H)return false;const j=(y*W+x)*4;return d[j+3]&&d[j]===cc[0]&&d[j+1]===cc[1]&&d[j+2]===cc[2]};const pts=[];for(let y=0;y<H;y++)for(let x=0;x<W;x++)if(on(x,y))pts.push([x,y]);
      const a=i/t.WEAPON_STEPS*2*Math.PI,steep=Math.abs(Math.sin(a))>=Math.abs(Math.cos(a));
      for(let m=0;m<(steep?H:W);m++){const r=pts.filter(p=>(steep?p[1]:p[0])===m).map(p=>steep?p[0]:p[1]);if(r.length&&Math.max(...r)-Math.min(...r)+1!==r.length){bad=k+' step '+i+' (a gap)';break}}
@@ -99,7 +99,7 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),out=()=>{cons
   // (the footprint: a boulder about 2r across, its foot just before the point; a cactus, a trunk on it; true pixels, opaque or empty)
   let foot='',semi=0;for(const c of ['grass','frost','desert','swamp'])for(let v=0;v<6;v++)for(const [k,r] of [['rock',7],['cactus',5],['tree',6]]){const o=t.PX.battleObstacle(k,c,v),b=o.box,w=b[2]-b[0]+1,y1=b[3]-o.ay,cx=(b[0]+b[2])/2-o.ax;
     if(k==='rock'&&(w<2*r||w>2*r+6||y1<3||y1>5||Math.abs(cx)>1.5)||k!=='rock'&&(y1<1||y1>3))foot+=k+' '+c+' '+v+' ('+w+' wide, foot '+y1+') ';
-    const d=o.s.getContext('2d').getImageData(0,0,o.s.width,o.s.height).data;for(let i=3;i<d.length;i+=4)if(d[i]&&d[i]<255)semi++}
+    const d=o.s.getContext('2d', { willReadFrequently: true }).getImageData(0,0,o.s.width,o.s.height).data;for(let i=3;i<d.length;i+=4)if(d[i]&&d[i]<255)semi++}
   ok(!foot,'each obstacle\u2019s footprint is about what blocks'+(foot?': '+foot:''));ok(!semi,'obstacle sprites are true pixels ('+semi+' half-clear)');
   B.over=true;B.endT=0;t.B=null;G.mode='world'}
  // smooth frames: a battle's sprites are made ahead, a little each frame, so no pose is first drawn mid-fight

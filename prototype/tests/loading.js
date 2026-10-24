@@ -46,7 +46,7 @@ try{
   {const x=fnv();for(const d of t.DEPOSITS)x.s(JSON.stringify(d));x.b(bytes(t.DEP_AT));h.W2=x.x}
   h.W3=fnv().s(J(t.TOWNS)).x;
   {t.landFresh();h.W4=fnv().b(bytes(Int8Array.from(t.LAND))).x}
-  {const c=t.worldCv();h.W5=fnv().b(words(c.getContext('2d').getImageData(0,0,c.width,c.height).data)).x}
+  {const c=t.worldCv();h.W5=fnv().b(words(c.getContext('2d', { willReadFrequently: true }).getImageData(0,0,c.width,c.height).data)).x}
   {const spots=[[P.x,P.y],[1792,1280],[2688,768]],keep={x:P.x,y:P.y,clock:G.clock},x=fnv();let k=0,now=1e7;performance.now=()=>now;
    for(const [sx,sy] of spots)for(const day of [.3,.8]){P.x=sx;P.y=sy;P.tx=P.ty=null;G.chase=null;G.clock=day*t.DAY;seed(9061+k);now=1e7+k*1e4;t.drawWorld();x.s(fnv().b(words(t.ctx.getImageData(0,0,t.VW,t.VH).data)).x);k++}
    performance.now=pn;P.x=keep.x;P.y=keep.y;G.clock=keep.clock;h.W6=x.x}
@@ -125,7 +125,7 @@ try{
     // (on a phone on its side)
     const sc=document.getElementById('screen'),css=sc.style.cssText;sc.style.cssText+=';width:844px;height:390px';const a=sc.getBoundingClientRect(),b=LD.el.querySelector('.lwin').getBoundingClientRect();
     mid.push(b.left>=a.left&&b.right<=a.right&&b.top>=a.top&&b.bottom<=a.bottom&&b.width<=.9*844+1,b.width.toFixed(0)+'x'+b.height.toFixed(0));sc.style.cssText=css;
-    const fl=LD.el.querySelector('.lflag');mid.push(fl.getContext('2d').getImageData(0,0,fl.width,fl.height).data.some(v=>v>0));yield .5;busy(150);yield 1}}]);
+    const fl=LD.el.querySelector('.lflag');mid.push(fl.getContext('2d', { willReadFrequently: true }).getImageData(0,0,fl.width,fl.height).data.some(v=>v>0));yield .5;busy(150);yield 1}}]);
   ok(!r.err&&mono(fr),'the bar never goes back, even when a step says less than before, and ends full ('+fr.map(v=>v.toFixed(2)).join(' ')+')');
   ok(modeIn.every(m=>m===k0)&&modeOut.some(m=>m==='loading/true')&&G.mode===k0,'each slice of work sees the game as the last left it ('+k0+'); between slices it is loading, and modal ('+[...new Set(modeOut)].join(', ')+')');
   ok(mid&&mid[0]==='Forging the world…'&&mid[1]==='Carving rivers'&&mid[2].length>10&&parseFloat(mid[3])>0,'it shows its title, the step under way, a tip and the bar ('+(mid&&mid.slice(0,4).join(' · '))+')');

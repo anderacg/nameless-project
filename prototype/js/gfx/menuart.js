@@ -35,7 +35,7 @@ const MenuArt=(()=>{
   /* a sprite graded to dusk (haze 0-1, quantized; rim 0-1; win: its lit windows [[x, y]...]); kept, by its canvas */
   const DUSK=new WeakMap();
   function dusk(img,haze,rim=1,win){haze=Math.round(haze*20)/20;let m=DUSK.get(img);if(!m)DUSK.set(img,m=new Map());const k=haze+'|'+rim;if(m.has(k))return m.get(k);
-    const w=img.width,h=img.height,c=PX.canvas(w,h),g=c.getContext('2d');g.drawImage(img,0,0);const d=g.getImageData(0,0,w,h),p=d.data,[hr,hg,hb]=hx(A.haze),[rr,rg,rb]=hx(A.rim);
+    const w=img.width,h=img.height,c=PX.canvas(w,h),g=c.getContext('2d', { willReadFrequently: true });g.drawImage(img,0,0);const d=g.getImageData(0,0,w,h),p=d.data,[hr,hg,hb]=hx(A.haze),[rr,rg,rb]=hx(A.rim);
     for(let y=0;y<h;y++)for(let x=0;x<w;x++){const i=(y*w+x)*4;if(p[i+3]<8)continue;let R=p[i]*A.dusk[0],Gn=p[i+1]*A.dusk[1],Bl=p[i+2]*A.dusk[2];
       if(rim&&(x===w-1||p[i+7]<8)){R+=(rr-R)*.5*rim;Gn+=(rg-Gn)*.5*rim;Bl+=(rb-Bl)*.5*rim}
       p[i]=R+(hr-R)*haze;p[i+1]=Gn+(hg-Gn)*haze;p[i+2]=Bl+(hb-Bl)*haze}
@@ -56,7 +56,7 @@ const MenuArt=(()=>{
   const BANNER_TREE=['..#..#..#..','#..#.#.#..#','.#..###..#.','..##.#.##..','....###....','.....#.....','.....#.....','.....#.....','....###....','...#.#.#...','..#..#..#..','.#..#.#..#.','#..#...#..#','###########'];
   /* (your hero in front, seen from behind, looking out over the land: hooded, a fur collar, the long cloak with the white tree on
      it, lit on the side toward the fire (west); his sword at his side. 30 x 54) */
-  function heroBack(){const W=30,H=54,c=PX.canvas(W,H),g=c.getContext('2d'),P=PX.paint(g),T=BANNER_TREE,O='#0c0a0d',cx=14;
+  function heroBack(){const W=30,H=54,c=PX.canvas(W,H),g=c.getContext('2d', { willReadFrequently: true }),P=PX.paint(g),T=BANNER_TREE,O='#0c0a0d',cx=14;
     // (the cloak, widening to a ragged hem; the folds; its western edge in the firelight)
     for(let y=12;y<=45;y++){const t=(y-12)/33,hw=Math.round(7+t*6),fold=x=>((x-cx)*3+y*0)%5===0;for(let x=cx-hw;x<=cx+hw;x++){if(y>=44&&PX.hash(x,y,5)>.5)continue;
       const e=x===cx-hw||x===cx+hw,lit=x<cx-hw+3+Math.round(t*2);P.px(e?O:lit?(x===cx-hw+1?'#7a5a46':'#4c3a3c'):fold(x)&&y>18?'#141218':'#1e1b23',x,y)}}
@@ -76,7 +76,7 @@ const MenuArt=(()=>{
     // the sky's band at (x, y): its height, brighter toward the sun
     skyF(x,y){const t=Math.max(0,Math.min(1,y/this.hz)),d=Math.hypot((x-this.sx)*.5,(y-this.hz)*1.5);return Math.min(A.sky.length-1.001,Math.pow(t,1.6)*(A.sky.length-2.2)+Math.max(0,1.8-d/80))}
     skyAt(x,y){const f=this.skyF(x,y),i=Math.floor(f);return A.sky[f-i>dith(x,y)?i+1:i]}
-    bake(){const g=(this.bg=PX.canvas(this.W,this.H)).getContext('2d'),B=pixels(g,this.W,this.H);this.sx=this.u(A.sun.u);this.items=[];
+    bake(){const g=(this.bg=PX.canvas(this.W,this.H)).getContext('2d', { willReadFrequently: true }),B=pixels(g,this.W,this.H);this.sx=this.u(A.sun.u);this.items=[];
       this.sky(B);this.clouds(B);this.volcano(B);this.ranges(B);this.sea(B);this.land(B);this.fields(B);this.river(B);this.bridge(B);this.roads(B);this.dress();B.flush();
       this.items.sort((a,b)=>a.y-b.y);for(const o of this.items)g.drawImage(o.img,Math.round(o.x-o.img.width/2),Math.round(o.y-o.img.height));
       const B2=pixels(g,this.W,this.H);this.ledge(B2);B2.flush();this.camp(g,PX.paint(g))}

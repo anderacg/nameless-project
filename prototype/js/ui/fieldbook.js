@@ -6,7 +6,7 @@ onWorld(()=>{FIELDBOOK.scroll.clear();FIELDBOOK.pick=null});
 function fbNarrow(){const r=$('#screen').getBoundingClientRect(),s=getComputedStyle(ov);return r.width-parseFloat(s.paddingLeft)-parseFloat(s.paddingRight)<=650}
 function fbCompact(){const r=$('#screen').getBoundingClientRect(),s=getComputedStyle(ov);return r.width-parseFloat(s.paddingLeft)-parseFloat(s.paddingRight)<=FIELDBOOK.compact.w||r.height-parseFloat(s.paddingTop)-parseFloat(s.paddingBottom)<=FIELDBOOK.compact.h}
 function fbArt(){
-  if(FIELDBOOK.art===null){const c=PX.canvas(640,180);new MenuArt.MenuScene(640,180,0).draw(c.getContext('2d'),4);FIELDBOOK.art=c.toDataURL();FIELDBOOK.emblem=MenuArt.menuEmblem().toDataURL()}
+  if(FIELDBOOK.art===null){const c=PX.canvas(640,180);new MenuArt.MenuScene(640,180,0).draw(c.getContext('2d', { willReadFrequently: true }),4);FIELDBOOK.art=c.toDataURL();FIELDBOOK.emblem=MenuArt.menuEmblem().toDataURL()}
   panel.style.setProperty('--fb-land','url("'+FIELDBOOK.art+'")');panel.style.setProperty('--fb-emblem','url("'+FIELDBOOK.emblem+'")');
 }
 const fbIcon=(k,s=18)=>icon(k,s);

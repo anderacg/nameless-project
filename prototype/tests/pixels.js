@@ -6,7 +6,7 @@
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);
 try{
  const t=T,G=t.G,P=t.P,W=t.W,TILE=t.TILE;t.act('begin','soldier');G.quietEvents=true;
- const solid=c=>{const a=c.getContext('2d').getImageData(0,0,c.width,c.height).data;for(let i=3;i<a.length;i+=4)if(a[i]!==0&&a[i]!==255)return false;return true};
+ const solid=c=>{const a=c.getContext('2d', { willReadFrequently: true }).getImageData(0,0,c.width,c.height).data;for(let i=3;i<a.length;i+=4)if(a[i]!==0&&a[i]!==255)return false;return true};
  // ---- every building type and site and cluster, for every culture, two facings (their sizes: PX.MODEL_SIZES)
  let n=0;const clip=[],wide=[],soft=[],SZ=PX.MODEL_SIZES;
  for(const culture of PX.MODEL_CULTURES)for(const type of PX.MODEL_TYPES.concat(PX.MODEL_SITES,PX.CLUSTER_MODELS))for(const yaw of [0,2]){

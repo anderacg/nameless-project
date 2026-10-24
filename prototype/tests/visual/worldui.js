@@ -15,8 +15,8 @@ try{
   if(n===135&&t.TOWNS.every(z=>Math.hypot(z.x-x,z.y-y)>240)&&W.sites.every(z=>Math.hypot(z.x-x,z.y-y)>120))spot=[x,y]}
  const home=()=>{clear();P.x=spot[0]+.4;P.y=spot[1]+.2;P.stay=null;P.troops={hum_levy:12};t.reveal()};
  // a crop of the screen just drawn: w x h game px with its middle at the world's (wx, wy), at the canvas's own pixels
- const grab=(wx,wy,w,h)=>{const c=document.createElement('canvas'),k=t.CVS;c.width=w*k;c.height=h*k;c.getContext('2d').drawImage(t.cv,Math.round((wx-G.cam.x-w/2)*k),Math.round((wy-G.cam.y-h/2)*k),w*k,h*k,0,0,w*k,h*k);return c};
- const strip=(name,cs)=>{const c=document.createElement('canvas'),g=c.getContext('2d'),w=cs[0].width,h=cs[0].height;c.width=(w+4)*cs.length-4;c.height=h;g.fillStyle='#000';g.fillRect(0,0,c.width,h);cs.forEach((f,i)=>g.drawImage(f,i*(w+4),0));shots.push('SHOT '+name+' '+c.toDataURL('image/png'))};
+ const grab=(wx,wy,w,h)=>{const c=document.createElement('canvas'),k=t.CVS;c.width=w*k;c.height=h*k;c.getContext('2d', { willReadFrequently: true }).drawImage(t.cv,Math.round((wx-G.cam.x-w/2)*k),Math.round((wy-G.cam.y-h/2)*k),w*k,h*k,0,0,w*k,h*k);return c};
+ const strip=(name,cs)=>{const c=document.createElement('canvas'),g=c.getContext('2d', { willReadFrequently: true }),w=cs[0].width,h=cs[0].height;c.width=(w+4)*cs.length-4;c.height=h;g.fillStyle='#000';g.fillRect(0,0,c.width,h);cs.forEach((f,i)=>g.drawImage(f,i*(w+4),0));shots.push('SHOT '+name+' '+c.toDataURL('image/png'))};
  const still=(name,c)=>shots.push('SHOT '+name+' '+(c||t.cv).toDataURL('image/png'));
  const at=ms=>{now+=ms;t.frame()},settle=()=>{for(let i=0;i<30;i++)at(16)};
  // ---- 1. a click: the ripple and the arrow's drop, then the bob

@@ -33,12 +33,12 @@ const EXPECT={
  'desert erg':'6cf0bdbb.f42d9d0d.-.-.0.214','desert spires, an oasis':'40111028.6689b907.-.64d934d2.9.115',
  'swamp fen':'7cf04f35.c074b3b2.-.-.123.0','swamp mere, a river':'010cd368.e665b78d.4ffc8936.-.72.0',
  'swamp mirewood (very large)':'cdff24d9.8d4a276a.-.-.3640.0','a lab ground: cliffs, ramps, a mountain, a river (no base)':'950e9679.4bce7494.b230cee6.4d2c4edc.52.0'};
-const fnv=(h,d)=>{for(let i=0;i<d.length;i++){h^=d[i]&255;h=Math.imul(h,16777619)>>>0}return h},px=c=>c.getContext('2d').getImageData(0,0,c.width,c.height).data;
+const fnv=(h,d)=>{for(let i=0;i<d.length;i++){h^=d[i]&255;h=Math.imul(h,16777619)>>>0}return h},px=c=>c.getContext('2d', { willReadFrequently: true }).getImageData(0,0,c.width,c.height).data;
 const fnvS=s=>{let h=2166136261;for(let i=0;i<s.length;i++)h=Math.imul(h^s.charCodeAt(i),16777619)>>>0;return h.toString(16).padStart(8,'0')};
 // (a ground kept by tiles, as one canvas: each tile drawn at its place (painted now where the LRU let it go))
-const whole=g=>{if(!(g instanceof PX.BattleGround))return g;const cv=PX.canvas(g.width,g.height),q=cv.getContext('2d');for(let k=0;k<g.cols*g.rows;k++){const [x,y]=g.rect(k);q.drawImage(g.tile(k),x,y)}return cv};
+const whole=g=>{if(!(g instanceof PX.BattleGround))return g;const cv=PX.canvas(g.width,g.height),q=cv.getContext('2d', { willReadFrequently: true });for(let k=0;k<g.cols*g.rows;k++){const [x,y]=g.rect(k);q.drawImage(g.tile(k),x,y)}return cv};
 // (the same, every tile painted again alone from the plan)
-const alone=(cv,S=TL.size)=>{const W=cv.width,H=cv.height,out=PX.canvas(W,H),q=out.getContext('2d');for(let y=0;y<H;y+=S)for(let x=0;x<W;x+=S)q.drawImage(PX.battleGroundPaint(cv.plan,[x,y,Math.min(S,W-x),Math.min(S,H-y)]),x,y);return out};
+const alone=(cv,S=TL.size)=>{const W=cv.width,H=cv.height,out=PX.canvas(W,H),q=out.getContext('2d', { willReadFrequently: true });for(let y=0;y<H;y+=S)for(let x=0;x<W;x+=S)q.drawImage(PX.battleGroundPaint(cv.plan,[x,y,Math.min(S,W-x),Math.min(S,H-y)]),x,y);return out};
 const same=(a,b)=>{const p=px(a),q=px(b);if(p.length!==q.length)return false;for(let i=0;i<p.length;i++)if(p[i]!==q[i])return false;return true};
 // (a painted ground's hash: its pixels; its props (kind, place, box and sprite pixels); the river's motion; the small map's under-colours)
 const gh=g=>{let h=fnv(2166136261,px(whole(g))),p=2166136261;for(const q of g.props){p=fnv(p,[q.dk,q.x,q.y,q.dx,q.dy,...q.box].map(v=>v|0));p=fnv(p,px(q.s))}
@@ -87,7 +87,7 @@ try{
   ok(!abad.length,'with no terrain, each climate’s arena assembled from its own tiles is the arena painted before R16 ('+Object.keys(ARENA).length+' fields: 4 climates, 3 sizes)'+(abad.length?': differ '+abad.join(', '):''))}
 
  // ---- a huge forest by tiles: drawn at zoom 1 as the whole; no gaps at any zoom; the LRU; the overview; the canopy
- if(huge){const {cv,G:Gd}=huge,W=cv.width,H=cv.height,VW=1280,VH=720,view=PX.canvas(VW,VH),q=view.getContext('2d');TL.sync=true;
+ if(huge){const {cv,G:Gd}=huge,W=cv.width,H=cv.height,VW=1280,VH=720,view=PX.canvas(VW,VH),q=view.getContext('2d', { willReadFrequently: true });TL.sync=true;
   const shot=(z,cx,cy,f)=>{q.setTransform(1,0,0,1,0,0);q.fillStyle='#ff00ff';q.fillRect(0,0,VW,VH);q.imageSmoothingEnabled=false;q.save();q.scale(z,z);q.translate(-Math.round(cx*z)/z,-Math.round(cy*z)/z);f(z,cx,cy);q.restore();return q.getImageData(0,0,VW,VH).data};
   const byTiles=(z,cx,cy)=>Gd.drawView(q,cx,cy,cx+VW/z,cy+VH/z,z),byWhole=(z,cx,cy)=>{const x0=Math.max(0,Math.floor(cx)-2),y0=Math.max(0,Math.floor(cy)-2),x1=Math.min(W,Math.ceil(cx+VW/z)+2),y1=Math.min(H,Math.ceil(cy+VH/z)+2);q.drawImage(cv,x0,y0,x1-x0,y1-y0,x0,y0,x1-x0,y1-y0)};
   let diff=0,views=0;for(const [cx,cy] of [[0,0],[300,200],[1000,700],[1800.4,1000.6],[W-VW,H-VH],[511,511]]){const a=shot(1,cx,cy,byTiles),b=shot(1,cx,cy,byWhole);views++;for(let i=0;i<a.length;i++)if(a[i]!==b[i]){diff++;break}}
@@ -123,17 +123,17 @@ try{
  {const L=t.BattleLab,arm=[{type:'hum_foot',count:30},{type:'hum_bow',count:20}];G.mode='world';G.modal=false;ev('FIELD_SIZES.on=true');
   L.start({leftGroups:arm,rightGroups:arm,deploy:false,paused:true,ai:true,morale:true,seed:7,terrain:'forest',ground:{recipe:'forest',seed:7,layout:'deepwood'},size:'huge',fog:false});const B=t.B,W=t.BW,H=t.BH;
   // (the same blood twice: by tiles, and into one canvas the field's size (the layer as it was); the same randoms)
-  const dead=B.units.filter(u=>u.team===1).slice(0,12),spots=dead.map((u,i)=>[300+i*231%(W-600),200+i*137%(H-400)]),fullG=PX.canvas(W,H),fq=fullG.getContext('2d');
+  const dead=B.units.filter(u=>u.team===1).slice(0,12),spots=dead.map((u,i)=>[300+i*231%(W-600),200+i*137%(H-400)]),fullG=PX.canvas(W,H),fq=fullG.getContext('2d', { willReadFrequently: true });
   const blood=()=>{Math.random=t.seeded(99);B.corpses=[];B.gore=null;B.t=0;for(const [i,u] of dead.entries()){const cp={x:spots[i][0],y:spots[i][1],team:1,face:1,wait:true};B.corpses.push(cp);t.vfxDeath(u,cp)}
    for(let k=0;k<400;k++)t.splat(spots[k%12][0]+(k*7%40)-20,spots[k%12][1]+(k*3%20)-10);B.t=t.GORE.fall+t.GORE.pool+.1;t.drawCorpses()};
-  blood();const gl=B.gore,nb=gl.tiles.size,mine=gl.getContext('2d').getImageData(0,0,W,H).data;
+  blood();const gl=B.gore,nb=gl.tiles.size,mine=gl.getContext('2d', { willReadFrequently: true }).getImageData(0,0,W,H).data;
   ev('window.__gl0=goreLayer;goreLayer=()=>B.gore||(B.gore={each:(a,b,c,d,f)=>{__fq.setTransform(1,0,0,1,0,0);f(__fq)},drawView(){},clear(){__fq.clearRect(0,0,BW,BH)}})');window.__fq=fq;
   try{blood()}finally{ev('goreLayer=window.__gl0;delete window.__gl0;delete window.__fq')}
   const old=fq.getImageData(0,0,W,H).data;let bd=0;for(let i=0;i<old.length;i++)if(old[i]!==mine[i]){bd++;break}
   B.gore=gl;const nT=Math.ceil(W/gl.n)*Math.ceil(H/gl.n);
   ok(!bd&&nb>0&&nb<nT,'blood is kept by tiles made only where it falls ('+nb+' of '+nT+', '+(gl.bytes()/1048576).toFixed(1)+' MB): as one picture, the pixels of the old full layer');
   // (the ground's tiles come and go; the blood stays)
-  const Gd=B.ground;for(let k=0;k<Gd.cols*Gd.rows;k++)Gd.tile(k);const after=gl.getContext('2d').getImageData(0,0,W,H).data;let bk=0;for(let i=0;i<after.length;i++)if(after[i]!==mine[i]){bk++;break}
+  const Gd=B.ground;for(let k=0;k<Gd.cols*Gd.rows;k++)Gd.tile(k);const after=gl.getContext('2d', { willReadFrequently: true }).getImageData(0,0,W,H).data;let bk=0;for(let i=0;i<after.length;i++)if(after[i]!==mine[i]){bk++;break}
   ok(!bk&&gl.tiles.size===nb&&Gd.tiles.size<=Gd.cap,'every ground tile painted in turn, the LRU letting most go: the blood kept as it was (its own tiles, never let go)');
   // (the reach: a layer the view's size and RANGE_M round it, never past the field; at zoom 1 its pixels the old field-sized layer's
   //  (drawn as it was: the view made the field's size, no camera), but where its curve runs out of the layer: there the canvas
@@ -141,8 +141,8 @@ try{
   const g0=t.playerGroups().find(g=>t.shooters(g).length),gr=B.groups[g0],at=(x,y)=>{gr.placeAt(x,y);t.layForm(g0);t.grpUnits(g0).forEach(u=>{u.x=gr.ax+u.sx;u.y=gr.ay+u.sy})};
   const cam0=B.cam,vw=ev('[BVW,BVH]'),M=t.RANGE_M,rd=[];let rn=0,lw=0,lh=0;
   for(const [ax,ay,cx,cy] of [[700,600,400,300],[1800,900,1300,500],[2900,1500,W-t.BVW,H-t.BVH],[400,300,0,0]]){at(ax,ay);
-   ev('BVW='+W+';BVH='+H);B.cam=null;t.drawFormationReach(g0,t.FIRE.blue);let rc=B.rangeCv;const A0=rc.getContext('2d').getImageData(0,0,rc.width,rc.height).data,w0=rc.width;ev('BVW='+vw[0]+';BVH='+vw[1]);
-   B.cam={...cam0,z:1,x:cx,y:cy,fit:false};t.drawFormationReach(g0,t.FIRE.blue);rc=B.rangeCv;const v=rc.rv,A1=rc.getContext('2d').getImageData(0,0,rc.width,rc.height).data;lw=Math.max(lw,rc.width);lh=Math.max(lh,rc.height);let d=0;
+   ev('BVW='+W+';BVH='+H);B.cam=null;t.drawFormationReach(g0,t.FIRE.blue);let rc=B.rangeCv;const A0=rc.getContext('2d', { willReadFrequently: true }).getImageData(0,0,rc.width,rc.height).data,w0=rc.width;ev('BVW='+vw[0]+';BVH='+vw[1]);
+   B.cam={...cam0,z:1,x:cx,y:cy,fit:false};t.drawFormationReach(g0,t.FIRE.blue);rc=B.rangeCv;const v=rc.rv,A1=rc.getContext('2d', { willReadFrequently: true }).getImageData(0,0,rc.width,rc.height).data;lw=Math.max(lw,rc.width);lh=Math.max(lh,rc.height);let d=0;
    for(let y=v.cy-v.oy;y<v.cy-v.oy+t.BVH&&y<rc.height;y++)for(let x=v.cx-v.ox;x<v.cx-v.ox+t.BVW&&x<rc.width;x++){const i=((y+v.oy)*w0+x+v.ox)*4,j=(y*rc.width+x)*4;if(A0[i+3])rn++;if(A0[i]!==A1[j]||A0[i+3]!==A1[j+3])d++}
    rd.push(d)}
   B.cam=cam0;const nd=rd.reduce((a,b)=>a+b,0);

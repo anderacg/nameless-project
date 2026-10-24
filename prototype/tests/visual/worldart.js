@@ -39,13 +39,13 @@ window.RUN=()=>{const t=T,o=[],G=t.G,P=t.P,W=t.W,TILE=t.TILE,Z=3,part=+(new URLS
  try{
   if(part===3){const CL=['grass','frost','desert','swamp'],BG={grass:'#54803a',frost:'#d6dee8',desert:'#d6b668',swamp:'#48583a'},Z=6,rows=[];for(const c of CL)for(const sp of PX.WORLD_SPECIES[c])rows.push([c,sp]);
    const pg=document.createElement('canvas');pg.width=8*(16*Z+6)+120;pg.height=rows.length*(16*Z+6)+10;pg.style.cssText='position:absolute;left:0;top:0;z-index:9999';document.body.appendChild(pg);
-   const g=pg.getContext('2d');g.imageSmoothingEnabled=false;g.fillStyle='#1a1c26';g.fillRect(0,0,pg.width,pg.height);
+   const g=pg.getContext('2d', { willReadFrequently: true });g.imageSmoothingEnabled=false;g.fillStyle='#1a1c26';g.fillRect(0,0,pg.width,pg.height);
    rows.forEach(([c,sp],r)=>{g.fillStyle='#e8e0c8';g.font='13px Arial';g.fillText(c+' · '+sp,4,r*(16*Z+6)+50);
     for(let k=0;k<8;k++){const s=PX.worldTree(c,sp,k&3,k>>2),X=120+k*(16*Z+6),Y=r*(16*Z+6)+4;g.fillStyle=BG[c];g.fillRect(X,Y,16*Z,16*Z);g.drawImage(s,X,Y,16*Z,16*Z)}});
    o.push('INFO page '+pg.width+' x '+pg.height,'PASS drawn ('+rows.length+' species)');throw 0}
   // (part 9: each crop (PX.WORLD_CROPS) in each climate at x6, a plot of 2 x 2 tiles, then what stands on a plot)
   if(part===9){const CL=['grass','frost','desert','swamp'],K=Object.keys(PX.WORLD_CROPS),Z=6,S=32*Z+8,pg=document.createElement('canvas');pg.width=110+CL.length*S;pg.height=K.length*S+16*Z+30;
-   pg.style.cssText='position:absolute;left:0;top:0;z-index:9999';document.body.appendChild(pg);const g=pg.getContext('2d');g.imageSmoothingEnabled=false;g.fillStyle='#1a1c26';g.fillRect(0,0,pg.width,pg.height);
+   pg.style.cssText='position:absolute;left:0;top:0;z-index:9999';document.body.appendChild(pg);const g=pg.getContext('2d', { willReadFrequently: true });g.imageSmoothingEnabled=false;g.fillStyle='#1a1c26';g.fillRect(0,0,pg.width,pg.height);
    const BG={grass:'#54803a',frost:'#d6dee8',desert:'#d6b668',swamp:'#48583a'};
    K.forEach((k,r)=>{g.fillStyle='#e8e0c8';g.font='13px Arial';g.fillText(k,4,r*S+40);CL.forEach((c,j)=>{const X=110+j*S,Y=r*S+4;g.fillStyle=BG[c];g.fillRect(X,Y,32*Z,32*Z);
     for(let q=0;q<4;q++){const s=PX.worldCrop(k,c,q,{snow:c==='frost'?1:0,wet:c==='swamp'?1:0,terrace:k==='rye'||k==='potato'});g.drawImage(s,X+(q&1)*16*Z,Y+(q>>1)*16*Z,16*Z,16*Z)}})});
@@ -214,14 +214,14 @@ window.RUN=()=>{const t=T,o=[],G=t.G,P=t.P,W=t.W,TILE=t.TILE,Z=3,part=+(new URLS
    ['a wood in the desert',()=>wood('desert')],['the swamp\'s forest, the whole view',()=>wood('swamp'),1],
    ['a lake',lake],['a river\'s bend',bend],['a lake, the whole view',lake,1],['a river\'s bend, the whole view',bend,1]];
   const cw=Math.round(t.VW/3),ch=Math.round(t.VH/3),lab=18,per=2,rows=Math.ceil(PIECES.length/per),pg=document.createElement('canvas');pg.width=per*(cw*Z+8)+8;pg.height=rows*(ch*Z+lab+8)+8;
-  pg.style.cssText='position:absolute;left:0;top:0;z-index:9999;background:#1a1c26';document.body.appendChild(pg);const g=pg.getContext('2d');g.imageSmoothingEnabled=false;g.fillStyle='#1a1c26';g.fillRect(0,0,pg.width,pg.height);
+  pg.style.cssText='position:absolute;left:0;top:0;z-index:9999;background:#1a1c26';document.body.appendChild(pg);const g=pg.getContext('2d', { willReadFrequently: true });g.imageSmoothingEnabled=false;g.fillStyle='#1a1c26';g.fillRect(0,0,pg.width,pg.height);
   o.push('INFO page '+pg.width+' x '+pg.height);
   // (the ground and what is built only: no folk, caravans, beasts, parties, banners or labels over it)
   const quiet=()=>{W.folk=[];W.caravans=[];W.critters=[];W.monsters=[]};quiet();const stay=P.stay,keep=[window.txt,window.drawParties,window.drawBanners];window.txt=window.drawParties=window.drawBanners=()=>{};
   // (part 8: a farm's plots drawn through gfx/worldart.js farmPlot even before gfx/structures.js estateGround calls it (agent AR's
   //  line request there): the plots of the picture it keeps drawn again, as it would draw them)
   const eg0=t.estateGround;if(part===8&&typeof window.farmPlot==='function'&&!/farmPlot/.test(String(eg0)))window.estateGround=(tw,k,lv)=>{const cv=eg0(tw,k,lv);if(!cv||k!=='farm'||cv._crop)return cv;cv._crop=1;
-   const p=t.bldSpots(tw).farm,c=t.climAt(p.x,p.y),pl=t.plotsAt(tw,'farm',lv),has=(x,y)=>pl.some(q=>q[0]===x&&q[1]===y),SC=t.WorldArt.ensure().snow,g2=cv.getContext('2d');
+   const p=t.bldSpots(tw).farm,c=t.climAt(p.x,p.y),pl=t.plotsAt(tw,'farm',lv),has=(x,y)=>pl.some(q=>q[0]===x&&q[1]===y),SC=t.WorldArt.ensure().snow,g2=cv.getContext('2d', { willReadFrequently: true });
    for(const [tx,ty] of pl){const X=tx*TILE-cv.x,Y=ty*TILE-cv.y,edge=(a,b)=>!has(tx+a,ty+b)&&!(tx+a===p.tx&&ty+b===p.ty),eN=edge(0,-1),eS=edge(0,1),eW=edge(-1,0),eE=edge(1,0);
     const ed=(x,y)=>Math.min(eW?x:9,eE?15-x:9,eN?y:9,eS?15-y:9),fr=c==='grass'||c==='frost'?Math.max(0,Math.min(1,(SC[ty*t.MW+tx]-.3)/.4)):0;
     g2.clearRect(X,Y,TILE,TILE);t.farmPlot(tw,tx,ty,c,fr,ed,(col,x,y)=>{g2.fillStyle=t.hex(col);g2.fillRect(X+x,Y+y,1,1)})}return cv};

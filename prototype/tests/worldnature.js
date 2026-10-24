@@ -17,7 +17,7 @@ try{
    for(const k of Object.keys(PX.WORLD_MOUNTS))for(let v=0;v<6;v++)for(const n of [32,64])L.push(['peak '+k+' '+n+' '+v,PX.worldPeak('grass',v,n,k)]);
    for(const k of Object.keys(PX.WORLD_CROPS))for(const c of CL)for(let v=0;v<4;v++)L.push(['crop '+k+' '+c+' '+v,PX.worldCrop(k,c,v,{snow:c==='frost'?1:0,wet:c==='swamp'?1:0})]);
    for(const k of ['stook','haystack','fruit'])for(let v=0;v<4;v++)L.push(['thing '+k+' '+v,PX.worldCropThing(k,v)]);return L};
- const list=all(),px=s=>s.getContext('2d').getImageData(0,0,s.width,s.height).data,by={};
+ const list=all(),px=s=>s.getContext('2d', { willReadFrequently: true }).getImageData(0,0,s.width,s.height).data,by={};
  const pow=[],soft=[],out=[],flat=[];
  for(const [n,s] of list){const N=s.width;(by[N]=by[N]||new Set()).add(n.split(' ')[0]);
    if(s.width!==s.height||![8,16,32,64].includes(N)||!Number.isInteger(s.ax)||!Number.isInteger(s.ay)||s.ax<0||s.ay<0||s.ax>=N||s.ay>=N)pow.push(n+' '+s.width+'x'+s.height);
@@ -52,7 +52,7 @@ try{
  let cv;try{cv=t.paintWorld()}finally{Math.random=r0;PX.worldTree=wt;(0,eval)('NATURE_TOUCH=null')}
  const N=t.NATURE,CLR=t.CLEAR,cnt=k=>{let n=0;for(let i=0;i<MW*MH;i++)if(t.tiles[i]===k)n++;return n},nF=cnt(t.T_FOREST),nH=cnt(t.T_HILL),nM=cnt(t.T_MOUNT);
  ok(rnd===0&&sum(t.tiles)===tiles0&&sum(t.climate)===clim0,'painting the world reads no Math.random ('+rnd+') and leaves the map’s tiles and climates as they were');
- ok(cv.getContext('2d').imageSmoothingEnabled===false,'the world canvas is painted without smoothing');
+ ok(cv.getContext('2d', { willReadFrequently: true }).imageSmoothingEnabled===false,'the world canvas is painted without smoothing');
  const share=k=>{let n=0,m=0;for(let ty=0;ty<MH;ty++)for(let tx=0;tx<MW;tx++){if(t.tiles[ty*MW+tx]!==k)continue;for(let y=1;y<TILE;y+=3)for(let x=1;x<TILE;x+=3){const i=(ty*TILE+y)*Wp+tx*TILE+x;if(CLR.at(tx*TILE+x,ty*TILE+y))continue;m++;if(TO[i])n++}}return m?n/m:0};
  const sF=share(t.T_FOREST),sH=share(t.T_HILL),sM=share(t.T_MOUNT);
  ok(N&&N.trees>=nF*3.5&&sF>.9,nF+' wood tiles stand thick with trees ('+(N&&N.trees)+' trees, '+(N&&(N.trees/nF).toFixed(1))+' a tile), '+Math.round(sF*100)+'% of their ground painted');
@@ -106,12 +106,12 @@ try{
   const own=[];for(const c of CL)for(const sp in drawn[c]||{})if(!PX.WORLD_SPECIES[c].includes(sp)&&!(c==='frost'&&Object.values(PX.WN_ECO.freeze).includes(sp)))own.push(c+' '+sp+' '+drawn[c][sp]);
   ok(!bad.length&&!own.length&&CL.every(c=>PX.WORLD_SPECIES[c].length>=3),'each climate’s woods grow its own trees ('+CL.map(c=>c+': '+PX.WORLD_SPECIES[c].join('/')).join('; ')+'), a few of them leafless or dead: '+sh.join(', ')+(bad.length||own.length?' — not: '+bad.concat(own).join(', '):''));
   let nB=0;for(let i=0;i<MW*MH;i++)if(t.tiles[i]===t.T_FOREST&&t.CLIMS[t.climate[i]]==='swamp')nB++;const sw=drawn.swamp||{},bogs=(sw.mangrove||0)+(sw.bogwillow||0);
-  const d=cv.getContext('2d').getImageData(0,0,Wp,Hp).data;let pools=0,seen=0;for(let i=0;i<MW*MH&&seen<400;i++){if(t.tiles[i]!==t.T_FOREST||t.CLIMS[t.climate[i]]!=='swamp')continue;seen++;const X=i%MW*TILE,Y=Math.floor(i/MW)*TILE;
+  const d=cv.getContext('2d', { willReadFrequently: true }).getImageData(0,0,Wp,Hp).data;let pools=0,seen=0;for(let i=0;i<MW*MH&&seen<400;i++){if(t.tiles[i]!==t.T_FOREST||t.CLIMS[t.climate[i]]!=='swamp')continue;seen++;const X=i%MW*TILE,Y=Math.floor(i/MW)*TILE;
    for(let y=0;y<TILE;y++)for(let x=0;x<TILE;x++){const o=((Y+y)*Wp+X+x)*4;if(d[o]===50&&d[o+1]===70&&d[o+2]===72){pools++;y=TILE;break}}}
   ok(!nB||bogs>nB&&!sw.willow&&pools>seen*.2,(nB?nB+' tiles of the swamp’s forest stand with bog trees ('+(sw.mangrove||0)+' mangroves, '+(sw.bogwillow||0)+' bog willows, '+((sw.snag||0)+(sw.dead||0))+' snags and dead trees with the fen’s), its pools showing on '+pools+' of '+seen+' tiles':'no swamp forest on this map'))}
  // ---- the frost blended: the snow's cover (gfx/worldart.js snowCover) thins out over the grass beside the frost in patches, rises
  //      over the frost's edge and lies whole deep in it; no grass far from it is touched (snow: a pale blue-white pixel)
- {const S=t.WorldArt.ensure().snow,d=cv.getContext('2d').getImageData(0,0,Wp,Hp).data,F=t.CLIMS.indexOf('frost'),G=t.CLIMS.indexOf('grass');
+ {const S=t.WorldArt.ensure().snow,d=cv.getContext('2d', { willReadFrequently: true }).getImageData(0,0,Wp,Hp).data,F=t.CLIMS.indexOf('frost'),G=t.CLIMS.indexOf('grass');
   const share=(tx,ty)=>{let n=0,m=0;for(let y=1;y<TILE;y+=2)for(let x=1;x<TILE;x+=2){const o=((ty*TILE+y)*Wp+tx*TILE+x)*4;m++;if(d[o]>185&&d[o+1]>190&&d[o+2]>200)n++}return n/m};
   // (the open tiles with only open ground round them, by how far they lie from the frost's edge: -1 grass beside it, 1 frost beside
   //  grass, 4 frost 4 tiles in, 0 grass 6 tiles from any frost)
@@ -126,7 +126,7 @@ try{
  // ---- the swamp's and the desert's edges blended as the frost's (gfx/worldart.js coverOf, landRGB; the owner's third play-test: no
  //      blocks between climates): each climate's own ground (the swamp's peat green, the desert's sand) in patches over the grass beside
  //      it, more over its own edge, whole deep in it, none on grass far from it; their covers a tile as the snow's (own .55 or more)
- {const d=cv.getContext('2d').getImageData(0,0,Wp,Hp).data,G=t.CLIMS.indexOf('grass'),PL=t.WorldArt.ensure(),res=[];
+ {const d=cv.getContext('2d', { willReadFrequently: true }).getImageData(0,0,Wp,Hp).data,G=t.CLIMS.indexOf('grass'),PL=t.WorldArt.ensure(),res=[];
   const IS={desert:(r,g,b)=>r>185&&g>150&&b<150&&r-b>60,swamp:(r,g,b)=>g-r<22&&g<112&&b<70};
   const near=(tx,ty,r,c)=>{for(let b=-r;b<=r;b++)for(let a=-r;a<=r;a++){const x=tx+a,y=ty+b;if(x>=0&&y>=0&&x<MW&&y<MH&&t.climate[y*MW+x]===c)return true}return false};
   for(const cn of ['desert','swamp']){const C=t.CLIMS.indexOf(cn),S=PL.cover[cn],is=IS[cn],B={'-1':[],1:[],4:[],0:[]};
@@ -154,7 +154,7 @@ try{
   const m=n.map(([a,b])=>a?b/a:0);ok(n[0][0]>50&&n[1][0]>50&&m[0]>m[1]&&m[1]>2.5*m[2],'a wood’s fringe: open grass beside a wood stands with '+m[0].toFixed(2)+' things a tile (undergrowth and trees), two tiles off '+m[1].toFixed(2)+', far from any wood '+m[2].toFixed(2))}
  // ---- the oasis: palms only by a small water in the desert
  {let near=0,far=0;const P2=new Set();for(let v=0;v<4;v++){const s=PX.worldTree('desert','palm',v,0);for(let i=0;i<s.a.length;i++)if(s.a[i]===1)P2.add(s.rgb[i*3]+','+s.rgb[i*3+1]+','+s.rgb[i*3+2])}
-  const d=cv.getContext('2d').getImageData(0,0,Wp,Hp).data;
+  const d=cv.getContext('2d', { willReadFrequently: true }).getImageData(0,0,Wp,Hp).data;
   for(let ty=1;ty<MH-1;ty++)for(let tx=1;tx<MW-1;tx++){if(t.CLIMS[t.climate[ty*MW+tx]]!=='desert'||t.tiles[ty*MW+tx]!==t.T_OPEN)continue;let hit=0;for(let j=0;j<TILE&&!hit;j+=2)for(let i=0;i<TILE;i+=2){const o4=((ty*TILE+j)*Wp+tx*TILE+i)*4;if(P2.has(d[o4]+','+d[o4+1]+','+d[o4+2])){hit=1;break}}
     if(!hit)continue;let wet=false;for(let b=-3;b<=3;b++)for(let a=-3;a<=3;a++)if(t.tAt(tx+a,ty+b)===t.T_WATER)wet=true;if(wet)near++;else far++}
   ok(far<=near*.1+2,'the desert’s palms stand by water (tiles showing palms: '+near+' by water, '+far+' not)')}
@@ -236,7 +236,7 @@ try{
   const culture=mx('vale grass','wheat')>mx('vale grass','herbs')+mx('vale grass','potato')&&mx('sylvan grass','herbs')+mx('sylvan grass','orchard')>mx('sylvan grass','wheat')&&mx('karn grass','rye')+mx('karn grass','potato')>20&&mx('horde grass','grazed')>20&&mx('vale desert','irrigated')>20&&mx('vale frost','rye')+mx('vale frost','turnips')+mx('vale frost','fallow')===60;
   ok(!bad.length&&culture&&snowy[0]>=snowy[1]*.8&&water[0]===water[1]&&stand[0]>=stand[1]*.5,'a farm\u2019s plots show their crops in rows, by climate and people ('+['vale grass','sylvan grass','karn grass','horde grass','vale desert','vale frost','vale swamp'].map(k=>k+': '+top(k)).join('; ')+'); the frost\u2019s snow in the troughs on '+snowy[0]+' of '+snowy[1]+', the desert\u2019s channel on '+water[0]+' of '+water[1]+', stooks, haystacks, fruit trees or palms standing on '+stand[0]+' of '+stand[1]+(bad.length?' \u2014 not: '+bad.slice(0,5).join('; '):''))}
  // ---- the same map, the same picture; and the time it takes
- {const h=c=>{const d=c.getContext('2d').getImageData(0,0,Wp,Hp).data;let s=0;for(let i=0;i<d.length;i+=28)s=(s*31+d[i])|0;return s},a=h(cv),ms=[];let b=0;
+ {const h=c=>{const d=c.getContext('2d', { willReadFrequently: true }).getImageData(0,0,Wp,Hp).data;let s=0;for(let i=0;i<d.length;i+=28)s=(s*31+d[i])|0;return s},a=h(cv),ms=[];let b=0;
   for(let k=0;k<3;k++){const q=performance.now(),c=t.paintWorld();ms.push(performance.now()-q);if(k===2)b=h(c)}
   ms.sort((x,y)=>x-y);ok(a===b,'painted again, the world is the same picture');
   // (the whole map in one window: the tests' and the wiki's, never the game's, which paints by chunks (worldchunks checks those); the

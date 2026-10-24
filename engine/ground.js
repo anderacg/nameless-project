@@ -189,7 +189,7 @@
       const col=[null,L[0],L[1],L[2],L[3],TR[0],TR[1],P.snow?P.snow[0]:'#f4f8fc',P.snow?P.snow[1]:'#d4e0ec','#3a3430',PX.mix(TR[0],TR[1],.5)];
       for(let y=0;y<N;y++)for(let x=0;x<N;x++){const t=M[y*N+x];if(t)Pt.px(col[t],x,y)}});
     // (its drawn pixels' box: the game fades a tree whose box covers your men)
-    {const d=cv.getContext('2d').getImageData(0,0,N,N).data;let x0=N,y0=N,x1=-1,y1=-1;for(let y=0;y<N;y++)for(let x=0;x<N;x++)if(d[(y*N+x)*4+3]){if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y}cv.box=[x0,y0,x1,y1]}
+    {const d=cv.getContext('2d', { willReadFrequently: true }).getImageData(0,0,N,N).data;let x0=N,y0=N,x1=-1,y1=-1;for(let y=0;y<N;y++)for(let x=0;x<N;x++)if(d[(y*N+x)*4+3]){if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y}cv.box=[x0,y0,x1,y1]}
     return TREES32[k]=cv}
   PX.battleTree=treeSprite32;
   PX.smallTree=treeSprite;// (the 16-px trees: a town's streets, js/gfx/scenedraw.js)
@@ -206,7 +206,7 @@
      saguaro or a barrel cactus. Each footprint about what blocks (r 6, 7, 5). Kept, one a kind, climate and look; seeded */
   const OBST={},CACTUS=['#b4cc6c','#8ab452','#62903e','#43702f','#2b4c22'];
   // (the drawn pixels' box of a canvas)
-  const boxOf=cv=>{const N=cv.width,H=cv.height,d=cv.getContext('2d').getImageData(0,0,N,H).data;let x0=N,y0=H,x1=-1,y1=-1;
+  const boxOf=cv=>{const N=cv.width,H=cv.height,d=cv.getContext('2d', { willReadFrequently: true }).getImageData(0,0,N,H).data;let x0=N,y0=H,x1=-1,y1=-1;
     for(let y=0;y<H;y++)for(let x=0;x<N;x++)if(d[(y*N+x)*4+3]){if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y}return[x0,y0,x1,y1]};
   // (a sprite from a tone map: 0 empty, else col[t]; the rim, every empty pixel beside one, in rim (none: no rim))
   const fromMap=(W,H,M,col,rim)=>PX.canvas(W,H,g=>{const Pg=PX.paint(g),at=(x,y)=>x>=0&&y>=0&&x<W&&y<H?M[y*W+x]:0;
@@ -356,7 +356,7 @@
     const soft=(A,n)=>{const r=GB.soft,B=new Float32Array(n*n);for(let y=0;y<n;y++)for(let x=0;x<n;x++){let s=0,t=0;for(let b=-r;b<=r;b++)for(let a=-r;a<=r;a++){const X=x+a,Y=y+b;t++;if(X>=0&&Y>=0&&X<n&&Y<n)s+=A[Y*n+X]}
       B[y*n+x]=s/t*Math.min(1,Math.min(x,y,n-1-x,n-1-y)/GB.fade)}return B};
     try{const type=fit(h.type)||fit(HOUSE_K[h.k])||fit('cottage');if(type&&PX.buildingModel){const m=PX.buildingModel({type,people:h.people||'human',culture:h.culture,seed:(h.seed|0)%4,yaw,env:c,snow:c==='frost'}),n=m.img.width*k;
-      const up=L=>PX.canvas(n,n,g=>{g.imageSmoothingEnabled=false;for(const q of L)if(q&&q.width)g.drawImage(q,0,0,n,n)}),dat=cv=>cv.getContext('2d').getImageData(0,0,n,n).data;
+      const up=L=>PX.canvas(n,n,g=>{g.imageSmoothingEnabled=false;for(const q of L)if(q&&q.width)g.drawImage(q,0,0,n,n)}),dat=cv=>cv.getContext('2d', { willReadFrequently: true }).getImageData(0,0,n,n).data;
       const s=up([m.img,m.snow&&m.snow.img]),g=m.ground&&m.ground.width?dat(up([m.ground,m.snow&&m.snow.ground])):null,sd=dat(up([m.shadow])),A=new Float32Array(n*n);for(let i=0;i<n*n;i++)A[i]=sd[i*4+3]/255;
       return HSPR[key]={s,g,sh:soft(A,n),n}}}catch(e){}
     const n=h.w,ht=Math.round(n*.9),wall=c==='desert'?['#e0c48e','#b89a6a']:['#d8ccb0','#a89c84'],roof=c==='frost'?['#eef3f8','#b8c4d2']:['#b0563c','#7a3a2a'],A=new Float32Array(n*n);
@@ -399,7 +399,7 @@
     const PLn=full?{spec,clb:[],zm:0}:null;
     // (the base under the window (the climate's arena, painted in steps, or a canvas): the whole's into its canvas, a rect's on one
     // the window's size; over a desert's own ground only its top band is kept, so only that is painted)
-    const own=!base||P.plain,bh=own?Math.max(0,Math.min(15,WY1)-WY0):SH,cv=out||PX.canvas(w,h),bc=full?cv:base?PX.canvas(SW,SH):null,g0=bc&&bc.getContext('2d');
+    const own=!base||P.plain,bh=own?Math.max(0,Math.min(15,WY1)-WY0):SH,cv=out||PX.canvas(w,h),bc=full?cv:base?PX.canvas(SW,SH):null,g0=bc&&bc.getContext('2d', { willReadFrequently: true });
     if(base&&bh){if(base.getContext)g0.drawImage(base,-WX0,-WY0);else yield* base.paintSteps(g0,WX0,WY0,SW,bh,full?PX.GROUND_BAND:PX.GROUND_BAND>>3)}
     const img=own?new ImageData(SW,SH):g0.getImageData(0,0,SW,SH),D=img.data;if(own){yield* plainGround(D,W,H,P,seed,base?15:0,WR);if(base&&bh)D.set(g0.getImageData(0,0,SW,bh).data)}
     // (0b, battle follows the world) a mixed field's other climate (spec.mix {c0, c, w}, spec.clim: terrain.js mixGround): its ground
@@ -830,7 +830,7 @@
     // (3c) mountains and spires (kind 6): see rockMasses
     const RS=kind.includes(6)?(yield* rockMasses()):null;
     // (the pixels in: the whole's; a rect's, its part of the window, and what is drawn over it in field px)
-    const g=cv.getContext('2d'),Pg=PX.paint(g);if(full)g.putImageData(img,0,0);else{g.putImageData(img,WX0-X,WY0-Y,X-WX0,Y-WY0,w,h);g.save();g.translate(-X,-Y)}yield at(6);
+    const g=cv.getContext('2d', { willReadFrequently: true }),Pg=PX.paint(g);if(full)g.putImageData(img,0,0);else{g.putImageData(img,WX0-X,WY0-Y,X-WX0,Y-WY0,w,h);g.save();g.translate(-X,-Y)}yield at(6);
     /* (4) what is drawn over the ground: the whole places it (below: every bush, reed, detail, stone, glint, bridge, tree's shadow
        and the desert's flats, seeded, as ever) into a list in the order it is drawn (L: 6 a record, its op, x, y and three more),
        then draws it; a rect draws the list's records that reach into it (EXT), so whatever straddles a tile's edge is drawn into
@@ -1038,7 +1038,7 @@
     yield at(8,.5);const props=[];for(const t of TREES){const s=treeSprite32(t.c||clim,t.sp,t.v),b=s.box;props.push({dk:1,x:t.x,y:t.y,s,dx:t.x-16,dy:t.y-31,box:[t.x-16+b[0],t.y-31+b[1],t.x-16+b[2],t.y-31+b[3]]})}
     // (the mountains' too {dk:3, ...as a face's}: their pixels' column runs, each run one mass's, cut the same way)
     const cutF=F.includes(1);
-    if(cutF||RS){const src=g.getImageData(0,0,W,H).data,fc=PX.canvas(W,H),fg=fc.getContext('2d'),fi=fg.createImageData(W,H),fd=fi.data;
+    if(cutF||RS){const src=g.getImageData(0,0,W,H).data,fc=PX.canvas(W,H),fg=fc.getContext('2d', { willReadFrequently: true }),fi=fg.createImageData(W,H),fd=fi.data;
       const BC=Math.max(1,Math.floor(PX.GROUND_BAND/H)),cut=function*(v,dk,ID){let open=[];for(let x=0;x<W;x++){if(x&&!(x%BC))yield at(8,.5+.2*x/W+(dk===3?.2:0));const runs=[];for(let y=0;y<H;y++){if(F[y*W+x]!==v)continue;const id=ID?ID[y*W+x]:0;let y1=y;while(y1+1<H&&F[(y1+1)*W+x]===v&&(!ID||ID[(y1+1)*W+x]===id))y1++;runs.push([y,y1,id]);
           for(let k=y;k<=y1;k++){const o=(k*W+x)*4;fd[o]=src[o];fd[o+1]=src[o+1];fd[o+2]=src[o+2];fd[o+3]=255}y=y1}
         const next=[];for(const [y0,y1,id] of runs){let s=open.find(q=>q.id===id&&Math.max(q.yb,y1)-Math.min(q.y,y1)<=2&&q.lt<=y1+1&&y0<=q.lb+1&&x-q.sx<16);
@@ -1089,7 +1089,7 @@
       const L=Math.round(m.a*dx+m.e),T=Math.round(m.d*dy+m.f),R=Math.round(m.a*(dx+dw)+m.e),D=Math.round(m.d*(dy+dh)+m.f);if(R<=L||D<=T)return;
       g.save();g.setTransform(1,0,0,1,0,0);g.drawImage(img,sx,sy,sw,sh,L,T,R-L,D-T);g.restore()}
     // (the overview made from the tiles, one by one: a ground whose whole was never painted at once (an arena's))
-    overview(){const O=this.over=PX.canvas(Math.ceil(this.width/2),Math.ceil(this.height/2)),g=O.getContext('2d');g.imageSmoothingEnabled=true;g.imageSmoothingQuality='low';
+    overview(){const O=this.over=PX.canvas(Math.ceil(this.width/2),Math.ceil(this.height/2)),g=O.getContext('2d', { willReadFrequently: true });g.imageSmoothingEnabled=true;g.imageSmoothingQuality='low';
       for(let k=0;k<this.cols*this.rows;k++){const [x,y,w,h]=this.rect(k);g.drawImage(this.tile(k),0,0,w,h,x/2,y/2,w/2,h/2)}}
     /* the field's view [x0,y0,x1,y1) (field px) drawn on g (in field px) at zoom z: zoomed out, the overview; else the tiles in it,
        the same pixels as the whole drawn there (each painted now if it must be; with an overview a missing one shown from it while it
@@ -1136,7 +1136,7 @@
   const CANOPY_BAND=64;
   PX.battleCanopy=ground=>{if(ground.canopy)return ground.canopy;
     if(!(ground instanceof BattleGround))return ground.canopy=PX.canvas(ground.width,ground.height,g=>{for(const p of ground.props||[])if(p.dk===1)g.drawImage(p.s,p.dx,p.dy)});
-    const W=ground.width,H=ground.height,B=CANOPY_BAND,T=(ground.props||[]).filter(p=>p.dk===1),strip=PX.canvas(W,B),sg=strip.getContext('2d');
+    const W=ground.width,H=ground.height,B=CANOPY_BAND,T=(ground.props||[]).filter(p=>p.dk===1),strip=PX.canvas(W,B),sg=strip.getContext('2d', { willReadFrequently: true });
     const half=PX.canvas(Math.ceil(W/2),Math.ceil(H/2),g=>{g.imageSmoothingEnabled=true;g.imageSmoothingQuality='low';
       for(let y=0;y<H;y+=B){sg.clearRect(0,0,W,B);for(const p of T){const b=p.box;if(b[3]>=y&&b[1]<y+B)sg.drawImage(p.s,p.dx,p.dy-y)}g.drawImage(strip,0,0,W,B,0,y/2,W/2,B/2)}});
     return ground.canopy={width:W,height:H,half,drawView(g,x0,y0,x1,y1){const a=Math.max(0,Math.floor(x0/2)-1),b=Math.max(0,Math.floor(y0/2)-1),c=Math.min(half.width,Math.ceil(x1/2)+1),d=Math.min(half.height,Math.ceil(y1/2)+1);if(c>a&&d>b)g.drawImage(half,a,b,c-a,d-b,a*2,b*2,(c-a)*2,(d-b)*2)}}};
@@ -1161,7 +1161,7 @@
   // cells its rock (lighter as it rises; snow on a cold one), the cells its peaks stand over their ground (ground.under); with walls a
   // cliff's contour darker, a slope's faint
   PX.battleGroundMini=(spec,ground)=>{if(ground&&ground.mini)return ground.mini;const C=spec.C,R=spec.R,cs=spec.cs||16,P=PX.GROUND_PAL[spec.climate]||PX.GROUND_PAL.grass,lvl=spec.lvl||new Uint8Array(C*R),kind=spec.kind||new Uint8Array(C*R),U=ground&&ground.under,WL=spec.wall&&spec.wall.length===C*R?spec.wall:null,RP=(P.rock||PX.GROUND_PAL.grass.rock);
-    return PX.canvas(C,R,g=>{const img=g.createImageData(C,R),M=img.data,G=ground?ground.getContext('2d').getImageData(0,0,ground.width,ground.height):null,B1=hx(P.base[1]),HI=hx(P.hi),LN=hx(P.line),LF=hx(P.leaf[3]),WA=hx(P.water[1]);
+    return PX.canvas(C,R,g=>{const img=g.createImageData(C,R),M=img.data,G=ground?ground.getContext('2d', { willReadFrequently: true }).getImageData(0,0,ground.width,ground.height):null,B1=hx(P.base[1]),HI=hx(P.hi),LN=hx(P.line),LF=hx(P.leaf[3]),WA=hx(P.water[1]);
       for(let j=0;j<R;j++)for(let i=0;i<C;i++){const o=(j*C+i)*4,k=kind[j*C+i],l=lvl[j*C+i];let c=[0,0,0],n=0;
         if(G){for(let y=j*cs+1;y<Math.min(G.height,(j+1)*cs);y+=2)for(let x=i*cs+1;x<Math.min(G.width,(i+1)*cs);x+=2){const q=(y*G.width+x)*4;c[0]+=G.data[q];c[1]+=G.data[q+1];c[2]+=G.data[q+2];n++}}
         c=n?c.map(v=>v/n):B1.slice();const m=(d,t)=>{c=c.map((v,z)=>v+(d[z]-v)*t)};if(U&&k!==6&&U[(j*C+i)*3]>=0)c=[U[(j*C+i)*3],U[(j*C+i)*3+1],U[(j*C+i)*3+2]];

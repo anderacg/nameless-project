@@ -12,7 +12,7 @@ window.RUN=()=>{const t=T,o=[],q=new URLSearchParams(location.search);
   const [x,y]=(q.get('at')||'246,45').split(',').map(Number),off=!!q.get('off');t.fieldSet(q.get('size')||'big');t.TERRAIN_WORLD.on=!off;
   t.P.x=(x+.5)*16;t.P.y=(y+.5)*16;const S=t.WM.battleSite(x,y),env=t.battleEnv(false,S),g=t.terrainOf(S,env),W=t.BW,H=t.BH,T0=t.buildTerrain({...g,W,H,top:24,bot:H-8});
   const cv=t.PX.battleGround({...T0,climate:env.c,base:t.paintArena(env.c)}),lab=40,pg=document.createElement('canvas');pg.width=W;pg.height=H+lab;
-  pg.style.cssText='position:absolute;left:0;top:0;z-index:9999';document.body.appendChild(pg);const c=pg.getContext('2d');c.imageSmoothingEnabled=false;c.fillStyle='#1a1c26';c.fillRect(0,0,pg.width,pg.height);
+  pg.style.cssText='position:absolute;left:0;top:0;z-index:9999';document.body.appendChild(pg);const c=pg.getContext('2d', { willReadFrequently: true });c.imageSmoothingEnabled=false;c.fillStyle='#1a1c26';c.fillRect(0,0,pg.width,pg.height);
   c.drawImage(cv,0,lab);c.save();c.translate(0,lab);t.PX.battleProps(c,cv);
   if(q.get('zones')){c.strokeStyle='rgba(255,255,255,.55)';c.setLineDash([6,4]);for(const tm of [0,1]){const z=t.fieldZone(tm);c.strokeRect(z.x0+.5,24.5,z.x1-z.x0,H-32)}}
   c.restore();const w=S.mix?'mix '+S.mix.c+' '+S.mix.share.toFixed(2):'',p=S.pond?'pond '+S.pond.kind:'',b=S.brook?'brook':'',l=S.lane?(S.lane.track?'track':'lane'):'',lt=S.lots?'lots '+S.lots.length:'';

@@ -101,7 +101,7 @@ try{
   bents.sort((a,b)=>a.y-b.y).forEach(e=>e.f());drawLand(cam,'line');
   // fog of war: keep the scene of structures, draw everyone, then put the remembered scene back over all but your sight, so
   // nothing that moves shows outside it; labels likewise (a place's, where you know the land; anyone's, only in your sight)
-  {const mg=memCv().getContext('2d');mg.clearRect(0,0,VW,VH);mg.drawImage(cv,0,0)}const nPlace=TXTQ.length,px0=P.x-cam.x,py0=P.y-cam.y;
+  {const mg=memCv().getContext('2d', { willReadFrequently: true });mg.clearRect(0,0,VW,VH);mg.drawImage(cv,0,0)}const nPlace=TXTQ.length,px0=P.x-cam.x,py0=P.y-cam.y;
   ents.filter(e=>!e.st).sort((a,b)=>a.y-b.y).forEach(e=>e.f());
   ctx.save();ctx.beginPath();ctx.rect(0,0,VW,VH);ctx.arc(px0,py0,V,0,Math.PI*2,true);ctx.clip('evenodd');ctx.drawImage(memCv(),0,0);ctx.restore();
   const q=TXTQ;TXTQ=null;q.forEach((a,i)=>{const wx=a[1]+cam.x,wy=a[2]+cam.y;if(i<nPlace?seenAt(wx,wy+6):inSight(wx,wy+8))txt(...a)});
@@ -297,7 +297,7 @@ try{
   const paint=fn=>{Math.random=t.seeded(7);c.save();c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,c.canvas.width,c.canvas.height);c.restore();fn();
    const d=c.getImageData(0,0,c.canvas.width,c.canvas.height).data;let h=0,lit=0;for(let i=0;i<d.length;i++){h=(h*31+d[i])|0;if(d[i])lit++}return [h,lit].join()};
   // (the marks on the screen and on the scene of what stands, memCv: drawWorld draws that scene in game pixels first, render.js)
-  const rects=fn=>{const got=[],P2=CanvasRenderingContext2D.prototype,f0=P2.fillRect,lo=t.memCv().getContext('2d');P2.fillRect=function(...a){if(this===c||this===lo)got.push(this.fillStyle+' '+a.join());return f0.apply(this,a)};try{paint(fn)}finally{P2.fillRect=f0}return got.join('|')};
+  const rects=fn=>{const got=[],P2=CanvasRenderingContext2D.prototype,f0=P2.fillRect,lo=t.memCv().getContext('2d', { willReadFrequently: true });P2.fillRect=function(...a){if(this===c||this===lo)got.push(this.fillStyle+' '+a.join());return f0.apply(this,a)};try{paint(fn)}finally{P2.fillRect=f0}return got.join('|')};
   const off={monsters:W.monsters,critters:W.critters,folk:W.folk,ships:W.ships,refugees:W.refugees,fights:W.fights};for(const k in off)W[k]=[];
   try{paint(t.drawWorld);paint(oldDraw);const a=paint(oldDraw),n=paint(t.drawWorld),a2=paint(oldDraw);
    ok(a===n&&a===a2,'the whole map is drawn as before, pixel for pixel ('+n+')');

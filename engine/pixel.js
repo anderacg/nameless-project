@@ -18,7 +18,7 @@
   PX.mix=(a,b,t)=>{const A=hex2(a),B=hex2(b);return rgb2(A[0]+(B[0]-A[0])*t,A[1]+(B[1]-A[1])*t,A[2]+(B[2]-A[2])*t)};
 
   /* canvases */
-  PX.canvas=(w,h,draw)=>{const c=document.createElement('canvas');c.width=Math.max(1,w);c.height=Math.max(1,h);const g=c.getContext('2d');g.imageSmoothingEnabled=false;if(draw)draw(g,c);return c};
+  PX.canvas=(w,h,draw)=>{const c=document.createElement('canvas');c.width=Math.max(1,w);c.height=Math.max(1,h);const g=c.getContext('2d', { willReadFrequently: true });g.imageSmoothingEnabled=false;if(draw)draw(g,c);return c};
   // a painter over one context: solid rectangles, single pixels, and polygons filled pixel by pixel through a colour function
   PX.paint=g=>{
     const P={
@@ -33,7 +33,7 @@
     };return P;
   };
   // a 1-pixel outline around everything opaque (the same dark rim the characters wear); returns a new canvas 2px bigger
-  PX.outline=(src,col)=>{const c=PX.canvas(src.width+2,src.height+2),g=c.getContext('2d'),m=PX.canvas(src.width,src.height),mg=m.getContext('2d');
+  PX.outline=(src,col)=>{const c=PX.canvas(src.width+2,src.height+2),g=c.getContext('2d', { willReadFrequently: true }),m=PX.canvas(src.width,src.height),mg=m.getContext('2d', { willReadFrequently: true });
     mg.drawImage(src,0,0);mg.globalCompositeOperation='source-in';mg.fillStyle=col||'#1a1512';mg.fillRect(0,0,m.width,m.height);
     for(const [a,b] of [[0,1],[2,1],[1,0],[1,2]])g.drawImage(m,a,b);g.drawImage(src,1,1);return c};
 

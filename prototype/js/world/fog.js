@@ -86,7 +86,7 @@ function drawWorldFog(cam,V){
 // the remembered scene (render.js memCv: the structures before anyone was drawn) put back over all but your sight, its edge
 // fading in over WFOG.feather px inside it: nothing that moves shows outside your sight, and none is cut off sharp at its edge
 function fogMem(mem,px,py,V){
-  const g=mem.getContext('2d'),f=Math.min(WFOG.feather,V*.5),gr=g.createRadialGradient(px,py,V-f,px,py,V);gr.addColorStop(0,'rgba(0,0,0,1)');gr.addColorStop(1,'rgba(0,0,0,0)');
+  const g=mem.getContext('2d', { willReadFrequently: true }),f=Math.min(WFOG.feather,V*.5),gr=g.createRadialGradient(px,py,V-f,px,py,V);gr.addColorStop(0,'rgba(0,0,0,1)');gr.addColorStop(1,'rgba(0,0,0,0)');
   g.save();g.globalCompositeOperation='destination-out';g.fillStyle=gr;g.beginPath();g.arc(px,py,V,0,Math.PI*2);g.fill();g.restore();ctx.drawImage(mem,0,0)}
 // the minimap's dark: one pixel a tile, soft-edged, dim over land you know, dark over land you do not; rebuilt when more land is
 // known (at most twice a second)

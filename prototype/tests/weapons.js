@@ -38,7 +38,7 @@ try{
  const bear={x:100,y:100,s:{...t.ST.bear},team:0,type:'bear',face:1};t.meleeFollow(bear,a1[0],5);ok(B.slashes.some(s=>s.kind==='claw'),'beasts leave claw marks');
  ok(t.troopStyle({s:t.ST.spearman,type:'spearman',atkN:1})==='thrust'&&t.troopStyle({s:t.ST.chief,type:'chief',atkN:1})==='overhead','spearmen thrust, chieftains chop from above');
  // poses: a swing, a thrust and an overhead blow look different
- const px=c=>{const d=c.getContext('2d').getImageData(0,0,c.width,c.height).data;let hh=0;for(let i=0;i<d.length;i+=4)hh=(hh*31+d[i]+d[i+1]*3+d[i+2]*7+d[i+3])|0;return hh};
+ const px=c=>{const d=c.getContext('2d', { willReadFrequently: true }).getImageData(0,0,c.width,c.height).data;let hh=0;for(let i=0;i<d.length;i+=4)hh=(hh*31+d[i]+d[i+1]*3+d[i+2]*7+d[i+3])|0;return hh};
  ok(new Set([7,10,13].map(p=>px(t.unitSprite('militia',0,false,0,p)))).size===3,'swing, thrust and overhead strikes are drawn differently');
  B.over=true;t.updateBattle(.01);t.act('cont');t.frame();
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}

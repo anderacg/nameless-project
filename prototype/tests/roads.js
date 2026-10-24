@@ -60,18 +60,18 @@ try{
   ok(worst<25,'road planning time a field (ms, the field\'s ways together): '+out.join('; '))}
  // ---- the art: no road line under a cliff face (a face prop's pixel), no face on a ramp, a gap in the canopy over a forest road
  {let pts=0,hid=0;for(const {sp,T:T0} of fields.filter(f=>f.T.wall&&f.T.recipe.road).slice(0,12)){const gr=t.PX.battleGround({...T0,climate:sp.frost?'frost':'grass'});
-     const faces=gr.props.filter(p=>p.dk===2).map(p=>({p,d:p.s.getContext('2d').getImageData(0,0,p.s.width,p.s.height).data}));
+     const faces=gr.props.filter(p=>p.dk===2).map(p=>({p,d:p.s.getContext('2d', { willReadFrequently: true }).getImageData(0,0,p.s.width,p.s.height).data}));
      for(const w of T0.ways)for(let j=1;j<w.p.length;j++)for(let k=0;k<4;k++){const x=Math.round(w.p[j-1][0]+(w.p[j][0]-w.p[j-1][0])*k/4),y=Math.round(w.p[j-1][1]+(w.p[j][1]-w.p[j-1][1])*k/4);if(x<0||y<0||x>=W||y>=H)continue;pts++;
        for(const f of faces){const b=f.p.box;if(x<b[0]||x>b[2]||y<b[1]||y>b[3])continue;if(f.d[((y-f.p.dy)*f.p.s.width+(x-f.p.dx))*4+3]>0)hid++}}}
   ok(pts>500&&hid<=pts*.002,'a road is never drawn under a cliff face: '+hid+' of '+pts+' points of road lines on fields with cliffs lie on a face prop\'s pixel')}
  {// (a sheer plateau with one ramp south: no face prop pixel in the ramp's middle, the cliff either side a face)
   const T0=t.buildTerrain({explicit:{hills:[{x:.5,y:.5,r:150,cliff:true,ramps:[90]}],seed:3},W:1280,H:720,top:40,bot:680}),gr=t.PX.battleGround({...T0,climate:'grass'}),{C,cs}=T0;
   const ramp=[],cliff=[];for(let i=0;i<T0.lvl.length;i++){if(!T0.lvl[i]||i+C>=T0.lvl.length||T0.lvl[i+C]>=T0.lvl[i])continue;((T0.wall[i]&2)||(T0.wall[i+C]&8)?cliff:ramp).push(i)}
-  const faces=gr.props.filter(p=>p.dk===2).map(p=>({p,d:p.s.getContext('2d').getImageData(0,0,p.s.width,p.s.height).data})),onFace=(x,y)=>faces.some(f=>{const b=f.p.box;return x>=b[0]&&x<=b[2]&&y>=b[1]&&y<=b[3]&&f.d[((y-f.p.dy)*f.p.s.width+(x-f.p.dx))*4+3]>0});
+  const faces=gr.props.filter(p=>p.dk===2).map(p=>({p,d:p.s.getContext('2d', { willReadFrequently: true }).getImageData(0,0,p.s.width,p.s.height).data})),onFace=(x,y)=>faces.some(f=>{const b=f.p.box;return x>=b[0]&&x<=b[2]&&y>=b[1]&&y<=b[3]&&f.d[((y-f.p.dy)*f.p.s.width+(x-f.p.dx))*4+3]>0});
   const mids=ramp.filter(i=>ramp.includes(i-1)&&ramp.includes(i+1));let rf=0,rn=0,cf=0,cn=0;
   for(const i of mids){const c=i%C,r=(i-c)/C;for(let y=(r+1)*cs-10;y<(r+1)*cs-2;y+=2){rn++;if(onFace(c*cs+8,y))rf++}}for(const i of cliff){const c=i%C,r=(i-c)/C;cn++;if(onFace(c*cs+8,(r+1)*cs-6)||onFace(c*cs+8,(r+1)*cs-3)||onFace(c*cs+8,(r+1)*cs-9))cf++}
   ok(mids.length>0&&rf===0&&cf>=cn*.6,'a ramp breaks the cliff: no face prop over its middle ('+rf+' of '+rn+' points), the cliff either side is face ('+cf+'/'+cn+' of its edge cells)')}
- {const T0=t.buildTerrain({recipe:'forest',layout:'deepwood',seed:12,W:1600,H:900,top:40,bot:860,road:{ew:true},forest:true}),gr=t.PX.battleGround({...T0,climate:'grass'}),cv=t.PX.battleCanopy(gr),d=cv.getContext('2d').getImageData(0,0,cv.width,cv.height).data,w=T0.ways.find(q=>q.kind==='road');let n=0,open=0;
+ {const T0=t.buildTerrain({recipe:'forest',layout:'deepwood',seed:12,W:1600,H:900,top:40,bot:860,road:{ew:true},forest:true}),gr=t.PX.battleGround({...T0,climate:'grass'}),cv=t.PX.battleCanopy(gr),d=cv.getContext('2d', { willReadFrequently: true }).getImageData(0,0,cv.width,cv.height).data,w=T0.ways.find(q=>q.kind==='road');let n=0,open=0;
   for(const [x,y] of w.p){if(x<0||y<20||x>=cv.width||y>=cv.height)continue;n++;if(d[(y*cv.width+x)*4+3]===0)open++}
   ok(n>50&&open>=n*.95,'a forest road shows through the canopy layer (a big wood zoomed out): '+open+' of '+n+' points of its line open')}
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}finally{try{(0,eval)('if(window.__wp)wayPlan=__wp;TERRAIN.on=false;B=null')}catch(e){}}

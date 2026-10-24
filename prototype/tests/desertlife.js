@@ -14,7 +14,7 @@ try{
  // ---- every desert layout stands cacti and the rest; the flat details painted
  {const lay=['plain','dune','dunes','erg','spires'],res=[],kinds={};let bad=0,flat=0;
   for(const ly of lay)for(let s=1;s<=4;s++){const {G:G0}=paint('desert',s*7919+ly.length,1100,600,{layout:ly}),D=dec(G0),c=D.filter(p=>CACTI.includes(p.dc)).length;res.push(D.length);if(c<3||D.length<30)bad++;for(const p of D)kinds[p.dc]=(kinds[p.dc]||0)+1;
-   const d=G0.getContext('2d').getImageData(0,0,G0.width,G0.height).data;let fl=0,pan=0;for(let i=0;i<d.length;i+=4){if(d[i]===0x7e&&d[i+1]===0x60&&d[i+2]===0x46)fl++;else if(d[i]===0xb0&&d[i+1]===0x8c&&d[i+2]===0x58)pan++}if(fl>40&&pan>10)flat++}
+   const d=G0.getContext('2d', { willReadFrequently: true }).getImageData(0,0,G0.width,G0.height).data;let fl=0,pan=0;for(let i=0;i<d.length;i+=4){if(d[i]===0x7e&&d[i+1]===0x60&&d[i+2]===0x46)fl++;else if(d[i]===0xb0&&d[i+1]===0x8c&&d[i+2]===0x58)pan++}if(fl>40&&pan>10)flat++}
   ok(!bad,'every desert layout ('+lay.join(', ')+', 4 seeds each) stands its life: '+Math.min(...res)+'–'+Math.max(...res)+' pieces a 1100×600 field, 3 cacti at least ('+bad+' short)');
   ok(['saguaro','young','barrel','pear','dead','dry','rocks'].every(k=>kinds[k]>0)&&(kinds.skull||0)+(kinds.ribs||0)>0,'all kinds stand: '+Object.entries(kinds).map(([k,n])=>k+' '+n).join(', '));
   ok(flat===20,'the flat details are painted on every one: dark flecks and sun-cracked clay pans ('+flat+'/20)')}
@@ -54,7 +54,7 @@ try{
   L.exit()}
  // ---- seeded: the same field, the same decor and pixels; another seed, another; never Math.random
  {let calls=0;const r0=Math.random;Math.random=()=>{calls++;return r0()};let a,b,c;
-  try{const T0=t.buildTerrain({recipe:'desert',seed:555,W:1100,H:600,top:40,bot:560,layout:'erg',oasis:true}),h=G0=>[fnv(G0.getContext('2d').getImageData(0,0,G0.width,G0.height).data),dec(G0).map(p=>p.dc+p.x+','+p.y).join(';')];
+  try{const T0=t.buildTerrain({recipe:'desert',seed:555,W:1100,H:600,top:40,bot:560,layout:'erg',oasis:true}),h=G0=>[fnv(G0.getContext('2d', { willReadFrequently: true }).getImageData(0,0,G0.width,G0.height).data),dec(G0).map(p=>p.dc+p.x+','+p.y).join(';')];
    a=h(PX.battleGround({...T0,climate:'desert'}));b=h(PX.battleGround({...T0,climate:'desert'}));c=h(paint('desert',556,1100,600,{layout:'erg',oasis:true}).G)}finally{Math.random=r0}
   ok(a[0]===b[0]&&a[1]===b[1]&&a[1].length>0,'the same field paints the same ground and the same decor, piece for piece');
   ok(a[1]!==c[1],'another seed, another desert');ok(calls===0,'never Math.random ('+calls+' calls)')}

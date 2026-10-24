@@ -69,7 +69,7 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
    t.setOrderUI();const card=g=>document.querySelector('.ucard[data-grp="'+g+'"]');
    ok(card(inf).querySelector('[data-st="ai"]')&&card(arc).querySelector('[data-st="ai"]')&&!card(cav).querySelector('[data-st="ai"]')&&/the AI in command/.test(card(inf).title),'their unit cards carry the AI badge, yours none'+' ('+[inf,arc,cav].map(g=>g+': '+(card(g)?card(g).title:'no card')).join(' | ')+')');
    // (the field icon: the badge first beside it, its violet rim drawn)
-   t.frame();const it=t.iconLayout(0).find(x=>x.g===inf);t.frame();const ic=B.icons.find(r=>r.g===inf),cx=document.querySelector('canvas').getContext('2d');
+   t.frame();const it=t.iconLayout(0).find(x=>x.g===inf);t.frame();const ic=B.icons.find(r=>r.g===inf),cx=document.querySelector('canvas').getContext('2d', { willReadFrequently: true });
    let violet=0;if(ic){const K=t.UICON.k,S=t.UICON.s,d=cx.getImageData(ic.x+(S+2)*K,ic.y,9*K,9*K).data;for(let i=0;i<d.length;i+=4)if(d[i]===0xb4&&d[i+1]===0x8c&&d[i+2]===0xf0)violet++}
    ok(it&&it.st[0]==='ai'&&violet>=10,'and their icons on the field: the AI badge beside it ('+violet+' violet rim pixels)');
    // (who gives the AI's orders to whom: every order to a group of yours while the captains think, command())
@@ -95,7 +95,7 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
    B.sel=inf;t.rtsOrder(300,300);ok(!B.auto&&!t.aiHas(B.groups[inf])&&t.playerGroups().filter(g=>g!==inf).every(g=>t.aiHas(B.groups[g]))&&!t.BAUTO.on,'then an order to one group takes back that group alone');
    t.setAuto(false,true)}
   // ======== allies in green: their soldiers' cloth, health bars and minimap dots (yours blue, theirs red)
-  {const B=battle(4242);t.HPBARS.on=true;const cx=document.querySelector('canvas').getContext('2d');
+  {const B=battle(4242);t.HPBARS.on=true;const cx=document.querySelector('canvas').getContext('2d', { willReadFrequently: true });
    const pick=s=>B.units.find(u=>u.hp>0&&!u.hero&&!u.leader&&!u.s.big&&t.sideKey(u)===s),U={own:pick('own'),ally:pick('ally'),foe:pick('foe')};
    const hex=h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16)),PP=t.PPAL,cloth={own:PP.blue,ally:PP.forest,foe:PP.red};
    const count=(d,cols,tol=0)=>{let n=0;for(let i=0;i<d.length;i+=4)if(cols.some(c=>Math.abs(d[i]-c[0])<=tol&&Math.abs(d[i+1]-c[1])<=tol&&Math.abs(d[i+2]-c[2])<=tol))n++;return n};

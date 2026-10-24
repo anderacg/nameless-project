@@ -11,7 +11,7 @@ try{
  ok(t.CLIMS.every(c=>cnt[c]>land*.06),'climate share of land: '+t.CLIMS.map(c=>c+' '+Math.round((cnt[c]||0)/land*100)+'%').join(', '));
  const mt=[...t.tiles].filter(x=>x===t.T_MOUNT).length;ok(mt>8,'mountain tiles: '+mt);
  {const off=TOWNS.filter(x=>t.climAt(x.x,x.y)!==x.clim);ok(!off.length,'each holding sits in its own climate'+(off.length?': not '+off.map(x=>x.name+' ('+x.clim+' on '+t.climAt(x.x,x.y)+')').join(', '):''))}
- const cv=document.createElement('canvas');cv.width=MW*TILE;cv.height=MH*TILE;const g=cv.getContext('2d');g.drawImage(t.worldCv(),0,0);
+ const cv=document.createElement('canvas');cv.width=MW*TILE;cv.height=MH*TILE;const g=cv.getContext('2d', { willReadFrequently: true });g.drawImage(t.worldCv(),0,0);
  g.font='bold 14px sans-serif';g.textAlign='center';for(const x of TOWNS){g.fillStyle='#000';g.fillText(x.name,x.x+1,x.y-11);g.fillStyle='#fff';g.fillText(x.name,x.x,x.y-12)}
  Object.assign(cv.style,{position:'fixed',left:0,top:0,width:'100vw',height:'auto',zIndex:99,imageRendering:'pixelated'});document.body.appendChild(cv);
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}

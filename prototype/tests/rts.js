@@ -466,8 +466,8 @@ try{
   e.hp=1;t.hit(me,e,99);const cp=B.corpses[B.corpses.length-1];ok(cp.sp&&cp.sp.body&&cp.sp.stand,'one struck down has a body to lie as');
   ok(cp.sp.body.width===cp.sp.stand.height&&cp.sp.body.height===cp.sp.stand.width,'him, turned flat (pixel for pixel)');
   t.drawBattle();B.t+=t.GORE.fall+t.GORE.pool+.1;t.drawBattle();ok(cp.baked&&B.gore,'once he has bled, he is painted into the field (no cost to show)');
-  const px=B.gore.getContext('2d').getImageData(Math.round(cp.x)-12,Math.round(cp.y)-8,30,14).data;let red=0;for(let i=0;i<px.length;i+=4)if(px[i+3]&&px[i]>2*px[i+1]&&px[i]>2*px[i+2])red++;ok(red>6,'lying in his blood ('+red+' px)');
-  t.setBlood(false);t.drawBattle();const px2=B.gore.getContext('2d').getImageData(Math.round(cp.x)-12,Math.round(cp.y)-8,30,14).data;let red2=0,any=0;for(let i=0;i<px2.length;i+=4){if(px2[i+3])any++;if(px2[i+3]&&px2[i]>2*px2[i+1]&&px2[i]>2*px2[i+2])red2++}
+  const px=B.gore.getContext('2d', { willReadFrequently: true }).getImageData(Math.round(cp.x)-12,Math.round(cp.y)-8,30,14).data;let red=0;for(let i=0;i<px.length;i+=4)if(px[i+3]&&px[i]>2*px[i+1]&&px[i]>2*px[i+2])red++;ok(red>6,'lying in his blood ('+red+' px)');
+  t.setBlood(false);t.drawBattle();const px2=B.gore.getContext('2d', { willReadFrequently: true }).getImageData(Math.round(cp.x)-12,Math.round(cp.y)-8,30,14).data;let red2=0,any=0;for(let i=0;i<px2.length;i+=4){if(px2[i+3])any++;if(px2[i+3]&&px2[i]>2*px2[i+1]&&px2[i]>2*px2[i+2])red2++}
   ok(red2<red&&any>0,'Blood off: the field is painted again, the body still there, the pool gone');
   B.vfx=[];const e2=B.units.find(u=>u.team===1&&u.hp>0);if(e2){t.vfxHit(me,e2,20,{crit:true});t.applyDmg(e2,5,1);ok(!B.vfx.some(p=>p.k==='blood'),'and blows draw no blood (nor does the wound itself)')}t.setBlood(true);
   B.bestCombo=4;const n0=G.msgs.length;B.win=true;B.over=true;t.finishBattle();ok(G.msgs.slice(n0).some(m=>/longest chain of blows: 4/.test(m.m)),'the longest chain of blows is told in the log');t.hidePanel&&t.hidePanel();G.modal=false;t.B=null}
@@ -519,7 +519,7 @@ try{
   a.cd=0;a.shot=null;a.aimA=0;a.face=1;a.grp=testGroup('arc');B.groups[testGroup('arc')].skirmish=true;B.groups[testGroup('arc')].tgt=null;t.aiUnit(a,.03,null);ok(!t.roundFire(a)&&!a.shot,'skirmishers too shoot only in their cone: a foe behind, they turn first');B.groups[testGroup('arc')].skirmish=false;a.shot=null;
   a.cd=0;a.aimA=0;B.groups[testGroup('arc')].cease=true;e.x=a.x+60;t.aiUnit(a,.03,null);ok(!a.shot,'ceasing fire, no draw');B.groups[testGroup('arc')].cease=false;
   a.grp=null;a.aimA=0;a.cd=0;a.shot=null;t.aiUnit(a,.03,null);a.stun=.5;t.aiUnit(a,.03,null);ok(!a.shot,'staggered, the draw is let down');a.stun=0;
-  B.sel=testGroup('arc');B.hov=null;a.grp=testGroup('arc');a.aimA=0;a.face=1;const shape=t.formationReachGeometry(a.grp);t.drawBattle();const px=(x,y)=>B.rangeCv.getContext('2d').getImageData(Math.round(x),Math.round(y),1,1).data[3];
+  B.sel=testGroup('arc');B.hov=null;a.grp=testGroup('arc');a.aimA=0;a.face=1;const shape=t.formationReachGeometry(a.grp);t.drawBattle();const px=(x,y)=>B.rangeCv.getContext('2d', { willReadFrequently: true }).getImageData(Math.round(x),Math.round(y),1,1).data[3];
   ok(shape&&px(shape.ax+shape.range-1,shape.ay)>0&&!px(shape.ax-shape.range+1,shape.ay),'their formation envelope paints the current-facing front edge and leaves its rear clear');B.over=true;B.endT=0;t.B=null}
  // a lord or a companion with a bow: the same cycle, their own arrow
  {P.comps={brann:{ap:0,role:''}};t.compInit('brann');const B=fight(['militia']);B.obs=[];const c=B.units.find(u=>u.comp),e=B.units.find(u=>u.team===1);
@@ -534,7 +534,7 @@ try{
   B.arrows=[];ar.forEach(u=>u.cd=0);for(let j=0;j<60;j++)t.updateBattle(.03);ok(!B.arrows.filter(x=>x.team===0).length,'ceasing fire, they hold their shots');
   t.rtsOrder(e.x,e.y-6);ar.forEach(u=>u.cd=0);let shot=0;for(let j=0;j<60;j++){t.updateBattle(.03);shot+=B.arrows.filter(x=>x.team===0).length}ok(shot>0||e.hp<9999,'but shoot the enemy you set them on');
   t.toggleFlag('cease');ok(!B.groups[testGroup('arc')].cease,'Q again: fire at will');
-  B.hov={x:e.x,y:e.y-4};t.drawBattle();ok(B.rangeCv&&B.rangeCv.getContext('2d').getImageData(Math.round(a.x+a.s.range-1),Math.round(a.y),1,1).data[3]>0,'their reach is drawn round them, out to their range');
+  B.hov={x:e.x,y:e.y-4};t.drawBattle();ok(B.rangeCv&&B.rangeCv.getContext('2d', { willReadFrequently: true }).getImageData(Math.round(a.x+a.s.range-1),Math.round(a.y),1,1).data[3]>0,'their reach is drawn round them, out to their range');
   B.over=true;B.endT=0;t.B=null}
  // their archers, attacking, go up to shoot from their range; defending, they wait behind their line
  {P.troops={hum_spear:4};const L=['hum_bow','hum_bow','hum_bow','hum_bow','hum_foot','hum_foot','hum_foot','hum_foot','hum_foot','hum_foot','hum_foot','hum_foot'];G.mode='world';G.modal=false;t.hidePanel();

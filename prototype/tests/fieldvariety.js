@@ -148,7 +148,7 @@ try{
    ok(out&&inn&&off,'a huge forest ('+G0().trees+' trees): zoomed out (×'+B.cam.z.toFixed(2)+') its trees are one canopy layer under the men, none sorted in; at ×1 the sprites; LOD off, the sprites')}
   // (roads painted: the ground along a road's line is the track, not the grass it was; with no way nothing changes)
   {const W=1792,H=1008,top=40,bot=H-40,T0=t.buildTerrain({recipe:'open',seed:21,W,H,top,bot,road:{ew:true}}),sp={...T0,climate:'grass'},A=t.PX.battleGround(sp),N=t.PX.battleGround({...sp,ways:[],recipe:{...T0.recipe,ways:[]}});
-   const a=A.getContext('2d').getImageData(0,0,W,H).data,b=N.getContext('2d').getImageData(0,0,W,H).data,w=T0.ways.find(q=>q.kind==='road');let on=0,n=0;
+   const a=A.getContext('2d', { willReadFrequently: true }).getImageData(0,0,W,H).data,b=N.getContext('2d', { willReadFrequently: true }).getImageData(0,0,W,H).data,w=T0.ways.find(q=>q.kind==='road');let on=0,n=0;
    for(const [x,y] of w.p){if(x<8||y<8||x>=W-8||y>=H-8)continue;for(let dy=-3;dy<=3;dy++){const i=((y+dy)*W+x)*4;n++;if(a[i]!==b[i]||a[i+1]!==b[i+1]||a[i+2]!==b[i+2])on++}}
    ok(w&&on/n>.85,'a road is painted along its way: '+Math.round(on/n*100)+'% of the ground on its line changed')}
   ev('FIELD_SIZES.on=false;EXITS.on=false')}

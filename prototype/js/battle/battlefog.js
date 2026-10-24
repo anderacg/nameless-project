@@ -89,10 +89,10 @@ const ghostFade=q=>Math.max(0,1-(B.t-q.t)/FOG.ghost);
    drawn as mist (fogDraw): its edge billowing, no hard lines where the fog begins */
 function fogView(){
   const G=B.fog&&B.sight&&B.sight.fog;if(!G||!G.vis[0])return null;let O=B.fogView;const vis=G.vis[0];
-  if(!O||O.N!==G.N){O=B.fogView={N:G.N,C:G.C,R:G.R,cs:G.cs,a:new Float32Array(G.N),lt:0,f:-1};for(let i=0;i<G.N;i++)O.a[i]=vis[i]?0:1;O.cv=mkc(G.C,G.R,()=>{});O.img=O.cv.getContext('2d').createImageData(G.C,G.R);O.dirty=true}
+  if(!O||O.N!==G.N){O=B.fogView={N:G.N,C:G.C,R:G.R,cs:G.cs,a:new Float32Array(G.N),lt:0,f:-1};for(let i=0;i<G.N;i++)O.a[i]=vis[i]?0:1;O.cv=mkc(G.C,G.R,()=>{});O.img=O.cv.getContext('2d', { willReadFrequently: true }).createImageData(G.C,G.R);O.dirty=true}
   const now=performance.now(),st=O.lt?Math.min(.1,(now-O.lt)/1000)/FOG.fade:1;O.lt=now;let ch=O.dirty;
   for(let i=0;i<G.N;i++){const to=vis[i]?0:1,a=O.a[i];if(a!==to){O.a[i]=Math.abs(to-a)<=st+1e-4?to:a<to?a+st:a-st;ch=true}}
-  if(ch){const d=O.img.data,[r,g,b]=FOG.col,A=fogSoft(O);for(let i=0;i<G.N;i++){const p=i*4;d[p]=r;d[p+1]=g;d[p+2]=b;d[p+3]=Math.round(A[i]*FOG.dark*255)}O.cv.getContext('2d').putImageData(O.img,0,0);O.dirty=false}
+  if(ch){const d=O.img.data,[r,g,b]=FOG.col,A=fogSoft(O);for(let i=0;i<G.N;i++){const p=i*4;d[p]=r;d[p+1]=g;d[p+2]=b;d[p+3]=Math.round(A[i]*FOG.dark*255)}O.cv.getContext('2d', { willReadFrequently: true }).putImageData(O.img,0,0);O.dirty=false}
   return O}
 // (its edge softened: the cells' alphas blurred [1 2 1] across and down, FOG.soft times, the field's edge held)
 function fogSoft(O){const {C,R,N}=O,a=O.s||(O.s=new Float32Array(N)),b=O.t||(O.t=new Float32Array(N));a.set(O.a);

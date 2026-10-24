@@ -52,7 +52,7 @@ try{
     for(let i=0;i<n;i++){const d=FT[2*i],l=FT[2*i+1],x=D[3*i]+cam.x,y=D[3*i+1]+cam.y,side=(x-w.X[0])*-uy+(y-w.Y[0])*ux;
      if(Math.min((d-want+F.dirs)%F.dirs,(want-d+F.dirs)%F.dirs)>1)bad.push('turned '+d+' for '+want);if(i&&l===FT[2*i-1])bad.push('two '+(l?'lefts':'rights')+' in a row');if(l?side>-.2:side<.2)bad.push((l?'a left':'a right')+' on the wrong side ('+side.toFixed(2)+')')}
     ok(FT.length===2*n&&Math.abs(n-room)<=1.5&&!bad.length,'footprints along it: '+n+' for '+room.toFixed(1)+' prints\' room, each turned the way it goes ('+want+' of '+F.dirs+'), a left then a right, each on its side'+(bad.length?': '+bad.slice(0,4).join('; '):''));
-    const pic=t.wuiFoot(want,1,t.WUI_K.col.gold),g=pic.getContext('2d').getImageData(0,0,pic.width,pic.height).data;let gold=0;for(let i=0;i<g.length;i+=4)if(g[i+3]===255)gold++;
+    const pic=t.wuiFoot(want,1,t.WUI_K.col.gold),g=pic.getContext('2d', { willReadFrequently: true }).getImageData(0,0,pic.width,pic.height).data;let gold=0;for(let i=0;i<g.length;i+=4)if(g[i+3]===255)gold++;
     ok(gold>=8&&gold<=26,'a print is a small shape in the way\'s gold ('+gold+' px), drawn in code')}
    // (they march: the same way a moment later has its dots elsewhere)
    const d0=WUI.dots.slice(0,6).join();frame(100);ok(WUI.dots.slice(0,6).join()!==d0,'the dots march along it');
@@ -92,7 +92,7 @@ try{
    click(b.x,b.y-4);const ring=t.ActionRing.now;click(b.x,b.y-4);frame(16);frame(400);ok(ring&&!t.ActionRing.now&&G.chase===b&&WUI.tgt&&WUI.tgt.o===b&&!WUI.dest,'a click on a band 60 px off opens its ring, a second chases it, and it is the UI\'s target');
    const T=t.wuiTargetAt(b,{x:Math.floor(G.cam.x),y:Math.floor(G.cam.y)}),rs=rings(),sw=swords();
    ok(rs.length>=1&&!arrows().length&&sw.length===1&&sw[0][1][1]<T.y-14,'a ring pulses round it ('+rs.length+' drawn) and crossed swords stand over it, no arrow: you go to attack it');
-   {const c=t.wuiSwords(),I=t.ICONS.attack,d=c.getContext('2d').getImageData(0,0,c.width,c.height).data,hx=v=>'#'+[0,1,2].map(k=>d[v+k].toString(16).padStart(2,'0')).join('');let red=0,navy=0,other=0;
+   {const c=t.wuiSwords(),I=t.ICONS.attack,d=c.getContext('2d', { willReadFrequently: true }).getImageData(0,0,c.width,c.height).data,hx=v=>'#'+[0,1,2].map(k=>d[v+k].toString(16).padStart(2,'0')).join('');let red=0,navy=0,other=0;
     for(let i=0;i<d.length;i+=4){if(!d[i+3])continue;const h=hx(i);if(h===t.PEOPLE_OUT)navy++;else if(Object.values(I.p).includes(h))red++;else other++}
     const it=t.partyRingItems(b,0,0)[0],svg=t.icon('attack',22);
     ok(red>=30&&navy>=30&&!other&&I.p.r===t.WUI_K.col.foe,'the swords: the attack icon, '+red+' px in the red of foes, outlined by '+navy+' px of the navy of the figures, drawn in code');

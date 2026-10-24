@@ -82,7 +82,7 @@ function drawWorld(){
   reveal();const V=vis(),C=G.cam;C.x=snapV(clamp(P.x-VW/2,0,MW*TILE-VW));C.y=snapV(clamp(P.y-VH/2,0,MH*TILE-VH));
   const cam={x:Math.floor(C.x),y:Math.floor(C.y)},fx=C.x-cam.x,fy=C.y-cam.y,scr=ctx,low=memCv(),hi=VS>1,ents=[];let nPlace=0;
   // what stands, into the scene in game pixels (memCv: its extra pixel each way counted in VW, VH while it is drawn)
-  ctx=low.getContext('2d');ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,low.width,low.height);if(hi){VW++;VH++}// (its transform reset each frame: nothing drawn into it can leave a shift that piles up)
+  ctx=low.getContext('2d', { willReadFrequently: true });ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,low.width,low.height);if(hi){VW++;VH++}// (its transform reset each frame: nothing drawn into it can leave a shift that piles up)
   try{
   WorldArt.draw(ctx,cam);// (the painted map by chunks, those in view: worldart.js)
   drawEnv(cam,V,0);drawLand(cam,'tint');drawTracks(cam);drawEstates(cam,V);// (the tracks on the ground, under all that stands: gfx/tracks.js)
@@ -118,7 +118,7 @@ function drawWorld(){
   ambientFlat(cam);worldOverdraw(ents.filter(e=>!e.st).sort((a,b)=>a.y-b.y),cam);ambientAir(cam);// (the splashes and the flyers' shadows under everyone, the flyers over them: ambient.js)
   // (at the screen's finer scale the remembered scene, the clouds and weather and the fog are laid in game pixels, as ever, into
   // one more picture the scene's size (overCv), drawn up in one step: three full screens' work made one)
-  const ov=hi?overCv():null;if(ov){ctx=ov.getContext('2d');ctx.clearRect(0,0,ov.width,ov.height)}
+  const ov=hi?overCv():null;if(ov){ctx=ov.getContext('2d', { willReadFrequently: true });ctx.clearRect(0,0,ov.width,ov.height)}
   try{
   fogMem(low,px0,py0,V);
   drawEnv(cam,V,1);
@@ -156,7 +156,7 @@ function drawWorld(){
 const ATK_ANIM=.36;
 // the box a picture's drawn pixels fill, [x0, y0, x1, y1] (inclusive), worked out once per picture: what a label clears and a
 // click answers on (world.js pickAt)
-function opaqueBox(s){if(s._ob)return s._ob;const d=s.getContext('2d').getImageData(0,0,s.width,s.height).data;let x0=s.width,y0=s.height,x1=-1,y1=-1;
+function opaqueBox(s){if(s._ob)return s._ob;const d=s.getContext('2d', { willReadFrequently: true }).getImageData(0,0,s.width,s.height).data;let x0=s.width,y0=s.height,x1=-1,y1=-1;
   for(let y=0;y<s.height;y++)for(let x=0;x<s.width;x++)if(d[(y*s.width+x)*4+3]){if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y}return s._ob=x1<0?[0,0,0,0]:[x0,y0,x1,y1]}
 // a party's leader as drawn (L: its look; f: the step, 0 to PEOPLE_STEPS-1): his picture, its cell's top left on the map and whether it faces
 // left. The cell's bottom is 3 below his place (a rider in the same 16 cell: the same feet, his banner taller)

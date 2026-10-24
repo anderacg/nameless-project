@@ -17,7 +17,7 @@ try{
    if(good&&!t.TOWNS.some(h=>Math.hypot(h.x-(tx+.5)*16,h.y-(ty+.5)*16)<200)&&!W.sites.some(z=>Math.abs(z.y-(ty+.5)*16)<48&&z.x>(tx-3)*16&&z.x<(tx+n+3)*16))return {x:(tx+.5)*16,y:(ty+.5)*16}}return null};
  const lvTo=n=>{P.sk.scout.lv=0;P.sk.scout.lv=Math.max(0,n-t.skill('scout'))};
  // (the view's middle around world point (wx, wy) at 4x, over the page)
- const zoom=(wx,wy)=>{const src=t.cv,k=src.width/t.VW,sx=(wx-G.cam.x)*k,sy=(wy-G.cam.y)*k,c=document.createElement('canvas');c.width=1400;c.height=880;const g=c.getContext('2d');g.imageSmoothingEnabled=false;
+ const zoom=(wx,wy)=>{const src=t.cv,k=src.width/t.VW,sx=(wx-G.cam.x)*k,sy=(wy-G.cam.y)*k,c=document.createElement('canvas');c.width=1400;c.height=880;const g=c.getContext('2d', { willReadFrequently: true });g.imageSmoothingEnabled=false;
    g.drawImage(src,sx-175*k,sy-110*k,350*k,220*k,0,0,1400,880);c.style.cssText='position:fixed;left:0;top:0;z-index:99';document.body.appendChild(c)};
  if(scene==='sand'||scene==='snow'){const s=run(scene==='sand'?'desert':'frost',14);Kit.goTo(s.x,s.y);t.updateWorld(.05);Kit.travel(s.x+12*16,s.y,4000);G.clock=t.DAY*.3;
   window.requestAnimationFrame=()=>0;t.drawWorld();zoom(s.x+8*16,s.y);info(scene+': '+W.tracks.map(x=>x.k+' '+x.size).join(', ')+'; '+K.n+' points')}

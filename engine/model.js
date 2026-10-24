@@ -482,7 +482,7 @@
     R=render(spec,sc);clean(R);bx=bnd(R);
     const {M,A,col,DEC,FL,GZ,F}=R,cw=bx.x1-bx.x0+1,dx=bx.x0-1-Math.floor((fit-cw)/2),dy=bx.y1-(N-2);
     // the picture: the body and its navy outline round it (not round what lies low and flat: fences, beds), cropped to the cell
-    const img=PX.canvas(N,N),g=img.getContext('2d'),im=g.createImageData(N,N),D=im.data,body=new Uint8Array(N*N),fine=new Uint8Array(N*N),gap=new Uint8Array(N*N),gz=new Uint8Array(N*N),nv=hx(NAVY);
+    const img=PX.canvas(N,N),g=img.getContext('2d', { willReadFrequently: true }),im=g.createImageData(N,N),D=im.data,body=new Uint8Array(N*N),fine=new Uint8Array(N*N),gap=new Uint8Array(N*N),gz=new Uint8Array(N*N),nv=hx(NAVY);
     const I={F,fi:new Int16Array(N*N).fill(-1),u:new Float32Array(N*N),v:new Float32Array(N*N),z:new Float32Array(N*N),b:new Uint8Array(N*N),ch:new Uint8Array(N*N),m:new Uint8Array(N*N)},
       take=(c,q)=>{I.fi[c]=R.fid[q];I.u[c]=R.SU[q];I.v[c]=R.SV[q];I.z[c]=R.SZ[q];I.b[c]=R.SB[q];I.ch[c]=R.SC[q];I.m[c]=R.SM[q]};
     for(let y=0;y<N;y++)for(let x=0;x<N;x++){const X=x+dx,Y=y+dy;if(X<0||Y<0||X>=M||Y>=M)continue;const q=Y*M+X;if(A[q]){body[y*N+x]=FL[q]===1?2:1;fine[y*N+x]=FL[q]===2;gz[y*N+x]=GZ[q];const i=(y*N+x)*4;D[i]=col[q*3];D[i+1]=col[q*3+1];D[i+2]=col[q*3+2];D[i+3]=255;take(y*N+x,q)}}
@@ -499,8 +499,8 @@
     // its ground shadow, a mask of its own (solid; the game lays every shadow in view into one mask and shades it once, at SHADE, after
     // the ground and before anything standing, so neighbours' shadows merge rather than stack): every face laid on the ground along
     // the light (to the lower right), inside the cell, off the picture
-    const shadow=PX.canvas(N,N,sg=>{const m=PX.canvas(N,N),P=PX.paint(m.getContext('2d'));for(const f of F)P.poly(f.P.map(p=>[p[0]+p[2]*SUN[0]+R.ox-dx,p[1]+p[2]*SUN[1]+R.oy-dy]),'#000');
-      const sm=m.getContext('2d').getImageData(0,0,N,N).data,o=sg.createImageData(N,N),on=i=>sm[i*4+3]&&!D[i*4+3];
+    const shadow=PX.canvas(N,N,sg=>{const m=PX.canvas(N,N),P=PX.paint(m.getContext('2d', { willReadFrequently: true }));for(const f of F)P.poly(f.P.map(p=>[p[0]+p[2]*SUN[0]+R.ox-dx,p[1]+p[2]*SUN[1]+R.oy-dy]),'#000');
+      const sm=m.getContext('2d', { willReadFrequently: true }).getImageData(0,0,N,N).data,o=sg.createImageData(N,N),on=i=>sm[i*4+3]&&!D[i*4+3];
       // (soft: its edge on open ground a checker, so it fades off rather than ending on a hard line)
       for(let y=0;y<N;y++)for(let x=0;x<N;x++){const i=y*N+x;if(!on(i))continue;const open=j=>!sm[j*4+3]&&!D[j*4+3],e=(x>0&&open(i-1))||(x<N-1&&open(i+1))||(y>0&&open(i-N))||(y<N-1&&open(i+N))||x===0||y===0||x===N-1||y===N-1;
         if(e&&(x+y)%2)continue;o.data[i*4]=20;o.data[i*4+1]=24;o.data[i*4+2]=12;o.data[i*4+3]=255}sg.putImageData(o,0,0)});
@@ -558,7 +558,7 @@
     if(a>.95)for(let y=1;y<N-1;y++)for(let x=0;x<N;x++){const i=y*N+x,f=fc(i),o=fc(i-N);if(!f||f.cls!=='wall'||!o||o.cls!=='lip'||H(x,5,sd+11)>=.42)continue;ice[i]=1;if(fc(i+N)===f&&H(x,6,sd+12)<.5)ice[i+N]=2}
     const img=PX.canvas(N,N,g=>{const im=g.createImageData(N,N),o=im.data;for(let i=0;i<N*N;i++){const c=ice[i]>=0?ICE[ice[i]]:on[i]>=0?S[on[i]]:null;if(!c)continue;o[i*4]=c[0];o[i*4+1]=c[1];o[i*4+2]=c[2];o[i*4+3]=255}g.putImageData(im,0,0)});
     // the ground: from the yard's edge in (its paths trodden, last), the beds' soil rows first
-    const gi=m.ground.info,gd=m.ground.getContext('2d').getImageData(0,0,N,N).data,D=gi.D,lim=(D+3)-a*(D+4.5);
+    const gi=m.ground.info,gd=m.ground.getContext('2d', { willReadFrequently: true }).getImageData(0,0,N,N).data,D=gi.D,lim=(D+3)-a*(D+4.5);
     const ground=PX.canvas(N,N,g=>{const im=g.createImageData(N,N),o=im.data;for(let y=0;y<N;y++)for(let x=0;x<N;x++){const i=y*N+x;if(!gd[i*4+3]||mk[i]===1)continue;const h=H(x,y,sd+13);
       const s=gi.beds[i]?(a>.6&&y%2)||a>.9:gi.path[i]?a>.9&&h<.35:gi.dist[i]+h*1.6>lim;if(!s)continue;const c=S[h<.2?2:h<.6?1:0];o[i*4]=c[0];o[i*4+1]=c[1];o[i*4+2]=c[2];o[i*4+3]=255}g.putImageData(im,0,0)});
     return{img,ground,amount:a}}

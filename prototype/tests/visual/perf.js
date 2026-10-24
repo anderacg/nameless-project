@@ -18,10 +18,10 @@ window.RUN=()=>{const o=[],t=T,G=t.G,P=t.P,W=t.W;
   // break the world frame down
   const cam=G.cam,V=t.vis(),ctx=t.ctx;
   time('  map blit',300,()=>ctx.drawImage(t.worldCv(),cam.x,cam.y,t.VW,t.VH,0,0,t.VW,t.VH));
-  {const src=t.worldCv(),S=512,tiles={};for(let y=0;y<src.height;y+=S)for(let x=0;x<src.width;x+=S){const c=document.createElement('canvas');c.width=Math.min(S,src.width-x);c.height=Math.min(S,src.height-y);c.getContext('2d').drawImage(src,-x,-y);tiles[x+','+y]=c}
+  {const src=t.worldCv(),S=512,tiles={};for(let y=0;y<src.height;y+=S)for(let x=0;x<src.width;x+=S){const c=document.createElement('canvas');c.width=Math.min(S,src.width-x);c.height=Math.min(S,src.height-y);c.getContext('2d', { willReadFrequently: true }).drawImage(src,-x,-y);tiles[x+','+y]=c}
    const blit=()=>{for(let y=Math.floor(cam.y/S)*S;y<cam.y+t.VH;y+=S)for(let x=Math.floor(cam.x/S)*S;x<cam.x+t.VW;x+=S){const c=tiles[x+','+y];if(c)ctx.drawImage(c,x-cam.x,y-cam.y)}};
    time('  map blit from 512px tiles',300,blit);
-   const view=document.createElement('canvas');view.width=t.VW;view.height=t.VH;const vg=view.getContext('2d');vg.drawImage(src,cam.x,cam.y,t.VW,t.VH,0,0,t.VW,t.VH);
+   const view=document.createElement('canvas');view.width=t.VW;view.height=t.VH;const vg=view.getContext('2d', { willReadFrequently: true });vg.drawImage(src,cam.x,cam.y,t.VW,t.VH,0,0,t.VW,t.VH);
    time('  blit of a view-sized cache',300,()=>ctx.drawImage(view,0,0));}
   time('  drawEnv layer 0',300,()=>t.drawEnv(cam,V,0));
   time('  drawEnv layer 1',300,()=>t.drawEnv(cam,V,1));
