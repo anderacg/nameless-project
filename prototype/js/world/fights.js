@@ -31,7 +31,7 @@ function startFight(A,B){
   const f=asFight({id:'f'+(++W.fightN),x,y,sides:[A.map(uidOf),B.map(uidOf)],t:0,n0:n,dur:FIGHT.base+FIGHT.per*n,acc:[0,0]});
   all.forEach(o=>{o.fight=f.id});W.fights.push(f);fightPlace(f);
   // (seen, or one you take part in, at once; no rider for it: he brings its end; worldlog.js)
-  worldEvent({text:'Battle near '+Spatial.nearestHolding(f.x,f.y).name+': '+A.map(o=>o.label()).join(', ')+' against '+B.map(o=>o.label()).join(', ')+'.',cls:all.some(o=>o.mine)?'bad':'',x,y,post:false,
+  worldEvent({text:'Battle near '+Spatial.nearestHolding(f.x,f.y).name+': '+A.map(o=>o.label()).join(', ')+' against '+B.map(o=>o.label()).join(', ')+'.',cls:all.some(o=>o.mine)?'bad':'',x,y,post:false,noise:'battle',
     was:Math.hypot(x-P.x,y-P.y)<vis()*1.5||all.some(o=>o.faction===P.fac||o.mine)});
   return f;
 }
@@ -48,7 +48,7 @@ function routParty(o,winners){
   const k=o.mapKind,near=Math.hypot(o.x-P.x,o.y-P.y)<vis()*1.5;o.fight=null;
   if(k==='cparty'){const c=P.comps[o.cid];if(c){c.party=null;c.hurt=G.day+3;log(COMPS[o.cid].short+'’s party is broken. '+COMPS[o.cid].short+' limps back to you, wounded for 3 days.','bad','war')}return}
   if(k==='lord'){if(o.state==='siege'&&townBy(o.tgt))worldEmit('siege:broken',{town:townBy(o.tgt),lord:o});worldEmit('lord:routed',{lord:o});defeatLord(o);
-    {const H=Spatial.nearestHolding(o.x,o.y).name;worldEvent({text:o.name+' is routed near '+H+'.',cls:o.fac===P.fac?'bad':'',x:o.x,y:o.y,fac:[o.fac],heard:['lord',o],was:near||o.fac===P.fac,seen:'You see '+o.name+' routed near '+H+'.',past:o.name+' was routed near '+H})}}
+    {const H=Spatial.nearestHolding(o.x,o.y).name;worldEvent({text:o.name+' is routed near '+H+'.',cls:o.fac===P.fac?'bad':'',x:o.x,y:o.y,fac:[o.fac],heard:['lord',o],noise:'battle',was:near||o.fac===P.fac,seen:'You see '+o.name+' routed near '+H+'.',past:o.name+' was routed near '+H})}}
   else if(k==='band'){bandits=bandits.filter(x=>x!==o);chiefEscapes(o.ld)}// (its chieftain gets away)
   else if(k==='patrol')patrolBeaten(o);
   else if(k==='monster')beastRouted(o);
@@ -56,7 +56,7 @@ function routParty(o,winners){
     worldEmit('caravan:beaten',{caravan:o,lord,band});// (the bus: news.js)
     if(lord){const home=Spatial.nearest(fiefsOf(lord.fac),lord.x,lord.y);if(home){ensureEcon(home);for(const g in o.goods)home.stock[g]=(home.stock[g]||0)+o.goods[g]}}
     else if(band)band.add('militia')// (it arms one more with the plunder)
-    {const yours=o.mine?', one of yours':'';worldEvent({text:(lord?lord.name+' seizes':band?'Bandits plunder':'The enemy takes')+' a caravan of '+o.from+yours+'.',cls:o.mine||o.fac===P.fac?'bad':'',x:o.x,y:o.y,fac:[o.fac],mine:o.mine,heard:['caravan',o],was:o.mine||o.fac===P.fac||near,
+    {const yours=o.mine?', one of yours':'';worldEvent({text:(lord?lord.name+' seizes':band?'Bandits plunder':'The enemy takes')+' a caravan of '+o.from+yours+'.',cls:o.mine||o.fac===P.fac?'bad':'',x:o.x,y:o.y,fac:[o.fac],mine:o.mine,heard:['caravan',o],noise:'battle',was:o.mine||o.fac===P.fac||near,
       seen:'You see '+(lord?lord.name+' seize':band?'bandits plunder':'the enemy take')+' a caravan of '+o.from+yours+'.',past:'a caravan of '+o.from+(o.mine?', one of yours,':'')+' was '+(lord?'seized by '+lord.name:band?'plundered by bandits':'taken by the enemy')})}}
 }
 // a party that came through: free to go on its way
@@ -70,7 +70,7 @@ function endFight(f,win){
   W.fights=W.fights.filter(x=>x!==f);
   // (seen at once; by rider when a lord of your realm or a party of yours fought in it; else news: worldlog.js)
   if(W0.length&&L.length){const who=W0.map(o=>o.label()).join(' and '),H=Spatial.nearestHolding(f.x,f.y).name;
-    worldEvent({text:who+' win'+(W0.length>1?'':'s')+' the battle near '+H+'.',x:f.x,y:f.y,mine:[...W0,...L].some(o=>o.mine||o.mapKind==='lord'&&P.fac&&o.fac===P.fac),heard:['fight',f],
+    worldEvent({text:who+' win'+(W0.length>1?'':'s')+' the battle near '+H+'.',x:f.x,y:f.y,mine:[...W0,...L].some(o=>o.mine||o.mapKind==='lord'&&P.fac&&o.fac===P.fac),heard:['fight',f],noise:'battle',
       was:Math.hypot(f.x-P.x,f.y-P.y)<vis()*1.5,past:who+' won the battle near '+H})}
 }
 function updateFights(d){
@@ -78,9 +78,10 @@ function updateFights(d){
     // gone from the field (beaten elsewhere, arrived, dead): out of the fight
     for(const s of [0,1])f.sides[s]=f.sides[s].filter(u=>{const o=partyBy(u);return o&&o.fight===f.id&&o.troops.length});
     if(!f.sides[0].length||!f.sides[1].length){const win=f.sides[0].length?0:1;sideParties(f,win).forEach(freeParty);W.fights=W.fights.filter(x=>x!==f);continue}
+    DISTRACTIONS.notice(f,'battle');
     // lords and patrols nearby ride in
     for(const o of [...W.lords.filter(l=>!l.dead&&!l.inside&&!l.fight),...W.patrols.filter(p=>!p.fight)])
-      if(Math.hypot(o.x-f.x,o.y-f.y)<FIGHT.join){const s=sideFor(f,o);if(s>=0){joinFight(f,o,s);worldEvent({text:o.label()+' rides into the battle near '+Spatial.nearestHolding(f.x,f.y).name+'.',x:f.x,y:f.y,post:false,was:Math.hypot(f.x-P.x,f.y-P.y)<vis()*1.5})}}
+      if(Math.hypot(o.x-f.x,o.y-f.y)<FIGHT.join){const s=sideFor(f,o);if(s>=0){joinFight(f,o,s);worldEvent({text:o.label()+' rides into the battle near '+Spatial.nearestHolding(f.x,f.y).name+'.',x:f.x,y:f.y,post:false,noise:'battle',was:Math.hypot(f.x-P.x,f.y-P.y)<vis()*1.5})}}
     // each side wears the other down by its share of the strength; the whole fight takes about dur
     // the pace is set by how many started (and joined): an even fight takes about dur, a lopsided one less
     const pw=[0,1].map(s=>sidePower(f,s)*lordTac(sideParties(f,s))),rate=(f.n0||sideTroops(f,0).length+sideTroops(f,1).length)/Math.max(1,f.dur);
@@ -131,12 +132,12 @@ onAct('fg-',fightAct);
 // you won the battle: the fight is over, your side goes on its way
 function fieldWon(e){const f=e.ref;sideParties(f,e.side).forEach(freeParty);worldPart(()=>sideParties(f,1-e.side).forEach(o=>routParty(o,[])));W.fights=W.fights.filter(x=>x!==f);return ''}
 
-/* on the map: a fight is a world object (parties.js WorldObject): seen within a little more than your sight, met by joining it
+/* on the map: a fight is a world object (parties.js WorldObject): seen under the same sight and concealment rule as a unit, met by joining it
    (fightMeet: a click on a party in it, world.js interact), drawn as dust, steel and a tally; no dot on the minimap */
 class Fight extends WorldObject{
   get mapKind(){return 'fight'}
   here(){return W.fights.includes(this)}
-  inView(V){return Math.hypot(this.x-P.x,this.y-P.y)<=V*1.2}
+  inView(V){return spotted(this,V)}
   meet(){fightMeet(this)}
   draw(ents,cam,V){if(!this.inView(V))return;const f=this;
     ents.push({y:f.y+20,f:()=>{subT(f);const sx=Math.round(f.x-cam.x),sy=Math.round(f.y-cam.y),t=performance.now();

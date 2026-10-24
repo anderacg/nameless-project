@@ -115,6 +115,10 @@ const SFX={
   levelup:{g:'ui',n:'Level up',pri:3,gap:.5,vol:.6,play:V=>{[293.7,370,440,587.3].forEach((f,i)=>AU.pluck(V,{f,at:i*.09,d:.9,amp:.22}));AU.bell(V,{f:1174.7,at:.36,d:1.4,amp:.1,parts:CHIME});AU.bell(V,{f:1480,at:.42,d:1.2,amp:.06,parts:CHIME});return 1.9}},
   notify:{g:'ui',n:'Notification',pri:2,gap:.3,vol:.5,play:V=>{AU.bell(V,{f:1318.5,d:.9,amp:.16,parts:CHIME});AU.bell(V,{f:1760,at:.12,d:1,amp:.11,parts:CHIME});return 1.2}},
   // the world
+  distantbattle:{g:'world',n:'Distant battle cries',gap:1.5,max:2,pri:1,vol:.8,vary:.06,play:V=>{
+    for(const [at,f] of [[0,155],[.3,190],[.65,132]]){const mouth=V.c.createBiquadFilter();mouth.type='bandpass';mouth.frequency.value=750;mouth.Q.value=1.7;mouth.connect(V.out);
+      AU.tone(V,{type:'sawtooth',f,f1:f*.8,at,a:.025,d:.35,amp:.32,lp:1800,dest:mouth});AU.noise(V,{f:1100,q:.6,at,d:.24,amp:.09,dest:mouth})}
+    AU.metal(V,{f:1200,at:.2,d:.12,amp:.02});return 1.25}},
   encounter:{g:'world',n:'Encounter alert',pri:3,gap:1,vol:.7,play:V=>{AU.drum(V,{f:70,d:.4,amp:.6});AU.drum(V,{f:70,at:.18,d:.5,amp:.7});AU.horn(V,{f:146.8,f1:138.6,at:.2,a:.08,hold:.35,r:.3,amp:.16,bright:4});return 1}},
   town:{g:'world',n:'Entering a town (gate and bell)',pri:3,gap:2,vol:.6,play:V=>{AU.noise(V,{f:520,f1:880,q:9,a:.08,d:.45,amp:.12});AU.tone(V,{type:'triangle',f:95,f1:70,at:.45,d:.18,amp:.3});
     AU.bell(V,{f:330,at:.55,d:2.6,amp:.16});AU.bell(V,{f:247,at:1.35,d:3,amp:.14});return 4.4}},

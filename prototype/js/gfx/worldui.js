@@ -199,7 +199,7 @@ function wuiUnder(cam){const now=performance.now(),dt=Math.min(.1,Math.max(0,(no
 function wuiOver(cam){if(G.mode==='title')return;const now=WUI.now||performance.now(),rm=reducedMotion();
   if(WUI.dest){const d=WUI.dest;wuiDrop(Math.round(d.x)-cam.x,Math.round(d.y)-cam.y,d.t,WUI_K.col.gold,now,rm,true)}
   if(WUI.tgt&&!WUI.tgt.f&&WUI.tgt.o.inView(vis())){const o=WUI.tgt.o,T=wuiTargetAt(o,cam),k=wuiKind(o);wuiDrop(T.x,T.top,WUI.tgt.t,WUI_K.col[k],now,rm,false,k==='foe'?wuiDrawSwords:null)}// (one you follow: no arrow)
-  wuiRoadOver(cam,now,rm);wuiEscorts(cam,now,rm);wuiFilling(cam);
+  wuiRoadOver(cam,now,rm);wuiDistractions(cam,now,rm);wuiEscorts(cam,now,rm);wuiFilling(cam);
   const h=WUI.hov;if(h){const b=h.b,col=WUI_K.col[h.kind],x0=wuiX(b[0],cam),y0=wuiY(b[1],cam),x1=wuiX(b[2],cam),y1=wuiY(b[3],cam),br=rm?0:(1+Math.sin(now/1000/WUI_K.breathe*6.2832))/2;
     wuiBrackets(x0,y0,x1,y1,col,h.kind==='ground'?.75:1,rm?0:Math.round(br),h.kind==='ground'?.5+.5*br:1+br)}}
 /* ---- the encounters on the road (world/road.js), each you know of and have not met (marked). Under the banners: sound
@@ -221,7 +221,7 @@ function wuiArc(r,d,col){const k='c'+r+','+d+col;let c=WUIP.get(k);if(c)return c
   c=mkc(2*r+3,2*r+4,g=>{const P2=[...pts].map(p=>p.split(',').map(Number));g.globalAlpha=.7;for(const [x,y] of P2)rect(g,WUI_K.dark,x,y+1);g.globalAlpha=1;for(const [x,y] of P2)rect(g,col,x,y)});
   c.cx=r+1;c.cy=r+1;WUIP.set(k,c);return c}
 // (the rings round (x, y) from r0 out: ry their height to their width; k a phase of its own, so two side by side do not beat as one)
-function wuiWaves(x,y,r0,px,ry,k,now,rm){const col=WUI_K.col.enc;for(let i=0;i<(rm?1:WAVE.n);i++){const q=rm?.5:((now/1000/WAVE.t+i/WAVE.n+k*.37)%1),rx=r0+Math.round(q*px),c=wuiRing(rx,Math.max(1,Math.round(rx*ry)),col);
+function wuiWaves(x,y,r0,px,ry,k,now,rm,col=WUI_K.col.enc){for(let i=0;i<(rm?1:WAVE.n);i++){const q=rm?.5:((now/1000/WAVE.t+i/WAVE.n+k*.37)%1),rx=r0+Math.round(q*px),c=wuiRing(rx,Math.max(1,Math.round(rx*ry)),col);
   ctx.globalAlpha=WAVE.a*(1-q)*Math.min(1,q*6);wuiPut(c,x,y,c.cx,c.cy)}ctx.globalAlpha=1}
 function wuiRoadUnder(cam,now,rm){const V=vis();for(const e of roadList()){if(!e.marked()||!e.inView(V))continue;const b=e.box();
   wuiWaves(Math.round(wuiX((b[0]+b[2])/2,cam)),Math.round(wuiY(b[3]-1,cam)),Math.max(6,Math.round((b[2]-b[0])*.5)),WAVE.px,WAVE.ry,e.seed||0,now,rm)}}
@@ -234,6 +234,16 @@ function wuiRoadOver(cam,now,rm){const V=vis(),col=WUI_K.col.enc,bang=wuiArrow('
     const d=(Math.round((a+Math.PI)/(Math.PI/8))%16+16)%16,sx=Math.round(ax+ux*WAVE.src),sy=Math.round(ay+uy*WAVE.src),nA=rm?2:WAVE.arcs;
     for(let i=0;i<nA;i++){const q=rm?(i+1)/(nA+1):((now/1000/WAVE.t+i/nA+(e.seed||0)*.37)%1),c=wuiArc(4+Math.round(q*WAVE.edge),d,col);ctx.globalAlpha=WAVE.a*Math.min(1,q*5)*(1-q*q);wuiPut(c,sx,sy,c.cx,c.cy)}
     ctx.globalAlpha=.8+.2*p;const in_=WAVE.edge-WAVE.src+12;wuiPut(bang,Math.round(ax-ux*in_),Math.round(ay-uy*in_)+4,bang.cx,bang.tip);ctx.globalAlpha=1}}
+/* White sound waves originate at the disturbance; offscreen they roll in from a point beyond that edge, as encounters do.
+   There is no !, label, tooltip or map mark: hearing a sound is not knowing who fought or what happened. */
+function wuiDistractions(cam,now,rm){const col=DISTRACTION.col;
+  for(const c of DISTRACTIONS.active(now)){const x=Math.round(wuiX(c.x,cam)),y=Math.round(wuiY(c.y,cam)),age=now-c.t;
+    if(x>=8&&x<=VW-8&&y>=8&&y<=VH-8){wuiWaves(x,y,4,WAVE.px,WAVE.ry,0,age,rm,col);continue}
+    const mx=12,my=24,cx=VW/2,cy=VH/2,dx=x-cx,dy=y-cy,k=Math.min((cx-mx)/Math.max(1e-6,Math.abs(dx)),(cy-my)/Math.max(1e-6,Math.abs(dy))),ax=Math.round(cx+dx*k),ay=Math.round(cy+dy*k),a=Math.atan2(dy,dx);
+    const d=(Math.round((a+Math.PI)/(Math.PI/8))%16+16)%16,sx=Math.round(ax+Math.cos(a)*WAVE.src),sy=Math.round(ay+Math.sin(a)*WAVE.src),n=rm?2:WAVE.arcs;
+    for(let i=0;i<n;i++){const q=rm?(i+1)/(n+1):((age/1000/WAVE.t+i/n)%1),arc=wuiArc(4+Math.round(q*WAVE.edge),d,col);ctx.globalAlpha=WAVE.a*Math.min(1,q*5)*(1-q*q);wuiPut(arc,sx,sy,arc.cx,arc.cy)}ctx.globalAlpha=1;
+  }
+}
 /* ---- a home a step is bound for (story/steps.js homeMark: an escort's place, a chain's family's door): a small house, in the
    friends' green, bobbing over it (a holding's middle, a house's or an estate's door), while it is on the screen; its dot on the
    minimap is the quests' (render.js). Still, under reducedMotion ---- */

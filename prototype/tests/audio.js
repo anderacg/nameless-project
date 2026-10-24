@@ -15,7 +15,7 @@ const clock=(sec=4)=>{const real=new OfflineAudioContext(2,Math.ceil(SR*sec),SR)
   t.audioStop();A.on=true;MU.want=null;t.audioStart(ctx);return{ctx,k,real}};// (no mood left wanted: it would start with it)
 const level=buf=>{let pk=0,ss=0,n=0;for(let ch=0;ch<buf.numberOfChannels;ch++){const d=buf.getChannelData(ch);for(let i=0;i<d.length;i++){const v=d[i];if(Math.abs(v)>pk)pk=Math.abs(v);ss+=v*v;n++}}return{pk,rms:Math.sqrt(ss/n)}};
 const dB=v=>(20*Math.log10(Math.max(1e-9,v))).toFixed(1);
-const CUES=['click','confirm','back','refused','coin','levelup','notify','encounter','town','day','horn','charge','clash','hit','block','loose','arrowhit','brace','gallop','rout','rally','victory','defeat'];
+const CUES=['click','confirm','back','refused','coin','levelup','notify','distantbattle','encounter','town','day','horn','charge','clash','hit','block','loose','arrowhit','brace','gallop','rout','rally','victory','defeat'];
 const BATTLE=['clash','hit','block','loose','arrowhit','brace','gallop','clash','hit','clash','block','loose'];
 const MOODS=['menu','world','town','battle','victory','defeat'];
 const steps=[];// (the rendering checks, run one after another)

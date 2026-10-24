@@ -17,7 +17,7 @@ Kit.suite(({ok,info})=>{
  // a lord's siege of h that fails (Math.random high: the garrison holds)
  const failSiege=(h,l)=>{Object.assign(l,{inside:null,state:'siege',tgt:h.name,troops:['hum_levy'],sd:0,dead:false,x:h.x+20,y:h.y+14});Kit.stub(.99,()=>t.resolveSiege(l,h))};
  Kit.goTo(A.x,A.y+20);G.clock=t.DAY*.3;
- ok(d(A,B)>t.vis()*L.sight*2,'you at '+A.name+'; '+B.name+' far off ('+Math.round(d(A,B))+' px, your sight '+Math.round(t.vis())+' px)');
+ ok(d(A,B)>t.vis()*2,'you at '+A.name+'; '+B.name+' far off ('+Math.round(d(A,B))+' px, your sight '+Math.round(t.vis())+' px)');
 
  // ---- far away: not logged, only news
  {fresh();const l=lordOf(B.owner);failSiege(B,l);const it=items().find(x=>x.k==='relieved'&&x.detail.town===B.name);

@@ -3,7 +3,7 @@
    gateway, worldEvent(ev), which picks how word of it reaches you:
    1. you took part (ev.involved; your battle's aftermath, worldPart; or you besiege or stay in one of its holdings, ev.towns):
       into your log at once;
-   2. you saw it (where it happened, ev.x, ev.y, within WORLD_LOG.sight times your sight: fights.js's rule): at once, worded as
+   2. you saw it (where it happened, ev.x, ev.y, within the army's actual sight, including woodland concealment): at once, worded as
       seen (ev.seen, else its text);
    3. your own realm's affairs (one of its realms, ev.fac, your employer's or your own banner's; or yours, ev.mine: your caravan,
       a battle your realm's lord fought): a rider brings it from your realm's holding nearest it, a day for every WORLD_LOG.tiles
@@ -12,6 +12,7 @@
       no rider for it (a battle begun: the rider brings its end);
    4. anything else: news only (news.js): a proclamation spreading as a wave (heard free once it reaches you), or common talk,
       heard as a rumour.
+   Noisy unseen events (ev.noise, or a noisy news kind) may emit source waves and cries within earshot (distractions.js), never knowledge.
    Its news: ev.news [kind, at, detail], recorded here, or ev.heard [kind, at], the item the bus (core/bus.js) recorded a moment
    before. What you learn at once or by rider is heard already: no source tells it you again as new. ev.cls: the log's tone;
    ev.kind: its Chronicle kind when logged at once (else 'war'; '' none, as the lines that had none before the gateway). No
@@ -19,13 +20,13 @@
    The riders on their way: W.news.post [{due (Clock.hours), day (it happened), from (who sent him), p (its words), a (more), cls, news (its event facts, if any)}],
    saved with the news (news.js). WORLD_LOG.on false: every event logged where it was before the gateway (ev.was false: it was
    not), nothing recorded (the fingerprints' check, tests/worldlog.js). The map's holding colours still change at once ---------- */
-// sight: × your sight; tiles: a rider's day; minHours: the least he takes
-const WORLD_LOG={on:true,sight:1.5,tiles:60,minHours:3};
+// tiles: a rider's day; minHours: the least he takes
+const WORLD_LOG={on:true,tiles:60,minHours:3};
 // (you took part: told so, in your battle's aftermath (worldPart), or you besiege it or stay inside; you see it; it is yours:
 // your employer's, your banner's, your own)
 const WL_PART={n:0},worldPart=fn=>{WL_PART.n++;try{return fn()}finally{WL_PART.n--}};
 const wlPart=ev=>!!ev.involved||WL_PART.n>0||[].concat(ev.towns||[]).some(t=>t&&(P.siege&&P.siege.town===t.name||P.stay&&P.stay.town===t.name));
-const wlSees=ev=>ev.x!=null&&Math.hypot(ev.x-P.x,ev.y-P.y)<vis()*WORLD_LOG.sight;
+const wlSees=ev=>Number.isFinite(ev.x)&&Number.isFinite(ev.y)&&spotted(ev,vis());
 const wlYours=ev=>!!ev.mine||[].concat(ev.fac||[]).some(f=>f&&(f==='player'||f===P.fac));
 // (the item the bus recorded just now: its kind by that holding today, the newest)
 const newsAt=(k,at)=>{const t=newsNear(at);return t&&newsW().items.filter(it=>it.k===k&&it.near===t.name&&it.day===G.day).pop()||null};
@@ -34,6 +35,7 @@ function worldEvent(ev){
   const K=ev.kind??'war';if(!WORLD_LOG.on){if(ev.was!==false&&ev.text)log(ev.text,ev.cls,K);return 'log'}
   const it=ev.news?newsRecord(...ev.news):ev.heard?newsAt(...ev.heard):null,how=wlPart(ev)?'part':wlSees(ev)?'seen':wlYours(ev)&&ev.post!==false?'rider':'news';
   if(ev.text){if(how==='part'||how==='seen'){const text=how==='seen'&&ev.seen||ev.text;KNOWLEDGE.hear(text,true,G.day,true);log(text,ev.cls,K)}else if(how==='rider')wlSend(ev,it)}
+  if(how!=='part'&&how!=='seen')DISTRACTIONS.notice(ev);
   if(it&&how!=='news')newsW().heard[it.id]=G.day;
   if(it&&(how==='part'||how==='seen'))KNOWLEDGE.news(it,how==='seen'&&ev.seen||ev.text||'');
   return how}
