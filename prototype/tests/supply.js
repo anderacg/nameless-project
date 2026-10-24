@@ -137,6 +137,11 @@ try{
    bag({grain:60});const n3=t.fillNow(),m3=last(),s3=t.SKINS.start(),r=t.mapRingItems(P.x+20,P.y,null,0,0).map(i=>i.label);
    ok(n3===0&&!s3&&/^No empty waterskins/.test(m3)&&r.includes('No empty waterskins')&&!r.includes('Fill waterskins')&&/No empty waterskins/.test(t.skinsTip()),'with none, nothing fills: "'+m3+'"; the ring says so ('+r.join(', ')+'), and the card’s drink tip ("'+t.skinsTip()+'")');
    bag({grain:60,water:42});ok(t.fillNow()===0&&/full/.test(last())&&!/No empty/.test(t.skinsTip()),'full skins: "'+last()+'"');t.SKINS.reset(false)}}
+  // at a holding's well (staying, or stopped by it) the band drinks from the well, its skins untouched (the owner, 2026-10-24)
+  reset();Kit.goHome();P.troops={hum_levy:5};t.SKINS.reset(false);bag({grain:60});{for(let k=0;k<30;k++)hour(false);const S=t.supplyNow();
+   ok(!t.BAND.dry&&!t.goodN('water')&&!t.goodN('skin_empty')&&!S.tags.some(g=>/Thirst|Parch/.test(g[0])),'at a holding’s well with no skins at all: 30 hours and never thirsty, on the card too (the band drinks from the well)')}
+  reset();Kit.goHome();P.troops={hum_levy:5};t.SKINS.reset(false);bag({grain:60,water:6});{for(let k=0;k<30;k++)hour(false);
+   ok(t.goodN('water')===6&&!t.goodN('skin_empty'),'and a band with full skins keeps them while it drinks at the well ('+t.goodN('water')+' full)')}
  // ---- the desert's thirst and the frost's frostbite
  // ---- thirst by its stages, sooner in the desert: Thirsty, Parched (slower), men fall sick, then the sick die
  {const T=S.thirst,tag=()=>t.supplyNow().tags.map(x=>x[0]).join(),lost=()=>t.BAND.lost.filter(x=>x.why==='thirst').length;

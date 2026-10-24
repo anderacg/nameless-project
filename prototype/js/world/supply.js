@@ -288,8 +288,10 @@ function supplyHour(){
   // food, eaten as it comes due (the frost eats more): hungry when it could not eat what was due, or has none left
   if(!free)u.eat+=bandFoodHour(moving)*(L.frost?1+S.frostEat*survivalShare():1);const due=Math.floor(u.eat);u.eat-=due;
   const hungry=!free&&((due?foodTake(due)<due:false)||!foodN());
-  // drink: rations as they come due, else on what it carries
-  if(!free)u.drink+=P.drinkHour(moving);const owe=Math.floor(u.drink);u.drink-=owe;const dr=free?'water':owe?drinkTake(owe,L):drinkNext(L);
+  // drink: rations as they come due, else on what it carries; staying in a holding or stopped at its well, the band drinks
+  // from the well, its skins untouched (the owner, 2026-10-24: no thirst at a well for want of empty skins)
+  const well=!free&&L.well&&!moving;
+  if(!free&&!well)u.drink+=P.drinkHour(moving);const owe=Math.floor(u.drink);u.drink-=owe;const dr=free||well?'water':owe?drinkTake(owe,L):drinkNext(L);
   {const n=staminaRate(moving,dr,L).n;P.bsta=clamp(P.bsta+(free?Math.max(0,n):n),0,100)}
   const st=P.staminaState();
   if(st!=='fresh'){if(++u.tired%S.tiredMorale.every===0)P.morale-=S.tiredMorale.n}else u.tired=0;
@@ -429,7 +431,7 @@ const campPole=c=>{const f=c.s.fire,d=SUPPLY.camp.pole;return{x:c.X+f[0]+d[0]+2,
 // the waterskins' fill in % while they fill (null: not filling; a fill off the map stops first: SKINS.watch)
 function supplyNow(){
   SKINS.watch();
-  const S=SUPPLY,L=supplyLand(),go=!P.stay&&(P.tx!=null||!!G.chase),dr=drinkNext(L)||(canFill(L)?'water':null),r=staminaRate(go,dr,L),st=P.staminaState(),tags=[];// (where the skins fill, never thirsty)
+  const S=SUPPLY,L=supplyLand(),go=!P.stay&&(P.tx!=null||!!G.chase),dr=drinkNext(L)||(L.well&&!go||canFill(L)?'water':null),r=staminaRate(go,dr,L),st=P.staminaState(),tags=[];// (at a well or where the skins fill, never thirsty)
   const foodDays=foodN()/Math.max(.01,bandFoodHour(go)*(L.frost?1+S.frostEat*survivalShare():1)*24),drinkDays=drinkStock(L)/Math.max(.01,P.drinkHour(go)*24);
   const furs={have:goodN('furs'),need:P.furNeed(),show:L.frost||goodN('furs')>0||nearFrost()};
   if(st==='tired')tags.push(['Tired','warn','Stamina under '+S.tired+': your pace is '+Math.round((1-S.pace.tired)*100)+'% slower and morale slips. Stop or make camp to rest.']);
