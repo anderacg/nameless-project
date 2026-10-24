@@ -146,6 +146,7 @@ js/world/             the campaign map and everything on it
   sites.js              caves, ruins, shrines, hideouts, travellers and the bandit camps
   encounters.js road.js the road's encounters: the kinds (who you meet and what happens) and the road (when and where one comes,
                         how it moves and ends, its page, the save; doc/ENCOUNTERS_DESIGN.md); their numbers are data/encounters.js
+                        hired deserters join the army and disappear from the map immediately; regression: tests/deserters.js
   letters.js            the sealed letter a robbed messenger carries (its item kind, Letter: a quest item): its contents, and its page
   incidents.js          the incidents: Incident kinds (weather, sickness, finds), rolled once a day (Incident.daily)
   quests.js             the jobs: JobQuest (no fail for time, a best-by day for the timed, the world's closing; what it requires,
@@ -180,7 +181,7 @@ js/battle/            engage.js (going into a fight: power and stance, allies jo
                       commandpowers.js (the commander's powers), camera.js, deploy.js (deployment and Auto), lab.js (the battle laboratory)
 js/scene/             walkable maps of the places you enter: scene.js (walking, paths, talking, in and out), town.js (town layouts);
                       a kind of place gets a scene by adding its generator to SCENES; its text panel stays, with a choice to walk in
-js/gfx/               worldart.js (the painted map), sprites.js (generated sprites), people.js (every person and troop, from one template),
+js/gfx/               worldart.js (the painted map), sprites.js (generated sprites and native-resolution map labels), people.js (every person and troop, from one template),
                       encounterscene.js (the road encounters' figures and props: EncounterScene, ENC_SCENE),
                       structures.js (placed buildings as models: lotModel, lotSprite, lotYard, lotsAhead; estates' ground, camps
                       and sites as models, flags), render.js (world and battle drawing, HUD),
@@ -972,3 +973,5 @@ seed redwater". Tests: `tests/worldsettings.js`; screenshots: `tests/visual/worl
 People menu removed (2026-10-24): Journal (J) owns known lords and realms; Army (C) owns companion management, and Quests (Q) owns jobs and their givers. The dock has no People button and P is unassigned. World sightings still update saved last-known reports; hall audiences return to the hall when left.
 
 Witnessing and distractions (2026-10-24): battle markers and witnessed logs now use unit sight and concealment (`spotted`). `world/distractions.js` keeps short, runtime-only cues from noisy events and ongoing fights within 1.25× current sight: a directional wordless cry (`audio.js` `distantbattle`) and white waves from the source, or rolling in from its offscreen edge (`worldui.js`), like encounter waves. Hearing adds no name, outcome, log, map mark or saved knowledge. Nearby reports coalesce; cues expire, stop when seen/out of earshot, respect mute/reduced motion, and reset on world/load. Existing delayed rider messages are unchanged. Tests: `worldwitness`, `worldlog`, `worldui`, `fights`, `audio`; screenshots: `visual/worldwitness`.
+
+World-map labels (2026-10-24): queued army counts, holding names and nearby building labels use `sprites.js` `mapTxt` / `mapTxtPic`: semibold Arial at final device-pixel resolution, with a thin dark outline and an 11 CSS-pixel minimum. Glyph pictures are cached by text, color, alignment and device size, then copied 1:1 on whole device pixels through the camera transform. Map art retains its pixel grid; legacy battle/street canvas text retains `txt` / `txtPic`. No new font download or simulation/save change. Tests: `maplabels`, `smoothmove`, `worldui`, `lordnames`, `worldprint`; before/after fixture: `visual/maplabels` (`legacy=1` selects the old labels).

@@ -235,8 +235,8 @@ function itemIcon(def){const k='ic'+def.icon+def.col;return spr[k]||(spr[k]=mkc(
 }))}
 /* ---------- text on canvas ---------- */
 // while TXTQ is an array (the world's things being drawn), labels are queued and drawn after all of them, on top (those of the
-// scene in game pixels too: TXTQ.lo, render.js drawWorld). On the screen at a finer scale than the game's pixels (core.js CVS: the
-// world map) a label is drawn in game pixels as ever and laid on as a picture (txtPic), so it stays as crisp as it was
+// scene in game pixels too: TXTQ.lo, render.js drawWorld). World labels are flushed through mapTxt at native resolution;
+// txt and txtPic keep the existing small pixel font for other canvas text.
 let TXTQ=null;
 const TXT_FONT='8px Silkscreen, "Courier New", monospace';
 function txt(s,x,y,col,al){if(TXTQ&&(ctx===TXTQ.ctx||ctx===TXTQ.lo)){TXTQ.push([s,x,y,col,al]);return}
@@ -250,6 +250,23 @@ function txtPic(s,col,al){s=String(s);const k=s+'|'+col+'|'+al;let c=TXTC.get(k)
   const m=TXTM||(TXTM=mkc(1,1,()=>{}).getContext('2d'));m.font=TXT_FONT;const w=Math.ceil(m.measureText(s).width),ox=1+(al==='center'?Math.ceil(w/2):al==='right'?w:0),oy=10;
   c=mkc(w+4,14,g=>{g.font=TXT_FONT;g.textAlign=al||'left';g.textBaseline='alphabetic';g.fillStyle='#000';g.fillText(s,ox+1,oy+1);g.fillStyle=col||'#e4e0cf';g.fillText(s,ox,oy)});
   c.ox=ox;c.oy=oy;TXTC.set(k,c);return c}
+
+/* World labels are cached at their final device-pixel size, never enlarged from the 8px text above. Arial matches the UI;
+   a small CSS-size floor keeps phones readable. The outline is part of the cached picture, not a blurred canvas shadow. */
+const MAP_TEXT={size:8,min:11,font:'Arial, sans-serif',weight:600,edge:'#09080a'};
+function mapTxtPic(s,col,al,scale,dpr){
+  s=String(s);const size=Math.max(Math.ceil(MAP_TEXT.min*dpr),Math.round(MAP_TEXT.size*scale)),line=Math.max(2,Math.round(2*dpr)),font=MAP_TEXT.weight+' '+size+'px '+MAP_TEXT.font,k='map|'+size+'|'+line+'|'+s+'|'+col+'|'+al;
+  let c=TXTC.get(k);if(c)return c;if(TXTC.size>600)TXTC.clear();
+  const m=TXTM||(TXTM=mkc(1,1,()=>{}).getContext('2d'));m.font=font;m.textAlign='left';m.textBaseline='alphabetic';
+  const metric=m.measureText(s),w=Math.ceil(metric.width),up=Math.ceil(metric.actualBoundingBoxAscent||size),down=Math.ceil(metric.actualBoundingBoxDescent||0),pad=Math.ceil(line/2)+2,ox=pad+(al==='center'?Math.ceil(w/2):al==='right'?w:0),oy=pad+up;
+  c=mkc(w+2*pad,up+down+2*pad,g=>{g.font=font;g.textAlign=al||'left';g.textBaseline='alphabetic';g.lineJoin='round';g.lineWidth=line;g.strokeStyle=MAP_TEXT.edge;g.strokeText(s,ox,oy);g.fillStyle=col||'#e4e0cf';g.fillText(s,ox,oy)});
+  c.ox=ox;c.oy=oy;c.deviceText=true;c.labelSize=size;TXTC.set(k,c);return c;
+}
+// A queued map label's anchor passes through the current camera transform, then the finished picture is copied 1:1.
+function mapTxt(s,x,y,col,al){
+  const g=ctx,m=g.getTransform(),dpr=window.devicePixelRatio||1,c=mapTxtPic(s,col,al,Math.hypot(m.a,m.b),dpr),px=Math.round(m.a*x+m.c*y+m.e),py=Math.round(m.b*x+m.d*y+m.f);
+  g.save();try{g.setTransform(1,0,0,1,0,0);g.shadowBlur=0;g.drawImage(c,px-c.ox,py-c.oy)}finally{g.restore()}
+}
 
 /* how big a host looks: followers trail the banner, more of them the bigger the band, at most 9 (render.js drawHost) */
 const hostSize=n=>n<5?0:Math.min(9,Math.round(Math.sqrt(n)*1.7)-2);

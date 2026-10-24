@@ -222,7 +222,7 @@ defineKinds('encounter',{trigger:'travelHour'},{
     facts:e=>[e.fac&&'deserters from the '+FACS[e.fac].n,insight(['soldiers, by their gear','two '+ST[e.unit].n.toLowerCase()+'s, worn but armed','2 × '+ST[e.unit].n+', tier '+ST[e.unit].tier],'know what they are')],
     left:()=>'They vanish into the trees.',
     acts:[{icon:'troops',label:'Take them in',need:e=>P.gold<15?'Not enough gold.':partySize()+2>partyCap()?'No room in your party.':!partyRoster(P).canAdd(e.unit)&&'No free army group.',
-        out:e=>({gold:-15,troops:{[e.unit]:2},say:'Two new '+ST[e.unit].n.toLowerCase()+'s fall in line.'})},
+        out:e=>({gold:-15,troops:{[e.unit]:2},gone:1,say:'Two new '+ST[e.unit].n.toLowerCase()+'s fall in line.'})},
       {icon:'prisoners',label:'Turn them in',need:e=>!e.fac&&'They serve no realm.',ask:e=>'Hand them to the '+FACS[e.fac].n+'’s men? Deserters hang.',
         out:e=>({honor:[e.fac,3],gold:10,say:()=>'You hand them over to the '+FACS[e.fac].n+'. The bounty is 10 gold.'})}]},
   gamblers:{n:'Gamblers',ico:'mug',w:1.2,ok:(c=storyCtx())=>c.gold>=20,on:'byroad',beh:'stay',hear:'Laughter and the rattle of dice to the {d}.',tip:'Soldiers at dice',

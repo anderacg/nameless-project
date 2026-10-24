@@ -52,7 +52,7 @@ Any of them leaves at once when you are about 1.5× your sight away. Traces fade
 | Wounded traveller | a man lying by the road (the fallen pose) | stays; calls out | Help (bandage, food) · Rob · Leave |
 | Wandering merchant | a peddler with a mule (caravan sprite, small) | approaches | Trade · Leave |
 | Pilgrims (built 2026-10-19: real shrines) | 2–4 pilgrims on the road to the nearest real shrine on the map; or, a shrine just past your sight, kneeling and standing at it, beside the map's own shrine (no shrine of their own) | walks to the shrine and ends there; or stays, praying | Pray with them (walking: Walk and pray with them, an hour) · Give alms · Take the coins (asks first) · Leave |
-| Deserters | 3–5 soldiers of a realm, no banner | stay; may flee if you are that realm's | Recruit · Turn them in · Leave |
+| Deserters | 2 soldiers of a realm, no banner | stay; may flee if you are that realm's | Recruit (15 gold: both join; their map figures disappear immediately, including while moving) · Turn them in · Leave |
 | Gamblers | soldiers round a fire with dice | stay | Play (pick a stake) · Leave |
 | Collapsed mine | a shaft mouth and old carts (hill) | stays | Search (risk) · Leave |
 | Hunters' camp | 2–3 hunters, a fire, pelts | stay | Trade · Hunt with them · Leave |

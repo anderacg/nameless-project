@@ -277,7 +277,10 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 // W7 re-recorded 2026-10-24 for the discovery correction: passive sightings no longer identify unknown lords, so known
 // holds fewer lord records. Restoring only the old watch rule restores f79b1a9c (temporary diagnostic: 16 checks passed).
 // W1-W6, W8, B2 and every generator sum held; no simulation, rendering or save-schema change.
-const EXPECT={W1:'2ba57e1b',W2:'975f62a1',W3:'224e40e8',W4:'29fda26b',W5:'f284901d',W6:'6b64690d',W7:'b1a67c01',W8:'a465c56e',B2:'8712b6a2'};
+// W6 re-recorded 2026-10-24 for native-resolution world-map labels (Arial and a dark outline), requested for legibility.
+// Was 6b64690d; now ca946ef1 (parts b20337fd 06f656b2 c148aa51 0c40944c 4403a5ea 8319b986). Switching only the
+// queue flush back to txt restored the old W6 and all 16 checks. World data, simulation, saves, W1-W5, W7-W8 and B2 held.
+const EXPECT={W1:'2ba57e1b',W2:'975f62a1',W3:'224e40e8',W4:'29fda26b',W5:'f284901d',W6:'ca946ef1',W7:'b1a67c01',W8:'a465c56e',B2:'8712b6a2'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended
