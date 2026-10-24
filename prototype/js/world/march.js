@@ -25,6 +25,13 @@ function marchSprite(u,o){
   const type=u.character?u.type.replace(/^comp_/,''):u.type;
   return unitSprite(type,0,false,u.id%6,u.walking?2+Math.floor(u.walk/WALK.foot)%4:0,false,false,o.look().col);
 }
+// Leaders use the same character kind and equipment as battle; cached cells also serve map picking and banner height.
+const MARCH_LEADERS=new WeakMap();
+function marchLeaderSprite(o,f){
+  const hero=o===P,cid=o.cid,type=hero?'hero':cid?charOf(compInit(cid),cid).key:o.mapKind==='lord'?charOf(o).key:o.ld?charOf(o.ld).key:partyRoster(o).groups[0]?.type||'militia';
+  const pose=f?2+Math.floor(f/2)%4:0,base=unitSprite(type,0,hero,0,pose,false,false,o.look().col);
+  let s=MARCH_LEADERS.get(base);if(!s){const k=WORLD_BATTLE.sprite/WORLD_BATTLE.scale;s=mkc(Math.ceil(base.width*k),Math.ceil(base.height*k),g=>g.drawImage(base,0,0,base.width*k,base.height*k));MARCH_LEADERS.set(base,s)}return s;
+}
 function marchDraw(ents,o,cam){
   if(!WORLD_BATTLE.on)return false;const army=MarchArmy.of(o);army.sync();marchCircle(ents,o,cam);
   for(const u of army.units)ents.push({y:u.y,own:o===P||o.faction==='player',f:()=>drawMarcher(u,o,cam)});return true;

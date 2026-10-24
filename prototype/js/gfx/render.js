@@ -98,7 +98,7 @@ function drawWorld(){
   if(P.siege)ents.push({y:P.y-1,f:()=>{subT(P);const s=campSprite(77,'bandit'),X=Math.round(P.x-24-s.ax-cam.x),Y=Math.round(P.y+2-s.ay-cam.y);ctx.globalAlpha=SHADOW.a;ctx.drawImage(s.sh,X,Y);ctx.globalAlpha=1;ctx.drawImage(s,X,Y);drawFire(X+s.fire[0],Y+s.fire[1],0);drawFlag(FACS.player.col,X+s.flag[0],Y+s.flag[1],0);txt('Siege day '+P.siege.days,Math.round(P.x-cam.x),Math.round(P.y-18-cam.y),'#e8b94a','center')}});
   if(P.camp){if(WORLD_BATTLE.on&&!B?.world)marchCircle(ents,P,cam);ents.push(bandCampEnt(cam));}// (your camp's tents, fire and banner in your place, by their feet among the trees as everyone is: world/supply.js)
   // (you, not while you camp: on foot, a step each WALK.foot px you walk; mounted, your horse on the same feet, a step each WALK.ride px; your host behind, as a lord's: drawParties)
-  if(!P.stay&&!P.camp&&!B?.world){if(WORLD_BATTLE.on)marchDraw(ents,P,cam);ents.push({y:P.y,own:1,f:()=>{subT(P);const sx=Math.round(P.x-cam.x),sy=Math.round(P.y-cam.y),m=mountDef(),go=mapStepping(P),s=partySprite('#e8b94a',m?m.col:'',go?frameOf(P,m?WALK.ride:WALK.foot,WALK.n):0);
+  if(!P.stay&&!P.camp&&!B?.world){if(WORLD_BATTLE.on)marchDraw(ents,P,cam);ents.push({y:P.y,own:1,f:()=>{subT(P);const sx=Math.round(P.x-cam.x),sy=Math.round(P.y-cam.y),m=mountDef(),go=mapStepping(P),s=WORLD_BATTLE.on?marchLeaderSprite(P,go?frameOf(P,WALK.foot,WALK.n):0):partySprite('#e8b94a',m?m.col:'',go?frameOf(P,m?WALK.ride:WALK.foot,WALK.n):0);
     ctx.fillStyle='rgba(0,0,0,.3)';ctx.fillRect(sx-(m?6:3),sy-1,m?12:6,2);if(!WORLD_BATTLE.on)drawHost(partySize(),'#3d74d6',sx-(m?P.dir*4:0),sy+2,P.dir,go?WALKED.get(P)||0:null,5,P.race);ctx.save();ctx.translate(sx,sy-10);ctx.scale(P.dir,1);ctx.drawImage(s,-(s.width>>1),13-s.height);ctx.restore();BANNERQ.push({o:P})}}); }
   drawFolk(ents,cam,V);drawCaravans(ents,cam,V);drawShips(ents,cam,V);drawRefugees(ents,cam,V);drawRoad(ents,cam,V);drawFights(ents,cam,V);
   ambientWorld(ents,cam,V);// (the birds, critters and butterflies on the ground, with everyone; the rest stepped: ambient.js)
@@ -160,9 +160,9 @@ function opaqueBox(s){if(s._ob)return s._ob;const d=s.getContext('2d', { willRea
   for(let y=0;y<s.height;y++)for(let x=0;x<s.width;x++)if(d[(y*s.width+x)*4+3]){if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y}return s._ob=x1<0?[0,0,0,0]:[x0,y0,x1,y1]}
 // a party's leader as drawn (L: its look; f: the step, 0 to PEOPLE_STEPS-1): his picture, its cell's top left on the map and whether it faces
 // left. The cell's bottom is 3 below his place (a rider in the same 16 cell: the same feet, his banner taller)
-function partyFig(o,L,f){const s=L.bandit?banditSprite(f):partySprite(L.col,L.rider==='horse'?C.horse:'',f,L.race);return{s,x:o.x-(s.width>>1),y:o.y+3-s.height,flip:L.dir<0}}
+function partyFig(o,L,f){const s=WORLD_BATTLE.on?marchLeaderSprite(o,f):L.bandit?banditSprite(f):partySprite(L.col,L.rider==='horse'?C.horse:'',f,L.race);return{s,x:o.x-(s.width>>1),y:o.y+3-s.height,flip:L.dir<0}}
 // (the rows above a leader's cell top his label clears: his highest pixel in either step, so it stands still as he walks)
-const figTop=L=>Math.min(...[...Array(PEOPLE_STEPS).keys()].map(f=>opaqueBox(partyFig(P,L,f).s)[1]));
+const figTop=(L,o=P)=>Math.min(...[...Array(PEOPLE_STEPS).keys()].map(f=>{const s=partyFig(o,L,f).s;return 16-s.height+opaqueBox(s)[1]}));
 // every party in sight, one way (Party.draw: its host, its leader's figure, a torch on a night watch, its label)
 function drawParties(ents,cam,V){for(const o of W.parties)o.draw(ents,cam,V)}
 function drawUnit(u){

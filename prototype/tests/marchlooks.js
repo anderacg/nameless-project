@@ -8,4 +8,12 @@ Kit.suite(({ok})=>{
  ok(pixels(orange)!==pixels(t.marchSprite({...u,type:'orc_grunt'},owner('#de873b'))),'mixed-race troops retain their individual unit appearance under faction tint');
  const dwarf=t.partySprite('#de873b','',0,'dwarf'),human=t.partySprite('#de873b','',0,'human');
  ok(pixels(dwarf)!==pixels(human)&&dwarf!==human,'campaign leader sprites and cache distinguish races within one faction color');
+ t.WORLD_BATTLE.on=true;
+ const hero=t.marchLeaderSprite(t.P,0),race=t.P.race;t.P.race=race==='orc'?'human':'orc';
+ ok(pixels(hero)!==pixels(t.marchLeaderSprite(t.P,0)),'hero leader uses current character race instead of a generic campaign figure');t.P.race=race;
+ const lord=t.W.lords[0],actual=t.marchLeaderSprite(lord,0),base=t.unitSprite(t.charOf(lord).key,0,false,0,0,false,false,lord.look().col),k=t.WORLD_BATTLE.sprite/t.WORLD_BATTLE.scale;
+ const expected=t.mkc(Math.ceil(base.width*k),Math.ceil(base.height*k),g=>g.drawImage(base,0,0,base.width*k,base.height*k));
+ ok(pixels(actual)===pixels(expected),'lord leader uses the battle character kind at marching scale and faction tint');
+ const fig=t.partyFig(lord,lord.look(),0);
+ ok(fig.s===actual&&Math.abs(lord.headY()-Math.min(...Array.from({length:t.PEOPLE_STEPS},(_,f)=>{const q=t.partyFig(lord,lord.look(),f);return q.y+t.opaqueBox(q.s)[1]})))<=1,'leader picking and banner height follow the displayed battle sprite');
 });

@@ -31,7 +31,7 @@ class Party extends WorldObject{
   // the banner it flies over it, Total War-style (sprites.js bannerSprite: k its shape, col its field, dev its device), null for
   // none; and the map row of its leader's head, the banner's pole standing over it (render.js bannerAt)
   banner(){return null}
-  headY(){return Math.round(this.y)+3-16+figTop(this.look())}
+  headY(){return Math.round(this.y)+3-16+figTop(this.look(),this)}
   // in sight: its host of soldiers, its leader's figure (a rider, a bandit), a torch on a night watch, its label (as it looks: look)
   draw(ents,cam,V){if(!this.inView(V)||B?.world?.hides(this))return;const o=this;if(WORLD_BATTLE.on)marchDraw(ents,o,cam);
     // (its step by how far it has walked: on foot a step each WALK.foot px, a rider each WALK.ride; standing still, or resting,
@@ -135,7 +135,7 @@ class PlayerParty extends Party{
   power(){return partyPower()}
   look(){return{col:'#3d74d6',rider:mountDef()?mountDef().col:'',dir:this.dir||1,moving:this.tx!=null,seed:5,label:'',labelCol:'#fff'}}
   banner(){return{k:'banner',col:FACS.player.col,dev:'crown'}}
-  headY(){const m=mountDef();return Math.round(this.y)+3-16+opaqueBox(partySprite('#e8b94a',m?m.col:'',0))[1]}
+  headY(){if(WORLD_BATTLE.on)return Math.round(this.y)+3-16+figTop(this.look(),this);const m=mountDef();return Math.round(this.y)+3-16+opaqueBox(partySprite('#e8b94a',m?m.col:'',0))[1]}
   /* your numbers (their older names in state.js and combat.js are aliases of these). P is your band and your hero's record at
      once: here, the band's size and room, what it eats and how far it sees; then your hero's disciplines with everything that
      adds to them, what her gear, tree and perks give, her fighting numbers, and her health, stamina and mana */

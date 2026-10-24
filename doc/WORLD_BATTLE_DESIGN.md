@@ -1,6 +1,6 @@
 # World-map battles
 
-Status: playable campaign version, with physical travel formations, individual pathfinding and actual-position battle entry, 2026-10-24. Enabled by `WORLD_BATTLE.on` in `prototype/js/battle/worldbattle.js`. Travel soldiers use the battle unit sprites, equipment and distance-driven walking poses at the same world scale, with faction cloth colors and individual troop races. Campaign leader sprites use their declared race; battle-side palettes remain unchanged; combat keeps the existing unit sprites, actors, orders, morale and campaign settlement.
+Status: playable campaign version, with physical travel formations, individual pathfinding and actual-position battle entry, 2026-10-24. Enabled by `WORLD_BATTLE.on` in `prototype/js/battle/worldbattle.js`. Travel soldiers use the battle unit sprites, equipment and distance-driven walking poses at the same world scale, with faction cloth colors and individual troop races. Campaign leaders use their battle character sprites, including hero and companion equipment, at marching scale; picking and banner heights follow the displayed sprites. Battle-side palettes remain unchanged; combat keeps the existing unit sprites, actors, orders, morale and campaign settlement.
 
 ## Travel and contact
 
