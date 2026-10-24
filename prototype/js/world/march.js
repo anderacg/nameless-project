@@ -22,8 +22,8 @@ function marchRows(o){
 const worldBattleReach=o=>WORLD_BATTLE.on&&o instanceof Party&&o!==P?marchOuter(P)+marchOuter(o)+2*WORLD_BATTLE.interaction:REACH;
 // The battle's full sprites at its world scale, with weapons included and movement-driven poses.
 function marchSprite(u,o){
-  const type=u.character?u.type.replace(/^comp_/,''):u.type,team=o===P||o.faction==='player'?0:o.faction&&!hostileTo(o.faction)?2:1;
-  return unitSprite(type,team,false,u.id%6,u.walking?2+Math.floor(u.walk/WALK.foot)%4:0);
+  const type=u.character?u.type.replace(/^comp_/,''):u.type;
+  return unitSprite(type,0,false,u.id%6,u.walking?2+Math.floor(u.walk/WALK.foot)%4:0,false,false,o.look().col);
 }
 function marchDraw(ents,o,cam){
   if(!WORLD_BATTLE.on)return false;const army=MarchArmy.of(o);army.sync();marchCircle(ents,o,cam);

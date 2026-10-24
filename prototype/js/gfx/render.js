@@ -160,7 +160,7 @@ function opaqueBox(s){if(s._ob)return s._ob;const d=s.getContext('2d', { willRea
   for(let y=0;y<s.height;y++)for(let x=0;x<s.width;x++)if(d[(y*s.width+x)*4+3]){if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y}return s._ob=x1<0?[0,0,0,0]:[x0,y0,x1,y1]}
 // a party's leader as drawn (L: its look; f: the step, 0 to PEOPLE_STEPS-1): his picture, its cell's top left on the map and whether it faces
 // left. The cell's bottom is 3 below his place (a rider in the same 16 cell: the same feet, his banner taller)
-function partyFig(o,L,f){const s=L.bandit?banditSprite(f):partySprite(L.col,L.rider==='horse'?C.horse:'',f);return{s,x:o.x-(s.width>>1),y:o.y+3-s.height,flip:L.dir<0}}
+function partyFig(o,L,f){const s=L.bandit?banditSprite(f):partySprite(L.col,L.rider==='horse'?C.horse:'',f,L.race);return{s,x:o.x-(s.width>>1),y:o.y+3-s.height,flip:L.dir<0}}
 // (the rows above a leader's cell top his label clears: his highest pixel in either step, so it stands still as he walks)
 const figTop=L=>Math.min(...[...Array(PEOPLE_STEPS).keys()].map(f=>opaqueBox(partyFig(P,L,f).s)[1]));
 // every party in sight, one way (Party.draw: its host, its leader's figure, a torch on a night watch, its label)
