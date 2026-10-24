@@ -24,6 +24,7 @@ window.RUN=()=>{
   const town=t.townBy('Ashford'),q=t.makeQuest('supply',town);t.acceptQuest(q);t.invAdd('good',q.good,Math.floor(q.n/2));
   t.openQuests();t.act('qw-tab','job');t.act('qw-sel','q'+q.id);
  }else{t.openChar();t.act('char-tab',scene==='armyskills'?'skills':scene==='condition'?'condition':'roster')}
+ if(u.get('section')){const d=t.panel.querySelector('[data-unit-section="'+u.get('section')+'"]'),sc=t.panel.querySelector('.fb-unit-inspector>.fb-scroll');if(d&&sc){d.open=true;sc.scrollTop+=d.getBoundingClientRect().top-sc.getBoundingClientRect().top}}
  t.panel.style.animation='none';t.updateHUD(true);t.frame();
  const d=document.createElement('pre');d.id='OUT';d.hidden=true;d.textContent='PASS real field-book '+scene;document.body.appendChild(d);
 };

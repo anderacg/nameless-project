@@ -51,7 +51,7 @@ try{
  window.dispatchEvent(new KeyboardEvent('keydown',{code:'Escape',key:'Escape'}));ok(G.mode==='char'&&t.partyView().sel==='hero','Escape follows its Back: the Army window, on your hero');
  if(document.querySelector('#panel .nav [data-nav="back"]:not([data-act="fb-menu"])'))window.dispatchEvent(new KeyboardEvent('keydown',{code:'Escape',key:'Escape'}));// (a small screen: its card's page, then the cards)
  window.dispatchEvent(new KeyboardEvent('keydown',{code:'Escape',key:'Escape'}));ok(G.mode==='esc','and again: the Army window’s Back, the Game Menu');window.dispatchEvent(new KeyboardEvent('keydown',{code:'Escape',key:'Escape'}));ok(G.mode==='world','then resumed');
- t.openChar();ok(/Open Skills/.test(panel())&&!/improve through use/.test(panel()),'your hero’s card points to the Skills page');t.act('char-close');
+ t.openChar();ok(document.querySelector('.fb-unit-actions [data-act="open-skills"]')?.textContent==='Development'&&!/improve through use/.test(panel()),'your hero’s card points to the Skills page');t.act('char-close');
  // saves
  t.saveGame();const tree=P.tree.slice();P.tree=['start'];t.act('load');ok(JSON.stringify(P.tree)===JSON.stringify(tree),'talents survive a reload');
  // active skills: every one on the tree, reachable without a keystone; slots fill themselves; keys 1 to 0 cast them

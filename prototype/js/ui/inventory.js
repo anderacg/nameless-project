@@ -33,7 +33,7 @@ function gearDiff(id,key){
   const sk=new Set([...Object.keys(a.sk||{}),...Object.keys(b.sk||{})]);for(const k of sk){const d=((a.sk||{})[k]||0)-((b.sk||{})[k]||0);if(d)out.push('<span class="'+(d>0?'good':'bad')+'">'+(d>0?'+':'')+d+' '+SKILLS[k].n+'</span>')}
   return out;
 }
-function openInv(){if(G.mode!=='world'||G.modal)return;G.mode='inv';G.invSel=null;G.invArm=null;G.invMore=false;G.invTab=G.invTab||'all';renderInv()}
+function openInv(){if(G.mode!=='world'||G.modal)return;G.mode='inv';G.invArmy=false;G.invSel=null;G.invArm=null;G.invMore=false;G.invTab=G.invTab||'all';renderInv()}
 // the selected bag item, if it is gear
 const selGear=()=>{const k=G.invSel;if(k==null||String(k).startsWith('eq:'))return null;const s=P.inv[k];return s&&s.k==='gear'?s.id:null};
 // a slot: its record (s), its key (a bag slot's index, or eq:slot), its label when empty, its classes (a quest item's bound: marked)
@@ -90,11 +90,11 @@ function renderInv(){
  const bag='<section class="fb-pane fb-bag" aria-label="Bag"><div class="fb-bag-categories" role="tablist" aria-label="Item categories">'+BAG_TABS.map(([k,l])=>'<button class="btn sm'+(tab===k?' on':'')+'" type="button" role="tab" aria-selected="'+(tab===k)+'" tabindex="'+(tab===k?0:-1)+'" aria-label="'+l+'" data-act="inv-tab" data-arg="'+k+'">'+fbIcon(labels[k][0])+labels[k][1]+'</button>').join('')+'</div><div class="invcap'+(over?' over':'')+'" title="'+used+' of '+size+' slots'+(over?', '+over+' past them (at most '+BAG.maxOver+')':'')+'" role="meter" aria-label="Bag slots used" aria-valuenow="'+used+'" aria-valuemin="0" aria-valuemax="'+Math.max(size,used)+'"><i style="width:'+Math.min(100,100*used/size)+'%"></i></div>'+(tab==='supplies'?suppliesLine():'')+'<div class="fb-scroll" data-fb-scroll="bag:'+tab+'"><div class="invgrid">'+P.inv.map((rec,i)=>tab!=='all'&&(!rec||(itemCat(rec)||{}).tab!==tab)?'':slotHtml(rec,i,i<size?'Empty slot':'Overflow slot',i>=size?'over':'')).join('')+'</div></div><div class="fb-bag-footer"><span>'+used+' / '+size+' slots'+(over?' · <b class="bad">'+over+' overflow · pace −'+Math.round((1-I.burden())*100)+'%</b>':'')+'</span>'+fbBtn('inv-sort',null,fbIcon('bag')+' Sort')+'</div></section>';
  const views='<div class="fb-inv-views">'+fbTabs([['bag','Bag'],['equipment','Equipment']],G.invView||'bag','inv-view','Inventory pages')+'</div>';
  const body='<div class="fb-inventory">'+views+'<div class="fb-inv-work '+(G.invView==='equipment'?'equipment ':'')+(G.invMore?'expanded':'')+'">'+equipment+bag+invItemPanel()+'</div></div>';
- fbShow('Inventory',fbIcon('gold')+' '+P.gold+' gold'+(over?' · <span class="bad">Pace −'+Math.round((1-I.burden())*100)+'%</span>':''),'',body,fbMenu(G.invMore?['inv-back',null,'Back']:null),['inv-close',null,'Back to map'],'fb-inv');fillIcons();
+ fbShow('Inventory',fbIcon('gold')+' '+P.gold+' gold'+(over?' · <span class="bad">Pace −'+Math.round((1-I.burden())*100)+'%</span>':''),'',body,fbMenu(G.invMore?['inv-back',null,'Back']:G.invArmy?['party-equipment-back',null,'Back to Army']:null),['inv-close',null,'Back to map'],'fb-inv');fillIcons();
 }
 function invAct(a,arg){
   if(!a.startsWith('inv-'))return false;
-  if(a==='inv-close'){G.mode='world';hidePanel();return true}
+  if(a==='inv-close'){G.invArmy=false;G.mode='world';hidePanel();return true}
   if(G.mode!=='inv')return true;
   const key=arg!=null&&!String(arg).startsWith('eq:')&&a!=='inv-unequip'&&a!=='inv-tab'?+arg:arg;
   if(a!=='inv-drop')G.invArm=null;
