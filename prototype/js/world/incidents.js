@@ -4,8 +4,6 @@
    w = weight, ok(c) = can it happen here and now (c: the story context), run() = what it does, returning its outcome (its log
    line and tone in it). The people you meet on the road are encounters (world/encounters.js, world/road.js) ---------- */
 defineKinds('incident',{trigger:'day'},{
-  wagon:{w:2,ok:()=>true,
-    run:()=>({gold:15,log:['You find an abandoned wagon and sell what is in it for 15 gold.','good']})},
   fever:{w:1.5,ok:(c=storyCtx())=>c.climate!=='swamp',
     run:()=>({morale:-6,log:['Fever spreads through the camp. Morale drops.','bad']})},
   storm:{w:1.5,ok:()=>true,

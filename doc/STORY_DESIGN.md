@@ -33,7 +33,7 @@ They differ only in **shape**, how they appear and how long they live. So the de
 | Shape | What it is | Lives | Ticks | Today / planned |
 |---|---|---|---|---|
 | **Encounter** | met on the map: figures, a behaviour, a page | hours | each frame, **only when near you** (the LOD tiers) | today's 24 road encounters; the small encounters; road bouts (tournaments §7); strays |
-| **Incident** | befalls you: no one to meet, applies at once (a log line, maybe a popup) | an instant | never | today's road events (storm, fever, blizzard, mirage, wagon) |
+| **Incident** | befalls you: no one to meet, applies at once (a log line, maybe a popup) | an instant | never | today's road events (storm, fever, blizzard, mirage; the wagon is now a map encounter) |
 | **Quest** | a task you carry: a goal, progress, its timing (a job's best-by day, if it has one; a step's or an escort's due day), a reward, where to report | days | **never per frame**: progress comes from world events (§3.6), the day's check on the daily tick | today's 9 job kinds; the escort; the new jobs (named outlaw, guard the harvest, …) |
 | **Gathering** | held at a place on set days, announced ahead, open to enter | days | the daily tick, from a calendar sorted by start day | tournaments (all four sizes); later fairs, festivals, market days |
 | **Thread** | a story tying several happenings into steps, sharing what it knows | days to weeks | never: it advances when one of its steps ends | chain quests ("The Wounded Traveller"); Ander The Fallen; later story arcs |
