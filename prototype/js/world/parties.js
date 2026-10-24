@@ -33,7 +33,7 @@ class Party extends WorldObject{
   banner(){return null}
   headY(){return Math.round(this.y)+3-16+figTop(this.look())}
   // in sight: its host of soldiers, its leader's figure (a rider, a bandit), a torch on a night watch, its label (as it looks: look)
-  draw(ents,cam,V){if(!this.inView(V))return;const o=this;if(WORLD_BATTLE.on)marchDraw(ents,o,cam);
+  draw(ents,cam,V){if(!this.inView(V)||B?.world?.hides(this))return;const o=this;if(WORLD_BATTLE.on)marchDraw(ents,o,cam);
     // (its step by how far it has walked: on foot a step each WALK.foot px, a rider each WALK.ride; standing still, or resting,
     // the first; drawn at its own place to the screen's pixel: render.js subT)
     // (its banner over it all, with its label over the banner: render.js drawBanners)

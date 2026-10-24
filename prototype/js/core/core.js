@@ -46,6 +46,7 @@ function fitScreen(){
   VW=Math.ceil(dw/s);VH=Math.ceil(dh/s);BVH=FIELD_H;BVW=Math.round(FIELD_H*Z.vw/Z.vh);
   const w=VW*s/dpr,h=VH*s/dpr;HUD_PX=dpr/s0;VS=s;cv.style.width=w+'px';cv.style.height=h+'px';
   if(FIXED_VIEW){scr.style.width=w+'px';scr.style.height=h+'px'}else{scr.style.width=aw+'px';scr.style.height=ah+'px'}
+  if(typeof B!=='undefined'&&B?.world){BVW=VW;BVH=VH}
   if(typeof B!=='undefined'&&B&&B.cam&&typeof camClamp==='function')camClamp();
   if(typeof zoomUI==='function')zoomUI();
 }

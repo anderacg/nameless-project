@@ -108,6 +108,7 @@ function iconPick(x,y,team){
   const c=B.iconCyc;return st.find(r=>r.g===c.order[c.i])||st[0]}
 // the icons over each group on the field (yours and theirs), drawn on the screen (not the zoomed field) so they keep their size
 const UICON={s:13,lift:22,k:2};// (its art in pixels, drawn k times over)
+const unitIconScale=()=>B?.world?UICON.k*(window.devicePixelRatio||1)/VS:UICON.k;
 /* where they stand (iconLayout; B.icons, for clicks, in the order drawn): each over its own group, its place on the field eased
    after its men on the battle's clock (follow: a man falling or running moves it with no jump; snap: field px past which it is
    simply put there, as when a group comes back into sight; deploying, the clock stands still and groups are placed at once, so
@@ -120,7 +121,7 @@ const ICON_FAN={contact:30,gap:2,ease:.25,follow:15,snap:120,under:.7,again:6};
 const atBlows=(a,b)=>a.m.some(u=>{const t=u.tgt;return !u.rout&&t&&t.hp>0&&t.grp===b.g&&Math.hypot(t.x-u.x,t.y-u.y)<ICON_FAN.contact});
 // rt: real seconds since the last (the fan's easing); returns the icons as drawn, bottom first
 function iconLayout(rt){
-  const K=UICON.k,S=UICON.s,z=B.cam?B.cam.z:1,rm=reducedMotion(),IP=B.iconPos||(B.iconPos={}),dt=Math.max(0,B.t-(B.iconT??B.t)),sel=selGroups(),items=[];B.iconT=B.t;
+  const K=unitIconScale(),S=UICON.s,z=B.cam?B.cam.z:1,rm=reducedMotion(),IP=B.iconPos||(B.iconPos={}),dt=Math.max(0,B.t-(B.iconT??B.t)),sel=selGroups(),items=[];B.iconT=B.t;
   // (an enemy group your side does not see has no icon; one partly seen, over those seen: terrain.js seenBy)
   for(const g in B.groups){const m=B.units.filter(u=>u.grp===g&&u.hp>0&&seenBy(0,u));if(!m.length){delete IP[g];continue}const mo=B.noMorale?null:grpMorale(m);
     const f=m.filter(u=>!u.rout),at=f.length?f:m,cx=at.reduce((a,u)=>a+u.x,0)/at.length,cy=at.reduce((a,u)=>a+u.y,0)/at.length,top=Math.min(...at.map(u=>u.y));
@@ -143,7 +144,7 @@ function iconLayout(rt){
   return items;
 }
 function drawUnitIcons(){
-  const sel=selGroups(),blink=Math.floor(B.t*3)%2,K=UICON.k,S=UICON.s,now=performance.now()/1000,rt=B.iconRT?Math.min(.25,now-B.iconRT):0;B.iconRT=now;
+  const sel=selGroups(),blink=Math.floor(B.t*3)%2,K=unitIconScale(),S=UICON.s,now=performance.now()/1000,rt=B.iconRT?Math.min(.25,now-B.iconRT):0;B.iconRT=now;
   for(const it of iconLayout(rt)){const {g,m,mo,st,x,y}=it;
     const team=SIDE[(mo?mo.team:m[0].team)?'foe':sideKey(B.groups[g])].plate,wav=mo&&mo.state==='wavering'&&blink;
     const hov=B.iconHov===g,edge=sel.includes(g)?'#ffd25a':wav?'#ffa040':hov?'#f4efe0':'#0a0c12',fade=it.under?ICON_FAN.under:1;
@@ -165,7 +166,7 @@ function drawUnitIcons(){
 /* the fog's ghosts (battlefog.js fogGhosts): where an enemy group was last seen, its icon greyed, fading over FOG.ghost s, a
    faint dashed ring on the ground under it; drawn on the screen as the icons, but no icon of B.icons (nothing to click) */
 function drawFogGhosts(){
-  const Gs=B.fog&&B.sight&&B.sight.ghost;if(!Gs||!Gs.size)return;const K=UICON.k,S=UICON.s,z=B.cam?B.cam.z:1;
+  const Gs=B.fog&&B.sight&&B.sight.ghost;if(!Gs||!Gs.size)return;const K=unitIconScale(),S=UICON.s,z=B.cam?B.cam.z:1;
   for(const [g,q] of Gs){const m=grpUnits(g),a=ghostFade(q);if(!m.length||a<=0)continue;const p=fromField({x:q.x,y:q.y}),x=Math.round(p.x-S*K/2),y=Math.round(p.y-UICON.lift*z-(S+6)*K);
     if(p.x<-40||p.x>BVW+40||p.y<0||p.y>BVH+60)continue;
     ctx.save();ctx.globalAlpha=.75*a;ctx.strokeStyle='#b8bcc4';ctx.setLineDash([3,3]);ctx.lineWidth=1;const rr=Math.max(8,Math.sqrt(m.length)*5)*z;ctx.beginPath();ctx.ellipse(Math.round(p.x),Math.round(p.y),rr,rr*.5,0,0,7);ctx.stroke();ctx.setLineDash([]);
