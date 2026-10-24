@@ -7,7 +7,9 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t
   // Attack/orders messages now identify the enemy formation by its safe group name.
   // move, attack, line_drag re-recorded for the AI handed per group (deploy.js): their orders under Auto take back only the groups
   // ordered (the rest stay the AI's, the log says whom), not the whole army; with the old whole-army take-back the hashes are as before.
-  const expected={"pick":"f8ea01cb","select":"870a2099","boxes":"627fa3d1","control_groups":"1f6e535a","move":"619baeb8","queue":"e3988d7e","attack":"30a7c1a9","own_icon":"bca1cbbd","orders":"78927b0f","flags":"d5c9b760","formations":"740cba6b","line_drag":"b68251ea","deployment":"8cf425b5","empty":"3ce8e39b","pointer_select":"f60d232d","pointer_orders":"d9382130","pointer_line":"1a6d2d33","touch":"5f816ed1","keyboard":"03b1480f"};
+  // line_drag: b68251ea -> 7a82a8aa (2026-10-24): hero now owns one share on the line, in selection order.
+  // The hotkey-only refactor retained all 19 old hashes; only this hero-inclusive fixture changes with the new planner.
+  const expected={"pick":"f8ea01cb","select":"870a2099","boxes":"627fa3d1","control_groups":"1f6e535a","move":"619baeb8","queue":"e3988d7e","attack":"30a7c1a9","own_icon":"bca1cbbd","orders":"78927b0f","flags":"d5c9b760","formations":"740cba6b","line_drag":"7a82a8aa","deployment":"8cf425b5","empty":"3ce8e39b","pointer_select":"f60d232d","pointer_orders":"d9382130","pointer_line":"1a6d2d33","touch":"5f816ed1","keyboard":"03b1480f"};
   const stable=x=>Array.isArray(x)?x.map(stable):x&&typeof x==='object'?Object.fromEntries(Object.keys(x).sort().map(k=>[k,stable(x[k])])):x;
   const hash=x=>{let h=2166136261;for(const c of JSON.stringify(stable(x)))h=Math.imul(h^c.charCodeAt(0),16777619)>>>0;return h.toString(16).padStart(8,'0')};
   const methods=['moveTo','attack','queueTo','hold','withdraw','setWalk','setFlag','setForm','setRun'],original={},calls=[];
@@ -80,7 +82,7 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t
         ok(results.wall===true&&!B.groups[testGroup('inf')].shieldWall&&results.line==='line'&&results.wedge==='wedge'&&!B.groups[testGroup('arc')].shieldWall,'shield ability filters eligibility independently of positioning formations');
       }else if(name==='line_drag'){
         B.sel=['hero',testGroup('inf'),testGroup('arc')];B.auto=true;results.short=t.formDragTo(300,200,302,202);results.line=t.formDragTo(400,100,400,450);
-        ok(!results.short&&results.line&&!B.auto&&B.groups[testGroup('inf')].ax===400&&B.groups[testGroup('arc')].ay>B.groups[testGroup('inf')].ay&&B.groups.hero.ax===370,'dragged lines share group space and leave the hero behind the line');
+        ok(!results.short&&results.line&&!B.auto&&B.groups[testGroup('inf')].ax===400&&B.groups[testGroup('arc')].ay>B.groups[testGroup('inf')].ay&&B.groups.hero.ax===400&&B.groups.hero.ay<B.groups[testGroup('inf')].ay,'dragged lines share group space including the hero on the line');
         const heroMove=calls.find(c=>c[0]==='moveTo'&&c[1]==='hero');ok(heroMove&&heroMove[2][2].face===B.groups.hero.face&&heroMove[2][2].turn!==false,'hero drag forwards the preview facing instead of suppressing the turn');
       }else if(name==='deployment'){
         B.sel=[testGroup('inf'),testGroup('arc')];t.rtsOrder(enemy.x,enemy.y-6,{queue:true,run:true});results.move=B.units.filter(u=>[testGroup('inf'),testGroup('arc')].includes(u.grp)).every(u=>u.x<=t.deployZone().x1);

@@ -1,10 +1,7 @@
 'use strict';
 /* ---------- the Army window (C; ui/partypage.js lays it out), your hero's sheet, perks, and the commands of the roster ---------- */
 function openChar(){if(G.mode!=='world'||G.modal)return;G.mode='char';const s=partyView();s.open=false;s.path=false;renderChar()}// (on a phone: the list first)
-function heroPage(){
- const m=vitals(),s=heroStats(),low=(v,mx)=>v<mx*.3?'bad':'';
- return '<div class="fb-character-sheet fb-hero-sheet"><div class="fb-character-stage"><strong>'+htmlText(P.name||'Your hero')+'</strong><img src="'+portrait('hero',true)+'" alt="'+htmlText(P.name||'Your hero')+'"><span>'+RACES[P.race].n+' · '+rankName()+'</span></div><div class="fb-character-stats">'+fbMeter('wounded','Health',P.hp,m[0],low(P.hp,m[0]))+fbMeter('speed','Stamina (your band’s)',P.sp,m[1],low(P.sp,m[1]))+fbMeter('skills','Mana',P.mp,m[2],low(P.mp,m[2]))+'<div class="fb-stat-grid">'+fbStat('sword','Attack',Math.round(s.dmg))+fbStat('renown','Level',P.level)+'</div><div class="fb-skills-summary">'+fbStat('skills','Skill points',P.tp)+'</div><small>'+htmlText((P.tree.length-1)+' skills learned. One skill point each level.')+'</small></div></div><div class="lab">Attributes · raised on the skill tree (K)</div><div class="fb-attributes">'+Object.keys(ATTRS).map((k,i)=>'<div>'+fbStat(['power','speed','book','banner'][i],ATTRS[k][0],P.attr[k])+fbDetails('Effects','<p>'+ATTRS[k][1]+'</p>')+'</div>').join('')+'</div>'+(P.perks.length?'<div class="lab">Perks from before</div><div class="fb-attributes">'+P.perks.map(p=>'<div class="fb-note"><strong>'+PERKS[p].n+'</strong><p>'+PERKS[p].d+'</p></div>').join('')+'</div>':'');
-}
+function heroPage(c=P,comp=false){const perks=comp?COMP_PERKS:PERKS;return '<div class="fb-skills-summary fb-stat-grid">'+fbStat('skills','Skill points',c.tp)+fbStat('book','Learned',c.tree.length-1)+'</div><div class="lab">Attributes · raised on the skill tree</div><div class="fb-attributes">'+Object.keys(ATTRS).map((k,i)=>'<div>'+fbStat(['power','speed','book','banner'][i],ATTRS[k][0],c.attr[k])+fbDetails('Effects','<p>'+(comp?CHAR_ATTR_FX[k]:ATTRS[k][1])+'</p>')+'</div>').join('')+'</div>'+(c.perks.length?'<div class="lab">Perks</div><div class="fb-attributes">'+c.perks.map(k=>'<div class="fb-note"><strong>'+perks[k].n+'</strong><p>'+perks[k].d+'</p></div>').join('')+'</div>':'')}
 // the window, its header the company muster (partypage.js partyHead): Roster, Army skills, Condition, Passengers (your quests are a
 // window of their own: ui/questwindow.js; the lords and realms the Journal's: ui/lordsrealms.js)
 function renderChar(){
@@ -21,6 +18,7 @@ function showPerk(from){
 }
 function toWorld(){G.mode='world';hidePanel();if(P.perkPend>0&&showPerk('world'))return;saveGame(true)}
 function charAct(a,arg){
+  if(G.mode==='char')partyUnitRemember();
   if(a==='char-close'){G.mode='world';hidePanel();return true}
   if(a==='perk-open'){showPerk('char');return true}
   if(a==='open-skills'){openSkills('talents');return true}
@@ -97,8 +95,8 @@ function updateCompTransferDraft(e){
 function renderComp(){renderChar()}
 onAct('cm-',(a,arg)=>{
   if(a==='cm-open')return openComp(arg);
-  if(!compShown())return;const id=G.compSel,keep=panel.scrollTop;
-  if(a==='cm-army'){G.compTab='orders';renderComp();return}
+  if(!compShown())return;partyUnitRemember();const id=G.compSel,keep=panel.scrollTop;
+  if(a==='cm-army'){G.compTab='orders';const s=partyView();(s.sections||(s.sections={}))[s.sel+':company']=true;renderComp();return}
   if(a==='cm-perk'){const c=compInit(id);if(c.perkPend>0&&COMP_PERKS[arg]&&!c.perks.includes(arg)){c.perks.push(arg);c.perkPend--;log(COMPS[id].short+' becomes '+COMP_PERKS[arg].n.toLowerCase()+'.','gold')}}
   else if(a==='cm-eq'){const [sl,i]=arg.split(':');if(compEquip(id,sl,+i))log(COMPS[id].short+' takes the '+ITEMS[compInit(id).gear[sl]].n+'.')}
   else if(a==='cm-off')compUnequip(id,arg);

@@ -67,9 +67,10 @@ function setOrder(o){
 // a group's flag on or off for the selection: walk, firm (hold ground), cease (cease fire), skirmish, melee (shooters' blades)
 const FLAG_N={walk:['walk','run'],firm:['hold their ground','fight freely'],shieldWall:['shield wall requested for eligible soldiers','shields lowered'],cease:['cease fire','fire at will'],skirmish:['skirmish','stand'],melee:['melee mode on: they fight whoever reaches them','melee mode off: they keep shooting, point blank']};
 function toggleFlag(f){if(!B||!FLAG_N[f])return;const gs=selGroups().filter(g=>grpUnits(g).some(u=>flagEligible(u,f)));if(!gs.length)return;const on=playerOrder(gs,()=>{const on=!gs.every(g=>B.groups[g][f]);gs.forEach(g=>B.groups[g].setFlag(f,on));return on});log(htmlText(selLabel())+': '+FLAG_N[f][on?0:1]+'.')}
-// control groups: Ctrl+1-9 keeps the selection under that key, 1-9 picks it again
-function ctrlGroup(k,save){if(!B)return;B.ctrl=B.ctrl||{};if(save){B.ctrl[k]=B.sel==='all'?'all':selGroups().slice();log('Group '+k+': '+htmlText(selLabel())+'.');return}
-  const c=B.ctrl[k];if(!c){const id=playerGroups()[k==='0'?9:Number(k)-1];if(id)selectGroup(id);return}const gs=c==='all'?'all':c.filter(g=>grpUnits(g).length);if(gs!=='all'&&!gs.length)return;B.sel=gs==='all'?'all':gs.length===1?gs[0]:gs;setOrderUI()}
+// control groups: Ctrl+1-9/0 keeps the selection; the same live binding drives recall and card badges.
+function ctrlGroups(k){if(!B)return[];const c=B.ctrl&&B.ctrl[k],id=playerGroups()[k==='0'?9:Number(k)-1];return c==='all'?'all':(c||[id]).filter(g=>g&&grpUnits(g).length)}
+function ctrlGroup(k,save){if(!B)return;B.ctrl=B.ctrl||{};if(save){B.ctrl[k]=B.sel==='all'?'all':selGroups().slice();log('Group '+k+': '+htmlText(selLabel())+'.');setOrderUI();return}
+  const gs=ctrlGroups(k);if(gs!=='all'&&!gs.length)return;B.sel=gs==='all'?'all':gs.length===1?gs[0]:gs;setOrderUI()}
 function selectGroup(g,add=false){if(!B||g!=='all'&&(!playerGroups().includes(g)||!grpUnits(g).length))return;if(add&&g!=='all'){const gs=B.sel==='all'?[]:selGroups();B.sel=[...new Set([...gs,g])]}else B.sel=g;setOrderUI()}
 function cycleGroup(){if(!B)return;const opts=['all',...playerGroups().filter(g=>grpUnits(g).length)];B.sel=opts[(opts.indexOf(B.sel)+1)%opts.length];setOrderUI()}
 /* your commands: a formation for the selected groups it suits (pressed again: back to line) */
@@ -83,7 +84,7 @@ function setForm(f){
 function formDragTo(x0,y0,x1,y1,o){
   if(B.deploy){const a=inZone(x0,y0),b=inZone(x1,y1);x0=a.x;y0=a.y;x1=b.x;y1=b.y}// (deploying: the line in your zone)
   const plan=formPlan(x0,y0,x1,y1);if(!plan.length)return false;const am=amTake(o);playerOrder(plan.map(p=>p.g),()=>{
-  // (each a move to its part of the line, facing as dragged, as wide as its share of it: battlecontrol.js; your hero stands behind)
+  // (each a move to its part of the line, facing as dragged, as wide as its share of it: battlecontrol.js; your hero shares the line)
   for(const p of plan){const gr=B.groups[p.g],go=am?'attackMove':'moveTo';gr.amEnd();if(p.hero){gr[go](p.ax,p.ay,{face:p.face});B.hero.sx=B.hero.sy=0;continue}gr[go](p.ax,p.ay,{face:p.face,files:p.files})}
   B.mark={x:(x0+x1)/2,y:(y0+y1)/2,t:.7,foe:false};if(am)B.mark.am=true;if(B.deploy)deploySnap(plan.map(p=>p.g))});log(htmlText(selLabel())+(am?': attack-move to the line.':': form up there.'));return true;
 }

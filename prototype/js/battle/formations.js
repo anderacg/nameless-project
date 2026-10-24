@@ -73,19 +73,16 @@ function breakWall(g){const gr=B.groups[g];if(gr&&gr.shieldWall){gr.setFlag('shi
 // explicit dragged facing bypasses this helper in BattleControl.moveTo.
 function faceToward(g,x,y){const gr=B.groups[g],m=grpUnits(g);if(!m.length)return;const cx=m.reduce((a,u)=>a+u.x,0)/m.length,cy=m.reduce((a,u)=>a+u.y,0)/m.length;if(Math.hypot(x-cx,y-cy)>.01)gr.setForm(gr.form||'line',{face:Math.atan2(y-cy,x-cx),files:gr.files})}
 // a line dragged from (x0,y0) to (x1,y1): the selection along it, shared by their numbers, facing the left of the drag.
-// Each is as wide as its share of the line (and so as deep as its numbers make it); a wedge keeps its shape; your hero stands
-// just behind the line's middle, not in it
+// Each is as wide as its share of the line (and so as deep as its numbers make it); a wedge keeps its shape.
+// Your hero shares the line as a one-person group, like a companion; preview and placement use this same plan.
 function dragFiles(f,n,seg){const F=FORMS[f]||FORMS.line;return F.drag==='fixed'?null:Math.max(1,Math.min(n,Math.round(seg/F.gx)+1))}
 function formPlan(x0,y0,x1,y1){
-  const sel=selGroups().filter(g=>grpUnits(g).length&&!B.groups[g].resolve?.routed),gs=sel.filter(g=>g!=='hero'),L=Math.hypot(x1-x0,y1-y0);if(!sel.length||L<FORM_DRAG)return[];
-  const ux=(x1-x0)/L,uy=(y1-y0)/L,foes=B.units.filter(u=>u.team===1&&u.hp>0),ex=foes.length?foes.reduce((a,u)=>a+u.x,0)/foes.length:BW,ey=foes.length?foes.reduce((a,u)=>a+u.y,0)/foes.length:BH/2;
+  const gs=selGroups().filter(g=>grpUnits(g).length&&!B.groups[g].resolve?.routed),L=Math.hypot(x1-x0,y1-y0);if(!gs.length||L<FORM_DRAG)return[];
+  const ux=(x1-x0)/L,uy=(y1-y0)/L;
   // (its front on the left of the drag, as in Total War: dragged down they face right, up left, left to right up, right to left down)
-  const face=Math.atan2(-ux,uy),mx=(x0+x1)/2,my=(y0+y1)/2;
-  const tot=gs.reduce((a,g)=>a+grpUnits(g).length,0);let s=0;
-  const plan=gs.map(g=>{const n=grpUnits(g).length,seg=L*n/tot,c=s+seg/2;s+=seg;
-    return{g,ax:clamp(x0+ux*c,8,BW-8),ay:clamp(y0+uy*c,fieldTop(),fieldBot()),face,files:dragFiles(B.groups[g].form||'line',n,seg)}});
-  if(sel.includes('hero'))plan.push({g:'hero',hero:true,ax:clamp(mx-Math.cos(face)*(gs.length?30:0),8,BW-8),ay:clamp(my-Math.sin(face)*(gs.length?30:0),fieldTop(),fieldBot()),face,files:null});
-  return plan;
+  const face=Math.atan2(-ux,uy),tot=gs.reduce((a,g)=>a+grpUnits(g).length,0);let s=0;
+  return gs.map(g=>{const n=grpUnits(g).length,seg=L*n/tot,c=s+seg/2;s+=seg;
+    return{g,...(g==='hero'?{hero:true}:{}),ax:clamp(x0+ux*c,8,BW-8),ay:clamp(y0+uy*c,fieldTop(),fieldBot()),face,files:g==='hero'?null:dragFiles(B.groups[g].form||'line',n,seg)}});
 }
 // the ghost of a dragged line: each soldier's slot, faint, and an arrow the way they will face. On a phone or a small window
 // (GHOST.mq) it is drawn bold in screen terms, so it reads at the whole field's zoom: the line, dots and arrow in CSS px (line,

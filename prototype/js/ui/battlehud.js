@@ -105,15 +105,18 @@ function bhudCards(){
   if(!row.dataset.hold){row.dataset.hold='1';let tm=0;const off=()=>clearTimeout(tm);
     row.addEventListener('pointerdown',e=>{const b=e.pointerType==='touch'&&e.target.closest('.ucard');if(!b)return;off();tm=setTimeout(()=>{if(b.isConnected&&b.title)holdCard('<p>'+htmlText(b.title)+'</p>',e.clientX,e.clientY)},TOUCH.hold)});
     ['pointerup','pointercancel','pointerleave'].forEach(t=>row.addEventListener(t,off))}
-  const ids=['all',...playerGroups()],signature=ids.join('|');if(row.dataset.groups===signature)return;
-  row.dataset.groups=signature;row.classList.toggle('many',ids.length>8);row.replaceChildren();ids.forEach((id,i)=>{const b=document.createElement('button');b.type='button';b.className='ucard'+(id==='all'?' all':'');b.dataset.grp=id;b.dataset.key=i?String(i%10):'';row.appendChild(b)});
+  const ids=['all',...playerGroups()],signature=ids.join('|');
+  if(row.dataset.groups!==signature){row.dataset.groups=signature;row.classList.toggle('many',ids.length>8);row.replaceChildren();ids.forEach(id=>{const b=document.createElement('button');b.type='button';b.className='ucard'+(id==='all'?' all':'');b.dataset.grp=id;row.appendChild(b)})}
+  const keys=Object.fromEntries(ids.map(id=>[id,[]]));for(const k of '1234567890'){const gs=ctrlGroups(k);for(const g of gs==='all'?ids.filter(id=>id==='all'||grpUnits(id).length):gs)if(keys[g])keys[g].push(k)}
+  // Update bindings without replacing cards or losing focus. Two keys fit; the tooltip carries every key.
+  for(const b of row.children){const ks=keys[b.dataset.grp];b.dataset.key=ks.join(', ');b.dataset.badge=ks.slice(0,2).join('·')+(ks.length>2?'+'+(ks.length-2):'');if(ks.length)b.setAttribute('aria-keyshortcuts',ks.join(' '));else b.removeAttribute('aria-keyshortcuts')}
 }
 function bhudCard(b,g){
   const m=g==='all'?playerGroups().flatMap(grpUnits):grpUnits(g),n=m.length,on=B.sel===g||Array.isArray(B.sel)&&B.sel.includes(g),gr=B.groups[g];
   const hp=m.reduce((a,u)=>a+u.hp,0)/Math.max(1,m.reduce((a,u)=>a+u.max,0)),mo=B.noMorale?null:grpMorale(m),sh=g!=='all'&&g!=='hero'&&gr?grpShape(g):null,rep=g==='hero'?'hero':repOf(m),stm=grpStamina(m);
   const st=cardStatus(g,m,mo,stm),vis=st.filter(o=>o.svg).slice(0,CARD.show);
   // (built again only when it changes, so a tooltip under the pointer stays; the bars on their own, as they move each moment)
-  const head='<span class="ukey">'+(b.dataset.key||'')+'</span>'+(g==='all'?'<span class="uall">'+icon('troops',18)+'<b>'+n+'</b></span>':(rep?'<img class="upic" src="'+portrait(rep,g==='hero')+'" alt="">':'')+'<span class="ucount">'+n+'</span>')+
+  const head='<span class="ukey">'+(b.dataset.badge||'')+'</span>'+(g==='all'?'<span class="uall">'+icon('troops',18)+'<b>'+n+'</b></span>':(rep?'<img class="upic" src="'+portrait(rep,g==='hero')+'" alt="">':'')+'<span class="ucount">'+n+'</span>')+
     '<span class="utop">'+(sh?'<small class="csh">'+sh.files+'×'+sh.ranks+'</small>':'')+(gr&&g!=='hero'&&gr.form&&gr.form!=='line'?formIcon(gr.form,18,12):'')+'</span>'+(vis.length?'<span class="cmi">'+vis.map(cardIco).join('')+'</span>':'');
   if(b.cardHead!==head){b.cardHead=head;b.innerHTML=head+'<span class="ubars"></span>'}
   const bars='<span class="ub"><i class="chp" style="width:'+pct(hp)+'"></i></span>'+(mo?'<span class="ub"><i class="cmo'+(mo.v<MORALE.waver/100?' low':'')+'" style="width:'+pct(mo.v)+'"></i></span>':'')+(stm!=null?'<span class="ub"><i class="cst'+(stm*FATIGUE.max<FATIGUE.tired?' low':'')+'" style="width:'+pct(stm)+'"></i></span>':''),bb=b.querySelector('.ubars');
