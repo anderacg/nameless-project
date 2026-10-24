@@ -64,7 +64,7 @@ try{
  // ---- painting a huge field: time and memory
  {const B=lab({leftGroups:[{type:'hum_foot',count:20}],rightGroups:[{type:'militia',count:20}],size:'huge',ground:{recipe:'forest',seed:4},climate:'grass',terrain:'forest'});
   let a=performance.now();const arena=t.paintArena('grass');const pa=performance.now()-a;a=performance.now();const gr=t.PX.battleGround({...B.terrain,climate:B.env.c,base:B.arena});const pg=performance.now()-a;B.ground=gr;
-  a=performance.now();t.frame();const f1=performance.now()-a;const px=gr.getContext('2d').getImageData(t.BW-3,t.BH-3,1,1).data;
+  a=performance.now();t.frame();const f1=performance.now()-a;const px=gr.getContext('2d', { willReadFrequently: true }).getImageData(t.BW-3,t.BH-3,1,1).data;
   const mb=n=>(n*4/1048576).toFixed(0),cells=t.BW*t.BH;
   ok(gr.width===t.BW&&gr.height===t.BH&&px[3]===255&&arena.width===t.BW,'a huge field’s ground is painted to its far corner');
   info('huge paint: arena '+pa.toFixed(0)+' ms, terrain ground '+pg.toFixed(0)+' ms, first frame '+f1.toFixed(0)+' ms; canvases '+mb(cells)+' MB each (arena, ground, blood layer, shooters’ reach: up to '+mb(cells*4)+' MB)');}

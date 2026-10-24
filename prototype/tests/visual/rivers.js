@@ -35,11 +35,11 @@ window.RUN=()=>{const t=T,o=[],q=new URLSearchParams(location.search),Z=+(q.get(
    if(!(wn==='classic'&&t.WM.classic))t.installWorld(t.genWorld(ws()));
    const m=t.WM,need=PIECES.filter(p=>!found.has(p[0]));if(!need.length)break;
    for(const [pn,f] of need){const i=f(m);if(i<0)continue;const x=i%m.w,y=(i-x)/m.w,X=Math.max(0,Math.min(m.w-CW,x-(CW>>1)))*TILE,Y=Math.max(0,Math.min(m.h-CH,y-(CH>>1)))*TILE;
-    const cv=t.mkcv(CW*TILE,CH*TILE);t.runGen(t.paintSteps(t.WorldArt.ensure(),X,Y,CW*TILE,CH*TILE,cv.getContext('2d'),0,0,{}));found.set(pn,{cv,at:wn+' ('+x+', '+y+')'})}
+    const cv=t.mkcv(CW*TILE,CH*TILE);t.runGen(t.paintSteps(t.WorldArt.ensure(),X,Y,CW*TILE,CH*TILE,cv.getContext('2d', { willReadFrequently: true }),0,0,{}));found.set(pn,{cv,at:wn+' ('+x+', '+y+')'})}
    t.WorldArt.invalidate()}
   // laid out in rows of 3 at Z, each labelled
   const per=3,cw=CW*TILE*Z,ch=CH*TILE*Z,lab=18,cols=per,rows=Math.ceil(PIECES.length/per),pg=document.createElement('canvas');pg.width=cols*(cw+8)+8;pg.height=rows*(ch+lab+8)+8;
-  pg.style.cssText='position:absolute;left:0;top:0;z-index:9999;background:#1a1c26';document.body.appendChild(pg);const g=pg.getContext('2d');g.imageSmoothingEnabled=false;g.fillStyle='#1a1c26';g.fillRect(0,0,pg.width,pg.height);
+  pg.style.cssText='position:absolute;left:0;top:0;z-index:9999;background:#1a1c26';document.body.appendChild(pg);const g=pg.getContext('2d', { willReadFrequently: true });g.imageSmoothingEnabled=false;g.fillStyle='#1a1c26';g.fillRect(0,0,pg.width,pg.height);
   PIECES.forEach(([pn],k)=>{const c=k%per,r=(k/per)|0,x=8+c*(cw+8),y=8+r*(ch+lab+8),f=found.get(pn);g.fillStyle='#e8e0c8';g.font='13px Arial';g.fillText(pn+(f?' · '+f.at:' · none found'),x,y+13);
    if(f)g.drawImage(f.cv,0,0,f.cv.width,f.cv.height,x,y+lab,cw,ch);o.push('INFO '+pn+': '+(f?f.at:'none found'))});
   o.push('PASS the river pieces drawn ('+found.size+' of '+PIECES.length+')');

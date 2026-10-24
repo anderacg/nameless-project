@@ -23,7 +23,7 @@ try{const t=T,G=t.G,P=t.P,W=t.W;t.act('begin','soldier');G.mode='world';G.modal=
  ok(ys[0]!=null&&ys[0]===ys[1],'and it stays still as his horse steps ('+ys.join(' / ')+')');
  // ---- clicks and hovers on a lord's whole horse
  // (a picture's drawn pixels in world places: the cell's top left and whether it faces left)
- const px=(s,x0,y0,flip)=>{const d=s.getContext('2d').getImageData(0,0,s.width,s.height).data,a=[];for(let y=0;y<s.height;y++)for(let x=0;x<s.width;x++)if(d[(y*s.width+x)*4+3]>200)a.push([x0+(flip?s.width-1-x:x)+.5,y0+y+.5]);return a};
+ const px=(s,x0,y0,flip)=>{const d=s.getContext('2d', { willReadFrequently: true }).getImageData(0,0,s.width,s.height).data,a=[];for(let y=0;y<s.height;y++)for(let x=0;x<s.width;x++)if(d[(y*s.width+x)*4+3]>200)a.push([x0+(flip?s.width-1-x:x)+.5,y0+y+.5]);return a};
  const ring=(q,x,y,r,dy)=>Math.hypot(q.x-x,q.y-dy-y)<r;// (the old ring: 10 round a party's middle, 11 round a caravan's)
  for(const d of [1,-1]){face(d);const s=t.partySprite(t.FACS[l.fac].col,t.C.horse,0),p=px(s,l.x-8,l.y+3-16,d<0),
      top=p.reduce((a,b)=>b[1]<a[1]?b:a),head=p.reduce((a,b)=>b[0]*d>a[0]*d?b:a),tail=p.reduce((a,b)=>b[0]*d<a[0]*d?b:a),hoof=p.filter(q=>q[1]>=l.y).reduce((a,b)=>b[0]*d<a[0]*d?b:a);
@@ -53,7 +53,7 @@ try{const t=T,G=t.G,P=t.P,W=t.W;t.act('begin','soldier');G.mode='world';G.modal=
    ok(s.width===s.height&&s.width===(big?32:16)&&bx[3]===s.height-1,(big?'a trade ship':'a fishing boat')+' sits in a '+s.width+'x'+s.height+' cell, its waterline on the bottom row');
    ok(big?len>=2.5*10&&bx[3]-bx[1]+1>=2*10:len>=12,(big?'a cog is some two and a half men long and two tall':'a rowing boat is longer than a man is tall')+' ('+len+' long, '+(bx[3]-bx[1]+1)+' high)')}
  // ---- moored at a pier (structures.js estateBoats): the same ships, the rowing boat empty, the cog's sail furled
- {const row=(s,y)=>{const d=s.getContext('2d').getImageData(9,y,13,1).data;let k=0;for(let i=3;i<d.length;i+=4)if(d[i])k++;return k};
+ {const row=(s,y)=>{const d=s.getContext('2d', { willReadFrequently: true }).getImageData(9,y,13,1).data;let k=0;for(let i=3;i<d.length;i+=4)if(d[i])k++;return k};
   const sail=t.shipSprite({seed:4,big:true,col:'#a8483a'}),furl=t.shipSprite({seed:4,big:true,col:'#a8483a',moored:true}),rb=t.shipSprite({seed:4,big:false,moored:true});
   ok(furl.width===32&&t.opaqueBox(furl)[3]===31&&rb.width===16&&t.opaqueBox(rb)[3]===15,'moored boats keep their ships’ cells and waterlines (32 and 16, the bottom row)');
   ok(row(sail,19)>8&&row(furl,19)<=4,'a moored cog’s sail is furled on its yard ('+row(furl,19)+' pixels across where the sail hangs under way: the mast in its outline)');

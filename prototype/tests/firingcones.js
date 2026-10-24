@@ -13,7 +13,7 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,P=t.P,G=t
    B.units.forEach(q=>{q.x=q.team===u.team?50:900;q.y=480;q.cd=999});const g=B.groups[u.grp];
    for(const [direction,dx,dy] of [['left',-100,0],['right',100,0],['down',0,100],['up',0,-100],['diagonal left',-100,80],['diagonal right',100,-80]]){
     u.x=450;u.y=300;u.sx=u.sy=0;u.rt=0;u.stun=0;u.walkA=null;u.shot=null;g.placeAt(u.x,u.y);g.face=0;g.currentFacing=0;g.moveTo(u.x+dx,u.y+dy);B.aim=1.234;
-    const x=u.x,y=u.y;g.step(.03);t.aiUnit(u,.03,()=>{});const movement=Math.atan2(u.y-y,u.x-x),rc=t.rangeLayer().getContext('2d');
+    const x=u.x,y=u.y;g.step(.03);t.aiUnit(u,.03,()=>{});const movement=Math.atan2(u.y-y,u.x-x),rc=t.rangeLayer().getContext('2d', { willReadFrequently: true });
     const fan=capture(rc,()=>t.drawReach([u],t.FIRE.blue)).find(a=>Math.abs(a[2]-u.s.range)<.00001);
     ok(u.spdNow>0&&close(t.arcAim(u),g.currentFacing)&&fan&&close(angle(fan),g.currentFacing)&&t.angGap(g.currentFacing,0)<=t.SHOOT.turn*.031,
       label+': '+direction+' slot correction leaves a bounded group-facing arc and overlay');
@@ -22,7 +22,7 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,P=t.P,G=t
    }
    // Once stopped, the group-facing angle is authoritative (including diagonal ghost placements).
    u.x=g.ax+u.sx;u.y=g.ay+u.sy;g.face=-2.4;g.step(.03);t.aiUnit(u,.03,()=>{});
-   const fan=capture(t.rangeLayer().getContext('2d'),()=>t.drawReach([u],t.FIRE.blue)).find(a=>Math.abs(a[2]-u.s.range)<.00001);
+   const fan=capture(t.rangeLayer().getContext('2d', { willReadFrequently: true }),()=>t.drawReach([u],t.FIRE.blue)).find(a=>Math.abs(a[2]-u.s.range)<.00001);
    ok(!u.spdNow&&fan&&close(angle(fan),g.currentFacing)&&close(t.arcAim(u),g.currentFacing),label+': stopped cone follows current group facing while order turns');
   }
   // Removing the persistent indicator does not remove active defensive/attack visuals.

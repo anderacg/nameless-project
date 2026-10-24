@@ -61,7 +61,7 @@ try{
  // ---- the walk cycles: WALK.n frames (6 to 8), 0 standing
  {const n=t.WALK.n,ppl=[...Array(n).keys()].map(f=>t.followerSprite('#3d74d6',f,2,'human')),rid=[...Array(n).keys()].map(f=>t.partySprite('#c74453',t.C.horse,f)),
    wolf=[...Array(n).keys()].map(f=>t.monsterMapSprite('wolf',f)),cow=[...Array(n).keys()].map(f=>t.critterSprite('cow',f)),cv=[...Array(n).keys()].map(f=>t.caravanSprite('#c74453',f)),
-   px=s=>s.getContext('2d').getImageData(0,0,s.width,s.height).data.join(),dist=a=>new Set(a.map(px)).size;
+   px=s=>s.getContext('2d', { willReadFrequently: true }).getImageData(0,0,s.width,s.height).data.join(),dist=a=>new Set(a.map(px)).size;
   ok(n>=6&&n<=8&&t.PEOPLE_STEPS===n&&t.PX.MAP_STEPS===n&&t.WALK.foot*n===10&&t.WALK.ride*n===16,'the map\'s walk cycles have '+n+' frames, the stride cut to match (a frame each '+t.WALK.foot+' px on foot, '+t.WALK.ride+' riding: the same pace)');
   ok(dist(ppl)===n&&dist(rid)>=n-2&&dist(wolf)>=n-2&&dist(cow)>=n-2&&dist(cv)===n,'each frame its own pose: a person '+dist(ppl)+', a rider '+dist(rid)+', a wolf '+dist(wolf)+', a cow '+dist(cow)+', a caravan '+dist(cv));
   const o2={x:0,y:0};t.WALKED.set(o2,7.3);t.stepOf(o2,1.25);now+=1000;ok(t.stepOf(o2,1.25)===0&&t.frameOf(o2,1.25,n)!==0,'standing still, a figure shows frame 0')}

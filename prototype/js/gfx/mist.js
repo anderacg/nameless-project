@@ -44,7 +44,7 @@ const mistSm=(a,b,x)=>{const f=x<=a?0:x>=b?1:(x-a)/(b-a);return f*f*(3-2*f)};
    colour haze, turning to col from strength hz[0] to hz[1]}. E keeps the pictures between frames */
 function mistFog(E,x,y,w,h,cs,k,levels){
   const M=mistV(),gx=Math.floor(x/cs)*cs-cs,gy=Math.floor(y/cs)*cs-cs,cols=Math.ceil((x+w-gx)/cs)+1,rows=Math.ceil((y+h-gy)/cs)+1,f=cs/k;
-  if(E.cols!==cols||E.rows!==rows){E.cols=cols;E.rows=rows;E.cv=mkc(cols,rows,()=>{});E.mk=mkc(cols,rows,()=>{});E.img=E.cv.getContext('2d').createImageData(cols,rows);E.mimg=E.mk.getContext('2d').createImageData(cols,rows);E.comp=mkc(cols*f,rows*f,()=>{})}
+  if(E.cols!==cols||E.rows!==rows){E.cols=cols;E.rows=rows;E.cv=mkc(cols,rows,()=>{});E.mk=mkc(cols,rows,()=>{});E.img=E.cv.getContext('2d', { willReadFrequently: true }).createImageData(cols,rows);E.mimg=E.mk.getContext('2d', { willReadFrequently: true }).createImageData(cols,rows);E.comp=mkc(cols*f,rows*f,()=>{})}
   const t=mistTime(),d=E.img.data,m=E.mimg.data,[pr,pg,pb]=MIST.col,W=MIST.warp,ws=MIST.wscale,fs=MIST.fscale,fr=MIST.fray,nl=levels.length;
   const fl=E.fl||(E.fl=[]);
   for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){
@@ -61,8 +61,8 @@ function mistFog(E,x,y,w,h,cs,k,levels){
     // (the thin fringe paled toward the mist's colour: lighter where it is thin)
     const o=(r*cols+c)*4,p=Math.min(1,thin*MIST.pale),q=A>0?1/A:0;
     d[o]=Math.round(cr*q*(1-p)+pr*p);d[o+1]=Math.round(cg*q*(1-p)+pg*p);d[o+2]=Math.round(cb*q*(1-p)+pb*p);d[o+3]=Math.round(A*255);m[o+3]=Math.round(wm*255)}
-  E.cv.getContext('2d').putImageData(E.img,0,0);E.mk.getContext('2d').putImageData(E.mimg,0,0);
-  const g=E.comp.getContext('2d'),cw=cols*f,ch=rows*f;g.clearRect(0,0,cw,ch);g.imageSmoothingEnabled=true;g.imageSmoothingQuality=MIST.smooth;g.drawImage(E.cv,0,0,cols,rows,0,0,cw,ch);
+  E.cv.getContext('2d', { willReadFrequently: true }).putImageData(E.img,0,0);E.mk.getContext('2d', { willReadFrequently: true }).putImageData(E.mimg,0,0);
+  const g=E.comp.getContext('2d', { willReadFrequently: true }),cw=cols*f,ch=rows*f;g.clearRect(0,0,cw,ch);g.imageSmoothingEnabled=true;g.imageSmoothingQuality=MIST.smooth;g.drawImage(E.cv,0,0,cols,rows,0,0,cw,ch);
   mistLay(x,y,w,h,q=>q.drawImage(E.mk,0,0,cols,rows,gx,gy,cols*cs,rows*cs));g.imageSmoothingQuality='low';mistOnto(g,gx,gy,k);
   E.gx=gx;E.gy=gy;E.cw=cw;E.ch=ch;E.k=k;return E}
 // (a grid's flat parts, for mistFog: G, C × R cells cs px, smoothly between their middles; over the box x0..x1, y0..y1 of the
@@ -81,7 +81,7 @@ function mistFlat(F,G,C,R,cs,x0,y0,x1,y1){
 function mistLay(x,y,w,h,mask){
   const M=mistV();if(w<=0||h<=0){M.w=0;return M}const r=MIST.res,cw=Math.ceil(w/r)+1,ch=Math.ceil(h/r)+1;
   if(!M.cv||M.cv.width<cw||M.cv.height<ch){M.cv=mkc(Math.max(cw,M.cv?M.cv.width:0),Math.max(ch,M.cv?M.cv.height:0),()=>{});M.pat=[]}
-  const g=M.cv.getContext('2d'),rm=reducedMotion(),t=mistTime();M.t=t;M.x=x;M.y=y;M.w=cw;M.h=ch;
+  const g=M.cv.getContext('2d', { willReadFrequently: true }),rm=reducedMotion(),t=mistTime();M.t=t;M.x=x;M.y=y;M.w=cw;M.h=ch;
   g.setTransform(1,0,0,1,0,0);g.globalCompositeOperation='source-over';g.globalAlpha=1;g.clearRect(0,0,cw,ch);g.imageSmoothingEnabled=true;g.imageSmoothingQuality='low';
   for(let i=0;i<M.tex.length;i++){const s=MIST.scale[i],L=MIST.n*s,[vx,vy]=MIST.drift[i],ox=((x-vx*t)%L+L)%L,oy=((y-vy*t)%L+L)%L,p=M.pat[i]||(M.pat[i]=g.createPattern(M.tex[i],'repeat'));
     g.globalAlpha=MIST.peak*(rm?.75:.75+.25*Math.sin(t*MIST.breath[i]+i*2.1));g.setTransform(s/r,0,0,s/r,-ox/r,-oy/r);g.fillStyle=p;g.fillRect(ox/s,oy/s,cw*r/s,ch*r/s)}

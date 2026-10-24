@@ -108,7 +108,7 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t
       ok(G.mode==='site'&&!G.enc&&s.screen===t.PAGE_SCREEN&&s.screen instanceof t.PageScreen&&t.PAGE_SCREEN instanceof t.RailScreen&&q('#panel.paged')&&!q('#panel.railed')&&!q('.rail')&&!q('.rail-i')&&q('.rwin h2').textContent===s.name&&q('.rwin>.top .rh-flag svg')&&
         !q('.nav [data-nav="back"]')&&q('.nav [data-nav="close"]').dataset.act==='site-leave'&&qa('.rwbody .rkact').map(b=>b.dataset.act+':'+b.dataset.rk).join()===ACTS[ty]&&!q('.rwbody [data-key]')&&!q('.rwbody [class^="rt"]'),
         s.T.n+': one page, no rail: its name and icon in the header, its key actions ('+qa('.rwbody .rkact b').map(b=>b.textContent).join(', ')+'), no tiles, no digits, Leave in the bar');
-      {const px=cv?(()=>{const d=cv.getContext('2d').getImageData(0,0,cv.width,cv.height).data,set=new Set();for(let i=0;i<d.length;i+=16)set.add(d[i]+','+d[i+1]+','+d[i+2]);return set.size})():0;
+      {const px=cv?(()=>{const d=cv.getContext('2d', { willReadFrequently: true }).getImageData(0,0,cv.width,cv.height).data,set=new Set();for(let i=0;i<d.length;i+=16)set.add(d[i]+','+d[i+1]+','+d[i+2]);return set.size})():0;
         ok(bn&&bn===q('.rwbody').firstElementChild&&!bn.textContent.trim()&&!bn.querySelector('*')&&/url\("?data:image\/png/.test(bn.style.backgroundImage)&&cv.width===t.PAGE_BANNER.w&&cv.height===t.PAGE_BANNER.h&&px>30,
           s.T.n+': on top a banner, a picture of the place only (no words in it): '+cv.width+' × '+cv.height+', '+px+' colours, the place on its own ground')}
       pages.push([ty,()=>{world();G.lastSite=null;t.enterSite(s)}]);t.onEscape();ok(G.mode==='world'&&!G.site,s.T.n+': Esc leaves')}

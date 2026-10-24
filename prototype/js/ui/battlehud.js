@@ -286,7 +286,7 @@ function formationReachGeometry(id){
 }
 // one area round them all: the circles filled, then their insides cut a little smaller, leaving the outer edge
 function drawReach(us,col){
-  if(!us.length)return;const c=rangeLayer(),g=c.getContext('2d');rangeClear(g);
+  if(!us.length)return;const c=rangeLayer(),g=c.getContext('2d', { willReadFrequently: true });rangeClear(g);
   // (each man's reach: the fan in front of him he can shoot into (battle.js SHOOT.arc), or all round for those who shoot all round;
   // drawn smaller and narrower to cut out its inside, leaving its edge)
   // (the inside of a fan: its point moved forward by sh so its sides stand in by -r0, and its radius cut by that too, so the far edge stays)
@@ -300,7 +300,7 @@ function drawReach(us,col){
 const medianValue=a=>{a.sort((x,y)=>x-y);return a[Math.floor(a.length/2)]||0};
 function drawFormationReach(id,col){
   const shape=formationReachGeometry(id);if(!shape)return;
-  const c=rangeLayer(),g=c.getContext('2d'),fill=(inset)=>{g.beginPath();
+  const c=rangeLayer(),g=c.getContext('2d', { willReadFrequently: true }),fill=(inset)=>{g.beginPath();
     if(shape.circle){g.arc(shape.ax,shape.ay,Math.max(0,shape.range+inset),0,Math.PI*2);g.closePath()}
     else{const pts=convexHull(shape.points.map(p=>({x:shape.ax+(p.x-shape.ax)*(Math.max(0,shape.range+inset)/shape.range),y:shape.ay+(p.y-shape.ay)*(Math.max(0,shape.range+inset)/shape.range)})));
       if(pts.length){g.moveTo(pts[0].x,pts[0].y);for(let i=1;i<pts.length;i++)g.lineTo(pts[i].x,pts[i].y);g.closePath()}}

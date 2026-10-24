@@ -37,7 +37,7 @@ try{
    ok(cases.some(c=>c.stone)&&cases.some(c=>!c.stone),'a stone bridge and a wooden one to sail under ('+cases.length+' cases)');
    for(const c of cases){const d=t.WorldArt.deck(c),w=d.cv.width,h=d.cv.height,nm=(c.stone?'stone':'wooden')+(hor(c)?' (deck west to east)':' (deck north to south)');
     // (its picture: the chunks' own pixels there, a rect painted as a chunk is)
-    {const pc=t.mkc(w,h,()=>{});t.runGen(t.paintSteps(t.WorldArt.ensure(),d.x,d.y,w,h,pc.getContext('2d'),0,0,{}));const A=d.cv.getContext('2d').getImageData(0,0,w,h).data,B=pc.getContext('2d').getImageData(0,0,w,h).data;let n=0,bad=0;
+    {const pc=t.mkc(w,h,()=>{});t.runGen(t.paintSteps(t.WorldArt.ensure(),d.x,d.y,w,h,pc.getContext('2d', { willReadFrequently: true }),0,0,{}));const A=d.cv.getContext('2d', { willReadFrequently: true }).getImageData(0,0,w,h).data,B=pc.getContext('2d', { willReadFrequently: true }).getImageData(0,0,w,h).data;let n=0,bad=0;
      for(let i=0;i<A.length;i+=4)if(A[i+3]){n++;if(A[i]!==B[i]||A[i+1]!==B[i+1]||A[i+2]!==B[i+2]||A[i+3]!==255)bad++}
      ok(n>60&&bad<=n*.01,'the '+nm+' bridge\'s picture is cut from the chunks\' own drawing: '+n+' px, '+bad+' otherwise (the rapids\' or ore\'s strokes over it)')}
     // (a fishing boat under its middle: its hull under the deck)
@@ -46,7 +46,7 @@ try{
     clear();P.x=x+30;P.y=y+60;P.stay=null;P.tx=null;t.reveal();W.ships=[s];const D=t.decksOver(s,t.shipSprite(s));
     ok(D&&D.list.includes(d)&&D.top===d.y,'a boat whose waterline lies above the '+nm+' bridge\'s last row and meets it is under it');
     const A=shot(),B=forced(shot);W.ships=[];const Z=shot();W.ships=[s];
-    const cam={x:Math.floor(G.cam.x),y:Math.floor(G.cam.y)},sp=t.shipSprite(s),bx=t.shipBox(sp,Math.round(s.x-cam.x),Math.round(s.y+4-cam.y)+(Math.floor(now/450+s.seed)%2)),M=d.cv.getContext('2d').getImageData(0,0,w,h).data,W0=c0.width;
+    const cam={x:Math.floor(G.cam.x),y:Math.floor(G.cam.y)},sp=t.shipSprite(s),bx=t.shipBox(sp,Math.round(s.x-cam.x),Math.round(s.y+4-cam.y)+(Math.floor(now/450+s.seed)%2)),M=d.cv.getContext('2d', { willReadFrequently: true }).getImageData(0,0,w,h).data,W0=c0.width;
     let inM=0,same=0,was=0,out=0;
     for(let py=0;py<c0.height;py++)for(let px=0;px<W0;px++){const i=(py*W0+px)*4,u=px+cam.x-d.x,v=py+cam.y-d.y,m=u>=0&&v>=0&&u<w&&v<h&&M[(v*w+u)*4+3]&&px>=bx[0]&&px<bx[2]&&py>=bx[1]&&py<bx[3];
      const dz=A[i]!==Z[i]||A[i+1]!==Z[i+1]||A[i+2]!==Z[i+2],db=B[i]!==Z[i]||B[i+1]!==Z[i+1]||B[i+2]!==Z[i+2];

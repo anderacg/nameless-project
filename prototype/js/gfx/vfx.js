@@ -59,19 +59,19 @@ const GORE={fall:.3,pool:2.5,col:['#4a0c0c','#68140f','#7e1c14'],tile:256};
 const undead=u=>!!(u&&(u.type==='slime'||u.s&&(u.s.undead||u.s.race==='undead')||/skel|ghoul|wraith|golem|zomb/.test(u.type||'')));
 /* the blood layer (B.gore, R16): by tiles of GORE.tile px, each made only where blood falls or one of the fallen is painted in, and
    kept for the battle (blood is never painted twice; the ground's tiles come and go apart from it). each(x0,y0,x1,y1,f): f(g) for
-   every tile the box touches, g in field px; drawView: those in view; getContext('2d'): read as one picture (getImageData), cleared
+   every tile the box touches, g in field px; drawView: those in view; getContext('2d', { willReadFrequently: true }): read as one picture (getImageData), cleared
    (clearRect) */
 class GoreLayer{
   constructor(W,H){this.width=W;this.height=H;this.n=GORE.tile;this.cols=Math.ceil(W/this.n);this.tiles=new Map()}
   each(x0,y0,x1,y1,f){const n=this.n;for(let ty=Math.max(0,Math.floor(y0/n));ty<=Math.min(Math.ceil(this.height/n)-1,Math.floor(y1/n));ty++)for(let tx=Math.max(0,Math.floor(x0/n));tx<=Math.min(this.cols-1,Math.floor(x1/n));tx++){
-    const k=ty*this.cols+tx;let t=this.tiles.get(k);if(!t)this.tiles.set(k,t=mkc(Math.min(n,this.width-tx*n),Math.min(n,this.height-ty*n),()=>{}));const g=t.getContext('2d');g.setTransform(1,0,0,1,-tx*n,-ty*n);f(g)}}
+    const k=ty*this.cols+tx;let t=this.tiles.get(k);if(!t)this.tiles.set(k,t=mkc(Math.min(n,this.width-tx*n),Math.min(n,this.height-ty*n),()=>{}));const g=t.getContext('2d', { willReadFrequently: true });g.setTransform(1,0,0,1,-tx*n,-ty*n);f(g)}}
   clear(){this.tiles.clear()}
   drawView(g,x0,y0,x1,y1){const n=this.n;x0=Math.max(0,Math.floor(x0)-2);y0=Math.max(0,Math.floor(y0)-2);x1=Math.min(this.width,Math.ceil(x1)+2);y1=Math.min(this.height,Math.ceil(y1)+2);
     for(const [k,t] of this.tiles){const X=(k%this.cols)*n,Y=Math.floor(k/this.cols)*n,sx=Math.max(x0,X),sy=Math.max(y0,Y),sw=Math.min(x1,X+t.width)-sx,sh=Math.min(y1,Y+t.height)-sy;if(sw>0&&sh>0)g.drawImage(t,sx-X,sy-Y,sw,sh,sx,sy,sw,sh)}}
   bytes(){let b=0;for(const t of this.tiles.values())b+=t.width*t.height*4;return b}
   getContext(){const L=this;return{clearRect(){L.clear()},getImageData(x,y,w,h){const out=new ImageData(w,h),n=L.n;
     for(const [k,t] of L.tiles){const X=(k%L.cols)*n,Y=Math.floor(k/L.cols)*n,sx=Math.max(x,X),sy=Math.max(y,Y),sw=Math.min(x+w,X+t.width)-sx,sh=Math.min(y+h,Y+t.height)-sy;if(sw<=0||sh<=0)continue;
-      const d=t.getContext('2d').getImageData(sx-X,sy-Y,sw,sh).data;for(let r=0;r<sh;r++)out.data.set(d.subarray(r*sw*4,(r+1)*sw*4),((sy-y+r)*w+sx-x)*4)}return out}}}
+      const d=t.getContext('2d', { willReadFrequently: true }).getImageData(sx-X,sy-Y,sw,sh).data;for(let r=0;r<sh;r++)out.data.set(d.subarray(r*sw*4,(r+1)*sw*4),((sy-y+r)*w+sx-x)*4)}return out}}}
 }
 function goreLayer(){if(!B.gore){B.gore=new GoreLayer(BW,BH);B.goreOn=BLOOD.on}return B.gore}
 // a splash where a drop lands: two or three pixels, dark, a little see-through, so many of them darken the ground as a fight goes on

@@ -28,7 +28,7 @@ window.RUN=()=>{
     else if(scene==='street'){const q=new URLSearchParams(location.search),tw=t.townBy(q.get('town')||'Ashford');G.mode='world';G.modal=false;t.hidePanel();G.lastTown=null;t.enterTown(tw);t.act('scene-enter');
       const S=G.scene,at=q.get('at');if(at){const [x,y]=at.split(',').map(Number);S.p.x=(x+.5)*16;S.p.y=(y+1)*16-3}else{S.p.x=(S.square.x+6)*16;S.p.y=(S.square.y+5)*16}
       if(q.get('night'))G.clock=t.DAY*.8;for(let i=0;i<40;i++)t.updateScene(.05);t.frame()}
-    else if(scene==='gallery'){G.mode='world';G.modal=false;t.hidePanel();const q=new URLSearchParams(location.search),part=q.get('part')||'holdings',Z=+(q.get('z')||2),cv=document.createElement('canvas');cv.width=1400;cv.height=880;cv.style.cssText='position:fixed;left:0;top:0;z-index:9999';document.body.appendChild(cv);const c=cv.getContext('2d');c.imageSmoothingEnabled=false;
+    else if(scene==='gallery'){G.mode='world';G.modal=false;t.hidePanel();const q=new URLSearchParams(location.search),part=q.get('part')||'holdings',Z=+(q.get('z')||2),cv=document.createElement('canvas');cv.width=1400;cv.height=880;cv.style.cssText='position:fixed;left:0;top:0;z-index:9999';document.body.appendChild(cv);const c=cv.getContext('2d', { willReadFrequently: true });c.imageSmoothingEnabled=false;
       c.fillStyle='#5a8a3a';c.fillRect(0,0,1400,880);c.save();c.scale(Z,Z);let x=2,y=2,rowH=0;const put=sp=>{if(x+sp.width>1400/Z){x=2;y+=rowH+3;rowH=0}c.drawImage(sp,x,y);x+=sp.width+3;rowH=Math.max(rowH,sp.height)};
       if(part==='troops'){const nl=()=>{x=2;y+=rowH+6;rowH=0};const tree=k=>{const out=[k];(t.UP[k]||[]).forEach(u=>out.push(...tree(u)));return out};
         for(const r of Object.keys(t.RACES)){const R=t.RACES[r];for(const line of ['melee','shield','ranged','horse']){for(const k of tree(R[line]))put(t.unitSprite(k,0,false,0));x+=10}nl()}}
@@ -75,5 +75,5 @@ window.RUN=()=>{
 };
 // ?zoom=1 copies the middle of the canvas into a large image for close inspection
 addEventListener('load',()=>setTimeout(function z(){if(!document.getElementById('OUT'))return setTimeout(z,100);if(!new URLSearchParams(location.search).get('zoom'))return;
-  const src=document.getElementById('cv')||document.querySelector('canvas'),c=document.createElement('canvas');c.width=1400;c.height=880;const g=c.getContext('2d');g.imageSmoothingEnabled=false;
+  const src=document.getElementById('cv')||document.querySelector('canvas'),c=document.createElement('canvas');c.width=1400;c.height=880;const g=c.getContext('2d', { willReadFrequently: true });g.imageSmoothingEnabled=false;
   g.drawImage(src,src.width/2-175,src.height/2-110,350,220,0,0,1400,880);c.style.cssText='position:fixed;left:0;top:0;z-index:99';document.body.appendChild(c)},100));

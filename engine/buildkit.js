@@ -43,12 +43,12 @@
 
   /* the cell: what a picture's drawn pixels fill, the crop to its cell (outlined), and its ground shadow */
   // the box around everything drawn on a canvas
-  function bounds(c){const w=c.width,h=c.height,a=c.getContext('2d').getImageData(0,0,w,h).data;let x0=w,y0=h,x1=-1,y1=-1;
+  function bounds(c){const w=c.width,h=c.height,a=c.getContext('2d', { willReadFrequently: true }).getImageData(0,0,w,h).data;let x0=w,y0=h,x1=-1,y1=-1;
     for(let j=0;j<h;j++)for(let i=0;i<w;i++)if(a[(j*w+i)*4+3]){if(i<x0)x0=i;if(i>x1)x1=i;if(j<y0)y0=j;if(j>y1)y1=j}return x1<0?{x0:0,x1:0,y0:0,y1:0}:{x0,x1,y0,y1}}
   // the fit x fit pixels of img from (cx, cy), outlined: the cell's picture (fit + 2 a side)
   const crop=(img,cx,cy,fit)=>PX.outline(PX.canvas(fit,fit,g=>g.drawImage(img,-cx,-cy)));
   // the ground shadow: down and to the right of the building's foot (its widest in the cell's bottom rows), kept inside the cell
-  function cellShadow(out,N,depth){const od=out.getContext('2d').getImageData(0,0,N,N).data;let s0=N,s1=-1;for(let yy=N-5;yy<N-1;yy++)for(let i=0;i<N;i++)if(od[(yy*N+i)*4+3]){s0=Math.min(s0,i);s1=Math.max(s1,i)}
+  function cellShadow(out,N,depth){const od=out.getContext('2d', { willReadFrequently: true }).getImageData(0,0,N,N).data;let s0=N,s1=-1;for(let yy=N-5;yy<N-1;yy++)for(let i=0;i<N;i++)if(od[(yy*N+i)*4+3]){s0=Math.min(s0,i);s1=Math.max(s1,i)}
     const sd=Math.max(2,Math.round(depth));return PX.canvas(N,N,g=>{if(s1>=s0)PX.paint(g).poly([[s0+2,N+1],[s1+2,N+1],[s1+4,N-1],[s1+4,N-1-sd],[s1+1,N-2-sd],[s0+4,N-1]],'rgba(20,24,12,.28)')})}
 
   /* the pieces: their colours (data), then each drawn at a point of a wall (x, y its foot or top left, as each says) */

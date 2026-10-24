@@ -11,7 +11,7 @@
 window.RUN=async()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.push('INFO '+m),t=T,G=t.G,P=t.P,W=t.W,LD=t.LOADING,D=t.WDEPTH;
 const r0=Math.random,pn=performance.now,t0=pn.call(performance),uw=t.updateWorld;let now=1e7;
 const fnv=a=>{let h=2166136261;for(let i=0;i<a.length;i++)h=Math.imul(h^a[i],16777619)>>>0;return h.toString(16).padStart(8,'0')};
-const pix=c=>fnv(new Uint32Array(c.getContext('2d').getImageData(0,0,c.width,c.height).data.buffer));
+const pix=c=>fnv(new Uint32Array(c.getContext('2d', { willReadFrequently: true }).getImageData(0,0,c.width,c.height).data.buffer));
 try{
  try{localStorage.clear()}catch(e){}
  Math.random=t.seeded(9001);t.act('begin','soldier');Math.random=r0;G.quietEvents=true;G.mode='world';G.modal=false;t.hidePanel();

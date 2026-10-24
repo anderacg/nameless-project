@@ -40,7 +40,7 @@ const CHUNK=512;
 const DIRT={grass:[150,128,84],frost:[176,170,158],desert:[200,170,112],swamp:[104,92,64]};
 const ROADC={grass:['#8a7448','#b89b62','#cdb47e'],frost:['#8e8a80','#b8b2a6','#d4cfc4'],desert:['#a8884c','#c9a868','#dcc084'],swamp:['#5a4a34','#7a6a48','#8e7e5a']};
 const clAt=(x,y)=>CLIMS[climate[Math.max(0,Math.min(MH-1,y))*MW+Math.max(0,Math.min(MW-1,x))]];
-const mkcv=(w,h)=>{const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').imageSmoothingEnabled=false;return c};
+const mkcv=(w,h)=>{const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d', { willReadFrequently: true }).imageSmoothingEnabled=false;return c};
 
 // the plan: the clear ground; the water's depth (tiles from the nearest land, up to 4; 9 deeper); the trampled patches (camps, the
 // timber and ore estates), in order; the holdings' tiles (roads lead into them) and the road tiles shifted to their gates; the
@@ -636,7 +636,7 @@ const WorldArt={
   rect(cx,cy){const X=cx*CHUNK,Y=cy*CHUNK;return[X,Y,Math.min(CHUNK,MW*TILE-X),Math.min(CHUNK,MH*TILE-Y)]},
   // a chunk's painting: its own canvas (one the LRU let go, if one fits), as steps
   start(cx,cy){const k=cy*this.cols+cx;let j=this.jobs.get(k);if(j)return j;const [X,Y,w,h]=this.rect(cx,cy),i=this.pool.findIndex(c=>c.width===w&&c.height===h),cv=i>=0?this.pool.splice(i,1)[0]:mkcv(w,h),rec={cx,cy,cv};
-    j={k,rec,gen:paintSteps(this.ensure(),X,Y,w,h,cv.getContext('2d'),0,0,rec)};this.jobs.set(k,j);return j},
+    j={k,rec,gen:paintSteps(this.ensure(),X,Y,w,h,cv.getContext('2d', { willReadFrequently: true }),0,0,rec)};this.jobs.set(k,j);return j},
   done(j){this.jobs.delete(j.k);this.chunks.set(j.k,j.rec);for(const [k,c] of this.chunks){if(this.chunks.size<=this.cap)break;if(this.view.has(k))continue;this.chunks.delete(k);this.recycle(c.cv)}},
   recycle(cv){if(this.pool.length<4)this.pool.push(cv)},
   chunk(cx,cy){const k=cy*this.cols+cx,c=this.chunks.get(k);if(c){this.chunks.delete(k);this.chunks.set(k,c);return c.cv}const j=this.start(cx,cy);runGen(j.gen);this.done(j);return j.rec.cv},
@@ -669,7 +669,7 @@ const WorldArt={
       const k=cy*this.cols+cx,c=this.chunks.get(k),j=this.jobs.get(k);if(c){this.chunks.delete(k);this.recycle(c.cv)}if(j){this.jobs.delete(k);this.recycle(j.rec.cv)}if(this.full)this.dirty.add(k)}},
   whole(){const W=MW*TILE,H=MH*TILE;if(this.full&&(this.full.width!==W||this.full.height!==H))this.full=null;
     if(!this.full){this.full=mkcv(W,H);this.dirty=new Set();this.cnt.clear();for(let k=0;k<this.cols*this.rows;k++)this.dirty.add(k)}
-    if(this.dirty.size){const g=this.full.getContext('2d');
+    if(this.dirty.size){const g=this.full.getContext('2d', { willReadFrequently: true });
       for(const k of [...this.dirty].sort((a,b)=>a-b)){const cx=k%this.cols,cy=(k-cx)/this.cols,[X,Y,w,h]=this.rect(cx,cy),c=this.chunks.get(k);
         if(c&&!NATURE_TOUCH){g.drawImage(c.cv,X,Y);this.cnt.set(k,c)}else{const rec={cx,cy};runGen(paintSteps(this.ensure(),X,Y,w,h,g,X,Y,rec));this.cnt.set(k,rec)}}
       this.dirty.clear();
@@ -733,13 +733,13 @@ function paintArena(c,steps){const W=BW,H=BH,P3=GROUND_RGB[c],seed=CLIMS.indexOf
       PX.battleDetails(g,W,H,c,seed,[X,Y,X+w,Y+h]);// (tufts, flowers, pebbles, bushes; drifts; stones; moss, reeds and pools: engine/ground.js)
       if(Y<15){g.fillStyle=top[0];g.fillRect(0,0,W,14);g.fillStyle=top[1];for(let x=Math.max(0,Math.floor((X-2)/3)*3);x<Math.min(W,X+w);x+=3)g.fillRect(x,13+(hs(x,0,4)>.5?1:0),2,1)}
       g.restore()},
-    get ground(){return this._g||(this._g=new PX.BattleGround(W,H,function*(x,y,w,h,out){A.paintRect(out.getContext('2d'),x,y,w,h);return out},
+    get ground(){return this._g||(this._g=new PX.BattleGround(W,H,function*(x,y,w,h,out){A.paintRect(out.getContext('2d', { willReadFrequently: true }),x,y,w,h);return out},
       ()=>PX.canvas(Math.ceil(W/2),Math.ceil(H/2),g=>{const it=A.paintSteps(g,0,0,W,H,0,2);while(!it.next().done);})))}};
   return steps?(function*(){return A})():A}
 
 /* what moves on the map: water glints, cloud shadows drifting by day, smoke over holdings, snow in the frost, fireflies at night */
 // a cloud's shadow at full size, pixel by pixel (hard edges, never scaled)
-const CLOUD=(()=>{const c=document.createElement('canvas');c.width=192;c.height=96;const g=c.getContext('2d');g.fillStyle='#000';
+const CLOUD=(()=>{const c=document.createElement('canvas');c.width=192;c.height=96;const g=c.getContext('2d', { willReadFrequently: true });g.fillStyle='#000';
   const E=[...Array(9)].map((_,i)=>[36+hs(i,1,3)*120,28+hs(i,2,3)*40,(20+hs(i,3,3)*20)*1.4,(20+hs(i,3,3)*20)*.8]);
   for(let y=0;y<96;y++)for(let x=0;x<192;x++)if(E.some(([cx,cy,rx,ry])=>((x+.5-cx)/rx)**2+((y+.5-cy)/ry)**2<=1))g.fillRect(x,y,1,1);return c})();
 // layer 0 (under everything): water glints; layer 1 (over parties, under fog and night): clouds, smoke, snow, fireflies
@@ -772,8 +772,8 @@ function drawEnv(cam,V,layer){
 
 /* sprite helpers: a dark 1-pixel outline around any sprite, and a white silhouette for the flash when struck */
 function outlined(src,col){
-  const c=document.createElement('canvas');c.width=src.width+2;c.height=src.height+2;const g=c.getContext('2d');g.imageSmoothingEnabled=false;
-  const m=document.createElement('canvas');m.width=src.width;m.height=src.height;const mg=m.getContext('2d');mg.drawImage(src,0,0);mg.globalCompositeOperation='source-in';mg.fillStyle=col||'rgba(18,14,12,.85)';mg.fillRect(0,0,m.width,m.height);
+  const c=document.createElement('canvas');c.width=src.width+2;c.height=src.height+2;const g=c.getContext('2d', { willReadFrequently: true });g.imageSmoothingEnabled=false;
+  const m=document.createElement('canvas');m.width=src.width;m.height=src.height;const mg=m.getContext('2d', { willReadFrequently: true });mg.drawImage(src,0,0);mg.globalCompositeOperation='source-in';mg.fillStyle=col||'rgba(18,14,12,.85)';mg.fillRect(0,0,m.width,m.height);
   for(const [a,b] of [[0,1],[2,1],[1,0],[1,2]])g.drawImage(m,a,b);g.drawImage(src,1,1);return c;
 }
-function whiteOf(src){if(src._w)return src._w;const c=document.createElement('canvas');c.width=src.width;c.height=src.height;const g=c.getContext('2d');g.drawImage(src,0,0);g.globalCompositeOperation='source-in';g.fillStyle='#ffffff';g.fillRect(0,0,c.width,c.height);return src._w=c}
+function whiteOf(src){if(src._w)return src._w;const c=document.createElement('canvas');c.width=src.width;c.height=src.height;const g=c.getContext('2d', { willReadFrequently: true });g.drawImage(src,0,0);g.globalCompositeOperation='source-in';g.fillStyle='#ffffff';g.fillRect(0,0,c.width,c.height);return src._w=c}

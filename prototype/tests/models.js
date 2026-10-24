@@ -7,7 +7,7 @@
 // the windows and door it records inside the cell; and it is quick enough to make a few hundred at load.
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);
 try{
- const px=c=>c.getContext('2d').getImageData(0,0,c.width,c.height).data,bad={cell:[],soft:[],rim:[],same:[],turn:[],shadow:[],marks:[],ground:[]};let n=0,ms=0,nm=0;
+ const px=c=>c.getContext('2d', { willReadFrequently: true }).getImageData(0,0,c.width,c.height).data,bad={cell:[],soft:[],rim:[],same:[],turn:[],shadow:[],marks:[],ground:[]};let n=0,ms=0,nm=0;
  for(const name of PX.MODEL_SAMPLES){const seen=new Set();for(let yaw=0;yaw<8;yaw++){const sp=PX.modelSample(name,{yaw,seed:3}),b=PX.model(sp),N=sp.cell,id=name+'/'+yaw,a=px(b.img);n++;if(yaw%2===0){ms+=b.ms;nm++}
    if(b.img.width!==N||b.img.height!==N||b.w!==N||b.ax!==0||b.ay!==N||b.clipped||b.tiles[0]!==N/16)bad.cell.push(id);
    // (b.mask: 0 empty, 1 the body, 2 low and flat (fences, beds, tufts), 3 the outline: every outline pixel navy and beside empty or flat

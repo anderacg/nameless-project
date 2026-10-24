@@ -31,7 +31,7 @@ try{
  // banners
  {const bd=d.banner(),bn=n.banner(),cd=t.bannerSprite(bd,0),cn=t.bannerSprite(bn,0);
   ok(bd.k==='pennant'&&bd.col===t.FACS[h.owner].col&&bn.k==='pennant'&&bn.dev==='lantern'&&bn.col===t.WATCH.night.pennant,'the day watch flies the realm’s pennant, the night watch a dark one with a lantern');
-  const px=c=>{const k=document.createElement('canvas');k.width=c.width;k.height=c.height;k.getContext('2d').drawImage(c,0,0);return k.toDataURL()};ok(px(cd)!==px(cn),'and they look different')}
+  const px=c=>{const k=document.createElement('canvas');k.width=c.width;k.height=c.height;k.getContext('2d', { willReadFrequently: true }).drawImage(c,0,0);return k.toDataURL()};ok(px(cd)!==px(cn),'and they look different')}
  t.drawWorld();ok(!ERR.length,'both draw');
  // beat the night watch: only it keeps in, short of its fallen
  {const g0=h.gar;P.x=n.x+30;P.y=n.y;P.tx=null;G.encCool=0;t.patrolMeet(n);t.act('pt-attack');const r=Math.random;Math.random=()=>0;const tr0=P.troops;P.troops={hum_knight:40};t.act('auto');Math.random=r;

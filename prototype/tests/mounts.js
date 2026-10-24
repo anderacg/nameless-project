@@ -59,7 +59,7 @@ try{
  ok(t.MONSTERS.griffin.gear.some(g=>g[0]==='m_griffin')&&t.ITEMS.m_drake.fly,'griffins can drop one; dragons guard drake eggs');
  // persists
  P.gear.mount='m_warg';P.inv=P.inv.map(()=>null);t.fitInv();G.mode='world';t.saveGame();P.gear.mount=null;t.act('load');ok(P.gear.mount==='m_warg','your mount is saved');
- const blank=Object.keys(t.MOUNTS).filter(k=>{const c=t.itemIcon(t.ITEMS['m_'+k]),px=c.getContext('2d').getImageData(0,0,16,16).data;let n=0;for(let j=3;j<px.length;j+=4)if(px[j])n++;return n<20});
+ const blank=Object.keys(t.MOUNTS).filter(k=>{const c=t.itemIcon(t.ITEMS['m_'+k]),px=c.getContext('2d', { willReadFrequently: true }).getImageData(0,0,16,16).data;let n=0;for(let j=3;j<px.length;j+=4)if(px[j])n++;return n<20});
  ok(!blank.length,'every mount has an icon');
  t.frame();
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}

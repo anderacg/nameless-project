@@ -14,7 +14,7 @@ let VW=576,VH=360,HUD_PX=.5;// (HUD_PX: game pixels to one CSS pixel)
 // a battle, a scene or a town, drawn in game pixels as before)
 let VS=1,CVS=1;
 // ctx: the context drawn into; the world map's ground and buildings go into a canvas of game pixels first (render.js drawWorld)
-const cv=$('#game');let ctx=cv.getContext('2d');const ctx0=ctx;
+const cv=$('#game');let ctx=cv.getContext('2d', { willReadFrequently: true });const ctx0=ctx;
 cv.width=VW;cv.height=VH;ctx.imageSmoothingEnabled=false;
 // the battlefield: BW x BH, set as a battle starts by its size (setup.js FIELD_SIZES); with sizes off (the older test suites) today's
 // field, FIELD_H high and as wide as the screen's shape asks (FIELD_W). In a battle the canvas runs at BVW x BVH (FIELD_H field px

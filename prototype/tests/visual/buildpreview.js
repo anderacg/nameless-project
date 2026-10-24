@@ -57,7 +57,7 @@ try{
  let BLD=[];const lot0=t.lotEnts,SM=document.createElement('canvas');window.__lotEnts0=lot0;
  window.__lotEnts=function(ents,cam,V){lot0(ents,cam,V);const g=t.ctx,at=b=>[b.x*TL-cam.x,(b.y+b.n)*TL-b.s.img.height-cam.y];
    for(const b of BLD)if(b.s.ground)g.drawImage(b.s.ground,...at(b));
-   SM.width=t.VW;SM.height=t.VH;const sg=SM.getContext('2d');let any=false;for(const b of BLD){if(b.s.shade){sg.drawImage(b.s.shadow,...at(b));any=true}else g.drawImage(b.s.shadow,...at(b))}
+   SM.width=t.VW;SM.height=t.VH;const sg=SM.getContext('2d', { willReadFrequently: true });let any=false;for(const b of BLD){if(b.s.shade){sg.drawImage(b.s.shadow,...at(b));any=true}else g.drawImage(b.s.shadow,...at(b))}
    if(any){g.globalAlpha=PX.MODEL_SHADE;g.drawImage(SM,0,0);g.globalAlpha=1}
    for(const b of BLD)ents.push({y:(b.y+b.n)*TL-1,f:()=>g.drawImage(b.s.img,...at(b))})};
  (0,eval)('lotEnts=window.__lotEnts');
@@ -74,7 +74,7 @@ try{
  const shots=[];
  const snap=(name,fx,fy)=>{G.clock=t.DAY*.3;t.drawWorld();t.drawWorld();shots.push(['SHOT '+name,t.cv.toDataURL('image/png')]);crop(name+'_x3',fx,fy)};
  // x3: a third of the view round (fx, fy) (the place's buildings), from the frame just drawn
- const crop=(name,fx,fy)=>{const cv=t.cv,c=document.createElement('canvas');c.width=cv.width;c.height=cv.height;const g=c.getContext('2d');g.imageSmoothingEnabled=false;
+ const crop=(name,fx,fy)=>{const cv=t.cv,c=document.createElement('canvas');c.width=cv.width;c.height=cv.height;const g=c.getContext('2d', { willReadFrequently: true });g.imageSmoothingEnabled=false;
    const w=Math.round(cv.width/3),h=Math.round(cv.height/3),sx=Math.max(0,Math.min(cv.width-w,Math.round(fx-G.cam.x-w/2))),sy=Math.max(0,Math.min(cv.height-h,Math.round(fy-G.cam.y-h/2)));
    g.drawImage(cv,sx,sy,w,h,0,0,w*3,h*3);shots.push(['SHOT '+name,c.toDataURL('image/png')])};
  const mid=lay=>[lay.reduce((a,b)=>a+(b.x+b.n/2)*TL,0)/Math.max(1,lay.length),lay.reduce((a,b)=>a+(b.y+b.n/2)*TL,0)/Math.max(1,lay.length)];

@@ -11,7 +11,7 @@ try{
  const cult=z=>typeof t.holdingCulture==='function'?t.holdingCulture(z):({vale:'vale',karn:'karn',sylvan:'sylvan',horde:'ashgor',salt:'league'})[t.HOME[z.name]];
  const snap=(name,x,y,dy)=>{if(only.length&&!only.includes(name))return;P.x=x;P.y=y+(dy||0);P.tx=null;G.clock=t.DAY*.3;W.folk=[];for(let i=0;i<240;i++)t.updateFolk(.05);
   t.drawWorld();t.drawWorld();const cv=t.cv;shots.push(['SHOT '+name,cv.toDataURL('image/png')]);
-  const c=document.createElement('canvas');c.width=cv.width;c.height=cv.height;const g=c.getContext('2d');g.imageSmoothingEnabled=false;const w=Math.round(cv.width/3),h=Math.round(cv.height/3);
+  const c=document.createElement('canvas');c.width=cv.width;c.height=cv.height;const g=c.getContext('2d', { willReadFrequently: true });g.imageSmoothingEnabled=false;const w=Math.round(cv.width/3),h=Math.round(cv.height/3);
   g.drawImage(cv,Math.round((cv.width-w)/2),Math.round((cv.height-h)/2),w,h,0,0,w*3,h*3);shots.push(['SHOT '+name+'_x3',c.toDataURL('image/png')]);o.push('INFO '+name+' at '+Math.round(x/TL)+','+Math.round(y/TL))};
  // (a holding: the middle of its buildings near its centre)
  const at=z=>{const c=z.lots.find(l=>l.k==='centre');return[(c.x+c.n/2)*TL,(c.y+c.n/2)*TL]};

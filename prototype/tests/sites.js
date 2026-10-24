@@ -60,7 +60,7 @@ try{
  G.mode='world';t.saveGame();const snap=JSON.stringify(S.map(s=>[s.type,s.x,s.y,s.seen,s.cleared]));W.sites=[];t.act('load');
  ok(JSON.stringify(W.sites.map(s=>[s.type,s.x,s.y,s.seen,s.cleared]))===snap,'sites, what you found and what you cleared survive a reload');
  // drawn
- const blank=W.sites.filter(s=>{const c=t.siteSprite(s),px=c.getContext('2d').getImageData(0,0,c.width,c.height).data;let n=0;for(let j=3;j<px.length;j+=4)if(px[j])n++;return n<40});
+ const blank=W.sites.filter(s=>{const c=t.siteSprite(s),px=c.getContext('2d', { willReadFrequently: true }).getImageData(0,0,c.width,c.height).data;let n=0;for(let j=3;j<px.length;j+=4)if(px[j])n++;return n<40});
  ok(!blank.length,'every site has a sprite');
  W.sites.forEach(s=>s.seen=true);P.x=W.sites[0].x+30;P.y=W.sites[0].y;G.mode='world';G.modal=false;t.hidePanel();t.frame();
  t.frame();

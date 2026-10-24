@@ -24,7 +24,7 @@ try{
  const behind=(box,fy)=>WA.standing(box[0]+G.cam.x,box[1]+G.cam.y,box[2]+G.cam.x,box[3]+G.cam.y).filter(e=>e.y<=fy).length;
  // a figure's pixels: on, off, the scene without it (hide/show it); in its box, those it drew (off differs from the scene)
  // (less its banner's pixels, drawn over all after: checked on their own)
- const flag=q=>{const B=t.bannerAt(q,Math.floor(now/420+q.x*.13)%2),m=new Set();if(!B)return m;const d=B.s.getContext('2d').getImageData(0,0,B.s.width,B.s.height).data;
+ const flag=q=>{const B=t.bannerAt(q,Math.floor(now/420+q.x*.13)%2),m=new Set();if(!B)return m;const d=B.s.getContext('2d', { willReadFrequently: true }).getImageData(0,0,B.s.width,B.s.height).data;
    for(let j=0;j<B.s.height;j++)for(let k=0;k<B.s.width;k++)if(d[(j*B.s.width+k)*4+3])m.add((B.y-G.cam.y+j)*VW+B.x-G.cam.x+k);return m};
  const look=(q,fy,hide,show)=>{settle();const on=grab(true),box=D.boxes.find(b=>b[4]===fy),off=grab(false),fl=flag(q);hide();const z=grab(true);show();if(!box)return null;
    const px=[];for(let y=box[1];y<=box[3];y++)for(let x=box[0];x<=box[2];x++){const i=(y*VW+x)*4;if(!same(off,z,i)&&!fl.has(y*VW+x))px.push(y*VW+x)}return{on,off,z,box,px}};
@@ -50,7 +50,7 @@ try{
   const L=look(b,by,()=>{b.x=-999},()=>{b.x=x*TILE+8});
   if(!L)ok(false,'the band behind the trees is drawn');else{const m=front(L.box,by);let inM=0,cov=0,bad=0,free=0;for(const p of L.px){const i=p*4;if(m.has(p)){inM++;if(near(L.on,L.off,L.z,i))cov++;else bad++}else if(!same(L.on,L.off,i))free++}
    ok(inM>15&&cov===inM&&!bad&&!free,'an enemy band behind trees: the crowns in front of it ('+inM+' of its '+L.px.length+' px) fade to '+F+' over it ('+cov+'; '+bad+' not), the rest of it untouched ('+free+' changed)');
-   const B=t.bannerAt(b,Math.floor(now/420+b.x*.13)%2),bd=B.s.getContext('2d').getImageData(0,0,B.s.width,B.s.height).data;let n=0,diff=0;
+   const B=t.bannerAt(b,Math.floor(now/420+b.x*.13)%2),bd=B.s.getContext('2d', { willReadFrequently: true }).getImageData(0,0,B.s.width,B.s.height).data;let n=0,diff=0;
    for(let j=0;j<B.s.height;j++)for(let k=0;k<B.s.width;k++){if(bd[(j*B.s.width+k)*4+3]<255)continue;const X=B.x-G.cam.x+k,Y=B.y-G.cam.y+j;if(X<0||Y<0||X>=VW||Y>=VH)continue;n++;if(!same(L.on,L.off,(Y*VW+X)*4))diff++}
    ok(n>20&&!diff,'its banner stays on top: '+n+' banner px the same with the depth on and off ('+diff+' differ)');
    const V=t.vis(),px0=P.x-G.cam.x,py0=P.y-G.cam.y;let inS=0,outS=0;for(let i=0;i<VW*VH;i++){if(same(L.on,L.off,i*4))continue;if(Math.hypot(i%VW-px0,(i/VW|0)-py0)<=V)inS++;else outS++}
@@ -78,7 +78,7 @@ try{
   if(!L)ok(false,'the lord in front of the trees is drawn');else{let ch=0;for(const p of L.px)if(!same(L.on,L.off,p*4))ch++;const bh=behind(L.box,fy);
    ok(bh>3&&L.px.length>40&&!ch,'a lord in front of the trees ('+bh+' of them behind him in his box): nothing drawn over his '+L.px.length+' px ('+ch+' changed)')}}
  // ---- shadows: their own pictures, one pass, never darker where two meet
- {const tw=t.townBy('Ashford'),l=tw.lots.find(l=>l.k==='house'&&l.st==='built'),s=t.lotSprite(tw,l),d=s.getContext('2d').getImageData(0,0,s.width,s.height).data;let half=0;for(let i=3;i<d.length;i+=4)if(d[i]&&d[i]<255)half++;
+ {const tw=t.townBy('Ashford'),l=tw.lots.find(l=>l.k==='house'&&l.st==='built'),s=t.lotSprite(tw,l),d=s.getContext('2d', { willReadFrequently: true }).getImageData(0,0,s.width,s.height).data;let half=0;for(let i=3;i<d.length;i+=4)if(d[i]&&d[i]<255)half++;
   const g=t.ctx;g.save();g.setTransform(1,0,0,1,0,0);g.fillStyle='#ffffff';g.fillRect(0,0,80,40);t.drawShadows([{sh:[s.sh,4,4]}]);const one=g.getImageData(0,0,80,40).data;g.fillRect(0,0,80,40);t.drawShadows([{sh:[s.sh,4,4]},{sh:[s.sh,6,5]}]);const two=g.getImageData(0,0,80,40).data;g.restore();
   let m1=255,m2=255;for(let i=0;i<one.length;i+=4){m1=Math.min(m1,one[i]);m2=Math.min(m2,two[i])}
   ok(!half&&s.sh&&l._sh===s.sh&&m1<255&&m1===m2,'a building\'s picture is its body only ('+half+' half-clear px), its shadow its own (the lot\'s _sh); two shadows laid together are no darker than one ('+m1+', '+m2+')')}

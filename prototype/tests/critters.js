@@ -74,7 +74,7 @@ try{
  // save
  G.mode='world';t.saveGame();const snap=JSON.stringify(W.critters.map(c=>[c.id,c.n,c.home||'']));W.critters=[];t.act('load');ok(JSON.stringify(W.critters.map(c=>[c.id,c.n,c.home||'']))===snap,'critters survive a reload');
  // sprites and icons
- const blank=Object.keys(t.CRITTERS).filter(k=>{const c=t.critterSprite(k),px=c.getContext('2d').getImageData(0,0,c.width,c.height).data;let n=0;for(let j=3;j<px.length;j+=4)if(px[j])n++;return n<15});
+ const blank=Object.keys(t.CRITTERS).filter(k=>{const c=t.critterSprite(k),px=c.getContext('2d', { willReadFrequently: true }).getImageData(0,0,c.width,c.height).data;let n=0;for(let j=3;j<px.length;j+=4)if(px[j])n++;return n<15});
  ok(!blank.length,'every critter is drawn'+(blank.length?': blank '+blank:''));
  // livestock: each herd stands where its kind can graze, stays there as it wanders, and pasture herds stay in their fence
  {W.critters=[];t.initCritters();const herds=W.critters.filter(c=>c.home),bad=herds.filter(c=>!t.grazeOk(c.id,c.hx,c.hy,c.pen));

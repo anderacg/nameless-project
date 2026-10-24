@@ -19,7 +19,7 @@ const WDEPTH={on:true,fade:.3,trk:false,di:null,fr:null,pics:[],al:new Map(),cov
 // a structure's picture as drawn this frame at (x, y) on the screen (before the shake): its opaque pixels stand by their feet
 function depthPic(img,x,y){if(img&&WDEPTH.on)WDEPTH.pics.push([img,Math.round(x),Math.round(y)])}
 // (a picture's feet: for each opaque pixel the row its column's run of opaque pixels ends on, -1 where it is clear; kept on it)
-function picFeet(img){if(img._df)return img._df;const w=img.width,h=img.height,d=img.getContext('2d').getImageData(0,0,w,h).data,F=new Int16Array(w*h).fill(-1);let top=h,mx=-1;
+function picFeet(img){if(img._df)return img._df;const w=img.width,h=img.height,d=img.getContext('2d', { willReadFrequently: true }).getImageData(0,0,w,h).data,F=new Int16Array(w*h).fill(-1);let top=h,mx=-1;
   for(let x=0;x<w;x++)for(let y=0;y<h;y++){if(d[(y*w+x)*4+3]<250)continue;let y1=y;while(y1+1<h&&d[((y1+1)*w+x)*4+3]>=250)y1++;for(let k=y;k<=y1;k++)F[k*w+x]=y1;if(y<top)top=y;if(y1>mx)mx=y1;y=y1}
   return img._df={w,h,F,top,foot:mx}}
 // (the box a figure draws in, on the canvas's own pixels: every picture's drawn pixels and rect while it is drawn; the context's
@@ -50,7 +50,7 @@ function overdrawBox(x0,y0,x1,y1,ox,oy,fy,own,cam,nf){
       for(let y=Math.max(wy0,Y+D.top);y<=Math.min(wy1,Y+D.h-1);y++){const ro=(y-Y)*D.w-X,mo=(y-wy0)*st-wx0;for(let x=Math.max(wx0,X);x<=Math.min(wx1,X+D.w-1);x++){const f=F[ro+x];if(f>=0&&Y+f>fy){M[(mo+x)*4+3]=A;n++}}}}
     if(n){any=1;if(!nf)WDEPTH.cov.add(key)}}
   if(!any)return;
-  const cv=WDEPTH.cv,g=cv.getContext('2d');g.putImageData(I,0,0,0,0,w,h);g.globalCompositeOperation='source-in';g.drawImage(memCv(),x0,y0,w,h,0,0,w,h);g.globalCompositeOperation='source-over';
+  const cv=WDEPTH.cv,g=cv.getContext('2d', { willReadFrequently: true });g.putImageData(I,0,0,0,0,w,h);g.globalCompositeOperation='source-in';g.drawImage(memCv(),x0,y0,w,h,0,0,w,h);g.globalCompositeOperation='source-over';
   ctx.drawImage(cv,0,0,w,h,x0,y0,w,h)}
 // the figures, by their feet (render.js drawWorld's ents that move: {y, f, own, top}), each with what stands in front of it put
 // back over it; those in flight after them all; each at its own place to the screen's pixel (render.js drawMover). The context's

@@ -8,7 +8,7 @@ try{
  window.requestAnimationFrame=()=>0;(0,eval)('drawWorldFog=function(){}');const shots=[],want={mine:1,quarry:1,lumber:1,camel:1,tamereindeer:1,buffalo:1};
  const snap=(name,x,y)=>{P.x=x;P.y=y;P.tx=null;G.clock=t.DAY*.3;W.folk=[];for(let i=0;i<240;i++)t.updateFolk(.05);
   t.drawWorld();t.drawWorld();const cv=t.cv;shots.push(['SHOT '+name,cv.toDataURL('image/png')]);
-  const c=document.createElement('canvas');c.width=cv.width;c.height=cv.height;const g=c.getContext('2d');g.imageSmoothingEnabled=false;const w=Math.round(cv.width/3),h=Math.round(cv.height/3);
+  const c=document.createElement('canvas');c.width=cv.width;c.height=cv.height;const g=c.getContext('2d', { willReadFrequently: true });g.imageSmoothingEnabled=false;const w=Math.round(cv.width/3),h=Math.round(cv.height/3);
   g.drawImage(cv,Math.round((cv.width-w)/2),Math.round((cv.height-h)/2),w,h,0,0,w*3,h*3);shots.push(['SHOT '+name+'_x3',c.toDataURL('image/png')]);o.push('INFO '+name+' at '+Math.round(x/TL)+','+Math.round(y/TL))};
  for(const S of [null,...[1,2,3,4].map(k=>({preset:'normal',seed:'s'+k}))]){
   if(!Object.keys(want).length)break;

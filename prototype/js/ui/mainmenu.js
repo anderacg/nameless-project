@@ -42,7 +42,7 @@ const MainMenu={el:null,scene:null,size:'',drawn:0,lore:0,loreAt:0,still:false,
     if(!this.size)this.layout();if(this.el.dataset.mobile==='true')return;
     if(now-this.loreAt>=MAINMENU.loreMs){this.loreAt=now;this.lore=(this.lore+1)%MAINMENU.lore.length;this.loreShow()}
     const still=reducedMotion();if(still&&this.drawn&&this.still)return;if(!still&&now-this.drawn<1000/MENU_ART.fps)return;
-    this.drawn=now;this.still=still;if(this.scene)this.scene.draw(this.cv.getContext('2d'),still?4:now/1000)},
+    this.drawn=now;this.still=still;if(this.scene)this.scene.draw(this.cv.getContext('2d', { willReadFrequently: true }),still?4:now/1000)},
   loreShow(){const p=this.el&&this.el.querySelector('.mm-lore p');if(!p)return;p.textContent=MAINMENU.lore[this.lore];p.classList.remove('in');void p.offsetWidth;p.classList.add('in')},
   /* the sizes (the screen's, a scale s of whole device pixels to a game pixel): the scene, the banner's cloth (under the
      emblem's flag), the emblem and the title at the largest whole scale their places allow; baked again when the size changes */
@@ -56,11 +56,11 @@ const MainMenu={el:null,scene:null,size:'',drawn:0,lore:0,loreAt:0,still:false,
     else{px(this.cv,W,H,s);this.scene=new MenuArt.MenuScene(W,H,bw)}
     // (the title and emblem stay as small static pictures; mobile draws neither a scene nor a cloth background)
     const tc=el.querySelector('.mm-title canvas'),T=this.word||(this.word=MenuArt.menuTitle()),tr=el.querySelector('.mm-title').getBoundingClientRect(),
-      tk=Math.max(1,Math.floor(Math.min(tr.width*dpr/T.width,ch*dpr*.1/T.height)));px(tc,T.width,T.height,tk);tc.getContext('2d').drawImage(T,0,0);
+      tk=Math.max(1,Math.floor(Math.min(tr.width*dpr/T.width,ch*dpr*.1/T.height)));px(tc,T.width,T.height,tk);tc.getContext('2d', { willReadFrequently: true }).drawImage(T,0,0);
     const em=el.querySelector('.mm-emblem'),ec=em.querySelector('canvas'),er=em.getBoundingClientRect();
-    if(er.width&&er.height){const E=this.emb||(this.emb=MenuArt.menuEmblem()),ek=Math.max(1,Math.floor(Math.min(er.width*dpr/(E.width+8),er.height*dpr/(E.height+6))));px(ec,E.width,E.height,ek);ec.getContext('2d').drawImage(E,0,0)}
+    if(er.width&&er.height){const E=this.emb||(this.emb=MenuArt.menuEmblem()),ek=Math.max(1,Math.floor(Math.min(er.width*dpr/(E.width+8),er.height*dpr/(E.height+6))));px(ec,E.width,E.height,ek);ec.getContext('2d', { willReadFrequently: true }).drawImage(E,0,0)}
     if(mobile)return;
     // (the cloth, its flag hung from the rod behind the emblem)
     const cl=el.querySelector('.mm-cloth'),q=v=>Math.round(v*dpr/s),ff=ec.getBoundingClientRect(),fl=[q(ff.left-br.left)-4,5,q(ff.width)+8,q(ff.bottom-br.top)+3];
-    px(cl,bw,H,s);cl.getContext('2d').drawImage(MenuArt.menuBanner(bw,H,fl),0,0)}
+    px(cl,bw,H,s);cl.getContext('2d', { willReadFrequently: true }).drawImage(MenuArt.menuBanner(bw,H,fl),0,0)}
 };

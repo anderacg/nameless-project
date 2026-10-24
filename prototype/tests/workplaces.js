@@ -61,7 +61,7 @@ Kit.suite(({ok,info})=>{
   ok(!fits,'no spot of its land takes one placed by hand')}
  else info('every holding of the five worlds has ore in its land');
  // camels, water buffalo and kept reindeer: drawn as the herds are, a camel and a buffalo as big as a cow
- {const look=id=>{const c=t.critterSprite(id),b=t.opaqueBox(c);let n=0;const d=c.getContext('2d').getImageData(0,0,c.width,c.height).data;for(let j=3;j<d.length;j+=4)if(d[j])n++;return {n,cell:c.width,w:b[2]-b[0]+1,h:b[3]-b[1]+1}};
+ {const look=id=>{const c=t.critterSprite(id),b=t.opaqueBox(c);let n=0;const d=c.getContext('2d', { willReadFrequently: true }).getImageData(0,0,c.width,c.height).data;for(let j=3;j<d.length;j+=4)if(d[j])n++;return {n,cell:c.width,w:b[2]-b[0]+1,h:b[3]-b[1]+1}};
   const q={};for(const id of ['camel','buffalo','tamereindeer','cow'])q[id]=look(id);
   ok(['camel','buffalo','tamereindeer'].every(id=>q[id].n>=30&&q[id].cell===16)&&q.camel.w>=q.cow.w-1&&q.buffalo.w>=q.cow.w-1&&t.critterSprite('camel',1)!==t.critterSprite('camel',0),'camels, water buffalo and reindeer are drawn in 16 cells, walking ('+['camel','buffalo','tamereindeer'].map(id=>id+' '+q[id].w+' x '+q[id].h).join(', ')+'; a cow '+q.cow.w+' x '+q.cow.h+')')}
 });

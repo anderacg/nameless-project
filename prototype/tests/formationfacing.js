@@ -20,7 +20,7 @@ window.RUN=()=>{const t=T,L=t.BattleLab,o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL '
   a.files=8;t.layForm(a.id);t.grpUnits(a.id).forEach(u=>{u.x=a.ax+u.sx;u.y=a.ay+u.sy});const wide=t.formationReachGeometry(a.id);a.files=savedFiles;t.layForm(a.id);t.grpUnits(a.id).forEach(u=>{u.x=a.ax+u.sx;u.y=a.ay+u.sy});
   ok(narrow.half<wide.half&&Math.hypot(narrow.ax-wide.ax,narrow.ay-wide.ay)<.001,'envelope frontage changes with files while the formation anchor stays fixed');
   const enemyArcher=t.grpUnits(foe.id)[0];foe.currentFacing=1.7;ok(t.arcAim(enemyArcher)===foe.currentFacing,'enemy forward shooters use the same current-heading authority as friendly shooters');
-  a.currentFacing=0;t.drawFormationReach(a.id,t.FIRE.blue);const layer=b.rangeCv.getContext('2d'),alpha=(x,y)=>layer.getImageData(Math.round(x),Math.round(y),1,1).data[3];
+  a.currentFacing=0;t.drawFormationReach(a.id,t.FIRE.blue);const layer=b.rangeCv.getContext('2d', { willReadFrequently: true }),alpha=(x,y)=>layer.getImageData(Math.round(x),Math.round(y),1,1).data[3];
   ok(alpha(shape.ax+shape.range-1,shape.ay)>0&&alpha(shape.ax-shape.range+1,shape.ay)===0,'the actual canvas envelope paints its forward edge and leaves the rear clear');
   arch.rout=true;arch.empty=true;ok(!t.shooters(a.id).includes(arch),'routed or empty shooters do not contribute to the envelope');arch.rout=false;arch.empty=false;
   const base=t.drawFormationReach,calls=[];window.__reachCalls=calls;window.__formationBase=base;(0,eval)('drawFormationReach=(id,col)=>{__reachCalls.push(id);return __formationBase(id,col)}');

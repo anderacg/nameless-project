@@ -48,7 +48,7 @@ try{
  t.act('inv-tab','trophies');ok(document.querySelectorAll('.invgrid .slot').length===P.inv.filter(x=>x&&(t.itemCat(x)||{}).tab==='trophies').length,'the Trophies & valuables tab filters to matching items');t.act('inv-tab','all');
  t.act('inv-drop','0');ok(P.inv[0],'first drop click asks to confirm');t.act('inv-drop','0');ok(!P.inv[0],'second click drops it');
  window.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape'}));ok(G.mode==='esc','Escape on the inventory: its Back, the Game Menu');window.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape'}));ok(G.mode==='world','again: resumed');
- const blank=[...Object.values(t.ITEMS),...Object.values(t.MATS),...Object.values(t.GOODS)].filter(d=>{const c=t.itemIcon(d),px=c.getContext('2d').getImageData(0,0,16,16).data;let n=0;for(let i=3;i<px.length;i+=4)if(px[i])n++;return n<20});
+ const blank=[...Object.values(t.ITEMS),...Object.values(t.MATS),...Object.values(t.GOODS)].filter(d=>{const c=t.itemIcon(d),px=c.getContext('2d', { willReadFrequently: true }).getImageData(0,0,16,16).data;let n=0;for(let i=3;i<px.length;i+=4)if(px[i])n++;return n<20});
  ok(!blank.length,'every item ('+Object.keys(t.ITEMS).length+') has a drawn icon'+(blank.length?': blank '+[...new Set(blank.map(d=>d.icon))].join(', '):''));
  // smith and drops
  empty();P.gold=5000;G.day=31;G.lastTown=null;{const a=t.townBy('Ashford');t.ensureEcon(a);a.stock.iron=40;a.stock.copper=10;a.stock.tin=10;a.stock.timber=40;t.W.shops=t.W.shops||{};delete t.W.shops[a.name]}

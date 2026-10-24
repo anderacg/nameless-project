@@ -1,6 +1,6 @@
 'use strict';
 /* ---------- sprites ---------- */
-const mkc=(w,h,f)=>{const c=document.createElement('canvas');c.width=w;c.height=h;const g=c.getContext('2d');g.imageSmoothingEnabled=false;f(g);return c};
+const mkc=(w,h,f)=>{const c=document.createElement('canvas');c.width=w;c.height=h;const g=c.getContext('2d', { willReadFrequently: true });g.imageSmoothingEnabled=false;f(g);return c};
 const rect=(g,col,x,y,w=1,h=1)=>{g.fillStyle=col;g.fillRect(x,y,w,h)};
 const C={skin:'#e8c39e',dark:'#1a1410',steel:'#c9ced8',steel2:'#8e95a6',wood:'#8b5a2b',gold:'#e8b94a',hood:'#3d6b3a',team:['#3d74d6','#b8403a'],teamD:['#2a4f99','#7e2a26'],horse:'#7a4a26',horseD:'#573219'};
 const spr={};
@@ -247,7 +247,7 @@ function txt(s,x,y,col,al){if(TXTQ&&(ctx===TXTQ.ctx||ctx===TXTQ.lo)){TXTQ.push([
 const TXTC=new Map();let TXTM=null;
 if(document.fonts&&document.fonts.addEventListener)document.fonts.addEventListener('loadingdone',()=>TXTC.clear());
 function txtPic(s,col,al){s=String(s);const k=s+'|'+col+'|'+al;let c=TXTC.get(k);if(c)return c;if(TXTC.size>600)TXTC.clear();
-  const m=TXTM||(TXTM=mkc(1,1,()=>{}).getContext('2d'));m.font=TXT_FONT;const w=Math.ceil(m.measureText(s).width),ox=1+(al==='center'?Math.ceil(w/2):al==='right'?w:0),oy=10;
+  const m=TXTM||(TXTM=mkc(1,1,()=>{}).getContext('2d', { willReadFrequently: true }));m.font=TXT_FONT;const w=Math.ceil(m.measureText(s).width),ox=1+(al==='center'?Math.ceil(w/2):al==='right'?w:0),oy=10;
   c=mkc(w+4,14,g=>{g.font=TXT_FONT;g.textAlign=al||'left';g.textBaseline='alphabetic';g.fillStyle='#000';g.fillText(s,ox+1,oy+1);g.fillStyle=col||'#e4e0cf';g.fillText(s,ox,oy)});
   c.ox=ox;c.oy=oy;TXTC.set(k,c);return c}
 
@@ -257,7 +257,7 @@ const MAP_TEXT={size:8,min:11,font:'Arial, sans-serif',weight:600,edge:'#09080a'
 function mapTxtPic(s,col,al,scale,dpr){
   s=String(s);const size=Math.max(Math.ceil(MAP_TEXT.min*dpr),Math.round(MAP_TEXT.size*scale)),line=Math.max(2,Math.round(2*dpr)),font=MAP_TEXT.weight+' '+size+'px '+MAP_TEXT.font,k='map|'+size+'|'+line+'|'+s+'|'+col+'|'+al;
   let c=TXTC.get(k);if(c)return c;if(TXTC.size>600)TXTC.clear();
-  const m=TXTM||(TXTM=mkc(1,1,()=>{}).getContext('2d'));m.font=font;m.textAlign='left';m.textBaseline='alphabetic';
+  const m=TXTM||(TXTM=mkc(1,1,()=>{}).getContext('2d', { willReadFrequently: true }));m.font=font;m.textAlign='left';m.textBaseline='alphabetic';
   const metric=m.measureText(s),w=Math.ceil(metric.width),up=Math.ceil(metric.actualBoundingBoxAscent||size),down=Math.ceil(metric.actualBoundingBoxDescent||0),pad=Math.ceil(line/2)+2,ox=pad+(al==='center'?Math.ceil(w/2):al==='right'?w:0),oy=pad+up;
   c=mkc(w+2*pad,up+down+2*pad,g=>{g.font=font;g.textAlign=al||'left';g.textBaseline='alphabetic';g.lineJoin='round';g.lineWidth=line;g.strokeStyle=MAP_TEXT.edge;g.strokeText(s,ox,oy);g.fillStyle=col||'#e4e0cf';g.fillText(s,ox,oy)});
   c.ox=ox;c.oy=oy;c.deviceText=true;c.labelSize=size;TXTC.set(k,c);return c;

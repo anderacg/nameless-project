@@ -9,7 +9,7 @@ try{
  // a picture's drawn box: [x0, y0, x1, y1]; its width and height; the height over the outline under its feet (fh); its outline
  // pixels that are not the silhouette's (inner: not joined through the outline to the ground round it) and its edge pixels not of
  // the outline (open)
- const look=s=>{const d=s.getContext('2d').getImageData(0,0,s.width,s.height).data,W0=s.width,H0=s.height,a=(x,y)=>x>=0&&y>=0&&x<W0&&y<H0&&d[(y*W0+x)*4+3]>0,
+ const look=s=>{const d=s.getContext('2d', { willReadFrequently: true }).getImageData(0,0,s.width,s.height).data,W0=s.width,H0=s.height,a=(x,y)=>x>=0&&y>=0&&x<W0&&y<H0&&d[(y*W0+x)*4+3]>0,
    out=(x,y)=>{if(!a(x,y))return false;const i=(y*W0+x)*4;return d[i]===OUT[0]&&d[i+1]===OUT[1]&&d[i+2]===OUT[2]};let inner=0,open=0;
    const N=[[1,0],[-1,0],[0,1],[0,-1]],seen=new Set(),q=[];
    for(let y=0;y<H0;y++)for(let x=0;x<W0;x++)if(out(x,y)&&N.some(([i,j])=>!a(x+i,y+j))){seen.add(y*W0+x);q.push([x,y])}

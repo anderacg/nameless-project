@@ -81,7 +81,7 @@ function loadingTick(){const L=LOADING;if(!L.on)return;const now=performance.now
   loadingFrame()}
 // a frame while it is open (render.js frame() calls it in loading mode, and draws nothing else): the flag flutters
 function loadingFrame(){const L=LOADING;if(!L.on||!L.shownAt||typeof flagSprite!=='function')return;const c=L.el.querySelector('.lflag'),f=Math.floor(performance.now()/220)%3;if(c._f===f)return;
-  const s=flagSprite(FACS.player.col,f),g=c.getContext('2d');c._f=f;if(c.width!==s.width||c.height!==s.height){c.width=s.width;c.height=s.height}g.clearRect(0,0,c.width,c.height);g.drawImage(s,0,0)}
+  const s=flagSprite(FACS.player.col,f),g=c.getContext('2d', { willReadFrequently: true });c._f=f;if(c.width!==s.width||c.height!==s.height){c.width=s.width;c.height=s.height}g.clearRect(0,0,c.width,c.height);g.drawImage(s,0,0)}
 // its buttons: Copy error; Keep waiting (the bar again, the stall clock from now); the way back (the run called off)
 function loadingAct(k){const L=LOADING;
   // (where the clipboard is shut, the error is selected to copy by hand)

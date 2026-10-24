@@ -59,7 +59,7 @@
   function flat(g,m,Rp,t0,t1){for(const [x,y] of m.pts())put(g,x,y,Rp[!m.has(x,y+1)&&t1!=null?t1:t0])}
   // (nothing may touch the canvas's edge, where no outline could go round it: such a pixel becomes the outline)
   function outline(g){for(let y=0;y<g.h;y++)for(let x=0;x<g.w;x++)if(at(g,x,y)&&(x===0||y===0||x===g.w-1||y===g.h-1))put(g,x,y,OUT);const o=[];for(let y=0;y<g.h;y++)for(let x=0;x<g.w;x++)if(!at(g,x,y)&&(at(g,x-1,y)||at(g,x+1,y)||at(g,x,y-1)||at(g,x,y+1)))o.push([x,y]);for(const [x,y] of o)put(g,x,y,OUT)}
-  function canvas(g){const c=PX.canvas(g.w,g.h),x=c.getContext('2d'),id=x.createImageData(g.w,g.h),d=id.data,mem={};
+  function canvas(g){const c=PX.canvas(g.w,g.h),x=c.getContext('2d', { willReadFrequently: true }),id=x.createImageData(g.w,g.h),d=id.data,mem={};
     for(let i=0;i<g.p.length;i++){const col=g.p[i];if(!col)continue;const v=mem[col]||(mem[col]=h2r(col));d[i*4]=v[0];d[i*4+1]=v[1];d[i*4+2]=v[2];d[i*4+3]=255}x.putImageData(id,0,0);return c}
   // (a grid turned a quarter clockwise, pixel for pixel: what stood up now lies, its head to the right)
   function turn(g){const r=grid(g.h,g.w);for(let y=0;y<g.h;y++)for(let x=0;x<g.w;x++){const c=g.p[y*g.w+x];if(c)r.p[x*r.w+(g.h-1-y)]=c}return r}

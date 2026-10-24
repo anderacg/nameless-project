@@ -27,7 +27,7 @@ try{
  {const pure=scan(S=>!S.mix&&!S.pond&&!S.brook&&!S.lane&&!S.lots,37,60);let same=0,fs=0,nf=0;
   for(const [x,y] of pure){const a=at(x,y,true),b=at(x,y,false);if(J(a.g)===J(b.g))same++;if(nf<12){nf++;const A=a.T,B=b.T;if(J(Array.from(A.kind))===J(Array.from(B.kind))&&J(Array.from(A.lvl))===J(Array.from(B.lvl))&&!A.clim&&!A.built&&J(A.recipe)===J(B.recipe))fs++}}
   ok(pure.length>=20&&same===pure.length&&fs===nf,'a fight of one climate with nothing by it: its ground spec ('+same+' of '+pure.length+' tiles) and its field ('+fs+' of '+nf+': cells, levels, recipe and words) the same as before (TERRAIN_WORLD off)');
-  if(pure.length){const [x,y]=pure[0],a=at(x,y,true),b=at(x,y,false),pa=t.PX.battleGround({...a.T,climate:a.env.c}),pb=t.PX.battleGround({...b.T,climate:b.env.c}),d1=pa.getContext('2d').getImageData(0,0,BW,BH).data,d2=pb.getContext('2d').getImageData(0,0,BW,BH).data;
+  if(pure.length){const [x,y]=pure[0],a=at(x,y,true),b=at(x,y,false),pa=t.PX.battleGround({...a.T,climate:a.env.c}),pb=t.PX.battleGround({...b.T,climate:b.env.c}),d1=pa.getContext('2d', { willReadFrequently: true }).getImageData(0,0,BW,BH).data,d2=pb.getContext('2d', { willReadFrequently: true }).getImageData(0,0,BW,BH).data;
    let diff=0;for(let i=0;i<d1.length;i++)if(d1[i]!==d2[i])diff++;ok(!diff&&pa.props.length===pb.props.length,'and painted pixel for pixel the same ('+x+','+y+': '+diff+' bytes differ, '+pa.props.length+' props)')}}
  {
 
@@ -58,7 +58,7 @@ try{
   const lo=sh.filter(s=>s[0]<.35),hi=sh.filter(s=>s[0]>=.42),m=a=>a.reduce((q,s)=>q+s[1],0)/Math.max(1,a.length);
   ok(!lo.length||!hi.length||m(hi)>m(lo),'more of the field the other\'s where the world has more of it: '+(m(lo)*100).toFixed(0)+'% of cells at a share under .35 ('+lo.length+'), '+(m(hi)*100).toFixed(0)+'% at .42 or more ('+hi.length+')');
   // (the art: the other's cells painted in its colours; the trees by the ecotone)
-  const fx=mixed.find(([x,y,S])=>S.mix.c==='frost'||S.mix.c==='desert')||mixed[0];if(fx){const [x,y,S]=fx,{T:T0,env}=at(x,y),cv=t.PX.battleGround({...T0,climate:env.c}),d=cv.getContext('2d').getImageData(0,0,BW,BH).data,b=CL.indexOf(S.mix.c);
+  const fx=mixed.find(([x,y,S])=>S.mix.c==='frost'||S.mix.c==='desert')||mixed[0];if(fx){const [x,y,S]=fx,{T:T0,env}=at(x,y),cv=t.PX.battleGround({...T0,climate:env.c}),d=cv.getContext('2d', { willReadFrequently: true }).getImageData(0,0,BW,BH).data,b=CL.indexOf(S.mix.c);
    const P1=t.PX.GROUND_PAL[env.c].base[1],P2=t.PX.GROUND_PAL[S.mix.c].base[1],hx=c=>[1,3,5].map(k=>parseInt(c.slice(k,k+2),16)),A=hx(P1),B2=hx(P2),dist=(p,q)=>Math.hypot(p[0]-q[0],p[1]-q[1],p[2]-q[2]);let near2=0,n2=0;
    for(const c of cellsOf(T0,i=>T0.kind[i]===0&&!T0.lvl[i])){const o=(Math.floor(c.y)*BW+Math.floor(c.x))*4,px=[d[o],d[o+1],d[o+2]],oth=T0.clim[c.i]===b;n2++;if(oth===dist(px,B2)<dist(px,A))near2++}
    ok(near2>=n2*.85,'painted: each open cell\'s middle nearer its own climate\'s ground colour ('+near2+' of '+n2+', '+env.c+'/'+S.mix.c+' at '+x+','+y+')')}}
@@ -102,7 +102,7 @@ try{
   ok(crops&&crop===crops&&fence>0,'crop rows slow a little (×.9 on foot: '+crop+' of '+crops+' fields), a fence more and breaks ranks (×.55, thin: '+fence+')');
   const pv=vs.find(([x,y])=>at(x,y).T.recipe.built);if(pv){const {T:T0,env}=at(pv[0],pv[1]),cv=t.PX.battleGround({...T0,climate:env.c}),hs=cv.props.filter(p=>p.dk===5);
    // (crisp at 2x: every 2x2 block of its picture one pixel of the model's)
-   const crisp=s=>{const d=s.getContext('2d').getImageData(0,0,s.width,s.height).data,w=s.width;if(w%2||s.height%2)return false;for(let y=0;y<s.height;y+=2)for(let x=0;x<w;x+=2){const o=(y*w+x)*4;for(const q of [o+4,o+w*4,o+w*4+4])for(let k=0;k<4;k++)if(d[q+k]!==d[o+k])return false}return true};
+   const crisp=s=>{const d=s.getContext('2d', { willReadFrequently: true }).getImageData(0,0,s.width,s.height).data,w=s.width;if(w%2||s.height%2)return false;for(let y=0;y<s.height;y+=2)for(let x=0;x<w;x+=2){const o=(y*w+x)*4;for(const q of [o+4,o+w*4,o+w*4+4])for(let k=0;k<4;k++)if(d[q+k]!==d[o+k])return false}return true};
    ok(hs.length===T0.recipe.built.houses.length&&hs.every(p=>p.s&&p.s.width>=32&&crisp(p.s)),'painted: each building a standing prop (dk 5, '+hs.length+'), the world\'s own model'+(t.PX.buildingModel?'':' (none here: a plain block)')+' drawn at 2x, each pixel a crisp 2x2 block ('+hs.map(p=>p.s.width+'x'+p.s.height).join(', ')+')')}
   // (it sits in the field's ground: round each building (the field painted with its props) the pixels just outside its silhouette
   // near the field's ground there (painted without what stands by the fight: the mean colour of that ring, either way), and no
@@ -110,8 +110,8 @@ try{
   // cell round it, 6 px (3 of the model's) or more off its silhouette (its walls' feet and contact shade are its own), no 8 px running one way more than 14 in light where the field without it does not))
   {const ring=[],runs=[];let nH=0;for(const [x,y] of vs.slice(0,8)){const {T:T0,env}=at(x,y);if(!T0.recipe.built||!T0.recipe.built.houses.length)continue;
     const cv=t.PX.battleGround({...T0,climate:env.c}),rf=t.PX.battleGround({...T0,built:null,recipe:{...T0.recipe,built:null},climate:env.c}),pg=document.createElement('canvas');pg.width=BW;pg.height=BH;
-    const g=pg.getContext('2d');t.PX.battleProps(g,cv);const pa=g.getImageData(0,0,BW,BH).data;g.globalCompositeOperation='destination-over';g.drawImage(cv,0,0);g.globalCompositeOperation='source-over';const d=g.getImageData(0,0,BW,BH).data,r=rf.getContext('2d').getImageData(0,0,BW,BH).data,L=(a,o)=>a[o]*.3+a[o+1]*.59+a[o+2]*.11;
-    for(const p of cv.props.filter(p=>p.dk===5)){nH++;const sw=p.s.width,sh=p.s.height,sa=p.s.getContext('2d').getImageData(0,0,sw,sh).data,sil=(X,Y)=>{const u=X-p.dx,v=Y-p.dy;return u>=0&&v>=0&&u<sw&&v<sh&&sa[(v*sw+u)*4+3]>0},near=(X,Y,k=3)=>{for(let b=-k;b<=k;b++)for(let a=-k;a<=k;a++)if(sil(X+a,Y+b))return true;return false};
+    const g=pg.getContext('2d', { willReadFrequently: true });t.PX.battleProps(g,cv);const pa=g.getImageData(0,0,BW,BH).data;g.globalCompositeOperation='destination-over';g.drawImage(cv,0,0);g.globalCompositeOperation='source-over';const d=g.getImageData(0,0,BW,BH).data,r=rf.getContext('2d', { willReadFrequently: true }).getImageData(0,0,BW,BH).data,L=(a,o)=>a[o]*.3+a[o+1]*.59+a[o+2]*.11;
+    for(const p of cv.props.filter(p=>p.dk===5)){nH++;const sw=p.s.width,sh=p.s.height,sa=p.s.getContext('2d', { willReadFrequently: true }).getImageData(0,0,sw,sh).data,sil=(X,Y)=>{const u=X-p.dx,v=Y-p.dy;return u>=0&&v>=0&&u<sw&&v<sh&&sa[(v*sw+u)*4+3]>0},near=(X,Y,k=3)=>{for(let b=-k;b<=k;b++)for(let a=-k;a<=k;a++)if(sil(X+a,Y+b))return true;return false};
      const A=[0,0,0],B=[0,0,0];let n=0;for(let Y=p.dy-3;Y<p.dy+sh+3;Y++)for(let X=p.dx-3;X<p.dx+sw+3;X++){if(X<0||Y<0||X>=BW||Y>=BH||sil(X,Y))continue;if(!near(X,Y))continue;const o=(Y*BW+X)*4;for(let k=0;k<3;k++){A[k]+=d[o+k];B[k]+=r[o+k]}n++}
      ring.push(n?Math.hypot(A[0]-B[0],A[1]-B[1],A[2]-B[2])/n:0);
      const cs=T0.cs,x0=Math.floor(p.dx/cs)*cs-cs,y0=Math.floor(p.dy/cs)*cs-cs,x1=Math.ceil((p.dx+sw)/cs)*cs+cs,y1=Math.ceil((p.dy+sh)/cs)*cs+cs;let worst=0;
@@ -129,7 +129,7 @@ try{
  {const pd=scan((S,x,y)=>S.pond&&S.pond.kind!=='oasis'&&S.c!=='desert'&&S.kinds.every((k,i)=>k!==T_WATER||S.pond.at.includes(i))&&!S.river&&!S.brook,3,24);let ok1=0,mid=0,mar=0,wd=0;const kinds={};
   for(const [x,y,S] of pd){const {g,T:T0}=at(x,y),P=T0.recipe.ponds;kinds[S.pond.kind]=(kinds[S.pond.kind]||0)+1;if(!(g.river&&'bridge' in g.river)&&g.pond&&P&&P.length)ok1++;if(P&&P.every(p=>Math.abs(p.x-BW/2)<BW*.15))mid++;if(T0.kind.includes(K.marsh))mar++;if(new RegExp(t.TERRAIN_WORDS.pond[S.pond.kind]).test(T0.recipe.text))wd++}
   ok(pd.length>=8&&ok1===pd.length&&mid===pd.length&&mar===pd.length&&wd===pd.length,'a fight by a pond: its pool in a marsh on the field ('+ok1+' of '+pd.length+': '+Object.entries(kinds).map(([k,v])=>k+' '+v).join(', ')+'), in the middle of its width ('+mid+'), its water no river (a frost field\'s frozen river by its chance as ever); the words name it ('+wd+')');
-  if(pd.length){const [x,y]=pd[0],{T:T0,env}=at(x,y),cv=t.PX.battleGround({...T0,climate:env.c}),d=cv.getContext('2d').getImageData(0,0,BW,BH).data,p=T0.recipe.ponds[0],o=(Math.round(p.y)*BW+Math.round(p.x))*4,W2=t.PX.GROUND_PAL[env.c].water.map(c=>[1,3,5].map(k=>parseInt(c.slice(k,k+2),16)));
+  if(pd.length){const [x,y]=pd[0],{T:T0,env}=at(x,y),cv=t.PX.battleGround({...T0,climate:env.c}),d=cv.getContext('2d', { willReadFrequently: true }).getImageData(0,0,BW,BH).data,p=T0.recipe.ponds[0],o=(Math.round(p.y)*BW+Math.round(p.x))*4,W2=t.PX.GROUND_PAL[env.c].water.map(c=>[1,3,5].map(k=>parseInt(c.slice(k,k+2),16)));
    ok(W2.some(c=>Math.hypot(d[o]-c[0],d[o+1]-c[1],d[o+2]-c[2])<40),'painted: open water in its middle ('+[d[o],d[o+1],d[o+2]].join(',')+')')}
   const oa=scan((S,x,y)=>S.pond&&S.pond.kind==='oasis'&&S.c==='desert'&&WM.kind[y*MW+x]!==T_HILL,1,4);if(oa.length){const ds=oa.map(([x,y])=>at(x,y).g);ok(ds.every(g=>g.recipe==='desert'&&g.oasis&&!g.pond&&!g.river),'a desert fight by an oasis keeps the desert\'s rule: its oasis, no pond of its own, no river ('+oa.length+' tiles)')}}
 

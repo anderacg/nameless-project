@@ -30,8 +30,8 @@ window.RUN=()=>{
       else{const em=q('.mm-emblem canvas').getBoundingClientRect();ok(em.width>0&&em.bottom<=ti.top+1&&ti.width<=ban.width&&art.width>0&&art.getBoundingClientRect().width>=W-1&&art.getBoundingClientRect().height>=H-1,tag+': emblem, title and full background restored on desktop')}};
     ev("MainMenu.size='';MainMenu.frame(performance.now())");fits(844,390,'844 × 390');
     // ---- the scene: seeded, the same pixels drawn twice
-    ok(ev(`(()=>{const a=PX.canvas(400,240),b=PX.canvas(400,240);new MenuArt.MenuScene(400,240,100).draw(a.getContext('2d'),3);new MenuArt.MenuScene(400,240,100).draw(b.getContext('2d'),3);
-      const x=a.getContext('2d').getImageData(0,0,400,240).data,y=b.getContext('2d').getImageData(0,0,400,240).data;for(let i=0;i<x.length;i++)if(x[i]!==y[i])return false;return true})()`),'the scene is seeded: drawn twice, the same pixels');
+    ok(ev(`(()=>{const a=PX.canvas(400,240),b=PX.canvas(400,240);new MenuArt.MenuScene(400,240,100).draw(a.getContext('2d', { willReadFrequently: true }),3);new MenuArt.MenuScene(400,240,100).draw(b.getContext('2d', { willReadFrequently: true }),3);
+      const x=a.getContext('2d', { willReadFrequently: true }).getImageData(0,0,400,240).data,y=b.getContext('2d', { willReadFrequently: true }).getImageData(0,0,400,240).data;for(let i=0;i<x.length;i++)if(x[i]!==y[i])return false;return true})()`),'the scene is seeded: drawn twice, the same pixels');
     // ---- the keys: arrows between the open buttons (Continue skipped), Esc nothing
     const key=k=>w.dispatchEvent(new w.KeyboardEvent('keydown',{key:k,code:k,bubbles:true}));
     q('[data-mm="new"]').focus();key('ArrowDown');const a1=d.activeElement.textContent;key('ArrowUp');key('ArrowUp');const a2=d.activeElement.textContent;key('Escape');

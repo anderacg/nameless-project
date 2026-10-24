@@ -42,14 +42,14 @@ function render(){
   if(q0.get('view')==='peoples')try{return renderPeoples()}catch(e){document.getElementById('out').textContent=e.stack;return}
   if(q0.get('view')==='catalog')try{return renderCatalog()}catch(e){document.getElementById('out').textContent=e.stack;return}
   if(q0.get('view')==='model')try{return renderModel()}catch(e){document.getElementById('out').textContent=e.stack;return}
-  if(new URLSearchParams(location.search).get('view')==='castles'){const out=document.getElementById('out');out.innerHTML='';for(const type of ['keep','citadel','village','longhouse','stonehall','elfhall','hidehall'])for(const style of ['human','dwarf','elf','orc']){if(['stonehall','elfhall','hidehall','longhouse'].includes(type)&&style!==({longhouse:'human',stonehall:'dwarf',elfhall:'elf',hidehall:'orc'})[type])continue;const row=document.createElement('div');row.className='row';row.innerHTML='<span class="lab">'+style+' · '+type+'</span>';for(let s=1;s<=6;s++){const hall=!['keep','citadel'].includes(type),b=PX.buildingModel({type,people:style,seed:s*37+type.length,fort:hall?(s>3?1:0):[0,1,2,3,1,2][s-1]}),Z=+(q0.get('z')||3),c=document.createElement('canvas'),M=4,w=b.w+2*M;c.width=w*Z;c.height=w*Z;const g=c.getContext('2d');g.imageSmoothingEnabled=false;g.scale(Z,Z);g.fillStyle='#5a8a3a';g.fillRect(0,0,w,w);g.fillStyle='rgba(0,0,0,.18)';for(let k=0;k<=b.tiles[0];k++){g.fillRect(M+k*16,0,1,w);g.fillRect(0,M+k*16,w,1)}g.fillStyle='rgba(255,230,120,.5)';g.fillRect(M+b.w/2,M+b.h,1,M);g.fillRect(M+b.w/2-1,M+b.h,1,M);g.drawImage(b.ground,M,M);g.globalAlpha=b.shade;g.drawImage(b.shadow,M,M);g.globalAlpha=1;g.drawImage(b.img,M,M);if(b.flag){const fx=M+b.flag[0],fy=M+b.flag[1],fc=['#c84040','#4a72b0','#3a8a4a','#d8a030'][s%4];g.fillStyle='#4a3020';g.fillRect(fx,fy-9,1,9);g.fillStyle=fc;g.fillRect(fx+1,fy-9,4,3)}row.appendChild(c)}out.appendChild(row)}return}
+  if(new URLSearchParams(location.search).get('view')==='castles'){const out=document.getElementById('out');out.innerHTML='';for(const type of ['keep','citadel','village','longhouse','stonehall','elfhall','hidehall'])for(const style of ['human','dwarf','elf','orc']){if(['stonehall','elfhall','hidehall','longhouse'].includes(type)&&style!==({longhouse:'human',stonehall:'dwarf',elfhall:'elf',hidehall:'orc'})[type])continue;const row=document.createElement('div');row.className='row';row.innerHTML='<span class="lab">'+style+' · '+type+'</span>';for(let s=1;s<=6;s++){const hall=!['keep','citadel'].includes(type),b=PX.buildingModel({type,people:style,seed:s*37+type.length,fort:hall?(s>3?1:0):[0,1,2,3,1,2][s-1]}),Z=+(q0.get('z')||3),c=document.createElement('canvas'),M=4,w=b.w+2*M;c.width=w*Z;c.height=w*Z;const g=c.getContext('2d', { willReadFrequently: true });g.imageSmoothingEnabled=false;g.scale(Z,Z);g.fillStyle='#5a8a3a';g.fillRect(0,0,w,w);g.fillStyle='rgba(0,0,0,.18)';for(let k=0;k<=b.tiles[0];k++){g.fillRect(M+k*16,0,1,w);g.fillRect(0,M+k*16,w,1)}g.fillStyle='rgba(255,230,120,.5)';g.fillRect(M+b.w/2,M+b.h,1,M);g.fillRect(M+b.w/2-1,M+b.h,1,M);g.drawImage(b.ground,M,M);g.globalAlpha=b.shade;g.drawImage(b.shadow,M,M);g.globalAlpha=1;g.drawImage(b.img,M,M);if(b.flag){const fx=M+b.flag[0],fy=M+b.flag[1],fc=['#c84040','#4a72b0','#3a8a4a','#d8a030'][s%4];g.fillStyle='#4a3020';g.fillRect(fx,fy-9,1,9);g.fillStyle=fc;g.fillRect(fx+1,fy-9,4,3)}row.appendChild(c)}out.appendChild(row)}return}
   const q=new URLSearchParams(location.search),Z=+(document.getElementById('z').value||q.get('z')||3),N=+(document.getElementById('n').value||q.get('n')||8),only=(document.getElementById('only').value||q.get('only')||'').trim();
   const out=document.getElementById('out');out.innerHTML='';
   for(const style in PEOPLE)for(const type of PEOPLE[style]){if(only&&only!==type&&only!==style)continue;
     const row=document.createElement('div');row.className='row';row.innerHTML='<span class="lab">'+style+' · '+type+'</span>';
     for(let s=1;s<=N;s++){const b=PX.buildingModel({type,people:style,seed:s*37+type.length,env:['grass','frost','desert','swamp'][s%4],yaw:(s%4)*2,fort:2});
       // the building in its square cell, on the tile grid (a faint line every 16 px, a stronger one round the cell)
-      const c=document.createElement('canvas'),M=4,tw=b.w+2*M,th=b.h+2*M;c.width=tw*Z;c.height=th*Z;const g=c.getContext('2d');g.imageSmoothingEnabled=false;g.scale(Z,Z);
+      const c=document.createElement('canvas'),M=4,tw=b.w+2*M,th=b.h+2*M;c.width=tw*Z;c.height=th*Z;const g=c.getContext('2d', { willReadFrequently: true });g.imageSmoothingEnabled=false;g.scale(Z,Z);
       g.fillStyle='#5a8a3a';g.fillRect(0,0,tw,th);g.fillStyle='rgba(0,0,0,.18)';for(let k=0;k<=b.tiles[0];k++){g.fillRect(M+k*16,0,1,th);g.fillRect(0,M+k*16,tw,1)}
       g.fillStyle='rgba(255,240,200,.35)';g.fillRect(M,M,b.w,1);g.fillRect(M,M+b.h-1,b.w,1);g.fillRect(M,M,1,b.h);g.fillRect(M+b.w-1,M,1,b.h);
       g.drawImage(b.ground,M,M);g.globalAlpha=b.shade;g.drawImage(b.shadow,M,M);g.globalAlpha=1;g.drawImage(b.img,M,M);if(b.snow)g.drawImage(b.snow.img,M,M);if(b.clipped){g.fillStyle='#e0605a';g.fillRect(0,0,3,3)}row.appendChild(c)}
@@ -67,8 +67,8 @@ function renderGround(){
     if(RIVERS.includes(recipe)&&climate==='desert'&&only!==recipe)continue;if(cl&&cl!==climate)continue;
     const t=PX.groundFixture({recipe,C:60,R:38,seed:sd}),t0=performance.now(),gr=PX.battleGround({...t,climate}),ms=performance.now()-t0,mini=PX.battleGroundMini({...t,climate},gr);
     const row=document.createElement('div');row.className='row';row.innerHTML='<span class="lab">'+recipe+' · '+climate+' · '+ms.toFixed(0)+' ms · props '+[1,2,3].map(k=>gr.props.filter(p=>p.dk===k).length).join('/')+'</span>';
-    const c=document.createElement('canvas');c.width=gr.width*Z;c.height=gr.height*Z;const g=c.getContext('2d');g.imageSmoothingEnabled=false;g.scale(Z,Z);g.drawImage(gr,0,0);PX.battleProps(g,gr);row.appendChild(c);// (its standing trees and cliff faces in their order: in the game, sorted in with the soldiers)
-    const m=document.createElement('canvas');m.width=mini.width*3;m.height=mini.height*3;const mg=m.getContext('2d');mg.imageSmoothingEnabled=false;mg.drawImage(mini,0,0,m.width,m.height);row.appendChild(m);
+    const c=document.createElement('canvas');c.width=gr.width*Z;c.height=gr.height*Z;const g=c.getContext('2d', { willReadFrequently: true });g.imageSmoothingEnabled=false;g.scale(Z,Z);g.drawImage(gr,0,0);PX.battleProps(g,gr);row.appendChild(c);// (its standing trees and cliff faces in their order: in the game, sorted in with the soldiers)
+    const m=document.createElement('canvas');m.width=mini.width*3;m.height=mini.height*3;const mg=m.getContext('2d', { willReadFrequently: true });mg.imageSmoothingEnabled=false;mg.drawImage(mini,0,0,m.width,m.height);row.appendChild(m);
     out.appendChild(row)}
 }
 // phase 4 depth: stand-in soldiers (yours blue, the enemy red) in front of and behind a spire, the massif and a cliff, drawn in
@@ -79,11 +79,11 @@ function figure(team){const T=team?['#d05a4a','#a83a34','#7a2a2a','#5a1e22']:['#
   return PX.canvas(16,16,g=>{for(let y=0;y<14;y++)for(let x=0;x<16;x++){const ch=FIG[y][x];if(ch!=='.'){g.fillStyle=col[ch];g.fillRect(x,y+1,1,1)}}
     const d=g.getImageData(0,0,16,16).data,o=[],a=(u,v)=>u>=0&&v>=0&&u<16&&v<16&&d[(v*16+u)*4+3];for(let y=0;y<16;y++)for(let x=0;x<16;x++)if(!a(x,y)&&(a(x-1,y)||a(x+1,y)||a(x,y-1)||a(x,y+1)))o.push([x,y]);
     g.fillStyle='#1a1c26';for(const [x,y] of o)g.fillRect(x,y,1,1)})}
-function scene(gr,men,fade){const c=PX.canvas(gr.width,gr.height),g=c.getContext('2d'),F0=figure(0),F1=figure(1);g.drawImage(gr,0,0);
+function scene(gr,men,fade){const c=PX.canvas(gr.width,gr.height),g=c.getContext('2d', { willReadFrequently: true }),F0=figure(0),F1=figure(1);g.drawImage(gr,0,0);
   for(const p of gr.props){p.al=1;if(!fade)continue;for(const u of men){if(u.team)continue;const b=p.box;if(u.x+5<b[0]||u.x-5>b[2]||u.y-1<b[1]||u.y-15>b[3])continue;if(u.y<p.y){p.al=.4;break}}}
   for(const o of [...gr.props,...men].sort((a,b)=>a.y-b.y)){if(o.dk){g.globalAlpha=o.al;g.drawImage(o.s,o.dx,o.dy);g.globalAlpha=1}else{g.fillStyle='rgba(8,14,24,.3)';g.fillRect(o.x-3,o.y,7,1);g.drawImage(o.team?F1:F0,o.x-8,o.y-15)}}
   return c}
-function crop(src,x,y,w,h,Z){const c=document.createElement('canvas');c.width=w*Z;c.height=h*Z;const g=c.getContext('2d');g.imageSmoothingEnabled=false;g.drawImage(src,x,y,w,h,0,0,w*Z,h*Z);return c}
+function crop(src,x,y,w,h,Z){const c=document.createElement('canvas');c.width=w*Z;c.height=h*Z;const g=c.getContext('2d', { willReadFrequently: true });g.imageSmoothingEnabled=false;g.drawImage(src,x,y,w,h,0,0,w*Z,h*Z);return c}
 function renderDepth(){const q=new URLSearchParams(location.search),climate=q.get('c')||'grass',sd=+(q.get('seed')||1),Z=+(q.get('z')||3),out=document.getElementById('out');out.innerHTML='';const shots=[];
   // (the lone spire at cell (38,9): yours behind it and in front; behind the massif yours and the enemy's)
   {const t=PX.groundFixture({recipe:'spires',C:60,R:38,seed:sd}),gr=PX.battleGround({...t,climate}),R3=gr.props.filter(p=>p.dk===3),men=[];
@@ -106,7 +106,7 @@ function renderDepth(){const q=new URLSearchParams(location.search),climate=q.ge
 function renderBench(){const out=document.getElementById('out'),rows=[];
   for(const [recipe,climate] of [['spires','grass'],['spires','frost'],['mountriver','swamp'],['plateau','desert'],['cliffs','grass'],['hillwoods','grass'],['forest','grass']]){
     const t=PX.groundFixture({recipe,C:82,R:38,seed:1});let ms=0,gr;for(let k=0;k<3;k++){const t0=performance.now();gr=PX.battleGround({...t,climate});ms+=performance.now()-t0}ms/=3;
-    const W=gr.width,H=gr.height,c=PX.canvas(W,H),g=c.getContext('2d'),R=PX.dice(PX.rng(5)),men=[];for(let k=0;k<150;k++)men.push({x:R.int(20,W-20),y:R.int(40,H-10)});
+    const W=gr.width,H=gr.height,c=PX.canvas(W,H),g=c.getContext('2d', { willReadFrequently: true }),R=PX.dice(PX.rng(5)),men=[];for(let k=0;k<150;k++)men.push({x:R.int(20,W-20),y:R.int(40,H-10)});
     const cc=8,gw=Math.ceil(W/cc)+1,gh=Math.ceil(H/cc)+1,PF=new Float32Array(gw*gh),L=gr.props;
     const frame=()=>{PF.fill(1e9);for(const u of men){const ga=Math.floor((u.y-15)/cc),gb=Math.floor((u.y-1)/cc),ha=Math.floor((u.x-5)/cc),hb=Math.floor((u.x+5)/cc);for(let y=ga;y<=gb;y++)for(let x=ha;x<=hb;x++){const i=y*gw+x;if(u.y<PF[i])PF[i]=u.y}}
       for(const p of L){const b=p.box;let cov=false;const ga=Math.max(0,Math.floor(b[1]/cc)),gb=Math.min(gh-1,Math.floor(b[3]/cc)),ha=Math.max(0,Math.floor(b[0]/cc)),hb=Math.min(gw-1,Math.floor(b[2]/cc));
@@ -122,7 +122,7 @@ function renderNature(){
   const q=new URLSearchParams(location.search),Z=+(q.get('z')||3),cl=q.get('c'),sd=+(q.get('seed')||1),out=document.getElementById('out');out.innerHTML='';
   document.querySelector('h1').textContent='PX world nature';document.querySelector('p').textContent='The world map’s trees, small things, hills and peaks by climate (engine/worldnature.js), and a stand-in map painted with them.';
   const GR={grass:'#547e3a',frost:'#d6dee8',desert:'#d6b668',swamp:'#485834'};
-  const cell=(sp,bg,z,lab)=>{const N=sp.width,c=document.createElement('canvas'),M=2;c.width=(N+2*M)*z;c.height=(N+2*M)*z;const g=c.getContext('2d');g.imageSmoothingEnabled=false;g.scale(z,z);g.fillStyle=bg;g.fillRect(0,0,N+2*M,N+2*M);
+  const cell=(sp,bg,z,lab)=>{const N=sp.width,c=document.createElement('canvas'),M=2;c.width=(N+2*M)*z;c.height=(N+2*M)*z;const g=c.getContext('2d', { willReadFrequently: true });g.imageSmoothingEnabled=false;g.scale(z,z);g.fillStyle=bg;g.fillRect(0,0,N+2*M,N+2*M);
     g.fillStyle='rgba(0,0,0,.12)';g.fillRect(M,M,N,1);g.fillRect(M,M+N-1,N,1);g.fillRect(M,M,1,N);g.fillRect(M+N-1,M,1,N);g.drawImage(sp,M,M);if(lab)c.title=lab;return c};
   const row=(lab,list)=>{const r=document.createElement('div');r.className='row';r.innerHTML='<span class="lab">'+lab+'</span>';list.forEach(c=>r.appendChild(c));out.appendChild(r)};
   for(const c of ['grass','frost','desert','swamp']){if(cl&&cl!==c)continue;const bg=GR[c];
@@ -132,7 +132,7 @@ function renderNature(){
     row(c+' · hills',[0,1,2,3,4,5].map(v=>cell(PX.worldHill(c,v),bg,Z,'hill '+v)));
     row(c+' · peaks 16, 32',[0,1,2,3,4,5].map(v=>cell(PX.worldPeak(c,v,16),bg,Z,'16 '+v)).concat([0,1,2,3,4,5].map(v=>cell(PX.worldPeak(c,v,32),bg,Z,'32 '+v))));
     row(c+' · peaks 64',[0,1,2,3,4,5].map(v=>cell(PX.worldPeak(c,v,64),bg,Z,'64 '+v)))}
-  for(const c of ['grass','frost','desert','swamp']){if(cl&&cl!==c)continue;const f=natureFixture(c,sd);row(c+' · a stand-in map · '+f.res.ms.toFixed(0)+' ms · trees '+f.res.trees+', hills '+f.res.hills+', peaks '+f.res.peaks+', small things '+(f.res.decor+f.res.flat)+' · in 4 windows: '+f.res.off+' px differ',[(()=>{const z=+(q.get('mz')||2),c2=document.createElement('canvas');c2.width=f.cv.width*z;c2.height=f.cv.height*z;const g=c2.getContext('2d');g.imageSmoothingEnabled=false;g.drawImage(f.cv,0,0,c2.width,c2.height);return c2})()])}
+  for(const c of ['grass','frost','desert','swamp']){if(cl&&cl!==c)continue;const f=natureFixture(c,sd);row(c+' · a stand-in map · '+f.res.ms.toFixed(0)+' ms · trees '+f.res.trees+', hills '+f.res.hills+', peaks '+f.res.peaks+', small things '+(f.res.decor+f.res.flat)+' · in 4 windows: '+f.res.off+' px differ',[(()=>{const z=+(q.get('mz')||2),c2=document.createElement('canvas');c2.width=f.cv.width*z;c2.height=f.cv.height*z;const g=c2.getContext('2d', { willReadFrequently: true });g.imageSmoothingEnabled=false;g.drawImage(f.cv,0,0,c2.width,c2.height);return c2})()])}
 }
 // a stand-in map (C×R tiles, 0 open, 1 wood, 2 hill, 3 water, 4 road, 5 rock) on the climate's plain ground: blobs of wood, hills
 // and a range, a pond, a road across it all (kept clear, its band painted)
@@ -161,9 +161,9 @@ function natureFixture(clim,seed){
 // breathing, the walk, the run, the attack (and the dragon's breath), lying dead, its other variants, on your side, and on the map
 function renderBeasts(){
   const q=new URLSearchParams(location.search),Z=+(q.get('z')||3),out=document.getElementById('out'),only=q.get('only');out.innerHTML='';
-  const cellOf=s=>{const n=[8,16,32,64].find(k=>k>=s.width&&k>=s.height),c=PX.canvas(n,n);c.getContext('2d').drawImage(s,(n>>1)-(s.width>>1),n-s.height);return c};
+  const cellOf=s=>{const n=[8,16,32,64].find(k=>k>=s.width&&k>=s.height),c=PX.canvas(n,n);c.getContext('2d', { willReadFrequently: true }).drawImage(s,(n>>1)-(s.width>>1),n-s.height);return c};
   const man=PX.canvas(16,16,g=>{g.fillStyle='#1a1c26';g.fillRect(4,0,7,16);g.fillStyle='#b8b0a0';g.fillRect(5,1,5,4);g.fillStyle='#6a7a9a';g.fillRect(5,5,5,7);g.fillStyle='#5a4a3a';g.fillRect(5,12,2,3);g.fillRect(8,12,2,3)});
-  const show=(row,s,lab)=>{const c=cellOf(s),cv=document.createElement('canvas');cv.width=c.width*Z;cv.height=c.height*Z;cv.title=lab;const g=cv.getContext('2d');g.imageSmoothingEnabled=false;g.fillStyle='#5a8a3a';g.fillRect(0,0,cv.width,cv.height);
+  const show=(row,s,lab)=>{const c=cellOf(s),cv=document.createElement('canvas');cv.width=c.width*Z;cv.height=c.height*Z;cv.title=lab;const g=cv.getContext('2d', { willReadFrequently: true });g.imageSmoothingEnabled=false;g.fillStyle='#5a8a3a';g.fillRect(0,0,cv.width,cv.height);
     g.fillStyle='rgba(0,0,0,.25)';g.fillRect(0,(c.height-2)*Z,cv.width,1);g.fillRect((c.width>>1)*Z,0,1,cv.height);g.drawImage(c,0,0,cv.width,cv.height);row.appendChild(cv)};
   if(q.get('fit')){out.textContent=JSON.stringify([...PX.BEAST_KINDS,'drake'].map(PX._beastFit));return}
   for(const k of PX.BEAST_KINDS){if(only&&!only.split(',').includes(k))continue;const row=document.createElement('div');row.className='row';row.innerHTML='<span class="lab">'+k+'</span>';show(row,man,'a man');try{
@@ -179,7 +179,7 @@ function renderModel(){
   document.querySelector('h1').textContent='PX model buildings';document.querySelector('p').textContent='Each sample in its 4 facings (front, left side, back, right side: yaw 0, 2, 4, 6), today’s nearest building first, a stand-in person for scale; then the peoples’ roofs, and why not 45°.';
   const OLD={cottage:{type:'cottage'},house:{type:'townhouse'},frost:{type:'cottage',snow:true,env:'frost'},desert:{type:'cottage',env:'desert'},farmhouse:{type:'longhouse'},inn:{type:'tavern'},chapel:{type:'church'}};
   const man=PX.canvas(6,10,g=>{g.fillStyle='#1a1c26';g.fillRect(1,0,4,10);g.fillRect(0,3,6,5);g.fillStyle='#e0b090';g.fillRect(2,1,2,2);g.fillStyle='#3d74d6';g.fillRect(1,3,4,4);g.fillStyle='#5a4a3a';g.fillRect(2,7,1,2);g.fillRect(3,7,1,2)});
-  const cell=(row,b,lab,sh)=>{const M=4,n=b.w,w=n+2*M+10,h=n+2*M,c=document.createElement('canvas');c.width=w*Z;c.height=h*Z;c.title=lab;const g=c.getContext('2d');g.imageSmoothingEnabled=false;g.scale(Z,Z);
+  const cell=(row,b,lab,sh)=>{const M=4,n=b.w,w=n+2*M+10,h=n+2*M,c=document.createElement('canvas');c.width=w*Z;c.height=h*Z;c.title=lab;const g=c.getContext('2d', { willReadFrequently: true });g.imageSmoothingEnabled=false;g.scale(Z,Z);
     g.fillStyle='#6e9a48';g.fillRect(0,0,w,h);g.fillStyle='rgba(0,0,0,.12)';for(let k=0;k<=n/16;k++){g.fillRect(M+k*16,0,1,h);g.fillRect(0,M+k*16,w,1)}
     // (the layers in the game's order: the flat ground, the shadow (a mask, shaded once), then what stands)
     if(b.ground)g.drawImage(b.ground,M,M);if(b.shadow){g.globalAlpha=b.shade||1;g.drawImage(b.shadow,M,M);g.globalAlpha=1}g.drawImage(b.img,M,M);g.drawImage(man,M+n+2,M+n-10);
@@ -224,7 +224,7 @@ function renderCatalog(){
   // the game's layers: ground (and the snow on it), the shadow mask shaded once, the picture, the snow on it
   const layers=(g,b,x,y)=>{if(b.ground)g.drawImage(b.ground,x,y);if(b.snow)g.drawImage(b.snow.ground,x,y);if(b.shadow){if(b.shade){const m=PX.canvas(b.w,b.h,c=>{c.drawImage(b.shadow,0,0);c.globalCompositeOperation='source-in';c.fillStyle='rgb(20,24,12)';c.fillRect(0,0,b.w,b.h)});g.globalAlpha=b.shade;g.drawImage(m,x,y);g.globalAlpha=1}else g.drawImage(b.shadow,x,y)}
     g.drawImage(b.img,x,y);if(b.snow)g.drawImage(b.snow.img,x,y)};
-  const cell=(row,b,lab,env,noMan)=>{const M=4,n=b.w,w=n+2*M+(noMan?0:16),h=Math.max(n,16)+2*M,c=document.createElement('canvas');c.width=w*Z;c.height=h*Z;c.title=lab;const g=c.getContext('2d');g.imageSmoothingEnabled=false;g.scale(Z,Z);
+  const cell=(row,b,lab,env,noMan)=>{const M=4,n=b.w,w=n+2*M+(noMan?0:16),h=Math.max(n,16)+2*M,c=document.createElement('canvas');c.width=w*Z;c.height=h*Z;c.title=lab;const g=c.getContext('2d', { willReadFrequently: true });g.imageSmoothingEnabled=false;g.scale(Z,Z);
     g.drawImage(groundTile(env||'grass',w,h,n),0,0);g.fillStyle='rgba(0,0,0,.1)';for(let k=0;k<=n/16;k++){g.fillRect(M+k*16,M-2,1,1);g.fillRect(M+k*16,M+n+1,1,1)}
     layers(g,b,M,M+h-2*M-n);if(b.marks&&b.marks.fire){const fl=PX.flame(1);g.drawImage(fl.img,M+b.marks.fire[0]-fl.ax,M+h-2*M-n+b.marks.fire[1]-fl.ay)}
     if(b.flag)g.drawImage(FLAG,M+b.flag[0]-2,M+h-2*M-n+b.flag[1]-11);
@@ -270,7 +270,7 @@ function renderCatalog(){
     const row=newRow('1×'),zrow=newRow('×3');
     for(const [env,pp] of [['grass','human'],['desert','orc'],['frost','dwarf'],['grass','elf']]){const s=scene(env,pp);s.title=env+' '+pp;
       const w=document.createElement('div');w.className='cc';w.appendChild(s);w.insertAdjacentHTML('beforeend','<div class="cl">'+env+' · '+pp+' (1×)</div>');row.appendChild(w);
-      const z=document.createElement('canvas');z.width=128*3;z.height=112*3;const zg=z.getContext('2d');zg.imageSmoothingEnabled=false;zg.drawImage(s,96,16,128,112,0,0,128*3,112*3);const w2=document.createElement('div');w2.className='cc';w2.appendChild(z);w2.insertAdjacentHTML('beforeend','<div class="cl">'+env+' ×3</div>');zrow.appendChild(w2)}}
+      const z=document.createElement('canvas');z.width=128*3;z.height=112*3;const zg=z.getContext('2d', { willReadFrequently: true });zg.imageSmoothingEnabled=false;zg.drawImage(s,96,16,128,112,0,0,128*3,112*3);const w2=document.createElement('div');w2.className='cc';w2.appendChild(z);w2.insertAdjacentHTML('beforeend','<div class="cl">'+env+' ×3</div>');zrow.appendChild(w2)}}
   // the old hand-drawn sprites (buildings.js, pieces.js: what the game draws today; stage 3 retires them) beside the new models, for comparison only
   // (the old hand-drawn sprites the models replaced were retired at stage 3: buildings.js is gone, &part=old with it)
   // the cost: every type in its facings and every cluster in its 4, fresh (no cache): the first view of a big holding
@@ -290,7 +290,7 @@ function renderPeoples(){
   document.querySelector('p').textContent='One column a culture ('+CU.join(', ')+'; the culture chooses the architecture, spec.culture): the holdings’ centres by tier, every type, every cluster and camp, then the same in the desert. &cultures=, &part=centres|types|clusters|desert, &only=, &env=, &yaw=, &seed=, &z=.';
   const GR={grass:'#6e9a48',desert:'#dcc28c',swamp:'#566a42',frost:'#e8eef4'};
   // (a model on its climate's ground, the game's layers: the ground, the shadow mask shaded once, the picture, the snow)
-  const cell=(m,env,lab)=>{const M=3,n=m.w,W=n+2*M,c=document.createElement('canvas');c.width=W*Z;c.height=W*Z;c.title=lab;const g=c.getContext('2d');g.imageSmoothingEnabled=false;g.scale(Z,Z);
+  const cell=(m,env,lab)=>{const M=3,n=m.w,W=n+2*M,c=document.createElement('canvas');c.width=W*Z;c.height=W*Z;c.title=lab;const g=c.getContext('2d', { willReadFrequently: true });g.imageSmoothingEnabled=false;g.scale(Z,Z);
     g.fillStyle=GR[env]||GR.grass;g.fillRect(0,0,W,W);if(m.ground)g.drawImage(m.ground,M,M);if(m.snow)g.drawImage(m.snow.ground,M,M);
     if(m.shadow){const s=PX.canvas(n,n,x=>{x.drawImage(m.shadow,0,0);x.globalCompositeOperation='source-in';x.fillStyle='rgb(20,24,12)';x.fillRect(0,0,n,n)});g.globalAlpha=m.shade||PX.MODEL_SHADE;g.drawImage(s,M,M);g.globalAlpha=1}
     g.drawImage(m.img,M,M);if(m.snow)g.drawImage(m.snow.img,M,M);if(m.clipped){g.fillStyle='#e0605a';g.fillRect(0,0,2,2)}return c};
@@ -310,7 +310,7 @@ function renderPeoples(){
 function renderProps(){
   const q=new URLSearchParams(location.search),Z=+(q.get('z')||3),out=document.getElementById('out');out.innerHTML='';
   const row=document.createElement('div');row.className='row';row.innerHTML='<span class="lab">objects · 16px</span>';
-  const show=(r,b,w)=>{const c=document.createElement('canvas');c.width=w*Z;c.height=w*Z;const g=c.getContext('2d');g.imageSmoothingEnabled=false;g.scale(Z,Z);g.fillStyle='#5a8a3a';g.fillRect(0,0,w,w);
+  const show=(r,b,w)=>{const c=document.createElement('canvas');c.width=w*Z;c.height=w*Z;const g=c.getContext('2d', { willReadFrequently: true });g.imageSmoothingEnabled=false;g.scale(Z,Z);g.fillStyle='#5a8a3a';g.fillRect(0,0,w,w);
     g.drawImage(b.ground,0,0);g.globalAlpha=b.shade;g.drawImage(b.shadow,0,0);g.globalAlpha=1;g.drawImage(b.img,0,0);if(b.marks&&b.marks.fire){const fl=PX.flame(0);g.drawImage(fl.img,b.marks.fire[0]-fl.ax,b.marks.fire[1]-fl.ay)}
     if(b.flag){g.fillStyle='#4a3020';g.fillRect(b.flag[0],b.flag[1]-9,1,9);g.fillStyle='#c84040';g.fillRect(b.flag[0]+1,b.flag[1]-9,4,3)}r.appendChild(c)};
   for(const type of PX.MODEL_OBJECTS)show(row,PX.objectModel({type,seed:4}),16);

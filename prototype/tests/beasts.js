@@ -8,7 +8,7 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);
 try{
  const t=T,G=t.G,P=t.P,PX=t.PX;t.act('begin','soldier');
  const kinds=Object.keys(t.ST).filter(k=>t.ST[k].beast),poses=[...t.BEAST_POSES,PX.BEAST_DEAD];
- const data=c=>c.getContext('2d').getImageData(0,0,c.width,c.height).data;
+ const data=c=>c.getContext('2d', { willReadFrequently: true }).getImageData(0,0,c.width,c.height).data;
  const OUT=[0x1a,0x1c,0x26],isOut=(d,i)=>d[i+3]&&d[i]===OUT[0]&&d[i+1]===OUT[1]&&d[i+2]===OUT[2];
  // ---- every kind: the new figure, from the engine
  ok(kinds.length>=11&&kinds.every(k=>PX.BEAST_KINDS.includes(k)),kinds.length+' beasts and monsters, each a kind of the engine’s ('+kinds.join(', ')+')');

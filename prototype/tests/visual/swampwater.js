@@ -13,11 +13,11 @@ window.RUN=()=>{const t=T,o=[],Z=2,CW=15,CH=9,TILE=t.TILE;
    ['D · murky blue, pale banks',[[92,126,128],[64,98,110],[44,72,90]],['#8e8a62','#6e6a4a']]];
   const CROPS=[['great river',23,93],['delta',22,97],['river',397,73]];
   const cw=CW*TILE*Z,ch=CH*TILE*Z,lab=18,pg=document.createElement('canvas');pg.width=CROPS.length*(cw+8)+8;pg.height=VARIANTS.length*(ch+lab+8)+8;
-  pg.style.cssText='position:absolute;left:0;top:0;z-index:9999;background:#1a1c26';document.body.appendChild(pg);const g=pg.getContext('2d');g.imageSmoothingEnabled=false;g.fillStyle='#1a1c26';g.fillRect(0,0,pg.width,pg.height);
+  pg.style.cssText='position:absolute;left:0;top:0;z-index:9999;background:#1a1c26';document.body.appendChild(pg);const g=pg.getContext('2d', { willReadFrequently: true });g.imageSmoothingEnabled=false;g.fillStyle='#1a1c26';g.fillRect(0,0,pg.width,pg.height);
   VARIANTS.forEach(([vn,wv,sv],r)=>{
    for(let k=0;k<3;k++)W.swamp[k]=wv[k];S.swamp[0]=sv[0];S.swamp[1]=sv[1];t.WorldArt.invalidate();
    CROPS.forEach(([cn,x,y],c)=>{const m=t.WM,X=Math.max(0,Math.min(m.w-CW,x-(CW>>1)))*TILE,Y=Math.max(0,Math.min(m.h-CH,y-(CH>>1)))*TILE,cv=t.mkcv(CW*TILE,CH*TILE);
-    t.runGen(t.paintSteps(t.WorldArt.ensure(),X,Y,CW*TILE,CH*TILE,cv.getContext('2d'),0,0,{}));
+    t.runGen(t.paintSteps(t.WorldArt.ensure(),X,Y,CW*TILE,CH*TILE,cv.getContext('2d', { willReadFrequently: true }),0,0,{}));
     const px=8+c*(cw+8),py=8+r*(ch+lab+8);g.fillStyle='#e8e0c8';g.font='13px Arial';g.fillText(vn+' · '+cn,px,py+13);g.drawImage(cv,0,0,cv.width,cv.height,px,py+lab,cw,ch)})});
   for(let k=0;k<3;k++)W.swamp[k]=w0[k];S.swamp[0]=s0[0];S.swamp[1]=s0[1];t.WorldArt.invalidate();
   o.push('PASS drawn ('+t.WM.gen+')');
