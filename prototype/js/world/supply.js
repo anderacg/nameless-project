@@ -314,7 +314,7 @@ function supplyHour(){
   // (frostbite: the hours short of furs, weighted by how short, until a man is bitten)
   const cold=L.frost?coldShare():0;if(cold){u.cold+=cold;if(u.cold>=S.frost.every){u.cold-=S.frost.every;supplyHurt('frostbite')}}else u.cold=0;
   P.morale=clamp(P.morale,0,100);
-  if(!u.hint&&P.bsta<S.hint){u.hint=true;log('Marching tires your band. Stop, or Make camp (Z), to rest.','gold','band')}
+  if(!u.hint&&P.bsta<S.hint){u.hint=true;log('Marching tires your band. Stop, or Make camp, to rest.','gold','band')}
 }
 Systems.add({name:'supply',order:{hour:10,frame:55},hour:supplyHour,frame:supplyFrame});
 
