@@ -7,12 +7,12 @@ try{
  const t=T,G=t.G,P=t.P;try{localStorage.clear()}catch(e){}
  t.act('begin','soldier');G.quietEvents=false;P.troops={hum_levy:4};
  const ids=t.INCIDENTS.map(e=>e.id);
- ok(ids.join()==='wagon,fever,storm,blizzard,sandstorm,mirage'&&t.INCIDENTS.every(e=>typeof e.run==='function'&&!e.choices),'the road events are instant: '+ids.join(', '));
+ ok(ids.join()==='fever,storm,blizzard,sandstorm,mirage'&&t.INCIDENTS.every(e=>typeof e.run==='function'&&!e.choices),'the road events are instant: '+ids.join(', '));
  const people=['refugees','pilgrims','warning','traveler','merchant','shrine','deserters','gamblers','mine','hunters','child','bard','wisps','caravan','ambush'];
  ok(!people.some(id=>ids.includes(id))&&(0,eval)('typeof TERRAIN_EVENTS')==='undefined','the people events are out of the roll (on the map now: '+Object.keys(t.ROAD_ENC).length+' kinds of encounter)');
  // force one event at a time
  const fire=id=>{G.mode='world';G.modal=false;t.hidePanel();const keep=t.INCIDENTS.slice();t.INCIDENTS.length=0;t.INCIDENTS.push(keep.find(e=>e.id===id));t.Incident.roll();t.INCIDENTS.length=0;keep.forEach(e=>t.INCIDENTS.push(e))};
- const g0=P.gold;fire('wagon');ok(P.gold===g0+15&&G.mode==='world'&&!G.modal&&/abandoned wagon/.test(G.msgs[G.msgs.length-1].m),'instant events apply and log ('+G.msgs[G.msgs.length-1].m+')');
+ ok(!t.Kinds.of('incident','wagon')&&!!t.ROAD_ENC.wagon,'the wagon is a map encounter, never an automatic daily payout');
  const spot=(clim,terr)=>{for(let i=0;i<t.MW*t.MH;i++)if(t.CLIMS[t.climate[i]]===clim&&t.tiles[i]===terr){P.x=(i%t.MW+.5)*t.TILE;P.y=(Math.floor(i/t.MW)+.5)*t.TILE;return true}return false};
  {spot('frost',t.T_OPEN);P.race='human';t.invAdd('good','grain',10);const f0=t.foodN(),m0=P.morale=60;fire('blizzard');ok(t.foodN()===f0-3&&P.morale===m0-4&&/blizzard buries/.test(G.msgs[G.msgs.length-1].m),'a blizzard in the frost: −3 food, morale −4, as before')}
  {const m0=P.morale=60;fire('fever');ok(P.morale===m0-6&&G.mode==='world','a fever: morale −6, no window')}

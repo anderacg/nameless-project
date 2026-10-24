@@ -215,12 +215,12 @@ class Encounter extends Happening{
     return {ico:D.ico,title:D.n,sub:regionAt(this.x,this.y).name+' · day '+G.day,banner:this.view(),msg:G.roadMsg,text:D.text(this),facts:D.facts&&D.facts(this),
       choices:D.acts,subject:this,act:'enc-do',done,close:roadForced(this)&&!done?null:['enc-leave',null,D.leave||'Leave']};
   }
-  // first heard (a caller, near enough) or seen: the log line, a soft sound; its call-out waits to be on the screen
+  // first heard (a caller, near enough) or seen: the log line, a soft sound unless silent; its call-out waits to be on the screen
   notice(){
     this.seen=1;
     const D=this.D;
     this.say((D.hear||'Your scouts spot '+(D.hidden?'movement in the trees':D.n.toLowerCase())+' to the {d}.').replace('{d}',compass(this.x-P.x,this.y-P.y)));
-    sfx('notify');
+    if(!D.silent)sfx('notify');
     if(D.heard)D.heard(this);
   }
   /* ---- a moment of it (d: world time, V: your sight, now: hours): true when it opened its page (it reached you, or you sprang

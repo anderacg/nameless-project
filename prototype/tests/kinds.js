@@ -19,7 +19,7 @@ Kit.suite(({ok,info})=>{
  // ---- the registry
  {const all=K.all(SHAPE),ids=all.map(k=>k.id),road=K.on(SHAPE,'travelHour');
   ok(all.length>=28&&new Set(ids).size===ids.length&&all.every(k=>t.kindOf(SHAPE,k.id)===k&&k.shape===SHAPE),'every kind registered once, found by its id ('+all.length+' encounter kinds)');
-  ok(road.length===27&&road.every(k=>k.trigger==='travelHour')&&Object.keys(t.ROAD_ENC).join()===road.map(k=>k.id).join()&&road.every(k=>t.ROAD_ENC[k.id]===k),'the pity timer\'s bucket: the road\'s 27, in their order; ROAD_ENC is its view');
+  ok(road.length===28&&road.every(k=>k.trigger==='travelHour')&&Object.keys(t.ROAD_ENC).join()===road.map(k=>k.id).join()&&road.every(k=>t.ROAD_ENC[k.id]===k),'the pity timer\'s bucket: the road\'s 28, in their order; ROAD_ENC is its view');
   ok(all.filter(k=>!k.trigger).map(k=>k.id).sort().join()==='body,cart,stray,wreck','the traces and the stray come from no trigger (only started by another)');
   const cls=all.filter(k=>k.cls).map(k=>k.id+':'+k.cls.name);ok(cls.join()==='sheep:Shepherd,stray:Stray'&&all.filter(k=>k.cls).every(k=>k.cls.prototype instanceof E),'a subclass only where a kind has behaviour of its own: '+cls.join(', '));
   let thr='';try{t.defineKind(SHAPE,'traveller',{})}catch(x){thr=x.message}ok(/twice/.test(thr),'a kind defined twice is refused');
@@ -109,7 +109,7 @@ Kit.suite(({ok,info})=>{
  ok(!bad.end.length,'every kind ends cleanly: not at once in your sight, gone out of it once its time is up (its trace left), announced once'+L(bad.end));
  // ================= the Incident kinds (story/incident.js; the incidents, world/incidents.js), every one
  {const SH='incident',I=t.Incident,all=K.all(SH),ids=all.map(k=>k.id),day=K.on(SH,'day'),bad=[];
-  ok(all.length>=6&&day.length===all.length&&all.every(k=>k.trigger==='day'&&t.kindOf(SH,k.id)===k)&&t.INCIDENTS===day,'the incidents: registered once each with the trigger day, the daily roll\'s bucket (INCIDENTS) in their order ('+ids.join(', ')+')');
+  ok(all.length===5&&day.length===all.length&&all.every(k=>k.trigger==='day'&&t.kindOf(SH,k.id)===k)&&t.INCIDENTS===day,'the incidents: registered once each with the trigger day, the daily roll\'s bucket (INCIDENTS) in their order ('+ids.join(', ')+')');
   // (a fitting context: the first tile of a climate and terrain its conditions allow)
   const spots=[];for(const c of ['grass','frost','desert','swamp'])for(const tr of [t.T_OPEN,t.T_FOREST,t.T_HILL]){let i=-1;for(let j=0;j<t.MW*t.MH;j++)if(t.CLIMS[t.climate[j]]===c&&t.tiles[j]===tr){i=j;break}if(i>=0)spots.push([(i%t.MW+.5)*t.TILE,(Math.floor(i/t.MW)+.5)*t.TILE])}
   let nDid=0;

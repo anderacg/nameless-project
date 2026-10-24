@@ -65,7 +65,7 @@ function roadFight(e,amb,edge=amb){asEncounter(e).fought();G.road=null;const k=a
    and again (its own days before it comes again: read by the road once it reads them; today ENC_SPAWN.again for all), leave (its Leave's word), life (its time by another behaviour's: ENC_LIFE), near (px past your sight it comes, if not ENC_SPAWN's), spd (ENC_SPD: how fast it comes), far (a
    click on it opens its page at once: one you cannot walk up to), wary() (× your sight: he flees if he sees you there before you see him), stop (flees
    a little way, then stops), spook (× your sight: it runs as you come), lost (the log line when one you chase gets away), they (what it does, in the wiki's words);
-   ends (how it ends when its time is up in your sight, if not its behaviour's: story/happening.js Behaviours), goes(piece) (which of its pieces go
+   silent (no notice sound or sound waves; found by sight), ends (how it ends when its time is up in your sight, if not its behaviour's: story/happening.js Behaviours), goes(piece) (which of its pieces go
    when it walks off, if not its people) */
 /* the road's talkers and their news (news.js): the peddler, the bard and the pilgrims tell a rumour of the roads near where you
    meet them (Ask for news, once), the refugees why they fled (a raid or a siege at their home, when there was one), the
@@ -424,7 +424,12 @@ defineKinds('encounter',{trigger:'travelHour'},{
       {icon:'sword',label:'Fight them',ask:e=>tollKnown(e)&&!e.real?null:'Attack men in the '+FACS[e.fac].n+'’s colours? If they are the lord’s own, the '+FACS[e.fac].n+' will not forgive it.',facts:e=>tollFightFacts(e),run:e=>tollFight(e)},
       {icon:'prisoners',label:'Report them',when:e=>tollKnown(e)&&!e.real,need:e=>Escort.why()||!tollStrong(e,ENC_TUNE.toll.seize)&&'They are too many to seize their ringleader.',
         tip:'Seize their ringleader and hand him to the lord’s reeve: a bounty there, and the word goes round.',
-        out:e=>({passenger:tollReport(e),gone:true,say:r=>r.escort?'You seize their ringleader and bind him; the rest scatter. The reeve of '+r.escort.to.name+' will want him: '+Escort.way(r.escort)+'.':'He slips away.'})}]}
+        out:e=>({passenger:tollReport(e),gone:true,say:r=>r.escort?'You seize their ringleader and bind him; the rest scatter. The reeve of '+r.escort.to.name+' will want him: '+Escort.way(r.escort)+'.':'He slips away.'})}]},
+  wagon:{n:'Abandoned wagon',ico:'sack',w:2,ok:()=>true,on:'byroad',beh:'stay',life:'wagon',ends:'unseen',silent:true,tip:'A wagon left beside the road',
+    scene:()=>[['oldcart','',0,0]],
+    text:e=>e.done?'You have searched the wagon. Nothing of value remains.':'A wagon stands abandoned beside the road. There is no sign of its owner. A few packs lie in its bed.',
+    facts:()=>['no one in sight'],left:()=>'You leave the abandoned wagon untouched.',
+    acts:[{icon:'eye',label:'Search the wagon',out:()=>({gold:ENC_TUNE.wagon.gold,say:'You search the abandoned wagon and find '+ENC_TUNE.wagon.gold+' gold among the packs.'})}]}
 });
 // (the road's kinds, by id: the pity timer's bucket, as the tests and the wiki read them)
 const ROAD_ENC=Kinds.view('encounter','travelHour');

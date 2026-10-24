@@ -169,7 +169,7 @@ try{
  const meet=(k,set)=>{const e=spawnK(k);if(set)set(e);t.roadMeet(e);return e};
  const acts=()=>qa('.rwbody .rkact').map(b=>b.querySelector('b').textContent),pickA=i=>t.act('enc-do',String(i)),sure=()=>q('.nav [data-nav="close"]').click();
  const ks=Object.keys(t.ROAD_ENC),NEW=['mud','thief','poacher','funeral','wedding','horse','beggar','messenger'],SMALL=['campfire','herbalist','toll'];
- ok(ks.length===27&&['traveller','merchant','pilgrims','deserters','gamblers','mine','hunters','child','bard','wisps','caravan','ambush','refugees','warning'].concat(NEW,['lure','sheep'],SMALL).every(k=>ks.includes(k)),'the 14 people events, now on the map, phase 2’s 8 new ones, phase 4’s lure, the strayed sheep and the small encounters (campfire, herbalist, toll: tests/newencounters.js): '+ks.join(', '));
+ ok(ks.length===28&&['traveller','merchant','pilgrims','deserters','gamblers','mine','hunters','child','bard','wisps','caravan','ambush','refugees','warning'].concat(NEW,['lure','sheep','wagon'],SMALL).every(k=>ks.includes(k)),'the 14 people events, now on the map, phase 2’s 8 new ones, phase 4’s lure, the strayed sheep, the abandoned wagon and the small encounters (campfire, herbalist, toll: tests/newencounters.js): '+ks.join(', '));
  {const bad=[];ev('TERRAIN.on=true');for(const k of ks){const e=meet(k);const Dk=D(k),want=Dk.acts.filter(a=>!a.when||a.when(e)).map(a=>a.label).join('|'),got=acts().join('|'),leave=q('.nav [data-nav="close"]');
    if(!(q('#panel.paged')&&q('.pg-banner')&&q('.rwin h2').textContent===Dk.n&&got===want&&(t.roadForced(e)?!leave:leave&&leave.dataset.act==='enc-leave'&&leave.textContent===(Dk.leave||'Leave'))&&q('.rwbody>p').textContent.length>20))bad.push(k+' ['+got+']')}
   ev('TERRAIN.on=false');world();ok(!bad.length,'every kind has its page: its banner, its name, what you see, its choices as key actions and Leave (none for the ambush)'+(bad.length?': '+bad.join('; '):''))}
@@ -628,7 +628,7 @@ try{
   world();clear();t.saveGame(true);t.loadGame();ok(W.road===null&&!('road' in JSON.parse(localStorage.getItem(t.slotKey('auto'))).world),'none: nothing saved, none loaded')}
 
  // ---- the weather and sickness: still instant events, as ever
- {ok(t.INCIDENTS.map(e=>e.id).join()==='wagon,fever,storm,blizzard,sandstorm,mirage'&&t.INCIDENTS.every(e=>e.run&&!e.choices),'the road events left are instant: the weather, the sickness, the finds ('+t.INCIDENTS.map(e=>e.id).join(', ')+')');
+ {ok(t.INCIDENTS.map(e=>e.id).join()==='fever,storm,blizzard,sandstorm,mirage'&&t.INCIDENTS.every(e=>e.run&&!e.choices),'the road events left are instant: the weather, the sickness, the spring or mirage ('+t.INCIDENTS.map(e=>e.id).join(', ')+')');
   goHome();G.quietEvents=false;const keep=t.INCIDENTS.slice();t.INCIDENTS.length=0;t.INCIDENTS.push(keep.find(e=>e.id==='storm'));const n0=G.msgs.length;t.Incident.roll();t.INCIDENTS.length=0;keep.forEach(e=>t.INCIDENTS.push(e));
   ok(G.mode==='world'&&G.msgs.length===n0+1&&/storm/.test(G.msgs[n0].m),'a storm comes at once, a line in the log, no window')}
 

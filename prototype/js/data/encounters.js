@@ -7,14 +7,14 @@
 // (px); arc: how far off the way you go (rad; arcTo for those that walk up to you, so they can reach your way); tries (spots tried); hold: tiles from a holding; pass: what passing one by takes
 // off the timer [from, to]. (base and rate halved 2026-10-22, the owner: encounters came too often; were .004 and .0016)
 const ENC_SPAWN={base:.002,rate:.0008,cap:.15,land:{road:1.5,held:1,wild:.6},perDay:2,again:5,near:[40,120],arc:1.1,arcTo:.5,tries:60,hold:6,pass:[.25,.5]};
-// how long one lasts unmet, in-game hours [from, to], by behaviour; trace: the hours a trace lies; leave: gone past this × your
+// how long one lasts unmet, in-game hours [from, to], by behaviour (wagon: a silent cart, one day); trace: the hours a trace lies; leave: gone past this × your
 // sight (or slack px farther than it first stood); say: real seconds its call-out shows; hail: px at which one walking up to you
 // stops you (it has reached you); spring: px at which an ambush springs
 // (run: one running across your view; walk: a procession, ending sooner where it arrives; spook: × your sight, one that flees runs as you come within it)
 // (its time up in your sight (its ends): pray: [from, to] hours a procession stays at the shrine or ruins it walked to; dying: hours
 // past his time the wounded traveller lasts while you watch him; linger: hours past its time after which one walking off ends
 // once past 0.8 × your sight, though still in it)
-const ENC_LIFE={approach:[2,3],stay:[6,8],flee:[2,2],run:[2,3],scene:[3,8],walk:[4,10],trace:24,leave:1.5,slack:24,say:4,hail:20,spring:18,spook:.6,pray:[2,3],dying:6,linger:6};
+const ENC_LIFE={approach:[2,3],stay:[6,8],wagon:[24,24],flee:[2,2],run:[2,3],scene:[3,8],walk:[4,10],trace:24,leave:1.5,slack:24,say:4,hail:20,spring:18,spook:.6,pray:[2,3],dying:6,linger:6};
 // how fast they walk (px of world time, as a party's base, yours 34): hurrying to you, a rider coming, running from you, running
 // across your view, a procession, going away, bolting
 const ENC_SPD={approach:24,ride:32,flee:20,run:36,walk:20,leave:12,bolt:34,stray:16};
@@ -51,7 +51,7 @@ const ENC_WALK={min:64,wind:.75,far:400};
 /* strayed sheep: n strays (from, to), r: px from the shepherd they wander (from, to), shy: px you come before one trots off,
    hours: how long he waits once you help, rep and good (wool or cheese) a sheep brought back, all: more when every one is */
 const ENC_SHEEP={n:[3,4],r:[40,80],shy:26,hours:3,rep:1,good:1,all:{rep:2,morale:3}};
-const ENC_TUNE={traveller:{food:3,rep:4,renown:1,gift:.6,gold:[5,10]},hunters:{xp:15,meat:3,furs:2},mud:{sp:20,hours:1,rep:3,give:[2,4],goods:[3,5],coins:[3,8]},thief:{purse:[20,40],reward:10,rep:4,honor:3},poacher:{see:1.15,scout:.1,rep:3,bounty:10,meat:4,price:8},
+const ENC_TUNE={wagon:{gold:15},traveller:{food:3,rep:4,renown:1,gift:.6,gold:[5,10]},hunters:{xp:15,meat:3,furs:2},mud:{sp:20,hours:1,rep:3,give:[2,4],goods:[3,5],coins:[3,8]},thief:{purse:[20,40],reward:10,rep:4,honor:3},poacher:{see:1.15,scout:.1,rep:3,bounty:10,meat:4,price:8},
   funeral:{n:[3,5],honor:2,morale:4},wedding:{morale:10,hours:2,gift:25,rep:5},beggar:{gold:[5,10,20],honor:[1,2,3]},messenger:{purse:[8,16]},
   child:{rep:6,morale:5,late:3},refugees:{grain:4,renown:1,min:8,late:1},
   pilgrims:{n:[2,4],morale:8,rep:3,walk:1,alms:20,almsMorale:12,xp:25,coins:12,coinsMorale:8},
