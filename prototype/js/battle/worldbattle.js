@@ -54,7 +54,7 @@ class WorldBattleArea{
   draw(){
     ctx.save();ctx.strokeStyle='#d1b464';ctx.lineWidth=this.scale;ctx.setLineDash([3*this.scale,4*this.scale]);ctx.beginPath();ctx.arc(this.cx,this.cy,this.radius,0,Math.PI*2);ctx.stroke();ctx.restore();
     for(const a of this.pending){if(!Number.isFinite(a.o.x))continue;const p=this.field(a.o);if(a.team&&!this.visible(p))continue;const x=clamp(p.x,16,BW-16),y=clamp(p.y,22,BH-16);ctx.fillStyle=a.team?'#dd7060':'#b9d28c';ctx.fillRect(x-3,y-9,6,9);txt('Reinforcements',x,y-15,ctx.fillStyle,'center')}
-    for(const a of this.arrivals){const p=this.field(a.mini);ctx.fillStyle=a.u.team?'#dd7060':'#b9d28c';ctx.fillRect(p.x-1.5*this.scale,p.y-5*this.scale,3*this.scale,5*this.scale)}
+    for(const a of this.arrivals){const p=this.field(a.mini),s=marchSprite(a.mini,a.army.owner),k=WORLD_BATTLE.sprite;ctx.save();ctx.translate(p.x,p.y);ctx.scale(Math.cos(a.mini.dir??a.army.face)<0?-k:k,k);ctx.drawImage(s,-Math.floor(s.width/2),-s.height+2);ctx.restore()}
     for(const u of B.units)if(u.regroup&&(!u.team||this.visible(u))){ctx.fillStyle=sideCol(u,'ui');ctx.fillRect(u.x-2*WORLD_BATTLE.sprite,u.y-6*WORLD_BATTLE.sprite,4*WORLD_BATTLE.sprite,6*WORLD_BATTLE.sprite)}
   }
   // Choose once from the reachable apron, rather than chasing a radial point which can be rock or behind a cliff.

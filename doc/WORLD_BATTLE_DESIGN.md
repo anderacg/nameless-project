@@ -1,6 +1,6 @@
 # World-map battles
 
-Status: playable campaign version, with physical travel formations, individual pathfinding and actual-position battle entry, 2026-10-24. Enabled by `WORLD_BATTLE.on` in `prototype/js/battle/worldbattle.js`. Small colored figures stand in for travel soldiers; combat keeps the existing unit sprites, actors, orders, morale and campaign settlement.
+Status: playable campaign version, with physical travel formations, individual pathfinding and actual-position battle entry, 2026-10-24. Enabled by `WORLD_BATTLE.on` in `prototype/js/battle/worldbattle.js`. Travel soldiers use the battle unit sprites, equipment and distance-driven walking poses at the same world scale; combat keeps the existing unit sprites, actors, orders, morale and campaign settlement.
 
 ## Travel and contact
 

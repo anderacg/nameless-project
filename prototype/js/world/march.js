@@ -20,10 +20,18 @@ function marchRows(o){
   });
 }
 const worldBattleReach=o=>WORLD_BATTLE.on&&o instanceof Party&&o!==P?marchOuter(P)+marchOuter(o)+2*WORLD_BATTLE.interaction:REACH;
+// The battle's full sprites at its world scale, with weapons included and movement-driven poses.
+function marchSprite(u,o){
+  const type=u.character?u.type.replace(/^comp_/,''):u.type,team=o===P||o.faction==='player'?0:o.faction&&!hostileTo(o.faction)?2:1;
+  return unitSprite(type,team,false,u.id%6,u.walking?2+Math.floor(u.walk/WALK.foot)%4:0);
+}
 function marchDraw(ents,o,cam){
-  if(!WORLD_BATTLE.on)return false;const army=MarchArmy.of(o),L=o.look();army.sync();marchCircle(ents,o,cam);
-  for(const u of army.units)ents.push({y:u.y,own:o===P||o.faction==='player',f:()=>{subT(u);const x=Math.round(u.x-cam.x),y=Math.round(u.y-cam.y),step=u.walking?Math.floor(u.walk/WALK.foot)%2:0;
-    rect(ctx,'#211c18',x-1,y-4,3,4);rect(ctx,u.character?'#e8cf91':L.col,x-1,y-3,3,2);rect(ctx,'#d5c5a4',x,y-4,1,1);rect(ctx,'#211c18',x-1+step,y,1,1);rect(ctx,'#211c18',x+1-step,y,1,1)}});return true;
+  if(!WORLD_BATTLE.on)return false;const army=MarchArmy.of(o);army.sync();marchCircle(ents,o,cam);
+  for(const u of army.units)ents.push({y:u.y,own:o===P||o.faction==='player',f:()=>drawMarcher(u,o,cam)});return true;
+}
+function drawMarcher(u,o,cam){
+  subT(u);const s=marchSprite(u,o),k=WORLD_BATTLE.sprite/WORLD_BATTLE.scale,x=Math.round(u.x-cam.x),y=Math.round(u.y-cam.y);
+  ctx.save();ctx.translate(x,y);ctx.scale(Math.cos(u.dir??marchFacing(o))<0?-k:k,k);ctx.drawImage(s,-Math.floor(s.width/2),-s.height+2);ctx.restore();
 }
 function marchCircle(ents,o,cam){
   const r=marchOuter(o),col=o===P?'#e4c777':o.look().col;ents.push({y:o.y-r,f:()=>{ctx.save();ctx.strokeStyle=col;ctx.lineWidth=1;ctx.globalAlpha=.55;ctx.beginPath();ctx.arc(o.x-cam.x,o.y-cam.y,r,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=.28;ctx.setLineDash([3,4]);ctx.beginPath();ctx.arc(o.x-cam.x,o.y-cam.y,r+WORLD_BATTLE.interaction,0,Math.PI*2);ctx.stroke();ctx.restore()}});
