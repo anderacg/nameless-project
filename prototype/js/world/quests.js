@@ -630,8 +630,8 @@ const questFactsHtml=q=>'<dl class="qfacts">'+questFacts(q).map(([k,v])=>'<dt>'+
 // its facts
 function offerRow(q,act,arg){
   q=Quest.as(q);
-  const lock=q.state==='locked';
-  return '<div class="row'+(lock?' locked':'')+'"><div class="info"><strong>'+q.title+(lock?' <span class="qw-st locked">'+QUEST_STATES.locked+'</span>':'')+'</strong><small>'+q.text+'</small>'+questFactsHtml(q)+'</div>'+
+  const lock=q.state==='locked',target=q.type==='lordkill'&&W.lords.find(l=>l.name===q.target),title=target?q.title.split(target.name).join(lordName(target)):q.title,text=target?q.text.split(target.name).join(lordName(target)):q.text;
+  return '<div class="row'+(lock?' locked':'')+'"><div class="info"><strong>'+title+(lock?' <span class="qw-st locked">'+QUEST_STATES.locked+'</span>':'')+'</strong><small>'+text+'</small>'+questFactsHtml(q)+'</div>'+
     '<div class="acts"><button class="btn sm" type="button" data-act="'+act+'" data-arg="'+arg+'"'+(lock?' disabled title="'+htmlText(q.needs().filter(n=>!n.met).map(n=>n.what).join('; '))+'"':'')+'>Accept</button></div></div>';
 }
 // the notice board: your quests to report here, then the work offered (none for you a while after you gave up one of theirs)

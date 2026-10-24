@@ -66,16 +66,25 @@ const lordSpares=l=>Relations.spares(l);
 const relDay=()=>Relations.day();
 
 /* in a lord's audience: where you stand, and what you can ask */
-function relHtml(l){
-  const why=(P.lrelWhy||{})[l.id]||[],fr=lordFriends(l).filter(o=>!o.dead).slice(0,3),rv=lordRivals(l).filter(o=>!o.dead).slice(0,3),R=RELATION,v=relWith(l);
+// Other lords named in an audience: known ties on the opening page, the rest only when asked.
+function lordTies(l,known=true){
+  const shown=o=>!o.dead&&(!known||KNOWLEDGE.knowsLord(o)),fr=lordFriends(l).filter(shown).slice(0,3),rv=lordRivals(l).filter(shown).slice(0,3);
+  return fr.length||rv.length?'<p class="muted" style="font-size:13px">'+(fr.length?'Friends with '+fr.map(o=>htmlText(o.name)).join(', ')+'. ':'')+(rv.length?'At odds with '+rv.map(o=>htmlText(o.name)).join(', ')+'.':'')+'</p>':'';
+}
+function relHtml(l,showTies=true){
+  const why=(P.lrelWhy||{})[l.id]||[],R=RELATION,v=relWith(l);
   const giftWait=(l.gift||0)>G.day,lendWait=(l.lend||0)>G.day;
   return '<p>Toward you: '+relTag(v)+(why.length?' <span class="muted" style="font-size:13px">· '+why.slice().reverse().map(w=>w.why+' ('+(w.n>0?'+':'')+w.n+')').join(' · ')+'</span>':'')+'</p>'+
-    ((fr.length||rv.length)?'<p class="muted" style="font-size:13px">'+(fr.length?'Friends with '+fr.map(o=>o.name).join(', ')+'. ':'')+(rv.length?'At odds with '+rv.map(o=>o.name).join(', ')+'.':'')+'</p>':'')+
+    (showTies?lordTies(l):'')+
     '<div class="btns" style="margin:0">'+dlgBtn('lr-gift',l.id,'Give '+R.gift.gold+' gold',P.gold<R.gift.gold?'Not enough gold':giftWait?'Gave lately':'')+
     dlgBtn('lr-troops',l.id,'Ask for '+R.troops+' soldiers',v<R.troopsAt?'Needs '+relName(R.troopsAt).toLowerCase()+' (+'+R.troopsAt+')':lendWait?'Asked lately':l.troops.length<R.troops+6?'Too few to spare':partyRoom()<R.troops?'No room in your band':'')+'</div>';
 }
 function relAct(a,arg){
   const l=W.lords.find(x=>x.id===arg);if(!l||l.dead)return;const R=RELATION;
+  if(a==='lr-rumours'||a==='lr-lords'){
+    if(!['dialog','scene'].includes(G.mode)||!G.enc||G.enc.kind!=='lord'||G.enc.ref!==l||hostileTo(l.fac)&&!lordSpares(l))return;
+    return lordMeet(l,a.slice(3));
+  }
   if(a==='lr-gift'&&P.gold>=R.gift.gold&&!((l.gift||0)>G.day)){P.gold-=R.gift.gold;l.gift=G.day+R.gift.days;changeRel(l,R.gift.rel,'your gift');updateHUD(true)}
   if(a==='lr-troops'&&relWith(l)>=R.troopsAt&&!((l.lend||0)>G.day)&&l.troops.length>=R.troops+6&&partyRoom()>=R.troops){
     l.lend=G.day+R.troopsDays;const got=partyRoster(l).transferAnyTo(partyRoster(P),R.troops,partyRoom()).map(k=>ST[k].n.toLowerCase());

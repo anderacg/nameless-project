@@ -2,7 +2,11 @@
 // Discoveries, dated reports, unspoken news, and save/load: the Journal must never query a remote lord's live whereabouts.
 Kit.suite(({ok})=>{
  const t=T,G=t.G,P=t.P,W=t.W,K=t.KNOWLEDGE,q=Kit.q;
- window.requestAnimationFrame=()=>0;Kit.begin('soldier',23);Kit.clear();Kit.world({town:null});
+ window.requestAnimationFrame=()=>0;Kit.begin('soldier',23);Kit.world({town:null});
+ const aldric=W.lords.find(x=>x.name==='Lord Aldric');
+ t.openJournal('lords');ok(!K.knowsLord(aldric)&&/0 known lords/.test(Kit.text())&&!Kit.text().includes(aldric.name),'a real fresh start: Aldric is not known when the Journal opens');
+ Kit.world();K.watch();t.openJournal('lords');ok(!K.knowsLord(aldric)&&/0 known lords/.test(Kit.text()),'the world sighting pass does not identify Aldric at the starting holding');
+ Kit.world();Kit.clear();
  const home=t.townBy('Ashford'),far=t.TOWNS.find(h=>h.owner!==home.owner),l=W.lords.find(x=>x.fac===home.owner),other=W.lords.find(x=>x.fac===far.owner),friend=t.lordFriends(l)[0];
  const away=()=>{P.x=P.y=-9999;G.town=null;G.lastTown=null;Kit.world({town:null});W.lords.forEach(x=>{x.x=x.y=-20000})};
  const page=sec=>{Kit.world({town:null});t.openJournal(sec);return Kit.text()},reset=()=>{away();t.fogReset();K.reset()};
@@ -11,9 +15,10 @@ Kit.suite(({ok})=>{
  text=page('realms');ok(/0 known realms/.test(text)&&/No realms known yet/.test(text)&&t.FIDS.every(f=>!text.includes(t.FACS[f].n))&&!text.includes(far.name),'no realms: no unknown realms, holdings or relationship pairs');
  W.seen[home.ty*t.MW+home.tx]=1;text=page('realms');
  ok(K.knowsRealm(home.owner)&&/1 known realm\b/.test(text)&&text.includes(home.name)&&!text.includes(far.name)&&!text.includes(other.name),'exploring one holding reveals its realm and holding, without its other holdings or lords');
- l.inside=null;l.dead=l.gone=false;l.x=P.x=home.x+20;l.y=P.y=home.y+20;G.day=2;t.peopleWatch();
+ l.inside=null;l.dead=l.gone=false;l.x=P.x=home.x+20;l.y=P.y=home.y+20;G.day=2;K.watch();
+ ok(!K.knowsLord(l),'seeing an unidentified army does not discover its lord');K.lord(l);K.watch();
  const sight=JSON.stringify(K.lords[l.id]),count=l.troops.length;
- text=page('lords');ok(text.includes(l.name)&&/Last known/.test(text)&&text.includes(count+' soldiers')&&!text.includes(other.name)&&(!friend||!text.includes(friend.name))&&/1 known lord\b/.test(text),'a sighting reveals one lord, a dated army report, and no unknown friends');
+ text=page('lords');ok(text.includes(l.name)&&/Last known/.test(text)&&text.includes(count+' soldiers')&&!text.includes(other.name)&&(!friend||!text.includes(friend.name))&&/1 known lord\b/.test(text),'a known lord sighting updates their dated army report, without revealing unknown friends');
  away();l.inside=far.name;l.troops=['hum_levy'];G.day=6;text=page('lords');
  ok(JSON.stringify(K.lords[l.id])===sight&&!text.includes(far.name)&&text.includes(count+' soldiers')&&/day 2/.test(text),'offscreen movement and army changes leave the last known report unchanged');
  text=page('realms');ok(!text.includes(far.name)&&!text.includes(other.name)&&text.includes(l.name)&&!text.includes('power '),'realm summaries contain only known holdings and lords, without live remote army details');
@@ -50,10 +55,12 @@ Kit.suite(({ok})=>{
  ok(K.holdings[far.name].fac===home.owner&&K.knowsRealm(home.owner),'hearing the capture updates the holding’s last known owner');
  // Direct audiences and records survive saves, while a fresh game and a missing save piece start empty.
  reset();P.fac=null;G.day=20;other.fac=far.owner;other.inside=far.name;G.town={ref:far};G.mode='town';t.renderTown();
- ok(K.knowsLord(other)&&K.lords[other.id].text.includes(far.name),'visiting a holding discovers its court and records the lords there');
+ ok(!K.knowsLord(other),'visiting a holding does not automatically discover its court’s lords');K.lord(other);t.renderTown();
+ ok(K.lords[other.id].text.includes(far.name),'visiting a holding updates last known information for a lord already known');
  away();P.hostile={};other.inside=null;t.lordMeet(other);
  const mentioned=t.lordFriends(other).filter(x=>!x.dead).slice(0,3);
- ok(K.knowsLord(other)&&mentioned.every(x=>K.knowsLord(x)),'an audience discovers the lord and the people named in the conversation');
+ ok(K.knowsLord(other)&&mentioned.every(x=>!K.knowsLord(x)),'an audience discovers only the lord met, not their friends');t.act('lr-lords',other.id);
+ ok(mentioned.every(x=>K.knowsLord(x)),'asking about other lords discovers only those named in the answer');
  away();G.day=21;const saved=JSON.stringify(K.save());t.saveGame(true,'quick');K.reset();t.loadGame('quick');
  ok(JSON.stringify(K.save())===saved,'discoveries and exact last known reports survive a real save/load');
  t.Saves.loadOf('known',undefined);ok(K.realms.length===0&&Object.keys(K.lords).length===0&&Object.keys(K.holdings).length===0,'a save without discoveries defaults to empty knowledge');

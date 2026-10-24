@@ -3,8 +3,7 @@
 // (no status under them; a dot only where a quest is ready), and opens each one's window, its people as cards with their
 // portraits and buttons; Back goes to the overview, the way out leaves, Esc steps back; the number keys pick places; it fits a phone on its
 // side with nothing sideways; your holding's rail lists its walls, houses and estates, each with its own window, its actions
-// as before. The people drawer (ui/peopledrawer.js): P and its tab open and close it, it lists your companions and the lords,
-// Show on map centres its map on them, and it keeps to what you know.
+// as before. People has no separate menu; the Journal keeps lord and realm knowledge, and Army keeps companion management.
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t.P,W=t.W;
   window.requestAnimationFrame=()=>0;try{localStorage.clear()}catch(e){}
   const h2s=()=>(document.querySelector('#panel h2')||{}).textContent||'',q=s=>document.querySelector(s),qa=s=>[...document.querySelectorAll(s)],panel=()=>q('#panel').innerHTML,h2=()=>(q('.rwin h2')||{}).textContent||'';
@@ -46,8 +45,8 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t
       t.act('ransom-pick');t.onEscape();ok(G.town.tab==='tavern'&&P.prisoners.militia===2,'Esc from the picker: back, nothing sold');P.prisoners={}}
     t.act('tab','hall');ok(/data-act="contract"/.test(panel())||P.fac||!ash.T.contract,'the Lord\'s hall offers the mercenary contract');
     {const l=W.lords.find(x=>x.fac===ash.owner&&!x.gone&&!x.dead);const in0=l.inside;l.inside=ash.name;l.x=ash.x;l.y=ash.y;P.hostile={};t.renderTown();const c=q('.rwbody .rcard [data-act="hall-talk"][data-arg="'+l.id+'"]');
-      ok(c&&c.closest('.rcard').querySelector('.rc-pic svg')&&c.closest('.rcard').textContent.includes(l.name)&&/soldiers/.test(c.closest('.rcard').textContent),'a lord holding court: a card with his realm\'s banner, his soldiers and Talk');
-      if(c){c.click();ok(G.mode==='dialog'&&new RegExp(l.name).test(panel()),'Talk: his own talk');t.act('lord-leave');ok(G.mode==='town'&&G.town.tab==='hall'&&q('#panel.railed'),'Leave: back to the hall')}l.inside=in0}
+      ok(c&&c.closest('.rcard').querySelector('.rc-pic svg')&&c.closest('.rcard').textContent.includes(t.lordName(l))&&/soldiers/.test(c.closest('.rcard').textContent),'a lord holding court: a card with his realm\'s banner, his soldiers and Talk');
+      if(c){const before=panel();t.act('hall-talk','missing-lord');ok(G.mode==='town'&&panel()===before,'a stale court action cannot start a remote audience');c.click();ok(G.mode==='dialog'&&new RegExp(l.name).test(panel()),'Talk: his own talk');t.act('lr-lords',l.id);t.onEscape();ok(G.mode==='town'&&G.town.tab==='hall'&&q('#panel.railed'),'Esc after a dialogue topic: back to the hall');q('.rwbody .rcard [data-act="hall-talk"][data-arg="'+l.id+'"]').click();t.act('lord-leave');ok(G.mode==='town'&&G.town.tab==='hall'&&q('#panel.railed'),'Leave: back to the hall')}l.inside=in0}
     if(ash.T.tourney){t.act('tab','tourney');ok(/data-act="tourney"/.test(panel()),'the Tournament place enters the lists')}
     t.act('tab','recruit');ok(/data-act="hire"/.test(panel())&&q('.rwbody .reccard'),'the Barracks: hires and the unit card');
     {const cs=qa('.rwbody .rcards .rcard').filter(c=>c.querySelector('[data-act="hire"]'));ok(cs.length===ash.races.flatMap(r=>ash.hires(r)).length&&cs.every(c=>c.querySelector('img.rc-pic').src.startsWith('data:image')&&/\d+ willing/.test(c.textContent)&&c.dataset.act==='rec-pick'),
@@ -111,35 +110,19 @@ b=q('.rwbody'),r=q('.rail'),s=scr.getBoundingClientRect(),pr=p.getBoundingClient
     t.onEscape();ok(G.town.tab===null,'again: the town\'s overview');t.onEscape();ok(G.mode==='world','and out');
     {const k=t.TOWNS.find(x=>x.kind==='castle');const o0=k.owner;k.owner='player';world();t.enterTown(k);const pl=t.townPlaces(k);
       ok(['stores','garrison','fief'].every(x=>pl.includes(x)),'a castle of yours: Stores, Garrison and Fief ('+pl.join(', ')+')');t.act('leave');k.owner=o0}
-    // ---- the people drawer
-    world();P.comps={brann:{ap:2,role:'scout'}};t.compInit('brann');t.frame();const E=t.PEOPLE.el;t.peopleRender();// (as its once-a-second look at your companions would)
-    ok(E&&E.tab===q('#peopleBtn')&&E.tab.closest('.dockrow')&&/People/.test(E.tab.textContent)&&!q('.pp-tab')&&!E.root.classList.contains('open'),'on the map: a People button in the bottom bar (no floating tab on the right edge)');
-    key('KeyP','p');ok(t.PEOPLE.on&&E.root.classList.contains('open')&&/Brann/.test(E.list.innerHTML),'P opens the drawer on your companions');
-    key('KeyP','p');ok(!t.PEOPLE.on&&!E.root.classList.contains('open'),'P closes it');
-    E.tab.click();ok(t.PEOPLE.on,'its tab opens it');q('.pp-scrim').click();ok(!t.PEOPLE.on,'a tap outside closes it');
-    E.tab.click();t.onEscape();ok(!t.PEOPLE.on&&G.mode==='world','Esc closes it first');
-    // lords: one in sight, one far away inside a holding you have never been near
-    const [l1,l2]=W.lords.filter(l=>!l.gone);l1.dead=false;l1.inside=null;l1.x=P.x+30;l1.y=P.y;const far=t.TOWNS.slice().sort((a,b)=>Math.hypot(b.x-P.x,b.y-P.y)-Math.hypot(a.x-P.x,a.y-P.y))[0];
-    l2.dead=false;l2.inside=far.name;l2.x=far.x;l2.y=far.y;t.PEOPLE.seen.clear();t.peopleWatch();
-    t.peopleToggle(true);E.tabs.querySelector('[data-arg="lords"]').click();const e1=E.list.querySelector('[data-id="l:'+l1.id+'"]'),e2=E.list.querySelector('[data-id="l:'+l2.id+'"]');
-    ok(t.PEOPLE.tab==='lords'&&E.list.querySelectorAll('.pp-grp').length>=2&&e1&&e2,'the Lords tab: grouped by realm');
-    ok(/In sight/.test(e1.textContent)&&new RegExp(l1.troops.length+' soldiers').test(e1.textContent)&&!e1.querySelector('[data-pp="look"]').disabled,'a lord in sight: where, his army, Show on map');
-    ok(/Whereabouts unknown/.test(e2.textContent)&&!e2.textContent.includes(far.name)&&e2.querySelector('[data-pp="look"]').disabled&&!t.ppSpot('l:'+l2.id)&&!/soldiers/.test(e2.textContent),'a lord you cannot know of: whereabouts unknown, no army, no Show on map ('+e2.textContent.slice(0,60)+')');
-    e1.querySelector('[data-pp="look"]').click();ok(t.PEOPLE.look&&t.PEOPLE.look.x===l1.x&&t.PEOPLE.look.y===l1.y&&!E.map.hidden,'Show on map centres the drawer\'s map on him');
-    {const r=t.cv.getBoundingClientRect(),sr=E.root.getBoundingClientRect(),k=r.width/t.cv.width,x=(l1.x-G.cam.x)*k+r.left-sr.left;ok(!E.ping.hidden&&Math.abs(parseFloat(E.ping.style.left)-x)<1.5,'and rings him on the world where he stands')}
-    l1.x=P.x+5000;t.peopleWatch();t.peopleRender();ok(/Seen/.test(E.list.querySelector('[data-id="l:'+l1.id+'"]').textContent),'out of sight: where you last saw him');
-    G.day+=t.PEOPLE.memory+1;t.peopleRender();ok(/Whereabouts unknown/.test(E.list.querySelector('[data-id="l:'+l1.id+'"]').textContent),'and after a few days, unknown again');G.day-=t.PEOPLE.memory+1;
-    E.list.querySelector('[data-id="l:'+l2.id+'"] [data-pp="card"]').click();ok(E.list.querySelector('.pp-card')&&/Lord of the/.test(E.list.querySelector('.pp-card').innerHTML),'Profile: a small card');
-    E.tabs.querySelector('[data-arg="realms"]').click();ok(t.FIDS.filter(f=>!W.dead[f]).every(f=>E.list.querySelector('[data-id="r:'+f+'"]'))&&/holding/.test(E.list.textContent),'the Realms tab: each realm, its holdings and wars');
-    t.peopleToggle(false);
-    // in a town: over its window; Talk to a lord holding court there, and back
-    {const fr=t.TOWNS.find(x=>x.owner&&x.owner!=='player'&&!t.hostileTo(x.owner)&&x.kind!=='village');P.hostile={};const l=W.lords.find(x=>x.fac===fr.owner&&!x.gone)||l2;l.dead=false;l.fac=fr.owner;l.inside=fr.name;l.x=fr.x;l.y=fr.y;
-      world();t.enterTown(fr);t.frame();key('KeyP','p');ok(t.PEOPLE.on&&G.mode==='town','in a town P opens the drawer over its window');
-      E.tabs.querySelector('[data-arg="lords"]').click();const tb=E.list.querySelector('[data-id="l:'+l.id+'"] [data-pp="talk"]');ok(tb&&/Here, in/.test(E.list.querySelector('[data-id="l:'+l.id+'"]').textContent),'a lord inside is here, with Talk');
-      if(tb){tb.click();ok(!t.PEOPLE.on&&G.mode==='dialog'&&new RegExp(l.name).test(panel()),'Talk: the lord\'s own dialogue');t.act('lord-leave');ok(G.mode==='town'&&q('#panel.railed'),'Leave: back to the town')}
-      t.onEscape();ok(G.mode==='world','and out of town');}
+    // ---- no separate People menu; existing destinations still work
+    world();t.frame();
+    ok(!q('#peopleBtn')&&!q('#people')&&!document.querySelector('script[src="js/ui/peopledrawer.js"]'),'People has no dock button, drawer or loaded script');
+    const before=panel();key('KeyP','p');ok(G.mode==='world'&&panel()===before,'P does nothing on the map');
+    t.onEscape();ok(G.mode==='esc','Esc opens the Game Menu directly');t.escAct('esc-resume');
+    key('KeyJ','j');ok(G.mode==='journal','J still opens the Journal');t.act('jn-sec','lords');ok(/known lord/.test(panel()),'Journal still has its discovered Lords section');t.act('jn-sec','realms');ok(/known realm/.test(panel()),'Journal still has its discovered Realms section');t.act('journal-close');
+    P.comps={brann:{ap:2,role:'scout'}};t.compInit('brann');t.openComp('brann');ok(G.mode==='char'&&panel().includes('Brann'),'companion management is still available in Army');t.act('char-close');
+    t.enterTown(ash);t.act('tab','hall');const townBefore=panel();key('KeyP','p');ok(G.mode==='town'&&panel()===townBefore,'P does nothing in a town');t.act('leave');
+    // The world pass still records known sightings after removing the drawer's watch wrapper.
+    const K=t.KNOWLEDGE,l=W.lords.find(x=>!x.gone&&!x.dead);K.reset();K.lord(l);l.inside=null;l.x=P.x+3;l.y=P.y;const paused=G.paused;G.paused=false;t.updateWorld(0);G.paused=paused;
+    ok(K.lords[l.id]&&K.lords[l.id].seen&&K.lords[l.id].text.includes(l.troops.length+' soldiers'),'world updates still save last-known sightings for Journal');
     // never in battle
-    P.troops={hum_foot:3};G.enc={kind:'party',ref:{x:P.x+8,y:P.y,cool:0},list:['militia'],allies:[],foes:[]};t.startBattle({enemies:['militia'],tournament:false});t.frame();
-    key('KeyP','p');ok(!t.PEOPLE.on&&getComputedStyle(E.root).display==='none','in battle there is no drawer, and P does nothing');
+    world();P.troops={hum_foot:3};G.enc={kind:'party',ref:{x:P.x+8,y:P.y,cool:0},list:['militia'],allies:[],foes:[]};t.startBattle({enemies:['militia'],tournament:false});t.frame();
+    key('KeyP','p');ok(G.mode==='battle'&&!q('#people'),'P does nothing in battle');
   }catch(e){o.push('EXC '+e.message+' '+e.stack)}
   const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d)};

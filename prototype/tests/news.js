@@ -102,7 +102,7 @@ try{
    ok(/“.+”/.test(panel())&&Object.keys(W.news.heard).length===1&&e.asked,'the peddler on the road tells a rumour when asked ("'+((document.querySelector('.pg-msg')||{}).textContent||'')+'")');t.act('enc-leave');world()}
   else ok(false,'a peddler on the road')
   const L=W.lords.find(l=>!l.dead&&l.fac===A.owner);Object.assign(L,{inside:null,x:A.x+30,y:A.y+30});t.newsRecord('siege',by(A,0,40),{town:A.name,fac:B.owner,lord:'Lord Z'});
-  t.lordMeet(L);ok(panel().includes(L.name+': “'),'a lord tells of his realm’s war when you meet him');world()}
+  t.lordMeet(L);ok(!panel().includes(L.name+': “'),'meeting a lord does not automatically tell their rumours');t.act('lr-rumours',L.id);ok(panel().includes(L.name+': “'),'a lord tells of his realm’s war when asked for rumours');world()}
 
  // ---- the "?" on the map: near the event, off its spot by its id, with its tooltip; it fades
  {fresh();const it=t.newsRecord('caravan',by(A),det.caravan);t.rumourFrom(t.rumourSource('tavern',A.name,A));const m=t.rumourMarks()[0];

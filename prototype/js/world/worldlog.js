@@ -86,9 +86,9 @@ const INTEL_KINDS={
         (food==null?'':food<1?', and no food left':', and food for '+food+(food===1?' day':' days'))+'. The assault comes in '+days+(days===1?' day':' days')+'.'}},
   hideout:{of:()=>W.sites.filter(s=>s.type==='hideout'&&!s.cleared&&!s.seen),key:s=>s.i,name:s=>'A '+s.name.toLowerCase(),sub:()=>'Its place, on your map',
     say:s=>'A '+s.name.toLowerCase()+' lies '+intelSpot(s)+(s.ld&&s.ld.name?', '+s.ld.name+' its chieftain':'')+'. It is on your map now.',learn:s=>{s.seen=true}},
-  march:{of:()=>W.lords.filter(l=>!l.dead&&!l.gone&&!l.inside&&(l.state==='march'||l.state==='relieve')&&townBy(l.tgt)),key:l=>l.id,name:()=>'An army on the march',sub:l=>intelLord(l),
+  march:{of:()=>W.lords.filter(l=>!l.dead&&!l.gone&&!l.inside&&(l.state==='march'||l.state==='relieve')&&townBy(l.tgt)),key:l=>l.id,name:()=>'An army on the march',sub:l=>lordName(l)+' of the '+facN(l.fac),
     say:l=>{const t=townBy(l.tgt),d=Router.days(l,t,lordSpeed(l)),n=Math.round(d);return intelLord(l)+' marches on '+t.name+' with '+intelMen(l.troops.length)+' (power '+l.power()+'): '+intelSpot(l)+', '+(!isFinite(d)?'his road unknown':d<1?'there within a day':'about '+n+(n===1?' day':' days')+' away')+'.'}},
-  lord:{of:()=>W.lords.filter(l=>!l.dead&&!l.gone&&(l.inside||l.state!=='march'&&l.state!=='relieve')),key:l=>l.id,at:l=>l.inside&&townBy(l.inside)||l,name:l=>l.name+'’s army',sub:l=>'Of the '+facN(l.fac)+': where it is, how strong',
+  lord:{of:()=>W.lords.filter(l=>!l.dead&&!l.gone&&(l.inside||l.state!=='march'&&l.state!=='relieve')),key:l=>l.id,at:l=>l.inside&&townBy(l.inside)||l,name:l=>lordName(l)+'’s army',sub:l=>'Of the '+facN(l.fac)+': where it is, how strong',
     say:l=>intelLord(l)+' has '+intelMen(l.troops.length)+' (power '+l.power()+'), '+(l.inside?'holding court in '+l.inside:l.state==='siege'?'besieging '+l.tgt:l.state==='home'?'riding home to '+l.tgt+', '+intelSpot(l):'riding '+intelSpot(l))+'.'},
   caravan:{of:()=>W.caravans.filter(c=>!c.mine&&!c.gone&&c.from&&c.to),key:c=>W.caravans.indexOf(c),name:c=>'A caravan out of '+c.from,sub:()=>'Its road and guard',
     say:c=>'A caravan of the '+facN(c.fac)+' out of '+c.from+', bound for '+c.to+': '+c.guards+' guards, carrying '+cargoText(c)+(c.purse?' and '+c.purse+' gold':'')+'; now '+intelSpot(c)+'.'}

@@ -33,13 +33,13 @@ Kit.suite(({ok,info})=>{
    const g=t.mapRingItems(P.x+40,P.y,null,0,0).map(i=>i.label);ok(!g.includes('Follow')&&!g.includes('Stop following'),'on the ground, not following: neither')}
   // ---- Follow: he marches home, you trail him
   {press(L.x,L.y-4);const n0=G.msgs.length,b=[...document.querySelectorAll('.aring .ar-btn')].find(x=>x.textContent==='Follow');b.click();
-   ok(G.follow&&G.follow.o===L&&!G.chase&&new RegExp('You follow '+L.name+' at a distance').test(msgs(n0)),'Follow: your band follows him ('+msgs(n0)+')');
+   ok(G.follow&&G.follow.o===L&&!G.chase&&msgs(n0).includes('You follow '+t.lordName(L)+' at a distance'),'Follow: your band follows him ('+msgs(n0)+')');
    const ds=[],gs=[];let mode=G.mode,met=false;for(let f=0;f<700&&G.follow;f++){t.updateWorld(.05);if(G.mode!=='world'){mode=G.mode;met=true;break}if(f>=80){ds.push(Math.hypot(P.x-L.x,P.y-L.y));if(P.tx!=null)gs.push(Math.hypot(P.tx-L.x,P.ty-L.y))}}
    const srt=a=>[...a].sort((x,y)=>x-y),med=a=>srt(a)[a.length>>1],T=F.trail*TL;
    ok(!met&&G.follow&&ds.length>=600&&Math.min(...ds)>=F.near*TL-4&&Math.abs(med(ds)-T)<=10,'over '+ds.length+' moments he marches on and you trail him, never meeting him: '+Math.min(...ds).toFixed(1)+' to '+Math.max(...ds).toFixed(1)+' px apart, '+med(ds).toFixed(1)+' most ('+F.trail+' tiles: '+T+' px)'+(met?' (met: '+mode+')':''));
    ok(gs.length>500&&Math.abs(med(gs)-T)<=4&&Math.max(...gs)<=T+1,'each moment you make for a point '+T+' px behind him on his way ('+med(gs).toFixed(1)+' px from him most, at most '+Math.max(...gs).toFixed(1)+')');
    t.frame();if(t.WUI.way)t.WUI.way.t0-=2000;t.frame();const W2=t.WUI;ok(W2.tgt&&W2.tgt.o===L&&W2.tgt.f&&W2.way&&Math.hypot(W2.way.gx-L.x,W2.way.gy-L.y)<6&&W2.dots.length>0,'the footprints lead to him ('+W2.dots.length/3+' prints), his ring round him, no arrow');
-   t.updateHUD(true);const pill=document.querySelector('#wday .wfollow');ok(pill&&pill.textContent==='Following '+L.name&&/Stop following/.test(pill.title),'the day bar: '+(pill&&pill.textContent));
+   t.updateHUD(true);const pill=document.querySelector('#wday .wfollow');ok(pill&&pill.textContent==='Following '+t.lordName(L)&&/Stop following/.test(pill.title),'the day bar: '+(pill&&pill.textContent));
    const it=t.mapRingItems(P.x+30,P.y,null,0,0).find(i=>i.label==='Stop following'),il=t.mapRingItems(L.x,L.y,L,0,0).find(i=>i.label==='Stop following'),pr=t.partyRingItems(L,0,0).map(i=>i.label+(i.active?'*':''));
    ok(it&&it.active&&il&&il.active&&pr.join()==='Meet,Stop following*,Look','the ring shows Stop following, lit (on the ground, on him; his click ring: '+pr.join(', ')+')');
    t.ringOpen(200,200,P.x+30,P.y);const lit=[...document.querySelectorAll('.aring .ar-btn.on')].map(b=>b.textContent);t.ActionRing.close();ok(lit.join()==='Stop following','lit in the ring as the other modes are ('+lit.join()+')');
@@ -51,9 +51,9 @@ Kit.suite(({ok,info})=>{
   // (open ground away from the holdings: you there, him 3 tiles east, marching home; following him)
   const sp=(()=>{for(let ty=8;ty<t.MH-8;ty++)for(let tx=8;tx<t.MW-8;tx++){const x=(tx+.5)*TL,y=(ty+.5)*TL;if(t.tAt(tx,ty)===t.T_OPEN&&t.tAt(tx+3,ty)===t.T_OPEN&&!t.TOWNS.some(h=>Math.hypot(h.x-x,h.y-y)<200)&&t.campGround(x,y))return [x,y]}})();
   const again=()=>{const M=lord();Kit.goTo(sp[0],sp[1]);M.x=sp[0]+48;M.y=sp[1];t.followStart(M);t.updateWorld(.05);return M};
-  {const M=again(),n=G.msgs.length;M.x+=4000;t.updateWorld(.05);ok(!G.follow&&P.tx==null&&new RegExp('You lose sight of '+M.name).test(msgs(n)),'he goes out of sight: '+msgs(n))}
-  {const M=again(),n=G.msgs.length,h=t.townBy(M.tgt);M.enter(h);t.updateWorld(.05);ok(!G.follow&&P.tx==null&&new RegExp(M.name+' rides into '+h.name).test(msgs(n)),'he goes into a holding: '+msgs(n))}
-  {const M=again(),n=G.msgs.length,i=W.lords.indexOf(M);W.lords.splice(i,1);t.updateWorld(.05);W.lords.splice(i,0,M);ok(!G.follow&&new RegExp(M.name+' is gone').test(msgs(n)),'he is gone (beaten): '+msgs(n))}
+  {const M=again(),n=G.msgs.length;M.x+=4000;t.updateWorld(.05);ok(!G.follow&&P.tx==null&&msgs(n).includes('You lose sight of '+t.lordName(M)),'he goes out of sight: '+msgs(n))}
+  {const M=again(),n=G.msgs.length,h=t.townBy(M.tgt);M.enter(h);t.updateWorld(.05);ok(!G.follow&&P.tx==null&&msgs(n).includes(t.lordName(M)+' rides into '+h.name),'he goes into a holding: '+msgs(n))}
+  {const M=again(),n=G.msgs.length,i=W.lords.indexOf(M);W.lords.splice(i,1);t.updateWorld(.05);W.lords.splice(i,0,M);ok(!G.follow&&msgs(n).includes(t.lordName(M)+' is gone'),'he is gone (beaten): '+msgs(n))}
   {again();const n=G.msgs.length;t.worldMove(P.x+50,P.y+20);ok(!G.follow&&P.tx!=null&&Math.abs(P.tx-P.x-50)<60&&msgs(n)==='','another order (a click on the ground: Travel) ends it quietly, the new order stands')}
   {again();const n=G.msgs.length;t.worldGo(P.x+50,P.y+20);ok(!G.follow,'a click on the ground ends it')}
   {again();const why=t.campWhy();t.makeCamp();t.updateWorld(.05);ok(!why&&!G.follow&&(P.camp||G.pitch),'making camp ends it'+(why?' ('+why+')':''))}

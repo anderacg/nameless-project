@@ -5,6 +5,7 @@ const cornered=(o,kind)=>(kind==='lord'?hostileTo(o.fac):true)&&stance(o.power()
 // how likely they are to yield: the weaker they are against you, the likelier, and a famous name helps
 const yieldChance=(o,kind)=>{const r=o.power()/Math.max(1,partyPower());return clamp(1.15-1.9*r+P.renown/600+.03*skill('pers')-(kind==='lord'?.15-relWith(o)/400:0),.05,.95)};
 function parley(o,kind){
+  if(kind==='lord'&&W.lords.includes(o))KNOWLEDGE.sight(o);
   G.par={o,kind};G.mode='dialog';P.tx=null;G.chase=null;const lord=kind==='lord',n=lord?o.troops.length:o.n,ch=Math.round(yieldChance(o,kind)*100);
   showPanel('<h2>'+(lord?o.name+' is cornered':'The '+(o.kind==='raiders'?'raiders':o.kind==='bog'?'bog raiders':'bandits')+' are cornered')+'</h2>'+
     '<p>They ran from you, but you have caught them. '+n+' '+(lord?'soldiers of the '+FACS[o.fac].n:'fighters')+' (power '+o.power()+') against your '+partyPower()+'.</p>'+

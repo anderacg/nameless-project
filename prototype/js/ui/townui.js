@@ -24,7 +24,7 @@ function townOverview(t){
   const f=FACS[t.owner],ls=lordsInside(t),cell=(n,v,c)=>'<span><b>'+n+'</b><span'+(c?' class="'+c+'"':'')+'>'+v+'</span></span>',fd=t.stock?foodDays(t):null,st=standingAt(t);
   const notes=[besieged(t)&&['bad','Under siege.'],Timed.of(t).has('sacked')&&['bad','Sacked: ruined for '+Timed.of(t).daysLeft('sacked')+' more days.'],!Timed.of(t).has('sacked')&&Timed.of(t).has('raided')&&['bad','Raided: ruined for '+Timed.of(t).daysLeft('raided')+' more days.'],
     Timed.of(t).has('turmoil')&&['gold','In turmoil after changing hands.'],t.stock&&foodDays(t)<3&&['bad','Hungry: food for '+foodDays(t)+' days.'],
-    ls.length&&['', 'Lords inside: '+ls.map(l=>l.name+' and '+l.troops.length+' soldiers').join(', ')+'.'],
+    ls.length&&['', 'Lords inside: '+ls.map(l=>lordName(l)+' and '+l.troops.length+' soldiers').join(', ')+'.'],
     P.stay&&P.stay.town===t.name&&['good','Your band is staying here.'],
     questHere(t)&&['gold','A quest of yours is ready to report at the Notice board.'],
     compsHere(t).length&&['gold','In the Tavern: '+compsHere(t).map(id=>COMPS[id].n).join(' and ')+' for hire.'],

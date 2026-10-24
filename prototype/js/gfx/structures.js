@@ -98,7 +98,7 @@ function holdingLabel(t,cam,X,Y,N){
   if(besieged(t)&&Math.floor(performance.now()/400)%2)txt('!',X+(N>>1),Y-N-2,'#ff6a60','center');
   const li=lordsInside(t),near=Math.hypot(t.x-P.x,t.y-P.y)<140;
   if(!near)li.slice(0,4).forEach((l,i,a)=>{const px=Math.round(t.x-cam.x)-a.length*3+i*6+1,py=Math.round(t.y+19-cam.y);rect(ctx,'#1a1512',px-1,py-1,5,5);rect(ctx,FACS[l.fac].col,px,py,3,3)});
-  if(li.length&&near)txt(li.map(l=>l.name+' '+l.troops.length).join(' · '),Math.round(t.x-cam.x),Math.round(t.y+25-cam.y),FACS[li[0].fac].col,'center');
+  if(li.length&&near)txt(li.map(l=>lordName(l)+' '+l.troops.length).join(' · '),Math.round(t.x-cam.x),Math.round(t.y+25-cam.y),FACS[li[0].fac].col,'center');
 }
 
 /* estates: fields, pastures, pits and piers lie flat on the tiles they keep; their buildings are lots like any other */

@@ -274,7 +274,10 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 // 16 checks passed). W1-W6, W8, B2 and every generator sum held; no simulation or art change.
 // (W7 measured 2026-10-24 at the full sweep of f689b02: the waterskins (alone 29dbbd3a) and the Journal's known piece (Codex alone
 //  9a7c43d8) together, f79b1a9c)
-const EXPECT={W1:'2ba57e1b',W2:'975f62a1',W3:'224e40e8',W4:'29fda26b',W5:'f284901d',W6:'6b64690d',W7:'f79b1a9c',W8:'a465c56e',B2:'8712b6a2'};
+// W7 re-recorded 2026-10-24 for the discovery correction: passive sightings no longer identify unknown lords, so known
+// holds fewer lord records. Restoring only the old watch rule restores f79b1a9c (temporary diagnostic: 16 checks passed).
+// W1-W6, W8, B2 and every generator sum held; no simulation, rendering or save-schema change.
+const EXPECT={W1:'2ba57e1b',W2:'975f62a1',W3:'224e40e8',W4:'29fda26b',W5:'f284901d',W6:'6b64690d',W7:'b1a67c01',W8:'a465c56e',B2:'8712b6a2'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended

@@ -61,7 +61,7 @@ function armyGroupLabel(id,r=partyRoster(P)){
 
 // what an attribute does for a companion, a lord or a chieftain (characters.js Character.base)
 const CHAR_ATTR_FX={str:'+4 health and +0.5 damage a point',agi:'+2 speed and 3% faster blows a point',int:'Nothing in battle yet',cha:'Nothing in battle yet'};
-/* a companion: its card opened on the Army window's Roster (from the map, the people drawer or its party met), its detail beside
+/* a companion: its card opened on the Army window's Roster (from the map or its party met), its detail beside
    the cards (ui/companionpage.js): level, stats, disciplines, perks, the gear you give them, and a party of your soldiers to lead */
 function openComp(id){if(!P.comps[id])return;if(G.mode!=='char'){if(G.modal||G.mode!=='world')return;G.mode='char'}G.char='roster';G.armyEdit=null;const s=partyView();s.sel='comp_'+id;s.open=true;s.path=false;compPick(id,true);renderChar()}
 const CP_TRANSFER_WHY={source:'Choose a fit source group.',target:'Choose a destination group of the same unit type, or a new group.',amount:'Enter a whole number from 1 to the fit count of this group.',capacity:'Not enough receiving headcount capacity for this entire transfer.',groups:'Not enough army slots (10 maximum), including the companion if they rejoin.',leadership:'This companion does not yet meet the level and trust requirements to lead.',party:'This companion has no separate army.',distance:'Ride within 60 pixels to take soldiers back.',fighting:'Wait until this companion’s battle ends.',companion:'Companion unavailable.','same-army':'Choose two different armies.'};

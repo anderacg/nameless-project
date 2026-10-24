@@ -145,6 +145,7 @@ function startEncounter(e){
   const given=!!e.allies;e.allies=e.allies||nearAllies(e);e.foes=e.foes||nearFoes(e);
   if(!given&&e.kind!=='tourney'){for(const p of cparties())if(!p.fight&&!p.inside&&nearYou(p)<REINF.r)e.allies.push(forceOf(p));// your companions' parties
     if(e.road&&e.road.k==='caravan')e.allies.push(guardsForce(e.road))}// (the caravan you ride to save: its own guards)
+  for(const l of [e.kind==='lord'&&e.ref,...e.allies,...e.foes])if(l&&W.lords.includes(l))KNOWLEDGE.sight(l);
   if(e.men==null)e.men=playerList().length;// (your men at the start: the helpers' share of the spoils, reinfCut)
   // the garrison sallies: beside you when you fight a holding's besiegers, against you when an army comes to relieve your siege
   if(!given&&e.kind==='lord'){const t=townBy(e.ref.tgt);if(t&&t.gar>0){if(e.ref.state==='siege'&&!hostileTo(t.owner)&&t.owner!=='player')e.allies.push(garrisonForce(t));else if(e.ref.state==='relieve'&&mySiege(t))e.foes.push(garrisonForce(t))}}

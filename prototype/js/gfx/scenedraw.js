@@ -92,7 +92,7 @@ function drawScene(){
   ctx.restore();
   // who is near, and how to talk to them
   const n=!G.modal&&sceneNear(S);
-  const nameOf=o=>o.role?SCENE_ROLES[o.role].n:o.lord?(W.lords.find(x=>x.id===o.lord)||{name:'A lord'}).name:'';
+  const nameOf=o=>o.role?SCENE_ROLES[o.role].n:o.lord?lordName(W.lords.find(x=>x.id===o.lord)):'';
   for(const o of S.npcs)if((o.role||o.lord)&&Math.hypot(o.x-p.x,o.y-p.y)<70)txt(nameOf(o),Math.round((o.x-cam.x)*Z),Math.round((o.y-cam.y)*Z)-58,o===n?'#ffe08a':'#e4e0cf','center');
   txt(S.ref,6,14,'#e8b94a');
   if(n){const lab=n.folk?'Talk':n.guard?'Talk to the guard':n.lord?'Talk to '+nameOf(n):'Talk to the '+SCENE_ROLES[n.role].n.toLowerCase()+(SCENE_ROLES[n.role].tab?' ('+(townTabs(townBy(S.ref)).find(x=>x[0]===SCENE_ROLES[n.role].tab)||['',''])[1]+')':'');

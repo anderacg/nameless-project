@@ -96,7 +96,7 @@ const FOLLOW={trail:2.5,near:1.5,crumb:4,kinds:['lord','cparty','patrol','band',
 onWorld(()=>{if(typeof G!=='undefined')G.follow=null});
 const followable=o=>!!o&&FOLLOW.kinds.includes(objKind(o))&&!o.fight&&o.inView(vis());
 // (its name in a line: a lord's or your companion's party's own, the rest "the caravan of Ashford", "the bandits"...; cap: as a tag)
-function followName(o,cap){const k=o.mapKind,l=o.label?o.label():k==='refugee'?'Refugees':'';if(cap||k==='lord'||k==='cparty')return l;return 'the '+l.charAt(0).toLowerCase()+l.slice(1)}
+function followName(o,cap){const k=o.mapKind,l=k==='lord'?lordName(o):o.label?o.label():k==='refugee'?'Refugees':'';if(cap||k==='lord'||k==='cparty')return l;return 'the '+l.charAt(0).toLowerCase()+l.slice(1)}
 function followStart(o){if(!followable(o))return false;breakCamp();G.chase=null;G.pitch=null;G.byRoad=null;G.follow={o,crumbs:[[o.x,o.y]]};P.stuck=0;
   log('You follow '+followName(o)+' at a distance.');followStep();updateHUD(true);return true}
 // it ends (why: said in the log; halt: your band stops where it is, else whatever was ordered stands)
@@ -222,7 +222,7 @@ function dangerInSight(){const V=vis();
 function fastWatch(){followWatch();if(!G.hurry)return;const why=G.mode!=='world'||G.modal?'':P.staminaState()==='exhausted'?'your band is exhausted':P.camp||P.stay?'you stop':null;if(why!=null)setHurry(false,why)}
 function updateWorld(dt){
   if(G.paused||G.dead)return;
-  fastWatch();peopleWatch();// (who you see: peopledrawer.js)
+  fastWatch();KNOWLEDGE.watch();// (last-known sightings: knowledge.js)
   const d=dt*G.speed*WORLD_PACE;lodTick(dt);
   Clock.advance(dt*G.speed*DAY/DAY_SECONDS);// (a new day: dayTick; a new hour: Systems.hour; core/clock.js)
   if(G.dead){if(G.mode!=='dead')showDeath();return}// (your hero died on the road in that time: the game is over, ui.js)

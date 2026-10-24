@@ -37,7 +37,7 @@ const ICONS={
   book:{p:{r:'#c0504a',w:'#f4efe0',d:'#7a2a24'},px:['.rrrrrrr.','.rwwwwwr.','.rwdddwr.','.rwwwwwr.','.rwdddwr.','.rwwwwwr.','.rrrrrrr.','.ddddddd.','.........']},
   exit:{p:{b:'#8a6a44',d:'#4a3a24',y:'#e8b94a'},px:['.bbbbbb..','.bdddddb.','.bdddddb.','.bdddyd.b','.bdddddb.','.bdddddb.','.bdddddb.','.bbbbbbb.','.........']},
   resume:{p:{g:'#78c474'},px:['.g.......','.ggg.....','.ggggg...','.ggggggg.','.ggggggg.','.ggggg...','.ggg.....','.g.......','.........']},
-  // a holding's places (ui/townui.js) and its buildings, and the people drawer (ui/peopledrawer.js)
+  // a holding's places (ui/townui.js) and its buildings
   stall:{p:{r:'#c0504a',w:'#f4efe0',b:'#8a6a44',y:'#e8b94a'},px:['.........','rwrwrwrwr','rwrwrwrwr','.b.....b.','.b.....b.','.byyyyyb.','.bbbbbbb.','.b.....b.','.........']},
   mug:{p:{b:'#b07a3a',d:'#6a4a2a',w:'#f4efe0'},px:['.........','.wwwww...','.bbbbbdd.','.bdbdb.d.','.bdbdb.d.','.bdbdbdd.','.bbbbb...','.ddddd...','.........']},
   anvil:{p:{g:'#9aa3ad',d:'#5a6270',w:'#cfd6e0'},px:['.........','.........','wwwwwww..','.gggggggg','...ggg...','...ggg...','..ddddd..','.ddddddd.','.........']},

@@ -1,7 +1,8 @@
 'use strict';
 /* ---------- people and realms you know: discoveries kept for good, whereabouts only as last seen or heard ----------
    Recording news is never learning it. hear reads only words actually told to you; news, riders and intelligence give dated
-   reports, and watch remembers sightings. An older report cannot replace a newer sighting. Known holdings keep their last
+   reports, and watch updates sightings of people already known. Seeing an army or visiting its court never names its lord.
+   An older report cannot replace a newer sighting. Known holdings keep their last
    owner until seen again or a proclamation tells you of their capture. The save piece known defaults empty ---------- */
 class JournalKnowledge{
   constructor(){this.reset()}
@@ -38,11 +39,14 @@ class JournalKnowledge{
     this.realm(P.fac);if(G.lastTown&&!this.holdings[G.lastTown.name])this.holding(G.lastTown);
     const here=(['town','scene'].includes(G.mode)||G.mode==='journal'&&G.overBack==='scene')&&G.town&&G.town.ref;
     for(const t of TOWNS)if(!t.gone&&(t.owner==='player'||t===here||inSight(t.x,t.y)||!this.holdings[t.name]&&seenTile(t.tx,t.ty)))this.holding(t);
-    const V=vis();for(const l of W.lords)if(!l.dead&&!l.gone&&(l.inside?here&&l.inside===here.name:spotted(l,V)))this.sight(l);
+    const V=vis();for(const l of W.lords)if(this.knowsLord(l)&&!l.dead&&!l.gone&&(l.inside?here&&l.inside===here.name:spotted(l,V)))this.sight(l);
   }
   save(){if(Object.keys(this.lords).length||this.realms.length||Object.keys(this.holdings).length)return {lords:this.lords,realms:this.realms,holdings:this.holdings}}
   load(v){this.lords=v.lords;this.realms=v.realms;this.holdings=v.holdings}
 }
 const KNOWLEDGE=new JournalKnowledge();
+// Display names only: canonical names still identify lords in saves, quests, news and the simulation.
+const lordName=l=>l&&KNOWLEDGE.knowsLord(l)?l.name:'???';
+const partyName=o=>W.lords.includes(o)?lordName(o):o.label?o.label():o.name;
 onWorld(()=>KNOWLEDGE.reset());
 Saves.add({key:'known',order:310,defaults:{lords:{},realms:[],holdings:{}},save:()=>KNOWLEDGE.save(),load:v=>KNOWLEDGE.load(v)});

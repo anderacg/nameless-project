@@ -11,7 +11,6 @@
      5a. main menu     the first screen: the scene drawn in code, the banner with its buttons, the lore (ui/mainmenu.js)
      5b. new world     the world's settings beside its preview (worldsetup.js), the Esc menu's World page
      6. world HUD      party card (top left), day bar (top middle), dock (bottom right), messages (bottom left), tooltip
-     6b. people        the tab on the right edge and its drawer: companions, lords, those you know, realms (peopledrawer.js)
      6c. supplies      the band card's stamina and health bars and its tags, the camp, the action ring (world/supply.js, ui/ring.js)
      7. battle HUD     balance of power, time, the selected unit, orders over the unit cards
      8. screens        inventory, talents, recruiting and unit cards, companions, troop cards, help and log
@@ -392,43 +391,6 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 .screen[data-mode="battle"] .pcard,.screen[data-mode="battle"] .hint,.screen[data-mode="battle"] .wtop,.screen[data-mode="battle"] .dock{display:none}
 .screen[data-mode="battle"] .toasts{bottom:auto;top:var(--e-t);width:min(28%,340px)}
 .screen[data-mode="scene"] .wtop [data-speed]{display:none}
-
-/* ---------- 6b. people ---------- */
-/* a tab on the right edge, under the minimap (peopledrawer.js peoplePlace sets its top): the people icon and your companions'
-   faces; it opens a drawer over the right side (over a town's window too), a dim scrim over the rest that closes it when
-   tapped. Shown on the map, in a town and its streets; never in battle */
-.people{position:absolute;inset:0;z-index:22;pointer-events:none;display:none}
-.screen[data-mode="world"] .people,.screen[data-mode="town"] .people,.screen[data-mode="scene"] .people{display:block}
-.people>*{pointer-events:auto}
-.people,.people *{touch-action:pan-y}
-  background:var(--glass);border:1px solid var(--line-2);border-right:0;border-left:2px solid var(--trim);border-radius:var(--r-md) 0 0 var(--r-md);box-shadow:var(--float)}
-.pp-scrim{position:absolute;inset:0;background:rgba(4,5,9,.4)}
-.pp-drawer{position:absolute;top:0;right:0;bottom:0;width:calc(min(380px,92%) + var(--sa-r));display:flex;flex-direction:column;padding:var(--sa-t) var(--sa-r) var(--sa-b) 0;
-  background:linear-gradient(180deg,#2c2320,var(--panel) 120px);border-left:2px solid var(--trim);box-shadow:var(--deep);animation:ppin .16s ease-out}
-@keyframes ppin{from{transform:translateX(30px);opacity:.5}to{transform:none;opacity:1}}
-.people:not(.open) .pp-drawer,.people:not(.open) .pp-scrim{display:none}
-.pp-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px 8px}
-.pp-head h2{margin:0;font-size:var(--fs-xl);color:var(--accent)}
-.pp-tabs{padding:0 14px 8px;border-bottom:1px solid var(--line)}
-.pp-map{display:block;width:calc(100% - 28px);margin:8px 14px 0;aspect-ratio:2/1;height:auto;image-rendering:pixelated;background:var(--shade);border:1px solid var(--line-2);border-radius:var(--r-sm)}
-.pp-map[hidden]{display:none}
-.pp-list{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:4px 14px 12px;scrollbar-width:thin;scrollbar-color:var(--line-2) transparent}
-.pp-list>p{margin:10px 0 0}
-.pp-grp{margin:10px 0 2px}
-.pp-e{display:flex;gap:10px;padding:9px 0;border-top:1px solid var(--line)}
-.pp-grp+.pp-e{border-top:0}
-.pp-pic{width:38px;height:38px;flex:none;image-rendering:pixelated;object-fit:contain;background:rgba(0,0,0,.35);border:1px solid var(--line);border-radius:var(--r-sm)}
-.pp-em{display:grid;place-items:center}
-.pp-i{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
-.pp-i strong{font-size:var(--fs-base);overflow-wrap:anywhere}
-.pp-i small{font-size:var(--fs-md);color:var(--muted)}
-.pp-acts{display:flex;gap:5px;flex-wrap:wrap;margin-top:5px}
-.pp-acts:empty{display:none}
-.pp-card{margin-top:6px;padding:7px 9px;font-size:var(--fs-md);line-height:1.45;color:var(--fg-2);background:var(--panel-2);border:1px solid var(--line-2);border-radius:var(--r-sm)}
-/* Show on map: a ring on the world where they stand */
-.pp-ping{position:absolute;width:30px;height:30px;margin:-15px 0 0 -15px;border:2px solid var(--accent);border-radius:50%;pointer-events:none;box-shadow:0 0 0 2px rgba(0,0,0,.55),0 0 14px rgba(232,185,74,.8);animation:pping 1s ease-out infinite}
-.pp-ping[hidden]{display:none}
-@keyframes pping{0%{transform:scale(.6);opacity:1}100%{transform:scale(1.5);opacity:.2}}
 
 /* ---------- 6c. supplies ---------- */
 /* the band card's bars (render.js updateHUD), each its % at its end: fitness steel blue, red under half; morale violet, orange
@@ -1077,13 +1039,9 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
   .panel:has(> .title){padding-left:calc(24px + var(--sa-l))}
   .recwrap,.cmwrap{flex-direction:column}
   .reccard,.cmside{position:static;width:100%}
-  /* (a rail window keeps its own edges: the safe area round it, square corners; beside a town's window, room for the people tab) */
+  /* (a rail window keeps its own edges: the safe area round it, square corners) */
   .panel.railed,.panel.paged{padding:var(--sa-t) var(--sa-r) var(--sa-b) var(--sa-l)}
   .rail,.rwin>.top,.rwin>.nav,.panel.paged .rwin>.top,.panel.paged .rwin>.nav{border-radius:0}
-  .screen[data-mode="town"] .panel.railed{padding-right:calc(var(--sa-r) + 40px)}
-  /* (the people drawer: a shorter map, tighter rows, so the list has the room) */
-  .pp-head{padding:8px 12px 6px}.pp-head h2{font-size:var(--fs-lg)}.pp-tabs{padding:0 12px 6px}
-  .pp-map{aspect-ratio:4/1;width:calc(100% - 24px);margin:6px 12px 0}.pp-list{padding:2px 12px 10px}.pp-e{padding:7px 0}
 }
 @media (max-width:760px){
   .inv{grid-template-columns:minmax(0,1fr)}
