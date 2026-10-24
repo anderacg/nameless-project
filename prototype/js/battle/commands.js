@@ -18,13 +18,13 @@ function playerOrder(gs,fn,{counts=true}={}){takeCommand(gs);if(counts)ordered(g
 // same spot, the next one under (moraleicons.js iconPick)
 function rtsUnitAt(x,y,team,pick){
   const ic=pick?iconPick(x,y,team):iconAt(x,y,team);if(ic){let best=null,bd=1e9;for(const u of B.units){if(u.hp<=0||u.grp!==ic.g||!seenBy(0,u))continue;const d=Math.hypot(u.x-ic.cx,u.y-ic.cy);if(d<bd){bd=d;best=u}}if(best)return best}
-  let best=null,bd=RTS_PICK;for(const u of B.units){if(u.hp<=0||u.team!==team||!seenBy(0,u))continue;const d=Math.hypot(u.x-x,u.y-6-y);if(d<bd){bd=d;best=u}}return best}
+  let best=null,bd=RTS_PICK*(B.world?WORLD_BATTLE.sprite:1);for(const u of B.units){if(u.hp<=0||u.team!==team||!seenBy(0,u))continue;const d=Math.hypot(u.x-x,u.y-6*(B.world?WORLD_BATTLE.sprite:1)-y);if(d<bd){bd=d;best=u}}return best}
 // select: a click picks the group of the unit under it (nothing of yours under it: none, as in Total War; the All card, Ctrl+A or
 // a box round everyone picks all); a box picks every group with a unit inside
 function rtsSelect(x0,y0,x1,y1,add){
   const was=add?selGroups():[];
   if(Math.hypot(x1-x0,y1-y0)<5){const u=rtsUnitAt(x1,y1,0,true);B.sel=u&&playerGroups().includes(u.grp)?u.grp:add?B.sel:null}// (your allies' men are theirs to command)
-  else{const xa=Math.min(x0,x1),xb=Math.max(x0,x1),ya=Math.min(y0,y1),yb=Math.max(y0,y1),gs=playerGroups().filter(g=>grpUnits(g).some(u=>u.x>=xa&&u.x<=xb&&u.y-6>=ya&&u.y-6<=yb));
+  else{const xa=Math.min(x0,x1),xb=Math.max(x0,x1),ya=Math.min(y0,y1),yb=Math.max(y0,y1),gs=playerGroups().filter(g=>grpUnits(g).some(u=>u.x>=xa&&u.x<=xb&&u.y-6*(B.world?WORLD_BATTLE.sprite:1)>=ya&&u.y-6*(B.world?WORLD_BATTLE.sprite:1)<=yb));
     B.sel=!gs.length?B.sel:gs.length===1?gs[0]:gs.length===playerGroups().filter(g=>grpUnits(g).length).length?'all':gs}
   if(add&&B.sel!=='all'){const all=[...new Set([...was,...selGroups()])].filter(g=>grpUnits(g).length);B.sel=all.length>=playerGroups().filter(g=>grpUnits(g).length).length?'all':all.length===1?all[0]:all}// (Shift: added to what you had)
   setOrderUI();

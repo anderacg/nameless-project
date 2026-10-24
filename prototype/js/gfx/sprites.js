@@ -49,7 +49,7 @@ function beastPose(u,moved){
   if(u.atkAt!=null&&B.t-u.atkAt<ATK_ANIM)return 6+Math.min(2,Math.floor((B.t-u.atkAt)/ATK_ANIM*3));
   if(u.shot)return 6;
   if((u.z||0)>1)return 16;
-  if(moved)return u.spdNow>u.s.spd*.75?15+Math.floor(B.t*12+(u.v||0))%4:2+Math.floor(B.t*8+(u.v||0))%4;
+  if(moved){const phase=B.world?u.walkPhase||0:null;return u.spdNow>u.s.spd*.75?15+Math.floor(phase??B.t*12+(u.v||0))%4:2+Math.floor(phase??B.t*8+(u.v||0))%4}
   return (B.t*.8+((u.id||0)*.37)%1)%1<.45?1:0}
 // a monster on the world map (engine/beasts.js PX.beastMap): the dragon on the wing (its own small figure in a 32 cell, wings up,
 // then level: it should look huge: f 0-1); the rest their own small figures in a 16 cell, f their step (PX.MAP_STEPS of them to a
@@ -93,7 +93,7 @@ function procPose(u,moved){
   if(u.atkAt!=null&&B.t-u.atkAt<ATK_ANIM)return (ATK_BASE[u.atkStyle]||6)+Math.min(2,Math.floor((B.t-u.atkAt)/ATK_ANIM*3));
   if(u.s.range&&!u.inMelee&&u.cd>0&&u.atkAt!=null&&!moved)return ATK_BASE.overhead+Math.floor((B.t-u.atkAt)*5)%3;
   // (running: the run, faster; walking: the walk)
-  if(moved)return u.spdNow>u.s.spd*.75?15+Math.floor(B.t*14+(u.v||0))%4:2+Math.floor(B.t*9+(u.v||0))%4;
+  if(moved){const phase=B.world?u.walkPhase||0:null;return u.spdNow>u.s.spd*.75?15+Math.floor(phase??B.t*14+(u.v||0))%4:2+Math.floor(phase??B.t*9+(u.v||0))%4}
   // (standing: breathing, slow, each on his own rhythm)
   return (B.t*.8+((u.id||0)*.37)%1)%1<.45?1:0;
 }

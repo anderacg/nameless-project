@@ -7,7 +7,7 @@ Kit.suite(({ok,info})=>{
  const tx=Math.floor(P.x/t.TILE),ty=Math.floor(P.y/t.TILE);for(let y=ty-10;y<=ty+10;y++)for(let x=tx-10;x<=tx+15;x++)if(t.WM.has(x,y)){const i=y*t.MW+x;t.WM.kind[i]=t.T_OPEN;t.WM.elev[i]=64;t.WM.edge[i]=0;t.WM.high[i]=0}
  t.WorldArt.invalidate();P.troops={hum_foot:6,hum_bow:4};
  const enemy=t.asParty({kind:'bandits',troops:['militia','militia','militia','archer'],x:P.x+70,y:P.y,cool:0,n:4});t.bandits.push(enemy);
- const helper=W.lords.find(l=>l.fac==='vale');helper.dead=false;helper.inside=null;helper.fight=null;helper.x=P.x-115;helper.y=P.y+15;helper.troops=['hum_foot','hum_bow'];
+ const helper=W.lords.find(l=>l.fac==='vale');helper.dead=false;helper.inside=null;helper.fight=null;helper.x=P.x-90;helper.y=P.y+15;helper.troops=['hum_foot','hum_bow'];
  G.enc={kind:'party',ref:enemy,list:enemy.troops.slice(),allies:[helper],foes:[],mine:true};t.startBattle({enemies:G.enc.list,tournament:false,deploy:true});const b=t.B,a=b.world;
  const pending=b.units.filter(u=>u.waiting),start=b.units.length;ok(pending.length===3&&pending.every(u=>u.hp===0&&u.left),'an ally named in the encounter waits at its real approach position, including its lord');
  t.setAuto(true,true);b.paused=false;let frames=0,bounds=true,finite=true;

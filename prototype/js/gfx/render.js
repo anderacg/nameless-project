@@ -120,10 +120,10 @@ function drawWorld(){
   // one more picture the scene's size (overCv), drawn up in one step: three full screens' work made one)
   const ov=hi?overCv():null;if(ov){ctx=ov.getContext('2d', { willReadFrequently: true });ctx.clearRect(0,0,ov.width,ov.height)}
   try{
-  fogMem(low,px0,py0,V);
+  if(B?.world)B.world.fog(cam,()=>fogMem(low,px0,py0,V));else fogMem(low,px0,py0,V);
   drawEnv(cam,V,1);
   // fog and night: the land you remember, outside your sight, lies dim; land you have never seen is dark (fog.js)
-  drawWorldFog(cam,V);
+  if(B?.world)B.world.fog(cam,()=>drawWorldFog(cam,V));else drawWorldFog(cam,V);
   }finally{ctx=scr}if(ov)ctx.drawImage(ov,0,0);
   // the tile grid and a building being placed lie over the fog
   if(GRID.on||G.place)drawGrid(cam.x,cam.y,VW+1,VH+1,cam.x,cam.y,1);
@@ -167,7 +167,8 @@ const figTop=L=>Math.min(...[...Array(PEOPLE_STEPS).keys()].map(f=>opaqueBox(par
 function drawParties(ents,cam,V){for(const o of W.parties)o.draw(ents,cam,V)}
 function drawUnit(u){
   // (placed on the camera's pixels, not the field's: zoomed in, they glide instead of stepping)
-  const q=B.cam?B.cam.z:1,big=u.s.big?2:1,s=unitSprite(u.type,spriteTeam(u),u.hero,u.v),w=s.width,h=s.ch,x=Math.round(u.x*q)/q,y=Math.round(u.y*q)/q;
+  const q=B.world?VS/B.world.scale:B.cam?B.cam.z:1,big=u.s.big?2:1,s=unitSprite(u.type,spriteTeam(u),u.hero,u.v),w=s.width,h=s.ch,x=Math.round(u.x*q)/q,y=Math.round(u.y*q)/q;
+  if(B.world){const k=WORLD_BATTLE.sprite;ctx.save();ctx.translate(x,y);ctx.scale(k,k);ctx.translate(-x,-y)}
   // (in a river (terrain.js groundAt; engine/ground.js paints it): deep water hides him to the waist, sunk 2 px, a ring of ripples
   // round him, its back half behind him; a ford wets his feet and splashes as he walks; a frozen ford (frost) is ice. From the
   // battle's time and his id: drawn only)
@@ -177,7 +178,7 @@ function drawUnit(u){
   const hit=u.hitAt!=null&&B.t-u.hitAt<.09;
   // (moving: a step in the last few frames, so a man who stops and starts as he settles does not flicker between standing and walking)
   // (knocked down: over, lying, up again, physics.js)
-  const dq=physDownPose(u);if(dq!=null){drawDowned(u,x,y-z,dq);u.plx=u.x;u.ply=u.y}else{const step=u.plx!=null&&Math.hypot(u.x-u.plx,u.y-u.ply)>.02;u.plx=u.x;u.ply=u.y;u.movF=step?6:Math.max(0,(u.movF||0)-(B.paused?0:1));const moved=u.movF>0;const beast=!!(ST[u.type]&&ST[u.type].beast),cl=moved&&typeof climbState==='function'?climbState(u):null;let pose=beast?beastPose(u,moved):procPose(u,moved);
+  const dq=physDownPose(u);if(dq!=null){drawDowned(u,x,y-z,dq);u.plx=u.x;u.ply=u.y}else{const distance=u.plx!=null?Math.hypot(u.x-u.plx,u.y-u.ply):0,step=distance>.02;if(B.world)u.walkPhase=(u.walkPhase||0)+distance/(WALK.foot*B.world.scale);u.plx=u.x;u.ply=u.y;u.movF=step?6:Math.max(0,(u.movF||0)-(B.paused?0:1));const moved=u.movF>0;const beast=!!(ST[u.type]&&ST[u.type].beast),cl=moved&&typeof climbState==='function'?climbState(u):null;let pose=beast?beastPose(u,moved):procPose(u,moved);
     // (on a hill's slope (the ground's climbState): walking or running up, bent forward on short slow steps; down, leaning on long ones)
     if(cl&&!beast&&((pose>=2&&pose<=5)||(pose>=15&&pose<=18)))pose=cl==='up'?19+Math.floor(B.t*5+(u.v||0))%4:23+Math.floor(B.t*9+(u.v||0))%4;
     const sp=beast?unitSprite(u.type,spriteTeam(u),u.hero,u.v,pose):unitSprite(u.type,spriteTeam(u),u.hero,u.v,pose,true,!!u.inMelee);
@@ -199,6 +200,7 @@ function drawUnit(u){
   if(u.leader)txt(u.leader.name+' Lv'+u.leader.lv,x,y-h-8-z,sideCol(u,'say'),'center');// a leader: his name over him
   if(HPBARS.on||u.hero||u.comp||u.leader){const bw=u.s.big?28:12,f=Math.max(0,u.hp/u.max),bx=Math.round(x-bw/2),by=y-h-2-z;ctx.fillStyle='#0a0c12';ctx.fillRect(bx-1,by-1,bw+2,4);ctx.fillStyle='#3a2420';ctx.fillRect(bx,by,bw,2);
     ctx.fillStyle=u.hero||u.comp?'#e8b94a':sideCol(u);ctx.fillRect(bx,by,Math.round(bw*f),2)}// (by side: battle.js SIDE)
+  if(B.world)ctx.restore();
 }
 // one knocked down (physics.js physDownPose: q 0 standing to 1 lying): he goes over as the fallen do (vfx.js drawBody), lies, and
 // gets up; a beast pressed low, then on its side
@@ -282,7 +284,7 @@ function drawBattle(){
   // the camera (camera.js): the field drawn at its zoom and pan, the HUD over it at the screen's scale
   if(B.cam)camTick();const Cz=B.cam?B.cam.z:1;
   // (deploying, the battle's clock stands: who sees whom is reckoned on the real one as your men are placed, terrain.js)
-  if(sightOn()&&B.deploy){const n=performance.now(),S=B.sight;if(!S||!(n-(S.rt||0)<250)){sightStep(true);B.sight.rt=n}}ctx.fillStyle='#07090e';ctx.fillRect(0,0,BVW,BVH);if(B.world)B.world.base();ctx.save();if(B.cam){ctx.scale(Cz,Cz);ctx.translate(-Math.round(B.cam.x*Cz)/Cz,-Math.round(B.cam.y*Cz)/Cz)}
+  if(sightOn()&&B.deploy){const n=performance.now(),S=B.sight;if(!S||!(n-(S.rt||0)<250)){sightStep(true);B.sight.rt=n}}ctx.fillStyle='#07090e';ctx.fillRect(0,0,BVW,BVH);if(B.world)B.world.base();ctx.save();if(B.cam){ctx.scale(Cz,Cz);const q=B.world?VS:1;ctx.translate(-Math.round(B.cam.x*Cz*q)/(Cz*q),-Math.round(B.cam.y*Cz*q)/(Cz*q))}
   // (a field with terrain: its own ground, painted over the arena at the start and kept by tiles (engine/ground.js PX.BattleGround);
   // without, the arena by its own tiles (worldart.js paintArena); units, as ever, over it)
   if(B.world)B.world.draw();else drawLayer(B.terrain?B.ground||(B.ground=runGen(PX.battleGroundSteps({...B.terrain,climate:B.env.c,base:B.arena}))):B.arena.ground||B.arena);

@@ -128,7 +128,7 @@ function iconLayout(rt){
     let p=IP[g];if(!p||rm||B.deploy||Math.hypot(p.x-cx,p.y-top)>ICON_FAN.snap)p=IP[g]={x:cx,y:top,dx:p?p.dx:0};else{const k=1-Math.exp(-dt*ICON_FAN.follow);p.x+=(cx-p.x)*k;p.y+=(top-p.y)*k}
     const st=[...(aiHas(B.groups[g])?['ai']:[]),...(mo?statusOf(mo):[])],W=(S+(st.length?Math.ceil(st.length/2)*10+1:0))*K,H=(S+6)*K,sp=fromField({x:p.x,y:p.y});
     if(sp.x<-W||sp.x>BVW+W||sp.y<0||sp.y>BVH+40)continue;// (off the view: none)
-    items.push({g,m,mo,st,W,H,cx,cy,p,team:m[0].team,bx:sp.x-S*K/2,y:Math.max(4,sp.y-UICON.lift*z-H),tier:sel.includes(g)?3:B.iconHov===g?2:m[0].team?0:1})}
+    items.push({g,m,mo,st,W,H,cx,cy,p,team:m[0].team,bx:sp.x-S*K/2,y:Math.max(4,sp.y-UICON.lift*z*(B.world?WORLD_BATTLE.sprite:1)-H),tier:sel.includes(g)?3:B.iconHov===g?2:m[0].team?0:1})}
   // the fan: banners that overlap where they stand, of groups at blows with each other, in clusters; each cluster set side by
   // apart, left to right as they stand, about the middle they had
   const hit=(a,b)=>a.bx<b.bx+b.W&&b.bx<a.bx+a.W&&a.y<b.y+b.H&&b.y<a.y+a.H,up=items.map((_,i)=>i),root=i=>up[i]===i?i:(up[i]=root(up[i]));
