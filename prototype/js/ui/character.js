@@ -40,7 +40,7 @@ function charAct(a,arg){
   else if(a==='army-merge-picked'){const to=G.armyMergeTarget;G.armyMergeTarget=null;if(partyRoster(P).merge(arg,to)){G.armyEdit=null;G.armyNotice='Groups merged; the destination keeps its name and wounded ownership.'}}
   else if(a==='army-split'){const r=partyRoster(P),g=r.groups.find(g=>g.id===arg);if(g)r.split(g.id,Math.floor(g.count/2))}
   else if(a==='army-merge'){const [from,to]=arg.split(':');partyRoster(P).merge(from,to)}
-  else if(a==='army-recruit')G.recruitTarget=arg;
+  else if(a==='army-auto-reinforce'){const r=partyRoster(P);if(r.groups.some(g=>g.id===arg)){const flags=P.army.autoReinforce||(P.army.autoReinforce={});flags[arg]=!flags[arg];recruitment.autoWait=0}}
   else if(a==='role'){const [id,r]=arg.split(':');const c=P.comps[id];if(c){if(c.role===r)c.role='';else{const o=roleOf(r);if(o)P.comps[o].role='';c.role=r}}}
   else if(a==='dismiss'){if(P.comps[arg]){delete P.comps[arg];partyView().open=false;log(COMPS[arg].n+' leaves your band.'+(compTown(arg)?' You may find them in '+compTown(arg).name+' again.':''))}}
   else if(a==='p-recruit')recruitmentFeedback(recruitment.recruitPrisoner(arg));

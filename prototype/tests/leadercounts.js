@@ -1,0 +1,22 @@
+'use strict';
+Kit.suite(({ok})=>{
+ const t=T,P=t.P,G=t.G,W=t.W;Kit.begin('soldier',1);Kit.clear();Kit.world();t.GUIDE.on=false;P.troops={hum_foot:3};P.comps={};
+ ok(P.fighters===4&&P.size===3,'player fighter count includes the hero while soldier size stays unchanged');
+ ok(t.partyHead().includes('4 fit (including hero)'),'Army fit total includes the hero explicitly');
+ const wage=t.bandPayroll().total;P.comps.brann={ap:5};t.compInit('brann');ok(P.fighters===5,'fit companions are counted once with the hero');
+ P.comps.brann.hurt=G.day+2;ok(P.fighters===4,'a wounded companion is excluded from available fighters');P.comps.brann.hurt=0;
+ const lord=W.lords.find(l=>!l.dead);Object.assign(lord,{inside:null,x:P.x+30,y:P.y});lord.troops=['hum_foot','hum_foot','hum_bow'];
+ ok(lord.fighters===4&&lord.size===3&&lord.look().label==='4'&&lord.tip().includes('4 fighters'),'lord map count and tooltip include the fighting lord');
+ const e={kind:'lord',ref:lord,list:lord.troops.slice(),allies:[],foes:[]};t.startEncounter(e);
+ ok(t.encounterMainFighters(e)===4&&t.panel.textContent.includes('Scouts count about 4 fighters including their leader'),'encounter main total includes its lord');
+ t.startBattle({enemies:e.list,tournament:false});ok(t.B.units.filter(u=>u.team===1).length===lord.fighters,'displayed enemy count matches the actual battle actors');window.eval('B=null');Kit.world();
+ const chief=t.newChief('bandits',1),band=t.asParty({kind:'bandits',ld:chief,troops:['militia','militia'],x:P.x+20,y:P.y});
+ ok(band.fighters===3&&band.look().label.endsWith('3')&&band.tip().includes('3 fighters'),'bandit map count includes its chieftain');
+ ok(t.encounterMainFighters({kind:'party',ref:band,list:band.troops,allies:[],foes:[]})===3,'encounter adds a separately spawned chieftain');
+ band.troops=['militia','chief'];ok(band.fighters===2&&t.encounterMainFighters({kind:'party',ref:band,list:band.troops,allies:[],foes:[]})===2,'a chief already in the soldier list is not counted twice');
+ const companion=t.asParty({kind:'cparty',cid:'brann',troops:['hum_foot','hum_foot'],x:P.x,y:P.y});P.comps.brann.party=companion;
+ ok(companion.fighters===3&&companion.look().label.endsWith('3')&&companion.tip().includes('3 fighters')&&P.fighters===4,'detached companion moves from player count into their own party count');
+ const helpers=t.reinfHtml({allies:[lord,t.forceOf(companion)],foes:[lord]});ok(helpers.includes('(4 fighters)')&&helpers.includes('(3 fighters)'),'reinforcement previews include lords and companion leaders');
+ const plain=t.asParty({kind:'bandits',troops:['militia','militia'],x:P.x,y:P.y});ok(plain.fighters===2,'a party without a combat leader receives no invented extra fighter');
+ delete P.comps.brann;ok(t.bandPayroll().total===wage&&P.size===3,'display counts do not change wage rates or recruitment soldier counts');
+});

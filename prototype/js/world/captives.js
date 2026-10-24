@@ -17,6 +17,8 @@ function battleLeaders(e){
   (e.allies||[]).forEach(l=>reinforcement(l,0));(e.foes||[]).forEach(l=>reinforcement(l,1));
   return a;
 }
+// The main enemy's preview uses the same leader list as battle setup. A chief already in its troop list is reused there.
+function encounterMainFighters(e){const leaders=battleLeaders({...e,allies:[],foes:[]});return e.list.length+leaders.filter(l=>!(l.type==='chief'&&e.list.includes('chief'))).length}
 // his fighter: his kind's soldier, made a leader by his level
 
 /* taken, freed, escaped */
