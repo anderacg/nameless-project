@@ -158,6 +158,7 @@ A ring of actions for mouse and touch, so nothing needs a key:
    ( Travel here )         ( Look )
 ```
 
+- **Hold progress (built 2026-10-24):** a gold circular progress arc fills clockwise before the menu opens, for mouse/pen and touch. It appears after 90 ms and fills to the existing 350 ms hold threshold. Mouse/pen radius 18 CSS pixels, touch 34; width 3, with a dark rim and faint full-circle track. Drawn over the final frame in screen pixels, independent of world zoom and device scale. Release, wandering, cancellation, leaving the canvas with a mouse/pen, losing focus, opening the ring or another window removes the indicator. Touch holds in battle keep their existing gold/red progress ring. No hold timing, action or save change. Tests: holdprogress, ring, touch.
 - **Later:** the ring is the one place for new map actions (Forage, Hunt, Scout around…), so the screen stays clean.
 - **Built as** one small `ActionRing` class (`ui/ring.js`): it takes a point and a list of `{icon, label, ok(), run()}` and draws itself as HTML over the canvas. The map and, later, the battle can each hand it their own list.
 

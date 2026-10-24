@@ -198,7 +198,7 @@ js/ui/                fieldbook.js (management frame, native-art cache, meters, 
                       holding's buildings), estate.js (an estate's window on the map, and the Fief's Estates section), input.js (actions, mouse, keys), map.js (the full map:
                       M or a click on the minimap), loot.js (the spoils), icons.js, battlehud.js, moraleicons.js (morale
                       badges and marks), orderpaths.js (where your groups are going), unitcard.js, developer.js (developer console),
-                      ring.js (the action ring: a hold on the map, its round buttons: ActionRing)
+                      ring.js (map hold progress and round action buttons: ActionRing)
 js/main.js            game loop and boot
 archive/              art.js (the sprite-sheet mapping for the graphics/ pixel-art pack, set aside; the pack is not in the repository)
 audio/                offline music scripts (Python: a MIDI/WAV soundtrack generator); the game's own sound is core/audio.js, music.js
@@ -386,6 +386,7 @@ the world piece `band` once it is not fresh. The band's own numbers are `PlayerP
   its own ring: Follow above); a move first calls the ring off and the release still travels; a right-click travels (or chases) at
   once. Its buttons, only those that apply (`mapRingItems`): Make camp or Break camp, Follow (Stop following), Travel here, By road,
   Hurry here (Stop hurrying), Fill waterskins, Drink liquor, Look (a card, for touch).
+  A gold circle fills clockwise at the pointer during a hold, after 90 ms (18 CSS px radius for mouse/pen, 34 for touch), reaching full at 350 ms. It stays the same size across zoom and display scales; quick clicks show nothing. Release, movement, pointer cancellation, leaving the canvas with a mouse/pen or losing focus removes it. Rendering: ring.js drawMapHold, called after the frame; tests: holdprogress and visual/holdprogress.
   Let go over one, or let go and tap one; Esc, a right-click or a tap outside closes it.
 - **The card** (`render.js updateHUD`, `supplyNow`): the band's stamina bar (green, amber Tired, red Exhausted, ▼ ▲, its rate and
   why on hover) and health (fit of the whole band, red under half, what hurt it lately on hover), the tags (Tired, Exhausted,

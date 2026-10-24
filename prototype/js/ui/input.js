@@ -87,7 +87,7 @@ cv.addEventListener('pointermove',e=>{const p=toCanvas(e);G.mouse.x=p.x;G.mouse.
   const o=pickAt(G.cam.x+p.x,G.cam.y+p.y),h=o&&tipFor(o)||rumourTip(G.cam.x+p.x,G.cam.y+p.y)||trackTip(G.cam.x+p.x,G.cam.y+p.y);if(!h){tip.hidden=true;return}// (nothing there: a rumour's "?", news.js; else tracks you see, world/tracks.js)
   tip.innerHTML=h;tip.classList.remove('hold');tip.hidden=false;const r=cv.getBoundingClientRect(),x=e.clientX-r.left+16,y=e.clientY-r.top+14;
   tip.style.left=Math.min(x,r.width-tip.offsetWidth-6)+'px';tip.style.top=Math.min(y,r.height-tip.offsetHeight-6)+'px'});
-cv.addEventListener('pointerleave',()=>{G.mouse.in=false;if(!holdCardUp())hideTip();if(B)B.hov=null;cv.style.cursor=''});
+cv.addEventListener('pointerleave',()=>{ringDrop();G.mouse.in=false;if(!holdCardUp())hideTip();if(B)B.hov=null;cv.style.cursor=''});
 cv.addEventListener('pointerdown',e=>{
   const p=toCanvas(e);G.mouse.x=p.x;G.mouse.y=p.y;G.mouse.in=true;G.mouse.type=e.pointerType;
   if(ActionRing.now){const o=partyAgain(p);ringTapOut();if(o)worldApproach(o);return}// (the action ring open: a press outside it only closes it, ring.js; on the party whose ring a click just opened, it approaches it: partyAgain)
@@ -196,7 +196,7 @@ function touchUp(e,cancel){const T=TOUCH,id=e.pointerId;if(!T.pts.has(id))return
   if(l.box){const b=B.box;B.box=null;if(b)rtsSelect(b.x0,b.y0,b.x1,b.y1,false);return true}
   if(B.sel!=='all'&&selGroups().length&&!rtsUnitAt(q.x,q.y,0))rtsOrder(q.x,q.y);else rtsSelect(q.x,q.y,q.x,q.y,false);return true}// (a tap: as it always was)
 cv.addEventListener('pointermove',e=>{if(e.pointerType==='touch')touchMove(e,toCanvas(e))});
-window.addEventListener('pointercancel',e=>{if(e.pointerType==='touch')touchUp(e,true)});
+window.addEventListener('pointercancel',e=>{if(e.pointerType==='touch')touchUp(e,true);else if(RING.press?.id===e.pointerId)ringDrop()});
 // anything else pressed puts the card away
 document.addEventListener('pointerdown',e=>{if(e.target!==cv&&holdCardUp())hideTip()},true);
 // the screen's safe area (clear of a notch, rounded corners, a home bar), CSS px: style.css --sa-*, read off the HUD layer's
@@ -222,7 +222,7 @@ cv.addEventListener('wheel',e=>{if(G.mode==='battle'&&B&&!G.modal){e.preventDefa
   else if(G.mode==='world'&&!G.modal&&e.deltaY){e.preventDefault();const now=performance.now();if(now-MAPZOOM.wt>=MAPZOOM.WHEEL){MAPZOOM.wt=now;mapZoom(e.deltaY<0?1:-1)}}},{passive:false});
 // the arrow keys pan while held
 window.addEventListener('keyup',e=>{if(B&&B.cam){const k=keyOf(e);if(k.startsWith('arrow'))B.cam.keys[k]=false}});
-window.addEventListener('blur',()=>{if(B&&B.cam)B.cam.keys={}});
+window.addEventListener('blur',()=>{ringDrop();touchDrop();TOUCH.pts.clear();TOUCH.spent.clear();TOUCH.pinch=null;if(B&&B.cam)B.cam.keys={}});
 /* (the bow's angle on the wheel, set aside with the manual control:) cv.addEventListener('wheel',e=>{if(G.mode==='battle'&&B&&isBow()){e.preventDefault();bowRangeStep(e.deltaY<0?15:-15)}},{passive:false}); */
 // keys are read by physical position (e.code), so WASD and the hotkeys work on any keyboard layout, Thai included
 function keyOf(e){const c=e.code||'';
