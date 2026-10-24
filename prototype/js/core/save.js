@@ -31,13 +31,13 @@ let SAVING=null;
 // the game saved to a slot (the autosave, if none is named): written at once when plain; gzipped, the save as it stands now is
 // written once zipped (a Promise; plain if zipping fails)
 function saveGame(quiet,slot){
-  if(typeof BattleLab!=='undefined'&&BattleLab.active){if(!quiet)log('Exit the battle test before saving.','bad');return}
-  if(!ESC_SAVE.includes(G.mode)){if(!quiet)log('You can only save while traveling or in town.','bad');return}
+  if(typeof BattleLab!=='undefined'&&BattleLab.active){if(!quiet)toast('Exit the battle test before saving.','bad');return}
+  if(!ESC_SAVE.includes(G.mode)){if(!quiet)toast('You can only save while traveling or in town.','bad');return}
   Systems.drain(true);// (a sliced day's work finished first: core/systems.js)
   slot=slot||'auto';const d=saveRecord(),json=JSON.stringify(d),sig=saveSig(d);
   // (true once it is stored; false when the browser would not keep it: the menu says which, never "saved" for a save that failed)
-  const put=s=>{try{localStorage.setItem(slotKey(slot),s);G.saved={day:d.day,sig};if(!quiet)log('Game saved'+(slot==='auto'?'':' ('+slotName(slot)+')')+'.','good');return true}
-    catch(e){if(!quiet)log('Could not save. Browser storage is unavailable.','bad');return false}};
+  const put=s=>{try{localStorage.setItem(slotKey(slot),s);G.saved={day:d.day,sig};if(!quiet)toast('Game saved'+(slot==='auto'?'':' ('+slotName(slot)+')')+'.','good');return true}
+    catch(e){if(!quiet)toast('Could not save. Browser storage is unavailable.','bad');return false}};
   if(LOADING.sync||!SAVE_ZIP)return put(json);
   const p=SAVING=(SAVING||Promise.resolve()).then(()=>gzip64(json)).then(z=>JSON.stringify({...saveHead(d),z}),()=>json).then(put).then(ok=>{if(SAVING===p)SAVING=null;return ok});return p;
 }
@@ -80,13 +80,13 @@ Saves.add({key:'fightN',   order:190, save:()=>W.fightN||0,    load:v=>{W.fightN
 Saves.add({key:'treas',    order:200, save:()=>W.treas,        load:v=>{W.treas=v}});
 Saves.add({key:'critters', order:210, save:()=>W.critters,     load:v=>{W.critters=v.map(herdRec)},settle:()=>{W.critters.forEach(herdToFields)}});
 Saves.add({key:'shops',    order:220, save:()=>W.shops||{},    load:v=>{W.shops=v}});
-/* the chronicle (G.msgs: core/state.js CHRONICLE), every message, each saved as [day, m, cls, kind, ref, at] (an empty one 0, the
+/* the chronicle (G.msgs: core/state.js CHRONICLE), lasting events, each saved as [day, m, cls, kind, ref, at] (an empty one 0, the
    empty ones at its end left off); none: left out, and a save without it loads with an empty chronicle. Past its budget, the
    oldest of the spare kinds go first, from the game too (said in the browser's console only); war, rumours and stories never */
 const chronTuple=r=>{const t=[r.day,r.m,r.cls||0,r.kind||0,r.ref==null?0:r.ref,r.at||0];while(t.length>2&&!t[t.length-1])t.pop();return t};
 const chronRec=([day,m,cls,kind,ref,at])=>{const r={m,day};if(cls)r.cls=cls;if(kind)r.kind=kind;if(ref)r.ref=ref;if(at)r.at=at;return r};
 function chronicleSave(){
-  const M=G.msgs;if(!M.length)return;
+  const M=journalPrune();if(!M.length)return;
   let ts=M.map(chronTuple),n=JSON.stringify(ts).length;if(n<=CHRONICLE.budget)return ts;
   const spare=r=>CHRONICLE.spare.includes(r.kind||''),keep=[];let cut=0;
   M.forEach((r,i)=>{if(n>CHRONICLE.budget&&spare(r)){n-=JSON.stringify(ts[i]).length+1;cut++}else keep.push(i)});
@@ -94,7 +94,7 @@ function chronicleSave(){
   G.msgs=keep.map(i=>M[i]);ts=keep.map(i=>ts[i]);
   console.info('Chronicle: '+cut+' of the oldest band and plain messages trimmed to keep its save within '+CHRONICLE.budget+' characters ('+n+').');
   return ts}
-Saves.add({key:'chronicle',order:300,defaults:[],save:chronicleSave,load:v=>{G.msgs=v.map(chronRec)}});
+Saves.add({key:'chronicle',order:300,defaults:[],save:chronicleSave,load:v=>{G.msgs=v.map(chronRec).filter(journalKeep)}});
 // does the world part fit this world (made: the holdings it made, by default the world's in): a record for each holding the world
 // made, the rest founded ones of a kind there is (read before anything is put back, so a save that doesn't fit leaves the game as
 // it was)
@@ -112,7 +112,7 @@ function worldLoad(w){W.ships=[];W.folk=[];Saves.load(w)}
    then the land under you painted. A failure shows the error, with the way back to the saves; one before the putting in leaves
    the game untouched */
 function loadGame(slot){
-  if(typeof BattleLab!=='undefined'&&BattleLab.active){log('Exit the battle test before loading.','bad');return}
+  if(typeof BattleLab!=='undefined'&&BattleLab.active){toast('Exit the battle test before loading.','bad');return}
   if(SAVING&&!LOADING.sync)return SAVING.then(()=>loadGame(slot));
   const h=readSave(slot);if(!h)return showTitle();
   const M=h.world.map,made=worldKey(M)===worldKey(WM)?null:{};let d=null;

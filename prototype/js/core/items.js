@@ -32,7 +32,7 @@ const DROP_VERB={id:'drop',icon:'close',label:'Drop',tip:'Leave it behind.',when
     const s=P.inv[i];
     if(!catAllows(i,'drop'))return;
     P.inv[i]=null;
-    if(s)log('You leave '+itemKind(s).some(s)+' behind.');
+    if(s)toast('You leave '+itemKind(s).some(s)+' behind.');
   }};
 const SELL_VERB={id:'sell',icon:'gold',label:'Sell',tip:'Sell it at the market.',when:i=>catAllows(i,'sell'),
   run:i=>{
@@ -41,7 +41,7 @@ const SELL_VERB={id:'sell',icon:'gold',label:'Sell',tip:'Sell it at the market.'
     P.gold+=g;
     P.inv[i]=null;
     train('trade',g/20);
-    log('You sell '+K.sold(x)+' for '+g+' gold.','gold');
+    toast('You sell '+K.sold(x)+' for '+g+' gold.','gold');
   }};
 class ItemKind{
   // k: the records' kind

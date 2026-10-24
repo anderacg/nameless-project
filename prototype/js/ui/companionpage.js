@@ -32,7 +32,7 @@ function companionPageAct(a,arg){
   }else if(a==='party-gear'){
     const sl=arg,fit=compFits(id,sl),items=fit.map(([x,i])=>({id:i,name:ITEMS[x.id].n,sub:ITEMS[x.id].d,ico:'sword'}));
     if(!items.length)items.push({id:'none',name:'No eligible equipment',why:'Find equipment for this slot in your bag.'});
-    fbChoose({title:'Choose '+SLOTS[sl].toLowerCase(),value:null,items,back:renderComp,apply:i=>{if(compEquip(id,sl,Number(i)))log(COMPS[id].short+' takes the '+ITEMS[c.gear[sl]].n+'.');updateHUD(true);renderComp()},focus:'[data-act="party-gear"][data-arg="'+sl+'"]'});return true;
+    fbChoose({title:'Choose '+SLOTS[sl].toLowerCase(),value:null,items,back:renderComp,apply:i=>{if(compEquip(id,sl,Number(i)))toast(COMPS[id].short+' takes the '+ITEMS[c.gear[sl]].n+'.');updateHUD(true);renderComp()},focus:'[data-act="party-gear"][data-arg="'+sl+'"]'});return true;
   }else if(a==='party-transfer-pick'){
     const [direction,field]=arg.split(':'),d=compTransferDraft(direction),p=c.party,from=direction==='give'?partyRoster(P):p&&partyRoster(p),to=direction==='give'?p&&partyRoster(p):partyRoster(P),g=from&&from.groups.find(g=>g.id===d.source);
     const rows=field==='source'?from?from.order.map(k=>from.groups.find(g=>g.id===k)).filter(Boolean):[]:to?.groups.filter(o=>o.type===g?.type)||[],items=rows.map(o=>({id:o.id,name:o.name||ST[o.type].n,sub:o.count+' fit · '+(field==='source'?from:to).wounded(o.id)+' wounded',pic:portrait(o.type)}));

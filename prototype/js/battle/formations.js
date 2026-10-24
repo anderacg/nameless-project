@@ -68,7 +68,7 @@ const formCharge=(att,t,side)=>{const m=att.s.charge&&att.grp?wedgeMembers(att.g
 const formPace=u=>shieldWallActive(u)?WALL.spd:1;
 
 // an order to charge breaks a shield wall
-function breakWall(g){const gr=B.groups[g];if(gr&&gr.shieldWall){gr.setFlag('shieldWall',false);log(htmlText(groupName(g))+' lower their shield wall.')}}
+function breakWall(g){const gr=B.groups[g];if(gr&&gr.shieldWall){gr.setFlag('shieldWall',false);toast(htmlText(groupName(g))+' lower their shield wall.')}}
 // Turn toward a plain move, including short repositioning. Ignore only effectively zero displacement;
 // explicit dragged facing bypasses this helper in BattleControl.moveTo.
 function faceToward(g,x,y){const gr=B.groups[g],m=grpUnits(g);if(!m.length)return;const cx=m.reduce((a,u)=>a+u.x,0)/m.length,cy=m.reduce((a,u)=>a+u.y,0)/m.length;if(Math.hypot(x-cx,y-cy)>.01)gr.setForm(gr.form||'line',{face:Math.atan2(y-cy,x-cx),files:gr.files})}

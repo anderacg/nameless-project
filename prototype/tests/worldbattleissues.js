@@ -40,8 +40,16 @@ Kit.suite(({ok,info})=>{
   finally{ctx.drawImage=draw;ctx.restore();window.eval('VS='+native)}
   const mind=t.CharacterMind.of(b.hero),auto=mind.auto,turn=window.updateNonHeroActors;let heroTime=0,troopTime=0;mind.auto=function(dt){heroTime+=dt;return auto.call(this,dt)};window.updateNonHeroActors=dt=>{troopTime+=dt;return turn(dt)};
   try{b.hx.stop=1;b.slow=1;t.updateBattle(.03);ok(troopTime>0&&Math.abs(heroTime-troopTime)<1e-8,'hero and soldiers share one movement clock without hero impacts freezing the whole battle')}finally{mind.auto=auto;window.updateNonHeroActors=turn}
-  // Fog removal is local to the combat area and does not fill campaign exploration memory.
-  const memory=t.W.seen.slice(),cam={x:b.world.x-30,y:b.world.y-30};ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,t.cv.width,t.cv.height);b.world.fog(cam,()=>{ctx.fillStyle='#ff0000';ctx.fillRect(0,0,t.VW+1,t.VH+1)});const clear=ctx.getImageData(30,30,1,1).data[3],outside=ctx.getImageData(Math.min(t.VW-1,Math.ceil(30+b.world.r+t.WORLD_BATTLE.apron+4)),30,1,1).data[3];ctx.restore();ok(clear===0&&outside===255,'world fog covers surrounding land while leaving the fight and escape apron clear');ok(memory.every((v,i)=>v===t.W.seen[i]),'battle visibility does not permanently reveal unexplored campaign land');
+  // The active circle clears fog and reveals land; its escape apron remains outside that visibility.
+  const cam={x:b.world.x-30,y:b.world.y-30};ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,t.cv.width,t.cv.height);b.world.fog(cam,()=>{ctx.fillStyle='#ff0000';ctx.fillRect(0,0,t.VW+1,t.VH+1)});const clear=ctx.getImageData(30,30,1,1).data[3],outside=ctx.getImageData(Math.min(t.VW-1,Math.ceil(30+b.world.r+4)),30,1,1).data[3];ctx.restore();ok(clear===0&&outside===255,'world fog clears the battle circle and resumes immediately outside it');
+  window.__visibilityBattle=b;const a=b.world,old={x:a.x,y:a.y,r:a.r};try{
+   a.x=P.x+t.vis()+5*t.TILE;a.y=P.y;a.r=2*t.TILE;t.fogReset();t.reveal();
+   ok(t.inSight(a.x,a.y)&&t.seenAt(a.x,a.y),'active battlefield beyond army sight is visible and explored');
+   ok(!t.inSight(a.x+a.r+2*t.TILE,a.y)&&!t.seenAt(a.x+a.r+2*t.TILE,a.y),'land beyond both army sight and the battle circle stays hidden');
+   window.eval('B=null');t.reveal();ok(!t.inSight(a.x,a.y)&&t.seenAt(a.x,a.y),'after battle the terrain remains explored without granting live sight');
+   const saved=t.seenSave();t.fogReset();t.seenLoad(saved);ok(t.seenAt(a.x,a.y),'battlefield exploration uses the existing fog save format');
+  }finally{window.eval('B=window.__visibilityBattle');Object.assign(a,old);delete window.__visibilityBattle}
+
   b.paused=true;const paused=b.t;t.updateBattle(.1);ok(b.t===paused,'tactical pause still stops the shared-speed simulation');b.paused=false;
   const speed=G.speed;t.finishBattle();ok(G.speed===speed,'returning from combat retains the speed the player selected');
  }

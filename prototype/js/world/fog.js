@@ -7,13 +7,17 @@ function seenArr(){if(!(W.seen instanceof Uint8Array)||W.seen.length!==MW*MH)W.s
 const seenTile=(tx,ty)=>tx>=0&&ty>=0&&tx<MW&&ty<MH&&seenArr()[ty*MW+tx]===1;
 const seenAt=(x,y)=>seenTile(Math.floor(x/TILE),Math.floor(y/TILE));
 // in your sight now
-const inSight=(x,y)=>Math.hypot(x-P.x,y-P.y)<vis();
+const inSight=(x,y)=>Math.hypot(x-P.x,y-P.y)<vis()||!!(B?.world&&Math.hypot(x-B.world.x,y-B.world.y)<=B.world.r);
 let fogDirty=true,lastReveal='';
 // what you see now becomes known (each tile whose middle lies within your sight)
-function reveal(){
-  const S=seenArr(),V=vis(),tx=Math.floor(P.x/TILE),ty=Math.floor(P.y/TILE),key=tx+','+ty+','+Math.round(V);if(key===lastReveal)return;lastReveal=key;
+function revealDisk(px,py,V){
+  const S=seenArr(),tx=Math.floor(px/TILE),ty=Math.floor(py/TILE);
   const r=Math.ceil(V/TILE)+1;
-  for(let y=ty-r;y<=ty+r;y++)for(let x=tx-r;x<=tx+r;x++){if(x<0||y<0||x>=MW||y>=MH||S[y*MW+x])continue;if(Math.hypot((x+.5)*TILE-P.x,(y+.5)*TILE-P.y)<V){S[y*MW+x]=1;fogDirty=true}}
+  for(let y=ty-r;y<=ty+r;y++)for(let x=tx-r;x<=tx+r;x++){if(x<0||y<0||x>=MW||y>=MH||S[y*MW+x])continue;if(Math.hypot((x+.5)*TILE-px,(y+.5)*TILE-py)<V){S[y*MW+x]=1;fogDirty=true}}
+}
+function reveal(){
+  const V=vis(),a=B?.world,key=Math.floor(P.x/TILE)+','+Math.floor(P.y/TILE)+','+Math.round(V)+(a?','+a.x+','+a.y+','+a.r:'');if(key===lastReveal)return;lastReveal=key;
+  revealDisk(P.x,P.y,V);if(a)revealDisk(a.x,a.y,a.r);
 }
 // a fresh map (a new game): nothing known yet
 function fogReset(){W.seen=new Uint8Array(MW*MH);fogDirty=true;lastReveal=''}

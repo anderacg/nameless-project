@@ -240,7 +240,7 @@ class CharActor extends Actor{
   turn(dt){CharacterMind.of(this.u).auto(dt)}
   turnsOn(g){return !g.player}
   taken(amt){const t=this.u;if(t.wardT>0)amt*=.75;if(t.comp&&t.s.block)amt*=1-t.s.block;if(t.s.dr)amt*=1-t.s.dr;return amt}// (a companion's shield and armour; a character's tree: less damage taken)
-  fell(){const t=this.u;if(t.comp){const c=compInit(t.type);if(c)c.hurt=Math.max(c.hurt||0,G.day+2);log(COMPS[t.type].n+' is wounded and drops out of the fight: out for 2 days.','bad')}else super.fell()}// (never killed)
+  fell(){const t=this.u;if(t.comp){const c=compInit(t.type);if(c)c.hurt=Math.max(c.hurt||0,G.day+Clock.frac+2);log(COMPS[t.type].n+' is wounded and drops out of the fight: out for 2 days.','bad')}else super.fell()}// (never killed)
   steady(){return Math.max(AIM.floor,1-AIM.skill*this.shotSkill())*Math.max(AIM.floor,1-AIM.gear*this.weaponTier())}
   earnXp(t,was){}
   // (a hard attack: their combo's finisher, charmind.js)

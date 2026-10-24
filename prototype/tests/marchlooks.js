@@ -14,6 +14,8 @@ Kit.suite(({ok})=>{
  const lord=t.W.lords[0],actual=t.marchLeaderSprite(lord,0),base=t.unitSprite(t.charOf(lord).key,0,false,0,0,false,false,lord.look().col),k=t.WORLD_BATTLE.sprite/t.WORLD_BATTLE.scale;
  const expected=t.mkc(Math.ceil(base.width*k),Math.ceil(base.height*k),g=>g.drawImage(base,0,0,base.width*k,base.height*k));
  ok(pixels(actual)===pixels(expected),'lord leader uses the battle character kind at marching scale and faction tint');
+ const oldDraw=t.ctx.drawImage,drawn=[];try{t.ctx.drawImage=s=>drawn.push(s);t.drawMarchLeader(actual,20,20,1);t.drawMarchLeader(actual,20,20,-1)}finally{t.ctx.drawImage=oldDraw}
+ ok(drawn.length===2&&drawn.every(s=>s===base&&s!==actual),'leaders in both directions draw the full battle sprite without pre-shrinking pixels');
  const fig=t.partyFig(lord,lord.look(),0);
  ok(fig.s===actual&&Math.abs(lord.headY()-Math.min(...Array.from({length:t.PEOPLE_STEPS},(_,f)=>{const q=t.partyFig(lord,lord.look(),f);return q.y+t.opaqueBox(q.s)[1]})))<=1,'leader picking and banner height follow the displayed battle sprite');
 });

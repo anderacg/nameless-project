@@ -43,7 +43,7 @@ function rtsOrder(x,y,opt){
     const last=g=>{const gr=B.groups[g];return gr.queue.length?gr.queue[gr.queue.length-1]:{x:gr.ax,y:gr.ay}},cx=gs.reduce((a,g)=>a+last(g).x,0)/gs.length,cy=gs.reduce((a,g)=>a+last(g).y,0)/gs.length;
     gs.forEach(g=>{const l=last(g),gr=B.groups[g];if(am)gr.queueTo(x+l.x-cx,y+l.y-cy,true);else gr.queueTo(x+l.x-cx,y+l.y-cy)});B.mark={x,y,t:.7,foe:false};if(am){B.mark.am=true;amSay()}return}
   gs.forEach(g=>B.groups[g].amEnd());
-  if(e){gs.forEach(g=>B.groups[g].attack(e,{run:!!opt.run}));log(htmlText(selLabel())+': attack the '+htmlText(e.grp&&B.groups[e.grp]?groupName(e.grp):e.leader?e.leader.name:ST[e.type]?ST[e.type].n.toLowerCase():'enemy')+'.')}
+  if(e){gs.forEach(g=>B.groups[g].attack(e,{run:!!opt.run}));toast(htmlText(selLabel())+': attack the '+htmlText(e.grp&&B.groups[e.grp]?groupName(e.grp):e.leader?e.leader.name:ST[e.type]?ST[e.type].n.toLowerCase():'enemy')+'.')}
   else{gs.forEach(regroup);const cx=gs.reduce((a,g)=>a+B.groups[g].ax,0)/gs.length,cy=gs.reduce((a,g)=>a+B.groups[g].ay,0)/gs.length;
     gs.forEach(g=>{const gr=B.groups[g];gr[am?'attackMove':'moveTo'](x+gr.ax-cx,y+gr.ay-cy,{run:!!opt.run})});if(am)amSay()}
   if(B.deploy)deploySnap(gs);
@@ -51,7 +51,7 @@ function rtsOrder(x,y,opt){
 }
 // an attack-move asked for (Ctrl) or armed (the button: armAttackMove), the arm spent by this order; never while deploying
 function amTake(opt){const am=!!(opt&&opt.amove||B.amArm)&&!B.deploy;if(B.amArm){B.amArm=false;setOrderUI()}return am}
-const amSay=()=>log(htmlText(selLabel())+': attack-move.');
+const amSay=()=>toast(htmlText(selLabel())+': attack-move.');
 // the Attack-move button (D): the selection's next order on the ground an attack-move (pressed again, or Esc: not)
 function armAttackMove(on){if(!B||B.deploy)return;B.amArm=on??(!B.amArm&&selGroups().length>0);setOrderUI()}
 // an order to the selected groups: hold (where they stand), charge, advance, withdraw (flee the battle: off your edge,
@@ -61,15 +61,15 @@ function setOrder(o){
   // (Charge and Advance set the pace, run or walk, and nothing else: where they go and whom they fight stay as they were;
   // hold: where they stand; withdraw: off your edge (battlecontrol.js))
   playerOrder(selGroups(),()=>{for(const g of selGroups()){const gr=B.groups[g];if(pace)gr.setWalk(o==='advance');else if(o==='withdraw')gr.withdraw();else if(o==='hold'){gr.amEnd();gr.hold()}}});
-  log(htmlText(selLabel())+': '+(pace?o==='charge'?'at a run.':'at a walk.':o+'.'));
+  toast(htmlText(selLabel())+': '+(pace?o==='charge'?'at a run.':'at a walk.':o+'.'));
   if(o==='charge'&&sfxOn()){const gs=selGroups();if(gs.length)sfx(gs.some(g=>grpUnits(g).some(u=>unitClass(u.s)==='cav'))?'gallop':'charge')}// (riders' hooves, else the horn)
 }
 // a group's flag on or off for the selection: walk, firm (hold ground), cease (cease fire), skirmish, melee (shooters' blades)
 const FLAG_N={walk:['walk','run'],firm:['hold their ground','fight freely'],shieldWall:['shield wall requested for eligible soldiers','shields lowered'],cease:['cease fire','fire at will'],skirmish:['skirmish','stand'],melee:['melee mode on: they fight whoever reaches them','melee mode off: they keep shooting, point blank']};
-function toggleFlag(f){if(!B||!FLAG_N[f])return;const gs=selGroups().filter(g=>grpUnits(g).some(u=>flagEligible(u,f)));if(!gs.length)return;const on=playerOrder(gs,()=>{const on=!gs.every(g=>B.groups[g][f]);gs.forEach(g=>B.groups[g].setFlag(f,on));return on});log(htmlText(selLabel())+': '+FLAG_N[f][on?0:1]+'.')}
+function toggleFlag(f){if(!B||!FLAG_N[f])return;const gs=selGroups().filter(g=>grpUnits(g).some(u=>flagEligible(u,f)));if(!gs.length)return;const on=playerOrder(gs,()=>{const on=!gs.every(g=>B.groups[g][f]);gs.forEach(g=>B.groups[g].setFlag(f,on));return on});toast(htmlText(selLabel())+': '+FLAG_N[f][on?0:1]+'.')}
 // control groups: Ctrl+1-9/0 keeps the selection; the same live binding drives recall and card badges.
 function ctrlGroups(k){if(!B)return[];const c=B.ctrl&&B.ctrl[k],id=playerGroups()[k==='0'?9:Number(k)-1];return c==='all'?'all':(c||[id]).filter(g=>g&&grpUnits(g).length)}
-function ctrlGroup(k,save){if(!B)return;B.ctrl=B.ctrl||{};if(save){B.ctrl[k]=B.sel==='all'?'all':selGroups().slice();log('Group '+k+': '+htmlText(selLabel())+'.');setOrderUI();return}
+function ctrlGroup(k,save){if(!B)return;B.ctrl=B.ctrl||{};if(save){B.ctrl[k]=B.sel==='all'?'all':selGroups().slice();toast('Group '+k+': '+htmlText(selLabel())+'.');setOrderUI();return}
   const gs=ctrlGroups(k);if(gs!=='all'&&!gs.length)return;B.sel=gs==='all'?'all':gs.length===1?gs[0]:gs;setOrderUI()}
 function selectGroup(g,add=false){if(!B||g!=='all'&&(!playerGroups().includes(g)||!grpUnits(g).length))return;if(add&&g!=='all'){const gs=B.sel==='all'?[]:selGroups();B.sel=[...new Set([...gs,g])]}else B.sel=g;setOrderUI()}
 function cycleGroup(){if(!B)return;const opts=['all',...playerGroups().filter(g=>grpUnits(g).length)];B.sel=opts[(opts.indexOf(B.sel)+1)%opts.length];setOrderUI()}
@@ -77,8 +77,8 @@ function cycleGroup(){if(!B)return;const opts=['all',...playerGroups().filter(g=
 function setForm(f){
   if(f==='wall')return toggleFlag('shieldWall');// Compatibility for old command callers, not a formation.
   if(!B||!FORMS[f])return;const sel=selGroups().filter(g=>grpUnits(g).length),gs=sel.filter(g=>formFits(g,f));
-  if(!gs.length){if(sel.length)log('Only '+WHO_N[FORMS[f].who]+' can form '+(f==='wall'?'a shield wall':f==='wedge'?'a wedge':'loose order')+'.');return}
-  const to=playerOrder(gs,()=>{const to=f!=='line'&&gs.every(g=>B.groups[g].form===f)?'line':f;gs.forEach(g=>B.groups[g].setForm(to));return to});log(gs.map(g=>htmlText(groupName(g))).join(' and ')+': '+FORMS[to].n.toLowerCase()+'.');
+  if(!gs.length){if(sel.length)toast('Only '+WHO_N[FORMS[f].who]+' can form '+(f==='wall'?'a shield wall':f==='wedge'?'a wedge':'loose order')+'.');return}
+  const to=playerOrder(gs,()=>{const to=f!=='line'&&gs.every(g=>B.groups[g].form===f)?'line':f;gs.forEach(g=>B.groups[g].setForm(to));return to});toast(gs.map(g=>htmlText(groupName(g))).join(' and ')+': '+FORMS[to].n.toLowerCase()+'.');
 }
 // (o.amove: Ctrl, or the Attack-move button: an attack-move to the line, rtsOrder)
 function formDragTo(x0,y0,x1,y1,o){
@@ -86,12 +86,12 @@ function formDragTo(x0,y0,x1,y1,o){
   const plan=formPlan(x0,y0,x1,y1);if(!plan.length)return false;const am=amTake(o);playerOrder(plan.map(p=>p.g),()=>{
   // (each a move to its part of the line, facing as dragged, as wide as its share of it: battlecontrol.js; your hero shares the line)
   for(const p of plan){const gr=B.groups[p.g],go=am?'attackMove':'moveTo';gr.amEnd();if(p.hero){gr[go](p.ax,p.ay,{face:p.face});B.hero.sx=B.hero.sy=0;continue}gr[go](p.ax,p.ay,{face:p.face,files:p.files})}
-  B.mark={x:(x0+x1)/2,y:(y0+y1)/2,t:.7,foe:false};if(am)B.mark.am=true;if(B.deploy)deploySnap(plan.map(p=>p.g))});log(htmlText(selLabel())+(am?': attack-move to the line.':': form up there.'));return true;
+  B.mark={x:(x0+x1)/2,y:(y0+y1)/2,t:.7,foe:false};if(am)B.mark.am=true;if(B.deploy)deploySnap(plan.map(p=>p.g))});toast(htmlText(selLabel())+(am?': attack-move to the line.':': form up there.'));return true;
 }
 // a unit ability (unitabilities.js) for every selected group that has it: each that can use it now does; the rest are left as
 // they are (cooling down, routing...). The order bar's ability buttons and their keys (G, I, U, Y) come here
 function groupAbility(id){
   const A=B&&UNIT_ABILITIES[id];if(!A)return false;const has=selGroups().filter(g=>grpUnits(g).length&&groupHasAbility(B.groups[g],id));if(!has.length)return false;
   const used=playerOrder(has,()=>has.filter(g=>B.groups[g].useAbility(id)),{counts:false});// (an ability is no order: a fall-back goes on)
-  log(used.length?used.map(g=>htmlText(groupName(g))).join(' and ')+': '+A.n.toLowerCase()+'.':htmlText(A.n)+': '+htmlText(abilityWhyNot(B.groups[has[0]],id).toLowerCase())+'.');return used.length>0;
+  toast(used.length?used.map(g=>htmlText(groupName(g))).join(' and ')+': '+A.n.toLowerCase()+'.':htmlText(A.n)+': '+htmlText(abilityWhyNot(B.groups[has[0]],id).toLowerCase())+'.');return used.length>0;
 }

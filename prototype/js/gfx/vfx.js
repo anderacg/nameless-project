@@ -29,7 +29,7 @@ function vfxCharge(u,t,m){
    momentum over SHAKE.charge) and, lighter, when a group of yours routs; with it the small shake of every blow (G.shake). A wobble
    by the clock, never a random draw; the jolt fades over SHAKE.life seconds of real time and never moves the camera (B.cam).
    Off: SHAKE.on false, or the system asks for reduced motion */
-const SHAKE={on:true,charge:.6,amp:4,rout:1.5,max:5,life:.45,hz:38};
+const SHAKE={on:true,world:.2,charge:.6,amp:4,rout:1.5,max:5,life:.45,hz:38};
 function reducedMotion(){try{return !!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)}catch(e){return false}}
 const shakeOn=()=>SHAKE.on&&!reducedMotion();
 // a jolt of n pixels, unless a stronger one is still going (lt: its clock restarts on the next frame)
@@ -42,7 +42,7 @@ function chargeJolt(u,m){if(m>SHAKE.charge&&(u.s.charge||u.s.big))jolt(SHAKE.amp
 function shakeView(bat){
   const now=performance.now()/1000,J=bat&&B&&B.jolt;if(J){joltStep(J.lt?Math.min(.1,now-J.lt):0);J.lt=now}
   if(!bat){G.shake=0;return null}// (only a battle shakes: a blow's shake left over must never shake the map)
-  if(!shakeOn())return null;const a=Math.max(B.paused?0:G.shake/2,joltAmp());if(a<.5)return null;
+  if(!shakeOn())return null;const a=Math.max(B.paused?0:G.shake/2,joltAmp())*(B.world?SHAKE.world:1);if(a<.5)return null;
   return{x:Math.round(Math.sin(now*SHAKE.hz)*a),y:Math.round(Math.cos(now*SHAKE.hz*1.3)*a)}}
 // one falls: the body tips over (drawCorpses), lies, and bleeds; a puff of dust. Its weapon drops beside it
 function vfxDeath(t,corpse){

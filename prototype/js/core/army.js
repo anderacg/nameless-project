@@ -3,8 +3,17 @@
    all normal roster mutations pass through this service. Reconciliation also supports explicit developer count edits,
    not old saves (only the current save schema is accepted). IDs never depend on type, slot or array position. */
 const ARMY_LIMIT=10;
+const ARMY_GROUP={start:3,leadBase:2,units:10};
+const armyGroupLimit=o=>o===P?Math.min(ARMY_LIMIT,ARMY_GROUP.start+Math.max(0,(P.sk?.lead?.lv||0)-ARMY_GROUP.leadBase)):ARMY_LIMIT;
 class ArmyRoster extends TroopRoster{
   get reserved(){return this.rules.reserved?this.rules.reserved():0}
+  get groupLimit(){return armyGroupLimit(this.owner)}
+  groupCap(type){return ARMY_GROUP.units}
+  groupRoom(type,target){
+    const cap=this.groupCap(type),gs=this.groups;
+    if(target&&target!=='new'){const g=gs.find(g=>g.id===target&&g.type===type);return g?Math.max(0,cap-g.count-this.wounded(g.id)):0}
+    return (target==='new'?0:gs.filter(g=>g.type===type).reduce((n,g)=>n+Math.max(0,cap-g.count-this.wounded(g.id)),0))+Math.max(0,this.groupLimit-this.slots)*cap;
+  }
   get groups(){
     const a=this.owner.army||(this.owner.army={nextId:1,groups:[]});
     // Reconcile count-based construction/debug edits without collapsing existing duplicate groups.
@@ -14,7 +23,9 @@ class ArmyRoster extends TroopRoster{
       if(have<want){if(gs.some(g=>g.count>0))gs.find(g=>g.count>0).count+=want-have;
         else{if(a.groups.filter(g=>g.count>0).length+this.reserved>=ARMY_LIMIT)throw Error('Army exceeds '+ARMY_LIMIT+' groups.');a.groups.push({id:'g'+a.nextId++,type,count:want-have,form:'line'})}}
     }
-    for(let i=a.groups.length-1;i>=0;i--)if(a.groups[i].count<=0)a.groups.splice(i,1);return a.groups;
+    for(let i=a.groups.length-1;i>=0;i--)if(a.groups[i].count<=0)a.groups.splice(i,1);
+    // Count-based spawns get the same ten-soldier groups; never discard troops from an already oversized saved army.
+    for(const g of a.groups.slice())while(g.count>this.groupCap(g.type)&&a.groups.length+this.reserved<ARMY_LIMIT){const n=Math.min(this.groupCap(g.type),g.count-this.groupCap(g.type));g.count-=n;a.groups.push({id:'g'+a.nextId++,type:g.type,count:n,form:g.form,files:g.files??null})}return a.groups;
   }
   get slots(){return this.groups.length+this.reserved}
   get order(){
@@ -37,13 +48,14 @@ class ArmyRoster extends TroopRoster{
     [order[i],order[j]]=[order[j],order[i]];this.owner.army.order=order;
     this.groups.sort((a,b)=>order.indexOf(a.id)-order.indexOf(b.id));this.changed();return true;
   }
-  canAdd(type,target){return this.accepts(type)&&(target!=='new'&&this.groups.some(g=>g.type===type&&(!target||g.id===target))||(!target||target==='new')&&this.slots<ARMY_LIMIT)}
+  canAdd(type,target,n=1){return this.accepts(type)&&troopAmount(n)&&(target!=='new'||n<=this.groupCap(type))&&this.groupRoom(type,target)>=n}
   add(type,n=1,groupId){
     if(!this.accepts(type)||!troopAmount(n)||!Number.isSafeInteger(this.count(type)+n))return 0;
-    const gs=this.groups;let g=groupId==='new'?null:groupId?gs.find(g=>g.id===groupId&&g.type===type):gs.find(g=>g.type===type);
+    if(!this.canAdd(type,groupId,n)||groupId==='new'&&n>this.groupCap(type))return 0;
+    const gs=this.groups;let g=groupId==='new'?null:groupId?gs.find(g=>g.id===groupId&&g.type===type):gs.find(g=>g.type===type&&g.count+this.wounded(g.id)<this.groupCap(type));
     if(groupId&&groupId!=='new'&&!g)return 0;
-    if(!g){if(this.slots>=ARMY_LIMIT)return 0;g={id:'g'+this.owner.army.nextId++,type,count:0,form:'line'};gs.push(g)}
-    g.count+=n;const c=this.owner[this.field]||(this.owner[this.field]={});c[type]=this.count(type)+n;this.changed();return n;
+    let left=n;while(left){if(!g){g={id:'g'+this.owner.army.nextId++,type,count:0,form:'line'};gs.push(g)}const put=Math.min(left,this.groupCap(type)-g.count-this.wounded(g.id));g.count+=put;left-=put;g=gs.find(g=>g.type===type&&g.count+this.wounded(g.id)<this.groupCap(type))}
+    const c=this.owner[this.field]||(this.owner[this.field]={});c[type]=this.count(type)+n;this.changed();return n;
   }
   remove(type,n=1,groupId){
     let left=this.limit(type,n),taken=0;const gs=this.groups;
@@ -53,13 +65,13 @@ class ArmyRoster extends TroopRoster{
       this.owner.army.groups=gs.filter(g=>g.count>0);this.changed()}return taken;
   }
   split(id,n){
-    const g=this.groups.find(g=>g.id===id);if(!g||!troopAmount(n)||n>=g.count||this.slots>=ARMY_LIMIT)return null;
+    const g=this.groups.find(g=>g.id===id);if(!g||!troopAmount(n)||n>=g.count||n>this.groupCap(g.type)||this.slots>=this.groupLimit)return null;
     const order=this.order;g.count-=n;const out={...g,id:'g'+this.owner.army.nextId++,count:n};delete out.name;this.owner.army.groups.push(out);
     order.splice(order.indexOf(id)+1,0,out.id);this.owner.army.order=order;this.changed();return out;
   }
   merge(fromId,toId){
     const gs=this.groups,a=gs.find(g=>g.id===fromId),b=gs.find(g=>g.id===toId);
-    if(!a||!b||a===b||a.type!==b.type)return false;b.count+=a.count;this.owner.army.groups=gs.filter(g=>g!==a);
+    if(!a||!b||a===b||a.type!==b.type||a.count+b.count+this.wounded(a.id)+this.wounded(b.id)>this.groupCap(a.type))return false;b.count+=a.count;this.owner.army.groups=gs.filter(g=>g!==a);
     for(const w of this.owner.woundedGroups||[])if(w.id===a.id){w.id=b.id;if(b.name)w.name=b.name;else delete w.name}this.changed();return true;
   }
   upgrade(id,to){
@@ -71,8 +83,8 @@ class ArmyRoster extends TroopRoster{
   }
   restore(group,n){
     const gs=this.groups,existing=gs.find(g=>g.id===group.id);
-    if(existing)return this.add(group.type,n,existing.id);
-    if(this.slots>=ARMY_LIMIT||!troopAmount(n)||!this.accepts(group.type))return 0;
+    if(existing){const amount=Math.min(n,this.groupCap(group.type)-existing.count);if(amount<=0)return 0;existing.count+=amount;const c=this.owner[this.field];c[group.type]=this.count(group.type)+amount;this.changed();return amount}
+    if(this.slots>=this.groupLimit||n>this.groupCap(group.type)||!troopAmount(n)||!this.accepts(group.type))return 0;
     gs.push({id:group.id,type:group.type,count:n,form:'line',...(group.name?{name:group.name}:{})});const c=this.owner[this.field]||(this.owner[this.field]={});c[group.type]=this.count(group.type)+n;this.changed();return n;
   }
   transferTo(target,k,n=1,room=Infinity){
@@ -89,7 +101,7 @@ class ArmyRoster extends TroopRoster{
     const dest=to==='new'?null:target.groups.find(row=>row.id===to&&row.type===g.type);
     if(!target.accepts(g.type)||to!=='new'&&!dest)return fail('target');
     if(!Number.isSafeInteger(target.count(g.type)+n))return fail('amount');
-    if(target.slots+(dest?0:1)+reserve>ARMY_LIMIT)return fail('groups');
+    if(target.slots+(dest?0:1)+reserve>target.groupLimit||n+(dest?.count||0)+(dest?target.wounded(dest.id):0)>target.groupCap(g.type))return fail('groups');
     return {ok:true,code:'transfer',source:id,target:to,type:g.type,count:n,whole:n===g.count,
       sourceCount:g.count,targetCount:dest?.count||0,sourceName:g.name||'',targetName:dest?.name||'',form:g.form,files:g.files??null,
       fromSlots:this.slots,toSlots:target.slots,fromAfter:this.slots-(n===g.count?1:0),toAfter:target.slots+(dest?0:1)+reserve};

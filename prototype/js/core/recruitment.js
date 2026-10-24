@@ -25,7 +25,7 @@ class RecruitmentService{
     if(this.player.gold<cost)return fail('gold');
     if(this.rules.size()+n>this.rules.capacity())return fail('capacity');
     if(this.rules.roster&&target!=='new'&&!this.rules.roster().groups.some(g=>g.id===target&&g.type===k))return fail('target');
-    if(this.rules.canGroup&&!this.rules.canGroup(k,target))return fail('groups');
+    if(this.rules.canGroup&&!this.rules.canGroup(k,target,n))return fail('groups');
     return {ok:true,code:'hire',kind:k,count:n,target,cost,unitCost};
   }
   hire(t,k,n=1,target){
@@ -90,8 +90,8 @@ class RecruitmentService{
 const TROOP_XP={need:{1:40,2:80,3:140,4:220},dmg:.5,kill:6,fight:4,win:4,auto:.6};
 const recruitment=new RecruitmentService(P,{troops:ST,upgrades:UP,companions:COMPS,compTown:id=>compTown(id),hire:HIRE,xp:TROOP_XP,prisonerCost:10,has,effect:tm,
   lead:()=>skill('lead'),size:partySize,capacity:partyCap,canHire:(t,k)=>canHire(t,k),day:()=>G.day,
-  roster:()=>partyRoster(P),target:k=>recruitTarget(k)||partyRoster(P).groups.find(g=>g.type===k)?.id||'new',
-  canGroup:(k,target)=>partyRoster(P).canAdd(k,target===undefined?recruitTarget(k):target),freeGroup:()=>partyRoster(P).slots<ARMY_LIMIT,
+  roster:()=>partyRoster(P),target:k=>recruitTarget(k)||partyRoster(P).groups.find(g=>g.type===k&&partyRoster(P).groupRoom(k,g.id)>0)?.id||'new',
+  canGroup:(k,target,n=1)=>partyRoster(P).canAdd(k,target===undefined?recruitTarget(k):target,n),freeGroup:()=>partyRoster(P).slots<partyRoster(P).groupLimit,
   add:(k,n=1,target=recruitTarget(k))=>{const r=partyRoster(P),added=r.add(k,n,target);if(added&&target==='new')G.recruitTarget=r.groups[r.groups.length-1].id;if(added)skinsJoin(added);return added},// (each recruit brings an empty waterskin: world/supply.js)
   canTrainGroup:(from,to)=>partyRoster(P).canAdd(to)||partyRoster(P).groups.find(g=>g.type===from)?.count===1});
 const hireCost=k=>recruitment.hireCost(k),trainCost=k=>recruitment.trainCost(k);

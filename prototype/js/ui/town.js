@@ -1,6 +1,6 @@
 'use strict';
 // Commands return outcomes; the screen decides how to describe them.
-const RECRUIT_WHY={amount:'Enter a positive whole number with a valid total cost',target:'Choose an existing group of this unit type, or a new group','wounded-group':'Wait for this group’s wounded to return before upgrading it',groups:'Army is full (10 groups). Reinforce an existing type or merge groups',gold:'Not enough gold for this order',capacity:'Not enough headcount capacity for this order',volunteers:'Not enough volunteers for this order',standing:'Not enough standing',closed:'No one will enlist while the holding recovers',unavailable:'This holding does not raise that troop',experience:'Needs more experience: fight with them',troops:'No soldiers of that kind',upgrade:'Not a valid troop upgrade','training-unavailable':'No training available here','companion-unavailable':'This companion is not available here','companion-hired':'Already in your band','invalid-unit':'Unknown recruit'};
+const RECRUIT_WHY={amount:'Enter a positive whole number with a valid total cost',target:'Choose an existing group of this unit type, or a new group','wounded-group':'Wait for this group’s wounded to return before upgrading it',groups:'Army slot or troop-group limit reached. Train Leadership, choose another group, or make room',gold:'Not enough gold for this order',capacity:'Not enough headcount capacity for this order',volunteers:'Not enough volunteers for this order',standing:'Not enough standing',closed:'No one will enlist while the holding recovers',unavailable:'This holding does not raise that troop',experience:'Needs more experience: fight with them',troops:'No soldiers of that kind',upgrade:'Not a valid troop upgrade','training-unavailable':'No training available here','companion-unavailable':'This companion is not available here','companion-hired':'Already in your band','invalid-unit':'Unknown recruit'};
 const recruitmentWhy=r=>RECRUIT_WHY[r.code]||'';
 function recruitmentFeedback(r,t){
   if(r.ok){
@@ -9,10 +9,10 @@ function recruitmentFeedback(r,t){
     else if(r.code==='group-training')log(r.id+': '+r.count+' × '+ST[r.from].n+' upgraded to '+ST[r.to].n+' for '+r.cost+'g.','good');
     else if(r.code==='companion')log(COMPS[r.id].n+' joins your band. Give them a role with C.','good');
     else if(r.code==='prisoner')log('A captured '+ST[r.kind].n.toLowerCase()+' swears to follow you.');
-  }else if(r.code==='standing')log('The people of '+t.name+' do not know you well enough yet.','bad');
-  else if(r.code==='volunteers')log('No one else in '+t.name+' will take up arms today.','bad');
-  else if(r.code==='experience')log(ST[r.from].n+' needs more experience first ('+Math.floor(txpOf(r.from))+' / '+(r.xpCost||txpNeed(r.from))+' XP): fight with them.','bad');
-  else if(recruitmentWhy(r))log(recruitmentWhy(r)+'.','bad');
+  }else if(r.code==='standing')toast('The people of '+t.name+' do not know you well enough yet.','bad');
+  else if(r.code==='volunteers')toast('No one else in '+t.name+' will take up arms today.','bad');
+  else if(r.code==='experience')toast(ST[r.from].n+' needs more experience first ('+Math.floor(txpOf(r.from))+' / '+(r.xpCost||txpNeed(r.from))+' XP): fight with them.','bad');
+  else if(recruitmentWhy(r))toast(recruitmentWhy(r)+'.','bad');
 }
 /* ---------- economy ---------- */
 // prices come from each market's stock against its needs (economy.js); these are the next unit's
@@ -42,7 +42,7 @@ function quiverRows(t,place,act){
 // a quiver bought where it is sold (place): into your bag, your standing up a little
 function quiverBuy(id,t,place){
   const p=gearPrice(id);if(!quiverStock(t,place).includes(id)||P.gold<p||!invAdd('gear',id,1))return;
-  P.gold-=p;addRep(t.name,ITEMS[id].v/120,true);log('You buy a '+ITEM_KINDS.quiver.title({id}).toLowerCase()+'. Wear it in your inventory.','gold');
+  P.gold-=p;addRep(t.name,ITEMS[id].v/120,true);toast('You buy a '+ITEM_KINDS.quiver.title({id}).toLowerCase()+'. Wear it in your inventory.','gold');
 }
 const ransomValue=()=>Object.keys(P.prisoners).reduce((a,k)=>a+P.prisoners[k]*RANSOM[ST[k].tier],0);
 
@@ -273,8 +273,8 @@ class Stable extends Place{
   // ridden out at once with no mount of your own; else into your bag
   buyMount(arg,t){
     const id=arg,p=gearPrice(id);if(stableStock(t).includes(id)&&canBuyMount(t,id)&&P.gold>=p&&P.gear.mount!==id){
-      if(!P.gear.mount){P.gear.mount=id;P.gold-=p;fitInv();log('You buy a '+ITEMS[id].n+' and ride it out of the stable.','gold')}
-      else if(invAdd('gear',id,1)){P.gold-=p;log('You buy a '+ITEMS[id].n+'. Swap mounts in your inventory.','gold')}}
+      if(!P.gear.mount){P.gear.mount=id;P.gold-=p;fitInv();toast('You buy a '+ITEMS[id].n+' and ride it out of the stable.','gold')}
+      else if(invAdd('gear',id,1)){P.gold-=p;toast('You buy a '+ITEMS[id].n+'. Swap mounts in your inventory.','gold')}}
   }
 }
 definePlace('stable',Stable);
@@ -333,7 +333,7 @@ class Barracks extends Place{
     else if(s.hireTarget===undefined||s.draftType!==from){s.hireTarget=recruitment.rules.target(from);s.draftType=from}
     s.pick=pick;const q=this.orderQuote(),slots=r.slots,capacity=partyCap(),size=partySize(),review=s.review;
     const groupSelect=to?'<label>Group to upgrade<select data-recruit-field="trainingGroup" aria-label="Group to upgrade">'+groups.map(g=>option(g.id,(g.name||ST[from].n)+' · '+g.id+' × '+g.count,g.id===s.trainingGroup)).join('')+'</select></label>':
-      '<label>Destination group<select data-recruit-field="hireTarget" aria-label="Destination group">'+groups.map(g=>option(g.id,(g.name||ST[from].n)+' · '+g.id+' × '+g.count,g.id===s.hireTarget)).join('')+option('new','New '+ST[from].n+' group',s.hireTarget==='new',slots>=ARMY_LIMIT)+'</select></label>';
+      '<label>Destination group<select data-recruit-field="hireTarget" aria-label="Destination group">'+groups.map(g=>option(g.id,(g.name||ST[from].n)+' · '+g.id+' × '+g.count,g.id===s.hireTarget)).join('')+option('new','New '+ST[from].n+' group',s.hireTarget==='new',slots>=r.groupLimit)+'</select></label>';
     const projected=slots+(!to&&s.hireTarget==='new'?1:0);
     return '<section class="recruit-order" aria-label="Group recruitment and training"><div class="lab">'+(to?'Upgrade '+ST[from].n+' → '+ST[to].n:'Recruit '+ST[from].n)+'</div><div class="recruit-fields">'+groupSelect+
       (to?'':'<label>Soldiers<input data-recruit-field="hireCount" aria-label="Recruit quantity" type="number" min="1" step="1" value="'+(Number.isFinite(s.hireCount)?s.hireCount:1)+'"></label>')+'</div>'+
@@ -458,8 +458,8 @@ class Storehouse extends Place{
   // put in (st-put) or take out (st-take) g:n (n: 5 or all), in your own castle
   store(a,arg){
     const t=G.town&&G.town.ref;if(!t||t.owner!=='player')return;ensureEcon(t);const [g,ns]=String(arg).split(':');if(!GOODS[g])return;const st=Math.floor(t.stock[g]||0);
-    if(a==='st-put'){const n=Math.min(ns==='all'?Infinity:+ns,goodN(g),Math.max(0,Math.round(storeCap(t))-st));const k=n>0?goodTake(g,n):0;t.stock[g]=(t.stock[g]||0)+k;if(k)log('You store '+k+' '+GOODS[g].n.toLowerCase()+' in '+t.name+'.')}
-    if(a==='st-take'){const n=Math.min(ns==='all'?Infinity:+ns,st,goodRoom(g));const k=n>0?invAdd('good',g,n):0;t.stock[g]-=k;if(k)log('You take '+k+' '+GOODS[g].n.toLowerCase()+' from the stores of '+t.name+'.')}
+    if(a==='st-put'){const n=Math.min(ns==='all'?Infinity:+ns,goodN(g),Math.max(0,Math.round(storeCap(t))-st));const k=n>0?goodTake(g,n):0;t.stock[g]=(t.stock[g]||0)+k;if(k)toast('You store '+k+' '+GOODS[g].n.toLowerCase()+' in '+t.name+'.')}
+    if(a==='st-take'){const n=Math.min(ns==='all'?Infinity:+ns,st,goodRoom(g));const k=n>0?invAdd('good',g,n):0;t.stock[g]-=k;if(k)toast('You take '+k+' '+GOODS[g].n.toLowerCase()+' from the stores of '+t.name+'.')}
     updateHUD(true);renderTown();
   }
 }

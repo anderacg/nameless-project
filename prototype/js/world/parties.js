@@ -40,7 +40,7 @@ class Party extends WorldObject{
     ents.push({y:o.y,own:o.faction==='player',f:()=>{subT(o);const L=o.look(),sx=Math.round(o.x-cam.x),sy=Math.round(o.y-10-cam.y),fd=L.dir<0?-1:1,rider=!!L.rider&&!L.bandit,go=L.moving&&mapStepping(o),fr=go?frameOf(o,rider?WALK.ride:WALK.foot,WALK.n):0;
       const s=partyFig(o,L,fr).s;// (a rider: his host behind his horse)
       if(!WORLD_BATTLE.on)drawHost(o.size,L.col,sx-(rider?fd*4:0),sy+12,fd,go?o.wd:null,L.seed,L.race,L.bandit);
-      ctx.save();ctx.translate(sx,sy);if(fd<0)ctx.scale(-1,1);ctx.drawImage(s,-(s.width>>1),13-s.height);ctx.restore();
+      if(WORLD_BATTLE.on)drawMarchLeader(s,sx,sy+10,fd);else{ctx.save();ctx.translate(sx,sy);if(fd<0)ctx.scale(-1,1);ctx.drawImage(s,-(s.width>>1),13-s.height);ctx.restore();}
       if(L.torch){const tx=sx+fd*4,ty=sy+3;rect(ctx,'#5a3e24',tx,ty,1,4);LIGHTQ.push({x:tx,y:ty-1,r:16})}
       BANNERQ.push({o,label:!o.fight&&L.label?[L.label,L.labelCol]:null})}})}
   // sheltering in a holding: inside is the holding's name. shelterWhy(t): why it may not go in there ('' if it may; each kind
@@ -150,7 +150,7 @@ class PlayerParty extends Party{
   // how many you may lead: your level, renown, Leadership and Charisma, and your talents
   cap(){
     const n=8+this.level*3+Math.floor(this.renown/25)+this.skill('lead')+Math.floor(this.attr.cha/2)+this.treeMod('cap');
-    return Math.max(3,Math.round(n*(1+this.treeMod('capPct'))))}
+    return Math.max((armyGroupLimit(this)-1)*ARMY_GROUP.units,Math.round(n*(1+this.treeMod('capPct'))))}
   // room left: negative while over capacity (callers decide whether a transfer is allowed)
   room(){return this.cap()-this.headcount()}
   prisonCap(){return 2+this.skill('lead')+(this.hasPerk('warden')?6:0)+this.treeMod('prison')}
@@ -227,7 +227,7 @@ class PlayerParty extends Party{
   drinkHour(moving){return (this.headcount()+1)*SUPPLY.drink.perDay/24*(moving?1:SUPPLY.drink.rest)}
   furNeed(){return Math.ceil((this.headcount()+1)/SUPPLY.furPer)}
   fitness(){
-    const hurt=Object.keys(this.comps).filter(id=>!this.comps[id].party&&this.comps[id].hurt>G.day).length,fit=1+this.troopCount()+compsInBand().length,wounded=this.woundedCount()+hurt;
+    const hurt=Object.keys(this.comps).filter(id=>!this.comps[id].party&&this.comps[id].hurt>G.day+Clock.frac).length,fit=1+this.troopCount()+compsInBand().length,wounded=this.woundedCount()+hurt;
     return{fit,wounded,share:fit/(fit+wounded)}}
 }
 Object.setPrototypeOf(P,PlayerParty.prototype);

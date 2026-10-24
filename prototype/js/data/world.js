@@ -6,7 +6,8 @@ const WORLD_SCALE={
   // every step on the map is moveStep(pace, d): pace (px per world second, unscaled) x d x move. Flee odds and chase choices
   // read the unscaled paces, so this changes how fast things look, never who outruns whom. .68 (D9): a band on foot some 9 px a
   // second on open ground at 1x, 100 tiles (25 km) a day
-  move:.68,
+  // Campaign travel is twice the base pace; world combat explicitly keeps the base scale.
+  move:.68,travel:2,
   // how far each kind sees you, before your cover cuts it (Brain.sight, hiddenAt)
   sight:{lord:90,band:95,monster:70,caravan:80,refugee:70},
   // what the parties weigh (brains.js, monsters.js, critters.js, folk.js, companions.js, patrols.js)
@@ -42,7 +43,7 @@ const WORLD_SCALE={
   // road bridges seen this far (the battle's own reaches, terrain.js TERRAIN_RIVER.near and engage.js BTYPE_WORLD.near, within it)
   battle:{elfR:10,bridge:2}
 };
-const moveStep=(px,d)=>px*d*WORLD_SCALE.move;
+const moveStep=(px,d,travel=true)=>px*d*WORLD_SCALE.move*(travel?WORLD_SCALE.travel:1);
 /* how many of each wild thing a world holds (doc/WORLD_DESIGN.md §10.6). classic: the base caps and starting counts (the old
    hand-made map's, the measure every world grows from); sites by kind (sites.js SITE_TYPES), camps by the map's spots; daily: the
    tries a day to bring bands, beasts and game back.

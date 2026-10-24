@@ -691,7 +691,7 @@ class Commander{
 // the enemy's captain (key 1): its style told as the battle opens (TEMPER_SAY); a beaten army falls back as one (beatenArmy, by
 // that name: tests/battlejuice.js stands in for it), rather than fighting to the last man; your hero the leader it marks
 class EnemyCommander extends Commander{
-  announce(temper){if(TEMPER_SAY[temper])log(TEMPER_SAY[temper])}
+  announce(temper){if(TEMPER_SAY[temper])toast(TEMPER_SAY[temper])}
   fallsBack(N0,S){return !B.noMorale&&(B.fallBack||beatenArmy(N0,S,this.T))}
   leadOf(foes){return B.hero&&B.hero.hp>0&&seenBy(this.team,B.hero)?B.hero:null}
 }

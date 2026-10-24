@@ -1,6 +1,6 @@
 'use strict';
 /* ---------- campaign formations and battles on the land where the armies meet ---------- */
-const WORLD_BATTLE={on:true,scale:6,inner:18,outer:38,interaction:8,apron:22,join:220,regroup:7,returns:1,turn:3.5,blocked:30,sprite:3,step:1/60};
+const WORLD_BATTLE={on:true,scale:6,inner:8,outer:14,interaction:6,apron:22,join:220,regroup:7,returns:1,turn:3.5,blocked:30,sprite:3,step:1/60};
 class WorldBattleArea{
   constructor(e){
     const other=e.ref?.src||e.ref,a={x:P.x,y:P.y,facing:marchFacing(P)},b=other&&Number.isFinite(other.x)&&Number.isFinite(other.y)?other:{x:P.x+worldBattleReach(other),y:P.y};
@@ -37,7 +37,7 @@ class WorldBattleArea{
   place(g,units,anchor,offset,owner=anchor){
     const face=anchor.facing??Math.atan2(this.y-anchor.y,this.x-anchor.x),co=Math.cos(face),si=Math.sin(face),dir=co>=0?1:-1,p=this.openPoint(this.field({x:anchor.x+offset.x*co-offset.y*si,y:anchor.y+offset.x*si+offset.y*co}));
     g.ax=p.x;g.ay=p.y;g.face=g.currentFacing=face;g.order='hold';const slots=formSlots(g.form,units.length,face,g.files,WORLD_BATTLE.sprite);
-    const army=MARCH_ARMIES.get(owner),march=army?.forGroup(g.sourceGroupId||g.id)||[];
+    const army=MARCH_ARMIES.get(owner),march=army?.forGroup(g.sourceGroupId||g.id).filter(m=>!B.units.some(u=>!units.includes(u)&&u.marchUnit===m))||[];
     units.forEach((u,i)=>{u.sx=slots[i][0];u.sy=slots[i][1];const mini=march[i],q=mini?this.field(mini):this.openPoint({x:p.x+u.sx,y:p.y+u.sy});u.x=q.x;u.y=q.y;u.dir=mini?.dir??face;u.face=Math.cos(u.dir)>=0?1:-1;
       if(mini){u.marchUnit=mini;if(!this.inside(q,6)){u.hpLeft=u.hp;u.hp=0;u.left=true;u.waiting=true;this.arrivals.push({u,mini,army})}}});
     if(march.length){const live=units.filter(u=>u.hp>0);if(live.length){g.ax=live.reduce((n,u)=>n+u.x-u.sx,0)/live.length;g.ay=live.reduce((n,u)=>n+u.y-u.sy,0)/live.length}}
@@ -49,8 +49,8 @@ class WorldBattleArea{
   base(){ctx.save();try{drawWorld()}finally{ctx.restore()}this.syncCamera()}
   hides(o){return o===P||this.participants.has(o)&&!this.pending.some(p=>p.o===o)}
   visible(p){return true}
-  // Keep campaign fog outside the fight, including its escape apron, without exploring that land permanently.
-  fog(cam,draw){ctx.save();try{ctx.beginPath();ctx.rect(0,0,VW+1,VH+1);ctx.moveTo(this.x-cam.x+this.r+WORLD_BATTLE.apron,this.y-cam.y);ctx.arc(this.x-cam.x,this.y-cam.y,this.r+WORLD_BATTLE.apron,0,Math.PI*2,true);ctx.clip('evenodd');draw()}finally{ctx.restore()}}
+  // The active circle is clear; campaign fog resumes at its boundary.
+  fog(cam,draw){ctx.save();try{ctx.beginPath();ctx.rect(0,0,VW+1,VH+1);ctx.moveTo(this.x-cam.x+this.r,this.y-cam.y);ctx.arc(this.x-cam.x,this.y-cam.y,this.r,0,Math.PI*2,true);ctx.clip('evenodd');draw()}finally{ctx.restore()}}
   draw(){
     ctx.save();ctx.strokeStyle='#d1b464';ctx.lineWidth=this.scale;ctx.setLineDash([3*this.scale,4*this.scale]);ctx.beginPath();ctx.arc(this.cx,this.cy,this.radius,0,Math.PI*2);ctx.stroke();ctx.restore();
     for(const a of this.pending){if(!Number.isFinite(a.o.x))continue;const p=this.field(a.o);if(a.team&&!this.visible(p))continue;const x=clamp(p.x,16,BW-16),y=clamp(p.y,22,BH-16);ctx.fillStyle=a.team?'#dd7060':'#b9d28c';ctx.fillRect(x-3,y-9,6,9);txt('Reinforcements',x,y-15,ctx.fillStyle,'center')}
@@ -112,12 +112,12 @@ class WorldBattleArea{
     if(entered){B.cmdT=0;B.moraleNext=0;setOrderUI()}
   }
   teamFor(o){
-    const e=G.enc;if(!e)return -1;if((e.allies||[]).some(f=>(f.src||f)===o))return 0;if((e.foes||[]).some(f=>(f.src||f)===o))return 1;
+    const e=G.enc;if(!e)return -1;if(o.mapKind==='monster')return e.kind==='monster'&&o.id===e.ref?.id?1:-1;if((e.allies||[]).some(f=>(f.src||f)===o))return 0;if((e.foes||[]).some(f=>(f.src||f)===o))return 1;
     if(o.mapKind==='band'&&e.kind==='party')return 1;const f=foeRealm(e);if(f&&o.faction&&(o.faction===f||relOf(o.faction,f).s==='ally'))return 1;
     return o.mapKind==='cparty'?0:o.mapKind==='lord'&&lordWhy(e,o)||o.mapKind==='patrol'&&watchWhy(e,o)?0:-1;
   }
   reinforce(dt){
-    for(const o of [...W.lords,...W.patrols,...cparties(),...bandits]){if(this.participants.has(o)||o.dead||o.gone||o.inside||o.fight||!o.troops.length||Math.hypot(o.x-this.x,o.y-this.y)>this.r+WORLD_BATTLE.join)continue;const team=this.teamFor(o);if(team<0)continue;this.participants.add(o);this.pending.push({o,team})}
+    for(const o of [...W.lords,...W.patrols,...cparties(),...bandits,...W.monsters.map(asMonster)]){if(this.participants.has(o)||o.dead||o.gone||o.inside||o.fight||!o.troops.length||Math.hypot(o.x-this.x,o.y-this.y)>this.r+WORLD_BATTLE.join)continue;const team=this.teamFor(o);if(team<0)continue;this.participants.add(o);this.pending.push({o,team})}
     for(let i=this.pending.length-1;i>=0;i--){const a=this.pending[i],o=a.o,d=Math.hypot(o.x-this.x,o.y-this.y);if(d>this.r-3){const sp=Math.min(d,partySpeed(o,o.troops)*dt/this.scale);walk(o,this.x-o.x,this.y-o.y,sp);MARCH_ARMIES.get(o)?.step(dt/(this.scale*WORLD_SCALE.move),false);continue}if(a.existing){for(const id of a.existing){const g=B.groups[id],m=B.units.filter(u=>u.grp===id);for(const u of m){u.hp=u.hpLeft;delete u.left;delete u.waiting}this.place(g,m,o,{x:0,y:(a.existing.indexOf(id)-(a.existing.length-1)/2)*5},o);if(g.resolve){g.resolve.refreshState();g.resolve.sync()}}B.cmdT=0;B.moraleNext=0;B.sight=null;log((o.mapKind==='lord'?lordName(o):o.name||o.label?.()||'An army')+' enters the battle.',a.team?'bad':'good','war');battleEvent('reinforcement',{party:o,team:a.team});setOrderUI()}else this.join(o,a.team);this.pending.splice(i,1)}
   }
   join(o,team){

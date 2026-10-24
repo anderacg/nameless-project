@@ -221,7 +221,7 @@ defineKinds('encounter',{trigger:'travelHour'},{
     text:e=>'Two '+ST[e.unit].n.toLowerCase()+'s who fled their lord ask to join your band for food and 15 gold.',
     facts:e=>[e.fac&&'deserters from the '+FACS[e.fac].n,insight(['soldiers, by their gear','two '+ST[e.unit].n.toLowerCase()+'s, worn but armed','2 × '+ST[e.unit].n+', tier '+ST[e.unit].tier],'know what they are')],
     left:()=>'They vanish into the trees.',
-    acts:[{icon:'troops',label:'Take them in',need:e=>P.gold<15?'Not enough gold.':partySize()+2>partyCap()?'No room in your party.':!partyRoster(P).canAdd(e.unit)&&'No free army group.',
+    acts:[{icon:'troops',label:'Take them in',need:e=>P.gold<15?'Not enough gold.':partySize()+2>partyCap()?'No room in your party.':!partyRoster(P).canAdd(e.unit,undefined,2)&&'No free army group.',
         out:e=>({gold:-15,troops:{[e.unit]:2},gone:1,say:'Two new '+ST[e.unit].n.toLowerCase()+'s fall in line.'})},
       {icon:'prisoners',label:'Turn them in',need:e=>!e.fac&&'They serve no realm.',ask:e=>'Hand them to the '+FACS[e.fac].n+'’s men? Deserters hang.',
         out:e=>({honor:[e.fac,3],gold:10,say:()=>'You hand them over to the '+FACS[e.fac].n+'. The bounty is 10 gold.'})}]},

@@ -62,7 +62,7 @@ function updateRefugees(d){
 /* meeting refugees */
 /* refugees */
 function refugeeMeet(r){
-  G.rf=r;G.mode='dialog';P.tx=null;G.chase=null;r.cool=4;const mine=playerFiefs().filter(t=>!besieged(t)),k=Math.min(3,Math.floor(r.n/4),partyRoom());
+  G.rf=r;G.mode='dialog';P.tx=null;G.chase=null;r.cool=4;const mine=playerFiefs().filter(t=>!besieged(t)),k=Math.min(3,Math.floor(r.n/4),partyRoom(),partyRoster(P).groupRoom(levyOf(r.race)));
   showPanel('<div class="top"><h2>Refugees from '+r.from+'</h2><span class="muted">Bound for '+r.to+'</span></div>'+
     '<p>'+r.n+' '+RACES[r.race].n.toLowerCase()+' folk on the road, because '+REFUGEE_WHY[r.why]+'. They carry '+(Object.keys(r.goods).length?Object.keys(r.goods).map(g=>r.goods[g]+' '+GOODS[g].n.toLowerCase()).join(', ')+' and ':'')+(r.purse?'a few coins':'almost nothing')+'.</p><div class="btns">'+
     dlgBtn('rf-feed',null,'Share '+CONDUCT.feedRefugees.food+' food',r.fed?'Already fed':foodN()<CONDUCT.feedRefugees.food?'Not enough food':'')+
@@ -78,7 +78,7 @@ function refugeeAct(a){
     return notice('Fed','They bless your name. Reputation in '+r.from+' +'+c.rep+' and in '+r.to+' +'+c.repTo+'.','good')}
   if(a==='rf-settle'){const home=Spatial.nearest(playerFiefs().filter(t=>!besieged(t)),r.x,r.y);if(!home)return;r.to=home.name;const c=C.settleRefugees;if(from)addRep(from.name,c.rep,true);if(from&&from.owner&&from.owner!=='player')addHonor(from.owner,-c.honor,true);
     return notice('A new home','They turn toward '+home.name+'. '+r.n+' more people will live and pay taxes there. The '+(from&&from.owner&&from.owner!=='player'?FACS[from.owner].n+' grumbles at losing them (−'+c.honor+' honor).':'road is long.'),'good')}
-  if(a==='rf-recruit'&&!r.asked){const k=Math.min(3,Math.floor(r.n/4),partyRoom());if(k<1)return;const lv=levyOf(r.race);if(!partyRoster(P).canAdd(lv))return;r.asked=true;P.add(lv,k);r.n-=k;if(from)addRep(from.name,-2,true);
+  if(a==='rf-recruit'&&!r.asked){const k=Math.min(3,Math.floor(r.n/4),partyRoom(),partyRoster(P).groupRoom(levyOf(r.race)));if(k<1)return;const lv=levyOf(r.race);if(!partyRoster(P).canAdd(lv))return;r.asked=true;P.add(lv,k);r.n-=k;if(from)addRep(from.name,-2,true);
     return notice('Volunteers',k+' of them take up arms with you as '+ST[lv].n.toLowerCase()+(k>1?'s':'')+'. Fewer will reach '+r.to+'.','good')}
   if(a==='rf-rob'&&!r.robbed){const got=Object.keys(r.goods).map(g=>{const k=invAdd('good',g,r.goods[g]);return k?k+' '+GOODS[g].n.toLowerCase():''}).filter(Boolean),gold=r.purse;P.gold+=gold;r.goods={};r.purse=0;r.robbed=true;r.fear=true;r.n=Math.max(2,r.n-rint(1,3));
     const c=C.robRefugees,cost=[from&&wrong(from,{rep:c.rep,honor:c.honor,morale:c.morale}),to&&to!==from&&wrong(to,{rep:c.repTo,honor:c.honorTo})].filter(Boolean).join(', ');mood('cruel');

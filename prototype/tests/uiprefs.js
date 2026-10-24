@@ -7,10 +7,10 @@ try{
  const t=T,G=t.G,P=t.P;try{localStorage.clear()}catch(e){}
  const key=k=>localStorage.getItem('ashmark.'+k),panel=()=>document.getElementById('panel').innerHTML;
  // the readers as they were before the table (the stored text → the value), and the defaults
- const sp=[.5,1,2,5],OLD={grid:s=>s==='1',bspeed:s=>sp.includes(+s)?+s:1,hpbars:s=>s!=='0',blood:s=>s!=='0',guide:s=>s!=='0',bdeploy:s=>s!=='0',autoskills:s=>s!=='0',bauto:s=>s==='1',bfog:s=>s!=='0',ambient:s=>s!=='0',opaths:s=>['all','sel','off'].includes(s)?s:'sel'};
- const DEF={grid:false,bspeed:1,hpbars:true,blood:true,guide:true,bdeploy:true,autoskills:true,bauto:false,bfog:true,ambient:true,opaths:'sel'};
+ const sp=[.5,1,2,5],OLD={bpause:s=>s!=='0',grid:s=>s==='1',bspeed:s=>sp.includes(+s)?+s:1,hpbars:s=>s!=='0',blood:s=>s!=='0',guide:s=>s!=='0',bdeploy:s=>s!=='0',autoskills:s=>s!=='0',bauto:s=>s==='1',bfog:s=>s!=='0',ambient:s=>s!=='0',opaths:s=>['all','sel','off'].includes(s)?s:'sel'};
+ const DEF={bpause:true,grid:false,bspeed:1,hpbars:true,blood:true,guide:true,bdeploy:true,autoskills:true,bauto:false,bfog:true,ambient:true,opaths:'sel'};
  const VIEW={grid:['GRID','on'],bspeed:['BSPEED','v'],hpbars:['HPBARS','on'],blood:['BLOOD','on'],guide:['GUIDE','on'],bdeploy:['BDEPLOY','on'],autoskills:['AUTOSK','on'],bauto:['BAUTO','on'],bfog:['FOG','on'],ambient:['AMBIENT','on']};
- ok(Object.keys(t.PREFS).sort().join()===[...Object.keys(OLD),'mute','volmaster','volmusic','volsfx','mapzoom'].sort().join(),'the eleven settings (fog of war: battlefog.js; order paths: ui/orderpaths.js; ambient life: gfx/ambient.js), the four of sound (audio.js) and the map zoom (tests/mapzoom.js) in one table: '+Object.keys(t.PREFS).join(', '));
+ ok(Object.keys(t.PREFS).sort().join()===[...Object.keys(OLD),'mute','volmaster','volmusic','volsfx','mapzoom'].sort().join(),'the battle and world settings (fog of war: battlefog.js; order paths: ui/orderpaths.js; ambient life: gfx/ambient.js), the four of sound (audio.js) and the map zoom (tests/mapzoom.js) in one table: '+Object.keys(t.PREFS).join(', '));
  const inputs=[null,'1','0','','junk','2','0.5','.5','5','7','true'];
  for(const k in OLD){const bad=inputs.filter(s=>{if(s==null)localStorage.removeItem('ashmark.'+k);else localStorage.setItem('ashmark.'+k,s);return t.prefLoad(k)!==OLD[k](s)});
    ok(!bad.length&&t.PREFS[k].def===DEF[k],k+' reads ashmark.'+k+' as before (default '+DEF[k]+')'+(bad.length?': differs for '+bad.join('|'):''))}
@@ -28,7 +28,7 @@ try{
  t.setBattleSpeed(3,true);ok(key('bspeed')==='0.5'&&t.BSPEED.v===.5,'a speed not offered is ignored');t.setBattleSpeed(1,true);ok(key('bspeed')==='1'&&t.BSPEED.v===1,'and back to 1');
  // the Settings buttons: one handler, the page redraws with the button on
  t.showTitle('settings');{const bad=[];
-  for(const [a,arg,v] of [['grid','on',true],['grid','off',false],['blood','off',false],['blood','on',true],['hpbars','off',false],['hpbars','on',true],['bdeploy','off',false],['bdeploy','on',true],['guide','off',false],['guide','on',true],['bfog','off',false],['bfog','on',true],['ambient','off',false],['ambient','on',true],['opaths','all','all'],['opaths','off','off'],['opaths','sel','sel'],['bspeed','2',2],['bspeed','0.5',.5],['bspeed','1',1]]){
+  for(const [a,arg,v] of [['bpause','off',false],['bpause','on',true],['grid','on',true],['grid','off',false],['blood','off',false],['blood','on',true],['hpbars','off',false],['hpbars','on',true],['bdeploy','off',false],['bdeploy','on',true],['guide','off',false],['guide','on',true],['bfog','off',false],['bfog','on',true],['ambient','off',false],['ambient','on',true],['opaths','all','all'],['opaths','off','off'],['opaths','sel','sel'],['bspeed','2',2],['bspeed','0.5',.5],['bspeed','1',1]]){
    t.act(a,arg);const b=document.querySelector('#panel [data-act="'+a+'"][data-arg="'+arg+'"]');
    if(!(t.prefGet(a)===v&&key(a)===(typeof v==='boolean'?(v?'1':'0'):String(v))&&G.menu==='settings'&&b&&b.classList.contains('on')))bad.push(a+' '+arg)}
   ok(!bad.length,'each Settings button sets, stores and shows its setting'+(bad.length?': wrong for '+bad.join(', '):''))}
@@ -73,7 +73,7 @@ try{
   t.act('end-contract');ok(P.fac===null&&last()==='You end your contract with the '+f+'.','end-contract: '+last())}
  {P.prisoners={militia:2};const v=t.ransomValue(),g0=P.gold;t.act('ransom');ok(v>0&&P.gold===g0+v&&!Object.keys(P.prisoners).length&&last()==='The broker pays '+v+' gold for 2 prisoners.','ransom: '+last())}
  t.act('leave');while(G.mode==='perk')t.act('perk',G.perkOffer[0]);
- {const cid='brann',ct=t.townBy(t.COMPS[cid].town);G.mode='world';G.modal=false;t.hidePanel();G.lastTown=null;t.enterTown(ct);t.act('tab','tavern');t.act('hire-comp',cid);ok(!!P.comps[cid],'hire-comp: '+t.COMPS[cid].n+' joins');
+ {P.sk.lead.lv=9;const cid='brann',ct=t.townBy(t.COMPS[cid].town);G.mode='world';G.modal=false;t.hidePanel();G.lastTown=null;t.enterTown(ct);t.act('tab','tavern');t.act('hire-comp',cid);ok(!!P.comps[cid],'hire-comp: '+t.COMPS[cid].n+' joins');
   t.act('leave');while(G.mode==='perk')t.act('perk',G.perkOffer[0])}
  {const tw=t.TOWNS.find(x=>x.T.tourney);G.mode='world';G.modal=false;t.hidePanel();G.lastTown=null;t.enterTown(tw);t.act('tab','tavern');P.gold=100;t.act('tourney');ok(P.gold===90&&t.B&&t.B.opts.tournament,'tourney: 10 gold and into the lists')}
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}finally{SP.setItem=si;SP.getItem=gi}

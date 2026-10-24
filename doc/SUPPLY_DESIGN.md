@@ -1,5 +1,7 @@
 # Travel supplies: stamina, food, drink and furs: design
 
+Campaign recovery tuning (2026-10-24): stamina recovers at 4/hour stopped, 16/hour in camp and 20/hour lodging; food and drink penalties still apply. Wounded companions show gradual recovery across their two-day injury timer. Hourly Medicine, camp and lodging bonuses shorten it; expired injuries clear and return the companion to duty.
+
 Status: **built 2026-10-21**, all four phases (`world/supply.js` with every number in `SUPPLY`, `ui/ring.js`; tests `tests/supply.js`, `tests/camp.js`, `tests/ring.js`; prototype/README.md "Supplies"). As built, where it differs from the plan below:
 
 **Next, designed only (owner, 2026-10-21):** food and water become supply pools with a carrying capacity, a pack train (mules, camels, carts, wagons: bought, looted, found), rations and resupply policies, foraging and a march preview: [LOGISTICS_DESIGN.md](LOGISTICS_DESIGN.md).
