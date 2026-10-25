@@ -119,6 +119,8 @@ try{
    pointAt(tx+40,ty+8);frame(16);ok(WUI.hov.b.join()===[tx+32,ty,tx+48,ty+16].join(),'and go straight to the next');
    const BR=brk();frame(16);const h1=BR.at()+mine().map(q=>q[1].join()).join();frame(500);frame(450);const h2=BR.at()+mine().map(q=>q[1].join()).join();BR.off();ok(h1===h2&&!!BR.last,'nothing pulses: the arrow and brackets hold');
    P.tx=null;G.mouse.in=false;let n=0;frame(16);ok(!WUI.fx.length&&!WUI.dest,'and no puff')}finally{window.__rm0=rm0;ev('reducedMotion=window.__rm0')}
+  // ---- the route has footprints, with no separate pace figure
+  home();click(P.x+80,P.y);frame(16);frame(500);ok(WUI.dots.length>0&&![...t.WUIP.keys()].some(k=>k.startsWith('pace')),'the travel guide keeps its footprints without a separate pace icon');
   // ---- crisp at the screen's 3x: every picture of it at its own size, on whole device pixels
   home();ev('VS=3');try{const b=t.asParty({x:P.x+60,y:P.y+10,n:6,cool:5,t:0,a:0,kind:'bandits',idle:true});b.troops=t.makeEnemies(6,false,'bandits');t.bandits.push(b);
    P.x+=.37;frame(16);click(b.x,b.y-4);click(b.x,b.y-4);pointAt(P.x-30.3,P.y+20);const bad=[];let n=0,fills=0;const fr0=c.fillRect;c.fillRect=function(x,y,w,h){if(rec){const m=this.getTransform();fills++;const isI=v=>Math.abs(v-Math.round(v))<1e-3;if(!isI(m.e+m.a*x)||!isI(m.f+m.d*y)||!isI(m.a*w)||!isI(m.d*h))bad.push('rect '+[x,y,w,h].map(v=>+v.toFixed(3)).join(','))}return fr0.call(this,x,y,w,h)};

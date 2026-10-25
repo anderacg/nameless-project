@@ -18,8 +18,8 @@ const treeMark=(a,k)=>{if(k<32)a.tk|=1<<k;else(a.tkx||(a.tkx=[])).push(k)};
    lands). Each steps itself (step); a hit is the same for all (strike), but for what a guard leaves of it (blocked) and whom it
    trains (trains) ---------- */
 // Swept world hitboxes follow the enlarged bodies; tactical collision and balance stay unchanged.
-function worldMissileHit(a,from,arc=false){
-  const k=WORLD_BATTLE.sprite,dx=a.x-from.x,dy=a.y-from.y,pool=spatialOn()?SG.near((a.x+from.x)/2,(a.y+from.y)/2,Math.hypot(dx,dy)/2+28*k,a.team,true):B.units;let best=null,at=Infinity;
+function worldMissileHit(a,from,arc=false,units=null,scale=WORLD_BATTLE.sprite){
+  const k=scale,dx=a.x-from.x,dy=a.y-from.y,pool=units||(spatialOn()?SG.near((a.x+from.x)/2,(a.y+from.y)/2,Math.hypot(dx,dy)/2+28*k,a.team,true):B.units);let best=null,at=Infinity;
   for(const e of pool){if(e.hp<=0||e.team===a.team)continue;let lo=0,hi=1;
     const cut=(v,d,min,max)=>{if(Math.abs(d)<1e-9)return v>=min&&v<=max;let t0=(min-v)/d,t1=(max-v)/d;if(t0>t1)[t0,t1]=[t1,t0];lo=Math.max(lo,t0);hi=Math.min(hi,t1);return lo<=hi};
     const rx=(e.s.big?14:e.s.mounted?10:6)*k,ry=(e.s.big?arc?10:11:e.s.mounted?7:arc?5:7)*k,cy=e.y-(arc?0:(e.s.big||e.s.mounted?10:6)*k);

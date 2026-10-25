@@ -67,7 +67,8 @@ function partyUnitRemember(){const s=partyView();panel.querySelectorAll('[data-u
 function partyUnitActions(d,r){const edit=G.armyEdit===d.id,managed=r.order.includes(d.id);
   const button=(a,arg,label,why,cls)=>fbBtn(a,arg,label,why,cls).replace('<button ','<button'+(why?' title="'+htmlText(why)+'" aria-label="'+htmlText(label+': '+why)+'"':'')+' ');
   return '<div class="btns fb-inspector-acts fb-unit-actions">'+button(edit?'army-edit-close':'army-edit',d.id,edit?'Done':'Manage Group',managed?'':'This companion is leading another army','primary')+
-    button(d.kind==='hero'?'open-skills':d.kind==='comp'?'cm-tree':'party-path',d.kind==='troop'?d.id:null,'Development')+'</div>';
+    button(d.kind==='hero'?'open-skills':d.kind==='comp'?'cm-tree':'party-path',d.kind==='troop'?d.id:null,'Development')+
+    (d.kind==='troop'?button('conceal-toggle',d.id,MarchAmbush.held(d.id)?'Rejoin march':'Hold concealed',managed?'':'Group is not in your army',MarchAmbush.held(d.id)?'on':'')+'<p class="fb-note">Hold this group at its current world position. Forest cover helps conceal it; open ground does not. Other groups follow your hero. Rejoins if your hero travels too far. In battle, give this group an order to release it.</p>':'')+'</div>';
 }
 function partyUnitAttributes(d){if(d.kind==='hero')return heroPage();if(d.kind==='comp')return companionSkills(d.u.cid,d.c,d.ch)+
     (d.c.perkPend?'<section class="fb-perks"><h3>Choose a perk</h3>'+Object.keys(COMP_PERKS).filter(p=>!d.c.perks.includes(p)).map(p=>fbBtn('cm-perk',p,COMP_PERKS[p].n+'<small>'+COMP_PERKS[p].d+'</small>')).join('')+'</section>':'');

@@ -173,8 +173,9 @@ js/world/             the campaign map and everything on it
   distractions.js       nearby unseen noisy events: wordless cries and white source waves, runtime only, no knowledge
   tracks.js             tracks: every band's trail of prints (Track; the Tracks system: sampled each frame, trimmed each hour
                         and at the cap, saved), who sees them (by Scouting) and their card (trackTip: hover, or Look on the ring)
-  monsters.js critters.js reputation.js
+  monsters.js critters.js hunting.js reputation.js
   march.js              MarchArmy/MarchGround: physical travel soldiers, local routes, saved formation goals and building feet
+  ambush.js             MarchAmbush: held travel groups, their observed strength and the handoff to concealed battle orders
   world.js              travel (your step: straight while the way is open, else by the router: heroStep, heroWay; where you come out
                         by a holding: gateSpot, open land in front of its gate), Follow (FOLLOW, followStart, followStep,
                         followWatch: your band shadows a party), the daily tick, the world update
@@ -1032,4 +1033,26 @@ Recovery timing: wounded troop and companion cards/details show estimated time r
 
 Travel concealment: a closed-eye badge beside your army banner indicates forest cover outside battle. It disappears when you leave cover; detection rules are unchanged. Tests: travelconcealicon.
 
-Travel stealth eyes: closed / partial / fully open eyes indicate outside detection, close to detection and detected. Visible observers have individual eyes; your army has an overall gauge. Hovering an observer explains its status. Eyes use existing detection rules and forest modifiers; partial opening indicates distance rather than a new awareness timer. Hidden entities are not revealed by markers. Tests: traveldetection.
+Travel stealth eyes: closed / partial / fully open eyes show unaware / suspicious / detected. Each travel observer builds its own suspicion within the existing cover-adjusted sight range. AI pursuit, avoidance and automatic encounters wait for detection; player-initiated interaction remains available. Visible observers have individual eyes; your army has an overall gauge. Hidden entities are not revealed by markers. Runtime state and TRAVEL_AWARE tuning live in world/worldobject.js. Tests: travelsuspicion and traveldetection.
+
+Travel stealth UI is icon-only. Your army rings match the overall eye colour: teal undetected, amber near detection, gold seen by neutral/friendly observers, red seen by hostile observers. Circle sizes and the yellow battle boundary stay unchanged.
+
+Travel detection eyes use larger fixed screen sizes: 18px for observers and 36px above your army.
+
+Wildlife hunting: select existing wild game, then Hunt with up to three actual fit ranged marchers; at least one is required. world/hunting.js owns the short live-map encounter and WILD_HUNT tuning. Hunters approach and shoot automatically; undetected forest cover improves opening accuracy. A collected kill grants the existing meat/materials/XP, survivors flee and leave real tracks, and Leave hunt or a travel order ends it freely. No tools, skinning or separate battlefield. Monsters retain ordinary combat. Tests: wildhunt; shared swept-hit compatibility: worldhitvisibility.
+
+Travel pace feedback: walking/running changes are silent. gfx/worldui.js draws a cached animated walking or running figure on the path; Hurry widens footprint spacing and accelerates the trail. Reduced motion keeps the guide still. Exhaustion refusal remains a warning. Tests: worldui, journalretention, clickhurry.
+
+Pace icon refinement: the path guide uses a footprint for walking and the same footprint with two upward chevrons for Hurry. The running chevrons pulse subtly; reduced motion holds them still.
+
+Travel suspicion (2026-10-25): detection takes 2 seconds on open terrain or 4 in forest at 1x. Hurry builds 1.5x faster; within 35% of sight range, 3x faster. Direct contact (at most 8 world pixels) reveals immediately. Suspicion fades over 3 seconds out of range, follows world speed and freezes while paused/in menus/battle. Lords, bands, guards, monsters, caravans, refugees, frightened workers and wildlife use the same recognition gate; firing a hunting shot alerts its herd. Range and forest modifiers remain unchanged; no travel line-of-sight/facing or NPC-to-NPC awareness changes. Suspicion is runtime-only, reset on world load/new game or taking shelter. Tests: travelsuspicion, traveldetection, wildhunt, structure.
+
+Joining an ongoing world fight (2026-10-25): WorldBattleArea records the original Fight and every participating army, counts their fighters including leaders, and encloses all existing formation circles/spreads before fixing the boundary. Original party travel sprites/rings and the campaign fight tally are hidden during tactical combat. Existing combatants enter immediately; new helpers retain the pending reinforcement path. Joins against monsters carry the same fight identity. fightPlace relocates cached MarchArmy figures with their anchor and clears stale routes; combat placement snaps blocked starting figures to nearby open ground. Tests: joinworldfight (16), fights (18). The broader worldbattle run passed 33 checks but still reported five formation-offset/editor/save assertion failures; those assertions were left unchanged.
+
+Travel pace badge refinement (2026-10-25): removed the separate pace figure from the path. gfx/render.js drawTravelPace reuses badgePx('walk'/'run') from battle unit cards beside the player banner, at 14 CSS pixels, stacked below concealment when present. Only a travel destination/chase/follow shows it; idle, sheltered, camped and combat states hide it. Path footprints retain their Hurry spacing/speed, and pace switches remain silent. Tests: worldui and travelconcealicon.
+
+Wildlife hunting now requires at least one fit troop with a physical ranged weapon. The preparation window disables Hunt and explains why when none are available, and start rechecks the roster. Removed the free hero bow and hero-only option; only up to three actual ranged marchers shoot. The hero can still lead the approach and collect the kill. Wounded ranged troops do not qualify. Tests: wildhunt.
+
+Travel ambush tactics: in Army, select a troop group and choose Hold concealed. It waits at its current world position while the hero and other groups travel; Rejoin march releases it, and moving more than 220 world pixels away automatically recalls it. Cover comes from actual forest terrain, not the order itself. Hold anchors live in P.army.concealed and survive saves. On entering a world battle, held groups retain their actual positions, hold position/fire and stay outside automatic commander control until you issue them an order. Battle settlement clears travel holds.
+
+Travel detection now builds suspicion per group using its actual centre, footprint, forest cover and movement. Group size adds at most 25% sight distance. A quiet held group in forest builds suspicion at half rate; moving groups build 1.35x faster. An observer estimates power only from groups it has detected, remembering them for 8 seconds, and pursues visible bait instead of an unseen hero. Other observers have independent knowledge. Existing terrain concealment, attack reveal and charge ambush shock apply in combat; there is no extra damage multiplier. World forest tiles also protect concealment at coarse battle-grid edges. Tuning: TRAVEL_AMBUSH in world/ambush.js; recognition in world/worldobject.js. Tests: travelambush, travelsuspicion, traveldetection, worldhitvisibility.

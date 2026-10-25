@@ -9,11 +9,11 @@ const GRACE_GAP=WORLD_SCALE.ai.graceGap;
 class Brain{
   cool(o,d){o.cool=Math.max(0,(o.cool||0)-d)}
   // you, from where it stands
-  look(o){const dx=P.x-o.x,dy=P.y-o.y;return{dx,dy,d:Math.hypot(dx,dy)}}
+  look(o){const p=TravelAwareness.target(o)||P,dx=p.x-o.x,dy=p.y-o.y;return{dx,dy,d:Math.hypot(dx,dy)}}
   // how far it sees you: its eyes, less when you are hidden, nothing while you stay inside a holding
   sight(base){return P.stay?0:base*(hiddenAt(P.x,P.y)?.55:1)}
   // close enough to meet you, and free to (in the grace after a fight, G.encCool, nothing meets you: hunters keep GRACE_GAP off)
-  canMeet(o,dist){return dist<(WORLD_BATTLE.on?worldBattleReach(o):10)&&o.cool<=0&&G.encCool<=0&&!G.modal}
+  canMeet(o,dist){return dist<(WORLD_BATTLE.on?worldBattleReach(o):10)&&o.cool<=0&&G.encCool<=0&&!G.modal&&(G.chase===o||TravelAwareness.sees(o))}
   // which way it faces after moving from ox
   face(o,ox){if(Math.abs(o.x-ox)>.01)o.dir=o.x>ox?1:-1}
   think(o,d){return false}
@@ -28,7 +28,7 @@ class LordBrain extends Brain{
     if(l.inside){const h=townBy(l.inside);if(l.state==='rest'&&l.tgt===l.inside&&h&&h.owner===l.fac)return false;l.leave()}
     if(inFight(l))return false;
     const v=this.look(l),pd=v.d,hostile=hostileTo(l.fac)&&!lordSpares(l),mul=lordSpeed(l)/26;// (26: a lord's old pace)
-    const relief=hostile&&l.state==='relieve'&&!!P.siege&&P.siege.town===l.tgt,st=hostile?(relief?'attack':stance(l.power())):null,see=this.sight(WORLD_SCALE.sight.lord)*(relief?2:1);
+    const relief=hostile&&l.state==='relieve'&&!!P.siege&&P.siege.town===l.tgt,st=hostile?(relief?'attack':stance(l.power(),l)):null,see=TravelAwareness.sees(l)?travelDetection(l).range:0;
     if(st==='afraid'&&l.state==='siege'&&pd<see){l.state='home';l.tgt=Spatial.nearest(fiefsOf(l.fac),l.x,l.y).name;log(l.name+' abandons the siege as your band approaches.','good')}
     const dread=W.lords.find(o=>!o.dead&&!o.inside&&o!==l&&atWar(o.fac,l.fac)&&Math.hypot(o.x-l.x,o.y-l.y)<WORLD_SCALE.ai.dread&&o.power()>=l.power()*1.5);
     if(dread&&l.state==='march'&&fiefsOf(l.fac).length){l.state='home';l.tgt=Spatial.nearest(fiefsOf(l.fac),l.x,l.y).name}
@@ -54,8 +54,8 @@ class BandBrain extends Brain{
   think(b,d,night){
     if(inFight(b))return false;
     const v=this.look(b);this.cool(b,d);
-    const st=stance(b.power()),home=night&&campNear(b);
-    if(b.cool>0||!stanceMove(b,st,v.d,v.dx,v.dy,this.sight(WORLD_SCALE.sight.band),moveStep(partySpeed(b,b.troops),d),true)){
+    const st=stance(b.power(),b),home=night&&campNear(b);
+    if(b.cool>0||!stanceMove(b,st,v.d,v.dx,v.dy,TravelAwareness.sees(b)?travelDetection(b).range:0,moveStep(partySpeed(b,b.troops),d),true)){
       if(home){Router.travel(b,home,moveStep(16,d))||walk(b,home.x-b.x,home.y-b.y,Math.min(Math.hypot(home.x-b.x,home.y-b.y),moveStep(16,d)));if(Math.hypot(home.x-b.x,home.y-b.y)<8){(home.bands=home.bands||[]).push(b);b.x=home.x;b.y=home.y;b.gone=true;return false}}
       else{b.t-=d;if(b.t<=0){b.t=2+Math.random()*3;b.a=Math.random()*6.283;b.idle=Math.random()<.3}if(!b.idle)walk(b,Math.cos(b.a),Math.sin(b.a),moveStep(12,d))}}
     if(this.canMeet(b,v.d)){meetBand(b);return true}
@@ -95,10 +95,10 @@ class PatrolBrain extends Brain{
     this.cool(p,d);const sp=moveStep(partySpeed(p,p.troops)*.75,d),ox=p.x;
     const threat=W.lords.find(l=>!l.dead&&!l.inside&&atWar(l.fac,p.fac)&&Math.hypot(l.x-p.x,l.y-p.y)<PATROL.see);
     const home=besieged(t)||watchOf(p)!==watchNow()||p.troops.length<t.T.patrol.size/2||threat&&threat.power()>p.power();
-    const pd=this.look(p).d,hostile=hostileTo(p.fac),wanted=!!crimeAt(t)&&p.fac!=='player',sees=pd<this.sight(PATROL.see);
-    const afraid=hostile&&stance(p.power())==='afraid';
+    const v=this.look(p),pd=v.d,hostile=hostileTo(p.fac),wanted=!!crimeAt(t)&&p.fac!=='player',sees=TravelAwareness.sees(p);
+    const afraid=hostile&&stance(p.power(),p)==='afraid';
     if(sees&&(hostile||wanted)&&!home&&!afraid&&p.cool<=0){const st=G.encCool>0?Math.min(sp*1.25,pd-GRACE_GAP):sp*1.25;// (in the grace, no step into the gap)
-      if(st>0)Router.travel(p,P,st)||walk(p,P.x-p.x,P.y-p.y,Math.min(pd,st));
+      if(st>0)Router.travel(p,{x:p.x+v.dx,y:p.y+v.dy},st)||walk(p,v.dx,v.dy,Math.min(pd,st));
       if(this.canMeet(p,pd)){patrolMeet(p);return true}}
     else if(threat&&!home&&Math.hypot(threat.x-p.x,threat.y-p.y)<16)startFight([p],[threat]);
     else{
@@ -118,7 +118,7 @@ class CaravanBrain extends Brain{
   think(c,d){
     if(c.idle||inFight(c))return false;
     this.cool(c,d);const to=townBy(c.to);if(!to||!c.mine&&atWar(to.owner,c.fac)){c.gone=true;return false}
-    const v=this.look(c),pd=v.d,scared=!c.mine&&hostileTo(c.fac)&&pd<this.sight(WORLD_SCALE.sight.caravan);
+    const v=this.look(c),pd=v.d,scared=!c.mine&&hostileTo(c.fac)&&TravelAwareness.sees(c);
     if(scared){walk(c,-v.dx,-v.dy,moveStep(CARAVAN_SPD*.9,d));c.dir=v.dx>0?-1:1}
     else{const ox=c.x;Router.travel(c,{...gateGoal(to),road:true},moveStep(CARAVAN_SPD*Math.max(.5,speedAt(c.x,c.y)||1),d));c.dir=c.x>=ox?1:-1}
     if(Math.hypot(to.x-c.x,to.y+12-c.y)<8){if(c.arrive(to))c.gone=true;return false}

@@ -1,8 +1,8 @@
 'use strict';
 Kit.suite(({ok})=>{
  const t=T,P=t.P,G=t.G;Kit.begin('soldier',1);Kit.clear();Kit.world();G.msgs=[];P.bsta=100;
- t.setHurry(true);t.setHurry(false);ok(G.msgs.length===0,'Hurry and walking feedback do not enter Journal history');
- ok(document.getElementById('log').textContent.includes('slows to its marching pace'),'transient movement feedback remains visible on screen');
+ const before=document.getElementById('log').textContent;t.setHurry(true);t.setHurry(false);ok(G.msgs.length===0,'Hurry and walking feedback do not enter Journal history');
+ ok(document.getElementById('log').textContent===before,'walk and run changes are silent on screen as well');
  t.setByRoad(true);t.setByRoad(false);ok(G.msgs.length===0,'route toggles remain screen-only');
  const hear=t.KNOWLEDGE.hear;let heard=0;try{t.KNOWLEDGE.hear=()=>heard++;t.log('An operational confirmation.','','system');t.log('Another order.','','action');t.toast('A direct control confirmation.');ok(!heard&&!G.msgs.length,'system and action feedback cannot create Journal entries or knowledge')}finally{t.KNOWLEDGE.hear=hear}
  t.log('Quest completed at Ashford.','good','story','q1');t.log('A rider brings news of a battle.','bad','war',null,G.day-1);t.log('Rumour of wolves.','','rumour','n17');t.log('Brann recovers and is fit to fight again.','good','band');t.log('You enter Ashford.');

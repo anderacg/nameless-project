@@ -406,10 +406,10 @@ function campStep(){
    (staminaRate); it cannot start Exhausted, and ends on its own once the band is Exhausted, stops, or anything calls for you
    (world.js fastWatch). The time's speed is not touched. G.hurry: on or off (never saved) ---------- */
 const hurryPace=()=>G.hurry?SUPPLY.forcedMarch.pace:1;
-// on or off (why: it ended on its own, said in the log); false if it cannot start
+// On or off; the path guide shows the pace. False if it cannot start.
 function setHurry(on,why){on=!!on;
   if(on&&(G.mode!=='world'||P.stay||P.staminaState()==='exhausted')){if(P.staminaState()==='exhausted')toast('Your band is too exhausted to hurry.','bad','band');on=false}
-  if(!!G.hurry!==on){G.hurry=on;if(on&&P.camp)breakCamp();toast(on?'Your band hurries: '+SUPPLY.forcedMarch.pace+'× the pace, its stamina draining '+SUPPLY.forcedMarch.drain+'× as fast.':'Your band slows to its marching pace'+(why?': '+why:'')+'.',why?'bad':'','band')}
+  if(!!G.hurry!==on){G.hurry=on;if(on&&P.camp)breakCamp()}
   hurryUI();return on}
 const toggleHurry=()=>setHurry(!G.hurry);
 // a Hurry button lit while on (none on the top bar now)

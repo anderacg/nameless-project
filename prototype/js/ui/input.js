@@ -136,7 +136,7 @@ function worldGo(wx,wy){
 }
 // travel to a point, or meet what is there (Follow ends: world.js followStop)
 // (a new trip: by road, if that mode is on, asks again whether a road is near: world.js byRoadTo)
-function worldMove(wx,wy){if(G.hurry)setHurry(false);G.travelClick=null;followStop();G.pitch=null;G.byRoad=null;if(!(clickAt(wx,wy)||G.chase)){P.tx=clamp(wx,8,MW*TILE-8);P.ty=clamp(wy,8,MH*TILE-8);P.stuck=0}wuiClick(wx,wy)}// (the click's ripple: worldui.js)
+function worldMove(wx,wy){WildHunt.active?.finish('You leave the hunt.');if(G.hurry)setHurry(false);G.travelClick=null;followStop();G.pitch=null;G.byRoad=null;if(!(clickAt(wx,wy)||G.chase)){P.tx=clamp(wx,8,MW*TILE-8);P.ty=clamp(wy,8,MH*TILE-8);P.stuck=0}wuiClick(wx,wy)}// (the click's ripple: worldui.js)
 /* a click or a tap on another party (the owner, 2026-10-23: Follow "can be used when you click at the other unit in the world
    map"): its ring at it (ActionRing; supply.js partyRingItems: Approach, today's chase, Follow, Look), nothing done yet; Esc or a
    press elsewhere closes it (ring.js). A second press on it within PARTY_CLICK.dbl ms (a double click or tap) approaches it at

@@ -73,15 +73,15 @@ function monsterDay(){const D=density(WM);for(let k=0;k<D.daily.monsters;k++)if(
 const BEAST_MIND={think(m,d,hide){
     if(inFight(m))return false;// (fighting on the map: fights.js)
     if(MONSTERS[m.id].mythic)return roamMythic(m,d);
-    const A=WORLD_SCALE.ai,M=MONSTERS[m.id],dx=P.x-m.x,dy=P.y-m.y,dist=Math.hypot(dx,dy);m.cool=Math.max(0,m.cool-d);
+    const A=WORLD_SCALE.ai,M=MONSTERS[m.id],prey=TravelAwareness.target(m)||P,dx=prey.x-m.x,dy=prey.y-m.y,dist=Math.hypot(dx,dy);m.cool=Math.max(0,m.cool-d);
     // (how it means to fight you weighed only while you are in its sight: out of it, it wanders whatever it thinks of you)
-    const see=WORLD_SCALE.sight.monster*hide,pw=monPower(m),st=dist<see?stance(pw):null,hunt=M.aggro&&Math.hypot(P.x-m.hx,P.y-m.hy)<A.lairHunt;
+    const see=TravelAwareness.sees(m)?travelDetection(m).range:0,pw=monPower(m),st=dist<see?stance(pw,m):null,hunt=M.aggro&&Math.hypot(prey.x-m.hx,prey.y-m.hy)<A.lairHunt;
     if(m.cool>0||!stanceMove(m,st,dist,dx,dy,see,moveStep(26*Math.min(1,speedAt(m.x,m.y)||1),d),hunt)){m.t-=d;if(m.t<=0){const R=monRng();m.t=2+R.next()*4;m.a=R.next()*6.283}
       // wander, but stay near the lair
       const hx=m.hx-m.x,hy=m.hy-m.y;if(Math.hypot(hx,hy)>A.lairLeash)m.a=Math.atan2(hy,hx);walk(m,Math.cos(m.a),Math.sin(m.a),moveStep(10,d))}
     // a band it meets: it falls on them, and they fight back (a fight on the map)
     {const b=beastMeets(m);if(b){startFight([asMonster(m)],[b]);return false}}
-    if(M.aggro&&dist<(WORLD_BATTLE.on?worldBattleReach(m):10)&&stance(monPower(m))==='attack'&&m.cool<=0&&G.encCool<=0&&!G.modal){startMonster(m);return true}
+    if(M.aggro&&TravelAwareness.sees(m)&&dist<(WORLD_BATTLE.on?worldBattleReach(m):10)&&stance(monPower(m),m)==='attack'&&m.cool<=0&&G.encCool<=0&&!G.modal){startMonster(m);return true}
     return false}};
 // the band a beast falls on: one it meets, out of any fight; neither of them set out by a quest, nor a mythic beast (it ravages
 // armies its own way: roamMythic)
@@ -135,13 +135,13 @@ function mythicDay(){
 // one frame of a mythic monster: hunt you if it sees you, else roam; returns true if it starts a fight
 function roamMythic(m,d){
   const M=MONSTERS[m.id],Y=M.mythic;m.cool=Math.max(0,m.cool-d);
-  const pd=Math.hypot(P.x-m.x,P.y-m.y),hunt=!P.stay&&pd<Y.see*(hiddenAt(P.x,P.y)?.55:1)&&m.cool<=0;let tx=m.tx,ty=m.ty;
-  if(hunt){tx=P.x;ty=P.y}
+  const prey=TravelAwareness.target(m)||P,pd=Math.hypot(prey.x-m.x,prey.y-m.y),hunt=TravelAwareness.sees(m)&&m.cool<=0;let tx=m.tx,ty=m.ty;
+  if(hunt){tx=prey.x;ty=prey.y}
   else{m.t-=d;if(m.t<=0||Math.hypot(tx-m.x,ty-m.y)<4){const r=monRng(),R=WORLD_SCALE.ai.mythicRoam;m.t=4+r.next()*5;m.tx=tx=clamp(m.x+r.int(-R[0],R[0]),24,MW*TILE-24);m.ty=ty=clamp(m.y+r.int(-R[1],R[1]),24,MH*TILE-24)}}
   const dx=tx-m.x,dy=ty-m.y,dl=Math.hypot(dx,dy);
   if(dl>1){const sp=Math.min(dl,moveStep(Y.speed[hunt?1:0],d));if(Y.fly){m.x+=dx/dl*sp;m.y+=dy/dl*sp}else walk(m,dx,dy,sp);m.dir=dx>=0?1:-1}
   if(Y.ravage)for(const l of W.lords)if(!l.dead&&!l.inside&&!((l.dcool||0)>G.day)&&Math.hypot(l.x-m.x,l.y-m.y)<16){l.dcool=G.day+3;cull(l,Y.ravage);log('The '+M.n.toLowerCase()+' falls upon the army of '+l.name+'. '+(Y.ravage>=.5?'Half':'Many')+' are lost.','bad');if(l.troops.length<3)defeatLord(l)}
-  if(pd<(WORLD_BATTLE.on?worldBattleReach(m):12)&&m.cool<=0&&G.encCool<=0&&!G.modal){startMonster(m);return true}
+  if(TravelAwareness.sees(m)&&pd<(WORLD_BATTLE.on?worldBattleReach(m):12)&&m.cool<=0&&G.encCool<=0&&!G.modal){startMonster(m);return true}
   return false;
 }
 // slain: its hoard (all of its gold yours: res.own, never shared with those beside you, engage.js reinfCut), and the wait for the next one

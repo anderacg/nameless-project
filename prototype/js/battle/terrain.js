@@ -1397,7 +1397,7 @@ class BattleSight{
       if(!q)for(const j of v.cells){if(!T.riseBlocked(mx(j),my(j),x,y)){q=true;S.seer.set(key,j);break}}
       S.los.set(key,q);return q};
     const all=new Map();
-    for(let k=0;k<n;k++){const u=live[k],i=uc[k],inW=!!K&&K[i]===wood,open=!inW&&!!T&&T.shTop>0&&(blk||sh[i]<T.lvlTop);let hid=0,lurk=!F;
+    for(let k=0;k<n;k++){const u=live[k],i=uc[k],wp=B.world?.world(u),inW=!!K&&K[i]===wood||!!wp&&!!hiddenAt(wp.x,wp.y),open=!inW&&!!T&&T.shTop>0&&(blk||sh[i]<T.lvlTop);let hid=0,lurk=!F;
       if(F){for(const t of teams){if(t===u.team)continue;
         if(u.rv&&now-(u.rv[t]??-1e9)<SIGHT.memory||(inW?near(V[t],u,ul[k]):fogSees(FG,T,t,u,i,ul[k])))continue;hid|=1<<t;if(inW||FG.rng[t][i])lurk=true}}
       else if(inW||open)for(const t of teams){if(t===u.team)continue;

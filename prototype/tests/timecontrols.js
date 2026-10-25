@@ -42,7 +42,7 @@ try{
   ok(Math.abs(t.staminaRate(false,dr,L).n-S.rest.stop)<1e-9,'stopped it rests as ever');
   t.updateHUD(true);ok([...document.querySelectorAll('#stats .pc-tags .tag')].some(x=>x.textContent==='Hurrying'),'the card says Hurrying')}
  // ---- it ends on its own: Exhausted, an event or a window, making camp; it cannot start Exhausted
- {calm();t.setHurry(true);P.bsta=S.exhausted-1;t.fastWatch();ok(!G.hurry&&/exhausted/.test((G.msgs[G.msgs.length-1]||{}).m||''),'your band Exhausted: Hurry ends, said in the log');
+ {calm();t.setHurry(true);P.bsta=S.exhausted-1;t.fastWatch();ok(!G.hurry,'your band Exhausted: Hurry ends and the guide returns to walking');
   ok(!t.setHurry(true)&&!G.hurry,'and it cannot start again while Exhausted');
   calm();t.setHurry(true);G.mode='event';t.fastWatch();ok(!G.hurry,'an event opening ends it');
   calm();t.setHurry(true);G.modal=true;t.fastWatch();ok(!G.hurry,'and so does a window over the map');G.modal=false;

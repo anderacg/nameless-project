@@ -79,7 +79,7 @@ function clickAt(wx,wy){
   return approach(o);
 }
 // (what you clicked on, or picked Approach for on its ring (ui/input.js worldApproach): met if you are touching it, else chased)
-function approach(o){if(Math.hypot(o.x-P.x,o.y-P.y)<=worldBattleReach(o))return interact(o);G.chase=o;P.tx=o.x;P.ty=o.y;P.stuck=0;return false}
+function approach(o){if(WildHunt.active){if(o===WildHunt.active.herd)return true;WildHunt.active.finish('You leave the hunt.')}if(o.mapKind==='critter'&&o.wild&&o.inView(vis()))return hunt(o);if(Math.hypot(o.x-P.x,o.y-P.y)<=worldBattleReach(o))return interact(o);G.chase=o;P.tx=o.x;P.ty=o.y;P.stuck=0;return false}
 /* ---------- Follow (the owner, 2026-10-23: "add new Action called 'Follow' which can be used when you click at the other unit in
    the world map"): your band shadows a party, keeping after it at a distance, never closing in to meet or fight it (a chase,
    G.chase, does). G.follow: {o: the party, crumbs: where it has walked, a point each FOLLOW.crumb px, the oldest FOLLOW.trail tiles

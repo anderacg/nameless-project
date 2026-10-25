@@ -192,7 +192,7 @@ function updateFolk(d){
         W.folk.push(asWorker(folkName({id:key+'|'+no,folk:true,home:t.name,k,job,x:at.x,y:at.y,tx:at.x,ty:at.y,st:'in',leave,done:now>leave?G.day:-1,dir:1,ph:Math.random()*6,fresh:first},t.races[0])))}}}
   for(const f of W.folk){
     const t=townBy(f.home),fresh=f.fresh;f.fresh=false;if(!t){f.gone=true;continue}
-    const threat=folkThreat(f.x,f.y,A.folkBandit)||Timed.of(t).has('fear')&&Math.hypot(P.x-f.x,P.y-f.y)<A.folkFear;
+    const threat=folkThreat(f.x,f.y,A.folkBandit)||Timed.of(t).has('fear')&&TravelAwareness.sees(asWorker(f));
     // at work inside: out with the day's load at his hour (not while the holding is besieged or afraid); in the field hours, out
     // to his work on the estate's ground if it is his day for it and safe (already at it as you first come near)
     if(f.st==='in'){f.moving=false;if(win&&f.done!==G.day&&now>=f.leave&&!besieged(t)&&!Timed.of(t).has('fear')){const g=folkHome(t);f.st='out';f.tx=g.x;f.ty=g.y}
