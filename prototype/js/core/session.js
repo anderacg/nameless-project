@@ -14,7 +14,7 @@ class GameSession{
 }
 const gameSession=new GameSession(G,P,W);
 function resetSession(savedPlayer){
-  gameSession.reset(savedPlayer);B=null;fieldDone();bandits=[];bbar.hidden=true;BATTLE_MOOD=null;
+  gameSession.reset(savedPlayer);if(typeof MARCH_FACING!=='undefined')MARCH_FACING.delete(P);if(typeof MARCH_ARMIES!=='undefined')MARCH_ARMIES.delete(P);B=null;fieldDone();bandits=[];bbar.hidden=true;BATTLE_MOOD=null;
   const messages=$('#log');if(messages)messages.textContent='';
   setSpeed(G.speed);pauseUI();
 }

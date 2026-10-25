@@ -137,7 +137,7 @@ class BattleSetup{
       }
     };
     if(!opts.tournament)addArmy(P,P.list,0,'p_',true);
-    const raw=enc&&['lord','party','patrol'].includes(enc.kind)?enc.ref:null;
+    const raw=enc&&['lord','party','patrol','monster'].includes(enc.kind)?enc.ref:null;
     if(raw&&!(raw instanceof Party)&&!raw.tc&&!raw.troops&&!raw.list)raw.troops=opts.enemies.slice();
     const main=raw?asParty(raw):null;
     addArmy(main,opts.enemies,1,'e0_');
@@ -253,7 +253,7 @@ class BattleSetup{
       return{x:W/2,y:mid+s*(h+A.gap*.5),rx:Math.min(W/2-8,span/.7),ry:A.gap*.3}}):[];
     return{road:[mid-h-A.road,mid+h+A.road],woods:ridge?[]:woods,ridges,place}}
   initialize(){
-    B.speed=BSPEED.v;B.paused=false;
+    B.speed=BSPEED.v;B.paused=prefGet('bpause');
     if(BEAST_TACTICS.on)beastPacks();// (beasts in the pack spread, an AI group of them split into packs: beastmind.js)
     for(const g of Object.keys(B.groups))layForm(g);
     campCaught(this.opts);// (a band that finds you in camp catches you unready: world/supply.js)
@@ -268,7 +268,7 @@ class BattleSetup{
   present(){
     G.mode='battle';hidePanel();if(LOADING.sync)bbar.hidden=false;else B.hudWait=true;buildSlotBar();setOrderUI();battleSpeedUI();autoUI();updateHint();
     for(const u of this.units)u.y=clamp(u.y,fieldTop(),fieldBot());for(const g of playerGroups())if(B.groups[g].ay)B.groups[g].placeAt(B.groups[g].ax,clamp(B.groups[g].ay,fieldTop(),fieldBot()));
-    log((this.opts.tournament?'The crowd roars. Defeat the champion.':'The lines meet in the '+this.env.name.toLowerCase()+'. '+this.env.text)+(BFIELD?' '+BFIELD.n+' field.':''));
+    toast((this.opts.tournament?'The crowd roars. Defeat the champion.':'The lines meet in the '+this.env.name.toLowerCase()+'. '+this.env.text)+(BFIELD?' '+BFIELD.n+' field.':''));
     if(B.btype)typeSay();
   }
   // (the world where it is fought: its BattleSite (worldmap.js), all the battle reads of the world; yours, none for a tournament; the
@@ -334,7 +334,7 @@ const ambushRidge=(recipe,seed)=>recipe==='desert'||recipe==='hills'&&seeded((se
 const BTYPE_SAY={hold:['Hold the bridge!','Hold the bridge: they must come over the river to you, by the bridge or not at all.'],take:['Take the bridge!','Take the bridge: they hold the far bank, and you must cross under their arrows.'],
   wait:['Lie in wait','Your band lies hidden beside the road. Charge out of hiding when you choose: the first blow lands harder.'],caught:['Ambushed!','Ambush! They lie hidden beside the road, and your band is caught in march order.']};
 function typeSay(){const bt=B.btype;if(!bt)return;const mine=bt.kind==='bridge'?bt.def===0:bt.hid===0,k=bt.kind==='bridge'?(mine?'hold':'take'):mine?'wait':'caught',[t,txt]=BTYPE_SAY[k];
-  log(txt,k==='caught'?'bad':k==='wait'?'good':'');battleEvent('btype',{text:t,team:k==='caught'?1:0})}
+  toast(txt,k==='caught'?'bad':k==='wait'?'good':'');battleEvent('btype',{text:t,team:k==='caught'?1:0})}
 // Compatibility entry point used by encounters, tournaments, sieges, tests and other callers: the start in steps (a failure shows
 // itself: its error view)
-function startBattle(opts){new BattleSetup(opts).start().catch(()=>{})}
+function startBattle(opts){new (worldBattleEligible(opts)?WorldBattleSetup:BattleSetup)(opts).start().catch(()=>{})}

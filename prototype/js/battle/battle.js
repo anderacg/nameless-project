@@ -67,12 +67,12 @@ function jostle(dt){
 function keepOffObstacles(was){
   for(const u of B.units){if(u.hp<=0||u.s.big)continue;for(const o of B.obs)obstaclePush(u,o,was.get(u))}
   for(const u of B.units){u.x=clamp(u.x,8,BW-8);u.y=clamp(u.y,fieldTop(),fieldBot())}
-  if(B.terrain)terrainHold(was)}
+  if(B.terrain)terrainHold(was);if(B.world)B.world.clamp()}
 // the fight over? one side with no one left fighting (or you withdrew: morale.js retreatNow); a side running off told in the log
 function checkBattleOver(){
   if(B.over)return;const ap=B.units.filter(u=>u.team===0&&fighting(u)).length,ae=B.units.filter(u=>u.team===1&&fighting(u)).length;
   if(ae>0&&retreating())retreatNow();
-  else if(ae===0||ap===0){B.over=true;B.endT=END_WAIT;B.win=ae===0;const run=B.units.some(u=>u.hp>0&&u.rout&&u.team===(B.win?1:0))||(B.win?B.fledFoes:B.fledMine);
+  else if((ae===0||ap===0)&&(!B.world||B.world.ended(ap,ae))){B.over=true;B.endT=END_WAIT;B.win=ae===0;const run=B.units.some(u=>u.hp>0&&u.rout&&u.team===(B.win?1:0))||(B.win?B.fledFoes:B.fledMine);
     if(run){B.routed=B.win?1:0;log(B.win?'The enemy breaks and flees the field.':'Your men break and run.',B.win?'good':'bad')}}}
 /* battle events: the fight tells what just happened (battleEvent(type, d)) and whoever shows or records it listens (battleOn):
    the banners and cards (battlehud.js), the commander bar's cue (commandpowers.js), the lab's telemetry (lab.js). Listeners run
@@ -87,16 +87,27 @@ function battleEvent(type,d){for(const f of BATTLE_EARS)f(type,d)}
 // Actor execution lives in actors.js; shared group defaults and frame orchestration remain here.
 // rt is real time; fighting runs on dt, slowed by BATTLE_PACE, while effects keep real time
 function updateBattle(rt){
+  if(B?.world){
+    if(B.paused||B.deploy)return;const b=B,speed=G.speed,step=WORLD_BATTLE.step,total=rt*speed;B.speed=speed;
+    // Bounded combat steps preserve collision, path corners and animation events at campaign fast speeds.
+    let left=total;while(left>1e-9&&B===b){const n=Math.min(step,left);battleStep(n,true);left-=n}return;
+  }
+  battleStep(rt,false);
+}
+function battleStep(rt,world){
   // the battle's speed: everything runs on its clock; paused, nothing moves but you can still give orders
-  if(B.paused||B.deploy)return;rt*=B.speed||1;if(B.slow>0){B.slow-=rt;rt*=VFX.slow}// (a charge's impact: a moment of slow motion, vfx.js)
-  const dt=rt*BATTLE_PACE;B.t+=dt;
+  if(B.paused||B.deploy)return;if(!world)rt*=B.speed||1;if(!world&&B.slow>0){B.slow-=rt;rt*=VFX.slow}// (a charge's impact: a moment of slow motion, vfx.js)
+  const dt=world?moveStep(1,rt*WORLD_PACE,false)*B.world.scale:rt*BATTLE_PACE;B.t+=dt;
+  // World combat keeps the campaign clock: a hero impact must not freeze every army.
+  if(world){B.slow=0;if(B.hx)B.hx.stop=0}
   // hit-stop: heavy blows freeze the fight for a moment while effects keep moving
   const frozen=B.hx&&B.hx.stop>0;if(frozen)B.hx.stop-=rt;
   // (the battle over: the field runs on, routers running, the dead falling, till the summary comes up: END_WAIT)
   if(!frozen){
+    if(B.world&&!B.over){checkBattleOver();if(!B.over)B.world.step(dt)}
     // (RTS command: your hero fights on their own, as every unit does; the manual control is set aside for now)
     const was=new Map(B.units.map(u=>[u,[u.x,u.y]]));// (where each stood as the frame began: its motion, for the way round a rock or tree)
-    if(MANUAL_HERO)updateHero(rt*HERO_PACE);else if(B.hero)CharacterMind.of(B.hero).auto(rt*HERO_PACE);for(const id in B.groups)B.groups[id].step(dt);command(dt);CharacterMind.command(dt);// (every group minds itself, then the captains give their orders: battlecontrol.js, commander.js)// (your hero fights on their own, as every character does: charmind.js; the enemy's captain: commander.js)
+    if(MANUAL_HERO)updateHero(world?dt:rt*HERO_PACE);else if(B.hero)CharacterMind.of(B.hero).auto(world?dt:rt*HERO_PACE);for(const id in B.groups)B.groups[id].step(dt);command(dt);CharacterMind.command(dt);// (every group minds itself, then the captains give their orders: battlecontrol.js, commander.js)// (your hero fights on their own, as every character does: charmind.js; the enemy's captain: commander.js)
     for(const u of B.units){if(u.hp<=0)continue;if(u.kx||u.ky){u.x+=u.kx*dt;u.y+=u.ky*dt;if(Math.abs(u.kx)+Math.abs(u.ky)>60&&Math.random()<.4)vfx({k:'dust',x:u.x,y:u.y-1,vx:-u.kx*.1,vy:-u.ky*.05,r:2,grow:8,life:.4,col:'196,180,140'});const k=Math.pow(.004,dt);u.kx*=k;u.ky*=k;if(Math.abs(u.kx)+Math.abs(u.ky)<2)u.kx=u.ky=0}if(u.buffT>0)u.buffT-=dt;if(u.wardT>0)u.wardT-=dt}
     for(const u of B.units){if(u.hp<=0)continue;if(u.slow>0)u.slow-=dt;if(u.hero&&gm('regen'))u.hp=Math.min(u.max,u.hp+gm('regen')*dt)}
     updateNonHeroActors(dt);

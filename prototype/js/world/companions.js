@@ -31,7 +31,7 @@ class Companion extends Character{
     for(let lv=o.lv-up+1;lv<=o.lv;lv++){if(lv%3===0)o.perkPend++;log(this.name+' reaches level '+lv+(lv%3===0?': a perk to choose (Hero, Party tab)':'')+'.','gold')}}
   rose(k,lv){log(this.name+'’s '+COMP_SK[k]+' rises to '+lv+'.','gold')}
   // in your band: not away leading a party, not lying wounded
-  inBand(){return !this.o.party&&!(this.o.hurt>G.day)}
+  inBand(){return !this.o.party&&!(this.o.hurt>G.day+Clock.frac)}
   // leading a party: who may, and how many soldiers (its level, its Leadership as it trained it, the Captain perk)
   canLead(){return this.o.lv>=COMP_LEAD.lv&&this.o.ap>=COMP_LEAD.ap}
   partyCap(){return 4+2*this.o.lv+this.trained('lead')+(this.hasPerk('captain')?4:0)}
@@ -112,16 +112,16 @@ function cpDisband(id,home){const c=P.comps[id];if(!c||!c.party)return;const p=c
   const r=partyRoster(P),source=partyRoster(p),groups=source.groups.slice(),wounded=sum(p.wounded||{})||(p.woundedGroups||[]).some(g=>g.count>0);
   // Automatic return preserves boundaries too, and is checked for the entire army before any soldier moves.
   if(wounded||r.slots+groups.length+1>ARMY_LIMIT||Object.keys(source.counts).some(k=>!r.accepts(k)||!Number.isSafeInteger(r.count(k)+source.count(k)))){
-    p.order='follow';if(!p.returnBlocked)log(wounded?COMPS[id].short+' must keep their wounded with their own army.':'Make room for '+groups.length+' troop groups and '+COMPS[id].short+' before they can rejoin (10 groups maximum).','bad');p.returnBlocked=true;return}
+    p.order='follow';if(!p.returnBlocked)toast(wounded?COMPS[id].short+' must keep their wounded with their own army.':'Make room for '+groups.length+' troop groups and '+COMPS[id].short+' before they can rejoin (10 groups maximum).','bad');p.returnBlocked=true;return}
   for(const g of groups)source.transferGroupTo(r,g.id,g.count,'new',Infinity,1);
   c.party=null;if(home)log(COMPS[id].short+' rejoins your band'+(n?' with '+n+' soldiers':'')+'.')}
 // where a party may shelter: as you may (stay.js), but a party pays only for its own soldiers
 const cpStayOk=t=>!yourShelterWhy(t);// (a companion's party shelters by your rules: parties.js)
 const cpStayCost=p=>STAY_BASE+Math.ceil(p.troops.length/2);
 function cpOrder(id,o){const p=compInit(id).party;if(!p)return;if(p.inside)p.leave();p.order=o;p.wx=null;
-  if(o==='stay'){const h=Spatial.nearestHolding(p.x,p.y,cpStayOk);if(!h){p.order='follow';log(COMPS[id].short+' finds no holding that will take them in.','bad');return}p.base=h.name;log(COMPS[id].short+' will shelter in '+h.name+(stayFree(h)?'':' ('+cpStayCost(p)+'g a day from your purse)')+' and hire there.');return}
-  if(o==='patrol'){const h=Spatial.nearestHolding(P.x,P.y,t=>!hostileTo(t.owner))||Spatial.nearestHolding(P.x,P.y);p.base=h.name;log(COMPS[id].short+' will patrol the land of '+h.name+'.')}
-  else if(o==='follow')log(COMPS[id].short+' will ride with you.');else log(COMPS[id].short+' is coming back to your band.')}
+  if(o==='stay'){const h=Spatial.nearestHolding(p.x,p.y,cpStayOk);if(!h){p.order='follow';toast(COMPS[id].short+' finds no holding that will take them in.','bad');return}p.base=h.name;toast(COMPS[id].short+' will shelter in '+h.name+(stayFree(h)?'':' ('+cpStayCost(p)+'g a day from your purse)')+' and hire there.');return}
+  if(o==='patrol'){const h=Spatial.nearestHolding(P.x,P.y,t=>!hostileTo(t.owner))||Spatial.nearestHolding(P.x,P.y);p.base=h.name;toast(COMPS[id].short+' will patrol the land of '+h.name+'.')}
+  else if(o==='follow')toast(COMPS[id].short+' will ride with you.');else toast(COMPS[id].short+' is coming back to your band.')}
 // each moment on the map: keep clear of what it cannot beat, run down bandits and weak enemies near it, otherwise follow
 // you, patrol its holding's land, or come back to you
 // each moment on the map: CompanionBrain (brains.js)
@@ -136,4 +136,13 @@ function compDay(){
 }
 // on the map: drawn with every party (render.js drawParties; its look: parties.js)
 // its work in the world's day and frame (core/systems.js)
-Systems.add({name:'companions',order:{day:150},day:compDay});
+const compHealthShare=c=>clamp(1-Math.max(0,(c.hurt||0)-G.day-Clock.frac)/2,0,1);
+function compRecoveryHour(){
+  const now=G.day+Clock.frac;
+  for(const id in P.comps){const c=compInit(id);if(!c.hurt)continue;
+    const sheltered=c.party?!!c.party.inside:!!P.stay,camped=!c.party&&!!P.camp,rate=(sheltered?2:camped?SUPPLY.camp.heal:1)+.03*skill('med');
+    c.hurt-=Math.max(0,rate-1)/24;
+    if(c.hurt<=now){c.hurt=0;log(COMPS[id].short+' recovers and is fit to fight again.','good','band')}
+  }
+}
+Systems.add({name:'companions',order:{day:150,hour:150},day:compDay,hour:compRecoveryHour});

@@ -277,7 +277,7 @@ const convexHull=points=>{const p=points.slice().sort((a,b)=>a.x-b.x||a.y-b.y),c
 function formationReachGeometry(id){
   const gr=B.groups[id],m=shooters(id);if(!gr||!m.length)return null;
   const ax=medianValue(m.map(u=>u.x-(u.sx||0))),ay=medianValue(m.map(u=>u.y-(u.sy||0))),range=Math.min(...m.map(u=>u.s.range)),all=m.every(roundFire);
-  const slots=formSlots(gr.form||'line',Math.max(1,grpUnits(id).length),0,gr.files),lat=slots.map(p=>p[1]),half=(Math.max(...lat)-Math.min(...lat))/2;
+  const slots=formSlots(gr.form||'line',Math.max(1,grpUnits(id).length),0,gr.files,B.world?WORLD_BATTLE.sprite:1),lat=slots.map(p=>p[1]),half=(Math.max(...lat)-Math.min(...lat))/2;
   if(all)return{ax,ay,range,half,circle:true,points:[]};
   const a=gr.currentFacing??gr.face,ha=SHOOT.arc/2,ca=Math.cos(a),sa=Math.sin(a),points=[];
   for(const side of [-1,1]){

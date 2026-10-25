@@ -2,13 +2,13 @@
 /* ---------- inventory screen and command feedback ---------- */
 // (what each thing in the bag is, its words, its worth and its verbs: its kind, core/items.js itemKind)
 function equipmentFeedback(result){
-  if(result.reason)log(result.reason,'bad');
-  if(result.ok&&result.moved.length)log('Into the bag: '+result.moved.join(', ')+'.');
+  if(result.reason)toast(result.reason,'bad');
+  if(result.ok&&result.moved.length)toast('Into the bag: '+result.moved.join(', ')+'.');
   return result.ok;
 }
 function equipInto(i,key){
   const s=P.inv[i];if(!equipmentFeedback(heroEquipment.equip(i,key)))return false;
-  log('You equip the '+ITEMS[s.id].n+(key==='offhand'&&ITEMS[s.id].slot==='weapon'?' in your off hand':'')+'.');return true;
+  toast('You equip the '+ITEMS[s.id].n+(key==='offhand'&&ITEMS[s.id].slot==='weapon'?' in your off hand':'')+'.');return true;
 }
 const invEquip=i=>{const s=P.inv[i];return s&&s.k==='gear'?equipInto(i,targetKey(s.id)):false};
 const invUnequip=(key,to)=>equipmentFeedback(heroEquipment.unequip(key,to));

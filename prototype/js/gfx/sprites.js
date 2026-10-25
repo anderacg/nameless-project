@@ -18,14 +18,14 @@ function cellOf(src){const n=CELLS.find(s=>s>=src.width&&s>=src.height)||Math.ma
 const ATK_BASE={swing:6,thrust:9,overhead:12};
 // bare: in battle, a soldier's melee weapon is drawn apart (weapons.js); the sprite leaves it off
 // (arm: a shooter in melee mode: his bow put away, his body bare for the sidearm drawn in his hand: weapons.js, sidearmLook)
-function unitSprite(type,team,hero,v,pose,bare,arm){
+function unitSprite(type,team,hero,v,pose,bare,arm,tint){
   // a companion wears what you gave them: their weapon, armour and helm show (cg)
   const cg=COMPS[type]&&P.comps&&P.comps[type]&&P.comps[type].gear||null;
   // (a beast or a monster: its own figure (engine/beasts.js), one of three variants, its poses: beastSprite)
   if(ST[type]&&ST[type].beast)return beastSprite(type,team===2?0:team,v,pose);
-  v=hero?0:(v||0)%6;pose=pose||0;const key=type+team+(hero?'h'+P.race+(P.gear.weapon||'')+(P.gear.body||'')+(P.gear.head||''):'')+(cg?'g'+(cg.weapon||'')+(cg.body||'')+(cg.head||''):'')+'v'+v+'p'+pose+(bare?'b':'')+(arm?'s':'');if(spr[key])return spr[key];
+  v=hero?0:(v||0)%6;pose=pose||0;const key=type+team+(hero?'h'+P.race+(P.gear.weapon||'')+(P.gear.body||'')+(P.gear.head||''):'')+(cg?'g'+(cg.weapon||'')+(cg.body||'')+(cg.head||''):'')+'v'+v+'p'+pose+(bare?'b':'')+(arm?'s':'')+(tint?'c'+tint:'');if(spr[key])return spr[key];
   // soldiers, your hero and companions: the template figures (people.js)
-  const cid=COMPS[type]?type:'',L0=allyLook(lookOf(type,team===2?0:team,hero,v,cid,cg),team),L=arm?{...L0,weapon:null}:L0;
+  const cid=COMPS[type]?type:'',L0=allyLook(lookOf(type,team===2?0:team,hero,v,cid,cg),team),L={...L0,...(tint?{team:tint}:{}),...(arm?{weapon:null}:{})};
   // (a bare body in a blow is the body standing: its weapon is drawn apart, so one sprite serves all nine blow frames)
   if(bare&&pose>=6&&pose<=14&&heldWeapon(L)){const k0=key.replace('p'+pose+'b','p0b');return spr[key]=spr[k0]||(spr[k0]=cellOf(peopleSprite(L,0,true)))}
   return spr[key]=cellOf(peopleSprite(L,pose,bare));
@@ -49,7 +49,7 @@ function beastPose(u,moved){
   if(u.atkAt!=null&&B.t-u.atkAt<ATK_ANIM)return 6+Math.min(2,Math.floor((B.t-u.atkAt)/ATK_ANIM*3));
   if(u.shot)return 6;
   if((u.z||0)>1)return 16;
-  if(moved)return u.spdNow>u.s.spd*.75?15+Math.floor(B.t*12+(u.v||0))%4:2+Math.floor(B.t*8+(u.v||0))%4;
+  if(moved){const phase=B.world?u.walkPhase||0:null;return u.spdNow>u.s.spd*.75?15+Math.floor(phase??B.t*12+(u.v||0))%4:2+Math.floor(phase??B.t*8+(u.v||0))%4}
   return (B.t*.8+((u.id||0)*.37)%1)%1<.45?1:0}
 // a monster on the world map (engine/beasts.js PX.beastMap): the dragon on the wing (its own small figure in a 32 cell, wings up,
 // then level: it should look huge: f 0-1); the rest their own small figures in a 16 cell, f their step (PX.MAP_STEPS of them to a
@@ -93,15 +93,15 @@ function procPose(u,moved){
   if(u.atkAt!=null&&B.t-u.atkAt<ATK_ANIM)return (ATK_BASE[u.atkStyle]||6)+Math.min(2,Math.floor((B.t-u.atkAt)/ATK_ANIM*3));
   if(u.s.range&&!u.inMelee&&u.cd>0&&u.atkAt!=null&&!moved)return ATK_BASE.overhead+Math.floor((B.t-u.atkAt)*5)%3;
   // (running: the run, faster; walking: the walk)
-  if(moved)return u.spdNow>u.s.spd*.75?15+Math.floor(B.t*14+(u.v||0))%4:2+Math.floor(B.t*9+(u.v||0))%4;
+  if(moved){const phase=B.world?u.walkPhase||0:null;return u.spdNow>u.s.spd*.75?15+Math.floor(phase??B.t*14+(u.v||0))%4:2+Math.floor(phase??B.t*9+(u.v||0))%4}
   // (standing: breathing, slow, each on his own rhythm)
   return (B.t*.8+((u.id||0)*.37)%1)%1<.45?1:0;
 }
 // a banner bearer on the map (people.js mapFigure): the party's leader in the banner's colour, on foot or riding a mount of colour
 // mc; f the step (0 to WALK.n-1)
-function partySprite(col,mc,f){f=(f||0)%PEOPLE_STEPS;const k='p'+col+(mc||'')+f;if(spr[k])return spr[k];
-  const you=col==='#e8b94a',R=RACE_LOOK[you?P.race:'human']||RACE_LOOK.human;
-  return spr[k]=mapFigure({race:you?P.race:'human',skin:R.skin[0],hair:R.hair[you?0:2],eye:R.eye,ears:R.ears,tusk:R.tusk,short:R.short,beard:R.beard?R.hair[0]:null,
+function partySprite(col,mc,f,race){f=(f||0)%PEOPLE_STEPS;const you=col==='#e8b94a';race=race||(you?P.race:'human');const k='p'+col+(mc||'')+f+race;if(spr[k])return spr[k];
+  const R=RACE_LOOK[race]||RACE_LOOK.human;
+  return spr[k]=mapFigure({race,skin:R.skin[0],hair:R.hair[you?0:2],eye:R.eye,ears:R.ears,tusk:R.tusk,short:R.short,beard:R.beard?R.hair[0]:null,
     helm:you?'crown':'kettle',outer:'steel',inner:'dark',team:col,shortHair:true},f,mc||null)}
 // a bandit on the map: hooded, a spear
 function banditSprite(f){f=(f||0)%PEOPLE_STEPS;const k='bd'+f;return spr[k]||(spr[k]=mapFigure({race:'human',skin:'skinTan',hair:'black',helm:'hood',hood:'leather',outer:'leather',inner:'dark',team:'#8a3a2a',weapon:'spear',shortHair:true},f,null))}

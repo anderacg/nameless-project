@@ -79,7 +79,7 @@ function clickAt(wx,wy){
   return approach(o);
 }
 // (what you clicked on, or picked Approach for on its ring (ui/input.js worldApproach): met if you are touching it, else chased)
-function approach(o){if(Math.hypot(o.x-P.x,o.y-P.y)<=REACH)return interact(o);G.chase=o;P.tx=o.x;P.ty=o.y;P.stuck=0;return false}
+function approach(o){if(Math.hypot(o.x-P.x,o.y-P.y)<=worldBattleReach(o))return interact(o);G.chase=o;P.tx=o.x;P.ty=o.y;P.stuck=0;return false}
 /* ---------- Follow (the owner, 2026-10-23: "add new Action called 'Follow' which can be used when you click at the other unit in
    the world map"): your band shadows a party, keeping after it at a distance, never closing in to meet or fight it (a chase,
    G.chase, does). G.follow: {o: the party, crumbs: where it has walked, a point each FOLLOW.crumb px, the oldest FOLLOW.trail tiles
@@ -98,9 +98,9 @@ const followable=o=>!!o&&FOLLOW.kinds.includes(objKind(o))&&!o.fight&&o.inView(v
 // (its name in a line: a lord's or your companion's party's own, the rest "the caravan of Ashford", "the bandits"...; cap: as a tag)
 function followName(o,cap){const k=o.mapKind,l=k==='lord'?lordName(o):o.label?o.label():k==='refugee'?'Refugees':'';if(cap||k==='lord'||k==='cparty')return l;return 'the '+l.charAt(0).toLowerCase()+l.slice(1)}
 function followStart(o){if(!followable(o))return false;breakCamp();G.chase=null;G.pitch=null;G.byRoad=null;G.follow={o,crumbs:[[o.x,o.y]]};P.stuck=0;
-  log('You follow '+followName(o)+' at a distance.');followStep();updateHUD(true);return true}
+  toast('You follow '+followName(o)+' at a distance.');followStep();updateHUD(true);return true}
 // it ends (why: said in the log; halt: your band stops where it is, else whatever was ordered stands)
-function followStop(why,halt){if(!G.follow)return false;G.follow=null;if(halt){P.tx=P.ty=null;P.stuck=0}if(why)log(why);if(typeof WUI!=='undefined')WUI.way=null;updateHUD(true);return true}
+function followStop(why,halt){if(!G.follow)return false;G.follow=null;if(halt){P.tx=P.ty=null;P.stuck=0}if(why)toast(why);if(typeof WUI!=='undefined')WUI.way=null;updateHUD(true);return true}
 // (every frame, whatever is shown: world.js fastWatch)
 function followWatch(){const F=G.follow;if(!F)return;const o=F.o;
   if(FOLLOW.ends.includes(G.mode)||P.camp||G.pitch||P.stay||G.chase)return followStop();
@@ -187,7 +187,9 @@ function dayTick(){
 }
 // your band's wages for the day (cnt: everyone paid), and its larder: fresh food spoils; a varied larder (3 or more kinds) lifts
 // spirits. (It eats by the hour: world/supply.js)
-function bandWages(cnt){const wage=Math.ceil(cnt*.5+mountedN()*.5)+2*compCount();
+const BAND_PAY={soldier:.5,mounted:.5,companion:2};
+function bandPayroll(cnt){const detached=cparties().reduce((a,p)=>a+p.troops.length,0),soldiers=cnt??troopCount()+woundedN()+detached,base=soldiers*BAND_PAY.soldier,mounts=mountedN()*BAND_PAY.mounted,companions=compCount()*BAND_PAY.companion,raw=base+mounts+companions;return{base,mounts,companions,detached,raw,total:Math.ceil(raw)}}
+function bandWages(cnt){const wage=bandPayroll(cnt).total;
   if(wage>0){if(P.gold>=wage)P.gold-=wage;else{P.gold=0;P.morale-=6;log('You cannot pay your troops. Morale falls.','bad','band');mood('unpaid')}}}
 function bandLarder(){
   let rot=0;for(const g of FOODS){const r=GOODS[g].spoil,n=goodN(g);if(r&&n)rot+=goodTake(g,Math.min(n,Math.floor(n*r+Math.random())))}
@@ -241,14 +243,14 @@ function marchStep(d){
   // fought and it would fight you: meetsAnyTime)
   if(G.follow)followStep();
   if(G.chase){const o=G.chase;if(!objKind(o)||!o.chaseable())G.chase=null;else{P.tx=o.x;P.ty=o.y;
-    if(Math.hypot(o.x-P.x,o.y-P.y)<=REACH&&!G.modal&&(G.encCool<=0||o.meetsAnyTime)){interact(o);return true}}}
+    if(Math.hypot(o.x-P.x,o.y-P.y)<=worldBattleReach(o)&&!G.modal&&(G.encCool<=0||o.meetsAnyTime)){interact(o);return true}}}
   if(P.tx!=null){
     const dx=P.tx-P.x,dy=P.ty-P.y,dist=Math.hypot(dx,dy);
     if(dist<2){if(!G.follow){P.tx=null;G.byRoad=null;campArrive()}}// (the clear ground you walked to: your band pitches there, supply.js)
     else{
       const step=Math.min(dist,moveStep(MAP_BASE*travelMul(),d)*(P.morale<25?.8:1)*roadSprint()*hurryPace());// (roadSprint: after a thief on the road, encounters.js; Hurry: supply.js)
       P.dir=dx>=0?1:-1;
-      if(heroStep(dx,dy,dist,step)){P.stuck=0;train('scout',step/TILE*.08);if(mountDef())train('ride',step/TILE*.1);if(terrAt(P.x,P.y)===T_FOREST)train('wood',step/TILE*WOODCRAFT.xp)}else{P.stuck+=d;if(P.stuck>.4){P.tx=null;P.stuck=0;campArrive()}}
+      const x0=P.x,y0=P.y;if(heroStep(dx,dy,dist,step)){P.stuck=0;const moved=Math.hypot(P.x-x0,P.y-y0);if(moved>0){train('scout',moved/TILE*.08);if(mountDef())train('ride',moved/TILE*.1);if(terrAt(P.x,P.y)===T_FOREST)train('wood',moved/TILE*WOODCRAFT.xp)}}else{P.stuck+=d;if(P.stuck>.4){P.tx=null;P.stuck=0;campArrive()}}
     }
   }
 }
@@ -284,7 +286,7 @@ function byRoadTo(x,y){if(!P.byRoad)return false;const k=Math.floor(x/TILE)+','+
 function roadNear(x,y,n){const tx=Math.floor(x/TILE),ty=Math.floor(y/TILE);for(let j=-n;j<=n;j++)for(let i=-n;i<=n;i++)if(tAt(tx+i,ty+j)===T_ROAD)return true;return false}
 // by-road mode on or off (the way you go now taken again by it); its state
 function setByRoad(on){on=!!on;G.byRoad=null;if(typeof WUI!=='undefined')WUI.way=null;if(on===!!P.byRoad)return on;
-  if(on)P.byRoad=true;else delete P.byRoad;log(on?'By road: your band keeps to the roads wherever one is near.':'By road off: your band takes the plain way again.');updateHUD(true);return on}
+  if(on)P.byRoad=true;else delete P.byRoad;toast(on?'By road: your band keeps to the roads wherever one is near.':'By road off: your band takes the plain way again.');updateHUD(true);return on}
 // (key B: on or off. The action ring's By road (roadGo): off, it turns on and you go to (wx, wy) by it; on, it turns off; the mode's state)
 const toggleByRoad=()=>setByRoad(!P.byRoad);
 function roadGo(wx,wy){if(P.byRoad)return setByRoad(false);setByRoad(true);worldMove(wx,wy);return true}

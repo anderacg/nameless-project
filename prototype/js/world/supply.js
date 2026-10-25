@@ -49,7 +49,7 @@
    or bandits' camp; ring: tiles round a holding's centre and houses; site: px round a site's picture; pole: your banner's pole's
    foot, px from the camp's fire (bandCampEnt: planted beside the tents). hint: the first-run hint once stamina falls under this. hurt: causes kept for the card */
 const SUPPLY={march:2,rough:1.5,night:1.3,forced:1.5,dry:1.5,desertDry:2,cold:.5,mounted:.7,skill:.03,skillCap:.5,guide:.9,
-  rest:{stop:2,camp:8,stay:10},dryRest:.5,
+  rest:{stop:4,camp:16,stay:20},dryRest:.5,
   tired:20,exhausted:5,pace:{tired:.85,exhausted:.6},tiredMorale:{every:3,n:1},worn:{every:8},
   eat:{rest:1,march:1.5},frostEat:.5,hunger:{morale:1,every:2,rest:.5,starving:72,starveDrain:1.25,starveMorale:1,desert:96,sick:168,die:240,toll:12,hero:{every:6,hp:.05,mp:.05}},
   drink:{perDay:1,rest:.5,order:['water','ale','liquor'],water:{morale:0},ale:{morale:2},liquor:{morale:6}},skins:{start:4,recruit:1,lot:5},
@@ -132,12 +132,12 @@ const skinsTip=()=>'Waterskins: '+goodN(SKIN.full)+' full, '+skinsEmpty()+' empt
 const skinsStart=()=>playerInventory.add('good',SKIN.full,SUPPLY.skins.start);
 const skinsJoin=n=>playerInventory.add('good',SKIN.empty,n*SUPPLY.skins.recruit);
 function skinsBuy(n){const p=GOODS[SKIN.empty].base*n;if(!(n>0)||P.gold<p||goodRoom(SKIN.empty)<n)return 0;
-  P.gold-=p;playerInventory.add('good',SKIN.empty,n);log('You buy '+n+' empty waterskin'+(n>1?'s':'')+' for '+p+' gold.','gold');return n}
+  P.gold-=p;playerInventory.add('good',SKIN.empty,n);toast('You buy '+n+' empty waterskin'+(n>1?'s':'')+' for '+p+' gold.','gold');return n}
 // your empty waterskins filled at once, up to SUPPLY.fill.days of drink on the march, free: how many (quiet: no line). The tavern's
 // tapster fills them so (the town's time stands still); else timed: fillSkins
 function fillNow(quiet){
   const got=skinsFill(skinsFillable());
-  if(!quiet)log(got?'You fill your waterskins: '+got+' water'+(skinsWant()>0?', all your empty ones':'')+'.':skinsWhy(),got?'good':'','band');
+  if(!quiet)toast(got?'You fill your waterskins: '+got+' water'+(skinsWant()>0?', all your empty ones':'')+'.':skinsWhy(),got?'good':'','band');
   return got}
 // fill them (the action ring's Fill waterskins): timed (SKINS.start: true when it began), or at once with SUPPLY.fill.timed off
 const fillSkins=quiet=>SUPPLY.fill.timed?SKINS.start(quiet):fillNow(quiet);
@@ -164,16 +164,16 @@ class SkinFill{
   // waterskins: said so, false
   start(quiet){
     if(this.on){if(!quiet)this.on.quiet=false;return true}const n=skinsFillable();
-    if(!n){if(!quiet)log(skinsWhy(),'','band');return false}
+    if(!n){if(!quiet)toast(skinsWhy(),'','band');return false}
     this.on={at:Clock.hours(),h:fillHours(n),n,got:0,x:P.x,y:P.y,quiet:!!quiet};
-    if(!quiet)log('Your band fills its waterskins: '+n+' water, about '+Math.round(this.on.h*60)+' minutes. Moving stops it.','','band');
+    if(!quiet)toast('Your band fills its waterskins: '+n+' water, about '+Math.round(this.on.h*60)+' minutes. Moving stops it.','','band');
     return true}
   // the skins due by now filled (as far as the empty ones go); done at its end
   step(){const f=this.on;if(!f)return;const k=Math.floor(this.share*f.n+1e-9)-f.got;
     if(k>0){skinsFill(k);f.got+=k}
-    if(f.got>=f.n){this.on=null;if(!f.quiet)log('You fill your waterskins: '+f.n+' water.','good','band')}}
+    if(f.got>=f.n){this.on=null;if(!f.quiet)toast('You fill your waterskins: '+f.n+' water.','good','band')}}
   // stopped before its end (moved): what is in stays
-  stop(){const f=this.on;if(!f)return;this.step();if(!this.on)return;this.on=null;if(!f.quiet)log('You stop filling your waterskins: '+f.got+' of '+f.n+' water in.','','band')}
+  stop(){const f=this.on;if(!f)return;this.step();if(!this.on)return;this.on=null;if(!f.quiet)toast('You stop filling your waterskins: '+f.got+' of '+f.n+' water in.','','band')}
   // off the map (a battle, an encounter, a page, a holding's window) or dead: it stops
   watch(){if(this.on&&(G.mode!=='world'||G.dead))this.stop()}
   // each moment on the map: a new game's full skins given; moving stops it, else it fills on; now and then it starts by itself
@@ -314,7 +314,7 @@ function supplyHour(){
   // (frostbite: the hours short of furs, weighted by how short, until a man is bitten)
   const cold=L.frost?coldShare():0;if(cold){u.cold+=cold;if(u.cold>=S.frost.every){u.cold-=S.frost.every;supplyHurt('frostbite')}}else u.cold=0;
   P.morale=clamp(P.morale,0,100);
-  if(!u.hint&&P.bsta<S.hint){u.hint=true;log('Marching tires your band. Stop, or Make camp, to rest.','gold','band')}
+  if(!u.hint&&P.bsta<S.hint){u.hint=true;toast('Marching tires your band. Stop, or Make camp, to rest.','gold','band')}
 }
 Systems.add({name:'supply',order:{hour:10,frame:55},hour:supplyHour,frame:supplyFrame});
 
@@ -385,14 +385,14 @@ function campSpot(){if(campGround(P.x,P.y))return{x:P.x,y:P.y,across:false};cons
    you stand or within SUPPLY.camp.hop tiles (nothing between), your band steps there and pitches at once; farther, it walks there
    (G.pitch) and pitches on arrival (campArrive); none in reach: no camp */
 function makeCamp(){if(P.camp||campWhy())return false;const s=campSpot();G.chase=null;
-  if(!s){log('No clear ground to camp here.','bad','band');return false}
+  if(!s){toast('No clear ground to camp here.','bad','band');return false}
   if(!s.across&&Math.hypot(s.x-P.x,s.y-P.y)<=SUPPLY.camp.hop*TILE){P.x=s.x;P.y=s.y;P.stuck=0;return pitchCamp()}
-  P.tx=s.x;P.ty=s.y;P.stuck=0;G.pitch={x:s.x,y:s.y};log('Your band makes for clear ground to camp.',undefined,'band');return true}
+  P.tx=s.x;P.ty=s.y;P.stuck=0;G.pitch={x:s.x,y:s.y};toast('Your band makes for clear ground to camp.',undefined,'band');return true}
 function pitchCamp(){G.pitch=null;P.camp={at:Clock.hours()};P.tx=P.ty=null;G.chase=null;
-  log('Your band makes camp. Stamina comes back faster, and the wounded mend.','good','band');updateHUD(true);return true}
+  toast('Your band makes camp. Stamina comes back faster, and the wounded mend.','good','band');updateHUD(true);return true}
 // your march ends (world.js marchStep): at the clear ground you made for, the band pitches; anywhere else the plan is dropped
 function campArrive(){const p=G.pitch;if(!p)return;G.pitch=null;if(Math.hypot(p.x-P.x,p.y-P.y)<3&&!campWhy()){P.x=p.x;P.y=p.y;pitchCamp()}}
-function breakCamp(why){if(!P.camp)return false;P.camp=null;log(why||'Your band breaks camp.',undefined,'band');updateHUD(true);return true}
+function breakCamp(why){if(!P.camp)return false;P.camp=null;toast(why||'Your band breaks camp.',undefined,'band');updateHUD(true);return true}
 function toggleCamp(){return P.camp?breakCamp():makeCamp()}
 // each moment in camp (world.js marchStep): a travel order breaks it (true: the march goes on), but not a press on the map that may
 // yet open the action ring (ui/ring.js RING.press); going faster than 1x, anything hostile in sight brings it back to 1x
@@ -407,8 +407,8 @@ function campStep(){
 const hurryPace=()=>G.hurry?SUPPLY.forcedMarch.pace:1;
 // on or off (why: it ended on its own, said in the log); false if it cannot start
 function setHurry(on,why){on=!!on;
-  if(on&&(G.mode!=='world'||P.stay||P.staminaState()==='exhausted')){if(P.staminaState()==='exhausted')log('Your band is too exhausted to hurry.','bad','band');on=false}
-  if(!!G.hurry!==on){G.hurry=on;if(on&&P.camp)breakCamp();log(on?'Your band hurries: '+SUPPLY.forcedMarch.pace+'× the pace, its stamina draining '+SUPPLY.forcedMarch.drain+'× as fast.':'Your band slows to its marching pace'+(why?': '+why:'')+'.',why?'bad':'','band')}
+  if(on&&(G.mode!=='world'||P.stay||P.staminaState()==='exhausted')){if(P.staminaState()==='exhausted')toast('Your band is too exhausted to hurry.','bad','band');on=false}
+  if(!!G.hurry!==on){G.hurry=on;if(on&&P.camp)breakCamp();toast(on?'Your band hurries: '+SUPPLY.forcedMarch.pace+'× the pace, its stamina draining '+SUPPLY.forcedMarch.drain+'× as fast.':'Your band slows to its marching pace'+(why?': '+why:'')+'.',why?'bad':'','band')}
   hurryUI();return on}
 const toggleHurry=()=>setHurry(!G.hurry);
 // a Hurry button lit while on (none on the top bar now)
@@ -463,7 +463,7 @@ function mapRingItems(wx,wy,o,cx,cy){
     ground&&!G.hurry&&P.staminaState()!=='exhausted'&&{icon:'speed',label:'Hurry here',run:()=>{worldMove(wx,wy);setHurry(true)}},
     G.hurry&&{icon:'speed',label:'Stop hurrying',run:()=>setHurry(false),active:true},
     canFill(L)&&{icon:'mug',label:SKINS.on||skinsWant()<=0||skinsEmpty()?'Fill waterskins':SKINS_NONE,active:!!SKINS.on,run:()=>fillSkins()},// (none to fill: said so)
-    goodN('liquor')>0&&{icon:'barrel',label:BAND.liquor?'Water first':'Drink liquor',active:!!BAND.liquor,run:()=>{BAND.liquor=!BAND.liquor;log(BAND.liquor?'Your band drinks its liquor first: a hard march.':'Your band drinks water first again.');updateHUD(true)}},
+    goodN('liquor')>0&&{icon:'barrel',label:BAND.liquor?'Water first':'Drink liquor',active:!!BAND.liquor,run:()=>{BAND.liquor=!BAND.liquor;toast(BAND.liquor?'Your band drinks its liquor first: a hard march.':'Your band drinks water first again.');updateHUD(true)}},
     look&&{icon:'eye',label:'Look',run:()=>holdCard(look,cx,cy)}].filter(Boolean)}
 
 // a click on another party (ui/input.js partyRing): Approach (today's chase: Attack one hostile, its crossed swords as the marker
@@ -483,7 +483,7 @@ function tapsterCard(t,race){
 function supplyAct(a,arg){
   if(a==='sup-fill')fillNow();
   else if(a==='sup-skins')skinsBuy(SUPPLY.skins.lot);
-  else if(a==='sup-liquor'){const p=GOODS.liquor.base*LIQUOR_LOT;if(P.gold<p||goodRoom('liquor')<LIQUOR_LOT)return;P.gold-=p;playerInventory.add('good','liquor',LIQUOR_LOT);log('You buy '+LIQUOR_LOT+' liquor for '+p+' gold.','gold')}
+  else if(a==='sup-liquor'){const p=GOODS.liquor.base*LIQUOR_LOT;if(P.gold<p||goodRoom('liquor')<LIQUOR_LOT)return;P.gold-=p;playerInventory.add('good','liquor',LIQUOR_LOT);toast('You buy '+LIQUOR_LOT+' liquor for '+p+' gold.','gold')}
   else if(a==='sup-camp')toggleCamp();
   updateHUD(true);if(G.mode==='town'&&G.town)renderTown()}
 onAct('sup-',supplyAct);

@@ -1354,9 +1354,9 @@ class TerrainRoutes{
 class BattleSight{
   constructor(){this.next=-1;this.n=0;this.hid=new Map();this.sprung=new Map();this.goal=new Map();this.los=new Map();this.seer=new Map()}
   // (is there sight to keep: terrain or fog)
-  static on(){return !!B&&!!(B.terrain||B.fog)}
+  static on(){return !!B&&!B.world&&!!(B.terrain||B.fog)}
   // (does side team see u: always for his own side, and while nothing hides him)
-  static seen(team,u){return !(u.hid&1<<team)}
+  static seen(team,u){return !!B?.world||!(u.hid&1<<team)}
   seen(team,u){return BattleSight.seen(team,u)}
   // (the living soldiers of the other sides that side sees)
   static foes(team){return B.units.filter(u=>u.hp>0&&u.team!==team&&!(u.hid&1<<team))}
@@ -1372,6 +1372,7 @@ class BattleSight{
      sight grid has his cell (fogGrid, fogSees), or who was struck by him lately; one in a wood as above. A group counts as lying
      in wait only in a wood or within its foes' range, hidden by the ground (not merely out of sight: fogGrid's rng) */
   static step(force){
+    if(B?.world){for(const u of B.units)u.hid=0;B.sight=null;return}
     const T=B&&B.terrain,F=!!(B&&B.fog);if(!T&&!F)return;
     let S=B.sight;if(!S)S=B.sight=new BattleSight();if(T)T.sight=S;
     if(!force&&B.t<S.next)return;

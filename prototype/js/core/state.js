@@ -57,15 +57,29 @@ function mood(ev){
 }
 const apName=a=>a>=5?'Loyal':a>=0?'Content':a>-3?'Uneasy':'Angry';
 
-/* the chronicle (G.msgs): every message of the game, kept for good (the owner, 2026-10-23) and saved with it (core/save.js); the
+/* the chronicle (G.msgs): lasting events of the game, kept for good (the owner, 2026-10-23) and saved with it (core/save.js); the
    Journal's Chronicle shows it (L: ui/chronicle.js). Each a small record: m (its text, the game's own HTML), day, and only
    when given cls (its tone), kind (one of kinds, for the Chronicle's filters; none: under All only) and ref (what it links to: a
    quest's or story's journal key, 'q12', 't3'; a rumour's news id, 'n40') and at (the day it happened, when you heard of it
    later: a rider's news, world/worldlog.js). page: the messages one Chronicle page shows; budget:
    the most its save part may be (JSON characters), past which the oldest of the spare kinds (your band's, and of no kind) go */
 const CHRONICLE={kinds:['war','rumour','band','story'],page:100,budget:1.5e6,spare:['band','']};
+// Durable events belong in log(); operational feedback belongs in toast(). Recognize old control spam without dropping stories.
+const JOURNAL_TRANSIENT={kinds:['action','system','command'],text:[
+  /^Your band (?:hurries:|slows to its marching pace|is too exhausted to hurry|fills its waterskins:|makes for clear ground to camp|makes camp\.|breaks camp\.|drinks (?:its liquor first|water first again))/,
+  /^You (?:fill your waterskins:|stop filling your waterskins:|equip the |follow .+ at a distance\.|stop (?:placing|following)\.)/,
+  /^(?:By road(?: off)?:|Tile grid (?:on|off)|Sound (?:on|off)|Auto skills (?:on|off)|Game saved(?:\b|\()|Could not save\.|Exit the battle test before |You can only save while |Into the bag:|No clear ground to camp here\.|Marching tires your band\.)/,
+  /^(?:The lines meet in |The crowd roars\.|Deploy your band:|The battle begins\.|Group \d+: )/,
+  /: (?:at a run|at a walk|attack-move(?: to the line)?|form up there|hold|charge|advance|line|loose|wedge)\.$/
+]};
+function journalKeep(r){
+  if(JOURNAL_TRANSIENT.kinds.includes(r.kind))return false;
+  if(r.ref||['story','rumour','war'].includes(r.kind))return true;
+  const text=String(r.m||'').replace(/<[^>]*>/g,'');return !JOURNAL_TRANSIENT.text.some(p=>p.test(text));
+}
+const journalPrune=()=>G.msgs=G.msgs.filter(journalKeep);
 // a message: into the chronicle and onto the screen (toast); at: the day it happened, if not today
-function log(m,cls,kind,ref,at){if(typeof KNOWLEDGE!=='undefined')KNOWLEDGE.hear(m);const r={m,day:G.day};if(cls)r.cls=cls;if(kind)r.kind=kind;if(ref!=null)r.ref=ref;if(at!=null&&at!==G.day)r.at=at;G.msgs.push(r);toast(m,cls)}
+function log(m,cls,kind,ref,at){const r={m,day:G.day};if(cls)r.cls=cls;if(kind)r.kind=kind;if(ref!=null)r.ref=ref;if(at!=null&&at!==G.day)r.at=at;if(journalKeep(r)){if(typeof KNOWLEDGE!=='undefined')KNOWLEDGE.hear(m);G.msgs.push(r)}toast(m,cls)}
 // a line onto the screen only, where it fades after a few seconds (the chronicle keeps what happened; "Welcome back" is no event)
 function toast(m,cls){const el=$('#log');if(!el)return;
   const d=document.createElement('div');if(cls)d.className=cls;d.innerHTML=m;el.appendChild(d);while(el.children.length>5)el.firstChild.remove();

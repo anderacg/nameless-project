@@ -70,12 +70,12 @@ function usePower(team,id){
   // (the word over him, the ring of his reach, the log and his horn; then its event: the banner, the bar's cue, the lab's row)
   const say=POWER_SAY[id];
   moraleSay(c,say[0],mine?'#ffe08a':'#ff9a90',1.2);B.rings.push({x:c.x,y:c.y-6,r:commandRadius(team),life:.7,max:.7,col:mine?'255,224,138':'255,154,144'});
-  log(htmlText((mine?'Your commander':'Their commander')+': '+A.n+(gs.length?' ('+gs.map(g=>groupName(g.id)).join(', ')+')':'')+'.'),mine?'good':'bad');
+  toast(htmlText((mine?'Your commander':'Their commander')+': '+A.n+(gs.length?' ('+gs.map(g=>groupName(g.id)).join(', ')+')':'')+'.'),mine?'good':'bad');
   if(A.snd&&sfxOn())sfxAt(A.snd,c.x,c.y);
   battleEvent('power',{team,id,c,gs});
   return true}
 // your press of a power (its button or key): no order (a character's fall-back goes on, commands.js playerOrder); a refusal is told
-function commandPower(id){if(!B||!COMMAND_POWERS[id])return false;const why=powerWhyNot(0,id);if(why){log(htmlText(COMMAND_POWERS[id].n+': '+why.toLowerCase()+'.'));return false}
+function commandPower(id){if(!B||!COMMAND_POWERS[id])return false;const why=powerWhyNot(0,id);if(why){toast(htmlText(COMMAND_POWERS[id].n+': '+why.toLowerCase()+'.'));return false}
   const ok=usePower(0,id);bhudPowers();return ok}
 const powerKey=k=>POWER_ORDER.find(id=>COMMAND_POWERS[id].key.toLowerCase()===k);
 /* the AI's commander (commander.js command, each frame of the fight; every think s): the enemy's always, yours with your whole army the AI's (aiAll).

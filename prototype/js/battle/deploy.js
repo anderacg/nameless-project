@@ -15,14 +15,14 @@ const DEPLOY={zone:.3};
 const BDEPLOY=prefView('bdeploy');
 // your characters' skills and special moves on their own (Auto skills, K): on, they use them when the moment is right; off, never
 const AUTOSK=prefView('autoskills');
-function setAutoSkills(on){prefSet('autoskills',on);if(B)log('Auto skills '+(AUTOSK.on?'on: your hero and companions use their skills when the moment is right.':'off: your hero and companions use no skills.'))}
+function setAutoSkills(on){prefSet('autoskills',on);if(B)toast('Auto skills '+(AUTOSK.on?'on: your hero and companions use their skills when the moment is right.':'off: your hero and companions use no skills.'))}
 // the AI in command of your army, kept for the next battle (setAuto)
 const BAUTO=prefView('bauto');
 function setDeploy(on){prefSet('bdeploy',on)}
 // the deployment zone (field px): your side's (setup.js fieldZone: on a sized field with open ground behind it); holding a bridge,
 // on to the bank (B.dzone: setup.js arrangeType)
 const deployZone=()=>{const Z=fieldZone(0);if(B&&B.dzone)Z.x1=Math.max(Z.x0+FORMS.line.gx*2,B.dzone.x1);return Z};
-function deployInit(opts){B.deploy=!!(opts.deploy&&(opts.sandbox||BDEPLOY.on)&&!opts.tournament);B.auto=!opts.tournament&&BAUTO.on;if(B.deploy&&GUIDE.on)log('Deploy your band: right-click or right-drag in the shaded zone, then Space to begin.')}
+function deployInit(opts){B.deploy=!!(opts.deploy&&(opts.sandbox||BDEPLOY.on)&&!opts.tournament);B.auto=!opts.tournament&&BAUTO.on;if(B.deploy&&GUIDE.on)toast('Deploy your band: right-click or right-drag in the shaded zone, then Space to begin.')}
 // keep a point in the zone
 const inZone=(x,y)=>{const Z=deployZone();return{x:clamp(x,Z.x0,Z.x1),y:clamp(y,Z.y0,Z.y1)}};
 // deploying, the groups just placed stand there at once (in the zone), not march
@@ -31,7 +31,7 @@ function deploySnap(gs){
     for(const u of grpUnits(g)){u.x=clamp(gr.ax+(u.sx||0),Z.x0,Z.x1);u.y=clamp(gr.ay+(u.sy||0),Z.y0,Z.y1)}}
 }
 // the fight begins (the withdrawal edge is your side of the field)
-function beginFight(){if(!B||!B.deploy)return;B.deploy=false;exitInit(B.units);B.paused=!!(B.opts.sandbox&&B.opts.pauseAfterDeploy);battleSpeedUI();setOrderUI();log('The battle begins.')}
+function beginFight(){if(!B||!B.deploy)return;B.deploy=false;exitInit(B.units);B.paused=!!(B.opts.sandbox&&B.opts.pauseAfterDeploy);battleSpeedUI();setOrderUI();toast('The battle begins.')}
 // the shaded zone and the word, while deploying (drawn on the field)
 function drawDeploy(){
   if(!B.deploy)return;const Z=deployZone();ctx.fillStyle='rgba(74,122,192,.12)';ctx.fillRect(Z.x0,Z.y0,Z.x1-Z.x0,Z.y1-Z.y0);
@@ -44,7 +44,7 @@ const aiAll=()=>!!B&&(!!B.auto||playerGroups().length>0&&playerGroups().every(id
 const aiAny=()=>!!B&&(!!B.auto||playerGroups().some(id=>B.groups[id].aiCmd));
 // (the AI's hold on your army changed: its captain (commander.js captainMem, its key 0) forgotten, to think afresh at once; the
 // whole-army choice remembered for the next battle)
-function aiChanged(quiet,msg){if(B.captains)delete B.captains[0];B.cmdT=0;if(!B.opts.sandbox)prefSet('bauto',aiAll());autoUI();if(!quiet)log(msg)}
+function aiChanged(quiet,msg){if(B.captains)delete B.captains[0];B.cmdT=0;if(!B.opts.sandbox)prefSet('bauto',aiAll());autoUI();if(!quiet)toast(msg)}
 // the AI in command of your whole army, on or off (remembered for the next battle); every group's own flag cleared
 function setAuto(on,quiet){
   if(!B)return;B.auto=!!on;for(const g of playerGroups())B.groups[g].aiCmd=false;

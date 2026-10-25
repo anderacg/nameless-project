@@ -154,8 +154,8 @@ try{
  reset();at('frost');bag({grain:200,water:400});hours(S.frost.every,false);ok(t.woundedN()===1&&/frostbite/.test(t.BAND.hurt.map(h=>h.why).join()),'with no furs in the frost, frostbite takes a man every '+S.frost.every+' hours');
  reset();at('frost');bag({grain:200,water:400,furs:P.furNeed()});hours(S.frost.every*2,false);ok(!t.woundedN(),'with furs enough, none');
  // ---- the hint, once
- reset();at('open');bag({water:400,grain:60});P.bsta=S.hint+1;const n0=G.msgs.filter(x=>/Make camp \(Z\)/.test(x.m)).length;hours(3,true);hours(30,true);
- ok(G.msgs.filter(x=>/Make camp \(Z\)/.test(x.m)).length===n0+1,'a first hint, once: "Marching tires your band. Stop, or Make camp, to rest."');
+ reset();at('open');bag({water:400,grain:60});P.bsta=S.hint+1;const n0=G.msgs.filter(x=>/Marching tires your band\. Stop, or Make camp, to rest\./.test(x.m)).length;hours(3,true);hours(30,true);
+ ok(G.msgs.filter(x=>/Marching tires your band\. Stop, or Make camp, to rest\./.test(x.m)).length===n0+1,'a first hint, once: "Marching tires your band. Stop, or Make camp, to rest."');
  // ---- the card
  reset();at('open');bag({water:400,grain:60});P.tx=P.x+200;P.ty=P.y;P.bsta=15;t.updateHUD(true);{const el=document.getElementById('stats'),h=el.innerHTML,bar=el.querySelector('.bar.sta');
   ok(bar&&bar.classList.contains('tired')&&/▼/.test(bar.textContent)&&/Tired/.test(bar.textContent)&&bar.title.includes('marching −'+t.SUPPLY.march),'the card: stamina amber with ▼ and "Tired" marching ('+bar.textContent+'; '+bar.title+')');

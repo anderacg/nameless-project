@@ -1,0 +1,38 @@
+'use strict';
+Kit.suite(({ok})=>{
+ const t=T,P=t.P,G=t.G;Kit.begin('soldier',1);Kit.clear();Kit.world();t.WORLD_BATTLE.on=true;
+ P.troops={};P.comps={};P.army={nextId:1,groups:[]};P.sk.lead.lv=1;const r=t.partyRoster(P);
+ ok(r.groupLimit===3&&r.slots===1,'new army has three slots including its hero');
+ ok(r.add('hum_foot',10)===10&&r.add('hum_bow',10)===10&&r.slots===3,'two full ten-soldier groups fill the starting army');
+ const snapshot=JSON.stringify(P.troops);ok(r.add('hum_foot')===0&&r.add('hum_knight',1,'new')===0&&JSON.stringify(P.troops)===snapshot,'full groups and locked slots reject additions without changing soldiers');
+ P.sk.lead.lv=3;ok(r.groupLimit===4&&r.add('hum_foot',4,'new')===4,'trained Leadership unlocks the next group slot');
+ const foot=r.groups.filter(g=>g.type==='hum_foot');ok(!r.merge(foot[1].id,foot[0].id),'merging cannot exceed ten soldiers in one group');
+ P.sk.lead.lv=10;ok(r.groupLimit===10,'Leadership progression stops at ten army slots');
+ P.comps.brann={ap:0,role:''};t.compInit('brann');ok(r.slots===5,'a companion consumes one army slot');
+ P.gold=10000;const holder={vol:100,pop:100,races:['human'],hires:()=>['hum_foot']},service=new t.RecruitmentService(P,{...t.recruitment.rules,canHire:()=>true}),gold=P.gold;
+ ok(!service.hire(holder,'hum_foot',1,foot[0].id).ok&&P.gold===gold&&holder.vol===100,'hiring into a full group neither spends gold nor consumes volunteers');
+ ok(!service.quoteHire(holder,'hum_foot',11,'new').ok,'bulk recruitment cannot create an oversized group');
+ const target=t.partyRoster(t.asParty({troops:[]}));target.add('hum_foot',10);
+ ok(!r.quoteGroupTransfer(target,foot[1].id,1,target.groups[0].id).ok,'group transfer cannot overfill a destination');
+ const npc=t.partyRoster(t.asParty({troops:Array(25).fill('hum_foot')}));ok(npc.groups.length===3&&npc.groups.every(g=>g.count<=10),'count-based NPC armies split into ten-soldier groups');
+ const single=t.asParty({troops:['hum_foot'],x:P.x,y:P.y}),large=t.asParty({troops:Array(30).fill('hum_foot'),x:P.x,y:P.y});ok(t.marchOuter(single)<t.marchOuter(large),'army radius grows with actual army size');
+ ok(t.PREFS.bpause.def===true&&t.settingsPage().includes('Pause when battle starts'),'battle-start pause defaults on and has a settings control');
+ const start=pause=>{
+  Kit.begin('soldier',1);Kit.clear();Kit.world();t.WORLD_BATTLE.on=true;t.BEAST_TACTICS.on=true;t.prefSet('bpause',pause);P.troops={hum_foot:4};
+  const h=Kit.goHome('Ashford');Kit.goTo(h.x+240,h.y+200);
+  const m=t.asMonster({id:'wolf',n:8,lv:1,x:P.x+60,y:P.y,hx:P.x+60,hy:P.y,cool:0,t:0,a:0});t.W.monsters=[m];
+  const a=t.MarchArmy.of(m);a.step(1/30);const before=new Map(a.units.map(u=>[u,{x:u.x,y:u.y}]));
+  t.startMonster(m);t.startBattle({enemies:G.enc.list,tournament:false});return{m,b:t.B,a,before};
+ };
+ const first=start(true),b=first.b,m=first.m;
+ ok(m instanceof t.Party&&t.worldBattleReach(m)>t.REACH,'monsters share army contact radii and rosters');
+ ok(first.a.units.length===8&&b.paused,'monster pack has individual world sprites and battle begins paused');
+ const monsterRoster=t.partyRoster(m);monsterRoster.remove('wolf',1);const fewer=m.n;monsterRoster.add('wolf',1);ok(fewer===7&&m.n===8,'monster roster mutations update its campaign pack count');
+ const enemies=b.units.filter(u=>u.team===1);
+ ok(enemies.every(u=>u.sourceArmy===m&&u.marchUnit)&&new Set(enemies.map(u=>u.marchUnit)).size===8,'split beast packs retain distinct physical marchers and monster source identity');
+ ok(enemies.every(u=>{const p=b.world.world(u),q=first.before.get(u.marchUnit);return q&&Math.hypot(p.x-q.x,p.y-q.y)<.01}),'monster battle starts at its actual world marcher positions');
+ ok(b.world.hides(m),'participating monster campaign sprites are suppressed during combat');
+ const extra=t.asMonster({id:'wolf',n:2,lv:1,x:b.world.x+5,y:b.world.y,hx:b.world.x,hy:b.world.y,cool:0});t.W.monsters.push(extra);b.world.reinforce(1/60);
+ ok(b.units.filter(u=>u.team===1).length===10,'nearby same-kind monsters reinforce through world battle entry');
+ const second=start(false);ok(!second.b.paused&&t.prefLoad('bpause')===false,'turning off battle-start pause persists and starts combat running');
+});

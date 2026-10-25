@@ -13,6 +13,8 @@ class Party extends WorldObject{
   get troops(){let a=LISTS.get(this);if(!a){a=Object.freeze(expandCounts(this.tc));LISTS.set(this,a)}return a}
   set troops(list){this.tc=countsOf(list);this.changed()}
   get size(){return partyRoster(this).size}
+  // Displayed fighting headcount; size stays the soldier-only count used by recruitment and simulation.
+  get fighters(){return this===P?1+this.size+compsInBand().length:this.size+Math.max(0,(this.dead?0:partyRoster(this).reserved)-(this.ld&&this.troops.includes('chief')?1:0))}
   has(k){return partyRoster(this).count(k)>0}
   add(k,n=1){partyRoster(this).add(k,n);return this}
   // take up to n of a kind; returns how many
@@ -31,16 +33,16 @@ class Party extends WorldObject{
   // the banner it flies over it, Total War-style (sprites.js bannerSprite: k its shape, col its field, dev its device), null for
   // none; and the map row of its leader's head, the banner's pole standing over it (render.js bannerAt)
   banner(){return null}
-  headY(){return Math.round(this.y)+3-16+figTop(this.look())}
+  headY(){return Math.round(this.y)+3-16+figTop(this.look(),this)}
   // in sight: its host of soldiers, its leader's figure (a rider, a bandit), a torch on a night watch, its label (as it looks: look)
-  draw(ents,cam,V){if(!this.inView(V))return;const o=this;
+  draw(ents,cam,V){if(!this.inView(V)||B?.world?.hides(this))return;const o=this;if(WORLD_BATTLE.on)marchDraw(ents,o,cam);
     // (its step by how far it has walked: on foot a step each WALK.foot px, a rider each WALK.ride; standing still, or resting,
     // the first; drawn at its own place to the screen's pixel: render.js subT)
     // (its banner over it all, with its label over the banner: render.js drawBanners)
     ents.push({y:o.y,own:o.faction==='player',f:()=>{subT(o);const L=o.look(),sx=Math.round(o.x-cam.x),sy=Math.round(o.y-10-cam.y),fd=L.dir<0?-1:1,rider=!!L.rider&&!L.bandit,go=L.moving&&mapStepping(o),fr=go?frameOf(o,rider?WALK.ride:WALK.foot,WALK.n):0;
       const s=partyFig(o,L,fr).s;// (a rider: his host behind his horse)
-      drawHost(o.size,L.col,sx-(rider?fd*4:0),sy+12,fd,go?o.wd:null,L.seed,L.race,L.bandit);
-      ctx.save();ctx.translate(sx,sy);if(fd<0)ctx.scale(-1,1);ctx.drawImage(s,-(s.width>>1),13-s.height);ctx.restore();
+      if(!WORLD_BATTLE.on)drawHost(o.size,L.col,sx-(rider?fd*4:0),sy+12,fd,go?o.wd:null,L.seed,L.race,L.bandit);
+      if(WORLD_BATTLE.on)drawMarchLeader(s,sx,sy+10,fd);else{ctx.save();ctx.translate(sx,sy);if(fd<0)ctx.scale(-1,1);ctx.drawImage(s,-(s.width>>1),13-s.height);ctx.restore();}
       if(L.torch){const tx=sx+fd*4,ty=sy+3;rect(ctx,'#5a3e24',tx,ty,1,4);LIGHTQ.push({x:tx,y:ty-1,r:16})}
       BANNERQ.push({o,label:!o.fight&&L.label?[L.label,L.labelCol]:null})}})}
   // sheltering in a holding: inside is the holding's name. shelterWhy(t): why it may not go in there ('' if it may; each kind
@@ -49,7 +51,7 @@ class Party extends WorldObject{
   enter(t){this.inside=t.name;this.x=t.x;this.y=t.y+4}
   leave(){const t=townBy(this.inside);this.inside=null;if(t){this.x=t.x+rint(-6,6);this.y=t.y+14}}
   // how it looks on the map (render.js drawParties): colour, rider, moving, label
-  look(){return{col:'#888',dir:this.dir||1,moving:true,seed:0,label:String(this.size),labelCol:'#ccc'}}
+  look(){return{col:'#888',dir:this.dir||1,moving:true,seed:0,label:String(this.fighters),labelCol:'#ccc'}}
   // its fighting strength (engage.js rating), and its realm; in a fight on the map, its fighters as they are (fights.js)
   power(){return rating(this.troops)}
   fightPower(){return power(this.troops)}
@@ -62,11 +64,11 @@ class LordParty extends Party{
   meet(){lordMeet(this)}
   mapDot(V){return !this.dead&&!this.inside&&this.fromYou()<V?[FACS[this.fac].col,1]:null}
   label(){return this.name}
-  tip(){return '<b>'+htmlText(lordName(this))+' <span class="muted">Lv '+lordStats(this).lv+'</span></b><small>'+tipFac(this.fac)+' · '+this.troops.length+' soldiers'+tipOdds(this.power())+paceVs(lordSpeed(this))+'</small><span class="act">Click: actions · double-click: '+(hostileTo(this.fac)?'fight':'talk')+'</span>'}
+  tip(){return '<b>'+htmlText(lordName(this))+' <span class="muted">Lv '+lordStats(this).lv+'</span></b><small>'+tipFac(this.fac)+' · '+this.fighters+' fighters, including the leader'+tipOdds(this.power())+paceVs(lordSpeed(this))+'</small><span class="act">Click: actions · double-click: '+(hostileTo(this.fac)?'fight':'talk')+'</span>'}
   get brain(){return BRAINS.lord}
   shelterWhy(t){return t&&t.owner!==this.fac?'Not a holding of his realm':super.shelterWhy(t)}
   banner(){return{k:'banner',col:FACS[this.fac].col,dev:this.fac}}
-  look(){const col=FACS[this.fac].col,still=this.state==='rest'||this.state==='siege';return{col,race:FACS[this.fac].races[0],rider:'horse',dir:faceDir(this),moving:!still,seed:this.id.length*31+this.name.length,label:String(this.size),labelCol:hostileTo(this.fac)?STANCE_COL[stance(this.power())]:col}}
+  look(){const col=FACS[this.fac].col,still=this.state==='rest'||this.state==='siege';return{col,race:FACS[this.fac].races[0],rider:'horse',dir:faceDir(this),moving:!still,seed:this.id.length*31+this.name.length,label:String(this.fighters),labelCol:hostileTo(this.fac)?STANCE_COL[stance(this.power())]:col}}
 }
 class CompanionParty extends Party{
   get mapKind(){return 'cparty'}
@@ -75,13 +77,13 @@ class CompanionParty extends Party{
   get faction(){return 'player'}
   // (its leader's Leadership makes it stronger)
   power(){return power(this.troops)*(1+.04*compSkill(this.cid,'lead'))}
-  tip(){return '<b>'+this.label()+'</b><small>Your companion · '+this.troops.length+' soldiers · '+({follow:'riding with you',patrol:'patrolling '+this.base,return:'coming back'})[this.order]+'</small><span class="act">Click: actions · double-click: orders</span>'}
+  tip(){return '<b>'+this.label()+'</b><small>Your companion · '+this.fighters+' fighters · '+({follow:'riding with you',patrol:'patrolling '+this.base,return:'coming back'})[this.order]+'</small><span class="act">Click: actions · double-click: orders</span>'}
   get brain(){return BRAINS.cparty}
   shelterWhy(t){return !t?'Nowhere':yourShelterWhy(t)}
   enter(t){this.inside=t.name;this.x=t.x;this.y=t.y}
   inView(V){return this.onMap()&&Math.hypot(this.x-P.x,this.y-P.y)<V}// (yours: always in sight)
   banner(){return{k:'banner',col:FACS.player.col,dev:'star'}}// (yours, a companion's mark on it)
-  look(){return{col:FACS.player.col,race:P.race,dir:this.dir||1,moving:true,seed:this.cid.length*7,label:COMPS[this.cid].short+' '+this.size,labelCol:'#9fc0ff'}}
+  look(){return{col:FACS.player.col,race:P.race,dir:this.dir||1,moving:true,seed:this.cid.length*7,label:COMPS[this.cid].short+' '+this.fighters,labelCol:'#9fc0ff'}}
 }
 class PatrolParty extends Party{
   get mapKind(){return 'patrol'}
@@ -89,7 +91,7 @@ class PatrolParty extends Party{
   meet(){patrolMeet(this)}
   get meetsAnyTime(){return true}
   label(){return watchName(this)}
-  tip(){return '<b>'+watchName(this)+'</b><small>'+tipFac(this.fac)+' · '+this.troops.length+' soldiers'+(hostileTo(this.fac)?tipOdds(this.power()):'')+'</small><span class="act">Click: actions · double-click: meet</span>'}
+  tip(){return '<b>'+watchName(this)+'</b><small>'+tipFac(this.fac)+' · '+this.fighters+' fighters'+(hostileTo(this.fac)?tipOdds(this.power()):'')+'</small><span class="act">Click: actions · double-click: meet</span>'}
   mapDot(V){return this.fromYou()<V?[this.fac==='player'?FACS.player.col:FACS[this.fac].col,1]:null}
   get brain(){return BRAINS.patrol}
   banner(){return watchOf(this)==='night'?{k:'pennant',col:WATCH.night.pennant,dev:'lantern'}:{k:'pennant',col:this.fac==='player'?FACS.player.col:FACS[this.fac].col,dev:this.fac}}// (the day watch: its holding's realm's pennant; the night watch: a dark one with a lantern)
@@ -108,10 +110,10 @@ class BandParty extends Party{
   get faction(){return null}
   // (its chieftain hardens it: leaders.js chiefLv)
   power(){return this.pw||(this.pw=rating(this.troops,chiefLv(this)))}
-  tip(){return '<b>'+this.label()+'</b>'+chiefTip(this)+'<small>'+this.n+' fighters'+tipOdds(this.power())+paceVs(partySpeed(this,this.troops))+'</small>'+(this.carry?'<small class="gold">They hold '+this.carry.map(c=>c.n).join(' and ')+' captive</small>':'')+'<span class="act">Click: actions · double-click: attack</span>'}
+  tip(){return '<b>'+this.label()+'</b>'+chiefTip(this)+'<small>'+this.fighters+' fighters'+tipOdds(this.power())+paceVs(partySpeed(this,this.troops))+'</small>'+(this.carry?'<small class="gold">They hold '+this.carry.map(c=>c.n).join(' and ')+' captive</small>':'')+'<span class="act">Click: actions · double-click: attack</span>'}
   get brain(){return BRAINS.band}
   banner(){return{k:'rag',col:BAND_FLAG[this.kind]||BAND_FLAG.bandits,dev:'skull'}}// (a tattered rag: red, a desert raider's ochre, a bog raider's green)
-  look(){const c=this.ld;return{col:'#8a4a3a',bandit:true,dir:faceDir(this),moving:!this.idle,seed:Math.round(this.x)%97,label:(c?c.name.split(' ')[0]+' Lv'+c.lv+' · ':'')+this.n,labelCol:STANCE_COL[stance(this.power())]}}
+  look(){const c=this.ld;return{col:'#8a4a3a',bandit:true,dir:faceDir(this),moving:!this.idle,seed:Math.round(this.x)%97,label:(c?c.name.split(' ')[0]+' Lv'+c.lv+' · ':'')+this.fighters,labelCol:STANCE_COL[stance(this.power())]}}
   changed(){super.changed();if(this.tc)this.n=this.size;this.pw=0}
   // its record in a save: on a generated world its numbers to a tenth, its strength made again (worldobject.js packs)
   toJSON(){if(!packs())return this;const {pw,...o}=this;return tenths(o)}
@@ -135,7 +137,7 @@ class PlayerParty extends Party{
   power(){return partyPower()}
   look(){return{col:'#3d74d6',rider:mountDef()?mountDef().col:'',dir:this.dir||1,moving:this.tx!=null,seed:5,label:'',labelCol:'#fff'}}
   banner(){return{k:'banner',col:FACS.player.col,dev:'crown'}}
-  headY(){const m=mountDef();return Math.round(this.y)+3-16+opaqueBox(partySprite('#e8b94a',m?m.col:'',0))[1]}
+  headY(){if(WORLD_BATTLE.on)return Math.round(this.y)+3-16+figTop(this.look(),this);const m=mountDef();return Math.round(this.y)+3-16+opaqueBox(partySprite('#e8b94a',m?m.col:'',0))[1]}
   /* your numbers (their older names in state.js and combat.js are aliases of these). P is your band and your hero's record at
      once: here, the band's size and room, what it eats and how far it sees; then your hero's disciplines with everything that
      adds to them, what her gear, tree and perks give, her fighting numbers, and her health, stamina and mana */
@@ -150,7 +152,7 @@ class PlayerParty extends Party{
   // how many you may lead: your level, renown, Leadership and Charisma, and your talents
   cap(){
     const n=8+this.level*3+Math.floor(this.renown/25)+this.skill('lead')+Math.floor(this.attr.cha/2)+this.treeMod('cap');
-    return Math.max(3,Math.round(n*(1+this.treeMod('capPct'))))}
+    return Math.max((armyGroupLimit(this)-1)*ARMY_GROUP.units,Math.round(n*(1+this.treeMod('capPct'))))}
   // room left: negative while over capacity (callers decide whether a transfer is allowed)
   room(){return this.cap()-this.headcount()}
   prisonCap(){return 2+this.skill('lead')+(this.hasPerk('warden')?6:0)+this.treeMod('prison')}
@@ -227,7 +229,7 @@ class PlayerParty extends Party{
   drinkHour(moving){return (this.headcount()+1)*SUPPLY.drink.perDay/24*(moving?1:SUPPLY.drink.rest)}
   furNeed(){return Math.ceil((this.headcount()+1)/SUPPLY.furPer)}
   fitness(){
-    const hurt=Object.keys(this.comps).filter(id=>!this.comps[id].party&&this.comps[id].hurt>G.day).length,fit=1+this.troopCount()+compsInBand().length,wounded=this.woundedCount()+hurt;
+    const hurt=Object.keys(this.comps).filter(id=>!this.comps[id].party&&this.comps[id].hurt>G.day+Clock.frac).length,fit=1+this.troopCount()+compsInBand().length,wounded=this.woundedCount()+hurt;
     return{fit,wounded,share:fit/(fit+wounded)}}
 }
 Object.setPrototypeOf(P,PlayerParty.prototype);

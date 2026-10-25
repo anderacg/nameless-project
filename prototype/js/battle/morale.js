@@ -271,6 +271,7 @@ function rout(u){
 // a routing soldier's moment: away from the enemy, toward its way off the field (its own edge; EXITS.on: its group's exit); there
 // it leaves the field
 function routStep(u,dt){
+  if(B.world)return B.world.escape(u,dt);
   const any=exitsOn(),X=any?exitFor(u):null,ex=any?X.x:u.team?BW-MORALE.edge:MORALE.edge,ey=any?X.y:u.y,e=nearest(u);let mx=Math.sign(ex-u.x)||1,my=0;
   if(any){const l=Math.hypot(ex-u.x,ey-u.y);if(l>1e-9){mx=(ex-u.x)/l;my=(ey-u.y)/l}}
   {const w=B.terrain?steerDir(u,ex,ey):null;if(w){mx=w[0];my=w[1]}}// (round rock, cliffs and impassable water to the edge: terrain.js)
@@ -293,6 +294,7 @@ const withdrawing=u=>{const g=u.grp&&B.groups[u.grp];return !!g&&g.order==='with
 function exitInit(units){const m=units.filter(u=>u.team===0&&!u.lord);B.exit={x:MORALE.edge,w:WITHDRAW.band,y:m.length?m.reduce((a,u)=>a+u.y,0)/m.length:BH/2};if(EXITS.on)B.exits=exitSpans()}
 // where a soldier withdraws to: the nearest point of your edge, straight back; EXITS.on: of his exit's stretch, near its chosen point
 function exitFor(u){
+  if(B.world)return B.world.exit(u,2);
   if(!exitsOn())return{x:u.team?BW-MORALE.edge:B.exit.x,y:clamp(u.y,fieldTop(),fieldBot())};
   const X=exitOf(u),lo=Math.max(X.a,X.s-EXITS.wide),hi=Math.min(X.b,X.s+EXITS.wide);return exitPoint(X.side,clamp(X.side==='W'||X.side==='E'?u.y:u.x,lo,hi))}
 /* ---- the ways off the field (EXITS.on; off (tests/harness.js): your edge and theirs, straight back, as ever) ----
@@ -362,7 +364,7 @@ function withdrawThreat(u){return (spatialOn()?SG.near(u.x,u.y,Math.max(SG.reach
 function withdrawStep(u,dt){
   u.run=0;u.inSlot=false;u.spdNow=0;
   const threat=withdrawThreat(u);
-  const atExit=exitsOn()?exitReached(u,exitOf(u),WITHDRAW.band):u.team?u.x>=BW-MORALE.edge-WITHDRAW.band:u.x<=B.exit.x+B.exit.w;
+  const atExit=B.world?!B.world.inside(u):exitsOn()?exitReached(u,exitOf(u),WITHDRAW.band):u.team?u.x>=BW-MORALE.edge-WITHDRAW.band:u.x<=B.exit.x+B.exit.w;
   const leave=()=>{if(u.team===0)B.withdrawn=(B.withdrawn||0)+1;leaveField(u)};
   // One bounded disengagement per withdrawal order, triggered on first melee contact (including at the exit).
   // Keep an uncontested exit immediate; no synthetic losses or escape roll is added here.

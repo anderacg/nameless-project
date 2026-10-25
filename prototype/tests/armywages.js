@@ -1,0 +1,24 @@
+'use strict';
+Kit.suite(({ok})=>{
+ const t=T,P=t.P,G=t.G;Kit.begin('soldier',1);Kit.clear();Kit.world();
+ P.troops={};P.wounded={};P.woundedGroups=[];P.comps={};
+ ok(t.bandPayroll().total===0,'hero alone owes no wages');
+ const mounted=Object.keys(t.ST).find(k=>t.ST[k].mounted);P.troops={hum_foot:3,[mounted]:2};
+ P.comps={brann:{ap:5},elske:{ap:5}};t.compInit('brann');t.compInit('elske');
+ const r=t.partyRoster(P),foot=r.groups.find(g=>g.type==='hum_foot'),horse=r.groups.find(g=>g.type===mounted);
+ P.wounded={hum_foot:1,[mounted]:1};P.woundedGroups=[{id:foot.id,type:'hum_foot',count:1},{id:horse.id,type:mounted,count:1}];
+ ok(t.partyUnitWage(t.partyGroup(foot.id,r))===2,'foot group includes fit and wounded soldier wages');
+ ok(t.partyUnitWage(t.partyGroup(horse.id,r))===2.5,'mounted surcharge applies to fit riders; wounded retain base pay');
+ ok(t.partyUnitWage(t.partyGroup('hero',r))===0&&t.partyUnitWage(t.partyGroup('comp_brann',r))===2,'hero and companion wages use their own rates');
+ let w=t.bandPayroll();ok(w.raw===8.5&&w.total===9,'combined daily bill is rounded up once');
+ P.gold=50;t.bandWages();ok(P.gold===41,'daily deduction matches displayed bill');
+ P.comps.brann.party=t.asParty({kind:'companion',troops:['hum_foot','hum_foot'],x:P.x,y:P.y});
+ w=t.bandPayroll();ok(w.detached===2&&w.raw===9.5&&w.total===10,'detached companion troops remain included without charging the companion twice');
+ P.comps.elske.hurt=G.day+2;ok(t.partyUnitWage(t.partyGroup('comp_elske',r))===2,'wounded companions still receive their wage');
+ G.char='roster';t.openChar();
+ ok(t.panel.querySelector('.fb-army-wage')?.textContent==='Wages: 10g / day','Army header shows the real total daily bill');
+ const card=t.panel.querySelector('[data-army-group="'+horse.id+'"]');ok(card?.querySelector('.fb-unit-wage')?.textContent==='Wages: 2.5g / day','roster card shows its group wage without rounding it separately');
+ t.act('party-select',horse.id);const pane=t.panel.querySelector('.fb-unit-inspector');ok(pane.textContent.includes('Daily wages2.5g')&&pane.textContent.includes('1g per fit soldier per day; 0.5g per wounded soldier'),'inspector explains group wage and per-soldier rate');
+ const condition=t.partyCondition();ok(condition.includes('Daily wages')&&condition.includes('2 soldiers in companion-led parties')&&condition.includes('rounded up once to 10g / day'),'Condition explains the full bill and detached-party costs');
+ P.gold=1;const morale=P.morale;t.bandWages();ok(P.gold===0&&P.morale===morale-6,'unpaid wage penalty retains existing behavior');
+});

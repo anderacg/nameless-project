@@ -1,6 +1,6 @@
 'use strict';
 /* ---------- the Chronicle: a section of the Journal (journal.js; the owner, 2026-10-23: the old Message log, folded in; L) ----------
-   Every message of the game (G.msgs: core/state.js CHRONICLE, every one kept), newest first, under its day's header. Its filters
+   Lasting events of the game (G.msgs: core/state.js CHRONICLE; operational feedback stays on screen), newest first, under its day's header. Its filters
    are tabs (CHRON.filters): All, or the messages of one kind (those of no kind under All only), each with its count. One page at a
    time (CHRONICLE.page messages: Newest, Newer, Older, Oldest), so tens of thousands open at once: only that page is drawn. A
    quest's or story's message opens its entry in your Quests (questwindow.js: Open in Main, Side, Jobs or Archive; chronEntry;
@@ -31,7 +31,7 @@ function chronLink(r,byK){
 const chronWhen=r=>r.at&&r.at<r.day?' <small class="muted ch-when">happened day '+r.at+' ('+(r.day-r.at)+(r.day-r.at===1?' day':' days')+' before you heard)</small>':'';
 // the section: its filters, the page (its days' headers, a row each: the message and its link), its pages
 function chronicleWindow(){
-  const C=chronState(),M=G.msgs,n={all:M.length};
+  const C=chronState(),M=journalPrune(),n={all:M.length};
   for(const r of M)if(r.kind)n[r.kind]=(n[r.kind]||0)+1;
   if(!CHRON.filters.some(([f])=>f===C.f))C.f='all';
   const list=C.f==='all'?M:M.filter(r=>r.kind===C.f),N=CHRONICLE.page,pages=Math.max(1,Math.ceil(list.length/N));

@@ -4,7 +4,12 @@
 // (a wood in the frost is also 'snowwood': the reindeer's and snow hares' (data/critters.js), no monster's)
 function habitatAt(x,y){const t=terrAt(x,y),c=t===T_FOREST&&climAt(x,y);return t===T_FOREST?['forest',c==='swamp'?'swamp':c==='frost'?'snowwood':'']:t===T_HILL?['hills']:t===T_OPEN?[climAt(x,y)]:[]}
 /* a beast on the map (W.monsters: plain data, saved as it is; made a Monster in place: asMonster): a world object (parties.js) */
-class Monster extends WorldObject{
+const MON_COUNTS=new WeakMap();
+class Monster extends Party{
+  get tc(){let c=MON_COUNTS.get(this);if(!c){c={};MON_COUNTS.set(this,c)}c[MONSTERS[this.id].unit]=this.n;return c}
+  set tc(counts){this.n=counts[MONSTERS[this.id].unit]||0;MON_COUNTS.set(this,{...counts});this.pw=0}
+  changed(){const c=MON_COUNTS.get(this);if(c)this.n=c[MONSTERS[this.id].unit]||0;this.pw=0;super.changed()}
+  look(){return{col:'#c58af0',dir:faceDir(this),moving:true,race:ST[MONSTERS[this.id].unit]?.race}}
   get mapKind(){return 'monster'}
   // its record in a save (MON_KEYS, below)
   toJSON(){return packs()?packRec(this,MON_KEYS,['pw','t','a']):this}
@@ -15,7 +20,7 @@ class Monster extends WorldObject{
   pick(at){at.add(this,11,6)}
   // its figure (a mythic one in flight, its wings beating, bobbing, drawn over what it flies above; the rest a walk of
   // PX.MAP_STEPS frames to a body length walked: render.js stepOf), its count and level by how it means to fight
-  draw(ents,cam,V){if(!this.inView(V))return;const m=this,M=MONSTERS[m.id],Y=M.mythic;
+  draw(ents,cam,V){if(!this.inView(V)||B?.world?.hides(this))return;if(WORLD_BATTLE.on){marchDraw(ents,this,cam);return}const m=this,M=MONSTERS[m.id],Y=M.mythic;
     ents.push({y:m.y+(Y&&Y.fly?30:0),top:!!(Y&&Y.fly),f:()=>{subT(m);
       const s=monsterMapSprite(m.id,Y?Math.floor(performance.now()/260+(m.hx||0))%2:stepOf(m,Math.max(4,monsterMapSprite(m.id,0).cw)/PX.MAP_STEPS,PX.MAP_STEPS)),w=s.width,h=s.ch,sx=Math.round(m.x-cam.x),sy=Math.round(m.y-cam.y),lift=Y&&Y.fly?6-Math.round(Math.sin(performance.now()/260)*2):0;
       ctx.fillStyle='rgba(0,0,0,.3)';if(Y)ctx.fillRect(sx-8,sy-1,16,3);else ctx.fillRect(sx-Math.max(2,(s.cw>>1)-1),sy-1,Math.max(4,s.cw-2),2);
@@ -76,7 +81,7 @@ const BEAST_MIND={think(m,d,hide){
       const hx=m.hx-m.x,hy=m.hy-m.y;if(Math.hypot(hx,hy)>A.lairLeash)m.a=Math.atan2(hy,hx);walk(m,Math.cos(m.a),Math.sin(m.a),moveStep(10,d))}
     // a band it meets: it falls on them, and they fight back (a fight on the map)
     {const b=beastMeets(m);if(b){startFight([asMonster(m)],[b]);return false}}
-    if(M.aggro&&dist<10&&stance(monPower(m))==='attack'&&m.cool<=0&&G.encCool<=0&&!G.modal){startMonster(m);return true}
+    if(M.aggro&&dist<(WORLD_BATTLE.on?worldBattleReach(m):10)&&stance(monPower(m))==='attack'&&m.cool<=0&&G.encCool<=0&&!G.modal){startMonster(m);return true}
     return false}};
 // the band a beast falls on: one it meets, out of any fight; neither of them set out by a quest, nor a mythic beast (it ravages
 // armies its own way: roamMythic)
@@ -136,7 +141,7 @@ function roamMythic(m,d){
   const dx=tx-m.x,dy=ty-m.y,dl=Math.hypot(dx,dy);
   if(dl>1){const sp=Math.min(dl,moveStep(Y.speed[hunt?1:0],d));if(Y.fly){m.x+=dx/dl*sp;m.y+=dy/dl*sp}else walk(m,dx,dy,sp);m.dir=dx>=0?1:-1}
   if(Y.ravage)for(const l of W.lords)if(!l.dead&&!l.inside&&!((l.dcool||0)>G.day)&&Math.hypot(l.x-m.x,l.y-m.y)<16){l.dcool=G.day+3;cull(l,Y.ravage);log('The '+M.n.toLowerCase()+' falls upon the army of '+l.name+'. '+(Y.ravage>=.5?'Half':'Many')+' are lost.','bad');if(l.troops.length<3)defeatLord(l)}
-  if(pd<12&&m.cool<=0&&G.encCool<=0&&!G.modal){startMonster(m);return true}
+  if(pd<(WORLD_BATTLE.on?worldBattleReach(m):12)&&m.cool<=0&&G.encCool<=0&&!G.modal){startMonster(m);return true}
   return false;
 }
 // slain: its hoard (all of its gold yours: res.own, never shared with those beside you, engage.js reinfCut), and the wait for the next one

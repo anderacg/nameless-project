@@ -25,13 +25,19 @@ class RecruitmentService{
     if(this.player.gold<cost)return fail('gold');
     if(this.rules.size()+n>this.rules.capacity())return fail('capacity');
     if(this.rules.roster&&target!=='new'&&!this.rules.roster().groups.some(g=>g.id===target&&g.type===k))return fail('target');
-    if(this.rules.canGroup&&!this.rules.canGroup(k,target))return fail('groups');
+    if(this.rules.canGroup&&!this.rules.canGroup(k,target,n))return fail('groups');
     return {ok:true,code:'hire',kind:k,count:n,target,cost,unitCost};
   }
   hire(t,k,n=1,target){
     const result=this.quoteHire(t,k,n,target);if(!result.ok)return result;
     if(this.rules.add){if(this.rules.add(k,n,result.target)!==n)return {...result,ok:false,code:'target'}}else for(let i=0;i<n;i++)this.player.add(k);
     this.player.gold-=result.cost;t.vol-=n;t.pop=Math.max(10,t.pop-n);return result;
+  }
+  reinforce(t,id){
+    const r=this.rules.roster(),g=r.groups.find(g=>g.id===id);if(!g)return null;
+    const cost=this.hireCost(g.type),room=r.groupRoom(g.type,id),funds=cost>0?Math.floor(this.player.gold/cost):room;
+    const n=Math.max(0,Math.floor(Math.min(room,t.vol||0,this.rules.capacity()-this.rules.size(),funds)));
+    return n>0?this.hire(t,g.type,n,id):null;
   }
   quoteGroupTraining(t,id,to){
     const g=this.rules.roster&&this.rules.roster().groups.find(g=>g.id===id),from=g&&g.type,count=g&&g.count||0,unitCost=this.trainCost(to),cost=unitCost*count,xpCost=from?this.xpNeed(from)*count:0;
@@ -90,11 +96,22 @@ class RecruitmentService{
 const TROOP_XP={need:{1:40,2:80,3:140,4:220},dmg:.5,kill:6,fight:4,win:4,auto:.6};
 const recruitment=new RecruitmentService(P,{troops:ST,upgrades:UP,companions:COMPS,compTown:id=>compTown(id),hire:HIRE,xp:TROOP_XP,prisonerCost:10,has,effect:tm,
   lead:()=>skill('lead'),size:partySize,capacity:partyCap,canHire:(t,k)=>canHire(t,k),day:()=>G.day,
-  roster:()=>partyRoster(P),target:k=>recruitTarget(k)||partyRoster(P).groups.find(g=>g.type===k)?.id||'new',
-  canGroup:(k,target)=>partyRoster(P).canAdd(k,target===undefined?recruitTarget(k):target),freeGroup:()=>partyRoster(P).slots<ARMY_LIMIT,
+  roster:()=>partyRoster(P),target:k=>recruitTarget(k)||partyRoster(P).groups.find(g=>g.type===k&&partyRoster(P).groupRoom(k,g.id)>0)?.id||'new',
+  canGroup:(k,target,n=1)=>partyRoster(P).canAdd(k,target===undefined?recruitTarget(k):target,n),freeGroup:()=>partyRoster(P).slots<partyRoster(P).groupLimit,
   add:(k,n=1,target=recruitTarget(k))=>{const r=partyRoster(P),added=r.add(k,n,target);if(added&&target==='new')G.recruitTarget=r.groups[r.groups.length-1].id;if(added)skinsJoin(added);return added},// (each recruit brings an empty waterskin: world/supply.js)
   canTrainGroup:(from,to)=>partyRoster(P).canAdd(to)||partyRoster(P).groups.find(g=>g.type===from)?.count===1});
 const hireCost=k=>recruitment.hireCost(k),trainCost=k=>recruitment.trainCost(k);
 const txpNeed=k=>recruitment.xpNeed(k),txpOf=k=>recruitment.xpOf(k),txpReady=k=>recruitment.ready(k);
 const txpGain=(k,n)=>recruitment.gainXp(k,n),txpClamp=()=>recruitment.clampXp();
 function recruitTarget(k){const id=G.recruitTarget;return id==='new'||partyRoster(P).groups.some(g=>g.id===id&&g.type===k)?id:undefined}
+// Saved per group; passing a friendly hiring place fills only that group through the normal paid recruitment rules.
+const autoReinforceOn=id=>!!P.army?.autoReinforce?.[id];
+function autoReinforceStep(d,dt){
+  if(G.mode!=='world'||G.paused||G.dead||G.modal||B||!(dt>0))return;
+  const r=partyRoster(P),groups=r.groups.filter(g=>autoReinforceOn(g.id)&&r.groupRoom(g.type,g.id)>0);if(!groups.length)return;
+  const towns=TOWNS.filter(t=>Math.hypot(t.x-P.x,t.y-P.y)<=REACH&&!hostileTo(t.owner)&&!closedNow(t)).sort((a,b)=>Math.hypot(a.x-P.x,a.y-P.y)-Math.hypot(b.x-P.x,b.y-P.y));if(!towns.length){recruitment.autoWait=0;return}
+  recruitment.autoWait=Math.max(0,(recruitment.autoWait||0)-dt);if(recruitment.autoWait)return;recruitment.autoWait=.5;let hired=0;
+  for(const g of groups)for(const t of towns){const q=recruitment.reinforce(t,g.id);if(q?.ok){hired+=q.count;log(q.count+' '+ST[g.type].n+' join '+armyGroupLabel(g.id,r)+' at '+t.name+' for '+q.cost+'g.','good','band')}if(!r.groupRoom(g.type,g.id))break}
+  if(hired)updateHUD(true);
+}
+Systems.add({name:'auto reinforce',order:{frame:148},frame:autoReinforceStep});

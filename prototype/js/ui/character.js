@@ -40,7 +40,7 @@ function charAct(a,arg){
   else if(a==='army-merge-picked'){const to=G.armyMergeTarget;G.armyMergeTarget=null;if(partyRoster(P).merge(arg,to)){G.armyEdit=null;G.armyNotice='Groups merged; the destination keeps its name and wounded ownership.'}}
   else if(a==='army-split'){const r=partyRoster(P),g=r.groups.find(g=>g.id===arg);if(g)r.split(g.id,Math.floor(g.count/2))}
   else if(a==='army-merge'){const [from,to]=arg.split(':');partyRoster(P).merge(from,to)}
-  else if(a==='army-recruit')G.recruitTarget=arg;
+  else if(a==='army-auto-reinforce'){const r=partyRoster(P);if(r.groups.some(g=>g.id===arg)){const flags=P.army.autoReinforce||(P.army.autoReinforce={});flags[arg]=!flags[arg];recruitment.autoWait=0}}
   else if(a==='role'){const [id,r]=arg.split(':');const c=P.comps[id];if(c){if(c.role===r)c.role='';else{const o=roleOf(r);if(o)P.comps[o].role='';c.role=r}}}
   else if(a==='dismiss'){if(P.comps[arg]){delete P.comps[arg];partyView().open=false;log(COMPS[arg].n+' leaves your band.'+(compTown(arg)?' You may find them in '+compTown(arg).name+' again.':''))}}
   else if(a==='p-recruit')recruitmentFeedback(recruitment.recruitPrisoner(arg));
@@ -62,7 +62,7 @@ const CHAR_ATTR_FX={str:'+4 health and +0.5 damage a point',agi:'+2 speed and 3%
 /* a companion: its card opened on the Army window's Roster (from the map or its party met), its detail beside
    the cards (ui/companionpage.js): level, stats, disciplines, perks, the gear you give them, and a party of your soldiers to lead */
 function openComp(id){if(!P.comps[id])return;if(G.mode!=='char'){if(G.modal||G.mode!=='world')return;G.mode='char'}G.char='roster';G.armyEdit=null;const s=partyView();s.sel='comp_'+id;s.open=true;s.path=false;compPick(id,true);renderChar()}
-const CP_TRANSFER_WHY={source:'Choose a fit source group.',target:'Choose a destination group of the same unit type, or a new group.',amount:'Enter a whole number from 1 to the fit count of this group.',capacity:'Not enough receiving headcount capacity for this entire transfer.',groups:'Not enough army slots (10 maximum), including the companion if they rejoin.',leadership:'This companion does not yet meet the level and trust requirements to lead.',party:'This companion has no separate army.',distance:'Ride within 60 pixels to take soldiers back.',fighting:'Wait until this companion’s battle ends.',companion:'Companion unavailable.','same-army':'Choose two different armies.'};
+const CP_TRANSFER_WHY={source:'Choose a fit source group.',target:'Choose a destination group of the same unit type, or a new group.',amount:'Enter a whole number from 1 to the fit count of this group.',capacity:'Not enough receiving headcount capacity for this entire transfer.',groups:'Not enough unlocked army slots or space in this troop group, including the companion if they rejoin.',leadership:'This companion does not yet meet the level and trust requirements to lead.',party:'This companion has no separate army.',distance:'Ride within 60 pixels to take soldiers back.',fighting:'Wait until this companion’s battle ends.',companion:'Companion unavailable.','same-army':'Choose two different armies.'};
 const cpTransferWhy=q=>CP_TRANSFER_WHY[q.code]||'Transfer unavailable.';
 function compTransferDraft(direction){return (G.compTransfer||(G.compTransfer={}))[direction]||((G.compTransfer[direction]={source:'',target:'new',count:1}))}
 function compTransferStatus(q){return q.ok?'<span>Transfer '+q.count+' fit soldiers. Groups: source '+q.fromSlots+' → '+q.fromAfter+' / 10 · destination '+q.toSlots+' → '+q.toAfter+' / 10.</span>'+
@@ -79,7 +79,7 @@ function compTransferAction(action,direction){
   if(action!=='cm-transfer-confirm'||!d.review)return;
   if(!q.ok||JSON.stringify(q)!==JSON.stringify(d.review)){d.review=null;G.compTransferNotice=q.ok?'This transfer changed. Review it again before confirming.':cpTransferWhy(q);return}
   const result=cpTransferGroup(id,direction,d.source,d.count,d.target);d.review=null;
-  if(result.ok){G.compTransfer={};G.compTransferNotice='Transferred '+result.count+' fit soldiers. Wounded remain with their original army.';log(G.compTransferNotice,'good')}
+  if(result.ok){G.compTransfer={};G.compTransferNotice='Transferred '+result.count+' fit soldiers. Wounded remain with their original army.';toast(G.compTransferNotice,'good')}
   else G.compTransferNotice=cpTransferWhy(result);
 }
 function updateCompTransferDraft(e){
@@ -98,7 +98,7 @@ onAct('cm-',(a,arg)=>{
   if(!compShown())return;partyUnitRemember();const id=G.compSel,keep=panel.scrollTop;
   if(a==='cm-army'){G.compTab='orders';const s=partyView();(s.sections||(s.sections={}))[s.sel+':company']=true;renderComp();return}
   if(a==='cm-perk'){const c=compInit(id);if(c.perkPend>0&&COMP_PERKS[arg]&&!c.perks.includes(arg)){c.perks.push(arg);c.perkPend--;log(COMPS[id].short+' becomes '+COMP_PERKS[arg].n.toLowerCase()+'.','gold')}}
-  else if(a==='cm-eq'){const [sl,i]=arg.split(':');if(compEquip(id,sl,+i))log(COMPS[id].short+' takes the '+ITEMS[compInit(id).gear[sl]].n+'.')}
+  else if(a==='cm-eq'){const [sl,i]=arg.split(':');if(compEquip(id,sl,+i))toast(COMPS[id].short+' takes the '+ITEMS[compInit(id).gear[sl]].n+'.')}
   else if(a==='cm-off')compUnequip(id,arg);
   else if(a==='cm-tree'){openSkills('talents',id);return}// (its own tree, on the Skills view)
   else if(['cm-transfer-review','cm-transfer-confirm','cm-transfer-cancel'].includes(a))compTransferAction(a,arg);

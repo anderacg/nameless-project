@@ -31,7 +31,7 @@ function battleMood(base,why){
 class BattleResolution{
   constructor(battle=null){this.battle=battle}
   finish(){
-    const b=this.battle;
+    const b=this.battle;if(b.world)b.world.finish(b);
     this.primaryLossesApplied=!!b.primaryLossesApplied;
     const groupLosses=[];
     // Preserve the original settlement/medicine traversal; sort only the finished report for presentation.
@@ -44,7 +44,7 @@ class BattleResolution{
     if(!b.opts.tournament)for(const u of b.units)if(u.team===0&&!u.hero&&!u.comp&&!u.lord&&!u.leader&&(u.hp>0||u.left))(b.txp=b.txp||{})[u.type]=(b.txp[u.type]||0)+(u.xp||0)+TROOP_XP.fight+(b.win?TROOP_XP.win:0);
     const txp=b.txp||{},o=b.opts,win=b.win,retreat=!!b.retreat,caught=b.caught||0,got=b.withdrawn||0,standing=b.units.filter(u=>u.team===1&&u.hp>0).length,fallen=Object.values(b.lost).reduce((a,n)=>a+n,0);bbar.hidden=true;G.mode='dialog';lootStart();
     const lost=o.tournament?{}:b.lost,kills=b.kills,slain=b.slain,h=b.hero,X=b.hx;
-    if(b.bestCombo>=3)log('Your longest chain of blows: '+b.bestCombo+' hits.',undefined,'war');
+    if(b.bestCombo>=3)toast('Your longest chain of blows: '+b.bestCombo+' hits.',undefined,'war');
     // carry the hero's condition out of the fight; a knocked-out hero comes to at 10% health
     if(h.hp>0||h.left)P.hp=h.left?h.hpLeft:h.hp;else{P.hp=Math.max(1,Math.round(h.max*.1));log('You come to after the fight, badly wounded.','bad','war')}
     if(X){P.sp=X.sp;P.mp=X.mp}
@@ -62,7 +62,7 @@ class BattleResolution{
       else{html='<h2>Beaten</h2><p>The champion takes your entry fee and sends you off with a bruised pride.</p>';log('You lose the tournament.','bad')}
       lootShow(html,null,0,'back-town');return;
     }
-    this.conclude(win,lost,kills,false,slain,retreat&&{caught,got,standing,fallen,carried:h.hp<=0&&!h.left},txp,groupLosses);
+    this.conclude(win,lost,kills,false,slain,retreat&&{caught,got,standing,fallen,blocked:!!b.stalemate,carried:h.hp<=0&&!h.left},txp,groupLosses);
   }
   conclude(win,lost,kills,auto,slain,retreat,txp,groupLosses){
     if(auto)BATTLE_MOOD=null;
@@ -91,9 +91,9 @@ class BattleResolution{
       const o=e.ref;slain=slain||[];if(!this.primaryLossesApplied&&o&&(e.kind==='lord'||e.kind==='patrol'||e.kind==='party'))for(const k of slain)if(formsFit(o))o.remove(k,1);
       if(e.list)for(const k of slain){const i=e.list.indexOf(k);if(i>=0)e.list.splice(i,1)}
       mood('flee');if(kills)gainXp(kills*4);
-      const od=fleeOdds(e),away=od.leave||od.ch>0&&Math.random()<od.ch,rear={};
+      const od=retreat.blocked?{leave:true,ch:1}:fleeOdds(e),away=od.leave||od.ch>0&&Math.random()<od.ch,rear={};
       // (a retreat costs, as in Total War: the band's morale and your renown; run down, more)
-      const moodLine=battleMood(-MOOD.retreat-(away?0:MOOD.runDown),away?'a retreat':'run down in the retreat');P.renown=Math.max(0,P.renown-MOOD.renown);
+      const moodLine=battleMood(retreat.blocked?0:-MOOD.retreat-(away?0:MOOD.runDown),retreat.blocked?'disengaged':away?'a retreat':'run down in the retreat');P.renown=Math.max(0,P.renown-(retreat.blocked?0:MOOD.renown));
       if(away){if(o&&o.x!=null){const dx=P.x-o.x,dy=P.y-o.y,l=Math.hypot(dx,dy)||1;walk(P,dx/l,dy/l,40)}if(o&&e.kind!=='camp')o.cool=12}
       else{const n=P.size?Math.max(1,Math.round(P.size*.1*(has('rearguard')?.5:1))):0;
         const before=groupLosses&&new Map(partyRoster(P).groups.map(g=>[g.id,g.count]));
@@ -104,6 +104,7 @@ class BattleResolution{
       html='<h2>'+(away?'Withdrawn':'Run down')+'</h2><p>'+(retreat.carried?'You fall in the fight, and your men carry you off the field. ':'')+'You pull your band out of the fight'+(kills?', leaving '+kills+' of them dead':'')+'. '+(retreat.caught?retreat.caught+' '+(retreat.caught>1?'were':'was')+' cut down before reaching the edge of the field.':'Everyone who withdrew got clear of the field.')+'</p>'+
         '<p class="'+(away?'good':'bad')+'">'+(od.leave?'They let you go.':away?'You get away ('+Math.round(od.ch*100)+'% chance): they lose your trail.':(od.ch<=0?od.why+': ':'')+'They run you down'+(rn?': your rearguard loses '+lossText(rear):'')+'. You must face them again.')+' You ride on with '+n+' soldier'+(n===1?'':'s')+'.</p>'+
         '<div class="lab">The battle</div><div class="loot-stats">'+[['Enemies slain',kills,'good'],['Your fallen',retreat.fallen||0,retreat.fallen?'bad':''],['Got away',retreat.got||0,''],['Enemies still standing',retreat.standing||0,'']].map(([k,v,c])=>'<span><b>'+k+'</b><span class="'+c+'">'+v+'</span></span>').join('')+'</div>'+moodLine+'<p class="bad">Renown −'+MOOD.renown+' for the retreat.</p>';
+      if(retreat.blocked)html='<h2>Disengaged</h2><p>Impassable ground blocks every route through the battle area. Both armies break contact; neither side claims victory.</p>'+moodLine;
     }else{
       const lose=Math.floor(P.gold*.25);P.gold-=lose;const moodLine=battleMood(-15,'defeat');if(auto){vitals();P.hp=Math.max(1,Math.round(P.hp*.5))}
       if(prisonerCount()){P.prisoners={};log('Your prisoners escape in the chaos.','bad','war')}
