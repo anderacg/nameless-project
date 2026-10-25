@@ -1105,7 +1105,7 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 @media(max-width:520px){.dev-grid{grid-template-columns:1fr}#dev-console [data-dev-form]{grid-template-columns:1fr auto}#dev-console [data-dev-form]>label{grid-column:1/-1}}
 
 /* March formation editor */
-.march-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(200px,280px);gap:16px;padding:12px}.march-layout canvas{display:block;width:100%;height:clamp(280px,68vh,680px);object-fit:fill;margin:0;touch-action:none;border:1px solid #806b3f}.march-layout .btns{display:flex;flex-wrap:wrap;gap:6px}.march-layout .btn.on{border-color:#f0cd76;background:#514026}.march-layout p{color:#c6b691}.fb-march .fb-body{overflow:auto}
+.march-layout{display:grid;flex:none;width:100%;min-width:0;align-content:start;grid-template-columns:minmax(0,1fr) minmax(200px,280px);gap:16px;padding:12px}.march-layout>div{min-width:0}.march-layout canvas{display:block;contain:inline-size;width:100%;height:clamp(280px,68vh,680px);object-fit:fill;margin:0;touch-action:none;border:1px solid #806b3f}.march-layout .btns{display:flex;flex-wrap:wrap;gap:6px}.march-layout .btn.on{border-color:#f0cd76;background:#514026}.march-layout p{color:#c6b691}.fb-march .fb-body{overflow:auto}
 @media(max-width:600px){.march-layout{gap:8px;padding:8px;grid-template-columns:minmax(180px,1.5fr) minmax(120px,1fr)}.march-layout .btn{font-size:11px;padding:6px}.march-layout canvas{width:100%;height:280px}}
 
 /* Short hunts stay on the map, with one way to leave. */

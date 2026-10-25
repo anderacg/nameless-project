@@ -3,6 +3,10 @@ Kit.suite(({ok})=>{
  const t=T,P=t.P,G=t.G;Kit.begin('soldier',1);Kit.clear();Kit.world();t.WORLD_BATTLE.on=true;t.GUIDE.on=false;
  P.troops={hum_bow:10,hum_knight:4};G.mode='char';t.openMarch();const arch=t.partyRoster(P).groups.find(g=>g.type==='hum_bow');
  t.act('march-select',arch.id);const row=()=>t.marchDraftRows().find(r=>r.id===arch.id);
+ const scale=t.marchCanvasView().scale;ok(!G.march.range,'range is hidden initially so the army fills the preview');
+ t.act('march-range');ok(G.march.range&&t.marchCanvasView().scale<scale,'range overview is available on demand');t.act('march-range');ok(t.marchCanvasView().scale===scale,'hiding range restores the placement scale');
+ const original=JSON.stringify(G.march.draft);t.act('march-step','up');ok(G.march.history.length===1,'one nudge records one undo step');t.act('march-undo');ok(JSON.stringify(G.march.draft)===original,'undo restores the whole draft');
+ t.act('march-form','column');t.act('march-reset-selected');ok(JSON.stringify(G.march.draft)===original,'reset group restores its default placement and saved formation');t.act('march-undo');ok(row().files===1,'reset group can be undone');t.act('march-undo');
  for(const form of ['line','column','loose']){t.act('march-form',form);const r=row();G.march.draft[r.id].x=999;G.march.draft[r.id].y=999;t.marchDraftClamp();
   const q=row(),points=t.marchGuidePoints(q);ok(points.length>=4&&points.every(p=>Math.hypot(q.x+p.x,q.y+p.y)<=t.marchDraftOuter()+.001),form+' guide fits entirely inside the army placement circle');
  }

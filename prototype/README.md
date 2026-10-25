@@ -1,5 +1,7 @@
 # Ashmark prototype
 
+**March formation preview:** the drawing pane fills its available column and stays independent of canvas bitmap size, preventing resize feedback. Desktop and phone landscape keep a stable army-radius preview.
+
 **Campaign recovery and pace:** wounded companions show recovery progress and return to duty when healed; camp, lodging and Medicine accelerate recovery. Stamina restores at 4/hour stopped, 16/hour camped and 20/hour lodging before supply penalties. Campaign movement is twice the base pace; world battle keeps its previous movement scale.
 
 **Battle order previews:** formation ghosts scale with world battle sprites. Movement paths, attack markers and previews draw beneath characters.
@@ -1056,3 +1058,7 @@ Wildlife hunting now requires at least one fit troop with a physical ranged weap
 Travel ambush tactics: in Army, select a troop group and choose Hold concealed. It waits at its current world position while the hero and other groups travel; Rejoin march releases it, and moving more than 220 world pixels away automatically recalls it. Cover comes from actual forest terrain, not the order itself. Hold anchors live in P.army.concealed and survive saves. On entering a world battle, held groups retain their actual positions, hold position/fire and stay outside automatic commander control until you issue them an order. Battle settlement clears travel holds.
 
 Travel detection now builds suspicion per group using its actual centre, footprint, forest cover and movement. Group size adds at most 25% sight distance. A quiet held group in forest builds suspicion at half rate; moving groups build 1.35x faster. An observer estimates power only from groups it has detected, remembering them for 8 seconds, and pursues visible bait instead of an unseen hero. Other observers have independent knowledge. Existing terrain concealment, attack reveal and charge ambush shock apply in combat; there is no extra damage multiplier. World forest tiles also protect concealment at coarse battle-grid edges. Tuning: TRAVEL_AMBUSH in world/ambush.js; recognition in world/worldobject.js. Tests: travelambush, travelsuspicion, traveldetection, worldhitvisibility.
+
+March editor: army-sized placement view by default; Show range opens the selected ranged group’s reach overview. Undo keeps the last 20 edits, Reset group restores only the selected group, and red drag outlines flag requests outside the placement boundary before they are fitted inside. Terrain obstacles remain resolved during travel.
+
+Deployment: the repository root has an `index.html`. Run `python3 scripts/build-web.py` from the root to create `dist/site/` and `dist/ashmark-web.zip` with all runtime dependencies. See `DEPLOY.md` for hosting and phone testing.

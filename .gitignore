@@ -6,3 +6,5 @@ ux-review/
 demos/
 # Python bytecode from the audio build scripts
 __pycache__/
+# Generated static deployment folder and ZIP
+dist/
