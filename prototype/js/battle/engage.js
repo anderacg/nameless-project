@@ -77,15 +77,22 @@ const helpChance=v=>clamp(REINF.chance+(1-REINF.chance)*v/RELATION.helpAt,0,1);
 const helpRoll=(e,k)=>{const R=e.rolls||(e.rolls={});return R[k]!=null?R[k]:R[k]=hash(Math.floor(P.x),Math.floor(P.y),G.day*7919+folkHash(k))};
 const fairOdds=(e,o)=>o.power()+partyPower()>=REINF.fair*rating(e.list||[],e.lv);
 const neutralHelps=(e,o,k,v)=>helpRoll(e,k)<helpChance(v)&&fairOdds(e,o);
+// Local law enforcement is duty, not a friendship roll. Current land ownership overrides a watch's old home.
+const banditBattle=e=>{const band=f=>(f?.src||f)?.mapKind==='band';return !foeRealm(e)&&(e.kind==='party'&&band(e.ref)||e.kind==='field'&&(e.foes||[]).length>0&&e.foes.every(band))};
+function localBanditDuty(e,o){
+  if(!banditBattle(e)||hostileTo(o.fac))return '';const p=B?.world&&G.enc===e?B.world:P,t=landHold(p.x,p.y);
+  return t?.owner===o.fac?'clearing bandits from its realm’s land':'';
+}
 const bountyWhy=e=>e.kind==='monster'||e.kind==='cave'?'to see the beast dead':'for the bounty';
 // why a lord rides to help you ('' if he won't): a friend; or a neutral lord by chance at fair odds, against a common enemy or
 // against a realm his own is at war with (the owner, 2026-10-23: "they fight each other, why not?")
 function lordWhy(e,l){const side=reinforceSide(e,l);if(side===1||side===-1)return '';const fr=foeRealm(e),st=siegeTown(e);if(fr&&(fr==='player'||!atWar(l.fac,fr)))return '';
   if(st&&l.tgt===st&&l.state==='siege')return 'besieging '+st;if(st&&l.inside===st)return 'holding the walls of '+st;
+  const duty=localBanditDuty(e,l);if(duty)return duty;
   const fw=friendWhy(l);if(fw||hostileTo(l.fac))return fw;return neutralHelps(e,l,l.id,relWith(l))?(fr?'at war with the '+FACS[fr].n:bountyWhy(e)):''}
 // why a holding's watch rides to help you ('' if it won't): on its realm's land against a common enemy, or against a realm at
 // war with its own; off its land against a common enemy as a neutral lord would (or a friend)
-function watchWhy(e,p){const side=reinforceSide(e,p);if(side===1||side===-1||hostileTo(p.fac))return '';const fr=foeRealm(e),land=patrolLand(p,P.x,P.y);
+function watchWhy(e,p){const side=reinforceSide(e,p);if(side===1||side===-1||hostileTo(p.fac))return '';const duty=localBanditDuty(e,p);if(duty)return duty;const fr=foeRealm(e),land=!banditBattle(e)&&patrolLand(p,P.x,P.y);
   if(fr)return land&&fr!=='player'&&fr!==p.fac&&atWar(p.fac,fr)?'riding out against the '+FACS[fr].n+' on its land':'';
   if(land)return 'riding in to clear its '+(e.kind==='monster'||e.kind==='cave'?'land':'road');
   return friendWhy(p)||(neutralHelps(e,p,'w:'+p.home+':'+watchOf(p),0)?bountyWhy(e):'')}

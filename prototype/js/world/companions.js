@@ -137,10 +137,12 @@ function compDay(){
 // on the map: drawn with every party (render.js drawParties; its look: parties.js)
 // its work in the world's day and frame (core/systems.js)
 const compHealthShare=c=>clamp(1-Math.max(0,(c.hurt||0)-G.day-Clock.frac)/2,0,1);
+const compRecoveryRate=c=>(c.party?c.party.inside?2:1:P.stay?2:P.camp?SUPPLY.camp.heal:1)+.03*skill('med');
+const compRecoveryHours=c=>Math.max(0,((c.hurt||0)-G.day-Clock.frac)*24)/compRecoveryRate(c);
 function compRecoveryHour(){
   const now=G.day+Clock.frac;
   for(const id in P.comps){const c=compInit(id);if(!c.hurt)continue;
-    const sheltered=c.party?!!c.party.inside:!!P.stay,camped=!c.party&&!!P.camp,rate=(sheltered?2:camped?SUPPLY.camp.heal:1)+.03*skill('med');
+    const rate=compRecoveryRate(c);
     c.hurt-=Math.max(0,rate-1)/24;
     if(c.hurt<=now){c.hurt=0;log(COMPS[id].short+' recovers and is fit to fight again.','good','band')}
   }

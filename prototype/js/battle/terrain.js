@@ -1354,9 +1354,9 @@ class TerrainRoutes{
 class BattleSight{
   constructor(){this.next=-1;this.n=0;this.hid=new Map();this.sprung=new Map();this.goal=new Map();this.los=new Map();this.seer=new Map()}
   // (is there sight to keep: terrain or fog)
-  static on(){return !!B&&!B.world&&!!(B.terrain||B.fog)}
+  static on(){return !!B&&!!(B.terrain||B.fog)}
   // (does side team see u: always for his own side, and while nothing hides him)
-  static seen(team,u){return B?.world?u.team===team||B.world.visible(u,team):!(u.hid&1<<team)}
+  static seen(team,u){return B?.world?u.team===team||B.world.visible(u,team)&&!(u.hid&1<<team):!(u.hid&1<<team)}
   seen(team,u){return BattleSight.seen(team,u)}
   // (the living soldiers of the other sides that side sees)
   static foes(team){return B.units.filter(u=>u.hp>0&&u.team!==team&&BattleSight.seen(team,u))}
@@ -1372,7 +1372,6 @@ class BattleSight{
      sight grid has his cell (fogGrid, fogSees), or who was struck by him lately; one in a wood as above. A group counts as lying
      in wait only in a wood or within its foes' range, hidden by the ground (not merely out of sight: fogGrid's rng) */
   static step(force){
-    if(B?.world){for(const u of B.units){u.hid=0;for(const team of [0,1]){if(!BattleSight.seen(team,u)){u.hid|=1<<team;continue}const p=u.ls||(u.ls=[]);p[2*team]=u.x;p[2*team+1]=u.y}}B.sight=null;return}
     const T=B&&B.terrain,F=!!(B&&B.fog);if(!T&&!F)return;
     let S=B.sight;if(!S)S=B.sight=new BattleSight();if(T)T.sight=S;
     if(!force&&B.t<S.next)return;
@@ -1382,14 +1381,14 @@ class BattleSight{
     const S=this;S.next=B.t+SIGHT.every;S.n++;S.goal.clear();S.los.clear();
     const live=[];for(const u of B.units)if(u.hp>0)live.push(u);const n=live.length,teams=[];for(const u of live)if(!teams.includes(u.team))teams.push(u.team);
     const foes=t=>teams.reduce((m,o)=>o===t?m:m|1<<o,0),now=B.t;
-    if(!F&&!(T.has.wood||T.shTop)){for(const u of live){if(u.hid)u.hid=0;const p=u.ls||(u.ls=[]);for(const t of teams)if(t!==u.team){p[2*t]=u.x;p[2*t+1]=u.y}}return}
+    if(!B.world&&!F&&!(T.has.wood||T.shTop)){for(const u of live){if(u.hid)u.hid=0;const p=u.ls||(u.ls=[]);for(const t of teams)if(t!==u.team){p[2*t]=u.x;p[2*t+1]=u.y}}return}
     const cs=T?T.cs:FOG.cell,C=T?T.C:Math.ceil(BW/cs),CR=T?T.R:Math.ceil(BH/cs),K=T&&T.kind,LV=T&&T.lvl,sh=T&&T.sh,BC=Math.ceil(BW/32),BR=Math.ceil(BH/32),wood=TKIND.wood,blk=!!T&&T.shTop>T.lvlTop,V={},nxt=new Int32Array(n),ul=new Uint8Array(n),uc=new Int32Array(n);
     for(const t of teams)V[t]={head:new Int32Array(BC*BR).fill(-1),cells:[],mark:F?null:new Uint8Array(C*CR),top:false};
     for(let k=0;k<n;k++){const u=live[k],i=T?tIx(T,u.x,u.y):clamp(Math.floor(u.y/cs),0,CR-1)*C+clamp(Math.floor(u.x/cs),0,C-1),v=V[u.team],b=clamp(Math.floor(u.y/32),0,BR-1)*BC+clamp(Math.floor(u.x/32),0,BC-1);uc[k]=i;ul[k]=LV?LV[i]:0;
       if(F){if(!u.rout&&!u.left){nxt[k]=v.head[b];v.head[b]=k}continue}nxt[k]=v.head[b];v.head[b]=k;
       if(!v.mark[i]){v.mark[i]=1;v.cells.push(i);if(sh[i]>=T.lvlTop)v.top=true}}
     const FG=F?fogGrid(S,T,live,uc,ul,teams):null;
-    const near2=SIGHT.near*SIGHT.near,high2=SIGHT.high*SIGHT.high,r=SIGHT.high;
+    const scale=B.world?WORLD_BATTLE.sprite:1,near2=(SIGHT.near*scale)**2,high2=(SIGHT.high*scale)**2,r=SIGHT.high*scale;
     const near=(v,u,lu)=>{const x=u.x,y=u.y,b0=clamp(Math.floor((x-r)/32),0,BC-1),b1=clamp(Math.floor((x+r)/32),0,BC-1),a0=clamp(Math.floor((y-r)/32),0,BR-1),a1=clamp(Math.floor((y+r)/32),0,BR-1);
       for(let a=a0;a<=a1;a++)for(let b=b0;b<=b1;b++)for(let k=v.head[a*BC+b];k>=0;k=nxt[k]){const o=live[k],d=(o.x-x)*(o.x-x)+(o.y-y)*(o.y-y);if(d<=near2||d<=high2&&ul[k]>lu)return true}return false};
     const mx=i=>(i%C+.5)*cs,my=i=>(Math.floor(i/C)+.5)*cs;
@@ -1403,6 +1402,7 @@ class BattleSight{
         if(u.rv&&now-(u.rv[t]??-1e9)<SIGHT.memory||(inW?near(V[t],u,ul[k]):fogSees(FG,T,t,u,i,ul[k])))continue;hid|=1<<t;if(inW||FG.rng[t][i])lurk=true}}
       else if(inW||open)for(const t of teams){if(t===u.team)continue;
         if(u.rv&&now-(u.rv[t]??-1e9)<SIGHT.memory||near(V[t],u,ul[k])||open&&(!blk&&V[t].top||los(V[t],t,i)))continue;hid|=1<<t}
+      if(B.world)for(const t of teams)if(t!==u.team&&!B.world.visible(u,t))hid|=1<<t;
       if(hid!==(u.hid|0))u.hid=hid;const p=u.ls||(u.ls=[]);for(const t of teams)if(t!==u.team&&!(hid&1<<t)){p[2*t]=u.x;p[2*t+1]=u.y}
       const f=foes(u.team),gk=u.grp||'u'+u.id,w=f!==0&&(hid&f)===f&&lurk;all.set(gk,(all.get(gk)??true)&&w)}
     for(const [gk,w] of all)if(w)S.hid.set(gk,now);

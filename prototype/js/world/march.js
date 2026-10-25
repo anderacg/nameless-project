@@ -25,7 +25,7 @@ const marchNumbers=o=>Object.fromEntries(marchRows(o).map((r,i)=>[r.id,(i+1)%10]
 const marchInteractRadius=(o,r=marchOuter(o))=>r+WORLD_BATTLE.interaction;
 const worldBattleReach=o=>WORLD_BATTLE.on&&o instanceof Party&&o!==P?marchInteractRadius(P)+marchInteractRadius(o):REACH;
 // Only a character added to the troop list in battle gets an extra map figure. Other anchors are already in the formation.
-const marchSeparateLeader=o=>o===P||!!o.cid||o.mapKind==='lord'||!!o.ld&&!o.troops.includes('chief');
+const marchSeparateLeader=o=>o.mapKind==='caravan'||o===P||!!o.cid||o.mapKind==='lord'||!!o.ld&&!o.troops.includes('chief');
 // The battle's full sprites at its world scale, with weapons included and movement-driven poses.
 function marchSprite(u,o){
   const type=u.character?u.type.replace(/^comp_/,''):u.type;
@@ -150,5 +150,5 @@ class MarchArmy{
 onWorld(()=>{MARCH_ARMIES=new WeakMap()});
 Systems.add({name:'march formations',order:{frame:145},frame:d=>{
   if(!WORLD_BATTLE.on)return;const range=vis()+MARCH_MOVE.active;
-  for(const o of [P,...W.parties,...W.monsters.map(asMonster)]){if(o===P?(P.stay||P.camp):o.dead||o.gone||o.inside||o.fight||Math.hypot(o.x-P.x,o.y-P.y)>range)continue;MarchArmy.of(o).step(d)}
+  for(const o of [P,...W.parties,...W.caravans,...W.monsters.map(asMonster)]){if(o===P?(P.stay||P.camp):o.dead||o.gone||o.inside||o.fight||Math.hypot(o.x-P.x,o.y-P.y)>range)continue;MarchArmy.of(o).step(d)}
 }});

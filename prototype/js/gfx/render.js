@@ -40,6 +40,33 @@ const BAND_MARKERS=new Map();
 function bandMarkerSprite(col){let s=BAND_MARKERS.get(col);if(!s){s=mkc(9,11,g=>{rect(g,col,0,0,9,9);rect(g,'#211b16',1,1,7,7);for(const [x,y] of [[2,3],[4,2],[6,3]])rect(g,'#efe2bb',x,y);rect(g,'#efe2bb',3,5,3,2);rect(g,col,4,9,1,2)});BAND_MARKERS.set(col,s)}return s}
 // (a party's banner only: a site's banner() is its camp flag's colour, structures.js)
 function bannerAt(o,f){const b=o.banner&&o.banner();if(!b||typeof b!=='object')return null;const s=bannerSprite(b,f);return{s,x:Math.round(o.x)-4,y:o.headY()-BANNER_GAP-14}}
+// Travel cover reduces detection distance; this is the same closed-eye badge used by battle concealment.
+const TRAVEL_HIDE={size:14,gap:4,s:null};
+function drawTravelConcealment(cam){
+  if(B||P.stay||!hiddenAt(P.x,P.y))return null;
+  const b=bannerAt(P,0);if(!b)return null;const k=(window.devicePixelRatio||1)/VS,size=TRAVEL_HIDE.size*k,x=b.x+b.s.width+TRAVEL_HIDE.gap*k-cam.x,y=b.y-cam.y;
+  const s=TRAVEL_HIDE.s||(TRAVEL_HIDE.s=mkc(9,9,g=>{for(const [x,y,c] of badgePx('hidden'))rect(g,c,x,y)}));
+  ctx.save();ctx.imageSmoothingEnabled=false;ctx.drawImage(s,Math.round(x),Math.round(y),size,size);ctx.restore();return{x,y,w:size,h:size};
+}
+const STEALTH_EYE={size:14,player:28,gap:4,cache:new Map()};
+function stealthEyeSprite(exposure,col){
+  const level=Math.round(clamp(exposure,0,1)*4),key=level+col;let s=STEALTH_EYE.cache.get(key);if(s)return s;
+  s=mkc(20,12,g=>{const h=level/4*5;g.lineWidth=2;g.strokeStyle='#141210';g.beginPath();g.moveTo(1,6);g.quadraticCurveTo(10,6-h,19,6);g.quadraticCurveTo(10,6+h,1,6);g.fillStyle='#211c18';g.fill();g.stroke();g.strokeStyle=col;g.lineWidth=1;g.stroke();if(level){g.fillStyle=col;g.beginPath();g.ellipse(10,6,2,Math.max(.5,h*.65),0,0,Math.PI*2);g.fill()}});
+  STEALTH_EYE.cache.set(key,s);return s;
+}
+function travelDetectionState(){
+  const rows=[];for(const o of new Set([...W.parties,...W.monsters.map(asMonster),...W.caravans,...W.refugees.map(asRefugees),...W.critters.map(asHerd),...W.folk.map(asWorker)])){const d=travelDetection(o);if(d)rows.push(d)}
+  const seen=rows.filter(d=>d.sees),exposure=Math.max(0,...rows.map(d=>d.exposure));return{rows,seen,exposure,danger:seen.some(d=>d.danger)};
+}
+function drawTravelDetection(cam){
+  if(B||P.stay)return null;const state=travelDetectionState(),k=(window.devicePixelRatio||1)/VS,V=vis();ctx.save();ctx.imageSmoothingEnabled=false;
+  for(const d of state.rows){const o=d.o;if(!inSight(o.x,o.y)||!o.inView(V))continue;const b=bannerAt(o,0),w=STEALTH_EYE.size*k,h=w*.6,x=b?b.x+b.s.width+STEALTH_EYE.gap*k-cam.x:o.x-cam.x-w/2,y=b?b.y-cam.y:o.y-cam.y-18-h;
+    ctx.drawImage(stealthEyeSprite(d.exposure,d.sees?d.danger?'#ef8c73':'#dbca91':d.exposure?'#d9ad57':'#8f9e94'),Math.round(x),Math.round(y),w,h);
+  }
+  const b=bannerAt(P,0),w=STEALTH_EYE.player*k,h=w*.6,x=P.x-cam.x-w/2,y=(b?b.y:P.y-24)-cam.y-h-10*k,col=state.seen.length?state.danger?'#ef8c73':'#dbca91':state.exposure?'#d9ad57':'#82c6b3';
+  ctx.drawImage(stealthEyeSprite(state.exposure,col),Math.round(x),Math.round(y),w,h);ctx.restore();
+  txt(state.seen.length?'Detected':state.exposure?'Near detection':'Unseen',P.x-cam.x,y-2*k,col,'center');return state;
+}
 function drawBanners(cam){const now=performance.now(),still=reducedMotion(),mine=q=>q.o===P||q.o.faction==='player'?1:0;
   BANNERQ.sort((a,b)=>mine(a)-mine(b)||a.o.y-b.o.y);
   for(const q of BANNERQ){if(q.marker){if(!inSight(q.o.x,q.o.y))continue;const m=q.marker,s=bandMarkerSprite(m.col),x=Math.round(q.o.x-cam.x),y=Math.round(q.o.y-cam.y-m.h-BANNER_GAP-s.height);ctx.drawImage(s,x-4,y);const n=q.o.fighters??q.o.n;if(n>1)txt(String(n),x,y-3,m.col,'center');continue}const B=bannerAt(q.o,still?0:Math.floor(now/420+q.o.x*.13)%2);if(!B)continue;const d=VS>1?subOf(q.o):[0,0],X=B.x-cam.x+d[0],Y=B.y-cam.y+d[1];ctx.drawImage(B.s,X,Y);
@@ -137,6 +164,8 @@ function drawWorld(){
     ctx.save();ctx.globalCompositeOperation='lighter';ctx.fillStyle=g;ctx.fillRect(L.x-r,L.y-r,2*r,2*r);ctx.restore();const f=Math.floor(now/120+L.x)%2;rect(ctx,'#e8803a',L.x-1+f,L.y-2,2,2);rect(ctx,'#ffe090',L.x,L.y-1-f,1,1)}}
   ambientGlow(cam);// (the fireflies' light: ambient.js)
   wuiUnder(cam);// (the way you walk, your goal's ring, a click's ripple, the ring round what you chase: worldui.js)
+  drawTravelConcealment(cam);
+  drawTravelDetection(cam);
   drawBanners(cam);// (the parties' banners, over all, their labels queued with the rest)
   // Queued names and counts use native-resolution text; their world anchors and visibility stay the same.
   const q=TXTQ;TXTQ=null;q.forEach((a,i)=>{const wx=a[1]+cam.x,wy=a[2]+cam.y;if(i<nPlace?seenAt(wx,wy+6):inSight(wx,wy+8))mapTxt(...a)});

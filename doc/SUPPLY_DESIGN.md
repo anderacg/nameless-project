@@ -215,3 +215,5 @@ The hero's Health and Mana bars leave the party card for the Hero window (C), an
 1. ~~Liquor~~: decided (ale and liquor slow the drain and lift morale; water neither).
 2. ~~The hero~~: decided (tires with the band).
 3. ~~Make camp~~: decided (Z, the dock, and the action ring on a left-click and hold).
+
+Recovery estimates (2026-10-25): Army cards and inspectors show remaining recovery time and estimated ready day/hour for wounded companions and troop groups; the Condition summary includes each wounded troop type. Companion forecasts share compRecoveryRate with hourly healing, including lodging/camp and Medicine. Troop forecasts calculate expected daily healing rolls until the originating group (or whole type) recovers, including time to the next daily roll, using the existing probabilistic rounding rule. Forecasts use current conditions, consume no RNG and do not change healing state; troop dates are estimates, not promises. Blocked group restoration displays an unavailable-recovery message. Helpers: companions.js compRecoveryHours; world.js woundedRecoveryHours; ui/partypage.js formatting. Tests: recoveryeta (12), recoverypace (6).

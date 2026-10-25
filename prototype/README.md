@@ -1019,3 +1019,17 @@ World battle effects: magic bolts, cosmetic glows, particles/trails, ghosts and 
 Battle fog integration: use normal fogMem/drawWorldFog directly; WorldBattleArea.fog was removed. After merging renderer changes, battleworldfog and worldeffects check the complete world-battle drawing path.
 
 World battle zoom centres the camera on the battle area on each wheel, keyboard or pinch zoom step. Manual panning remains available; the fixed battlefield boundary is unchanged. Tests: battlezoom.
+
+World-battle accuracy and concealment: projectiles use swept, sprite-scaled hitboxes (including cavalry); flat shots aim at scaled body height. BattleSight tree/terrain concealment also runs in world battles within the normal world sight range, initialized after actors are placed. Hidden enemies stay out of rendering, picking and AI target lists until detected or revealed by attacking. Tests: worldhitvisibility and concealment.
+
+World-battle bystanders: nearby mobile nonparticipants retreat to reachable ground outside the battle area, including armies, workers, wildlife, monsters, caravans, refugees, ships and moving road encounters. Reinforcements keep joining. Routes respect land/water/flight; original orders remain for afterward. Local reaction state is owned by BattleBystanders in battle/worldbattle.js. Tests: battlebystanders.
+
+Local bandit defence: nearby eligible lords and guards reliably reinforce bandit fights on their faction’s current territory, without a neutral-help roll or odds check. Hostility and faction allegiance remain authoritative. Rules live in battle/engage.js; tests/localbanditdefence.js covers initial and arriving helpers.
+
+Outdoor world encounters: caravans show their real marching guards around the cart and carry those actors into seamless combat with matching counts, race/type, faction cloth and casualties. Estates, outdoor camps and ruins also fight on their map location. Cave interiors and siege/raid assaults retain special battlefields, as do tournaments and the lab. Tests: outdoorworld and caravanparty.
+
+Recovery timing: wounded troop and companion cards/details show estimated time remaining and ready day/hour. Army Condition includes troop-type recovery estimates. Camp, lodging and Medicine affect forecasts through current healing rates; troop daily rolls mean actual dates can vary. Recovery rules are unchanged. Tests: recoveryeta and recoverypace.
+
+Travel concealment: a closed-eye badge beside your army banner indicates forest cover outside battle. It disappears when you leave cover; detection rules are unchanged. Tests: travelconcealicon.
+
+Travel stealth eyes: closed / partial / fully open eyes indicate outside detection, close to detection and detected. Visible observers have individual eyes; your army has an overall gauge. Hovering an observer explains its status. Eyes use existing detection rules and forest modifiers; partial opening indicates distance rather than a new awareness timer. Hidden entities are not revealed by markers. Tests: traveldetection.

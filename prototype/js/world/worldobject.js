@@ -11,6 +11,22 @@
    herds (critters.js), refugees, workers (folk.js) and ships are world objects. ---------- */
 // (in sight: within your sight, or nearer where it hides in woods or hills)
 const spotted=(o,V)=>Math.hypot(o.x-P.x,o.y-P.y)<V*(hiddenAt(o.x,o.y)?.45:1);
+// Read-only travel perception: these are the same distance/cover thresholds the world brains use, not an awareness timer.
+function travelDetection(o){
+  if(!o||o===P||B||P.stay||o.dead||o.gone||o.inside||o.fight||!Number.isFinite(o.x)||!Number.isFinite(o.y))return null;
+  const k=o.mapKind,cover=hiddenAt(P.x,P.y);let range=0,danger=false;
+  if(k==='lord'){const relief=hostileTo(o.fac)&&!lordSpares(o)&&o.state==='relieve'&&P.siege?.town===o.tgt;range=o.brain.sight(WORLD_SCALE.sight.lord)*(relief?2:1);danger=hostileTo(o.fac)&&!lordSpares(o)}
+  else if(k==='band'){range=o.brain.sight(WORLD_SCALE.sight.band);danger=true}
+  else if(k==='patrol'){range=o.brain.sight(PATROL.see);danger=hostileTo(o.fac)||!!crimeAt(townBy(o.home))}
+  else if(k==='monster'){const m=MONSTERS[o.id];range=(m.mythic?.see||WORLD_SCALE.sight.monster)*(cover?.55:1);danger=!!(m.aggro||m.mythic)}
+  else if(k==='caravan'){if(o.mine)return null;range=o.brain.sight(WORLD_SCALE.sight.caravan);danger=hostileTo(o.fac)}
+  else if(k==='refugee')range=WORLD_SCALE.sight.refugee*(cover?.55:1);
+  else if(k==='critter'){if(!o.wild)return null;range=CRITTERS[o.id].shy*(cover?.6:1)}
+  else if(k==='worker'){if(!folkSeen(o))return null;const t=townBy(o.home);if(!t||!Timed.of(t).has('fear'))return null;range=WORLD_SCALE.ai.folkFear;danger=true}
+  if(!(range>0))return null;const distance=Math.hypot(o.x-P.x,o.y-P.y),sees=distance<range,exposure=sees?1:clamp((range*1.35-distance)/(range*.35),0,.85);
+  return{o,range,distance,sees,exposure,danger};
+}
+function travelDetectionText(o){const d=travelDetection(o);return d?d.sees?'Can detect your army':d.exposure>0?'Close to detecting your army':'Cannot detect your army at this distance':''}
 class WorldObject{
   get mapKind(){return null}
   here(){return true}

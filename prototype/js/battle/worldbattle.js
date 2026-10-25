@@ -1,6 +1,48 @@
 'use strict';
 /* ---------- campaign formations and battles on the land where the armies meet ---------- */
-const WORLD_BATTLE={on:true,scale:6,inner:8,outer:14,interaction:6,apron:22,join:220,regroup:7,returns:1,turn:3.5,blocked:30,sprite:3,step:1/60,sightBase:1,perFighter:4};
+const WORLD_BATTLE={on:true,scale:6,inner:8,outer:14,interaction:6,apron:22,join:220,regroup:7,returns:1,turn:3.5,blocked:30,sprite:3,step:1/60,sightBase:1,perFighter:4,avoid:28,avoidScan:1};
+// Only local avoidance runs while campaign time is paused. Existing work/travel orders stay on their owners.
+class BattleBystanders{
+  constructor(area){this.area=area;this.time=0;this.next=0;this.entries=new Map();this.navs=new Map()}
+  eligible(o){
+    if(o===P||this.area.participants.has(o)||o.dead||o.gone||o.inside||o.fight||!Number.isFinite(o.x)||!Number.isFinite(o.y))return false;
+    if(o.mapKind==='worker')return folkSeen(o);if(o.mapKind==='critter')return o.wild;
+    if(o.mapKind==='road')return !o.trace&&!o.done&&(['approach','flee','walk','leave','bolt','graze'].includes(o.beh)||o.beh==='stay'&&o.D?.scene?.(o)?.every(([k])=>['walk','stand','soldier','rider','graze'].includes(k)));
+    return ['lord','patrol','band','cparty','monster','caravan','refugee','ship'].includes(o.mapKind);
+  }
+  margin(o){return WORLD_BATTLE.avoid+(o instanceof Party?marchOuter(o):6)}
+  mode(o){return o.mapKind==='ship'?'water':o.mapKind==='monster'&&MONSTERS[o.id]?.mythic?.fly?'air':'land'}
+  nav(o){
+    const mode=this.mode(o);let nav=this.navs.get(mode);if(nav&&nav.version===WAYV)return nav;
+    const a=this.area,r=a.r+WORLD_BATTLE.avoid+96;
+    nav=new MarchGround(P,[{x:Math.max(1,a.x-r),y:Math.max(1,a.y-r)},{x:Math.min(MW*TILE-1,a.x+r),y:Math.min(MH*TILE-1,a.y+r)}]);
+    if(mode!=='land'){const g=nav.grid;nav.fly=mode==='air';for(let i=0;i<g.cost.length;i++){const x=nav.x+(i%g.C+.5)*g.cs,y=nav.y+(Math.floor(i/g.C)+.5)*g.cs;g.cost[i]=mode==='air'||isWater(Math.floor(x/TILE),Math.floor(y/TILE))?ROUTE.unit:0}g.wall.fill(0);nav.blocks=[];if(mode==='water')nav.stand=p=>nav.open(p)}
+    this.navs.set(mode,nav);return nav;
+  }
+  plan(o){
+    const a=this.area,nav=this.nav(o),safe=a.r+this.margin(o),dx=o.x-a.x,dy=o.y-a.y,d=Math.hypot(dx,dy),angle=d>1?Math.atan2(dy,dx):(folkHash(String(o.id||o.mapKind))%6283)/1000,goal={x:a.x+Math.cos(angle)*(safe+8),y:a.y+Math.sin(angle)*(safe+8)},reach=nav.island(o);
+    let to=nav.snap(goal,reach,null,q=>Math.hypot(q.x-a.x,q.y-a.y)>=safe);
+    // Trapped on a small island: move to the furthest reachable refuge instead of walking through water or walls.
+    if(!to){const g=nav.grid;let best=d;for(let i=0;i<reach.length;i++)if(reach[i]&&g.cost[i]){const q={x:nav.x+(i%g.C+.5)*g.cs,y:nav.y+(Math.floor(i/g.C)+.5)*g.cs},r=Math.hypot(q.x-a.x,q.y-a.y);if(r>best&&nav.stand(q)){best=r;to=q}}}
+    return to?{nav,to,path:nav.path(o,to),i:0,moving:o.moving}:null;
+  }
+  scan(){
+    const objects=new Set([...W.parties,...W.monsters.map(asMonster),...W.caravans,...W.refugees.map(asRefugees),...W.critters.map(asHerd),...W.folk.map(asWorker),...W.ships.map(asShip),...roadList()]);
+    for(const o of objects)if(!this.entries.has(o)&&this.eligible(o)&&Math.hypot(o.x-this.area.x,o.y-this.area.y)<this.area.r+this.margin(o)){const p=this.plan(o);if(p)this.entries.set(o,p)}
+    for(const [o,p] of this.entries)if(!objects.has(o)||!this.eligible(o)){if(o.mapKind==='worker')o.moving=p.moving;this.entries.delete(o)}
+  }
+  speed(o){if(o.mapKind==='ship')return o.k==='trade'?SHIP_SPD:BOAT_SPD;if(o.mapKind==='worker')return FIELD.hurry;if(o.mapKind==='critter')return CRITTERS[o.id].spd||20;if(o instanceof Party)return partySpeed(o,o.troops);return ENC_SPD.run}
+  step(dt){
+    this.time+=dt;if(this.time>=this.next){this.next=this.time+WORLD_BATTLE.avoidScan;this.scan()}
+    for(const [o,p] of this.entries){if(!this.eligible(o))continue;if(p.nav.version!==WAYV){const q=this.plan(o);if(!q)continue;Object.assign(p,q)}
+      let left=this.speed(o)*dt/this.area.scale,moved=0;
+      while(left>0&&p.i<p.path.length){const q=p.path[p.i],dx=q.x-o.x,dy=q.y-o.y,d=Math.hypot(dx,dy);if(d<.1){p.i++;continue}const n=Math.min(left,d),to={x:o.x+dx*n/d,y:o.y+dy*n/d};if(!p.nav.clear(o,to))break;o.x=to.x;o.y=to.y;o.dir=dx>=0?1:-1;WALKED.set(o,(WALKED.get(o)||0)+n);left-=n;moved+=n}
+      if(o.mapKind==='worker')o.moving=moved>0;
+      if(o instanceof Party)MarchArmy.of(o).step(dt/(this.area.scale*WORLD_SCALE.move));
+    }
+  }
+  finish(){for(const [o,p] of this.entries)if(o.mapKind==='worker')o.moving=p.moving;this.entries.clear();this.navs.clear()}
+}
 class WorldBattleArea{
   constructor(e){
     const other=e.ref?.src||e.ref,a={x:P.x,y:P.y,facing:marchFacing(P)},b=other&&Number.isFinite(other.x)&&Number.isFinite(other.y)?other:{x:P.x+worldBattleReach(other),y:P.y};
@@ -40,7 +82,7 @@ class WorldBattleArea{
     g.ax=p.x;g.ay=p.y;g.face=g.currentFacing=face+(offset.face||0);g.order='hold';const slots=formSlots(g.form,units.length,g.face,g.files,WORLD_BATTLE.sprite);
     const army=MARCH_ARMIES.get(owner),march=army?.forGroup(g.sourceGroupId||g.id).filter(m=>!B.units.some(u=>!units.includes(u)&&u.marchUnit===m))||[];
     units.forEach((u,i)=>{u.sx=slots[i][0];u.sy=slots[i][1];const mini=march[i],worker=owner.ws?.find(f=>!f.gone&&workerAppearance(f).type===u.type&&!B.units.some(v=>v.worker===f)),q=worker?this.field(worker):mini?this.field(mini):this.openPoint({x:p.x+u.sx,y:p.y+u.sy});u.x=q.x;u.y=q.y;u.dir=worker?(worker.dir<0?Math.PI:0):mini?.dir??face;u.face=Math.cos(u.dir)>=0?1:-1;
-      u.v=mini?mini.id%6:u.hero||u.leader?0:u.v;u.worldTint=owner.look?.().col;u.worldSide=owner.mapKind==='monster'?1:0;delete u.look;delete u.side;
+      u.v=mini?mini.id%6:u.hero||u.leader?0:u.v;u.worldTint=FACS[forceRealm(owner)]?.col||owner.look?.().col;u.worldSide=owner.mapKind==='monster'?1:0;delete u.look;delete u.side;
       if(owner.ws)u.worldTint=FACS[owner.fac]?.col||'#bda882';if(worker){u.worker=worker;const L=workerAppearance(worker);u.v=L.v;u.worldTint=L.tint}
       if(mini){u.marchUnit=mini;if(!this.inside(q,6)){u.hpLeft=u.hp;u.hp=0;u.left=true;u.waiting=true;this.arrivals.push({u,mini,army})}}});
     if(march.length){const live=units.filter(u=>u.hp>0);if(live.length){g.ax=live.reduce((n,u)=>n+u.x-u.sx,0)/live.length;g.ay=live.reduce((n,u)=>n+u.y-u.sy,0)/live.length}}
@@ -124,7 +166,7 @@ class WorldBattleArea{
       if(u.worldFled){const key=u.team?'fledFoes':'fledMine';B[key]=Math.max(0,(B[key]||0)-1);delete u.worldFled}u.hp=u.hpLeft;delete u.left;delete u.fled;delete u.regroup;delete u.worldEscape;u.rout=false;u.shattered=false;u.rallied=false;u.tgt=null;
       const g=B.groups[u.grp],r=g?.resolve;if(r){if((r.worldReturns||0)<=a.cycle){r.worldReturns=a.cycle+1;r.routed=false;r.shattered=false;r.rallied=true;r.breakT=0;r.mor=MORALE.rally;r.confidence=0}r.refreshState();r.sync()}if(g&&!r?.routed){g.hold();g.aiReset()}battleEvent('rejoin',{u});
     }
-    this.reinforce(dt);this.watchBlocked();
+    this.reinforce(dt);(this.bystanders||(this.bystanders=new BattleBystanders(this))).step(dt);this.watchBlocked();
   }
   enterMarchers(dt){
     if(!this.arrivals.length)return;for(const army of new Set(this.arrivals.map(a=>a.army))){const o=army.owner,d=Math.hypot(o.x-this.x,o.y-this.y);if(o!==P&&d>Math.max(0,this.r-marchOuter(o)-3))walk(o,this.x-o.x,this.y-o.y,Math.min(d,partySpeed(o,o.troops)*dt/this.scale));army.step(dt/(this.scale*WORLD_SCALE.move),false,this.marchClamp,this.marchInside)}let entered=false;
@@ -152,6 +194,7 @@ class WorldBattleArea{
     warmBattle(added);B.cmdT=0;B.moraleNext=0;B.sight=null;B.captains={};log((o.mapKind==='lord'?lordName(o):force.name||o.label())+' enters the battle.',team?'bad':'good','war');battleEvent('reinforcement',{party:o,team});setOrderUI();
   }
   finish(b){
+    this.bystanders?.finish();
     if(G.enc?.kind==='villagers')workerBattleFinish(b,this);
     const marched=new Set();for(const u of b.units)if(u.marchUnit&&!u.waiting){const m=u.marchUnit,army=MARCH_ARMIES.get(u.sourceArmy?.src||u.sourceArmy);if(army)marched.add(army);if(u.hp>0||u.left){const p=this.world(u);m.x=p.x;m.y=p.y;m.dir=u.dir}else m.dead=true}
     for(const army of marched)army.settlePivot();
@@ -164,7 +207,7 @@ class WorldBattleArea{
 class WorldBattleSetup extends BattleSetup{
   constructor(opts){super(opts);this.area=new WorldBattleArea(G.enc)}
   survey(){
-    const a=this.area;BFIELD=null;BW=BH=a.span*a.scale;this.site=this.battleSite();this.env=battleEnv(false,this.site);a.env=this.env;this.env.text='Fight on the world map. The gold circle is fixed; routed soldiers can regroup beyond it and return.';
+    const a=this.area,primary=G.enc.ref?.src||G.enc.ref;if(primary?.mapKind==='caravan')MarchArmy.of(primary).sync();BFIELD=null;BW=BH=a.span*a.scale;this.site=this.battleSite();this.env=battleEnv(false,this.site);a.env=this.env;this.env.text='Fight on the world map. The gold circle is fixed; routed soldiers can regroup beyond it and return.';
     this.field={top:8,bot:BH-8};this.createUnits();this.createGroups();
   }
   createGroups(){super.createGroups();for(const u of this.units)if(u.leader&&W.lords.includes(u.leader.ref))this.groups[u.grp].name=lordName(u.leader.ref)}
@@ -178,9 +221,9 @@ class WorldBattleSetup extends BattleSetup{
       if(!g.player&&source&&source!==primary&&source!==e.ref&&!a.joinedFight&&Number.isFinite(anchor?.x)&&Number.isFinite(anchor?.y)){a.participants.add(anchor);const team=g.team;let p=a.pending.find(p=>p.o===anchor);if(!p){p={o:anchor,team,existing:[]};a.pending.push(p)}p.existing.push(id);m.forEach(u=>{u.hpLeft=u.hp;u.hp=0;u.left=true;u.waiting=true});continue}
       const key=g.sourceGroupId||id,formation=g.player?rows:primary instanceof Party?marchRows(primary):[],offset=formation.find(r=>r.id===key)||{x:0,y:(Object.keys(B.groups).indexOf(id)%5-2)*7};a.place(g,m,g.player?a.starts[0]:this.area.joinedFight&&Number.isFinite(anchor?.x)?anchor:a.starts[1],offset,g.player?P:source?.src||source);
     }
-    B.speed=G.speed;B.deploy=false;exitInit(B.units);a.clamp();warmBattle(B.units);
+    B.speed=G.speed;B.deploy=false;exitInit(B.units);a.clamp();B.sight=null;for(const u of B.units){delete u.ls;u.hid=0} sightStep(true);warmBattle(B.units);
   }
   present(){super.present();B.deploy=false;bbar.hidden=false;this.area.syncCamera()}
   start(after){this.survey();this.terrain();this.muster();this.open();if(after)after();return Promise.resolve()}
 }
-function worldBattleEligible(opts){return WORLD_BATTLE.on&&!opts.sandbox&&!opts.tournament&&G.enc&&['party','lord','patrol','caravan','monster','field','villagers'].includes(G.enc.kind)}
+function worldBattleEligible(opts){return WORLD_BATTLE.on&&!opts.sandbox&&!opts.tournament&&G.enc&&['party','lord','patrol','caravan','monster','field','villagers','estate','camp','ruin'].includes(G.enc.kind)}

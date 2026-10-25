@@ -314,6 +314,16 @@ function woundedBack(k,n){const W0=P.wounded;let h=Math.min(n,W0[k]||0),got=0;
   for(const g of (P.woundedGroups||[]).filter(g=>g.type===k&&g.count)){if(!h)break;const m=partyRoster(P).restore(g,Math.min(h,g.count));g.count-=m;h-=m;got+=m}
   if(h&&!(P.woundedGroups||[]).some(g=>g.type===k&&g.count))got+=partyRoster(P).add(k,h);
   W0[k]-=got;if(!W0[k])delete W0[k];return got}
+// Expected daily healing rolls until a type (or its originating group in recovery order) is fit again.
+// Healing remains stochastic; this forecast uses today's rate and never consumes random draws.
+function woundedRecoveryHours(k,id){
+  const n=P.wounded?.[k]||0;if(!n)return 0;const r=partyRoster(P),rows=(P.woundedGroups||[]).filter(g=>g.type===k&&g.count>0);let needed=n;
+  if(id){const index=rows.findIndex(g=>g.id===id);if(index<0)return 0;const w=rows[index],g=r.groups.find(g=>g.id===id);
+    if(g?g.count+w.count>r.groupCap(k):r.slots>=r.groupLimit)return Infinity;needed=rows.slice(0,index+1).reduce((a,g)=>a+g.count,0)}
+  const left=Math.max(0,n-needed),rate=healShare().share,E=new Float64Array(n+1);
+  for(let m=left+1;m<=n;m++){const v=m*rate,whole=Math.floor(v),p=v-whole;E[m]=whole?1+(1-p)*E[Math.max(0,m-whole)]+p*E[Math.max(0,m-whole-1)]:1/p+E[m-1]}
+  return Math.max(0,(E[n]-Clock.frac)*24);
+}
 function woundedDay(){const W0=P.wounded||{},r=healShare().share;let back=0;
   for(const k in W0){const n=W0[k];if(!n)continue;back+=woundedBack(k,Math.min(n,Math.floor(n*r+Math.random())))}
   P.woundedGroups=(P.woundedGroups||[]).filter(g=>g.count>0);

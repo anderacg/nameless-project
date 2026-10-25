@@ -329,8 +329,8 @@ function woundedPanel(){
   sickTrim();const W=P.wounded||{},ks=Object.keys(W).filter(k=>W[k]>0),l=lostLines();if(!ks.length&&!l.length)return '';
   const r=healShare(),help=[P.camp||P.stay?'':'rest in camp or a holding',r.near?'':'a friendly holding near'].filter(Boolean);
   const rows=ks.map(k=>{const s=BAND.sick[k]||{},sn=sum(s),wn=W[k]-sn;
-    return '<li>'+ST[k].n+' ×'+W[k]+': '+[wn?wn+' wounded':'',...Object.keys(s).map(w=>s[w]+' sick ('+(WHY_SICK[w]||w)+')')].filter(Boolean).join(', ')+'</li>'}).join('');
-  return '<div class="lab">Wounded and sick</div>'+(ks.length?'<ul class="tnotes">'+rows+'</ul><p class="muted" style="font-size:13px">About '+Math.round(r.share*100)+'% are fit again each day'+(help.length?'; more with '+help.join(' and '):'')+' (Medicine helps too).</p>':'')+
+    return '<li>'+ST[k].n+' ×'+W[k]+': '+[wn?wn+' wounded':'',...Object.keys(s).map(w=>s[w]+' sick ('+(WHY_SICK[w]||w)+')')].filter(Boolean).join(', ')+' · '+htmlText(recoveryTimeText(woundedRecoveryHours(k)))+'</li>'}).join('');
+  return '<div class="lab">Wounded and sick</div>'+(ks.length?'<ul class="tnotes">'+rows+'</ul><p class="muted" style="font-size:13px">About '+Math.round(r.share*100)+'% are fit again each day'+(help.length?'; more with '+help.join(' and '):'')+' (Medicine helps too). Recovery times are estimates at current conditions; daily rolls can vary.</p>':'')+
     (l.length?'<p class="bad" style="font-size:13px">Lost on the road, these '+SUPPLY.lost.days+' days: '+l.join('; ')+'.</p>':'')}
 /* ---------- the camp (§7): Z, the dock's Camp, or the action ring. Your band stops and pitches its tents; stamina comes back
    faster (SUPPLY.rest.camp), the wounded mend faster (SUPPLY.camp.heal: world.js woundedDay); fast forward stops when anything

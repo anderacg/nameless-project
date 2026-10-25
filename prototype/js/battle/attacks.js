@@ -88,7 +88,7 @@ class Fighter{
   attack(t){
     const u=this.u,s=u.s;if(!s.range){const H=Moveset.hardNow(u,t);if(H)return this.windUp(t,H)}// (a hard attack ready: wound up first, movesets.js)
     u.cd=s.cd*(.9+Math.random()*.2);u.atkAt=B.t;if(B.sight)sightStruck(u,t);// (a blow or a shot loosed gives him away: terrain.js)
-    if(s.range){const flat=s.magic||s.flat,E=this.aimErr();Missile.fire(u,Math.atan2(t.y-(flat?u.y-6:u.y),t.x-u.x)+spreadOf(E),s.dmg*(.85+Math.random()*.3)*(u.buffT>0?1.3:1)*arrowMul(u),arrowSrc(u,s),Math.hypot(t.x-u.x,t.y-u.y),{sc:E.d});if(!s.magic&&sfxOn()&&sndTurn('loose'))sfxAt('loose',u.x,u.y)}// (fire arrows: unitabilities.js)
+    if(s.range){const flat=s.magic||s.flat,E=this.aimErr(),k=B.world?WORLD_BATTLE.sprite:1,ty=B.world&&flat?t.y-(t.s.mounted||t.s.big?10:6)*k:t.y;Missile.fire(u,Math.atan2(ty-(flat?u.y-6*k:u.y),t.x-u.x)+spreadOf(E),s.dmg*(.85+Math.random()*.3)*(u.buffT>0?1.3:1)*arrowMul(u),arrowSrc(u,s),Math.hypot(t.x-u.x,t.y-u.y),{sc:E.d});if(!s.magic&&sfxOn()&&sndTurn('loose'))sfxAt('loose',u.x,u.y)}// (fire arrows: unitabilities.js)
     else{let dm=s.dmg*(.8+Math.random()*.4)*chargeMul(u,t)*tiredMul(u).dmg;fatigueBlow(u);// (a charge: by how far it ran, braced spears blunt it, morale.js; tired, softer: fatigue.js)
       this.hit(t,dm);if(PHYSICS.on)physBlow(u,t);this.follow(t,dm)}// (a heavy one's blow pushes men: physics.js)
     if(s.range)this.useAmmo(s);

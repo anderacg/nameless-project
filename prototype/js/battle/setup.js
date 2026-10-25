@@ -137,7 +137,7 @@ class BattleSetup{
       }
     };
     if(!opts.tournament)addArmy(P,P.list,0,'p_',true);
-    const raw=enc&&['lord','party','patrol','monster','villagers'].includes(enc.kind)?enc.ref:null;
+    const raw=enc&&['lord','party','patrol','caravan','monster','villagers','estate'].includes(enc.kind)?enc.ref:null;
     if(raw&&!(raw instanceof Party)&&!raw.tc&&!raw.troops&&!raw.list)raw.troops=opts.enemies.slice();
     const main=raw?asParty(raw):null;
     addArmy(main,opts.enemies,1,'e0_');
