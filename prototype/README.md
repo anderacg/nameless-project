@@ -1015,3 +1015,7 @@ March editor dragging: right-drag a line to set the selected group frontage, pla
 March circle: allowed radius and view framing stay fixed throughout an editing session. Overlarge frontage fits inside that circle. Formation guides show facing arrows while drawing and after placement.
 
 World battle effects: magic bolts, cosmetic glows, particles/trails, ghosts and ground-stuck arrows match the world sprite scale. Slash detail and area-outline weights are enlarged while combat reach and area radii remain accurate. gfx/vfx.js owns shared drawing-scale helpers; gfx/render.js applies them to projectiles and combat marks. Tests: worldeffects.
+
+Battle fog integration: use normal fogMem/drawWorldFog directly; WorldBattleArea.fog was removed. After merging renderer changes, battleworldfog and worldeffects check the complete world-battle drawing path.
+
+World battle zoom centres the camera on the battle area on each wheel, keyboard or pinch zoom step. Manual panning remains available; the fixed battlefield boundary is unchanged. Tests: battlezoom.

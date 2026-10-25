@@ -188,7 +188,7 @@ function touchTick(now){const l=TOUCH.lp;if(!l||l.armed||l.box||l.off||now-l.t0<
 function touchMove(e,p){const T=TOUCH,pt=T.pts.get(e.pointerId);if(!pt)return;pt.x=p.x;pt.y=p.y;pt.cx=e.clientX;pt.cy=e.clientY;
   // (the map: a step in or out each time the fingers are MAPZOOM.PINCH times as far apart, or as near, as at the last step)
   if(T.pinch&&T.pinch.map){if(T.pts.size>=2&&G.mode==='world'&&!G.modal){const d=touchSpan(),r=d/T.pinch.d0;if(r>=MAPZOOM.PINCH||r<=1/MAPZOOM.PINCH){mapZoom(r>1?1:-1);T.pinch.d0=d}}return}
-  if(T.pinch){if(T.pts.size>=2&&B&&G.mode==='battle'){const m=touchMid();camPinch(T.pinch.w,T.pinch.z0*m.d/T.pinch.d0,m.x,m.y)}return}
+  if(T.pinch){if(T.pts.size>=2&&B&&G.mode==='battle'){const m=touchMid();if(B.world){const r=m.d/T.pinch.d0;if(r>=MAPZOOM.PINCH||r<=1/MAPZOOM.PINCH){camZoom(r>1?1:-1);T.pinch.d0=m.d;T.pinch.z0=B.cam.z;T.pinch.w=toField(m)}else camPinch(T.pinch.w,T.pinch.z0,m.x,m.y)}else camPinch(T.pinch.w,T.pinch.z0*m.d/T.pinch.d0,m.x,m.y)}return}
   const l=T.lp;if(!l||l.id!==e.pointerId)return;touchTick(performance.now());
   if(l.armed||l.box||Math.hypot(e.clientX-l.cx,e.clientY-l.cy)<=T.slop)return;
   if(l.mode==='world'){l.off=true;return}// (wandered: no card; the lift still travels to where it went down)
