@@ -122,10 +122,10 @@ function drawWorld(){
   // one more picture the scene's size (overCv), drawn up in one step: three full screens' work made one)
   const ov=hi?overCv():null;if(ov){ctx=ov.getContext('2d', { willReadFrequently: true });ctx.clearRect(0,0,ov.width,ov.height)}
   try{
-  fogMem(low,px0,py0,V);
+  if(B?.world)B.world.fog(cam,()=>fogMem(low,px0,py0,V));else fogMem(low,px0,py0,V);
   drawEnv(cam,V,1);
   // fog and night: the land you remember, outside your sight, lies dim; land you have never seen is dark (fog.js)
-  drawWorldFog(cam,V);
+  if(B?.world)B.world.fog(cam,()=>drawWorldFog(cam,V));else drawWorldFog(cam,V);
   }finally{ctx=scr}if(ov)ctx.drawImage(ov,0,0);
   // the tile grid and a building being placed lie over the fog
   if(GRID.on||G.place)drawGrid(cam.x,cam.y,VW+1,VH+1,cam.x,cam.y,1);
