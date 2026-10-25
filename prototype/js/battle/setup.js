@@ -337,4 +337,4 @@ function typeSay(){const bt=B.btype;if(!bt)return;const mine=bt.kind==='bridge'?
   toast(txt,k==='caught'?'bad':k==='wait'?'good':'');battleEvent('btype',{text:t,team:k==='caught'?1:0})}
 // Compatibility entry point used by encounters, tournaments, sieges, tests and other callers: the start in steps (a failure shows
 // itself: its error view)
-function startBattle(opts){new (worldBattleEligible(opts)?WorldBattleSetup:BattleSetup)(opts).start().catch(()=>{})}
+function startBattle(opts){if(!opts.tournament&&G.enc)alignReinforcements(G.enc);new (worldBattleEligible(opts)?WorldBattleSetup:BattleSetup)(opts).start().catch(()=>{})}

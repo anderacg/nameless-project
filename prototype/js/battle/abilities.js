@@ -42,7 +42,7 @@ const CAST={
     for(let k=0;k<8;k++){const an=Math.random()*6.283,rr=Math.random()*28*A.r,px=c.x+Math.cos(an)*rr,py=c.y+Math.sin(an)*rr;
       fireBolt(u,Math.atan2(py-u.y,px-u.x),u.s.dmg*.7*A.dmg,{...u.s,magic:false,flat:false,bolt:'#ffe08a',heroShot:K.hero,dt:'pierce'},Math.hypot(px-u.x,py-u.y),{exact:true,speed:ARC_SPEED*(1.1+Math.random()*.3)})}},
   fireball(u,K,at){const A=K.A;fireBolt(u,angleOf(K,at),u.s.dmg*2*A.dmg*K.sm,{...u.s,range:140,magic:true,bolt:'#ff7a30',splash:32*A.r,splashMul:.7,dt:'fire'},K.hero?cursorDist(u):Math.hypot(at.x-u.x,at.y-u.y))},
-  nova(u,K){const A=K.A,R=60*A.r;vfxRing(u.x,u.y,R,'190,230,255',.5);vfx({k:'glow',x:u.x,y:u.y-6,r:R*.6,life:.3,col:'#bfe6ff'});vfxBurst(u.x,u.y-4,18,'#e4f6ff',80,170,'spark');for(let i=0;i<24;i++){const b=rnd(0,6.283),d=rnd(6,R);vfx({k:'frost',x:u.x+Math.cos(b)*d,y:u.y+Math.sin(b)*d*.5,life:rnd(2,3.5)})}B.rings.push({x:u.x,y:u.y-6,r:R,life:.5,max:.5,col:'150,210,255'});
+  nova(u,K){const A=K.A,R=60*A.r;vfxRing(u.x,u.y,R,'190,230,255',.5);vfx({k:'glow',x:u.x,y:u.y-6,r:R*.6,area:true,life:.3,col:'#bfe6ff'});vfxBurst(u.x,u.y-4,18,'#e4f6ff',80,170,'spark');for(let i=0;i<24;i++){const b=rnd(0,6.283),d=rnd(6,R);vfx({k:'frost',x:u.x+Math.cos(b)*d,y:u.y+Math.sin(b)*d*.5,life:rnd(2,3.5)})}B.rings.push({x:u.x,y:u.y-6,r:R,life:.5,max:.5,col:'150,210,255'});
     for(const e of withinOf(u.x,u.y,R,foesOf(u))){K.strike(e,.7*A.dmg*K.sm,{kb:4,dt:'frost'});e.slow=Math.max(e.slow||0,3+A.dur)}},
   heal(u,K){const A=K.A;u.hp=Math.min(u.max,u.hp+u.max*.3*A.dmg*K.sm);B.rings.push({x:u.x,y:u.y-6,r:90*A.r,life:.5,max:.5,col:'140,230,140'});
     for(const o of alliesOf(u))if(Math.hypot(o.x-u.x,o.y-u.y)<90*A.r){o.hp=Math.min(o.max,o.hp+o.max*.2*A.dmg*K.sm);vfxBurst(o.x,o.y-6,3,'#9af09a',3,10,'ember',30)}

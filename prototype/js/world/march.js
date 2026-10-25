@@ -18,11 +18,12 @@ function marchRows(o){
   return ids.map(id=>{const g=r.groups.find(g=>g.id===id),character=!g,at=others.indexOf(id),a=at/Math.max(1,others.length)*Math.PI*2;
     const saved=o.army?.march?.[id],p=id==='hero'||id===pivot?.id?{x:0,y:0}:saved&&Number.isFinite(saved.x)&&Number.isFinite(saved.y)?saved:{x:Math.cos(a)*marchCore(o),y:Math.sin(a)*marchCore(o)};
     const limit=Math.max(0,marchOuter(o)-marchExtent(g||{count:1})),d=Math.hypot(p.x,p.y),k=d>limit?limit/d:1;
-    return{id,type:g?.type||id,count:g?.count||1,character,x:p.x*k,y:p.y*k,form:g?.form||'line',files:g?.files||null};
+    return{id,type:g?.type||id,count:g?.count||1,character,x:p.x*k,y:p.y*k,face:Number.isFinite(saved?.face)?saved.face:0,form:g?.form||'line',files:g?.files||null};
   });
 }
 const marchNumbers=o=>Object.fromEntries(marchRows(o).map((r,i)=>[r.id,(i+1)%10]));
-const worldBattleReach=o=>WORLD_BATTLE.on&&o instanceof Party&&o!==P?marchOuter(P)+marchOuter(o)+2*WORLD_BATTLE.interaction:REACH;
+const marchInteractRadius=(o,r=marchOuter(o))=>r+WORLD_BATTLE.interaction;
+const worldBattleReach=o=>WORLD_BATTLE.on&&o instanceof Party&&o!==P?marchInteractRadius(P)+marchInteractRadius(o):REACH;
 // Only a character added to the troop list in battle gets an extra map figure. Other anchors are already in the formation.
 const marchSeparateLeader=o=>o===P||!!o.cid||o.mapKind==='lord'||!!o.ld&&!o.troops.includes('chief');
 // The battle's full sprites at its world scale, with weapons included and movement-driven poses.
@@ -49,7 +50,7 @@ function drawMarcher(u,o,cam){
   ctx.save();ctx.translate(x,y);ctx.scale(Math.cos(u.dir??marchFacing(o))<0?-k:k,k);ctx.drawImage(s,-Math.floor(s.width/2),-s.height+2);ctx.restore();
 }
 function marchCircle(ents,o,cam,r=marchOuter(o),col=o===P?'#e4c777':o.look().col){
-  ents.push({y:o.y-r,f:()=>{ctx.save();ctx.strokeStyle=col;ctx.lineWidth=1;ctx.globalAlpha=.55;ctx.beginPath();ctx.arc(o.x-cam.x,o.y-cam.y,r,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=.28;ctx.setLineDash([3,4]);ctx.beginPath();ctx.arc(o.x-cam.x,o.y-cam.y,r+WORLD_BATTLE.interaction,0,Math.PI*2);ctx.stroke();ctx.restore()}});
+  ents.push({y:o.y-r,f:()=>{ctx.save();ctx.strokeStyle=col;ctx.lineWidth=1;ctx.globalAlpha=.55;ctx.beginPath();ctx.arc(o.x-cam.x,o.y-cam.y,r,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=.28;ctx.setLineDash([3,4]);ctx.beginPath();ctx.arc(o.x-cam.x,o.y-cam.y,marchInteractRadius(o,r),0,Math.PI*2);ctx.stroke();ctx.restore()}});
 }
 
 // Positions are runtime state. Saved group offsets remain the destination, never a rigid transform of the men.
@@ -98,7 +99,7 @@ class MarchArmy{
     const o=this.owner,co=Math.cos(this.face),si=Math.sin(this.face),out=[];
     const pivot=this.pivot();
     for(const row of this.rows)if(row.id!=='hero'){
-      const x=o.x+row.x*co-row.y*si,y=o.y+row.x*si+row.y*co,slots=formSlots(row.form,row.count,this.face,row.files,WORLD_BATTLE.sprite);
+      const x=o.x+row.x*co-row.y*si,y=o.y+row.x*si+row.y*co,slots=formSlots(row.form,row.count,this.face+(row.face||0),row.files,WORLD_BATTLE.sprite);
       const at=pivot?.row===row.id?slots[pivot.index]:[0,0];
       slots.forEach(([sx,sy],i)=>out.push({row:row.id,index:i,type:row.type,character:row.character,pivot:pivot?.row===row.id&&pivot.index===i,x:x+(sx-at[0])/WORLD_BATTLE.scale,y:y+(sy-at[1])/WORLD_BATTLE.scale}));
     }return out;

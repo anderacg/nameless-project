@@ -43,9 +43,24 @@ function makeEnemies(n,camp,band){
    page) and his men at the start (his share of the spoils) are kept on the encounter (e.help). An enemy lord's realm and
    allies join him (nearFoes, at most REINF.foes). */
 const friendFac=f=>!hostileTo(f)&&(!!P.fac&&(f===P.fac||relOf(f,P.fac).s==='ally')||honorWith(f)>=25);
-const foeFac=e=>e.kind==='lord'||e.kind==='caravan'||e.kind==='estate'||e.kind==='patrol'?e.ref.fac:e.kind==='siege'||e.kind==='raid'?e.ref.owner:null;
+const forceRealm=o=>{const src=o?.src||o;return src?.fac||src?.faction||src?.owner||o?.fac||null};
+const foeFac=e=>['lord','caravan','estate','patrol','villagers','party'].includes(e.kind)?forceRealm(e.ref)||(e.kind==='villagers'?townBy(e.ref?.town)?.owner:null):e.kind==='siege'||e.kind==='raid'?e.ref.owner:null;
 // the realm whose men you fight (foeFac's, or a realm's real toll-men on the road); none: a common enemy
 const foeRealm=e=>foeFac(e)||(e.road&&e.road.real&&e.road.fac)||null;
+// Realm loyalty precedes friendship/help rolls and remembered participant lists. null leaves ordinary eligibility in charge.
+function reinforceSide(e,o){
+  const src=o.src||o;if(src.mapKind==='cparty'||o.kind==='cparty')return 0;
+  const f=forceRealm(o);if(!f)return null;
+  const foes=[foeRealm(e),...(e.foes||[]).map(forceRealm)].filter(Boolean),friends=['player',P.fac,...(e.kind==='field'?(e.allies||[]).map(forceRealm):[])].filter(Boolean);
+  if(e.kind==='field'&&foes.includes(f)&&friends.includes(f)){if((e.allies||[]).some(a=>(a.src||a)===src))return 0;if((e.foes||[]).some(a=>(a.src||a)===src))return 1;return -1}
+  if(foes.includes(f))return 1;
+  if(foes.some(g=>g!=='player'&&relOf(f,g).s==='ally'))return friends.includes(f)||friends.some(g=>g!==f&&g!=='player'&&relOf(f,g).s==='ally')?-1:1;
+  return null;
+}
+function alignReinforcements(e){
+  const sides=[[],[]],seen=new Set();for(const [team,list] of [[0,e.allies||[]],[1,e.foes||[]]])for(const o of list){const key=o.src||o;if(seen.has(key))continue;seen.add(key);const side=reinforceSide(e,o);if(side!==-1)sides[side??team].push(o)}
+  [e.allies,e.foes]=sides;
+}
 const commonFoe=e=>e.kind==='field'?(e.foes||[]).every(f=>!f.fac):e.kind!=='tourney'&&!foeRealm(e);
 // the holding a fight is over: the one you storm or raid, or the one the lord you fight is besieging (or riding to relieve)
 const siegeTown=e=>e.kind==='siege'||e.kind==='raid'?e.ref.name:e.kind==='lord'&&(e.ref.state==='siege'||e.ref.state==='relieve')?e.ref.tgt:null;
@@ -65,12 +80,12 @@ const neutralHelps=(e,o,k,v)=>helpRoll(e,k)<helpChance(v)&&fairOdds(e,o);
 const bountyWhy=e=>e.kind==='monster'||e.kind==='cave'?'to see the beast dead':'for the bounty';
 // why a lord rides to help you ('' if he won't): a friend; or a neutral lord by chance at fair odds, against a common enemy or
 // against a realm his own is at war with (the owner, 2026-10-23: "they fight each other, why not?")
-function lordWhy(e,l){const fr=foeRealm(e),st=siegeTown(e);if(fr&&(fr==='player'||!atWar(l.fac,fr)))return '';
+function lordWhy(e,l){const side=reinforceSide(e,l);if(side===1||side===-1)return '';const fr=foeRealm(e),st=siegeTown(e);if(fr&&(fr==='player'||!atWar(l.fac,fr)))return '';
   if(st&&l.tgt===st&&l.state==='siege')return 'besieging '+st;if(st&&l.inside===st)return 'holding the walls of '+st;
   const fw=friendWhy(l);if(fw||hostileTo(l.fac))return fw;return neutralHelps(e,l,l.id,relWith(l))?(fr?'at war with the '+FACS[fr].n:bountyWhy(e)):''}
 // why a holding's watch rides to help you ('' if it won't): on its realm's land against a common enemy, or against a realm at
 // war with its own; off its land against a common enemy as a neutral lord would (or a friend)
-function watchWhy(e,p){if(hostileTo(p.fac))return '';const fr=foeRealm(e),land=patrolLand(p,P.x,P.y);
+function watchWhy(e,p){const side=reinforceSide(e,p);if(side===1||side===-1||hostileTo(p.fac))return '';const fr=foeRealm(e),land=patrolLand(p,P.x,P.y);
   if(fr)return land&&fr!=='player'&&fr!==p.fac&&atWar(p.fac,fr)?'riding out against the '+FACS[fr].n+' on its land':'';
   if(land)return 'riding in to clear its '+(e.kind==='monster'||e.kind==='cave'?'land':'road');
   return friendWhy(p)||(neutralHelps(e,p,'w:'+p.home+':'+watchOf(p),0)?bountyWhy(e):'')}
@@ -149,6 +164,7 @@ function startEncounter(e){
   if(e.men==null)e.men=playerList().length;// (your men at the start: the helpers' share of the spoils, reinfCut)
   // the garrison sallies: beside you when you fight a holding's besiegers, against you when an army comes to relieve your siege
   if(!given&&e.kind==='lord'){const t=townBy(e.ref.tgt);if(t&&t.gar>0){if(e.ref.state==='siege'&&!hostileTo(t.owner)&&t.owner!=='player')e.allies.push(garrisonForce(t));else if(e.ref.state==='relieve'&&mySiege(t))e.foes.push(garrisonForce(t))}}
+  alignReinforcements(e);
   const ratio=(power(e.list)*lvPow(e.lv)+power(lordTroops(e.foes)))/(power(playerList())+power(lordTroops(e.allies))),threat=ratio<.6?'Easy':ratio<1?'Even':ratio<1.5?'Risky':'Deadly';
   const vm=vitals(),hurt=reinfHtml(e)+(P.hp<vm[0]*.6?'<p class="bad">You are wounded: '+Math.round(P.hp)+' / '+vm[0]+' health. Rest at an inn or travel to recover.</p>':''),cls=ratio<.6?'good':ratio<1?'gold':'bad',vs='Your power <strong>'+partyPower()+'</strong> vs <strong>'+rating(e.list,e.lv)+'</strong> · threat <strong class="'+cls+'">'+threat+'</strong>',lord=e.kind==='lord'&&e.ref,f=lord&&FACS[lord.fac];
   if(e.kind==='monster'||e.kind==='cave'){const M=MONSTERS[e.ref.id],u=ST[M.unit],Y=M.mythic;

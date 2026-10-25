@@ -34,8 +34,8 @@
    with no water: Thirsty at once (the drain above), Parched from parched hours (pace × pace, −morale an hour), Dying of thirst
    from dying hours (a man falls sick every toll hours), and from death hours a sick man (else a fit one) dies every toll hours.
    lost: the men lost for good (died, deserted) shown for days on the card and in the troops tab.
-   fill: waterskins fill to days of drink on the march, free, at the water's edge (a water pixel as drawn within near tiles) or a
-   holding's well (within well tiles of where you arrive at it or set out from it); timed (the owner, 2026-10-23: filling takes
+   fill: waterskins fill to days of drink on the march, free, within the army interaction ring; near/well tiles are the legacy
+   shore/well reach when world combat is off; timed (the owner, 2026-10-23: filling takes
    time): minPerDay game minutes for each man's day of drink filled (drink.perDay water), never under min nor over max; off,
    they fill at once as before; only as many as you have empty waterskins; furPer: 1 fur for every so many people in the frost; frost: frostbite after every so many hours' worth of shortage (a
    man wounded), and −morale a night short of furs (survive, world.js).
@@ -72,26 +72,27 @@ Saves.add({key:'band',order:280,defaults:freshBand(),save:()=>{if(JSON.stringify
 /* ---------- where you stand, as your supplies see it ---------- */
 // the climate; rough ground; a harsh desert or frost (not your race's home, no holding near to shelter you); at the water's edge
 // (a river, a lake, a pond or an oasis: waterEdge) or a holding's well (staying in it, or at it: wellNear)
+const fillReach=(well=false)=>WORLD_BATTLE.on?marchInteractRadius(P):(well?SUPPLY.fill.well:SUPPLY.fill.near)*TILE;
 function supplyLand(){
   const x=P.x,y=P.y,c=climAt(x,y),t=terrAt(x,y),home=RACES[P.race].home,shelter=!!P.stay||TOWNS.some(h=>Math.hypot(h.x-x,h.y-y)<WORLD_SCALE.land.shelter);
   return{clim:c,rough:t===T_FOREST||t===T_HILL||t===T_MOUNT||c==='swamp'||c==='frost'||c==='desert',
     desert:c==='desert'&&!home.includes('desert')&&!shelter,frost:c==='frost'&&!home.includes('frost')&&!shelter,
-    well:!!P.stay||wellNear(x,y),water:waterEdge(x,y,SUPPLY.fill.near*TILE)}}
+    well:!!P.stay||wellNear(x,y),water:waterEdge(x,y,fillReach())}}
 /* (the owner, 2026-10-23: "much shorter": a water pixel as the world art draws it (worldart.js wpx: the shore's curve, a ford's
    shallows, a bridge's water, a pond's) within r px of (x, y); none off the map or on its edge tiles (drawn as water there).
    The tiles round first: none with water, none to look for) */
-function waterEdge(x,y,r){const K=WorldArt.ensure().wk,tx0=Math.floor((x-r)/TILE)-1,ty0=Math.floor((y-r)/TILE)-1,tx1=Math.floor((x+r)/TILE)+1,ty1=Math.floor((y+r)/TILE)+1;
-  if(tx0<1||ty0<1||tx1>MW-2||ty1>MH-2)return false;
+function waterEdge(x,y,r){const K=WorldArt.ensure().wk,tx0=Math.max(1,Math.floor((x-r)/TILE)-1),ty0=Math.max(1,Math.floor((y-r)/TILE)-1),tx1=Math.min(MW-2,Math.floor((x+r)/TILE)+1),ty1=Math.min(MH-2,Math.floor((y+r)/TILE)+1);
+  if(tx0>tx1||ty0>ty1)return false;
   let any=false;for(let ty=ty0;ty<=ty1&&!any;ty++)for(let tx=tx0;tx<=tx1;tx++)if(K[ty*MW+tx]){any=true;break}
   if(!any)return false;const X=Math.round(x),Y=Math.round(y),R=Math.ceil(r);
-  for(let j=-R;j<=R;j++)for(let i=-R;i<=R;i++)if(i*i+j*j<=r*r&&wpx(K,X+i,Y+j))return true;
+  for(let j=Math.max(-R,TILE-Y);j<=Math.min(R,(MH-1)*TILE-1-Y);j++)for(let i=Math.max(-R,TILE-X);i<=Math.min(R,(MW-1)*TILE-1-X);i++)if(i*i+j*j<=r*r&&wpx(K,X+i,Y+j))return true;
   return false}
-// (a holding's well: within SUPPLY.fill.well tiles of where you arrive at it (its x, y) or of the spot before its gate where you
+// (a holding's well: within fillReach of where you arrive at it (its x, y) or of the spot before its gate where you
 // set out from it (world.js gateSpot: made once a holding and map, and again when its lots change))
 const WELL_GATE=new WeakMap();
 function wellGate(h){const n=(h.lots||[]).length;let g=WELL_GATE.get(h);if(!g||g.m!==WM||g.n!==n){g={m:WM,n,...gateSpot(h)};WELL_GATE.set(h,g)}return g}
-function wellNear(x,y){const r=SUPPLY.fill.well*TILE;
-  return TOWNS.some(h=>{const d=Math.hypot(h.x-x,h.y-y);if(d<=r)return true;if(d>(GATE.r+3)*TILE)return false;const g=wellGate(h);return Math.hypot(g.x-x,g.y-y)<=r})}
+function wellNear(x,y){const r=fillReach(true);
+  return TOWNS.some(h=>{const d=Math.hypot(h.x-x,h.y-y);if(d<=r)return true;if(d>r+(GATE.r+3)*TILE)return false;const g=wellGate(h);return Math.hypot(g.x-x,g.y-y)<=r})}
 // the frost a few tiles off (the card shows your furs as you come near it)
 const nearFrost=()=>[[0,0],[1,0],[-1,0],[0,1],[0,-1]].some(([i,j])=>climAt(P.x+i*4*TILE,P.y+j*4*TILE)==='frost');
 // the share of the furs you need that you lack (0: enough)

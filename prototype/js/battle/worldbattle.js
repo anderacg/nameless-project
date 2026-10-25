@@ -37,7 +37,7 @@ class WorldBattleArea{
   }
   place(g,units,anchor,offset,owner=anchor){
     const face=anchor.facing??Math.atan2(this.y-anchor.y,this.x-anchor.x),co=Math.cos(face),si=Math.sin(face),dir=co>=0?1:-1,p=this.openPoint(this.field({x:anchor.x+offset.x*co-offset.y*si,y:anchor.y+offset.x*si+offset.y*co}));
-    g.ax=p.x;g.ay=p.y;g.face=g.currentFacing=face;g.order='hold';const slots=formSlots(g.form,units.length,face,g.files,WORLD_BATTLE.sprite);
+    g.ax=p.x;g.ay=p.y;g.face=g.currentFacing=face+(offset.face||0);g.order='hold';const slots=formSlots(g.form,units.length,g.face,g.files,WORLD_BATTLE.sprite);
     const army=MARCH_ARMIES.get(owner),march=army?.forGroup(g.sourceGroupId||g.id).filter(m=>!B.units.some(u=>!units.includes(u)&&u.marchUnit===m))||[];
     units.forEach((u,i)=>{u.sx=slots[i][0];u.sy=slots[i][1];const mini=march[i],worker=owner.ws?.find(f=>!f.gone&&workerAppearance(f).type===u.type&&!B.units.some(v=>v.worker===f)),q=worker?this.field(worker):mini?this.field(mini):this.openPoint({x:p.x+u.sx,y:p.y+u.sy});u.x=q.x;u.y=q.y;u.dir=worker?(worker.dir<0?Math.PI:0):mini?.dir??face;u.face=Math.cos(u.dir)>=0?1:-1;
       u.v=mini?mini.id%6:u.hero||u.leader?0:u.v;u.worldTint=owner.look?.().col;u.worldSide=owner.mapKind==='monster'?1:0;delete u.look;delete u.side;
@@ -73,15 +73,23 @@ class WorldBattleArea{
     const g=this.escapeRoutes?.[routeWho(u.s)];if(!g)return null;const old=u.worldEscape;if(old&&old.g===g&&old.v===g.v)return old;
     const D=routeDist(g,u.x,u.y);let at=-1,best=Infinity;
     for(let i=0;i<D.length;i++){if(!Number.isFinite(D[i])||!g.cost[i])continue;const x=(i%g.C+.5)*g.cs,y=(Math.floor(i/g.C)+.5)*g.cs;
-      if(this.distance({x,y})<this.radius+g.cs||x<8||x>BW-8||y<fieldTop()||y>fieldBot())continue;
+      if(this.distance({x,y})<this.radius+2||x<8||x>BW-8||y<fieldTop()||y>fieldBot())continue;
       if(D[i]<best){at=i;best=D[i]}}
     const to=at<0?this.exit(u,2*g.cs):{x:(at%g.C+.5)*g.cs,y:(Math.floor(at/g.C)+.5)*g.cs},p=routePath(g,u.x,u.y,to.x,to.y,{budget:g.cost.length});
     return u.worldEscape={g,v:g.v,to,p,i:0};
   }
-  escapeWay(u){
-    const w=this.escapePlan(u);if(!w)return null;const {g,p}=w;
+  escapeWay(u,w=this.escapePlan(u)){if(!w)return null;const {g,p}=w;
     while(w.i<p.length-1&&(Math.hypot(p[w.i][0]-u.x,p[w.i][1]-u.y)<1||lineClear(g,u.x,u.y,...p[w.i+1])))w.i++;
     const q=p[w.i];if(!q)return null;const dx=q[0]-u.x,dy=q[1]-u.y,d=Math.hypot(dx,dy);return d>.001?[dx/d,dy/d,d]:null;
+  }
+  // Re-enter on the same terrain grid used to escape, through the nearest reachable point inside the ring.
+  returnPlan(u){
+    const g=this.escapeRoutes?.[routeWho(u.s)];if(!g)return null;
+    const D=routeDist(g,u.x,u.y);let at=-1,best=Infinity;
+    for(let i=0;i<D.length;i++){if(!g.cost[i]||!Number.isFinite(D[i]))continue;const x=(i%g.C+.5)*g.cs,y=(Math.floor(i/g.C)+.5)*g.cs;
+      if(!this.inside({x,y},18))continue;if(D[i]<best){at=i;best=D[i]}}
+    if(at<0)return null;const to={x:(at%g.C+.5)*g.cs,y:(Math.floor(at/g.C)+.5)*g.cs},p=routePath(g,u.x,u.y,to.x,to.y,{budget:g.cost.length});
+    return{g,v:g.v,to,p,i:0};
   }
   watchBlocked(){
     if(B.over||B.t<(this.blockCheck||0))return;this.blockCheck=B.t+3;
@@ -110,8 +118,9 @@ class WorldBattleArea{
     this.enterMarchers(dt);
     for(const u of B.units){const a=u.regroup;if(!a)continue;
       if(a.phase==='rest'){a.t+=dt;if(a.t>=WORLD_BATTLE.regroup)a.phase='return';continue}
-      const p=this.openPoint(this.exit(u,-18)),d=Math.hypot(p.x-u.x,p.y-u.y),s=Math.min(d,u.s.spd*dt);
-      if(d>0){u.x+=(p.x-u.x)*s/d;u.y+=(p.y-u.y)*s/d}if(d>s+2)continue;
+      const w=a.way||(a.way=this.returnPlan(u));if(!w)continue;const way=this.escapeWay(u,w),s=way?Math.min(way[2],u.s.spd*dt):0;
+      if(s>0){u.x+=way[0]*s;u.y+=way[1]*s;u.dir=Math.atan2(way[1],way[0]);u.face=way[0]>=0?1:-1}
+      if(Math.hypot(w.to.x-u.x,w.to.y-u.y)>1)continue;
       if(u.worldFled){const key=u.team?'fledFoes':'fledMine';B[key]=Math.max(0,(B[key]||0)-1);delete u.worldFled}u.hp=u.hpLeft;delete u.left;delete u.fled;delete u.regroup;delete u.worldEscape;u.rout=false;u.shattered=false;u.rallied=false;u.tgt=null;
       const g=B.groups[u.grp],r=g?.resolve;if(r){if((r.worldReturns||0)<=a.cycle){r.worldReturns=a.cycle+1;r.routed=false;r.shattered=false;r.rallied=true;r.breakT=0;r.mor=MORALE.rally;r.confidence=0}r.refreshState();r.sync()}if(g&&!r?.routed){g.hold();g.aiReset()}battleEvent('rejoin',{u});
     }
@@ -123,8 +132,8 @@ class WorldBattleArea{
     if(entered){B.cmdT=0;B.moraleNext=0;setOrderUI()}
   }
   teamFor(o){
-    const e=G.enc;if(!e)return -1;if(o.mapKind==='monster')return e.kind==='monster'&&o.id===e.ref?.id?1:-1;if((e.allies||[]).some(f=>(f.src||f)===o))return 0;if((e.foes||[]).some(f=>(f.src||f)===o))return 1;
-    if(o.mapKind==='band'&&e.kind==='party')return 1;const f=foeRealm(e);if(f&&o.faction&&(o.faction===f||relOf(o.faction,f).s==='ally'))return 1;
+    const e=G.enc;if(!e)return -1;if(o.mapKind==='monster')return e.kind==='monster'&&o.id===e.ref?.id?1:-1;const side=reinforceSide(e,o);if(side!==null)return side;if((e.allies||[]).some(f=>(f.src||f)===o))return 0;if((e.foes||[]).some(f=>(f.src||f)===o))return 1;
+    if(o.mapKind==='band'&&e.kind==='party')return (o.kind||'bandits')===((e.ref?.src||e.ref)?.kind||'bandits')?1:-1;
     return o.mapKind==='cparty'?0:o.mapKind==='lord'&&lordWhy(e,o)||o.mapKind==='patrol'&&watchWhy(e,o)?0:-1;
   }
   reinforce(dt){

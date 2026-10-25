@@ -267,8 +267,8 @@ const shooters=g=>grpUnits(g).filter(u=>!u.rout&&!u.empty&&u.s.range>0);
 // curve cut at the layer's edge is cut as the field's own layer cut it): a field seen whole at ×1 has the field's own layer. rangeView:
 // its rect in the zoom's pixels (ox, oy, w, h) and the camera's (cx, cy); rangeClear sets the layer to it; rangeBlit puts it over the view)
 const RANGE_M=32;
-function rangeView(){const cm=B.cam,z=cm?cm.z:1,cx=Math.round((cm?cm.x:0)*z),cy=Math.round((cm?cm.y:0)*z),ox=Math.max(0,cx-RANGE_M),oy=Math.max(0,cy-RANGE_M);
-  return{z,cx,cy,ox,oy,w:Math.max(1,Math.min(Math.ceil(BW*z),cx+BVW+RANGE_M)-ox),h:Math.max(1,Math.min(Math.ceil(BH*z),cy+BVH+RANGE_M)-oy)}}
+function rangeView(){const cm=B.cam,native=B.world?VS:1,z=(cm?cm.z:1)*native,cx=Math.round((cm?cm.x:0)*z),cy=Math.round((cm?cm.y:0)*z),ox=Math.max(0,cx-RANGE_M),oy=Math.max(0,cy-RANGE_M);
+  return{z,cx,cy,ox,oy,w:Math.max(1,Math.min(Math.ceil(BW*z),cx+BVW*native+RANGE_M)-ox),h:Math.max(1,Math.min(Math.ceil(BH*z),cy+BVH*native+RANGE_M)-oy)}}
 function rangeLayer(){const v=rangeView(),c=B.rangeCv||(B.rangeCv=document.createElement('canvas'));if(c.width!==v.w||c.height!==v.h){c.width=v.w;c.height=v.h}c.rv=v;return c}
 function rangeClear(g){const v=g.canvas.rv;g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,g.canvas.width,g.canvas.height);g.setTransform(v.z,0,0,v.z,-v.ox,-v.oy)}
 function rangeBlit(c){const v=c.rv,m=ctx.getTransform();ctx.save();ctx.setTransform(1,0,0,1,Math.round(m.e+v.cx)+v.ox-v.cx,Math.round(m.f+v.cy)+v.oy-v.cy);ctx.globalAlpha=.75;ctx.drawImage(c,0,0);ctx.restore()}
@@ -278,8 +278,12 @@ function formationReachGeometry(id){
   const gr=B.groups[id],m=shooters(id);if(!gr||!m.length)return null;
   const ax=medianValue(m.map(u=>u.x-(u.sx||0))),ay=medianValue(m.map(u=>u.y-(u.sy||0))),range=Math.min(...m.map(u=>u.s.range)),all=m.every(roundFire);
   const slots=formSlots(gr.form||'line',Math.max(1,grpUnits(id).length),0,gr.files,B.world?WORLD_BATTLE.sprite:1),lat=slots.map(p=>p[1]),half=(Math.max(...lat)-Math.min(...lat))/2;
-  if(all)return{ax,ay,range,half,circle:true,points:[]};
-  const a=gr.currentFacing??gr.face,ha=SHOOT.arc/2,ca=Math.cos(a),sa=Math.sin(a),points=[];
+  return formationRangeShape(ax,ay,range,half,all,gr.currentFacing??gr.face);
+}
+// Shared by the live battle and the march editor (using world-distance coordinates there).
+function formationRangeShape(ax,ay,range,half,circle,a=0){
+  if(circle)return{ax,ay,range,half,circle:true,points:[]};
+  const ha=SHOOT.arc/2,ca=Math.cos(a),sa=Math.sin(a),points=[];
   for(const side of [-1,1]){
     points.push({x:ax-sa*side*half,y:ay+ca*side*half});
     for(let i=0;i<=32;i++){const theta=-ha+SHOOT.arc*i/32,forward=range*Math.cos(theta),lateral=side*half+range*Math.sin(theta);
@@ -303,13 +307,13 @@ function drawReach(us,col){
 const medianValue=a=>{a.sort((x,y)=>x-y);return a[Math.floor(a.length/2)]||0};
 function drawFormationReach(id,col){
   const shape=formationReachGeometry(id);if(!shape)return;
-  const c=rangeLayer(),g=c.getContext('2d', { willReadFrequently: true }),fill=(inset)=>{g.beginPath();
+  const c=rangeLayer(),g=c.getContext('2d', { willReadFrequently: true }),edge=FIRE.edge/(B.world?(B.cam?.z||1):1),fill=(inset)=>{g.beginPath();
     if(shape.circle){g.arc(shape.ax,shape.ay,Math.max(0,shape.range+inset),0,Math.PI*2);g.closePath()}
     else{const pts=convexHull(shape.points.map(p=>({x:shape.ax+(p.x-shape.ax)*(Math.max(0,shape.range+inset)/shape.range),y:shape.ay+(p.y-shape.ay)*(Math.max(0,shape.range+inset)/shape.range)})));
       if(pts.length){g.moveTo(pts[0].x,pts[0].y);for(let i=1;i<pts.length;i++)g.lineTo(pts[i].x,pts[i].y);g.closePath()}}
     g.fill()};
   rangeClear(g);g.globalCompositeOperation='source-over';g.fillStyle='rgba('+col+',1)';fill(0);
-  g.globalCompositeOperation='destination-out';g.fillStyle='rgba(0,0,0,1)';fill(-FIRE.edge);
+  g.globalCompositeOperation='destination-out';g.fillStyle='rgba(0,0,0,1)';fill(-edge);
   g.globalCompositeOperation='source-over';g.fillStyle='rgba('+col+','+FIRE.fill+')';fill(-FIRE.edge);
   rangeBlit(c);
 }
@@ -343,6 +347,6 @@ function drawOrderLines(){
     if(gr.order==='charge'){const ts=[...new Set(m.map(u=>u.tgt).filter(t=>t&&t.hp>0))];if(ts.length){const t={x:ts.reduce((a,u)=>a+u.x,0)/ts.length,y:ts.reduce((a,u)=>a+u.y,0)/ts.length};if(Math.hypot(t.x-c.x,t.y-c.y)>12)line(c,t,'rgba(255,106,90,.7)')}continue}
     if(gr.order==='withdraw'&&B.exit){line(c,exitFor({x:c.x,y:c.y,team:gr.team,grp:g}),'rgba(111,168,224,.9)');continue}
     const a={x:gr.ax,y:gr.ay};
-    if(Math.hypot(a.x-c.x,a.y-c.y)>14){line(c,a,'rgba(255,210,90,.85)');ctx.fillStyle='rgba(255,210,90,.35)';for(const u of m)ctx.fillRect(Math.round(a.x+(u.sx||0))-1,Math.round(a.y+(u.sy||0))-1,2,2)}
+    if(Math.hypot(a.x-c.x,a.y-c.y)>14){line(c,a,'rgba(255,210,90,.85)');ctx.fillStyle='rgba(255,210,90,.35)';const s=B.world?4*WORLD_BATTLE.sprite:2;for(const u of m)ctx.fillRect(Math.round(a.x+(u.sx||0))-s/2,Math.round(a.y+(u.sy||0))-s/2,s,s)}
     let p=a;for(const w of gr.queue||[]){line(p,w,'rgba(255,210,90,.55)');p=w}}
 }
