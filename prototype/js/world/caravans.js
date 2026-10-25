@@ -51,11 +51,11 @@ class CaravanParty extends Party{
   // on the map (drawCaravans): its carts seen out to a little past your sight, not hidden by woods; its label near you
   inView(V){return this.fromYou()<=V*1.2}
   // a click: on its ring, and anywhere on its cart, ox and drover (caravanPic)
-  pick(at){at.add(this,11,5);const s=caravanPic(this);at.fig(this,s,this.x-(s.width>>1),this.y+1-s.height,this.dir<0);const B=at.flag&&bannerAt(this,0);if(B)at.flag(this,B)}
+  pick(at){at.add(this,WORLD_BATTLE.on?marchInteractRadius(this):11,5);const s=caravanPic(this);at.fig(this,s,this.x-(s.width>>1),this.y+1-s.height,this.dir<0);const B=at.flag&&bannerAt(this,0);if(B)at.flag(this,B)}
   // a small trade pennant in its owner's colour over its cart (Party banner)
   banner(){return{k:'trade',col:caravanCol(this),dev:'coin'}}
   headY(){const s=caravanPic(this);return Math.round(this.y)+1-s.height+opaqueBox(s)[1]}
-  draw(ents,cam,V){if(!this.inView(V))return;const c=this;
+  draw(ents,cam,V){if(!this.inView(V))return;const c=this;if(WORLD_BATTLE.on&&!B?.world?.hides(c))marchDraw(ents,c,cam);
     ents.push({y:c.y,f:()=>{subT(c);const L=c.look(),s=caravanSprite(L.col,stepOf(c,1.2)),sx=Math.round(c.x-cam.x),sy=Math.round(c.y-cam.y);ctx.fillStyle='rgba(0,0,0,.3)';ctx.fillRect(sx-(s.cw>>1)+3,sy-1,s.cw-6,2);
       ctx.save();ctx.translate(sx,sy);if(c.dir<0)ctx.scale(-1,1);ctx.drawImage(s,-(s.width>>1),1-s.height);ctx.restore();
       BANNERQ.push({o:c,label:c.fromYou()<90?[L.label,L.labelCol]:null})}})}

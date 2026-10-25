@@ -169,7 +169,7 @@ function wuiBrackets(x0,y0,x1,y1,col,a,p,g){const w=x1-x0,h=y1-y0;
 // WUI_FOOT.gap px, a left then a right, each WUI_FOOT.side px off the way's middle on its side and turned along it; their phase by
 // the clock, over a pair's stride, so a print keeps its side as they march); drawn out from you over WUI_K.draw s when it is
 // new; faint the first px from you; none on land never seen
-function wuiTrail(cam,now,rm){const w=WUI.way,D=WUI.dots,FT=WUI.feet;D.length=0;FT.length=0;if(!w||w.n<2)return;const F=WUI_FOOT,s0=WUI.s,end=w.S[w.n-1]-(WUI.tgt?10:6),gp=F.gap,ph=rm?0:(now/1000*WUI_K.march)%(2*gp),col=WUI.tgt?WUI_K.col[wuiKind(WUI.tgt.o)]:WUI_K.col.gold;
+function wuiTrail(cam,now,rm){const w=WUI.way,D=WUI.dots,FT=WUI.feet;D.length=0;FT.length=0;if(!w||w.n<2)return;const F=WUI_FOOT,s0=WUI.s,end=w.S[w.n-1]-(WUI.tgt?10:6),gp=F.gap*(G.hurry?1.5:1),ph=rm?0:(now/1000*WUI_K.march*hurryPace())%(2*gp),col=WUI.tgt?WUI_K.col[wuiKind(WUI.tgt.o)]:WUI_K.col.gold;
   const reach=rm?1e9:s0+(now-w.t0)/1000/WUI_K.draw*(end-s0+20);let n=0;
   for(let k=Math.ceil((s0+3-ph)/gp),s=k*gp+ph;s<end&&s<reach&&n<400;k++,s+=gp){const [x,y]=wuiPt(w,s),[ax,ay]=wuiPt(w,s-F.look),[bx,by]=wuiPt(w,s+F.look),l=Math.hypot(bx-ax,by-ay)||1,ux=(bx-ax)/l,uy=(by-ay)/l,left=!(k&1),sd=left?-F.side:F.side;
     // (seen where it is drawn: a point rounded over a tile's edge into the dark is not)

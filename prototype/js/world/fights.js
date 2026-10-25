@@ -37,7 +37,7 @@ function startFight(A,B){
 }
 function joinFight(f,o,s){if(o.fight)return;f.sides[s].push(uidOf(o));o.fight=f.id;const k=o.troops.length;f.n0=(f.n0||0)+k;f.dur+=FIGHT.per*k;fightPlace(f)}
 // the two lines face each other across the fight
-function fightPlace(f){for(const s of [0,1])sideParties(f,s).forEach((o,i)=>{o.x=f.x+(s?14:-14)+(s?1:-1)*(i>>1)*10;o.y=f.y+(i%2?8:-4)+(i>>1)*3;o.dir=s?-1:1})}
+function fightPlace(f){for(const s of [0,1])sideParties(f,s).forEach((o,i)=>{const x=f.x+(s?14:-14)+(s?1:-1)*(i>>1)*10,y=f.y+(i%2?8:-4)+(i>>1)*3,army=MARCH_ARMIES.get(o);if(army)army.relocate(x,y);else{o.x=x;o.y=y}o.dir=s?-1:1})}
 // whose side a party would take: its realm's and allies', against its enemies; bands stick together; lawful men fight bands
 function sideFor(f,o){
   const fac=o.faction,lord=o.mapKind==='lord',score=s=>sideParties(f,s).reduce((a,p)=>{if(lord&&p.mapKind==='lord'){const r=lordRel(o,p);if(r<=RELATION.rival)return a-3}const pf=p.faction;if(!fac)return a+(pf?-1:1);if(!pf)return a-1;return a+(pf===fac||relOf(pf,fac).s==='ally'?2:atWar(pf,fac)?-2:0)},0);
@@ -125,7 +125,7 @@ function fightAct(a,arg){
     for(const o of sideParties(f,1-s)){const fc=o.faction;if(fc&&fc!=='player'&&realmOf(fc).provoke(20,10))log('The '+FACS[fc].n+' turns hostile to you.','bad','war')}
     // (against a beast: your battle with it, as when you meet it (monsters.js startMonster), the side you joined beside you)
     G.fg=null;const m=sideParties(f,1-s).find(o=>o.mapKind==='monster');
-    if(m)return startEncounter({kind:'monster',ref:m,lv:m.lv,list:m.troops.slice(),mine:true,allies:sideParties(f,s).map(forceOf),foes:sideParties(f,1-s).filter(o=>o!==m).map(forceOf)});
+    if(m)return startEncounter({kind:'monster',ref:m,fight:f,lv:m.lv,list:m.troops.slice(),mine:true,allies:sideParties(f,s).map(forceOf),foes:sideParties(f,1-s).filter(o=>o!==m).map(forceOf)});
     startEncounter({kind:'field',ref:f,side:s,list:[],allies:sideParties(f,s).map(forceOf),foes:sideParties(f,1-s).map(forceOf),title:'Battle near '+Spatial.nearestHolding(f.x,f.y).name})}
 }
 onAct('fg-',fightAct);
@@ -139,7 +139,7 @@ class Fight extends WorldObject{
   here(){return W.fights.includes(this)}
   inView(V){return spotted(this,V)}
   meet(){fightMeet(this)}
-  draw(ents,cam,V){if(!this.inView(V))return;const f=this;
+  draw(ents,cam,V){if(!this.inView(V)||B?.world?.hides(this))return;const f=this;
     ents.push({y:f.y+20,f:()=>{subT(f);const sx=Math.round(f.x-cam.x),sy=Math.round(f.y-cam.y),t=performance.now();
       for(let i=0;i<6;i++){const a=t/300+i*1.05,r=7+3*Math.sin(t/200+i);ctx.fillStyle='rgba(200,184,150,'+(.25+.15*Math.sin(t/150+i)).toFixed(2)+')';ctx.fillRect(Math.round(sx+Math.cos(a)*r)-2,Math.round(sy+Math.sin(a)*r*.5)-1,3,2)}
       if(Math.floor(t/120)%3===0){ctx.fillStyle='#fff8d0';ctx.fillRect(sx+rint(-6,6),sy-rint(3,10),1,1)}

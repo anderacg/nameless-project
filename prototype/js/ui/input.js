@@ -136,7 +136,7 @@ function worldGo(wx,wy){
 }
 // travel to a point, or meet what is there (Follow ends: world.js followStop)
 // (a new trip: by road, if that mode is on, asks again whether a road is near: world.js byRoadTo)
-function worldMove(wx,wy){if(G.hurry)setHurry(false);G.travelClick=null;followStop();G.pitch=null;G.byRoad=null;if(!(clickAt(wx,wy)||G.chase)){P.tx=clamp(wx,8,MW*TILE-8);P.ty=clamp(wy,8,MH*TILE-8);P.stuck=0}wuiClick(wx,wy)}// (the click's ripple: worldui.js)
+function worldMove(wx,wy){WildHunt.active?.finish('You leave the hunt.');if(G.hurry)setHurry(false);G.travelClick=null;followStop();G.pitch=null;G.byRoad=null;if(!(clickAt(wx,wy)||G.chase)){P.tx=clamp(wx,8,MW*TILE-8);P.ty=clamp(wy,8,MH*TILE-8);P.stuck=0}wuiClick(wx,wy)}// (the click's ripple: worldui.js)
 /* a click or a tap on another party (the owner, 2026-10-23: Follow "can be used when you click at the other unit in the world
    map"): its ring at it (ActionRing; supply.js partyRingItems: Approach, today's chase, Follow, Look), nothing done yet; Esc or a
    press elsewhere closes it (ring.js). A second press on it within PARTY_CLICK.dbl ms (a double click or tap) approaches it at
@@ -188,7 +188,7 @@ function touchTick(now){const l=TOUCH.lp;if(!l||l.armed||l.box||l.off||now-l.t0<
 function touchMove(e,p){const T=TOUCH,pt=T.pts.get(e.pointerId);if(!pt)return;pt.x=p.x;pt.y=p.y;pt.cx=e.clientX;pt.cy=e.clientY;
   // (the map: a step in or out each time the fingers are MAPZOOM.PINCH times as far apart, or as near, as at the last step)
   if(T.pinch&&T.pinch.map){if(T.pts.size>=2&&G.mode==='world'&&!G.modal){const d=touchSpan(),r=d/T.pinch.d0;if(r>=MAPZOOM.PINCH||r<=1/MAPZOOM.PINCH){mapZoom(r>1?1:-1);T.pinch.d0=d}}return}
-  if(T.pinch){if(T.pts.size>=2&&B&&G.mode==='battle'){const m=touchMid();camPinch(T.pinch.w,T.pinch.z0*m.d/T.pinch.d0,m.x,m.y)}return}
+  if(T.pinch){if(T.pts.size>=2&&B&&G.mode==='battle'){const m=touchMid();if(B.world){const r=m.d/T.pinch.d0;if(r>=MAPZOOM.PINCH||r<=1/MAPZOOM.PINCH){camZoom(r>1?1:-1);T.pinch.d0=m.d;T.pinch.z0=B.cam.z;T.pinch.w=toField(m)}else camPinch(T.pinch.w,T.pinch.z0,m.x,m.y)}else camPinch(T.pinch.w,T.pinch.z0*m.d/T.pinch.d0,m.x,m.y)}return}
   const l=T.lp;if(!l||l.id!==e.pointerId)return;touchTick(performance.now());
   if(l.armed||l.box||Math.hypot(e.clientX-l.cx,e.clientY-l.cy)<=T.slop)return;
   if(l.mode==='world'){l.off=true;return}// (wandered: no card; the lift still travels to where it went down)

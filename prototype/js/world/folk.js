@@ -16,11 +16,11 @@ class EstateWorker extends WorldObject{
   inView(V){return folkSeen(this)&&Math.abs(this.x-P.x)<=V*1.3&&Math.abs(this.y-P.y)<=V*1.3}
   // (at work inside: met at his estate, estates.js; out on its ground, or on the road with a delivery, where he is)
   pick(at){if(folkSeen(this))at.add(this,6,4)}
-  // the people's figure with his trade's tool, the home's race, his load on his back on the way to the holding or back from his work (folkSprite); his
+  // World combat uses the trade's real battle unit, with stable variant and holding cloth; legacy mode keeps folkSprite. His
   // fraction of a pixel (subT) kept inside save/restore
-  draw(ents,cam,V){if(!this.inView(V))return;const f=this;
-    ents.push({y:f.y,f:()=>{ctx.save();subT(f);const fr=f.moving&&mapStepping(f)?(frameOf(f,WALK.foot,WALK.n)+Math.floor(f.ph*WALK.n))%WALK.n:0,t=townBy(f.home),s=folkSprite(f.job,fr,t&&t.races?t.races[0]:'human',Math.floor(f.ph*7),f.st==='out'||f.load),sx=Math.round(f.x-cam.x),sy=Math.round(f.y-cam.y);
-      ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(sx-2,sy-1,5,2);ctx.save();ctx.translate(sx,sy);if(f.dir<0)ctx.scale(-1,1);ctx.drawImage(s,-8,-14);ctx.restore();ctx.restore()}})}
+  draw(ents,cam,V){if(!this.inView(V)||B?.world?.hides(this))return;const f=this;
+    ents.push({y:f.y,f:()=>{ctx.save();subT(f);const fr=f.moving&&mapStepping(f)?(frameOf(f,WALK.foot,WALK.n)+Math.floor(f.ph*WALK.n))%WALK.n:0,t=townBy(f.home),s=WORLD_BATTLE.on?null:folkSprite(f.job,fr,t&&t.races?t.races[0]:'human',Math.floor(f.ph*7),f.st==='out'||f.load),sx=Math.round(f.x-cam.x),sy=Math.round(f.y-cam.y);
+      ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(sx-2,sy-1,5,2);ctx.save();ctx.translate(sx,sy);if(WORLD_BATTLE.on){const L=workerAppearance(f),pose=f.moving&&mapStepping(f)?2+Math.floor((WALKED.get(f)||0)/WALK.foot)%4:0,sp=unitSprite(L.type,0,false,L.v,pose,false,false,L.tint),k=WORLD_BATTLE.sprite/WORLD_BATTLE.scale;ctx.scale(f.dir<0?-k:k,k);ctx.drawImage(sp,-Math.floor(sp.width/2),-sp.height+2)}else{if(f.dir<0)ctx.scale(-1,1);ctx.drawImage(s,-8,-14)}ctx.restore();ctx.restore()}})}
   tip(){return '<b>'+(this.name?this.name+', '+this.job:cap1(this.job))+'</b><small>Of '+this.home+'</small><span class="act">Click: talk</span>'}
 }
 const asWorker=asClass(EstateWorker);
@@ -49,6 +49,13 @@ const handsLeft=(t,k)=>{const n=lostHands(t,k);return n?Math.max(0,1-n/Math.min(
 // a worker's trade as a soldier (a quarry's miners are quarrymen), the peasant he becomes (data/units.js), and why not
 const tradeOf=f=>f.k==='quarry'?'quarryman':f.job;
 const recruitKind=(t,f)=>peasantKind(t.races[0],tradeOf(f));
+function workerAppearance(f){const t=townBy(f.home);const type=t?recruitKind(t,f):'militia';return{type:ST[type]?type:'militia',v:folkHash(f.id||f.home+'|'+f.job)%6,tint:FACS[t?.owner]?.col||'#bda882'}}
+function workerBattleFinish(b,area){
+  for(const u of b.units){const f=u.worker;if(!f)continue;if(u.hp>0||u.left){const p=area.world(u);f.x=p.x;f.y=p.y;f.dir=u.face;continue}if(b.win||f.gone)continue;
+    const t=townBy(f.home);f.gone=true;if(t){t.pop=Math.max(10,(t.pop||0)-1);t.lost=t.lost||{};(t.lost[f.k]||(t.lost[f.k]=[])).push(G.day+REFILL_DAYS)}
+  }
+  W.folk=W.folk.filter(f=>!f.gone);
+}
 function workerRecruitWhy(t,f){const k=recruitKind(t,f),c=hireCost(k);
   return P.fac&&P.fac===t.owner?'Your employer’s people':remembers(t,f)?'They will not follow you':partyRoom()<1?'Your band is full':!partyRoster(P).canAdd(k)?'No room for another group':P.gold<c?'Not enough gold':t.owner!=='player'&&!canHire(t,k)?'They do not trust you yet':''}
 function workerRecruit(f){const t=townBy(f.home);if(!t||!W.folk.includes(f)||workerRecruitWhy(t,f))return false;const k=recruitKind(t,f),c=hireCost(k);
@@ -185,7 +192,7 @@ function updateFolk(d){
         W.folk.push(asWorker(folkName({id:key+'|'+no,folk:true,home:t.name,k,job,x:at.x,y:at.y,tx:at.x,ty:at.y,st:'in',leave,done:now>leave?G.day:-1,dir:1,ph:Math.random()*6,fresh:first},t.races[0])))}}}
   for(const f of W.folk){
     const t=townBy(f.home),fresh=f.fresh;f.fresh=false;if(!t){f.gone=true;continue}
-    const threat=folkThreat(f.x,f.y,A.folkBandit)||Timed.of(t).has('fear')&&Math.hypot(P.x-f.x,P.y-f.y)<A.folkFear;
+    const threat=folkThreat(f.x,f.y,A.folkBandit)||Timed.of(t).has('fear')&&TravelAwareness.sees(asWorker(f));
     // at work inside: out with the day's load at his hour (not while the holding is besieged or afraid); in the field hours, out
     // to his work on the estate's ground if it is his day for it and safe (already at it as you first come near)
     if(f.st==='in'){f.moving=false;if(win&&f.done!==G.day&&now>=f.leave&&!besieged(t)&&!Timed.of(t).has('fear')){const g=folkHome(t);f.st='out';f.tx=g.x;f.ty=g.y}
@@ -260,8 +267,8 @@ function robTake(t,f){const L=robLoot(f),[g]=jobGood(t,f.job),n=L.goods[1]?rint(
 function robFight(t,f,o){G.wk=G.wkFrom=null;const who=o.ws.length>1?f.job+'s':f.job;log('The '+who+' of '+t.name+' will not give up what is theirs!','bad');
   startEncounter({kind:'villagers',mine:true,ref:{town:t.name,k:f.k,f,ws:o.ws,gs:o.gs.length,x:f.x,y:f.y,fac:t.owner,cool:0},list:o.list.slice(),allies:[],foes:[],word:'villagers'+(o.gs.length?' and guards':''),title:'The '+who+' of '+t.name+' fight back'})}
 // won (engage.js ON_WIN.villagers): what he carried, and the dead: the estate short of their hands and remembering you
-function villagersWon(e){const r=e.ref,t=townBy(r.town);if(!t)return '';if(r.gs)guardsBeaten(t,r.k);const got=robTake(t,r.f),c=CONDUCT.killWorkers,n=r.ws.length;
-  r.ws.forEach(x=>x.gone=true);W.folk=W.folk.filter(x=>!r.ws.includes(x));t.pop=Math.max(10,(t.pop||0)-n);t.lost=t.lost||{};t.lost[r.k]=[...(t.lost[r.k]||[]).filter(d=>d>G.day),...r.ws.map(()=>G.day+REFILL_DAYS)];
+function villagersWon(e){const r=e.ref,t=townBy(r.town);if(!t)return '';if(r.gs)guardsBeaten(t,r.k);const got=robTake(t,r.f),c=CONDUCT.killWorkers,ws=r.ws.filter(f=>!f.gone),n=ws.length;
+  ws.forEach(x=>x.gone=true);W.folk=W.folk.filter(x=>!ws.includes(x));t.pop=Math.max(10,(t.pop||0)-n);t.lost=t.lost||{};t.lost[r.k]=[...(t.lost[r.k]||[]).filter(d=>d>G.day),...ws.map(()=>G.day+REFILL_DAYS)];
   remember(t,r.k,ROB.estate);const cost=wrong(t,{...c,hostile:rint(c.hostile[0],c.hostile[1])});mood('cruel');
   return ' You take '+got+' from the dead. Killing the people of '+t.name+' costs you dearly: '+cost+'. Its '+ESTATES[r.k].n.toLowerCase()+' will remember you.'}
 // fled, or beaten (ON_WIN.villagers lost): nothing taken, word spreads, and the holding's guards want you

@@ -75,7 +75,7 @@ function faceToward(g,x,y){const gr=B.groups[g],m=grpUnits(g);if(!m.length)retur
 // a line dragged from (x0,y0) to (x1,y1): the selection along it, shared by their numbers, facing the left of the drag.
 // Each is as wide as its share of the line (and so as deep as its numbers make it); a wedge keeps its shape.
 // Your hero shares the line as a one-person group, like a companion; preview and placement use this same plan.
-function dragFiles(f,n,seg){const F=FORMS[f]||FORMS.line;return F.drag==='fixed'?null:Math.max(1,Math.min(n,Math.round(seg/(F.gx*(B?.world?WORLD_BATTLE.sprite:1)))+1))}
+function dragFiles(f,n,seg,space=B?.world?WORLD_BATTLE.sprite:1){const F=FORMS[f]||FORMS.line;return F.drag==='fixed'?null:Math.max(1,Math.min(n,Math.round(seg/(F.gx*space))+1))}
 function formPlan(x0,y0,x1,y1){
   const gs=selGroups().filter(g=>grpUnits(g).length&&!B.groups[g].resolve?.routed),L=Math.hypot(x1-x0,y1-y0);if(!gs.length||L<FORM_DRAG)return[];
   const ux=(x1-x0)/L,uy=(y1-y0)/L;
@@ -84,28 +84,29 @@ function formPlan(x0,y0,x1,y1){
   return gs.map(g=>{const n=grpUnits(g).length,seg=L*n/tot,c=s+seg/2;s+=seg;
     return{g,...(g==='hero'?{hero:true}:{}),ax:clamp(x0+ux*c,8,BW-8),ay:clamp(y0+uy*c,fieldTop(),fieldBot()),face,files:g==='hero'?null:dragFiles(B.groups[g].form||'line',n,seg)}});
 }
+// World ghosts scale with the battle sprites and their slot spacing.
 // the ghost of a dragged line: each soldier's slot, faint, and an arrow the way they will face. On a phone or a small window
 // (GHOST.mq) it is drawn bold in screen terms, so it reads at the whole field's zoom: the line, dots and arrow in CSS px (line,
 // dot, arrow), brighter, over a dark edge; a dot never wider than most of its slot's spacing. It only draws: no state changes
 const GHOST={mq:typeof matchMedia==='function'?matchMedia('(pointer:coarse),(max-height:600px),(max-width:820px)'):null,line:3,dot:5,arrow:22};
 function drawFormGhost(){
-  const d=B.rdrag;if(!d||Math.hypot(d.x1-d.x0,d.y1-d.y0)<FORM_DRAG)return;const plan=formPlan(d.x0,d.y0,d.x1,d.y1);
+  const d=B.rdrag;if(!d||Math.hypot(d.x1-d.x0,d.y1-d.y0)<FORM_DRAG)return;const plan=formPlan(d.x0,d.y0,d.x1,d.y1),scale=B.world?WORLD_BATTLE.sprite:1,dot=4*scale;
   if(!(GHOST.mq&&GHOST.mq.matches)){
-    ctx.strokeStyle='rgba(232,185,74,.7)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(d.x0,d.y0);ctx.lineTo(d.x1,d.y1);ctx.stroke();
+    ctx.strokeStyle='rgba(232,185,74,.7)';ctx.lineWidth=scale;ctx.beginPath();ctx.moveTo(d.x0,d.y0);ctx.lineTo(d.x1,d.y1);ctx.stroke();
     for(const p of plan){const gr=B.groups[p.g],S=p.hero?[[0,0]]:formSlots(gr.form||'line',grpUnits(p.g).length,p.face,p.files,B.world?WORLD_BATTLE.sprite:1);
-      ctx.fillStyle='rgba(232,185,74,.8)';for(const [sx,sy] of S)ctx.fillRect(Math.round(p.ax+sx)-2,Math.round(p.ay+sy)-2,4,4);
-      ctx.strokeStyle='rgba(232,185,74,.8)';ctx.beginPath();ctx.moveTo(p.ax,p.ay);ctx.lineTo(p.ax+Math.cos(p.face)*14,p.ay+Math.sin(p.face)*14);ctx.stroke()}
-    return}
+      ctx.fillStyle='rgba(232,185,74,.8)';for(const [sx,sy] of S)ctx.fillRect(Math.round(p.ax+sx)-dot/2,Math.round(p.ay+sy)-dot/2,dot,dot);
+      ctx.strokeStyle='rgba(232,185,74,.8)';ctx.beginPath();ctx.moveTo(p.ax,p.ay);ctx.lineTo(p.ax+Math.cos(p.face)*14*scale,p.ay+Math.sin(p.face)*14*scale);ctx.stroke()}
+    ctx.lineWidth=1;return}
   // (k: field units to a CSS px at this zoom; every size at least what the desktop draws)
-  const r=cv.getBoundingClientRect(),k=cv.width/Math.max(1,r.width)/(B.world?VS:1)/(B.cam?B.cam.z:1),lw=Math.max(1,GHOST.line*k),ek=Math.max(1,k),gold='rgba(255,214,110,.95)',dark='rgba(10,12,18,.6)';
+  const r=cv.getBoundingClientRect(),k=cv.width/Math.max(1,r.width)/(B.world?VS:1)/(B.cam?B.cam.z:1),lw=Math.max(scale,GHOST.line*k),ek=Math.max(1,k),gold='rgba(255,214,110,.95)',dark='rgba(10,12,18,.6)';
   const seg=(x0,y0,x1,y1)=>{ctx.beginPath();ctx.moveTo(x0,y0);ctx.lineTo(x1,y1);ctx.stroke()};ctx.lineCap='round';
   ctx.strokeStyle=dark;ctx.lineWidth=lw+2*ek;seg(d.x0,d.y0,d.x1,d.y1);ctx.strokeStyle=gold;ctx.lineWidth=lw;seg(d.x0,d.y0,d.x1,d.y1);
   const ghosts=plan.map(p=>{const f=B.groups[p.g].form||'line',F=FORMS[f]||FORMS.line,S=p.hero?[[0,0]]:formSlots(f,grpUnits(p.g).length,p.face,p.files,B.world?WORLD_BATTLE.sprite:1);
-    return{p,S,s:Math.max(4,Math.min(GHOST.dot*k,Math.min(F.gx,F.gy)*.7))}});
+    return{p,S,s:Math.max(dot,Math.min(GHOST.dot*k,Math.min(F.gx,F.gy)*scale*.7))}});
   ctx.fillStyle=dark;for(const {p,S,s} of ghosts){const o=s/2+ek;for(const [sx,sy] of S)ctx.fillRect(Math.round(p.ax+sx)-o,Math.round(p.ay+sy)-o,2*o,2*o)}
   ctx.fillStyle=gold;for(const {p,S,s} of ghosts)for(const [sx,sy] of S)ctx.fillRect(Math.round(p.ax+sx)-s/2,Math.round(p.ay+sy)-s/2,s,s);
   // (the facing: an arrow with a head, over its dark edge)
-  for(const {p} of ghosts){const L=Math.max(14,GHOST.arrow*k),c=Math.cos(p.face),sn=Math.sin(p.face),hx=p.ax+c*L,hy=p.ay+sn*L,h=Math.max(4,L*.35);
+  for(const {p} of ghosts){const L=Math.max(14*scale,GHOST.arrow*k),c=Math.cos(p.face),sn=Math.sin(p.face),hx=p.ax+c*L,hy=p.ay+sn*L,h=Math.max(4,L*.35);
     const head=()=>{seg(hx,hy,hx-c*h-sn*h*.6,hy-sn*h+c*h*.6);seg(hx,hy,hx-c*h+sn*h*.6,hy-sn*h-c*h*.6)};
     ctx.strokeStyle=dark;ctx.lineWidth=lw+2*ek;seg(p.ax,p.ay,hx,hy);head();ctx.strokeStyle=gold;ctx.lineWidth=lw;seg(p.ax,p.ay,hx,hy);head()}
   ctx.lineCap='butt';ctx.lineWidth=1;

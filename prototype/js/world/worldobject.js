@@ -11,6 +11,51 @@
    herds (critters.js), refugees, workers (folk.js) and ships are world objects. ---------- */
 // (in sight: within your sight, or nearer where it hides in woods or hills)
 const spotted=(o,V)=>Math.hypot(o.x-P.x,o.y-P.y)<V*(hiddenAt(o.x,o.y)?.45:1);
+// Travel perception uses the brains' distance/cover thresholds and each observer's suspicion.
+function travelDetection(o){
+  if(!o||o===P||B||P.stay||o.dead||o.gone||o.inside||o.fight||!Number.isFinite(o.x)||!Number.isFinite(o.y))return null;
+  const k=o.mapKind,cover=hiddenAt(P.x,P.y);let range=0,danger=false;
+  if(k==='lord'){const relief=hostileTo(o.fac)&&!lordSpares(o)&&o.state==='relieve'&&P.siege?.town===o.tgt;range=o.brain.sight(WORLD_SCALE.sight.lord)*(relief?2:1);danger=hostileTo(o.fac)&&!lordSpares(o)}
+  else if(k==='band'){range=o.brain.sight(WORLD_SCALE.sight.band);danger=true}
+  else if(k==='patrol'){range=o.brain.sight(PATROL.see);danger=hostileTo(o.fac)||!!crimeAt(townBy(o.home))}
+  else if(k==='monster'){const m=MONSTERS[o.id];range=(m.mythic?.see||WORLD_SCALE.sight.monster)*(cover?.55:1);danger=!!(m.aggro||m.mythic)}
+  else if(k==='caravan'){if(o.mine)return null;range=o.brain.sight(WORLD_SCALE.sight.caravan);danger=hostileTo(o.fac)}
+  else if(k==='refugee')range=WORLD_SCALE.sight.refugee*(cover?.55:1);
+  else if(k==='critter'){if(!o.wild)return null;range=CRITTERS[o.id].shy*(cover?.6:1)}
+  else if(k==='worker'){if(!folkSeen(o))return null;const t=townBy(o.home);if(!t||!Timed.of(t).has('fear'))return null;range=WORLD_SCALE.ai.folkFear;danger=true}
+  if(!(range>0))return null;const factor=k==='critter'?.6:k==='worker'?1:.55,base=range/(cover?factor:1),rows=TravelAwareness.scan(o,base,factor),visible=rows.filter(r=>r.within&&r.q>=1),nearest=(visible.length?visible:rows).slice().sort((a,b)=>a.distance-b.distance)[0],within=rows.some(r=>r.within),exposure=TravelAwareness.level(o),sees=visible.length>0;
+  return{o,range:nearest.range+Math.min(12,nearest.group.extent),distance:nearest.distance,within,sees,exposure,danger,rows,target:visible.length?nearest.group:null};
+}
+function travelDetectionText(o){const d=travelDetection(o);return d?d.sees?'Has detected your army':d.exposure>0?(d.within?'Suspicious of your army':'Losing suspicion')+' ('+Math.round(d.exposure*100)+'%)':'Has not detected your army':''}
+const TRAVEL_AWARE={open:2,forest:4,fade:3,hurry:1.5,close:3,contact:8};
+const travelObservers=()=>[...new Set([...W.parties,...W.monsters.map(asMonster),...W.caravans,...W.refugees.map(asRefugees),...W.critters.map(asHerd),...W.folk.map(asWorker)])];
+class TravelAwareness{
+  static states=new WeakMap();
+  static records=new WeakMap();
+  static snapshot=null;
+  static time=0;
+  static level(o){return this.states.get(o)||0}
+  static rows(o){let r=this.records.get(o);if(!r){r=new Map();this.records.set(o,r)}return r}
+  static scan(o,base,factor){return (this.snapshot||MarchAmbush.groups()).map(row=>{const group=row.id==='hero'?{...row,x:P.x,y:P.y,cover:!!hiddenAt(P.x,P.y),moving:P.tx!=null}:row,range=base*(group.cover?factor:1)*(1+Math.min(TRAVEL_AMBUSH.maxSize,Math.sqrt(Math.max(0,group.count-1))*TRAVEL_AMBUSH.size)),distance=Math.max(0,Math.hypot(o.x-group.x,o.y-group.y)-Math.min(12,group.extent)),r=this.records.get(o)?.get(group.id);return{group,range,distance,within:distance<range,q:r?.q||0}})}
+  static notice(o,id='hero'){const group=(this.snapshot||MarchAmbush.groups()).find(g=>g.id===id);if(group)this.rows(o).set(id,{q:1,last:this.time,power:group.power});this.states.set(o,1)}
+  static sees(o){return !!travelDetection(o)?.sees}
+  static target(o){return travelDetection(o)?.target||null}
+  static power(o){if(!WORLD_BATTLE.on)return partyPower();return [...(this.records.get(o)?.values()||[])].reduce((n,r)=>n+(r.last!=null&&this.time-r.last<=TRAVEL_AMBUSH.memory?r.power:0),0)}
+  static reset(){this.states=new WeakMap();this.records=new WeakMap();this.snapshot=null;this.time=0}
+  static step(rt){
+    if(G.paused||G.modal||G.mode!=='world'||B)return;if(P.stay){this.reset();return}const dt=rt*G.speed;this.time+=dt;this.snapshot=MarchAmbush.groups();
+    for(const o of travelObservers()){const d=travelDetection(o);if(!d){this.states.delete(o);this.records.delete(o);continue}const records=this.rows(o),ids=new Set(d.rows.map(r=>r.group.id));let exposure=0;
+      for(const v of d.rows){const g=v.group,r=records.get(g.id)||{q:0,last:null,power:0};
+        if(v.within){const speed=(G.hurry&&!g.hold?TRAVEL_AWARE.hurry:1)*(v.distance<v.range*.35?TRAVEL_AWARE.close:1)*(g.hold&&g.cover&&!g.moving?TRAVEL_AMBUSH.quiet:g.moving?TRAVEL_AMBUSH.moving:1);r.q=v.distance<Math.min(TRAVEL_AWARE.contact,v.range*.15)?1:Math.min(1,r.q+dt*speed/(g.cover?TRAVEL_AWARE.forest:TRAVEL_AWARE.open));if(r.q>=1){r.last=this.time;r.power=g.power}}
+        else r.q=Math.max(0,r.q-dt/TRAVEL_AWARE.fade);records.set(g.id,r);exposure=Math.max(exposure,r.q);
+      }
+      for(const [id,r] of records)if(!ids.has(id)||r.q===0&&(r.last==null||this.time-r.last>TRAVEL_AMBUSH.memory))records.delete(id);
+      if(exposure>0)this.states.set(o,exposure);else this.states.delete(o);
+    }
+  }
+}
+onWorld(()=>TravelAwareness.reset());
+Systems.add({name:'travel awareness',order:{frame:6},frame:(d,dt)=>TravelAwareness.step(dt)});
 class WorldObject{
   get mapKind(){return null}
   here(){return true}

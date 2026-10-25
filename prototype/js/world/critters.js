@@ -19,12 +19,12 @@ class Herd extends WorldObject{
   pick(at){if(this.wild)at.add(this,9,4)}
   // up to three of its animals, behind and beside the first, a walk of PX.MAP_STEPS frames to a body length walked (critterSprite;
   // render.js stepOf), its count near you; each at its own place to the screen's pixel (render.js subT)
-  draw(ents,cam,V){if(!this.inView(V))return;const c=this;
+  draw(ents,cam,V){if(!this.inView(V)||WildHunt.active?.herd===this)return;const c=this;if(WORLD_BATTLE.on)marchCircle(ents,c,cam,Math.max(WORLD_BATTLE.outer,WORLD_BATTLE.inner+Math.sqrt(c.n||1)*2),'#b4c985');
     ents.push({y:c.y,f:()=>{subT(c);const s=critterSprite(c.id),sx=Math.round(c.x-cam.x),sy=Math.round(c.y-cam.y),k=Math.min(3,c.n||1),sp=Math.max(4,Math.round(s.cw*.55)),go=mapStepping(c),N=PX.MAP_STEPS;
       for(let i=k-1;i>=0;i--){const ox=i===0?0:i===1?-sp:Math.round(sp*.4),oy=i===0?0:i===1?-1:-3,fr=go?(frameOf(c,Math.max(4,s.cw)/N,N)+i*3)%N:0,a=critterSprite(c.id,fr),w=Math.max(4,a.cw-2);
         ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(sx+(c.dir<0?-ox:ox)-(w>>1),sy+oy-1,w,2);
         ctx.save();ctx.translate(sx+(c.dir<0?-ox:ox),sy+oy);if(c.dir<0)ctx.scale(-1,1);ctx.drawImage(a,-(a.width>>1),-a.height+1);ctx.restore()}
-      if(c.n>1&&c.fromYou()<90)txt(String(c.n),sx,sy-s.ch-4,'#c8e0a0','center')}})}
+      if(WORLD_BATTLE.on)BANNERQ.push({o:c,marker:{h:s.ch,col:'#b4c985'}});else if(c.n>1&&c.fromYou()<90)txt(String(c.n),sx,sy-s.ch-4,'#c8e0a0','center')}})}
   tip(){const D=CRITTERS[this.id];return this.wild?'<b>'+D.n+(this.n>1?' ×'+this.n:'')+'</b><small>Wild game</small><span class="act">Click: hunt</span>':''}// (livestock: never hovered)
 }
 const asHerd=asClass(Herd);
@@ -118,25 +118,25 @@ function critterDay(){
   TOWNS.filter(t=>t.T.herds&&!herdOf(t)&&R.chance(.25)).forEach(spawnHerd);
 }
 // move every herd: wild game bolts when you come close and tires as it runs; livestock just grazes
-// a herd's moment (parties.js lodThink; hide: how well you are hidden from it): wild game you reach is hunted
+// a herd's moment (parties.js lodThink; hide: how well you are hidden from it). Hunting is an explicit choice.
 const HERD_MIND={think(c,d,hide){
+    if(WildHunt.active?.herd===c)return false;
     const A=WORLD_SCALE.ai,D=CRITTERS[c.id],dx=c.x-P.x,dy=c.y-P.y,dist=Math.hypot(dx,dy),ox=c.x,oy=c.y;c.cool=Math.max(0,c.cool-d);
     // (fleeing: its grazing ground goes with it, and it keeps on away a little after, so it does not turn back into you)
-    if(!D.live&&dist<D.shy*hide){const sp=moveStep(D.spd*(c.tire>4?.4:1)*Math.min(1,speedAt(c.x,c.y)||1),d);walk(c,dx,dy,sp);c.tire+=d;
+    if(!D.live&&TravelAwareness.sees(c)){const sp=moveStep(D.spd*(c.tire>4?.4:1)*Math.min(1,speedAt(c.x,c.y)||1),d);walk(c,dx,dy,sp);c.tire+=d;
       c.hx=c.x;c.hy=c.y;c.a=Math.atan2(dy,dx);c.t=Math.max(c.t,1.5);c.idle=false}
     else{c.tire=Math.max(0,c.tire-d*.5);c.t-=d;if(c.t<=0){const R=critRng();c.t=2+R.next()*4;c.a=R.next()*6.283;c.idle=R.chance(.5)}
       const hx=c.hx-c.x,hy=c.hy-c.y;if(Math.hypot(hx,hy)>(D.live?(c.pen?A.penLeash:A.herdLeash):A.gameLeash))c.a=Math.atan2(hy,hx);
       if(!c.idle){const ok=D.live?(x,y)=>grazeOk(c.id,x,y,c.pen):(x,y)=>habitatOk(c.id,x,y);if(!walk(c,Math.cos(c.a),Math.sin(c.a),moveStep(D.live?4:8,d),ok)){c.a=Math.atan2(hy,hx)+(critRng().next()-.5);c.idle=true}}}
     // (it faces the way it went, turning only on a clear step sideways: no flicker as it swerves or runs straight up or down)
     {const mx=c.x-ox,my=c.y-oy;if(Math.abs(mx)>Math.hypot(mx,my)*.35&&Math.abs(mx)>.01)c.dir=mx>0?1:-1}
-    if(dist<10&&!D.live&&c.cool<=0&&G.encCool<=0&&!G.modal){c.cool=4;if(G.chase===c)G.chase=null;hunt(c)}
+
     return false}};
 function updateCritters(d){return lodEach(W.critters,HERD_MIND,d,P.stay?0:hiddenAt(P.x,P.y)?.6:1)}
-// a hunt: one animal, plus one for every 4 bows or slings and every 3 levels of Scouting; the rest scatter
-const rangedCount=()=>Object.keys(P.troops).reduce((a,k)=>a+(ST[k].range?P.troops[k]:0),0);
-function hunt(c){
-  const D=CRITTERS[c.id],kills=Math.min(c.n,1+Math.floor(rangedCount()/4)+Math.floor(skill('hunt')/3)+(critRng().chance(.4)?1:0));
-  c.n-=kills;if(c.n<=0)W.critters=W.critters.filter(x=>x!==c);else{c.tire=0;c.cool=6}
+// One collected animal pays the existing meat, materials and experience rewards.
+function hunt(c){return WildHunt.prepare(asHerd(c))}
+function huntRewards(c,kills){
+  const D=CRITTERS[c.id];
   const meat=invAdd('good','meat',kills*D.meat),got=[meat+' meat'];
   if(D.mat){let m=0;for(let i=0;i<kills;i++)if(critRng().chance(D.mat[1]*(1+.05*skill('hunt'))))m++;if(m){const k=invAdd('mat',D.mat[0],m);if(k)got.push(k+' '+MATS[D.mat[0]].n.toLowerCase()+(k>1?'s':''))}}
   gainXp(kills*D.xp);train('hunt',kills*3);

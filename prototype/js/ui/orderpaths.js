@@ -98,7 +98,7 @@ function orderPathAlpha(id,sel,now){
   if(mode==='all')a=Math.max(a,OPATH.allA);return g.ally?a*OPATH.allyA:a}
 // (the dashes' march: px along the way, from the real clock; none with reducedMotion)
 const orderPathPhase=(now,rm)=>rm?0:now/1000*OPATH.march;
-// every path shown, over the soldiers, trees and rock (render.js drawBattle: a way round a mountain runs behind its picture); false
+// every path shown, beneath the soldiers, trees and rock (render.js drawBattle: a way round a mountain runs behind its picture); false
 // when they are off (Settings): render.js draws the straight lines instead (orderPathsOn)
 function drawOrderPaths(){
   if(opMode()==='off')return false;if(B.deploy)return true;opReset();
@@ -121,7 +121,7 @@ function drawOrderPaths(){
     if(OPS.am||OPS.wam){ctx.lineWidth=1.5*u;opBlades(u,u);ctx.strokeStyle=dk;ctx.stroke();opBlades(0,u);ctx.strokeStyle='rgba('+OPATH.blades+','+al.toFixed(2)+')';ctx.stroke();ctx.lineWidth=u}// (an attack-move's end)
     if(OPS.lost&&q>1){ctx.setLineDash(D.o);for(let k=0;k<2;k++){const o=k?0:u;ctx.beginPath();ctx.ellipse(OPS.x[q-1]+o,OPS.y[q-1]+o,6*u,3*u,0,0,6.283);ctx.strokeStyle=o?dk:cl;ctx.stroke()}ctx.setLineDash(OPS.none)}
     // (a move's men's places where it ends, faint, when it is yours to look at)
-    if(OPS.kind==='move'&&full&&q>1){ctx.fillStyle='rgba('+col+','+(.55*al).toFixed(2)+')';const s=Math.max(2,u*2);for(const m of B.units)if(m.grp===id&&m.hp>0&&!m.rout)ctx.fillRect(Math.round(g.ax+(m.sx||0))-s/2,Math.round(g.ay+(m.sy||0))-s/2,s,s)}}
+    if(OPS.kind==='move'&&full&&q>1){ctx.fillStyle='rgba('+col+','+(.55*al).toFixed(2)+')';const s=Math.max(2,u*2,B.world?4*WORLD_BATTLE.sprite:2);for(const m of B.units)if(m.grp===id&&m.hp>0&&!m.rout)ctx.fillRect(Math.round(g.ax+(m.sx||0))-s/2,Math.round(g.ay+(m.sy||0))-s/2,s,s)}}
   ctx.setLineDash(OPS.none);ctx.lineDashOffset=0;ctx.lineWidth=1;return true}
 // (points i0 … i1-1 as a line, over a dark copy a pixel down and right, so it reads on grass, snow and sand alike: one field pixel
 // wide, one screen pixel zoomed out; thin lines, as a wide or soft edge costs the canvas several times more)

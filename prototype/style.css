@@ -1107,3 +1107,7 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 /* March formation editor */
 .march-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(200px,280px);gap:16px;padding:12px}.march-layout canvas{display:block;width:100%;height:clamp(280px,68vh,680px);object-fit:fill;margin:0;touch-action:none;border:1px solid #806b3f}.march-layout .btns{display:flex;flex-wrap:wrap;gap:6px}.march-layout .btn.on{border-color:#f0cd76;background:#514026}.march-layout p{color:#c6b691}.fb-march .fb-body{overflow:auto}
 @media(max-width:600px){.march-layout{gap:8px;padding:8px;grid-template-columns:minmax(180px,1.5fr) minmax(120px,1fr)}.march-layout .btn{font-size:11px;padding:6px}.march-layout canvas{width:100%;height:280px}}
+
+/* Short hunts stay on the map, with one way to leave. */
+.hunt-bar{position:absolute;z-index:8;left:50%;bottom:64px;transform:translateX(-50%);display:flex;align-items:center;gap:10px;max-width:90%;padding:8px 12px;background:#292017f0;border:1px solid #a78642;color:#e8dcc0;font:13px Arial}.hunt-bar span{color:#c9b78c}.hunt-bar .btn{white-space:nowrap}@media(max-height:450px){.hunt-bar{bottom:48px;padding:5px 8px;font-size:11px;gap:6px}}
+.screen:not([data-mode="world"]) .hunt-bar{display:none}

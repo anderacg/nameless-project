@@ -17,6 +17,16 @@ const treeMark=(a,k)=>{if(k<32)a.tk|=1<<k;else(a.tkx||(a.tkx=[])).push(k)};
    stone or a web in an arc (ArcMissile), a crossbow bolt (Bolt), a bolt of magic (MagicBolt: through the trees, a burst where it
    lands). Each steps itself (step); a hit is the same for all (strike), but for what a guard leaves of it (blocked) and whom it
    trains (trains) ---------- */
+// Swept world hitboxes follow the enlarged bodies; tactical collision and balance stay unchanged.
+function worldMissileHit(a,from,arc=false,units=null,scale=WORLD_BATTLE.sprite){
+  const k=scale,dx=a.x-from.x,dy=a.y-from.y,pool=units||(spatialOn()?SG.near((a.x+from.x)/2,(a.y+from.y)/2,Math.hypot(dx,dy)/2+28*k,a.team,true):B.units);let best=null,at=Infinity;
+  for(const e of pool){if(e.hp<=0||e.team===a.team)continue;let lo=0,hi=1;
+    const cut=(v,d,min,max)=>{if(Math.abs(d)<1e-9)return v>=min&&v<=max;let t0=(min-v)/d,t1=(max-v)/d;if(t0>t1)[t0,t1]=[t1,t0];lo=Math.max(lo,t0);hi=Math.min(hi,t1);return lo<=hi};
+    const rx=(e.s.big?14:e.s.mounted?10:6)*k,ry=(e.s.big?arc?10:11:e.s.mounted?7:arc?5:7)*k,cy=e.y-(arc?0:(e.s.big||e.s.mounted?10:6)*k);
+    if(!cut(from.x,dx,e.x-rx,e.x+rx)||!cut(from.y,dy,cy-ry,cy+ry)||arc&&!cut(from.z,a.z-from.z,0,9*k)||lo>=at)continue;best=e;at=lo;
+  }
+  if(best){a.x=from.x+dx*at;a.y=from.y+dy*at;if(arc)a.z=from.z+(a.z-from.z)*at}return best;
+}
 const MISSILES=new WeakMap();
 class Missile{
   constructor(a){this.a=a}
@@ -28,7 +38,7 @@ class Missile{
       const d0=clamp(dist||120,24,640),sp=opts&&opts.speed||ARC_SPEED*(.8+d0/250),sc=opts&&opts.sc!=null?opts.sc:src.race==='elf'?.03:.06,d=d0*(opts&&opts.exact?1:1-sc+Math.random()*sc*2),T=d/sp,H=Math.min(64,d*d/700);
       B.arrows.push({...base,x:u.x,y:u.y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,z:0,vz:4*H/T,g:8*H/T/T,T,H,t:0,life:9,arc:true});return}
     const v=mag?MAGIC_SPEED:BOLT_SPEED;
-    B.arrows.push({...base,x:u.x,y:u.y-6,vx:Math.cos(a)*v,vy:Math.sin(a)*v,life:mag?1.4:1.1,magic:mag,col:src.bolt||'#c58af0'});
+    B.arrows.push({...base,x:u.x,y:u.y-6*(B.world?WORLD_BATTLE.sprite:1),vx:Math.cos(a)*v,vy:Math.sin(a)*v,life:mag?1.4:1.1,magic:mag,col:src.bolt||'#c58af0'});
   }
   // Called at the original point in updateBattle: after unit movement/collision, before morale and battle-end checks.
   // (nobody moves while arrows fly: the grid, spatial.js, offers each the soldiers round it, in their order)
@@ -52,10 +62,11 @@ class Missile{
 // an arrow, javelin, stone or web: trees catch it only low, it hits on the way down, a miss sticks in the ground
 class ArcMissile extends Missile{
   step(dt){
-    const a=this.a;a.t+=dt;a.x+=a.vx*dt;a.y+=a.vy*dt;a.z+=a.vz*dt;a.vz-=a.g*dt;const z=Math.max(0,a.z);
+    const a=this.a,from=B.world?{x:a.x,y:a.y,z:Math.max(0,a.z)}:null;a.t+=dt;a.x+=a.vx*dt;a.y+=a.vy*dt;a.z+=a.vz*dt;a.vz-=a.g*dt;const z=Math.max(0,a.z);
     if(z<10&&!a.elf)for(let k=0;k<B.obs.length;k++){const o=B.obs[k];if(o.kind==='tree'&&!treePast(a,k)&&Math.hypot(a.x-o.x,a.y-o.y)<o.r+2){treeMark(a,k);if(Math.random()<.35){a.life=0;fx(a.x,a.y-z-4,'#8b5a2b',2);return}}}
     if(z<10&&!a.elf&&B.terrain&&B.terrain.has.wood&&woodStops(a,a.x,a.y,a.x-a.vx*dt,a.y-a.vy*dt,a.vz<0)){a.life=0;fx(a.x,a.y-z-4,'#8b5a2b',2);return}// (low through woods, or down into them: terrain.js)
-    if(z<9)for(const e of spatialOn()?SG.near(a.x,a.y,16,a.team,true):B.units){if(e.hp<=0||e.team===a.team)continue;if(Math.abs(e.x-a.x)<(e.s.big?14:6)&&Math.abs(e.y-a.y)<(e.s.big?10:5)){this.strike(e);return}}
+    if(B.world){const e=worldMissileHit(a,from,true);if(e){this.strike(e);return}}
+    else if(z<9)for(const e of spatialOn()?SG.near(a.x,a.y,16,a.team,true):B.units){if(e.hp<=0||e.team===a.team)continue;if(Math.abs(e.x-a.x)<(e.s.big?14:6)&&Math.abs(e.y-a.y)<(e.s.big?10:5)){this.strike(e);return}}
     if(a.z<=0&&a.t>.03){a.life=0;B.parts.push({x:a.x,y:a.y-1,vx:0,vy:0,life:5,c:'#c9b48a',stuck:a.vx>=0?1:-1});vfx({k:'dust',x:a.x,y:a.y,vx:0,vy:-3,r:1,grow:5,life:.3,col:dustCol()});if(sfxOn()&&sndTurn('ground'))sfxAt('arrowhit',a.x,a.y,{vol:.4})}// (it stays where it lands a while; a thud, softer)
   }
   blocked(dm){const a=this.a;dm*=blockMul();fx(a.x,a.y-6,'#cfe0ff',4);return dm}
@@ -63,8 +74,9 @@ class ArcMissile extends Missile{
 // a crossbow bolt flies straight and low: trees and woods may stop it
 class Bolt extends Missile{
   step(dt){
-    const a=this.a;a.x+=a.vx*dt;a.y+=a.vy*dt;a.life-=dt;this.cover(dt);
+    const a=this.a,from=B.world?{x:a.x,y:a.y}:null;a.x+=a.vx*dt;a.y+=a.vy*dt;a.life-=dt;this.cover(dt);
     if(a.life<=0)return;
+    if(B.world){const e=worldMissileHit(a,from);if(e)this.strike(e);return}
     for(const e of spatialOn()?SG.near(a.x,a.y+10,24,a.team,true):B.units){if(e.hp<=0||e.team===a.team)continue;if(Math.abs(e.x-a.x)<(e.s.big?14:6)&&Math.abs((e.y-(e.s.big?10:6))-a.y)<(e.s.big?11:7)){this.strike(e);break}}
   }
   cover(dt){

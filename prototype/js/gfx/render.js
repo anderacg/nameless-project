@@ -36,11 +36,49 @@ function drawMover(e){if(VS<=1){e.f();return}const nt=TXTQ?TXTQ.length:0,nl=LIGH
    stance against you, as before). They flutter in real time, still under reducedMotion (vfx.js). A click on one picks its party
    (Party.pick, world.js pickAt) */
 const BANNER_GAP=2;let BANNERQ=[];
+const BAND_MARKERS=new Map();
+function bandMarkerSprite(col){let s=BAND_MARKERS.get(col);if(!s){s=mkc(9,11,g=>{rect(g,col,0,0,9,9);rect(g,'#211b16',1,1,7,7);for(const [x,y] of [[2,3],[4,2],[6,3]])rect(g,'#efe2bb',x,y);rect(g,'#efe2bb',3,5,3,2);rect(g,col,4,9,1,2)});BAND_MARKERS.set(col,s)}return s}
 // (a party's banner only: a site's banner() is its camp flag's colour, structures.js)
 function bannerAt(o,f){const b=o.banner&&o.banner();if(!b||typeof b!=='object')return null;const s=bannerSprite(b,f);return{s,x:Math.round(o.x)-4,y:o.headY()-BANNER_GAP-14}}
+// Travel cover reduces detection distance; this is the same closed-eye badge used by battle concealment.
+const TRAVEL_HIDE={size:14,gap:4,s:null};
+function drawTravelConcealment(cam){
+  if(B||P.stay||!hiddenAt(P.x,P.y))return null;
+  const b=bannerAt(P,0);if(!b)return null;const k=(window.devicePixelRatio||1)/VS,size=TRAVEL_HIDE.size*k,x=b.x+b.s.width+TRAVEL_HIDE.gap*k-cam.x,y=b.y-cam.y;
+  const s=TRAVEL_HIDE.s||(TRAVEL_HIDE.s=mkc(9,9,g=>{for(const [x,y,c] of badgePx('hidden'))rect(g,c,x,y)}));
+  ctx.save();ctx.imageSmoothingEnabled=false;ctx.drawImage(s,Math.round(x),Math.round(y),size,size);ctx.restore();return{x,y,w:size,h:size};
+}
+// Pace shares the battle unit cards' walk/run badges, stacked with travel concealment.
+const TRAVEL_PACE={size:14,gap:4,cache:new Map()};
+function drawTravelPace(cam){
+  if(B||P.stay||P.camp||!(P.tx!=null||G.chase||G.follow))return null;const b=bannerAt(P,0);if(!b)return null;
+  const kind=G.hurry?'run':'walk',k=(window.devicePixelRatio||1)/VS,size=TRAVEL_PACE.size*k,x=b.x+b.s.width+TRAVEL_PACE.gap*k-cam.x,y=b.y-cam.y+(hiddenAt(P.x,P.y)?TRAVEL_HIDE.size+3:0)*k;
+  let s=TRAVEL_PACE.cache.get(kind);if(!s){s=mkc(9,9,g=>{for(const [x,y,c] of badgePx(kind))rect(g,c,x,y)});TRAVEL_PACE.cache.set(kind,s)}
+  ctx.save();ctx.imageSmoothingEnabled=false;ctx.drawImage(s,Math.round(x),Math.round(y),size,size);ctx.restore();return{x,y,w:size,h:size,kind};
+}
+const STEALTH_EYE={size:18,player:36,gap:4,cache:new Map()};
+function stealthEyeSprite(exposure,col){
+  const level=Math.round(clamp(exposure,0,1)*4),key=level+col;let s=STEALTH_EYE.cache.get(key);if(s)return s;
+  s=mkc(20,12,g=>{const h=level/4*5;g.lineWidth=2;g.strokeStyle='#141210';g.beginPath();g.moveTo(1,6);g.quadraticCurveTo(10,6-h,19,6);g.quadraticCurveTo(10,6+h,1,6);g.fillStyle='#211c18';g.fill();g.stroke();g.strokeStyle=col;g.lineWidth=1;g.stroke();if(level){g.fillStyle=col;g.beginPath();g.ellipse(10,6,2,Math.max(.5,h*.65),0,0,Math.PI*2);g.fill()}});
+  STEALTH_EYE.cache.set(key,s);return s;
+}
+function travelDetectionState(){
+  const rows=[];for(const o of travelObservers()){const d=travelDetection(o);if(d)rows.push(d)}
+  const seen=rows.filter(d=>d.sees),exposure=Math.max(0,...rows.map(d=>d.exposure));return{rows,seen,exposure,danger:seen.some(d=>d.danger)};
+}
+const travelDetectionColor=state=>state.seen.length?state.danger?'#ef8c73':'#dbca91':state.exposure?'#d9ad57':'#82c6b3';
+function drawTravelDetection(cam){
+  if(B||P.stay)return null;const state=travelDetectionState(),k=(window.devicePixelRatio||1)/VS,V=vis();ctx.save();ctx.imageSmoothingEnabled=false;
+  for(const d of state.rows){const o=d.o;if(!inSight(o.x,o.y)||!o.inView(V))continue;const b=bannerAt(o,0),w=STEALTH_EYE.size*k,h=w*.6,x=b?b.x+b.s.width+STEALTH_EYE.gap*k-cam.x:o.x-cam.x-w/2,y=b?b.y-cam.y:o.y-cam.y-18-h;
+    ctx.drawImage(stealthEyeSprite(d.exposure,d.sees?d.danger?'#ef8c73':'#dbca91':d.exposure?'#d9ad57':'#8f9e94'),Math.round(x),Math.round(y),w,h);
+  }
+  const b=bannerAt(P,0),w=STEALTH_EYE.player*k,h=w*.6,x=P.x-cam.x-w/2,y=(b?b.y:P.y-24)-cam.y-h-10*k,col=travelDetectionColor(state);
+  ctx.drawImage(stealthEyeSprite(state.exposure,col),Math.round(x),Math.round(y),w,h);ctx.restore();
+  return state;
+}
 function drawBanners(cam){const now=performance.now(),still=reducedMotion(),mine=q=>q.o===P||q.o.faction==='player'?1:0;
   BANNERQ.sort((a,b)=>mine(a)-mine(b)||a.o.y-b.o.y);
-  for(const q of BANNERQ){const B=bannerAt(q.o,still?0:Math.floor(now/420+q.o.x*.13)%2);if(!B)continue;const d=VS>1?subOf(q.o):[0,0],X=B.x-cam.x+d[0],Y=B.y-cam.y+d[1];ctx.drawImage(B.s,X,Y);
+  for(const q of BANNERQ){if(q.marker){if(!inSight(q.o.x,q.o.y))continue;const m=q.marker,s=bandMarkerSprite(m.col),x=Math.round(q.o.x-cam.x),y=Math.round(q.o.y-cam.y-m.h-BANNER_GAP-s.height);ctx.drawImage(s,x-4,y);const n=q.o.fighters??q.o.n;if(n>1)txt(String(n),x,y-3,m.col,'center');continue}const B=bannerAt(q.o,still?0:Math.floor(now/420+q.o.x*.13)%2);if(!B)continue;const d=VS>1?subOf(q.o):[0,0],X=B.x-cam.x+d[0],Y=B.y-cam.y+d[1];ctx.drawImage(B.s,X,Y);
     if(q.label)txt(q.label[0],X+7,Y+opaqueBox(B.s)[1]-2,q.label[1],'center')}
   BANNERQ=[]}
 // (an animal's step on the map, ms a frame)
@@ -93,6 +131,7 @@ function drawWorld(){
   // the holdings (and their estates) are drawn as their placed buildings (lotEnts, called with the estates below)
   drawParties(ents,cam,V);// lords, bands, patrols and your companions' parties (each party draws itself: parties.js)
   for(const m of W.monsters)asMonster(m).draw(ents,cam,V);
+  WildHunt.active?.draw(ents,cam);
   drawHerds(ents,cam,V);// (a pasture's herd: one animal on each worked field tile; the rest as herds: critters.js)
   if(P.raid)ents.push({y:P.y-1,f:()=>{subT(P);txt('Raiding '+Math.round(P.raid.t/RAID_TIME*100)+'%',Math.round(P.x-cam.x),Math.round(P.y-20-cam.y),'#ff9a90','center')}});
   if(P.siege)ents.push({y:P.y-1,f:()=>{subT(P);const s=campSprite(77,'bandit'),X=Math.round(P.x-24-s.ax-cam.x),Y=Math.round(P.y+2-s.ay-cam.y);ctx.globalAlpha=SHADOW.a;ctx.drawImage(s.sh,X,Y);ctx.globalAlpha=1;ctx.drawImage(s,X,Y);drawFire(X+s.fire[0],Y+s.fire[1],0);drawFlag(FACS.player.col,X+s.flag[0],Y+s.flag[1],0);txt('Siege day '+P.siege.days,Math.round(P.x-cam.x),Math.round(P.y-18-cam.y),'#e8b94a','center')}});
@@ -112,7 +151,7 @@ function drawWorld(){
   drawLand(cam,'line');// (the borders over all that stands and the water's glints, under everyone who moves: territory.js)
   nPlace=TXTQ.length}finally{ctx=scr;if(hi){VW--;VH--}}
   // onto the screen, shifted by the camera's fraction, as is everything over it up to the minimap
-  ctx.drawImage(low,-fx,-fy);ctx.save();ctx.translate(-fx,-fy);const px0=P.x-cam.x,py0=P.y-cam.y;
+  ctx.drawImage(low,-fx,-fy);ctx.save();ctx.translate(-fx,-fy);const eye=worldEye(),px0=eye.x-cam.x,py0=eye.y-cam.y;
   // fog of war: keep the scene of structures, draw everyone, then put the remembered scene back over all but your sight, so
   // nothing that moves shows outside it; labels likewise (a place's, where you know the land; anyone's, only in your sight)
   ambientFlat(cam);worldOverdraw(ents.filter(e=>!e.st).sort((a,b)=>a.y-b.y),cam);ambientAir(cam);// (the splashes and the flyers' shadows under everyone, the flyers over them: ambient.js)
@@ -120,10 +159,10 @@ function drawWorld(){
   // one more picture the scene's size (overCv), drawn up in one step: three full screens' work made one)
   const ov=hi?overCv():null;if(ov){ctx=ov.getContext('2d', { willReadFrequently: true });ctx.clearRect(0,0,ov.width,ov.height)}
   try{
-  if(B?.world)B.world.fog(cam,()=>fogMem(low,px0,py0,V));else fogMem(low,px0,py0,V);
+  fogMem(low,px0,py0,V);
   drawEnv(cam,V,1);
   // fog and night: the land you remember, outside your sight, lies dim; land you have never seen is dark (fog.js)
-  if(B?.world)B.world.fog(cam,()=>drawWorldFog(cam,V));else drawWorldFog(cam,V);
+  drawWorldFog(cam,V);
   }finally{ctx=scr}if(ov)ctx.drawImage(ov,0,0);
   // the tile grid and a building being placed lie over the fog
   if(GRID.on||G.place)drawGrid(cam.x,cam.y,VW+1,VH+1,cam.x,cam.y,1);
@@ -135,6 +174,9 @@ function drawWorld(){
     ctx.save();ctx.globalCompositeOperation='lighter';ctx.fillStyle=g;ctx.fillRect(L.x-r,L.y-r,2*r,2*r);ctx.restore();const f=Math.floor(now/120+L.x)%2;rect(ctx,'#e8803a',L.x-1+f,L.y-2,2,2);rect(ctx,'#ffe090',L.x,L.y-1-f,1,1)}}
   ambientGlow(cam);// (the fireflies' light: ambient.js)
   wuiUnder(cam);// (the way you walk, your goal's ring, a click's ripple, the ring round what you chase: worldui.js)
+  drawTravelConcealment(cam);
+  drawTravelPace(cam);
+  drawTravelDetection(cam);
   drawBanners(cam);// (the parties' banners, over all, their labels queued with the rest)
   // Queued names and counts use native-resolution text; their world anchors and visibility stay the same.
   const q=TXTQ;TXTQ=null;q.forEach((a,i)=>{const wx=a[1]+cam.x,wy=a[2]+cam.y;if(i<nPlace?seenAt(wx,wy+6):inSight(wx,wy+8))mapTxt(...a)});
@@ -167,7 +209,7 @@ const figTop=(L,o=P)=>Math.min(...[...Array(PEOPLE_STEPS).keys()].map(f=>{const 
 function drawParties(ents,cam,V){for(const o of W.parties)o.draw(ents,cam,V)}
 function drawUnit(u){
   // (placed on the camera's pixels, not the field's: zoomed in, they glide instead of stepping)
-  const q=B.world?VS/B.world.scale:B.cam?B.cam.z:1,big=u.s.big?2:1,s=unitSprite(u.type,spriteTeam(u),u.hero,u.v),w=s.width,h=s.ch,x=Math.round(u.x*q)/q,y=Math.round(u.y*q)/q;
+  const q=B.world?VS/B.world.scale:B.cam?B.cam.z:1,big=u.s.big?2:1,s=actorSprite(u),w=s.width,h=s.ch,x=Math.round(u.x*q)/q,y=Math.round(u.y*q)/q;
   if(B.world){const k=WORLD_BATTLE.sprite;ctx.save();ctx.translate(x,y);ctx.scale(k,k);ctx.translate(-x,-y)}
   // (in a river (terrain.js groundAt; engine/ground.js paints it): deep water hides him to the waist, sunk 2 px, a ring of ripples
   // round him, its back half behind him; a ford wets his feet and splashes as he walks; a frozen ford (frost) is ice. From the
@@ -181,7 +223,7 @@ function drawUnit(u){
   const dq=physDownPose(u);if(dq!=null){drawDowned(u,x,y-z,dq);u.plx=u.x;u.ply=u.y}else{const distance=u.plx!=null?Math.hypot(u.x-u.plx,u.y-u.ply):0,step=distance>.02;if(B.world)u.walkPhase=(u.walkPhase||0)+distance/(WALK.foot*B.world.scale);u.plx=u.x;u.ply=u.y;u.movF=step?6:Math.max(0,(u.movF||0)-(B.paused?0:1));const moved=u.movF>0;const beast=!!(ST[u.type]&&ST[u.type].beast),cl=moved&&typeof climbState==='function'?climbState(u):null;let pose=beast?beastPose(u,moved):procPose(u,moved);
     // (on a hill's slope (the ground's climbState): walking or running up, bent forward on short slow steps; down, leaning on long ones)
     if(cl&&!beast&&((pose>=2&&pose<=5)||(pose>=15&&pose<=18)))pose=cl==='up'?19+Math.floor(B.t*5+(u.v||0))%4:23+Math.floor(B.t*9+(u.v||0))%4;
-    const sp=beast?unitSprite(u.type,spriteTeam(u),u.hero,u.v,pose):unitSprite(u.type,spriteTeam(u),u.hero,u.v,pose,true,!!u.inMelee);
+    const sp=beast?actorSprite(u,pose):actorSprite(u,pose,true,!!u.inMelee);
     // (a beast's blow: its pose, and a short lunge with it; its steps bob in its frames)
     let bx=0,bo=0;if(beast&&u.atkAt!=null&&B.t-u.atkAt<ATK_ANIM)bx=Math.round(2*Math.sin((B.t-u.atkAt)/ATK_ANIM*Math.PI))
     ctx.save();ctx.translate(x,y-z+bo);if(deep||ford){const sk=deep?2:0;ctx.translate(0,sk);ctx.beginPath();ctx.rect(-64,-128,128,128-sk-(deep?2:0));ctx.clip()}if(u.face<0)ctx.scale(-1,1);{const ln=physLean(u);if(ln)ctx.transform(1,0,-ln,1,0,0)}/* (leaning into his run: physics.js) */if(ghost)ctx.globalAlpha=.55;ctx.drawImage(hit?whiteOf(sp):sp,-Math.floor(sp.width/2)+bx,-sp.height+2);if(!beast)drawHeld(u,u.inMelee?sidearmLook(u):unitLook(u),sp,-Math.floor(sp.width/2)+bx,-sp.height+2,hit);ctx.restore();
@@ -217,7 +259,7 @@ function waterRing(x,y,rx,u,half,moved){x=Math.round(x);y=Math.round(y);const ph
 // an attack's trail by its shape: a sweeping crescent, a darting streak, a chop and its shockwave, a full circle, claw marks
 function drawSlash(s){
   const p=1-s.life/(s.max||.2),fade=Math.min(1,s.life/(s.max||.2)*1.6),col=s.col||'255,255,255',st=a=>'rgba('+col+','+Math.max(0,a).toFixed(2)+')';
-  ctx.save();ctx.lineCap='round';
+  ctx.save();const scale=worldEffectScale();effectTransform(s.x,s.y,scale);s={...s,r:s.r/scale,area:s.area/scale};ctx.lineCap='round';
   if(s.kind==='arc'||s.kind==='spin'){const span=s.kind==='spin'?Math.PI*2:2*s.arc,q=Math.min(1,p*2.4),a0=s.kind==='spin'?s.a:s.a-s.dir*s.arc,a1=a0+s.dir*span*q,tail=Math.max(0,q-.55)*span;
     const lo=Math.min(a0+s.dir*tail,a1),hi=Math.max(a0+s.dir*tail,a1);
     for(let k=0;k<3;k++){ctx.strokeStyle=st(fade*(1-k*.3));ctx.lineWidth=Math.max(1,(s.w||3)-k);ctx.beginPath();ctx.arc(s.x,s.y,s.r-k*2,lo,hi);ctx.stroke()}
@@ -287,7 +329,7 @@ function drawBattle(){
   if(sightOn()&&B.deploy){const n=performance.now(),S=B.sight;if(!S||!(n-(S.rt||0)<250)){sightStep(true);B.sight.rt=n}}ctx.fillStyle='#07090e';ctx.fillRect(0,0,BVW,BVH);if(B.world)B.world.base();ctx.save();if(B.cam){ctx.scale(Cz,Cz);const q=B.world?VS:1;ctx.translate(-Math.round(B.cam.x*Cz*q)/(Cz*q),-Math.round(B.cam.y*Cz*q)/(Cz*q))}
   // (a field with terrain: its own ground, painted over the arena at the start and kept by tiles (engine/ground.js PX.BattleGround);
   // without, the arena by its own tiles (worldart.js paintArena); units, as ever, over it)
-  if(B.world)B.world.draw();else drawLayer(B.terrain?B.ground||(B.ground=runGen(PX.battleGroundSteps({...B.terrain,climate:B.env.c,base:B.arena}))):B.arena.ground||B.arena);
+  if(B.world){B.world.draw();B.world.clipSight()}else drawLayer(B.terrain?B.ground||(B.ground=runGen(PX.battleGroundSteps({...B.terrain,climate:B.env.c,base:B.arena}))):B.arena.ground||B.arena);
   // (a river moves: glints and current over its water, engine/ground.js PX.battleWater, on the ground's own clock (real time, still
   // while paused); still water for those who ask for less motion (vfx.js reducedMotion))
   if(!B.world&&B.terrain&&B.ground.water){const gw=B.ground,now=performance.now();if(!B.paused&&gw.wl)gw.wt=(gw.wt||0)+Math.min(.1,(now-gw.wl)/1000);gw.wl=now;
@@ -299,32 +341,31 @@ function drawBattle(){
     const fx_=Math.round(gr.ax),fy=Math.round(gr.ay);rect(ctx,C.wood,fx_,fy-14,1,14);rect(ctx,C.team[0],fx_+1,fy-14,6,4);rect(ctx,'#e4e0cf',fx_+3,fy-13,2,2)}
   // your selection underlined; the box you drag; where you last sent them (a ring), or whom you set them on (red)
   drawFireRange();drawSelection();// (shooters' reach and line of fire: battlehud.js)
-  if(!orderPathsOn())drawOrderLines();// (Settings → Order paths off: the straight lines; on, ui/orderpaths.js draws the paths over the men below)
+  if(orderPathsOn())drawOrderPaths();else drawOrderLines();// (order paths and destination ghosts beneath characters: ui/orderpaths.js)
   drawFormGhost();// (a line being dragged: formations.js)
   drawCommandPowers();// (the command radius, Stand Fast!'s glow: commandpowers.js)
   if(B.box){const b=B.box;ctx.strokeStyle='#e8b94a';ctx.lineWidth=1;ctx.strokeRect(Math.min(b.x0,b.x1)+.5,Math.min(b.y0,b.y1)+.5,Math.abs(b.x1-b.x0),Math.abs(b.y1-b.y0))}
   if(B.mark&&B.mark.t>0){const m=B.mark;ctx.strokeStyle=m.foe||m.am?'#ff6a5a':'#e8b94a';ctx.globalAlpha=Math.min(1,m.t*2);ctx.beginPath();ctx.ellipse(m.x,m.y,8*(1.4-m.t*.5),4*(1.4-m.t*.5),0,0,7);ctx.stroke();ctx.globalAlpha=1;m.t-=1/60}
   obstacleGround();battleEnts().forEach(o=>o.kind?drawObstacle(o):o.dk?drawProp(o):drawUnit(o));// (obstacles: their ground, then each in the depth order: sprites.js)
-  drawOrderPaths();// (where your groups are going, routed and cut as they walk, over the men, trees and rock: ui/orderpaths.js)
   for(const a of B.arrows){if(a.arc){const z=Math.max(0,a.z),ang=Math.atan2(a.vy-a.vz,a.vx),sc=Math.min(1,z/50),kind=missileOf(a);
-      ctx.fillStyle='rgba(0,0,0,'+(.35-sc*.2).toFixed(2)+')';ctx.fillRect(Math.round(a.x-2),Math.round(a.y),4,1);
-      ctx.save();ctx.translate(Math.round(a.x),Math.round(a.y-4-z));
+      ctx.fillStyle='rgba(0,0,0,'+(.35-sc*.2).toFixed(2)+')';const k=B.world?WORLD_BATTLE.sprite:1;ctx.fillRect(Math.round(a.x-2*k),Math.round(a.y),4*k,k);
+      ctx.save();ctx.translate(Math.round(a.x),Math.round(a.y-4-z));ctx.scale(k,k);
       // (its look by what it is: a spider's web a sticky white clot with loose strands, a sling's stone, a javelin's long shaft; else an arrow)
       if(kind==='web'){const sp=Math.floor(a.t*12)%2;ctx.fillStyle='#eef0f4';ctx.fillRect(-1,-1,3,3);ctx.fillStyle='#c8ccd6';if(sp){ctx.fillRect(-3,-2,2,1);ctx.fillRect(2,2,2,1)}else{ctx.fillRect(-3,2,2,1);ctx.fillRect(2,-2,2,1)}ctx.fillStyle='#ffffff';ctx.fillRect(0,-1,1,1)}
       else if(kind==='stone'){ctx.fillStyle='#7a776e';ctx.fillRect(-1,-1,2,2);ctx.fillStyle='#a8a498';ctx.fillRect(-1,-1,1,1)}
       else if(kind==='javelin'){ctx.rotate(ang);ctx.fillStyle='#9a6a3a';ctx.fillRect(-6,0,10,1);ctx.fillStyle='#c9ced8';ctx.fillRect(4,0,3,1)}
       else{ctx.rotate(ang);ctx.fillStyle='#e8e4d0';ctx.fillRect(-4,0,7,1);ctx.fillStyle='#c9ced8';ctx.fillRect(3,0,2,1);ctx.fillStyle='#d8d0c0';ctx.fillRect(-5,-1,2,1);ctx.fillRect(-5,1,2,1)}
       ctx.restore();continue}
-    if(a.magic){if(Math.random()<.6)vfx({k:'ember',x:a.x+rnd(-2,2),y:a.y+rnd(-2,2),vx:rnd(-12,12),vy:rnd(-12,6),life:rnd(.2,.4),col:a.col});const fl=Math.floor(performance.now()/80)%2;ctx.fillStyle=a.col;ctx.globalAlpha=.35;ctx.beginPath();ctx.arc(a.x,a.y,5+fl,0,7);ctx.fill();ctx.globalAlpha=1;ctx.beginPath();ctx.arc(a.x,a.y,2.5,0,7);ctx.fill();ctx.fillStyle='#fff';ctx.fillRect(Math.round(a.x)-1,Math.round(a.y)-1,2,2);continue}ctx.save();ctx.translate(Math.round(a.x),Math.round(a.y));ctx.rotate(a.a);ctx.fillStyle='#e8e4d0';ctx.fillRect(-4,0,7,1);ctx.fillStyle='#c9ced8';ctx.fillRect(3,0,2,1);ctx.restore()}
+    if(a.magic){if(Math.random()<.6)vfx({k:'ember',x:a.x+rnd(-2,2),y:a.y+rnd(-2,2),vx:rnd(-12,12),vy:rnd(-12,6),life:rnd(.2,.4),col:a.col});const fl=Math.floor(performance.now()/80)%2;ctx.save();effectTransform(a.x,a.y);ctx.fillStyle=a.col;ctx.globalAlpha=.35;ctx.beginPath();ctx.arc(a.x,a.y,5+fl,0,7);ctx.fill();ctx.globalAlpha=1;ctx.beginPath();ctx.arc(a.x,a.y,2.5,0,7);ctx.fill();ctx.fillStyle='#fff';ctx.fillRect(Math.round(a.x)-1,Math.round(a.y)-1,2,2);ctx.restore();continue}ctx.save();ctx.translate(Math.round(a.x),Math.round(a.y));ctx.rotate(a.a);const k=B.world?WORLD_BATTLE.sprite:1;ctx.scale(k,k);ctx.fillStyle='#e8e4d0';ctx.fillRect(-4,0,7,1);ctx.fillStyle='#c9ced8';ctx.fillRect(3,0,2,1);ctx.restore()}
   ambientBattle();// (birds out of the trees as it begins, crows over the field once it is over: ambient.js)
   if(!B.world)fogDraw();// (the fog of war over the field outside your side's sight: battlefog.js)
   const h=B.hero;
   // No persistent short aim arc; selected shooters already have the shared range fan.
   if(h&&h.hp>0&&B.blocking){ctx.strokeStyle='#9fc0ff';ctx.lineWidth=3;ctx.beginPath();ctx.arc(h.x,h.y-6,13,B.aim-.9,B.aim+.9);ctx.stroke()}
-  for(const s of B.slashes){if(s.kind){drawSlash(s);continue}ctx.strokeStyle='rgba('+(s.col||'255,255,255')+','+Math.min(1,s.life*7).toFixed(2)+')';ctx.lineWidth=s.w||3;ctx.beginPath();ctx.arc(s.x,s.y,s.r||B.hero.s.reach,s.a-(s.arc||1.1),s.a+(s.arc||1.1));ctx.stroke()}
-  for(const r of B.rings){const p=1-r.life/r.max;ctx.strokeStyle='rgba('+r.col+','+(r.life/r.max).toFixed(2)+')';ctx.lineWidth=3;ctx.beginPath();ctx.arc(r.x,r.y,r.r*(.5+.5*p),0,6.283);ctx.stroke()}
-  for(const p of B.parts){if(p.stuck){const x=Math.round(p.x),y=Math.round(p.y);ctx.globalAlpha=Math.min(1,p.life*2);ctx.fillStyle='#c9b48a';ctx.fillRect(x-p.stuck,y-3,1,2);ctx.fillRect(x-2*p.stuck,y-5,1,2);ctx.fillStyle='#e8e4d0';ctx.fillRect(x-3*p.stuck,y-6,1,1);ctx.globalAlpha=1;continue}
-    ctx.fillStyle=p.c;ctx.fillRect(Math.round(p.x),Math.round(p.y),2,2)}
+  for(const s of B.slashes){if(s.kind){drawSlash(s);continue}ctx.strokeStyle='rgba('+(s.col||'255,255,255')+','+Math.min(1,s.life*7).toFixed(2)+')';ctx.lineWidth=(s.w||3)*worldEffectScale();ctx.beginPath();ctx.arc(s.x,s.y,s.r||B.hero.s.reach,s.a-(s.arc||1.1),s.a+(s.arc||1.1));ctx.stroke()}
+  for(const r of B.rings){const p=1-r.life/r.max;ctx.strokeStyle='rgba('+r.col+','+(r.life/r.max).toFixed(2)+')';ctx.lineWidth=3*worldEffectScale();ctx.beginPath();ctx.arc(r.x,r.y,r.r*(.5+.5*p),0,6.283);ctx.stroke()}
+  for(const p of B.parts){ctx.save();effectTransform(p.x,p.y);if(p.stuck){const x=Math.round(p.x),y=Math.round(p.y);ctx.globalAlpha=Math.min(1,p.life*2);ctx.fillStyle='#c9b48a';ctx.fillRect(x-p.stuck,y-3,1,2);ctx.fillRect(x-2*p.stuck,y-5,1,2);ctx.fillStyle='#e8e4d0';ctx.fillRect(x-3*p.stuck,y-6,1,1);ctx.globalAlpha=1;ctx.restore();continue}
+    ctx.fillStyle=p.c;ctx.fillRect(Math.round(p.x),Math.round(p.y),2,2);ctx.restore()}
   vfxAir();// (sparks, glows, embers, flying blood: vfx.js)
   // (a number pops up big and settles)
   for(const f of B.floats){const a=f.age||0,k=a<.12?1+(1-a/.12)*.6:1;if(k===1){txt(f.t,Math.round(f.x),Math.round(f.y),f.c,'center');continue}ctx.save();ctx.translate(Math.round(f.x),Math.round(f.y));ctx.scale(k,k);txt(f.t,0,0,f.c,'center');ctx.restore()}

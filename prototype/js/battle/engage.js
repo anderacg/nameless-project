@@ -7,7 +7,7 @@ const rating=(list,lv)=>Math.round(power(list)*lvPow(lv));
 const partyPower=()=>rating(playerList());
 // stance: how a roaming party judges you from its power against yours
 const ATTACK_AT=.8,FLEE_AT=.5,STANCE_COL={attack:'#ff9a90',wary:'#e8d8a0',afraid:'#78c474'};
-const stance=pw=>{const r=pw/Math.max(1,partyPower());return r>=ATTACK_AT?'attack':r>=FLEE_AT?'wary':'afraid'};
+const stance=(pw,observer=null)=>{const r=pw/Math.max(1,observer?TravelAwareness.power(observer):partyPower());return r>=ATTACK_AT?'attack':r>=FLEE_AT?'wary':'afraid'};
 const monPower=m=>m.pw||(m.pw=rating(Array(m.n).fill(MONSTERS[m.id].unit),m.lv));
 // move a party for one frame by its stance: hunt, keep its distance, or run
 function stanceMove(o,st,dist,dx,dy,see,sp,canHunt){
@@ -43,9 +43,24 @@ function makeEnemies(n,camp,band){
    page) and his men at the start (his share of the spoils) are kept on the encounter (e.help). An enemy lord's realm and
    allies join him (nearFoes, at most REINF.foes). */
 const friendFac=f=>!hostileTo(f)&&(!!P.fac&&(f===P.fac||relOf(f,P.fac).s==='ally')||honorWith(f)>=25);
-const foeFac=e=>e.kind==='lord'||e.kind==='caravan'||e.kind==='estate'||e.kind==='patrol'?e.ref.fac:e.kind==='siege'||e.kind==='raid'?e.ref.owner:null;
+const forceRealm=o=>{const src=o?.src||o;return src?.fac||src?.faction||src?.owner||o?.fac||null};
+const foeFac=e=>['lord','caravan','estate','patrol','villagers','party'].includes(e.kind)?forceRealm(e.ref)||(e.kind==='villagers'?townBy(e.ref?.town)?.owner:null):e.kind==='siege'||e.kind==='raid'?e.ref.owner:null;
 // the realm whose men you fight (foeFac's, or a realm's real toll-men on the road); none: a common enemy
 const foeRealm=e=>foeFac(e)||(e.road&&e.road.real&&e.road.fac)||null;
+// Realm loyalty precedes friendship/help rolls and remembered participant lists. null leaves ordinary eligibility in charge.
+function reinforceSide(e,o){
+  const src=o.src||o;if(src.mapKind==='cparty'||o.kind==='cparty')return 0;
+  const f=forceRealm(o);if(!f)return null;
+  const foes=[foeRealm(e),...(e.foes||[]).map(forceRealm)].filter(Boolean),friends=['player',P.fac,...(e.kind==='field'?(e.allies||[]).map(forceRealm):[])].filter(Boolean);
+  if(e.kind==='field'&&foes.includes(f)&&friends.includes(f)){if((e.allies||[]).some(a=>(a.src||a)===src))return 0;if((e.foes||[]).some(a=>(a.src||a)===src))return 1;return -1}
+  if(foes.includes(f))return 1;
+  if(foes.some(g=>g!=='player'&&relOf(f,g).s==='ally'))return friends.includes(f)||friends.some(g=>g!==f&&g!=='player'&&relOf(f,g).s==='ally')?-1:1;
+  return null;
+}
+function alignReinforcements(e){
+  const sides=[[],[]],seen=new Set();for(const [team,list] of [[0,e.allies||[]],[1,e.foes||[]]])for(const o of list){const key=o.src||o;if(seen.has(key))continue;seen.add(key);const side=reinforceSide(e,o);if(side!==-1)sides[side??team].push(o)}
+  [e.allies,e.foes]=sides;
+}
 const commonFoe=e=>e.kind==='field'?(e.foes||[]).every(f=>!f.fac):e.kind!=='tourney'&&!foeRealm(e);
 // the holding a fight is over: the one you storm or raid, or the one the lord you fight is besieging (or riding to relieve)
 const siegeTown=e=>e.kind==='siege'||e.kind==='raid'?e.ref.name:e.kind==='lord'&&(e.ref.state==='siege'||e.ref.state==='relieve')?e.ref.tgt:null;
@@ -62,15 +77,22 @@ const helpChance=v=>clamp(REINF.chance+(1-REINF.chance)*v/RELATION.helpAt,0,1);
 const helpRoll=(e,k)=>{const R=e.rolls||(e.rolls={});return R[k]!=null?R[k]:R[k]=hash(Math.floor(P.x),Math.floor(P.y),G.day*7919+folkHash(k))};
 const fairOdds=(e,o)=>o.power()+partyPower()>=REINF.fair*rating(e.list||[],e.lv);
 const neutralHelps=(e,o,k,v)=>helpRoll(e,k)<helpChance(v)&&fairOdds(e,o);
+// Local law enforcement is duty, not a friendship roll. Current land ownership overrides a watch's old home.
+const banditBattle=e=>{const band=f=>(f?.src||f)?.mapKind==='band';return !foeRealm(e)&&(e.kind==='party'&&band(e.ref)||e.kind==='field'&&(e.foes||[]).length>0&&e.foes.every(band))};
+function localBanditDuty(e,o){
+  if(!banditBattle(e)||hostileTo(o.fac))return '';const p=B?.world&&G.enc===e?B.world:P,t=landHold(p.x,p.y);
+  return t?.owner===o.fac?'clearing bandits from its realm’s land':'';
+}
 const bountyWhy=e=>e.kind==='monster'||e.kind==='cave'?'to see the beast dead':'for the bounty';
 // why a lord rides to help you ('' if he won't): a friend; or a neutral lord by chance at fair odds, against a common enemy or
 // against a realm his own is at war with (the owner, 2026-10-23: "they fight each other, why not?")
-function lordWhy(e,l){const fr=foeRealm(e),st=siegeTown(e);if(fr&&(fr==='player'||!atWar(l.fac,fr)))return '';
+function lordWhy(e,l){const side=reinforceSide(e,l);if(side===1||side===-1)return '';const fr=foeRealm(e),st=siegeTown(e);if(fr&&(fr==='player'||!atWar(l.fac,fr)))return '';
   if(st&&l.tgt===st&&l.state==='siege')return 'besieging '+st;if(st&&l.inside===st)return 'holding the walls of '+st;
+  const duty=localBanditDuty(e,l);if(duty)return duty;
   const fw=friendWhy(l);if(fw||hostileTo(l.fac))return fw;return neutralHelps(e,l,l.id,relWith(l))?(fr?'at war with the '+FACS[fr].n:bountyWhy(e)):''}
 // why a holding's watch rides to help you ('' if it won't): on its realm's land against a common enemy, or against a realm at
 // war with its own; off its land against a common enemy as a neutral lord would (or a friend)
-function watchWhy(e,p){if(hostileTo(p.fac))return '';const fr=foeRealm(e),land=patrolLand(p,P.x,P.y);
+function watchWhy(e,p){const side=reinforceSide(e,p);if(side===1||side===-1||hostileTo(p.fac))return '';const duty=localBanditDuty(e,p);if(duty)return duty;const fr=foeRealm(e),land=!banditBattle(e)&&patrolLand(p,P.x,P.y);
   if(fr)return land&&fr!=='player'&&fr!==p.fac&&atWar(p.fac,fr)?'riding out against the '+FACS[fr].n+' on its land':'';
   if(land)return 'riding in to clear its '+(e.kind==='monster'||e.kind==='cave'?'land':'road');
   return friendWhy(p)||(neutralHelps(e,p,'w:'+p.home+':'+watchOf(p),0)?bountyWhy(e):'')}
@@ -139,6 +161,7 @@ function typeHtml(e){const bt=e.btype;
 // (Spring an ambush: your band hidden beside the road, theirs on it in march order; no deployment for either)
 onAct('bt-',a=>{const e=G.enc;if(a==='bt-spring'&&e&&G.mode==='dialog'&&canSpring(e)){e.btype={kind:'ambush',hid:0};startBattle({enemies:e.list,tournament:false,lv:e.lv||1,deploy:false})}});
 function startEncounter(e){
+  WildHunt.active?.finish('The hunt is interrupted.');
   if(e.mine==null)e.mine=!!G.youAttack;G.youAttack=false;if(e.lv==null&&e.ref&&e.ref.ld)e.lv=chiefLv(e.ref);// did you start it (you may call that off)? a chieftain's band fights at its level
   if(e.btype==null){const bt=battleTypeFor(e);if(bt)e.btype=bt}// (a battle type: none with terrain off)
   e.list=e.list||makeEnemies(e.n,e.kind==='camp',e.band);const env=battleEnv(),ground='<p class="muted">Battleground: '+env.name+'. '+terrainEnvText(env,e.kind,e.btype)+'</p>',band=BANDS[e.band||'bandits'];G.enc=e;G.mode='dialog';P.tx=null;G.chase=null;
@@ -149,6 +172,7 @@ function startEncounter(e){
   if(e.men==null)e.men=playerList().length;// (your men at the start: the helpers' share of the spoils, reinfCut)
   // the garrison sallies: beside you when you fight a holding's besiegers, against you when an army comes to relieve your siege
   if(!given&&e.kind==='lord'){const t=townBy(e.ref.tgt);if(t&&t.gar>0){if(e.ref.state==='siege'&&!hostileTo(t.owner)&&t.owner!=='player')e.allies.push(garrisonForce(t));else if(e.ref.state==='relieve'&&mySiege(t))e.foes.push(garrisonForce(t))}}
+  alignReinforcements(e);
   const ratio=(power(e.list)*lvPow(e.lv)+power(lordTroops(e.foes)))/(power(playerList())+power(lordTroops(e.allies))),threat=ratio<.6?'Easy':ratio<1?'Even':ratio<1.5?'Risky':'Deadly';
   const vm=vitals(),hurt=reinfHtml(e)+(P.hp<vm[0]*.6?'<p class="bad">You are wounded: '+Math.round(P.hp)+' / '+vm[0]+' health. Rest at an inn or travel to recover.</p>':''),cls=ratio<.6?'good':ratio<1?'gold':'bad',vs='Your power <strong>'+partyPower()+'</strong> vs <strong>'+rating(e.list,e.lv)+'</strong> · threat <strong class="'+cls+'">'+threat+'</strong>',lord=e.kind==='lord'&&e.ref,f=lord&&FACS[lord.fac];
   if(e.kind==='monster'||e.kind==='cave'){const M=MONSTERS[e.ref.id],u=ST[M.unit],Y=M.mythic;
@@ -157,7 +181,7 @@ function startEncounter(e){
       (finds?'<p class="muted">'+finds+'</p>':'')+hurt+'<p>'+vs+'</p>'+
       '<div class="btns"><button class="btn primary" type="button" data-act="fight">Fight</button><button class="btn" type="button" data-act="auto">Auto-resolve</button>'+fleeBtn(e)+'</div>')}
   if(e.kind==='field')return showPanel('<h2>'+e.title+'</h2><p>You ride into the battle'+(e.allies.length?' beside '+e.allies.map(l=>l.name).join(', '):'')+'.</p>'+ground+hurt+'<p>'+vs+'</p><div class="btns"><button class="btn primary" type="button" data-act="fight">Fight</button><button class="btn" type="button" data-act="auto">Auto-resolve</button><button class="btn" type="button" data-act="flee">Leave them to it</button></div>');
-  showPanel('<h2>'+(e.title?e.title:lord?lord.name+' attacks':e.kind==='camp'?e.ref.name||'Bandit camp':band[0])+'</h2>'+(lord?'<p class="muted">An army of the <span style="color:'+f.col+'">'+f.n+'</span>.</p>':'')+'<p>Scouts count about <strong>'+encounterMainFighters(e)+'</strong> fighters'+(encounterMainFighters(e)>e.list.length?' including their leader':'')+'.'+ground+' You have <strong>'+P.fighters+'</strong> fighters, including yourself.</p>'+typeHtml(e)+hurt+'<p>'+vs+'</p><div class="btns"><button class="btn primary" type="button" data-act="fight">Fight</button>'+(canSpring(e)?'<button class="btn" type="button" data-act="bt-spring">Spring an ambush</button>':'')+'<button class="btn" type="button" data-act="auto">Auto-resolve</button>'+fleeBtn(e)+'</div>');
+  showPanel('<h2>'+(e.title?e.title:lord?lord.name+' attacks':e.kind==='camp'?e.ref.name||'Bandit camp':band[0])+'</h2>'+(lord?'<p class="muted">An army of the <span style="color:'+f.col+'">'+f.n+'</span>.</p>':'')+'<p>Scouts count about <strong>'+encounterMainFighters(e)+'</strong> '+(e.word||'fighters')+(encounterMainFighters(e)>e.list.length?' including their leader':'')+'.'+ground+' You have <strong>'+P.fighters+'</strong> fighters, including yourself.</p>'+typeHtml(e)+hurt+'<p>'+vs+'</p><div class="btns"><button class="btn primary" type="button" data-act="fight">Fight</button>'+(canSpring(e)?'<button class="btn" type="button" data-act="bt-spring">Spring an ambush</button>':'')+'<button class="btn" type="button" data-act="auto">Auto-resolve</button>'+fleeBtn(e)+'</div>');
 }
 /* fleeing is a real escape. A fight you started (you rode at them, or you are storming, raiding or joining a battle) you can
    simply call off, as you can with a foe that is afraid of you. Otherwise it is a race: your band's speed on this ground (a big

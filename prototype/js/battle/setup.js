@@ -137,7 +137,7 @@ class BattleSetup{
       }
     };
     if(!opts.tournament)addArmy(P,P.list,0,'p_',true);
-    const raw=enc&&['lord','party','patrol','monster'].includes(enc.kind)?enc.ref:null;
+    const raw=enc&&['lord','party','patrol','caravan','monster','villagers','estate'].includes(enc.kind)?enc.ref:null;
     if(raw&&!(raw instanceof Party)&&!raw.tc&&!raw.troops&&!raw.list)raw.troops=opts.enemies.slice();
     const main=raw?asParty(raw):null;
     addArmy(main,opts.enemies,1,'e0_');
@@ -337,4 +337,4 @@ function typeSay(){const bt=B.btype;if(!bt)return;const mine=bt.kind==='bridge'?
   toast(txt,k==='caught'?'bad':k==='wait'?'good':'');battleEvent('btype',{text:t,team:k==='caught'?1:0})}
 // Compatibility entry point used by encounters, tournaments, sieges, tests and other callers: the start in steps (a failure shows
 // itself: its error view)
-function startBattle(opts){new (worldBattleEligible(opts)?WorldBattleSetup:BattleSetup)(opts).start().catch(()=>{})}
+function startBattle(opts){if(!opts.tournament&&G.enc)alignReinforcements(G.enc);new (worldBattleEligible(opts)?WorldBattleSetup:BattleSetup)(opts).start().catch(()=>{})}

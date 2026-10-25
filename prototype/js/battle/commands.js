@@ -11,7 +11,7 @@ const RTS_PICK=10;
 const ordered=gs=>gs.forEach(g=>{const gr=B.groups[g];if(gr)gr.orderSeq=(gr.orderSeq|0)+1});
 // every order of yours to groups gs: those the AI has taken back (deploy.js), counted (a move, an attack, Hold, the pace, a formation, a flag;
 // not a unit ability: counts false), done (fn), the order bar redrawn; returns what fn does
-function playerOrder(gs,fn,{counts=true}={}){takeCommand(gs);if(counts)ordered(gs);const r=fn();setOrderUI();return r}
+function playerOrder(gs,fn,{counts=true}={}){MarchAmbush.releaseBattle(gs);takeCommand(gs);if(counts)ordered(gs);const r=fn();setOrderUI();return r}
 // the unit under a point: on a group's icon, its soldier nearest the group's middle (the icon is clicked as the group: select,
 // attack, everything a click on a soldier does); else the nearest soldier within RTS_PICK. An enemy your side does not see (in
 // woods or behind a rise: terrain.js seenBy) is no one to click. pick: a select's click, where icons overlap clicked again on the

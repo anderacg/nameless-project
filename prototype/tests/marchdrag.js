@@ -1,0 +1,30 @@
+'use strict';
+Kit.suite(({ok})=>{
+ const t=T,P=t.P,G=t.G;Kit.begin('soldier',1);Kit.clear();Kit.world();t.GUIDE.on=false;t.WORLD_BATTLE.on=true;P.troops={hum_bow:10,hum_knight:6};G.mode='char';t.openMarch();
+ const roster=t.partyRoster(P),arch=roster.groups.find(g=>g.type==='hum_bow'),cav=roster.groups.find(g=>g.type==='hum_knight');t.act('march-select',arch.id);
+ const fixedRadius=t.marchDraftOuter(),fixedScale=t.marchCanvasView().scale;
+ const drag=(x0,y0,x1,y1,{touch=false,cancel=false,short=false}={})=>{const cv=document.getElementById('marchCanvas'),v=t.marchCanvasView(),r=cv.getBoundingClientRect(),capture=cv.setPointerCapture;cv.setPointerCapture=()=>{};
+  const fire=(type,x,y)=>cv.dispatchEvent(new PointerEvent(type,{pointerId:7,pointerType:touch?'touch':'mouse',button:touch?0:2,buttons:touch?1:2,clientX:r.left+(v.x+x*v.scale)*r.width/v.w,clientY:r.top+(v.y+y*v.scale)*r.height/v.h,bubbles:true,cancelable:true}));
+  try{fire('pointerdown',x0,y0);fire('pointermove',x1,y1);fire(cancel?'pointercancel':'pointerup',x1,y1)}finally{cv.setPointerCapture=capture}
+ };
+ drag(0,-10,0,10);let d=G.march.draft[arch.id];
+ ok(d.files===4&&Math.abs(d.face)<.001&&Math.hypot(d.x,d.y)<.001,'right-drag sets frontage, midpoint and battle-style facing in world units');
+ const saved=JSON.stringify(G.march.draft);drag(-10,0,10,0,{cancel:true});ok(JSON.stringify(G.march.draft)===saved,'pointer cancellation restores the complete draft');
+ drag(0,0,.1,.1);ok(JSON.stringify(G.march.draft)===saved,'a short right-click does not change the formation');
+ t.act('march-tool','form');drag(-10,0,10,0,{touch:true});d=G.march.draft[arch.id];ok(Math.abs(d.face+Math.PI/2)<.001&&d.files===4,'touch Draw formation uses the same frontage and facing');
+ drag(100,100,120,100,{touch:true});ok(t.marchDraftRows().every(row=>Math.hypot(row.x,row.y)+t.marchExtent(row)<=t.marchDraftOuter()+.001),'drawn formations stay fully inside the allowed army circle');
+ ok(t.marchDraftOuter()===fixedRadius&&Math.abs(t.marchCanvasView().scale-fixedScale)<.001,'army circle radius and displayed scale remain fixed after frontage drags');
+ t.act('march-select',arch.id);drag(-100,0,100,0,{touch:true});
+ ok(t.marchDraftOuter()===fixedRadius&&t.marchExtent(t.marchDraftRows().find(r=>r.id===arch.id))<=fixedRadius&&Math.abs(t.marchCanvasView().scale-fixedScale)<.001,'an oversized frontage fits the allowed circle instead of enlarging or reframing it');
+ for(const face of [0,Math.PI/2,-Math.PI/2,Math.PI]){const lines=[],moves=[],g={beginPath(){},moveTo(x,y){moves.push([x,y])},lineTo(x,y){lines.push([x,y])},stroke(){}};
+  t.marchFacingGuide(g,{...t.marchDraftRows().find(r=>r.id===arch.id),face},100,100,2);const dx=lines[0][0]-moves[0][0],dy=lines[0][1]-moves[0][1];
+  ok(Math.abs(dx*Math.sin(face)-dy*Math.cos(face))<.001&&dx*Math.cos(face)+dy*Math.sin(face)>0&&lines.length===3,'facing guide paints a forward arrow with a head at angle '+face);
+ }
+ t.act('march-select',cav.id);t.act('march-form','wedge');drag(0,-20,0,20,{touch:true});ok(G.march.draft[cav.id].form==='wedge'&&G.march.draft[cav.id].files===null,'dragging a wedge changes its placement and facing while preserving its shape');
+ t.act('march-select','hero');const hero=JSON.stringify(G.march.draft.hero);drag(-10,0,10,0,{touch:true});ok(JSON.stringify(G.march.draft.hero)===hero,'the hero remains the fixed army anchor');
+ t.act('march-select',arch.id);drag(-10,0,10,0,{touch:true});t.act('march-apply');const row=t.marchRows(P).find(r=>r.id===arch.id);ok(Math.abs(row.face+Math.PI/2)<.001&&row.files===4,'Apply persists facing and frontage into marching rows');
+ const army=t.MarchArmy.of(P);army.sync();const targets=army.targets().filter(p=>p.row===arch.id),first=targets[0],second=targets[1];ok(Math.abs(first.x-second.x)>Math.abs(first.y-second.y)*5,'marching slots rotate with the saved relative facing');
+ t.openMarch();ok(Math.abs(G.march.draft[arch.id].face+Math.PI/2)<.001,'reopening the editor retains saved facing');t.act('march-back');Kit.world();
+ const h=Kit.goHome('Ashford');Kit.goTo(h.x+160,h.y+120);const e=t.asParty({kind:'bandits',troops:['militia'],x:P.x+70,y:P.y,cool:0});G.enc={kind:'party',ref:e,list:e.troops.slice(),allies:[],foes:[],mine:true};t.startBattle({enemies:G.enc.list,tournament:false});
+ const b=t.B,g=Object.values(b.groups).find(g=>g.player&&g.sourceGroupId===arch.id);ok(g.files===4&&t.angGap(g.face,b.world.starts[0].facing+row.face)<.001,'world battle preserves dragged frontage and facing relative to the marching army');
+});

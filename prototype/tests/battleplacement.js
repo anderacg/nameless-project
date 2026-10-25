@@ -28,6 +28,23 @@ Kit.suite(({ok})=>{
   b.sel=[a,h,c];b.rdrag={x0:400,y0:100,x1:400,y1:500};const plan=t.formPlan(400,100,400,500),hero=plan.find(p=>p.hero),ctx=t.ctx,rects=[],fill=ctx.fillRect;
   try{ctx.fillRect=function(...args){rects.push(args);return fill.apply(this,args)};t.drawFormGhost()}finally{ctx.fillRect=fill;b.rdrag=null}
   ok(rects.some(([x,y,w,h])=>Math.abs(x+w/2-hero.ax)<1&&Math.abs(y+h/2-hero.ay)<1),'the actual canvas ghost paints the hero dot on the planned line');
+  // World previews grow with the actual sprites without shifting their planned anchors.
+  {const world=b.world,mq=t.GHOST.mq,scale=t.WORLD_BATTLE.sprite,fill=ctx.fillRect;
+   try{b.world={};b.rdrag={x0:400,y0:100,x1:400,y1:500};
+    for(const size of [3,6])for(const coarse of [false,true]){t.WORLD_BATTLE.sprite=size;t.GHOST.mq={matches:coarse};const dots=[];
+     ctx.fillRect=function(...args){dots.push(args)};t.drawFormGhost();
+     ok(dots.some(([x,y,w,h])=>w>=4*size&&h===w&&Math.abs(x+w/2-hero.ax)<1&&Math.abs(y+h/2-hero.ay)<1),'world hero ghost stays centred and readable at sprite scale '+size+', coarse '+coarse);
+    }
+   }finally{ctx.fillRect=fill;b.world=world;b.rdrag=null;t.GHOST.mq=mq;t.WORLD_BATTLE.sprite=scale}
+  }
+  // Exercise the actual renderer: routed and fallback orders both precede all characters.
+  {const mode=t.prefGet('opaths'),names=['drawOrderPaths','drawOrderLines','drawFormGhost','drawUnit'],saved=names.map(n=>window[n]);
+   try{for(const routed of [true,false]){const calls=[];t.prefSet('opaths',routed?'sel':'off');
+    for(const n of names)window[n]=()=>calls.push(n);t.drawBattle();
+    const path=routed?'drawOrderPaths':'drawOrderLines',first=calls.indexOf('drawUnit');
+    ok(first>=0&&calls.filter(n=>n===path).length===1&&calls.indexOf(path)<first&&calls.indexOf('drawFormGhost')<first,'order paths and ghosts draw once beneath characters, routed '+routed);
+   }}finally{names.forEach((n,i)=>window[n]=saved[i]);t.prefSet('opaths',mode)}
+  }
   const companion=[b.groups[d].ax,b.groups[d].ay];t.formDragTo(400,100,400,500);
   ok(b.groups[d].ax===companion[0]&&b.groups[d].ay===companion[1]&&b.hero.sx===0&&b.hero.sy===0,'an unselected companion stays put and the hero has no hidden slot offset');
   const old=[b.groups[h].ax,b.groups[h].ay];ok(!t.formDragTo(400,100,402,102)&&b.groups[h].ax===old[0]&&b.groups[h].ay===old[1],'a short drag issues no line order');

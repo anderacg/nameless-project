@@ -42,7 +42,7 @@ class Party extends WorldObject{
     ents.push({y:o.y,own:o.faction==='player',f:()=>{subT(o);const L=o.look(),sx=Math.round(o.x-cam.x),sy=Math.round(o.y-10-cam.y),fd=L.dir<0?-1:1,rider=!!L.rider&&!L.bandit,go=L.moving&&mapStepping(o),fr=go?frameOf(o,rider?WALK.ride:WALK.foot,WALK.n):0;
       const s=partyFig(o,L,fr).s;// (a rider: his host behind his horse)
       if(!WORLD_BATTLE.on)drawHost(o.size,L.col,sx-(rider?fd*4:0),sy+12,fd,go?o.wd:null,L.seed,L.race,L.bandit);
-      if(WORLD_BATTLE.on)drawMarchLeader(s,sx,sy+10,fd);else{ctx.save();ctx.translate(sx,sy);if(fd<0)ctx.scale(-1,1);ctx.drawImage(s,-(s.width>>1),13-s.height);ctx.restore();}
+      if(WORLD_BATTLE.on){if(marchSeparateLeader(o))drawMarchLeader(s,sx,sy+10,fd)}else{ctx.save();ctx.translate(sx,sy);if(fd<0)ctx.scale(-1,1);ctx.drawImage(s,-(s.width>>1),13-s.height);ctx.restore();}
       if(L.torch){const tx=sx+fd*4,ty=sy+3;rect(ctx,'#5a3e24',tx,ty,1,4);LIGHTQ.push({x:tx,y:ty-1,r:16})}
       BANNERQ.push({o,label:!o.fight&&L.label?[L.label,L.labelCol]:null})}})}
   // sheltering in a holding: inside is the holding's name. shelterWhy(t): why it may not go in there ('' if it may; each kind
@@ -161,7 +161,7 @@ class PlayerParty extends Party{
     const n=(this.headcount()+this.mountedCount()+this.prisonerCount()+1)/4;
     return Math.ceil(n*(this.hasPerk('forced')?1.2:1)*(this.hasPerk('quarter')?.75:1)*(roleOf('quarter')?.75:1)*(1-this.treeMod('food')))}
   // how far you see: your Scouting, the ground you stand on and your gear
-  sight(){return (110+8*this.skill('scout'))*visMulAt(this.x,this.y)*(1+this.gearMod('vis'))}
+  sight(){const p=typeof worldEye==='function'?worldEye():this;return (110+8*this.skill('scout'))*visMulAt(p.x,p.y)*(1+this.gearMod('vis'))}
   // what your skill tree gives (tmOf: any character's), and the disciplines it adds
   treeMod(k){return tmOf(this,k)}
   treeSkill(k){return treeSkOf(this,k)}

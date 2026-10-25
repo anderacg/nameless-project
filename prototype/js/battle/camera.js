@@ -21,7 +21,7 @@ const fromField=p=>{const c=bcam();return{x:(p.x-c.x)*c.z,y:(p.y-c.y)*c.z}};
 // zoom a step in (dir 1) or out (-1), keeping the field point under (sx, sy) on the canvas where it is
 function camZoom(dir,sx,sy){
   // (from a pinched zoom between the steps: the next step that way)
-  if(!B||!B.cam)return;if(B.world){mapZoom(dir);B.world.syncCamera();return}const c=B.cam,Z=camZooms(),i=Z.indexOf(c.z),j=i>=0?clamp(i+dir,0,Z.length-1):dir>0?Z.findIndex(z=>z>c.z):Z.findLastIndex(z=>z<c.z);if(j<0||Z[j]===c.z)return;
+  if(!B||!B.cam)return;if(B.world){if(mapZoom(dir))camCentre(B.world.cx,B.world.cy);B.world.syncCamera();return}const c=B.cam,Z=camZooms(),i=Z.indexOf(c.z),j=i>=0?clamp(i+dir,0,Z.length-1):dir>0?Z.findIndex(z=>z>c.z):Z.findLastIndex(z=>z<c.z);if(j<0||Z[j]===c.z)return;
   if(sx==null){sx=BVW/2;sy=BVH/2}const w=toField({x:sx,y:sy});c.z=Z[j];c.fit=j===0;c.x=w.x-sx/c.z;c.y=w.y-sy/c.z;camClamp();
 }
 // a pinch (two fingers, input.js): zoom z, anywhere from the whole field to the closest step, the field point w held under the

@@ -39,7 +39,7 @@ function drawDeploy(){
 }
 // your groups in the AI's hands: the whole army (B.auto) or each its own (g.aiCmd); aiAll: every one of them (the commander's
 // powers then the AI's too: commandpowers.js), aiAny: any (your captain thinks: commander.js command)
-const aiHas=g=>!!(B&&g&&g.player&&(B.auto||g.aiCmd));
+const aiHas=g=>!!(B&&g&&g.player&&!g.concealHold&&(B.auto||g.aiCmd));
 const aiAll=()=>!!B&&(!!B.auto||playerGroups().length>0&&playerGroups().every(id=>B.groups[id].aiCmd));
 const aiAny=()=>!!B&&(!!B.auto||playerGroups().some(id=>B.groups[id].aiCmd));
 // (the AI's hold on your army changed: its captain (commander.js captainMem, its key 0) forgotten, to think afresh at once; the
