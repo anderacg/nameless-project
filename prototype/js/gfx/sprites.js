@@ -30,6 +30,8 @@ function unitSprite(type,team,hero,v,pose,bare,arm,tint){
   if(bare&&pose>=6&&pose<=14&&heldWeapon(L)){const k0=key.replace('p'+pose+'b','p0b');return spr[key]=spr[k0]||(spr[k0]=cellOf(peopleSprite(L,0,true)))}
   return spr[key]=cellOf(peopleSprite(L,pose,bare));
 }
+// World combat retains the army's cloth and each marcher's appearance instead of repainting by battle side.
+const actorSprite=(u,pose,bare,arm)=>unitSprite(u.type,u.worldSide??spriteTeam(u),u.hero,u.v,pose,bare,arm,u.worldTint);
 /* the fallen (vfx.js drawCorpses): a man flat where he fell, head the way he faced, turned a quarter pixel for pixel so he stays
    crisp; a rider thrown from his mount, which lies low beside him; a beast slumped where it stood. stand: him upright (his fall
    turns it about his feet), body: him lying, ax, ay: his feet in it; wk: the weapon he dropped; mount: his mount standing, down: lying */
@@ -56,10 +58,10 @@ function beastPose(u,moved){
 // body length walked: monsters.js)
 function monsterMapSprite(id,f){const M=MONSTERS[id],n=M.mythic?2:PX.MAP_STEPS,k='mm'+M.unit+((f||0)%n);if(spr[k])return spr[k];return spr[k]=cellOf(PX.beastMap(M.unit,(f||0)%n))}
 function corpseOf(u){
-  const base=unitSprite(u.type,spriteTeam(u),u.hero,u.v,0,true);let c=CORPSES.get(base);if(c)return c;
+  const base=actorSprite(u,0,true);let c=CORPSES.get(base);if(c)return c;
   // (a beast: it sinks as it falls (a troll over as a man does, a spider or a scorpion onto its back, a slime running flat, the rest
   // pressed low), then lies in its dead pose, down: engine/beasts.js)
-  if(ST[u.type]&&ST[u.type].beast)c={beast:base,down:unitSprite(u.type,spriteTeam(u),false,u.v,PX.BEAST_DEAD),how:BEAST_FALL[u.type]||'side'};
+  if(ST[u.type]&&ST[u.type].beast)c={beast:base,down:actorSprite(u,PX.BEAST_DEAD),how:BEAST_FALL[u.type]||'side'};
   else{const L=unitLook(u),wk=heldWeapon(L),g=pgrid(24,20);drawFigure(g,{...L,mount:null,weapon:wk?null:L.weapon},4,3,-1,null,-1);const lie=pturn(g);poutline(g);poutline(lie);
     c={stand:pcanvas(g),body:pcanvas(lie),ax:2,ay:12,wk,team:L.team};
     if(L.mount){const m=pgrid(32,32),d=pgrid(32,22);drawMount(m,L,-1);drawMountDown(d,L);poutline(m);poutline(d);c.mount=pcanvas(m);c.down=pcanvas(d)}}
@@ -72,19 +74,19 @@ function corpseOf(u){
 const WARM={q:[],b:[],budget:4};
 function warmBattle(units){
   WARM.q=[];WARM.b=[];const seen=new Set(),late=[];
-  for(const u of units){if(ST[u.type]&&ST[u.type].beast){const k=u.type+'|'+(u.team?1:0)+'|'+(u.v||0)%3;if(!seen.has(k)){seen.add(k);for(const p of [...BEAST_POSES,PX.BEAST_DEAD])WARM.b.push(()=>unitSprite(u.type,spriteTeam(u),false,u.v,p))}continue}const v=u.hero?0:(u.v||0)%6,k=u.type+'|'+spriteTeam(u)+'|'+(u.hero?1:0)+'|'+v;if(seen.has(k))continue;seen.add(k);
-    for(const p of [0,1,2,3,4,5,15,16,17,18])WARM.q.push(()=>unitSprite(u.type,spriteTeam(u),u.hero,u.v,p,true));
+  for(const u of units){if(ST[u.type]&&ST[u.type].beast){const k=u.type+'|'+(u.team?1:0)+'|'+(u.v||0)%3;if(!seen.has(k)){seen.add(k);for(const p of [...BEAST_POSES,PX.BEAST_DEAD])WARM.b.push(()=>actorSprite(u,p))}continue}const v=u.hero?0:(u.v||0)%6,k=u.type+'|'+spriteTeam(u)+'|'+(u.hero?1:0)+'|'+v+'|'+(u.worldTint||'')+'|'+(u.worldSide??'');if(seen.has(k))continue;seen.add(k);
+    for(const p of [0,1,2,3,4,5,15,16,17,18])WARM.q.push(()=>actorSprite(u,p,true));
     const L=unitLook(u),w=heldWeapon(L);
     if(w){const sk=pal(L.skin)[1],kw=w+L.team+sk;if(!seen.has(kw)){seen.add(kw);for(let i=0;i<WEAPON_STEPS;i++)WARM.q.push(()=>weaponSprite(w,L.team,sk,i))}}
-    else for(let p=6;p<=14;p++)WARM.q.push(()=>unitSprite(u.type,spriteTeam(u),u.hero,u.v,p,true));
+    else for(let p=6;p<=14;p++)WARM.q.push(()=>actorSprite(u,p,true));
     // (and last, how he lies when he falls, and the weapon he drops: vfx.js drawCorpses)
-    late.push(()=>corpseOf(u));if(u.s.range&&!u.s.magic){for(const p of [0,2,3,4,5,6,7,8])late.push(()=>unitSprite(u.type,spriteTeam(u),u.hero,u.v,p,true,true));const sk=pal(L.skin)[1],kw='sword'+L.team+sk;if(!seen.has(kw)){seen.add(kw);for(let i=0;i<WEAPON_STEPS;i++)late.push(()=>weaponSprite('sword',L.team,sk,i))}}if(w)for(const i of [0,1,WEAPON_STEPS-1,WEAPON_STEPS/2,WEAPON_STEPS/2+1])late.push(()=>weaponSprite(w,L.team,PPAL.wood[2],i))}
+    late.push(()=>corpseOf(u));if(u.s.range&&!u.s.magic){for(const p of [0,2,3,4,5,6,7,8])late.push(()=>actorSprite(u,p,true,true));const sk=pal(L.skin)[1],kw='sword'+L.team+sk;if(!seen.has(kw)){seen.add(kw);for(let i=0;i<WEAPON_STEPS;i++)late.push(()=>weaponSprite('sword',L.team,sk,i))}}if(w)for(const i of [0,1,WEAPON_STEPS-1,WEAPON_STEPS/2,WEAPON_STEPS/2+1])late.push(()=>weaponSprite(w,L.team,PPAL.wood[2],i))}
   WARM.q.push(...late)}
 function warmStep(){const t0=performance.now();while((WARM.q.length||WARM.b.length)&&performance.now()-t0<WARM.budget)(WARM.q.length?WARM.q:WARM.b).shift()()}
 // a soldier's look (what unitSprite draws him from), for the weapon in his hand
 // a shooter's sidearm: a short sword, on the weapon layer
 const sidearmLook=u=>u.side||(u.side={...unitLook(u),weapon:'sword'});
-function unitLook(u){if(u.look)return u.look;const cg=COMPS[u.type]&&P.comps&&P.comps[u.type]&&P.comps[u.type].gear||null;return u.look=allyLook(lookOf(u.type,u.team,u.hero,u.hero?0:(u.v||0)%6,COMPS[u.type]?u.type:'',cg),spriteTeam(u))}
+function unitLook(u){if(u.look)return u.look;const cg=COMPS[u.type]&&P.comps&&P.comps[u.type]&&P.comps[u.type].gear||null;const L=allyLook(lookOf(u.type,u.worldSide??u.team,u.hero,u.hero?0:(u.v||0)%6,COMPS[u.type]?u.type:'',cg),u.worldSide??spriteTeam(u));return u.look=u.worldTint?{...L,team:u.worldTint}:L}
 // (your allies' men (team 2: battle.js spriteTeam) in their side's cloth, SIDE.ally.tabard)
 const allyLook=(L,team)=>team===2?{...L,team:SIDE.ally.tabard}:L;
 function procPose(u,moved){

@@ -1356,12 +1356,12 @@ class BattleSight{
   // (is there sight to keep: terrain or fog)
   static on(){return !!B&&!B.world&&!!(B.terrain||B.fog)}
   // (does side team see u: always for his own side, and while nothing hides him)
-  static seen(team,u){return !!B?.world||!(u.hid&1<<team)}
+  static seen(team,u){return B?.world?u.team===team||B.world.visible(u,team):!(u.hid&1<<team)}
   seen(team,u){return BattleSight.seen(team,u)}
   // (the living soldiers of the other sides that side sees)
-  static foes(team){return B.units.filter(u=>u.hp>0&&u.team!==team&&!(u.hid&1<<team))}
+  static foes(team){return B.units.filter(u=>u.hp>0&&u.team!==team&&BattleSight.seen(team,u))}
   // (where that side last saw him: his place now while seen; null never seen)
-  static lastSeen(team,u){if(!(u.hid&1<<team))return{x:u.x,y:u.y};const p=u.ls;return p&&p[2*team]!=null?{x:p[2*team],y:p[2*team+1]}:null}
+  static lastSeen(team,u){if(BattleSight.seen(team,u))return{x:u.x,y:u.y};const p=u.ls;return p&&p[2*team]!=null?{x:p[2*team],y:p[2*team+1]}:null}
   /* who sees whom, every SIGHT.every s (force: now). For each side, its living soldiers filed in 32-px buckets (near) and the cells
      they stand in (each once: its lines of sight, from cell middle to cell middle). A soldier who could hide (in a wood; or where a
      rise could stand between: a field with one, and he below its top) is checked against each other side: struck or shot by him
@@ -1372,7 +1372,7 @@ class BattleSight{
      sight grid has his cell (fogGrid, fogSees), or who was struck by him lately; one in a wood as above. A group counts as lying
      in wait only in a wood or within its foes' range, hidden by the ground (not merely out of sight: fogGrid's rng) */
   static step(force){
-    if(B?.world){for(const u of B.units)u.hid=0;B.sight=null;return}
+    if(B?.world){for(const u of B.units){u.hid=0;for(const team of [0,1]){if(!BattleSight.seen(team,u)){u.hid|=1<<team;continue}const p=u.ls||(u.ls=[]);p[2*team]=u.x;p[2*team+1]=u.y}}B.sight=null;return}
     const T=B&&B.terrain,F=!!(B&&B.fog);if(!T&&!F)return;
     let S=B.sight;if(!S)S=B.sight=new BattleSight();if(T)T.sight=S;
     if(!force&&B.t<S.next)return;

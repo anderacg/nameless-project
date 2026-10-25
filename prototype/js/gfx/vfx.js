@@ -122,7 +122,7 @@ function vfxRing(x,y,r,col,life){vfx({k:'shock',x,y,r,life:life||.45,col})}
 function vfxBurst(x,y,n,col,v0,v1,k,up){for(let i=0;i<n;i++){const b=rnd(0,6.283),v=rnd(v0,v1);vfx({k:k||'ember',x,y,vx:Math.cos(b)*v,vy:Math.sin(b)*v*(k==='spark'?.6:1)-(up||0),life:rnd(.3,.7),col})}}
 function vfxCracks(x,y,n,len){for(let i=0;i<n;i++){const a=i/n*6.283+rnd(-.3,.3);vfx({k:'crack',x,y,a,len:len*rnd(.6,1.1),br:rnd(-.6,.6),life:rnd(1.2,1.8)})}}
 function vfxSmoke(x,y,n){for(let i=0;i<n;i++)vfx({k:'dust',x:x+rnd(-6,6),y:y+rnd(-4,2),vx:rnd(-8,8),vy:rnd(-22,-10),r:rnd(3,5),grow:10,life:rnd(.7,1.1),col:'120,116,110'})}
-function vfxGhost(u){const sp=unitSprite(u.type,spriteTeam(u),u.hero,u.v,0,true);vfx({k:'ghost',x:u.x,y:u.y-(u.z||0),face:u.face||1,sp,life:.22,col:sideCol(u,'say')})}
+function vfxGhost(u){const sp=actorSprite(u,0,true);vfx({k:'ghost',x:u.x,y:u.y-(u.z||0),face:u.face||1,sp,life:.22,col:sideCol(u,'say')})}
 // a spell's explosion: a flash, a ring of fire, embers and smoke
 function vfxExplode(x,y,r,col){vfx({k:'glow',x,y,r:r*1.1,life:.3,col:col||'#ffb050'});vfxRing(x,y+4,r,'255,150,70',.4);vfxBurst(x,y,16,'#ffd070',40,130,'ember',30);vfxBurst(x,y,6,'#ff7a30',20,70,'spark');vfxSmoke(x,y,5);shakeIt(3)}
 // each moment: they move, slow, fall, fade (blood that lands leaves a stain that fades)

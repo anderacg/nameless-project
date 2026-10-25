@@ -14,14 +14,17 @@ const marchOuter=o=>Math.max(WORLD_BATTLE.outer,marchCore(o)+4+Math.max(0,...par
 // March offsets are in world pixels, relative to the hero (east is the front). Missing entries use a stable default.
 function marchRows(o){
   const r=partyRoster(o),ids=o===P?r.order.filter(id=>id==='hero'||(id.startsWith('comp_')?compsInBand().includes(id.slice(5)):r.groups.some(g=>g.id===id&&g.count>0))):r.groups.filter(g=>g.count>0).map(g=>g.id),others=ids.filter(id=>id!=='hero');
+  const pivot=!marchSeparateLeader(o)&&(r.groups.find(g=>g.id===MARCH_ARMIES.get(o)?.units.find(u=>u.pivot&&!u.dead)?.row)||r.groups.find(g=>o.ld&&g.type==='chief')||r.groups[0]);
   return ids.map(id=>{const g=r.groups.find(g=>g.id===id),character=!g,at=others.indexOf(id),a=at/Math.max(1,others.length)*Math.PI*2;
-    const saved=o.army?.march?.[id],p=id==='hero'?{x:0,y:0}:saved&&Number.isFinite(saved.x)&&Number.isFinite(saved.y)?saved:{x:Math.cos(a)*marchCore(o),y:Math.sin(a)*marchCore(o)};
+    const saved=o.army?.march?.[id],p=id==='hero'||id===pivot?.id?{x:0,y:0}:saved&&Number.isFinite(saved.x)&&Number.isFinite(saved.y)?saved:{x:Math.cos(a)*marchCore(o),y:Math.sin(a)*marchCore(o)};
     const limit=Math.max(0,marchOuter(o)-marchExtent(g||{count:1})),d=Math.hypot(p.x,p.y),k=d>limit?limit/d:1;
     return{id,type:g?.type||id,count:g?.count||1,character,x:p.x*k,y:p.y*k,form:g?.form||'line',files:g?.files||null};
   });
 }
 const marchNumbers=o=>Object.fromEntries(marchRows(o).map((r,i)=>[r.id,(i+1)%10]));
 const worldBattleReach=o=>WORLD_BATTLE.on&&o instanceof Party&&o!==P?marchOuter(P)+marchOuter(o)+2*WORLD_BATTLE.interaction:REACH;
+// Only a character added to the troop list in battle gets an extra map figure. Other anchors are already in the formation.
+const marchSeparateLeader=o=>o===P||!!o.cid||o.mapKind==='lord'||!!o.ld&&!o.troops.includes('chief');
 // The battle's full sprites at its world scale, with weapons included and movement-driven poses.
 function marchSprite(u,o){
   const type=u.character?u.type.replace(/^comp_/,''):u.type;
@@ -39,14 +42,14 @@ function drawMarchLeader(s,x,y,dir){
 }
 function marchDraw(ents,o,cam){
   if(!WORLD_BATTLE.on)return false;const army=MarchArmy.of(o);army.sync();marchCircle(ents,o,cam);
-  for(const u of army.units)ents.push({y:u.y,own:o===P||o.faction==='player',f:()=>drawMarcher(u,o,cam)});return true;
+  for(const u of army.units)ents.push({y:u.y,own:o===P||o.faction==='player',f:()=>{drawMarcher(u,o,cam);if(u.pivot&&o.mapKind==='monster')BANNERQ.push({o,marker:{h:marchSprite(u,o).height*WORLD_BATTLE.sprite/WORLD_BATTLE.scale,col:o.look().col}})}});return true;
 }
 function drawMarcher(u,o,cam){
   subT(u);const s=marchSprite(u,o),k=WORLD_BATTLE.sprite/WORLD_BATTLE.scale,x=Math.round(u.x-cam.x),y=Math.round(u.y-cam.y);
   ctx.save();ctx.translate(x,y);ctx.scale(Math.cos(u.dir??marchFacing(o))<0?-k:k,k);ctx.drawImage(s,-Math.floor(s.width/2),-s.height+2);ctx.restore();
 }
-function marchCircle(ents,o,cam){
-  const r=marchOuter(o),col=o===P?'#e4c777':o.look().col;ents.push({y:o.y-r,f:()=>{ctx.save();ctx.strokeStyle=col;ctx.lineWidth=1;ctx.globalAlpha=.55;ctx.beginPath();ctx.arc(o.x-cam.x,o.y-cam.y,r,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=.28;ctx.setLineDash([3,4]);ctx.beginPath();ctx.arc(o.x-cam.x,o.y-cam.y,r+WORLD_BATTLE.interaction,0,Math.PI*2);ctx.stroke();ctx.restore()}});
+function marchCircle(ents,o,cam,r=marchOuter(o),col=o===P?'#e4c777':o.look().col){
+  ents.push({y:o.y-r,f:()=>{ctx.save();ctx.strokeStyle=col;ctx.lineWidth=1;ctx.globalAlpha=.55;ctx.beginPath();ctx.arc(o.x-cam.x,o.y-cam.y,r,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=.28;ctx.setLineDash([3,4]);ctx.beginPath();ctx.arc(o.x-cam.x,o.y-cam.y,r+WORLD_BATTLE.interaction,0,Math.PI*2);ctx.stroke();ctx.restore()}});
 }
 
 // Positions are runtime state. Saved group offsets remain the destination, never a rigid transform of the men.
@@ -93,21 +96,32 @@ class MarchArmy{
   static spread(o){const a=MARCH_ARMIES.get(o);return a&&Math.hypot(o.x-a.x,o.y-a.y)<=MARCH_MOVE.teleport?Math.max(0,...a.units.map(u=>Math.hypot(u.x-o.x,u.y-o.y)+3)):0}
   targets(){
     const o=this.owner,co=Math.cos(this.face),si=Math.sin(this.face),out=[];
+    const pivot=this.pivot();
     for(const row of this.rows)if(row.id!=='hero'){
       const x=o.x+row.x*co-row.y*si,y=o.y+row.x*si+row.y*co,slots=formSlots(row.form,row.count,this.face,row.files,WORLD_BATTLE.sprite);
-      slots.forEach(([sx,sy],i)=>out.push({row:row.id,index:i,type:row.type,character:row.character,x:x+sx/WORLD_BATTLE.scale,y:y+sy/WORLD_BATTLE.scale}));
+      const at=pivot?.row===row.id?slots[pivot.index]:[0,0];
+      slots.forEach(([sx,sy],i)=>out.push({row:row.id,index:i,type:row.type,character:row.character,pivot:pivot?.row===row.id&&pivot.index===i,x:x+(sx-at[0])/WORLD_BATTLE.scale,y:y+(sy-at[1])/WORLD_BATTLE.scale}));
     }return out;
+  }
+  pivot(){
+    if(marchSeparateLeader(this.owner))return null;
+    const old=this.units.find(u=>u.pivot&&!u.dead&&this.rows.some(r=>r.id===u.row&&u.index<r.count));if(old)return old;
+    const row=this.rows.find(r=>this.owner.ld&&r.type==='chief')||this.rows[0];if(!row)return null;
+    const slots=formSlots(row.form,row.count,0,row.files,WORLD_BATTLE.sprite);let index=0;for(let i=1;i<slots.length;i++)if(Math.hypot(...slots[i])<Math.hypot(...slots[index]))index=i;return{row:row.id,index};
   }
   sync(){
     this.rows=marchRows(this.owner);const key=JSON.stringify(this.rows);if(key===this.key&&!this.units.some(u=>u.dead))return;this.key=key;
-    const targets=this.targets(),old=this.units.filter(u=>!u.dead),used=new Set(),units=[];
+    const targets=this.targets(),old=this.units.filter(u=>!u.dead),prior=old.find(u=>u.pivot),used=new Set(),units=[];
     this.ground=new MarchGround(this.owner,old);this.refresh=this.time+MARCH_MOVE.refresh;const g=this.ground,reach=g.reachable(this.owner),reserved=new Set();
-    for(const p of targets){let u=old.find(u=>!used.has(u)&&u.row===p.row&&u.type===p.type);if(u){used.add(u);reserved.add(routeIx(g.grid,u.x-g.x,u.y-g.y))}else{const q=g.snap(p,reach,reserved)||g.snap(this.owner,null,reserved);if(!q)continue;u={id:++this.serial,x:q.x,y:q.y,walk:0,walking:false};}
-      Object.assign(u,{row:p.row,index:p.index,type:p.type,character:p.character,goal:{x:p.x,y:p.y},plan:null});units.push(u)}this.units=units;
+    for(const p of targets){let u=old.find(u=>!used.has(u)&&u.row===p.row&&u.type===p.type);if(u){used.add(u);reserved.add(routeIx(g.grid,u.x-g.x,u.y-g.y))}else{const q=p.pivot?this.owner:g.snap(p,reach,reserved)||g.snap(this.owner,null,reserved);if(!q)continue;u={id:++this.serial,x:q.x,y:q.y,walk:0,walking:false};}
+      Object.assign(u,{row:p.row,index:p.index,type:p.type,character:p.character,pivot:p.pivot,goal:{x:p.x,y:p.y},plan:null});units.push(u)}this.units=units;
+    if(prior&&units.includes(prior)&&!marchSeparateLeader(this.owner))for(const u of units)u.pivot=u===prior;
+    const pivot=units.find(u=>u.pivot);if(pivot){pivot.x=this.owner.x;pivot.y=this.owner.y;pivot.goal={x:pivot.x,y:pivot.y}}
   }
   step(d,sync=true,bounds=null,inside=null){
     if(!(d>0))return;const o=this.owner;if(Math.hypot(o.x-this.x,o.y-this.y)>MARCH_MOVE.teleport){MARCH_ARMIES.delete(o);MarchArmy.of(o);return}
     if(sync)this.sync();this.time+=d;const dx=o.x-this.x,dy=o.y-this.y,moved=Math.hypot(dx,dy),to=moved>.001?(this.heading=Math.atan2(dy,dx)):this.heading,gap=Math.atan2(Math.sin(to-this.face),Math.cos(to-this.face));this.face+=clamp(gap,-MARCH_MOVE.turn*d,MARCH_MOVE.turn*d);this.x=o.x;this.y=o.y;
+    const pivot=this.units.find(u=>u.pivot);if(pivot){pivot.walk+=Math.hypot(o.x-pivot.x,o.y-pivot.y);pivot.walking=moved>.001;pivot.x=o.x;pivot.y=o.y;pivot.dir=this.face;pivot.goal={x:o.x,y:o.y};pivot.plan=null;if(this.units.length===1){this.queries=0;return}}
     if(!this.ground||this.ground.version!==WAYV||this.time>=(this.refresh||0)||!this.ground.covers(o,marchOuter(o)+8)||this.units.some(u=>!this.ground.covers(u,8))){this.ground=new MarchGround(o,this.units);this.refresh=this.time+MARCH_MOVE.refresh}
     const nav=this.ground,reach=nav.reachable(o),reserved=new Set(),targets=this.targets();this.queries=0;
     const pace=o===P?MAP_BASE*travelMul()*(P.morale<25?.8:1)*roadSprint()*hurryPace():partySpeed(o,o.troops),step=moveStep(pace,d,!B?.world)*MARCH_MOVE.catchup;
@@ -115,11 +129,11 @@ class MarchArmy{
     const near=u=>{const out=[],cx=Math.floor(u.x/cell),cy=Math.floor(u.y/cell);for(let y=cy-1;y<=cy+1;y++)for(let x=cx-1;x<=cx+1;x++)out.push(...buckets.get(x+','+y)||[]);return out};
     const wanted=new Map(targets.map(p=>[p.row+':'+p.index,p])),requests=[],sameGoals=this.goalGround===nav&&this.goalX===o.x&&this.goalY===o.y&&this.goalFace===this.face&&this.goalRoster===this.key&&this.goalBounds===bounds;
     this.goalGround=nav;this.goalX=o.x;this.goalY=o.y;this.goalFace=this.face;this.goalRoster=this.key;this.goalBounds=bounds;
-    for(const u of this.units){u.walking=false;const p=wanted.get(u.row+':'+u.index);if(!sameGoals){const at=routeIx(nav.grid,u.x-nav.x,u.y-nav.y),local=reach[at]?reach:nav.island(u);u.goal=p&&nav.snap(bounds?bounds(p):p,local,reserved,inside)}if(!u.goal)continue;
+    for(const u of this.units){if(u.pivot){reserved.add(routeIx(nav.grid,u.x-nav.x,u.y-nav.y));continue}u.walking=false;const p=wanted.get(u.row+':'+u.index);if(!sameGoals){const at=routeIx(nav.grid,u.x-nav.x,u.y-nav.y),local=reach[at]?reach:nav.island(u);u.goal=p&&nav.snap(bounds?bounds(p):p,local,reserved,inside)}if(!u.goal)continue;
       u.straight=nav.clear(u,u.goal);if(u.straight){u.plan=null;delete u.needAt;continue}
       const w=u.plan;if(!w||w.ground!==nav||this.time>=w.at||Math.hypot(w.goal.x-u.goal.x,w.goal.y-u.goal.y)>nav.grid.cs){u.needAt??=this.time;requests.push(u)}}
     requests.sort((a,b)=>a.needAt-b.needAt||a.id-b.id);for(const u of requests.slice(0,MARCH_MOVE.queries)){this.queries++;u.plan={ground:nav,p:nav.path(u,u.goal),i:0,goal:u.goal,at:this.time+MARCH_MOVE.repath+u.id%7*.025};delete u.needAt}
-    for(const u of this.units){const goal=u.goal;if(!goal||Math.hypot(goal.x-u.x,goal.y-u.y)<=MARCH_MOVE.settle)continue;
+    for(const u of this.units){if(u.pivot)continue;const goal=u.goal;if(!goal||Math.hypot(goal.x-u.x,goal.y-u.y)<=MARCH_MOVE.settle)continue;
       let aim=goal;if(!u.straight){const w=u.plan;if(!w||w.ground!==nav||!w.p.length)continue;while(w.i<w.p.length-1&&(Math.hypot(w.p[w.i].x-u.x,w.p[w.i].y-u.y)<MARCH_MOVE.waypoint||nav.clear(u,w.p[w.i+1])))w.i++;aim=w.p[w.i]}
       const ax=aim.x-u.x,ay=aim.y-u.y,l=Math.hypot(ax,ay);if(l<.001)continue;const amount=Math.min(step,l),friends=near(u),angle=Math.atan2(ay,ax);let q=null;
       for(const off of MARCH_MOVE.sidestep){const p={x:u.x+Math.cos(angle+off)*amount,y:u.y+Math.sin(angle+off)*amount};if(nav.clear(u,p)&&!friends.some(v=>v!==u&&Math.hypot(v.x-p.x,v.y-p.y)<MARCH_MOVE.gap&&Math.hypot(v.x-p.x,v.y-p.y)<Math.hypot(v.x-u.x,v.y-u.y)-.001)){q=p;break}}if(!q)continue;
@@ -127,6 +141,10 @@ class MarchArmy{
     }
   }
   forGroup(id){return this.units.filter(u=>u.row===id)}
+  settlePivot(){
+    if(marchSeparateLeader(this.owner))return;const live=this.units.filter(u=>!u.dead),pivot=live.find(u=>u.pivot)||live[0];if(!pivot)return;
+    for(const u of this.units)u.pivot=u===pivot;this.owner.x=this.x=pivot.x;this.owner.y=this.y=pivot.y;
+  }
 }
 onWorld(()=>{MARCH_ARMIES=new WeakMap()});
 Systems.add({name:'march formations',order:{frame:145},frame:d=>{

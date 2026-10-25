@@ -7,7 +7,8 @@ function seenArr(){if(!(W.seen instanceof Uint8Array)||W.seen.length!==MW*MH)W.s
 const seenTile=(tx,ty)=>tx>=0&&ty>=0&&tx<MW&&ty<MH&&seenArr()[ty*MW+tx]===1;
 const seenAt=(x,y)=>seenTile(Math.floor(x/TILE),Math.floor(y/TILE));
 // in your sight now
-const inSight=(x,y)=>Math.hypot(x-P.x,y-P.y)<vis()||!!(B?.world&&Math.hypot(x-B.world.x,y-B.world.y)<=B.world.r);
+const worldEye=()=>B?.world&&B.hero?B.world.world(B.hero):P;
+const inSight=(x,y)=>{const p=worldEye();return Math.hypot(x-p.x,y-p.y)<vis()};
 let fogDirty=true,lastReveal='';
 // what you see now becomes known (each tile whose middle lies within your sight)
 function revealDisk(px,py,V){
@@ -16,8 +17,8 @@ function revealDisk(px,py,V){
   for(let y=ty-r;y<=ty+r;y++)for(let x=tx-r;x<=tx+r;x++){if(x<0||y<0||x>=MW||y>=MH||S[y*MW+x])continue;if(Math.hypot((x+.5)*TILE-px,(y+.5)*TILE-py)<V){S[y*MW+x]=1;fogDirty=true}}
 }
 function reveal(){
-  const V=vis(),a=B?.world,key=Math.floor(P.x/TILE)+','+Math.floor(P.y/TILE)+','+Math.round(V)+(a?','+a.x+','+a.y+','+a.r:'');if(key===lastReveal)return;lastReveal=key;
-  revealDisk(P.x,P.y,V);if(a)revealDisk(a.x,a.y,a.r);
+  const V=vis(),p=worldEye(),key=Math.floor(p.x/TILE)+','+Math.floor(p.y/TILE)+','+Math.round(V);if(key===lastReveal)return;lastReveal=key;
+  revealDisk(p.x,p.y,V);
 }
 // a fresh map (a new game): nothing known yet
 function fogReset(){W.seen=new Uint8Array(MW*MH);fogDirty=true;lastReveal=''}
@@ -80,7 +81,7 @@ function wfogAt(O,x,y){const cs=WFOG.cell,C=O.C,R=O.R;let u=x/cs-.5,v=y/cs-.5;u=
 // the land you remember, the dark of the land you never saw over it, their edges mist and wisps drifting in them (mist.js),
 // laid into one small picture of the frame (a pixel 4 ground px) and drawn up onto the screen in one step
 function drawWorldFog(cam,V){
-  const O=wfogStep(cam,V),v=O.v,r0=v*WFOG.ring,rw=v-r0,px=P.x,py=P.y,W=MIST.warp,flat=mistFlat(O.fl||(O.fl={}),O.b,O.C,O.R,WFOG.cell,cam.x,cam.y,cam.x+VW,cam.y+VH);
+  const O=wfogStep(cam,V),v=O.v,r0=v*WFOG.ring,rw=v-r0,eye=worldEye(),px=eye.x,py=eye.y,W=MIST.warp,flat=mistFlat(O.fl||(O.fl={}),O.b,O.C,O.R,WFOG.cell,cam.x,cam.y,cam.x+VW,cam.y+VH);
   const E=mistFog(O.edge,cam.x,cam.y,VW,VH,WFOG.cell,4,[
     {s:(x,y)=>{const d=Math.hypot(x-px,y-py);return d<=r0?0:d>=v?1:(d-r0)/rw},flat:(X,Y)=>{const d=Math.hypot(X-px,Y-py);return d+W<=r0?0:d-W>=v?1:-1},a:FOG.dark,col:FOG.col,m:FOG.dark,haze:WFOG.ringHaze,hz:WFOG.ringHz},
     // (the unknown's dark kept out of your sight but for its last tenth, so its puffs never hide what you see)
