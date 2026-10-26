@@ -1,0 +1,25 @@
+'use strict';
+Kit.suite(({ok})=>{
+ const t=T,P=t.P,G=t.G,W=t.W,A=t.TravelAwareness;window.requestAnimationFrame=()=>0;Kit.begin('soldier',1);Kit.clear();Kit.world();t.WORLD_BATTLE.on=true;t.GUIDE.on=false;P.troops={hum_foot:5};P.comps={};P.camp=null;
+ const home=Kit.goHome('Ashford');Kit.goTo(home.x+240,home.y+200);
+ const enemy=t.asParty({kind:'bandits',troops:['militia','militia'],x:P.x+65,y:P.y,cool:0});t.bandits.push(enemy);
+ const reset=()=>{window.eval('B=null');Kit.world();A.reset();enemy.x=P.x+65;delete enemy.fight;enemy.dead=false;enemy.inside=null;t.MarchAmbush.finish()};
+ const encounter=(extra={})=>{t.startEncounter({kind:'party',ref:enemy,list:enemy.troops.slice(),mine:true,allies:[],foes:[],...extra});return G.enc};
+ const ambush=()=>document.querySelector('[data-act="bt-spring"]');
+ reset();let e=encounter();ok(t.canSpring(e)&&ambush()?.textContent==='Ambush attack'&&document.querySelector('[data-act="fight"]').textContent==='Normal attack','undetected enemy encounter offers normal and ambush attack');
+ ok(Kit.text().includes('They have not detected your army'),'the choice explains whose detection matters');
+ A.notice(enemy);t.act('bt-spring');ok(!t.B&&G.mode==='dialog'&&!e.btype,'a stale ambush button cannot bypass newly acquired detection');
+ encounter();ok(!ambush()&&!!document.querySelector('[data-act="fight"]'),'a detected target still permits a normal attack');
+ enemy.x=P.x+700;ok(!t.canWorldAmbush(e),'recent sighting memory prevents an immediate ambush after leaving detection range');A.time+=t.TRAVEL_AMBUSH.memory+.1;ok(t.canWorldAmbush(e),'ambush becomes available once detection and recent sighting memory expire');
+ reset();e=encounter({mine:false});ok(!t.canWorldAmbush(e)&&!ambush(),'an enemy-initiated encounter does not offer a player ambush');
+ reset();enemy.fight='ongoing';e=encounter();ok(!t.canWorldAmbush(e)&&!ambush(),'an ongoing fight cannot become a new ambush');delete enemy.fight;
+ reset();e=encounter();t.act('fight');ok(t.B?.muster?.active&&!t.B.ready,'Normal attack starts the regular walk-in preparation');
+ reset();e=encounter();const actual=new Map();for(const owner of [P,enemy])for(const u of t.MarchArmy.of(owner).units)actual.set(u,{x:u.x,y:u.y});t.act('bt-spring');let b=t.B;
+ ok(b?.world&&!b.muster&&!b.ready&&!b.paused&&e.btype.hid===0,'Ambush attack immediately starts a player ambush without preparation');
+ ok(b.units.filter(u=>u.marchUnit).every(u=>{const p=b.world.world(u),q=actual.get(u.marchUnit);return q&&Math.hypot(p.x-q.x,p.y-q.y)<.001}),'ambush preserves the current physical marching positions');t.updateBattle(.01);ok(b.t>0,'ambush starts actual combat without Start Battle');
+ reset();const monster=t.asMonster({id:'wolf',n:2,lv:1,x:P.x+60,y:P.y,cool:0});W.monsters=[monster];t.startEncounter({kind:'monster',ref:monster,lv:1,list:monster.troops.slice(),mine:true,allies:[],foes:[]});ok(!!ambush()&&document.querySelector('[data-act="fight"]').textContent==='Normal attack','undetected monster encounters expose both attack choices');
+ reset();const caravan=Object.assign(new t.CaravanParty(),{from:home.name,to:home.name,fac:'vale',x:P.x+60,y:P.y,goods:{grain:1},gold:0,guards:2,tc:{militia:2},cool:0});W.caravans=[caravan];t.startEncounter({kind:'caravan',ref:caravan,list:caravan.troops.slice(),mine:true,allies:[],foes:[]});ok(!!ambush(),'undetected caravans expose the ambush choice');
+ reset();t.parley(enemy,'band');t.act('pl-fight');ok(G.enc.mine&&!!ambush(),'attacking through a parley preserves the player attack choice');
+ reset();const r=t.partyRoster(P).groups[0];t.MarchAmbush.set(r.id,true);encounter();t.act('fight');ok(t.B.muster?.active&&!P.army.concealed,'choosing Normal attack releases concealed holds and performs normal preparation');
+ ok(!ERR.length,'attack choices produce no runtime errors');
+});

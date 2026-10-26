@@ -10,7 +10,7 @@ Kit.suite(({ok})=>{
  G.enc={kind:'party',ref:enemy,list:enemy.troops.slice(),allies:[],foes:[],mine:true};t.startBattle({enemies:G.enc.list,tournament:false});for(let i=0;i<1600&&t.B.muster?.active;i++)t.updateBattle(.1);t.frame();let b=t.B;
  const near=(a,z)=>Math.abs(a-z)<.001,start=document.getElementById('bStart'),r=start.getBoundingClientRect(),screen=document.getElementById('screen').getBoundingClientRect();
  ok(b.ready&&b.paused&&!b.deploy&&b.t===0,'world battle opens formed up and paused even with the old pause preference off');
- ok(!start.hidden&&r.height>=44&&near(r.left+r.width/2,screen.left+screen.width/2)&&r.top<screen.top+35,'Start Battle is accessible at the top center');
+ ok(!start.hidden&&r.height>=44&&near(r.left+r.width/2,screen.left+screen.width/2)&&near(r.top+r.height/2,screen.top+screen.height/2),'Start Battle is accessible at the screen center');
  ok(b.groups['p_'+foot.id].files===1&&b.groups['p_'+cav.id].form==='wedge','saved Column and Wedge formations are retained');
  for(const owner of [P,enemy]){const groups=Object.values(b.groups).filter(g=>g.player=== (owner===P)),rows=t.marchRows(owner),anchor=b.muster.armies.find(a=>a.owner===owner).anchor,face=anchor.facing;
   ok(groups.every(g=>{const row=rows.find(z=>z.id===(g.sourceGroupId||g.id));if(!row)return true;const p=b.world.field({x:anchor.x+row.x*Math.cos(face)-row.y*Math.sin(face),y:anchor.y+row.x*Math.sin(face)+row.y*Math.cos(face)});return near(g.ax,p.x)&&near(g.ay,p.y)&&near(g.face,face+row.face)}),(owner===P?'player':'enemy')+' group centers and facing match the saved march layout');

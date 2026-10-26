@@ -12,7 +12,7 @@ function parley(o,kind){
     '<p class="muted">Call on them to yield ('+insight(['you cannot tell whether they would','they '+(ch>=50?'may well':'might')+' yield','about '+ch+'% they do'],'know the odds')+'; if not, they fight), attack at once, or let them go.</p><div class="btns">'+
     dlgBtn('pl-yield',null,'Demand surrender',null,true)+dlgBtn('pl-fight',null,'Attack')+dlgBtn('pl-go',null,'Let them go')+'</div>');
 }
-function parleyFight(o,kind){G.par=null;if(kind==='lord')return startEncounter({kind:'lord',ref:o,list:o.troops.slice()});startEncounter({kind:'party',ref:o,n:o.n,list:o.troops.slice(),band:o.kind||'bandits'})}
+function parleyFight(o,kind){G.par=null;if(kind==='lord')return startEncounter({kind:'lord',ref:o,list:o.troops.slice(),mine:true});startEncounter({kind:'party',ref:o,n:o.n,list:o.troops.slice(),band:o.kind||'bandits',mine:true})}
 // they yield: take them prisoner, (bandits) take them into your band, or disarm them and let them go
 function parleyYield(){
   const {o,kind}=G.par,lord=kind==='lord',list=o.troops;

@@ -88,7 +88,7 @@ function measureField(ready=false){
     // (measured without the unit-ability buttons (battlehud.js): which abilities show depends on the selection, and the last battle's
     // were still there, so the field and the groups' widths would change with them)
     if(ab)ab.hidden=true;const tops=['.btop','.btime'].map(box).filter(Boolean),bot=box('.bcmd');
-    const top=Math.max(ready?54:0,tops.length?Math.max(...tops.map(b=>b.bottom))-r.top:0),bh=bot?r.bottom-bot.top:0;
+    const top=tops.length?Math.max(...tops.map(b=>b.bottom))-r.top:0,bh=bot?r.bottom-bot.top:0;
     return{top:Math.round(clamp(top*k+FIELD_EDGE.body,FIELD_EDGE.top,BH*.3)),bot:Math.round(clamp(BH-bh*k-FIELD_EDGE.bot,BH*.6,BH-FIELD_EDGE.bot))}}
   finally{if(ab)ab.hidden=abH;bbar.classList.toggle('battle-ready',wasReady);bbar.hidden=was;bbar.style.visibility=''}}
 /* ---------- battle types (IMPLEMENTATION_PLAN §4 item 5; doc/TERRAIN_DESIGN.md §8, phase 5): B.btype, absent on an open field ----------

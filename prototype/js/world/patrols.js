@@ -125,7 +125,7 @@ class Watches{
     if(a==='pt-pay'&&c&&P.gold>=c.fine){P.gold-=c.fine;t.crime=null;addRep(t.name,2,true);G.pt=null;return notice('Fine paid','The guards take '+c.fine+' gold and let you pass. The matter is closed.','good')}
     if(a==='pt-run'){const l=Math.hypot(P.x-p.x,P.y-p.y)||1;walk(P,(P.x-p.x)/l,(P.y-p.y)/l,WORLD_SCALE.ai.slipAway);p.cool=8;G.pt=null;closeDialog();G.encCool=4;log('You slip away from the guards of '+p.home+'. They will be looking for you.','bad');return}
     if(a==='pt-fight'||a==='pt-attack'){realmOf(p.fac).provoke(20,a==='pt-fight'?5:10);G.pt=null;
-      return startEncounter({kind:'patrol',ref:p,list:p.troops.slice(),title:watchName(p)})}
+      return startEncounter({kind:'patrol',ref:p,list:p.troops.slice(),title:watchName(p),mine:a==='pt-attack'})}
   }
   // beaten: the patrol is gone, those still standing make their way home, and that watch (only) keeps in for a while, short of
   // its fallen; its holding remembers

@@ -151,12 +151,23 @@ function battleTypeFor(e){
   const by=e.mine?0:e.kind==='lord'?BTYPE_WORLD.by.lord:e.kind==='party'?BTYPE_WORLD.by[e.band||'bandits']||0:0,cv=by&&coverAt(P.x,P.y);
   return cv&&hash(g.tx,g.ty,G.day*13+7)<BTYPE_WORLD.cover[cv]*by?{kind:'ambush',hid:1}:null}
 // you may lie in wait for them: you rode at them, where there is cover, and it is no bridge's fight
-const canSpring=e=>!WORLD_BATTLE.on&&TERRAIN.on&&!!e.mine&&BTYPE_WORLD.kinds.includes(e.kind)&&!e.btype&&!!coverAt(P.x,P.y);
+const WORLD_ATTACK_KINDS=['party','lord','patrol','caravan','monster'];
+// A known sighting remains detection until travel awareness's existing memory expires.
+function canWorldAmbush(e){
+  if(!e||!WORLD_BATTLE.on||!e.mine||!WORLD_ATTACK_KINDS.includes(e.kind)||e.btype||e.fight||P.stay||B)return false;
+  const o=e.ref?.src||e.ref;if(!o||o===P||o.dead||o.gone||o.inside||o.fight||!Number.isFinite(o.x)||!Number.isFinite(o.y)||!['lord','band','patrol','caravan','monster'].includes(o.mapKind))return false;
+  if(TravelAwareness.sees(o))return false;
+  return ![...(TravelAwareness.records.get(o)?.values()||[])].some(r=>r.last!=null&&TravelAwareness.time-r.last<=TRAVEL_AMBUSH.memory);
+}
+const canSpring=e=>WORLD_BATTLE.on?canWorldAmbush(e):TERRAIN.on&&!!e.mine&&BTYPE_WORLD.kinds.includes(e.kind)&&!e.btype&&!!coverAt(P.x,P.y);
+function encounterAttackButtons(e){return '<button class="btn primary" type="button" data-act="fight">'+(WORLD_BATTLE.on&&e.mine&&WORLD_ATTACK_KINDS.includes(e.kind)?'Normal attack':'Fight')+'</button>'+(canSpring(e)?'<button class="btn" type="button" data-act="bt-spring">'+(WORLD_BATTLE.on?'Ambush attack':'Spring an ambush')+'</button>':'')}
+
 // the pre-battle panel's word on the battle's type
 function typeHtml(e){const bt=e.btype;
   if(bt&&bt.kind==='bridge')return bt.def===0?'<p class="gold"><strong>Hold the bridge.</strong> You stand on your bank by it: they must come at you over the river, by the bridge'+(bt.ford?' or a ford far off it.':' or not at all.')+'</p>'
     :'<p class="gold"><strong>Take the bridge.</strong> They hold the far bank by it'+(bt.ford?', a ford far off it':'')+': you must cross.</p>';
   if(bt&&bt.kind==='ambush')return '<p class="bad"><strong>Ambush!</strong> They burst from cover beside the road: your band is caught in march order, with no time to deploy.</p>';
+  if(WORLD_BATTLE.on&&canWorldAmbush(e))return '<p class="muted">They have not detected your army. Normal attack lets both armies form up. Ambush attack begins immediately from your current positions.</p>';
   return canSpring(e)?'<p class="muted">There is cover here: you can lie in wait beside the road and spring an ambush on them as they pass.</p>':''}
 // (Spring an ambush: your band hidden beside the road, theirs on it in march order; no deployment for either)
 onAct('bt-',a=>{const e=G.enc;if(a==='bt-spring'&&e&&G.mode==='dialog'&&canSpring(e)){e.btype={kind:'ambush',hid:0};startBattle({enemies:e.list,tournament:false,lv:e.lv||1,deploy:false})}});
@@ -177,11 +188,11 @@ function startEncounter(e){
   const vm=vitals(),hurt=reinfHtml(e)+(P.hp<vm[0]*.6?'<p class="bad">You are wounded: '+Math.round(P.hp)+' / '+vm[0]+' health. Rest at an inn or travel to recover.</p>':''),cls=ratio<.6?'good':ratio<1?'gold':'bad',vs='Your power <strong>'+partyPower()+'</strong> vs <strong>'+rating(e.list,e.lv)+'</strong> · threat <strong class="'+cls+'">'+threat+'</strong>',lord=e.kind==='lord'&&e.ref,f=lord&&FACS[lord.fac];
   if(e.kind==='monster'||e.kind==='cave'){const M=MONSTERS[e.ref.id],u=ST[M.unit],Y=M.mythic;
     const finds=[M.mat&&'Trophy: '+MATS[M.mat].n+'.',M.gear.length&&'Rare finds: '+M.gear.map(([it])=>'<span style="color:'+RARITY[ITEMS[it].r]+'">'+ITEMS[it].n+'</span>').join(', ')+'.',Y&&Y.hoard&&'It guards a hoard of about '+Y.hoard.gold+' gold.'].filter(Boolean).join(' ');
-    return showPanel('<h2>'+(Y?Y.title:(e.kind==='cave'?e.ref.name+': ':'')+M.n+' <span class="muted">· level '+e.lv+'</span>')+'</h2><p>'+M.d+'</p><p>'+e.list.length+' × '+u.n+' ('+u.hp+' hp'+(e.lv>1?', stronger with level':'')+'). '+vsLine(u)+'. You have <strong>'+P.fighters+'</strong> fighters.</p>'+ground+
+    return showPanel('<h2>'+(Y?Y.title:(e.kind==='cave'?e.ref.name+': ':'')+M.n+' <span class="muted">· level '+e.lv+'</span>')+'</h2><p>'+M.d+'</p><p>'+e.list.length+' × '+u.n+' ('+u.hp+' hp'+(e.lv>1?', stronger with level':'')+'). '+vsLine(u)+'. You have <strong>'+P.fighters+'</strong> fighters.</p>'+ground+typeHtml(e)+
       (finds?'<p class="muted">'+finds+'</p>':'')+hurt+'<p>'+vs+'</p>'+
-      '<div class="btns"><button class="btn primary" type="button" data-act="fight">Fight</button><button class="btn" type="button" data-act="auto">Auto-resolve</button>'+fleeBtn(e)+'</div>')}
+      '<div class="btns">'+encounterAttackButtons(e)+'<button class="btn" type="button" data-act="auto">Auto-resolve</button>'+fleeBtn(e)+'</div>')}
   if(e.kind==='field')return showPanel('<h2>'+e.title+'</h2><p>You ride into the battle'+(e.allies.length?' beside '+e.allies.map(l=>l.name).join(', '):'')+'.</p>'+ground+hurt+'<p>'+vs+'</p><div class="btns"><button class="btn primary" type="button" data-act="fight">Fight</button><button class="btn" type="button" data-act="auto">Auto-resolve</button><button class="btn" type="button" data-act="flee">Leave them to it</button></div>');
-  showPanel('<h2>'+(e.title?e.title:lord?lord.name+' attacks':e.kind==='camp'?e.ref.name||'Bandit camp':band[0])+'</h2>'+(lord?'<p class="muted">An army of the <span style="color:'+f.col+'">'+f.n+'</span>.</p>':'')+'<p>Scouts count about <strong>'+encounterMainFighters(e)+'</strong> '+(e.word||'fighters')+(encounterMainFighters(e)>e.list.length?' including their leader':'')+'.'+ground+' You have <strong>'+P.fighters+'</strong> fighters, including yourself.</p>'+typeHtml(e)+hurt+'<p>'+vs+'</p><div class="btns"><button class="btn primary" type="button" data-act="fight">Fight</button>'+(canSpring(e)?'<button class="btn" type="button" data-act="bt-spring">Spring an ambush</button>':'')+'<button class="btn" type="button" data-act="auto">Auto-resolve</button>'+fleeBtn(e)+'</div>');
+  showPanel('<h2>'+(e.title?e.title:lord?lord.name+' attacks':e.kind==='camp'?e.ref.name||'Bandit camp':band[0])+'</h2>'+(lord?'<p class="muted">An army of the <span style="color:'+f.col+'">'+f.n+'</span>.</p>':'')+'<p>Scouts count about <strong>'+encounterMainFighters(e)+'</strong> '+(e.word||'fighters')+(encounterMainFighters(e)>e.list.length?' including their leader':'')+'.'+ground+' You have <strong>'+P.fighters+'</strong> fighters, including yourself.</p>'+typeHtml(e)+hurt+'<p>'+vs+'</p><div class="btns">'+encounterAttackButtons(e)+'<button class="btn" type="button" data-act="auto">Auto-resolve</button>'+fleeBtn(e)+'</div>');
 }
 /* fleeing is a real escape. A fight you started (you rode at them, or you are storming, raiding or joining a battle) you can
    simply call off, as you can with a foe that is afraid of you. Otherwise it is a race: your band's speed on this ground (a big

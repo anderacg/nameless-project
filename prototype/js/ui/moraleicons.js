@@ -112,7 +112,7 @@ const unitIconScale=()=>B?.world?UICON.k*(window.devicePixelRatio||1)/VS:UICON.k
 /* where they stand (iconLayout; B.icons, for clicks, in the order drawn): each over its own group, its place on the field eased
    after its men on the battle's clock (follow: a man falling or running moves it with no jump; snap: field px past which it is
    simply put there, as when a group comes back into sight; deploying, the clock stands still and groups are placed at once, so
-   each is simply put over its own). They may overlap: drawn the selected on top, then the one pointed
+   each is simply put over its own). Preparation also follows actual soldiers directly while the combat clock is frozen. They may overlap: drawn the selected on top, then the one pointed
    at, then yours over theirs, the nearer (lower) over the farther; one under another faded a little (under). Only where banners
    overlap and their groups are at blows with each other (a man of one set on a man of the other within contact field px) are
    they fanned out side by side, gap px apart (badges and all), so each can be seen and clicked; eased in and out over about ease real seconds. Less motion
@@ -125,7 +125,7 @@ function iconLayout(rt){
   // (an enemy group your side does not see has no icon; one partly seen, over those seen: terrain.js seenBy)
   for(const g in B.groups){const m=B.units.filter(u=>u.grp===g&&u.hp>0&&seenBy(0,u));if(!m.length){delete IP[g];continue}const mo=B.noMorale?null:grpMorale(m);
     const f=m.filter(u=>!u.rout),at=f.length?f:m,cx=at.reduce((a,u)=>a+u.x,0)/at.length,cy=at.reduce((a,u)=>a+u.y,0)/at.length,top=Math.min(...at.map(u=>u.y));
-    let p=IP[g];if(!p||rm||B.deploy||Math.hypot(p.x-cx,p.y-top)>ICON_FAN.snap)p=IP[g]={x:cx,y:top,dx:p?p.dx:0};else{const k=1-Math.exp(-dt*ICON_FAN.follow);p.x+=(cx-p.x)*k;p.y+=(top-p.y)*k}
+    let p=IP[g];if(!p||rm||B.deploy||B.muster&&(B.muster.active||B.ready)||Math.hypot(p.x-cx,p.y-top)>ICON_FAN.snap)p=IP[g]={x:cx,y:top,dx:p?p.dx:0};else{const k=1-Math.exp(-dt*ICON_FAN.follow);p.x+=(cx-p.x)*k;p.y+=(top-p.y)*k}
     const st=[...(aiHas(B.groups[g])?['ai']:[]),...(mo?statusOf(mo):[])],W=(S+(st.length?Math.ceil(st.length/2)*10+1:0))*K,H=(S+6)*K,sp=fromField({x:p.x,y:p.y});
     if(sp.x<-W||sp.x>BVW+W||sp.y<0||sp.y>BVH+40)continue;// (off the view: none)
     items.push({g,m,mo,st,W,H,cx,cy,p,team:m[0].team,bx:sp.x-S*K/2,y:Math.max(4,sp.y-UICON.lift*z*(B.world?WORLD_BATTLE.sprite:1)-H),tier:sel.includes(g)?3:B.iconHov===g?2:m[0].team?0:1})}
