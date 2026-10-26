@@ -4,7 +4,7 @@ Kit.suite(({ok})=>{
  const hud=window.mobileWorldHud,root=hud.root,cv=document.getElementById('game'),stats=document.getElementById('stats'),speed=document.getElementById('speedToggle'),party=document.getElementById('partyToggle');
  const visible=e=>!!e.getClientRects().length&&getComputedStyle(e).display!=='none',rect=e=>e.getBoundingClientRect(),click=id=>document.getElementById(id).click();
  ok(hud.enabled&&visible(root)&&!visible(stats)&&!visible(document.getElementById('wtop'))&&!visible(document.querySelector('.dock')),'mobile world starts with one bottom dock and collapsed party details');
- const buttons=[document.getElementById('pause'),speed,...['mapBtn','charBtn','menuBtn'].map(id=>document.getElementById(id))],r=rect(root);
+ const buttons=[document.getElementById('pause'),speed,...['mapToggle','charBtn','menuBtn'].map(id=>document.getElementById(id))],r=rect(root);
  ok(buttons.every(b=>{const p=rect(b);return root.contains(b)&&p.width>=44&&p.height>=44&&p.left>=r.left&&p.right<=r.right&&p.bottom<=r.bottom})&&buttons.every((b,i)=>!i||rect(b).left>=rect(buttons[i-1]).right),'the five thumb-sized controls fit in one row without overlapping');
  ok(r.bottom<=innerHeight&&r.top>innerHeight/2,'the dock stays inside the viewport at the bottom');
  click('speedToggle');const choices=hud.choices;ok(!choices.hidden&&speed.getAttribute('aria-expanded')==='true'&&rect(choices).bottom<=r.top,'speed choices expand above the dock');
@@ -18,6 +18,8 @@ Kit.suite(({ok})=>{
  ok(G.mode==='esc'&&Math.abs(p.bottom-screen.bottom)<2&&p.top>screen.top,'Menu opens a bottom sheet and pauses the campaign');
  ok(['Skills','Help','Inventory','Quests'].every(name=>[...panel.querySelectorAll('.gm-tile strong')].some(e=>e.textContent===name)),'the menu sheet contains the other mobile windows');
  t.act('esc-resume');t.frame();ok(hud.enabled&&document.getElementById('pause').closest('.mwh-dock')&&G.paused,'Resume restores the same dock controls and pause state');
+ click('mapToggle');ok(!hud.mapChoices.hidden&&rect(hud.mapChoices).bottom<=rect(root).top,'Map expands zoom controls above the dock');
+ const z=t.VS,out=document.getElementById('zoomOut');if(z>t.MAPZOOM.lo){click('zoomOut');ok(t.VS<z&&!hud.mapChoices.hidden,'zoom out works without closing the Map controls');click('zoomIn');ok(t.VS===z,'zoom in restores the previous scale')}else ok(out.disabled&&!hud.mapChoices.hidden,'zoom limits stay disabled without hiding the Map controls');
  click('mapBtn');t.frame();ok(G.mode==='fullmap'&&!hud.enabled,'Map still opens the full map');t.fullMapKey();t.frame();
  click('charBtn');t.frame();ok(G.mode==='char'&&!hud.enabled,'Army still opens the roster');
  ok(!ERR.length,'mobile HUD interactions have no runtime errors');

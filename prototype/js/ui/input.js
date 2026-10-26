@@ -240,7 +240,7 @@ window.addEventListener('keydown',e=>{
   const k=keyOf(e);
   if(e.key==='F6'){e.preventDefault();saveGame(false,'quick');return}
   if(k==='tab'&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&!e.shiftKey&&!G.modal&&['world','scene','battle'].includes(G.mode)){e.preventDefault();if(!e.repeat)menuKey();return}// Tab: the Game Menu (hub.js; in a window, the menu too, Tab moves between its buttons)
-  if(k==='escape'){e.preventDefault();if(window.mobileWorldHud?.close()||ActionRing.close()||dragCancel())uiSfx('back');else if(G.mode==='battle'&&B&&B.amArm){armAttackMove(false);uiSfx('back')}else onEscape();return}// (a drag first, then an armed attack-move: Esc calls it off and nothing else)
+  if(k==='escape'){e.preventDefault();if(window.mobileBattleHud?.close()||window.mobileWorldHud?.close()||ActionRing.close()||dragCancel())uiSfx('back');else if(G.mode==='battle'&&B&&B.amArm){armAttackMove(false);uiSfx('back')}else onEscape();return}// (a drag first, then an armed attack-move: Esc calls it off and nothing else)
   if(k==='m'&&!e.ctrlKey&&!e.metaKey&&!e.altKey){if(!e.repeat){if(e.shiftKey)toggleMute();else fullMapKey()}return}// M: the full map (map.js); Shift+M: the sound off or on, anywhere (ui.js)
   if(/^[0-9]$/.test(k)&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&!e.repeat&&G.mode!=='battle'&&railKey(k)){e.preventDefault();return}// a number: a place on the window's rail (window.js)
   if(/^[qwer]$/.test(k)&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&!e.repeat&&G.mode!=='battle'&&railActKey(k)){e.preventDefault();return}// Q, W, E, R: the window's key actions (window.js)
@@ -311,8 +311,11 @@ class MobileWorldHud{
       '<div id="worldSpeedChoices" class="mwh-speeds" role="group" aria-label="Travel speed" hidden></div>';
     $('.hudlayer').appendChild(this.root);
     this.speedButton=$('#speedToggle');this.partyButton=$('#partyToggle');this.choices=$('#worldSpeedChoices');
+    this.mapChoices=document.createElement('div');this.mapChoices.id='worldMapChoices';this.mapChoices.className='mwh-map';this.mapChoices.hidden=true;this.mapChoices.setAttribute('role','group');this.mapChoices.setAttribute('aria-label','Map view and zoom');this.mapChoices.innerHTML='<strong>Map view</strong><div class="mwh-map-actions"><div data-place="mapOut"></div><div data-place="mapIn"></div><div data-place="mapFull"></div></div>';this.root.appendChild(this.mapChoices);
+    this.mapButton=document.createElement('button');this.mapButton.type='button';this.mapButton.id='mapToggle';this.mapButton.className='dbtn';this.mapButton.setAttribute('aria-controls','worldMapChoices');this.mapButton.setAttribute('aria-expanded','false');this.mapButton.innerHTML=icon('map',18)+'<span class="dl">Map ▴</span>';this.root.querySelector('[data-place="map"]').appendChild(this.mapButton);
+    this.mapButton.addEventListener('click',()=>{const open=this.mapChoices.hidden;this.close();this.mapChoices.hidden=!open;this.mapButton.setAttribute('aria-expanded',String(open))});
     const node=(selector,place)=>{const el=$(selector),home=document.createComment('mobile control home');el.before(home);return{el,home,to:this.root.querySelector('[data-place="'+place+'"]')||this.choices}};
-    this.nodes=[node('#pause','pause'),node('#mapBtn','map'),node('#charBtn','army'),node('#menuBtn','menu'),node('#wday','day'),node('.wtime','speed')];
+    this.nodes=[node('#pause','pause'),node('#mapBtn','mapFull'),node('#zoomOut','mapOut'),node('#zoomIn','mapIn'),node('#charBtn','army'),node('#menuBtn','menu'),node('#wday','day'),node('.wtime','speed')];
     this.speedButton.addEventListener('click',()=>{const open=this.choices.hidden;this.close();this.choices.hidden=!open;this.speedButton.setAttribute('aria-expanded',String(open));this.speed()});
     this.partyButton.addEventListener('click',()=>{const open=this.partyButton.getAttribute('aria-expanded')!=='true';this.close();this.partyButton.setAttribute('aria-expanded',String(open));this.screen.classList.toggle('party-open',open)});
     document.addEventListener('click',e=>{if(e.target.closest('[data-speed]')||!this.root.contains(e.target)&&!$('#stats').contains(e.target))this.close();this.sync()});
@@ -327,12 +330,13 @@ class MobileWorldHud{
     const enabled=mobile&&G.mode==='world'&&!G.modal;if(enabled===this.enabled)return;
     this.close();this.enabled=enabled;this.screen.classList.toggle('mobile-world',enabled);this.root.hidden=!enabled;
     for(const n of this.nodes)if(enabled)n.to.appendChild(n.el);else n.home.after(n.el);
+    $('#mapBtn .dl').textContent=enabled?'Full map':'Map';
     this.measure();
   }
   measure(){if(this.enabled){const pixels=this.root.getBoundingClientRect().height,height=pixels+'px';if(pixels>0&&this.screen.style.getPropertyValue('--mobile-hud-height')!==height)this.screen.style.setProperty('--mobile-hud-height',height)}}
   close(){
-    const was=!this.choices.hidden||this.partyButton.getAttribute('aria-expanded')==='true';
-    this.choices.hidden=true;this.speedButton.setAttribute('aria-expanded','false');this.partyButton.setAttribute('aria-expanded','false');this.screen.classList.remove('party-open');this.speed();return was;
+    const was=!this.choices.hidden||!this.mapChoices.hidden||this.partyButton.getAttribute('aria-expanded')==='true';
+    this.mapChoices.hidden=true;this.mapButton.setAttribute('aria-expanded','false');this.choices.hidden=true;this.speedButton.setAttribute('aria-expanded','false');this.partyButton.setAttribute('aria-expanded','false');this.screen.classList.remove('party-open');this.speed();return was;
   }
   speed(){this.speedButton.querySelector('strong').textContent=G.speed+'× '+(this.choices.hidden?'▴':'▾');this.speedButton.setAttribute('aria-label','Travel speed '+G.speed+' times')}
   update(fitness,morale,stamina){
@@ -341,3 +345,51 @@ class MobileWorldHud{
   }
 }
 window.mobileWorldHud=new MobileWorldHud();
+
+
+/* Mobile battle presentation reuses live controls; combat and desktop orders stay authoritative. */
+class MobileBattleHud{
+  constructor(){
+    this.screen=$('#screen');this.enabled=false;this.nodes=[];
+    this.root=document.createElement('div');this.root.className='mobile-battle-hud';this.root.hidden=true;
+    const drawer=(id,title,body)=>'<section id="'+id+'" class="mbh-drawer" aria-label="'+title+'" hidden><header><strong>'+title+'</strong><button type="button" class="mbh-close" aria-label="Close '+title+'">×</button></header>'+body+'</section>';
+    this.root.innerHTML='<div data-bplace="status"></div><div data-bplace="cards"></div><nav class="mbh-dock" aria-label="Battle controls"><div data-bplace="pause"></div><button type="button" id="battleSpeedToggle" aria-expanded="false" aria-controls="battleSpeedChoices">1× ▴</button><button type="button" id="battleOrdersToggle" aria-expanded="false" aria-controls="battleOrderChoices">Orders ▴</button><button type="button" id="battleMoreToggle" aria-expanded="false" aria-controls="battleMoreChoices">More ▴</button><div data-bplace="menu"></div></nav>'+
+      drawer('battleSpeedChoices','Battle speed','<div class="mbh-speed-grid" data-bplace="speed"></div>')+
+      drawer('battleOrderChoices','Orders & formations','<div data-bplace="orders"></div><div data-bplace="powers"></div>')+
+      drawer('battleMoreChoices','Battle view','<div class="mbh-options" data-bplace="options"><button type="button" data-bview="out">Zoom −</button><button type="button" data-bview="in">Zoom +</button><button type="button" data-bview="reset">Reset view</button></div><div data-bplace="info"></div>');
+    $('#bbar').appendChild(this.root);
+    this.panels=[['battleSpeedToggle','battleSpeedChoices'],['battleOrdersToggle','battleOrderChoices'],['battleMoreToggle','battleMoreChoices']].map(([button,panel])=>({button:$('#'+button),panel:$('#'+panel)}));
+    for(const p of this.panels)p.button.addEventListener('click',()=>{const open=p.panel.hidden;this.close();p.panel.hidden=!open;p.button.setAttribute('aria-expanded',String(open))});
+    this.root.addEventListener('click',e=>{if(e.target.closest('.mbh-close'))this.close();const view=e.target.closest('[data-bview]');if(view){if(view.dataset.bview==='reset')camReset();else camZoom(view.dataset.bview==='in'?1:-1)}});
+    document.addEventListener('click',e=>{if(e.target.closest('[data-bspeed],[data-order],#bAmove,[data-power],#bAuto')||!this.root.contains(e.target))this.close();this.sync()});
+    document.addEventListener('pointerdown',e=>{if(!this.root.contains(e.target))this.close()});
+    new ResizeObserver(()=>this.measure()).observe(this.root);
+    window.mobileWorldHud.media.addEventListener('change',()=>this.sync());addEventListener('resize',()=>this.sync());
+  }
+  move(el,place){
+    if(!el||this.nodes.some(n=>n.el===el))return;const home=document.createComment('battle control home');el.before(home);this.nodes.push({el,home});this.root.querySelector('[data-bplace="'+place+'"]').appendChild(el);
+  }
+  sync(){
+    const enabled=window.mobileWorldHud.media.matches&&G.mode==='battle'&&!!B;
+    if(enabled!==this.enabled){
+      this.close();this.battle=null;this.enabled=enabled;this.root.hidden=!enabled;this.screen.classList.toggle('mobile-battle',enabled);
+      if(enabled){
+        for(const [selector,place] of [['.btop','status'],['.bcards','cards'],['#bPause','pause'],['#bMenu','menu'],['.borders','orders'],['#bInfo','info'],['#bSkills','options'],['#hpBtn','options']])this.move($(selector),place);
+        document.querySelectorAll('[data-bspeed]').forEach(el=>this.move(el,'speed'));
+      }else{for(const n of this.nodes){n.home.after(n.el);n.home.remove()}this.nodes=[]}
+      this.measure();
+    }
+    if(enabled){this.move($('#bCmd'),'powers');if(this.battle!==B){this.battle=B;this.update()}}
+  }
+  close(){const was=this.panels.some(p=>!p.panel.hidden);for(const p of this.panels){p.panel.hidden=true;p.button.setAttribute('aria-expanded','false')}return was}
+  measure(){if(this.enabled){const height=this.root.getBoundingClientRect().height;if(height>0)this.screen.style.setProperty('--mobile-battle-height',height+'px')}}
+  update(){
+    if(!this.enabled||!B)return;const speed=B.world?G.speed:B.speed,button=$('#battleSpeedToggle'),text=speed+'× ▴';if(button.textContent!==text)button.textContent=text;button.setAttribute('aria-label','Battle speed '+speed+' times');
+    const labels={hold:'Hold',charge:'Run',advance:'Walk',withdraw:'Retreat',firm:'Hold ground',cease:'Hold fire',skirmish:'Skirmish',melee:'Melee',shieldWall:'Shields'};
+    for(const b of this.root.querySelectorAll('.obtn'))if(!b.querySelector('.mbh-label')){
+      const label=b.id==='bAmove'?'Attack move':labels[b.dataset.order||b.dataset.flag]||(b.dataset.form&&FORMS[b.dataset.form]?.n)||(b.dataset.abil&&UNIT_ABILITIES[b.dataset.abil]?.n);
+      if(label){const span=document.createElement('span');span.className='mbh-label';span.textContent=label;b.appendChild(span)}
+    }
+  }
+}
+window.mobileBattleHud=new MobileBattleHud();

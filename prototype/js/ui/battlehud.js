@@ -146,7 +146,7 @@ function bhudInfo(){
 }
 // the top bar: each side's numbers and strength (health by tier), the field, and what is happening (deploying, paused, speed)
 function bhudTop(){
-  if(!B)return;const w=u=>u.hp/Math.max(1,u.max)*(u.hero||u.leader||u.comp?4:(ST[u.type]&&ST[u.type].tier||1));let me=0,foe=0,nm=0,nf=0;
+  if(!B)return;window.mobileBattleHud?.update();const w=u=>u.hp/Math.max(1,u.max)*(u.hero||u.leader||u.comp?4:(ST[u.type]&&ST[u.type].tier||1));let me=0,foe=0,nm=0,nf=0;
   for(const u of B.units){if(u.hp<=0)continue;if(u.team===0){nm++;if(!u.rout)me+=w(u)}else{nf++;if(!u.rout)foe+=w(u)}}
   const $id=id=>document.getElementById(id);if(!$id('bMine'))return;$id('bMine').textContent=nm;$id('bFoe').textContent=nf;$id('bPowMe').style.width=pct(me/Math.max(.01,me+foe));
   $id('bField').textContent=B.env.name+(B.opts.tournament?' · tournament':'');
