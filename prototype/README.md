@@ -1070,3 +1070,5 @@ Fleeing on the world map: wildlife, hunted animals, frightened parties, caravans
 Mobile Map opens zoom out, zoom in and the full map. The mobile battle HUD keeps balance, horizontally scrolling unit cards and a single bottom row (Begin/Pause, Speed, Orders, More, Menu). Orders and commander powers open in a labelled drawer; More contains view controls, auto skills, health bars and selected-unit details. Drawers dismiss on outside taps or Escape. Existing controls are restored for desktop, with combat and deployment rules unchanged.
 
 Awareness eyes use a symmetric eyelid with the pupil contained inside it. Their cached artwork is rasterized at display density and placed on physical pixels, keeping player and observer eyes undistorted across map zooms. Detection states and colours are unchanged.
+
+Mobile awareness eyes now use opaque pixel-art eyelids and pupils, with integer-sized pixel blocks at each display density. They avoid antialiased curves, self-canvas mirroring and fractional scaling; awareness states and colours are unchanged.

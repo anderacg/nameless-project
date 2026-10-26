@@ -57,16 +57,18 @@ function drawTravelPace(cam){
   ctx.save();ctx.imageSmoothingEnabled=false;ctx.drawImage(s,Math.round(x),Math.round(y),size,size);ctx.restore();return{x,y,w:size,h:size,kind};
 }
 const STEALTH_EYE={size:18,player:36,gap:4,cache:new Map()};
-function stealthEyeSprite(exposure,col,width=20){
-  const level=Math.round(clamp(exposure,0,1)*4),w=Math.max(8,Math.round(width)),h=Math.round(w*.6),key=level+':'+col+':'+w;let s=STEALTH_EYE.cache.get(key);if(s)return s;
-  s=mkc(w,h,g=>{const opening=level*2;g.save();g.scale(w/20,h/12);g.lineWidth=1.5;g.strokeStyle='#141210';g.beginPath();g.moveTo(1.5,6);g.quadraticCurveTo(10,6-opening,18.5,6);g.quadraticCurveTo(10,6+opening,1.5,6);g.closePath();g.fillStyle='#211c18';g.fill();g.stroke();g.strokeStyle=col;g.lineWidth=.8;g.stroke();if(level){g.fillStyle=col;g.beginPath();g.ellipse(10,6,1.7,Math.min(1.7,opening*.2),0,0,Math.PI*2);g.fill()}g.restore()});
-  // Mirror the raster halves: tiny curved strokes otherwise acquire uneven antialiased edges.
-  const g=s.getContext('2d'),halfW=Math.floor(w/2),halfH=Math.floor(h/2);g.save();g.imageSmoothingEnabled=false;
-  g.setTransform(-1,0,0,1,w,0);g.clearRect(0,0,halfW,h);g.drawImage(s,0,0,halfW,h,0,0,halfW,h);
-  g.setTransform(1,0,0,-1,0,h);g.clearRect(0,0,w,halfH);g.drawImage(s,0,0,w,halfH,0,0,w,halfH);g.restore();
+function stealthEyeSprite(exposure,col,width=18){
+  const level=Math.round(clamp(exposure,0,1)*4),unit=Math.max(1,Math.round(width/18)),key=level+':'+col+':'+unit;let s=STEALTH_EYE.cache.get(key);if(s)return s;
+  // Opaque pixel strokes only. Integer-sized blocks avoid soft curves and uneven mobile resampling.
+  s=mkc(18*unit,12*unit,g=>{
+    const lid=x=>5-Math.round(level*.75*(1-Math.pow((x-8.5)/6.5,2))),box=(col,x,y,w,h)=>{g.fillStyle=col;g.fillRect(x*unit,y*unit,w*unit,h*unit)};
+    for(let x=2;x<16;x++){const top=lid(x);box('#141210',x-1,top-1,3,14-top*2)}
+    for(let x=2;x<16;x++){const top=lid(x),bottom=11-top;box('#211c18',x,top,1,bottom-top+1);box(col,x,top,1,1);box(col,x,bottom,1,1)}
+    if(level){const r=level===4?2:1;for(let y=6-r;y<6+r;y++)for(let x=9-r;x<9+r;x++)if(r===1||!(Math.abs(x-8.5)>1&&Math.abs(y-5.5)>1))box(col,x,y,1,1)}
+  });
   STEALTH_EYE.cache.set(key,s);return s;
 }
-// Rasterize at the display density and place on physical pixels: no fractional nearest-neighbour stretching.
+// Keep each art pixel an integer-sized block at the display density, aligned to physical pixels.
 function drawStealthEye(exposure,col,x,y,size){
   const s=stealthEyeSprite(exposure,col,size*(window.devicePixelRatio||1));
   ctx.drawImage(s,Math.round(x*VS)/VS,Math.round(y*VS)/VS,s.width/VS,s.height/VS);
@@ -78,10 +80,10 @@ function travelDetectionState(){
 const travelDetectionColor=state=>state.seen.length?state.danger?'#ef8c73':'#dbca91':state.exposure?'#d9ad57':'#82c6b3';
 function drawTravelDetection(cam){
   if(B||P.stay)return null;const state=travelDetectionState(),k=(window.devicePixelRatio||1)/VS,V=vis();ctx.save();ctx.imageSmoothingEnabled=false;
-  for(const d of state.rows){const o=d.o;if(!inSight(o.x,o.y)||!o.inView(V))continue;const b=bannerAt(o,0),w=STEALTH_EYE.size*k,h=w*.6,x=b?b.x+b.s.width+STEALTH_EYE.gap*k-cam.x:o.x-cam.x-w/2,y=b?b.y-cam.y:o.y-cam.y-18-h;
+  for(const d of state.rows){const o=d.o;if(!inSight(o.x,o.y)||!o.inView(V))continue;const b=bannerAt(o,0),w=STEALTH_EYE.size*k,h=w*2/3,x=b?b.x+b.s.width+STEALTH_EYE.gap*k-cam.x:o.x-cam.x-w/2,y=b?b.y-cam.y:o.y-cam.y-18-h;
     drawStealthEye(d.exposure,d.sees?d.danger?'#ef8c73':'#dbca91':d.exposure?'#d9ad57':'#8f9e94',x,y,STEALTH_EYE.size);
   }
-  const b=bannerAt(P,0),w=STEALTH_EYE.player*k,h=w*.6,x=P.x-cam.x-w/2,y=(b?b.y:P.y-24)-cam.y-h-10*k,col=travelDetectionColor(state);
+  const b=bannerAt(P,0),w=STEALTH_EYE.player*k,h=w*2/3,x=P.x-cam.x-w/2,y=(b?b.y:P.y-24)-cam.y-h-10*k,col=travelDetectionColor(state);
   drawStealthEye(state.exposure,col,x,y,STEALTH_EYE.player);ctx.restore();
   return state;
 }
