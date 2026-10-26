@@ -26,8 +26,9 @@ class WildHunt{
   }
   flee(d,dt){
     const c=this.herd,D=CRITTERS[c.id],live=this.animals.filter(a=>a.hp>0);
-    if(!this.alert&&(TravelAwareness.sees(c)||live.some(a=>this.sources.some(s=>Math.hypot(a.x-s.x,a.y-s.y)<TRAVEL_AWARE.contact)))){this.alert=true;this.alertAt=this.time}
-    for(const a of live){const x=a.x,y=a.y;if(this.alert&&this.time-this.alertAt>.35){Router.flee(a,P,moveStep(D.spd*.8,d));if(Math.abs(a.x-x)>Math.hypot(a.x-x,a.y-y)*.35&&Math.abs(a.x-x)>.01)a.dir=a.x>x?1:-1;a.walk+=Math.hypot(a.x-x,a.y-y)}a.vx=(a.x-x)/Math.max(.001,dt);a.vy=(a.y-y)/Math.max(.001,dt)}
+    WildlifeThreats.rebuild();const threat=WildlifeThreats.target(c);
+    if(!this.alert&&(threat||live.some(a=>this.sources.some(s=>Math.hypot(a.x-s.x,a.y-s.y)<TRAVEL_AWARE.contact)))){this.alert=true;this.alertAt=this.time}
+    for(const a of live){const x=a.x,y=a.y;if(this.alert&&this.time-this.alertAt>.35){Router.flee(a,threat||P,moveStep(D.spd*.8,d));if(Math.abs(a.x-x)>Math.hypot(a.x-x,a.y-y)*.35&&Math.abs(a.x-x)>.01)a.dir=a.x>x?1:-1;a.walk+=Math.hypot(a.x-x,a.y-y)}a.vx=(a.x-x)/Math.max(.001,dt);a.vy=(a.y-y)/Math.max(.001,dt)}
     if(live.length){c.x=live[0].x;c.y=live[0].y;c.hx=c.x;c.hy=c.y;c.dir=live[0].dir;c.tire=0;c.cool=6;Tracks.step(c,'crit:'+c.id,false,trackNow())}
   }
   fire(source,target){

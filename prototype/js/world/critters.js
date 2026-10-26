@@ -117,14 +117,33 @@ function critterDay(){
   for(const c of W.critters){herdKind(c);const D=CRITTERS[c.id];if(c.n<D.herd[1]&&R.chance(c.home?.35:.15))c.n++}
   TOWNS.filter(t=>t.T.herds&&!herdOf(t)&&R.chance(.25)).forEach(spawnHerd);
 }
-// move every herd: wild game bolts when you come close and tires as it runs; livestock just grazes
+// Nearby people and beasts spook game even outside the player's view. Runtime caches never enter saves.
+class WildlifeThreats{
+  static index=Spatial.index([]);
+  static chosen=new WeakMap();
+  static present(o){return o&&!o.dead&&!o.gone&&!o.inside&&Number.isFinite(o.x)&&Number.isFinite(o.y)}
+  static rebuild(){this.index.rebuild([...new Set([...W.parties,...W.caravans,...W.refugees,...W.monsters,...W.folk.filter(folkSeen)])].filter(o=>o!==P&&this.present(o)))}
+  static target(c){
+    const D=CRITTERS[c.id];if(!D||D.live)return null;
+    const player=TravelAwareness.target(c),near=this.index.within(c.x,c.y,D.shy).filter(o=>this.present(o)&&Math.hypot(o.x-c.x,o.y-c.y)<D.shy*(hiddenAt(o.x,o.y)?WILDLIFE_AWARE.cover:1));
+    if(player)near.push(player);
+    const distance=o=>Math.hypot(o.x-c.x,o.y-c.y),previous=this.chosen.get(c);
+    let target=Spatial.nearest(near,c.x,c.y);
+    // Keep an escape heading until another threat is clearly closer.
+    if(previous&&near.includes(previous)&&target&&distance(target)>=distance(previous)*WILDLIFE_AWARE.switch)target=previous;
+    if(target)this.chosen.set(c,target);else this.chosen.delete(c);
+    return target;
+  }
+}
+onWorld(()=>{WildlifeThreats.index.rebuild([]);WildlifeThreats.chosen=new WeakMap()});
+// Move every herd: wild game bolts from perceived threats and tires as it runs; livestock just grazes.
 // a herd's moment (parties.js lodThink; hide: how well you are hidden from it). Hunting is an explicit choice.
 const HERD_MIND={think(c,d,hide){
     if(WildHunt.active?.herd===c)return false;
-    const A=WORLD_SCALE.ai,D=CRITTERS[c.id],dx=c.x-P.x,dy=c.y-P.y,dist=Math.hypot(dx,dy),ox=c.x,oy=c.y;c.cool=Math.max(0,c.cool-d);
+    const A=WORLD_SCALE.ai,D=CRITTERS[c.id],threat=WildlifeThreats.target(c),ox=c.x,oy=c.y;c.cool=Math.max(0,c.cool-d);
     // (fleeing: its grazing ground goes with it, and it keeps on away a little after, so it does not turn back into you)
-    if(!D.live&&TravelAwareness.sees(c)){const sp=moveStep(D.spd*(c.tire>4?.4:1)*Math.min(1,speedAt(c.x,c.y)||1),d);Router.flee(c,P,sp);c.tire+=d;
-      c.hx=c.x;c.hy=c.y;c.a=Math.atan2(dy,dx);c.t=Math.max(c.t,1.5);c.idle=false}
+    if(threat){const sp=moveStep(D.spd*(c.tire>4?.4:1)*Math.min(1,speedAt(c.x,c.y)||1),d);Router.flee(c,threat,sp);c.tire+=d;
+      c.hx=c.x;c.hy=c.y;c.a=Math.atan2(c.y-threat.y,c.x-threat.x);c.t=Math.max(c.t,1.5);c.idle=false}
     else{c.tire=Math.max(0,c.tire-d*.5);c.t-=d;if(c.t<=0){const R=critRng();c.t=2+R.next()*4;c.a=R.next()*6.283;c.idle=R.chance(.5)}
       const hx=c.hx-c.x,hy=c.hy-c.y;if(Math.hypot(hx,hy)>(D.live?(c.pen?A.penLeash:A.herdLeash):A.gameLeash))c.a=Math.atan2(hy,hx);
       if(!c.idle){const ok=D.live?(x,y)=>grazeOk(c.id,x,y,c.pen):(x,y)=>habitatOk(c.id,x,y);if(!walk(c,Math.cos(c.a),Math.sin(c.a),moveStep(D.live?4:8,d),ok)){c.a=Math.atan2(hy,hx)+(critRng().next()-.5);c.idle=true}}}
@@ -132,7 +151,7 @@ const HERD_MIND={think(c,d,hide){
     {const mx=c.x-ox,my=c.y-oy;if(Math.abs(mx)>Math.hypot(mx,my)*.35&&Math.abs(mx)>.01)c.dir=mx>0?1:-1}
 
     return false}};
-function updateCritters(d){return lodEach(W.critters,HERD_MIND,d,P.stay?0:hiddenAt(P.x,P.y)?.6:1)}
+function updateCritters(d){WildlifeThreats.rebuild();return lodEach(W.critters,HERD_MIND,d,P.stay?0:hiddenAt(P.x,P.y)?.6:1)}
 // One collected animal pays the existing meat, materials and experience rewards.
 function hunt(c){return WildHunt.prepare(asHerd(c))}
 function huntRewards(c,kills){

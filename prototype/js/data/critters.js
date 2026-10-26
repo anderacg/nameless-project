@@ -1,4 +1,5 @@
 'use strict';
+const WILDLIFE_AWARE={cover:.6,switch:.8};
 /* ---------- data: critters ---------- */
 // Wild game roams its habitat (where: climates, or 'forest' / 'hills'), runs when you come near and tires as it runs.
 // Catch a herd to hunt it: meat for each animal brought down, sometimes a hide or antler (mat: [trophy, chance]).

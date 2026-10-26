@@ -1074,3 +1074,5 @@ Awareness eyes use a symmetric eyelid with the pupil contained inside it. Their 
 Mobile awareness eyes now use opaque pixel-art eyelids and pupils, with integer-sized pixel blocks at each display density. They avoid antialiased curves, self-canvas mirroring and fractional scaling; awareness states and colours are unchanged.
 
 The player awareness eye uses the same 18 CSS-pixel size as observer eyes.
+
+Wildlife also flees nearby lords, bandits, patrols, companion parties, caravans, refugees, outdoor workers and monsters, including during hunts. `WildlifeThreats` (`world/critters.js`) indexes nearby threats and keeps escape headings stable; cover reduces detection range. Sheltered people and livestock do not trigger this behavior. Player stealth still uses travel awareness.
