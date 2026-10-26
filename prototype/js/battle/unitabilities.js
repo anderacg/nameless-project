@@ -52,7 +52,7 @@ function abilityActive(g,id){const S=g&&g.abil&&g.abil[id],A=UNIT_ABILITIES[id];
 // why a group cannot use it now ('' when it can)
 function abilityWhyNot(g,id){
   const A=UNIT_ABILITIES[id];if(!B||!A||!g)return 'Unknown ability';
-  if(B.over)return 'The battle is over';if(B.deploy||B.ready)return 'Start the battle first';
+  if(B.over)return 'The battle is over';if(B.deploy||B.ready||B.muster?.active)return 'Start the battle first';
   if(g.resolve?.routed)return 'Routing';if(g.order==='withdraw')return 'Withdrawing';
   if(!groupHasAbility(g,id))return 'Not for this unit';
   if(A.morale&&(B.noMorale||!g.resolve))return 'Morale is off';

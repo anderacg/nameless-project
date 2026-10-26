@@ -87,6 +87,7 @@ function battleEvent(type,d){for(const f of BATTLE_EARS)f(type,d)}
 // Actor execution lives in actors.js; shared group defaults and frame orchestration remain here.
 // rt is real time; fighting runs on dt, slowed by BATTLE_PACE, while effects keep real time
 function updateBattle(rt){
+  if(B?.muster?.active){B.muster.step(rt);return}
   if(B?.world){
     if(B.paused||B.deploy)return;const b=B,speed=G.speed,step=WORLD_BATTLE.step,total=rt*speed;B.speed=speed;
     // Bounded combat steps preserve collision, path corners and animation events at campaign fast speeds.

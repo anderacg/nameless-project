@@ -11,7 +11,7 @@ const RTS_PICK=10;
 const ordered=gs=>gs.forEach(g=>{const gr=B.groups[g];if(gr)gr.orderSeq=(gr.orderSeq|0)+1});
 // every order of yours to groups gs: those the AI has taken back (deploy.js), counted (a move, an attack, Hold, the pace, a formation, a flag;
 // not a unit ability: counts false), done (fn), the order bar redrawn; returns what fn does
-function playerOrder(gs,fn,{counts=true}={}){MarchAmbush.releaseBattle(gs);takeCommand(gs);if(counts)ordered(gs);const r=fn();setOrderUI();return r}
+function playerOrder(gs,fn,{counts=true}={}){if(B?.muster?.active)return false;MarchAmbush.releaseBattle(gs);takeCommand(gs);if(counts)ordered(gs);const r=fn();setOrderUI();return r}
 // the unit under a point: on a group's icon, its soldier nearest the group's middle (the icon is clicked as the group: select,
 // attack, everything a click on a soldier does); else the nearest soldier within RTS_PICK. An enemy your side does not see (in
 // woods or behind a rise: terrain.js seenBy) is no one to click. pick: a select's click, where icons overlap clicked again on the
@@ -33,6 +33,7 @@ function rtsSelect(x0,y0,x1,y1,add){
 // (opt.queue: Shift, a waypoint after the ones they have; opt.run: a double right-click, at a run; opt.amove: Ctrl, or the
 // Attack-move button armed (B.amArm), an attack-move there: battlecontrol.js AMOVE). Any order but a waypoint ends an attack-move
 function rtsOrder(x,y,opt){
+  if(B?.muster?.active)return;
   opt=opt||{};const gs=selGroups().filter(g=>grpUnits(g).length&&!B.groups[g].resolve?.routed);if(!gs.length)return;const am=amTake(opt);playerOrder(gs,()=>{
   if(B.deploy){const p=inZone(x,y);x=p.x;y=p.y;opt={}}// (deploying: a spot in your zone, no enemy to set them on)
   const e=B.deploy?null:rtsUnitAt(x,y,1);
@@ -53,11 +54,11 @@ function rtsOrder(x,y,opt){
 function amTake(opt){const am=!!(opt&&opt.amove||B.amArm)&&!B.deploy;if(B.amArm){B.amArm=false;setOrderUI()}return am}
 const amSay=()=>toast(htmlText(selLabel())+': attack-move.');
 // the Attack-move button (D): the selection's next order on the ground an attack-move (pressed again, or Esc: not)
-function armAttackMove(on){if(!B||B.deploy)return;B.amArm=on??(!B.amArm&&selGroups().length>0);setOrderUI()}
+function armAttackMove(on){if(!B||B.deploy||B.muster?.active)return;B.amArm=on??(!B.amArm&&selGroups().length>0);setOrderUI()}
 // an order to the selected groups: hold (where they stand), charge, advance, withdraw (flee the battle: off your edge,
 // straight back off your edge, striking no one: once all have withdrawn the battle ends as your retreat, morale.js). Any order calls off a target and the waypoints
 function setOrder(o){
-  if(!B)return;const pace=o==='charge'||o==='advance';
+  if(!B||B.muster?.active)return;const pace=o==='charge'||o==='advance';
   // (Charge and Advance set the pace, run or walk, and nothing else: where they go and whom they fight stay as they were;
   // hold: where they stand; withdraw: off your edge (battlecontrol.js))
   playerOrder(selGroups(),()=>{for(const g of selGroups()){const gr=B.groups[g];if(pace)gr.setWalk(o==='advance');else if(o==='withdraw')gr.withdraw();else if(o==='hold'){gr.amEnd();gr.hold()}}});
@@ -66,7 +67,7 @@ function setOrder(o){
 }
 // a group's flag on or off for the selection: walk, firm (hold ground), cease (cease fire), skirmish, melee (shooters' blades)
 const FLAG_N={walk:['walk','run'],firm:['hold their ground','fight freely'],shieldWall:['shield wall requested for eligible soldiers','shields lowered'],cease:['cease fire','fire at will'],skirmish:['skirmish','stand'],melee:['melee mode on: they fight whoever reaches them','melee mode off: they keep shooting, point blank']};
-function toggleFlag(f){if(!B||!FLAG_N[f])return;const gs=selGroups().filter(g=>grpUnits(g).some(u=>flagEligible(u,f)));if(!gs.length)return;const on=playerOrder(gs,()=>{const on=!gs.every(g=>B.groups[g][f]);gs.forEach(g=>B.groups[g].setFlag(f,on));return on});toast(htmlText(selLabel())+': '+FLAG_N[f][on?0:1]+'.')}
+function toggleFlag(f){if(!B||B.muster?.active||!FLAG_N[f])return;const gs=selGroups().filter(g=>grpUnits(g).some(u=>flagEligible(u,f)));if(!gs.length)return;const on=playerOrder(gs,()=>{const on=!gs.every(g=>B.groups[g][f]);gs.forEach(g=>B.groups[g].setFlag(f,on));return on});toast(htmlText(selLabel())+': '+FLAG_N[f][on?0:1]+'.')}
 // control groups: Ctrl+1-9/0 keeps the selection; the same live binding drives recall and card badges.
 function ctrlGroups(k){if(!B)return[];const c=B.ctrl&&B.ctrl[k],id=playerGroups()[k==='0'?9:Number(k)-1];return c==='all'?'all':(c||[id]).filter(g=>g&&grpUnits(g).length)}
 function ctrlGroup(k,save){if(!B)return;B.ctrl=B.ctrl||{};if(save){B.ctrl[k]=B.sel==='all'?'all':selGroups().slice();toast('Group '+k+': '+htmlText(selLabel())+'.');setOrderUI();return}
@@ -75,6 +76,7 @@ function selectGroup(g,add=false){if(!B||g!=='all'&&(!playerGroups().includes(g)
 function cycleGroup(){if(!B)return;const opts=['all',...playerGroups().filter(g=>grpUnits(g).length)];B.sel=opts[(opts.indexOf(B.sel)+1)%opts.length];setOrderUI()}
 /* your commands: a formation for the selected groups it suits (pressed again: back to line) */
 function setForm(f){
+  if(B?.muster?.active)return;
   if(f==='wall')return toggleFlag('shieldWall');// Compatibility for old command callers, not a formation.
   if(!B||!FORMS[f])return;const sel=selGroups().filter(g=>grpUnits(g).length),gs=sel.filter(g=>formFits(g,f));
   if(!gs.length){if(sel.length)toast('Only '+WHO_N[FORMS[f].who]+' can form '+(f==='wall'?'a shield wall':f==='wedge'?'a wedge':'loose order')+'.');return}
@@ -82,6 +84,7 @@ function setForm(f){
 }
 // (o.amove: Ctrl, or the Attack-move button: an attack-move to the line, rtsOrder)
 function formDragTo(x0,y0,x1,y1,o){
+  if(B?.muster?.active)return false;
   if(B.deploy){const a=inZone(x0,y0),b=inZone(x1,y1);x0=a.x;y0=a.y;x1=b.x;y1=b.y}// (deploying: the line in your zone)
   const plan=formPlan(x0,y0,x1,y1);if(!plan.length)return false;const am=amTake(o);playerOrder(plan.map(p=>p.g),()=>{
   // (each a move to its part of the line, facing as dragged, as wide as its share of it: battlecontrol.js; your hero shares the line)
@@ -91,6 +94,7 @@ function formDragTo(x0,y0,x1,y1,o){
 // a unit ability (unitabilities.js) for every selected group that has it: each that can use it now does; the rest are left as
 // they are (cooling down, routing...). The order bar's ability buttons and their keys (G, I, U, Y) come here
 function groupAbility(id){
+  if(B?.muster?.active)return false;
   const A=B&&UNIT_ABILITIES[id];if(!A)return false;const has=selGroups().filter(g=>grpUnits(g).length&&groupHasAbility(B.groups[g],id));if(!has.length)return false;
   const used=playerOrder(has,()=>has.filter(g=>B.groups[g].useAbility(id)),{counts:false});// (an ability is no order: a fall-back goes on)
   toast(used.length?used.map(g=>htmlText(groupName(g))).join(' and ')+': '+A.n.toLowerCase()+'.':htmlText(A.n)+': '+htmlText(abilityWhyNot(B.groups[has[0]],id).toLowerCase())+'.');return used.length>0;

@@ -119,7 +119,7 @@ const BTYPE={bridgeY:.15,ford:.4,fordGap:100,front:24,behind:50,flank:110,back:3
 // One short-lived coordinator per battle. Runtime units remain plain records; saved campaign records are not copied.
 // Construction order is deliberate: preserve random draws, chief reuse, HUD measurement and post-layout initialization.
 class BattleSetup{
-  constructor(opts){this.opts=opts;this.units=[];this.id=0}
+  constructor(opts){this.opts=opts;this.units=[];this.id=0;this.surprise=!!(opts.surprise||opts.ambush||G.enc?.surprise||G.enc?.ambush||G.enc?.btype?.kind==='ambush'||P.camp||Object.keys(P.army?.concealed||{}).length)}
   spawn(unit,team,x,y){
     const s=unit.fieldStats(this.env,team,this.opts.lv||1);
     return{id:this.id++,v:Math.floor(Math.random()*6),type:unit.key,unit,team,x,y,hp:s.hp,max:s.hp,cd:Math.random()*.6,hero:unit.role==='hero',face:team?-1:1,s,spdNow:0,tgt:null,rt:0,swing:0};
@@ -253,7 +253,7 @@ class BattleSetup{
       return{x:W/2,y:mid+s*(h+A.gap*.5),rx:Math.min(W/2-8,span/.7),ry:A.gap*.3}}):[];
     return{road:[mid-h-A.road,mid+h+A.road],woods:ridge?[]:woods,ridges,place}}
   initialize(){
-    B.speed=BSPEED.v;B.ready=!this.opts.sandbox;B.paused=B.ready||prefGet('bpause');
+    B.speed=BSPEED.v;B.ready=!this.opts.sandbox&&!this.surprise;B.paused=this.surprise?false:B.ready||prefGet('bpause');
     if(BEAST_TACTICS.on)beastPacks();// (beasts in the pack spread, an AI group of them split into packs: beastmind.js)
     for(const g of Object.keys(B.groups))layForm(g);
     campCaught(this.opts);// (a band that finds you in camp catches you unready: world/supply.js)
@@ -262,7 +262,7 @@ class BattleSetup{
     camInit();
     warmBattle(this.units);
     deployInit(this.opts);
-    if(!B.world&&!this.opts.sandbox&&!this.opts.tournament&&!B.btype)this.arrangeMarch();
+    if(!B.world&&!this.opts.sandbox&&!this.opts.tournament&&!B.btype&&!this.surprise)this.arrangeMarch();
   }
   // The saved march layout sets group centers; each group's own formation sets its soldiers' slots.
   arrangeMarch(){
@@ -279,7 +279,7 @@ class BattleSetup{
   // the battle's first frame (render.js frame), so it never shows half made, nor over the map it leaves)
   present(){
     G.mode='battle';hidePanel();if(LOADING.sync)bbar.hidden=false;else B.hudWait=true;buildSlotBar();setOrderUI();battleSpeedUI();autoUI();updateHint();
-    for(const u of this.units)u.y=clamp(u.y,fieldTop(),fieldBot());for(const g of playerGroups())if(B.groups[g].ay)B.groups[g].placeAt(B.groups[g].ax,clamp(B.groups[g].ay,fieldTop(),fieldBot()));
+    if(!B.world){for(const u of this.units)u.y=clamp(u.y,fieldTop(),fieldBot());for(const g of playerGroups())if(B.groups[g].ay)B.groups[g].placeAt(B.groups[g].ax,clamp(B.groups[g].ay,fieldTop(),fieldBot()));}
     toast((this.opts.tournament?'The crowd roars. Defeat the champion.':'The lines meet in the '+this.env.name.toLowerCase()+'. '+this.env.text)+(BFIELD?' '+BFIELD.n+' field.':''));
     if(B.btype)typeSay();
   }

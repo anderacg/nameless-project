@@ -31,7 +31,7 @@ function deploySnap(gs){
     for(const u of grpUnits(g)){u.x=clamp(gr.ax+(u.sx||0),Z.x0,Z.x1);u.y=clamp(gr.ay+(u.sy||0),Z.y0,Z.y1)}}
 }
 // the fight begins (the withdrawal edge is your side of the field)
-function beginFight(){if(!B||!B.deploy&&!B.ready)return;const deploying=B.deploy;B.deploy=false;B.ready=false;if(deploying)exitInit(B.units);B.paused=!!(B.opts.sandbox&&B.opts.pauseAfterDeploy);battleSpeedUI();setOrderUI();toast('The battle begins.')}
+function beginFight(){if(!B||B.muster?.active||!B.deploy&&!B.ready)return;const deploying=B.deploy;B.deploy=false;B.ready=false;if(deploying)exitInit(B.units);B.paused=!!(B.opts.sandbox&&B.opts.pauseAfterDeploy);battleSpeedUI();setOrderUI();toast('The battle begins.')}
 // the shaded zone and the word, while deploying (drawn on the field)
 function drawDeploy(){
   if(!B.deploy)return;const Z=deployZone();ctx.fillStyle='rgba(74,122,192,.12)';ctx.fillRect(Z.x0,Z.y0,Z.x1-Z.x0,Z.y1-Z.y0);
@@ -62,7 +62,7 @@ function setGroupsAuto(gs,on,quiet){
 }
 // A, or the AI button: the selected groups to the AI, or back to you when it has them all; nothing selected (or All), the
 // whole army, on or off
-function autoKey(){if(!B)return;const gs=B.sel==='all'?[]:selGroups().filter(g=>grpUnits(g).length);
+function autoKey(){if(!B||B.muster?.active)return;const gs=B.sel==='all'?[]:selGroups().filter(g=>grpUnits(g).length);
   if(!gs.length)setAuto(!aiAll());else setGroupsAuto(gs,!gs.every(g=>aiHas(B.groups[g])));setOrderUI()}// (the cards' AI badges)
 // an order of yours to groups gs takes those of them the AI has back
 function takeCommand(gs){if(B&&gs&&gs.length)setGroupsAuto(gs,false)}

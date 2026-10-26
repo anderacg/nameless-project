@@ -2,7 +2,7 @@
 Kit.suite(({ok})=>{
  const t=T,G=t.G,P=t.P;window.requestAnimationFrame=()=>0;Kit.begin('soldier',1);Kit.clear();Kit.world();t.WORLD_BATTLE.on=true;t.GUIDE.on=false;
  const home=Kit.goHome('Ashford');Kit.goTo(home.x+160,home.y+120);P.troops={hum_foot:5,hum_bow:4};
- const enemy=t.asParty({kind:'bandits',troops:['militia','archer'],x:P.x+70,y:P.y,cool:0});G.enc={kind:'party',ref:enemy,list:enemy.troops.slice(),allies:[],foes:[],mine:true};t.startBattle({enemies:G.enc.list,tournament:false});t.battlePause(true);t.frame();
+ const enemy=t.asParty({kind:'bandits',troops:['militia','archer'],x:P.x+70,y:P.y,cool:0});G.enc={kind:'party',ref:enemy,list:enemy.troops.slice(),allies:[],foes:[],mine:true};t.startBattle({enemies:G.enc.list,tournament:false});for(let i=0;i<1600&&t.B.muster?.active;i++)t.updateBattle(.1);t.battlePause(true);t.frame();
  const hud=window.mobileBattleHud,root=hud.root,click=id=>document.getElementById(id).click(),r=e=>e.getBoundingClientRect(),shown=e=>!!e.getClientRects().length&&getComputedStyle(e).display!=='none';
  ok(hud.enabled&&shown(root)&&!window.mobileWorldHud.enabled,'world battle uses the mobile battle dock');
  ok(!shown(document.querySelector('.btime'))&&!shown(document.querySelector('.bcmd')),'the old overlapping bars are hidden');

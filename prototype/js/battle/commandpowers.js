@@ -51,7 +51,7 @@ function powerWhyNot(team,id){
   const A=COMMAND_POWERS[id];if(!B||!A||typeof A!=='object')return 'Unknown power';if(!powersOn())return 'Commander powers are off';
   if(B.over)return 'The battle is over';if(!commanderOf(team))return team?'No commander':'Your hero is not commanding (fallen, gone or absent)';
   const S=powerOf(team,id);
-  if(B.deploy||B.ready)return 'Start the battle first';if(B.noMorale)return 'Morale is off';
+  if(B.deploy||B.ready||B.muster?.active)return 'Start the battle first';if(B.noMorale)return 'Morale is off';
   if(S&&B.t<S.readyAt)return 'Ready in '+Math.ceil(S.readyAt-B.t-1e-9)+' s';
   if(!(id==='rally'?rallyTargets(team):standTargets(team)).length)return id==='rally'?'No routing or wavering unit within range':'No unit within range';
   return ''}
