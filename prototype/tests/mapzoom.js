@@ -2,7 +2,7 @@
 // The world map's zoom (core.js MAPZOOM, mapZoom): the map drawn at a whole number of device pixels to a game pixel still, one
 // step at a time by the wheel, + and −, the buttons by Save (dimmed at the ends) and a two-finger pinch (never a tap), within its
 // range; clicks and picking read through it, the minimap keeps its size on the screen, the step is remembered (PREFS mapzoom,
-// Settings → Map zoom); the default is the window's own scale, three times it on a phone; battles keep their own zoom and the window's scale. The screen
+// Settings → Map zoom); the default is the window's own scale, closer on a phone; battles keep their own zoom and the window's scale. The screen
 // here a 3x one (devicePixelRatio 3: the fixed view's 576 x 360 game px at 3x or more).
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);
 const t=T,G=t.G,P=t.P,W=t.W,Z=t.MAPZOOM,ev=s=>(0,eval)(s),pn=performance.now,r0=Math.random,cv=document.querySelector('canvas');
@@ -94,9 +94,9 @@ try{
   ok(zoomed===plain,'a battle started from the zoomed map is the same as from the unzoomed one: its field, obstacles and drawing ('+plain.split('|').slice(0,8).join(',')+')'+(zoomed===plain?'':': '+zoomed.split('|').map((v,i)=>v===plain.split('|')[i]?'=':v.slice(0,80)+' vs '+plain.split('|')[i].slice(0,80)).join(' ')));
   ev('B=null');world();t.frame()}
  // ---- a phone (the window's shorter side MAPZOOM.SMALL CSS px or less; the fixed view here, so phone() is told so): the map
- // drawn PHONE times the window's scale by default (the owner, 2026-10-22), within the range; still Auto; the HUD and the minimap
+ // Auto starts closer, with the former default as the zoom-out limit; the HUD and the minimap
  // at the window's scale; a step from there stored, a step back Auto again; off the map the window's own scale
- {const ph=Z.phone;try{Z.phone=()=>true;t.act('mapzoom','0');world();t.fitScreen();t.frame();const A=Math.min(Z.hi,s0*Z.PHONE);
+ {const ph=Z.phone;try{Z.phone=()=>true;t.act('mapzoom','0');world();t.fitScreen();t.frame();const A=Math.ceil(Z.lo*Z.PHONE_START);
    ok(Z.auto===A&&A>s0&&t.VS===A&&Z.z===0&&t.HUD_PX===3/s0&&Math.abs(Z.k()-s0/t.VS)<1e-9&&view(),'on a phone the map is drawn at '+A+' by default, not the window\'s '+s0+' ('+t.VW+' x '+t.VH+' game px); the HUD at the window\'s scale');
    const m=t.worldMiniRect();ok(Math.abs(m.w*t.VS-112*s0)<=t.VS*2,'the minimap keeps its size on the screen ('+m.w*t.VS+' device px across)');
    const a1=t.mapZoom(-1);t.frame();const v1=t.VS,st=localStorage.getItem('ashmark.mapzoom');const a2=t.mapZoom(1);t.frame();

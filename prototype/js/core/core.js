@@ -25,15 +25,10 @@ let BW=960,BH=FIELD_H,BVW=960,BVH=FIELD_H;
 function setRes(w,h,k=1){CVS=k;if(cv.width===w&&cv.height===h)return;cv.width=w;cv.height=h;ctx0.imageSmoothingEnabled=false}
 // (the test suites keep the old fixed view, 576 x 360, so their clicks and sums stay put; ?v= is a look at the real thing)
 const FIXED_VIEW=/[?&]test=/.test(location.search)&&!/[?&]v=/.test(location.search);
-/* the world map's zoom: its scale a whole number of device pixels to a game pixel still, so the art stays crisp. z: the scale
-   asked for (0 auto: the map's default, auto below; Settings → Map zoom, the wheel, + and −, the buttons, a pinch: mapZoom),
-   kept within lo (out: at most OUT game px in view, and no more than the map; a phone's farthest is then 2, as at 1 a frame
-   costs 4x: tests/visual/smoothperf.js) and hi (in: at least IN px across, IN_H down; phones use PHONE_IN and PHONE_IN_H).
-   Only while the map is drawn (map: render.js frame); battles, scenes and the HUD keep s0 (vw x vh, the view at it). k(): the
-   HUD's share of a game pixel on the zoomed map (the minimap keeps its size on the screen). auto: the map's own default, s0;
-   on a small screen (a phone: its shorter side SMALL CSS px or less) PHONE times it, within hi (the owner, 2026-10-22: the map
-   was drawn too small there; phone(w, h): is a window w x h CSS px one, never the tests' fixed view) */
-const MAPZOOM={z:0,map:false,on:false,s0:1,auto:1,lo:1,hi:1,vw:576,vh:360,IN:320,IN_H:180,OUT:1.7e6,PINCH:1.25,WHEEL:140,SMALL:540,PHONE:3,PHONE_IN:240,PHONE_IN_H:120,wt:0,k(){return this.on?this.s0/VS:1},phone(w,h){return !FIXED_VIEW&&Math.min(w,h)<=this.SMALL}};
+/* Map art stays on whole device pixels. z: saved scale (0 Auto); lo/hi: zoom limits. Desktop Auto and limits follow the
+   window. On phones, the former default (PHONE × window scale, bounded by PHONE_IN/PHONE_IN_H) is now the farthest view.
+   Auto starts PHONE_START times closer, with further zoom up to PHONE_MAX times the former default. HUD scale stays s0. */
+const MAPZOOM={z:0,map:false,on:false,s0:1,auto:1,lo:1,hi:1,vw:576,vh:360,IN:320,IN_H:180,OUT:1.7e6,PINCH:1.25,WHEEL:140,SMALL:540,PHONE:3,PHONE_START:1.5,PHONE_MAX:2,PHONE_IN:240,PHONE_IN_H:120,wt:0,k(){return this.on?this.s0/VS:1},phone(w,h){return !FIXED_VIEW&&Math.min(w,h)<=this.SMALL}};
 // the screen is the window; the canvas fills it at a whole-number scale (a game pixel's last part may run past the edge)
 function fitScreen(){
   const scr=cv.parentElement,dpr=window.devicePixelRatio||1,aw=innerWidth,ah=innerHeight,Z=MAPZOOM,phone=Z.phone(aw,ah);
@@ -41,7 +36,7 @@ function fitScreen(){
   // (the screen in device pixels: the window, or the tests' fixed view at its scale; the view at a scale s: dw/s x dh/s)
   const dw=FIXED_VIEW?576*s0:aw*dpr,dh=FIXED_VIEW?360*s0:ah*dpr,fit=s=>Math.ceil(dw/s)*Math.ceil(dh/s)<=Z.OUT&&Math.ceil(dw/s)<=MW*TILE&&Math.ceil(dh/s)<=MH*TILE;
   Z.s0=s0;Z.vw=Math.ceil(dw/s0);Z.vh=Math.ceil(dh/s0);Z.hi=Math.max(s0,Math.floor(Math.min(dw/(phone?Z.PHONE_IN:Z.IN),dh/(phone?Z.PHONE_IN_H:Z.IN_H))));Z.lo=s0;while(Z.lo>1&&fit(Z.lo-1))Z.lo--;
-  Z.auto=phone?Math.min(Z.hi,s0*Z.PHONE):s0;
+  if(phone){const far=Math.min(Z.hi,s0*Z.PHONE);Z.lo=far;Z.auto=Math.ceil(far*Z.PHONE_START);Z.hi=Math.max(Z.auto+1,Math.ceil(far*Z.PHONE_MAX))}else Z.auto=s0;
   const s=Z.map?Math.max(Z.lo,Math.min(Z.hi,Z.z||Z.auto)):s0;Z.on=s!==s0;
   VW=Math.ceil(dw/s);VH=Math.ceil(dh/s);BVH=FIELD_H;BVW=Math.round(FIELD_H*Z.vw/Z.vh);
   const w=VW*s/dpr,h=VH*s/dpr;HUD_PX=dpr/s0;VS=s;cv.style.width=w+'px';cv.style.height=h+'px';
