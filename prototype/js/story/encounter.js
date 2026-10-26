@@ -279,8 +279,9 @@ class Encounter extends Happening{
   // far it has run
   run(d,v){
     const own=this.hx!=null,sx=own?this.hx:this.x-P.x,sy=own?this.hy:this.y-P.y,s=moveStep(v,d);
-    if(walk(this,sx,sy,s)){
-      this.dir=sx>=0?1:-1;
+    const ox=this.x;
+    if(Router.flee(this,own?{x:this.x-sx,y:this.y-sy}:P,s)){
+      if(Math.abs(this.x-ox)>.01)this.dir=this.x>ox?1:-1;
       this.ran=(this.ran||0)+s;
     }
   }
@@ -417,7 +418,7 @@ class Encounter extends Happening{
       }
     }
     if(this.la===undefined)this.la=roadAwayAt(this);
-    if(!(this.la&&Router.travel(this,{x:this.la[0],y:this.la[1]},s)))walk(this,this.x-P.x,this.y-P.y,s);
+    if(!(this.la&&Router.travel(this,{x:this.la[0],y:this.la[1]},s)))Router.flee(this,P,s);
     if(Math.abs(this.x-ox)>.01)this.dir=this.x>ox?1:-1;
   }
 }

@@ -13,8 +13,8 @@ const monPower=m=>m.pw||(m.pw=rating(Array(m.n).fill(MONSTERS[m.id].unit),m.lv))
 function stanceMove(o,st,dist,dx,dy,see,sp,canHunt){
   if(P.stay)return false;
   if(st==='attack'&&canHunt&&dist<see){const s=G.encCool>0?Math.min(dist,sp,dist-GRACE_GAP):Math.min(dist,sp);if(s>0)walk(o,dx,dy,s);return true}// (the grace after a fight: they keep a few steps off, no step into the gap)
-  if(st==='afraid'&&dist<see){walk(o,-dx,-dy,sp*.85);o.fled=true;return true}
-  if(st==='wary'&&dist<see*.45){walk(o,-dx,-dy,sp*.5);return true}
+  if(st==='afraid'&&dist<see){Router.flee(o,{x:o.x+dx,y:o.y+dy},sp*.85);o.fled=true;return true}
+  if(st==='wary'&&dist<see*.45){Router.flee(o,{x:o.x+dx,y:o.y+dy},sp*.5);return true}
   return false;
 }
 function playerList(){return ['hero',...Object.keys(P.comps),...P.list]}

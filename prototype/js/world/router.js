@@ -1,11 +1,12 @@
 'use strict';
-/* ---------- the router: every way over the land, behind three calls (doc/WORLD_DESIGN.md §3.6), so how ways are found can
+/* ---------- the router: every way over the land, behind shared calls (doc/WORLD_DESIGN.md §3.6), so how ways are found can
    change behind them and no walker notices:
      Router.travel(o, goal, step): one step of o toward goal, a point {x, y}; with tw (a holding) the way leads to that holding
        by its roads and the last stretch goes straight to the point; with road, it keeps to the roads where they go (off them a
        tile costs WAY.keep times as much: a caravan's way, the owner's play-test 2: "only off the road when they run away"; a number, that
        many times: a worker's, WAY.folk). True while on its way, false when goal cannot be reached
        from where o stands (the walker should pick another)
+     Router.flee(o, threat, step): escape along reachable ground, committing to a bounded detour at obstacles
      Router.reach(a, b): can one walk from a to b (a holding from its own tile, anything else from its point)
      Router.days(a, b, pace): how many days' march from a to b at pace (px a world second, unscaled: MAP_BASE if left out);
        Infinity when there is no way
@@ -57,6 +58,7 @@ const wayTile=p=>{const h=p instanceof Holding,tx=h?p.tx:Math.floor(p.x/TILE),ty
 // the way to a holding, a goal for Router.travel: the spot in front of its gate (dx along it), by the holding's roads
 const gateGoal=(t,dx)=>({x:t.x+(dx||0),y:t.y+12,tw:t});
 const Router={
+  flee(o,threat,step){return FleeRoutes.step(o,threat,step)},
   travel(o,goal,step){return wayTravel(o,goal,step)},
   reach(a,b){const L=landPieces(),i=wayTile(a),j=wayTile(b);return i>=0&&j>=0&&L[i]>=0&&L[i]===L[j]},
   // (the graph's days at WAY.pace, by the pace asked)
@@ -316,3 +318,52 @@ function wayDays(a,b){const s=wayTile(a),g=wayTile(b);if(s<0||g<0)return Infinit
   const r=wayRoute(WM.graph,s,g,b instanceof Holding?wayNodes().get(g):null);return r?r.cost:Infinity}
 // (the days a list of tiles takes from tile s, at WAY.pace: tests/router.js weighs ways by it)
 function wayCost(s,p){let c=0,a=s;for(const k of p){const d=a%MW!==k%MW&&(a/MW|0)!==(k/MW|0)?1.414:1;c+=d*wayStep(tiles[k],climate[k]);a=k}return c*wayDay()}
+
+
+/* Escape routes stay committed around obstacles instead of alternating local steering angles. */
+const FLEE_ROUTE={radius:12,depth:24,look:3,rethink:3,cost:.12};
+class FleeRoutes{
+  static paths=new WeakMap();
+  static clear(a,b){return wayRay(a.x,a.y,b.x,b.y,i=>i>=0&&wayOpen(i))}
+  static plan(o,threat){
+    const start=wayTile(o),sx=start%MW,sy=Math.floor(start/MW),seen=new Map([[start,{prev:-1,depth:0}]]),q=[start],base=Math.hypot(o.x-threat.x,o.y-threat.y);
+    let best=start,score=TILE*.5;
+    for(let h=0;h<q.length;h++){
+      const k=q[h],x=k%MW,y=Math.floor(k/MW),depth=seen.get(k).depth;
+      if(depth>=FLEE_ROUTE.depth)continue;
+      for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){
+        if(!dx&&!dy)continue;const nx=x+dx,ny=y+dy,j=ny*MW+nx;
+        if(nx<0||ny<0||nx>=MW||ny>=MH||Math.abs(nx-sx)>FLEE_ROUTE.radius||Math.abs(ny-sy)>FLEE_ROUTE.radius||seen.has(j)||!wayOpen(j))continue;
+        if(dx&&dy&&(!wayOpen(y*MW+nx)||!wayOpen(ny*MW+x)))continue;
+        const [px,py]=wayCentre(j);if(k===start&&!this.clear(o,{x:px,y:py}))continue;
+        seen.set(j,{prev:k,depth:depth+1});q.push(j);
+        const value=Math.hypot(px-threat.x,py-threat.y)-base-(depth+1)*TILE*FLEE_ROUTE.cost;
+        if(value>score){score=value;best=j}
+      }
+    }
+    const path=[];for(let k=best;k!==start;k=seen.get(k).prev)path.push(k);
+    return{path:path.reverse(),at:0,threat:{x:threat.x,y:threat.y},x:o.x,y:o.y,v:WAYV};
+  }
+  static step(o,threat,step){
+    if(!(step>0)||!Number.isFinite(step)||!Number.isFinite(threat.x)||!Number.isFinite(threat.y)||wayTile(o)<0)return false;
+    let r=this.paths.get(o);
+    if(r&&(r.v!==WAYV||Math.hypot(o.x-r.x,o.y-r.y)>1||Math.hypot(threat.x-r.threat.x,threat.y-r.threat.y)>FLEE_ROUTE.rethink*TILE)){this.paths.delete(o);r=null}
+    if(!r){
+      const dx=o.x-threat.x,dy=o.y-threat.y,d=Math.hypot(dx,dy),ux=d?dx/d:1,uy=d?dy/d:0,look=Math.max(step,FLEE_ROUTE.look*TILE);
+      if(this.clear(o,{x:o.x+ux*look,y:o.y+uy*look}))return this.move(o,o.x+ux*step,o.y+uy*step);
+      r=this.plan(o,threat);this.paths.set(o,r);
+    }
+    let moved=false,left=step;
+    for(let n=0;n<64&&left>0&&r.at<r.path.length;n++){
+      let end=r.at;while(end+1<r.path.length){const [x,y]=wayCentre(r.path[end+1]);if(!this.clear(o,{x,y}))break;end++}
+      const [x,y]=wayCentre(r.path[end]),dx=x-o.x,dy=y-o.y,d=Math.hypot(dx,dy);
+      if(d<.001){r.at=end+1;continue}
+      const s=Math.min(d,left),nx=o.x+dx/d*s,ny=o.y+dy/d*s;
+      if(!this.clear(o,{x:nx,y:ny})){this.paths.delete(o);break}
+      this.move(o,nx,ny);moved=true;left-=s;if(s===d)r.at=end+1;
+    }
+    r.x=o.x;r.y=o.y;if(moved&&r.at>=r.path.length)this.paths.delete(o);return moved;
+  }
+  static move(o,x,y){const d=Math.hypot(x-o.x,y-o.y);WALKED.set(o,(WALKED.get(o)||0)+d);o.x=x;o.y=y;return d>0}
+}
+onWorld(()=>{FleeRoutes.paths=new WeakMap()});

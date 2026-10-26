@@ -1064,3 +1064,5 @@ March editor: army-sized placement view by default; Show range opens the selecte
 Deployment: the repository root has an `index.html`. Run `python3 scripts/build-web.py` from the root to create `dist/site/` and `dist/ashmark-web.zip` with all runtime dependencies. See `DEPLOY.md` for hosting and phone testing.
 
 Mobile world HUD: one bottom dock keeps Pause, a collapsible speed picker, Map, Army and Menu together. The compact day/party strip opens the full condition card; opening speed or tapping away closes it. Menu opens a bottom sheet with all windows, including Skills and Help. Existing desktop and battle controls keep their layout. Bottom safe areas and viewport resize are respected.
+
+Fleeing on the world map: wildlife, hunted animals, frightened parties, caravans and fleeing road encounters use Router.flee. Open escapes stay direct; obstacles use a bounded reachable route held across frames. Routes reconsider a shifted threat or changed crossing, never cut blocked corners, and stay runtime-only. Normal travel, movement speed and saves are unchanged.

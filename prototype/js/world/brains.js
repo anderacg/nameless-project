@@ -119,7 +119,7 @@ class CaravanBrain extends Brain{
     if(c.idle||inFight(c))return false;
     this.cool(c,d);const to=townBy(c.to);if(!to||!c.mine&&atWar(to.owner,c.fac)){c.gone=true;return false}
     const v=this.look(c),pd=v.d,scared=!c.mine&&hostileTo(c.fac)&&TravelAwareness.sees(c);
-    if(scared){walk(c,-v.dx,-v.dy,moveStep(CARAVAN_SPD*.9,d));c.dir=v.dx>0?-1:1}
+    if(scared){const ox=c.x;Router.flee(c,{x:c.x+v.dx,y:c.y+v.dy},moveStep(CARAVAN_SPD*.9,d));this.face(c,ox)}
     else{const ox=c.x;Router.travel(c,{...gateGoal(to),road:true},moveStep(CARAVAN_SPD*Math.max(.5,speedAt(c.x,c.y)||1),d));c.dir=c.x>=ox?1:-1}
     if(Math.hypot(to.x-c.x,to.y+12-c.y)<8){if(c.arrive(to))c.gone=true;return false}
     // preyed on: bandits close by, or a lord at war with its owner; the guards fight it out (fights.js)
