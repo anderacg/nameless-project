@@ -240,7 +240,7 @@ window.addEventListener('keydown',e=>{
   const k=keyOf(e);
   if(e.key==='F6'){e.preventDefault();saveGame(false,'quick');return}
   if(k==='tab'&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&!e.shiftKey&&!G.modal&&['world','scene','battle'].includes(G.mode)){e.preventDefault();if(!e.repeat)menuKey();return}// Tab: the Game Menu (hub.js; in a window, the menu too, Tab moves between its buttons)
-  if(k==='escape'){e.preventDefault();if(ActionRing.close()||dragCancel())uiSfx('back');else if(G.mode==='battle'&&B&&B.amArm){armAttackMove(false);uiSfx('back')}else onEscape();return}// (a drag first, then an armed attack-move: Esc calls it off and nothing else)
+  if(k==='escape'){e.preventDefault();if(window.mobileWorldHud?.close()||ActionRing.close()||dragCancel())uiSfx('back');else if(G.mode==='battle'&&B&&B.amArm){armAttackMove(false);uiSfx('back')}else onEscape();return}// (a drag first, then an armed attack-move: Esc calls it off and nothing else)
   if(k==='m'&&!e.ctrlKey&&!e.metaKey&&!e.altKey){if(!e.repeat){if(e.shiftKey)toggleMute();else fullMapKey()}return}// M: the full map (map.js); Shift+M: the sound off or on, anywhere (ui.js)
   if(/^[0-9]$/.test(k)&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&!e.repeat&&G.mode!=='battle'&&railKey(k)){e.preventDefault();return}// a number: a place on the window's rail (window.js)
   if(/^[qwer]$/.test(k)&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&!e.repeat&&G.mode!=='battle'&&railActKey(k)){e.preventDefault();return}// Q, W, E, R: the window's key actions (window.js)
@@ -298,3 +298,46 @@ window.addEventListener('keydown',e=>{
 });
 window.addEventListener('keyup',e=>{if(e.code==='Space'&&B&&B.draw)drawRelease();const k=keyOf(e);G.keys[k]=false;if(k==='shift'||!e.shiftKey)G.keys.shift=false});
 window.addEventListener('blur',()=>{G.keys={}});
+
+
+/* Mobile world controls share the existing buttons and handlers; restore them outside the map. */
+class MobileWorldHud{
+  constructor(){
+    this.media=matchMedia('(max-width:600px), (pointer:coarse) and (max-height:600px)');
+    this.screen=$('#screen');this.enabled=false;
+    this.root=document.createElement('div');this.root.className='mobile-world-hud';this.root.hidden=true;
+    this.root.innerHTML='<div class="mwh-status"><div data-place="day"></div><button type="button" id="partyToggle" aria-controls="stats" aria-expanded="false"><span>Party status</span> <b aria-hidden="true">▴</b></button></div>'+
+      '<nav class="mwh-dock" aria-label="World controls"><div data-place="pause"></div><button type="button" id="speedToggle" aria-controls="worldSpeedChoices" aria-expanded="false"><strong>1× ▴</strong><small>Speed</small></button><div data-place="map"></div><div data-place="army"></div><div data-place="menu"></div></nav>'+
+      '<div id="worldSpeedChoices" class="mwh-speeds" role="group" aria-label="Travel speed" hidden></div>';
+    $('.hudlayer').appendChild(this.root);
+    this.speedButton=$('#speedToggle');this.partyButton=$('#partyToggle');this.choices=$('#worldSpeedChoices');
+    const node=(selector,place)=>{const el=$(selector),home=document.createComment('mobile control home');el.before(home);return{el,home,to:this.root.querySelector('[data-place="'+place+'"]')||this.choices}};
+    this.nodes=[node('#pause','pause'),node('#mapBtn','map'),node('#charBtn','army'),node('#menuBtn','menu'),node('#wday','day'),node('.wtime','speed')];
+    this.speedButton.addEventListener('click',()=>{const open=this.choices.hidden;this.close();this.choices.hidden=!open;this.speedButton.setAttribute('aria-expanded',String(open));this.speed()});
+    this.partyButton.addEventListener('click',()=>{const open=this.partyButton.getAttribute('aria-expanded')!=='true';this.close();this.partyButton.setAttribute('aria-expanded',String(open));this.screen.classList.toggle('party-open',open)});
+    document.addEventListener('click',e=>{if(e.target.closest('[data-speed]')||!this.root.contains(e.target)&&!$('#stats').contains(e.target))this.close();this.sync()});
+    document.addEventListener('pointerdown',e=>{if(!this.root.contains(e.target)&&!$('#stats').contains(e.target))this.close()});
+    this.media.addEventListener('change',()=>this.sync());addEventListener('resize',()=>this.sync());
+    window.visualViewport?.addEventListener('resize',()=>{fitScreen();this.sync()});
+    new ResizeObserver(()=>this.measure()).observe(this.root);
+    this.sync();this.speed();
+  }
+  sync(){
+    const mobile=this.media.matches;if(this.mobile!==mobile){this.mobile=mobile;this.screen.classList.toggle('mobile-controls',mobile)}
+    const enabled=mobile&&G.mode==='world'&&!G.modal;if(enabled===this.enabled)return;
+    this.close();this.enabled=enabled;this.screen.classList.toggle('mobile-world',enabled);this.root.hidden=!enabled;
+    for(const n of this.nodes)if(enabled)n.to.appendChild(n.el);else n.home.after(n.el);
+    this.measure();
+  }
+  measure(){if(this.enabled){const pixels=this.root.getBoundingClientRect().height,height=pixels+'px';if(pixels>0&&this.screen.style.getPropertyValue('--mobile-hud-height')!==height)this.screen.style.setProperty('--mobile-hud-height',height)}}
+  close(){
+    const was=!this.choices.hidden||this.partyButton.getAttribute('aria-expanded')==='true';
+    this.choices.hidden=true;this.speedButton.setAttribute('aria-expanded','false');this.partyButton.setAttribute('aria-expanded','false');this.screen.classList.remove('party-open');this.speed();return was;
+  }
+  speed(){this.speedButton.querySelector('strong').textContent=G.speed+'× '+(this.choices.hidden?'▴':'▾');this.speedButton.setAttribute('aria-label','Travel speed '+G.speed+' times')}
+  update(fitness,morale,stamina){
+    const text='Fit '+fitness+'% · Morale '+morale+'% · Stamina '+stamina+'%',label=this.partyButton.querySelector('span');if(label.textContent!==text){label.textContent=text;this.measure()}
+    this.partyButton.setAttribute('aria-label','Party status: fitness '+fitness+' percent, morale '+morale+' percent, stamina '+stamina+' percent');this.partyButton.classList.toggle('warn',fitness<50||morale<30||stamina<SUPPLY.tired);
+  }
+}
+window.mobileWorldHud=new MobileWorldHud();

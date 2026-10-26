@@ -70,7 +70,7 @@ try{
   world();G.enc=enc;t.startEncounter({kind:'party',ref:t.asParty({x:P.x,y:P.y,cool:0,troops:['militia','militia','militia']}),n:3,list:['militia','militia','militia']})}
  // in battle Esc pauses the fight
  t.act('fight');const B=t.B,bt=B.t;esc();ok(G.mode==='esc'&&/in battle/.test(panel())&&sysb().includes('Save game (off)')&&/Not during a battle/.test(document.querySelector('#panel [data-act="esc-saves"]').textContent),'Esc in battle: the Game Menu, Save greyed (Not during a battle)');
- {const ts=[...document.querySelectorAll('#panel .gm-tile')];ok(ts.length===6&&ts.every(b=>b.disabled&&/Not during a battle/.test(b.textContent)),'in battle every tile greyed: Not during a battle');t.act('esc-go','journal');ok(G.mode==='esc','(a greyed tile opens nothing)');
+ {const ts=[...document.querySelectorAll('#panel .gm-tile')];ok(ts.length===8&&ts.every(b=>b.disabled&&/Not during a battle/.test(b.textContent)),'in battle every tile greyed: Not during a battle');t.act('esc-go','journal');ok(G.mode==='esc','(a greyed tile opens nothing)');
   t.act('esc-settings');ok(page()==='settings'&&/Realm economy/.test(panel()),'Settings in battle');esc();ok(page()==='menu','and Back')}
  for(let i=0;i<5;i++){if(G.mode==='battle')t.updateBattle(.05)}ok(B.t===bt,'the battle does not move while paused');t.frame();esc();ok(G.mode==='battle'&&!G.modal,'Esc resumes the battle');Kit.key('Tab','Tab');ok(G.mode==='esc'&&G.esc.mode==='battle','Tab in battle: the Game Menu too');esc();ok(G.mode==='battle','(resumed)');
  B.over=true;B.endT=0;t.updateBattle(.01);t.act('cont');while(G.mode==='perk')t.act('perk',G.perkOffer[0]);

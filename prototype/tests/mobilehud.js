@@ -1,0 +1,24 @@
+'use strict';
+Kit.suite(({ok})=>{
+ const t=T,G=t.G;window.requestAnimationFrame=()=>0;Kit.begin('soldier',1);Kit.clear();Kit.world();G.paused=true;t.updateHUD(true);t.frame();
+ const hud=window.mobileWorldHud,root=hud.root,cv=document.getElementById('game'),stats=document.getElementById('stats'),speed=document.getElementById('speedToggle'),party=document.getElementById('partyToggle');
+ const visible=e=>!!e.getClientRects().length&&getComputedStyle(e).display!=='none',rect=e=>e.getBoundingClientRect(),click=id=>document.getElementById(id).click();
+ ok(hud.enabled&&visible(root)&&!visible(stats)&&!visible(document.getElementById('wtop'))&&!visible(document.querySelector('.dock')),'mobile world starts with one bottom dock and collapsed party details');
+ const buttons=[document.getElementById('pause'),speed,...['mapBtn','charBtn','menuBtn'].map(id=>document.getElementById(id))],r=rect(root);
+ ok(buttons.every(b=>{const p=rect(b);return root.contains(b)&&p.width>=44&&p.height>=44&&p.left>=r.left&&p.right<=r.right&&p.bottom<=r.bottom})&&buttons.every((b,i)=>!i||rect(b).left>=rect(buttons[i-1]).right),'the five thumb-sized controls fit in one row without overlapping');
+ ok(r.bottom<=innerHeight&&r.top>innerHeight/2,'the dock stays inside the viewport at the bottom');
+ click('speedToggle');const choices=hud.choices;ok(!choices.hidden&&speed.getAttribute('aria-expanded')==='true'&&rect(choices).bottom<=r.top,'speed choices expand above the dock');
+ choices.querySelector('[data-speed="4"]').click();ok(G.speed===4&&choices.hidden&&speed.textContent.includes('4×'),'choosing a speed updates the existing clock and collapses the picker');
+ click('pause');ok(!G.paused&&G.speed===4,'Pause/Play stays directly accessible without changing the selected speed');click('pause');
+ click('speedToggle');cv.click();ok(choices.hidden,'tapping the map dismisses the speed picker');
+ click('partyToggle');ok(visible(stats)&&party.getAttribute('aria-expanded')==='true'&&rect(stats).bottom<=r.top,'the condition card expands above the dock without covering controls ('+rect(stats).bottom+' <= '+r.top+')');
+ click('speedToggle');ok(!visible(stats)&&!choices.hidden,'opening speed closes party details');
+ window.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',code:'Escape',bubbles:true}));ok(choices.hidden&&G.mode==='world','Escape collapses the picker before opening a menu');
+ click('menuBtn');t.frame();const panel=document.getElementById('panel');panel.style.animation='none';const p=rect(panel),screen=rect(document.getElementById('screen'));
+ ok(G.mode==='esc'&&Math.abs(p.bottom-screen.bottom)<2&&p.top>screen.top,'Menu opens a bottom sheet and pauses the campaign');
+ ok(['Skills','Help','Inventory','Quests'].every(name=>[...panel.querySelectorAll('.gm-tile strong')].some(e=>e.textContent===name)),'the menu sheet contains the other mobile windows');
+ t.act('esc-resume');t.frame();ok(hud.enabled&&document.getElementById('pause').closest('.mwh-dock')&&G.paused,'Resume restores the same dock controls and pause state');
+ click('mapBtn');t.frame();ok(G.mode==='fullmap'&&!hud.enabled,'Map still opens the full map');t.fullMapKey();t.frame();
+ click('charBtn');t.frame();ok(G.mode==='char'&&!hud.enabled,'Army still opens the roster');
+ ok(!ERR.length,'mobile HUD interactions have no runtime errors');
+});

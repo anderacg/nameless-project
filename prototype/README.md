@@ -1062,3 +1062,5 @@ Travel detection now builds suspicion per group using its actual centre, footpri
 March editor: army-sized placement view by default; Show range opens the selected ranged group’s reach overview. Undo keeps the last 20 edits, Reset group restores only the selected group, and red drag outlines flag requests outside the placement boundary before they are fitted inside. Terrain obstacles remain resolved during travel.
 
 Deployment: the repository root has an `index.html`. Run `python3 scripts/build-web.py` from the root to create `dist/site/` and `dist/ashmark-web.zip` with all runtime dependencies. See `DEPLOY.md` for hosting and phone testing.
+
+Mobile world HUD: one bottom dock keeps Pause, a collapsible speed picker, Map, Army and Menu together. The compact day/party strip opens the full condition card; opening speed or tapping away closes it. Menu opens a bottom sheet with all windows, including Skills and Help. Existing desktop and battle controls keep their layout. Bottom safe areas and viewport resize are respected.

@@ -380,6 +380,7 @@ function drawBattle(){
 }
 function frame(){
   {const sc=document.getElementById('screen');if(sc&&sc.dataset.mode!==G.mode){sc.dataset.mode=G.mode;updateHint();hideTip()}}
+  window.mobileWorldHud?.sync();
   // (loading: the overlay over the last frame, nothing drawn under it, so no effect draws a random number meanwhile: ui/loading.js)
   if(G.mode==='loading'){if(typeof loadingFrame==='function')loadingFrame();return}
   const bat=B&&(G.mode==='battle'||G.mode==='esc'&&G.esc&&G.esc.mode==='battle'),scn=!bat&&G.scene&&(G.mode==='scene'||G.mode==='town'&&G.town&&G.town.inScene||G.mode==='esc'&&G.esc&&(G.esc.mode==='scene'||G.esc.mode==='town'&&G.town&&G.town.inScene)),map=(!bat||!!B?.world)&&!scn;
@@ -434,6 +435,7 @@ function updateHUD(force){
     '<div class="pc-line" title="Where you are">'+icon('region',12)+'<span>'+regionAt(P.x,P.y).name+' · <span style="color:'+(lh?landCol(lh.owner):'#9a958a')+'">'+landName(P.x,P.y)+'</span></span></div>'+
     '<div class="pc-line" title="Renown and whom you serve">'+icon('renown',12)+'<span>'+P.renown+'</span>'+icon('banner',12)+'<span'+(P.fac?' style="color:'+FACS[P.fac].col+'"':'')+'>'+(P.fac?FACS[P.fac].n:'Independent')+'</span></div>';
   const d=$('#wday');if(d)d.innerHTML=icon(darkness()>.3?'moon':'sun',16)+'<span>Day '+G.day+' · '+timeOfDay()+'</span>'+byRoadPill()+followPill()+'<b'+(G.paused?'':' class="off"')+'>Paused</b>';
+  window.mobileWorldHud?.update(fp,mo,Math.round(P.bsta));
   const cb=$('#campBtn');if(cb){cb.classList.toggle('on',!!P.camp);cb.setAttribute('aria-pressed',String(!!P.camp))}
 }
 // a short hint at the top of the screen for where you are (H shows every control)
@@ -459,6 +461,6 @@ function setOrderUI(){
 // Travel fast will not start with danger in sight
 function setSpeed(n,why){
   if(why&&G.speed===TRAVEL_FAST&&n!==TRAVEL_FAST)log('Travel fast ends: '+why+'.','bad');
-  G.speed=n;document.querySelectorAll('[data-speed]').forEach(b=>{const on=+b.dataset.speed===n;b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on))})}
+  G.speed=n;window.mobileWorldHud?.speed();document.querySelectorAll('[data-speed]').forEach(b=>{const on=+b.dataset.speed===n;b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on))})}
 function pauseUI(){const b=$('#pause');if(!b)return;b.innerHTML=icon(G.paused?'play':'pause',14);b.setAttribute('aria-label',G.paused?'Play':'Pause');b.classList.toggle('on',!!G.paused)}
 function togglePause(){G.paused=!G.paused;pauseUI();updateHUD(true)}
