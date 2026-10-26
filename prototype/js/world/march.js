@@ -105,7 +105,7 @@ class MarchArmy{
     for(const row of this.rows)if(row.id!=='hero'){
       const x=o.x+row.x*co-row.y*si,y=o.y+row.x*si+row.y*co,slots=formSlots(row.form,row.count,this.face+(row.face||0),row.files,WORLD_BATTLE.sprite);
       const at=pivot?.row===row.id?slots[pivot.index]:[0,0];
-      slots.forEach(([sx,sy],i)=>out.push({row:row.id,index:i,type:row.type,character:row.character,pivot:pivot?.row===row.id&&pivot.index===i,x:x+(sx-at[0])/WORLD_BATTLE.scale,y:y+(sy-at[1])/WORLD_BATTLE.scale}));
+      slots.forEach(([sx,sy],i)=>out.push({row:row.id,index:i,type:row.type,character:row.character,pivot:pivot?.row===row.id&&pivot.index===i,x:(o===P?WildHunt.active?.goalFor(row.id,i)?.x:null)??x+(sx-at[0])/WORLD_BATTLE.scale,y:(o===P?WildHunt.active?.goalFor(row.id,i)?.y:null)??y+(sy-at[1])/WORLD_BATTLE.scale}));
     }return out;
   }
   pivot(){
@@ -129,11 +129,11 @@ class MarchArmy{
     const pivot=this.units.find(u=>u.pivot);if(pivot){pivot.walk+=Math.hypot(o.x-pivot.x,o.y-pivot.y);pivot.walking=moved>.001;pivot.x=o.x;pivot.y=o.y;pivot.dir=this.face;pivot.goal={x:o.x,y:o.y};pivot.plan=null;if(this.units.length===1){this.queries=0;return}}
     if(!this.ground||this.ground.version!==WAYV||this.time>=(this.refresh||0)||!this.ground.covers(o,marchOuter(o)+8)||this.units.some(u=>!this.ground.covers(u,8))){this.ground=new MarchGround(o,this.units);this.refresh=this.time+MARCH_MOVE.refresh}
     const nav=this.ground,reach=nav.reachable(o),reserved=new Set(),targets=this.targets();this.queries=0;
-    const pace=o===P?MAP_BASE*travelMul()*(P.morale<25?.8:1)*roadSprint()*hurryPace():partySpeed(o,o.troops),step=moveStep(pace,d,!B?.world)*MARCH_MOVE.catchup;
+    const pace=o===P?MAP_BASE*travelMul()*(P.morale<25?.8:1)*hurryPace():partySpeed(o,o.troops),step=moveStep(pace,d,!B?.world)*MARCH_MOVE.catchup;
     const buckets=new Map(),cell=MARCH_MOVE.bucket,key=(x,y)=>Math.floor(x/cell)+','+Math.floor(y/cell),put=u=>{const k=key(u.x,u.y),a=buckets.get(k)||[];if(!buckets.has(k))buckets.set(k,a);a.push(u);u.bucket=k};this.units.forEach(put);
     const near=u=>{const out=[],cx=Math.floor(u.x/cell),cy=Math.floor(u.y/cell);for(let y=cy-1;y<=cy+1;y++)for(let x=cx-1;x<=cx+1;x++)out.push(...buckets.get(x+','+y)||[]);return out};
-    const wanted=new Map(targets.map(p=>[p.row+':'+p.index,p])),requests=[],sameGoals=this.goalGround===nav&&this.goalX===o.x&&this.goalY===o.y&&this.goalFace===this.face&&this.goalRoster===this.key&&this.goalBounds===bounds;
-    this.goalGround=nav;this.goalX=o.x;this.goalY=o.y;this.goalFace=this.face;this.goalRoster=this.key;this.goalBounds=bounds;
+    const wanted=new Map(targets.map(p=>[p.row+':'+p.index,p])),requests=[],huntRevision=o===P?WildHunt.active?.revision:null,sameGoals=this.goalHunt===huntRevision&&this.goalGround===nav&&this.goalX===o.x&&this.goalY===o.y&&this.goalFace===this.face&&this.goalRoster===this.key&&this.goalBounds===bounds;
+    this.goalHunt=huntRevision;this.goalGround=nav;this.goalX=o.x;this.goalY=o.y;this.goalFace=this.face;this.goalRoster=this.key;this.goalBounds=bounds;
     for(const u of this.units){if(u.pivot){reserved.add(routeIx(nav.grid,u.x-nav.x,u.y-nav.y));continue}u.walking=false;const p=wanted.get(u.row+':'+u.index);if(!sameGoals){const at=routeIx(nav.grid,u.x-nav.x,u.y-nav.y),local=reach[at]?reach:nav.island(u);u.goal=p&&nav.snap(bounds?bounds(p):p,local,reserved,inside)}if(!u.goal)continue;
       u.straight=nav.clear(u,u.goal);if(u.straight){u.plan=null;delete u.needAt;continue}
       const w=u.plan;if(!w||w.ground!==nav||this.time>=w.at||Math.hypot(w.goal.x-u.goal.x,w.goal.y-u.goal.y)>nav.grid.cs){u.needAt??=this.time;requests.push(u)}}
@@ -141,7 +141,7 @@ class MarchArmy{
     for(const u of this.units){if(u.pivot)continue;const goal=u.goal;if(!goal||Math.hypot(goal.x-u.x,goal.y-u.y)<=MARCH_MOVE.settle)continue;
       let aim=goal;if(!u.straight){const w=u.plan;if(!w||w.ground!==nav||!w.p.length)continue;while(w.i<w.p.length-1&&(Math.hypot(w.p[w.i].x-u.x,w.p[w.i].y-u.y)<MARCH_MOVE.waypoint||nav.clear(u,w.p[w.i+1])))w.i++;aim=w.p[w.i]}
       const ax=aim.x-u.x,ay=aim.y-u.y,l=Math.hypot(ax,ay);if(l<.001)continue;const amount=Math.min(step,l),friends=near(u),angle=Math.atan2(ay,ax);let q=null;
-      for(const off of MARCH_MOVE.sidestep){const p={x:u.x+Math.cos(angle+off)*amount,y:u.y+Math.sin(angle+off)*amount};if(nav.clear(u,p)&&!friends.some(v=>v!==u&&Math.hypot(v.x-p.x,v.y-p.y)<MARCH_MOVE.gap&&Math.hypot(v.x-p.x,v.y-p.y)<Math.hypot(v.x-u.x,v.y-u.y)-.001)){q=p;break}}if(!q)continue;
+      for(const off of MARCH_MOVE.sidestep){const p={x:u.x+Math.cos(angle+off)*amount,y:u.y+Math.sin(angle+off)*amount};if(!(o===P&&WildHunt.active?.sources.includes(u)&&WildHunt.active.inside(u)&&!WildHunt.active.inside(p))&&nav.clear(u,p)&&!friends.some(v=>v!==u&&Math.hypot(v.x-p.x,v.y-p.y)<MARCH_MOVE.gap&&Math.hypot(v.x-p.x,v.y-p.y)<Math.hypot(v.x-u.x,v.y-u.y)-.001)){q=p;break}}if(!q)continue;
       const at=buckets.get(u.bucket);at.splice(at.indexOf(u),1);u.dir=Math.atan2(q.y-u.y,q.x-u.x);u.x=q.x;u.y=q.y;u.walk+=amount;u.walking=true;put(u);
     }
   }

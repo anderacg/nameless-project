@@ -160,7 +160,7 @@ function goField(t,f,now){const pl=f.plan&&f.plan.day===G.day?f.plan:f.plan=fiel
 function fieldRest(f){const R=f.plan.R,w=f.plan.loop[f.si].w;f.wait=w[0]+R()*(w[1]-w[0]);f.turn=R()<.6?f.wait*R():0}
 // a step toward the next point of his way (in haste on his way in), on the land's ways (world.js walk: round what is in the way),
 // a fisher's over the planks; true once there
-function fieldStep(f,d,fast){const p=f.wp[0],dx=p.x-f.x,dy=p.y-f.y,dd=Math.hypot(dx,dy),s=moveStep(fast?FIELD.hurry:FIELD.speed*(f.load?FIELD.carry:1),d);
+function fieldStep(f,d,fast,s=moveStep(fast?FIELD.hurry:FIELD.speed*(f.load?FIELD.carry:1),d)){const p=f.wp[0],dx=p.x-f.x,dy=p.y-f.y,dd=Math.hypot(dx,dy);
   if(Math.abs(dx)>.2)f.dir=dx>0?1:-1;f.moving=true;
   if(dd<=s){WALKED.set(f,(WALKED.get(f)||0)+dd);f.x=p.x;f.y=p.y;f.wp.shift();if(p.i>=0)f.si=p.i;return true}
   if(f.plan.pier||!walk(f,dx,dy,s,f.plan.pens&&((x,y)=>!inPen(f.plan.pens,x,y,1)))){WALKED.set(f,(WALKED.get(f)||0)+s);f.x+=dx/dd*s;f.y+=dy/dd*s}return false}
@@ -170,7 +170,7 @@ function fieldWork(t,f,d,now){const pl=f.plan,risk=fieldDanger(t,f);
   // (in by his round to home, then his way round the pens back to the door: by the corners he has passed, if still on his way out)
   if(!f.gin&&(!fieldTime(now)||!fieldOut(f)||risk||pl.day!==G.day)){f.gin=true;const at=f.wp.length&&f.wp[0].i>=0?f.wp[0].i:f.si,o=at>=0?pl.out.length:f.wp.length&&f.wp[0].o!=null?f.wp[0].o:0;
     f.wp=(at<0?[]:fieldWay(pl,at,pl.home)).concat(pl.out.slice(0,o).reverse(),[{...pl.door,i:-1}])}
-  if(f.wp.length){if(fieldStep(f,d,f.gin)&&!f.wp.length&&!f.gin){f.load=false;fieldRest(f)}return}
+  if(f.wp.length){if((risk?EscapeStamina.run(f,null,moveStep(FIELD.hurry,d),n=>fieldStep(f,d,true,n)):fieldStep(f,d,f.gin))&&!f.wp.length&&!f.gin){f.load=false;fieldRest(f)}return}
   f.moving=false;if(f.gin){f.st='in';f.gin=false;f.load=false;return}
   f.wait-=d;if(f.turn&&f.wait<f.turn){f.dir=-f.dir;f.turn=0}
   if(f.wait<=0){const n=pl.loop.length;if(n<2)return fieldRest(f);let i=f.si+(pl.ping?f.dn:1);if(pl.ping&&(i<0||i>=n)){f.dn=-f.dn;i=f.si+f.dn}
@@ -203,7 +203,7 @@ function updateFolk(d){
     const dx=f.tx-f.x,dy=f.ty-f.y,dd=Math.hypot(dx,dy);
     // (laden on the way to the holding: slower; on the roads and the estates' tracks where they go, a little off his way for them:
     // router.js WAY.folk, lots.js estTrack)
-    if(dd>1.5){f.dir=dx>=0?1:-1;f.moving=true;if(Router.travel(f,{x:f.tx,y:f.ty,road:WAY.folk},moveStep(threat?FIELD.hurry:FIELD.speed*(f.st==='out'?FIELD.carry:1),d)))continue}
+    if(dd>1.5){f.dir=dx>=0?1:-1;f.moving=true;if((threat?EscapeStamina.run(f,typeof threat==='object'?threat:P,moveStep(FIELD.hurry,d),n=>Router.travel(f,{x:f.tx,y:f.ty,road:WAY.folk},n)):Router.travel(f,{x:f.tx,y:f.ty,road:WAY.folk},moveStep(FIELD.speed*(f.st==='out'?FIELD.carry:1),d))))continue}
     // (there, or no way there: in at the gate, or in at the estate's door; a new hour for tomorrow's load)
     f.moving=false;
     if(f.st==='out'){f.st='town';f.wait=DELIVER.stop[0]+Math.random()*(DELIVER.stop[1]-DELIVER.stop[0]);f.done=G.day;f.leave=DELIVER.from+Math.random()*(DELIVER.to-DELIVER.from)}

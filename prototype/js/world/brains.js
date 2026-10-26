@@ -35,7 +35,7 @@ class LordBrain extends Brain{
     if(!(hostile&&l.cool<=0&&l.state!=='siege'&&stanceMove(l,st,pd,v.dx,v.dy,see,moveStep(26*mul,d),true))){
       const t=townBy(l.tgt);if(!t){lordThink(l);return false}
       const tx=t.x+(l.state==='siege'?(l.id.endsWith('0')?-16:16):0),ty=t.y+12,dd=Math.hypot(tx-l.x,ty-l.y);
-      if(dd>4)Router.travel(l,{x:tx,y:ty,tw:t},moveStep(26*mul,d));
+      if(dd>4){const step=moveStep(26*mul,d);if(dread)EscapeStamina.run(l,dread,step,n=>Router.travel(l,{x:tx,y:ty,tw:t},n),true);else Router.travel(l,{x:tx,y:ty,tw:t},step)}
       else if(l.state==='march'){
         if(atWar(l.fac,t.owner)){l.state='siege';l.sd=0;worldEmit('siege:laid',{town:t,lord:l});
           {const F=FACS[l.fac].n,mine=t.owner==='player';worldEvent({text:l.name+' of the '+F+' lays siege to '+t.name+(mine?', your fief!':'.'),cls:t.owner===P.fac||mine?'bad':'',x:t.x,y:t.y,fac:[l.fac,t.owner],towns:[t],heard:['siege',t],kind:'',
@@ -73,8 +73,8 @@ class CompanionBrain extends Brain{
     this.cool(p,d);const sp=moveStep(partySpeed(p,p.troops)*.9,d),ox=p.x,mine=p.power(),A=WORLD_SCALE.ai,go=(x,y,s)=>{const dd=Math.hypot(x-p.x,y-p.y);if(dd>1)Router.travel(p,{x,y},s)||walk(p,x-p.x,y-p.y,Math.min(dd,s))};
     const foes=[...bandits.filter(b=>!b.fight),...W.lords.filter(l=>!l.dead&&!l.inside&&!l.fight&&hostileTo(l.fac))].map(o=>[o,Math.hypot(o.x-p.x,o.y-p.y),o.power()]).filter(([,dd])=>dd<A.compFoes).sort((a,b)=>a[1]-b[1]);
     const strong=foes.find(([,,pw])=>pw>mine*1.2),prey=p.order!=='return'&&foes.find(([,,pw])=>pw<=mine);
-    if(strong&&strong[1]<A.compFlee){go(P.x,P.y,sp*1.1)}
-    else if(prey&&p.cool<=0){go(prey[0].x,prey[0].y,sp*1.15);if(prey[1]<10){startFight([p],[prey[0]]);p.cool=3}}
+    if(strong&&strong[1]<A.compFlee){EscapeStamina.run(p,strong[0],sp,n=>go(P.x,P.y,n),true)}
+    else if(prey&&p.cool<=0){go(prey[0].x,prey[0].y,sp);if(prey[1]<10){startFight([p],[prey[0]]);p.cool=3}}
     else if(p.order==='follow'){if(Math.hypot(P.x-p.x,P.y-p.y)>28)go(P.x-14,P.y+10,sp*1.2)}
     else if(p.order==='return'){go(P.x,P.y,sp*1.2);if(Math.hypot(P.x-p.x,P.y-p.y)<12)cpDisband(p.cid,true)}
     else if(p.order==='stay'){const t=townBy(p.base);Router.travel(p,gateGoal(t),sp);if(Math.hypot(t.x-p.x,t.y+12-p.y)<8){p.enter(t);log(COMPS[p.cid].short+'’s party takes lodgings in '+t.name+'.')}}
@@ -97,15 +97,16 @@ class PatrolBrain extends Brain{
     const home=besieged(t)||watchOf(p)!==watchNow()||p.troops.length<t.T.patrol.size/2||threat&&threat.power()>p.power();
     const v=this.look(p),pd=v.d,hostile=hostileTo(p.fac),wanted=!!crimeAt(t)&&p.fac!=='player',sees=TravelAwareness.sees(p);
     const afraid=hostile&&stance(p.power(),p)==='afraid';
-    if(sees&&(hostile||wanted)&&!home&&!afraid&&p.cool<=0){const st=G.encCool>0?Math.min(sp*1.25,pd-GRACE_GAP):sp*1.25;// (in the grace, no step into the gap)
+    if(sees&&(hostile||wanted)&&!home&&!afraid&&p.cool<=0){const st=G.encCool>0?Math.min(sp,pd-GRACE_GAP):sp;// (in the grace, no step into the gap)
       if(st>0)Router.travel(p,{x:p.x+v.dx,y:p.y+v.dy},st)||walk(p,v.dx,v.dy,Math.min(pd,st));
       if(this.canMeet(p,pd)){patrolMeet(p);return true}}
+    else if(afraid&&sees){EscapeStamina.run(p,P,sp,n=>Router.travel(p,gateGoal(t),n),true)}
     else if(threat&&!home&&Math.hypot(threat.x-p.x,threat.y-p.y)<16)startFight([p],[threat]);
     else{
       const b=!home&&LandDefence.prey(p);
-      if(b){const bd=Math.hypot(b.x-p.x,b.y-p.y);Router.travel(p,b,sp*1.2)||walk(p,b.x-p.x,b.y-p.y,Math.min(bd,sp*1.2));
+      if(b){const bd=Math.hypot(b.x-p.x,b.y-p.y);Router.travel(p,b,sp)||walk(p,b.x-p.x,b.y-p.y,Math.min(bd,sp));
         if(bd<10)startFight([p],[b])}
-      else if(home){Router.travel(p,gateGoal(t),sp);if(Math.hypot(t.x-p.x,t.y+12-p.y)<8)t.watch.back(p)}
+      else if(home){if(threat)EscapeStamina.run(p,threat,sp,n=>Router.travel(p,gateGoal(t),n),true);else Router.travel(p,gateGoal(t),sp);if(Math.hypot(t.x-p.x,t.y+12-p.y)<8)t.watch.back(p)}
       else{const at=p.wx!=null&&Math.hypot(p.wx-p.x,p.wy-p.y)<6;// on its beat: stop a moment at each building, then on to the next
         if(at&&(p.wait||0)>0)p.wait-=d;else{if(p.wx==null||at||Math.random()<d*.02)t.watch.beat(p);if(!Router.travel(p,{x:p.wx,y:p.wy},sp))p.wx=null}}}// (no way there over land: another stop next time)
     this.face(p,ox);return false;

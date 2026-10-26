@@ -1,6 +1,6 @@
 'use strict';
 /* ---------- panels ---------- */
-function showPanel(html){panel.classList.remove('wide','railed','paged','fmap','wsp');panel.innerHTML=html;ov.hidden=false;G.modal=true;const b=panel.querySelector('button:not([disabled]),.card');if(b)b.focus({preventScroll:true})}
+function showPanel(html){panel.classList.remove('wide','railed','paged','fmap','wsp','hunt-setup');panel.innerHTML=html;ov.hidden=false;G.modal=true;const b=panel.querySelector('button:not([disabled]),.card');if(b)b.focus({preventScroll:true})}
 function hidePanel(){ov.hidden=true;G.modal=false}
 /* every window's bottom bar: its navigation only; the game's choices stay in the window above it. back: [act, arg, label] on
    the left, when it was opened from another window; close: [act, arg, label, why disabled, noEsc] on the right, the way out,

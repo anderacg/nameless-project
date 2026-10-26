@@ -39,7 +39,7 @@ function ringDrop(){const p=RING.press;if(p)clearTimeout(p.timer);RING.press=nul
 // (held: the ring opens and the press is spent; nothing to do there, or the map not yours now, the press waits to be let go)
 function ringHeld(){const p=RING.press;if(!p||p.off)return false;p.off=true;if(G.mode!=='world'||G.modal||!ringOpen(p.cx,p.cy,p.wx,p.wy))return false;RING.press=null;return true}
 // the ring at a point (client px) over the map point (wx, wy), with what applies there (on whatever is there, or the ground)
-function ringOpen(cx,cy,wx,wy){const items=mapRingItems(wx,wy,pickAt(wx,wy),cx,cy);if(!items.length)return false;new ActionRing(cx,cy,items).open();return true}
+function ringOpen(cx,cy,wx,wy){if(WildHunt.armed)return WildHunt.preview(wx,wy);const items=mapRingItems(wx,wy,pickAt(wx,wy),cx,cy);if(!items.length)return false;new ActionRing(cx,cy,items).open();return true}
 function ringMove(e){const p=RING.press;if(p&&!p.off&&e.pointerId===p.id&&Math.hypot(e.clientX-p.cx,e.clientY-p.cy)>RING.slop){p.off=true;clearTimeout(p.timer)}}
 // let go: a press still waiting was a click, and you travel (true); else over a button of the open ring, it is picked (true)
 function ringUp(e){const p=RING.press;ringDrop();if(p){if(G.mode==='world'&&!G.modal)worldGo(p.wx,p.wy);return true}const R=ActionRing.now;if(!R)return false;const i=R.at(e.clientX,e.clientY);if(i<0)return false;R.pick(i);return true}

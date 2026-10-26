@@ -1171,3 +1171,14 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 .mbh-help{font:12px/1.4 Arial,sans-serif;color:var(--muted);margin:0 0 8px}
 .abils::before{content:'Unit abilities';font:700 10px/1.3 Arial,sans-serif;color:var(--accent);max-width:58px;text-align:center}
 .mobile-battle-hud .abils::before{grid-column:1/-1;max-width:none;text-align:left}
+
+.overlay:has(.hunt-setup){align-items:flex-end;background:#0002;padding:8px}
+.panel.hunt-setup{height:auto;max-height:55dvh;width:min(620px,100%);gap:7px;padding:12px}
+.hunt-picker{display:flex;flex-wrap:wrap;gap:5px;max-height:110px;overflow:auto}.hunt-picker .btn{min-height:40px}
+.hunt-bar{display:flex;flex-direction:column;align-items:stretch;gap:6px;max-height:38dvh;overflow:auto;width:min(580px,calc(100% - 20px));padding:9px}
+.hunt-heading{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}.hunt-heading span{font-size:12px}
+.hunt-actions,.hunt-targets{display:flex;gap:5px;flex-wrap:wrap}.hunt-actions button,.hunt-targets button{min-height:38px;padding:5px 8px;border:1px solid var(--trim);background:var(--button-face);color:var(--fg);font:12px Arial}
+.hunt-bar button[aria-pressed="true"]{border-color:var(--accent);color:var(--accent)}.hunt-bar button:disabled{opacity:.4}
+@media(max-height:500px){.hunt-bar{left:auto;right:8px;transform:none;bottom:72px;width:360px;max-height:45dvh}.hunt-targets{max-height:40px;overflow:auto}.panel.hunt-setup{max-height:80dvh}}
+
+@media(min-height:501px){.hunt-actions button,.hunt-targets button{min-height:44px;font-size:13px}}

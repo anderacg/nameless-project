@@ -501,15 +501,15 @@ function roadNews(){const out=[],s=W.sites.filter(x=>!x.seen&&x.scoutable).sort(
   out.push(()=>{if(!wars.length)return'the realms keep the peace, for now';const w=roadRng().pick(wars);return'the '+FACS[w[0]].n+' and the '+FACS[w[1]].n+' are at war'});
   return roadRng().pick(out)()}
 /* the chase and the catch (ENC_CATCH), shared: how fast one you chase runs (by your Agility), how near you must come, the hours
-   you would take to close on one dist px away at your sprint (Infinity: never); the odds of a catch by hand (Riding, Agility);
-   roadSprint: × your pace on the map while you chase one (world.js updateWorld) */
-const roadSprint=()=>G.chase&&G.chase.rd&&G.chase.chase?ENC_CATCH.sprint:1;
+   you would take to close on one dist px away at your normal pace (Infinity: never); the odds of a catch by hand (Riding, Agility);
+   roadSprint: compatibility name; chasing grants no automatic speed bonus */
+const roadSprint=()=>1;
 const catchSpd=()=>ENC_SPD.run*Math.max(ENC_CATCH.lo,1-ENC_CATCH.agi*P.attr.agi);
 const catchReach=()=>ENC_CATCH.reach+ENC_CATCH.agiReach*P.attr.agi;
-function catchHours(dist){const g=MAP_BASE*travelMul()*(P.morale<25?.8:1)*ENC_CATCH.sprint-catchSpd();return dist<=catchReach()?0:g>0?(dist-catchReach())/moveStep(g,Clock.hourSecs()):Infinity}
+function catchHours(dist,who){const g=MAP_BASE*travelMul()*(P.morale<25?.8:1)*hurryPace()-catchSpd()*(who?EscapeStamina.factor(who):1);return dist<=catchReach()?0:g>0?(dist-catchReach())/moveStep(g,Clock.hourSecs()):Infinity}
 const catchOdds=()=>statOdds('horse');
 // (the thief's Insight read: can you run him down, from here)
-function roadChaseRead(e){const h=catchHours(e.fromYou()),H=ENC_CATCH.hours;
+function roadChaseRead(e){const h=catchHours(e.fromYou(),e),H=ENC_CATCH.hours;
   return insight(['he runs like a hare',h<=H*.6?'you could run him down':h<=H?'it will be close':'he is too quick for you',h===Infinity?'he runs faster than you: you cannot catch him':'you would close on him in '+h.toFixed(1)+' h; he is away after '+H+' h'],'know if you can catch him')}
 // Chase: off his page and after him on the map (G.chase: you follow him) until you have him or he is away (Behaviours.chase)
 function roadChase(e){e.chase=roadNow()+ENC_CATCH.hours;e.hx=e.hy=null;G.road=null;G.mode='world';hidePanel();G.chase=e;P.tx=e.x;P.ty=e.y;P.stuck=0;const m='You run after the thief!';log(m);return m}

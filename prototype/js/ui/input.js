@@ -128,7 +128,8 @@ function dragCancel(){if(G.mode!=='battle'||!B||!(B.rdrag||B.box||TOUCH.lp))retu
 // the map's click or tap (ring.js ringUp, touchUp): on another party, its ring (partyRing); else worldMove
 const WORLD_CLICK={dbl:400,r:18};
 function worldGo(wx,wy){
-  if(G.mode!=='world'||G.modal)return;const was=!!G.hurry,last=G.travelClick,now=performance.now(),box=cv.getBoundingClientRect(),sx=(wx-G.cam.x)*box.width/VW,sy=(wy-G.cam.y)*box.height/VH;
+  if(G.mode!=='world'||G.modal)return;if(WildHunt.active?.moveArmed){WildHunt.active.order(wx,wy);return}
+  const was=!!G.hurry,last=G.travelClick,now=performance.now(),box=cv.getBoundingClientRect(),sx=(wx-G.cam.x)*box.width/VW,sy=(wy-G.cam.y)*box.height/VH;
   if(was)setHurry(false);if(partyRing(pickAt(wx,wy))){G.travelClick=null;return}
   const twice=!was&&last&&now-last.t<=WORLD_CLICK.dbl&&Math.hypot(sx-last.x,sy-last.y)<=WORLD_CLICK.r;
   worldMove(wx,wy);G.travelClick=twice||was?null:{x:sx,y:sy,t:now};
@@ -313,7 +314,7 @@ class MobileWorldHud{
       '<div id="worldSpeedChoices" class="mwh-speeds" role="group" aria-label="Travel speed" hidden></div>';
     $('.hudlayer').appendChild(this.root);
     this.speedButton=$('#speedToggle');this.partyButton=$('#partyToggle');this.choices=$('#worldSpeedChoices');
-    this.mapChoices=document.createElement('div');this.mapChoices.id='worldMapChoices';this.mapChoices.className='mwh-map';this.mapChoices.hidden=true;this.mapChoices.setAttribute('role','group');this.mapChoices.setAttribute('aria-label','Map view and zoom');this.mapChoices.innerHTML='<strong>Map view</strong><div class="mwh-map-actions"><div data-place="mapOut"></div><div data-place="mapIn"></div><div data-place="mapFull"></div></div>';this.root.appendChild(this.mapChoices);
+    this.mapChoices=document.createElement('div');this.mapChoices.id='worldMapChoices';this.mapChoices.className='mwh-map';this.mapChoices.hidden=true;this.mapChoices.setAttribute('role','group');this.mapChoices.setAttribute('aria-label','Map view and zoom');this.mapChoices.innerHTML='<strong>Map view</strong><button class="btn sm" type="button" data-act="hunt-area" aria-pressed="false">Hunting area</button><div class="mwh-map-actions"><div data-place="mapOut"></div><div data-place="mapIn"></div><div data-place="mapFull"></div></div>';this.root.appendChild(this.mapChoices);this.mapChoices.addEventListener('click',e=>{if(e.target.closest('[data-act="hunt-area"]')){WildHunt.toggle();this.close()}});
     this.mapButton=document.createElement('button');this.mapButton.type='button';this.mapButton.id='mapToggle';this.mapButton.className='dbtn';this.mapButton.setAttribute('aria-controls','worldMapChoices');this.mapButton.setAttribute('aria-expanded','false');this.mapButton.innerHTML=icon('map',18)+'<span class="dl">Map ▴</span>';this.root.querySelector('[data-place="map"]').appendChild(this.mapButton);
     this.mapButton.addEventListener('click',()=>{const open=this.mapChoices.hidden;this.close();this.mapChoices.hidden=!open;this.mapButton.setAttribute('aria-expanded',String(open))});
     const node=(selector,place)=>{const el=$(selector),home=document.createComment('mobile control home');el.before(home);return{el,home,to:this.root.querySelector('[data-place="'+place+'"]')||this.choices}};

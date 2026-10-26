@@ -43,7 +43,7 @@ class Monster extends Party{
 }
 // (its record in a save: packed on a generated world, worldobject.js packRec, its strength made again and its wandering drawn
 // again on its next moment (t, a: 0); read back either way)
-const MON_KEYS=['id','x','y','hx','hy','lv','n','cool'];
+const MON_KEYS=['id','x','y','hx','hy','lv','n','cool','escapeSta'];
 const asMonster=o=>asClass(Monster)(Array.isArray(o)?unpackRec(o,MON_KEYS,{t:0,a:0}):o);
 // (the beasts' own dice: the stream 'monsters', core/rng.js, so a kind added or a weight changed never moves the world's Math.random)
 const monRng=()=>rngOf('monsters');
@@ -139,7 +139,7 @@ function roamMythic(m,d){
   if(hunt){tx=prey.x;ty=prey.y}
   else{m.t-=d;if(m.t<=0||Math.hypot(tx-m.x,ty-m.y)<4){const r=monRng(),R=WORLD_SCALE.ai.mythicRoam;m.t=4+r.next()*5;m.tx=tx=clamp(m.x+r.int(-R[0],R[0]),24,MW*TILE-24);m.ty=ty=clamp(m.y+r.int(-R[1],R[1]),24,MH*TILE-24)}}
   const dx=tx-m.x,dy=ty-m.y,dl=Math.hypot(dx,dy);
-  if(dl>1){const sp=Math.min(dl,moveStep(Y.speed[hunt?1:0],d));if(Y.fly){m.x+=dx/dl*sp;m.y+=dy/dl*sp}else walk(m,dx,dy,sp);m.dir=dx>=0?1:-1}
+  if(dl>1){const sp=Math.min(dl,moveStep(Y.speed[0],d));if(Y.fly){m.x+=dx/dl*sp;m.y+=dy/dl*sp}else walk(m,dx,dy,sp);m.dir=dx>=0?1:-1}
   if(Y.ravage)for(const l of W.lords)if(!l.dead&&!l.inside&&!((l.dcool||0)>G.day)&&Math.hypot(l.x-m.x,l.y-m.y)<16){l.dcool=G.day+3;cull(l,Y.ravage);log('The '+M.n.toLowerCase()+' falls upon the army of '+l.name+'. '+(Y.ravage>=.5?'Half':'Many')+' are lost.','bad');if(l.troops.length<3)defeatLord(l)}
   if(TravelAwareness.sees(m)&&pd<(WORLD_BATTLE.on?worldBattleReach(m):12)&&m.cool<=0&&G.encCool<=0&&!G.modal){startMonster(m);return true}
   return false;

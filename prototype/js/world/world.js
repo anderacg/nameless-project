@@ -26,7 +26,7 @@ function heroAtGate(t){const s=gateSpot(t);P.x=s.x;P.y=s.y;P.tx=P.ty=null;P.stuc
 const bridgeAt=(tx,ty)=>tAt(tx,ty)!==T_ROAD?0:tAt(tx-1,ty)===T_WATER&&tAt(tx+1,ty)===T_WATER?1:tAt(tx,ty-1)===T_WATER&&tAt(tx,ty+1)===T_WATER?2:0;
 function walk(o,dx,dy,step,ok){
   const a0=Math.atan2(dy,dx);
-  for(const off of [0,.6,-.6,1.2,-1.2,1.9,-1.9]){const a=a0+off;let nx=o.x+Math.cos(a)*step,ny=o.y+Math.sin(a)*step;if(passable(terrAt(nx,ny))&&(!ok||ok(nx,ny))){
+  for(const off of [0,.6,-.6,1.2,-1.2,1.9,-1.9]){const a=a0+off;let nx=o.x+Math.cos(a)*step,ny=o.y+Math.sin(a)*step;if(!(o===P&&WildHunt.active?.sources.some(u=>u.type==='hero')&&WildHunt.active.inside(P)&&!WildHunt.active.inside({x:nx,y:ny}))&&passable(terrAt(nx,ny))&&(!ok||ok(nx,ny))){
     const tx=Math.floor(nx/TILE),ty=Math.floor(ny/TILE),b=bridgeAt(tx,ty),m=Math.max(1,step);if(b===1)nx+=clamp((tx+.5)*TILE-nx,-m,m);else if(b===2)ny+=clamp((ty+.5)*TILE-ny,-m,m);
     WALKED.set(o,(WALKED.get(o)||0)+Math.hypot(nx-o.x,ny-o.y));o.x=nx;o.y=ny;return true}}
   return false;
@@ -139,7 +139,7 @@ const sizeMul=n=>Math.max(.7,1-.006*Math.max(0,n-12));
 const mountedShare=sp=>{let n=0,m=0;for(const [s,c] of sp){n+=c;if(s>=60)m+=c}return n?m/n:0};
 const roughFor=(x,y,ign)=>{const t=RoadBand.on(x,y)?T_ROAD:terrAt(x,y);ign=ign||[];return t===T_FOREST&&!ign.includes('forest')||t===T_HILL&&!ign.includes('hills')||climAt(x,y)==='swamp'&&!ign.includes('swamp')};
 function listSpeeds(list){const m={};for(const k of list){const s=(ST[k]&&ST[k].spd)||PACE_REF;m[s]=(m[s]||0)+1}return Object.entries(m).map(([s,c])=>[+s,c])}
-function partySpeed(o,list){const sp=listSpeeds(list);return MAP_BASE*paceRatio(sp)*sizeMul(list.length)*Math.max(.45,speedAt(o.x,o.y)||1)*(mountedShare(sp)>=.5&&roughFor(o.x,o.y)?.8:1)}
+function partySpeed(o,list){const sp=listSpeeds(list);return MAP_BASE*paceRatio(sp)*sizeMul(list.length)*Math.max(.45,speedAt(o.x,o.y)||1)*(mountedShare(sp)>=.5&&roughFor(o.x,o.y)?.8:1)*EscapeStamina.factor(o)}
 // your hero's own pace: on foot a fit 40; mounted, by the mount
 // a lord's army: its pace, slowed by its baggage train unless it is mostly mounted
 const lordSpeed=l=>partySpeed(l,l.troops)*(mountedShare(listSpeeds(l.troops))>=.5?1:.85);
@@ -248,7 +248,7 @@ function marchStep(d){
     const dx=P.tx-P.x,dy=P.ty-P.y,dist=Math.hypot(dx,dy);
     if(dist<2){if(!G.follow){P.tx=null;G.byRoad=null;campArrive()}}// (the clear ground you walked to: your band pitches there, supply.js)
     else{
-      const step=Math.min(dist,moveStep(MAP_BASE*travelMul(),d)*(P.morale<25?.8:1)*roadSprint()*hurryPace());// (roadSprint: after a thief on the road, encounters.js; Hurry: supply.js)
+      const step=Math.min(dist,moveStep(MAP_BASE*travelMul(),d)*(P.morale<25?.8:1)*hurryPace());// (Hurry: supply.js)
       P.dir=dx>=0?1:-1;
       const x0=P.x,y0=P.y;if(heroStep(dx,dy,dist,step)){P.stuck=0;const moved=Math.hypot(P.x-x0,P.y-y0);if(moved>0){train('scout',moved/TILE*.08);if(mountDef())train('ride',moved/TILE*.1);if(terrAt(P.x,P.y)===T_FOREST)train('wood',moved/TILE*WOODCRAFT.xp)}}else{P.stuck+=d;if(P.stuck>.4){P.tx=null;P.stuck=0;campArrive()}}
     }

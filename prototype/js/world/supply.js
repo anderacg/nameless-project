@@ -456,6 +456,7 @@ function bandFitness(){const F=P.fitness(),fit=F.fit-1,hp=P.hp==null?1:clamp(P.h
 function mapRingItems(wx,wy,o,cx,cy){
   const L=supplyLand(),ground=!o,look=o&&tipFor(o)||rumourTip(wx,wy)||trackTip(wx,wy);// (a rumour's "?", else tracks you see: world/tracks.js)
   return[
+    !P.stay&&{icon:'attack',label:WildHunt.active?'End hunt':'Hunting area',active:WildHunt.armed||!!WildHunt.active,run:()=>WildHunt.toggle()},
     !P.camp&&!campWhy()&&{icon:'fire',label:'Make camp',run:makeCamp},
     P.camp&&{icon:'fire',label:'Break camp',run:()=>breakCamp(),active:true},
     followItem(o),

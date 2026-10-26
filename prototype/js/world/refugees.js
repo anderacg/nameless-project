@@ -47,7 +47,7 @@ function updateRefugees(d){
     r.cool=Math.max(0,r.cool-d);let to=townBy(r.to);
     if(!to||besieged(to)||to.owner!=='player'&&atWar(to.owner,(townBy(r.from)||{}).owner)){const f=townBy(r.from);to=f&&refuge(f);if(!to){r.gone=true;continue}r.to=to.name}
     const dx=P.x-r.x,dy=P.y-r.y,pd=Math.hypot(dx,dy),afraid=r.fear&&TravelAwareness.sees(asRefugees(r));
-    if(afraid){walk(r,-dx,-dy,moveStep(REFUGEE_SPD*1.2,d));r.dir=dx>0?-1:1}
+    if(afraid){Router.flee(r,{x:r.x+dx,y:r.y+dy},moveStep(REFUGEE_SPD,d));r.dir=dx>0?-1:1}
     else{const ox=r.x;Router.travel(r,gateGoal(to),moveStep(REFUGEE_SPD*Math.max(.5,speedAt(r.x,r.y)||1),d));r.dir=r.x>=ox?1:-1}
     if(Math.hypot(to.x-r.x,to.y+12-r.y)<8){refugeesArrive(r,to);r.gone=true;continue}
     // bandits rob them of what they carry, and some do not survive it

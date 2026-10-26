@@ -19,7 +19,7 @@ class Herd extends WorldObject{
   pick(at){if(this.wild)at.add(this,9,4)}
   // up to three of its animals, behind and beside the first, a walk of PX.MAP_STEPS frames to a body length walked (critterSprite;
   // render.js stepOf), its count near you; each at its own place to the screen's pixel (render.js subT)
-  draw(ents,cam,V){if(!this.inView(V)||WildHunt.active?.herd===this)return;const c=this;if(WORLD_BATTLE.on)marchCircle(ents,c,cam,Math.max(WORLD_BATTLE.outer,WORLD_BATTLE.inner+Math.sqrt(c.n||1)*2),'#b4c985');
+  draw(ents,cam,V){if(!this.inView(V))return;const c=this;if(WORLD_BATTLE.on)marchCircle(ents,c,cam,Math.max(WORLD_BATTLE.outer,WORLD_BATTLE.inner+Math.sqrt(c.n||1)*2),'#b4c985');
     ents.push({y:c.y,f:()=>{subT(c);const s=critterSprite(c.id),sx=Math.round(c.x-cam.x),sy=Math.round(c.y-cam.y),k=Math.min(3,c.n||1),sp=Math.max(4,Math.round(s.cw*.55)),go=mapStepping(c),N=PX.MAP_STEPS;
       for(let i=k-1;i>=0;i--){const ox=i===0?0:i===1?-sp:Math.round(sp*.4),oy=i===0?0:i===1?-1:-3,fr=go?(frameOf(c,Math.max(4,s.cw)/N,N)+i*3)%N:0,a=critterSprite(c.id,fr),w=Math.max(4,a.cw-2);
         ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(sx+(c.dir<0?-ox:ox)-(w>>1),sy+oy-1,w,2);
@@ -30,7 +30,7 @@ class Herd extends WorldObject{
 const asHerd=asClass(Herd);
 // (its record in a save: packed on a generated world, worldobject.js packRec, its grazing drawn again on its next moment (t, a:
 // 0); herdRec reads it back, either way)
-const HERD_KEYS=['id','x','y','hx','hy','n','dir','tire','cool','idle'];
+const HERD_KEYS=['id','x','y','hx','hy','n','dir','tire','cool','idle','escapeSta'];
 const herdRec=o=>Array.isArray(o)?asHerd(unpackRec(o,HERD_KEYS,{crit:true,t:0,a:0})):o;
 // the wild herds on the map (render.js drawWorld); livestock is drawn with its pasture (penEnts)
 function drawHerds(ents,cam,V){for(const c of W.critters.map(asHerd))if(c.wild)c.draw(ents,cam,V)}
@@ -126,7 +126,7 @@ class WildlifeThreats{
   static target(c){
     const D=CRITTERS[c.id];if(!D||D.live)return null;
     const player=TravelAwareness.target(c),near=this.index.within(c.x,c.y,D.shy).filter(o=>this.present(o)&&Math.hypot(o.x-c.x,o.y-c.y)<D.shy*(hiddenAt(o.x,o.y)?WILDLIFE_AWARE.cover:1));
-    if(player)near.push(player);
+    if(player)near.push(player);const hunter=WildHunt.active?.threatFor(c);if(hunter)near.push(hunter);
     const distance=o=>Math.hypot(o.x-c.x,o.y-c.y),previous=this.chosen.get(c);
     let target=Spatial.nearest(near,c.x,c.y);
     // Keep an escape heading until another threat is clearly closer.
@@ -139,12 +139,11 @@ onWorld(()=>{WildlifeThreats.index.rebuild([]);WildlifeThreats.chosen=new WeakMa
 // Move every herd: wild game bolts from perceived threats and tires as it runs; livestock just grazes.
 // a herd's moment (parties.js lodThink; hide: how well you are hidden from it). Hunting is an explicit choice.
 const HERD_MIND={think(c,d,hide){
-    if(WildHunt.active?.herd===c)return false;
     const A=WORLD_SCALE.ai,D=CRITTERS[c.id],threat=WildlifeThreats.target(c),ox=c.x,oy=c.y;c.cool=Math.max(0,c.cool-d);
     // (fleeing: its grazing ground goes with it, and it keeps on away a little after, so it does not turn back into you)
-    if(threat){const sp=moveStep(D.spd*(c.tire>4?.4:1)*Math.min(1,speedAt(c.x,c.y)||1),d);Router.flee(c,threat,sp);c.tire+=d;
+    if(threat){const sp=moveStep(D.spd*Math.min(1,speedAt(c.x,c.y)||1),d);Router.flee(c,threat,sp);
       c.hx=c.x;c.hy=c.y;c.a=Math.atan2(c.y-threat.y,c.x-threat.x);c.t=Math.max(c.t,1.5);c.idle=false}
-    else{c.tire=Math.max(0,c.tire-d*.5);c.t-=d;if(c.t<=0){const R=critRng();c.t=2+R.next()*4;c.a=R.next()*6.283;c.idle=R.chance(.5)}
+    else{c.t-=d;if(c.t<=0){const R=critRng();c.t=2+R.next()*4;c.a=R.next()*6.283;c.idle=R.chance(.5)}
       const hx=c.hx-c.x,hy=c.hy-c.y;if(Math.hypot(hx,hy)>(D.live?(c.pen?A.penLeash:A.herdLeash):A.gameLeash))c.a=Math.atan2(hy,hx);
       if(!c.idle){const ok=D.live?(x,y)=>grazeOk(c.id,x,y,c.pen):(x,y)=>habitatOk(c.id,x,y);if(!walk(c,Math.cos(c.a),Math.sin(c.a),moveStep(D.live?4:8,d),ok)){c.a=Math.atan2(hy,hx)+(critRng().next()-.5);c.idle=true}}}
     // (it faces the way it went, turning only on a clear step sideways: no flicker as it swerves or runs straight up or down)

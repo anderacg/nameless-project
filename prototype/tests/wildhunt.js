@@ -1,31 +1,21 @@
 'use strict';
-Kit.suite(({ok,info})=>{
- const t=T,P=t.P,G=t.G,W=t.W;Kit.begin('soldier',1);Kit.clear();Kit.world();t.GUIDE.on=false;t.WORLD_BATTLE.on=true;
- // Quiet, passable ground with enough space for a brief retreat.
- let at=null;for(let y=20;y<t.MH-20&&!at;y++)for(let x=20;x<t.MW-20&&!at;x++)if(t.tAt(x,y)===t.T_OPEN&&t.tAt(x+1,y)===t.T_OPEN&&t.tAt(x+2,y)===t.T_OPEN&&t.tAt(x+3,y)===t.T_OPEN)at={x:(x+.5)*t.TILE,y:(y+.5)*t.TILE};
- Kit.goTo(at.x,at.y);P.troops={hum_bow:3};P.inv=Array(t.INV_SIZE).fill(null);G.paused=false;
- const make=(n=3)=>{const c=t.asHerd({crit:true,id:'deer',x:P.x+40,y:P.y,hx:P.x+40,hy:P.y,n,dir:1,t:0,a:0,tire:0,cool:0});W.critters=[c];return c};
- P.troops={hum_foot:3};let blocked=make();t.hunt(blocked);ok(document.querySelector('[data-act="hunt-start"]').disabled&&Kit.text().includes('requires at least one fit ranged troop'),'melee-only armies see the ranged troop requirement and a disabled Hunt button');
- t.act('hunt-start','hero');ok(!t.WildHunt.active&&blocked.n===3,'a direct or old hero-only action cannot bypass the ranged troop requirement');t.act('hunt-back');
- P.troops={};P.wounded={hum_bow:2};ok(!t.WildHunt.hunters().length,'wounded ranged soldiers cannot hunt');P.wounded={};P.troops={hum_bow:3};
- let c=make(),count=c.n,meat=t.goodN('meat');ok(t.hunt(c)&&c.n===count&&t.goodN('meat')===meat&&G.modal,'hunt opens a choice without instantly collecting animals or rewards');
- t.act('hunt-back');ok(G.mode==='world'&&!G.modal&&c.n===count,'leaving preparation costs no animals or resources');
- t.approach(c);ok(G.modal&&P.tx==null,'visible wildlife can be selected for a hunt without first chasing into touching range');
- t.act('hunt-start','band');let h=t.WildHunt.active;ok(h&&h.herd===c&&h.animals.length===count&&h.sources.length===3&&!h.sources.includes(P)&&G.mode==='world'&&!t.B,'hunt uses actual fit ranged marchers without giving the hero a free bow');
- const rng=Math.random;try{Math.random=()=>.1;for(let i=0;i<100&&!h.body&&t.WildHunt.active;i++)h.step(.05*t.WORLD_PACE,.05)}finally{Math.random=rng}
- ok(h.body&&c.n===count-1&&t.goodN('meat')===meat,'a physical arrow hit brings down one real animal; rewards wait for collection');
- const survivor=h.animals.find(a=>a.hp>0),old={x:survivor.x,y:survivor.y};h.time=h.alertAt+1;h.flee(.8,.8);
- ok(Math.hypot(survivor.x-old.x,survivor.y-old.y)>0&&c.hx===c.x,'survivors move away and the original herd follows their real position');
- h.flee(1,1);ok(W.tracks.some(tr=>tr.k==='crit:deer'&&tr.p.length>=6),'fleeing survivors leave actual wildlife tracks');
- P.x=h.body.x;P.y=h.body.y;h.step(.01,.01);const loot=t.goodN('meat');ok(!t.WildHunt.active&&loot>meat&&c.n===count-1,'reaching fallen game automatically collects rewards and leaves survivors in the world');
- h.finish();ok(t.goodN('meat')===loot,'hunt rewards cannot be collected twice');
- c=make(1);t.hunt(c);P.troops={hum_foot:2};ok(!t.WildHunt.start()&&!t.WildHunt.active,'the ranged requirement is checked again when starting');P.troops={hum_bow:3};t.act('hunt-start','band');h=t.WildHunt.active;ok(h.sources.length>0&&h.sources.every(s=>t.ST[s.type].range&&!t.ST[s.type].magic),'only fit troops with physical ranged weapons shoot during a hunt');
- const shots=h.shots;G.paused=true;h.step(1,1);ok(h.shots===shots&&h.time===0,'pausing the world pauses the hunt');G.paused=false;
- const inv=t.goodN('meat');h.time=t.WILD_HUNT.duration+1;h.step(.01,.01);ok(!t.WildHunt.active&&c.n===1&&t.goodN('meat')===inv,'an escaped hunt ends promptly without consuming animals or granting loot');
- c=make();t.hunt(c);t.act('hunt-start','band');h=t.WildHunt.active;t.worldMove(P.x-10,P.y);ok(!t.WildHunt.active&&!document.getElementById('huntBar'),'a normal travel order leaves the hunt and removes its controls');
- c=make();t.hunt(c);t.act('hunt-start','band');h=t.WildHunt.active;const ents=[];h.draw(ents,G.cam);ok(ents.length===c.n,'the hunt draws each real animal rather than a representative herd icon');
- const before=P.x;h.finish();ok(P.x===before&&c.n===3,'leaving freely preserves the herd and player position');
- // Concealment changes opening accuracy without changing damage.
- c=make();t.hunt(c);t.act('hunt-start','band');h=t.WildHunt.active;const i=Math.floor(P.y/t.TILE)*t.MW+Math.floor(P.x/t.TILE),tile=t.tiles[i],random=Math.random;
- try{Math.random=()=>.75;h.alert=false;t.tiles[i]=t.T_FOREST;h.fire(P,h.animals[0]);const concealed=h.arrows.pop();t.tiles[i]=t.T_OPEN;h.alert=false;h.fire(P,h.animals[0]);const open=h.arrows.pop();ok(Math.abs(concealed.vy)<Math.abs(open.vy),'undetected forest opening improves aim rather than adding damage')}finally{t.tiles[i]=tile;Math.random=random;h.finish()}
+Kit.suite(({ok})=>{
+ const t=T,P=t.P,G=t.G,W=t.W,H=t.WildHunt;window.requestAnimationFrame=()=>0;Kit.begin('soldier',1);Kit.clear();Kit.world();t.GUIDE.on=false;t.WORLD_BATTLE.on=true;G.paused=false;
+ const home=Kit.goHome('Ashford');Kit.goTo(home.x+350,home.y+300);const tx=Math.floor(P.x/t.TILE),ty=Math.floor(P.y/t.TILE);for(let y=ty-20;y<=ty+20;y++)for(let x=tx-20;x<=tx+20;x++){const i=y*t.MW+x;t.tiles[i]=t.T_OPEN;t.WM.edge[i]=0}
+ P.troops={hum_bow:3,hum_foot:3};const make=()=>{const c=t.asHerd({crit:true,id:'deer',x:P.x+30,y:P.y,hx:P.x+30,hy:P.y,n:3,dir:1,t:5,a:0,tire:0,cool:0,idle:true});W.critters=[c];return c};
+ let c=make(),meat=t.goodN('meat');H.toggle();ok(H.armed,'Hunting area toggles on');t.ringOpen(100,100,c.x,c.y);ok(H.choice&&G.modal&&document.querySelector('.hunt-setup')&&!H.armed,'holding a map spot previews the fixed hunting circle and setup');
+ ok(c.n===3&&t.goodN('meat')===meat,'preview grants no instant kill or rewards');t.act('hunt-back');ok(!G.modal&&!H.choice&&G.mode==='world','Cancel returns to ordinary world interaction');
+ t.hunt(c);const selected=H.choice.selected.slice(),actual=new Map([...t.MarchArmy.of(P).units,H.heroSource].map(u=>[u,{x:u.x,y:u.y}]));t.act('hunt-start');let h=H.active;
+ ok(h&&h.sources.length===selected.length&&h.sources.every(u=>actual.has(u)&&u.x===actual.get(u).x&&u.y===actual.get(u).y)&&!G.modal,'ranged hunt selects fit real marchers at their current positions');
+ const bounds={x:h.x,y:h.y,r:h.radius},hunter=h.sources[0];h.order(h.x+h.radius*3,h.y);h.step(.01,.01);ok(Math.hypot(h.goalFor(hunter.row,hunter.index).x-h.x,h.goalFor(hunter.row,hunter.index).y-h.y)<h.radius&&hunter.x===actual.get(hunter).x,'orders clamp hunter destinations to the circle without teleporting');h.manual=null;
+ const random=Math.random;try{Math.random=()=>.1;for(let i=0;i<300&&!h.body;i++)h.step(.025,.025)}finally{Math.random=random}
+ ok(h.body&&c.n===2&&t.goodN('meat')===meat,'a physical ranged hit kills one animal and waits for collection');
+ h.collect();hunter.x=h.body.x;hunter.y=h.body.y;h.step(.01,.01);ok(!h.body&&t.goodN('meat')>meat,'Collect requires a hunter to physically reach the fallen game');const loot=t.goodN('meat');h.collect();h.step(.01,.01);ok(t.goodN('meat')===loot,'game cannot be collected twice');h.finish();
+ P.gear.weapon=Object.keys(t.ITEMS).find(k=>t.ITEMS[k].slot==='weapon'&&!t.ITEMS[k].kind);c=make();t.hunt(c);t.act('hunt-method','melee');ok(H.choice.method==='melee'&&H.pool('melee').some(u=>u.type==='hero'),'melee hunt supports suitable troops and the equipped melee hero');t.act('hunt-start');h=H.active;h.pursue=true;for(const u of h.sources){u.x=c.x-20;u.y=c.y}h.step(.01,.01);ok(!h.body&&c.n===3,'melee hunters cannot hit from interaction distance');
+ const melee=h.sources.find(u=>!u.character)||h.sources[0];melee.x=c.x-1;melee.y=c.y;h.step(.1,.1);for(let i=0;i<50&&!h.body;i++)h.step(.1,.1);ok(h.body&&c.n===2,'melee hunter damages prey only at actual weapon contact');h.finish();
+ c=make();t.hunt(c);t.act('hunt-start');h=H.active;const ownBounds={x:h.x,y:h.y,r:h.radius};h.sources=[];h.time=20;h.step(.1,.1);ok(H.active===h&&h.x===ownBounds.x&&h.y===ownBounds.y&&h.radius===ownBounds.r,'a hunt has no arbitrary fourteen-second timeout and its circle stays fixed');
+ c.x=h.x+h.radius+5;for(let i=0;i<50;i++)h.step(.1,.1);ok(!h.target&&H.active===h,'prey can escape beyond the circle while the hunt remains available for other targets');h.finish();
+ P.troops={hum_foot:2};P.wounded={hum_bow:3};c=make();t.hunt(c);ok(!H.pool('ranged').length&&H.choice.method==='melee','wounded archers do not provide ranged hunters and melee remains available');t.act('hunt-back');P.wounded={};
+ c.escapeSta=2;t.hunt(c);t.act('hunt-start');h=H.active;ok(c.escapeSta===2,'beginning another hunt never refills prey endurance');const time=h.time;G.paused=true;h.step(1,1);ok(h.time===time,'pause freezes hunting');G.paused=false;t.worldMove(P.x-20,P.y);ok(!H.active&&!document.getElementById('huntBar'),'a normal travel order ends the hunt and releases temporary hunter positions');
+ ok(!ERR.length,'area hunting produces no runtime errors');
 });

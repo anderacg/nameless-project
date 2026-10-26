@@ -58,7 +58,7 @@ const wayTile=p=>{const h=p instanceof Holding,tx=h?p.tx:Math.floor(p.x/TILE),ty
 // the way to a holding, a goal for Router.travel: the spot in front of its gate (dx along it), by the holding's roads
 const gateGoal=(t,dx)=>({x:t.x+(dx||0),y:t.y+12,tw:t});
 const Router={
-  flee(o,threat,step){return FleeRoutes.step(o,threat,step)},
+  flee(o,threat,step){return EscapeStamina.flee(o,threat,step)},
   travel(o,goal,step){return wayTravel(o,goal,step)},
   reach(a,b){const L=landPieces(),i=wayTile(a),j=wayTile(b);return i>=0&&j>=0&&L[i]>=0&&L[i]===L[j]},
   // (the graph's days at WAY.pace, by the pace asked)

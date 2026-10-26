@@ -175,7 +175,9 @@ js/world/             the campaign map and everything on it
   distractions.js       nearby unseen noisy events: wordless cries and white source waves, runtime only, no knowledge
   tracks.js             tracks: every band's trail of prints (Track; the Tracks system: sampled each frame, trimmed each hour
                         and at the cap, saved), who sees them (by Scouting) and their card (trackTip: hover, or Look on the ring)
-  monsters.js critters.js hunting.js reputation.js
+  exertion.js           EscapeStamina: escape effort, gradual speed loss and safe recovery; data/exertion.js holds tuning
+  hunting.js            WildHunt: fixed hunting areas, actual hunters, contact attacks, arrows and collected game
+  monsters.js critters.js reputation.js
   march.js              MarchArmy/MarchGround: physical travel soldiers, local routes, saved formation goals and building feet
   travelgroups.js       TravelGroups: physical troop groups and their observed travel strength
   world.js              travel (your step: straight while the way is open, else by the router: heroStep, heroWay; where you come out
@@ -1041,7 +1043,7 @@ Travel stealth UI is icon-only. Your army rings match the overall eye colour: te
 
 Travel detection eyes use larger fixed screen sizes: 18px for observers and 36px above your army.
 
-Wildlife hunting: select existing wild game, then Hunt with up to three actual fit ranged marchers; at least one is required. world/hunting.js owns the short live-map encounter and WILD_HUNT tuning. Hunters approach and shoot automatically; undetected forest cover improves opening accuracy. A collected kill grants the existing meat/materials/XP, survivors flee and leave real tracks, and Leave hunt or a travel order ends it freely. No tools, skinning or separate battlefield. Monsters retain ordinary combat. Tests: wildhunt; shared swept-hit compatibility: worldhitvisibility.
+Wildlife hunting: Map > Hunting area, then hold a spot to preview a fixed circle and choose up to three actual fit melee or physical ranged hunters (an appropriately equipped hero can join). Ranged hunters approach and shoot physical arrows; melee hunters need weapon contact. Approach stops when prey bolts unless Pursue is enabled. Hunters stay within the circle, animals can escape; Collect sends a hunter to the body before granting meat/materials/XP. Move positions hunters; End hunt rejoins normal marching. No battle formation phase or arbitrary hunt timer. HUNT_AREA tuning lives in data/exertion.js. Tests: wildhunt, huntfield; shared swept-hit compatibility: worldhitvisibility.
 
 Travel pace feedback: walking/running changes are silent. gfx/worldui.js draws a cached animated walking or running figure on the path; Hurry widens footprint spacing and accelerates the trail. Reduced motion keeps the guide still. Exhaustion refusal remains a warning. Tests: worldui, journalretention, clickhurry.
 
@@ -1053,7 +1055,7 @@ Joining an ongoing world fight (2026-10-25): WorldBattleArea records the origina
 
 Travel pace badge refinement (2026-10-25): removed the separate pace figure from the path. gfx/render.js drawTravelPace reuses badgePx('walk'/'run') from battle unit cards beside the player banner, at 14 CSS pixels, stacked below concealment when present. Only a travel destination/chase/follow shows it; idle, sheltered, camped and combat states hide it. Path footprints retain their Hurry spacing/speed, and pace switches remain silent. Tests: worldui and travelconcealicon.
 
-Wildlife hunting now requires at least one fit troop with a physical ranged weapon. The preparation window disables Hunt and explains why when none are available, and start rechecks the roster. Removed the free hero bow and hero-only option; only up to three actual ranged marchers shoot. The hero can still lead the approach and collect the kill. Wounded ranged troops do not qualify. Tests: wildhunt.
+World escape fatigue (2026-10-26): wildlife, lords, bands, guards, companions, caravans, refugees, monsters and frightened workers spend their own escape stamina only while fleeing. Species/party capacities differ; speed gradually falls to 55% and stamina recovers after a safe break. Changing targets never refreshes it. Automatic chase speed bonuses are removed. Player stamina, Hurry and the existing footmen/mounted/army-size travel formula remain; fatigue multiplies NPC normal speed. Small four-state stamina icons sit beside each visible entity, clear of its detection eye and group count. Remaining stamina is saved. Tests: escapestamina, fleeroutes, wildlifethreats.
 
 Travel awareness observes each marching group at its physical location, with natural forest cover and recent sighting memory. All groups follow their army leader. The Hold concealed command has been removed; obsolete saved hold anchors have no effect. Normal and Ambush attack choices remain available through enemy interactions.
 
