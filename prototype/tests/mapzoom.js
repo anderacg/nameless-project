@@ -2,7 +2,7 @@
 // The world map's zoom (core.js MAPZOOM, mapZoom): the map drawn at a whole number of device pixels to a game pixel still, one
 // step at a time by the wheel, + and −, the buttons by Save (dimmed at the ends) and a two-finger pinch (never a tap), within its
 // range; clicks and picking read through it, the minimap keeps its size on the screen, the step is remembered (PREFS mapzoom,
-// Settings → Map zoom); the default is the window's own scale, twice it on a phone; battles keep their own zoom and the window's scale. The screen
+// Settings → Map zoom); the default is the window's own scale, three times it on a phone; battles keep their own zoom and the window's scale. The screen
 // here a 3x one (devicePixelRatio 3: the fixed view's 576 x 360 game px at 3x or more).
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);
 const t=T,G=t.G,P=t.P,W=t.W,Z=t.MAPZOOM,ev=s=>(0,eval)(s),pn=performance.now,r0=Math.random,cv=document.querySelector('canvas');
