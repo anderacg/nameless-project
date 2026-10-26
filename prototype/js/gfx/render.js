@@ -56,7 +56,7 @@ function drawTravelPace(cam){
   let s=TRAVEL_PACE.cache.get(kind);if(!s){s=mkc(9,9,g=>{for(const [x,y,c] of badgePx(kind))rect(g,c,x,y)});TRAVEL_PACE.cache.set(kind,s)}
   ctx.save();ctx.imageSmoothingEnabled=false;ctx.drawImage(s,Math.round(x),Math.round(y),size,size);ctx.restore();return{x,y,w:size,h:size,kind};
 }
-const STEALTH_EYE={size:18,player:36,gap:4,cache:new Map()};
+const STEALTH_EYE={size:18,player:18,gap:4,cache:new Map()};
 function stealthEyeSprite(exposure,col,width=18){
   const level=Math.round(clamp(exposure,0,1)*4),unit=Math.max(1,Math.round(width/18)),key=level+':'+col+':'+unit;let s=STEALTH_EYE.cache.get(key);if(s)return s;
   // Opaque pixel strokes only. Integer-sized blocks avoid soft curves and uneven mobile resampling.

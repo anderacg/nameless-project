@@ -1072,3 +1072,5 @@ Mobile Map opens zoom out, zoom in and the full map. The mobile battle HUD keeps
 Awareness eyes use a symmetric eyelid with the pupil contained inside it. Their cached artwork is rasterized at display density and placed on physical pixels, keeping player and observer eyes undistorted across map zooms. Detection states and colours are unchanged.
 
 Mobile awareness eyes now use opaque pixel-art eyelids and pupils, with integer-sized pixel blocks at each display density. They avoid antialiased curves, self-canvas mirroring and fractional scaling; awareness states and colours are unchanged.
+
+The player awareness eye uses the same 18 CSS-pixel size as observer eyes.
