@@ -93,7 +93,7 @@ class MarchGround{
 }
 class MarchArmy{
   constructor(o){this.owner=o;this.face=this.heading=marchFacing(o);this.x=o.x;this.y=o.y;this.units=[];this.serial=0;this.time=0;this.key='';this.ground=null}
-  static of(o){if(o===P&&!B)MarchAmbush.releaseFar();let a=MARCH_ARMIES.get(o);if(a&&Math.hypot(o.x-a.x,o.y-a.y)>MARCH_MOVE.teleport){MARCH_ARMIES.delete(o);a=null}if(!a){a=new MarchArmy(o);MARCH_ARMIES.set(o,a);a.sync()}return a}
+  static of(o){let a=MARCH_ARMIES.get(o);if(a&&Math.hypot(o.x-a.x,o.y-a.y)>MARCH_MOVE.teleport){MARCH_ARMIES.delete(o);a=null}if(!a){a=new MarchArmy(o);MARCH_ARMIES.set(o,a);a.sync()}return a}
   static spread(o){const a=MARCH_ARMIES.get(o);return a&&Math.hypot(o.x-a.x,o.y-a.y)<=MARCH_MOVE.teleport?Math.max(0,...a.units.map(u=>Math.hypot(u.x-o.x,u.y-o.y)+3)):0}
   relocate(x,y){
     const dx=x-this.owner.x,dy=y-this.owner.y;this.owner.x=x;this.owner.y=y;this.x+=dx;this.y+=dy;this.ground=null;
@@ -103,7 +103,7 @@ class MarchArmy{
     const o=this.owner,co=Math.cos(this.face),si=Math.sin(this.face),out=[];
     const pivot=this.pivot();
     for(const row of this.rows)if(row.id!=='hero'){
-      const hold=o===P?MarchAmbush.held(row.id):null,x=hold?.x??o.x+row.x*co-row.y*si,y=hold?.y??o.y+row.x*si+row.y*co,slots=formSlots(row.form,row.count,(hold?.face??this.face)+(row.face||0),row.files,WORLD_BATTLE.sprite);
+      const x=o.x+row.x*co-row.y*si,y=o.y+row.x*si+row.y*co,slots=formSlots(row.form,row.count,this.face+(row.face||0),row.files,WORLD_BATTLE.sprite);
       const at=pivot?.row===row.id?slots[pivot.index]:[0,0];
       slots.forEach(([sx,sy],i)=>out.push({row:row.id,index:i,type:row.type,character:row.character,pivot:pivot?.row===row.id&&pivot.index===i,x:x+(sx-at[0])/WORLD_BATTLE.scale,y:y+(sy-at[1])/WORLD_BATTLE.scale}));
     }return out;
@@ -124,7 +124,6 @@ class MarchArmy{
     const pivot=units.find(u=>u.pivot);if(pivot){pivot.x=this.owner.x;pivot.y=this.owner.y;pivot.goal={x:pivot.x,y:pivot.y}}
   }
   step(d,sync=true,bounds=null,inside=null){
-    if(this.owner===P&&!B)MarchAmbush.releaseFar();
     if(!(d>0))return;const o=this.owner;if(Math.hypot(o.x-this.x,o.y-this.y)>MARCH_MOVE.teleport){MARCH_ARMIES.delete(o);MarchArmy.of(o);return}
     if(sync)this.sync();this.time+=d;const dx=o.x-this.x,dy=o.y-this.y,moved=Math.hypot(dx,dy),to=moved>.001?(this.heading=Math.atan2(dy,dx)):this.heading,gap=Math.atan2(Math.sin(to-this.face),Math.cos(to-this.face));this.face+=clamp(gap,-MARCH_MOVE.turn*d,MARCH_MOVE.turn*d);this.x=o.x;this.y=o.y;
     const pivot=this.units.find(u=>u.pivot);if(pivot){pivot.walk+=Math.hypot(o.x-pivot.x,o.y-pivot.y);pivot.walking=moved>.001;pivot.x=o.x;pivot.y=o.y;pivot.dir=this.face;pivot.goal={x:o.x,y:o.y};pivot.plan=null;if(this.units.length===1){this.queries=0;return}}

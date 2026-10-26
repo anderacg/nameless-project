@@ -7,7 +7,7 @@ function act(a,arg){
   if(a==='race'){G.race=arg;showTitle('new');const b=panel.querySelector('[data-act="race"].on');if(b)b.focus({preventScroll:true});return}
   if(a==='load')return loadGame(arg);
   if(a==='wipe')return wipeSave(arg);
-  if(a==='fight'){const e=G.enc;if(WORLD_BATTLE.on&&e.mine&&!e.btype&&!e.surprise&&!e.ambush)MarchAmbush.finish();return startBattle({enemies:e.list,tournament:false,lv:e.lv||1,deploy:true})}
+  if(a==='fight'){const e=G.enc;return startBattle({enemies:e.list,tournament:false,lv:e.lv||1,deploy:true})}
   if(a==='auto')return autoResolve();
   if(a==='flee')return flee();
   if(a==='cont'){lootEnd();updateHUD(true);if(G.encAgain){const e=G.encAgain;G.encAgain=null;return startEncounter(e)}// (run down after withdrawing: face them again)

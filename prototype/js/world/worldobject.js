@@ -36,20 +36,20 @@ class TravelAwareness{
   static time=0;
   static level(o){return this.states.get(o)||0}
   static rows(o){let r=this.records.get(o);if(!r){r=new Map();this.records.set(o,r)}return r}
-  static scan(o,base,factor){return (this.snapshot||MarchAmbush.groups()).map(row=>{const group=row.id==='hero'?{...row,x:P.x,y:P.y,cover:!!hiddenAt(P.x,P.y),moving:P.tx!=null}:row,range=base*(group.cover?factor:1)*(1+Math.min(TRAVEL_AMBUSH.maxSize,Math.sqrt(Math.max(0,group.count-1))*TRAVEL_AMBUSH.size)),distance=Math.max(0,Math.hypot(o.x-group.x,o.y-group.y)-Math.min(12,group.extent)),r=this.records.get(o)?.get(group.id);return{group,range,distance,within:distance<range,q:r?.q||0}})}
-  static notice(o,id='hero'){const group=(this.snapshot||MarchAmbush.groups()).find(g=>g.id===id);if(group)this.rows(o).set(id,{q:1,last:this.time,power:group.power});this.states.set(o,1)}
+  static scan(o,base,factor){return (this.snapshot||TravelGroups.groups()).map(row=>{const group=row.id==='hero'?{...row,x:P.x,y:P.y,cover:!!hiddenAt(P.x,P.y),moving:P.tx!=null}:row,range=base*(group.cover?factor:1)*(1+Math.min(TRAVEL_GROUPS.maxSize,Math.sqrt(Math.max(0,group.count-1))*TRAVEL_GROUPS.size)),distance=Math.max(0,Math.hypot(o.x-group.x,o.y-group.y)-Math.min(12,group.extent)),r=this.records.get(o)?.get(group.id);return{group,range,distance,within:distance<range,q:r?.q||0}})}
+  static notice(o,id='hero'){const group=(this.snapshot||TravelGroups.groups()).find(g=>g.id===id);if(group)this.rows(o).set(id,{q:1,last:this.time,power:group.power});this.states.set(o,1)}
   static sees(o){return !!travelDetection(o)?.sees}
   static target(o){return travelDetection(o)?.target||null}
-  static power(o){if(!WORLD_BATTLE.on)return partyPower();return [...(this.records.get(o)?.values()||[])].reduce((n,r)=>n+(r.last!=null&&this.time-r.last<=TRAVEL_AMBUSH.memory?r.power:0),0)}
+  static power(o){if(!WORLD_BATTLE.on)return partyPower();return [...(this.records.get(o)?.values()||[])].reduce((n,r)=>n+(r.last!=null&&this.time-r.last<=TRAVEL_GROUPS.memory?r.power:0),0)}
   static reset(){this.states=new WeakMap();this.records=new WeakMap();this.snapshot=null;this.time=0}
   static step(rt){
-    if(G.paused||G.modal||G.mode!=='world'||B)return;if(P.stay){this.reset();return}const dt=rt*G.speed;this.time+=dt;this.snapshot=MarchAmbush.groups();
+    if(G.paused||G.modal||G.mode!=='world'||B)return;if(P.stay){this.reset();return}const dt=rt*G.speed;this.time+=dt;this.snapshot=TravelGroups.groups();
     for(const o of travelObservers()){const d=travelDetection(o);if(!d){this.states.delete(o);this.records.delete(o);continue}const records=this.rows(o),ids=new Set(d.rows.map(r=>r.group.id));let exposure=0;
       for(const v of d.rows){const g=v.group,r=records.get(g.id)||{q:0,last:null,power:0};
-        if(v.within){const speed=(G.hurry&&!g.hold?TRAVEL_AWARE.hurry:1)*(v.distance<v.range*.35?TRAVEL_AWARE.close:1)*(g.hold&&g.cover&&!g.moving?TRAVEL_AMBUSH.quiet:g.moving?TRAVEL_AMBUSH.moving:1);r.q=v.distance<Math.min(TRAVEL_AWARE.contact,v.range*.15)?1:Math.min(1,r.q+dt*speed/(g.cover?TRAVEL_AWARE.forest:TRAVEL_AWARE.open));if(r.q>=1){r.last=this.time;r.power=g.power}}
+        if(v.within){const speed=(G.hurry?TRAVEL_AWARE.hurry:1)*(v.distance<v.range*.35?TRAVEL_AWARE.close:1)*(g.moving?TRAVEL_GROUPS.moving:1);r.q=v.distance<Math.min(TRAVEL_AWARE.contact,v.range*.15)?1:Math.min(1,r.q+dt*speed/(g.cover?TRAVEL_AWARE.forest:TRAVEL_AWARE.open));if(r.q>=1){r.last=this.time;r.power=g.power}}
         else r.q=Math.max(0,r.q-dt/TRAVEL_AWARE.fade);records.set(g.id,r);exposure=Math.max(exposure,r.q);
       }
-      for(const [id,r] of records)if(!ids.has(id)||r.q===0&&(r.last==null||this.time-r.last>TRAVEL_AMBUSH.memory))records.delete(id);
+      for(const [id,r] of records)if(!ids.has(id)||r.q===0&&(r.last==null||this.time-r.last>TRAVEL_GROUPS.memory))records.delete(id);
       if(exposure>0)this.states.set(o,exposure);else this.states.delete(o);
     }
   }

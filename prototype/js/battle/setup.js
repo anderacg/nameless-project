@@ -119,7 +119,7 @@ const BTYPE={bridgeY:.15,ford:.4,fordGap:100,front:24,behind:50,flank:110,back:3
 // One short-lived coordinator per battle. Runtime units remain plain records; saved campaign records are not copied.
 // Construction order is deliberate: preserve random draws, chief reuse, HUD measurement and post-layout initialization.
 class BattleSetup{
-  constructor(opts){this.opts=opts;this.units=[];this.id=0;this.surprise=!!(opts.surprise||opts.ambush||G.enc?.surprise||G.enc?.ambush||G.enc?.btype?.kind==='ambush'||P.camp||Object.keys(P.army?.concealed||{}).length)}
+  constructor(opts){this.opts=opts;this.units=[];this.id=0;this.surprise=!!(opts.surprise||opts.ambush||G.enc?.surprise||G.enc?.ambush||G.enc?.btype?.kind==='ambush'||P.camp)}
   spawn(unit,team,x,y){
     const s=unit.fieldStats(this.env,team,this.opts.lv||1);
     return{id:this.id++,v:Math.floor(Math.random()*6),type:unit.key,unit,team,x,y,hp:s.hp,max:s.hp,cd:Math.random()*.6,hero:unit.role==='hero',face:team?-1:1,s,spdNow:0,tgt:null,rt:0,swing:0};

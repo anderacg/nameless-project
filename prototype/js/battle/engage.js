@@ -157,7 +157,7 @@ function canWorldAmbush(e){
   if(!e||!WORLD_BATTLE.on||!e.mine||!WORLD_ATTACK_KINDS.includes(e.kind)||e.btype||e.fight||P.stay||B)return false;
   const o=e.ref?.src||e.ref;if(!o||o===P||o.dead||o.gone||o.inside||o.fight||!Number.isFinite(o.x)||!Number.isFinite(o.y)||!['lord','band','patrol','caravan','monster'].includes(o.mapKind))return false;
   if(TravelAwareness.sees(o))return false;
-  return ![...(TravelAwareness.records.get(o)?.values()||[])].some(r=>r.last!=null&&TravelAwareness.time-r.last<=TRAVEL_AMBUSH.memory);
+  return ![...(TravelAwareness.records.get(o)?.values()||[])].some(r=>r.last!=null&&TravelAwareness.time-r.last<=TRAVEL_GROUPS.memory);
 }
 const canSpring=e=>WORLD_BATTLE.on?canWorldAmbush(e):TERRAIN.on&&!!e.mine&&BTYPE_WORLD.kinds.includes(e.kind)&&!e.btype&&!!coverAt(P.x,P.y);
 function encounterAttackButtons(e){return '<button class="btn primary" type="button" data-act="fight">'+(WORLD_BATTLE.on&&e.mine&&WORLD_ATTACK_KINDS.includes(e.kind)?'Normal attack':'Fight')+'</button>'+(canSpring(e)?'<button class="btn" type="button" data-act="bt-spring">'+(WORLD_BATTLE.on?'Ambush attack':'Spring an ambush')+'</button>':'')}
