@@ -40,7 +40,7 @@ Start a **new campaign** for this version. Old saves are not loaded or migrated;
 
 Focused regression suites: `armygroups`, `armyedges`, `groups`, `battlesetup`, `battlecommands`, `rts`, plus the existing recruitment, roster, laboratory, combat and morale suites. Test-only `testGroup(role)` resolves role-based execution fixtures to real group IDs; it is not a gameplay or save-compatibility API.
 
-**Army progression:** start with 3 group slots, counting the hero and companions. Each trained Leadership level above 2 adds a slot, up to 10. Each troop group holds 10 soldiers including its wounded. Army and recruitment windows show the unlocked limit and unit-group occupancy. Circles scale with army size and formation footprint. Monster packs share contact circles, physical battle entry and same-kind reinforcements. Settings offers Pause when battle starts, On by default.
+**Army progression:** start with 3 group slots, counting the hero and companions. Each trained Leadership level above 2 adds a slot, up to 10. Each troop group holds 10 soldiers including its wounded. Army and recruitment windows show the unlocked limit and unit-group occupancy. Circles scale with army size and formation footprint. Monster packs share contact circles, physical battle entry and same-kind reinforcements. Battles open paused with Start Battle at the top center.
 
 **Travel controls:** double-click or double-tap a destination to Hurry; a normal travel click returns to walking. Party double-click approaches at Hurry pace. Normal exhaustion and stamina costs apply.
 
@@ -1076,3 +1076,5 @@ Mobile awareness eyes now use opaque pixel-art eyelids and pupils, with integer-
 The player awareness eye uses the same 18 CSS-pixel size as observer eyes.
 
 Wildlife also flees nearby lords, bandits, patrols, companion parties, caravans, refugees, outdoor workers and monsters, including during hunts. `WildlifeThreats` (`world/critters.js`) indexes nearby threats and keeps escape headings stable; cover reduces detection range. Sheltered people and livestock do not trigger this behavior. Player stealth still uses travel awareness.
+
+Battles assemble initial armies into saved march offsets and troop formations before opening paused. Start Battle (top center, or Space) begins combat; the sandbox keeps its own start controls. World reinforcements still arrive physically, and impassable ground adjusts formation slots. Battle hold progress draws in CSS pixels over the completed frame, independent of map zoom and camera scale. Commander abilities act around the hero; unit abilities act on eligible selected troop groups, with separate labels in Orders.

@@ -80,17 +80,17 @@ const fieldTop=()=>B&&B.ftop!=null?B.ftop:FIELD_EDGE.top,fieldBot=()=>B&&B.fbot!
 // (measured before the field is laid out, so its rocks and trees go where the fight can be seen; the HUD laid out unseen and put
 // back as it was: it shows only once it is filled in for this battle, as the field opens (present). Shown here, it stood empty or
 // as the last battle left it through the start's other steps, behind the loading overlay while that is still clear)
-function measureField(){
+function measureField(ready=false){
   if(MAPZOOM.on){MAPZOOM.map=false;fitScreen()}// (the screen at its own scale first, whatever the map's zoom: core.js MAPZOOM)
   const def={top:FIELD_EDGE.top,bot:BH-FIELD_EDGE.bot},was=bbar.hidden;bbar.style.visibility='hidden';bbar.hidden=false;{const sc=document.getElementById('screen');if(sc)sc.dataset.mode='battle'}// (the HUD laid out as in battle)
-  const ab=bbar.querySelector('.abils'),abH=ab&&ab.hidden;
-  try{const cv=document.querySelector('canvas'),r=cv&&cv.getBoundingClientRect();if(!r||r.height<50)return def;const k=BVH/r.height/camFit(),box=sel=>{const e=bbar.querySelector(sel);return e&&e.offsetParent!==null?e.getBoundingClientRect():null};
+  const ab=bbar.querySelector('.abils'),abH=ab&&ab.hidden,wasReady=bbar.classList.contains('battle-ready');bbar.classList.toggle('battle-ready',ready);
+  try{const cv=document.querySelector('canvas'),r=cv&&cv.getBoundingClientRect();if(!r||r.height<50)return def;const k=BVH/r.height/camFit(),box=sel=>{const e=bbar.querySelector(sel);return e&&e.offsetParent!==null&&!e.closest('.mobile-battle-hud')?e.getBoundingClientRect():null};
     // (measured without the unit-ability buttons (battlehud.js): which abilities show depends on the selection, and the last battle's
     // were still there, so the field and the groups' widths would change with them)
     if(ab)ab.hidden=true;const tops=['.btop','.btime'].map(box).filter(Boolean),bot=box('.bcmd');
-    const top=tops.length?Math.max(...tops.map(b=>b.bottom))-r.top:0,bh=bot?r.bottom-bot.top:0;
+    const top=Math.max(ready?54:0,tops.length?Math.max(...tops.map(b=>b.bottom))-r.top:0),bh=bot?r.bottom-bot.top:0;
     return{top:Math.round(clamp(top*k+FIELD_EDGE.body,FIELD_EDGE.top,BH*.3)),bot:Math.round(clamp(BH-bh*k-FIELD_EDGE.bot,BH*.6,BH-FIELD_EDGE.bot))}}
-  finally{if(ab)ab.hidden=abH;bbar.hidden=was;bbar.style.visibility=''}}
+  finally{if(ab)ab.hidden=abH;bbar.classList.toggle('battle-ready',wasReady);bbar.hidden=was;bbar.style.visibility=''}}
 /* ---------- battle types (IMPLEMENTATION_PLAN §4 item 5; doc/TERRAIN_DESIGN.md §8, phase 5): B.btype, absent on an open field ----------
    {kind:'bridge', def, ford}: a fight at a river crossing: one bridge over deep water nobody can wade (ford: and a ford far off
    it); def, the team set upon, stands on its bank by the bridge, the other comes on from its own edge and must cross.
@@ -253,7 +253,7 @@ class BattleSetup{
       return{x:W/2,y:mid+s*(h+A.gap*.5),rx:Math.min(W/2-8,span/.7),ry:A.gap*.3}}):[];
     return{road:[mid-h-A.road,mid+h+A.road],woods:ridge?[]:woods,ridges,place}}
   initialize(){
-    B.speed=BSPEED.v;B.paused=prefGet('bpause');
+    B.speed=BSPEED.v;B.ready=!this.opts.sandbox;B.paused=B.ready||prefGet('bpause');
     if(BEAST_TACTICS.on)beastPacks();// (beasts in the pack spread, an AI group of them split into packs: beastmind.js)
     for(const g of Object.keys(B.groups))layForm(g);
     campCaught(this.opts);// (a band that finds you in camp catches you unready: world/supply.js)
@@ -262,6 +262,18 @@ class BattleSetup{
     camInit();
     warmBattle(this.units);
     deployInit(this.opts);
+    if(!B.world&&!this.opts.sandbox&&!this.opts.tournament&&!B.btype)this.arrangeMarch();
+  }
+  // The saved march layout sets group centers; each group's own formation sets its soldiers' slots.
+  arrangeMarch(){
+    const armies=new Map();for(const g of Object.values(B.groups)){const m=grpUnits(g.id),owner=g.player?P:m[0]?.sourceArmy;if(!owner||!m.length)continue;const a=armies.get(owner)||[];a.push(g);armies.set(owner,a)}
+    for(const [owner,groups] of armies){const rows=marchRows(owner),team=groups[0].team,face=team?Math.PI:0,Z=fieldZone(team),scale=WORLD_BATTLE.scale/WORLD_BATTLE.sprite,side=[...armies.keys()].filter(o=>armies.get(o)[0].team===team),cy=fieldTop()+(fieldBot()-fieldTop())*(side.indexOf(owner)+.5)/side.length;
+      for(const g of groups){if(g.form==='pack')continue;const row=rows.find(r=>r.id===(g.sourceGroupId||g.id))||(grpUnits(g.id)[0]?.leader?{x:0,y:0,face:0,form:'line',files:null}:null);if(!row)continue;const m=grpUnits(g.id);g.face=g.currentFacing=face+row.face;g.form=row.form;g.files=row.files;
+        const slots=formSlots(g.form,m.length,g.face,g.files),xs=slots.map(p=>p[0]),ys=slots.map(p=>p[1]);
+        g.ax=clamp(fieldLine(team)+(team?-1:1)*row.x*scale,Z.x0-Math.min(...xs),Z.x1-Math.max(...xs));g.ay=clamp(cy+(team?-1:1)*row.y*scale,fieldTop()-Math.min(...ys),fieldBot()-Math.max(...ys));
+        m.forEach((u,i)=>{[u.sx,u.sy]=slots[i];u.x=g.ax+u.sx;u.y=g.ay+u.sy;u.dir=g.face;u.face=Math.cos(u.dir)>=0?1:-1});
+      }
+    }
   }
   // (the HUD filled in, then shown: at once when the start runs in one go (LOADING.sync: nothing is painted in between), else with
   // the battle's first frame (render.js frame), so it never shows half made, nor over the map it leaves)
@@ -290,7 +302,7 @@ class BattleSetup{
     this.ground=this.groundSpec();groundEnv(this.env,this.ground);// (the ground's recipe and seed before anyone spawns: D2, terrain.js)
     this.createUnits();
     this.btype=this.battleType();if(this.btype)this.typeGround();// (its type, if any: BTYPE)
-    this.field=measureField();
+    this.field=measureField(!this.opts.sandbox);
     this.createGroups();
   }
   // (the battle's state (B), its type's lay-out, morale, the camera, deployment and the sprites queued (initialize))

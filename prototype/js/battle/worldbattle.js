@@ -81,15 +81,15 @@ class WorldBattleArea{
     const a=this.constrain(p,12),ok=q=>!T||!T.solid[tIx(T,q.x,q.y)];if(ok(a))return a;
     for(let r=16;r<this.radius*2;r+=16)for(let k=0;k<16;k++){const q={x:a.x+Math.cos(k*Math.PI/8)*r,y:a.y+Math.sin(k*Math.PI/8)*r};if(this.inside(q,12)&&ok(q))return q}return a;
   }
-  place(g,units,anchor,offset,owner=anchor){
-    const face=anchor.facing??Math.atan2(this.y-anchor.y,this.x-anchor.x),co=Math.cos(face),si=Math.sin(face),dir=co>=0?1:-1,p=this.openPoint(this.field({x:anchor.x+offset.x*co-offset.y*si,y:anchor.y+offset.x*si+offset.y*co}));
-    g.ax=p.x;g.ay=p.y;g.face=g.currentFacing=face+(offset.face||0);g.order='hold';const slots=formSlots(g.form,units.length,g.face,g.files,WORLD_BATTLE.sprite);
+  place(g,units,anchor,offset,owner=anchor,assemble=false){
+    const face=anchor.facing??(assemble&&owner instanceof Party?marchFacing(owner):Math.atan2(this.y-anchor.y,this.x-anchor.x)),co=Math.cos(face),si=Math.sin(face),dir=co>=0?1:-1,p=this.openPoint(this.field({x:anchor.x+offset.x*co-offset.y*si,y:anchor.y+offset.x*si+offset.y*co}));
+    g.ax=p.x;g.ay=p.y;g.face=g.currentFacing=face+(offset.face||0);g.order='hold';if(assemble&&offset.id){g.form=offset.form;g.files=offset.files}const slots=formSlots(g.form,units.length,g.face,g.files,WORLD_BATTLE.sprite);
     const army=MARCH_ARMIES.get(owner),march=army?.forGroup(g.sourceGroupId||g.id).filter(m=>!B.units.some(u=>!units.includes(u)&&u.marchUnit===m))||[];
-    units.forEach((u,i)=>{u.sx=slots[i][0];u.sy=slots[i][1];const mini=march[i],worker=owner.ws?.find(f=>!f.gone&&workerAppearance(f).type===u.type&&!B.units.some(v=>v.worker===f));let q=worker?this.field(worker):mini?this.field(mini):this.openPoint({x:p.x+u.sx,y:p.y+u.sy});if(mini&&this.inside(q,6)&&B.terrain?.solid[tIx(B.terrain,q.x,q.y)])q=this.openPoint(q);u.x=q.x;u.y=q.y;u.dir=worker?(worker.dir<0?Math.PI:0):mini?.dir??face;u.face=Math.cos(u.dir)>=0?1:-1;
+    units.forEach((u,i)=>{u.sx=slots[i][0];u.sy=slots[i][1];const mini=march[i],worker=owner.ws?.find(f=>!f.gone&&workerAppearance(f).type===u.type&&!B.units.some(v=>v.worker===f));let q=worker?this.field(worker):mini&&(!assemble||!this.inside(this.field(mini),6))?this.field(mini):this.openPoint({x:p.x+u.sx,y:p.y+u.sy});if(mini&&this.inside(q,6)&&B.terrain?.solid[tIx(B.terrain,q.x,q.y)])q=this.openPoint(q);u.x=q.x;u.y=q.y;u.dir=worker?(worker.dir<0?Math.PI:0):assemble?g.face:mini?.dir??face;u.face=Math.cos(u.dir)>=0?1:-1;
       u.v=mini?mini.id%6:u.hero||u.leader?0:u.v;u.worldTint=FACS[forceRealm(owner)]?.col||owner.look?.().col;u.worldSide=owner.mapKind==='monster'?1:0;delete u.look;delete u.side;
       if(owner.ws)u.worldTint=FACS[owner.fac]?.col||'#bda882';if(worker){u.worker=worker;const L=workerAppearance(worker);u.v=L.v;u.worldTint=L.tint}
       if(mini){u.marchUnit=mini;if(!this.inside(q,6)){u.hpLeft=u.hp;u.hp=0;u.left=true;u.waiting=true;this.arrivals.push({u,mini,army})}}});
-    if(march.length){const live=units.filter(u=>u.hp>0);if(live.length){g.ax=live.reduce((n,u)=>n+u.x-u.sx,0)/live.length;g.ay=live.reduce((n,u)=>n+u.y-u.sy,0)/live.length}}
+    if(march.length&&!assemble){const live=units.filter(u=>u.hp>0);if(live.length){g.ax=live.reduce((n,u)=>n+u.x-u.sx,0)/live.length;g.ay=live.reduce((n,u)=>n+u.y-u.sy,0)/live.length}}
   }
   syncCamera(){
     BVW=VW;BVH=VH;const c=B.cam||(B.cam={keys:{},lt:0});c.z=1/this.scale;c.fit=false;c.x=(G.cam.x-this.x0)*this.scale;c.y=(G.cam.y-this.y0)*this.scale;
@@ -224,7 +224,7 @@ class WorldBattleSetup extends BattleSetup{
     BVW=VW;BVH=VH;const deploy=this.opts.deploy;this.opts.deploy=false;try{super.initialize()}finally{this.opts.deploy=deploy}const a=this.area,e=G.enc,rows=marchRows(P),primary=e.ref?.src||e.ref;
     for(const [id,g] of Object.entries(B.groups)){const m=B.units.filter(u=>u.grp===id),first=m[0],source=first?.sourceArmy,anchor=g.player?a.starts[0]:source?.src||source;
       if(!g.player&&source&&Number.isFinite(anchor?.x)&&Number.isFinite(anchor?.y)){a.participants.add(anchor);if(source!==primary&&source!==e.ref&&!a.initial.has(anchor)){const team=g.team;let p=a.pending.find(p=>p.o===anchor);if(!p){p={o:anchor,team,existing:[]};a.pending.push(p)}p.existing.push(id);m.forEach(u=>{u.hpLeft=u.hp;u.hp=0;u.left=true;u.waiting=true});continue}}
-      const key=g.sourceGroupId||id,formation=g.player?rows:primary instanceof Party?marchRows(primary):[],offset=formation.find(r=>r.id===key)||{x:0,y:(Object.keys(B.groups).indexOf(id)%5-2)*7};a.place(g,m,g.player?a.starts[0]:this.area.joinedFight&&Number.isFinite(anchor?.x)?anchor:a.starts[1],offset,g.player?P:source?.src||source);
+      const key=g.sourceGroupId||id,formation=g.player?rows:source instanceof Party?marchRows(source):[],offset=formation.find(r=>r.id===key)||{x:0,y:first?.leader?0:(Object.keys(B.groups).indexOf(id)%5-2)*7};a.place(g,m,g.player?a.starts[0]:this.area.joinedFight&&Number.isFinite(anchor?.x)?anchor:a.starts[1],offset,g.player?P:source?.src||source,g.form!=='pack');
     }
     MarchAmbush.battle();B.speed=G.speed;B.deploy=false;exitInit(B.units);a.clamp();B.sight=null;for(const u of B.units){delete u.ls;u.hid=0} sightStep(true);warmBattle(B.units);
   }

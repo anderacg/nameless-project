@@ -406,6 +406,7 @@ function frame(){
   else if(G.mode==='title'){ctx.fillStyle='#0b0d14';ctx.fillRect(0,0,VW,VH);drawWorld()}
   else drawWorld();
   ctx.restore();
+  if(typeof drawTouchHold==='function')drawTouchHold();
   if(typeof drawMapHold==='function')drawMapHold();// (the map's click-and-hold progress, in screen pixels: ring.js)
 }
 /* the band card (top left; doc/SUPPLY_DESIGN.md §8; the owner, 2026-10-23): your band's name, big (a button: the Names window,

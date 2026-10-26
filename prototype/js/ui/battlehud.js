@@ -150,7 +150,7 @@ function bhudTop(){
   for(const u of B.units){if(u.hp<=0)continue;if(u.team===0){nm++;if(!u.rout)me+=w(u)}else{nf++;if(!u.rout)foe+=w(u)}}
   const $id=id=>document.getElementById(id);if(!$id('bMine'))return;$id('bMine').textContent=nm;$id('bFoe').textContent=nf;$id('bPowMe').style.width=pct(me/Math.max(.01,me+foe));
   $id('bField').textContent=B.env.name+(B.opts.tournament?' · tournament':'');
-  $id('bStatus').textContent=B.over?(B.retreat?'Withdrawn':B.win?'Victory':'Defeat'):B.deploy?(GUIDE.on?'Deploy: place your band in the shaded zone · Space to begin':'Deploying'):B.paused?(GUIDE.on?'Paused · give your orders · Space to go on':'Paused'):B.speed!==1?B.speed+'×':'';
+  $id('bStatus').textContent=B.over?(B.retreat?'Withdrawn':B.win?'Victory':'Defeat'):B.ready?'Ready · Start Battle to begin':B.deploy?(GUIDE.on?'Deploy: place your band in the shaded zone · Space to begin':'Deploying'):B.paused?(GUIDE.on?'Paused · give your orders · Space to go on':'Paused'):B.speed!==1?B.speed+'×':'';
   document.querySelector('.bfield').classList.toggle('alert',!!(B.deploy||B.paused));
   {const b=$id('bAmove');if(b){b.classList.toggle('on',!!B.amArm);b.setAttribute('aria-pressed',String(!!B.amArm));b.disabled=!!B.deploy}}// (armed: commands.js armAttackMove)
   bhudAbilities();
@@ -252,7 +252,6 @@ function drawSelection(){
   // (All selected: every soldier of yours, a lighter ring, so the field does not turn gold)
   const sel=selGroups(),all=B.sel==='all';
   for(const g of sel)for(const u of grpUnits(g)){const k=u.s.big?2:1;ctx.fillStyle='rgba(255,210,90,.35)';ctx.beginPath();ctx.ellipse(Math.round(u.x),Math.round(u.y),7*k,3.5*k,0,0,7);ctx.fill();ring(u,'#ffe08a',1,2)}
-  if(typeof drawTouchHold==='function')drawTouchHold();// (a finger held on the field: its filling ring, input.js)
   const h=B.hov;if(!h)return;const mine=rtsUnitAt(h.x,h.y,0),foe=!mine&&rtsUnitAt(h.x,h.y,1);
   if(mine&&mine.grp&&(all||!sel.includes(mine.grp)))for(const u of grpUnits(mine.grp))ring(u,sideKey(u)==='ally'?SIDE.ally.ui:'#ffffff',.7,1.5);// (your allies': their colour)
   if(foe){const g=foe.grp;for(const u of g?grpUnits(g):[foe])if(seenBy(0,u))ring(u,'#ff6a5a',.9,1.5)}// (none under those you cannot see: terrain.js)

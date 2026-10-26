@@ -48,7 +48,7 @@ Kit.suite(({ok,info})=>{
  {
   a=begin();P.x+=25;for(let i=0;i<10;i++)a.step(1/30);const before=new Map(a.units.map(u=>[u,{x:u.x,y:u.y}]));
   const e=t.asParty({kind:'bandits',troops:['militia','militia'],x:P.x+70,y:P.y,cool:0,n:2});t.bandits.push(e);G.enc={kind:'party',ref:e,list:e.troops.slice(),allies:[],foes:[],mine:true};t.startBattle({enemies:G.enc.list,tournament:false});const b=t.B;
-  ok(b.units.filter(u=>u.sourceArmy===P).every(u=>u.marchUnit&&Math.hypot(b.world.world(u).x-before.get(u.marchUnit).x,b.world.world(u).y-before.get(u.marchUnit).y)<.001),'battle starts at the actual marcher positions without reforming or teleporting');
+  ok(b.ready&&b.paused&&b.units.filter(u=>u.sourceArmy===P).every(u=>u.marchUnit&&before.has(u.marchUnit)&&Math.hypot(u.x-b.groups[u.grp].ax-u.sx,u.y-b.groups[u.grp].ay-u.sy)<.001),'battle reforms the same marchers into their saved slots before waiting for Start');
   const soldier=b.units.find(u=>u.marchUnit),mini=soldier.marchUnit;soldier.x+=12;const expected=b.world.world(soldier);b.world.finish(b);ok(Math.hypot(mini.x-expected.x,mini.y-expected.y)<.001,'surviving battle positions return to the same travel sprites');
  }
  info('Physical marching checked without render-driven movement or random path choices.');

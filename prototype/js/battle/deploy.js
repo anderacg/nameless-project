@@ -31,7 +31,7 @@ function deploySnap(gs){
     for(const u of grpUnits(g)){u.x=clamp(gr.ax+(u.sx||0),Z.x0,Z.x1);u.y=clamp(gr.ay+(u.sy||0),Z.y0,Z.y1)}}
 }
 // the fight begins (the withdrawal edge is your side of the field)
-function beginFight(){if(!B||!B.deploy)return;B.deploy=false;exitInit(B.units);B.paused=!!(B.opts.sandbox&&B.opts.pauseAfterDeploy);battleSpeedUI();setOrderUI();toast('The battle begins.')}
+function beginFight(){if(!B||!B.deploy&&!B.ready)return;const deploying=B.deploy;B.deploy=false;B.ready=false;if(deploying)exitInit(B.units);B.paused=!!(B.opts.sandbox&&B.opts.pauseAfterDeploy);battleSpeedUI();setOrderUI();toast('The battle begins.')}
 // the shaded zone and the word, while deploying (drawn on the field)
 function drawDeploy(){
   if(!B.deploy)return;const Z=deployZone();ctx.fillStyle='rgba(74,122,192,.12)';ctx.fillRect(Z.x0,Z.y0,Z.x1-Z.x0,Z.y1-Z.y0);

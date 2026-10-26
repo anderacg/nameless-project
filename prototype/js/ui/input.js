@@ -217,13 +217,15 @@ function holdCard(h,cx,cy){const tip=$('#tip'),r=cv.getBoundingClientRect(),sa=s
 // (iOS only; other browsers never send them) are stopped; the game's pinch reads pointers and windows still scroll (style.css
 // touch-action)
 ['gesturestart','gesturechange'].forEach(t=>document.addEventListener(t,e=>{if(e.cancelable)e.preventDefault()},{passive:false}));
-// the long press filling, on the field (battlehud.js drawSelection): a ring round the finger, wider than it, gold, red on an
+// The long press progress over the finished frame (render.js frame): a ring round the finger, wider than it, gold, red on an
 // enemy; full once armed. From 90 ms, so a quick tap shows nothing
-function drawTouchHold(){const l=TOUCH.lp;if(!l||l.mode!=='battle'||l.B!==B||l.box)return;const t=performance.now()-l.t0;if(!l.armed&&t<90)return;
-  const r=cv.getBoundingClientRect(),k=cv.width/Math.max(1,r.width)/(B.cam?B.cam.z:1),R=TOUCH.ring*k,col=rtsUnitAt(l.q.x,l.q.y,1)?'255,106,90':'232,185,74',f=l.armed?1:Math.min(1,t/TOUCH.hold);
-  ctx.lineWidth=3*k;ctx.strokeStyle='rgba(10,12,18,.45)';ctx.beginPath();ctx.arc(l.q.x,l.q.y,R,0,7);ctx.stroke();
-  ctx.strokeStyle='rgba('+col+','+(l.armed?1:.85)+')';ctx.beginPath();ctx.arc(l.q.x,l.q.y,R,-Math.PI/2,-Math.PI/2+f*Math.PI*2);ctx.stroke();
-  if(l.armed){ctx.fillStyle='rgba('+col+',.9)';ctx.beginPath();ctx.arc(l.q.x,l.q.y,2.5*k,0,7);ctx.fill()}ctx.lineWidth=1}
+function drawTouchHold(now=performance.now()){const l=TOUCH.lp;if(!l||G.mode!=='battle'||G.modal||l.mode!=='battle'||l.B!==B||l.box||l.off)return false;const t=now-l.t0;if(!l.armed&&t<90)return false;
+  const r=cv.getBoundingClientRect();if(!r.width||!r.height)return false;const x=l.cx-r.left,y=l.cy-r.top,R=TOUCH.ring,col=rtsUnitAt(l.q.x,l.q.y,1)?'255,106,90':'232,185,74',f=l.armed?1:clamp(t/TOUCH.hold,0,1);
+  ctx.save();try{ctx.setTransform(cv.width/r.width,0,0,cv.height/r.height,0,0);ctx.lineWidth=3;ctx.lineCap='round';ctx.strokeStyle='rgba(10,12,18,.45)';ctx.beginPath();ctx.arc(x,y,R,0,Math.PI*2);ctx.stroke();
+    ctx.strokeStyle='rgba('+col+','+(l.armed?1:.85)+')';ctx.beginPath();ctx.arc(x,y,R,-Math.PI/2,-Math.PI/2+f*Math.PI*2);ctx.stroke();
+    if(l.armed){ctx.fillStyle='rgba('+col+',.9)';ctx.beginPath();ctx.arc(x,y,2.5,0,Math.PI*2);ctx.fill()}
+  }finally{ctx.restore()}return true;
+}
 // the wheel zooms the battle toward the cursor (camera.js); on the map a step a notch, one each MAPZOOM.WHEEL ms at most (core.js)
 cv.addEventListener('wheel',e=>{if(G.mode==='battle'&&B&&!G.modal){e.preventDefault();const p=toCanvas(e);camZoom(e.deltaY<0?1:-1,p.x,p.y)}
   else if(G.mode==='world'&&!G.modal&&e.deltaY){e.preventDefault();const now=performance.now();if(now-MAPZOOM.wt>=MAPZOOM.WHEEL){MAPZOOM.wt=now;mapZoom(e.deltaY<0?1:-1)}}},{passive:false});
@@ -355,7 +357,7 @@ class MobileBattleHud{
     const drawer=(id,title,body)=>'<section id="'+id+'" class="mbh-drawer" aria-label="'+title+'" hidden><header><strong>'+title+'</strong><button type="button" class="mbh-close" aria-label="Close '+title+'">×</button></header>'+body+'</section>';
     this.root.innerHTML='<div data-bplace="status"></div><div data-bplace="cards"></div><nav class="mbh-dock" aria-label="Battle controls"><div data-bplace="pause"></div><button type="button" id="battleSpeedToggle" aria-expanded="false" aria-controls="battleSpeedChoices">1× ▴</button><button type="button" id="battleOrdersToggle" aria-expanded="false" aria-controls="battleOrderChoices">Orders ▴</button><button type="button" id="battleMoreToggle" aria-expanded="false" aria-controls="battleMoreChoices">More ▴</button><div data-bplace="menu"></div></nav>'+
       drawer('battleSpeedChoices','Battle speed','<div class="mbh-speed-grid" data-bplace="speed"></div>')+
-      drawer('battleOrderChoices','Orders & formations','<div data-bplace="orders"></div><div data-bplace="powers"></div>')+
+      drawer('battleOrderChoices','Orders & formations','<p class="mbh-help">Unit abilities affect selected troop groups. Commander abilities affect friendly groups near your hero.</p><div data-bplace="orders"></div><div data-bplace="powers"></div>')+
       drawer('battleMoreChoices','Battle view','<div class="mbh-options" data-bplace="options"><button type="button" data-bview="out">Zoom −</button><button type="button" data-bview="in">Zoom +</button><button type="button" data-bview="reset">Reset view</button></div><div data-bplace="info"></div>');
     $('#bbar').appendChild(this.root);
     this.panels=[['battleSpeedToggle','battleSpeedChoices'],['battleOrdersToggle','battleOrderChoices'],['battleMoreToggle','battleMoreChoices']].map(([button,panel])=>({button:$('#'+button),panel:$('#'+panel)}));

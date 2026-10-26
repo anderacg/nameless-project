@@ -51,7 +51,7 @@ function powerWhyNot(team,id){
   const A=COMMAND_POWERS[id];if(!B||!A||typeof A!=='object')return 'Unknown power';if(!powersOn())return 'Commander powers are off';
   if(B.over)return 'The battle is over';if(!commanderOf(team))return team?'No commander':'Your hero is not commanding (fallen, gone or absent)';
   const S=powerOf(team,id);
-  if(B.deploy)return 'Not while deploying';if(B.noMorale)return 'Morale is off';
+  if(B.deploy||B.ready)return 'Start the battle first';if(B.noMorale)return 'Morale is off';
   if(S&&B.t<S.readyAt)return 'Ready in '+Math.ceil(S.readyAt-B.t-1e-9)+' s';
   if(!(id==='rally'?rallyTargets(team):standTargets(team)).length)return id==='rally'?'No routing or wavering unit within range':'No unit within range';
   return ''}
@@ -102,12 +102,12 @@ const AI_TIP='AI (A): the AI commands the selected groups, or with none selected
 function bhudPowers(){
   const bar=typeof document!=='undefined'&&document.getElementById('bbar');if(!bar||!B)return;let el=document.getElementById('bCmd');
   if(!el){el=document.createElement('div');el.id='bCmd';el.className='cmdbar';el.setAttribute('role','group');el.setAttribute('aria-label','Commander powers (Z rally the line, S stand fast) and the AI (A)');
-    el.innerHTML='<span class="cmdh">Command</span>'+POWER_ORDER.map(id=>'<button type="button" class="cbtn" data-power="'+id+'"><i class="ccd" aria-hidden="true"></i>'+pixelSVG(POWER_ICON[id],20)+'<span class="ct" aria-hidden="true"></span><span class="k">'+COMMAND_POWERS[id].key+'</span></button>').join('')+
+    el.innerHTML='<span class="cmdh" title="Your hero commands nearby friendly groups; selecting a unit does not limit these abilities.">Commander abilities</span>'+POWER_ORDER.map(id=>'<button type="button" class="cbtn" data-power="'+id+'"><i class="ccd" aria-hidden="true"></i>'+pixelSVG(POWER_ICON[id],20)+'<span class="ct" aria-hidden="true"></span><span class="k">'+COMMAND_POWERS[id].key+'</span></button>').join('')+
       '<button type="button" class="cbtn cai" id="bAuto" aria-pressed="false" title="'+AI_TIP+'" aria-label="'+AI_TIP+'">'+pixelSVG(POWER_ICON.ai,20)+'<span class="k">A</span></button>';
     el.addEventListener('click',e=>{if(e.target.closest('#bAuto')){autoKey();return}const b=e.target.closest('[data-power]');if(b)commandPower(b.dataset.power)});
     el.addEventListener('pointerover',e=>{const b=e.target.closest('[data-power]');if(B)B.cmdHov=b?b.dataset.power:null});el.addEventListener('pointerleave',()=>{if(B)B.cmdHov=null});
     bar.appendChild(el);autoUI()}
-  const pw=powersOn();el.hidden=false;if(!pw){for(const b of el.querySelectorAll('[data-power]'))b.hidden=true;return}
+  const pw=powersOn();el.querySelector('.cmdh').textContent=pw?'Commander abilities':'AI command';el.hidden=false;if(!pw){for(const b of el.querySelectorAll('[data-power]'))b.hidden=true;return}
   const c=commanderOf(0),R=c?Math.round(commandRadius(0)):0;
   for(const b of el.querySelectorAll('[data-power]')){const id=b.dataset.power,A=COMMAND_POWERS[id],st=powerStatus(0,id);b.hidden=false;
     const off=!!st.why,cool=st.cooldown>0;b.classList.toggle('off',off);b.setAttribute('aria-disabled',String(off));b.classList.toggle('on',st.left>0);
