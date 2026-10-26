@@ -1082,3 +1082,5 @@ Normal world battles preserve actual marching positions, then visibly walk initi
 Group banners follow actual soldier positions during preparation and readiness, independently of the frozen combat clock. Interacting with an enemy that has not detected or recently seen your army offers Normal attack and Ambush attack. Normal attack uses preparation; Ambush attack starts immediately at current positions. The choice is rechecked when selected and also applies to monsters and caravans.
 
 Mobile zoom keeps the former default view as its farthest view. The starting world and sprites are about 50% larger (rounded to whole device pixels), with further zoom available. Saved wider views clamp to the new limit. Desktop zoom, menus, buttons and minimap sizing are unchanged.
+
+Wildlife awareness eyes sit beside group markers with room for their count labels at every map zoom. Start Battle keeps its centered position while pressed on touch and mouse devices.

@@ -38,6 +38,12 @@ function drawMover(e){if(VS<=1){e.f();return}const nt=TXTQ?TXTQ.length:0,nl=LIGH
 const BANNER_GAP=2;let BANNERQ=[];
 const BAND_MARKERS=new Map();
 function bandMarkerSprite(col){let s=BAND_MARKERS.get(col);if(!s){s=mkc(9,11,g=>{rect(g,col,0,0,9,9);rect(g,'#211b16',1,1,7,7);for(const [x,y] of [[2,3],[4,2],[6,3]])rect(g,'#efe2bb',x,y);rect(g,'#efe2bb',3,5,3,2);rect(g,col,4,9,1,2)});BAND_MARKERS.set(col,s)}return s}
+// Shared marker bounds include its native-resolution count, so nearby indicators leave both visible.
+function bandMarkerAt(o,m,cam){
+  const s=bandMarkerSprite(m.col),x=Math.round(o.x-cam.x)-4,y=Math.round(o.y-cam.y-m.h-BANNER_GAP-s.height),n=o.fighters??o.n;
+  const count=n>1?mapTxtPic(String(n),m.col,'center',VS,window.devicePixelRatio||1):null,right=Math.max(x+s.width,count?x+4+(count.width-count.ox+1)/VS:x+s.width);
+  return{s,x,y,right};
+}
 // (a party's banner only: a site's banner() is its camp flag's colour, structures.js)
 function bannerAt(o,f){const b=o.banner&&o.banner();if(!b||typeof b!=='object')return null;const s=bannerSprite(b,f);return{s,x:Math.round(o.x)-4,y:o.headY()-BANNER_GAP-14}}
 // Travel cover reduces detection distance; this is the same closed-eye badge used by battle concealment.
@@ -79,8 +85,8 @@ function travelDetectionState(){
 }
 const travelDetectionColor=state=>state.seen.length?state.danger?'#ef8c73':'#dbca91':state.exposure?'#d9ad57':'#82c6b3';
 function drawTravelDetection(cam){
-  if(B||P.stay)return null;const state=travelDetectionState(),k=(window.devicePixelRatio||1)/VS,V=vis();ctx.save();ctx.imageSmoothingEnabled=false;
-  for(const d of state.rows){const o=d.o;if(!inSight(o.x,o.y)||!o.inView(V))continue;const b=bannerAt(o,0),w=STEALTH_EYE.size*k,h=w*2/3,x=b?b.x+b.s.width+STEALTH_EYE.gap*k-cam.x:o.x-cam.x-w/2,y=b?b.y-cam.y:o.y-cam.y-18-h;
+  if(B||P.stay)return null;const state=travelDetectionState(),k=(window.devicePixelRatio||1)/VS,V=vis(),markers=new Map(BANNERQ.filter(q=>q.marker).map(q=>[q.o,bandMarkerAt(q.o,q.marker,cam)]));ctx.save();ctx.imageSmoothingEnabled=false;
+  for(const d of state.rows){const o=d.o;if(!inSight(o.x,o.y)||!o.inView(V))continue;const b=bannerAt(o,0),m=markers.get(o),w=STEALTH_EYE.size*k,h=w*2/3,x=b?b.x+b.s.width+STEALTH_EYE.gap*k-cam.x:m?m.right+STEALTH_EYE.gap*k:o.x-cam.x-w/2,y=b?b.y-cam.y:m?m.y:o.y-cam.y-18-h;
     drawStealthEye(d.exposure,d.sees?d.danger?'#ef8c73':'#dbca91':d.exposure?'#d9ad57':'#8f9e94',x,y,STEALTH_EYE.size);
   }
   const b=bannerAt(P,0),w=STEALTH_EYE.player*k,h=w*2/3,x=P.x-cam.x-w/2,y=(b?b.y:P.y-24)-cam.y-h-10*k,col=travelDetectionColor(state);
@@ -89,7 +95,7 @@ function drawTravelDetection(cam){
 }
 function drawBanners(cam){const now=performance.now(),still=reducedMotion(),mine=q=>q.o===P||q.o.faction==='player'?1:0;
   BANNERQ.sort((a,b)=>mine(a)-mine(b)||a.o.y-b.o.y);
-  for(const q of BANNERQ){if(q.marker){if(!inSight(q.o.x,q.o.y))continue;const m=q.marker,s=bandMarkerSprite(m.col),x=Math.round(q.o.x-cam.x),y=Math.round(q.o.y-cam.y-m.h-BANNER_GAP-s.height);ctx.drawImage(s,x-4,y);const n=q.o.fighters??q.o.n;if(n>1)txt(String(n),x,y-3,m.col,'center');continue}const B=bannerAt(q.o,still?0:Math.floor(now/420+q.o.x*.13)%2);if(!B)continue;const d=VS>1?subOf(q.o):[0,0],X=B.x-cam.x+d[0],Y=B.y-cam.y+d[1];ctx.drawImage(B.s,X,Y);
+  for(const q of BANNERQ){if(q.marker){if(!inSight(q.o.x,q.o.y))continue;const m=q.marker,r=bandMarkerAt(q.o,m,cam);ctx.drawImage(r.s,r.x,r.y);const n=q.o.fighters??q.o.n;if(n>1)txt(String(n),r.x+4,r.y-3,m.col,'center');continue}const B=bannerAt(q.o,still?0:Math.floor(now/420+q.o.x*.13)%2);if(!B)continue;const d=VS>1?subOf(q.o):[0,0],X=B.x-cam.x+d[0],Y=B.y-cam.y+d[1];ctx.drawImage(B.s,X,Y);
     if(q.label)txt(q.label[0],X+7,Y+opaqueBox(B.s)[1]-2,q.label[1],'center')}
   BANNERQ=[]}
 // (an animal's step on the map, ms a frame)
