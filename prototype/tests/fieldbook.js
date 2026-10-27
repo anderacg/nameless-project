@@ -4,6 +4,7 @@ Kit.suite(({ok})=>{
  const t=T,P=t.P,G=t.G,p=t.panel,scr=document.getElementById('screen'),q=s=>p.querySelector(s),qa=s=>[...p.querySelectorAll(s)];
  Kit.begin('soldier',23);Kit.clear();Kit.world();
  P.band='Grey <Company>';P.comps={brann:{ap:5,role:'scout'},elske:{ap:5,role:'surgeon'}};t.compInit('brann').lv=8;t.compInit('elske');
+ P.sk.lead.lv=7;// (room for the groups: an army starts at 3 slots, your hero and companions among them, and leadership adds more: core/army.js armyGroupLimit)
  const r=t.partyRoster(P);r.add('hum_foot',12);const a=r.groups[0],b=r.split(a.id,4);r.rename(a.id,'First <Guard>');P.wounded={hum_foot:3};P.woundedGroups=[{id:a.id,type:a.type,count:3}];
  t.vitals();P.morale=63;P.bsta=24;P.gold=1000;P.tp=3;
  const world=()=>{G.mode='world';t.hidePanel()},army=()=>{world();G.char='roster';t.openChar()};
@@ -13,7 +14,7 @@ Kit.suite(({ok})=>{
  ok(q('[data-army-group="'+a.id+'"]').textContent.includes('3 wounded')&&q('[data-army-group="'+b.id+'"]').textContent.includes('0'),'duplicate troop cards keep wounded with their originating group');
  P.hp=Math.floor(t.heroStats().hp/2);t.act('party-select','hero');const health=q('.fb-person-detail .fb-meter[aria-label="Health"]');ok(health&&health.textContent.includes(P.hp+' / '+t.heroStats().hp),'the hero’s card opens its sheet: current health against maximum');P.hp=t.heroStats().hp;t.renderChar();
  ok(p.textContent.includes('Grey <Company>')&&!q('Company')&&p.textContent.includes('First <Guard>')&&!q('Guard'),'player and group names stay literal text');
- t.act('char-tab','condition');ok(G.char==='condition'&&q('.fb-condition').textContent.includes('Stamina')&&q('.fb-condition').textContent.includes('Recruitment target'),'condition page exposes recovery, supply and recruitment settings');t.act('char-tab','roster');
+ t.act('char-tab','condition');ok(G.char==='condition'&&q('.fb-condition').textContent.includes('Stamina')&&/Recruitment.*Start with 3 slots/.test(q('.fb-condition').textContent)&&!q('.fb-condition').textContent.includes('Recruitment target'),'condition page exposes recovery, supply and recruitment (its group slots; no auto-reinforce target since 696de87)');t.act('char-tab','roster');
  t.act('char-tab','passengers');P.prisoners.hum_foot=1;P.gold=0;t.renderChar();ok(q('[data-act="p-recruit"]').disabled,'prisoner recruitment uses its current eligibility quote');P.gold=1000;
  world();t.openComp('brann');const roles=JSON.stringify(P.comps);t.act('party-role');t.act('fb-choice','surgeon');ok(JSON.stringify(P.comps)===roles,'choosing an occupied role is only a draft');t.act('fb-cancel');ok(JSON.stringify(P.comps)===roles&&q('[data-act="party-role"]'),'Cancel returns to the character without assigning a role');
  t.act('party-role');t.act('fb-choice','surgeon');t.act('fb-apply');ok(P.comps.brann.role==='surgeon'&&!P.comps.elske.role,'Apply transfers the occupied company role once');
@@ -41,7 +42,7 @@ Kit.suite(({ok})=>{
   const fit=label=>{p.style.animation='none';ok(inside(p)&&p.scrollWidth<=p.clientWidth+1&&qa('.nav .btn').every(inside),label+' frame and navigation fit '+w+' × '+h);ok(!q('select'),label+' has no dropdown at '+w+' × '+h)};
   world();t.openChar();t.act('party-select','hero');fit('Hero');
   army();fit('Army');const card=q('.fb-unit'),viewport=q('.fb-unit-grid'),cr=card.getBoundingClientRect(),vr=viewport.getBoundingClientRect();ok(vr.height>=80&&cr.width>=44,'Army cards have usable space at '+w+' × '+h);
-  t.act('party-select',a.id);ok(qa('.fb-inspector-acts .btn').length===3&&qa('.fb-inspector-acts .btn').every(inside)&&!q('.fb-actions'),'Army actions are in the group’s page, on screen, at '+w+' × '+h);
+  t.act('party-select',a.id);ok(qa('.fb-inspector-acts .btn').map(b=>b.textContent).join()==='Manage Group,Development'&&qa('.fb-inspector-acts .btn').every(inside)&&!q('.fb-actions'),'Army actions (Manage Group, Development: Reinforce gone in e429a13) are in the group’s page, on screen, at '+w+' × '+h);
   world();t.openComp('brann');fit('Companion');
   world();t.openInv();fit('Inventory');ok(qa('.fb-item-actions .btn').every(inside),'item actions stay pinned at '+w+' × '+h);t.act('inv-view','equipment');const rings=qa('.fb-equipment .ring');
   const targets=rings.map(e=>e.getBoundingClientRect()),overlap=targets.some((a,i)=>targets.slice(i+1).some(b=>a.left<b.right&&a.right>b.left&&a.top<b.bottom&&a.bottom>b.top));

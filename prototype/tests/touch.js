@@ -10,7 +10,7 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t
   const cv=document.querySelector('canvas'),TO=t.TOUCH,near=(a,b,e=1)=>Math.abs(a-b)<=e,later=()=>performance.now()+TO.hold+50;
   // (client points: from the field (battle), the canvas's own pixels, or the world map)
   const fromF=(x,y)=>{const p=t.fromField({x,y});return fromC(p.x,p.y)},fromC=(x,y)=>{const r=cv.getBoundingClientRect();return{clientX:r.left+x*r.width/cv.width,clientY:r.top+y*r.height/cv.height}};
-  const fromW=(wx,wy)=>fromC(wx-G.cam.x,wy-G.cam.y);
+  const fromW=(wx,wy)=>fromC((wx-G.cam.x)*cv.width/t.VW,(wy-G.cam.y)*cv.height/t.VH);// (the map's canvas may be drawn finer than its game px: core.js setRes)
   const fire=(type,c,id=1,kind='touch',button=type==='pointermove'?-1:0,extra={})=>cv.dispatchEvent(new PointerEvent(type,{...c,pointerId:id,isPrimary:id===1,pointerType:kind,button,bubbles:true,cancelable:true,...extra}));
   const tap=(c,id=1)=>{fire('pointerdown',c,id);fire('pointerup',c,id)};
   const calls=[],orig={},methods=['moveTo','attack','queueTo'];

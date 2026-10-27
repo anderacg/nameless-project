@@ -17,8 +17,10 @@ const wrong=()=>{if(bar.hidden)return [];const B=t.B,w=[],gs=B?['all',...t.playe
  if(qa('.obtn[data-order],.obtn[data-flag],.obtn[data-form]').some(b=>!b.querySelector('svg')))w.push('a button with no icon');
  const live=k=>B.units.filter(u=>u.team===k&&u.hp>0).length;if(q('#bMine').textContent!==String(live(0))||q('#bFoe').textContent!==String(live(1)))w.push('numbers '+q('#bMine').textContent+'/'+q('#bFoe').textContent+' for '+live(0)+'/'+live(1));
  if(q('#bField').textContent!==B.env.name)w.push('field "'+q('#bField').textContent+'"');
- if(B.deploy!==/Deploying/.test(q('#bStatus').textContent))w.push('status "'+q('#bStatus').textContent+'"');
- if(q('#bPause').textContent!==(B.deploy?'⚔ Begin':B.paused?'▶ Play':'⏸ Pause'))w.push('pause "'+q('#bPause').textContent+'"');
+ // (a battle opens ready, paused for Start Battle (f8cfe32); forming up first, as armies walk to their places (c0ba7c6))
+ const st=q('#bStatus').textContent,want=B.over?null:B.muster?.active?/^(Forming up|Preparation paused)/:B.ready?/^Ready · Start Battle/:B.deploy?/Deploy/:null;
+ if(want?!want.test(st):/Deploy|Ready/.test(st))w.push('status "'+st+'"');
+ if(q('#bPause').textContent!==(!B.over&&(B.ready||B.deploy)?'▶ Start':B.paused?'▶ Play':'⏸ Pause'))w.push('pause "'+q('#bPause').textContent+'"');
  if(qa('[data-bspeed]').filter(b=>b.getAttribute('aria-pressed')==='true').map(b=>+b.dataset.bspeed).join()!==String(B.speed))w.push('speed buttons');
  if(q('#bAuto').classList.contains('on')!==t.aiAll())w.push('AI button');
  if(!q('#bInfo').textContent.trim())w.push('no details');return w};
@@ -34,7 +36,7 @@ try{
   seen.observe(bar,{attributes:true,attributeFilter:['hidden']});
   try{t.act('fight');for(let i=0;i<240&&!(t.B&&G.mode==='battle'&&!bar.hidden);i++){const w=wrong();if(w.length)bad.push(w.join('; '));await next();frames++}
    const start=frames;for(let i=0;i<20;i++){await next();frames++;const w=wrong();if(w.length)bad.push(w.join('; '))}
-   ok(shown&&!shown.w.length&&!bad.length&&!bar.hidden&&frames>start,name+': hidden while the field is made ('+start+' frames), complete from the moment it shows'+(t.B&&t.B.deploy?' (Deploying, ⚔ Begin)':'')+(ai?' (AI lit)':'')+' and for 20 frames after'+(shown&&shown.w.length?': at first '+shown.w.join('; '):'')+(bad.length?': '+[...new Set(bad)].slice(0,3).join(' | '):''))}
+   ok(shown&&!shown.w.length&&!bad.length&&!bar.hidden&&frames>start,name+': hidden while the field is made ('+start+' frames), complete from the moment it shows'+(t.B&&t.B.deploy?' (deploying, ready: ▶ Start)':t.B&&t.B.ready?' (ready: ▶ Start)':'')+(ai?' (AI lit)':'')+' and for 20 frames after'+(shown&&shown.w.length?': at first '+shown.w.join('; '):'')+(bad.length?': '+[...new Set(bad)].slice(0,3).join(' | '):''))}
   finally{seen.disconnect();t.LOADING.sync=sync0}}
  // ---- in one go (LOADING.sync): shown at once, complete, as before
  ev('BDEPLOY.on=false;BAUTO.on=false');enc();t.act('fight');{const w=wrong().filter(x=>!/canvas|screen/.test(x));ok(!bar.hidden&&G.mode==='battle'&&!w.length,'started in one go (the tests\' way): shown at once, complete'+(w.length?': '+w.join('; '):''))}

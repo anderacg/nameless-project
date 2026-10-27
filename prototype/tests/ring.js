@@ -3,7 +3,7 @@
 // apply there; a press does nothing yet: let go before it opens, it travels (the owner, 2026-10-22: click or hold); a move
 // before it opens calls the ring off, and letting go still travels; let go over a button picks it, or let go first
 // and tap one; Esc, a right-click or a tap outside closes it, travelling nowhere. A short click on another party opens its own
-// ring at it (ui/input.js partyRing: Attack or Meet, Follow, Look), chasing nothing yet; held on it, the map's with Follow. Only what applies: Make camp or Break camp,
+// ring at it (ui/input.js partyRing: Attack or Meet, Follow, Look), chasing nothing yet; held on it, the map's with Follow. Only what applies: Hunting area (world/hunting.js), Make camp or Break camp,
 // Travel here, By road (world.js roadGo: by-road mode on, and you go there; on, it turns it off) and Hurry here on the ground (Stop
 // hurrying while you hurry), Fill waterskins at the water's edge or a holding's well (lit while they fill; "No empty waterskins" with none to fill), Drink liquor with liquor, Look on something. A mode that is on (camped, by
 // road, hurrying) is lit: the button's class on, a gold glow; the rest are not. A finger's long press opens it too, and its Look
@@ -31,12 +31,12 @@ try{
  // ---- held still: the ring, the travel put back
  reset();{const wx=P.x+60,p=cl(wx,P.y+20);down(p);await held();
   ok(!!ring()&&P.tx==null&&document.querySelector('.aring'),'held still '+R.hold+' ms: the ring opens, travelling nowhere');
-  ok(labels().join()==='Make camp,Travel here,By road,Hurry here','on bare ground: '+labels().join(', '));
+  ok(labels().join()==='Hunting area,Make camp,Travel here,By road,Hurry here','on bare ground: '+labels().join(', '));
   const b=btn('Travel here');up(b);ok(!ring()&&P.tx!=null&&Math.abs(P.tx-wx)<2,'let go over Travel here: you travel there, the ring closed ('+(b&&b.el.textContent)+', '+P.tx+' for '+wx+')')}
  // ---- By road: by-road mode on and you travel there; it stays on for a plain click after it, and the ring lights it; picked
  // again, it is off
  const lit=()=>[...document.querySelectorAll('.aring .ar-btn.on')].map(b=>b.textContent),glow=l=>{const b=btn(l);return b?getComputedStyle(b.el).boxShadow:''};
- reset();t.setByRoad(false);{const wx=P.x+60,p=cl(wx,P.y+20);down(p);await held();const none=lit().length===0;const said=G.msgs.length;up(btn('By road'));const m=G.msgs.slice(said).map(q=>q.m).join(' ');
+ reset();t.setByRoad(false);{const wx=P.x+60,p=cl(wx,P.y+20);down(p);await held();const none=lit().length===0;const said=new Set(document.querySelectorAll('#log > div'));up(btn('By road'));const m=[...document.querySelectorAll('#log > div')].filter(d=>!said.has(d)).map(d=>d.textContent).join(' ');// (on the screen: a system line, no journal's)
   ok(none&&!ring()&&P.tx!=null&&Math.abs(P.tx-wx)<2&&P.byRoad===true&&/keeps to the roads/.test(m),'let go over By road (none lit before): by-road mode on, you travel there ('+m+')');
   t.worldGo(wx,P.y);ok(P.byRoad===true,'and it stays on for a plain click after it');P.tx=null;
   down(p);await held();up(p);const b=btn('By road');
@@ -62,7 +62,7 @@ try{
  // ---- let go first, then tap one
  reset();{const p=cl(P.x+60,P.y+20);down(p);await held();up(p);ok(!!ring(),'let go on the spot: the ring stays');btn('Make camp').el.click();ok(!ring()&&!!P.camp,'then tap Make camp: your band makes camp')}
  // ---- in camp: Break camp; with liquor: Drink liquor; by water: Fill waterskins
- {const p=cl(P.x+60,P.y+20);down(p);await held();ok(labels()[0]==='Break camp'&&!labels().includes('Make camp')&&lit().join()==='Break camp','in camp it offers Break camp, lit ('+labels().join(', ')+')');
+ {const p=cl(P.x+60,P.y+20);down(p);await held();ok(labels().filter(l=>l!=='Hunting area')[0]==='Break camp'&&!labels().includes('Make camp')&&lit().join()==='Break camp','in camp it offers Break camp, lit ('+labels().join(', ')+')');
   t.ActionRing.close();P.camp=null;up(p)}
  reset();bag({liquor:5});{const p=cl(P.x+60,P.y+20);down(p);await held();up(p);ok(labels().includes('Drink liquor')&&!labels().includes('Fill waterskins'),'carrying liquor: Drink liquor; far from water, no Fill waterskins');
   btn('Drink liquor').el.click();ok(t.BAND.liquor===true,'Drink liquor: your band drinks its liquor first');down(p);await held();up(p);ok(lit().join()==='Water first','and the ring lights Water first while it does ('+lit().join()+')');t.ActionRing.close();t.BAND.liquor=false}

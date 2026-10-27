@@ -12,14 +12,15 @@ try{const t=T,G=t.G,P=t.P,W=t.W;t.act('begin','soldier');G.mode='world';G.modal=
    if(dry&&t.TOWNS.every(z=>Math.hypot(z.x-x,z.y-y)>260)&&W.sites.every(s=>Math.hypot(s.x-x,s.y-y)>120))spot=[x,y]}
  ok(!!spot,'an open spot for the fixture');P.x=spot[0];P.y=spot[1];t.reveal();
  W.parties.forEach(p=>{if(p!==P){p.x=-9999;p.y=-9999}});W.critters=[];W.folk=[];W.caravans=[];W.refugees=[];W.ships=[];
- const l=W.lords[0];Object.assign(l,{inside:null,dead:false,x:P.x+40,y:P.y,state:'march'});l.fight=null;
+ const l=W.lords[0];Object.assign(l,{inside:null,dead:false,x:P.x+40,y:P.y,state:'march'});l.fight=null;t.KNOWLEDGE.lord(l);// (met: his name on his card, 8b9e063)
  const face=d=>{t.faceDir(l);l.x+=d;t.faceDir(l)};face(1);
  // ---- the lord's label
- const labels=[],txt0=window.txt;window.txt=function(...a){if(!t.TXTQ)labels.push(a);return txt0.apply(this,a)};
- const ys=[];for(const fr of [0,1]){performance.now=()=>fr*170+5;labels.length=0;t.drawWorld();const B=t.bannerAt(l,0),bx=B.x-G.cam.x+7,L=labels.find(a=>a[0]===String(l.size)&&Math.abs(a[1]-bx)<2);
+ // (the map's labels are queued and drawn last at the screen's own resolution: sprites.js mapTxt)
+ const labels=[],txt0=window.mapTxt;window.mapTxt=function(...a){labels.push(a);return txt0.apply(this,a)};
+ const ys=[];for(const fr of [0,1]){performance.now=()=>fr*170+5;labels.length=0;t.drawWorld();const B=t.bannerAt(l,0),bx=B.x-G.cam.x+7,L=labels.find(a=>a[0]===String(l.fighters)&&Math.abs(a[1]-bx)<2);
    const top=B.y-G.cam.y+t.opaqueBox(B.s)[1];ys.push(L?L[2]:null);
-   ok(!!L&&L[2]+1<top,'step '+fr+': the lord’s troop count ('+l.size+') is drawn clear above his banner (label row '+(L&&L[2])+', banner top '+top+')')}
- window.txt=txt0;delete performance.now;
+   ok(!!L&&L[2]+1<top,'step '+fr+': the lord’s troop count ('+l.fighters+', he among them) is drawn clear above his banner (label row '+(L&&L[2])+', banner top '+top+')')}
+ window.mapTxt=txt0;delete performance.now;
  ok(ys[0]!=null&&ys[0]===ys[1],'and it stays still as his horse steps ('+ys.join(' / ')+')');
  // ---- clicks and hovers on a lord's whole horse
  // (a picture's drawn pixels in world places: the cell's top left and whether it faces left)

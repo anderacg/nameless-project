@@ -6,6 +6,8 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),SP=Storage.pr
 try{
  const t=T,G=t.G,P=t.P;try{localStorage.clear()}catch(e){}
  const key=k=>localStorage.getItem('ashmark.'+k),panel=()=>document.getElementById('panel').innerHTML;
+ // (the newest line on screen: town and system lines are toasts, not the journal's)
+ const toastLast=()=>{const l=document.querySelector('#log')?.lastElementChild;return l?l.textContent:''};
  // the readers as they were before the table (the stored text → the value), and the defaults
  const sp=[.5,1,2,5],OLD={bpause:s=>s!=='0',grid:s=>s==='1',bspeed:s=>sp.includes(+s)?+s:1,hpbars:s=>s!=='0',blood:s=>s!=='0',guide:s=>s!=='0',bdeploy:s=>s!=='0',autoskills:s=>s!=='0',bauto:s=>s==='1',bfog:s=>s!=='0',ambient:s=>s!=='0',opaths:s=>['all','sel','off'].includes(s)?s:'sel'};
  const DEF={bpause:true,grid:false,bspeed:1,hpbars:true,blood:true,guide:true,bdeploy:true,autoskills:true,bauto:false,bfog:true,ambient:true,opaths:'sel'};
@@ -28,10 +30,11 @@ try{
  t.setBattleSpeed(3,true);ok(key('bspeed')==='0.5'&&t.BSPEED.v===.5,'a speed not offered is ignored');t.setBattleSpeed(1,true);ok(key('bspeed')==='1'&&t.BSPEED.v===1,'and back to 1');
  // the Settings buttons: one handler, the page redraws with the button on
  t.showTitle('settings');{const bad=[];
-  for(const [a,arg,v] of [['bpause','off',false],['bpause','on',true],['grid','on',true],['grid','off',false],['blood','off',false],['blood','on',true],['hpbars','off',false],['hpbars','on',true],['bdeploy','off',false],['bdeploy','on',true],['guide','off',false],['guide','on',true],['bfog','off',false],['bfog','on',true],['ambient','off',false],['ambient','on',true],['opaths','all','all'],['opaths','off','off'],['opaths','sel','sel'],['bspeed','2',2],['bspeed','0.5',.5],['bspeed','1',1]]){
+  for(const [a,arg,v] of [['grid','on',true],['grid','off',false],['blood','off',false],['blood','on',true],['hpbars','off',false],['hpbars','on',true],['bdeploy','off',false],['bdeploy','on',true],['guide','off',false],['guide','on',true],['bfog','off',false],['bfog','on',true],['ambient','off',false],['ambient','on',true],['opaths','all','all'],['opaths','off','off'],['opaths','sel','sel'],['bspeed','2',2],['bspeed','0.5',.5],['bspeed','1',1]]){
    t.act(a,arg);const b=document.querySelector('#panel [data-act="'+a+'"][data-arg="'+arg+'"]');
    if(!(t.prefGet(a)===v&&key(a)===(typeof v==='boolean'?(v?'1':'0'):String(v))&&G.menu==='settings'&&b&&b.classList.contains('on')))bad.push(a+' '+arg)}
   ok(!bad.length,'each Settings button sets, stores and shows its setting'+(bad.length?': wrong for '+bad.join(', '):''))}
+ ok(!document.querySelector('#panel [data-act="bpause"]')&&/Battle preparation.*Start Battle/.test(panel()),'battle preparation: no pause button, battles open paused for Start Battle (f8cfe32)');
  t.act('econmode','light');ok(t.ECON.mode==='light'&&localStorage.getItem('ashmark.econ')==='light'&&G.menu==='settings','the realm economy button still sets its mode');t.act('econmode','full');
  ok(t.settingAct('autoskills','on')===false&&t.settingAct('bauto','on')===false&&t.settingAct('tab','trade')===false,'actions that are no Settings button pass on');
  // storage blocked: the settings still change for this session; reading gives the defaults
@@ -45,11 +48,11 @@ try{
  t.act('begin','soldier');G.quietEvents=true;G.mode='world';G.modal=false;t.hidePanel();
  t.startEncounter({kind:'party',ref:t.asParty({x:P.x,y:P.y,cool:0,troops:['militia','militia','militia']}),n:3,list:['militia','militia','militia']});t.act('fight');
  {t.setAuto(true,true);const on=key('bauto')==='1'&&t.BAUTO.on===true;t.setAuto(false,true);ok(t.B&&on&&key('bauto')==='0'&&t.BAUTO.on===false,'setAuto writes ashmark.bauto 1 or 0 and sets BAUTO.on')}
- t.setAutoSkills(false);ok(G.msgs[G.msgs.length-1].m==='Auto skills off: your hero and companions use no skills.'&&key('autoskills')==='0','Auto skills in battle: stored and said');t.setAutoSkills(true);
+ t.setAutoSkills(false);ok(toastLast()==='Auto skills off: your hero and companions use no skills.'&&key('autoskills')==='0','Auto skills in battle: stored and said');t.setAutoSkills(true);
  t.B.over=true;t.B.endT=0;t.updateBattle(.01);t.act('cont');while(G.mode==='perk')t.act('perk',G.perkOffer[0]);
  // town actions through act(), each by its name
  t.act('begin','soldier');G.quietEvents=true;P.troops={};P.gold=5000;G.day=31;G.lastTown=null;
- const ash=t.townBy('Ashford'),last=()=>G.msgs[G.msgs.length-1].m;t.ensureEcon(ash);Object.assign(ash.stock,{iron:40,copper:10,tin:10,timber:40,grain:50,arrows:200});
+ const ash=t.townBy('Ashford'),last=toastLast;t.ensureEcon(ash);Object.assign(ash.stock,{iron:40,copper:10,tin:10,timber:40,grain:50,arrows:200});
  t.W.shops=t.W.shops||{};delete t.W.shops[ash.name];P.rep[ash.name]=90;ash.vol=5;
  {G.town=null;const g0=P.gold,n0=t.goodN('grain'),r=t.act('buy','grain:1');ok(r===undefined&&P.gold===g0&&t.goodN('grain')===n0,'outside a town a town action does nothing')}
  t.enterTown(ash);t.act('tab','trade');ok(G.mode==='town'&&G.town.tab==='trade'&&/data-act="buy"/.test(panel()),'tab: the trade tab');

@@ -1,7 +1,8 @@
 'use strict';
 Kit.suite(({ok})=>{
  const t=T,G=t.G,Z=t.MAPZOOM;window.requestAnimationFrame=()=>0;Kit.begin('soldier',1);Kit.clear();Kit.world();t.GUIDE.on=false;
- t.prefSet('mapzoom',0);t.frame();const dpr=devicePixelRatio||1,phone=Z.phone(innerWidth,innerHeight),s0=Z.s0,defaultScale=t.VS,oldHi=Math.max(s0,Math.floor(Math.min(innerWidth*dpr/(phone?240:320),innerHeight*dpr/(phone?120:180)))),formerDefault=phone?Math.min(oldHi,s0*3):s0;
+ t.prefSet('mapzoom',0);t.frame();// (the screen in device pixels as fitScreen measures it: the tests' fixed view, 576 x 360 at s0, unless ?v=)
+ const dpr=devicePixelRatio||1,phone=Z.phone(innerWidth,innerHeight),s0=Z.s0,defaultScale=t.VS,dw=t.FIXED_VIEW?576*s0:innerWidth*dpr,dh=t.FIXED_VIEW?360*s0:innerHeight*dpr,oldHi=Math.max(s0,Math.floor(Math.min(dw/(phone?240:320),dh/(phone?120:180)))),formerDefault=phone?Math.min(oldHi,s0*3):s0;
  const sizes=()=>{const dock=document.querySelector(phone?'.mwh-dock':'.dock'),r=dock.getBoundingClientRect(),mini=t.worldMiniRect();return{width:r.width,height:r.height,miniWidth:mini.w*t.VS/dpr,miniHeight:mini.h*t.VS/dpr,hud:t.HUD_PX}};
  const original=sizes(),same=(a,b)=>Math.abs(a-b)<=1.1;
  if(phone){
