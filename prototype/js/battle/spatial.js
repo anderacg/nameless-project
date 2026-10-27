@@ -9,17 +9,19 @@
    any soldier added after the build), sorts it by B.units index, then puts each through the original test with the original
    arithmetic: the same soldiers in the same order as the full scan, so the same pick, the same ties and the same float sums.
    Cell sizes are powers of two, so a cell's edges are exact in floating point (nearest's stopping bound relies on it) */
-const SPATIAL={cell:32,jostle:16};
+// (sparse: a grid with more than this many cells a filed man is searched man by man: nearest)
+const SPATIAL={cell:32,jostle:16,sparse:4};
 let SG=null;
 // (ascending, in place: a few dozen indices are sorted fastest by insertion)
 const sortIx=a=>{if(a.length>48)return a.sort((x,y)=>x-y);for(let i=1;i<a.length;i++){const v=a[i];let j=i-1;while(j>=0&&a[j]>v){a[j+1]=a[j];j--}a[j+1]=v}return a};
 class SpatialGrid{
   // only: which of units to file (default: the living); every index filed or not is still offered while it is loose or late
   constructor(units,cs,only){this.cs=cs;this.inv=1/cs;this.C=this.R=0;this.reset(units,only)}
-  // (filed afresh; the buckets of the same field kept and emptied)
+  // (filed afresh; the buckets of the same field kept, and those filled since the last filing (used: each marked with the filing it
+  // is in, stamp) emptied: a world battle's field has thousands, nearly all empty)
   reset(units,only){
     const C=Math.max(1,Math.ceil(BW*this.inv)),R=Math.max(1,Math.ceil(BH*this.inv));
-    if(C!==this.C||R!==this.R){this.C=C;this.R=R;this.by={};this.teams=[]}else for(const t of this.teams)for(const b of this.by[t])b.length=0;
+    if(C!==this.C||R!==this.R){this.C=C;this.R=R;this.by={};this.teams=[];this.used=[]}else{for(const b of this.used)b.length=0;this.used.length=0}this.stamp=(this.stamp||0)+1;
     this.U=units;this.n=units.length;this.at=new Int32Array(this.n).fill(-1);this.loose=-1;this.reach=11;this.memo=new Map();// (memo: actors.js targetMembersOf)
     for(let i=0;i<this.n;i++){const u=units[i];if(only?only(u):u.hp>0)this.put(i);const r=u.s&&u.s.reach||11;if(r>this.reach)this.reach=r}
     return this}
@@ -27,7 +29,7 @@ class SpatialGrid{
   cx(x){const c=Math.floor(x*this.inv);return c>=0?(c<this.C?c:this.C-1):0}
   cy(y){const c=Math.floor(y*this.inv);return c>=0?(c<this.R?c:this.R-1):0}
   cells(t){let c=this.by[t];if(!c){c=this.by[t]=Array.from({length:this.C*this.R},()=>[]);this.teams.push(t)}return c}
-  put(i){const u=this.U[i],k=this.cy(u.y)*this.C+this.cx(u.x);this.at[i]=k;this.cells(u.team)[k].push(i)}
+  put(i){const u=this.U[i],k=this.cy(u.y)*this.C+this.cx(u.x),b=this.cells(u.team)[k];this.at[i]=k;if(b.stamp!==this.stamp){b.stamp=this.stamp;this.used.push(b)}b.push(i)}
   take(i){const k=this.at[i];if(k<0)return;const b=this.by[this.U[i].team][k],j=b.indexOf(i);b[j]=b[b.length-1];b.pop();this.at[i]=-1}
   // (moved: into the bucket it stands in now)
   refile(i){if(i>=this.n||this.at[i]<0)return;const u=this.U[i],k=this.cy(u.y)*this.C+this.cx(u.x);if(k!==this.at[i]){this.take(i);this.put(i)}}
@@ -51,6 +53,8 @@ class SpatialGrid{
     const U=this.U,ux=u.x,uy=u.y,team=u.team,c0=this.cx(ux),r0=this.cy(uy),C=this.C,cs=this.cs;let best=null,bd=1e9,bi=-1;
     const look=b=>{for(let q=0;q<b.length;q++){const i=b[q],e=U[i];if(e.hp<=0||!battleEnemy(team,e)||!ArmyTactics.local(u,e))continue;const d=((e.x-ux)**2+(e.y-uy)**2)*(e.rout?9:1);if(d<bd||d===bd&&i<bi){bd=d;best=e;bi=i}}};
     const extra=[];if(this.loose>=0)extra.push(this.loose);for(let i=this.n;i<U.length;i++)extra.push(i);look(extra);
+    // (a sparse grid, sparse cells to every man: a world battle's wide field: each filed man looked at once, as the rings would)
+    if(this.n*SPATIAL.sparse<C*this.R){const all=[];for(let i=0;i<this.n;i++)if(this.at[i]>=0)all.push(i);look(all);return best}
     const K=Math.max(c0,C-1-c0,r0,this.R-1-r0);
     for(let k=0;k<=K;k++){
       if(best&&k>1&&bd<((k-1)*cs)**2)break;

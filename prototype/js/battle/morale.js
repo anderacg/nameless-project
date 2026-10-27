@@ -83,7 +83,7 @@ class BattleResolve{
     this.routed=false;this.rallied=false;this.shattered=false;this.breakT=0;this.state='steady';this.confidenceBlockedUntil=0;
   }
   get control(){return this.groupId===null?null:B.groups[this.groupId]}
-  members(){return B.units.filter(u=>!steady(u)&&(this.groupId===null?u.id===this.unitId:u.grp===this.groupId))}
+  members(){return B.units.filter(u=>(this.groupId===null?u.id===this.unitId:u.grp===this.groupId)&&!steady(u))}// (its own first: the cheaper test)
   live(){return this.members().filter(u=>u.hp>0&&!u.left)}
   bucket(){const at=Math.floor(B.t/GROUP_RESOLVE.bucket)*GROUP_RESOLVE.bucket;this.events=this.events.filter(e=>B.t-e.at<=GROUP_RESOLVE.history);let e=this.events.at(-1);if(!e||e.at!==at){e={at,in:0,out:0,missiles:0,deaths:0};this.events.push(e)}return e}
   recent(){return this.events.filter(e=>B.t-e.at<GROUP_RESOLVE.window).reduce((n,e)=>({in:n.in+e.in,out:n.out+e.out,missiles:n.missiles+e.missiles}),{in:0,out:0,missiles:0})}
