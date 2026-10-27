@@ -28,7 +28,8 @@ try{
   ok(t.cv.width===t.VW*S&&t.cv.height===t.VH*S&&t.CVS===S,'the world map\'s canvas is the screen\'s own pixels: '+t.cv.width+' x '+t.cv.height+' ('+S+' a game pixel)');
   ok(!isInt(C.x)&&isInt(C.x*S)&&isInt(C.y*S)&&Math.abs(C.x-(P.x-t.VW/2))<=.5/S&&Math.abs(C.y-(P.y-t.VH/2))<=.5/S,'the camera follows you to 1/'+S+' of a game pixel ('+C.x.toFixed(4)+', '+C.y.toFixed(4)+')');
   // ---- no picture is resampled: each drawn at its own size, the transform a whole VS (a mirror allowed), on device pixels
-  {const bad=calls.filter(([img,a,m])=>{const scale=img.deviceText?1:S,w=img.width,h=img.height,sz=a.length===2||(a.length===8&&a[2]===a[6]&&a[3]===a[7]);
+  // (art made at the display's density, the awareness eye's (a370b85), is drawn at its size / VS: one of its pixels, one device pixel)
+  {const bad=calls.filter(([img,a,m])=>{const w=img.width,h=img.height,dense=a.length===4&&Math.abs(Math.abs(a[2]*m.a)-w)<EPS&&Math.abs(a[3]*m.d-h)<EPS,scale=img.deviceText?1:S,sz=dense||a.length===2||(a.length===8&&a[2]===a[6]&&a[3]===a[7]);
     return !sz||Math.abs(Math.abs(m.a)-scale)>EPS||Math.abs(m.d-scale)>EPS||m.b||m.c||!isInt(m.e+m.a*(a.length===8?a[4]:a[0]))||!isInt(m.f+m.d*(a.length===8?a[5]:a[1]))});
    ok(calls.length>8&&!bad.length,'every picture on the screen ('+calls.length+') is drawn at its own size, scaled by '+S+' whole (native labels at 1:1), on whole device pixels: never resampled'+(bad.length?': '+bad.slice(0,3).map(([img,a,m])=>img.width+'x'+img.height+' '+a.map(v=>+(+v).toFixed(3)).join(',')+' @'+[m.a,m.d,m.e,m.f].map(v=>+v.toFixed(3)).join(',')).join('; '):''))}
   // ---- what stands keeps to the grid: the screen in whole S x S blocks on the camera's fraction, away from anyone who moves
