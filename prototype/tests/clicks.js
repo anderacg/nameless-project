@@ -28,7 +28,8 @@ try{
  reset();W.monsters=[];const s=W.sites.find(x=>x.type==='shrine');s.seen=true;P.x=s.x+6;P.y=s.y;G.lastSite=s;t.updateWorld(.01);ok(G.mode==='world','standing on a site you left does not reopen it');
  click(s.x,s.y-4);ok(G.mode==='site'&&G.site===s,'clicking it opens the shrine again');t.act('site-leave');
  // a herd
- reset();const h={crit:true,id:'deer',x:P.x+10,y:P.y,hx:P.x,hy:P.y,n:3,t:0,a:0,dir:1,tire:0,cool:4};W.critters=[h];const m0=t.goodN('meat');click(h.x,h.y-4);ok(t.goodN('meat')>m0,'clicking wild game beside you hunts it at once');
+ reset();const h={crit:true,id:'deer',x:P.x+10,y:P.y,hx:P.x,hy:P.y,n:3,t:0,a:0,dir:1,tire:0,cool:4};W.critters=[h];click(h.x,h.y-4);{const go=document.querySelector('#panel [data-act="hunt-start"]');// (a hunt is a world battle of your whole army, from its Hunting area window: 4b309d5)
+  ok(G.mode==='dialog'&&t.WildHunt.choice&&go&&!go.disabled,'clicking wild game beside you opens its hunt at once (the Hunting area, Begin hunt ready)');t.act('hunt-back')}
  // (livestock is never clicked: it lives in its pasture, drawn with it; a click there finds what stands behind it)
  reset();const cw={crit:true,id:'cow',x:P.x+10,y:P.y,hx:P.x,hy:P.y,n:3,home:'Ashford',t:0,a:0,dir:1,tire:0,cool:4,milked:0};W.critters=[cw];click(cw.x,cw.y-4);ok(G.mode!=='herd'&&t.pickAt(cw.x,cw.y-4)!==cw,'a herd of livestock is not clicked: nothing to buy');
  // a click on something far away walks you there; you meet it only on contact
