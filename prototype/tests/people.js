@@ -37,7 +37,8 @@ try{
  ok(t.repAt(wt.name)<wr&&wt.fear>G.day&&t.workerScale(wt)<=ws*.5+1e-9,'robbing a worker costs reputation and frightens the fields: half the work for days');t.act('dlg-ok');
  for(let i=0;i<60;i++)t.updateFolk(.05);ok(!W.folk.some(x=>x.home===wt.name&&(x.st==='out'||x.st==='town')),'and its workers on the road hurry back to their estates');
  wt.fear=0;W.folk=[];t.FOLK_SEEN.clear();for(let i=0;i<300;i++)t.updateFolk(.05);const f2=W.folk.find(x=>x.home===wt.name);
- if(f2){world();P.x=f2.x;P.y=f2.y;const pp=wt.pop,tc=t.troopCount();t.interact(f2);t.act('wk-press');ok(t.troopCount()===tc+1&&wt.pop===pp-1&&!W.folk.includes(f2),'press-ganging a worker adds a soldier and takes one of '+wt.name+'\'s people');t.act('dlg-ok')}
+ if(f2){world();P.x=f2.x;P.y=f2.y;const pp=wt.pop,tc=t.troopCount();const kind=t.recruitKind(wt,f2),had=P.troops[kind]||0;t.interact(f2);t.act('wk-press');ok(t.troopCount()===tc+1&&wt.pop===pp-1&&!W.folk.includes(f2),'press-ganging a worker adds a soldier and takes one of '+wt.name+'\'s people');
+  ok(t.ST[kind].peasant===t.tradeOf(f2)&&t.ST[kind].tier===0&&(P.troops[kind]||0)===had+1,'he joins as what he is ('+t.ST[kind].n+', tier '+t.ST[kind].tier+'), not as a levy');t.act('dlg-ok')}
  else ok(false,'a second worker to press-gang');
  // ---- estates
  wt.fear=0;const ek=Object.keys(t.bldSpots(wt)).find(k=>t.bldLv(wt,k)),sp=t.bldSpots(wt)[ek];world();P.x=sp.x+20;P.y=sp.y+20;

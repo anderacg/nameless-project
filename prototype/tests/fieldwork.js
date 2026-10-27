@@ -100,6 +100,7 @@ try{
   t.drawWorld();const cv=q('canvas'),r=cv.getBoundingClientRect();{const e={clientX:r.left+(f.x-G.cam.x)*r.width/t.VW,clientY:r.top+(f.y-4-G.cam.y)*r.height/t.VH,pointerType:'mouse',bubbles:true};cv.dispatchEvent(new PointerEvent('pointerdown',e));cv.dispatchEvent(new PointerEvent('pointerup',e))}
   ok(G.mode==='dialog'&&G.wk===f&&q('.rkact[data-act="wk-hire"]')&&q('.rkact[data-act="wk-ask"][data-arg="rob"]')&&q('.rkact[data-act="wk-ask"][data-arg="press"]')&&document.getElementById('panel').textContent.includes(t.cap1(t.an(f.job))+' of Ashford'),
     'clicking him opens his talk: Hire, Rob, Press-gang ('+f.name+', '+f.job+')');
+  {const k=t.recruitKind(ash,f);ok(new RegExp('as an? '+t.ST[k].n.toLowerCase()).test(document.getElementById('panel').textContent)&&!/as an? levy/i.test(document.getElementById('panel').textContent),'Hire and Press-gang take him on as what he is: '+t.ST[k].n.toLowerCase()+', not a levy')}
   const st=f.st;f.st='in';const inn=t.robCarries(ash,f);f.st=st;ok(t.robLoot(f)===t.ROB.loot.in&&t.robCarries(ash,f)===inn,'robbing him: what one at work carries ('+inn+')');world();F.out=.6}
  // ---- the living area: only those inside, the rest at work outside
  {let hit=null;for(let day=1;day<=60&&!hit;day++){G.day=day;near(ash,.2);t.updateFolk(.05);for(const k of ['farm','pasture','smithy']){const ws=W.folk.filter(f=>f.home==='Ashford'&&f.k===k);if(ws.some(f=>f.st==='in')&&ws.some(f=>f.st==='field')){hit=k;break}}}

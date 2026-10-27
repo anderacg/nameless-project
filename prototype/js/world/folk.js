@@ -232,12 +232,13 @@ function workerMeet(f,from){
   else showPanel('<div class="top"><h2>'+title+'</h2><span class="muted">'+sub+'</span></div>'+body+nav(null,close));
 }
 // his deeds: Hire; someone else's worker, Rob and Press-gang (each asks first: wk-ask)
-function workerDeeds(t,f){const own=t.owner==='player',lv=levyOf(t.races[0]),c=hireCost(lv),mem=remembers(t,f),rb=CONDUCT.robWorker,pg=CONDUCT.pressWorker;
-  return [{icon:'troops',label:'Hire',act:'wk-hire',facts:['as '+an(ST[lv].n.toLowerCase()),c+'g'],why:mem?'They will not follow you':partyRoom()<1?'Your band is full':P.gold<c?'Not enough gold':!canHire(t,lv)&&!own?'They do not trust you':'',
+// (whoever you take on joins as what he is, a farmer, a woodcutter, a miner: tier 0, trained up to a levy (data/units.js peasantKind))
+function workerDeeds(t,f){const own=t.owner==='player',lv=recruitKind(t,f),c=hireCost(lv),mem=remembers(t,f),rb=CONDUCT.robWorker,pg=CONDUCT.pressWorker;
+  return [{icon:'troops',label:'Hire',act:'wk-hire',facts:['as '+an(ST[lv].n.toLowerCase()),c+'g'],why:mem?'They will not follow you':partyRoom()<1?'Your band is full':!partyRoster(P).canAdd(lv)?'No room for another group':P.gold<c?'Not enough gold':!canHire(t,lv)&&!own?'They do not trust you':'',
       tip:'Hire the '+f.job+' as '+an(ST[lv].n.toLowerCase())+' for '+c+' gold: '+t.name+' has one less pair of hands.'},
     !own&&{icon:'bag',label:'Rob',act:'wk-ask',arg:'rob',facts:[robCarries(t,f),mem?'':robRead(t,f,robOdds(t,f))],why:mem?'They have nothing left to give you':'',
       tip:'Take what they carry. They may fight back, with any guards near: then it is a fight. Reputation −'+rb.rep+', honor −'+rb.honor+'; killing them costs far more. It asks you first.'},
-    !own&&{icon:'prisoners',label:'Press-gang',act:'wk-ask',arg:'press',facts:['into your band','reputation −'+pg.rep+' · honor −'+pg.honor],why:partyRoom()<1?'Your band is full':'',
+    !own&&{icon:'prisoners',label:'Press-gang',act:'wk-ask',arg:'press',facts:['into your band as '+an(ST[lv].n.toLowerCase()),'reputation −'+pg.rep+' · honor −'+pg.honor],why:partyRoom()<1?'Your band is full':!partyRoster(P).canAdd(lv)?'No room for another group':'',
       tip:'Drag the '+f.job+' into your ranks: reputation −'+pg.rep+', honor −'+pg.honor+', morale −'+pg.morale+', and his estate remembers you for '+ROB.estate+' days. It asks you first.'}]}
 /* robbing (doc/CONDUCT_RUINS_DESIGN.md §2; its numbers: ROB, data/conduct.js). What he carries goes by what he is doing (robLoot);
    whether they fight back, by their power against yours and their nerve (robOdds); given in, you take it (robTake); fighting
@@ -282,11 +283,11 @@ function workerAct(a,arg){
   if(a==='wk-ask'){const d=workerDeeds(t,f).find(x=>x&&x.arg===arg);if(!d||d.why)return workerMeet(f,G.wkFrom);
     return railConfirm({title:d.label+' '+f.name+'?',sub:cap1(f.job)+' of '+t.name,text:d.tip.replace(' It asks you first.',''),facts:arg==='rob'?['They carry '+d.facts[0],d.facts[1]]:d.facts,confirm:[arg==='rob'?'wk-rob':'wk-press',null,d.label],back:['wk-talk',null,'Back']})}
   const take=()=>{f.gone=true;W.folk=W.folk.filter(x=>x!==f);t.pop=Math.max(10,t.pop-1)};
-  if(a==='wk-hire'){const lv=levyOf(t.races[0]),c=hireCost(lv);if(remembers(t,f)||partyRoom()<1||!partyRoster(P).canAdd(lv)||P.gold<c||!canHire(t,lv)&&t.owner!=='player')return;P.gold-=c;P.add(lv);take();
+  if(a==='wk-hire'){const lv=recruitKind(t,f),c=hireCost(lv);if(remembers(t,f)||partyRoom()<1||!partyRoster(P).canAdd(lv)||P.gold<c||!canHire(t,lv)&&t.owner!=='player')return;P.gold-=c;P.add(lv);take();
     return notice('A new recruit','The '+f.job+' lays down the '+(f.job==='farmer'?'hoe':'tools')+' and joins your band as '+an(ST[lv].n.toLowerCase())+'. '+t.name+' has one less pair of hands.','good')}
   if(a==='wk-rob'){if(t.owner==='player'||remembers(t,f))return;const o=robOdds(t,f);remember(t,f.id,ROB.memory);if(Math.random()<o.ch)return robFight(t,f,o);
     const got=robTake(t,f),cost=wrong(t,CONDUCT.robWorker);mood('cruel');return notice('Robbed','You take '+got+'. The workers of '+t.name+' run for home. It costs you: '+cost+'.','bad')}
-  if(a==='wk-press'){if(partyRoom()<1)return;const lv=levyOf(t.races[0]);if(!partyRoster(P).canAdd(lv))return;P.add(lv);take();remember(t,f.k,ROB.estate);const cost=wrong(t,CONDUCT.pressWorker);mood('cruel');
+  if(a==='wk-press'){if(partyRoom()<1)return;const lv=recruitKind(t,f);if(!partyRoster(P).canAdd(lv))return;P.add(lv);take();remember(t,f.k,ROB.estate);const cost=wrong(t,CONDUCT.pressWorker);mood('cruel');
     return notice('Press-ganged','Your soldiers drag the '+f.job+' into the ranks. '+cap1(an(ST[lv].n.toLowerCase()))+' joins, unwilling, and the fields of '+t.name+' empty for days. It costs you: '+cost+'.','bad')}
 }
 onAct('wk-',workerAct);
