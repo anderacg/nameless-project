@@ -26,7 +26,7 @@ try{
  const html=document.getElementById('panel').innerHTML;
  ok(/Break the siege/.test(html)&&/data-act="sg-relieve"/.test(html)&&/Join the siege/.test(html)&&/data-act="sg-join"/.test(html),'neutral to both, you may break the siege or join it');
  t.act('sg-join',B);ok(G.enc&&G.enc.kind==='siege'&&G.enc.allies.includes(s3)&&t.hostileTo(A)&&G.capWith===B,'joining: you storm the walls with the besieger beside you, and the defenders turn hostile');
- {const Bt=t.B;Bt.units.filter(u=>u.team===1).forEach(u=>t.applyDmg(u,9999));for(let i=0;i<80&&!Bt.over;i++)t.updateBattle(.05);Bt.endT=0;t.updateBattle(.01);t.act('cont');while(G.mode==='perk')t.act('perk',G.perkOffer[0]);
+ {const Bt=t.B;t.beginFight();Bt.units.filter(u=>u.team===1).forEach(u=>t.applyDmg(u,9999));for(let i=0;i<80&&!Bt.over;i++)t.updateBattle(.05);Bt.endT=0;t.updateBattle(.01);t.act('cont');while(G.mode==='perk')t.act('perk',G.perkOffer[0]);
   ok(G.mode==='capture'&&/who led the siege/.test(document.getElementById('panel').innerHTML),'won: you may hand it to the realm that led the siege');
   const g0=P.gold;t.act('cap-peace');ok(T1.owner===B&&P.gold>g0&&!G.capWith,'handed over: it is theirs, and they pay you')}
  // ---- breaking a siege: garrison and lords inside beside you, every besieger against you
@@ -37,7 +37,7 @@ try{
   t.act('flee');world()}
  // ---- an army sent to relieve your siege attacks your camp, even a weak one, with the garrison sallying
  {const T3=t.TOWNS.find(z=>z.owner===A&&z.kind!=='village');P.hostile={[A]:G.day+60};T3.gar=5;P.siege={town:T3.name,days:1};P.troops={hum_knight:20};P.x=T3.x+20;P.y=T3.y+20;
-  const rl=mk('Lord Rescue',A,P.x+6,P.y,6,'hum_levy',{state:'relieve',tgt:T3.name});W.lords=[rl];world();t.updateLords(.05);
+  const rl=mk('Lord Rescue',A,P.x+6,P.y,6,'hum_levy',{state:'relieve',tgt:T3.name});W.lords=[rl];world();t.TravelAwareness.notice(rl);t.updateLords(.05);// (it has seen your camp: a party meets you once it detects you)
   ok(G.enc&&G.enc.ref===rl&&G.enc.foes.some(f=>f.kind==='garrison'),'a relief army comes at your siege camp though you outnumber it, and the garrison sallies with it');
   t.act('flee');P.siege=null;world()}
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}

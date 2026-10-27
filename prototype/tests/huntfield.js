@@ -1,5 +1,7 @@
 'use strict';
 window.RUN=async()=>{const {ok,exc,out}=Kit.report(),t=T,P=t.P,G=t.G,W=t.W,H=t.WildHunt;
+ // (a phone, whatever the test window's size: the mobile HUDs follow mobileWorldHud.media)
+ const hud=window.mobileWorldHud,media=hud.media;hud.media={matches:true,addEventListener(){}};hud.sync();
  try{
   window.requestAnimationFrame=()=>0;Kit.begin('soldier',1);Kit.clear();Kit.world();t.GUIDE.on=false;G.paused=false;G.speed=1;P.gear.weapon=t.gearId('sword',2);P.troops={hum_bow:4};
   const home=Kit.goHome('Ashford');Kit.goTo(home.x+400,home.y+350);const tx=Math.floor(P.x/t.TILE),ty=Math.floor(P.y/t.TILE);for(let y=ty-25;y<=ty+25;y++)for(let x=tx-25;x<=tx+25;x++){const i=y*t.MW+x;t.tiles[i]=t.T_OPEN;t.WM.edge[i]=0}
@@ -18,5 +20,5 @@ window.RUN=async()=>{const {ok,exc,out}=Kit.report(),t=T,P=t.P,G=t.G,W=t.W,H=t.W
   ok(b.kills>0&&starts.some(({u,x,y})=>Math.hypot(u.x-x,u.y-y)>5),'melee-only Auto Hunt physically closes on exhausted animals and kills at weapon reach');
   ok(!b.units.some(u=>u.type==='hum_bow')&&!b.arrows.length,'melee hunting needs no ranged troops or separate hunt mode');ok(b.units.filter(u=>!u.team&&u.hp>0&&!u.rout).every(u=>a.inside(u)),'automatic hunters remain inside the fixed area');
   t.frame();ok(!ERR.length,'whole-army mobile hunting has no runtime errors');
- }catch(e){exc(e)}out();
+ }catch(e){exc(e)}finally{hud.media=media;hud.sync()}out();
 };

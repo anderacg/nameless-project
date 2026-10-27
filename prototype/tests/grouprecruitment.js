@@ -1,11 +1,11 @@
 'use strict';
 window.RUN=()=>{const t=T,P=t.P,G=t.G,o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);
 try{
- t.begin('soldier');G.quietEvents=true;P.gold=100000;P.renown=10000;const town=t.townBy('Ashford'),r=t.partyRoster(P),service=t.recruitment,k=t.RACES.human.melee,to=t.UP[k][0];P.rep[town.name]=100;town.vol=100;
- r.add(k,8);const a=r.groups[0],b=r.split(a.id,4),state=()=>JSON.stringify({gold:P.gold,troops:P.troops,army:P.army,xp:P.txp,wounded:P.wounded,wg:P.woundedGroups,vol:town.vol,pop:town.pop});
+ t.begin('soldier');G.quietEvents=true;P.gold=100000;P.renown=10000;const town=t.townBy('Ashford'),r=t.partyRoster(P),service=t.recruitment,k=t.RACES.human.melee,to=t.UP[k][0];P.rep[town.name]=100;town.vol=100;P.sk.lead.lv=10;// all ten slots (a new band starts at three)
+ r.add(k,5);const a=r.groups[0],b=r.split(a.id,1),state=()=>JSON.stringify({gold:P.gold,troops:P.troops,army:P.army,xp:P.txp,wounded:P.wounded,wg:P.woundedGroups,vol:town.vol,pop:town.pop});
  const rejects=(fn,code,label)=>{const before=state(),q=fn();ok(!q.ok&&q.code===code&&state()===before,label)};
  let before=state(),q=service.quoteHire(town,k,5,b.id);ok(q.ok&&q.cost===5*service.hireCost(k)&&state()===before,'bulk quote is read-only and multiplies the existing unit price');
- const gold=P.gold,vol=town.vol;service.hire(town,k,5,b.id);ok(a.count===4&&b.count===9&&P.gold===gold-q.cost&&town.vol===vol-5,'bulk hire spends exact totals and reinforces only the chosen duplicate');
+ const gold=P.gold,vol=town.vol;service.hire(town,k,5,b.id);ok(a.count===4&&b.count===6&&P.gold===gold-q.cost&&town.vol===vol-5,'bulk hire spends exact totals and reinforces only the chosen duplicate');
  const slots=r.slots;service.hire(town,k,3,'new');const c=r.groups[r.groups.length-1];ok(c.count===3&&r.slots===slots+1,'bulk new-group recruitment uses one slot, not one per soldier');
  for(const n of [0,-1,1.5,NaN,Infinity,Number.MAX_SAFE_INTEGER])rejects(()=>service.hire(town,k,n,a.id),'amount','invalid quantity '+n+' is non-mutating');
  rejects(()=>service.hire(town,k,1,'missing'),'target','missing target is not silently replaced');r.add('hum_bow',2);const bow=r.groups.find(g=>g.type==='hum_bow');
@@ -36,8 +36,9 @@ try{
  t.act('rec-review');ok(G.town.review&&state()===before&&panel.querySelector('[data-act=rec-confirm]'),'review is a separate non-mutating step');t.act('rec-cancel');ok(state()===before&&!G.town.review,'cancel discards only the draft confirmation');
  t.act('rec-review');const bc=b.count;t.act('rec-confirm');ok(b.count===bc+3&&!G.town.review,'actual confirmation executes one bulk transaction');const done=state();t.act('rec-confirm');ok(state()===done,'double confirmation cannot buy the same order twice');
  const quick=b.count;t.act('hire',k);ok(b.count===quick+1&&a.type===to,'quick Hire 1 also honours the selected destination for its type');
- r.merge(c.id,b.id);change('hireTarget','new');t.act('hire',k);const created=r.groups[r.groups.length-1],afterNew=r.slots;t.act('hire',k);
- ok(created.count===2&&r.slots===afterNew&&G.town.hireTarget===created.id,'quick new-group hiring switches its next recruit to the newly created group');change('hireTarget',b.id);
+ // (b is full now: a group holds ten, so c merges into another)
+ r.merge(c.id,r.groups.find(g=>g.type===k&&g!==b&&g!==c).id);change('hireTarget','new');t.act('hire',k);const created=r.groups[r.groups.length-1],afterNew=r.slots;t.act('hire',k);
+ ok(created.count===2&&r.slots===afterNew&&G.town.hireTarget===created.id,'quick new-group hiring switches its next recruit to the newly created group');change('hireTarget',created.id);
  t.act('rec-review');const price=service.hireCost(k);P.attr.cha++;const changed=state();t.act('rec-confirm');ok(state()===changed&&!G.town.review&&panel.textContent.includes('order changed'),'changed prices require a fresh review instead of silently charging new terms');P.attr.cha--;
  t.act('rec-review');town.vol=0;const unavailable=state();t.act('rec-confirm');ok(state()===unavailable&&!G.town.review,'availability is rechecked at confirmation');town.vol=100;
  P.txp[k]=P.troops[k]*t.txpNeed(k);t.act('rec-pick',k+'>'+to);change('trainingGroup',b.id);before=state();t.act('rec-review');ok(state()===before&&G.town.review.code==='group-training','UI reviews a specific duplicate group upgrade');t.act('rec-confirm');ok(b.type===to&&a.id!==b.id&&r.slots===10,'UI upgrades the chosen group without merging it into an existing upgraded group');

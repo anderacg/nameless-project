@@ -1,7 +1,8 @@
 'use strict';
 window.RUN=()=>{const t=T,P=t.P,G=t.G,o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);
 try{
- t.begin('soldier');G.quietEvents=true;P.gold=10000;P.renown=10000;const r=t.partyRoster(P),town=t.townBy('Ashford');P.rep[town.name]=100;town.vol=40;
+ t.begin('soldier');G.quietEvents=true;P.gold=10000;P.renown=10000;P.sk.lead.lv=10;// (all ten group slots: a new band starts at three)
+ const r=t.partyRoster(P),town=t.townBy('Ashford');P.rep[town.name]=100;town.vol=40;
  const type=t.RACES.human.melee;r.add(type,4);const a=r.groups[0],b=r.split(a.id,2);
  G.recruitTarget=b.id;const gold=P.gold;t.recruitment.hire(town,type);
  ok(a.count===2&&b.count===3&&P.gold<gold,'actual recruitment reinforces the selected duplicate');

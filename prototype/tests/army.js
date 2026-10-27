@@ -11,7 +11,7 @@ Kit.suite(({ok})=>{
  // (a tab's Back goes to the Game Menu; a sub-page's to its parent)
  const menuBack=()=>{const b=navBack();return !!b&&b.dataset.act==='fb-menu'&&b.textContent==='Back'},sub=()=>{const b=navBack();return !!b&&b.dataset.act!=='fb-menu'};
  Kit.begin('soldier',31);Kit.clear();Kit.world();
- P.band='Iron <Band>';P.xp=30;P.gold=2000;
+ P.band='Iron <Band>';P.xp=30;P.gold=2000;P.sk.lead.lv=10;// all ten group slots (a new band starts at three)
  P.comps={brann:{ap:5,role:'scout'},elske:{ap:5,role:'surgeon'},tavi:{ap:5,role:''}};const brann=t.compInit('brann');brann.lv=4;brann.xp=50;t.compInit('elske');const tavi=t.compInit('tavi');tavi.lv=3;
  const r=t.partyRoster(P);r.add('hum_foot',8);r.add('hum_knight',2);r.add('hum_levy',5);const foot=r.groups.find(g=>g.type==='hum_foot'),knight=r.groups.find(g=>g.type==='hum_knight');
  t.cpGive('tavi','hum_levy',3);ok(!!tavi.party,'Tavi leads a party of his own (away from the band)');
@@ -32,7 +32,7 @@ Kit.suite(({ok})=>{
   for(const [tab] of t.ARMY_TABS){t.act('char-tab',tab);ok(q('.fb-head .fb-meter[aria-label="Fitness"]')&&q('.fb-head h2').textContent==='Iron <Band>'&&G.char===tab,'the muster heads the '+tab+' tab too')}
   t.act('char-tab','condition');ok(G.char==='condition'&&q('.fb-condition')&&q('[data-act="char-tab"][data-arg="condition"]').classList.contains('on'),'its tab opens Condition');
   // ---- Condition
-  {const c=q('.fb-condition').textContent;ok(/Stamina [+-]?[\d.]+ \/ hour/.test(c)&&c.includes('Headcount')&&c.includes(t.partySize()+' / '+t.partyCap())&&c.includes('Food')&&c.includes('Drink')&&/Party power · \d+/.test(c)&&c.includes('Brann the Wolf')&&c.includes('Recruitment target'),'Condition: recovery and its reasons, supplies, capacity and the power breakdown');
+  {const c=q('.fb-condition').textContent;ok(/Stamina [+-]?[\d.]+ \/ hour/.test(c)&&c.includes('Headcount')&&c.includes(t.partySize()+' / '+t.partyCap())&&c.includes('Food')&&c.includes('Drink')&&/Party power · \d+/.test(c)&&c.includes('Brann the Wolf')&&c.includes('Groups'+r.slots+' / '+r.groupLimit)&&/Recruitment.*Start with 3 slots/.test(c),'Condition: recovery and its reasons, supplies, capacity, group slots and the power breakdown');
    ok(q('.fb-condition .fb-scroll [data-act="party-supplies"]')&&menuBack()&&navClose().textContent==='Back to map'&&qa('.nav').length===1&&[...q('.fb-condition').querySelectorAll('button')].every(b=>b.closest('.fb-scroll')),'its Supplies in its content; its bar, the only bottom bar: Back (to the Game Menu), Back to map');
    esc();ok(G.mode==='esc'&&G.esc.page==='menu'&&G.esc.html==null,'Esc follows the bar: from Condition, the Game Menu, the window closed under it');esc();ok(G.mode==='world','one more Esc resumes');open();ok(G.char==='roster','Roster again')}
   // ---- every tab, the same bar: Back to the Game Menu (ui/hub.js), Back to map; however the window was opened
@@ -129,8 +129,8 @@ Kit.suite(({ok})=>{
     // (each tab's main panel the same box: the Roster's cards and detail, Army skills, Condition, Passengers, edge to edge alike)
     open();{const box=()=>{const e=q('.fb-army-layout>.fb-split')||q('.fb-army-layout>.fb-pane');return e?[...['left','top','right','bottom'].map(k=>e.getBoundingClientRect()[k])]:[]},boxes=t.ARMY_TABS.map(([k])=>{t.act('char-tab',k);return [k,box()]}),b0=boxes[0][1];
      ok(b0.length===4&&b0[2]-b0[0]>100&&boxes.every(([,b])=>b.length===4&&b.every((v,i)=>Math.abs(v-b0[i])<=1)),'Tabs '+at+': each tab’s main panel the same box ('+boxes.map(([k,b])=>k+' '+b.map(Math.round).join(',')).join(' · ')+')');world()}
-    open();t.act('char-tab','condition');{const c=q('.fb-condition'),sc=c.querySelector('.fb-scroll'),last=[...sc.querySelectorAll('.btns')].pop();
-     ok(last&&last.querySelector('[data-act="army-recruit"][data-arg="new"]'),'Condition '+at+': its last control is the recruitment target’s');reach(sc,last,'Condition '+at);area(sc,'Condition '+at);oneBar(c,'Condition '+at);
+    open();t.act('char-tab','condition');{const c=q('.fb-condition'),sc=c.querySelector('.fb-scroll'),last=[...sc.querySelectorAll('button,summary')].pop();
+     ok(last&&last.tagName==='SUMMARY'&&last.textContent==='Condition and recovery','Condition '+at+': its last control is the Condition and recovery notes (the recruitment target moved to the Roster)');reach(sc,last,'Condition '+at);area(sc,'Condition '+at);oneBar(c,'Condition '+at);
      ok(menuBack()&&navClose().textContent==='Back to map','Condition '+at+': Back (to the Game Menu) on the left, Back to map on the right');
      esc();ok(G.mode==='esc','Condition '+at+': Esc, the Game Menu');esc();ok(G.mode==='world','Condition '+at+': and resumed')}
     open();{const c=q('.fb-collection'),sc=c.querySelector('.fb-scroll');reach(sc,q('.fb-recruit-options'),'Roster '+at);area(sc,'Roster '+at);oneBar(c,'Roster '+at)}
