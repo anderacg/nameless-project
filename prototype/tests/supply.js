@@ -8,7 +8,7 @@
 // drunk, they are empty; a fill fills only empty ones, never past 2 days; a new hero sets out with 4 full, a recruit brings an
 // empty one, markets and taverns sell them; the desert's thirst and the frost's frostbite take men; liquor at the
 // tavern; the band goes into a battle at its stamina (never under 25) and comes out at its side's; the card; saves.
-window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.push('INFO '+m);
+window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.push('INFO '+m),toast0=window.toast;
 try{
  const t=T,G=t.G,P=t.P,S=t.SUPPLY,ev=s=>(0,eval)(s);
  Kit.begin('soldier',4242);Kit.clear();Kit.world();
@@ -25,7 +25,8 @@ try{
  const reset=()=>{P.troops={hum_levy:5};P.comps={};P.wounded={};P.woundedGroups=[];P.perks=[];P.gear.mount=null;P.sk.athl.lv=0;P.sk.ride.lv=0;P.sk.surv.lv=0;P.race='human';
   P.morale=60;P.bsta=100;P.stay=null;G.dead=null;ev('BAND=freshBand()');G.clock=t.DAY*.3;G.speed=1;P.tx=null;G.chase=null;Kit.world()};
  const rate=moving=>{const L=t.supplyLand();return t.staminaRate(moving,t.drinkNext(L),L).n};
- const near=(a,b)=>Math.abs(a-b)<1e-9,last=()=>G.msgs[G.msgs.length-1].m;
+ // (what is said: on screen, as the journal keeps no fills or hints; every line logged is shown so too)
+ const said=[],near=(a,b)=>Math.abs(a-b)<1e-9,last=()=>said[said.length-1];window.toast=(m,c)=>{said.push(m);toast0(m,c)};
  // (an hour: on the march when walked, else stopped)
  const hour=walked=>{if(walked)t.WALKED.set(P,(t.WALKED.get(P)||0)+100);t.supplyHour()};
  const hours=(n,walked)=>{for(let i=0;i<n;i++)hour(walked)};
@@ -108,7 +109,7 @@ try{
    pass(h1*60/2);const half=t.goodN('water');ok(t.SKINS.on&&half>0&&half<full&&Math.abs(half-full/2)<=1,'halfway, half the water is in ('+half+' of '+full+')');
    t.updateHUD(true);{const b=document.querySelector('#stats .pc-fill');ok(b&&/^Filling waterskins\d+%$/.test(b.textContent)&&Math.abs(parseInt(b.textContent.replace(/\D/g,''))-50)<=2&&b.querySelector('i').style.width===b.textContent.replace(/\D/g,'')+'%','the band card shows it: '+(b&&b.textContent)+', its bar as full');
     ok(document.querySelectorAll('#stats .bars .bar').length===3,'under the three bars, not one of them')}
-   pass(h1*60/2+1);ok(!t.SKINS.on&&t.goodN('water')===full&&/You fill your waterskins: \d+ water/.test(G.msgs[G.msgs.length-1].m),'at its end they are full ('+t.goodN('water')+')');
+   pass(h1*60/2+1);ok(!t.SKINS.on&&t.goodN('water')===full&&/You fill your waterskins: \d+ water/.test(last()),'at its end they are full ('+t.goodN('water')+')');
    t.updateHUD(true);ok(!document.querySelector('#stats .pc-fill'),'and the bar is gone')}
   {reset();Kit.goHome();bag({grain:60,skin_empty:99});t.SKINS.reset(false);P.troops={};t.fillSkins();const h1=t.SKINS.on.h;t.SKINS.reset(false);P.troops={hum_levy:2};t.fillSkins();const h3=t.SKINS.on.h;t.SKINS.reset(false);P.troops={hum_levy:40};t.fillSkins();const h41=t.SKINS.on.h;t.SKINS.reset(false);
    ok(Math.abs(h3-3*h1)<1e-9&&h41*60===F.max,'a bigger band takes longer: alone '+h1*60+' min, three '+h3*60+', forty-one '+h41*60+' (the most, '+F.max+')')}
@@ -154,8 +155,8 @@ try{
  reset();at('frost');bag({grain:200,water:400});hours(S.frost.every,false);ok(t.woundedN()===1&&/frostbite/.test(t.BAND.hurt.map(h=>h.why).join()),'with no furs in the frost, frostbite takes a man every '+S.frost.every+' hours');
  reset();at('frost');bag({grain:200,water:400,furs:P.furNeed()});hours(S.frost.every*2,false);ok(!t.woundedN(),'with furs enough, none');
  // ---- the hint, once
- reset();at('open');bag({water:400,grain:60});P.bsta=S.hint+1;const n0=G.msgs.filter(x=>/Marching tires your band\. Stop, or Make camp, to rest\./.test(x.m)).length;hours(3,true);hours(30,true);
- ok(G.msgs.filter(x=>/Marching tires your band\. Stop, or Make camp, to rest\./.test(x.m)).length===n0+1,'a first hint, once: "Marching tires your band. Stop, or Make camp, to rest."');
+ reset();at('open');bag({water:400,grain:60});P.bsta=S.hint+1;const n0=said.filter(m=>/Marching tires your band\. Stop, or Make camp, to rest\./.test(m)).length;hours(3,true);hours(30,true);
+ ok(said.filter(m=>/Marching tires your band\. Stop, or Make camp, to rest\./.test(m)).length===n0+1,'a first hint, once: "Marching tires your band. Stop, or Make camp, to rest."');
  // ---- the card
  reset();at('open');bag({water:400,grain:60});P.tx=P.x+200;P.ty=P.y;P.bsta=15;t.updateHUD(true);{const el=document.getElementById('stats'),h=el.innerHTML,bar=el.querySelector('.bar.sta');
   ok(bar&&bar.classList.contains('tired')&&/▼/.test(bar.textContent)&&/Tired/.test(bar.textContent)&&bar.title.includes('marching −'+t.SUPPLY.march),'the card: stamina amber with ▼ and "Tired" marching ('+bar.textContent+'; '+bar.title+')');
@@ -181,7 +182,7 @@ try{
   ok(r&&r.ok&&t.goodN('skin_empty')===3,'3 recruits hired ('+(k||'none')+(r&&!r.ok?', '+r.code:'')+') bring 3 empty waterskins ('+t.goodN('skin_empty')+')');
   if(k)P.remove(k,2);ok(t.goodN('skin_empty')===3,'dismissing or losing men takes none away')}
  // ---- into battle and back
- const fight=()=>{Kit.world();G.enc={kind:'party',ref:{cool:0,x:P.x+8,y:P.y},list:['militia','militia']};t.startBattle({enemies:['militia','militia'],tournament:false});return t.B};
+ const fight=()=>{Kit.world();G.enc={kind:'party',ref:{cool:0,x:P.x+8,y:P.y},list:['militia','militia']};t.startBattle({enemies:['militia','militia'],tournament:false});t.beginFight();return t.B};// (Start Battle: battles open waiting for it)
  const band=B=>B.units.filter(u=>u.team===0&&!u.hero);
  reset();at('open');bag({water:400,grain:60});{let B=fight();ok(band(B).every(u=>u.sta===t.FATIGUE.max)&&t.heroState().sp===t.maxSP(),'a fresh band starts a battle fresh, as ever');B.over=true;B.endT=0;ev('B=null');
   P.bsta=60;B=fight();ok(band(B).every(u=>near(u.sta,60))&&near(t.heroState().sp,t.maxSP()*.6),'at 60, its troops and your hero start at 60%');
@@ -202,5 +203,5 @@ try{
   ok(w0===0&&!c0.tags.some(x=>x[0]==='Thirsty')&&w1===S.skins.start&&!t.goodN('skin_empty')&&!t.SKINS.on,'a new game: not thirsty, and its hero sets out with '+S.skins.start+' full waterskins on its first moment ('+w0+' water, then '+w1+')')}
  // (a loaded game keeps what it saved: no free fill)
  {G.mode='world';t.goodTake('water',1e9);t.saveGame(true,'quick');t.loadGame('quick');G.mode='world';G.modal=false;t.hidePanel();Kit.goTo(-999,-999);t.Systems.frame(.01,.01);ok(t.goodN('water')===0,'a loaded game keeps what it saved: no free fill')}
-}catch(e){o.push('EXC '+e.message+' '+e.stack)}
+}catch(e){o.push('EXC '+e.message+' '+e.stack)}finally{window.toast=toast0}
 const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d)};

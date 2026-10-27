@@ -7,7 +7,7 @@ try{
  const t=T,G=t.G,P=t.P;try{localStorage.clear()}catch(e){}
  const done=()=>{while(G.mode==='perk')t.act('perk',G.perkOffer[0])};
  t.act('begin','soldier');const m=t.vitals();ok(P.hp===m[0]&&P.sp===m[1]&&P.mp===m[2],'a new hero starts full ('+m.join(' / ')+')');
- const battle=()=>{G.mode='world';G.modal=false;t.hidePanel();G.enc={kind:'party',ref:{cool:0,x:P.x,y:P.y},list:['militia']};t.startBattle({enemies:['militia'],tournament:false});return t.B};
+ const battle=()=>{G.mode='world';G.modal=false;t.hidePanel();G.enc={kind:'party',ref:{cool:0,x:P.x,y:P.y},list:['militia']};t.startBattle({enemies:['militia'],tournament:false});t.beginFight();return t.B};// (Start Battle: battles open waiting for it)
  const finish=(B,win)=>{B.win=win;B.over=true;B.endT=0;t.updateBattle(.01);t.act('cont');done()};
  // carry over
  let B=battle();B.hero.hp-=30;t.updateBattle(.01);B.hx.sp-=25;B.hx.mp-=20;const hp=B.hero.hp,sp=B.hx.sp,mp=B.hx.mp;finish(B,true);
@@ -21,10 +21,11 @@ try{
  P.x=t.TOWNS[0].x;P.y=t.TOWNS[0].y+20;P.hp=10;P.sp=0;P.mp=0;t.regenVitals(1);ok(P.hp-10>(far[0]-10)*1.8,'recovery is twice as fast near a holding');
  {const g=t.townBy('Ashford');P.rep[g.name]=40;P.hp=10;P.sp=0;P.mp=0;t.startStay(g);t.stayTick(0);t.regenVitals(.5);t.stayTick(t.DAY*.5);ok(P.hp-10>(far[0]-10)*1.8&&!!P.stay,'staying in a holding recovers you faster still');t.leaveStay();done()}
  // auto-resolve defeat
- P.troops={};const h0=P.hp;G.mode='world';G.modal=false;t.startEncounter({kind:'party',ref:t.asParty({cool:0,x:P.x,y:P.y,troops:Array(15).fill('spearman')}),list:Array(15).fill('spearman'),band:'bandits'});t.autoResolve();t.act('cont');done();
+ // (alone: no lord or watch of the holding by you to join the fight on your side, battle/engage.js)
+ t.W.lords.forEach(l=>{l.x=-9999;l.y=-9999});t.W.patrols=[];P.troops={};const h0=P.hp;G.mode='world';G.modal=false;t.startEncounter({kind:'party',ref:t.asParty({cool:0,x:P.x,y:P.y,troops:Array(15).fill('spearman')}),list:Array(15).fill('spearman'),band:'bandits'});t.autoResolve();t.act('cont');done();
  ok(Math.abs(P.hp-Math.round(h0*.5))<=1,'losing an auto-resolved fight costs half your health');
  // display
- P.hp=20;G.mode='world';G.modal=false;t.hidePanel();t.openChar();t.act('party-select','hero');ok(['Health','Stamina (your band’s)','Mana'].every(n=>document.querySelector('#panel .fb-meter[aria-label="'+n+'"]'))&&document.querySelector('#panel .fb-meter.bad[aria-label="Health"]')&&!/Mana/.test(document.getElementById('stats').innerHTML),'your hero’s card in the Army window shows your vitals and flags low health (not the party card)');t.act('char-close');
+ P.hp=20;G.mode='world';G.modal=false;t.hidePanel();t.openChar();t.act('party-select','hero');ok(['Health','Stamina','Mana'].every(n=>document.querySelector('#panel .fb-meter[aria-label="'+n+'"]'))&&document.querySelector('#panel .fb-meter.bad[aria-label="Health"]')&&!/Mana/.test(document.getElementById('stats').innerHTML),'your hero’s card in the Army window shows your vitals and flags low health (not the party card)');t.act('char-close');
  G.mode='world';G.modal=false;t.startEncounter({kind:'party',ref:t.asParty({cool:0,x:P.x,y:P.y,n:3,kind:'bandits'}),n:3,band:'bandits'});ok(/You are wounded/.test(document.getElementById('panel').innerHTML),'encounters warn when you are wounded');t.act('flee');
  // saves
  P.hp=33;P.sp=12;P.mp=7;G.mode='world';G.modal=false;t.hidePanel();t.saveGame();P.hp=P.sp=P.mp=null;t.act('load');ok(P.hp===33&&P.sp===12&&P.mp===7,'save/load keeps your vitals');

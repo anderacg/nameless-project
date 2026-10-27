@@ -7,14 +7,15 @@
 // farther (within SUPPLY.camp.r) it walks there and pitches; none near (a wood, a swamp): no camp. Never on a road, track, bridge,
 // ford, water, pond, lot, holding's ring, site, field or brook. Drawn by its feet among the trees, none of them faded over it; your
 // figure and host hidden while you camp, your banner on a pole in it.
-window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);
+window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),toast0=window.toast;
 try{
  const t=T,G=t.G,P=t.P,S=t.SUPPLY,ev=s=>(0,eval)(s);
  Kit.begin('soldier',4242);Kit.clear();Kit.world();
  const spot=(()=>{for(let ty=8;ty<t.MH-8;ty++)for(let tx=8;tx<t.MW-8;tx++){const x=(tx+.5)*16,y=(ty+.5)*16;if(t.tAt(tx,ty)===t.T_OPEN&&t.climAt(x,y)==='grass'&&!t.TOWNS.some(h=>Math.hypot(h.x-x,h.y-y)<160)&&!t.nearWater(x,y,4)&&t.campGround(x,y))return [x,y]}})();// (clear ground: the camp pitched at once)
  const bag=g=>{for(const k of ['water','ale','liquor',...t.FOODS])t.goodTake(k,1e9);for(const k in g)t.playerInventory.add('good',k,g[k])};
  const reset=()=>{Kit.world();Kit.goTo(spot[0],spot[1]);P.troops={hum_levy:5};P.wounded={};P.woundedGroups=[];P.comps={};P.bsta=50;P.morale=60;ev('BAND=freshBand()');G.speed=1;G.encCool=99;G.clock=t.DAY*.3;bag({water:200,grain:60})};
- const msgs=re=>G.msgs.filter(x=>re.test(x.m)).length;
+ // (what is said: on screen, as the journal keeps no camp orders; every line logged is shown so too)
+ const said=[],msgs=re=>said.filter(m=>re.test(m)).length;window.toast=(m,c)=>{said.push(m);toast0(m,c)};
  // ---- Z, and the dock
  reset();Kit.key('KeyZ','z');ok(!!P.camp&&P.tx==null&&msgs(/makes camp/)===1,'Z: your band makes camp');
  t.updateHUD(true);{const tags=[...document.querySelectorAll('#stats .pc-tags .tag')].map(x=>x.textContent);ok(tags.includes('In camp')&&document.getElementById('campBtn').classList.contains('on'),'the card says In camp, the dock’s Camp is lit')}
@@ -49,9 +50,11 @@ try{
   for(const [w,at] of [['deep in a wood',inWood],['in a swamp',inFen]]){if(!at){o.push('INFO no '+w+' on this map');continue}reset();Kit.goTo(at[0],at[1]);const n=msgs(/No clear ground to camp here/);
    ok(!t.makeCamp()&&!P.camp&&P.tx==null&&msgs(/No clear ground to camp here/)===n+1,w+': no clear ground near, no camp, said in the log')}}
  // ---- hidden while camped (the owner, 2026-10-23): no figure or host drawn, your banner on a pole in the camp; back when it breaks
- {const draws=()=>{let hero=0;const bn=[],ps=window.partySprite,ba=window.bannerAt;
-    window.partySprite=function(c){if(c==='#e8b94a')hero++;return ps.apply(this,arguments)};window.bannerAt=function(o){bn.push(o);return ba.apply(this,arguments)};
-    try{t.drawWorld()}finally{window.partySprite=ps;window.bannerAt=ba}return{hero,bn}};
+ // (the stealth eye and the fatigue badge over your band only ask where your banner would stand, drawing none: not counted)
+ {const draws=()=>{let hero=0,badge=0;const bn=[],ps=window.partySprite,ba=window.bannerAt,dt=window.drawTravelDetection,df=window.drawWorldFatigue,aside=f=>function(){badge++;try{return f.apply(this,arguments)}finally{badge--}};
+    window.partySprite=function(c){if(c==='#e8b94a'&&!badge)hero++;return ps.apply(this,arguments)};window.bannerAt=function(o){if(!badge)bn.push(o);return ba.apply(this,arguments)};
+    window.drawTravelDetection=aside(dt);window.drawWorldFatigue=aside(df);
+    try{t.drawWorld()}finally{window.partySprite=ps;window.bannerAt=ba;window.drawTravelDetection=dt;window.drawWorldFatigue=df}return{hero,bn}};
   reset();const a=draws();ok(a.hero>0&&a.bn.includes(P),'(out of camp your figure and its banner are drawn)');
   t.makeCamp();const b=draws(),pole=b.bn.find(o=>o!==P&&o.faction==='player'),c=t.campAt(P.x,P.y),px=pole&&pole.x-2,py=pole&&pole.headY()-t.BANNER_GAP;
   ok(!!P.camp&&!b.hero&&!b.bn.includes(P),'in camp your figure, host and the banner over you are not drawn');
@@ -89,5 +92,5 @@ try{
    Kit.frames(800,.05,null,()=>!!P.camp||P.tx==null);ok(!!P.camp&&Math.hypot(P.x-s.x,P.y-s.y)<3&&!bad(P.x,P.y),'and pitches there, on allowed ground')}}
  reset();t.makeCamp();G.mode='world';t.saveGame(true,'quick');ev('BAND=freshBand()');ok(!P.camp,'(a fresh record has no camp)');t.loadGame('quick');ok(!!P.camp,'saved and loaded in camp');
  Kit.begin('soldier',4242);ok(!P.camp,'a new game: no camp');
-}catch(e){o.push('EXC '+e.message+' '+e.stack)}
+}catch(e){o.push('EXC '+e.message+' '+e.stack)}finally{window.toast=toast0}
 const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d)};
