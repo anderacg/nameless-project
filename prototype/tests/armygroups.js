@@ -1,12 +1,12 @@
 'use strict';
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);
 try{
- const t=T,P=t.P,G=t.G;t.begin('soldier');G.quietEvents=true;
- const r=t.partyRoster(P);P.add('hum_foot',12);const first=r.groups[0],second=r.split(first.id,5);
- ok(first.count===7&&second.count===5&&first.id!==second.id,'split creates independently identified duplicate formations');
- ok(P.troops.hum_foot===12&&r.slots===3,'count view unchanged; hero consumes one of ten slots');
- r.add('hum_foot',2,second.id);ok(first.count===7&&second.count===7,'targeted reinforcement changes only the chosen group');
- r.remove('hum_foot',2,second.id);ok(first.count===7&&second.count===5,'targeted casualties change only their originating group');
+ const t=T,P=t.P,G=t.G;t.begin('soldier');G.quietEvents=true;P.sk.lead.lv=10;// Leadership opens all ten slots (a new band starts at three); a group holds ten
+ const r=t.partyRoster(P);P.add('hum_foot',10);const first=r.groups[0],second=r.split(first.id,3);
+ ok(first.count===7&&second.count===3&&first.id!==second.id,'split creates independently identified duplicate formations');
+ ok(P.troops.hum_foot===10&&r.slots===3,'count view unchanged; hero consumes one of ten slots');
+ r.add('hum_foot',2,second.id);ok(first.count===7&&second.count===5,'targeted reinforcement changes only the chosen group');
+ r.remove('hum_foot',2,second.id);ok(first.count===7&&second.count===3,'targeted casualties change only their originating group');
  const secondId=second.id;
  for(let i=0;i<7;i++)r.add('hum_foot',1,'new');
  ok(r.slots===10,'ten groups including hero');
@@ -25,7 +25,7 @@ try{
   ok(t.readSlot('2')===null&&t.oldSlot('2')&&P.gold===-5&&G.mode==='title','a v2 save is refused, not loaded: the game stays as it was');
   t.showTitle('load');ok(/Made by an older version: start a new game/.test(document.getElementById('panel').innerHTML),'the save list says it was made by an older version: start a new game');P.gold=g;G.mode='world';t.hidePanel()}
  // A compact battle with duplicate infantry and duplicate archers, plus a separate companion.
- t.begin('soldier');G.quietEvents=true;P.add('hum_foot',12);const a=r.groups[0],b=r.split(a.id,6);P.add('hum_bow',8);const c=r.groups.find(g=>g.type==='hum_bow'),d=r.split(c.id,4);P.comps.brann={ap:0,role:''};
+ t.begin('soldier');G.quietEvents=true;P.sk.lead.lv=10;P.add('hum_foot',10);const a=r.groups[0],b=r.split(a.id,4);r.add('hum_foot',2,b.id);P.add('hum_bow',8);const c=r.groups.find(g=>g.type==='hum_bow'),d=r.split(c.id,4);P.comps.brann={ap:0,role:''};
  t.startBattle({enemies:Array(12).fill('hum_foot'),deploy:false});const B=t.B,gs=t.playerGroups(),aid='p_'+a.id,bid='p_'+b.id;
  ok(gs.length===6&&gs.includes('comp_brann'),'hero, companion and each troop formation get independent battle cards');
  ok(Object.values(B.groups).every(g=>new Set(t.grpUnits(g.id).map(u=>u.type)).size===1),'every battle group is homogeneous');

@@ -1,12 +1,12 @@
 'use strict';
 window.RUN=()=>{const t=T,P=t.P,G=t.G,o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);
 try{
- t.begin('soldier');G.quietEvents=true;P.gold=10000;P.renown=1000;P.comps.brann={ap:2,role:''};
- const r=t.partyRoster(P);r.add('hum_foot',12);const a=r.groups[0];r.add('hum_bow',6);const bow=r.groups.find(g=>g.type==='hum_bow');
+ t.begin('soldier');G.quietEvents=true;P.gold=10000;P.renown=1000;P.comps.brann={ap:2,role:''};P.sk.lead.lv=10;// all ten slots; a group holds ten, fit and wounded
+ const r=t.partyRoster(P);r.add('hum_foot',7);const a=r.groups[0];r.add('hum_bow',6);const bow=r.groups.find(g=>g.type==='hum_bow');
  P.wounded={hum_foot:3};P.woundedGroups=[{id:a.id,type:a.type,count:3}];
  const snap=()=>JSON.stringify({army:P.army,troops:P.troops,w:P.wounded,wg:P.woundedGroups}),before=snap();
- for(const n of [0,-1,1.5,12,13,NaN,Infinity])ok(!r.split(a.id,n)&&snap()===before,'split rejects invalid count '+n+' without mutation');
- const child=r.split(a.id,5);ok(a.count===7&&child.count===5&&P.troops.hum_foot===12,'exact split moves precisely five fit soldiers');
+ for(const n of [0,-1,1.5,7,8,NaN,Infinity])ok(!r.split(a.id,n)&&snap()===before,'split rejects invalid count '+n+' without mutation');
+ const child=r.split(a.id,3);ok(a.count===4&&child.count===3&&P.troops.hum_foot===7,'exact split moves precisely three fit soldiers');
  ok(r.wounded(a.id)===3&&!r.wounded(child.id),'all pending wounded stay with the originating group');
  ok(r.order.indexOf(child.id)===r.order.indexOf(a.id)+1,'new split is ordered immediately after its parent');
  ok(r.rename(a.id,'  Royal   Guard  ')&&r.nameOf(a.id)==='Royal Guard','rename trims and normalizes whitespace');
@@ -22,7 +22,7 @@ try{
  t.act('army-edit',a.id);const name=panel.querySelector('[data-army-name]');name.value='<b>Royal & "Guard"</b>';t.act('army-name-save',a.id);
  ok(r.nameOf(a.id)==='<b>Royal & "Guard"</b>'&&panel.querySelector('[data-army-group="'+a.id+'"] strong').textContent.includes('<b>')&&!panel.querySelector('[data-army-group="'+a.id+'"] strong b'),'group names are literal text, not executable HTML');
  const input=panel.querySelector('[data-army-split]');input.value='2';t.act('army-split-exact',a.id);const exact=r.groups[r.groups.length-1];
- ok(exact.count===2&&a.count===5&&!exact.name&&r.wounded(a.id)===3,'real editor splits the requested number without cloning the name or wounded');
+ ok(exact.count===2&&a.count===2&&!exact.name&&r.wounded(a.id)===3,'real editor splits the requested number without cloning the name or wounded');
  t.act('army-move',a.id+':-1');ok(rows().join()===r.order.join(),'actual Up/Down action refreshes the visible order');
  // Wounded-only formations stay visible and retain names on recovery.
  r.rename(child.id,'Recovering Guard');P.wounded.hum_foot+=2;P.woundedGroups.push({id:child.id,type:child.type,count:2});r.remove(child.type,child.count,child.id);t.renderChar();
