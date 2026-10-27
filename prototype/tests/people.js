@@ -60,7 +60,7 @@ try{
  fix(.01);t.act('pl-yield');unfix();ok(/throw down/.test(panel()),'it may yield');const pc=t.prisonerCount();t.act('pl-cage');
  ok(t.prisonerCount()===pc+2&&!t.bandits.includes(b),'and its fighters become your prisoners ('+pc+' → '+t.prisonerCount()+', cap '+t.prisonCap()+')');t.act('dlg-ok');
  const b2={x:P.x+5,y:P.y,n:2,kind:'bandits',list:['militia','spearman'],t:0,a:0,idle:false,cool:0};t.bandits.push(t.asParty(b2));world();t.meetBand(b2);fix(.01);t.act('pl-yield');unfix();
- P.wounded={};// (the wounded from earlier take room in the band)
+ P.wounded={};P.sk.lead.lv=10;// (the wounded from earlier take room in the band; and two new kinds need two new groups: army.js armyGroupLimit)
  const tc2=t.troopCount(),hh=t.honorWith(t.FIDS[0]);t.act('pl-join');ok(t.troopCount()===tc2+2&&t.honorWith(t.FIDS[0])<hh,'or join your band, at a cost to your honor');t.act('dlg-ok');
  const b3={x:P.x+5,y:P.y,n:2,kind:'bandits',list:['militia','militia'],t:0,a:0,idle:false,cool:0};t.bandits.push(t.asParty(b3));world();t.meetBand(b3);fix(.99);t.act('pl-yield');unfix();
  ok(G.enc&&G.enc.ref===b3&&/Fight/.test(panel()),'if they refuse, they fight');t.act('flee');
