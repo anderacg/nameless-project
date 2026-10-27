@@ -4,7 +4,7 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);
 try{
  const t=T,G=t.G,P=t.P;try{localStorage.clear()}catch(e){}
  t.act('begin','soldier');P.troops={};P.gold=500;t.enterTown(t.TOWNS[1]);t.act('tab','tavern');t.act('hire-comp','brann');P.troops={militia:4,spearman:2,archer:4,horse:3};t.act('leave');while(G.mode==='perk')t.act('perk',G.perkOffer[0]);
- t.startEncounter({kind:'party',ref:t.bandits[0],n:10});t.act('fight');const B=t.B;
+ t.startEncounter({kind:'party',ref:t.bandits[0],n:10});t.act('fight');const B=t.B;t.beginFight();// (a battle opens paused at Start Battle)
  const n=g=>t.grpUnits(g).length;ok(n(testGroup('inf'))===4&&n(testGroup('arc'))===4&&n(testGroup('cav'))===3,'groups inf='+n(testGroup('inf'))+' arc='+n(testGroup('arc'))+' cav='+n(testGroup('cav')));
  ok(['hero',testGroup('inf'),testGroup('arc'),testGroup('cav')].every(g=>B.groups[g].order==='hold'),'defaults: every group holds until you order it');
  const card=document.querySelector('[data-grp="'+testGroup('cav')+'"]'),btn=card.getAttribute('aria-label');ok(btn.startsWith(t.groupName(testGroup('cav'))+': ')&&!card.querySelector('.cn')&&card.querySelector('.ucount').textContent==='3','button label '+btn+' (its name in its tooltip, not on it) and visible count');
