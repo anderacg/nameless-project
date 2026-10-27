@@ -49,6 +49,7 @@ try{
   const cp=comp.party;cp.x=P.x;cp.y=P.y;P.wounded={hum_levy:1};P.troops={hum_levy:t.partyCap()-2};
   ok(t.cpTake('brann','hum_levy',3)===0&&cp.size===3,'taking soldiers back includes companions and wounded in the capacity check');
   P.remove('hum_levy');ok(t.cpTake('brann','hum_levy',3)===1&&cp.size===2,'a partial return fills only the free slot');
+  before=P.size;t.cpDisband('brann',false);ok(comp.party===cp&&cp.size===2&&P.size===before,'a return that would pass your group slots (three, untrained) is blocked whole: no soldier is lost');P.sk.lead.lv=10;
   before=P.size;t.cpDisband('brann',false);ok(!comp.party&&cp.size===0&&P.size===before+2,'automatic disband preserves the existing over-cap return policy but drains its old source');
   before=P.size;t.cpDisband('brann',false);t.partyRoster(cp).transferAllTo(t.partyRoster(P));ok(P.size===before,'repeating a disband or using its stale party reference cannot duplicate soldiers');
   const fief=t.TOWNS.find(h=>h.kind==='town');fief.owner='player';fief.gar=1;P.troops={hum_levy:1};P.txp={hum_levy:40};

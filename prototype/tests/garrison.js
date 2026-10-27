@@ -16,7 +16,8 @@ try{
  // defending
  const def=t.siegeDefenders(h);ok(def.lords.includes(l)&&def.list.length===t.garList(h).length+t.insideTroops(h).length,'his soldiers defend it with the garrison ('+t.garList(h).length+' + '+t.insideTroops(h).length+')');
  const fn=t.foodNeed(h);l.inside=null;const fn0=t.foodNeed(h);l.inside=h.name;ok(fn>fn0,'and eat from its stores');
- G.lastTown=null;G.mode='world';t.enterTown(h);ok(new RegExp(l.name).test(panel())&&/inside/.test(panel()),'the town panel names him with the garrison');t.act('leave');
+ G.lastTown=null;G.mode='world';t.enterTown(h);ok(!new RegExp(l.name).test(panel())&&/Lords inside: \?\?\?/.test(panel()),'a lord you have not met is inside, his name unknown');t.act('leave');
+ t.KNOWLEDGE.lord(l);G.lastTown=null;world();t.enterTown(h);ok(new RegExp(l.name).test(panel())&&/inside/.test(panel()),'once met, the town panel names him with the garrison');t.act('leave');
  // the Garrison tab: everything about who would defend it
  G.lastTown=null;G.mode='world';G.modal=false;t.hidePanel();t.enterTown(h);t.act('tab','garrison');
  ok(/On the walls/.test(panel())&&new RegExp(l.name).test(panel())&&/Defence power/.test(panel())&&/Walls/.test(panel())&&/Patrol/.test(panel()),'every holding has a Garrison tab: the soldiers on the walls, lords inside, defence power, walls, food and its patrol');
