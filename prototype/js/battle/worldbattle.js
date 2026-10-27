@@ -161,7 +161,7 @@ class WorldBattleArea{
   clamp(){for(const u of B.units)if(u.hp>0&&!u.rout&&!withdrawing(u)){const p=this.constrain(u);u.x=p.x;u.y=p.y}
     for(const g of Object.values(B.groups))if(g.order!=='rout'&&g.order!=='withdraw'){const p=this.constrain({x:g.ax,y:g.ay},16);g.ax=p.x;g.ay=p.y;for(const q of g.queue||[]){const a=this.constrain(q,16);q.x=a.x;q.y=a.y}}}
   step(dt){
-    this.enterMarchers(dt);
+    B.surprise?.step();this.enterMarchers(dt);
     for(const u of B.units){const a=u.regroup;if(!a)continue;
       if(a.phase==='rest'){a.t+=dt;if(a.t>=WORLD_BATTLE.regroup)a.phase='return';continue}
       const w=a.way||(a.way=this.returnPlan(u));if(!w)continue;const way=this.escapeWay(u,w),s=way?Math.min(way[2],u.s.spd*dt):0;

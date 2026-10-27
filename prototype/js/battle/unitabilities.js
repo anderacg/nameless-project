@@ -53,7 +53,7 @@ function abilityActive(g,id){const S=g&&g.abil&&g.abil[id],A=UNIT_ABILITIES[id];
 function abilityWhyNot(g,id){
   const A=UNIT_ABILITIES[id];if(!B||!A||!g)return 'Unknown ability';
   if(B.over)return 'The battle is over';if(B.deploy||B.ready||B.muster?.active)return 'Start the battle first';
-  if(g.resolve?.routed)return 'Routing';if(g.order==='withdraw')return 'Withdrawing';
+  if(g.resolve?.routed)return 'Routing';if(g.order==='withdraw')return 'Withdrawing';if(id==='brace'&&B.surprise?.has({grp:g.id}))return 'Surprised: no time to brace';
   if(!groupHasAbility(g,id))return 'Not for this unit';
   if(A.morale&&(B.noMorale||!g.resolve))return 'Morale is off';
   const S=g.abil&&g.abil[id];if(S&&B.t<S.readyAt)return 'Ready in '+Math.ceil(S.readyAt-B.t-1e-9)+' s';

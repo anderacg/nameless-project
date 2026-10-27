@@ -189,26 +189,33 @@ function sideOf(t,src){
 // a word over a soldier, unless the same word is already up close by (a whole line breaking says it once)
 function moraleSay(u,t,c,life){if(B.floats.some(f=>f.t===t&&Math.abs(f.x-u.x)<40&&Math.abs(f.y-u.y+22)<30))return;B.floats.push({x:u.x,y:u.y-22,t,life:life||.8,c})}
 // a blow's weight by the side it lands on (and a shake to its morale)
-// an ambush sprung on the world map (engage.js canWorldAmbush): the foes there at its start are taken by surprise, the longer the
-// less they suspected (stage: their awareness's, the map's eye: 0 unaware .. 3 all but sure). stages: [s, morale shaken] by stage.
-// Meanwhile their captains give no orders (they stand as they marched, each man fighting where he is), any blow on them lands as on
-// their flank, and the first charge each ambushing group lands shocks them AMBUSH.shock times (for AMBUSH.burst s)
-const SURPRISE={stages:[[8,15],[6,10],[5,7],[4,5]],says:['unaware of you','barely suspicious','suspicious','all but onto you']};
+/* an ambush on the world map. Yours (engage.js canWorldAmbush; hard): the foes there at its start are taken by surprise, the
+   longer the less they suspected (stage: their awareness's, the map's eye: 0 unaware .. 3 all but sure; stages: [s, morale
+   shaken] by stage). Meanwhile their captains give no orders (they stand as they marched, each man fighting where he is), any
+   blow on them lands as on their flank, and the first charge each ambushing group lands shocks them AMBUSH.shock times (for
+   AMBUSH.burst s). Theirs (a road ambush, btype hid 1; caught): your side is caught off guard, lighter: shaken, your move orders
+   come late s late, and no time to brace or close a shield wall. Both: the banner, the Surprised badge, the battle report */
+const SURPRISE={stages:[[8,15],[6,10],[5,7],[4,5]],says:['unaware of you','barely suspicious','suspicious','all but onto you'],caught:{secs:5,shake:8,late:1}};
 class Surprise{
   static stage(aware){return Math.min(3,Math.round(clamp(aware||0,0,1)*4))}
-  static begin(b,e){if(e?.btype?.kind!=='ambush'||e.btype.hid||e.aware==null)return null;return b.surprise=new Surprise(b,this.stage(e.aware))}
-  constructor(b,stage){const [secs,amt]=SURPRISE.stages[stage];this.stage=stage;this.secs=secs;this.until=b.t+secs;this.sprung=new Map();
-    this.groups=new Set(Object.values(b.groups).filter(g=>g.foe).map(g=>g.id));this.teams=new Set([...this.groups].map(id=>b.groups[id].team));
+  static begin(b,e){const bt=e?.btype;if(bt?.kind!=='ambush')return null;if(bt.hid===1)return b.surprise=new Surprise(b,null);if(e.aware==null)return null;return b.surprise=new Surprise(b,this.stage(e.aware))}
+  constructor(b,stage){const C=SURPRISE.caught,hard=stage!=null,[secs,amt]=hard?SURPRISE.stages[stage]:[C.secs,C.shake];Object.assign(this,{hard,stage,secs,until:b.t+secs,sprung:new Map(),queue:[]});
+    this.groups=new Set(Object.values(b.groups).filter(g=>hard?g.foe:g.team===0).map(g=>g.id));this.teams=new Set([...this.groups].map(id=>b.groups[id].team));
     for(const u of b.units)if(this.groups.has(u.grp)&&!steady(u)&&u.mor!=null)shake(u,amt);
-    const by=b.hero||b.units.find(u=>u.team===0);if(by)battleEvent('ambush',{u:by});log('Ambush! They were '+SURPRISE.says[stage]+': surprised for '+secs+' s.','good','war')}
+    const by=hard?b.hero||b.units.find(u=>u.team===0):b.units.find(u=>u.team!==0&&battleEnemy(0,u));if(by)battleEvent('ambush',{u:by});
+    log(hard?'Ambush! They were '+SURPRISE.says[stage]+': surprised for '+secs+' s.':'Ambushed! Your army is caught off guard for '+secs+' s: orders come late, no time to brace.',hard?'good':'bad','war')}
   get active(){return B.t<this.until}
   has(u){return this.active&&this.groups.has(u.grp)}
-  holds(team){return this.active&&this.teams.has(team)}
-  shock(u,t){if(!this.has(t))return 1;const k=u.grp||'u'+u.id,sp=this.sprung.get(k);if(sp===undefined){this.sprung.set(k,B.t);return AMBUSH.shock}return B.t-sp<=AMBUSH.burst?AMBUSH.shock:1}
-  get report(){return{stage:this.stage,secs:this.secs,say:SURPRISE.says[this.stage]}}
+  holds(team){return this.hard&&this.active&&this.teams.has(team)}
+  shock(u,t){if(!this.hard||!this.has(t))return 1;const k=u.grp||'u'+u.id,sp=this.sprung.get(k);if(sp===undefined){this.sprung.set(k,B.t);return AMBUSH.shock}return B.t-sp<=AMBUSH.burst?AMBUSH.shock:1}
+  flank(t){return this.hard&&this.has(t)}
+  // (caught: your order fn to groups gs carried out late s on (step); none caught, at once)
+  late(gs,fn){if(this.hard||!this.active||!gs.some(g=>this.groups.has(g)))return false;this.queue.push({at:B.t+SURPRISE.caught.late,fn});return true}
+  step(){while(this.queue.length&&this.queue[0].at<=B.t){this.queue.shift().fn();setOrderUI()}}
+  get report(){return this.hard?{stage:this.stage,secs:this.secs,say:SURPRISE.says[this.stage]}:{caught:true,secs:this.secs}}
 }
 function flankMul(t,src){
-  if(!src||B.opts&&B.opts.tournament||t.hero&&MANUAL_HERO)return 1;const s0=sideOf(t,src),s=s0==='front'&&B.surprise?.has(t)?'flank':s0;if(s==='front')return 1;// (a tournament: no flank bonus; morale off still has it, only the shake and banner go)
+  if(!src||B.opts&&B.opts.tournament||t.hero&&MANUAL_HERO)return 1;const s0=sideOf(t,src),s=s0==='front'&&B.surprise?.flank(t)?'flank':s0;if(s==='front')return 1;// (a tournament: no flank bonus; morale off still has it, only the shake and banner go)
   if(!B.noMorale){if(!steady(t)&&B.t-(t.sideShockAt??-Infinity)>=RESOLVE.flankEvery){shake(t,MORALE[s]);t.sideShockAt=B.t}t.flankAt=B.t;const r=resolveOf(t);if(r)r.flankAt=B.t;battleEvent('flank',{u:t,src})}// (its banner, now and then: battlehud.js)
   if(!src.arrow)moraleSay(t,s==='rear'?'Rear!':'Flank!','#ffb04a',.5);
   return 1+(FLANK[s]-1)*(src.arrow?FLANK.arrow:1);

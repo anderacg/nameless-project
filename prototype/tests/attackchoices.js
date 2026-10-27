@@ -25,6 +25,14 @@ Kit.suite(({ok})=>{
   const knight=b.units.find(u=>u.team===0);ok(S.shock(knight,eu)===t.AMBUSH.shock,'the ambushers\u2019 first charge shocks them harder');
   b.t=S.until;ok(!S.has(eu)&&t.flankMul(eu,front)===1&&S.shock(knight,eu)===1,'the surprise ends on time');b.over=true;b.win=true;b.endT=0;t.updateBattle(.01);
   ok(/Ambush:<\/b> they were unaware of you, surprised for 8 s/.test(document.getElementById('panel').innerHTML),'the battle report names the ambush')}
+ // (their ambush on the road: your army caught off guard, lighter: shaken, move orders late, no bracing or shield wall)
+ {reset();e=encounter({mine:false,btype:{kind:'ambush',hid:1}});t.act('fight');const b=t.B,S=b?.surprise,mine=b&&Object.values(b.groups).find(g=>g.player&&!g.units.some(u=>u.hero)),u=mine?.units[0];
+  ok(S&&!S.hard&&S.secs===t.SURPRISE.caught.secs&&S.has(u)&&t.grpMorale(mine.units)?.weak.includes('surprised')&&!S.holds(1),'ambushed, your army is caught off guard (the enemy captain is not)');
+  let done=false;t.playerOrder([mine.id],()=>{done=true},{late:true});const now=done;for(let i=0;i<40;i++)t.updateBattle(1/30);ok(!now&&done,'your move orders come '+t.SURPRISE.caught.late+' s late');
+  mine.setFlag('shieldWall',true);ok(!mine.shieldWall&&/no time to brace/.test(t.abilityWhyNot(mine,'brace')),'no time to close a shield wall or brace');
+  ok(t.flankMul(u,{x:u.x+Math.cos(t.facing(u))*10,y:u.y+Math.sin(t.facing(u))*10})===1,'their blows from the front are not flank hits');
+  b.t=S.until;t.playerOrder([mine.id],()=>{done='now'},{late:true});mine.setFlag('shieldWall',true);ok(done==='now'&&mine.shieldWall,'once it ends, orders are at once, and the shield wall closes');b.over=true;b.win=true;b.endT=0;t.updateBattle(.01);
+  ok(/Ambush:<\/b> they caught your army off guard/.test(document.getElementById('panel').innerHTML),'the battle report names it')}
  reset();const monster=t.asMonster({id:'wolf',n:2,lv:1,x:P.x+60,y:P.y,cool:0});W.monsters=[monster];t.startEncounter({kind:'monster',ref:monster,lv:1,list:monster.troops.slice(),mine:true,allies:[],foes:[]});ok(!!ambush()&&document.querySelector('[data-act="fight"]').textContent==='Normal attack','undetected monster encounters expose both attack choices');
  reset();const caravan=Object.assign(new t.CaravanParty(),{from:home.name,to:home.name,fac:'vale',x:P.x+60,y:P.y,goods:{grain:1},gold:0,guards:2,tc:{militia:2},cool:0});W.caravans=[caravan];t.startEncounter({kind:'caravan',ref:caravan,list:caravan.troops.slice(),mine:true,allies:[],foes:[]});ok(!!ambush(),'undetected caravans expose the ambush choice');
  reset();t.parley(enemy,'band');t.act('pl-fight');ok(G.enc.mine&&!!ambush(),'attacking through a parley preserves the player attack choice');

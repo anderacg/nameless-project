@@ -113,7 +113,8 @@ class BattleControl{
   aimAt(){if(!this.hasTarget||!this.units.some(u=>u.s.range&&!u.hero))return;const p=this.targetPoint(),C=this.centre();
     if(p&&angGap(Math.atan2(p.y-C.y,p.x-C.x),this.face)>SHOOT.arc*.4)faceToward(this.id,p.x,p.y)}
   turnFacing(dt){const from=this.currentFacing==null?this.face:this.currentFacing,diff=Math.atan2(Math.sin(this.face-from),Math.cos(this.face-from)),step=Math.min(Math.abs(diff),SHOOT.turn*Math.max(0,dt));this.currentFacing=from+Math.sign(diff)*step}
-  setFlag(k,on){if(this.resolve?.routed||!Object.hasOwn(GRP_FLAGS,k))return;this[k]=!!on&&this.units.some(u=>flagEligible(u,k))}
+  // (surprised: no time to close a shield wall: morale.js Surprise)
+  setFlag(k,on){if(this.resolve?.routed||!Object.hasOwn(GRP_FLAGS,k)||on&&k==='shieldWall'&&B?.surprise?.has({grp:this.id}))return;this[k]=!!on&&this.units.some(u=>flagEligible(u,k))}
   // a formation (formations.js), facing face, files wide
   setForm(f,o){if(this.resolve?.routed)return;if(f==='wall'){this.setFlag('shieldWall',true);return}if(!FORMS[f])return;o=o||{};if(o.face!=null)this.face=o.face;if(o.files!==undefined)this.files=o.files;this.form=f;if(FORMS[f].wedge&&o.files===undefined)this.files=null;layForm(this.id)}
   // its unit abilities (unitabilities.js): Brace, Fire arrows, Spur, Rally, as it has them; false when refused (cooldown, routing...)

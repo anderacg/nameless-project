@@ -11,7 +11,8 @@ const RTS_PICK=10;
 const ordered=gs=>gs.forEach(g=>{const gr=B.groups[g];if(gr)gr.orderSeq=(gr.orderSeq|0)+1});
 // every order of yours to groups gs: those the AI has taken back (deploy.js), counted (a move, an attack, Hold, the pace, a formation, a flag;
 // not a unit ability: counts false), done (fn), the order bar redrawn; returns what fn does
-function playerOrder(gs,fn,{counts=true}={}){if(B?.muster?.active)return false;takeCommand(gs);if(counts)ordered(gs);const r=fn();setOrderUI();return r}
+// (late: a move order, carried out late while an ambush has your army off guard: morale.js Surprise)
+function playerOrder(gs,fn,{counts=true,late=false}={}){if(B?.muster?.active)return false;takeCommand(gs);if(counts)ordered(gs);if(late&&B.surprise?.late(gs,fn))return;const r=fn();setOrderUI();return r}
 // the unit under a point: on a group's icon, its soldier nearest the group's middle (the icon is clicked as the group: select,
 // attack, everything a click on a soldier does); else the nearest soldier within RTS_PICK. An enemy your side does not see (in
 // woods or behind a rise: terrain.js seenBy) is no one to click. pick: a select's click, where icons overlap clicked again on the
@@ -48,7 +49,7 @@ function rtsOrder(x,y,opt){
   else{gs.forEach(regroup);const cx=gs.reduce((a,g)=>a+B.groups[g].ax,0)/gs.length,cy=gs.reduce((a,g)=>a+B.groups[g].ay,0)/gs.length;
     gs.forEach(g=>{const gr=B.groups[g];gr[am?'attackMove':'moveTo'](x+gr.ax-cx,y+gr.ay-cy,{run:!!opt.run})});if(am)amSay()}
   if(B.deploy)deploySnap(gs);
-  B.mark={x,y,t:.7,foe:!!e};if(am&&!e)B.mark.am=true});
+  B.mark={x,y,t:.7,foe:!!e};if(am&&!e)B.mark.am=true},{late:true});
 }
 // an attack-move asked for (Ctrl) or armed (the button: armAttackMove), the arm spent by this order; never while deploying
 function amTake(opt){const am=!!(opt&&opt.amove||B.amArm)&&!B.deploy;if(B.amArm){B.amArm=false;setOrderUI()}return am}
@@ -61,7 +62,7 @@ function setOrder(o){
   if(!B||B.muster?.active)return;const pace=o==='charge'||o==='advance';
   // (Charge and Advance set the pace, run or walk, and nothing else: where they go and whom they fight stay as they were;
   // hold: where they stand; withdraw: off your edge (battlecontrol.js))
-  playerOrder(selGroups(),()=>{for(const g of selGroups()){const gr=B.groups[g];if(pace)gr.setWalk(o==='advance');else if(o==='withdraw')gr.withdraw();else if(o==='hold'){gr.amEnd();gr.hold()}}});
+  playerOrder(selGroups(),()=>{for(const g of selGroups()){const gr=B.groups[g];if(pace)gr.setWalk(o==='advance');else if(o==='withdraw')gr.withdraw();else if(o==='hold'){gr.amEnd();gr.hold()}}},{late:true});
   // (withdrawing: the preview done (orderpaths.js WithdrawView); in a battle of several armies, told the rest fight on)
   if(o==='withdraw')withdrawView.disarm();
   toast(htmlText(selLabel())+': '+(pace?o==='charge'?'at a run.':'at a walk.':o==='withdraw'&&B.sides?.active?'withdraw. The other armies fight on after you leave.':o+'.'));
@@ -91,7 +92,7 @@ function formDragTo(x0,y0,x1,y1,o){
   const plan=formPlan(x0,y0,x1,y1);if(!plan.length)return false;const am=amTake(o);playerOrder(plan.map(p=>p.g),()=>{
   // (each a move to its part of the line, facing as dragged, as wide as its share of it: battlecontrol.js; your hero shares the line)
   for(const p of plan){const gr=B.groups[p.g],go=am?'attackMove':'moveTo';gr.amEnd();if(p.hero){gr[go](p.ax,p.ay,{face:p.face});B.hero.sx=B.hero.sy=0;continue}gr[go](p.ax,p.ay,{face:p.face,files:p.files})}
-  B.mark={x:(x0+x1)/2,y:(y0+y1)/2,t:.7,foe:false};if(am)B.mark.am=true;if(B.deploy)deploySnap(plan.map(p=>p.g))});toast(htmlText(selLabel())+(am?': attack-move to the line.':': form up there.'));return true;
+  B.mark={x:(x0+x1)/2,y:(y0+y1)/2,t:.7,foe:false};if(am)B.mark.am=true;if(B.deploy)deploySnap(plan.map(p=>p.g))},{late:true});toast(htmlText(selLabel())+(am?': attack-move to the line.':': form up there.'));return true;
 }
 // a unit ability (unitabilities.js) for every selected group that has it: each that can use it now does; the rest are left as
 // they are (cooling down, routing...). The order bar's ability buttons and their keys (G, I, U, Y) come here
