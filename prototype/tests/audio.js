@@ -60,7 +60,7 @@ try{
   t.prefSet('mute',true);const m1=t.sfx('click');ok(key('mute')==='1'&&A.muted&&A.level.master===0&&!m1,'mute: stored, master at 0, and a cue then makes nothing');
   t.prefSet('mute',false);ok(key('mute')==='0'&&!A.muted&&t.sfx('click'),'sound back on: cues play');
   const press=()=>window.dispatchEvent(new KeyboardEvent('keydown',{code:'KeyM',key:'M',shiftKey:true}));G.mode='world';G.modal=false;press();const on1=t.prefGet('mute')&&key('mute')==='1'&&A.muted;press();
-  ok(on1&&!t.prefGet('mute')&&key('mute')==='0'&&/Sound on/.test(G.msgs[G.msgs.length-1].m),'Shift+M mutes, and Shift+M again brings the sound back ("Sound on.")');
+  ok(on1&&!t.prefGet('mute')&&key('mute')==='0'&&/Sound on/.test((document.querySelector('#log')?.lastElementChild||{}).textContent),'Shift+M mutes, and Shift+M again brings the sound back ("Sound on.", on the screen: no journal line)');
   t.showTitle('settings');const pn=()=>document.getElementById('panel');
   ok(pn().querySelectorAll('[data-act="sound"]').length===2&&['volmaster','volmusic','volsfx'].every(k=>pn().querySelectorAll('[data-act="'+k+'"]').length===5)&&/data-nav="back"/.test(pn().innerHTML),'Settings: Sound off/on and three volumes (0–100%), the bottom bar\'s Back still there');
   t.act('sound','off');const off=A.muted&&pn().querySelector('[data-act="sound"][data-arg="off"]').classList.contains('on');t.act('volsfx','0.25');
@@ -79,6 +79,7 @@ try{
    t.act('leave');while(G.mode==='perk')t.act('perk',G.perkOffer[0]);k.t=6;t.audioWatch();ok(cur()==='world','out of the town: the road again');
    t.startEncounter({kind:'party',ref:t.asParty({x:P.x,y:P.y,cool:0,troops:['militia','militia','militia']}),n:3,list:['militia','militia','militia']});k.t=7;t.audioWatch();ok(A.last.encounter===7&&cur()==='world','met on the road: the alert');
    t.act('fight');k.t=8;t.audioWatch();ok(G.mode==='battle'&&cur()==='battle'&&A.last.horn===8,'a battle: the battle music, the horn as it begins');
+   t.beginFight();// (a battle opens ready, paused for Start Battle: f8cfe32)
    const B=t.B;B.over=true;B.win=true;k.t=9;t.audioWatch();ok(cur()==='victory'&&MU.cur.M.stinger,'won: the victory stinger');
    B.win=false;ok(t.sceneMood()==='defeat','lost (or withdrawn): the defeat stinger');B.win=true;
    B.endT=0;t.updateBattle(.01);t.act('cont');while(G.mode==='perk')t.act('perk',G.perkOffer[0]);k.t=9.5;t.audioWatch();
