@@ -15,7 +15,7 @@ Kit.suite(({ok})=>{
  // (no other beast near enough to come at you meanwhile: a world grown with its land holds more of them)
  W.monsters=W.monsters.filter(m=>Math.hypot(m.x-P.x,m.y-P.y)>400);
  const near=(id,lv)=>{const m={id,x:P.x+40,y:P.y,hx:P.x+40,hy:P.y,lv:lv||1,n:MONSTERS[id].count[0],cool:0,t:9,a:0};W.monsters.push(m);return m};
- G.encCool=0;P.troops={};let tg=near('tiger');const d0=Math.hypot(tg.x-P.x,tg.y-P.y);t.updateMonsters(.5);ok(Math.hypot(tg.x-P.x,tg.y-P.y)<d0,'tigers hunt you');
+ G.encCool=0;P.troops={};let tg=near('tiger');t.TravelAwareness.notice(t.asMonster(tg));/* (it has seen you: a beast hunts only what it has detected) */const d0=Math.hypot(tg.x-P.x,tg.y-P.y);t.updateMonsters(.5);ok(Math.hypot(tg.x-P.x,tg.y-P.y)<d0,'tigers hunt you');
  W.monsters=W.monsters.filter(m=>m!==tg);
  const boar=near('boar');for(let k=0;k<20;k++)t.updateMonsters(.1);ok(G.mode==='world','boars leave you alone');
  W.patrols=[];W.fights=[];// (no watch riding out at the boar first: on the generated world it may graze by a holding, and the land defence would be fighting it)
@@ -24,7 +24,7 @@ Kit.suite(({ok})=>{
  P.troops={hum_spear:8,hum_long:4};P.inv=Array(t.INV_SIZE).fill(null);
  // (keep: the beasts kept whole until that is seen: two level-1 spiders can fall to the spears before a web of theirs lands)
  const win=(id,lv,force,keep)=>{const m=near(id,lv);if(force)MONSTERS[id].gear=MONSTERS[id].gear.map(([g])=>[g,1]);G.encCool=0;t.startMonster(m);
-   const xp0=P.xp+P.level*1000;t.act('fight');const B=t.B,mu=B.units.find(u=>u.type===MONSTERS[id].unit);
+   const xp0=P.xp+P.level*1000;t.act('fight');t.beginFight();/* (Start Battle: battles open waiting for it) */const B=t.B,mu=B.units.find(u=>u.type===MONSTERS[id].unit);
    let seen={pounce:0,web:0,heal:0},i=0;
    while(t.B&&i<12000){B.units.forEach(u=>{if(u.team===0||keep&&!seen[keep])u.hp=u.max});const hp=mu.hp;t.updateBattle(.033);if(t.B){if(i%15===0)t.frame();/* (drawn now and then: what is seen is read from the simulation) */
      if(B.floats.some(f=>f.t==='POUNCE'))seen.pounce=1;if(B.units.some(u=>u.slow>0))seen.web=1;if(mu.hp>hp&&mu.hp>0)seen.heal=1}i++}

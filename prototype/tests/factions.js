@@ -14,13 +14,14 @@ try{
  t.enterTown(t.townBy('Ashford'));t.act('tab','tavern');t.act('contract');ok(P.fac==='vale'&&t.hostileTo('karn')&&!t.hostileTo('salt'),'contract with vale makes karn hostile');
  P.troops.hum_spear=2;t.act('tab','recruit');ok(/Pikeman/.test(document.getElementById('panel').innerHTML),'branching upgrade shown');
  P.txp={hum_spear:t.txpNeed('hum_spear')};t.act('train','hum_spear:hum_pike');ok(P.troops.hum_pike===1,'trained pikeman (with the experience for it)');
- t.act('hire','hum_levy');ok(P.troops.hum_levy===1,'hired race troop');
+ // (a third group wants a step of Leadership: an army starts with room for 3, your hero's own one of them, army.js armyGroupLimit)
+ P.sk.lead.lv=Math.max(P.sk.lead.lv,t.ARMY_GROUP.leadBase+1);t.act('hire','hum_levy');ok(P.troops.hum_levy===1,'hired race troop');
  t.act('leave');done();
  const kh=t.townBy('Karn Hold');P.x=kh.x;P.y=kh.y+3;G.lastTown=null;G.encCool=99;t.updateWorld(.016);
  ok(G.mode==='besiege'&&/Make siege camp/.test(document.getElementById('panel').innerHTML),'a hostile holding opens the siege screen instead of its gates');t.act('sg-leave');
- const kl=W.lords.find(l=>l.fac==='karn'&&!l.dead);kl.troops=Array(14).fill('dw_axe');kl.cool=0;G.encCool=0;P.x=kl.x+3;P.y=kl.y;t.updateLords(.016);
+ const kl=W.lords.find(l=>l.fac==='karn'&&!l.dead);kl.troops=Array(14).fill('dw_axe');kl.cool=0;G.encCool=0;P.x=kl.x+3;P.y=kl.y;t.TravelAwareness.notice(kl);t.updateLords(.016);
  ok(G.mode==='dialog'&&G.enc&&G.enc.kind==='lord','hostile lord attacks');
- t.act('fight');ok(t.B&&t.B.units.some(u=>u.team===1&&['dwarf','orc'].includes(t.ST[u.type].race)),'battle vs dwarf/orc troops');
+ t.act('fight');if(t.B)t.beginFight();ok(t.B&&t.B.units.some(u=>u.team===1&&['dwarf','orc'].includes(t.ST[u.type].race)),'battle vs dwarf/orc troops');
  let i=0;while(t.B&&i<20000){t.B.units.forEach(u=>{if(u.team===0&&!u.left)u.hp=u.max});t.updateBattle(.033);if(t.B&&i%15===0)t.frame();i++}
  ok(G.mode==='dialog'&&kl.dead,'beat lord in '+i+' steps; renown '+P.renown);
  t.act('cont');done();

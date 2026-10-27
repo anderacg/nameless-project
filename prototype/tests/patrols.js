@@ -37,7 +37,7 @@ try{
  h.gar=Math.max(h.gar,h.T.gar);t.patrolDay();ok(t.patrolOf(h),'and a fresh patrol rides out the next day');
  // crime: rob a worker, and the guards come for you
  const q=t.patrolOf(h);world();h.crime=null;t.wrong(h,t.CONDUCT.robWorker);ok(t.crimeAt(h)&&t.crimeAt(h).fine===t.CONDUCT.robWorker.rep*t.PATROL.fine,'a crime is remembered with a fine ('+t.crimeAt(h).fine+' gold)');
- q.cool=0;G.encCool=0;q.back=G.day+5;for(let i=0;i<400&&G.mode==='world';i++){if(i%40===0){P.x=q.x+40;P.y=q.y}t.updatePatrols(.05)}// (kept near: the day watch rides its beat, so it may turn away first)
+ q.cool=0;G.encCool=0;q.back=G.day+5;for(let i=0;i<400&&G.mode==='world';i++){if(i%40===0){P.x=q.x+40;P.y=q.y;t.TravelAwareness.notice(q)}t.updatePatrols(.05)}// (kept near: the day watch rides its beat, so it may turn away first)
  ok(G.mode==='dialog'&&/stops you/.test(panel())&&G.pt===q,'the guards come and stop you');
  P.gold=500;t.act('pt-pay');ok(!t.crimeAt(h)&&P.gold===500-t.CONDUCT.robWorker.rep*t.PATROL.fine,'paying the fine closes the matter');t.act('dlg-ok');
  world();t.wrong(h,t.CONDUCT.robWorker);G.encCool=0;t.patrolMeet(q);t.act('pt-fight');ok(G.enc&&G.enc.kind==='patrol'&&t.hostileTo(q.fac),'refusing means a fight, and their realm turns hostile');
@@ -64,8 +64,8 @@ try{
  // put on open ground 40 px off in plain line to you, not in a river it cannot walk out of; and the dice are seeded)
  {world();P.troops={hum_spear:1};const q=W.patrols.filter(x=>x.troops.length>=3).sort((a,b)=>t.rating(b.troops)-t.rating(a.troops))[0],r0=Math.random;Math.random=t.seeded(77);try{
   const spot=[0,1,2,3,4,5,6,7].map(k=>[P.x+40*Math.cos(k*Math.PI/4),P.y+40*Math.sin(k*Math.PI/4)]).find(([x,y])=>t.passable(t.terrAt(x,y))&&t.clearLine(x,y,P.x,P.y))||[P.x+40,P.y];
-  P.hostile[q.fac]=G.day+20;q.cool=0;q.x=spot[0];q.y=spot[1];G.encCool=5;
-  for(let i=0;i<60;i++)t.updatePatrols(.05);const d=Math.hypot(q.x-P.x,q.y-P.y);ok(d>=t.GRACE_GAP-2&&!G.enc,'in the grace after a fight, the guards hunting you hold off ('+Math.round(d)+' px, '+t.stance(t.rating(q.troops))+')');
-  G.encCool=0;for(let i=0;i<200&&!G.enc&&G.mode==='world';i++)t.updatePatrols(.05);ok(G.enc&&G.enc.kind==='patrol','once it is over, they close in and attack');world();delete P.hostile[q.fac]}finally{Math.random=r0}}
+  P.hostile[q.fac]=G.day+20;q.cool=0;q.x=spot[0];q.y=spot[1];G.encCool=5;t.TravelAwareness.notice(q);// (it has you in its eye, and keeps you there: worldobject.js)
+  const look=()=>{t.TravelAwareness.step(.05);t.updatePatrols(.05)};for(let i=0;i<60;i++)look();const d=Math.hypot(q.x-P.x,q.y-P.y);ok(d>=t.GRACE_GAP-2&&!G.enc,'in the grace after a fight, the guards hunting you hold off ('+Math.round(d)+' px, '+t.stance(t.rating(q.troops))+')');
+  G.encCool=0;for(let i=0;i<200&&!G.enc&&G.mode==='world';i++)look();ok(G.enc&&G.enc.kind==='patrol','once it is over, they close in and attack');world();delete P.hostile[q.fac]}finally{Math.random=r0}}
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}
 const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d)};
