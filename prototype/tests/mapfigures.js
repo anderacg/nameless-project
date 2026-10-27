@@ -44,7 +44,7 @@ try{
   const wrong=want.filter(([q,k,c,d])=>{const B=q.banner();return !B||B.k!==k||B.col!==c||B.dev!==d}).map(([q])=>q.mapKind);
   ok(!wrong.length,'each kind its banner: a realm\'s lord its colour and emblem, you a crown on your colour, a companion a star, guards their realm\'s pennant, bands a tattered rag (raiders\' ochre), a caravan a trade pennant'+(wrong.length?': '+wrong.join(', '):''));
   const beasts=[t.asMonster({id:'wolf',x:0,y:0,lv:1,n:1}),t.asMonster({id:'dragon',x:0,y:0,lv:1,n:1}),t.asHerd({crit:true,id:'deer',x:0,y:0,n:2}),t.asRefugees({rf:true,from:tw.name,to:tw.name,n:4,x:0,y:0})];
-  ok(beasts.every(q=>!q.banner&&!t.bannerAt(q,0)),'a beast, the dragon, a herd and refugees fly none');
+  ok(beasts.every(q=>!(q.banner&&q.banner())&&!t.bannerAt(q,0)),'a beast, the dragon, a herd and refugees fly none');
   const sp=[];for(const [q] of want)for(const f of [0,1])sp.push([q.mapKind,look(t.bannerSprite(q.banner(),f)),t.bannerSprite(q.banner(),f)]);
   const bb=sp.filter(([n,q,s])=>s.width!==16||q.h>16||q.w>12||q.inner||q.open);info('banners: '+sp.filter((x,i)=>!(i%2)).map(([n,q])=>n+' '+q.w+'x'+q.h).join(', '));
   ok(!bb.length&&t.bannerSprite(L.banner(),0)!==t.bannerSprite(L.banner(),1),'each banner in a 16 cell, at most 12 x 16, outlined round the silhouette only, fluttering in two frames'+(bb.length?': '+bb.slice(0,3).map(([n,q])=>n+' '+q.w+'x'+q.h+' '+q.inner+'/'+q.open).join(', '):''));
