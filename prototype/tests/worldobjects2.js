@@ -171,7 +171,15 @@ try{
  const oldInteract=ev('('+kept(OLD_INTERACT).replace('objKind(o)','__oldObjKind(o)').replace('o instanceof WorldObject','o instanceof Party')+')');
  // (the helpers named there that are gone since, read as their methods now: item 10)
  const since=s=>s.replace(/siteKnown\(s\)/g,'s.known()').replace(/bandPower\(o\)/g,'o.power()').replace(/o\.list\|\|\[\]/g,'o.troops');
- const oldTip=ev('('+kept(since(OLD_TIP)).replace('objKind(o)','__oldObjKind(o)')+')');
+ // (the cards changed on purpose since: a lord's name only once you know him (knowledge.js lordName), each party's fighters
+ // counted with its leader (Party fighters, its strength power()), and under each card what it makes of you, the travel eye's
+ // line (worldobject.js travelDetectionText, ui.js tipFor); the old text is read with those, the rest held as before)
+ const cards=s=>s.replace("'<b>'+o.name+' <span class=\"muted\">Lv '","'<b>'+htmlText(lordName(o))+' <span class=\"muted\">Lv '")
+   .replace("o.troops.length+' soldiers'+vs(rating(o.troops))+paceVs(lordSpeed(o))","o.fighters+' fighters, including the leader'+vs(o.power())+paceVs(lordSpeed(o))")
+   .replace("o.n+' fighters'+vs(o.power())","o.fighters+' fighters'+vs(o.power())")
+   .replace("o.troops.length+' soldiers'+(hostileTo(o.fac)?vs(rating(o.troops)):'')","o.fighters+' fighters'+(hostileTo(o.fac)?vs(o.power()):'')")
+   .replace("'’s party</b><small>Your companion · '+o.troops.length+' soldiers · '","'’s party</b><small>Your companion · '+o.fighters+' fighters · '");
+ const oldCard=ev('('+cards(kept(since(OLD_TIP))).replace('objKind(o)','__oldObjKind(o)')+')'),oldTip=o=>{const h=oldCard(o),d=h&&G.mode==='world'&&t.travelDetectionText(o);return h+(d?'<small>'+t.htmlText(d)+'</small>':'')};
  // (the chase: dropped when, and met during the cool-down after a fight: its two lines, read as two tests)
  const oldDrop=ev('(o=>{const k=__oldObjKind(o);return '+OLD_CHASE.slice(OLD_CHASE.indexOf('if(!k')+3,OLD_CHASE.indexOf(')G.chase=null'))+'})');
  const oldCool=ev('(k=>'+OLD_CHASE.match(/(\[\'town\'[^\]]*\])\.includes\(k\)/)[0]+')');
@@ -197,7 +205,8 @@ try{
  // both, and the movers the text draws its own old ways (beasts, herds, workers, ships, refugees, fights) are taken off the map
  // while the two are compared below; the parties and caravans draw themselves in both)
  // (and the parties' banners, drawn over all, as now: drawBanners; a spot on a banner picks its party, below)
- const PLINE=/if\(!P\.stay(?:&&!P\.camp)?\)ents\.push\(\{y:P\.y,(?:own:1,)?f:\(\)=>\{[\s\S]*?\}\}\);/,nowP=t.drawWorld.toString().match(PLINE)[0];const onFlag=(q,x,y)=>{const B=q&&q.banner&&t.bannerAt(q,0);if(!B)return false;const b=t.opaqueBox(B.s);return x>=B.x+b[0]&&x<=B.x+b[2]&&y>=B.y+b[1]&&y<=B.y+b[3]};
+ // (you as now: on the map's march, your host marching by you, and not while a world battle is on: render.js, since 702d45a)
+ const PLINE=/if\(!P\.stay(?:&&!P\.camp)?\)ents\.push\(\{y:P\.y,(?:own:1,)?f:\(\)=>\{[\s\S]*?\}\}\);|if\(!P\.stay&&!P\.camp&&!B\?\.world\)\{if\(WORLD_BATTLE\.on\)marchDraw\(ents,P,cam\);ents\.push\(\{y:P\.y,own:1,f:\(\)=>\{[\s\S]*?\}\}\); \}/,nowP=t.drawWorld.toString().match(PLINE)[0];const onFlag=(q,x,y)=>{const B=q&&q.banner&&t.bannerAt(q,0);if(!B)return false;const b=t.opaqueBox(B.s);return x>=B.x+b[0]&&x<=B.x+b[2]&&y>=B.y+b[1]&&y<=B.y+b[3]};
  const oldDraw=ev('('+depthDraw(since(OLD_DRAW)).replace(PLINE,()=>nowP).replace('estateEnts(bents,cam,V)','__oldLotEnts(bents,cam,V)').replace('drawFolk(ents,cam,V)','__oldDrawFolk(ents,cam,V)').replace('drawShips(ents,cam,V)','__oldDrawShips(ents,cam,V)').replace('drawRefugees(ents,cam,V)','__oldDrawRefugees(ents,cam,V)').replace('worldObjects()','[...W.parties,...W.caravans.map(asParty)]').replace('atSize(miniCv,mw,mh)','atSize(WorldArt.mini(Math.ceil(MW/256)),mw,mh)').replace("ctx.fillStyle='#000';ctx.fillRect(mx-1,my-1,mw+2,mh+2);",'drawMapFrame({x:mx,y:my,w:mw,h:mh});').replace("ctx.save();ctx.beginPath();ctx.rect(0,0,VW,VH);ctx.arc(px0,py0,V,0,Math.PI*2,true);ctx.clip('evenodd');ctx.drawImage(memCv(),0,0);ctx.restore();",'fogMem(memCv(),px0,py0,V);').replace(/const px=P\.x-cam\.x,py=P\.y-cam\.y,gr=[^\n]*\n\s*drawDark\(cam\);/,'drawWorldFog(cam,V);')+')');
  ok([OLD_PICK,OLD_INTERACT,OLD_TIP,OLD_DRAW].every(s=>s.length>500)&&/estateEnts\(bents/.test(OLD_DRAW)&&/worldObjects\(\)/.test(OLD_DRAW),'the old ways are kept as text ('+[OLD_PICK,OLD_INTERACT,OLD_TIP,OLD_DRAW].map(s=>s.length).join(', ')+' characters)');
  // ---- a crowd by a holding: a lord, a band beside him, two patrols, a caravan, your companion's party, a beast and the dragon,

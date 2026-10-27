@@ -35,16 +35,21 @@ try{
  ok(herds.length===t.TOWNS.filter(x=>x.kind!=='castle').length&&herds.every(c=>{const z=t.townBy(c.home);return c.pen?t.PASTURE_HERD[t.pastureLand(z)].includes(c.id):t.LIVESTOCK[z.races[0]].includes(c.id)}),'every village and town has a herd: a pasture’s of its land’s animals (workplaces), else of its people’s livestock');
  // fleeing and tiring
  const deer={crit:true,id:'deer',x:0,y:0,hx:0,hy:0,n:3,t:0,a:0,dir:1,tire:0,cool:0};const spot=W.critters.find(c=>!c.home);deer.x=deer.hx=spot.x;deer.y=deer.hy=spot.y;
- W.critters=[deer];P.x=deer.x-30;P.y=deer.y;G.mode='world';G.modal=false;G.encCool=0;t.hidePanel();
- const d0=Math.hypot(deer.x-P.x,deer.y-P.y);t.updateCritters(.1);ok(Math.hypot(deer.x-P.x,deer.y-P.y)>d0,'deer bolt when you come close');
- deer.tire=5;const x1=deer.x;t.updateCritters(.1);const fresh=Math.abs(deer.x-x1);ok(fresh<t.CRITTERS.deer.spd*.1*.5,'and slow down once tired');
- // hunting
- empty();P.troops={hum_bow:8};P.sk.hunt.lv=3;const xp=P.xp+P.level*1000;deer.x=P.x+5;deer.y=P.y;deer.n=3;deer.cool=0;t.updateCritters(.01);
- const killed=3-(W.critters.includes(deer)?deer.n:0);ok(killed>=3&&t.goodN('meat')===killed*4,'8 bows and Hunting 3 bring down '+killed+' deer for '+t.goodN('meat')+' meat');
- ok(!W.critters.includes(deer),'a herd hunted out is gone');
- const rab={crit:true,id:'rabbit',x:P.x+5,y:P.y,hx:P.x,hy:P.y,n:4,t:0,a:0,dir:1,tire:0,cool:0};W.critters=[rab];P.troops={};P.sk.hunt.lv=0;
- let lone=0;for(let i=0;i<20;i++){P.sk.hunt={lv:0,xp:0};rab.n=4;rab.cool=0;rab.x=P.x+5;rab.y=P.y;if(!W.critters.includes(rab))W.critters.push(rab);const b=t.goodN('meat');t.updateCritters(.01);lone=Math.max(lone,t.goodN('meat')-b)}
- ok(lone>=1&&lone<=2,'alone, you catch one or two rabbits at a time');
+ W.critters=[deer];P.x=deer.x-30;P.y=deer.y;G.mode='world';G.modal=false;G.encCool=0;t.hidePanel();t.TravelAwareness.notice(t.asHerd(deer));// (it has seen you: game flees what it has noticed, worldobject.js TravelAwareness)
+ const d0=Math.hypot(deer.x-P.x,deer.y-P.y),x0=deer.x,y0=deer.y;t.updateCritters(.1);const run=Math.hypot(deer.x-x0,deer.y-y0);ok(Math.hypot(deer.x-P.x,deer.y-P.y)>d0,'deer bolt when you come close');
+ // (tired: their escape stamina spent, world/exertion.js EscapeStamina, which took over from a herd's own tiring)
+ deer.escapeSta=0;const x1=deer.x,y1=deer.y;t.updateCritters(.1);const tired=Math.hypot(deer.x-x1,deer.y-y1);ok(tired>0&&tired<run*.8,'and slow down once tired ('+run.toFixed(2)+' px a moment fresh, '+tired.toFixed(2)+' spent)');
+ // hunting: a whole-army hunt, a world battle round the herd (the owner, 4b309d5: world/hunting.js WildHunt, battle/hunting.js;
+ // its own checks: tests/wildhunt.js); Auto Hunt runs it, the kills' meat and trophies come in the loot
+ const hunted=c=>{c.cool=0;Kit.world();t.hunt(c);t.act('hunt-start');const b=t.B;if(!b||!b.hunt)return null;t.setAuto(true,true);let i=0;
+   for(;t.B===b&&i<3000;i++){t.updateBattle(.05);if(t.B===b&&b.hunt.animals.every(u=>u.hp<=0||u.left))b.hunt.end()}if(t.B===b)b.hunt.end();t.setAuto(false,true);
+   const meat=(G.loot&&G.loot.pile||[]).filter(q=>q.k==='good'&&q.id==='meat').reduce((n,q)=>n+q.n,0),kills=b.kills;if(G.loot)t.act('lt-all');Kit.done({world:true});return{b,kills,meat,hunters:b.units.filter(u=>!u.team).length}};
+ empty();P.troops={hum_bow:8};P.sk.hunt.lv=3;deer.x=deer.hx=P.x+20;deer.y=deer.hy=P.y;deer.n=3;deer.tire=0;deer.escapeSta=undefined;
+ const h=hunted(deer),killed=h?h.kills:0;
+ ok(h&&killed>=1&&h.meat===killed*t.CRITTERS.deer.meat&&t.goodN('meat')===h.meat,'8 bows and Hunting 3 bring down '+killed+' deer for '+(h?h.meat:0)+' meat (carried off: '+t.goodN('meat')+')');
+ ok(killed<3?W.critters.includes(deer)&&deer.n===3-killed:!W.critters.includes(deer),'a herd hunted out is gone, the rest of one stay on the map ('+(W.critters.includes(deer)?deer.n+' left':'gone')+')');
+ const rab={crit:true,id:'rabbit',x:P.x+20,y:P.y,hx:P.x+20,hy:P.y,n:4,t:0,a:0,dir:1,tire:0,cool:0};W.critters=[rab];P.troops={};P.sk.hunt.lv=0;
+ const lone=hunted(rab);ok(lone&&lone.hunters===1,'alone, your hero hunts by himself: the whole army is him');
  // chase
  const stag={crit:true,id:'stag',x:P.x+40,y:P.y,hx:P.x+40,hy:P.y,n:1,t:0,a:0,dir:1,tire:0,cool:0};W.critters=[stag];G.chase=stag;t.updateWorld(.05);ok(P.tx===stag.x||G.chase===stag,'clicking a critter chases it');G.chase=null;P.tx=null;
  // livestock

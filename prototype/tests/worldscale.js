@@ -5,18 +5,19 @@
 // realistic pace: the day 180 s at a world pace of .4 (so every timer counted per game day lasts as it did), the
 // lever at .68 (a band on foot some 9 px a second on open ground, 25 km a day), the grace after a fight 1.47 times as long (the
 // gap you open in it as before), the AI on the same lever, and the walk cycles by the distance walked.
+// Since then campaign travel goes at twice that (WORLD_SCALE.travel, moveStep's third argument); a world battle keeps the base.
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);
 try{
  const t=T,get=u=>{const x=new XMLHttpRequest();x.open('GET',u,false);x.send();return x.responseText};
  const S=t.WORLD_SCALE,D=t.DENSITY;
  // ---- the table: every moved number, at today's value
- const want={move:.68,sight:{lord:90,band:95,monster:70,caravan:80,refugee:70},
+ const want={move:.68,travel:2,sight:{lord:90,band:95,monster:70,caravan:80,refugee:70},
   ai:{graceGap:24,grace:1.47,dread:70,bandCamp:220,lairHunt:140,lairLeash:60,mythicRoam:[120,90],mythicScorch:200,gameLeash:50,herdLeash:24,penLeash:99,
    compFoes:90,compFlee:70,compBeat:[80,60],compTake:60,compDraft:120,folkNear:520,folkForget:120,folkBandit:70,folkFear:90,slipAway:40},
   spawn:{bandit:[220,260],monster:[180,240],monsterHold:64,mythic:200,critter:[120,200],critterHold:56,away:120,rim:3},
   econ:{caravanNear:10,caravanFar:90,caravanCost:150,refuge:70,resRange:10,homeRange:24},
   law:{repNear:15,eventNear:15,siegeOutrage:20},land:{shelter:48,healNear:80,estateGuard:7,friendly:50,pacify:35},war:{front:60,raidLeash:80,siegeLeash:80},battle:{elfR:10,bridge:2}};
- ok(JSON.stringify(S)===JSON.stringify(want),'WORLD_SCALE holds every moved distance at today\'s value, the lever and the grace at Phase 1\'s ('+Object.keys(S).join(', ')+')');
+ ok(JSON.stringify(S)===JSON.stringify(want),'WORLD_SCALE holds every moved distance at today\'s value, the lever and the grace at Phase 1\'s, campaign travel twice the base (696de87) ('+Object.keys(S).join(', ')+')');
  const classic={bandits:30,camps:12,monsterStart:48,monsterCap:60,critterStart:96,critterCap:120,caravans:72,refugees:42,ships:30,sites:{cave:30,travelers:21,hideout:24,ruins:21,shrine:18},daily:{bandits:1,monsters:3,critters:3}};
  ok(JSON.stringify(D.classic)===JSON.stringify(classic)&&t.density()===D.classic,'DENSITY.classic holds today\'s caps, and it is the one in use (the classic world: the classic seed)');
  // ---- every cap reads the table; the site kinds scattered at random are the table's, and none keeps a count of its own
@@ -53,8 +54,8 @@ try{
   ok(!left.length&&!/BANDITS|MONSTER_CAP|MONSTER_START/.test(core)&&(0,eval)('typeof MAP_DENS')==='undefined','MAP_DENS is retired: core.js grows no caps and nothing reads it'+(left.length?': '+left.join(', '):''))}
  ok(t.GRACE_GAP===S.ai.graceGap&&t.RES_RANGE===S.econ.resRange&&t.HOME_RANGE===S.econ.homeRange,'the old names (GRACE_GAP, RES_RANGE, HOME_RANGE) read the table');
  // ---- one movement lever: at move 1 a step is exactly pace x d
- const R=t.seeded(5);let same=true;for(let i=0;i<2000;i++){const px=R()*90,d=R()*.2;same=same&&t.moveStep(px,d)===px*d*S.move}
- ok(S.move===.68&&same,'moveStep(pace, d) is exactly pace x d x move (2000 samples)');
+ const R=t.seeded(5);let same=true;for(let i=0;i<2000;i++){const px=R()*90,d=R()*.2;same=same&&t.moveStep(px,d)===px*d*S.move*S.travel&&t.moveStep(px,d,false)===px*d*S.move}
+ ok(S.move===.68&&S.travel===2&&same,'moveStep(pace, d) is exactly pace x d x move x travel on the campaign map, pace x d x move in a world battle (2000 samples)');
  // ---- no moved number left written out (the old expressions are gone; every step goes through moveStep)
  const gone={
   'world/brains.js':['const GRACE_GAP=24','this.sight(90)','this.sight(95)','this.sight(80)','o.y-l.y)<70','26*mul*d','16*d','12*d','.9*d','.75*d','dd<90','[1]<70','rint(-80,80)','rint(-60,60)','*d)'],
@@ -97,19 +98,19 @@ try{
   P.gear.mount=null;P.sk.ride.lv=0;P.sk.athl.lv=0;P.perks=[];P.comps={};P.wounded={};P.morale=60;P.hp=t.vitals()[0];(0,eval)('BAND=freshBand()');P.bsta=100;// (the pace by ground alone: fresh, not Parched or Tired after the day above, world/supply.js)
   const rows=[],bad=[],kmDay=v=>v*t.DAY_SECONDS/t.TILE*.25,want={foot:{open:[8.9,.05],road:[11.6,.05],forest:[5.3,.05]},horse:{open:[13.3,.08],road:[17.3,.08]}},race0=P.race;
   for(const [who,setup] of [['foot',()=>{P.race='dwarf';P.gear.mount=null;P.troops={hum_levy:10}}],['horse',()=>{P.race='dwarf';P.gear.mount='m_horse';P.troops={hum_knight:10}}],['human foot',()=>{P.race='human';P.gear.mount=null;P.troops={hum_levy:10}}]]){setup();
-   for(const g in grounds){if(!grounds[g])continue;P.x=grounds[g][0];P.y=grounds[g][1];const v=speed(grounds[g]),tm=(P.x=grounds[g][0],P.y=grounds[g][1],t.travelMul()),today=t.MAP_BASE*tm*.6,now=t.MAP_BASE*tm*t.WORLD_PACE*S.move;
-    if(Math.abs(v-now)>1e-6||Math.abs(v/today-.4/.6*.68)>1e-6)bad.push(who+' '+g+' '+v.toFixed(2)+' (want '+now.toFixed(2)+')');
-    const w=(want[who]||{})[g];if(w&&Math.abs(v/w[0]-1)>w[1])bad.push(who+' '+g+' '+v.toFixed(2)+' px/s, off the doc\'s '+w[0]+' by '+Math.round((v/w[0]-1)*100)+'%');
+   for(const g in grounds){if(!grounds[g])continue;P.x=grounds[g][0];P.y=grounds[g][1];const v=speed(grounds[g]),tm=(P.x=grounds[g][0],P.y=grounds[g][1],t.travelMul()),today=t.MAP_BASE*tm*.6,now=t.MAP_BASE*tm*t.WORLD_PACE*S.move*S.travel;
+    if(Math.abs(v-now)>1e-6||Math.abs(v/today-.4/.6*.68*S.travel)>1e-6)bad.push(who+' '+g+' '+v.toFixed(2)+' (want '+now.toFixed(2)+')');
+    const w=(want[who]||{})[g];if(w&&Math.abs(v/S.travel/w[0]-1)>w[1])bad.push(who+' '+g+' '+(v/S.travel).toFixed(2)+' px/s at the base, off the doc\'s '+w[0]+' by '+Math.round((v/S.travel/w[0]-1)*100)+'%');
     if(who==='human foot'&&g!=='open'&&g!=='road')continue;rows.push(who+' '+g+' '+v.toFixed(1)+' px/s ('+today.toFixed(1)+' before), '+kmDay(v).toFixed(0)+' km a day')}}
   P.gear.mount=null;P.troops={};
   info('on screen at 1x: '+rows.join('; '));
-  ok(!bad.length&&rows.length>=12,'every ground, on foot and mounted: today\'s pace x .4/.6 x .68 exactly, near the doc\'s targets (on foot within 5% of 8.9 open, 11.6 road, 5.3 forest; mounted within 8% of 13.3 and 17.3)'+(bad.length?': '+bad.join('; '):''));
-  {P.race='dwarf';P.troops={hum_levy:10};P.x=grounds.open[0];P.y=grounds.open[1];const km=kmDay(speed(grounds.open));ok(Math.abs(km/25-1)<.06,'a band on foot covers some 25 km a day on open ground ('+km.toFixed(1)+' km, '+(km*4).toFixed(0)+' tiles)');P.race=race0}
+  ok(!bad.length&&rows.length>=12,'every ground, on foot and mounted: today\'s pace x .4/.6 x .68 x travel exactly, the base near the doc\'s targets (on foot within 5% of 8.9 open, 11.6 road, 5.3 forest; mounted within 8% of 13.3 and 17.3)'+(bad.length?': '+bad.join('; '):''));
+  {P.race='dwarf';P.troops={hum_levy:10};P.x=grounds.open[0];P.y=grounds.open[1];const km=kmDay(speed(grounds.open));ok(Math.abs(km/(25*S.travel)-1)<.06,'a band on foot covers some '+25*S.travel+' km a day on open ground (25 at the base, x'+S.travel+' campaign travel: '+km.toFixed(1)+' km, '+(km*4).toFixed(0)+' tiles)');P.race=race0}
   // ---- the AI on the same lever: a caravan's step on open ground, a lord's on the march
   {park();const [x,y]=grounds.open,to=t.TOWNS.reduce((a,h)=>Math.hypot(h.x-x,h.y-y)>Math.hypot(a.x-x,a.y-y)?h:a);
    const c=t.asParty({cv:true,fac:to.owner,from:to.name,to:to.name,x,y,goods:{grain:5},guards:3,cool:0,dir:1});W.caravans.push(c);
-   P.x=-999;P.y=-999;const d=.02,x0=c.x,y0=c.y;c.brain.think(c,d);const step=Math.hypot(c.x-x0,c.y-y0),wantS=t.CARAVAN_SPD*Math.max(.5,t.speedAt(x0,y0)||1)*d*S.move;
-   ok(Math.abs(step-wantS)<1e-6,'a caravan steps by the same lever: '+step.toFixed(4)+' px in '+d+' (pace '+t.CARAVAN_SPD+' x '+S.move+')');W.caravans=[]}
+   P.x=-999;P.y=-999;const d=.02,x0=c.x,y0=c.y;c.brain.think(c,d);const step=Math.hypot(c.x-x0,c.y-y0),wantS=t.CARAVAN_SPD*Math.max(.5,t.speedAt(x0,y0)||1)*d*S.move*S.travel;
+   ok(Math.abs(step-wantS)<1e-6,'a caravan steps by the same lever: '+step.toFixed(4)+' px in '+d+' (pace '+t.CARAVAN_SPD+' x '+S.move+' x '+S.travel+')');W.caravans=[]}
   // ---- the grace after a fight: 1.47 times as long in world time, so the gap you open in it is what it was
   {park();P.troops={hum_levy:10};const [x,y]=grounds.open;P.x=x;P.y=y;const tm=t.travelMul();G.encCool=3;let f=0;for(;f<4000&&G.encCool>0;f++){P.x=x;P.y=y;P.tx=null;t.updateWorld(.05)}
    const secs=f*.05,gap=secs*t.MAP_BASE*tm*t.WORLD_PACE*S.move,before=3*t.MAP_BASE*tm;

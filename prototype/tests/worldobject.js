@@ -106,8 +106,8 @@ try{
   parties.forEach((q,i)=>{q.x=was[i][0];q.y=was[i][1]});P.x=px;P.y=py;if(mo)Object.assign(mo,{x:cx-12,y:cy-14});
   ok(same,'who is in sight is as before ('+n+' checks'+(f?', in the woods too':'')+')');
   L.inside=tw.name;ok(!L.inView(999)&&!L.mapDot(999),'a lord inside a holding is neither seen nor dotted');L.inside=null}
- // ---- the minimap: the same dots
- {const V=t.vis(),a=[],n=[];oldDots((x,y,col,s)=>a.push([x,y,col,s].join()),V);for(const q of t.worldObjects().filter(q=>q instanceof t.Party)){const d=q.mapDot(V);if(d)n.push([q.x,q.y,d[0],d[1]].join())}
+ // ---- the minimap: the same dots (the parties and caravans: a beast is a Party too now, for the world battles, its dot its own)
+ {const V=t.vis(),a=[],n=[];oldDots((x,y,col,s)=>a.push([x,y,col,s].join()),V);for(const q of t.worldObjects().filter(q=>q instanceof t.Party&&q.mapKind!=='monster')){const d=q.mapDot(V);if(d)n.push([q.x,q.y,d[0],d[1]].join())}
   ok(a.length>=4&&a.sort().join('|')===n.sort().join('|'),'the minimap dots the same parties and caravans, in the same colours ('+n.length+')')}
  // ---- meeting: the same dialog for each kind; G.youAttack set while it opens and cleared as soon as interact is done
  {const spies=['lordMeet','meetBand','patrolMeet','openComp'],orig={},got=[];
