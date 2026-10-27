@@ -150,7 +150,9 @@ const beastSize=u=>ST[u].hp<40?'small':ST[u].hp<120?'big':'huge',fewSay=n=>n<=2?
 class Cave extends Site{
   get screen(){return PAGE_SCREEN}
   static ground(tx,ty){return tAt(tx,ty)===T_HILL||tAt(tx,ty)===T_MOUNT}
-  static clear(tx,ty){const m=tAt(tx,ty+1);return!occAt(tx,ty)&&passable(m)&&m!==T_ROAD&&!occAt(tx,ty+1)}
+  // (its picture covers its tile, the one beside it and the two over them: none a road)
+  static clear(tx,ty){const m=tAt(tx,ty+1);if(occAt(tx,ty)||!passable(m)||m===T_ROAD||occAt(tx,ty+1))return false;
+    for(let j=-1;j<=0;j++)for(let i=0;i<=1;i++)if(tAt(tx+i,ty+j)===T_ROAD)return false;return true}
   static point(tx,ty){return[(tx+.5)*TILE,(ty+1)*TILE+CAVE_MOUTH]}
   static reachRow(ty){return ty+1}
   setup(sites){this.name=unusedName(CAVE_NAMES,sites);this.id=caveMonster(this.x,this.y)}
