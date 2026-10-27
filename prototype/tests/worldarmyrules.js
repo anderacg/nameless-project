@@ -16,7 +16,7 @@ Kit.suite(({ok})=>{
  ok(!r.quoteGroupTransfer(target,foot[1].id,1,target.groups[0].id).ok,'group transfer cannot overfill a destination');
  const npc=t.partyRoster(t.asParty({troops:Array(25).fill('hum_foot')}));ok(npc.groups.length===3&&npc.groups.every(g=>g.count<=10),'count-based NPC armies split into ten-soldier groups');
  const single=t.asParty({troops:['hum_foot'],x:P.x,y:P.y}),large=t.asParty({troops:Array(30).fill('hum_foot'),x:P.x,y:P.y});ok(t.marchOuter(single)<t.marchOuter(large),'army radius grows with actual army size');
- ok(t.PREFS.bpause.def===true&&t.settingsPage().includes('Pause when battle starts'),'battle-start pause defaults on and has a settings control');
+ ok(!t.settingsPage().includes('Pause when battle starts'),'every battle opens paused at Start Battle: Settings has no battle-start pause to turn off');
  const start=pause=>{
   Kit.begin('soldier',1);Kit.clear();Kit.world();t.WORLD_BATTLE.on=true;t.BEAST_TACTICS.on=true;t.prefSet('bpause',pause);P.troops={hum_foot:4};
   const h=Kit.goHome('Ashford');Kit.goTo(h.x+240,h.y+200);
@@ -26,7 +26,7 @@ Kit.suite(({ok})=>{
  };
  const first=start(true),b=first.b,m=first.m;
  ok(m instanceof t.Party&&t.worldBattleReach(m)>t.REACH,'monsters share army contact radii and rosters');
- ok(first.a.units.length===8&&b.paused,'monster pack has individual world sprites and battle begins paused');
+ ok(first.a.units.length===8&&b.muster?.active&&!b.ready,'monster pack has individual world sprites and its battle begins by forming up');
  const monsterRoster=t.partyRoster(m);monsterRoster.remove('wolf',1);const fewer=m.n;monsterRoster.add('wolf',1);ok(fewer===7&&m.n===8,'monster roster mutations update its campaign pack count');
  const enemies=b.units.filter(u=>u.team===1);
  ok(enemies.every(u=>u.sourceArmy===m&&u.marchUnit)&&new Set(enemies.map(u=>u.marchUnit)).size===8,'split beast packs retain distinct physical marchers and monster source identity');
@@ -34,5 +34,6 @@ Kit.suite(({ok})=>{
  ok(b.world.hides(m),'participating monster campaign sprites are suppressed during combat');
  const extra=t.asMonster({id:'wolf',n:2,lv:1,x:b.world.x+5,y:b.world.y,hx:b.world.x,hy:b.world.y,cool:0});t.W.monsters.push(extra);b.world.reinforce(1/60);
  ok(b.units.filter(u=>u.team===1).length===10,'nearby same-kind monsters reinforce through world battle entry');
- const second=start(false);ok(!second.b.paused&&t.prefLoad('bpause')===false,'turning off battle-start pause persists and starts combat running');
+ const second=start(false),b2=second.b;for(let i=0;i<4000&&b2.muster?.active;i++)t.updateBattle(.05);
+ ok(!b2.muster.active&&b2.ready&&b2.paused&&b2.t===0,'once formed, the monster battle waits paused at Start Battle, whatever the old pause preference');t.beginFight();ok(!b2.paused&&!b2.ready,'Start Battle runs it');
 });
