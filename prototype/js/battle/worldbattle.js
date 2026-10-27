@@ -1,6 +1,6 @@
 'use strict';
 /* ---------- campaign formations and battles on the land where the armies meet ---------- */
-const WORLD_BATTLE={on:true,scale:6,inner:8,outer:14,interaction:6,apron:22,join:220,regroup:7,returns:1,turn:3.5,blocked:30,sprite:3,step:1/60,sightBase:1,perFighter:4,avoid:28,avoidScan:1};
+const WORLD_BATTLE={on:true,scale:6,inner:8,outer:14,interaction:6,apron:22,join:220,regroup:7,returns:1,turn:3.5,blocked:30,stall:6,sprite:3,step:1/60,sightBase:1,perFighter:4,avoid:28,avoidScan:1};
 // Only local avoidance runs while campaign time is paused. Existing work/travel orders stay on their owners.
 class BattleBystanders{
   constructor(area){this.area=area;this.time=0;this.next=0;this.entries=new Map();this.navs=new Map()}
@@ -54,7 +54,7 @@ class WorldBattleArea{
     if(this.fight)for(const o of this.initial){if(o===P)continue;const reach=Math.max(marchOuter(o),MarchArmy.spread(o)),dx=o.x-this.x,dy=o.y-this.y,dist=Math.hypot(dx,dy);if(dist+reach<=this.r)continue;if(reach>=dist+this.r){this.x=o.x;this.y=o.y;this.r=reach}else{const size=(this.r+dist+reach)/2,k=dist?(size-this.r)/dist:0;this.x+=dx*k;this.y+=dy*k;this.r=size}}
     this.r=Math.max(this.r,this.sightRadius*WORLD_BATTLE.sightBase+Math.sqrt(this.fighters)*WORLD_BATTLE.perFighter);
     this.span=Math.ceil(2*(this.r+WORLD_BATTLE.apron));this.x0=this.x-this.span/2;this.y0=this.y-this.span/2;this.cx=this.cy=this.span*this.scale/2;this.radius=this.r*this.scale;
-    this.joinedFight=!!this.fight;this.starts=[a,{x:b.x,y:b.y,facing:other instanceof Party?marchFacing(other):Math.atan2(a.y-b.y,a.x-b.x)}];this.participants=new Set([...this.initial,other,this.fight,...(e.kind==='villagers'?other?.ws||[]:[])]);this.pending=[];this.arrivals=[];this.serial=0;this.marchClamp=p=>this.world(this.constrain(this.field(p),18));this.marchInside=p=>this.inside(this.field(p),6);
+    this.joinedFight=!!this.fight;this.starts=[a,{x:b.x,y:b.y,facing:other instanceof Party?marchFacing(other):Math.atan2(a.y-b.y,a.x-b.x)}];this.participants=new Set([...this.initial,other,this.fight,...(e.kind==='villagers'?other?.ws||[]:[])]);this.pending=[];this.turned=new Set();this.arrivals=[];this.serial=0;this.marchClamp=p=>this.world(this.constrain(this.field(p),18));this.marchInside=p=>this.inside(this.field(p),6);
   }
   field(p){return{x:(p.x-this.x0)*this.scale,y:(p.y-this.y0)*this.scale}}
   world(p){return{x:this.x0+p.x/this.scale,y:this.y0+p.y/this.scale}}
@@ -184,8 +184,10 @@ class WorldBattleArea{
   }
   reinforce(dt){
     for(const o of [...W.lords,...W.patrols,...cparties(),...bandits,...W.monsters.map(asMonster)]){if(this.participants.has(o)||o.dead||o.gone||o.inside||o.fight||!o.troops.length||Math.hypot(o.x-this.x,o.y-this.y)>this.r+WORLD_BATTLE.join)continue;const team=this.teamFor(o);if(team<0)continue;this.participants.add(o);this.pending.push({o,team});if(this.sides){const r=this.sides.byOwner.get(o);log(this.sides.label(r)+' approaches: '+this.sides.intent(r)+'.',battleEnemy(0,team)?'bad':'gold','war')}}
-    for(let i=this.pending.length-1;i>=0;i--){const a=this.pending[i],o=a.o,d=Math.hypot(o.x-this.x,o.y-this.y);if(this.sides){const r=this.sides.byOwner.get(o);if(r)a.team=r.team}if(d>this.r-3){const sp=Math.min(d,partySpeed(o,o.troops)*dt/this.scale);walk(o,this.x-o.x,this.y-o.y,sp);MARCH_ARMIES.get(o)?.step(dt/(this.scale*WORLD_SCALE.move),false);continue}if(this.sides&&!this.sides.room(o,a.existing?a.existing.reduce((n,id)=>n+B.units.filter(u=>u.grp===id).length,0):null))continue;if(a.existing){for(const id of a.existing){const g=B.groups[id],m=B.units.filter(u=>u.grp===id);for(const u of m){u.hp=u.hpLeft;delete u.left;delete u.waiting}this.place(g,m,o,{x:0,y:(a.existing.indexOf(id)-(a.existing.length-1)/2)*5},o);if(g.resolve){g.resolve.refreshState();g.resolve.sync()}}if(this.sides){const r=this.sides.byOwner.get(o);if(r)r.joined=true}B.cmdT=0;B.moraleNext=0;B.sight=null;log((o.mapKind==='lord'?lordName(o):o.name||o.label?.()||'An army')+' enters the battle.',a.team?'bad':'good','war');battleEvent('reinforcement',{party:o,team:a.team});setOrderUI()}else this.join(o,a.team);this.pending.splice(i,1)}
+    for(let i=this.pending.length-1;i>=0;i--){const a=this.pending[i],o=a.o,d=Math.hypot(o.x-this.x,o.y-this.y);if(this.sides){const r=this.sides.byOwner.get(o);if(r)a.team=r.team}if(d>this.r-3){const sp=Math.min(d,partySpeed(o,o.troops)*dt/this.scale);walk(o,this.x-o.x,this.y-o.y,sp);MARCH_ARMIES.get(o)?.step(dt/(this.scale*WORLD_SCALE.move),false);if(d<(a.best??Infinity)-1){a.best=d;a.stuck=0}else if((a.stuck=(a.stuck||0)+dt)>WORLD_BATTLE.stall)this.turnAway(i);continue}if(this.sides&&!this.sides.room(o,a.existing?a.existing.reduce((n,id)=>n+B.units.filter(u=>u.grp===id).length,0):null))continue;if(a.existing){for(const id of a.existing){const g=B.groups[id],m=B.units.filter(u=>u.grp===id);for(const u of m){u.hp=u.hpLeft;delete u.left;delete u.waiting}this.place(g,m,o,{x:0,y:(a.existing.indexOf(id)-(a.existing.length-1)/2)*5},o);if(g.resolve){g.resolve.refreshState();g.resolve.sync()}}if(this.sides){const r=this.sides.byOwner.get(o);if(r)r.joined=true}B.cmdT=0;B.moraleNext=0;B.sight=null;log((o.mapKind==='lord'?lordName(o):o.name||o.label?.()||'An army')+' enters the battle.',a.team?'bad':'good','war');battleEvent('reinforcement',{party:o,team:a.team});setOrderUI()}else this.join(o,a.team);this.pending.splice(i,1)}
   }
+  // a pending army that stops closing in (a river, a wall, the land) turns away: the fight no longer waits on it
+  turnAway(i){const o=this.pending.splice(i,1)[0].o,r=this.sides?.byOwner.get(o);this.turned.add(o);if(r)r.away=true;log((r?this.sides.label(r):o.mapKind==='lord'?lordName(o):o.name||'An army')+' cannot reach the battle and turns away.','gold','war')}
   join(o,team){
     if(this.sides){let r=this.sides.byOwner.get(o)||this.sides.reserve(o);if(!r||r.joined||!this.sides.room(o))return false;team=r.team}
     const e=G.enc,list=team?e.foes:e.allies;let force=list.find(f=>(f.src||f)===o);if(!force){force=forceOf(o);if(!this.sides||team===0||this.sides.active&&battleEnemy(0,team))list.push(force);(e.help||(e.help=new Map())).set(force,{why:'riding into the battle',n:o.troops.length})}
@@ -203,7 +205,7 @@ class WorldBattleArea{
     if(G.enc?.kind==='villagers')workerBattleFinish(b,this);
     const marched=new Set();for(const u of b.units)if(u.marchUnit&&!u.waiting){const m=u.marchUnit,army=MARCH_ARMIES.get(u.sourceArmy?.src||u.sourceArmy);if(army)marched.add(army);if(u.hp>0||u.left){const p=this.world(u);m.x=p.x;m.y=p.y;m.dir=u.dir}else m.dead=true}
     for(const army of marched)army.settlePivot();
-    const waiting=new Set(this.pending.map(p=>p.o)),e=G.enc;
+    const waiting=new Set([...this.pending.map(p=>p.o),...this.turned]),e=G.enc;
     if(e)for(const key of ['allies','foes'])e[key]=(e[key]||[]).filter(f=>!waiting.has(f.src||f));
     BVH=FIELD_H;BVW=Math.round(FIELD_H*MAPZOOM.vw/MAPZOOM.vh);if(b.hero&&(b.hero.hp>0||b.hero.left)){const p=this.world(b.hero);P.x=p.x;P.y=p.y;P.tx=null;const a=MARCH_ARMIES.get(P);if(a){a.x=P.x;a.y=P.y}}
   }

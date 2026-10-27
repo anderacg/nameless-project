@@ -172,7 +172,7 @@ class BattleArmyHud{
  pending(r){return B.world.pending.find(p=>p.o===r.owner)}
  state(r){
   const p=this.pending(r);if(p){const count=p.existing?p.existing.reduce((n,id)=>n+B.units.filter(u=>u.grp===id).length,0):null;return !this.s.room(p.o,count)?'Waiting to enter · fighter limit':'Approaching'}
-  if(!r.joined)return 'Not yet entered';const m=this.s.survivors(r);if(!m.length)return 'Defeated';return m.some(u=>u.hp>0&&!u.left&&!u.rout&&!withdrawing(u))?'Fighting · '+m.length:'Withdrawn / withdrawing';
+  if(!r.joined)return r.away?'Turned away':'Not yet entered';const m=this.s.survivors(r);if(!m.length)return 'Defeated';return m.some(u=>u.hp>0&&!u.left&&!u.rout&&!withdrawing(u))?'Fighting · '+m.length:'Withdrawn / withdrawing';
  }
  update(){
   if(!B?.sides){this.root.hidden=true;this.close();this.battle=null;return}

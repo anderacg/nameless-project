@@ -37,6 +37,8 @@ Kit.suite(({ok,info})=>{
  for(let i=0;i<300&&a.pending.some(p=>p.o===helper);i++)a.step(.1);
  const added=b.units.filter(u=>u.sourceArmy===helper);ok(added.length===3&&added.every(u=>a.inside(u))&&new Set(b.units.map(u=>u.id)).size===b.units.length,'an arriving army adds its troops and lord once, with unique actor identities');
  a.step(1);ok(b.units.filter(u=>u.sourceArmy===helper).length===3&&a.x===initial.x&&a.r===initial.r,'reinforcements never duplicate or enlarge the battle');
+ {const stuck=W.lords.find(l=>l.fac==='karn'&&l!==helper),walk=window.walk;stuck.dead=false;stuck.inside=null;stuck.fight=null;stuck.troops=['dw_clan'];stuck.x=a.x+a.r+60;stuck.y=a.y;a.pending.push({o:stuck,team:1});window.walk=()=>false;
+  try{for(let i=0;i<120&&a.pending.some(p=>p.o===stuck);i++)a.step(.1)}finally{window.walk=walk}ok(!a.pending.some(p=>p.o===stuck)&&a.turned.has(stuck)&&!b.units.some(u=>u.sourceArmy===stuck),'an army that cannot close in on the circle turns away after '+t.WORLD_BATTLE.stall+' s, so the fight stops waiting on it')}
  const soldier=added.find(u=>!u.leader),count=helper.troops.length;/* casualty settlement remains the normal source-group path */
  t.applyDmg(soldier,100000,1,null,b.hero,false);ok(helper.troops.length===count-1,'reinforcement casualties settle against their own campaign army');
  ok(a.ended(1,0),'no enemy left fighting is a final victory');ok(a.ended(0,1),'no ally left fighting is a final defeat');ok(!a.ended(1,1),'two fighting sides remain in battle');ok(a.ended(0,0),'a mutually cleared battlefield also resolves');

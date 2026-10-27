@@ -184,10 +184,10 @@ const acrossRiver=(a,b)=>{const r=B.btype&&B.btype.kind==='bridge'&&B.terrain&&B
 // if he is as fast (outpaced: the share of its pace he must be under; such a charge is forced). Walls (wall: spears of any kind,
 // shield walls, the braced; a spear's reach more avoid px to keep off) it rides at from a flank, never head on: one facing it and
 // fighting no one else (balks) it turns away from 1.5 × clear px off (on its last leg in, or any leg once the wall comes at it),
-// and stands off balk s before trying again; a run-in by another wall's front is front px dearer. No way out at all: it rides at the nearest (forced), but holds before a wall. At rest it waits shadowing its mark (see shadow); rested
-// (rested stamina), or restMax s at rest and fit to charge (minSta), it goes again. rough: see leg
-const CAVALRY_RIDE={runup:115,loop:155,near:26,contact:24,impact:.7,unsafe:.3,chargeMax:8,travelMax:12,recover:1.2,rested:55,minSta:35,formed:90,avoid:28,spear:120,margin:18,
-  out:150,clear:110,runMin:60,meet:170,legs:3,outpaced:.9,moved:40,turn:25,lead:40,balk:6,front:200,rough:60,moving:8,restMax:12,shadow:140};
+// and stands off balk s before trying again; a run-in by another wall's front is front px dearer. No way out at all: it rides at the nearest (forced), but holds before a wall. At rest it waits shadowing its mark (see shadow):
+// still fresh (low stamina or more) it re-forms and charges again, cycle after cycle; come in under low, it rests there till rested, or restMax s and fit to charge (minSta). rough: see leg
+const CAVALRY_RIDE={runup:115,loop:155,near:26,contact:24,impact:.7,unsafe:.3,chargeMax:8,travelMax:12,recover:1.2,rested:80,low:45,minSta:35,formed:90,avoid:28,spear:120,margin:18,
+  out:150,clear:110,runMin:60,meet:170,legs:3,outpaced:.9,moved:40,turn:25,lead:40,balk:6,front:200,rough:60,moving:8,restMax:40,shadow:140};
 class CavalryRide{
  static safe(a,p){const X=CAVALRY_RIDE;if(p.x<X.margin||p.x>BW-X.margin||p.y<fieldTop()+X.margin||p.y>fieldBot()-X.margin||B.world&&!B.world.inside(p,X.margin))return false;const T=B.terrain;return !T?.blocky||lineClear(T.route.mounted,a.x,a.y,p.x,p.y,255,ROUTE_UNIT.r)}
  static point(E,v,f,l,side){return {x:E.x+v.x*f-v.y*l*side,y:E.y+v.y*f+v.x*l*side}}
@@ -277,11 +277,11 @@ class CavalryRide{
     if(p.index>=p.points.length){if(p.phase==='exit'&&gap<X.clear&&gap>=X.runMin&&able&&!this.balks(c,m,foe,C))return this.charge(c,g,p,C,foe);if(p.phase==='exit'){p.phase='recover';p.at=B.t;p.chased=false;g.rest=true;if(gap>=X.clear)p.legs=0}else return this.runIn(c,g,m,C,p,target,able)}}return true;
   }
   if(p.phase==='recover'){
-   g.phase='regroup';g.rest=true;const at=this.shadow(c,p,C,foe);this.travel(g,at,C);if(foe)g.face=Math.atan2(foe.y-C.y,foe.x-C.x);const sx=m.reduce((n,u)=>n+(u.sx||0),0)/m.length,sy=m.reduce((n,u)=>n+(u.sy||0),0)/m.length,formed=m.every(u=>Math.hypot(u.x-C.x-(u.sx||0)+sx,u.y-C.y-(u.sy||0)+sy)<X.formed);
+   g.phase='regroup';g.rest=true;p.tired??=st<X.low;const at=this.shadow(c,p,C,foe);this.travel(g,at,C);if(foe)g.face=Math.atan2(foe.y-C.y,foe.x-C.x);const sx=m.reduce((n,u)=>n+(u.sx||0),0)/m.length,sy=m.reduce((n,u)=>n+(u.sy||0),0)/m.length,formed=m.every(u=>Math.hypot(u.x-C.x-(u.sx||0)+sx,u.y-C.y-(u.sy||0)+sy)<X.formed);
    if(gap<X.contact)return this.charge(c,g,p,C,foe,true);
    // (a foe coming on: from a run-up they ride at him; too close, they gallop clear again while they outrun him, else meet him)
    if(gap<X.clear){if(gap>=X.runMin&&able&&!this.balks(c,m,foe,C))return this.charge(c,g,p,C,foe);if(this.outruns(m,foe)&&(p.legs||0)<X.legs)return this.breakAway(c,g,m,C,p,foe);if(gap<X.runMin)return this.charge(c,g,p,C,foe,true)}
-   if(B.t-p.at>=X.recover&&B.t-(p.balk??-1e9)>=X.balk&&(st>=X.rested||B.t-p.at>=X.restMax&&st>=X.minSta)&&formed&&(!c.rOf?.(g.id)||c.rOf(g.id).mor>=tun(c.T,UNIT_AI,'chargeAt')||B.t-p.at>=tun(c.T,UNIT_AI,'cavRecover'))){delete g.ridePlan;g.rest=false;g.phase='flank'}return true;
+   if(B.t-p.at>=X.recover&&B.t-(p.balk??-1e9)>=X.balk&&(st>=(p.tired?X.rested:X.low)||B.t-p.at>=X.restMax&&st>=X.minSta)&&formed&&(!c.rOf?.(g.id)||c.rOf(g.id).mor>=tun(c.T,UNIT_AI,'chargeAt')||B.t-p.at>=tun(c.T,UNIT_AI,'cavRecover'))){delete g.ridePlan;g.rest=false;g.phase='flank'}return true;
   }
   return false;
  }
