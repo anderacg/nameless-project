@@ -23,6 +23,6 @@ Kit.suite(({ok})=>{
   // Exercise both movement paths on real open ground, with the player sheltered far away.
   let at=null;for(let y=20;y<t.MH-20&&!at;y++)for(let x=20;x<t.MW-20&&!at;x++)if([0,1,2,3].every(i=>t.tAt(x+i,y)===t.T_OPEN))at={x:(x+1.5)*t.TILE,y:(y+.5)*t.TILE};
   const herd=make();Object.assign(herd,at,{hx:at.x,hy:at.y});npc.x=at.x-10;npc.y=at.y;W.lords=[npc];P.stay='sheltered';threats.rebuild();const before=herd.x;t.HERD_MIND.think(herd,.1,0);ok(herd.x>before&&herd.hx===herd.x,'herd flees NPC and moves grazing anchor while player is sheltered');P.stay=null;
-  const active=t.WildHunt.active;t.WildHunt.active={herd,sources:[],threatFor:()=>null};try{const start=herd.x;t.HERD_MIND.think(herd,.1,0);ok(threats.target(herd)===npc&&herd.x>start,'wildlife uses the same NPC escape movement during an active area hunt')}finally{t.WildHunt.active=active}
+
  }finally{t.TravelAwareness.target=awareness;for(const [i,kind] of terrain)t.tiles[i]=kind;P.stay=null}
 });

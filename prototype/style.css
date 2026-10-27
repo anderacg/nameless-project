@@ -1109,8 +1109,6 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 @media(max-width:600px){.march-layout{gap:8px;padding:8px;grid-template-columns:minmax(180px,1.5fr) minmax(120px,1fr)}.march-layout .btn{font-size:11px;padding:6px}.march-layout canvas{width:100%;height:280px}}
 
 /* Short hunts stay on the map, with one way to leave. */
-.hunt-bar{position:absolute;z-index:8;left:50%;bottom:64px;transform:translateX(-50%);display:flex;align-items:center;gap:10px;max-width:90%;padding:8px 12px;background:#292017f0;border:1px solid #a78642;color:#e8dcc0;font:13px Arial}.hunt-bar span{color:#c9b78c}.hunt-bar .btn{white-space:nowrap}@media(max-height:450px){.hunt-bar{bottom:48px;padding:5px 8px;font-size:11px;gap:6px}}
-.screen:not([data-mode="world"]) .hunt-bar{display:none}
 
 
 /* Mobile map: one bottom stack, with transient speed and party panels above it. */
@@ -1127,7 +1125,7 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 .screen.mobile-world #stats{display:none;top:auto;bottom:calc(var(--e-b) + var(--mobile-hud-height,108px) + 8px);left:var(--e-l);right:var(--e-r);width:auto;max-height:calc(100% - var(--e-t) - var(--e-b) - var(--mobile-hud-height,108px) - 16px);overflow:auto;z-index:16}
 .screen.mobile-world.party-open #stats{display:block}
 .screen.mobile-world .toasts{bottom:calc(var(--e-b) + var(--mobile-hud-height,108px) + 12px);width:min(75%,380px)}
-.screen.mobile-world .staybar,.screen.mobile-world .hunt-bar{top:auto;bottom:calc(var(--e-b) + var(--mobile-hud-height,108px) + 12px)}
+.screen.mobile-world .staybar{top:auto;bottom:calc(var(--e-b) + var(--mobile-hud-height,108px) + 12px)}
 .screen.mobile-world.party-open .toasts,.screen.mobile-world:has(#worldSpeedChoices:not([hidden])) .toasts{display:none}
 .screen.mobile-controls .overlay:has(.fb-gm){align-items:flex-end;padding:0}
 .screen.mobile-controls .panel:has(.fb-gm){width:100%;height:min(620px,85%);max-height:calc(100% - var(--e-t));border-radius:12px 12px 0 0;border:1px solid var(--trim);padding:0;padding-bottom:var(--sa-b)}
@@ -1174,11 +1172,4 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 
 .overlay:has(.hunt-setup){align-items:flex-end;background:#0002;padding:8px}
 .panel.hunt-setup{height:auto;max-height:55dvh;width:min(620px,100%);gap:7px;padding:12px}
-.hunt-picker{display:flex;flex-wrap:wrap;gap:5px;max-height:110px;overflow:auto}.hunt-picker .btn{min-height:40px}
-.hunt-bar{display:flex;flex-direction:column;align-items:stretch;gap:6px;max-height:38dvh;overflow:auto;width:min(580px,calc(100% - 20px));padding:9px}
-.hunt-heading{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}.hunt-heading span{font-size:12px}
-.hunt-actions,.hunt-targets{display:flex;gap:5px;flex-wrap:wrap}.hunt-actions button,.hunt-targets button{min-height:38px;padding:5px 8px;border:1px solid var(--trim);background:var(--button-face);color:var(--fg);font:12px Arial}
-.hunt-bar button[aria-pressed="true"]{border-color:var(--accent);color:var(--accent)}.hunt-bar button:disabled{opacity:.4}
-@media(max-height:500px){.hunt-bar{left:auto;right:8px;transform:none;bottom:72px;width:360px;max-height:45dvh}.hunt-targets{max-height:40px;overflow:auto}.panel.hunt-setup{max-height:80dvh}}
-
-@media(min-height:501px){.hunt-actions button,.hunt-targets button{min-height:44px;font-size:13px}}
+@media(max-height:500px){.panel.hunt-setup{max-height:85dvh}}

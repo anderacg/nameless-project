@@ -21,7 +21,7 @@ try{
  // registers in them, and the world's day and frame run in the order the loop called them by hand (the shared Math.random: the
  // world fingerprints, tests/worldprint.js, hold it)
  {const w0=order.findIndex(s=>s.startsWith('world/')),day='estate guards,band,realms,patrols,relations,monsters,sites,herds,sieges,lands,economy,estates,caravans,ships,companions,wounded,chieftains,refugees,caravan upkeep,fiefs,quests,autosave,incidents,gatherings',
-   frame='escape stamina,tracks,travel awareness,stay,capture,raids,lands,march,supply,sites,road,fights,ships,parties,patrols,land defence,patrol moves,monsters,hunting,herds,refugees,folk,march formations,auto reinforce,arrival';
+   frame='escape stamina,tracks,travel awareness,stay,capture,raids,lands,march,supply,sites,road,fights,ships,parties,patrols,land defence,patrol moves,monsters,herds,refugees,folk,march formations,auto reinforce,arrival';
   ok(order.indexOf('core/systems.js')>=dataFirst&&order.indexOf('core/saves.js')>=dataFirst&&order.indexOf('core/systems.js')<w0&&order.indexOf('core/saves.js')<order.indexOf('core/save.js'),'the registries load after the data, before the systems');
   ok(t.Systems.names('day').join()===day,'the day, in its order: '+t.Systems.names('day').join(', '));
   ok(t.Systems.names('frame').join()===frame,'the frame, in its order: '+t.Systems.names('frame').join(', '))}

@@ -22,6 +22,7 @@ function unitSprite(type,team,hero,v,pose,bare,arm,tint){
   // a companion wears what you gave them: their weapon, armour and helm show (cg)
   const cg=COMPS[type]&&P.comps&&P.comps[type]&&P.comps[type].gear||null;
   // (a beast or a monster: its own figure (engine/beasts.js), one of three variants, its poses: beastSprite)
+  if(ST[type]?.wildlife){const id=ST[type].wildlife,f=pose>=2?pose%PX.MAP_STEPS:0,key='hunt:'+id+':'+f;if(spr[key])return spr[key];const s=critterSprite(id,f),c=mkc(s.width*2,s.height*2,g=>g.drawImage(s,0,0,s.width*2,s.height*2));c.cw=s.cw*2;c.ch=s.ch*2;return spr[key]=c;}
   if(ST[type]&&ST[type].beast)return beastSprite(type,team===2?0:team,v,pose);
   v=hero?0:(v||0)%6;pose=pose||0;const key=type+team+(hero?'h'+P.race+(P.gear.weapon||'')+(P.gear.body||'')+(P.gear.head||''):'')+(cg?'g'+(cg.weapon||'')+(cg.body||'')+(cg.head||''):'')+'v'+v+'p'+pose+(bare?'b':'')+(arm?'s':'')+(tint?'c'+tint:'');if(spr[key])return spr[key];
   // soldiers, your hero and companions: the template figures (people.js)

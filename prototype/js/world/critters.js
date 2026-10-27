@@ -19,7 +19,7 @@ class Herd extends WorldObject{
   pick(at){if(this.wild)at.add(this,9,4)}
   // up to three of its animals, behind and beside the first, a walk of PX.MAP_STEPS frames to a body length walked (critterSprite;
   // render.js stepOf), its count near you; each at its own place to the screen's pixel (render.js subT)
-  draw(ents,cam,V){if(!this.inView(V))return;const c=this;if(WORLD_BATTLE.on)marchCircle(ents,c,cam,Math.max(WORLD_BATTLE.outer,WORLD_BATTLE.inner+Math.sqrt(c.n||1)*2),'#b4c985');
+  draw(ents,cam,V){if(!this.inView(V)||B?.world?.hides(this))return;const c=this;if(WORLD_BATTLE.on)marchCircle(ents,c,cam,Math.max(WORLD_BATTLE.outer,WORLD_BATTLE.inner+Math.sqrt(c.n||1)*2),'#b4c985');
     ents.push({y:c.y,f:()=>{subT(c);const s=critterSprite(c.id),sx=Math.round(c.x-cam.x),sy=Math.round(c.y-cam.y),k=Math.min(3,c.n||1),sp=Math.max(4,Math.round(s.cw*.55)),go=mapStepping(c),N=PX.MAP_STEPS;
       for(let i=k-1;i>=0;i--){const ox=i===0?0:i===1?-sp:Math.round(sp*.4),oy=i===0?0:i===1?-1:-3,fr=go?(frameOf(c,Math.max(4,s.cw)/N,N)+i*3)%N:0,a=critterSprite(c.id,fr),w=Math.max(4,a.cw-2);
         ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(sx+(c.dir<0?-ox:ox)-(w>>1),sy+oy-1,w,2);
@@ -126,7 +126,7 @@ class WildlifeThreats{
   static target(c){
     const D=CRITTERS[c.id];if(!D||D.live)return null;
     const player=TravelAwareness.target(c),near=this.index.within(c.x,c.y,D.shy).filter(o=>this.present(o)&&Math.hypot(o.x-c.x,o.y-c.y)<D.shy*(hiddenAt(o.x,o.y)?WILDLIFE_AWARE.cover:1));
-    if(player)near.push(player);const hunter=WildHunt.active?.threatFor(c);if(hunter)near.push(hunter);
+    if(player)near.push(player);
     const distance=o=>Math.hypot(o.x-c.x,o.y-c.y),previous=this.chosen.get(c);
     let target=Spatial.nearest(near,c.x,c.y);
     // Keep an escape heading until another threat is clearly closer.

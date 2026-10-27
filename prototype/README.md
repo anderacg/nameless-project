@@ -176,7 +176,7 @@ js/world/             the campaign map and everything on it
   tracks.js             tracks: every band's trail of prints (Track; the Tracks system: sampled each frame, trimmed each hour
                         and at the cap, saved), who sees them (by Scouting) and their card (trackTip: hover, or Look on the ring)
   exertion.js           EscapeStamina: escape effort, gradual speed loss and safe recovery; data/exertion.js holds tuning
-  hunting.js            WildHunt: fixed hunting areas, actual hunters, contact attacks, arrows and collected game
+  hunting.js            WildHunt: whole-army hunting-area preview; battle/hunting.js runs its world battle and species loot
   monsters.js critters.js reputation.js
   march.js              MarchArmy/MarchGround: physical travel soldiers, local routes, saved formation goals and building feet
   travelgroups.js       TravelGroups: physical troop groups and their observed travel strength
@@ -1043,7 +1043,7 @@ Travel stealth UI is icon-only. Your army rings match the overall eye colour: te
 
 Travel detection eyes use larger fixed screen sizes: 18px for observers and 36px above your army.
 
-Wildlife hunting: Map > Hunting area, then hold a spot to preview a fixed circle and choose up to three actual fit melee or physical ranged hunters (an appropriately equipped hero can join). Ranged hunters approach and shoot physical arrows; melee hunters need weapon contact. Approach stops when prey bolts unless Pursue is enabled. Hunters stay within the circle, animals can escape; Collect sends a hunter to the body before granting meat/materials/XP. Move positions hunters; End hunt rejoins normal marching. No battle formation phase or arbitrary hunt timer. HUNT_AREA tuning lives in data/exertion.js. Tests: wildhunt, huntfield; shared swept-hit compatibility: worldhitvisibility.
+Wildlife hunting (2026-10-27): Map > Hunting area, hold a nearby spot, then Begin hunt. The entire fit army and hero enter a real world battle at their current marching positions, without hunter selection or army preparation. Each visible animal within the fixed circle becomes its own species battle unit. Use ordinary orders or the existing AI toggle for Auto Hunt: melee and ranged units fight together with normal weapons, range, cooldowns, abilities and ammunition. Wildlife uses individual species escape stamina, follows reachable exits, and never regroups after escaping the boundary. Hunters stay inside. End hunt (mobile: More) opens normal loot: meat and species trophy chances only for kills, no war gold, renown or prisoners. Survivors return to the map at their actual positions with fatigue preserved. The map preview is world/hunting.js; battle/hunting.js owns battle setup, wildlife AI and settlement. Tests: wildhunt, huntfield, huntcompat.
 
 Travel pace feedback: walking/running changes are silent. gfx/worldui.js draws a cached animated walking or running figure on the path; Hurry widens footprint spacing and accelerates the trail. Reduced motion keeps the guide still. Exhaustion refusal remains a warning. Tests: worldui, journalretention, clickhurry.
 

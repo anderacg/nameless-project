@@ -26,7 +26,7 @@ function heroAtGate(t){const s=gateSpot(t);P.x=s.x;P.y=s.y;P.tx=P.ty=null;P.stuc
 const bridgeAt=(tx,ty)=>tAt(tx,ty)!==T_ROAD?0:tAt(tx-1,ty)===T_WATER&&tAt(tx+1,ty)===T_WATER?1:tAt(tx,ty-1)===T_WATER&&tAt(tx,ty+1)===T_WATER?2:0;
 function walk(o,dx,dy,step,ok){
   const a0=Math.atan2(dy,dx);
-  for(const off of [0,.6,-.6,1.2,-1.2,1.9,-1.9]){const a=a0+off;let nx=o.x+Math.cos(a)*step,ny=o.y+Math.sin(a)*step;if(!(o===P&&WildHunt.active?.sources.some(u=>u.type==='hero')&&WildHunt.active.inside(P)&&!WildHunt.active.inside({x:nx,y:ny}))&&passable(terrAt(nx,ny))&&(!ok||ok(nx,ny))){
+  for(const off of [0,.6,-.6,1.2,-1.2,1.9,-1.9]){const a=a0+off;let nx=o.x+Math.cos(a)*step,ny=o.y+Math.sin(a)*step;if(passable(terrAt(nx,ny))&&(!ok||ok(nx,ny))){
     const tx=Math.floor(nx/TILE),ty=Math.floor(ny/TILE),b=bridgeAt(tx,ty),m=Math.max(1,step);if(b===1)nx+=clamp((tx+.5)*TILE-nx,-m,m);else if(b===2)ny+=clamp((ty+.5)*TILE-ny,-m,m);
     WALKED.set(o,(WALKED.get(o)||0)+Math.hypot(nx-o.x,ny-o.y));o.x=nx;o.y=ny;return true}}
   return false;
@@ -79,7 +79,7 @@ function clickAt(wx,wy){
   return approach(o);
 }
 // (what you clicked on, or picked Approach for on its ring (ui/input.js worldApproach): met if you are touching it, else chased)
-function approach(o){if(WildHunt.active){if(o===WildHunt.active.herd)return true;WildHunt.active.finish('You leave the hunt.')}if(o.mapKind==='critter'&&o.wild&&o.inView(vis()))return hunt(o);if(Math.hypot(o.x-P.x,o.y-P.y)<=worldBattleReach(o))return interact(o);G.chase=o;P.tx=o.x;P.ty=o.y;P.stuck=0;return false}
+function approach(o){if(o.mapKind==='critter'&&o.wild&&o.inView(vis()))return hunt(o);if(Math.hypot(o.x-P.x,o.y-P.y)<=worldBattleReach(o))return interact(o);G.chase=o;P.tx=o.x;P.ty=o.y;P.stuck=0;return false}
 /* ---------- Follow (the owner, 2026-10-23: "add new Action called 'Follow' which can be used when you click at the other unit in
    the world map"): your band shadows a party, keeping after it at a distance, never closing in to meet or fight it (a chase,
    G.chase, does). G.follow: {o: the party, crumbs: where it has walked, a point each FOLLOW.crumb px, the oldest FOLLOW.trail tiles

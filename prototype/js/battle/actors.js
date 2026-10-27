@@ -103,7 +103,7 @@ class Actor extends Fighter{
     try{for(let i=0;i<B.units.length;i++){const u=B.units[i];if(u.hp<=0||u.hero)continue;S.hold(i);u.cd-=dt;Actor.of(u).turn(dt);S.release(i)}}finally{spatialClose()}
   }
   // a troop's or a beast's turn: its step, then a monster's ability and a dragon's breath
-  turn(dt){const u=this.u;this.step(dt,null);this.ability(dt);if(u.s.breath){u.br=(u.br??2.5)-dt;if(u.br<=0){const t=nearest(u);if(t&&Math.hypot(t.x-u.x,t.y-u.y)<90){this.breathe(t);u.br=3.5}}}}
+  turn(dt){const u=this.u;if(u.wildlife)return B.hunt.turn(u,dt);this.step(dt,null);this.ability(dt);if(u.s.breath){u.br=(u.br??2.5)-dt;if(u.br<=0){const t=nearest(u);if(t&&Math.hypot(t.x-u.x,t.y-u.y)<90){this.breathe(t);u.br=3.5}}}}
   ability(dt){
     const u=this.u,ab=u.s.ability;
     if(ab==='regen')u.hp=Math.min(u.max,u.hp+4*dt);

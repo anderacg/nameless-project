@@ -80,7 +80,7 @@
          over a row of unit cards. Icons are filled in at load (battlehud.js) -->
     <div class="bhud" id="bbar" hidden>
       <div class="btop" role="status">
-        <div class="bpow"><span class="bside me"><b id="bMine">0</b> Your band</span><span class="bpowbar" aria-hidden="true"><i id="bPowMe"></i></span><span class="bside foe">Enemy <b id="bFoe">0</b></span></div>
+        <div class="bpow"><span class="bside me"><b id="bMine">0</b> Your band</span><span class="bpowbar" aria-hidden="true"><i id="bPowMe"></i></span><span class="bside foe"><span id="bFoeLabel">Enemy</span> <b id="bFoe">0</b></span></div>
         <div class="bfield"><span id="bField"></span><span id="bStatus"></span></div>
       </div>
       <div class="btime" role="group" aria-label="Battle speed (Space pauses; [ and ] slower, faster)">
@@ -309,6 +309,7 @@
 <script src="js/battle/camera.js"></script>
 <script src="js/battle/deploy.js"></script>
 <script src="js/battle/worldbattle.js"></script>
+<script src="js/battle/hunting.js"></script>
 <script src="js/world/march.js"></script>
 <script src="js/world/travelgroups.js"></script>
 <script src="js/ui/march.js"></script>

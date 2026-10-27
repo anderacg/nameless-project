@@ -228,12 +228,12 @@ class Commander{
     powersThink(dt);// (the commanders' powers: theirs, and yours under Auto; commandpowers.js)
     if(!B||(B.cmdT=(B.cmdT||0)-dt)>0)return;B.cmdT=FOE_CMD.think;
     // (orders hands its groups on to finish: the same as groups would find again, groups being made only at the start)
-    Commander.of(1).think();
+    if(!B.hunt)Commander.of(1).think();
     if(Object.values(B.groups).some(g=>g.ally))Commander.of('ally').think();// (your allies' own captain)
     if(aiAny())Commander.of(0).think();// (yours: the groups the AI has, deploy.js aiHas)
   }
   // one think: its orders, then each group's pace, formation and front (finish)
-  think(){this.finish(this.orders())}
+  think(){if(B.hunt&&this.team===0){B.hunt.orders(Object.values(this.groups()).flat().map(id=>B.groups[id]));return}this.finish(this.orders())}
   // a captain's think: its posture, then each arm in turn on one reading of the battle (captainCtx); it hands back its groups (captainFinish's)
   orders(){
     // (ck: this captain's own memory (captainMem): your army's and your allies' are on one side but each its own)

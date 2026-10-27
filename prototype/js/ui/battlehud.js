@@ -149,6 +149,7 @@ function bhudTop(){
   if(!B)return;window.mobileBattleHud?.update();const w=u=>u.hp/Math.max(1,u.max)*(u.hero||u.leader||u.comp?4:(ST[u.type]&&ST[u.type].tier||1));let me=0,foe=0,nm=0,nf=0;
   for(const u of B.units){if(u.hp<=0)continue;if(u.team===0){nm++;if(!u.rout)me+=w(u)}else{nf++;if(!u.rout)foe+=w(u)}}
   const $id=id=>document.getElementById(id);if(!$id('bMine'))return;$id('bMine').textContent=nm;$id('bFoe').textContent=nf;$id('bPowMe').style.width=pct(me/Math.max(.01,me+foe));
+  const huntEnd=$id('huntEnd');if(huntEnd)huntEnd.hidden=!B.hunt;const foeLabel=$id('bFoeLabel');if(foeLabel)foeLabel.textContent=B.hunt?'Wildlife':'Enemy';
   $id('bField').textContent=B.env.name+(B.opts.tournament?' · tournament':'');
   $id('bStatus').textContent=B.over?(B.retreat?'Withdrawn':B.win?'Victory':'Defeat'):B.muster?.active?(B.paused?'Preparation paused · Space to continue':'Forming up · '+B.muster.done+'/'+B.muster.entries.length):B.ready?'Ready · Start Battle to begin':B.deploy?(GUIDE.on?'Deploy: place your band in the shaded zone · Space to begin':'Deploying'):B.paused?(GUIDE.on?'Paused · give your orders · Space to go on':'Paused'):B.speed!==1?B.speed+'×':'';
   document.querySelector('.bfield').classList.toggle('alert',!!(B.deploy||B.paused));
