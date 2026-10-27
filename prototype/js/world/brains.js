@@ -27,6 +27,8 @@ class LordBrain extends Brain{
     if(l.defend&&LandDefence.lordDefends(l,d))return false;
     if(l.inside){const h=townBy(l.inside);if(l.state==='rest'&&l.tgt===l.inside&&h&&h.owner===l.fac)return false;l.leave()}
     if(inFight(l))return false;
+    // (lying in wait in the trees: waylay.js)
+    if(l.waylay||['march','home','patrol'].includes(l.state)&&!TravelAwareness.sees(l)&&Waylay.consider(l,d,true)){const r=Waylay.step(l,moveStep(lordSpeed(l),d));if(r==='met')return true;if(r)return false}
     const v=this.look(l),pd=v.d,hostile=hostileTo(l.fac)&&!lordSpares(l),mul=lordSpeed(l)/26;// (26: a lord's old pace)
     const relief=hostile&&l.state==='relieve'&&!!P.siege&&P.siege.town===l.tgt,st=hostile?(relief?'attack':stance(l.power(),l)):null,see=TravelAwareness.sees(l)?travelDetection(l).range:0;
     if(st==='afraid'&&l.state==='siege'&&pd<see){l.state='home';l.tgt=Spatial.nearest(fiefsOf(l.fac),l.x,l.y).name;log(l.name+' abandons the siege as your band approaches.','good')}
@@ -54,6 +56,7 @@ class BandBrain extends Brain{
   think(b,d,night){
     if(inFight(b))return false;
     const v=this.look(b);this.cool(b,d);
+    if(b.waylay||!TravelAwareness.sees(b)&&Waylay.consider(b,d)){const r=Waylay.step(b,moveStep(partySpeed(b,b.troops),d));if(r==='met')return true;if(r)return false}// (lying in wait: waylay.js)
     const st=stance(b.power(),b),home=night&&campNear(b);
     if(b.cool>0||!stanceMove(b,st,v.d,v.dx,v.dy,TravelAwareness.sees(b)?travelDetection(b).range:0,moveStep(partySpeed(b,b.troops),d),true)){
       if(home){Router.travel(b,home,moveStep(16,d))||walk(b,home.x-b.x,home.y-b.y,Math.min(Math.hypot(home.x-b.x,home.y-b.y),moveStep(16,d)));if(Math.hypot(home.x-b.x,home.y-b.y)<8){(home.bands=home.bands||[]).push(b);b.x=home.x;b.y=home.y;b.gone=true;return false}}

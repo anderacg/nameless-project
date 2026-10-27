@@ -89,7 +89,7 @@ function updateFights(d){
     if(f.multi){updateArmyFight(f,d);continue}
     // each side wears the other down by its share of the strength; the whole fight takes about dur
     // the pace is set by how many started (and joined): an even fight takes about dur, a lopsided one less
-    const pw=[0,1].map(s=>sidePower(f,s)*lordTac(sideParties(f,s))),rate=(f.n0||sideTroops(f,0).length+sideTroops(f,1).length)/Math.max(1,f.dur);
+    const pw=[0,1].map(s=>sidePower(f,s)*lordTac(sideParties(f,s))*(f.amb?.side===s&&f.t<f.amb.until?WAYLAY.fight:1)),rate=(f.n0||sideTroops(f,0).length+sideTroops(f,1).length)/Math.max(1,f.dur);
     for(const s of [0,1]){f.acc[s]+=d*rate*pw[1-s]/Math.max(1,pw[0]+pw[1]);
       while(f.acc[s]>=1){f.acc[s]--;const ps=sideParties(f,s).filter(o=>o.troops.length);if(!ps.length)break;let r=Math.random()*ps.reduce((a,o)=>a+o.troops.length,0),o=ps[0];for(const p of ps){r-=p.troops.length;if(r<=0){o=p;break}}
         // a lord's Medicine: some of his fallen live
