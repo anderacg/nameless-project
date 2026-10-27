@@ -107,7 +107,7 @@ function iconPick(x,y,team){
   if(C&&C.key===key&&Math.hypot(C.x-p.x,C.y-p.y)<=ICON_FAN.again)C.i=(C.i+1)%C.order.length;else B.iconCyc={key,x:p.x,y:p.y,order:st.map(r=>r.g),i:0};
   const c=B.iconCyc;return st.find(r=>r.g===c.order[c.i])||st[0]}
 // the icons over each group on the field (yours and theirs), drawn on the screen (not the zoomed field) so they keep their size
-const UICON={s:13,lift:22,k:2};// (its art in pixels, drawn k times over)
+const UICON={s:13,lift:22,k:2,crowd:2};// (its art in pixels, drawn k times over; crowd: the badges a banner keeps in a press: iconLayout)
 const unitIconScale=()=>B?.world?UICON.k*(window.devicePixelRatio||1)/VS:UICON.k;
 /* where they stand (iconLayout; B.icons, for clicks, in the order drawn): each over its own group, its place on the field eased
    after its men on the battle's clock (follow: a man falling or running moves it with no jump; snap: field px past which it is
@@ -129,9 +129,11 @@ function iconLayout(rt){
     const st=[...(aiHas(B.groups[g])?['ai']:[]),...(mo?statusOf(mo):[])],W=(S+(st.length?Math.ceil(st.length/2)*10+1:0))*K,H=(S+6)*K,sp=fromField({x:p.x,y:p.y});
     if(sp.x<-W||sp.x>BVW+W||sp.y<0||sp.y>BVH+40)continue;// (off the view: none)
     items.push({g,m,mo,st,W,H,cx,cy,p,team:m[0].team,bx:sp.x-S*K/2,y:Math.max(4,sp.y-UICON.lift*z*(B.world?WORLD_BATTLE.sprite:1)-H),tier:sel.includes(g)?3:B.iconHov===g?2:m[0].team?0:1})}
+  const hit=(a,b)=>a.bx<b.bx+b.W&&b.bx<a.bx+a.W&&a.y<b.y+b.H&&b.y<a.y+a.H,up=items.map((_,i)=>i),root=i=>up[i]===i?i:(up[i]=root(up[i]));
+  // (a crowd: a banner whose badges reach over another's keeps its first UICON.crowd, one column, so a press of them stays legible)
+  for(const a of items)if(a.st.length>UICON.crowd&&items.some(b=>b!==a&&hit(a,b))){a.st=a.st.slice(0,UICON.crowd);a.W=(S+Math.ceil(a.st.length/2)*10+1)*K}
   // the fan: banners that overlap where they stand, of groups at blows with each other, in clusters; each cluster set side by
   // apart, left to right as they stand, about the middle they had
-  const hit=(a,b)=>a.bx<b.bx+b.W&&b.bx<a.bx+a.W&&a.y<b.y+b.H&&b.y<a.y+a.H,up=items.map((_,i)=>i),root=i=>up[i]===i?i:(up[i]=root(up[i]));
   for(let i=0;i<items.length;i++)for(let j=i+1;j<items.length;j++){const a=items[i],b=items[j];if(a.team!==b.team&&hit(a,b)&&(atBlows(a,b)||atBlows(b,a)))up[root(i)]=root(j)}
   const fan=new Map();
   for(const i of new Set(items.map((_,i)=>root(i)))){const c=items.filter((_,j)=>root(j)===i).sort((a,b)=>a.bx-b.bx||(a.g<b.g?-1:1));if(c.length<2)continue;

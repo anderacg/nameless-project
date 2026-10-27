@@ -176,37 +176,97 @@ const acrossRiver=(a,b)=>{const r=B.btype&&B.btype.kind==='bridge'&&B.terrain&&B
    foe unseen, the battle types' ways (typePost, typeHolds, take) and the withdrawal (fallsBack: the enemy's, EnemyCommander).
    Its beasts are its PackMind's (beastmind.js), its characters their own (charmind.js). A Commander holds no state of its own
    beyond its key and multi-army coordinator: its shared memory is made only when it first needs one ---------- */
-// A mounted melee wing lines up, strikes briefly, peels out and loops back for a new run-up.
-const CAVALRY_RIDE={runup:115,flank:85,loop:155,near:26,contact:24,impact:.7,unsafe:.3,chargeMax:8,travelMax:12,recover:1.2,rested:55,minSta:35,formed:90,avoid:28,spear:120,margin:18};
+// A mounted melee wing lines up, strikes briefly, peels out and loops back for a new run-up. Chased (a foe within clear px), it
+// gallops clear first (break: up to legs legs of out px away from its chasers while it outruns them; clear, it has them again),
+// and rides at a foe again only from a run-up of runMin px at least: one who comes at it (moved px off where he stood) it turns
+// on within meet px; one closer, coming at it (moving px/s at least), it leaves behind, or meets if he is as fast (outpaced: the
+// share of its pace he must be under; such a charge is forced). Spear walls (wall; any spear: his reach more avoid px to keep
+// off) it rides at from a flank, never head on: one facing it and fighting no one else (balks) it turns away from 1.5 × clear px
+// off (on its last leg in, or any leg once the wall comes at it), and stands off balk s before trying again. No way round a
+// mark: straight at him from a run-up (straight px dearer); no way out at all: it rides at the nearest (forced), but holds
+// before a spear wall. Rested (rested stamina), or restMax s at rest and fit to charge (minSta), it goes again. lead: see
+// travel; rough: see leg
+const CAVALRY_RIDE={runup:115,flank:85,loop:155,near:26,contact:24,impact:.7,unsafe:.3,chargeMax:8,travelMax:12,recover:1.2,rested:55,minSta:35,formed:90,avoid:28,spear:120,margin:18,
+  out:150,clear:110,runMin:60,meet:170,legs:3,outpaced:.9,moved:40,turn:25,lead:40,balk:6,straight:200,rough:60,pike:20,moving:8,restMax:12};
 class CavalryRide{
  static safe(a,p){const X=CAVALRY_RIDE;if(p.x<X.margin||p.x>BW-X.margin||p.y<fieldTop()+X.margin||p.y>fieldBot()-X.margin||B.world&&!B.world.inside(p,X.margin))return false;const T=B.terrain;return !T?.blocky||lineClear(T.route.mounted,a.x,a.y,p.x,p.y,255,ROUTE_UNIT.r)}
  static point(E,v,f,l,side){return {x:E.x+v.x*f-v.y*l*side,y:E.y+v.y*f+v.x*l*side}}
  static choose(c,C){const pool=new Map();for(const e of c.foes){if(e.rout||withdrawing(e))continue;const key=e.grp||e.id,old=pool.get(key);if(!old||c.d2(C,e)<c.d2(C,old))pool.set(key,e)}const score=e=>c.d2(C,e)-(e.s.range?65:0)-(c.engaged(e)?35:0)+(unitClass(e.s)==='spear'&&shieldWallActive(e)?CAVALRY_RIDE.spear:0);return [...pool.values()].filter(e=>!B.terrain?.blocky||canReach(C,e,'mounted')).reduce((a,e)=>!a||score(e)<score(a)?e:a,null)}
- static route(c,C,E,v,exit=false){const X=CAVALRY_RIDE,candidates=[];for(const side of [1,-1]){
-   const points=exit?[this.point(C,v,65,75,side),this.point(E,v,X.runup*.65,X.loop,side),this.point(E,v,-X.runup,X.loop,side)]:[this.point(E,v,-X.runup,X.flank,side),this.point(E,v,-X.runup*.7,20,side)];
-   let a=C,valid=true,cost=0;for(const p of points){if(!this.safe(a,p)){valid=false;break}cost+=c.d2(a,p);for(const e of c.foes)if(!e.rout){for(const t of [.25,.5,.75,1])if(c.d2(e,{x:a.x+(p.x-a.x)*t,y:a.y+(p.y-a.y)*t})<X.avoid)cost+=150}a=p}if(valid)candidates.push({points,side,cost})
+ // (no flank to be had: straight at him from a run-up's length on this side of him, at straight px more cost; a way in by the
+ // front of a spear, 1.5 × spear px of him, as dear)
+ static route(c,C,E,v,exit=false){const X=CAVALRY_RIDE,candidates=[];for(const side of exit?[1,-1]:[1,-1,0]){
+   const points=exit?[this.point(C,v,65,75,side),this.point(E,v,X.runup*.65,X.loop,side),this.point(E,v,-X.runup,X.loop,side)]:side?[this.point(E,v,-X.runup,X.flank,side),this.point(E,v,-X.runup*.7,20,side)]:[this.point(E,v,-X.runup*.7,0,1)];
+   let a=C,valid=true,cost=0,danger=0;for(const p of points){if(!this.safe(a,p)){valid=false;break}cost+=c.d2(a,p);for(const e of c.foes)if(!e.rout){const r=this.avoid(e);for(const t of [.25,.5,.75,1])if(c.d2(e,{x:a.x+(p.x-a.x)*t,y:a.y+(p.y-a.y)*t})<r){cost+=150;danger++}if(!exit&&c.d2(e,p)<X.spear*1.5&&this.spearFront(e,p))cost+=X.straight}a=p}if(valid)candidates.push({points,side:side||1,cost:cost+(side?0:X.straight),danger})
   }return candidates.sort((a,b)=>a.cost-b.cost)[0]||null}
- static travel(g,p,C){const sx=g.units.reduce((n,u)=>n+(u.sx||0),0)/g.units.length,sy=g.units.reduce((n,u)=>n+(u.sy||0),0)/g.units.length;g.standAt(p.x-sx,p.y-sy);g.face=Math.atan2(p.y-C.y,p.x-C.x)}
+ // how far off a foe its way keeps (a spear: his reach further); a spear wall (pikes, pike px of reach or more, or spears braced
+ // or in a shield wall) facing them (within 60° of head on); a foe coming at them (moving, within 60° of straight at them)
+ static avoid(e){return CAVALRY_RIDE.avoid+(unitClass(e.s)==='spear'?e.s.reach||0:0)}
+ static wall(e){const g=e.grp&&B.groups[e.grp];return unitClass(e.s)==='spear'&&((e.s.reach||0)>=CAVALRY_RIDE.pike||shieldWallActive(e)||!!g&&abilityActive(g,'brace'))}
+ static spearFront(e,C){const g=e.grp&&B.groups[e.grp],f=g?.currentFacing??g?.face;return this.wall(e)&&f!=null&&Math.cos(Math.atan2(C.y-e.y,C.x-e.x)-f)>.5}
+ static coming(e,C){return (e.vel??e.spdNow??0)>CAVALRY_RIDE.moving&&Math.cos(Math.atan2(C.y-e.y,C.x-e.x)-(e.hd??e.dir??0))>.5}
+ // a spear wall facing them, fighting no one else, that they can leave behind: no charge, they stand off
+ static balks(c,m,e,C){return this.spearFront(e,C)&&!c.engaged(e)&&this.outruns(m,e)}
+ // the way they ride in at him (a unit vector): straight at him, or at a spear wall facing them, at its nearer flank
+ static line(C,e){const g=e.grp&&B.groups[e.grp],f=g?.currentFacing??g?.face,dx=e.x-C.x,dy=e.y-C.y,len=Math.hypot(dx,dy)||1;if(!this.spearFront(e,C))return {x:dx/len,y:dy/len};const n={x:-Math.sin(f),y:Math.cos(f)},k=n.x*dx+n.y*dy>0?1:-1;return {x:n.x*k,y:n.y*k}}
+ // (chased: they make for a place lead px past it, so they are still at a gallop when they get there)
+ static travel(g,p,C,lead=0){const l=lead/(Math.hypot(p.x-C.x,p.y-C.y)||1);p={x:p.x+(p.x-C.x)*l,y:p.y+(p.y-C.y)*l};const sx=g.units.reduce((n,u)=>n+(u.sx||0),0)/g.units.length,sy=g.units.reduce((n,u)=>n+(u.sy||0),0)/g.units.length;g.standAt(p.x-sx,p.y-sy);g.face=Math.atan2(p.y-C.y,p.x-C.x)}
+ // the foes who could ride it down (none routing or going), the nearest; whether it outruns him (its slowest rider, tired or not)
+ static live(e){return e.hp>0&&!e.rout&&!withdrawing(e)}
+ static nearest(c,C){let n=null;for(const e of c.foes)if(this.live(e)&&(!n||c.d2(e,C)<c.d2(n,C)))n=e;return n}
+ // where its mark's men stand (their middle): he has come at them once that is moved px off where it was
+ static mark(c,p){const l=c.foes.filter(e=>this.live(e)&&(p.group?e.grp===p.group:e.id===p.unit));return l.length?centroid(l):null}
+ static outruns(m,e){return e.s.spd*tiredMul(e).spd<Math.min(...m.map(u=>u.s.spd*tiredMul(u).spd))*CAVALRY_RIDE.outpaced}
+ // a leg out of reach: off the middle of those within 1.5 × clear px, turned up to 115° either way (along the field's edge), the
+ // one ending furthest from them less turn px a radian its riders must wheel and rough px each for woods, marsh or deep water at
+ // its middle and end (slow going for horses: foot would catch them there); safe ground only (null: nowhere to go)
+ static rough(p){const k=groundAt(p.x,p.y);return k===TKIND.wood||k===TKIND.marsh||k===TKIND.deep}
+ static leg(c,C,m){const X=CAVALRY_RIDE,near=c.foes.filter(e=>this.live(e)&&c.d2(e,C)<X.clear*1.5);if(!near.length)return null;const T=centroid(near),a0=Math.atan2(C.y-T.y,C.x-T.x),hd=Math.atan2(m.reduce((n,u)=>n+Math.sin(u.hd??u.dir??0),0),m.reduce((n,u)=>n+Math.cos(u.hd??u.dir??0),0));let best=null;
+  for(const k of [0,.4,-.4,.8,-.8,1.2,-1.2,1.6,-1.6,2,-2]){const a=a0+k,p={x:C.x+Math.cos(a)*X.out,y:C.y+Math.sin(a)*X.out};if(!this.safe(C,p))continue;const mid={x:(C.x+p.x)/2,y:(C.y+p.y)/2},score=Math.min(...near.map(e=>c.d2(e,p)))-angGap(a,hd)*X.turn-((this.rough(p)?1:0)+(this.rough(mid)?1:0))*X.rough;if(!best||score>best.score)best={p,score}}return best&&best.p}
+ // gallop clear (a new leg; its time its own); no way out: they ride at him from where they are, or (standing off a spear
+ // wall: stand, or a wall coming at them) hold there
+ static breakAway(c,g,m,C,p,foe,stand=false){const to=(p.legs||0)<CAVALRY_RIDE.legs&&this.leg(c,C,m);if(!to&&(stand||foe&&this.wall(foe))){p.phase='recover';p.points=[{x:C.x,y:C.y}];p.at=B.t;g.rest=true;return true}if(!to)return this.charge(c,g,p,C,foe,true);p.phase='exit';p.points=[to];p.index=0;p.legs=(p.legs||0)+1;p.at=B.t;p.chased=true;g.phase='regroup';g.rest=false;this.travel(g,to,C);return true}
+ static charge(c,g,p,C,e,forced=false){p.phase='charge';p.forced=forced;p.at=B.t;p.hit=null;p.group=e.grp;p.unit=e.id;p.enemy={x:e.x,y:e.y};p.mark=this.mark(c,p);const len=c.d2(C,e)||1;p.v={x:(e.x-C.x)/len,y:(e.y-C.y)/len};p.runup=len;g.phase='charge';g.chargeAt=B.t;g.rest=false;g.attack(e);sfxAt('gallop',C.x,C.y);return true}
  static step(c,g,m){
-  const X=CAVALRY_RIDE,C=centroid(m),st=grpSta(m),d=c.d2;let p=g.ridePlan,target=p&&c.foes.find(e=>e.hp>0&&!e.rout&&!withdrawing(e)&&(p.group?e.grp===p.group:e.id===p.unit));
-  if(!p){target=this.choose(c,C);if(!target)return false;const dx=target.x-C.x,dy=target.y-C.y,len=Math.hypot(dx,dy)||1,v={x:dx/len,y:dy/len},route=this.route(c,C,target,v);if(!route)return false;p=g.ridePlan={phase:'approach',points:route.points,side:route.side,index:0,v,enemy:{x:target.x,y:target.y},group:target.grp,unit:target.id,at:B.t};g.phase='flank'}
+  const X=CAVALRY_RIDE,C=centroid(m),st=grpSta(m),d=c.d2;let p=g.ridePlan,target=p&&c.foes.reduce((a,e)=>this.live(e)&&(p.group?e.grp===p.group:e.id===p.unit)&&(!a||d(e,C)<d(a,C))?e:a,null);
+  if(!p){target=this.choose(c,C);if(!target)return false;const v=this.line(C,target),route=this.route(c,C,target,v),near=this.nearest(c,C);
+   // (no way round him, a foe close (at the field's edge, say): out of reach first, if they can be, and round from there)
+   if(!route&&!(near&&d(near,C)<X.clear&&this.outruns(m,near)&&this.leg(c,C,m)))return false;p=g.ridePlan={phase:'approach',points:route?.points||[],side:route?.side||1,index:0,v,enemy:{x:target.x,y:target.y},group:target.grp,unit:target.id,at:B.t};p.mark=this.mark(c,p);g.phase='flank';if(!route)return this.breakAway(c,g,m,C,p,near)}
+  const foe=this.nearest(c,C),gap=foe?d(foe,C):Infinity,able=st>=X.minSta&&(!c.rOf?.(g.id)||c.rOf(g.id).mor>=tun(c.T,UNIT_AI,'chargeAt'));
   if(p.phase==='charge'){
    const contact=c.foes.some(e=>!e.rout&&m.some(u=>d(u,e)<X.contact));if(contact&&p.hit==null)p.hit=B.t;
    const unsafe=m.filter(u=>c.foes.some(e=>!e.rout&&d(u,e)<X.contact)).length>m.length*.7||target&&unitClass(target.s)==='spear'&&shieldWallActive(target),spent=st<X.minSta;
    if(p.hit!=null&&B.t-p.hit>=(unsafe||spent?X.unsafe:X.impact)||B.t-p.at>X.chargeMax||!target){
-    const route=this.route(c,C,p.enemy,p.v,true);if(!route){g.standAt(C.x,C.y);delete g.ridePlan;g.phase='regroup';g.t=0;return true}p.phase='exit';p.points=route.points;p.index=0;p.at=B.t;g.phase='regroup';g.rest=false;
+    // (no loop round him: straight out of reach, else they stand off where they are)
+    const route=this.route(c,C,p.enemy,p.v,true);if((!route||route.danger)&&gap<X.clear&&this.leg(c,C,m)){p.legs=0;return this.breakAway(c,g,m,C,p,foe)}if(!route){g.standAt(C.x,C.y);delete g.ridePlan;g.phase='regroup';g.t=0;return true}p.phase='exit';p.points=route.points;p.index=0;p.legs=0;p.at=B.t;p.chased=gap<X.clear;g.phase='regroup';g.rest=false;
    }else{g.attack(target);return true}
   }
+  if(p.phase==='approach'){
+   if(!target){delete g.ridePlan;return false}
+   // (a foe too close for a run-up: they gallop clear of him, or meet him if he is as fast; their mark come at them: from a
+   // run-up's length they ride at him at once, further off the way round is planned again from where he is now)
+   if(gap<X.runMin&&this.coming(foe,C))return this.outruns(m,foe)?this.breakAway(c,g,m,C,p,foe):this.charge(c,g,p,C,foe,true);
+   const at=this.mark(c,p),moved=at&&p.mark&&d(at,p.mark)>X.moved;
+   if((p.index>=p.points.length-1||moved)&&d(target,C)<X.clear*1.5&&this.balks(c,m,target,C)){p.balk=B.t;return this.breakAway(c,g,m,C,p,target,true)}
+   if(moved){const td=d(target,C);if(td<=X.meet)return able&&!this.balks(c,m,target,C)?this.charge(c,g,p,C,target):this.breakAway(c,g,m,C,p,foe);
+    // (further off: the way round goes with him)
+    const dx=at.x-p.mark.x,dy=at.y-p.mark.y;p.points=p.points.map(q=>({x:q.x+dx,y:q.y+dy}));p.enemy={x:p.enemy.x+dx,y:p.enemy.y+dy};p.mark=at}
+  }
   if(p.phase==='approach'||p.phase==='exit'){
-   if(p.phase==='approach'&&!target){delete g.ridePlan;return false}
    if(B.t-p.at>X.travelMax){delete g.ridePlan;g.phase='regroup';g.t=0;g.standAt(C.x,C.y);return true}
-   const to=p.points[p.index];if(!this.safe(C,to)){delete g.ridePlan;return false}this.travel(g,to,C);
-   if(d(C,to)<X.near){p.index++;if(p.index>=p.points.length){if(p.phase==='exit'){p.phase='recover';p.at=B.t;g.rest=true}else if(st>=X.minSta&&(!c.rOf?.(g.id)||c.rOf(g.id).mor>=tun(c.T,UNIT_AI,'chargeAt'))){p.phase='charge';p.at=B.t;p.hit=null;p.enemy={x:target.x,y:target.y};const len=d(C,target)||1;p.v={x:(target.x-C.x)/len,y:(target.y-C.y)/len};g.phase='charge';g.chargeAt=B.t;g.attack(target);sfxAt('gallop',C.x,C.y)}else{p.phase='recover';p.at=B.t;g.rest=true}}}return true;
+   // (chased, at a gallop: a foe within runMin px, or coming at them within clear px)
+   if(p.phase==='exit')p.chased=gap<X.runMin||gap<X.clear&&this.coming(foe,C);
+   const to=p.points[p.index];if(!this.safe(C,to)){delete g.ridePlan;return false}this.travel(g,to,C,p.chased?X.lead:0);
+   if(d(C,to)<X.near){p.index++;
+    // (out of a charge with a foe on their heels they keep galloping, while they outrun him)
+    if(p.phase==='exit'&&gap<X.clear&&this.outruns(m,foe)&&(p.legs||0)<X.legs)return this.breakAway(c,g,m,C,p,foe);
+    if(p.index>=p.points.length){if(p.phase==='exit'){p.phase='recover';p.at=B.t;p.chased=false;g.rest=true;if(gap>=X.clear)p.legs=0}else if(able&&!this.balks(c,m,target,C))this.charge(c,g,p,C,target);else if(able){p.balk=B.t;return this.breakAway(c,g,m,C,p,target,true)}else{p.phase='recover';p.at=B.t;g.rest=true}}}return true;
   }
   if(p.phase==='recover'){
-   g.phase='regroup';g.rest=true;const at=p.points[p.points.length-1];this.travel(g,at,C);const sx=m.reduce((n,u)=>n+(u.sx||0),0)/m.length,sy=m.reduce((n,u)=>n+(u.sy||0),0)/m.length,formed=m.every(u=>Math.hypot(u.x-C.x-(u.sx||0)+sx,u.y-C.y-(u.sy||0)+sy)<X.formed),threat=c.foes.some(e=>!e.rout&&d(e,C)<X.contact);
-   if(threat){delete g.ridePlan;g.rest=false;g.phase='charge';if(target)g.attack(target);return true}
-   if(B.t-p.at>=X.recover&&st>=X.rested&&formed&&(!c.rOf?.(g.id)||c.rOf(g.id).mor>=tun(c.T,UNIT_AI,'chargeAt')||B.t-p.at>=tun(c.T,UNIT_AI,'cavRecover'))){delete g.ridePlan;g.rest=false;g.phase='flank'}return true;
+   g.phase='regroup';g.rest=true;const at=p.points[p.points.length-1];this.travel(g,at,C);if(foe)g.face=Math.atan2(foe.y-C.y,foe.x-C.x);const sx=m.reduce((n,u)=>n+(u.sx||0),0)/m.length,sy=m.reduce((n,u)=>n+(u.sy||0),0)/m.length,formed=m.every(u=>Math.hypot(u.x-C.x-(u.sx||0)+sx,u.y-C.y-(u.sy||0)+sy)<X.formed);
+   if(gap<X.contact)return this.charge(c,g,p,C,foe,true);
+   // (a foe coming on: from a run-up they ride at him; too close, they gallop clear again while they outrun him, else meet him)
+   if(gap<X.clear){if(gap>=X.runMin&&able&&!this.balks(c,m,foe,C))return this.charge(c,g,p,C,foe);if(this.outruns(m,foe)&&(p.legs||0)<X.legs)return this.breakAway(c,g,m,C,p,foe);if(gap<X.runMin)return this.charge(c,g,p,C,foe,true)}
+   if(B.t-p.at>=X.recover&&B.t-(p.balk??-1e9)>=X.balk&&(st>=X.rested||B.t-p.at>=X.restMax&&st>=X.minSta)&&formed&&(!c.rOf?.(g.id)||c.rOf(g.id).mor>=tun(c.T,UNIT_AI,'chargeAt')||B.t-p.at>=tun(c.T,UNIT_AI,'cavRecover'))){delete g.ridePlan;g.rest=false;g.phase='flank'}return true;
   }
   return false;
  }
@@ -740,7 +800,7 @@ class Commander{
       // (on the ground: infantry charging a foe TERRAIN_AI.uphill levels above them walks up, running only the last upRun px, unless
       // strong enough to go up anyway)
       const up=!round&&k==='inf'&&g.order==='charge'&&!!this.ground()&&(()=>{const p=tg||foes.reduce((a,e)=>Math.hypot(e.x-Cm.x,e.y-Cm.y)<Math.hypot(a.x-Cm.x,a.y-Cm.y)?e:a);return levelAt(p.x,p.y)-lvlOf(m)>=this.gt('uphill')&&holdsGround(tg?{grp:g.targetGroupId}:p)&&(S.ratio<tun(T,FOE_CMD,'attackAt')*this.gt('uphillOdds')||onSteep(p))})();
-      g.setRun(g.backing||!!g.huntBack||!!g.screenBack||!!g.pushRun||!g.hunt&&g.order==='charge'&&near<(up?Math.min(TERRAIN_AI.upRun,runFor(k,st,T)):runFor(k,st,T))||k==='cav'&&g.order==='hold'&&(g.phase==='flank'||g.ridePlan?.phase==='exit')&&!g.rest&&st>=FATIGUE.tired);
+      g.setRun(g.backing||!!g.huntBack||!!g.screenBack||!!g.pushRun||!g.hunt&&g.order==='charge'&&near<(up?Math.min(TERRAIN_AI.upRun,runFor(k,st,T)):runFor(k,st,T))||k==='cav'&&g.order==='hold'&&(g.phase==='flank'||g.ridePlan?.phase==='exit')&&!g.rest&&st>=(g.ridePlan?.chased?FATIGUE.spent:FATIGUE.tired));
       if(k==='hero')continue;
       // (whether a new place is a move, its men breaking off to go: battlecontrol.js standAt)
       // (what the moment calls for: shot at, a shield wall (infantry) or loose order (shooters); a charge coming, they brace in a

@@ -37,7 +37,9 @@ panel.addEventListener('input',updateCompTransferDraft);
 panel.addEventListener('change',updateCompTransferDraft);
 document.addEventListener('click',e=>{
   const s=e.target.closest('[data-speed]');if(s){const n=+s.dataset.speed;setSpeed(n===TRAVEL_FAST&&G.speed===n?1:n)}// (Travel fast toggles)
-  const o=e.target.closest('[data-order]');if(o)setOrder(o.dataset.order);
+  // (Withdraw on a touch screen: a first tap shows the way off the field (the orders drawer closing, so it can be seen) and is
+  // held; a second, or Retreat now beside the preview, withdraws: orderpaths.js WithdrawView, battlehud.js bhudWithdraw)
+  const o=e.target.closest('[data-order]');if(o&&!(o.dataset.order==='withdraw'&&(e.pointerType==='touch'||window.mobileBattleHud?.enabled)&&withdrawView.tap()))setOrder(o.dataset.order);
   const g=e.target.closest('[data-grp]');if(g)selectGroup(g.dataset.grp,e.shiftKey);
 });
 bhudInit();// (the order, flag and formation buttons' icons: battlehud.js)

@@ -83,7 +83,7 @@ class BattleResolve{
     this.routed=false;this.rallied=false;this.shattered=false;this.breakT=0;this.state='steady';this.confidenceBlockedUntil=0;
   }
   get control(){return this.groupId===null?null:B.groups[this.groupId]}
-  members(){return B.units.filter(u=>!steady(u)&&(this.groupId===null?u.id===this.unitId:u.grp===this.groupId))}
+  members(){return B.units.filter(u=>(this.groupId===null?u.id===this.unitId:u.grp===this.groupId)&&!steady(u))}// (its own first: the cheaper test)
   live(){return this.members().filter(u=>u.hp>0&&!u.left)}
   bucket(){const at=Math.floor(B.t/GROUP_RESOLVE.bucket)*GROUP_RESOLVE.bucket;this.events=this.events.filter(e=>B.t-e.at<=GROUP_RESOLVE.history);let e=this.events.at(-1);if(!e||e.at!==at){e={at,in:0,out:0,missiles:0,deaths:0};this.events.push(e)}return e}
   recent(){return this.events.filter(e=>B.t-e.at<GROUP_RESOLVE.window).reduce((n,e)=>({in:n.in+e.in,out:n.out+e.out,missiles:n.missiles+e.missiles}),{in:0,out:0,missiles:0})}
@@ -372,7 +372,8 @@ function withdrawStep(u,dt){
   const state=u.withdrawal||(u.withdrawal={remaining:null});if(threat&&state.remaining===null)state.remaining=WITHDRAW.disengage;
   if(atExit&&state.remaining===0){leave();return}
   const back=Math.min(dt,state.remaining||0);if(state.remaining>0)state.remaining=Math.max(0,state.remaining-back);
-  const free=dt-back,walking=staOf(u)<FATIGUE.runMin,spd=u.s.spd*tiredMul(u).spd*(u.slow>0?.5:1),X=exitFor(u),w=B.terrain?steerDir(u,X.x,X.y):null,d=Math.hypot(X.x-u.x,X.y-u.y),dx=w?w[0]*d:X.x-u.x,dy=w?w[1]*d:X.y-u.y;// (round rock, cliffs and impassable water: terrain.js)
+  // (a world battle: by its way off the circle, worldbattle.js escapeWay, as routers go: the field's own ways end at its edge)
+  const free=dt-back,walking=staOf(u)<FATIGUE.runMin,spd=u.s.spd*tiredMul(u).spd*(u.slow>0?.5:1),ww=B.world?B.world.escapeWay(u):null,X=ww?{x:u.x+ww[0]*ww[2],y:u.y+ww[1]*ww[2]}:exitFor(u),w=!ww&&B.terrain?steerDir(u,X.x,X.y):null,d=Math.hypot(X.x-u.x,X.y-u.y),dx=w?w[0]*d:X.x-u.x,dy=w?w[1]*d:X.y-u.y;// (round rock, cliffs and impassable water: terrain.js)
   const sp=Math.min(d,spd*(back*WITHDRAW.backstep+free*(walking?MARCH.walk:1))*groundMul(u,dx/d,dy/d));
   if(d>.001){u.x+=dx/d*sp;u.y+=dy/d*sp;u.dir=Math.atan2(dy,dx);u.face=dx>=0?1:-1;u.walkA=u.dir;u.spdNow=free>0?spd*(walking?MARCH.walk:1):spd*WITHDRAW.backstep}
   if(back>0)fatigueStep(u,back,sp>0,true,false,threat);

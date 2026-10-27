@@ -93,7 +93,9 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
   {const arm=[Gp('hum_foot',20),Gp('hum_bow',12),Gp('hum_knight',6,'wedge')],B=lab(arm,arm,{ground:{hills:[{x:.5,y:.5,r:110,top:1,cliff:true,ramps:[180]}],woods:[],seed:3},morale:false,ai:false}),h=B.terrain.recipe.hills[0];
    const mg=t.playerGroups().map(id=>B.groups[id]),fg=Object.values(B.groups).filter(q=>q.foe),at=[[h.x+20,h.y],[h.x-25,h.y-20],[h.x-30,h.y+30]];
    mg.forEach((g,i)=>{place(g,at[i][0],at[i][1]);g.units.forEach(u=>{u.s={...u.s,spd:0};u.hp=u.max=u.max*3})});fg.forEach((g,i)=>place(g,t.BW-120,h.y-80+i*80,Math.PI));B.cmdT=0;
-   ev('checkBattleOver=__cbo');let first=null,s=0;while(!L.session.result&&B.t<300&&s++<4000){L.step(30);if(first==null&&B.units.some(u=>u.team===1&&u.hp>0&&t.levelAt(u.x,u.y)>=1))first=B.t}
+   // (420 s: their riders strike and ride clear (commander.js CavalryRide) rather than die in the press, so the last of them, against
+   // men who cannot move, lasts longer than he did, 110 s)
+   ev('checkBattleOver=__cbo');let first=null,s=0;while(!L.session.result&&B.t<420&&s++<5600){L.step(30);if(first==null&&B.units.some(u=>u.team===1&&u.hp>0&&t.levelAt(u.x,u.y)>=1))first=B.t}
    ok(first!=null&&first<45&&!!L.session.result,'your army on a sheer top, the AI attacking: round by the ramp, its first man up at '+(first!=null?Math.round(first)+' s':'never')+', '+(L.session.result||'unfinished at '+Math.round(B.t)+' s'));ev('checkBattleOver=()=>{}')}
   ev('TERRAIN.on='+TR0);
   {const B=lab([Gp('hum_foot',10),Gp('hum_knight',6)],[Gp('orc_grunt',12)],{morale:false}),mg=t.playerGroups().map(id=>B.groups[id]),e=theirs(B);mg.forEach((g,i)=>place(g,520,240+i*120,0));place(e,600,300,Math.PI);e.charge({run:true});go(B,3);
