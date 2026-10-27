@@ -34,5 +34,6 @@ Kit.suite(({ok,info})=>{
  // (no wall: footmen are ridden at straight, no way round)
  {const keep=enemy.units.map(u=>u.s);place(g,300,400);place(enemy,650,400);enemy.units.forEach(u=>u.s={...t.ST.hum_foot,dmg:0});delete g.ridePlan;
   t.CavalryRide.step(c,g,g.units);ok(g.ridePlan?.phase==='charge'&&!g.ridePlan.points.length,'footmen, no wall, are charged straight in');enemy.units.forEach((u,i)=>u.s=keep[i])}
+ {const safe=t.CavalryRide.safe;let threw=null;g.ridePlan={phase:'recover',points:[],at:b.t,group:enemy.id,unit:null,index:0};try{t.CavalryRide.safe=()=>false;t.CavalryRide.step(c,g,g.units)}catch(e){threw=e}finally{t.CavalryRide.safe=safe}ok(!threw&&Number.isFinite(g.ax),'at rest after a straight-in charge (no way points) with no calm place, they hold where they stand')}
  g.ridePlan={phase:'recover'};g.aiReset();ok(!g.ridePlan,'handing a group back to the AI clears its old riding plan');ok(!ERR.length,'curved cavalry movement has no runtime errors');
 });

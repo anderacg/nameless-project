@@ -221,9 +221,9 @@ class CavalryRide{
  static mark(c,p){const l=c.foes.filter(e=>this.live(e)&&(p.group?e.grp===p.group:e.id===p.unit));return l.length?centroid(l):null}
  // where they wait at rest: shadow px off the flank of their mark (his group's middle; else the nearest foe), on their side of
  // him, else the other, else straight back from him (further out, to twice that, till it is calm, nor a foe within clear px of their walk there), on safe ground; kept while it stays calm, wherever he goes (walking they get no breath
- // back, standing they do). No flank to be had: where their ride ended. Calm: no foe within 1.25 × clear px of it, nor a shooter within his range (shot px at most: past it arrows fall thin) and margin px
+ // back, standing they do). No flank to be had: where their ride ended (or where they stand). Calm: no foe within 1.25 × clear px of it, nor a shooter within his range (shot px at most: past it arrows fall thin) and margin px
  static calm(c,q){const X=CAVALRY_RIDE;return c.foes.every(e=>!this.live(e)||c.d2(e,q)>=Math.max(X.clear*1.25,e.s.range?Math.min(e.s.range,X.shot)+X.margin:0))}
- static shadow(c,p,C,foe){const X=CAVALRY_RIDE,E=this.mark(c,p)||foe,end=p.points[p.points.length-1];if(!E)return end;const S=p.shadow;if(S&&this.calm(c,S))return S;
+ static shadow(c,p,C,foe){const X=CAVALRY_RIDE,E=this.mark(c,p)||foe,end=p.points[p.points.length-1]||{x:C.x,y:C.y};if(!E)return end;const S=p.shadow;if(S&&this.calm(c,S))return S;
   const g=p.group&&B.groups[p.group],f=g?.currentFacing??g?.face,dx=C.x-E.x,dy=C.y-E.y,l=Math.hypot(dx,dy)||1,n=f==null?{x:dx/l,y:dy/l}:{x:-Math.sin(f),y:Math.cos(f)},k=n.x*dx+n.y*dy>=0?1:-1;
   const clear=q=>this.calm(c,q);
   for(const r of [1,1.5,2])for(const w of [{x:n.x*k,y:n.y*k},{x:-n.x*k,y:-n.y*k},{x:dx/l,y:dy/l}]){const q={x:E.x+w.x*X.shadow*r,y:E.y+w.y*X.shadow*r};if(this.safe(C,q)&&clear(q)&&[.25,.5,.75].every(t=>c.foes.every(e=>!this.live(e)||c.d2(e,{x:C.x+(q.x-C.x)*t,y:C.y+(q.y-C.y)*t})>=X.clear)))return p.shadow={x:q.x,y:q.y,e:{x:E.x,y:E.y}}}return end}
