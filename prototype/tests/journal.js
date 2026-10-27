@@ -14,31 +14,31 @@ Kit.suite(({ok,info})=>{
   ok(menus.length===1&&menus[0].id==='menuBtn'&&!q('#hubBtn')&&q('#menuBtn kbd').textContent==='Esc'&&q('#journalBtn .dl').textContent==='Journal'&&q('#journalBtn kbd').textContent==='J','the bar: one Menu button (Esc), the Log button now Journal (J)')}
  // ---- the Game Menu: Tab, a tile per window with its key, then the game's own buttons
  key('Tab','Tab');
- ok(G.mode==='esc'&&tiles().map(b=>b.querySelector('strong').textContent+' '+b.querySelector('kbd').textContent).join(', ')==='Army C, Inventory I, Quests Q, Journal J, Map M, Camp Z'&&tiles().every(b=>!b.disabled),
+ ok(G.mode==='esc'&&tiles().map(b=>b.querySelector('strong').textContent+' '+b.querySelector('kbd').textContent).join(', ')==='Army C, Inventory I, Quests Q, Journal J, Map M, Skills K, Help H, Camp Z'&&tiles().every(b=>!b.disabled),
   'Tab: the Game Menu, a tile each: '+tiles().map(b=>b.querySelector('strong').textContent).join(', '));
  ok(sys().map(b=>b.querySelector('strong').textContent).join()==='Save game,Load game,Settings,Main menu,Exit game','under them: '+sys().map(b=>b.querySelector('strong').textContent).join(', '));
  ok(!back()&&close()&&close().textContent==='Resume','the frame rule: its bar, Resume on the right');
  key('Tab','Tab');ok(G.mode==='esc','Tab in the menu moves between its buttons: it stays open');
  esc();ok(G.mode==='world','Esc resumes');
  q('#menuBtn').click();ok(G.mode==='esc','the bar’s Menu opens it');q('#menuBtn').click();ok(G.mode==='world','and closes it');
- esc();ok(G.mode==='esc'&&tiles().length===6,'Esc with no window open: the same menu');esc();ok(G.mode==='world','(resumed)');
+ esc();ok(G.mode==='esc'&&tiles().length===8,'Esc with no window open: the same menu');esc();ok(G.mode==='world','(resumed)');
  // ---- over a window (the bar's Menu): every tile greyed, Resume back to the window; Esc in a window steps back first
  {Kit.world();t.openQuests();q('#menuBtn').click();ok(G.mode==='esc'&&tiles().every(b=>b.disabled&&/Close the window in front first/.test(b.textContent)),'over a window: every tile greyed (Close the window in front first)');
   esc();ok(G.mode==='quests','Esc: back to the window');esc();ok(G.mode==='esc'&&G.esc.html==null,'Esc in the window, at its top level: its Back, the Game Menu (the window closed)');esc();ok(G.mode==='world','one more Esc resumes');Kit.world()}
  // ---- each tile opens its window
  const opens={army:()=>G.mode==='char'&&G.char==='roster',inventory:()=>G.mode==='inv',quests:()=>G.mode==='quests',journal:()=>G.mode==='journal',map:()=>G.mode==='fullmap'};
  for(const [id,is] of Object.entries(opens)){Kit.world();t.showEsc();tile(id).click();ok(is(),'the '+id+' tile opens its window ('+G.mode+')');Kit.world()}
- {Kit.world();const c0=!!P.camp;t.showEsc();tile('camp').click();const m=G.msgs[G.msgs.length-1].m;ok(G.mode==='world'&&(!!P.camp!==c0||!!G.pitch||/camp here/.test(m)),'the camp tile makes camp, as Z does: '+m);if(P.camp)t.breakCamp();G.pitch=null;P.tx=P.ty=null}
+ {Kit.world();const c0=!!P.camp;t.showEsc();tile('camp').click();const m=(q('#log')?.lastElementChild||{}).textContent||'';ok(G.mode==='world'&&(!!P.camp!==c0||!!G.pitch||/camp here/.test(m)),'the camp tile makes camp, as Z does: '+m);if(P.camp)t.breakCamp();G.pitch=null;P.tx=P.ty=null}
  // ---- from the streets: what needs the map greyed, saying why; Quests and the Journal open, closing back to the streets
  {Kit.world();G.mode='scene';G.modal=false;key('Tab','Tab');
-  ok(G.mode==='esc'&&G.esc.mode==='scene'&&['army','inventory','map','camp'].every(id=>tile(id).disabled&&/On the map only/.test(tile(id).textContent))&&!tile('quests').disabled&&!tile('journal').disabled&&close().textContent==='Resume',
-   'from the streets: Army, Inventory, Map and Camp greyed (On the map only); Quests and the Journal open');
+  ok(G.mode==='esc'&&G.esc.mode==='scene'&&['army','inventory','map','skills','camp'].every(id=>tile(id).disabled&&/On the map only/.test(tile(id).textContent))&&!tile('quests').disabled&&!tile('journal').disabled&&close().textContent==='Resume',
+   'from the streets: Army, Inventory, Map, Skills and Camp greyed (On the map only); Quests and the Journal open');
   tile('quests').click();ok(G.mode==='quests'&&close().textContent==='Back to the streets','Quests over the streets');
   esc();ok(G.mode==='esc'&&G.esc.mode==='scene','Esc: its Back, the Game Menu over the streets');esc();ok(G.mode==='scene','one more: back to the streets');
   key('KeyJ','j');ok(G.mode==='journal','J in the streets: the Journal');t.act('journal-close');key('KeyQ','q');ok(G.mode==='quests','Q in the streets: your Quests');t.act('quests-close');ok(G.mode==='scene','closed: the streets again');Kit.world()}
  // ---- the Menu's registry: a window adds its tile
  {let opened=0;t.defineMenuEntry('zz_test',{label:'Test window',icon:'book',key:'X',open:()=>{opened++}});
-  try{t.showEsc();ok(tile('zz_test')&&/Test window/.test(tile('zz_test').textContent)&&tiles().length===7,'a tile defined: it is in the Game Menu');tile('zz_test').click();ok(opened===1&&G.mode==='world','its tile opens it (the menu closed first)')}
+  try{t.showEsc();ok(tile('zz_test')&&/Test window/.test(tile('zz_test').textContent)&&tiles().length===9,'a tile defined: it is in the Game Menu');tile('zz_test').click();ok(opened===1&&G.mode==='world','its tile opens it (the menu closed first)')}
   finally{delete t.MENU_ENTRIES.zz_test;Kit.world()}}
  // ---- your Quests: a window of its own, Q; the Character window keeps Hero and Party
  key('KeyQ','q');
@@ -71,7 +71,7 @@ Kit.suite(({ok,info})=>{
    const rows=els=>new Set(els.map(b=>Math.round(b.getBoundingClientRect().top))).size,sw=q('.gm-sys').getBoundingClientRect().width,hd=[...qa('.fb-gm .fb-head .btn')];
    ok(inside(q('#panel'))&&tiles().every(inside)&&tiles().every(b=>b.getBoundingClientRect().height>=44)&&sys().every(inside)&&sys().every(b=>b.getBoundingClientRect().height>=44)&&hd.every(inside)&&inside(close()),
     'at '+w+' x '+h+': the Game Menu all on the screen, its header, every tile and button at least 44 px ('+Math.round(Math.min(...tiles().map(b=>b.getBoundingClientRect().height)))+', '+Math.round(Math.min(...sys().map(b=>b.getBoundingClientRect().height)))+')');
-   ok(w>h?rows(tiles())===1&&rows(sys())===1:rows(tiles())===2&&rows(sys())===5&&sys().every(b=>b.getBoundingClientRect().width>=sw-1),
+   ok(w>h?rows(tiles())===2&&rows(sys())===1:rows(tiles())===3&&rows(sys())===5&&sys().every(b=>b.getBoundingClientRect().width>=sw-1),
     'at '+w+' x '+h+': the tiles in a grid ('+rows(tiles())+' rows), the game’s buttons '+(w>h?'in a row':'full width, one under another')+' ('+rows(sys())+' rows)');
    tile('journal').click();q('#panel').style.animation='none';const jt=qa('[data-act="jn-sec"]');
    ok(inside(q('#panel'))&&jt.every(inside)&&jt.every(b=>b.getBoundingClientRect().height>=43.5)&&inside(close()),'at '+w+' x '+h+': the Journal’s sections and its bar on the screen');
