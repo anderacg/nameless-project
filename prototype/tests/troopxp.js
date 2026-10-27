@@ -5,7 +5,7 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);
 try{
  const t=T,G=t.G,P=t.P,ST=t.ST;try{localStorage.clear()}catch(e){}
  t.act('begin','soldier');G.quietEvents=true;
- const fight=(troops,list)=>{P.troops=troops;P.txp={};G.mode='world';G.modal=false;t.hidePanel();G.enc={kind:'party',ref:{cool:0,x:P.x,y:P.y},list,mine:true};t.startBattle({enemies:list,tournament:false});return t.B};
+ const fight=(troops,list)=>{P.troops=troops;P.txp={};G.mode='world';G.modal=false;t.hidePanel();G.enc={kind:'party',ref:{cool:0,x:P.x,y:P.y},list,mine:true};t.startBattle({enemies:list,tournament:false});t.beginFight();return t.B};// (begun: a battle opens waiting for Start Battle, deploy.js)
  // the rules
  ok(t.txpNeed('hum_levy')===t.TROOP_XP.need[1]&&t.txpNeed('hum_spear')===t.TROOP_XP.need[2]&&t.txpNeed('hum_spear')>t.txpNeed('hum_levy'),'higher tiers need more XP to train ('+t.txpNeed('hum_levy')+', '+t.txpNeed('hum_spear')+')');
  P.troops={hum_levy:3};P.txp={};t.txpGain('hum_levy',1e6);ok(P.txp.hum_levy===3*t.txpNeed('hum_levy')&&t.txpReady('hum_levy')===3,'a kind holds no more XP than its soldiers can use (all 3 ready)');
