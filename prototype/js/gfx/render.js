@@ -404,7 +404,7 @@ function drawBattle(){
   // the HUD at the screen's scale over the zoomed-out field
   ctx.save();ctx.scale(BVW/VW,BVH/VH);
   drawHeroHud();if(!B.world)drawMiniField();// (the small map of the field, top right: camera.js)
-  if(B.over){txt(B.stalemate?'DISENGAGED':B.retreat?'WITHDRAWN':B.win?'VICTORY':'DEFEAT',VW/2,VH/2,B.win?'#e8b94a':B.retreat?'#6fa8e0':'#e0605a','center')}
+  if(B.over){txt(B.stalemate?'DISENGAGED':B.hunt?'HUNT OVER':B.retreat?'WITHDRAWN':B.win?'VICTORY':'DEFEAT',VW/2,VH/2,B.win?'#e8b94a':B.retreat?'#6fa8e0':'#e0605a','center')}
   ctx.restore();
   calloutFrame();// (the banners for the big moments, over the field: battlehud.js)
 }
