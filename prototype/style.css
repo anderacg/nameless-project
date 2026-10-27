@@ -631,6 +631,9 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 .battle-report{margin:14px 0;padding:12px;background:var(--panel-2);border:1px solid var(--line-2);border-radius:4px}
 .battle-report p{font-size:13px;margin:7px 0}
 .battle-report .battle-best,.battle-report .battle-ambush{font-size:var(--fs-base);color:var(--accent)}.battle-best b,.battle-ambush b{color:var(--fg)}
+/* (choosing who of a yielded band joins yours: parley.js RecruitPick) */
+.pick-rows{display:flex;flex-direction:column;gap:6px;margin:8px 0}.pick-row{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:36px}.pick-row small{margin-left:6px}
+.pick-step{display:flex;align-items:center;gap:8px}.pick-step .btn{min-width:36px;min-height:36px;padding:0 10px}.pick-step b{min-width:2ch;text-align:center}
 .battle-report-scroll{overflow-x:auto}
 .battle-report table{width:100%;border-collapse:collapse;font-size:14px}
 .battle-report th,.battle-report td{padding:9px 7px;border-bottom:1px solid var(--line-2);text-align:right}

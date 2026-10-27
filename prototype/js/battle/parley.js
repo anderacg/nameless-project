@@ -21,19 +21,44 @@ function parleyYield(){
     return notice(o.name+' yields','The sword is handed over, and '+ransom+' gold paid as ransom. '+(pr?pr+' of the soldiers become your prisoners; the rest are sent home unarmed.':'The soldiers are sent home unarmed.')+' Renown +8; the '+FACS[o.fac].n+' will not forget the shame (−5 honor).','good')}
   G.mode='dialog';showPanel('<h2>They yield</h2><p>The '+(o.kind==='raiders'?'raiders':'bandits')+' throw down their weapons. What becomes of them?</p><div class="btns">'+
     dlgBtn('pl-cage',null,'Take them prisoner ('+Math.min(list.length,prisonCap()-prisonerCount())+' fit)',prisonerCount()>=prisonCap()?'No room for prisoners':'',true)+
-    dlgBtn('pl-join',null,'Take them into your band ('+Math.min(list.length,partyRoom())+')',partyRoom()<1?'Your band is full':'')+dlgBtn('pl-free',null,'Disarm them and let them go')+'</div>'+
+    dlgBtn('pl-join',null,'Take them into your band…',RecruitPick.room()?'':'Your band is full')+dlgBtn('pl-free',null,'Disarm them and let them go')+'</div>'+
     '<p class="muted">Brigands in your ranks lower morale and every realm\'s opinion of you. Setting them free is merciful, but the roads stay dangerous.</p>');
+}
+/* who of a band that yielded joins yours (the owner, 2026-10-27: you choose): each kind of theirs, as many as your band has room
+   for, its headcount (partyRoom) and its groups (a kind fills its groups of ten, then takes a free one: core/army.js). It opens
+   with as many as fit, taken in their order; whoever you leave is disarmed and sent off. G.par.take: {kind: n} */
+class RecruitPick{
+  static kinds(){const c={};for(const k of G.par.o.troops)c[k]=(c[k]||0)+1;return c}
+  // (does this choice fit your band?)
+  static fits(take){const r=partyRoster(P),cap=ARMY_GROUP.units;let heads=partyRoom(),free=r.groupLimit-r.slots;
+    for(const [k,n] of Object.entries(take)){if(!n)continue;if(!r.accepts(k))return false;heads-=n;const room=r.groups.filter(g=>g.type===k).reduce((a,g)=>a+Math.max(0,cap-g.count-r.wounded(g.id)),0);free-=Math.ceil(Math.max(0,n-room)/cap)}
+    return heads>=0&&free>=0}
+  static room(){return partyRoom()>0&&Object.keys(this.kinds()).some(k=>this.fits({[k]:1}))}
+  static open(){const take={},have=this.kinds();for(const k in have)while(take[k]!==have[k]&&this.fits({...take,[k]:(take[k]||0)+1}))take[k]=(take[k]||0)+1;G.par.take=take;this.show()}
+  static step(k,d){const t=G.par.take,n=(t[k]||0)+d;if(n<0||n>(this.kinds()[k]||0)||d>0&&!this.fits({...t,[k]:n}))return;t[k]=n;this.show()}
+  static btn(k,d,label,off){return '<button class="btn" type="button" data-act="pl-pick" data-arg="'+k+':'+d+'" aria-label="'+(d>0?'One more ':'One fewer ')+htmlText(ST[k].n)+'"'+(off?' disabled':'')+'>'+label+'</button>'}
+  static show(){const t=G.par.take,have=this.kinds(),r=partyRoster(P),n=sum(t),heads=partyRoom()-n,free=r.groupLimit-r.slots;
+    const rows=Object.keys(have).map(k=>{const c=t[k]||0,no=!r.accepts(k)?'Will not serve you':'',more=c<have[k]&&this.fits({...t,[k]:c+1});
+      return '<div class="pick-row"><span>'+htmlText(ST[k].n)+' <small class="muted">'+have[k]+' yielded'+(!no&&c<have[k]&&!more?' · no room in your groups':'')+'</small></span>'+(no?'<small class="muted">'+no+'</small>':
+        '<span class="pick-step">'+this.btn(k,-1,'−',!c)+'<b>'+c+'</b>'+this.btn(k,1,'+',!more)+'</span>')+'</div>'}).join('');
+    G.mode='dialog';showPanel('<h2>Take them into your band</h2><p class="muted">Room for '+Math.max(0,heads)+' more fighters; '+free+' free group'+(free===1?'':'s')+' of ten. The rest are disarmed and sent off.</p><div class="pick-rows">'+rows+'</div>'+
+      nav(['pl-back',null,'Back'],['pl-take',null,n?'Take '+n:'Take none',n?'':'Choose who joins']))}
+  static take(){const {o,take}=G.par,r=partyRoster(P);let k=0;for(const [type,n] of Object.entries(take))if(n)k+=r.add(type,n);
+    const c=CONDUCT.takeBrigands;P.morale=clamp(P.morale-c.morale,0,100);FIDS.forEach(f=>addHonor(f,-c.honorAll,true));mood('cruel');bandGone(o);G.par=null;
+    return notice('New recruits',k+' brigands join your band'+(o.troops.length>k?'; the rest are disarmed and sent off':'')+'. Your honest soldiers grumble (morale −'+c.morale+'), and every realm thinks a little less of you (−'+c.honorAll+' honor).','gold')}
 }
 function cage(list){let n=0;for(const k of list){if(prisonerCount()>=prisonCap())break;if(!ST[k]||ST[k].tier>=4||ST[k].beast)continue;P.prisoners[k]=(P.prisoners[k]||0)+1;n++}return n}
 function bandGone(o){bandits=bandits.filter(x=>x!==o);worldEmit('band:beaten',{band:o});repNear(o.x,o.y,3)}
-function parleyAct(a){
+function parleyAct(a,arg){
   const p=G.par;if(!p){closeDialog();return}const {o,kind}=p;
   if(a==='pl-fight')return parleyFight(o,kind);
   if(a==='pl-go'){o.cool=8;G.encCool=3;if(kind==='lord'){addHonor(o.fac,2,true);changeRel(o,RELATION.letGo,'you let them go')}else repNear(o.x,o.y,-2);mood('mercy');closeDialog();log(kind==='lord'?'You let '+o.name+' ride away.':'You let the band go. The roads stay dangerous.');return}
   if(a==='pl-yield'){const y=Math.random()<yieldChance(o,kind);train('pers',y?6:2);if(y)return parleyYield();log((kind==='lord'?o.name:'The band')+' refuses to yield and draws steel.','bad');return parleyFight(o,kind)}
   if(a==='pl-cage'&&kind==='band'){const n=cage(o.troops),gold=rint(5,15)+o.n*2;P.gold+=gold;P.renown+=2;bandGone(o);G.par=null;return notice('Prisoners',n+' of them are bound and marched with you'+(o.n>n?'; the rest are disarmed and chased off':'')+'. You take '+gold+' gold they had stolen.','good')}
-  if(a==='pl-join'&&kind==='band'&&partyRoom()>0){const k=sum(partyRoster(o).transferAllTo(partyRoster(P),partyRoom()));const c=CONDUCT.takeBrigands;P.morale=clamp(P.morale-c.morale,0,100);FIDS.forEach(f=>addHonor(f,-c.honorAll,true));mood('cruel');bandGone(o);G.par=null;
-    return notice('New recruits',k+' brigands join your band. Your honest soldiers grumble (morale −'+c.morale+'), and every realm thinks a little less of you (−'+c.honorAll+' honor).','gold')}
+  if(a==='pl-join'&&kind==='band'&&RecruitPick.room())return RecruitPick.open();
+  if(a==='pl-pick'&&kind==='band'&&p.take){const [k,d]=String(arg).split(':');return RecruitPick.step(k,+d)}
+  if(a==='pl-back'&&kind==='band')return parleyYield();
+  if(a==='pl-take'&&kind==='band'&&p.take&&sum(p.take)>0&&RecruitPick.fits(p.take))return RecruitPick.take();
   if(a==='pl-free'&&kind==='band'){P.renown+=1;bandGone(o);mood('mercy');G.par=null;return notice('Set free','You break their weapons and send them off. Some may find honest work; some will not.','good')}
 }
 /* a bandit camp or hideout, from its page (sites.js Lair): parley as with a band. Pay them to break camp (tribute: a price a

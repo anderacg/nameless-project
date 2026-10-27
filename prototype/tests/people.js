@@ -61,7 +61,18 @@ try{
  ok(t.prisonerCount()===pc+2&&!t.bandits.includes(b),'and its fighters become your prisoners ('+pc+' → '+t.prisonerCount()+', cap '+t.prisonCap()+')');t.act('dlg-ok');
  const b2={x:P.x+5,y:P.y,n:2,kind:'bandits',list:['militia','spearman'],t:0,a:0,idle:false,cool:0};t.bandits.push(t.asParty(b2));world();t.meetBand(b2);fix(.01);t.act('pl-yield');unfix();
  P.wounded={};P.sk.lead.lv=10;// (the wounded from earlier take room in the band; and two new kinds need two new groups: army.js armyGroupLimit)
- const tc2=t.troopCount(),hh=t.honorWith(t.FIDS[0]);t.act('pl-join');ok(t.troopCount()===tc2+2&&t.honorWith(t.FIDS[0])<hh,'or join your band, at a cost to your honor');t.act('dlg-ok');
+ const tc2=t.troopCount(),hh=t.honorWith(t.FIDS[0]);t.act('pl-join');ok(/Take them into your band/.test(panel())&&/Take 2/.test(panel()),'or join your band: you choose who, all who fit chosen to begin with');t.act('pl-take');ok(t.troopCount()===tc2+2&&t.honorWith(t.FIDS[0])<hh,'and they join, at a cost to your honor');t.act('dlg-ok');
+ // (choosing who joins: as many as your band's groups hold, the rest sent off; nobody dropped unseen)
+ {P.sk.lead.lv=t.ARMY_GROUP.leadBase;P.troops={hum_knight:9};P.wounded={};const r=t.partyRoster(P);while(r.groupLimit-r.slots<1)P.sk.lead.lv++;const free=r.groupLimit-r.slots;// (one free group: your companions hold slots too)
+  
+  const b4={x:P.x+5,y:P.y,n:5,kind:'bandits',list:['militia','militia','spearman','spearman','spearman'],t:0,a:0,idle:false,cool:0};t.bandits.push(t.asParty(b4));world();t.meetBand(b4);fix(.01);t.act('pl-yield');unfix();
+  t.act('pl-join');const take=()=>G.par.take,plus=k=>document.querySelector('[data-act="pl-pick"][data-arg="'+k+':1"]');
+  ok(free===1&&take().militia===2&&!take().spearman&&plus('spearman').disabled&&/1 free group of ten/.test(panel()),'one free group: the two militia fill it to begin with, and no spearman fits beside them');
+  t.act('pl-pick','spearman:1');ok(!take().spearman,'nor can one be added');
+  t.act('pl-pick','militia:-1');t.act('pl-pick','militia:-1');t.act('pl-pick','spearman:1');t.act('pl-pick','spearman:1');ok(take().militia===0&&take().spearman===2&&/Take 2/.test(panel()),'leave the militia, and the spearmen may have the group instead');
+  t.act('pl-back');ok(/throw down/.test(panel())&&G.par,'Back: the band’s fate to choose again');t.act('pl-join');
+  t.act('pl-pick','militia:-1');t.act('pl-pick','militia:-1');t.act('pl-pick','spearman:1');const n0=t.troopCount();t.act('pl-take');
+  ok(t.troopCount()===n0+1&&P.troops.spearman===1&&!P.troops.militia&&/the rest are disarmed and sent off/.test(panel())&&!t.bandits.includes(b4),'you take the one you chose; the rest are sent off, and the page says so');t.act('dlg-ok')}
  const b3={x:P.x+5,y:P.y,n:2,kind:'bandits',list:['militia','militia'],t:0,a:0,idle:false,cool:0};t.bandits.push(t.asParty(b3));world();t.meetBand(b3);fix(.99);t.act('pl-yield');unfix();
  ok(G.enc&&G.enc.ref===b3&&/Fight/.test(panel()),'if they refuse, they fight');t.act('flee');
  const l=W.lords.find(x=>!x.dead);l.troops=['hum_levy','hum_levy'];P.hostile[l.fac]=G.day+20;world();P.x=l.x;P.y=l.y;t.interact(l);

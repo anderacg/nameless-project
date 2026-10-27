@@ -186,7 +186,7 @@ js/world/             the campaign map and everything on it
                         followWatch: your band shadows a party), the daily tick, the world update
 js/ui/march.js         march formation editor: drag groups round the fixed hero, Apply or Back
 js/battle/sides.js    BattleSides: per-army relationships, reinforcement budgets, participation rewards and continued NPC fights
-js/battle/            engage.js (going into a fight: power and stance, allies joining, the battle type, flight, auto-resolve, outcomes by kind: ON_WIN), parley.js (cornered parties), setup.js (BattleSetup, field
+js/battle/            engage.js (going into a fight: power and stance, allies joining, the battle type, flight, auto-resolve, outcomes by kind: ON_WIN), parley.js (cornered parties; RecruitPick: you choose who of a band that yielded joins yours, as many as your groups hold), setup.js (BattleSetup, field
                       and unit construction), worldbattle.js (WorldBattleSetup, the fixed world area, actual-position march handoff, reachable escape paths, local fog clearing, arrivals and regrouping), resolution.js (BattleResolution, field results and campaign settlement),
                       battle.js (shared group defaults and frame orchestration), actors.js (each soldier's moment and his targeting: Actor, CharActor, HeroActor),
                       battlecontrol.js (group mechanics), commands.js (player selection and orders),
