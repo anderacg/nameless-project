@@ -209,17 +209,18 @@ class WorldBattleArea{
   ended(ap,ae){return !ap||!ae}
 }
 // Preparation has its own real-time movement clock. No combat systems or late arrivals run here.
-const BATTLE_MUSTER={edge:.8,inset:10,speed:1,minimum:18,queries:6,reach:.001,look:.25};
+const BATTLE_MUSTER={gap:20,retreat:16,inset:10,speed:1,minimum:18,queries:6,reach:.001,look:.25};
 class BattleMuster{
   constructor(b){
     this.b=b;this.area=b.world;this.active=true;this.time=0;this.done=0;this.entries=[];this.armies=[];this.reserved=new Set();
     const a=this.area,by=new Map(),centers=[0,1].map(team=>{const m=b.units.filter(u=>u.team===team&&u.hp>0&&!u.left);return{x:m.reduce((n,u)=>n+u.x,0)/Math.max(1,m.length),y:m.reduce((n,u)=>n+u.y,0)/Math.max(1,m.length)}}),angle=Math.atan2(centers[1].y-centers[0].y,centers[1].x-centers[0].x);
     for(const g of Object.values(b.groups)){const units=b.units.filter(u=>u.grp===g.id&&u.hp>0&&!u.left),owner=g.player?P:units[0]?.sourceArmy;if(!owner||!units.length)continue;let army=by.get(owner);if(!army){army={owner,team:g.team,groups:[],rows:marchRows(owner)};by.set(owner,army);this.armies.push(army)}army.groups.push({g,units})}
     for(const army of this.armies){
-      const face=angle+(army.team?Math.PI:0),co=Math.cos(face),si=Math.sin(face),side=this.armies.filter(o=>o.team===army.team),lane=side.indexOf(army)-(side.length-1)/2;
+      const face=angle+(army.team?Math.PI:0),co=Math.cos(face),si=Math.sin(face);
       const layout=army.groups.map(({g,units})=>{const row=army.rows.find(r=>r.id===(g.sourceGroupId||g.id))||{x:0,y:0,face:0,form:g.form,files:g.files};if(g.form!=='pack'){g.form=row.form;g.files=row.files}g.face=g.currentFacing=face+row.face;g.order='hold';
         const slots=formSlots(g.form,units.length,g.face,g.files,WORLD_BATTLE.sprite),offset={x:(row.x*co-row.y*si)*a.scale,y:(row.x*si+row.y*co)*a.scale};return{g,units,slots,offset}});
-      const extent=Math.max(0,...layout.flatMap(l=>l.slots.map(([x,y])=>Math.hypot(l.offset.x+x,l.offset.y+y)))),r=Math.max(0,Math.min(a.radius*BATTLE_MUSTER.edge,a.radius-extent-BATTLE_MUSTER.inset*a.scale)),lateral=lane*(extent*2+a.scale*BATTLE_MUSTER.inset),anchor=a.constrain({x:a.cx-co*r-si*lateral,y:a.cy-si*r+co*lateral},extent+a.scale*BATTLE_MUSTER.inset);
+      const points=layout.flatMap(l=>l.slots.map(([x,y])=>({x:l.offset.x+x,y:l.offset.y+y}))),extent=Math.max(0,...points.map(p=>Math.hypot(p.x,p.y))),front=Math.max(0,...points.map(p=>p.x*co+p.y*si)),origin=a.field(army.owner),middle={x:(centers[0].x+centers[1].x)/2,y:(centers[0].y+centers[1].y)/2},room=(middle.x-origin.x)*co+(middle.y-origin.y)*si;
+      const back=clamp(front+BATTLE_MUSTER.gap*a.scale/2-room,0,BATTLE_MUSTER.retreat*a.scale),anchor=a.constrain({x:origin.x-co*back,y:origin.y-si*back},extent+BATTLE_MUSTER.inset*a.scale);
       army.anchor={...a.world(anchor),facing:face};
       for(const l of layout){const {g,units,slots,offset}=l;g.ax=anchor.x+offset.x;g.ay=anchor.y+offset.y;
         units.forEach((u,i)=>{[u.sx,u.sy]=slots[i];this.entries.push({u,g,goal:a.constrain({x:g.ax+u.sx,y:g.ay+u.sy},12),path:null,at:0,done:false})});

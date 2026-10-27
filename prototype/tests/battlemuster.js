@@ -12,7 +12,8 @@ Kit.suite(({ok})=>{
  ok(b.units.filter(u=>u.marchUnit).every(u=>{const p=b.world.world(u),o=originals.get(u.marchUnit);return o&&near(p.x,o.x)&&near(p.y,o.y)}),'battle trigger preserves every actual marcher position without snapping');
  ok(!start.hidden&&start.disabled&&start.textContent.includes('Forming'),'Start Battle shows preparation status and cannot start early');
  t.beginFight();start.click();ok(m.active&&!b.ready&&b.t===0,'direct calls and disabled Start cannot bypass preparation');
- const anchors=m.armies.map(a=>b.world.field(a.anchor)),faces=m.armies.map(a=>a.anchor.facing);ok(anchors.length===2&&Math.hypot(anchors[0].x-anchors[1].x,anchors[0].y-anchors[1].y)>b.world.radius&&near(Math.abs(faces[0]-faces[1]),Math.PI),'the two armies target opposite edges of the circle and face each other');
+ const faces=m.armies.map(a=>a.anchor.facing);ok(m.armies.length===2&&m.armies.every(a=>Math.hypot(a.anchor.x-a.owner.x,a.anchor.y-a.owner.y)<=t.BATTLE_MUSTER.retreat+.001)&&near(Math.abs(faces[0]-faces[1]),Math.PI),'armies form near their meeting positions, with a short retreat and opposing facing');
+ const radius=b.world.radius;b.world.radius*=2;const wide=new t.BattleMuster(b);b.world.radius=radius;ok(wide.armies.every((a,i)=>near(a.anchor.x,m.armies[i].anchor.x)&&near(a.anchor.y,m.armies[i].anchor.y)),'a larger battle circle does not send armies farther away');
  const group=b.groups['p_'+foot.id],snapshot=b.units.map(u=>({u,x:u.x,y:u.y,hp:u.hp,sta:u.sta,cd:u.cd})),clock=G.clock,day=G.day;
  let issued=false;t.playerOrder([group.id],()=>{issued=true});t.selectGroup(group.id);t.setForm('loose');t.toggleFlag('firm');t.setOrder('withdraw');t.groupAbility('brace');ok(!issued&&group.form==='line'&&group.order==='hold','manual orders cannot interrupt the automatic forming movement');
  t.frame();const iconStart={...b.iconPos[group.id]};
@@ -36,5 +37,6 @@ Kit.suite(({ok})=>{
  b=begin();m=b.muster;const terrain=b.terrain,grid=terrain.route.foot,wall=Math.floor(grid.C/2);for(const g of Object.values(terrain.route)){for(let y=0;y<g.R;y++)g.cost[y*g.C+wall]=0;g.v++}
  let crossed=false;for(let i=0;i<1800&&m.active;i++){const before=m.entries.map(e=>[e.u,Math.floor(e.u.x/grid.cs)]);t.updateBattle(.1);for(const [u,x] of before)if(x!==wall&&Math.floor(u.x/grid.cs)!==x&&(x<wall)!==(Math.floor(u.x/grid.cs)<wall))crossed=true}
  ok(!m.active&&b.ready&&!crossed,'an unreachable edge uses reachable positions and completes without teleporting across the barrier');
+ const shift=P.x+8-enemy.x;enemy.x+=shift;for(const u of t.MarchArmy.of(enemy).units)u.x+=shift;b=begin();m=b.muster;ok(m.armies.some(a=>Math.hypot(a.anchor.x-a.owner.x,a.anchor.y-a.owner.y)>1)&&m.armies.every(a=>Math.hypot(a.anchor.x-a.owner.x,a.anchor.y-a.owner.y)<=t.BATTLE_MUSTER.retreat+.001),'armies meeting at close range step back for formation space without a long retreat');
  ok(!ERR.length,'animated preparation produces no runtime errors');
 });
