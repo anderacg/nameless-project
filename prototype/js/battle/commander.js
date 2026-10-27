@@ -175,7 +175,41 @@ const acrossRiver=(a,b)=>{const r=B.btype&&B.btype.kind==='bridge'&&B.terrain&&B
    (infantry, shooters, cavalry, hero), the groups' abilities (Brace, Rally, Fire arrows, Spur, Scout ahead), the search for a
    foe unseen, the battle types' ways (typePost, typeHolds, take) and the withdrawal (fallsBack: the enemy's, EnemyCommander).
    Its beasts are its PackMind's (beastmind.js), its characters their own (charmind.js). A Commander holds no state of its own
-   beyond its key: its memory is made only when it first needs one, as ever ---------- */
+   beyond its key and multi-army coordinator: its shared memory is made only when it first needs one ---------- */
+// Multi-army coordination leaves each arm's existing tactics in charge of its posture and abilities.
+const ARMY_AI={lock:4,switchGain:45,focus:15,spacing:1.6,threat:85,urgent:30,threatWeight:1.4,pursuit:180,cavPursuit:1.5,contact:30,chase:3,chaseLeash:90,scatter:75,scatterShare:.5,formed:25,regroup:4,retry:8};
+class ArmyTactics{
+ constructor(commander){this.commander=commander;this.states=new Map()}
+ static managed(g){return !!g&&(g.team>0||aiHas(g))}
+ static local(u,e){if(!B.sides?.active||!ArmyTactics.managed(B.groups[u.grp])||!e.rout&&!withdrawing(e))return true;const state=Commander.of(u.team).tactics?.states.get(u.grp);if(state?.skipFleeUntil>B.t)return false;return Math.hypot(e.x-u.x,e.y-u.y)<=(u.s.range&&!u.empty?u.s.range:ARMY_AI.contact)}
+ core(groups){const points=groups.map(g=>g.centre()),mid=k=>points.map(p=>p[k]).sort((a,b)=>a-b)[Math.floor((points.length-1)/2)];return {x:mid('x'),y:mid('y')}}
+ reachable(a,b,who){return !B.terrain?.blocky||canReach(a,b,who)}
+ step(N){
+  const X=ARMY_AI,groups=Object.values(N).flat().map(id=>B.groups[id]).filter(g=>ArmyTactics.managed(g)&&g.order!=='withdraw'&&g.units.some(u=>fighting(u)&&!u.left));if(!groups.length){this.states.clear();return}
+  const ids=new Set(groups.map(g=>g.id));for(const id of this.states.keys())if(!ids.has(id))this.states.delete(id);
+  const core=this.core(groups),mine=B.units.filter(u=>u.team===this.commander.team&&fighting(u)&&!u.left&&!withdrawing(u)),foes=B.units.filter(u=>u.hp>0&&!u.left&&battleEnemy(this.commander.team,u)&&seenBy(this.commander.team,u)),dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+  if(!this.home){this.home=core;this.radius=Math.max(X.pursuit,...groups.map(g=>dist(g.centre(),core)*X.spacing))}
+  for(const g of groups){const m=g.units.filter(u=>fighting(u)&&!u.left),C=centroid(m),start=m.reduce((a,u)=>dist(u,C)<dist(a,C)?u:a),gap=e=>Math.min(...m.map(u=>dist(u,e))),who=m.some(u=>u.s.big)?'big':m.filter(u=>u.s.mounted).length>m.length/2?'mounted':'foot';let state=this.states.get(g.id);if(!state){state={offset:{x:C.x-core.x,y:C.y-core.y},lock:0};this.states.set(g.id,state)}
+   if(state.chase&&(B.t-state.chase.at>=X.chase||dist(C,state.chase)>=X.chaseLeash)){state.skipFleeUntil=B.t+X.retry;state.chase=null;state.target=null;state.regroup={x:C.x,y:C.y,until:B.t+X.regroup}}
+   if(g.resolve?.routed||g.recover||abilityActive(g,'brace')||g.phase==='regroup')continue;
+   const sx=m.reduce((n,u)=>n+(u.sx||0),0)/m.length,sy=m.reduce((n,u)=>n+(u.sy||0),0)/m.length,near=foes.some(e=>!e.rout&&!withdrawing(e)&&m.some(u=>dist(u,e)<X.urgent)),leash=this.radius*(g.role==='cav'?X.cavPursuit:1),spread=m.filter(u=>Math.hypot(u.x-C.x-(u.sx||0)+sx,u.y-C.y-(u.sy||0)+sy)>X.scatter).length;
+   const scattered=m.length>=3&&spread/m.length>=X.scatterShare,outlier=dist(C,core)>leash;
+   if(!near&&(g.order==='charge'||g.order==='advance'||state.regroup)&&((scattered||outlier)&&B.t>=(state.retry||0)||state.regroup)){
+    if(!state.regroup){const p=outlier?{x:core.x+state.offset.x,y:core.y+state.offset.y}:C;state.regroup={x:p.x,y:p.y,until:B.t+X.regroup};if(!this.reachable(start,p,who))state.regroup={x:C.x,y:C.y,until:B.t+X.regroup};state.target=null}
+    const p=state.regroup,formed=m.every(u=>Math.hypot(u.x-p.x-(u.sx||0)+sx,u.y-p.y-(u.sy||0)+sy)<X.formed);
+    if(B.t<p.until&&!formed){g.standAt(p.x-sx,p.y-sy);continue}state.regroup=null;state.retry=B.t+X.retry;
+   }else if(near&&state.regroup){state.regroup=null;state.retry=B.t+X.retry}
+   const pool=new Map();for(const e of foes){const fleeing=e.rout||withdrawing(e);if(fleeing&&(state.skipFleeUntil>B.t||gap(e)>X.contact||dist(core,e)>leash))continue;const key=e.grp||'u'+e.id,old=pool.get(key);if(!old||dist(C,e)<dist(C,old))pool.set(key,e)}
+   const candidates=[...pool.values()].filter(e=>this.reachable(start,e,who)),score=e=>dist(C,e)-Math.max(0,X.threat-Math.min(...mine.map(u=>dist(u,e))))*X.threatWeight-(g.targetGroupId===e.grp?X.focus:0),current=candidates.find(e=>(e.grp||'u'+e.id)===state.target),best=candidates.reduce((a,e)=>!a||score(e)<score(a)?e:a,null);
+   let target=best;if(current&&best&&best!==current){const urgent=gap(best)<X.urgent&&gap(current)>X.threat;target=urgent?best:B.t-state.lock<X.lock||score(best)>score(current)-X.switchGain?current:best}
+   if(!target){state.target=null;if(g.order==='charge'||g.order==='advance'||g.hasTarget)g.standAt(C.x,C.y);continue}
+   if(target.rout||withdrawing(target)){if(!state.chase)state.chase={x:C.x,y:C.y,at:B.t}}else state.chase=null;
+   const key=target.grp||'u'+target.id;if(key!==state.target){state.target=key;state.lock=B.t}
+   if(g.order==='charge'||g.order==='advance'||g.hasTarget){const advance=g.order==='advance',old=g.targetGroupId===target.grp&&g.hasTarget;if(!old)g.attack(target);if(advance)g.run=false}
+  }
+ }
+}
+
 const COMMANDERS=new WeakMap();
 class Commander{
   constructor(ck){this.ck=ck;this.team=ck==='ally'?0:ck;this.key=ck==='ally'?'ally':undefined}
@@ -233,7 +267,7 @@ class Commander{
     if(aiAny())Commander.of(0).think();// (yours: the groups the AI has, deploy.js aiHas)
   }
   // one think: its orders, then each group's pace, formation and front (finish)
-  think(){if(B.hunt&&this.team===0){B.hunt.orders(Object.values(this.groups()).flat().map(id=>B.groups[id]));return}this.finish(this.orders())}
+  think(){if(B.hunt&&this.team===0){B.hunt.orders(Object.values(this.groups()).flat().map(id=>B.groups[id]));return}const groups=B.sides?.active?this.groups():null,N=this.orders();if(groups)(this.tactics||(this.tactics=new ArmyTactics(this))).step(groups);this.finish(N)}
   // a captain's think: its posture, then each arm in turn on one reading of the battle (captainCtx); it hands back its groups (captainFinish's)
   orders(){
     // (ck: this captain's own memory (captainMem): your army's and your allies' are on one side but each its own)

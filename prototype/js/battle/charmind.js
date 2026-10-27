@@ -129,7 +129,7 @@ class CharacterMind{
       if(ai&&!sent&&!(g&&g.hasTarget)&&!(B.t-(S.backIn??-99)<CHAR_FALL.keep))this.duel();
       if((S.think=(S.think||0)-dt)<=0){S.think=CHAR_AI.think;if(sent)return;if(this.basics()||chooseAbility(u))u.castNow=true}}
   // a duel: the nearest character of the other side his side sees, within CHAR_AI.duel px: he is set on him
-  duel(){const u=this.u;let best=null,bd=CHAR_AI.duel;for(const e of B.units)if(battleEnemy(e,u)&&e.hp>0&&isChar(e)&&seenBy(u.team,e)){const d=Math.hypot(e.x-u.x,e.y-u.y);if(d<bd){bd=d;best=e}}if(best){u.tgt=best;u.rt=.5}}
+  duel(){const u=this.u;let best=null,bd=CHAR_AI.duel;for(const e of B.units)if(battleEnemy(e,u)&&e.hp>0&&ArmyTactics.local(u,e)&&isChar(e)&&seenBy(u.team,e)){const d=Math.hypot(e.x-u.x,e.y-u.y);if(d<bd){bd=d;best=e}}if(best){u.tgt=best;u.rt=.5}}
 }
 // your hero's own hands (combat.js): its state heroState's; its timers, roll, leap and dash heroActions'; its blow the combo, the
 // bow drawn or a staff's cast; a Shove (or Shield Bash), a Dodge Roll and its skills yours

@@ -90,7 +90,7 @@ class BattleControl{
   // put at (x,y) at once (deploying: no march), standing
   placeAt(x,y){if(this.resolve?.routed)return;if(B.world){const p=B.world.constrain({x,y},16);x=p.x;y=p.y}this.ax=x;this.ay=y;this.order='hold';this.tgt=null;this.queue=[]}
   // handed to the AI: its notes and waypoints cleared, for a fresh start (none left from an earlier spell of the AI's)
-  aiReset(){for(const k of AI_NOTES)delete this[k];this.phase=null;this.t=0;this.queue=[];this.amEnd()}
+  aiReset(){if(B.sides?.active)Commander.of(this.team).tactics?.states.delete(this.id);for(const k of AI_NOTES)delete this[k];this.phase=null;this.t=0;this.queue=[];this.amEnd()}
   // the AI's placing: stand at (x,y); a move (its men break off and go) only when that is well away from where it last stood
   standAt(x,y){if(this.resolve?.routed)return;if(B.world){const p=B.world.constrain({x,y},16);x=p.x;y=p.y}this.order='hold';this.tgt=null;this.ax=clamp(x,8,BW-8);this.ay=clamp(y,fieldTop(),fieldBot());
     if(this.lax==null||Math.hypot(this.ax-this.lax,this.ay-this.lay)>CAPT.move){if(this.lax!=null)moveOrder(this.id);this.lax=this.ax;this.lay=this.ay}}

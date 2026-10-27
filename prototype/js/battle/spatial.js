@@ -49,7 +49,7 @@ class SpatialGrid{
      can beat or tie it */
   nearest(u){
     const U=this.U,ux=u.x,uy=u.y,team=u.team,c0=this.cx(ux),r0=this.cy(uy),C=this.C,cs=this.cs;let best=null,bd=1e9,bi=-1;
-    const look=b=>{for(let q=0;q<b.length;q++){const i=b[q],e=U[i];if(e.hp<=0||!battleEnemy(team,e))continue;const d=((e.x-ux)**2+(e.y-uy)**2)*(e.rout?9:1);if(d<bd||d===bd&&i<bi){bd=d;best=e;bi=i}}};
+    const look=b=>{for(let q=0;q<b.length;q++){const i=b[q],e=U[i];if(e.hp<=0||!battleEnemy(team,e)||!ArmyTactics.local(u,e))continue;const d=((e.x-ux)**2+(e.y-uy)**2)*(e.rout?9:1);if(d<bd||d===bd&&i<bi){bd=d;best=e;bi=i}}};
     const extra=[];if(this.loose>=0)extra.push(this.loose);for(let i=this.n;i<U.length;i++)extra.push(i);look(extra);
     const K=Math.max(c0,C-1-c0,r0,this.R-1-r0);
     for(let k=0;k<=K;k++){
