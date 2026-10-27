@@ -67,7 +67,7 @@ Kit.suite(({ok,info})=>{
   const tr=W.tracks[0],a0=grab();TR.on=false;const bare=grab();TR.on=true;const laid=same(a0,bare);
   o.y=grass.y+up*10;K.step(o,'band:bandits',false,now);const a1=grab();
   ok(tr&&tr.size===6&&laid>20&&same(a0,a1)===0,'the walker turns '+(up<0?'north':'south')+' 10 px (no new point yet): every print as it was ('+laid+' pixels of prints, '+same(a0,a1)+' changed)');
-  o.y=grass.y+up*(S+6);K.step(o,'band:bandits',false,now);const a2=grab(),bx=grass.x+5*S,away=(x,y)=>!(x>bx-9&&x<bx+9&&(y-grass.y)*up>-9&&(y-grass.y)*up<S+15);
+  o.y=grass.y+up*(S+6);K.step(o,'band:bandits',false,now);const a2=grab(),bx=grass.x+5*S,M=9*TR.px+2,away=(x,y)=>!(x>bx-M&&x<bx+M&&(y-grass.y)*up>-M&&(y-grass.y)*up<S+6+M);// (the new stretch's box: as wide as its prints, TRACKS.px over)
   ok(tr.size===7&&same(a1,a2)>0&&same(a1,a2,away)===0,'it walks on that way past a sample: a point kept and its prints laid ('+same(a1,a2)+' pixels), the older prints untouched ('+same(a1,a2,away)+' changed away from the new stretch)')}
  // ---- fading: by age, and faster in the desert's wind and the frost's snow
  {const now=t.trackNow(),lifeOf=c=>{const s=run(c,2);return s?t.trackLife(s.x,s.y):null},lg=lifeOf('grass'),ld=lifeOf('desert'),lf=lifeOf('frost');

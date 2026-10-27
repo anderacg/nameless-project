@@ -1,9 +1,31 @@
 'use strict';
 /* Hunting is a world battle: ordinary armies and attacks, individual fleeing wildlife, species loot. */
+/* the hunt's tracks: each animal's prints as it runs (HUNT_TRACK), where each was last seen, what your hunters can read of them,
+   and where a group with no prey in sight goes to find some: along the freshest trail it reads, else to the nearest last sighting */
+class HuntTracks{
+  constructor(){this.trails=new Map();this.seen=new Map()}
+  step(u){const X=HUNT_TRACK;let l=this.trails.get(u);if(!l)this.trails.set(u,l=[]);const q=l[l.length-1];
+    if(!q||Math.hypot(u.x-q.x,u.y-q.y)>=X.sample)l.push({x:u.x,y:u.y,t:B.t,a:Math.atan2(u.y-(q?q.y:u.y),u.x-(q?q.x:u.x-1))});
+    while(l.length&&(B.t-l[0].t>X.life||l.length>X.keep))l.shift()}
+  sight(u){this.seen.set(u,{x:u.x,y:u.y,t:B.t})}
+  get reach(){return HUNT_TRACK.read+HUNT_TRACK.scout*skill('scout')}
+  // (a print one of your hunters stands within reach of)
+  readable(p,hunters,r){return hunters.some(h=>Math.hypot(h.x-p.x,h.y-p.y)<=r)}
+  // where a group (C: its middle) goes: on along the freshest trail any of your hunters reads, else the nearest last sighting
+  search(C,hunters,live){const r=this.reach;let best=null;
+    for(const [u,l] of this.trails){if(!live(u))continue;for(let i=l.length-1;i>=0;i--){if(!this.readable(l[i],hunters,r))continue;if(!best||l[i].t>best.t)best={t:l[i].t,l,i};break}}
+    if(best){const p=best.l[Math.min(best.l.length-1,best.i+HUNT_TRACK.ahead)];return {x:p.x,y:p.y}}
+    let near=null;for(const [u,p] of this.seen)if(live(u)&&(!near||Math.hypot(p.x-C.x,p.y-C.y)<Math.hypot(near.x-C.x,near.y-C.y)))near=p;return near}
+  // the prints your hunters read, under everyone (render.js drawBattle): a beast's own kind of print, fading with its age
+  draw(hunters){const r=this.reach,k=WORLD_BATTLE.sprite,CR=Object.keys(TRACKS.col).indexOf('known');
+    for(const [u,l] of this.trails){const D=CRITTERS[u.wildlife],si=TRACK_SI[D&&D.size>=2?'hoof':'paw'];
+      l.forEach((p,i)=>{if(!this.readable(p,hunters,r))return;const a=1-(B.t-p.t)/HUNT_TRACK.life;if(a<=0)return;const S=trackSprite(si,0,(Math.round(p.a/(Math.PI/4))+8)%8,i&1,CR);
+        ctx.save();ctx.globalAlpha=Math.min(1,a);ctx.translate(Math.round(p.x),Math.round(p.y));ctx.scale(k,k);ctx.drawImage(S,S.ox,S.oy);ctx.restore()})}}
+}
 class HuntBattleArea extends WorldBattleArea{
   constructor(e){
     super(e);const a=e.hunt;this.herds=a.herds;this.x=a.x;this.y=a.y;this.r=HUNT_AREA.radius;this.span=Math.ceil(2*(this.r+WORLD_BATTLE.apron));this.x0=this.x-this.span/2;this.y0=this.y-this.span/2;this.cx=this.cy=this.span*this.scale/2;this.radius=this.r*this.scale;
-    this.initial=new Set([P,...this.herds]);this.participants=new Set(this.initial);this.pending=[];this.animals=[];this.joinedFight=false;
+    this.initial=new Set([P,...this.herds]);this.participants=new Set(this.initial);this.pending=[];this.animals=[];this.joinedFight=false;this.tracks=new HuntTracks();
   }
   reinforce(){}
   watchBlocked(){}
@@ -29,13 +51,14 @@ class HuntBattleArea extends WorldBattleArea{
     if(distance<WORLD_BATTLE.interaction*this.scale||u.hp<u.max)u.alert=1;
     u.spdNow=0;if(!threat||u.alert<1){u.rest=(u.rest||0)+seconds;if(u.rest>ESCAPE_STAMINA.delay)u.escapeSta=Math.min(u.escapeCap,u.escapeSta+u.escapeCap*ESCAPE_STAMINA.recovery*seconds);u.sta=u.escapeSta/u.escapeCap*FATIGUE.max;return}
     u.rest=0;const way=this.flight(u,threat),dir=this.escapeWay(u,way);if(!dir)return;const ratio=clamp(u.escapeSta/u.escapeCap,0,1),factor=ratio>=.6?1:ratio>=.25?.8+(ratio-.25)/.35*.2:ESCAPE_STAMINA.floor+ratio/.25*(.8-ESCAPE_STAMINA.floor),step=Math.min(dir[2],u.s.spd*factor*dt);
-    const x=u.x+dir[0]*step,y=u.y+dir[1]*step;if(!lineClear(way.g,u.x,u.y,x,y))return;u.x=x;u.y=y;u.dir=Math.atan2(dir[1],dir[0]);u.face=dir[0]>=0?1:-1;u.spdNow=step/dt;u.escapeSta=Math.max(0,u.escapeSta-seconds);u.sta=u.escapeSta/u.escapeCap*FATIGUE.max;
+    const x=u.x+dir[0]*step,y=u.y+dir[1]*step;if(!lineClear(way.g,u.x,u.y,x,y))return;u.x=x;u.y=y;this.tracks.step(u);u.dir=Math.atan2(dir[1],dir[0]);u.face=dir[0]>=0?1:-1;u.spdNow=step/dt;u.escapeSta=Math.max(0,u.escapeSta-seconds);u.sta=u.escapeSta/u.escapeCap*FATIGUE.max;
     if(!this.inside(u,-2))this.depart(u);
   }
   orders(groups){
-    const prey=this.animals.filter(u=>u.hp>0&&!u.left);
+    const prey=this.animals.filter(u=>u.hp>0&&!u.left),hunters=B.units.filter(u=>u.team===0&&u.hp>0&&!u.left&&!u.rout),live=u=>u.hp>0&&!u.left;for(const u of prey)if(seenBy(0,u))this.tracks.sight(u);
     for(const g of groups){const m=grpUnits(g.id);if(!m.length||g.order==='withdraw'||g.order==='rout')continue;const C=centroid(m),targets=prey.filter(u=>seenBy(0,u)&&canReach(C,u,groupWho(m))),target=Spatial.nearest(targets,C.x,C.y);
-      if(!target){if(g.hasTarget&&!targetStands(g))g.hold();continue}if(g.targetGroupId!==target.grp)g.attack(target,{run:true});g.faceTo(Math.atan2(target.y-C.y,target.x-C.x));
+      // (none in sight: on along the tracks, or to where one was last seen)
+      if(!target){const to=this.tracks.search(C,hunters,live);if(to&&canReach(C,to,groupWho(m))){g.standAt(to.x,to.y);g.setRun(true)}else if(g.hasTarget&&!targetStands(g))g.hold();continue}if(g.targetGroupId!==target.grp)g.attack(target,{run:true});g.faceTo(Math.atan2(target.y-C.y,target.x-C.x));
     }return groups;
   }
   end(){if(B?.hunt!==this||B.over)return;B.retreat=false;B.over=true;B.win=true;B.endT=0;finishBattle()}
@@ -66,9 +89,10 @@ class HuntBattleSetup extends WorldBattleSetup{
   }
   createState(){const b=super.createState();b.hunt=this.area;return b}
   initialize(){
-    // Standard combat initialization and original marching positions, with no opposing-army preparation phase.
+    // Standard combat initialization and original marching positions, with no opposing-army preparation phase; each animal's
+    // place its first sighting (seen on the map, where the hunt was chosen: HuntTracks)
     super.initialize();const a=this.area;delete B.muster;B.ready=false;B.paused=false;B.auto=true;
-    for(const [id,g] of Object.entries(B.groups))if(!g.player){const m=B.units.filter(u=>u.grp===id);for(const u of m){const c=u.herd;if(!c)continue;const index=a.animals.filter(v=>v.herd===c).indexOf(u),offset=index?Math.ceil(index/2)*3:0;Object.assign(u,a.field({x:c.x+(index%2?-1:1)*offset,y:c.y-offset*.3}));u.sta=u.escapeSta/u.escapeCap*FATIGUE.max;delete u.rout;delete u.left;u.hp=u.max;u.sx=u.sy=0}if(m.length){const p=centroid(m);g.ax=p.x;g.ay=p.y;g.order='hold'}}
+    for(const [id,g] of Object.entries(B.groups))if(!g.player){const m=B.units.filter(u=>u.grp===id);for(const u of m){const c=u.herd;if(!c)continue;const index=a.animals.filter(v=>v.herd===c).indexOf(u),offset=index?Math.ceil(index/2)*3:0;Object.assign(u,a.field({x:c.x+(index%2?-1:1)*offset,y:c.y-offset*.3}));u.sta=u.escapeSta/u.escapeCap*FATIGUE.max;delete u.rout;delete u.left;u.hp=u.max;u.sx=u.sy=0;a.tracks.sight(u)}if(m.length){const p=centroid(m);g.ax=p.x;g.ay=p.y;g.order='hold'}}
     B.sight=null;sightStep(true);
   }
   survey(){super.survey();this.env.name='Hunting area';this.env.text='Auto Hunt is on for your whole army. Give orders or use AI to take command. Wildlife can escape beyond the circle; kills provide meat and trophies.'}

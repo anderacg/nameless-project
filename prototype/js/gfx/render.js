@@ -371,6 +371,7 @@ function drawBattle(){
     const fx_=Math.round(gr.ax),fy=Math.round(gr.ay);rect(ctx,C.wood,fx_,fy-14,1,14);rect(ctx,C.team[0],fx_+1,fy-14,6,4);rect(ctx,'#e4e0cf',fx_+3,fy-13,2,2)}
   // your selection underlined; the box you drag; where you last sent them (a ring), or whom you set them on (red)
   drawFireRange();drawSelection();// (shooters' reach and line of fire: battlehud.js)
+  if(B.hunt)B.hunt.tracks.draw(B.units.filter(u=>u.team===0&&u.hp>0&&!u.left));// (a hunt's tracks your hunters read, under everyone: battle/hunting.js)
   if(orderPathsOn())drawOrderPaths();else drawOrderLines();// (order paths and destination ghosts beneath characters: ui/orderpaths.js)
   drawFormGhost();// (a line being dragged: formations.js)
   drawCommandPowers();// (the command radius, Stand Fast!'s glow: commandpowers.js)
