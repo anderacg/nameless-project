@@ -176,6 +176,42 @@ const acrossRiver=(a,b)=>{const r=B.btype&&B.btype.kind==='bridge'&&B.terrain&&B
    foe unseen, the battle types' ways (typePost, typeHolds, take) and the withdrawal (fallsBack: the enemy's, EnemyCommander).
    Its beasts are its PackMind's (beastmind.js), its characters their own (charmind.js). A Commander holds no state of its own
    beyond its key and multi-army coordinator: its shared memory is made only when it first needs one ---------- */
+// A mounted melee wing lines up, strikes briefly, peels out and loops back for a new run-up.
+const CAVALRY_RIDE={runup:115,flank:85,loop:155,near:26,contact:24,impact:.7,unsafe:.3,chargeMax:8,travelMax:12,recover:1.2,rested:55,minSta:35,formed:90,avoid:28,spear:120,margin:18};
+class CavalryRide{
+ static safe(a,p){const X=CAVALRY_RIDE;if(p.x<X.margin||p.x>BW-X.margin||p.y<fieldTop()+X.margin||p.y>fieldBot()-X.margin||B.world&&!B.world.inside(p,X.margin))return false;const T=B.terrain;return !T?.blocky||lineClear(T.route.mounted,a.x,a.y,p.x,p.y,255,ROUTE_UNIT.r)}
+ static point(E,v,f,l,side){return {x:E.x+v.x*f-v.y*l*side,y:E.y+v.y*f+v.x*l*side}}
+ static choose(c,C){const pool=new Map();for(const e of c.foes){if(e.rout||withdrawing(e))continue;const key=e.grp||e.id,old=pool.get(key);if(!old||c.d2(C,e)<c.d2(C,old))pool.set(key,e)}const score=e=>c.d2(C,e)-(e.s.range?65:0)-(c.engaged(e)?35:0)+(unitClass(e.s)==='spear'&&shieldWallActive(e)?CAVALRY_RIDE.spear:0);return [...pool.values()].filter(e=>!B.terrain?.blocky||canReach(C,e,'mounted')).reduce((a,e)=>!a||score(e)<score(a)?e:a,null)}
+ static route(c,C,E,v,exit=false){const X=CAVALRY_RIDE,candidates=[];for(const side of [1,-1]){
+   const points=exit?[this.point(C,v,65,75,side),this.point(E,v,X.runup*.65,X.loop,side),this.point(E,v,-X.runup,X.loop,side)]:[this.point(E,v,-X.runup,X.flank,side),this.point(E,v,-X.runup*.7,20,side)];
+   let a=C,valid=true,cost=0;for(const p of points){if(!this.safe(a,p)){valid=false;break}cost+=c.d2(a,p);for(const e of c.foes)if(!e.rout){for(const t of [.25,.5,.75,1])if(c.d2(e,{x:a.x+(p.x-a.x)*t,y:a.y+(p.y-a.y)*t})<X.avoid)cost+=150}a=p}if(valid)candidates.push({points,side,cost})
+  }return candidates.sort((a,b)=>a.cost-b.cost)[0]||null}
+ static travel(g,p,C){const sx=g.units.reduce((n,u)=>n+(u.sx||0),0)/g.units.length,sy=g.units.reduce((n,u)=>n+(u.sy||0),0)/g.units.length;g.standAt(p.x-sx,p.y-sy);g.face=Math.atan2(p.y-C.y,p.x-C.x)}
+ static step(c,g,m){
+  const X=CAVALRY_RIDE,C=centroid(m),st=grpSta(m),d=c.d2;let p=g.ridePlan,target=p&&c.foes.find(e=>e.hp>0&&!e.rout&&!withdrawing(e)&&(p.group?e.grp===p.group:e.id===p.unit));
+  if(!p){target=this.choose(c,C);if(!target)return false;const dx=target.x-C.x,dy=target.y-C.y,len=Math.hypot(dx,dy)||1,v={x:dx/len,y:dy/len},route=this.route(c,C,target,v);if(!route)return false;p=g.ridePlan={phase:'approach',points:route.points,side:route.side,index:0,v,enemy:{x:target.x,y:target.y},group:target.grp,unit:target.id,at:B.t};g.phase='flank'}
+  if(p.phase==='charge'){
+   const contact=c.foes.some(e=>!e.rout&&m.some(u=>d(u,e)<X.contact));if(contact&&p.hit==null)p.hit=B.t;
+   const unsafe=m.filter(u=>c.foes.some(e=>!e.rout&&d(u,e)<X.contact)).length>m.length*.7||target&&unitClass(target.s)==='spear'&&shieldWallActive(target),spent=st<X.minSta;
+   if(p.hit!=null&&B.t-p.hit>=(unsafe||spent?X.unsafe:X.impact)||B.t-p.at>X.chargeMax||!target){
+    const route=this.route(c,C,p.enemy,p.v,true);if(!route){g.standAt(C.x,C.y);delete g.ridePlan;g.phase='regroup';g.t=0;return true}p.phase='exit';p.points=route.points;p.index=0;p.at=B.t;g.phase='regroup';g.rest=false;
+   }else{g.attack(target);return true}
+  }
+  if(p.phase==='approach'||p.phase==='exit'){
+   if(p.phase==='approach'&&!target){delete g.ridePlan;return false}
+   if(B.t-p.at>X.travelMax){delete g.ridePlan;g.phase='regroup';g.t=0;g.standAt(C.x,C.y);return true}
+   const to=p.points[p.index];if(!this.safe(C,to)){delete g.ridePlan;return false}this.travel(g,to,C);
+   if(d(C,to)<X.near){p.index++;if(p.index>=p.points.length){if(p.phase==='exit'){p.phase='recover';p.at=B.t;g.rest=true}else if(st>=X.minSta&&(!c.rOf?.(g.id)||c.rOf(g.id).mor>=tun(c.T,UNIT_AI,'chargeAt'))){p.phase='charge';p.at=B.t;p.hit=null;p.enemy={x:target.x,y:target.y};const len=d(C,target)||1;p.v={x:(target.x-C.x)/len,y:(target.y-C.y)/len};g.phase='charge';g.chargeAt=B.t;g.attack(target);sfxAt('gallop',C.x,C.y)}else{p.phase='recover';p.at=B.t;g.rest=true}}}return true;
+  }
+  if(p.phase==='recover'){
+   g.phase='regroup';g.rest=true;const at=p.points[p.points.length-1];this.travel(g,at,C);const sx=m.reduce((n,u)=>n+(u.sx||0),0)/m.length,sy=m.reduce((n,u)=>n+(u.sy||0),0)/m.length,formed=m.every(u=>Math.hypot(u.x-C.x-(u.sx||0)+sx,u.y-C.y-(u.sy||0)+sy)<X.formed),threat=c.foes.some(e=>!e.rout&&d(e,C)<X.contact);
+   if(threat){delete g.ridePlan;g.rest=false;g.phase='charge';if(target)g.attack(target);return true}
+   if(B.t-p.at>=X.recover&&st>=X.rested&&formed&&(!c.rOf?.(g.id)||c.rOf(g.id).mor>=tun(c.T,UNIT_AI,'chargeAt')||B.t-p.at>=tun(c.T,UNIT_AI,'cavRecover'))){delete g.ridePlan;g.rest=false;g.phase='flank'}return true;
+  }
+  return false;
+ }
+}
+
 // Multi-army coordination leaves each arm's existing tactics in charge of its posture and abilities.
 const ARMY_AI={lock:4,switchGain:45,focus:15,spacing:1.6,threat:85,urgent:30,threatWeight:1.4,pursuit:180,cavPursuit:1.5,contact:30,chase:3,chaseLeash:90,scatter:75,scatterShare:.5,formed:25,regroup:4,retry:8};
 class ArmyTactics{
@@ -190,6 +226,7 @@ class ArmyTactics{
   const core=this.core(groups),mine=B.units.filter(u=>u.team===this.commander.team&&fighting(u)&&!u.left&&!withdrawing(u)),foes=B.units.filter(u=>u.hp>0&&!u.left&&battleEnemy(this.commander.team,u)&&seenBy(this.commander.team,u)),dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
   if(!this.home){this.home=core;this.radius=Math.max(X.pursuit,...groups.map(g=>dist(g.centre(),core)*X.spacing))}
   for(const g of groups){const m=g.units.filter(u=>fighting(u)&&!u.left),C=centroid(m),start=m.reduce((a,u)=>dist(u,C)<dist(a,C)?u:a),gap=e=>Math.min(...m.map(u=>dist(u,e))),who=m.some(u=>u.s.big)?'big':m.filter(u=>u.s.mounted).length>m.length/2?'mounted':'foot';let state=this.states.get(g.id);if(!state){state={offset:{x:C.x-core.x,y:C.y-core.y},lock:0};this.states.set(g.id,state)}
+   if(g.ridePlan)continue;
    if(state.chase&&(B.t-state.chase.at>=X.chase||dist(C,state.chase)>=X.chaseLeash)){state.skipFleeUntil=B.t+X.retry;state.chase=null;state.target=null;state.regroup={x:C.x,y:C.y,until:B.t+X.regroup}}
    if(g.resolve?.routed||g.recover||abilityActive(g,'brace')||g.phase==='regroup')continue;
    const sx=m.reduce((n,u)=>n+(u.sx||0),0)/m.length,sy=m.reduce((n,u)=>n+(u.sy||0),0)/m.length,near=foes.some(e=>!e.rout&&!withdrawing(e)&&m.some(u=>dist(u,e)<X.urgent)),leash=this.radius*(g.role==='cav'?X.cavPursuit:1),spread=m.filter(u=>Math.hypot(u.x-C.x-(u.sx||0)+sx,u.y-C.y-(u.sy||0)+sy)>X.scatter).length;
@@ -638,11 +675,12 @@ class Commander{
   // charge again (regroupFar); tired ones stand off after a charge till rested (rested, restMax), and walk (runFor, captainFinish))
   cavalry(c,id){
     const {team,T,S,foes,M,d2,lead,within,engaged,goIn,shooterNear,threats,rOf,weak,ground,gt,stand,send,ride,flankAt}=c,X=AI_TACTICS;
-    const cav=grpUnits(id).filter(u=>!u.rout);if(!cav.length)return;const g=B.groups[id],C=centroid(cav),was=g.phase;g.t=(g.t||0)+FOE_CMD.think;g.phase=g.phase||'flank';
+    const cav=grpUnits(id).filter(u=>!u.rout);if(!cav.length)return;const g=B.groups[id],C=centroid(cav),was=g.phase;g.t=(g.t||0)+FOE_CMD.think;g.phase=g.phase||'flank';if(g.ridePlan&&(!PHYSICS.on||c.take||c.holding||c.rush))delete g.ridePlan;
     if(c.rush&&g.phase==='flank'){g.phase='charge';g.t=0;g.chargeAt=B.t}// (an ambush sprung: they ride at once)
     // (holding a bridge: they wait behind the line on its bank, and ride at whoever of theirs comes over, the nearest first)
     if(c.holding){const over=foes.filter(e=>!acrossRiver(e,C)&&!e.rout);if(!over.length){g.phase='flank';g.t=0;const H=c.holdAt(c.N.inf[0]||id),dir=Math.sign(c.M.x-H.x)||1;c.stand(g,H.x-dir*BTYPE.behind*2.4,H.y+(g.flankSide||1)*BTYPE.flank,cav);return}
       g.phase='charge';const e=over.reduce((a,o)=>c.d2(o,C)<c.d2(a,C)?o:a);if(g.tgt!==e&&!(g.tgt&&g.tgt.hp>0&&over.includes(g.tgt)))g.attack(e);return}
+    if(PHYSICS.on&&!c.take&&!c.rush&&cav.every(u=>u.s.mounted&&!u.s.range)&&CavalryRide.step(c,g,cav))return;
     const st=grpSta(cav),fresh=st>=X.fresh,back=fresh?tun(T,X,'regroupFar'):FOE_CMD.regroup;
     // (on the ground: a mark in woods, marsh or water worth TERRAIN_AI.woodsCav less, one higher upCav less a level, one lower downCav more)
     const pick=()=>{const sc0=e=>(e.s.range?3:0)+(engaged(e)?2:0)+(foes.some(o=>o!==e&&d2(o,e)<30)?0:1)+(unitClass(e.s)==='spear'?-3:0)+(e===lead?.5:0)+(weak(e)?tun(T,UNIT_AI,'prey'):0)-d2(e,C)/300;
@@ -702,7 +740,7 @@ class Commander{
       // (on the ground: infantry charging a foe TERRAIN_AI.uphill levels above them walks up, running only the last upRun px, unless
       // strong enough to go up anyway)
       const up=!round&&k==='inf'&&g.order==='charge'&&!!this.ground()&&(()=>{const p=tg||foes.reduce((a,e)=>Math.hypot(e.x-Cm.x,e.y-Cm.y)<Math.hypot(a.x-Cm.x,a.y-Cm.y)?e:a);return levelAt(p.x,p.y)-lvlOf(m)>=this.gt('uphill')&&holdsGround(tg?{grp:g.targetGroupId}:p)&&(S.ratio<tun(T,FOE_CMD,'attackAt')*this.gt('uphillOdds')||onSteep(p))})();
-      g.setRun(g.backing||!!g.huntBack||!!g.screenBack||!!g.pushRun||!g.hunt&&g.order==='charge'&&near<(up?Math.min(TERRAIN_AI.upRun,runFor(k,st,T)):runFor(k,st,T))||k==='cav'&&g.order==='hold'&&g.phase==='flank'&&st>=FATIGUE.tired);
+      g.setRun(g.backing||!!g.huntBack||!!g.screenBack||!!g.pushRun||!g.hunt&&g.order==='charge'&&near<(up?Math.min(TERRAIN_AI.upRun,runFor(k,st,T)):runFor(k,st,T))||k==='cav'&&g.order==='hold'&&(g.phase==='flank'||g.ridePlan?.phase==='exit')&&!g.rest&&st>=FATIGUE.tired);
       if(k==='hero')continue;
       // (whether a new place is a move, its men breaking off to go: battlecontrol.js standAt)
       // (what the moment calls for: shot at, a shield wall (infantry) or loose order (shooters); a charge coming, they brace in a
@@ -718,7 +756,7 @@ class Commander{
       // reach), turned only once he is out of their arc: the soldiers never turn themselves; on its way over a crossing, its way)
       const C=centroid(m),sm=(k==='arc'||k==='mag')&&m.some(u=>u.s.range),R=sm?Math.max(...m.map(u=>u.s.range||0)):0,inR=sm?foes.filter(e=>Math.hypot(e.x-C.x,e.y-C.y)<=R):[],
         mark=sm&&(sightGoal(g,team)||g.targetPoint()||(inR.length?inR.reduce((a,e)=>Math.hypot(e.x-C.x,e.y-C.y)<Math.hypot(a.x-C.x,a.y-C.y)?e:a):null)),
-        wade=g.order==='hold'&&B.captains&&B.captains[ck]&&B.captains[ck].files&&B.captains[ck].files[id],face=wade?wade.a:mark?Math.atan2(mark.y-C.y,mark.x-C.x):Math.atan2(M.y-C.y,M.x-C.x),turned=angGap(face,g.currentFacing??g.face)>(mark?SHOOT.arc*.4:CAPT.turn);
+        wade=g.order==='hold'&&B.captains&&B.captains[ck]&&B.captains[ck].files&&B.captains[ck].files[id],face=k==='cav'&&g.ridePlan&&g.order==='hold'?g.face:wade?wade.a:mark?Math.atan2(mark.y-C.y,mark.x-C.x):Math.atan2(M.y-C.y,M.x-C.x),turned=angGap(face,g.currentFacing??g.face)>(mark?SHOOT.arc*.4:CAPT.turn);
       if(g.form!==f||turned)g.setForm(f,{face})}
   }
 }

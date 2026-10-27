@@ -17,7 +17,7 @@ const FORM_SWAP={every:1,gain:6};
 // the AI's own notes on a group (commander.js): its phase and time in it, its stand, hunt and way home, its screen and lead, a
 // recovery and a plug, a cavalry's rest, melee count, charge time and flank, a form's time, where it last stood; a beast's side,
 // nerve, lair and prey (beastmind.js)
-const AI_NOTES=['stand','hunt','huntBack','screenBack','recover','plug','pushed','pushRun','rest','inMelee','chargeAt','flankSide','formAt','lax','lay','side','mark','lurk','prey'];
+const AI_NOTES=['ridePlan','stand','hunt','huntBack','screenBack','recover','plug','pushed','pushRun','rest','inMelee','chargeAt','flankSide','formAt','lax','lay','side','mark','lurk','prey'];
 /* attack-move (Ctrl + right-click, or the Attack-move button: commands.js): a march to a place that fights what it meets on the
    way. A foe its side sees comes within reach of the march (any of its men within melee px of him; riders cav px; shooters
    the shortest reach among them and short px more) and the group turns on the nearest: its fighters attack his group, its riders

@@ -26,6 +26,7 @@ const PHYSICS={on:true,
   // this to where he stops, he lines up first (cos² of it: no circling his place); spur: spurred riders gather speed this much
   // faster; press: how fast one pressing into a foe is slowed by him (a second, by the foe's share of their masses: physShare)
   wheel:.3,near:24,spur:2,press:6,
+  horse:{radius:18,lateral:190,slow:12,creep:36,cruise:.48,commit:2.1,release:1.1},
   /* a charge's impact (physImpact, physBraced): kb, the throw (× the speed the two go on with); support, the share of the mass
      of each man close behind him (within supR, up to supN) the one struck is backed by; wall: a shield wall's mass ×; wedge: a
      wedge rider's mass × (1 + wedge × its bonus); down: thrown faster than this (px/s) × his own mass, he is down downT × (thrown/that) s
@@ -62,10 +63,10 @@ function physRng(){const P=B.phys||(B.phys={});if(!P.r){let h=(0x9E3779B9^B.unit
 function physGo(u,dt,mx,my,top,arr,want,spur){
   const P=PHYSICS,K=physKind(u);if(u.hd==null){u.hd=u.dir!=null?u.dir:u.face<0?Math.PI:0;u.vel=0}
   const go=!!(mx||my)&&top>0,wa=go?Math.atan2(my,mx):want;let df=0;u.trn=0;
-  if(wa!=null){df=Math.atan2(Math.sin(wa-u.hd),Math.cos(wa-u.hd));const w=(K.turn0+(K.turn-K.turn0)*clamp(u.vel/Math.max(1,u.s.spd),0,1))*dt,d=clamp(df,-w,w);u.hd=Math.atan2(Math.sin(u.hd+d),Math.cos(u.hd+d));df-=d;u.trn=d/Math.max(dt,1e-6)}
+  if(wa!=null){df=Math.atan2(Math.sin(wa-u.hd),Math.cos(wa-u.hd));const horse=u.s.mounted&&go&&(arr==null||arr>P.near),H=P.horse;if(horse&&Math.abs(df)>H.commit){u.wheelSide=u.wheelSide||Math.sign(df)||1;df=u.wheelSide*Math.abs(df)}else if(Math.abs(df)<H.release||!horse)delete u.wheelSide;const rate=horse?Math.min(K.turn0,Math.max(u.vel,H.slow)/(H.radius+u.vel*u.vel/H.lateral)+K.turn0*(1-clamp(u.vel/H.creep,0,1))):K.turn0+(K.turn-K.turn0)*clamp(u.vel/Math.max(1,u.s.spd),0,1),w=rate*dt,d=clamp(df,-w,w);u.hd=Math.atan2(Math.sin(u.hd+d),Math.cos(u.hd+d));df-=d;u.trn=d/Math.max(dt,1e-6)}
   if(!go&&!(u.vel>0)){u.acl=0;u.pstep=0;u.pf=B.t;return 0}
   const ch=Math.cos(u.hd),sh=Math.sin(u.hd),gm=groundMul(u,ch,sh);let s=0;
-  if(go){const c=Math.cos(df);s=top*gm*(arr!=null&&arr<P.near?Math.max(0,c)**2:clamp((c+P.wheel)/(1+P.wheel),0,1));if(arr!=null)s=Math.min(s,Math.sqrt(2*K.brake*Math.max(0,arr-.5)))}
+  if(go){const c=Math.cos(df);s=top*gm*(arr!=null&&arr<P.near?Math.max(0,c)**2:clamp((c+P.wheel)/(1+P.wheel),u.s.mounted?P.horse.cruise:0,1));if(arr!=null)s=Math.min(s,Math.sqrt(2*K.brake*Math.max(0,arr-.5)))}
   const tm=tiredMul(u).spd,dv=clamp(s-u.vel,-K.brake*clamp(1/gm,.8,1.5)*dt,K.acc*tm*tm*gm*(spur?P.spur:1)*dt);
   u.acl=dv/Math.max(dt,1e-6);u.vel=Math.max(0,u.vel+dv);const d=u.vel*dt;u.x+=ch*d;u.y+=sh*d;u.pf=B.t;u.pstep=d;return d}
 /* a soldier's move under his group (actors.js aiUnit, physics on): physGo, then his facing, heading and charge run as the old
