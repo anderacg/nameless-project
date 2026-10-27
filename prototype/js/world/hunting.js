@@ -9,7 +9,7 @@ class WildHunt{
   static preview(x,y){
     if(B||P.stay||G.mode!=='world')return false;this.armed=false;this.controls();this.choice={x,y};const prey=this.prey(this.choice),close=Math.hypot(P.x-x,P.y-y)<HUNT_AREA.radius-WORLD_BATTLE.inner,ready=close&&prey.length>0;
     G.mode='dialog';G.chase=null;P.tx=P.ty=null;
-    showPanel('<div class="top"><h2>Hunting area</h2></div><p>'+prey.reduce((n,c)=>n+c.n,0)+' animals in '+prey.length+' visible wildlife groups.</p><p>Your whole army hunts together with normal battle orders, weapons and ammunition. Use the AI control for Auto Hunt. Animals flee and tire; those beyond the circle escape. Kills provide meat and species trophies in the loot screen.</p>'+nav(['hunt-back',null,'Cancel'],['hunt-start',null,'Begin hunt',ready?'':!close?'Move closer to this hunting area':'No visible wildlife in this area']));panel.classList.add('hunt-setup');return true;
+    showPanel('<div class="top"><h2>Hunting area</h2></div><p>'+prey.reduce((n,c)=>n+c.n,0)+' animals in '+prey.length+' visible wildlife groups.</p><p>Auto Hunt starts with your whole army, using normal weapons and ammunition. Give battle orders or use the AI control to take command. Animals flee and tire; those beyond the circle escape. Kills provide meat and species trophies in the loot screen.</p>'+nav(['hunt-back',null,'Cancel'],['hunt-start',null,'Begin hunt',ready?'':!close?'Move closer to this hunting area':'No visible wildlife in this area']));panel.classList.add('hunt-setup');return true;
   }
   static start(){
     const area=this.choice;if(!area||B||G.mode!=='dialog'||P.stay||Math.hypot(P.x-area.x,P.y-area.y)>=HUNT_AREA.radius-WORLD_BATTLE.inner)return false;const herds=this.prey(area);if(!herds.length)return false;

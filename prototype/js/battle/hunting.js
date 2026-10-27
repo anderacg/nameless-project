@@ -67,10 +67,10 @@ class HuntBattleSetup extends WorldBattleSetup{
   createState(){const b=super.createState();b.hunt=this.area;return b}
   initialize(){
     // Standard combat initialization and original marching positions, with no opposing-army preparation phase.
-    super.initialize();const a=this.area;delete B.muster;B.ready=false;B.paused=false;
+    super.initialize();const a=this.area;delete B.muster;B.ready=false;B.paused=false;B.auto=true;
     for(const [id,g] of Object.entries(B.groups))if(!g.player){const m=B.units.filter(u=>u.grp===id);for(const u of m){const c=u.herd;if(!c)continue;const index=a.animals.filter(v=>v.herd===c).indexOf(u),offset=index?Math.ceil(index/2)*3:0;Object.assign(u,a.field({x:c.x+(index%2?-1:1)*offset,y:c.y-offset*.3}));u.sta=u.escapeSta/u.escapeCap*FATIGUE.max;delete u.rout;delete u.left;u.hp=u.max;u.sx=u.sy=0}if(m.length){const p=centroid(m);g.ax=p.x;g.ay=p.y;g.order='hold'}}
     B.sight=null;sightStep(true);
   }
-  survey(){super.survey();this.env.name='Hunting area';this.env.text='Your whole army can hunt. Use normal orders or enable AI. Wildlife can escape beyond the circle; kills provide meat and trophies.'}
+  survey(){super.survey();this.env.name='Hunting area';this.env.text='Auto Hunt is on for your whole army. Give orders or use AI to take command. Wildlife can escape beyond the circle; kills provide meat and trophies.'}
   present(){super.present();let end=document.getElementById('huntEnd');if(!end){end=document.createElement('button');end.id='huntEnd';end.type='button';end.className='btn sm';end.textContent='End hunt';end.addEventListener('click',()=>B?.hunt?.end());bbar.querySelector('.btime').appendChild(end)}end.hidden=false;window.mobileBattleHud?.sync();autoUI()}
 }
