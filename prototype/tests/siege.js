@@ -76,7 +76,8 @@ try{
  // a friendly town besieged by a lord is closed to you; break the siege to open it
  quiet();P.fac=null;P.hostile={};army();const fr=t.TOWNS.find(x=>x.kind!=='village'&&!['karn','player'].includes(x.owner)&&!x.sacked&&!x.turmoil),bl=t.asParty({id:'b0',name:'Besieger',fac:'karn',x:fr.x+16,y:fr.y+12,troops:Array(8).fill('dw_clan'),state:'siege',tgt:fr.name,sd:0,dead:false,cool:0});
  W.lords=[bl];W.rel[t.rk(fr.owner,'karn')]={s:'war',since:G.day};at(fr);t.updateWorld(.01);
- ok(G.mode==='besiege'&&/gates are barred/.test(panel())&&/Attack Besieger/.test(panel()),'a besieged friendly town shows only the blockade');
+ ok(G.mode==='besiege'&&/gates are barred/.test(panel())&&/Attack \?\?\?/.test(panel())&&!/Besieger/.test(panel()),'a besieged friendly town shows only the blockade (its besieger, not met yet: ???)');
+ t.KNOWLEDGE.lord(bl);t.showBlockade(fr);ok(/Attack Besieger/.test(panel()),'once met, he is named');
  ok(!/data-act="tab"/.test(panel())&&!/data-act="buy"/.test(panel()),'no trade, recruits or jobs while it is besieged');
  const rf=t.repAt(fr.name);t.act('sg-relieve','0');ok(G.enc&&G.enc.kind==='lord'&&t.hostileTo('karn'),'attacking the besieger makes his faction hostile');
  t.act('auto');ok(/break the siege/.test(panel())&&t.repAt(fr.name)>rf,'breaking the siege earns thanks in '+fr.name);t.act('cont');done();

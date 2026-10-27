@@ -28,10 +28,10 @@ function openSiege(t){G.lastTown=t;P.tx=null;G.chase=null;G.bes=t;G.mode='besieg
 function showBlockade(t){
   G.bes=t;G.lastTown=t;P.tx=null;G.chase=null;G.mode='besiege';const ls=siegeLordsAt(t),f=FACS[t.owner];
   showPanel('<div class="top"><h2>'+t.name+' is under siege</h2><span class="muted">'+cap1(t.label)+' of the <span style="color:'+f.col+'">'+f.n+'</span></span></div>'+
-    '<p>'+ls.map(l=>l.name+' of the '+FACS[l.fac].n+' ('+l.troops.length+' soldiers, power '+l.power()+')').join(' and ')+' '+(ls.length>1?'surround':'surrounds')+' the walls.</p>'+
+    '<p>'+ls.map(l=>lordName(l)+' of the '+FACS[l.fac].n+' ('+l.troops.length+' soldiers, power '+l.power()+')').join(' and ')+' '+(ls.length>1?'surround':'surrounds')+' the walls.</p>'+
     '<p class="bad">The gates are barred. No trade, no recruits, no work and no rest until the siege is broken.</p><p>Your power <strong>'+partyPower()+'</strong>.'+(t.owner==='player'?' This is your fief.':' Breaking the siege earns the thanks of '+t.name+' and the '+f.n+'.')+'</p>'+
-    '<div class="lab" style="margin-top:6px">Break the siege</div><p class="muted" style="font-size:13px">Fight the besiegers. The garrison'+(lordsInside(t).length?' and '+lordsInside(t).map(l=>l.name).join(' and '):'')+' sally out beside you.</p>'+
-    '<div class="btns">'+ls.map((l,i)=>'<button class="btn'+(i?'':' primary')+'" type="button" data-act="sg-relieve" data-arg="'+i+'"'+(P.fac&&P.fac===l.fac?' disabled title="Your employer"':'')+'>Attack '+l.name+(hostileTo(l.fac)?'':' (the '+FACS[l.fac].n+' turns hostile)')+'</button>').join('')+'</div>'+
+    '<div class="lab" style="margin-top:6px">Break the siege</div><p class="muted" style="font-size:13px">Fight the besiegers. The garrison'+(lordsInside(t).length?' and '+lordsInside(t).map(l=>lordName(l)).join(' and '):'')+' sally out beside you.</p>'+
+    '<div class="btns">'+ls.map((l,i)=>'<button class="btn'+(i?'':' primary')+'" type="button" data-act="sg-relieve" data-arg="'+i+'"'+(P.fac&&P.fac===l.fac?' disabled title="Your employer"':'')+'>Attack '+lordName(l)+(hostileTo(l.fac)?'':' (the '+FACS[l.fac].n+' turns hostile)')+'</button>').join('')+'</div>'+
     joinHtml(t)+nav(null,['sg-leave',null,'Leave']));
 }
 // joining a siege: storm the walls beside the besiegers of a realm you are not hostile to (not your employer's holding);
@@ -52,7 +52,7 @@ function showSiege(msg){
   const t=G.bes;if(myRaid(t))return showRaid(t);const f=FACS[t.owner],s=mySiege(t),village=!walled(t),def=siegeDefenders(t),lv=siegeLv(t),ep=rating(def.list,lv),pp=partyPower(),r=ep/Math.max(1,pp);
   const threat=r<.6?'<span class="good">Easy</span>':r<1?'<span class="gold">Even</span>':r<1.5?'<span class="bad">Risky</span>':'<span class="bad">Deadly</span>';
   const btn=(act,label,why,primary)=>'<button class="btn'+(primary?' primary':'')+'" type="button" data-act="'+act+'"'+(why?' disabled title="'+why+'"':'')+'>'+label+(why?' · '+why:'')+'</button>';
-  let body='<p class="muted">Held by the <span style="color:'+f.col+'">'+f.n+'</span>. Garrison '+t.gar+(def.lords.length?', and '+def.lords.map(l=>l.name).join(' and ')+' with '+def.lords.reduce((a,l)=>a+l.troops.length,0)+' soldiers':'')+'.'+
+  let body='<p class="muted">Held by the <span style="color:'+f.col+'">'+f.n+'</span>. Garrison '+t.gar+(def.lords.length?', and '+def.lords.map(l=>lordName(l)).join(' and ')+' with '+def.lords.reduce((a,l)=>a+l.troops.length,0)+' soldiers':'')+'.'+
     (wallOf(t)?' '+WALL_N[wallOf(t)]+' make every defender as strong as level '+lv+'.':' It has no walls.')+'</p><p>Defenders\' power <strong>'+ep+'</strong> vs yours <strong>'+pp+'</strong> · threat <strong>'+threat+'</strong></p>',btns='';
   if(!hostileTo(t.owner)){
     body+='<p>The '+f.n+' is not your enemy. Attacking '+t.name+' makes them hostile for 60 days and costs 20 honor with them.</p>'+(P.fac===t.owner?'<p class="bad">You serve the '+f.n+'. You cannot attack your employer\'s holdings.</p>':'');
@@ -109,7 +109,7 @@ function siegeDay(){
 }
 // won the assault or raid (from concludeEncounter); returns a line for the victory panel
 function siegeWon(e){
-  const t=e.ref;(e.lords||[]).forEach(l=>{if(!l.dead){defeatLord(l);log(l.name+' is beaten inside the walls of '+t.name+'.','good','war')}});
+  const t=e.ref;(e.lords||[]).forEach(l=>{if(!l.dead){defeatLord(l);log(lordName(l)+' is beaten inside the walls of '+t.name+'.','good','war')}});
   if(e.kind==='raid')return startRaid(t);
   t.gar=0;G.capture=t;return ' The gates of '+t.name+' are open. Decide its fate.';
 }
@@ -203,7 +203,7 @@ function garrisonBody(t){
     '<p class="muted" style="font-size:13px">'+(wl?WALL_N[wl]+' make every defender fight as level '+lv+'; a lord\'s siege takes '+(2+wl)+' days.':'No walls: defenders fight as they are, and a lord\'s siege takes 2 days.')+
       (fd!=null?' Its stores feed the garrison'+(def.lords.length?' and the lords\' soldiers':'')+' for about '+fd+' days under siege.':'')+'</p>';
   // its state
-  const notes=[besieged(t)&&'<span class="bad">Under siege'+(siegeLordsAt(t).length?' by '+siegeLordsAt(t).map(l=>l.name).join(' and '):mySiege(t)?' by you':'')+'.</span>',
+  const notes=[besieged(t)&&'<span class="bad">Under siege'+(siegeLordsAt(t).length?' by '+siegeLordsAt(t).map(l=>lordName(l)).join(' and '):mySiege(t)?' by you':'')+'.</span>',
     Timed.of(t).has('sacked')&&'<span class="bad">Sacked: the garrison is held at half until day '+Timed.of(t).end('sacked')+'.</span>',Timed.of(t).has('turmoil')&&'<span class="gold">In turmoil after changing hands, until day '+Timed.of(t).end('turmoil')+'.</span>',
     !mine&&crimeAt(t)&&'<span class="bad">The guards want you for a crime here: '+crimeAt(t).fine+' gold, until day '+crimeAt(t).until+'.</span>'].filter(Boolean);
   if(notes.length)html+='<p style="font-size:14px">'+notes.join(' ')+'</p>';
@@ -211,7 +211,7 @@ function garrisonBody(t){
   html+=lab('On the walls · '+t.gar+' '+t.races.map(r=>RACES[r].n).join(' and ')+' soldiers'+(mine?'':' ('+(t.gar<cap?'refilling to '+cap:'full')+')'))+
     (gl.length?groups(gl).map(([k,n])=>{const s=ST[k];return row(s.n,'Tier '+s.tier+' · '+s.hp+' hp · '+s.dmg+' damage'+(s.range?' · ranged':'')+'<br><span class="vs">'+vsLine(s)+'</span>',null,'×'+n)}).join(''):'<p class="muted">No one holds the walls.</p>');
   // lords staying, and the patrol out on the land
-  html+=lab('Lords inside')+(def.lords.length?def.lords.map(l=>{const tr=groups(l.troops);return row(l.name+' · <span style="color:'+FACS[l.fac].col+'">'+FACS[l.fac].n+'</span>',
+  html+=lab('Lords inside')+(def.lords.length?def.lords.map(l=>{const tr=groups(l.troops);return row(lordName(l)+' · <span style="color:'+FACS[l.fac].col+'">'+FACS[l.fac].n+'</span>',
       l.troops.length+' soldiers: '+tr.slice(0,4).map(([k,n])=>n+' '+ST[k].n.toLowerCase()).join(', ')+(tr.length>4?'…':'')+' · toward you '+relTag(relWith(l)),null,'power '+l.power())}).join(''):'<p class="muted">'+(mine?'None: your fief is held by its garrison alone.':'None. A lord of the '+(FACS[t.owner]||{n:'realm'}).n+' resting here would go inside and defend it.')+'</p>');
   html+=lab('Patrol')+(pt?row(pt.troops.length+' guards out on the land','Back by day '+pt.back+(pt.fight?' · <span class="bad">fighting now</span>':'')+' · '+(d=>d<1?'by the gate':d+(d===1?' tile ':' tiles ')+compass(pt.x-t.x,pt.y-t.y))(Math.round(Math.hypot(pt.x-t.x,pt.y-t.y)/TILE))+'. They rejoin the garrison when they return.',null,'power '+pt.power()):
     '<p class="muted">None out'+(t.gar<t.T.patrol.keep+t.T.patrol.size?': the garrison needs '+(t.T.patrol.keep+t.T.patrol.size)+' before it can spare '+t.T.patrol.size+' to ride the land.':'; one rides out each day it can spare the soldiers.')+'</p>');

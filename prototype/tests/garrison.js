@@ -17,6 +17,8 @@ try{
  const def=t.siegeDefenders(h);ok(def.lords.includes(l)&&def.list.length===t.garList(h).length+t.insideTroops(h).length,'his soldiers defend it with the garrison ('+t.garList(h).length+' + '+t.insideTroops(h).length+')');
  const fn=t.foodNeed(h);l.inside=null;const fn0=t.foodNeed(h);l.inside=h.name;ok(fn>fn0,'and eat from its stores');
  G.lastTown=null;G.mode='world';t.enterTown(h);ok(!new RegExp(l.name).test(panel())&&/Lords inside: \?\?\?/.test(panel()),'a lord you have not met is inside, his name unknown');t.act('leave');
+ {const gb=t.garrisonBody(h);G.bes=h;G.mode='besiege';t.showSiege();const sg=panel();t.hidePanel();G.mode='world';G.bes=null;
+  ok(!new RegExp(l.name).test(gb)&&/\?\?\?/.test(gb)&&!new RegExp(l.name).test(sg)&&/\?\?\?/.test(sg),'nor do the Garrison tab and the siege screen name him (???)')}
  t.KNOWLEDGE.lord(l);G.lastTown=null;world();t.enterTown(h);ok(new RegExp(l.name).test(panel())&&/inside/.test(panel()),'once met, the town panel names him with the garrison');t.act('leave');
  // the Garrison tab: everything about who would defend it
  G.lastTown=null;G.mode='world';G.modal=false;t.hidePanel();t.enterTown(h);t.act('tab','garrison');
