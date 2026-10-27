@@ -110,9 +110,10 @@ function cpTake(id,k,n){
 }
 function cpDisband(id,home){const c=P.comps[id];if(!c||!c.party)return;const p=c.party,n=p.troops.length;
   const r=partyRoster(P),source=partyRoster(p),groups=source.groups.slice(),wounded=sum(p.wounded||{})||(p.woundedGroups||[]).some(g=>g.count>0);
-  // Automatic return preserves boundaries too, and is checked for the entire army before any soldier moves.
-  if(wounded||r.slots+groups.length+1>ARMY_LIMIT||Object.keys(source.counts).some(k=>!r.accepts(k)||!Number.isSafeInteger(r.count(k)+source.count(k)))){
-    p.order='follow';if(!p.returnBlocked)toast(wounded?COMPS[id].short+' must keep their wounded with their own army.':'Make room for '+groups.length+' troop groups and '+COMPS[id].short+' before they can rejoin (10 groups maximum).','bad');p.returnBlocked=true;return}
+  // Automatic return preserves boundaries too, and is checked for the entire army before any soldier moves (against your
+  // own group limit, armyGroupLimit: else a group without room would be lost on the way).
+  if(wounded||r.slots+groups.length+1>r.groupLimit||Object.keys(source.counts).some(k=>!r.accepts(k)||!Number.isSafeInteger(r.count(k)+source.count(k)))){
+    p.order='follow';if(!p.returnBlocked)toast(wounded?COMPS[id].short+' must keep their wounded with their own army.':'Make room for '+groups.length+' troop groups and '+COMPS[id].short+' before they can rejoin ('+r.groupLimit+' groups at most).','bad');p.returnBlocked=true;return}
   for(const g of groups)source.transferGroupTo(r,g.id,g.count,'new',Infinity,1);
   c.party=null;if(home)log(COMPS[id].short+' rejoins your band'+(n?' with '+n+' soldiers':'')+'.')}
 // where a party may shelter: as you may (stay.js), but a party pays only for its own soldiers

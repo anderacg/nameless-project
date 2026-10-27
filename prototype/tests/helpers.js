@@ -33,7 +33,7 @@ try{
   t.act('party-transfer-pick','take:source');const options=[...document.querySelectorAll('#panel [data-act="fb-choice"]')].map(el=>el.textContent);t.act('fb-cancel');
   ok(options.some(s=>s.includes(levy)&&s.includes('3 fit'))&&options.some(s=>s.includes(bow)&&s.includes('2 fit')),'companion source choices show separate groups and fit counts');
   ok(options[0].includes(levy)&&options[1].includes(bow)&&JSON.stringify(party.tc)===snapshot,'group choices preserve formation order without changing party counts');
-  t.cpDisband('brann',false);t.renderComp();ok(!take(),'a companion without a party has no stale take-back choices');
+  P.sk.lead.lv=10;t.cpDisband('brann',false);t.renderComp();ok(!take(),'a companion without a party has no stale take-back choices');
 
   const town=t.TOWNS.find(h=>h.kind==='town');town.gar=10;W.lords=[];
   const div=document.createElement('div');div.innerHTML=t.garrisonBody(town);const rows=[...div.querySelectorAll('.row')];
