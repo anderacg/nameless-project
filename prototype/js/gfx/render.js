@@ -88,6 +88,7 @@ function drawTravelDetection(cam){
   if(B||P.stay)return null;const state=travelDetectionState(),k=(window.devicePixelRatio||1)/VS,V=vis(),markers=new Map(BANNERQ.filter(q=>q.marker).map(q=>[q.o,bandMarkerAt(q.o,q.marker,cam)]));ctx.save();ctx.imageSmoothingEnabled=false;
   for(const d of state.rows){const o=d.o;if(!inSight(o.x,o.y)||!o.inView(V))continue;const b=bannerAt(o,0),m=markers.get(o),w=STEALTH_EYE.size*k,h=w*2/3,x=b?b.x+b.s.width+STEALTH_EYE.gap*k-cam.x:m?m.right+STEALTH_EYE.gap*k:o.x-cam.x-w/2,y=b?b.y-cam.y:m?m.y:o.y-cam.y-18-h;
     drawStealthEye(d.exposure,d.sees?d.danger?'#ef8c73':'#dbca91':d.exposure?'#d9ad57':'#8f9e94',x,y,STEALTH_EYE.size);
+    const q=!d.sees&&TravelSearch.of(o);if(q&&inSight(q.x,q.y))drawStealthEye(0,'#d9ad57',q.x-cam.x-w/2,q.y-cam.y-h/2,STEALTH_EYE.size);// (searching: an eye shut on where it last saw you)
   }
   const b=bannerAt(P,0),w=STEALTH_EYE.player*k,h=w*2/3,x=P.x-cam.x-w/2,y=(b?b.y:P.y-24)-cam.y-h-10*k,col=travelDetectionColor(state);
   drawStealthEye(state.exposure,col,x,y,STEALTH_EYE.player);ctx.restore();

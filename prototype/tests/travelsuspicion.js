@@ -28,5 +28,11 @@ Kit.suite(({ok})=>{
   const herd=t.asHerd({crit:true,id:'deer',n:2,x:P.x+40,y:P.y,hx:P.x+40,hy:P.y,t:99,a:0,idle:true,tire:0,cool:0});W.critters=[herd];A.reset();const walk=window.walk,steps=[];
   try{window.walk=(...args)=>{steps.push(args);return true};t.HERD_MIND.think(herd,.01,1);ok(!steps.length,'wildlife does not bolt before it notices the player');step(2);t.HERD_MIND.think(herd,.1,1);ok(steps.some(([o,dx])=>o===herd&&dx>0),'wildlife flees once suspicion completes')}finally{window.walk=walk}
   A.reset();A.notice(herd);ok(A.sees(herd),'a hunting shot can immediately alert the herd');
+  // (lost sight of you: a hunter goes to where it last saw you, looks about, then turns back; TravelSearch)
+  {const S=t.TravelSearch,X=t.TRAVEL_SEARCH,o={x:P.x+60,y:P.y},at={x:P.x,y:P.y},px=P.x,walk=window.walk;A.reset();G.encCool=0;window.walk=(q,dx,dy,step)=>{const l=Math.hypot(dx,dy)||1;q.x+=dx/l*step;q.y+=dy/l*step;return true};try{
+   t.stanceMove(o,'attack',60,-60,0,95,1,true);const m=S.of(o);ok(m&&m.x===at.x&&m.y===at.y,'a hunter that sees you marks where you are');
+   P.x+=300;const d0=Math.hypot(o.x-at.x,o.y-at.y);ok(t.stanceMove(o,'attack',300,P.x-o.x,0,0,1,true)&&Math.hypot(o.x-at.x,o.y-at.y)<d0&&/Searching/.test(t.travelDetectionText(o)||'Searching'),'out of its sight, it goes to that place, not to where you are now');
+   let n=0;while(S.of(o)&&n++<400){A.time+=.1;t.stanceMove(o,'attack',300,P.x-o.x,0,0,1,true)}ok(!S.of(o)&&Math.hypot(o.x-at.x,o.y-at.y)<X.reach+2&&n*.1>=X.look,'it looks about there for '+X.look+' s, finds nothing, and turns back');
+   ok(!t.stanceMove(o,'attack',300,P.x-o.x,0,0,1,true),'and then goes about its own business')}finally{P.x=px;window.walk=walk}}
  }finally{t.tiles[i]=tile;G.speed=1;G.hurry=false;G.paused=false;G.modal=false;P.stay=null;G.chase=null;A.reset()}
 });

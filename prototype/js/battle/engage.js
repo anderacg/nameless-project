@@ -12,7 +12,8 @@ const monPower=m=>m.pw||(m.pw=rating(Array(m.n).fill(MONSTERS[m.id].unit),m.lv))
 // move a party for one frame by its stance: hunt, keep its distance, or run
 function stanceMove(o,st,dist,dx,dy,see,sp,canHunt){
   if(P.stay)return false;
-  if(st==='attack'&&canHunt&&dist<see){const s=G.encCool>0?Math.min(dist,sp,dist-GRACE_GAP):Math.min(dist,sp);if(s>0)walk(o,dx,dy,s);return true}// (the grace after a fight: they keep a few steps off, no step into the gap)
+  if(st==='attack'&&canHunt&&dist<see){TravelSearch.seen(o);const s=G.encCool>0?Math.min(dist,sp,dist-GRACE_GAP):Math.min(dist,sp);if(s>0)walk(o,dx,dy,s);return true}// (the grace after a fight: they keep a few steps off, no step into the gap)
+  if(st==='attack'&&canHunt&&TravelSearch.step(o,sp))return true;// (lost sight of you: where it saw you last, a look about, then back: TravelSearch)
   if(st==='afraid'&&dist<see){Router.flee(o,{x:o.x+dx,y:o.y+dy},sp*.85);o.fled=true;return true}
   if(st==='wary'&&dist<see*.45){Router.flee(o,{x:o.x+dx,y:o.y+dy},sp*.5);return true}
   return false;

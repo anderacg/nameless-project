@@ -26,7 +26,7 @@ function travelDetection(o){
   if(!(range>0))return null;const factor=k==='critter'?.6:k==='worker'?1:.55,base=range/(cover?factor:1),rows=TravelAwareness.scan(o,base,factor),visible=rows.filter(r=>r.within&&r.q>=1),nearest=(visible.length?visible:rows).slice().sort((a,b)=>a.distance-b.distance)[0],within=rows.some(r=>r.within),exposure=TravelAwareness.level(o),sees=visible.length>0;
   return{o,range:nearest.range+Math.min(12,nearest.group.extent),distance:nearest.distance,within,sees,exposure,danger,rows,target:visible.length?nearest.group:null};
 }
-function travelDetectionText(o){const d=travelDetection(o);return d?d.sees?'Has detected your army':d.exposure>0?(d.within?'Suspicious of your army':'Losing suspicion')+' ('+Math.round(d.exposure*100)+'%)':'Has not detected your army':''}
+function travelDetectionText(o){const d=travelDetection(o);return d?d.sees?'Has detected your army':TravelSearch.of(o)?'Searching where it last saw your army':d.exposure>0?(d.within?'Suspicious of your army':'Losing suspicion')+' ('+Math.round(d.exposure*100)+'%)':'Has not detected your army':''}
 const TRAVEL_AWARE={open:2,forest:4,fade:3,hurry:1.5,close:3,contact:8};
 const travelObservers=()=>[...new Set([...W.parties,...W.monsters.map(asMonster),...W.caravans,...W.refugees.map(asRefugees),...W.critters.map(asHerd),...W.folk.map(asWorker)])];
 class TravelAwareness{
@@ -41,7 +41,7 @@ class TravelAwareness{
   static sees(o){return !!travelDetection(o)?.sees}
   static target(o){return travelDetection(o)?.target||null}
   static power(o){if(!WORLD_BATTLE.on)return partyPower();return [...(this.records.get(o)?.values()||[])].reduce((n,r)=>n+(r.last!=null&&this.time-r.last<=TRAVEL_GROUPS.memory?r.power:0),0)}
-  static reset(){this.states=new WeakMap();this.records=new WeakMap();this.snapshot=null;this.time=0}
+  static reset(){this.states=new WeakMap();this.records=new WeakMap();this.snapshot=null;this.time=0;TravelSearch.reset()}
   static step(rt){
     if(G.paused||G.modal||G.mode!=='world'||B)return;if(P.stay){this.reset();return}const dt=rt*G.speed;this.time+=dt;this.snapshot=TravelGroups.groups();
     for(const o of travelObservers()){const d=travelDetection(o);if(!d){this.states.delete(o);this.records.delete(o);continue}const records=this.rows(o),ids=new Set(d.rows.map(r=>r.group.id));let exposure=0;
@@ -53,6 +53,20 @@ class TravelAwareness{
       if(exposure>0)this.states.set(o,exposure);else this.states.delete(o);
     }
   }
+}
+/* a hunter that loses sight of you (engage.js stanceMove) goes to where it last saw you (pace: of its hunting step), looks about
+   there for look s, and turns back to its own business if it finds nothing: max s at most, or at once if it cannot get there.
+   Seen again on the way, it hunts you as before. Its mark shows on the map (render.js drawTravelDetection) */
+const TRAVEL_SEARCH={look:4,max:30,reach:8,pace:.9};
+class TravelSearch{
+  static marks=new WeakMap();
+  static seen(o){this.marks.set(o,{x:P.x,y:P.y,at:TravelAwareness.time,arrived:null})}
+  static of(o){return this.marks.get(o)||null}
+  static reset(){this.marks=new WeakMap()}
+  static step(o,sp){const m=this.of(o);if(!m)return false;const X=TRAVEL_SEARCH,T=TravelAwareness.time,dx=m.x-o.x,dy=m.y-o.y,d=Math.hypot(dx,dy);
+    if(T-m.at>X.max||m.arrived!=null&&T-m.arrived>X.look){this.marks.delete(o);return false}
+    if(d>X.reach){if(walk(o,dx,dy,Math.min(d,sp*X.pace)))return true;this.marks.delete(o);return false}
+    if(m.arrived==null)m.arrived=T;walk(o,Math.cos(T*1.7),Math.sin(T*1.7),sp*.3);return true}
 }
 onWorld(()=>TravelAwareness.reset());
 Systems.add({name:'travel awareness',order:{frame:6},frame:(d,dt)=>TravelAwareness.step(dt)});
