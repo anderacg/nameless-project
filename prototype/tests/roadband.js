@@ -60,10 +60,12 @@ Kit.suite(({ok,info})=>{
  const march=n=>Kit.frames(n,.05,dt=>t.marchStep(dt*t.WORLD_PACE),()=>P.tx==null||G.mode!=='world');
  if(!pairs.length)info('no two holdings with a road between them across a swamp');
  const pill=()=>!!document.querySelector('#wday .wroad');
+ // what was said on the screen since (system lines are toasts, not the journal: state.js toast)
+ const told=()=>new Set(document.querySelectorAll('#log>div')),toldSince=s=>[...document.querySelectorAll('#log>div')].filter(d=>!s.has(d)).map(d=>d.textContent);
  for(const [h1,h2,sw] of pairs.slice(0,1)){const s1=t.gateSpot(h1),s2=t.gateSpot(h2),from=on=>{Kit.clear();Kit.world({encCool:99});Kit.goTo(s1.x,s1.y);G.lastTown=h1;P.bsta=100;P.stuck=0;G.chase=null;t.setByRoad(on)};
   from(false);t.worldGo(s2.x,s2.y);t.wuiSync(performance.now());const w0=t.WUI.way,p0=onShare(w0);
-  const said=G.msgs.length;from(true);t.worldGo(s2.x,s2.y);t.wuiSync(performance.now());const w1=t.WUI.way,p1=onShare(w1);
-  ok(P.byRoad===true&&G.byRoad&&G.byRoad.on&&w1!==w0&&w1.ok&&p1>p0&&p1>.9&&G.msgs.slice(said).some(m=>/keeps to the roads/.test(m.m)),h1.name+' to '+h2.name+' ('+Math.round(sw*100)+'% swamp on the straight line): by-road mode on, a plain click\'s way drawn keeps to the roads, '+Math.round(p1*100)+'% of it on them (the plain way '+Math.round(p0*100)+'%), and the log says it is on');
+  const said=told();from(true);t.worldGo(s2.x,s2.y);t.wuiSync(performance.now());const w1=t.WUI.way,p1=onShare(w1);
+  ok(P.byRoad===true&&G.byRoad&&G.byRoad.on&&w1!==w0&&w1.ok&&p1>p0&&p1>.9&&toldSince(said).some(m=>/keeps to the roads/.test(m)),h1.name+' to '+h2.name+' ('+Math.round(sw*100)+'% swamp on the straight line): by-road mode on, a plain click\'s way drawn keeps to the roads, '+Math.round(p1*100)+'% of it on them (the plain way '+Math.round(p0*100)+'%), and the log says it is on');
   t.updateHUD(true);ok(pill(),'the day bar shows By road while it is on ('+(document.querySelector('#wday .wroad')||{}).textContent+')');
   let on=0;const f1=Kit.frames(20000,.05,dt=>{t.marchStep(dt*t.WORLD_PACE);if(t.regionAt(P.x,P.y).road)on++},()=>P.tx==null||G.mode!=='world'),end=Math.hypot(P.x-s2.x,P.y-s2.y);
   // (still on for the next trip: back the way you came, a plain click again)
@@ -92,8 +94,8 @@ Kit.suite(({ok,info})=>{
  {let a=null,b=null;for(let ty=12;ty<t.MH-12&&!b;ty+=3)for(let tx=12;tx<t.MW-12&&!b;tx+=3){if(t.tAt(tx,ty)!==t.T_OPEN||t.roadNear((tx+.5)*TL,(ty+.5)*TL,t.ROAD_GO.near+2))continue;
    if(!a)a=[(tx+.5)*TL,(ty+.5)*TL];else if(Math.hypot((tx+.5)*TL-a[0],(ty+.5)*TL-a[1])<10*TL&&t.Router.reach({x:a[0],y:a[1]},{x:(tx+.5)*TL,y:(ty+.5)*TL}))b=[(tx+.5)*TL,(ty+.5)*TL]}
   if(!b)info('no two spots far from every road');
-  else{Kit.clear();Kit.world({encCool:99});Kit.goTo(a[0],a[1]);t.setByRoad(true);const said=G.msgs.length;t.worldGo(b[0],b[1]);const plain=!t.byRoadTo(P.tx,P.ty),f=march(3000),said2=G.msgs.slice(said).filter(m=>/road/i.test(m.m));
-   ok(plain&&P.byRoad===true&&G.byRoad==null&&Math.hypot(P.x-b[0],P.y-b[1])<3&&!said2.length,'by-road mode on with no road within '+t.ROAD_GO.near+' tiles: the plain way there ('+f+' frames), still on, and nothing in the log'+(said2.length?': '+said2.map(m=>m.m).join(' | '):''));t.setByRoad(false)}}
+  else{Kit.clear();Kit.world({encCool:99});Kit.goTo(a[0],a[1]);t.setByRoad(true);const said=told(),said0=G.msgs.length;t.worldGo(b[0],b[1]);const plain=!t.byRoadTo(P.tx,P.ty),f=march(3000),said2=[...G.msgs.slice(said0).map(m=>m.m),...toldSince(said)].filter(m=>/road/i.test(m));
+   ok(plain&&P.byRoad===true&&G.byRoad==null&&Math.hypot(P.x-b[0],P.y-b[1])<3&&!said2.length,'by-road mode on with no road within '+t.ROAD_GO.near+' tiles: the plain way there ('+f+' frames), still on, and nothing in the log'+(said2.length?': '+said2.join(' | '):''));t.setByRoad(false)}}
  // ---- the band follows the ways: an estate's track taken up and laid again (lots.js tracksUp, occRebuild) makes it again
  {const x=T2[0],b0=t.RoadBand.bytes(),v0=t.WAYV;t.tracksUp(t.WM);const up=t.speedAt(x[0],x[1]),b1=t.RoadBand.bytes();for(const h of t.TOWNS)if(h.lots)t.Layout.of(h).tracks(true);t.tracksDone();
   ok(t.WAYV!==v0&&up<RB.trackSpeed&&b1<b0&&t.speedAt(x[0],x[1])===RB.trackSpeed&&t.RoadBand.bytes()===b0,'the estates\' tracks taken up (lots.js tracksUp): the band made again without them ('+up.toFixed(2)+' where one ran, '+b1+' bytes); laid again, with them ('+t.RoadBand.bytes()+' bytes)')}
