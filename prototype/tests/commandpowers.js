@@ -70,7 +70,7 @@ window.RUN=()=>{const t=T,L=t.BattleLab,o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL '
  b.t+=CP.stand.dur+.01;ok(!R(g1).standing(),'after '+CP.stand.dur+' s it ends');R(g1).shock(20);ok(R(g1).mor<t.MORALE.waver&&R(g1).state==='wavering','and a shock can take them to wavering again ('+R(g1).mor.toFixed(1)+')');
  ok(/^Ready in/.test(t.powerWhyNot(0,'stand'))||t.powerCd(0,'stand')<=CP.stand.dur,'(its cooldown runs on: '+t.powerWhyNot(0,'stand')+')');
  b.noMorale=true;b.t+=CP.stand.cd;ok(t.powerWhyNot(0,'stand')==='Morale is off'&&t.powerWhyNot(0,'rally')==='Morale is off','with morale off neither Rally nor Stand Fast! can be used');b.noMorale=false;
- b.deploy=true;ok(t.powerWhyNot(0,'stand')==='Not while deploying','nor while deploying');b.deploy=false;
+ b.deploy=true;ok(t.powerWhyNot(0,'stand')==='Start the battle first','nor while deploying');b.deploy=false;
  b.over=true;ok(t.powerWhyNot(0,'stand')==='The battle is over','nor once it is over');b.over=false;
  // ---- the AI uses each (theirs always; yours under Auto)
  const think=()=>{b.cpT=0;t.powersThink(.01)};

@@ -7,7 +7,7 @@ try{
  (0,eval)('MANUAL_HERO=true');// (the manual control is set aside in play, RTS command: its mechanics are still tested here)
  t.act('begin','soldier');P.level=5;P.tree=['start','might0','might1','might2','mighta0','command0','command1','command2','commanda0'];P.slots=['whirl','leap','cry',...Array(7).fill(null)];P.troops={militia:3};P.comps={};G.mouse.in=false;
  // each test battle starts with a fully rested hero; persistence has its own suite
- const fresh=enemies=>{P.hp=P.sp=P.mp=null;G.mode='world';G.modal=false;t.hidePanel();G.enc={kind:'party',ref:{cool:0},list:enemies.slice()};t.startBattle({enemies,tournament:false});
+ const fresh=enemies=>{P.hp=P.sp=P.mp=null;G.mode='world';G.modal=false;t.hidePanel();G.enc={kind:'party',ref:{cool:0},list:enemies.slice()};t.startBattle({enemies,tournament:false});t.beginFight();// (battles open waiting for Start Battle)
    const B=t.B,h=B.hero;B.units.filter(u=>u.team===1).forEach((u,i)=>{u.x=h.x+16+i*3;u.y=h.y+(i-1)*6;u.cd=9});B.units.filter(u=>u.team===0&&!u.hero).forEach(u=>{u.x=10;u.y=30});B.aim=0;return B};
  // tick keeps the enemies alive so timing checks never end the battle early
  const tick=(B,sec)=>{for(let i=0;i<Math.round(sec/.02);i++){if(!t.B)return;B.hero.hp=Math.max(B.hero.hp,B.hero.max*.5);if(B.hx&&!B.keepSp)B.hx.sp=Math.max(B.hx.sp,40);B.units.forEach(u=>{if(u.team===1&&u.hp>0)u.hp=u.max});t.updateBattle(.02)}};

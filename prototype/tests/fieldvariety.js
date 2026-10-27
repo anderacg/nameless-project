@@ -107,7 +107,7 @@ try{
   ok(!t.B.terrain&&t.B.obs.length>0,'terrain off: the flat field and its scattered trees as ever');L.exit()}
  // ---- a world battle in a forest
  {ev('TERRAIN.on=true');let p=null;for(let i=0;i<t.MW*t.MH&&!p;i++)if(t.tiles[i]===t.T_FOREST&&t.CLIMS[t.climate[i]]==='grass'){const tx=i%t.MW,ty=Math.floor(i/t.MW);let w=0;for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++)if(t.tAt(tx+dx,ty+dy)===t.T_WATER)w++;if(!w)p={x:(tx+.5)*t.TILE,y:(ty+.5)*t.TILE}}
-  const P=t.P;P.x=p.x;P.y=p.y;P.troops={hum_spear:6,hum_bow:4};G.mode='world';G.modal=false;G.enc={kind:'party',ref:{cool:0,x:P.x,y:P.y},list:['orc_grunt','orc_grunt','archer','hedge']};t.startBattle({enemies:G.enc.list,tournament:false});
+  const P=t.P;P.x=p.x;P.y=p.y;P.troops={hum_spear:6,hum_bow:4};G.mode='world';G.modal=false;G.enc={kind:'party',ref:{cool:0,x:P.x,y:P.y},list:['orc_grunt','orc_grunt','archer','hedge']};t.startBattle({enemies:G.enc.list,tournament:false});t.beginFight();
   const B2=t.B,T2=B2.terrain;ok(T2&&T2.recipe.kind==='forest'&&T2.recipe.dense&&share(T2,B2.ftop,B2.fbot,K.wood)>=.5&&t.terrainFair(T2,t.BW,B2.ftop,B2.fbot).ok,'a battle on a forest tile of the world: '+Math.round(share(T2,B2.ftop,B2.fbot,K.wood)*100)+'% woods, fair; '+B2.env.text);
   for(let i=0;i<60;i++)t.updateBattle(1/30);ok(B2.units.every(u=>Number.isFinite(u.x)&&Number.isFinite(u.y)),'and it runs');G.mode='world';t.B.over=true}
  // ---- field sizes and field variety together (setup.js FIELD_SIZES on): the ground built at the chosen size, its deployment zones the sized field's (fieldZone)

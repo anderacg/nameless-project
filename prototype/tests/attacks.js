@@ -27,7 +27,7 @@ try{
  ok(t.garList(t.townBy('Ashford')).includes('hum_mage'),'garrisons include casters');
  ok(t.MONSTERS.slime&&ST.slime.magic&&t.MONSTERS.slime.where.includes('swamp'),'bog slimes spit magic in the swamps');
  // battle: an enemy caster's bolt
- const fresh=(enemies,troops)=>{P.troops=troops||{};P.comps={};P.hp=P.sp=P.mp=null;G.mode='world';G.modal=false;t.hidePanel();G.enc={kind:'party',ref:{cool:0,x:P.x,y:P.y},list:enemies.slice()};t.startBattle({enemies,tournament:false});return t.B};
+ const fresh=(enemies,troops)=>{P.troops=troops||{};P.comps={};P.hp=P.sp=P.mp=null;G.mode='world';G.modal=false;t.hidePanel();G.enc={kind:'party',ref:{cool:0,x:P.x,y:P.y},list:enemies.slice()};t.startBattle({enemies,tournament:false});t.beginFight();return t.B};// (battles open waiting for Start Battle)
  let B=fresh(['hum_mage'],{hum_spear:3});const mg=B.units.find(u=>u.type==='hum_mage'),tgt=B.units.find(u=>u.type==='hum_spear');
  B.arrows=[];t.attack(mg,tgt);const bolt=B.arrows[0];ok(bolt&&bolt.magic&&Math.hypot(bolt.vx,bolt.vy)<t.BOLT_SPEED&&bolt.col===ST.hum_mage.bolt,'casters shoot coloured bolts, slower than a crossbow’s');
  // splash and trees

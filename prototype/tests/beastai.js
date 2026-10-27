@@ -23,8 +23,8 @@ window.RUN=()=>{const t=T,L=t.BattleLab,o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL '
    for(let x=0;x<a.length;x++)for(let y=x+1;y<a.length;y++)spread=Math.max(spread,t.angGap(a[x],a[y]));sides=Math.max(sides,a.length)}
   ok(N().bite>=3&&spread>=Math.PI/2&&sides>=2,'the packs circle their prey and bite from different sides at once ('+sides+' packs at grips together, '+Math.round(spread*180/Math.PI)+'° apart; '+N().bite+' bites)');
   ok(N().back>=1,'wolves hit and run: a pack bites, pulls back and comes round again ('+N().back+' pull-backs in '+Math.round(t.B.t)+' s)')}
- // the pull-back: away from the prey, then in again
- {const w=army([G('hum_foot',12)],[G('wolf',4)],[[400,300],[700,300]]);still(w.mine[0]);tough(w.mine[0]);const g=w.foe[0];let away=0,again=false,b0=null;
+ // the pull-back: away from the prey, then in again (the wolves tough too: a bite that costs them dear is a regroup, below)
+ {const w=army([G('hum_foot',12)],[G('wolf',4)],[[400,300],[700,300]]);still(w.mine[0]);tough(w.mine[0]);const g=w.foe[0];tough(g);let away=0,again=false,b0=null;
   for(let i=0;i<240&&!again;i++){step(.25);if(g.phase==='back'&&b0==null)b0=d2(C(g),C(w.mine[0]));if(b0!=null){away=Math.max(away,d2(C(g),C(w.mine[0]))-b0);if(g.phase==='bite')again=true}}
   ok(away>=30&&again,'a pack’s pull-back takes it '+Math.round(away)+' px off its prey, and it bites again')}
  // packs hurt in a bite break off and regroup; a pack too small joins another
@@ -73,7 +73,7 @@ window.RUN=()=>{const t=T,L=t.BattleLab,o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL '
   ev('TERRAIN.on='+TR0+';FIELD_SIZES.on='+FS0);ok(!res.some(r=>/UNFINISHED/.test(r)),'AI-on-AI beast battles all end within 300 s ('+res.join('; ')+')')}
  // ----- a monster encounter on the map, fought out
  {if(L.active)L.exit();const G0=t.G,P=t.P,W=t.W;t.act('begin','soldier');W.critters=[];W.sites=[];W.lords.forEach(l=>{l.x=-999;l.y=-999});P.troops={hum_spear:8,hum_long:4};
-  const m={id:'wolf',x:P.x+40,y:P.y,hx:P.x+40,hy:P.y,lv:1,n:6,cool:0,t:9,a:0};W.monsters.push(m);G0.encCool=0;t.startMonster(m);t.act('fight');const B=t.B,packs=Object.values(B.groups).filter(g=>g.foe).map(g=>g.units.length);
+  const m={id:'wolf',x:P.x+40,y:P.y,hx:P.x+40,hy:P.y,lv:1,n:6,cool:0,t:9,a:0};W.monsters.push(m);G0.encCool=0;t.startMonster(m);t.act('fight');t.beginFight();const B=t.B,packs=Object.values(B.groups).filter(g=>g.foe).map(g=>g.units.length);
   let i=0;while(t.B&&i<12000){t.updateBattle(.033);i++}
   ok(packs.join()==='3,3'&&!t.B,'a wolf pack met on the map (6) fights as two packs of 3, and the battle ends ('+Math.round(i*.033)+' s)');if(G0.loot)t.act('lt-all');t.act('cont')}
  // ----- the switch off: beasts as before (one group in its line, the captain's arms; no pack, no beast memory)

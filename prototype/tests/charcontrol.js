@@ -5,7 +5,7 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),out=()=>{cons
  const t=T,G=t.G,P=t.P;
  try{t.act('begin','soldier');P.troops={hum_spear:4};P.slots=Array(10).fill(null);
   const L=t.W.lords.find(l=>!l.dead);Object.assign(L,{inside:null,x:P.x,y:P.y,troops:Array(6).fill('hum_spear')});G.mode='world';G.modal=false;t.hidePanel();
-  t.startEncounter({kind:'lord',ref:L,list:L.troops.slice(),allies:[],foes:[]});t.startBattle({enemies:G.enc.list,tournament:false});const B=t.B;B.obs=[];
+  t.startEncounter({kind:'lord',ref:L,list:L.troops.slice(),allies:[],foes:[]});t.startBattle({enemies:G.enc.list,tournament:false});t.beginFight();const B=t.B;B.obs=[];
   const h=B.hero,lord=B.units.find(x=>x.leader&&x.leader.ref===L),run=n=>{for(let j=0;j<n;j++)t.updateBattle(.03)};
   B.units.filter(u=>u.team===1).forEach(u=>{u.cd=99;u.s={...u.s,spd:0};u.hp=u.max=9999});
   // move

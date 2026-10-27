@@ -6,6 +6,8 @@
 // the escaped counted; a full AI battle at each size; timings at 400 and 800 soldiers (INFO). tests/harness.js turns sizes and exits
 // off for the older suites; this one turns them on.
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.push('INFO '+m);
+// (what is said on the screen: a battle's first line is a toast, not the journal)
+const said=[],toast0=window.toast;window.toast=(m,c)=>{said.push(m);toast0(m,c)};
 try{
  const t=T,G=t.G,P=t.P,W=t.W,L=t.BattleLab,ev=s=>(0,eval)(s),F=t.FIELD_SIZES,SIZES=F.order,keep={validate:L.validate};
  t.act('begin','soldier');G.quietEvents=true;t.GUIDE.on=false;ev('FIELD_SIZES.on=true;EXITS.on=true');
@@ -33,7 +35,7 @@ try{
  // ---- the lab's size key; the field set and given back; the start names it
  {let B=lab({leftGroups:[{type:'hum_foot',count:10}],rightGroups:[{type:'militia',count:10}],size:'huge'});
   ok(t.BW===3200&&t.BH===1792&&t.BFIELD.key==='huge'&&B.fsize==='huge','size huge: the field 3200×1792');
-  ok(G.msgs.some(m=>/Huge field\./.test(m.m)),'the battle’s first line names its size');
+  ok(said.some(m=>/Huge field\./.test(m)),'the battle’s first line names its size');
   L.exit();ok(t.BH===t.FIELD_H&&!t.BFIELD,'leaving the lab gives back today’s field');
   B=lab({leftGroups:[{type:'hum_foot',count:10}],rightGroups:[{type:'militia',count:10}],size:'very large'});ok(t.BFIELD.key==='vlarge'&&t.BW===2400,'"very large" is vlarge');
   B=lab({leftGroups:[{type:'hum_foot',count:10}],rightGroups:[{type:'militia',count:10}]});ok(t.BFIELD.key===t.fieldSizeFor(20,{t:t.T_OPEN,c:'grass'},null),'no size key: by its soldiers and terrain ('+t.BFIELD.key+')');
@@ -132,7 +134,7 @@ try{
  {L.exit();G.mode='world';G.modal=false;W.lords=[];W.monsters=[];t.bandits.length=0;P.troops={hum_spear:12};P.comps={};
   const band=t.asParty({kind:'bandits',troops:Array(14).fill('militia'),x:P.x+8,y:P.y,cool:0,ld:t.newChief('bandits',2)});t.bandits.push(band);
   G.enc={kind:'party',ref:band,list:band.troops.slice(),allies:[],foes:[],mine:true};G.loot=null;G.encAgain=null;t.startBattle({enemies:G.enc.list,tournament:false,lv:1,deploy:false});const B=t.B;
-  ok(t.BFIELD&&B.fsize===t.BFIELD.key&&G.msgs.some(m=>m.m.includes(t.BFIELD.n+' field.')),'a campaign battle is fought on a '+t.BFIELD.n.toLowerCase()+' field, named as it starts');
+  ok(t.BFIELD&&B.fsize===t.BFIELD.key&&said.some(m=>m.includes(t.BFIELD.n+' field.')),'a campaign battle is fought on a '+t.BFIELD.n.toLowerCase()+' field, named as it starts');
   const mine=Object.values(B.groups).filter(g=>g.team===0),theirs=Object.values(B.groups).filter(g=>g.team===1),Z=t.fieldZone(0);
   ok(mine.every(g=>g.ax>=Z.x0&&g.ax<=Z.x1)&&theirs.every(g=>g.ax>=t.fieldZone(1).x0&&g.ax<=t.fieldZone(1).x1)&&Z.x0===t.BFIELD.back,'its lines form up in their zones, '+Z.x0+' px of ground behind them');
   for(const g of mine)g.withdraw();B.paused=false;let fr=0;while(t.B&&!B.over&&fr++<60*120)t.updateBattle(1/60);
@@ -161,6 +163,6 @@ try{
   for(let i=0;i<8;i++)t.camZoom(1);a=performance.now();for(let f=0;f<10;f++)t.frame();const drawIn=(performance.now()-a)/10;
   info(N+' soldiers, '+k+' ('+t.BW+'×'+t.BH+'): simulation '+sim.toFixed(1)+' ms/frame, drawing '+draw.toFixed(1)+' ms whole field, '+drawIn.toFixed(1)+' ms zoomed in; paint '+paint.toFixed(0)+' ms')}
  L.validate=keep.validate;
-}catch(e){o.push('EXC '+e.message+' '+e.stack)}finally{const L=T.BattleLab;if(L.active)L.exit();(0,eval)('FIELD_SIZES.on=false;EXITS.on=false')}
+}catch(e){o.push('EXC '+e.message+' '+e.stack)}finally{window.toast=toast0;const L=T.BattleLab;if(L.active)L.exit();(0,eval)('FIELD_SIZES.on=false;EXITS.on=false')}
  const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d);
 };
