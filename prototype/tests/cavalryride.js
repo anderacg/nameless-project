@@ -17,12 +17,20 @@ Kit.suite(({ok,info})=>{
   const at=p.points.at(-1),rest=tired=>{const q=g.ridePlan={...p,phase:'recover',at:b.t-X.recover-1,balk:null,tired};g.rest=true;for(const u of g.units)u.sta=(X.low+X.rested)/2;t.CavalryRide.step(c,g,g.units);return g.ridePlan===q};
   ok(!rest(false)&&rest(true),'fresh riders (at or over '+X.low+' stamina) re-form and ride again at once; tired ones rest till '+X.rested)}else{ok(false,'tired cavalry recovers instead of immediately charging again');ok(false,'formed and rested cavalry can begin the next run-up')}
  const C={x:400,y:400},E={x:550,y:400},v={x:1,y:0};const safe=t.CavalryRide.safe;try{t.CavalryRide.safe=(a,p)=>p.y<=400;const route=t.CavalryRide.route(c,C,E,v,true);ok(route&&route.side===-1,'a blocked flank chooses the other escape arc');t.CavalryRide.safe=()=>false;ok(t.CavalryRide.route(c,C,E,v,true)===null,'no escape arc is fabricated through blocked terrain')}finally{t.CavalryRide.safe=safe}
- // (at rest they shadow their mark: off his flank, picked once, again only when he moves)
+ // (at rest they wait off their mark's flank: picked once, again only when a foe comes near it)
  {place(enemy,650,400);place(g,420,330);b.t+=1;const E=()=>t.centroid(enemy.units),p=g.ridePlan={phase:'recover',points:[{x:420,y:330}],at:b.t,group:enemy.id,unit:null,index:0};for(const u of g.units)u.sta=10;
   t.CavalryRide.step(c,g,g.units);const S=p.shadow,at={x:g.ax,y:g.ay},d=S&&Math.hypot(S.x-E().x,S.y-E().y);
   ok(S&&[1,1.5,2].some(r=>Math.abs(d-X.shadow*r)<2)&&enemy.units.every(e=>Math.hypot(e.x-S.x,e.y-S.y)>=X.clear*1.25)&&S.y<E().y&&Math.hypot(at.x-S.x,at.y-S.y)<40,'resting cavalry waits off its mark’s flank, on its own side ('+Math.round(d)+' px off him)');
   t.CavalryRide.step(c,g,g.units);ok(p.shadow===S,'a mark standing still keeps the same waiting place (no walking about: standing gives breath back)');
-  for(const u of enemy.units)u.x+=60;t.CavalryRide.step(c,g,g.units);ok(p.shadow!==S&&Math.abs(p.shadow.x-S.x-60)<2,'a mark that moves is shadowed to his new flank')}
+  for(const u of enemy.units)u.x+=60;t.CavalryRide.step(c,g,g.units);ok(p.shadow===S,'they stay put while he moves about, out of reach (standing gives breath back)');
+  for(const u of enemy.units)u.y-=60;t.CavalryRide.step(c,g,g.units);ok(p.shadow!==S&&t.CavalryRide.calm(c,p.shadow),'a foe come near their place: they pick a calm one')}
+ // (hunted at rest: tired, they gallop clear; fit, they ride at him; a shooter's mark, they move out of his reach)
+ {const keep=enemy.units.map(u=>u.s),hunt=(sta,s,dx,come=true)=>{place(enemy,420+dx,330);place(g,420,330);if(s)enemy.units.forEach(u=>u.s={...s,dmg:0});if(come)enemy.units.forEach(u=>{u.vel=30;u.hd=Math.PI});enemy.targetGroupId=g.id;b.t+=1;const p=g.ridePlan={phase:'recover',points:[{x:420,y:330}],at:b.t,group:enemy.id,unit:null,index:0,tired:true};for(const u of g.units)u.sta=sta;t.CavalryRide.step(c,g,g.units);return g.ridePlan||{}};
+  ok(hunt(10,null,150,false).phase==='recover','a foe who only stands with them for his mark lets them rest');
+  ok(hunt(10,null,150).phase==='exit','tired riders their foe comes for gallop clear before he reaches them');
+  ok(hunt(100,t.ST.hum_foot,150).phase==='charge','fit riders ride at the foe who comes for them');
+  const bow={...t.ST.hum_bow},safe=t.CavalryRide.safe;let p;try{t.CavalryRide.safe=()=>false;p=hunt(10,bow,170)}finally{t.CavalryRide.safe=safe}ok(p.phase==='charge'&&p.forced,'tired riders under a shooter\u2019s aim with nowhere out of his reach ride him down');place(enemy,650,400);enemy.units.forEach(u=>u.s={...bow,dmg:0});enemy.targetGroupId=g.id;const q=g.ridePlan={phase:'recover',points:[{x:300,y:400}],at:b.t,group:enemy.id,unit:null,index:0,tired:true};place(g,300,400);for(const u of g.units)u.sta=10;t.CavalryRide.step(c,g,g.units);ok(g.ridePlan===q&&q.shadow&&t.CavalryRide.calm(c,q.shadow),'with room, they ride to a place out of his reach instead');
+  enemy.targetGroupId=null;enemy.units.forEach((u,i)=>u.s=keep[i])}
  // (no wall: footmen are ridden at straight, no way round)
  {const keep=enemy.units.map(u=>u.s);place(g,300,400);place(enemy,650,400);enemy.units.forEach(u=>u.s={...t.ST.hum_foot,dmg:0});delete g.ridePlan;
   t.CavalryRide.step(c,g,g.units);ok(g.ridePlan?.phase==='charge'&&!g.ridePlan.points.length,'footmen, no wall, are charged straight in');enemy.units.forEach((u,i)=>u.s=keep[i])}
