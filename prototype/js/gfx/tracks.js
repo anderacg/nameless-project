@@ -1,25 +1,32 @@
 'use strict';
 /* ---------- tracks drawn (world/tracks.js keeps them; data/tracks.js TRACKS; doc/WORLD_DESIGN.md §12.7): each trail's prints every
-   step px along its line, turned the way it went (8 ways), a few pixels each (TRACKS.px over, ringed by a highlight) in the people's style: footprints, hoof prints,
+   step px along its line, turned the way it went, a small print each (TRACK_GLYPH, lit on its up-left edge) in the people's style: footprints, hoof prints,
    paw prints, a wagon's two ruts, a beast's dragged furrow; a band's size class spreads them wider. They lie on the ground, over
    the land and under everything built and everyone (render.js drawWorld), as clear as their ground keeps them and fading with
    their age; only those you see (Tracks.seen: in your sight; others' by your Scouting), at most TRACKS.max a frame ---------- */
 const TRACK_SI={foot:0,hoof:1,paw:2,rut:3,drag:4};
-// one mark of each style: its pixels as [forward, across] in steps of the way it goes
-const TRACK_MARK=[[[0,0],[1,0]],[[0,0],[1,-1],[1,1]],[[0,0],[2,-1],[2,1]],[[-1,-3],[0,-3],[1,-3],[-1,3],[0,3],[1,3]],[[-1,0],[0,0],[1,0],[0,1]]];
-// where the marks of a size class lie across the way (a wagon and a dragged beast: one, in the middle)
+/* one print of each style, pointing east (forward: +x; rows across the way): a boot's sole and heel, a hoof's curve open behind,
+   a paw's pad and toes; a wagon's two ruts and a beast's dragged furrow are lines (no print). '#' its ground's dark, turned to the
+   nearest of the four ways (exact: pixel art turned 45° only blurs); a highlight (TRACKS.glow) lies on its up-left edges, as a
+   pressed-in mark catches the light */
+const TRACK_GLYPH=[['.#..##.','##.####','.#..##.'],['##.','..#','..#','##.'],['...#.','##...','##..#','##...','...#.'],null,null];
+const TRACK_MARK=[null,null,null,[[-1,-3],[0,-3],[1,-3],[-1,3],[0,3],[1,3]],[[-1,0],[0,0],[1,0],[0,1]]];
+// where the prints of a size class lie across the way, in lanes (a wagon and a dragged beast: one, in the middle)
 const TRACK_ACROSS=[[-1,1],[-3,-1,1,3],[-5,-3,-1,1,3,5],[-7,-5,-3,-1,1,3,5,7]];
 // (the pictures, made once each: [style][class][way][left or right step][ground's colour, or a known bounty's])
 const TRACK_SPR=[];
 function trackSprite(si,cls,dir,alt,ci){
   const a=TRACK_SPR[si]||(TRACK_SPR[si]=[]),b=a[cls]||(a[cls]=[]),c=b[dir]||(b[dir]=[]),d=c[alt]||(c[alt]=[]);if(d[ci])return d[ci];
-  const ang=dir*Math.PI/4,ux=Math.cos(ang),uy=Math.sin(ang),col=Object.values(TRACKS.col)[ci],across=si>=3?[0]:TRACK_ACROSS[cls];
-  const px=[];across.forEach((l,j)=>{const f=si>=3?0:((j*5+alt*3)%4)-1.5;for(const [fa,fb] of TRACK_MARK[si]){const A=f+fa,B=l+fb;px.push([Math.round(A*ux-B*uy),Math.round(A*uy+B*ux)])}});
-  // (cut to its pixels' box, ox, oy its corner from the print's place: the smaller the picture, the cheaper each one drawn)
-  // (each pixel TRACKS.px over, on a highlight one pixel wider all round)
-  const P=TRACKS.px,ox=Math.min(...px.map(q=>q[0])),oy=Math.min(...px.map(q=>q[1])),S=mkc((Math.max(...px.map(q=>q[0]))-ox+1)*P+2,(Math.max(...px.map(q=>q[1]))-oy+1)*P+2,g=>{
-    g.fillStyle=TRACKS.glow;for(const [x,y] of px)g.fillRect((x-ox)*P,(y-oy)*P,P+2,P+2);g.fillStyle=col;for(const [x,y] of px)g.fillRect((x-ox)*P+1,(y-oy)*P+1,P,P)});
-  S.ox=ox*P-1;S.oy=oy*P-1;return d[ci]=S}
+  const col=Object.values(TRACKS.col)[ci],G=TRACK_GLYPH[si],px=[];
+  if(G){// (a print: its pixels in lanes TRACKS.lane apart, left and right steps a stagger apart, turned to its way's nearest quarter)
+    const q=Math.round(dir/2)%4,rot=(f,l)=>q===0?[f,l]:q===1?[-l,f]:q===2?[-f,-l]:[l,-f],W=G[0].length,H=G.length;
+    TRACK_ACROSS[cls].forEach((l,j)=>{const f0=((j*5+alt*3)%4)*TRACKS.stagger-W/2,l0=l*TRACKS.lane/2+(alt?1:-1)-H/2;
+      G.forEach((row,y)=>[...row].forEach((ch,x)=>{if(ch==='#')px.push(rot(Math.round(f0+x),Math.round(l0+y)))}))})}
+  else{const ang=dir*Math.PI/4,ux=Math.cos(ang),uy=Math.sin(ang);for(const [fa,fb] of TRACK_MARK[si])px.push([Math.round(fa*ux-fb*uy),Math.round(fa*uy+fb*ux)])}
+  // (cut to its pixels' box and a pixel round for the highlight, ox, oy its corner from the print's place)
+  const on=new Set(px.map(p=>p+'')),ox=Math.min(...px.map(q=>q[0]))-1,oy=Math.min(...px.map(q=>q[1]))-1,S=mkc(Math.max(...px.map(q=>q[0]))-ox+1,Math.max(...px.map(q=>q[1]))-oy+1,g=>{
+    g.fillStyle=TRACKS.glow;for(const [x,y] of px)if(!on.has([x-1,y-1]+''))g.fillRect(x-1-ox,y-1-oy,1,1);g.fillStyle=col;for(const [x,y] of px)g.fillRect(x-ox,y-oy,1,1)});
+  S.ox=ox;S.oy=oy;return d[ci]=S}
 // every trail's prints you see in view, onto the scene (ctx: the scene in game pixels, cam its whole pixels); how many it drew.
 // Each laid from its stretch's own two points, from the older (its place and heading fixed once both are kept: a turn, or the
 // trail growing, never moves one); a trail still being walked shows up to its last point (Tracks.step keeps one every sample px),

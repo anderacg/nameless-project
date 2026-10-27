@@ -27,9 +27,10 @@ const TRACKS={on:true,
   // A first reading of a trail trains Scouting by train
   read:[2,5,8],train:2,
   // the prints: px between them along a trail by their style; the most drawn a frame; how dark at their clearest
-  step:{foot:6,hoof:7,paw:5,rut:3,drag:3},max:700,alpha:.8,
-  // each print's pixel drawn px × px, ringed by a one-pixel highlight of glow (so they read on any ground)
-  px:2,glow:'rgba(255,244,214,.55)',
+  step:{foot:13,hoof:13,paw:12,rut:3,drag:3},max:700,alpha:.8,
+  // the prints (gfx/tracks.js TRACK_GLYPH): lanes px apart across a band's way, steps stagger px apart along it; the highlight on
+  // their up-left edges (glow), so they read on any ground
+  lane:7,stagger:3,glow:'rgba(255,246,222,.45)',
   // the size classes: up to size[0] people class 0 (a pair of prints), up to size[1] class 1, up to size[2] class 2, more class 3
   size:[2,9,29],
   // their colour on each ground; a bounty's band's once you have read one of its trails (a faint gold); on a road (dust)
