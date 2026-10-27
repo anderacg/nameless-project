@@ -130,38 +130,6 @@ try{
   for(const o of worldObjects()){const d=o.mapDot(V);if(d)dot(o.x,o.y,d[0],d[1])}
   P.quests.forEach(q=>{const g=questGoal(q);if(g)dot(g.x,g.y,'#ffe040',2)});
   dot(P.x,P.y,'#fff',3);
-}`,OLD_LOTS=`function lotEnts(ents,cam,V){
-  for(const t of TOWNS){if(!t.lots||Math.hypot(t.x-P.x,t.y-P.y)>V+340)continue;const now=facCol(t),live0=inSight(t.x,t.y);if(live0)t._memCol=now;const col=live0?now:t._memCol||now;
-    for(const l of t.lots){const N=l.n*TILE,X=Math.round(l.x*TILE-cam.x),Y=Math.round((l.y+l.n)*TILE-cam.y);if(X>VW||X+N<0||Y-N>VH+20||Y<-12)continue;
-      ents.push({y:(l.y+l.n)*TILE-1,f:()=>{
-        // outside your sight: the building as you last saw it (fog.js), or nothing if you never saw its ground
-        const live=inSight((l.x+l.n/2)*TILE,(l.y+l.n/2)*TILE);
-        if(!live){if(!seenTile(l.x,l.y)&&!seenTile(l.x+l.n-1,l.y+l.n-1))return;const m=l._mem||lotSprite(t,l);ctx.drawImage(m,X,Y-N);if(l.k==='centre'&&(l._memSt||l.st)!=='ruined'){if(m.flag)drawFlag(col,X+m.flag[0],Y-N+m.flag[1],t.seed);txt(t.name,Math.round(t.x-cam.x),Math.round(t.y+16-cam.y),'#a8a496','center')}return}
-        const s=lotSprite(t,l),w=t.work&&(t.work.lot?t.work.lot===l.id:t.work.k===l.k||t.work.k==='wall'&&l.k==='centre'),p=w?workProg(t):0;l._mem=s;l._memSt=l.st;
-        if(l.st==='building')drawSite(s,X,Y,N,p,false,l.seed);else{ctx.drawImage(s,X,Y-N);if(w&&l.st==='built')drawSite(s,X,Y,N,p,true,l.seed)}
-        if(ESTATES[l.k]&&sabotaged(t,l.k)){const now=performance.now()/1000;for(let i=0;i<6;i++){const ph=(now*.35+i/6)%1;ctx.globalAlpha=(1-ph)*.6;rect(ctx,ph<.3?'#4a4440':'#7a7470',Math.round(X+N/2-1+Math.sin(ph*6+i)*3+ph*5),Math.round(Y-N*.6-ph*20),2,2)}ctx.globalAlpha=1}
-        if(l.k==='centre'&&l.st!=='ruined'){if(s.flag)drawFlag(col,X+s.flag[0],Y-N+s.flag[1],t.seed);holdingLabel(t,cam,X,Y,N)}
-        if(ESTATES[l.k]){const m=lotMid(l);if(Math.hypot(m.x-P.x,m.y-P.y)<60)txt(ESTATES[l.k].n,Math.round(m.x-cam.x),Y+8,'#c8c2ae','center')}}});
-      if(l.k==='port'&&l.st==='built')for(const o of estateBoats(t,bldLv(t,'port')))ents.push({y:o.y,f:()=>drawMoored(o,cam)})}}
-}`,OLD_FOLK=`function drawFolk(ents,cam,V){
-  // (only those out on the road: the rest are at work inside their estate, or delivering inside the gate)
-  for(const f of W.folk){if(!folkOut(f)||Math.abs(f.x-P.x)>V*1.3||Math.abs(f.y-P.y)>V*1.3)continue;
-    ents.push({y:f.y,f:()=>{const fr=f.moving?Math.floor((performance.now()/180+f.ph))%2:0,t=townBy(f.home),s=folkSprite(f.job,fr,t&&t.races?t.races[0]:'human',Math.floor(f.ph*7),f.st==='out'),sx=Math.round(f.x-cam.x),sy=Math.round(f.y-cam.y);
-      ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(sx-3,sy-1,6,2);ctx.save();ctx.translate(sx,sy);if(f.dir<0)ctx.scale(-1,1);ctx.drawImage(s,-8,-14);ctx.restore()}})}
-}`,OLD_SHIPS=`function drawShips(ents,cam,V){
-  const now=performance.now();
-  for(const s of W.ships){if(Math.hypot(s.x-P.x,s.y-P.y)>V*1.2)continue;
-    ents.push({y:s.y+4,f:()=>{const b=shipSprite(s),sx=Math.round(s.x-cam.x),sy=Math.round(s.y+4-cam.y)+(Math.floor(now/450+s.seed)%2);
-      const sailing=s.state!=='fish';
-      if(sailing)for(let i=1;i<=3;i++){const ph=(now/300+i/3)%1;ctx.fillStyle=i===1?'#e8f4fa':'#bcd8e8';ctx.fillRect(sx-s.dir*(b.stern+i*3+Math.floor(ph*2)),sy-2+(i%2),2,1)}
-      ctx.save();ctx.translate(sx,sy);if(s.dir<0)ctx.scale(-1,1);ctx.drawImage(b,-b.ax,-b.ay);ctx.restore();
-      if(!sailing){const ph=(now/700+s.seed)%2;ctx.fillStyle='#d8c890';ctx.fillRect(sx+s.dir*b.net,sy-5,1,5);if(ph<1){ctx.fillStyle='#e8f4fa';ctx.fillRect(sx+s.dir*b.net-1,sy+1,3,1)}}
-      if(s.k==='trade'&&Math.hypot(s.x-P.x,s.y-P.y)<110)txt('Trade ship',sx,sy-b.ay+opaqueBox(b)[1]-2,hostileTo(s.fac)?'#ff9a90':'#e8d8a0','center')}})}
-}`,OLD_REF=`function drawRefugees(ents,cam,V){
-  for(const r of W.refugees){if(Math.hypot(r.x-P.x,r.y-P.y)>V*1.2)continue;
-    ents.push({y:r.y,f:()=>{const sx=Math.round(r.x-cam.x),sy=Math.round(r.y-cam.y),k=Math.min(6,Math.max(3,Math.ceil(r.n/3))),mv=performance.now();ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(sx-8,sy-1,16,2);
-      for(let i=0;i<k;i++){const px=sx-r.dir*((i%3)*6-6)+(i>2?-r.dir*3:0),py=sy-(i>2?3:0);const s=refugeeSprite(Math.floor(mv/220+i)%2,i);ctx.save();ctx.translate(px,py);if(r.dir<0)ctx.scale(-1,1);ctx.drawImage(s,-8,-15);ctx.restore()}
-      if(Math.hypot(r.x-P.x,r.y-P.y)<90)txt('Refugees '+r.n,sx,sy-12,r.fear?'#ff9a90':'#c8c2ae','center')}})}
 }`;
  window.__oldObjKind=ev('('+OLD_OBJKIND.replace('const objKind=','').replace(/;$/,'').replace('o instanceof WorldObject','o instanceof Party')+')');
  // (livestock, on purpose since: it lives in its holding's pasture, drawn with it (critters.js penEnts), never picked, met or
@@ -183,31 +151,7 @@ try{
  // (the chase: dropped when, and met during the cool-down after a fight: its two lines, read as two tests)
  const oldDrop=ev('(o=>{const k=__oldObjKind(o);return '+OLD_CHASE.slice(OLD_CHASE.indexOf('if(!k')+3,OLD_CHASE.indexOf(')G.chase=null'))+'})');
  const oldCool=ev('(k=>'+OLD_CHASE.match(/(\[\'town\'[^\]]*\])\.includes\(k\)/)[0]+')');
- // (the depth work (gfx/depth.js, doc/WORLD_DESIGN.md §12.5) changed what is drawn on purpose: each structure's shadow is its own
- // picture, laid in one pass under them all (structures.js drawShadows), its picture kept for the depth (depthPic); everyone who
- // moves has what stands in front of him drawn again over him (worldOverdraw); the clouds and weather, fog, night and lights come
- // before the banners, labels, quest marks and your goal. The old texts are read with those changes, so the rest is held as before)
- const depthLots=s=>s.replace(/(      ents\.push\(\{y:\(l\.y\+l\.n\)\*TILE-1,)f:\(\)=>\{\n(\s*\/\/[^\n]*\n)\s*const live=inSight[^\n]*\n/,
-   (m,a,c)=>"      const live=inSight((l.x+l.n/2)*TILE,(l.y+l.n/2)*TILE),sm=live?l.st!=='building'&&lotSprite(t,l):(seenTile(l.x,l.y)||seenTile(l.x+l.n-1,l.y+l.n-1))&&(l._mem||lotSprite(t,l));\n"+a+"sh:sm&&sm.sh?[sm.sh,X,Y-N]:null,f:()=>{\n"+c)
-  .replace('ctx.drawImage(m,X,Y-N);','ctx.drawImage(m,X,Y-N);depthPic(m,X,Y-N);').replace('else{ctx.drawImage(s,X,Y-N);','else{ctx.drawImage(s,X,Y-N);depthPic(s,X,Y-N);');
- const depthDraw=s=>{const m=s.match(/(const q=TXTQ;TXTQ=null;[^\n]*)\n\s*drawEnv\(cam,V,1\);\n\s*drawQuestMarks\(cam\);\n\s*(if\(P\.tx!=null\)[^\n]*)\n/);
-  return s.replace(m[0],'drawEnv(cam,V,1);\n').replace('  // minimap','  drawBanners(cam);'+m[1]+'drawQuestMarks(cam);'+m[2]+'\n  // minimap')
-   .replace('ents.push({st:true,y:s.y,f:','ents.push({st:true,y:s.y,sh:(q=>q.sh?[q.sh,Math.round(s.x-cam.x)-q.ax,Math.round(s.y-cam.y)+8-q.ay]:null)(siteSprite(s)),f:')
-   .replace('ctx.drawImage(sp,sx-sp.ax,sy+8-sp.ay);','ctx.drawImage(sp,sx-sp.ax,sy+8-sp.ay);if(!s.cleared)depthPic(sp,sx-sp.ax,sy+8-sp.ay);')
-   // (stage 3 of the building redesign: a site's yard is its model's, laid under it, in place of the patch of worn ground)
-   .replace("if(s.patch)ctx.drawImage(groundPatch(climAt(s.x,s.y)),sx-15,sy-4);if(s.cleared)ctx.globalAlpha=.5;const sp=siteSprite(s);","const sp=siteSprite(s);if(sp.gr)ctx.drawImage(sp.gr,sx-sp.ax,sy+8-sp.ay);if(s.cleared)ctx.globalAlpha=.5;")
-   .replace('bents.sort((a,b)=>a.y-b.y).forEach(e=>e.f());','WDEPTH.pics.length=0;drawShadows(bents);bents.sort((a,b)=>a.y-b.y).forEach(e=>e.f());')
-   .replace('ents.filter(e=>!e.st).sort((a,b)=>a.y-b.y).forEach(e=>e.f());','worldOverdraw(ents.filter(e=>!e.st).sort((a,b)=>a.y-b.y),cam);')};
- ev('window.__oldLotEnts=('+depthLots(OLD_LOTS)+');window.__oldDrawFolk=('+OLD_FOLK+');window.__oldDrawShips=('+OLD_SHIPS+');window.__oldDrawRefugees=('+OLD_REF+')');
- // (drawWorld as it was: its helpers as they were; the minimap's movers were then the parties and caravans: worldObjects; the fog
- // as it is now (fog.js fogMem, drawWorldFog: the fog's look is tests/fog.js's))
- // (Phase 1 redrew the map's figures smaller on purpose, D25 (mapfigures.js holds them to their sizes): you are drawn as now in
- // both, and the movers the text draws its own old ways (beasts, herds, workers, ships, refugees, fights) are taken off the map
- // while the two are compared below; the parties and caravans draw themselves in both)
- // (and the parties' banners, drawn over all, as now: drawBanners; a spot on a banner picks its party, below)
- // (you as now: on the map's march, your host marching by you, and not while a world battle is on: render.js, since 702d45a)
- const PLINE=/if\(!P\.stay(?:&&!P\.camp)?\)ents\.push\(\{y:P\.y,(?:own:1,)?f:\(\)=>\{[\s\S]*?\}\}\);|if\(!P\.stay&&!P\.camp&&!B\?\.world\)\{if\(WORLD_BATTLE\.on\)marchDraw\(ents,P,cam\);ents\.push\(\{y:P\.y,own:1,f:\(\)=>\{[\s\S]*?\}\}\); \}/,nowP=t.drawWorld.toString().match(PLINE)[0];const onFlag=(q,x,y)=>{const B=q&&q.banner&&t.bannerAt(q,0);if(!B)return false;const b=t.opaqueBox(B.s);return x>=B.x+b[0]&&x<=B.x+b[2]&&y>=B.y+b[1]&&y<=B.y+b[3]};
- const oldDraw=ev('('+depthDraw(since(OLD_DRAW)).replace(PLINE,()=>nowP).replace('estateEnts(bents,cam,V)','__oldLotEnts(bents,cam,V)').replace('drawFolk(ents,cam,V)','__oldDrawFolk(ents,cam,V)').replace('drawShips(ents,cam,V)','__oldDrawShips(ents,cam,V)').replace('drawRefugees(ents,cam,V)','__oldDrawRefugees(ents,cam,V)').replace('worldObjects()','[...W.parties,...W.caravans.map(asParty)]').replace('atSize(miniCv,mw,mh)','atSize(WorldArt.mini(Math.ceil(MW/256)),mw,mh)').replace("ctx.fillStyle='#000';ctx.fillRect(mx-1,my-1,mw+2,mh+2);",'drawMapFrame({x:mx,y:my,w:mw,h:mh});').replace("ctx.save();ctx.beginPath();ctx.rect(0,0,VW,VH);ctx.arc(px0,py0,V,0,Math.PI*2,true);ctx.clip('evenodd');ctx.drawImage(memCv(),0,0);ctx.restore();",'fogMem(memCv(),px0,py0,V);').replace(/const px=P\.x-cam\.x,py=P\.y-cam\.y,gr=[^\n]*\n\s*drawDark\(cam\);/,'drawWorldFog(cam,V);')+')');
+ const onFlag=(q,x,y)=>{const B=q&&q.banner&&t.bannerAt(q,0);if(!B)return false;const b=t.opaqueBox(B.s);return x>=B.x+b[0]&&x<=B.x+b[2]&&y>=B.y+b[1]&&y<=B.y+b[3]};
  ok([OLD_PICK,OLD_INTERACT,OLD_TIP,OLD_DRAW].every(s=>s.length>500)&&/estateEnts\(bents/.test(OLD_DRAW)&&/worldObjects\(\)/.test(OLD_DRAW),'the old ways are kept as text ('+[OLD_PICK,OLD_INTERACT,OLD_TIP,OLD_DRAW].map(s=>s.length).join(', ')+' characters)');
  // ---- a crowd by a holding: a lord, a band beside him, two patrols, a caravan, your companion's party, a beast and the dragon,
  // herds wild and kept, refugees, workers on the road, every kind of site and a ship; some made as a save or a test makes them
@@ -301,18 +245,8 @@ try{
  // ---- sight: the dragon from afar, other beasts and herds as anyone, nearer in the woods; workers only on the road
  {const V=150,px=P.x,py=P.y,res=[];for(const d of [0,60,100,140,170,200,230,260]){P.x=mo.x+d;P.y=mo.y;res.push(mo.inView(V)===t.spotted(mo,V));P.x=dr.x+d;P.y=dr.y;res.push(dr.inView(V)===(Math.hypot(dr.x-P.x,dr.y-P.y)<V*1.6))}
   P.x=px;P.y=py;const st=wk.st;wk.st='in';const inn=wk.inView(999);wk.st=st;ok(res.every(Boolean)&&!inn&&wk.inView(999),'who is in sight is as before (the dragon seen from afar; a worker at work inside never)')}
- // ---- drawn as before: the whole map, its buildings, everyone on it and the minimap, pixel for pixel (the clock held still)
- {const pn=performance.now,rnd=Math.random,c=t.ctx;performance.now=()=>4321;
-  const paint=fn=>{Math.random=t.seeded(7);c.save();c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,c.canvas.width,c.canvas.height);c.restore();fn();
-   const d=c.getImageData(0,0,c.canvas.width,c.canvas.height).data;let h=0,lit=0;for(let i=0;i<d.length;i++){h=(h*31+d[i])|0;if(d[i])lit++}return [h,lit].join()};
-  // (the marks on the screen and on the scene of what stands, memCv: drawWorld draws that scene in game pixels first, render.js)
-  const rects=fn=>{const got=[],P2=CanvasRenderingContext2D.prototype,f0=P2.fillRect,lo=t.memCv().getContext('2d', { willReadFrequently: true });P2.fillRect=function(...a){if(this===c||this===lo)got.push(this.fillStyle+' '+a.join());return f0.apply(this,a)};try{paint(fn)}finally{P2.fillRect=f0}return got.join('|')};
-  const off={monsters:W.monsters,critters:W.critters,folk:W.folk,ships:W.ships,refugees:W.refugees,fights:W.fights};for(const k in off)W[k]=[];
-  try{paint(t.drawWorld);paint(oldDraw);const a=paint(oldDraw),n=paint(t.drawWorld),a2=paint(oldDraw);
-   ok(a===n&&a===a2,'the whole map is drawn as before, pixel for pixel ('+n+')');
-   const ra=rects(oldDraw),rn=rects(t.drawWorld);ok(ra.length>100&&ra===rn,'the same small marks, minimap dots among them, in the same order ('+rn.split('|').length+')');
-   G.clock=t.DAY*.8;const na=paint(oldDraw),nn=paint(t.drawWorld);ok(na===nn,'and at night (torches)');G.clock=t.DAY*.2}finally{performance.now=pn;Math.random=rnd;Object.assign(W,off)}
-  const e0=ERR.length;t.frame();ok(ERR.length===e0,'and the whole frame draws')}
+ // ---- the whole frame draws (the pixel-for-pixel match with drawWorld as it was at 460c917 is retired: drawn anew since, the owner 2026-10-27)
+ {const e0=ERR.length;t.frame();ok(ERR.length===e0,'the whole frame draws')}
  // ---- the minimap: the same dots, layered as before (the places, then the beasts, parties and caravans over them)
  {const V=t.vis(),a=[],n=[],dot=arr=>(x,y,col,s)=>arr.push([x,y,col,s].join());
   ev('((dot,V)=>{'+since(OLD_DRAW.slice(OLD_DRAW.indexOf("  TOWNS.forEach(tw=>{if(seenTile"),OLD_DRAW.indexOf("  P.quests.forEach"))).replace('worldObjects()','[...W.parties,...W.caravans.map(asParty)]')+'})')(dot(a),V);
