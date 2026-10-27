@@ -1142,7 +1142,7 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 /* Mobile battle: status and unit cards above a single persistent control row. */
 .mobile-battle-hud{position:absolute;left:var(--e-l);right:var(--e-r);bottom:var(--e-b);display:flex;flex-direction:column;gap:4px;z-index:15;pointer-events:auto}
 .mobile-battle-hud>[data-bplace]{min-width:0}
-.mobile-battle-hud .btop{position:static;transform:none;width:100%;max-width:none;min-width:0;gap:3px;padding:5px 9px;border-radius:5px}
+.mobile-battle-hud .btop{position:relative;top:auto;left:auto;transform:none;width:100%;max-width:none;min-width:0;gap:3px;padding:5px 9px;border-radius:5px}
 .mobile-battle-hud .bpow{gap:8px}.mobile-battle-hud .bside{font-size:9px;letter-spacing:.03em}.mobile-battle-hud .bside b{font-size:15px}.mobile-battle-hud .bpowbar{height:6px}.mobile-battle-hud .bfield{font-size:9px;gap:8px;justify-content:space-between}.mobile-battle-hud .bfield.alert #bStatus{animation:none}
 .mobile-battle-hud .bcards{width:100%;max-width:100%;min-width:0;justify-content:flex-start;gap:5px;padding:3px 2px;overflow-x:auto;overscroll-behavior:contain;scrollbar-width:thin}
 .mobile-battle-hud .bcards .ucard{width:62px;height:60px}.mobile-battle-hud .bcards .ucard.all{width:48px;height:54px}.mobile-battle-hud .ucard .upic{width:26px;height:26px;top:6px}.mobile-battle-hud .ucard .csh{display:none}
@@ -1173,3 +1173,19 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 .overlay:has(.hunt-setup){align-items:flex-end;background:#0002;padding:8px}
 .panel.hunt-setup{height:auto;max-height:55dvh;width:min(620px,100%);gap:7px;padding:12px}
 @media(max-height:500px){.panel.hunt-setup{max-height:85dvh}}
+
+/* Battle army relationships and reinforcement notices. */
+.army-intel{position:static;width:100%;pointer-events:auto;font-family:Arial,sans-serif}
+.army-intel[hidden],.army-panel[hidden]{display:none}
+.army-intel button{background:var(--hud-face);color:var(--fg);border:1px solid var(--trim);border-top:2px solid var(--trim-hi);border-radius:4px;font-family:Arial,sans-serif;cursor:pointer}.army-intel button:hover,.army-intel button:focus-visible{border-color:var(--accent)}
+#battleArmiesToggle{position:absolute;top:5px;right:8px;width:84px;min-height:36px;padding:3px 5px;font-size:12px}
+.army-arrivals:empty{display:none}.army-arrivals{display:grid;gap:3px;margin-top:3px;font-size:11px}.army-arrivals button{width:100%;padding:5px 7px;min-height:32px;text-align:left;font-size:11px;white-space:normal;overflow-wrap:anywhere}
+.army-panel{position:absolute;top:calc(100% + 6px);left:0;right:0;z-index:30;max-height:min(440px,60dvh);overflow:auto;overscroll-behavior:contain;padding:8px;background:var(--hud-face);border:1px solid var(--trim);border-radius:5px;box-shadow:var(--float);font-size:12px;text-align:left}
+.army-panel header{display:flex;align-items:center;justify-content:space-between;gap:8px}.army-panel header button{min-width:44px;min-height:44px;padding:3px}.army-banners{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;margin:5px 0}.army-banners button{display:flex;align-items:center;gap:7px;min-height:48px;padding:6px;text-align:left;min-width:0}.army-banners button[aria-pressed="true"]{outline:2px solid var(--accent);outline-offset:-2px}.army-banners span{min-width:0}.army-banners strong,.army-banners small{display:block;overflow-wrap:anywhere;font-size:11px}.army-banners small{color:var(--muted);margin-top:3px}.army-flag{flex:none;width:20px;height:25px;color:#111;text-align:center;line-height:25px}.army-relations{border-top:1px solid var(--trim);padding:8px 2px;overflow-wrap:anywhere}.army-relations dl{display:grid;grid-template-columns:52px 1fr;gap:5px;margin:7px 0}.army-relations dd{margin:0}.army-relations dt{color:var(--accent)}.army-relations>small{color:var(--muted)}.callout.neutral{color:#e0ca8c;border-color:#d6b966}
+.mobile-battle-hud .army-panel{top:auto;bottom:calc(100% + 6px);max-height:calc(100dvh - var(--mobile-battle-height,190px) - 20px)}
+.mobile-battle-hud #battleArmiesToggle{top:0;min-height:44px}.mobile-battle-hud .army-arrivals button{min-height:44px}
+@media(max-width:500px){.army-banners{grid-template-columns:1fr}.army-panel{font-size:12px}}
+@media(max-height:500px){.mobile-battle-hud .army-panel{max-height:calc(100dvh - 100px)}.mobile-battle-hud .army-arrivals button{padding:3px 6px}.mobile-battle-hud .army-arrivals button:nth-child(n+2),.mobile-battle-hud .army-arrivals small{display:none}}
+
+.btop:has(.army-intel:not([hidden])) .bpow,.btop:has(.army-intel:not([hidden])) .bfield{align-self:flex-start;width:calc(100% - 92px)}
+.army-arrivals{width:100%}
