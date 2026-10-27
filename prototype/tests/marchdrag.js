@@ -26,5 +26,6 @@ Kit.suite(({ok})=>{
  const army=t.MarchArmy.of(P);army.sync();const targets=army.targets().filter(p=>p.row===arch.id),first=targets[0],second=targets[1];ok(Math.abs(first.x-second.x)>Math.abs(first.y-second.y)*5,'marching slots rotate with the saved relative facing');
  t.openMarch();ok(Math.abs(G.march.draft[arch.id].face+Math.PI/2)<.001,'reopening the editor retains saved facing');t.act('march-back');Kit.world();
  const h=Kit.goHome('Ashford');Kit.goTo(h.x+160,h.y+120);const e=t.asParty({kind:'bandits',troops:['militia'],x:P.x+70,y:P.y,cool:0});G.enc={kind:'party',ref:e,list:e.troops.slice(),allies:[],foes:[],mine:true};t.startBattle({enemies:G.enc.list,tournament:false});
- const b=t.B,g=Object.values(b.groups).find(g=>g.player&&g.sourceGroupId===arch.id);ok(g.files===4&&t.angGap(g.face,b.world.starts[0].facing+row.face)<.001,'world battle preserves dragged frontage and facing relative to the marching army');
+ const b=t.B,g=Object.values(b.groups).find(g=>g.player&&g.sourceGroupId===arch.id);const mine=b.muster.armies.find(a=>a.owner===P);// (the armies form up facing each other first: c0ba7c6)
+ ok(g.files===4&&t.angGap(g.face,mine.anchor.facing+row.face)<.001,'world battle preserves dragged frontage and facing relative to the marching army');
 });
