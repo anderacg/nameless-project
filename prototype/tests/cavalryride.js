@@ -6,8 +6,9 @@ Kit.suite(({ok,info})=>{
  const wheel=make(90);for(let i=0;i<10;i++)t.physGo(wheel,.05,-1,i%2?.01:-.01,100,null,null,false);ok(Math.abs(wheel.hd)>0.2&&wheel.vel>15,'a committed turn keeps moving without alternating left and right behind the horse');
  const stop=make(100);t.physGo(stop,.1,0,0,0,null,null,false);ok(stop.x>500&&stop.vel>0&&stop.vel<100,'a manual stop brakes over distance instead of snapping to a halt');for(let i=0;i<30;i++)t.physGo(stop,.1,0,0,0,null,null,false);ok(stop.vel===0,'braking eventually reaches a complete stop');
  const place=(q,x,y)=>{q.ax=x;q.ay=y;t.layForm(q.id);for(const u of q.units){u.x=x+(u.sx||0);u.y=y+(u.sy||0);u.hd=0;u.dir=0;u.vel=0;u.sta=100;u.cd=999;u.s={...u.s,dmg:0}}};place(g,300,400);place(enemy,650,400);const foes=enemy.units,c={foes,engaged:()=>false,d2:(a,b)=>Math.hypot(a.x-b.x,a.y-b.y)},X=t.CAVALRY_RIDE;
- ok(t.CavalryRide.step(c,g,g.units)&&g.ridePlan.phase==='approach'&&g.ridePlan.points.length===2,'a melee cavalry wing plans a flanking approach and a straightening waypoint');
- const plan=g.ridePlan,first=plan.points[0];ok(Math.abs(first.y-plan.enemy.y)>20,'the approach bends to a flank rather than charging directly backwards');const phases=new Set([plan.phase]);
+ // (levies are spears: a wall; facing the riders, it is ridden at from its flank, one run-in from runup px out on it)
+ enemy.face=enemy.currentFacing=Math.PI;ok(t.CavalryRide.step(c,g,g.units)&&g.ridePlan.phase==='approach'&&g.ridePlan.points.length===1,'a melee cavalry wing facing spears plans one flank run-in');
+ const plan=g.ridePlan,first=plan.points[0];ok(Math.abs(Math.min(...enemy.units.map(u=>Math.hypot(u.x-first.x,u.y-first.y)))-X.runup)<12&&Math.abs(first.x-t.centroid(enemy.units).x)<1,'its run-in starts runup px beyond the spears\u2019 last man on their flank, not in front of them');const phases=new Set([plan.phase]);
  // Drive the actual actors through the route. The foe holds its ground; the phase timer sees real simulation time.
  for(let i=0;i<1800;i++){b.t+=1/30;if(i%15===0){t.CavalryRide.step(c,g,g.units);phases.add(g.ridePlan?.phase||'new-run');g.setRun(!g.rest)}for(const u of g.units)t.Actor.of(u).step(1/30,null);t.BattleControl.prototype.step.call(g,1/30);if(phases.has('exit')&&phases.has('recover'))break}
  info('phases '+[...phases].join(','));ok(phases.has('charge')&&phases.has('exit'),'actual mounted movement reaches a charge and peels away after contact');ok(phases.has('recover'),'the looping withdrawal reaches a recovery position');
@@ -19,5 +20,8 @@ Kit.suite(({ok,info})=>{
   ok(S&&[1,1.5,2].some(r=>Math.abs(d-X.shadow*r)<2)&&enemy.units.every(e=>Math.hypot(e.x-S.x,e.y-S.y)>=X.clear*1.25)&&S.y<E().y&&Math.hypot(at.x-S.x,at.y-S.y)<40,'resting cavalry waits off its mark’s flank, on its own side ('+Math.round(d)+' px off him)');
   t.CavalryRide.step(c,g,g.units);ok(p.shadow===S,'a mark standing still keeps the same waiting place (no walking about: standing gives breath back)');
   for(const u of enemy.units)u.x+=60;t.CavalryRide.step(c,g,g.units);ok(p.shadow!==S&&Math.abs(p.shadow.x-S.x-60)<2,'a mark that moves is shadowed to his new flank')}
+ // (no wall: footmen are ridden at straight, no way round)
+ {const keep=enemy.units.map(u=>u.s);place(g,300,400);place(enemy,650,400);enemy.units.forEach(u=>u.s={...t.ST.hum_foot,dmg:0});delete g.ridePlan;
+  t.CavalryRide.step(c,g,g.units);ok(g.ridePlan?.phase==='charge'&&!g.ridePlan.points.length,'footmen, no wall, are charged straight in');enemy.units.forEach((u,i)=>u.s=keep[i])}
  g.ridePlan={phase:'recover'};g.aiReset();ok(!g.ridePlan,'handing a group back to the AI clears its old riding plan');ok(!ERR.length,'curved cavalry movement has no runtime errors');
 });
