@@ -154,22 +154,8 @@ function bhudTop(){
   $id('bStatus').textContent=B.over?(B.retreat?'Withdrawn':B.win?'Victory':'Defeat'):B.muster?.active?(B.paused?'Preparation paused · Space to continue':'Forming up · '+B.muster.done+'/'+B.muster.entries.length):B.ready?'Ready · Start Battle to begin':B.deploy?(GUIDE.on?'Deploy: place your band in the shaded zone · Space to begin':'Deploying'):B.paused?(GUIDE.on?'Paused · give your orders · Space to go on':'Paused'):B.speed!==1?B.speed+'×':'';
   document.querySelector('.bfield').classList.toggle('alert',!!(B.deploy||B.paused));
   {const b=$id('bAmove');if(b){b.classList.toggle('on',!!B.amArm);b.setAttribute('aria-pressed',String(!!B.amArm));b.disabled=!!B.deploy}}// (armed: commands.js armAttackMove)
-  bhudAbilities();bhudArmies();bhudWithdraw();
+  bhudAbilities();bhudArmies();withdrawView.hud();
 }
-/* the withdrawal at a glance, under the balance of power: the Withdraw button's preview (the groups it shows and the way each would
-   leave; on a touch screen, held by a tap, Retreat now and Cancel), else your groups on their way off the field (each a button: select it),
-   how many are off it, and, in a battle of several armies, that the rest fight on without you. The Withdraw buttons read
-   Confirm while a tap holds them (orderpaths.js WithdrawView) */
-function bhudWithdraw(){
-  let el=document.getElementById('bWithdraw');if(!el){const top=document.querySelector('.btop');if(!top)return;el=document.createElement('div');el.id='bWithdraw';el.className='bwithdraw';el.setAttribute('role','status');el.setAttribute('aria-live','polite');top.appendChild(el);
-    el.addEventListener('click',e=>{const b=e.target.closest('[data-wgrp]');if(b)selectGroup(b.dataset.wgrp,e.shiftKey);if(e.target.closest('[data-wgo]'))setOrder('withdraw');if(e.target.closest('[data-wno]'))withdrawView.disarm();bhudWithdraw()})}
-  const armed=withdrawView.armed();for(const b of document.querySelectorAll('.obtn[data-order="withdraw"]')){b.classList.toggle('armed',armed);const l=b.querySelector('.mbh-label');if(l)l.textContent=armed?'Confirm':'Retreat'}
-  const live=id=>grpUnits(id).filter(u=>u.hp>0&&!u.left),mine=playerGroups().filter(id=>live(id).length),going=mine.filter(id=>B.groups[id].order==='withdraw'),pv=withdrawView.ids(),off=B.withdrawn||0;
-  const rest=!!B.sides?.active&&B.sides.records.some(r=>r.owner!==P&&r.joined&&B.sides.survivors(r).some(u=>u.hp>0&&!u.left&&!u.rout)),chip=id=>'<button type="button" data-wgrp="'+id+'">'+htmlText(groupName(id))+' · '+live(id).length+'</button>';
-  let html='';
-  if(pv.length&&!B.over)html='<b>Withdraw preview</b> '+pv.map(id=>chip(id)+' <small class="wv-dir">'+htmlText(withdrawView.where(id))+'</small>').join(' ')+(armed?' <button type="button" class="wgo" data-wgo>Retreat now</button><button type="button" data-wno>Cancel</button>':'')+(rest?' <em>The other armies fight on after you leave.</em>':'');
-  else if((going.length||off)&&!B.over)html='<b>↩ Withdrawing</b> '+(going.map(chip).join(' ')||'')+(off?' <small>'+off+' off the field</small>':'')+(going.length&&going.length===mine.length?' <em>The battle ends for you once they are off the field.</em>':'')+(rest?' <em>The other armies fight on without you.</em>':'');
-  if(el.dataset.sig!==html){el.dataset.sig=html;el.innerHTML=html}el.hidden=!html}
 // Army banners open a relationship view without changing selection or issuing an order.
 class BattleArmyHud{
  constructor(){

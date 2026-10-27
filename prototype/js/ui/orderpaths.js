@@ -153,7 +153,7 @@ function opBlades(o,u){ctx.beginPath();const X=OPS.x,Y=OPS.y,at=(i,r)=>{const x=
    withdraws) shows, for each selected group of yours not yet withdrawing, the way it would take off the field now: its exit
    (morale.js exitChoose; the world battle's circle, worldbattle.js exit; else your edge, straight back), looked at again every
    every s of battle, laid round the ground as a withdrawal's path, with where they would leave. Drawing only: no exit is chosen
-   for a group, and its order stands till you give one. Bound to the buttons once (bind) */
+   for a group, and its order stands till you give one. Bound to the buttons once (bind); its strip on the HUD each frame (hud) */
 const WITHDRAW_VIEW={arm:6,every:.5};
 class WithdrawView{
  constructor(){this.hover=false;this.armedAt=-1e9;this.memo=new Map()}
@@ -171,6 +171,20 @@ class WithdrawView{
  // where its way points, in words: by the edge it leaves by, or (the world battle; no edges) to the way off the field
  where(id){const g=B.groups[id],m=grpUnits(id).filter(u=>u.hp>0&&!u.left&&!u.rout);if(!g||!m.length)return '';const C=centroid(m),e=this.exit(g,C.x,C.y);
   if(e.side)return 'by the '+{W:'west',E:'east',N:'north',S:'south'}[e.side]+' edge';const a=Math.round(Math.atan2(e.y-C.y,e.x-C.x)/(Math.PI/4));return 'to the '+['east','south-east','south','south-west','west','north-west','north','north-east'][(a+8)%8]}
+ /* the withdrawal at a glance, under the balance of power: the Withdraw button's preview (the groups it shows and the way each would
+    leave; on a touch screen, held by a tap, Retreat now and Cancel), else your groups on their way off the field (each a button: select it),
+    how many are off it, and, in a battle of several armies, that the rest fight on without you. The Withdraw buttons read
+    Confirm while a tap holds them */
+ hud(){
+   let el=document.getElementById('bWithdraw');if(!el){const top=document.querySelector('.btop');if(!top)return;el=document.createElement('div');el.id='bWithdraw';el.className='bwithdraw';el.setAttribute('role','status');el.setAttribute('aria-live','polite');top.appendChild(el);
+     el.addEventListener('click',e=>{const b=e.target.closest('[data-wgrp]');if(b)selectGroup(b.dataset.wgrp,e.shiftKey);if(e.target.closest('[data-wgo]'))setOrder('withdraw');if(e.target.closest('[data-wno]'))this.disarm();this.hud()})}
+   const armed=this.armed();for(const b of document.querySelectorAll('.obtn[data-order="withdraw"]')){b.classList.toggle('armed',armed);const l=b.querySelector('.mbh-label');if(l)l.textContent=armed?'Confirm':'Retreat'}
+   const live=id=>grpUnits(id).filter(u=>u.hp>0&&!u.left),mine=playerGroups().filter(id=>live(id).length),going=mine.filter(id=>B.groups[id].order==='withdraw'),pv=this.ids(),off=B.withdrawn||0;
+   const rest=!!B.sides?.active&&B.sides.records.some(r=>r.owner!==P&&r.joined&&B.sides.survivors(r).some(u=>u.hp>0&&!u.left&&!u.rout)),chip=id=>'<button type="button" data-wgrp="'+id+'">'+htmlText(groupName(id))+' · '+live(id).length+'</button>';
+   let html='';
+   if(pv.length&&!B.over)html='<b>Withdraw preview</b> '+pv.map(id=>chip(id)+' <small class="wv-dir">'+htmlText(this.where(id))+'</small>').join(' ')+(armed?' <button type="button" class="wgo" data-wgo>Retreat now</button><button type="button" data-wno>Cancel</button>':'')+(rest?' <em>The other armies fight on after you leave.</em>':'');
+   else if((going.length||off)&&!B.over)html='<b>↩ Withdrawing</b> '+(going.map(chip).join(' ')||'')+(off?' <small>'+off+' off the field</small>':'')+(going.length&&going.length===mine.length?' <em>The battle ends for you once they are off the field.</em>':'')+(rest?' <em>The other armies fight on without you.</em>':'');
+   if(el.dataset.sig!==html){el.dataset.sig=html;el.innerHTML=html}el.hidden=!html}
  bind(){for(const b of document.querySelectorAll('.obtn[data-order="withdraw"]')){if(b.dataset.wv)continue;b.dataset.wv='1';
    b.addEventListener('pointerenter',e=>{if(e.pointerType!=='touch')this.hover=true});b.addEventListener('pointerleave',()=>{this.hover=false});
    b.addEventListener('focus',()=>{this.hover=true});b.addEventListener('blur',()=>{this.hover=false})}}

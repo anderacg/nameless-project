@@ -57,7 +57,7 @@ function battleReportHtml(report){
       '<td>'+g.start+'</td><td>'+g.fit+'</td><td class="'+(g.wounded?'gold':'muted')+'">'+g.wounded+'</td><td class="'+(g.killed?'bad':'muted')+'">'+g.killed+'</td></tr>').join('')+'</tbody></table></div>':'<p class="muted">No troop groups took part.</p>')+
     (characters.length?'<div class="battle-report-characters">'+characters.map(c=>'<span>'+htmlText(c.name)+' · <strong>'+htmlText(c.status)+'</strong></span>').join('')+'</div><p class="muted">Character condition at field exit; heroes and companions are not counted as killed.</p>':'')+'</section>';
 }
-// the battle's armies, army by army (resolution.js armyReport), who was still on the field when yours left it, and what your army
+// the battle's armies, army by army (resolution.js ArmyReport), who was still on the field when yours left it, and what your army
 // earned by it; none for a report without them
 function battleArmiesHtml(report){
   const A=report.armies,R=report.rewards;if(!A||!A.length)return '';const td=(n,c)=>'<td class="'+(n?c:'muted')+'">'+n+'</td>';
