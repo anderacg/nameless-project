@@ -51,7 +51,7 @@ class Moveset{
     if(B.t<r||momentum(u)>=(u.s.charge?CHARGE.min:CHARGE.foot_min))return null;return B.t>=r+MOVESETS.idle||this.worth(u,t)?H:null}
   // (a shield toward him, a character, a big one, or a knot round him)
   worth(u,t){if(isChar(t)||t.s.big||shieldToward(t,u))return true;const R=(u.s.reach||11)+2;let n=0;
-    for(const o of spatialOn()?SG.near(t.x,t.y,R+1,t.team,false):B.units)if(o.team===t.team&&o.hp>0&&Math.hypot(o.x-t.x,o.y-t.y)<=R&&++n>=MOVESETS.want)return true;return false}
+    for(const o of spatialOn()?SG.near(t.x,t.y,R+1,t.team,false):B.units)if(battleFriend(o,t)&&o.hp>0&&Math.hypot(o.x-t.x,o.y-t.y)<=R&&++n>=MOVESETS.want)return true;return false}
   // may his charge's impact throw down? (m: its momentum) old: always, as before
   static fells(u,m){if(MOVESETS.old)return true;return Moveset.of(u).charge>0&&m>=MOVESETS.charge.speed}
   // (his charge's throw: × a kind's own; old, 1)

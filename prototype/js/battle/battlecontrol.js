@@ -41,14 +41,14 @@ class BattleControl{
   get hasTarget(){return this.targetGroupId!==null||this.targetUnitId!==null}
   setTarget(e){
     const group=e instanceof BattleControl?e:e&&e.grp&&B&&B.groups[e.grp];
-    if(!e||e.team===this.team){this.targetGroupId=this.targetUnitId=null;return}
-    this.targetGroupId=group&&group.team!==this.team?group.id:null;
+    if(!e||!battleEnemy(this.team,e)){this.targetGroupId=this.targetUnitId=null;return}
+    this.targetGroupId=group&&battleEnemy(this.team,group)?group.id:null;
     this.targetUnitId=e instanceof BattleControl?null:e.id??null;
   }
   targetMembers(){
     if(!B||!this.hasTarget)return [];
     if(this.targetGroupId!==null&&!B.groups[this.targetGroupId])return [];
-    return B.units.filter(u=>u.hp>0&&!u.left&&u.team!==this.team&&(this.targetGroupId!==null?u.grp===this.targetGroupId:u.id===this.targetUnitId));
+    return B.units.filter(u=>u.hp>0&&!u.left&&battleEnemy(this.team,u)&&(this.targetGroupId!==null?u.grp===this.targetGroupId:u.id===this.targetUnitId));
   }
   targetRepresentative(){const m=this.targetMembers();return m.find(u=>u.id===this.targetUnitId&&!u.rout)||m.find(u=>!u.rout)||m[0]||null}
   targetPoint(){const m=this.targetMembers();return m.length?{x:m.reduce((n,u)=>n+u.x,0)/m.length,y:m.reduce((n,u)=>n+u.y,0)/m.length}:null}
@@ -74,7 +74,7 @@ class BattleControl{
   amStep(m){
     const A=this.amove,X=AMOVE,lost=!!A.at&&A.eng==='attack'&&!this.tgt;if(!lost&&B.t<(A.next??0))return;A.next=B.t+X.every;
     const sh=m.filter(u=>u.s.range&&!u.empty),shoot=!this.melee&&sh.length*2>m.length,R=(shoot?Math.min(...sh.map(u=>u.s.range))+X.short:this.role==='cav'?X.cav:X.melee)*(A.at?X.off:1);
-    let e=null,d=R;for(const f of B.units){if(f.team===this.team||f.hp<=0||f.rout||f.left||!seenBy(this.team,f))continue;for(const u of m){const k=Math.hypot(f.x-u.x,f.y-u.y);if(k<d){d=k;e=f}}}
+    let e=null,d=R;for(const f of B.units){if(!battleEnemy(this.team,f)||f.hp<=0||f.rout||f.left||!seenBy(this.team,f))continue;for(const u of m){const k=Math.hypot(f.x-u.x,f.y-u.y);if(k<d){d=k;e=f}}}
     const C=this.centre();
     if(!e){// (none left: runners chased a little, then on again; there, it holds)
       if(A.at&&A.eng==='attack'&&this.tgt&&Math.hypot(C.x-A.at.x,C.y-A.at.y)<X.leash)return;
@@ -95,7 +95,7 @@ class BattleControl{
   standAt(x,y){if(this.resolve?.routed)return;if(B.world){const p=B.world.constrain({x,y},16);x=p.x;y=p.y}this.order='hold';this.tgt=null;this.ax=clamp(x,8,BW-8);this.ay=clamp(y,fieldTop(),fieldBot());
     if(this.lax==null||Math.hypot(this.ax-this.lax,this.ay-this.lay)>CAPT.move){if(this.lax!=null)moveOrder(this.id);this.lax=this.ax;this.lay=this.ay}}
   // Set on an enemy formation, accepting its control or any member. Lone ungrouped foes remain valid targets.
-  attack(e,o){if(this.resolve?.routed||!e||e.team===this.team)return;const prior=[this.targetGroupId,this.targetUnitId];this.tgt=e;if(!this.tgt){[this.targetGroupId,this.targetUnitId]=prior;return}o=o||{};breakWall(this.id);this.queue=[];this.order='charge';if(o.run!=null)this.run=!!o.run}
+  attack(e,o){if(this.resolve?.routed||!e||!battleEnemy(this.team,e))return;const prior=[this.targetGroupId,this.targetUnitId];this.tgt=e;if(!this.tgt){[this.targetGroupId,this.targetUnitId]=prior;return}o=o||{};breakWall(this.id);this.queue=[];this.order='charge';if(o.run!=null)this.run=!!o.run}
   // at them all: each man at the foe nearest him
   charge(o){if(this.resolve?.routed)return;o=o||{};breakWall(this.id);this.queue=[];this.tgt=null;this.order='charge';if(o.run!=null)this.run=!!o.run}
   // walk on at the foe, in its ranks (step)
@@ -146,7 +146,7 @@ class BattleControl{
       // (a place out of reach (terrain.js groupWay: its way ends short of it): its men there as near as they get)
       const W=this.way,short=!!W&&!W.ok&&m.every(u=>u.mvId===this.mvId);
       if(Math.hypot(cx-this.ax,cy-this.ay)<MARCH.reached||short){const w=this.queue.shift();this.ax=w.x;this.ay=w.y;moveOrder(this.id);if(w.am)this.amove={x:w.x,y:w.y,run:this.run};else this.amEnd()}}
-    const foes=B.units.filter(e=>e.team!==this.team&&e.hp>0&&!e.rout&&(!B.fog||seenBy(this.team,e))),C=this.centre(),near=foes.length?foes.reduce((a,e)=>Math.hypot(e.x-this.ax,e.y-this.ay)<Math.hypot(a.x-this.ax,a.y-this.ay)?e:a):null;
+    const foes=B.units.filter(e=>battleEnemy(this.team,e)&&e.hp>0&&!e.rout&&(!B.fog||seenBy(this.team,e))),C=this.centre(),near=foes.length?foes.reduce((a,e)=>Math.hypot(e.x-this.ax,e.y-this.ay)<Math.hypot(a.x-this.ax,a.y-this.ay)?e:a):null;
     // an advance: its place walks on at the nearest foe till it is close (shooters stop further off); on ground that blocks, round
     // by the way while the straight one is not clear (a cliff's ramp, a ford: terrain.js wayOn), never to stop below a cliff
     if(this.order==='advance'&&near){const dx=near.x-this.ax,dy=near.y-this.ay,d=Math.hypot(dx,dy)||1,stop=m.some(u=>u.s.range)?(m.some(u=>u.s.magic)?60:85):FOE_CMD.clash*.6;

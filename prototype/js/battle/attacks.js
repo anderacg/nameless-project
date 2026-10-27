@@ -42,13 +42,14 @@ class Fighter{
     amt=Math.max(1,Math.round(amt));const wasHp=t.hp,effective=Math.min(Math.max(0,wasHp),amt);if(B.opts.sandbox&&BattleLab.active)BattleLab.damage(t,effective,source);t.hp-=amt;B.lastHit=B.t;t.flash=.1;t.hitAt=B.t;moraleHurt(t,effective,source,missile);
     B.floats.push({x:t.x,y:t.y-14,t:String(amt),life:.7,c:m>=1.25?'#ffb04a':m&&m<=.8?'#9aa3ad':isMagical(dt)?'#c8a0ff':t.team?'#ffe08a':'#ff9a90'});// (telling: orange, dulled: grey, magic: violet)
     if(BLOOD.on&&!undead(t))for(let i=0;i<2;i++)vfx({k:'blood',x:t.x,y:t.y,z:7,vx:(Math.random()-.5)*60,vy:(Math.random()-.5)*30,vz:20+Math.random()*50,life:1.2});// (gfx/vfx.js; none with Blood off)
+    B.sides?.damage(t,effective,source);
     if(t.hp<=0){
       if(wasHp>0&&B.opts.sandbox&&BattleLab.active)BattleLab.kill(t,source);
-      t.hp=0;const cp={x:t.x,y:t.y,team:t.team,face:t.face,hero:t.hero,wait:true};B.corpses.push(cp);vfxDeath(t,cp);if(wasHp>0)moraleDeath(t,source);// (it falls first, then lies: vfx.js)
-      if(t.team===1){B.kills++;B.slain.push(t.type);if(wasHp>0&&source&&source.grp){const K=B.grpKills||(B.grpKills={});K[source.grp]=(K[source.grp]||0)+1}}// (and by whose group: the unit of the battle, resolution.js)
+      t.hp=0;const cp={x:t.x,y:t.y,team:t.team,face:t.face,hero:t.hero,wait:true};B.corpses.push(cp);vfxDeath(t,cp);if(wasHp>0)moraleDeath(t,source);if(wasHp>0&&B.sides&&!B.sides.active)B.sides.kill(t,source,false);// (it falls first, then lies: vfx.js)
+      if(B.sides?.active){if(wasHp>0)B.sides.kill(t,source);if(t.team===0)this.fell()}else if(t.team===1){B.kills++;B.slain.push(t.type);if(wasHp>0&&source&&source.grp){const K=B.grpKills||(B.grpKills={});K[source.grp]=(K[source.grp]||0)+1}}// (and by whose group: the unit of the battle, resolution.js)
       else this.fell();
       if(t.lord&&!t.leader){if(t.sourceArmy===t.lord&&t.sourceGroupId)partyRoster(t.sourceArmy).remove(t.type,1,t.sourceGroupId);else t.lord.remove(t.type,1)}
-      else if(t.team===1&&t.sourceArmy&&t.sourceGroupId&&!t.leader){partyRoster(t.sourceArmy).remove(t.type,1,t.sourceGroupId);B.primaryLossesApplied=true}
+      else if(t.team!==0&&t.sourceArmy&&t.sourceGroupId&&!t.leader){partyRoster(t.sourceArmy).remove(t.type,1,t.sourceGroupId);B.primaryLossesApplied=true}
       battleEvent('down',{u:t});// (the cards and the selection: battlehud.js)
       shakeIt(2);
     }
@@ -68,7 +69,7 @@ class Fighter{
     if(sfxOn())blowSound(att,t,false,isMagical(dt||dtOf(att.s)));
   }
   // one of your troops (not your hero, a companion or a lord's man) earns XP for a blow: the damage it dealt, and a kill by the foe's tier
-  earnXp(t,was){const u=this.u;if(u.team!==0||u.lord||!t||t.team===0)return;const dealt=Math.max(0,was-Math.max(0,t.hp));
+  earnXp(t,was){const u=this.u;if(u.team!==0||u.lord||!t||!battleEnemy(u,t))return;const dealt=Math.max(0,was-Math.max(0,t.hp));
     u.xp=(u.xp||0)+dealt*TROOP_XP.dmg+(was>0&&t.hp<=0?TROOP_XP.kill*(ST[t.type]&&ST[t.type].tier||1):0)}
   // how true he shoots (p: a bow's draw, 0 to 1): AIM's spread by his weapon, his race, how steady he is, how tired, the draw
   aimErr(p){
@@ -106,7 +107,7 @@ class Fighter{
   hardBlow(t,H){
     const u=this.u,s=u.s,a=Math.atan2(t.y-u.y,t.x-u.x),dm=s.dmg*H.dmg*(.8+Math.random()*.4)*tiredMul(u).dmg;u.cd=s.cd*(.9+Math.random()*.2);u.atkAt=B.t;u.atkStyle='overhead';u.face=Math.cos(a)>=0?1:-1;fatigueBlow(u);
     this.hit(t,dm);if(PHYSICS.on)physBlow(u,t,H);
-    if(H.area)for(const o of spatialOn()?SG.near(t.x,t.y,H.area+13,t.team,false):B.units)if(o!==t&&o.hp>0&&o.team===t.team&&Math.hypot(o.x-t.x,o.y-t.y)-(o.s.big?12:0)<=H.area){this.hit(o,dm*.5);if(PHYSICS.on)physBlow(u,o,H)}
+    if(H.area)for(const o of spatialOn()?SG.near(t.x,t.y,H.area+13,u.team,true):B.units)if(o!==t&&o.hp>0&&battleEnemy(u,o)&&Math.hypot(o.x-t.x,o.y-t.y)-(o.s.big?12:0)<=H.area){this.hit(o,dm*.5);if(PHYSICS.on)physBlow(u,o,H)}
     B.slashes.push({kind:'slam',x:u.x,y:u.y-6,a,life:.22,max:.22,arc:.8,r:(s.reach||11)+2,w:2,dir:1,area:H.area||9,col:'255,190,90'});fx(t.x,t.y,'#a89a78',8);shakeIt(2)}
   // a troop's melee blow: the look of its weapon, and what it does beyond the one it hits
   follow(t,dm){
@@ -114,14 +115,14 @@ class Fighter{
     if(s.beast){B.slashes.push({kind:'claw',x:t.x,y:t.y-8,a,life:.18,max:.18,col:'255,255,255',w:1});return}
     const style=troopStyle(u);u.atkStyle=style;
     if(style==='thrust'){B.slashes.push({kind:'thrust',x:u.x,y:u.y-6,a,life:.14,max:.14,r:R+4,w:1,col:'230,236,255',wid:3});
-      const b=(spatialOn()?SG.near(u.x,u.y,R+14+31,t.team,false):B.units).find(o=>o!==t&&o.hp>0&&o.team===t.team&&inShape(u.x,u.y,a,R+14,{shape:'thrust',wid:5},o));if(b)this.hit(b,dm*.5)}
+      const b=(spatialOn()?SG.near(u.x,u.y,R+14+31,u.team,true):B.units).find(o=>o!==t&&o.hp>0&&battleEnemy(u,o)&&inShape(u.x,u.y,a,R+14,{shape:'thrust',wid:5},o));if(b)this.hit(b,dm*.5)}
     else{B.slashes.push({kind:style==='overhead'?'slam':'arc',x:u.x,y:u.y-6,a,life:.14,max:.14,arc:.8,r:R,w:1,dir:u.atkN%2?1:-1,area:7,col:'255,255,255'});
-      if(s.big||style==='overhead'){const b=(spatialOn()?SG.near(t.x,t.y,13,t.team,false):B.units).find(o=>o!==t&&o.hp>0&&o.team===t.team&&Math.hypot(o.x-t.x,o.y-t.y)<12);if(b)this.hit(b,dm*.5)}}
+      if(s.big||style==='overhead'){const b=(spatialOn()?SG.near(t.x,t.y,13,u.team,true):B.units).find(o=>o!==t&&o.hp>0&&battleEnemy(u,o)&&Math.hypot(o.x-t.x,o.y-t.y)<12);if(b)this.hit(b,dm*.5)}}
   }
   // a dragon's fire: everyone in a cone ahead
   breathe(t){
     const u=this.u,a=Math.atan2(t.y-u.y,t.x-u.x),ox=u.x+Math.cos(a)*14,oy=u.y-10;u.face=Math.cos(a)>=0?1:-1;u.atkAt=B.t;
-    for(const e of spatialOn()?SG.near(u.x,u.y,96,u.team,true):B.units){if(e.hp<=0||e.team===u.team)continue;const ea=Math.atan2(e.y-u.y,e.x-u.x),df=angGap(ea,a);
+    for(const e of spatialOn()?SG.near(u.x,u.y,96,u.team,true):B.units){if(e.hp<=0||!battleEnemy(u,e))continue;const ea=Math.atan2(e.y-u.y,e.x-u.x),df=angGap(ea,a);
       if(df<.5&&Math.hypot(e.x-u.x,e.y-u.y)<95)this.hit(e,14*(.8+Math.random()*.4)*(tagsOf(e.s).includes('ward')?.6:1))}
     for(let i=0;i<34;i++){const j=a+(Math.random()-.5)*.9,v=70+Math.random()*90;B.parts.push({x:ox,y:oy,vx:Math.cos(j)*v,vy:Math.sin(j)*v-20,life:.5,c:Math.random()<.5?'#ff7a30':'#ffd24a'})}
     B.floats.push({x:u.x,y:u.y-30,t:'FIRE',life:.6,c:'#ff9a50'});shakeIt(3);

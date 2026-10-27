@@ -163,7 +163,7 @@ const wOf=u=>u.hp/Math.max(1,u.max)*(u.hero||u.leader||u.comp?4:(ST[u.type]&&ST[
    good (a lull, or idle too long); rmode, its shooters' posture (rangedMode); temper, its race's fighting style (TEMPERAMENT key, null: none), chosen at its first
    think (temperFor). Yours is forgotten each time Auto changes (setAuto) */
 function captainMem(ck){const C=B.captains=B.captains||{};return C[ck]||(C[ck]={post:null,plan:null,idle:0,vol:0,commit:false,rmode:null})}
-const foesKnown=team=>B.units.some(u=>u.team!==team&&u.hp>0&&lastSeen(team,u));
+const foesKnown=team=>B.units.some(u=>battleEnemy(team,u)&&u.hp>0&&lastSeen(team,u));
 // (are a and b on either bank of a held bridge's river (its middle, B.terrain.ai.river)? the straight way between may run over the
 // bridge itself, so wadesDeep cannot tell)
 const acrossRiver=(a,b)=>{const r=B.btype&&B.btype.kind==='bridge'&&B.terrain&&B.terrain.ai.river;return !!r&&r.deep&&(a.x-r.x)*(b.x-r.x)<0};
@@ -180,7 +180,7 @@ const COMMANDERS=new WeakMap();
 class Commander{
   constructor(ck){this.ck=ck;this.team=ck==='ally'?0:ck;this.key=ck==='ally'?'ally':undefined}
   // the commander of key ck in this battle (one each, kept with the battle; none made for its memory)
-  static of(ck){let m=B&&COMMANDERS.get(B);if(!m){m={};if(B)COMMANDERS.set(B,m)}return m[ck]||(m[ck]=ck===1?new EnemyCommander(ck):new Commander(ck))}
+  static of(ck){let m=B&&COMMANDERS.get(B);if(!m){m={};if(B)COMMANDERS.set(B,m)}return m[ck]||(m[ck]=typeof ck==='number'&&ck>0?new EnemyCommander(ck):new Commander(ck))}
   // (by team and key, as the old names have them: key 'ally', your allies', else the team's own)
   static at(team,key){return Commander.of(key==null?team:key)}
   // its memory (captainMem: made the first time), and a look at it that never makes it
@@ -201,6 +201,7 @@ class Commander{
   // (a captain's groups: the enemy's, your allies', or, yours, those the AI has (deploy.js aiHas): your others are friends it fights
   // beside, never its to order)
   groups(){const {team,key}=this;
+    if(B.sides?.active&&team>0)return Object.fromEntries(['inf','arc','mag','cav','hero'].map(role=>[role,Object.keys(B.groups).filter(id=>B.groups[id].team===team&&B.groups[id].role===role)]));
     const ids=Object.keys(B.groups).filter(id=>{const g=B.groups[id];return g.team===team&&(team===1||key==='ally'?team===1||g.ally:aiHas(g))});
     return Object.fromEntries(['inf','arc','mag','cav','hero'].map(role=>[role,ids.filter(id=>B.groups[id].role===role)]));
   }
@@ -218,7 +219,7 @@ class Commander{
      its archers' rescue first;
      your hero (under the AI): behind the infantry until the lines meet, then into the fight. */
   assess(){const team=this.team;
-    const mine=B.units.filter(u=>u.team===team&&fighting(u)),foes=B.units.filter(u=>u.team!==team&&fighting(u)&&seenBy(team,u));// (only foes it can see: terrain.js sight)
+    const mine=B.units.filter(u=>u.team===team&&fighting(u)),foes=B.units.filter(u=>battleEnemy(team,u)&&fighting(u)&&seenBy(team,u));// (only foes it can see: terrain.js sight)
     const pw=l=>l.reduce((a,u)=>a+wOf(u),0),shoot=l=>l.filter(u=>u.s.range).reduce((a,u)=>a+wOf(u),0),pm=pw(mine),pf=pw(foes);
     return{mine,foes,ratio:pm/Math.max(.01,pf),shootMe:shoot(mine)/Math.max(.01,pm),shootFoe:shoot(foes)/Math.max(.01,pf)};
   }
@@ -228,8 +229,7 @@ class Commander{
     powersThink(dt);// (the commanders' powers: theirs, and yours under Auto; commandpowers.js)
     if(!B||(B.cmdT=(B.cmdT||0)-dt)>0)return;B.cmdT=FOE_CMD.think;
     // (orders hands its groups on to finish: the same as groups would find again, groups being made only at the start)
-    if(!B.hunt)Commander.of(1).think();
-    if(Object.values(B.groups).some(g=>g.ally))Commander.of('ally').think();// (your allies' own captain)
+    if(B.sides?.active){for(const team of B.sides.teams())if(team>0)Commander.of(team).think()}else{if(!B.hunt)Commander.of(1).think();if(Object.values(B.groups).some(g=>g.ally))Commander.of('ally').think()}// (your allies' own captain)
     if(aiAny())Commander.of(0).think();// (yours: the groups the AI has, deploy.js aiHas)
   }
   // one think: its orders, then each group's pace, formation and front (finish)
@@ -267,7 +267,7 @@ class Commander{
   fallsBack(N0,S){return false}
   leadOf(foes){return foes.find(u=>u.leader)||null}
   // the withdrawal: the whole army off the field by its edge, as one (once begun it does not turn round)
-  fallBack(N0){if(!B.fallBack){B.fallBack=true;log('The enemy falls back.','good');battleEvent('fallback',{team:this.team})}for(const id of Object.values(N0).flat())B.groups[id].withdraw()}
+  fallBack(N0){if(B.sides?.active){(B.fallBackTeams||(B.fallBackTeams=new Set())).add(this.team);battleEvent('fallback',{team:this.team});for(const id of Object.values(N0).flat())B.groups[id].withdraw();return}if(!B.fallBack){B.fallBack=true;log('The enemy falls back.','good');battleEvent('fallback',{team:this.team})}for(const id of Object.values(N0).flat())B.groups[id].withdraw()}
   // (attacking, it keeps attacking down to FOE_CMD.hold under attackAt: no flip on noise)
   posture(S){const ck=this.ck;
     // (bt: the battle's time, or, in the fog (battlefog.js), the time since this captain first saw the foe: Q.seen)
@@ -304,10 +304,10 @@ class Commander{
      fighting is unseen, and either it sees none of them or the fight is in its first UNIT_ABILITIES.scout.aiEarly s; with every foe
      in sight (no fog, no terrain hiding them) never */
   scout(N,S){const team=this.team;
-    const X=UNIT_ABILITIES.scout;if(!(S.foes.length===0||B.t<X.aiEarly)||!B.units.some(u=>u.team!==team&&fighting(u)&&!seenBy(team,u)))return;
+    const X=UNIT_ABILITIES.scout;if(!(S.foes.length===0||B.t<X.aiEarly)||!B.units.some(u=>battleEnemy(team,u)&&fighting(u)&&!seenBy(team,u)))return;
     for(const id of Object.values(N).flat()){const g=B.groups[id];if(g&&!abilityWhyNot(g,'scout'))g.useAbility('scout')}}
   search(N){const team=this.team;
-    const hid=B.units.filter(u=>u.team!==team&&fighting(u));if(!hid.length)return;let x=0,y=0,c=0;for(const u of hid){const p=lastSeen(team,u);if(p){x+=p.x;y+=p.y;c++}}
+    const hid=B.units.filter(u=>battleEnemy(team,u)&&fighting(u));if(!hid.length)return;let x=0,y=0,c=0;for(const u of hid){const p=lastSeen(team,u);if(p){x+=p.x;y+=p.y;c++}}
     const Z=BFIELD&&fieldZone(1-team),far={x:Z?(Z.x0+Z.x1)/2:team?BW*.15:BW*.85,y:(fieldTop()+fieldBot())/2},ids=Object.values(N).flat().filter(id=>B.groups[id]&&B.groups[id].order!=='withdraw'&&grpUnits(id).length);
     if(B.fog&&!c){const C=ids.map(id=>B.groups[id].centre()),dir=team?-1:1,mx=C.reduce((a,p)=>a+p.x,0)/Math.max(1,C.length);
       ids.forEach((id,i)=>{const g=B.groups[id],back=g.role==='arc'||g.role==='mag'?FOE_CMD.behind:0;g.standAt(clamp(mx+dir*(FOG.probe-back),BW*.1,BW*.9),C[i].y)});return}
@@ -692,8 +692,8 @@ class Commander{
 // that name: tests/battlejuice.js stands in for it), rather than fighting to the last man; your hero the leader it marks
 class EnemyCommander extends Commander{
   announce(temper){if(TEMPER_SAY[temper])toast(TEMPER_SAY[temper])}
-  fallsBack(N0,S){return !B.noMorale&&(B.fallBack||beatenArmy(N0,S,this.T))}
-  leadOf(foes){return B.hero&&B.hero.hp>0&&seenBy(this.team,B.hero)?B.hero:null}
+  fallsBack(N0,S){return !B.noMorale&&((B.sides?.active?B.fallBackTeams?.has(this.team):B.fallBack)||beatenArmy(N0,S,this.T))}
+  leadOf(foes){return B.hero&&B.hero.hp>0&&battleEnemy(this.team,B.hero)&&seenBy(this.team,B.hero)?B.hero:B.sides?.active?foes.find(u=>u.leader||u.hero)||null:null}
 }
 // ---------- the old names: one-line aliases (each declared as it was: tests stand in for command and posture) ----------
 const gtun=(ck,k)=>Commander.of(ck).gt(k);

@@ -20,7 +20,7 @@ const treeMark=(a,k)=>{if(k<32)a.tk|=1<<k;else(a.tkx||(a.tkx=[])).push(k)};
 // Swept world hitboxes follow the enlarged bodies; tactical collision and balance stay unchanged.
 function worldMissileHit(a,from,arc=false,units=null,scale=WORLD_BATTLE.sprite){
   const k=scale,dx=a.x-from.x,dy=a.y-from.y,pool=units||(spatialOn()?SG.near((a.x+from.x)/2,(a.y+from.y)/2,Math.hypot(dx,dy)/2+28*k,a.team,true):B.units);let best=null,at=Infinity;
-  for(const e of pool){if(e.hp<=0||e.team===a.team)continue;let lo=0,hi=1;
+  for(const e of pool){if(e.hp<=0||!battleEnemy(e,a))continue;let lo=0,hi=1;
     const cut=(v,d,min,max)=>{if(Math.abs(d)<1e-9)return v>=min&&v<=max;let t0=(min-v)/d,t1=(max-v)/d;if(t0>t1)[t0,t1]=[t1,t0];lo=Math.max(lo,t0);hi=Math.min(hi,t1);return lo<=hi};
     const rx=(e.s.big?14:e.s.mounted?10:6)*k,ry=(e.s.big?arc?10:11:e.s.mounted?7:arc?5:7)*k,cy=e.y-(arc?0:(e.s.big||e.s.mounted?10:6)*k);
     if(!cut(from.x,dx,e.x-rx,e.x+rx)||!cut(from.y,dy,cy-ry,cy+ry)||arc&&!cut(from.z,a.z-from.z,0,9*k)||lo>=at)continue;best=e;at=lo;
@@ -66,7 +66,7 @@ class ArcMissile extends Missile{
     if(z<10&&!a.elf)for(let k=0;k<B.obs.length;k++){const o=B.obs[k];if(o.kind==='tree'&&!treePast(a,k)&&Math.hypot(a.x-o.x,a.y-o.y)<o.r+2){treeMark(a,k);if(Math.random()<.35){a.life=0;fx(a.x,a.y-z-4,'#8b5a2b',2);return}}}
     if(z<10&&!a.elf&&B.terrain&&B.terrain.has.wood&&woodStops(a,a.x,a.y,a.x-a.vx*dt,a.y-a.vy*dt,a.vz<0)){a.life=0;fx(a.x,a.y-z-4,'#8b5a2b',2);return}// (low through woods, or down into them: terrain.js)
     if(B.world){const e=worldMissileHit(a,from,true);if(e){this.strike(e);return}}
-    else if(z<9)for(const e of spatialOn()?SG.near(a.x,a.y,16,a.team,true):B.units){if(e.hp<=0||e.team===a.team)continue;if(Math.abs(e.x-a.x)<(e.s.big?14:6)&&Math.abs(e.y-a.y)<(e.s.big?10:5)){this.strike(e);return}}
+    else if(z<9)for(const e of spatialOn()?SG.near(a.x,a.y,16,a.team,true):B.units){if(e.hp<=0||!battleEnemy(e,a))continue;if(Math.abs(e.x-a.x)<(e.s.big?14:6)&&Math.abs(e.y-a.y)<(e.s.big?10:5)){this.strike(e);return}}
     if(a.z<=0&&a.t>.03){a.life=0;B.parts.push({x:a.x,y:a.y-1,vx:0,vy:0,life:5,c:'#c9b48a',stuck:a.vx>=0?1:-1});vfx({k:'dust',x:a.x,y:a.y,vx:0,vy:-3,r:1,grow:5,life:.3,col:dustCol()});if(sfxOn()&&sndTurn('ground'))sfxAt('arrowhit',a.x,a.y,{vol:.4})}// (it stays where it lands a while; a thud, softer)
   }
   blocked(dm){const a=this.a;dm*=blockMul();fx(a.x,a.y-6,'#cfe0ff',4);return dm}
@@ -77,7 +77,7 @@ class Bolt extends Missile{
     const a=this.a,from=B.world?{x:a.x,y:a.y}:null;a.x+=a.vx*dt;a.y+=a.vy*dt;a.life-=dt;this.cover(dt);
     if(a.life<=0)return;
     if(B.world){const e=worldMissileHit(a,from);if(e)this.strike(e);return}
-    for(const e of spatialOn()?SG.near(a.x,a.y+10,24,a.team,true):B.units){if(e.hp<=0||e.team===a.team)continue;if(Math.abs(e.x-a.x)<(e.s.big?14:6)&&Math.abs((e.y-(e.s.big?10:6))-a.y)<(e.s.big?11:7)){this.strike(e);break}}
+    for(const e of spatialOn()?SG.near(a.x,a.y+10,24,a.team,true):B.units){if(e.hp<=0||!battleEnemy(e,a))continue;if(Math.abs(e.x-a.x)<(e.s.big?14:6)&&Math.abs((e.y-(e.s.big?10:6))-a.y)<(e.s.big?11:7)){this.strike(e);break}}
   }
   cover(dt){
     const a=this.a;if(a.elf)return;
@@ -95,7 +95,7 @@ class MagicBolt extends Bolt{
   blocked(dm){const a=this.a,bl=blockMul();dm*=Math.max(.5,bl);fx(a.x,a.y,'#cfe0ff',4);return dm}
   strike(e){
     super.strike(e);const a=this.a,sr=a.src&&a.src.splash||18,sm=a.src&&a.src.splashMul||.5;if(sr>=28)vfxExplode(a.x,a.y,sr,a.col);// (a fireball: an explosion, vfx.js)
-    B.rings.push({x:a.x,y:a.y,r:sr,life:.25,max:.25,col:'210,170,255'});for(const o of spatialOn()?SG.near(a.x,a.y+6,sr+1,a.team,true):B.units)if(o!==e&&o.hp>0&&o.team!==a.team&&Math.hypot(o.x-a.x,o.y-6-a.y)<sr)Actor.of(o).wound(a.dmg*matchup(a.src||{},o.s)*sm,1,dtOf(a.src),a.by,true)
+    B.rings.push({x:a.x,y:a.y,r:sr,life:.25,max:.25,col:'210,170,255'});for(const o of spatialOn()?SG.near(a.x,a.y+6,sr+1,a.team,true):B.units)if(o!==e&&o.hp>0&&battleEnemy(o,a)&&Math.hypot(o.x-a.x,o.y-6-a.y)<sr)Actor.of(o).wound(a.dmg*matchup(a.src||{},o.s)*sm,1,dtOf(a.src),a.by,true)
   }
 }
 // ---------- the old names: one-line aliases (arcStep: any record, as an arc) ----------

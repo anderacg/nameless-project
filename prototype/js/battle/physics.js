@@ -91,7 +91,7 @@ function physSpeed(u){return clamp((u.vel||0)/Math.max(1,u.s.spd),0,1)}
 // the mass behind the one struck (a toward him from the blow): his own, his ranks close behind him, a shield wall
 function physBacked(t,a){
   const H=PHYSICS.hit,c=Math.cos(a),s=Math.sin(a);let m=physMass(t),n=0;
-  for(const o of spatialOn()?SG.near(t.x,t.y,H.supR+1,t.team,false):B.units){if(n>=H.supN)break;if(o===t||o.team!==t.team||o.hp<=0||o.rout||o.down>0)continue;
+  for(const o of spatialOn()?SG.near(t.x,t.y,H.supR+1,t.team,false):B.units){if(n>=H.supN)break;if(o===t||!battleFriend(o,t)||o.hp<=0||o.rout||o.down>0)continue;
     const dx=o.x-t.x,dy=o.y-t.y,al=dx*c+dy*s;if(al>2&&al<H.supR&&Math.abs(dx*s-dy*c)<8){m+=H.support*physMass(o);n++}}
   return m*(shieldWallActive(t)?H.wall:1)}
 /* thrown back by dv px/s along a; down a moment if it may (down: false never; true, or the footing it must beat: a number, ×
@@ -114,7 +114,7 @@ function physImpact(u,t,m){
   const H=PHYSICS.hit,a=Math.atan2(t.y-u.y,t.x-u.x),va=Math.max(0,(u.vel||0)*Math.cos(a-(u.hd??a)));if(!(va>0))return;
   const W=u.s.charge&&u.grp?wedgeMembers(u.grp):[],wb=W.includes(u)?wedgeBonus(W.length):0,ma=physMass(u)*(1+H.wedge*wb),mt=physBacked(t,a),vc=va*ma/(ma+mt),dv=vc*H.kb*Moveset.rush(u),fell=Moveset.fells(u,m);
   physThrow(t,a,dv,fell);
-  for(const o of spatialOn()?SG.near(t.x,t.y,H.splashR+1,t.team,false):B.units)if(o!==t&&o.team===t.team&&o.hp>0&&!o.s.big&&Math.hypot(o.x-t.x,o.y-t.y)<H.splashR)physThrow(o,a,dv*H.splash*physMass(t)/physMass(o),wb>0&&fell);
+  for(const o of spatialOn()?SG.near(t.x,t.y,H.splashR+1,t.team,false):B.units)if(o!==t&&battleFriend(o,t)&&o.hp>0&&!o.s.big&&Math.hypot(o.x-t.x,o.y-t.y)<H.splashR)physThrow(o,a,dv*H.splash*physMass(t)/physMass(o),wb>0&&fell);
   u.vel=Math.min(u.vel,vc);if((u.s.charge||u.s.big)&&m>SHAKE.charge)jolt(SHAKE.amp*clamp(ma*va/H.shake,0,1.25))}
 // braced spears take a charge (morale.js chargeMul, physics on): the rider stopped dead, thrown back, staggered, shaken and hurt
 function physBraced(u,t,m){
@@ -131,7 +131,7 @@ function physBlow(u,t,Hd){const H=PHYSICS.hit,M=MOVESETS,ma=physMass(u);if(t.hp<
    into a foe (heading at him: dt the frame) is slowed by him, the lighter more (PHYSICS.press: a rider ploughing into a crowd is
    soon held in it, a troll barely; one breaking away is not held) */
 function physShare(a,b,dt,dx,dy){const ma=physMass(a),mb=physMass(b),f=mb/(ma+mb);
-  if(a.team!==b.team&&dt>0){const k=PHYSICS.press*dt;if(a.vel>0&&Math.cos(a.hd)*dx+Math.sin(a.hd)*dy>0)a.vel*=Math.exp(-k*f);if(b.vel>0&&Math.cos(b.hd)*dx+Math.sin(b.hd)*dy<0)b.vel*=Math.exp(-k*(1-f))}return f}
+  if(battleEnemy(a,b)&&dt>0){const k=PHYSICS.press*dt;if(a.vel>0&&Math.cos(a.hd)*dx+Math.sin(a.hd)*dy>0)a.vel*=Math.exp(-k*f);if(b.vel>0&&Math.cos(b.hd)*dx+Math.sin(b.hd)*dy<0)b.vel*=Math.exp(-k*(1-f))}return f}
 /* after the frame's moves (battle.js updateBattle, after keepOffObstacles: rock, cliffs, water and the field's edge as ever): one
    who went under 40% as far along his heading as his speed took him (a cliff, a rock, the edge, a press too thick) has
    his speed cut to what he went: nobody grinds on against a wall. One moved some other way this frame (withdrawing, a leap,

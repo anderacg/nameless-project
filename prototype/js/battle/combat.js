@@ -167,7 +167,7 @@ class HeroHands{
     B.slashes.push({kind:c.shape,x:h.x,y:h.y-6,a:B.aim,life,max:life,arc:c.arc,r:R,col:c.col,w:c.w,dir:c.dir,area:c.area,wid:c.wid});
     if(c.shape==='slam'){const cx=h.x+Math.cos(B.aim)*R*.6,cy=h.y+Math.sin(B.aim)*R*.6;fx(cx,cy,'#a89a78',8)}
     // a thrust pierces: everyone along the line, each one behind for a little less
-    const hits=B.units.filter(e=>e.team===1&&e.hp>0&&inShape(h.x,h.y,B.aim,R,c,e)).sort((p,q)=>Math.hypot(p.x-h.x,p.y-h.y)-Math.hypot(q.x-h.x,q.y-h.y));
+    const hits=B.units.filter(e=>battleEnemy(h,e)&&e.hp>0&&inShape(h.x,h.y,B.aim,R,c,e)).sort((p,q)=>Math.hypot(p.x-h.x,p.y-h.y)-Math.hypot(q.x-h.x,q.y-h.y));
     const pierce=c.shape==='thrust'||c.shape==='twin';let n=0;
     for(const e of hits){X.hitFoe(e,c.mult*(pierce?Math.max(.5,1-.2*n):1),c);n++}
     if(n&&c.stop){X.stop=c.stop;shakeIt(c.shake)}
@@ -178,7 +178,7 @@ class HeroHands{
     const h=B.hero,X=this;if(!h||h.hp<=0||X.busy()||(X.shoveCd||0)>0)return;if(!X.spend((grip()==='shield'?BASH:SHOVE).sp,0))return;
     const S=grip()==='shield'?BASH:SHOVE;X.shoveCd=S.cd;B.draw=null;h.face=Math.cos(B.aim)>=0?1:-1;h.atkAt=B.t;if(S===BASH)B.floats.push({x:h.x,y:h.y-26,t:'Shield Bash',life:.6,c:'#cfe0ff'});
     B.slashes.push({x:h.x,y:h.y-6,a:B.aim,life:.15,r:h.s.reach+2,arc:.9,col:'200,220,255',w:2});
-    for(const e of B.units){if(e.team!==1||e.hp<=0)continue;const d=Math.hypot(e.x-h.x,e.y-h.y)-(e.s.big?12:0),ea=Math.atan2(e.y-h.y,e.x-h.x),df=angGap(ea,B.aim);
+    for(const e of B.units){if(!battleEnemy(h,e)||e.hp<=0)continue;const d=Math.hypot(e.x-h.x,e.y-h.y)-(e.s.big?12:0),ea=Math.atan2(e.y-h.y,e.x-h.x),df=angGap(ea,B.aim);
       if(d<=h.s.reach+6&&df<1.1)X.hitFoe(e,S.mult,{kb:S.kb,stun:S.stun,noCrit:true,dt:'blunt'})}
   }
   dodge(dirX,dirY){

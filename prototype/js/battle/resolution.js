@@ -62,6 +62,7 @@ class BattleResolution{
       else{html='<h2>Beaten</h2><p>The champion takes your entry fee and sends you off with a bruised pride.</p>';log('You lose the tournament.','bad')}
       lootShow(html,null,0,'back-town');return;
     }
+    if(b.sides?.active)return b.sides.settle(b,lost,groupLosses);
     if(b.hunt)return b.hunt.settle(b,lost,groupLosses);
     this.conclude(win,lost,kills,false,slain,retreat&&{caught,got,standing,fallen,blocked:!!b.stalemate,carried:h.hp<=0&&!h.left},txp,groupLosses);
   }

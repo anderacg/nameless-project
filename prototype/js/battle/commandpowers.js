@@ -83,11 +83,11 @@ const powerKey=k=>POWER_ORDER.find(id=>COMMAND_POWERS[id].key.toLowerCase()===k)
    Fast! when a group in range wavers, or as stand.groups of them (all, if fewer) come within stand.meet px of a foe it sees */
 function powersThink(dt){
   if(!powersOn()||(B.cpT=(B.cpT||0)-dt)>0)return;B.cpT=COMMAND_POWERS.think;
-  for(const t of [0,1]){if(t===0&&!aiAll()||!commanderOf(t))continue;// (yours: with your whole army the AI's, deploy.js)
+  for(const t of B.sides?.active?B.sides.teams():[0,1]){if(t===0&&!aiAll()||!commanderOf(t))continue;// (yours: with your whole army the AI's, deploy.js)
     const R=rallyTargets(t);if(R.length&&!powerWhyNot(t,'rally')&&(R.some(g=>g.resolve.routed)||R.length>=COMMAND_POWERS.rally.waver)){usePower(t,'rally');continue}
     if(powerWhyNot(t,'stand'))continue;const gs=standTargets(t),X=COMMAND_POWERS.stand;
     if(gs.some(g=>g.resolve.mor<MORALE.waver)){usePower(t,'stand');continue}
-    const foes=B.units.filter(e=>e.team!==t&&fighting(e)&&seenBy(t,e)),near=g=>{const C=g.centre();return foes.some(e=>Math.hypot(e.x-C.x,e.y-C.y)<=X.meet)};
+    const foes=B.units.filter(e=>battleEnemy(t,e)&&fighting(e)&&seenBy(t,e)),near=g=>{const C=g.centre();return foes.some(e=>Math.hypot(e.x-C.x,e.y-C.y)<=X.meet)};
     if(foes.length&&gs.filter(near).length>=Math.min(X.groups,gs.length))usePower(t,'stand')}}
 /* ---- the HUD: the commander bar (left middle of the field), distinct from the order bar: a round button a power, with a
    sweep that empties as its cooldown runs out, the seconds, its key; dimmed (aria-disabled, so hovering still works) with the

@@ -2,7 +2,7 @@
 /* ---------- actor execution and local targeting ---------- */
 // Actors execute their group's orders; commanders and BattleControl retain command authority.
 // (the grid open: the same pick from the buckets round him, spatial.js)
-const nearest=u=>{if(spatialOn())return SG.nearest(u);let best=null,bd=1e9;for(const e of B.units){if(e.hp<=0||e.team===u.team)continue;const d=((e.x-u.x)**2+(e.y-u.y)**2)*(e.rout?9:1);if(d<bd){bd=d;best=e}}return best};
+const nearest=u=>{if(spatialOn())return SG.nearest(u);let best=null,bd=1e9;for(const e of B.units){if(e.hp<=0||!battleEnemy(e,u))continue;const d=((e.x-u.x)**2+(e.y-u.y)**2)*(e.rout?9:1);if(d<bd){bd=d;best=e}}return best};
 // strike: how it hits (a character: combos, the bow and casts, charmind.js charStrike); else a troop's attack
 /* every shooter's shot, as in Total War: they shoot only in a forward arc (SHOOT.arc), where their group faces; turning it is
    yours or their commander's call (a move, a dragged line, the commander's facing: commander.js), never theirs; mages (their bolt; their spells have their own shapes), riders and units marked 'circle' shoot all round. The moment a foe is in range and in the arc (and
@@ -26,7 +26,7 @@ const inArc=(u,t)=>roundFire(u)||angGap(Math.atan2(t.y-u.y,t.x-u.x),arcAim(u))<=
 const SKIRM={keep:.6,until:.85,max:140,burst:1.5,stand:1.2,outpaced:1.15,room:24};// (outpaced: a foe this much faster is not run from; room: the field's edge kept behind them)// (burst: the longest it backs off at a time; stand: then it stands that long to loose a volley)// (max: the farthest a skirmisher starts backing off, a long bow too)
 // (shooting on the move: a trait, 'mobile' (riders' bows, rangers), and every elf with a bow; the rest stand to shoot)
 const onTheMove=s=>!!s&&!s.magic&&(tagsOf(s).includes('mobile')||s.race==='elf');
-const meleeFoe=(u,r)=>{let best=null,bd=r;for(const e of B.units){if(e.hp<=0||e.team===u.team||e.rout||e.s.range)continue;const d=Math.hypot(e.x-u.x,e.y-u.y)-(e.s.big?12:0);if(d<bd){bd=d;best=e}}return best};
+const meleeFoe=(u,r)=>{let best=null,bd=r;for(const e of B.units){if(e.hp<=0||!battleEnemy(e,u)||e.rout||e.s.range)continue;const d=Math.hypot(e.x-u.x,e.y-u.y)-(e.s.big?12:0);if(d<bd){bd=d;best=e}}return best};
 /* whom a soldier goes for by himself (fire at will): the nearest foe in his reach, one already in his arc first (he turns for
    none he need not); out of reach, the nearest, to face or close on. Routers last. Nothing cleverer: whom to finish, whom to
    focus, when to hold fire are his commander's calls (commander.js) or yours: an attack order, cease fire */
@@ -35,10 +35,10 @@ const blowsToFell=(u,e)=>Math.ceil(e.hp/Math.max(.5,u.s.dmg*matchup(u.s,e.s)));
 /* (a foe his side cannot see, hidden in woods or behind a rise, is no one's pick: terrain.js seenBy; the nearest he can see. With
    no terrain everyone is seen and this is nearest itself) */
 const nearestSeen=u=>{const n=nearest(u);if(!n||seenBy(u.team,n))return n;let best=null,bd=1e9;
-  for(const e of B.units){if(e.hp<=0||e.team===u.team||!seenBy(u.team,e))continue;const d=((e.x-u.x)**2+(e.y-u.y)**2)*(e.rout?9:1);if(d<bd){bd=d;best=e}}return best};
+  for(const e of B.units){if(e.hp<=0||!battleEnemy(e,u)||!seenBy(u.team,e))continue;const d=((e.x-u.x)**2+(e.y-u.y)**2)*(e.rout?9:1);if(d<bd){bd=d;best=e}}return best};
 const meleeTarget=u=>nearestSeen(u);// named targeting contract, also used by the RTS tests
 function shooterTarget(u){
-  const R=u.s.range,d=e=>Math.hypot(e.x-u.x,e.y-u.y),inR=(spatialOn()?SG.near(u.x,u.y,R+1,u.team,true):B.units).filter(e=>e.hp>0&&e.team!==u.team&&!e.rout&&d(e)<=R&&seenBy(u.team,e));if(!inR.length)return nearestSeen(u);
+  const R=u.s.range,d=e=>Math.hypot(e.x-u.x,e.y-u.y),inR=(spatialOn()?SG.near(u.x,u.y,R+1,u.team,true):B.units).filter(e=>e.hp>0&&battleEnemy(e,u)&&!e.rout&&d(e)<=R&&seenBy(u.team,e));if(!inR.length)return nearestSeen(u);
   const fr=inR.filter(e=>inArc(u,e)),L=fr.length?fr:inR;return L.reduce((a,e)=>d(e)<d(a)?e:a)}
 // Tactical focus is a formation; each soldier selects an opponent appropriate to its own position and firing arc.
 function orderedTarget(u,g,s){
@@ -49,7 +49,7 @@ function orderedTarget(u,g,s){
   return eligible.reduce((a,e)=>dist(e)<dist(a)?e:a);
 }
 // (battlecontrol.js targetMembers' test of one soldier)
-const targetTest=g=>u=>u.hp>0&&!u.left&&u.team!==g.team&&(g.targetGroupId!==null?u.grp===g.targetGroupId:u.id===g.targetUnitId);
+const targetTest=g=>u=>u.hp>0&&!u.left&&battleEnemy(g,u)&&(g.targetGroupId!==null?u.grp===g.targetGroupId:u.id===g.targetUnitId);
 /* g.targetMembers() (battlecontrol.js), during the soldiers' turns (the grid open): the list sifted from the whole battle once
    per turn of the battle and target, then only sifted again by the same test. Nobody joins a target mid-turn (no one rises,
    comes back, changes side or group), so the members then are those of the first list still passing it, plus any soldier
@@ -71,8 +71,8 @@ function targetStands(g){
 const CROWD={wait:.8,keep:2.5,look:90,slack:16,full:3};
 function roomyFoe(u,not,s=u.s){let best=null,bs=1e9;const R=(s.reach||11)+6;
   const g=u.grp&&B.groups[u.grp],grid=spatialOn(),pool=g&&g.hasTarget?targetMembersOf(g):grid?SG.near(u.x,u.y,CROWD.look+1,u.team,true):B.units;
-  for(const e of pool){if(e.hp<=0||e.team===u.team||e===not||e.rout||!seenBy(u.team,e))continue;const d=Math.hypot(e.x-u.x,e.y-u.y);if(d>CROWD.look)continue;
-    let n=0;for(const o of grid?SG.near(e.x,e.y,R+1,u.team,false):B.units)if(o!==u&&o.hp>0&&o.team===u.team&&Math.hypot(o.x-e.x,o.y-e.y)<R)n++;if(n>=CROWD.full)continue;const sc=d+n*14;if(sc<bs){bs=sc;best=e}}
+  for(const e of pool){if(e.hp<=0||!battleEnemy(e,u)||e===not||e.rout||!seenBy(u.team,e))continue;const d=Math.hypot(e.x-u.x,e.y-u.y);if(d>CROWD.look)continue;
+    let n=0;for(const o of grid?SG.near(e.x,e.y,R+1,u.team,false):B.units)if(o!==u&&o.hp>0&&battleFriend(o,u)&&Math.hypot(o.x-e.x,o.y-e.y)<R)n++;if(n>=CROWD.full)continue;const sc=d+n*14;if(sc<bs){bs=sc;best=e}}
   return best}
 /* an order at a target gone from sight (terrain.js sightGoal: in woods or behind a rise, none of it seen by his side): he leaves
    it be and makes for his place round where it was last seen (its last known place plus his slot), at his group's pace, shooting
@@ -153,7 +153,7 @@ class Actor extends Fighter{
     if(gt&&B.sight){const lk=sightGoal(g,u.team);if(lk)return this.lost(g,s,lk,dt)}
     if(gt){
       // Re-evaluate immediately on an order change or casualty; otherwise retain the normal thinking interval.
-      const member=e=>e&&e.hp>0&&!e.left&&e.team!==u.team&&(g.targetGroupId!==null?e.grp===g.targetGroupId:e.id===g.targetUnitId);
+      const member=e=>e&&e.hp>0&&!e.left&&battleEnemy(e,u)&&(g.targetGroupId!==null?e.grp===g.targetGroupId:e.id===g.targetUnitId);
       if(u.rt<=0||!member(u.tgt)){u.tgt=orderedTarget(u,g,s);u.rt=.4;u.near=null}
       // (your hero and companions, sent at a foe, go for him: they do not turn on whoever they brush past on the way; soldiers do)
       const n=nearest(u),close=s.range?30:(s.reach||11)+8;

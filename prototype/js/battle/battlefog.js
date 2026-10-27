@@ -76,7 +76,7 @@ function fogSees(G,T,t,u,i,lu){
    that place (FOG.clear cells each way, not a wood) lies in your sight with none of them there */
 function fogGhosts(S,T){
   const G=S.fog,Gs=S.ghost||(S.ghost=new Map()),on=S.gseen||(S.gseen=new Set()),vis=G&&G.vis[0];
-  for(const id in B.groups){const g=B.groups[id];if(g.team===0)continue;const m=grpUnits(id);if(!m.length){Gs.delete(id);on.delete(id);continue}
+  for(const id in B.groups){const g=B.groups[id];if(!battleEnemy(0,g))continue;const m=grpUnits(id);if(!m.length){Gs.delete(id);on.delete(id);continue}
     if(m.some(u=>!(u.hid&1))){Gs.delete(id);on.add(id);continue}
     if(on.has(id)){on.delete(id);let x=0,y=0,c=0;for(const u of m){const p=lastSeen(0,u);if(p){x+=p.x;y+=p.y;c++}}if(c)Gs.set(id,{x:x/c,y:y/c,t:B.t})}
     const q=Gs.get(id);if(!q)continue;if(B.t-q.t>FOG.ghost||vis&&fogClear(G,T,vis,q))Gs.delete(id)}}

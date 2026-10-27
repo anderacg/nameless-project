@@ -21,7 +21,7 @@ const flagEligible=(u,f)=>f==='shieldWall'?shieldEligible(u):['melee','cease','s
 const unitFlag=(u,f)=>!!(u.grp&&B.groups[u.grp]&&B.groups[u.grp][f]&&flagEligible(u,f));
 // (no shield wall in woods, a ford or deep water, nor riders in the wedge there: they break formations, terrain.js groundThin)
 function wallReady(u){const g=u.grp&&B.groups[u.grp];return !!(unitFlag(u,'shieldWall')&&g.walk&&!g.run&&u.hp>0&&!u.rout&&!(u.stun>0)&&g.order!=='charge'&&g.order!=='withdraw'&&!groundThin(u))}
-function shieldWallActive(u){return wallReady(u)&&B.units.some(o=>o!==u&&o.team===u.team&&wallReady(o)&&Math.hypot(o.x-u.x,o.y-u.y)<=WALL.near&&angGap(B.groups[o.grp].face||0,B.groups[u.grp].face||0)<1.05)}
+function shieldWallActive(u){return wallReady(u)&&B.units.some(o=>o!==u&&battleFriend(o,u)&&wallReady(o)&&Math.hypot(o.x-u.x,o.y-u.y)<=WALL.near&&angGap(B.groups[o.grp].face||0,B.groups[u.grp].face||0)<1.05)}
 function wedgeMembers(g){
   const gr=B.groups[g];if(!gr||gr.form!=='wedge')return [];
   const m=grpUnits(g).filter(u=>!u.rout&&!withdrawing(u)&&u.s.charge&&!(u.stun>0)&&!groundThin(u));if(!m.length)return [];

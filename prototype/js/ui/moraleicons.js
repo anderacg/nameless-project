@@ -96,7 +96,7 @@ function unitIcon(g,m){
   if(w==='xbow')return 'xbow';if(s.range)return w==='javelin'?'javelin':'bow';
   return {sword:'sword',great:'sword',axe:'axe',bigaxe:'axe',hammer:'hammer',spear:'spear',pike:'spear',lance:'spear'}[w]||(unitClass(s)==='spear'?'spear':'sword')}
 // the icons under a point of the field (screen-sized, so tested on the screen), the topmost first (team: one side's only)
-function iconsAt(x,y,team){if(!B.icons)return [];const p=fromField({x,y}),out=[];for(let i=B.icons.length-1;i>=0;i--){const r=B.icons[i];if((team==null||r.team===team)&&p.x>=r.x&&p.x<r.x+r.w&&p.y>=r.y&&p.y<r.y+r.h)out.push(r)}return out}
+function iconsAt(x,y,team){if(!B.icons)return [];const p=fromField({x,y}),out=[];for(let i=B.icons.length-1;i>=0;i--){const r=B.icons[i];if((team==null||(team===1?battleEnemy(0,r):r.team===team))&&p.x>=r.x&&p.x<r.x+r.w&&p.y>=r.y&&p.y<r.y+r.h)out.push(r)}return out}
 // the topmost icon under a point, for pointing and orders: the icon stands for its group
 const iconAt=(x,y,team)=>iconsAt(x,y,team)[0]||null;
 // a click (select): the topmost; clicked again on the same spot (ICON_FAN.again screen px), the next one under it, and round
@@ -146,7 +146,7 @@ function iconLayout(rt){
 function drawUnitIcons(){
   const sel=selGroups(),blink=Math.floor(B.t*3)%2,K=unitIconScale(),S=UICON.s,now=performance.now()/1000,rt=B.iconRT?Math.min(.25,now-B.iconRT):0;B.iconRT=now;
   for(const it of iconLayout(rt)){const {g,m,mo,st,x,y}=it;
-    const team=SIDE[(mo?mo.team:m[0].team)?'foe':sideKey(B.groups[g])].plate,wav=mo&&mo.state==='wavering'&&blink;
+    const team=SIDE[sideKey(B.groups[g])].plate,wav=mo&&mo.state==='wavering'&&blink;
     const hov=B.iconHov===g,edge=sel.includes(g)?'#ffd25a':wav?'#ffa040':hov?'#f4efe0':'#0a0c12',fade=it.under?ICON_FAN.under:1;
     ctx.save();ctx.translate(x,y);ctx.scale(K,K);ctx.globalAlpha=(mo&&(mo.state==='routing'||mo.state==='shattered')?.6:1)*fade;
     // the plate: an edge (gold when selected), its side's colour, lighter at the top and darker at the foot, a notch pointing down

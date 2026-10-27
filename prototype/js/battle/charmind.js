@@ -20,7 +20,7 @@ const isFighter=u=>!!(u.leader||u.comp);
 const isChar=u=>!!(u&&(u.hero||u.leader||u.comp));
 const champLv=u=>u.leader?u.leader.lv:u.comp&&compInit(u.type)?compInit(u.type).lv:1;
 const breath=()=>CHAR_AI.breath[0]+Math.random()*(CHAR_AI.breath[1]-CHAR_AI.breath[0]);
-const champFoes=u=>B.units.filter(e=>e.team!==u.team&&e.hp>0);
+const champFoes=u=>B.units.filter(e=>battleEnemy(e,u)&&e.hp>0);
 /* falling back: a character who rolled out of a press (charBasics) does not run straight back into it. It falls back to cover
    (S.fallBack {at, x, y}: behind the nearest troops of its own side, away from the press, CHAR_FALL.near-dist px off; never into
    other foes), striking only a foe in its way and healing if it can, and gets its breath back. Each think it looks again
@@ -36,13 +36,13 @@ const champFoes=u=>B.units.filter(e=>e.team!==u.team&&e.hp>0);
 const CHAR_FALL={near:60,dist:100,cover:250,min:1,crowd:2,trap:40,look:300,max:12,heal:.6,keep:2};
 // a group's orders as a fall-back remembers them: any order of yours (commands.js bumps orderSeq), a move, a target
 const ordKey=g=>g?[g.mvId,g.targetGroupId,g.targetUnitId,g.order,g.orderSeq|0].join():'';
-const fallMates=u=>B.units.filter(o=>o.team===u.team&&o.hp>0&&!o.rout&&!o.left&&!isChar(o));
-const liveFoes=u=>B.units.filter(e=>e.team!==u.team&&e.hp>0&&!e.rout&&!e.left&&seenBy(u.team,e));// (those its side can see: terrain.js sight)
+const fallMates=u=>B.units.filter(o=>battleFriend(o,u)&&o.hp>0&&!o.rout&&!o.left&&!isChar(o));
+const liveFoes=u=>B.units.filter(e=>battleEnemy(e,u)&&e.hp>0&&!e.rout&&!e.left&&seenBy(u.team,e));// (those its side can see: terrain.js sight)
 /* the calls for the characters (your hero, lords, chieftains, companions), each CHAR_AI.think: their commander's for the AI's
    (the enemy, your allies, your army on auto: A), and for yours your Auto skills (K): a special move or a skill when the moment
    is right (charBasics, chooseAbility). Duels are the commander's alone: a character of the other side near, and not on the
    move elsewhere, it sets him on him */
-const aiCommands=u=>u.team===1||!!(u.grp&&u.grp.startsWith('a_'))||aiAll()||aiHas(u.grp&&B.groups[u.grp]);// (yours: the AI's with your whole army its, or his group: deploy.js)
+const aiCommands=u=>u.team>0||!!(u.grp&&u.grp.startsWith('a_'))||aiAll()||aiHas(u.grp&&B.groups[u.grp]);// (yours: the AI's with your whole army its, or his group: deploy.js)
 /* ---------- a character's mind (CharacterMind.of(u): one for each, made when first needed, kept aside; it holds nothing but its
    man: his state is his own, heroState's for your hero, u.ch for a champion). The same for every character: one moment as an actor
    (auto: a move under way, a fall back, else as his group goes), his blow (strike), the special moves (basics), falling back and
@@ -129,7 +129,7 @@ class CharacterMind{
       if(ai&&!sent&&!(g&&g.hasTarget)&&!(B.t-(S.backIn??-99)<CHAR_FALL.keep))this.duel();
       if((S.think=(S.think||0)-dt)<=0){S.think=CHAR_AI.think;if(sent)return;if(this.basics()||chooseAbility(u))u.castNow=true}}
   // a duel: the nearest character of the other side his side sees, within CHAR_AI.duel px: he is set on him
-  duel(){const u=this.u;let best=null,bd=CHAR_AI.duel;for(const e of B.units)if(e.team!==u.team&&e.hp>0&&isChar(e)&&seenBy(u.team,e)){const d=Math.hypot(e.x-u.x,e.y-u.y);if(d<bd){bd=d;best=e}}if(best){u.tgt=best;u.rt=.5}}
+  duel(){const u=this.u;let best=null,bd=CHAR_AI.duel;for(const e of B.units)if(battleEnemy(e,u)&&e.hp>0&&isChar(e)&&seenBy(u.team,e)){const d=Math.hypot(e.x-u.x,e.y-u.y);if(d<bd){bd=d;best=e}}if(best){u.tgt=best;u.rt=.5}}
 }
 // your hero's own hands (combat.js): its state heroState's; its timers, roll, leap and dash heroActions'; its blow the combo, the
 // bow drawn or a staff's cast; a Shove (or Shield Bash), a Dodge Roll and its skills yours

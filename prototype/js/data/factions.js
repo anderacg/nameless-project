@@ -35,6 +35,7 @@ const FIGHT={base:3,per:.25,rout:.3,join:60};
 // to none at -helpAt; and only if his strength and yours come to fair x theirs. Won: honor from each realm's force beside you
 // (beside) and, for a common enemy cleared on a realm's land with its men beside you, once more from that realm (land);
 // renown: yours x renown when a lord or a watch helped (they take their share of the gold by their men: reinfCut)
+const BATTLE_JOIN={armies:8,fighters:300};
 const REINF={r:110,max:3,foes:2,band:30,guards:2,chance:.5,fair:.8,honor:{beside:3,land:2},renown:.8};
 // the land defended (world/defence.js; the owner, 2026-10-19). A threat: a bandit band or a beast (not a mythic one, nor one a
 // quest set out), out of any fight. A holding sends its watch at one on its land that the watch (PATROL.see) or the holding or

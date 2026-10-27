@@ -18,7 +18,7 @@ function playerOrder(gs,fn,{counts=true}={}){if(B?.muster?.active)return false;t
 // same spot, the next one under (moraleicons.js iconPick)
 function rtsUnitAt(x,y,team,pick){
   const ic=pick?iconPick(x,y,team):iconAt(x,y,team);if(ic){let best=null,bd=1e9;for(const u of B.units){if(u.hp<=0||u.grp!==ic.g||!seenBy(0,u))continue;const d=Math.hypot(u.x-ic.cx,u.y-ic.cy);if(d<bd){bd=d;best=u}}if(best)return best}
-  let best=null,bd=RTS_PICK*(B.world?WORLD_BATTLE.sprite:1);for(const u of B.units){if(u.hp<=0||u.team!==team||!seenBy(0,u))continue;const d=Math.hypot(u.x-x,u.y-6*(B.world?WORLD_BATTLE.sprite:1)-y);if(d<bd){bd=d;best=u}}return best}
+  let best=null,bd=RTS_PICK*(B.world?WORLD_BATTLE.sprite:1);for(const u of B.units){if(u.hp<=0||(team===1?!battleEnemy(0,u):u.team!==team)||!seenBy(0,u))continue;const d=Math.hypot(u.x-x,u.y-6*(B.world?WORLD_BATTLE.sprite:1)-y);if(d<bd){bd=d;best=u}}return best}
 // select: a click picks the group of the unit under it (nothing of yours under it: none, as in Total War; the All card, Ctrl+A or
 // a box round everyone picks all); a box picks every group with a unit inside
 function rtsSelect(x0,y0,x1,y1,add){

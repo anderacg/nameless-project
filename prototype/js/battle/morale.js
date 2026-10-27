@@ -45,11 +45,11 @@ function moraleView(u,live,strength){
   const own=Math.max(.01,strength.get(u)||moraleStrength(u)),face=facing(u),sectors=[0,0,0,0];let allied=0,enemy=0,visibleAllied=0,visibleEnemy=0,localAllied=0,localEnemy=0,closest=Infinity,support=0,left=false,right=false;
   const vg=viewGrid(live);for(const o of vg?vg.near(u.x,u.y,CONFIDENCE.radius+1,null):live){const dx=o.x-u.x,dy=o.y-u.y,d=Math.hypot(dx,dy);if(d>CONFIDENCE.radius||!moraleVisible(u,o))continue;
     const s=strength.get(o)||0,w=1/(1+(d/AWARENESS.near)**2);
-    if(o.team===u.team){allied+=s*w;visibleAllied+=s;if(d<AWARENESS.close)localAllied+=s;
+    if(battleFriend(o,u)){allied+=s*w;visibleAllied+=s;if(d<AWARENESS.close)localAllied+=s;
       if(o!==u&&d<COHESION.radius&&cohesionReady(u)&&cohesionReady(o)&&angGap(facing(o),face)<1.05){
         const formed=u.grp!==o.grp||Math.hypot(dx-((o.sx||0)-(u.sx||0)),dy-((o.sy||0)-(u.sy||0)))<=COHESION.slot;
         if(formed){support+=s;const side=-dx*Math.sin(face)+dy*Math.cos(face);if(side>8)left=true;if(side<-8)right=true}}
-    }else{enemy+=s*w;visibleEnemy+=s;closest=Math.min(closest,d);if(d<AWARENESS.close){localEnemy+=s;const angle=Math.atan2(dy,dx)-face;const sector=(Math.round(angle/(Math.PI/2))%4+4)%4;sectors[sector]+=s}}
+    }else if(battleEnemy(o,u)){enemy+=s*w;visibleEnemy+=s;closest=Math.min(closest,d);if(d<AWARENESS.close){localEnemy+=s;const angle=Math.atan2(dy,dx)-face;const sector=(Math.round(angle/(Math.PI/2))%4+4)%4;sectors[sector]+=s}}
   }
   // Distance alone must not make both equal armies believe they have numerical/quality superiority.
   const ratio=enemy>0?allied/enemy:Infinity,advantage=Math.min(ratio,visibleAllied/Math.max(.01,visibleEnemy)),confidence=enemy>0?clamp((advantage-CONFIDENCE.ratio)/(CONFIDENCE.full-CONFIDENCE.ratio),0,1):0;
@@ -159,7 +159,7 @@ const PUSH={cav:2.6,heavyCav:3.4,big:3.6,shock:1.4,foot:.9,heavy:.6,wall:.35,spl
 function chargePush(u,t,m){
   const s=u.s,at=tagsOf(s),base=s.big?PUSH.big:s.charge?(at.includes('heavy')?PUSH.heavyCav:PUSH.cav):at.includes('shock')?PUSH.shock:PUSH.foot,g=t.grp&&B.groups[t.grp];
   const f=base*m*(tagsOf(t.s).includes('heavy')?PUSH.heavy:1)*(shieldWallActive(t)?PUSH.wall:1);knock(t,u.x,u.y,f);
-  for(const o of spatialOn()?SG.near(t.x,t.y,PUSH.splashR+1,t.team,false):B.units)if(o!==t&&o.team===t.team&&o.hp>0&&!o.s.big&&Math.hypot(o.x-t.x,o.y-t.y)<PUSH.splashR)knock(o,u.x,u.y,f*PUSH.splash)}
+  for(const o of spatialOn()?SG.near(t.x,t.y,PUSH.splashR+1,t.team,false):B.units)if(o!==t&&battleFriend(o,t)&&o.hp>0&&!o.s.big&&Math.hypot(o.x-t.x,o.y-t.y)<PUSH.splashR)knock(o,u.x,u.y,f*PUSH.splash)}
 
 // who never breaks
 // (a shock to a soldier's morale, by his steadiness: a unit of higher Morale is shaken less)
@@ -199,7 +199,7 @@ function flankMul(t,src){
 function moraleHurt(t,amt,source,missile){
   if(B.noMorale||!(amt>0))return;const own=resolveOf(t),attacker=resolveOf(source);
   if(own){own.hurt(amt,missile??!!(source?.s.range&&!source.inMelee));if(t.flankAt!==undefined)own.flankAt=t.flankAt}
-  if(attacker&&source.team!==t.team)attacker.dealt(amt);
+  if(attacker&&battleEnemy(source,t))attacker.dealt(amt);
 }
 // a death: its side shaken (most of all close by, and by a leader's fall); the other side heartened a little
 function moraleDeath(t,source){
@@ -209,15 +209,15 @@ function moraleDeath(t,source){
   if(B.noMorale)return;const lead=t.hero||t.leader,own=resolveOf(t);if(own&&!own.death(t))return;
   if(own&&!own.live().length)armyWord(own,{x:t.x,y:t.y},'cut');// (the last of a group cut down: the army hears of it)
   for(const r of battleResolves()){if(!r.live().length)continue;const d=Math.hypot(r.point().x-t.x,r.point().y-t.y);
-    if(r.team===t.team){if(lead){r.confidence=0;r.confidenceBlockedUntil=Math.max(r.confidenceBlockedUntil,B.t+CONFIDENCE.leaderPause);r.breakUrgentUntil=B.t+CONFIDENCE.leaderPause;r.shock(MORALE.lead,false)}else if(r!==own&&d<MORALE.near)r.shock(MORALE.death/Math.max(1,own?.initialCount||r.initialCount))}
-    else if(lead){r.mor=Math.min(100,r.mor+MORALE.lead/2);r.sync()}else if(d<MORALE.near||r===resolveOf(source))r.reassure()}
+    if(battleFriend(r,t)){if(lead){r.confidence=0;r.confidenceBlockedUntil=Math.max(r.confidenceBlockedUntil,B.t+CONFIDENCE.leaderPause);r.breakUrgentUntil=B.t+CONFIDENCE.leaderPause;r.shock(MORALE.lead,false)}else if(r!==own&&d<MORALE.near)r.shock(MORALE.death/Math.max(1,own?.initialCount||r.initialCount))}
+    else if(battleEnemy(r,t)&&lead){r.mor=Math.min(100,r.mor+MORALE.lead/2);r.sync()}else if(battleEnemy(r,t)&&(d<MORALE.near||r===resolveOf(source)))r.reassure()}
   if(lead){(B.leadFell=B.leadFell||[])[t.team]=B.t}
   if(lead){B.floats.push({x:t.x,y:t.y-30,t:t.team?'Their leader falls!':'Your leader falls!',life:1.4,c:t.team?'#ffe08a':'#ff9a90'});battleEvent('leader',{u:t})}
 }
 // a leader close by steadies them: your hero, a lord or chieftain of theirs
 // (during moraleTick only the heroes and leaders are looked at, gathered once for it: nobody else can steady them)
 let INSPIRERS=null;
-const inspired=u=>(INSPIRERS&&INSPIRERS.U===B.units?INSPIRERS.list:B.units).some(o=>o.team===u.team&&o.hp>0&&(o.hero||o.leader)&&Math.hypot(o.x-u.x,o.y-u.y)<MORALE.inspire);
+const inspired=u=>(INSPIRERS&&INSPIRERS.U===B.units?INSPIRERS.list:B.units).some(o=>battleFriend(o,u)&&o.hp>0&&(o.hero||o.leader)&&Math.hypot(o.x-u.x,o.y-u.y)<MORALE.inspire);
 // a war cry heartens those it reaches
 function moraleCry(list){if(B.noMorale)return;for(const r of new Set(list.map(resolveOf).filter(Boolean))){r.mor=Math.min(100,r.mor+MORALE.cry);r.refreshState();r.sync()}}
 
@@ -253,7 +253,7 @@ function armyWord(r,p,how){
     Q.push({at:B.t+Math.min(A.max,A.delay+A.per*d/100),gid:o.groupId,hit:base*(1-(1-A.far)*Math.min(1,d/A.span)),say})}}
 // (what is said: where the lost group stood in its army, facing the other: its left or right flank, or its centre)
 function armySay(r,p,others,how){
-  const C=others.map(o=>o.point()),cx=C.reduce((n,q)=>n+q.x,0)/C.length,cy=C.reduce((n,q)=>n+q.y,0)/C.length,F=B.units.filter(u=>u.team!==r.team&&fighting(u));
+  const C=others.map(o=>o.point()),cx=C.reduce((n,q)=>n+q.x,0)/C.length,cy=C.reduce((n,q)=>n+q.y,0)/C.length,F=B.units.filter(u=>battleEnemy(r,u)&&fighting(u));
   let fx=r.team?-1:1,fy=0;if(F.length){const ex=F.reduce((n,u)=>n+u.x,0)/F.length-cx,ey=F.reduce((n,u)=>n+u.y,0)/F.length-cy,l=Math.hypot(ex,ey);if(l>1){fx=ex/l;fy=ey/l}}
   const s=(p.x-cx)*fy-(p.y-cy)*fx,w=Math.max(60,...C.map(q=>Math.abs((q.x-cx)*fy-(q.y-cy)*fx)))/3;
   return (Math.abs(s)<w?'The centre':s>0?'The left flank':'The right flank')+(how==='cut'?' has fallen!':' is broken!')}
@@ -338,7 +338,7 @@ function exitDanger(C,P,foes){
 function exitChoose(m,team,cur){
   const n=m.length,C={x:m.reduce((a,u)=>a+u.x,0)/n,y:m.reduce((a,u)=>a+u.y,0)/n},T=B.terrain,who=m.some(u=>u.s.big)?'big':m.filter(u=>u.s.mounted).length*2>n?'mounted':'foot';
   const g=T&&T.blocky&&T.route?T.route[who]:null,D=g?routeDist(g,C.x,C.y):null,foes=[],home=team?'E':'W';
-  for(const id in B.groups){if(B.groups[id].team===team)continue;const f=grpUnits(id).filter(u=>!u.rout&&!withdrawing(u));if(!f.length)continue;
+  for(const id in B.groups){if(!battleEnemy(team,B.groups[id]))continue;const f=grpUnits(id).filter(u=>!u.rout&&!withdrawing(u));if(!f.length)continue;
     foes.push({x:f.reduce((a,u)=>a+u.x,0)/f.length,y:f.reduce((a,u)=>a+u.y,0)/f.length,s:clamp(f.length/n,EXITS.str[0],EXITS.str[1]),r:f.length/n})}
   // (away: the way from the enemy, by their strength and nearness, at most a unit)
   let ax=0,ay=0;for(const f of foes){const dx=C.x-f.x,dy=C.y-f.y,d=Math.hypot(dx,dy)||1,w=f.s/(1+(d/EXITS.near)**2);ax+=dx/d*w;ay+=dy/d*w}{const l=Math.hypot(ax,ay);if(l>1){ax/=l;ay/=l}}
@@ -360,7 +360,7 @@ function exitOf(u){
   const m=g?grpUnits(g.id):[];h.exitTo=exitChoose(m.length?m:[u],u.team,X)||{side:u.team?'E':'W',a:fieldTop(),b:fieldBot(),s:clamp(u.y,fieldTop(),fieldBot()),x:u.team?BW-MORALE.edge:MORALE.edge,y:u.y,cost:Infinity,at:B.t};
   return h.exitTo}
 // (the grid open, spatial.js: only those within the longest reach of him, in their order)
-function withdrawThreat(u){return (spatialOn()?SG.near(u.x,u.y,Math.max(SG.reach,BLADE.reach)+3+12+WITHDRAW.contact+1,u.team,true):B.units).some(e=>e.hp>0&&e.team!==u.team&&!e.rout&&(!e.s.range||e.inMelee)&&Math.hypot(e.x-u.x,e.y-u.y)<=(e.inMelee?BLADE.reach:e.s.reach||11)+3+(u.s.big?12:0)+WITHDRAW.contact)}
+function withdrawThreat(u){return (spatialOn()?SG.near(u.x,u.y,Math.max(SG.reach,BLADE.reach)+3+12+WITHDRAW.contact+1,u.team,true):B.units).some(e=>e.hp>0&&battleEnemy(e,u)&&!e.rout&&(!e.s.range||e.inMelee)&&Math.hypot(e.x-u.x,e.y-u.y)<=(e.inMelee?BLADE.reach:e.s.reach||11)+3+(u.s.big?12:0)+WITHDRAW.contact)}
 function withdrawStep(u,dt){
   u.run=0;u.inSlot=false;u.spdNow=0;
   const threat=withdrawThreat(u);

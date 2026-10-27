@@ -1359,7 +1359,7 @@ class BattleSight{
   static seen(team,u){return B?.world?u.team===team||B.world.visible(u,team)&&!(u.hid&1<<team):!(u.hid&1<<team)}
   seen(team,u){return BattleSight.seen(team,u)}
   // (the living soldiers of the other sides that side sees)
-  static foes(team){return B.units.filter(u=>u.hp>0&&u.team!==team&&BattleSight.seen(team,u))}
+  static foes(team){return B.units.filter(u=>u.hp>0&&battleEnemy(team,u)&&BattleSight.seen(team,u))}
   // (where that side last saw him: his place now while seen; null never seen)
   static lastSeen(team,u){if(BattleSight.seen(team,u))return{x:u.x,y:u.y};const p=u.ls;return p&&p[2*team]!=null?{x:p[2*team],y:p[2*team+1]}:null}
   /* who sees whom, every SIGHT.every s (force: now). For each side, its living soldiers filed in 32-px buckets (near) and the cells
@@ -1409,7 +1409,7 @@ class BattleSight{
     if(F)fogGhosts(S,T)}
   // he struck or shot at t: t's side sees him now and for SIGHT.memory s (attacks.js: a blow, a shot loosed, a missile landing)
   struckBy(att,t){
-    if(!att||!t||att.team===t.team)return;(att.rv||(att.rv=[]))[t.team]=B.t;
+    if(!att||!t||!battleEnemy(att,t))return;(att.rv||(att.rv=[]))[t.team]=B.t;
     if(att.hid&1<<t.team){att.hid&=~(1<<t.team);const p=att.ls||(att.ls=[]);p[2*t.team]=att.x;p[2*t.team+1]=att.y;this.goal.clear()}}
   // (an order at a target that side sees none of: where it was last seen; reckoned once a sight step for each target)
   goalFor(g,team){

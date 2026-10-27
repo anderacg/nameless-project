@@ -59,14 +59,14 @@ function beastPacks(){
       layForm(q.id);for(const u of part){u.x=q.ax+u.sx;u.y=q.ay+u.sy}}}}
 // (a list's health; its men at grips with a foe; a point d px on from a, away from b (the field's middle when on top of it))
 const hpOf=m=>m.reduce((a,u)=>a+u.hp,0);
-const atGrips=(m,team)=>m.filter(u=>B.units.some(e=>e.team!==team&&e.hp>0&&!e.left&&Math.hypot(e.x-u.x,e.y-u.y)<(u.s.reach||11)+10));
+const atGrips=(m,team)=>m.filter(u=>B.units.some(e=>battleEnemy(team,e)&&e.hp>0&&!e.left&&Math.hypot(e.x-u.x,e.y-u.y)<(u.s.reach||11)+10));
 function awayFrom(a,b,d){let dx=a.x-b.x,dy=a.y-b.y,l=Math.hypot(dx,dy);if(l<1){dx=BW/2-a.x;dy=0;l=Math.abs(dx)||1}return{x:clamp(a.x+dx/l*d,8,BW-8),y:clamp(a.y+dy/l*d,fieldTop(),fieldBot())}}
 /* the captain's reading for its beasts, once a think: the foe's groups it sees (routing too: prey), each {key, m, C (middle), r
    (spread), n, rout, shot (shares), hurt (health lost), w (strength), rep (whom an order names), mor (its morale), face, alone};
    the foe's middle (M), ours (mine); reach, nearest (a group they can walk to) */
 class PackMind{
   constructor(team,S,Q){
-    const d2=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y),G={},seen=B.units.filter(u=>u.team!==team&&u.hp>0&&!u.left&&seenBy(team,u));
+    const d2=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y),G={},seen=B.units.filter(u=>battleEnemy(team,u)&&u.hp>0&&!u.left&&seenBy(team,u));
     for(const u of seen){const k=u.grp||'u'+u.id;(G[k]||(G[k]={key:k,m:[]})).m.push(u)}
     const L=Object.values(G);for(const f of L){const m=f.m,g=B.groups[f.key];f.C=centroid(m);f.n=m.length;f.r=Math.min(80,Math.max(...m.map(u=>d2(u,f.C))));f.rout=m.filter(u=>u.rout).length/f.n;
       f.shot=m.filter(u=>u.s.range&&!u.empty).length/f.n;f.hurt=1-hpOf(m)/m.reduce((a,u)=>a+u.max,0);f.w=m.reduce((a,u)=>a+wOf(u),0);f.rep=m.find(u=>!u.rout)||m[0];const r=!B.noMorale&&resolveOf(f.rep);f.mor=r?r.mor:100;
@@ -85,7 +85,7 @@ class PackMind{
      falling back takes its beasts with it */
   static think(team,ck,S,ids){
     const Q=captainMem(ck),P=Q.beast||(Q.beast={mark:{},n:{bite:0,back:0,regroup:0,join:0,dread:0,rush:0,strike:0,unseen:0,dive:0}}),L=ids.filter(id=>B.groups[id].order!=='withdraw'&&grpUnits(id).some(u=>!u.rout));
-    if(team===1&&B.fallBack){for(const id of L)B.groups[id].withdraw();return}
+    if((B.sides?.active?B.fallBackTeams?.has(team):team===1&&B.fallBack)){for(const id of L)B.groups[id].withdraw();return}
     const hid=id=>{const g=B.groups[id];return beastKind(id).way==='ambush'&&(g.phase||'hide')==='hide'&&g.t<beastNum(beastKind(id),'wait')};
     if(!S.foes.length){for(const id of L)if(hid(id))PackMind.tick(B.groups[id]);
       const seen=B.fog&&Q.seen||0;if(B.t-Math.max(B.lastHit||0,seen)>FOE_CMD.lull||B.fog&&B.t>FOG.scout&&!foesKnown(team))Commander.of(team).search({beasts:L.filter(id=>!hid(id))});return}

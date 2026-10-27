@@ -16,8 +16,8 @@ function kitOf(u,id){
     strike:(e,m,o)=>{o=o||{};hit(u,e,u.s.dmg*m,o.dt);if(o.kb)knock(e,u.x,u.y,o.kb);if(o.stun)stun(e,o.stun)},
     can:keep=>C.sp>=A.sp+(keep&&A.sp?CHAR_AI.keepSp:0)&&C.mp>=A.mp,
     pay:()=>{if(C.sp<A.sp||C.mp<A.mp)return false;C.sp-=A.sp;C.mp-=A.mp;if(A.sp)C.spT=0;return true}}}
-const foesOf=u=>B.units.filter(e=>e.team!==u.team&&e.hp>0);
-const alliesOf=u=>B.units.filter(o=>o.team===u.team&&o.hp>0&&o!==u);
+const foesOf=u=>B.units.filter(e=>battleEnemy(e,u)&&e.hp>0);
+const alliesOf=u=>B.units.filter(o=>battleFriend(o,u)&&o.hp>0&&o!==u);
 const withinOf=(x,y,r,list)=>list.filter(e=>Math.hypot(e.x-x,e.y-y)-(e.s.big?12:0)<=r);
 // where it aims: your hero, where she aims (the cursor with the manual control, B.aiAim under command); a champion, at its target
 const aimOf=(K,at,d)=>K.hero?aimPoint(d):at||{x:K.u.x+(K.u.face||1)*d,y:K.u.y};
@@ -31,8 +31,8 @@ const CAST={
   leap(u,K,at){const p=aimOf(K,at,80),dd=Math.hypot(p.x-u.x,p.y-u.y),m=Math.min(1,100/Math.max(1,dd));
     K.st.leap={sx:u.x,sy:u.y,tx:clamp(u.x+(p.x-u.x)*m,8,BW-8),ty:clamp(u.y+(p.y-u.y)*m,fieldTop(),fieldBot()),t:0,dur:.32};K.st.inv=.36},
   cry(u,K){const A=K.A,heartened=[];B.rings.push({x:u.x,y:u.y-6,r:90*A.r,life:.5,max:.5,col:'232,185,74'});
-    for(const o of B.units){if(o.hp<=0)continue;const d=Math.hypot(o.x-u.x,o.y-u.y);if(o.team===u.team&&d<90*A.r){o.buffT=6+A.dur;heartened.push(o)}if(o.team!==u.team&&!o.hero&&d<70*A.r)stun(o,.8+A.stun)}moraleCry(heartened);
-    vfxRing(u.x,u.y,70*A.r,'232,185,74',.5);vfxRing(u.x,u.y,100*A.r,'255,220,120',.7);for(const o of B.units)if(o.team===u.team&&o.hp>0&&Math.hypot(o.x-u.x,o.y-u.y)<90*A.r)vfxBurst(o.x,o.y-8,2,'#ffd25a',5,15,'ember',25);
+    for(const o of B.units){if(o.hp<=0)continue;const d=Math.hypot(o.x-u.x,o.y-u.y);if(battleFriend(o,u)&&d<90*A.r){o.buffT=6+A.dur;heartened.push(o)}if(battleEnemy(o,u)&&!o.hero&&d<70*A.r)stun(o,.8+A.stun)}moraleCry(heartened);
+    vfxRing(u.x,u.y,70*A.r,'232,185,74',.5);vfxRing(u.x,u.y,100*A.r,'255,220,120',.7);for(const o of B.units)if(battleFriend(o,u)&&o.hp>0&&Math.hypot(o.x-u.x,o.y-u.y)<90*A.r)vfxBurst(o.x,o.y-8,2,'#ffd25a',5,15,'ember',25);
     castSay(u,'WAR CRY',u.team?'#ff9a90':'#e8b94a');shakeIt(2)},
   quake(u,K){const A=K.A,R=50*A.r;vfxCracks(u.x,u.y,8,R*.7);vfxRing(u.x,u.y,R*1.2,'170,130,90',.55);vfxBurst(u.x,u.y,10,'#a88a60',30,90,'spark',40);for(let i=0;i<8;i++){const b=rnd(0,6.283);vfx({k:'dust',x:u.x+Math.cos(b)*R*.5,y:u.y+Math.sin(b)*R*.25,vx:Math.cos(b)*30,vy:Math.sin(b)*12,r:rnd(3,5),grow:12,life:rnd(.6,.9),col:dustCol()})}B.rings.push({x:u.x,y:u.y-4,r:R,life:.45,max:.45,col:'200,160,110'});fx(u.x,u.y,'#c8b48a',12);
     for(const e of withinOf(u.x,u.y,R,foesOf(u)))K.strike(e,.9*A.dmg,{kb:8,stun:.6+A.stun,dt:'blunt'});shakeIt(5)},
@@ -48,7 +48,7 @@ const CAST={
     for(const o of alliesOf(u))if(Math.hypot(o.x-u.x,o.y-u.y)<90*A.r){o.hp=Math.min(o.max,o.hp+o.max*.2*A.dmg*K.sm);vfxBurst(o.x,o.y-6,3,'#9af09a',3,10,'ember',30)}
     vfxBurst(u.x,u.y-8,10,'#b8ffb0',5,20,'ember',35);vfx({k:'glow',x:u.x,y:u.y-8,r:18,life:.35,col:'#8ae08a'});castSay(u,'HEAL','#8ae08a')},
   banner(u,K){const A=K.A,R=100*A.r,T=8+A.dur;B.banner={x:u.x,y:u.y,r:R,t:T,team:u.team};
-    for(const o of B.units)if(o.team===u.team&&o.hp>0&&Math.hypot(o.x-u.x,o.y-u.y)<R)o.wardT=T;vfxRing(u.x,u.y,R*.8,'232,185,74',.6);vfxBurst(u.x,u.y-14,12,'#ffe08a',10,40,'ember',30);castSay(u,'BANNER','#e8b94a')}
+    for(const o of B.units)if(battleFriend(o,u)&&o.hp>0&&Math.hypot(o.x-u.x,o.y-u.y)<R)o.wardT=T;vfxRing(u.x,u.y,R*.8,'232,185,74',.6);vfxBurst(u.x,u.y-14,12,'#ffe08a',10,40,'ember',30);castSay(u,'BANNER','#e8b94a')}
 };
 // cast it: paid and cooled down, or false (your hero's own checks first: combat.js castSkill)
 function castAbility(u,id,at){

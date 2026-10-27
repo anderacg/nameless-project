@@ -37,7 +37,7 @@ class SpatialGrid{
   // indices in the box (team: that team only; foes: every team but it; null: all), with the loose and the late, ascending
   box(x0,y0,x1,y1,team,foes,out=[]){
     const c0=this.cx(x0),c1=this.cx(x1),r0=this.cy(y0),r1=this.cy(y1),C=this.C;
-    for(const t of this.teams){if(team!=null&&(foes?t===team:t!==team))continue;const cl=this.by[t];
+    for(const t of this.teams){if(team!=null&&(foes?!battleEnemy(team,t):!battleFriend(team,t)))continue;const cl=this.by[t];
       for(let r=r0;r<=r1;r++)for(let c=c0;c<=c1;c++){const b=cl[r*C+c];for(let k=0;k<b.length;k++)out.push(b[k])}}
     if(this.loose>=0)out.push(this.loose);for(let i=this.n;i<this.U.length;i++)out.push(i);
     return sortIx(out)}
@@ -49,13 +49,13 @@ class SpatialGrid{
      can beat or tie it */
   nearest(u){
     const U=this.U,ux=u.x,uy=u.y,team=u.team,c0=this.cx(ux),r0=this.cy(uy),C=this.C,cs=this.cs;let best=null,bd=1e9,bi=-1;
-    const look=b=>{for(let q=0;q<b.length;q++){const i=b[q],e=U[i];if(e.hp<=0||e.team===team)continue;const d=((e.x-ux)**2+(e.y-uy)**2)*(e.rout?9:1);if(d<bd||d===bd&&i<bi){bd=d;best=e;bi=i}}};
+    const look=b=>{for(let q=0;q<b.length;q++){const i=b[q],e=U[i];if(e.hp<=0||!battleEnemy(team,e))continue;const d=((e.x-ux)**2+(e.y-uy)**2)*(e.rout?9:1);if(d<bd||d===bd&&i<bi){bd=d;best=e;bi=i}}};
     const extra=[];if(this.loose>=0)extra.push(this.loose);for(let i=this.n;i<U.length;i++)extra.push(i);look(extra);
     const K=Math.max(c0,C-1-c0,r0,this.R-1-r0);
     for(let k=0;k<=K;k++){
       if(best&&k>1&&bd<((k-1)*cs)**2)break;
       const ra=Math.max(0,r0-k),rb=Math.min(this.R-1,r0+k),ca=Math.max(0,c0-k),cb=Math.min(C-1,c0+k);
-      for(const t of this.teams){if(t===team)continue;const cl=this.by[t];
+      for(const t of this.teams){if(!battleEnemy(team,t))continue;const cl=this.by[t];
         for(let r=ra;r<=rb;r++){const o=r*C;if(r===r0-k||r===r0+k)for(let c=ca;c<=cb;c++)look(cl[o+c]);else{if(c0-k>=0)look(cl[o+c0-k]);if(c0+k<C)look(cl[o+c0+k])}}}
     }
     return best}

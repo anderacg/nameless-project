@@ -9,13 +9,14 @@ const groupName=id=>id==='all'?'All troops':B&&B.groups[id]?B.groups[id].name:id
    tabard: the side's cloth on the soldiers (people.js PPAL) */
 const SIDE={
   own:{ui:'#6fa8e0',rout:'#c8d8f0',rgb:'111,168,224',say:'#9fc0ff',plate:['#3466c0','#5a8ae0','#24488a'],tabard:'blue'},
+  neutral:{ui:'#d6b966',rout:'#dfd2ab',rgb:'214,185,102',say:'#e0ca8c',plate:['#8e7330','#c3a14a','#5f4a20'],tabard:'gold'},
   ally:{ui:'#5cc06c',rout:'#c4ecc4',rgb:'92,192,108',say:'#a8e6a4',plate:['#2c8a44','#4cb468','#1c5e30'],tabard:'forest'},
   foe:{ui:'#e0605a',rout:'#f2c0b8',rgb:'224,96,90',say:'#ff9a90',plate:['#a8443e','#c8605a','#7a2e2a'],tabard:'red'}};
 // whose a soldier or a group is: 'own', 'ally' or 'foe' (a soldier by his group's ally)
-const sideKey=x=>x.team?'foe':(x.ally??(x.grp&&B&&B.groups[x.grp]&&B.groups[x.grp].ally))?'ally':'own';
-const sideCol=(x,k='ui')=>SIDE[sideKey(x)][k];
+const sideKey=x=>B?.sides?.active?B.sides.colourKey(x.team):x.team?'foe':(x.ally??(x.grp&&B&&B.groups[x.grp]&&B.groups[x.grp].ally))?'ally':'own';
+const sideCol=(x,k='ui')=>B?.sides?.active&&k==='ui'?B.sides.colour(x.team):SIDE[sideKey(x)][k];
 // a soldier's side for his sprite (sprites.js unitSprite: 0 yours, 1 theirs, 2 your allies')
-const spriteTeam=u=>u.team?1:sideKey(u)==='ally'?2:0;
+const spriteTeam=u=>B?.sides?.active?(battleEnemy(0,u)?1:u.team?2:0):u.team?1:sideKey(u)==='ally'?2:0;
 // the manual control of your hero (WASD, Space, F, B, skill slots) is set aside for now: you command, your hero fights on their
 // own (RTS command: commands.js). true brings it back here (its keys and buttons are commented out in input.js and Ashmark.html)
 let MANUAL_HERO=false;
@@ -59,7 +60,7 @@ function jostle(dt){
   try{for(let i=0;i<U.length;i++){a=U[i];if(a.hp<=0)continue;let last=i;gather();
     for(let k=0;k<list.length;k++){const j=list[k];if(j<=last)continue;
       if(Math.abs(a.x-x0)>JOSTLE.pad||Math.abs(a.y-y0)>JOSTLE.pad){gather();k=-1;continue}
-      last=j;const b=U[j];if(b.hp<=0||a.team===b.team&&(a.rout||b.rout||withdrawing(a)||withdrawing(b)))continue;const dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy);const R=a.s.big||b.s.big?18:8;if(d<R&&d>.01){if(PHYSICS.on){const q=(R-d)/d,f=physShare(a,b,dt,dx,dy);if(!a.hero){a.x-=dx*q*f;a.y-=dy*q*f;S.refile(i)}if(!b.hero){b.x+=dx*q*(1-f);b.y+=dy*q*(1-f);S.refile(j)}}else{const p=(R-d)*.5/d;if(!a.hero){a.x-=dx*p;a.y-=dy*p;S.refile(i)}if(!b.hero){b.x+=dx*p;b.y+=dy*p;S.refile(j)}}}}}}
+      last=j;const b=U[j];if(b.hp<=0||battleFriend(a,b)&&(a.rout||b.rout||withdrawing(a)||withdrawing(b)))continue;const dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy);const R=a.s.big||b.s.big?18:8;if(d<R&&d>.01){if(PHYSICS.on){const q=(R-d)/d,f=physShare(a,b,dt,dx,dy);if(!a.hero){a.x-=dx*q*f;a.y-=dy*q*f;S.refile(i)}if(!b.hero){b.x+=dx*q*(1-f);b.y+=dy*q*(1-f);S.refile(j)}}else{const p=(R-d)*.5/d;if(!a.hero){a.x-=dx*p;a.y-=dy*p;S.refile(i)}if(!b.hero){b.x+=dx*p;b.y+=dy*p;S.refile(j)}}}}}}
   finally{spatialClose()}
 }
 // off the rocks and trees (obstaclePush; the big ones shoulder through), inside the field, and no step into rock or impassable
@@ -70,7 +71,7 @@ function keepOffObstacles(was){
   if(B.terrain)terrainHold(was);if(B.world)B.world.clamp()}
 // the fight over? one side with no one left fighting (or you withdrew: morale.js retreatNow); a side running off told in the log
 function checkBattleOver(){
-  if(B.over)return;const ap=B.units.filter(u=>u.team===0&&fighting(u)).length,ae=B.units.filter(u=>u.team===1&&fighting(u)).length;
+  if(B.over)return;if(B.sides?.active)return B.sides.check();const ap=B.units.filter(u=>u.team===0&&fighting(u)).length,ae=B.units.filter(u=>u.team===1&&fighting(u)).length;
   if(ae>0&&retreating())retreatNow();
   else if((ae===0||ap===0)&&(!B.world||B.world.ended(ap,ae))){B.over=true;B.endT=END_WAIT;B.win=ae===0;const run=B.units.some(u=>u.hp>0&&u.rout&&u.team===(B.win?1:0))||(B.win?B.fledFoes:B.fledMine);
     if(run){B.routed=B.win?1:0;log(B.win?'The enemy breaks and flees the field.':'Your men break and run.',B.win?'good':'bad')}}}
