@@ -7,16 +7,24 @@ Kit.suite(({ok})=>{
  const encounter=(extra={})=>{t.startEncounter({kind:'party',ref:enemy,list:enemy.troops.slice(),mine:true,allies:[],foes:[],...extra});return G.enc};
  const ambush=()=>document.querySelector('[data-act="bt-spring"]');
  reset();let e=encounter();ok(t.canSpring(e)&&ambush()?.textContent==='Ambush attack'&&document.querySelector('[data-act="fight"]').textContent==='Normal attack','undetected enemy encounter offers normal and ambush attack');
- ok(Kit.text().includes('They have not detected your army'),'the choice explains whose detection matters');
+ ok(Kit.text().includes('They are unaware of you')&&Kit.text().includes('surprised for 8 s'),'the choice says how aware they are, and how long the surprise lasts');
  A.notice(enemy);t.act('bt-spring');ok(!t.B&&G.mode==='dialog'&&!e.btype,'a stale ambush button cannot bypass newly acquired detection');
  encounter();ok(!ambush()&&!!document.querySelector('[data-act="fight"]'),'a detected target still permits a normal attack');
- enemy.x=P.x+700;ok(!t.canWorldAmbush(e),'recent sighting memory prevents an immediate ambush after leaving detection range');A.time+=t.TRAVEL_GROUPS.memory+.1;ok(t.canWorldAmbush(e),'ambush becomes available once detection and recent sighting memory expire');
+ enemy.x=P.x+700;ok(t.canWorldAmbush(e)&&t.Surprise.stage(A.level(enemy))===3,'out of their sight again (losing suspicion) they may be ambushed, at the shortest surprise');
+ ok([0,.2,.5,.7,.95].map(a=>t.Surprise.stage(a)).join()==='0,1,2,3,3','four stages short of detected, by the eye\u2019s');
  reset();e=encounter({mine:false});ok(!t.canWorldAmbush(e)&&!ambush(),'an enemy-initiated encounter does not offer a player ambush');
  reset();enemy.fight='ongoing';e=encounter();ok(!t.canWorldAmbush(e)&&!ambush(),'an ongoing fight cannot become a new ambush');delete enemy.fight;
  reset();e=encounter();t.act('fight');ok(t.B?.muster?.active&&!t.B.ready,'Normal attack starts the regular walk-in preparation');
  reset();e=encounter();const actual=new Map();for(const owner of [P,enemy])for(const u of t.MarchArmy.of(owner).units)actual.set(u,{x:u.x,y:u.y});t.act('bt-spring');let b=t.B;
  ok(b?.world&&!b.muster&&!b.ready&&!b.paused&&e.btype.hid===0,'Ambush attack immediately starts a player ambush without preparation');
  ok(b.units.filter(u=>u.marchUnit).every(u=>{const p=b.world.world(u),q=actual.get(u.marchUnit);return q&&Math.hypot(p.x-q.x,p.y-q.y)<.001}),'ambush preserves the current physical marching positions');t.updateBattle(.01);ok(b.t>0,'ambush starts actual combat without Start Battle');
+ {const S=b.surprise,foe=Object.values(b.groups).find(g=>g.foe),eu=foe.units[0],f=t.facing(eu),front={x:eu.x+Math.cos(f)*10,y:eu.y+Math.sin(f)*10};
+  ok(S&&S.stage===0&&S.secs===8&&S.has(eu)&&t.grpMorale(foe.units)?.weak.includes('surprised'),'unaware, they are surprised for 8 s, and their cards say so');
+  const od=t.Commander.prototype.orders;let n=0;t.Commander.prototype.orders=function(){if(this.team===foe.team)n++;return od.apply(this,arguments)};try{for(let i=0;i<60;i++)t.updateBattle(1/30)}finally{t.Commander.prototype.orders=od}
+  ok(n===0,'surprised, their captain gives no orders');ok(t.flankMul(eu,front)>1,'a blow from their front lands as on the flank');
+  const knight=b.units.find(u=>u.team===0);ok(S.shock(knight,eu)===t.AMBUSH.shock,'the ambushers\u2019 first charge shocks them harder');
+  b.t=S.until;ok(!S.has(eu)&&t.flankMul(eu,front)===1&&S.shock(knight,eu)===1,'the surprise ends on time');b.over=true;b.win=true;b.endT=0;t.updateBattle(.01);
+  ok(/Ambush:<\/b> they were unaware of you, surprised for 8 s/.test(document.getElementById('panel').innerHTML),'the battle report names the ambush')}
  reset();const monster=t.asMonster({id:'wolf',n:2,lv:1,x:P.x+60,y:P.y,cool:0});W.monsters=[monster];t.startEncounter({kind:'monster',ref:monster,lv:1,list:monster.troops.slice(),mine:true,allies:[],foes:[]});ok(!!ambush()&&document.querySelector('[data-act="fight"]').textContent==='Normal attack','undetected monster encounters expose both attack choices');
  reset();const caravan=Object.assign(new t.CaravanParty(),{from:home.name,to:home.name,fac:'vale',x:P.x+60,y:P.y,goods:{grain:1},gold:0,guards:2,tc:{militia:2},cool:0});W.caravans=[caravan];t.startEncounter({kind:'caravan',ref:caravan,list:caravan.troops.slice(),mine:true,allies:[],foes:[]});ok(!!ambush(),'undetected caravans expose the ambush choice');
  reset();t.parley(enemy,'band');t.act('pl-fight');ok(G.enc.mine&&!!ambush(),'attacking through a parley preserves the player attack choice');

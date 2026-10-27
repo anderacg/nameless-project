@@ -385,7 +385,7 @@ class Commander{
     if(aiAny())Commander.of(0).think();// (yours: the groups the AI has, deploy.js aiHas)
   }
   // one think: its orders, then each group's pace, formation and front (finish)
-  think(){if(B.hunt&&this.team===0){B.hunt.orders(Object.values(this.groups()).flat().map(id=>B.groups[id]));return}const groups=B.sides?.active?this.groups():null,N=this.orders();if(groups)(this.tactics||(this.tactics=new ArmyTactics(this))).step(groups);this.finish(N)}
+  think(){if(B.surprise?.holds(this.team))return;if(B.hunt&&this.team===0){B.hunt.orders(Object.values(this.groups()).flat().map(id=>B.groups[id]));return}const groups=B.sides?.active?this.groups():null,N=this.orders();if(groups)(this.tactics||(this.tactics=new ArmyTactics(this))).step(groups);this.finish(N)}
   // a captain's think: its posture, then each arm in turn on one reading of the battle (captainCtx); it hands back its groups (captainFinish's)
   orders(){
     // (ck: this captain's own memory (captainMem): your army's and your allies' are on one side but each its own)

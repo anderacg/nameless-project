@@ -22,6 +22,7 @@ const GLYPH={
   outmatched:['g...g','gg.gg','.....','.g.g.','..g..'],
   recentloss:['ggggg','.g.g.','..g..','.g.g.','ggggg'],
   charged:['...gg','..gg.','.ggg.','.gg..','gg...'],
+  surprised:['g.g.g','.....','..g..','..g..','..g..'],
   leader:['g.g.g','ggggg','ggggg','.....','.....'],
   losing:['..g..','..g..','g.g.g','.ggg.','..g..'],
   tired:['gggg.','..g..','.g...','gggg.','.....'],
@@ -56,7 +57,7 @@ const GLYPH={
 };
 GLYPH.spent=GLYPH.tired;// (spent: tired's mark, rimmed red)
 // each badge's rim: morale in its own colours, weaknesses in red (a charge in gold)
-const BADGE_RIM={breaking:'#ff8040',rallying:'#9fe09a',missile:'#e8a75a',confident:'#70dfb0',outmatched:'#d8b35a',recentloss:'#e8a75a',wavering:'#ffa040',routing:'#f2efe6',shattered:'#8a8f98',flanked:'#e0605a',outnumbered:'#e0605a',charged:'#ffd25a',leader:'#e0605a',losing:'#e0605a'};
+const BADGE_RIM={breaking:'#ff8040',rallying:'#9fe09a',missile:'#e8a75a',confident:'#70dfb0',outmatched:'#d8b35a',recentloss:'#e8a75a',wavering:'#ffa040',routing:'#f2efe6',shattered:'#8a8f98',flanked:'#e0605a',outnumbered:'#e0605a',charged:'#ffd25a',surprised:'#e0605a',leader:'#e0605a',losing:'#e0605a'};
 /* the cards' other badges, rimmed by their kind (BADGE_KIND): an order warm gold, the pace pale grey, an ability on green
    (Stand Fast! too), a warning amber (few shots, tired, falling back), something bad red (no shots, spent), a flag steel blue,
    sight teal; morale and weaknesses keep their own rims above */
@@ -66,7 +67,7 @@ const BADGE_KIND={ai:'ai',amove:'order',move:'order',attack:'order',charge:'orde
 for(const k in BADGE_KIND)BADGE_RIM[k]=BADGE_CAT[BADGE_KIND[k]];
 const CONFIDENCE_LABEL='Confident: visible, distance-weighted fighting strength advantage. Up to +'+CONFIDENCE.max+' morale and '+Math.round(CONFIDENCE.resist*100)+'% less ordinary morale shock. Panic and leader loss can suppress it.';
 const MORALE_STATE={steady:{c:'#78c474',n:'Steady'},shaken:{c:'#e8d04a',n:'Shaken'},wavering:{c:'#ffa040',n:'Wavering'},breaking:{c:'#ff8040',n:'Breaking'},rallying:{c:'#9fe09a',n:'Rallying'},routing:{c:'#f2efe6',n:'Routing'},shattered:{c:'#8a8f98',n:'Shattered'}};
-const WEAK_N={missile:'Unanswered missile fire: recent ranged damage without enough successful retaliation',tired:'Tired: slower and weaker; standing still restores them',flanked:'Flanked: hit from the side or behind',outmatched:'Outmatched: stronger visible opposition in the wider area',recentloss:'Recent losses: temporary pressure that fades; some morale loss remains',outnumbered:'Locally overwhelmed: close fighting strength or substantial threats on opposite sides',charged:'Charged: hit by a charge',leader:'Leader fallen',losing:'Army depleted: fewer than half as many active troops overall (informational, not a direct morale penalty)'};
+const WEAK_N={surprised:'Surprised: caught in an ambush; no orders yet, and every blow lands as on the flank',missile:'Unanswered missile fire: recent ranged damage without enough successful retaliation',tired:'Tired: slower and weaker; standing still restores them',flanked:'Flanked: hit from the side or behind',outmatched:'Outmatched: stronger visible opposition in the wider area',recentloss:'Recent losses: temporary pressure that fades; some morale loss remains',outnumbered:'Locally overwhelmed: close fighting strength or substantial threats on opposite sides',charged:'Charged: hit by a charge',leader:'Leader fallen',losing:'Army depleted: fewer than half as many active troops overall (informational, not a direct morale penalty)'};
 // a state's badge (only when its morale is failing: steady and shaken show none)
 const stateIcon=st=>['wavering','breaking','routing','rallying','shattered'].includes(st)?st:null;
 // a badge's pixels: [x, y, colour] (9×9: its rim, a dark inside, its 5×5 glyph in white; rim: another colour than its own)

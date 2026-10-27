@@ -189,8 +189,26 @@ function sideOf(t,src){
 // a word over a soldier, unless the same word is already up close by (a whole line breaking says it once)
 function moraleSay(u,t,c,life){if(B.floats.some(f=>f.t===t&&Math.abs(f.x-u.x)<40&&Math.abs(f.y-u.y+22)<30))return;B.floats.push({x:u.x,y:u.y-22,t,life:life||.8,c})}
 // a blow's weight by the side it lands on (and a shake to its morale)
+// an ambush sprung on the world map (engage.js canWorldAmbush): the foes there at its start are taken by surprise, the longer the
+// less they suspected (stage: their awareness's, the map's eye: 0 unaware .. 3 all but sure). stages: [s, morale shaken] by stage.
+// Meanwhile their captains give no orders (they stand as they marched, each man fighting where he is), any blow on them lands as on
+// their flank, and the first charge each ambushing group lands shocks them AMBUSH.shock times (for AMBUSH.burst s)
+const SURPRISE={stages:[[8,15],[6,10],[5,7],[4,5]],says:['unaware of you','barely suspicious','suspicious','all but onto you']};
+class Surprise{
+  static stage(aware){return Math.min(3,Math.round(clamp(aware||0,0,1)*4))}
+  static begin(b,e){if(e?.btype?.kind!=='ambush'||e.btype.hid||e.aware==null)return null;return b.surprise=new Surprise(b,this.stage(e.aware))}
+  constructor(b,stage){const [secs,amt]=SURPRISE.stages[stage];this.stage=stage;this.secs=secs;this.until=b.t+secs;this.sprung=new Map();
+    this.groups=new Set(Object.values(b.groups).filter(g=>g.foe).map(g=>g.id));this.teams=new Set([...this.groups].map(id=>b.groups[id].team));
+    for(const u of b.units)if(this.groups.has(u.grp)&&!steady(u)&&u.mor!=null)shake(u,amt);
+    const by=b.hero||b.units.find(u=>u.team===0);if(by)battleEvent('ambush',{u:by});log('Ambush! They were '+SURPRISE.says[stage]+': surprised for '+secs+' s.','good','war')}
+  get active(){return B.t<this.until}
+  has(u){return this.active&&this.groups.has(u.grp)}
+  holds(team){return this.active&&this.teams.has(team)}
+  shock(u,t){if(!this.has(t))return 1;const k=u.grp||'u'+u.id,sp=this.sprung.get(k);if(sp===undefined){this.sprung.set(k,B.t);return AMBUSH.shock}return B.t-sp<=AMBUSH.burst?AMBUSH.shock:1}
+  get report(){return{stage:this.stage,secs:this.secs,say:SURPRISE.says[this.stage]}}
+}
 function flankMul(t,src){
-  if(!src||B.opts&&B.opts.tournament||t.hero&&MANUAL_HERO)return 1;const s=sideOf(t,src);if(s==='front')return 1;// (a tournament: no flank bonus; morale off still has it, only the shake and banner go)
+  if(!src||B.opts&&B.opts.tournament||t.hero&&MANUAL_HERO)return 1;const s0=sideOf(t,src),s=s0==='front'&&B.surprise?.has(t)?'flank':s0;if(s==='front')return 1;// (a tournament: no flank bonus; morale off still has it, only the shake and banner go)
   if(!B.noMorale){if(!steady(t)&&B.t-(t.sideShockAt??-Infinity)>=RESOLVE.flankEvery){shake(t,MORALE[s]);t.sideShockAt=B.t}t.flankAt=B.t;const r=resolveOf(t);if(r)r.flankAt=B.t;battleEvent('flank',{u:t,src})}// (its banner, now and then: battlehud.js)
   if(!src.arrow)moraleSay(t,s==='rear'?'Rear!':'Flank!','#ffb04a',.5);
   return 1+(FLANK[s]-1)*(src.arrow?FLANK.arrow:1);
@@ -418,7 +436,7 @@ function chargeMul(u,t){
   const m=momentum(u),s=u.s;u.run=0;if(s.range&&!s.charge||m<(s.charge?CHARGE.min:CHARGE.foot_min))return 1;fatigueCharge(u,m);// (the charge spends the runner's stamina: fatigue.js)
   if(spearBraced(t,u)){if(PHYSICS.on){physBraced(u,t,m);moraleSay(t,'Braced!','#cfe0ff',.7)}else B.floats.push({x:t.x,y:t.y-22,t:'Braced',life:.6,c:'#cfe0ff'});return 1}// (physics: the charge stopped dead, the riders hurt: physics.js)
   // (out of hiding: a group unseen till it charged shakes them harder, once: terrain.js ambushMul)
-  const amb=B.terrain?ambushMul(u):1;
+  const amb=Math.max(B.terrain?ambushMul(u):1,B.surprise?.shock(u,t)||1);
   // (physics on: the impact throws them by the two masses in place of chargeJolt and chargePush, physics.js physImpact)
   if(s.charge){vfxCharge(u,t,m);if(!PHYSICS.on)chargeJolt(u,m);fx(t.x,t.y-6,'#fff',4);if(!B.noMorale&&!steady(t)&&t.mor!=null){shake(t,CHARGE.shock*m*amb);t.shockAt=B.t;const r=resolveOf(t);if(r)r.shockAt=B.t}if(PHYSICS.on)physImpact(u,t,m);else chargePush(u,t,m);if(m>.6)moraleSay(t,'Charge!','#fff',.6);
     return 1+CHARGE.cav*m*formCharge(u,t,sideOf(t,u))*groundCharge(u,t)}// (downhill harder, uphill softer, into woods halved: terrain.js)
@@ -437,7 +455,7 @@ function grpMorale(m){
   const state=owners.length===1?owners[0].state:rout*2>l.length?'routing':moraleStateOf(mor);// (a mixed group: by its average, as one resolve)
   const ago=(k,w)=>owners.some(r=>r[k]!=null&&B.t-r[k]<w),team=l[0].team,weak=[];
   if(ago('flankAt',MORALE_WEAK.flanked))weak.push('flanked');if(ago('outAt',MORALE_WEAK.outnumbered))weak.push('outnumbered');if(ago('shockAt',MORALE_WEAK.charged))weak.push('charged');
-  if(B.leadFell&&B.leadFell[team]!=null&&B.t-B.leadFell[team]<MORALE_WEAK.leader)weak.push('leader');if(B.losing&&B.losing[team])weak.push('losing');
+  if(B.surprise?.has(l[0]))weak.push('surprised');if(B.leadFell&&B.leadFell[team]!=null&&B.t-B.leadFell[team]<MORALE_WEAK.leader)weak.push('leader');if(B.losing&&B.losing[team])weak.push('losing');
   const st=grpStamina(m);if(st!=null&&st*FATIGUE.max<FATIGUE.tired)weak.push('tired');
   const confident=owners.every(r=>!r.routed&&r.mor>0&&r.control?.order!=='withdraw'&&r.confidence>.1);
   if(owners.some(r=>!r.routed&&r.outmatched>.1))weak.push('outmatched');if(owners.some(r=>r.lossStrain>1))weak.push('recentloss');if(owners.some(r=>r.missilePressure>0))weak.push('missile');

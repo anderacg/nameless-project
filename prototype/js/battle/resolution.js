@@ -63,7 +63,7 @@ class BattleResolution{
     }
     if(!b.opts.tournament)for(const u of b.units)if(u.team===0&&!u.hero&&!u.comp&&!u.lord&&!u.leader&&(u.hp>0||u.left))(b.txp=b.txp||{})[u.type]=(b.txp[u.type]||0)+(u.xp||0)+TROOP_XP.fight+(b.win?TROOP_XP.win:0);
     const txp=b.txp||{},o=b.opts,win=b.win,retreat=!!b.retreat,caught=b.caught||0,got=b.withdrawn||0,standing=b.units.filter(u=>u.team===1&&u.hp>0).length,fallen=Object.values(b.lost).reduce((a,n)=>a+n,0);bbar.hidden=true;G.mode='dialog';lootStart();
-    const lost=o.tournament?{}:b.lost,kills=b.kills,slain=b.slain,h=b.hero,X=b.hx;
+    const lost=o.tournament?{}:b.lost,kills=b.kills,slain=b.slain,h=b.hero,X=b.hx;this.ambush=b.surprise?.report;
     if(b.bestCombo>=3)toast('Your longest chain of blows: '+b.bestCombo+' hits.',undefined,'war');
     // carry the hero's condition out of the fight; a knocked-out hero comes to at 10% health
     if(h.hp>0||h.left)P.hp=h.left?h.hpLeft:h.hp;else{P.hp=Math.max(1,Math.round(h.max*.1));log('You come to after the fight, badly wounded.','bad','war')}
@@ -153,7 +153,7 @@ class BattleResolution{
     worldEmit('battle:ended',{enc:e,how:win?'won':!retreat?'lost':G.encAgain===e?'rundown':'withdrawn'});
     G.encCool=retreat?4:3;G.enc=null;G.mode='dialog';
     const report=groupLosses?{groups:groupLosses.slice().sort((a,b)=>a.slot-b.slot).map(row=>({id:row.id,type:row.type,name:row.name,start:row.start,
-      fit:row.start-row.count-row.rearguard,wounded:row.wounded,killed:row.count-row.wounded+row.rearguard,saved:row.saved,rearguard:row.rearguard})),characters:this.characterReport||[],...(this.unitOfBattle?{best:this.unitOfBattle}:{})}:null;
+      fit:row.start-row.count-row.rearguard,wounded:row.wounded,killed:row.count-row.wounded+row.rearguard,saved:row.saved,rearguard:row.rearguard})),characters:this.characterReport||[],...(this.unitOfBattle?{best:this.unitOfBattle}:{}),...(this.ambush?{ambush:this.ambush}:{})}:null;
     lootShow(html,lost,saved,'cont',report);
   }
 }

@@ -152,12 +152,11 @@ function battleTypeFor(e){
   return cv&&hash(g.tx,g.ty,G.day*13+7)<BTYPE_WORLD.cover[cv]*by?{kind:'ambush',hid:1}:null}
 // you may lie in wait for them: you rode at them, where there is cover, and it is no bridge's fight
 const WORLD_ATTACK_KINDS=['party','lord','patrol','caravan','monster'];
-// A known sighting remains detection until travel awareness's existing memory expires.
+// any stage short of detected (unaware, suspicious, losing suspicion) may be ambushed: the less aware, the longer the surprise (morale.js Surprise)
 function canWorldAmbush(e){
   if(!e||!WORLD_BATTLE.on||!e.mine||!WORLD_ATTACK_KINDS.includes(e.kind)||e.btype||e.fight||P.stay||B)return false;
   const o=e.ref?.src||e.ref;if(!o||o===P||o.dead||o.gone||o.inside||o.fight||!Number.isFinite(o.x)||!Number.isFinite(o.y)||!['lord','band','patrol','caravan','monster'].includes(o.mapKind))return false;
-  if(TravelAwareness.sees(o))return false;
-  return ![...(TravelAwareness.records.get(o)?.values()||[])].some(r=>r.last!=null&&TravelAwareness.time-r.last<=TRAVEL_GROUPS.memory);
+  return !TravelAwareness.sees(o);
 }
 const canSpring=e=>WORLD_BATTLE.on?canWorldAmbush(e):TERRAIN.on&&!!e.mine&&BTYPE_WORLD.kinds.includes(e.kind)&&!e.btype&&!!coverAt(P.x,P.y);
 function encounterAttackButtons(e){return '<button class="btn primary" type="button" data-act="fight">'+(WORLD_BATTLE.on&&e.mine&&WORLD_ATTACK_KINDS.includes(e.kind)?'Normal attack':'Fight')+'</button>'+(canSpring(e)?'<button class="btn" type="button" data-act="bt-spring">'+(WORLD_BATTLE.on?'Ambush attack':'Spring an ambush')+'</button>':'')}
@@ -167,10 +166,10 @@ function typeHtml(e){const bt=e.btype;
   if(bt&&bt.kind==='bridge')return bt.def===0?'<p class="gold"><strong>Hold the bridge.</strong> You stand on your bank by it: they must come at you over the river, by the bridge'+(bt.ford?' or a ford far off it.':' or not at all.')+'</p>'
     :'<p class="gold"><strong>Take the bridge.</strong> They hold the far bank by it'+(bt.ford?', a ford far off it':'')+': you must cross.</p>';
   if(bt&&bt.kind==='ambush')return '<p class="bad"><strong>Ambush!</strong> They burst from cover beside the road: your band is caught in march order, with no time to deploy.</p>';
-  if(WORLD_BATTLE.on&&canWorldAmbush(e))return '<p class="muted">They have not detected your army. Normal attack lets both armies form up. Ambush attack begins immediately from your current positions.</p>';
+  if(WORLD_BATTLE.on&&canWorldAmbush(e)){const st=Surprise.stage(TravelAwareness.level(e.ref?.src||e.ref));return '<p class="muted">They are '+SURPRISE.says[st]+'. Normal attack lets both armies form up. Ambush attack begins at once from where you stand, and catches them surprised for '+SURPRISE.stages[st][0]+' s.</p>'}
   return canSpring(e)?'<p class="muted">There is cover here: you can lie in wait beside the road and spring an ambush on them as they pass.</p>':''}
 // (Spring an ambush: your band hidden beside the road, theirs on it in march order; no deployment for either)
-onAct('bt-',a=>{const e=G.enc;if(a==='bt-spring'&&e&&G.mode==='dialog'&&canSpring(e)){e.btype={kind:'ambush',hid:0};startBattle({enemies:e.list,tournament:false,lv:e.lv||1,deploy:false})}});
+onAct('bt-',a=>{const e=G.enc;if(a==='bt-spring'&&e&&G.mode==='dialog'&&canSpring(e)){e.btype={kind:'ambush',hid:0};if(WORLD_BATTLE.on)e.aware=TravelAwareness.level(e.ref?.src||e.ref);startBattle({enemies:e.list,tournament:false,lv:e.lv||1,deploy:false})}});
 function startEncounter(e){
   if(e.mine==null)e.mine=!!G.youAttack;G.youAttack=false;if(e.lv==null&&e.ref&&e.ref.ld)e.lv=chiefLv(e.ref);// did you start it (you may call that off)? a chieftain's band fights at its level
   if(e.btype==null){const bt=battleTypeFor(e);if(bt)e.btype=bt}// (a battle type: none with terrain off)

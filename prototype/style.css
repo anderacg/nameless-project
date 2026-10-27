@@ -630,7 +630,7 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 .loot-stats b{font-size:var(--fs-2xs);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
 .battle-report{margin:14px 0;padding:12px;background:var(--panel-2);border:1px solid var(--line-2);border-radius:4px}
 .battle-report p{font-size:13px;margin:7px 0}
-.battle-report .battle-best{font-size:var(--fs-base);color:var(--accent)}.battle-best b{color:var(--fg)}
+.battle-report .battle-best,.battle-report .battle-ambush{font-size:var(--fs-base);color:var(--accent)}.battle-best b,.battle-ambush b{color:var(--fg)}
 .battle-report-scroll{overflow-x:auto}
 .battle-report table{width:100%;border-collapse:collapse;font-size:14px}
 .battle-report th,.battle-report td{padding:9px 7px;border-bottom:1px solid var(--line-2);text-align:right}
