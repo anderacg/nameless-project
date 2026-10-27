@@ -27,6 +27,26 @@ function battleMood(base,why){
   if(bm){if(bm.share>0){d-=MOOD.loss*bm.share;if(bm.share>=.2)why.push('heavy losses')}const sk=bm.shaken-1;if(sk<-.1){d+=MOOD.shaken*sk;why.push('the men shaken')}if(bm.broke){d+=MOOD.rout;why.push('the enemy broke and fled')}}
   const m0=P.morale;P.morale=clamp(P.morale+Math.round(d),0,100);
   return '<p class="'+(P.morale<m0?'bad':P.morale>m0?'good':'muted')+'">Your band\u2019s morale: '+Math.round(m0)+' \u2192 '+Math.round(P.morale)+(why.length?' ('+why.join(', ')+')':'')+'.</p>'}
+/* the battle report's armies (ui/loot.js battleArmiesHtml), read off the field before it goes: each army that took the field, yours
+   first, with how many of it fought (reinforcements that never came on not counted), fell, withdrew off the field, fled (routing,
+   on it or off it), still stand, and the kills it is credited with; a world battle's armies as its sides know them (sides.js),
+   else your band, its allies and the enemy. And what your army earned: the gold, renown, experience and prisoners settling the
+   battle gave (or took), from the campaign as it was (mark) to as it is (since) */
+class ArmyReport{
+ constructor(b){this.armies=ArmyReport.armies(b);this.mark=ArmyReport.tally()}
+ static row(name,stance,colour,us,kills){return {name,stance,colour,start:us.length,fallen:us.filter(u=>u.hp<=0&&!u.left).length,withdrew:us.filter(u=>u.left&&!u.rout).length,
+  fled:us.filter(u=>u.rout&&(u.hp>0||u.left)).length,standing:us.filter(u=>u.hp>0&&!u.left&&!u.rout).length,kills}}
+ static armies(b){const S=b.sides,fought=u=>!u.waiting,row=ArmyReport.row;
+  if(S){const me=S.records.find(r=>r.owner===P),stance=r=>r===me?'Your army':S.pair(me,r)>0?'Ally':S.pair(me,r)<0?'Hostile':'Neutral';
+   return S.records.filter(r=>r.joined).sort((x,y)=>(y===me)-(x===me)).map(r=>row(r===me?bandName():S.label(r),stance(r),S.colour(r.team),b.units.filter(u=>r.groups.includes(u.grp)&&fought(u)),r.kills.length))}
+  const mine=b.units.filter(u=>u.team===0&&fought(u)&&!(u.grp&&b.groups[u.grp]?.ally)),allies=b.units.filter(u=>u.team===0&&fought(u)&&u.grp&&b.groups[u.grp]?.ally),foes=b.units.filter(u=>u.team!==0&&fought(u));
+  return [row(bandName(),'Your army',SIDE.own.ui,mine,b.kills||0),...(allies.length?[row('Allies','Ally',SIDE.ally.ui,allies,0)]:[]),row('Enemy','Hostile',SIDE.foe.ui,foes,b.units.filter(u=>u.team===0&&fought(u)&&u.hp<=0&&!u.left).length)]}
+ // (your hero's experience all told: every level's and the present one's, so a level gained in between counts whole)
+ static tally(){const h=leaderOf(P);let xp=h.xp;for(let l=1;l<h.lv;l++)xp+=LV_XP(l);return {gold:P.gold,renown:P.renown,xp,prisoners:prisonerCount()}}
+ since(){const n=ArmyReport.tally(),m=this.mark;return {gold:n.gold-m.gold,renown:n.renown-m.renown,xp:n.xp-m.xp,prisoners:n.prisoners-m.prisoners}}
+ // (added to the report its settlement showed)
+ present(){const V=G.lootView;if(!V?.report)return;V.report.armies=this.armies;V.report.rewards=this.since();renderLoot()}
+}
 // A short-lived coordinator carries the finished field into campaign settlement. It is never attached to saved state.
 class BattleResolution{
   constructor(battle=null){this.battle=battle}
@@ -56,15 +76,17 @@ class BattleResolution{
     // the unit of the battle: your troop group with the most kills (then the most damage dealt); none if none of them fought
     if(!o.tournament){const K=b.grpKills||{};this.unitOfBattle=Object.values(b.groups).filter(g=>g.player&&g.sourceGroupId).map(g=>({id:g.sourceGroupId,name:g.name,kills:K[g.id]||0,damage:Math.round(g.resolve?.damageDealt||0)}))
       .filter(x=>x.kills||x.damage).sort((x,y)=>y.kills-x.kills||y.damage-x.damage)[0]||null}
+    const armies=o.tournament?null:new ArmyReport(b);// (read off the field before it goes)
     B=null;fieldDone();updateHint();// (the field back to today's height: setup.js)
     if(o.tournament){
       let html;if(win){P.gold+=45;P.renown+=6;gainXp(25);if(G.town)addRep(G.town.ref.name,8);html='<h2>Champion</h2><p>The crowd chants your name. You take <strong class="gold">45 gold</strong> and gain renown.</p>';log('You win the tournament.','good')}
       else{html='<h2>Beaten</h2><p>The champion takes your entry fee and sends you off with a bruised pride.</p>';log('You lose the tournament.','bad')}
       lootShow(html,null,0,'back-town');return;
     }
-    if(b.sides?.active)return b.sides.settle(b,lost,groupLosses);
-    if(b.hunt)return b.hunt.settle(b,lost,groupLosses);
-    this.conclude(win,lost,kills,false,slain,retreat&&{caught,got,standing,fallen,blocked:!!b.stalemate,carried:h.hp<=0&&!h.left},txp,groupLosses);
+    if(b.sides?.active)b.sides.settle(b,lost,groupLosses);
+    else if(b.hunt)b.hunt.settle(b,lost,groupLosses);
+    else this.conclude(win,lost,kills,false,slain,retreat&&{caught,got,standing,fallen,blocked:!!b.stalemate,carried:h.hp<=0&&!h.left},txp,groupLosses);
+    armies?.present();
   }
   conclude(win,lost,kills,auto,slain,retreat,txp,groupLosses){
     if(auto)BATTLE_MOOD=null;

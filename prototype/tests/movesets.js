@@ -70,11 +70,17 @@ Kit.suite(({ok,info})=>{const t=T,G=t.G,L=t.BattleLab,M=t.MOVESETS,ev=s=>(0,eval
    ok(w===0&&B.units.every(u=>u.hardAt===undefined),'MOVESETS.old: in a 20 s fight of bears, a troll and greatswords no one winds up, no cooldown is kept')}
   // ======== the measure: your hero's knockdowns a minute (no armour, mass 1) against two bears, a troll and six knights, old rules and new
   ev('BEAST_TACTICS.on=true');
+  // (charged: those a charge's impact made, physics.js physImpact: riders charge from a true run-up (commander.js CavalryRide), and
+  // a charge at speed throws down under either rules; the rest, by blows, are what the movesets take away)
   const fight=(foe,n,form,seed)=>{const B=lab([{type:'hero',count:1}],[Gp(foe,n,form)],{ai:true,seed,distance:300,ground:'none'}),h=B.hero;h.hp=h.max=1e6;for(const u of B.units)if(u.team===1)u.hp=u.max=1e6;
-   let downs=0,was=false;go(B,60,()=>{const d=h.down>0;if(d&&!was)downs++;was=d});return{downs,mass:t.physMass(h),armor:t.armorOf(h.s)}};
+   const impact=window.physImpact,fall=window.physFall;let charging=false,byCharge=false;
+   window.physImpact=function(u,tg){charging=tg===h;try{return impact.apply(this,arguments)}finally{charging=false}};window.physFall=function(tg){if(tg===h&&charging)byCharge=true;return fall.apply(this,arguments)};
+   let downs=0,charged=0,was=false;try{go(B,60,()=>{const d=h.down>0;if(d&&!was){downs++;if(byCharge)charged++}byCharge=false;was=d})}finally{window.physImpact=impact;window.physFall=fall}
+   return{downs,charged,mass:t.physMass(h),armor:t.armorOf(h.s)}};
   for(const [name,foe,n,form] of [['two bears','bear',2],['a troll','troll',1],['six knights','hum_knight',6,'wedge']]){
-   const per=old=>{M.old=old;try{const R=[1,2,3].map(s=>fight(foe,n,form,s));return{avg:R.reduce((a,r)=>a+r.downs,0)/R.length,R}}finally{M.old=false}},b=per(true),a=per(false);
-   info('MEASURE '+name+': your hero ('+b.R[0].armor+', mass '+b.R[0].mass.toFixed(2)+') knocked down '+b.avg.toFixed(1)+' a minute with the old rules ('+b.R.map(r=>r.downs).join(', ')+'), '+a.avg.toFixed(1)+' with movesets ('+a.R.map(r=>r.downs).join(', ')+')');
-   ok(a.avg*4<b.avg,'against '+name+': '+a.avg.toFixed(1)+' knockdowns a minute, from '+b.avg.toFixed(1))}
+   const per=old=>{M.old=old;try{const R=[1,2,3].map(s=>fight(foe,n,form,s)),avg=k=>R.reduce((a,r)=>a+r[k],0)/R.length;return{avg:avg('downs'),charged:avg('charged'),R}}finally{M.old=false}},b=per(true),a=per(false);
+   info('MEASURE '+name+': your hero ('+b.R[0].armor+', mass '+b.R[0].mass.toFixed(2)+') knocked down '+b.avg.toFixed(1)+' a minute with the old rules ('+b.R.map(r=>r.downs).join(', ')+'), '+a.avg.toFixed(1)+' with movesets ('+a.R.map(r=>r.downs).join(', ')+'); by charges '+b.charged.toFixed(1)+' and '+a.charged.toFixed(1));
+   // (riders: their charges, from a run-up, still throw down; it is the knockdowns by blows the movesets cut)
+   const n0=foe==='hum_knight'?a.avg-a.charged:a.avg;ok(n0*4<b.avg,'against '+name+': '+n0.toFixed(1)+' knockdowns a minute'+(foe==='hum_knight'?' by blows (and '+a.charged.toFixed(1)+' by charges)':'')+', from '+b.avg.toFixed(1))}
  }finally{if(L.active)L.exit();M.old=keep.old;M.hard.maul.down=keep.maul;M.hard.heavy.down=keep.heavy;t.P.gear.weapon=keep.weapon;ev('PHYSICS.on='+keep.phys+';BEAST_TACTICS.on='+keep.beasts+';checkBattleOver=window.__cbo');if(L.active)L.exit()}
 });

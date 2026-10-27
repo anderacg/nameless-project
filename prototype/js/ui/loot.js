@@ -49,7 +49,7 @@ function battleReportHtml(report){
   if(!report)return '';
   const rows=report.groups||[],characters=report.characters||[];
   const best=report.best;// (the unit of the battle: resolution.js)
-  return '<section class="battle-report" aria-label="Army battle report"><div class="lab">'+(P.band?htmlText(P.band):'Your army')+' · battle report</div>'+
+  return '<section class="battle-report" aria-label="Army battle report">'+battleArmiesHtml(report)+'<div class="lab">'+(P.band?htmlText(P.band):'Your army')+' · battle report</div>'+
     (best?'<p class="battle-best" data-best-group="'+htmlText(best.id)+'"><b>Unit of the battle:</b> '+htmlText(best.name)+' — '+(best.kills?best.kills+' kill'+(best.kills>1?'s':''):best.damage+' damage dealt')+'</p>':'')+
     (rows.length?'<p class="muted">Fit includes soldiers returned immediately by medicine. Wounded are new injuries from this battle; earlier wounded are not included.</p><div class="battle-report-scroll" tabindex="0" role="region" aria-label="Troop group outcomes"><table><thead><tr><th scope="col">Group</th><th scope="col">Started</th><th scope="col">Fit</th><th scope="col">Wounded</th><th scope="col">Killed</th></tr></thead><tbody>'+rows.map(g=>
       '<tr data-report-group="'+htmlText(g.id)+'"><th scope="row">'+htmlText(g.name)+'<small>'+htmlText(ST[g.type]?.n||g.type)+' · '+htmlText(g.id)+'</small>'+
@@ -57,6 +57,15 @@ function battleReportHtml(report){
       '<td>'+g.start+'</td><td>'+g.fit+'</td><td class="'+(g.wounded?'gold':'muted')+'">'+g.wounded+'</td><td class="'+(g.killed?'bad':'muted')+'">'+g.killed+'</td></tr>').join('')+'</tbody></table></div>':'<p class="muted">No troop groups took part.</p>')+
     (characters.length?'<div class="battle-report-characters">'+characters.map(c=>'<span>'+htmlText(c.name)+' · <strong>'+htmlText(c.status)+'</strong></span>').join('')+'</div><p class="muted">Character condition at field exit; heroes and companions are not counted as killed.</p>':'')+'</section>';
 }
+// the battle's armies, army by army (resolution.js ArmyReport), who was still on the field when yours left it, and what your army
+// earned by it; none for a report without them
+function battleArmiesHtml(report){
+  const A=report.armies,R=report.rewards;if(!A||!A.length)return '';const td=(n,c)=>'<td class="'+(n?c:'muted')+'">'+n+'</td>';
+  const sign=(n,w,c)=>n?'<span class="'+(n>0?c:'bad')+'">'+(n>0?'+':'−')+Math.abs(n)+' '+w+'</span>':'',got=R?[sign(R.gold,'gold','gold'),sign(R.renown,'renown','good'),sign(R.xp,'experience','good'),R.prisoners>0?'<span>'+R.prisoners+' prisoner'+(R.prisoners>1?'s':'')+' taken</span>':''].filter(Boolean):[];
+  return '<div class="lab">Armies in the battle</div><div class="battle-report-scroll" tabindex="0" role="region" aria-label="Army outcomes"><table class="army-report"><thead><tr><th scope="col">Army</th><th scope="col">Fought</th><th scope="col">Fallen</th><th scope="col">Withdrew</th><th scope="col">Fled</th><th scope="col">Standing</th><th scope="col">Kills</th></tr></thead><tbody>'+
+    A.map((a,i)=>'<tr data-report-army="'+i+'"'+(a.stance==='Your army'?' class="mine"':'')+'><th scope="row"><span class="army-flag" style="background:'+htmlText(a.colour)+'" aria-hidden="true">⚑</span>'+htmlText(a.name)+(a.name!==a.stance?'<small>'+htmlText(a.stance)+'</small>':'')+'</th><td>'+a.start+'</td>'+td(a.fallen,'bad')+td(a.withdrew,'')+td(a.fled,'gold')+td(a.standing,'')+td(a.kills,'good')+'</tr>').join('')+'</tbody></table></div>'+
+    (A[0].stance==='Your army'&&!A[0].standing&&A.some(a=>a.standing&&a!==A[0])?'<p class="muted">Still on the field when your army left: '+A.filter(a=>a.standing&&a!==A[0]).map(a=>htmlText(a.name)+' ('+a.standing+')').join(', ')+'. The fight goes on without you.</p>':'')+
+    (R?'<p class="battle-rewards"><b>Your army earned:</b> '+(got.join(' · ')||'<span class="muted">nothing</span>')+'</p>':'')}
 function renderLoot(){
   const V=G.lootView,L=G.loot;if(!V||!L)return;const n=L.pile.reduce((a,s)=>a+s.n,0),any=L.pile.some(lootRoom);
   showPanel(V.head+battleReportHtml(V.report)+lootHtml(V.lost,V.saved)+(L.pile.length?'<div class="btns"><button class="btn primary" type="button" data-act="lt-all"'+(any?'':' disabled title="'+BAG_FULL+'"')+'>Take all you can carry</button></div>'+nav(null,['lt-leave',null,'Continue · leave '+n+' behind',null,true])

@@ -463,6 +463,14 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 .bfield{display:flex;justify-content:center;gap:10px;width:100%;font-size:var(--fs-2xs);font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);white-space:nowrap;overflow:hidden}
 .bfield #bStatus{color:var(--accent);overflow:hidden;text-overflow:ellipsis}
 .bfield.alert #bStatus{animation:blink 1.4s steps(2) infinite}
+/* the withdrawal at a glance (under the balance of power: battlehud.js bhudWithdraw) */
+.bwithdraw{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:3px 6px;width:100%;font:11px/1.3 Arial,sans-serif;color:#cfe0ff}
+.bwithdraw[hidden]{display:none}
+.bwithdraw b{color:#9fc0ff;font-weight:700}.bwithdraw small{color:var(--muted);font-size:11px}.bwithdraw em{color:var(--accent);font-style:normal;font-weight:700}
+.bwithdraw button{min-height:24px;padding:2px 7px;background:rgba(111,168,224,.14);color:#e4eeff;border:1px solid rgba(111,168,224,.55);border-radius:4px;font:11px Arial,sans-serif;cursor:pointer}
+.bwithdraw button:hover,.bwithdraw button:focus-visible{border-color:#9fc0ff}
+.bwithdraw .wgo{background:linear-gradient(#2c4a72,#1a2c46);border-color:#9fc0ff;color:#fff;font-weight:700}
+.obtn.armed{border-color:#9fc0ff;color:#fff;background:linear-gradient(#2c4a72,#1a2c46);box-shadow:inset 0 -2px #9fc0ff}
 /* time and switches (top right) */
 .btime{position:absolute;top:var(--e-t);right:var(--e-r);display:flex;gap:3px;padding:3px;background:var(--hud-face);border:1px solid var(--trim);border-radius:var(--r-md);box-shadow:var(--float),inset 0 0 0 1px var(--shade)}
 .btime .btn{min-height:26px;padding:1px 8px;font-size:var(--fs-sm)}
@@ -629,6 +637,10 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 .battle-report th:first-child{text-align:left;min-width:150px;overflow-wrap:anywhere}
 .battle-report thead th{font-size:12px;color:var(--muted);white-space:nowrap}
 .battle-report small{display:block;font-size:12px;font-weight:normal;color:var(--muted)}
+.battle-report .army-report{margin-bottom:6px}.army-report tr.mine th:first-child{color:#cfe0ff}
+.army-report .army-flag{display:inline-block;width:14px;height:14px;margin-right:6px;border-radius:2px;vertical-align:-2px;font-size:10px;line-height:14px;text-align:center;color:#111}
+.battle-report .battle-rewards{font-size:var(--fs-base);margin:4px 0 14px}.battle-rewards b{color:var(--fg)}
+@media(max-height:500px){.battle-report .army-report th,.battle-report .army-report td{padding:5px 6px}}
 .battle-report-characters{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:12px;font-size:13px;overflow-wrap:anywhere}
 .diff{display:flex;flex-wrap:wrap;gap:2px 10px;font-size:var(--fs-md)}
 .cargo{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:var(--fs-md);color:var(--muted)}
@@ -1183,6 +1195,8 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 .army-panel{position:absolute;top:calc(100% + 6px);left:0;right:0;z-index:30;max-height:min(440px,60dvh);overflow:auto;overscroll-behavior:contain;padding:8px;background:var(--hud-face);border:1px solid var(--trim);border-radius:5px;box-shadow:var(--float);font-size:12px;text-align:left}
 .army-panel header{display:flex;align-items:center;justify-content:space-between;gap:8px}.army-panel header button{min-width:44px;min-height:44px;padding:3px}.army-banners{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;margin:5px 0}.army-banners button{display:flex;align-items:center;gap:7px;min-height:48px;padding:6px;text-align:left;min-width:0}.army-banners button[aria-pressed="true"]{outline:2px solid var(--accent);outline-offset:-2px}.army-banners span{min-width:0}.army-banners strong,.army-banners small{display:block;overflow-wrap:anywhere;font-size:11px}.army-banners small{color:var(--muted);margin-top:3px}.army-flag{flex:none;width:20px;height:25px;color:#111;text-align:center;line-height:25px}.army-relations{border-top:1px solid var(--trim);padding:8px 2px;overflow-wrap:anywhere}.army-relations dl{display:grid;grid-template-columns:52px 1fr;gap:5px;margin:7px 0}.army-relations dd{margin:0}.army-relations dt{color:var(--accent)}.army-relations>small{color:var(--muted)}.callout.neutral{color:#e0ca8c;border-color:#d6b966}
 .mobile-battle-hud .army-panel{top:auto;bottom:calc(100% + 6px);max-height:calc(100dvh - var(--mobile-battle-height,190px) - 20px)}
+.mobile-battle-hud .bwithdraw{justify-content:flex-start}.mobile-battle-hud .bwithdraw button{min-height:36px}
+@media(max-height:500px){.mobile-battle-hud .bwithdraw .wv-dir{display:none}.mobile-battle-hud .bwithdraw button{min-height:32px;padding:1px 6px}}
 .mobile-battle-hud #battleArmiesToggle{top:0;min-height:44px}.mobile-battle-hud .army-arrivals button{min-height:44px}
 @media(max-width:500px){.army-banners{grid-template-columns:1fr}.army-panel{font-size:12px}}
 @media(max-height:500px){.mobile-battle-hud .army-panel{max-height:calc(100dvh - 100px)}.mobile-battle-hud .army-arrivals button{padding:3px 6px}.mobile-battle-hud .army-arrivals button:nth-child(n+2),.mobile-battle-hud .army-arrivals small{display:none}}

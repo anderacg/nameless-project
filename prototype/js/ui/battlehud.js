@@ -154,7 +154,7 @@ function bhudTop(){
   $id('bStatus').textContent=B.over?(B.retreat?'Withdrawn':B.win?'Victory':'Defeat'):B.muster?.active?(B.paused?'Preparation paused · Space to continue':'Forming up · '+B.muster.done+'/'+B.muster.entries.length):B.ready?'Ready · Start Battle to begin':B.deploy?(GUIDE.on?'Deploy: place your band in the shaded zone · Space to begin':'Deploying'):B.paused?(GUIDE.on?'Paused · give your orders · Space to go on':'Paused'):B.speed!==1?B.speed+'×':'';
   document.querySelector('.bfield').classList.toggle('alert',!!(B.deploy||B.paused));
   {const b=$id('bAmove');if(b){b.classList.toggle('on',!!B.amArm);b.setAttribute('aria-pressed',String(!!B.amArm));b.disabled=!!B.deploy}}// (armed: commands.js armAttackMove)
-  bhudAbilities();bhudArmies();
+  bhudAbilities();bhudArmies();withdrawView.hud();
 }
 // Army banners open a relationship view without changing selection or issuing an order.
 class BattleArmyHud{

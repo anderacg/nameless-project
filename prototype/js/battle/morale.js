@@ -372,7 +372,8 @@ function withdrawStep(u,dt){
   const state=u.withdrawal||(u.withdrawal={remaining:null});if(threat&&state.remaining===null)state.remaining=WITHDRAW.disengage;
   if(atExit&&state.remaining===0){leave();return}
   const back=Math.min(dt,state.remaining||0);if(state.remaining>0)state.remaining=Math.max(0,state.remaining-back);
-  const free=dt-back,walking=staOf(u)<FATIGUE.runMin,spd=u.s.spd*tiredMul(u).spd*(u.slow>0?.5:1),X=exitFor(u),w=B.terrain?steerDir(u,X.x,X.y):null,d=Math.hypot(X.x-u.x,X.y-u.y),dx=w?w[0]*d:X.x-u.x,dy=w?w[1]*d:X.y-u.y;// (round rock, cliffs and impassable water: terrain.js)
+  // (a world battle: by its way off the circle, worldbattle.js escapeWay, as routers go: the field's own ways end at its edge)
+  const free=dt-back,walking=staOf(u)<FATIGUE.runMin,spd=u.s.spd*tiredMul(u).spd*(u.slow>0?.5:1),ww=B.world?B.world.escapeWay(u):null,X=ww?{x:u.x+ww[0]*ww[2],y:u.y+ww[1]*ww[2]}:exitFor(u),w=!ww&&B.terrain?steerDir(u,X.x,X.y):null,d=Math.hypot(X.x-u.x,X.y-u.y),dx=w?w[0]*d:X.x-u.x,dy=w?w[1]*d:X.y-u.y;// (round rock, cliffs and impassable water: terrain.js)
   const sp=Math.min(d,spd*(back*WITHDRAW.backstep+free*(walking?MARCH.walk:1))*groundMul(u,dx/d,dy/d));
   if(d>.001){u.x+=dx/d*sp;u.y+=dy/d*sp;u.dir=Math.atan2(dy,dx);u.face=dx>=0?1:-1;u.walkA=u.dir;u.spdNow=free>0?spd*(walking?MARCH.walk:1):spd*WITHDRAW.backstep}
   if(back>0)fatigueStep(u,back,sp>0,true,false,threat);

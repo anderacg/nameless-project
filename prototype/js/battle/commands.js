@@ -62,7 +62,9 @@ function setOrder(o){
   // (Charge and Advance set the pace, run or walk, and nothing else: where they go and whom they fight stay as they were;
   // hold: where they stand; withdraw: off your edge (battlecontrol.js))
   playerOrder(selGroups(),()=>{for(const g of selGroups()){const gr=B.groups[g];if(pace)gr.setWalk(o==='advance');else if(o==='withdraw')gr.withdraw();else if(o==='hold'){gr.amEnd();gr.hold()}}});
-  toast(htmlText(selLabel())+': '+(pace?o==='charge'?'at a run.':'at a walk.':o+'.'));
+  // (withdrawing: the preview done (orderpaths.js WithdrawView); in a battle of several armies, told the rest fight on)
+  if(o==='withdraw')withdrawView.disarm();
+  toast(htmlText(selLabel())+': '+(pace?o==='charge'?'at a run.':'at a walk.':o==='withdraw'&&B.sides?.active?'withdraw. The other armies fight on after you leave.':o+'.'));
   if(o==='charge'&&sfxOn()){const gs=selGroups();if(gs.length)sfx(gs.some(g=>grpUnits(g).some(u=>unitClass(u.s)==='cav'))?'gallop':'charge')}// (riders' hooves, else the horn)
 }
 // a group's flag on or off for the selection: walk, firm (hold ground), cease (cease fire), skirmish, melee (shooters' blades)
