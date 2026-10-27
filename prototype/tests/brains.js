@@ -10,7 +10,8 @@ try{
  // the shared steps
  {const B=t.BRAINS.band,b={cool:2};B.cool(b,.5);ok(b.cool===1.5,'its cool-down runs');
   const open=P.x;P.x=open;const s0=B.sight(100);P.stay={town:'x'};const s1=B.sight(100);P.stay=null;ok(s0>0&&s1===0,'it cannot see you while you stay inside ('+s0+' → '+s1+')');
-  ok(B.canMeet({cool:0},5)===(G.encCool<=0&&!G.modal)&&!B.canMeet({cool:0},20),'it meets you only when close and free to')}
+  const o=t.bandits[0];o.cool=0;G.chase=o;const free=G.encCool<=0&&!G.modal,near=B.canMeet(o,5),far=B.canMeet(o,t.worldBattleReach(o)+5);G.chase=null;
+  ok(near===free&&!far&&!B.canMeet(o,5),'it meets you only when close and free to, and only once it knows you are there (it has detected you, or you ride at it)')}
  // one loop for all: each kind's brain runs
  {const seen={};const keep={};for(const k in t.BRAINS){keep[k]=t.BRAINS[k].think;t.BRAINS[k].think=function(o,d,n){seen[k]=(seen[k]||0)+1;return keep[k].call(this,o,d,n)}}
   P.comps={brann:{ap:5,role:''}};const c=t.compInit('brann');c.lv=3;P.troops={hum_levy:6};t.cpGive('brann','hum_levy',3);
@@ -19,6 +20,7 @@ try{
   ok(['lord','band','cparty','patrol'].every(k=>seen[k]>0)&&(seen.caravan>0||!W.caravans.length),'one loop runs every kind ('+Object.keys(seen).map(k=>k+' '+seen[k]).join(', ')+')')}
  // it stops at an encounter
  {G.encCool=0;G.modal=false;G.mode='world';W.fights=[];P.comps={};// (your companion’s party would run the band down first)
-  const b=t.bandits[0];t.bandits.forEach(x=>{x.fight=null;if(x!==b){x.x=-999;x.y=-999}});W.lords.forEach(l=>{l.fight=null;l.x=-999});W.patrols=[];b.cool=0;b.x=P.x+3;b.y=P.y;P.troops={};b.power();const met=t.updateParties(.01);ok(met&&(G.enc&&G.enc.ref===b||G.par&&G.par.o===b),'and stops when a band meets you (to fight, or to yield if it is cornered)');if(G.enc)t.act('flee')}
+  const b=t.bandits[0];t.bandits.forEach(x=>{x.fight=null;if(x!==b){x.x=-999;x.y=-999}});W.lords.forEach(l=>{l.fight=null;l.x=-999});W.patrols=[];b.cool=0;b.x=P.x+3;b.y=P.y;P.troops={};b.power();t.TravelAwareness.step(.01);const met=t.updateParties(.01);// (that close it has detected you at once: worldobject.js TravelAwareness)
+  ok(met&&(G.enc&&G.enc.ref===b||G.par&&G.par.o===b),'and stops when a band meets you (to fight, or to yield if it is cornered)');if(G.enc)t.act('flee')}
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}
 const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d)};

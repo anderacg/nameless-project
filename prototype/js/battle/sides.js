@@ -29,7 +29,7 @@ class BattleSides{
  teamRecord(team){return this.records.find(r=>r.team===team)}
  record(u){return this.records.find(r=>r.groups.includes(u.grp))||this.teamRecord(u.team)}
  pair(a,b){
-  if(a===b)return 1;if(a.owner===P||b.owner===P){const other=a.owner===P?b:a;if(other.initial&&!other.neutral)return other.base===0?1:-1}
+  if(a===b)return 1;if(a.owner===P||b.owner===P){const other=a.owner===P?b:a;if(other.initial&&!other.neutral)return other.base===0?1:-1;if(other.duty&&armyRelation(a.owner,b.owner)>=0)return 1}
   const relation=armyRelation(a.owner,b.owner);if(relation)return relation;if(a.initial&&b.initial&&!a.neutral&&!b.neutral)return a.base===b.base?1:-1;return 0;
  }
  relation(a,b){if(a===b)return 1;const x=this.teamRecord(a),y=this.teamRecord(b);return x&&y?this.pair(x,y):0}
@@ -43,11 +43,15 @@ class BattleSides{
   for(const r of this.records)for(const id of r.groups){const g=b.groups[id];if(!g)continue;g.team=r.team;if(r.team!==0&&!g.armyName){g.armyName=this.label(r);g.name=g.armyName+' · '+g.name}g.ally=r.team!==0&&this.relation(0,r.team)>0;g.foe=this.relation(0,r.team)<0;if(g.resolve)g.resolve.team=r.team;for(const u of b.units)if(u.grp===id){u.team=r.team;u.hid=0;delete u.ls;delete u.rv;u.tgt=null;if(u.leader)u.leader.team=r.team}}
   for(const a of b.arrows)if(a.by)a.team=a.by.team;b.captains={};b.sight=null;b.cmdT=0;
  }
+ // (your side by duty: an ally of yours in this fight, or the land's own lord or watch against outlaws on it: engage.js localBanditDuty;
+ // a neutral lord riding in for the bounty stays his own)
+ duty(o){const e=this.enc;return (e.allies||[]).some(f=>armySource(f)===o)||(o.mapKind==='lord'||o.mapKind==='patrol')&&!!localBanditDuty(e,o)}
  reserve(o){
   o=armySource(o);const old=this.byOwner.get(o);if(old)return old;if(this.records.length>=BATTLE_JOIN.armies)return null;
-  const relations=this.records.map(r=>armyRelation(o,r.owner));if(!relations.some(v=>v<0))return null;
-  let team=-1;if(!this.active)for(const t of [0,1])if(this.records.every((r,i)=>relations[i]===(r.team===t?1:-1))){team=t;break}
-  if(team<0)this.activate();const r=this.add(o,o,team<0?this.records.length:team);if(this.active)r.team=r.id;return r;
+  const relations=this.records.map(r=>armyRelation(o,r.owner)),duty=this.duty(o);if(!relations.some(v=>v<0))return null;
+  // (a friend of yours by duty joins your side where it is at odds with no one on it: pair)
+  let team=-1;if(!this.active)for(const t of [0,1])if(this.records.every((r,i)=>duty&&t===0&&r.team===0?relations[i]>=0:relations[i]===(r.team===t?1:-1))){team=t;break}
+  if(team<0)this.activate();const r=this.add(o,o,team<0?this.records.length:team);r.duty=duty;if(this.active)r.team=r.id;return r;
  }
  room(o,count=null){return this.b.units.filter(u=>u.hp>0&&!u.left).length+(count??(o.fighters||o.troops.length))<=BATTLE_JOIN.fighters}
  joined(o,force,groups){const r=this.byOwner.get(armySource(o));if(!r)return;r.force=force;this.byForce.set(force,r);r.groups.push(...groups);r.start=this.b.units.filter(u=>groups.includes(u.grp)).length;r.joined=true}

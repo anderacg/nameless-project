@@ -25,8 +25,8 @@ Kit.suite(({ok})=>{
   step(1);const q=level();for(let k=0;k<5;k++)t.travelDetectionState();ok(level()===q,'drawing and reading the gauge never advance suspicion');
   ok(!JSON.stringify(b).includes('suspicion'),'suspicion is runtime state outside entity save records');
   P.stay={town:home.name};step(.1);P.stay=null;ok(level()===0,'taking shelter clears travel suspicion');
-  const herd=t.asHerd({crit:true,id:'deer',n:2,x:P.x+40,y:P.y,hx:P.x+40,hy:P.y,t:99,a:0,idle:true,tire:0,cool:0});W.critters=[herd];A.reset();const walk=window.walk,steps=[];
-  try{window.walk=(...args)=>{steps.push(args);return true};t.HERD_MIND.think(herd,.01,1);ok(!steps.length,'wildlife does not bolt before it notices the player');step(2);t.HERD_MIND.think(herd,.1,1);ok(steps.some(([o,dx])=>o===herd&&dx>0),'wildlife flees once suspicion completes')}finally{window.walk=walk}
+  const herd=t.asHerd({crit:true,id:'deer',n:2,x:P.x+40,y:P.y,hx:P.x+40,hy:P.y,t:99,a:0,idle:true,tire:0,cool:0});W.critters=[herd];A.reset();t.bandits.length=0;const x0=herd.x,row=Math.floor(P.y/t.TILE)*t.MW,strip=[];for(let k=1;k<=8;k++){const j=row+Math.floor(P.x/t.TILE)+k;strip.push([j,t.tiles[j]]);t.tiles[j]=t.T_OPEN}// (no band near: herds flee parties too, WildlifeThreats; open ground east of you for it to run on: the generated world may have a wall or water there)
+  try{  t.WildlifeThreats.rebuild();t.HERD_MIND.think(herd,.01,1);ok(herd.x===x0,'wildlife does not bolt before it notices the player');step(2);t.WildlifeThreats.rebuild();t.HERD_MIND.think(herd,.1,1);ok(herd.x>x0,'wildlife flees once suspicion completes (away from you: '+(herd.x-x0).toFixed(2)+' px)');}finally{for(const [j,v] of strip)t.tiles[j]=v}
   A.reset();A.notice(herd);ok(A.sees(herd),'a hunting shot can immediately alert the herd');
   // (lost sight of you: a hunter goes to where it last saw you, looks about, then turns back; TravelSearch)
   {const S=t.TravelSearch,X=t.TRAVEL_SEARCH,o={x:P.x+60,y:P.y},at={x:P.x,y:P.y},px=P.x,walk=window.walk;A.reset();G.encCool=0;window.walk=(q,dx,dy,step)=>{const l=Math.hypot(dx,dy)||1;q.x+=dx/l*step;q.y+=dy/l*step;return true};try{

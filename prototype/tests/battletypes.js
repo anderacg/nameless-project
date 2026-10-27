@@ -11,7 +11,7 @@ try{
  const t=T,G=t.G,P=t.P,W=t.W,L=t.BattleLab,ev=s=>(0,eval)(s),K=t.TKIND,X=t.BTYPE;try{localStorage.clear()}catch(e){}
  t.act('begin','soldier');G.quietEvents=true;t.GUIDE.on=false;W.monsters=[];W.critters=[];t.bandits.length=0;W.patrols=[];P.troops={hum_levy:8,hum_bow:6,hum_squire:4};
  const panel=()=>document.getElementById('panel').innerHTML,TILE=t.TILE,MW=t.MW,MH=t.MH;
- const world=()=>{if(t.B){const B=t.B;B.win=true;B.over=true;B.endT=0;t.updateBattle(.01);t.act('cont')}t.hidePanel();G.mode='world';G.modal=false;G.enc=null;G.encCool=0;G.event=null};
+ const world=()=>{if(t.B){const B=t.B;B.win=true;B.over=true;B.endT=0;B.paused=false;B.ready=false;B.deploy=false;t.updateBattle(.01);t.act('cont')}t.hidePanel();G.mode='world';G.modal=false;G.enc=null;G.encCool=0;G.event=null};
  const at=(tx,ty)=>{P.x=(tx+.5)*TILE;P.y=(ty+.5)*TILE};
  const band=(n,k='bandits')=>t.asParty({x:P.x+10,y:P.y,cool:0,n,kind:k});
  const meet=(o={})=>{world();const b=band(6,o.band);t.startEncounter({kind:'party',ref:b,n:6,list:b.troops.slice(),band:o.band||'bandits',...o});return G.enc};
@@ -62,7 +62,7 @@ try{
   ok(mine.every(g=>t.grpUnits(g.id).every(u=>{const s=t.riverSpan(u.y);return !s||u.x<s[0]}))&&inf.length&&inf.every(g=>Math.abs(mid(g).y-br.y)<130&&rv.x0-mid(g).x<90),'your band stands on its bank by the bridge, the foot at the water ('+inf.map(g=>Math.round(rv.x0-mid(g).x)+' px off it').join(', ')+')');
   ok(theirs.every(g=>mid(g).x>t.BW*.7),'they come on from their own edge (the far bank)');
   ok(B.dzone&&t.deployZone().x1===B.dzone.x1&&B.dzone.x1<=rv.x0&&B.dzone.x1>t.BW*t.DEPLOY.zone,'your deployment zone runs to your bank ('+B.dzone.x1+' px; the river from '+rv.x0+')');
-  ok(t.calloutState().q.concat(t.calloutState().on).some(c=>c.text==='Hold the bridge!')&&G.msgs.some(m=>/Hold the bridge/.test(m.m)),'the battle opens with Hold the bridge (a banner and the log)');
+  ok(t.calloutState().q.concat(t.calloutState().on).some(c=>c.text==='Hold the bridge!')&&/Hold the bridge/.test(document.getElementById('log').textContent),'the battle opens with Hold the bridge (a banner and a line on the screen; not the journal, the owner 2026-10-25)');
   world();
   const e2=meet({mine:true});ok(e2.btype&&e2.btype.def===1&&/Take the bridge/.test(panel())&&!/bt-spring/.test(panel()),'riding at them by a bridge: Take the bridge (and no ambush on offer)');
   t.act('fight');{const B=t.B,rv=B.terrain.ai.river,br=B.terrain.ai.crossings.find(c=>c.kind==='bridge'),mine=t.playerGroups().map(g=>B.groups[g]).filter(g=>t.grpUnits(g.id).length),theirs=Object.values(B.groups).filter(g=>g.team===1&&t.grpUnits(g.id).length);

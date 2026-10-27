@@ -32,7 +32,7 @@ window.RUN=()=>{const t=T,L=t.BattleLab,o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL '
  b.t=t0+UA.brace.dur+.01;ok(!t.abilityActive(spear,'brace')&&!t.abilityStatus(spear,'brace').active,'the duration ends the effect');
  ok(!spear.useAbility('brace'),'but it is still cooling down');b.t=t0+UA.brace.cd+.01;ok(t.abilityWhyNot(spear,'brace')===''&&spear.useAbility('brace'),'once the cooldown has run out it can be used again');
  b.over=true;ok(!spear.useAbility('rally')&&t.abilityWhyNot(spear,'rally')==='The battle is over','nothing is used once the battle is over');b.over=false;
- b.deploy=true;ok(t.abilityWhyNot(spear,'rally')==='Not while deploying','nor while deploying');b.deploy=false;
+ b.deploy=true;ok(t.abilityWhyNot(spear,'rally')==='Start the battle first','nor while deploying (start the battle first)');b.deploy=false;
  spear.withdraw();ok(!spear.useAbility('rally')&&t.abilityWhyNot(spear,'rally')==='Withdrawing','nor by a withdrawing group');
  // ---- Brace: stands its ground
  f=start([{type:'hum_spear',count:10},{type:'hum_spear',count:10}]);[spear]=f.mine;const other=f.mine[1];
