@@ -47,8 +47,9 @@ try{
     ok(D&&D.list.includes(d)&&D.top===d.y,'a boat whose waterline lies above the '+nm+' bridge\'s last row and meets it is under it');
     const A=shot(),B=forced(shot);W.ships=[];const Z=shot();W.ships=[s];
     const cam={x:Math.floor(G.cam.x),y:Math.floor(G.cam.y)},sp=t.shipSprite(s),bx=t.shipBox(sp,Math.round(s.x-cam.x),Math.round(s.y+4-cam.y)+(Math.floor(now/450+s.seed)%2)),M=d.cv.getContext('2d', { willReadFrequently: true }).getImageData(0,0,w,h).data,W0=c0.width;
-    let inM=0,same=0,was=0,out=0;
-    for(let py=0;py<c0.height;py++)for(let px=0;px<W0;px++){const i=(py*W0+px)*4,u=px+cam.x-d.x,v=py+cam.y-d.y,m=u>=0&&v>=0&&u<w&&v<h&&M[(v*w+u)*4+3]&&px>=bx[0]&&px<bx[2]&&py>=bx[1]&&py<bx[3];
+    // (the map's canvas may be drawn finer than its game px, k canvas px to one: core.js setRes)
+    let inM=0,same=0,was=0,out=0;const k=W0/t.VW;
+    for(let py=0;py<c0.height;py++)for(let px=0;px<W0;px++){const i=(py*W0+px)*4,gx=Math.floor(px/k),gy=Math.floor(py/k),u=gx+cam.x-d.x,v=gy+cam.y-d.y,m=u>=0&&v>=0&&u<w&&v<h&&M[(v*w+u)*4+3]&&gx>=bx[0]&&gx<bx[2]&&gy>=bx[1]&&gy<bx[3];
      const dz=A[i]!==Z[i]||A[i+1]!==Z[i+1]||A[i+2]!==Z[i+2],db=B[i]!==Z[i]||B[i+1]!==Z[i+1]||B[i+2]!==Z[i+2];
      if(m){inM++;if(!dz)same++;if(db)was++}else if(A[i]!==B[i]||A[i+1]!==B[i+1]||A[i+2]!==B[i+2])out++}
     ok(inM>20&&same===inM&&was>10,'over it the deck\'s own pixels: '+same+' of '+inM+' px of the deck in its box as the frame without it ('+was+' were the boat\'s, drawn over the deck before)');

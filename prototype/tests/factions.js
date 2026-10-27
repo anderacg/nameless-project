@@ -19,7 +19,8 @@ try{
  t.act('leave');done();
  const kh=t.townBy('Karn Hold');P.x=kh.x;P.y=kh.y+3;G.lastTown=null;G.encCool=99;t.updateWorld(.016);
  ok(G.mode==='besiege'&&/Make siege camp/.test(document.getElementById('panel').innerHTML),'a hostile holding opens the siege screen instead of its gates');t.act('sg-leave');
- const kl=W.lords.find(l=>l.fac==='karn'&&!l.dead);kl.troops=Array(14).fill('dw_axe');kl.cool=0;G.encCool=0;P.x=kl.x+3;P.y=kl.y;t.TravelAwareness.notice(kl);t.updateLords(.016);
+ const kl=W.lords.find(l=>l.fac==='karn'&&!l.dead);kl.troops=Array(14).fill('dw_axe');kl.cool=0;kl.inside=null;kl.fight=null;kl.state='home';// (out and about: one resting in its realm's holding stays in)
+ G.encCool=0;P.x=kl.x+3;P.y=kl.y;t.TravelAwareness.notice(kl);t.updateLords(.016);
  ok(G.mode==='dialog'&&G.enc&&G.enc.kind==='lord','hostile lord attacks');
  t.act('fight');if(t.B)t.beginFight();ok(t.B&&t.B.units.some(u=>u.team===1&&['dwarf','orc'].includes(t.ST[u.type].race)),'battle vs dwarf/orc troops');
  let i=0;while(t.B&&i<20000){t.B.units.forEach(u=>{if(u.team===0&&!u.left)u.hp=u.max});t.updateBattle(.033);if(t.B&&i%15===0)t.frame();i++}
