@@ -8,7 +8,7 @@
 // their infantry; flankY, flankAt, flankMax: cavalry rides this far round a flank, is there within flankAt, or gives up after
 // flankMax s; advance: an advancing line's pace; threat: an enemy this close to its archers threatens them; reach: archers aim
 // at what is within this share of their range; regroup: cavalry pulls back this far after a charge, recharge: after this long
-// in the melee; attackAt / defendAt: the strength ratios to attack or hold at (hold: an attack goes on down to attackAt-hold); stall: a standoff turns into an attack after this;
+// in the melee; attackAt / defendAt: the strength ratios to attack or hold at (hold: an attack goes on down to attackAt-hold, a defence up to defendAt+hold); stall: a standoff turns into an attack after this;
 // lull: no blow struck anywhere for this long (two sides that cannot reach each other), and every group goes in
 const FOE_CMD={think:.5,clash:70,behind:50,outgun:.8,volley:12,screen:20,replan:3,moved:30,flankY:110,flankAt:40,flankMax:8,advance:22,threat:70,reach:.97,regroup:90,recharge:3,attackAt:1.15,hold:.1,defendAt:.85,stall:30,lull:10,patience:6,beaten:.4,broken:30};
 // unit-level morale (each captain's, a group's own resolve): an infantry group under pullAt with a steady one (backAt) beside it
@@ -427,7 +427,7 @@ class Commander{
     if(S.shootFoe>S.shootMe+.15||S.ratio>=tun(T,F,'attackAt')-(P_==='attack'?F.hold:0))return 'attack';
     // (a river between the armies: a defence is worth more, at the crossings (TERRAIN_AI.riverDefend))
     const rv=this.ground()&&S.mine&&S.mine.length&&S.foes.length&&wadesDeep(centroid(S.mine),centroid(S.foes));
-    if(S.ratio<(rv?tun(T,F,'defendAt')*this.gt('riverDefend'):tun(T,F,'defendAt'))&&S.shootMe>=S.shootFoe&&S.shootMe>.1)return bt<stall*2?'defend':'attack';
+    if(S.ratio<(rv?tun(T,F,'defendAt')*this.gt('riverDefend'):tun(T,F,'defendAt'))+(P_==='defend'?F.hold:0)&&S.shootMe>=S.shootFoe&&S.shootMe>.1)return bt<stall*2?'defend':'attack';
     return P_==='defend'&&bt<stall?'defend':S.shootMe>S.shootFoe+.1&&bt<stall?'defend':'attack';
   }
   /* the shooters' posture, each think, kept a while (hysteresis): aggressive while attacking, not outnumbered, out-ranging or
@@ -665,9 +665,9 @@ class Commander{
     // (taking a bridge: waiting at the crossing's near mouth, then over it to form up beyond (typeTake))
     else if(c.take&&c.take.spot[id]){const p=c.take.spot[id][c.take.phase==='cross'?'form':c.take.phase];g.standAt(p.x,p.y)}
     else if(goIn&&!busy){const e=shooterNear(I0);go(e,()=>g.attack(e))}// (losing the ranged duel: at their shooters)
-    // (gone in at their shooters on ground that blocks: kept at them while the duel is lost, not called back to the line whenever
-    // their volleys pause, round a cliff and back again)
-    else if(c.lost&&!busy&&g.order==='charge'&&g.hasTarget&&g.targetMembers().some(e=>e.s.range&&!e.empty&&!e.rout)){}
+    // (gone in at their shooters (the duel lost, or on ground that blocks): kept at them, not called back to the line whenever
+    // their volleys pause or the way round a cliff takes them out of reach, and back again)
+    else if((c.lost||this.ground()?.blocky)&&!busy&&g.order==='charge'&&g.hasTarget&&g.targetMembers().some(e=>e.s.range&&!e.empty&&!e.rout)){}
     else if(preyOk&&!busy&&(post==='attack'||clash))go(prey,()=>g.attack(prey));// (their shooters bare: at them)
     // (attacking and fresh, it charges from further off (AI_TACTICS.footFar), to come in at a full run; not while it stands for the
     // volleys, nor at riders or a beast (the nearest foe), nor with a charge coming at it (a shield wall's moment: captainFinish),
