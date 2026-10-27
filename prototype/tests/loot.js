@@ -38,7 +38,7 @@ try{
  ok(/^\+\d+ \(\d+ (militia|bandit)/i.test(chip('Prisoners')),'prisoners taken: '+chip('Prisoners'));t.act('cont');world();
  // a real battle: no arrows gathered from the field (a quiver is full again at the next: doc/ITEMS_DESIGN.md §2b)
  P.troops={hum_knight:8};P.gear.weapon=t.gearId('bow',1);P.gear.quiver='q_hunter';G.enc={kind:'party',ref:{x:P.x,y:P.y,cool:0},list:['militia','militia']};
- t.startBattle({enemies:G.enc.list,tournament:false});t.B.hero.ammo=10;t.B.units.filter(u=>u.team===1).forEach(u=>u.hp=0);let i=0;while(t.B&&i<400){t.updateBattle(.05);i++}
+ t.startBattle({enemies:G.enc.list,tournament:false});t.beginFight();t.B.hero.ammo=10;t.B.units.filter(u=>u.team===1).forEach(u=>u.hp=0);let i=0;while(t.B&&i<400){t.updateBattle(.05);i++}
  ok(!t.B&&/Victory/.test(html())&&!tiles().some(s=>/Arrows|Bolts/.test(s)),'after a fought battle, no arrows among the spoils');
  t.act('lt-leave');world();
  ok(!G.loot,'the watch ends with the summary');

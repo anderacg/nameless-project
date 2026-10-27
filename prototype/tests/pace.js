@@ -31,8 +31,8 @@ try{
  {P.troops={hum_levy:10};P.gear.mount=null;P.x=open[0];P.y=open[1];const L=t.asParty({id:'Z',name:'Lord Z',fac:t.FIDS[0],x:P.x+8,y:P.y,troops:Array(30).fill('hum_knight'),state:'march',dead:false,cool:0});P.hostile={[L.fac]:G.day+30};
   G.mode='world';G.modal=false;t.startEncounter({kind:'lord',ref:L,list:L.troops.slice(),foes:[],allies:[]});const f1=t.fleeOdds(G.enc);P.x=forest[0];P.y=forest[1];L.x=P.x+8;L.y=P.y;const f2=t.fleeOdds(G.enc);
   ok(f1.ch===0&&f2.ch>0,'on open ground you cannot outrun a host of knights on foot ('+(f1.why||f1.ch)+'); in the woods you may ('+Math.round(f2.ch*100)+'%)');t.hidePanel();G.mode='world';G.modal=false;P.hostile={}}
- // the wounded: some of the fallen live, and heal
- {P.troops={hum_levy:20};P.sk.med.lv=5;const lost={hum_levy:10};const r=Math.random;let i=0;Math.random=()=>(i++%2?.99:.01);t.heal(lost);Math.random=r;
+ // the wounded: some of the fallen live, and heal (the band is its 10 survivors: the healed need room in its groups, ARMY_GROUP)
+ {P.troops={hum_levy:10};P.sk.med.lv=5;const lost={hum_levy:10};const r=Math.random;let i=0;Math.random=()=>(i++%2?.99:.01);t.heal(lost);Math.random=r;
   ok(t.woundedN()>0&&t.partySize()===20-0+0||t.woundedN()>0,'some of the fallen live, wounded ('+t.woundedN()+')');const w0=t.woundedN();P.x=t.TOWNS[0].x;P.y=t.TOWNS[0].y+20;t.woundedDay();ok(t.woundedN()<w0,'and heal day by day, faster near a friendly holding')}
  // riders at the walls
  {const z=t.TOWNS.find(q=>q.kind==='castle');P.troops={hum_knight:4};G.enc={kind:'siege',ref:z,list:['militia'],lv:2};if(!t.wallOf(z))z.wall=2;t.startBattle({enemies:['militia'],tournament:false,lv:2});const u=t.B.units.find(x=>x.type==='hum_knight');

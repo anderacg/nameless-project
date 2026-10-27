@@ -27,7 +27,7 @@ try{
  {const m=t.vitals();P.hp=10;P.sp=0;P.mp=0;P.x=town.x+400;P.y=town.y+400;t.unstick(P);t.regenVitals(.3);const road=P.hp-10;P.hp=10;t.stayTick(0);t.regenVitals(.3);t.stayTick(t.DAY*.3);
   ok(P.hp-10>=Math.min(m[0]-10,road*3.5),'inside you recover four times as fast as on the road ('+Math.round(road)+' → '+Math.round(P.hp-10)+' health in a third of a day)')}
  {P.morale=40;t.stayTick(t.DAY);ok(Math.abs(P.morale-55)<1,'morale rises 15 a day');P.stay.paidTo=t.worldTime()+t.DAY}
- {const r=Math.random;Math.random=()=>0;P.wounded={hum_levy:20};t.woundedDay();const inside=20-t.woundedN();const s=P.stay;P.stay=null;P.wounded={hum_levy:20};P.troops={hum_levy:10};t.woundedDay();const out=20-t.woundedN();P.stay=s;Math.random=r;P.wounded={};P.troops={hum_levy:10};
+ {const r=Math.random;Math.random=()=>0;P.troops={};P.wounded={hum_levy:20};t.woundedDay();const inside=20-t.woundedN();const s=P.stay;P.stay=null;P.wounded={hum_levy:20};P.troops={};t.woundedDay();const out=20-t.woundedN();P.stay=s;Math.random=r;P.wounded={};P.troops={hum_levy:10};
   ok(inside>=out*2-1&&inside>out,'the wounded heal twice as fast ('+out+' → '+inside+' a day)')}
  // out of gold
  P.gold=3;P.stay.paidTo=t.worldTime()-.01;t.stayTick(.01);ok(!P.stay&&(g=>Math.abs(P.x-g.x)<1&&Math.abs(P.y-g.y)<1)(t.gateSpot(town))&&P.gold===3,'when you cannot pay for another day, the innkeeper sends you out at the gate');

@@ -8,7 +8,7 @@ Kit.suite(({ok})=>{
  ok(t.lordName(a)==='???'&&a.name===name&&a.label()===name,'an unknown display name is ??? while the canonical name and party label stay real');
  ok(a.tip().includes('???')&&!a.tip().includes(name)&&!K.knowsLord(a),'hovering an unknown lord masks the name without discovering them');
  ok(t.followName(a)==='???','the Follow action labels an unknown lord ???');t.followStart(a);
- ok(!K.knowsLord(a)&&G.msgs.at(-1).m.includes('???')&&!G.msgs.at(-1).m.includes(name),'following logs ??? and does not accidentally learn the canonical name');t.followStop();
+ {const said=document.querySelector('#log').lastElementChild?.textContent||'';ok(!K.knowsLord(a)&&said.includes('???')&&!said.includes(name),'following says ??? (a toast) and does not accidentally learn the canonical name')}t.followStop();
  const card=t.charCard(t.charOf(a));ok(card.includes('???')&&!card.includes(name),'a read-only character card masks an unknown lord');
  a.inside=home.name;b.inside=home.name;G.town={ref:home,tab:'hall'};G.mode='town';t.renderTown();
  ok(Kit.text().includes('???')&&!Kit.text().includes(name)&&!Kit.text().includes(b.name)&&!K.knowsLord(a),'hall cards mask their names without granting knowledge');

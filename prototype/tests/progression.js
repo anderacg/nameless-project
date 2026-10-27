@@ -14,7 +14,7 @@ try{
  t.act('hire-comp','brann');ok(!!P.comps.brann,'hire brann');
  t.act('leave');ok(G.mode==='world','leave town ('+G.mode+')');
  t.openChar();t.act('char-tab','party');t.act('role','brann:scout');ok(P.comps.brann.role==='scout'&&t.skill('scout')===P.sk.scout.lv+2,'role scout bonus');t.act('char-close');
- const b=t.bandits[0];t.startEncounter({kind:'party',ref:b,n:4});t.act('fight');ok(G.mode==='battle'&&t.B.units.some(u=>u.comp),'battle with companion');
+ const b=t.bandits[0];t.startEncounter({kind:'party',ref:b,n:4});t.act('fight');ok(G.mode==='battle'&&t.B.units.some(u=>u.comp),'battle with companion');t.beginFight();
  let i=0;while(t.B&&i<20000){const h=t.B.hero,e=t.B.units.find(u=>u.team===1&&u.hp>0);if(h.hp>0&&e){h.x+= (e.x-h.x)*.05;h.y+=(e.y-h.y)*.05;h.cd=0;}t.swing();t.updateBattle(.033);if(t.B&&i%15===0)t.frame();i++}
  ok(!t.B&&G.mode==='dialog','battle finished in '+i+' steps; oneh xp='+P.sk.oneh.xp.toFixed(1)+' prisoners='+JSON.stringify(P.prisoners));
  t.act('cont');ok(G.mode==='world'||G.mode==='perk','cont -> '+G.mode);while(G.mode==='perk')t.act('perk',G.perkOffer[0]);

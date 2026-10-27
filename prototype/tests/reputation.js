@@ -15,7 +15,7 @@ Kit.suite(({ok})=>{
  const hm=t.townBy('Highmoor');ok(t.standingAt(hm)===10&&!t.canHire(hm,'hum_levy')&&!t.canHire(hm,'hum_squire'),'Highmoor (10) is not enough for anything yet');
  P.gold=500;town('Ashford');t.act('hire','hum_levy');ok(P.troops.hum_levy===1,'hiring works with enough standing');t.act('leave');done();
  town('Highmoor');t.act('tab','recruit');ok(/Needs standing 15/.test(panel())&&document.querySelector('[data-act="hire"]').disabled,'the recruit screen shows the requirement and disables Hire');
- t.act('hire','hum_levy');ok(P.troops.hum_levy===1&&/do not know you/.test(G.msgs[G.msgs.length-1].m),'a hire without standing is refused');t.act('leave');done();
+ t.act('hire','hum_levy');ok(P.troops.hum_levy===1&&/do not know you/.test(document.querySelector('#log').lastElementChild?.textContent),'a hire without standing is refused');t.act('leave');done();
  const elg=t.townBy('Elderglen');ok(t.standingAt(elg)===0,'other races start at zero');
  // earning reputation
  P.troops={hum_spear:10};P.x=ash.x+60;P.y=ash.y;const r0=t.repAt('Ashford');
@@ -34,7 +34,7 @@ Kit.suite(({ok})=>{
  // honor raises standing across the faction
  P.honor.sylvan=30;ok(t.standingAt(elg)===15&&t.canHire(elg,'elf_glade'),'honor 30 with the Sylvan Court opens their recruits (15)');
  // tournament
- town('Ashford');const tw0=t.repAt('Ashford');t.startBattle({enemies:['chief'],tournament:true});t.B.win=true;t.B.over=true;t.B.endT=0;t.updateBattle(.01);ok(t.repAt('Ashford')===tw0+8,'winning a tournament is worth 8');t.act('back-town');t.act('leave');done();
+ town('Ashford');const tw0=t.repAt('Ashford');t.startBattle({enemies:['chief'],tournament:true});t.beginFight();t.B.win=true;t.B.over=true;t.B.endT=0;t.updateBattle(.01);ok(t.repAt('Ashford')===tw0+8,'winning a tournament is worth 8');t.act('back-town');t.act('leave');done();
  // realms tab and save
  G.mode='world';G.modal=false;t.openJournal('realms');ok(/Your reputation/.test(panel())&&/Your honor/.test(panel()),'realms tab lists reputation and honor');t.act('journal-close');
  const rep=JSON.stringify(P.rep),hon=JSON.stringify(P.honor);t.saveGame();P.rep={};P.honor={};t.act('load');ok(JSON.stringify(P.rep)===rep&&JSON.stringify(P.honor)===hon,'save/load keeps reputation and honor');

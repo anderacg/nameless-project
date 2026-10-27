@@ -46,7 +46,7 @@ try{
  // shots' dice are seeded, so the count is the same every run)
  const tree=B.obs.find(x=>x.kind==='tree'&&!B.obs.some(o=>o!==x&&o.kind==='tree'&&o.x>x.x-40-o.r&&o.x<x.x+50+o.r&&Math.abs(o.y-x.y)<o.r+6));let stopped=0;const N=400;
  ok(tree,'the forest has a tree standing clear of the others');
- if(tree){const r0=Math.random;Math.random=t.seeded(4321);try{
+ if(tree){t.beginFight();const r0=Math.random;Math.random=t.seeded(4321);try{// (a battle opens waiting for Start Battle: deploy.js beginFight)
  for(let k=0;k<N;k++){B.arrows=[{x:tree.x-30,y:tree.y-6,vx:170,vy:0,team:1,dmg:0,life:1,a:0,elf:false,tk:0}];B.noMorale=true;B.units.forEach(u=>{u.hp=u.max=1e6;u.cd=99;u.x=12;u.y=t.BH-20;u.s={...u.s,spd:0}});for(let s=0;s<40;s++)t.updateBattle(.01);if(!B.arrows.length||B.arrows[0].x<tree.x+10)stopped++}
  }finally{Math.random=r0}}
  ok(stopped>N*.12&&stopped<N*.4,'trees stop about a quarter of arrows ('+stopped+'/'+N+')');

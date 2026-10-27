@@ -41,7 +41,9 @@ try{
  // fighting beside you
  {p.order='follow';p.x=P.x+20;p.y=P.y;G.mode='world';G.modal=false;G.encCool=0;const b={x:P.x+5,y:P.y,n:4,cool:0,t:0,a:0,kind:'bandits'};t.bandits.push(t.asParty(b));
   t.startEncounter({kind:'party',ref:b,n:4,band:'bandits'});ok(G.enc&&G.enc.allies.some(a=>a.src===p),'near you, his party rides into your battles');t.act('flee');t.hidePanel();G.mode='world';G.modal=false}
- // coming back
+ // coming back: only with room for his groups in your army (your group limit, army.js armyGroupLimit), else he keeps them and follows
+ {const lv=P.sk.lead.lv,n1=p.troops.length,x0=p.x,y0=p.y;P.sk.lead.lv=0;p.x=P.x+5;p.y=P.y;t.cpOrder('brann','return');for(let k=0;k<5;k++)t.updateCParties(.1);
+  ok(c.party===p&&p.troops.length===n1&&p.order==='follow','told to come back with no room for his groups, he keeps his soldiers and follows you');P.sk.lead.lv=Math.max(lv,10);p.x=x0;p.y=y0}
  t.cpOrder('brann','return');for(let k=0;k<120&&c.party;k++)t.updateCParties(.1);ok(!c.party&&P.troops.hum_levy>=4+n0,'told to come back, he rejoins you with his soldiers');
  // a broken party
  {c.ap=3;t.cpGive('brann','hum_levy',2);const q=c.party;// (fleeing above cost his trust: Brann hates running)

@@ -131,7 +131,7 @@ try{
     t.act('site-ask');q('.nav [data-nav="close"]').click();ok(G.enc&&G.enc.kind==='cave'&&G.enc.lv===y.lv&&G.enc.list.length===M.count[1]+1,'Enter asks first, then the lair fight at the level they saw');t.act('flee');
     world();t.enterSite(cv);lucky('site-scout',null,.999);ok(G.enc&&G.enc.kind==='cave'&&!G.site,'seen, the beasts wake: the fight at once');t.act('flee')}
   // bands that catch you on the road: as before, the fight (or, cornered, their parley), never a page
-  {world();P.troops={hum_levy:1};t.bandits.length=0;{const h=t.TOWNS[0];P.x=(h.tx+.5)*TILE;P.y=(h.ty+2.5)*TILE}const b=t.asParty({x:P.x+24,y:P.y,n:14,kind:'bandits',list:t.makeEnemies(14,false,'bandits'),t:0,a:0,idle:false,cool:0,ld:null});t.bandits.push(b);G.clock=t.DAY*.3;
+  {world();P.troops={hum_levy:1};t.bandits.length=0;{const h=t.TOWNS[0];P.x=(h.tx+.5)*TILE;P.y=(h.ty+2.5)*TILE}const b=t.asParty({x:P.x+24,y:P.y,n:14,kind:'bandits',list:t.makeEnemies(14,false,'bandits'),t:0,a:0,idle:false,cool:0,ld:null});t.bandits.push(b);G.clock=t.DAY*.3;t.TravelAwareness.notice(b);// (it has seen you: worldobject.js TravelAwareness)
     for(let i=0;i<200&&!G.enc;i++)t.updateBands(.05);ok(G.enc&&G.enc.kind==='party'&&G.enc.ref===b&&!q('#panel.paged'),'a band that catches you on the road: the fight, as before'+(G.enc?'':' (none: '+[Math.round(Math.hypot(b.x-P.x,b.y-P.y)),t.stance(b.power()),G.mode,G.par?'par':'',b.cool,b.gone].join()+')'));t.act('flee');world();
     P.troops={hum_knight:40};b.pw=0;t.meetBand(b);ok(G.par&&q('[data-act="pl-yield"]')&&!q('#panel.paged'),'a band you corner: its parley, as before');world();t.bandits.length=0}}
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}
