@@ -11,13 +11,13 @@ try{const t=T,G=t.G,P=t.P,W=t.W;try{localStorage.clear()}catch(e){}
  t.act('hire','orc_grunt');t.act('hire','dw_clan');t.act('leave');while(G.mode==='perk')t.act('perk',G.perkOffer[0]);
  W.monsters=W.monsters.filter(m=>m.id!=='dragon');let D=null;for(let k=0;k<20&&!D;k++)D=t.spawnMythic('dragon');ok(D&&t.mythicOf('dragon')===D&&t.MONSTERS.dragon.mythic,'the dragon is a mythic monster and spawns: '+G.msgs[G.msgs.length-1].m);
  ok(t.mythicIds().includes('dragon')&&!t.MONSTERS.dragon.where.length,'it has no lair habitat: it roams the whole map');
- D.x=P.x+30;D.y=P.y;D.cool=0;G.encCool=0;for(let i=0;i<60&&G.mode==='world';i++)t.updateMonsters(.05);
+ D.x=P.x+30;D.y=P.y;D.cool=0;G.encCool=0;t.TravelAwareness.notice(D);for(let i=0;i<60&&G.mode==='world';i++)t.updateMonsters(.05);
  ok(G.mode==='dialog'&&G.enc.kind==='monster'&&G.enc.ref===D&&/A dragon descends/.test(document.getElementById('panel').innerHTML),'dragon hunts and attacks player');
- t.act('fight');ok(t.B&&t.B.units.some(u=>u.type==='dragon'),'dragon in battle');
+ t.act('fight');ok(t.B&&t.B.units.some(u=>u.type==='dragon'),'dragon in battle');t.beginFight();
  let i=0,breaths=0;while(t.B&&i<6000){const b0=t.B.floats.filter(f=>f.t==='FIRE').length;t.updateBattle(.033);if(t.B){if(i%15===0)t.frame();if(t.B.floats.filter(f=>f.t==='FIRE').length>b0)breaths++}i++}
  ok(!t.B,'dragon battle ends ('+i+' steps, '+breaths+' breaths), result: '+(t.mythicOf('dragon')?'dragon won':'dragon slain'));
  t.act('cont');while(G.mode==='perk')t.act('perk',G.perkOffer[0]);
  G.mode='world';G.modal=false;t.saveGame();t.act('load');ok(P.race==='orc','race survives a reload');
- G.mode='world';t.openChar();t.act('party-select','hero');ok(/>Orc · /.test(document.getElementById('panel').innerHTML)&&/Level \d+ · /.test(document.getElementById('panel').innerHTML),'race in char panel (the hero’s sheet in the Army window)');t.act('char-close');t.openJournal('realms');t.act('journal-close');t.frame();
+ G.mode='world';t.openChar();t.act('party-select','hero');ok(/Hero · Level \d+ · [^<]* · Orc</.test(document.getElementById('panel').innerHTML),'race in char panel (the hero’s sheet in the Army window)');t.act('char-close');t.openJournal('realms');t.act('journal-close');t.frame();
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}
 const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d)};

@@ -93,7 +93,7 @@ function partyUnitOverview(d){const {u,c,s,kind}=d,h=kind==='hero',v=h?vitals():
 }
 function partyDetail(id,r){return partyInspector(id,r)}
 function heroDetail(r){return partyInspector('hero',r)}
-function partyInspector(id,r){const d=partyUnit(id,r),edit=G.armyEdit===id,path=d.kind==='troop'&&partyView().path,cls=d.kind==='hero'?' fb-person-detail fb-hero-detail':d.kind==='comp'?' fb-person-detail fb-comp-detail':'',type={hero:'Hero',comp:'Companion',troop:'Troop'}[d.kind],sub=type+' · '+(d.kind==='troop'?'Tier ':'Level ')+d.level+' · '+(d.kind==='hero'?rankName():classN(d.s));
+function partyInspector(id,r){const d=partyUnit(id,r),edit=G.armyEdit===id,path=d.kind==='troop'&&partyView().path,cls=d.kind==='hero'?' fb-person-detail fb-hero-detail':d.kind==='comp'?' fb-person-detail fb-comp-detail':'',type={hero:'Hero',comp:'Companion',troop:'Troop'}[d.kind],sub=type+' · '+(d.kind==='troop'?'Tier ':'Level ')+d.level+' · '+(d.kind==='hero'?rankName()+' · '+RACES[P.race].n:classN(d.s));
   return '<section class="fb-pane fb-inspector fb-unit-inspector'+cls+'" data-unit-id="'+id+'" data-unit-kind="'+d.kind+'"><div class="fb-scroll" data-fb-scroll="army:'+id+(edit?':edit':path?':path':'')+'">'+(path?troopPath(d.u.type):'<div class="fb-figure"><img src="'+d.u.pic+'" alt=""></div><div class="fb-title"><small>'+htmlText(sub)+'</small><h3 title="'+htmlText(d.u.name)+'">'+htmlText(d.u.name)+'</h3></div>'+partyUnitActions(d,r)+(edit?partyGroupEditor(id,r):partyUnitOverview(d)))+'</div></section>';
 }
 
