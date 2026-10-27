@@ -65,7 +65,8 @@ window.RUN=()=>{const t=T,L=t.BattleLab,G=t.G,P=t.P,o=[],ok=(c,m)=>o.push((c?'PA
  // ----- the unit of the battle, in the battle report
  const fixture=()=>{
   Math.random=t.seeded(1831);t.begin('soldier');G.quietEvents=true;t.BDEPLOY.on=false;
-  const r=t.partyRoster(P);r.add('hum_foot',12);const ga=r.groups[0],gb=r.split(ga.id,6);r.rename(ga.id,'Royal <Guard>');r.rename(gb.id,'Forest Watch');
+  // (two groups of six: a new army has room for three, the hero's one of them)
+  P.troops={};P.army=null;const r=t.partyRoster(P);r.add('hum_foot',6,'new');r.add('hum_foot',6,'new');const [ga,gb]=r.groups;r.rename(ga.id,'Royal <Guard>');r.rename(gb.id,'Forest Watch');
   const band=t.asParty({kind:'bandits',troops:Array(12).fill('militia'),x:P.x+8,y:P.y,cool:0});G.enc={kind:'party',ref:band,list:band.troops.slice(),allies:[],foes:[],mine:true};
   t.startBattle({enemies:G.enc.list,deploy:false});const b=t.B,A=b.groups['p_'+ga.id],Bg=b.groups['p_'+gb.id],foes=b.units.filter(x=>x.team===1);let k=0;
   const kill=(g,n)=>{for(let i=0;i<n;i++){const e=foes[k++];t.applyDmg(e,e.hp+1,1,'slash',g.units[0])}};

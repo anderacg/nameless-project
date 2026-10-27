@@ -8,7 +8,7 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),out=()=>{cons
   t.act('begin','soldier');P.troops={hum_spear:6,hum_bow:4};P.slots=Array(10).fill(null);
   const L=t.W.lords.find(l=>!l.dead);Object.assign(L,{inside:null,x:P.x,y:P.y,troops:Array(10).fill('hum_spear')});G.mode='world';G.modal=false;t.hidePanel();
   t.startEncounter({kind:'lord',ref:L,list:L.troops.slice(),allies:[],foes:[]});t.startBattle({enemies:G.enc.list,tournament:false});const B=t.B;
-  if(B.deploy&&t.deployDone)t.deployDone();else if(B.deploy)B.deploy=false;
+  t.beginFight();// (battles open deploying or waiting for Start Battle)
   const h=B.hero;t.selectGroup('hero');
   const bad=[];B.units.forEach((u,i)=>{if(!u||!u.s)bad.push(i+':'+(u?Object.keys(u).slice(0,12).join('/'):String(u)))});o.push('INFO units without s: '+(bad.join(' ; ')||'none'));
   for(const id in B.groups){const gu=B.groups[id].units;if(gu&&gu.some(u=>!u||!u.s))o.push('INFO group '+id+' units bad: '+gu.map(u=>u?(u.s?'ok':'noS'):String(u)).join(','))}

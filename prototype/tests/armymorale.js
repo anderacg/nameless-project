@@ -54,7 +54,8 @@ window.RUN=()=>{const t=T,L=t.BattleLab,o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL '
  A.on=false;f=start([foot(10),foot(10)],[[300,200],[300,600]]);f.gs[0].resolve.route();ok(!Q().length,'MORALE.army.on false: only the cascade, as before');A.on=on0;
  f=start([foot(10),foot(10)],[[300,200],[300,600]],{morale:false});for(const u of f.gs[0].units){u.hp=0;t.moraleDeath(u,null)}ok(!Q().length,'morale off: no word');
  // ---- in a fight: the AI armies, nothing thrown, the word heard
- f=start([foot(10),foot(4),foot(10),{type:'hum_bow',count:6}],[[300,150],[300,300],[300,450],[200,300]],{ai:true,distance:300,rightGroups:[{type:'hum_knight',count:8},{type:'hum_foot',count:14}]});f.foe.units.forEach(u=>u.cd=0);
+ // (two bands of archers behind: the AI's foot close up on the foe, the shooters stand off, beyond the cascade's reach)
+ f=start([foot(10),foot(4),foot(10),{type:'hum_bow',count:6},{type:'hum_bow',count:6}],[[300,150],[300,300],[300,450],[200,200],[200,400]],{ai:true,distance:300,rightGroups:[{type:'hum_knight',count:8},{type:'hum_foot',count:14}]});f.foe.units.forEach(u=>u.cd=0);
  let heard=0;for(let i=0;i<20&&!t.B.over;i++){L.step(300);heard=Math.max(heard,...Object.values(t.B.groups).map(g=>g.resolve&&g.resolve.armyHeard||0))}const lostN=Object.values(t.B.groups).filter(g=>g.resolve&&g.resolve.armyLost).length;
  ok(!ERR.length&&heard>0,'an AI battle with groups routing runs, the word heard ('+t.B.t.toFixed(1)+' s; groups lost '+lostN+'; the most word a group heard: '+heard+')');
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}finally{A.on=on0;if(L.active)L.exit()}

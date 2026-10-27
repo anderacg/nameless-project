@@ -69,7 +69,8 @@ window.RUN=()=>{const t=T,L=t.BattleLab,o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL '
  {const MID=(t.fieldTop()+t.fieldBot())/2,g=hill(W()/2,MID,90,1,{steep:true,shoulder:0}),wt=army([G('hum_foot',12)],[G('hum_foot',1)],[[W()/2+125,MID-70],[W()-60,t.fieldTop()+20]],g,{quiet:true}),T=wt.b.terrain,gr=T.route.foot;
   const bankC=gr.cost[cells(T,2)[0]];ok(bankC===Math.round(t.ROUTE.unit*ST.route.foot)&&gr.wcap===bankC-1&&T.route.mounted.cost[cells(T,2)[0]]===Math.round(t.ROUTE.unit*ST.route.mounted),'a steep bank costs '+bankC+' on the foot\'s grid (open '+t.ROUTE.unit+'), the riders\' '+T.route.mounted.cost[cells(T,2)[0]]+'; a straight way is clear over ground up to '+gr.wcap);
   const crosses=(pts,x,y)=>{let n=0,px=x,py=y;for(const q of pts){const L0=Math.hypot(q[0]-px,q[1]-py),k=Math.ceil(L0/4);for(let j=1;j<=k;j++){const i=t.tIx(T,px+(q[0]-px)*j/k,py+(q[1]-py)*j/k);if(T.steep[i]&2)n++}px=q[0];py=q[1]}return n};
-  const A={x:W()/2+125,y:MID-70},p=t.routePath(gr,A.x,A.y,W()/2,MID),straight=crosses([[W()/2,MID]],A.x,A.y);
+  const A={x:W()/2+125,y:MID-90},p=t.routePath(gr,A.x,A.y,W()/2,MID),straight=crosses([[W()/2,MID]],A.x,A.y);
+  // (A north of the shoulder's band (STEEP.shoulder/2 off its line): its straight way meets the bank clear of the band's edge cells)
   ok(straight>0&&crosses(p,A.x,A.y)===0&&p.ok,'from beside its shoulder (east) to the top: the straight way climbs the bank ('+straight+' samples on it), the way goes round by the shoulder ('+crosses(p,A.x,A.y)+')');
   const B0={x:W()/2-150,y:MID},q=t.routePath(gr,B0.x,B0.y,W()/2,MID);ok(q.ok&&crosses(q,B0.x,B0.y)>0,'from the far side (west), the shoulder far round: the way climbs the bank straight');
   // (the group: sent from beside the shoulder to the top, it goes up by the shoulder)

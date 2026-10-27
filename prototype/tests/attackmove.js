@@ -13,12 +13,14 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,L=t
   place(g,150,300);place(e,fx,fy);e.units.forEach(u=>{u.s={...u.s,spd:0};u.hp=u.max=hp});B.sel=g.id;return{B,g,e}};
  // (the battle on, s seconds at most, each frame watched; stop: true to end early)
  const go=(B,s,watch,stop)=>{const end=B.t+s;while(B.t<end&&!B.over){t.updateBattle(1/30);if(watch)watch();if(stop&&stop())break}};
+ // (the last line on the screen: orders are said in a toast, not the journal)
+ const said=()=>document.getElementById('log')?.lastElementChild?.textContent||'';
  const there=(g,p,r=20)=>{const c=mid(g);return Math.hypot(c.x-p.x,c.y-p.y)<r};
  try{t.act('begin','soldier');G.quietEvents=true;t.GUIDE.on=false;window.__cbo=t.checkBattleOver;(0,eval)('checkBattleOver=()=>{}');// (the field never won: a foe beaten or running, the battle goes on)
   ok(A&&A.melee===90&&A.leash===120&&A.cav>=A.melee&&A.short>0,'the tunables in one table: melee '+A.melee+' px, riders '+A.cav+', shooters their reach + '+A.short+', leash '+A.leash);
   // ======== marching past a foe within reach: it turns on him, beats him, marches on and arrives
   {const {B,g,e}=setup('hum_spear',12,430,360),goal={x:700,y:300};t.rtsOrder(goal.x,goal.y,{amove:true});
-   ok(g.amove&&g.amove.x===goal.x&&g.order==='hold'&&!g.hasTarget&&/attack-move/.test(G.msgs[G.msgs.length-1].m),'Ctrl + right-click (opt.amove): an attack-move, said in the log ('+G.msgs[G.msgs.length-1].m+')');
+   ok(g.amove&&g.amove.x===goal.x&&g.order==='hold'&&!g.hasTarget&&/attack-move/.test(said()),'Ctrl + right-click (opt.amove): an attack-move, said in the log ('+said()+')');
    let engaged=null,resumed=null;go(B,60,()=>{if(!engaged&&g.hasTarget&&g.targetGroupId===e.id&&g.amove&&g.amove.at)engaged={t:B.t,c:mid(g)};if(engaged&&!resumed&&!e.units.length&&g.amove&&!g.amove.at&&g.order==='hold'&&g.ax===goal.x)resumed=B.t},()=>!g.amove&&there(g,goal));
    ok(engaged&&engaged.c.x<430,'a foe within '+A.melee+' px of its march: it turns on his group ('+(engaged?'at '+engaged.t.toFixed(1)+' s, x '+Math.round(engaged.c.x):'never')+')');
    ok(resumed&&!e.units.length,'him beaten, it marches on to the same place ('+(resumed?resumed.toFixed(1)+' s':'never')+')');
@@ -57,7 +59,7 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,L=t
   {const {B,g,e}=setup('hum_spear',12,430,560);t.rtsOrder(300,300);t.rtsOrder(700,300,{queue:true,amove:true});
    const q=g.queue.length===1&&g.queue[0].am&&!g.amove;go(B,30,null,()=>!!g.amove);
    ok(q&&g.amove&&g.amove.x===g.ax&&g.ax>=650,'a Shift-queued attack-move: a plain move to its waypoint, the attack-move from there on');
-   t.formDragTo(300,150,300,450,{amove:true});ok(g.amove&&g.amove.face!=null&&/attack-move to the line/.test(G.msgs[G.msgs.length-1].m),'a line dragged with Ctrl: an attack-move to it, keeping the line’s facing')}
+   t.formDragTo(300,150,300,450,{amove:true});ok(g.amove&&g.amove.face!=null&&/attack-move to the line/.test(said()),'a line dragged with Ctrl: an attack-move to it, keeping the line’s facing')}
   // ======== the input: Ctrl + right-click, the button (D) and Esc; its path and its card
   {const {B,g}=setup('hum_spear',12,430,560),cv=document.querySelector('canvas');t.frame();
    const point=(x,y)=>{const p=t.fromField({x,y}),r=cv.getBoundingClientRect();return{clientX:r.left+p.x*r.width/cv.width,clientY:r.top+p.y*r.height/cv.height}};

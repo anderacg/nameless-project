@@ -2,13 +2,15 @@
 // race fighting styles (commander.js TEMPERAMENT): each captain's temperament chosen from its army's troops, human the base
 // itself, and each style shifting the captain's decisions its own way (dwarves hold, elves skirmish, orcs come on, a mixed
 // host goes for the wavering); the enemy's style told once as the battle opens
-window.RUN=()=>{const t=T,L=t.BattleLab,o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);try{
+window.RUN=()=>{const t=T,L=t.BattleLab,o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);
+ // (what is said on the screen: the style is told in a toast, not the journal)
+ const heard=[],toast0=window.toast;window.toast=(m,c)=>{heard.push(m);toast0(m,c)};try{
  const TM=t.TEMPERAMENT,X=t.AI_TACTICS,F=t.FOE_CMD,U=t.UNIT_AI,CP=t.CAPT,H=t.HUNT;
  // left/right: group specs; at: [x,y] for each group (left first, then right), laid out in its formation there
  const army=(left,right,at,extra={})=>{if(L.active)L.exit();L.start({leftGroups:left,rightGroups:right,morale:true,deploy:false,paused:true,ai:false,seed:42,...extra});const b=t.B;b.obs=[];
   const mine=t.playerGroups().map(id=>b.groups[id]),foe=Object.values(b.groups).filter(g=>g.foe);
   if(at)[...mine,...foe].forEach((g,i)=>{g.placeAt(at[i][0],at[i][1]);t.layForm(g.id);g.units.forEach(u=>{u.x=g.ax+(u.sx||0);u.y=g.ay+(u.sy||0)})});return {b,mine,foe}};
- const G=(type,count)=>({type,count}),C=g=>g.centre(),said=m=>t.G.msgs.filter(x=>x.m===m).length,set=(ck,k)=>{t.captainMem(ck).temper=k};
+ const G=(type,count)=>({type,count}),C=g=>g.centre(),said=m=>heard.filter(x=>x===m).length,set=(ck,k)=>{t.captainMem(ck).temper=k};
  // ----- chosen from the army's troops
  const pick=(right,left=[G('hum_foot',10)])=>{army(left,right);return t.temperFor(1)};
  ok(pick([G('orc_grunt',20),G('orc_thrower',10)])==='orc','an orc army: orc');
@@ -21,14 +23,14 @@ window.RUN=()=>{const t=T,L=t.BattleLab,o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL '
  ok(pick([G('militia',20),G('archer',10)])===null,'generic levies of no race: none (the base)');
  army([G('orc_grunt',20)],[G('dw_clan',20)],null,{ai:true});ok(t.temperFor(0)==='orc'&&t.temperFor(1)==='dwarf','each side its own: your army (the AI’s: its captain plans with the groups it has, deploy.js aiHas) and the enemy’s apart');
  // ----- kept once in the captain's memory; the enemy's style told once, not human's nor your own army's
- let w=army([G('hum_foot',20)],[G('orc_grunt',20)],[[200,300],[800,300]]);let n0=t.G.msgs.length;t.command(1);t.command(1);
+ let w=army([G('hum_foot',20)],[G('orc_grunt',20)],[[200,300],[800,300]]);let n0=heard.length;t.command(1);t.command(1);
  ok(t.captainMem(1).temper==='orc'&&said('The orcs come on in a frenzy.')===1,'the enemy captain keeps its temperament (orc) and the log tells it once');
  w.foe[0].units.slice(0,15).forEach(u=>u.hp=0);t.command(1);ok(t.captainMem(1).temper==='orc','chosen once: losses do not change it');
  w=army([G('hum_foot',20)],[G('dw_clan',20)],[[200,300],[800,300]]);t.command(1);ok(said('The dwarves hold the line.')===1,'dwarves: "The dwarves hold the line."');
  w=army([G('hum_foot',20)],[G('elf_glade',20)],[[200,300],[800,300]]);t.command(1);ok(said('The elves keep their distance.')===1,'elves: "The elves keep their distance."');
- w=army([G('hum_foot',20)],[G('hum_foot',20)],[[200,300],[800,300]]);n0=t.G.msgs.length;t.command(1);ok(t.captainMem(1).temper==='human'&&t.G.msgs.length===n0,'a human enemy: the base, and nothing said');
- w=army([G('orc_grunt',20)],[G('hum_foot',20)],[[200,300],[800,300]],{ai:true});n0=t.G.msgs.length;t.command(1);
- ok(w.b.auto&&t.captainMem(0).temper==='orc'&&!t.G.msgs.slice(n0).some(x=>/orcs/.test(x.m)),'your army under the AI takes its own race’s style (orc), unannounced');
+ w=army([G('hum_foot',20)],[G('hum_foot',20)],[[200,300],[800,300]]);n0=heard.length;t.command(1);ok(t.captainMem(1).temper==='human'&&heard.length===n0,'a human enemy: the base, and nothing said');
+ w=army([G('orc_grunt',20)],[G('hum_foot',20)],[[200,300],[800,300]],{ai:true});n0=heard.length;t.command(1);
+ ok(w.b.auto&&t.captainMem(0).temper==='orc'&&!heard.slice(n0).some(x=>/orcs/.test(x)),'your army under the AI takes its own race’s style (orc), unannounced');
  // ----- human: the base itself
  const tabs={FOE_CMD:F,UNIT_AI:U,AI_TACTICS:X,CAPT:CP,HUNT:H};
  ok(!Object.keys(TM.human).length&&Object.values(tabs).every(tb=>Object.keys(tb).every(k=>t.tun(TM.human,tb,k)===tb[k]&&t.tun(null,tb,k)===tb[k])),'human: every tunable its base value (identity)');
@@ -73,6 +75,6 @@ window.RUN=()=>{const t=T,L=t.BattleLab,o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL '
  ok(t.tun(TM.mixed,U,'prey')>U.prey&&t.tun(TM.mixed,U,'preyShot')>U.preyShot,'a mixed host’s riders and shooters favour a wavering foe more');
  w=army([G('hum_foot',30)],[G('hum_foot',10)],[[200,300],[700,300]]);w.foe[0].resolve.mor=10;const N1=t.captainGroups(1),S1={ratio:.35};
  ok(t.beatenArmy(N1,S1)&&t.beatenArmy(N1,S1,TM.human)&&!t.beatenArmy(N1,S1,TM.orc),'a beaten army at a third of your strength: men fall back, orcs fight on (beaten '+F.beaten+' vs '+t.tun(TM.orc,F,'beaten').toFixed(2)+')');
- }catch(e){o.push('EXC '+e.message+' '+e.stack)}finally{if(L.active)L.exit()}
+ }catch(e){o.push('EXC '+e.message+' '+e.stack)}finally{window.toast=toast0;if(L.active)L.exit()}
  const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d);
 };
