@@ -6,7 +6,7 @@ Kit.suite(({ok,info})=>{
   Kit.begin('soldier',seed);Kit.clear();Kit.world();t.WORLD_BATTLE.on=true;t.PHYSICS.on=true;t.FOG.on=true;t.GUIDE.on=false;
   const h=Kit.goHome('Ashford');Kit.goTo(h.x+160,h.y+120);P.troops={hum_foot:4};G.speed=4;t.BSPEED.v=1;
   const e=t.asParty({kind:'bandits',troops:['militia','militia'],x:P.x+70,y:P.y,cool:0,n:2});t.bandits.push(e);G.enc={kind:'party',ref:e,list:e.troops.slice(),allies:[],foes:[],mine:true};t.startBattle({enemies:G.enc.list,tournament:false});const b=t.B;
-  b.paused=false;return b;
+  for(let i=0;i<4000&&b.muster?.active;i++)t.updateBattle(.05);t.beginFight();return b;// (the armies form up, then Start Battle: c0ba7c6)
  }
  for(const lose of [false,true]){
   const b=start();for(const u of b.units)if(u.team===(lose?0:1))t.applyDmg(u,100000,1,null,b.units.find(v=>v.team!==u.team),false);
@@ -34,7 +34,7 @@ Kit.suite(({ok,info})=>{
   t.setBattleSpeed(2);ok(G.speed===2&&b.speed===2,'changing combat speed updates the shared campaign speed');
   let at=b.t;t.updateBattle(.01);const slow=b.t-at;document.querySelector('[data-bspeed="4"]').click();at=b.t;t.updateBattle(.01);ok(Math.abs((b.t-at)/slow-2)<1e-8,'world combat time doubles exactly from 2x to 4x');
   const settings=document.createElement('div');settings.innerHTML=t.settingsPage();ok([...settings.querySelectorAll('[data-act="bspeed"]')].map(e=>e.dataset.arg).join(',')==='1,2,4,8','Settings uses the same campaign speed choices during world combat');
-  ok(!b.fog&&!t.sightOn(),'world combat uses campaign sight rather than tactical terrain concealment');for(const u of b.units)u.hid=3;t.sightStep(true);ok(b.units.every(u=>t.seenBy(0,u)&&t.seenBy(1,u)),'nearby starting combatants remain visible to both sides');
+  ok(!b.fog&&t.sightOn(),'world combat has no tactical fog, but its trees and terrain still conceal (544a6ad)');for(const u of b.units)u.hid=3;t.sightStep(true);ok(b.units.every(u=>t.seenBy(0,u)&&t.seenBy(1,u)),'nearby starting combatants remain visible to both sides');
   t.frame();const native=t.VS;window.eval('VS=3');const u=b.hero,ctx=t.ctx,draw=ctx.drawImage,poses=[];ctx.save();ctx.setTransform(1,0,0,1,0,0);
   try{ctx.drawImage=function(...args){const m=this.getTransform();poses.push({x:m.e,y:m.f,k:m.a});return draw.apply(this,args)};u.x=b.world.cx+.3;u.y=b.world.cy+.3;t.drawUnit(u);const first=poses.find(p=>Math.abs(p.k)>0);poses.length=0;u.x+=2;t.drawUnit(u);const second=poses.find(p=>Math.abs(p.k)>0);ok(first&&second&&second.x!==first.x,'sub-world-pixel movement advances on the native display pixels');ok(first&&Math.abs(first.k)>2,'combat sprites are enlarged independently of the world camera')}
   finally{ctx.drawImage=draw;ctx.restore();window.eval('VS='+native)}
