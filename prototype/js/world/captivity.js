@@ -8,10 +8,15 @@
    were yours), your realm pays (it thinks well of you: realm), or refuse and sit in their cage (prison: let go after some weeks,
    stripped of your gold, your bag's gear and your troops). Freed, you are at a holding near; a ransom, a fine or your realm's
    help (light) costs one or two pieces from your bag too, their pick. Beasts take no captives: left for dead, you wake where you
-   fell. Your companions share your fate (phase 1). ---------- */
+   fell. Taken, each companion tries to get away too (their own Agility): those who do are out there.
+   Prison (phase 2), a day at a time (prison): wait (their ransom comes down a little each day; your realm may pay; after days you
+   are let go), try to break out (Agility, Athletics, a kind soul's help; less the closer they watch you: failing, they watch
+   closer and beat you), bribe a guard (with the gold you hid on you: hidden), talk with the other prisoners (news), or pay
+   what they ask now. Most days something happens (events): a guard who knows your name, a prisoner's news, a kind soul of the
+   house; and your companions who got away may break you out (rescue). Out of their cage you have only the gold you hid. ---------- */
 const CAPTIVITY={escape:{base:.25,agi:.03,skill:.02,mounted:.15,night:.1,cover:.1,riders:.25,hurt:.15,min:.05,max:.9},
   ransom:{base:40,renown:.4,level:15,lord:1.5,harsh:1.25},persuade:{base:.2,cha:.04,pers:.04,renown:.001,honor:.004,regard:.004,war:.15,min:.05,max:.85,fine:.1},
-  serve:{band:[4,6],lord:[5,8],rep:6,honor:4},realm:{honor:20,days:[3,5]},prison:{days:21},scatter:{base:.35,morale:.3,lead:.04,min:.2,max:.9,days:[1,3]},light:[1,2],
+  serve:{band:[4,6],lord:[5,8],rep:6,honor:4},realm:{honor:20,days:[3,5],daily:.25},prison:{days:21,hidden:.15,fall:.04,floor:.5,break:{base:.12,agi:.02,athl:.01,guard:.06,min:.03,max:.6},beat:.2,bribe:{base:20,guard:15,ch:.6,step:.15},events:.35,help:.15,rescue:{each:.07,max:.3}},scatter:{base:.35,morale:.3,lead:.04,min:.2,max:.9,days:[1,3]},light:[1,2],
   beast:{hp:.25}};
 class Captivity{
   static held=null;static scattered=[];
@@ -29,23 +34,24 @@ class Captivity{
     if(!c){P.hp=Math.max(1,Math.min(P.hp,Math.round(vitals()[0]*CAPTIVITY.beast.hp)));return{how:'beast',text:'Left for dead among the fallen, you wake where you fell, badly hurt.'}}
     const ch=this.escapeChance(e);if(Math.random()<ch){const lose=Math.floor(P.gold*.25);P.gold-=lose;const o=e.ref;if(o&&Number.isFinite(o.x)){const dx=P.x-o.x,dy=P.y-o.y,l=Math.hypot(dx,dy)||1;walk(P,dx/l,dy/l,40)}
       const back=this.scatter();return{how:'escaped',text:'In the rout you slip away ('+Math.round(ch*100)+'% chance) and lose '+lose+' gold in the flight. Your soldiers scatter'+(back?': '+back+' of them may find you in the next days.':'.')}}
-    this.held={...c,since:G.day,ransom:this.ransomOf(c),tried:[]};return{how:'taken',text:'The rout catches you ('+Math.round(ch*100)+'% chance to get away): you are taken by '+c.name+'.'}}
+    const away=compsInBand().filter(id=>Math.random()<clamp(CAPTIVITY.escape.base+(compInit(id)?.attr?.agi||0)*CAPTIVITY.escape.agi,CAPTIVITY.escape.min,CAPTIVITY.escape.max));
+    this.held={...c,since:G.day,ransom:this.ransomOf(c),tried:[],away};return{how:'taken',text:'The rout catches you ('+Math.round(ch*100)+'% chance to get away): you are taken by '+c.name+'.'+(away.length?' '+away.map(id=>COMPS[id].short).join(' and ')+' got away.':'')}}
   static ransomOf(c,harsh=false){const X=CAPTIVITY.ransom;return Math.round((X.base+P.renown*X.renown+P.level*X.level)*(c.k==='band'?1:X.lord)*(harsh?X.harsh:1)/5)*5}
   static persuadeChance(c){const X=CAPTIVITY.persuade,l=this.lord(c),regard=l?relWith(l):0,honor=c.fac&&FACS[c.fac]?honorWith(c.fac):0;
     return clamp(X.base+(P.attr?.cha||0)*X.cha+skill('pers')*X.pers+(c.k==='band'?P.renown*X.renown:honor*X.honor+regard*X.regard)-(c.fac&&hostileTo(c.fac)?X.war:0),X.min,X.max)}
   static realmPays(c){return !!P.fac&&P.fac!==c.fac&&FACS[P.fac]&&honorWith(P.fac)>=CAPTIVITY.realm.honor}
   static serves(c){return c.k==='band'||!P.fac}
   // the captor's page: its choices, what each costs, and the odds where there are some (the frame: its bar's way out is refusing)
-  static open(){const c=this.held;if(!c)return;G.mode='dialog';const odds=this.persuadeChance(c),tried=k=>c.tried.includes(k);
+  static open(){const c=this.held;if(!c)return;if(c.prison)return this.cell();G.mode='dialog';const odds=this.persuadeChance(c),tried=k=>c.tried.includes(k);
     const btns=[dlgBtn('held-pay',null,'Pay the ransom · '+c.ransom+'g',P.gold<c.ransom?'You have '+P.gold+'g':'',true),
       !tried('persuade')&&dlgBtn('held-persuade',null,'Persuade them to let you go · '+insight(['you cannot tell your odds',odds>=.5?'they may well listen':'they might listen','about '+Math.round(odds*100)+'%'],'know the odds')),
       this.serves(c)&&dlgBtn('held-serve',null,(c.k==='band'?'Ride with the band':'Serve '+c.name)+' for some days'),
       this.realmPays(c)&&dlgBtn('held-realm',null,'Wait for the '+FACS[P.fac].n+' to pay for you')].filter(Boolean);
     showPanel('<h2>Taken captive</h2><p>You are held by '+c.name+'. '+(c.k==='band'?'They want gold, and know your name.':c.fac&&hostileTo(c.fac)?'You are an enemy of the '+FACS[c.fac].n+', and worth something to them.':'They will hear you out.')+'</p>'+
       (c.tried.includes('persuade')?'<p class="bad">Your words failed: they ask more now.</p>':'')+'<div class="btns cv-choices">'+btns.join('')+'</div>'+
-      '<p class="muted">Ransom, persuasion or your realm’s help: freed at a holding near, your troops scattered, a piece or two from your bag taken. Serving them: you keep your goods. Refusing: their cage for '+CAPTIVITY.prison.days+' days, and you lose your gold, your bag’s gear and your troops.</p>'+
+      '<p class="muted">Ransom, persuasion or your realm’s help: freed at a holding near, your troops scattered, a piece or two from your bag taken. Serving them: you keep your goods. Refusing: their cage, for about '+CAPTIVITY.prison.days+' days at most, and out of it you keep only the gold you hide on you; your bag’s gear and your troops are lost.</p>'+
       nav(null,['held-refuse',null,'Refuse']))}
-  static act(a){const c=this.held;if(!c)return;
+  static act(a){const c=this.held;if(!c)return;if(c.prison)return this.cellAct(a);
     if(a==='held-pay'){if(P.gold<c.ransom)return;P.gold-=c.ransom;return this.free('light','You pay '+c.ransom+' gold, and they let you go.')}
     if(a==='held-persuade'&&!c.tried.includes('persuade')){c.tried.push('persuade');train('pers',4);if(Math.random()<this.persuadeChance(c)){const fine=Math.floor(P.gold*CAPTIVITY.persuade.fine);P.gold-=fine;return this.free('light','Your words carry: they let you go'+(fine?' for a fine of '+fine+' gold':'')+'.')}
       c.ransom=this.ransomOf(c,true);log('Your words fail: '+c.name+' raise the ransom to '+c.ransom+' gold.','bad','war');return this.open()}
@@ -53,13 +59,44 @@ class Captivity{
       if(c.k==='band'){const X=CAPTIVITY.serve;repNear(P.x,P.y,-X.rep);FIDS.forEach(f=>addHonor(f,-X.honor,true));return this.free('serve','You ride with the band for '+d+' days, and their raids are yours to answer for (reputation −'+X.rep+', honour −'+X.honor+' with every realm). Then they let you go.')}
       return this.free('serve','You serve '+c.name+' for '+d+' days; then they let you go.')}
     if(a==='held-realm'&&this.realmPays(c)){const [lo,hi]=CAPTIVITY.realm.days,d=rint(lo,hi);Clock.passHours(d*24);return this.free('light','After '+d+' days the '+FACS[P.fac].n+' pay for you, and you are let go.')}
-    if(a==='held-refuse'){Clock.passHours(CAPTIVITY.prison.days*24);return this.free('prison','You sit in their cage for '+CAPTIVITY.prison.days+' days, and in the end they let you go: stripped of your gold and the gear in your bag, your soldiers long gone.')}}
+    if(a==='held-refuse'){c.prison={day:1,guard:0,hidden:Math.floor(P.gold*CAPTIVITY.prison.hidden),offer:c.ransom,talked:false,help:0,event:'Their cage is cold, and the guards bored.'};return this.cell()}}
+  // ---- prison: today's page (the frame: its bar's way out is waiting a day)
+  static breakChance(q){const X=CAPTIVITY.prison.break;return clamp(X.base+(P.attr?.agi||0)*X.agi+skill('athl')*X.athl+q.help-q.guard*X.guard,X.min,X.max)}
+  static bribe(q){const X=CAPTIVITY.prison.bribe;return{cost:X.base+q.guard*X.guard,ch:clamp(X.ch-q.guard*X.step,.05,.9)}}
+  static cell(){const c=this.held,q=c.prison,X=CAPTIVITY.prison,br=this.breakChance(q),bb=this.bribe(q);G.mode='dialog';
+    const btns=[dlgBtn('held-break',null,'Try to break out · '+insight(['you cannot tell your odds',br>=.3?'you might make it':'it is a long chance','about '+Math.round(br*100)+'%'],'know the odds'),'',true),
+      dlgBtn('held-bribe',null,'Bribe a guard · '+bb.cost+'g',q.hidden<bb.cost?'You hid '+q.hidden+'g':''),
+      dlgBtn('held-talk',null,'Talk with the other prisoners',q.talked?'Not again today':''),
+      dlgBtn('held-pay',null,'Pay what they ask now · '+q.offer+'g',P.gold<q.offer?'You have '+P.gold+'g':'')];
+    showPanel('<h2>In their cage</h2><p class="muted">Day '+q.day+' of about '+X.days+' · held by '+c.name+' · '+['they watch you as they watch anyone','they watch you closely','they never take their eyes off you'][Math.min(2,q.guard)]+' · '+q.hidden+'g hidden on you</p><p>'+q.event+'</p>'+
+      '<div class="btns cv-choices">'+btns.join('')+'</div><p class="muted">Each choice but talking takes the day. Their ransom comes down a little each day'+(this.realmPays(c)?'; the '+FACS[P.fac].n+' may pay for you':'')+'.</p>'+nav(null,['held-wait',null,'Wait a day']))}
+  static cellAct(a){const c=this.held,q=c.prison,X=CAPTIVITY.prison;
+    if(a==='held-pay'){if(P.gold<q.offer)return;P.gold-=q.offer;return this.free('light','You pay '+q.offer+' gold, and they let you out.')}
+    if(a==='held-talk'){if(q.talked)return;q.talked=true;train('pers',1);q.event=this.news()||'The others have nothing new to tell.';return this.cell()}
+    if(a==='held-break'){if(Math.random()<this.breakChance(q))return this.free('broke','In the dark you slip your bonds and get over the wall.');
+      q.guard++;P.hp=Math.max(1,Math.round(P.hp-vitals()[0]*X.beat));q.help=0;return this.day('They catch you at the wall and beat you for it. They watch you closer now.')}
+    if(a==='held-bribe'){const b=this.bribe(q);if(q.hidden<b.cost)return;q.hidden-=b.cost;if(Math.random()<b.ch)return this.free('broke','The guard takes your '+b.cost+' gold and leaves the door unbarred.');
+      q.guard++;return this.day('The guard takes your '+b.cost+' gold, and tells his captain. They watch you closer now.')}
+    if(a==='held-wait')return this.day('')}
+  // a day in the cage: their ask comes down, your realm may pay, your companions may come, something may happen; let go at the end
+  static day(text){const c=this.held,q=c.prison,X=CAPTIVITY.prison;Clock.passHours(24);q.day++;q.talked=false;q.offer=Math.max(Math.round(c.ransom*X.floor/5)*5,q.offer-Math.max(5,Math.round(q.offer*X.fall/5)*5));
+    if(this.realmPays(c)&&Math.random()<CAPTIVITY.realm.daily)return this.free('light','On day '+q.day+' the '+FACS[P.fac].n+' pay for you, and you are let out.');
+    if(c.away.length&&Math.random()<Math.min(X.rescue.max,c.away.length*X.rescue.each))return this.free('broke',c.away.map(id=>COMPS[id].short).join(' and ')+' come for you in the night and break you out.');
+    if(q.day>X.days)return this.free('prison','After '+X.days+' days they tire of you and turn you out, with nothing but what you hid.');
+    q.event=(text?text+' ':'')+(Math.random()<X.events?this.event():'');if(!q.event.trim())q.event='Another day in their cage.';return this.cell()}
+  // (what happens: a guard who knows your name watches you less; a prisoner's news; a kind soul of the house, who will help)
+  static event(){const c=this.held,q=c.prison,k=['name','news','kind'][Math.floor(Math.random()*3)];
+    if(k==='name'&&P.renown>=40&&q.guard>0){q.guard--;return 'A guard knows your name, and watches you less.'}
+    if(k==='kind'&&c.k!=='band'){q.help=CAPTIVITY.prison.help;return 'A kind soul of the house slips you a word: the north wall is badly kept. (A better chance to break out.)'}
+    return this.news()||''}
+  static news(){const l=W.lords.filter(l=>!l.dead&&!KNOWLEDGE.knowsLord(l));if(!l.length)return '';const o=l[Math.floor(Math.random()*l.length)];KNOWLEDGE.lord(o);return 'A prisoner tells you of '+o.name+' of the '+FACS[o.fac].n+'.'}
   // freed: at a holding near the captor (theirs or not hostile to you); what it cost by the way out
   static free(how,text){const c=this.held;this.held=null;const lost=[];
-    if(how==='prison'){if(P.gold)lost.push(P.gold+' gold');P.gold=0;const n=this.stripBag();if(n)lost.push(n+' piece'+(n>1?'s':'')+' of gear');const t=troopCount();for(const g of partyRoster(P).groups.slice())partyRoster(P).remove(g.type,g.count,g.id);if(t)lost.push(t+' soldiers')}
+    if(how==='prison'||how==='broke'){const keep=c.prison?.hidden||0;if(P.gold>keep)lost.push(P.gold-keep+' gold');P.gold=Math.min(P.gold,keep);const n=this.stripBag();if(n)lost.push(n+' piece'+(n>1?'s':'')+' of gear');const t=troopCount();for(const g of partyRoster(P).groups.slice())partyRoster(P).remove(g.type,g.count,g.id);if(t)lost.push(t+' soldiers')}
     else{if(how==='light'){const n=this.stripBag(rint(...CAPTIVITY.light));if(n)lost.push(n+' piece'+(n>1?'s':'')+' of gear from your bag')}const back=this.scatter();if(back)text+=' Your soldiers scattered: '+back+' of them may find you in the next days.'}
     const safe=TOWNS.filter(t=>!hostileTo(t.owner)),at=Spatial.nearest(safe.length?safe:TOWNS,P.x,P.y);heroAtGate(at);G.lastTown=at;G.encCool=4;
-    log('Freed near '+at.name+'.','gold','war');notice('Free',text+(lost.length?' Lost: '+lost.join(', ')+'.':'')+' You are near '+at.name+'.',how==='prison'?'bad':'gold')}
+    if(c.away?.length)text+=' '+c.away.map(id=>COMPS[id].short).join(' and ')+', who got away, '+(c.away.length>1?'find':'finds')+' you.';
+    log('Freed near '+at.name+'.','gold','war');notice('Free',text+(lost.length?' Lost: '+lost.join(', ')+'.':'')+' You are near '+at.name+'.',how==='prison'||how==='broke'?'bad':'gold')}
   // (their pick from your bag: n pieces of gear, or all of it)
   static stripBag(n=Infinity){let k=0;for(const s of P.inv.slice()){if(k>=n)break;if(s&&s.k==='gear'){k+=playerInventory.take('gear',s.id,Math.min(s.n||1,n-k))}}return k}
   // your fit troops scattered: a share of each group (by your band's morale and your Leadership) finds you within days; the rest

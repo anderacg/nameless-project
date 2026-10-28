@@ -36,9 +36,23 @@ Kit.suite(({ok})=>{
   setup();{const f=t.FIDS[0],lord=W.lords.find(l=>l.fac!==f&&t.atWar?.(l.fac,f))||W.lords.find(l=>l.fac!==f);P.fac=f;t.addHonor(f,40-t.honorWith(f),true);lord.dead=false;lord.inside=null;lord.fight=null;roll(.99);lose({kind:'lord',ref:lord,list:lord.troops.slice()});window.Math.random=rnd;
    {t.act('cont');ok(document.querySelector('[data-act="held-realm"]')&&!document.querySelector('[data-act="held-serve"]'),'held by a lord: your realm may pay for you; you serve no other while you serve it');const d0=G.day;t.act('held-realm');ok(!C.held&&G.day-d0>=X.realm.days[0]&&P.gold>=400,'after some days your realm pays: free, none of your gold taken');t.act('dlg-ok')}
    P.fac=null}
-  // ---- refusing: their cage, and what it costs
-  setup();b=band();roll(.99);lose({kind:'party',ref:b,n:6,list:b.troops.slice(),band:'bandits'});t.act('cont');window.Math.random=rnd;{const d0=G.day;t.act('held-refuse');
-   ok(!C.held&&G.day-d0>=X.prison.days&&P.gold===0&&gearN()===0&&!t.troopCount()&&!C.scattered.length&&/cage/.test(panel()),'refused: '+X.prison.days+' days in their cage, then let go with no gold, no gear in your bag, no soldiers');t.act('dlg-ok')}
+  // ---- refusing: their cage, a day at a time (phase 2)
+  const caged=(seq)=>{setup();const b=band();let k=0;window.Math.random=()=>seq?seq[k++]??.99:.99;lose({kind:'party',ref:b,n:6,list:b.troops.slice(),band:'bandits'});t.act('cont');t.act('held-refuse');return C.held&&C.held.prison};
+  {const q=caged();ok(q&&q.day===1&&q.hidden===Math.floor(400*X.prison.hidden)&&/In their cage/.test(panel())&&document.querySelector('.nav [data-act="held-wait"]')&&document.querySelector('[data-act="held-break"]')&&document.querySelector('[data-act="held-bribe"]')&&document.querySelector('[data-act="held-talk"]'),'refused: their cage, day 1, '+q.hidden+'g hidden on you; break out, bribe, talk, pay, or wait a day');
+   const o0=q.offer,d0=G.day;t.act('held-wait');ok(q.day===2&&G.day>d0&&q.offer<o0,'a day passes, and what they ask comes down ('+o0+' → '+q.offer+'g)');
+   t.act('held-talk');const told=/A prisoner tells you of/.test(panel());t.act('held-talk');ok(told&&q.talked&&q.day===2&&document.querySelector('[data-act="held-talk"]').disabled,'talking with the other prisoners: news of a lord (he is known now), once a day, and the day goes on');
+   const hp=P.hp;t.act('held-break');ok(q.guard===1&&P.hp<hp&&q.day===3,'caught breaking out: beaten, and watched closer');
+   for(let i=0;i<40&&C.held;i++)t.act('held-wait');window.Math.random=rnd;ok(!C.held&&P.gold===q.hidden&&gearN()===0&&!t.troopCount()&&!C.scattered.length&&/turn you out/.test(panel()),'after '+X.prison.days+' days they turn you out: only the gold you hid, no gear in your bag, no soldiers');t.act('dlg-ok')}
+  {const q=caged();window.Math.random=()=>0;t.act('held-break');window.Math.random=rnd;ok(!C.held&&P.gold===q.hidden&&/over the wall/.test(panel()),'breaking out: free, with only the gold you hid');t.act('dlg-ok')}
+  {const q=caged(),cost=C.bribe(q).cost,hid=q.hidden;window.Math.random=()=>0;t.act('held-bribe');window.Math.random=rnd;ok(!C.held&&P.gold===hid-cost&&/unbarred/.test(panel()),'a bribed guard ('+cost+'g of what you hid) leaves the door unbarred');t.act('dlg-ok')}
+  {const q=caged(),o=q.offer;t.act('held-pay');window.Math.random=rnd;ok(!C.held&&P.gold===400-o,'or pay what they ask, and they let you out');t.act('dlg-ok')}
+  // (your companions: each tries to get away as you are taken; those who do may break you out)
+  {P.comps={brann:{ap:5,role:''}};t.compInit('brann');const q=caged([.99,0]);ok(C.held.away.includes('brann'),'Brann got away as you were taken');
+   window.Math.random=()=>0;t.act('held-wait');window.Math.random=rnd;ok(!C.held&&/come for you in the night/.test(panel())&&/who got away, finds you/.test(panel()),'and comes for you in the night: broken out');t.act('dlg-ok');P.comps={}}
+  // (your realm may pay while you wait)
+  {const f=t.FIDS[0];P.fac=f;t.addHonor(f,40-t.honorWith(f),true);const q=caged();P.fac=f;window.Math.random=()=>0;t.act('held-wait');window.Math.random=rnd;ok(!C.held&&/pay for you/.test(panel()),'your realm pays for you while you wait');t.act('dlg-ok');P.fac=null}
+  // (a save made in the cage keeps the cage)
+  {caged();window.Math.random=rnd;const s=JSON.stringify(C.save());C.held=null;C.load(JSON.parse(s));ok(C.held?.prison?.day===1,'a save in the cage keeps the cage');t.hidePanel();G.mode='world';G.modal=false;C.hour();ok(/In their cage/.test(panel()),'loaded: back in their cage');C.held=null;t.hidePanel()}
   // ---- a captivity and the scattered are kept in the save
   setup();b=band();roll(.99);lose({kind:'party',ref:b,n:6,list:b.troops.slice(),band:'bandits'});window.Math.random=rnd;t.act('cont');C.scattered.push({type:'hum_foot',n:2,at:t.Clock.hours()+30});
   {const s=JSON.stringify(C.save());C.held=null;C.scattered=[];C.load(JSON.parse(s));ok(C.held&&C.held.k==='band'&&C.scattered.length===1,'held and scattered come back with a save');t.hidePanel();G.mode='world';G.modal=false;C.hour();ok(G.mode==='dialog'&&/Taken captive/.test(panel()),'loaded while held: the captor’s page opens again');t.act('held-refuse');t.act('dlg-ok')}
