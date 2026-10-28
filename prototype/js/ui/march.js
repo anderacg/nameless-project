@@ -7,7 +7,7 @@ function marchFitRow(row){
   if(marchExtent(row)<=marchDraftOuter())return row;if(FORMS[row.form]?.drag==='fixed')return null;
   let best=null,gap=Infinity;for(let files=1;files<=row.count;files++){const r={...row,files},d=Math.abs(files-(row.files||FORMS[row.form]?.files||1));if(d<gap&&marchExtent(r)<=marchDraftOuter()){best=r;gap=d}}return best;
 }
-function marchDraftClamp(){for(const row of marchDraftRows()){const r=marchFitRow(row)||marchRows(P).find(r=>r.id===row.id),p=G.march.draft[row.id];Object.assign(p,{form:r.form,files:r.files});const d=Math.hypot(p.x,p.y),limit=Math.max(0,marchDraftOuter()-marchExtent(r));if(d>limit){p.x*=limit/d;p.y*=limit/d}}}
+function marchDraftClamp(){for(const row of marchDraftRows()){const r=marchFitRow(row)||marchRows(P).find(r=>r.id===row.id),p=G.march.draft[row.id];Object.assign(p,{form:r.form,files:r.files});const q=marchPlace({...r,face:p.face??r.face},p.x,p.y,marchDraftOuter());p.x=q.x;p.y=q.y}}
 function marchFormFits(row,f){
   if(!row||row.character||!['line','column','loose','wedge'].includes(f))return false;
   const who=FORMS[f]?.who;return (!who||FORM_WHO[who]({s:ST[row.type]}))&&!!marchFitRow({...row,form:f==='column'?'line':f,files:f==='column'?1:FORMS[f].files});
@@ -58,7 +58,7 @@ function renderMarch(){
     const d=s.gesture;if(!d||d.id!==e.pointerId)return;const p=point(e),v=d.view,world={x:(p.x-v.x)/v.scale,y:(p.y-v.y)/v.scale};
     if(d.form){d.end=p;if(Math.hypot(p.x-d.start.x,p.y-d.start.y)<6)return;const row=marchDraftRows().find(r=>r.id===s.sel),dx=p.x-d.start.x,dy=p.y-d.start.y;
       Object.assign(s.draft[s.sel],{x:((p.x+d.start.x)/2-v.x)/v.scale,y:((p.y+d.start.y)/2-v.y)/v.scale,face:Math.atan2(-dx,dy),files:dragFiles(row.form,row.count,Math.hypot(dx,dy)/v.scale*WORLD_BATTLE.scale,WORLD_BATTLE.sprite)});
-    }else Object.assign(s.draft[s.sel],world);const candidate=marchDraftRows().find(r=>r.id===s.sel);s.invalid=Math.hypot(candidate.x,candidate.y)+marchExtent(candidate)>marchDraftOuter()+.001?{...candidate}:null;marchDraftClamp();drawMarch();
+    }else Object.assign(s.draft[s.sel],world);const candidate=marchDraftRows().find(r=>r.id===s.sel);s.invalid=marchFoot(candidate,candidate.x,candidate.y)>marchDraftOuter()+.001?{...candidate}:null;marchDraftClamp();drawMarch();
   };
   cv.oncontextmenu=e=>e.preventDefault();
   cv.onpointerdown=e=>{if(s.gesture||e.button!==0&&e.button!==2)return;const v=marchCanvasView(),p=point(e),form=e.button===2||s.tool==='form';
@@ -96,5 +96,5 @@ onAct('march-',(a,arg)=>{
   if(a==='march-back'){G.marchResize?.disconnect();G.march=null;renderChar();return}
   if(a==='march-select'&&s.draft[arg]){s.sel=arg;renderMarch();return}
   if(a==='march-reset'){const before=structuredClone(s.draft);s.draft=marchDefaults();marchDraftClamp();marchRemember(before);renderMarch();return}
-  if(a==='march-step'&&s.sel!=='hero'){const before=structuredClone(s.draft),p=s.draft[s.sel],d={up:[0,-2],down:[0,2],left:[-2,0],right:[2,0]}[arg];if(!d)return;const row=marchDraftRows().find(r=>r.id===s.sel),limit=marchDraftOuter()-marchExtent(row),x=p.x+d[0],y=p.y+d[1],l=Math.hypot(x,y),k=l>limit?limit/l:1;p.x=x*k;p.y=y*k;marchRemember(before);renderMarch()}
+  if(a==='march-step'&&s.sel!=='hero'){const before=structuredClone(s.draft),p=s.draft[s.sel],d={up:[0,-2],down:[0,2],left:[-2,0],right:[2,0]}[arg];if(!d)return;const row=marchDraftRows().find(r=>r.id===s.sel),q=marchPlace({...row,face:p.face??row.face},p.x+d[0],p.y+d[1],marchDraftOuter());p.x=q.x;p.y=q.y;marchRemember(before);renderMarch()}
 });

@@ -9,6 +9,10 @@ function marchFacing(o){
   MARCH_FACING.set(o,{x:o.x,y:o.y,a,to,at:now});return a;
 }
 const marchExtent=row=>3+Math.max(0,...formSlots(row.form||'line',row.count||1,0,row.files,WORLD_BATTLE.sprite).map(p=>Math.hypot(...p)))/WORLD_BATTLE.scale;
+// (a group set at x, y: how far from the army's middle its farthest man stands, as it is formed and faces; marchPlace: the place
+// nearest x, y, along the way from the middle, where every man is inside outer: a line along the ring goes as far as its men do)
+const marchFoot=(row,x,y)=>3+Math.max(0,...formSlots(row.form||'line',row.count||1,row.face||0,row.files,WORLD_BATTLE.sprite).map(([a,b])=>Math.hypot(x+a/WORLD_BATTLE.scale,y+b/WORLD_BATTLE.scale)));
+function marchPlace(row,x,y,outer){if(marchFoot(row,x,y)<=outer)return{x,y};let lo=0,hi=1;for(let i=0;i<24;i++){const m=(lo+hi)/2;if(marchFoot(row,x*m,y*m)<=outer)lo=m;else hi=m}return{x:x*lo,y:y*lo}}
 const marchCore=o=>WORLD_BATTLE.inner+Math.sqrt(partyRoster(o).size+partyRoster(o).reserved)*2;
 const marchOuter=o=>Math.max(WORLD_BATTLE.outer,marchCore(o)+4+Math.max(0,...partyRoster(o).groups.map(marchExtent)));
 // March offsets are in world pixels, relative to the hero (east is the front). Missing entries use a stable default.
@@ -17,8 +21,8 @@ function marchRows(o){
   const pivot=!marchSeparateLeader(o)&&(r.groups.find(g=>g.id===MARCH_ARMIES.get(o)?.units.find(u=>u.pivot&&!u.dead)?.row)||r.groups.find(g=>o.ld&&g.type==='chief')||r.groups[0]);
   return ids.map(id=>{const g=r.groups.find(g=>g.id===id),character=!g,at=others.indexOf(id),a=at/Math.max(1,others.length)*Math.PI*2;
     const saved=o.army?.march?.[id],p=id==='hero'||id===pivot?.id?{x:0,y:0}:saved&&Number.isFinite(saved.x)&&Number.isFinite(saved.y)?saved:{x:Math.cos(a)*marchCore(o),y:Math.sin(a)*marchCore(o)};
-    const limit=Math.max(0,marchOuter(o)-marchExtent(g||{count:1})),d=Math.hypot(p.x,p.y),k=d>limit?limit/d:1;
-    return{id,type:g?.type||id,count:g?.count||1,character,x:p.x*k,y:p.y*k,face:Number.isFinite(saved?.face)?saved.face:0,form:g?.form||'line',files:g?.files||null};
+    const row={type:g?.type||id,count:g?.count||1,face:Number.isFinite(saved?.face)?saved.face:0,form:g?.form||'line',files:g?.files||null},q=marchPlace(row,p.x,p.y,marchOuter(o));
+    return{id,...row,character,x:q.x,y:q.y};
   });
 }
 const marchNumbers=o=>Object.fromEntries(marchRows(o).map((r,i)=>[r.id,(i+1)%10]));

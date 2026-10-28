@@ -12,7 +12,9 @@ Kit.suite(({ok})=>{
  const saved=JSON.stringify(G.march.draft);drag(-10,0,10,0,{cancel:true});ok(JSON.stringify(G.march.draft)===saved,'pointer cancellation restores the complete draft');
  drag(0,0,.1,.1);ok(JSON.stringify(G.march.draft)===saved,'a short right-click does not change the formation');
  t.act('march-tool','form');drag(-10,0,10,0,{touch:true});d=G.march.draft[arch.id];ok(Math.abs(d.face+Math.PI/2)<.001&&d.files===4,'touch Draw formation uses the same frontage and facing');
- drag(100,100,120,100,{touch:true});ok(t.marchDraftRows().every(row=>Math.hypot(row.x,row.y)+t.marchExtent(row)<=t.marchDraftOuter()+.001),'drawn formations stay fully inside the allowed army circle');
+ drag(100,100,120,100,{touch:true});ok(t.marchDraftRows().every(row=>t.marchFoot(row,row.x,row.y)<=t.marchDraftOuter()+.001),'drawn formations stay fully inside the allowed army circle (every man of them)');
+ {const s=G.march,id=t.marchDraftRows().find(r=>!r.character)?.id;if(id){s.sel=id;Object.assign(s.draft[id],{x:0,y:0,face:0,form:'line',files:null});const row=()=>t.marchDraftRows().find(r=>r.id===id),R=t.marchDraftOuter();for(let i=0;i<80;i++)t.act('march-step','right');const r=row(),old=R-t.marchExtent(r);
+  ok(t.marchFoot(r,r.x,r.y)<=R+.001&&r.x>old+1,'a line facing east steps out east till its men reach the ring ('+r.x.toFixed(1)+' px; a circle its width wide stopped it at '+old.toFixed(1)+')')}}
  ok(t.marchDraftOuter()===fixedRadius&&Math.abs(t.marchCanvasView().scale-fixedScale)<.001,'army circle radius and displayed scale remain fixed after frontage drags');
  t.act('march-select',arch.id);drag(-100,0,100,0,{touch:true});
  ok(t.marchDraftOuter()===fixedRadius&&t.marchExtent(t.marchDraftRows().find(r=>r.id===arch.id))<=fixedRadius&&Math.abs(t.marchCanvasView().scale-fixedScale)<.001,'an oversized frontage fits the allowed circle instead of enlarging or reframing it');
