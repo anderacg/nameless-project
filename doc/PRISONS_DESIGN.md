@@ -1,6 +1,6 @@
 # Prisons: where captives are held: design
 
-Status: **designed** (2026-10-28), nothing built. The owner's answers in §8; phases in §7.
+Status: **phase 1 built** (2026-10-28): your own captivity. `data/prisons.js` `PRISONS` (§3: Lock-up, Jail, Prison, Dungeon, Cage, The pit: each its break-out odds, bribe price, the guards' first watch, a camp's harder beatings; a holding's walls (−2% a level) and garrison (−0.2% a man, at most −6%)); `world/captivity.js` `Captivity.prisonOf` (the cell's title, "In the Dungeon of Highmoor", and its numbers; a ransom broker keeps his own cage). The war rule (§4, `CAPTIVITY.war`; `Captivity.atWar`): taken by a lord or a realm's men at war with your realm, you go straight to the prison of the realm's nearest walled holding; the war price is 3 times the ransom and never comes down; no persuading, serving or release by time; your realm may pay it (8% a day while your honour with it is 20 or more, from its treasury: `payRealm`); a lord whose relation with you was 20 or more when he took you may let you go on your word (2% a day, +0.2% a point above 20 and +0.1% a point of your honour with his realm, at most 10%; you keep your bag); peace frees you (you keep your bag). Not at war: as before, but their cage is a prison of its place's kind. Tests: captivity. Phases 2–4 not built. The owner's answers in §8; phases in §7.
 
 ## 1. Today
 
