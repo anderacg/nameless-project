@@ -42,7 +42,7 @@ Kit.suite(({ok})=>{
   {const q=caged();ok(q&&q.day===1&&q.hidden===Math.floor(400*X.prison.hidden)&&/In their cage/.test(panel())&&document.querySelector('.nav [data-act="held-wait"]')&&document.querySelector('[data-act="held-break"]')&&document.querySelector('[data-act="held-bribe"]')&&document.querySelector('[data-act="held-talk"]'),'refused: their cage, day 1, '+q.hidden+'g hidden on you; break out, bribe, talk, pay, or wait a day');
    const o0=q.offer,d0=G.day;t.act('held-wait');ok(q.day===2&&G.day>d0&&q.offer<o0,'a day passes, and what they ask comes down ('+o0+' → '+q.offer+'g)');
    t.act('held-talk');const told=/A prisoner tells you of/.test(panel());t.act('held-talk');ok(told&&q.talked&&q.day===2&&document.querySelector('[data-act="held-talk"]').disabled,'talking with the other prisoners: news of a lord (he is known now), once a day, and the day goes on');
-   const hp=P.hp;t.act('held-break');ok(q.guard===1&&P.hp<hp&&q.day===3,'caught breaking out: beaten, and watched closer');
+   P.hp=t.vitals()[0];const hp=P.hp;t.act('held-break');ok(q.guard===1&&P.hp<hp&&q.day===3,'caught breaking out: beaten, and watched closer');
    for(let i=0;i<40&&C.held;i++)t.act('held-wait');window.Math.random=rnd;ok(!C.held&&P.gold===q.hidden&&gearN()===0&&!t.troopCount()&&!C.scattered.length&&/turn you out/.test(panel()),'after '+X.prison.days+' days they turn you out: only the gold you hid, no gear in your bag, no soldiers');t.act('dlg-ok')}
   {const q=caged();window.Math.random=()=>0;t.act('held-break');window.Math.random=rnd;ok(!C.held&&P.gold===q.hidden&&/over the wall/.test(panel()),'breaking out: free, with only the gold you hid');t.act('dlg-ok')}
   {const q=caged(),cost=C.bribe(q).cost,hid=q.hidden;window.Math.random=()=>0;t.act('held-bribe');window.Math.random=rnd;ok(!C.held&&P.gold===hid-cost&&/unbarred/.test(panel()),'a bribed guard ('+cost+'g of what you hid) leaves the door unbarred');t.act('dlg-ok')}
@@ -64,6 +64,20 @@ Kit.suite(({ok})=>{
    setup();P.perks=['oldsoldier'];const b2=band();roll(.99);lose({kind:'party',ref:b2,n:6,list:b2.troops.slice(),band:'bandits'});t.act('cont');const g1=gearN();t.act('held-pay');window.Math.random=rnd;
    ok(g1-gearN()===X.light[1]-1,'and a piece fewer from your bag ('+(g1-gearN())+')');t.act('dlg-ok');P.perks=[]}
   {P.perks=[];const N=['slippery','silver','oldsoldier'].map(k=>Object.values(t.TREE).find(n=>n.m&&n.m.perk===k));ok(N.every(n=>n&&n.links.length),'each trait is a node in the hero’s tree: '+N.map(n=>n&&n.n).join(', '))}
+  // ---- where they keep you, and where you come out
+  {caged();ok(C.held.at===null||C.held.at.k==='site','a band takes you to a camp or hideout of theirs near, if there is one')}
+  {setup();const l=W.sites.find(s=>s instanceof t.Lair&&!s.cleared&&!s.within);P.x=l.x+3*t.TILE;P.y=l.y;const b=band();roll(.99);lose({kind:'party',ref:b,n:6,list:b.troops.slice(),band:'bandits'});window.Math.random=rnd;
+   const d=Math.hypot(P.x-l.x,P.y-l.y)/t.TILE;ok(C.held.at?.i===l.i&&d<4&&/to the /.test(panel()),'taken: carried to the '+l.name+' ('+d.toFixed(1)+' tiles off it)');t.act('cont');
+   t.act('held-refuse');const q=C.held.prison;
+   // (too hurt to try, a day heals; in chains after two tries)
+   P.hp=Math.round(t.vitals()[0]*.2);C.cell();ok(document.querySelector('[data-act="held-break"]').disabled&&/Too hurt/.test(panel()),'too hurt to break out');const h0=P.hp;t.act('held-break');ok(q.day===1&&P.hp===h0,'and trying does nothing');
+   t.act('held-wait');ok(P.hp>h0,'a day in the cage heals a little ('+h0+' → '+P.hp+', food '+t.supplyNow().foodDays+'d)');
+   P.hp=t.vitals()[0];roll(.99);t.act('held-break');P.hp=t.vitals()[0];t.act('held-break');window.Math.random=rnd;ok(q.fails===2&&document.querySelector('[data-act="held-break"]').disabled&&/in chains/i.test(panel()),'two tries caught: in chains, no more break-outs');
+   q.fails=0;P.hp=t.vitals()[0];roll(0);t.act('held-break');window.Math.random=rnd;const o=Math.hypot(P.x-l.x,P.y-l.y)/t.TILE;ok(!C.held&&o>=X.release.out-1.5,'broken out: a way off their camp, alone ('+o.toFixed(1)+' tiles)');t.act('dlg-ok')}
+  {setup();const l=W.sites.find(s=>s instanceof t.Lair&&!s.cleared&&!s.within);P.x=l.x+3*t.TILE;P.y=l.y;const b=band();roll(.99);lose({kind:'party',ref:b,n:6,list:b.troops.slice(),band:'bandits'});window.Math.random=rnd;t.act('cont');
+   t.act('held-pay');const o=Math.hypot(P.x-l.x,P.y-l.y)/t.TILE;ok(!C.held&&o<4,'ransomed: let go at their camp ('+o.toFixed(1)+' tiles)');t.act('dlg-ok')}
+  {setup();const f=t.FIDS[0],home=t.TOWNS.find(x=>x.owner===f);C.held={k:'realm',fac:t.FIDS[1],name:'the men of the '+t.FACS[t.FIDS[1]].n,at:{k:'holding',town:t.TOWNS.find(x=>x.owner===t.FIDS[1]).name},away:[]};P.fac=f;C.free('light','Paid.',0,true);
+   const n=t.Spatial.nearest(t.fiefsOf(f),P.x,P.y);ok(n&&n.owner===f&&Math.hypot(P.x-n.x,P.y-n.y)<6*t.TILE,'your realm pays: freed at a holding of your realm ('+n.name+')');t.act('dlg-ok');P.fac=null}
   // ---- their stash (phase 3): what they took, in a camp or hideout of theirs near; a quest marks it; cleared, most of it back
   const stashOf=()=>P.quests.find(q=>q.type==='stash'),atLair=()=>{const l=W.sites.find(s=>s instanceof t.Lair&&!s.cleared&&!s.within);P.x=l.x+3*t.TILE;P.y=l.y;return l};
   const ransomed=()=>{setup();const l=atLair(),b=band();roll(.99);lose({kind:'party',ref:b,n:6,list:b.troops.slice(),band:'bandits'});window.Math.random=rnd;t.act('cont');const r=C.held.ransom;t.act('held-pay');return {l,r,q:t.Quest.as(stashOf())}};

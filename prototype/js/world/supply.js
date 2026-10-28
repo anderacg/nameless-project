@@ -284,7 +284,7 @@ const bandFoodHour=moving=>P.foodHour(moving)+Escort.foodHour(moving);
    march); its stamina drains or comes back; and what it lacks takes its toll: tiredness and hunger in morale, exhaustion, hunger,
    thirst and the cold in men. The console's noNeeds (core.js CHEAT): nothing eaten or drunk, never hungry or thirsty, no drain */
 function supplyHour(){
-  const S=SUPPLY,u=BAND,L=supplyLand(),moving=!P.stay&&supplyMoved(),free=CHEAT.noNeeds;
+  const S=SUPPLY,u=BAND,L=supplyLand(),moving=!P.stay&&supplyMoved(),free=CHEAT.noNeeds||!!Captivity.held;// (held captive, your captors feed you: world/captivity.js)
   if(!S.fill.timed&&(L.well||L.water&&!moving))fillNow(true);
   // food, eaten as it comes due (the frost eats more): hungry when it could not eat what was due, or has none left
   if(!free)u.eat+=bandFoodHour(moving)*(L.frost?1+S.frostEat*survivalShare():1);const due=Math.floor(u.eat);u.eat-=due;
