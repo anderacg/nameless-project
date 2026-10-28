@@ -24,14 +24,15 @@ const TAGS={
 };
 Object.entries(TAGS).forEach(([k,t])=>{ST[k].tags=t});
 /* ---------- damage types and armour. Every blow, shot and spell is physical (slash, pierce, blunt) or magical (fire, frost,
-   arcane). Physical damage is stopped in part by armour (ARMOR_VS: what is left of each kind against each armour); an
-   armour-piercing weapon (the 'pierce' trait) is stopped half as much. Magic ignores armour: a ward (the 'ward' trait) takes
+   arcane). Physical damage is stopped in part by armour: its value (ARMOR v, 0-100; a unit's own av over its kind's), of which
+   each kind is stopped by its share (ARMOR_PEN): what is left is 1 - value/100 x share; an armour-piercing weapon (the 'pierce'
+   trait) is stopped half as much. Magic ignores armour: a ward (the 'ward' trait) takes
    WARD of it, and some creatures and peoples resist or fear a school (RESIST, RACE_RESIST). A troop's type comes from its
    weapon (WEAPON_DT; UNIT_DT for casters and beasts), its armour from what it wears (OUTER_ARMOR; plate for heavy troops; hide
    for beasts; UNIT_ARMOR where its look misleads); a character's from the weapon and body armour they carry (itemDt, itemArmor) ---------- */
 const DMG={slash:{n:'Slash',main:'physical'},pierce:{n:'Pierce',main:'physical'},blunt:{n:'Blunt',main:'physical'},fire:{n:'Fire',main:'magical'},frost:{n:'Frost',main:'magical'},arcane:{n:'Arcane',main:'magical'}};
-const ARMOR={none:{n:'Unarmoured'},leather:{n:'Leather'},mail:{n:'Mail'},plate:{n:'Plate'},hide:{n:'Hide / scales'}};
-const ARMOR_VS={slash:{none:1,leather:.85,mail:.65,plate:.45,hide:.8},pierce:{none:1,leather:.9,mail:.8,plate:.6,hide:.85},blunt:{none:1,leather:.9,mail:.8,plate:.75,hide:.85}};
+const ARMOR={none:{n:'Unarmoured',v:0},leather:{n:'Leather',v:15},mail:{n:'Mail',v:35},plate:{n:'Plate',v:55},hide:{n:'Hide / scales',v:20}};
+const ARMOR_PEN={slash:1,pierce:.7,blunt:.55};
 const WARD=.6,AP=.5;// (a ward keeps 60% of magic; armour-piercing: armour stops half as much)
 const RESIST={troll:{fire:1.5,frost:.5},wolf:{fire:1.3,frost:.3},dragon:{fire:.2},wyrm:{fire:.6},slime:{fire:1.3,frost:.6},spider:{fire:1.3}};
 const RACE_RESIST={elf:{arcane:.85},dwarf:{fire:.85},orc:{frost:.85}};
@@ -49,13 +50,15 @@ function damageTypesInit(){for(const [k,s] of Object.entries(ST)){const L=(typeo
   if(!s.resist&&RESIST[k])s.resist=RESIST[k]}}
 const dtOf=s=>s&&s.dt||(s&&s.magic?'arcane':s&&s.range?'pierce':'slash');
 const armorOf=s=>s&&s.armor||'none';
+// its armour's value (0-100): its own (av), else its kind's
+const armorValue=s=>s?.av??ARMOR[armorOf(s)].v;
 const isMagical=dt=>!!(DMG[dt]&&DMG[dt].main==='magical');
 // a combo step's own kind: a thrust pierces, a slam crushes, a sweep is the weapon's
 const shapeDt=(shape,base)=>shape==='thrust'||shape==='twin'?'pierce':shape==='slam'?'blunt':base;
 // what is left of a blow of type dt (else the attacker's) from a on d, after armour or ward and resistances
 function typeMul(a,d,dt){dt=dt||dtOf(a);if(!DMG[dt])return 1;
   if(isMagical(dt))return (tagsOf(d).includes('ward')?WARD:1)*((d.resist&&d.resist[dt])||1)*((RACE_RESIST[d.race]||{})[dt]||1);
-  const m=(ARMOR_VS[dt]||{})[armorOf(d)]??1;return m<1&&tagsOf(a).includes('pierce')?m+(1-m)*AP:m}
+  const m=1-armorValue(d)/100*(ARMOR_PEN[dt]??0);return m<1&&tagsOf(a).includes('pierce')?m+(1-m)*AP:m}
 const tagsOf=s=>s.tags||[];
 /* every unit two attacks: a melee damage and a missile damage. A shooter's melee (his sidearm: Melee Mode) is s.mdmg, else
    MELEE_SHOT of his shot; a fighter's missile is his shot if he has one, else none (0) */

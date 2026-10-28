@@ -8,7 +8,8 @@ try{
  ok(mu('archer','militia')===1.2,'archers beat unarmored foot (×1.2)');
  ok(mu('militia','spearman')===1.25,'foot beat spearmen (×1.25)');
  ok(mu('spearman','horse')===1.6&&mu('spearman','troll')===1.6,'spears beat cavalry and large monsters (×1.6)');
- ok(tm('archer','hum_guard')===.6&&tm('hum_long','hum_guard')===.8,'plate shrugs off arrows (×0.6), armour-piercing ones half as much (×0.8)');
+ {const pl=1-t.ARMOR.plate.v/100*t.ARMOR_PEN.pierce;ok(tm('archer','hum_guard')===+pl.toFixed(3)&&tm('hum_long','hum_guard')===+(pl+(1-pl)*t.AP).toFixed(3)&&pl<.65,'plate (armour '+t.ARMOR.plate.v+') shrugs off arrows (×'+pl.toFixed(3)+'), armour-piercing ones half as much')}
+ ok(['none','leather','hide','mail','plate'].every((k,i,a)=>!i||t.ARMOR[k].v>t.ARMOR[a[i-1]].v)&&t.ARMOR_PEN.slash>t.ARMOR_PEN.pierce&&t.ARMOR_PEN.pierce>t.ARMOR_PEN.blunt,'armour has a value, rising from none to plate; slashes are stopped most by it, blows least');
  ok(mu('dw_berserk','archer')===1.4,'shock troops tear into archers (×1.4)');
  ok(mu('militia','militia')===1,'even fights stay even');
  const gaps=Object.keys(ST).filter(k=>{const v=t.vsInfo(ST[k]);return !v.strong.length||!v.weak.length});
@@ -20,7 +21,7 @@ try{
  B.over=true;B.endT=0;t.updateBattle(.01);t.act('cont');
  // the hero's class follows the gear
  P.gear.weapon='wyrmspear';ok(t.unitClass(t.heroStats())==='spear','the Wyrm Tooth Spear makes your hero fight as a spearman');P.gear.weapon=null;
- P.gear.body='scorpplate';ok(t.heroStats().armor==='plate'&&+t.typeMul(ST.archer,t.heroStats()).toFixed(3)===.6,'Scorpion Plate gives your hero plate against arrows');P.gear.body=null;
+ P.gear.body='scorpplate';ok(t.heroStats().armor==='plate'&&Math.abs(t.typeMul(ST.archer,t.heroStats())-(1-t.ARMOR.plate.v/100*t.ARMOR_PEN.pierce))<1e-9,'Scorpion Plate gives your hero plate against arrows');P.gear.body=null;
  // UI
  P.gold=999;G.mode='world';G.modal=false;G.lastTown=null;t.enterTown(t.townBy('Ashford'));t.act('tab','recruit');ok(/Strong vs/.test(document.getElementById('panel').innerHTML),'recruit screen lists strengths and weaknesses');t.act('leave');
  while(G.mode==='perk')t.act('perk',G.perkOffer[0]);
