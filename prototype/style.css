@@ -692,6 +692,8 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 .rec-step{display:flex;align-items:center;gap:var(--sp-1);flex-wrap:wrap;justify-content:flex-end}
 .rec-n{min-width:22px;text-align:center;font-size:var(--fs-lg);color:var(--accent)}
 .rec-i{flex:none;font-style:italic;font-family:Georgia,serif}
+/* (a narrow screen, a phone held upright: the row in two lines, its name and i, then how many) */
+@media (max-width:600px){.rec-row{flex-wrap:wrap}.rec-txt{flex:1 1 0}.rec-i{order:2}.rec-step{order:3;flex:1 0 100%;justify-content:flex-start}.rec-step{gap:2px}.rec-step .btn{flex:1;min-width:0;padding-left:2px;padding-right:2px}.rec-n{flex:none;min-width:18px}.rec-txt{min-width:0}.rec-txt strong{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.rec-txt small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
 .rec-bar{position:sticky;bottom:calc(-1 * var(--sp-3));margin-top:var(--sp-2);padding:var(--sp-2) var(--sp-3);background:var(--panel-3);border:1px solid var(--trim);border-radius:var(--r-sm);box-shadow:var(--float);z-index:2}
 .rec-bar .btns{display:flex;gap:var(--sp-1);align-items:center;margin:var(--sp-1) 0 0}
 .rec-sum{font-size:var(--fs-md)}
