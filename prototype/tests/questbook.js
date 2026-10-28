@@ -17,6 +17,7 @@ Kit.suite(({ok})=>{
  // ---- every entry walked through each branch: a path is the choices made at its pages and goals (goal: 'ok' or 'fail'; a
  // choice: its place, a check's with w or l)
  const begin=id=>{reset();const town=t.TOWNS.find(x=>x.T.tabs.includes('tavern')&&x.kind==='town')||t.TOWNS[0],l=W.lords.find(x=>!x.dead&&x.fac===town.owner)||W.lords[0];Kit.goHome(town);
+  {const g=t.FIDS.find(x=>x!==town.owner);W.rel[t.rk(town.owner,g)]={s:'war',since:1}}// (a war, for the entries that need an enemy)
   return Q.take(id,Q.ctx({town:town.name,fac:l.fac,lord:l.name,lordRef:l}),null,true)};
  const step=(th,k)=>{const s=th.current;if(!s)return false;
    if(th.pageSpec){const [i,wl]=[parseInt(k),k.slice(-1)];Kit.world();th.showPage();if(G.mode!=='story')return false;Kit.stubStream('road',wl==='w'?0:wl==='l'?.9999:.5,()=>t.act('thr-do',String(i)));return true}
@@ -48,6 +49,18 @@ Kit.suite(({ok})=>{
  // ---- once a game; again after its cool days
  reset();{const th=begin('millers_debt');step(th,'ok');step(live('millers_debt'),'0');ok(!Q.ready('millers_debt'),'once a game: done, never again');
   const p=begin('poorhouse_grain');step(p,'ok');ok(!Q.ready('poorhouse_grain'),'done: not again for a while');G.day+=B.poorhouse_grain.cool;ok(Q.ready('poorhouse_grain'),B.poorhouse_grain.cool+' days on: offered again')}
+ // ---- phase 2: a deadline for the whole of it; a lord to beat; a rescue; the temple's and a companion's offers; a stage's name
+ {const th=begin('lords_enemy'),q=P.quests.find(x=>x.id===th.wait?.id),l=q&&W.lords.find(x=>x.id===t.Quest.as(q).target),r0=t.relWith(W.lords.find(x=>x.name===th.memory.lord));
+  ok(q&&q.type==='booklord'&&l&&t.atWar(th.memory.fac,l.fac)&&/days left/.test(th.note),'an enemy lord to beat: '+l?.name+' of a realm at war with his ('+th.note+')');
+  G.day=th.memory.due+1;Q.day();ok(!live('lords_enemy')&&!P.quests.includes(q)&&th.how==='expired'&&t.relWith(W.lords.find(x=>x.name===th.memory.lord))<r0,'out of time: failed, his quest dropped, his regard lower')}
+ {const th=begin('lords_enemy'),q=P.quests.find(x=>x.id===th.wait?.id),l=W.lords.find(x=>x.id===t.Quest.as(q).target);t.worldEmit('lord:beaten',{lord:l});ok(!live('lords_enemy')&&th.how==='ok','beaten in time: done')}
+ {const th=begin('pilgrim_taken'),q=t.Quest.as(P.quests.find(x=>x.id===th.wait?.id)),s=q&&q.lair();ok(q&&q.type==='held'&&q.held.k==='lair'&&s&&th.memory.to,'a rescue: Brother Aldo held in '+th.memory.to);
+  t.worldEmit('site:cleared',{site:s});ok(!live('pilgrim_taken')&&th.how==='ok','its hideout cleared: freed, done');
+  const h=Q.held({held:'holding'},th),b=Q.held({held:'band',n:'Aldo'},th);ok(h?.k==='holding'&&t.townBy(h.town)&&b?.k==='band'&&t.bandCarrying(b.cap),'or held in a holding’s prison ('+h?.town+'), or by a band set near')}
+ reset();{const town=t.TOWNS.find(x=>x.T.temple);ok(town&&/qb-take.*pilgrim_taken/.test(Q.priest(town)),'the priest of '+town?.name+' asks for help')}
+ reset();{P.comps={elske:{ap:2,role:''}};t.compInit('elske');const r=Q.compReplies('elske');ok(r.some(x=>x.arg==='elske_fever#elske'),'Elske, approving: something on her mind');
+  t.act('qb-take','elske_fever#elske');const th=live('elske_fever');ok(th&&th.memory.comp==='elske','taken from her talk');Kit.world();th.showPage();t.act('thr-do','1');ok(!live('elske_fever')&&P.comps.elske.ap===1,'turned down: her approval −1');P.comps={}}
+ ok(t.kindOf('thread','book:lords_enemy').steps[0].stage({memory:{}})==='The enemy lord','a step’s own stage name');
  // ---- the console
  reset();{const D=t.DevConsole,out=D.execute('book');ok(/millers_debt/.test(out),'book: the entries');const m=D.execute('book millers_debt what');ok(live('millers_debt')?.at==='what'&&/Begun/.test(m),'book millers_debt what: begun at that step')}
  reset();

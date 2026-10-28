@@ -24,6 +24,7 @@
    - fail: the keys that fail it ([how, …]): a side story's end there is failed (else done; 'left', abandoned); a main story's
      stage failed never ends it: it falls back (setback) to its last checkpoint, with a line (setback(th): what happened);
    - checkpoint: true, a main story's stage it falls back to once begun (the thread's cp).
+   Ended 'expired' (out of time: story/questbook.js Questbook.expire) or 'unstarted', it failed.
    Its record (W.story.threads.on): {k, i, day (begun), at (the step under way), wait ({shape, id}: what it waits for), memory,
    past ([step, how] each done); a main story's cp once it has passed a checkpoint}. Thread.start(id, memory) begins one (or an
    outcome's start: {thread, memory}). Never ticked: it hears the bus (Thread.heard), only for the events its steps wait for; it
@@ -126,7 +127,7 @@ class Thread extends Happening{
     return {k:'t'+this.i,cat:this.cat,title:this.title,giver:this.who,state:this.endState(how,s),day:G.day,got:s?this.stageName(s):''};
   }
   endState(how,s){
-    return how==='left'?'abandoned':how==='unstarted'||s&&Thread.fails(s,how)?'failed':'done';
+    return how==='left'?'abandoned':how==='unstarted'||how==='expired'||s&&Thread.fails(s,how)?'failed':'done';
   }
   // (what to do now: its step's note)
   get note(){

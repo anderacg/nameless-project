@@ -107,7 +107,7 @@ class CompanionSpeaker extends Speaker{
   thinks(){const d=this.c.deed,F=DIALOGUE.feel;return (d&&F[d[0]]?.[d[1]>0?'good':'bad'])||F.none[apName(this.c.ap).toLowerCase()]}
   wishWhy(){const D=this.D,c=this.c;if(!D.wish)return false;if(c.wish)return c.wish==='asked'&&P.quests.some(q=>q.wish===this.o)?'You are helping already':false;return ''}
   replies(){const id=this.o,w=this.wishWhy();return [{act:'talk-about',arg:id,label:'Tell me about yourself'},{act:'talk-think',arg:id,label:'How do you think we are doing?'},
-    w!==false&&{act:'talk-wish',arg:id,label:'Is there anything you want?',why:w}]}
+    w!==false&&{act:'talk-wish',arg:id,label:'Is there anything you want?',why:w},...Questbook.compReplies(id)]}
   act(k,cv){const D=this.D,c=this.c;
     if(k==='about'){cv.say('Tell me about yourself.',false,heroName()||'You').say(D.about||'There is not much to tell.')}
     if(k==='think'){cv.say('How do you think we are doing?',false,heroName()||'You').say(this.thinks())}

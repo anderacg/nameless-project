@@ -32,5 +32,23 @@ Object.assign(QUESTBOOK,{
       hunt:{goal:'hunt',title:'Hunt the beasts',note:'Hunt down the beasts taking the shepherd’s flock.',next:'thanks'},
       thanks:{end:{reward:{gold:35,rep:5,xp:60},say:'The shepherd presses a cheese on you, and his thanks.'}},
       lost:{end:{reward:{morale:-2},say:'You lose the trail, and the shepherd his hope.',failed:true}},
-      left:{end:{say:'You leave him to his flock.'}}}}
+      left:{end:{say:'You leave him to his flock.'}}}},
+  // (a temple's: a rescue from a hideout)
+  pilgrim_taken:{title:'The taken pilgrim',ico:'altar',giver:{by:'temple',name:'The priest',pic:'folk'},once:true,
+    text:'Brother Aldo set out for the shrine a week ago. Bandits took him on the road.',
+    steps:{start:{goal:'rescue',held:'lair',n:'Brother Aldo',title:'Free Brother Aldo',note:'Free Brother Aldo from the hideout where he is held.',say:'You cut Brother Aldo loose. He blesses you through cracked lips.',reward:{rep:6,renown:3,xp:60}}}},
+  // (a companion's: a choice with a heal check, then a visit, their approval)
+  elske_fever:{title:'Elske’s fever-house',ico:'wounded',giver:{by:'comp',comp:'elske',name:'Elske',ask:'Elske, you look troubled.'},when:{approve:1},once:true,
+    text:'Elske has heard of a fever in {town}.',
+    steps:{
+      start:{title:'Elske’s worry',text:'“There is a fever in {town},” Elske says. “They have no one to tend them. Will you help me?”',note:'Answer Elske.',choose:[
+        {label:'Help her tend them',icon:'wounded',check:'heal',win:'go',lose:'go',winSay:'You learn her ways quickly.',loseSay:'You will have to follow her lead.'},
+        {label:'Not now',icon:'shoe',next:'no'}]},
+      go:{goal:'visit',to:{town:'{town}',lot:'house'},title:'The fever-house',note:'Go with Elske to the fever-house in {town}.',say:'For three days you carry water and burn rags.',next:'thanks'},
+      thanks:{end:{reward:{approve:3,rep:5,xp:50},say:'“You did not have to,” Elske says. “Thank you.”'}},
+      no:{end:{reward:{approve:-1},say:'Elske says nothing, and turns away.'}}}},
+  // (a lord's: an enemy lord to beat, the whole of it in 30 days)
+  lords_enemy:{title:'The enemy’s champion',ico:'sword',giver:{by:'lord'},when:{realm:'same',war:true},cool:20,fail:{days:30,say:'{lord} has found someone else for the work.',out:{rel:-3}},
+    text:'{lord} wants an enemy lord brought low before the month is out.',
+    steps:{start:{goal:'kill',lord:'enemy',title:'Bring down an enemy lord',note:'Beat {to} in battle.',stage:'The enemy lord',say:'{lord} will hear of it.',reward:{gold:120,rel:8,honor:5,renown:5}}}}
 });
