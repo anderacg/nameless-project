@@ -69,7 +69,7 @@
 .gm-body{display:flex;flex-direction:column;gap:12px;padding:12px 14px}
 .gm-tiles{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}
 .gm-tile{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;min-width:0;min-height:112px;padding:12px 6px;border:1px solid #8b7048;border-radius:3px;background:radial-gradient(ellipse at 50% 30%,#4a392333,transparent 70%),linear-gradient(#30261d,#161216);color:#e7d7b3;font:inherit;cursor:pointer;box-shadow:inset 0 1px #b7a06a33,inset 0 -2px #0008}
-.gm-tile:hover:not(:disabled),.gm-tile:focus-visible{border-color:#d7b36b;color:#fff0c7}.gm-tile:disabled{opacity:.5;cursor:default}
+.gm-tile:focus-visible{border-color:#d7b36b;color:#fff0c7}@media (hover:hover){.gm-tile:hover:not(:disabled){border-color:#d7b36b;color:#fff0c7}}.gm-tile:disabled{opacity:.5;cursor:default}
 .gm-tile .gico{width:32px;height:32px}.gm-tile strong{font:700 16px/1.1 Arial,sans-serif}.gm-tile small{font-size:11px;line-height:1.2;color:#b5a88e;text-align:center}
 .gm-tile kbd{position:absolute;top:6px;right:8px;padding:1px 5px;font:700 11px Arial,sans-serif;color:#c9a24e;background:none;border:1px solid #6b5533;border-radius:2px}
 .gm-sys{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;padding-top:12px;border-top:1px solid #655133}
