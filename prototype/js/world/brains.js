@@ -123,7 +123,11 @@ class CaravanBrain extends Brain{
     if(c.idle||inFight(c))return false;
     this.cool(c,d);const to=townBy(c.to);if(!to||!c.mine&&atWar(to.owner,c.fac)){c.gone=true;return false}
     const v=this.look(c),pd=v.d,scared=!c.mine&&hostileTo(c.fac)&&TravelAwareness.sees(c);
-    if(scared){const ox=c.x;Router.flee(c,{x:c.x+v.dx,y:c.y+v.dy},moveStep(CARAVAN_SPD*.9,d));this.face(c,ox)}
+    // (afraid of you: the gate near, a run for it; you at the gate, another holding of its realm; else away from you)
+    const gate=gateGoal(to),gd=Math.hypot(gate.x-c.x,gate.y-c.y),X=CARAVAN_FEAR,block=scared&&Math.hypot(P.x-gate.x,P.y-gate.y)<X.block;
+    if(block){const alt=Spatial.nearest(TOWNS.filter(t=>t!==to&&t.owner===c.fac),c.x,c.y);if(alt)c.to=alt.name}
+    if(scared&&!block&&gd<pd*X.dash){const ox=c.x;Router.travel(c,{...gate,road:true},moveStep(CARAVAN_SPD,d));this.face(c,ox)}
+    else if(scared){const ox=c.x;Router.flee(c,{x:c.x+v.dx,y:c.y+v.dy},moveStep(CARAVAN_SPD*.9,d));this.face(c,ox)}
     else{const ox=c.x;Router.travel(c,{...gateGoal(to),road:true},moveStep(CARAVAN_SPD*Math.max(.5,speedAt(c.x,c.y)||1),d));c.dir=c.x>=ox?1:-1}
     if(Math.hypot(to.x-c.x,to.y+12-c.y)<8){if(c.arrive(to))c.gone=true;return false}
     // preyed on: bandits close by, or a lord at war with its owner; the guards fight it out (fights.js)
