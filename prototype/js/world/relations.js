@@ -79,6 +79,10 @@ function relHtml(l,showTies=true){
     '<div class="btns" style="margin:0">'+dlgBtn('lr-gift',l.id,'Give '+R.gift.gold+' gold',P.gold<R.gift.gold?'Not enough gold':giftWait?'Gave lately':'')+
     dlgBtn('lr-troops',l.id,'Ask for '+R.troops+' soldiers',v<R.troopsAt?'Needs '+relName(R.troopsAt).toLowerCase()+' (+'+R.troopsAt+')':lendWait?'Asked lately':l.troops.length<R.troops+6?'Too few to spare':partyRoom()<R.troops?'No room in your band':'')+'</div>';
 }
+// (why he cannot lend you soldiers now, his liking aside; and his lending them)
+const lendWhy=l=>(l.lend||0)>G.day?'Asked lately':l.troops.length<RELATION.troops+6?'Too few to spare':partyRoom()<RELATION.troops?'No room in your band':'';
+function lordLend(l){const R=RELATION;l.lend=G.day+R.troopsDays;const got=partyRoster(l).transferAnyTo(partyRoster(P),R.troops,partyRoom()).map(k=>ST[k].n.toLowerCase());
+  log(l.name+' lends you '+got.join(', ')+'.','good');updateHUD(true);return got}
 function relAct(a,arg){
   const l=W.lords.find(x=>x.id===arg);if(!l||l.dead)return;const R=RELATION;
   if(a==='lr-rumours'||a==='lr-lords'){
@@ -86,9 +90,7 @@ function relAct(a,arg){
     return lordMeet(l,a.slice(3));
   }
   if(a==='lr-gift'&&P.gold>=R.gift.gold&&!((l.gift||0)>G.day)){P.gold-=R.gift.gold;l.gift=G.day+R.gift.days;changeRel(l,R.gift.rel,'your gift');updateHUD(true)}
-  if(a==='lr-troops'&&relWith(l)>=R.troopsAt&&!((l.lend||0)>G.day)&&l.troops.length>=R.troops+6&&partyRoom()>=R.troops){
-    l.lend=G.day+R.troopsDays;const got=partyRoster(l).transferAnyTo(partyRoster(P),R.troops,partyRoom()).map(k=>ST[k].n.toLowerCase());
-    log(l.name+' lends you '+got.join(', ')+'.','good');updateHUD(true)}
+  if(a==='lr-troops'&&relWith(l)>=R.troopsAt&&!lendWhy(l))lordLend(l);
   lordMeet(l);
 }
 onAct('lr-',relAct);

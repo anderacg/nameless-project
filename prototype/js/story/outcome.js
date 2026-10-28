@@ -102,6 +102,13 @@ const Outcome={
       },
       text:v=>v[0]&&FACS[v[0]]?'honour with the '+FACS[v[0]].n+' '+Outcome.signed(v[1]):'',
     },
+    // rel: [lord, n]: his feeling for you (world/relations.js changeRel), with why
+    rel:{
+      apply(v){
+        if(v[0])changeRel(v[0],v[1],v[2]||'what you said');
+      },
+      text:v=>v[0]?'relation '+Outcome.signed(v[1]):'',
+    },
     renown:{
       apply(v){
         P.renown+=v;

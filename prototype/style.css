@@ -1000,6 +1000,9 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 .talk-replies{display:grid;gap:var(--sp-1);margin:var(--sp-2) 0}
 .talk-r{justify-content:flex-start;text-align:left}
 .talk-k{display:inline-block;min-width:16px;margin-right:var(--sp-2);color:var(--faint);font-size:var(--fs-xs)}
+.talk-line.you b{color:var(--side-me-fg)}
+.talk-out{display:block;flex-basis:100%;margin-left:24px;color:var(--muted);font-weight:normal;font-size:var(--fs-xs)}
+.talk-r{flex-wrap:wrap}
 
 /* ---------- 9. responsive ---------- */
 /* a touch screen: everything you press at least 44 px, and nothing that only hovering shows */

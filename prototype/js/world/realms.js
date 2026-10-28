@@ -284,7 +284,9 @@ function lordMeet(l,topic){
   // (the talk: story/conversation.js; its answers kept on the visit's talk, said once each)
   const cv=talk.cv||(talk.cv=new Conversation(new LordSpeaker(l)));
   if(topic==='rumours'&&talk.rumours==null){talk.rumours=rumourSay(rumourSource('lord',l.id,l,{fac:l.fac,from:l.name}))||'I have heard nothing new.';cv.say(talk.rumours)}
-  if(topic==='lords'&&talk.lords==null){talk.lords=lordTies(l,false)||'<p>I have no other lords to speak of.</p>';KNOWLEDGE.hear(talk.lords);cv.say(talk.lords,true)}
+  if(topic==='lords'&&talk.lords==null){talk.lords=lordTies(l,false)||'<p>I have no other lords to speak of.</p>';KNOWLEDGE.hear(talk.lords);cv.say(talk.lords,true);
+    // (and their manner: their tempers known to you from now: story/conversation.js)
+    const named=[...lordFriends(l).filter(o=>!o.dead).slice(0,3),...lordRivals(l).filter(o=>!o.dead).slice(0,3)];if(named.length){named.forEach(o=>{TalkMemory.of('lord:'+o.id).temper=true});cv.say(DIALOGUE.tells.replace('{list}',named.map(o=>htmlText(o.name)+' is '+new LordSpeaker(o).temper()).join(', ')),true)}}
   cv.show({body:cv.sp.body(talk),close:['lord-leave',null,'Leave']});
 }
 // its work in the world's day and frame (core/systems.js)
