@@ -1,11 +1,12 @@
 'use strict';
 // Captivity (world/captivity.js, doc/CAPTIVITY_DESIGN.md phase 1): beaten, you may get away or be taken; taken, you pay, persuade,
-// serve, wait for your realm or refuse; freed near a holding, it costs by the way out; your scattered soldiers find you again.
+// serve, wait for your realm or refuse; freed near a holding, it costs by the way out; your scattered soldiers find you again;
+// what they took is in their stash (phase 3), won back by clearing or raiding it or from a fence, sold off after a month.
 Kit.suite(({ok})=>{
  const t=T,P=t.P,G=t.G,W=t.W,C=t.Captivity,X=t.CAPTIVITY;Kit.begin('soldier',1);Kit.clear();Kit.world();t.GUIDE.on=false;
  const rnd=Math.random,roll=v=>{window.Math.random=()=>v},panel=()=>document.getElementById('panel').innerHTML;
  const band=()=>{const b=t.asParty({kind:'bandits',troops:Array(6).fill('militia'),x:P.x+30,y:P.y,cool:0});t.bandits.push(b);return b};
- const setup=()=>{Kit.world();C.held=null;C.scattered=[];P.troops={hum_foot:8};P.gold=400;P.hp=t.vitals()[0];P.fac=null;P.gear.mount=null;const gid=Object.keys(t.ITEMS).find(k=>t.ITEMS[k].slot==='weapon');t.invAdd('gear',gid,1);t.invAdd('gear',gid,1);t.invAdd('gear',gid,1)};
+ const setup=()=>{Kit.world();C.held=null;C.scattered=[];P.quests=[];P.troops={hum_foot:8};P.gold=400;P.hp=t.vitals()[0];P.fac=null;P.gear.mount=null;const gid=Object.keys(t.ITEMS).find(k=>t.ITEMS[k].slot==='weapon');t.invAdd('gear',gid,1);t.invAdd('gear',gid,1);t.invAdd('gear',gid,1)};
  const lose=e=>{t.startEncounter(e);t.concludeEncounter(false,{},0,true,[],null,{})};
  const gearN=()=>P.inv.filter(s=>s&&s.k==='gear').reduce((n,s)=>n+(s.n||1),0);
  try{
@@ -53,6 +54,21 @@ Kit.suite(({ok})=>{
   {const f=t.FIDS[0];P.fac=f;t.addHonor(f,40-t.honorWith(f),true);const q=caged();P.fac=f;window.Math.random=()=>0;t.act('held-wait');window.Math.random=rnd;ok(!C.held&&/pay for you/.test(panel()),'your realm pays for you while you wait');t.act('dlg-ok');P.fac=null}
   // (a save made in the cage keeps the cage)
   {caged();window.Math.random=rnd;const s=JSON.stringify(C.save());C.held=null;C.load(JSON.parse(s));ok(C.held?.prison?.day===1,'a save in the cage keeps the cage');t.hidePanel();G.mode='world';G.modal=false;C.hour();ok(/In their cage/.test(panel()),'loaded: back in their cage');C.held=null;t.hidePanel()}
+  // ---- their stash (phase 3): what they took, in a camp or hideout of theirs near; a quest marks it; cleared, most of it back
+  const stashOf=()=>P.quests.find(q=>q.type==='stash'),atLair=()=>{const l=W.sites.find(s=>s instanceof t.Lair&&!s.cleared&&!s.within);P.x=l.x+3*t.TILE;P.y=l.y;return l};
+  const ransomed=()=>{setup();const l=atLair(),b=band();roll(.99);lose({kind:'party',ref:b,n:6,list:b.troops.slice(),band:'bandits'});window.Math.random=rnd;t.act('cont');const r=C.held.ransom;t.act('held-pay');return {l,r,q:t.Quest.as(stashOf())}};
+  {const {l,r,q}=ransomed();ok(q&&q.gold===r&&q.gear.length>=1&&q.holder.k==='site'&&q.holder.i===l.i&&q.seek().x===l.x&&/a quest marks it/.test(panel()),'ransomed: the '+r+'g and '+q.gear.length+' piece(s) they took are in the '+l.name+', marked');t.act('dlg-ok');
+   const g=P.gold,n=gearN();t.worldEmit('site:cleared',{site:l});ok(!stashOf()&&P.gold===g+Math.round(r*X.stash.back)&&gearN()===n+Math.round(q.gear.length*X.stash.back),'their camp cleared: '+Math.round(X.stash.back*100)+'% of it back')}
+  // (a fence in a tavern sells your gear back; the gold still waits in their stash)
+  {const {q}=ransomed();t.act('dlg-ok');const town=t.TOWNS.find(x=>x.T.broker)||t.TOWNS[0];t.enterTown(town);t.act('tab','tavern');const p=C.fencePrice(q),g=P.gold,n=gearN(),k=q.gear.length;
+   ok(document.querySelector('[data-act="held-fence"]')&&/A fence/.test(panel()),'a fence in the tavern has your gear');t.act('held-fence',q.id);
+   ok(P.gold===g-p&&gearN()===n+k&&!q.gear.length&&stashOf()&&/A fence/.test(panel())===false,'bought back for '+p+'g: all '+k+' piece(s); the gold is still in their stash');t.toWorld();
+   // (a month on, sold off)
+   G.day=q.due+1;q.lapse();ok(!stashOf(),'not taken back in '+X.stash.days+' days: sold off')}
+  // (a lord's: in a holding of his realm; raided, won back)
+  {setup();const f=t.FIDS[0];C.held={k:'realm',fac:f,name:'the men of the '+t.FACS[f].n};C.free('prison','Out.');const q=t.Quest.as(stashOf()),town=t.townBy(q.holder.town);
+   ok(q&&town&&town.owner===f&&q.gold===400&&q.gear.length===gearN()+q.gear.length&&q.deed==='holding:raided','out of their prison: your 400g and all your gear in '+town.name+', a holding of theirs');t.act('dlg-ok');
+   const g=P.gold;t.worldEmit('holding:raided',{town});ok(!stashOf()&&P.gold===g+Math.round(400*X.stash.back),'raided: most of it back')}
   // ---- a captivity and the scattered are kept in the save
   setup();b=band();roll(.99);lose({kind:'party',ref:b,n:6,list:b.troops.slice(),band:'bandits'});window.Math.random=rnd;t.act('cont');C.scattered.push({type:'hum_foot',n:2,at:t.Clock.hours()+30});
   {const s=JSON.stringify(C.save());C.held=null;C.scattered=[];C.load(JSON.parse(s));ok(C.held&&C.held.k==='band'&&C.scattered.length===1,'held and scattered come back with a save');t.hidePanel();G.mode='world';G.modal=false;C.hour();ok(G.mode==='dialog'&&/Taken captive/.test(panel()),'loaded while held: the captor’s page opens again');t.act('held-refuse');t.act('dlg-ok')}

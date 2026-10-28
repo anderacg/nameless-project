@@ -123,7 +123,7 @@ js/world/             the campaign map and everything on it
                         with your numbers: size, room, food, sight, skills, gear, vitals)
   brains.js             how each kind of party behaves on the map; the systems parties and patrol moves run them (updateParties: all at once)
   waylay.js             bands (often) and lords (rarely) lying in wait in the trees by a road; your sight sources spot them (WAYLAY)
-  captivity.js          beaten but alive: the escape roll, taken captive (ransom, persuade, serve, your realm pays, refuse), their cage a day at a time (break out, bribe, talk, wait; your companions' rescue), scattered troops finding you (CAPTIVITY; doc/CAPTIVITY_DESIGN.md)
+  captivity.js          beaten but alive: the escape roll, taken captive (ransom, persuade, serve, your realm pays, refuse), their cage a day at a time (break out, bribe, talk, wait; your companions' rescue), scattered troops finding you, their stash (what they took, in a camp or hideout of a band's or a holding of their realm; StashQuest, step kind 'stash': clear or raid it for 60% back, buy the gear back from a tavern's fence, sold off after 30 days) (CAPTIVITY; doc/CAPTIVITY_DESIGN.md)
   captives.js           leaders in battle; captured, ransomed, let go or escaped; a passenger of yours carried off (carryOff)
   patrols.js            every holding's guards ride its land: a day watch and a night watch (Watches, t.watch; class wave D)
   defence.js            the land defended: monsters in the wilds, bandits away from homes, the watch and lords ride out at them
