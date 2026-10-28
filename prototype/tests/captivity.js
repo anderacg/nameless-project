@@ -54,6 +54,16 @@ Kit.suite(({ok})=>{
   {const f=t.FIDS[0];P.fac=f;t.addHonor(f,40-t.honorWith(f),true);const q=caged();P.fac=f;window.Math.random=()=>0;t.act('held-wait');window.Math.random=rnd;ok(!C.held&&/pay for you/.test(panel()),'your realm pays for you while you wait');t.act('dlg-ok');P.fac=null}
   // (a save made in the cage keeps the cage)
   {caged();window.Math.random=rnd;const s=JSON.stringify(C.save());C.held=null;C.load(JSON.parse(s));ok(C.held?.prison?.day===1,'a save in the cage keeps the cage');t.hidePanel();G.mode='world';G.modal=false;C.hour();ok(/In their cage/.test(panel()),'loaded: back in their cage');C.held=null;t.hidePanel()}
+  // ---- the traits (phase 4): Slippery, Silver Tongue, Old Soldier
+  setup();{const e={list:Array(6).fill('militia')},c={k:'band',name:'the bandits'},TR=X.traits,ch=C.escapeChance(e),pc=C.persuadeChance(c),rs=C.ransomOf(c),q={help:0,guard:0},bc=C.breakChance(q);
+   P.perks=['slippery'];ok(Math.abs(C.escapeChance(e)-ch-TR.slippery.escape)<1e-9&&C.breakChance(q)>bc,'Slippery: +'+Math.round(TR.slippery.escape*100)+'% to get away, an easier break-out');
+   P.perks=['silver'];ok(Math.abs(C.persuadeChance(c)-pc-TR.silver)<1e-9,'Silver Tongue: easier to talk round');
+   P.perks=['oldsoldier'];ok(C.ransomOf(c)<rs,'Old Soldier: a smaller ransom ('+rs+' → '+C.ransomOf(c)+'g)');
+   const b=band();roll(.99);lose({kind:'party',ref:b,n:6,list:b.troops.slice(),band:'bandits'});window.Math.random=rnd;t.act('cont');const g0=gearN(),d0=G.day;roll(.99);t.act('held-serve');window.Math.random=rnd;
+   ok(G.day-d0<=Math.ceil(X.serve.band[1]*TR.oldsoldier.serve),'and half the service ('+(G.day-d0)+' days)');t.act('dlg-ok');
+   setup();P.perks=['oldsoldier'];const b2=band();roll(.99);lose({kind:'party',ref:b2,n:6,list:b2.troops.slice(),band:'bandits'});t.act('cont');const g1=gearN();t.act('held-pay');window.Math.random=rnd;
+   ok(g1-gearN()===X.light[1]-1,'and a piece fewer from your bag ('+(g1-gearN())+')');t.act('dlg-ok');P.perks=[]}
+  {P.perks=[];const N=['slippery','silver','oldsoldier'].map(k=>Object.values(t.TREE).find(n=>n.m&&n.m.perk===k));ok(N.every(n=>n&&n.links.length),'each trait is a node in the hero’s tree: '+N.map(n=>n&&n.n).join(', '))}
   // ---- their stash (phase 3): what they took, in a camp or hideout of theirs near; a quest marks it; cleared, most of it back
   const stashOf=()=>P.quests.find(q=>q.type==='stash'),atLair=()=>{const l=W.sites.find(s=>s instanceof t.Lair&&!s.cleared&&!s.within);P.x=l.x+3*t.TILE;P.y=l.y;return l};
   const ransomed=()=>{setup();const l=atLair(),b=band();roll(.99);lose({kind:'party',ref:b,n:6,list:b.troops.slice(),band:'bandits'});window.Math.random=rnd;t.act('cont');const r=C.held.ransom;t.act('held-pay');return {l,r,q:t.Quest.as(stashOf())}};

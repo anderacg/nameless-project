@@ -22,7 +22,8 @@ const TREE_BRANCHES=[
       ['k','Lone Wolf',{hpPct:.3,dmgPct:.3,capPct:-.4},'+30% health and damage, but you can lead 40% fewer troops.']],
     sideA:[['a','Cyclone',{whirlR:.4},'Whirlwind reaches 40% farther.'],['a','Bladestorm',{whirlDmg:.4},'Whirlwind hits 40% harder.'],['a','Second Wind',{whirlCost:.4},'Whirlwind costs 40% less.']],
     sideC:[['a','Blade Dash',{unlock:'dash'},'Active skill: dash through enemies, cutting each one you pass.'],['a','Swift Dash',{dashCd:.35,dashDmg:.3},'Blade Dash recovers 35% faster and cuts 30% deeper.'],['a','Rain of Arrows',{unlock:'volley'},'Active skill (needs a bow): loose a volley that falls around your aim.'],['a','Arrow Storm',{volleyDmg:.4,volleyR:.3},'Rain of Arrows hits 40% harder over a wider area.']],
-    sideD:[['s','Steady Aim',{sk:{archery:1},crit:.02}],['s','Fleet Runner',{sk:{athl:1},sp:10}],['n','Marksman',{sk:{archery:2},vis:.05},'+2 Archery. See a little farther.']],
+    sideD:[['s','Steady Aim',{sk:{archery:1},crit:.02}],['s','Fleet Runner',{sk:{athl:1},sp:10}],['n','Marksman',{sk:{archery:2},vis:.05},'+2 Archery. See a little farther.'],
+      ['n','Slippery',{perk:'slippery'},'+15% to get away as a battle is lost, and easier to slip out of a cage.']],
     sideB:[['n','Acrobat',{dodgeCost:.4,dodgeCd:.3},'Dodge rolls cost 40% less stamina and recover 30% faster.'],['n','Pathfinder',{perk:'path',travel:.05},'Forest and hills slow you half as much.'],
       ['n','Hawkeye',{perk:'guide',vis:.05},'Shows your arrow\u2019s path and where it will land while you draw a bow.'],
       ['n','Vanish',{perk:'vanish'},'+15% to get away when you flee in forest, hills or at night.'],['n','Forced March',{perk:'forced'},'Your band travels 15% faster, and eats 20% more.']]},
@@ -35,12 +36,13 @@ const TREE_BRANCHES=[
     sideD:[['a','Healing Light',{unlock:'heal'},'Active skill: mend your wounds and those of the troops near you.'],['a','Renewal',{healDmg:.5,healCd:.3},'Healing Light heals 50% more and recovers 30% faster.'],['s','Spell Study',{sk:{spell:2}}]],
     sideB:[['n','Warden',{perk:'warden',prison:2},'Hold 8 more prisoners.'],['n','Inner Fire',{mp:20,sp:15},'+20 mana and +15 stamina.']]},
   {k:'command',n:'Command',a:'cha',ang:180,col:'#e8b94a',
-    spine:[['s','Charisma',{attr:{cha:2}}],['s','Followers',{cap:1}],['n','Silver Tongue',{perk:'silver',hire:.05},'Hiring troops costs 25% less.'],
+    spine:[['s','Charisma',{attr:{cha:2}}],['s','Followers',{cap:1}],['n','Silver Tongue',{perk:'silver',hire:.05},'Hiring troops costs 25% less. Captors are easier to talk round.'],
       ['s','Charisma',{attr:{cha:2}}],['s','Followers',{cap:2}],['n','Drillmaster',{perk:'drill',train:.1},'Training troops costs about half as much.'],
       ['k','Warlord',{tHp:.15,tDmg:.15,dmgPct:-.25},'Your troops get +15% health and damage, but you deal 25% less.']],
     sideA:[['a','War Cry',{unlock:'cry'},'Active skill: nearby troops hit harder and move faster; enemies flinch.'],['a','Battle Hymn',{cryDur:4,cryR:.4},'War Cry lasts 4 seconds longer and reaches 40% farther.'],['a','Fearsome Roar',{cryStun:.8},'War Cry makes enemies flinch twice as long.']],
     sideC:[['a','War Banner',{unlock:'banner'},'Active skill: plant your banner; troops near it take 25% less damage.'],['a','Standard Bearer',{bannerDur:4,bannerR:.4},'War Banner lasts 4 seconds longer and covers 40% more ground.'],['n','Logistics',{food:.1,cap:2},'Your band eats 10% less. +2 party size.']],
-    sideD:[['s','Drill Yard',{tDmg:.04}],['n','Quartermaster General',{sk:{lead:1},cap:2},'+1 Leadership, +2 party size.'],['n','Rearguard',{perk:'rearguard'},'Caught fleeing, you lose half as many men.']],
+    sideD:[['s','Drill Yard',{tDmg:.04}],['n','Quartermaster General',{sk:{lead:1},cap:2},'+1 Leadership, +2 party size.'],['n','Rearguard',{perk:'rearguard'},'Caught fleeing, you lose half as many men.'],
+      ['n','Old Soldier',{perk:'oldsoldier'},'Taken captive, you are treated better: a smaller ransom and fine, a piece less from your bag, half the service.']],
     sideB:[['n','Banner Bearer',{tHp:.08,morale:5},'Troops get +8% health. Morale never falls below 5 more.'],['n','Veteran Drill',{tDmg:.08,sk:{lead:1}},'Troops deal 8% more damage. +1 Leadership.']]}
 ];
 // hybrid nodes between neighbouring branches
