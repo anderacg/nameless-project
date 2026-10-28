@@ -29,6 +29,11 @@ Kit.suite(({ok})=>{
   t.act('cont');ok(G.mode==='dialog'&&/Taken captive/.test(panel())&&document.querySelector('[data-act="held-pay"]')&&document.querySelector('[data-act="held-persuade"]')&&document.querySelector('[data-act="held-serve"]')&&!document.querySelector('[data-act="held-realm"]')&&document.querySelector('.nav [data-act="held-refuse"]'),'their page: pay, persuade, ride with the band; no realm to pay for you; Refuse its way out');
   {const r=C.held.ransom;roll(.99);t.act('held-persuade');window.Math.random=rnd;ok(C.held&&C.held.ransom>r&&!document.querySelector('[data-act="held-persuade"]'),'your words fail: the ransom harsher ('+r+' → '+C.held.ransom+'g), and no second try')}
   {const r=C.held.ransom,g0=gearN();t.act('held-pay');ok(!C.held&&P.gold===400-r&&gearN()<g0&&!t.troopCount()&&t.Spatial.nearestHolding(P.x,P.y)&&/near/.test(panel()),'pay the ransom: free near a holding, '+r+'g and '+(g0-gearN())+' piece(s) from your bag gone, your soldiers scattered');t.act('dlg-ok')}
+  // ---- now and then they do not bargain: straight into their prison, their ask on its page
+  {setup();const l=W.sites.find(s=>s instanceof t.Lair&&!s.cleared&&!s.within);P.x=l.x+3*t.TILE;P.y=l.y;const b=band(),ch=C.straight({k:'band'});let k=0;const seq=[.99,0];window.Math.random=()=>seq[k++]??.99;lose({kind:'party',ref:b,n:6,list:b.troops.slice(),band:'bandits'});window.Math.random=rnd;
+   ok(C.held&&C.held.prison&&/They do not bargain: straight into/.test(panel()),'taken by the bandits, who do not bargain ('+Math.round(ch*100)+'% of the time): straight into their prison');
+   t.act('cont');ok(G.mode==='dialog'&&/<h2>In (their Cage|the pit)<\/h2>/.test(panel())&&/No talk of ransom/.test(panel())&&!document.querySelector('[data-act="held-persuade"]')&&document.querySelector('[data-act="held-pay"]')&&document.querySelector('[data-act="held-break"]'),'its page: no persuading, no riding with them; pay their ask, break out, bribe, or wait');
+   const lv=W.lords[0],r=t.Relations.withYou(lv);ok(C.straight({k:'lord',id:lv.id})<=X.straight.lord+.001,'a lord '+Math.round(C.straight({k:'lord',id:lv.id})*100)+'%, a realm\u2019s men '+Math.round(C.straight({k:'realm'})*100)+'%, a broker never ('+C.straight({k:'broker'})+')');C.held=null;t.hidePanel()}
   // ---- persuaded: a fine
   setup();b=band();roll(.99);lose({kind:'party',ref:b,n:6,list:b.troops.slice(),band:'bandits'});t.act('cont');roll(0);t.act('held-persuade');window.Math.random=rnd;ok(!C.held&&P.gold===400-Math.floor(400*X.persuade.fine),'persuaded: let go for a fine');t.act('dlg-ok');
   // ---- serving the band: days pass, their raids are yours
@@ -88,7 +93,7 @@ Kit.suite(({ok})=>{
   // ---- where they keep you, and where you come out
   {caged();ok(C.held.at===null||C.held.at.k==='site','a band takes you to a camp or hideout of theirs near, if there is one')}
   {setup();const l=W.sites.find(s=>s instanceof t.Lair&&!s.cleared&&!s.within);P.x=l.x+3*t.TILE;P.y=l.y;const b=band();roll(.99);lose({kind:'party',ref:b,n:6,list:b.troops.slice(),band:'bandits'});window.Math.random=rnd;
-   const d=Math.hypot(P.x-l.x,P.y-l.y)/t.TILE;ok(C.held.at?.i===l.i&&d<4&&/to the /.test(panel()),'taken: carried to the '+l.name+' ('+d.toFixed(1)+' tiles off it)');t.act('cont');
+   const d=Math.hypot(P.x-l.x,P.y-l.y)/t.TILE;ok(C.held.at?.i===l.i&&d<4&&/to (the|their) .+ at the /.test(panel()),'taken: carried to the '+l.name+' ('+d.toFixed(1)+' tiles off it)');t.act('cont');
    t.act('held-refuse');const q=C.held.prison;
    // (too hurt to try, a day heals; in chains after two tries)
    P.hp=Math.round(t.vitals()[0]*.2);C.cell();ok(document.querySelector('[data-act="held-break"]').disabled&&/Too hurt/.test(panel()),'too hurt to break out');const h0=P.hp;t.act('held-break');ok(q.day===1&&P.hp===h0,'and trying does nothing');

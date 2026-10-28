@@ -36,10 +36,13 @@
    word (parole: by his relation when he took you and your honour with his realm); peace frees you.
    Phase 3: your realm may trade a lord of theirs it holds for you (an exchange: PRISON.exchange a day, world/prisons.js); your
    companions taken with you (with) are freed with you, but left in their prison when you break out alone (broke; your companions'
-   rescue, rescued, frees them all): Prisons.leave. ---------- */
+   rescue, rescued, frees them all): Prisons.leave.
+   Straight to their prison (straight): now and then a captor does not bargain at all: a band (band), a lord (lord: less the better
+   he thinks of you, rel a point), a realm's men (realm); you are thrown into the prison of their place at once, their ask on the
+   cell's page as ever. ---------- */
 const CAPTIVITY={escape:{base:.25,agi:.03,skill:.02,mounted:.15,night:.1,cover:.1,riders:.25,hurt:.15,min:.05,max:.9},
   ransom:{base:40,renown:.4,level:15,lord:1.5,harsh:1.25},persuade:{base:.2,cha:.04,pers:.04,renown:.001,honor:.004,regard:.004,war:.15,min:.05,max:.85,fine:.1},
-  serve:{band:[4,6],lord:[5,8],rep:6,honor:4},realm:{honor:20,days:[3,5],daily:.25},prison:{days:21,hidden:.15,fall:.04,floor:.5,break:{base:.12,agi:.02,athl:.01,guard:.06,min:.03,max:.6,hurt:.4,fails:2},beat:.2,heal:.1,bribe:{base:20,guard:15,ch:.6,step:.15},events:.35,help:.15,rescue:{each:.07,max:.3}},stash:{back:.6,fence:.5,days:30,near:60},release:{by:2,out:5,far:12},sold:{daily:.05,renown:.0005,floor:.1,far:40,price:1.2,persuade:.6,work:[3,5],days:10,harder:.06},war:{price:3,realm:.08,parole:{rel:20,base:.02,per:.002,honor:.001,max:.1}},traits:{slippery:{escape:.15,break:.1},silver:.15,oldsoldier:{cost:.75,serve:.5}},scatter:{base:.35,morale:.3,lead:.04,min:.2,max:.9,days:[1,3]},light:[1,2],
+  serve:{band:[4,6],lord:[5,8],rep:6,honor:4},realm:{honor:20,days:[3,5],daily:.25},prison:{days:21,hidden:.15,fall:.04,floor:.5,break:{base:.12,agi:.02,athl:.01,guard:.06,min:.03,max:.6,hurt:.4,fails:2},beat:.2,heal:.1,bribe:{base:20,guard:15,ch:.6,step:.15},events:.35,help:.15,rescue:{each:.07,max:.3}},stash:{back:.6,fence:.5,days:30,near:60},release:{by:2,out:5,far:12},sold:{daily:.05,renown:.0005,floor:.1,far:40,price:1.2,persuade:.6,work:[3,5],days:10,harder:.06},straight:{band:.35,lord:.25,realm:.4,rel:.005,min:.05,max:.8},war:{price:3,realm:.08,parole:{rel:20,base:.02,per:.002,honor:.001,max:.1}},traits:{slippery:{escape:.15,break:.1},silver:.15,oldsoldier:{cost:.75,serve:.5}},scatter:{base:.35,morale:.3,lead:.04,min:.2,max:.9,days:[1,3]},light:[1,2],
   beast:{hp:.25}};
 class Captivity{
   static held=null;static scattered=[];
@@ -71,8 +74,11 @@ class Captivity{
       const back=this.scatter();return{how:'escaped',text:'In the rout you slip away ('+Math.round(ch*100)+'% chance) and lose '+lose+' gold in the flight. Your soldiers scatter'+(back?': '+back+' of them may find you in the next days.':'.')}}
     const away=compsInBand().filter(id=>{const o=compInit(id);return Math.random()<clamp(CAPTIVITY.escape.base+(o?.attr?.agi||0)*CAPTIVITY.escape.agi+(o?.perks?.includes('slippery')?CAPTIVITY.traits.slippery.escape:0),CAPTIVITY.escape.min,CAPTIVITY.escape.max)});
     const war=this.atWar(c),l=this.lord(c),at=this.placeOf(c,war),s=at&&this.spot(at),h=this.held={...c,since:G.day,tried:[],away,with:compsInBand().filter(id=>!away.includes(id)),at,war,rel:l?relWith(l):0};h.ransom=this.ransomOf(h);if(s)this.put(s);
-    const pk=war&&this.prisonOf(h);if(war)h.prison=this.jail(h,'A prisoner of war: the '+FACS[c.fac].n+' will not bargain with you, nor let you go while the war lasts.');
-    return{how:'taken',text:'The rout catches you ('+Math.round(ch*100)+'% chance to get away): you are taken by '+c.name+(war?', a prisoner of war':'')+(s?', to '+(pk?pk.title.replace(/^In t/,'t'):s.name):'')+'.'+(away.length?' '+away.map(id=>COMPS[id].short).join(' and ')+' got away.':'')}}
+    const pk=this.prisonOf(h),where=pk?pk.title.replace(/^In t/,'t')+(s?.site?' at '+s.name:''):'their cage',cell=war||Math.random()<this.straight(c);
+    if(cell)h.prison=this.jail(h,war?'A prisoner of war: the '+FACS[c.fac].n+' will not bargain with you, nor let you go while the war lasts.':c.k==='band'?'No talk of ransom: they bind your hands and throw you into '+where+'. Their ask comes later.':cap1(c.name)+' have no words for you: you are taken to '+where+'. Their ask comes later.');
+    return{how:'taken',text:'The rout catches you ('+Math.round(ch*100)+'% chance to get away): you are taken by '+c.name+(war?', a prisoner of war':'')+(s?', to '+(pk?where:s.name):'')+(cell&&!war?'. They do not bargain: straight into '+where:'')+'.'+(away.length?' '+away.map(id=>COMPS[id].short).join(' and ')+' got away.':'')}}
+  // (the chance they do not bargain, straight to their prison: straight; a broker always does)
+  static straight(c){const X=CAPTIVITY.straight,l=this.lord(c);return c.k==='broker'?0:clamp((X[c.k]||0)-(l?relWith(l)*X.rel:0),X.min,X.max)}
   static ransomOf(c,harsh=false){const X=CAPTIVITY.ransom;return Math.round((X.base+P.renown*X.renown+P.level*X.level)*(c.k==='band'?1:c.k==='broker'?CAPTIVITY.sold.price:X.lord)*(c.war?CAPTIVITY.war.price:1)*(harsh?X.harsh:1)*(has('oldsoldier')?CAPTIVITY.traits.oldsoldier.cost:1)/5)*5}
   static persuadeChance(c){const X=CAPTIVITY.persuade,l=this.lord(c),regard=l?relWith(l):0,honor=c.fac&&FACS[c.fac]?honorWith(c.fac):0;
     return clamp(X.base+(P.attr?.cha||0)*X.cha+skill('pers')*X.pers+(c.k==='band'?P.renown*X.renown:honor*X.honor+regard*X.regard)-(c.fac&&hostileTo(c.fac)?X.war:0)+(has('silver')?CAPTIVITY.traits.silver:0),X.min,X.max)*(c.k==='broker'?CAPTIVITY.sold.persuade:1)}
@@ -84,8 +90,8 @@ class Captivity{
   // the captor's page: a talk with them (story/conversation.js CaptorSpeaker): what has happened (facts), their words, your choices
   // (replies), with what each costs and the odds where there are some (the frame: its bar's way out is refusing)
   static open(){const c=this.held;if(!c)return;if(c.prison)return this.cell();G.mode='dialog';const cv=this.cv?.sp.o===c?this.cv:(this.cv=new Conversation(new CaptorSpeaker(c)));
-    cv.show({body:'<p class="muted">Ransom, persuasion or your realm’s help: freed at a holding near, your troops scattered, a piece or two from your bag taken. Serving them: you keep your goods. Refusing: their cage, for about '+this.limit(c)+' days at most, and out of it you keep only the gold you hide on you; your bag’s gear and your troops are lost.</p>',
-      close:['held-refuse',null,'Refuse']})}
+    cv.show({body:'<p class="muted">Ransom, persuasion or your realm’s help: freed at a holding near, your troops scattered, a piece or two from your bag taken. Serving them: you keep your goods. Refusing: '+(this.prisonOf(c)?.title.replace(/^In t/,'t')||'their cage')+', for about '+this.limit(c)+' days at most, and out of it you keep only the gold you hide on you; your bag’s gear and your troops are lost.</p>',
+      close:['held-refuse',null,'Refuse'+(this.prisonOf(c)?' (to the '+this.prisonOf(c).name.replace(/^The /,'').toLowerCase()+')':'')]})}
   static facts(c){return '<p><b>'+(c.k==='broker'?'Sold.':'Taken captive.')+'</b> '+(c.note?c.note+' ':'')+'You are held by '+c.name+'. '+(c.k==='band'?'They want gold, and know your name.':c.k==='broker'?'He paid for you, and wants his price back with a profit.':c.fac&&hostileTo(c.fac)?'You are an enemy of the '+FACS[c.fac].n+', and worth something to them.':'They will hear you out.')+'</p>'+
     (c.tried.includes('persuade')?'<p class="bad">Your words failed: they ask more now.</p>':'')}
   static replies(c){const odds=this.persuadeChance(c),tried=k=>c.tried.includes(k);
