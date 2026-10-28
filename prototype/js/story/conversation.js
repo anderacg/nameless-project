@@ -12,7 +12,11 @@
    saved with the world (key talk); its greeting is by it: first words, or again, or what he holds against you.
    A lord (phase 2) has a temper (TEMPERS: drawn once from the stream talk): his words by it, and the checks it makes easier or
    harder (DIALOGUE.checks: praise him, ask a favour, threaten him), each a roll with its odds read by Insight and its outcome
-   shown on the button; his temper hinted in his words, named once your Insight is sharp or another lord told you of it. ---------- */
+   shown on the button; his temper hinted in his words, named once your Insight is sharp or another lord told you of it.
+   A companion (phase 3, CompanionSpeaker; their words: DIALOGUE.comps): from the Army's Role tab; greets you by approval (in
+   words: apName), tells their story, what they think of your last deed they cared about, and, trusted (DIALOGUE.trust), their
+   wish: their own quest (a step kind), its prize their approval and experience. Turning angry, they warn you first (core/state.js
+   mood). Banter: now and then on the road two companions of yours speak (DIALOGUE.banter: once a day at most, the stream talk). ---------- */
 class TalkMemory{
   static all={};
   static knows(key){return !!this.all[key]?.met}
@@ -88,6 +92,34 @@ class WorkerSpeaker extends Speaker{
   name(){return cap1(an(this.o.job))+' of '+this.t.name}
   sub(){return this.t.owner?'Subject of the '+FACS[this.t.owner].n:''}
 }
+class CompanionSpeaker extends Speaker{
+  get role(){return 'companion'}
+  get key(){return 'comp:'+this.o}
+  get c(){return compInit(this.o)}
+  get D(){return DIALOGUE.comps[this.o]||{}}
+  name(){return COMPS[this.o].n}
+  sub(){const a=this.c.ap;return 'Companion · <span title="Approval '+a+' (from −10 to 10)">'+apName(a)+'</span>'}
+  greet(){const g=this.D.greet;return g?g[apName(this.c.ap).toLowerCase()]||'':''}
+  // (what they think: of the last deed they cared about, liked or not; none, by how they feel)
+  thinks(){const d=this.c.deed,F=DIALOGUE.feel;return (d&&F[d[0]]?.[d[1]>0?'good':'bad'])||F.none[apName(this.c.ap).toLowerCase()]}
+  wishWhy(){const D=this.D,c=this.c;if(!D.wish)return false;if(c.wish)return c.wish==='asked'&&P.quests.some(q=>q.wish===this.o)?'You are helping already':false;return ''}
+  replies(){const id=this.o,w=this.wishWhy();return [{act:'talk-about',arg:id,label:'Tell me about yourself'},{act:'talk-think',arg:id,label:'How do you think we are doing?'},
+    w!==false&&{act:'talk-wish',arg:id,label:'Is there anything you want?',why:w}]}
+  act(k,cv){const D=this.D,c=this.c;
+    if(k==='about'){cv.say('Tell me about yourself.',false,heroName()||'You').say(D.about||'There is not much to tell.')}
+    if(k==='think'){cv.say('How do you think we are doing?',false,heroName()||'You').say(this.thinks())}
+    if(k==='wish'&&this.wishWhy()===''){cv.say('Is there anything you want?',false,heroName()||'You');
+      if(c.ap<DIALOGUE.trust)cv.say('Ask me again when I know you better.');
+      else{const q=this.wishQuest();if(q){c.wish='asked';cv.say(D.wish.ask).say('<span class="muted">New quest: '+q.title+'.</span>',true)}else cv.say('Not now. Ask me another time.')}}
+    this.show(cv)}
+  // (their quest: its place by its kind (a hideout near their home, the hungriest holding near you, the farthest one), its spec)
+  wishQuest(){const W0=this.D.wish,home=townBy(COMPS[this.o].town)||Spatial.nearestHolding(P.x,P.y),s={...W0.spec};
+    if(W0.kind==='lair')s.near=home;
+    if(W0.kind==='deliver'){const t=TOWNS.filter(t=>!hostileTo(t.owner)).sort((a,b)=>Math.hypot(a.x-P.x,a.y-P.y)-Math.hypot(b.x-P.x,b.y-P.y)).slice(0,5).sort((a,b)=>a.pros-b.pros)[0];if(!t)return null;s.to={town:t.name};s.text='Bring grain and cloth to the hungry of '+t.name+', with Elske.'}
+    if(W0.kind==='visit'){const t=TOWNS.slice().sort((a,b)=>Math.hypot(b.x-P.x,b.y-P.y)-Math.hypot(a.x-P.x,a.y-P.y))[0];if(!t)return null;s.to={town:t.name};s.text='Take '+COMPS[this.o].short+' to '+t.name+', the farthest holding there is.'}
+    const q=Quest.make(W0.kind,home,null,s);if(!q)return null;q.wish=this.o;return q.accept()?q:null}
+  show(cv){cv.show({close:['talk-back',null,'Back to the army']})}
+}
 class Conversation{
   // (a new talk: its greeting first, by what they remember of you; then they remember you)
   constructor(sp){this.sp=sp;this.lines=[];const g=sp.greet(TalkMemory.knows(sp.key));if(g)this.say(g);TalkMemory.meet(sp.key)}
@@ -107,6 +139,17 @@ class Conversation{
 }
 const TALK={lines:6};
 onWorld(()=>{TalkMemory.all={};Conversation.now=null});
-// a lord's check, on the talk shown with him (LordSpeaker#act)
-onAct('talk-',(a,arg)=>{const cv=Conversation.now,sp=cv?.sp;if(!(sp instanceof LordSpeaker)||String(sp.o.id)!==String(arg)||G.enc?.kind!=='lord'||G.enc.ref!==sp.o||sp.o.dead)return;sp.act(a.slice(5),cv)});
+// the talks' own actions: a companion's, opened from the Army (talk-comp) and closed back to it (talk-back); a lord's check or a
+// companion's topic, on the talk shown with them (their Speaker's act)
+onAct('talk-',(a,arg)=>{
+  if(a==='talk-comp'){if(!P.comps[arg]||!['char','dialog'].includes(G.mode))return;G.mode='dialog';const sp=new CompanionSpeaker(arg);sp.show(new Conversation(sp));return}
+  if(a==='talk-back'){hidePanel();G.mode='world';openChar();return}
+  const cv=Conversation.now,sp=cv?.sp;
+  if(sp instanceof CompanionSpeaker){if(sp.o===arg&&P.comps[arg])sp.act(a.slice(5),cv);return}
+  if(!(sp instanceof LordSpeaker)||String(sp.o.id)!==String(arg)||G.enc?.kind!=='lord'||G.enc.ref!==sp.o||sp.o.dead)return;sp.act(a.slice(5),cv)});
+// banter: an hour on the road (not in a holding, nor held), once a day at most, two companions of yours speak (DIALOGUE.banter)
+const Banter={hour(){const m=TalkMemory.of('banter'),here=compsInBand();if(m.day===G.day||here.length<2||P.stay||G.town||Captivity.held||G.mode!=='world')return;
+    const R=rngOf('talk');if(!R.chance(DIALOGUE.banterDay/12))return;const ok=DIALOGUE.banter.filter(b=>here.includes(b.a)&&here.includes(b.b));if(!ok.length)return;
+    const b=R.pick(ok);m.day=G.day;log(COMPS[b.a].short+': “'+b.lines[0]+'” '+COMPS[b.b].short+': “'+b.lines[1]+'”','','band')}};
+Systems.add({name:'banter',order:{hour:170},hour:()=>Banter.hour()});
 Saves.add({key:'talk',order:340,defaults:null,save:()=>TalkMemory.save(),load:v=>TalkMemory.load(v)});

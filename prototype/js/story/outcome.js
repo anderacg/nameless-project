@@ -102,6 +102,13 @@ const Outcome={
       },
       text:v=>v[0]&&FACS[v[0]]?'honour with the '+FACS[v[0]].n+' '+Outcome.signed(v[1]):'',
     },
+    // approve: [companion, n]: their approval (core/state.js; kept between −10 and 10)
+    approve:{
+      apply(v){
+        const c=P.comps[v[0]];if(c)c.ap=clamp(c.ap+v[1],-10,10);
+      },
+      text:v=>COMPS[v[0]]?COMPS[v[0]].short+' approves':'',
+    },
     // rel: [lord, n]: his feeling for you (world/relations.js changeRel), with why
     rel:{
       apply(v){

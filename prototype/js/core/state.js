@@ -50,9 +50,9 @@ const heroStats=()=>P.heroStats();
 function train(k,n){leaderOf(P).train(k,n)}
 function mood(ev){
   for(const id of Object.keys(P.comps)){
-    const d=COMPS[id].react[ev];if(!d)continue;const c=P.comps[id];c.ap=clamp(c.ap+d,-10,10);
+    const d=COMPS[id].react[ev];if(!d)continue;const c=P.comps[id],was=c.ap;c.ap=clamp(c.ap+d,-10,10);c.deed=[ev,d,G.day];// (the last deed they cared about: their talk, story/conversation.js)
     if(c.ap<=-5){delete P.comps[id];log(COMPS[id].n+' has had enough and leaves your band.','bad','band')}
-    else log(COMPS[id].n+(d>0?' approves.':' disapproves.'),d>0?'good':'bad','band');
+    else{log(COMPS[id].n+(d>0?' approves.':' disapproves.'),d>0?'good':'bad','band');const w=DIALOGUE.comps[id]?.warn;if(w&&was>-3&&c.ap<=-3)log(w,'bad','band')}
   }
 }
 const apName=a=>a>=5?'Loyal':a>=0?'Content':a>-3?'Uneasy':'Angry';

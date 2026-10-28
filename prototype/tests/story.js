@@ -39,6 +39,8 @@ Kit.suite(({ok,info})=>{
   let r0=t.repAt('Ashford');run({rep:['Ashford',3]},null,(r,f)=>t.repAt('Ashford')===r0+3&&f.join()==='reputation in Ashford +3','reputation');
   run({rep:[null,3]},null,(r,f)=>t.repAt('Ashford')===r0+3&&!f.length,'reputation nowhere: nothing, and says nothing');
   let h0=t.honorWith(fac);run({honor:[fac,-2]},null,(r,f)=>t.honorWith(fac)===h0-2&&f.join()==='honour with the '+t.FACS[fac].n+' −2','honour');
+  {P.comps={brann:{ap:1,role:''}};run({approve:['brann',3]},null,(r,f)=>P.comps.brann.ap===4&&f.join()==='Brann approves','a companion’s approval');P.comps={}}
+  {const L=W.lords.find(l=>!l.dead),v=t.relWith(L);run({rel:[L,5,'a test']},null,(r,f)=>t.relWith(L)===v+5&&f.join()==='relation +5','a lord’s relation')}
   let n0=P.renown;run({renown:2},null,(r,f)=>P.renown===n0+2&&f.join()==='renown +2','renown');
   P.morale=50;run({morale:-4},null,(r,f)=>P.morale===46&&f.join()==='morale −4','morale');
   P.morale=95;run({morale:{n:10,min:0,max:100}},null,(r,f)=>P.morale===100&&f.join()==='morale +10','morale, kept within its bounds');

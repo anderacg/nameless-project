@@ -84,7 +84,7 @@ js/story/             the story system's shared parts (doc/STORY_DESIGN.md, S0â€
                       and ChoicePage: the one page for any happening's, thing's or place's choices), kinds.js (the kinds registry:
                       defineKind, kindOf, the triggers' buckets), conversation.js (Conversation, Speaker and its kinds, TalkMemory:
                       one window for talking with a lord, a townsperson, a guard, a worker; a lord's temper and checks:
-                      praise, a favour, a threat; doc/DIALOGUE_DESIGN.md), happening.js (Happening, the base of every shape), encounter.js (the encounters' Behaviours and Encounter),
+                      praise, a favour, a threat; a companion's talk, wish and banter; doc/DIALOGUE_DESIGN.md), happening.js (Happening, the base of every shape), encounter.js (the encounters' Behaviours and Encounter),
                       incident.js (Incident: the incidents' shape, and their daily roll), quest.js (Quest: the jobs' shape, their deeds heard on the bus),
                       thread.js (Thread: steps of happenings sharing a memory: the chains), gathering.js (Gathering: held at a
                       place on set days, announced ahead; its calendar; framework only), steps.js (a chain's reusable step

@@ -67,7 +67,7 @@ function partyUnitEquipment(d){if(d.kind==='comp')return companionEquipment(d.u.
   const on=EQUIP.filter(k=>P.gear[k]&&ITEMS[P.gear[k]]);return '<div class="fb-gear-rows">'+(on.length?on.map(k=>{const label=k.startsWith('ring')?'Ring '+(+k.slice(4)+1):INV_SLOT_LABELS[k]||SLOTS[slotOfKey(k)];return '<div class="fb-gear-row">'+fbIcon('shield',26)+'<div><small>'+htmlText(label)+'</small><strong>'+htmlText(ITEMS[P.gear[k]].n)+'</strong></div></div>'}).join(''):'<p class="fb-note">Nothing worn but your clothes.</p>')+'</div>'+fbBtn('party-equipment',null,'Change equipment');
 }
 function partyUnitCompany(d){
-  return '<div class="fb-stat-grid">'+fbStat('morale','Approval',apName(d.c.ap)+' ('+d.c.ap+')')+'</div>'+companionRole()+companionOrders(d.u.cid,d.c)+fbDetails('Company service','<p>'+htmlText(COMPS[d.u.cid].short)+' can leave your company and be found again in a tavern. Upkeep: 2 gold a day.</p>'+fbBtn('party-dismiss',null,'Dismiss from company'));
+  return '<div class="fb-stat-grid"><span title="Approval '+d.c.ap+' (from −10 to 10)">'+fbStat('morale','Approval',apName(d.c.ap))+'</span></div>'+fbBtn('talk-comp',d.u.cid,'Talk with '+htmlText(COMPS[d.u.cid].short))+companionRole()+companionOrders(d.u.cid,d.c)+fbDetails('Company service','<p>'+htmlText(COMPS[d.u.cid].short)+' can leave your company and be found again in a tavern. Upkeep: 2 gold a day.</p>'+fbBtn('party-dismiss',null,'Dismiss from company'));
 }
 // the unit's card (ui/unitcard.js UnitCard): its numbers now (health; morale as your band's mood drifts it), a group's strength, its
 // training or experience, its upkeep (the wage rule in its tip) and its buttons; a hero or companion: Character, Equipment and Role

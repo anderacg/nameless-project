@@ -31,6 +31,26 @@ Kit.suite(({ok})=>{
    t.act('lord-leave');t.lordMeet(L);ok(qa('.talk-line')[0].innerHTML.includes('not forgotten your threats'),'and he remembers it when you meet again');t.act('lord-leave');
    const g0=P.gold;t.TalkMemory.all['lord:'+L.id].tried={};t.LordSpeaker.prototype.odds=()=>1;t.lordMeet(L);q('[data-act="talk-threaten"]').click();ok(P.gold>g0,'a threat that works: he pays ('+(P.gold-g0)+'g)');t.act('lord-leave');
   }finally{t.LordSpeaker.prototype.odds=o}}
+ // ---- phase 3: a companion (from the Army's Role tab): approval in words, their story, their opinion, their wish, a warning
+ {P.comps={brann:{ap:5,role:''},elske:{ap:1,role:''}};t.compInit('brann');t.compInit('elske');P.quests=[];
+  G.mode='world';G.modal=false;t.openChar();t.act('party-select','comp_brann');t.act('party-unit-tab','role');
+  ok(q('[data-act="talk-comp"][data-arg="brann"]')&&/Approval/.test(q('[data-unit-tab="role"]').textContent)&&/Loyal/.test(q('[data-unit-tab="role"]').textContent)&&!/\(5\)/.test(q('[data-unit-tab="role"]').textContent),'his Role tab: approval in words (Loyal, the number in its tip), and Talk with Brann');
+  q('[data-act="talk-comp"]').click();const D=t.DIALOGUE.comps.brann;
+  ok(q('.talk-head h2').textContent==='Brann the Wolf'&&/Loyal/.test(q('.talk-head').textContent)&&qa('.talk-line')[0].innerHTML.includes(D.greet.loyal)&&q('.nav [data-act="talk-back"]'),'talking with Brann: his greeting by his approval, Back to the army');
+  t.act('talk-about','brann');ok(qa('.talk-line').some(e=>e.innerHTML.includes(D.about.slice(0,30))),'he tells his story');
+  t.compInit('brann').deed=['ransom',2,G.day];t.act('talk-think','brann');ok(qa('.talk-line').some(e=>e.innerHTML.includes(t.DIALOGUE.feel.ransom.good)),'what he thinks: of the last deed he cared about (a ransom he liked)');
+  t.act('talk-wish','brann');const wq=P.quests.find(x=>x.wish==='brann');ok(wq&&wq.type==='lair'&&t.compInit('brann').wish==='asked'&&qa('.talk-line').some(e=>e.innerHTML.includes(D.wish.ask.slice(0,20))),'trusted, his wish: a quest of his own ('+(wq&&wq.title)+')');
+  ok(q('[data-act="talk-wish"]').disabled,'and asked once');
+  if(wq){const s=W.sites.find(x=>x.i===wq.site&&x.seed===wq.sseed),a0=t.compInit('brann').ap;t.worldEmit('site:cleared',{site:s});ok(!P.quests.includes(wq)&&t.compInit('brann').ap===Math.min(10,a0+3),'done: his approval rises')}
+  t.act('talk-back');ok(G.mode==='char','Back: the army again');
+  G.mode='char';t.act('talk-comp','elske');t.act('talk-wish','elske');ok(!P.quests.some(x=>x.wish==='elske')&&/know you better/.test(Kit.text()),'not trusted yet: Elske keeps her wish for later');t.act('talk-back');
+  const lg=window.log,said=[];window.log=function(m){said.push(m);return lg.apply(this,arguments)};try{t.compInit('brann').ap=-2;t.mood('flee')}finally{window.log=lg}
+  ok(P.comps.brann&&said.includes(D.warn),'turning angry, he warns you first');
+  // (banter: two of them on the road, once a day at most)
+  P.comps.brann.ap=2;P.comps.elske.ap=2;G.mode='world';G.town=null;P.stay=null;const n0=said.length;window.log=function(m){said.push(m);return lg.apply(this,arguments)};
+  try{const R=t.rngOf('talk'),ch=R.chance,pk=R.pick;R.chance=()=>true;R.pick=l=>l[0];try{t.TalkMemory.all.banter={};t.Banter.hour();t.Banter.hour()}finally{R.chance=ch;R.pick=pk}}finally{window.log=lg}
+  ok(said.length===n0+1&&said[n0].includes(t.DIALOGUE.banter[0].lines[0]),'banter on the road: a line each, once a day');
+  P.comps={};t.hidePanel();G.mode='world'}
  // ---- a townsperson and a guard, in the streets
  const town=t.TOWNS.find(x=>x.owner&&!t.hostileTo(x.owner));G.scene={ref:town.name,p:{x:0,y:0},npcs:[],folk:[]};G.mode='scene';
  t.sceneTalk({folk:true,name:'Old Ada'});ok(q('.talk-head h2').textContent==='Old Ada'&&qa('.talk-line').length===1&&q('.nav [data-act="scene-back"]'),'a townsperson: her face, her gossip quoted, Back to the streets');

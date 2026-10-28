@@ -35,12 +35,47 @@ const DIALOGUE={
       yes:{plain:'Take it, then, and go.',greedy:'Fine! Take it. But this is not over.'},no:{plain:'Get out before I have you thrown out.',proud:'You dare? Out of my sight!',honourable:'I do not bend to threats.'}},
     min:.05,max:.9},
   // (what another lord tells you of a lord's manner, asked about other lords)
-  tells:'Of their manner: {list}.'
+  tells:'Of their manner: {list}.',
+  /* companions (phase 3; story/conversation.js CompanionSpeaker): greet by their approval (core/state.js apName: loyal, content,
+     uneasy, angry); about (their story); warn (their words as they turn angry: one more and they leave); wish (asked once you
+     have their trust, wish.trust approval or more: their own quest, a step kind (story/steps.js) with its spec; done, its prize:
+     their approval and experience) */
+  comps:{
+    brann:{greet:{loyal:'Point me at them, captain.',content:'Captain.',uneasy:'What now?',angry:'Make it quick.'},
+      about:'I sold my sword in Karn Hold for ten years. The last company I rode with left me for dead in a ditch and kept my pay. I have not forgotten their faces.',
+      warn:'Brann spits. "One more like that, captain, and I am gone."',
+      wish:{ask:'The Grey Wolves, the company that left me in that ditch, have gone to ground in a hideout near Karn Hold. Help me pay them back.',
+        kind:'lair',spec:{title:'Brann’s old score',text:'Brann’s old company, the men who left him for dead, hide in a hideout near Karn Hold. Clear it out.',prize:{approve:['brann',3],xp:80}}}},
+    elske:{greet:{loyal:'Bless you. Where do we go?',content:'Yes?',uneasy:'I am listening.',angry:'Say what you must.'},
+      about:'I was a sister of the Saltmere hospice until the plague year. We buried more than we saved. I swore I would go where the hurt are, not wait for them to come to me.',
+      warn:'Elske will not look at you. "I cannot ride with this much longer."',
+      wish:{ask:'There is a holding near here where the people go hungry. Bring them grain and cloth, and I will tend the sick there.',
+        kind:'deliver',spec:{title:'Bread for the hungry',give:{grain:20,cloth:5},prize:{approve:['elske',3],xp:60}}}},
+    tavi:{greet:{loyal:'Ready when you are!',content:'Hey, captain.',uneasy:'Hm?',angry:'What.'},
+      about:'Ashford born. My father was a road-warden; he took me up every hill in the Vale before I could read. I want to see the far edge of the map before I die.',
+      warn:'Tavi kicks at the dirt. "I did not sign on to starve, you know."',
+      wish:{ask:'Have you ever seen the far side of the world? Take me to the farthest holding there is. Just once.',
+        kind:'visit',spec:{title:'The far edge of the map',prize:{approve:['tavi',3],xp:60}}}}
+  },
+  trust:3,
+  // (a companion's opinion, asked how you are doing: their last deed they cared about, by whether they liked it; none: by approval)
+  feel:{ransom:{good:'Ransoms! Good coin and no one dies.',bad:'Selling men for silver. I do not like it.'},win:{good:'We won, and well. Keep it up.',bad:'We won, but at what cost?'},
+    flee:{good:'Running was wise.',bad:'We ran. I hate running.'},release:{good:'You let them go. That was right.',bad:'You let them go? They will be back.'},
+    cruel:{good:'They had it coming.',bad:'That was cruel, and needless.'},mercy:{good:'Mercy. Good.',bad:'Mercy is for the weak.'},
+    kind:{good:'That was kind of you.',bad:'Soft.'},hungry:{good:'Hunger hardens a band.',bad:'My belly aches. We need food.'},unpaid:{good:'',bad:'Where is my pay?'},
+    none:{loyal:'We are doing well, captain. I am glad I came.',content:'Well enough.',uneasy:'I have had better days.',angry:'Badly.'}},
+  // (banter on the road: now and then, two companions in your band, a line each (the first, then the second); either order)
+  banter:[{a:'brann',b:'elske',lines:['You patch them up, I cut them down. Fair trade.','I would rather patch fewer.']},
+    {a:'brann',b:'tavi',lines:['Quiet, scout. You talk more than you look.','And you look more than you think.']},
+    {a:'elske',b:'tavi',lines:['Eat something, Tavi. You are thin as a reed.','Only if you stop fussing.']},
+    {a:'brann',b:'elske',lines:['A prisoner is gold walking, sister.','A prisoner is a man, Brann.']}],
+  banterDay:.4
 };
 // a lord's temper (drawn once, from the stream talk, at your first meeting): how he speaks, and what moves him
 const TEMPERS=['proud','honourable','greedy','cunning','kind'];
 const TALK_PIC={
   lord:l=>portrait(charOf(l).key),
+  companion:id=>portrait(id),
   folk:(n,t)=>personPic('folk',t?.races?.[0]||'human',n?.v||0),
   guard:(n,t)=>portrait(RACES[t?.races?.[0]||'human']?.melee||'hum_foot'),
   worker:(f,t)=>personPic('folk',t?.races?.[0]||'human',(f?.id||'').length%4)
