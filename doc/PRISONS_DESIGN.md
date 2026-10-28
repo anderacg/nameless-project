@@ -49,7 +49,7 @@ A rail entry, like the Tavern or the Barracks, in every holding (and a page in a
 
 ## 6. Your own prisons (later)
 
-Lords and chieftains you take ride with you first (as today, `P.captives`): taken in a battle or anywhere else, they travel with your band, and a lost battle may free them. Once you bring them to a holding of yours, you can lock them in its prison: there they wait for their ransom or your mercy, and a lost battle no longer frees them; you can take them out again to ride with you. Captured soldiers can be recruited from it.
+Lords and chieftains you take ride with you first (as today, `P.captives`): taken in a battle or anywhere else, they travel with your band, and a lost battle may free them. Once you bring them to a holding of yours, or of the realm you serve (handed to your liege's keeping), you can lock them in its prison: there they wait for their ransom or your mercy, and a lost battle no longer frees them; you can take them out again to ride with you. Captured soldiers can be recruited from it.
 
 ## 7. Phases
 
@@ -64,4 +64,4 @@ Lords and chieftains you take ride with you first (as today, `P.captives`): take
 
 1. **Parole:** yes, a lord who had a good relation with you before may let you go now and then.
 2. **Names:** the place is **Prison**; inside, by kind: **Lock-up**, **Jail**, **Prison**, **Dungeon**, **Cage**, **The pit**.
-3. **Your captives (§6):** taken, a captive travels with you; only once you bring him to a holding can you lock him in its prison.
+3. **Your captives (§6):** taken, a captive travels with you; only once you bring him to a holding of yours or of the realm you serve can you lock him in its prison.
