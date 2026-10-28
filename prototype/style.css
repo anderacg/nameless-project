@@ -1197,6 +1197,8 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 .screen.mobile-controls .fb-gm .gm-tiles{grid-template-columns:repeat(4,minmax(0,1fr))}.screen.mobile-controls .fb-gm .gm-tile{min-height:64px}.screen.mobile-controls .fb-gm .gm-tile kbd{display:none}.screen.mobile-controls .fb-gm .gm-sys{grid-template-columns:repeat(2,minmax(0,1fr))}.screen.mobile-controls .fb-gm .gm-sys-btn{min-height:44px;justify-content:flex-start}
 
 .screen.mobile-controls[data-mode="esc"] .dock,.screen.mobile-controls[data-mode="esc"] .pcard,.screen.mobile-controls[data-mode="esc"] .wtop{display:none}
+/* a window open on a phone: the HUD behind it hidden (iOS Safari drew the HUD over the window: its bars over its header and its bottom bar) */
+.screen.mobile-controls:has(#ov:not([hidden])) .hudlayer>*{display:none}
 
 
 /* Map view is an explicit popup, keeping zoom within thumb reach. */
