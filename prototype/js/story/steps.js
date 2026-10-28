@@ -257,8 +257,8 @@ class LairQuest extends StepQuest{
    - lair: the hideout or camp that keeps him, marked; cleared by you (site:cleared): freed (say.lair). The day's tick: cleared
      by another or gone, the nearest of its kind within STEP.retarget tiles (its survivors took him there: say.moved), else
      over, gone;
-   - holding: its gaol; at its gates on the map (within ESCORT.reach, Steps.frame; hostile or not) the gaoler's page: pay his
-     price (freed: say.paid), or Not now (asked again once you have gone and come back); stormed by you (battle:ended, a siege
+   - holding: its prison (world/prisons.js: the Prison on its rail, or from outside its walls when it is hostile): pay his price
+     (freed: say.paid), or break him out (a crime: freed, say.taken); stormed by you (battle:ended, a siege
      won there): freed (say.taken). The day's tick: it changed hands, to you or your realm, freed (say.taken); to another, over,
      gone (let out in the turmoil).
    Freed: done, its fate 'freed'. Its ears are its own (HeldQuest.heard: band:beaten, site:cleared, battle:ended), by where he is */
@@ -309,28 +309,15 @@ class HeldQuest extends StepQuest{
   }
   todo(){
     const h=this.held;
-    return h.k==='band'?'Beat '+this.to.name+'.':h.k==='lair'?'Clear '+this.to.name+'.':'Ransom '+this.pn+' at '+h.town+' ('+this.price+' gold), or take it.';
+    return h.k==='band'?'Beat '+this.to.name+'.':h.k==='lair'?'Clear '+this.to.name+'.':'Ransom '+this.pn+' at the Prison of '+h.town+' ('+this.price+' gold), or take it.';
   }
-  // ---- the gaol: its gates reached on the map, once each time you come (Not now waits till you have gone off and come back)
+  // (held in a holding: ransomed at its Prison, ui/town.js definePlace('prison'), world/prisons.js; no page at its gates)
   get reaches(){
-    return !!this.held&&this.held.k==='holding';
-  }
-  near(){
-    const n=super.near();
-    if(!n)this.off=0;
-    return n&&!this.off;
+    return false;
   }
   arrive(){}
-  reached(){
-    this.off=1;
-    if(G.mode!=='world'||G.modal)return;
-    G.ransom=this;
-    G.mode='story';
-    CHOICE_PAGE.show({ico:'gold',title:'The gaol of '+this.held.town,sub:this.title+' · day '+G.day,text:this.say('gaol')||this.todo(),facts:[this.price+' gold asked'],choices:RANSOM_CHOICES,subject:this,act:'rs-do',
-      close:['rs-close',null,'Not now']},'ransom:'+this.id);
-  }
   ransom(){
-    if(P.gold<this.price||!this.reaches)return '';
+    if(P.gold<this.price||this.held.k!=='holding')return '';
     P.gold-=this.price;
     this.pay('freed','paid');
     return '';
@@ -387,20 +374,6 @@ class HeldQuest extends StepQuest{
   }
 }
 for(const type of ['band:beaten','site:cleared','battle:ended'])worldOn(type,d=>HeldQuest.heard(type,d));
-// the gaoler's page: pay (its way out: Not now)
-const RANSOM_CHOICES=Choice.list([{icon:'gold',label:'Pay the ransom',need:q=>P.gold<q.price&&'Not enough gold',facts:q=>['−'+q.price+' gold',cap1(q.pn)+' is free'],
-  tip:'Pay his gaolers, and he walks free.',run:q=>q.ransom()}]);
-onAct('rs-',(a,arg)=>{
-  const q=G.ransom;
-  if(G.mode!=='story'||!q)return;
-  const c=a==='rs-do'&&CHOICE_PAGE.choose(RANSOM_CHOICES,arg,q);
-  if(a!=='rs-close'&&!c)return;
-  G.ransom=null;
-  G.mode='world';
-  hidePanel();
-  if(c)c.perform(q);
-  updateHUD(true);
-});
 defineKinds('step',{},{
   visit:{cls:VisitQuest},
   deliver:{cls:DeliverQuest},

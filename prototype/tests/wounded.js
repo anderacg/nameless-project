@@ -26,6 +26,8 @@ Kit.suite(({ok,info})=>{
  const heal=e=>{t.roadMeet(e);t.act('enc-do','0');return e};
  const pick=label=>String(t.ROAD_ENC.traveller.acts.findIndex(c=>c.label===label));
  const pageHas=(...ws)=>{const h=Kit.text();return ws.every(w=>h.includes(w))};
+ // (the Prison of the holding that holds him: on its rail, or from outside its walls when it is hostile: world/prisons.js)
+ const atPrison=q=>{const h=t.townBy(q.held.town);if(t.hostileTo(h.owner)){t.openSiege(h);t.act('sg-prison')}else{t.enterTown(h);t.act('tab','prison')}};
  // (a chain under way, taken home from a fresh traveller)
  const home=()=>{const e=heal(spawn());t.act('enc-do',pick('Take him home'));t.act('enc-leave');return {e,th:live(),q:step()}};
  try{
@@ -159,12 +161,10 @@ Kit.suite(({ok,info})=>{
   {C=home();const l=lordNear();lose(vsLord(l));const th=live(),q=step(),h=q&&t.townBy(q.held.town);
    ok(th.at==='held'&&q.held.k==='holding'&&h&&h.owner===l.fac&&th.memory.held.k==='holding'&&q.price===WD.rescue.ransom.traveller&&!q.days&&!q.homeMark(),'captured by '+l.name+'’s army: held in '+(h&&h.name)+', a holding of his realm, his ransom '+(q&&q.price)+' gold');
    G.day+=120;t.questDay();ok(live().at==='held'&&P.quests.includes(q),'no deadline: 120 days on, still there to ransom');
-   ok(saved(),'saved and loaded with him in the gaol');const q2=step();P.gold=q2.price-1;there(q2);
-   ok(G.mode==='story'&&G.ransom===q2&&pageHas('The gaol of '+h.name,'Pay the ransom','Not now',q2.price+' gold'),'at its gates on the map: the gaoler’s page');
-   t.act('rs-do','0');ok(G.mode==='story'&&P.quests.includes(q2)&&P.gold===q2.price-1,'not enough gold: nothing paid');
-   t.act('rs-close');frame();ok(G.mode==='world'&&P.quests.includes(q2),'Not now: not asked again while you stay');
-   P.x+=600;frame();P.gold=q2.price+50;there(q2);ok(G.mode==='story'&&G.ransom===q2,'gone off and come back: asked again');
-   t.act('rs-do','0');ok(P.gold===50&&q2.fate==='freed'&&live().at==='escort'&&G.mode==='world','paid '+q2.price+' gold: freed, the escort again');drop()}
+   ok(saved(),'saved and loaded with him in the gaol');const q2=step();P.gold=q2.price-1;atPrison(q2);
+   ok(pageHas(q2.price+'g asked','Pay '+q2.price+'g')&&document.querySelector('[data-act="pz-quest"]').disabled,'at its Prison ('+(t.hostileTo(h.owner)?'from outside its walls':'on its rail')+'): his ransom, '+q2.price+' gold');
+   t.act('pz-quest',q2.id);ok(P.quests.includes(q2)&&P.gold===q2.price-1,'not enough gold: nothing paid');
+   P.gold=q2.price+50;atPrison(q2);t.act('pz-quest',q2.id);ok(P.gold===50&&q2.fate==='freed'&&live().at==='escort','paid '+q2.price+' gold: freed, the escort again');t.toWorld();drop()}
   {C=home();lose(vsLord(lordNear()));const q=step(),h=t.townBy(q.held.town);t.worldEmit('battle:ended',{enc:{kind:'siege',ref:h},how:'won'});
    ok(q.fate==='freed'&&live().at==='escort','you storm '+h.name+': he is freed from its gaol');drop()}
   {C=home();lose(vsLord(lordNear()));const q=step(),h=t.townBy(q.held.town),o=h.owner;try{h.owner='player';t.questDay();ok(q.fate==='freed'&&live().at==='escort','it is yours now: freed')}finally{h.owner=o}drop()}
@@ -196,7 +196,7 @@ Kit.suite(({ok,info})=>{
   {const a=anderHome();const b=band();lose(vsBand(b));t.bandits.splice(t.bandits.indexOf(b),1);t.questDay();ok(ends(a.th).join()==='loose'&&wanders(),'his band beaten by another: he slips away, wandering')}
   {const a=anderHome();t.Escort.lost({kind:'monster',ref:{x:P.x,y:P.y}});ok(ends(a.th).join()==='loose'&&wanders(),'lost to beasts: wandering')}
   {const a=anderHome();lose(vsLord(lordNear()));const q=step();ok(q.type==='held'&&q.held.k==='holding'&&q.price===WD.rescue.ransom.ander,'held by a lord: a sellsword of his name fetches '+q.price+' gold');
-   P.gold=q.price;there(q);t.act('rs-do','0');ok(ends(a.th).join()==='freed'&&live().memory.ander&&step().type==='escort'&&!step().days&&!t.Wanderer.state,'ransomed: his escort again, no due day');drop();ok(wanders(),'then abandoned: wandering')}
+   P.gold=q.price;atPrison(q);t.act('pz-quest',q.id);t.toWorld();ok(ends(a.th).join()==='freed'&&live().memory.ander&&step().type==='escort'&&!step().days&&!t.Wanderer.state,'ransomed: his escort again, no due day');drop();ok(wanders(),'then abandoned: wandering')}
   // ---- wandering: tavern to tavern, the rumour, winning him back
   {const a=anderHome();there(a.q);t.act('thr-do','1');const s=t.Wanderer.state,w=t.Wanderer.at(),D=WD.wander.days,len=x=>x.to-x.from;
    ok(s&&w&&t.Wanderer.taverns().some(z=>z.name===w.town)&&w.leg===0&&w.from===G.day&&len(w)>=D[0]&&len(w)<=D[1],'wandering: he drinks in the tavern of '+w.town+' for '+len(w)+' days');

@@ -459,6 +459,9 @@ onAct('st-',storesAct);
 /* the walls and garrison, at every holding: everyone who would defend it, how well, and for how long; in your own fief its
    soldiers (siege.js garrisonBody; their fief- orders are the steward's). A plain entry */
 definePlace('garrison',{n:'Walls & garrison',short:'Walls',ico:'tower',at:t=>true,body:t=>garrisonBody(t)});
+/* the prison, at every holding (world/prisons.js Prisons, doc/PRISONS_DESIGN.md §5): who is held there, and what you can do for
+   them (its verbs pz-); yours or your realm's, your own prisoners and the captives you lock up. A plain entry */
+definePlace('prison',{n:'Prison',ico:'prisoners',at:t=>true,dot:t=>Prisons.dot(t),body:t=>Prisons.body(t),handles:a=>a.startsWith('pz-'),act:(a,arg,t)=>Prisons.act(a,arg,t)});
 
 /* the steward's office, in your own fief: its people, taxes, stores, land and income (siege.js fiefBody), or one of its
    buildings (G.town.bld: townui.js bldBody). Every fief- order (the garrison's, the buildings', the economy's) is its own

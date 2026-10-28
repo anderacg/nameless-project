@@ -47,6 +47,7 @@ class Realm{
       if(C.relWith(a).s==='ally'&&C.relWith(b).s==='peace')C.setRel(b,'war',1);
       if(C.relWith(b).s==='ally'&&C.relWith(a).s==='peace')C.setRel(a,'war',1);
     });
+    if(prev==='war'&&s!=='war')Prisons.peace(a,b);// (peace frees their prisoners: world/prisons.js)
     W.lords.forEach(l=>{if(!l.dead&&(l.fac===a||l.fac===b)&&l.state!=='siege')lordThink(l)});
   }
   // one day between it and realm g (after it in FIDS): a peace of six days or more may break into war; a war of eight days or
@@ -232,7 +233,7 @@ function fallFaction(f,at,involved){realmOf(f).fall(at,involved)}
 function resolveSiege(l,t){
   const mine=t.owner==='player',pa=power(l.troops)*lordTac([l])*(.8+Math.random()*.4),pd=power(garList(t).concat(insideTroops(t)))*(mine?2.2:1.8+.8*Math.max(0,FIEF0-fiefsOf(t.owner).length))*(1+.15*(wallOf(t)-t.T.wall0))*(t.stock&&foodDays(t)<2?.6:1)*(.8+Math.random()*.4);
   if(pa>pd){
-    const prev=t.owner;cull(l,clamp(.1+.5*(pd/pa)**2,.05,.6));lordWins(l,t.gar||6);lordsInside(t).forEach(o=>{defeatLord(o);worldEvent({text:o.name+' is taken inside the walls of '+t.name+'.',cls:o.fac===P.fac?'bad':'',x:t.x,y:t.y,fac:[o.fac],towns:[t],past:o.name+' was taken inside the walls of '+t.name})});t.owner=l.fac;t.gar=4;l.state='rest';
+    const prev=t.owner;cull(l,clamp(.1+.5*(pd/pa)**2,.05,.6));lordWins(l,t.gar||6);lordsInside(t).forEach(o=>{if(!Prisons.take(o,l.fac,t.x,t.y,t))defeatLord(o);worldEvent({text:o.name+' is taken inside the walls of '+t.name+'.',cls:o.fac===P.fac?'bad':'',x:t.x,y:t.y,fac:[o.fac],towns:[t],past:o.name+' was taken inside the walls of '+t.name})});t.owner=l.fac;t.gar=4;l.state='rest';
     // conquest leaves its mark: turmoil for a while, and sometimes the victors sack the place
     Timed.of(t).set('turmoil',8);breach(t);const sacked=Math.random()<.35;if(sacked){Timed.of(t).set('sacked',15);burnEstates(t,2);sackStock(t,.5,.25)}
     worldEmit('holding:taken',{town:t,lord:l,sacked});

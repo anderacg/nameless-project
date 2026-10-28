@@ -67,7 +67,7 @@ function partyUnitEquipment(d){if(d.kind==='comp')return companionEquipment(d.u.
   const on=EQUIP.filter(k=>P.gear[k]&&ITEMS[P.gear[k]]);return '<div class="fb-gear-rows">'+(on.length?on.map(k=>{const label=k.startsWith('ring')?'Ring '+(+k.slice(4)+1):INV_SLOT_LABELS[k]||SLOTS[slotOfKey(k)];return '<div class="fb-gear-row">'+fbIcon('shield',26)+'<div><small>'+htmlText(label)+'</small><strong>'+htmlText(ITEMS[P.gear[k]].n)+'</strong></div></div>'}).join(''):'<p class="fb-note">Nothing worn but your clothes.</p>')+'</div>'+fbBtn('party-equipment',null,'Change equipment');
 }
 function partyUnitCompany(d){
-  return '<div class="fb-stat-grid"><span title="Approval '+d.c.ap+' (from −10 to 10)">'+fbStat('morale','Approval',apName(d.c.ap))+'</span></div>'+fbBtn('talk-comp',d.u.cid,'Talk with '+htmlText(COMPS[d.u.cid].short))+companionRole()+companionOrders(d.u.cid,d.c)+fbDetails('Company service','<p>'+htmlText(COMPS[d.u.cid].short)+' can leave your company and be found again in a tavern. Upkeep: 2 gold a day.</p>'+fbBtn('party-dismiss',null,'Dismiss from company'));
+  return '<div class="fb-stat-grid"><span title="Approval '+d.c.ap+' (from −10 to 10)">'+fbStat('morale','Approval',apName(d.c.ap))+'</span></div>'+fbBtn('talk-comp',d.u.cid,'Talk with '+htmlText(COMPS[d.u.cid].short),d.c.jail?'Held in prison':'')+companionRole()+companionOrders(d.u.cid,d.c)+fbDetails('Company service','<p>'+htmlText(COMPS[d.u.cid].short)+' can leave your company and be found again in a tavern. Upkeep: 2 gold a day.</p>'+fbBtn('party-dismiss',null,'Dismiss from company'));
 }
 // the unit's card (ui/unitcard.js UnitCard): its numbers now (health; morale as your band's mood drifts it), a group's strength, its
 // training or experience, its upkeep (the wage rule in its tip) and its buttons; a hero or companion: Character, Equipment and Role
@@ -99,11 +99,11 @@ function troopPath(k){const s=ST[k],from=UP_FROM(k),need=(P.troops[k]||0)*txpNee
 }
 function partyRosterPage(){
   const s=partyView(),r=partyRoster(P);if(G.armyEdit){s.sel=G.armyEdit;s.open=true}
-  const recover=[...new Set((P.woundedGroups||[]).filter(w=>w.count>0&&!r.groups.some(g=>g.id===w.id)).map(w=>w.id))],away=Object.keys(P.comps).filter(id=>P.comps[id].party).map(id=>'comp_'+id),ids=[...r.order,...recover,...away];
+  const recover=[...new Set((P.woundedGroups||[]).filter(w=>w.count>0&&!r.groups.some(g=>g.id===w.id)).map(w=>w.id))],away=Object.keys(P.comps).filter(id=>P.comps[id].party).map(id=>'comp_'+id),held=Object.keys(P.comps).filter(id=>P.comps[id].jail&&!P.comps[id].party).map(id=>'comp_'+id),ids=[...r.order,...recover,...away,...held.filter(id=>!r.order.includes(id))];
   if(!ids.includes(s.sel)){s.sel=ids[0];s.path=false}if(rosterKind(s.sel)==='comp')compPick(s.sel.slice(5));
   const full=partyFull(),cls=(s.open?' open':'')+(full?' full':'');const numbers=marchNumbers(P);s.shape=partyShape();
-  return '<div class="fb-army-layout'+cls+'"><div class="fb-split"><section class="fb-pane fb-collection"><div class="fb-pane-head"><h3>Battle Group</h3><span>'+r.slots+' / '+r.groupLimit+'</span></div><div class="fb-scroll fb-unit-grid" data-fb-scroll="army-roster">'+r.order.map(id=>{const g=partyGroup(id,r);return partyCard(id,r,numbers[id]??'—')}).join('')+
-    (recover.length?'<div class="fb-section">Recovering groups · no fit soldiers</div>'+recover.map(id=>partyCard(id,r,'—')).join(''):'')+(away.length?'<div class="fb-section">Away · leading their own party</div>'+away.map(id=>partyCard(id,r,'—')).join(''):'')+
+  return '<div class="fb-army-layout'+cls+'"><div class="fb-split"><section class="fb-pane fb-collection"><div class="fb-pane-head"><h3>Battle Group</h3><span>'+r.slots+' / '+r.groupLimit+'</span></div><div class="fb-scroll fb-unit-grid" data-fb-scroll="army-roster">'+r.order.filter(id=>!held.includes(id)).map(id=>{const g=partyGroup(id,r);return partyCard(id,r,numbers[id]??'—')}).join('')+
+    (recover.length?'<div class="fb-section">Recovering groups · no fit soldiers</div>'+recover.map(id=>partyCard(id,r,'—')).join(''):'')+(away.length?'<div class="fb-section">Away · leading their own party</div>'+away.map(id=>partyCard(id,r,'—')).join(''):'')+(held.length?'<div class="fb-section">Held · in prison</div>'+held.map(id=>partyCard(id,r,'—')).join(''):'')+
     '<div class="btns fb-recruit-options">'+(WORLD_BATTLE.on?fbBtn('march-open',null,'March formation'):'')+'</div></div></section>'+partyDetail(s.sel,r)+'</div></div>';
 }
 /* ---- Army skills: your band's skills are your hero's (parties.js Leader.skill): what you have trained, with what a companion in its
@@ -121,6 +121,7 @@ function bandSkillNote(k){if(k!=='athl'&&k!=='ride')return '';const ride=mounted
 // what a role gives now
 function roleFx(k,id){
   if(!id)return {scout:'A Scout adds 2 and a third of their Scouting to yours.',surgeon:'A Surgeon adds 2 and a third of their Medicine to yours.',quarter:'Your band would eat 25% less food.',guide:'Your band would tire less on the march and travel faster.'}[k];
+  if(P.comps[id]?.jail)return 'Held in '+Prisons.title(P.comps[id].jail)+': no effect until they are free.';
   if(!compInBand(id))return 'Away leading their own party: no effect until they rejoin.';
   return k==='scout'?'+'+P.roleBonus('scout')+' Scouting':k==='surgeon'?'+'+P.roleBonus('med')+' Medicine':k==='quarter'?'Your band eats 25% less food.':'Your band tires '+Math.round((1-SUPPLY.guide)*100)+'% less on the march and travels '+Math.round(3+compSkill(id,'scout'))+'% faster (3% and 1% a level of their Scouting).';
 }

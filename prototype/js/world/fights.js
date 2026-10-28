@@ -50,8 +50,10 @@ function sideFor(f,o){
 function routParty(o,winners){
   const k=o.mapKind,near=Math.hypot(o.x-P.x,o.y-P.y)<vis()*1.5;o.fight=null;
   if(k==='cparty'){const c=P.comps[o.cid];if(c){c.party=null;c.hurt=G.day+3;log(COMPS[o.cid].short+'’s party is broken. '+COMPS[o.cid].short+' limps back to you, wounded for 3 days.','bad','war')}return}
-  if(k==='lord'){if(o.state==='siege'&&townBy(o.tgt))worldEmit('siege:broken',{town:townBy(o.tgt),lord:o});worldEmit('lord:routed',{lord:o});defeatLord(o);
-    {const H=Spatial.nearestHolding(o.x,o.y).name;worldEvent({text:o.name+' is routed near '+H+'.',cls:o.fac===P.fac?'bad':'',x:o.x,y:o.y,fac:[o.fac],heard:['lord',o],noise:'battle',was:near||o.fac===P.fac,seen:'You see '+o.name+' routed near '+H+'.',past:o.name+' was routed near '+H})}}
+  if(k==='lord'){if(o.state==='siege'&&townBy(o.tgt))worldEmit('siege:broken',{town:townBy(o.tgt),lord:o});worldEmit('lord:routed',{lord:o});
+    // (routed by a lord at war with his realm: taken to its prison, half the time: world/prisons.js)
+    const by=winners.find(w=>w.mapKind==='lord'&&atWar(w.fac,o.fac)),jail=by&&Prisons.take(o,by.fac,o.x,o.y);if(!jail)defeatLord(o);
+    {const H=Spatial.nearestHolding(o.x,o.y).name;worldEvent({text:o.name+' is routed near '+H+(jail?' and taken to '+Prisons.title(jail.name):'')+'.',cls:o.fac===P.fac?'bad':'',x:o.x,y:o.y,fac:[o.fac],heard:['lord',o],noise:'battle',was:near||o.fac===P.fac,seen:'You see '+o.name+' routed near '+H+'.',past:o.name+' was routed near '+H})}}
   else if(k==='band'){bandits=bandits.filter(x=>x!==o);chiefEscapes(o.ld)}// (its chieftain gets away)
   else if(k==='patrol')patrolBeaten(o);
   else if(k==='monster')beastRouted(o);

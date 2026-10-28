@@ -71,6 +71,8 @@ function showSiege(msg){
     btns=btn('sg-assault','Assault the walls',no,true)+btn('sg-auto','Assault (auto)',no)+btn('sg-wait','Wait in camp')+btn('sg-lift','Lift the siege');
     body+=joinHtml(t);
   }
+  // (its prison, from outside the walls: world/prisons.js)
+  if(hostileTo(t.owner)){const n=Prisons.of(t.name).length+Prisons.quests(t).length;btns+=btn('sg-prison','The prison'+(n?' ('+n+' held)':''))}
   showPanel('<div class="top"><h2>'+(s?'Siege of ':'')+t.name+'</h2><span class="muted">'+cap1(t.label)+' · '+P.gold+' gold</span></div>'+body+(msg?'<p class="gold">'+msg+'</p>':'')+
     '<div class="btns">'+btns+'</div>'+(s?'':nav(null,['sg-leave',null,'Leave'])));
 }
@@ -83,6 +85,8 @@ function siegeAct(a,arg){
   if(!a.startsWith('sg-'))return false;
   const t=G.bes;if(G.mode!=='besiege'||!t)return true;
   if(a==='sg-leave'||a==='sg-wait'){G.mode='world';hidePanel();return true}
+  if(a==='sg-prison'){Prisons.outside(t);return true}
+  if(a==='sg-back'){showSiege();return true}
   if(a==='sg-relieve'){const l=siegeLordsAt(t)[+arg];if(l){if(!hostileTo(l.fac)){Timed.of(P,'hostile').extend(l.fac,20);addHonor(l.fac,-15,true)}startEncounter({kind:'lord',ref:l,list:l.troops.slice()})}return true}
   if(a==='sg-stopraid'&&myRaid(t)){finishRaid(t,myRaid(t).t/RAID_TIME);G.mode='world';hidePanel();return true}
   if((a==='sg-join'||a==='sg-join-auto')&&joinFacs(t).includes(arg)&&troopCount()>=3){

@@ -31,7 +31,7 @@ class Companion extends Character{
     for(let lv=o.lv-up+1;lv<=o.lv;lv++){if(lv%3===0)o.perkPend++;log(this.name+' reaches level '+lv+(lv%3===0?': a perk to choose (Hero, Party tab)':'')+'.','gold')}}
   rose(k,lv){log(this.name+'’s '+COMP_SK[k]+' rises to '+lv+'.','gold')}
   // in your band: not away leading a party, not lying wounded
-  inBand(){return !this.o.party&&!(this.o.hurt>G.day+Clock.frac)}
+  inBand(){return !this.o.party&&!this.o.jail&&!(this.o.hurt>G.day+Clock.frac)}
   // leading a party: who may, and how many soldiers (its level, its Leadership as it trained it, the Captain perk)
   canLead(){return this.o.lv>=COMP_LEAD.lv&&this.o.ap>=COMP_LEAD.ap}
   partyCap(){return 4+2*this.o.lv+this.trained('lead')+(this.hasPerk('captain')?4:0)}

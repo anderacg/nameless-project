@@ -159,7 +159,7 @@ onWorld(()=>{TalkMemory.all={};Conversation.now=null});
 // the talks' own actions: a companion's, opened from the Army (talk-comp) and closed back to it (talk-back); a lord's check or a
 // companion's topic, on the talk shown with them (their Speaker's act)
 onAct('talk-',(a,arg)=>{
-  if(a==='talk-comp'){if(!P.comps[arg]||!['char','dialog'].includes(G.mode))return;G.mode='dialog';const sp=new CompanionSpeaker(arg);sp.show(new Conversation(sp));return}
+  if(a==='talk-comp'){if(!P.comps[arg]||P.comps[arg].jail||!['char','dialog'].includes(G.mode))return;G.mode='dialog';const sp=new CompanionSpeaker(arg);sp.show(new Conversation(sp));return}
   if(a==='talk-back'){hidePanel();G.mode='world';openChar();return}
   const cv=Conversation.now,sp=cv?.sp;
   if(sp instanceof CompanionSpeaker){if(sp.o===arg&&P.comps[arg])sp.act(a.slice(5),cv);return}
