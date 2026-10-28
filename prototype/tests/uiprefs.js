@@ -69,8 +69,8 @@ try{
   ok(P.gear.mount===id&&P.gold===g0-t.gearPrice(id)&&last()==='You buy a '+t.ITEMS[id].n+' and ride it out of the stable.','buy-mount: '+last())}
  t.act('tab','recruit');{const kind=t.RACES.human.melee;t.act('rec-pick',kind);ok(G.town.pick===kind,'rec-pick picks the unit');
   t.act('hire',kind);ok(P.troops[kind]===1&&last()===t.cap1(t.an(t.ST[kind].n.toLowerCase()))+' joins your band.','hire: '+last());
-  t.act('rec-review');const rv=!!G.town.review;t.act('rec-cancel');ok(rv&&!G.town.review&&P.troops[kind]===1,'rec-review, then rec-cancel: nothing bought');
-  t.act('rec-review');t.act('rec-confirm');ok(P.troops[kind]===2&&!G.town.review,'rec-review, then rec-confirm: one more');
+  t.act('rec-add',kind+':1');t.act('rec-clear');ok(!Object.keys(G.town.cart).length&&P.troops[kind]===1,'rec-add, then rec-clear: nothing bought');
+  t.act('rec-add',kind+':1');t.act('rec-hire');ok(P.troops[kind]===2&&!Object.keys(G.town.cart).length,'rec-add, then rec-hire: one more');
   P.txp[kind]=t.txpNeed(kind);const to=t.UP[kind][0];t.act('train',kind+':'+to);ok(P.troops[to]===1&&P.troops[kind]===1&&last()===t.ST[kind].n+' trained into '+t.ST[to].n.toLowerCase()+'.','train: '+last())}
  t.act('tab','tavern');{const f=t.FACS[ash.owner].n;P.fac=null;t.act('contract');ok(P.fac===ash.owner&&last()==='You sign on with the '+f+'. Their enemies are now yours.','contract: '+last());
   t.act('end-contract');ok(P.fac===null&&last()==='You end your contract with the '+f+'.','end-contract: '+last())}

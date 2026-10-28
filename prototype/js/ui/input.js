@@ -24,12 +24,9 @@ function act(a,arg){
   const t=G.town&&G.town.ref;if(t)return townAct(a,arg,t);// (the rest: a town's window and its tabs, town.js)
 }
 panel.addEventListener('click',e=>{if(e.target.closest('[data-recruit-field]'))return;const b=e.target.closest('[data-act]');if(b)act(b.dataset.act,b.dataset.arg)});
-function updateRecruitDraft(e){const field=e.target.dataset.recruitField;if(!['hireCount','hireTarget','trainingGroup'].includes(field)||G.mode!=='town'||!G.town)return;
-  const value=field==='hireCount'?Number(e.target.value):e.target.value;if(Object.is(G.town[field],value))return;
-  G.town[field]=value;G.town.review=null;G.town.recruitNotice='';
-  // Keep the input node/focus/caret alive. In particular, blur must not replace the Review button during a click.
-  const preview=document.createElement('div');preview.innerHTML=townRecruitControls(G.town.ref,G.town.pick);
-  panel.querySelector('.recruit-summary')?.replaceWith(preview.querySelector('.recruit-summary'));
+// (the barracks' group for a kind in your order: town.js Barracks, its Groups)
+function updateRecruitDraft(e){const field=e.target.dataset.recruitField||'';if(!field.startsWith('cartTarget:')||G.mode!=='town'||!G.town)return;
+  const k=field.slice(11),v=e.target.value,c=G.town.cartTarget||(G.town.cartTarget={});if(v==='auto')delete c[k];else c[k]=v;renderTown();
 }
 panel.addEventListener('input',updateRecruitDraft);
 panel.addEventListener('change',updateRecruitDraft);

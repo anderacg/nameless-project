@@ -30,9 +30,10 @@ try{
  ok(document.getElementById('panel').classList.contains('wide'),'a town’s window is the larger one');
  const card=()=>{const e=document.querySelector('.reccard .ucard-x');return e&&e.dataset.unit};
  // (the Barracks lists its recruits and trainings as cards now, window.js railCard: a card picks as a row did, .sel marks it)
- const hires=[...document.querySelectorAll('.rcard[data-act="rec-pick"]')].map(e=>e.dataset.arg);ok(hires.length>=2&&card()===hires[0],'the first troop’s card shows until you pick ('+card()+')');
- t.act('rec-pick',hires[1]);ok(card()===hires[1]&&document.querySelector('.rcard.sel').dataset.arg===hires[1],'click another: its card, its row marked');
- const tr=hires.find(a=>a.includes('>'));ok(tr&&(t.act('rec-pick',tr),card()===tr.split('>')[1])&&/against Levy/.test(panel()),'a training row shows the trained troop’s card, against the one it comes from');
+ const hires=[...document.querySelectorAll('.rec-row[data-act="rec-pick"]')].map(e=>e.dataset.arg);ok(hires.length>=2&&card()===hires[0],'the first troop’s card shows until you pick ('+card()+')');
+ t.act('rec-pick',hires[1]);ok(card()===hires[1]&&document.querySelector('.rec-row.sel').dataset.arg===hires[1],'click another: its card, its row marked');
+ t.act('rec-tab','train');const tr=[...document.querySelectorAll('.rec-row[data-act="rec-pick"]')].map(e=>e.dataset.arg).find(a=>a.includes('>'));t.act('rec-tab','hire');
+ {const W=window.matchMedia;window.matchMedia=()=>({matches:true});try{t.act('rec-info',tr)}finally{window.matchMedia=W}}ok(tr&&document.querySelector('.rec-info .ucard-x')?.dataset.unit===tr.split('>')[1]&&/against Levy/.test(panel()),'a training’s card: the trained troop, against the one it comes from (on a small screen, over the list)');t.act('rec-info-back');ok(!G.town.info&&document.querySelector('.rec-rows'),'Back: the list again');
  const n0=P.troops.hum_levy||0;t.act('hire','hum_levy');ok(P.troops.hum_levy===n0+1,'hiring still works from the list');
  t.act('leave');G.mode='world';t.showPanel('<p>x</p>');ok(!document.getElementById('panel').classList.contains('wide'),'other windows keep their size');t.hidePanel();
  // the roster: each race hires a shield line too; every troop has a look, a sprite, and a shield only if it carries one

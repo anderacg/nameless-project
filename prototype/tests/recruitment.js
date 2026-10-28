@@ -34,12 +34,12 @@ try{
   rejects(()=>service.recruitPrisoner('a'),'prisoner-unavailable','an already recruited prisoner cannot be recruited again');
   ok(JSON.stringify(P)===globalBefore,'the injected service never changes the live player record');
   t.begin('soldier');G.quietEvents=true;const ash=t.townBy('Ashford');P.troops={};P.gold=1000;P.rep[ash.name]=90;ash.vol=2;
-  t.enterTown(ash);t.act('tab','recruit');const kind=t.RACES.human.melee,quote=t.recruitment.quoteHire(ash,kind),button=document.querySelector('[data-act="hire"][data-arg="'+kind+'"]');
-  ok(quote.ok&&button&&!button.disabled&&button.textContent.includes(String(quote.cost)),'the recruit button uses the service eligibility and price');
+  t.enterTown(ash);t.act('tab','recruit');const kind=t.RACES.human.melee,quote=t.recruitment.quoteHire(ash,kind),button=document.querySelector('[data-act="rec-add"][data-arg="'+kind+':1"]'),row=button&&button.closest('.rec-row');
+  ok(quote.ok&&button&&!button.disabled&&row.textContent.includes(quote.cost+'g'),'the recruit row uses the service eligibility and price');
   const g0=P.gold;t.act('hire',kind);ok(P.troops[kind]===1&&P.gold===g0-quote.cost&&ash.vol===1,'the existing hire action delegates to the service');
   const saved=JSON.stringify({gold:P.gold,troops:P.troops,txp:P.txp});t.act('hire','missing');t.act('train',kind+':missing');
   ok(JSON.stringify({gold:P.gold,troops:P.troops,txp:P.txp})===saved,'invalid UI action arguments cannot mutate the roster or funds');
-  P.txp[kind]=t.txpNeed(kind);t.renderTown();const to=t.UP[kind][0],train=document.querySelector('[data-act="train-pick"][data-arg="'+kind+':'+to+'"]');
+  P.txp[kind]=t.txpNeed(kind);t.act('rec-tab','train');const to=t.UP[kind][0],train=document.querySelector('[data-act="train"][data-arg^="'+kind+':'+to+':"]');
   ok(train&&!train.disabled&&t.recruitment.quoteTraining(ash,kind,to).ok,'training eligibility agrees between the screen and service');
   t.act('train',kind+':'+to);ok(P.troops[to]===1&&!P.troops[kind],'the training action changes the roster through the service');
   t.act('leave');G.mode='world';t.saveGame(true);const snapshot=JSON.stringify({gold:P.gold,troops:P.troops,txp:P.txp});t.begin('hedge');t.loadGame();

@@ -24,24 +24,25 @@ try{
  P.txp[k]=0;rejects(()=>service.trainGroup(town,b.id,to),'experience','partial experience cannot upgrade a whole group');P.txp[k]=P.troops[k]*t.txpNeed(k);
  P.woundedGroups=[{id:b.id,type:k,count:1}];P.wounded[k]=1;rejects(()=>service.trainGroup(town,b.id,to),'wounded-group','pending wounded cannot be stranded by an in-place type change');P.woundedGroups=[];P.wounded={};
  town.raided=G.day+2;rejects(()=>service.trainGroup(town,b.id,to),'training-unavailable','closed barracks reject whole-group upgrades');town.raided=0;
- // Real UI: choose quantity and duplicate, review/cancel, then confirm. No hidden mutation on draft changes.
- G.mode='world';G.modal=false;t.hidePanel();t.enterTown(town);t.act('tab','recruit');t.act('rec-pick',k);
- const change=(field,value)=>{const el=panel.querySelector('[data-recruit-field="'+field+'"]');el.value=String(value);el.dispatchEvent(new Event('change',{bubbles:true}))};
- before=state();change('hireTarget',b.id);change('hireCount',3);ok(state()===before&&panel.querySelector('.recruit-totals').textContent.includes(String(service.hireCost(k)*3)+'g'),'draft controls update totals without spending');
- const input=panel.querySelector('[data-recruit-field="hireCount"]');input.focus();input.value='4';input.dispatchEvent(new Event('input',{bubbles:true}));
- ok(panel.querySelector('[data-recruit-field="hireCount"]')===input&&document.activeElement===input&&G.town.hireCount===4,'live quantity typing preserves input identity, focus and the entered value');
- const reviewButton=panel.querySelector('[data-act=rec-review]');input.dispatchEvent(new Event('change',{bubbles:true}));ok(panel.querySelector('[data-act=rec-review]')===reviewButton,'blur/change does not replace the button the user is clicking');
- input.value='0';input.dispatchEvent(new Event('input',{bubbles:true}));ok(panel.querySelector('[data-act=rec-review]').disabled&&state()===before,'zero quantity disables review without spending');change('hireCount',3);
- ok(panel.querySelector('.recruit-totals').textContent.includes('Groups 10 → 10 / 10'),'UI previews the slot budget when reinforcing a full army');
- t.act('rec-review');ok(G.town.review&&state()===before&&panel.querySelector('[data-act=rec-confirm]'),'review is a separate non-mutating step');t.act('rec-cancel');ok(state()===before&&!G.town.review,'cancel discards only the draft confirmation');
- t.act('rec-review');const bc=b.count;t.act('rec-confirm');ok(b.count===bc+3&&!G.town.review,'actual confirmation executes one bulk transaction');const done=state();t.act('rec-confirm');ok(state()===done,'double confirmation cannot buy the same order twice');
- const quick=b.count;t.act('hire',k);ok(b.count===quick+1&&a.type===to,'quick Hire 1 also honours the selected destination for its type');
- // (b is full now: a group holds ten, so c merges into another)
- r.merge(c.id,r.groups.find(g=>g.type===k&&g!==b&&g!==c).id);change('hireTarget','new');t.act('hire',k);const created=r.groups[r.groups.length-1],afterNew=r.slots;t.act('hire',k);
- ok(created.count===2&&r.slots===afterNew&&G.town.hireTarget===created.id,'quick new-group hiring switches its next recruit to the newly created group');change('hireTarget',created.id);
- t.act('rec-review');const price=service.hireCost(k);P.attr.cha++;const changed=state();t.act('rec-confirm');ok(state()===changed&&!G.town.review&&panel.textContent.includes('order changed'),'changed prices require a fresh review instead of silently charging new terms');P.attr.cha--;
- t.act('rec-review');town.vol=0;const unavailable=state();t.act('rec-confirm');ok(state()===unavailable&&!G.town.review,'availability is rechecked at confirmation');town.vol=100;
- P.txp[k]=P.troops[k]*t.txpNeed(k);t.act('rec-pick',k+'>'+to);change('trainingGroup',b.id);before=state();t.act('rec-review');ok(state()===before&&G.town.review.code==='group-training','UI reviews a specific duplicate group upgrade');t.act('rec-confirm');ok(b.type===to&&a.id!==b.id&&r.slots===10,'UI upgrades the chosen group without merging it into an existing upgraded group');
+ // The barracks (town.js Barracks): how many of each with − + · +5 · Max, the hire bar's totals, Groups (automatic or chosen),
+ // Hire (asked first when it spends much), Fill band, and the Train tab's whole-group upgrade. Nothing is spent before Hire.
+ G.mode='world';G.modal=false;t.hidePanel();t.enterTown(town);t.act('tab','recruit');const bar=()=>panel.querySelector('.rec-bar').textContent;
+ before=state();t.act('rec-add',k+':3');ok(state()===before&&G.town.cart[k]===3&&bar().includes(String(service.hireCost(k)*3)+'g'),'choosing how many updates the totals without spending');
+ t.act('rec-add',k+':-1');ok(G.town.cart[k]===2,'− takes one off');t.act('rec-add',k+':1');
+ t.act('rec-groups');const sel=panel.querySelector('[data-recruit-field="cartTarget:'+k+'"]');sel.value=b.id;sel.dispatchEvent(new Event('change',{bubbles:true}));
+ ok(G.town.cartTarget[k]===b.id&&state()===before,'Groups: the order’s kind sent to a chosen group, nothing spent');
+ const bc=b.count;t.act('rec-hire');ok(b.count===bc+3&&!Object.keys(G.town.cart).length,'Hire: one order, into the chosen group, and the order is cleared');
+ const done=state();t.act('rec-hire');ok(state()===done,'Hire again with nothing ordered buys nothing');
+ delete G.town.cartTarget[k];t.act('rec-add',k+':2');const room=r.groups.filter(g=>g.type===k).reduce((n,g)=>n+r.groupRoom(k,g.id),0),n0=P.troops[k];t.act('rec-hire');
+ ok(P.troops[k]===n0+Math.min(2,room)&&r.slots===10,'automatic groups: into the groups of its kind with room, the army already full');
+ t.act('rec-add',k+':2');town.vol=0;const unavailable=state();t.act('rec-hire');ok(state()===unavailable,'the willing are checked as you hire');town.vol=100;t.act('rec-clear');
+ t.act('rec-add',k+':max');ok(G.town.cart[k]===Math.min(town.vol,t.partyCap()-t.partySize()),'Max: all you have room and gold for ('+G.town.cart[k]+')');t.act('rec-clear');
+ {const g0=P.gold;P.gold=service.hireCost(k)*3;t.act('rec-add',k+':2');const asked=state();t.act('rec-hire');ok(G.town.cartAsk&&state()===asked&&/more than half your gold/.test(bar()),'spending more than half your gold asks first');
+  t.act('rec-hire-no');ok(!G.town.cartAsk&&state()===asked,'Cancel: nothing bought');t.act('rec-clear');P.gold=g0}
+ {while(r.slots>3)r.dismiss?.(r.groups[r.groups.length-1].id)||r.remove(r.groups[r.groups.length-1].type,r.groups[r.groups.length-1].count,r.groups[r.groups.length-1].id);t.act('rec-fill');const c2=G.town.cart,T=Object.keys(c2).reduce((n,x)=>n+c2[x],0),ranged=Object.keys(c2).some(x=>t.ST[x].range);
+  ok(T>0&&T<=t.partyCap()-t.partySize()&&ranged&&Object.keys(c2).some(x=>!t.ST[x].range),'Fill band: your free places, melee and ranged ('+Object.keys(c2).map(x=>t.ST[x].n+' ×'+c2[x]).join(', ')+')');t.act('rec-clear')}
+ {const g=r.groups.find(x=>x.type===k);P.txp[k]=P.troops[k]*t.txpNeed(k);t.act('rec-tab','train');const up=panel.querySelector('[data-act="rec-upgroup"][data-arg="'+g.id+':'+to+'"]');ok(up,'Train: a whole group’s upgrade offered');
+  const id=g.id;t.act('rec-upgroup',id+':'+to);ok(r.groups.find(x=>x.id===id)?.type===to,'and done in one press, keeping its place');t.act('rec-tab','hire')}
  G.mode='world';t.saveGame(true,'quick');const saved=JSON.stringify(P.army);t.begin('hedge');t.loadGame('quick');ok(JSON.stringify(P.army)===saved,'upgraded group identity and composition survive current-schema save/load');
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}
 const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d)};
