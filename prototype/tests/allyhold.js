@@ -1,0 +1,27 @@
+'use strict';
+// Your allies fight on (battle/sides.js BattleSides#check): in a battle of several armies your army down is not the end while an
+// army beside you still fights; it wins (byAllies: Victory, the watch's holding and realm think better of you) or loses with you
+// (Defeat: the escape roll and captivity, world/captivity.js). In the ordinary two-sided battle your allies are on your side.
+Kit.suite(({ok})=>{
+ const t=T,P=t.P,G=t.G,W=t.W,rnd=Math.random;Kit.begin('soldier',1);Kit.clear();Kit.world();t.GUIDE.on=false;t.WORLD_BATTLE.on=true;
+ const town=t.TOWNS.find(h=>h.owner&&h.owner!=='player'),fac=town.owner;
+ const fight=()=>{Kit.world();P.hostile={};P.fac=null;Kit.goTo(town.x,town.y);t.Captivity.held=null;t.Captivity.scattered=[];
+  const guard=t.asParty({pt:true,home:town.name,fac,x:P.x+16,y:P.y,troops:Array(12).fill('hum_foot'),cool:0}),band=t.asParty({kind:'bandits',x:P.x+20,y:P.y,troops:['militia','militia']});
+  const e={kind:'party',ref:band,list:band.troops.slice(),allies:[],foes:[],mine:true};G.enc=e;W.lords=[];W.patrols=[guard];W.monsters=[];t.bandits.length=0;t.bandits.push(band);P.troops={hum_foot:1};
+  t.startBattle({enemies:e.list,tournament:false});const b=t.B;for(let i=0;i<40&&!b.units.some(u=>u.sourceArmy?.src===guard||u.sourceArmy===guard);i++)b.world.reinforce(.5);
+  const watch=b.units.filter(u=>u.sourceArmy?.src===guard||u.sourceArmy===guard);return {b,e,watch}};
+ const down=b=>{for(const u of b.units)if(u.team===0)u.hp=0};
+ try{
+  // (two-sided: the watch is on your side)
+  {const {b,watch}=fight();ok(watch.length&&watch.every(u=>u.team===0),'the watch joins on your side');for(const u of b.units)if(u.team===0&&!watch.includes(u))u.hp=0;t.checkBattleOver();ok(!b.over,'two-sided: your army down, the watch fights on')}
+  // (several armies: your army down, they fight on; they win: Victory)
+  {const {b,watch}=fight();b.sides.activate();ok(b.sides.active&&watch.every(u=>u.team!==0&&b.sides.relation(0,u.team)>0),'several armies: the watch is its own army, beside you');
+   for(const u of b.units)if(u.team===0)u.hp=0;t.checkBattleOver();ok(!b.over,'your army down: the battle goes on while the watch fights');
+   for(const u of b.units)if(t.battleEnemy(0,u))u.hp=0;t.checkBattleOver();ok(b.over&&b.win&&b.byAllies,'the watch beats the bandits: won, by your allies');
+   const rep=t.repOf?t.repOf(town.name):null;t.finishBattle();ok(/Victory/.test(document.getElementById('panel').innerHTML)&&/allies held the field/.test(document.getElementById('panel').innerHTML)&&!t.Captivity.held,'Victory: your allies held the field; no captivity')}
+  // (they fall too: Defeat, through the escape roll)
+  {const {b,watch}=fight();b.sides.activate();for(const u of b.units)if(u.team===0||watch.includes(u))u.hp=0;t.checkBattleOver();ok(b.over&&!b.win&&!b.byAllies,'the watch falls too: lost');
+   window.Math.random=()=>.99;try{t.finishBattle()}finally{window.Math.random=rnd}ok(/Defeat/.test(document.getElementById('panel').innerHTML)&&t.Captivity.held,'Defeat: taken captive, as any lost battle');t.Captivity.held=null}
+ }finally{window.Math.random=rnd;t.Captivity.held=null}
+ ok(!ERR.length,'no runtime errors'+(ERR.length?': '+ERR[0]:''));
+});

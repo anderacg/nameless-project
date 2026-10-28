@@ -62,10 +62,14 @@ class BattleSides{
   if(credit&&source.grp){const K=this.b.grpKills||(this.b.grpKills={});K[source.grp]=(K[source.grp]||0)+1}
   if(r.owner===P){if(credit){this.b.kills++;this.b.slain.push(t.type)}if(victim)victim.playerKills.push(t.type)}
  }
+ // (over once your side has no one fighting or no foe is left: your side is your army and, once yours is down, your allies, who
+ // fight on for you (b.byAllies: won by them); withdrawn is withdrawn, whatever your allies do)
  check(){
   const b=this.b,player=b.units.filter(u=>u.team===0&&fighting(u)),enemies=b.units.filter(u=>battleEnemy(0,u)&&fighting(u));
   if(enemies.length&&retreating()){retreatNow();return}
-  if(player.length&&(enemies.length||b.world.pending.some(p=>p.o.troops.length&&this.relation(0,this.byOwner.get(p.o)?.team)<0)))return;b.over=true;b.endT=END_WAIT;b.win=!!player.length;
+  const friends=player.length?player:b.units.filter(u=>u.team!==0&&this.relation(0,u.team)>0&&fighting(u));
+  if(!player.length&&friends.length&&!b.allyOn){b.allyOn=true;log('Your army is down. Your allies fight on.','bad','war')}
+  if(friends.length&&(enemies.length||b.world.pending.some(p=>p.o.troops.length&&this.relation(0,this.byOwner.get(p.o)?.team)<0)))return;b.over=true;b.endT=END_WAIT;b.win=!!friends.length;b.byAllies=b.win&&!player.length;
   if(!b.win&&player.length===0&&b.units.some(u=>u.team===0&&u.left))b.retreat=true;
  }
  survivors(r){return this.b.units.filter(u=>r.groups.includes(u.grp)&&(u.hp>0||u.left)&&!u.waiting)}
@@ -81,6 +85,10 @@ class BattleSides{
   if(old)for(const o of fightParties(old))if(!this.byOwner.has(o)&&o.troops.length){o.fight=null;o.cool=4;alive.push(o)}
   resumeArmyFight(alive,(a,b)=>{const x=this.byOwner.get(a),y=this.byOwner.get(b);return x&&y?this.pair(x,y)<0:old?fightHostile(old,a,b):armyRelation(a,b)<0});
  }
+ // (won: each army that stood beside you thinks better of you: a lord (RELATION.fightBeside), his realm (REINF.honor.beside), a
+ // watch's holding (REINF.rep))
+ thanks(){for(const r of this.records){if(r.owner===P||!r.joined||this.relation(0,r.team)<=0)continue;const o=r.owner;
+   if(o.mapKind==='lord'&&!o.dead)changeRel(o,RELATION.fightBeside,'you fought beside them');if(o.fac&&FACS[o.fac]&&o.fac!=='player')addHonor(o.fac,REINF.honor.beside,true);if(o.mapKind==='patrol'&&o.home)addRep(o.home,REINF.rep,true)}}
  settle(b,lost,groups){
   const e=this.enc,credit=this.records.find(r=>r.owner===P),kills=credit?.kills||[],saved=heal(lost,groups);for(const g of groups)if(g.count)partyRoster(P).remove(g.type,g.count,g.id);
   let gold=0;for(const k of kills)if(!ST[k].beast)gold+=rint(2,6);gold=Math.round(gold*(1+tm('loot')));P.gold+=gold;P.renown+=kills.length;gainXp(kills.length*8);takePrisoners(kills);
@@ -91,8 +99,10 @@ class BattleSides{
    else if(o.mapKind==='caravan'&&r.playerKills.length>=r.start/2){if(e.kind==='caravan'&&o===e.ref&&e.seize)o.seize();else o.loot();r.handled=true}
    else if(o.mapKind==='band'&&o.ld&&r.playerLeader){spoilsWon({kind:'party',ref:o});captureChief(o.ld);o.ld=null}
   }
-  this.continueFight();let heading=b.win?'Victory':b.retreat?'Withdrawn':'Defeat',detail='Your army defeated '+kills.length+' foes. Rewards count only your army’s kills.';
-  if(!b.win&&!b.retreat){const loss=Math.floor(P.gold*.25);P.gold-=loss;const safe=TOWNS.filter(t=>!hostileTo(t.owner)),near=Spatial.nearest(safe.length?safe:TOWNS,P.x,P.y);heroAtGate(near);detail+=' You lost '+loss+' gold and were carried to '+near.name+'.'}
+  this.continueFight();let heading=b.win?'Victory':b.retreat?'Withdrawn':'Defeat',detail=(b.byAllies?'Your army fell, but your allies held the field. ':'')+'Your army defeated '+kills.length+' foes. Rewards count only your army’s kills.';
+  if(b.win)this.thanks();
+  // (beaten, your allies too: taken captive, or away in the rout: world/captivity.js)
+  if(!b.win&&!b.retreat){if(prisonerCount()){P.prisoners={};log('Your prisoners escape in the chaos.','bad','war')}captivesEscape();const fate=Captivity.defeat(e);if(e?.ref&&e.kind!=='camp')e.ref.cool=8;detail+=' '+fate.text;log('Defeat. '+fate.text,'bad','war')}
   const moodLine=battleMood(b.win?(kills.length?4:0):b.retreat?-8:-15,b.win?'victory':b.retreat?'withdrawal':'defeat');G.enc=null;G.encCool=4;G.mode='dialog';worldEmit('battle:ended',{enc:e,how:b.win?'won':b.retreat?'withdrawn':'lost'});
   const report={groups:groups.map(g=>({id:g.id,type:g.type,name:g.name,start:g.start,fit:g.start-g.count,wounded:g.wounded,killed:g.count-g.wounded,saved:g.saved,rearguard:0})),characters:[]};
   lootShow('<h2>'+heading+'</h2><p>'+detail+' Surviving armies keep their own soldiers; other hostile armies can continue fighting.</p>'+moodLine,lost,saved,'cont',report);updateHUD(true);
