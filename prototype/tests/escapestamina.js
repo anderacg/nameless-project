@@ -16,6 +16,5 @@ Kit.suite(({ok})=>{
  G.chase={rd:true,chase:true};ok(t.roadSprint()===1,'chasing road entities no longer grants the player a speed bonus');G.chase=null;
  const time=E.time,remaining=c.escapeSta;G.paused=true;E.tick(10);ok(E.time===time&&c.escapeSta===remaining,'pause freezes escape stamina');G.paused=false;G.modal=true;E.tick(10);ok(E.time===time,'menus freeze escape stamina');G.modal=false;
  const worker=t.asWorker({folk:true,id:'fatigue-test',x:P.x,y:P.y,st:'field',gin:true,escapeSta:1,wp:[{x:P.x+100,y:P.y,i:-1}],plan:{day:G.day,pier:true}}),fear=home.fear;home.fear=G.day+1;E.tick(.1);t.fieldWork(home,worker,.1,.2);home.fear=fear;ok(worker.x>P.x&&worker.escapeSta<1,'field workers spend escape stamina while retreating through estate waypoints');
- const labels=['fresh','tiring','tired','exhausted'];ok(labels.every(s=>t.fatigueSprite(s)&&t.fatigueSprite(s)===t.fatigueSprite(s)),'every fatigue state has a cached recognizable icon');
  ok(!ERR.length,'escape stamina produces no runtime errors');
 });

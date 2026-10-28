@@ -65,8 +65,8 @@ try{
    {const g=c.getImageData(0,0,t.cv.width,t.cv.height),d=g.data,W2=g.width,C=G.cam,off=((-Math.round(C.x*S))%S+S)%S,offy=((-Math.round(C.y*S))%S+S)%S,px=(x,y)=>d.subarray((y*W2+x)*4,(y*W2+x)*4+4).join();
     let blocks=0,badB=0;for(let by=offy+S;by<60*S;by+=S)for(let bx=off+S;bx<200*S;bx+=S){const p0=px(bx,by);let same=true;for(let j=0;j<S&&same;j++)for(let i=0;i<S;i++)if(px(bx+i,by+j)!==p0){same=false;break}blocks++;if(!same)badB++}
     const bad=calls.filter(([img,a,m])=>{const sz=a.length===2||(a.length===8&&a[2]===a[6]&&a[3]===a[7]);
-     // (the awareness eyes and fatigue badges: sized on the screen, not the map, so a whole number of device pixels to a pixel of
-     // theirs (1 for the eyes, devicePixelRatio for the badges), still at whole device pixels: render.js drawStealthEye, drawWorldFatigue)
+     // (the awareness eyes: sized on the screen, not the map, so a whole number of device pixels to a pixel of
+     // theirs (1 for the eyes), still at whole device pixels: render.js drawStealthEye)
      const k=a.length===4&&a[2]*S/img.width;if(k>=1&&isInt(k)&&Math.abs(a[3]*S/img.height-k)<EPS)return Math.abs(Math.abs(m.a)-S)>EPS||Math.abs(m.d-S)>EPS||m.b||m.c||!isInt(m.e+m.a*a[0])||!isInt(m.f+m.d*a[1]);return !sz||Math.abs(Math.abs(m.a)-S)>EPS||Math.abs(m.d-S)>EPS||m.b||m.c||!isInt(m.e+m.a*(a.length===8?a[4]:a[0]))||!isInt(m.f+m.d*(a.length===8?a[5]:a[1]))});
     ok(S===s&&view()&&blocks>1000&&!badB&&calls.length>8&&!bad.length,'at '+S+' ('+t.VW+' x '+t.VH+' game px) the map lies in whole '+S+' x '+S+' blocks ('+blocks+(badB?', '+badB+' not':'')+') and no picture of '+calls.length+' is resampled'+(bad.length?': '+bad.slice(0,2).map(([img,a,m])=>img.width+'x'+img.height+' @'+[m.a,m.e].map(v=>+v.toFixed(3))).join('; '):''))}
    {const wx=P.x+37.3,wy=P.y-21.6,e=cl(wx,wy),p=t.toCanvas(e);t.cv.dispatchEvent(new PointerEvent('pointerdown',{...e,pointerType:'mouse',button:0,bubbles:true}));t.cv.dispatchEvent(new PointerEvent('pointerup',{...e,pointerType:'mouse',button:0,bubbles:true}));

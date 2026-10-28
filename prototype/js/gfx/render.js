@@ -94,17 +94,6 @@ function drawTravelDetection(cam){
   drawStealthEye(state.exposure,col,x,y,STEALTH_EYE.player);ctx.restore();
   return state;
 }
-const WORLD_FATIGUE={size:16,gap:4,cache:new Map(),states:{fresh:{n:4,col:'#8acb8c'},tiring:{n:3,col:'#d7cf77'},tired:{n:2,col:'#e6a35c'},exhausted:{n:1,col:'#e47b6b'}}};
-function fatigueSprite(state){let s=WORLD_FATIGUE.cache.get(state);if(s)return s;const D=WORLD_FATIGUE.states[state];s=mkc(16,12,g=>{rect(g,'#141210',0,1,15,10);rect(g,D.col,1,2,12,8);rect(g,'#211c18',2,3,10,6);rect(g,D.col,14,5,2,3);for(let i=0;i<D.n;i++)rect(g,D.col,3+i*2,4,1,4)});WORLD_FATIGUE.cache.set(state,s);return s}
-function drawWorldFatigue(cam){
-  if(B||P.stay)return;const k=(window.devicePixelRatio||1)/VS,markers=new Map(BANNERQ.filter(q=>q.marker).map(q=>[q.o,bandMarkerAt(q.o,q.marker,cam)])),V=vis();ctx.save();ctx.imageSmoothingEnabled=false;
-  for(const o of new Set([P,...W.parties,...W.monsters.map(asMonster),...W.caravans,...W.refugees.map(asRefugees),...W.critters.map(asHerd).filter(c=>c.wild),...W.folk.map(asWorker).filter(folkSeen)])){
-    if(o.dead||o.gone||o.inside||o!==P&&(!inSight(o.x,o.y)||!o.inView(V)))continue;const b=bannerAt(o,0),m=markers.get(o),eye=o===P||!!travelDetection(o),w=STEALTH_EYE.size*k,h=w*2/3;
-    let x=b?b.x+b.s.width+STEALTH_EYE.gap*k-cam.x:m?m.right+STEALTH_EYE.gap*k:o.x-cam.x-w/2,y=b?b.y-cam.y:m?m.y:o.y-cam.y-18-h;
-    if(o===P){x=P.x-cam.x-w/2;y=(b?b.y:P.y-24)-cam.y-h-10*k}if(eye)x+=stealthEyeSprite(0,'#8f9e94',STEALTH_EYE.size*(window.devicePixelRatio||1)).width/VS+WORLD_FATIGUE.gap*k;
-    const sprite=fatigueSprite(EscapeStamina.state(o));ctx.drawImage(sprite,Math.round(x*VS)/VS,Math.round(y*VS)/VS,WORLD_FATIGUE.size*k,12*k);
-  }ctx.restore();
-}
 function drawBanners(cam){const now=performance.now(),still=reducedMotion(),mine=q=>q.o===P||q.o.faction==='player'?1:0;
   BANNERQ.sort((a,b)=>mine(a)-mine(b)||a.o.y-b.o.y);
   for(const q of BANNERQ){if(q.marker){if(!inSight(q.o.x,q.o.y))continue;const m=q.marker,r=bandMarkerAt(q.o,m,cam);ctx.drawImage(r.s,r.x,r.y);const n=q.o.fighters??q.o.n;if(n>1)txt(String(n),r.x+4,r.y-3,m.col,'center');continue}const B=bannerAt(q.o,still?0:Math.floor(now/420+q.o.x*.13)%2);if(!B)continue;const d=VS>1?subOf(q.o):[0,0],X=B.x-cam.x+d[0],Y=B.y-cam.y+d[1];ctx.drawImage(B.s,X,Y);
@@ -206,7 +195,6 @@ function drawWorld(){
   drawTravelConcealment(cam);
   drawTravelPace(cam);
   drawTravelDetection(cam);
-  drawWorldFatigue(cam);
   drawBanners(cam);// (the parties' banners, over all, their labels queued with the rest)
   // Queued names and counts use native-resolution text; their world anchors and visibility stay the same.
   const q=TXTQ;TXTQ=null;q.forEach((a,i)=>{const wx=a[1]+cam.x,wy=a[2]+cam.y;if(i<nPlace?seenAt(wx,wy+6):inSight(wx,wy+8))mapTxt(...a)});
@@ -273,7 +261,6 @@ function drawUnit(u){
   if(HPBARS.on||u.hero||u.comp||u.leader){const bw=u.s.big?28:12,f=Math.max(0,u.hp/u.max),bx=Math.round(x-bw/2),by=y-h-2-z;ctx.fillStyle='#0a0c12';ctx.fillRect(bx-1,by-1,bw+2,4);ctx.fillStyle='#3a2420';ctx.fillRect(bx,by,bw,2);
     ctx.fillStyle=u.hero||u.comp?'#e8b94a':sideCol(u);ctx.fillRect(bx,by,Math.round(bw*f),2)}// (by side: battle.js SIDE)
   if(B.world)ctx.restore();
-  if(u.wildlife&&B.world){const k=(window.devicePixelRatio||1)/VS*B.world.scale,state=EscapeStamina.state({mapKind:'critter',id:u.wildlife,escapeSta:u.escapeSta});ctx.drawImage(fatigueSprite(state),x+7*WORLD_BATTLE.sprite,y-h*WORLD_BATTLE.sprite,12*k,9*k)}
 }
 // one knocked down (physics.js physDownPose: q 0 standing to 1 lying): he goes over as the fallen do (vfx.js drawBody), lies, and
 // gets up; a beast pressed low, then on its side

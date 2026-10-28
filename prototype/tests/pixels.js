@@ -47,8 +47,8 @@ try{
  ctx.drawImage=function(img,...a){if(img===((t.WFOGV||{}).edge||{}).comp)return orig.call(ctx,img,...a);// (the fog: a soft overlay drawn up smooth, as the battle's: fog.js drawWorldFog)
    const m=ctx.getTransform(),whole=v=>Math.abs(v-Math.round(v))<1e-6,[dx,dy]=a.length===8?[a[4],a[5]]:[a[0],a[1]];
    const sw=a.length===8?a[2]:img.width,sh=a.length===8?a[3]:img.height,dw=a.length>=4?(a.length===8?a[6]:a[2]):sw,dh=a.length>=4?(a.length===8?a[7]:a[3]):sh;
-   // (the awareness eyes and fatigue badges are sized on the screen, not the map: a whole number of device pixels to a pixel of
-   // theirs at the map's scale VS, at whole device pixels: render.js drawStealthEye, drawWorldFatigue; 251e298, aa3ed8d)
+   // (the awareness eyes are sized on the screen, not the map: a whole number of device pixels to a pixel of
+   // theirs at the map's scale VS, at whole device pixels: render.js drawStealthEye; 251e298, aa3ed8d)
    const r=dw*t.VS/sw,dense=dw!==sw&&r>=1&&whole(r)&&Math.abs(dh*t.VS/sh-r)<1e-6,S=dense?t.VS:1;
    if(Math.abs(Math.abs(m.a)-1)>1e-9||Math.abs(Math.abs(m.d)-1)>1e-9||m.b||m.c||!dense&&(dw!==sw||dh!==sh))off.push('scaled '+img.width+'x'+img.height);
    else if(!whole((m.a*dx+m.e)*S)||!whole((m.d*dy+m.f)*S))off.push('at '+(m.a*dx+m.e).toFixed(2)+','+(m.d*dy+m.f).toFixed(2)+' ('+img.width+'x'+img.height+') '+(new Error().stack.split('\n')[2]||'').trim().split('/').pop());

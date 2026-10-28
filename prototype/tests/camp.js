@@ -51,10 +51,10 @@ try{
    ok(!t.makeCamp()&&!P.camp&&P.tx==null&&msgs(/No clear ground to camp here/)===n+1,w+': no clear ground near, no camp, said in the log')}}
  // ---- hidden while camped (the owner, 2026-10-23): no figure or host drawn, your banner on a pole in the camp; back when it breaks
  // (the stealth eye and the fatigue badge over your band only ask where your banner would stand, drawing none: not counted)
- {const draws=()=>{let hero=0,badge=0;const bn=[],ps=window.partySprite,ba=window.bannerAt,dt=window.drawTravelDetection,df=window.drawWorldFatigue,aside=f=>function(){badge++;try{return f.apply(this,arguments)}finally{badge--}};
+ {const draws=()=>{let hero=0,badge=0;const bn=[],ps=window.partySprite,ba=window.bannerAt,dt=window.drawTravelDetection,aside=f=>function(){badge++;try{return f.apply(this,arguments)}finally{badge--}};
     window.partySprite=function(c){if(c==='#e8b94a'&&!badge)hero++;return ps.apply(this,arguments)};window.bannerAt=function(o){if(!badge)bn.push(o);return ba.apply(this,arguments)};
-    window.drawTravelDetection=aside(dt);window.drawWorldFatigue=aside(df);
-    try{t.drawWorld()}finally{window.partySprite=ps;window.bannerAt=ba;window.drawTravelDetection=dt;window.drawWorldFatigue=df}return{hero,bn}};
+    window.drawTravelDetection=aside(dt);
+    try{t.drawWorld()}finally{window.partySprite=ps;window.bannerAt=ba;window.drawTravelDetection=dt}return{hero,bn}};
   reset();const a=draws();ok(a.hero>0&&a.bn.includes(P),'(out of camp your figure and its banner are drawn)');
   t.makeCamp();const b=draws(),pole=b.bn.find(o=>o!==P&&o.faction==='player'),c=t.campAt(P.x,P.y),px=pole&&pole.x-2,py=pole&&pole.headY()-t.BANNER_GAP;
   ok(!!P.camp&&!b.hero&&!b.bn.includes(P),'in camp your figure, host and the banner over you are not drawn');
