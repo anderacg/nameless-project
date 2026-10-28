@@ -69,13 +69,18 @@ const DIALOGUE={
     {a:'brann',b:'tavi',lines:['Quiet, scout. You talk more than you look.','And you look more than you think.']},
     {a:'elske',b:'tavi',lines:['Eat something, Tavi. You are thin as a reed.','Only if you stop fussing.']},
     {a:'brann',b:'elske',lines:['A prisoner is gold walking, sister.','A prisoner is a man, Brann.']}],
-  banterDay:.4
+  banterDay:.4,
+  // (phase 4: your captor's words (world/captivity.js): first, by who holds you; persuaded and refused: you, then theirs)
+  captor:{band:'Well, well. What is a fine captain worth, I wonder?',lord:'You are my prisoner, {you}. Let us speak of your ransom.',
+    realm:'You will be held until someone pays for you.',broker:'I paid good silver for you. Now you will pay me back, with a little on top.',
+    you:'Let me go. You will gain nothing by holding me.',no:'You talk too much. The price just went up.'}
 };
 // a lord's temper (drawn once, from the stream talk, at your first meeting): how he speaks, and what moves him
 const TEMPERS=['proud','honourable','greedy','cunning','kind'];
 const TALK_PIC={
   lord:l=>portrait(charOf(l).key),
   companion:id=>portrait(id),
+  captor:c=>c.k==='broker'?personPic('merchant',townBy(c.town)?.races?.[0]||'human',1):c.k==='band'?portrait('militia'):portrait(RACES[fiefsOf(c.fac)[0]?.races?.[0]||'human']?.melee||'hum_foot'),
   folk:(n,t)=>personPic('folk',t?.races?.[0]||'human',n?.v||0),
   guard:(n,t)=>portrait(RACES[t?.races?.[0]||'human']?.melee||'hum_foot'),
   worker:(f,t)=>personPic('folk',t?.races?.[0]||'human',(f?.id||'').length%4)

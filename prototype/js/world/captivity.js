@@ -57,19 +57,22 @@ class Captivity{
   // (how long they keep you in their cage: a broker less, waiting for a buyer)
   static limit(c){return c.k==='broker'?CAPTIVITY.sold.days:CAPTIVITY.prison.days}
   // the captor's page: its choices, what each costs, and the odds where there are some (the frame: its bar's way out is refusing)
-  static open(){const c=this.held;if(!c)return;if(c.prison)return this.cell();G.mode='dialog';const odds=this.persuadeChance(c),tried=k=>c.tried.includes(k);
-    const btns=[dlgBtn('held-pay',null,'Pay the ransom · '+c.ransom+'g',P.gold<c.ransom?'You have '+P.gold+'g':'',true),
-      !tried('persuade')&&dlgBtn('held-persuade',null,'Persuade them to let you go · '+insight(['you cannot tell your odds',odds>=.5?'they may well listen':'they might listen','about '+Math.round(odds*100)+'%'],'know the odds')),
-      this.serves(c)&&dlgBtn('held-serve',null,(c.k==='band'?'Ride with the band':c.k==='broker'?'Work off your price':'Serve '+c.name)+' for some days'),
-      this.realmPays(c)&&dlgBtn('held-realm',null,'Wait for the '+FACS[P.fac].n+' to pay for you')].filter(Boolean);
-    showPanel('<h2>'+(c.k==='broker'?'Sold':'Taken captive')+'</h2>'+(c.note?'<p>'+c.note+'</p>':'')+'<p>You are held by '+c.name+'. '+(c.k==='band'?'They want gold, and know your name.':c.k==='broker'?'He paid for you, and wants his price back with a profit.':c.fac&&hostileTo(c.fac)?'You are an enemy of the '+FACS[c.fac].n+', and worth something to them.':'They will hear you out.')+'</p>'+
-      (c.tried.includes('persuade')?'<p class="bad">Your words failed: they ask more now.</p>':'')+'<div class="btns cv-choices">'+btns.join('')+'</div>'+
-      '<p class="muted">Ransom, persuasion or your realm’s help: freed at a holding near, your troops scattered, a piece or two from your bag taken. Serving them: you keep your goods. Refusing: their cage, for about '+this.limit(c)+' days at most, and out of it you keep only the gold you hide on you; your bag’s gear and your troops are lost.</p>'+
-      nav(null,['held-refuse',null,'Refuse']))}
+  // the captor's page: a talk with them (story/conversation.js CaptorSpeaker): what has happened (facts), their words, your choices
+  // (replies), with what each costs and the odds where there are some (the frame: its bar's way out is refusing)
+  static open(){const c=this.held;if(!c)return;if(c.prison)return this.cell();G.mode='dialog';const cv=this.cv?.sp.o===c?this.cv:(this.cv=new Conversation(new CaptorSpeaker(c)));
+    cv.show({body:'<p class="muted">Ransom, persuasion or your realm’s help: freed at a holding near, your troops scattered, a piece or two from your bag taken. Serving them: you keep your goods. Refusing: their cage, for about '+this.limit(c)+' days at most, and out of it you keep only the gold you hide on you; your bag’s gear and your troops are lost.</p>',
+      close:['held-refuse',null,'Refuse']})}
+  static facts(c){return '<p><b>'+(c.k==='broker'?'Sold.':'Taken captive.')+'</b> '+(c.note?c.note+' ':'')+'You are held by '+c.name+'. '+(c.k==='band'?'They want gold, and know your name.':c.k==='broker'?'He paid for you, and wants his price back with a profit.':c.fac&&hostileTo(c.fac)?'You are an enemy of the '+FACS[c.fac].n+', and worth something to them.':'They will hear you out.')+'</p>'+
+    (c.tried.includes('persuade')?'<p class="bad">Your words failed: they ask more now.</p>':'')}
+  static replies(c){const odds=this.persuadeChance(c),tried=k=>c.tried.includes(k);
+    return [{act:'held-pay',label:'Pay the ransom · '+c.ransom+'g',why:P.gold<c.ransom?'You have '+P.gold+'g':'',primary:true},
+      !tried('persuade')&&{act:'held-persuade',label:'Persuade them to let you go · '+insight(['you cannot tell your odds',odds>=.5?'they may well listen':'they might listen','about '+Math.round(odds*100)+'%'],'know the odds')},
+      this.serves(c)&&{act:'held-serve',label:(c.k==='band'?'Ride with the band':c.k==='broker'?'Work off your price':'Serve '+c.name)+' for some days'},
+      this.realmPays(c)&&{act:'held-realm',label:'Wait for the '+FACS[P.fac].n+' to pay for you'}]}
   static act(a){const c=this.held;if(!c)return;if(c.prison)return this.cellAct(a);
     if(a==='held-pay'){if(P.gold<c.ransom)return;P.gold-=c.ransom;return this.free('light','You pay '+c.ransom+' gold, and they let you go.',c.ransom)}
     if(a==='held-persuade'&&!c.tried.includes('persuade')){c.tried.push('persuade');train('pers',4);if(Math.random()<this.persuadeChance(c)){const fine=Math.floor(P.gold*CAPTIVITY.persuade.fine*(has('oldsoldier')?CAPTIVITY.traits.oldsoldier.cost:1));P.gold-=fine;return this.free('light','Your words carry: they let you go'+(fine?' for a fine of '+fine+' gold':'')+'.',fine)}
-      c.ransom=this.ransomOf(c,true);log('Your words fail: '+c.name+' raise the ransom to '+c.ransom+' gold.','bad','war');return this.open()}
+      c.ransom=this.ransomOf(c,true);log('Your words fail: '+c.name+' raise the ransom to '+c.ransom+' gold.','bad','war');this.cv?.say(DIALOGUE.captor.you,false,heroName()||'You').say(DIALOGUE.captor.no+' '+c.ransom+' gold.');return this.open()}
     if(a==='held-serve'&&this.serves(c)){const [lo,hi]=c.k==='band'?CAPTIVITY.serve.band:c.k==='broker'?CAPTIVITY.sold.work:CAPTIVITY.serve.lord,d=Math.ceil(rint(lo,hi)*(has('oldsoldier')?CAPTIVITY.traits.oldsoldier.serve:1));Clock.passHours(d*24);
       if(c.k==='band'){const X=CAPTIVITY.serve;repNear(P.x,P.y,-X.rep);FIDS.forEach(f=>addHonor(f,-X.honor,true));return this.free('serve','You ride with the band for '+d+' days, and their raids are yours to answer for (reputation −'+X.rep+', honour −'+X.honor+' with every realm). Then they let you go.')}
       if(c.k==='broker')return this.free('serve','You work off your price in '+c.town+' for '+d+' days; then he lets you go.');
@@ -188,6 +191,6 @@ Captivity.fenceCard=(t,race)=>{const qs=P.quests.filter(q=>q.type==='stash'&&q.g
 Captivity.fencePrice=q=>Math.max(5,Math.round(q.gear.reduce((n,id)=>n+gearPrice(id),0)*CAPTIVITY.stash.fence/5)*5);
 onAct('held-',(a,arg)=>{if(a==='held-fence'){const q=P.quests.find(q=>q.id===+arg||q.id===arg);if(!q)return;const Q=Quest.as(q),p=Captivity.fencePrice(Q);if(P.gold<p)return;P.gold-=p;let k=0;for(const id of Q.gear)if(invAdd('gear',id,1))k++;Q.gear=[];
   log('You buy back '+k+' piece'+(k>1?'s':'')+' of your gear from a fence for '+p+' gold.','gold','story',Q.journalKey);if(!Q.gold)Q.over('bought','bought');if(G.town){updateHUD(true);renderTown()}return}Captivity.act(a)});
-onWorld(()=>{Captivity.held=null;Captivity.scattered=[]});
+onWorld(()=>{Captivity.held=null;Captivity.scattered=[];Captivity.cv=null});
 Systems.add({name:'captivity',order:{hour:160},hour:()=>Captivity.hour()});
 Saves.add({key:'captivity',order:330,defaults:null,save:()=>Captivity.save(),load:v=>Captivity.load(v)});

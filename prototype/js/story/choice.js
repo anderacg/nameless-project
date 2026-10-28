@@ -72,11 +72,12 @@ class Choice{
   }
 }
 class ChoicePage extends PageScreen{
-  /* show(o, key): o {ico, title, sub, banner (its picture: window.js pageBanner), msg (the last result), text (what you see)
+  /* show(o, key): o {ico, title, sub, banner (its picture: window.js pageBanner), who (who speaks: {name, pic, sub}), msg (the last result), text (what you see)
      and facts (what you know: a list; none: no line), or body (its own markup), choices (Choice list), subject (what they
      are about), act (the action its buttons send), done (no choices now), note, back, close}; key: as PageScreen's */
   show(o,key){
-    const body=o.body!=null?o.body:'<p>'+o.text+'</p>'+(o.facts?pageFacts(o.facts):'');
+    // (someone speaking (o.who: {name, pic, sub}): their head, the text in a talk's frame: story/conversation.js)
+    const text=o.who?Conversation.headOf(o.who)+'<div class="talk-lines"><div class="talk-told">'+o.text+'</div></div>':'<p>'+o.text+'</p>',body=o.body!=null?o.body:text+(o.facts?pageFacts(o.facts):'');
     super.show({ico:o.ico,title:o.title,sub:o.sub,banner:o.banner,msg:o.msg,body,acts:o.done?[]:this.buttons(o.choices,o.subject,o.act),note:o.note,back:o.back,close:o.close},key);
   }
   // the choices offered now, as key actions (each its place in the whole list)

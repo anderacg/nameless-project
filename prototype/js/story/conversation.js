@@ -16,7 +16,9 @@
    A companion (phase 3, CompanionSpeaker; their words: DIALOGUE.comps): from the Army's Role tab; greets you by approval (in
    words: apName), tells their story, what they think of your last deed they cared about, and, trusted (DIALOGUE.trust), their
    wish: their own quest (a step kind), its prize their approval and experience. Turning angry, they warn you first (core/state.js
-   mood). Banter: now and then on the road two companions of yours speak (DIALOGUE.banter: once a day at most, the stream talk). ---------- */
+   mood). Banter: now and then on the road two companions of yours speak (DIALOGUE.banter: once a day at most, the stream talk).
+   Phase 4: your captor speaks (CaptorSpeaker: the captive's page, its choices the replies); a story's page step may name who
+   speaks (its spec's who: {name, pic, sub}): the page draws their head and tells its text as theirs (story/choice.js). ---------- */
 class TalkMemory{
   static all={};
   static knows(key){return !!this.all[key]?.met}
@@ -120,13 +122,28 @@ class CompanionSpeaker extends Speaker{
     const q=Quest.make(W0.kind,home,null,s);if(!q)return null;q.wish=this.o;return q.accept()?q:null}
   show(cv){cv.show({close:['talk-back',null,'Back to the army']})}
 }
+// your captor (phase 4; world/captivity.js Captivity.open): their chief, the lord himself, the realm's captain or the broker; the
+// page's choices its replies (Captivity.replies)
+class CaptorSpeaker extends Speaker{
+  get role(){return 'captor'}
+  get key(){return 'captor:'+(this.o.id??this.o.town??this.o.fac??this.o.k)}
+  get lord(){return Captivity.lord(this.o)}
+  name(){const c=this.o;return this.lord?.name||(c.k==='broker'?cap1(c.name):c.k==='band'?'Their chief':'Their captain')}
+  sub(){const c=this.o;return c.k==='broker'?'Holds you, bought from your captors':'Holds you: '+c.name}
+  pic(){return this.lord?TALK_PIC.lord(this.lord):TALK_PIC.captor(this.o)}
+  greet(){return this.fill(DIALOGUE.captor[this.o.k]||'')}
+  facts(){return Captivity.facts(this.o)}
+  replies(){return Captivity.replies(this.o)}
+}
 class Conversation{
   // (a new talk: its greeting first, by what they remember of you; then they remember you)
   constructor(sp){this.sp=sp;this.lines=[];const g=sp.greet(TalkMemory.knows(sp.key));if(g)this.say(g);TalkMemory.meet(sp.key)}
   // (a line: quoted, the speaker's; told (who null), as it is)
   say(html,told=false,who=null){if(html)this.lines.push({who:told?null:who||this.sp.name(),you:!!who,html});return this}
   // the page's parts: head (face, name, standing), what was said, the replies (numbered), the speaker's own blocks
-  head(){const p=this.sp.pic(),s=this.sp.sub();return '<div class="talk-head">'+(p?'<img class="talk-pic" src="'+p+'" alt="">':'')+'<div class="talk-who"><h2>'+htmlText(this.sp.name())+'</h2>'+(s?'<span class="muted">'+s+'</span>':'')+'</div></div>'}
+  head(){return Conversation.headOf({pic:this.sp.pic(),name:this.sp.name(),sub:this.sp.sub()})}
+  // (a speaker's head: face, name and standing; a story's page with someone speaking draws one too: story/choice.js ChoicePage)
+  static headOf(w){return '<div class="talk-head">'+(w.pic?'<img class="talk-pic" src="'+w.pic+'" alt="">':'')+'<div class="talk-who"><h2>'+htmlText(w.name)+'</h2>'+(w.sub?'<span class="muted">'+w.sub+'</span>':'')+'</div></div>'}
   said(){return this.lines.length?'<div class="talk-lines">'+this.lines.slice(-TALK.lines).map(l=>l.who?'<p class="talk-line'+(l.you?' you':'')+'"><b>'+htmlText(l.who)+'</b> &ldquo;'+l.html+'&rdquo;</p>':'<div class="talk-told">'+l.html+'</div>').join('')+'</div>':''}
   answers(rs){rs=rs.filter(Boolean);return rs.length?'<div class="btns talk-replies">'+rs.map((r,i)=>'<button class="btn talk-r'+(r.primary?' primary':'')+'" type="button" data-act="'+r.act+'"'+(r.arg!=null?' data-arg="'+r.arg+'"':'')+(i<9?' data-key="'+(i+1)+'"':'')+(r.why?' disabled title="'+r.why+'"':'')+'>'+(i<9?'<b class="talk-k">'+(i+1)+'</b>':'')+r.label+(r.why?' · '+r.why:'')+(r.note?'<small class="talk-out">'+r.note+'</small>':'')+'</button>').join('')+'</div>':''}
   html(o={}){return '<div class="talk">'+(o.head===false?'':this.head())+this.sp.facts()+this.said()+this.answers(this.sp.replies())+(o.body??'')+'</div>'}

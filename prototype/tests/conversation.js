@@ -51,6 +51,15 @@ Kit.suite(({ok})=>{
   try{const R=t.rngOf('talk'),ch=R.chance,pk=R.pick;R.chance=()=>true;R.pick=l=>l[0];try{t.TalkMemory.all.banter={};t.Banter.hour();t.Banter.hour()}finally{R.chance=ch;R.pick=pk}}finally{window.log=lg}
   ok(said.length===n0+1&&said[n0].includes(t.DIALOGUE.banter[0].lines[0]),'banter on the road: a line each, once a day');
   P.comps={};t.hidePanel();G.mode='world'}
+ // ---- phase 4: your captor speaks; a story's page names who speaks on it
+ {const C=t.Captivity;C.held={k:'band',name:'the bandits',since:G.day,ransom:100,tried:[],away:[]};C.cv=null;C.open();
+  ok(q('.talk-head h2').textContent==='Their chief'&&/Taken captive/.test(Kit.text())&&qa('.talk-line')[0].innerHTML.includes(t.DIALOGUE.captor.band)&&q('.talk-replies [data-act="held-pay"][data-key="1"]')&&q('.nav [data-act="held-refuse"]'),'your captor: their chief speaks; pay, persuade, serve as replies; Refuse in the bar');
+  const R=Math.random;window.Math.random=()=>.99;try{t.act('held-persuade')}finally{window.Math.random=R}
+  ok(qa('.talk-line.you').length===1&&qa('.talk-line').some(e=>e.innerHTML.includes(t.DIALOGUE.captor.no))&&!q('[data-act="held-persuade"]'),'your words fail: you, then them, and the price goes up');
+  C.held=null;C.cv=null;t.hidePanel();G.mode='world'}
+ {G.mode='story';t.CHOICE_PAGE.show({ico:'people',title:'A page',text:'“Hello,” she says.',who:{name:'Old Ada',pic:'',sub:'At the well'},choices:[],subject:{},act:'thr-do',done:true},'test');
+  ok(q('.talk-head h2')?.textContent==='Old Ada'&&q('.talk-told')?.textContent.includes('Hello'),'a story page with someone speaking: their head over its text');
+  const w=t.Wounded.speaker({memory:{name:'Hob',town:t.TOWNS[0].name},i:1});ok(w.name.startsWith('Hob')&&w.pic,'the Wounded Traveller’s family speak on its pages ('+w.name+')');t.hidePanel();G.mode='world'}
  // ---- a townsperson and a guard, in the streets
  const town=t.TOWNS.find(x=>x.owner&&!t.hostileTo(x.owner));G.scene={ref:town.name,p:{x:0,y:0},npcs:[],folk:[]};G.mode='scene';
  t.sceneTalk({folk:true,name:'Old Ada'});ok(q('.talk-head h2').textContent==='Old Ada'&&qa('.talk-line').length===1&&q('.nav [data-act="scene-back"]'),'a townsperson: her face, her gossip quoted, Back to the streets');

@@ -10,7 +10,8 @@
          story/steps.js);
        {encounter: kind, x, y}: one on the road there (none: a spot of its own ground ahead of you);
        {incident: kind}: it befalls you, over at once;
-       {page: {ico, title, text, choices}}: a page of choices (Choice specs, each its how), shown when you are free on the map;
+       {page: {ico, title, text, who, choices}}: a page of choices (Choice specs, each its how), shown when you are free on the map
+       (who: who speaks on it, {name, pic, sub}: their face and name over its text, as a talk's: story/conversation.js);
      none: the step only waits;
    - until: the world event that ends it (core/bus.js), 'type' or {on: 'type', match(d, th)}; none: the end of what it began
      (its starter's event, for the very one it began: its shape and id);
@@ -144,7 +145,7 @@ class Thread extends Happening{
   page(){
     const p=this.pageSpec,K=this.kind;
     if(!p)return null;
-    return {ico:p.ico||'scroll',title:this.param(p.title)||K.n,sub:K.n+' · day '+G.day,msg:'',text:this.param(p.text)||'',
+    return {ico:p.ico||'scroll',title:this.param(p.title)||K.n,sub:K.n+' · day '+G.day,msg:'',text:this.param(p.text)||'',who:p.who?this.param(p.who):null,
       choices:this.choices(),subject:this,act:'thr-do',done:false,close:null};
   }
   // shown when you are free on the map (true); else it waits for whoever opens it later (Thread.paged)
