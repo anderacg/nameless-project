@@ -1,6 +1,10 @@
 'use strict';
 /* ---------- panels ---------- */
-function showPanel(html){panel.classList.remove('wide','railed','paged','fmap','wsp','hunt-setup');panel.innerHTML=html;ov.hidden=false;G.modal=true;const b=panel.querySelector('button:not([disabled]),.card');if(b)b.focus({preventScroll:true})}
+// (key: the window it is; the same one drawn again while shown changes in place (window.js morph), keeping what stays the same:
+// the button under a finger, its focus, the scroll; none, or another window, drawn afresh, the first button in focus)
+function showPanel(html,key){const same=key&&!ov.hidden&&panel.dataset.win===key;panel.classList.remove('wide','railed','paged','fmap','wsp','hunt-setup');panel.dataset.win=key||'';
+  if(same){const t=document.createElement('div');t.innerHTML=html;morphKids(panel,t)}else panel.innerHTML=html;ov.hidden=false;G.modal=true;
+  if(!same){const b=panel.querySelector('button:not([disabled]),.card');if(b)b.focus({preventScroll:true})}}
 function hidePanel(){ov.hidden=true;G.modal=false}
 /* every window's bottom bar: its navigation only; the game's choices stay in the window above it. back: [act, arg, label] on
    the left, when it was opened from another window; close: [act, arg, label, why disabled, noEsc] on the right, the way out,

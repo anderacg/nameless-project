@@ -30,7 +30,7 @@ try{
  const pi=G.loot.pile.findIndex(x=>x.id==='pelt');t.act('lt-take',String(pi));ok(P.inv.some(x=>x&&x.id==='pelt'),'and the pelts go in its place');
  t.act('lt-leave');ok(!G.loot&&G.msgs.some(m=>/You leave .*behind/.test(m.m)),'leaving the rest is a choice you make, and the log says what was left');world();P.inv=keep;
  // a defeat: what you lost
- P.prisoners={militia:2};P.gold=200;G.enc={kind:'party',ref:{x:P.x,y:P.y,cool:0},list:['militia']};t.concludeEncounter(false,{hum_knight:2},0,true,[]);
+ P.prisoners={militia:2};P.gold=200;G.enc={kind:'party',ref:{x:P.x,y:P.y,cool:0},list:['militia']};{const R=Math.random;window.Math.random=()=>0;try{t.concludeEncounter(false,{hum_knight:2},0,true,[])}finally{window.Math.random=R}}// (away in the rout: a quarter of your gold, world/captivity.js)
  ok(/Defeat/.test(html())&&chip('Gold')==='−50'&&/escaped/.test(chip('Prisoners')),'a defeat shows the gold lost ('+chip('Gold')+') and the prisoners who escaped');
  t.act('cont');world();
  // prisoners taken show by kind
