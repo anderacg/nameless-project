@@ -10,7 +10,7 @@ Kit.suite(({ok})=>{
   [...document.querySelectorAll('#panel [data-act="rec-add"]')].find(b=>!b.disabled&&b.dataset.arg.endsWith(':1')).click();
   ok(q('.rwbody').scrollTop===at&&Object.values(G.town.cart).some(n=>n>0),'pressing + keeps the list where it was ('+at+')');
   const bar=q('.rec-bar').getBoundingClientRect(),view=q('.rwbody').getBoundingClientRect();ok(bar.bottom<=view.bottom+1&&bar.top>=view.top,'the hire bar is in view');
-  q('.rec-i').click();ok(G.town.info&&q('.rec-info .ucard-x')&&!q('.rec-rows'),'its card opens over the list');
+  q('.rec-row:not(.sel)').click();ok(G.town.info&&q('.rec-info .ucard-x')&&!q('.rec-rows'),'its card opens over the list');
   t.act('rec-info-back');ok(!G.town.info&&q('.rec-rows')&&q('.rwbody').scrollTop===at,'Back: the list, where you were');
  }finally{screen.style.cssText=orig;window.matchMedia=W}
  ok(!ERR.length,'no runtime errors'+(ERR.length?': '+ERR[0]:''));
