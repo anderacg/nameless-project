@@ -181,6 +181,7 @@ class Tavern extends Place{
       tapsterCard(t,race),// (drink for the road: world/supply.js)
       t.T.broker&&{pic:personPic('merchant',race,1),name:'The ransom broker',role:'Buys prisoners you bring in',facts:[prisonerCount()?prisonerCount()+' prisoners with you':'No prisoners with you',prisonerCount()?['Worth '+ransomValue()+'g','gold']:''],acts:[['ransom-pick',null,'Ransom',prisonerCount()?'':'No prisoners']]},
       Captivity.fenceCard(t,race),// (your gear from a captor's stash: world/captivity.js)
+      ...Questbook.offers('tavern',Questbook.ctx({town:t.name})).map(id=>Questbook.card(id,t)),// (the questbook's: story/questbook.js)
       ...compsHere(t).map(id=>{const c=COMPS[id],quote=recruitment.quoteCompanion(t,id);return {pic:portrait(id),name:c.n,role:'Companion, looking for work',note:c.d,acts:[['hire-comp',id,'Hire '+c.cost+'g',quote.ok?'':recruitmentWhy(quote)||'Not available']]}}),
       Wanderer.card(t)].filter(Boolean))+
       // (the rumours: real news near here, two new a day (news.js), heard as you come in and kept while you stay: G.town.news;

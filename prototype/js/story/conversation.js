@@ -65,7 +65,8 @@ class LordSpeaker extends Speaker{
   replies(){const l=this.o,C=DIALOGUE.checks,read=p=>insight(['you cannot tell your odds',p>=.5?'he may well':'a long chance','about '+Math.round(p*100)+'%'],'know the odds');
     return [{act:'lr-rumours',arg:l.id,label:'Ask for rumours'},{act:'lr-lords',arg:l.id,label:'Ask about other lords'},
       ...['flatter','favour','threaten'].map(id=>{const why=this.checkWhy(id);if(why===false)return null;const win=Outcome.describe(this.outcome(id,true)),lose=Outcome.describe(this.outcome(id,false));
-        return {act:'talk-'+id,arg:l.id,label:C[id].label+' · '+read(this.odds(id)),note:(id==='favour'?RELATION.troops+' soldiers':win)+(lose?' / failing: '+lose:''),why}})]}
+        return {act:'talk-'+id,arg:l.id,label:C[id].label+' · '+read(this.odds(id)),note:(id==='favour'?RELATION.troops+' soldiers':win)+(lose?' / failing: '+lose:''),why}}),
+      ...Questbook.replies(l)]}
   // a check tried: your words, the roll (the stream talk), his answer by temper, what came of it; remembered
   act(id,cv){const l=this.o,X=DIALOGUE.checks[id];if(!X||this.checkWhy(id))return;const m=TalkMemory.meet(this.key);(m.tried||(m.tried={}))[id]=G.day;
     cv.say(X.you,false,heroName()||'You');const won=rngOf('talk').chance(this.odds(id)),o=this.outcome(id,won),words=won?X.yes:X.no;train('pers',won?3:1);

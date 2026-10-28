@@ -1,6 +1,6 @@
 # The questbook: hand-written quests in one place: design
 
-Status: **designed** (2026-10-28), nothing built. The owner's answers in §9; phases in §8.
+Status: **phase 1 built** (2026-10-28): `js/data/questbook/` (`book.js`: `QUESTBOOK`, `QUEST_CHECKS`, `QUESTBOOK_OFFER`; `samples.js`: four entries, one for each giver: the miller's debt (tavern: a visit, a choice with a talk check, a band to beat), bread for the poorhouse (board: goods to bring), a word for the steward (lord), the shepherd's wolves (road: a track check, a beast hunt)); `js/story/questbook.js` (`Questbook`, `BookBandQuest`, `BookBeastQuest`): each entry compiled into a thread kind at load, so several steps, choices and branches already work (phase 2's core); once and cool built too. Goals built: visit, deliver, clear, beat, hunt, escort; paying is an option's `gold`; a rescue and killing a lord are not built (a story's captive and a lord's death need more than data: later). Givers: board, tavern, lord, road. Conditions: level, renown, honor, rel, realm, war, kind, culture, day, has, done, comp, gold, and `not`. Console: `book`, `book <id> [step]`. Tests: questbook (every entry linked, walked through every branch with each check won and lost, saved and loaded at each step; the givers' offers; once and cool; the console). Left for phase 2: a deadline for the whole entry (`fail.days`: today each goal step's own `days`), the Quests window's stages by name, more givers (a temple, a companion's wish). The owner's answers in §9; phases in §8.
 
 ## 1. Today
 

@@ -163,7 +163,8 @@ Kit.suite(({ok,info})=>{
  // ================= the Thread kinds (story/thread.js), every one (the game registers none yet: the test kind, tests/kit.js
  // Kit.storyKinds): its steps are data that hold together; every way through it (each branch) walked, each step answered by its
  // own event on the bus (another's ignored), its record saved and loaded at each step; it ends once, by its last step's key
- {Kit.storyKinds();const SH='thread',Th=t.Thread,all=K.all(SH),bad=[];let nPaths=0;Kit.world();Kit.clear();Kit.goHome();
+ {Kit.storyKinds();const SH='thread',Th=t.Thread,all=K.all(SH).filter(D=>!D.book),bad=[];// (the questbook's: tests/questbook.js walks them)
+ let nPaths=0;Kit.world();Kit.clear();Kit.goHome();
   const nexts=s=>s.then==null?[]:typeof s.then==='string'?[s.then]:Object.values(s.then).filter(Boolean);
   const keys=s=>s.then&&typeof s.then==='object'?Object.keys(s.then):['done'];
   const ended=[],fn=ev=>ended.push(ev);t.worldOn('thread:ended',fn);

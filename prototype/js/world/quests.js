@@ -641,7 +641,7 @@ function jobsBody(t){
   return '<div class="lab">Your quests here</div>'+(here.length?here.map(q=>row(q.title,'<small>'+questProgress(q)+' · '+Quest.as(q).rewardLine()+'</small>','<button class="btn sm" type="button" data-act="q-turnin" data-arg="'+q.id+'"'+(questReady(q)?'':' disabled')+'>'+(Quest.as(q).handsOver?'Hand over':'Report')+'</button>')).join(''):'<p class="muted">None.</p>')+
     '<div class="lab" style="margin-top:6px">Work offered · you hold '+n+' job'+(n===1?'':'s')+'</div>'+
     (shut?'<p class="bad">'+QuestShut.line({home:t.name},shut)+'.</p>':'')+
-    (offers.length?offers.map((q,i)=>offerRow(q,'q-accept',i)).join(''):'<p class="muted">No more work this week.</p>');
+    (offers.length?offers.map((q,i)=>offerRow(q,'q-accept',i)).join(''):'<p class="muted">No more work this week.</p>')+Questbook.rows(t);// (the questbook's: story/questbook.js)
 }
 // town actions (from the town screen) and log actions (from the character screen)
 function questAct(a,arg,t){

@@ -14,13 +14,13 @@ try{
  const seen={},dups=[];
  for(const f of srcs){const txt=get(f);for(const m of txt.matchAll(/^(?:function\s+([\w$]+)\s*\(|(?:const|let)\s+([\w$]+)\s*=)/gm)){const n=m[1]||m[2];if(seen[n]&&seen[n]!==f)dups.push(n+' ('+seen[n]+', '+f+')');else seen[n]=f}}
  ok(srcs.length>=40&&!dups.length,Object.keys(seen).length+' top-level names in '+srcs.length+' scripts, none declared twice'+(dups.length?': '+dups.join('; '):''));
- ok(srcs.every(s=>/^js\/(core|data|story|world|battle|scene|gfx|ui)\/[\w]+\.js$|^js\/main\.js$/.test(s)),'every script lives in its folder: core, data, story, world, battle, scene, gfx or ui');
+ ok(srcs.every(s=>/^js\/(core|data|story|world|battle|scene|gfx|ui)\/[\w]+\.js$|^js\/data\/questbook\/[\w]+\.js$|^js\/main\.js$/.test(s)),'every script lives in its folder: core, data (the questbook\'s entries in data/questbook), story, world, battle, scene, gfx or ui');
  const order=srcs.map(s=>s.replace(/^js\//,'')),dataFirst=order.findIndex(s=>!s.startsWith('core/core')&&!s.startsWith('data/'));
  ok(order[0]==='core/core.js'&&order.slice(1,dataFirst).every(s=>s.startsWith('data/'))&&order.slice(dataFirst).every(s=>!s.startsWith('data/')),'core loads first, then all the data, then the systems');
  // ---- the systems and save registries (core/systems.js, core/saves.js; doc/CORE_DESIGN.md K1): loaded before any system that
  // registers in them, and the world's day and frame run in the order the loop called them by hand (the shared Math.random: the
  // world fingerprints, tests/worldprint.js, hold it)
- {const w0=order.findIndex(s=>s.startsWith('world/')),day='estate guards,band,realms,patrols,relations,monsters,sites,herds,sieges,lands,economy,estates,caravans,ships,companions,wounded,chieftains,prisons,refugees,caravan upkeep,fiefs,quests,autosave,incidents,gatherings',
+ {const w0=order.findIndex(s=>s.startsWith('world/')),day='estate guards,band,realms,patrols,relations,monsters,sites,herds,sieges,lands,economy,estates,caravans,ships,companions,wounded,chieftains,prisons,refugees,caravan upkeep,fiefs,quests,questbook,autosave,incidents,gatherings',
    frame='escape stamina,tracks,travel awareness,stay,capture,raids,lands,march,supply,sites,road,fights,ships,parties,patrols,land defence,patrol moves,monsters,herds,refugees,folk,march formations,auto reinforce,arrival';
   ok(order.indexOf('core/systems.js')>=dataFirst&&order.indexOf('core/saves.js')>=dataFirst&&order.indexOf('core/systems.js')<w0&&order.indexOf('core/saves.js')<order.indexOf('core/save.js'),'the registries load after the data, before the systems');
   ok(t.Systems.names('day').join()===day,'the day, in its order: '+t.Systems.names('day').join(', '));
