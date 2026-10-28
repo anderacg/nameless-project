@@ -10,7 +10,7 @@ Kit.suite(({ok})=>{
  const before=JSON.stringify([P.wounded,P.woundedGroups]),rnd=Math.random;let draws=0;try{Math.random=()=>{draws++;return .5};t.woundedRecoveryHours('hum_foot',g.id)}finally{Math.random=rnd}
  ok(!draws&&JSON.stringify([P.wounded,P.woundedGroups])===before,'forecast neither changes recovery state nor consumes random rolls');
  const estimate=t.partyRecoveryText(t.partyGroup(g.id,r));ok(estimate.includes('Est. recovery:')&&t.partyCard(g.id,r,1).includes(estimate),'troop roster card displays an estimated recovery time');
- G.mode='char';const detail=t.partyUnitOverview(t.partyUnit(g.id,r));ok(detail.includes('Est. recovery:')&&detail.includes('checked daily'),'unit detail explains daily troop recovery uncertainty');
+ G.mode='char';const detail=t.partyUnitCard(t.partyUnit(g.id,r),r);ok(detail.includes('Est. recovery:')&&detail.includes('checked daily'),'unit detail explains daily troop recovery uncertainty');
  ok(t.woundedPanel().includes('Est. recovery:')&&t.woundedPanel().includes('daily rolls can vary'),'army condition recovery summary gives estimated ready times');
  P.camp={at:0};ok(t.woundedRecoveryHours('hum_foot',g.id)<hours,'camp shortens the troop forecast without changing healing rules');P.camp=null;
  c.hurt=0;P.wounded={};P.woundedGroups=[];ok(t.partyRecoveryText(t.partyGroup('comp_brann'))===''&&t.partyRecoveryText(t.partyGroup(g.id,r))==='','fit units show no pending recovery time');

@@ -478,6 +478,7 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 .binfo{position:absolute;left:var(--e-l);bottom:var(--e-b);width:240px;height:auto;min-height:214px;max-height:min(360px,calc(100% - 90px));overflow-x:hidden;overflow-y:auto;scrollbar-width:thin;align-content:start;display:grid;grid-auto-rows:max-content;gap:4px;padding:8px 9px;font-size:var(--fs-md)}
 .binfo small{display:block;color:var(--muted);font-size:var(--fs-sm);line-height:1.25}
 .bi-head{display:flex;gap:8px;align-items:center;padding-bottom:6px;margin-bottom:2px;border-bottom:1px solid var(--line)}
+.bi-picb{padding:0;border:0;background:none;cursor:pointer;flex:none}.bi-picb.on .bi-pic,.bi-picb:hover .bi-pic{border-color:var(--accent)}#bInfo .ucard-x{padding:6px 0 0;background:none;border:0;box-shadow:none}#bInfo .uc-head{display:none}#bInfo .uc-stat{grid-template-columns:80px 1fr 44px;gap:5px}
 .bi-pic{width:44px;height:44px;image-rendering:pixelated;object-fit:contain;background:rgba(0,0,0,.35);border:1px solid var(--line);border-radius:var(--r-sm)}
 .bi-title{font-size:var(--fs-lg);font-weight:700;color:#e7d7b3;line-height:1.15}
 .bi-bar{position:relative;height:14px;background:var(--field);border:1px solid var(--line);border-radius:var(--r-sm);overflow:hidden}
@@ -714,8 +715,15 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 .uc-stats{display:flex;flex-direction:column;gap:3px;margin:2px 0 8px}
 .uc-stat{display:grid;grid-template-columns:96px 1fr 68px;gap:6px;align-items:center}
 .uc-l{color:var(--fg-2)}
-.uc-bar{display:block;height:7px;background:var(--field);border:1px solid var(--line);border-radius:3px;overflow:hidden}
+.uc-bar{position:relative;display:block;height:7px;background:var(--field);border:1px solid var(--line);border-radius:3px;overflow:hidden}
 .uc-bar i{display:block;height:100%;background:#d8b84a}
+/* (the Army page's card: full width, its hero's or companion's tabs under it) */
+.fb-unit-inspector .ucard-x{background:none;border:0;box-shadow:none;padding:0}.uc-acts{margin:0 0 8px}.fb-unit-inspector .uc-acts .btns{width:100%;display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:0}.fb-unit-inspector .uc-acts .fb-unit-actions>.btn:last-child{grid-column:auto}.fb-attr-fx{margin:4px 0 0;font-size:var(--fs-sm);color:var(--fg-2)}
+.fb-unit-tabs{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:4px;margin:12px 0 8px}.fb-unit-tabs .btn{min-height:36px}.fb-unit-tabs .btn.on{border-color:var(--accent);color:var(--accent)}
+/* (what lowers a number now, red; what raises it, green; the unit's strength and rank over its numbers: UnitCard) */
+.uc-bar i.dn,.uc-bar i.up{position:absolute;top:0}.uc-bar i.dn{background:#c0503f}.uc-bar i.up{background:#6fbf5a}
+.uc-strength{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;margin:0 0 6px;font-size:var(--fs-sm);font-weight:700}.uc-strength .uc-bar{height:10px}.uc-strength .uc-bar i:first-child{background:#7fb24f}
+.uc-rank{display:grid;grid-template-columns:96px 1fr 68px;gap:6px;align-items:center;margin:0 0 8px;font-size:var(--fs-sm)}.uc-rank .uc-bar i{background:#8fa8d8}.uc-meter{margin-top:-4px}.uc-meter .uc-bar i{background:#7fc4b0}
 .uc-v{text-align:right;white-space:nowrap;font-weight:700}
 .uc-v b{font-size:var(--fs-2xs)}
 .uc-lab{margin:6px 0 4px;font-size:var(--fs-xs);font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
@@ -723,7 +731,7 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 .uc-ab{padding:2px 7px;font-size:var(--fs-sm);background:#342b22;border:1px solid var(--line-2);border-radius:var(--r-sm);cursor:help}
 .uc-ab.sk{border-color:var(--accent);background:#3a3020}
 .uc-vs{margin-bottom:6px;font-size:var(--fs-sm);line-height:1.45;color:var(--fg-2)}
-.uc-foot{padding-top:6px;border-top:1px solid var(--line);font-size:var(--fs-sm);color:var(--accent)}
+.uc-foot{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding-top:6px;border-top:1px solid var(--line);font-size:var(--fs-sm);color:var(--accent)}.uc-foot>span{flex:1;cursor:help}.uc-foot .btns{margin:0}
 /* a companion's window: its card beside the rest (character.js renderComp) */
 .cmwrap{display:flex;gap:12px;align-items:flex-start}
 .cmside{flex:none;width:280px;position:sticky;top:0}

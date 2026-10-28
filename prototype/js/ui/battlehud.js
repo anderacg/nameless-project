@@ -28,6 +28,7 @@ function pixelSVG(rows,size,cls){const s=rows.length;let r='';rows.forEach((row,
 function bhudInit(){
   document.querySelectorAll('.obtn[data-order],.obtn[data-flag]').forEach(b=>{const k=b.dataset.order||b.dataset.flag;b.innerHTML=pixelSVG(ORDER_ICON[k],18)+'<span class="k">'+(b.dataset.key||'')+'</span>';b.setAttribute('aria-label',b.title)});
   {const b=document.getElementById('bAmove');if(b){b.innerHTML=pixelSVG(ORDER_ICON.amove,18)+'<span class="k">'+(b.dataset.key||'')+'</span>';b.setAttribute('aria-label',b.title)}}// (attack-move: commands.js armAttackMove)
+  {const el=document.getElementById('bInfo');if(el)el.addEventListener('click',e=>{if(e.target.closest('[data-bi-card]')&&B){B.infoCard=!B.infoCard;bhudInfo()}})}// (its portrait opens its unit card: bhudCardOf)
   document.querySelectorAll('.obtn[data-form]').forEach(b=>{const F=FORMS[b.dataset.form];b.innerHTML=formIcon(b.dataset.form,24,16)+'<span class="k">'+F.key+'</span>';b.title=F.n+': '+F.d+' ('+F.key+')';b.setAttribute('aria-label',b.title)});
 }
 // a unit's portrait: its sprite, drawn once into a picture (cached by kind)
@@ -133,8 +134,10 @@ function bhudInfo(){
   if(gs.length>1){el.innerHTML='<div class="bi-title">'+(B.sel==='all'?'All troops':gs.length+' units')+'</div>'+gs.map(g=>{const S=stat(g);return '<div class="bi-row"><img class="bi-mini" src="'+portrait(g==='hero'?'hero':repOf(S.m),g==='hero')+'" alt=""><span class="bi-n">'+htmlText(groupName(g))+' <b>'+S.m.length+'</b></span><span class="ub"><i class="chp" style="width:'+pct(S.hp/Math.max(1,S.mx))+'"></i></span>'+(aiHas(S.gr)?badgeSVG('ai',12):'')+(S.mo?badgeSVG(stateIcon(S.mo.state),12)+(S.mo.confident?badgeSVG('confident',12):''):'')+'</div>'}).join('');return}
   const g=gs[0],S=stat(g),gr=S.gr,rep=g==='hero'?'hero':repOf(S.m),st=g==='hero'?B.hero.s:ST[rep]||S.m[0].s,sh=g!=='hero'?grpShape(g):null;
   const flags=[S.mo&&S.mo.breaking?'Breaking: '+S.mo.breaking+' (morale collapse)':'',gr.walk?'Walking':'Running',gr.firm?'Holding ground':'',gr.cease?'Cease fire':'',gr.skirmish?'Skirmishing':'',gr.melee===false&&grpUnits(g).some(u=>u.s.range)?'Melee mode off':'',S.mo?.confident?'Confident: local superiority':''].filter(Boolean).join(' · ');
-  el.innerHTML='<div class="bi-head"><img class="bi-pic" src="'+portrait(rep,g==='hero')+'" alt=""><div><div class="bi-title">'+htmlText(g==='hero'&&!gr.customName?(P.name||'Your hero'):groupName(g))+'</div><small>'+(g==='hero'?'Your hero':S.m.length+' × '+(ST[rep]?ST[rep].n:rep))+'</small>'+
-    '<small>'+(aiHas(gr)?'AI · ':'')+(gr.amove?'Attack-move':cap1(gr.order))+(g!=='hero'?' · '+FORMS[gr.form||'line'].n+(sh?' '+sh.files+'×'+sh.ranks:''):'')+'</small></div></div>'+
+  const head='<div class="bi-head"><button class="bi-picb'+(B.infoCard?' on':'')+'" type="button" data-bi-card title="'+(B.infoCard?'Back to its orders and bars':'Its unit card')+'" aria-pressed="'+!!B.infoCard+'"><img class="bi-pic" src="'+portrait(rep,g==='hero')+'" alt=""></button><div><div class="bi-title">'+htmlText(g==='hero'&&!gr.customName?(P.name||'Your hero'):groupName(g))+'</div><small>'+(g==='hero'?'Your hero':S.m.length+' × '+(ST[rep]?ST[rep].n:rep))+'</small>'+
+    '<small>'+(aiHas(gr)?'AI · ':'')+(gr.amove?'Attack-move':cap1(gr.order))+(g!=='hero'?' · '+FORMS[gr.form||'line'].n+(sh?' '+sh.files+'×'+sh.ranks:''):'')+'</small></div></div>';
+  if(B.infoCard){el.innerHTML=head+bhudCardOf(g,S,rep,st);return}
+  el.innerHTML=head+
     '<div class="bi-bar hp"><i style="width:'+pct(S.hp/Math.max(1,S.mx))+'"></i><em>Health '+Math.round(S.hp)+' / '+Math.round(S.mx)+'</em></div>'+
     (g==='hero'&&B.hx?'<div class="bi-bar sp"><i style="width:'+pct(B.hx.sp/maxSP())+'"></i><em>Stamina '+Math.round(B.hx.sp)+'</em></div><div class="bi-bar mp"><i style="width:'+pct(B.hx.mp/maxMP())+'"></i><em>Mana '+Math.round(B.hx.mp)+'</em></div>':'')+
     (g!=='hero'&&grpStamina(S.m)!=null?(st=>'<div class="bi-bar st"><i class="'+(st*FATIGUE.max<FATIGUE.tired?'low':'')+'" style="width:'+pct(st)+'"></i><em>Stamina '+Math.round(st*FATIGUE.max)+(st*FATIGUE.max<FATIGUE.spent?' · spent':st*FATIGUE.max<FATIGUE.tired?' · tired':'')+'</em></div>')(grpStamina(S.m)):'')+
@@ -144,6 +147,12 @@ function bhudInfo(){
     (st?'<div class="bi-stats"><span><b>Damage</b>'+Math.round(st.dmg)+'</span><span><b>'+(st.range?'Range':'Reach')+'</b>'+(st.range||st.reach)+'</span><span><b>Speed</b>'+Math.round(st.spd)+'</span><span><b>Health</b>'+Math.round(st.hp)+'</span>'+(ammoText(S.m)?'<span><b>Ammo</b>'+ammoText(S.m)+'</span>':'')+'</div>':'')+
     (flags?'<small class="bi-flags">'+flags+'</small>':'')+(moraleContextText(S.mo)?'<small class="bi-flags">'+moraleContextText(S.mo)+'</small>':'')+(groupAbilityText(g)?'<small class="bi-flags">'+groupAbilityText(g)+'</small>':'')+(st&&g!=='hero'?'<small class="vs">'+vsLine(st)+'</small>':'');
 }
+// a group's unit card in the battle (ui/unitcard.js UnitCard): its men left of those it began with, their health, its morale now,
+// its speed and blows as tiredness has them (fatigue.js tiredMul), your hero's stamina and mana
+function bhudCardOf(g,S,rep,st){const m=S.m,hero=g==='hero',tm=tiredMul(m[0]),start=B.units.filter(u=>u.grp===g).length,now={hp:S.hp/Math.max(1,m.length),spd:st.spd*tm.spd,atk:meleeDmgOf(st)/st.cd*tm.dmg,shot:missileDmgOf(st)/st.cd*tm.dmg};
+  if(S.mo)now.mor=S.mo.v*100;
+  return new UnitCard({key:rep,s:st,name:htmlText(hero&&!S.gr.customName?(P.name||'Your hero'):groupName(g)),sub:hero?'Your hero':ST[rep]?ST[rep].n:rep,hero,now,strength:hero?null:{fit:m.length,max:start,hurt:0,tip:'Men still fighting, of the '+start+' it began with'},
+    meters:hero&&B.hx?[{label:'Stamina',v:B.hx.sp,max:maxSP()},{label:'Mana',v:B.hx.mp,max:maxMP()}]:null,abil:unitAbilities(st)}).html()}
 // the top bar: each side's numbers and strength (health by tier), the field, and what is happening (deploying, paused, speed)
 function bhudTop(){
   if(!B)return;window.mobileBattleHud?.update();const w=u=>u.hp/Math.max(1,u.max)*(u.hero||u.leader||u.comp?4:(ST[u.type]&&ST[u.type].tier||1));let me=0,foe=0,nm=0,nf=0;

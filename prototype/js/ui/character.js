@@ -1,7 +1,7 @@
 'use strict';
 /* ---------- the Army window (C; ui/partypage.js lays it out), your hero's sheet, perks, and the commands of the roster ---------- */
 function openChar(){if(G.mode!=='world'||G.modal)return;G.mode='char';const s=partyView();s.open=false;s.path=false;renderChar()}// (on a phone: the list first)
-function heroPage(c=P,comp=false){const perks=comp?COMP_PERKS:PERKS;return '<div class="fb-skills-summary fb-stat-grid">'+fbStat('skills','Skill points',c.tp)+fbStat('book','Learned',c.tree.length-1)+'</div><div class="lab">Attributes · raised on the skill tree</div><div class="fb-attributes">'+Object.keys(ATTRS).map((k,i)=>'<div>'+fbStat(['power','speed','book','banner'][i],ATTRS[k][0],c.attr[k])+fbDetails('Effects','<p>'+(comp?CHAR_ATTR_FX[k]:ATTRS[k][1])+'</p>')+'</div>').join('')+'</div>'+(c.perks.length?'<div class="lab">Perks</div><div class="fb-attributes">'+c.perks.map(k=>'<div class="fb-note"><strong>'+perks[k].n+'</strong><p>'+perks[k].d+'</p></div>').join('')+'</div>':'')}
+function heroPage(c=P,comp=false){const perks=comp?COMP_PERKS:PERKS;return '<div class="fb-skills-summary fb-stat-grid">'+fbStat('skills','Skill points',c.tp)+fbStat('book','Learned',c.tree.length-1)+'</div><div class="lab">Attributes · raised on the skill tree</div><div class="fb-attributes">'+Object.keys(ATTRS).map((k,i)=>'<div>'+fbStat(['power','speed','book','banner'][i],ATTRS[k][0],c.attr[k])+'<p class="fb-attr-fx">'+(comp?CHAR_ATTR_FX[k]:ATTRS[k][1])+'</p>'+'</div>').join('')+'</div>'+(c.perks.length?'<div class="lab">Perks</div><div class="fb-attributes">'+c.perks.map(k=>'<div class="fb-note"><strong>'+perks[k].n+'</strong><p>'+perks[k].d+'</p></div>').join('')+'</div>':'')}
 // the window, its header the company muster (partypage.js partyHead): Roster, Army skills, Condition, Passengers (your quests are a
 // window of their own: ui/questwindow.js; the lords and realms the Journal's: ui/lordsrealms.js)
 function renderChar(){
@@ -96,7 +96,7 @@ function renderComp(){renderChar()}
 onAct('cm-',(a,arg)=>{
   if(a==='cm-open')return openComp(arg);
   if(!compShown())return;partyUnitRemember();const id=G.compSel,keep=panel.scrollTop;
-  if(a==='cm-army'){G.compTab='orders';const s=partyView();(s.sections||(s.sections={}))[s.sel+':company']=true;renderComp();return}
+  if(a==='cm-army'){G.compTab='orders';const s=partyView();(s.tabs||(s.tabs={}))[s.sel]='role';renderComp();return}
   if(a==='cm-perk'){const c=compInit(id);if(c.perkPend>0&&COMP_PERKS[arg]&&!c.perks.includes(arg)){c.perks.push(arg);c.perkPend--;log(COMPS[id].short+' becomes '+COMP_PERKS[arg].n.toLowerCase()+'.','gold')}}
   else if(a==='cm-eq'){const [sl,i]=arg.split(':');if(compEquip(id,sl,+i))toast(COMPS[id].short+' takes the '+ITEMS[compInit(id).gear[sl]].n+'.')}
   else if(a==='cm-off')compUnequip(id,arg);

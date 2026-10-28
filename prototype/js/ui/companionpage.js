@@ -23,7 +23,7 @@ function companionTransferFields(id,direction){
 function companionPageAct(a,arg){
   if(a!=='party-comp-tab'&&!['party-role','party-dismiss','party-gear','party-transfer-dir','party-transfer-pick'].includes(a))return false;
   if(!compShown())return false;const id=G.compSel,c=compInit(id);partyUnitRemember();fbRemember();
-  if(a==='party-comp-tab'){if(['overview','gear','skills','orders'].includes(arg)){G.compTab=arg;const s=partyView();s.sections=s.sections||{};for(const k of ['character','gear','company'])s.sections[s.sel+':'+k]=({skills:'character',gear:'gear',orders:'company'})[arg]===k}}
+  if(a==='party-comp-tab'){if(['overview','gear','skills','orders'].includes(arg)){G.compTab=arg;const s=partyView();(s.tabs||(s.tabs={}))[s.sel]=({gear:'gear',orders:'role'})[arg]||'character'}}
   else if(a==='party-transfer-dir'){if(['give','take'].includes(arg))G.compDirection=arg}
   else if(a==='party-dismiss'){
     fbChoose({title:'Dismiss '+COMPS[id].short+'?',value:'leave',items:[{id:'leave',name:'Leave the company',sub:'You may find them in '+(compTown(id)?.name||'a tavern')+' again.',pic:portrait(id)}],confirm:'Dismiss',back:renderComp,apply:()=>charAct('dismiss',id)});return true;
