@@ -30,7 +30,7 @@
    fewer from your bag, half the service). ---------- */
 const CAPTIVITY={escape:{base:.25,agi:.03,skill:.02,mounted:.15,night:.1,cover:.1,riders:.25,hurt:.15,min:.05,max:.9},
   ransom:{base:40,renown:.4,level:15,lord:1.5,harsh:1.25},persuade:{base:.2,cha:.04,pers:.04,renown:.001,honor:.004,regard:.004,war:.15,min:.05,max:.85,fine:.1},
-  serve:{band:[4,6],lord:[5,8],rep:6,honor:4,pardon:5},realm:{honor:20,days:[3,5],daily:.25},prison:{days:21,hidden:.15,fall:.04,floor:.5,break:{base:.12,agi:.02,athl:.01,guard:.06,min:.03,max:.6,hurt:.4,fails:2},beat:.2,heal:.1,bribe:{base:20,guard:15,ch:.6,step:.15},events:.35,help:.15,rescue:{each:.07,max:.3}},stash:{back:.6,fence:.5,days:30,near:60},release:{by:2,out:5},sold:{daily:.05,renown:.0005,floor:.1,far:40,price:1.2,persuade:.6,work:[3,5],days:10,harder:.06},traits:{slippery:{escape:.15,break:.1},silver:.15,oldsoldier:{cost:.75,serve:.5}},scatter:{base:.35,morale:.3,lead:.04,min:.2,max:.9,days:[1,3]},light:[1,2],
+  serve:{band:[4,6],lord:[5,8],rep:6,honor:4},realm:{honor:20,days:[3,5],daily:.25},prison:{days:21,hidden:.15,fall:.04,floor:.5,break:{base:.12,agi:.02,athl:.01,guard:.06,min:.03,max:.6,hurt:.4,fails:2},beat:.2,heal:.1,bribe:{base:20,guard:15,ch:.6,step:.15},events:.35,help:.15,rescue:{each:.07,max:.3}},stash:{back:.6,fence:.5,days:30,near:60},release:{by:2,out:5},sold:{daily:.05,renown:.0005,floor:.1,far:40,price:1.2,persuade:.6,work:[3,5],days:10,harder:.06},traits:{slippery:{escape:.15,break:.1},silver:.15,oldsoldier:{cost:.75,serve:.5}},scatter:{base:.35,morale:.3,lead:.04,min:.2,max:.9,days:[1,3]},light:[1,2],
   beast:{hp:.25}};
 class Captivity{
   static held=null;static scattered=[];
@@ -137,9 +137,10 @@ class Captivity{
     if(how!=='broke'&&this.pardon(c))text+=' The '+FACS[c.fac].n+' hold nothing against you now.';
     log('Freed near '+at.name+'.','gold','war');notice('Free',text+(lost.length?' Lost: '+lost.join(', ')+'.':'')+' You are near '+at.name+'.',how==='prison'||how==='broke'?'bad':'gold')}
   // (let go by a lord or a realm (served, ransomed, fined, your term done): the score settled: their hostility over, your crimes in
-  // their holdings forgiven, a little honour back (serve.pardon); a war with your employer is not theirs to forgive. true: settled)
+  // their holdings forgiven; the honour you lost stays lost (paying a debt earns no praise); a war with your employer is not theirs
+  // to forgive. true: settled)
   static pardon(c){if(!c||!c.fac||!FACS[c.fac]||c.k==='band'||c.k==='broker')return false;const h=Timed.of(P,'hostile'),was=h.has(c.fac)||TOWNS.some(t=>t.owner===c.fac&&crimeAt(t));
-    h.clear(c.fac);for(const t of TOWNS)if(t.owner===c.fac)t.crime=null;if(was)addHonor(c.fac,CAPTIVITY.serve.pardon,true);return was}
+    h.clear(c.fac);for(const t of TOWNS)if(t.owner===c.fac)t.crime=null;return was}
   // (their pick from your bag: n pieces of gear, or all of it; the ids taken)
   static stripBag(n=Infinity){const ids=[];for(const s of P.inv.slice()){if(ids.length>=n)break;if(s&&s.k==='gear'){const id=s.id,k=playerInventory.take('gear',id,Math.min(s.n||1,n-ids.length));for(let i=0;i<k;i++)ids.push(id)}}return ids}
   // where they keep you and what they took: a camp or hideout of a band's within stash.near tiles, a holding of their realm; null: none

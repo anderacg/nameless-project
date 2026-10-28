@@ -92,8 +92,8 @@ Kit.suite(({ok})=>{
   {const c={k:'band',ransom:100},q={offer:100,hidden:0};let r=.11;window.Math.random=()=>r;const a=sells.call(C,c,q);q.offer=50;const b2=sells.call(C,c,q);window.Math.random=rnd;ok(!a&&b2,'more likely sold once their ask is at its floor')}
   // ---- let go by a realm (served, ransomed, fined): the score settled; broken out: not
   {const f=t.FIDS[0],town=t.TOWNS.find(x=>x.owner===f),h=t.Timed.of(P,'hostile'),wrong=()=>{h.set(f,20);town.crime={until:G.day+10,fine:50}};
-   setup();wrong();C.held={k:'realm',fac:f,name:'the men of the '+t.FACS[f].n,since:G.day,ransom:100,tried:[],away:[]};C.cv=null;t.act('held-serve');
-   ok(!C.held&&!h.has(f)&&!t.crimeAt(town)&&/hold nothing against you/.test(panel()),'served them: the '+t.FACS[f].n+' hostile no more, your crime at '+town.name+' forgiven');t.act('dlg-ok');
+   setup();wrong();C.held={k:'realm',fac:f,name:'the men of the '+t.FACS[f].n,since:G.day,ransom:100,tried:[],away:[]};C.cv=null;const hon=t.honorWith(f);t.act('held-serve');
+   ok(!C.held&&!h.has(f)&&!t.crimeAt(town)&&/hold nothing against you/.test(panel()),'served them: the '+t.FACS[f].n+' hostile no more, your crime at '+town.name+' forgiven');ok(t.honorWith(f)===hon,'and no honour won back for it: a debt paid earns no praise');t.act('dlg-ok');
    setup();wrong();C.held={k:'realm',fac:f,name:'the men',since:G.day,ransom:100,tried:[],away:[],prison:{day:2,guard:0,hidden:0,offer:100,talked:false,help:0,event:''}};C.free('broke','Out.');
    ok(h.has(f)&&t.crimeAt(town),'broken out: they still want you');t.act('dlg-ok');h.clear(f);town.crime=null}
   // ---- their stash (phase 3): what they took, in a camp or hideout of theirs near; a quest marks it; cleared, most of it back
