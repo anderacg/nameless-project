@@ -189,7 +189,8 @@ function dayTick(){
 // spirits. (It eats by the hour: world/supply.js)
 const BAND_PAY={soldier:.5,mounted:.5,companion:2};
 function bandPayroll(cnt){const detached=cparties().reduce((a,p)=>a+p.troops.length,0),soldiers=cnt??troopCount()+woundedN()+detached,base=soldiers*BAND_PAY.soldier,mounts=mountedN()*BAND_PAY.mounted,companions=compCount()*BAND_PAY.companion,raw=base+mounts+companions;return{base,mounts,companions,detached,raw,total:Math.ceil(raw)}}
-function bandWages(cnt){const wage=bandPayroll(cnt).total;
+// (none while you are held captive: you are not with your band, world/captivity.js)
+function bandWages(cnt){if(Captivity.held)return;const wage=bandPayroll(cnt).total;
   if(wage>0){if(P.gold>=wage)P.gold-=wage;else{P.gold=0;P.morale-=6;log('You cannot pay your troops. Morale falls.','bad','band');mood('unpaid')}}}
 function bandLarder(){
   let rot=0;for(const g of FOODS){const r=GOODS[g].spoil,n=goodN(g);if(r&&n)rot+=goodTake(g,Math.min(n,Math.floor(n*r+Math.random())))}

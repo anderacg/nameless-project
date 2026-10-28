@@ -118,7 +118,7 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t
       if(tournament)ok(P.gold===(win?245:200)&&P.renown===(win?36:30)&&G.lootView.next==='back-town'&&P.troops.hum_spear===6,name+': tournament rewards and roster isolation preserved');
       else ok(G.enc===null&&G.encCool===(retreat?4:3)&&G.lootView.next==='cont',name+': encounter cleanup and continuation preserved');
       if(name==='field_win')ok(chief&&band.ld===null&&P.captives.some(c=>c.k==='chief'&&c.ld===chief),'victory captures the same band chief');
-      if(!tournament&&name.endsWith('_loss'))ok(!P.captives.length&&!Object.keys(P.prisoners).length&&P.gold===150,'defeat loses a quarter of gold and releases captives/prisoners');
+      if(!tournament&&name.endsWith('_loss'))ok(!P.captives.length&&!Object.keys(P.prisoners).length&&(t.Captivity.held?P.gold===200:P.gold===150),'defeat releases captives and prisoners; away in the rout it costs a quarter of your gold, taken captive the ransom waits (world/captivity.js: '+(t.Captivity.held?'taken':'away')+')');t.Captivity.held=null;t.Captivity.scattered=[];
       if(name==='retreat_caught')ok(G.encAgain===e&&e.noFlee&&P.renown===28&&G.lootView.head.includes('Run down'),'caught retreat keeps the same encounter for another fight');
       if(name==='carried_retreat')ok(P.hp>=1&&G.lootView.head.includes('carry you'),'fallen hero survives a carried retreat');
       if(name==='siege_win')ok(G.capture===town&&town.gar===0,'siege victory opens the holding for a capture decision');

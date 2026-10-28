@@ -1,6 +1,6 @@
 # Captivity: beaten but alive: design
 
-Status: **design only** (owner, 2026-10-22). Nothing here is built. **Death** is separate: for now a hero whose health runs out outside a battle ends the game, with a Load last save button (built with the play-test fixes). The owner plans more for death later.
+Status: **phase 1 built** (2026-10-28, `prototype/js/world/captivity.js` `Captivity`, numbers in `CAPTIVITY`; tests/captivity.js): the escape roll, the captor's page (ransom, persuade, serve, your realm pays, refuse), §6's outcomes and the scattered troops' return; beasts take no captives. Simplified for now: refusing is a 21-day wait, not phase 2's prison days; companions share your fate (no roll of their own); what is taken is gone (no stash: phase 3). Designed (owner, 2026-10-22). **Death** is separate: for now a hero whose health runs out outside a battle ends the game, with a Load last save button (built with the play-test fixes). The owner plans more for death later.
 
 ## 1. Today
 

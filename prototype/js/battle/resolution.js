@@ -130,17 +130,17 @@ class BattleResolution{
         '<div class="lab">The battle</div><div class="loot-stats">'+[['Enemies slain',kills,'good'],['Your fallen',retreat.fallen||0,retreat.fallen?'bad':''],['Got away',retreat.got||0,''],['Enemies still standing',retreat.standing||0,'']].map(([k,v,c])=>'<span><b>'+k+'</b><span class="'+c+'">'+v+'</span></span>').join('')+'</div>'+moodLine+'<p class="bad">Renown −'+MOOD.renown+' for the retreat.</p>';
       if(retreat.blocked)html='<h2>Disengaged</h2><p>Impassable ground blocks every route through the battle area. Both armies break contact; neither side claims victory.</p>'+moodLine;
     }else{
-      const lose=Math.floor(P.gold*.25);P.gold-=lose;const moodLine=battleMood(-15,'defeat');if(auto){vitals();P.hp=Math.max(1,Math.round(P.hp*.5))}
+      const moodLine=battleMood(-15,'defeat');if(auto){vitals();P.hp=Math.max(1,Math.round(P.hp*.5))}
       if(prisonerCount()){P.prisoners={};log('Your prisoners escape in the chaos.','bad','war')}
       captivesEscape();
       if(e.kind==='siege'||e.kind==='raid'){P.siege=null;G.capWith=null;e.ref.gar=Math.max(1,Math.round(e.ref.gar*.75))}
       if(e.kind==='patrol'){const h=townBy(e.ref.home);if(h)h.crime=null}
       if(e.kind==='party'||e.kind==='camp')chiefWins(e.ref,partySize()+1);// the chieftain who beat you grows
-      const safe=TOWNS.filter(t=>!hostileTo(t.owner)),near=Spatial.nearest(safe.length?safe:TOWNS,P.x,P.y);
-      heroAtGate(near);G.lastTown=near;if(e.kind!=='camp')e.ref.cool=8;
+      // (taken captive, or away in the rout, or left for dead by beasts: world/captivity.js)
+      const fate=Captivity.defeat(e);if(e.kind!=='camp'&&e.ref)e.ref.cool=8;
       if(e.kind==='lord'){const l=e.ref;if(auto)cull(l,.3);else if(!this.primaryLossesApplied)for(const k of slain)l.remove(k,1);lordWins(l,partySize())}
-      html='<h2>Defeat</h2><p>Your band was routed. You lost '+lose+' gold and woke up near '+near.name+'.</p>'+moodLine;
-      log('Defeat. You wake near '+near.name+'.','bad','war');
+      html='<h2>Defeat</h2><p>Your band was routed. '+fate.text+'</p>'+moodLine;
+      log('Defeat. '+fate.text,'bad','war');
     }
     // your troops' experience (core/recruitment.js): what each kind earned, after the shared roster has applied the losses
     {const before=Object.keys(P.troops).reduce((a,k)=>a+txpReady(k),0);
