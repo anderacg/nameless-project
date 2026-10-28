@@ -332,6 +332,13 @@ class Barracks extends Place{
   check(t){const T=this.totals();if(!T.n)return {ok:false,why:''};if(T.cost>P.gold)return {ok:false,why:'Not enough gold'};if(T.n>Math.floor(t.vol||0))return {ok:false,why:'Not that many willing'};
     if(partySize()+T.n>partyCap())return {ok:false,why:'No room in your band'};const bad=T.ks.find(k=>this.rowWhy(t,k));return bad?{ok:false,why:ST[bad].n+': '+this.rowWhy(t,bad)}:{ok:true}}
   pick(arg,t){this.info(arg,t,'rec-pick')}
+  // (choosing how many changes the list in place: each row's count and buttons, and the hire bar, the buttons under your finger
+  // kept (a quick second tap on a busy phone lands on the button it was meant for); anything else redraws the window)
+  act(a,arg,t){const r=super.act(a,arg,t);if(!['rec-add','rec-clear','rec-fill'].includes(a)||G.town.info||G.town.recTab==='train'||!this.refresh(t))return r;return Place.AWAY}
+  refresh(t){const now=panel.querySelector('.rec-rows'),bar=panel.querySelector('.rec-bar');if(!now||!bar)return false;const tmp=document.createElement('div');tmp.innerHTML=this.hireTab(t);
+    const rows=[...now.querySelectorAll('.rec-row')],fresh=[...tmp.querySelectorAll('.rec-row')];if(rows.length!==fresh.length||rows.some((r,i)=>r.dataset.arg!==fresh[i].dataset.arg))return false;
+    rows.forEach((r,i)=>{const f=fresh[i];r.querySelector('.rec-n').textContent=f.querySelector('.rec-n').textContent;r.querySelectorAll('[data-act="rec-add"]').forEach(b=>{b.disabled=!!f.querySelector('[data-act="rec-add"][data-arg="'+b.dataset.arg+'"]')?.disabled})});
+    bar.replaceWith(tmp.querySelector('.rec-bar'));return true}
   tab(arg){G.town.recTab=arg==='train'?'train':'hire';G.town.info=null}
   add(arg,t){const [k,n]=String(arg).split(':'),c=this.cart();if(!this.hires(t).includes(k)||this.rowWhy(t,k))return;const more=this.room(t,k);
     c[k]=Math.max(0,(c[k]||0)+(n==='max'?more:Math.min(+n||0,more)));G.town.cartAsk=false;G.town.recruitNotice=''}

@@ -7,8 +7,9 @@ Kit.suite(({ok})=>{
  try{screen.style.cssText=orig+';width:844px;height:390px';window.matchMedia=()=>({matches:true});
   const town=t.TOWNS.find(x=>x.T.tabs.includes('recruit')&&!t.hostileTo(x.owner)&&t.townBy(x.name));t.enterTown(town);t.act('tab','recruit');
   const body=q('.rwbody');body.scrollTop=body.scrollHeight;const at=body.scrollTop,k=q('.rec-row').dataset.arg;
-  [...document.querySelectorAll('#panel [data-act="rec-add"]')].find(b=>!b.disabled&&b.dataset.arg.endsWith(':1')).click();
+  const plus=[...document.querySelectorAll('#panel [data-act="rec-add"]')].find(b=>!b.disabled&&b.dataset.arg.endsWith(':1'));plus.click();
   ok(q('.rwbody').scrollTop===at&&Object.values(G.town.cart).some(n=>n>0),'pressing + keeps the list where it was ('+at+')');
+  plus.click();ok(plus.isConnected&&Object.values(G.town.cart).some(n=>n===2)&&plus.closest('.rec-row').querySelector('.rec-n').textContent==='2'&&plus.closest('.rec-row').querySelector('[data-arg$=":-1"]').disabled===false,'the same button again, at once: its count 2, − free now (the row changed in place, its buttons kept)');
   const bar=q('.rec-bar').getBoundingClientRect(),view=q('.rwbody').getBoundingClientRect();ok(bar.bottom<=view.bottom+1&&bar.top>=view.top,'the hire bar is in view');
   q('.rec-row:not(.sel)').click();ok(G.town.info&&q('.rec-info .ucard-x')&&!q('.rec-rows'),'its card opens over the list');
   t.act('rec-info-back');ok(!G.town.info&&q('.rec-rows')&&q('.rwbody').scrollTop===at,'Back: the list, where you were');

@@ -210,13 +210,18 @@ document.addEventListener('pointerdown',e=>{if(e.target!==cv&&holdCardUp())hideT
 // padding (its children are placed against its padding box, so the padding moves nothing)
 function safeInsets(){const h=$('.hudlayer'),s=h&&getComputedStyle(h),n=v=>parseFloat(v)||0;return s?{t:n(s.paddingTop),r:n(s.paddingRight),b:n(s.paddingBottom),l:n(s.paddingLeft)}:{t:0,r:0,b:0,l:0}}
 // the card: over the finger (not under it), kept on the screen and in its safe area; 'Tap' where the tooltip says 'Click'
-// a finger held on a button and let go on it still presses it (phones drop the click of a held tap); not a battle card's, whose
+// a finger held on a button and let go on it still presses it (phones drop the click of a held tap), as does a quick tap the browser
+// gave up for a scroll that hardly moved; not a battle card's, whose
 // long press shows its card (battlehud.js)
 {let down=null,pend=null;
  document.addEventListener('pointerdown',e=>{const b=e.pointerType==='touch'&&e.target.closest('button:not(.ucard)');down=b?{b,x:e.clientX,y:e.clientY,t:performance.now()}:null},true);
  document.addEventListener('click',()=>{if(pend)pend.clicked=true},true);
  document.addEventListener('pointerup',e=>{const h=down;down=null;if(!h||e.pointerType!=='touch'||performance.now()-h.t<TOUCH.hold||Math.hypot(e.clientX-h.x,e.clientY-h.y)>TOUCH.slop||document.elementFromPoint(e.clientX,e.clientY)?.closest('button')!==h.b)return;
-  pend=h;setTimeout(()=>{if(!h.clicked&&!h.b.disabled&&h.b.isConnected)h.b.click();if(pend===h)pend=null},80)},true)}
+  pend=h;setTimeout(()=>{if(!h.clicked&&!h.b.disabled&&h.b.isConnected)h.b.click();if(pend===h)pend=null},80)},true);
+ // (and a quick tap the browser cancelled to begin a scroll, the finger hardly moved (under TOUCH.slop): the browser sends no click,
+ // so it is pressed here)
+ document.addEventListener('pointermove',e=>{if(down&&e.pointerType==='touch'){down.mx=e.clientX;down.my=e.clientY}},true);
+ document.addEventListener('pointercancel',e=>{const h=down;down=null;if(!h||e.pointerType!=='touch'||performance.now()-h.t>TOUCH.hold||Math.hypot((h.mx??h.x)-h.x,(h.my??h.y)-h.y)>TOUCH.slop)return;if(!h.b.disabled&&h.b.isConnected)h.b.click()},true)}
 function holdCard(h,cx,cy){const tip=$('#tip'),r=cv.getBoundingClientRect(),sa=safeInsets();tip.innerHTML=h.replace(/>Click:/g,'>Tap:');tip.classList.add('hold');tip.hidden=false;
   const w=tip.offsetWidth,ht=tip.offsetHeight,x=cx-r.left,y=cy-r.top,up=y-ht-TOUCH.ring,L=6+sa.l,T=6+sa.t;
   tip.style.left=clamp(x-w/2,L,Math.max(L,r.width-w-6-sa.r))+'px';tip.style.top=(up>=T?up:clamp(y+TOUCH.ring,T,Math.max(T,r.height-ht-6-sa.b)))+'px'}
