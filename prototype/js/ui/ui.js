@@ -5,6 +5,9 @@ function hidePanel(){ov.hidden=true;G.modal=false}
 /* every window's bottom bar: its navigation only; the game's choices stay in the window above it. back: [act, arg, label] on
    the left, when it was opened from another window; close: [act, arg, label, why disabled, noEsc] on the right, the way out,
    named for where it takes you. Esc presses Back, else the way out (escDismiss), unless going costs you something (noEsc) */
+// (a part redrawn on a clock (the party card, the day, the battle's unit panel): written only when what it shows has changed, so the
+// buttons under a finger are not replaced by the same ones a quarter of a second later and the tap lost)
+function setHtml(el,h){if(el&&el._html!==h){el._html=h;el.innerHTML=h}}
 function nav(back,close){const b=(a,cls,k)=>'<button class="btn'+cls+'" type="button" data-nav="'+k+'" data-act="'+a[0]+'"'+(a[1]!=null?' data-arg="'+a[1]+'"':'')+(a[3]?' disabled title="'+a[3]+'"':'')+(a[4]?' data-noesc':'')+'>'+a[2]+'</button>';
   return '<div class="btns nav">'+(back?b(back,'','back'):'')+'<span class="grow"></span>'+(close?b(close,' primary','close'):'')+'</div>'}
 /* windows anyone can open over the map or the streets: Help (H), your Quests (Q: ui/questwindow.js) and the Journal (J, L: ui/journal.js); closing goes back where you were */

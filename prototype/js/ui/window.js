@@ -126,9 +126,24 @@ function pageBanner(b){const k=b.key;if(BANNERS[k]!=null)return k;let url='';
       for(const [c,px,py,al] of b.ps||[]){if(!c)continue;g.globalAlpha=al??1;g.drawImage(c,Math.round(px-x0),Math.round(py-y0))}g.globalAlpha=1});
     url=cv.toDataURL();BANNER_CV[k]=cv}catch(e){url=''}
   BANNERS[k]=url;return k}
+// (the same window drawn again: changed in place, node by node (its text, attributes, rows added or gone), so what is the same is
+// kept: the button under a finger, its focus, the scroll, an image not loaded again; a field you are typing in keeps its value)
+function morph(a,b){
+  for(const at of [...a.attributes])if(!b.hasAttribute(at.name))a.removeAttribute(at.name);
+  for(const at of [...b.attributes])if(a.getAttribute(at.name)!==at.value)a.setAttribute(at.name,at.value);
+  if(/^(INPUT|SELECT|TEXTAREA)$/.test(a.tagName)&&document.activeElement!==a&&a.value!==b.value)a.value=b.value;
+  morphKids(a,b);
+}
+function morphKids(a,b){
+  const ac=[...a.childNodes],bc=[...b.childNodes];
+  bc.forEach((y,i)=>{const x=ac[i];if(!x)return a.appendChild(y);if(x.nodeType!==y.nodeType||x.nodeName!==y.nodeName||x.namespaceURI!==y.namespaceURI||x.nodeName==='svg'&&x.outerHTML!==y.outerHTML)return a.replaceChild(y,x);
+    if(x.nodeType===1)morph(x,y);else if(x.nodeValue!==y.nodeValue)x.nodeValue=y.nodeValue});
+  for(let i=ac.length-1;i>=bc.length;i--)a.removeChild(ac[i]);
+}
 function showRail(o,key){
-  const old=panel.querySelector('.rwbody'),keep=old&&panel.dataset.rail===key?old.scrollTop:0,rk=panel.querySelector('.rail'),rkeep=rk&&panel.dataset.railLab===(o.label||'')?rk.scrollTop:0;
-  showPanel(railWindow(o));panel.classList.add('wide','railed');panel.dataset.rail=key;panel.dataset.railLab=o.label||'';
+  const old=panel.querySelector('.rwbody'),same=old&&!ov.hidden&&panel.classList.contains('railed')&&panel.dataset.rail===key,keep=old&&panel.dataset.rail===key?old.scrollTop:0,rk=panel.querySelector('.rail'),rkeep=rk&&panel.dataset.railLab===(o.label||'')?rk.scrollTop:0;
+  if(same){const t=document.createElement('div');t.innerHTML=railWindow(o);morphKids(panel,t)}
+  else showPanel(railWindow(o));panel.classList.add('wide','railed');panel.dataset.rail=key;panel.dataset.railLab=o.label||'';
   const b=panel.querySelector('.rwbody');if(b)b.scrollTop=keep;const r=panel.querySelector('.rail');if(r){r.scrollTop=rkeep;const on=r.querySelector('.rail-i.on');if(on&&!rkeep)on.scrollIntoView({block:'nearest'})}
 }
 // (every other window is a plain one: showPanel takes the rail's classes off with the rest)

@@ -129,15 +129,15 @@ function bhudCard(b,g){
 // the selected unit's details (bottom left): one group in full; several, a line each
 function bhudInfo(){
   const el=document.getElementById('bInfo');if(!el||!B)return;const gs=selGroups().filter(g=>grpUnits(g).length);
-  if(!gs.length){el.innerHTML='<p class="muted">No one left to command.</p>';return}
+  if(!gs.length){setHtml(el,'<p class="muted">No one left to command.</p>');return}
   const stat=(g)=>{const m=grpUnits(g),gr=B.groups[g],mo=B.noMorale?null:grpMorale(m),hp=m.reduce((a,u)=>a+u.hp,0),mx=m.reduce((a,u)=>a+u.max,0);return{m,gr,mo,hp,mx}};
-  if(gs.length>1){el.innerHTML='<div class="bi-title">'+(B.sel==='all'?'All troops':gs.length+' units')+'</div>'+gs.map(g=>{const S=stat(g);return '<div class="bi-row"><img class="bi-mini" src="'+portrait(g==='hero'?'hero':repOf(S.m),g==='hero')+'" alt=""><span class="bi-n">'+htmlText(groupName(g))+' <b>'+S.m.length+'</b></span><span class="ub"><i class="chp" style="width:'+pct(S.hp/Math.max(1,S.mx))+'"></i></span>'+(aiHas(S.gr)?badgeSVG('ai',12):'')+(S.mo?badgeSVG(stateIcon(S.mo.state),12)+(S.mo.confident?badgeSVG('confident',12):''):'')+'</div>'}).join('');return}
+  if(gs.length>1){setHtml(el,'<div class="bi-title">'+(B.sel==='all'?'All troops':gs.length+' units')+'</div>'+gs.map(g=>{const S=stat(g);return '<div class="bi-row"><img class="bi-mini" src="'+portrait(g==='hero'?'hero':repOf(S.m),g==='hero')+'" alt=""><span class="bi-n">'+htmlText(groupName(g))+' <b>'+S.m.length+'</b></span><span class="ub"><i class="chp" style="width:'+pct(S.hp/Math.max(1,S.mx))+'"></i></span>'+(aiHas(S.gr)?badgeSVG('ai',12):'')+(S.mo?badgeSVG(stateIcon(S.mo.state),12)+(S.mo.confident?badgeSVG('confident',12):''):'')+'</div>'}).join(''));return}
   const g=gs[0],S=stat(g),gr=S.gr,rep=g==='hero'?'hero':repOf(S.m),st=g==='hero'?B.hero.s:ST[rep]||S.m[0].s,sh=g!=='hero'?grpShape(g):null;
   const flags=[S.mo&&S.mo.breaking?'Breaking: '+S.mo.breaking+' (morale collapse)':'',gr.walk?'Walking':'Running',gr.firm?'Holding ground':'',gr.cease?'Cease fire':'',gr.skirmish?'Skirmishing':'',gr.melee===false&&grpUnits(g).some(u=>u.s.range)?'Melee mode off':'',S.mo?.confident?'Confident: local superiority':''].filter(Boolean).join(' · ');
   const head='<div class="bi-head"><button class="bi-picb'+(B.infoCard?' on':'')+'" type="button" data-bi-card title="'+(B.infoCard?'Back to its orders and bars':'Its unit card')+'" aria-pressed="'+!!B.infoCard+'"><img class="bi-pic" src="'+portrait(rep,g==='hero')+'" alt=""></button><div><div class="bi-title">'+htmlText(g==='hero'&&!gr.customName?(P.name||'Your hero'):groupName(g))+'</div><small>'+(g==='hero'?'Your hero':S.m.length+' × '+(ST[rep]?ST[rep].n:rep))+'</small>'+
     '<small>'+(aiHas(gr)?'AI · ':'')+(gr.amove?'Attack-move':cap1(gr.order))+(g!=='hero'?' · '+FORMS[gr.form||'line'].n+(sh?' '+sh.files+'×'+sh.ranks:''):'')+'</small></div></div>';
-  if(B.infoCard){el.innerHTML=head+bhudCardOf(g,S,rep,st);return}
-  el.innerHTML=head+
+  if(B.infoCard){setHtml(el,head+bhudCardOf(g,S,rep,st));return}
+  setHtml(el,head+
     '<div class="bi-bar hp"><i style="width:'+pct(S.hp/Math.max(1,S.mx))+'"></i><em>Health '+Math.round(S.hp)+' / '+Math.round(S.mx)+'</em></div>'+
     (g==='hero'&&B.hx?'<div class="bi-bar sp"><i style="width:'+pct(B.hx.sp/maxSP())+'"></i><em>Stamina '+Math.round(B.hx.sp)+'</em></div><div class="bi-bar mp"><i style="width:'+pct(B.hx.mp/maxMP())+'"></i><em>Mana '+Math.round(B.hx.mp)+'</em></div>':'')+
     (g!=='hero'&&grpStamina(S.m)!=null?(st=>'<div class="bi-bar st"><i class="'+(st*FATIGUE.max<FATIGUE.tired?'low':'')+'" style="width:'+pct(st)+'"></i><em>Stamina '+Math.round(st*FATIGUE.max)+(st*FATIGUE.max<FATIGUE.spent?' · spent':st*FATIGUE.max<FATIGUE.tired?' · tired':'')+'</em></div>')(grpStamina(S.m)):'')+
@@ -145,7 +145,7 @@ function bhudInfo(){
       (S.mo.confident?'<div class="bi-weak"><span title="'+CONFIDENCE_LABEL+'">'+badgeSVG('confident',14)+'Confident</span></div>':'')+
       (S.mo.weak.length?'<div class="bi-weak">'+S.mo.weak.map(w=>'<span title="'+WEAK_N[w]+'">'+badgeSVG(w,12)+WEAK_N[w].split(':')[0]+'</span>').join('')+'</div>':''):'')+
     (st?'<div class="bi-stats"><span><b>Damage</b>'+Math.round(st.dmg)+'</span><span><b>'+(st.range?'Range':'Reach')+'</b>'+(st.range||st.reach)+'</span><span><b>Speed</b>'+Math.round(st.spd)+'</span><span><b>Health</b>'+Math.round(st.hp)+'</span>'+(ammoText(S.m)?'<span><b>Ammo</b>'+ammoText(S.m)+'</span>':'')+'</div>':'')+
-    (flags?'<small class="bi-flags">'+flags+'</small>':'')+(moraleContextText(S.mo)?'<small class="bi-flags">'+moraleContextText(S.mo)+'</small>':'')+(groupAbilityText(g)?'<small class="bi-flags">'+groupAbilityText(g)+'</small>':'')+(st&&g!=='hero'?'<small class="vs">'+vsLine(st)+'</small>':'');
+    (flags?'<small class="bi-flags">'+flags+'</small>':'')+(moraleContextText(S.mo)?'<small class="bi-flags">'+moraleContextText(S.mo)+'</small>':'')+(groupAbilityText(g)?'<small class="bi-flags">'+groupAbilityText(g)+'</small>':'')+(st&&g!=='hero'?'<small class="vs">'+vsLine(st)+'</small>':''));
 }
 // a group's unit card in the battle (ui/unitcard.js UnitCard): its men left of those it began with, their health, its morale now,
 // its speed and blows as tiredness has them (fatigue.js tiredMul), your hero's stamina and mana
@@ -195,7 +195,7 @@ class BattleArmyHud{
  fit(){const screen=document.getElementById('screen').getBoundingClientRect(),r=this.root.parentElement.getBoundingClientRect(),space=this.root.closest('.mobile-battle-hud')?r.top-screen.top-6:screen.bottom-r.bottom-6;this.panel.style.maxHeight=Math.max(60,Math.floor(space))+'px'}
  render(){
   this.fit();const s=this.s,r=s.records.find(q=>q.id===this.selected)||s.records[0],rows=s.records.map(q=>({q,name:s.label(q),relation:this.relation(q),state:this.state(q)})),sig=JSON.stringify([r.id,rows.map(x=>[x.name,x.relation,x.state]),s.records.map(q=>s.pair(r,q))]);if(sig===this.detailSignature)return;this.detailSignature=sig;
-  const banners=this.root.querySelector('.army-banners');banners.innerHTML=rows.map(({q,name,relation,state})=>'<button type="button" data-army="'+q.id+'" aria-pressed="'+(q===r)+'"><span class="army-flag" style="background:'+s.colour(q.id)+'" aria-hidden="true">⚑</span><span><strong>'+htmlText(name)+'</strong><small>'+htmlText(relation+' · '+state)+'</small></span></button>').join('');
+  const banners=this.root.querySelector('.army-banners');setHtml(banners,rows.map(({q,name,relation,state})=>'<button type="button" data-army="'+q.id+'" aria-pressed="'+(q===r)+'"><span class="army-flag" style="background:'+s.colour(q.id)+'" aria-hidden="true">⚑</span><span><strong>'+htmlText(name)+'</strong><small>'+htmlText(relation+' · '+state)+'</small></span></button>').join(''));
   const names=v=>s.records.filter(q=>q!==r&&s.pair(r,q)===v).map(q=>htmlText(s.label(q))).join(', ')||'None';
   this.root.querySelector('.army-relations').innerHTML='<strong>'+htmlText(s.label(r))+'</strong><dl><dt>Allies</dt><dd>'+names(1)+'</dd><dt>Enemies</dt><dd>'+names(-1)+'</dd><dt>Neutral</dt><dd>'+names(0)+'</dd></dl><small>Neutral armies may fight each other. Viewing an army does not issue orders.</small>';
  }

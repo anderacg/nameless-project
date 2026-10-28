@@ -440,7 +440,7 @@ function updateHUD(force){
   const tags=[...S.tags,burdenTag()].filter(Boolean);// (an overfilled bag: Burdened, core/inventory.js)
   const drinkTip='Drink: '+(drinkOrder(S.L).filter(g=>goodN(g)).map(g=>GOODS[g].n+' '+goodN(g)).join(', ')||'none')+' · about '+days(S.drinkDays)+' '+go+(S.L.desert?' (in the desert, water only)':'')+(BAND.liquor?' · liquor first':'')+' · '+skinsTip();
   const who=RACES[P.race].n+' '+(BGS[P.bg]?BGS[P.bg].n:'');
-  el.innerHTML='<div class="pc-head"><img class="pc-pic" src="'+portrait('hero',true)+'" alt=""><div class="pc-who"><button class="pc-band" type="button" data-act="nm-open" title="'+htmlText(bandName())+': rename your band and your hero">'+htmlText(bandName())+'</button>'+
+  setHtml(el,'<div class="pc-head"><img class="pc-pic" src="'+portrait('hero',true)+'" alt=""><div class="pc-who"><button class="pc-band" type="button" data-act="nm-open" title="'+htmlText(bandName())+': rename your band and your hero">'+htmlText(bandName())+'</button>'+
       '<small title="'+htmlText((heroName()?heroName()+', ':'')+who)+' · Level '+P.level+' · '+rankName()+'">'+htmlText(heroName()||who)+' · Lv '+P.level+' · '+rankName()+'</small></div>'+
       (P.tp?'<span class="pc-pts" title="Talent points to spend (K)">+'+P.tp+'</span>':'')+'</div>'+
     '<div class="bars">'+bar(fp,'fit'+(fp<50?' low':''),'Fitness<b>'+fp+'%</b>',fitTip)+bar(mo,'mor'+(mo<30?' low':''),'Morale<b>'+mo+'%</b>',moTip)+
@@ -453,8 +453,8 @@ function updateHUD(force){
       chip('speed',sp.toFixed(1)+'×','Your band’s pace before the ground: the slowest of you, its size, the wounded, mounts, Athletics or Riding, a Guide, Forced March, tiredness, Hurry, an overfilled bag',sp<.8)+
       (prisonerCount()?chip('prisoners',prisonerCount(),'Prisoners'):'')+'</div>'+
     '<div class="pc-line" title="Where you are">'+icon('region',12)+'<span>'+regionAt(P.x,P.y).name+' · <span style="color:'+(lh?landCol(lh.owner):'#9a958a')+'">'+landName(P.x,P.y)+'</span></span></div>'+
-    '<div class="pc-line" title="Renown and whom you serve">'+icon('renown',12)+'<span>'+P.renown+'</span>'+icon('banner',12)+'<span'+(P.fac?' style="color:'+FACS[P.fac].col+'"':'')+'>'+(P.fac?FACS[P.fac].n:'Independent')+'</span></div>';
-  const d=$('#wday');if(d)d.innerHTML=icon(darkness()>.3?'moon':'sun',16)+'<span>Day '+G.day+' · '+timeOfDay()+'</span>'+byRoadPill()+followPill()+'<b'+(G.paused?'':' class="off"')+'>Paused</b>';
+    '<div class="pc-line" title="Renown and whom you serve">'+icon('renown',12)+'<span>'+P.renown+'</span>'+icon('banner',12)+'<span'+(P.fac?' style="color:'+FACS[P.fac].col+'"':'')+'>'+(P.fac?FACS[P.fac].n:'Independent')+'</span></div>');
+  const d=$('#wday');if(d)setHtml(d,icon(darkness()>.3?'moon':'sun',16)+'<span>Day '+G.day+' · '+timeOfDay()+'</span>'+byRoadPill()+followPill()+'<b'+(G.paused?'':' class="off"')+'>Paused</b>');
   window.mobileWorldHud?.update(fp,mo,Math.round(P.bsta));
   const cb=$('#campBtn');if(cb){cb.classList.toggle('on',!!P.camp);cb.setAttribute('aria-pressed',String(!!P.camp))}
 }
