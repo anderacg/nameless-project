@@ -300,11 +300,11 @@ class Barracks extends Place{
   }
   hires(t){return t.races.flatMap(r=>t.hires(r))}
   ups(t){return t.T.train?Object.keys(P.troops).filter(k=>P.troops[k]>0&&UP[k]).flatMap(k=>UP[k].map(to=>[k,to])):[]}
-  // ---- the order: how many of each kind (G.town.cart), its totals, the most more you could take of one kind
+  // ---- the order: how many of each kind (G.town.cart), its totals, how many more of one kind you could still add
   cart(){const s=G.town;return s.cart||(s.cart={})}
   totals(){const c=this.cart(),ks=Object.keys(c).filter(k=>c[k]>0);return {ks,n:ks.reduce((a,k)=>a+c[k],0),cost:ks.reduce((a,k)=>a+c[k]*hireCost(k),0)}}
   room(t,k){const c=this.cart(),T=this.totals(),mine=c[k]||0,others=T.n-mine,cost=T.cost-mine*hireCost(k);
-    return Math.max(0,Math.min(Math.floor(t.vol||0)-others,partyCap()-partySize()-others,Math.floor((P.gold-cost)/Math.max(1,hireCost(k)))))}
+    return Math.max(0,Math.min(Math.floor(t.vol||0)-others,partyCap()-partySize()-others,Math.floor((P.gold-cost)/Math.max(1,hireCost(k))))-mine)}
   rowWhy(t,k){return !canHire(t,k)?'Needs standing '+needFor(k):''}
   body(t){
     const s=G.town,tab=t.T.train&&s.recTab==='train'?'train':'hire',v=Math.floor(t.vol||0);
