@@ -91,7 +91,7 @@ const DevConsole={
     // (a questbook entry begun where you are, by the nearest holding (a lord's: a lord of its realm), at its first step or at one named)
     if(cmd==='book'){const ids=Questbook.all();if(!arg)return 'Questbook entries: '+ids.map(id=>id+' ('+QUESTBOOK[id].giver?.by+')').join(', ');
       const [id,at]=arg.split(/\s+/),E=Questbook.entry(id);if(!E)throw Error('No questbook entry '+id+'. Type book for the list.');if(at&&!E.steps[at])throw Error('No step '+at+' in '+id+': '+Object.keys(E.steps).join(', ')+'.');
-      const t=Spatial.nearestHolding(P.x,P.y),l=E.giver?.by==='lord'?W.lords.find(x=>!x.dead&&x.fac===t.owner)||W.lords.find(x=>!x.dead):null,th=Questbook.take(id,Questbook.ctx({town:t.name,fac:l?.fac,lord:l?.name,lordRef:l}),at,true);
+      const t=Spatial.nearestHolding(P.x,P.y),l=E.giver?.by==='lord'?W.lords.find(x=>!x.dead&&x.fac===t.owner)||W.lords.find(x=>!x.dead):null,th=Questbook.take(id,Stories.ctx({town:t.name,fac:l?.fac,lord:l?.name,lordRef:l}),at,true);
       if(!th)throw Error('It is under way already. Type chains for the list.');updateHUD(true);return 'Begun at '+t.name+(l?' for '+l.name:'')+': '+E.title+' (thread '+th.i+', step '+(th.at||'over')+').'}
     if(cmd==='chains'||cmd==='threads'){const L=Thread.list().on;if(!L.length)return 'No thread under way. Thread kinds: '+(Kinds.all('thread').map(K=>K.id).join(', ')||'none');
       return L.map(th=>th.i+' · '+th.kind.n+' ('+th.k+') · step '+th.at+' · waits for '+(th.wait?th.wait.shape+' '+th.wait.id:'nothing')+' · begun day '+th.day).join('\n')}

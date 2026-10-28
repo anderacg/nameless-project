@@ -33,3 +33,15 @@ const WOUNDED={wait:24,home:{min:6,max:30,near:3,estate:3},refuse:1,escort:{rep:
 ST.ander={n:'Ander',hp:84,dmg:12,spd:50,reach:16,range:0,cd:.75,tier:3,tags:['shock']};
 Object.defineProperty(COMPS,'ander',{enumerable:false,configurable:true,writable:true,value:{n:'Ander The Fallen',short:'Ander',race:'human',story:true,
   d:'A veteran sellsword, scarred, in a dark cloak. Likes a hard fight won; hates running and cruelty.',react:{win:1,flee:-2,cruel:-2,mercy:1,kind:1}}});
+// the checks a story's choice may name (story/forms.js), shaped as data/encounters.js ENC_STAT's ({base, parts: [[stat or skill, per
+// point]], cap}); their odds on the button read by Insight
+const QUEST_CHECKS={
+  talk:{base:.25,parts:[['pers',.05],['cha',.04]],cap:.9},
+  threaten:{base:.15,parts:[['cha',.04],['str',.04]],cap:.8},
+  sneak:{base:.2,parts:[['agi',.05],['scout',.04]],cap:.85},
+  heal:{base:.1,parts:[['med',.1],['int',.02]],cap:.95},
+  track:{base:.2,parts:[['scout',.06],['surv',.04]],cap:.9},
+  lift:{base:.15,parts:[['str',.06],['athl',.04]],cap:.85},
+  lore:{base:.15,parts:[['int',.06]],cap:.85},
+  haggle:{base:.2,parts:[['trade',.06],['cha',.02]],cap:.85}
+};

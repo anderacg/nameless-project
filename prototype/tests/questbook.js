@@ -18,7 +18,7 @@ Kit.suite(({ok})=>{
  // choice: its place, a check's with w or l)
  const begin=id=>{reset();const town=t.TOWNS.find(x=>x.T.tabs.includes('tavern')&&x.kind==='town')||t.TOWNS[0],l=W.lords.find(x=>!x.dead&&x.fac===town.owner)||W.lords[0];Kit.goHome(town);
   {const g=t.FIDS.find(x=>x!==town.owner);W.rel[t.rk(town.owner,g)]={s:'war',since:1}}// (a war, for the entries that need an enemy)
-  return Q.take(id,Q.ctx({town:town.name,fac:l.fac,lord:l.name,lordRef:l}),null,true)};
+  return Q.take(id,t.Stories.ctx({town:town.name,fac:l.fac,lord:l.name,lordRef:l}),null,true)};
  const step=(th,k)=>{const s=th.current;if(!s)return false;
    if(th.pageSpec){const [i,wl]=[parseInt(k),k.slice(-1)];Kit.world();th.showPage();if(G.mode!=='story')return false;Kit.stubStream('road',wl==='w'?0:wl==='l'?.9999:.5,()=>t.act('thr-do',String(i)));return true}
    const q=th.wait&&P.quests.find(x=>x.id===th.wait.id);if(!q)return false;const Qq=t.Quest.as(q);if(k==='ok')Qq.pay('arrived');else Qq.fail(null,'late');return true};
@@ -35,9 +35,9 @@ Kit.suite(({ok})=>{
  {const th=begin('shepherds_wolves');step(th,'0l');ok(!live('shepherds_wolves')&&th.how==='failed','the shepherd: the trail lost, the quest failed')}
  // ---- its goals set things on the map: a band, beasts
  {const th=begin('millers_debt');step(th,'ok');step(live('millers_debt'),'2');const q=P.quests.find(x=>x.id===live('millers_debt')?.wait?.id),b=q&&t.bandits.find(x=>x.qid===q.id);
-  ok(q&&q.type==='bookband'&&b&&b.name==='Red Vipers','hunting the band: the Red Vipers set near '+q?.home);t.worldEmit('band:beaten',{band:b});ok(!live('millers_debt'),'broken: the quest ends')}
+  ok(q&&q.type==='band'&&b&&b.name==='Red Vipers','hunting the band: the Red Vipers set near '+q?.home);t.worldEmit('band:beaten',{band:b});ok(!live('millers_debt'),'broken: the quest ends')}
  {const th=begin('shepherds_wolves');step(th,'0w');const q=P.quests.find(x=>x.id===live('shepherds_wolves')?.wait?.id),m=q&&W.monsters.find(x=>x.qid===q.id);
-  ok(q&&q.type==='bookbeast'&&m,'the trail found: '+(m&&t.MONSTERS[m.id].n.toLowerCase())+' set near '+q?.home);t.worldEmit('monster:slain',{monster:m});ok(!live('shepherds_wolves'),'slain: the quest ends')}
+  ok(q&&q.type==='beasts'&&m,'the trail found: '+(m&&t.MONSTERS[m.id].n.toLowerCase())+' set near '+q?.home);t.worldEmit('monster:slain',{monster:m});ok(!live('shepherds_wolves'),'slain: the quest ends')}
  // ---- a check's odds on its button, read by Insight
  {const th=begin('millers_debt');step(th,'ok');const on=live('millers_debt');Kit.world();on.showPage();ok(G.mode==='story'&&/Talk them out of it/.test(panel())&&/Persuasion/.test(panel()),'a check on its button: the stats that help');t.Thread.store().on=[];Kit.world()}
  // ---- the givers: a tavern's card, a board's row, a lord's reply, the road
@@ -51,12 +51,12 @@ Kit.suite(({ok})=>{
   const p=begin('poorhouse_grain');step(p,'ok');ok(!Q.ready('poorhouse_grain'),'done: not again for a while');G.day+=B.poorhouse_grain.cool;ok(Q.ready('poorhouse_grain'),B.poorhouse_grain.cool+' days on: offered again')}
  // ---- phase 2: a deadline for the whole of it; a lord to beat; a rescue; the temple's and a companion's offers; a stage's name
  {const th=begin('lords_enemy'),q=P.quests.find(x=>x.id===th.wait?.id),l=q&&W.lords.find(x=>x.id===t.Quest.as(q).target),r0=t.relWith(W.lords.find(x=>x.name===th.memory.lord));
-  ok(q&&q.type==='booklord'&&l&&t.atWar(th.memory.fac,l.fac)&&/days left/.test(th.note),'an enemy lord to beat: '+l?.name+' of a realm at war with his ('+th.note+')');
-  G.day=th.memory.due+1;Q.day();ok(!live('lords_enemy')&&!P.quests.includes(q)&&th.how==='expired'&&t.relWith(W.lords.find(x=>x.name===th.memory.lord))<r0,'out of time: failed, his quest dropped, his regard lower')}
+  ok(q&&q.type==='foe'&&l&&t.atWar(th.memory.fac,l.fac)&&/days left/.test(th.note),'an enemy lord to beat: '+l?.name+' of a realm at war with his ('+th.note+')');
+  G.day=th.memory.due+1;t.Stories.day();ok(!live('lords_enemy')&&!P.quests.includes(q)&&th.how==='expired'&&t.relWith(W.lords.find(x=>x.name===th.memory.lord))<r0,'out of time: failed, his quest dropped, his regard lower')}
  {const th=begin('lords_enemy'),q=P.quests.find(x=>x.id===th.wait?.id),l=W.lords.find(x=>x.id===t.Quest.as(q).target);t.worldEmit('lord:beaten',{lord:l});ok(!live('lords_enemy')&&th.how==='ok','beaten in time: done')}
  {const th=begin('pilgrim_taken'),q=t.Quest.as(P.quests.find(x=>x.id===th.wait?.id)),s=q&&q.lair();ok(q&&q.type==='held'&&q.held.k==='lair'&&s&&th.memory.to,'a rescue: Brother Aldo held in '+th.memory.to);
   t.worldEmit('site:cleared',{site:s});ok(!live('pilgrim_taken')&&th.how==='ok','its hideout cleared: freed, done');
-  const h=Q.held({held:'holding'},th),b=Q.held({held:'band',n:'Aldo'},th);ok(h?.k==='holding'&&t.townBy(h.town)&&b?.k==='band'&&t.bandCarrying(b.cap),'or held in a holding’s prison ('+h?.town+'), or by a band set near')}
+  const h=t.Stories.held({held:'holding'},th),b=t.Stories.held({held:'band',n:'Aldo'},th);ok(h?.k==='holding'&&t.townBy(h.town)&&b?.k==='band'&&t.bandCarrying(b.cap),'or held in a holding’s prison ('+h?.town+'), or by a band set near')}
  reset();{const town=t.TOWNS.find(x=>x.T.temple);ok(town&&/qb-take.*pilgrim_taken/.test(Q.priest(town)),'the priest of '+town?.name+' asks for help')}
  reset();{P.comps={elske:{ap:2,role:''}};t.compInit('elske');const r=Q.compReplies('elske');ok(r.some(x=>x.arg==='elske_fever#elske'),'Elske, approving: something on her mind');
   t.act('qb-take','elske_fever#elske');const th=live('elske_fever');ok(th&&th.memory.comp==='elske','taken from her talk');Kit.world();th.showPage();t.act('thr-do','1');ok(!live('elske_fever')&&P.comps.elske.ap===1,'turned down: her approval −1');P.comps={}}

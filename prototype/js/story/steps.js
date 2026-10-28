@@ -374,11 +374,58 @@ class HeldQuest extends StepQuest{
   }
 }
 for(const type of ['band:beaten','site:cleared','battle:ended'])worldOn(type,d=>HeldQuest.heard(type,d));
+/* beat a band (spec: {band (its name; none: one of BAND_NAMES), n (its size; none: 4–6 and more with the days), title, text, prize,
+   say, days}): set near its holding, as a bounty's (world/quests.js BountyQuest); broken by you (band:beaten): beaten; gone to
+   ground everywhere, broken by another: over (gone) */
+class BandQuest extends StepQuest{
+  setup(t,lord,s){this.band=s.band||questRng().pick(BAND_NAMES);this.n=s.n||questRng().int(4,6)+Math.floor(G.day/12);this.giver=t.name;
+    this.title=s.title||'Break the '+this.band;this.text=s.text||'Find the '+this.band+' near '+t.name+' and break them.';this.takes(s)}
+  begin(t){const p=spotNear(t,8,16);if(!p)return false;const kind=climAt(p.x,p.y)==='desert'?'raiders':climAt(p.x,p.y)==='swamp'?'bog':'bandits';
+    const list=Rng.use('quests',()=>makeEnemies(this.n,false,kind)),ld=Rng.use('quests',()=>newChief(kind,2+Math.floor(G.day/20)));
+    bandits.push(asParty({x:p.x,y:p.y,n:this.n,kind,list,t:0,a:0,idle:true,cool:0,qid:this.id,name:this.band,ld}));this.x=p.x;this.y=p.y}
+  seek(){const b=bandits.find(x=>x.qid===this.id)||Quest.quarry(this.id)[0];return b?{x:b.x,y:b.y,name:'the '+this.band}:null}
+  get deed(){return 'band:beaten'}
+  hits(d){return d.band?.qid===this.id}
+  finish(){Quest.unmark(this.id);this.pay('beaten','beaten')}
+  todo(){return 'Break the '+this.band+'.'}
+  lapse(){if(!Quest.quarry(this.id).some(o=>!o.gone))return this.over('gone','gone');super.lapse()}
+}
+/* hunt beasts (spec: {mon (a MONSTERS id; none: of its holding's lands), n, title, text, prize, say, days}): set near its holding,
+   as a beast hunt's (world/quests.js BeastQuest); slain by you (monster:slain): slain; gone: over (gone) */
+class BeastsQuest extends StepQuest{
+  setup(t,lord,s){const ids=Object.keys(MONSTERS).filter(id=>MONSTERS[id].where.includes(t.clim)||MONSTERS[id].where.includes('forest')&&t.clim==='grass');
+    this.mon=s.mon||(ids.length?questRng().pick(ids):'wolf');const M=MONSTERS[this.mon];if(!M)return false;this.n=s.n||Math.max(...M.count);this.lv=monLevel(questRng())+1;this.giver=t.name;
+    this.title=s.title||'Hunt the '+M.n.toLowerCase();this.text=s.text||cap1(M.n.toLowerCase())+' prowl near '+t.name+'. Hunt them down.';this.takes(s)}
+  begin(t){const M=MONSTERS[this.mon],p=spotNear(t,6,14,(x,y)=>M.where.some(w=>habitatAt(x,y).includes(w)))||spotNear(t,6,14);if(!p)return false;
+    W.monsters.push(asMonster({id:this.mon,x:p.x,y:p.y,hx:p.x,hy:p.y,lv:this.lv,n:this.n,t:0,a:0,cool:0,qid:this.id}));this.x=p.x;this.y=p.y}
+  seek(){const m=W.monsters.find(x=>x.qid===this.id);return m?{x:m.x,y:m.y,name:MONSTERS[this.mon].n.toLowerCase()}:null}
+  get deed(){return 'monster:slain'}
+  hits(d){return d.monster?.qid===this.id}
+  finish(){this.pay('slain','slain')}
+  todo(){return 'Hunt the '+MONSTERS[this.mon].n.toLowerCase()+'.'}
+  lapse(){if(!W.monsters.some(m=>m.qid===this.id))return this.over('gone','gone');super.lapse()}
+}
+/* beat a lord (spec: {target (his id), title, text, prize, say, days}): where he is (in a holding: its gate); beaten by you
+   (lord:beaten): beaten; gone for good: over (gone) */
+class FoeQuest extends StepQuest{
+  setup(t,lord,s){const l=W.lords.find(x=>x.id===s.target);if(!l)return false;this.target=l.id;this.to={k:'lord',name:l.name};this.giver=t.name;this.title=s.title||'Beat '+l.name;this.text=s.text||'Beat '+l.name+' of the '+FACS[l.fac].n+' in battle.';this.takes(s)}
+  foe(){return W.lords.find(x=>x.id===this.target)||null}
+  begin(){const l=this.foe();if(l)KNOWLEDGE.lord(l)}
+  seek(){const l=this.foe();if(!l||l.dead)return null;const h=l.inside&&townBy(l.inside);return h?{x:h.x,y:h.y,name:l.name+' in '+h.name}:{x:l.x,y:l.y,name:l.name}}
+  get deed(){return 'lord:beaten'}
+  hits(d){return d.lord?.id===this.target}
+  finish(){this.pay('beaten','beaten')}
+  todo(){const l=this.foe();return 'Beat '+(l?l.name:'him')+' in battle.'}
+  lapse(){const l=this.foe();if(!l||l.gone)return this.over('gone','gone');super.lapse()}
+}
 defineKinds('step',{},{
   visit:{cls:VisitQuest},
   deliver:{cls:DeliverQuest},
   lair:{cls:LairQuest},
   held:{cls:HeldQuest},
+  band:{cls:BandQuest},
+  beasts:{cls:BeastsQuest},
+  foe:{cls:FoeQuest},
 });
 /* each moment on the map: a thread's page that waits shown once you are free; else the first step at its place reached (one a
    moment); true: something opened (the moment ends there) */

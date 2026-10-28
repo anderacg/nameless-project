@@ -16,18 +16,7 @@
        an end {end: {reward, say, failed (true: the quest failed)}}.
    Outcomes (reward, out, winOut, loseOut): story/outcome.js's keys, and rep, honor, rel as plain numbers (at the giver's holding,
    with its realm, with the lord who gave it).
-   QUEST_CHECKS: the checks a choice may name, shaped as data/encounters.js ENC_STAT's ({base, parts: [[stat or skill, per point]],
-   cap}); their odds on the button read by Insight. QUESTBOOK_OFFER: how many a giver shows at once (offers), a road's chance of
+   The checks a choice may name: QUEST_CHECKS (data/chains.js). QUESTBOOK_OFFER: how many a giver shows at once (offers), a road's chance of
    one a day (road). ---------- */
 const QUESTBOOK={};
-const QUEST_CHECKS={
-  talk:{base:.25,parts:[['pers',.05],['cha',.04]],cap:.9},
-  threaten:{base:.15,parts:[['cha',.04],['str',.04]],cap:.8},
-  sneak:{base:.2,parts:[['agi',.05],['scout',.04]],cap:.85},
-  heal:{base:.1,parts:[['med',.1],['int',.02]],cap:.95},
-  track:{base:.2,parts:[['scout',.06],['surv',.04]],cap:.9},
-  lift:{base:.15,parts:[['str',.06],['athl',.04]],cap:.85},
-  lore:{base:.15,parts:[['int',.06]],cap:.85},
-  haggle:{base:.2,parts:[['trade',.06],['cha',.02]],cap:.85}
-};
 const QUESTBOOK_OFFER={offers:2,road:.04};

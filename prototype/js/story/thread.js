@@ -170,6 +170,7 @@ class Thread extends Happening{
     const K=kindOf('thread',id);
     if(!K)return null;
     const L=this.store(),th=this.as({k:id,i:++L.n,day:G.day,at:null,wait:null,memory:{...(memory||{})},past:[]});
+    if(K.fail?.days&&th.memory.due==null)th.memory.due=G.day+K.fail.days;// (a deadline for the whole of it: story/forms.js)
     L.on.push(th);
     th.begin(at||K.first||K.steps[0].id);
     return th;
