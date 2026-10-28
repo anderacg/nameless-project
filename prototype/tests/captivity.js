@@ -90,6 +90,12 @@ Kit.suite(({ok})=>{
    t.act('held-refuse');ok(C.held.prison.hidden===q.hidden&&C.limit(C.held)===X.sold.days&&C.breakChance(C.held.prison)<C.breakChance({help:0,guard:0})+.001,'his cage: your hidden gold still on you, '+X.sold.days+' days, better kept');
    P.quests=[];P.gold=2000;t.act('held-pay');ok(!C.held&&Math.hypot(P.x-town.x,P.y-town.y)<8*t.TILE&&!P.quests.some(x=>x.type==='stash'),'paid: let go at his town; no stash for what a merchant takes');t.act('dlg-ok');P.comps={}}
   {const c={k:'band',ransom:100},q={offer:100,hidden:0};let r=.11;window.Math.random=()=>r;const a=sells.call(C,c,q);q.offer=50;const b2=sells.call(C,c,q);window.Math.random=rnd;ok(!a&&b2,'more likely sold once their ask is at its floor')}
+  // ---- let go by a realm (served, ransomed, fined): the score settled; broken out: not
+  {const f=t.FIDS[0],town=t.TOWNS.find(x=>x.owner===f),h=t.Timed.of(P,'hostile'),wrong=()=>{h.set(f,20);town.crime={until:G.day+10,fine:50}};
+   setup();wrong();C.held={k:'realm',fac:f,name:'the men of the '+t.FACS[f].n,since:G.day,ransom:100,tried:[],away:[]};C.cv=null;t.act('held-serve');
+   ok(!C.held&&!h.has(f)&&!t.crimeAt(town)&&/hold nothing against you/.test(panel()),'served them: the '+t.FACS[f].n+' hostile no more, your crime at '+town.name+' forgiven');t.act('dlg-ok');
+   setup();wrong();C.held={k:'realm',fac:f,name:'the men',since:G.day,ransom:100,tried:[],away:[],prison:{day:2,guard:0,hidden:0,offer:100,talked:false,help:0,event:''}};C.free('broke','Out.');
+   ok(h.has(f)&&t.crimeAt(town),'broken out: they still want you');t.act('dlg-ok');h.clear(f);town.crime=null}
   // ---- their stash (phase 3): what they took, in a camp or hideout of theirs near; a quest marks it; cleared, most of it back
   const stashOf=()=>P.quests.find(q=>q.type==='stash'),atLair=()=>{const l=W.sites.find(s=>s instanceof t.Lair&&!s.cleared&&!s.within);P.x=l.x+3*t.TILE;P.y=l.y;return l};
   const ransomed=()=>{setup();const l=atLair(),b=band();roll(.99);lose({kind:'party',ref:b,n:6,list:b.troops.slice(),band:'bandits'});window.Math.random=rnd;t.act('cont');const r=C.held.ransom;t.act('held-pay');return {l,r,q:t.Quest.as(stashOf())}};
