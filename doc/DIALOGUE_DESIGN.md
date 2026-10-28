@@ -1,6 +1,6 @@
 # Dialogue: talking with people: design
 
-Status: **designed** (2026-10-28), nothing built. Phases in §9; the owner's choices still open in §10.
+Status: **phase 1 built** (2026-10-28): `story/conversation.js` (`Conversation`, `Speaker`: `LordSpeaker`, `FolkSpeaker`, `GuardSpeaker`, `WorkerSpeaker`; `TalkMemory`, saved as `talk`), `data/dialogue.js` (`DIALOGUE` greetings, `TALK_PIC` portraits), the window's styles (style.css 8e). A lord, a townsperson, a guard and a worker now talk in one window: face, name and standing, what was said this visit (quoted), replies numbered 1–9 (keys answer), their own blocks, the bottom bar; their content as before, plus a greeting by memory (first meeting, again). Tests: conversation, lorddialogue, news. Phases 2–4 to come. The owner's answers (§10): both hand-written and world-built lines; the existing portraits for now, swappable (`TALK_PIC`); tempers hinted, named once known; companion approval in words; phase 1 for lords, townsfolk, guards and workers.
 
 ## 1. Today
 

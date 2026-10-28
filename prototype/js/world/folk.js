@@ -225,11 +225,11 @@ function workerMeet(f,from){
   const t=townBy(f.home);if(!t)return;G.wk=f;G.wkFrom=from||null;G.mode='dialog';P.tx=null;G.chase=null;ensureEcon(t);
   const short=Object.keys(GOODS).filter(g=>itemGood(g)&&marketState(t,g)==='shortage').slice(0,3).map(g=>GOODS[g].n.toLowerCase()),glut=Object.keys(GOODS).filter(g=>itemGood(g)&&marketState(t,g)==='surplus').slice(0,3).map(g=>GOODS[g].n.toLowerCase());
   const own=t.owner==='player',mem=remembers(t,f),rum=mem?'':rumourSay(rumourSource('estate',f.home+':'+f.k,bldSpots(t)[f.k]||f,{from:'a worker of '+t.name}));// (his estate's rumour of the day: news.js)
-  const title=cap1(an(f.job))+' of '+t.name,sub=t.owner?'Subject of the '+FACS[t.owner].n:'',body='<p>&ldquo;'+(mem?warySay(f):(foodDays(t)<2?'There is hardly any bread left in '+t.name+'.':t.pros>70?'Good times in '+t.name+'.':'We get by.')+(short.length?' We are short of '+short.join(', ')+'.':'')+(glut.length?' There is plenty of '+glut.join(', ')+'.':''))+'&rdquo;</p>'+(rum?'<p>&ldquo;And have you heard? '+rum+'&rdquo;</p>':'')+
-    '<p class="muted">'+t.name+': '+t.pop+' people, prosperity '+Math.round(t.pros)+'%, food for '+foodDays(t)+' days.'+(mem?' <span class="bad">They remember what you did.</span>':'')+'</p>'+
+  // (a talk: story/conversation.js; his words, then his estate's facts and what you can do)
+  const cv=new Conversation(new WorkerSpeaker(f,t)).say(mem?warySay(f):(foodDays(t)<2?'There is hardly any bread left in '+t.name+'.':t.pros>70?'Good times in '+t.name+'.':'We get by.')+(short.length?' We are short of '+short.join(', ')+'.':'')+(glut.length?' There is plenty of '+glut.join(', ')+'.':''));if(rum)cv.say('And have you heard? '+rum);
+  const body='<p class="muted">'+t.name+': '+t.pop+' people, prosperity '+Math.round(t.pros)+'%, food for '+foodDays(t)+' days.'+(mem?' <span class="bad">They remember what you did.</span>':'')+'</p>'+
     railKeyActions(workerDeeds(t,f),own?'':'Robbing or press-ganging: reputation in '+t.name+' falls, the '+(t.owner?FACS[t.owner].n:'owner')+' resents it, and its workers flee the fields for a while.'),close=['dlg-close',null,'Leave'];
-  if(from)estateRail(from,'folk',{title,sub,body,back:['wk-back',null,'Back'],close},'wk');
-  else showPanel('<div class="top"><h2>'+title+'</h2><span class="muted">'+sub+'</span></div>'+body+nav(null,close));
+  cv.show(from?{rail:[from,'folk','wk'],body,back:['wk-back',null,'Back'],close}:{body,close});
 }
 // his deeds: Hire; someone else's worker, Rob and Press-gang (each asks first: wk-ask)
 // (whoever you take on joins as what he is, a farmer, a woodcutter, a miner: tier 0, trained up to a levy (data/units.js peasantKind))

@@ -17,6 +17,7 @@
      8b. rail windows  a town's places or a holding's buildings down the left, the chosen one's window beside it (window.js)
      8c. full map      the world's map in a window (M, or the minimap): the map, its marks, its legend (map.js)
      8d. quests        your Quests (C): the list and the one chosen in full; the quests' facts, the boards' too (questwindow.js)
+     8e. conversations a talk with someone: their face and name, what was said, your replies (story/conversation.js)
      9. responsive     compact screens (phones, small windows), touch pointers, phones held upright
    ===================================================================================================================== */
 
@@ -983,6 +984,23 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 }
 @container ovl (max-width:520px){.qfacts{grid-template-columns:minmax(0,1fr);gap:1px}.qfacts dd{margin-bottom:5px}}
 
+/* ---------- 8e. conversations ---------- */
+/* story/conversation.js: a talk with someone. Its head (their face, big and pixel-sharp, their name and standing), what has been
+   said this visit (their words quoted, the rest told, the newest last), the replies (numbered: keys 1-9), then the speaker's own
+   blocks; the bottom bar is the window's (nav) */
+.talk-head{display:flex;gap:var(--sp-3);align-items:center;margin-bottom:var(--sp-2)}
+.talk-head h2{margin:0}
+.talk-pic{width:64px;height:64px;object-fit:contain;image-rendering:pixelated;background:var(--field);border:1px solid var(--line);border-radius:var(--r-sm);flex:none}
+.talk-who{min-width:0}
+.talk-lines{display:grid;gap:var(--sp-1);margin:var(--sp-2) 0;padding:var(--sp-2) var(--sp-3);background:var(--field);border-left:2px solid var(--trim);border-radius:var(--r-sm)}
+.talk-line{margin:0}
+.talk-line b{color:var(--accent);margin-right:var(--sp-1)}
+.talk-told{color:var(--fg-2)}
+.talk-told p{margin:0}
+.talk-replies{display:grid;gap:var(--sp-1);margin:var(--sp-2) 0}
+.talk-r{justify-content:flex-start;text-align:left}
+.talk-k{display:inline-block;min-width:16px;margin-right:var(--sp-2);color:var(--faint);font-size:var(--fs-xs)}
+
 /* ---------- 9. responsive ---------- */
 /* a touch screen: everything you press at least 44 px, and nothing that only hovering shows */
 @media (pointer:coarse){
@@ -1000,6 +1018,7 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 }
 /* a small screen (a phone on its side, a small window): the HUD tightens; the details you can open stay out of the way */
 @media (max-height:600px),(max-width:820px){
+  .talk-pic{width:44px;height:44px}.talk-lines{padding:var(--sp-1) var(--sp-2)}
   :root{--edge:6px;--fs-hero:38px}
   .pcard{width:226px;padding:6px 8px 7px}
   .pc-head{margin-bottom:5px}.pc-pic{width:30px;height:30px}

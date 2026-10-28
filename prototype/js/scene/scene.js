@@ -45,9 +45,10 @@ const sceneNear=S=>{let best=null,bd=TALK_R;for(const n of S.npcs){const d=Math.
 function sceneUse(){const S=G.scene;if(!S||G.modal)return;const n=sceneNear(S);if(n)sceneTalk(n)}
 function sceneTalk(n){
   const S=G.scene,t=townBy(S.ref);S.p.goal=null;S.p.path=null;
-  if(n.folk)return sceneSay(n.name||'A townsperson','&ldquo;'+sceneGossip(t)+'&rdquo;');
+  // (a townsperson or a guard: a talk, story/conversation.js)
+  if(n.folk)return new Conversation(new FolkSpeaker(n,t)).say(sceneGossip(t)).show({close:['scene-back',null,'Back to the streets']});
   if(n.lord){const l=W.lords.find(x=>x.id===n.lord);if(l&&!l.dead)return lordMeet(l);return}
-  if(n.guard)return sceneSay('Guard','&ldquo;'+(hostileTo(t.owner)?'Keep your hand off your sword, stranger.':'Move along. The gate shuts at nightfall.')+'&rdquo;');
+  if(n.guard)return new Conversation(new GuardSpeaker(n,t)).say(hostileTo(t.owner)?'Keep your hand off your sword, stranger.':'Move along. The gate shuts at nightfall.').show({close:['scene-back',null,'Back to the streets']});
   const R=SCENE_ROLES[n.role];
   if(n.role==='priest'){const fresh=t.blessDay!==G.day;if(fresh){t.blessDay=G.day;P.morale=clamp(P.morale+BLESSING.morale,0,100);updateHUD(true)}
     return sceneSay(R.n,'&ldquo;'+R.say+'&rdquo;'+(fresh?'<br><span class="good">You rest in the cool of the temple. Morale +'+BLESSING.morale+'.</span>':'<br><span class="muted">You have prayed here today.</span>'))}

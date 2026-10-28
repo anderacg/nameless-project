@@ -280,13 +280,12 @@ function lordMeet(l,topic){
   KNOWLEDGE.sight(l);
   if(hostileTo(l.fac)&&!lordSpares(l))return cornered(l,'lord')?parley(l,'lord'):startEncounter({kind:'lord',ref:l,list:l.troops.slice()});
   const talk=['dialog','scene'].includes(G.mode)&&G.enc&&G.enc.kind==='lord'&&G.enc.ref===l&&G.enc.talk||{};
-  G.enc={kind:'lord',ref:l,talk};G.mode=l.inside&&G.scene?'scene':'dialog';P.tx=null;const f=FACS[l.fac];
-  if(topic==='rumours'&&talk.rumours==null)talk.rumours=rumourSay(rumourSource('lord',l.id,l,{fac:l.fac,from:l.name}))||'I have heard nothing new.';
-  if(topic==='lords'&&talk.lords==null){talk.lords=lordTies(l,false)||'<p>I have no other lords to speak of.</p>';KNOWLEDGE.hear(talk.lords)}
-  const st=hostileTo(l.fac)?'Your realms are at odds, but '+l.name+' will not draw on a friend.':P.fac===l.fac?'You serve the '+f.n+'.':P.fac?'Your employer is at '+(relOf(P.fac,l.fac).s==='ally'?'alliance':'peace')+' with them.':'They have no quarrel with you.';
-  showPanel('<h2>'+l.name+'</h2><p class="muted">Lord of the <span style="color:'+f.col+'">'+f.n+'</span>, leading '+l.troops.length+' soldiers (power '+l.power()+' vs your '+partyPower()+').</p><p class="muted">Level '+lordStats(l).lv+' · renown '+(l.renown||0)+' · Leadership '+lordSkill(l,'lead')+' · Tactics '+lordSkill(l,'tact')+' · Medicine '+lordSkill(l,'med')+' · leads up to '+lcapOf(l)+'.</p><p>'+st+'</p>'+
-    (talk.rumours?'<p>'+htmlText(l.name)+': &ldquo;'+talk.rumours+'&rdquo;</p>':'')+(talk.lords||'')+'<div class="btns">'+dlgBtn('lr-rumours',l.id,'Ask for rumours')+dlgBtn('lr-lords',l.id,'Ask about other lords')+'</div>'+relHtml(l,!talk.lords)+(l.inside?'<p class="muted">Holding court in '+l.inside+', with '+l.troops.length+' soldiers quartered alongside the garrison.</p>':'')+lordJobHtml(l)+'<div class="btns">'+(P.fac===l.fac||l.inside?'':'<button class="btn" type="button" data-act="lord-attack">Attack</button>')+'</div>'+
-    (P.fac===l.fac||l.inside?'':'<p class="muted">Attacking makes the '+f.n+' hostile to you for 20 days.</p>')+nav(null,['lord-leave',null,'Leave']));
+  G.enc={kind:'lord',ref:l,talk};G.mode=l.inside&&G.scene?'scene':'dialog';P.tx=null;
+  // (the talk: story/conversation.js; its answers kept on the visit's talk, said once each)
+  const cv=talk.cv||(talk.cv=new Conversation(new LordSpeaker(l)));
+  if(topic==='rumours'&&talk.rumours==null){talk.rumours=rumourSay(rumourSource('lord',l.id,l,{fac:l.fac,from:l.name}))||'I have heard nothing new.';cv.say(talk.rumours)}
+  if(topic==='lords'&&talk.lords==null){talk.lords=lordTies(l,false)||'<p>I have no other lords to speak of.</p>';KNOWLEDGE.hear(talk.lords);cv.say(talk.lords,true)}
+  cv.show({body:cv.sp.body(talk),close:['lord-leave',null,'Leave']});
 }
 // its work in the world's day and frame (core/systems.js)
 Systems.add({name:'realms',order:{day:30},day:worldDay});

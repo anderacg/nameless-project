@@ -77,11 +77,13 @@ js/data/              tables only, no game logic: races, factions, units, monste
                       quests (the boards' JOB_OFFERS and JOB_REFRESH, QUEST_LATE, QUEST_CLOSED, QUEST_ABANDON (a job given up),
                       JOB_NEEDS (what a job asks of you), the journal's QUEST_CATS, QUEST_STATES and QUEST_ARCHIVE),
                       names (NAMING: a name's length and your band's default; the word tables of a random band name),
-                      tracks (TRACKS: the prints every band leaves, how clear on each ground, how long they last, who sees them)
+                      tracks (TRACKS: the prints every band leaves, how clear on each ground, how long they last, who sees them),
+                      dialogue (DIALOGUE: a speaker's first words by role; TALK_PIC: each role's portrait, swappable)
 js/story/             the story system's shared parts (doc/STORY_DESIGN.md, S0–S3, S5, ST2): context.js (storyCtx: where, when, who, the
                       weather, once a frame), outcome.js (Outcome: what a choice does, declared, and its words), choice.js (Choice,
                       and ChoicePage: the one page for any happening's, thing's or place's choices), kinds.js (the kinds registry:
-                      defineKind, kindOf, the triggers' buckets), happening.js (Happening, the base of every shape), encounter.js (the encounters' Behaviours and Encounter),
+                      defineKind, kindOf, the triggers' buckets), conversation.js (Conversation, Speaker and its kinds, TalkMemory:
+                      one window for talking with a lord, a townsperson, a guard, a worker; doc/DIALOGUE_DESIGN.md), happening.js (Happening, the base of every shape), encounter.js (the encounters' Behaviours and Encounter),
                       incident.js (Incident: the incidents' shape, and their daily roll), quest.js (Quest: the jobs' shape, their deeds heard on the bus),
                       thread.js (Thread: steps of happenings sharing a memory: the chains), gathering.js (Gathering: held at a
                       place on set days, announced ahead; its calendar; framework only), steps.js (a chain's reusable step
