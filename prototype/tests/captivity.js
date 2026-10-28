@@ -9,6 +9,7 @@ Kit.suite(({ok})=>{
  const setup=()=>{Kit.world();C.held=null;C.scattered=[];P.quests=[];P.troops={hum_foot:8};P.gold=400;P.hp=t.vitals()[0];P.fac=null;P.gear.mount=null;const gid=Object.keys(t.ITEMS).find(k=>t.ITEMS[k].slot==='weapon');t.invAdd('gear',gid,1);t.invAdd('gear',gid,1);t.invAdd('gear',gid,1)};
  const lose=e=>{t.startEncounter(e);t.concludeEncounter(false,{},0,true,[],null,{})};
  const gearN=()=>P.inv.filter(s=>s&&s.k==='gear').reduce((n,s)=>n+(s.n||1),0);
+ const sells=C.sells;C.sells=()=>false;// (no sale but where it is tested: below)
  try{
   // ---- who takes you
   ok(t.Captivity.captor({kind:'monster',ref:{}})===null&&C.captor({kind:'party',ref:{kind:'bandits'}}).k==='band'&&C.captor({kind:'lord',ref:W.lords[0]}).k==='lord','beasts take no captives; a band and a lord do');
@@ -78,6 +79,17 @@ Kit.suite(({ok})=>{
    t.act('held-pay');const o=Math.hypot(P.x-l.x,P.y-l.y)/t.TILE;ok(!C.held&&o<4,'ransomed: let go at their camp ('+o.toFixed(1)+' tiles)');t.act('dlg-ok')}
   {setup();const f=t.FIDS[0],home=t.TOWNS.find(x=>x.owner===f);C.held={k:'realm',fac:t.FIDS[1],name:'the men of the '+t.FACS[t.FIDS[1]].n,at:{k:'holding',town:t.TOWNS.find(x=>x.owner===t.FIDS[1]).name},away:[]};P.fac=f;C.free('light','Paid.',0,true);
    const n=t.Spatial.nearest(t.fiefsOf(f),P.x,P.y);ok(n&&n.owner===f&&Math.hypot(P.x-n.x,P.y-n.y)<6*t.TILE,'your realm pays: freed at a holding of your realm ('+n.name+')');t.act('dlg-ok');P.fac=null}
+  // ---- sold on to a ransom broker: far off, all but your hidden gold kept by the band, a dearer price, his shorter cage
+  {setup();P.comps={brann:{ap:5,role:''}};t.compInit('brann');const l=W.sites.find(s=>s instanceof t.Lair&&!s.cleared&&!s.within);P.x=l.x+3*t.TILE;P.y=l.y;const b=band();
+   let k=0;const seq=[.99,0];window.Math.random=()=>seq[k++]??.99;lose({kind:'party',ref:b,n:6,list:b.troops.slice(),band:'bandits'});t.act('cont');t.act('held-refuse');const q=C.held.prison,base=C.ransomOf({k:'band'});ok(C.held.away.includes('brann'),'Brann got away as you were taken');
+   C.sells=()=>true;window.Math.random=()=>.99;t.act('held-wait');window.Math.random=rnd;C.sells=()=>false;const h=C.held,town=h&&t.townBy(h.town),far=town&&Math.hypot(town.x-l.x,town.y-l.y)/t.TILE;
+   ok(h&&h.k==='broker'&&town.T.broker&&Math.hypot(P.x-town.x,P.y-town.y)<8*t.TILE&&/Sold/.test(panel()),'sold to the ransom broker of '+(town&&town.name)+', carried there ('+(far|0)+' tiles from their camp)');
+   ok(P.gold===q.hidden&&!t.troopCount()&&P.quests.some(x=>x.type==='stash'&&x.holder.k==='site'&&x.holder.i===l.i),'the band keeps all but the '+q.hidden+'g you hid, in its stash (a quest marks it)');
+   ok(h.ransom===Math.round(base*X.sold.price/5)*5&&!h.away.length&&/lose[s]? track/.test(panel()),'his price is dearer ('+h.ransom+'g); Brann loses track of you');
+   ok(document.querySelector('[data-act="held-serve"]')?.textContent.includes('Work off')&&Math.abs(C.persuadeChance(h)-C.persuadeChance({k:'band'})*X.sold.persuade)<.2,'his page: work off your price; harder to talk round');
+   t.act('held-refuse');ok(C.held.prison.hidden===q.hidden&&C.limit(C.held)===X.sold.days&&C.breakChance(C.held.prison)<C.breakChance({help:0,guard:0})+.001,'his cage: your hidden gold still on you, '+X.sold.days+' days, better kept');
+   P.quests=[];P.gold=2000;t.act('held-pay');ok(!C.held&&Math.hypot(P.x-town.x,P.y-town.y)<8*t.TILE&&!P.quests.some(x=>x.type==='stash'),'paid: let go at his town; no stash for what a merchant takes');t.act('dlg-ok');P.comps={}}
+  {const c={k:'band',ransom:100},q={offer:100,hidden:0};let r=.11;window.Math.random=()=>r;const a=sells.call(C,c,q);q.offer=50;const b2=sells.call(C,c,q);window.Math.random=rnd;ok(!a&&b2,'more likely sold once their ask is at its floor')}
   // ---- their stash (phase 3): what they took, in a camp or hideout of theirs near; a quest marks it; cleared, most of it back
   const stashOf=()=>P.quests.find(q=>q.type==='stash'),atLair=()=>{const l=W.sites.find(s=>s instanceof t.Lair&&!s.cleared&&!s.within);P.x=l.x+3*t.TILE;P.y=l.y;return l};
   const ransomed=()=>{setup();const l=atLair(),b=band();roll(.99);lose({kind:'party',ref:b,n:6,list:b.troops.slice(),band:'bandits'});window.Math.random=rnd;t.act('cont');const r=C.held.ransom;t.act('held-pay');return {l,r,q:t.Quest.as(stashOf())}};
@@ -96,6 +108,6 @@ Kit.suite(({ok})=>{
   // ---- a captivity and the scattered are kept in the save
   setup();b=band();roll(.99);lose({kind:'party',ref:b,n:6,list:b.troops.slice(),band:'bandits'});window.Math.random=rnd;t.act('cont');C.scattered.push({type:'hum_foot',n:2,at:t.Clock.hours()+30});
   {const s=JSON.stringify(C.save());C.held=null;C.scattered=[];C.load(JSON.parse(s));ok(C.held&&C.held.k==='band'&&C.scattered.length===1,'held and scattered come back with a save');t.hidePanel();G.mode='world';G.modal=false;C.hour();ok(G.mode==='dialog'&&/Taken captive/.test(panel()),'loaded while held: the captor’s page opens again');t.act('held-refuse');t.act('dlg-ok')}
- }finally{window.Math.random=rnd;C.held=null;C.scattered=[]}
+ }finally{window.Math.random=rnd;C.held=null;C.scattered=[];C.sells=sells}
  ok(!ERR.length,'no runtime errors');
 });
