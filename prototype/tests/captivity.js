@@ -96,6 +96,10 @@ Kit.suite(({ok})=>{
    ok(!C.held&&!h.has(f)&&!t.crimeAt(town)&&/hold nothing against you/.test(panel()),'served them: the '+t.FACS[f].n+' hostile no more, your crime at '+town.name+' forgiven');ok(t.honorWith(f)===hon,'and no honour won back for it: a debt paid earns no praise');t.act('dlg-ok');
    setup();wrong();C.held={k:'realm',fac:f,name:'the men',since:G.day,ransom:100,tried:[],away:[],prison:{day:2,guard:0,hidden:0,offer:100,talked:false,help:0,event:''}};C.free('broke','Out.');
    ok(h.has(f)&&t.crimeAt(town),'broken out: they still want you');t.act('dlg-ok');h.clear(f);town.crime=null}
+  // ---- let go by a realm at war with yours: far from its gate
+  {const f=t.FIDS[0],g=t.FIDS.find(x=>x!==f),town=t.TOWNS.find(x=>x.owner===f),w0=t.W.rel[t.rk(f,g)];setup();P.fac=g;t.W.rel[t.rk(f,g)]={s:'war',since:G.day};
+   C.held={k:'realm',fac:f,name:'the men',since:G.day,ransom:100,tried:[],away:[],at:{k:'holding',town:town.name}};C.cv=null;P.gold=500;t.act('held-pay');
+   const d=Math.hypot(P.x-town.x,P.y-town.y)/t.TILE;ok(!C.held&&d>=X.release.far-3,'at war with your realm: let go far from '+town.name+' ('+d.toFixed(1)+' tiles)');t.act('dlg-ok');t.W.rel[t.rk(f,g)]=w0;P.fac=null}
   // ---- their stash (phase 3): what they took, in a camp or hideout of theirs near; a quest marks it; cleared, most of it back
   const stashOf=()=>P.quests.find(q=>q.type==='stash'),atLair=()=>{const l=W.sites.find(s=>s instanceof t.Lair&&!s.cleared&&!s.within);P.x=l.x+3*t.TILE;P.y=l.y;return l};
   const ransomed=()=>{setup();const l=atLair(),b=band();roll(.99);lose({kind:'party',ref:b,n:6,list:b.troops.slice(),band:'bandits'});window.Math.random=rnd;t.act('cont');const r=C.held.ransom;t.act('held-pay');return {l,r,q:t.Quest.as(stashOf())}};

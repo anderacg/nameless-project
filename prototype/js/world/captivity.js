@@ -30,7 +30,7 @@
    fewer from your bag, half the service). ---------- */
 const CAPTIVITY={escape:{base:.25,agi:.03,skill:.02,mounted:.15,night:.1,cover:.1,riders:.25,hurt:.15,min:.05,max:.9},
   ransom:{base:40,renown:.4,level:15,lord:1.5,harsh:1.25},persuade:{base:.2,cha:.04,pers:.04,renown:.001,honor:.004,regard:.004,war:.15,min:.05,max:.85,fine:.1},
-  serve:{band:[4,6],lord:[5,8],rep:6,honor:4},realm:{honor:20,days:[3,5],daily:.25},prison:{days:21,hidden:.15,fall:.04,floor:.5,break:{base:.12,agi:.02,athl:.01,guard:.06,min:.03,max:.6,hurt:.4,fails:2},beat:.2,heal:.1,bribe:{base:20,guard:15,ch:.6,step:.15},events:.35,help:.15,rescue:{each:.07,max:.3}},stash:{back:.6,fence:.5,days:30,near:60},release:{by:2,out:5},sold:{daily:.05,renown:.0005,floor:.1,far:40,price:1.2,persuade:.6,work:[3,5],days:10,harder:.06},traits:{slippery:{escape:.15,break:.1},silver:.15,oldsoldier:{cost:.75,serve:.5}},scatter:{base:.35,morale:.3,lead:.04,min:.2,max:.9,days:[1,3]},light:[1,2],
+  serve:{band:[4,6],lord:[5,8],rep:6,honor:4},realm:{honor:20,days:[3,5],daily:.25},prison:{days:21,hidden:.15,fall:.04,floor:.5,break:{base:.12,agi:.02,athl:.01,guard:.06,min:.03,max:.6,hurt:.4,fails:2},beat:.2,heal:.1,bribe:{base:20,guard:15,ch:.6,step:.15},events:.35,help:.15,rescue:{each:.07,max:.3}},stash:{back:.6,fence:.5,days:30,near:60},release:{by:2,out:5,far:12},sold:{daily:.05,renown:.0005,floor:.1,far:40,price:1.2,persuade:.6,work:[3,5],days:10,harder:.06},traits:{slippery:{escape:.15,break:.1},silver:.15,oldsoldier:{cost:.75,serve:.5}},scatter:{base:.35,morale:.3,lead:.04,min:.2,max:.9,days:[1,3]},light:[1,2],
   beast:{hp:.25}};
 class Captivity{
   static held=null;static scattered=[];
@@ -151,10 +151,11 @@ class Captivity{
   // (you at it: a holding's gate, a camp's edge (release.by tiles); out tiles off it, away from it: broken out)
   static put(s,out=0){if(s.town)heroAtGate(s.town);else{P.x=s.x;P.y=s.y+CAPTIVITY.release.by*TILE}
     if(out){const a=Math.atan2(P.y-s.y,P.x-s.x)+(Math.random()-.5);P.x+=Math.cos(a)*out*TILE;P.y+=Math.sin(a)*out*TILE}unstick(P);P.tx=P.ty=null;P.stuck=0}
-  // freed: your realm's ransom at its nearest holding; broken out (or by your companions), off their camp or holding, alone; any
-  // other way, at their gate; their place gone, at the nearest holding not hostile to you (the rest of the way)
+  // freed: your realm's ransom at its nearest holding; broken out (or by your companions), off their camp or holding, alone (out
+  // tiles); let go by a realm at war with yours, far from its gate (far tiles: clear of its watch and its caravans); any other way,
+  // at their gate; their place gone, at the nearest holding not hostile to you (the rest of the way)
   static release(c,how,realm){const home=realm&&P.fac&&Spatial.nearest(fiefsOf(P.fac),P.x,P.y),s=!home&&c.at&&this.spot(c.at);
-    if(home)heroAtGate(home);else if(s)this.put(s,how==='broke'?CAPTIVITY.release.out:0);else{const safe=TOWNS.filter(t=>!hostileTo(t.owner));heroAtGate(Spatial.nearest(safe.length?safe:TOWNS,P.x,P.y))}
+    const X=CAPTIVITY.release,war=!!P.fac&&!!c.fac&&atWar(P.fac,c.fac);if(home)heroAtGate(home);else if(s)this.put(s,war?X.far:how==='broke'?X.out:0);else{const safe=TOWNS.filter(t=>!hostileTo(t.owner));heroAtGate(Spatial.nearest(safe.length?safe:TOWNS,P.x,P.y))}
     G.lastTown=Spatial.nearestHolding(P.x,P.y);G.encCool=4;return home||s||G.lastTown}
   // their stash: where it is (where they kept you, else placeOf), and the quest that marks it; null: nowhere
   static stash(c,gold,gear){const holder=c.at||this.placeOf(c);
