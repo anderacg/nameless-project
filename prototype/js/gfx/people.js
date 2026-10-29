@@ -172,8 +172,9 @@ function drawFigure(g,o,ox,oy,walk,style,atk,cut){
   if(h==='crown'){set(6,1,PPAL.gold[1]);set(7,1,PPAL.red[1]);set(8,1,PPAL.gold[2]);set(6,0,PPAL.gold[0]);set(8,0,PPAL.gold[1])}
   if(h==='circlet'){set(5,2,PPAL.gold[1]);set(6,2,PPAL.gold[0]);set(7,2,PPAL.teal[0]);set(8,2,PPAL.gold[1]);set(9,2,PPAL.gold[2])}
   if(h==='skull'){const W=PPAL.white;set(6,1,W[0]);set(7,1,W[1]);set(8,1,W[1]);set(5,2,W[1]);set(6,2,PEOPLE_OUT);set(7,2,W[1]);set(8,2,PEOPLE_OUT);set(9,2,W[2])}
-  // the shield on its left, in front
-  if(o.shield){const C=pal(o.shield),Tm=pal(o.team);for(let y=8;y<=11-sh;y++){set(2,y,C[1]);set(3,y,y===8?C[0]:C[2])}set(2,9,Tm[1]);set(2,10-sh,Tm[2]);set(3,12-sh,C[3]);set(2,12-sh,C[2])}
+  // the shield on its left, in front; raised to meet a blow (guardUp), up before his chest and face
+  if(o.shield&&o.guardUp){const C=pal(o.shield),Tm=pal(o.team);for(let y=5;y<=11-sh;y++){set(11,y,y===5?C[0]:C[2]);set(12,y,y===5?C[0]:C[1]);set(13,y,y===11-sh?C[3]:C[2])}set(12,7,Tm[1]);set(12,8,Tm[1]);set(11,8,Tm[2]);set(13,8,Tm[2])}
+  else if(o.shield){const C=pal(o.shield),Tm=pal(o.team);for(let y=8;y<=11-sh;y++){set(2,y,C[1]);set(3,y,y===8?C[0]:C[2])}set(2,9,Tm[1]);set(2,10-sh,Tm[2]);set(3,12-sh,C[3]);set(2,12-sh,C[2])}
   drawWeapon(g,o,ox,oy+bob,style,atk,sh);
   return[ox+11,oy+bob+10-sh];// (the weapon hand: weapons.js holds a weapon there)
 }
@@ -284,8 +285,8 @@ function peopleSprite(o,pose,bare){
   // (pose 1: a breath in, walk -2)
   // (19-22: climbing, walk 8-11; 23-26: descending, walk 12-15; a rider's mount just walks)
   const walk=pose===1?-2:pose>=2&&pose<=5?pose-2:pose>=15&&pose<=18?pose-11:pose>=19&&pose<=26?(o.mount?(pose-19)%4:pose-11):-1,blow=pose>=6&&pose<=14,atk=blow?(pose-6)%3:-1,style=!blow?null:pose>=12?'overhead':pose>=9?'thrust':'swing';
-  // (bare: the melee weapon left off, to be held apart: weapons.js)
-  if(bare&&heldWeapon(o))o={...o,weapon:null};
+  // (bare: the melee weapon left off, to be held apart: weapons.js; DEF_POSE: standing, his shield raised before him)
+  if(bare&&heldWeapon(o))o={...o,weapon:null};if(pose===DEF_POSE)o={...o,guardUp:true};
   if(o.mount){const g=pgrid(32,32),top=drawMount(g,o,walk),hand=drawFigure(g,{...o,shield:null},6,top-6,-1,style,atk,12);g.fh=32-(top-6);
     // the rider's leg down the mount's side
     const Lc=lettersOf(o);pset(g,11,top+7,Lc.L);pset(g,11,top+8,Lc.L);pset(g,11,top+9,Lc.F);poutline(g);const c=pcanvas(g);c.fh=g.fh;c.hand=hand;return c}

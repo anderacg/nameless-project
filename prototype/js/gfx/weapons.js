@@ -33,14 +33,15 @@ function drawBlade(set,hx,hy,deg,k,Tm,skin){
   set(hx,hy,skin)}
 // how he holds it now: [angle (degrees, 0 forward, -90 up), hand dx, hand dy] by what he is doing
 const HOLD={
-  // at rest, on the march, in a charge, in guard near a foe, stunned
-  blade:{rest:62,march:-128,run:-122,guard:-38,stun:85},heavy:{rest:58,march:-140,run:-118,guard:-55,stun:85},
-  pole:{rest:-90,march:-90,run:-6,guard:0,stun:70},lance:{rest:-72,march:-76,run:4,guard:2,stun:60}};
+  // at rest, on the march, in a charge, in guard near a foe, stunned, a parry (raised across before him: battle/defence.js)
+  blade:{rest:62,march:-128,run:-122,guard:-38,stun:85,parry:-78},heavy:{rest:58,march:-140,run:-118,guard:-55,stun:85,parry:-72},
+  pole:{rest:-90,march:-90,run:-6,guard:0,stun:70,parry:-48},lance:{rest:-72,march:-76,run:4,guard:2,stun:60,parry:-40}};
 function holdOf(u,k){
   const kind=k==='lance'?'lance':POLE(k)?'pole':k==='great'||k==='bigaxe'||k==='hammer'?'heavy':'blade',H=HOLD[kind],t=u.tgt&&u.tgt.hp>0?u.tgt:null,f=u.face||1;
   // the foe's direction as he sees it (he faces right in his own picture)
   const aim=t?clamp(Math.atan2(t.y-6-(u.y-6),Math.abs(t.x-u.x)+.01)*180/Math.PI,-40,35):0;
   if(u.stun>0)return[H.stun,0,1];
+  if(Defence.now(u)==='parry')return[H.parry,2,-2];
   if(u.atkAt!=null&&B.t-u.atkAt<ATK_ANIM){const p=(B.t-u.atkAt)/ATK_ANIM,st=u.atkStyle||'swing';
     if(st==='thrust'||POLE(k)&&st!=='overhead'){const push=Math.sin(Math.PI*Math.min(1,p*1.3));return[POLE(k)?aim:aim-10,-2+push*5,0]}
     // (a wind-up held a moment, then the strike, fast, then it comes back a little)

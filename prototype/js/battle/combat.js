@@ -128,6 +128,7 @@ class HeroHands{
   }
   // one hero blow on one enemy: matchup, crit, knockback, stagger, combo count
   hitFoe(e,mult,o){
+    if(!this.hard&&this.step!==heroCombo().length-1&&Defence.stops(B.hero,e))return;// (met in his stance: defence.js; the finisher, a hard attack never)
     const h=B.hero,X=this,dt=o.dt||shapeDt(o.shape,h.s.dt),mu=matchup(h.s,e.s,dt);let dm=h.s.dmg*(.85+Math.random()*.3)*mu*mult*(h.buffT>0?1.3:1)*(MANUAL_HERO?1:tiredMul(h).dmg);
     if(!o.noCrit&&Math.random()<(has('bloodlust')?.2:.1)+gm('crit')){dm*=1.8;B.floats.push({x:e.x,y:e.y-22,t:'Crit',life:.6,c:'#ffd24a'})}
     Actor.of(e).wound(dm*formTaken(e,h),mu,dt,h,false);vfxHit(h,e,dm,{crit:dm>h.s.dmg*1.7});train(meleeSk(),2);

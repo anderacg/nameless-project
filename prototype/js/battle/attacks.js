@@ -90,7 +90,8 @@ class Fighter{
     const u=this.u,s=u.s;if(!s.range){const H=Moveset.hardNow(u,t);if(H)return this.windUp(t,H)}// (a hard attack ready: wound up first, movesets.js)
     u.cd=s.cd*(.9+Math.random()*.2);u.atkAt=B.t;if(B.sight)sightStruck(u,t);// (a blow or a shot loosed gives him away: terrain.js)
     if(s.range){const flat=s.magic||s.flat,E=this.aimErr(),k=B.world?WORLD_BATTLE.sprite:1,ty=B.world&&flat?t.y-(t.s.mounted||t.s.big?10:6)*k:t.y;Missile.fire(u,Math.atan2(ty-(flat?u.y-6*k:u.y),t.x-u.x)+spreadOf(E),s.dmg*(.85+Math.random()*.3)*(u.buffT>0?1.3:1)*arrowMul(u),arrowSrc(u,s),Math.hypot(t.x-u.x,t.y-u.y),{sc:E.d});if(!s.magic&&sfxOn()&&sndTurn('loose'))sfxAt('loose',u.x,u.y)}// (fire arrows: unitabilities.js)
-    else{let dm=s.dmg*(.8+Math.random()*.4)*chargeMul(u,t)*tiredMul(u).dmg;fatigueBlow(u);// (a charge: by how far it ran, braced spears blunt it, morale.js; tired, softer: fatigue.js)
+    else{const cm=chargeMul(u,t);let dm=s.dmg*(.8+Math.random()*.4)*cm*tiredMul(u).dmg;fatigueBlow(u);// (a charge: by how far it ran, braced spears blunt it, morale.js; tired, softer: fatigue.js)
+      if(cm<=DEFENCE.charge&&Defence.stops(u,t))return this.follow(t,dm,true);// (met: blocked, parried or dodged, defence.js)
       this.hit(t,dm);if(PHYSICS.on)physBlow(u,t);this.follow(t,dm)}// (a heavy one's blow pushes men: physics.js)
     if(s.range)this.useAmmo(s);
   }
@@ -109,15 +110,15 @@ class Fighter{
     this.hit(t,dm);if(PHYSICS.on)physBlow(u,t,H);
     if(H.area)for(const o of spatialOn()?SG.near(t.x,t.y,H.area+13,u.team,true):B.units)if(o!==t&&o.hp>0&&battleEnemy(u,o)&&Math.hypot(o.x-t.x,o.y-t.y)-(o.s.big?12:0)<=H.area){this.hit(o,dm*.5);if(PHYSICS.on)physBlow(u,o,H)}
     B.slashes.push({kind:'slam',x:u.x,y:u.y-6,a,life:.22,max:.22,arc:.8,r:(s.reach||11)+2,w:2,dir:1,area:H.area||9,col:'255,190,90'});fx(t.x,t.y,'#a89a78',8);shakeIt(2)}
-  // a troop's melee blow: the look of its weapon, and what it does beyond the one it hits
-  follow(t,dm){
+  // a troop's melee blow: the look of its weapon, and what it does beyond the one it hits (met: stopped, its look only)
+  follow(t,dm,met){
     const u=this.u,s=u.s,a=Math.atan2(t.y-u.y,t.x-u.x),R=(s.reach||11)+2;u.face=Math.cos(a)>=0?1:-1;u.atkN=(u.atkN||0)+1;
     if(s.beast){B.slashes.push({kind:'claw',x:t.x,y:t.y-8,a,life:.18,max:.18,col:'255,255,255',w:1});return}
     const style=troopStyle(u);u.atkStyle=style;
     if(style==='thrust'){B.slashes.push({kind:'thrust',x:u.x,y:u.y-6,a,life:.14,max:.14,r:R+4,w:1,col:'230,236,255',wid:3});
-      const b=(spatialOn()?SG.near(u.x,u.y,R+14+31,u.team,true):B.units).find(o=>o!==t&&o.hp>0&&battleEnemy(u,o)&&inShape(u.x,u.y,a,R+14,{shape:'thrust',wid:5},o));if(b)this.hit(b,dm*.5)}
+      if(met)return;const b=(spatialOn()?SG.near(u.x,u.y,R+14+31,u.team,true):B.units).find(o=>o!==t&&o.hp>0&&battleEnemy(u,o)&&inShape(u.x,u.y,a,R+14,{shape:'thrust',wid:5},o));if(b)this.hit(b,dm*.5)}
     else{B.slashes.push({kind:style==='overhead'?'slam':'arc',x:u.x,y:u.y-6,a,life:.14,max:.14,arc:.8,r:R,w:1,dir:u.atkN%2?1:-1,area:7,col:'255,255,255'});
-      if(s.big||style==='overhead'){const b=(spatialOn()?SG.near(t.x,t.y,13,u.team,true):B.units).find(o=>o!==t&&o.hp>0&&battleEnemy(u,o)&&Math.hypot(o.x-t.x,o.y-t.y)<12);if(b)this.hit(b,dm*.5)}}
+      if(!met&&(s.big||style==='overhead')){const b=(spatialOn()?SG.near(t.x,t.y,13,u.team,true):B.units).find(o=>o!==t&&o.hp>0&&battleEnemy(u,o)&&Math.hypot(o.x-t.x,o.y-t.y)<12);if(b)this.hit(b,dm*.5)}}
   }
   // a dragon's fire: everyone in a cone ahead
   breathe(t){
@@ -128,7 +129,7 @@ class Fighter{
     B.floats.push({x:u.x,y:u.y-30,t:'FIRE',life:.6,c:'#ff9a50'});shakeIt(3);
   }
   // a shooter's sidearm (Melee Mode): his melee damage, a blade's pace
-  blade(e){const u=this.u,s=u.s,dm=meleeDmgOf(s)*(.8+Math.random()*.4)*tiredMul(u).dmg;u.cd=s.cd*BLADE.cd*(.9+Math.random()*.2);u.atkAt=B.t;u.atkStyle='swing';fatigueBlow(u);u.face=e.x>=u.x?1:-1;this.hit(e,dm);this.follow(e,dm)}
+  blade(e){const u=this.u,s=u.s,dm=meleeDmgOf(s)*(.8+Math.random()*.4)*tiredMul(u).dmg;u.cd=s.cd*BLADE.cd*(.9+Math.random()*.2);u.atkAt=B.t;u.atkStyle='swing';fatigueBlow(u);u.face=e.x>=u.x?1:-1;if(Defence.stops(u,e))return this.follow(e,dm,true);this.hit(e,dm);this.follow(e,dm)}
 }
 // ---------- the old names: one-line aliases (earnXp: a missile's shooter may be none) ----------
 function applyDmg(t,amt,m,dt,source,missile){return Actor.of(t).wound(amt,m,dt,source,missile)}

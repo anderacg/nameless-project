@@ -1,7 +1,8 @@
 'use strict';
 /* ---------- encounters ---------- */
 // fighting strength: each unit counts as √(health × damage per second), so numbers matter as much as one strong fighter
-const power=list=>list.reduce((a,t)=>{const s=t==='hero'?heroStats():ST[t];return a+Math.sqrt(s.hp*s.dmg/s.cd)*(s.range?1.15:1)*(s.breath?1.45:1)},0);
+// (his health counted up by the share of blows he would meet in his stance: battle/defence.js)
+const power=list=>list.reduce((a,t)=>{const s=t==='hero'?heroStats():ST[t];return a+Math.sqrt(s.hp/(1-Defence.expect(s))*s.dmg/s.cd)*(s.range?1.15:1)*(s.breath?1.45:1)},0);
 const lvPow=lv=>Math.sqrt(lvMul(lv||1));
 const rating=(list,lv)=>Math.round(power(list)*lvPow(lv));
 const partyPower=()=>rating(playerList());

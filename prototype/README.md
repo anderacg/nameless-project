@@ -206,7 +206,7 @@ js/battle/            engage.js (going into a fight: power and stance, allies jo
                       its parts TerrainRoutes and BattleSight; class wave E1), route.js
                       (route-finding round cliffs and water), battlefog.js (fog of war), charmind.js (characters' mind: CharacterMind, HeroMind, ChampionMind), commander.js
                       (the AI captains: Commander, EnemyCommander; multi-army coordination: ArmyTactics; mounted charge loops: CavalryRide), beastmind.js (beasts' tactics: PackMind; class wave E2), abilities.js (casting), formations.js (shared troop/character line plan), morale.js (group resolve),
-                      fatigue.js (stamina), unitabilities.js (Brace, Fire arrows, Spur, Rally), physics.js (mass, turning, impact), movesets.js (normal, hard and charge blows: who may knock down),
+                      fatigue.js (stamina), unitabilities.js (Brace, Fire arrows, Spur, Rally), physics.js (mass, turning, impact), movesets.js (normal, hard and charge blows: who may knock down), defence.js (blows blocked, parried or dodged in a man's stance),
                       commandpowers.js (the commander's powers), camera.js, deploy.js (deployment and Auto), lab.js (the battle laboratory)
 js/scene/             walkable maps of the places you enter: scene.js (walking, paths, talking, in and out), town.js (town layouts);
                       a kind of place gets a scene by adding its generator to SCENES; its text panel stays, with a choice to walk in
@@ -626,6 +626,17 @@ Tunables: `AI_TACTICS` in `battle/commander.js`, `CHAR_FALL` in `battle/charmind
 - Balance (`tests/visual/physicsbalance.js`, physics on, `MOVESETS.old` then new): cavalry vs light foot 4/8 then 2/8 wins (men knocked down a battle 17.9 then 4.1); knights vs militia 8/8 both (16.6 then 5.3); archers vs cavalry 0/8 both (15.9 then 9.1); a troll vs a line 0/8 both (6.9 then 0.1); braced spears, heavy vs light infantry and wolves vs foot as they were.
 - Measured (`tests/movesets.js`, your hero with no armour, 3 seeds × 60 s): knockdowns a minute against two bears 48.3 → 4.7, a troll 36.7 → 4.0, six knights in a wedge 48.7 → 2.0.
 - `MOVESETS.old` (the proof switch): every blow as before. The battle fingerprints (`actorrules`, `attackrules`, `battlecommands`, `battleresolution`, `battlesetup`, `aishare`, `groundhash`, `rts`) hold both ways: they run with physics off (no push or fall changes), and none of their fights ever winds up a hard attack (checked: with `windUp` made to throw, every one of them still passes).
+
+## Defence: blocks, parries and dodges (2026-10-29)
+
+`battle/defence.js` (`DEFENCE`, one tunables table; `Defence`). The owner: battles about 1.5 times as long, every man blocking, parrying or dodging in his stance (never rolling away, which stays your hero's and the champions'), no words over him, only the look.
+
+- **The roll:** each melee blow of a troop, a character or your hero at a foe. Met, it does nothing. Chance: `base` 22%, +4% a tier past the first, +10% for a shield toward the blow (not on a mount), −3% a tier of the attacker's, ×0.55 from the flank, ×0.1 from behind, ×0.8 tired, ×0.6 spent, ×0.5 against a big one's blow, at most 60%.
+- **How:** a shield toward it, a **block** (the shield raised before him: `DEF_POSE`, sprites.js); else a **parry** (his weapon raised across: `HOLD.*.parry`, weapons.js), or, in leather or cloth, a third of the time a **dodge** (a sway and lean back on the spot: render.js). A spark or a puff where it met, the block or clash sound; struck, a one-pixel flinch.
+- **Never met:** a hard attack, a combo's finisher, a charge's blow, a shove or bash, an ability, a missile (a shield's front already turns those); nor a blow at your hero (yours to block), a man down, stunned, routing or winding up. Big beasts never defend; the rest dodge 12%.
+- **The auto-resolve** counts it: a kind's health is raised by its expected share met (`Defence.expect`, engage.js `power`).
+- Measured (`tests/defence.js`, 8 v 8 to the last man, 4 seeds, off → on): levies ×1.53, spearmen v shield orcs ×1.46, swordsmen v hammerers ×1.51, shield guards v black orcs ×1.61, levies v swordsmen ×1.34: ×1.49 on average.
+- `DEFENCE.on` false: every blow lands as before. `tests/harness.js` turns it off for the older suites, so their fingerprints hold; `tests/defence.js` turns it on.
 
 ## Battle speed (spatial grid)
 
