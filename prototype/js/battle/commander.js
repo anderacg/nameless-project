@@ -176,7 +176,8 @@ const acrossRiver=(a,b)=>{const r=B.btype&&B.btype.kind==='bridge'&&B.terrain&&B
    foe unseen, the battle types' ways (typePost, typeHolds, take) and the withdrawal (fallsBack: the enemy's, EnemyCommander).
    Its beasts are its PackMind's (beastmind.js), its characters their own (charmind.js). A Commander holds no state of its own
    beyond its key and multi-army coordinator: its shared memory is made only when it first needs one ---------- */
-// A mounted melee wing lines up, strikes briefly, peels out and loops back for a new run-up, galloping its legs (lead: see
+// A mounted melee wing lines up, strikes, fights on while it pays (impact s; out at once, unsafe s, when spears face it, crowd to one
+// are round it, or loss of its men have fallen), peels out and loops back for a new run-up, galloping its legs (lead: see
 // travel), so it never checks between them. Chased (a foe within clear px), it gallops clear first (break: up to legs legs of
 // out px away from its chasers while it outruns them; clear, it has them again), and rides at a foe again only from a run-up of
 // runMin px at least: one still within clear px as its loop ends it rides at at once, at speed; one who comes at it (moved px off
@@ -187,8 +188,8 @@ const acrossRiver=(a,b)=>{const r=B.btype&&B.btype.kind==='bridge'&&B.terrain&&B
 // and stands off balk s before trying again; a run-in by another wall's front is front px dearer. No way out at all: it rides at the nearest (forced), but holds before a wall. At rest it waits off its mark's flank (see shadow):
 // still fresh (low stamina or more) it re-forms and charges again, cycle after cycle; come in under low, it rests there till rested, or restMax s and fit to charge (minSta).
 // Hunted at rest (hunted): fit, it rides at him first; else it gallops clear while it outruns him, or meets him. rough: see leg
-const CAVALRY_RIDE={runup:115,loop:155,near:26,contact:24,impact:.7,unsafe:.3,chargeMax:8,travelMax:12,recover:1.2,rested:80,low:20,minSta:20,formed:90,avoid:28,spear:120,margin:18,
-  out:150,clear:110,runMin:60,meet:170,legs:3,outpaced:.9,moved:40,turn:25,lead:40,balk:6,front:200,rough:60,moving:8,restMax:40,shadow:140,shot:220};
+const CAVALRY_RIDE={runup:115,loop:155,near:26,contact:24,impact:4,unsafe:.3,round:60,crowd:1.5,loss:1,chargeMax:12,travelMax:12,recover:1.2,rested:60,low:20,minSta:20,formed:90,avoid:28,spear:120,margin:18,
+  out:150,clear:110,runMin:60,meet:170,legs:3,outpaced:.9,moved:40,turn:25,lead:40,balk:6,front:200,rough:60,moving:8,restMax:20,shadow:140,shot:220};
 class CavalryRide{
  static safe(a,p){const X=CAVALRY_RIDE;if(p.x<X.margin||p.x>BW-X.margin||p.y<fieldTop()+X.margin||p.y>fieldBot()-X.margin||B.world&&!B.world.inside(p,X.margin))return false;const T=B.terrain;return !T?.blocky||lineClear(T.route.mounted,a.x,a.y,p.x,p.y,255,ROUTE_UNIT.r)}
  static point(E,v,f,l,side){return {x:E.x+v.x*f-v.y*l*side,y:E.y+v.y*f+v.x*l*side}}
@@ -251,8 +252,12 @@ class CavalryRide{
    if(!route&&!(near&&d(near,C)<X.clear&&this.outruns(m,near)&&this.leg(c,C,m)))return false;p=g.ridePlan={phase:'approach',points:route?.points||[],side:route?.side||1,index:0,v,enemy:{x:target.x,y:target.y},group:target.grp,unit:target.id,at:B.t};p.mark=this.mark(c,p);g.phase='flank';if(!route)return this.breakAway(c,g,m,C,p,near)}
   const foe=this.nearest(c,C),gap=foe?d(foe,C):Infinity,able=st>=X.minSta&&(!c.rOf?.(g.id)||c.rOf(g.id).mor>=tun(c.T,UNIT_AI,'chargeAt'));
   if(p.phase==='charge'){
-   const contact=c.foes.some(e=>!e.rout&&m.some(u=>d(u,e)<X.contact));if(contact&&p.hit==null)p.hit=B.t;
-   const unsafe=m.filter(u=>c.foes.some(e=>!e.rout&&d(u,e)<X.contact)).length>m.length*.7||target&&unitClass(target.s)==='spear'&&shieldWallActive(target),spent=st<X.minSta;
+   const contact=c.foes.some(e=>!e.rout&&m.some(u=>d(u,e)<X.contact));if(contact&&p.hit==null){p.hit=B.t;p.n0=m.length}
+   // (in the melee they stay while it pays (impact s, the owner 2026-10-29: "cavalry always runs away"); out at once (unsafe s)
+   // when a wall's spears face them, the foe within round px of them outnumbers them crowd to one, loss of their men (one) have fallen
+   // since they struck, or they are among trees)
+   const round=c.foes.filter(e=>!e.rout&&d(e,C)<X.round).length,wood=B.terrain&&m.some(u=>groundAt(u.x,u.y)===TKIND.wood),
+     unsafe=round>m.length*X.crowd||p.n0!=null&&p.n0-m.length>=X.loss||wood||target&&unitClass(target.s)==='spear'&&shieldWallActive(target),spent=st<X.minSta;
    if(p.hit!=null&&B.t-p.hit>=(unsafe||spent?X.unsafe:X.impact)||B.t-p.at>X.chargeMax||!target){
     // (no loop round him: straight out of reach, else they stand off where they are)
     const route=this.route(c,C,p.enemy,p.v,true);if((!route||route.danger)&&gap<X.clear&&this.leg(c,C,m)){p.legs=0;return this.breakAway(c,g,m,C,p,foe)}if(!route){g.standAt(C.x,C.y);delete g.ridePlan;g.phase='regroup';g.t=0;return true}p.phase='exit';p.points=route.points;p.index=0;p.legs=0;p.at=B.t;p.chased=gap<X.clear;g.phase='regroup';g.rest=false;
