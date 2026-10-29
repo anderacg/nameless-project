@@ -49,7 +49,7 @@ art('ruts','Wagon ruts',[rect(-26,-48,12,96),rect(14,-48,12,96)],[rect(-21,-48,2
 art('drag','Dragged beast',["M-4,-48 C10,-30 -12,-14 4,4 C16,18 -8,32 4,48 L-4,48 C-16,32 8,18 -4,4 C-20,-14 2,-30 -12,-48 Z"])
 # ---- the pixel prints (the Sprites setting's Pixel: gfx/tracks.js): each art above pixelated at its size in the game (data/tracks.js
 # TRACKS.art.px, its length in game px; a wagon's ruts and a beast's drag, a band its step long: TRACKS.step), turned to each of
-# the 8 ways, a left step mirrored: as many pixels pressed in as the art's ink would fill, the most covered first (any it covers PX_FULL
+# the 4 ways (east, south, west, north: each the east one turned, pixel for pixel; pixel art turned 45° is another shape), a left step mirrored: as many pixels pressed in as the art's ink would fill, the most covered first (any it covers PX_FULL
 # of; none under PX_ON; at least .8 of its length, for a thin one: a bird's toes), so a small print keeps its weight and shape; a detail (lighter) where its details cover PX_DETAIL of one. Change the sizes there, then run this again. '#' pressed in, '+' its detail; o: its top-left cell from the print's
 # place (way 0: east, as the game's angles)
 def parse(d):
@@ -103,7 +103,7 @@ def table(name):
 SIZE=table('px');STEP=table('step');LINE={'ruts':'rut','drag':'drag'}
 def pixelate(id,way,alt):
     A=ART[id];P=parse(A['p']);M=parse(A['m']) if A['m'] else [];px=SIZE.get(id,6);line=id in LINE;ln=STEP[LINE[id]] if line else 0
-    sx,sy=(px/100,ln*1.15/96) if line else (px/100,px/100);ang=way*math.pi/4+math.pi/2;c,s=math.cos(ang),math.sin(ang);R=int(math.ceil(max(px,ln)*.75+1))
+    sx,sy=(px/100,ln*1.15/96) if line else (px/100,px/100);ang=way*math.pi/2+math.pi/2;c,s=math.cos(ang),math.sin(ang);R=int(math.ceil(max(px,ln)*.75+1))
     cov={}
     for j in range(-R,R+1):
         for i in range(-R,R+1):
@@ -127,7 +127,17 @@ def pixelate(id,way,alt):
     if not cells:cells[(0,0)]='#'
     x0=min(i for i,j in cells);x1=max(i for i,j in cells);y0=min(j for i,j in cells);y1=max(j for i,j in cells)
     return {'o':[x0,y0],'r':[''.join(cells.get((i,j),'.') for i in range(x0,x1+1)) for j in range(y0,y1+1)]}
-PIX={k:[pixelate(k,w,a) for w in range(8) for a in (0,1)] for k in ART}
+def turn(g):
+    # (a quarter turn clockwise, as the map's y runs down)
+    on={(-(g['o'][1]+j),g['o'][0]+i):ch for j,r in enumerate(g['r']) for i,ch in enumerate(r) if ch!='.'};x0=min(x for x,y in on);y0=min(y for x,y in on)
+    return {'o':[x0,y0],'r':[''.join(on.get((x,y),'.') for x in range(x0,max(x for x,y in on)+1)) for y in range(y0,max(y for x,y in on)+1)]}
+def ways(k,a):
+    g=[pixelate(k,0,a)]
+    for _ in range(3):g.append(turn(g[-1]))
+    return g
+PIX={}
+for k in ART:
+    r,l=ways(k,0),ways(k,1);PIX[k]=[x for w in range(4) for x in (r[w],l[w])]
 # ---- js/data/trackart.js: the game's copy
 js="'use strict';\n/* ---------- data: the tracks' pictures (written by art/tracks.py, which writes art/tracks.svg from the same shapes: change them\n   there and run it). Each print points up, in a 100-wide box round 0,0 (vb: its box); p, the pressed-in dark, m its lighter details\n   (tread, nails, a frog), as SVG paths; gfx/tracks.js draws them (Path2D). TRACK_PX: the same pixelated at their size in the game,\n   for the Sprites setting's Pixel: per art, way*2+(a left step), o its top-left cell, r its rows ('#' pressed in, '+' a detail) ---------- */\nconst TRACK_ART="+json.dumps({k:{kk:v[kk] for kk in ('vb','p','m')} for k,v in ART.items()},separators=(',',':'))+";\nconst TRACK_PX="+json.dumps(PIX,separators=(',',':'))+";\n"
 open(os.path.join(ROOT,'js','data','trackart.js'),'w').write(js)
@@ -156,10 +166,10 @@ def trail(k,y,n,step,s,lanes,alt,label):
     return ''.join(g)+f'<text x="{W-30}" y="{y+6}" text-anchor="end" font-family="Georgia,serif" font-size="15" fill="#3d2c1a">{label}</text>'
 o+= [trail('hobnail',y0+70,14,50,34,[-30,0,30],True,'A column of soldiers'),trail('horse',y0+160,11,62,34,[-14,14],True,'Riders'),trail('wolf',y0+230,16,42,26,[0],True,'A wolf'),trail('ruts',y0+290,12,57.6,60,[0],False,'A wagon'),'</svg>']
 open(os.path.join(HERE,'tracks.svg'),'w').write('\n'.join(o));print(len(ART),'prints')
-# ---- art/tracks-px.svg: the pixel prints, each way and step, a pixel ZOOM wide (a big one less); below each, all eight at their size in the game
+# ---- art/tracks-px.svg: the pixel prints, each way and step, a pixel ZOOM wide (a big one less); below each, the four at their size in the game
 ZOOM,CELL=8,300;items=list(PIX.items());rows=(len(items)+COLS-1)//COLS;PW=CELL*COLS+40;PH=90+rows*CELL
 o=[f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {PW} {PH}" width="{PW}" height="{PH}" shape-rendering="crispEdges">','<title>Ashmark tracks, pixel</title>',
- '<desc>The prints of tracks.svg pixelated at their size in the game, one for each of the 8 ways (left and right steps), as the Pixel sprites draw them: dark pressed in, its details lighter, no light on them (each way the same, turned). Written by art/tracks.py.</desc>',
+ '<desc>The prints of tracks.svg pixelated at their size in the game, one for each of the 4 ways (a right step above, a left step below), as the Pixel sprites draw them: dark pressed in, its details lighter, no light on them (each way the same, turned). Written by art/tracks.py.</desc>',
  f'<rect width="{PW}" height="{PH}" fill="{GROUND}"/>',f'<text x="{PW/2}" y="48" text-anchor="middle" font-family="Georgia,serif" font-size="30" fill="#3d2c1a">Tracks, pixel</text>']
 def stamp(g,x,y,z):
     on={(g['o'][0]+i,g['o'][1]+j) for j,r in enumerate(g['r']) for i,ch in enumerate(r) if ch!='.'};out=[]
@@ -171,7 +181,7 @@ for n,(k,gs) in enumerate(items):
     bx=20+CELL*(n%COLS);by=90+CELL*(n//COLS)
     o.append(f'<rect x="{bx+8}" y="{by}" width="{CELL-16}" height="{CELL-16}" rx="10" fill="none" stroke="#a88b5f" stroke-width="1.5"/>')
     big=max(max(len(g['r']),len(g['r'][0])) for g in gs);z=min(ZOOM,60//big)# (a big print zoomed less, to fit its box)
-    for w in range(8):o.append(stamp(gs[w*2+(w&1)],bx+40+(w%4)*68,by+50+(w//4)*92,z))
-    for w in range(8):o.append(stamp(gs[w*2],bx+30+w*30,by+CELL-70,2))
+    for w in range(8):o.append(stamp(gs[(w%4)*2+w//4],bx+40+(w%4)*68,by+50+(w//4)*92,z))
+    for w in range(4):o.append(stamp(gs[w*2],bx+60+w*50,by+CELL-70,2))
     o.append(f'<text x="{bx+CELL/2}" y="{by+CELL-30}" text-anchor="middle" font-family="Georgia,serif" font-size="15" fill="#3d2c1a">{ART[k]["name"]}</text>')
 o.append('</svg>');open(os.path.join(HERE,'tracks-px.svg'),'w').write('\n'.join(o))

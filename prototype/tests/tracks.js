@@ -58,13 +58,13 @@ Kit.suite(({ok,info})=>{
    ok(tr&&onRoad&&diff>10,'a band of 12 walking a track between places: '+(tr?tr.size:0)+' points, all on the road, its prints drawn ('+diff+' pixels differ from the frame without tracks)');
   // (the setting Sprites: Pixel, the same art pixelated at its size in the game, whole pixels, as big as the art's)
   {const pv=t.SPRITES.pixel,arts=Object.keys(t.TRACK_ART),bad=[];
-   for(const id of arts){const g=t.TRACK_PX[id],n=g&&g.length===16&&Math.max(...g.map(q=>Math.max(q.r.length,q.r[0].length))),px=t.TRACKS.art.px[id];if(!n||(!t.trackLine(id)&&Math.abs(n-px)>2))bad.push(id+' '+n+'/'+px)}
-   ok(!bad.length,'each of the '+arts.length+' arts pixelated: 8 ways, a left and right step each, as long as its art in the game'+(bad.length?': wrong for '+bad.join(', '):''));
+   for(const id of arts){const g=t.TRACK_PX[id],n=g&&g.length===8&&Math.max(...g.map(q=>Math.max(q.r.length,q.r[0].length))),px=t.TRACKS.art.px[id];if(!n||(!t.trackLine(id)&&Math.abs(n-px)>2))bad.push(id+' '+n+'/'+px)}
+   ok(!bad.length,'each of the '+arts.length+' arts pixelated: 4 ways, a left and right step each, as long as its art in the game'+(bad.length?': wrong for '+bad.join(', '):''));
    try{t.SPRITES.pixel=true;const S=t.trackPic('hobnail',1,0,0,0,9,13);ok(S.w===S.width&&S.h===S.height&&Number.isInteger(S.ox)&&Number.isInteger(S.oy)&&S.w<20,'Pixel: a print in whole game pixels ('+S.w+'×'+S.h+'), whatever the screen\'s density');
     {const on=(id,w,alt)=>{const S=t.trackPix(id,2,w*Math.PI/4,alt,0),d=S.getContext('2d').getImageData(0,0,S.width,S.height).data,o=new Set(),c=new Set();for(let i=0;i<d.length;i+=4)if(d[i+3]){const x=(i/4)%S.width+S.ox,y=(i/4/S.width|0)+S.oy;o.add(x+','+y);c.add(d[i]+','+d[i+1]+','+d[i+2])}return{o,c}};const off=[];
      for(const id of arts)for(let w=0;w<8;w++)for(const alt of [0,1]){const A=on(id,w,alt),B=on(id,(w+2)%8,alt),R=new Set([...A.o].map(k=>{const [x,y]=k.split(',').map(Number);return (-y)+','+x}));
-      if(R.size!==B.o.size||[...R].some(k=>!B.o.has(k))||A.c.size>2)off.push(id+' '+w)}
-     ok(!off.length,'Pixel: each way the same print turned, its lanes too, no light on it (only its colour and its details\')'+(off.length?': not for '+off.slice(0,6).join(', '):''))}
+      if(R.size!==B.o.size||[...R].some(k=>!B.o.has(k))||A.c.size>2||t.trackPix(id,2,w*Math.PI/4+.6,alt,0)!==t.trackPix(id,2,Math.round((w*Math.PI/4+.6)/(Math.PI/2))*Math.PI/2,alt,0))off.push(id+' '+w)}
+     ok(!off.length,'Pixel: each way the same print turned, its lanes too, a slant the nearest straight way\'s, no light on it (only its colour and its details\')'+(off.length?': not for '+off.slice(0,6).join(', '):''))}
     const px=grab();let d=0;for(let i=0;i<px.length;i+=4)if(px[i]!==off[i]||px[i+1]!==off[i+1]||px[i+2]!==off[i+2])d++;ok(d>10,'and drawn on the map ('+d+' pixels differ from the frame without tracks)')}
    finally{t.SPRITES.pixel=pv}}}
   else info('no straight enough track between places for the drawn check')}

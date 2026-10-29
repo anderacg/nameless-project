@@ -29,13 +29,13 @@ function trackPic(id,cls,a,alt,ci,k,len){if(SPRITES.pixel)return trackPix(id,cls
     all(T.glow,null,-T.art.edge,-T.art.edge);all(col,T.detail,0,0)});
   S.ox=-R;S.oy=-R;S.w=S.h=2*R;TRACK_PICS.set(key,S);return S}
 /* the same, pixel (the setting Sprites: Pixel): each art pixelated at its size in the game (TRACK_PX: art/tracks.py, its sheet
-   art/tracks-px.svg), turned to the nearest of the 8 ways, its lanes laid as the art's, whole pixels (halves away from the middle,
+   art/tracks-px.svg), turned to the nearest of the 4 ways (east, south, west, north: pixel art turned 45° is another shape, so a slant takes the nearest; the owner: "still not the same"), its lanes laid as the art's, whole pixels (halves away from the middle,
    so each way the same turned); no light on it (the owner, 2026-10-29: "make them the same, no light": a light from one side looks
    different on each way), its details lighter (TRACKS.detail). Its corner ox, oy in whole game px, drawn unsmoothed */
-const trackRound=v=>{const r=Math.round(v*1e6)/1e6;return Math.sign(r)*Math.round(Math.abs(r))};
+const trackRound=v=>Math.sign(v)*Math.round(Math.abs(v));
 function trackPix(id,cls,a,alt,ci){
-  const way=((Math.round(a/(Math.PI/4))%8)+8)%8,line=trackLine(id),key='px|'+id+'|'+cls+'|'+way+'|'+(alt?1:0)+'|'+ci;let S=TRACK_PICS.get(key);if(S)return S;
-  const T=TRACKS,g=TRACK_PX[id][way*2+(alt&&!line?1:0)],lanes=line?[0]:TRACK_ACROSS[cls],ang=way*Math.PI/4+Math.PI/2,c=Math.cos(ang),s=Math.sin(ang),on=new Map();
+  const way=((Math.round(a/(Math.PI/2))%4)+4)%4,line=trackLine(id),key='px|'+id+'|'+cls+'|'+way+'|'+(alt?1:0)+'|'+ci;let S=TRACK_PICS.get(key);if(S)return S;
+  const T=TRACKS,g=TRACK_PX[id][way*2+(alt&&!line?1:0)],lanes=line?[0]:TRACK_ACROSS[cls],c=[0,-1,0,1][way],s=[1,0,-1,0][way],on=new Map();
   lanes.forEach((l,j)=>{const x=line?0:l*T.lane/2+(alt?1:-1),y=line?0:-((j*5+(alt?3:0))%4)*T.stagger,dx=trackRound(x*c-y*s)+g.o[0],dy=trackRound(x*s+y*c)+g.o[1];
     g.r.forEach((r,j2)=>{for(let i=0;i<r.length;i++)if(r[i]!=='.')on.set((dx+i)+','+(dy+j2),r[i])})});
   const px=[...on.keys()].map(k=>k.split(',').map(Number)),ox=Math.min(...px.map(p=>p[0])),oy=Math.min(...px.map(p=>p[1]));
