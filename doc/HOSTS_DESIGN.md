@@ -1,6 +1,6 @@
 # Hosts: armies that march together: design
 
-Status: **designed** (2026-10-29). The owner's answers in §8; phases in §7.
+Status: **phase 1 built** (2026-10-29): `world/hosts.js` `Host` (`HOSTS`: crumb 6, gap 22, catch 1.3, far 160, join 220 px). Your companions' parties with the order **Follow** (the order's button renamed from Ride with me; its party's line "following you") are your host: each walks to its place back along your trail (`Host.keep`, from `CompanionBrain`), in the order they were told to follow (`fseq`); you go at the slowest's pace, their own paces before the ground (`Host.base`, `paceOf`: world.js your step); following, they hunt no prey; one farther than `far` makes for you; each within `join` of a battle of yours joins it (battle/engage.js, past `REINF.r`). Tests: hosts. Phases 2 and 3 not built. The owner's answers in §8; phases in §7.
 
 ## 1. Today
 

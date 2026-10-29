@@ -75,10 +75,10 @@ class CompanionBrain extends Brain{
       else if(p.inside)return false;}// inside: off the map
     this.cool(p,d);const sp=moveStep(partySpeed(p,p.troops)*.9,d),ox=p.x,mine=p.power(),A=WORLD_SCALE.ai,go=(x,y,s)=>{const dd=Math.hypot(x-p.x,y-p.y);if(dd>1)Router.travel(p,{x,y},s)||walk(p,x-p.x,y-p.y,Math.min(dd,s))};
     const foes=[...bandits.filter(b=>!b.fight),...W.lords.filter(l=>!l.dead&&!l.inside&&!l.fight&&hostileTo(l.fac))].map(o=>[o,Math.hypot(o.x-p.x,o.y-p.y),o.power()]).filter(([,dd])=>dd<A.compFoes).sort((a,b)=>a[1]-b[1]);
-    const strong=foes.find(([,,pw])=>pw>mine*1.2),prey=p.order!=='return'&&foes.find(([,,pw])=>pw<=mine);
+    const strong=foes.find(([,,pw])=>pw>mine*1.2),prey=p.order!=='return'&&p.order!=='follow'&&foes.find(([,,pw])=>pw<=mine);// (following, it keeps its place in your host: hosts.js)
     if(strong&&strong[1]<A.compFlee){EscapeStamina.run(p,strong[0],sp,n=>go(P.x,P.y,n),true)}
     else if(prey&&p.cool<=0){go(prey[0].x,prey[0].y,sp);if(prey[1]<10){startFight([p],[prey[0]]);p.cool=3}}
-    else if(p.order==='follow'){if(Math.hypot(P.x-p.x,P.y-p.y)>28)go(P.x-14,P.y+10,sp*1.2)}
+    else if(p.order==='follow')Host.keep(p,sp,go);// (its place in your column: hosts.js)
     else if(p.order==='return'){go(P.x,P.y,sp*1.2);if(Math.hypot(P.x-p.x,P.y-p.y)<12)cpDisband(p.cid,true)}
     else if(p.order==='stay'){const t=townBy(p.base);Router.travel(p,gateGoal(t),sp);if(Math.hypot(t.x-p.x,t.y+12-p.y)<8){p.enter(t);log(COMPS[p.cid].short+'’s party takes lodgings in '+t.name+'.')}}
     else{const t=townBy(p.base);if(!t){p.order='follow';return false}

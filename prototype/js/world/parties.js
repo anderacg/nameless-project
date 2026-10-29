@@ -77,7 +77,7 @@ class CompanionParty extends Party{
   get faction(){return 'player'}
   // (its leader's Leadership makes it stronger)
   power(){return power(this.troops)*(1+.04*compSkill(this.cid,'lead'))}
-  tip(){return '<b>'+this.label()+'</b><small>Your companion · '+this.fighters+' fighters · '+({follow:'riding with you',patrol:'patrolling '+this.base,return:'coming back'})[this.order]+'</small><span class="act">Click: actions · double-click: orders</span>'}
+  tip(){return '<b>'+this.label()+'</b><small>Your companion · '+this.fighters+' fighters · '+({follow:'following you',patrol:'patrolling '+this.base,return:'coming back'})[this.order]+'</small><span class="act">Click: actions · double-click: orders</span>'}
   get brain(){return BRAINS.cparty}
   shelterWhy(t){return !t?'Nowhere':yourShelterWhy(t)}
   enter(t){this.inside=t.name;this.x=t.x;this.y=t.y}

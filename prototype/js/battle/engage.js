@@ -176,7 +176,7 @@ function startEncounter(e){
   if(e.btype==null){const bt=battleTypeFor(e);if(bt)e.btype=bt}// (a battle type: none with terrain off)
   e.list=e.list||makeEnemies(e.n,e.kind==='camp',e.band);const env=battleEnv(),ground='<p class="muted">Battleground: '+env.name+'. '+terrainEnvText(env,e.kind,e.btype)+'</p>',band=BANDS[e.band||'bandits'];G.enc=e;G.mode='dialog';P.tx=null;G.chase=null;
   const given=!!e.allies;e.allies=e.allies||nearAllies(e);e.foes=e.foes||nearFoes(e);
-  if(!given&&e.kind!=='tourney'){for(const p of cparties())if(!p.fight&&!p.inside&&nearYou(p)<REINF.r)e.allies.push(forceOf(p));// your companions' parties
+  if(!given&&e.kind!=='tourney'){for(const p of cparties())if(!p.fight&&!p.inside&&(nearYou(p)<REINF.r||Host.joins(p)))e.allies.push(forceOf(p));// your companions' parties
     if(e.road&&e.road.k==='caravan')e.allies.push(guardsForce(e.road))}// (the caravan you ride to save: its own guards)
   for(const l of [e.kind==='lord'&&e.ref,...e.allies,...e.foes])if(l&&W.lords.includes(l))KNOWLEDGE.sight(l);
   if(e.men==null)e.men=playerList().length;// (your men at the start: the helpers' share of the spoils, reinfCut)

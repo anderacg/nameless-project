@@ -249,7 +249,7 @@ function marchStep(d){
     const dx=P.tx-P.x,dy=P.ty-P.y,dist=Math.hypot(dx,dy);
     if(dist<2){if(!G.follow){P.tx=null;G.byRoad=null;campArrive()}}// (the clear ground you walked to: your band pitches there, supply.js)
     else{
-      const step=Math.min(dist,moveStep(MAP_BASE*travelMul(),d)*(P.morale<25?.8:1)*hurryPace());// (Hurry: supply.js)
+      const step=Math.min(dist,moveStep(MAP_BASE*travelMul(),d)*(P.morale<25?.8:1)*hurryPace()*Host.yourPace());// (Hurry: supply.js; your host's slowest: hosts.js)
       P.dir=dx>=0?1:-1;
       const x0=P.x,y0=P.y;if(heroStep(dx,dy,dist,step)){P.stuck=0;const moved=Math.hypot(P.x-x0,P.y-y0);if(moved>0){train('scout',moved/TILE*.08);if(mountDef())train('ride',moved/TILE*.1);if(terrAt(P.x,P.y)===T_FOREST)train('wood',moved/TILE*WOODCRAFT.xp)}}else{P.stuck+=d;if(P.stuck>.4){P.tx=null;P.stuck=0;campArrive()}}
     }

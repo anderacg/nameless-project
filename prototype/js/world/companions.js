@@ -80,7 +80,7 @@ function cpTransferPlan(id,direction,source,n,target='new'){
   if(!Object.prototype.hasOwnProperty.call(P.comps,id)||!Object.prototype.hasOwnProperty.call(COMPS,id)||!['give','take'].includes(direction))return fail('companion');
   const c=compInit(id);if(direction==='give'&&!canLead(id))return fail('leadership');
   if(direction==='take'&&!c.party)return fail('party');
-  const forming=!c.party,p=c.party||asParty({cid:id,x:P.x+10,y:P.y+6,troops:[],order:'follow',base:null,cool:2,dir:1});
+  const forming=!c.party,p=c.party||asParty({cid:id,x:P.x+10,y:P.y+6,troops:[],order:'follow',fseq:Math.max(0,...cparties().map(x=>x.fseq||0))+1,base:null,cool:2,dir:1});
   if(p.fight)return fail('fighting');
   if(direction==='take'&&Math.hypot(p.x-P.x,p.y-P.y)>WORLD_SCALE.ai.compTake)return fail('distance');
   const from=partyRoster(direction==='give'?P:p),to=partyRoster(direction==='give'?p:P),
@@ -122,7 +122,7 @@ const cpStayCost=p=>STAY_BASE+Math.ceil(p.troops.length/2);
 function cpOrder(id,o){const p=compInit(id).party;if(!p)return;if(p.inside)p.leave();p.order=o;p.wx=null;
   if(o==='stay'){const h=Spatial.nearestHolding(p.x,p.y,cpStayOk);if(!h){p.order='follow';toast(COMPS[id].short+' finds no holding that will take them in.','bad');return}p.base=h.name;toast(COMPS[id].short+' will shelter in '+h.name+(stayFree(h)?'':' ('+cpStayCost(p)+'g a day from your purse)')+' and hire there.');return}
   if(o==='patrol'){const h=Spatial.nearestHolding(P.x,P.y,t=>!hostileTo(t.owner))||Spatial.nearestHolding(P.x,P.y);p.base=h.name;toast(COMPS[id].short+' will patrol the land of '+h.name+'.')}
-  else if(o==='follow')toast(COMPS[id].short+' will ride with you.');else toast(COMPS[id].short+' is coming back to your band.')}
+  else if(o==='follow'){p.fseq=Math.max(0,...cparties().map(x=>x.fseq||0))+1;toast(COMPS[id].short+' will follow you.')}else toast(COMPS[id].short+' is coming back to your band.')}
 // each moment on the map: keep clear of what it cannot beat, run down bandits and weak enemies near it, otherwise follow
 // you, patrol its holding's land, or come back to you
 // each moment on the map: CompanionBrain (brains.js)
