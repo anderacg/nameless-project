@@ -54,6 +54,7 @@ Focused regression suites: `armygroups`, `armyedges`, `groups`, `battlesetup`, `
 Ashmark.html          page markup; loads style.css, the PX engine (../engine: pixel, buildkit, buildmodels (every building as a model at the owner's scale: objects 16 px, buildings 32, big ones and centres 64, a capital 128: the world map's buildings, sites and camps; the old hand-drawn buildings.js retired at stage 3), build-vale, build-karn, build-ashgor, build-sylvan (each culture's building style: Vale with the Salt League, the Clans, the Horde, the Court), pieces, ground, worldnature, beasts,
                       model), then the scripts below (the full order is the <script> list in Ashmark.html)
 art/portrait/         121 source portraits; game/ has 30 compact named-character and animal portraits; review gallery and identity manifest
+art/portrait/gamecopies.py  the troops' portraits for the game: a 256 × 256 WebP in art/portrait/game/ of each and js/data/unitportraits.js (UNIT_PORTRAITS)
 art/tracks.py         the tracks' art, drawn once: writes art/tracks.svg (the sheet: boots, bare foot, hooves, paws, troll, talon, dragon, ruts, a drag, sample trails), art/tracks-px.svg (the same pixelated at their size in the game, each of the 8 ways) and js/data/trackart.js (TRACK_PX, the pixel prints the game draws: gfx/tracks.js trackPic; data/tracks.js TRACKS.art says who leaves which and how big)
 style.css
 fieldbook.css        scoped management-window theme and responsive layouts (doc/FIELDBOOK_UI.md)
@@ -657,6 +658,13 @@ Tunables: `AI_TACTICS` in `battle/commander.js`, `CHAR_FALL` in `battle/charmind
 ## Phones: resolution and frame rate (2026-10-29)
 
 The owner: "it lags on mobile". Settings → **Resolution** (core.js `RENDER.cap`, `dprOf`: Full the screen's own density, **Balanced** 2 (the default), Fast 1.5) and **Frame rate** (`RENDER.fps`: 60, or 30; main.js `loop` skips a frame sooner than .65 of its interval, so a 120 Hz screen draws 60, a 90 Hz one all of its own). The art is whole pixels, so fewer canvas pixels shown at the window's size (pixelated) look the same, the text a little coarser; every place that read `devicePixelRatio` reads `dprOf()`. And: `reducedMotion` (vfx.js) asks the browser once, not each call; the travel-detection eye (render.js `travelDetectionState`) is worked out at most every 100 ms, drawn only; a multi-army battle's `relation` (sides.js) is remembered while the jostle runs. Measured (headless, 844 × 390 at density 3, a world battle of about 90): the canvas 2534 × 1176 → 1692 × 783; the map's frame 13.1 → 5.0 ms to draw, 7.0 → 5.4 ms to update. Tests: render.
+
+## Unit portraits and the sprite view (2026-10-29)
+
+The owner: "change all unit icon to portrait and add a button to view unit in sprite in detail page".
+- **Portraits:** every unit type shows its painted portrait wherever the windows show a unit: recruiting, the party page, prisoners, cards and the unit card. `ui/battlehud.js` `portrait()` takes the named face first (`NAMED_PORTRAITS`), then its kind's (`NamedPortraits.unit`, `js/data/unitportraits.js` `UNIT_PORTRAITS`), else the sprite. The copies are 256 × 256 WebP in `art/portrait/game/`, about 25 KB each, written by `art/portrait/gamecopies.py` from the PNGs. The battle's own cards (the group cards, the selection rows) keep the troops' sprites (`hudPic`), so you read the field at a glance; the customizable player keeps a generated one.
+- **The sprite view** (`ui/unitcard.js` `SpriteView`, `SPRITE_VIEW`): on the unit card, View sprite swaps the portrait for the unit's battle figure, enlarged and in whole pixels. It plays through its poses: standing and breathing, walking, running, then its blows (a beast through its own; your hero's bare hands through the fists'). View portrait brings the portrait back.
+- Tests: `portraits`.
 
 ## Bare hands and the Nobody (2026-10-29)
 

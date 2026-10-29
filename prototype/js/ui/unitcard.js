@@ -63,7 +63,7 @@ class UnitCard{
   meter(R,cls){return '<div class="uc-rank'+(cls||'')+'" title="'+htmlText(R.tip||R.label)+'"><span class="uc-l">'+htmlText(R.label)+'</span><span class="uc-bar"><i style="width:'+UnitCard.pct(R.v,R.max)+'%"></i></span><span class="uc-v">'+(R.max?Math.round(R.v)+' / '+R.max:'—')+'</span></div>'}
   rankHtml(){return (this.rank?this.meter(this.rank):'')+(this.meters||[]).map(m=>this.meter(m,' uc-meter')).join('')}
   html(){const s=this.s,M=ucMax(),F=this.from?Object.fromEntries(unitNumbers(this.from).map(r=>[r[0],r[2]])):null,vs=vsInfo(s),chips=(l,cls)=>l.map(([n,d])=>'<span class="uc-ab'+(cls||'')+'" title="'+htmlText(d)+'" tabindex="0">'+n+'</span>').join('');
-    return '<div class="ucard-x" data-unit="'+this.key+'"><div class="uc-head"><img class="uc-pic" src="'+(this.pic||portrait(this.key,this.hero))+'" alt=""><div class="uc-name"><strong>'+this.name+'</strong><small>'+this.sub+'</small><small>'+glyphSVG(this.hero?'hero':iconOfType(this.key),14)+' '+classN(s)+' · <span class="uc-type" title="Its damage type, and the armour it wears">'+DMG[dtOf(s)].n+(isMagical(dtOf(s))?' (magic)':'')+' · '+ARMOR[armorOf(s)].n+'</span></small>'+(this.fromN?'<small class="uc-from">▲▼ against '+this.fromN+'</small>':'')+'</div></div>'+(this.acts?'<div class="uc-acts">'+this.acts+'</div>':'')+
+    return '<div class="ucard-x" data-unit="'+this.key+'"><div class="uc-head"><img class="uc-pic" src="'+(this.pic||portrait(this.key,this.hero))+'" alt=""><canvas class="uc-pic uc-anim" width="120" height="120" hidden data-spr="'+this.key+'"'+(this.hero?' data-hero="1"':'')+'></canvas><div class="uc-name"><strong>'+this.name+'</strong><small>'+this.sub+'</small><small>'+glyphSVG(this.hero?'hero':iconOfType(this.key),14)+' '+classN(s)+' · <span class="uc-type" title="Its damage type, and the armour it wears">'+DMG[dtOf(s)].n+(isMagical(dtOf(s))?' (magic)':'')+' · '+ARMOR[armorOf(s)].n+'</span></small>'+(this.fromN?'<small class="uc-from">▲▼ against '+this.fromN+'</small>':'')+'<button class="btn sm uc-sprbtn" type="button" data-act="uc-sprite" data-arg="'+this.key+'" aria-pressed="false">View sprite</button></div></div>'+(this.acts?'<div class="uc-acts">'+this.acts+'</div>':'')+
       this.strengthHtml()+this.rankHtml()+'<div class="uc-stats">'+unitNumbers(s).map(r=>this.bar(r,M,F)).join('')+'</div>'+
       (this.abil.length||this.skills?.length?'<div class="uc-abs">'+chips(this.abil)+chips(this.skills||[],' sk')+'</div>':'')+
       '<div class="uc-vs"><span class="good">✔ Strong vs</span> '+(vs.strong.join(', ')||'—')+'<br><span class="bad">✖ Weak vs</span> '+(vs.weak.join(', ')||'—')+'</div>'+
@@ -72,3 +72,25 @@ class UnitCard{
 const cardHtml=o=>new UnitCard(o).html();
 // the troop a type is trained from (null for one you hire)
 const UP_FROM=k=>Object.keys(UP).find(f=>UP[f].includes(k))||null;
+/* the card's sprite (the owner, 2026-10-29: "a button to view the unit in its sprite", animated): its battle figure enlarged in the
+   picture's place, played through its poses (SPRITE_VIEW: standing and breathing, walking, running, then its blows; a beast's
+   own, BEAST_POSES; your hero's bare hands, the fists'), a frame every ms; the same button brings the portrait back */
+const SPRITE_VIEW={ms:140,people:[0,0,1,1,0,0,1,1,2,3,4,5,2,3,4,5,15,16,17,18,15,16,17,18,6,7,8,0,0,9,10,11,0,0,12,13,14,0,0]};
+class SpriteView{
+  static poses(type,hero){if(ST[type]?.beast)return [...PX.BEAST_POSES];const P0=SPRITE_VIEW.people.slice(0,24);
+    return hero&&unarmed()?[...P0,...Array.from({length:12},(_,i)=>FIST_POSE+i),0,0]:SPRITE_VIEW.people}
+  // (its picture or its sprite, the button saying the other)
+  static toggle(key,btn){const card=btn?.closest('.ucard-x')||document.querySelector('#panel .ucard-x[data-unit="'+key+'"]')||document.querySelector('.ucard-x[data-unit="'+key+'"]');if(!card)return;
+    const img=card.querySelector('img.uc-pic'),cv=card.querySelector('canvas.uc-anim'),b=card.querySelector('.uc-sprbtn'),on=cv.hidden;
+    cv.hidden=!on;img.hidden=on;if(b){b.textContent=on?'View portrait':'View sprite';b.setAttribute('aria-pressed',on)}if(on)this.play(cv)}
+  // (a frame every SPRITE_VIEW.ms while it is shown; drawn whole pixels, its feet on the bottom)
+  // (its scale from the figure standing, cw × ch inside its cell, so every frame is as big; the cell drawn whole, its feet on the bottom)
+  static play(cv){const type=cv.dataset.spr,hero=!!cv.dataset.hero,seq=this.poses(type,hero),g=cv.getContext('2d'),s0=unitSprite(type,0,hero,0,0);let i=0;clearInterval(cv.tick);
+    const k=Math.max(1,Math.floor(Math.min(cv.width/(s0.cw||s0.width),(cv.height-4)/(s0.ch||s0.height))));
+    const step=()=>{if(!cv.isConnected||cv.hidden){clearInterval(cv.tick);return}const s=unitSprite(type,0,hero,0,seq[i++%seq.length]);
+      g.clearRect(0,0,cv.width,cv.height);g.imageSmoothingEnabled=false;g.drawImage(s,Math.round((cv.width-s.width*k)/2),cv.height-2-s.height*k,s.width*k,s.height*k)};
+    step();cv.tick=setInterval(step,SPRITE_VIEW.ms)}
+}
+onAct('uc-',(a,arg)=>{if(a==='uc-sprite')SpriteView.toggle(arg)});
+// (a card outside the panel, the battle's own: its button works there too)
+document.addEventListener('click',e=>{const b=e.target.closest('.uc-sprbtn');if(b&&!b.closest('#panel'))SpriteView.toggle(b.dataset.arg,b)});

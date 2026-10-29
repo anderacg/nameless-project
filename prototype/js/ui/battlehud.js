@@ -31,9 +31,11 @@ function bhudInit(){
   {const el=document.getElementById('bInfo');if(el)el.addEventListener('click',e=>{if(e.target.closest('[data-bi-card]')&&B){B.infoCard=!B.infoCard;bhudInfo()}})}// (its portrait opens its unit card: bhudCardOf)
   document.querySelectorAll('.obtn[data-form]').forEach(b=>{const F=FORMS[b.dataset.form];b.innerHTML=formIcon(b.dataset.form,24,16)+'<span class="k">'+F.key+'</span>';b.title=F.n+': '+F.d+' ('+F.key+')';b.setAttribute('aria-label',b.title)});
 }
-// a unit's portrait: its sprite, drawn once into a picture (cached by kind)
+// a unit's portrait: its painted one (a named face, or its kind's: data/unitportraits.js; the owner, 2026-10-29), else its
+// sprite, drawn once into a picture (cached by kind); hudPic, the battle's own cards: the sprite, as its soldiers look on the field
 const PORTRAITS={};
-function portrait(type,hero,v){const art=!hero&&NamedPortraits.of(type);if(art)return art;return spritePic((hero?'hero:':'')+type+(v?':'+v:''),()=>unitSprite(type,0,!!hero,v||0))}// (v: one of its looks)
+function portrait(type,hero,v){return !hero&&NamedPortraits.unit(type)||hudPic(type,hero,v)}
+function hudPic(type,hero,v){const art=!hero&&NamedPortraits.of(type);if(art)return art;return spritePic((hero?'hero:':'')+type+(v?':'+v:''),()=>unitSprite(type,0,!!hero,v||0))}// (v: one of its looks)
 // any figure's picture the same way (mk: its sprite cell): a worker at his trade (workerPic), a townsperson (personPic: the
 // smith, the innkeeper, a merchant…)
 function spritePic(k,mk){if(!PORTRAITS[k]){try{const sp=mk(),n=sp.width,S=Math.min(n,Math.max(sp.cw||n,(sp.ch||n)+3));// (the figure itself, cropped from its cell: feet at the bottom, centred)
@@ -117,7 +119,7 @@ function bhudCard(b,g){
   const hp=m.reduce((a,u)=>a+u.hp,0)/Math.max(1,m.reduce((a,u)=>a+u.max,0)),mo=B.noMorale?null:grpMorale(m),sh=g!=='all'&&g!=='hero'&&gr?grpShape(g):null,rep=g==='hero'?'hero':repOf(m),stm=grpStamina(m);
   const st=cardStatus(g,m,mo,stm),vis=st.filter(o=>o.svg).slice(0,CARD.show);
   // (built again only when it changes, so a tooltip under the pointer stays; the bars on their own, as they move each moment)
-  const head='<span class="ukey">'+(b.dataset.badge||'')+'</span>'+(g==='all'?'<span class="uall">'+icon('troops',18)+'<b>'+n+'</b></span>':(rep?'<img class="upic" src="'+portrait(rep,g==='hero')+'" alt="">':'')+'<span class="ucount">'+n+'</span>')+
+  const head='<span class="ukey">'+(b.dataset.badge||'')+'</span>'+(g==='all'?'<span class="uall">'+icon('troops',18)+'<b>'+n+'</b></span>':(rep?'<img class="upic" src="'+hudPic(rep,g==='hero')+'" alt="">':'')+'<span class="ucount">'+n+'</span>')+
     '<span class="utop">'+(sh?'<small class="csh">'+sh.files+'×'+sh.ranks+'</small>':'')+(gr&&g!=='hero'&&gr.form&&gr.form!=='line'?formIcon(gr.form,18,12):'')+'</span>'+(vis.length?'<span class="cmi">'+vis.map(cardIco).join('')+'</span>':'');
   if(b.cardHead!==head){b.cardHead=head;b.innerHTML=head+'<span class="ubars"></span>'}
   const bars='<span class="ub"><i class="chp" style="width:'+pct(hp)+'"></i></span>'+(mo?'<span class="ub"><i class="cmo'+(mo.v<MORALE.waver/100?' low':'')+'" style="width:'+pct(mo.v)+'"></i></span>':'')+(stm!=null?'<span class="ub"><i class="cst'+(stm*FATIGUE.max<FATIGUE.tired?' low':'')+'" style="width:'+pct(stm)+'"></i></span>':''),bb=b.querySelector('.ubars');
@@ -131,10 +133,10 @@ function bhudInfo(){
   const el=document.getElementById('bInfo');if(!el||!B)return;const gs=selGroups().filter(g=>grpUnits(g).length);
   if(!gs.length){setHtml(el,'<p class="muted">No one left to command.</p>');return}
   const stat=(g)=>{const m=grpUnits(g),gr=B.groups[g],mo=B.noMorale?null:grpMorale(m),hp=m.reduce((a,u)=>a+u.hp,0),mx=m.reduce((a,u)=>a+u.max,0);return{m,gr,mo,hp,mx}};
-  if(gs.length>1){setHtml(el,'<div class="bi-title">'+(B.sel==='all'?'All troops':gs.length+' units')+'</div>'+gs.map(g=>{const S=stat(g);return '<div class="bi-row"><img class="bi-mini" src="'+portrait(g==='hero'?'hero':repOf(S.m),g==='hero')+'" alt=""><span class="bi-n">'+htmlText(groupName(g))+' <b>'+S.m.length+'</b></span><span class="ub"><i class="chp" style="width:'+pct(S.hp/Math.max(1,S.mx))+'"></i></span>'+(aiHas(S.gr)?badgeSVG('ai',12):'')+(S.mo?badgeSVG(stateIcon(S.mo.state),12)+(S.mo.confident?badgeSVG('confident',12):''):'')+'</div>'}).join(''));return}
+  if(gs.length>1){setHtml(el,'<div class="bi-title">'+(B.sel==='all'?'All troops':gs.length+' units')+'</div>'+gs.map(g=>{const S=stat(g);return '<div class="bi-row"><img class="bi-mini" src="'+hudPic(g==='hero'?'hero':repOf(S.m),g==='hero')+'" alt=""><span class="bi-n">'+htmlText(groupName(g))+' <b>'+S.m.length+'</b></span><span class="ub"><i class="chp" style="width:'+pct(S.hp/Math.max(1,S.mx))+'"></i></span>'+(aiHas(S.gr)?badgeSVG('ai',12):'')+(S.mo?badgeSVG(stateIcon(S.mo.state),12)+(S.mo.confident?badgeSVG('confident',12):''):'')+'</div>'}).join(''));return}
   const g=gs[0],S=stat(g),gr=S.gr,rep=g==='hero'?'hero':repOf(S.m),st=g==='hero'?B.hero.s:ST[rep]||S.m[0].s,sh=g!=='hero'?grpShape(g):null;
   const flags=[S.mo&&S.mo.breaking?'Breaking: '+S.mo.breaking+' (morale collapse)':'',gr.walk?'Walking':'Running',gr.firm?'Holding ground':'',gr.cease?'Cease fire':'',gr.skirmish?'Skirmishing':'',gr.melee===false&&grpUnits(g).some(u=>u.s.range)?'Melee mode off':'',S.mo?.confident?'Confident: local superiority':''].filter(Boolean).join(' · ');
-  const head='<div class="bi-head"><button class="bi-picb'+(B.infoCard?' on':'')+'" type="button" data-bi-card title="'+(B.infoCard?'Back to its orders and bars':'Its unit card')+'" aria-pressed="'+!!B.infoCard+'"><img class="bi-pic" src="'+portrait(rep,g==='hero')+'" alt=""></button><div><div class="bi-title">'+htmlText(g==='hero'&&!gr.customName?(P.name||'Your hero'):groupName(g))+'</div><small>'+(g==='hero'?'Your hero':S.m.length+' × '+(ST[rep]?ST[rep].n:rep))+'</small>'+
+  const head='<div class="bi-head"><button class="bi-picb'+(B.infoCard?' on':'')+'" type="button" data-bi-card title="'+(B.infoCard?'Back to its orders and bars':'Its unit card')+'" aria-pressed="'+!!B.infoCard+'"><img class="bi-pic" src="'+hudPic(rep,g==='hero')+'" alt=""></button><div><div class="bi-title">'+htmlText(g==='hero'&&!gr.customName?(P.name||'Your hero'):groupName(g))+'</div><small>'+(g==='hero'?'Your hero':S.m.length+' × '+(ST[rep]?ST[rep].n:rep))+'</small>'+
     '<small>'+(aiHas(gr)?'AI · ':'')+(gr.amove?'Attack-move':cap1(gr.order))+(g!=='hero'?' · '+FORMS[gr.form||'line'].n+(sh?' '+sh.files+'×'+sh.ranks:''):'')+'</small></div></div>';
   if(B.infoCard){setHtml(el,head+bhudCardOf(g,S,rep,st));return}
   setHtml(el,head+

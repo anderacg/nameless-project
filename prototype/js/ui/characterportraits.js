@@ -1,6 +1,7 @@
 'use strict';
 /* Character faces and corrected animal poses use compact WebP artwork. Named faces stay independent of equipment and allegiance;
-   full PNG artwork stays in art/portrait. Extra generated lords retain a stable individual sprite look. */
+   full PNG artwork stays in art/portrait. Extra generated lords retain a stable individual sprite look. The troops' painted portraits:
+   data/unitportraits.js (NamedPortraits.unit). */
 const NAMED_PORTRAITS={
   "brann": "brann.webp?v=eb6e933d",
   "elske": "elske.webp?v=eec0d775",
@@ -35,6 +36,8 @@ const NAMED_PORTRAITS={
 };
 class NamedPortraits{
   static of(key){return Object.hasOwn(NAMED_PORTRAITS,key)?'art/portrait/game/'+NAMED_PORTRAITS[key]:''}
+  // (a troop's: its kind's painted portrait, data/unitportraits.js, after a named one)
+  static unit(type){return this.of(type)||(Object.hasOwn(UNIT_PORTRAITS,type)?'art/portrait/game/'+UNIT_PORTRAITS[type]:'')}
   static lord(l){
     const art=this.of(l.name);if(art)return art;
     const key=l.name||l.id||'lord';let h=2166136261;for(const c of key)h=Math.imul(h^c.charCodeAt(0),16777619)>>>0;
