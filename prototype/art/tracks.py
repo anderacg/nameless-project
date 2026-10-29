@@ -159,12 +159,10 @@ open(os.path.join(HERE,'tracks.svg'),'w').write('\n'.join(o));print(len(ART),'pr
 # ---- art/tracks-px.svg: the pixel prints, each way and step, a pixel ZOOM wide (a big one less); below each, all eight at their size in the game
 ZOOM,CELL=8,300;items=list(PIX.items());rows=(len(items)+COLS-1)//COLS;PW=CELL*COLS+40;PH=90+rows*CELL
 o=[f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {PW} {PH}" width="{PW}" height="{PH}" shape-rendering="crispEdges">','<title>Ashmark tracks, pixel</title>',
- '<desc>The prints of tracks.svg pixelated at their size in the game, one for each of the 8 ways (left and right steps), as the Pixel sprites draw them: dark pressed in, its details lighter, the light on its up-left. Written by art/tracks.py.</desc>',
+ '<desc>The prints of tracks.svg pixelated at their size in the game, one for each of the 8 ways (left and right steps), as the Pixel sprites draw them: dark pressed in, its details lighter, no light on them (each way the same, turned). Written by art/tracks.py.</desc>',
  f'<rect width="{PW}" height="{PH}" fill="{GROUND}"/>',f'<text x="{PW/2}" y="48" text-anchor="middle" font-family="Georgia,serif" font-size="30" fill="#3d2c1a">Tracks, pixel</text>']
 def stamp(g,x,y,z):
     on={(g['o'][0]+i,g['o'][1]+j) for j,r in enumerate(g['r']) for i,ch in enumerate(r) if ch!='.'};out=[]
-    for (i,j) in on:
-        if (i-1,j-1) not in on:out.append(f'<rect x="{f(x+(i-1)*z)}" y="{f(y+(j-1)*z)}" width="{z}" height="{z}" fill="{LIGHT}"/>')
     for j,r in enumerate(g['r']):
         for i,ch in enumerate(r):
             if ch!='.':out.append(f'<rect x="{f(x+(g["o"][0]+i)*z)}" y="{f(y+(g["o"][1]+j)*z)}" width="{z}" height="{z}" fill="{DARK if ch=="#" else MID}"/>')

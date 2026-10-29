@@ -659,7 +659,7 @@ The owner: "it lags on mobile". Settings → **Resolution** (core.js `RENDER.cap
 
 ## Sprites: Art or Pixel (2026-10-29)
 
-Settings → **Sprites** (core.js `SPRITES.pixel`, ui.js pref `sprites`): **Art** (the default) draws the tracks from art/tracks.svg, smooth at the screen's pixels; **Pixel** draws the same prints pixelated (art/tracks-px.svg, `TRACK_PX`), whole game pixels like the map. Both come from the one art: `art/tracks.py` pixelates each print at its game size (`TRACKS.art.px`), so the two match in size and kind (14 prints). It keeps as many pixels as the art's ink fills, the most covered first. Change a print or a size there and run it again. Tests: tracks (each art's 16 pixel prints as long as the art, drawn on the map), uiprefs.
+Settings → **Sprites** (core.js `SPRITES.pixel`, ui.js pref `sprites`): **Art** (the default) draws the tracks from art/tracks.svg, smooth at the screen's pixels; **Pixel** draws the same prints pixelated (art/tracks-px.svg, `TRACK_PX`), whole game pixels like the map. Both come from the one art: `art/tracks.py` pixelates each print at its game size (`TRACKS.art.px`), so the two match in size and kind (14 prints). It keeps as many pixels as the art's ink fills, the most covered first. Pixel prints have no light on them, so each way is the same print turned (the owner: "make them the same, no light"). Change a print or a size there and run it again. Tests: tracks (each art's 16 pixel prints as long as the art, each way the same turned, drawn on the map), uiprefs.
 
 ## Battle speed (spatial grid)
 

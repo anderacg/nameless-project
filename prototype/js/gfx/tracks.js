@@ -29,16 +29,17 @@ function trackPic(id,cls,a,alt,ci,k,len){if(SPRITES.pixel)return trackPix(id,cls
     all(T.glow,null,-T.art.edge,-T.art.edge);all(col,T.detail,0,0)});
   S.ox=-R;S.oy=-R;S.w=S.h=2*R;TRACK_PICS.set(key,S);return S}
 /* the same, pixel (the setting Sprites: Pixel): each art pixelated at its size in the game (TRACK_PX: art/tracks.py, its sheet
-   art/tracks-px.svg), turned to the nearest of the 8 ways, its lanes laid as the art's, whole pixels; the light on its up-left
-   (TRACKS.glow), its details lighter (TRACKS.detail). Its corner ox, oy in whole game px, drawn unsmoothed */
+   art/tracks-px.svg), turned to the nearest of the 8 ways, its lanes laid as the art's, whole pixels (halves away from the middle,
+   so each way the same turned); no light on it (the owner, 2026-10-29: "make them the same, no light": a light from one side looks
+   different on each way), its details lighter (TRACKS.detail). Its corner ox, oy in whole game px, drawn unsmoothed */
+const trackRound=v=>{const r=Math.round(v*1e6)/1e6;return Math.sign(r)*Math.round(Math.abs(r))};
 function trackPix(id,cls,a,alt,ci){
   const way=((Math.round(a/(Math.PI/4))%8)+8)%8,line=trackLine(id),key='px|'+id+'|'+cls+'|'+way+'|'+(alt?1:0)+'|'+ci;let S=TRACK_PICS.get(key);if(S)return S;
   const T=TRACKS,g=TRACK_PX[id][way*2+(alt&&!line?1:0)],lanes=line?[0]:TRACK_ACROSS[cls],ang=way*Math.PI/4+Math.PI/2,c=Math.cos(ang),s=Math.sin(ang),on=new Map();
-  lanes.forEach((l,j)=>{const x=line?0:l*T.lane/2+(alt?1:-1),y=line?0:-((j*5+(alt?3:0))%4)*T.stagger,dx=Math.round(x*c-y*s)+g.o[0],dy=Math.round(x*s+y*c)+g.o[1];
+  lanes.forEach((l,j)=>{const x=line?0:l*T.lane/2+(alt?1:-1),y=line?0:-((j*5+(alt?3:0))%4)*T.stagger,dx=trackRound(x*c-y*s)+g.o[0],dy=trackRound(x*s+y*c)+g.o[1];
     g.r.forEach((r,j2)=>{for(let i=0;i<r.length;i++)if(r[i]!=='.')on.set((dx+i)+','+(dy+j2),r[i])})});
-  const px=[...on.keys()].map(k=>k.split(',').map(Number)),ox=Math.min(...px.map(p=>p[0]))-1,oy=Math.min(...px.map(p=>p[1]))-1;
-  S=mkc(Math.max(...px.map(p=>p[0]))-ox+1,Math.max(...px.map(p=>p[1]))-oy+1,G=>{G.fillStyle=T.glow;for(const [x,y] of px)if(!on.has((x-1)+','+(y-1)))G.fillRect(x-1-ox,y-1-oy,1,1);
-    G.fillStyle=Object.values(T.col)[ci];for(const [x,y] of px)G.fillRect(x-ox,y-oy,1,1);G.fillStyle=T.detail;for(const [x,y] of px)if(on.get(x+','+y)==='+')G.fillRect(x-ox,y-oy,1,1)});
+  const px=[...on.keys()].map(k=>k.split(',').map(Number)),ox=Math.min(...px.map(p=>p[0])),oy=Math.min(...px.map(p=>p[1]));
+  S=mkc(Math.max(...px.map(p=>p[0]))-ox+1,Math.max(...px.map(p=>p[1]))-oy+1,G=>{G.fillStyle=Object.values(T.col)[ci];for(const [x,y] of px)G.fillRect(x-ox,y-oy,1,1);G.fillStyle=T.detail;for(const [x,y] of px)if(on.get(x+','+y)==='+')G.fillRect(x-ox,y-oy,1,1)});
   S.ox=ox;S.oy=oy;S.w=S.width;S.h=S.height;TRACK_PICS.set(key,S);return S}
 // every trail's prints you see in view, onto the scene (ctx: the scene in game pixels, cam its whole pixels); how many it drew.
 // Each laid from its stretch's own two points, from the older (its place and heading fixed once both are kept: a turn, or the
