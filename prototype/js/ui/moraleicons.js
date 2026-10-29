@@ -109,7 +109,7 @@ function iconPick(x,y,team){
   const c=B.iconCyc;return st.find(r=>r.g===c.order[c.i])||st[0]}
 // the icons over each group on the field (yours and theirs), drawn on the screen (not the zoomed field) so they keep their size
 const UICON={s:13,lift:22,k:2,crowd:2};// (its art in pixels, drawn k times over; crowd: the badges a banner keeps in a press: iconLayout)
-const unitIconScale=()=>B?.world?UICON.k*(window.devicePixelRatio||1)/VS:UICON.k;
+const unitIconScale=()=>B?.world?UICON.k*dprOf()/VS:UICON.k;
 /* where they stand (iconLayout; B.icons, for clicks, in the order drawn): each over its own group, its place on the field eased
    after its men on the battle's clock (follow: a man falling or running moves it with no jump; snap: field px past which it is
    simply put there, as when a group comes back into sight; deploying, the clock stands still and groups are placed at once, so

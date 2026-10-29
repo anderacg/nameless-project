@@ -30,7 +30,9 @@ function vfxCharge(u,t,m){
    by the clock, never a random draw; the jolt fades over SHAKE.life seconds of real time and never moves the camera (B.cam).
    Off: SHAKE.on false, or the system asks for reduced motion */
 const SHAKE={on:true,world:.2,charge:.6,amp:4,rout:1.5,max:5,life:.45,hz:38};
-function reducedMotion(){try{return !!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)}catch(e){return false}}
+// (asked of the browser once: its answer kept up to date by the query itself)
+const REDUCED_Q=(()=>{try{return window.matchMedia?matchMedia('(prefers-reduced-motion: reduce)'):null}catch(e){return null}})();
+function reducedMotion(){return !!(REDUCED_Q&&REDUCED_Q.matches)}
 const shakeOn=()=>SHAKE.on&&!reducedMotion();
 // a jolt of n pixels, unless a stronger one is still going (lt: its clock restarts on the next frame)
 function jolt(n){if(!B||!(n>0)||!shakeOn())return;const J=B.jolt||(B.jolt={a:0,t:0,lt:0});if(n<joltAmp())return;J.a=Math.min(SHAKE.max,n);J.t=SHAKE.life;J.lt=0}

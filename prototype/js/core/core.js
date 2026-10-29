@@ -13,6 +13,12 @@ let VW=576,VH=360,HUD_PX=.5;// (HUD_PX: game pixels to one CSS pixel)
 // device pixels), so the world glides a device pixel at a time (render.js drawWorld); CVS: the canvas's now (VS on the map, 1 in
 // a battle, a scene or a town, drawn in game pixels as before)
 let VS=1,CVS=1;
+/* the density drawn at (the owner, 2026-10-29: "it lags on mobile"): the screen's own (devicePixelRatio), at most cap (the setting
+   Resolution, ui.js: Full none, Balanced 2, Fast 1.5). The game's art is whole pixels, so a canvas of fewer pixels shown at the
+   window's size (pixelated, style.css) looks the same, its text a little coarser, and draws in a fraction of the time on a phone
+   (at 3, Balanced fills 4/9 of the pixels, Fast 1/4) */
+const RENDER={cap:2,fps:60};
+const dprOf=()=>Math.min(window.devicePixelRatio||1,RENDER.cap);
 // ctx: the context drawn into; the world map's ground and buildings go into a canvas of game pixels first (render.js drawWorld)
 const cv=$('#game');let ctx=cv.getContext('2d', { willReadFrequently: true });const ctx0=ctx;
 cv.width=VW;cv.height=VH;ctx.imageSmoothingEnabled=false;
@@ -31,7 +37,7 @@ const FIXED_VIEW=/[?&]test=/.test(location.search)&&!/[?&]v=/.test(location.sear
 const MAPZOOM={z:0,map:false,on:false,s0:1,auto:1,lo:1,hi:1,vw:576,vh:360,IN:320,IN_H:180,OUT:1.7e6,PINCH:1.25,WHEEL:140,SMALL:540,PHONE:3,PHONE_START:1.5,PHONE_MAX:2,PHONE_IN:240,PHONE_IN_H:120,wt:0,k(){return this.on?this.s0/VS:1},phone(w,h){return !FIXED_VIEW&&Math.min(w,h)<=this.SMALL}};
 // the screen is the window; the canvas fills it at a whole-number scale (a game pixel's last part may run past the edge)
 function fitScreen(){
-  const scr=cv.parentElement,dpr=window.devicePixelRatio||1,aw=innerWidth,ah=innerHeight,Z=MAPZOOM,phone=Z.phone(aw,ah);
+  const scr=cv.parentElement,dpr=dprOf(),aw=innerWidth,ah=innerHeight,Z=MAPZOOM,phone=Z.phone(aw,ah);
   const s0=FIXED_VIEW?Math.max(1,Math.floor(Math.min(aw*dpr/576,ah*dpr/360))):Math.max(1,Math.floor(Math.min(ah*dpr/VIEW.h,aw*dpr/VIEW.w)));
   // (the screen in device pixels: the window, or the tests' fixed view at its scale; the view at a scale s: dw/s x dh/s)
   const dw=FIXED_VIEW?576*s0:aw*dpr,dh=FIXED_VIEW?360*s0:ah*dpr,fit=s=>Math.ceil(dw/s)*Math.ceil(dh/s)<=Z.OUT&&Math.ceil(dw/s)<=MW*TILE&&Math.ceil(dh/s)<=MH*TILE;

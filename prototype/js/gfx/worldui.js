@@ -148,7 +148,7 @@ const wuiX=(x,cam)=>snapV(x)-cam.x,wuiY=(y,cam)=>snapV(y)-cam.y;
 function wuiDrawArrow(x,y,k,col){const c=wuiArrow(k,col);wuiPut(c,x,y,c.cx,c.tip)}
 // the crossed swords at screen (x, y): their pommels' row there; at least WUI_K.swords CSS px high (zoomed far out, a phone's
 // farthest: at a whole multiple of their pixels, still crisp)
-function wuiDrawSwords(x,y){const c=wuiSwords(),s=Math.max(1,Math.ceil(WUI_K.swords/(c.height*VS/(window.devicePixelRatio||1))));
+function wuiDrawSwords(x,y){const c=wuiSwords(),s=Math.max(1,Math.ceil(WUI_K.swords/(c.height*VS/dprOf())));
   if(s===1)wuiPut(c,x,y,c.cx,c.tip);else ctx.drawImage(c,x-c.cx*s,y-c.tip*s,c.width*s,c.height*s)}
 // an arrow dropping onto (x, y) from t0: falls (drawn out), lands (squashed), then bobs; its shadow on the ground under it. put:
 // another marker in its place, dropping and bobbing as it does (wuiDrawSwords)

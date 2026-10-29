@@ -32,14 +32,17 @@ class BattleSides{
   if(a===b)return 1;if(a.owner===P||b.owner===P){const other=a.owner===P?b:a;if(other.initial&&!other.neutral)return other.base===0?1:-1;if(other.duty&&armyRelation(a.owner,b.owner)>=0)return 1}
   const relation=armyRelation(a.owner,b.owner);if(relation)return relation;if(a.initial&&b.initial&&!a.neutral&&!b.neutral)return a.base===b.base?1:-1;return 0;
  }
- relation(a,b){if(a===b)return 1;const x=this.teamRecord(a),y=this.teamRecord(b);return x&&y?this.pair(x,y):0}
+ // (asked for every pair of men near each other in the jostle (battle.js): remembered while it runs (memo, nothing can change
+ // who is whose foe meanwhile), asked afresh everywhere else)
+ relation(a,b){if(a===b)return 1;const M=this.memo,k=a*4096+b;let v=M?M.get(k):undefined;
+  if(v===undefined){const x=this.teamRecord(a),y=this.teamRecord(b);v=x&&y?this.pair(x,y):0;if(M)M.set(k,v)}return v}
  teams(){return [...new Set(this.records.filter(r=>r.joined).map(r=>r.team))]}
  colourKey(team){return team===0?'own':this.relation(0,team)>0?'ally':this.relation(0,team)<0?'foe':'neutral'}
  colour(team){return ['#6fa8e0','#e0605a','#b69ae5','#dba75f','#63c7bf','#da8fa5','#9fbe71','#c8b9a4'][team%8]}
  label(r){return r.owner===P?P.name||'Your army':r.owner.name||r.force?.name||r.owner.label?.()||'An army'}
  activate(){
   if(this.active)return;this.active=true;const b=this.b;
-  for(const r of this.records)r.team=r.id;
+  this.memo=null;for(const r of this.records)r.team=r.id;
   for(const r of this.records)for(const id of r.groups){const g=b.groups[id];if(!g)continue;g.team=r.team;if(r.team!==0&&!g.armyName){g.armyName=this.label(r);g.name=g.armyName+' · '+g.name}g.ally=r.team!==0&&this.relation(0,r.team)>0;g.foe=this.relation(0,r.team)<0;if(g.resolve)g.resolve.team=r.team;for(const u of b.units)if(u.grp===id){u.team=r.team;u.hid=0;delete u.ls;delete u.rv;u.tgt=null;if(u.leader)u.leader.team=r.team}}
   for(const a of b.arrows)if(a.by)a.team=a.by.team;b.captains={};b.sight=null;b.cmdT=0;
  }

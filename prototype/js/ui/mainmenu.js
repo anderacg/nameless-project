@@ -46,7 +46,7 @@ const MainMenu={el:null,scene:null,size:'',drawn:0,lore:0,loreAt:0,still:false,
   loreShow(){const p=this.el&&this.el.querySelector('.mm-lore p');if(!p)return;p.textContent=MAINMENU.lore[this.lore];p.classList.remove('in');void p.offsetWidth;p.classList.add('in')},
   /* the sizes (the screen's, a scale s of whole device pixels to a game pixel): the scene, the banner's cloth (under the
      emblem's flag), the emblem and the title at the largest whole scale their places allow; baked again when the size changes */
-  layout(){const el=this.el,sc=document.getElementById('screen');if(!el||el.hidden||!sc)return;const dpr=window.devicePixelRatio||1,cw=sc.clientWidth,ch=sc.clientHeight;if(!cw||!ch)return;
+  layout(){const el=this.el,sc=document.getElementById('screen');if(!el||el.hidden||!sc)return;const dpr=dprOf(),cw=sc.clientWidth,ch=sc.clientHeight;if(!cw||!ch)return;
     const mobile=matchMedia(MAINMENU.mobileQuery).matches;el.dataset.mobile=String(mobile);
     const s=Math.max(1,Math.round(dpr*ch/MAINMENU.artH)),W=Math.ceil(cw*dpr/s),H=Math.ceil(ch*dpr/s),ban=el.querySelector('.mm-banner'),br=ban.getBoundingClientRect(),
       bw=Math.ceil(br.width*dpr/s),key=[W,H,s,bw,dpr,mobile,el.dataset.page].join();if(key===this.size)return;this.size=key;

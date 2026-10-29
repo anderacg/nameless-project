@@ -74,7 +74,7 @@ function marchFacingGuide(g,row,x,y,scale){
   g.beginPath();g.moveTo(sx,sy);g.lineTo(ex,ey);g.moveTo(ex-c*8-s*5,ey-s*8+c*5);g.lineTo(ex,ey);g.lineTo(ex-c*8+s*5,ey-s*8-c*5);g.stroke();
 }
 function drawMarch(){
-  const s=G.march,cv=document.getElementById('marchCanvas');if(!s||!cv)return;const v=marchCanvasView(),scale=v.scale,g=cv.getContext('2d'),dpr=window.devicePixelRatio||1;
+  const s=G.march,cv=document.getElementById('marchCanvas');if(!s||!cv)return;const v=marchCanvasView(),scale=v.scale,g=cv.getContext('2d'),dpr=dprOf();
   const width=Math.round(v.w*dpr),height=Math.round(v.h*dpr);if(cv.width!==width)cv.width=width;if(cv.height!==height)cv.height=height;g.setTransform(dpr,0,0,dpr,0,0);g.fillStyle='#211c18';g.fillRect(0,0,v.w,v.h);g.font='12px Arial';g.textAlign='center';
   for(const [r,col,dash] of [[marchDraftOuter()+WORLD_BATTLE.interaction,'#756447',[4,4]],[marchDraftOuter(),'#c9a551',[]],[marchCore(P),'#796943',[]]]){g.strokeStyle=col;g.setLineDash(dash);g.beginPath();g.arc(v.x,v.y,r*scale,0,Math.PI*2);g.stroke()}g.setLineDash([]);g.fillStyle='#cfba85';g.fillText('FRONT →',v.w-48,v.y);
   const drag=s.gesture;if(drag?.form){g.strokeStyle='#ffe09a';g.lineWidth=2;g.beginPath();g.moveTo(drag.start.x,drag.start.y);g.lineTo(drag.end.x,drag.end.y);g.stroke();g.lineWidth=1}

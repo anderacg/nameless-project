@@ -41,7 +41,7 @@ function bandMarkerSprite(col){let s=BAND_MARKERS.get(col);if(!s){s=mkc(9,11,g=>
 // Shared marker bounds include its native-resolution count, so nearby indicators leave both visible.
 function bandMarkerAt(o,m,cam){
   const s=bandMarkerSprite(m.col),x=Math.round(o.x-cam.x)-4,y=Math.round(o.y-cam.y-m.h-BANNER_GAP-s.height),n=o.fighters??o.n;
-  const count=n>1?mapTxtPic(String(n),m.col,'center',VS,window.devicePixelRatio||1):null,right=Math.max(x+s.width,count?x+4+(count.width-count.ox+1)/VS:x+s.width);
+  const count=n>1?mapTxtPic(String(n),m.col,'center',VS,dprOf()):null,right=Math.max(x+s.width,count?x+4+(count.width-count.ox+1)/VS:x+s.width);
   return{s,x,y,right};
 }
 // (a party's banner only: a site's banner() is its camp flag's colour, structures.js)
@@ -50,7 +50,7 @@ function bannerAt(o,f){const b=o.banner&&o.banner();if(!b||typeof b!=='object')r
 const TRAVEL_HIDE={size:14,gap:4,s:null};
 function drawTravelConcealment(cam){
   if(B||P.stay||!hiddenAt(P.x,P.y))return null;
-  const b=bannerAt(P,0);if(!b)return null;const k=(window.devicePixelRatio||1)/VS,size=TRAVEL_HIDE.size*k,x=b.x+b.s.width+TRAVEL_HIDE.gap*k-cam.x,y=b.y-cam.y;
+  const b=bannerAt(P,0);if(!b)return null;const k=dprOf()/VS,size=TRAVEL_HIDE.size*k,x=b.x+b.s.width+TRAVEL_HIDE.gap*k-cam.x,y=b.y-cam.y;
   const s=TRAVEL_HIDE.s||(TRAVEL_HIDE.s=mkc(9,9,g=>{for(const [x,y,c] of badgePx('hidden'))rect(g,c,x,y)}));
   ctx.save();ctx.imageSmoothingEnabled=false;ctx.drawImage(s,Math.round(x),Math.round(y),size,size);ctx.restore();return{x,y,w:size,h:size};
 }
@@ -58,7 +58,7 @@ function drawTravelConcealment(cam){
 const TRAVEL_PACE={size:14,gap:4,cache:new Map()};
 function drawTravelPace(cam){
   if(B||P.stay||P.camp||!(P.tx!=null||G.chase||G.follow))return null;const b=bannerAt(P,0);if(!b)return null;
-  const kind=G.hurry?'run':'walk',k=(window.devicePixelRatio||1)/VS,size=TRAVEL_PACE.size*k,x=b.x+b.s.width+TRAVEL_PACE.gap*k-cam.x,y=b.y-cam.y+(hiddenAt(P.x,P.y)?TRAVEL_HIDE.size+3:0)*k;
+  const kind=G.hurry?'run':'walk',k=dprOf()/VS,size=TRAVEL_PACE.size*k,x=b.x+b.s.width+TRAVEL_PACE.gap*k-cam.x,y=b.y-cam.y+(hiddenAt(P.x,P.y)?TRAVEL_HIDE.size+3:0)*k;
   let s=TRAVEL_PACE.cache.get(kind);if(!s){s=mkc(9,9,g=>{for(const [x,y,c] of badgePx(kind))rect(g,c,x,y)});TRAVEL_PACE.cache.set(kind,s)}
   ctx.save();ctx.imageSmoothingEnabled=false;ctx.drawImage(s,Math.round(x),Math.round(y),size,size);ctx.restore();return{x,y,w:size,h:size,kind};
 }
@@ -76,16 +76,19 @@ function stealthEyeSprite(exposure,col,width=18){
 }
 // Keep each art pixel an integer-sized block at the display density, aligned to physical pixels.
 function drawStealthEye(exposure,col,x,y,size){
-  const s=stealthEyeSprite(exposure,col,size*(window.devicePixelRatio||1));
+  const s=stealthEyeSprite(exposure,col,size*dprOf());
   ctx.drawImage(s,Math.round(x*VS)/VS,Math.round(y*VS)/VS,s.width/VS,s.height/VS);
 }
-function travelDetectionState(){
+// (drawn only: worked out again at most every DETECT_DRAW ms of real time, not each frame)
+const DETECT_DRAW=100;let DETECT_LAST=null;
+function travelDetectionState(){const now=performance.now();if(DETECT_LAST&&now-DETECT_LAST.at<DETECT_DRAW)return DETECT_LAST.v;const v=travelDetectionNow();DETECT_LAST={at:now,v};return v}
+function travelDetectionNow(){
   const rows=[];for(const o of travelObservers()){const d=travelDetection(o);if(d)rows.push(d)}
   const seen=rows.filter(d=>d.sees),exposure=Math.max(0,...rows.map(d=>d.exposure));return{rows,seen,exposure,danger:seen.some(d=>d.danger)};
 }
 const travelDetectionColor=state=>state.seen.length?state.danger?'#ef8c73':'#dbca91':state.exposure?'#d9ad57':'#82c6b3';
 function drawTravelDetection(cam){
-  if(B||P.stay)return null;const state=travelDetectionState(),k=(window.devicePixelRatio||1)/VS,V=vis(),markers=new Map(BANNERQ.filter(q=>q.marker).map(q=>[q.o,bandMarkerAt(q.o,q.marker,cam)]));ctx.save();ctx.imageSmoothingEnabled=false;
+  if(B||P.stay)return null;const state=travelDetectionState(),k=dprOf()/VS,V=vis(),markers=new Map(BANNERQ.filter(q=>q.marker).map(q=>[q.o,bandMarkerAt(q.o,q.marker,cam)]));ctx.save();ctx.imageSmoothingEnabled=false;
   for(const d of state.rows){const o=d.o;if(!inSight(o.x,o.y)||!o.inView(V))continue;const b=bannerAt(o,0),m=markers.get(o),w=STEALTH_EYE.size*k,h=w*2/3,x=b?b.x+b.s.width+STEALTH_EYE.gap*k-cam.x:m?m.right+STEALTH_EYE.gap*k:o.x-cam.x-w/2,y=b?b.y-cam.y:m?m.y:o.y-cam.y-18-h;
     drawStealthEye(d.exposure,d.sees?d.danger?'#ef8c73':'#dbca91':d.exposure?'#d9ad57':'#8f9e94',x,y,STEALTH_EYE.size);
     const q=!d.sees&&TravelSearch.of(o);if(q&&inSight(q.x,q.y))drawStealthEye(0,'#d9ad57',q.x-cam.x-w/2,q.y-cam.y-h/2,STEALTH_EYE.size);// (searching: an eye shut on where it last saw you)

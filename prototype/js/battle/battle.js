@@ -65,7 +65,7 @@ const roomOf=(a,b)=>{const big=a.s.big||b.s.big;if(!JOSTLE.on)return big?18:8;co
   if(big)return foe?18:18*k;const R=(bodyOf(a)+bodyOf(b))/2*k;return foe?Math.min(R*JOSTLE.foe,Math.max(8,Math.min(a.s.reach||11,b.s.reach||11)*JOSTLE.reach)):R};
 // (the farthest two may stand apart and still be pushed: big ones always gathered)
 const roomMax=a=>(a.s.big?18:JOSTLE.on?(bodyOf(a)+JOSTLE.mount)/2:8)*(JOSTLE.on&&B.world?WORLD_BATTLE.sprite:1);
-function jostle(dt){for(let p=0;p<(JOSTLE.on?JOSTLE.passes:1);p++)jostlePass(p?0:dt)}
+function jostle(dt){const S=B.sides;if(S)S.memo=new Map();try{for(let p=0;p<(JOSTLE.on?JOSTLE.passes:1);p++)jostlePass(p?0:dt)}finally{if(S)S.memo=null}}
 function jostlePass(dt){
   const U=B.units,S=spatialOpen(SPATIAL.jostle),big=[],list=[];for(let i=0;i<U.length;i++)if(U[i].hp>0&&U[i].s.big)big.push(i);
   let a=null,x0=0,y0=0;const gather=()=>{x0=a.x;y0=a.y;const r=roomMax(a)+JOSTLE.pad+1;list.length=0;for(const i of big)list.push(i);S.box(x0-r,y0-r,x0+r,y0+r,null,false,list)};

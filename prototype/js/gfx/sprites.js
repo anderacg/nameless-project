@@ -270,7 +270,7 @@ function mapTxtPic(s,col,al,scale,dpr){
 }
 // A queued map label's anchor passes through the current camera transform, then the finished picture is copied 1:1.
 function mapTxt(s,x,y,col,al){
-  const g=ctx,m=g.getTransform(),dpr=window.devicePixelRatio||1,c=mapTxtPic(s,col,al,Math.hypot(m.a,m.b),dpr),px=Math.round(m.a*x+m.c*y+m.e),py=Math.round(m.b*x+m.d*y+m.f);
+  const g=ctx,m=g.getTransform(),dpr=dprOf(),c=mapTxtPic(s,col,al,Math.hypot(m.a,m.b),dpr),px=Math.round(m.a*x+m.c*y+m.e),py=Math.round(m.b*x+m.d*y+m.f);
   g.save();try{g.setTransform(1,0,0,1,0,0);g.shadowBlur=0;g.drawImage(c,px-c.ox,py-c.oy)}finally{g.restore()}
 }
 

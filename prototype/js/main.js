@@ -2,7 +2,11 @@
 damageTypesInit();// (every troop kind its damage type and armour: matchups.js)
 /* ---------- loop ---------- */
 let last=performance.now(),hudCards=false;
+// (about RENDER.fps frames a second at most: a frame sooner than .65 of its interval after the last is skipped, so a 120 Hz screen
+// draws every other one (60), a 90 Hz one each (its frames come late enough); 30: a 60 Hz screen every other one. The setting
+// Frame rate, ui.js)
 function loop(now){
+  if(now-last<650/RENDER.fps){requestAnimationFrame(loop);return}
   const dt=Math.min(.05,(now-last)/1000);last=now;
   fastWatch();// (Travel fast: back to 1x when anything calls for you: world.js)
   if(!DevConsole.opened){
