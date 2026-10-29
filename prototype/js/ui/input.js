@@ -23,11 +23,13 @@ function act(a,arg){
   if(G.est&&G.mode==='dialog'&&estateFief(a,arg))return;// (your own estate's window on the map: its building buttons, estates.js)
   const t=G.town&&G.town.ref;if(t)return townAct(a,arg,t);// (the rest: a town's window and its tabs, town.js)
 }
-panel.addEventListener('click',e=>{if(e.target.closest('[data-recruit-field]'))return;const b=e.target.closest('[data-act]');if(b)act(b.dataset.act,b.dataset.arg)});
+panel.addEventListener('click',e=>{if(e.target.closest('[data-recruit-field],[data-qty]'))return;const b=e.target.closest('[data-act]');if(b)act(b.dataset.act,b.dataset.arg)});
 // (the barracks' group for a kind in your order: town.js Barracks, its Groups)
 function updateRecruitDraft(e){const field=e.target.dataset.recruitField||'';if(!field.startsWith('cartTarget:')||G.mode!=='town'||!G.town)return;
   const k=field.slice(11),v=e.target.value,c=G.town.cartTarget||(G.town.cartTarget={});if(v==='auto')delete c[k];else c[k]=v;renderTown();
 }
+// (a typed amount: its act on change (Enter, or leaving the field), the arg before it if any: window.js railQty, the barracks' counts)
+panel.addEventListener('change',e=>{const el=e.target.closest('[data-qty]');if(el)act(el.dataset.qty,(el.dataset.arg?el.dataset.arg+':':'')+el.value)});
 panel.addEventListener('input',updateRecruitDraft);
 panel.addEventListener('change',updateRecruitDraft);
 panel.addEventListener('input',updateCompTransferDraft);

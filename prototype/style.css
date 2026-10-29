@@ -690,7 +690,8 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 .rec-txt{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
 .rec-txt small{color:var(--muted);font-size:var(--fs-xs)}
 .rec-step{display:flex;align-items:center;gap:var(--sp-1);flex-wrap:wrap;justify-content:flex-end}
-.rec-n{min-width:22px;text-align:center;font-size:var(--fs-lg);color:var(--accent)}
+.rec-n{width:44px;min-height:30px;text-align:center;font-size:var(--fs-lg);color:var(--accent);background:var(--shade);border:1px solid var(--line-2);border-radius:var(--r-sm);-moz-appearance:textfield}
+.rec-n::-webkit-inner-spin-button,.qty-n::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 .rec-pic{position:relative}
 .rec-badge{position:absolute;top:-5px;right:-5px;width:14px;height:14px;border-radius:50%;background:var(--accent);color:var(--accent-ink);font:italic bold 10px/14px Georgia,serif;text-align:center;box-shadow:0 0 0 1px var(--shade)}
 /* (a narrow screen, a phone held upright: the row in two lines, its name and i, then how many) */
@@ -872,6 +873,7 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 /* a window's ×1 / ×5 quantity toggle (window.js railQty): the Buy and Sell under it take that many */
 .qty{display:inline-flex;gap:0;align-self:flex-start}.qty .btn{border-radius:0;min-width:46px}.qty .btn:first-child{border-radius:var(--r-sm) 0 0 var(--r-sm)}.qty .btn:last-child{border-radius:0 var(--r-sm) var(--r-sm) 0}
 .qty .btn.on{background:var(--accent);color:#1a1408;border-color:var(--accent)}
+.qty .qty-n{width:56px;margin-left:6px;text-align:center;font-size:var(--fs-md);color:var(--fg);background:var(--shade);border:1px solid var(--line-2);border-radius:var(--r-sm);-moz-appearance:textfield}.qty .qty-n.on{border-color:var(--accent);color:var(--accent)}
 .lab-qty{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
 @media (pointer:coarse){.rkact kbd{display:none}}
 @container (max-width:760px) or (max-height:520px){

@@ -60,7 +60,7 @@ function railKeyActions(as,note){as=as.filter(Boolean);if(!as.length)return '';
    (as many as can be chosen; 1: a tick box), unit (what one is worth, for the total)}], total (the words before it: 'You get'),
    unit ('g'), sel ({id: n} to start with; none: everything), confirm [act, label]: Confirm sends act with the choice ('id:n,id:n',
    or encode(sel)), back [act, arg, label], note. railConfirm(o): the same window with nothing to choose, for what cannot be undone:
-   title, sub, text, facts, confirm [act, arg, label], back. railQty(n, act): a window's ×1 / ×5 quantity toggle */
+   title, sub, text, facts, confirm [act, arg, label], back. railQty(n, act): a window's ×1 / ×5 quantity toggle, and a field to type any amount (input.js: its act on change) */
 let PICK=null;
 function railPicker(o){PICK={o,sel:o.sel?{...o.sel}:Object.fromEntries(o.items.map(x=>[x.id,x.max]))};pickShow()}
 function pickShow(focus){
@@ -78,7 +78,8 @@ onAct('pk-',(a,arg)=>{if(a!=='pk-set'||!PICK||!panel.classList.contains('picker'
   PICK.sel[x.id]=Math.min(x.max,Math.max(0,+arg.slice(i+1)));pickShow(id)});
 function railConfirm(o){PICK=null;showPanel('<div class="top"><h2>'+o.title+'</h2>'+(o.sub?'<span class="muted">'+o.sub+'</span>':'')+'</div>'+(o.text?'<p>'+o.text+'</p>':'')+
   (o.facts&&o.facts.length?'<ul class="tnotes">'+o.facts.map(f=>'<li>'+f+'</li>').join('')+'</ul>':'')+nav(o.back,o.confirm));panel.classList.add('picker','confirm')}
-const railQty=(n,a)=>'<div class="qty" role="group" aria-label="How many">'+[1,5].map(k=>'<button class="btn sm'+(n===k?' on':'')+'" type="button" data-act="'+a+'" data-arg="'+k+'" aria-pressed="'+(n===k)+'">×'+k+'</button>').join('')+'</div>';
+const railQty=(n,a)=>'<div class="qty" role="group" aria-label="How many">'+[1,5].map(k=>'<button class="btn sm'+(n===k?' on':'')+'" type="button" data-act="'+a+'" data-arg="'+k+'" aria-pressed="'+(n===k)+'">×'+k+'</button>').join('')+'<input class="qty-n'+(n!==1&&n!==5?' on':'')+'" type="number" inputmode="numeric" min="1" max="'+QTY_MAX+'" step="1" value="'+n+'" data-qty="'+a+'" aria-label="How many"></div>';
+const QTY_MAX=999;
 /* a rail screen's first page (its overview), past its own description and key actions: what is in each area, as a short list.
    RailScreen is the base (towns, holdings, estates, the travellers); areas: [{n (its name), note (a few words)}] */
 class RailScreen{

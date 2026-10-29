@@ -292,7 +292,7 @@ const RECRUIT_UI={fill:.6,ask:.5,step:5};
 const panelScroll=v=>{const b=panel.querySelector('.rwbody');if(v===undefined)return b?b.scrollTop:0;if(b)b.scrollTop=v};
 class Barracks extends Place{
   constructor(id){
-    super(id,{n:'Barracks',ico:'shield',verbs:{'rec-pick':'pick','rec-tab':'tab','rec-add':'add','rec-clear':'clear','rec-fill':'fill','rec-groups':'groups','rec-hire':'order','rec-hire-ok':'order','rec-hire-no':'order',
+    super(id,{n:'Barracks',ico:'shield',verbs:{'rec-pick':'pick','rec-tab':'tab','rec-add':'add','rec-set':'set','rec-clear':'clear','rec-fill':'fill','rec-groups':'groups','rec-hire':'order','rec-hire-ok':'order','rec-hire-no':'order',
       'rec-info':'info','rec-info-back':'info',hire:'hire',train:'train','rec-upgroup':'upgroup'}});
   }
   shut(t){
@@ -320,14 +320,14 @@ class Barracks extends Place{
     const rows=hires.map(k=>{const s=ST[k],n=c[k]||0,why=this.rowWhy(t,k),more=why?0:this.room(t,k);
       return '<div class="rec-row'+(pick===k?' sel':'')+'" data-act="rec-pick" data-arg="'+k+'"><button class="rec-pic" type="button" data-act="rec-info" data-arg="'+k+'" aria-label="'+htmlText(s.n)+': its card"><img src="'+portrait(k)+'" alt=""><span class="rec-badge" aria-hidden="true">i</span></button>'+
         '<div class="rec-txt"><strong>'+glyphSVG(iconOfType(k),14)+' '+s.n+'</strong><small>Tier '+s.tier+(s.race?' · '+RACES[s.race].n:'')+' · '+kind(s)+' · <b class="gold">'+hireCost(k)+'g</b></small><small>'+(why?'<span class="bad">'+why+'</span>':'You lead ×'+(P.troops[k]||0))+'</small></div>'+
-        '<div class="rec-step">'+btn('rec-add',k+':-1','−',!n)+'<b class="rec-n">'+n+'</b>'+btn('rec-add',k+':1','+',!more)+btn('rec-add',k+':'+RECRUIT_UI.step,'+'+RECRUIT_UI.step,!more)+btn('rec-add',k+':max','Max',!more)+'</div></div>'}).join('');
+        '<div class="rec-step">'+btn('rec-add',k+':-1','−',!n)+'<input class="rec-n" type="number" inputmode="numeric" min="0" max="'+(n+more)+'" step="1" value="'+n+'" data-qty="rec-set" data-arg="'+k+'" aria-label="'+htmlText(s.n)+': how many"'+(why?' disabled':'')+'>'+btn('rec-add',k+':1','+',!more)+btn('rec-add',k+':'+RECRUIT_UI.step,'+'+RECRUIT_UI.step,!more)+btn('rec-add',k+':max','Max',!more)+'</div></div>'}).join('');
     return '<div class="recwrap"><div class="reclist"><div class="rec-rows">'+rows+'</div><p class="muted" style="font-size:12px">More volunteers come forward each day as the '+t.label+' grows and prospers.</p></div><div class="reccard">'+(pick?unitCard(pick):'')+'</div></div>'+this.bar(t);
   }
   // the hire bar: the order's totals, its buttons, the groups (when open) and the question (when it spends much)
   bar(t){const s=G.town,T=this.totals(),r=partyRoster(P),c=this.cart(),q=this.check(t),opt=(v,n,sel,dis)=>'<option value="'+v+'"'+(sel?' selected':'')+(dis?' disabled':'')+'>'+htmlText(n)+'</option>';
     const groups=s.recGroups&&T.ks.length?'<div class="rec-groups">'+T.ks.map(k=>'<label>'+ST[k].n+' ×'+c[k]+'<select data-recruit-field="cartTarget:'+k+'" aria-label="'+htmlText(ST[k].n)+': group">'+opt('auto','Automatic',!(s.cartTarget||{})[k])+r.groups.filter(g=>g.type===k).map(g=>opt(g.id,(g.name||ST[k].n)+' · '+g.id+' × '+g.count,(s.cartTarget||{})[k]===g.id,r.groupRoom(k,g.id)<c[k])).join('')+opt('new','A new group',(s.cartTarget||{})[k]==='new',r.groupRoom(k,'new')<c[k])+'</select></label>').join('')+'</div>':'';
     const ask=s.cartAsk?'<div class="recruit-confirm" role="status">Spend '+T.cost+'g, more than half your gold?<div class="btns"><button type="button" class="btn primary" data-act="rec-hire-ok">Yes, hire</button><button type="button" class="btn" data-act="rec-hire-no">Cancel</button></div></div>':'';
-    return '<section class="rec-bar" aria-label="Your order"><div class="rec-sum" aria-live="polite">'+(T.n?'Hire <b>'+T.n+'</b> soldier'+(T.n>1?'s':'')+' · <b class="gold">'+T.cost+'g</b> · band '+partySize()+' → '+(partySize()+T.n)+' / '+partyCap():'Choose how many with + and −, or Fill band.')+(T.n&&!q.ok?' · <span class="bad">'+q.why+'</span>':'')+'</div>'+
+    return '<section class="rec-bar" aria-label="Your order"><div class="rec-sum" aria-live="polite">'+(T.n?'Hire <b>'+T.n+'</b> soldier'+(T.n>1?'s':'')+' · <b class="gold">'+T.cost+'g</b> · band '+partySize()+' → '+(partySize()+T.n)+' / '+partyCap():'Choose how many with + and − (or type it), or Fill band.')+(T.n&&!q.ok?' · <span class="bad">'+q.why+'</span>':'')+'</div>'+
       '<div class="btns"><button type="button" class="btn sm" data-act="rec-fill"'+(partySize()>=partyCap()?' disabled':'')+'>Fill band</button><button type="button" class="btn sm" data-act="rec-clear"'+(T.n?'':' disabled')+'>Clear</button><button type="button" class="btn sm" data-act="rec-groups"'+(T.n?'':' disabled')+'>Groups: '+(Object.keys(s.cartTarget||{}).some(k=>c[k])?'chosen':'auto')+(s.recGroups?' ▴':' ▾')+'</button><span class="grow"></span><button type="button" class="btn primary" data-act="rec-hire"'+(T.n&&q.ok?'':' disabled')+'>Hire'+(T.n?' · '+T.cost+'g':'')+'</button></div>'+groups+ask+(s.recruitNotice?'<p role="status">'+s.recruitNotice+'</p>':'')+'</section>'}
   // (can the whole order be hired: gold, willing, room in your band; each kind's own rules, its standing)
   check(t){const T=this.totals();if(!T.n)return {ok:false,why:''};if(T.cost>P.gold)return {ok:false,why:'Not enough gold'};if(T.n>Math.floor(t.vol||0))return {ok:false,why:'Not that many willing'};
@@ -336,6 +336,9 @@ class Barracks extends Place{
   tab(arg){G.town.recTab=arg==='train'?'train':'hire';G.town.info=null}
   add(arg,t){const [k,n]=String(arg).split(':'),c=this.cart();if(!this.hires(t).includes(k)||this.rowWhy(t,k))return;const more=this.room(t,k);
     c[k]=Math.max(0,(c[k]||0)+(n==='max'?more:Math.min(+n||0,more)));G.town.cartAsk=false;G.town.recruitNotice=''}
+  // (a typed count (k:n): as many as could be hired, none below 0)
+  set(arg,t){const [k,n]=String(arg).split(':'),c=this.cart();if(!this.hires(t).includes(k)||this.rowWhy(t,k))return;
+    c[k]=Math.max(0,Math.min(Math.floor(+n)||0,(c[k]||0)+this.room(t,k)));G.town.cartAsk=false;G.town.recruitNotice=''}
   clear(){G.town.cart={};G.town.cartAsk=false;G.town.recruitNotice=''}
   groups(){G.town.recGroups=!G.town.recGroups}
   // Fill band: your free places, a mix of the cheapest melee and ranged kinds you may hire here (RECRUIT_UI.fill melee), as gold and the willing allow
@@ -523,11 +526,11 @@ const siegeBody=t=>PLACES.siege.body(t);
 /* the town window's own actions (no prefix): act() (input.js) hands them here with the town t, once no prefix, menu, encounter
    or hero action took them. A place's verb is its own (Place act: the barracks' recruits and training, the hall's talk and
    contract, the tavern's broker and companions, the smith, the stable and the market, the lists, the siege camp, the steward's
-   fief- orders); the window's: qty (the ×1 / ×5 of a Buy and Sell), tab (a place opened; home: the overview), bld (one of your
+   fief- orders); the window's: qty (how many a Buy and Sell takes: ×1, ×5 or typed), tab (a place opened; home: the overview), bld (one of your
    holding's buildings, townui.js). The window redraws where it was scrolled (window.js showRail), the focus back on the button
    pressed */
 const TOWN_WINDOW_ACTS={
-  qty:arg=>{G.town.qty=+arg===5?5:1},
+  qty:arg=>{G.town.qty=Math.max(1,Math.min(QTY_MAX,Math.floor(+arg)||1))},
   tab:arg=>{G.town.tab=arg==='home'?null:arg;G.town.bld=null;G.town.direct=false;G.town.greet=null;G.town.news=null},
   bld:arg=>{G.town.tab='fief';G.town.bld=arg;G.town.direct=false;G.town.greet=null}
 };

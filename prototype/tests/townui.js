@@ -55,7 +55,12 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t
     // the market's ×1 / ×5: one toggle for the window, its Buy and Sell take that many
     t.act('tab','trade');{const one=qa('.rwbody .row [data-act="buy"]');ok(q('.rwbody .qty')&&one.length>3&&one.every(b=>b.textContent==='Buy'&&/:1$/.test(b.dataset.arg))&&!qa('.rwbody .row .btn').some(b=>/Buy 5|Sell 5/.test(b.textContent)),'the Market: Buy and Sell, short, with a ×1 / ×5 toggle (×1 now)');
       q('.qty [data-arg="5"]').click();const n0=t.goodN('grain');ok(G.town.qty===5&&qa('.rwbody .row [data-act="buy"]').every(b=>/:5$/.test(b.dataset.arg))&&q('.qty [data-arg="5"]').classList.contains('on'),'×5: every Buy and Sell takes five');
-      q('.rwbody .row [data-act="buy"][data-arg="grain:5"]').click();ok(t.goodN('grain')===n0+5,'and Buy buys five, as the old Buy 5 did');t.act('qty','1')}
+      q('.rwbody .row [data-act="buy"][data-arg="grain:5"]').click();ok(t.goodN('grain')===n0+5,'and Buy buys five, as the old Buy 5 did');
+      {const f=q('.qty .qty-n');f.value='12';f.dispatchEvent(new Event('change',{bubbles:true}));const n1=t.goodN('grain');
+       ok(G.town.qty===12&&qa('.rwbody .row [data-act="buy"]').every(b=>/:12$/.test(b.dataset.arg))&&q('.qty .qty-n.on')&&!q('.qty .btn.on'),'an amount typed (12): every Buy and Sell takes twelve');
+       q('.rwbody .row [data-act="sell"][data-arg="grain:12"]').click();ok(t.goodN('grain')===n1-12||n1<12,'and Sell sells twelve');
+       t.act('qty','0');ok(G.town.qty===1,'none or less: one');t.act('qty','5000');ok(G.town.qty===t.QTY_MAX,'too many: '+t.QTY_MAX)}
+      t.act('qty','1')}
     t.act('tab','trade');ok(q('.rwbody .rcard img.rc-pic')&&qa('.rwbody .row [data-act="buy"]').length>3&&!q('.rwbody .rcard [data-act="buy"]'),'the Market: its merchants as a card, the goods as rows');
     t.act('tab','smith');ok(q('.rwbody .rcard img.rc-pic')&&/The smith/.test(q('.rwbody .rcard').textContent),'the Smithy: the smith as a card');t.act('tab','stable');ok(/The stablemaster/.test(q('.rwbody .rcard').textContent),'the Stable: the stablemaster');
     {const g0=P.gold,id=t.stableStock(ash).find(k=>t.canBuyMount(ash,k));t.act('tab','stable');P.gear.mount=null;t.act('buy-mount',id);ok(P.gear.mount===id&&P.gold<g0&&G.town.tab==='stable','actions work as before (a mount bought in the Stable window)')}

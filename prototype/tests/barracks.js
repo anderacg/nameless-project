@@ -9,7 +9,11 @@ Kit.suite(({ok})=>{
   const body=q('.rwbody');body.scrollTop=body.scrollHeight;const at=body.scrollTop,k=q('.rec-row').dataset.arg;
   const plus=[...document.querySelectorAll('#panel [data-act="rec-add"]')].find(b=>!b.disabled&&b.dataset.arg.endsWith(':1'));plus.click();
   ok(q('.rwbody').scrollTop===at&&Object.values(G.town.cart).some(n=>n>0),'pressing + keeps the list where it was ('+at+')');
-  plus.click();ok(plus.isConnected&&Object.values(G.town.cart).some(n=>n===2)&&plus.closest('.rec-row').querySelector('.rec-n').textContent==='2'&&plus.closest('.rec-row').querySelector('[data-arg$=":-1"]').disabled===false,'the same button again, at once: its count 2, − free now (the row changed in place, its buttons kept)');
+  plus.click();ok(plus.isConnected&&Object.values(G.town.cart).some(n=>n===2)&&plus.closest('.rec-row').querySelector('.rec-n').value==='2'&&plus.closest('.rec-row').querySelector('[data-arg$=":-1"]').disabled===false,'the same button again, at once: its count 2, − free now (the row changed in place, its buttons kept)');
+  {const f=plus.closest('.rec-row').querySelector('.rec-n'),k2=f.dataset.arg,cap=+f.max;f.value='3';f.dispatchEvent(new Event('change',{bubbles:true}));
+   ok(G.town.cart[k2]===3&&q('.rwbody').scrollTop===at,'a count typed: three in the order, the list where it was');
+   f.value=String(cap+50);f.dispatchEvent(new Event('change',{bubbles:true}));ok(G.town.cart[k2]===cap&&cap>0,'more than could be hired: as many as could ('+cap+')');
+   t.act('rec-set',k2+':-4');ok(!G.town.cart[k2],'below none: none');t.act('rec-set',k2+':2')}
   const bar=q('.rec-bar').getBoundingClientRect(),view=q('.rwbody').getBoundingClientRect();ok(bar.bottom<=view.bottom+1&&bar.top>=view.top,'the hire bar is in view');
   const row=q('.rec-row:not(.sel)');row.click();ok(!G.town.info&&q('.rec-rows')&&G.town.pick===row.dataset.arg,'pressing a row only picks it: no card');
   q('.rec-row:not(.sel) [data-act="rec-info"]').click();ok(G.town.info&&q('.rec-info .ucard-x')&&!q('.rec-rows'),'its i badge opens its card over the list');
