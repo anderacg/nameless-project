@@ -281,19 +281,13 @@ class Stable extends Place{
 }
 definePlace('stable',Stable);
 
-/* the barracks (the owner, 2026-10-28: casual recruiting): two tabs. Hire: a row for each troop they raise, how many you want of
-   each (− + · +5 · Max), the card of the one pressed (its row or its face, a small i on it) beside the list (on a small screen
-   in the window over the list: rec-info, Back to the list where you were), and the hire bar under it: what the order costs and does to your band, Fill band
-   (a mix of melee and ranged into your free places: RECRUIT_UI.fill), Clear, Groups (each kind to its group: automatic, or the
-   one you choose) and Hire (asks once when it spends more than RECRUIT_UI.ask of your gold). Train: a row for each training, all
-   that are ready in one press, or a whole group at once. The order (G.town.cart) belongs to this visit, never to a save */
-const RECRUIT_UI={fill:.6,ask:.5,step:5};
-// (the window's scroll: read, or set)
-const panelScroll=v=>{const b=panel.querySelector('.rwbody');if(v===undefined)return b?b.scrollTop:0;if(b)b.scrollTop=v};
+/* the barracks (the owner, 2026-10-28: casual recruiting): two tabs. Hire: the hiring desk (ui/hiredesk.js HireDesk, its acts
+   rec-*): a row for each troop they raise, the standing each needs, those willing; Train: a row for each training, all that are
+   ready in one press, or a whole group at once. The order (G.town.cart) belongs to this visit, never to a save */
 class Barracks extends Place{
   constructor(id){
-    super(id,{n:'Barracks',ico:'shield',verbs:{'rec-pick':'pick','rec-tab':'tab','rec-add':'add','rec-set':'set','rec-clear':'clear','rec-fill':'fill','rec-groups':'groups','rec-hire':'order','rec-hire-ok':'order','rec-hire-no':'order',
-      'rec-info':'info','rec-info-back':'info',hire:'hire',train:'train','rec-upgroup':'upgroup'}});
+    super(id,{n:'Barracks',ico:'shield',verbs:{'rec-tab':'tab',hire:'hire',train:'train','rec-upgroup':'upgroup',
+      ...Object.fromEntries(['pick','add','set','clear','fill','groups','hire','hire-ok','hire-no','info','info-back'].map(v=>['rec-'+v,'desk']))}});
   }
   shut(t){
     const closed=Place.closed(t);
@@ -301,58 +295,18 @@ class Barracks extends Place{
   }
   hires(t){return t.races.flatMap(r=>t.hires(r))}
   ups(t){return t.T.train?Object.keys(P.troops).filter(k=>P.troops[k]>0&&UP[k]).flatMap(k=>UP[k].map(to=>[k,to])):[]}
-  // ---- the order: how many of each kind (G.town.cart), its totals, how many more of one kind you could still add
-  cart(){const s=G.town;return s.cart||(s.cart={})}
-  totals(){const c=this.cart(),ks=Object.keys(c).filter(k=>c[k]>0);return {ks,n:ks.reduce((a,k)=>a+c[k],0),cost:ks.reduce((a,k)=>a+c[k]*hireCost(k),0)}}
-  room(t,k){const c=this.cart(),T=this.totals(),mine=c[k]||0,others=T.n-mine,cost=T.cost-mine*hireCost(k);
-    return Math.max(0,Math.min(Math.floor(t.vol||0)-others,partyCap()-partySize()-others,Math.floor((P.gold-cost)/Math.max(1,hireCost(k))))-mine)}
-  rowWhy(t,k){return !canHire(t,k)?'Needs standing '+needFor(k):''}
+  // (its desk: the town's troops, their price, its willing, the standing each needs)
+  deskOf(t){return new HireDesk('rec-',{state:G.town,kinds:this.hires(t),cost:hireCost,willing:Math.floor(t.vol||0),why:k=>!canHire(t,k)?'Needs standing '+needFor(k):'',
+    line:k=>'You lead ×'+(P.troops[k]||0),note:'More volunteers come forward each day as the '+t.label+' grows and prospers.',
+    hire:(k,n,tgt)=>{const r=recruitment.hire(t,k,n,tgt);if(r.ok)recruitmentFeedback(r,t);return {ok:r.ok,cost:r.cost,why:r.ok?'':recruitmentWhy(r)}}})}
   body(t){
     const s=G.town,tab=t.T.train&&s.recTab==='train'?'train':'hire',v=Math.floor(t.vol||0);
     const tabs=t.T.train?'<div class="rec-tabs" role="tablist">'+[['hire','Hire'],['train','Train']].map(([k,n])=>'<button class="btn sm'+(k===tab?' on':'')+'" type="button" role="tab" aria-selected="'+(k===tab)+'" data-act="rec-tab" data-arg="'+k+'">'+n+'</button>').join('')+'</div>':'';
     const head='<div class="top rec-top">'+tabs+'<span class="lab">'+t.races.map(r=>RACES[r].n).join(' and ')+' troops · band '+partySize()+' / '+partyCap()+'</span><span class="lab">Standing <b class="gold" style="font-size:14px">'+standingAt(t)+'</b> · '+v+' willing</span></div>';
-    if(s.info)return head+'<div class="rec-info"><div class="btns"><button class="btn" type="button" data-act="rec-info-back">‹ Back to the list</button></div>'+unitCard(s.info.split('>').pop(),s.info.includes('>')?s.info.split('>')[0]:null)+'</div>';
-    return head+(tab==='train'?this.trainTab(t):this.hireTab(t));
+    return head+(tab==='train'&&!s.info?this.trainTab(t):this.deskOf(t).body());
   }
-  hireTab(t){
-    const hires=this.hires(t),c=this.cart(),kind=s=>s.range?'ranged':s.charge?'mounted':'melee';let pick=G.town.pick;if(!hires.includes(pick))pick=hires[0]||null;
-    const btn=(a,arg,label,why,cls='')=>'<button class="btn sm'+cls+'" type="button" data-act="'+a+'" data-arg="'+arg+'"'+(why?' disabled':'')+'>'+label+'</button>';
-    const rows=hires.map(k=>{const s=ST[k],n=c[k]||0,why=this.rowWhy(t,k),more=why?0:this.room(t,k);
-      return '<div class="rec-row'+(pick===k?' sel':'')+'" data-act="rec-pick" data-arg="'+k+'"><button class="rec-pic" type="button" data-act="rec-info" data-arg="'+k+'" aria-label="'+htmlText(s.n)+': its card"><img src="'+portrait(k)+'" alt=""><span class="rec-badge" aria-hidden="true">i</span></button>'+
-        '<div class="rec-txt"><strong>'+glyphSVG(iconOfType(k),14)+' '+s.n+'</strong><small>Tier '+s.tier+(s.race?' · '+RACES[s.race].n:'')+' · '+kind(s)+' · <b class="gold">'+hireCost(k)+'g</b></small><small>'+(why?'<span class="bad">'+why+'</span>':'You lead ×'+(P.troops[k]||0))+'</small></div>'+
-        '<div class="rec-step">'+btn('rec-add',k+':-1','−',!n)+'<input class="rec-n" type="number" inputmode="numeric" min="0" max="'+(n+more)+'" step="1" value="'+n+'" data-qty="rec-set" data-arg="'+k+'" aria-label="'+htmlText(s.n)+': how many"'+(why?' disabled':'')+'>'+btn('rec-add',k+':1','+',!more)+btn('rec-add',k+':'+RECRUIT_UI.step,'+'+RECRUIT_UI.step,!more)+btn('rec-add',k+':max','Max',!more)+'</div></div>'}).join('');
-    return '<div class="recwrap"><div class="reclist"><div class="rec-rows">'+rows+'</div><p class="muted" style="font-size:12px">More volunteers come forward each day as the '+t.label+' grows and prospers.</p></div><div class="reccard">'+(pick?unitCard(pick):'')+'</div></div>'+this.bar(t);
-  }
-  // the hire bar: the order's totals, its buttons, the groups (when open) and the question (when it spends much)
-  bar(t){const s=G.town,T=this.totals(),r=partyRoster(P),c=this.cart(),q=this.check(t),opt=(v,n,sel,dis)=>'<option value="'+v+'"'+(sel?' selected':'')+(dis?' disabled':'')+'>'+htmlText(n)+'</option>';
-    const groups=s.recGroups&&T.ks.length?'<div class="rec-groups">'+T.ks.map(k=>'<label>'+ST[k].n+' ×'+c[k]+'<select data-recruit-field="cartTarget:'+k+'" aria-label="'+htmlText(ST[k].n)+': group">'+opt('auto','Automatic',!(s.cartTarget||{})[k])+r.groups.filter(g=>g.type===k).map(g=>opt(g.id,(g.name||ST[k].n)+' · '+g.id+' × '+g.count,(s.cartTarget||{})[k]===g.id,r.groupRoom(k,g.id)<c[k])).join('')+opt('new','A new group',(s.cartTarget||{})[k]==='new',r.groupRoom(k,'new')<c[k])+'</select></label>').join('')+'</div>':'';
-    const ask=s.cartAsk?'<div class="recruit-confirm" role="status">Spend '+T.cost+'g, more than half your gold?<div class="btns"><button type="button" class="btn primary" data-act="rec-hire-ok">Yes, hire</button><button type="button" class="btn" data-act="rec-hire-no">Cancel</button></div></div>':'';
-    return '<section class="rec-bar" aria-label="Your order"><div class="rec-sum" aria-live="polite">'+(T.n?'Hire <b>'+T.n+'</b> soldier'+(T.n>1?'s':'')+' · <b class="gold">'+T.cost+'g</b> · band '+partySize()+' → '+(partySize()+T.n)+' / '+partyCap():'Choose how many with + and − (or type it), or Fill band.')+(T.n&&!q.ok?' · <span class="bad">'+q.why+'</span>':'')+'</div>'+
-      '<div class="btns"><button type="button" class="btn sm" data-act="rec-fill"'+(partySize()>=partyCap()?' disabled':'')+'>Fill band</button><button type="button" class="btn sm" data-act="rec-clear"'+(T.n?'':' disabled')+'>Clear</button><button type="button" class="btn sm" data-act="rec-groups"'+(T.n?'':' disabled')+'>Groups: '+(Object.keys(s.cartTarget||{}).some(k=>c[k])?'chosen':'auto')+(s.recGroups?' ▴':' ▾')+'</button><span class="grow"></span><button type="button" class="btn primary" data-act="rec-hire"'+(T.n&&q.ok?'':' disabled')+'>Hire'+(T.n?' · '+T.cost+'g':'')+'</button></div>'+groups+ask+(s.recruitNotice?'<p role="status">'+s.recruitNotice+'</p>':'')+'</section>'}
-  // (can the whole order be hired: gold, willing, room in your band; each kind's own rules, its standing)
-  check(t){const T=this.totals();if(!T.n)return {ok:false,why:''};if(T.cost>P.gold)return {ok:false,why:'Not enough gold'};if(T.n>Math.floor(t.vol||0))return {ok:false,why:'Not that many willing'};
-    if(partySize()+T.n>partyCap())return {ok:false,why:'No room in your band'};const bad=T.ks.find(k=>this.rowWhy(t,k));return bad?{ok:false,why:ST[bad].n+': '+this.rowWhy(t,bad)}:{ok:true}}
-  pick(arg){G.town.pick=arg}
+  desk(arg,t,a){this.deskOf(t).act(a,arg)}
   tab(arg){G.town.recTab=arg==='train'?'train':'hire';G.town.info=null}
-  add(arg,t){const [k,n]=String(arg).split(':'),c=this.cart();if(!this.hires(t).includes(k)||this.rowWhy(t,k))return;const more=this.room(t,k);
-    c[k]=Math.max(0,(c[k]||0)+(n==='max'?more:Math.min(+n||0,more)));G.town.cartAsk=false;G.town.recruitNotice=''}
-  // (a typed count (k:n): as many as could be hired, none below 0)
-  set(arg,t){const [k,n]=String(arg).split(':'),c=this.cart();if(!this.hires(t).includes(k)||this.rowWhy(t,k))return;
-    c[k]=Math.max(0,Math.min(Math.floor(+n)||0,(c[k]||0)+this.room(t,k)));G.town.cartAsk=false;G.town.recruitNotice=''}
-  clear(){G.town.cart={};G.town.cartAsk=false;G.town.recruitNotice=''}
-  groups(){G.town.recGroups=!G.town.recGroups}
-  // Fill band: your free places, a mix of the cheapest melee and ranged kinds you may hire here (RECRUIT_UI.fill melee), as gold and the willing allow
-  fill(arg,t){this.clear();const ok=this.hires(t).filter(k=>!this.rowWhy(t,k)),cheap=l=>l.sort((a,b)=>hireCost(a)-hireCost(b))[0],m=cheap(ok.filter(k=>!ST[k].range)),r=cheap(ok.filter(k=>ST[k].range)),c=this.cart();
-    for(let i=0;;i++){const T=this.totals(),k=!r?m:!m?r:(c[m]||0)<Math.ceil((T.n+1)*RECRUIT_UI.fill)?m:r;if(!k||!this.room(t,k))break;c[k]=(c[k]||0)+1}}
-  // Hire: asked first when it spends much; then each kind into its group (chosen, or the one with room, then new ones), all or what could be
-  order(arg,t,a){const s=G.town,T=this.totals();if(a==='rec-hire-no'){s.cartAsk=false;return}if(!this.check(t).ok)return;
-    if(a==='rec-hire'&&T.cost>P.gold*RECRUIT_UI.ask){s.cartAsk=true;return}s.cartAsk=false;let got=0,spent=0,why='';
-    for(const k of T.ks){let left=this.cart()[k];const chosen=(s.cartTarget||{})[k];
-      while(left>0){const r=partyRoster(P),tgt=chosen||recruitment.rules.target(k),room=r.groupRoom(k,tgt)||0,n=Math.min(left,tgt==='new'?ARMY_GROUP.units:room);if(n<1){why='No room in a group for more '+ST[k].n;break}
-        const res=recruitment.hire(t,k,n,tgt);if(!res.ok){why=recruitmentWhy(res);break}recruitmentFeedback(res,t);got+=n;spent+=res.cost;left-=n;this.cart()[k]=left;if(chosen==='new')break}}
-    s.recruitNotice=got?'Hired '+got+' soldier'+(got>1?'s':'')+' for '+spent+'g.'+(why?' '+why+'.':''):why;for(const k in this.cart())if(!this.cart()[k])delete this.cart()[k]}
-  // a unit's card: beside the list on a wide screen (picked), in the window over it on a small one (Back: the list, where you were)
-  info(arg,t,a){const s=G.town;if(a==='rec-info-back'){s.info=null;s.recBack=true;return}s.pick=arg;if(!window.matchMedia('(max-width:820px),(max-height:600px)').matches)return;s.info=arg;s.recScroll=panelScroll()}
   hire(arg,t){const result=recruitment.hire(t,arg,1);recruitmentFeedback(result,t)}
   // ---- Train: each training a row (ready ones in one press, or a whole group's upgrade, keeping its place)
   trainTab(t){const ups=this.ups(t);if(!ups.length)return '<p class="muted">None of your troops can train further. They gain experience by fighting.</p>';
@@ -365,7 +319,7 @@ class Barracks extends Place{
   train(arg,t){const [k,to,ns]=String(arg).split(':');for(let i=0;i<Math.max(1,+ns||1);i++){const r=recruitment.train(t,k,to);recruitmentFeedback(r,t);if(!r.ok)break}}
   upgroup(arg,t){const [id,to]=String(arg).split(':'),r=recruitment.trainGroup(t,id,to);recruitmentFeedback(r,t)}
   // (back from a unit's card: the list where you left it)
-  focus(a){if(a==='rec-info-back'&&G.town.recBack){G.town.recBack=false;panelScroll(G.town.recScroll||0);return true}if((a==='rec-info'||a==='rec-pick')&&G.town.info){panelScroll(0);return true}return false}
+  focus(a){return this.deskOf(G.town.ref).focus(a)}
 }
 definePlace('recruit',Barracks);
 

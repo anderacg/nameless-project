@@ -16,6 +16,11 @@ const fiefIncome=t=>t.fiefIncome();
 const playerFiefs=()=>TOWNS.filter(t=>t.owner==='player');
 const fiefCap=t=>t.garCap();
 const siegeDefenders=t=>t.defenders();
+// the defenders who fell in a fight at the walls you did not win (n of them): the garrison and each lord's men inside, by their
+// share of the walls' men (the garrison never below one)
+function siegeFallen(t,n){const def=siegeDefenders(t),tot=def.list.length;if(!tot||!(n>0))return;const f=Math.min(1,n/tot);
+  t.gar=Math.max(1,t.gar-Math.round(t.gar*f));
+  def.lords.forEach(l=>{for(let i=Math.round(l.troops.length*f);i>0&&l.troops.length;i--)l.remove(l.troops[Math.floor(Math.random()*l.troops.length)],1)})}
 const siegeLordsAt=t=>t.besiegers();
 const myRaid=t=>P.raid&&P.raid.town===t.name?P.raid:null;
 const closedNow=t=>t.closed();

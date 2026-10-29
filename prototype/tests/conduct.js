@@ -113,7 +113,7 @@ try{
    occupy('refugees');t.invAdd('good','grain',10);const f0=t.foodN();t.act('site-help','food');ok(t.foodN()===f0-C.food&&r.cleared,'Feed: '+C.food+' food');
    occupy('refugees');const h1=fac?t.honorWith(fac):0;t.act('site-chase');ok(q('#panel.confirm')&&q('.nav [data-nav="close"]').dataset.act==='site-chased'&&!r.cleared,'Chase off asks first');
    t.act('site-chased');ok((!fac||t.honorWith(fac)===h1-t.CONDUCT.chaseRefugees.honor)&&r.cleared,'chased off: honor −'+t.CONDUCT.chaseRefugees.honor)}
- {const r=occupy('travellers');ok(G.mode==='site'&&q('#panel.railed')&&qa('.rail-i .ri-n').map(b=>b.textContent).join()==='Wagons,Campfire'&&text().includes(t.RUIN_OCC.travellers.line)&&r.occ.s instanceof t.TravellersCamp&&r.occ.s.until===r.back,'travellers: the travellers\' rail, Wagons and Campfire');
+ {const r=occupy('travellers');ok(G.mode==='site'&&q('#panel.railed')&&/^Wagons,(Sellswords,)?Campfire$/.test(qa('.rail-i .ri-n').map(b=>b.textContent).join())&&text().includes(t.RUIN_OCC.travellers.line)&&r.occ.s instanceof t.TravellersCamp&&r.occ.s.until===r.back,'travellers: the travellers\' rail, Wagons and Campfire');
    t.act('site-tab','trade');const g=Object.keys(r.occ.s.stock)[0],n0=t.goodN(g);P.inv=P.inv.map(()=>null);t.act('site-buy',g);ok(t.goodN(g)>0&&G.siteTab==='trade','and their wagons trade')}
  {const r=occupy('hermit');ok(page(r,'hermit')&&acts()==='site-hermit=rumour:q,site-hermit=lore:w','a hermit: Ask (rumours) or Listen (lore)');
    const g0=P.gold,x0=P.xp;t.act('site-hermit','lore');ok(P.gold===g0-t.RUIN.hermit.lore&&qa('.rwbody .rkact').every(b=>b.disabled)&&/old kings/.test(text()),'lore for '+t.RUIN.hermit.lore+' gold, then he has said his piece: once a visit');

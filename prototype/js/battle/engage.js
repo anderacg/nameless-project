@@ -258,7 +258,7 @@ const ON_WIN={
 const encLost=e=>{const L=ON_WIN[e.kind]&&ON_WIN[e.kind].lost;if(L)L(e)};
 function autoResolve(){
   const e=G.enc,pl=playerList(),al=e.allies||[],fl=e.foes||[],pp=(power(pl)+power(lordTroops(al)))*(.8+Math.random()*.4)*(1+.05*skill('tact')),ep=(power(e.list)*lvPow(e.lv)+power(lordTroops(fl)))*(e.kind==='lord'?lordTac([e.ref,...fl]):lordTac(fl))*(.8+Math.random()*.4),win=pp>ep;
-  const loser=win?ep/pp:pp/ep,frac=win?clamp(.1+.6*loser*loser,.05,.8):1,lost=partyRoster(P).losses(frac);
+  const loser=win?ep/pp:pp/ep,frac=win?clamp(.1+.6*loser*loser,.05,.8):1,lost=partyRoster(P).losses(frac);e.fell=win?1:clamp(.1+.6*loser*loser,.05,.5);// (their share fallen: a siege's walls, resolution.js)
   const helpers=e.kind==='field'&&win?lordTroops(fl).slice():[];
   al.forEach(l=>cull(l,Math.min(frac,.85)));fl.forEach(l=>cull(l,win?.6:clamp(.1+.6*loser*loser,.05,.5)));
   concludeEncounter(win,lost,e.list.length+helpers.length,true,e.list.concat(helpers));

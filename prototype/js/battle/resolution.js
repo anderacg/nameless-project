@@ -77,6 +77,7 @@ class BattleResolution{
     if(!o.tournament){const K=b.grpKills||{};this.unitOfBattle=Object.values(b.groups).filter(g=>g.player&&g.sourceGroupId).map(g=>({id:g.sourceGroupId,name:g.name,kills:K[g.id]||0,damage:Math.round(g.resolve?.damageDealt||0)}))
       .filter(x=>x.kills||x.damage).sort((x,y)=>y.kills-x.kills||y.damage-x.damage)[0]||null}
     const armies=o.tournament?null:new ArmyReport(b);// (read off the field before it goes)
+    this.wallsFell=b.units.filter(u=>u.team===1&&u.hp<=0&&!u.leader&&String(u.grp||'').startsWith('e0_')).length;// (the walls' own men slain: siege.js siegeFallen)
     B=null;fieldDone();updateHint();// (the field back to today's height: setup.js)
     if(o.tournament){
       let html;if(win){P.gold+=45;P.renown+=6;gainXp(25);if(G.town)addRep(G.town.ref.name,8);html='<h2>Champion</h2><p>The crowd chants your name. You take <strong class="gold">45 gold</strong> and gain renown.</p>';log('You win the tournament.','good')}
@@ -113,6 +114,7 @@ class BattleResolution{
       // as fleeing on the map (fleeOdds): a fight you started you simply leave; else a race. Got away, they lose your trail for a
       // while; run down, your rearguard pays and you must face them again. The foes you slew stay dead either way.
       const o=e.ref;slain=slain||[];if(!this.primaryLossesApplied&&o&&(e.kind==='lord'||e.kind==='patrol'||e.kind==='party'))for(const k of slain)if(formsFit(o))o.remove(k,1);
+      if(e.kind==='siege'||e.kind==='raid')siegeFallen(e.ref,this.wallsFell);
       if(e.list)for(const k of slain){const i=e.list.indexOf(k);if(i>=0)e.list.splice(i,1)}
       mood('flee');if(kills)gainXp(kills*4);
       const od=retreat.blocked?{leave:true,ch:1}:fleeOdds(e),away=od.leave||od.ch>0&&Math.random()<od.ch,rear={};
@@ -133,7 +135,7 @@ class BattleResolution{
       const moodLine=battleMood(-15,'defeat');if(auto){vitals();P.hp=Math.max(1,Math.round(P.hp*.5))}
       if(prisonerCount()){P.prisoners={};log('Your prisoners escape in the chaos.','bad','war')}
       captivesEscape();
-      if(e.kind==='siege'||e.kind==='raid'){P.siege=null;G.capWith=null;e.ref.gar=Math.max(1,Math.round(e.ref.gar*.75))}
+      if(e.kind==='siege'||e.kind==='raid'){P.siege=null;G.capWith=null;siegeFallen(e.ref,auto?Math.round((e.list||[]).length*(e.fell??.25)):this.wallsFell??0)}// (those slain: siege.js)
       if(e.kind==='patrol'){const h=townBy(e.ref.home);if(h)h.crime=null}
       if(e.kind==='party'||e.kind==='camp')chiefWins(e.ref,partySize()+1);// the chieftain who beat you grows
       // (taken captive, or away in the rout, or left for dead by beasts: world/captivity.js)

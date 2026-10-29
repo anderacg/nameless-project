@@ -50,7 +50,7 @@ try{
  const tr=of('travelers').find(s=>t.TRAVELERS[s.kind].race)||of('travelers')[0];if(!t.TRAVELERS[tr.kind].race){tr.kind=0;tr.stockUp()}
  go(tr);ok(G.mode==='site'&&new RegExp(tr.name).test(panel()),'a camp of '+tr.name.toLowerCase());
  P.gold=2000;P.troops={};P.inv=P.inv.map(()=>null);const g=Object.keys(tr.stock)[0],n0=t.goodN(g);t.act('site-buy',g);ok(t.goodN(g)===n0+5,'buy '+g+' from them');
- const w=tr.swords()[0];t.act('site-hire',String(w.i));ok(P.troops[w.k]===1,'hire a sellsword ('+w.name+', '+t.ST[w.k].n+') with no standing');
+ const w=tr.swords()[0];t.act('site-tab','hire');t.act('site-rec-add',w.k+':1');t.act('site-rec-hire');ok(P.troops[w.k]===1,'hire a sellsword ('+w.name+', '+t.ST[w.k].n+') with no standing');
  P.hp=10;t.act('site-tab','fire');t.act('site-fire');ok(P.hp>10&&document.querySelector('[data-act="site-fire"]').disabled,'rest by their fire once a day');
  const seen0=S.filter(s=>s.seen).length;t.act('site-news');ok(S.filter(s=>s.seen).length===seen0+2&&/on your map/.test(panel()),'news puts two new places on your map');
  t.invAdd('mat','pelt',3);const g1=P.gold;t.act('site-sell');ok(P.gold>g1&&!t.invCount('mat','pelt'),'they buy trophies');
