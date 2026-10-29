@@ -18,9 +18,9 @@ class HuntTracks{
     let near=null;for(const [u,p] of this.seen)if(live(u)&&(!near||Math.hypot(p.x-C.x,p.y-C.y)<Math.hypot(near.x-C.x,near.y-C.y)))near=p;return near}
   // the prints your hunters read, under everyone (render.js drawBattle): a beast's own kind of print, fading with its age
   draw(hunters){const r=this.reach,k=WORLD_BATTLE.sprite,CR=Object.keys(TRACKS.col).indexOf('known');
-    for(const [u,l] of this.trails){const D=CRITTERS[u.wildlife],si=TRACK_SI[D&&D.size>=2?'hoof':'paw'];
-      l.forEach((p,i)=>{if(!this.readable(p,hunters,r))return;const a=1-(B.t-p.t)/HUNT_TRACK.life;if(a<=0)return;const S=trackSprite(si,0,(Math.round(p.a/(Math.PI/4))+8)%8,i&1,CR);
-        ctx.save();ctx.globalAlpha=Math.min(1,a);ctx.translate(Math.round(p.x),Math.round(p.y));ctx.scale(k,k);ctx.drawImage(S,S.ox,S.oy);ctx.restore()})}}
+    for(const [u,l] of this.trails){const D=CRITTERS[u.wildlife],art=D&&D.size>=2?TRACKS.art.game.big:TRACKS.art.game.small;
+      l.forEach((p,i)=>{if(!this.readable(p,hunters,r))return;const a=1-(B.t-p.t)/HUNT_TRACK.life;if(a<=0)return;
+        ctx.save();ctx.globalAlpha=Math.min(1,a);ctx.translate(p.x,p.y);ctx.scale(k,k);const S=trackPic(art,0,p.a,i&1,CR,ctx.getTransform().a);ctx.drawImage(S,S.ox,S.oy,S.w,S.h);ctx.restore()})}}
 }
 class HuntBattleArea extends WorldBattleArea{
   constructor(e){

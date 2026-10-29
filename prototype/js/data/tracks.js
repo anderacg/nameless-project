@@ -28,15 +28,24 @@ const TRACKS={on:true,
   read:[2,5,8],train:2,
   // the prints: px between them along a trail by their style; the most drawn a frame; how dark at their clearest
   step:{foot:13,hoof:13,paw:12,rut:3,drag:3},max:700,alpha:.8,
-  // the prints (gfx/tracks.js TRACK_GLYPH): lanes px apart across a band's way, steps stagger px apart along it; the highlight on
-  // their up-left edges (glow), so they read on any ground
-  lane:7,stagger:3,glow:'rgba(255,246,222,.45)',
+  // the prints (gfx/tracks.js trackPic): lanes px apart across a band's way, steps stagger px apart along it; the light on
+  // their up-left edges (glow), so they read on any ground; their details (tread, nails, a hoof's frog) lighter (detail)
+  lane:7,stagger:3,glow:'rgba(255,246,222,.45)',detail:'rgba(255,246,222,.3)',
   // the size classes: up to size[0] people class 0 (a pair of prints), up to size[1] class 1, up to size[2] class 2, more class 3
   size:[2,9,29],
   // their colour on each ground; a bounty's band's once you have read one of its trails (a faint gold); on a road (dust)
   col:{grass:'#24301a',frost:'#6f82a0',desert:'#6a4c2a',swamp:'#1c180f',known:'#e8c860',road:'#2a1c0e'},
   // how a kind of beast walks (monsters by their kind; game: a size 1 animal paws, a bigger one hooves); the rest on foot
   beast:{wolf:'paw',boar:'hoof',tiger:'paw',bear:'paw',spider:'paw',troll:'foot',scorpion:'paw',wyrm:'drag',slime:'drag',griffin:'paw'},
+  /* the prints' look (the owner, 2026-10-29: the art's tracks, art/tracks.svg; data/trackart.js TRACK_ART, by art/tracks.py), by
+     who left them (world/tracks.js Track#art): soldiers (yours, a lord's, a watch, your companions') hobnailed boots, a band boots,
+     refugees bare feet, riders shod hooves, a wagon's ruts; a beast by its kind (beast), game by its size (big, small); else by
+     its style (style). px: a print's length in game px (a band's ruts or drag: its width across); edge: the light's offset up-
+     left in game px; hd: the most screen pixels a game pixel they are drawn at */
+  art:{who:{you:'hobnail',lord:'hobnail',patrol:'hobnail',cparty:'hobnail',band:'boot',refugee:'barefoot',caravan:'ruts'},mounted:'horse',
+    beast:{wolf:'wolf',boar:'cloven',tiger:'cat',bear:'bear',spider:'talon',troll:'troll',scorpion:'talon',wyrm:'dragon',slime:'drag',griffin:'talon'},
+    game:{big:'cloven',small:'wolf'},style:{foot:'boot',hoof:'hoof',paw:'wolf',rut:'ruts',drag:'drag'},
+    px:{hobnail:7,boot:7,barefoot:6,horse:6,hoof:6,cloven:5,wolf:4.5,bear:7,cat:5,troll:11,talon:6,dragon:12,ruts:7,drag:3},edge:.35,hd:12},
   // what the card calls each style (mounted people: mounted)
   how:{foot:'on foot',hoof:'hooves',paw:'paws',rut:'wagon wheels',drag:'something dragged',mounted:'mounted'}
 };

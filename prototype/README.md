@@ -53,7 +53,7 @@ Focused regression suites: `armygroups`, `armyedges`, `groups`, `battlesetup`, `
 ```
 Ashmark.html          page markup; loads style.css, the PX engine (../engine: pixel, buildkit, buildmodels (every building as a model at the owner's scale: objects 16 px, buildings 32, big ones and centres 64, a capital 128: the world map's buildings, sites and camps; the old hand-drawn buildings.js retired at stage 3), build-vale, build-karn, build-ashgor, build-sylvan (each culture's building style: Vale with the Salt League, the Clans, the Horde, the Court), pieces, ground, worldnature, beasts,
                       model), then the scripts below (the full order is the <script> list in Ashmark.html)
-art/tracks.svg        HD vector tracks (not used by the game; its own are pixel glyphs, gfx/tracks.js): boots, bare foot, hooves, paws, troll, talon, dragon, ruts, a drag, sample trails; each a <symbol> pointing up
+art/tracks.py         the tracks' art, drawn once: writes art/tracks.svg (the sheet: boots, bare foot, hooves, paws, troll, talon, dragon, ruts, a drag, sample trails) and js/data/trackart.js (TRACK_ART, the same shapes for the game: gfx/tracks.js trackPic draws them at the screen's own pixels; data/tracks.js TRACKS.art says who leaves which)
 style.css
 fieldbook.css        scoped management-window theme and responsive layouts (doc/FIELDBOOK_UI.md)
 js/core/              core.js (DOM, canvas, constants, helpers, the action registry), state.js (state factories, G, P; your numbers' older names),

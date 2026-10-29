@@ -43,6 +43,10 @@ class Track{
   get style(){const k=this.k,i=k.indexOf(':'),id=i<0?'':k.slice(i+1);
     return k==='caravan'?'rut':k.startsWith('mon:')?TRACKS.beast[id]||'paw':k.startsWith('crit:')?(CRITTERS[id]&&CRITTERS[id].size>=2?'hoof':'paw'):this.m?'hoof':'foot'}
   get beast(){return this.k.startsWith('mon:')||this.k.startsWith('crit:')}
+  // what its prints look like (data/tracks.js TRACKS.art): by who walked it, mounted, a beast's kind or game's size, else its style
+  get art(){const A=TRACKS.art,k=this.k,i=k.indexOf(':'),kind=i<0?k:k.slice(0,i),id=i<0?'':k.slice(i+1);
+    if(kind==='mon')return A.beast[id]||A.style[this.style];if(kind==='crit')return CRITTERS[id]&&CRITTERS[id].size>=2?A.game.big:A.game.small;
+    return this.m&&kind!=='caravan'?A.mounted:A.who[kind]||A.style[this.style]}
   add(x,y,t){x=Math.round(x);y=Math.round(y);this.p.push(x,y,t);const b=this.box;if(x<b[0])b[0]=x;if(y<b[1])b[1]=y;if(x>b[2])b[2]=x;if(y>b[3])b[3]=y}
   // its first n points gone (the oldest), its bounds again
   trim(n){if(n<=0)return;this.p.splice(0,3*n);const b=this.box,p=this.p;b[0]=b[1]=Infinity;b[2]=b[3]=-Infinity;
