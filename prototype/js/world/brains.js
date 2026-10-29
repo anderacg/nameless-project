@@ -119,6 +119,10 @@ class PatrolBrain extends Brain{
 // a caravan (CaravanParty, caravans.js): on the road to its market (keeping to the roads where they go: Router.travel's road),
 // off it only away from you if you are its enemy; bandits and enemy lords near it fall on it
 class CaravanBrain extends Brain{
+  // (another caravan just in front of it, heading as it does: it holds back, CARAVAN_GAP)
+  behind(c,gate,gd){const X=CARAVAN_GAP,ux=(gate.x-c.x)/(gd||1),uy=(gate.y-c.y)/(gd||1);
+    return W.caravans.some(o=>{if(o===c||o.gone||o.idle||inFight(o)||Math.hypot(o.x-c.x,o.y-c.y)>X.px)return false;const g=gateGoal(townBy(o.to)||{x:o.x,y:o.y}),od=Math.hypot(g.x-o.x,g.y-o.y)||1;
+      return (ux*(g.x-o.x)+uy*(g.y-o.y))/od>=X.dot&&(o.x-c.x)*ux+(o.y-c.y)*uy>0})}
   think(c,d){
     if(c.idle||inFight(c))return false;
     this.cool(c,d);const to=townBy(c.to);if(!to||!c.mine&&atWar(to.owner,c.fac)){c.gone=true;return false}
@@ -128,7 +132,7 @@ class CaravanBrain extends Brain{
     if(block){const alt=Spatial.nearest(TOWNS.filter(t=>t!==to&&t.owner===c.fac),c.x,c.y);if(alt)c.to=alt.name}
     if(scared&&!block&&gd<pd*X.dash){const ox=c.x;Router.travel(c,{...gate,road:true},moveStep(CARAVAN_SPD,d));this.face(c,ox)}
     else if(scared){const ox=c.x;Router.flee(c,{x:c.x+v.dx,y:c.y+v.dy},moveStep(CARAVAN_SPD*.9,d));this.face(c,ox)}
-    else{const ox=c.x;Router.travel(c,{...gateGoal(to),road:true},moveStep(CARAVAN_SPD*Math.max(.5,speedAt(c.x,c.y)||1),d));c.dir=c.x>=ox?1:-1}
+    else{const ox=c.x;Router.travel(c,{...gateGoal(to),road:true},moveStep(CARAVAN_SPD*Math.max(.5,speedAt(c.x,c.y)||1)*(this.behind(c,gate,gd)?CARAVAN_GAP.slow:1),d));c.dir=c.x>=ox?1:-1}
     if(Math.hypot(to.x-c.x,to.y+12-c.y)<8){if(c.arrive(to))c.gone=true;return false}
     // preyed on: bandits close by, or a lord at war with its owner; the guards fight it out (fights.js)
     const b=bandits.find(o=>Math.hypot(o.x-c.x,o.y-c.y)<12&&!o.cvT);

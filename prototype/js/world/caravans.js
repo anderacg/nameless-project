@@ -9,6 +9,9 @@ const CARAVAN_CAP=density().caravans,CARAVAN_SPD=17;
 // a caravan afraid of you near where it is bound (brains.js CaravanBrain): it runs for the gate when the gate is nearer it than you
 // are (dash: the gate within dash × your distance), and turns for another holding of its realm when you stand at that gate (block px)
 const CARAVAN_FEAR={dash:1,block:60};// (CARAVAN_CAP: today's; a world's own: density(WM), data/world.js)
+// two caravans on the same way (brains.js CaravanBrain): the one behind holds back (slow, of its pace) while another is within px
+// ahead of it, heading the same way (dot: how alike their headings, 1 the same), so they string out along the road, never one heap
+const CARAVAN_GAP={px:26,slow:.3,dot:.5};
 
 /* realm caravans */
 // a holding's surplus: goods it holds well beyond its own ten days, which a caravan can take away
