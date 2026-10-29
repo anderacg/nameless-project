@@ -663,7 +663,7 @@ The owner: "it lags on mobile". Settings → **Resolution** (core.js `RENDER.cap
 
 The owner: "change all unit icon to portrait and add a button to view unit in sprite in detail page".
 - **Portraits:** every unit type shows its painted portrait wherever the windows show a unit: recruiting, the party page, prisoners, cards and the unit card. `ui/battlehud.js` `portrait()` takes the named face first (`NAMED_PORTRAITS`), then its kind's (`NamedPortraits.unit`, `js/data/unitportraits.js` `UNIT_PORTRAITS`), else the sprite. The copies are 256 × 256 WebP in `art/portrait/game/`, about 25 KB each, written by `art/portrait/gamecopies.py` from the PNGs. The battle's own cards (the group cards, the selection rows) keep the troops' sprites (`hudPic`), so you read the field at a glance; the customizable player keeps a generated one.
-- **The sprite view** (`ui/unitcard.js` `SpriteView`, `SPRITE_VIEW`): on the unit card, View sprite swaps the portrait for the unit's battle figure, enlarged and in whole pixels. It plays through its poses: standing and breathing, walking, running, then its blows (a beast through its own; your hero's bare hands through the fists'). View portrait brings the portrait back.
+- **The sprite view** (`ui/unitcard.js` `SpriteView`): on the unit card, View sprite swaps the portrait for the unit's battle figure, standing, enlarged and in whole pixels (still for now: the owner). View portrait brings the portrait back.
 - Tests: `portraits`.
 
 ## Bare hands and the Nobody (2026-10-29)
