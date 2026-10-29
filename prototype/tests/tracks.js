@@ -55,7 +55,14 @@ Kit.suite(({ok,info})=>{
    const pn=performance.now,grab=()=>{performance.now=()=>1e7;try{t.drawWorld();return t.ctx.getImageData(0,0,t.VW,t.VH).data}finally{performance.now=pn}};
    const on=grab();TR.on=false;const off=grab();TR.on=true;let diff=0;for(let i=0;i<on.length;i+=4)if(on[i]!==off[i]||on[i+1]!==off[i+1]||on[i+2]!==off[i+2])diff++;
    const onRoad=!!tr&&tr.p.every((v,i)=>i%3||!!t.trackRoad(v,tr.p[i+1],t.terrAt(v,tr.p[i+1])));
-   ok(tr&&onRoad&&diff>10,'a band of 12 walking a track between places: '+(tr?tr.size:0)+' points, all on the road, its prints drawn ('+diff+' pixels differ from the frame without tracks)')}
+   ok(tr&&onRoad&&diff>10,'a band of 12 walking a track between places: '+(tr?tr.size:0)+' points, all on the road, its prints drawn ('+diff+' pixels differ from the frame without tracks)');
+  // (the setting Sprites: Pixel, the same art pixelated at its size in the game, whole pixels, as big as the art's)
+  {const pv=t.SPRITES.pixel,arts=Object.keys(t.TRACK_ART),bad=[];
+   for(const id of arts){const g=t.TRACK_PX[id],n=g&&g.length===16&&Math.max(...g.map(q=>Math.max(q.r.length,q.r[0].length))),px=t.TRACKS.art.px[id];if(!n||(!t.trackLine(id)&&Math.abs(n-px)>2))bad.push(id+' '+n+'/'+px)}
+   ok(!bad.length,'each of the '+arts.length+' arts pixelated: 8 ways, a left and right step each, as long as its art in the game'+(bad.length?': wrong for '+bad.join(', '):''));
+   try{t.SPRITES.pixel=true;const S=t.trackPic('hobnail',1,0,0,0,9,13);ok(S.w===S.width&&S.h===S.height&&Number.isInteger(S.ox)&&Number.isInteger(S.oy)&&S.w<20,'Pixel: a print in whole game pixels ('+S.w+'×'+S.h+'), whatever the screen\'s density');
+    const px=grab();let d=0;for(let i=0;i<px.length;i+=4)if(px[i]!==off[i]||px[i+1]!==off[i+1]||px[i+2]!==off[i+2])d++;ok(d>10,'and drawn on the map ('+d+' pixels differ from the frame without tracks)')}
+   finally{t.SPRITES.pixel=pv}}}
   else info('no straight enough track between places for the drawn check')}
  // ---- a print laid stays where it lies, turned as it was: the walker turning, or walking on, never moves or turns an older one
  // (the owner's bug, 2026-10-23: the prints already laid turned as the band changed its way)

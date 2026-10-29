@@ -18,6 +18,9 @@ let VS=1,CVS=1;
    window's size (pixelated, style.css) looks the same, its text a little coarser, and draws in a fraction of the time on a phone
    (at 3, Balanced fills 4/9 of the pixels, Fast 1/4) */
 const RENDER={cap:2,fps:60};
+// the pictures drawn from art (art/: the tracks): smooth at the screen's pixels, or pixel, the same pixelated in game pixels (the
+// setting Sprites, ui.js: the owner, 2026-10-29)
+const SPRITES={pixel:false};
 const dprOf=()=>Math.min(window.devicePixelRatio||1,RENDER.cap);
 // ctx: the context drawn into; the world map's ground and buildings go into a canvas of game pixels first (render.js drawWorld)
 const cv=$('#game');let ctx=cv.getContext('2d', { willReadFrequently: true });const ctx0=ctx;

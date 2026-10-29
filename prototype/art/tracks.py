@@ -1,5 +1,5 @@
-# Ashmark's tracks, drawn once here: writes art/tracks.svg (the sheet, each print a <symbol>) and js/data/trackart.js (the same
-# shapes as SVG path strings, for the game: gfx/tracks.js draws them with Path2D). Run from prototype/: python3 art/tracks.py
+# Ashmark's tracks, drawn once here: writes art/tracks.svg (the sheet, each print a <symbol>), art/tracks-px.svg (the same pixelated
+# at their size in the game) and js/data/trackart.js (both, for the game: gfx/tracks.js). Run from prototype/: python3 art/tracks.py
 # Every print points up (the way it went), in units of a 100-wide box round 0,0; 'p' is the pressed-in dark, 'm' its details
 # (lighter: tread, nails, the frog), drawn over it.
 import math,json,os
@@ -47,8 +47,89 @@ art('talon','Bird / griffin',[circle(0,6,7),toe(-32,34,4),toe(0,40,4.5),toe(32,3
 art('dragon','Dragon / wyrm',["M-14,10 C-16,30 -6,44 0,44 C6,44 16,30 14,10 C10,0 -10,0 -14,10 Z",toe(-30,40,7),toe(0,46,8),toe(30,40,7),toe(-70,22,5)],vb=(-50,-54,100,104))
 art('ruts','Wagon ruts',[rect(-26,-48,12,96),rect(14,-48,12,96)],[rect(-21,-48,2,96),rect(19,-48,2,96)])
 art('drag','Dragged beast',["M-4,-48 C10,-30 -12,-14 4,4 C16,18 -8,32 4,48 L-4,48 C-16,32 8,18 -4,4 C-20,-14 2,-30 -12,-48 Z"])
+# ---- the pixel prints (the Sprites setting's Pixel: gfx/tracks.js): each art above pixelated at its size in the game (data/tracks.js
+# TRACKS.art.px, its length in game px; a wagon's ruts and a beast's drag, a band its step long: TRACKS.step), turned to each of
+# the 8 ways, a left step mirrored: as many pixels pressed in as the art's ink would fill, the most covered first (any it covers PX_FULL
+# of; none under PX_ON; at least .8 of its length, for a thin one: a bird's toes), so a small print keeps its weight and shape; a detail (lighter) where its details cover PX_DETAIL of one. Change the sizes there, then run this again. '#' pressed in, '+' its detail; o: its top-left cell from the print's
+# place (way 0: east, as the game's angles)
+def parse(d):
+    # (an SVG path of M L C A a Z, as written above, into closed polylines)
+    import re;tok=re.findall(r'[MLCAaZ]|-?\d*\.?\d+',d);i=0;polys=[];cur=None;x=y=0
+    def take(n):
+        nonlocal i;v=[float(t) for t in tok[i:i+n]];i+=n;return v
+    while i<len(tok):
+        c=tok[i];i+=1
+        if c=='M':x,y=take(2);cur=[(x,y)];polys.append(cur)
+        elif c=='L':x,y=take(2);cur.append((x,y))
+        elif c=='C':
+            x1,y1,x2,y2,x3,y3=take(6)
+            for k in range(1,13):
+                t=k/12;u=1-t;cur.append((u**3*x+3*u*u*t*x1+3*u*t*t*x2+t**3*x3,u**3*y+3*u*u*t*y1+3*u*t*t*y2+t**3*y3))
+            x,y=x3,y3
+        elif c in 'Aa':
+            rx,ry,rot,la,sw,ex,ey=take(7)
+            if c=='a':ex+=x;ey+=y
+            cur.extend(arc(x,y,rx,ry,rot,int(la),int(sw),ex,ey));x,y=ex,ey
+        elif c=='Z':pass
+    return polys
+def arc(x1,y1,rx,ry,rot,la,sw,x2,y2):
+    # (the SVG spec's endpoint arc, F.6.5, as points)
+    ph=math.radians(rot);c,s=math.cos(ph),math.sin(ph);dx,dy=(x1-x2)/2,(y1-y2)/2;xp,yp=c*dx+s*dy,-s*dx+c*dy
+    L=xp*xp/(rx*rx)+yp*yp/(ry*ry)
+    if L>1:rx*=math.sqrt(L);ry*=math.sqrt(L)
+    n=rx*rx*ry*ry-rx*rx*yp*yp-ry*ry*xp*xp;q=math.sqrt(max(0,n/(rx*rx*yp*yp+ry*ry*xp*xp)))*(-1 if la==sw else 1)
+    cxp,cyp=q*rx*yp/ry,-q*ry*xp/rx;cx,cy=c*cxp-s*cyp+(x1+x2)/2,s*cxp+c*cyp+(y1+y2)/2
+    ang=lambda ux,uy,vx,vy:math.atan2(ux*vy-uy*vx,ux*vx+uy*vy)
+    t1=ang(1,0,(xp-cxp)/rx,(yp-cyp)/ry);dt=ang((xp-cxp)/rx,(yp-cyp)/ry,(-xp-cxp)/rx,(-yp-cyp)/ry)
+    if not sw and dt>0:dt-=2*math.pi
+    if sw and dt<0:dt+=2*math.pi
+    out=[]
+    for k in range(1,17):
+        t=t1+dt*k/16;out.append((cx+rx*math.cos(t)*c-ry*math.sin(t)*s,cy+rx*math.cos(t)*s+ry*math.sin(t)*c))
+    return out
+def inside(polys,x,y):
+    # (nonzero, as a canvas fills)
+    w=0
+    for P in polys:
+        for (ax,ay),(bx,by) in zip(P,P[1:]+P[:1]):
+            if ay<=y<by and (bx-ax)*(y-ay)-(x-ax)*(by-ay)>0:w+=1
+            elif by<=y<ay and (bx-ax)*(y-ay)-(x-ax)*(by-ay)<0:w-=1
+    return w!=0
+PX_ON,PX_FULL,PX_DETAIL,PX_SS=.08,.6,.5,6
+TJS=open(os.path.join(ROOT,'js','data','tracks.js')).read()
+import re
+def table(name):
+    m=re.search(name+r':\{([^}]*)\}',TJS);return {k:float(v) for k,v in re.findall(r'(\w+):(-?[\d.]+)',m.group(1))}
+SIZE=table('px');STEP=table('step');LINE={'ruts':'rut','drag':'drag'}
+def pixelate(id,way,alt):
+    A=ART[id];P=parse(A['p']);M=parse(A['m']) if A['m'] else [];px=SIZE.get(id,6);line=id in LINE;ln=STEP[LINE[id]] if line else 0
+    sx,sy=(px/100,ln*1.15/96) if line else (px/100,px/100);ang=way*math.pi/4+math.pi/2;c,s=math.cos(ang),math.sin(ang);R=int(math.ceil(max(px,ln)*.75+1))
+    cov={}
+    for j in range(-R,R+1):
+        for i in range(-R,R+1):
+            on=de=0
+            for a in range(PX_SS):
+                for b in range(PX_SS):
+                    X,Y=i-.5+(a+.5)/PX_SS,j-.5+(b+.5)/PX_SS;u,v=(X*c+Y*s)/sx,(-X*s+Y*c)/sy
+                    if alt and not line:u=-u
+                    if inside(P,u,v):
+                        on+=1
+                        if M and inside(M,u,v):de+=1
+            n=PX_SS*PX_SS
+            if on:cov[(i,j)]=(on/n,de/n)
+    # (as many pixels as the art's ink covers, the most covered first: a small print keeps its shape's weight, never under PX_ON of a pixel's)
+    keep=max(round(sum(a for a,d in cov.values())),round(px*.8));cells={};last=1
+    for c,(a,d) in sorted(cov.items(),key=lambda kv:-kv[1][0]):
+        if len(cells)>=keep and a<PX_FULL and a<last-.03:break# (one as covered as the last kept goes too: a print's two sides alike)
+        last=a
+        if a<PX_ON:break
+        cells[c]='+' if d>=PX_DETAIL else '#'
+    if not cells:cells[(0,0)]='#'
+    x0=min(i for i,j in cells);x1=max(i for i,j in cells);y0=min(j for i,j in cells);y1=max(j for i,j in cells)
+    return {'o':[x0,y0],'r':[''.join(cells.get((i,j),'.') for i in range(x0,x1+1)) for j in range(y0,y1+1)]}
+PIX={k:[pixelate(k,w,a) for w in range(8) for a in (0,1)] for k in ART}
 # ---- js/data/trackart.js: the game's copy
-js="'use strict';\n/* ---------- data: the tracks' pictures (written by art/tracks.py, which writes art/tracks.svg from the same shapes: change them\n   there and run it). Each print points up, in a 100-wide box round 0,0 (vb: its box); p, the pressed-in dark, m its lighter details\n   (tread, nails, a frog), as SVG paths; gfx/tracks.js draws them (Path2D) ---------- */\nconst TRACK_ART="+json.dumps({k:{kk:v[kk] for kk in ('vb','p','m')} for k,v in ART.items()},separators=(',',':'))+";\n"
+js="'use strict';\n/* ---------- data: the tracks' pictures (written by art/tracks.py, which writes art/tracks.svg from the same shapes: change them\n   there and run it). Each print points up, in a 100-wide box round 0,0 (vb: its box); p, the pressed-in dark, m its lighter details\n   (tread, nails, a frog), as SVG paths; gfx/tracks.js draws them (Path2D). TRACK_PX: the same pixelated at their size in the game,\n   for the Sprites setting's Pixel: per art, way*2+(a left step), o its top-left cell, r its rows ('#' pressed in, '+' a detail) ---------- */\nconst TRACK_ART="+json.dumps({k:{kk:v[kk] for kk in ('vb','p','m')} for k,v in ART.items()},separators=(',',':'))+";\nconst TRACK_PX="+json.dumps(PIX,separators=(',',':'))+";\n"
 open(os.path.join(ROOT,'js','data','trackart.js'),'w').write(js)
 # ---- art/tracks.svg: the sheet
 GROUND='#c9ad7f';DARK='#6a4e31';MID='#8f7148';LIGHT='#efdcb4'
@@ -75,3 +156,24 @@ def trail(k,y,n,step,s,lanes,alt,label):
     return ''.join(g)+f'<text x="{W-30}" y="{y+6}" text-anchor="end" font-family="Georgia,serif" font-size="15" fill="#3d2c1a">{label}</text>'
 o+= [trail('hobnail',y0+70,14,50,34,[-30,0,30],True,'A column of soldiers'),trail('horse',y0+160,11,62,34,[-14,14],True,'Riders'),trail('wolf',y0+230,16,42,26,[0],True,'A wolf'),trail('ruts',y0+290,12,57.6,60,[0],False,'A wagon'),'</svg>']
 open(os.path.join(HERE,'tracks.svg'),'w').write('\n'.join(o));print(len(ART),'prints')
+# ---- art/tracks-px.svg: the pixel prints, each way and step, a pixel ZOOM wide (a big one less); below each, all eight at their size in the game
+ZOOM,CELL=8,300;items=list(PIX.items());rows=(len(items)+COLS-1)//COLS;PW=CELL*COLS+40;PH=90+rows*CELL
+o=[f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {PW} {PH}" width="{PW}" height="{PH}" shape-rendering="crispEdges">','<title>Ashmark tracks, pixel</title>',
+ '<desc>The prints of tracks.svg pixelated at their size in the game, one for each of the 8 ways (left and right steps), as the Pixel sprites draw them: dark pressed in, its details lighter, the light on its up-left. Written by art/tracks.py.</desc>',
+ f'<rect width="{PW}" height="{PH}" fill="{GROUND}"/>',f'<text x="{PW/2}" y="48" text-anchor="middle" font-family="Georgia,serif" font-size="30" fill="#3d2c1a">Tracks, pixel</text>']
+def stamp(g,x,y,z):
+    on={(g['o'][0]+i,g['o'][1]+j) for j,r in enumerate(g['r']) for i,ch in enumerate(r) if ch!='.'};out=[]
+    for (i,j) in on:
+        if (i-1,j-1) not in on:out.append(f'<rect x="{f(x+(i-1)*z)}" y="{f(y+(j-1)*z)}" width="{z}" height="{z}" fill="{LIGHT}"/>')
+    for j,r in enumerate(g['r']):
+        for i,ch in enumerate(r):
+            if ch!='.':out.append(f'<rect x="{f(x+(g["o"][0]+i)*z)}" y="{f(y+(g["o"][1]+j)*z)}" width="{z}" height="{z}" fill="{DARK if ch=="#" else MID}"/>')
+    return ''.join(out)
+for n,(k,gs) in enumerate(items):
+    bx=20+CELL*(n%COLS);by=90+CELL*(n//COLS)
+    o.append(f'<rect x="{bx+8}" y="{by}" width="{CELL-16}" height="{CELL-16}" rx="10" fill="none" stroke="#a88b5f" stroke-width="1.5"/>')
+    big=max(max(len(g['r']),len(g['r'][0])) for g in gs);z=min(ZOOM,60//big)# (a big print zoomed less, to fit its box)
+    for w in range(8):o.append(stamp(gs[w*2+(w&1)],bx+40+(w%4)*68,by+50+(w//4)*92,z))
+    for w in range(8):o.append(stamp(gs[w*2],bx+30+w*30,by+CELL-70,2))
+    o.append(f'<text x="{bx+CELL/2}" y="{by+CELL-30}" text-anchor="middle" font-family="Georgia,serif" font-size="15" fill="#3d2c1a">{ART[k]["name"]}</text>')
+o.append('</svg>');open(os.path.join(HERE,'tracks-px.svg'),'w').write('\n'.join(o))

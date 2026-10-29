@@ -53,7 +53,7 @@ Focused regression suites: `armygroups`, `armyedges`, `groups`, `battlesetup`, `
 ```
 Ashmark.html          page markup; loads style.css, the PX engine (../engine: pixel, buildkit, buildmodels (every building as a model at the owner's scale: objects 16 px, buildings 32, big ones and centres 64, a capital 128: the world map's buildings, sites and camps; the old hand-drawn buildings.js retired at stage 3), build-vale, build-karn, build-ashgor, build-sylvan (each culture's building style: Vale with the Salt League, the Clans, the Horde, the Court), pieces, ground, worldnature, beasts,
                       model), then the scripts below (the full order is the <script> list in Ashmark.html)
-art/tracks.py         the tracks' art, drawn once: writes art/tracks.svg (the sheet: boots, bare foot, hooves, paws, troll, talon, dragon, ruts, a drag, sample trails) and js/data/trackart.js (TRACK_ART, the same shapes for the game: gfx/tracks.js trackPic draws them at the screen's own pixels; data/tracks.js TRACKS.art says who leaves which)
+art/tracks.py         the tracks' art, drawn once: writes art/tracks.svg (the sheet: boots, bare foot, hooves, paws, troll, talon, dragon, ruts, a drag, sample trails) and art/tracks-px.svg (the same pixelated at their size in the game, each of the 8 ways) and js/data/trackart.js (TRACK_ART, the shapes, and TRACK_PX, the pixel prints, for the game: gfx/tracks.js trackPic draws the art at the screen's own pixels, trackPix the pixel ones for Settings → Sprites: Pixel; data/tracks.js TRACKS.art says who leaves which and how big)
 style.css
 fieldbook.css        scoped management-window theme and responsive layouts (doc/FIELDBOOK_UI.md)
 js/core/              core.js (DOM, canvas, constants, helpers, the action registry), state.js (state factories, G, P; your numbers' older names),
@@ -656,6 +656,10 @@ Tunables: `AI_TACTICS` in `battle/commander.js`, `CHAR_FALL` in `battle/charmind
 ## Phones: resolution and frame rate (2026-10-29)
 
 The owner: "it lags on mobile". Settings → **Resolution** (core.js `RENDER.cap`, `dprOf`: Full the screen's own density, **Balanced** 2 (the default), Fast 1.5) and **Frame rate** (`RENDER.fps`: 60, or 30; main.js `loop` skips a frame sooner than .65 of its interval, so a 120 Hz screen draws 60, a 90 Hz one all of its own). The art is whole pixels, so fewer canvas pixels shown at the window's size (pixelated) look the same, the text a little coarser; every place that read `devicePixelRatio` reads `dprOf()`. And: `reducedMotion` (vfx.js) asks the browser once, not each call; the travel-detection eye (render.js `travelDetectionState`) is worked out at most every 100 ms, drawn only; a multi-army battle's `relation` (sides.js) is remembered while the jostle runs. Measured (headless, 844 × 390 at density 3, a world battle of about 90): the canvas 2534 × 1176 → 1692 × 783; the map's frame 13.1 → 5.0 ms to draw, 7.0 → 5.4 ms to update. Tests: render.
+
+## Sprites: Art or Pixel (2026-10-29)
+
+Settings → **Sprites** (core.js `SPRITES.pixel`, ui.js pref `sprites`): **Art** (the default) draws the tracks from art/tracks.svg, smooth at the screen's pixels; **Pixel** draws the same prints pixelated (art/tracks-px.svg, `TRACK_PX`), whole game pixels like the map. Both come from the one art: `art/tracks.py` pixelates each print at its game size (`TRACKS.art.px`), so the two match in size and kind (14 prints). It keeps as many pixels as the art's ink fills, the most covered first. Change a print or a size there and run it again. Tests: tracks (each art's 16 pixel prints as long as the art, drawn on the map), uiprefs.
 
 ## Battle speed (spatial grid)
 

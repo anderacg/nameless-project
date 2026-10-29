@@ -20,7 +20,7 @@ class HuntTracks{
   draw(hunters){const r=this.reach,k=WORLD_BATTLE.sprite,CR=Object.keys(TRACKS.col).indexOf('known');
     for(const [u,l] of this.trails){const D=CRITTERS[u.wildlife],art=D&&D.size>=2?TRACKS.art.game.big:TRACKS.art.game.small;
       l.forEach((p,i)=>{if(!this.readable(p,hunters,r))return;const a=1-(B.t-p.t)/HUNT_TRACK.life;if(a<=0)return;
-        ctx.save();ctx.globalAlpha=Math.min(1,a);ctx.translate(p.x,p.y);ctx.scale(k,k);const S=trackPic(art,0,p.a,i&1,CR,ctx.getTransform().a);ctx.drawImage(S,S.ox,S.oy,S.w,S.h);ctx.restore()})}}
+        ctx.save();ctx.globalAlpha=Math.min(1,a);ctx.imageSmoothingEnabled=false;ctx.translate(p.x,p.y);ctx.scale(k,k);const S=trackPic(art,0,p.a,i&1,CR,ctx.getTransform().a);ctx.drawImage(S,S.ox,S.oy,S.w,S.h);ctx.restore()})}}
 }
 class HuntBattleArea extends WorldBattleArea{
   constructor(e){
