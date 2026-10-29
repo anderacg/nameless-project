@@ -6,6 +6,8 @@ Kit.suite(({ok})=>{
  ok(lords.every(s=>s.startsWith('art/portrait/game/'))&&new Set(lords).size===20,'the twenty founding lords have distinct authored portraits');
  const comps=['brann','elske','tavi','ander'].map(id=>t.portrait(id));
  ok(comps.every(s=>s.startsWith('art/portrait/game/'))&&new Set(comps.concat(lords)).size===24,'all four named companions have their own faces, separate from lords');
+ const animals=['bear','wolf','boar','tiger','griffin','dragon'];
+ for(const id of animals){const pic=t.portrait(id);ok(pic.startsWith('art/portrait/game/'+id+'.webp?v='),'the '+id+' uses its corrected animal-pose artwork in the game');ok(t.unitCard(id).includes('src="'+pic+'"'),'the '+id+' unit card displays that same corrected portrait')}
  const l={id:'vale0',name:'Lord Aldric',fac:'vale'},a=t.lordPic(l);l.fac='karn';
  ok(t.lordPic(l)===a&&t.TALK_PIC.lord(l)===a,'a lord keeps his face when his allegiance changes, and dialogue uses it');
  ok(t.lordPic({name:'Lord Aldric',fac:'vale'})===a,'a captured record without the world party still resolves the same face');

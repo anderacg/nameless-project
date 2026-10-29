@@ -820,7 +820,9 @@
       "width": 1254,
       "height": 1254,
       "sha256": "8599bb449ac3ffe4273f753983ce83e6151b37d49872bb5bb969994d2547b32a",
-      "pose": "natural grounded quadruped"
+      "pose": "natural grounded quadruped",
+      "game_file": "game/wolf.webp",
+      "game_sha256": "62f3f6d9f5ba2dc8efdb30f8e6623fea3a27406fbb69a63a1365ee2d480674f4"
     },
     {
       "id": "scorpion",
@@ -845,7 +847,9 @@
       "width": 1254,
       "height": 1254,
       "sha256": "4d78722986731805b54fad746d79990199bafded52b95cbbe08d72989ee4f43d",
-      "pose": "natural grounded quadruped"
+      "pose": "natural grounded quadruped",
+      "game_file": "game/dragon.webp",
+      "game_sha256": "b732f4324b2142b2a05c65ae684e5ec69139bc4c5fd84a8b430784e77a7e0411"
     },
     {
       "id": "hum_farmer",
@@ -1170,7 +1174,9 @@
       "width": 1254,
       "height": 1254,
       "sha256": "dddd4763ca3d39ce52f816f85126cd27cc3be7ed3c43855f8fe8f044398bbbe3",
-      "pose": "natural grounded quadruped"
+      "pose": "natural grounded quadruped",
+      "game_file": "game/boar.webp",
+      "game_sha256": "9347dcf30e72fcd3ddb649297ed3927f9bc40a43d7a552fb5fe5bfb4ba045a13"
     },
     {
       "id": "tiger",
@@ -1183,7 +1189,9 @@
       "width": 1254,
       "height": 1254,
       "sha256": "07cbffcf1caa54088da18715a21644d6e8c5bc6ed601fe45526e794314cc137f",
-      "pose": "natural grounded quadruped"
+      "pose": "natural grounded quadruped",
+      "game_file": "game/tiger.webp",
+      "game_sha256": "b898849127fc31749245cd953ec6890ab22a6573ede1b11753239b3cb61331ea"
     },
     {
       "id": "bear",
@@ -1196,7 +1204,9 @@
       "width": 1254,
       "height": 1254,
       "sha256": "3aaa85643f06734809edc5db09dc215f3b4d323c2b2e9533f1e41433bc8e95ba",
-      "pose": "natural grounded quadruped"
+      "pose": "natural grounded quadruped",
+      "game_file": "game/bear.webp",
+      "game_sha256": "86eccd29c230372355e222fee3062fe2fc99f983b4b3e2096241e24d8b3e9f1c"
     },
     {
       "id": "spider",
@@ -1245,7 +1255,9 @@
       "width": 1254,
       "height": 1254,
       "sha256": "9e68581a8de103af7a280b39ad1d2a7bbaaebdf709fb913509d629b662fee21b",
-      "pose": "natural grounded quadruped"
+      "pose": "natural grounded quadruped",
+      "game_file": "game/griffin.webp",
+      "game_sha256": "d24cc600da67ddd315360100efe4d4b6ecc969a3ef2613989a6c831121e29b76"
     },
     {
       "id": "ander",

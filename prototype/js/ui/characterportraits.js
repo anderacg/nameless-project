@@ -1,5 +1,5 @@
 'use strict';
-/* Named faces are independent of troops, equipment and allegiance. The small WebP copies are deployed;
+/* Character faces and corrected animal poses use compact WebP artwork. Named faces stay independent of equipment and allegiance;
    full PNG artwork stays in art/portrait. Extra generated lords retain a stable individual sprite look. */
 const NAMED_PORTRAITS={
   "brann": "brann.webp?v=eb6e933d",
@@ -25,7 +25,13 @@ const NAMED_PORTRAITS={
   "Admiral Cass": "lord_salt0.webp?v=0751c151",
   "Captain Ivo": "lord_salt1.webp?v=db0e092d",
   "Admiral Neri": "lord_salt2.webp?v=10dca47e",
-  "Captain Mirelle": "lord_salt3.webp?v=fb560a66"
+  "Captain Mirelle": "lord_salt3.webp?v=fb560a66",
+  "wolf": "wolf.webp?v=62f3f6d9",
+  "dragon": "dragon.webp?v=b732f432",
+  "boar": "boar.webp?v=9347dcf3",
+  "tiger": "tiger.webp?v=b8988491",
+  "bear": "bear.webp?v=86eccd29",
+  "griffin": "griffin.webp?v=d24cc600"
 };
 class NamedPortraits{
   static of(key){return Object.hasOwn(NAMED_PORTRAITS,key)?'art/portrait/game/'+NAMED_PORTRAITS[key]:''}
