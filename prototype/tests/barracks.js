@@ -11,7 +11,8 @@ Kit.suite(({ok})=>{
   ok(q('.rwbody').scrollTop===at&&Object.values(G.town.cart).some(n=>n>0),'pressing + keeps the list where it was ('+at+')');
   plus.click();ok(plus.isConnected&&Object.values(G.town.cart).some(n=>n===2)&&plus.closest('.rec-row').querySelector('.rec-n').textContent==='2'&&plus.closest('.rec-row').querySelector('[data-arg$=":-1"]').disabled===false,'the same button again, at once: its count 2, − free now (the row changed in place, its buttons kept)');
   const bar=q('.rec-bar').getBoundingClientRect(),view=q('.rwbody').getBoundingClientRect();ok(bar.bottom<=view.bottom+1&&bar.top>=view.top,'the hire bar is in view');
-  q('.rec-row:not(.sel)').click();ok(G.town.info&&q('.rec-info .ucard-x')&&!q('.rec-rows'),'its card opens over the list');
+  const row=q('.rec-row:not(.sel)');row.click();ok(!G.town.info&&q('.rec-rows')&&G.town.pick===row.dataset.arg,'pressing a row only picks it: no card');
+  q('.rec-row:not(.sel) [data-act="rec-info"]').click();ok(G.town.info&&q('.rec-info .ucard-x')&&!q('.rec-rows'),'its i badge opens its card over the list');
   t.act('rec-info-back');ok(!G.town.info&&q('.rec-rows')&&q('.rwbody').scrollTop===at,'Back: the list, where you were');
  }finally{screen.style.cssText=orig;window.matchMedia=W}
  ok(!ERR.length,'no runtime errors'+(ERR.length?': '+ERR[0]:''));

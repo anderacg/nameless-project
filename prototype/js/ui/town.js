@@ -332,7 +332,7 @@ class Barracks extends Place{
   // (can the whole order be hired: gold, willing, room in your band; each kind's own rules, its standing)
   check(t){const T=this.totals();if(!T.n)return {ok:false,why:''};if(T.cost>P.gold)return {ok:false,why:'Not enough gold'};if(T.n>Math.floor(t.vol||0))return {ok:false,why:'Not that many willing'};
     if(partySize()+T.n>partyCap())return {ok:false,why:'No room in your band'};const bad=T.ks.find(k=>this.rowWhy(t,k));return bad?{ok:false,why:ST[bad].n+': '+this.rowWhy(t,bad)}:{ok:true}}
-  pick(arg,t){this.info(arg,t,'rec-pick')}
+  pick(arg){G.town.pick=arg}
   tab(arg){G.town.recTab=arg==='train'?'train':'hire';G.town.info=null}
   add(arg,t){const [k,n]=String(arg).split(':'),c=this.cart();if(!this.hires(t).includes(k)||this.rowWhy(t,k))return;const more=this.room(t,k);
     c[k]=Math.max(0,(c[k]||0)+(n==='max'?more:Math.min(+n||0,more)));G.town.cartAsk=false;G.town.recruitNotice=''}
