@@ -807,7 +807,8 @@
       "file": "wolf.png",
       "width": 1254,
       "height": 1254,
-      "sha256": "ca19dba362dc9959dcbfe8a26596822c8a595a5b387678066097f1c7c81fc1e2"
+      "sha256": "8599bb449ac3ffe4273f753983ce83e6151b37d49872bb5bb969994d2547b32a",
+      "pose": "natural grounded quadruped"
     },
     {
       "id": "scorpion",
@@ -831,7 +832,8 @@
       "file": "dragon.png",
       "width": 1254,
       "height": 1254,
-      "sha256": "dabd4e145ffaf00d97878651452451bb2fc234d92a7b27466ddda30c82d48999"
+      "sha256": "4d78722986731805b54fad746d79990199bafded52b95cbbe08d72989ee4f43d",
+      "pose": "natural grounded quadruped"
     },
     {
       "id": "hum_farmer",
@@ -1155,7 +1157,8 @@
       "file": "boar.png",
       "width": 1254,
       "height": 1254,
-      "sha256": "ab52d304fce45a3a43987bd78393417ae5f82acb6f290a937d2e9d6c088509ab"
+      "sha256": "dddd4763ca3d39ce52f816f85126cd27cc3be7ed3c43855f8fe8f044398bbbe3",
+      "pose": "natural grounded quadruped"
     },
     {
       "id": "tiger",
@@ -1167,7 +1170,8 @@
       "file": "tiger.png",
       "width": 1254,
       "height": 1254,
-      "sha256": "ff6c62d3c7c68e4f3f2eb8ecf6df3c15a68d9ba64dc2e85fea7d6fd3b783b788"
+      "sha256": "07cbffcf1caa54088da18715a21644d6e8c5bc6ed601fe45526e794314cc137f",
+      "pose": "natural grounded quadruped"
     },
     {
       "id": "bear",
@@ -1179,7 +1183,8 @@
       "file": "bear.png",
       "width": 1254,
       "height": 1254,
-      "sha256": "72f3ba3f92cd19769a9c7d7782e9c27d3c5a168e171b22c592fd203842640723"
+      "sha256": "3aaa85643f06734809edc5db09dc215f3b4d323c2b2e9533f1e41433bc8e95ba",
+      "pose": "natural grounded quadruped"
     },
     {
       "id": "spider",
@@ -1227,7 +1232,8 @@
       "file": "griffin.png",
       "width": 1254,
       "height": 1254,
-      "sha256": "2d2f2e15e8b9cfb6a0447c25f8bcfc81e3b4e6ef40da994de33870d5e2d7a220"
+      "sha256": "9e68581a8de103af7a280b39ad1d2a7bbaaebdf709fb913509d629b662fee21b",
+      "pose": "natural grounded quadruped"
     },
     {
       "id": "ander",
