@@ -54,7 +54,6 @@ const PREFS={
   grid:prefOnOff(false),// the tile grid: a faint line along every 16-pixel tile edge on the map and in scenes (G)
   fps:{def:60,read:s=>+s===30?30:60,write:String,apply:v=>{RENDER.fps=v}},// frames a second at most (main.js loop)
   res:{def:'bal',read:s=>['full','bal','fast'].includes(s)?s:'bal',write:String,apply:v=>{RENDER.cap=RES_CAP[v];fitScreen()}},// the density drawn at (core.js RENDER): Full, Balanced, Fast
-  sprites:{def:'art',read:s=>s==='pixel'?'pixel':'art',write:String,apply:v=>{SPRITES.pixel=v==='pixel'}},// the pictures drawn from art (core.js SPRITES): Art, smooth; Pixel, pixelated
   mapzoom:{def:0,read:s=>{const v=parseInt(s,10);return Number.isSafeInteger(v)&&v>=1?v:0},write:String,apply:v=>{MAPZOOM.z=v;fitScreen()}},// the world map's zoom: 0 auto, else its scale (core.js MAPZOOM)
   bspeed:{def:1,read:s=>BATTLE_SPEEDS.includes(+s)?+s:1,write:String},// the speed each battle starts at
   guide:prefOnOff(true,()=>{if(typeof updateHint==='function')updateHint()}),// guide texts: the hints at the top of the screen and the helper lines in towns and battle
@@ -73,7 +72,7 @@ const PREFS={
 // what a setting reads as from storage (as the game loads)
 function prefLoad(k){const p=PREFS[k];try{return p.read(localStorage.getItem('ashmark.'+k))}catch(e){return p.def}}
 for(const k in PREFS)PREFS[k].v=prefLoad(k);
-const RES_CAP={full:Infinity,bal:2,fast:1.5};RENDER.cap=RES_CAP[PREFS.res.v];RENDER.fps=PREFS.fps.v;SPRITES.pixel=PREFS.sprites.v==='pixel';MAPZOOM.z=PREFS.mapzoom.v;fitScreen();
+const RES_CAP={full:Infinity,bal:2,fast:1.5};RENDER.cap=RES_CAP[PREFS.res.v];RENDER.fps=PREFS.fps.v;MAPZOOM.z=PREFS.mapzoom.v;fitScreen();
 const prefGet=k=>PREFS[k].v;
 function prefSet(k,v){const p=PREFS[k],s=p.write(v);p.v=p.read(s);try{localStorage.setItem('ashmark.'+k,s)}catch(e){}if(p.apply)p.apply(p.v)}
 const prefView=(k,f='on')=>Object.defineProperty({},f,{get:()=>prefGet(k),set:v=>{PREFS[k].v=v},enumerable:true});
@@ -88,7 +87,7 @@ function toggleMute(){prefSet('mute',!prefGet('mute'));if(G.mode==='title'){if(G
 // economy.js; sound: on/off; volmaster, volmusic, volsfx: a volume 0–1), and the page redraws; false if the action is no setting
 function settingAct(a,arg){
   if(a==='dev-open'){DevConsole.show();return true}// (Settings → Developer tools: what the old DEV tab opened, developer.js)
-  if(a==='res'||a==='sprites')prefSet(a,arg);else if(a==='fps')prefSet('fps',+arg);else if(a==='econmode')setEconMode(arg);else if(a==='bspeed')setBattleSpeed(+arg,true);else if(['grid','blood','hpbars','bdeploy','bpause','guide','bfog','ambient'].includes(a))prefSet(a,arg==='on');
+  if(a==='res')prefSet('res',arg);else if(a==='fps')prefSet('fps',+arg);else if(a==='econmode')setEconMode(arg);else if(a==='bspeed')setBattleSpeed(+arg,true);else if(['grid','blood','hpbars','bdeploy','bpause','guide','bfog','ambient'].includes(a))prefSet(a,arg==='on');
   else if(a==='opaths')prefSet('opaths',arg);else if(a==='mapzoom')prefSet('mapzoom',+arg||0);
   else if(a==='sound')prefSet('mute',arg==='off');else if(VOLUMES.some(([k])=>k===a))prefSet(a,+arg);else return false;
   if(G.mode==='esc')escSettings();else showTitle('settings');return true}
@@ -132,7 +131,6 @@ function settingsPage(){
     '<div class="lab">Map zoom</div><div class="tabs" role="group" aria-label="Map zoom">'+[0,...Array.from({length:MAPZOOM.hi-MAPZOOM.lo+1},(_,i)=>MAPZOOM.lo+i)].map(v=>'<button class="btn sm'+(MAPZOOM.z===v?' on':'')+'" type="button" data-act="mapzoom" data-arg="'+v+'" aria-pressed="'+(MAPZOOM.z===v)+'">'+(v?v:'Auto')+'</button>').join('')+'</div><p class="muted">How close the world map is drawn: Auto starts closer on phones; higher numbers zoom in further. Use the wheel, + and −, the Map controls or a two-finger pinch to zoom.</p>'+
     '<div class="lab">Resolution</div><div class="tabs" role="group" aria-label="Resolution">'+[['full','Full'],['bal','Balanced'],['fast','Fast']].map(([v,n])=>{const on=prefGet('res')===v;return '<button class="btn sm'+(on?' on':'')+'" type="button" data-act="res" data-arg="'+v+'" aria-pressed="'+on+'">'+n+'</button>'}).join('')+'</div><p class="muted">Fewer pixels drawn: smoother on a phone, text a little coarser.</p>'+
     '<div class="lab">Frame rate</div><div class="tabs" role="group" aria-label="Frame rate">'+[[60,'60'],[30,'30']].map(([v,n])=>{const on=prefGet('fps')===v;return '<button class="btn sm'+(on?' on':'')+'" type="button" data-act="fps" data-arg="'+v+'" aria-pressed="'+on+'">'+n+'</button>'}).join('')+'</div><p class="muted">30 saves the battery and keeps a slow phone steady.</p>'+
-    '<div class="lab">Sprites</div><div class="tabs" role="group" aria-label="Sprites">'+[['art','Art'],['pixel','Pixel']].map(([v,n])=>{const on=prefGet('sprites')===v;return '<button class="btn sm'+(on?' on':'')+'" type="button" data-act="sprites" data-arg="'+v+'" aria-pressed="'+on+'">'+n+'</button>'}).join('')+'</div><p class="muted">Tracks: smooth at your screen\'s pixels, or pixelated like the map.</p>'+
     '<div class="lab">Ambient life</div><div class="tabs" role="group" aria-label="Ambient life">'+[['off','Off'],['on','On']].map(([v,n])=>{const on=prefGet('ambient')===(v==='on');return '<button class="btn sm'+(on?' on':'')+'" type="button" data-act="ambient" data-arg="'+v+'" aria-pressed="'+on+'">'+n+'</button>'}).join('')+'</div><p class="muted">Birds crossing the sky and pecking in the fields, crows over a fight, gulls on the shore, butterflies, fireflies at night, fish jumping, a hare or a squirrel; birds out of the trees as a battle begins. Only for the look: fewer and calmer when your system asks for less motion.</p>'+
     '<div class="lab">'+(B?.world?'World battle speed (shared with travel)':'Battle speed (each battle starts at it; change it in battle too)')+'</div><div class="tabs" role="group" aria-label="Battle speed">'+battleSpeeds().map(v=>'<button class="btn sm'+((B?.world?G.speed:BSPEED.v)===v?' on':'')+'" type="button" data-act="bspeed" data-arg="'+v+'" aria-pressed="'+((B?.world?G.speed:BSPEED.v)===v)+'">'+v+'×</button>').join('')+'</div>'+
     '<div class="lab">Guide texts</div><div class="tabs" role="group" aria-label="Guide texts">'+[['off','Off'],['on','On']].map(([v,n])=>'<button class="btn sm'+(GUIDE.on===(v==='on')?' on':'')+'" type="button" data-act="guide" data-arg="'+v+'" aria-pressed="'+(GUIDE.on===(v==='on'))+'">'+n+'</button>').join('')+'</div><p class="muted">The hints at the top of the screen and the helper lines in towns and battle. Off, only what you can do right now shows (E to talk).</p>'+

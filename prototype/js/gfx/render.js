@@ -144,7 +144,7 @@ function drawWorld(){
   ctx=low.getContext('2d', { willReadFrequently: true });ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,low.width,low.height);if(hi){VW++;VH++}// (its transform reset each frame: nothing drawn into it can leave a shift that piles up)
   try{
   WorldArt.draw(ctx,cam);// (the painted map by chunks, those in view: worldart.js)
-  drawEnv(cam,V,0);drawLand(cam,'tint');drawEstates(cam,V);
+  drawEnv(cam,V,0);drawLand(cam,'tint');drawTracks(cam);drawEstates(cam,V);
   // each thing on the map draws itself onto the frame's list (WorldObject draw), in the order they always went (two as deep stay
   // in it): the sites, the parties, the beasts, the herds, you, then the workers, caravans, ships, refugees, the encounters on
   // the road (road.js) and fights
@@ -172,8 +172,6 @@ function drawWorld(){
   nPlace=TXTQ.length}finally{ctx=scr;if(hi){VW--;VH--}}
   // onto the screen, shifted by the camera's fraction, as is everything over it up to the minimap
   ctx.drawImage(low,-fx,-fy);ctx.save();ctx.translate(-fx,-fy);const eye=worldEye(),px0=eye.x-cam.x,py0=eye.y-cam.y;
-  // (the tracks on the ground at the screen's own pixels, then all that stands over them put back: gfx/tracks.js, depth.js)
-  if(drawTracks(cam)&&WDEPTH.on){const b=TRACK_BOX;overdrawBox(Math.max(0,b[0]),Math.max(0,b[1]),Math.min(VW,b[2]),Math.min(VH,b[3]),cam.x,cam.y,-Infinity,false,cam,true)}
   // fog of war: keep the scene of structures, draw everyone, then put the remembered scene back over all but your sight, so
   // nothing that moves shows outside it; labels likewise (a place's, where you know the land; anyone's, only in your sight)
   ambientFlat(cam);worldOverdraw(ents.filter(e=>!e.st).sort((a,b)=>a.y-b.y),cam);ambientAir(cam);// (the splashes and the flyers' shadows under everyone, the flyers over them: ambient.js)
