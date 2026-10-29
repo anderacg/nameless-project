@@ -159,8 +159,10 @@ class Actor extends Fighter{
       const n=nearest(u),close=s.range?30:(s.reach||11)+8;
       u.near=this.turnsOn(g)&&n&&!n.rout&&!member(n)&&Math.hypot(n.x-u.x,n.y-u.y)<close?n:null;
       if(u.near)u.tgt=u.near;
+      if(DUEL.on&&!s.range){const p=Duel.of(u);if(p&&member(p))u.tgt=p}// (in a duel, his partner if one of those he was sent at: duel.js)
     }
-    else{if(u.near)u.near=null;if(u.rt<=0||!u.tgt||u.tgt.hp<=0||!seenBy(u.team,u.tgt)){u.tgt=s.range?shooterTarget(u):meleeTarget(u);u.rt=.4}}// (free: no ordered foe, so no foe brushed past either; one gone from sight is let go)
+    else{if(u.near)u.near=null;if(u.rt<=0||!u.tgt||u.tgt.hp<=0||!seenBy(u.team,u.tgt)){u.tgt=s.range?shooterTarget(u):meleeTarget(u);u.rt=.4}
+      if(DUEL.on&&!s.range){const p=Duel.of(u);if(p)u.tgt=p}}// (free: no ordered foe, so no foe brushed past either; one gone from sight is let go; in a duel, his partner)
     this.crowd(dt,s);
     const t=u.tgt;u.spdNow=0;
     // The hero is a single-unit group: an explicit attack turns its firing arc toward the target,

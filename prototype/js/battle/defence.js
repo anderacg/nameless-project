@@ -6,7 +6,8 @@
    less again, a big one's blow less (big), at most cap. How: a shield toward it, a block; else, lightly armoured, now and then a
    dodge (a lean back on the spot: never a roll, which stays your hero's and the champions' own); else a parry with his weapon.
    Never stopped: a hard attack, a combo's finisher, a charge's blow (chargeMul past charge), a shove or bash, an ability, a
-   missile (a shield's front already turns those: matchups.js); nor a blow at your hero (yours to block), a man down, stunned,
+   missile (a shield's front already turns those: matchups.js); nor a blow at your hero (yours to block) but with duels on
+   (battle/duel.js: theirs as everyone's, your block on top), a man down, stunned,
    routing or winding up a hard blow. Beasts have no stance: the big ones never defend, the rest dodge now and then (beast).
    on: false, every blow lands as before (tests/harness.js turns it off for the older suites, whose fingerprints it would move;
    tests/defence.js turns it on) ---------- */
@@ -21,7 +22,7 @@ const Defence={
   shieldOf(s){return tagsOf(s).includes('shield')&&!s.mounted},
   // (his chance against a blow from att, and from which side: 0 when he cannot meet it)
   chance(att,t){const D=DEFENCE,s=t.s;
-    if(!D.on||t.hero||t.hp<=0||t.rout||t.stun>0||t.wind||physDownPose(t)!=null||s.big)return 0;
+    if(!D.on||t.hero&&!DUEL.on||t.hp<=0||t.rout||t.stun>0||t.wind||physDownPose(t)!=null||s.big)return 0;
     const side=sideOf(t,att),T=tiredMul(t).dmg;
     let p=s.beast?D.beast:D.base+D.tier*(this.tier(t)-1)+(side==='front'&&this.shieldOf(s)?D.shield:0);
     p=(p-D.att*(this.tier(att)-1))*D.side[side]*(T<.8?D.spent:T<1?D.tired:1)*(att.s.big?D.big:1);

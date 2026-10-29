@@ -1,6 +1,7 @@
 'use strict';
 // Duels (battle/duel.js, DUEL; the owner, 2026-10-29: "units fight each other with more animations; commands still force them",
-// think Total War): two men who meet pair up and meet each other's blows better, a block or parry answered at once; a third man catches
+// think Total War): two men who meet pair up and meet each other's blows better, a block or parry answered at once; each keeps
+// to his partner, but any number may strike him; your hero and the characters duel too; a third man catches
 // one on his blind side; a duel ends when either falls, runs or is taken away; not for your hero, a character, a beast; each
 // blow's look by weapon and foe (drawn only: the rules keep theirs), each defence's by the blow it meets; a heavy wound staggers.
 // And the measure: how much longer melee lasts with duels on, against blocks and parries alone and against neither.
@@ -19,7 +20,17 @@ Kit.suite(({ok,info})=>{const t=T,G=t.G,L=t.BattleLab,D=t.DUEL,ev=s=>(0,eval)(s)
    t.attack(us[1],f);ok(f.duel===u&&!us[1].duel,'the third man does not take him from his duel');
    u.x=300;ok(!t.Duel.of(f)&&!t.Duel.of(u),'one taken away (an order, a step back): the duel ends')}
   {const {u,f}=pair('hum_sword','hum_sword');t.attack(u,f);f.rout=true;ok(!t.Duel.of(u),'one runs: it ends');f.rout=false;u.duel=f;f.duel=u;f.hp=0;ok(!t.Duel.of(u),'one falls: it ends')}
-  {const {u,f}=pair('hum_sword','wolf');t.attack(u,f);ok(!u.duel&&!f.duel&&!t.Duel.can({hero:true,s:{}})&&!t.Duel.can({leader:{},s:{}}),'no duels with beasts, your hero or a character')}
+  {const {u,f}=pair('hum_sword','wolf');t.attack(u,f);ok(!u.duel&&!f.duel&&t.Duel.can({hero:true,s:{}})&&t.Duel.can({leader:{},s:{}}),'no duels with beasts; your hero and the characters duel as anyone')}
+  // ======== he keeps to his partner, but any number may strike him; his partner down, the next who strikes him is his new one
+  {const B=lab([Gp('hum_sword',1)],[Gp('hum_sword',3)]),u=mine(B).units[0],[p,q,r]=theirs(B).units;u.x=400;u.y=300;u.dir=0;u.face=1;[[p,412,300],[q,409,306],[r,404,309]].forEach(([e,x,y])=>{e.x=x;e.y=y;e.dir=Math.PI;e.face=-1});
+   [u,p,q,r].forEach(e=>{e.hp=e.max=1e5;e.hardAt=1e9});t.attack(u,p);u.rt=0;u.tgt=q;t.Actor.of(u).step(1/30,null);
+   ok(u.duel===p&&u.tgt===p,'in a duel, he keeps to his partner, though another stands nearer');
+   const hp=u.hp;let landed=0;for(let i=0;i<60;i++){const h=u.hp;t.attack(q,u);t.attack(r,u);if(u.hp<h)landed++;B.t+=1}
+   ok(u.hp<hp&&landed>30&&u.duel===p,'two more strike him at once: '+landed+' of 60 rounds hurt him (his blind side); his duel goes on');
+   p.hp=0;t.attack(q,u);ok(!t.Duel.of(u)||u.duel===q,'his partner down: the next who strikes him, free, is his new one ('+(u.duel===q?'paired':'free')+')')}
+  // ======== your hero: paired when struck, meeting blows in his stance (your block on top)
+  {const B=lab([Gp('hum_sword',1)],[Gp('hum_sword',1)]),f=theirs(B).units[0],h=mine(B).units[0];h.hero=true;h.x=400;h.y=300;h.dir=0;h.face=1;f.x=411;f.y=300;f.dir=Math.PI;f.face=-1;[h,f].forEach(e=>{e.hp=e.max=1e5;e.hardAt=1e9});
+   const c0=t.Defence.chance(f,h);t.attack(f,h);ok(h.duel===f&&t.Defence.chance(f,h)>c0&&c0>0,'your hero, struck: paired, meeting blows in his stance ('+Math.round(c0*100)+'% → '+Math.round(t.Defence.chance(f,h)*100)+'% in the duel)');h.hero=false}
   // ======== a parry in a duel is answered at once; a met blow floats no word
   {const {B,u,f}=pair('hum_sword','hum_sword');let rip=0,met=0,word=0;
    for(let i=0;i<200;i++){f.cd=5;const fl=B.floats.length;f.defAt=null;t.attack(u,f);if(f.defAt===B.t){met++;if(f.defK!=='dodge'&&f.cd<=D.riposte)rip++;if(B.floats.length!==fl)word++}B.t+=1}

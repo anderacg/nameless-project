@@ -4,8 +4,11 @@
    each the other's): they trade blows, each meeting his partner's better (def more, at most cap: battle/defence.js) and, blocking or
    parrying him, answering at once (riposte: his next blow within that many s). Another who strikes a man in a duel catches him on his blind
    side (busy: × his chance), so flanking and numbers still tell. A duel ends when either falls, runs, or is more than his reach
-   and slack away: an order that sends one elsewhere (a move, a withdrawal, another target) ends it by taking him away. Not for
-   your hero (yours to fight), a character, a shooter with his bow, a beast or a big one.
+   and slack away: an order that sends one elsewhere (a move, a withdrawal, another target) ends it by taking him away. While it
+   lasts he keeps to his partner (actors.js step: unless sent at others), but any number may strike him; his partner down, the
+   next who strikes him (and is free) is his new one. Your hero and the characters duel too (the owner's: "like a normal attack,
+   with more animations"; your hero's blows are still yours or their own mind's, their defence in their stance). Never a shooter
+   with his bow, a beast or a big one.
    The look of each blow (u.atkLook: drawn only, weapons.js holdOf; the rules keep troopStyle's), by his weapon (blade, heavy,
    pole) and what he fights (man, beast, big): weights in moves; a shield adds a bash. A defence's look follows the blow it meets
    (high: a swing, an overhead, a bash; low: a low cut, a thrust; t.defH), a dodge back or aside (t.defV), a heavy blow blocked
@@ -21,8 +24,8 @@ const Duel={
   // (his partner still: standing, near, his; else none, the duel over)
   of(u){const p=u.duel;if(!p)return null;
     if(p.hp<=0||u.hp<=0||p.rout||u.rout||p.duel!==u||Math.hypot(p.x-u.x,p.y-u.y)-(p.s.big?12:0)>Math.max(u.s.reach||11,p.s.reach||11)+DUEL.slack){u.duel=null;return null}return p},
-  // (who may duel: a soldier on foot or mounted with a blade in his hand, never your hero, a character, a shooter, a beast)
-  can(u){return !u.hero&&!isFighter(u)&&!u.s.beast&&!u.s.big&&!(u.s.range&&!u.empty&&!u.inMelee)},
+  // (who may duel: any man with a weapon in his hand, your hero and the characters too; never a shooter with his bow, a beast)
+  can(u){return !u.s.beast&&!u.s.big&&!(u.s.range&&!u.empty&&!u.inMelee)},
   // (a blow from u at t: paired when both are free)
   meet(u,t){if(!DUEL.on||!this.can(u)||!this.can(t))return;if(!this.of(u)&&!this.of(t)){u.duel=t;t.duel=u}},
   // (his chance to meet att's blow, p as defence.js reckons it: his partner's better, another's on his blind side)
