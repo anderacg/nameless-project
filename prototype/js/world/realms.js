@@ -230,10 +230,11 @@ function lordWon(l,res){
 }
 function defeatLord(l){l.inside=null;l.dead=true;l.troops=[];l.back=G.day+4;l.state='rest'}
 function fallFaction(f,at,involved){realmOf(f).fall(at,involved)}
+// (a marshal's siege: all his host's strength there, hosts.js Host.besiegers; each takes his share of the losses)
 function resolveSiege(l,t){
-  const mine=t.owner==='player',pa=power(l.troops)*lordTac([l])*(.8+Math.random()*.4),pd=power(garList(t).concat(insideTroops(t)))*(mine?2.2:1.8+.8*Math.max(0,FIEF0-fiefsOf(t.owner).length))*(1+.15*(wallOf(t)-t.T.wall0))*(t.stock&&foodDays(t)<2?.6:1)*(.8+Math.random()*.4);
+  const ls=Host.besiegers(l,t),mine=t.owner==='player',pa=power(ls.flatMap(o=>o.troops))*lordTac(ls)*(.8+Math.random()*.4),pd=power(garList(t).concat(insideTroops(t)))*(mine?2.2:1.8+.8*Math.max(0,FIEF0-fiefsOf(t.owner).length))*(1+.15*(wallOf(t)-t.T.wall0))*(t.stock&&foodDays(t)<2?.6:1)*(.8+Math.random()*.4);
   if(pa>pd){
-    const prev=t.owner;cull(l,clamp(.1+.5*(pd/pa)**2,.05,.6));lordWins(l,t.gar||6);lordsInside(t).forEach(o=>{if(!Prisons.take(o,l.fac,t.x,t.y,t))defeatLord(o);worldEvent({text:o.name+' is taken inside the walls of '+t.name+'.',cls:o.fac===P.fac?'bad':'',x:t.x,y:t.y,fac:[o.fac],towns:[t],past:o.name+' was taken inside the walls of '+t.name})});t.owner=l.fac;t.gar=4;l.state='rest';
+    const prev=t.owner;ls.forEach(o=>cull(o,clamp(.1+.5*(pd/pa)**2,.05,.6)));lordWins(l,t.gar||6);lordsInside(t).forEach(o=>{if(!Prisons.take(o,l.fac,t.x,t.y,t))defeatLord(o);worldEvent({text:o.name+' is taken inside the walls of '+t.name+'.',cls:o.fac===P.fac?'bad':'',x:t.x,y:t.y,fac:[o.fac],towns:[t],past:o.name+' was taken inside the walls of '+t.name})});t.owner=l.fac;t.gar=4;l.state='rest';
     // conquest leaves its mark: turmoil for a while, and sometimes the victors sack the place
     Timed.of(t).set('turmoil',8);breach(t);const sacked=Math.random()<.35;if(sacked){Timed.of(t).set('sacked',15);burnEstates(t,2);sackStock(t,.5,.25)}
     worldEmit('holding:taken',{town:t,lord:l,sacked});
@@ -243,7 +244,7 @@ function resolveSiege(l,t){
     W.lords.forEach(o=>{if(!o.dead&&o!==l&&o.tgt===t.name)lordThink(o)});
     stayFall(t);
     if(!mine&&!fiefsOf(prev).length)fallFaction(prev,t);
-  }else{cull(l,.55);lordXp(l,6);lordTrain(l,'tact',2);t.gar=Math.max(2,Math.round(t.gar*.6));worldEmit('siege:broken',{town:t,lord:l});
+  }else{ls.forEach(o=>cull(o,.55));lordXp(l,6);lordTrain(l,'tact',2);t.gar=Math.max(2,Math.round(t.gar*.6));worldEmit('siege:broken',{town:t,lord:l});
     worldEvent({text:'The siege of '+t.name+' fails. '+l.name+' falls back.',x:t.x,y:t.y,fac:[t.owner,l.fac],towns:[t],heard:['relieved',t],seen:'You see the siege of '+t.name+' fail. '+l.name+' falls back.',past:'the siege of '+t.name+' failed and '+l.name+' fell back'});lordThink(l)}
 }
 function worldDay(){
@@ -259,6 +260,7 @@ function worldDay(){
       Object.assign(l,{dead:false,x:h.x,y:h.y+14,troops:raised,state:'rest',tgt:h.name,cool:3});if(!l.shelterWhy(h))l.enter(h);
       worldEvent({text:l.name+' raises a new army at '+h.name+'.',x:h.x,y:h.y,fac:[l.fac],towns:[h],news:['army',h,{lord:l.name,fac:l.fac,town:h.name,n:raised.length}],past:l.name+' raised a new army at '+h.name});continue;
     }
+    if(l.with)continue;// (in a marshal's host: his aims are theirs, his siege theirs: hosts.js)
     const t=townBy(l.tgt);
     if(l.state==='siege'){if(!t||!atWar(l.fac,t.owner)){lordThink(l);continue}if(inFight(l))continue;
       if(t.stock&&foodStock(t)<=0)worldNews('starving',t,{town:t.name,fac:t.owner});// (its stores run dry: news only, worldlog.js)

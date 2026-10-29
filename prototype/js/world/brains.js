@@ -23,14 +23,14 @@ class Brain{
 // at home, rides out against bands and beasts that come near his realm's holdings and estates (defence.js)
 class LordBrain extends Brain{
   think(l,d){
-    if(l.dead)return false;if(l.follow){Host.lordStep(l,d,this);return false}// (he follows you: his place in your column, hosts.js)
+    if(l.dead)return false;if(l.follow||l.with){Host.lordStep(l,d,this);return false}// (he follows you, or his marshal: his place in the column, hosts.js)
     this.cool(l,d);
     if(l.defend&&LandDefence.lordDefends(l,d))return false;
     if(l.inside){const h=townBy(l.inside);if(l.state==='rest'&&l.tgt===l.inside&&h&&h.owner===l.fac)return false;l.leave()}
     if(inFight(l))return false;
     // (lying in wait in the trees: waylay.js)
     if(l.waylay||['march','home','patrol'].includes(l.state)&&!TravelAwareness.sees(l)&&Waylay.consider(l,d,true)){const r=Waylay.step(l,moveStep(lordSpeed(l),d));if(r==='met')return true;if(r)return false}
-    const v=this.look(l),pd=v.d,hostile=hostileTo(l.fac)&&!lordSpares(l),mul=lordSpeed(l)/26;// (26: a lord's old pace)
+    const v=this.look(l),pd=v.d,hostile=hostileTo(l.fac)&&!lordSpares(l),mul=lordSpeed(l)/26*Host.paceFor(l);// (26: a lord's old pace; a marshal's, his host's: hosts.js)
     const relief=hostile&&l.state==='relieve'&&!!P.siege&&P.siege.town===l.tgt,st=hostile?(relief?'attack':stance(l.power(),l)):null,see=TravelAwareness.sees(l)?travelDetection(l).range:0;
     if(st==='afraid'&&l.state==='siege'&&pd<see){l.state='home';l.tgt=Spatial.nearest(fiefsOf(l.fac),l.x,l.y).name;log(l.name+' abandons the siege as your band approaches.','good')}
     const dread=W.lords.find(o=>!o.dead&&!o.inside&&o!==l&&atWar(o.fac,l.fac)&&Math.hypot(o.x-l.x,o.y-l.y)<WORLD_SCALE.ai.dread&&o.power()>=l.power()*1.5);

@@ -63,5 +63,22 @@ Kit.suite(({ok})=>{
  {L.x=P.x+30;L.y=P.y;Kit.goTo(P.x,P.y);t.followStart(L);const bd=t.asParty({kind:'bandits',troops:Array(6).fill('militia'),x:L.x+20,y:L.y,cool:0,idle:true});t.bandits.push(bd);Kit.world();const fg=t.startFight([L],[bd]);t.Host.watch();
   ok(G.mode==='dialog'&&document.querySelector('[data-act="hs-aside"]'),'his battle near: its page, Stand aside');const r0=t.relWith(L);t.act('hs-aside');ok(t.relWith(L)<r0&&G.mode==='world','standing aside: his regard lower');t.Host.under=null;t.followStop()}
  P.fac=null;
+ // ======== phase 3: a realm's campaign under its marshal
+ {const C=t.HOSTS.camp,fa=t.FIDS[1],fb=t.FIDS.find(x=>x!==fa),town=t.TOWNS.find(x=>x.owner===fa);rel(fa,fb,'war');for(const o of t.FIDS)if(o!==fa&&o!==fb)rel(fa,o,'peace');
+  const ls=W.lords.filter(l=>l.fac===fa&&!l.gone).slice(0,4);ls.forEach((l,i)=>Object.assign(l,{dead:false,held:false,follow:null,with:null,campaign:null,inside:null,fight:null,state:'rest',x:town.x+i*14,y:town.y+30,troops:Array(12+i).fill('hum_foot')}));
+  if(ls.length<3)ok(true,'(too few lords in this world for a campaign)');else{
+   const r=Math.random;try{Math.random=()=>0;t.Host.campaignDay()}finally{Math.random=r}
+   const L=ls.find(l=>l.campaign),ms=L?t.Host.campMembers(L):[];
+   ok(L&&L.power()===Math.max(...ls.map(l=>l.power()))&&ms.length>=C.members[0]&&ms.every(m=>m.with===L.id),'a realm at war makes its strongest lord its marshal, '+ms.length+' lords his host, marching on '+L?.campaign?.tgt);
+   ok(t.townBy(L.campaign.tgt)&&t.atWar(fa,t.townBy(L.campaign.tgt).owner)&&L.state==='march','his aim: an enemy holding, '+L.campaign.tgt);
+   for(let i=0;i<300;i++){t.BRAINS.lord.think(L,.05);ms.forEach(m=>t.BRAINS.lord.think(m,.05))}
+   const far=Math.max(...ms.map(m=>Math.hypot(m.x-L.x,m.y-L.y)));ok(far<X.gap*(ms.length+2),'they march in his column (the last '+Math.round(far)+' px back)');
+   const tg=t.townBy(L.campaign.tgt);ms.forEach(m=>{m.x=tg.x+5;m.y=tg.y+12});L.x=tg.x;L.y=tg.y+12;ok(t.Host.besiegers(L,tg).length===ms.length+1,'at the walls: the marshal’s siege has all his host’s strength ('+(ms.length+1)+' lords)');
+   // (you, serving the realm: summoned)
+   P.fac=fa;G.quietEvents=false;try{L.campaign=null;ms.forEach(m=>m.with=null);Math.random=()=>0;Kit.world();t.Host.campaign(fa)}finally{Math.random=r;G.quietEvents=true}
+   const L2=ls.find(l=>l.campaign);ok(G.mode==='dialog'&&/calls the lords of the/.test(document.getElementById('panel').textContent),'serving the realm: you are summoned to '+L2?.name+'’s host');
+   t.act('hs-summon');ok(t.Host.under?.id===L2.id&&G.follow?.host&&t.Host.of(P).members.at(-1)===P,'answered: you ride in his host, last in his column');t.Host.under=null;t.followStop();
+   // (its days up: it disperses, its lords their own way)
+   G.day=L2.campaign.until+1;{const r=Math.random;try{Math.random=()=>.99;t.Host.campaignDay()}finally{Math.random=r}}ok(!L2.campaign&&ls.every(l=>!l.with),'its days up: the host disperses');P.fac=null}}
  ok(!ERR.length,'no runtime errors');
 });

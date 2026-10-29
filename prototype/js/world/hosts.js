@@ -22,9 +22,17 @@
      makes you a member of his host; your band keeps its place in his column (world.js followStep), waits at his gate while he is
      inside, and takes it up again after a battle or a talk. His battle near: its page, Join or Stand aside (relation lord.aside
      lower). His days up, he lets you go (relation, renown, honour: lord.end); Stop following before that, or gone far from him
-     (lord.desert × far), costs relation lord.leave and honour lord.honor. ---------- */
+     (lord.desert × far), costs relation lord.leave and honour lord.honor.
+   Phase 3 (HOSTS.camp): realm campaigns. Each day a realm at war with no campaign under way may begin one (camp.start): its
+   strongest free lord its marshal (l.campaign: {tgt, since, until}), camp.members of its free lords nearest him (within
+   camp.reach, camp.troops men or more) his host (l.with: his id; wseq, their places); they march on its enemy holding nearest
+   him, at the host's pace, and lay siege together: the marshal resolves it with all their strength (realms.js resolveSiege,
+   Host.besiegers), the members never alone. It ends: the holding taken (or no longer an enemy's), the marshal beaten, or its
+   days up (camp.days); its members go their own way. Serving the realm, you are summoned (a page: Ride with his host, his
+   days; Decline, honour camp.refuse lower). ---------- */
 const HOSTS={crumb:6,gap:22,catch:1.3,far:160,join:220,
-  lord:{rel:20,max:3,troops:6,days:[5,10],near:150,offer:.03,leave:6,honor:2,end:{rel:5,renown:3,honor:2},hopeless:2.5,cautious:['greedy','cunning'],aside:3,peace:6,desert:3}};
+  lord:{rel:20,max:3,troops:6,days:[5,10],near:150,offer:.03,leave:6,honor:2,end:{rel:5,renown:3,honor:2},hopeless:2.5,cautious:['greedy','cunning'],aside:3,peace:6,desert:3},
+  camp:{start:.12,min:3,members:[2,4],troops:9,reach:700,days:20,refuse:3}};
 class Host{
   constructor(lead,members){this.lead=lead;this.members=members}
   // ---- your host: you, your companions' parties that follow you and the lords that do (none: no host)
@@ -32,7 +40,12 @@ class Host{
     const m=[...ps,...ls].sort((a,b)=>seq(a)-seq(b));return m.length?new Host(P,m):null}
   static lords(){return W.lords.filter(l=>l.follow&&!l.dead&&!l.gone&&!l.held)}
   // (the host an army is in, or leads: yours, or the lord's you follow)
-  static of(o){const h=this.yours();if(h&&(h.lead===o||h.members.includes(o)))return h;const u=this.leader();return u&&(o===P||o===u)?new Host(u,[P]):null}
+  static of(o){const h=this.yours();if(h&&(h.lead===o||h.members.includes(o)))return h;const u=this.leader();if(u&&(o===P||o===u))return new Host(u,[...this.campMembers(u),P]);
+    const L=o.campaign?o:o.with&&W.lords.find(l=>l.id===o.with&&l.campaign&&!l.dead);return L?new Host(L,this.campMembers(L)):null}
+  // (a marshal's host: the lords with him, in their places)
+  static campMembers(L){return W.lords.filter(l=>l.with===L.id&&!l.dead&&!l.gone&&!l.held).sort((a,b)=>(a.wseq||0)-(b.wseq||0))}
+  // (a lord's pace in his host: a marshal's, slowed to his host's slowest)
+  static paceFor(l){return l.campaign?this.of(l)?.paceOf()??1:1}
   // (the next place in your column)
   static seq(){return Math.max(0,...cparties().map(p=>p.fseq||0),...this.lords().map(l=>l.follow.seq||0))+1}
   // ---- the leader's trail: a point each time he has gone crumb px, as long as the column needs
@@ -81,13 +94,13 @@ class Host{
   static leader(){const u=this.under;return u&&W.lords.find(l=>l.id===u.id&&!l.dead&&!l.gone&&!l.held)||null}
   static follows(o){return !!this.under&&this.leader()===o}
   static canFollow(o){return o?.mapKind==='lord'&&this.friend(o)&&!o.follow&&!this.under&&!o.dead&&o.troops.length>0}
-  static join(o){const X=HOSTS.lord,n=rint(...X.days);this.under={id:o.id,since:G.day,until:G.day+n};log('You join the host of '+lordName(o)+' for '+n+' days.','gold','war');return n}
+  static join(o,days){const X=HOSTS.lord,n=days||rint(...X.days);this.under={id:o.id,since:G.day,until:G.day+n};log('You join the host of '+lordName(o)+' for '+n+' days.','gold','war');return n}
   // (you leave him: before his days are up, relation and honour; his days up, his thanks; why: its line)
   static leave(early,why){const l=this.leader(),X=HOSTS.lord;this.under=null;if(!l)return;
     if(early){changeRel(l,-X.leave,'you left his host');addHonor(l.fac,-X.honor,true);log(why||'You leave the host of '+lordName(l)+' before he lets you go.','bad','war')}
     else{changeRel(l,X.end.rel,'you marched with him');P.renown+=X.end.renown;addHonor(l.fac,X.end.honor,true);log(lordName(l)+' lets you go with his thanks.','good','war')}}
   // (your place in his column: world.js followStep; he inside a holding, at its gate)
-  static yourSlot(l){if(l.inside){const t=townBy(l.inside);return t?gateGoal(t):{x:l.x,y:l.y}}const h=new Host(l,[P]);h.mark();return h.slot(P)}
+  static yourSlot(l){if(l.inside){const t=townBy(l.inside);return t?gateGoal(t):{x:l.x,y:l.y}}const h=this.of(P);h.mark();return h.slot(P)}
   // (each moment on the map: your place taken up again after a battle or a talk; his battle near, its page)
   static watch(){const l=this.leader();if(!l){if(this.under)this.under=null;return}if(G.mode!=='world'||G.modal)return;
     if(!G.follow&&this.paused){this.paused=false;if(followable(l)||l.inside){G.follow={o:l,crumbs:[[l.x,l.y]],host:true}}}
@@ -96,7 +109,7 @@ class Host{
   static asideAct(f){const l=this.leader();return l&&f.sides.some((_,i)=>sideParties(f,i).includes(l))?['hs-aside',null,'Stand aside']:null}
   // ---- each day: lords that follow you, their days up or no longer friends, go; his host: its days, or you gone far from it;
   // a friend near may offer to follow you
-  static day(){const X=HOSTS.lord;
+  static day(){const X=HOSTS.lord;this.campaignDay();
     for(const l of this.lords()){if(G.day>=l.follow.until)this.release(l,lordName(l)+' takes his leave of your host.');else if(!this.friend(l)||l.troops.length<3)this.release(l,lordName(l)+' leaves your host.')}
     if(this.under){const l=this.leader();if(!l||hostileTo(l.fac))this.under=null;else if(G.day>=this.under.until)this.leave(false);
       else if(!G.follow&&!this.paused&&Math.hypot(l.x-P.x,l.y-P.y)>HOSTS.far*X.desert)this.leave(true,'You have gone far from the host of '+lordName(l)+': he counts you gone.')}
@@ -105,6 +118,31 @@ class Host{
   // (his offer: a page, Accept or Decline)
   static offer(l){G.mode='dialog';G.hostOffer=l;showPanel('<h2>'+lordName(l)+'</h2><p>'+lordName(l)+' of the '+FACS[l.fac].n+' rides up beside you. “The road is safer for two hosts than one. May I ride with you for a while?”</p>'+
     '<div class="btns">'+dlgBtn('hs-accept',null,'Accept',this.askWhy(l)||'',true)+'</div>'+nav(null,['hs-decline',null,'Decline']))}
+  // ---- phase 3: each day, the realms' campaigns under way kept to their aim, ended when done; a realm at war may begin one
+  static campaignDay(){const C=HOSTS.camp;
+    for(const L of W.lords.filter(l=>l.campaign)){const c=L.campaign,t=townBy(c.tgt),ms=this.campMembers(L);
+      if(L.dead||L.gone||L.held)this.disband(L,'The host of '+L.name+' breaks up.');
+      else if(t&&t.owner===L.fac)this.disband(L,'With '+t.name+' taken, the host of '+L.name+' breaks up.');
+      else if(!t||!atWar(L.fac,t.owner)||G.day>c.until||!ms.length)this.disband(L,'The host of '+L.name+' disperses.');
+      else{if(L.state!=='siege'){L.state='march';L.tgt=c.tgt}for(const m of ms){if(m.troops.length<3){this.part(m);continue}m.state=L.state==='siege'?'siege':'march';m.tgt=L.tgt}}}
+    for(const l of W.lords.filter(l=>l.with&&(l.dead||!W.lords.some(L=>L.id===l.with&&L.campaign&&!L.dead))))this.part(l);
+    for(const f of FIDS){if(W.dead[f]||!realmOf(f).enemies().length||W.lords.some(l=>l.campaign&&l.fac===f)||Math.random()>=C.start)continue;this.campaign(f)}}
+  // (a realm's campaign begun: its marshal, his host, his aim; its news; you summoned, serving it)
+  static campaign(f){const C=HOSTS.camp,free=lordsOf(f).filter(l=>!l.dead&&!l.gone&&!l.held&&!l.follow&&!l.with&&!l.campaign&&!l.fight&&l.troops.length>=C.troops&&!['siege','relieve'].includes(l.state)&&this.leader()!==l);
+    if(free.length<C.min)return null;const L=free.reduce((a,b)=>b.power()>a.power()?b:a),foes=TOWNS.filter(t=>!t.gone&&t.owner&&atWar(f,t.owner)),t=Spatial.nearest(foes,L.x,L.y);if(!t)return null;
+    const ms=free.filter(l=>l!==L&&Math.hypot(l.x-L.x,l.y-L.y)<=C.reach).sort((a,b)=>Math.hypot(a.x-L.x,a.y-L.y)-Math.hypot(b.x-L.x,b.y-L.y)).slice(0,C.members[1]);if(ms.length<C.members[0])return null;
+    if(L.inside)L.leave();L.campaign={tgt:t.name,since:G.day,until:G.day+C.days};L.state='march';L.tgt=t.name;ms.forEach((m,i)=>{m.with=L.id;m.wseq=i+1;m.state='march';m.tgt=t.name});
+    worldEvent({text:'The '+FACS[f].n+' make '+L.name+' their marshal: '+(ms.length+1)+' lords march on '+t.name+'.',fac:[f,t.owner],x:L.x,y:L.y,towns:[t],cls:t.owner===P.fac||t.owner==='player'?'bad':f===P.fac?'good':'',
+      past:L.name+' of the '+FACS[f].n+' led '+(ms.length+1)+' lords on '+t.name});
+    if(P.fac===f&&!this.under&&!G.quietEvents&&G.mode==='world'&&!G.modal&&!Captivity.held)this.summon(L);return L}
+  static summon(L){G.mode='dialog';G.hostSummon=L;const c=L.campaign;showPanel('<h2>'+lordName(L)+', marshal of the '+FACS[L.fac].n+'</h2><p>A rider brings word: '+lordName(L)+' calls the lords of the '+FACS[L.fac].n+' to march with him on '+c.tgt+'. You serve the realm: will you ride with his host?</p>'+
+    '<div class="btns">'+dlgBtn('hs-summon',null,'Ride with his host',this.under?'You follow another':'',true)+'</div><p class="muted">Declining costs honour with the '+FACS[L.fac].n+' ('+HOSTS.camp.refuse+').</p>'+nav(null,['hs-decline-summon',null,'Decline']))}
+  // (a member gone its own way; a campaign ended, its line, its members released)
+  static part(l){l.with=null;l.wseq=null;if(!l.dead)lordThink(l)}
+  static disband(L,why){for(const m of this.campMembers(L))this.part(m);L.campaign=null;if(!L.dead){L.state=L.state==='siege'?L.state:'home';lordThink(L)}
+    if(why)worldEvent({text:why,fac:[L.fac],x:L.x,y:L.y,past:why.replace(/\.$/,'')})}
+  // (the lords besieging t with l: his host's, there; or him alone)
+  static besiegers(l,t){return l.campaign?[l,...this.campMembers(l).filter(m=>!m.fight&&Math.hypot(m.x-t.x,m.y-t.y)<HOSTS.far*1.5)]:[l]}
   static save(){return this.under?{under:this.under}:null}
   static load(v){this.under=v?.under||null;this.paused=!!this.under}
 }
@@ -112,6 +150,8 @@ Host.trails=new WeakMap();Host.under=null;
 onWorld(()=>{Host.trails=new WeakMap();Host.under=null;Host.paused=false;Host.asked=null});
 onAct('hs-',a=>{
   if(a==='hs-accept'||a==='hs-decline'){const l=G.hostOffer;G.hostOffer=null;G.mode='world';hidePanel();if(a==='hs-accept'&&l&&!Host.askWhy(l))Host.lead(l);else if(l)log('You thank '+lordName(l)+', and ride on alone.','gold','war');return}
+  if(a==='hs-summon'||a==='hs-decline-summon'){const L=G.hostSummon;G.hostSummon=null;G.mode='world';hidePanel();if(!L||!L.campaign)return;
+    if(a==='hs-summon'&&!Host.under){Host.join(L,Math.max(1,L.campaign.until-G.day));Host.paused=false;G.follow={o:L,crumbs:[[L.x,L.y]],host:true}}else{addHonor(L.fac,-HOSTS.camp.refuse,true);log('You do not answer the call of '+lordName(L)+'.','bad','war')}return}
   if(a==='hs-aside'){const l=Host.leader();if(l)changeRel(l,-HOSTS.lord.aside,'you stood aside from his battle');G.fg=null;G.mode='world';hidePanel();if(l)log('You stand aside while '+lordName(l)+' fights.','bad','war')}});
 Systems.add({name:'hosts',order:{day:177},day:()=>Host.day()});
 Saves.add({key:'hosts',order:345,defaults:null,save:()=>Host.save(),load:v=>Host.load(v)});
