@@ -95,7 +95,7 @@ class Prisons{
   // (one held by others: a lord, your companion; what you can do for him)
   static card(r,i,key,t,mine){const pay=this.ransomOf(r),bb=this.bribe(r,key),br=this.breakChance(key),l=r.k==='lord'&&this.lordOf(r),
       acts=mine?[]:[['pz-pay',i,'Pay '+pay+'g',P.gold<pay?'You have '+P.gold+'g':''],['pz-bribe',i,'Bribe the gaoler · '+bb.cost+'g',P.gold<bb.cost?'You have '+P.gold+'g':''],['pz-break',i,'Break out · '+this.odds(br)]];
-    if(r.k==='lord')return{fac:r.fac,name:this.who(r),role:'Lord of the '+FACS[r.fac].n+', held by the '+FACS[r.keep].n,facts:['Lv '+r.lv,'since day '+r.since,l&&['Relation '+relWith(l),relWith(l)>=0?'good':'bad']],
+    if(r.k==='lord')return{fac:r.fac,pic:lordPic(l||r),name:this.who(r),role:'Lord of the '+FACS[r.fac].n+', held by the '+FACS[r.keep].n,facts:['Lv '+r.lv,'since day '+r.since,l&&['Relation '+relWith(l),relWith(l)>=0?'good':'bad']],
       acts:[['pz-visit',i,'Visit',r.seen!=null&&G.day-r.seen<PRISON.visit.days?'Not again so soon':''],...acts]};
     return{pic:portrait(r.id),name:this.who(r),role:'Your companion, held by '+(FACS[r.keep]?'the '+FACS[r.keep].n:r.keep==='broker'?'the ransom broker':'the band'),facts:['since day '+r.since],note:'Get him out, or he may slip away in time.',acts}}
   // (yours: a lord, a chieftain, soldiers; what becomes of them)
@@ -103,12 +103,12 @@ class Prisons{
     if(r.k==='men')return{pic:portrait(r.type),name:ST[r.type].n,role:'Prisoners',n:r.n,acts:[['pz-recruit',i,'Recruit one'],['pz-out',i,'Take out',prisonerCount()>=prisonCap()?'No room for prisoners':''],['pz-free',i,'Let them go']]};
     if(r.k==='chief')return{pic:portrait('chief'),name:this.who(r),role:'Bandit chief, your prisoner',facts:['Lv '+r.ld.lv],acts:[['pz-hand',i,'Hand over '+bountyOf(r.ld)+'g'],['pz-out',i,'Take out'],['pz-free',i,'Let go']]};
     const swap=this.swapFor(r);
-    return{fac:r.fac,name:this.who(r),role:'Lord of the '+FACS[r.fac].n+', your prisoner',facts:['Lv '+r.lv,'since day '+r.since,r.offer?['His realm offers '+r.offer+'g','gold']:'no offer yet'],
+    return{fac:r.fac,pic:lordPic(this.lordOf(r)||r),name:this.who(r),role:'Lord of the '+FACS[r.fac].n+', your prisoner',facts:['Lv '+r.lv,'since day '+r.since,r.offer?['His realm offers '+r.offer+'g','gold']:'no offer yet'],
       acts:[['pz-ransom',i,r.offer?'Ransom '+r.offer+'g':'Ransom',r.offer?'':fiefsOf(r.fac).length?'His realm has made no offer yet':'His realm has fallen: no one will pay'],r.offer&&!r.asked&&['pz-ask',i,'Ask for more'],
         ['pz-swap',i,'Exchange'+(swap?' for '+this.who(swap.r):''),swap?'':'His realm holds no one of yours'],['pz-free',i,'Let go'],['pz-out',i,'Take out'],['pz-exec',i,'Execute']]}}
   // (what you carry that can be locked up: your captives, your soldier prisoners)
   static lockCards(key){const cs=captives(),room=this.room(key),men=this.menRoom(key),n=prisonerCount();
-    const cards=cs.map((c,i)=>({fac:c.k==='lord'?c.fac:undefined,pic:c.k==='chief'?portrait('chief'):undefined,name:c.k==='lord'?c.name:c.ld.name,role:c.k==='lord'?'Lord of the '+FACS[c.fac].n+', with you':'Bandit chief, with you',
+    const cards=cs.map((c,i)=>({fac:c.k==='lord'?c.fac:undefined,pic:c.k==='chief'?portrait('chief'):lordPic(c),name:c.k==='lord'?c.name:c.ld.name,role:c.k==='lord'?'Lord of the '+FACS[c.fac].n+', with you':'Bandit chief, with you',
       acts:[['pz-lock',i,'Lock up',room>0?'':'No cell free']]}));
     if(n)cards.push({pic:portrait(Object.keys(P.prisoners).find(k=>P.prisoners[k]>0)),name:'Your soldier prisoners',role:'With you',n,acts:[['pz-lockmen',null,'Lock up '+Math.min(n,Math.max(0,men)),men>0?'':'No room for soldiers']]});
     return cards.length?railCards(cards):''}

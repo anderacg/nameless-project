@@ -33,7 +33,7 @@ function bhudInit(){
 }
 // a unit's portrait: its sprite, drawn once into a picture (cached by kind)
 const PORTRAITS={};
-function portrait(type,hero,v){return spritePic((hero?'hero:':'')+type+(v?':'+v:''),()=>unitSprite(type,0,!!hero,v||0))}// (v: one of its looks)
+function portrait(type,hero,v){const art=!hero&&NamedPortraits.of(type);if(art)return art;return spritePic((hero?'hero:':'')+type+(v?':'+v:''),()=>unitSprite(type,0,!!hero,v||0))}// (v: one of its looks)
 // any figure's picture the same way (mk: its sprite cell): a worker at his trade (workerPic), a townsperson (personPic: the
 // smith, the innkeeper, a merchant…)
 function spritePic(k,mk){if(!PORTRAITS[k]){try{const sp=mk(),n=sp.width,S=Math.min(n,Math.max(sp.cw||n,(sp.ch||n)+3));// (the figure itself, cropped from its cell: feet at the bottom, centred)

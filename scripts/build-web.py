@@ -29,7 +29,8 @@ class Links(HTMLParser):
 
 def dependencies():
     pending = ["index.html", ".nojekyll", "prototype/Ashmark.html",
-               "prototype/wiki.html", "prototype/manifest.webmanifest"]
+               "prototype/wiki.html", "prototype/manifest.webmanifest",
+               "prototype/art/portrait/portraits.json"]
     files = set()
     while pending:
         name = pending.pop()
@@ -45,6 +46,8 @@ def dependencies():
             parser = Links()
             parser.feed(source.read_text(encoding="utf-8"))
             paths = parser.paths
+        elif name == "prototype/art/portrait/portraits.json":
+            paths = [entry["game_file"] for entry in json.loads(source.read_text())["portraits"] if entry.get("game_file")]
         elif source.suffix == ".webmanifest":
             paths = [icon["src"] for icon in json.loads(source.read_text())["icons"]]
         elif source.suffix == ".css":

@@ -1,6 +1,6 @@
 {
   "style_reference": "hum_sword.png",
-  "count": 101,
+  "count": 121,
   "portraits": [
     {
       "id": "militia",
@@ -76,42 +76,54 @@
     },
     {
       "id": "brann",
-      "name": "Brann",
+      "name": "Brann the Wolf",
       "race": "human",
       "tags": [
         "human",
-        "companion"
+        "companion",
+        "hero"
       ],
       "file": "brann.png",
       "width": 1254,
       "height": 1254,
-      "sha256": "4064e505b653383c22a99d8c74475e162179d7e97a909f36a53f34459e68700c"
+      "sha256": "7d08aa6fa473beeef65d914c7144bcb94550366eee4f4eb185ae68bdf7a1e353",
+      "game_file": "game/brann.webp",
+      "game_sha256": "eb6e933de74b16814c34caf4b87f30589b335ca6762938603094ccfd0d28e746",
+      "identity_design": "A weathered human male sellsword in his late forties, broad squat face, visibly broken blunt nose, heavy uneven ginger moustache and full coarse ginger beard with a few grey hairs, deep-set pale blue eyes, receding ginger hair tied back with shaved temples, missing notch in one eyebrow, hard squint and a slightly threatening asymmetric half smile. Broad heavy shoulders in worn grey wolf fur, patched leather straps, dark green tunic with blue cloth visible. A battered large axe at shoulder. Keep red hair/fur/axe identity, but much more rugged, mature and distinct than a generic handsome soldier."
     },
     {
       "id": "elske",
-      "name": "Elske",
+      "name": "Sister Elske",
       "race": "human",
       "tags": [
         "human",
-        "companion"
+        "companion",
+        "hero"
       ],
       "file": "elske.png",
       "width": 1254,
       "height": 1254,
-      "sha256": "4f0933f56a48228d5cfd73fa7858755bf5ac1b25e4340c9da43222172c1bc81c"
+      "sha256": "3a16812395d0f6c7b6ab0284718cfce4221fbad56f3cc08102578a75c6bd6979",
+      "game_file": "game/elske.webp",
+      "game_sha256": "eec0d7758ca24a6d3fb71fa8f6196050fc4fff0e1e06e568ad514378fb97de89",
+      "identity_design": "Human female healer around fifty, a broad kind round face with soft double chin, laugh lines, small downturned blue eyes, faint freckles, ash blonde hair streaked grey braided tightly and tucked into a simple off-white linen head covering that frames her face. Gentle knowing closed-mouth smile, practical and resilient rather than youthful glamorous princess. Modest cream healer robes and worn blue stole, simple brass sun-shaped clasp, linen bandage roll in one hand, familiar wooden staff with small pale violet crystal. Preserve blonde/white robe/blue/staff identity while making age and compassionate personality unmistakable."
     },
     {
       "id": "tavi",
-      "name": "Tavi",
+      "name": "Tavi Quickfoot",
       "race": "human",
       "tags": [
         "human",
-        "companion"
+        "companion",
+        "hero"
       ],
       "file": "tavi.png",
       "width": 1254,
       "height": 1254,
-      "sha256": "a23092144641022ef22074582ca44804e4057cfee5a5ba7564054eebaead3f19"
+      "sha256": "20d5df49c9674ff0190bf4771cd90df7b1356a12a83a7092aca8bda1fa979a3d",
+      "game_file": "game/tavi.webp",
+      "game_sha256": "1d1d699e719c38ac7dd3ec7af4f2944abaad53d38b147932ba1c78df394ea7ea",
+      "identity_design": "Human young adult scout around twenty-three, slim small triangular face, short upturned nose, scattered freckles, bright hazel-green eyes, unruly short chestnut curls spilling from an asymmetrically pushed-back forest green hood. One eyebrow lifted and a confident lopsided tooth-showing grin. Human round ears, NOT elf. Narrow agile shoulders in scuffed green hooded cloak and brown leather with blue neck scarf, quiver with mismatched fletching and slim bow behind shoulder. Cheerful lively scout, visibly younger and mischievous, distinctive narrow face rather than generic serious soldier."
     },
     {
       "id": "hum_levy",
@@ -808,7 +820,9 @@
       "width": 1254,
       "height": 1254,
       "sha256": "8599bb449ac3ffe4273f753983ce83e6151b37d49872bb5bb969994d2547b32a",
-      "pose": "natural grounded quadruped"
+      "pose": "natural grounded quadruped",
+      "game_file": "game/wolf.webp",
+      "game_sha256": "62f3f6d9f5ba2dc8efdb30f8e6623fea3a27406fbb69a63a1365ee2d480674f4"
     },
     {
       "id": "scorpion",
@@ -833,7 +847,9 @@
       "width": 1254,
       "height": 1254,
       "sha256": "4d78722986731805b54fad746d79990199bafded52b95cbbe08d72989ee4f43d",
-      "pose": "natural grounded quadruped"
+      "pose": "natural grounded quadruped",
+      "game_file": "game/dragon.webp",
+      "game_sha256": "b732f4324b2142b2a05c65ae684e5ec69139bc4c5fd84a8b430784e77a7e0411"
     },
     {
       "id": "hum_farmer",
@@ -1158,7 +1174,9 @@
       "width": 1254,
       "height": 1254,
       "sha256": "dddd4763ca3d39ce52f816f85126cd27cc3be7ed3c43855f8fe8f044398bbbe3",
-      "pose": "natural grounded quadruped"
+      "pose": "natural grounded quadruped",
+      "game_file": "game/boar.webp",
+      "game_sha256": "9347dcf30e72fcd3ddb649297ed3927f9bc40a43d7a552fb5fe5bfb4ba045a13"
     },
     {
       "id": "tiger",
@@ -1171,7 +1189,9 @@
       "width": 1254,
       "height": 1254,
       "sha256": "07cbffcf1caa54088da18715a21644d6e8c5bc6ed601fe45526e794314cc137f",
-      "pose": "natural grounded quadruped"
+      "pose": "natural grounded quadruped",
+      "game_file": "game/tiger.webp",
+      "game_sha256": "b898849127fc31749245cd953ec6890ab22a6573ede1b11753239b3cb61331ea"
     },
     {
       "id": "bear",
@@ -1184,7 +1204,9 @@
       "width": 1254,
       "height": 1254,
       "sha256": "3aaa85643f06734809edc5db09dc215f3b4d323c2b2e9533f1e41433bc8e95ba",
-      "pose": "natural grounded quadruped"
+      "pose": "natural grounded quadruped",
+      "game_file": "game/bear.webp",
+      "game_sha256": "86eccd29c230372355e222fee3062fe2fc99f983b4b3e2096241e24d8b3e9f1c"
     },
     {
       "id": "spider",
@@ -1233,20 +1255,366 @@
       "width": 1254,
       "height": 1254,
       "sha256": "9e68581a8de103af7a280b39ad1d2a7bbaaebdf709fb913509d629b662fee21b",
-      "pose": "natural grounded quadruped"
+      "pose": "natural grounded quadruped",
+      "game_file": "game/griffin.webp",
+      "game_sha256": "d24cc600da67ddd315360100efe4d4b6ecc969a3ef2613989a6c831121e29b76"
     },
     {
       "id": "ander",
-      "name": "Ander",
+      "name": "Ander The Fallen",
       "race": "human",
       "tags": [
         "human",
-        "companion"
+        "companion",
+        "hero"
       ],
       "file": "ander.png",
       "width": 1254,
       "height": 1254,
-      "sha256": "93e401b7e114561bb4fbf16f10ab8acc18890155dc4d79ef2be3f6645d656030"
+      "sha256": "783ee70004f9320ea5d2b3e405a8498b57bfea3e97ff39365d462ca2700741bf",
+      "game_file": "game/ander.webp",
+      "game_sha256": "a042c19e7045742b4464e8aaf8110e224b6ade4c4db4774aedb9d13c2a3ed815",
+      "identity_design": "Human male veteran around forty-two, long lean gaunt face, high cheekbones, hollow cheeks, long slightly hooked nose, narrow tired grey eyes with dark circles, short uneven black hair with one silver streak at temple, black stubble and a deep old branching scar down left cheek. World-weary restrained expression with one corner of mouth lowered. Battered dark leather armor with old repairs, dark teal cloak with tarnished broken heraldic clasp, one damaged steel shoulderplate and plain battle-worn longsword. Preserve scar, black hair, dark cloak and sword identity; emphasize grief, endurance and an older distinctive gaunt face."
+    },
+    {
+      "id": "lord_vale0",
+      "name": "Lord Aldric",
+      "race": "human",
+      "tags": [
+        "human",
+        "lord"
+      ],
+      "file": "lord_vale0.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "9ca27710f5c64a0b1a1331fd8028379be5973a8cf5247eb4ad6258d39e2fbc7b",
+      "game_file": "game/lord_vale0.webp",
+      "game_sha256": "0f02e5a6bdcdf06d30128c889adfa0ec6bba5d7a303db6e9c43dc5d49e1b12c8",
+      "identity_design": "Human male noble aged sixty, long severe face, straight aquiline nose, deep grey eyes, receding silver hair brushed back, neatly trimmed squared silver beard, pronounced brow and forehead creases. Stern dignified authority. Orange and ivory Vale cloak over engraved steel, small aged gold circlet, gold wheat-sheaf clasp. Tall upright bust, frontal slightly turned left. Dark stone hall background.",
+      "faction": "vale"
+    },
+    {
+      "id": "lord_vale1",
+      "name": "Lady Maren",
+      "race": "human",
+      "tags": [
+        "human",
+        "lord"
+      ],
+      "file": "lord_vale1.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "40e43800cc5370b0ab1a8124c3aa8313afbd881e4b64e84c2056d38fd7a7b785",
+      "game_file": "game/lord_vale1.webp",
+      "game_sha256": "fca4d4cba4d732a1d72fd15f0f0c00a621d65542600b9322e23b815841738eaa",
+      "identity_design": "Human female military noble aged thirty-seven, broad athletic face, tan complexion, dark brown eyes, blunt slightly crooked nose, deep eyebrow scar, thick dark chestnut hair in a single practical braid. Firm tight-lipped expression. Orange Vale sash over battle-worn steel armor, open head with no crown, gold falcon shoulder clasp, hand resting on sword pommel. Three quarter facing right, cloudy fortress courtyard background.",
+      "faction": "vale"
+    },
+    {
+      "id": "lord_vale2",
+      "name": "Ser Corwin",
+      "race": "human",
+      "tags": [
+        "human",
+        "lord"
+      ],
+      "file": "lord_vale2.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "ef728c81b8105dc778ce2c27d1b574ef39c9cb872785f6dd9420062fade97556",
+      "game_file": "game/lord_vale2.webp",
+      "game_sha256": "650036c243bdc8ae64a3ee70d6d02bcd0c5a87d880a48a2890d5e0f7d1258106",
+      "identity_design": "Human male knight aged twenty-eight, long narrow fair face, red cheeks, clean-shaven sharp chin, green eyes, copper-red wavy hair cut at jaw and swept to one side, faint freckles and a cocky raised eyebrow. Polished steel cuirass, cream and orange tabard with small black stag badge, helmet tucked under arm. Slight grin, youthful ambition. Tilted shoulders, warm castle courtyard behind.",
+      "faction": "vale"
+    },
+    {
+      "id": "lord_vale3",
+      "name": "Lady Rowena",
+      "race": "human",
+      "tags": [
+        "human",
+        "lord"
+      ],
+      "file": "lord_vale3.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "db8aaf74293d0563af6fb571e5981b1a87a2e9c867864065a257a88017ec193a",
+      "game_file": "game/lord_vale3.webp",
+      "game_sha256": "f81576f6e2ad052e09b6ef20ab145f4ddd73a84b05740ffe5a155211aa2c4bfc",
+      "identity_design": "Human female stateswoman aged fifty-five, rich dark brown skin, broad nose, high cheekbones, dark almond eyes, black hair streaked silver woven in crown braids, strong round chin and fine smile lines. Calm shrewd closed-mouth smile. Burnt orange velvet mantle with cream lining, high embroidered collar, gold chain and small oak-leaf brooch, NO armor or sword. Distinct poised seated-looking bust, dim candlelit hall behind.",
+      "faction": "vale"
+    },
+    {
+      "id": "lord_karn0",
+      "name": "Thane Borka",
+      "race": "dwarf",
+      "tags": [
+        "dwarf",
+        "lord"
+      ],
+      "file": "lord_karn0.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "ed4f2498d4f6702887ba80d3d078bd4e1e011e15cf2d876d2c7667e4401ddfca",
+      "game_file": "game/lord_karn0.webp",
+      "game_sha256": "d97964f7e2f09750fd613076b7e231a0a8ebf1ea15ca1173aea82346d25803cc",
+      "identity_design": "Adult female dwarf leader, short broad dwarf neck and powerful stocky shoulders, wide square freckled face, broad nose, green eyes, thick copper hair in two heavy ringed braids, shaved strip at one temple, strong jaw with no beard. Proud loud open smile. Blue wool and heavy iron armor, brass geometric clan clasp, hammer shoulder. Cold northern stone forge background. Clearly dwarf proportions rather than human.",
+      "faction": "karn"
+    },
+    {
+      "id": "lord_karn1",
+      "name": "Thane Hroth",
+      "race": "dwarf",
+      "tags": [
+        "dwarf",
+        "lord"
+      ],
+      "file": "lord_karn1.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "7755f9db8a112b8c8d2e3c2d856de0bc5f9f8b6688bfb8c6fc0a73f29e15e9c6",
+      "game_file": "game/lord_karn1.webp",
+      "game_sha256": "a44d9d70a226d1917058c00cc6cc989e1467eab95e7428210189bb0d324447da",
+      "identity_design": "Ancient male dwarf patriarch, enormous round nose, deep sunken steel blue eyes, broad craggy wrinkled face, bald pate, snowy white eyebrows and huge long white beard split into three heavy braids with square iron rings. Wry patient expression. Deep blue cloak over dark rune-etched iron armor and shaggy white fur, solid square shoulders, snowy northern gate background. Very old and unmistakably dwarf.",
+      "faction": "karn"
+    },
+    {
+      "id": "lord_karn2",
+      "name": "Thane Dain",
+      "race": "dwarf",
+      "tags": [
+        "dwarf",
+        "lord"
+      ],
+      "file": "lord_karn2.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "71e6211f55edc5351fa82d00854d3f8d779781976348d6991acb71441d9f9ecf",
+      "game_file": "game/lord_karn2.webp",
+      "game_sha256": "f5c79e195f9355d061291bcfd8f90da5e8bf81c4c07434d60a4b463a29bf9a48",
+      "identity_design": "Middle-aged male dwarf commander, very broad compact dark brown face, completely bald head, short thick black forked beard, heavy black eyebrows, hazel eyes, flattened nose with old break, black soot on cheek and visible small ear hoop. Hard focused scowl. Massive practical iron pauldrons, sapphire blue quilted undercoat, brass anvil clasp, hammer held low. Forge embers in dark stone background, broad squat dwarf anatomy.",
+      "faction": "karn"
+    },
+    {
+      "id": "lord_karn3",
+      "name": "Thane Gimra",
+      "race": "dwarf",
+      "tags": [
+        "dwarf",
+        "lord"
+      ],
+      "file": "lord_karn3.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "ac684ad30102e5d05284fa7eb9f9caad00213182cd4d8dff412abd635beab9b7",
+      "game_file": "game/lord_karn3.webp",
+      "game_sha256": "ad7eaa66c15b1016f34ec2125064d993499024458c669a172ba7afae2c132eb7",
+      "identity_design": "Older female dwarf noble, compact angular stone-like face, olive skin, amber eyes, distinctive large arched nose, thick silver-grey hair in high braided bun, two thin temple braids held with cobalt beads, pale scar across chin, no beard. Measured skeptical gaze. Rich cobalt blue mantle over bronze-edged iron chainmail, tiny rune medallions at collar, no weapon dominating face. Cool rune-lit mine entrance background, stout dwarf shoulders.",
+      "faction": "karn"
+    },
+    {
+      "id": "lord_sylvan0",
+      "name": "Lady Ithriel",
+      "race": "elf",
+      "tags": [
+        "elf",
+        "lord"
+      ],
+      "file": "lord_sylvan0.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "5a4932eb3bcd8e933b599e06f8b33a8fec5a07577f48ee99cbfe0773ad16be64",
+      "game_file": "game/lord_sylvan0.webp",
+      "game_sha256": "1ada833acbaae22588f0bbfe027ccf1ee12afd2482633a6fc90f5113f215b62b",
+      "identity_design": "Regal mature female elf with very long pointed ears, long narrow ivory face, pronounced high cheekbones, long straight nose, almond lavender-grey eyes, waist-long straight white-silver hair swept behind ears, delicate silver twig circlet. Remote serene expression. Dusty rose and mauve layered silk over silver leaf-shaped shoulder armor, pale pink blossom brooch, deep forest temple background. Distinct angular elven anatomy, not round human face.",
+      "faction": "sylvan"
+    },
+    {
+      "id": "lord_sylvan1",
+      "name": "Lord Caelan",
+      "race": "elf",
+      "tags": [
+        "elf",
+        "lord"
+      ],
+      "file": "lord_sylvan1.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "51abe3c502fdb9d218d9c1cb37d137ad68c271432cde0a88d7f3ccb4784cd3ce",
+      "game_file": "game/lord_sylvan1.webp",
+      "game_sha256": "a37d100a76e07bfb5a7ea429917d8131c8661aa24c2d0b948df85115ef0f46b5",
+      "identity_design": "Adult male elf courtier-warrior, long pointed ears, warm medium bronze skin, slender long face with pronounced hooked nose, black hair in intricate high knot with one loose braid, clean-shaven, amber almond eyes, thin knowing smile. Plum embroidered collar under pink-trimmed silver scale armor, rose-gold crescent clasp. Three quarter looking left, mossy elven courtyard background. No white hair, no generic pale blonde elf.",
+      "faction": "sylvan"
+    },
+    {
+      "id": "lord_sylvan2",
+      "name": "Warden Sylas",
+      "race": "elf",
+      "tags": [
+        "elf",
+        "lord"
+      ],
+      "file": "lord_sylvan2.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "5ffc9d650f34d774f737bb6a39aaad92765eeaf21cfe7f4cbfa9cb1a8f2c1ebd",
+      "game_file": "game/lord_sylvan2.webp",
+      "game_sha256": "4198d035979c25dee582c9453b3ed32fcfc112439af9cdc887cecceceed92e65",
+      "identity_design": "Middle-aged male elven forest warden, olive weathered skin, lean triangular face, long pointed ears one with small healed notch, intense green eyes, shoulder-length dark auburn hair unevenly tied back, old vertical scar near mouth, no beard. Stern wary squint. Moss green and bark brown leather cloak with narrow dusty rose faction cord, wooden leaf clasp, longbow and dark quiver behind shoulder. Misty woodland background, practical ranger rather than ornate aristocrat.",
+      "faction": "sylvan"
+    },
+    {
+      "id": "lord_sylvan3",
+      "name": "Lord Faelar",
+      "race": "elf",
+      "tags": [
+        "elf",
+        "lord"
+      ],
+      "file": "lord_sylvan3.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "966fd148f4c8614481bc376e08ec061c62257d3d2e44097b0494c133a61a6f2c",
+      "game_file": "game/lord_sylvan3.webp",
+      "game_sha256": "daf869b254f9c9685e858894fd947f4e53034f8659f12c97ae5ad7eb53100aa5",
+      "identity_design": "Younger adult male elf noble with long pointed ears, dark brown skin, wide-set pale blue eyes, narrow face with delicate cheekbones and straight broad-bridged nose, short tightly curled pale golden hair, clean-shaven and charismatic broad smile. Pale rose and ivory riding mantle, light silver filigree armor, gold sunburst pin, no crown. One shoulder forward, luminous dark forest grove background. Distinct short curly hair silhouette.",
+      "faction": "sylvan"
+    },
+    {
+      "id": "lord_horde0",
+      "name": "Warchief Ulgra",
+      "race": "orc",
+      "tags": [
+        "orc",
+        "lord"
+      ],
+      "file": "lord_horde0.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "64e9055e820bfb6780eeefb1d8bffac51d5c16dc9b56d1f8d41b889e1ab9c202",
+      "game_file": "game/lord_horde0.webp",
+      "game_sha256": "39b70ce4afbea89e31ce023b40e166c26edffdf6c9664a4e24ff994ae5c4358e",
+      "identity_design": "Older powerful female orc war leader, moss green skin, massive square face and jaw, broad flat nose, deep amber eyes, large asymmetric lower tusks one with iron band, thick white hair in one huge braid over shoulder with shaved sides. Deep age creases and a narrow scar across brow, commanding unsmiling expression. Red hide mantle and black iron shoulder armor with a single boar-tusk clasp. Desert fortress at dusk, muscular orc proportions. Female but imposing seasoned chieftain, no glamorized human face.",
+      "faction": "horde"
+    },
+    {
+      "id": "lord_horde1",
+      "name": "Gash Bonecleaver",
+      "race": "orc",
+      "tags": [
+        "orc",
+        "lord"
+      ],
+      "file": "lord_horde1.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "317cd940e40aace2969815e9e62f536c3fa2801a29a5555dd3f3b846e8f6d785",
+      "game_file": "game/lord_horde1.webp",
+      "game_sha256": "a9065b848df81e3a1a358a647631b3e89c36b70479a5a1a709671ad4e06e6dc1",
+      "identity_design": "Adult male orc with lean long predatory grey-green face, enormous crooked nose, two long narrow lower tusks, yellow eyes, shaved head with short black braided topknot, one ragged ear, diagonal slash scar over cheek. Sharp toothy aggressive grin. Bone ornaments across rough dark leather harness, crimson torn shoulder cloth, massive chipped bone-handled cleaver held behind shoulder. Dusty desert ravine background. Much leaner face than other orc lords.",
+      "faction": "horde"
+    },
+    {
+      "id": "lord_horde2",
+      "name": "Mok the Red",
+      "race": "orc",
+      "tags": [
+        "orc",
+        "lord"
+      ],
+      "file": "lord_horde2.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "aa1ea679a025de1e39d4881c58d99b04c9add0d1f780d24a67e5742aa1c0151b",
+      "game_file": "game/lord_horde2.webp",
+      "game_sha256": "1fe6f74abfeb12742362ae7565953ba95e33e4e9afd45f32f4ed505e6145afa1",
+      "identity_design": "Male orc warrior aged thirty-five, deep olive green skin with a bold red ochre stripe over scalp forehead and nose, round wide face, small blazing amber eyes, blunt short nose, thick dark red mohawk and short red chin beard, two short wide tusks. Boisterous confident grin. Scorched reddish iron armor, rust-red cloak, round sun-shaped bronze fastener. Ember red desert camp background. Red refers to hair/warpaint and clothing, not generic human skin.",
+      "faction": "horde"
+    },
+    {
+      "id": "lord_horde3",
+      "name": "Grukk Ironjaw",
+      "race": "orc",
+      "tags": [
+        "orc",
+        "lord"
+      ],
+      "file": "lord_horde3.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "247411ec671ba82981667c424036b7df549f5e60151ef8df198199c5f47de0de",
+      "game_file": "game/lord_horde3.webp",
+      "game_sha256": "3d4abf7f59dfec800ccecd59b94779a8075a27b78992f462673743b34a2298c9",
+      "identity_design": "Massive older male orc with slate grey-green skin, broad nearly rectangular face, flattened wide nose, heavy black brows, one pale blind eye and one dark gold eye, cropped coarse black hair, heavy jaw protected by a fitted black iron lower-jaw guard with visible tusks. Grim rigid expression. Blocky riveted black iron armor and muted crimson clan sash, thick neck. Dark iron gate with desert dust background. Unique iron-jaw silhouette, do not fully cover the face.",
+      "faction": "horde"
+    },
+    {
+      "id": "lord_salt0",
+      "name": "Admiral Cass",
+      "race": "elf",
+      "tags": [
+        "elf",
+        "lord"
+      ],
+      "file": "lord_salt0.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "49f4fa529e8c28a23cc25696a5aeffac69ef90e6d607905c38c4d77d497e5199",
+      "game_file": "game/lord_salt0.webp",
+      "game_sha256": "0751c1516c4a2896e3ab960b026c6fd54034e3566deae258dde36c49db268272",
+      "identity_design": "Mature male elf admiral with pointed ears, deeply sun-weathered warm tan skin, long lean face, prominent hooked nose, blue-grey eyes, long wavy salt-and-pepper hair tied at nape, clean-shaven, small nick in lower lip. Confident wry smile. Teal naval mantle over dark silver-trimmed leather coat, ornate brass compass brooch and practical dark captain cap with small feather, no pirate skull motif. Dim ship rigging and ocean background.",
+      "faction": "salt"
+    },
+    {
+      "id": "lord_salt1",
+      "name": "Captain Ivo",
+      "race": "elf",
+      "tags": [
+        "elf",
+        "lord"
+      ],
+      "file": "lord_salt1.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "b322000cc9fa2fd626be6aed965bfc79833d7b79f64687f021eaa0f280250bcf",
+      "game_file": "game/lord_salt1.webp",
+      "game_sha256": "db0e092d01fef6b3d525ad210c561234dc8d998cd7e11010ab5a722c7d0aa48d",
+      "identity_design": "Young adult male elf sea captain with long pointed ears, deep brown skin, wide-set green eyes, narrow face, broad nose, short dense black curls held by teal cloth headband, single brass ear cuff. Lively daring grin. Open-neck cream linen beneath teal and brown sea leather, brass anchor pin, crossbody rope, hand on curved sword hilt at frame edge. Dark coastal harbor background. Clearly short-haired and youthful, distinct from Cass.",
+      "faction": "salt"
+    },
+    {
+      "id": "lord_salt2",
+      "name": "Admiral Neri",
+      "race": "elf",
+      "tags": [
+        "elf",
+        "lord"
+      ],
+      "file": "lord_salt2.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "97e71d4f8499ee57047a814c4605a7c8c8fd3500a6985a3e9da86cf86c366fd9",
+      "game_file": "game/lord_salt2.webp",
+      "game_sha256": "10dca47e1b755c8b82441c2a35044987dc2779917a0024ca1fefa92a801067a1",
+      "identity_design": "Mature female elf admiral with long pointed ears, rich olive complexion, angular long face, high cheekbones, grey-green eyes, thick straight black hair cut into a blunt chin-length bob with one white temple streak. Cool calculating closed-mouth expression. High-collared teal brocade naval coat with cream trim and brass octopus clasp, elegant small pearl earring, no hat. Dark ship cabin with chart cabinet background. Recognizable severe bob silhouette.",
+      "faction": "salt"
+    },
+    {
+      "id": "lord_salt3",
+      "name": "Captain Mirelle",
+      "race": "elf",
+      "tags": [
+        "elf",
+        "lord"
+      ],
+      "file": "lord_salt3.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "d6ca16d548ab5fa6913df428fafeb302121090042bd416583a6792b281b9b58d",
+      "game_file": "game/lord_salt3.webp",
+      "game_sha256": "fb560a669ecc5e9363c9dc8af9f0296004a9410faa8f2bb71232621138b2e925",
+      "identity_design": "Adult female elf captain with long pointed ears, fair freckled skin, compact heart-shaped face, slightly upturned nose, bright hazel eyes, wild copper curls gathered to one side with teal ribbon, pale sun-faded eyebrow slash. Broad irreverent smile. Weathered teal short cloak over cream shirt and brown brigandine, brass shell brooch, short sword at hip only partly visible. Rainy harbor pilings in dark background. Clearly different from the other three League lords.",
+      "faction": "salt"
     }
   ]
 }

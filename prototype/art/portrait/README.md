@@ -1,9 +1,9 @@
-# Unit portraits
+# Unit and character portraits
 
-101 original PNG portraits, one for each unit type in the current ST roster, including troops, companions, civilian workers and creatures. Every image is 1254 × 1254 pixels. Filenames match unit IDs; `hum_sword.png` is the approved style reference and is preserved unchanged.
+121 original PNG portraits: 101 unit IDs and 20 individually named founding lords. The four companion portraits have distinctive faces, ages, hair and expressions; the lords have personal faces, dress and faction details. Sources are 1254 × 1254. `hum_sword.png` is the unchanged approved style reference.
 
-Open [index.html](index.html) to browse and filter the collection. [portraits.json](portraits.json) maps IDs to names, races, tags, filenames, dimensions and SHA-256 checksums. Portraits interpret the current in-game sprites and equipment in the approved detailed pixel-art style.
+Open [index.html](index.html) to browse and filter the collection, including Companions and Lords. [portraits.json](portraits.json) maps IDs to names, races, tags, source files, dimensions, checksums and character identity notes.
 
-These are source art assets; the existing in-game portrait renderer still uses its generated sprites.
+The game uses 30 small 256 × 256 WebP copies in `game/` for named companions and founding lords in cards, conversations, the lords journal and prisons, plus the six corrected bear, wolf, boar, tiger, griffin and dragon poses in unit portraits. These are loaded when displayed; full PNG sources are excluded from the deployment archive. Troops and the customizable player keep generated sprite portraits. Extra world-generated lords use stable varied sprite portraits. Portrait identity follows a lord's name when allegiance or captivity changes.
 
 Animal composition: wolves, bears, boars, tigers, griffins and dragons use grounded quadruped poses with visible bodies and legs. Humanoids keep their bust portraits; other creatures retain anatomy suited to their species.

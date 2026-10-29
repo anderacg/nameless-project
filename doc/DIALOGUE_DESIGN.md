@@ -116,3 +116,5 @@ Saved with the world (`Saves.add({key: 'talk', defaults: …})`); forgotten slow
 3. **Tempers shown:** told plainly once known, or only hinted in how they speak? *Suggested: hinted, named once your Insight or another lord tells you.*
 4. **Companion approval:** a number you see, or only words ("Brann trusts you")? *Suggested: words, with the number in the tooltip.*
 5. **Phase 1 scope:** lords and townsfolk only, or workers too?
+
+Named faces (2026-10-30): TALK_PIC.lord resolves the speaker record through lordPic, keeping identity by name across allegiance and captivity. The four companions and twenty founding lords use detailed individual art, with compact WebP copies for the game; extra generated lords retain stable varied sprite portraits. The same resolution serves the journal and prison cards. Tests: portraits and conversation.
