@@ -5,7 +5,8 @@ Status: **phases 1 and 2 built** (2026-10-28).
 - **Phase 1:** `js/data/questbook/` (`book.js`: `QUESTBOOK`, `QUEST_CHECKS`, `QUESTBOOK_OFFER`; `samples.js`: the first entries); `js/story/questbook.js` (`Questbook`, `BookBandQuest`, `BookBeastQuest`): each entry compiled into a thread kind at load, so several steps, choices and branches work; once and cool. Givers: board, tavern, lord, road. Goals: visit, deliver, clear, beat, hunt, escort; paying is an option's `gold`. Conditions: level, renown, honor, rel, realm, war, kind, culture, day, has, done, comp, gold, and `not`. Console: `book`, `book <id> [step]`.
 - **Phase 2:** a deadline for the whole entry (`fail: {days, say, out}`: its days left on its note in your Quests; the day passed, what it waits on is dropped and it fails, `Questbook.expire`, the thread ended `expired`); a step's own stage name (`stage`); two more goals: **rescue** (`held`: lair, the nearest hideout, the default; band, a band set near that carries the captive; holding, the prison of the nearest holding of another realm, ransomed at its Prison: story/steps.js `HeldQuest`) and **kill** (`lord`: a name, or 'enemy': the nearest free lord of a realm at war with the giver's realm; `BookLordQuest`, done when you beat him); two more givers: **temple** (the priest in a holding's streets, under his words: scene/scene.js) and **comp** (a companion's talk, `giver.comp`, its line `giver.ask`: story/conversation.js `CompanionSpeaker`), with the condition `approve` and the outcome `approve` as a plain number (that companion's). Three more samples: the taken pilgrim (temple: a rescue), Elske's fever-house (Elske: a heal check, a visit, her approval), the enemy's champion (lord: an enemy lord to beat within 30 days).
 - **Tests:** questbook (every entry linked, walked through every branch with each check won and lost, saved and loaded at each step; the givers' offers; once and cool; the deadline; a lord beaten; a rescue freed; the console).
-- **Left:** phase 3 (the Wounded Traveller as an entry), and more entries.
+- **Phase 3 (the owner's: one way to write any story, §10):** built (2026-10-28). The step forms moved into the story system itself (`story/forms.js` `Stories`, `defineStory`); the questbook keeps only its entries and who offers them; the Wounded Traveller is a `defineStory` too.
+- **Left:** more entries.
 
 The owner's answers in §9; phases in §8.
 
@@ -97,3 +98,19 @@ A choice with `check:` rolls by the stats that help, the same way the road's enc
 1. **Givers:** dynamic, so others can be added later (registries, §5).
 2. **One file or a folder:** easy to extend: a folder of themed files, each adding entries to one table (§3).
 3. **Checks:** yes (§6).
+
+## 10. One way to write any story (phase 3, the owner's: "why a new thing when the story and quests can be refactored")
+
+The questbook's forms are not its own: they belong to every story. So:
+
+| Part | Where | What |
+|---|---|---|
+| The step forms | `story/forms.js` `Stories`, `defineStory(id, spec)` | a story's steps as a **goal**, a **choice** (with checks) or an **end**, beside the thread's own steps (`start`, `until`, `how`, `then`, kept as written); any field a function of the thread; `remember` on any step; words `{town} {realm} {lord} {you} {to}` and `{key}` for its memory's other fields; outcomes with plain numbers and `once` (a reward the first time in a game, another after) |
+| The story's own fields | the same | `fail` (a deadline for the whole of it: `memory.due`; passed, failed, `expired`), `resume` (`{key: step}`: picked up again at that step in a new thread, not archived), `speaker` (who speaks on its pages) |
+| Goals and conditions | the same | `defineGoal`, `defineCond`: visit, deliver, escort (its `on: {captured, lost}`: carried off by those who beat you, `memory.held`; or by no one), track (go to where a trail starts; there the nearest hideout of its band is found: `memory.site, lair, lx, ly`), clear, beat, hunt, rescue (by default the one the story remembers holds him), kill |
+| Its step kinds | `story/steps.js` | `band` (`BandQuest`), `beasts` (`BeastsQuest`), `foe` (`FoeQuest`), with visit, deliver, lair, held |
+| Checks | `data/chains.js` `QUEST_CHECKS` | the checks a choice may name |
+| The questbook | `story/questbook.js`, `data/questbook/` | the entries (each a `defineStory`) and who offers them: givers, offers, once and cool |
+| The Wounded Traveller | `story/wounded.js` | a `defineStory`: its trail a **track** goal, its clear, back and call goals, its rescue picked up again by `resume: {freed: 'escort'}`; its escort (Ander's own ends), its pages and Ander wandering stay its own code |
+
+A new story is written once, in one format: plain data for a simple one, with functions and `remember` where it needs them, its pages and goals the same either way.
