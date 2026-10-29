@@ -25,7 +25,7 @@ const Defence={
     const side=sideOf(t,att),T=tiredMul(t).dmg;
     let p=s.beast?D.beast:D.base+D.tier*(this.tier(t)-1)+(side==='front'&&this.shieldOf(s)?D.shield:0);
     p=(p-D.att*(this.tier(att)-1))*D.side[side]*(T<.8?D.spent:T<1?D.tired:1)*(att.s.big?D.big:1);
-    return clamp(p,0,D.cap)},
+    return clamp(Duel.mod(att,t,p),0,Duel.cap(att,t))},// (in a duel: battle/duel.js)
   // (is a blow from att stopped by t? If so, how (block, parry, dodge), shown on him: none of it lands)
   stops(att,t){const p=this.chance(att,t);if(!(p>0)||Math.random()>=p)return null;const s=t.s;
     const k=s.beast?'dodge':sideOf(t,att)==='front'&&this.shieldOf(s)?'block':!heldWeapon(unitLook(t))||!/^(mail|plate)$/.test(armorOf(s))&&Math.random()<DEFENCE.light?'dodge':'parry';
@@ -34,7 +34,7 @@ const Defence={
   show(att,t,k){t.defAt=B.t;t.defK=k;t.defFace=att.x>=t.x?1:-1;
     const mx=(att.x+t.x)/2,my=Math.min(att.y,t.y)-7;
     if(k==='dodge')fx(t.x,t.y,'#a89a78',2);else fx(mx,my,k==='block'?'#e8d8b0':'#fff2c0',3);
-    if(k!=='dodge'&&sfxOn()){const q=k==='block'?'block':'clash';if(sndTurn(q))sfxAt(q,t.x,t.y)}},
+    if(k!=='dodge'&&sfxOn()){const q=k==='block'?'block':'clash';if(sndTurn(q))sfxAt(q,t.x,t.y)}Duel.shown(att,t,k)},
   // (meeting a blow now: its kind, else null)
   now(u){return u.defAt!=null&&B.t-u.defAt<DEFENCE.anim?u.defK:null},
   // (his expected share of blows stopped, for the auto-resolve: engage.js power)

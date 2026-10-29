@@ -33,19 +33,23 @@ function drawBlade(set,hx,hy,deg,k,Tm,skin){
   set(hx,hy,skin)}
 // how he holds it now: [angle (degrees, 0 forward, -90 up), hand dx, hand dy] by what he is doing
 const HOLD={
-  // at rest, on the march, in a charge, in guard near a foe, stunned, a parry (raised across before him: battle/defence.js)
-  blade:{rest:62,march:-128,run:-122,guard:-38,stun:85,parry:-78},heavy:{rest:58,march:-140,run:-118,guard:-55,stun:85,parry:-72},
-  pole:{rest:-90,march:-90,run:-6,guard:0,stun:70,parry:-48},lance:{rest:-72,march:-76,run:4,guard:2,stun:60,parry:-40}};
+  // at rest, on the march, in a charge, in guard near a foe, stunned, a parry (raised across before him: battle/defence.js) and
+  // a low one (down across his legs, meeting a low cut or a thrust: battle/duel.js)
+  blade:{rest:62,march:-128,run:-122,guard:-38,stun:85,parry:-78,parryLow:32},heavy:{rest:58,march:-140,run:-118,guard:-55,stun:85,parry:-72,parryLow:28},
+  pole:{rest:-90,march:-90,run:-6,guard:0,stun:70,parry:-48,parryLow:22},lance:{rest:-72,march:-76,run:4,guard:2,stun:60,parry:-40,parryLow:20}};
 function holdOf(u,k){
   const kind=k==='lance'?'lance':POLE(k)?'pole':k==='great'||k==='bigaxe'||k==='hammer'?'heavy':'blade',H=HOLD[kind],t=u.tgt&&u.tgt.hp>0?u.tgt:null,f=u.face||1;
   // the foe's direction as he sees it (he faces right in his own picture)
   const aim=t?clamp(Math.atan2(t.y-6-(u.y-6),Math.abs(t.x-u.x)+.01)*180/Math.PI,-40,35):0;
   if(u.stun>0)return[H.stun,0,1];
-  if(Defence.now(u)==='parry')return[H.parry,2,-2];
-  if(u.atkAt!=null&&B.t-u.atkAt<ATK_ANIM){const p=(B.t-u.atkAt)/ATK_ANIM,st=u.atkStyle||'swing';
-    if(st==='thrust'||POLE(k)&&st!=='overhead'){const push=Math.sin(Math.PI*Math.min(1,p*1.3));return[POLE(k)?aim:aim-10,-2+push*5,0]}
+  if(Defence.now(u)==='parry')return u.defH==='low'?[H.parryLow,2,1]:[H.parry,2,-2];
+  // (a blow: its look (battle/duel.js: a low cut, a thrust from above, a shield bash) or its style)
+  if(u.atkAt!=null&&B.t-u.atkAt<ATK_ANIM){const p=(B.t-u.atkAt)/ATK_ANIM,st=u.atkLook||u.atkStyle||'swing';
+    if(st==='bash')return[H.guard,-2,0];
+    if(st==='thrust'||POLE(k)&&st!=='overhead'){const push=Math.sin(Math.PI*Math.min(1,p*1.3));return[(POLE(k)?aim:aim-10)+(st==='high'?-28:st==='low'?22:0),-2+push*5,st==='high'?-2:st==='low'?1:0]}
     // (a wind-up held a moment, then the strike, fast, then it comes back a little)
     const q=p<.3?0:p<.55?(p-.3)/.25:1-Math.min(1,(p-.55)/.45)*.12;
+    if(st==='low')return[-30+q*95,-1+q*2,1+q*2];
     if(st==='overhead')return[-100+q*170,q*2-1,-1+q*2];
     return[-120+q*165,-3+q*4,-3+q*4]}
   // (each state has room before it changes back, so a man on its edge does not flicker between two holds)

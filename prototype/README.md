@@ -206,7 +206,7 @@ js/battle/            engage.js (going into a fight: power and stance, allies jo
                       its parts TerrainRoutes and BattleSight; class wave E1), route.js
                       (route-finding round cliffs and water), battlefog.js (fog of war), charmind.js (characters' mind: CharacterMind, HeroMind, ChampionMind), commander.js
                       (the AI captains: Commander, EnemyCommander; multi-army coordination: ArmyTactics; mounted charge loops: CavalryRide), beastmind.js (beasts' tactics: PackMind; class wave E2), abilities.js (casting), formations.js (shared troop/character line plan), morale.js (group resolve),
-                      fatigue.js (stamina), unitabilities.js (Brace, Fire arrows, Spur, Rally), physics.js (mass, turning, impact), movesets.js (normal, hard and charge blows: who may knock down), defence.js (blows blocked, parried or dodged in a man's stance),
+                      fatigue.js (stamina), unitabilities.js (Brace, Fire arrows, Spur, Rally), physics.js (mass, turning, impact), movesets.js (normal, hard and charge blows: who may knock down), defence.js (blows blocked, parried or dodged in a man's stance), duel.js (two men paired in melee, the looks of their blows and defences),
                       commandpowers.js (the commander's powers), camera.js, deploy.js (deployment and Auto), lab.js (the battle laboratory)
 js/scene/             walkable maps of the places you enter: scene.js (walking, paths, talking, in and out), town.js (town layouts);
                       a kind of place gets a scene by adding its generator to SCENES; its text panel stays, with a choice to walk in
@@ -637,6 +637,16 @@ Tunables: `AI_TACTICS` in `battle/commander.js`, `CHAR_FALL` in `battle/charmind
 - **The auto-resolve** counts it: a kind's health is raised by its expected share met (`Defence.expect`, engage.js `power`).
 - Measured (`tests/defence.js`, 8 v 8 to the last man, 4 seeds, off → on): levies ×1.53, spearmen v shield orcs ×1.46, swordsmen v hammerers ×1.51, shield guards v black orcs ×1.61, levies v swordsmen ×1.34: ×1.49 on average.
 - `DEFENCE.on` false: every blow lands as before. `tests/harness.js` turns it off for the older suites, so their fingerprints hold; `tests/defence.js` turns it on.
+
+## Duels: two men fighting each other (2026-10-29)
+
+`battle/duel.js` (`DUEL`, one tunables table; `Duel`). The owner: units fight each other with more animations, as in Total War; orders still send them where they are told.
+
+- **Paired:** a soldier's blow at a free man, himself free, pairs them (`u.duel`). Each meets his partner's blows better (+30%, at most 75%: `Defence.chance`), and a block or parry is answered at once (his next blow within 0.3 s). Another man striking one in a duel catches him on his blind side (×0.35). It ends when either falls, runs, or is taken more than his reach away (an order, a push). Not your hero, a character, a shooter with his bow, a beast or a big one.
+- **The looks** (drawn only; the rules keep `troopStyle`): each blow by his weapon and what he fights (`DUEL.moves`: blade, heavy, pole × man, beast, big; a shield adds a bash): a swing, a low cut, an overhead, a thrust, a thrust from above, a shield bash, each with a lunge. Each defence by the blow it meets: a shield high or low (`DEF_POSE`, `DEF_LOW`), a parry high or low (`HOLD.*.parry`, `parryLow`), a dodge back or a step aside; a heavy blow blocked pushes him a step back; a wound of a quarter of his health staggers him.
+- **Future:** looks against beasts and big ones are their own rows of `DUEL.moves` (the owner's: different attacks by the enemy's kind).
+- Measured (`tests/duel.js`, 8 v 8 to the last man, 4 seeds): melee ×1.96 as long as with neither (blocks and parries alone ×1.49). A whole battle (38 v 38, the lab's AI on both sides, 10 seeds): the middle one about 71 s against 57 s.
+- `DUEL.on` false: none of it (`tests/harness.js` turns it off for the older suites; their fingerprints hold).
 
 ## Battle speed (spatial grid)
 

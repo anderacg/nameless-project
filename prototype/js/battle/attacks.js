@@ -39,7 +39,7 @@ class Fighter{
     if(B.sight)sightStruck(source,t);// (whoever strikes or shoots at a side is seen by it: terrain.js)
     if(this.dodging()>0){B.floats.push({x:t.x,y:t.y-16,t:'Dodge',life:.4,c:'#cfe0ff'});return}// (rolling, leaping, dashing: unhurt)
     amt=this.taken(amt);
-    amt=Math.max(1,Math.round(amt));const wasHp=t.hp,effective=Math.min(Math.max(0,wasHp),amt);if(B.opts.sandbox&&BattleLab.active)BattleLab.damage(t,effective,source);t.hp-=amt;B.lastHit=B.t;t.flash=.1;t.hitAt=B.t;moraleHurt(t,effective,source,missile);
+    amt=Math.max(1,Math.round(amt));const wasHp=t.hp,effective=Math.min(Math.max(0,wasHp),amt);if(B.opts.sandbox&&BattleLab.active)BattleLab.damage(t,effective,source);t.hp-=amt;B.lastHit=B.t;t.flash=.1;t.hitAt=B.t;Duel.struck(t,amt);moraleHurt(t,effective,source,missile);
     B.floats.push({x:t.x,y:t.y-14,t:String(amt),life:.7,c:m>=1.25?'#ffb04a':m&&m<=.8?'#9aa3ad':isMagical(dt)?'#c8a0ff':t.team?'#ffe08a':'#ff9a90'});// (telling: orange, dulled: grey, magic: violet)
     if(BLOOD.on&&!undead(t))for(let i=0;i<2;i++)vfx({k:'blood',x:t.x,y:t.y,z:7,vx:(Math.random()-.5)*60,vy:(Math.random()-.5)*30,vz:20+Math.random()*50,life:1.2});// (gfx/vfx.js; none with Blood off)
     B.sides?.damage(t,effective,source);
@@ -91,6 +91,7 @@ class Fighter{
     u.cd=s.cd*(.9+Math.random()*.2);u.atkAt=B.t;if(B.sight)sightStruck(u,t);// (a blow or a shot loosed gives him away: terrain.js)
     if(s.range){const flat=s.magic||s.flat,E=this.aimErr(),k=B.world?WORLD_BATTLE.sprite:1,ty=B.world&&flat?t.y-(t.s.mounted||t.s.big?10:6)*k:t.y;Missile.fire(u,Math.atan2(ty-(flat?u.y-6*k:u.y),t.x-u.x)+spreadOf(E),s.dmg*(.85+Math.random()*.3)*(u.buffT>0?1.3:1)*arrowMul(u),arrowSrc(u,s),Math.hypot(t.x-u.x,t.y-u.y),{sc:E.d});if(!s.magic&&sfxOn()&&sndTurn('loose'))sfxAt('loose',u.x,u.y)}// (fire arrows: unitabilities.js)
     else{const cm=chargeMul(u,t);let dm=s.dmg*(.8+Math.random()*.4)*cm*tiredMul(u).dmg;fatigueBlow(u);// (a charge: by how far it ran, braced spears blunt it, morale.js; tired, softer: fatigue.js)
+      Duel.meet(u,t);Duel.look(u,t);// (two men paired, and the look of his blow: duel.js)
       if(cm<=DEFENCE.charge&&Defence.stops(u,t))return this.follow(t,dm,true);// (met: blocked, parried or dodged, defence.js)
       this.hit(t,dm);if(PHYSICS.on)physBlow(u,t);this.follow(t,dm)}// (a heavy one's blow pushes men: physics.js)
     if(s.range)this.useAmmo(s);
@@ -129,7 +130,7 @@ class Fighter{
     B.floats.push({x:u.x,y:u.y-30,t:'FIRE',life:.6,c:'#ff9a50'});shakeIt(3);
   }
   // a shooter's sidearm (Melee Mode): his melee damage, a blade's pace
-  blade(e){const u=this.u,s=u.s,dm=meleeDmgOf(s)*(.8+Math.random()*.4)*tiredMul(u).dmg;u.cd=s.cd*BLADE.cd*(.9+Math.random()*.2);u.atkAt=B.t;u.atkStyle='swing';fatigueBlow(u);u.face=e.x>=u.x?1:-1;if(Defence.stops(u,e))return this.follow(e,dm,true);this.hit(e,dm);this.follow(e,dm)}
+  blade(e){const u=this.u,s=u.s,dm=meleeDmgOf(s)*(.8+Math.random()*.4)*tiredMul(u).dmg;u.cd=s.cd*BLADE.cd*(.9+Math.random()*.2);u.atkAt=B.t;u.atkStyle='swing';fatigueBlow(u);u.face=e.x>=u.x?1:-1;Duel.meet(u,e);Duel.look(u,e);if(Defence.stops(u,e))return this.follow(e,dm,true);this.hit(e,dm);this.follow(e,dm)}
 }
 // ---------- the old names: one-line aliases (earnXp: a missile's shooter may be none) ----------
 function applyDmg(t,amt,m,dt,source,missile){return Actor.of(t).wound(amt,m,dt,source,missile)}

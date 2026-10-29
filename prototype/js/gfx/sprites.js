@@ -13,9 +13,9 @@ function cellOf(src){const n=CELLS.find(s=>s>=src.width&&s>=src.height)||Math.ma
   if(src.hand)c.hand=[(n>>1)-(src.width>>1)+src.hand[0],n-src.height+src.hand[1]];// (the hand, where it went)
   return c}
 // pose: 0-1 idle (breathing), 2-5 walking (legs stride, body bobs), 15-18 running (a long stride, leaning, bouncing), then three blows of three frames each (wind up, strike,
-// follow through): 6-8 a swing, 9-11 a thrust, 12-14 an overhead chop; 27 his shield raised to meet a blow (DEF_POSE, battle/defence.js). A figure is 16x16 drawn into a 20x20 canvas (room for a
+// follow through): 6-8 a swing, 9-11 a thrust, 12-14 an overhead chop; 27 his shield raised to meet a blow (DEF_POSE, battle/defence.js), 28 held low (DEF_LOW, a low cut or a thrust: battle/duel.js). A figure is 16x16 drawn into a 20x20 canvas (room for a
 // raised or thrust weapon) inside a 1-pixel outline, feet on the bottom row; cached by type, team, variant and pose.
-const ATK_BASE={swing:6,thrust:9,overhead:12},DEF_POSE=27;
+const ATK_BASE={swing:6,thrust:9,overhead:12},DEF_POSE=27,DEF_LOW=28;
 // bare: in battle, a soldier's melee weapon is drawn apart (weapons.js); the sprite leaves it off
 // (arm: a shooter in melee mode: his bow put away, his body bare for the sidearm drawn in his hand: weapons.js, sidearmLook)
 function unitSprite(type,team,hero,v,pose,bare,arm,tint){
@@ -94,7 +94,8 @@ function procPose(u,moved){
   // (a shooter: drawing, three steps to full; just loosed; reloading)
   if(u.shot)return ATK_BASE.thrust+Math.min(2,Math.floor(u.shot.t/u.shot.aim*3));
   // (meeting a blow: his shield up; a parry or a dodge stands, his weapon and his lean showing it: weapons.js, render.js)
-  {const d=Defence.now(u);if(d)return d==='block'?DEF_POSE:0}
+  {const d=Defence.now(u);if(d)return d==='block'?(u.defH==='low'?DEF_LOW:DEF_POSE):0}
+  if(u.atkAt!=null&&B.t-u.atkAt<ATK_ANIM&&u.atkLook==='bash')return DEF_POSE;// (a bash: his shield driven forward, battle/duel.js)
   if(u.atkAt!=null&&B.t-u.atkAt<ATK_ANIM)return (ATK_BASE[u.atkStyle]||6)+Math.min(2,Math.floor((B.t-u.atkAt)/ATK_ANIM*3));
   if(u.s.range&&!u.inMelee&&u.cd>0&&u.atkAt!=null&&!moved)return ATK_BASE.overhead+Math.floor((B.t-u.atkAt)*5)%3;
   // (running: the run, faster; walking: the walk)
