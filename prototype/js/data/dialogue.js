@@ -33,6 +33,10 @@ const DIALOGUE={
     threaten:{label:'Threaten him',base:.2,cha:.02,power:.3,renown:.001,temper:{kind:.15,greedy:.05,cunning:-.05,honourable:-.1,proud:-.25},win:{gold:60,rel:-8},lose:{rel:-12,honor:-5},
       you:'Pay me, or I will burn your fields to the last stalk.',
       yes:{plain:'Take it, then, and go.',greedy:'Fine! Take it. But this is not over.'},no:{plain:'Get out before I have you thrown out.',proud:'You dare? Out of my sight!',honourable:'I do not bend to threats.'}},
+    // (ask him to follow you: he marches in your host for some days: world/hosts.js; by his relation with you too (rel))
+    follow:{label:'Ask him to follow you',base:.25,cha:.03,pers:.03,renown:.0015,honor:.004,rel:.006,temper:{honourable:.1,kind:.1,proud:-.15,greedy:-.05,cunning:0},
+      you:'Ride with me for a while. There is work on the road for both of us.',
+      yes:{plain:'Very well. For a few days, then.',honourable:'Gladly. Lead on.',greedy:'If there is plunder in it, why not.'},no:{plain:'I have my own road to ride.',proud:'I follow my liege, and no one else.',cunning:'Not yet. Show me what you are worth first.'}},
     min:.05,max:.9},
   // (what another lord tells you of a lord's manner, asked about other lords)
   tells:'Of their manner: {list}.',

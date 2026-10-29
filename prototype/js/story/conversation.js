@@ -55,25 +55,27 @@ class LordSpeaker extends Speaker{
     return this.fill(m.threat!=null&&G.day-m.threat<=30?G0.threatened:m.slight!=null&&G.day-m.slight<=7?G0.slighted:again?g.again:g.first)}
   // ---- the checks: why not now ('' free; false: not offered), the odds, the outcome won or lost
   checkWhy(id){const l=this.o,m=TalkMemory.all[this.key]||{},v=relWith(l);
+    if(id==='follow'){const w=Host.askWhy(l);if(w!=='')return w===false?false:w}
     if(id==='threaten'&&P.fac===l.fac)return false;if(id==='favour'&&v>=RELATION.troopsAt)return false;
     if(m.tried?.[id]===G.day)return 'Not again today';if(id==='favour')return v<0?'He does not like you enough':lendWhy(l);
     if(id==='threaten'&&partyPower()<l.power())return 'Your army is weaker';return ''}
   odds(id){const C=DIALOGUE.checks,X=C[id],l=this.o,pw=Math.max(0,partyPower()/Math.max(1,l.power())-1);
-    return clamp(X.base+(P.attr?.cha||0)*(X.cha||0)+skill('pers')*(X.pers||0)+P.renown*(X.renown||0)+honorWith(l.fac)*(X.honor||0)+Math.min(1,pw)*(X.power||0)+(X.temper[this.temper()]||0)+(has('silver')?CAPTIVITY.traits.silver:0),C.min,C.max)}
+    return clamp(X.base+(P.attr?.cha||0)*(X.cha||0)+skill('pers')*(X.pers||0)+P.renown*(X.renown||0)+honorWith(l.fac)*(X.honor||0)+relWith(l)*(X.rel||0)+Math.min(1,pw)*(X.power||0)+(X.temper[this.temper()]||0)+(has('silver')?CAPTIVITY.traits.silver:0),C.min,C.max)}
   outcome(id,won){const X=DIALOGUE.checks[id],o=won?X.win:X.lose,l=this.o,out={};if(!o)return out;
     if(o.gold)out.gold=Math.min(o.gold,treas(l.fac));if(o.rel)out.rel=[l,o.rel,'what you said to him'];if(o.honor)out.honor=[l.fac,o.honor];return out}
   replies(){const l=this.o,C=DIALOGUE.checks,read=p=>insight(['you cannot tell your odds',p>=.5?'he may well':'a long chance','about '+Math.round(p*100)+'%'],'know the odds');
     return [{act:'lr-rumours',arg:l.id,label:'Ask for rumours'},{act:'lr-lords',arg:l.id,label:'Ask about other lords'},
-      ...['flatter','favour','threaten'].map(id=>{const why=this.checkWhy(id);if(why===false)return null;const win=Outcome.describe(this.outcome(id,true)),lose=Outcome.describe(this.outcome(id,false));
-        return {act:'talk-'+id,arg:l.id,label:C[id].label+' · '+read(this.odds(id)),note:(id==='favour'?RELATION.troops+' soldiers':win)+(lose?' / failing: '+lose:''),why}}),
+      ...['flatter','favour','threaten','follow'].map(id=>{const why=this.checkWhy(id);if(why===false)return null;const win=Outcome.describe(this.outcome(id,true)),lose=Outcome.describe(this.outcome(id,false));
+        return {act:'talk-'+id,arg:l.id,label:C[id].label+' · '+read(this.odds(id)),note:(id==='favour'?RELATION.troops+' soldiers':id==='follow'?'he follows you for some days':win)+(lose?' / failing: '+lose:''),why}}),
       ...Questbook.replies(l)]}
   // a check tried: your words, the roll (the stream talk), his answer by temper, what came of it; remembered
   act(id,cv){const l=this.o,X=DIALOGUE.checks[id];if(!X||this.checkWhy(id))return;const m=TalkMemory.meet(this.key);(m.tried||(m.tried={}))[id]=G.day;
     cv.say(X.you,false,heroName()||'You');const won=rngOf('talk').chance(this.odds(id)),o=this.outcome(id,won),words=won?X.yes:X.no;train('pers',won?3:1);
     cv.say(this.fill(words[this.temper()]||words.plain));
     if(won&&id==='favour'){const got=lordLend(l);cv.say(l.name+' lends you '+got.join(', ')+'.',true)}
+    if(won&&id==='follow'){const n=Host.lead(l);cv.say(l.name+' will follow you for '+n+' days.',true)}// (his place in your host: world/hosts.js)
     if(o.gold)W.treas[l.fac]=Math.max(0,treas(l.fac)-o.gold);Outcome.apply(o,{});const d=Outcome.describe(o);if(d)cv.say('<span class="muted">'+d+'</span>',true);
-    if(id==='threaten')m.threat=G.day;else if(!won)m.slight=G.day;updateHUD(true);lordMeet(l)}
+    if(id==='threaten')m.threat=G.day;else if(!won&&id!=='follow')m.slight=G.day;updateHUD(true);lordMeet(l)}
   facts(){const l=this.o,f=FACS[l.fac],st=hostileTo(l.fac)?'Your realms are at odds, but '+l.name+' will not draw on a friend.':P.fac===l.fac?'You serve the '+f.n+'.':P.fac?'Your employer is at '+(relOf(P.fac,l.fac).s==='ally'?'alliance':'peace')+' with them.':'They have no quarrel with you.';
     return '<p class="muted">Level '+lordStats(l).lv+' · renown '+(l.renown||0)+' · Leadership '+lordSkill(l,'lead')+' · Tactics '+lordSkill(l,'tact')+' · Medicine '+lordSkill(l,'med')+' · leads up to '+lcapOf(l)+'.</p><p>'+st+'</p>'}
   body(talk){const l=this.o,f=FACS[l.fac],free=P.fac===l.fac||l.inside;

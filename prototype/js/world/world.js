@@ -97,26 +97,32 @@ onWorld(()=>{if(typeof G!=='undefined')G.follow=null});
 const followable=o=>!!o&&FOLLOW.kinds.includes(objKind(o))&&!o.fight&&o.inView(vis());
 // (its name in a line: a lord's or your companion's party's own, the rest "the caravan of Ashford", "the bandits"...; cap: as a tag)
 function followName(o,cap){const k=o.mapKind,l=k==='lord'?lordName(o):o.label?o.label():k==='refugee'?'Refugees':'';if(cap||k==='lord'||k==='cparty')return l;return 'the '+l.charAt(0).toLowerCase()+l.slice(1)}
-function followStart(o){if(!followable(o))return false;breakCamp();G.chase=null;G.pitch=null;G.byRoad=null;G.follow={o,crumbs:[[o.x,o.y]]};P.stuck=0;
-  toast('You follow '+followName(o)+' at a distance.');followStep();updateHUD(true);return true}
+// (a friendly lord: you join his host, saved, your place in his column: hosts.js; any other: at a distance)
+function followStart(o){if(!followable(o))return false;breakCamp();G.chase=null;G.pitch=null;G.byRoad=null;const host=Host.canFollow(o);G.follow={o,crumbs:[[o.x,o.y]],host};P.stuck=0;
+  if(host)Host.join(o);else toast('You follow '+followName(o)+' at a distance.');followStep();updateHUD(true);return true}
 // it ends (why: said in the log; halt: your band stops where it is, else whatever was ordered stands)
 function followStop(why,halt){if(!G.follow)return false;G.follow=null;if(halt){P.tx=P.ty=null;P.stuck=0}if(why)toast(why);if(typeof WUI!=='undefined')WUI.way=null;updateHUD(true);return true}
 // (every frame, whatever is shown: world.js fastWatch)
-function followWatch(){const F=G.follow;if(!F)return;const o=F.o;
+function followWatch(){Host.watch();const F=G.follow;if(!F)return;const o=F.o;
+  // (in his host: a battle, a talk, a holding's window pause it (taken up again after: Host.watch); he inside or out of sight, you
+  // keep your place, at his gate)
+  if(F.host&&FOLLOW.ends.includes(G.mode)){Host.paused=true;return followStop()}
   if(FOLLOW.ends.includes(G.mode)||P.camp||G.pitch||P.stay||G.chase)return followStop();
+  if(F.host)return;
   const nm=followName(o),gone=!objKind(o)||o.dead||o.inside;
   if(gone){const t=o.inside?townBy(o.inside):TOWNS.find(h=>Math.hypot(h.x-o.x,h.y-o.y)<30),c=!t&&camps().find(k=>Math.hypot(k.x-o.x,k.y-o.y)<30);
     return followStop(t?cap1(nm)+' rides into '+t.name+'.':c?cap1(nm)+' slips into '+(c.name||'their camp')+'.':cap1(nm)+' is gone.',true)}
   if(!o.inView(vis()))return followStop('You lose sight of '+nm+'.',true)}
 // (your goal this moment: the point FOLLOW.trail tiles behind it along its crumbs (those older dropped), else that far from it on
 // your side; within FOLLOW.near tiles of it, where you stand)
-function followStep(){const F=G.follow,o=F.o,c=F.crumbs,l=c[c.length-1],T=FOLLOW.trail*TILE;if(Math.hypot(o.x-l[0],o.y-l[1])>=FOLLOW.crumb)c.push([o.x,o.y]);
+function followStep(){const F=G.follow,o=F.o,c=F.crumbs,l=c[c.length-1],T=FOLLOW.trail*TILE;if(F.host){const s=Host.yourSlot(o);P.tx=s.x;P.ty=s.y;return}if(Math.hypot(o.x-l[0],o.y-l[1])>=FOLLOW.crumb)c.push([o.x,o.y]);
   let s=0,px=o.x,py=o.y,tx=null,ty=null;for(let i=c.length-1;i>=0;i--){const [x,y]=c[i],d=Math.hypot(x-px,y-py);if(s+d>=T&&d>0){const q=(T-s)/d;tx=px+(x-px)*q;ty=py+(y-py)*q;c.splice(0,i);break}s+=d;px=x;py=y}
   const d=Math.hypot(P.x-o.x,P.y-o.y);if(tx==null){tx=d>T?o.x+(P.x-o.x)/d*T:P.x;ty=d>T?o.y+(P.y-o.y)/d*T:P.y}
   if(d<FOLLOW.near*TILE){tx=P.x;ty=P.y}P.tx=tx;P.ty=ty}
 // (the ring's item for o: Stop following (lit) while you follow it, or anything with o not one to follow; Follow for one to
 // follow; none else)
-const followItem=o=>G.follow&&(G.follow.o===o||!followable(o))?{icon:'shoe',label:'Stop following',active:true,run:()=>followStop('You stop following '+followName(G.follow.o)+'.',true)}
+const followItem=o=>Host.follows(o)?{icon:'shoe',label:'Stop following',active:true,run:()=>{Host.leave(G.day<Host.under.until);Host.paused=false;followStop('',true)}}
+  :G.follow&&(G.follow.o===o||!followable(o))?{icon:'shoe',label:'Stop following',active:true,run:()=>followStop('You stop following '+followName(G.follow.o)+'.',true)}
   :followable(o)?{icon:'shoe',label:'Follow',run:()=>followStart(o)}:null;
 // (the day bar's tag while you follow: render.js updateHUD)
 const followPill=()=>G.follow?'<em class="wroad wfollow" title="Following '+followName(G.follow.o)+': your band keeps after it at a distance (any other order, or the action ring’s Stop following, ends it)">'+icon('shoe',12)+'<i><small>Following </small>'+followName(G.follow.o,true)+'</i></em>':'';

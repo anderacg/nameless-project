@@ -23,7 +23,8 @@ class Brain{
 // at home, rides out against bands and beasts that come near his realm's holdings and estates (defence.js)
 class LordBrain extends Brain{
   think(l,d){
-    if(l.dead)return false;this.cool(l,d);
+    if(l.dead)return false;if(l.follow){Host.lordStep(l,d,this);return false}// (he follows you: his place in your column, hosts.js)
+    this.cool(l,d);
     if(l.defend&&LandDefence.lordDefends(l,d))return false;
     if(l.inside){const h=townBy(l.inside);if(l.state==='rest'&&l.tgt===l.inside&&h&&h.owner===l.fac)return false;l.leave()}
     if(inFight(l))return false;

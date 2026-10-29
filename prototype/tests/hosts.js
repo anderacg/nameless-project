@@ -30,5 +30,38 @@ Kit.suite(({ok})=>{
   ok(al.some(f=>f.src===m1)&&al.some(f=>f.src===m2),'a battle: both join it, the one '+(t.REINF.r+40)+' px back too ('+X.join+' px a host’s reach)');G.enc=null;Kit.world();t.bandits.length=0}
  // ---- told otherwise, out of the host
  {t.cpOrder('elske','patrol');ok(t.Host.yours()?.members.length===1,'told to patrol: out of your host');t.cpOrder('elske','follow');ok(t.Host.yours()?.members.at(-1)===t.compInit('elske').party,'told to follow again: the last in the column')}
+ // ======== phase 2: lords
+ t.cpOrder('brann','return');t.cpOrder('elske','return');for(let i=0;i<80;i++){t.BRAINS.cparty.think(t.compInit('brann').party||{troops:[]},.05)}P.comps={};
+ const f=t.FIDS[0],g=t.FIDS.find(x=>x!==f),k=t.FIDS.find(x=>x!==f&&x!==g),rel=(a,b,s)=>{W.rel[t.rk(a,b)]={s,since:G.day}};
+ const lordOf=fac=>{const l=W.lords.find(x=>x.fac===fac&&!x.dead&&!x.follow);Object.assign(l,{x:P.x+30,y:P.y,inside:null,fight:null,state:'rest',dead:false,troops:Array(10).fill('hum_foot')});return l};
+ P.fac=f;const L=lordOf(f),N=lordOf(g);t.Relations.change(N,-t.relWith(N),'test');
+ ok(t.Host.friend(L)&&!t.Host.friend(N)&&t.Host.askWhy(L)===''&&/know you well enough/.test(t.Host.askWhy(N)),'who may march with you: your realm’s lord, not a stranger');
+ {const r=t.relWith(N);t.Relations.change(N,30,'test');ok(t.Host.friend(N),'a friend of another realm may');t.Relations.change(N,r-t.relWith(N),'test')}
+ // (asked in his talk)
+ {G.enc={kind:'lord',ref:L,list:L.troops.slice()};t.lordMeet(L);const b=document.querySelector('[data-act="talk-follow"]');ok(b&&!b.disabled&&/follow you/.test(b.textContent),'his talk: Ask him to follow you');
+  Kit.stubStream('talk',0,()=>t.act('talk-follow',L.id));ok(L.follow&&L.follow.until>G.day&&/will follow you for/.test(document.getElementById('panel').textContent),'he agrees: he follows you for '+(L.follow&&L.follow.until-G.day)+' days');Kit.world()}
+ {const h=t.Host.yours();ok(h&&h.members.includes(L),'a lord in your host');P.tx=P.x+20*t.TILE;P.ty=P.y;Kit.frames(500,.05,null,()=>P.tx==null);const d=Math.hypot(L.x-P.x,L.y-P.y);ok(d<X.gap*3,'he keeps his place in your column ('+Math.round(d)+' px back)')}
+ // (a battle of yours: he joins against bandits; against a realm at peace with his, he stands aside and leaves your host)
+ {const bd=t.asParty({kind:'bandits',troops:Array(4).fill('militia'),x:P.x+30,y:P.y,cool:0});t.bandits.push(bd);t.startEncounter({kind:'party',ref:bd,n:4,list:bd.troops.slice(),band:'bandits'});
+  ok((G.enc?.allies||[]).includes(L),'bandits: he joins your battle');G.enc=null;Kit.world();t.bandits.length=0}
+ {L.temper='greedy';const bd=t.asParty({kind:'bandits',troops:Array(60).fill('hum_knight'),x:P.x+30,y:P.y,cool:0});t.bandits.push(bd);t.startEncounter({kind:'party',ref:bd,n:60,list:bd.troops.slice(),band:'bandits'});
+  ok(!(G.enc?.allies||[]).includes(L)&&/Standing aside: .*hopeless/.test(document.getElementById('panel').innerHTML),'the odds hopeless, his temper cautious: he stands aside, named on the page');G.enc=null;Kit.world();t.bandits.length=0;L.temper='honourable'}
+ {rel(f,k,'peace');rel(L.fac,k,'peace');const o=lordOf(k);t.Timed.of(P,'hostile').set(k,20);const r0=t.relWith(L);t.startEncounter({kind:'lord',ref:o,list:o.troops.slice()});
+  ok(!(G.enc?.allies||[]).includes(L)&&!L.follow&&t.relWith(L)<r0,'a lord of a realm at peace with his: he stands aside, and leaves your host');G.enc=null;Kit.world();t.Timed.of(P,'hostile').clear(k)}
+ // (his days up: he takes his leave)
+ {t.Host.lead(L,2);G.day=L.follow.until;t.Host.day();ok(!L.follow&&!t.Host.yours(),'his days up: he takes his leave')}
+ // (a friend near offers to follow you: his page)
+ {L.x=P.x+40;L.y=P.y;G.quietEvents=false;const r=Math.random;try{Math.random=()=>0;t.Host.day()}finally{Math.random=r;G.quietEvents=true}
+  ok(G.mode==='dialog'&&/May I ride with you/.test(document.getElementById('panel').textContent),'a friend near asks to ride with you');t.act('hs-accept');ok(!!L.follow,'accepted: he follows you');t.Host.release(L)}
+ // ---- you follow a lord: his host
+ {Kit.world();Object.assign(L,{x:P.x+30,y:P.y,state:'patrol',inside:null});Kit.goTo(P.x,P.y);t.followStart(L);ok(t.Host.under?.id===L.id&&G.follow?.host,'Follow on a lord of your realm: you join his host');
+  const s=JSON.stringify(t.Host.save());t.Host.under=null;t.Host.load(JSON.parse(s));ok(t.Host.under?.id===L.id,'kept in the save');
+  Kit.world();G.follow={o:L,crumbs:[[L.x,L.y]],host:true};L.x+=80;for(let i=0;i<200;i++){t.followStep();t.updateWorld(.05)}const d=Math.hypot(L.x-P.x,L.y-P.y);ok(d<X.gap*3,'your band keeps its place in his column ('+Math.round(d)+' px)');
+  const r0=t.relWith(L);t.Host.leave(true);ok(!t.Host.under&&t.relWith(L)<r0,'leaving before he lets you go: his regard lower');
+  L.x=P.x+30;L.y=P.y;Kit.goTo(P.x,P.y);t.followStart(L);const r1=t.relWith(L),n0=P.renown;G.day=t.Host.under.until;t.Host.day();ok(!t.Host.under&&t.relWith(L)>r1&&P.renown>n0,'his days up: he lets you go with his thanks');t.followStop()}
+ // (his battle near you: its page, Stand aside)
+ {L.x=P.x+30;L.y=P.y;Kit.goTo(P.x,P.y);t.followStart(L);const bd=t.asParty({kind:'bandits',troops:Array(6).fill('militia'),x:L.x+20,y:L.y,cool:0,idle:true});t.bandits.push(bd);Kit.world();const fg=t.startFight([L],[bd]);t.Host.watch();
+  ok(G.mode==='dialog'&&document.querySelector('[data-act="hs-aside"]'),'his battle near: its page, Stand aside');const r0=t.relWith(L);t.act('hs-aside');ok(t.relWith(L)<r0&&G.mode==='world','standing aside: his regard lower');t.Host.under=null;t.followStop()}
+ P.fac=null;
  ok(!ERR.length,'no runtime errors');
 });
