@@ -6,7 +6,8 @@
      band, n, mon, held, lord, site, near, at…), spec (more of its quest's spec, or all of it: an object or a function of the
      thread), title, text, note, stage, say, days, reward, next (the step after it is done; none: the end), failed (the step if it
      fails; none: the story failed), on ({key: step}: its other ends, an escort's captured (taken by those who beat you: memory.held)
-     or lost (taken by no one))};
+     or lost (taken by no one); a key named here is kept as it is, done or not), key (a function of the event and the thread: its
+     end's key in place of its quest's fate, read against on, then done or failed as ever)};
    - a choice: {choose: [options], title, text, who, note, stage}: an option {label, icon, tip, ask, when, need (conditions, or
      functions of the thread), gold (its cost), out (an outcome, or a function), say, how (its key; none: c<i>), next; or a check:
      check (a QUEST_CHECKS name, or {base, parts, cap}: data/chains.js), win, lose, winOut, loseOut, winSay, loseSay};
@@ -59,7 +60,7 @@ class Stories{
     if(st.choose)return this.page(K,sid,st,note,stage);
     const G0=kindOf('goal',st.goal);if(!G0)throw new Error('The story '+K.id+', step '+sid+': no goal '+st.goal);const on=st.on||{};
     return {id:sid,stage,note,start:{goal:st.goal},form:st,remember:st.remember||G0.remember&&((d,th)=>G0.remember(d,th,st)),
-      how:st.how||(d=>{const f=fateOf(d);return f==='captured'&&d?.e?.by?.k==='none'&&on.lost!==undefined?'lost':STORY_OK.includes(f)?'ok':f}),
+      how:st.how||((d,th)=>{const f=st.key?st.key(d,th):fateOf(d);return f in on?f:f==='captured'&&d?.e?.by?.k==='none'&&'lost' in on?'lost':STORY_OK.includes(f)?'ok':f}),
       fail:st.fail||(st.failed?undefined:STORY_BAD.filter(b=>!(b in on))),then:st.then||{ok:st.next||null,...Object.fromEntries(STORY_BAD.map(b=>[b,st.failed||null])),...on}}}
   // (a choice: a page; each option's key, its how or c<i>, a check's c<i>w or c<i>l (its roll, kept on the memory as it is chosen))
   static page(K,sid,st,note,stage){const then={};
@@ -124,7 +125,7 @@ defineGoal('track',{start:(st,th)=>{const to=Stories.place(st.spec?.to||st.to,th
 defineGoal('clear',{start:(st,th)=>{const t=townBy(th.memory.town);return Stories.quest('lair',st,th,{band:st.band,site:st.site,near:st.near||(t?{x:t.x,y:t.y}:{x:th.memory.x,y:th.memory.y})})}});
 defineGoal('beat',{start:(st,th)=>Stories.quest('band',st,th,{band:st.band?.name?Stories.fill(st.band.name,th):null,n:st.n})});
 defineGoal('hunt',{start:(st,th)=>Stories.quest('beasts',st,th,{mon:st.mon,n:st.n})});
-defineGoal('rescue',{start:(st,th)=>{const held=Stories.held(st,th);return held&&Stories.quest('held',st,th,{held,n:Stories.fill(st.n||'the captive',th),home:st.home||5,price:st.price||60})}});
+defineGoal('rescue',{start:(st,th)=>{const held=st.spec?.held||Stories.held(st,th);return held&&Stories.quest('held',st,th,{held,n:Stories.fill(st.n||'the captive',th),home:st.home||5,price:st.price||60})}});
 defineGoal('kill',{start:(st,th)=>{const l=Stories.target(st,th);return l&&Stories.quest('foe',st,th,{target:l.id})}});
 // ---- the conditions: on you, the place it is offered at, its realm, lord and companion
 defineCond('level',(v)=>P.level>=v,v=>'Level '+v);

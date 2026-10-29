@@ -111,6 +111,6 @@ The questbook's forms are not its own: they belong to every story. So:
 | Its step kinds | `story/steps.js` | `band` (`BandQuest`), `beasts` (`BeastsQuest`), `foe` (`FoeQuest`), with visit, deliver, lair, held |
 | Checks | `data/chains.js` `QUEST_CHECKS` | the checks a choice may name |
 | The questbook | `story/questbook.js`, `data/questbook/` | the entries (each a `defineStory`) and who offers them: givers, offers, once and cool |
-| The Wounded Traveller | `story/wounded.js` | a `defineStory`: its trail a **track** goal, its clear, back and call goals, its rescue picked up again by `resume: {freed: 'escort'}`; its escort (Ander's own ends), its pages and Ander wandering stay its own code |
+| The Wounded Traveller | `story/wounded.js` | a `defineStory`, every step in the forms: its escort an **escort** goal (its ends by `key`: carried off, home on his own, Ander loose), its pages (family, trail, thanks) **choices**, its trail a **track** goal, its clear, back and call goals, its rescue a **rescue** goal (by `key`: freed, or on to his walk home) picked up again by `resume: {freed: 'escort'}`. Only what is not a step stays its own code: the healed traveller's offer on the road, Ander wandering the taverns, the heirloom and Ander joining |
 
 A new story is written once, in one format: plain data for a simple one, with functions and `remember` where it needs them, its pages and goals the same either way.
