@@ -1,7 +1,7 @@
 'use strict';
 /* ---------- data: backgrounds, attributes, skills, perks and companions ---------- */
-// A past decides your weapon (in wood), your purse and your strengths. weapon: a gear base; gear: what else you wear ({slot: item}:
-// a shooter's first quiver).
+// A past decides your weapon (in wood), your purse and your strengths. weapon: a gear base (none: your bare hands, combat.js
+// FISTS); gear: what else you wear ({slot: item}: a shooter's first quiver).
 const BGS={
   soldier:{n:'Veteran soldier',weapon:'sword',d:'A sword and 60 gold. Known in your home town, so you can hire there right away. Strength and One-Handed.',gold:60,cargo:{grain:8},troops:{},bonus:2,attr:{str:2},sk:{oneh:2,lead:1},rep:12},
   guard:{n:'Village guard',weapon:'spear',d:'A spear and 45 gold. Steady against riders and beasts. Strength and Leadership.',gold:45,cargo:{grain:8},troops:{},bonus:1,attr:{str:1,cha:1},sk:{lead:2},rep:6},
@@ -9,6 +9,7 @@ const BGS={
   exile:{n:'Exiled archer',weapon:'bow',gear:{quiver:'q_worn'},d:'A bow, a worn quiver of 20 arrows and 45 gold. Moves unseen and sees far. Agility, Archery and Scouting.',gold:45,cargo:{grain:6},troops:{},bonus:0,attr:{agi:2},sk:{scout:1,archery:1}},
   merchant:{n:'Merchant\u2019s child',weapon:'crossbow',gear:{quiver:'q_wornCase'},d:'A crossbow, a worn case of 20 bolts, 110 gold and a small cart to trade. Charisma and Trade.',gold:110,cargo:{grain:10,cloth:4},troops:{},bonus:0,attr:{cha:2},sk:{trade:2}},
   hedge:{n:'Hedge mage',weapon:'staff',d:'A staff and 40 gold. Your spells hit hard; your purse is light. Intellect and Spellcraft.',gold:40,cargo:{grain:6},troops:{},bonus:0,attr:{int:2},sk:{spell:2}},
+  nobody:{n:'Nobody',weapon:null,d:'Nothing but the clothes you stand in, a few coins and a crust for the road. You fight with your bare hands. Unarmed and Athletics.',gold:5,cargo:{grain:3},troops:{},bonus:0,attr:{},sk:{fist:2,athl:1}},
   apprentice:{n:'Runaway apprentice',weapon:'wand',d:'A wand, 55 gold and a quick wit. Intellect and Medicine.',gold:55,cargo:{grain:6},troops:{},bonus:0,attr:{int:1,agi:1},sk:{spell:1,med:1}}
 };
 const ATTRS={str:['Strength','Health and damage'],agi:['Agility','Attack speed, footspeed and stamina'],int:['Intellect','Mana, and faster Tactics and Medicine'],cha:['Charisma','Party size, hire costs, Leadership and Trade']};
@@ -21,6 +22,7 @@ const SKILLS={
   block:{n:'Blocking',a:'str',d:'Blocked hits deal 1% less damage and guarding costs 3% less stamina per level. Rises with each hit you block'},
   archery:{n:'Archery',a:'agi',d:'Your arrows and bolts hit 4% harder per level. Rises with each one that hits'},
   spell:{n:'Spellcraft',a:'int',d:'Spells hit 4% harder and cost 2% less mana per level. Rises as you cast'},
+  fist:{n:'Unarmed',a:'str',d:'+0.6 damage per level with your bare hands (no weapon in either hand): punches, kicks and throws. Rises with each blow you land unarmed'},
   athl:{n:'Athletics',a:'agi',d:'+4 stamina per level. Rises as you sprint and dodge'},
   // command
   lead:{n:'Leadership',a:'cha',d:'+1 army group slot per trained level above 2 (3 starting slots, 10 maximum), +1 party size, +1 prisoner and +3 to the floor under morale per level. Rises with each battle your troops win'},

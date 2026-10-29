@@ -11,7 +11,7 @@ try{
  const seen=new Set(['start']),q=['start'];while(q.length){const c=q.pop();for(const n of TR[c].links)if(!seen.has(n)){seen.add(n);q.push(n)}}
  ok(seen.size===ids.length,'every node is reachable from the start');
  ok(ids.every(id=>TR[id].links.every(n=>TR[n]&&TR[n].links.includes(id))),'links go both ways');
- ok(['k','n','a','s'].every(k=>ids.some(id=>TR[id].t===k))&&ids.filter(id=>TR[id].t==='k').length===4,'small, notable, ability and 4 keystone nodes');
+ ok(['k','n','a','s'].every(k=>ids.some(id=>TR[id].t===k))&&ids.filter(id=>TR[id].t==='k').length===5,'small, notable, ability and 5 keystone nodes (one each path\'s end, and the brawler\'s Open Hand)');
  ok(ids.every(id=>TR[id].d&&TR[id].d.length>3),'every node is described');
  ok(Object.values(t.PERKS).length&&Object.keys(t.PERKS).every(p=>ids.some(id=>TR[id].m.perk===p)),'every old perk is a notable');
  // points

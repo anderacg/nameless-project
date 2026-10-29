@@ -72,7 +72,8 @@ function startGame(k,b){
   // every discipline starts at 0; your race and past give a knack: 25% faster learning per point (P.apt)
   for(const src of [b.sk,rc.sk])for(const s in src||{})P.apt[s]=(P.apt[s]||0)+.25*src[s];
   P.origin=originOf(k);P.tree=[P.origin];applyNode(P.origin,1);G.skSel=P.origin;
-  P.gear.weapon=gearId(b.weapon||'sword',0);Object.assign(P.gear,b.gear);for(const g in b.cargo)invAdd('good',g,b.cargo[g]);
+  // (your past's weapon: none for a nobody, bare hands, combat.js FISTS)
+  P.gear.weapon=b.weapon?gearId(b.weapon,0):null;Object.assign(P.gear,b.gear);for(const g in b.cargo)invAdd('good',g,b.cargo[g]);
   // (a new game on the map: every system's world reset first, onWorld; the game's number for its random streams, core/rng.js,
   // drawn before the wild game and the beasts are placed from them)
   // (a generated world but the classic one: its first sites, herds, bands and beasts from its seed, seededStart)

@@ -22,7 +22,9 @@ const MOVESETS={old:false,grace:1.75,push:.5,charge:{speed:.6},
     heavy:{n:'Heavy blow',wind:.45,cd:7,first:2,dmg:1.4,kb:1.6,down:.5},
     maul:{n:'Maul',wind:.5,cd:7,first:2,dmg:1.5,kb:1.3,down:.5},
     slam:{n:'Club slam',wind:.6,cd:7,first:2,dmg:1.6,kb:1.2,down:.6},
-    stomp:{n:'Stomp',wind:.7,cd:8,first:3,dmg:1.4,kb:1.1,down:.6,area:16}},
+    stomp:{n:'Stomp',wind:.7,cd:8,first:3,dmg:1.4,kb:1.1,down:.6,area:16},
+    // (your hero's with bare hands: seized and thrown, combat.js HeroHands#grab; more often and more surely with the talents' grabCd, grabDown)
+    grapple:{n:'Grapple',wind:.35,cd:6,first:2,dmg:1.1,kb:1.5,down:.6,grab:true}},
   // × the throw it takes to fell one with a shield toward the blow, a braced spear
   resist:{shield:1.5,brace:2},
   // whose: a kind's own (hard: its hard attack; charge: its charge may throw down, × its throw if a number); else big ones a
@@ -39,9 +41,10 @@ const MOVESETS={old:false,grace:1.75,push:.5,charge:{speed:.6},
    the footing of the one a hard attack hits (footing). Old movesets: nothing asked of it, nothing kept */
 const MOVES=new WeakMap();
 class Moveset{
-  constructor(M,s){this.hard=M.hard?MOVESETS.hard[M.hard]:null;this.charge=M.charge===true?1:M.charge||0;this.s=s}
+  constructor(M,s){this.hard=M.hard?MOVESETS.hard[M.hard]:null;if(this.hard?.grab)this.hard={...this.hard,cd:this.hard.cd*(1-P.treeMod('grabCd')),down:Math.min(.95,this.hard.down+P.treeMod('grabDown'))};this.charge=M.charge===true?1:M.charge||0;this.s=s}
   static of(u){let m=MOVES.get(u);if(!m||m.s!==u.s)MOVES.set(u,m=new Moveset(Moveset.entry(u),u.s));return m}
   static entry(u){const M=MOVESETS,s=u.s,k=M.kinds[u.type];if(k)return k;if(s.big)return{hard:'stomp'};if(s.mounted)return{charge:!!s.charge};if(s.range)return{};
+    if(u.hero&&unarmed())return{hard:'grapple'};// (bare hands: combat.js FISTS)
     return(isChar(u)?Moveset.charHeavy(u):M.weapons.includes((PEOPLE_LOOK[u.type]||PEOPLE_LOOK[s.look]||{}).weapon))?{hard:'heavy'}:{}}
   // (a character's weapon heavy: your hero's a two-hander or a hammer, a champion's combo the heavy one: charmind.js comboOf)
   static charHeavy(u){return u.hero?heroKind()==='melee'&&[COMBOS.heavy,COMBOS.hammer].includes(weaponCombo()):ChampionMind.comboOf(u)===COMBOS.heavy}

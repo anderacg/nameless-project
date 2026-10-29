@@ -48,6 +48,14 @@ const TREE_BRANCHES=[
 // hybrid nodes between neighbouring branches
 const TREE_HYBRIDS=[['might','finesse','Warrior’s Poise',{attr:{str:1,agi:1},hp:5}],['finesse','arcana','Keen Mind',{attr:{agi:1,int:1},sp:10}],
   ['arcana','command','Sage Counsel',{attr:{int:1,cha:1},mp:10}],['command','might','Captain’s Grit',{attr:{cha:1,str:1},cap:1}]];
+/* the brawler's chain (bare hands, combat.js FISTS; the owner, 2026-10-29): out from the Nobody's origin, and from Sage Counsel
+   for anyone, into the free ground below Command. Its effects: fistPct, unarmed damage; fistCd, their swing time; kick, the kick's power and push; grabCd,
+   grabDown, the grapple more often and surer to throw down (movesets.js) */
+const TREE_FISTS={from:['o_nobody','h_arcana_command'],nodes:[
+  ['n','Bare Knuckles',{fistPct:.15,sk:{fist:1}},'Your bare-handed blows land 15% harder. +1 Unarmed.',-205,95],
+  ['n','Iron Shins',{kick:.4,hp:8},'Your kick lands 40% harder and throws them back farther. +8 health.',-275,132],
+  ['n','Grappler',{grabCd:.3,grabDown:.2},'You grapple 30% more often, and a throw puts them down more surely.',-337,172],
+  ['k','Open Hand',{fistPct:.35,fistCd:-.1,dr:-.1},'Bare-handed blows land 35% harder and 10% quicker, but you take 10% more damage.',-398,214]]};
 // build the nodes with positions: spines run out from the centre; side chains branch off the 3rd and 5th spine node
 // The middle is the Crossroads, a node like any other that joins the four paths. Each past starts from its own origin
 // on a ring around the Crossroads (at), joined to the first node of its path or, between two paths, of both (to); already learned, with a small bonus.
@@ -59,7 +67,9 @@ const ORIGINS={
   exile:{n:'Exile',at:[127,-23],to:['finesse0'],m:{sk:{archery:1},vis:.05}},
   apprentice:{n:'Apprentice',at:[127,23],to:['finesse0','arcana0'],m:{mp:5,sp:5,sk:{med:1}}},
   hedge:{n:'Hedge Mage',at:[53,54],to:['arcana0'],m:{mp:10,sk:{spell:1}}},
-  merchant:{n:'Merchant',at:[-53,54],to:['arcana0','command0'],m:{hire:.05,sk:{trade:1}}}
+  merchant:{n:'Merchant',at:[-53,54],to:['arcana0','command0'],m:{hire:.05,sk:{trade:1}}},
+  // (a nobody: no head start on any path, none closed to them: joined to the Crossroads itself)
+  nobody:{n:'Nobody',at:[-127,23],to:['start'],m:{sp:10}}
 };
 const originOf=bg=>'o_'+(ORIGINS[bg]?bg:'soldier');
 (()=>{
@@ -75,8 +85,10 @@ const originOf=bg=>'o_'+(ORIGINS[bg]?bg:'soldier');
   }
   for(const [p,q,n,m] of TREE_HYBRIDS){const A=TREE[p+'2'],C=TREE[q+'2'],id='h_'+p+'_'+q;
     TREE[id]={id,t:'s',n,m,x:Math.round((A.x+C.x)/2*1.25),y:Math.round((A.y+C.y)/2*1.25),br:'hybrid',links:[],d:''};link(p+'2',id);link(id,q+'2')}
+  TREE_FISTS.nodes.forEach(([t,n,m,d,x,y],i)=>{const id='fist'+i;TREE[id]={id,t,n,m,x,y,br:'might',links:[],d,lab:[-1,0]};if(i)link('fist'+(i-1),id)});
   for(const bg in ORIGINS){const O=ORIGINS[bg],id='o_'+bg,[x,y]=O.at;
     TREE[id]={id,t:'origin',bg,n:O.n,m:O.m,x,y,br:null,links:[],d:'',lab:Math.abs(x)>90?[Math.sign(x),0]:[0,Math.sign(y)]};O.to.forEach(n=>link(id,n))}
+  for(const f of TREE_FISTS.from)link(f,'fist0');
   // describe the small nodes from their effects
   for(const id in TREE){const N=TREE[id];if(!N.d)N.d=(N.t==='origin'?'Where a '+N.n.toLowerCase()+' begins. ':N.t==='start'?'Joins the four paths. ':'')+describeNode(N.m)}
 })();

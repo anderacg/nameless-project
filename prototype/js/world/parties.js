@@ -184,15 +184,15 @@ class PlayerParty extends Party{
   skill(k){return this.sk[k].lv+this.roleBonus(k)+this.gearSkill(k)+this.treeSkill(k)}
   // your hero's numbers in battle: her level, attributes, disciplines, gear and talents
   heroStats(){
-    const tm=k=>this.treeMod(k),gm=k=>this.gearMod(k),melee=this.skill(meleeSk()),two=hybridTwo(),kind=heroKind();
+    const tm=k=>this.treeMod(k),gm=k=>this.gearMod(k),melee=this.skill(meleeSk()),two=hybridTwo(),kind=heroKind(),fist=unarmed();// (bare hands: combat.js FISTS)
     return {n:'You',
       hp:Math.round((50+10*this.level+4*this.attr.str+gm('hp'))*(1+tm('hpPct'))),
-      dmg:(8+2*this.level+this.bonus+this.attr.str*.5+melee*.6+gm('dmg'))*(1+tm('dmgPct'))*(two?1.2:1),
+      dmg:(8+2*this.level+this.bonus+this.attr.str*.5+melee*.6+gm('dmg'))*(1+tm('dmgPct'))*(two?1.2:1)*(fist?FISTS.dmg*(1+tm('fistPct')):1),
       spd:(48+this.attr.agi*2)*(1+gm('spd')),
-      reach:21+melee*.4+gm('reach')+(two?4:0),
+      reach:21+melee*.4+gm('reach')+(two?4:0)+(fist?FISTS.reach:0),
       range:heroRange(),magic:kind==='magic',
       dt:itemDt(this.gear.weapon)||(kind==='magic'?'arcane':'blunt'),armor:itemArmor(this.gear.body)||'none',race:this.race,
-      cd:.45*(1-this.attr.agi*.03)*(1+gm('cd')),
+      cd:.45*(1-this.attr.agi*.03)*(1+gm('cd'))*(fist?FISTS.cd*(1+tm('fistCd')):1),
       tags:Object.values(this.gear).map(id=>id&&ITEMS[id].tag).filter(Boolean)}}
   // stamina pays for physical effort, mana for skills
   maxSP(){return 60+this.attr.agi*5+this.level*2+this.treeMod('sp')+4*this.skill('athl')}

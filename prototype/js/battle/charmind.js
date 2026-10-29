@@ -150,7 +150,8 @@ class HeroMind extends CharacterMind{
     swing()}
   shove(t,M){shove()}
   // (a hard attack wound up: the finisher of your weapon's combo, struck now; its blows may throw down: combat.js hitFoe)
-  hard(t,H){const X=heroState(),CB=heroCombo();X.step=CB.length-2;X.win=1;X.hard=H;try{this.blow(t)}finally{X.hard=null}}
+  hard(t,H){if(H.grab)return heroState().grab(t,H);// (bare hands: the grapple, combat.js)
+    const X=heroState(),CB=heroCombo();X.step=CB.length-2;X.win=1;X.hard=H;try{this.blow(t)}finally{X.hard=null}}
   dodgeCost(){return dodgeCost()}
   dodge(dx,dy,cost){dodge(dx,dy)}
   heal(){castSkill('heal')}

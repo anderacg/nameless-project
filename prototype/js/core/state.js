@@ -28,8 +28,10 @@ const gm=k=>P.gearMod(k);
 const mainI=()=>P.gear.weapon?ITEMS[P.gear.weapon]:null,offI=()=>P.gear.offhand?ITEMS[P.gear.offhand]:null;
 function grip(){const m=mainI(),o=offI();if(o&&o.slot==='weapon')return 'dual';if(o&&o.base==='shield')return 'shield';if(m&&(m.hand==='two'||m.hand==='hybrid'&&!o))return 'two';return 'one'}
 const hybridTwo=()=>{const m=mainI();return !!m&&m.hand==='hybrid'&&!offI()};
-// the melee discipline of your grip: Two-Handed for a two-handed weapon or a hybrid held in both hands, else One-Handed
-const meleeSk=()=>{const m=mainI();return m&&!m.kind&&(m.hand==='two'||hybridTwo())?'twoh':'oneh'};
+// (no weapon in either hand: you fight with your fists, combat.js FISTS; a shield in the other hand still bashes)
+const unarmed=()=>!mainI()&&!(offI()&&offI().slot==='weapon');
+// the melee discipline of your grip: Unarmed with bare hands, Two-Handed for a two-handed weapon or a hybrid held in both hands, else One-Handed
+const meleeSk=()=>{if(unarmed())return 'fist';const m=mainI();return m&&!m.kind&&(m.hand==='two'||hybridTwo())?'twoh':'oneh'};
 const gearSkill=k=>P.gearSkill(k);
 // the ridden mount, and the ground it crosses at full speed
 const mountDef=()=>P.gear.mount?ITEMS[P.gear.mount]:null;

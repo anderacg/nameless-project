@@ -21,6 +21,14 @@ const COMBOS={
   thrust:Object.assign([CW('Thrust','thrust',1.05,12,.32,6,{wid:5}),CW('Sweep','arc',.95,10,.36,10,{arc:.7}),CW('Lunge','thrust',1.9,22,.6,24,{wid:6,stun:.5,...CFIN})],{sp:1}),
   phalanx:Object.assign([CW('Jab','thrust',.95,9,.3,5,{wid:4}),CW('Jab','thrust',.95,9,.3,5,{wid:4}),CW('Drive','thrust',1.6,14,.55,20,{wid:5,stun:.4,...CFIN})],{sp:.9})
 };
+/* bare hands (the owner, 2026-10-29: "mostly a one hand punch, two hands to grapple, a kick"): your hero with no weapon in either
+   hand (core/state.js unarmed) fights with fists, Unarmed their discipline: × dmg, + reach, × the swing time (FISTS, and the
+   talents' fistPct); the combo a jab, a cross and a kick (each strikes only the nearest in it: one; the kick harder with the
+   talents' kick), the hard attack a grapple (movesets.js MOVESETS.hard.grapple: wound up, the one before you seized in both hands
+   and thrown, perhaps down; grab: its push and stagger). Only your hero, for now */
+const FISTS={dmg:.6,reach:-8,cd:.75,grab:{kb:14,stun:.8}};
+COMBOS.fists=Object.assign([CW('Jab','thrust',.8,0,.2,3,{wid:4,w:2,one:true,look:'jab',col:'255,236,210'}),CW('Cross','arc',1,0,.24,6,{arc:.8,dir:-1,w:2,one:true,look:'hook'}),
+  CW('Kick','thrust',1.5,4,.42,22,{wid:5,stun:.5,one:true,look:'kick',...CFIN,shake:2})],{sp:.6});
 const COMBO_WINDOW=.75,DODGE_CD=1.1;
 const isHammer=m=>m.base==='warhammer'||m.icon==='club';
 /* the combo grows with practice in the discipline of the weapon you fight with (One-Handed or Two-Handed): two blows to begin
@@ -29,11 +37,11 @@ const isHammer=m=>m.base==='warhammer'||m.icon==='club';
 const COMBO_UP={third:3,fin:6},FIN_BASE={mult:.85,stun:.5,kb:.6},FIN_STYLE={stun:{mult:.9,stun:1.6,kb:.4},push:{mult:.9,stun:0,kb:1.9}};
 const comboBlows=()=>skill(meleeSk())>=COMBO_UP.third?3:2;
 const finReady=()=>skill(meleeSk())>=COMBO_UP.fin;
-function heroCombo(){const C=weaponCombo(),n=comboBlows(),F=FIN_STYLE[P.fin]||FIN_BASE;
-  const out=C.slice(0,n).map((c,i)=>i<2?c:{...c,mult:+(c.mult*F.mult).toFixed(2),stun:+((c.stun||.4)*F.stun).toFixed(2),kb:Math.round(c.kb*F.kb)});return Object.assign(out,{sp:C.sp})}
-function weaponCombo(){const m=mainI(),g=grip();if(g==='dual')return COMBOS.dual;if(!m)return COMBO;if(m.base==='dagger'||m.icon==='dagger')return COMBOS.dagger;
+function heroCombo(){const C=weaponCombo(),n=comboBlows(),F=FIN_STYLE[P.fin]||FIN_BASE,K=C===COMBOS.fists?1+P.treeMod('kick'):1;// (the kick: the talents')
+  const out=C.slice(0,n).map((c,i)=>i<2?c:{...c,mult:+(c.mult*F.mult*K).toFixed(2),stun:+((c.stun||.4)*F.stun).toFixed(2),kb:Math.round(c.kb*F.kb*K)});return Object.assign(out,{sp:C.sp})}
+function weaponCombo(){if(unarmed())return COMBOS.fists;const m=mainI(),g=grip();if(g==='dual')return COMBOS.dual;if(!m)return COMBO;if(m.base==='dagger'||m.icon==='dagger')return COMBOS.dagger;
   if(m.base==='spear'||m.tag==='spear')return g==='two'?COMBOS.thrust:COMBOS.phalanx;if(isHammer(m))return COMBOS.hammer;if(m.hand==='two')return COMBOS.heavy;if(m.base==='axe')return COMBOS.axe;return COMBO}
-// how each shape looks on the hero's body: a swing, a thrust or an overhead blow
+// how each shape looks on the hero's body: a swing, a thrust or an overhead blow (a step's own look over it: the fists')
 const STYLE={arc:'swing',spin:'swing',thrust:'thrust',twin:'thrust',slam:'overhead'};
 // is e inside step c's hitbox, from (x,y) aiming at a with reach R?
 function inShape(x,y,a,R,c,e){
@@ -135,6 +143,10 @@ class HeroHands{
     knock(e,h.x,h.y,o.kb||0);if(o.stun)stun(e,o.stun);if(X.hard&&PHYSICS.on)physBlow(h,e,X.hard);// (your hero's hard attack: charmind.js)
     X.combo++;X.comboT=2.2;B.bestCombo=Math.max(B.bestCombo||0,X.combo);// (the longest chain: told in the log when the battle ends)
   }
+  // the grapple (your hero's hard attack with bare hands, H: movesets.js): t seized in both hands and thrown, its blow hard (it may throw him down)
+  grab(t,H){const h=B.hero,X=this,G=FISTS.grab;if(!h||h.hp<=0||X.busy()||!t||t.hp<=0)return;const a=Math.atan2(t.y-h.y,t.x-h.x);B.aim=a;
+    h.cd=H.wind*(h.s.cd/.45);h.atkAt=B.t;h.atkStyle='grapple';h.face=Math.cos(a)>=0?1:-1;X.hard=H;
+    try{X.hitFoe(t,H.dmg,{kb:G.kb,stun:G.stun,dt:'blunt',noCrit:true})}finally{X.hard=null}B.floats.push({x:h.x,y:h.y-28,t:'Throw',life:.6,c:'#ffb04a'})}
   drawStart(){const h=B.hero;if(!h||h.hp<=0||B.blocking||this.busy()||h.cd>0||!haveShots())return;B.draw={t:0}}
   drawRelease(force){const p=force!=null?force:clamp(B.draw.t/DRAW_TIME,.15,1);B.draw=null;this.shoot('ranged',p)}
   // holding a full draw: stamina drains; at zero the arm gives out
@@ -160,7 +172,7 @@ class HeroHands{
     const CB=heroCombo();X.buf=false;const step=X.win>0?(X.step+1)%CB.length:0;if(!X.spend(MANUAL_HERO?Math.round(STAM.swing[step]*(CB.sp||1)):0,0)){X.win=0;return}
     if(!MANUAL_HERO)staSpend(h,blowSta(step,CB));// (under RTS command a blow costs what a soldier's does; tired, it lands softer: hitFoe)
     X.step=step;const c=CB[step];
-    h.cd=c.cd*(h.s.cd/.45);X.win=h.cd+COMBO_WINDOW;h.swing=.18;h.atkAt=B.t;h.atkStyle=STYLE[c.shape];h.face=Math.cos(B.aim)>=0?1:-1;
+    h.cd=c.cd*(h.s.cd/.45);X.win=h.cd+COMBO_WINDOW;h.swing=.18;h.atkAt=B.t;h.atkStyle=c.look||STYLE[c.shape];h.face=Math.cos(B.aim)>=0?1:-1;
     // thrusts step in, sweeps lean in, slams and spins plant the feet
     const lean=c.shape==='thrust'||c.shape==='twin'?(c.reach>15?8:5):c.shape==='arc'?3:0;
     h.x=clamp(h.x+Math.cos(B.aim)*lean,8,BW-8);h.y=clamp(h.y+Math.sin(B.aim)*lean,fieldTop(),fieldBot());
@@ -170,7 +182,7 @@ class HeroHands{
     // a thrust pierces: everyone along the line, each one behind for a little less
     const hits=B.units.filter(e=>battleEnemy(h,e)&&e.hp>0&&inShape(h.x,h.y,B.aim,R,c,e)).sort((p,q)=>Math.hypot(p.x-h.x,p.y-h.y)-Math.hypot(q.x-h.x,q.y-h.y));
     const pierce=c.shape==='thrust'||c.shape==='twin';let n=0;
-    for(const e of hits){X.hitFoe(e,c.mult*(pierce?Math.max(.5,1-.2*n):1),c);n++}
+    for(const e of hits){X.hitFoe(e,c.mult*(pierce?Math.max(.5,1-.2*n):1),c);n++;if(c.one)break}// (a fist strikes one)
     if(n&&c.stop){X.stop=c.stop;shakeIt(c.shake)}
     if(n&&X.step===2)B.floats.push({x:h.x,y:h.y-28,t:c.n,life:.6,c:'#ffb04a'});
     return n;
