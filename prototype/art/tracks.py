@@ -20,14 +20,18 @@ def claw(x,y,ang,l=7):
 def toe(ang,l,w):
     a=math.radians(ang);ex,ey=l*math.sin(a),-l*math.cos(a);nx,ny=math.cos(a)*w,math.sin(a)*w
     return f'M{f(-nx)},{f(-ny)} L{f(ex-nx*.4)},{f(ey-ny*.4)} L{f(ex*1.18)},{f(ey*1.18)} L{f(ex+nx*.4)},{f(ey+ny*.4)} L{f(nx)},{f(ny)} Z'
-sole="M0,-46 C15,-46 19,-31 18,-17 C17,-5 12,4 10,13 L-10,13 C-11,4 -18,-6 -18,-19 C-18,-33 -13,-46 0,-46 Z"
-heel="M-10,20 C-9,17 9,17 10,20 L11,42 C11,48 -11,48 -11,42 Z"
+# (a boot's heel nearly as wide as its sole, the arch a clear gap between: so even its pixel print, 7 px, reads as a boot, not an arrow)
+sole="M0,-46 C16,-46 20,-31 19,-17 C18,-6 14,2 12,8 L-12,8 C-14,2 -19,-7 -19,-19 C-19,-33 -14,-46 0,-46 Z"
+heel="M-15,24 C-14,20 14,20 15,24 L15,40 C15,47 -15,47 -15,40 Z"
 # a soldier's hobnailed boot: a ring of nails, a row down the middle, the heel's
-nails=[(12.5*math.sin(math.radians(t)),-20-22*math.cos(math.radians(t))) for t in range(0,360,24)]+[(0,y) for y in (-34,-26,-18,-10,-2,6)]+[(-6,-30),(6,-30),(-7,-14),(7,-14),(-5,2),(5,2)]
-art('hobnail',"Soldier's hobnailed boot",[sole,heel],[circle(x,y,1.6) for x,y in nails if abs(x)<16]+[circle(x,y,1.6) for x in (-6,0,6) for y in (24,32,40)])
-art('boot','Boot (tread)',[sole,heel],[rect(-14,y,28,2.2) for y in (-38,-31,-24,-17,-10,-3,4)]+[rect(-8,y,16,2) for y in (25,32,39)])
+nails=[(12.5*math.sin(math.radians(t)),-20-22*math.cos(math.radians(t))) for t in range(0,360,24)]+[(0,y) for y in (-34,-26,-18,-10,-2)]+[(-6,-30),(6,-30),(-7,-14),(7,-14),(-5,2),(5,2)]
+art('hobnail',"Soldier's hobnailed boot",[sole,heel],[circle(x,y,1.6) for x,y in nails if abs(x)<16]+[circle(x,y,1.6) for x in (-8,0,8) for y in (28,34,40)])
+art('boot','Boot (tread)',[sole,heel],[rect(-14,y,28,2.2) for y in (-38,-31,-24,-17,-10,-3)]+[rect(-11,y,22,2) for y in (27,33,39)])
 foot="M-4,46 C-14,46 -16,36 -15,26 C-14,14 -9,6 -10,-6 C-11,-18 -16,-24 -14,-32 C-12,-40 8,-40 14,-32 C18,-24 16,-10 12,2 C9,12 9,22 8,32 C7,42 4,46 -4,46 Z"
-art('barefoot','Bare foot',[foot]+[ellipse(x,y,rx,ry) for x,y,rx,ry in [(-11,-44,5.2,6.5),(-1,-47,4.2,5.2),(7,-45,3.6,4.6),(13,-41,3.1,4),(17,-35,2.7,3.4)]])
+# (a bare foot 1.3 times as wide as drawn: a real one's breadth, and so its pixel print, 6 px, keeps its heel, arch and ball)
+import re
+BW=1.3;foot=re.sub(r'(-?\d+),(-?\d+)',lambda m:f'{f(float(m.group(1))*BW)},{m.group(2)}',foot)
+art('barefoot','Bare foot',[foot]+[ellipse(x*BW,y,rx*BW,ry) for x,y,rx,ry in [(-11,-44,5.2,6.5),(-1,-47,4.2,5.2),(7,-45,3.6,4.6),(13,-41,3.1,4),(17,-35,2.7,3.4)]])
 shoe="M-30,30 C-38,6 -34,-30 0,-36 C34,-30 38,6 30,30 L20,30 C26,8 24,-20 0,-25 C-24,-20 -26,8 -20,30 Z"
 frog="M0,-14 C6,0 12,16 12,26 C6,22 3,20 0,20 C-3,20 -6,22 -12,26 C-12,16 -6,0 0,-14 Z"
 art('horse','Horse, shod',[shoe],[rect(x-1.8,y-1,3.6,2,r) for x,y,r in [(-28,10,80),(-27,-6,65),(-20,-20,40),(28,10,-80),(27,-6,-65),(20,-20,-40)]]+[frog])
