@@ -146,11 +146,13 @@ function drawFigure(g,o,ox,oy,walk,style,atk,cut){
   const run=walk>=4&&walk<8,climb=walk>=8&&walk<12,desc=walk>=12,T=o.short?PEOPLE_T_SHORT:PEOPLE_T,Lc=lettersOf(o),sh=o.short?1:0;
   const bob=run?RUN_BOB[walk-4]:climb?CLIMB_BOB[walk-8]:desc?DESC_BOB[walk-12]:walk===1||walk===3||walk===-2?-1:0,lean=run?9:desc?6:0;
   // (climbing: bent double, the head two pixels forward and the shoulders one, all above the belt a pixel lower)
-  const set=climb?(x,y,c)=>pset(g,ox+x+(y<6?2:y<9?1:0),oy+y+(y<9?1:0)+(y<13-sh?bob:0),c):(x,y,c)=>pset(g,ox+x+(y<lean?1:0),oy+y+(y<13-sh?bob:0),c);
+  // (bare hands: the body turned and leaning into each blow, fsx px forward by the row, FIST_BODY)
+  const fb=!o.weapon&&atk>=0&&FIST_BODY[style]?FIST_BODY[style][atk]:null,fsx=y=>fb&&y<13-sh?(y<7?fb[0]:y<9?fb[1]:fb[2]):0;
+  const set=climb?(x,y,c)=>pset(g,ox+x+(y<6?2:y<9?1:0),oy+y+(y<9?1:0)+(y<13-sh?bob:0),c):(x,y,c)=>pset(g,ox+x+(y<lean?1:0)+fsx(y),oy+y+(y<13-sh?bob:0),c);
   T.forEach((row,y)=>{if(cut!=null&&y>cut)return;[...row].forEach((c,x)=>{if(c==='.'||c==='L'||c==='M'||c==='F')return;set(x,y+(o.short&&y>=9?0:0),Lc[c])})});
   const ly=13-sh;
   // legs and feet (by the stride), or a robe to the ground
-  if(cut==null&&style==='kick'&&atk>=0&&!o.robe)drawKick(set,Lc,ly,atk);// (a kick: the front leg out, combat.js FISTS)
+  if(cut==null&&fb&&!o.robe){if(style==='kick')drawKick(set,Lc,ly,atk);else for(const [x,y,c] of FIST_FEET[FIST_STANCE[style][atk]])set(x,ly+y,Lc[c])}// (bare hands: a fighter's stance, a kick's leg out)
   else if(cut==null){if(o.robe){for(let x=4;x<=9;x++)set(x,ly,x<6?Lc.b:x<8?Lc.c:Lc.d);set(5,ly+1,Lc.d);set(8,ly+1,Lc.d)}
     else{const s=run?STRIDE_RUN[walk-4]:climb?STRIDE_CLIMB[walk-8]:desc?STRIDE_DESC[walk-12]:STRIDE[walk<0?2:walk],k=climb&&walk&1?1:0;/* (standing or breathing: the standing stride; climbing, the front knee up: k) */
       set(s[0],ly,Lc.L);set(s[0]+1,ly,Lc.L);set(s[1],ly-k,Lc.L);set(s[1]+1,ly-k,Lc.M);set(s[2],ly+1,Lc.F);set(s[3],ly+1-k,Lc.F)}}
@@ -178,7 +180,7 @@ function drawFigure(g,o,ox,oy,walk,style,atk,cut){
   if(o.shield&&o.guardUp){const C=pal(o.shield),Tm=pal(o.team),y0=o.guardUp==='low'?8:5,y1=o.guardUp==='low'?13-sh:11-sh;for(let y=y0;y<=y1;y++){set(11,y,y===y0?C[0]:C[2]);set(12,y,y===y0?C[0]:C[1]);set(13,y,y===y1?C[3]:C[2])}const ym=y0+3;set(12,ym-1,Tm[1]);set(12,ym,Tm[1]);set(11,ym,Tm[2]);set(13,ym,Tm[2])}
   else if(o.shield){const C=pal(o.shield),Tm=pal(o.team);for(let y=8;y<=11-sh;y++){set(2,y,C[1]);set(3,y,y===8?C[0]:C[2])}set(2,9,Tm[1]);set(2,10-sh,Tm[2]);set(3,12-sh,C[3]);set(2,12-sh,C[2])}
   drawWeapon(g,o,ox,oy+bob,style,atk,sh);
-  if(!o.weapon&&(FIST_STYLES.includes(style)||o.guardUp&&!o.shield))drawFists(g,o,ox,oy+bob,o.guardUp&&!FIST_STYLES.includes(style)?'guard':style,atk,sh);
+  if(!o.weapon&&(FIST_STYLES.includes(style)||o.guardUp&&!o.shield))drawFists(g,o,ox,oy+bob,o.guardUp&&!FIST_STYLES.includes(style)?'guard':style,atk,sh,fsx);
   return[ox+11,oy+bob+10-sh];// (the weapon hand: weapons.js holds a weapon there)
 }
 /* bare hands (combat.js FISTS): the front arm (its sleeve a, the fist f, a knuckle k, the blow's flash w) in each frame of a jab,
@@ -189,11 +191,18 @@ const FIST_ARMS={jab:[[[11,8,'a'],[11,7,'f'],[12,7,'k']],[[11,8,'a'],[12,8,'a'],
   kick:[[[11,8,'a'],[12,7,'f']],[[11,8,'a'],[12,7,'f']],[[11,8,'a'],[12,7,'f']]],
   grapple:[[[11,8,'a'],[12,8,'a'],[13,8,'f'],[11,10,'a'],[12,10,'a'],[13,10,'f']],[[11,7,'a'],[12,6,'a'],[13,5,'f'],[11,9,'a'],[12,8,'a'],[13,7,'f']],[[11,9,'a'],[12,10,'a'],[13,11,'f'],[11,11,'a'],[12,12,'f']]],
   guard:[[[11,8,'a'],[11,7,'f'],[12,6,'f'],[10,6,'k']]]};
+/* the body in each frame of a blow, [head, shoulders, chest] px forward (− back): a jab drawn back then thrown from the shoulder;
+   a cross turning the hips and shoulders through, the rear heel up (toe); a kick leaning back to balance the leg; a grapple
+   reaching in, rearing back to lift, bending over the throw. Feet: square, a fighter's stance (the lead foot forward, the rear
+   back); toe, the rear heel lifted as the hips turn */
+const FIST_BODY={jab:[[-1,-1,0],[1,1,0],[0,0,0]],hook:[[-1,-1,-1],[2,1,1],[1,1,0]],kick:[[-1,-1,0],[-2,-2,-1],[-1,-1,0]],grapple:[[1,1,0],[-1,-1,0],[2,2,1]]};
+const FIST_FEET={square:[[4,0,'L'],[5,0,'L'],[3,1,'F'],[4,1,'F'],[9,0,'L'],[10,0,'M'],[10,1,'F'],[11,1,'F']],toe:[[5,0,'L'],[6,0,'L'],[6,1,'F'],[9,0,'L'],[10,0,'M'],[10,1,'F'],[11,1,'F']]};
+const FIST_STANCE={jab:['square','square','square'],hook:['square','toe','toe'],grapple:['square','square','toe']};
 // (the kick's legs: the back one planted, the front one chambered, driven out at the hip, drawn back)
 const KICK_LEGS=[[[8,-1,'L'],[9,-1,'L'],[10,-1,'L'],[10,0,'M'],[11,0,'F']],[[8,-1,'L'],[9,-1,'L'],[10,-1,'L'],[11,-2,'M'],[12,-2,'M'],[13,-2,'F'],[14,-2,'F']],[[8,0,'L'],[9,0,'L'],[10,0,'M'],[11,1,'F']]];
 function drawKick(set,Lc,ly,atk){set(5,ly,Lc.L);set(6,ly,Lc.M);set(5,ly+1,Lc.F);set(6,ly+1,Lc.F);for(const [x,y,c] of KICK_LEGS[atk])set(x,ly+y,Lc[c])}
-function drawFists(g,o,ox,oy,style,atk,sh){const S=pal(o.skin),A=pal(o.outer),F=FIST_ARMS[style];if(!F)return;
-  for(const [x,y,c] of F[Math.max(0,Math.min(F.length-1,atk))])pset(g,ox+x,oy+y-(y>=9?sh:0),c==='a'?A[2]:c==='f'?S[1]:c==='k'?S[2]:'#ffffff')}
+function drawFists(g,o,ox,oy,style,atk,sh,fsx=()=>0){const S=pal(o.skin),A=pal(o.outer),F=FIST_ARMS[style];if(!F)return;
+  for(const [x,y,c] of F[Math.max(0,Math.min(F.length-1,atk))])pset(g,ox+x+fsx(y),oy+y-(y>=9?sh:0),c==='a'?A[2]:c==='f'?S[1]:c==='k'?S[2]:'#ffffff')}
 // the weapon in its right hand: upright at rest; in a blow, swung from the hand at the frame's angle (as the old figures did)
 const WPN={sword:[6,'steel','guard'],great:[9,'steel','guard'],dagger:[4,'steel','guard'],axe:[7,'wood','axe'],bigaxe:[9,'wood','bigaxe'],hammer:[7,'wood','hammer'],
   spear:[12,'wood','tip'],pike:[15,'wood','tip'],javelin:[10,'wood','tip'],lance:[16,'wood','pennant'],
