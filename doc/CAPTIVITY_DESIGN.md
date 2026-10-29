@@ -73,7 +73,7 @@ Held in the captor's holding (a lord's castle dungeon) or camp (a cage).
   - wait, for the ransom offer to come down or your realm to act;
   - try to escape (Agility, Slippery; a failure means harder guarding, or a beating that costs health);
   - bribe a guard (with gold hidden on you);
-  - talk with the other prisoners.
+  - talk with the other prisoners, when anyone else is held there (an empty prison or a cage of no prison: no one to talk with).
 - **Days pass in the world** while you sit. Your companions who got away may try a **rescue** (a quest of their own).
 - **Later** (the owner: "more game mechanics related to this, like escape from prison"): a walkable prison scene (the scene system), guards' rounds, a breakout.
 

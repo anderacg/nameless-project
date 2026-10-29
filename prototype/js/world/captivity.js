@@ -114,16 +114,19 @@ class Captivity{
   static bribe(q){const X=CAPTIVITY.prison.bribe;return{cost:Math.round((X.base+q.guard*X.guard)*(this.prisonOf(this.held)?.bribe||1)/5)*5,ch:clamp(X.ch-q.guard*X.step,.05,.9)}}
   // (no break-out in chains (after break.fails tries), nor too hurt (under break.hurt of your health: a day in the cage heals heal))
   static breakWhy(q){const X=CAPTIVITY.prison.break;return (q.fails||0)>=X.fails?'They keep you in chains now':P.hp<vitals()[0]*X.hurt?'Too hurt: rest a few days first':''}
+  // (the others held where you are (world/prisons.js): none in a cage of no prison's, or an empty one: no one to talk with; the
+  // owner, 2026-10-29)
+  static fellows(c){return c?.at?Prisons.of(Prisons.keyOf(c.at)).reduce((n,r)=>n+(r.k==='men'?r.n:1),0):0}
   static cell(){const c=this.held,q=c.prison,X=CAPTIVITY.prison,br=this.breakChance(q),bb=this.bribe(q),pk=this.prisonOf(c),realm=this.realmPays(c)&&FACS[P.fac].n;G.mode='dialog';
     const btns=[dlgBtn('held-break',null,'Try to break out · '+insight(['you cannot tell your odds',br>=.3?'you might make it':'it is a long chance','about '+Math.round(br*100)+'%'],'know the odds'),this.breakWhy(q),true),
       dlgBtn('held-bribe',null,'Bribe a guard · '+bb.cost+'g',q.hidden<bb.cost?'You hid '+q.hidden+'g':''),
-      dlgBtn('held-talk',null,'Talk with the other prisoners',q.talked?'Not again today':''),
+      dlgBtn('held-talk',null,'Talk with the other prisoners',!this.fellows(c)?'No one else is held here':q.talked?'Not again today':''),
       dlgBtn('held-pay',null,(c.war?'Pay the war price · ':'Pay what they ask now · ')+q.offer+'g',P.gold<q.offer?'You have '+P.gold+'g':'')];
     showPanel('<h2>'+(pk?pk.title:'In their cage')+'</h2><p class="muted">Day '+q.day+(c.war?' · a prisoner of war':' of about '+this.limit(c))+' · held by '+c.name+' · '+['they watch you as they watch anyone','they watch you closely','they never take their eyes off you'][Math.min(2,q.guard)]+' · '+q.hidden+'g hidden on you</p><p>'+q.event+'</p>'+
       '<div class="btns cv-choices">'+btns.join('')+'</div><p class="muted">Each choice but talking takes the day. '+(c.war?'No prisoner of war is let go while the war lasts: peace frees you'+(realm?'; the '+realm+' may pay your war price':'')+(this.paroleChance(c)?'; '+c.name+' might take your word':'')+'.':'Their ransom comes down a little each day'+(realm?'; the '+realm+' may pay for you':'')+'.')+'</p>'+nav(null,['held-wait',null,'Wait a day']))}
   static cellAct(a){const c=this.held,q=c.prison,X=CAPTIVITY.prison;
     if(a==='held-pay'){if(P.gold<q.offer)return;P.gold-=q.offer;return this.free('light','You pay '+q.offer+' gold, and they let you out.',q.offer)}
-    if(a==='held-talk'){if(q.talked)return;q.talked=true;train('pers',1);q.event=this.news()||'The others have nothing new to tell.';return this.cell()}
+    if(a==='held-talk'){if(q.talked||!this.fellows(c))return;q.talked=true;train('pers',1);q.event=this.news()||'The others have nothing new to tell.';return this.cell()}
     if(a==='held-break'){if(this.breakWhy(q))return;if(Math.random()<this.breakChance(q))return this.free('broke','In the dark you slip your bonds and get over the wall.');
       q.guard++;q.fails=(q.fails||0)+1;P.hp=Math.max(1,Math.round(P.hp-vitals()[0]*X.beat*(this.prisonOf(c)?.beat||1)));q.help=0;return this.day('They catch you at the wall and beat you for it. '+(q.fails>=X.break.fails?'They put you in chains.':'They watch you closer now.'))}
     if(a==='held-bribe'){const b=this.bribe(q);if(q.hidden<b.cost)return;q.hidden-=b.cost;if(Math.random()<b.ch)return this.free('broke','The guard takes your '+b.cost+' gold and leaves the door unbarred.');
