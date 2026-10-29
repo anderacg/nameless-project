@@ -1,0 +1,1246 @@
+{
+  "style_reference": "hum_sword.png",
+  "count": 101,
+  "portraits": [
+    {
+      "id": "militia",
+      "name": "Militia",
+      "race": "human",
+      "tags": [
+        "human"
+      ],
+      "file": "militia.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "97be0bb0b9f68072a91e971c807a9ea004ee58551791459344dbe9e9c94ba4de"
+    },
+    {
+      "id": "spearman",
+      "name": "Spearman",
+      "race": "human",
+      "tags": [
+        "human"
+      ],
+      "file": "spearman.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "d96d86bb48918f9e605bf228563a824a35ce3ac3c6db0b6ab518dc07bbea65fe"
+    },
+    {
+      "id": "archer",
+      "name": "Archer",
+      "race": "human",
+      "tags": [
+        "human"
+      ],
+      "file": "archer.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "865507e5ffc9329c703184d404324036fb6cb6669bb0b9e5546f07a9115cd083"
+    },
+    {
+      "id": "ranger",
+      "name": "Ranger",
+      "race": "human",
+      "tags": [
+        "human"
+      ],
+      "file": "ranger.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "8398ebd6b6e51fb646edef1849f2318fb185790ac01aa146d95d3603dbba9a6a"
+    },
+    {
+      "id": "horse",
+      "name": "Horseman",
+      "race": "human",
+      "tags": [
+        "human"
+      ],
+      "file": "horse.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "99c2ed4e904d7f289735a382c6f70cbda77440227a59c6499ab2577647c4d1ca"
+    },
+    {
+      "id": "chief",
+      "name": "Chieftain",
+      "race": "human",
+      "tags": [
+        "human"
+      ],
+      "file": "chief.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "d015bf17b84926e6b26f0643ff9a90b33bd7a2a6bca963bc6ec40aa505ca1ca1"
+    },
+    {
+      "id": "brann",
+      "name": "Brann",
+      "race": "human",
+      "tags": [
+        "human",
+        "companion"
+      ],
+      "file": "brann.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "4064e505b653383c22a99d8c74475e162179d7e97a909f36a53f34459e68700c"
+    },
+    {
+      "id": "elske",
+      "name": "Elske",
+      "race": "human",
+      "tags": [
+        "human",
+        "companion"
+      ],
+      "file": "elske.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "4f0933f56a48228d5cfd73fa7858755bf5ac1b25e4340c9da43222172c1bc81c"
+    },
+    {
+      "id": "tavi",
+      "name": "Tavi",
+      "race": "human",
+      "tags": [
+        "human",
+        "companion"
+      ],
+      "file": "tavi.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "a23092144641022ef22074582ca44804e4057cfee5a5ba7564054eebaead3f19"
+    },
+    {
+      "id": "hum_levy",
+      "name": "Levy",
+      "race": "human",
+      "tags": [
+        "human"
+      ],
+      "file": "hum_levy.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "1ddd8343afc0c66b3bc9df55a2a5380231d4a63ea21953f4b65eb0a7052b2465"
+    },
+    {
+      "id": "hum_spear",
+      "name": "Man-at-Arms",
+      "race": "human",
+      "tags": [
+        "human"
+      ],
+      "file": "hum_spear.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "eef09930c7eccbce806ba55ee585ff517acd3c3d635849a5e8fcf0a37fad0c57"
+    },
+    {
+      "id": "hum_guard",
+      "name": "Shield Guard",
+      "race": "human",
+      "tags": [
+        "human"
+      ],
+      "file": "hum_guard.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "2a2578b75480eb1b2354bc4cfd37076b8dd03798c77efe34607b5cab9b5e5992"
+    },
+    {
+      "id": "hum_pike",
+      "name": "Pikeman",
+      "race": "human",
+      "tags": [
+        "human"
+      ],
+      "file": "hum_pike.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "7cd8c6517a4f7e998fce172078897c87fab21b913fe09bb1b5b9265fa75bc314"
+    },
+    {
+      "id": "hum_bow",
+      "name": "Bowman",
+      "race": "human",
+      "tags": [
+        "human"
+      ],
+      "file": "hum_bow.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "ff91c8700370074da0b0742a303f01556412ffac59be9a3aae285a1ceb7d8949"
+    },
+    {
+      "id": "hum_long",
+      "name": "Longbowman",
+      "race": "human",
+      "tags": [
+        "human"
+      ],
+      "file": "hum_long.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "0f00aee6c2adc243687d0d3a483652735259d53139b9736ce2daeec989691766"
+    },
+    {
+      "id": "hum_squire",
+      "name": "Squire",
+      "race": "human",
+      "tags": [
+        "human"
+      ],
+      "file": "hum_squire.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "bd8a3b8264bbd5b809b3ead1183441bf35410b27ac876aee54dec16cfd33f9df"
+    },
+    {
+      "id": "hum_knight",
+      "name": "Knight",
+      "race": "human",
+      "tags": [
+        "human"
+      ],
+      "file": "hum_knight.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "35c19fe922b2f48881ab03814ef22b29ae8ce24e7c76b0074e7635ce9b1f72da"
+    },
+    {
+      "id": "dw_clan",
+      "name": "Dwarf Clansman",
+      "race": "dwarf",
+      "tags": [
+        "dwarf"
+      ],
+      "file": "dw_clan.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "51d44236b336bf739de64cb4deb1debc8380f78b6d9a2292cc740758cfcc44b2"
+    },
+    {
+      "id": "dw_axe",
+      "name": "Dwarf Axeman",
+      "race": "dwarf",
+      "tags": [
+        "dwarf"
+      ],
+      "file": "dw_axe.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "8f5099d38474c5cf40214c433b9b81c3d2cf9dd2f731545a543971d6031432f2"
+    },
+    {
+      "id": "dw_iron",
+      "name": "Ironbreaker",
+      "race": "dwarf",
+      "tags": [
+        "dwarf"
+      ],
+      "file": "dw_iron.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "e6dd02baf0c9b276f459f7bc29bab316f3d2449b26d8728d28d42d4b53cfcf64"
+    },
+    {
+      "id": "dw_berserk",
+      "name": "Berserker",
+      "race": "dwarf",
+      "tags": [
+        "dwarf"
+      ],
+      "file": "dw_berserk.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "bfe31baf553dba3d6ba3bd86ee10771f2d295e69f6c1580d8df78305757eb396"
+    },
+    {
+      "id": "dw_sling",
+      "name": "Dwarf Slinger",
+      "race": "dwarf",
+      "tags": [
+        "dwarf"
+      ],
+      "file": "dw_sling.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "98206ef4eefa5fb2a49dee422adf499d7e037b08fcdc1b88f86feb944c28c97d"
+    },
+    {
+      "id": "dw_xbow",
+      "name": "Crossbowman",
+      "race": "dwarf",
+      "tags": [
+        "dwarf"
+      ],
+      "file": "dw_xbow.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "52a686b0db97c753cceb78e7fdc040006d6911fd65f61acb253dbc40cdb9a588"
+    },
+    {
+      "id": "dw_ram",
+      "name": "Ram Rider",
+      "race": "dwarf",
+      "tags": [
+        "dwarf"
+      ],
+      "file": "dw_ram.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "ce2856e7be43756383c382b37173aa74ed4cdd7bfc2d57dba9e8262170ab7166"
+    },
+    {
+      "id": "dw_ramlord",
+      "name": "Ram Knight",
+      "race": "dwarf",
+      "tags": [
+        "dwarf"
+      ],
+      "file": "dw_ramlord.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "d1040e0d56bcf8a2a83c4fc594d068e5551abfdab3c7d9b1b4009946c20da746"
+    },
+    {
+      "id": "elf_glade",
+      "name": "Glade Warden",
+      "race": "elf",
+      "tags": [
+        "elf"
+      ],
+      "file": "elf_glade.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "fcab67817ab19477c09ff3f68da10a3ef9feb487bd71761fea650ee9b18f0de4"
+    },
+    {
+      "id": "elf_dancer",
+      "name": "Wardancer",
+      "race": "elf",
+      "tags": [
+        "elf"
+      ],
+      "file": "elf_dancer.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "a6d8478c79da7805b1295cb3d2e0e3b36caece72b503bf546f6ec7d6e8ad7049"
+    },
+    {
+      "id": "elf_blade",
+      "name": "Bladesinger",
+      "race": "elf",
+      "tags": [
+        "elf"
+      ],
+      "file": "elf_blade.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "79c8f31a488e4678d5b8b6234dbe9128e8f892e4a9293b9584d024f486e6ce35"
+    },
+    {
+      "id": "elf_sentinel",
+      "name": "Sentinel",
+      "race": "elf",
+      "tags": [
+        "elf"
+      ],
+      "file": "elf_sentinel.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "8dfd19bce41338855311e2f8f6a5a58639eb4d832cbdc903f24baec912720b63"
+    },
+    {
+      "id": "elf_archer",
+      "name": "Elf Archer",
+      "race": "elf",
+      "tags": [
+        "elf"
+      ],
+      "file": "elf_archer.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "461f022eb3b8e9fca3174b95015372ff9cdef30e9dabdc44087e4add6f032876"
+    },
+    {
+      "id": "elf_marks",
+      "name": "Elf Marksman",
+      "race": "elf",
+      "tags": [
+        "elf"
+      ],
+      "file": "elf_marks.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "c528caed00c3c9117beab5f4e209a31a2e4cabd296bc4a8080ba60b8f9bd36c0"
+    },
+    {
+      "id": "elf_sharp",
+      "name": "Starshot",
+      "race": "elf",
+      "tags": [
+        "elf"
+      ],
+      "file": "elf_sharp.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "b838bf4219c5127a541ede0db29f53ccdfbe2fdbfc2c6c91598ef73e0433e7bb"
+    },
+    {
+      "id": "elf_hart",
+      "name": "Hart Rider",
+      "race": "elf",
+      "tags": [
+        "elf"
+      ],
+      "file": "elf_hart.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "0a7e3dcdc61fb21922bcefdbdfb9d14343d04bae7101f5b2ef6683399cf334b4"
+    },
+    {
+      "id": "elf_lance",
+      "name": "Wild Lancer",
+      "race": "elf",
+      "tags": [
+        "elf"
+      ],
+      "file": "elf_lance.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "57d6db0e79074d7ba49789023c1d3aafed62243ceab19333b9461486d35d51a4"
+    },
+    {
+      "id": "orc_grunt",
+      "name": "Orc Grunt",
+      "race": "orc",
+      "tags": [
+        "orc"
+      ],
+      "file": "orc_grunt.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "60339e1c83ade9edf3dd876d3cbae373bb1ab59a1616a1fc34ccc5706f90936b"
+    },
+    {
+      "id": "orc_brute",
+      "name": "Orc Brute",
+      "race": "orc",
+      "tags": [
+        "orc"
+      ],
+      "file": "orc_brute.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "a798838857cc539eb51a4b484c70bb20622d8f30615026789f0c7c0232a326ab"
+    },
+    {
+      "id": "orc_ironjaw",
+      "name": "Ironjaw",
+      "race": "orc",
+      "tags": [
+        "orc"
+      ],
+      "file": "orc_ironjaw.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "031e18ec944cca8a3d5d213cf02b3111bfa598aedd910d3e31bb67479b847b17"
+    },
+    {
+      "id": "orc_reaver",
+      "name": "Bloodreaver",
+      "race": "orc",
+      "tags": [
+        "orc"
+      ],
+      "file": "orc_reaver.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "e517bb78c71b1fb346ed75ee35b6ea28da2435d6ada1807f2523d56e022bdb04"
+    },
+    {
+      "id": "orc_thrower",
+      "name": "Spear Thrower",
+      "race": "orc",
+      "tags": [
+        "orc"
+      ],
+      "file": "orc_thrower.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "7fbd743e2fee55afa3f6107a6fe2aadb7ce585394bc286533528bb427f219b1d"
+    },
+    {
+      "id": "orc_hunter",
+      "name": "Orc Hunter",
+      "race": "orc",
+      "tags": [
+        "orc"
+      ],
+      "file": "orc_hunter.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "b696398deb14a3cb686e9a441e62f6852b80c895af28dcd5b67076396b9b41bf"
+    },
+    {
+      "id": "orc_wolf",
+      "name": "Wolf Rider",
+      "race": "orc",
+      "tags": [
+        "orc"
+      ],
+      "file": "orc_wolf.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "fcff24f990317b9d0222fe9d2f17efe3624320c7584e00d5c503698b17232c26"
+    },
+    {
+      "id": "orc_warg",
+      "name": "Warg Raider",
+      "race": "orc",
+      "tags": [
+        "orc"
+      ],
+      "file": "orc_warg.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "4279dc9f7aea7557f645f8c65ab1172bfe0c4411a6d200838b087cef0d339e16"
+    },
+    {
+      "id": "hum_foot",
+      "name": "Footman",
+      "race": "human",
+      "tags": [
+        "human"
+      ],
+      "file": "hum_foot.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "f7d7bbef8d4bff476d6c01702cb7e6ea242ba758d0326f1ec8c20ce60f32aa70"
+    },
+    {
+      "id": "hum_sword",
+      "name": "Swordsman",
+      "race": "human",
+      "tags": [
+        "human"
+      ],
+      "file": "hum_sword.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "9963698f812dc7bda893f59f05ad0108b079a27698585bc6a31898344960bb02"
+    },
+    {
+      "id": "hum_sergeant",
+      "name": "Sword Sergeant",
+      "race": "human",
+      "tags": [
+        "human"
+      ],
+      "file": "hum_sergeant.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "3c7295901beb597eb033fe7eafae68f6291ea77825dee8c4a55cbd295eee112e"
+    },
+    {
+      "id": "hum_champ",
+      "name": "Greatsword",
+      "race": "human",
+      "tags": [
+        "human"
+      ],
+      "file": "hum_champ.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "d9616c89dee3879ff7ed98e3e04f9bd5cc46d33fb358efccdb09b1a690776c41"
+    },
+    {
+      "id": "hum_xbow",
+      "name": "Arbalester",
+      "race": "human",
+      "tags": [
+        "human"
+      ],
+      "file": "hum_xbow.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "d26566f54e2859c7525660e14cbf75ea4c1b779b325dcdd1ca9feadae07d8d72"
+    },
+    {
+      "id": "hum_hbow",
+      "name": "Mounted Archer",
+      "race": "human",
+      "tags": [
+        "human"
+      ],
+      "file": "hum_hbow.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "f0760ab354cb5d9aed5d21faec8d71302b33d52266bbe65aaf7761cd9b1561ad"
+    },
+    {
+      "id": "dw_shield",
+      "name": "Shieldbearer",
+      "race": "dwarf",
+      "tags": [
+        "dwarf"
+      ],
+      "file": "dw_shield.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "0085ead7d9b462dd67a84d37fda651f5e42a4a21dcfe4fae46d65363071fd8db"
+    },
+    {
+      "id": "dw_hammer",
+      "name": "Hammerer",
+      "race": "dwarf",
+      "tags": [
+        "dwarf"
+      ],
+      "file": "dw_hammer.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "cb52015c3cb84cbf49b4e275d469f12f8b06d9ba330dc91928cc7035a0d4b19a"
+    },
+    {
+      "id": "dw_longbeard",
+      "name": "Longbeard",
+      "race": "dwarf",
+      "tags": [
+        "dwarf"
+      ],
+      "file": "dw_longbeard.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "efd8519fb64d1734786e335dcfb846453f9990e87e7bb44c7b087b4ed4441f8c"
+    },
+    {
+      "id": "dw_thane",
+      "name": "Thunder Thane",
+      "race": "dwarf",
+      "tags": [
+        "dwarf"
+      ],
+      "file": "dw_thane.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "11730137b18aa7484baa2ff026be6c1994d0719f9923d730c04f87cabf3f1093"
+    },
+    {
+      "id": "elf_spear",
+      "name": "Spearguard",
+      "race": "elf",
+      "tags": [
+        "elf"
+      ],
+      "file": "elf_spear.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "7a6d1466fdb06905f6a7062d3de60f491d2da519443f51089e489cde63795cc1"
+    },
+    {
+      "id": "elf_eternal",
+      "name": "Eternal Guard",
+      "race": "elf",
+      "tags": [
+        "elf"
+      ],
+      "file": "elf_eternal.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "bebb7beebcc1b578a52ed86019aea3c30ee8d4c58c3275e571e60dd63a5868b4"
+    },
+    {
+      "id": "elf_phoenix",
+      "name": "Phoenix Guard",
+      "race": "elf",
+      "tags": [
+        "elf"
+      ],
+      "file": "elf_phoenix.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "c4887a8899f1a1ddb1f2e21e2b76196fe2b9d432c20048168e1d70022e04183b"
+    },
+    {
+      "id": "elf_hartbow",
+      "name": "Hart Archer",
+      "race": "elf",
+      "tags": [
+        "elf"
+      ],
+      "file": "elf_hartbow.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "1409de5b6a10d422db72a1cfa062c86259bea515fda9053ed036201358418ff8"
+    },
+    {
+      "id": "orc_shield",
+      "name": "Shield Orc",
+      "race": "orc",
+      "tags": [
+        "orc"
+      ],
+      "file": "orc_shield.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "aa724f725c9f065d24dbca4cfd5f8079a5e9f0f2fca99cc31dcd4d007e9e9e8b"
+    },
+    {
+      "id": "orc_warrior",
+      "name": "Orc Warrior",
+      "race": "orc",
+      "tags": [
+        "orc"
+      ],
+      "file": "orc_warrior.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "951d8978e30e17052e90a1f6fb7fe50c5321540bff1cbfe8e79fed26722e640e"
+    },
+    {
+      "id": "orc_black",
+      "name": "Black Orc",
+      "race": "orc",
+      "tags": [
+        "orc"
+      ],
+      "file": "orc_black.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "f8486ee128107834fc9b0b35671d57ef78d4495469171803b492491c9899c044"
+    },
+    {
+      "id": "orc_wolfbow",
+      "name": "Wolf Archer",
+      "race": "orc",
+      "tags": [
+        "orc"
+      ],
+      "file": "orc_wolfbow.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "8931ccbada9ad599e49e1cf4255b983475d578a3705021b01d41a11ea4817f22"
+    },
+    {
+      "id": "hum_mage",
+      "name": "Battle Mage",
+      "race": "human",
+      "tags": [
+        "human"
+      ],
+      "file": "hum_mage.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "361bbbd4f2cc4fd3a75576b26bcc84e14e6e4d1e9559aae5113fb3e56fe4c3e3"
+    },
+    {
+      "id": "dw_rune",
+      "name": "Runepriest",
+      "race": "dwarf",
+      "tags": [
+        "dwarf"
+      ],
+      "file": "dw_rune.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "84262921b8449aeb5552e166bf2c0e00977505dfb9b7efb4d2ed821a9b3000af"
+    },
+    {
+      "id": "elf_weaver",
+      "name": "Spellweaver",
+      "race": "elf",
+      "tags": [
+        "elf"
+      ],
+      "file": "elf_weaver.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "2bfbda5a928347f9459748a2b7a59c459a5d3ade9d3f5bbc15ea0ccee0aef2e0"
+    },
+    {
+      "id": "orc_shaman",
+      "name": "Orc Shaman",
+      "race": "orc",
+      "tags": [
+        "orc"
+      ],
+      "file": "orc_shaman.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "7674c93f27b6d0978f6c2a5b48bbc762e02570b07fb4ab301b8834d62aca6557"
+    },
+    {
+      "id": "hedge",
+      "name": "Hedge Witch",
+      "race": "human",
+      "tags": [
+        "human"
+      ],
+      "file": "hedge.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "d9b2b135e45faedb0fbcc54056a0fc400f6341c3a7f1e2c799f9ce624e09bd1e"
+    },
+    {
+      "id": "slime",
+      "name": "Bog Slime",
+      "race": "creature",
+      "tags": [
+        "creature"
+      ],
+      "file": "slime.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "0e442fe76b0139a16e17af7d0f52771d124b2fa825b35f289e219b645fd54770"
+    },
+    {
+      "id": "wolf",
+      "name": "Frost Wolf",
+      "race": "creature",
+      "tags": [
+        "creature"
+      ],
+      "file": "wolf.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "ca19dba362dc9959dcbfe8a26596822c8a595a5b387678066097f1c7c81fc1e2"
+    },
+    {
+      "id": "scorpion",
+      "name": "Giant Scorpion",
+      "race": "creature",
+      "tags": [
+        "creature"
+      ],
+      "file": "scorpion.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "3e41daece2eed26c0b56ad5cf7a30417a0d02f823c96bafd54be7a70c5238004"
+    },
+    {
+      "id": "dragon",
+      "name": "Dragon",
+      "race": "creature",
+      "tags": [
+        "creature"
+      ],
+      "file": "dragon.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "dabd4e145ffaf00d97878651452451bb2fc234d92a7b27466ddda30c82d48999"
+    },
+    {
+      "id": "hum_farmer",
+      "name": "Farmer",
+      "race": "human",
+      "tags": [
+        "human",
+        "worker"
+      ],
+      "file": "hum_farmer.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "c633e5ff2ebfcbc88cf0a7768500a4903f4c905d0b39b366cdb646d5870ecae3"
+    },
+    {
+      "id": "hum_herder",
+      "name": "Herder",
+      "race": "human",
+      "tags": [
+        "human",
+        "worker"
+      ],
+      "file": "hum_herder.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "cacfac839f081b1d08e7fae253d2528a17ad85655b1c9da8d186e2644941269d"
+    },
+    {
+      "id": "hum_woodcutter",
+      "name": "Woodcutter",
+      "race": "human",
+      "tags": [
+        "human",
+        "worker"
+      ],
+      "file": "hum_woodcutter.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "7648225cb09f9a5276459ab8c7b22586a21e27b29d06bb51019d968b79741d07"
+    },
+    {
+      "id": "hum_miner",
+      "name": "Miner",
+      "race": "human",
+      "tags": [
+        "human",
+        "worker"
+      ],
+      "file": "hum_miner.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "c00d637ee9a84a126aa42e75f863707d875004fd48cd913989c329cb1e0446a9"
+    },
+    {
+      "id": "hum_fisher",
+      "name": "Fisher",
+      "race": "human",
+      "tags": [
+        "human",
+        "worker"
+      ],
+      "file": "hum_fisher.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "c4516356d9b62b211cbcd950f17a34e9a510efee88fbc316b84b7f38a8e18609"
+    },
+    {
+      "id": "hum_quarryman",
+      "name": "Quarryman",
+      "race": "human",
+      "tags": [
+        "human",
+        "worker"
+      ],
+      "file": "hum_quarryman.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "54f75efc50dde986da6d78f6c996f3ee85631f0594ea7469ebd6cc49fac319f9"
+    },
+    {
+      "id": "dw_farmer",
+      "name": "Farmer",
+      "race": "dwarf",
+      "tags": [
+        "dwarf",
+        "worker"
+      ],
+      "file": "dw_farmer.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "70e9c7f3faa67e242e868a1c6baa82e065f2d21063f32a0e705c010797f292ad"
+    },
+    {
+      "id": "dw_herder",
+      "name": "Herder",
+      "race": "dwarf",
+      "tags": [
+        "dwarf",
+        "worker"
+      ],
+      "file": "dw_herder.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "b928364407274a04c19f77d260ea7d6dc68b560404caf43955f95b7e78ebde20"
+    },
+    {
+      "id": "dw_woodcutter",
+      "name": "Woodcutter",
+      "race": "dwarf",
+      "tags": [
+        "dwarf",
+        "worker"
+      ],
+      "file": "dw_woodcutter.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "47e77c6e4d297e033d1cfa9527e4e3581ee8b68266d8952166caa20de2d9e146"
+    },
+    {
+      "id": "dw_miner",
+      "name": "Miner",
+      "race": "dwarf",
+      "tags": [
+        "dwarf",
+        "worker"
+      ],
+      "file": "dw_miner.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "09e45b815e69696d5bf87c9dfb46f6731b7ba3104bd3e5ea5fb483e621d934c9"
+    },
+    {
+      "id": "dw_fisher",
+      "name": "Fisher",
+      "race": "dwarf",
+      "tags": [
+        "dwarf",
+        "worker"
+      ],
+      "file": "dw_fisher.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "58723dd00d991a3e35a4f2a3d3e58c68a1dd08f84511045c1f84ab5e18a4fb4f"
+    },
+    {
+      "id": "dw_quarryman",
+      "name": "Quarryman",
+      "race": "dwarf",
+      "tags": [
+        "dwarf",
+        "worker"
+      ],
+      "file": "dw_quarryman.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "6bbe940b44bb188db6b1e251ea98f72e01ddaba0ab2e855b713ea6a71760b833"
+    },
+    {
+      "id": "elf_farmer",
+      "name": "Farmer",
+      "race": "elf",
+      "tags": [
+        "elf",
+        "worker"
+      ],
+      "file": "elf_farmer.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "c4f8ea0e65c61ac1ff20f223dc25f660fb5d25aa854e98387a8a7d58e92f6c82"
+    },
+    {
+      "id": "elf_herder",
+      "name": "Herder",
+      "race": "elf",
+      "tags": [
+        "elf",
+        "worker"
+      ],
+      "file": "elf_herder.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "418065e8e204ce0598a8215658cc5a45536aa21ebd702046041b6f54f9e6bb86"
+    },
+    {
+      "id": "elf_woodcutter",
+      "name": "Woodcutter",
+      "race": "elf",
+      "tags": [
+        "elf",
+        "worker"
+      ],
+      "file": "elf_woodcutter.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "f64e09ff8e65e27d7eb54f86533c4a69fcc11472186e98bf68c78d9589f42ad3"
+    },
+    {
+      "id": "elf_miner",
+      "name": "Miner",
+      "race": "elf",
+      "tags": [
+        "elf",
+        "worker"
+      ],
+      "file": "elf_miner.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "b0d7069c98567de8562e9ba493a036f3c1158817ecae60b86a06c58f50ea4b5f"
+    },
+    {
+      "id": "elf_fisher",
+      "name": "Fisher",
+      "race": "elf",
+      "tags": [
+        "elf",
+        "worker"
+      ],
+      "file": "elf_fisher.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "f808c9ff896e4207e72acac191fd9a41d3ed33d65071b56634310606453608c1"
+    },
+    {
+      "id": "elf_quarryman",
+      "name": "Quarryman",
+      "race": "elf",
+      "tags": [
+        "elf",
+        "worker"
+      ],
+      "file": "elf_quarryman.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "bd9fa853e9ccf29c6978cd34d4741c60d371d7f80b01ef91c2ccb0204ac7605c"
+    },
+    {
+      "id": "orc_farmer",
+      "name": "Farmer",
+      "race": "orc",
+      "tags": [
+        "orc",
+        "worker"
+      ],
+      "file": "orc_farmer.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "29470f3cdc68ca19c0508819c03e280cc04bdc8a0877bd75b4be6745e14b5cda"
+    },
+    {
+      "id": "orc_herder",
+      "name": "Herder",
+      "race": "orc",
+      "tags": [
+        "orc",
+        "worker"
+      ],
+      "file": "orc_herder.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "7286de75d949c9c3abf10256db33885d1b42b4c5918d89a54032a8e2e9f4bb5e"
+    },
+    {
+      "id": "orc_woodcutter",
+      "name": "Woodcutter",
+      "race": "orc",
+      "tags": [
+        "orc",
+        "worker"
+      ],
+      "file": "orc_woodcutter.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "d10e2e1e47c4fedfe7948eb686c0d5c6571c8b0a905b053826b0ff52ee47666c"
+    },
+    {
+      "id": "orc_miner",
+      "name": "Miner",
+      "race": "orc",
+      "tags": [
+        "orc",
+        "worker"
+      ],
+      "file": "orc_miner.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "f27be1e8545e798f7bb4164e5a2eda7731fc6ee545d07f6828e9f2ee82176c2a"
+    },
+    {
+      "id": "orc_fisher",
+      "name": "Fisher",
+      "race": "orc",
+      "tags": [
+        "orc",
+        "worker"
+      ],
+      "file": "orc_fisher.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "95e9ea9d04ffb4f09c0e95b614f7971dfa95d98ecd5ec1ca5707c75f0fc30b4f"
+    },
+    {
+      "id": "orc_quarryman",
+      "name": "Quarryman",
+      "race": "orc",
+      "tags": [
+        "orc",
+        "worker"
+      ],
+      "file": "orc_quarryman.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "90ac45c50b9495b0f703ce200dfe65ab4251d44880c98f71380df54fee1db5ed"
+    },
+    {
+      "id": "boar",
+      "name": "Dire Boar",
+      "race": "creature",
+      "tags": [
+        "creature"
+      ],
+      "file": "boar.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "ab52d304fce45a3a43987bd78393417ae5f82acb6f290a937d2e9d6c088509ab"
+    },
+    {
+      "id": "tiger",
+      "name": "Tiger",
+      "race": "creature",
+      "tags": [
+        "creature"
+      ],
+      "file": "tiger.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "ff6c62d3c7c68e4f3f2eb8ecf6df3c15a68d9ba64dc2e85fea7d6fd3b783b788"
+    },
+    {
+      "id": "bear",
+      "name": "Cave Bear",
+      "race": "creature",
+      "tags": [
+        "creature"
+      ],
+      "file": "bear.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "72f3ba3f92cd19769a9c7d7782e9c27d3c5a168e171b22c592fd203842640723"
+    },
+    {
+      "id": "spider",
+      "name": "Giant Spider",
+      "race": "creature",
+      "tags": [
+        "creature"
+      ],
+      "file": "spider.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "f2bbfffd9d2f50dd4097db8fcb607d30c737fce6833ce96e49c59757af22ebe6"
+    },
+    {
+      "id": "troll",
+      "name": "Troll",
+      "race": "creature",
+      "tags": [
+        "creature"
+      ],
+      "file": "troll.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "1875ca0c184864bb79dd7df20ebbe517ce1e58c6990c767d5042620a95e3412d"
+    },
+    {
+      "id": "wyrm",
+      "name": "Sand Wyrm",
+      "race": "creature",
+      "tags": [
+        "creature"
+      ],
+      "file": "wyrm.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "be94a6d084aab99cc1fe2b7d09bddf7c353e59323f391e3fcf009d8a1d49c131"
+    },
+    {
+      "id": "griffin",
+      "name": "Griffin",
+      "race": "creature",
+      "tags": [
+        "creature"
+      ],
+      "file": "griffin.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "2d2f2e15e8b9cfb6a0447c25f8bcfc81e3b4e6ef40da994de33870d5e2d7a220"
+    },
+    {
+      "id": "ander",
+      "name": "Ander",
+      "race": "human",
+      "tags": [
+        "human",
+        "companion"
+      ],
+      "file": "ander.png",
+      "width": 1254,
+      "height": 1254,
+      "sha256": "93e401b7e114561bb4fbf16f10ab8acc18890155dc4d79ef2be3f6645d656030"
+    }
+  ]
+}
