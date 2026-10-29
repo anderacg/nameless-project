@@ -10,7 +10,7 @@
 // at what is within this share of their range; regroup: cavalry pulls back this far after a charge, recharge: after this long
 // in the melee; attackAt / defendAt: the strength ratios to attack or hold at (hold: an attack goes on down to attackAt-hold, a defence up to defendAt+hold); stall: a standoff turns into an attack after this;
 // lull: no blow struck anywhere for this long (two sides that cannot reach each other), and every group goes in
-const FOE_CMD={think:.5,clash:70,behind:50,outgun:.8,volley:12,screen:20,replan:3,moved:30,flankY:110,flankAt:40,flankMax:8,advance:22,threat:70,reach:.97,regroup:90,recharge:3,attackAt:1.15,hold:.1,defendAt:.85,stall:30,lull:10,patience:6,beaten:.4,broken:30};
+const FOE_CMD={think:.5,clash:70,behind:50,outgun:.8,volley:12,screen:20,replan:3,moved:30,flankY:110,flankAt:40,flankMax:8,advance:22,threat:70,reach:.97,regroup:90,recharge:3,attackAt:1.15,hold:.1,defendAt:.85,stall:30,lull:10,patience:6,beaten:.4,broken:30,hopeless:.15};
 // unit-level morale (each captain's, a group's own resolve): an infantry group under pullAt with a steady one (backAt) beside it
 // steps pullDist back to recover, till backAt or maxRecover s, the nearest steady one free going into the gap; riders under
 // chargeAt start no new charge, standing off cavRecover s at most (short: riders out of the fight get their breath back and come
@@ -120,10 +120,11 @@ const reachOf=s=>s.reach||12;
 function runFor(k,st,T){const X=AI_TACTICS;if(k!=='inf'&&k!=='cav')return CAPT.runAt;
   return st>=X.fresh?(k==='cav'?Infinity:tun(T,X,'runFar')):st>=FATIGUE.tired?CAPT.runAt:st>=FATIGUE.spent?X.runNear:0}
 // beaten / broken: the enemy army falls back (withdraws off its edge) once its strength is under beaten of yours and its
-// formations' shared morale (morale.js BattleResolve), weighted by the men in them, is under broken. Your own army never does on its own.
+// formations' shared morale (morale.js BattleResolve), weighted by the men in them, is under broken; or, whatever its morale, once
+// it is under hopeless of yours (a last few riders who would only circle). Your own army never does on its own.
 function beatenArmy(N,S,T){
   const rs=[...new Set(Object.values(N).flat().flatMap(grpUnits).map(resolveOf).filter(r=>r&&!r.routed&&r.live().length))],n=rs.reduce((a,r)=>a+r.live().length,0);
-  return !!n&&S.ratio<tun(T,FOE_CMD,'beaten')&&rs.reduce((a,r)=>a+r.mor*r.live().length,0)/n<FOE_CMD.broken;
+  return !!n&&(S.ratio<FOE_CMD.hopeless||S.ratio<tun(T,FOE_CMD,'beaten')&&rs.reduce((a,r)=>a+r.mor*r.live().length,0)/n<FOE_CMD.broken);
 }
 // shotFor, shotShare: a group is under fire when this share of its men were hit by a shot in the last shotFor seconds; brace: riders
 // building a charge at it this near (a big beast half that), and it braces; keep: a shield wall or loose order is kept this long at least

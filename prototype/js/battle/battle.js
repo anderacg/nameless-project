@@ -53,14 +53,21 @@ function obstaclePush(u,o,w){
    where he stood when they were gathered, big ones always, gathered again from the next j on once he has been pushed more than
    the pad off; so every pair that could be in reach at its turn is tried, in the same order with the same arithmetic, and
    the pairs left out would have done nothing */
-const JOSTLE={pad:4};
-function jostle(dt){
+/* bodies (the owner, 2026-10-29: "each unit not to collide or collapse to each other"): with on, each man keeps his body's room,
+   as wide as he is drawn (foot, mount; big ones 18 as ever), two of a side the mean of theirs apart, foes face to face foe of it
+   (inside every reach), settled in passes a frame; off, 8 and one pass, as before (tests/harness.js: the older suites' fingerprints) */
+const JOSTLE={pad:4,on:true,foot:11,mount:16,foe:.8,passes:2};
+const bodyOf=u=>u.s.mounted?JOSTLE.mount:JOSTLE.foot;
+// (how far apart two stand)
+const roomOf=(a,b)=>a.s.big||b.s.big?18:!JOSTLE.on?8:(bodyOf(a)+bodyOf(b))/2*(battleEnemy(a,b)?JOSTLE.foe:1);
+function jostle(dt){for(let p=0;p<(JOSTLE.on?JOSTLE.passes:1);p++)jostlePass(p?0:dt)}
+function jostlePass(dt){
   const U=B.units,S=spatialOpen(SPATIAL.jostle),big=[],list=[];for(let i=0;i<U.length;i++)if(U[i].hp>0&&U[i].s.big)big.push(i);
-  let a=null,x0=0,y0=0;const gather=()=>{x0=a.x;y0=a.y;const r=(a.s.big?18:8)+JOSTLE.pad+1;list.length=0;for(const i of big)list.push(i);S.box(x0-r,y0-r,x0+r,y0+r,null,false,list)};
+  let a=null,x0=0,y0=0;const gather=()=>{x0=a.x;y0=a.y;const r=(a.s.big?18:JOSTLE.on?(bodyOf(a)+JOSTLE.mount)/2:8)+JOSTLE.pad+1;list.length=0;for(const i of big)list.push(i);S.box(x0-r,y0-r,x0+r,y0+r,null,false,list)};
   try{for(let i=0;i<U.length;i++){a=U[i];if(a.hp<=0)continue;let last=i;gather();
     for(let k=0;k<list.length;k++){const j=list[k];if(j<=last)continue;
       if(Math.abs(a.x-x0)>JOSTLE.pad||Math.abs(a.y-y0)>JOSTLE.pad){gather();k=-1;continue}
-      last=j;const b=U[j];if(b.hp<=0||battleFriend(a,b)&&(a.rout||b.rout||withdrawing(a)||withdrawing(b)))continue;const dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy);const R=a.s.big||b.s.big?18:8;if(d<R&&d>.01){if(PHYSICS.on){const q=(R-d)/d,f=physShare(a,b,dt,dx,dy);if(!a.hero){a.x-=dx*q*f;a.y-=dy*q*f;S.refile(i)}if(!b.hero){b.x+=dx*q*(1-f);b.y+=dy*q*(1-f);S.refile(j)}}else{const p=(R-d)*.5/d;if(!a.hero){a.x-=dx*p;a.y-=dy*p;S.refile(i)}if(!b.hero){b.x+=dx*p;b.y+=dy*p;S.refile(j)}}}}}}
+      last=j;const b=U[j];if(b.hp<=0||battleFriend(a,b)&&(a.rout||b.rout||withdrawing(a)||withdrawing(b)))continue;const dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy);const R=roomOf(a,b);if(d<R&&d>.01){if(PHYSICS.on){const q=(R-d)/d,f=physShare(a,b,dt,dx,dy);if(!a.hero){a.x-=dx*q*f;a.y-=dy*q*f;S.refile(i)}if(!b.hero){b.x+=dx*q*(1-f);b.y+=dy*q*(1-f);S.refile(j)}}else{const p=(R-d)*.5/d;if(!a.hero){a.x-=dx*p;a.y-=dy*p;S.refile(i)}if(!b.hero){b.x+=dx*p;b.y+=dy*p;S.refile(j)}}}}}}
   finally{spatialClose()}
 }
 // off the rocks and trees (obstaclePush; the big ones shoulder through), inside the field, and no step into rock or impassable
