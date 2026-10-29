@@ -82,7 +82,7 @@ const DIALOGUE={
 // a lord's temper (drawn once, from the stream talk, at your first meeting): how he speaks, and what moves him
 const TEMPERS=['proud','honourable','greedy','cunning','kind'];
 const TALK_PIC={
-  lord:l=>portrait(charOf(l).key),
+  lord:l=>lordPic(l),
   companion:id=>portrait(id),
   captor:c=>c.k==='broker'?personPic('merchant',townBy(c.town)?.races?.[0]||'human',1):c.k==='band'?portrait('militia'):portrait(RACES[fiefsOf(c.fac)[0]?.races?.[0]||'human']?.melee||'hum_foot'),
   folk:(n,t)=>personPic('folk',t?.races?.[0]||'human',n?.v||0),

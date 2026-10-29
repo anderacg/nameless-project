@@ -1003,6 +1003,11 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 }
 @container ovl (max-width:520px){.qfacts{grid-template-columns:minmax(0,1fr);gap:1px}.qfacts dd{margin-bottom:5px}}
 
+/* Named portrait art: compact face crops in cards, readable busts in conversations. */
+img[src^="art/portrait/game/"]{image-rendering:auto;object-fit:cover}
+.lord-portrait{width:48px;height:48px;flex:none;object-fit:cover;image-rendering:pixelated;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--field)}
+.talk-pic[src^="art/portrait/game/"]{width:88px;height:88px}
+@media(max-height:500px){.talk-pic[src^="art/portrait/game/"]{width:52px;height:52px}.lord-portrait{width:40px;height:40px}}
 /* ---------- 8e. conversations ---------- */
 /* story/conversation.js: a talk with someone. Its head (their face, big and pixel-sharp, their name and standing), what has been
    said this visit (their words quoted, the rest told, the newest last), the replies (numbered: keys 1-9), then the speaker's own
