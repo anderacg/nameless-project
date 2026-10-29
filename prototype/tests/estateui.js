@@ -137,7 +137,7 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t
       ok(q('.rwbody .rcard img.rc-pic')&&/The traders/.test(q('.rwbody .rcard').textContent)&&qa('.rwbody .row [data-act="site-buy"]').length===Object.keys(tr.stock).length,'the Wagons: the traders as a card, their goods as rows');
       // the Campfire: a card for each sellsword, his own name, look, tier and price, Hire; hiring him takes his card away
       tr.mercs=3;delete tr.hired;P.troops={};t.act('site-tab','fire');const sw=tr.swords(),cs=qa('.rwbody .rcard').filter(c=>c.querySelector('[data-act="site-hire"]'));
-      ok(sw.length===3&&cs.length===3&&cs.every((c,i)=>{const w=sw[i];return c.querySelector('strong').textContent===w.name&&c.querySelector('img.rc-pic').src===t.portrait(w.k,false,w.v)&&new RegExp('Tier '+t.ST[w.k].tier).test(c.textContent)&&new RegExp(w.c+'g').test(c.textContent)&&!c.querySelector('.rc-n')&&c.querySelector('[data-act="site-hire"]').dataset.arg===String(w.i)}),
+      ok(sw.length===3&&cs.length===3&&cs.every((c,i)=>{const w=sw[i];return c.querySelector('strong').textContent===w.name&&c.querySelector('.rc-info img').src===t.portrait(w.k,false,w.v)&&new RegExp('Tier '+t.ST[w.k].tier).test(c.textContent)&&new RegExp(w.c+'g').test(c.textContent)&&!c.querySelector('.rc-n')&&c.querySelector('[data-act="site-hire"]').dataset.arg===String(w.i)}),
         'the Campfire: a card for each of the 3 sellswords, his own name, look, tier and price, a Hire each, no count ('+sw.map(w=>w.name+' '+t.ST[w.k].n+' '+w.c+'g').join('; ')+')');
       ok(new Set(sw.map(w=>w.name)).size===3&&JSON.stringify(tr.swords())===JSON.stringify(sw),'each his own name, the same each time they are asked (seeded from the camp)');
       ok(q('.rwbody .rcard [data-act="site-news"]')&&q('.rwbody .row [data-act="site-fire"]')&&!q('[data-act="site-hirepick"]'),'the greybeard with news and the fire stay as they were; no amount picker');
@@ -146,6 +146,10 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t
           'Hire: '+w.name+' joins ('+w.c+'g), his card goes, the other two stay as they were');
         ok(JSON.stringify(tr.swords())===JSON.stringify(sw.filter(x=>x!==sw[1]).map(x=>x)),'the two left keep their names and looks');
         G.mode='world';t.saveGame(true,'3');const sv=t.readSlot('3').world.sites.find(x=>x.tx===tr.tx&&x.ty===tr.ty&&x.type==='travelers');ok(sv&&sv.mercs===2&&sv.hired.join()===String(w.i),'saved: how many are left and whose place was hired (the rest of the save as it was)');G.mode='site'}
+      {const w=tr.swords()[0];q('.rwbody .rcard [data-act="site-card"][data-arg="'+w.i+'"]').click();
+        ok(G.siteCard===w.i&&q('.rwbody .rec-info .ucard-x')&&!q('.rwbody [data-act="site-hire"]')&&G.siteTab==='fire','i on a sellsword\'s portrait: his unit card over the list ('+t.ST[w.k].n+')');
+        q('.rwbody [data-act="site-card"][data-arg="back"]').click();ok(G.siteCard==null&&qa('.rwbody [data-act="site-hire"]').length===2,'Back to the fire: the list again');
+        t.act('site-card',w.i);t.act('site-tab','home');t.act('site-tab','fire');ok(G.siteCard==null&&q('.rwbody [data-act="site-hire"]'),'another place and back: the list, the card closed')}
       fits('the travellers\' windows',[['travellers',()=>{world();G.lastSite=null;t.enterSite(tr)}],['campfire',()=>t.act('site-tab','fire')]]);
       t.act('site-leave');ok(G.mode==='world','Leave: the map')}
     world();

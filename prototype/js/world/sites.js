@@ -520,13 +520,15 @@ class TravellersCamp extends Site{
   about(r){return '<p>'+this.TR.d+'</p><p class="muted">They break camp in '+Math.max(1,this.until-G.day)+' days.</p>'}
   // their wagons (the traders: their goods, your trophies) and their campfire (each sellsword, the pilgrims or minstrels, whoever
   // has news, and the fire to rest by)
-  places(r){const TR=this.TR,s=this,left=Object.keys(s.stock).filter(g=>s.stock[g]>0).length,race=TR.race||'human',u=s.unit;
+  // (a sellsword's unit card open at the fire (G.siteCard: his place in line; i on his portrait, site-card): over the list, its Back the list)
+  places(r){const TR=this.TR,s=this,left=Object.keys(s.stock).filter(g=>s.stock[g]>0).length,race=TR.race||'human',u=s.unit,card=G.siteCard!=null&&s.swords().find(w=>w.i===G.siteCard);
     return [{k:'trade',n:'Wagons',ico:'stall',note:left?left+' goods for sale':'sold out',
       body:railCards([{pic:personPic('merchant',race),name:'The traders',role:TR.n,facts:[left?left+' goods for sale':['Sold out','bad'],'They move on in '+Math.max(1,s.until-G.day)+' days']}])+'<div class="lab">Goods</div>'+
         Object.keys(s.stock).map(g=>{const p=travPrice(g),n=s.stock[g],k=Math.min(5,n);return railRow(GOODS[g].n,p+'g each · '+n+' left · you have '+goodN(g)+(k?' · '+k+' for '+p*k+'g':''),railBtn('site-buy',g,'Buy',!k?'Sold out':P.gold<p*k?'Not enough gold':goodRoom(g)<k?'No room in your bag':''))}).join('')+
         (P.inv.some(x=>x&&x.k==='mat')?railRow('Your trophies','They pay a little less than a town market: '+Math.round(P.inv.reduce((a,x)=>a+(x&&x.k==='mat'?matPrice(x.id)*x.n:0),0)*.85)+'g for all',railBtn('site-sellpick',null,'Sell')):'')},
       {k:'fire',n:'Campfire',short:'Fire',ico:'fire',note:[u&&(s.mercs?s.mercs+' sellsword'+(s.mercs>1?'s':'')+' willing':'no sellswords left'),TR.special&&!s.special&&(TR.special==='bless'?'a blessing':'a song'),s.news===G.day?'':'news',s.fire===G.day?'rested today':'rest'].filter(Boolean).join(' · '),
-      body:railCards([...s.swords().map(w=>{const c=w.c;return {pic:portrait(w.k,false,w.v),name:w.name,role:'Sellsword · '+ST[w.k].n,facts:['Tier '+ST[w.k].tier,c+'g','No standing needed'],
+      body:card?'<div class="rec-info"><div class="btns"><button class="btn" type="button" data-act="site-card" data-arg="back">‹ Back to the fire</button></div>'+unitCard(card.k)+'</div>':
+        railCards([...s.swords().map(w=>{const c=w.c;return {pic:portrait(w.k,false,w.v),info:['site-card',w.i],name:w.name,role:'Sellsword · '+ST[w.k].n,facts:['Tier '+ST[w.k].tier,c+'g','No standing needed'],
           acts:[['site-hire',w.i,'Hire',P.gold<c?'Not enough gold':partySize()>=partyCap()?'Your party is full':!partyRoster(P).canAdd(w.k)?'No room for another group':'']]}}),
         u&&!s.mercs&&{pic:portrait(u),name:'The sellswords',role:'Gone with their pay',facts:[['No one left to hire','bad']]},
         TR.special==='bless'&&{pic:personPic('priest',race),name:'The pilgrims',role:'Robed, singing softly',facts:[s.special?'They have blessed you':'A blessing: your mana restored, morale +8'],acts:[['site-bless',null,'Kneel',s.special?'They have blessed you already':'']]},
@@ -540,7 +542,8 @@ class TravellersCamp extends Site{
       items:it.map(([x,i])=>({id:i,name:MATS[x.id].n+' ×'+x.n,sub:Math.round(matPrice(x.id)*x.n*.85)+'g',max:1,unit:Math.round(matPrice(x.id)*x.n*.85)}))});return true}
     else if(a==='site-sell'){let g=0;const pick=arg?String(arg).split(',').map(Number):null;P.inv.forEach((x,i)=>{if(x&&x.k==='mat'&&(!pick||pick.includes(i))){g+=matPrice(x.id)*x.n;P.inv[i]=null}});g=Math.round(g*.85);if(g){P.gold+=g;train('trade',g/20);done('The travellers buy your trophies for '+g+' gold.')}}
     // (one sellsword, by his place in line: his card goes)
-    else if(a==='site-hire'){const w=s.swords().find(x=>x.i===+arg),c=w&&w.c;
+    else if(a==='site-card'){G.siteCard=arg==='back'?null:+arg;showSite();return true}
+    else if(a==='site-hire'){G.siteCard=null;const w=s.swords().find(x=>x.i===+arg),c=w&&w.c;
       if(w&&s.mercs>0&&P.gold>=c&&partySize()<partyCap()&&partyRoster(P).canAdd(w.k)){P.gold-=c;s.mercs--;(s.hired=s.hired||[]).push(w.i);P.add(w.k);done(w.name+' takes your coin and joins you as '+an(ST[w.k].n.toLowerCase())+'.')}}
     else if(a==='site-fire'&&s.fire!==G.day){const m=vitals();s.fire=G.day;P.hp+=(m[0]-P.hp)/2;P.sp+=(m[1]-P.sp)/2;P.mp+=(m[2]-P.mp)/2;P.morale=clamp(P.morale+5,0,100);done('You share their fire and their stew. Everyone sleeps well.')}
     else if(a==='site-news'&&s.news!==G.day){const first=!s.news;s.news=G.day;
@@ -653,8 +656,8 @@ function siteAct(a,arg){
   if(!a.startsWith('site-'))return false;
   const s=G.site;if(G.mode!=='site'||!s)return true;
   const done=m=>{G.siteMsg=m;log(m.replace(/<[^>]+>/g,''));updateHUD(true);showSite();railFocus(a,arg)};
-  if(a==='site-leave'){G.site=null;G.mode='world';hidePanel();saveGame(true);return true}
-  if(a==='site-tab'){G.siteTab=arg==='home'?null:arg;G.siteMsg='';showSite();return true}// (a place on the rail, or home: the overview)
+  if(a==='site-leave'){G.site=null;G.siteCard=null;G.mode='world';hidePanel();saveGame(true);return true}
+  if(a==='site-tab'){G.siteTab=arg==='home'?null:arg;G.siteMsg='';G.siteCard=null;showSite();return true}// (a place on the rail, or home: the overview)
   s.act(a,arg,done);return true;
 }
 onAct('site-',siteAct);
