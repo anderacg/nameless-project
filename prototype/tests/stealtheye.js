@@ -16,7 +16,7 @@ Kit.suite(({ok})=>{
    Object.defineProperty(window,'devicePixelRatio',{configurable:true,value:density});window.eval('VS='+zoom);
    for(const size of [t.STEALTH_EYE.size,t.STEALTH_EYE.player]){
     t.drawStealthEye(.5,col,10.37,20.63,size);const [s,x,y,w,h]=calls.pop();
-    ok(Math.abs(x*zoom-Math.round(x*zoom))<1e-8&&Math.abs(y*zoom-Math.round(y*zoom))<1e-8&&w*zoom===s.width&&h*zoom===s.height&&s.width===18*Math.max(1,Math.round(size*density/18)),'eye '+size+' at density '+density+' and zoom '+zoom+' draws one source pixel per physical pixel');
+    ok(Math.abs(x*zoom-Math.round(x*zoom))<1e-8&&Math.abs(y*zoom-Math.round(y*zoom))<1e-8&&w*zoom===s.width&&h*zoom===s.height&&s.width===18*Math.max(1,Math.round(size*t.dprOf()/18)),'eye '+size+' at density '+density+' (drawn at '+t.dprOf()+': the Resolution setting\'s cap) and zoom '+zoom+' draws one source pixel per canvas pixel');
    }
   }
  }finally{t.ctx.drawImage=draw;window.eval('VS='+vs);if(dpr)Object.defineProperty(window,'devicePixelRatio',dpr);else delete window.devicePixelRatio}

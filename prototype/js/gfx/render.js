@@ -79,9 +79,9 @@ function drawStealthEye(exposure,col,x,y,size){
   const s=stealthEyeSprite(exposure,col,size*dprOf());
   ctx.drawImage(s,Math.round(x*VS)/VS,Math.round(y*VS)/VS,s.width/VS,s.height/VS);
 }
-// (drawn only: worked out again at most every DETECT_DRAW ms of real time, not each frame)
+// (drawn only: worked out again at most every DETECT_DRAW ms of real time, not each frame; afresh after TravelAwareness.reset)
 const DETECT_DRAW=100;let DETECT_LAST=null;
-function travelDetectionState(){const now=performance.now();if(DETECT_LAST&&now-DETECT_LAST.at<DETECT_DRAW)return DETECT_LAST.v;const v=travelDetectionNow();DETECT_LAST={at:now,v};return v}
+function travelDetectionState(){const now=performance.now();const gen=TravelAwareness.gen;if(DETECT_LAST&&DETECT_LAST.gen===gen&&now-DETECT_LAST.at<DETECT_DRAW)return DETECT_LAST.v;const v=travelDetectionNow();DETECT_LAST={at:now,gen,v};return v}
 function travelDetectionNow(){
   const rows=[];for(const o of travelObservers()){const d=travelDetection(o);if(d)rows.push(d)}
   const seen=rows.filter(d=>d.sees),exposure=Math.max(0,...rows.map(d=>d.exposure));return{rows,seen,exposure,danger:seen.some(d=>d.danger)};

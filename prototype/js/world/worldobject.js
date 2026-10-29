@@ -34,6 +34,7 @@ class TravelAwareness{
   static records=new WeakMap();
   static snapshot=null;
   static time=0;
+  static gen=0;// (each reset: what is drawn from it is worked out afresh, render.js travelDetectionState)
   static level(o){return this.states.get(o)||0}
   static rows(o){let r=this.records.get(o);if(!r){r=new Map();this.records.set(o,r)}return r}
   static scan(o,base,factor){return (this.snapshot||TravelGroups.groups()).map(row=>{const group=row.id==='hero'?{...row,x:P.x,y:P.y,cover:!!hiddenAt(P.x,P.y),moving:P.tx!=null}:row,range=base*(group.cover?factor:1)*(1+Math.min(TRAVEL_GROUPS.maxSize,Math.sqrt(Math.max(0,group.count-1))*TRAVEL_GROUPS.size)),distance=Math.max(0,Math.hypot(o.x-group.x,o.y-group.y)-Math.min(12,group.extent)),r=this.records.get(o)?.get(group.id);return{group,range,distance,within:distance<range,q:r?.q||0}})}
@@ -41,9 +42,9 @@ class TravelAwareness{
   static sees(o){return !!travelDetection(o)?.sees}
   static target(o){return travelDetection(o)?.target||null}
   static power(o){if(!WORLD_BATTLE.on)return partyPower();return [...(this.records.get(o)?.values()||[])].reduce((n,r)=>n+(r.last!=null&&this.time-r.last<=TRAVEL_GROUPS.memory?r.power:0),0)}
-  static reset(){this.states=new WeakMap();this.records=new WeakMap();this.snapshot=null;this.time=0;TravelSearch.reset()}
+  static reset(){this.gen++;this.states=new WeakMap();this.records=new WeakMap();this.snapshot=null;this.time=0;TravelSearch.reset()}
   static step(rt){
-    if(G.paused||G.modal||G.mode!=='world'||B)return;if(P.stay){this.reset();return}const dt=rt*G.speed;this.time+=dt;this.snapshot=TravelGroups.groups();Waylay.sight();
+    if(G.paused||G.modal||G.mode!=='world'||B)return;if(P.stay){this.reset();return}const dt=rt*G.speed;this.time+=dt;this.snapshot=TravelGroups.groups();Waylay.sight(dt);
     for(const o of travelObservers()){const d=travelDetection(o);if(!d){this.states.delete(o);this.records.delete(o);continue}const records=this.rows(o),ids=new Set(d.rows.map(r=>r.group.id));let exposure=0;
       for(const v of d.rows){const g=v.group,r=records.get(g.id)||{q:0,last:null,power:0};
         if(v.within){const speed=(G.hurry?TRAVEL_AWARE.hurry:1)*(v.distance<v.range*.35?TRAVEL_AWARE.close:1)*(g.moving?TRAVEL_GROUPS.moving:1);r.q=v.distance<Math.min(TRAVEL_AWARE.contact,v.range*.15)?1:Math.min(1,r.q+dt*speed/(g.cover?TRAVEL_AWARE.forest:TRAVEL_AWARE.open));if(r.q>=1){r.last=this.time;r.power=g.power}}
