@@ -145,7 +145,7 @@ class Actor extends Fighter{
     u.inSlot=false;
     // its target: the enemy its group was set on (right-click), else the nearest
     // (Melee Mode, his group's: a shooter puts his bow away and is a fighter: his melee damage, a sword's reach; he shoots nothing)
-    const g=u.grp&&B.groups[u.grp],mm=!!(u.s.range&&!u.empty&&g&&g.melee),s=mm?(u.mmS&&u.mmS.base===u.s?u.mmS:(u.mmS={...u.s,base:u.s,range:0,reach:BLADE.reach,dmg:meleeDmgOf(u.s)})):u.s;u.rt-=dt;// (his group lets a fallen foe go: battlecontrol.js step)
+    const g=u.grp&&B.groups[u.grp],mm=!!(u.s.range&&!u.empty&&g&&g.melee),s=mm?(u.mmS&&u.mmS.base===u.s?u.mmS:(u.mmS={...u.s,base:u.s,range:0,reach:BLADE.reach*meleeK(),dmg:meleeDmgOf(u.s)})):u.s;u.rt-=dt;// (his group lets a fallen foe go: battlecontrol.js step)
     // (set on a target, it still turns on an enemy right on top of it: it does not stand and take the blows)
     // (whether g.tgt is set: read once here (nothing before his blow below changes it, and hold() leaves none); only its truth is used)
     const gt=!!g&&g.hasTarget&&targetStands(g);if(g&&g.hasTarget&&!gt)g.hold();

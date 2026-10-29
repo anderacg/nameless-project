@@ -16,7 +16,7 @@ Kit.suite(({ok})=>{const t=T,G=t.G,L=t.BattleLab,J=t.JOSTLE,ev=s=>(0,eval)(s),Gp
    for(let i=0;i<20;i++)t.jostle(1/30);let close=0;for(const u of us)for(const v of us)if(u!==v&&gap(u,v)<J.foot*.75)close++;ok(close===0,'twelve men piled on one spot: spread apart within 20 frames, none nearer than 3/4 of a body')}
   // ======== on the world map: each drawn WORLD_BATTLE.sprite times as big, so that much room; foes still within reach
   {const B=lab([Gp('hum_foot',2)],[Gp('hum_foot',1)]),[a,b]=B.units.filter(u=>u.team===0),f=B.units.find(u=>u.team===1),k=t.WORLD_BATTLE.sprite;
-   ev('B.world={}');try{ok(Math.abs(t.roomOf(a,b)-J.foot*k)<1e-9&&t.roomOf(a,f)<=(f.s.reach||11)&&t.roomOf(a,f)>=8,'on the world map: two of a side '+t.roomOf(a,b)+' px apart (their sprites '+k+'× as big), foes '+t.roomOf(a,f).toFixed(1)+' px (within reach)')}finally{ev('B.world=null')}}
+   ev('B.world={}');try{ok(Math.abs(t.roomOf(a,b)-J.foot*k)<1e-9&&t.roomOf(a,f)<=(f.s.reach||11)&&t.roomOf(a,f)>=8,'on the world map: two of a side '+t.roomOf(a,b)+' px apart (their sprites '+k+'× as big), foes '+t.roomOf(a,f).toFixed(1)+' px (within reach)');ok(t.meleeK()===k,'and every melee distance scaled as much (meleeK '+t.meleeK()+')')}finally{ev('B.world=null')}}
   ev('JOSTLE.on=false');{const B=lab([Gp('hum_foot',2)],[Gp('orc_grunt',1)]),[a,b]=B.units.filter(u=>u.team===0);a.x=400;a.y=300;b.x=401;b.y=300;B.units.find(u=>u.team===1).x=900;t.jostle(1/30);ok(Math.abs(gap(a,b)-8)<.6,'off: 8 px, as before')}
  }finally{if(L.active)L.exit();ev('JOSTLE.on=false')}
  ok(!ERR.length,'no runtime errors'+(ERR.length?': '+ERR[0]:''));

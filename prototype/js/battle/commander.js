@@ -253,7 +253,7 @@ class CavalryRide{
    if(!route&&!(near&&d(near,C)<X.clear&&this.outruns(m,near)&&this.leg(c,C,m)))return false;p=g.ridePlan={phase:'approach',points:route?.points||[],side:route?.side||1,index:0,v,enemy:{x:target.x,y:target.y},group:target.grp,unit:target.id,at:B.t};p.mark=this.mark(c,p);g.phase='flank';if(!route)return this.breakAway(c,g,m,C,p,near)}
   const foe=this.nearest(c,C),gap=foe?d(foe,C):Infinity,able=st>=X.minSta&&(!c.rOf?.(g.id)||c.rOf(g.id).mor>=tun(c.T,UNIT_AI,'chargeAt'));
   if(p.phase==='charge'){
-   const contact=c.foes.some(e=>!e.rout&&m.some(u=>d(u,e)<X.contact));if(contact&&p.hit==null){p.hit=B.t;p.n0=m.length}
+   const contact=c.foes.some(e=>!e.rout&&m.some(u=>d(u,e)<X.contact*meleeK()));if(contact&&p.hit==null){p.hit=B.t;p.n0=m.length}
    // (in the melee they stay while it pays (impact s, the owner 2026-10-29: "cavalry always runs away"); out at once (unsafe s)
    // when a wall's spears face them, the foe within round px of them outnumbers them crowd to one, loss of their men (one) have fallen
    // since they struck, or they are among trees)
@@ -288,7 +288,7 @@ class CavalryRide{
   }
   if(p.phase==='recover'){
    g.phase='regroup';g.rest=true;p.tired??=st<X.low;const at=this.shadow(c,p,C,foe);this.travel(g,at,C);if(foe)g.face=Math.atan2(foe.y-C.y,foe.x-C.x);const sx=m.reduce((n,u)=>n+(u.sx||0),0)/m.length,sy=m.reduce((n,u)=>n+(u.sy||0),0)/m.length,formed=m.every(u=>Math.hypot(u.x-C.x-(u.sx||0)+sx,u.y-C.y-(u.sy||0)+sy)<X.formed);
-   if(gap<X.contact)return this.charge(c,g,p,C,foe,true);
+   if(gap<X.contact*meleeK())return this.charge(c,g,p,C,foe,true);
    // (hunted: fit, they ride at him from a run-up; a shooter's mark, they ride off out of his reach (calm), or at him if there is no such place; else away while they outrun him, or meet him)
    const h=this.hunted(c,g,m,C);if(h){const hd=d(h,C);if(able&&hd>=X.runMin&&!this.balks(c,m,h,C))return this.charge(c,g,p,C,h);if(h.s.range&&at!==p.shadow)return this.charge(c,g,p,C,h,true);if(!h.s.range){if(this.outruns(m,h)&&(p.legs||0)<X.legs)return this.breakAway(c,g,m,C,p,h);if(hd<X.runMin||!this.outruns(m,h))return this.charge(c,g,p,C,h,true)}}
    // (a foe coming on: from a run-up they ride at him; too close, they gallop clear again while they outrun him, else meet him)
@@ -784,7 +784,7 @@ class Commander{
     const r=rOf(id),into=()=>{if(!r||r.mor>=tun(T,UNIT_AI,'chargeAt')||g.phase==='charge'||g.phase==='regroup'&&g.t>=tun(T,UNIT_AI,'cavRecover'))return true;if(g.phase!=='regroup'){const dir=Math.sign(C.x-M.x)||1;g.phase='regroup';g.t=0;sa(C.x+dir*back,C.y)}return false};
     // (on a charge, any (a rescue of its shooters too): half of them in the melee for recharge s, they pull back to charge again;
     // the count kept only while charging, so one left from before never pulls them back at once)
-    if(g.phase==='charge'){g.inMelee=cav.filter(u=>foes.some(e=>d2(e,u)<16)).length*2>=cav.length?(g.inMelee||0)+FOE_CMD.think:0;
+    if(g.phase==='charge'){g.inMelee=cav.filter(u=>foes.some(e=>d2(e,u)<16*meleeK())).length*2>=cav.length?(g.inMelee||0)+FOE_CMD.think:0;
       if(g.inMelee>=FOE_CMD.recharge){const dir=Math.sign(C.x-M.x)||1;g.phase='regroup';g.t=0;sa(C.x+dir*back,C.y)}}
     if(g.phase!=='charge'&&g.inMelee)g.inMelee=0;
     // (taking a bridge: they wait at the crossing's near mouth till the foot is over and formed (typeTake))

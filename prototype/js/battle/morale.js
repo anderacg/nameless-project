@@ -385,7 +385,7 @@ function exitOf(u){
   const m=g?grpUnits(g.id):[];h.exitTo=exitChoose(m.length?m:[u],u.team,X)||{side:u.team?'E':'W',a:fieldTop(),b:fieldBot(),s:clamp(u.y,fieldTop(),fieldBot()),x:u.team?BW-MORALE.edge:MORALE.edge,y:u.y,cost:Infinity,at:B.t};
   return h.exitTo}
 // (the grid open, spatial.js: only those within the longest reach of him, in their order)
-function withdrawThreat(u){return (spatialOn()?SG.near(u.x,u.y,Math.max(SG.reach,BLADE.reach)+3+12+WITHDRAW.contact+1,u.team,true):B.units).some(e=>e.hp>0&&battleEnemy(e,u)&&!e.rout&&(!e.s.range||e.inMelee)&&Math.hypot(e.x-u.x,e.y-u.y)<=(e.inMelee?BLADE.reach:e.s.reach||11)+3+(u.s.big?12:0)+WITHDRAW.contact)}
+function withdrawThreat(u){return (spatialOn()?SG.near(u.x,u.y,Math.max(SG.reach,BLADE.reach*meleeK())+3+12+WITHDRAW.contact+1,u.team,true):B.units).some(e=>e.hp>0&&battleEnemy(e,u)&&!e.rout&&(!e.s.range||e.inMelee)&&Math.hypot(e.x-u.x,e.y-u.y)<=(e.inMelee?BLADE.reach:e.s.reach||11)+3+(u.s.big?12:0)+WITHDRAW.contact)}
 function withdrawStep(u,dt){
   u.run=0;u.inSlot=false;u.spdNow=0;
   const threat=withdrawThreat(u);

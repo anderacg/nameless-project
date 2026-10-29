@@ -23,7 +23,7 @@ const DUEL={on:true,def:.3,cap:.75,busy:.35,riposte:.3,slack:8,stagger:.25,push:
 const Duel={
   // (his partner still: standing, near, his; else none, the duel over)
   of(u){const p=u.duel;if(!p)return null;
-    if(p.hp<=0||u.hp<=0||p.rout||u.rout||p.duel!==u||Math.hypot(p.x-u.x,p.y-u.y)-(p.s.big?12:0)>Math.max(u.s.reach||11,p.s.reach||11)+DUEL.slack){u.duel=null;return null}return p},
+    if(p.hp<=0||u.hp<=0||p.rout||u.rout||p.duel!==u||Math.hypot(p.x-u.x,p.y-u.y)-(p.s.big?12:0)>Math.max(u.s.reach||11,p.s.reach||11)+DUEL.slack*meleeK()){u.duel=null;return null}return p},
   // (who may duel: any man with a weapon in his hand, your hero and the characters too; never a shooter with his bow, a beast)
   can(u){return !u.s.beast&&!u.s.big&&!(u.s.range&&!u.empty&&!u.inMelee)},
   // (a blow from u at t: paired when both are free)

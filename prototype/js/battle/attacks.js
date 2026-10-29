@@ -83,7 +83,7 @@ class Fighter{
   steady(){const s=this.u.s;return Math.max(AIM.floor,1-AIM.tier*((s.tier||1)-1))}
   shotSkill(){const u=this.u,k=u.s.magic?'spell':'archery';return u.unit&&u.unit.isChar?u.unit.skill(k):0}
   weaponTier(){const u=this.u,id=u.unit&&u.unit.isChar&&u.unit.o.gear&&u.unit.o.gear.weapon,I=id&&ITEMS[id];return I&&I.tier||0}
-  outOfAmmo(){const u=this.u;u.s={...u.s,range:0,reach:Math.max(u.s.reach||0,10),dmg:u.s.dmg*.6};u.empty=true;B.floats.push({x:u.x,y:u.y-20,t:'Out of ammo',life:.7,c:'#9aa3ad'})}
+  outOfAmmo(){const u=this.u;u.s={...u.s,range:0,reach:Math.max(u.s.reach||0,10*meleeK()),dmg:u.s.dmg*.6};u.empty=true;B.floats.push({x:u.x,y:u.y-20,t:'Out of ammo',life:.7,c:'#9aa3ad'})}
   // a shot from his quiver (s: his stats as he loosed)
   useAmmo(s){const u=this.u;if(u.ammo==null)u.ammo=quiverOf(s);if(--u.ammo<=0)this.outOfAmmo()}
   attack(t){

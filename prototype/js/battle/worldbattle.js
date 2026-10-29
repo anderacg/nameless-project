@@ -1,6 +1,9 @@
 'use strict';
 /* ---------- campaign formations and battles on the land where the armies meet ---------- */
-const WORLD_BATTLE={on:true,scale:6,inner:8,outer:14,interaction:6,apron:22,join:220,regroup:7,returns:1,turn:3.5,blocked:30,stall:6,sprite:3,step:1/60,sightBase:1,perFighter:4,avoid:28,avoidScan:1};
+/* melee: on the world map each fighter is drawn sprite times as big (and his formation's slots as wide), so his melee reach and
+   the few fixed melee distances (meleeK: a duel's slack, the riders' contact, a bowman's blade) are that much more too (the owner,
+   2026-10-29: "the units overlap in world battle"); off, as they were */
+const WORLD_BATTLE={on:true,melee:true,scale:6,inner:8,outer:14,interaction:6,apron:22,join:220,regroup:7,returns:1,turn:3.5,blocked:30,stall:6,sprite:3,step:1/60,sightBase:1,perFighter:4,avoid:28,avoidScan:1};
 // Only local avoidance runs while campaign time is paused. Existing work/travel orders stay on their owners.
 class BattleBystanders{
   constructor(area){this.area=area;this.time=0;this.next=0;this.entries=new Map();this.navs=new Map()}
@@ -141,7 +144,7 @@ class WorldBattleArea{
     if(B.over||B.t<(this.blockCheck||0))return;this.blockCheck=B.t+3;
     const a=B.units.filter(u=>u.team===0&&fighting(u)),b=B.units.filter(u=>battleEnemy(0,u)&&fighting(u));if(!a.length||!b.length||B.t-(B.lastHit||0)<WORLD_BATTLE.blocked){this.blockAt=null;return}
     const canReach=(mine,foes)=>{
-      const tested={};for(const u of mine){const range=u.empty?BLADE.reach:u.s.range||u.s.reach||12;if(foes.some(e=>Math.hypot(u.x-e.x,u.y-e.y)<=range+8&&!terrainBlocksView(u,e)))return true;
+      const tested={};for(const u of mine){const range=u.empty?BLADE.reach*meleeK():u.s.range||u.s.reach||12;if(foes.some(e=>Math.hypot(u.x-e.x,u.y-e.y)<=range+8*meleeK()&&!terrainBlocksView(u,e)))return true;
         const who=routeWho(u.s),g=B.terrain.route[who],i=routeIx(g,u.x,u.y);let seen=tested[who];if(!seen)tested[who]=seen=new Uint8Array(g.cost.length);if(seen[i])continue;const flood=routeFlood(g,i);for(let k=0;k<flood.length;k++)if(flood[k])seen[k]=1;if(foes.some(e=>flood[routeIx(g,e.x,e.y)]))return true;
       }return false;
     };
@@ -256,7 +259,10 @@ class BattleMuster{
     if(this.done===this.entries.length){this.active=false;B.ready=true;B.paused=true;B.sight=null;B.captains={};battleSpeedUI();setOrderUI();toast('Armies are in position. Press Start Battle when ready.')}
   }
 }
+const meleeK=()=>B?.world&&WORLD_BATTLE.melee?WORLD_BATTLE.sprite:1;
 class WorldBattleSetup extends BattleSetup{
+  // (each fighter's reach as big as he is drawn: meleeK)
+  spawn(unit,team,x,y){const u=super.spawn(unit,team,x,y);if(WORLD_BATTLE.melee&&u.s.reach)u.s={...u.s,reach:u.s.reach*WORLD_BATTLE.sprite};return u}
   constructor(opts){super(opts);if(BattleSides.eligible(G.enc))BattleSides.limit(G.enc,opts.enemies?.length||0);this.area=new WorldBattleArea(G.enc)}
   survey(){
     const a=this.area,primary=G.enc.ref?.src||G.enc.ref;for(const owner of new Set([P,primary,...(G.enc.allies||[]).map(o=>o.src||o),...(G.enc.foes||[]).map(o=>o.src||o)]))if(owner instanceof Party)MarchArmy.of(owner).sync();BFIELD=null;BW=BH=a.span*a.scale;this.site=this.battleSite();this.env=battleEnv(false,this.site);a.env=this.env;this.env.text='Fight on the world map. The gold circle is fixed; routed soldiers can regroup beyond it and return.';
