@@ -22,9 +22,9 @@ try{
  const kl=W.lords.find(l=>l.fac==='karn'&&!l.dead);kl.troops=Array(14).fill('dw_axe');kl.cool=0;kl.inside=null;kl.fight=null;kl.state='home';// (out and about: one resting in its realm's holding stays in)
  G.encCool=0;P.x=kl.x+3;P.y=kl.y;t.TravelAwareness.notice(kl);t.updateLords(.016);
  ok(G.mode==='dialog'&&G.enc&&G.enc.kind==='lord','hostile lord attacks');
- t.act('fight');if(t.B)t.beginFight();ok(t.B&&t.B.units.some(u=>u.team===1&&['dwarf','orc'].includes(t.ST[u.type].race)),'battle vs dwarf/orc troops');
+ t.act('fight');Kit.engage();ok(t.B&&t.B.units.some(u=>u.team===1&&['dwarf','orc'].includes(t.ST[u.type].race)),'battle vs dwarf/orc troops');
  let i=0;while(t.B&&i<20000){t.B.units.forEach(u=>{if(u.team===0&&!u.left)u.hp=u.max});t.updateBattle(.033);if(t.B&&i%15===0)t.frame();i++}
- ok(G.mode==='dialog'&&kl.dead,'beat lord in '+i+' steps; renown '+P.renown);
+ /* (in a world battle the men who flee the field live on with their lord: worldbattle.js; beaten, he is slain or ridden off with a few) */ok(G.mode==='dialog'&&/Victory/.test(document.getElementById('panel').textContent)&&(kl.dead||kl.troops.length<14),'beat lord in '+i+' steps; renown '+P.renown+(kl.dead?', the lord slain':', he rides off with '+kl.troops.length));
  t.act('cont');done();
  const sl=W.lords.find(l=>l.fac==='salt'&&!l.dead);sl.inside=null;G.encCool=0;t.lordMeet(sl);/* met on the road (in a hall there is no attacking) */ok(/Attack/.test(document.getElementById('panel').innerHTML),'neutral lord dialog');
  t.act('lord-attack');ok(G.enc.kind==='lord'&&t.hostileTo('salt'),'attacking makes salt hostile');t.act('auto');t.act('cont');done();

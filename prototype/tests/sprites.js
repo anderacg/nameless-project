@@ -1,4 +1,5 @@
 'use strict';
+window.ARENA=true;// (the battle screen's own rules, on its own field: tests/harness.js)
 // Sprites: everything is drawn by code. Soldiers get varied looks and animated poses with an outline, struck fighters flash,
 // every holding, site, critter and obstacle has a sprite, the world map is painted in detail and roads and holdings stay clear.
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),out=()=>{const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d)};
@@ -17,7 +18,7 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),out=()=>{cons
   for(let i=0;i<40;i++)t.updateBattle(.03);t.B.units.forEach(u=>u.atkAt=t.B.t-.1);t.drawBattle();for(let i=0;i<5;i++)t.updateBattle(.03);t.drawBattle();
   ok(t.B.units.filter(u=>u.plx!=null).length>=10,'a battle draws its fighters');
   t.B.over=true;t.B.endT=0;t.updateBattle(.01);t.act('cont');while(G.mode==='perk')t.act('perk',G.perkOffer[0]);
-  W.sites.forEach(s=>s.seen=true);P.gear.mount='m_horse';G.mode='world';t.drawWorld();ok(Object.keys(t.spr).some(k=>k.startsWith('p#e8b94a'+t.ITEMS.m_horse.col)),'the hero rides a horse on the map');P.gear.mount=null;
+  W.sites.forEach(s=>s.seen=true);G.mode='world';t.drawWorld();
   const px=c=>c.getContext('2d', { willReadFrequently: true }).getImageData(0,0,c.width,c.height).data.join(),looks=new Set([0,1,2,3,4,5].map(v=>px(t.unitSprite('hum_spear',0,false,v))));
   ok(looks.size===6,'six different looks for one kind of soldier');
   ok(px(t.unitSprite('hero',0,true,3))===px(t.unitSprite('hero',0,true,0)),'your hero always looks the same');

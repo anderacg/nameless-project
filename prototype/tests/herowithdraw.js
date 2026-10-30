@@ -1,4 +1,5 @@
 'use strict';
+window.ARENA=true;// (the battle screen's own rules, on its own field: tests/harness.js)
 // Your hero withdrawn by hand, the screen drawn every frame (order paths on, as in the game): the battle goes on to its end.
 // (A withdrawing group's order path once built a stand-in man for the exit code; with EXITS.on it threw and the game froze.)
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),out=()=>{const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d)};

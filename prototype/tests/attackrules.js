@@ -1,4 +1,5 @@
 'use strict';
+window.ARENA=true;// (the battle screen's own rules, on its own field: tests/harness.js)
 // Snapshot baseline reviewed for schema v2: persistent IDs, homogeneous formations, new deployment lanes and source-army links.
 // Behavioral assertions below are retained; old category-bucket fingerprints no longer describe this architecture.
 // guard re-recorded 2026-10-17: rear/flank damage multipliers now apply with morale off (effect audit #5).

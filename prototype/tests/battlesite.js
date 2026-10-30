@@ -1,4 +1,5 @@
 'use strict';
+window.ARENA=true;// (the battle screen's own rules, on its own field: tests/harness.js)
 // The BattleSite hand-off (doc/WORLD_DESIGN.md R17): on every tile of the classic world the battle's inputs read through
 // WorldMap.battleSite (its env, ground spec: recipe, seed, river, edges, road, elven; its type's bridge, its field size, its cover)
 // equal the direct reads of the world (kept below as they were before R17, less what the generated world adds); the battle's

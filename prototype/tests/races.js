@@ -1,4 +1,5 @@
 'use strict';
+window.ARENA=true;// (the battle screen's own rules, on its own field: tests/harness.js)
 // Races and the dragon (a mythic monster): race bonuses, racial recruits, dragon hunting, the race kept in a save. (Dragon balance trials: visual/dragonbalance.js.)
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);
 try{const t=T,G=t.G,P=t.P,W=t.W;try{localStorage.clear()}catch(e){}

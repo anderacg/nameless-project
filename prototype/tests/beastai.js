@@ -1,4 +1,5 @@
 'use strict';
+window.ARENA=true;// (the battle screen's own rules, on its own field: tests/harness.js)
 // Beasts in battle (beastmind.js BEAST_TACTICS): wolves split into packs that circle their prey and bite from two sides or more,
 // hit and run, and break off to regroup when hurt; boars rush, back off and rush again; brutes go for the thickest fight (else the
 // strongest group); spiders wait unseen in a wood and strike; griffins mark the shooters and dive at their rear; no stall at a

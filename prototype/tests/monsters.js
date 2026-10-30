@@ -1,4 +1,5 @@
 'use strict';
+window.ARENA=true;// (the battle screen's own rules, on its own field: tests/harness.js)
 // Monsters: habitats, hunting vs passive, abilities, levels, XP and loot, gear stats, trophy sales, save/load.
 // (How a 12-troop army fares against each monster: visual/monsterbalance.js.)
 Kit.suite(({ok})=>{

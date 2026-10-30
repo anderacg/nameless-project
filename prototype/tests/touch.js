@@ -1,4 +1,5 @@
 'use strict';
+window.ARENA=true;// (the battle screen's own rules, on its own field: tests/harness.js)
 // Touch: a phone on its side. Real PointerEvents (pointerType 'touch', each finger its own pointerId) on the game canvas:
 // a pinch zooms about its middle and a two-finger drag pans, never ordering; a tap selects and a tap again sends, as before;
 // a long press sends the selection to the ground or onto an enemy, and dragged on lays the line; a second finger calls a press

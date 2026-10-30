@@ -1,4 +1,5 @@
 'use strict';
+window.ARENA=true;// (the battle screen's own rules, on its own field: tests/harness.js)
 // Sound (audio.js, music.js): off, every call is a no-op; every cue and mood builds and is heard (rendered offline, never past
 // full scale); the per-cue limit and the voice cap hold under a battle's pile-up; the settings are stored and mute silences;
 // Shift+M mutes (M opens the full map); the music follows the scene (title, road, town, battle, its stinger, then on); a lab battle is heard (its blows,

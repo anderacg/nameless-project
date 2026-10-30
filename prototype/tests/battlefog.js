@@ -1,4 +1,5 @@
 'use strict';
+window.ARENA=true;// (the battle screen's own rules, on its own field: tests/harness.js)
 // Fog of war in battle (battle/battlefog.js; terrain.js sightStep): a side sees an enemy only within its soldiers' sight ranges
 // (FOG: foot, shooters, riders, characters; big ones from farther; more from higher ground) with a clear line (rises and rock
 // block it), woods keep their own rule, a blow or shot gives the striker away; the AI's foes are only those it sees; ghosts

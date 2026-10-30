@@ -1,4 +1,5 @@
 'use strict';
+window.ARENA=true;// (the battle screen's own rules, on its own field: tests/harness.js)
 // Loot: the end of every fight shows what it brought in (gold, XP, renown, prisoners) and lays the things it won on the
 // ground beside your bag: take what you want while there is room, put things back to make room, and leave the rest
 // (your choice: Esc won't do it). Defeats show what was lost.

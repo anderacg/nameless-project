@@ -1,4 +1,5 @@
 'use strict';
+window.ARENA=true;// (the battle screen's own rules, on its own field: tests/harness.js)
 window.RUN=()=>{const t=T,P=t.P,G=t.G,o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);
 try{
  t.begin('soldier');G.quietEvents=true;P.gold=10000;P.renown=10000;P.sk.lead.lv=10;// (all ten group slots: a new band starts at three)

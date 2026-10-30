@@ -1,4 +1,5 @@
 'use strict';
+window.ARENA=true;// (the battle screen's own rules, on its own field: tests/harness.js)
 // Vitals: health, stamina and mana carry over between battles, recover on the map (faster near holdings), fastest while staying in a holding,
 // a knocked-out hero comes to at 10%, a lost auto-resolve costs half your health, and the Hero window and encounters show it. (Stamina
 // is your band's, by the hour: tests/supply.js)

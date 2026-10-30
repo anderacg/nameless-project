@@ -1,4 +1,5 @@
 'use strict';
+window.ARENA=true;// (the battle screen's own rules, on its own field: tests/harness.js)
 // Talents: the tree is connected and every node reachable; points come one per level; nodes must touch what you have;
 // refunds keep the tree connected and cost gold; effects reach the hero, troops, party, abilities and perks; the page works; saves.
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);

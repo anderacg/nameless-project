@@ -32,7 +32,7 @@ try{const t=T,G=t.G,P=t.P,W=t.W;t.act('begin','soldier');G.mode='world';G.modal=
    const pts={'cart’s back':back,'drover':drover,'cover':cover,'wheel':wheel},far=Object.keys(pts).filter(k=>!ring(c,pts[k][0],pts[k][1],11,5));
    ok(far.length>=3,'facing '+(d>0?'right':'left')+', the caravan reaches past its old 11 pixel ring: '+far.join(', '));
    const miss=Object.keys(pts).filter(k=>t.pickAt(pts[k][0],pts[k][1])!==c);ok(!miss.length,'a click anywhere on the cart, ox and drover picks the caravan'+(miss.length?' (missed: '+miss.join(', ')+')':''));
-   ok(t.pickAt(back[0]-d*4,back[1])!==c&&t.pickAt(cover[0],cover[1]-5)!==c,'but not the ground behind the cart or above its cover');
+   {const R=t.marchInteractRadius(c);ok(t.pickAt(c.x+d*(R+6),c.y-5)!==c,'but not the ground beyond its guards\' ring ('+Math.round(R)+' px: world/march.js)')}
    const tip=t.tipFor(t.pickAt(drover[0],drover[1]));ok(!!tip&&/aravan/.test(tip),'hovering the drover shows the caravan’s card')}
   c.dir=1;const ox=px(t.caravanPic(c),c.x-16,c.y+1-32,false).filter(q=>q[0]>c.x-3&&q[0]<c.x+5).reduce((a,q)=>q[1]<a[1]?q:a);
   const b2=t.bandits[1]||t.bandits[0];b2.fight=null;b2.x=ox[0];b2.y=c.y+4;ok(t.pickAt(b2.x,b2.y-6)===b2,'a band standing at the ox is still picked when clicked, not the caravan');b2.x=-9999;b2.y=-9999}

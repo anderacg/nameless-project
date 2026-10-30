@@ -1,4 +1,5 @@
 'use strict';
+window.ARENA=true;// (the battle screen's own rules, on its own field: tests/harness.js)
 // Battle types (setup.js BTYPE; IMPLEMENTATION_PLAN §4 item 5; doc/TERRAIN_DESIGN.md §8, phase 5): hold the bridge and ambush.
 // The world's triggers (engage.js battleTypeFor: a road bridge on or next to the tile; an ambush by cover and band, from the
 // tile and the day, never Math.random); who stands where (the holders on their bank by the bridge, your zone to the bank; the

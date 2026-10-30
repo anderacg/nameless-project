@@ -1,4 +1,5 @@
 'use strict';
+window.ARENA=true;// (the battle screen's own rules, on its own field: tests/harness.js)
 // Mobile polish: a phone on its side (Android Chrome, iOS Safari). The HUD, its buttons, the messages and the long-press card
 // keep clear of a notch (the safe-area tokens --sa-*, here set by hand, as env() is 0 on a desktop); a pinch or double tap on the
 // HUD never zooms the page (touch-action, iOS gesture events) while windows and the unit cards still scroll; the line ghost is

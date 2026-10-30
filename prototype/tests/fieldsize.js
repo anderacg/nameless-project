@@ -1,4 +1,5 @@
 'use strict';
+window.ARENA=true;// (the battle screen's own rules, on its own field: tests/harness.js)
 // Battle field sizes (battle/setup.js FIELD_SIZES, BFIELD) and the ways off the field by any open edge (battle/morale.js EXITS,
 // B.exits): the size chosen by the soldiers, the world tile and the battle's type, the lab's size key; deployment zones with ground
 // behind them; the camera, small map, route, fog and spatial grids sized to the field; painting a huge field (time and memory);

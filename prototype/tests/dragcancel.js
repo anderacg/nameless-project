@@ -1,4 +1,5 @@
 'use strict';
+window.ARENA=true;// (the battle screen's own rules, on its own field: tests/harness.js)
 // Calling a drag off in battle (input.js dragCancel): a right-drag's line ghost goes with a left-click or Esc (Esc then opens no
 // menu), a box with Esc, a finger's held line with a second finger; nothing is sent and the selection stays. A right-drag let go
 // as ever still lays the line. And deploying, a group's banner (moraleicons.js iconLayout) stands over it as soon as it is placed.

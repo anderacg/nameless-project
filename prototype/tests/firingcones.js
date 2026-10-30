@@ -1,4 +1,5 @@
 'use strict';
+window.ARENA=true;// (the battle screen's own rules, on its own field: tests/harness.js)
 // Capture the actual Canvas arcs, not only facing state: moving cones and firing checks must agree.
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,P=t.P,G=t.G,random0=Math.random,manual0=t.MANUAL_HERO;
  try{

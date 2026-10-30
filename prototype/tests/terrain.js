@@ -1,4 +1,5 @@
 'use strict';
+window.ARENA=true;// (the battle screen's own rules, on its own field: tests/harness.js)
 // Terrain phase 1 (battle/terrain.js; doc/TERRAIN_DESIGN.md): the ground grid, its generation (determinism, isolation from
 // Math.random, fairness), one check per rule of the hills, woods and marsh tables, the race exemptions, D2/D6, no scattered props with terrain (D10 reversed), no woods in deserts, terrain off is
 // today's battle, and the arrow tree-memory fix (more than 32 trees). TERRAIN.on is turned on here (tests/harness.js turns it off).

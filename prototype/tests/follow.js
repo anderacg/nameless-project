@@ -12,7 +12,7 @@ Kit.suite(({ok,info})=>{
  // (a lord of a realm with two holdings far apart, at the gate of the one, marching home to the other; you three tiles behind him)
  const lord=()=>{for(const L of W.lords){if(L.dead)continue;const fs=t.TOWNS.filter(h=>h.owner===L.fac);for(const a of fs)for(const b of fs)if(a!==b&&Math.hypot(a.x-b.x,a.y-b.y)>60*TL&&t.Router.reach(a,b)){
    const s=t.gateSpot(a);Object.assign(L,{x:s.x,y:s.y,inside:null,fight:null,state:'home',tgt:b.name,cool:0});const d=Math.hypot(b.x-s.x,b.y-s.y);
-   let px=s.x-(b.x-s.x)/d*48,py=s.y-(b.y-s.y)/d*48;if(!t.passable(t.terrAt(px,py))){px=s.x;py=s.y+40}Kit.goTo(px,py);G.chase=null;P.tx=null;return L}}return null};
+   const D=Math.max(48,t.worldBattleReach(L)+20);let px=s.x-(b.x-s.x)/d*D,py=s.y-(b.y-s.y)/d*D;/* (behind him, out of reach: where your armies' rings would meet, march.js worldBattleReach) */if(!t.passable(t.terrAt(px,py))){px=s.x;py=s.y+40}Kit.goTo(px,py);G.chase=null;P.tx=null;return L}}return null};
  const ring=()=>t.ActionRing.now,labels=()=>ring()?ring().items.map(i=>i.label).join():'none';
  // (pointer events on the canvas at a world point)
  const cl=(wx,wy)=>{const r=cv.getBoundingClientRect();return{clientX:r.left+(wx-G.cam.x)*r.width/t.VW,clientY:r.top+(wy-G.cam.y)*r.height/t.VH}};
@@ -51,7 +51,7 @@ Kit.suite(({ok,info})=>{
   // ---- the ends
   // (open ground away from the holdings: you there, him 3 tiles east, marching home; following him)
   const sp=(()=>{for(let ty=8;ty<t.MH-8;ty++)for(let tx=8;tx<t.MW-8;tx++){const x=(tx+.5)*TL,y=(ty+.5)*TL;if(t.tAt(tx,ty)===t.T_OPEN&&t.tAt(tx+3,ty)===t.T_OPEN&&!t.TOWNS.some(h=>Math.hypot(h.x-x,h.y-y)<200)&&t.campGround(x,y))return [x,y]}})();
-  const again=()=>{const M=lord();Kit.goTo(sp[0],sp[1]);M.x=sp[0]+48;M.y=sp[1];t.followStart(M);t.updateWorld(.05);return M};
+  const again=()=>{const M=lord();Kit.goTo(sp[0],sp[1]);M.x=sp[0]+Math.max(48,t.worldBattleReach(M)+20);M.y=sp[1];t.followStart(M);t.updateWorld(.05);return M};
   {const M=again(),n=said.length;M.x+=4000;t.updateWorld(.05);ok(!G.follow&&P.tx==null&&msgs(n).includes('You lose sight of '+t.lordName(M)),'he goes out of sight: '+msgs(n))}
   {const M=again(),n=said.length,h=t.townBy(M.tgt);M.enter(h);t.updateWorld(.05);ok(!G.follow&&P.tx==null&&msgs(n).includes(t.lordName(M)+' rides into '+h.name),'he goes into a holding: '+msgs(n))}
   {const M=again(),n=said.length,i=W.lords.indexOf(M);W.lords.splice(i,1);t.updateWorld(.05);W.lords.splice(i,0,M);ok(!G.follow&&msgs(n).includes(t.lordName(M)+' is gone'),'he is gone (beaten): '+msgs(n))}

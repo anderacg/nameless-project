@@ -78,7 +78,7 @@ try{
   const things=[L,t.bandits[0],t.asParty({pt:true,watch:'day',home:tw.name,fac:tw.owner,troops:['hum_spear'],x:0,y:0,cool:0,dir:1}),t.asParty({cv:true,fac:tw.owner,from:tw.name,to:tw.name,x:0,y:0,goods:{},guards:2,cool:0,dir:1}),
    t.asMonster({id:'wolf',x:0,y:0,lv:1,n:1}),t.asHerd({crit:true,id:'deer',x:0,y:0,n:2}),t.asRefugees({rf:true,from:tw.name,to:tw.name,n:4,x:0,y:0}),t.asWorker({folk:true,home:tw.name,x:0,y:0,st:'out'})];
   for(const q of things){q.inside=null;q.dead=false;q.pick(at)}
-  const want={lord:[10,4],band:[10,4],patrol:[10,4],caravan:[11,5],monster:[11,6],critter:[9,4],refugee:[10,4],worker:[6,4]};
+  const want={lord:[10,4],band:[10,4],patrol:[10,4],caravan:[t.marchInteractRadius(things[3]),5]/* (a caravan's guards march round it: its army's ring, world/march.js) */,monster:[11,6],critter:[9,4],refugee:[10,4],worker:[6,4]};
   ok(JSON.stringify(rings)===JSON.stringify(want)&&t.REACH===14,'every kind keeps its click ring for touch ('+Object.keys(rings).map(k=>k+' '+rings[k][0]).join(', ')+') and you reach what is 14 px off');
   // (a click 9 px from a lord's ring centre still meets him; on his horse's banner, away from the ring, too)
   t.bandits.length=0;W.lords.forEach(l=>{l.x=-9999;l.y=-9999});W.monsters=[];W.critters=[];W.caravans=[];W.refugees=[];W.folk=[];W.patrols=[];

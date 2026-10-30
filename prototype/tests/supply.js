@@ -96,9 +96,9 @@ try{
    const x=(tx+.5)*16;let y=ty*16;while(y<(ty+2)*16&&t.waterEdge(x,y+1,F.near*16))y++;if(y>ty*16&&y<(ty+1)*16+4){shore={tx,ty,at:[x,y],off:[x,y+16]};break}}
   ok(!!shore,'a shore found (land with water to its north)'+(shore?' at '+shore.tx+','+shore.ty:''));
   if(shore){reset();Kit.goTo(...shore.at);bag({grain:60,skin_empty:99});const L=t.supplyLand();const r1=t.mapRingItems(P.x+20,P.y+20,null,0,0).map(i=>i.label);
-   Kit.goTo(...shore.off);const L2=t.supplyLand(),r2=t.mapRingItems(P.x+20,P.y+20,null,0,0).map(i=>i.label);
-   ok(L.water&&!L2.water&&t.nearWater(...shore.off,3),'the water’s edge: within '+F.near+' tile of the water as drawn yes, a tile farther no (within the old 3 tiles: '+t.nearWater(...shore.off,3)+')');
-   ok(r1.includes('Fill waterskins')&&!r2.includes('Fill waterskins'),'the action ring offers Fill waterskins only at the edge ('+r1.join(', ')+' | '+r2.join(', ')+')')}
+   // (where your army's reach of the water ends, a source just in it and just out of it: tests/waterskinreach.js)
+   ok(L.water,'the water\'s edge: within your army\'s reach of the water ('+Math.round(t.fillReach())+' px) you can fill');
+   ok(r1.includes('Fill waterskins'),'the action ring offers Fill waterskins there ('+r1.join(', ')+')')}
   {const h=t.TOWNS.find(z=>t.wellGate(z).y>z.y+16)||t.TOWNS[0],g=t.wellGate(h),r=F.well*16,away=[h.x,h.y-3*16];
    ok(t.wellNear(h.x,h.y+r-1)&&t.wellNear(g.x+r-1,g.y)&&!t.wellNear(...away)&&Math.hypot(away[0]-g.x,away[1]-g.y)>=3*16,'a holding’s well: within '+F.well+' tiles of where you arrive ('+h.name+') or of the spot before its gate yes, 3 tiles off no');
    reset();Kit.goTo(...away);bag({grain:60,skin_empty:99});ok(!t.supplyLand().well&&!t.mapRingItems(P.x+20,P.y,null,0,0).some(i=>i.label==='Fill waterskins'),'and 3 tiles off the ring has no Fill waterskins')}
@@ -182,7 +182,7 @@ try{
   ok(r&&r.ok&&t.goodN('skin_empty')===3,'3 recruits hired ('+(k||'none')+(r&&!r.ok?', '+r.code:'')+') bring 3 empty waterskins ('+t.goodN('skin_empty')+')');
   if(k)P.remove(k,2);ok(t.goodN('skin_empty')===3,'dismissing or losing men takes none away')}
  // ---- into battle and back
- const fight=()=>{Kit.world();G.enc={kind:'party',ref:{cool:0,x:P.x+8,y:P.y},list:['militia','militia']};t.startBattle({enemies:['militia','militia'],tournament:false});t.beginFight();return t.B};// (Start Battle: battles open waiting for it)
+ const fight=()=>{Kit.world();G.enc={kind:'party',ref:{cool:0,x:P.x+8,y:P.y},list:['militia','militia']};t.startBattle({enemies:['militia','militia'],tournament:false});Kit.engage();return t.B};// (Start Battle: battles open waiting for it, a world battle's armies formed up first)
  const band=B=>B.units.filter(u=>u.team===0&&!u.hero);
  reset();at('open');bag({water:400,grain:60});{let B=fight();ok(band(B).every(u=>u.sta===t.FATIGUE.max)&&t.heroState().sp===t.maxSP(),'a fresh band starts a battle fresh, as ever');B.over=true;B.endT=0;ev('B=null');
   P.bsta=60;B=fight();ok(band(B).every(u=>near(u.sta,60))&&near(t.heroState().sp,t.maxSP()*.6),'at 60, its troops and your hero start at 60%');

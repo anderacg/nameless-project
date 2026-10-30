@@ -77,7 +77,7 @@ try{
   t.act('pl-pick','militia:-1');t.act('pl-pick','militia:-1');t.act('pl-pick','spearman:1');const n0=t.troopCount();t.act('pl-take');
   ok(t.troopCount()===n0+1&&P.troops.spearman===1&&!P.troops.militia&&/the rest are disarmed and sent off/.test(panel())&&!t.bandits.includes(b4),'you take the one you chose; the rest are sent off, and the page says so');t.act('dlg-ok')}
  const b3={x:P.x+5,y:P.y,n:2,kind:'bandits',list:['militia','militia'],t:0,a:0,idle:false,cool:0};t.bandits.push(t.asParty(b3));world();t.meetBand(b3);fix(.99);t.act('pl-yield');unfix();
- ok(G.enc&&G.enc.ref===b3&&/Fight/.test(panel()),'if they refuse, they fight');t.act('flee');
+ ok(G.enc&&G.enc.ref===b3&&/Fight|Normal attack/.test(panel()),'if they refuse, they fight');/* (with world battles its button reads Normal attack: engage.js encounterAttackButtons) */t.act('flee');
  const l=W.lords.find(x=>!x.dead);l.troops=['hum_levy','hum_levy'];P.hostile[l.fac]=G.day+20;world();P.x=l.x;P.y=l.y;t.interact(l);
  ok(G.par&&G.par.o===l,'a weak enemy lord who is caught may be called on to yield');const lg=P.gold;fix(.01);t.act('pl-yield');unfix();
  ok(l.dead&&P.gold>lg&&/yields/.test(panel()),'the lord pays a ransom and the army is gone');t.act('dlg-ok');

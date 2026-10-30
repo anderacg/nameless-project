@@ -1,4 +1,5 @@
 'use strict';
+window.ARENA=true;// (the battle screen's own rules, on its own field: tests/harness.js)
 // Hero combat: the 3-hit combo, input buffering, dodge invulnerability, the three skills, level locks, stagger, knockback,
 // hit-stop, war cry buffs, the combo counter and the skill buttons.
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);

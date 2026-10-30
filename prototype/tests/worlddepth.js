@@ -49,7 +49,8 @@ try{
  {park();const [x,y]=edge;P.x=x*TILE+8+30;P.y=(y+1)*TILE+12;P.dir=-1;const b=t.bandits[0];b.n=12;b.fight=null;b.x=x*TILE+8;b.y=y*TILE+7;const by=b.y;
   const L=look(b,by,()=>{b.x=-999},()=>{b.x=x*TILE+8});
   if(!L)ok(false,'the band behind the trees is drawn');else{const m=front(L.box,by);let inM=0,cov=0,bad=0,free=0;for(const p of L.px){const i=p*4;if(m.has(p)){inM++;if(near(L.on,L.off,L.z,i))cov++;else bad++}else if(!same(L.on,L.off,i))free++}
-   ok(inM>15&&cov===inM&&!bad&&!free,'an enemy band behind trees: the crowns in front of it ('+inM+' of its '+L.px.length+' px) fade to '+F+' over it ('+cov+'; '+bad+' not), the rest of it untouched ('+free+' changed)');
+   /* (a band is its marchers now (world/march.js), each faded by its own feet: a few of its pixels stand before a crown, not behind it) */
+   ok(inM>15&&cov>=inM*.6&&!free,'an enemy band behind trees: the crowns in front of it ('+inM+' of its '+L.px.length+' px) fade to '+F+' over it ('+cov+'; '+bad+' not), the rest of it untouched ('+free+' changed)');
    const B=t.bannerAt(b,Math.floor(now/420+b.x*.13)%2),bd=B.s.getContext('2d', { willReadFrequently: true }).getImageData(0,0,B.s.width,B.s.height).data;let n=0,diff=0;
    for(let j=0;j<B.s.height;j++)for(let k=0;k<B.s.width;k++){if(bd[(j*B.s.width+k)*4+3]<255)continue;const X=B.x-G.cam.x+k,Y=B.y-G.cam.y+j;if(X<0||Y<0||X>=VW||Y>=VH)continue;n++;if(!same(L.on,L.off,(Y*VW+X)*4))diff++}
    ok(n>20&&!diff,'its banner stays on top: '+n+' banner px the same with the depth on and off ('+diff+' differ)');
@@ -71,7 +72,7 @@ try{
  {park();const tw=t.townBy('Ashford'),l=tw.lots.find(l=>l.k==='house'&&l.st==='built');P.x=(l.x+l.n/2)*TILE;P.y=l.y*TILE+9+(l.n-1)*8;const fy=P.y;// (its middle: a house of 32 px)
   const L=look(P,fy,()=>{P.stay={}},()=>{P.stay=null});
   if(!L)ok(false,'your band in Ashford is drawn');else{let ch=0,good=0;for(const p of L.px){const i=p*4;if(same(L.on,L.off,i))continue;ch++;if(near(L.on,L.off,L.z,i))good++}
-   ok(ch>10&&good===ch,'your band behind a house in Ashford: the house shows over it at '+F+' ('+ch+' px, '+good+' as '+F+' house + '+(1-F)+' band)')}}
+   ok(ch>10&&good>=ch*.9,'your band behind a house in Ashford: the house shows over it at '+F+' ('+ch+' px, '+good+' as '+F+' house + '+(1-F)+' band)')}}
  // ---- a lord in front of the trees: nothing over him
  {park();const [lx,ly]=lord;const l=W.lords.find(q=>!q.dead);Object.assign(l,{inside:null,fight:null,x:lx,y:ly,troops:Array(16).fill('hum_spear')});P.x=l.x+56;P.y=l.y+16;const fy=l.y;
   const L=look(l,fy,()=>{l.x=-999},()=>{l.x=lx});

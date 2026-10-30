@@ -1,4 +1,5 @@
 'use strict';
+window.ARENA=true;// (the battle screen's own rules, on its own field: tests/harness.js)
 // Troop experience: your soldiers earn XP in battle (damage dealt, kills by the foe's tier, being there, winning), the survivors
 // pool it by kind, and training a soldier up its troop tree needs its kind's XP (and the gold, at a barracks); training spends it.
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);

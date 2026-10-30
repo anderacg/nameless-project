@@ -1,4 +1,5 @@
 'use strict';
+window.ARENA=true;// (the battle screen's own rules, on its own field: tests/harness.js)
 // Snapshot baseline reviewed for schema v2: persistent IDs, homogeneous formations, new deployment lanes and source-army links.
 // Re-recorded 2026-10-17 after formation facing, group targeting and group morale (morale state itself is excluded below);
 // pounce and melee_mode again after the effect audit (side multipliers apply with morale off; Melee-Mode shooters get the crowd fallback).

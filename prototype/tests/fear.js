@@ -15,7 +15,9 @@ try{
  weak();const me=t.partyPower();ok(t.stance(me*.9)==='attack'&&t.stance(me*.6)==='wary'&&t.stance(me*.3)==='afraid','stance from power ratio: ≥80% attack, ≥50% wary, below that afraid');
  // bandits
  // (each has seen you: a party, beast or lord reckons with you only once it has detected you, worldobject.js TravelAwareness)
- const seen=x=>(t.TravelAwareness.notice(x),x);
+ // (with world battles each reckons with what of your army it has seen (TravelAwareness.power: every group of it here), as fresh
+ // as P.troops is at the time: seen after strong() or weak())
+ const seen=x=>{t.MarchArmy.of(P).sync();t.TravelAwareness.snapshot=null;for(const g of t.TravelGroups.groups())t.TravelAwareness.notice(x,g.id);return x};// (your army on the march, as it is drawn: world/march.js; its groups as they are now, not the last frame's snapshot)
  const band=n=>{const b={x:P.x+60,y:P.y,n,kind:'bandits',list:Array(n).fill('militia'),t:9,a:0,idle:true,cool:0};t.bandits.length=0;t.bandits.push(t.asParty(b));return seen(b)};
  // (45 frames of updateWorld: as far as 20 went before Phase 1's slower pace, D9: .4/.6 x .68 of the ground a frame)
  strong();let b=band(4),d0=gap(b);for(let k=0;k<45;k++){W.patrols=[];t.updateWorld(.05)}/* (the watch rides out every half second: kept out) */ok(gap(b)>d0+10,'a weak bandit band runs from a strong party ('+Math.round(d0)+' → '+Math.round(gap(b))+')');

@@ -43,8 +43,8 @@ try{
  // ---- the world drawn at whole pixels and its own size, with everything in view
  const tw=t.townBy('Ashford');P.x=tw.x+40;P.y=tw.y+30;G.mode='world';G.modal=false;t.hidePanel();W.sites.forEach(s=>s.seen=true);
  if(W.monsters[0]){W.monsters[0].x=P.x+60;W.monsters[0].y=P.y}const dm=t.mythicOf('dragon')||t.spawnMythic('dragon');if(dm){dm.x=P.x-60;dm.y=P.y-20}
- const ctx=t.ctx,orig=ctx.drawImage,off=[];
- ctx.drawImage=function(img,...a){if(img===((t.WFOGV||{}).edge||{}).comp)return orig.call(ctx,img,...a);// (the fog: a soft overlay drawn up smooth, as the battle's: fog.js drawWorldFog)
+ const ctx=t.ctx,orig=ctx.drawImage,off=[],unmarch=Kit.watchMarch();
+ ctx.drawImage=function(img,...a){if(img===((t.WFOGV||{}).edge||{}).comp||Kit.marching)return orig.call(ctx,img,...a);// (the marching armies: drawn smaller on purpose, Kit.watchMarch)// (the fog: a soft overlay drawn up smooth, as the battle's: fog.js drawWorldFog)
    const m=ctx.getTransform(),whole=v=>Math.abs(v-Math.round(v))<1e-6,[dx,dy]=a.length===8?[a[4],a[5]]:[a[0],a[1]];
    const sw=a.length===8?a[2]:img.width,sh=a.length===8?a[3]:img.height,dw=a.length>=4?(a.length===8?a[6]:a[2]):sw,dh=a.length>=4?(a.length===8?a[7]:a[3]):sh;
    // (the awareness eyes are sized on the screen, not the map: a whole number of device pixels to a pixel of
@@ -54,7 +54,7 @@ try{
    else if(!whole((m.a*dx+m.e)*S)||!whole((m.d*dy+m.f)*S))off.push('at '+(m.a*dx+m.e).toFixed(2)+','+(m.d*dy+m.f).toFixed(2)+' ('+img.width+'x'+img.height+') '+(new Error().stack.split('\n')[2]||'').trim().split('/').pop());
    return orig.call(ctx,img,...a)};
  for(const at of ['Ashford','Saltmere','Highmoor','Sunreach']){const z=t.townBy(at);P.x=z.x+30;P.y=z.y+20;t.drawWorld()}
- ctx.drawImage=orig;
+ ctx.drawImage=orig;unmarch();
  ok(!off.length,'the world map draws every picture unscaled, at whole pixels'+(off.length?': '+[...new Set(off)].slice(0,6).join('; '):''));
  // ---- sprite cells: every figure sits in an 8, 16, 32 or 64 pixel square, feet on its bottom row, never cut off
  {const pow=c=>c.width===c.height&&[8,16,32,64].includes(c.width)&&c.cw<=c.width&&c.ch<=c.height,list=[];

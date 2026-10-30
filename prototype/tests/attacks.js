@@ -1,4 +1,5 @@
 'use strict';
+window.ARENA=true;// (the battle screen's own rules, on its own field: tests/harness.js)
 // Attack types: melee, ranged and magic for enemies and the hero. Casters for every race and in bandit bands, armies and
 // garrisons; magic bolts splash, ignore armor and trees, are half blocked and resisted by ward; the hero shoots with a bow
 // (stamina) or casts with a staff (mana); bog slimes spit magic; dragon fire is magic too.

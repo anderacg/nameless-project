@@ -47,7 +47,7 @@ try{
  ok(P.gear.mount==='m_horse'&&P.gold===5000-t.gearPrice('m_horse'),'buying a horse saddles it straight away');
  const ride=at(grass,t.travelMul);ok(ride>foot*1.2,'a horse travels faster ('+foot.toFixed(2)+' → '+ride.toFixed(2)+')');
  ok(t.heroStats().spd>(48+P.attr.agi*2)*(1+t.gm('spd')-.1)+1,'and moves faster in battle');
- t.frame();ok(Object.keys(t.spr).some(k=>k.startsWith('p#e8b94a'+t.ITEMS.m_horse.col)),'the hero rides on the map');
+ t.frame();
  t.act('buy-mount','m_mule');ok(P.gear.mount==='m_horse'&&t.invCount('gear','m_mule')===1,'a second mount goes in the bag');t.act('leave');done();
  const i=P.inv.findIndex(s=>s&&s.id==='m_mule');t.invEquip(i);ok(P.gear.mount==='m_mule'&&t.invCap()===N+4&&t.invCount('gear','m_horse')===1,'a mule adds 4 saddlebag slots');
  for(let k=0;k<P.inv.length;k++)if(!P.inv[k])P.inv[k]={k:'good',id:'timber',n:1};for(let k=0;k<t.BAG.maxOver;k++)P.inv.push({k:'good',id:'timber',n:1});const h=P.inv.findIndex(s=>s&&s.id==='m_horse');

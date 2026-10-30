@@ -40,7 +40,8 @@ try{
  click(far2.x,far2.y);ok(G.mode==='world'&&G.chase===far2&&P.tx!=null,'clicking a holding 60 away does not open it, your band walks there');
  for(let i=0;i<400&&G.mode==='world';i++)t.updateWorld(.05);ok(G.mode==='town'||G.mode==='besiege','on arrival it opens ('+G.mode+' '+(G.mode==='dialog'?document.getElementById('panel').textContent.slice(0,160):'')+')');t.hidePanel();G.mode='world';G.modal=false;G.town=null;
  reset();G.encCool=0;const b2={x:P.x+40,y:P.y,n:3,cool:0,t:0,a:0,kind:'bandits',idle:true};t.bandits.length=0;t.bandits.push(t.asParty(b2));
- ok(!t.clickAt(b2.x,b2.y-4)&&G.mode==='world'&&G.chase===b2,'clicking bandits 40 away starts a chase, not a fight');
+ // (beyond where the armies would meet: their rings touching, march.js worldBattleReach)
+ b2.x=P.x+Math.max(40,t.worldBattleReach(t.asParty(b2))+15);ok(!t.clickAt(b2.x,b2.y-4)&&G.mode==='world'&&G.chase===b2,'clicking bandits out of reach ('+Math.round(b2.x-P.x)+' px) starts a chase, not a fight');
  t.frame();
  // structures answer wherever they are drawn: the centre's far corner, a house, a wall piece, but not the open ground beside
  reset();P.troops={};{const tw=t.townBy('Ashford'),c=t.lotCentre(tw),h=tw.lots.find(l=>l.k==='house'),w=tw.lots.find(l=>l.k==='wall');P.x=tw.x;P.y=tw.y+20;

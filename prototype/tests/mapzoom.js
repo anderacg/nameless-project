@@ -54,7 +54,7 @@ try{
   fire('pointerdown',cx-30,cy,1);fire('pointerdown',cx+30,cy,2);fire('pointerup',cx+30,cy,2);fire('pointerdown',cx+30,cy,3);fire('pointermove',cx+60,cy,3);const v5=t.VS;fire('pointerup',cx-30,cy,1);fire('pointerup',cx+60,cy,3);
   ok(v5===v4+1&&P.tx==null,'a finger lifted and put back pinches again, still travelling nowhere')}
  // ---- through the zoom: a click travels to the map's point under it; a party under the pointer is picked; the minimap's size
- const c=t.ctx,calls=[];let rec=false;const di0=c.drawImage;c.drawImage=function(img,...a){if(rec)calls.push([img,a,this.getTransform()]);return di0.apply(this,[img,...a])};
+ const c=t.ctx,calls=[],unmarch=Kit.watchMarch(true);let rec=false;const di0=c.drawImage;c.drawImage=function(img,...a){if(rec&&!Kit.marching)calls.push([img,a,this.getTransform()]);return di0.apply(this,[img,...a])};/* (the marching armies, drawn smaller on purpose, left out: the map's own pixels; Kit.watchMarch) */
  const frame=()=>{calls.length=0;rec=true;try{t.frame()}finally{rec=false}};const isInt=v=>Math.abs(v-Math.round(v))<1e-4,EPS=1e-4;
  const miniW=()=>{const m=t.WorldArt.mini(Math.max(1,Math.round(t.MW/256)))._at,q=calls.find(([img])=>img===m);return q?[m.width*t.VS,q[2].e+q[2].a*q[1][0]]:null};
  try{
@@ -74,7 +74,7 @@ try{
    {const L=W.lords.find(l=>!l.dead);Object.assign(L,{x:P.x+40.37,y:P.y+12.2,inside:null,fight:null,dir:1});frame();const p=t.toCanvas(cl(L.x+.3,L.y-6));
     ok(t.pickAt(G.cam.x+p.x,G.cam.y+p.y)===L,'at '+S+' the party under the pointer is picked');L.x=-9999;L.y=-9999}}
   ok(minis.every(m=>m&&Math.abs(m[0]-112*s0)<=t.VS*2&&Math.abs(m[0]-minis[1][0])<=Z.hi*2),'the minimap keeps its size on the screen at every zoom ('+minis.map(m=>m&&m[0]).join(', ')+' device px across)');
- }finally{c.drawImage=di0}
+ }finally{c.drawImage=di0;unmarch()}
  // ---- remembered: the stored step comes back as the game loads; Settings offers Auto and every step
  {t.act('mapzoom',String(Z.hi));const st=localStorage.getItem('ashmark.mapzoom');Z.z=0;t.fitScreen();const auto=t.VS;Z.z=t.prefLoad('mapzoom');t.fitScreen();
   ok(st===String(Z.hi)&&auto===s0&&t.VS===Z.hi,'the zoom is stored (ashmark.mapzoom '+st+') and read back on load');

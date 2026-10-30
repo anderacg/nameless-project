@@ -69,6 +69,22 @@ const Kit={
     G.enc=null;
     if(more)Object.assign(G,more);
   },
+  // the marching armies on the map (world/march.js): their soldiers and leaders are the battle's figures drawn smaller
+  // (WORLD_BATTLE.sprite/scale), so resampled on purpose; Kit.marching is true while one is drawn (watchMarch: the hook on,
+  // its return takes it off; hide: not drawn at all, for a look at the map's own pixels)
+  marching:false,
+  watchMarch(hide){
+    const fs=['drawMarcher','drawMarchLeader',...(hide?['marchCircle']:[])],keep=fs.map(n=>window[n]);// (hidden: their rings too, drawn smooth)
+    fs.forEach((n,i)=>{window[n]=function(){if(hide)return;Kit.marching=true;try{return keep[i].apply(this,arguments)}finally{Kit.marching=false}}});
+    return ()=>fs.forEach((n,i)=>{window[n]=keep[i]});
+  },
+  // a battle begun as Start Battle begins it: a world battle's armies formed up first (worldbattle.js BattleMuster), at most steps of
+  // dt s (false: they never formed up)
+  engage(steps=4000,dt=.05){
+    const b=T.B;if(!b)return false;
+    for(let i=0;i<steps&&b.muster?.active&&T.B===b;i++)T.updateBattle(dt);
+    T.beginFight();return !b.muster?.active;
+  },
   // the perks offered taken, the first each time (cont: the result's Continue first; world: then back on the map)
   done(o){
     const G=T.G;

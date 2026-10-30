@@ -1,4 +1,5 @@
 'use strict';
+window.ARENA=true;// (the battle screen's own rules, on its own field: tests/harness.js)
 // RTS command in battle, as in Total War: your hero fights on their own like every unit; you select (click a unit for its group,
 // drag a box round several, 1-4 / 5), and right-click the ground to send them there in formation or an enemy to set them on it.
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);

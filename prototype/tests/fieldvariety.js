@@ -1,4 +1,5 @@
 'use strict';
+window.ARENA=true;// (the battle screen's own rules, on its own field: tests/harness.js)
 // Field variety (battle/terrain.js; doc/TERRAIN_DESIGN.md "Field variety as built"): battlefields reflect the world map. A forest
 // tile is a real forest (woods over 50-65% of the field at every field size, a glade for each army, a road, deer path or chain of
 // clearings through, fair by cover and open ground); every tile kind has its signature (plains, hills, peaks, swamp, desert,

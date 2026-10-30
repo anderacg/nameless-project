@@ -1,4 +1,5 @@
 'use strict';
+window.ARENA=true;// (the battle screen's own rules, on its own field: tests/harness.js)
 // The battle HUD on a quick start (ui/battlehud.js #bbar; battle/setup.js measureField, present; render.js frame): a battle started
 // from an encounter, in steps as in the game (LOADING.sync off), with deployment off, with the AI commanding and with deployment
 // on. The HUD is laid out unseen while the field is measured; from the moment it shows (watched as it changes, before the

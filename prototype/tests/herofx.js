@@ -1,4 +1,5 @@
 'use strict';
+window.ARENA=true;// (the battle screen's own rules, on its own field: tests/harness.js)
 // The hero's moves, made flashy (gfx/herofx.js HERO_FX; the owner, 2026-10-30: "flashy hero moves and effects"): a ribbon on
 // each swing, the finisher's zoom-punch and flash, a crit's star and beat of slow motion (capped), whirlwind after-images, a
 // dash's streak, a spell's sparks and burst, a landing's debris and shockwave, her glow; Light keeps the ribbons and flashes;

@@ -18,7 +18,7 @@ try{
  P.x=spot[0]+.4;P.y=spot[1]+.2;P.stay=null;P.troops={hum_levy:12};t.reveal();
  const L=W.lords.find(l=>!l.dead);Object.assign(L,{x:P.x-30.2,y:P.y+14,inside:null,fight:null,dead:false,dir:1});
  // (each drawImage on the screen while a frame is drawn: the picture, its source and target sizes, the transform)
- const c=t.ctx,calls=[];let rec=false;const di0=c.drawImage;c.drawImage=function(img,...a){if(rec)calls.push([img,a,this.getTransform()]);return di0.apply(this,[img,...a])};
+ const c=t.ctx,calls=[],unmarch=Kit.watchMarch();let rec=false;const di0=c.drawImage;c.drawImage=function(img,...a){if(rec&&!Kit.marching)calls.push([img,a,this.getTransform()]);return di0.apply(this,[img,...a])};/* (the marching armies drawn smaller on purpose: Kit.watchMarch) */
  const frame=()=>{calls.length=0;rec=true;try{t.frame()}finally{rec=false}};
  // (the context's transform is kept in single precision: within 1e-4 of a device pixel)
  const isInt=v=>Math.abs(v-Math.round(v))<1e-4,EPS=1e-4;
@@ -47,7 +47,7 @@ try{
    ok(!isInt(G.cam.x)&&Math.abs(G.cam.x+p.x-m.x)<1e-6&&Math.abs(G.cam.y+p.y-(m.y-4))<1e-6,'the pointer reads as the map\'s point under it with the camera at '+G.cam.x.toFixed(3)+' (toCanvas in game pixels)');
    t.cv.dispatchEvent(new PointerEvent('pointerdown',{clientX:x,clientY:y,pointerType:'mouse',bubbles:true}));t.cv.dispatchEvent(new PointerEvent('pointerup',{clientX:x,clientY:y,pointerType:'mouse',bubbles:true}));ok(G.enc&&G.enc.kind==='monster','a click on the beast beside you meets it');if(G.enc)t.act('flee');world();W.monsters=[];G.encCool=1e9}
   {L.x=P.x+20.37;L.y=P.y+6.2;frame();ok(t.pickAt(L.x+.3,L.y-6)===L,'a party is picked at its place as drawn')}
- }finally{c.drawImage=di0}
+ }finally{c.drawImage=di0;unmarch()}
  // ---- the walk cycles: WALK.n frames (6 to 8), 0 standing
  {const n=t.WALK.n,wolf=[...Array(n).keys()].map(f=>t.monsterMapSprite('wolf',f)),cow=[...Array(n).keys()].map(f=>t.critterSprite('cow',f)),cv=[...Array(n).keys()].map(f=>t.caravanSprite('#c74453',f)),
    px=s=>s.getContext('2d', { willReadFrequently: true }).getImageData(0,0,s.width,s.height).data.join(),dist=a=>new Set(a.map(px)).size;
