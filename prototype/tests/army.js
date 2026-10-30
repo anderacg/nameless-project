@@ -47,7 +47,9 @@ Kit.suite(({ok})=>{
   ok(ids[ids.length-1]==='comp_tavi'&&q('.fb-unit-grid').textContent.includes('Away · leading their own party'),'a companion leading his own party is still on the roster, under Away');
   ok(kinds[ids.indexOf('hero')]==='hero'&&kinds[ids.indexOf('comp_brann')]==='comp'&&kinds[ids.indexOf(foot.id)]==='troop','each card says what it is');
   {const kindIcon=id=>fills(q('.fb-unit[data-army-group="'+id+'"] .fb-unit-kind svg'));
-   ok(kindIcon('hero')===iconFills('rosterhero')&&kindIcon('comp_brann')===iconFills('rostercomp')&&kindIcon(foot.id)===iconFills('rostertroop')&&new Set(['rosterhero','rostercomp','rostertroop'].map(iconFills)).size===3,'its icon: a crown for the hero, a star for a companion, a shield for troops');
+   ok(kindIcon('hero')===iconFills('rosterhero')&&kindIcon('comp_brann')===iconFills('rostercomp')&&new Set(['rosterhero','rostercomp'].map(iconFills)).size===2,'its icon: a crown for the hero, a star for a companion');
+   const glyph=k=>{const d=document.createElement('div');d.innerHTML=t.glyphSVG(k,14);return d.querySelector('svg').innerHTML.replace(/\s+/g,'')};
+   ok([foot,knight].every(g=>q('.fb-unit[data-army-group="'+g.id+'"] .fb-unit-kind svg').innerHTML.replace(/\s+/g,'')===glyph(t.iconOfType(g.type)))&&t.iconOfType(foot.type)!==t.iconOfType(knight.type),'a troop group\'s: its type\'s, as on its banner in battle ('+t.iconOfType(foot.type)+', '+t.iconOfType(knight.type)+')');
    ok(['rosterhero','rostercomp','rostertroop'].every(k=>t.ICONS[k].px.length===9&&t.ICONS[k].px.every(row=>row.length===9&&[...row].every(c=>c==='.'||t.ICONS[k].p[c]))),'the three are pixel icons of the game’s set (9 × 9, each colour its palette’s)')}
   {const xp=id=>q('.fb-unit[data-army-group="'+id+'"] .fb-unit-xp'),val=e=>[+e.getAttribute('aria-valuenow'),+e.getAttribute('aria-valuemax')].join('/'),txt=id=>q('.fb-unit[data-army-group="'+id+'"] .fb-unit-xptxt').textContent,need=(P.troops.hum_foot||0)*t.txpNeed('hum_foot');
    ok(cards.every(c=>c.querySelector('.fb-unit-xp[role="meter"]')),'every card has an experience bar');
