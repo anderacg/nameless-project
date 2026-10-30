@@ -6,8 +6,6 @@ Kit.suite(({ok})=>{
  ok(pixels(orange)!==pixels(purple),'travel soldiers retain their faction colors instead of sharing a battle-side palette');
  ok(before===pixels(t.unitSprite('dw_axe',0,false,1,0))&&battle!==orange,'travel tint does not alter cached battle sprites');
  ok(pixels(orange)!==pixels(t.marchSprite({...u,type:'orc_grunt'},owner('#de873b'))),'mixed-race troops retain their individual unit appearance under faction tint');
- const dwarf=t.partySprite('#de873b','',0,'dwarf'),human=t.partySprite('#de873b','',0,'human');
- ok(pixels(dwarf)!==pixels(human)&&dwarf!==human,'campaign leader sprites and cache distinguish races within one faction color');
  t.WORLD_BATTLE.on=true;
  const hero=t.marchLeaderSprite(t.P,0),race=t.P.race;t.P.race=race==='orc'?'human':'orc';
  ok(pixels(hero)!==pixels(t.marchLeaderSprite(t.P,0)),'hero leader uses current character race instead of a generic campaign figure');t.P.race=race;

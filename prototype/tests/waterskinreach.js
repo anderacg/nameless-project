@@ -22,5 +22,4 @@ Kit.suite(({ok})=>{
  const gate=t.wellGate(home),r=t.fillReach(true);ok(t.wellNear(home.x+r-1,home.y)&&t.wellNear(gate.x+r-1,gate.y),'both holding wells and gate access use the same army range');
  const outside=Array.from({length:64},(_,i)=>({x:home.x+Math.cos(i*Math.PI/32)*(r+2),y:home.y+Math.sin(i*Math.PI/32)*(r+2)})).find(p=>t.TOWNS.every(h=>{const g=t.wellGate(h);return Math.hypot(p.x-h.x,p.y-h.y)>r&&Math.hypot(p.x-g.x,p.y-g.y)>r}));
  ok(outside&&!t.wellNear(outside.x,outside.y),'a point outside every well interaction radius cannot refill');
- t.WORLD_BATTLE.on=false;ok(t.fillReach()===t.SUPPLY.fill.near*t.TILE&&t.fillReach(true)===t.SUPPLY.fill.well*t.TILE,'legacy mode keeps its existing standalone supply distances');
 });

@@ -58,7 +58,7 @@ try{
  ok(!off.length,'the world map draws every picture unscaled, at whole pixels'+(off.length?': '+[...new Set(off)].slice(0,6).join('; '):''));
  // ---- sprite cells: every figure sits in an 8, 16, 32 or 64 pixel square, feet on its bottom row, never cut off
  {const pow=c=>c.width===c.height&&[8,16,32,64].includes(c.width)&&c.cw<=c.width&&c.ch<=c.height,list=[];
-  const add=(n,c)=>list.push([n,c]);add('party',t.partySprite('#e8b94a','',0));add('party mounted',t.partySprite('#e8b94a','#8a6a4a',1));add('bandit',t.banditSprite(0));add('follower',t.followerSprite('#3d74d6',0));
+  const add=(n,c)=>list.push([n,c]);add('follower',t.followerSprite('#3d74d6',0));
   add('caravan',t.caravanSprite('#3d74d6'));add('refugee',t.refugeeSprite(0));[0,1,2].forEach(v=>{add('ship trade',t.shipSprite({seed:v,big:true,col:'#3d74d6'}));add('ship fishing',t.shipSprite({seed:v,big:false}))});[0,1,2].forEach(v=>{add('ship trade',t.shipSprite({seed:v,big:true,col:'#3d74d6'}));add('ship fishing',t.shipSprite({seed:v,big:false}))});Object.keys(t.JOBS).forEach(j=>add('worker '+j,t.folkSprite(j,0)));Object.keys(t.CRITTERS).forEach(c=>add('critter '+c,t.critterSprite(c)));
   Object.keys(t.ST).forEach(u=>{for(const pose of [0,3,7,10,13])add(u+' pose '+pose,t.unitSprite(u,0,false,0,pose))});add('hero',t.unitSprite('hero',0,true,0,7));
   Object.keys(t.MONSTERS).forEach(m=>add('monster '+m,t.unitSprite(t.MONSTERS[m].unit,1,false)));add('townsfolk',t.personSprite('folk','human',1,0));

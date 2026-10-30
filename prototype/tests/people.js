@@ -82,7 +82,6 @@ try{
  ok(G.par&&G.par.o===l,'a weak enemy lord who is caught may be called on to yield');const lg=P.gold;fix(.01);t.act('pl-yield');unfix();
  ok(l.dead&&P.gold>lg&&/yields/.test(panel()),'the lord pays a ransom and the army is gone');t.act('dlg-ok');
  // ---- a big host looks big
- ok(t.hostSize(3)===0&&t.hostSize(12)>0&&t.hostSize(60)>t.hostSize(12),'followers grow with the army: '+[3,12,30,60].map(n=>n+' → '+t.hostSize(n)).join(', '));
  world();P.troops={hum_knight:40};W.refugees=[];t.sendRefugees(src,dst,'hunger');W.refugees[0].x=P.x+30;W.refugees[0].y=P.y;t.drawWorld();ok(true,'the map draws big hosts and refugees');
  // ---- saved
  t.saveGame(true);const nr=W.refugees.length;W.refugees=[];t.loadGame();ok(W.refugees.length===nr&&nr>0,'refugees on the road are saved');

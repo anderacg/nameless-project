@@ -49,12 +49,12 @@ try{
   const inWood=deep((x,y)=>t.tAt(x,y)===t.T_FOREST),inFen=deep((x,y)=>t.passable(t.tAt(x,y))&&t.CLIMS[t.climate[y*t.MW+x]]==='swamp');
   for(const [w,at] of [['deep in a wood',inWood],['in a swamp',inFen]]){if(!at){o.push('INFO no '+w+' on this map');continue}reset();Kit.goTo(at[0],at[1]);const n=msgs(/No clear ground to camp here/);
    ok(!t.makeCamp()&&!P.camp&&P.tx==null&&msgs(/No clear ground to camp here/)===n+1,w+': no clear ground near, no camp, said in the log (searching '+S.camp.r+' tiles: with the glades and the 12-tile search such places are rare)')}S.camp.r=r0}
- // ---- hidden while camped (the owner, 2026-10-23): no figure or host drawn, your banner on a pole in the camp; back when it breaks
+ // ---- hidden while camped (the owner, 2026-10-23): no figure or army drawn (the march: world/march.js marchLeaderSprite), your banner on a pole in the camp; back when it breaks
  // (the stealth eye and the fatigue badge over your band only ask where your banner would stand, drawing none: not counted)
- {const draws=()=>{let hero=0,badge=0;const bn=[],ps=window.partySprite,ba=window.bannerAt,dt=window.drawTravelDetection,aside=f=>function(){badge++;try{return f.apply(this,arguments)}finally{badge--}};
-    window.partySprite=function(c){if(c==='#e8b94a'&&!badge)hero++;return ps.apply(this,arguments)};window.bannerAt=function(o){if(!badge)bn.push(o);return ba.apply(this,arguments)};
+ {const draws=()=>{let hero=0,badge=0;const bn=[],ps=window.marchLeaderSprite,ba=window.bannerAt,dt=window.drawTravelDetection,aside=f=>function(){badge++;try{return f.apply(this,arguments)}finally{badge--}};
+    window.marchLeaderSprite=function(o){if(o===P&&!badge)hero++;return ps.apply(this,arguments)};window.bannerAt=function(o){if(!badge)bn.push(o);return ba.apply(this,arguments)};
     window.drawTravelDetection=aside(dt);
-    try{t.drawWorld()}finally{window.partySprite=ps;window.bannerAt=ba;window.drawTravelDetection=dt}return{hero,bn}};
+    const wb=t.WORLD_BATTLE.on;t.WORLD_BATTLE.on=true;try{t.drawWorld()}finally{t.WORLD_BATTLE.on=wb;window.marchLeaderSprite=ps;window.bannerAt=ba;window.drawTravelDetection=dt}return{hero,bn}};
   reset();const a=draws();ok(a.hero>0&&a.bn.includes(P),'(out of camp your figure and its banner are drawn)');
   t.makeCamp();const b=draws(),pole=b.bn.find(o=>o!==P&&o.faction==='player'),c=t.campAt(P.x,P.y),px=pole&&pole.x-2,py=pole&&pole.headY()-t.BANNER_GAP;
   ok(!!P.camp&&!b.hero&&!b.bn.includes(P),'in camp your figure, host and the banner over you are not drawn');

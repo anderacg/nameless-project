@@ -36,17 +36,6 @@ try{
   {const g=c.getImageData(0,0,t.cv.width,t.cv.height),d=g.data,W2=g.width,off=((-Math.round(C.x*S))%S+S)%S,offy=((-Math.round(C.y*S))%S+S)%S,px=(x,y)=>d.subarray((y*W2+x)*4,(y*W2+x)*4+4).join();
    let blocks=0,badB=0;for(let by=offy+S;by<60*S;by+=S)for(let bx=off+S;bx<200*S;bx+=S){const p0=px(bx,by);let same=true;for(let j=0;j<S&&same;j++)for(let i=0;i<S;i++)if(px(bx+i,by+j)!==p0){same=false;break}blocks++;if(!same)badB++}
    ok(blocks>1000&&!badB,'the ground and what stands lie in whole '+S+' x '+S+' blocks on the camera\'s fraction (the top left of the screen: '+blocks+' blocks'+(badB?', '+badB+' not':'')+'): on the map\'s grid, gliding with it')}
-  // ---- your band steady in the middle; a lord walking by glides a device pixel at a time, his parts whole game pixels apart
-  const figs=new Set([...Array(t.PEOPLE_STEPS).keys()].map(f=>t.partySprite(t.FACS[L.fac].col,t.C.horse,f))),lead=new Set([...figs,...[...Array(t.PEOPLE_STEPS).keys()].map(f=>t.partySprite('#e8b94a','',f))]),fol=img=>img.width===16&&img.height===16&&!lead.has(img)&&img.ox==null;
-  const seen=()=>{const q=calls.filter(([img])=>figs.has(img));if(!q.length)return null;const [img,a,m]=q[q.length-1];return m.e/S};
-  const mine=()=>{const q=calls.filter(([img])=>[...Array(t.PEOPLE_STEPS).keys()].some(f=>img===t.partySprite('#e8b94a','',f)));return q.length?q[q.length-1][2].e/S:null};
-  {const xs=[],me=[],rel=[];for(let i=0;i<40;i++){t.walk(L,1,0,.15);now+=16.7;frame();xs.push(seen());me.push(mine());
-     // (his followers: drawn just before him, back to anything else)
-     const li=calls.findIndex(([img])=>figs.has(img));if(li>=0)for(let j=li-1;j>=0&&fol(calls[j][0]);j--)rel.push(calls[j][2].e/S-calls[li][2].e/S)}
-   const st=xs.slice(1).map((x,i)=>x-xs[i]);
-   ok(xs.every(x=>x!=null&&isInt(x*S))&&st.every(s=>s>-EPS&&s<=1/S+EPS)&&xs[xs.length-1]-xs[0]>4,'a lord walking by moves on monotonically, by at most 1/'+S+' of a game pixel a frame ('+(xs[xs.length-1]-xs[0]).toFixed(2)+' px in 40 frames; steps '+[...new Set(st.map(s=>s.toFixed(3)))].join(', ')+')');
-   ok(rel.length>20&&rel.every(isInt),'his host keeps whole game pixels from him: a figure never shears ('+rel.length+' followers drawn)');
-   ok(me.every(x=>x!=null&&Math.abs(x-me[0])<EPS),'your own band stays still in the middle of the screen as the map glides')}
   // (you walking: the camera steps 1/VS at a time too)
   {const cs=[];for(let i=0;i<30;i++){t.walk(P,1,0,.15);now+=16.7;frame();cs.push(G.cam.x)}const st=cs.slice(1).map((x,i)=>x-cs[i]);
    ok(cs.every(x=>isInt(x*S))&&st.every(s=>s>-EPS&&s<=1/S+EPS)&&st.some(s=>s>0)&&st.filter(s=>s>0).length>st.length/3,'as you walk the camera glides by 1/'+S+' px steps, most frames ('+st.filter(s=>s>0).length+' of '+st.length+')')}
@@ -60,11 +49,10 @@ try{
   {L.x=P.x+20.37;L.y=P.y+6.2;frame();ok(t.pickAt(L.x+.3,L.y-6)===L,'a party is picked at its place as drawn')}
  }finally{c.drawImage=di0}
  // ---- the walk cycles: WALK.n frames (6 to 8), 0 standing
- {const n=t.WALK.n,ppl=[...Array(n).keys()].map(f=>t.followerSprite('#3d74d6',f,2,'human')),rid=[...Array(n).keys()].map(f=>t.partySprite('#c74453',t.C.horse,f)),
-   wolf=[...Array(n).keys()].map(f=>t.monsterMapSprite('wolf',f)),cow=[...Array(n).keys()].map(f=>t.critterSprite('cow',f)),cv=[...Array(n).keys()].map(f=>t.caravanSprite('#c74453',f)),
+ {const n=t.WALK.n,wolf=[...Array(n).keys()].map(f=>t.monsterMapSprite('wolf',f)),cow=[...Array(n).keys()].map(f=>t.critterSprite('cow',f)),cv=[...Array(n).keys()].map(f=>t.caravanSprite('#c74453',f)),
    px=s=>s.getContext('2d', { willReadFrequently: true }).getImageData(0,0,s.width,s.height).data.join(),dist=a=>new Set(a.map(px)).size;
   ok(n>=6&&n<=8&&t.PEOPLE_STEPS===n&&t.PX.MAP_STEPS===n&&t.WALK.foot*n===10&&t.WALK.ride*n===16,'the map\'s walk cycles have '+n+' frames, the stride cut to match (a frame each '+t.WALK.foot+' px on foot, '+t.WALK.ride+' riding: the same pace)');
-  ok(dist(ppl)===n&&dist(rid)>=n-2&&dist(wolf)>=n-2&&dist(cow)>=n-2&&dist(cv)===n,'each frame its own pose: a person '+dist(ppl)+', a rider '+dist(rid)+', a wolf '+dist(wolf)+', a cow '+dist(cow)+', a caravan '+dist(cv));
+  ok(dist(wolf)>=n-2&&dist(cow)>=n-2&&dist(cv)===n,'each frame its own pose: a wolf '+dist(wolf)+', a cow '+dist(cow)+', a caravan '+dist(cv));
   const o2={x:0,y:0};t.WALKED.set(o2,7.3);t.stepOf(o2,1.25);now+=1000;ok(t.stepOf(o2,1.25)===0&&t.frameOf(o2,1.25,n)!==0,'standing still, a figure shows frame 0')}
  // ---- the battle is drawn as before: in its own pixels, whatever the world's scale
  {world();const shot=vs=>{ev('VS='+vs);Math.random=t.seeded(5);now=2e7;t.frame();return [t.cv.width,t.cv.height,t.CVS,(()=>{const d=t.ctx.getImageData(0,0,t.cv.width,t.cv.height).data;let h=0;for(let i=0;i<d.length;i+=7)h=(h*31+d[i])|0;return h})()].join()};

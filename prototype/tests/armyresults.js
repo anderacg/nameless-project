@@ -29,9 +29,5 @@ Kit.suite(({ok,info})=>{
   ok(A[0].withdrew>0&&A[0].standing===0&&A.every(adds),'the report counts those who withdrew');
   const still=A.slice(1).filter(a=>a.standing);ok(!still.length||/fight goes on without you/.test(document.querySelector('.battle-report')?.textContent||''),'armies still on the field are named as fighting on'+(still.length?' ('+still.map(a=>a.name).join(', ')+')':''));
   t.act('lt-leave');Kit.done({world:true});Kit.clear()}
- // ---- a classic battle: your band and the enemy
- {t.WORLD_BATTLE.on=false;P.troops={hum_foot:8};const foe=t.asParty({kind:'bandits',troops:Array(6).fill('militia'),x:P.x+8,y:P.y,cool:0});G.enc={kind:'party',ref:foe,list:foe.troops.slice(),allies:[],foes:[],mine:true};
-  t.startBattle({enemies:G.enc.list,deploy:false});const b=t.B;for(const u of b.units.filter(u=>u.team===1))u.hp=0;b.kills=6;b.slain=Array(6).fill('militia');b.win=true;b.over=true;t.finishBattle();const A=G.lootView.report.armies;
-  ok(A.length===2&&A[0].stance==='Your army'&&A[1].name==='Enemy'&&A[1].fallen===6&&A[0].kills===6&&A.every(adds),'a classic battle reports your band and the enemy');t.act('lt-leave')}
  ok(!ERR.length,'army results have no runtime errors');
 });

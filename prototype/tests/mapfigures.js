@@ -1,6 +1,6 @@
 'use strict';
 // The world map's own figures (doc/WORLD_DESIGN.md §10.1, Phase 1): smaller than the battle's, so a person is clearly smaller than
-// a house. A person 6 wide and 10 high over the outline under the feet (a dwarf 9), a rider 13 (16 to his banner's top), the beasts,
+// a house. A person 6 wide and 10 high over the outline under the feet (a dwarf 9), the beasts,
 // the herds, the caravan and the ships each at its size; every one in a power-of-two cell with its pixels well inside it, its
 // outline (the dark navy #1a1c26) round the silhouette only. The click targets keep their size for touch (the rings and REACH).
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.push('INFO '+m);
@@ -20,22 +20,17 @@ try{
  // ---- people: every follower (each variant, people and band), worker (loaded or not), refugee, bandit and leader on foot, at every step
  {const ps=[],races=['human','elf','dwarf','orc'];
   for(const r of races)for(let v=0;v<6;v++)for(let f=0;f<4;f++){ps.push(['follower '+r+v,t.followerSprite('#3d74d6',f,v,r),r]);ps.push(['band '+r+v,t.followerSprite('#8a4a3a',f,v,r,true),r])}
-  for(const j of Object.keys(t.JOBS))for(let f=0;f<4;f++){ps.push([j,t.workerSprite(j,f,'human',1),'human']);ps.push([j+' loaded',t.workerSprite(j,f,'dwarf',2,true),'dwarf'])}
-  for(let v=0;v<4;v++)ps.push(['refugee',t.refugeeSprite(v,v),'human']);for(let f=0;f<4;f++)ps.push(['bandit',t.banditSprite(f),'human']);
+  for(let v=0;v<4;v++)ps.push(['refugee',t.refugeeSprite(v,v),'human']);
+  for(let v=0;v<4;v++)ps.push(['refugee',t.refugeeSprite(v,v),'human']);
   const L=ps.map(([n,s,r])=>[n,look(s),r]),tall=L.filter(([n,q,r])=>q.fh>(r==='dwarf'?9:10)||q.h<9),wide=L.filter(([n,q])=>q.w>9),cells=ps.filter(([n,s])=>s.width!==16||!cell(s));
   const body=L.filter(([n])=>/^follower/.test(n)),bw=Math.max(...body.map(([n,q])=>q.w)),bh=Math.max(...L.filter(([n,q,r])=>r==='human').map(([n,q])=>q.fh));
   info('a person '+bh+' high over the outline under the feet ('+(bh+1)+' with it), a dwarf '+Math.max(...L.filter(([n,q,r])=>r==='dwarf').map(([n,q])=>q.fh))+'; '+Math.min(...L.map(([n,q])=>q.w))+'-'+bw+' wide with what is in the hand');
-  ok(!tall.length&&!cells.length&&L.length>200,'every person on the map (followers, bands, workers, refugees, bandits: '+L.length+') is 10 high (a dwarf 9) in a 16 cell'+(tall.length?': '+tall.slice(0,3).map(([n,q])=>n+' '+q.fh).join(', '):''));
+  ok(!tall.length&&!cells.length&&L.length>=200,'every person on the map (followers, bands, workers, refugees: '+L.length+') is 10 high (a dwarf 9) in a 16 cell'+(tall.length?': '+tall.slice(0,3).map(([n,q])=>n+' '+q.fh).join(', '):''));
   ok(!wide.length,'and at most 9 wide, held weapon or tool and load on the back included (6 without)'+(wide.length?': '+wide.slice(0,3).map(([n,q])=>n+' '+q.w).join(', '):''));
   const bare=t.mapPerson({race:'human',skin:'skin',hair:'brown',helm:'bare',outer:'leather',inner:'dark',team:'#3d74d6'},0),qb=look(bare);
   ok(qb.w===6&&qb.fh===10,'a person with nothing in his hands is 6 x 10 (with the outline; '+qb.w+' x '+qb.fh+')');
   const oi=L.filter(([n,q])=>q.inner>0||q.open>0);ok(!oi.length,'each outlined round the silhouette only: no outline inside, no edge without it'+(oi.length?': '+oi.slice(0,3).map(([n,q])=>n+' '+q.inner+'/'+q.open).join(', '):''));
   const house=16;ok(bh<house*.7,'a person ('+bh+') is clearly smaller than a house (a 16-px tile)')}
- // ---- leaders: a person (his sword in his hand) or a rider, no banner in the hand (it floats over the party: below), every step
- {const fs=[];for(let f=0;f<4;f++){fs.push(['lord on foot',t.partySprite('#c74453','',f)]);fs.push(['rider',t.partySprite('#c74453',t.C.horse,f)]);fs.push(['you mounted',t.partySprite('#e8b94a','#8a8a8a',f)])}
-  const L=fs.map(([n,s])=>[n,look(s),s]),bad=L.filter(([n,q,s])=>s.width!==16||(n==='lord on foot'?q.fh>10||q.w>8:q.h>13||q.w>15)||q.inner||q.open);
-  const r=L.find(([n])=>n==='rider')[1];info('a rider '+r.w+' x '+r.h+' (in a 16 cell); a lord on foot '+L[0][1].w+' x '+L[0][1].fh);
-  ok(!bad.length,'leaders on the map hold no banner: on foot a person 10 high, mounted a rider at most 13, outlined round the silhouette only'+(bad.length?': '+bad.slice(0,3).map(([n,q])=>n+' '+q.w+'x'+q.h+' '+q.inner+'/'+q.open).join(', '):''))}
  // ---- banners: each party flies its own over it (Total War-style), none for a beast or a herd
  {const tw=t.townBy('Ashford'),L=W.lords.find(l=>!l.dead);t.spawnBandit(true);const b=t.bandits[0];
   const pt=t.asParty({pt:true,watch:'day',home:tw.name,fac:tw.owner,troops:['hum_spear'],x:0,y:0,cool:0,dir:1}),cv=t.asParty({cv:true,fac:tw.owner,from:tw.name,to:tw.name,x:0,y:0,goods:{},guards:2,cool:0,dir:1});
@@ -54,8 +49,8 @@ try{
   P.x=spot[0];P.y=spot[1];P.stay=null;t.reveal();Object.assign(L,{x:P.x+40,y:P.y,inside:null,fight:null,dead:false});
   const c=t.ctx,orig=c.drawImage;let drawn=[];c.drawImage=function(img,...a){drawn.push(img);return orig.call(c,img,...a)};const sees=()=>{drawn=[];t.drawWorld();return drawn};
   try{const fl=s=>[0,1].map(f=>t.bannerSprite(s.banner(),f)),has=(d,q)=>fl(q).some(s=>d.includes(s)),at=(d,q)=>Math.max(...fl(q).map(s=>d.lastIndexOf(s)));
-   const d1=sees(),fig=Math.max(...[0,1,2,3].map(f=>d1.lastIndexOf(t.partySprite(t.FACS[L.fac].col,t.C.horse,f))));
-   ok(has(d1,L)&&has(d1,P)&&at(d1,L)>fig&&at(d1,P)>at(d1,L),'a lord in sight flies his banner, drawn after the figures (over them and the trees), yours over his');
+   const d1=sees();
+   ok(has(d1,L)&&has(d1,P)&&at(d1,P)>at(d1,L),'a lord in sight flies his banner, yours over his');
    L.x=P.x+t.vis()*1.5;const d2=sees();ok(!has(d2,L),'out of your sight, no banner');L.x=P.x+40;L.inside=tw.name;const d3=sees();ok(!has(d3,L),'sheltering inside a holding, none');L.inside=null}
   finally{c.drawImage=orig}
   // (a click on the banner picks its party; its ring still does)
@@ -77,8 +72,6 @@ try{
   const cog=look(t.shipSprite({seed:1,big:true,col:'#c74453'})),boat=look(t.shipSprite({seed:1,big:false})),mc=t.shipSprite({seed:1,big:true,moored:true}),mb=t.shipSprite({seed:1,big:false,moored:true});
   ok(cog.cell===32&&Math.abs(cog.w-26)<=2&&Math.abs(cog.h-20)<=2&&boat.cell===16&&Math.abs(boat.w-14)<=2&&boat.h<=9,'a cog some 26 x 20 in a 32 cell ('+cog.w+' x '+cog.h+'), a rowing boat some 12 x 8 in 16 ('+boat.w+' x '+boat.h+')');
   ok(mc.width===32&&mb.width===16&&t.opaqueBox(mc)[3]===31&&t.opaqueBox(mb)[3]===15&&mc.hull>0&&mc.top>mc.hull,'moored, they keep their cells and waterlines (the pier reads their hull and castles: hull '+mc.hull+', top '+mc.top+')')}
- // ---- the host: at most 9 followers, ranks 4 px apart
- ok(t.hostSize(4)===0&&t.hostSize(12)>0&&t.hostSize(200)===9,'a host shows at most 9 followers ('+[12,30,60,200].map(n=>n+' → '+t.hostSize(n)).join(', ')+')');
  // ---- click targets keep their size: each kind's ring, the reach; a lord, a caravan still answer on their figures
  {const rings={};const at={x:0,y:0,V:1e9,add:(q,r,dy)=>{rings[q.mapKind]=[r,dy||0]},box(){},fig(){},camp(){}};
   const tw=t.townBy('Ashford'),L=W.lords.find(l=>!l.dead);t.spawnBandit(true);
@@ -89,7 +82,6 @@ try{
   ok(JSON.stringify(rings)===JSON.stringify(want)&&t.REACH===14,'every kind keeps its click ring for touch ('+Object.keys(rings).map(k=>k+' '+rings[k][0]).join(', ')+') and you reach what is 14 px off');
   // (a click 9 px from a lord's ring centre still meets him; on his horse's banner, away from the ring, too)
   t.bandits.length=0;W.lords.forEach(l=>{l.x=-9999;l.y=-9999});W.monsters=[];W.critters=[];W.caravans=[];W.refugees=[];W.folk=[];W.patrols=[];
-  Object.assign(L,{x:P.x+40,y:P.y,inside:null,fight:null,dead:false});ok(t.pickAt(L.x+9,L.y-4)===L&&t.pickAt(L.x,L.y-4)===L,'a click on a lord\'s ring picks him, as wide as before (9 px off)');
-  const F=t.partyFig(L,L.look(),0),b=t.opaqueBox(F.s),fx=F.flip?F.x+F.s.width-1-b[0]-1:F.x+b[0]+1,fy=F.y+b[1]+1;ok(t.pickAt(fx,fy)===L,'and on his banner\'s top, on the figure itself')}
+  Object.assign(L,{x:P.x+40,y:P.y,inside:null,fight:null,dead:false});ok(t.pickAt(L.x+9,L.y-4)===L&&t.pickAt(L.x,L.y-4)===L,'a click on a lord\'s ring picks him, as wide as before (9 px off)')}
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}
 const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d)};

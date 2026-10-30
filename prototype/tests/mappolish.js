@@ -1,6 +1,6 @@
 'use strict';
-// The map's big figures: a lord's troop count stands clear above his banner (floating over him since Phase 1) and keeps still as his horse
-// walks; a mounted lord and a caravan answer a click or hover anywhere on what is drawn of them (horse and banner; cart, ox
+// The map's big figures: a lord's troop count stands clear above his banner (floating over him since Phase 1) and keeps still as he
+// walks; a caravan answers a click or hover anywhere on what is drawn of it (cart, ox
 // and drover), and someone small beside them still takes his own click; ships sit in power-of-two cells on the people's scale.
 // (Phase 1, D25: the map's own smaller figures: a rider and a person in a 16 cell, a caravan and a cog in 32, a rowing boat in 16;
 // the click rings keep their size for touch, so a rider now lies within his: mapfigures.js)
@@ -22,22 +22,9 @@ try{const t=T,G=t.G,P=t.P,W=t.W;t.act('begin','soldier');G.mode='world';G.modal=
    ok(!!L&&L[2]+1<top,'step '+fr+': the lord’s troop count ('+l.fighters+', he among them) is drawn clear above his banner (label row '+(L&&L[2])+', banner top '+top+')')}
  window.mapTxt=txt0;delete performance.now;
  ok(ys[0]!=null&&ys[0]===ys[1],'and it stays still as his horse steps ('+ys.join(' / ')+')');
- // ---- clicks and hovers on a lord's whole horse
  // (a picture's drawn pixels in world places: the cell's top left and whether it faces left)
  const px=(s,x0,y0,flip)=>{const d=s.getContext('2d', { willReadFrequently: true }).getImageData(0,0,s.width,s.height).data,a=[];for(let y=0;y<s.height;y++)for(let x=0;x<s.width;x++)if(d[(y*s.width+x)*4+3]>200)a.push([x0+(flip?s.width-1-x:x)+.5,y0+y+.5]);return a};
  const ring=(q,x,y,r,dy)=>Math.hypot(q.x-x,q.y-dy-y)<r;// (the old ring: 10 round a party's middle, 11 round a caravan's)
- for(const d of [1,-1]){face(d);const s=t.partySprite(t.FACS[l.fac].col,t.C.horse,0),p=px(s,l.x-8,l.y+3-16,d<0),
-     top=p.reduce((a,b)=>b[1]<a[1]?b:a),head=p.reduce((a,b)=>b[0]*d>a[0]*d?b:a),tail=p.reduce((a,b)=>b[0]*d<a[0]*d?b:a),hoof=p.filter(q=>q[1]>=l.y).reduce((a,b)=>b[0]*d<a[0]*d?b:a);
-   const pts={'banner top':top,'horse’s head':head,'tail':tail,'hind hoof':hoof},far=Object.keys(pts).filter(k=>!ring(l,pts[k][0],pts[k][1],10,4));
-   ok(Object.keys(pts).every(k=>Math.abs(pts[k][0]-l.x)<=8&&pts[k][1]>=l.y-13&&pts[k][1]<=l.y+3),'facing '+(d>0?'right':'left')+', the lord’s horse and banner fill his 16 cell, '+(far.length?'reaching past his 10 pixel ring: '+far.join(', '):'within his 10 pixel ring'));
-   const miss=Object.keys(pts).filter(k=>t.pickAt(pts[k][0],pts[k][1])!==l);ok(!miss.length,'a click anywhere on his horse and banner picks him: '+Object.keys(pts).join(', ')+(miss.length?' (missed: '+miss.join(', ')+')':''));
-   {const B=t.bannerAt(l,0),bb=t.opaqueBox(B.s);ok(t.pickAt(B.x+bb[0]+3,B.y+bb[1]+2)===l&&t.pickAt(B.x+bb[0]+3,B.y+bb[1]-4)!==l&&t.pickAt(head[0]+d*4,head[1])!==l,'his banner over him picks him too; not the open ground above it or ahead of his horse')}
-   const tip=t.tipFor(t.pickAt(head[0],head[1]));ok(!!tip&&tip.includes(l.name),'hovering his horse’s head shows his card')}
- // (someone small beside him keeps his own click)
- face(1);const b=t.bandits[0];b.fight=null;b.x=l.x-9;b.y=l.y+3;
- ok(t.pickAt(b.x,b.y-6)===b,'a bandit standing by the lord’s horse is still picked when clicked');
- {const s=t.partySprite(t.FACS[l.fac].col,t.C.horse,0),hd=px(s,l.x-8,l.y+3-16,false).reduce((a,q)=>q[0]>a[0]?q:a);ok(t.pickAt(hd[0],hd[1])===l,'and the horse’s head, away from him, still picks the lord')}
- b.x=-9999;b.y=-9999;
  // ---- clicks on a caravan's whole cart, ox and drover
  for(let i=0;i<30&&!W.caravans.length;i++)t.sendCaravan(t.TOWNS[i%t.TOWNS.length]);const c=W.caravans[0];ok(!!c,'a caravan for the fixture');
  if(c){c.x=P.x-20;c.y=P.y+60;for(const d of [1,-1]){c.dir=d;const s=t.caravanPic(c),p=px(s,c.x-16,c.y+1-32,d<0),
