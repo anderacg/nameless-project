@@ -14,10 +14,10 @@ Kit.suite(({ok,info})=>{
   // (the bandits a little way off the ring, coming in)
   const A=b.world;band.x=A.x-(A.r+30);band.y=A.y;t.bandits.push(band);return {b,guard,band}};
  try{
-  const {b,guard,band}=fight();b.world.reinforce(.01);t.drawBattle();{const m=b.world.marks?.get(band),A=b.world;
+  const {b,guard,band}=fight();{const r0=Math.random;Math.random=()=>.05;try{b.world.reinforce(.01)}finally{Math.random=r0}}t.drawBattle();{const m=b.world.marks?.get(band),A=b.world;
    ok(m&&m.col===t.ARRIVAL.col.foe&&/andit/i.test(m.name),'(the owner, 2026-10-30) the bandits coming: a marker on the ring where they come in, in a foe\'s colour, named ('+(m&&m.name)+')');
    const dx=band.x-A.x,dy=band.y-A.y;ok(m&&Math.abs(Math.atan2(Math.sin(m.a-Math.atan2(dy,dx)),Math.cos(m.a-Math.atan2(dy,dx))))<.6,'on the side of the ring they come from')}
-  for(let i=0;i<60&&!b.units.some(u=>u.sourceArmy===band||u.sourceArmy?.src===band);i++)b.world.reinforce(.5);
+  {const r0=Math.random;Math.random=()=>.05;try{for(let i=0;i<60&&!b.units.some(u=>u.sourceArmy===band||u.sourceArmy?.src===band);i++){b.t+=t.JOIN_RULES.every;b.world.reinforce(.5)}}finally{Math.random=r0}}/* (a band rides in by the dice, weighed every few seconds: worldbattle.js JOIN_RULES) */
   {const A=b.world;for(let i=0;i<200&&A.arrivals.length;i++)t.updateBattle(.05);t.drawBattle();const m=A.marks?.get(band);const e0=performance.now;let now=e0.call(performance);performance.now=()=>now+=2000;try{t.drawBattle()}finally{performance.now=e0}
    ok(m&&!A.marks.has(band),'once they are all in, it fades away')}
   const bm=b.units.filter(u=>u.sourceArmy===band||u.sourceArmy?.src===band);ok(bm.length&&b.sides.active,'the bandits join, an army of their own ('+bm.length+' men)');

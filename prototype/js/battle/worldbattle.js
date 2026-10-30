@@ -9,10 +9,11 @@
 function heralded(units){const teams=B.sides?.active?B.sides.teams():[0,1];for(const u of units){const p=u.ls||(u.ls=[]);for(const t of teams)if(t!==u.team){p[2*t]=u.x;p[2*t+1]=u.y}}}
 // (where a joining army comes in: the marker's radius r px, its colours by where it stands with you, its pulse a second, its fade s once in)
 const ARRIVAL={r:5,pulse:1.2,fade:1.5,col:{own:'#6fa8e0',ally:'#8fd08a',foe:'#e0605a',neutral:'#dba75f'}};
-// (who rides into a world battle unasked, bands and beasts (wild): from reach px past its ring, weighing it every every s: a band
+// (who rides into a world battle unasked, bands and beasts (wild) not of the kind you fight (kin): from reach px past its ring, weighing it every every s: a band
 // when the field is small (small men a side at most) or worn (after after s, worn of its men down), by chance; a hungry beast never
 // within near px of a holding, by chance: WorldBattleArea#tempted)
-const JOIN_RULES={reach:120,every:5,band:{small:12,after:40,worn:.4,chance:.5},beast:{near:240,chance:.25},wild:o=>o.mapKind==='band'||o.mapKind==='monster'};
+const JOIN_RULES={reach:120,every:5,band:{small:12,after:40,worn:.4,chance:.5},beast:{near:240,chance:.25},wild:o=>o.mapKind==='band'||o.mapKind==='monster',
+  kin:(o,e)=>!!e&&(o.mapKind==='monster'?e.kind==='monster'&&o.id===e.ref?.id:e.kind==='party'&&(o.kind||'bandits')===((e.ref?.src||e.ref)?.kind||'bandits'))};// (kin: a pack or band of the kind you fight, riding to its own: as ever)
 const WORLD_BATTLE={on:true,melee:true,scale:6,inner:8,outer:14,interaction:6,apron:22,join:220,regroup:7,returns:1,turn:3.5,blocked:30,stall:6,sprite:3,step:1/60,sightBase:1,perFighter:4,avoid:28,avoidScan:1};
 // Only local avoidance runs while campaign time is paused. Existing work/travel orders stay on their owners.
 class BattleBystanders{
@@ -219,7 +220,7 @@ class WorldBattleArea{
      some time"): it weighs the fight every JOIN_RULES.every s of it. A band, when the field is small (no side over band.small men
      still fighting) or worn (after band.after s, band.worn of those who began it down), by band.chance; a beast, only a hungry
      kind (aggro) and never within beast.near px of a holding, by beast.chance. Your lords, watches and companions as ever */
-  tempted(o){if(!JOIN_RULES.wild(o))return true;const J=JOIN_RULES,M=this.mulled||(this.mulled=new Map()),t=M.get(o);if(t!=null&&B.t<t)return false;M.set(o,B.t+J.every);
+  tempted(o){if(!JOIN_RULES.wild(o)||JOIN_RULES.kin(o,G.enc))return true;const J=JOIN_RULES,M=this.mulled||(this.mulled=new Map()),t=M.get(o);if(t!=null&&B.t<t)return false;M.set(o,B.t+J.every);
     if(o.mapKind==='monster'){const X=J.beast;return !!MONSTERS[o.id]?.aggro&&!TOWNS.some(h=>Math.hypot(h.x-o.x,h.y-o.y)<X.near)&&Math.random()<X.chance}
     const X=J.band,by=new Map();for(const u of B.units)if(fighting(u))by.set(u.team,(by.get(u.team)||0)+1);const now=[...by.values()].reduce((n,v)=>n+v,0),most=Math.max(0,...by.values());
     this.began=this.began||Math.max(now,1);const small=most<=X.small,worn=B.t>=X.after&&now<=this.began*(1-X.worn);return (small||worn)&&Math.random()<X.chance}

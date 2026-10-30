@@ -58,7 +58,14 @@ function marchCircle(ents,o,cam,r=marchOuter(o),col=o===P?B?'#e4c777':travelDete
 }
 
 // Positions are runtime state. Saved group offsets remain the destination, never a rigid transform of the men.
-const MARCH_MOVE={cell:4,pad:48,chunk:64,repath:.45,refresh:2,catchup:1,turn:1.5,settle:.2,gap:2.4,active:180,queries:6,teleport:160,bucket:8,waypoint:.15,sidestep:[0,.65,-.65,1.2,-1.2]};
+const MARCH_MOVE={cell:4,pad:48,chunk:64,repath:.45,refresh:2,catchup:1,turn:1.5,settle:.2,gap:2.4,active:180,queries:6,teleport:160,bucket:8,waypoint:.15,sidestep:[0,.65,-.65,1.2,-1.2],part:3};
+/* no two marchers on each other (the owner, 2026-10-30: "make sure units cannot overlap"): each has his body, as in battle
+   (battle.js JOSTLE: foot, mounted, a big one 18), drawn WORLD_BATTLE.sprite/scale as big on the map; a row of bigger bodies
+   than its formation's spacing marches that much wider (marchRoomK); after each step, MARCH_MOVE.part passes push apart any two
+   closer than their bodies, half each, onto open ground (the pivot, and a leader drawn apart, never pushed: the others give way) */
+const marchBodyOf=type=>{const s=ST[type]||{};return s.big?18:s.mounted?JOSTLE.mount:JOSTLE.foot};
+const marchBody=u=>marchBodyOf(u.type)*WORLD_BATTLE.sprite/WORLD_BATTLE.scale;
+const marchRoomK=row=>{const F=FORMS[row.form]||FORMS.line;return Math.max(1,marchBodyOf(row.type)/Math.min(F.gx,F.gy))};
 const marchFootprints=(x0,y0,x1,y1)=>TOWNS.flatMap(t=>(t.lots||[]).filter(l=>l.st!=='ruined'&&l.k!=='field'&&l.k!=='pasture'&&l.x*TILE<x1&&l.y*TILE<y1&&(l.x+l.n)*TILE>x0&&(l.y+l.n)*TILE>y0).map(l=>{
   const b=opaqueBox(lotSprite(t,l)),h=Math.min(12,l.n*TILE*.3);return{x:l.x*TILE+b[0],y:l.y*TILE+Math.max(b[1],b[3]-h),w:b[2]-b[0]+1,h};
 }));
@@ -84,7 +91,7 @@ class MarchGround{
   clear(a,b){return this.contains(a)&&this.contains(b)&&lineClear(this.grid,a.x-this.x,a.y-this.y,b.x-this.x,b.y-this.y)}
   // Keep blocked slots on the leader's connected ground; distinct nearby slots prevent a pile on a riverbank or building.
   snap(p,reach,reserved,inside){
-    const g=this.grid,a=this.local(p),i=routeIx(g,a.x,a.y),space=q=>!reserved?.points?.some(v=>Math.hypot(v.x-q.x,v.y-q.y)<MARCH_MOVE.gap+.2),at=j=>({x:this.x+(j%g.C+.5)*g.cs,y:this.y+(Math.floor(j/g.C)+.5)*g.cs}),ok=j=>g.cost[j]&&this.stand(at(j))&&(!reach||reach[j])&&(!reserved||!reserved.has(j))&&(!inside||inside(at(j)))&&space(at(j)),keep=(q,j)=>{if(reserved){reserved.add(j);(reserved.points||(reserved.points=[])).push(q)}return q};
+    const g=this.grid,a=this.local(p),i=routeIx(g,a.x,a.y),rb=p.type?marchBody(p):MARCH_MOVE.gap+.2,space=q=>!reserved?.points?.some(v=>Math.hypot(v.x-q.x,v.y-q.y)<(rb+(v.r??rb))/2),at=j=>({x:this.x+(j%g.C+.5)*g.cs,y:this.y+(Math.floor(j/g.C)+.5)*g.cs}),ok=j=>g.cost[j]&&this.stand(at(j))&&(!reach||reach[j])&&(!reserved||!reserved.has(j))&&(!inside||inside(at(j)))&&space(at(j)),keep=(q,j)=>{if(reserved){reserved.add(j);(reserved.points||(reserved.points=[])).push({...q,r:rb})}return q};// (a body's room kept round each goal taken: marchBody)
     if(this.contains(p)&&this.stand(p)&&ok(i)&&space(p))return keep({x:p.x,y:p.y},i);
     const c0=i%g.C,r0=Math.floor(i/g.C);let best=-1,dist=Infinity;
     for(let k=0;k<Math.max(g.C,g.R)&&!(best>=0&&k*k>dist);k++)for(let r=Math.max(0,r0-k);r<=Math.min(g.R-1,r0+k);r++){
@@ -107,7 +114,7 @@ class MarchArmy{
     const o=this.owner,co=Math.cos(this.face),si=Math.sin(this.face),out=[];
     const pivot=this.pivot();
     for(const row of this.rows)if(row.id!=='hero'){
-      const x=o.x+row.x*co-row.y*si,y=o.y+row.x*si+row.y*co,slots=formSlots(row.form,row.count,this.face+(row.face||0),row.files,WORLD_BATTLE.sprite);
+      const x=o.x+row.x*co-row.y*si,y=o.y+row.x*si+row.y*co,slots=formSlots(row.form,row.count,this.face+(row.face||0),row.files,WORLD_BATTLE.sprite*marchRoomK(row));
       const at=pivot?.row===row.id?slots[pivot.index]:[0,0];
       slots.forEach(([sx,sy],i)=>out.push({row:row.id,index:i,type:row.type,character:row.character,pivot:pivot?.row===row.id&&pivot.index===i,x:x+(sx-at[0])/WORLD_BATTLE.scale,y:y+(sy-at[1])/WORLD_BATTLE.scale}));
     }return out;
@@ -138,16 +145,22 @@ class MarchArmy{
     const near=u=>{const out=[],cx=Math.floor(u.x/cell),cy=Math.floor(u.y/cell);for(let y=cy-1;y<=cy+1;y++)for(let x=cx-1;x<=cx+1;x++)out.push(...buckets.get(x+','+y)||[]);return out};
     const wanted=new Map(targets.map(p=>[p.row+':'+p.index,p])),requests=[],sameGoals=this.goalGround===nav&&this.goalX===o.x&&this.goalY===o.y&&this.goalFace===this.face&&this.goalRoster===this.key&&this.goalBounds===bounds;
     this.goalGround=nav;this.goalX=o.x;this.goalY=o.y;this.goalFace=this.face;this.goalRoster=this.key;this.goalBounds=bounds;
-    for(const u of this.units){if(u.pivot){reserved.add(routeIx(nav.grid,u.x-nav.x,u.y-nav.y));continue}u.walking=false;const p=wanted.get(u.row+':'+u.index);if(!sameGoals){const at=routeIx(nav.grid,u.x-nav.x,u.y-nav.y),local=reach[at]?reach:nav.island(u);u.goal=p&&nav.snap(bounds?bounds(p):p,local,reserved,inside)}if(!u.goal)continue;
+    if(marchSeparateLeader(o))(reserved.points=[]).push({x:o.x,y:o.y,r:marchBodyOf(o===P?'hero':'militia')*WORLD_BATTLE.sprite/WORLD_BATTLE.scale});// (the leader drawn apart stands there: no goal on him)
+    for(const u of this.units){if(u.pivot){reserved.add(routeIx(nav.grid,u.x-nav.x,u.y-nav.y));(reserved.points||(reserved.points=[])).push({x:u.x,y:u.y,r:marchBody(u)});continue}u.walking=false;const p=wanted.get(u.row+':'+u.index);if(!sameGoals){const at=routeIx(nav.grid,u.x-nav.x,u.y-nav.y),local=reach[at]?reach:nav.island(u);u.goal=p&&nav.snap(bounds?{...bounds(p),type:p.type}:p,local,reserved,inside)}if(!u.goal)continue;
       u.straight=nav.clear(u,u.goal);if(u.straight){u.plan=null;delete u.needAt;continue}
       const w=u.plan;if(!w||w.ground!==nav||this.time>=w.at||Math.hypot(w.goal.x-u.goal.x,w.goal.y-u.goal.y)>nav.grid.cs){u.needAt??=this.time;requests.push(u)}}
     requests.sort((a,b)=>a.needAt-b.needAt||a.id-b.id);for(const u of requests.slice(0,MARCH_MOVE.queries)){this.queries++;u.plan={ground:nav,p:nav.path(u,u.goal),i:0,goal:u.goal,at:this.time+MARCH_MOVE.repath+u.id%7*.025};delete u.needAt}
     for(const u of this.units){if(u.pivot)continue;const goal=u.goal;if(!goal||Math.hypot(goal.x-u.x,goal.y-u.y)<=MARCH_MOVE.settle)continue;
       let aim=goal;if(!u.straight){const w=u.plan;if(!w||w.ground!==nav||!w.p.length)continue;while(w.i<w.p.length-1&&(Math.hypot(w.p[w.i].x-u.x,w.p[w.i].y-u.y)<MARCH_MOVE.waypoint||nav.clear(u,w.p[w.i+1])))w.i++;aim=w.p[w.i]}
-      const ax=aim.x-u.x,ay=aim.y-u.y,l=Math.hypot(ax,ay);if(l<.001)continue;const amount=Math.min(step,l),friends=near(u),angle=Math.atan2(ay,ax);let q=null;
-      for(const off of MARCH_MOVE.sidestep){const p={x:u.x+Math.cos(angle+off)*amount,y:u.y+Math.sin(angle+off)*amount};if(nav.clear(u,p)&&!friends.some(v=>v!==u&&Math.hypot(v.x-p.x,v.y-p.y)<MARCH_MOVE.gap&&Math.hypot(v.x-p.x,v.y-p.y)<Math.hypot(v.x-u.x,v.y-u.y)-.001)){q=p;break}}if(!q)continue;
+      const ax=aim.x-u.x,ay=aim.y-u.y,l=Math.hypot(ax,ay);if(l<.001)continue;const amount=Math.min(step,l),friends=near(u),angle=Math.atan2(ay,ax),ru=marchBody(u);let q=null;
+      for(const off of MARCH_MOVE.sidestep){const p={x:u.x+Math.cos(angle+off)*amount,y:u.y+Math.sin(angle+off)*amount};if(nav.clear(u,p)&&!friends.some(v=>v!==u&&Math.hypot(v.x-p.x,v.y-p.y)<(ru+marchBody(v))/2&&Math.hypot(v.x-p.x,v.y-p.y)<Math.hypot(v.x-u.x,v.y-u.y)-.001)){q=p;break}}if(!q)continue;
       const at=buckets.get(u.bucket);at.splice(at.indexOf(u),1);u.dir=Math.atan2(q.y-u.y,q.x-u.x);u.x=q.x;u.y=q.y;u.walk+=amount;u.walking=true;put(u);
     }
+    // (then apart: no two closer than their bodies; a leader drawn apart is a body too, never pushed)
+    const lead=marchSeparateLeader(o)?{x:o.x,y:o.y,pivot:true,type:o===P?'hero':'militia'}:null,move=(u,x,y)=>{const p={x,y};if(!nav.clear(u,p)||!nav.stand(p))return;const at=buckets.get(u.bucket);at.splice(at.indexOf(u),1);u.x=x;u.y=y;put(u)};
+    for(let pass=0;pass<MARCH_MOVE.part;pass++)for(const u of this.units){if(u.pivot)continue;const ru=marchBody(u);
+      for(const v of lead?[...near(u),lead]:near(u)){if(v===u)continue;const dx=u.x-v.x,dy=u.y-v.y,dd=Math.hypot(dx,dy),need=(ru+marchBody(v))/2;if(dd>=need)continue;
+        const k=v.pivot?1:.5,a=dd>1e-6?Math.atan2(dy,dx):u.id*2.39996;move(u,u.x+Math.cos(a)*(need-dd)*k,u.y+Math.sin(a)*(need-dd)*k)}}
   }
   forGroup(id){return this.units.filter(u=>u.row===id)}
   settlePivot(){
