@@ -1,6 +1,6 @@
 # Unit ranks: design
 
-Status: **design only, revision 2** (2026-10-30, written against `codex` at c06c6b3). Nothing here is built. The owner answered revision 1's questions; his answers are in **Decisions** and folded into the rules. §9 lists what is still open.
+Status: **design only, revision 3** (2026-10-30, written against `codex` at c06c6b3). Nothing here is built. The owner answered revisions 1 and 2's questions; his answers are in **Decisions** and folded into the rules. §9 lists what is still open.
 
 **Readers:** the owner, and whoever builds the phases of §8.
 
@@ -31,6 +31,13 @@ Revision 2 (the owner's answers to revision 1's questions):
 - **The ladder is a baseline for later:** Spear and Bow are built first; the table and its code are made so the other roles are added as data later.
 - **Peasants (tier 0) have no ranks:** they grind experience toward their first upgrade, and that first grind is made hard.
 
+Revision 3 (the owner's answers to revision 2's questions):
+- **Trainers are like Skyrim's:** named people who teach, each only up to his own level. His level caps the **rank** he can train a group to.
+- **Training can reach rank 5,** but it is not the main way to advance: an optional thing to advance a little faster. Battle stays the main road.
+- **5 trainings a week per trainer,** for your whole army.
+- **The trainer trait** is a companion role (Trainer) and a hero talent, and **holdings' trainers work by the same rules** (roles, level, 5 a week).
+- **Some trainers stay put, some travel** between holdings and places; where they are is heard in the news and rumours. A player may need a certain trainer to train, or to **upgrade**, certain units.
+
 ## 1. Experience and rank
 
 - Each group keeps `xp` (its experience) and `rank` (1 to 5). A new group starts at rank 1, `xp` 0.
@@ -58,20 +65,32 @@ Revision 2 (the owner's answers to revision 1's questions):
 
 ## 3. Train (experience) and trainers
 
-- **Train** is an order to a group: it drills under a trainer and gains **flat experience by the trainer's expertise level** (`RANKS.train.xp[level]`, proposal: 20 / 35 / 50 for levels 1 to 3).
-- **A trainer** has an **expertise**: one or more roles (§ "Words used": spear, bow, shield, sword, cavalry…) and a **level** (1 to 3). He can train only groups of his roles, and only up to **his level's tier** (level 1: tier 0 and 1; level 2: up to tier 2; level 3: up to tier 3).
-- **Where:**
-  - **In your camp:** only when your band has a trainer: your hero or a companion with the **trainer trait** (a new companion role, `ROLES.trainer`, with its expertise; for the hero a talent). Free.
-  - **At a holding:** its trainers (each holding has a few, by its size and people: a town 1 to 2 roles, a castle 2 to 3, the capital more, at higher levels), for **gold** (`RANKS.train.gold`, by tier). A holding with no trainer for your group's role cannot train it.
-  - **At a special place:** e.g. a knightly order's house or a mercenary camp, with a master trainer of one role (later; the shape is the same as a holding's).
-- **Limits:** about **5 trainings a week** (`RANKS.train.week`, the owner's to adjust). Proposal: counted for the band (any groups), at most one per group a day.
-- **Ranks it reaches:** training raises experience like battle does; the trainer's level caps the tier, not the rank (open, §9).
-- In the Army window (a group's page: Train, with the trainer and what it gives, how many are left this week) and at a holding (its trainers: the Barracks' Train tab).
+Training is optional: a way to advance a little faster, never the main one (the owner). Battle stays the main road to rank 5.
+
+### 3.1 A trainer
+- A **trainer** is a person (`Trainer`, one record each) with:
+  - **roles:** one or two (spear, bow, shield, sword, cavalry, horse archer, caster, scout);
+  - **a level**, as Skyrim's trainers: **1 journeyman, 2 expert, 3 master**. His level caps the rank he trains a group to: journeyman to **rank 2**, expert to **rank 4**, master to **rank 5** (`RANKS.train.cap`);
+  - **what a training gives:** flat experience by his level (`RANKS.train.xp`, proposal 15 / 25 / 35: about a third of a fight's, so it helps without replacing battle);
+  - **5 trainings a week** (`RANKS.train.week`), for your whole army: each is one group trained once; the count starts again each week;
+  - **his price** (a holding's or a wandering trainer's; yours are free): by his level and the group's tier, `RANKS.train.gold`.
+- **Every trainer follows these rules,** yours or the world's.
+
+### 3.2 Who trains
+- **Your own:** your hero with the trainer talent (the tree's Drillmaster becomes it: his people's melee or bow role, the level rising with the talent's ranks), and any **companion with the Trainer role** (a new `ROLES.trainer`: each companion his own roles, his level rising as he levels). They train only while you are **in your camp**, free.
+- **The world's:** trainers living in holdings (a town's 1 to 2, a castle's 2 to 3, a capital's more, by its people and size), at **special places** (a knightly order's house, a mercenary camp, a hermit's hut: later), and **wandering ones** who travel between holdings and places on a round, a few days at each.
+
+### 3.3 Finding them
+- A holding's trainers are listed in its Barracks (their Train tab: each his roles, level, price and trainings left this week).
+- **Wandering trainers are news:** where one is now, and where he goes next, is heard in the rumours (`news.js`: "A master of the bow, Aldric Greywater, is teaching at Saltmere this week") and in the tavern's information. The Journal keeps the trainers you have met and where they were last heard of.
+- A trainer you need is a reason to travel: a master is rare (a few in the world), and some upgrades need one (§4).
 
 ## 4. Upgrade (tier)
 
 - A **rank-5** group upgrades as a whole: it keeps its id, name, slot and count; its kind becomes the next tier's (the path's choice where there are two, as now); it starts at **rank 1**, `xp` 0. This is today's whole-group upgrade (`RecruitmentService#trainGroup`, `ArmyRoster#upgrade`), now gated by rank instead of pooled experience.
-- **Where and its cost:** below tier 3 and not into a caster, anywhere, free (from the Army window); tier 3 and casters at a holding that trains, for `trainCost` × the group's men (as today).
+- **Where and its cost:**
+  - an upgrade below tier 3 and not into a caster: **anywhere, free** (from the Army window);
+  - **special upgrades** (to tier 3, or into a caster): only with **a trainer of that role at expert level or more** (master for some: `RANKS.upgrade.need`, by target), wherever he is (a holding, a place, a wandering one, or your own), for his price (`trainCost` × the group's men; your own: free). This replaces "a holding that trains" (`TRAIN_PLACE`).
 - A group at the end of its path at rank 5 is done: its badge gold, five chevrons.
 
 ## 5. The skills ladder
@@ -120,14 +139,11 @@ Each role has five rungs. **Rank 1** has the role's basic skill; the rest unlock
 
 1. **Ranks and badges:** group `xp`/`rank`, the ladder, earning in battle, the badge everywhere, Upgrade gated by rank 5 (Train 1/all removed), `P.txp` dropped, the peasants' first grind. No battle numbers change.
 2. **The ladder, Spear and Bow:** `RANK_SKILLS`, Brace and Fire arrows gated by rank, their passives. Fingerprints re-recorded with reasons.
-3. **Trainers and Train:** the trainer trait and companion role, holdings' and places' trainers by role and level, the weekly limit, gold at holdings.
-4. **AI ranks:** starting ranks, growth from fights and drill, lords' upgrades.
-5. **The other roles' ladders** and new actives, a few at a time.
+3. **Trainers:** the `Trainer` record and its rules; holdings' trainers (Barracks); your hero's talent and the companions' Trainer role (in camp); special upgrades needing a trainer.
+4. **Wandering trainers:** their rounds, the news and rumours, the Journal's list.
+5. **AI ranks:** starting ranks, growth from fights and drill, lords' upgrades.
+6. **The other roles' ladders** and new actives, a few at a time.
 
 ## 9. Open questions
 
-1. **The trainer's cap:** "the training cap for tier based on the trainer's expertise level". I read it as: a level-1 trainer trains tier-1 groups (and peasants), level 2 up to tier 2, level 3 up to tier 3. Or does his level cap the **rank** he can train a group to (e.g. level 1 to rank 2, level 2 to rank 4, level 3 to rank 5)?
-2. **Can training alone reach rank 5,** or must the last rank(s) be earned in battle?
-3. **5 a week:** for the whole band, or for each group?
-4. **The trainer trait:** who has it? My proposal: a new companion role, Trainer (each companion an expertise of 1 to 2 roles and a level, raised as they level up), and a hero talent on the tree (Drillmaster becomes it: the hero trains his own people's roles).
-5. **Holdings' trainers:** fixed per holding (made with the world: a town's by its people and size), or changing over time (one leaves, another comes)?
+None now. The numbers marked "proposal" are first values in the tunables, for the owner to adjust in play.
