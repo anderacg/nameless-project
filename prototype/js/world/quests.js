@@ -580,13 +580,26 @@ function questArrive(t){
 }
 /* the one you track (P.track: 'q' and a quest's id, or 't' and a story's number; none tracked: no field, so a save without one
    is as it was): its quest (a story's: the quest its step waits on) and that quest's goal; untracked once it ends */
+/* the quests you track (the owner, 2026-10-30: a tracker for quick access, ui/questtrack.js): P.tracks, the newest first, at most
+   QUEST_TRACKS; the one marked on the map, P.track, among them. set(k): k tracked and marked; set(null): the marked one let go
+   (untracked in your Quests), none marked; drop(k): k over, gone from the tracker, the next marked if it was. A save without
+   P.tracks: the marked one alone */
+const QUEST_TRACKS=5;
 const QuestTrack={
   key(){
     return P.track||null;
   },
+  list(){
+    return (P.tracks||(P.track?[P.track]:[])).filter(k=>this.quest(k)||this.thread(k));
+  },
   set(k){
-    if(k)P.track=k;
-    else delete P.track;
+    const t=P.tracks||(P.tracks=P.track?[P.track]:[]);
+    if(k){P.track=k;if(!t.includes(k))t.unshift(k);t.length=Math.min(t.length,QUEST_TRACKS);return}
+    const i=t.indexOf(P.track);if(i>=0)t.splice(i,1);delete P.track;
+  },
+  drop(k){
+    const t=P.tracks,was=P.track===k;if(t){const i=t.indexOf(k);if(i>=0)t.splice(i,1)}
+    if(!was)return;const next=(t||[]).find(x=>this.quest(x)||this.thread(x));if(next)P.track=next;else delete P.track;
   },
   thread(k){
     return k&&k[0]==='t'?Thread.list().on.find(th=>th.i===+k.slice(1))||null:null;
@@ -607,8 +620,8 @@ const QuestTrack={
     return !!k&&this.quest(k)===q;
   },
 };
-worldOn('quest:ended',d=>{if(d&&d.e&&P.track==='q'+d.e.id)QuestTrack.set(null)});
-worldOn('thread:ended',d=>{if(d&&d.e&&P.track==='t'+d.e.i)QuestTrack.set(null)});
+worldOn('quest:ended',d=>{if(d&&d.e)QuestTrack.drop('q'+d.e.id)});
+worldOn('thread:ended',d=>{if(d&&d.e)QuestTrack.drop('t'+d.e.i)});
 /* panels */
 const rewardText=r=>'<span class="gold">'+r.gold+' gold</span>'+(r.rep?' · +'+r.rep+' reputation':'')+(r.honor?' · +'+r.honor+' honor':'')+(r.xp?' · '+r.xp+' XP':'');
 // a quest's facts, [label, html] each: who gave it, the day taken, its timing, where it is turned in, its reward (a late one's

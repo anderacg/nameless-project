@@ -105,6 +105,7 @@ class Quest extends Happening{
     if(this.begin(townBy(this.home))===false)return false;
     P.quests.push(this);
     log('New quest: '+this.title+'. '+this.takenLine()+'Track it in your Quests (Q).','gold','story',this.journalKey);
+    worldEmit('quest:new',{q:this});// (its note under the tracker: ui/questtrack.js)
     return true;
   }
   // (taken: its due day; its words for it in the line)

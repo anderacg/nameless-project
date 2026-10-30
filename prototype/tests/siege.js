@@ -65,7 +65,7 @@ try{
  // raid a village (unwalled: days of world simulation above can build it a palisade, and then it is a siege, not a raid;
  // the world's dice are seeded from here, so the raid plays out the same every run)
  {const r0=Math.random;Math.random=t.seeded(6201);try{
- quiet();army();vil.wall=0;P.inv=P.inv.map(()=>null);t.initCritters();t.ensureEcon(vil);vil.stock.grain=Math.max(vil.stock.grain||0,60);vil.stock.meat=Math.max(vil.stock.meat||0,20);const vr=t.repAt(vil.name);at(vil);t.updateWorld(.01);ok(/Raid/.test(panel()),'a hostile village can be raided');
+ quiet();army();t.W.patrols=[];/* (no watch on the road to meet first: where it stands hangs on the world's dice before) */vil.wall=0;P.inv=P.inv.map(()=>null);t.initCritters();t.ensureEcon(vil);vil.stock.grain=Math.max(vil.stock.grain||0,60);vil.stock.meat=Math.max(vil.stock.meat||0,20);const vr=t.repAt(vil.name);at(vil);t.updateWorld(.01);ok(/Raid/.test(panel()),'a hostile village can be raided');
  t.act('sg-raid-auto');t.act('cont');done();ok(P.raid&&!vil.raided&&t.repAt(vil.name)<vr-20,'beating the militia starts the raid, and the village already hates you');
  G.lastTown=null;G.encCool=0;t.clickAt(vil.x,vil.y-4);ok(G.mode==='besiege'&&/plundered/.test(panel()),'the village is closed while you raid it');t.act('sg-wait');
  for(let i=0;i<70&&P.raid;i++)t.updateWorld(.25);ok(vil.raided>G.day&&t.foodN()>10&&t.repAt(vil.name)<vr-20&&!t.herdOf(vil),'raiding takes food, burns the herd and earns hatred (raided '+(vil.raided>G.day)+', food '+t.foodN()+', rep '+t.repAt(vil.name)+' vs '+vr+', herd '+!!t.herdOf(vil)+', raid '+!!P.raid+')');

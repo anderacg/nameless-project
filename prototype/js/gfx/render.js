@@ -471,6 +471,7 @@ function updateHUD(force){
   const d=$('#wday');if(d)setHtml(d,icon(darkness()>.3?'moon':'sun',16)+'<span>Day '+G.day+' · '+timeOfDay()+'</span>'+byRoadPill()+followPill()+'<b'+(G.paused?'':' class="off"')+'>Paused</b>');
   window.mobileWorldHud?.update(fp,mo,Math.round(P.bsta));
   const cb=$('#campBtn');if(cb){cb.classList.toggle('on',!!P.camp);cb.setAttribute('aria-pressed',String(!!P.camp))}
+  questTrackHUD();// (the quests you track, under the band card as it now stands: ui/questtrack.js)
 }
 // a short hint at the top of the screen for where you are (H shows every control)
 function updateHint(){
