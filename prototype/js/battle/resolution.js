@@ -61,7 +61,7 @@ class BattleResolution{
         slot:(b.playerOrder||Object.keys(b.groups)).indexOf(g.id)});
       const source=partyRoster(P).groups.find(s=>s.id===g.sourceGroupId);if(source){source.form=g.form;source.files=g.files}
     }
-    this.ranksUp=b.ranksUp=b.opts.tournament?[]:groupRanks(b,b.win);// (each of your groups' experience from its men's, before the losses: core/ranks.js)
+    this.ranksUp=b.ranksUp=b.opts.tournament?[]:groupRanks(b,b.win);if(!b.opts.tournament)aiBattleRanks(b);// (each of your groups' experience from its men's, before the losses: core/ranks.js)
     const o=b.opts,win=b.win,retreat=!!b.retreat,caught=b.caught||0,got=b.withdrawn||0,standing=b.units.filter(u=>u.team===1&&u.hp>0).length,fallen=Object.values(b.lost).reduce((a,n)=>a+n,0);bbar.hidden=true;G.mode='dialog';lootStart();
     const lost=o.tournament?{}:b.lost,kills=b.kills,slain=b.slain,h=b.hero,X=b.hx;this.ambush=b.surprise?.report;
     if(b.bestCombo>=3)toast('Your longest chain of blows: '+b.bestCombo+' hits.',undefined,'war');
@@ -146,7 +146,7 @@ class BattleResolution{
     }
     // your groups' experience (core/ranks.js): a fought battle's from its men (finish, groupRanks); auto-resolved, each group the
     // same share of the fight
-    {const up=auto?groupRanksAuto(win,kills):this.ranksUp||[];html+=rankUpHtml(up)}
+    {const up=auto?groupRanksAuto(win,kills):this.ranksUp||[];html+=rankUpHtml(up);if(auto&&e?.ref)aiFightRanks(e.ref,!win)}
     // (withdrawn or beaten, the beasts holding the field: the spoils stay there, a quest to take them back: world/fieldloot.js)
     if(!win&&e.kind==='monster'){const at=this.battle?.world||e.ref,q=leaveFieldLoot(at.x,at.y,slain||[],e.ref);if(q)html+=fieldLootLine(q)}
     if(!win)encLost(e);// (withdrawn or beaten: what that costs or leaves behind, engage.js ON_WIN lost)

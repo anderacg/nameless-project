@@ -9,7 +9,7 @@ Kit.suite(({ok})=>{
  const grp=(k,n,rank)=>{r.add(k,n,'new');const g=r.groups.filter(x=>x.type===k).pop();t.rankGain(g,1e6);if(rank<R.max){t.rankReset(g);t.rankGain(g,R.xp[t.ST[k].tier].slice(0,rank-1).reduce((a,b)=>a+b,0))}return g};
  const sp1=grp('hum_spear',4,1),sp5=grp('hum_spear',4,5),bw1=grp('hum_bow',4,1),bw4=grp('hum_bow',4,4),cav=grp('hum_squire',3,1);
  ok([sp1,sp5,bw1,bw4,cav].map(t.rankOf).join()==='1,5,1,4,1','(groups at ranks 1, 5, 1, 4, 1)');
- const foe=t.asParty({kind:'bandits',troops:['hum_spear','hum_spear','hum_spear','militia'],x:P.x+30,y:P.y,cool:0});t.bandits.length=0;t.bandits.push(foe);
+ const foe=t.asParty({kind:'bandits',troops:['hum_spear','hum_spear','hum_spear','militia'],x:P.x+30,y:P.y,cool:0});t.bandits.length=0;t.bandits.push(foe);t.aiGroups(foe).forEach(g=>{g.rank=R.ai});/* (their own ranks, world/armyranks.js: set here) */
  G.enc={kind:'party',ref:foe,list:foe.troops.slice(),allies:[],foes:[],mine:true};t.startBattle({enemies:G.enc.list,tournament:false});Kit.engage();const b=t.B;
  const bg=g=>Object.values(b.groups).find(x=>x.sourceGroupId===g.id),has=(g,id)=>t.groupHasAbility(bg(g),id),unit=g=>b.units.find(u=>u.grp===bg(g).id);
  t.updateBattle(.01);

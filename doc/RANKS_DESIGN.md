@@ -1,6 +1,6 @@
 # Unit ranks: design
 
-Status: **phases 1 to 4 built** (trainers and wandering trainers: README "Trainers", "Wandering trainers"; mastery and proficiency too) (2026-10-30: ranks, badges, the rank-5 upgrade, the peasants' grind; the Spear and Bow ladders; README "Ranks", "Rank skills"); phases 5 and 6 not yet; design revision 3 (2026-10-30, written against `codex` at c06c6b3). Nothing here is built. The owner answered revisions 1 and 2's questions; his answers are in **Decisions** and folded into the rules. §9 lists what is still open.
+Status: **phases 1 to 5 built** (trainers, wandering trainers, AI armies' ranks: README "Trainers", "Wandering trainers", "AI armies' ranks"; mastery and proficiency too) (2026-10-30: ranks, badges, the rank-5 upgrade, the peasants' grind; the Spear and Bow ladders; README "Ranks", "Rank skills"); phase 6 (the other roles' ladders) not yet; design revision 3 (2026-10-30, written against `codex` at c06c6b3). Nothing here is built. The owner answered revisions 1 and 2's questions; his answers are in **Decisions** and folded into the rules. §9 lists what is still open.
 
 **Readers:** the owner, and whoever builds the phases of §8.
 

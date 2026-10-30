@@ -11,6 +11,11 @@ const RANKS={max:5,
   ai:2,
   xp:{1:[40,100,180,280],2:[60,150,270,420],3:[90,220,400,620]},
   peasant:160,
+  // (an AI army's groups (doc/RANKS_DESIGN.md §6, phase 5): their first rank by the army's kind (a lord's by his level: lord,
+  // a rank each lordPer levels), its chieftain's own group one more; a fight on the map or one auto-resolved, each group's
+  // experience (won or lost); a lord at rest in a holding, his drill a day (to rank drillCap at most); his rank-5 groups upgrade
+  // where it trains)
+  aiStart:{band:[1,2],patrol:[1,3],caravan:[1,2],cparty:[1,2],lord:[1,4],lordPer:4},aiFight:{win:14,lose:6},aiDrill:{xp:6,cap:4},
   prof:.01,
   mastery:{xp:[300,700,1200],metal:['bronze','silver','gold'],carry:.5},
   drill:{id:'drill',n:'Drill',d:'One more step of proficiency: +1% damage, health and aim.'},

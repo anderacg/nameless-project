@@ -23,7 +23,7 @@ Kit.suite(({ok})=>{
   const bg=g=>Object.values(b.groups).find(x=>x.sourceGroupId===g.id),u=g=>b.units.find(x=>x.grp===bg(g).id);
   const s=u(sp),s1=u(sp1),w=u(bw),P5=5*R.prof;ok(Math.abs(s.s.dmg/s1.s.dmg-(1+P5))<1e-9&&Math.abs(s.max/s1.max-(1+P5))<.02&&s.hp===s.max,'their damage and health by their proficiency ('+P5*100+'% over a rank-1 group\'s)');
   ok(Math.abs(t.rankAim(w)/(t.RANK_SKILLS.bow[2].aim*(1-2*R.prof))-1)<1e-9,'and their aim (Steady aim, and 2% truer)');
-  const ai=b.units.find(x=>x.team===1&&!x.leader);ok(Math.abs((ai.prof||0)-(R.ai-1)*R.prof)<1e-9,'an AI army\'s, at rank '+R.ai+': '+(R.ai-1)*R.prof*100+'%');
+  const ai=b.units.find(x=>x.team===1&&!x.leader);{const rec=t.battleRec(b.groups[ai.grp]);ok(Math.abs((ai.prof||0)-t.rankProf(rec))<1e-9,'an AI army\'s, by its own group\'s rank (rank '+t.rankOf(rec)+': '+Math.round(t.rankProf(rec)*100)+'%)')}
   ok(Math.abs(t.rankDur(bg(sp),'brace')-(t.UNIT_ABILITIES.brace.dur+t.RANK_SKILLS.spear[1].up.dur))<1e-9,'Brace improved: '+t.rankDur(bg(sp),'brace')+' s (from '+t.UNIT_ABILITIES.brace.dur+')');
   const k=t.RANK_SKILLS.spear[2];ok(Math.abs(s.s.reach/s1.s.reach-(k.reach+k.up.reach))<1e-9,'Long reach improved: +'+Math.round((k.reach+k.up.reach-1)*100)+'%');
   for(const x of b.units)if(x.team===1)x.hp=0;t.checkBattleOver();b.endT=0;t.updateBattle(.01);if(t.B)t.finishBattle();t.act('cont');t.hidePanel()}

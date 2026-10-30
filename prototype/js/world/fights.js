@@ -71,6 +71,7 @@ function endFight(f,win){
   const W0=sideParties(f,win),L=sideParties(f,1-win),lw=W0.filter(o=>o.mapKind==='lord'),ll=L.filter(o=>o.mapKind==='lord');
   {const foes=L.reduce((a,o)=>a+o.troops.length,0)+Math.round((f.n0||0)/3);lw.forEach(o=>lordWins(o,foes));W0.filter(o=>o.mapKind==='band').forEach(o=>chiefWins(o,foes));W0.filter(o=>o.cid).forEach(o=>{compXp(o.cid,12+2*foes);compTrain(o.cid,'lead',3)})}
   lw.forEach((a,i)=>lw.slice(i+1).forEach(b=>changeLordRel(a,b,RELATION.together)));ll.forEach(a=>lw.forEach(b=>changeLordRel(a,b,RELATION.beaten)));
+  W0.forEach(o=>aiFightRanks(o,true));L.forEach(o=>aiFightRanks(o,false));// (their groups' experience: world/armyranks.js)
   worldEmit('fight:ended',{fight:f,won:W0,lost:L});L.forEach(o=>routParty(o,W0));W0.forEach(freeParty);// (the bus: the news of it before the beaten are gone: news.js)
   W.fights=W.fights.filter(x=>x!==f);
   // (seen at once; by rider when a lord of your realm or a party of yours fought in it; else news: worldlog.js)

@@ -36,7 +36,7 @@ const chiefTip=o=>o&&o.ld?'<small>Led by '+chiefLabel(o.ld)+' · bounty '+bounty
 const tipFac=f=>f&&FACS[f]?'<span style="color:'+FACS[f].col+'">'+FACS[f].n+'</span>':'';
 const tipOdds=pw=>{const [n,c]=odds(pw);return ' · <span class="'+c+'">'+n+'</span>'};
 // what the pointer is over: whatever is on the map says (WorldObject tip); nothing for what is not (or no longer) there
-function tipFor(o){if(!objKind(o))return '';const h=o.tip(),d=G.mode==='world'&&travelDetectionText(o);return h+(h&&d?'<small>'+htmlText(d)+'</small>':'')}
+function tipFor(o){if(!objKind(o))return '';const h=o.tip()+(o instanceof Party&&o!==P?rankTip(o):''),d=G.mode==='world'&&travelDetectionText(o);return h+(h&&d?'<small>'+htmlText(d)+'</small>':'')}
 function hideTip(){const t=document.getElementById('tip');if(t){t.hidden=true;t.classList.remove('hold')}}
 // full screen (F11 does the same)
 function toggleFull(){try{if(document.fullscreenElement)document.exitFullscreen();else document.documentElement.requestFullscreen()}catch(e){}}
