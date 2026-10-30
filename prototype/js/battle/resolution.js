@@ -149,6 +149,8 @@ class BattleResolution{
       if(auto){const n=troopCount(),each=TROOP_XP.auto*(TROOP_XP.fight+(win?TROOP_XP.win:0)+(n?kills*TROOP_XP.kill*2/n:0));for(const k in P.troops)txpGain(k,each*P.troops[k])}
       else for(const k in txp||{})txpGain(k,txp[k]);txpClamp();const ready=Object.keys(P.troops).reduce((a,k)=>a+txpReady(k),0);
       if(ready>before)html+='<p class="gold">Your troops learn from the fight: '+ready+' soldier'+(ready>1?'s are':' is')+' ready to train at a barracks.</p>'}
+    // (withdrawn or beaten, the beasts holding the field: the spoils stay there, a quest to take them back: world/fieldloot.js)
+    if(!win&&e.kind==='monster'){const at=this.battle?.world||e.ref,q=leaveFieldLoot(at.x,at.y,slain||[],e.ref);if(q)html+=fieldLootLine(q)}
     if(!win)encLost(e);// (withdrawn or beaten: what that costs or leaves behind, engage.js ON_WIN lost)
     // (how it went, on the world's bus: an encounter fought on the road ends with it, passengers are lost with a defeat; run down,
     // it is to be faced again: story/encounter.js, world/escort.js)

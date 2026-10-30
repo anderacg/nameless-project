@@ -61,7 +61,7 @@ class BandBrain extends Brain{
     const st=stance(b.power(),b),home=night&&campNear(b);
     if(b.cool>0||!stanceMove(b,st,v.d,v.dx,v.dy,TravelAwareness.sees(b)?travelDetection(b).range:0,moveStep(partySpeed(b,b.troops),d),true)){
       if(home){Router.travel(b,home,moveStep(16,d))||walk(b,home.x-b.x,home.y-b.y,Math.min(Math.hypot(home.x-b.x,home.y-b.y),moveStep(16,d)));if(Math.hypot(home.x-b.x,home.y-b.y)<8){(home.bands=home.bands||[]).push(b);b.x=home.x;b.y=home.y;b.gone=true;return false}}
-      else{b.t-=d;if(b.t<=0){b.t=2+Math.random()*3;b.a=Math.random()*6.283;b.idle=Math.random()<.3}if(!b.idle)walk(b,Math.cos(b.a),Math.sin(b.a),moveStep(12,d))}}
+      else if(!(b.lootGo&&FieldLootQuest.seek(b,d))){b.t-=d;if(b.t<=0){b.t=2+Math.random()*3;b.a=Math.random()*6.283;b.idle=Math.random()<.3}if(!b.idle)walk(b,Math.cos(b.a),Math.sin(b.a),moveStep(12,d))}}
     if(this.canMeet(b,v.d)){meetBand(b);return true}
     return false;
   }

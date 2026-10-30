@@ -160,6 +160,7 @@ class BattleSides{
   if(!b.win&&!b.retreat){if(prisonerCount()){P.prisoners={};log('Your prisoners escape in the chaos.','bad','war')}captivesEscape();const ce=this.captorEnc(b.captor)||e,fate=Captivity.defeat(ce);if(ce?.ref&&ce.kind!=='camp')ce.ref.cool=8;
    if(ce?.kind==='party')chiefWins(ce.ref,partySize()+1);if(ce?.kind==='lord')lordWins(ce.ref,partySize());if(ce?.kind==='patrol'){const h=townBy(ce.ref.home);if(h)h.crime=null}
    if(ce!==e)detail+=' '+cap1(this.label(b.captor))+' held the field.';detail+=' '+fate.text;log('Defeat. '+fate.text,'bad','war')}
+  {const h=!b.win&&(b.captor||this.victor()),q=h?.owner?.mapKind==='monster'&&leaveFieldLoot(b.world.x,b.world.y,kills,h.owner);if(q)detail+=' '+fieldLootLine(q).replace(/<[^>]+>/g,'')}
   if(!b.win)encLost(e);
   const moodLine=battleMood(b.win?(kills.length?4:0):b.retreat?-8:-15,b.win?'victory':b.retreat?'withdrawal':'defeat');G.enc=null;G.encCool=4;G.mode='dialog';worldEmit('battle:ended',{enc:e,how:b.win?'won':b.retreat?'withdrawn':'lost'});
   const report={groups:groups.map(g=>({id:g.id,type:g.type,name:g.name,start:g.start,fit:g.start-g.count,wounded:g.wounded,killed:g.count-g.wounded,saved:g.saved,rearguard:0})),characters:[]};
