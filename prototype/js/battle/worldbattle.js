@@ -9,6 +9,10 @@
 function heralded(units){const teams=B.sides?.active?B.sides.teams():[0,1];for(const u of units){const p=u.ls||(u.ls=[]);for(const t of teams)if(t!==u.team){p[2*t]=u.x;p[2*t+1]=u.y}}}
 // (where a joining army comes in: the marker's radius r px, its colours by where it stands with you, its pulse a second, its fade s once in)
 const ARRIVAL={r:5,pulse:1.2,fade:1.5,col:{own:'#6fa8e0',ally:'#8fd08a',foe:'#e0605a',neutral:'#dba75f'}};
+// (who rides into a world battle unasked, bands and beasts (wild): from reach px past its ring, weighing it every every s: a band
+// when the field is small (small men a side at most) or worn (after after s, worn of its men down), by chance; a hungry beast never
+// within near px of a holding, by chance: WorldBattleArea#tempted)
+const JOIN_RULES={reach:120,every:5,band:{small:12,after:40,worn:.4,chance:.5},beast:{near:240,chance:.25},wild:o=>o.mapKind==='band'||o.mapKind==='monster'};
 const WORLD_BATTLE={on:true,melee:true,scale:6,inner:8,outer:14,interaction:6,apron:22,join:220,regroup:7,returns:1,turn:3.5,blocked:30,stall:6,sprite:3,step:1/60,sightBase:1,perFighter:4,avoid:28,avoidScan:1};
 // Only local avoidance runs while campaign time is paused. Existing work/travel orders stay on their owners.
 class BattleBystanders{
@@ -207,9 +211,18 @@ class WorldBattleArea{
     return o.mapKind==='cparty'?0:o.mapKind==='lord'&&lordWhy(e,o)||o.mapKind==='patrol'&&watchWhy(e,o)?0:-1;
   }
   reinforce(dt){
-    for(const o of [...W.lords,...W.patrols,...cparties(),...bandits,...W.monsters.map(asMonster)]){if(this.participants.has(o)||o.dead||o.gone||o.inside||o.fight||!o.troops.length||Math.hypot(o.x-this.x,o.y-this.y)>this.r+WORLD_BATTLE.join)continue;const team=this.teamFor(o);if(team<0)continue;this.participants.add(o);this.pending.push({o,team});if(this.sides){const r=this.sides.byOwner.get(o);log(this.sides.label(r)+' approaches: '+this.sides.intent(r)+'.',battleEnemy(0,team)?'bad':'gold','war')}}
+    for(const o of [...W.lords,...W.patrols,...cparties(),...bandits,...W.monsters.map(asMonster)]){if(this.participants.has(o)||o.dead||o.gone||o.inside||o.fight||!o.troops.length||Math.hypot(o.x-this.x,o.y-this.y)>this.r+(JOIN_RULES.wild(o)?JOIN_RULES.reach:WORLD_BATTLE.join)||!this.tempted(o))continue;const team=this.teamFor(o);if(team<0)continue;this.participants.add(o);this.pending.push({o,team});if(this.sides){const r=this.sides.byOwner.get(o);log(this.sides.label(r)+' approaches: '+this.sides.intent(r)+'.',battleEnemy(0,team)?'bad':'gold','war')}}
     for(let i=this.pending.length-1;i>=0;i--){const a=this.pending[i],o=a.o,d=Math.hypot(o.x-this.x,o.y-this.y);if(this.sides){const r=this.sides.byOwner.get(o);if(r)a.team=r.team}if(d>this.r-3){const sp=Math.min(d,partySpeed(o,o.troops)*dt/this.scale);walk(o,this.x-o.x,this.y-o.y,sp);MARCH_ARMIES.get(o)?.step(dt/(this.scale*WORLD_SCALE.move),false);if(d<(a.best??Infinity)-1){a.best=d;a.stuck=0}else if((a.stuck=(a.stuck||0)+dt)>WORLD_BATTLE.stall)this.turnAway(i);continue}if(this.sides&&!this.sides.room(o,a.existing?a.existing.reduce((n,id)=>n+B.units.filter(u=>u.grp===id).length,0):null))continue;if(a.existing){for(const id of a.existing){const g=B.groups[id],m=B.units.filter(u=>u.grp===id);for(const u of m){u.hp=u.hpLeft;delete u.left;delete u.waiting}this.place(g,m,o,{x:0,y:(a.existing.indexOf(id)-(a.existing.length-1)/2)*5},o);if(g.resolve){g.resolve.refreshState();g.resolve.sync()}}if(this.sides){const r=this.sides.byOwner.get(o);if(r)r.joined=true}B.cmdT=0;B.moraleNext=0;B.sight=null;log((o.mapKind==='lord'?lordName(o):o.name||o.label?.()||'An army')+' enters the battle.',a.team?'bad':'good','war');battleEvent('reinforcement',{party:o,team:a.team});setOrderUI()}else this.join(o,a.team);this.pending.splice(i,1)}
   }
+  /* whether a band or a beast (JOIN_RULES.wild) near the fight rides in now (the owner, 2026-10-30: beasts joining a battle in the
+     middle of a holding; bandits "likely not to join a clash between big armies ... when both have low unit count or fighting for
+     some time"): it weighs the fight every JOIN_RULES.every s of it. A band, when the field is small (no side over band.small men
+     still fighting) or worn (after band.after s, band.worn of those who began it down), by band.chance; a beast, only a hungry
+     kind (aggro) and never within beast.near px of a holding, by beast.chance. Your lords, watches and companions as ever */
+  tempted(o){if(!JOIN_RULES.wild(o))return true;const J=JOIN_RULES,M=this.mulled||(this.mulled=new Map()),t=M.get(o);if(t!=null&&B.t<t)return false;M.set(o,B.t+J.every);
+    if(o.mapKind==='monster'){const X=J.beast;return !!MONSTERS[o.id]?.aggro&&!TOWNS.some(h=>Math.hypot(h.x-o.x,h.y-o.y)<X.near)&&Math.random()<X.chance}
+    const X=J.band,by=new Map();for(const u of B.units)if(fighting(u))by.set(u.team,(by.get(u.team)||0)+1);const now=[...by.values()].reduce((n,v)=>n+v,0),most=Math.max(0,...by.values());
+    this.began=this.began||Math.max(now,1);const small=most<=X.small,worn=B.t>=X.after&&now<=this.began*(1-X.worn);return (small||worn)&&Math.random()<X.chance}
   // a pending army that stops closing in (a river, a wall, the land) turns away: the fight no longer waits on it
   turnAway(i){const o=this.pending.splice(i,1)[0].o,r=this.sides?.byOwner.get(o);this.turned.add(o);if(r)r.away=true;log((r?this.sides.label(r):o.mapKind==='lord'?lordName(o):o.name||'An army')+' cannot reach the battle and turns away.','gold','war')}
   join(o,team){
