@@ -56,6 +56,9 @@ const samePair=(it,d)=>it.detail.a===d.a&&it.detail.b===d.b;
 // (who took a holding: a realm, or your band by name (by), for a realm or its own (fac 'player'))
 const fellBy=d=>!d.by?'the '+facN(d.fac):d.fac&&d.fac!=='player'?d.by+' in the name of the '+facN(d.fac):d.by;
 const NEWS_KINDS={
+  // (a wandering trainer where he teaches now, and where next: world/trainers.js; heard anywhere)
+  trainer:{w:6,wide:true,apart:true,same:(it,d)=>it.detail.id===d.id,say:[d=>'A '+d.lv.toLowerCase()+' of '+d.roles.toLowerCase()+', '+d.name+', is teaching at '+d.town+'; '+d.town+' will not keep him long: he goes on to '+d.next+'.',
+    d=>'They say '+d.name+', a '+d.lv.toLowerCase()+' of '+d.roles.toLowerCase()+', drills soldiers at '+d.town+' these days, and '+d.next+' after.']},
   fell:{w:10,say:[(d,s)=>d.town+' has fallen to '+fellBy(d)+(d.sacked?', and was sacked':'')+', '+s.when+'.',
     (d,s)=>'They say '+fellBy(d)+' took '+d.town+' '+s.when+(d.sacked?' and put it to the torch':'')+'.']},
   siege:{w:9,say:[d=>'The '+facN(d.fac)+'’s men are besieging '+d.town+'.',(d,s)=>d.lord+' of the '+facN(d.fac)+' laid siege to '+d.town+' '+s.when+'.']},
@@ -228,7 +231,7 @@ function rumourHear(it,src){const N=newsW(),v=newsVague(it),t=rumourText(it,v),j
    just now), today (all it told you today, fresh ones too: a page that asks again shows the same), before (rumours you heard
    already of news it knows, not today's from it), capped (its cap is spent) */
 function rumourFrom(src){if(src.kind==='tavern')Wanderer.news();newsTrim();const proc=proclaimHear(src.at,src.from),N=newsW(),day=G.day,told=N.told[src.key]||(N.told[src.key]={day,ids:[]}),fresh=[];
-  for(const it of rumourCands(src)){if(told.ids.length>=src.cap)break;rumourHear(it,src);told.ids.push(it.id);fresh.push(it)}
+  for(const it of rumourCands(src)){if(told.ids.length>=src.cap)break;rumourHear(it,src);told.ids.push(it.id);fresh.push(it);if(it.k==='trainer')trainerHeard(it.detail)}
   const today=told.ids.map(newsById).filter(Boolean);
   return {proc,fresh,today,before:N.items.filter(it=>N.heard[it.id]!=null&&!newsProc(it)&&!today.includes(it)&&newsKnows(src,it)).sort((a,b)=>b.day-a.day||b.id-a.id),capped:told.ids.length>=src.cap}}
 // (one line a talker says today, or none: what a worker, a captain, a caravan master or a lord says beside his own words; a

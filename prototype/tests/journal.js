@@ -47,9 +47,9 @@ Kit.suite(({ok,info})=>{
  key('KeyQ','q');ok(G.mode==='world','Q again: closed');t.openQuests();esc();ok(G.mode==='esc','Esc: its Back, the Game Menu');esc();ok(G.mode==='world','and resumes');
  t.openChar();ok(G.mode==='char'&&tabs().join('|')==='Roster|Army skills|Condition|Passengers'&&!q('[data-act="char-tab"][data-arg="quests"]'),'the Army window: Roster, Army skills, Condition, Passengers ('+tabs().join(', ')+')');
  t.act('char-tab','quests');ok(G.char==='roster','no Quests tab to turn to');Kit.world();
- // ---- the Journal: J on its last section; Chronicle, Lords, Realms; L on the Chronicle
+ // ---- the Journal: J on its last section; Chronicle, Lords, Realms, Trainers (ui/trainerlist.js); L on the Chronicle
  key('KeyJ','j');
- ok(G.mode==='journal'&&tabs().join('|')==='Chronicle|Lords|Realms','J: the Journal, its sections: '+tabs().join(', '));
+ ok(G.mode==='journal'&&tabs().join('|')==='Chronicle|Lords|Realms|Trainers','J: the Journal, its sections: '+tabs().join(', '));
  t.act('jn-sec','lords');ok(G.jsec==='lords'&&/How each lord feels about you/.test(Kit.text())&&W.lords.filter(l=>!l.gone).every(l=>Kit.text().includes(l.name)===t.KNOWLEDGE.knowsLord(l)),'Lords: only the lords you know');
  t.act('jn-sec','realms');ok(G.jsec==='realms'&&/Your standing/.test(Kit.text())&&/Relations/.test(Kit.text()),'Realms, moved too: your standing, the realms, their relations');
  key('KeyJ','j');ok(G.mode==='world','J again: closed');
@@ -58,7 +58,7 @@ Kit.suite(({ok,info})=>{
  t.openJournal('lords');Kit.world();key('KeyL','l');ok(G.jsec==='chronicle','L always opens the Chronicle');esc();ok(G.mode==='esc'&&G.esc.html==null,'Esc on the Journal: its Back, the Game Menu');esc();ok(G.mode==='world','and resumes');
  // ---- the Journal's registry: a section is one definition
  {const S=t.JOURNAL_SECTIONS;t.defineJournalSection('zz_test',{label:'Test pages',icon:'book',render:()=>'<div class="fb-scroll"><p id="zz">A test section.</p></div>',sub:()=>'for the test',back:()=>['jn-sec','chronicle','Back']});
-  try{t.chronicleKey();const tb=q('[data-act="jn-sec"][data-arg="zz_test"]');ok(tb&&/Test pages/.test(tb.textContent)&&tabs().length===4,'a section defined: its tab in the Journal ('+tabs().join(', ')+')');
+  try{t.chronicleKey();const tb=q('[data-act="jn-sec"][data-arg="zz_test"]');ok(tb&&/Test pages/.test(tb.textContent)&&tabs().length===5,'a section defined: its tab in the Journal ('+tabs().join(', ')+')');
    tb.click();ok(G.jsec==='zz_test'&&q('#zz')&&/for the test/.test(q('.fb-head').textContent)&&back().textContent==='Back','turned to it: its content, its line, its Back');
    esc();ok(G.mode==='journal'&&G.jsec==='chronicle','Esc presses its Back');
    t.act('jn-sec','zz_test');t.act('journal-close');t.openJournal();ok(G.jsec==='zz_test','the last section opened is opened again');t.act('journal-close')}

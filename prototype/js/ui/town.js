@@ -285,8 +285,8 @@ definePlace('stable',Stable);
    ready in one press, or a whole group at once. The order (G.town.cart) belongs to this visit, never to a save */
 // trainers' rows (a holding's, or yours): each his level, roles, the rank he trains to and what a lesson gives, his lessons left this
 // week; a button for each of your groups of his roles (its badge, its price, or why not)
-function trainerRows(trs){const gs=partyRoster(P).groups;return '<div class="rec-rows">'+trs.map(tr=>{const mine=gs.filter(g=>tr.roles.includes(trainRole(g.type)));
-  return '<div class="rec-row trainer"><div class="rec-txt"><strong>'+htmlText(tr.name)+'</strong><small>'+trainLevelN(tr)+' · '+trainRolesN(tr)+' · to rank '+TRAINERS.cap[tr.level-1]+' · +'+TRAINERS.xp[tr.level-1]+' a lesson · '+trainLeft(tr)+' of '+TRAINERS.week+' left this week</small></div>'+
+function trainerRows(trs){const gs=partyRoster(P).groups,where=tr=>tr.wander?' · passing through, till Day '+tr.until:'';return '<div class="rec-rows">'+trs.map(tr=>{const mine=gs.filter(g=>tr.roles.includes(trainRole(g.type)));
+  return '<div class="rec-row trainer"><div class="rec-txt"><strong>'+htmlText(tr.name)+'</strong><small>'+trainLevelN(tr)+' · '+trainRolesN(tr)+' · to rank '+TRAINERS.cap[tr.level-1]+' · +'+TRAINERS.xp[tr.level-1]+' a lesson · '+trainLeft(tr)+' of '+TRAINERS.week+' left this week'+where(tr)+'</small></div>'+
     '<div class="rec-step">'+(mine.length?mine.map(g=>{const why=lessonWhy(tr,g),p=lessonPrice(tr,g);return '<button class="btn sm" type="button" data-act="trn-lesson" data-arg="'+htmlText(tr.id+'|'+g.id)+'"'+(why?' disabled title="'+htmlText(why)+'"':'')+'>'+groupBadge(g,12)+' '+htmlText(armyGroupLabel(g.id))+(p?' · '+p+'g':'')+'</button>'}).join(''):'<small class="muted">None of your groups</small>')+'</div></div>'}).join('')+'</div>'}
 class Barracks extends Place{
   constructor(id){
@@ -313,7 +313,7 @@ class Barracks extends Place{
   hire(arg,t){const result=recruitment.hire(t,arg,1);recruitmentFeedback(result,t)}
   // ---- Train (doc/RANKS_DESIGN.md §3: its trainers, world/trainers.js) and upgrade (§4): each of your groups that upgrades a row (its badge, its rank), a button for each kind
   // it upgrades into: at its last rank, here for its price (core/recruitment.js quoteGroupTraining), keeping its place
-  trainTab(t){const trs=trainersAt(t),lessons=trs.length?'<div class="lab">Trainers here</div>'+trainerRows(trs):'<p class="muted">No trainer here.</p>',gs=partyRoster(P).groups.filter(g=>UP[g.type]);
+  trainTab(t){const trs=trainersAt(t);trs.forEach(trainerMeet);const lessons=trs.length?'<div class="lab">Trainers here</div>'+trainerRows(trs):'<p class="muted">No trainer here.</p>',gs=partyRoster(P).groups.filter(g=>UP[g.type]);
     if(!gs.length)return lessons+'<p class="muted">None of your groups upgrades further.</p>';
     return lessons+'<div class="lab">Upgrades</div><div class="rec-rows">'+gs.map(g=>{const L=rankLine(g);
       const key=g.type+'>'+UP[g.type][0];// (its card: the first it upgrades into, against it)

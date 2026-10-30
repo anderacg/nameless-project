@@ -9,10 +9,10 @@ Kit.suite(({ok})=>{
  const sp=grp('hum_spear',5),bw=grp('hum_bow',5);
  ok(t.trainRole('hum_spear')==='spear'&&t.trainRole('hum_bow')==='bow'&&t.trainRole('hum_xbow')==='xbow'&&t.trainRole('hum_mage')==='caster'&&t.trainRole('hum_knight')==='cav'&&t.trainRole('hum_foot')==='foot','each kind its role');
  // ======== a holding's
- {const L=t.trainersAt(ash);ok(L.length>=1&&L.every(x=>x.level>=1&&x.level<=3&&x.roles.length&&x.name)&&t.trainersAt(ash)===L,'Ashford keeps its trainers (made once: '+L.map(x=>x.name+', '+t.trainLevelN(x)+' of '+t.trainRolesN(x)).join('; ')+')')}
+ {const L=t.trainersAt(ash);ok(L.length>=1&&L.every(x=>x.level>=1&&x.level<=3&&x.roles.length&&x.name)&&t.trainersAt(ash).map(x=>x.id).join()===L.map(x=>x.id).join(),'Ashford keeps its trainers (made once: '+L.map(x=>x.name+', '+t.trainLevelN(x)+' of '+t.trainRolesN(x)).join('; ')+')')}
  ok(!t.trainersAt(t.TOWNS.find(h=>!h.T.train)).length,'a holding that does not train has none');
  // (a known pair for the rest: Ashford's an expert of spears, a journeyman of bows)
- t.W.trainers[ash.name]=[{id:'A:0',name:'Hob the Spearmaster',roles:['spear'],level:2,town:ash.name},{id:'A:1',name:'Ida the Bowmaster',roles:['bow'],level:1,town:ash.name}];
+ t.W.wanderers=[];/* (none passing through Ashford for these) */t.W.trainers[ash.name]=[{id:'A:0',name:'Hob the Spearmaster',roles:['spear'],level:2,town:ash.name},{id:'A:1',name:'Ida the Bowmaster',roles:['bow'],level:1,town:ash.name}];
  const [ex,jy]=t.trainersAt(ash);
  {const g0=P.gold,x0=t.rankXp(sp),q=t.lesson(ex,sp);ok(q.ok&&t.rankXp(sp)===x0+X.xp[1]&&P.gold===g0-X.gold[1]*2&&t.trainLeft(ex)===X.week-1,'a lesson: the spearmen +'+X.xp[1]+' (an expert\'s), for '+X.gold[1]*2+'g (his price, tier 2), '+(X.week-1)+' left this week')}
  ok(t.lessonWhy(ex,bw)==='Teaches Spear only'&&t.lessonWhy(jy,sp)==='Teaches Bow only','each teaches his roles only');

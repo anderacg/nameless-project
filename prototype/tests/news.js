@@ -22,7 +22,7 @@ try{
  const det={fell:{town:A.name,fac:A.owner,lord:'Lord X',sacked:1},siege:{town:A.name,fac:A.owner,lord:'Lord X'},relieved:{town:A.name,lord:'Lord X',fac:A.owner},raid:{town:A.name,estate:'farm'},
   lord:{lord:'Lord X',fac:A.owner},caravan:{from:A.name,band:1},beast:{id:'wolf',n:5},band:{label:'Bandits',n:20,chief:'Grak One-Eye'},fight:{win:'Bandits',lose:'The day watch of '+A.name},trace:{t:'wreck'},
   war:{a:A.owner,b:B.owner},peace:{a:A.owner,b:B.owner,ended:1},ally:{a:A.owner,b:B.owner},realm:{fac:A.owner,town:A.name},army:{lord:'Lord X',fac:A.owner,town:A.name,n:12},starving:{town:A.name,fac:A.owner},
-  walls:{town:A.name,fac:A.owner,wall:'stone walls'},exodus:{town:A.name,to:B.name,n:9,why:'hunger'}};
+  walls:{town:A.name,fac:A.owner,wall:'stone walls'},exodus:{town:A.name,to:B.name,n:9,why:'hunger'},trainer:{id:'w:0',name:'Gwen the Bowmaster',lv:'Master',roles:'Bow',town:A.name,next:B.name}};
  const kinds=Object.keys(t.NEWS_KINDS);
  for(const k of kinds){t.newsRecord(k,by(A),det[k]);t.newsRecord(k,by(A,30,20),det[k])}
  ok(items().length===kinds.length&&kinds.every(k=>items().filter(it=>it.k===k).length===1),'each kind recorded once, the second the same day merged ('+items().length+' items for '+kinds.length+' kinds: '+kinds.join(', ')+')');
