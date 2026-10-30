@@ -15,6 +15,8 @@ const ICONS={
   truce:{p:{p:'#8a6a44',w:'#f4efe0',s:'#c8c4b4'},px:['.pwwwww..','.pwwwwsw.','.pwwws...','.pws.....','.p.......','.p.......','.p.......','ppp......','.........']},
   region:{p:{r:'#e0605a',w:'#f4efe0',d:'#8a2a24'},px:['..rrrrr..','.rrrrrrr.','.rrwwwrr.','.rrwwwrr.','.rrrrrrr.','..rrrrr..','...rrr...','....d....','.........']},
   renown:{p:{y:'#e8b94a',w:'#fff6c0'},px:['....y....','....y....','...ywy...','yyyyyyyyy','.yyyyyyy.','..yyyyy..','..yy.yy..','.yy...yy.','.........']},
+  // (volunteers taken in: a banner raised, a plus by it: ui/underway.js)
+  recruit:{p:{p:'#8a6a44',f:'#e0b050',g:'#6cd06c'},px:['.pffff...','.pffff.g.','.pfff.ggg','.pff...g.','.p.......','.p.......','.p.......','ppp......','.........']},
   banner:{p:{p:'#8a6a44',f:'#6fa8e0'},px:['.pfffff..','.pffffff.','.pfffff..','.pffff...','.p.......','.p.......','.p.......','ppp......','.........']},
   sun:{p:{y:'#ffd25a',o:'#e8902a'},px:['....y....','.y.....y.','...ooo...','..ooooo..','yyooooooy'.slice(0,9),'..ooooo..','...ooo...','.y.....y.','....y....']},
   moon:{p:{w:'#dfe6f2',b:'#9aa8c0'},px:['...www...','..ww.....','.ww......','.ww......','.ww......','.www.....','..wwwww..','...bbb...','.........']},

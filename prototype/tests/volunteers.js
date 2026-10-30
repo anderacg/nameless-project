@@ -19,6 +19,7 @@ Kit.suite(({ok})=>{
  // ======== camped on its lands; leaving them
  {P.stay=null;const g2=r.groups.find(g=>g.type===kind);r.remove(kind,3,g2.id);let spot=null;for(let k=0;k<400&&!spot;k++){const a=k*2.4,d=40+k%6*15,x=ash.x+Math.cos(a)*d,y=ash.y+Math.sin(a)*d;if(t.landHold(x,y)===ash&&t.passable(t.terrAt(x,y)))spot=[x,y]}
   Kit.goTo(spot[0],spot[1]);t.pitchCamp();ok(t.volunteerTown()===ash&&row('volunteers'),'camped on Ashford\'s lands: volunteers too');t.volunteerStart();
+  ok(row('recruit')?.querySelector('svg.uw-live')&&row('camp')?.querySelector('svg.uw-live')&&/recruiting/.test(row('camp').textContent),'recruiting in camp: its own icon, pulsing, on its line and on the camp\'s');
   t.breakCamp();t.volunteerHour();ok(!P.recruit,'camp broken: it stops')}
  // ======== a hostile realm's
  {t.pitchCamp();const f=ash.owner;t.Timed.of(P,'hostile').extend(f,10);ok(/hostile/.test(t.volunteerWhy(ash)),'its realm hostile: none');t.breakCamp()}
