@@ -16,14 +16,14 @@ try{
  while(r.slots<10)r.add(k,1,'new');rejects(()=>service.hire(town,k,2,'new'),'groups','full-slot army cannot create another bulk group');
  ok(service.hire(town,k,2,a.id).ok,'a full-slot army can reinforce an existing group');
  P.txp[k]=P.troops[k]*t.txpNeed(k);a.form='loose';a.files=2;const count=a.count,id=a.id,oldGold=P.gold,oldXP=P.txp[k],oldOther=b.count;
- before=state();q=service.quoteGroupTraining(town,id,to);ok(q.ok&&q.count===count&&q.cost===count*service.trainCost(to)&&q.xpCost===count*t.txpNeed(k)&&state()===before,'whole-group quote shows exact gold and pooled-XP totals without mutation');
+ before=state();q=service.quoteGroupTraining(town,id,to);ok(q.ok&&q.count===count&&q.cost===count*service.trainPrice(to)&&q.xpCost===count*t.txpNeed(k)&&state()===before,'whole-group quote shows exact gold and pooled-XP totals without mutation');
  ok(service.trainGroup(town,id,to).ok&&r.slots===10&&a.id===id&&a.type===to&&a.count===count,'whole-group upgrade preserves ID, count and slot in a full army');
  ok(b.type===k&&b.count===oldOther&&P.gold===oldGold-q.cost&&P.txp[k]===oldXP-q.xpCost,'upgrade does not change the duplicate and spends XP/gold exactly once');
  ok(a.form==='line'&&a.files===null,'upgraded group resets potentially incompatible formation/frontage');
  rejects(()=>service.trainGroup(town,id,to),'upgrade','an upgrade cannot be purchased twice');
  P.txp[k]=0;rejects(()=>service.trainGroup(town,b.id,to),'experience','partial experience cannot upgrade a whole group');P.txp[k]=P.troops[k]*t.txpNeed(k);
  P.woundedGroups=[{id:b.id,type:k,count:1}];P.wounded[k]=1;rejects(()=>service.trainGroup(town,b.id,to),'wounded-group','pending wounded cannot be stranded by an in-place type change');P.woundedGroups=[];P.wounded={};
- town.raided=G.day+2;rejects(()=>service.trainGroup(town,b.id,to),'training-unavailable','closed barracks reject whole-group upgrades');town.raided=0;
+ {const tier=t.TRAIN_PLACE.tier;t.TRAIN_PLACE.tier=1;town.raided=G.day+2;rejects(()=>service.trainGroup(town,b.id,to),'training-unavailable','closed barracks reject whole-group upgrades that need a holding');town.raided=0;t.TRAIN_PLACE.tier=tier}
  // The barracks (town.js Barracks): how many of each with − + · +5 · Max, the hire bar's totals, Groups (automatic or chosen),
  // Hire (asked first when it spends much), Fill band, and the Train tab's whole-group upgrade. Nothing is spent before Hire.
  G.mode='world';G.modal=false;t.hidePanel();t.enterTown(town);t.act('tab','recruit');const bar=()=>panel.querySelector('.rec-bar').textContent;

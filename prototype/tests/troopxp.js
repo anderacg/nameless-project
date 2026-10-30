@@ -23,8 +23,8 @@ try{
  // training needs it, and spends it
  {const town=t.TOWNS.find(x=>x.T.train);P.troops={hum_levy:2};P.txp={};P.gold=500;G.town={ref:town,tab:'recruit'};G.mode='town';
   t.act('train','hum_levy:hum_spear');ok(P.troops.hum_levy===2&&!P.troops.hum_spear&&P.gold===500,'without the XP, no training');
-  P.txp={hum_levy:t.txpNeed('hum_levy')+5};const c=t.trainCost('hum_spear');t.act('train','hum_levy:hum_spear');
-  ok(P.troops.hum_levy===1&&P.troops.hum_spear===1&&P.gold===500-c&&Math.round(P.txp.hum_levy)===5,'with it: trained, the XP and gold spent');
+  P.txp={hum_levy:t.txpNeed('hum_levy')+5};const c=t.trainPrice('hum_spear');t.act('train','hum_levy:hum_spear');
+  ok(P.troops.hum_levy===1&&P.troops.hum_spear===1&&P.gold===500-c&&Math.round(P.txp.hum_levy)===5,'with it: trained, the XP spent (and its price: '+c+'g, a tier 2 free)');
   t.renderTown&&t.renderTown();G.mode='world';G.town=null;t.hidePanel()}
  // auto-resolve: a share
  {P.troops={hum_levy:6};P.txp={};G.mode='world';G.enc={kind:'party',ref:{cool:0,x:P.x,y:P.y},list:['militia'],mine:true};const r=Math.random;Math.random=()=>.99;t.autoResolve();Math.random=r;

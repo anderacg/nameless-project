@@ -3,7 +3,7 @@
 // want to train"): a stepper on each training (−, the count, +, Max), from 1 to those ready you can pay for, at most at first; the
 // Train button trains that many and costs that much; a typed count is kept within the range.
 Kit.suite(({ok})=>{
- const t=T,P=t.P,G=t.G;Kit.begin('soldier',1);const ash=t.townBy('Ashford'),kind=t.RACES.human.melee,to=t.UP[kind][0];
+ const t=T,P=t.P,G=t.G;Kit.begin('soldier',1);const ash=t.townBy('Ashford'),kind='hum_sword',to='hum_sergeant';// (a training with a price: a tier 3, at a holding)
  P.troops={[kind]:6};P.gold=5000;P.rep[ash.name]=90;P.txp[kind]=t.txpNeed(kind)*6;const key=kind+'>'+to,c=t.trainCost(to);
  t.enterTown(ash);t.act('tab','recruit');t.act('rec-tab','train');
  const btn=()=>document.querySelector('[data-act="train"][data-arg^="'+kind+':'+to+':"]'),num=()=>document.querySelector('[data-qty="rec-tset"][data-arg="'+key+'"]');

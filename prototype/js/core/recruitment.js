@@ -3,6 +3,10 @@
 class RecruitmentService{
   constructor(player,rules){this.player=player;this.rules=rules}
   hireCost(k){const s=this.rules.troops[k];return s?Math.round(this.rules.hire[k]*(this.rules.has('silver')?.8:1)*(1-.02*this.player.attr.cha)*(s.race&&s.race===this.player.race?.85:1)*(1-this.rules.effect('hire'))):0}
+  // (the owner, 2026-10-30: training anywhere, free; only some needs a holding that trains: an upgrade to TRAIN_PLACE.tier or
+  // up, or into a caster, at its barracks for trainCost)
+  anywhere(k){const s=this.rules.troops[k],at=this.rules.trainPlace;return !!at&&!!s&&!s.magic&&s.tier<at.tier}
+  trainPrice(k){return this.anywhere(k)?0:this.trainCost(k)}
   trainCost(k){const s=this.rules.troops[k];return s?Math.round((s.tier>=3?45:25)*(this.rules.has('drill')?.6:1)*(1-this.rules.effect('train'))):0}
   xpNeed(k){return this.rules.xp.need[this.rules.troops[k]&&this.rules.troops[k].tier||1]||this.rules.xp.need[4]}
   xpOf(k){return (this.player.txp||{})[k]||0}
@@ -40,11 +44,11 @@ class RecruitmentService{
     return n>0?this.hire(t,g.type,n,id):null;
   }
   quoteGroupTraining(t,id,to){
-    const g=this.rules.roster&&this.rules.roster().groups.find(g=>g.id===id),from=g&&g.type,count=g&&g.count||0,unitCost=this.trainCost(to),cost=unitCost*count,xpCost=from?this.xpNeed(from)*count:0;
+    const g=this.rules.roster&&this.rules.roster().groups.find(g=>g.id===id),from=g&&g.type,count=g&&g.count||0,unitCost=this.trainPrice(to),cost=unitCost*count,xpCost=from?this.xpNeed(from)*count:0;
     const result={id,from,to,count,unitCost,cost,xpCost},fail=code=>({...result,ok:false,code});
     if(!g)return fail('target');
     if(!this.rules.troops[to]||!Array.isArray(this.rules.upgrades[from])||!this.rules.upgrades[from].includes(to))return fail('upgrade');
-    if(this.closed(t)||!t.T.train)return fail('training-unavailable');
+    if(!this.anywhere(to)&&(this.closed(t)||!t?.T?.train))return fail('training-unavailable');
     if(!Number.isSafeInteger(cost)||cost<0||!Number.isSafeInteger(xpCost))return fail('amount');
     if(this.player.gold<cost)return fail('gold');
     if(this.xpOf(from)<xpCost)return fail('experience');
@@ -59,9 +63,9 @@ class RecruitmentService{
     this.player.gold-=result.cost;this.clampXp();return result;
   }
   quoteTraining(t,from,to){
-    const cost=this.trainCost(to),fail=code=>({ok:false,code,from,to,cost});
+    const cost=this.trainPrice(to),fail=code=>({ok:false,code,from,to,cost});
     if(!this.rules.troops[to]||!Array.isArray(this.rules.upgrades[from])||!this.rules.upgrades[from].includes(to))return fail('upgrade');
-    if(this.closed(t)||!t.T.train)return fail('training-unavailable');
+    if(!this.anywhere(to)&&(this.closed(t)||!t?.T?.train))return fail('training-unavailable');
     if(this.player.gold<cost)return fail('gold');
     if(!(this.player.troops[from]>0))return fail('troops');
     if(this.ready(from)<1)return fail('experience');
@@ -94,13 +98,15 @@ class RecruitmentService{
 }
 // Survivors pool XP by kind. Training spends one soldier's threshold; casualties cannot leave more XP than the survivors can use.
 const TROOP_XP={need:{1:40,2:80,3:140,4:220},dmg:.5,kill:6,fight:4,win:4,auto:.6};
-const recruitment=new RecruitmentService(P,{troops:ST,upgrades:UP,companions:COMPS,compTown:id=>compTown(id),hire:HIRE,xp:TROOP_XP,prisonerCost:10,has,effect:tm,
+// (where training is done: an upgrade to this tier or up, or into a caster, only at a holding that trains)
+const TRAIN_PLACE={tier:3};
+const recruitment=new RecruitmentService(P,{troops:ST,upgrades:UP,companions:COMPS,compTown:id=>compTown(id),hire:HIRE,xp:TROOP_XP,trainPlace:TRAIN_PLACE,prisonerCost:10,has,effect:tm,
   lead:()=>skill('lead'),size:partySize,capacity:partyCap,canHire:(t,k)=>canHire(t,k),day:()=>G.day,
   roster:()=>partyRoster(P),target:k=>recruitTarget(k)||partyRoster(P).groups.find(g=>g.type===k&&partyRoster(P).groupRoom(k,g.id)>0)?.id||'new',
   canGroup:(k,target,n=1)=>partyRoster(P).canAdd(k,target===undefined?recruitTarget(k):target,n),freeGroup:()=>partyRoster(P).slots<partyRoster(P).groupLimit,
   add:(k,n=1,target=recruitTarget(k))=>{const r=partyRoster(P),added=r.add(k,n,target);if(added&&target==='new')G.recruitTarget=r.groups[r.groups.length-1].id;if(added)skinsJoin(added);return added},// (each recruit brings an empty waterskin: world/supply.js)
   canTrainGroup:(from,to)=>partyRoster(P).canAdd(to)||partyRoster(P).groups.find(g=>g.type===from)?.count===1});
-const hireCost=k=>recruitment.hireCost(k),trainCost=k=>recruitment.trainCost(k);
+const hireCost=k=>recruitment.hireCost(k),trainCost=k=>recruitment.trainCost(k),trainPrice=k=>recruitment.trainPrice(k),trainsAnywhere=k=>recruitment.anywhere(k);
 const txpNeed=k=>recruitment.xpNeed(k),txpOf=k=>recruitment.xpOf(k),txpReady=k=>recruitment.ready(k);
 const txpGain=(k,n)=>recruitment.gainXp(k,n),txpClamp=()=>recruitment.clampXp();
 function recruitTarget(k){const id=G.recruitTarget;return id==='new'||partyRoster(P).groups.some(g=>g.id===id&&g.type===k)?id:undefined}

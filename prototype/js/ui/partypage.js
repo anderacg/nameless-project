@@ -93,9 +93,14 @@ function partyInspector(id,r){const d=partyUnit(id,r),edit=G.armyEdit===id,path=
 /* a troop type's skills: its training path (where it is trained from, what it trains into, at a barracks), its battle orders (the
    unit abilities it has: battle/unitabilities.js, asked of one of its soldiers) and its traits (unitcard.js) */
 function troopOrdersOf(k){const u={s:ST[k],type:k,team:0,ally:false};return UNIT_ABIL_ORDER.filter(id=>UNIT_ABILITIES[id].who(u))}
+// (one training of its path: here, free, when it trains anywhere (its buttons: one, or all those ready); else where and its price)
+function troopTrainRow(k,to,row){const s=ST[to],sub='Tier '+s.tier+' · '+classN(s)+' · ',n=txpReady(k);
+  if(!trainsAnywhere(to))return row(s.n,sub+trainCost(to)+'g each at a holding\'s barracks ('+(s.magic?'a caster':'tier '+s.tier)+')');
+  const q=recruitment.quoteTraining(null,k,to),why=n?!q.ok&&recruitmentWhy(q):'Fight with them to gain experience';
+  return row(s.n,sub+'free, trained here')+'<div class="btns fb-train-btns">'+fbBtn('party-train',k+':'+to+':1','Train 1',why)+(n>1?fbBtn('party-train',k+':'+to+':all','Train all '+n,why):'')+'</div>'}
 function troopPath(k){const s=ST[k],from=UP_FROM(k),need=(P.troops[k]||0)*txpNeed(k),orders=troopOrdersOf(k),traits=unitAbilities(s),row=(n,sub,cls='')=>'<div class="fb-path-step'+cls+'"><strong>'+n+'</strong><small>'+sub+'</small></div>';
-  return '<div class="fb-title"><small>Training path and abilities</small><h3>'+htmlText(s.n)+'</h3></div>'+(UP[k]?fbMeter('skills','Training · all '+s.n,txpOf(k),Math.max(1,need))+'<p class="fb-training-note">'+txpReady(k)+' ready to train at a barracks</p>':'<p class="fb-note">The top of its path: it trains no further.</p>')+
-    '<div class="lab">Path</div><div class="fb-path">'+(from?row(ST[from].n,'Tier '+ST[from].tier+' · trained from'):'')+row(s.n,'Tier '+s.tier+' · '+classN(s)+' · now',' on')+(UP[k]||[]).map(t=>row(ST[t].n,'Tier '+ST[t].tier+' · '+classN(ST[t])+' · '+trainCost(t)+'g each at a barracks')).join('')+'</div>'+
+  return '<div class="fb-title"><small>Training path and abilities</small><h3>'+htmlText(s.n)+'</h3></div>'+(UP[k]?fbMeter('skills','Training · all '+s.n,txpOf(k),Math.max(1,need))+'<p class="fb-training-note">'+txpReady(k)+' ready to train</p>':'<p class="fb-note">The top of its path: it trains no further.</p>')+
+    '<div class="lab">Path</div><div class="fb-path">'+(from?row(ST[from].n,'Tier '+ST[from].tier+' · trained from'):'')+row(s.n,'Tier '+s.tier+' · '+classN(s)+' · now',' on')+(UP[k]||[]).map(t=>troopTrainRow(k,t,row)).join('')+'</div>'+
     '<div class="lab">Battle orders</div>'+(orders.length?orders.map(id=>row(UNIT_ABILITIES[id].n+' ('+UNIT_ABILITIES[id].key+')',UNIT_ABILITIES[id].d)).join(''):'<p class="muted">No special orders.</p>')+
     '<div class="lab">Traits</div>'+(traits.length?traits.map(([n,d])=>row(n,d)).join(''):'<p class="muted">No special traits.</p>');
 }
@@ -151,6 +156,7 @@ onAct('party-',(a,arg)=>{
   if(a==='party-select'){s.sel=arg;s.open=true;s.path=false;G.armyEdit=null;if(rosterKind(arg)==='comp')compPick(arg.slice(5))}
   else if(a==='party-back'){if(G.armyEdit)G.armyEdit=null;else if(s.path)s.path=false;else s.open=false}
   else if(a==='party-path'){s.path=!s.path;G.armyEdit=null}
+  else if(a==='party-train'){const [k,to,n]=String(arg).split(':');if(!trainsAnywhere(to))return;for(let i=0,m=n==='all'?txpReady(k):1;i<m;i++){const r=recruitment.train(null,k,to);recruitmentFeedback(r,null);if(!r.ok)break}}
   else if(a==='party-unit-tab'&&PARTY_TABS[arg]){(s.tabs||(s.tabs={}))[s.sel]=arg}
   else if(a==='party-holder'){if(ROLES[arg]&&Object.keys(P.comps).length)armyRolePick(arg);return}
   else if(a==='party-equipment'){G.mode='world';hidePanel();openInv();G.invArmy=true;G.invView='equipment';renderInv();return}
