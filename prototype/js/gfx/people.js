@@ -44,7 +44,7 @@ const PLAYER_HERO_T=[
   '.....F...F......',
   '................'];
 const PLAYER_HERO_SHORT=PLAYER_HERO_T.filter((r,i)=>i!==9);
-const PLAYER_HERO_LOOK={cape:['#83a8ad','#456e78','#2d4b5b','#203040'],inner:'forest',outer:'leather'};
+const PLAYER_HERO_LOOK={cape:['#758087','#46535b','#343f47','#252d35'],inner:'forest',outer:'leather'};
 // a dwarf: the same, a row shorter in the body
 const PEOPLE_T_SHORT=PEOPLE_T.filter((r,i)=>i!==9);
 const PEOPLE_OUT='#1a1c26',PEOPLE_SCAR='#c06a5a';
@@ -173,8 +173,7 @@ function drawFigure(g,o,ox,oy,walk,style,atk,cut){
     rd=y=>!rig||y>=13-sh?null:y<7?rig.head:rig.body;
   const set=climb?(x,y,c)=>pset(g,ox+x+(y<6?2:y<9?1:0),oy+y+(y<9?1:0)+(y<13-sh?bob:0),c):(x,y,c)=>{const d=rd(y);pset(g,ox+x+(y<lean?1:0)+(d?d[0]:0),oy+y+(y<13-sh?bob:0)+(d?d[1]:0),c)};
   if(o.playerStyle&&o.cape){const C=pal(o.cape),sway=walk>=0&&walk%4>=2?1:0;
-    for(let y=7;y<=12-sh;y++)for(let x=y===7?4:y===8?3:2;x<=4;x++)set(x+(y>=11?sway:0),y,C[x===4?1:x===3?2:3]);
-    set(2+sway,12-sh,C[2]);set(3+sway,12-sh,C[3])}
+    for(let y=7;y<=11-sh;y++)for(let x=y<9?4:3;x<=4;x++)set(x+(y>=10?sway:0),y,C[x===4?1:2])}
   if(rig)rigLimbs(g,o,ox,oy+bob,rig,sh,true);// (an arm behind the body first)
   T.forEach((row,y)=>{if(cut!=null&&y>cut)return;[...row].forEach((c,x)=>{if(c==='.'||c==='L'||c==='M'||c==='F'||rig&&y>=7&&(x<=4||x>=10))return;set(x,y+(o.short&&y>=9?0:0),Lc[c])})});// (rigged: the arms drawn apart)
   const ly=13-sh;
