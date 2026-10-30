@@ -106,7 +106,7 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),out=()=>{cons
  {world2();P.troops={hum_spear:4,hum_bow:3};t.startBattle({enemies:['orc_grunt','orc_hunter'],tournament:false});const n0=t.WARM.q.length;ok(n0>40,'a battle lists the sprites it will need ('+n0+')');
   const a=performance.now();t.warmStep();const ms=performance.now()-a;ok(t.WARM.q.length<n0&&ms<t.WARM.budget+12,'and makes them a little at a time ('+(n0-t.WARM.q.length)+' in '+ms.toFixed(1)+' ms)');
   let k=0;while(t.WARM.q.length&&k++<400)t.warmStep();ok(!t.WARM.q.length,'until all are ready');
-  const b0=t.unitSprite('hum_spear',0,false,0,0,true),b7=t.unitSprite('hum_spear',0,false,0,7,true);ok(b0===b7,'a blow\u2019s frames share the standing body (the weapon swings apart)');
+  const b0=t.unitSprite('hum_spear',0,false,0,0,true),b7=t.unitSprite('hum_spear',0,false,0,7,true),h0=t.unitSprite('horse',0,false,0,0,true),h7=t.unitSprite('horse',0,false,0,7,true);ok(b0!==b7&&b7.rig&&h0===h7,'a blow\u2019s frames: on foot his own body turning into it (Wave 3: people.js BLOW_RIG), a rider\u2019s his standing one (the weapon swings apart)');
   t.B.over=true;t.B.endT=0;t.B=null;G.mode='world'}
  }catch(e){o.push('EXC '+e.message+' '+e.stack)}
  out();

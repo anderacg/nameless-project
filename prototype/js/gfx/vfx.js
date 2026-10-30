@@ -86,8 +86,13 @@ function poolSprite(r,seed){const key=r+'_'+seed;if(POOLS[key])return POOLS[key]
   return POOLS[key]=mkc(r*2+3,H*2+3,g=>{for(let y=-H-1;y<=H+1;y++)for(let x=-r-1;x<=r+1;x++){
     const d=Math.hypot(x/(r+.5),y/(ry+.5)),n=Math.sin(x*1.7+h)*Math.cos(y*2.3+h*.3)*.18;if(d>1+n)continue;g.fillStyle=d<.45?GORE.col[0]:d<.8?GORE.col[1]:GORE.col[2];g.fillRect(x+r+1,y+H+1,1,1)}})}
 // one of the fallen on g: q, how far through his fall (0-1); k, how far his pool has spread (0-1)
-function drawBody(g,c,q,k){const S=c.sp,X=Math.round(c.x),Y=Math.round(c.y);if(B?.world){g.save();g.translate(X,Y);g.scale(WORLD_BATTLE.sprite,WORLD_BATTLE.sprite);g.translate(-X,-Y)}
-  if(k>0&&BLOOD.on&&!c.dry){const r=Math.max(1,Math.round(c.pool*Math.sqrt(k))),p=poolSprite(r,c.seed),px=S.beast?0:S.mount?2*c.face:7*c.face,py=S.beast||S.mount?2:3;g.globalAlpha=.85;g.drawImage(p,X+px-(p.width>>1),Y+py-(p.height>>1));g.globalAlpha=1}
+/* how a man falls (the owner, 2026-10-30: "more ways to fall"; drawn only, from where he lies): over (forward, head the way he
+   faced), back (over backwards, he lies the other way), knees (to his knees, then over); his weapon flung from his hand as he goes,
+   turning, to where it lands (fly: its arc, px high, turns over its flight) */
+const FALLS=['over','back','knees'],FALL_FLY={h:9,turns:1.5};
+const fallOf=c=>c.fall||(c.fall=FALLS[(Math.round(c.x)*7+Math.round(c.y)*3)%3]);
+function drawBody(g,c,q,k){const S=c.sp,X=Math.round(c.x),Y=Math.round(c.y),how=S.beast||S.mount?'over':fallOf(c),bk=how==='back'?-1:1;if(B?.world){g.save();g.translate(X,Y);g.scale(WORLD_BATTLE.sprite,WORLD_BATTLE.sprite);g.translate(-X,-Y)}
+  if(k>0&&BLOOD.on&&!c.dry){const r=Math.max(1,Math.round(c.pool*Math.sqrt(k))),p=poolSprite(r,c.seed),px=S.beast?0:S.mount?2*c.face:7*c.face*bk,py=S.beast||S.mount?2:3;g.globalAlpha=.85;g.drawImage(p,X+px-(p.width>>1),Y+py-(p.height>>1));g.globalAlpha=1}
   g.save();g.translate(X,Y);if(c.face<0)g.scale(-1,1);
   // (a beast, a mount: slumped low where it stood; its rider thrown forward of it)
   if(S.beast){const sp=S.beast,w=sp.width,h=sp.height,x0=-Math.floor(w/2),Q=q*q;
@@ -96,8 +101,9 @@ function drawBody(g,c,q,k){const S=c.sp,X=Math.round(c.x),Y=Math.round(c.y);if(B
     else if(S.how==='back'){const s=1-1.7*Q;if(s<0)g.translate(0,Math.round((h-2)*s*.5));g.scale(1,Math.abs(s)<.05?.05:s);g.drawImage(sp,x0,-h+2)}
     else{const s=1-(S.how==='melt'?.75:.5)*Q;g.drawImage(sp,x0,Math.round((-h+2)*s),w,Math.max(1,Math.round(h*s)))}}
   else{if(S.mount){if(q<1){const m=S.mount,s=1-.5*q*q;g.drawImage(m,-16,Math.round(1-31*s),32,Math.max(1,Math.round(32*s)))}else g.drawImage(S.down,-16,-19);g.translate(4,7)}
-    if(S.wk&&q>=1){const w=weaponSprite(S.wk,S.team,c.skin,c.wi);g.drawImage(w,Math.round(c.wx)-w.R,Math.round(c.wy)-w.R)}
-    if(q<1){g.translate(0,1);g.rotate(q*q*Math.PI/2);g.drawImage(S.stand,-12,-18)}else g.drawImage(S.body,-S.ax,1-S.ay)}
+    if(S.wk){const F=FALL_FLY,w0=q>=1?c.wi:(c.wi+Math.round(q*F.turns*WEAPON_STEPS))%WEAPON_STEPS,w=weaponSprite(S.wk,S.team,c.skin,w0),x=q>=1?c.wx:3+(c.wx-3)*q,y=q>=1?c.wy:-9+(c.wy+9)*q-F.h*Math.sin(Math.PI*q);g.drawImage(w,Math.round(x)-w.R,Math.round(y)-w.R)}// (flung as he falls)
+    if(q<1){g.translate(0,1);if(how==='knees'){const a=q<.5?0:((q-.5)/.5)**2,s=q<.5?1-.28*q/.5:.72;g.rotate(a*Math.PI/2);g.scale(1,s)}else g.rotate(bk*q*q*Math.PI/2);g.drawImage(S.stand,-12,-18)}
+    else{if(bk<0)g.scale(-1,1);g.drawImage(S.body,-S.ax,1-S.ay)}}
   g.restore();if(B?.world)g.restore()}
 // all of them: the settled painted into the layer once (into each of its tiles the body reaches), and the layer drawn; those still
 // falling or bleeding drawn as they are

@@ -217,6 +217,9 @@ function drawWorld(){
 }
 // how long a unit holds its attack pose after it strikes
 const ATK_ANIM=.36;
+// the body's small life (drawUnit): a flinch for flinch s after a blow; standing, every 1/idle s a glance back (look of it) and
+// the weight shifted (shift of it)
+const BODY_LIFE={flinch:.16,idle:.11,look:.07,shift:.08};
 // the box a picture's drawn pixels fill, [x0, y0, x1, y1] (inclusive), worked out once per picture: what a label clears and a
 // click answers on (world.js pickAt)
 function opaqueBox(s){if(s._ob)return s._ob;const d=s.getContext('2d', { willReadFrequently: true }).getImageData(0,0,s.width,s.height).data;let x0=s.width,y0=s.height,x1=-1,y1=-1;
@@ -244,6 +247,8 @@ function drawUnit(u){
   const dq=physDownPose(u);if(dq!=null){drawDowned(u,x,y-z,dq);u.plx=u.x;u.ply=u.y}else{const distance=u.plx!=null?Math.hypot(u.x-u.plx,u.y-u.ply):0,step=distance>.02;if(B.world)u.walkPhase=(u.walkPhase||0)+distance/(WALK.foot*B.world.scale);u.plx=u.x;u.ply=u.y;u.movF=step?6:Math.max(0,(u.movF||0)-(B.paused?0:1));const moved=u.movF>0;const beast=!!(ST[u.type]&&ST[u.type].beast),cl=moved&&typeof climbState==='function'?climbState(u):null;let pose=beast?beastPose(u,moved):procPose(u,moved);
     // (on a hill's slope (the ground's climbState): walking or running up, bent forward on short slow steps; down, leaning on long ones)
     if(cl&&!beast&&((pose>=2&&pose<=5)||(pose>=15&&pose<=18)))pose=cl==='up'?19+Math.floor(B.t*5+(u.v||0))%4:23+Math.floor(B.t*9+(u.v||0))%4;
+    // (struck, a flinch; standing about, now and then a glance back or the weight shifted: from his id and the battle's time, drawn only)
+    if(!beast&&!u.s.mounted&&!cl){if(u.hitAt!=null&&B.t-u.hitAt<BODY_LIFE.flinch&&(pose<6||pose>=15&&pose<=18))pose=FLINCH_POSE;else if(pose<2&&!moved){const ph=(B.t*BODY_LIFE.idle+(u.id||0)*.618)%1;if(ph<BODY_LIFE.look)pose=LOOK_POSE;else if(ph>.5&&ph<.5+BODY_LIFE.shift)pose=SHIFT_POSE}}
     const sp=beast?actorSprite(u,pose):actorSprite(u,pose,true,!!u.inMelee);
     // (a beast's blow: its pose, and a short lunge with it; its steps bob in its frames)
     let [bx,sa]=stateShake(u),bo=0;if(beast&&u.atkAt!=null&&B.t-u.atkAt<ATK_ANIM)bx=Math.round(2*Math.sin((B.t-u.atkAt)/ATK_ANIM*Math.PI))
@@ -253,7 +258,7 @@ function drawUnit(u){
     if(dk==='dodge'&&!side)bx-=Math.round(2*dp);if(side)bo+=Math.round((u.id&1?2:-2)*dp);if(dk==='block'&&u.defV==='push')bx-=Math.round(2*dp);if(hit)bx-=1;
     const sg=u.stagAt!=null&&B.t-u.stagAt<.3?Math.sin((B.t-u.stagAt)/.3*Math.PI):0;if(sg)bx-=Math.round(2*sg);
     if(!beast&&DUEL.on&&u.atkLook&&u.atkAt!=null&&B.t-u.atkAt<ATK_ANIM)bx+=Math.round((u.atkLook==='bash'?2.5:1.5)*Math.sin((B.t-u.atkAt)/ATK_ANIM*Math.PI));
-    ctx.save();ctx.translate(x,y-z+bo);if(deep||ford){const sk=deep?2:0;ctx.translate(0,sk);ctx.beginPath();ctx.rect(-64,-128,128,128-sk-(deep?2:0));ctx.clip()}if((dk?u.defFace:u.face)<0)ctx.scale(-1,1);{const ln=physLean(u)+(dk==='dodge'&&!side?-.18*dp:0)-.15*sg;if(ln)ctx.transform(1,0,-ln,1,0,0)}/* (leaning into his run: physics.js) */ctx.globalAlpha=(ghost?.55:1)*sa;ctx.drawImage(hit?whiteOf(sp):statePic(u,sp),-Math.floor(sp.width/2)+bx,-sp.height+2);if(!beast)drawHeld(u,u.inMelee?sidearmLook(u):unitLook(u),sp,-Math.floor(sp.width/2)+bx,-sp.height+2,hit);ctx.restore();
+    ctx.save();ctx.translate(x,y-z+bo);if(deep||ford){const sk=deep?2:0;ctx.translate(0,sk);ctx.beginPath();ctx.rect(-64,-128,128,128-sk-(deep?2:0));ctx.clip()}if(spinFace(u,dk?u.defFace:u.face)<0)ctx.scale(-1,1);{const ln=physLean(u)+(dk==='dodge'&&!side?-.18*dp:0)-.15*sg;if(ln)ctx.transform(1,0,-ln,1,0,0)}/* (leaning into his run: physics.js) */ctx.globalAlpha=(ghost?.55:1)*sa;ctx.drawImage(hit?whiteOf(sp):statePic(u,sp),-Math.floor(sp.width/2)+bx,-sp.height+2);if(!beast)drawHeld(u,u.inMelee?sidearmLook(u):unitLook(u),sp,-Math.floor(sp.width/2)+bx,-sp.height+2,hit);ctx.restore();
     // (climbing: a little grit trickles down the slope behind him now and then; coming down, a puff at the heel: from his id and the
     // battle's time, drawn only)
     if(cl){const ph=(B.t*(cl==='up'?2.2:3)+((u.id||0)*.37))%1,dc=B.env.c==='frost'?'#e8eef4':B.env.c==='desert'?'#e6cc96':'#a8987a';

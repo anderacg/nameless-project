@@ -68,7 +68,7 @@ function heldAngle(u,k){
   u.wDx=u.wDx==null?dx:u.wDx+(dx-u.wDx)*Math.min(1,dt*12);u.wDy=u.wDy==null?dy:u.wDy+(dy-u.wDy)*Math.min(1,dt*12);
   return[u.wAng,u.wDx,u.wDy]}
 function drawHeld(u,o,sp,bx,by,flash){
-  const k=heldWeapon(o);if(!k||!sp.hand)return;const [deg,dx,dy]=heldAngle(u,k),f=deg/360*WEAPON_STEPS;
+  const k=heldWeapon(o);if(!k||!sp.hand)return;const [deg,hx,hy]=heldAngle(u,k),dx=sp.rig?0:hx,dy=sp.rig?0:hy,f=deg/360*WEAPON_STEPS;// (rigged: the fist carries it, people.js BLOW_RIG)
   // (the step drawn changes only when the angle is well past the middle between two: no flicker on the boundary)
   if(u.wIdx==null||Math.abs(((f-u.wIdx)%WEAPON_STEPS+WEAPON_STEPS*1.5)%WEAPON_STEPS-WEAPON_STEPS/2)>.8)u.wIdx=Math.round(f);
   const i=((u.wIdx%WEAPON_STEPS)+WEAPON_STEPS)%WEAPON_STEPS;

@@ -30,16 +30,19 @@ function heroFinisher(){if(reducedMotion())return;const V=heroView(),now=perform
 // the moments, as the battle tells them
 battleOn((type,d)=>{if(!STATE_FX.on||!B)return;const T=HERO_FX.trail;
   if(type==='swing'&&d.u){const big=d.last&&d.n,u=d.u;fxp({k:'trail',x:u.x,y:u.y-6,a:d.a,r:d.r,arc:d.c.arc||.9,dir:d.c.dir||1,shape:d.c.shape,w:big?T.fin:T.w,col:d.c.col||T.col,life:T.life*(big?1.4:1)});
-    if(big&&mine(u))heroFinisher()}
+    if(d.c.shape==='spin')stateMark(u).spin=B.t;if(big&&mine(u))heroFinisher()}
   if(type==='blow'&&d.e){const e=d.e;if(d.crit){fxp({k:'star',x:e.x,y:e.y-8,r:HERO_FX.crit.star,life:.3});if(mine(d.u))heroBeatNow()}
     if(d.kill&&mine(d.u)){fxp({k:'flash',x:e.x,y:e.y-6,r:12,col:'255,255,255',life:.22});fxp({k:'ring',x:e.x,y:e.y,r:16,col:'255,240,200',life:.4});heroBeatNow()}}
   if(type==='cast'&&d.u){const u=d.u,id=d.id,C=HERO_FX.spell[id];
-    if(id==='whirl')for(let i=0;i<HERO_FX.ghosts;i++)fxp({k:'ghost',u,x:u.x,y:u.y,a:i/HERO_FX.ghosts*6.283,r:11,face:i&1?-1:1,life:.32});
+    if(id==='whirl')stateMark(u).spin=B.t;if(id==='whirl')for(let i=0;i<HERO_FX.ghosts;i++)fxp({k:'ghost',u,x:u.x,y:u.y,a:i/HERO_FX.ghosts*6.283,r:11,face:i&1?-1:1,life:.32});
     if(id==='dash'){const D=d.st&&d.st.dash;if(D)fxp({k:'streak',x:D.sx,y:D.sy-6,tx:D.tx,ty:D.ty-6,col:'235,230,210',life:.36})}
     if(C){const hx=u.x+(u.face||1)*4,hy=u.y-10;for(let i=0;i<8;i++){const b=fxr()*6.283;fxp({k:'mote',x:hx+Math.cos(b)*16,y:hy+Math.sin(b)*10,tx:hx,ty:hy,col:C,life:.22})}
       fxp({k:'flash',x:hx,y:hy,r:14,col:C,life:.28});fxp({k:'ring',x:u.x,y:u.y,r:22,col:C,life:.45})}}
   if(type==='land'&&d.u){const u=d.u;for(let i=0;i<HERO_FX.debris;i++){const b=fxr()*6.283,v=30+fxr()*50;fxp({k:'rock',x:u.x,y:u.y,vx:Math.cos(b)*v,vy:Math.sin(b)*v*.45,z:0,vz:40+fxr()*50,g:260,life:.6})}
     fxp({k:'wave',x:u.x,y:u.y,r:(d.r||30)*1.3,col:'255,214,140',life:.4});fxp({k:'flash',x:u.x,y:u.y-2,r:12,col:'255,236,190',life:.18});if(mine(u))heroFinisher()}});
+// (a spin: turning round on his feet, his facing flipped n times over t s of the battle's clock (render.js drawUnit))
+const SPIN={t:.36,n:6};
+function spinFace(u,f){const m=STATE_MARKS.get(u),q=m&&m.spin!=null?(B.t-m.spin)/SPIN.t:-1;return q>=0&&q<1&&Math.floor(q*SPIN.n)%2?-f:f}
 // under your hero: her glow
 function heroAura(u,x,y,big){if(!STATE_FX.on||!mine(u)||u.hp<=0)return;const A=HERO_FX.aura,p=.5+.5*Math.sin(performance.now()/1000/A.pulse*6.283),R=A.r*big;
   ctx.save();ctx.globalCompositeOperation='lighter';const g=ctx.createRadialGradient(x,y,0,x,y,R);g.addColorStop(0,'rgba(255,220,140,'+(A.a*(.7+.3*p)).toFixed(2)+')');g.addColorStop(1,'rgba(255,220,140,0)');

@@ -147,8 +147,10 @@ function drawFigure(g,o,ox,oy,walk,style,atk,cut){
   const bob=run?RUN_BOB[walk-4]:climb?CLIMB_BOB[walk-8]:desc?DESC_BOB[walk-12]:walk===1||walk===3||walk===-2?-1:0,lean=run?9:desc?6:0;
   // (climbing: bent double, the head two pixels forward and the shoulders one, all above the belt a pixel lower)
   // (bare hands: a frame of the rig, FIST_RIG: the head and the body each moved, the arms and legs drawn from their joints)
-  const rig=cut==null&&!o.weapon&&!o.mount?FIST_STYLES.includes(style)&&atk>=0?FIST_RIG[style][atk]:o.guardUp&&!o.shield?FIST_RIG.guard[0]:null:null,
-    rd=y=>!rig||y>=13-sh?null:y<7?rig.head:rig.body;
+  // (a weapon held apart (o.held): a frame of BLOW_RIG, the body turning into the blow, its weapon in the fore hand; meeting a blow,
+  // the flinch; standing about, a glance back or the weight shifted: NUDGE, the head and the body only)
+  const rig=cut==null&&!o.weapon&&!o.mount?FIST_STYLES.includes(style)&&atk>=0?FIST_RIG[style][atk]:o.held&&BLOW_RIG[style]&&atk>=0?blowRig(o,style,atk):style==='flinch'?blowRig(o,style,0):o.guardUp&&!o.shield?FIST_RIG.guard[0]:null:null,
+    nd=!rig&&cut==null&&NUDGE[style],rd=y=>{const R=rig||nd;return !R||y>=13-sh?null:y<7?R.head:R.body};
   const set=climb?(x,y,c)=>pset(g,ox+x+(y<6?2:y<9?1:0),oy+y+(y<9?1:0)+(y<13-sh?bob:0),c):(x,y,c)=>{const d=rd(y);pset(g,ox+x+(y<lean?1:0)+(d?d[0]:0),oy+y+(y<13-sh?bob:0)+(d?d[1]:0),c)};
   if(rig)rigLimbs(g,o,ox,oy+bob,rig,sh,true);// (an arm behind the body first)
   T.forEach((row,y)=>{if(cut!=null&&y>cut)return;[...row].forEach((c,x)=>{if(c==='.'||c==='L'||c==='M'||c==='F'||rig&&y>=7&&(x<=4||x>=10))return;set(x,y+(o.short&&y>=9?0:0),Lc[c])})});// (rigged: the arms drawn apart)
@@ -183,8 +185,31 @@ function drawFigure(g,o,ox,oy,walk,style,atk,cut){
   else if(o.shield){const C=pal(o.shield),Tm=pal(o.team);for(let y=8;y<=11-sh;y++){set(2,y,C[1]);set(3,y,y===8?C[0]:C[2])}set(2,9,Tm[1]);set(2,10-sh,Tm[2]);set(3,12-sh,C[3]);set(2,12-sh,C[2])}
   drawWeapon(g,o,ox,oy+bob,style,atk,sh);
   if(rig)rigLimbs(g,o,ox,oy+bob,rig,sh,false);
-  return[ox+11,oy+bob+10-sh];// (the weapon hand: weapons.js holds a weapon there)
+  if(rig&&o.held){const [x,y]=rig.fore[2];return[ox+x,oy+bob+y-(y>=9?sh:0)]}// (rigged: the weapon in the fore fist)
+  return[ox+11+(nd?nd.body[0]:0),oy+bob+10-sh+(nd?nd.body[1]:0)];// (the weapon hand: weapons.js holds a weapon there)
 }
+/* a weapon's blows on the rig (the owner, 2026-10-30: "more alive bodies"; Wave 3): swing, thrust and overhead, three frames each
+   (wind-up, strike, follow through), as FIST_RIG's: the body turns back into the wind-up and forward into the strike, the knees
+   bend and the front foot steps in (the back heel up), the fore arm carries the weapon (its fist the weapon hand: weapons.js
+   drawHeld), the free arm swings back to balance; a two-handed weapon (great, big axe, hammer, a pole) has both hands on it (grip),
+   a shield arm keeps its shield; a pole's swing is a thrust from the hips. flinch: struck, the head and body jerked back, the arms
+   in. NUDGE: standing about (render.js), a glance back (look), the weight on the back foot (shift) */
+const BLOW_RIG={
+  swing:[{head:[-1,0],body:[-1,0],fore:[[8,8],[8,6],[9,5]],rear:[[4,8],[5,10],[7,10]],grip:[[5,8],[7,7],[8,6]],lead:[[8,12],[9,13],[10,14]],back:[[6,12],[5,13],[4,14]]},
+    {head:[1,0],body:[1,0],fore:[[10,8],[12,9],[13,9]],rear:[[6,8],[5,10],[4,11]],grip:[[6,8],[9,9],[11,9]],lead:[[9,12],[11,13],[12,14]],back:[[7,12],[5,13],[3,14]],toe:true},
+    {head:[1,0],body:[1,0],fore:[[10,8],[11,10],[12,11]],rear:[[6,8],[5,10],[5,12]],grip:[[6,8],[8,10],[10,11]],lead:[[9,12],[10,13],[11,14]],back:[[7,12],[5,13],[4,14]]}],
+  thrust:[{head:[-1,0],body:[-1,0],fore:[[8,8],[8,10],[9,10]],rear:[[4,8],[4,10],[5,11]],grip:[[4,8],[6,10],[7,10]],lead:[[8,12],[9,13],[10,14]],back:[[6,12],[5,13],[4,14]]},
+    {head:[1,0],body:[1,0],fore:[[10,8],[12,9],[14,9]],rear:[[6,8],[5,10],[4,10]],grip:[[6,8],[9,9],[11,9]],lead:[[9,12],[11,13],[12,14]],back:[[7,12],[5,13],[3,14]],toe:true},
+    {head:[1,0],body:[1,0],fore:[[10,8],[12,9],[13,9]],rear:[[6,8],[5,10],[4,11]],grip:[[6,8],[8,9],[10,9]],lead:[[9,12],[10,13],[11,14]],back:[[7,12],[5,13],[4,14]]}],
+  overhead:[{head:[-1,0],body:[0,0],fore:[[9,8],[9,6],[9,4]],rear:[[5,8],[5,10],[6,11]],grip:[[5,8],[7,6],[8,5]],lead:[[8,12],[9,13],[10,14]],back:[[6,12],[5,13],[4,14]]},
+    {head:[1,1],body:[1,1],fore:[[10,9],[12,8],[13,8]],rear:[[6,9],[5,11],[5,12]],grip:[[6,9],[9,8],[11,8]],lead:[[9,13],[10,13],[11,14]],back:[[7,13],[5,13],[4,14]]},
+    {head:[1,1],body:[1,1],fore:[[10,9],[11,11],[12,12]],rear:[[6,9],[5,11],[4,12]],grip:[[6,9],[8,11],[10,12]],lead:[[9,13],[10,13],[11,14]],back:[[7,13],[5,13],[4,14]],toe:true}],
+  flinch:[{head:[-1,0],body:[-1,0],fore:[[8,8],[9,10],[10,8]],rear:[[4,8],[4,10],[5,9]],grip:[[4,8],[6,9],[8,8]],lead:[[8,12],[9,13],[10,14]],back:[[6,12],[5,13],[3,14]]}]};
+const NUDGE={look:{head:[-1,0],body:[0,0]},shift:{head:[-1,0],body:[-1,0]}};
+const SHIELD_ARM=[[5,8],[4,10],[3,10]];
+// (a frame for this figure: a pole's swing a thrust; both hands on a two-handed weapon; a shield kept on its arm)
+function blowRig(o,style,atk){const st=style==='swing'&&POLE(o.held)?'thrust':style,f=BLOW_RIG[st][atk];
+  if(o.shield)return{...f,rear:SHIELD_ARM,over:false};return o.held&&(POLE(o.held)||o.held==='great'||o.held==='bigaxe'||o.held==='hammer')?{...f,rear:f.grip,over:true}:f}
 /* bare hands (combat.js FISTS): a small rig, each frame of a jab, a cross (the rear hand), a kick and a grapple (reach, lift,
    throw), and the fists up to meet a blow (guard). head, body: [dx, dy] the head (rows 0-6) and the body (7-12) moved from the
    standing figure; fore, rear: the arms, [shoulder, elbow, fist] (rear drawn behind the body unless over: it crosses in front);
@@ -322,13 +347,13 @@ function peopleSprite(o,pose,bare){
   // (pose 1: a breath in, walk -2)
   // (19-22: climbing, walk 8-11; 23-26: descending, walk 12-15; a rider's mount just walks)
   const walk=pose===1?-2:pose>=2&&pose<=5?pose-2:pose>=15&&pose<=18?pose-11:pose>=19&&pose<=26?(o.mount?(pose-19)%4:pose-11):-1,blow=pose>=6&&pose<=14,
-    fist=pose>=FIST_POSE&&pose<FIST_POSE+12,atk=blow?(pose-6)%3:fist?(pose-FIST_POSE)%3:-1,style=fist?FIST_STYLES[(pose-FIST_POSE)/3|0]:!blow?null:pose>=12?'overhead':pose>=9?'thrust':'swing';// (fist: bare hands, sprites.js)
+    fist=pose>=FIST_POSE&&pose<FIST_POSE+12,atk=blow?(pose-6)%3:fist?(pose-FIST_POSE)%3:-1,style=fist?FIST_STYLES[(pose-FIST_POSE)/3|0]:LIFE_POSES[pose]||(!blow?null:pose>=12?'overhead':pose>=9?'thrust':'swing');// (fist: bare hands; LIFE_POSES: struck, glancing, shifting: sprites.js)
   // (bare: the melee weapon left off, to be held apart: weapons.js; DEF_POSE: standing, his shield raised before him)
-  if(bare&&heldWeapon(o))o={...o,weapon:null};if(pose===DEF_POSE||pose===DEF_LOW)o={...o,guardUp:pose===DEF_LOW?'low':true};
+  if(bare&&heldWeapon(o))o={...o,weapon:null,held:heldWeapon(o)};if(pose===DEF_POSE||pose===DEF_LOW)o={...o,guardUp:pose===DEF_LOW?'low':true};
   if(o.mount){const g=pgrid(32,32),top=drawMount(g,o,walk),hand=drawFigure(g,{...o,shield:null},6,top-6,-1,style,atk,12);g.fh=32-(top-6);
     // the rider's leg down the mount's side
     const Lc=lettersOf(o);pset(g,11,top+7,Lc.L);pset(g,11,top+8,Lc.L);pset(g,11,top+9,Lc.F);poutline(g);const c=pcanvas(g);c.fh=g.fh;c.hand=hand;return c}
-  const g=pgrid(24,19),hand=drawFigure(g,o,4,3,walk,style,atk);poutline(g);const c=pcanvas(g);c.fh=o.short?15:16;c.hand=hand;return c;
+  const g=pgrid(24,19),hand=drawFigure(g,o,4,3,walk,style,atk);poutline(g);const c=pcanvas(g);c.fh=o.short?15:16;c.hand=hand;c.rig=!!o.held&&(blow||pose===FLINCH_POSE);return c;
 }
 
 /* the world map's own figures (doc/WORLD_DESIGN.md §10.1), smaller than the battle's, so a person is clearly smaller than a

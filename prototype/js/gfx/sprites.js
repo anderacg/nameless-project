@@ -11,12 +11,15 @@ const CELLS=[8,16,32,64];
 function cellOf(src){const n=CELLS.find(s=>s>=src.width&&s>=src.height)||Math.max(src.width,src.height);
   const c=mkc(n,n,g=>g.drawImage(src,(n>>1)-(src.width>>1),n-src.height));c.cw=src.width;c.ch=src.fh||src.height;
   if(src.hand)c.hand=[(n>>1)-(src.width>>1)+src.hand[0],n-src.height+src.hand[1]];// (the hand, where it went)
+  c.rig=src.rig;
   return c}
 // pose: 0-1 idle (breathing), 2-5 walking (legs stride, body bobs), 15-18 running (a long stride, leaning, bouncing), then three blows of three frames each (wind up, strike,
 // follow through): 6-8 a swing, 9-11 a thrust, 12-14 an overhead chop; 27 his shield raised to meet a blow (DEF_POSE, battle/defence.js), 28 held low (DEF_LOW, a low cut or a thrust: battle/duel.js). A figure is 16x16 drawn into a 20x20 canvas (room for a
 // raised or thrust weapon) inside a 1-pixel outline, feet on the bottom row; cached by type, team, variant and pose.
 // 29-40 bare hands (combat.js FISTS), three frames each: a jab, a cross (hook), a kick, a grapple (FIST_STYLES from FIST_POSE)
 const ATK_BASE={swing:6,thrust:9,overhead:12,jab:29,hook:32,kick:35,grapple:38},DEF_POSE=27,DEF_LOW=28,FIST_POSE=29,FIST_STYLES=['jab','hook','kick','grapple'];
+// 41 struck (a flinch), 42 a glance back, 43 the weight shifted (render.js picks them: drawn only)
+const FLINCH_POSE=41,LOOK_POSE=42,SHIFT_POSE=43,LIFE_POSES={41:'flinch',42:'look',43:'shift'};
 // bare: in battle, a soldier's melee weapon is drawn apart (weapons.js); the sprite leaves it off
 // (arm: a shooter in melee mode: his bow put away, his body bare for the sidearm drawn in his hand: weapons.js, sidearmLook)
 function unitSprite(type,team,hero,v,pose,bare,arm,tint){
@@ -28,8 +31,9 @@ function unitSprite(type,team,hero,v,pose,bare,arm,tint){
   v=hero?0:(v||0)%6;pose=pose||0;const key=type+team+(hero?'h'+P.race+(P.gear.weapon||'')+(P.gear.body||'')+(P.gear.head||''):'')+(cg?'g'+(cg.weapon||'')+(cg.body||'')+(cg.head||''):'')+'v'+v+'p'+pose+(bare?'b':'')+(arm?'s':'')+(tint?'c'+tint:'');if(spr[key])return spr[key];
   // soldiers, your hero and companions: the template figures (people.js)
   const cid=COMPS[type]?type:'',L0=allyLook(lookOf(type,team===2?0:team,hero,v,cid,cg),team),L={...L0,...(tint?{team:tint}:{}),...(arm?{weapon:null}:{})};
-  // (a bare body in a blow is the body standing: its weapon is drawn apart, so one sprite serves all nine blow frames)
-  if(bare&&pose>=6&&pose<=14&&heldWeapon(L)){const k0=key.replace('p'+pose+'b','p0b');return spr[key]=spr[k0]||(spr[k0]=cellOf(peopleSprite(L,0,true)))}
+  // (a rider's bare body in a blow is the body standing: its weapon is drawn apart, so one sprite serves all nine blow frames; on
+  // foot, each frame his own: people.js BLOW_RIG)
+  if(bare&&pose>=6&&pose<=14&&heldWeapon(L)&&L.mount){const k0=key.replace('p'+pose+'b','p0b');return spr[key]=spr[k0]||(spr[k0]=cellOf(peopleSprite(L,0,true)))}
   return spr[key]=cellOf(peopleSprite(L,pose,bare));
 }
 // World combat retains the army's cloth and each marcher's appearance instead of repainting by battle side.
@@ -80,7 +84,7 @@ function warmBattle(units){
     for(const p of [0,1,2,3,4,5,15,16,17,18])WARM.q.push(()=>actorSprite(u,p,true));
     const L=unitLook(u),w=heldWeapon(L);
     if(w){const sk=pal(L.skin)[1],kw=w+L.team+sk;if(!seen.has(kw)){seen.add(kw);for(let i=0;i<WEAPON_STEPS;i++)WARM.q.push(()=>weaponSprite(w,L.team,sk,i))}}
-    else for(let p=6;p<=14;p++)WARM.q.push(()=>actorSprite(u,p,true));
+    for(const p of [6,7,8,9,10,11,12,13,14,FLINCH_POSE,LOOK_POSE,SHIFT_POSE])WARM.q.push(()=>actorSprite(u,p,true));
     if(u.hero&&unarmed())for(let p=FIST_POSE;p<FIST_POSE+12;p++)WARM.q.push(()=>actorSprite(u,p,true));// (bare hands: the fists' blows)
     // (and last, how he lies when he falls, and the weapon he drops: vfx.js drawCorpses)
     late.push(()=>corpseOf(u));if(u.s.range&&!u.s.magic){for(const p of [0,2,3,4,5,6,7,8])late.push(()=>actorSprite(u,p,true,true));const sk=pal(L.skin)[1],kw='sword'+L.team+sk;if(!seen.has(kw)){seen.add(kw);for(let i=0;i<WEAPON_STEPS;i++)late.push(()=>weaponSprite('sword',L.team,sk,i))}}if(w)for(const i of [0,1,WEAPON_STEPS-1,WEAPON_STEPS/2,WEAPON_STEPS/2+1])late.push(()=>weaponSprite(w,L.team,PPAL.wood[2],i))}
