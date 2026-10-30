@@ -34,6 +34,7 @@ Kit.suite(({ok})=>{
   ok(Math.abs(u4.s.range/u1.s.range-t.RANK_SKILLS.bow[4].range)<1e-9,'Marksmen at rank 5: +'+Math.round((t.RANK_SKILLS.bow[4].range-1)*100)+'% range');for(const u of b2.units)if(u.team===1)u.hp=0;t.checkBattleOver();b2.endT=0;t.updateBattle(.01);if(t.B)t.finishBattle();t.act('cont');t.hidePanel()}
  // ======== the Army window: the ladder
  {Kit.world();t.openChar();t.act('party-select',sp1.id);t.act('party-path',sp1.id);const d=document.querySelector('.fb-inspector');
-  ok(/Rank skills/.test(d.textContent)&&d.querySelectorAll('.fb-path-step.off').length===4&&/Brace \(G\)/.test(d.textContent),'a spearmen\'s path: its five rungs, four still to reach');t.act('char-close')}
+  ok(/Rank skills/.test(d.textContent)&&d.querySelectorAll('.fb-path-step.off').length===4&&/Brace \(G\)/.test(d.textContent),'a spearmen\'s path: its five rungs, four still to reach');
+  {const rungs=[...d.querySelectorAll('.fb-path-step')].map(x=>x.textContent),tl=d.textContent.split('Traits')[1]||'';ok(/Rank 1 · Set spears \(its trait\)/.test(rungs.join('|'))&&!/Set spears/.test(tl)&&/Shield/.test(tl),'rank 1 is its own trait, Set spears, not listed again with its traits (its Shield is)')}t.act('char-close')}
  ok(!ERR.length,'no runtime errors'+(ERR.length?': '+ERR[0]:''));
 });

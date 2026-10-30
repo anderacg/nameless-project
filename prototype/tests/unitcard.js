@@ -18,7 +18,7 @@ try{
  ok(['Health','Melee attack','Reach','Speed','Vigor','Charge bonus'].every(n=>nums('hum_levy').includes(n)),'a foot soldier: health, melee attack, reach, speed, vigor, charge bonus');
  ok(['Missile attack','Range','Ammunition'].every(n=>nums('hum_bow').includes(n))&&!nums('hum_bow').includes('Charge bonus'),'an archer: missile attack, range and ammunition, no charge');
  ok(abil('hum_knight').includes('Cavalry charge')&&abil('hum_knight').includes('Heavy armour')&&abil('hum_knight').includes('Wedge'),'a knight: cavalry charge, heavy armour, wedge');
- ok(abil('hum_pike').includes('Brace')&&abil('hum_bow').includes('Longshot')&&abil('elf_archer').includes('Elven aim')&&abil('hum_mage').includes('Magic bolts')&&abil('dw_xbow').includes('Direct fire'),'pikes brace, bows outrange, elves aim true, mages cast, crossbows shoot flat');
+ ok(abil('hum_pike').includes('Set spears')&&abil('hum_bow').includes('Longshot')&&abil('elf_archer').includes('Elven aim')&&abil('hum_mage').includes('Magic bolts')&&abil('dw_xbow').includes('Direct fire'),'pikes brace, bows outrange, elves aim true, mages cast, crossbows shoot flat');
  // the card
  {const c=t.unitCard('hum_knight');ok(/Knight/.test(c)&&/Cavalry/.test(c)&&/\+90%/.test(c)&&/Strong vs/.test(c)&&/Upkeep 1g a day/.test(c)&&/<img/.test(c),'a knight’s card: name, class, charge bonus, strong and weak, upkeep (riders cost more), picture')}
  {const c=t.unitCard('hum_levy');ok(/Armour/.test(c)&&/Morale/.test(c)&&!/Missile attack/.test(c)&&t.unitCard('hum_bow').includes('Missile attack'),'a card shows only the numbers its unit has (a levy no missile attack), armour among them');
@@ -43,7 +43,7 @@ try{
   const bad=all.filter(k=>!ST[k]||!t.PEOPLE_LOOK[k]||!!t.PEOPLE_LOOK[k].shield!==t.tagsOf(ST[k]).includes('shield'));ok(!bad.length,'each has its own look, and a shield trait exactly when its look carries a shield'+(bad.length?' ('+bad.join(', ')+')':''));
   const nos=all.filter(k=>{try{const c=t.unitSprite(k,0,false,0);return !(c&&c.width>0)}catch(e){return true}});ok(!nos.length,'and a sprite'+(nos.length?' (missing: '+nos.join(', ')+')':''));
   ok(t.townBy('Ashford').hires('human').includes('hum_foot'),'towns hire the shield line')}
- ok(!t.tagsOf(ST.hum_levy).includes('shield')&&abil('hum_levy').includes('Brace')&&!abil('hum_levy').includes('Shield wall'),'a levy carries a spear and no shield: it braces, and cannot form a shield wall');
+ ok(!t.tagsOf(ST.hum_levy).includes('shield')&&abil('hum_levy').includes('Set spears')&&!abil('hum_levy').includes('Shield wall'),'a levy carries a spear and no shield: it braces, and cannot form a shield wall');
  ok(abil('hum_foot').includes('Shield')&&abil('hum_foot').includes('Shield wall')&&/Shield infantry/.test(t.unitCard('hum_foot')),'a footman: a shield, a shield wall, shield infantry');
  ok(ST.hum_hbow.mounted&&ST.hum_hbow.range>0&&/Missile cavalry/.test(t.unitCard('hum_hbow'))&&abil('hum_hbow').includes('Horse archer')&&t.vigorOf(ST.hum_hbow)>t.vigorOf(ST.hum_bow),'mounted archers: riders who shoot (missile cavalry), with a rider\u2019s vigor');
  // shields in battle: missiles at the front do less; only shields make a shield wall

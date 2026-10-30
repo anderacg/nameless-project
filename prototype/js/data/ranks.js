@@ -25,15 +25,17 @@ const RANKS={max:5,
    (its numbers here: reach, range and aim error multiplied; a flag read where it acts) or one of the group abilities
    (ab: battle/unitabilities.js), unlocked at that rank; up: a mastery pick's gain on it (an ability's dur in seconds, Rally's gain,
    Fire arrows' mul; a passive's own number). A role not here keeps today's abilities from rank 1 (built later as data: the
-   owner, "a baseline for future added") ---------- */
+   owner, "a baseline for future added"). Rank 1 is the kind's own trait (traits: the first of these it has, data/abilities.js),
+   listed there and not again with its traits: the ladder builds on it (the owner: skills and traits "not overlapping", "relevant
+   to each other") ---------- */
 const RANK_SKILLS={
-  spear:[{id:'setspears',n:'Set spears',d:'Braced against a charge on their front: it gets no charge bonus and no shock.'},
+  spear:[{traits:['brace']},
     {ab:'brace',up:{dur:3}},
     {id:'reach',n:'Long reach',d:'+10% reach.',reach:1.1,up:{reach:.05}},
     {ab:'rally',up:{gain:5}},
-    {id:'hedge',n:'Hedge of spears',d:'Braced against a charge from the front and the flanks, always: only one from behind still hits home.'}],
-  bow:[{id:'volley',n:'Volley',d:'They shoot as bowmen do: arcing shots over their own lines.'},
+    {id:'hedge',n:'Hedge of spears',d:'Set spears on the flanks too, always, Brace ordered or not: only a charge from behind still hits home.'}],
+  bow:[{traits:['longshot','elvenaim']},
     {ab:'fire',up:{mul:.05}},
     {id:'aim',n:'Steady aim',d:'Their shots 10% truer.',aim:.9,up:{aim:-.05}},
     {ab:'rapid',up:{dur:2}},
-    {id:'marks',n:'Marksmen',d:'+10% range.',range:1.1,up:{range:.05}}]};
+    {id:'marks',n:'Marksmen',d:'+10% range, on top of their bows\' own.',range:1.1,up:{range:.05}}]};

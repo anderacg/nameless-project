@@ -13,7 +13,7 @@ const UNIT_ABILITIES={
   // (spearmen in the fight always brace against a charge on their front, morale.js chargeMul: Brace adds their flanks)
   // push: the share of a push (its distance) that still moves him
   brace:{n:'Brace',key:'G',dur:8,cd:40,snd:'brace',push:.2,who:u=>unitClass(u.s)==='spear',
-    d:'Spear and pike infantry plant their spears and stand fast: they stop where they are, a charge on their front or flank gets no charge bonus (spearmen always brace against one on their front; from behind it still hits home), and pushes barely move them. A move, attack, advance or withdraw order ends it.',
+    d:'Spear and pike infantry plant their spears and stand fast: they stop where they are, their Set spears covers their flanks too (a charge there gets no bonus; from behind it still hits home), and pushes barely move them. A move, attack, advance or withdraw order ends it.',
     use(g,S){g.hold();S.mv=g.mvId;const m=abilityTroops(g);if(m[0])moraleSay(m[0],'Brace!','#cfe0ff',.8)},
     holds:(g,S)=>g.order==='hold'&&!g.hasTarget&&g.mvId===S.mv&&!(g.queue&&g.queue.length),
     step(g,S,dt){const k=Math.pow(.004,dt*(1/this.push-1));/* (on top of a push's own fading, .004 a combat second: battle.js) */for(const u of g.units)if((u.kx||u.ky)&&this.who(u)){u.kx*=k;u.ky*=k}}},

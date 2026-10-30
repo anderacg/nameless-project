@@ -121,11 +121,12 @@ function masteryHtml(g,L){const r=rankOf(g),picks=g.picks||[],name=id=>{const k=
 function ownTrainHtml(g){const trs=ownTrainers().filter(tr=>tr.roles.includes(trainRole(g.type)));if(!g.id)return '';
   if(!trs.length)return '<p class="fb-note">Training: your hero with Drillmaster, or a companion as Trainer, drills your groups in camp; a holding\'s trainers for gold.</p>';
   return '<div class="lab">Training'+(P.camp?'':' (in camp)')+'</div><div class="btns fb-train-btns">'+trs.map(tr=>{const why=lessonWhy(tr,g);return fbBtn('trn-lesson',tr.id+'|'+g.id,htmlText(tr.name)+' · +'+TRAINERS.xp[tr.level-1]+' ('+trainLeft(tr)+' left)',why)}).join('')+'</div>'}
-function troopPath(k,id){const s=ST[k],from=UP_FROM(k),orders=troopOrdersOf(k),traits=unitAbilities(s),row=(n,sub,cls='')=>'<div class="fb-path-step'+cls+'"><strong>'+n+'</strong><small>'+sub+'</small></div>',
+function troopPath(k,id){const s=ST[k],from=UP_FROM(k),orders=troopOrdersOf(k),traits=traitsOf(s).filter(id=>!(RANK_SKILLS[rankRole({s,type:k,team:0})]||[]).some(x=>x.traits?.includes(id))).map(id=>[ABILITIES[id].n,abilityText(id,s)]),row=(n,sub,cls='')=>'<div class="fb-path-step'+cls+'"><strong>'+n+'</strong><small>'+sub+'</small></div>',
     g=partyRoster(P).groups.find(x=>x.id===id)||(P.woundedGroups||[]).find(w=>w.id===id)||{id,type:k},L=rankLine(g),L2=RANK_SKILLS[rankRole({s,type:k,team:0})];// (its ladder: data/ranks.js)
   return '<div class="fb-title"><small>Rank and path</small><h3>'+groupBadge(g,16)+' '+htmlText(s.n)+'</h3></div>'+fbMeter('skills',L.txt,L.v,Math.max(1,L.max))+(UP[k]?'':'<p class="fb-note">The top of its path: it upgrades no further.</p>')+masteryHtml(g,L2)+ownTrainHtml(g)+
     '<div class="lab">Path</div><div class="fb-path">'+(from?row(ST[from].n,'Tier '+ST[from].tier+' · upgraded from'):'')+row(s.n,'Tier '+s.tier+' · '+classN(s)+' · now',' on')+(UP[k]||[]).map(t=>troopUpRow(g,t,row)).join('')+'</div>'+
-    (L2?'<div class="lab">Rank skills</div>'+L2.map((x,i)=>{const A=x.ab&&UNIT_ABILITIES[x.ab],got=rankOf(g)>i;return row(rankBadge(k,i+1,12)+' Rank '+(i+1)+' · '+(A?A.n+' ('+A.key+')':x.n),(A?A.d:x.d)+(got?'':' <i>(at rank '+(i+1)+')</i>'),got?' on':' off')}).join(''):
+    (L2?'<div class="lab">Rank skills</div>'+L2.map((x,i)=>{const A=x.ab&&UNIT_ABILITIES[x.ab],tr=x.traits&&x.traits.find(id=>traitsOf(s).includes(id)),got=rankOf(g)>i;
+      return row(rankBadge(k,i+1,12)+' Rank '+(i+1)+' · '+(A?A.n+' ('+A.key+')':tr?ABILITIES[tr].n+' <small>(its trait)</small>':x.n),(A?A.d:tr?abilityText(tr,s):x.d)+(got?'':' <i>(at rank '+(i+1)+')</i>'),got?' on':' off')}).join(''):
     '<div class="lab">Battle orders</div>'+(orders.length?orders.map(id=>row(UNIT_ABILITIES[id].n+' ('+UNIT_ABILITIES[id].key+')',UNIT_ABILITIES[id].d)).join(''):'<p class="muted">No special orders.</p>'))+
     '<div class="lab">Traits</div>'+(traits.length?traits.map(([n,d])=>row(n,d)).join(''):'<p class="muted">No special traits.</p>');
 }

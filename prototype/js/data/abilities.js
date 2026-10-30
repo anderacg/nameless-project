@@ -16,7 +16,7 @@ const ABILITIES={
   cry:{kind:'active',n:'War Cry',learn:'commanda0',cd:18,mp:30,sp:0,d:'Nearby troops hit 30% harder and move 25% faster for 6 seconds. Nearby enemies flinch.'},
   banner:{kind:'active',n:'War Banner',learn:'commandc0',cd:24,mp:20,sp:10,d:'Plant your banner: troops near it take 25% less damage for 8 seconds.'},
   // traits: troops'
-  brace:{kind:'trait',n:'Brace',has:s=>unitClass(s)==='spear',d:'Stands against charges: riders who hit it get no charge bonus. Its thrusts carry on into the enemy behind for half damage.'},
+  brace:{kind:'trait',n:'Set spears',has:s=>unitClass(s)==='spear',d:'Braced against a charge on its front: riders who hit it there get no charge bonus and no shock. Its thrusts carry on into the enemy behind for half damage.'},
   charge:{kind:'trait',n:'Cavalry charge',has:s=>unitClass(s)==='cav',d:()=>'Its first blow after a full run hits '+Math.round(CHARGE.cav*100)+'% harder, knocks the one it hits back and shakes their morale.'},
   runcharge:{kind:'trait',n:'Running charge',has:s=>unitClass(s)==='foot'&&!s.range,d:()=>'Running in, its first blow hits up to '+Math.round(CHARGE.foot*100)+'% harder.'},
   shield:{kind:'trait',n:'Shield',has:s=>tagsOf(s).includes('shield')&&!s.mounted,d:'Takes 30% less from arrows, bolts and javelins that hit it from the front (not from spells).'},
